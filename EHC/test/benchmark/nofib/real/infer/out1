@@ -1,0 +1,9 @@
+[unit : All x. x -> List x,
+ append : All x. List x -> List x -> List x,
+ fix : All x. (x -> x) -> x]
+? \x. x : a0 -> a0
+? \x y. x : a0 -> a1 -> a0
+? \x y z. z : a0 -> a1 -> a2 -> a2
+? Failed to type
+? let  f = (\x. x)  in  f : a1 -> a1
+? 

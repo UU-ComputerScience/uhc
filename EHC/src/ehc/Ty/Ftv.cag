@@ -1,0 +1,117 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell importable interface to Ty subst
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[doesWhat doclatex
+Compute free type variables of a type.
+%%]
+
+%%[(2 hmtyinfer || hmtyast) hs module {%{EH}Ty.Ftv} import(Data.List,{%{EH}Base.Common},{%{EH}Ty})
+%%]
+
+%%[(2 hmtyinfer || hmtyast) hs import(qualified Data.Set as Set)
+%%]
+%%[(4 hmtyinfer || hmtyast) hs import(qualified Data.Map as Map)
+%%]
+
+%%[(2 hmtyinfer || hmtyast).WRAPPER ag import({Ty/AbsSyn})
+WRAPPER
+  TyAGItf
+%%]
+
+%%[(2 hmtyinfer || hmtyast).tyFtv hs export(tyFtv)
+tyFtv :: Ty -> Set.Set TyVarId
+%%[[2
+tyFtv ty
+  =  let  t =  wrap_TyAGItf
+                 (sem_TyAGItf (TyAGItf_AGItf ty))
+                 (Inh_TyAGItf)
+     in   Set.fromList $ tvs_Syn_TyAGItf t
+%%][4
+tyFtv = Map.keysSet . tyFtvMp
+%%][9
+tyFtv = Map.keysSet . Map.filter (\i -> tvpurposeIsTy (tvinfoPurpose i)) . tyFtvMp
+%%]]
+%%]
+
+%%[(4 hmtyinfer || hmtyast) hs export(tyFtvMp)
+tyFtvMp :: Ty -> TvCatMp
+tyFtvMp ty
+  =  let  t =  wrap_TyAGItf
+                 (sem_TyAGItf (TyAGItf_AGItf ty))
+                 (Inh_TyAGItf)
+     in   tvMp_Syn_TyAGItf t
+%%]
+
+%%[(99 hmtyinfer || hmtyast) hs export(implsFtvMp)
+implsFtvMp :: Impls -> TvCatMp
+implsFtvMp i = tyFtvMp (Ty_Impls i)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Extract ty vars
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(2 hmtyinfer || hmtyast).TyFtv
+ATTR TyAGItf AllTy  [ | | tvs USE {`union`} {[]}: TyVarIdL ]
+
+SEM Ty
+  | Var             lhs     .   tvs         =   [@tv]
+%%]
+
+%%[(3 hmtyinfer || hmtyast).TyFtv
+SEM Ty
+  | Quant           lhs     .   tvs         =   @tv `delete` @ty.tvs
+%%]
+
+%%[(4 hmtyinfer || hmtyast) -(2.TyFtv 3.TyFtv)
+ATTR
+  TyAGItf AllTy
+    [ | | tvMp USE {`Map.union`} {Map.empty}: TvCatMp ]
+ATTR TyVarCateg [ | | self: SELF ]
+
+SEM Ty
+  | Var             lhs     .   tvMp        =   @tv `Map.singleton` mkTvInfoTy @categ.self
+  | Quant
+%%[[11
+    Lam
+%%]]
+                    lhs     .   tvMp        =   @tv `Map.delete` @ty.tvMp 
+%%]
+
+%%[(9 hmtyinfer || hmtyast)
+SEM Pred
+  | Var				lhs		.	tvMp		=	@pv `Map.singleton` mkTvInfoPlain TvPurpose_Pred
+
+SEM Impls
+  | Tail			lhs		.	tvMp		=	@iv `Map.singleton` mkTvInfoPlain TvPurpose_Impls
+%%]
+
+%%[(10 hmtyinfer || hmtyast)
+%%]
+SEM Pred
+  | RowSplit		lhs		.	tvMp		=	Map.unions [@ty.tvMp,@exts.tvMp] 
+
+SEM RowExts
+  | Exts			lhs		.	tvMp		=	Map.unions [ tyFtvMp t | (_,t) <- @exts ] 
+
+%%[(13 hmtyinfer || hmtyast)
+SEM PredSeq
+  | Var  			lhs		.	tvMp		=	@av `Map.singleton` mkTvInfoTy TyVarCateg_Plain
+%%]
+
+%%[(16 hmtyinfer || hmtyast)
+SEM Pred
+  | Eq              lhs     .   tvMp        =   @tyL.tvMp `Map.union` @tyR.tvMp
+%%]
+
+%%[(50 hmtyinfer || hmtyast)
+SEM Ty
+  | Equal           lhs     .   tvs         =   [@tv] `union` @ty.tvs
+%%]
+

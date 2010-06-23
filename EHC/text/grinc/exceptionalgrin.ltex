@@ -1,0 +1,72 @@
+\documentclass[sffont=false,color=false,openright]{st-thesis}
+
+%include lhs2TeX.fmt
+%include lhs2TeX.sty
+
+%include grin.fmt
+
+\usepackage[english]{babel}
+\usepackage[square,numbers,comma,sort&compress]{natbib}
+\usepackage{graphicx}
+\usepackage{boxedminipage}
+% use landscape images/pages in portrait documents
+\usepackage{rotating} %\newenvironment{sidewaysfigure}
+\usepackage{lscape}   %\newenvironment{landscape}
+
+\title{Exceptional GRIN}
+\author{Christof Douma\\
+\\ \\
+Thesis code: INF/SCR-05-55
+}
+\date{18th May 2006}
+
+
+\newcommand{\todo}[1]{\noindent\emph{\textbf{todo: }#1}}
+
+\newenvironment{Figure}[2]{%
+	\def\FCap{#1}
+	\def\FLab{#2}
+	\begin{figure}
+ 	\begin{boxedminipage}{1.0\textwidth}
+	%\hrule \medskip
+
+}{%
+	%\medskip \hrule
+  	\end{boxedminipage}
+	\caption{\FCap}
+	\label{\FLab}
+	\end{figure}
+}
+
+\newcommand{\cmm}{C\texttt{-\/-}} \newcommand{\qcmm}{qc\texttt{-\/-}}
+\newcommand{\ident}[1]{\mbox{\em #1}}
+\newcommand{\keyword}[1]{\mbox{\bf #1}}
+
+\begin{document}
+%%\pagenumbering{roman}
+\maketitle
+%%\setcounter{page}{1}
+\tableofcontents{}
+%%\pagebreak
+%%\setcounter{page}{1}
+%%\pagenumbering{arabic}
+
+%include intro.ltex
+%include grin.ltex
+%include hpt.ltex
+%include exceptions.ltex
+%include transformations.ltex
+%include codegeneration.ltex
+%include conclusions-and-future-work.ltex
+
+\newpage
+\begin{flushleft}
+
+\bibliographystyle{plainnat}
+\bibliography{papers}
+
+\end{flushleft}
+
+%include appendix.ltex
+
+\end{document}

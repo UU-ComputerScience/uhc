@@ -1,0 +1,103 @@
+%%[fiOptsTableHeader
+{lll}
+Option & meaning & default \\
+\hline
+%%]
+
+%%[fiOptsEH4
+|fioBindRFirst|
+ & prefer binding of a rhs tvar over instantiating
+ & |fioBindRFirstY|
+ \\
+|fioBindLFirst|
+ & prefer binding of a lhs tvar over instantiating
+ & |fioBindLFirstY|
+ \\
+%%]
+
+%%[fiOptsEH4B
+|fioBindToTyAlts|
+ & bind as type alternative
+ & |fioBindToTyAltsN|
+ \\
+|fioFit|
+ & fit
+ & |fioFitY|
+ \\
+|fioMeet|
+ & meet
+ & |fioMeetN|
+ \\
+|fioJoin|
+ & join
+ & |fioJoinN|
+ \\
+%%]
+
+%%[fiOptsEH5
+|fioLeaveRInst|
+ & leave rhs (of fitsIn) instantiated
+ & |fioLeaveRInstN|
+ \\
+%%]
+
+%%[fiOptsCombisTableHeader
+{lll}
+Combination & options (relative to default) & context \\
+\hline
+%%]
+
+%%[fiOptsCombisDefault
+|strongFIOpts|
+ &  
+ & strong (default)
+ \\
+%%]
+
+%%[fiOptsCombisEH4forEH4
+|instLRFIOpts|
+ &  |fioBindLFirstN, fioBindRFirstN|
+ & left and right instantiating
+ \\
+%%]
+
+%%[fiOptsCombisEH4forEH4B
+|instLFIOpts|
+ &  |fioBindRFirstN|
+ & left instantiating
+ \\
+|instLRFIOpts|
+ &  |fioBindLFirstN, fioBindRFirstN|
+ & left and right instantiating
+ \\
+%%]
+
+%%[fiOptsCombisEH4B1
+|impredFIOpts|
+ &  |fioBindToTyAltsY|
+ & impredicative inference
+ \\
+%%]
+
+%%[fiOptsCombisEH4B2
+|meetFIOpts|
+ &  |fioMeetY|
+ & meet
+ \\
+|joinFIOpts|
+ &  |fioJoinY|
+ & join
+ \\
+%%]
+
+%%[fiOptsCombisEH5
+|instFIOpts|
+ &  |fioBindRFirstN|, |fioBindLFirstN|, |fioLeaveRInstY|
+ & ...
+ \\
+|weakFIOpts|
+ &  |fioBindRFirstN|, |fioLeaveRInstY|
+ & weak
+ \\
+%%]
+

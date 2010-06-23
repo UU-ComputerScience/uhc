@@ -1,0 +1,774 @@
+-- last changed: Andres Loeh, May 21, 2002
+
+-- Read using a monospaced font!
+
+-- At some places we still have to look at,
+-- a "-- ToDo:" comment is inserted
+
+-- ------------------------------------------------------------------------
+-- -- Modules                                                            --
+-- ------------------------------------------------------------------------
+
+DATA Module
+    | Module
+        range                    : Range
+        name                     : MaybeName
+        exports                  : MaybeExports
+        body                     : Body
+
+TYPE Exports                     = [ Export ]
+
+DATA MaybeExports
+    | Nothing
+    | Just
+        exports                  : Exports
+
+DATA Export
+    | Variable
+        range                    : Range
+        name                     : Name
+    | TypeOrClass
+        range                    : Range
+        name                     : Name
+        names                    : MaybeNames  -- constructors or field names or class methods
+    | TypeOrClassComplete
+        range                    : Range
+        name                     : Name
+    | Module
+        range                    : Range
+        name                     : Name   -- this is a module name
+
+-- Since the parser cannot distinguish between types or constructors,
+-- or between types and type classes, we do not have different cases (yet?).
+
+DATA Body
+    | Body
+        range                    : Range
+        importdeclarations       : ImportDeclarations
+        declarations             : Declarations
+
+TYPE ImportDeclarations          = [ ImportDeclaration ]
+
+DATA ImportDeclaration
+    | Import
+        range                    : Range
+        qualified                : Bool
+        name                     : Name
+        asname                   : MaybeName
+        importspecification      : MaybeImportSpecification
+    | Empty
+        range                    : Range
+
+DATA MaybeImportSpecification
+    | Nothing
+    | Just
+        importspecification      : ImportSpecification
+
+DATA ImportSpecification
+    | Import
+        range                    : Range
+        hiding                   : Bool
+        imports                  : Imports
+
+TYPE Imports                     = [ Import ] 
+
+DATA Import
+    | Variable
+        range                    : Range
+        name                     : Name
+    | TypeOrClass
+        range                    : Range
+        name                     : Name
+        names                    : MaybeNames  -- constructors or field names or class methods
+    | TypeOrClassComplete
+        range                    : Range
+        name                     : Name
+
+-- cf. Export
+
+-- ------------------------------------------------------------------------
+-- -- Declarations                                                       --
+-- ------------------------------------------------------------------------
+
+DATA MaybeDeclarations
+    | Nothing
+    | Just
+        declarations             : Declarations
+
+TYPE Declarations                = [ Declaration ]
+
+DATA Declaration                                  {- *** -}
+    | Type
+        range                    : Range
+        simpletype               : SimpleType
+        type                     : Type
+    | Data                            {- *** -}
+        range                    : Range
+        context                  : ContextItems
+        simpletype               : SimpleType
+        constructors             : Constructors
+        derivings                : Names
+    | Newtype
+        range                    : Range
+        context                  : ContextItems
+        simpletype               : SimpleType
+        constructor              : Constructor  -- has only one field, no strictness
+        derivings                : Names
+    | Class
+        range                    : Range
+        context                  : ContextItems -- is a "simple" context
+        simpletype               : SimpleType   -- Haskell 98 allows only one variable
+        where                    : MaybeDeclarations -- cannot have everything
+    | Instance
+        range                    : Range
+        context                  : ContextItems -- is a "simple" context
+        name                     : Name
+        types                    : Types        -- Haskell 98 allows only one type
+                                                -- that is severely restricted
+        where                    : MaybeDeclarations -- cannot have everything
+    | Default
+        range                    : Range
+        types                    : Types        -- should be instances of Num
+    | FunctionBindings                {- *** -}
+        range                    : Range
+        bindings                 : FunctionBindings -- should all be for the same function
+    | PatternBinding
+        range                    : Range
+        pattern                  : Pattern
+        righthandside            : RightHandSide
+    | TypeSignature
+        range                    : Range
+        names                    : Names
+        type                     : Type   -- may have context
+    | Fixity
+        range                    : Range
+        fixity                   : Fixity
+        priority                 : MaybeInt
+        operators                : Names
+    | Empty
+        range                    : Range
+
+DATA Fixity
+    | Infixl
+        range                    : Range
+    | Infixr
+        range                    : Range
+    | Infix
+        range                    : Range
+
+-- ------------------------------------------------------------------------
+-- -- Types                                                              --
+-- ------------------------------------------------------------------------
+
+TYPE Types                       = [Type]
+
+DATA Type                                         {- *** -}
+    | Application                            {- *** -}
+        range                    : Range
+        prefix                   : Bool
+        function                 : Type
+        arguments                : Types
+    | Variable                               {- *** -}
+        range                    : Range
+        name                     : Name
+    | Constructor                            {- *** -}
+        range                    : Range
+        name                     : Name
+    | Qualified
+        range                    : Range
+        context                  : ContextItems
+        type                     : Type
+    | Forall
+        range                    : Range
+        typevariables            : Names
+        type                     : Type
+    | Exists
+        range                    : Range
+        typevariables            : Names
+        type                     : Type
+    | Parenthesized
+        range                    : Range
+        type                     : Type
+
+-- Representation examples (ranges are skipped):
+--   o "(Int,Int,Int)" as
+--
+--     Type_Application 
+--       False (Type_Constructor (Name_Special "(,,)"))
+--       [Type_Constructor (Name_Identifier "Int")
+--       ,Type_Constructor (Name_Identifier "Int")
+--       ,Type_Constructor (Name_Identifier "Int")]
+--
+--   o "(,,) Int Int Int" as
+--
+--     Type_Application 
+--       True (Type_Constructor (Name_Special "(,,)"))
+--       [Type_Constructor (Name_Identifier "Int")
+--       ,Type_Constructor (Name_Identifier "Int")
+--       ,Type_Constructor (Name_Identifier "Int")]
+--
+--   o "((,,) Int) Int Int" as
+--
+--     Type_Application
+--       True
+--       (Type_Parenthesized
+--         (Type_Application 
+--            True (Type_Constructor (Name_Special "(,,)"))
+--            [Type_Constructor (Name_Identifier "Int")]))
+--       [Type_Constructor (Name_Identifier "Int")
+--       ,Type_Constructor (Name_Identifier "Int")]
+--
+--   o "Int -> Int" as
+--
+--     Type_Application 
+--       False (Type_Constructor (Name_Special "->"))
+--       [Type_Constructor (Name_Identifier "Int")
+--       ,Type_Constructor (Name_Identifier "Int")]
+--
+--   o "(->) Int Int" as
+--
+--     Type_Application 
+--       True (Type_Constructor (Name_Special "->"))
+--       [Type_Constructor (Name_Identifier "Int")
+--       ,Type_Constructor (Name_Identifier "Int")]
+--
+--   o "Tree Int" as
+--
+--     Type_Application 
+--       True (Type_Constructor (Name_Identifier "Tree"))
+--       [Type_Constructor (Name_Identifier "Int")]
+
+
+DATA SimpleType
+    | SimpleType
+        range                    : Range
+        name                     : Name
+        typevariables            : Names
+
+TYPE ContextItems                = [ ContextItem ]
+
+DATA ContextItem
+    | ContextItem -- ToDo: or _Item?
+        range                    : Range
+        name                     : Name   -- that is the class
+        types                    : Types  -- in Haskell 98, this is only one type
+
+TYPE Constructors                = [ Constructor ]
+
+DATA Constructor
+    | Constructor 
+        range                    : Range
+        constructor              : Name
+        types                    : AnnotatedTypes
+    | Infix
+        range                    : Range
+        leftType                 : AnnotatedType
+        constructorOperator      : Name
+        rightType                : AnnotatedType
+    | Record
+        range                    : Range
+        constructor              : Name
+        fieldDeclarations        : FieldDeclarations
+
+TYPE FieldDeclarations           = [ FieldDeclaration ]
+
+DATA FieldDeclaration
+    | FieldDeclaration
+        range                    : Range
+        names                    : Names
+        type                     : AnnotatedType        
+
+TYPE AnnotatedTypes              = [ AnnotatedType ]
+
+DATA AnnotatedType
+    | AnnotatedType -- ToDo: or _Type?
+        range                    : Range
+        strict                   : Bool
+        type                     : Type
+
+-- ------------------------------------------------------------------------
+-- -- Expressions                                                        --
+-- ------------------------------------------------------------------------
+
+TYPE Expressions                 = [ Expression ]
+
+DATA MaybeExpression
+    | Nothing
+    | Just
+        expression               : Expression
+
+DATA Expression                                   {- *** -}
+    | Literal                          {- *** -}
+        range                    : Range
+        literal                  : Literal
+    | Variable                         {- *** -}
+        range                    : Range
+        name                     : Name
+    | Constructor                      {- *** -}
+        range                    : Range
+        name                     : Name
+    | Parenthesized
+        range                    : Range
+        expression               : Expression
+    | NormalApplication                {- *** -}
+        range                    : Range
+        function                 : Expression
+        arguments                : Expressions
+    | InfixApplication
+        range                    : Range
+        leftExpression           : MaybeExpression
+        operator                 : Expression
+        rightExpression          : MaybeExpression
+    | If
+        range                    : Range
+        guardExpression          : Expression
+        thenExpression           : Expression
+        elseExpression           : Expression
+    | Lambda                           {- *** -}
+        range                    : Range
+        patterns                 : Patterns
+        expression               : Expression
+    | Case                             {- *** -}
+        range                    : Range
+        expression               : Expression
+        alternatives             : Alternatives
+    | Let                              {- *** -}
+        range                    : Range
+        declarations             : Declarations
+        expression               : Expression
+    | Do
+        range                    : Range
+        statements               : Statements
+    | List
+        range                    : Range
+        expressions              : Expressions
+    | Tuple
+        range                    : Range
+        expressions              : Expressions
+    | Comprehension
+        range                    : Range
+        expression               : Expression
+        qualifiers               : Qualifiers
+    | Typed                            {- ??? -}
+        range                    : Range
+        expression               : Expression
+        type                     : Type
+    | RecordConstruction
+        range                    : Range
+        name                     : Name
+        recordExpressionBindings : RecordExpressionBindings
+    | RecordUpdate
+        range                    : Range
+        expression               : Expression
+        recordExpressionBindings : RecordExpressionBindings
+    | Enum
+        range                    : Range
+        from                     : Expression
+        then                     : MaybeExpression
+        to                       : MaybeExpression
+    | Negate
+        range                    : Range
+        expression               : Expression
+
+-- Helium
+    | NegateFloat
+        range                    : Range
+        expression               : Expression
+
+-- Representation examples (ranges are skipped):
+--
+--   o "(+) 2 3" as
+--     
+--     Expression_NormalApplication
+--       (Expression_InfixApplication 
+--          Nothing (Name_Operator [] "+") Nothing)
+--       [Expression_Literal (Literal_Int "2")
+--       ,Expression_Literal (Literal_Int "3")]
+--
+-- ToDo: Now that we distinguish operators from identifiers, is
+-- there a good reason not to say
+--
+--     Expression_NormalApplication
+--       (Expression_Variable (Name_Operator [] "+"))
+--       [Expression_Literal (Literal_Int "2")
+--       ,Expression_Literal (Literal_Int "3")]
+--
+--   o "(+3) 2" as
+--
+--     Expression_NormalApplication
+--       (Expression_InfixApplication
+--          Nothing (Name_Operator [] "+") 
+--          (Just (Expression_Literal (Literal_Int "3"))))
+--       [Expression_Literal (Literal_Int "2")]
+--
+--   o "(2+) 3" as
+--
+--     Expression_NormalApplication
+--       (Expression_InfixApplication
+--          (Just (Expression_Literal (Literal_Int "2")))
+--          (Name_Operator [] "+") Nothing)
+--       [Expression_Literal (Literal_Int "3")]
+--
+--   o "2 + 3" as
+-- 
+--     Expression_InfixApplication
+--       (Just (Expression_Literal (Literal_Int "2")))
+--       (Name_Operator [] "+")
+--       (Just (Expression_Literal (Literal_Int "3")))
+--
+--   o "mod 5 2" as
+--
+--     Expression_NormalApplication
+--       (Expression_Variable (Name_Identifier [] "mod"))
+--       [Expression_Literal (Literal_Int "5")
+--       ,Expression_Literal (Literal_Int "3")]
+--
+--   o "(`mod` 2) 5" as
+--
+--     Expression_NormalApplication
+--       (Expression_InfixApplication
+--          Nothing (Name_Identifier [] "mod") 
+--          (Just (Expression_Literal (Literal_Int "2"))))
+--       [Expression_Literal (Literal_Int "5")]
+--
+--   o "(5 `mod`) 2" as
+--
+--     Expression_NormalApplication
+--       (Expression_InfixApplication
+--          (Just (Expression_Literal (Literal_Int "5")))
+--          (Name_Identifier [] "mod") Nothing)
+--       [Expression_Literal (Literal_Int "2")]
+--
+--   o "(mod 5) 2" as
+--
+--     Expression_NormalApplication
+--       (Expression_Parenthesized 
+--         (Expression_NormalApplication
+--           (Expression_Variable (Name_Identifier [] "mod"))
+--           [Expression_Literal (Literal_Int "5")]))
+--       [Expression_Literal (Literal_Int "2")]
+--
+--   o "5 `mod` 2" as
+--
+--     Expression_InfixApplication
+--       (Just (Expression_Literal (Literal_Int "5")))
+--       (Name_Identifier [] "mod")
+--       (Just (Expression_Literal (Literal_Int "2")))
+--
+--   o "-2" as
+--
+--     Expression_Negate (Expression_Literal (Literal_Int "2"))
+--
+--   o "(-2)" as
+--
+--     Expression_Parenthesized
+--       (Expression_Negate (Expression_Literal (Literal_Int "2")))
+--
+--   o "(2-)" as
+--
+--     Expression_InfixApplication
+--       (Just (Expression_Literal (Literal_Int "2")))
+--       (Name_Operator [] "-") Nothing
+--
+-- Summary: 
+-- Sections are represented as partial infix applications. Backquotes
+-- and parentheses that originate from pre/in-fixing an operator/identifier
+-- are not stored explicitly.
+
+TYPE Statements                  = [ Statement ]
+
+DATA Statement
+    | Expression
+        range                    : Range
+        expression               : Expression
+    | Let
+        range                    : Range
+        declarations             : Declarations
+    | Generator
+        range                    : Range
+        pattern                  : Pattern
+        expression               : Expression
+    | Empty
+        range                    : Range
+
+TYPE Qualifiers                  = [ Qualifier ]
+
+DATA Qualifier
+    | Guard
+        range                    : Range
+        guard                    : Expression -- type: Boolean
+    | Let
+        range                    : Range
+        declarations             : Declarations
+    | Generator
+        range                    : Range
+        pattern                  : Pattern
+        expression               : Expression
+    | Empty
+        range                    : Range
+
+TYPE Alternatives                = [ Alternative ]
+
+DATA Alternative
+    | Alternative
+        range                    : Range
+        pattern                  : Pattern
+        righthandside            : RightHandSide
+    | Empty
+        range                    : Range
+
+TYPE GuardedExpressions          = [ GuardedExpression ]
+
+DATA GuardedExpression -- ToDo: or _Guard?
+    | GuardedExpression
+        range                    : Range
+        guard                    : Expression -- type: Boolean
+        expression               : Expression
+
+TYPE RecordExpressionBindings    = [ RecordExpressionBinding ]
+
+DATA RecordExpressionBinding
+    | RecordExpressionBinding -- ToDo: or _Binding?
+        range                    : Range
+        name                     : Name
+        expression               : Expression
+
+TYPE RecordPatternBindings       = [ RecordPatternBinding ]
+
+DATA RecordPatternBinding
+    | RecordPatternBinding -- ToDo: or _Binding?
+        range                    : Range
+        name                     : Name
+        pattern                  : Pattern
+
+TYPE FunctionBindings            = [ FunctionBinding ]
+
+DATA FunctionBinding
+    | FunctionBinding
+        range                    : Range
+        lefthandside             : LeftHandSide
+        righthandside            : RightHandSide
+
+DATA LeftHandSide
+    | Function
+        range                    : Range
+        name                     : Name
+        patterns                 : Patterns
+    | Infix
+        range                    : Range
+        leftPattern              : Pattern
+        operator                 : Name
+        rightPattern             : Pattern
+    | Parenthesized
+        range                    : Range
+        lefthandside             : LeftHandSide
+        patterns                 : Patterns
+
+DATA RightHandSide
+    | Expression
+        range                    : Range
+        expression               : Expression
+        where                    : MaybeDeclarations
+    | Guarded
+        range                    : Range
+        guardedexpressions       : GuardedExpressions
+        where                    : MaybeDeclarations
+
+-- ------------------------------------------------------------------------
+-- -- Patterns                                                           --
+-- ------------------------------------------------------------------------
+
+TYPE Patterns                    = [ Pattern ]
+
+DATA Pattern
+    | Literal                             {- *** -}
+        range                    : Range
+        literal                  : Literal
+    | Variable                            {- *** -}
+        range                    : Range          
+        name                     : Name
+    | Constructor                         {- *** -}
+        range                    : Range
+        name                     : Name
+        patterns                 : Patterns
+    | Parenthesized
+        range                    : Range
+        pattern                  : Pattern
+    | InfixConstructor
+        range                    : Range
+        leftPattern              : Pattern
+        constructorOperator      : Name
+        rightPattern             : Pattern
+    | List
+        range                    : Range
+        patterns                 : Patterns
+    | Tuple
+        range                    : Range
+        patterns                 : Patterns
+    | Record
+        range                    : Range
+        name                     : Name
+        recordPatternBindings    : RecordPatternBindings
+    | Negate
+        range                    : Range
+        literal                  : Literal -- only numbers allowed here
+    | As                                  {- ??? -}
+        range                    : Range
+        name                     : Name
+        pattern                  : Pattern
+    | Wildcard
+        range                    : Range
+    | Irrefutable
+        range                    : Range
+        pattern                  : Pattern
+    | Successor                    -- n+k patterns        
+        range                    : Range
+        name                     : Name
+        literal                  : Literal -- only integers allowed here
+-- Helium
+    | NegateFloat
+        range                    : Range
+        literal                  : Literal -- only numbers allowed here
+
+-- ------------------------------------------------------------------------
+-- -- Basics                                                             --
+-- ------------------------------------------------------------------------
+
+DATA Literal                                      {- *** -}
+    | Int                                 {- *** -}
+        range                    : Range
+        value                    : String
+    | Char                                {- *** -}
+        range                    : Range
+        value                    : String -- without the quotes
+    | Float
+        range                    : Range
+        value                    : String
+    | String                              {- ??? -}
+        range                    : Range
+        value                    : String -- without the quotes
+
+TYPE Names                       = [ Name ]
+
+DATA MaybeNames
+    | Nothing
+    | Just
+        names                    : Names
+
+DATA MaybeName
+    | Nothing
+    | Just
+        name                     : Name
+
+DATA Name                                         {- *** -}
+    | Identifier                             {- *** -}
+        range                    : Range
+        module                   : Strings
+        name                     : String
+    | Operator
+        range                    : Range
+        module                   : Strings
+        name                     : String
+    | Special
+        range                    : Range
+        module                   : Strings
+        name                     : String
+
+-- Normal identifiers should be stored as "Name_Identifier".
+-- Symbolic identifiers or operators that are usually applied infix
+-- should be stored as "Name_Operator".
+-- "Name_Special" is reserved for:
+--   o (on the type level:) the function space arrow, the unit type,
+--     all tuple type constructors, the list type constructor
+--   o (on the value level:) unit, all tuple value constructors, the
+--     empty list
+-- The field "module" can be used to store qualifications. If the
+-- name occurs unqualified, the empty list is used. Multiple list
+-- entries can be used to support a hierarchical module space
+-- (as supported in recent versions of GHC).
+
+TYPE Strings                     = [ String ]
+
+DATA MaybeInt
+    | Nothing
+    | Just
+        int                      : Int
+
+DATA Range
+    | Range
+        start                    : Position
+        stop                     : Position
+
+DATA Position
+    | Position
+        filename                 : String
+        line                     : Int
+        column                   : Int
+    | Unknown
+
+{-
+
+Documented Design Decisions:
+
+  o    All names are spelt out.
+
+  o    All constructor names are prefixed with the type name followed by
+       an underscore. This preserves uniqueness, and the AG system can
+       do that automatically.
+
+  o    Ranges are included everywhere as the first field, except
+       in list and maybe types.
+
+  o    Naming convention for list types: append an `s' to the name of
+       the element type.
+
+  o    Naming convention for maybe types: prepend base type with `Maybe'.
+
+  o    All of Haskell should be expressible without too much reinterpretation.
+       That means that the syntax contains cases for ugly constructs such
+       as the `default' statement or n+k/successor patterns.
+
+  o    We keep a few extensions in mind and are thus more general than
+       Haskell in many places. For instance, the abstract syntax allows:
+        <>    multi-parameter type classes
+        <>    existential types
+        <>    rank-n polymorphic and qualified types
+        <>    hierarchical module names
+        <>    Haskell toplevel declarations everywhere
+
+  o    `Expression_InfixApplication' is used to store sections and
+       prefixed operators.
+
+  o    General where rule: A "where" with no declarations is represented
+       as "Just []". A missing "where" clause is represented as "Nothing".
+
+  o    If two different cases can be joined into one by using a `Bool'
+       to distinguish or by using maybe types, then they _usually_ should.
+
+  o    Literals are stored as strings rather than in their corresponding
+       Haskell types, leaving it to each project to do conversions if
+       necessary. The strings should store the literal in the same
+       way as it appears in the source, but without the single or double
+       quotes for character or string literals.
+
+  o    We do not include nonterminals that do not have resemblance in the
+       concrete syntax, although they might be convenient for AG usage.
+       Examples discussed were special root-like nonterminals for expressions
+       and types, or a `BindingGroup' nonterminal.
+
+  o    Although parentheses can be represented in the abstract syntax,
+       the program using it will probably not always do so. For instance,
+       most compilers will work on type expressions and not insert parentheses
+       at the correct positions. There might be different pretty printers needed:
+       literal and optimizing.
+
+ ToDo: Create different levels of the abstract syntax.
+       Types, constructors, maybe even fields should be categorised.
+       There should be a really small core, and different standardised
+       extensions levels. Some of the extensions might even be not
+       yet discussed at all (kinds, functional dependencies, ...)
+       Andres has started marking some types and some constructors
+       he thinks are most important with {- *** -}.
+
+-}
+

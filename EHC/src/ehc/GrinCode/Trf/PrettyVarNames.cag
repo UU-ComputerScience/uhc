@@ -1,0 +1,159 @@
+%%[doesWhat doclatex
+
+Prefix Grin variable names by `p', `n', `i' or `t', if they represent a pointer, node, integer or tag, respectively.
+
+%%]
+
+%%
+%% TODO: Show the usage of this transformation
+%%
+
+%%[(8_2 codegen grin) ag import({GrinCode/AbsSyn})
+%%]
+
+%%[(8_2 codegen grin) hs module {%{EH}GrinCode.Trf.PrettyVarNames}
+%%]
+%%[(8_2 codegen grin) hs import({%{EH}Base.Builtin}, {%{EH}Base.Common}, {%{EH}GrinCode.Common}, {%{EH}GrinCode})
+%%]
+%%[(8_2 codegen grin) hs import(qualified Data.Map as Map)
+%%]
+%%[(8_2 codegen grin) hs import(qualified Data.Maybe as Maybe)
+%%]
+%%[(8_2 codegen grin) hs import(qualified Data.List as List)
+%%]
+
+%%[(8_2 codegen grin) hs export(grPrettyNames)
+grPrettyNames :: GrModule -> GrModule
+grPrettyNames grmod
+  = trf_Syn_GrAGItf t
+  where t = wrap_GrAGItf (sem_GrAGItf $ GrAGItf_AGItf grmod)
+            $ Inh_GrAGItf
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Wrapper
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8_2 codegen grin)
+WRAPPER GrAGItf
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Mapping of HsName to a HsName which indicates the type and is easier to read. 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%[(8_2 codegen grin)
+ATTR AllNT   [ | mapping : {Map.Map HsName HsName} | ] 
+%%]
+
+%%[(8_2 codegen grin)
+SEM GrAGItf
+  | AGItf       module      .   mapping         = Map.empty
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Unique number for unique variable names 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%[(8_2 codegen grin)
+ATTR AllNT   [ | uniqNr : {Int} | ] 
+%%]
+
+%%[(8_2 codegen grin)
+SEM GrAGItf
+  | AGItf       module      .   uniqNr              = 0
+
+SEM GrBind
+  | Bind        lhs         .   uniqNr              = @expr.uniqNr
+                expr        .   uniqNr              = @loc.uniqNr
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Actual renaming 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%[(8_2 codegen grin)
+ATTR GrAGItf [ | | trf: GrModule ]
+ATTR AllNT   [ | | trf: SELF     ]
+%%]
+
+%%[(8_2 codegen grin)
+SEM GrBindL
+  | Cons        hd          .   uniqNr              = @lhs.uniqNr
+                tl          .   uniqNr              = @hd.uniqNr
+                lhs         .   uniqNr              = @tl.uniqNr
+  | Nil         lhs         .   uniqNr              = @lhs.uniqNr
+
+SEM GrBind
+  | Bind        lhs         .   trf                 = GrBind_Bind @nm GrBindAnnNormal @loc.ns @expr.trf
+                loc         .   (ns,mapping,uniqNr) = getPrettyNames @lhs.mapping @argNmL @lhs.uniqNr
+
+SEM GrPatLam
+  | Var         lhs         .   trf                 = GrPatLam_Var @loc.nm 
+                loc         .   (nm,mapping,uniqNr) = if @lhs.matchesStore
+                                                      then getPrettyName @lhs.mapping @nm GrinPointer @lhs.uniqNr
+                                                      else getPrettyName @lhs.mapping @nm GrinNode @lhs.uniqNr
+  | BasicNode   lhs         .   trf                 = GrPatLam_BasicNode @annot @loc.nm 
+                loc         .   (nm,mapping,uniqNr) = getPrettyName @lhs.mapping @nm GrinInteger @lhs.uniqNr
+  | BasicAnnot  lhs         .   trf                 = GrPatLam_BasicAnnot @annot @loc.nm 
+                loc         .   (nm,mapping,uniqNr) = getPrettyName @lhs.mapping @nm GrinInteger @lhs.uniqNr
+  | EnumAnnot   lhs         .   trf                 = GrPatLam_EnumAnnot @tycon @loc.nm 
+                loc         .   (nm,mapping,uniqNr) = getPrettyName @lhs.mapping @nm GrinTag @lhs.uniqNr
+
+SEM GrExpr
+  | Eval        lhs         .   trf                 = GrExpr_Eval @loc.nm 
+                loc         .   (nm,mapping,uniqNr) = getPrettyName @lhs.mapping @nm GrinPointer @lhs.uniqNr
+
+SEM GrVal
+  | Var         lhs         .   trf                 = GrVal_Var @loc.nm 
+                loc         .   (nm,mapping,uniqNr) = getPrettyName @lhs.mapping @nm GrinNode @lhs.uniqNr
+  | BasicNode   lhs         .   trf                 = GrVal_BasicNode @tag.trf @loc.nm
+                loc         .   (nm,mapping,uniqNr) = getPrettyName @lhs.mapping @nm GrinInteger @lhs.uniqNr
+  | EnumNode    lhs         .   trf                 = GrVal_EnumNode @loc.nm 
+                loc         .   (nm,mapping,uniqNr) = getPrettyName @lhs.mapping @nm GrinTag @lhs.uniqNr
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% A patternmatch on a store should be an pointer 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%[(8_2 codegen grin)
+ATTR GrExpr    [ | | isStore : {Bool} ]
+ATTR GrPatLam  [ matchesStore : {Bool} | | ]
+
+SEM GrExpr
+  | Store       lhs         .   isStore             = True
+  | * - Store   lhs         .   isStore             = False
+
+SEM GrExpr
+  | Seq         pat         .   matchesStore        = @expr.isStore
+                                                      
+%%]
+
+
+%%[(8_2 codegen grin)
+{
+getPrettyNames :: Map.Map HsName HsName -> [HsName] -> Int -> ([HsName], Map.Map HsName HsName, Int)
+getPrettyNames mapping origNames uniqNr =
+  let f (newNames,newMapping,newUniqNr) origName = 
+        let (newName, newMapping', newUniqNr') = getPrettyName newMapping origName GrinPointer newUniqNr
+         in (newNames ++ [newName], newMapping', newUniqNr')
+   in List.foldl' f ([],mapping,uniqNr) origNames
+  
+getPrettyName :: Map.Map HsName HsName -> HsName -> GrinType -> Int -> (HsName, Map.Map HsName HsName, Int)
+getPrettyName mapping origName grType uniqNr =
+  if Map.member origName mapping
+  then (Maybe.fromJust $ Map.lookup origName mapping, mapping, uniqNr)
+  else let newName = hsnFromString $ (prefix grType) ++ show uniqNr
+        in (newName, Map.insert origName newName mapping, uniqNr + 1)
+
+data GrinType
+  = GrinPointer
+  | GrinNode
+  | GrinInteger
+  | GrinTag
+
+prefix :: GrinType -> String
+prefix (GrinPointer) = "p"
+prefix (GrinNode)    = "n"
+prefix (GrinInteger) = "i"
+prefix (GrinTag)     = "t"
+}
+%%]

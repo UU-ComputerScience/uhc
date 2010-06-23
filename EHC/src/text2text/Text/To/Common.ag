@@ -1,0 +1,15 @@
+-------------------------------------------------------------------------
+-- Common stuff to To's in same directory
+-------------------------------------------------------------------------
+
+-------------------------------------------------------------------------
+-- Gathering of line's
+-------------------------------------------------------------------------
+
+{-
+ATTR AllText [ | | lines USE {`Seq.union`} {Seq.empty}: Lines ]
+
+SEM TextItem
+  | LineFeed		lhs			.	lines		=   Seq.singleton (Line_LF   @pp)
+  | * - LineFeed	lhs			.	lines		=   Seq.singleton (Line_Item @pp)
+-}

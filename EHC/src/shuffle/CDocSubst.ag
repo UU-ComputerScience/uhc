@@ -1,0 +1,57 @@
+-------------------------------------------------------------------------
+-- Substitution on CDoc
+-------------------------------------------------------------------------
+
+{
+module CDocSubst
+  ( cdocSubst
+  )
+  where
+
+import qualified Data.Set as Set
+import qualified Data.Map as Map
+import CDoc
+import CDocCommon
+}
+
+INCLUDE "CDocAbsSyn.ag"
+INCLUDE "CDocCommonAG.ag"
+
+WRAPPER AGCDocItf
+
+{
+wrapAGCDoc_T :: NmChMp -> T_AGCDocItf -> Syn_AGCDocItf
+wrapAGCDoc_T nmChMp d
+  = wrap_AGCDocItf d
+      (Inh_AGCDocItf
+         { nmChMp_Inh_AGCDocItf = nmChMp
+         })
+
+wrapCDoc :: NmChMp -> CDoc -> Syn_AGCDocItf
+wrapCDoc m d = wrapAGCDoc_T m (sem_AGCDocItf (AGCDocItf_AGItf d))
+
+cdocSubst :: NmChMp -> CDoc -> (CDoc,Set.Set Nm,ErrM)
+cdocSubst m d
+  = (sbRepl_Syn_AGCDocItf r,sbCRefS_Syn_AGCDocItf r,sbErrM_Syn_AGCDocItf r)
+  where r = wrapCDoc m d
+}
+
+-------------------------------------------------------------------------
+-- CRef subst in CDoc
+-------------------------------------------------------------------------
+
+ATTR CDoc [ | | sbRepl: SELF ]
+ATTR AGCDocItf [ | | sbRepl: CDoc ]
+ATTR CDoc AGCDocItf [ | | sbCRefS USE {`Set.union`} {Set.empty}: {Set.Set Nm} ]
+ATTR CDoc AGCDocItf [ | | sbErrM USE {`Map.union`} {Map.empty}: ErrM ]
+
+SEM CDoc
+  | Ref         lhs         .   (sbRepl,sbCRefS,sbErrM)
+                                            =   case Map.lookup (@cref) @lhs.nmChMp of
+                                                  Just i
+                                                    -> case maybe (nciMbCDoc i) (nciMkCDoc i) @mbVariantReqm of
+                                                         Just d -> (r,Set.insert @cref s,e)
+                                                                where (r,s,e) = cdocSubst (Map.delete @cref @lhs.nmChMp) d
+                                                         _      -> (CDoc_Emp,Set.empty,Map.empty)
+                                                  _ -> (@sbRepl,Set.empty,Map.singleton @lhs.cpos (Err_UndefNm @lhs.cpos "chunk reference" [@cref]))
+

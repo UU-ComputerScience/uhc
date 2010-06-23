@@ -1,0 +1,26 @@
+%%[1
+preamble tex "%include lhs2TeX.fmt\n%include afp.fmt\n"
+%%]
+
+%%[1.expr.scheme.minimal
+scheme expr =
+    holes [ e: Expr, g: Gam, t: Ty ]
+    judgespec g :- e : t
+    judgeuse tex g :-.."e" e : t
+%%]
+
+%%[1.expr.rs.minimal
+ruleset expr scheme expr "Expression type rules" =
+  rule e.int =
+      -
+      judge expr = g :- int : Int
+%%]
+
+%%[2.expr.rs.holes.directly
+ruleset expr scheme expr "Expression type rules" =
+  rule e.int =
+      -
+      judge expr
+          | e = int
+          | t = Int
+%%]

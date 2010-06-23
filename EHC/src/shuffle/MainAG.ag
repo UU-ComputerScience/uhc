@@ -1,0 +1,839 @@
+imports
+{
+import Network.URI
+import IO
+import Monad
+import Array
+import Data.List
+import qualified Data.Map as Map
+import Common
+import CDoc
+import CDocCommon
+import CDocSubst
+import CDocInline
+import qualified Data.Set as Set
+import qualified EH.Util.FastSeq as Seq
+import EH.Util.Utils(initlast)
+
+-- for debugging:
+-- import EH.Util.Utils (tr, trp, wordsBy)
+-- import EH.Util.Pretty
+}
+
+-------------------------------------------------------------------------
+-- Inferfacing
+-------------------------------------------------------------------------
+
+WRAPPER AGItf
+
+{
+wrapAG_T :: Opts -> FPath -> XRefExcept -> NmChMp -> T_AGItf -> Syn_AGItf
+wrapAG_T opts fp xr nmChMp pres
+  = wrap_AGItf pres
+      (Inh_AGItf
+         { opts_Inh_AGItf = opts {optBaseName = mbBaseName, optBaseFPath = fp, optDefs = mbDefs `Map.union` optDefs opts}
+         , xrefExcept_Inh_AGItf = xr
+         , nmChMp_Inh_AGItf = nmChMp
+         })
+  where mbBaseName = maybe (Just (fpathBase fp)) Just (optBaseName opts)
+        mbDefs = maybe Map.empty (\n -> Map.fromList [("basename",n),("base",n)]) mbBaseName
+}
+
+{
+cdocSubstInline :: NmChMp -> CDoc -> IO (CDoc,Set.Set Nm,ErrM)
+cdocSubstInline m d
+  = do { let (d2,s,e) = cdocSubst m d
+       ; if Map.null e
+         then do { let (d3,il) = cdocInlineCDocIO d2
+                 ; (im,ie) <- il (Map.empty,Map.empty)
+                 ; if Map.null ie
+                   then do { let (d4,_,es) = cdocSubst im d3
+                           ; return (d4,s,es)
+                           }
+                   else return (d3,s,ie)
+                 }
+         else return (d2,s,e)
+       }
+}
+
+INCLUDE "ChunkAbsSyn.ag"
+
+-------------------------------------------------------------------------
+-- Global info
+-------------------------------------------------------------------------
+
+ATTR AGItf AllChunk AllLine AllWord AllGroup AllStrExpr [ opts: Opts | | ]
+
+-------------------------------------------------------------------------
+-- Common. Variant
+-------------------------------------------------------------------------
+
+{
+instance CD VariantOffer where
+  cd = cd . mkNm
+
+cmpByVariantRefOrder :: VariantRefOrder -> VariantRef -> VariantRef -> Ordering
+cmpByVariantRefOrder vo v1 v2
+  = maybe EQ id $ listToMaybe $ catMaybes $ map c vo
+  where  c o = do { i1 <- elemIndex v1 o
+                  ; i2 <- elemIndex v2 o
+                  ; return (compare i1 i2)
+                  }
+
+variantOfferAllLE_3 :: VariantRefOrder -> VariantReqm -> [VariantRef]
+variantOfferAllLE_3 vo v
+  = let allN = nub $ sort $ concat vo
+        nrN = length allN
+        nsN = [(0::Int) .. nrN-1]
+        ixOf' v = elemIndex v allN
+        ixOfV v = maybe Nothing ixOf' (mbVariantReqmRef v)
+        ixOf v = maybe 0 id (ixOf' v)
+        voPrefixes
+          = map (\p@((v,_):_) -> (ixOf v,map ixOf $ nub $ sort $ (v:) $ concat $ map snd p))
+          $ groupBy (\(v1,_) (v2,_) -> v1 == v2)
+          $ sortBy (\(v1,_) (v2,_) -> compare v1 v2)
+          $ concat
+          $ map (\o -> zip o (inits o))
+          $ vo
+        m1 = map
+                (\(n,ns)
+                    -> map snd . sort $ (zip (ns) (repeat True) ++ zip (nsN \\ ns) (repeat False))
+                )
+                voPrefixes
+        m2 = array (0,nrN-1) (zip nsN (map (\r -> array (0,nrN-1) (zip nsN r)) m1))
+        m3 = foldr
+                (\n m
+                    -> foldr
+                        (\i m -> m // [(i,m ! i // [ (j,m ! i ! n && m ! n ! j || m ! i ! j) | j <- nsN ])])
+                        m nsN
+                )
+                m2 nsN
+        nsV = maybe [] (\i -> assocs (m3 ! i)) (ixOfV v)
+        allN' = case v of
+                  VReqmAll -> allN
+                  _        -> [ allN !! i | (i,b) <- nsV, b ]
+     in sortBy (cmpByVariantRefOrder vo) $ nub $ sort allN'
+
+variantOfferAllLE_4 :: Opts -> VariantRefOrderMp
+variantOfferAllLE_4 opts
+  = vm
+  where vo = if optsHasNoVariantRefOrder opts then variantRefOrderDefault else optVariantRefOrder opts
+        vs = variantOfferAllLE_3 vo (optGenReqm opts)
+        vm = Map.fromList $ zip (sortBy (cmpByVariantRefOrder vo) vs) [1..]
+
+variantRefOrderDefault :: VariantRefOrder
+variantRefOrderDefault = [take 1 (map variantRefFromTop [1..])]
+
+isAllowedCompilerVariant :: CompilerRestriction -> [Int] -> Bool
+isAllowedCompilerVariant (Restricted mLower mUpper) v
+  = mLower `leq` (Just v) && (Just v) `leq` mUpper
+  where
+    leq Nothing _ = True
+    leq _ Nothing = True
+    leq (Just p) (Just q) = p <= q
+}
+
+-------------------------------------------------------------------------
+-- Allowed versions
+-------------------------------------------------------------------------
+
+ATTR AllChunk AllLine AllGroup [ allowedVariants: VariantRefOrderMp | | ]
+
+SEM AGItf
+  | AGItf       loc         .   allowedVariants
+                                            =   variantOfferAllLE_4 @lhs.opts
+                            .   allowedLaTeXVariants
+                                            =   variantOfferAllLE_4 (@lhs.opts {optGenReqm=VReqmAll})
+
+-------------------------------------------------------------------------
+-- Sequence nr (for ordering when printing)
+-------------------------------------------------------------------------
+
+ATTR AllChunk AllLine AllGroup [ | seqNr: Int | ]
+
+SEM AGItf
+  | AGItf       dumLines    .   seqNr       =   1
+
+SEM Chunks
+  | Cons        hd          .   seqNr       =   @lhs.seqNr + 1
+
+SEM Group
+  | Group       lines       .   seqNr       =   @lhs.seqNr + 1
+
+-------------------------------------------------------------------------
+-- Line counting, column counting
+-------------------------------------------------------------------------
+
+ATTR AllChunk AllLine AllGroup [ | lineNr: Int | ]
+ATTR AllWord [ | colNr: Int | ]
+
+SEM AGItf
+  | AGItf       dumLines    . lineNr    = 1
+
+SEM Chunk
+  | Ver Named   loc         . chunkLineNr
+                                        = @lhs.lineNr
+                lines       . lineNr    = @chunkLineNr + 1
+                dumLines    . lineNr    = @lines.lineNr {- + 1 -}
+
+SEM Chunk
+  | Ver         loc         . dumIsOnlyNl
+                                        = @lines.lineNr + 1 == @dumLines.lineNr
+
+SEM Line
+  | AsIs        words       . colNr     = 1
+                lhs         . lineNr    = @lhs.lineNr + 1
+  | Named       lhs         . lineNr    = @lhs.lineNr + 1
+  | Groups      loc         . groupsLineNr
+                                        = @lhs.lineNr
+                groups      . lineNr    = @groupsLineNr + @extraLine
+                lhs         . lineNr    = @groups.lineNr + @extraLine
+
+SEM Groups
+  | Cons        tl          . lineNr    = @hd.lineNr + 1
+  | Nil         lhs         . lineNr    = @lhs.lineNr - 1
+
+SEM Word
+  | White Black loc         . wordColNr = @lhs.colNr
+                lhs         . colNr     = @lhs.colNr + length @chars
+
+-------------------------------------------------------------------------
+-- String of StrExpr
+-------------------------------------------------------------------------
+
+ATTR StrExpr [ | | str: String ]
+
+SEM StrExpr
+  | Str         lhs         .   str     =   @str
+  | Var         lhs         .   str     =   Map.findWithDefault "" @nm (optDefs @lhs.opts)
+  | Concat      lhs         .   str     =   @e1.str ++ @e2.str
+  | White       lhs         .   str     =   @e1.str ++ " " ++ @e2.str
+  | Seq         lhs         .   str     =   "(" ++ concat (intersperse "," @es.strL) ++ ")"
+
+ATTR StrExprs [ | | strL: {[String]} ]
+
+SEM StrExprs
+  | Nil         lhs         .   strL    =   []
+  | Cons        lhs         .   strL    =   @hd.str : @tl.strL
+
+ATTR MbStrExpr [ | | mbStr: {Maybe String} ]
+
+SEM MbStrExpr
+  | Just        lhs         .   mbStr   =   Just @just.str
+  | Nothing     lhs         .   mbStr   =   Nothing
+
+-------------------------------------------------------------------------
+-- Left + right context
+-------------------------------------------------------------------------
+
+ATTR Words [ lCtxt: {[String]}  lAllCtxt: {[String]} | | rCtxt: {[String]} ]
+ATTR Word [ | lCtxt: {[String]}  lAllCtxt: {[String]}  rCtxt: {[String]} | ]
+
+SEM Line
+  | AsIs        words       . lCtxt     = []
+                            . lAllCtxt  = []
+
+SEM Words
+  | Nil         lhs         . rCtxt     = []
+  | Cons        hd          . rCtxt     = @tl.rCtxt
+                lhs         . rCtxt     = @hd.rCtxt
+
+SEM Word
+  | Black       lhs         . rCtxt     = @chars : @lhs.rCtxt
+                            . lCtxt     = @chars : @lhs.lCtxt
+                            . lAllCtxt  = @chars : @lhs.lAllCtxt
+  | White       lhs         . lAllCtxt  = @chars : @lhs.lAllCtxt
+
+-------------------------------------------------------------------------
+-- Cross ref
+-------------------------------------------------------------------------
+
+{
+data XRefKind = XRHsDef | XRAgAttrDef | XRAgAltDef | XRAgSemDef | XRHsUse | XRAgAttrUse deriving Show
+data XRef = XRef { xrKind :: XRefKind, xrKeyL :: [String] } deriving Show
+
+xrMainKey :: XRef -> String
+xrMainKey = head . xrKeyL
+
+xrKindIsDefining :: XRefKind -> Bool
+xrKindIsDefining XRHsDef = True
+xrKindIsDefining XRAgAttrDef = True
+xrKindIsDefining XRAgAltDef = True
+xrKindIsDefining XRAgSemDef = True
+xrKindIsDefining _ = False
+
+xrIsDefining :: XRef -> Bool
+xrIsDefining = xrKindIsDefining . xrKind
+
+type XRefL = Seq.FastSeq XRef
+type XRefExcept = Set.Set String
+
+passXR :: XRefExcept -> String -> ([XRef],Int) -> ([XRef],Int)
+passXR exc r xr = if Set.member r exc then ([],0) else xr
+}
+
+ATTR AGItf AllNT [ xrefExcept: XRefExcept | | ]
+ATTR AllWord AllLine [ | | xrefL USE {`Seq.union`} {Seq.empty} : XRefL ]
+ATTR Word [ | rCtxtUsed: Int | ]
+ATTR Words [ rCtxtUsed: Int | | ]
+
+SEM Word
+  | Black       (loc.xrefL,lhs.rCtxtUsed)
+                                        = let ctxtHuge = 10000000
+                                              loclhs = ["lhs","loc"]
+                                              none = ([],@lhs.rCtxtUsed - 1)
+                                              def nms k cUsed
+                                                   = if any (flip Set.member @lhs.xrefExcept) nms then ([],0) else ([XRef k nms],cUsed)
+                                           in if @lhs.rCtxtUsed <= 0 && isAlpha (head @chars)
+                                              then case (@lhs.lAllCtxt,@lhs.lCtxt,@chars,@lhs.rCtxt) of
+                                                     (_,("@":_),nm1,(".":nm2:_))
+                                                       | nm1 `elem` loclhs          -> def [nm2] XRAgAttrUse 2
+                                                     (_,("@":_),nm1,(".":nm2:_))    -> def [nm2,nm1] XRAgAttrUse 2
+                                                     (_,("@":_),nm1,_)              -> def [nm1] XRAgAttrUse 0
+                                                     (_,("|":_),nm1,_)              -> def [nm1] XRAgAltDef 0
+                                                     (_,(".":ll:_),nm1,("=":_))
+                                                       | ll `elem` loclhs           -> def [nm1] XRAgAttrDef 1
+                                                     (_,(".":nm2:_),nm1,("=":_))    -> def [nm1,nm2] XRAgAttrDef 1
+                                                     (_,_,nm1,([sep]:nm2:_))
+                                                       | sep `elem` "._"            -> def [nm2,nm1] XRHsUse 2
+                                                       | otherwise                  -> none
+                                                     (_,["SEM"],nm1,_)              -> def [nm1] XRAgSemDef ctxtHuge
+                                                     (_,["data"],nm1,_)             -> def [nm1] XRHsDef 0
+                                                     (_,["type"],nm1,_)             -> def [nm1] XRHsDef 0
+                                                     ([],_,nm1,_)                   -> def [nm1] XRHsDef ctxtHuge
+                                                     (_,_,nm1,_)
+                                                       | nm1 `notElem` loclhs       -> def [nm1] XRHsUse 0
+                                                     _                              -> none
+                                              else none
+                lhs         . xrefL     = Seq.fromList @xrefL
+  | White       lhs         . rCtxtUsed = 0
+
+SEM Line
+  | AsIs        words       . rCtxtUsed = 0
+
+-------------------------------------------------------------------------
+-- Named chunks
+-------------------------------------------------------------------------
+
+ATTR AllChunk AllLine AllGroup AGItf [ | | gathNmChMp USE {`Map.union`} {Map.empty}: NmChMp ]
+ATTR AllChunk AllLine AllGroup AGItf [ nmChMp: NmChMp | | ]
+
+SEM Chunk
+  | Ver         loc         .   nmChInfo    =   NmChInfo @chFullNm ChHere @lines.mbCDoc @lines.mkCDoc
+                lhs         .   gathNmChMp  =   Map.insert @chFullNm @nmChInfo @lines.gathNmChMp
+  | Named       loc         .   nmChInfo    =   NmChInfo @cref ChHere @lines.mbCDoc @lines.mkCDoc
+                lhs         .   gathNmChMp  =   Map.insert @cref @nmChInfo @lines.gathNmChMp
+
+SEM Group
+  | Group       loc         .   gathNmChMp  =   case @userRef of
+                                                  Just (r,_) -> Map.singleton r (NmChInfo r ChHere @mbCDoc @mkCDoc)
+                                                  _          -> Map.empty
+                lhs         .   gathNmChMp  =   Map.union @lines.gathNmChMp @gathNmChMp
+
+SEM AGItf
+  | AGItf       chunks      .   nmChMp      =   @chunks.gathNmChMp `Map.union` @lhs.nmChMp
+                dumLines    .   nmChMp      =   Map.empty
+
+-------------------------------------------------------------------------
+-- Adm for hideable groups of lines
+-------------------------------------------------------------------------
+
+{
+data HideInfo
+  = HideInfo
+      { hiNm        :: Nm
+      , hiDescr     :: CDoc
+      , hiSeqNr     :: Int
+      , hiChDest    :: ChDest
+      , hiMbCD      :: Maybe CDoc
+      , hiChFullNm  :: Nm
+      }
+
+type HideMp = Map.Map Nm HideInfo
+}
+
+-------------------------------------------------------------------------
+-- Content replica, CDoc
+-------------------------------------------------------------------------
+
+{
+mbCDocCmb :: Maybe CDoc -> Maybe CDoc -> Maybe CDoc
+mbCDocCmb c1 c2 = maybe c1 (Just . (maybe CDoc_Emp id c1 `CDoc_Ver`)) c2
+}
+
+ATTR AllLine AllGroup [ | | mbCDoc USE {`mbCDocCmb`} {Nothing}: {Maybe CDoc} ]
+ATTR AllGroup [ | | mbCDocL USE {++} {[]}: {[(VariantOffer,Maybe CDoc)]} ]
+
+SEM Line
+  | AsIs        loc         .   cdoc        =   if cdIsEmpty @words.cdoc then CDoc_Str "" else @words.cdoc
+  | Named       loc         .   cdoc        =   CDoc_Ref @cref @mbVariantReqm ChHere
+  | AsIs Named  loc         .   mbCDoc      =   Just (CDoc_Pos (CPos (optBaseFPath @lhs.opts) @lhs.lineNr) @cdoc)
+  | Groups      lhs         .   mbCDoc      =   maybe Nothing snd $ initlast $ sortOnVariantRefOrderMp @lhs.allowedVariants @groups.mbCDocL
+
+SEM Group
+  | Group       loc         .   mbCDocbase  =   fmap (chWrap @chOptions.chWrap) @lines.mbCDoc
+                            .   isAllowed   =   variantReqmMatchOffer (Just @lhs.allowedVariants) (optGenReqm @lhs.opts) @variantOffer
+                (loc.mbCDoc,loc.gathHideMp) =   case @chOptions.chDest of
+                                                  _ | not @isAllowed
+                                                         -> (Nothing,Map.empty)
+                                                  ChHere -> (@mbCDocbase,Map.empty)
+                                                  h      -> (Just (mkHideNmRef (cd n)),Map.singleton n (HideInfo n i @lhs.seqNr @chOptions.chDest @mbCDocbase @lhs.chFullNm))
+                                                         where (n,i) = case @userRef of
+                                                                         Just (r,Just i ) -> (r,cd i)
+                                                                         Just (r,Nothing) -> (r,cd r)
+                                                                         _                -> (mkNm (show h) `nmApd` mkNm @lhs.seqNr,CDoc_Emp)
+                lhs         .   mbCDocL     =   if @isAllowed then [(@variantOffer,@mbCDoc)] else []
+
+ATTR AllWord [ | | cdoc USE {.|.} {CDoc_Emp} : CDoc ]
+
+SEM Word
+  | White Black lhs         .   cdoc        =   cd @chars
+  | Expand      lhs         .   cdoc		=	cd @exp.str
+
+SEM Inline
+  | URI         lhs         .   cdoc        =   CDoc_Inl @str
+
+-------------------------------------------------------------------------
+-- Content replica making, MkCDoc only, no hidden stuff
+-------------------------------------------------------------------------
+
+{
+mkCDocCmb :: MkCDoc -> MkCDoc -> MkCDoc
+mkCDocCmb c1 c2 = \sel -> maybe (c1 sel) (Just . (maybe CDoc_Emp id (c1 sel) `CDoc_Ver`)) (c2 sel)
+
+mkCDocEmpty :: MkCDoc
+mkCDocEmpty = const Nothing
+}
+
+ATTR AllLine AllGroup [ | | mkCDoc USE {`mkCDocCmb`} {mkCDocEmpty}: {MkCDoc} ]
+ATTR AllGroup [ | | mkCDocL USE {++} {[]}: {[(VariantOffer,MkCDoc)]} ]
+
+SEM Line
+  | AsIs Named  lhs         .   mkCDoc      =   const @mbCDoc
+  | Groups      lhs         .   mkCDoc      =   \sel -> let mkCDocSortL = sortOnVariantRefOrderMp' (variantOfferAllLE_4 (@lhs.opts {optGenReqm=sel})) @groups.mkCDocL
+                                                        in  maybe Nothing (\(_,((_,valid),mk)) -> if valid then mk sel else Nothing)
+                                                            $ initlast mkCDocSortL 
+
+SEM Group
+  | Group       loc         .   mkCDoc      =   \sel -> case @chOptions.chDest of
+                                                          ChHere -> fmap (chWrap @chOptions.chWrap) (@lines.mkCDoc sel)
+                                                          _      -> Nothing
+                lhs         .   mkCDocL     =   [(@variantOffer,@mkCDoc)]
+
+-------------------------------------------------------------------------
+-- Gathering of hidden text
+-------------------------------------------------------------------------
+
+ATTR AllChunk AllGroup AllLine [ | | gathHideMp USE {`Map.union`} {Map.empty}: HideMp ]
+
+SEM Group
+  | Group       lhs         .   gathHideMp  =   @gathHideMp `Map.union` @lines.gathHideMp
+
+-------------------------------------------------------------------------
+-- Chunks
+-------------------------------------------------------------------------
+
+{
+data VariantChunkInfo
+  = VariantChunkInfo
+      { vciLineNr   		:: Int
+      , vciSeqNr    		:: Int
+      , vciVariantOffer     :: VariantOffer
+      , vciChunkRef         :: ChunkRef
+      , vciMinusL   		:: [ChunkRef]
+      , vciChKind   		:: ChKind
+      , vciChDest   		:: ChDest
+      , vciMbModNm  		:: Maybe String
+      , vciImps     		:: [String]
+      , vciExps     		:: [String]
+      , vciMbCD     		:: Maybe CDoc
+      , vciMkCD     		:: MkCDoc
+      , vciXRefL    		:: [XRef]
+      } deriving Show
+
+type VariantChunkInfoM = [(VariantOffer,[VariantChunkInfo])]
+
+vciMToL :: VariantChunkInfoM -> [VariantChunkInfo]
+vciMToL = concat . map snd
+
+vciFullNm :: VariantChunkInfo -> Nm
+vciFullNm i = mkNm (vciChunkRef i)
+
+instance Eq VariantChunkInfo where
+  i1 == i2 = vciVariantOffer i1 == vciVariantOffer i2
+
+instance Ord VariantChunkInfo where
+  compare i1 i2 = vciVariantOffer i1 `compare` vciVariantOffer i2
+
+vciSortBySeqNr :: [VariantChunkInfo] -> [VariantChunkInfo]
+vciSortBySeqNr = sortBy (\v1 v2 -> vciSeqNr v1 `compare` vciSeqNr v2)
+
+vciVariantOfferFilter :: (VariantOffer -> Bool) -> [VariantChunkInfo] -> [VariantChunkInfo]
+vciVariantOfferFilter f = filter (f . vciVariantOffer)
+
+vciVariantOfferGroup :: [VariantChunkInfo] -> [[VariantChunkInfo]]
+vciVariantOfferGroup = groupBy (\i1 i2 -> vciVariantOffer i1 == vciVariantOffer i2)
+
+vciHasImpExp :: VariantChunkInfo -> Bool
+vciHasImpExp i = not (null (vciImps i) && null (vciExps i))
+
+vciIsPre :: VariantChunkInfo -> Bool
+vciIsPre = (==VOfferPre) . vciVariantOffer
+
+vciIsHS :: VariantChunkInfo -> Bool
+vciIsHS = (==ChHS) . vciChKind
+
+vciCD :: VariantChunkInfo -> CDoc
+vciCD = maybe CDoc_Emp id . vciMbCD
+
+vciHasCD :: VariantChunkInfo -> Bool
+vciHasCD = isJust . vciMbCD
+
+vciSplitPre :: [VariantChunkInfo] -> ([VariantChunkInfo],[VariantChunkInfo])
+vciSplitPre = partition vciIsPre
+
+vciTakePre :: VariantChunkInfoM -> ([VariantChunkInfo],VariantChunkInfoM)
+vciTakePre is
+  = case is of
+        ((VOfferPre,p):r) -> (p,r)
+        _            -> ([],is)
+
+selectChunks :: Bool -> VariantReqm -> VariantRefOrderMp -> [VariantChunkInfo] -> [(VariantOffer,[VariantChunkInfo])]
+selectChunks appMinus variantReqm allowedVariants agl
+  = let (pre,nonPre)    = vciSplitPre agl
+        vAndVciL        = map (\v -> let vreqm = variantReqmUpdRef variantReqm (variantOfferRef v)
+                                     in  ( v
+                                         , vciSortBySeqNr
+                                           $ vciVariantOfferFilter
+                                               (\offer -> variantReqmMatchOffer Nothing vreqm offer)
+                                               nonPre
+                              )          )
+                              [variantOfferFromRef r | r <- Map.keys allowedVariants]
+        isNotMinused
+          = let minuses = if appMinus then [ m | (_,vciL) <- vAndVciL, ml <- map vciMinusL vciL, m <- ml ] else []
+             in \i -> vciChunkRef i `notElem` minuses
+     in filter
+          ( not.null.snd )
+          ( (VOfferPre,pre)
+          : map (\(v,vciL) -> (v,filter isNotMinused vciL)) vAndVciL
+          )
+
+data Build
+  = Build
+      { bldBase     		:: String
+      , bldVariantReqm      :: VariantReqm
+      , bldCD       		:: CDoc
+      , bldHideCD   		:: [(Nm,CDoc)]
+      , bldNmChMp   		:: NmChMp
+      }
+}
+
+-------------------------------------------------------------------------
+-- Chunk options
+-------------------------------------------------------------------------
+
+{
+chKindCmb ChPlain o = o
+chKindCmb o       _ = o
+
+chDestCmb ChHere  o = o
+chDestCmb o       _ = o
+
+chWrapCmb ChWrapPlain  o = o
+chWrapCmb o            _ = o
+
+}
+
+ATTR AllChunkOption [ | | chKind USE {`chKindCmb`} {ChPlain} : ChKind ]
+ATTR AllChunkOption [ | | chDest USE {`chDestCmb`} {ChHere} : ChDest ]
+ATTR AllChunkOption [ | | chWrap USE {`chWrapCmb`} {ChWrapPlain} : ChWrap ]
+
+SEM ChunkOption
+  | Kind        lhs         .   chKind      =   @chKind
+  | Dest        lhs         .   chDest      =   @chDest
+  | Wrap        lhs         .   chWrap      =   @chWrap
+
+-------------------------------------------------------------------------
+-- Additional lines between chunks collapsed to single line
+-------------------------------------------------------------------------
+
+SEM Chunk
+  | Ver         loc         .   addBlankLine=   if @dumIsOnlyNl then id else (.-. CDoc_Str "")
+
+-------------------------------------------------------------------------
+-- Gathering chunk info
+-------------------------------------------------------------------------
+
+ATTR AllChunk [ | | verChInfoL USE {++} {[]} : {[VariantChunkInfo]} ]
+
+SEM Chunk
+  | Ver         loc         .   chInfo      =   VariantChunkInfo
+                                                    @chunkLineNr @lhs.seqNr
+                                                    @variantOffer (chunkRefFromOfferNm @variantOffer @subNm) @minusL
+                                                    @chOptions.chKind @chOptions.chDest @mbModNm.mbStr @imports.strL @exports.strL
+                                                    (fmap (@addBlankLine . chWrap (chWrapT2T @lhs.opts @chOptions.chKind)) @lines.mbCDoc)
+                                                    @lines.mkCDoc
+                                                    (Seq.toList @lines.xrefL)
+                loc         .   isAllowed   =   isAllowedCompilerVariant @compRestrict (optCompiler @lhs.opts)
+                lhs         .   verChInfoL  =   if @isAllowed then [@chInfo] else []
+
+-------------------------------------------------------------------------
+-- Collect dependencies of AG chunks
+-------------------------------------------------------------------------
+
+ATTR AGItf AllChunk [ | | deps USE {++} {[]} : {[String]} ]
+
+SEM Chunk
+  | Ver         lhs         .   deps = if @chOptions.chKind == ChAG
+                                       then @imports.strL
+                                       else []
+
+-------------------------------------------------------------------------
+-- Line context, in chunks
+-------------------------------------------------------------------------
+
+ATTR AllLine AllChunk AllGroup [ chFullNm: Nm | | ]
+
+SEM Chunk
+  | Ver         loc         .   chFullNm    =   vciFullNm @chInfo
+  | Named       loc         .   chFullNm    =   nciNm @nmChInfo
+
+SEM AGItf
+  | AGItf       loc         .   chFullNm    =   NmEmp
+
+-------------------------------------------------------------------------
+-- Selecting from VariantReqm and building
+-------------------------------------------------------------------------
+
+SEM AGItf
+  | AGItf       loc         . selChunks = selectChunks True (optGenReqm @lhs.opts) @allowedVariants @chunks.verChInfoL
+                            . selLaTeXChunks
+                                        = selectChunks False VReqmAll @allowedLaTeXVariants @chunks.verChInfoL
+                            . wrapLhs2tex
+                                        = \doWr -> if doWr then chWrap (optWrapLhs2tex @lhs.opts) else id
+                            . build     = \bld chunks
+                                               -> let fileBase = fromJust (optBaseName @lhs.opts)
+                                                      v = optGenReqm @lhs.opts
+                                                      d = bld @lhs.opts @wrapLhs2tex fileBase chunks
+                                                      m = Map.fromList [ (vciFullNm i,NmChInfo (vciFullNm i) (vciChDest i) (vciMbCD i) (vciMkCD i)) | (_,l) <- chunks, i <- l ]
+                                                      h = [ (hiChFullNm h,mkHideNmDef (cd n) (hiDescr h) (cd (hiMbCD h)))
+                                                          | (n,h) <- sortBy (\(_,h1) (_,h2) -> hiSeqNr h1 `compare` hiSeqNr h2) . Map.toList $ @chunks.gathHideMp
+                                                          ]
+                                                   in [Build fileBase v d h m]
+
+
+-------------------------------------------------------------------------
+-- Wrap in Haddock comments
+-------------------------------------------------------------------------
+
+{
+haddockize :: CDoc -> CDoc
+haddockize d
+  = "{-|" .-. d .-. "-}"
+}
+
+-------------------------------------------------------------------------
+-- Wrap with line pragmas
+-------------------------------------------------------------------------
+
+{
+linePragma :: String -> Opts -> String -> Int -> CDoc -> CDoc
+linePragma pragcmt opts filename n c 
+  = if not (optLinePragmas opts) || cdIsEmpty c 
+    then c 
+    else CDoc_Ver (CDoc_Str ("{-" ++ pragcmt ++ " LINE "++show (n+1)++" \"" ++ filename ++ "\" " ++ pragcmt ++ "-}")) c
+
+hsLinePragma
+  = linePragma "#"
+
+agLinePragma
+  = linePragma ""
+}
+
+-------------------------------------------------------------------------
+-- Gen AG
+-------------------------------------------------------------------------
+
+{
+buildAGImps :: VariantChunkInfo -> CDoc
+buildAGImps = cdVer . map (\imp -> "INCLUDE \"" .|. imp .|. ".ag\"") . vciImps
+
+buildAG :: Opts -> (Bool -> CDoc -> CDoc) -> String -> VariantChunkInfoM -> CDoc
+buildAG opts wrap fileBase is
+  = let (pre,noPre) = vciTakePre is
+        noPre' = vciMToL noPre
+        h p  = "{" .-. p .-. "}"
+        mk i = case vciChKind i of
+                 ChHaddock -> h (haddockize (vciCD i))
+                 ChHS      -> agLinePragma opts (fpathToStr $ optBaseFPath opts) (vciLineNr i) (h (vciCD i))
+                 _         -> buildAGImps i .-. agLinePragma opts (fpathToStr $ optBaseFPath opts) (vciLineNr i) (vciCD i)
+        ish  = filter vciIsHS noPre'
+        buildImpExp = if optAGModHeader opts
+                      then buildAGHSModImpExp fileBase ish
+                      else h (buildHSModImpExp fileBase ish)
+        pph  = if any vciHasImpExp ish
+               then wrap True buildImpExp
+               else CDoc_Emp
+        cds  =   map (\i -> let vnm = vciFullNm i
+                            in  (wrap (not (vciIsPre i)) (mk i))
+                     )
+               $ vciSortBySeqNr
+               $ noPre'
+        d = (if optPreamble opts then cdVer (map (wrap False . vciCD) pre) else CDoc_Emp)
+            .-. pph
+            .-. (cdVer cds)
+     in d
+
+buildAGHSModImpExp :: String -> [VariantChunkInfo] -> CDoc
+buildAGHSModImpExp fileBase is = buildAGHSModuleHead fileBase is .-. "{" .-. buildHSImps is .-. "}"
+
+buildAGHSModuleHead :: String -> [VariantChunkInfo] -> CDoc
+buildAGHSModuleHead fileBase is
+  = let ismie = [ i | i <- is   , isJust (vciMbModNm i) || not (null (vciExps i) && null (vciImps i)) ]
+        isie  = [ i | i <- ismie, not (null (vciExps i) && null (vciImps i)) ]
+        e = [ vciExps i | i <- isie, not (null (vciExps i)) ]
+        m = catMaybes . map vciMbModNm $ ismie
+        exps = cdListSepV "{" "}" ", " . map (cdListSep "" "" ", ") $ e
+        modNm = if null m then fileBase else head m
+     in "MODULE" .#. ("{" ++ modNm ++ "}") .#. exps
+}
+
+ATTR AGItf [ | | bldAG: {[Build]} ]
+
+SEM AGItf
+  | AGItf       lhs         . bldAG     = @build buildAG @selChunks
+
+-------------------------------------------------------------------------
+-- Gen LaTeX
+-------------------------------------------------------------------------
+
+{
+mkCmdNmDef :: CDoc -> CDoc -> CDoc
+mkCmdNmDef = mkTexCmdDef "chunkCmdDef"
+
+mkHideNmDef :: CDoc -> CDoc -> CDoc -> CDoc
+mkHideNmDef = mkTexCmd3 "chunkHideDef"
+
+mkHideNmRef :: CDoc -> CDoc
+mkHideNmRef = mkTexCmdUse "chunkHideRef"
+
+mkCmdNmUse :: CDoc -> CDoc
+mkCmdNmUse = mkTexCmdUse' "chunkCmdUse"
+
+mkCmdInx :: CDoc -> CDoc
+mkCmdInx = mkTexCmdUse' "chunkIndex"
+
+mkLabel :: CDoc -> CDoc
+mkLabel = mkTexCmdUse' "label"
+
+mkMetaInfo :: CDoc -> String -> CDoc
+mkMetaInfo lab fileBase = mkLabel lab -- .-. mkTexCmdDef "chunkMetaDef" lab (cd fileBase)
+
+buildLaTeX :: Opts -> (Bool -> CDoc -> CDoc) -> String -> VariantChunkInfoM -> CDoc
+buildLaTeX opts wrap fileBase is
+  = let (pre,noPre) = vciTakePre is
+        noPre' = vciMToL noPre
+        versions = nub $ map (variantOfferRefTop.vciVariantOffer) $ noPre'
+        missing = if null versions then []
+                                   else [minimum versions .. maximum versions] \\ versions
+        mkInx
+          = let styleFmt = if optWrapLhs2tex opts == ChWrapCode then "||" else "|"
+             in \ix
+                 -> let n = foldr1 (\x y -> y ++ "!" ++ x) . xrKeyL $ ix
+                        dfmt = CDoc_Emp -- if xrIsDefining ix then text (styleFmt ++ "emph") else CDoc_Emp
+                     in mkCmdInx (n .|. dfmt)
+        mkContent = let mk = wrap True . vciCD
+                     in if optIndex opts
+                        then \i -> cdVer (map mkInx (vciXRefL i)) .-. mk i
+                        else mk
+        ppNoPreL
+          =   map (\is -> let vnm = mkNm (vciVariantOffer (head is))
+                              nm = mkNm fileBase `nmApd` vnm
+                              cnm = cd nm
+                              (nms,pps)
+                                  = unzip
+                                    . map (\(nr,i) -> let cn = cd (nm `nmApd` mkNm nr)
+                                                          content = mkContent i
+                                                       in ( cn
+                                                          , mkCmdNmDef cn (mkMetaInfo cn fileBase .-. content)
+                                                            .-. (let cna = cd (nm `nmApd` chunkRefNm (vciChunkRef i))
+                                                                 in  mkCmdNmDef cna (mkMetaInfo cna fileBase .-. mkCmdNmUse cn)
+                                                                )
+                                                          )
+                                          )
+                                    . zip [(0::Int)..]
+                                    $ is
+                              content = cdVer pps .-. mkCmdNmDef cnm (mkMetaInfo cnm fileBase .-. cdVer (map mkCmdNmUse nms))
+                           in (content)
+                  )
+            . vciVariantOfferGroup
+            $ noPre'
+        d = (if optPreamble opts then cdVer (map (wrap False . vciCD) pre) else CDoc_Emp)
+            .-. cdVer ppNoPreL
+            .-. cdVer (map (\v -> mkCmdNmDef (cdDots [cd fileBase,cd v]) CDoc_Emp) missing)
+     in d
+}
+
+ATTR AGItf [ | | bldLaTeX: {[Build]} ]
+
+SEM AGItf
+  | AGItf       lhs         . bldLaTeX  = @build buildLaTeX @selLaTeXChunks
+
+-------------------------------------------------------------------------
+-- Gen Haskell
+-------------------------------------------------------------------------
+
+{
+mkModNm :: [CDoc] -> CDoc
+mkModNm = cdHor
+
+buildHSImps :: [VariantChunkInfo] -> CDoc
+buildHSImps = cdVer . map (cdVer . map ("import" .#.) . vciImps)
+
+buildHSModuleHead :: String -> [VariantChunkInfo] -> CDoc
+buildHSModuleHead fileBase is
+  = let ismie = [ i | i <- is   , isJust (vciMbModNm i) || not (null (vciExps i) && null (vciImps i)) ]
+        isie  = [ i | i <- ismie, not (null (vciExps i) && null (vciImps i)) ]
+        -- e = filter (not.null) . map vciExps $ isie
+        e = [ vciExps i | i <- isie, not (null (vciExps i)) ]
+        m = catMaybes . map vciMbModNm $ ismie
+        exps = if null e then CDoc_Emp
+                         else cdListSepV "( " " )" ", " . map (cdListSep "" "" ", ") $ e
+        modNm = if null m then fileBase else head m
+     in "module" .#. modNm .-. {- indent 2 -} (exps .-. "where")
+
+buildHSModImpExp :: String -> [VariantChunkInfo] -> CDoc
+buildHSModImpExp fileBase is = buildHSModuleHead fileBase is .-. buildHSImps is
+
+buildHS :: Opts -> (Bool -> CDoc -> CDoc) -> String -> VariantChunkInfoM -> CDoc
+buildHS opts wrap fileBase is
+  = let mk i = case vciChKind i of
+                 ChHaddock -> haddockize (vciCD i)
+                 _         -> vciCD i
+        (pre,noPre) = vciTakePre is
+        noPre' = vciMToL noPre
+        ppMod = buildHSModImpExp fileBase (vciMToL is)
+        ppNoPreL
+          =   map  ( cdVer
+                   . (map  (\i
+                             -> hsLinePragma opts (fpathToStr $ optBaseFPath opts) (vciLineNr i)
+                                             (wrap (vciHasCD i) (mk i))
+                   ) )     )
+            $ vciVariantOfferGroup
+            $ vciSortBySeqNr
+            $ noPre'
+        isEmpty = all (isNothing.vciMbCD) noPre'
+        ppNoPre = cdVer ppNoPreL
+     in if isEmpty
+         then CDoc_Emp
+         else if optPlain opts
+         then ppNoPre
+         else (if optPreamble opts then cdVer (map (wrap False . vciCD) pre) else CDoc_Emp)
+              .-. wrap True ppMod
+              .-. ppNoPre
+}
+
+ATTR AGItf [ | | bldHS: {[Build]} ]
+
+SEM AGItf
+  | AGItf       lhs         . bldHS     = @build buildHS @selChunks

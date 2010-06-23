@@ -1,0 +1,41 @@
+%%[(8 jazy)
+package uu.jazy.ehc ;
+
+import java.util.* ;
+import java.io.* ;
+
+import uu.jazy.core.* ;
+
+/**
+ * A handle for an open file. Any of the fields may be null, depending on how
+ * the file was opened.
+ */
+public class Handle
+{
+%%]
+
+%%[(98 jazy)
+	public File file = null;
+    public InputStream in = null ;
+    public OutputStream out = null ;
+
+	public Handle( InputStream i, OutputStream o, File f ) {
+		in = i;
+		out = o;
+		file = f;
+	}
+    
+    public Handle( InputStream i ) {
+    	in = i ;
+    }
+    
+    public Handle( OutputStream o ) {
+    	out = o ;
+    }
+%%]
+    
+
+%%[(8 jazy)
+}
+
+%%]

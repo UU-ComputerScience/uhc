@@ -1,0 +1,632 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Type inferencing for Expr
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Top level
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(98 hmtyinfer)
+SEM AGItf
+  | AGItf       loc         .   (foMain,nmErrs)     =   if @lhs.isMainMod
+                                                        then let (t,e) = valGamLookupTy hsnMain @expr.gathValGam
+                                                             in  (fitsIn strongFIOpts @fe @lUniq_98_fitsIn_ty @expr.tyVarMp t (tyTopLevelMain @lhs.opts @lUniq_98_IO_tvar), e)
+                                                        else (emptyFO,[])
+                loc         .   lUniq_98_IO_tvar    :   UNIQUEREF gUniq
+                loc         .   lUniq_98_fitsIn_ty  :   UNIQUEREF gUniq
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Known type distr
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(1 hmtyinfer).knTy
+ATTR AllExpr [ knTy: Ty | | ]
+%%]
+
+%%[(1 hmtyinfer).knTy.AGItf
+SEM AGItf
+  | AGItf       expr        .  knTy                 =  Ty_Any
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Type of Expr
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(1 hmtyinfer).ty
+ATTR AllExpr [ | | ty: Ty ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Constants
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+-- generated from ruler rules into EHRulerRules, was 1.Const
+%%[(9090 hmtyinfer).Const
+SEM Expr
+  | CConst      loc         .   ty_                 =   tyChar
+  | IConst      loc         .   ty_                 =   tyInt
+  | IConst CConst
+                loc         .   fo_                 =   @ty_ `fitsIn` @lhs.knTy
+                            .   ty                  =   foTy @fo_
+%%]
+
+-- generated from ruler rules into EHRulerRules, was 2.Const
+%%[(9090 hmtyinfer).Const
+SEM Expr
+  | IConst CConst
+                loc         .   fo_                 :=  @ty_ `fitsIn` (@lhs.tyVarMp |=> @lhs.knTy)
+                lhs         .   tyVarMp             =   foVarMp @fo_ |=> @lhs.tyVarMp
+%%]
+
+-- generated from ruler rules into EHRulerRules, was 4.Const
+%%[(9090 hmtyinfer).Const
+SEM Expr
+  | IConst CConst
+                loc         .   fo_                 :=  fitsIn @lhs.fiOpts @fe @lUniq @lhs.tyVarMp @ty_ (@lhs.tyVarMp |=> @lhs.knTy)
+                loc         .   lUniq               :   UNIQUEREF gUniq
+%%]
+
+-- generated from ruler rules into EHRulerRules, was 4_2.Const
+%%[(9090 hmtyinfer)
+SEM Expr
+  | CConst      loc         .   imprTy              =   tyChar
+  | IConst      loc         .   imprTy              =   tyInt
+%%]
+
+-- between variant 5 .. 99, reconstruction of AG rules, getting rid of ruler3 until Arie's ruler4 can be used
+%%[(5 noHmTyRuler hmtyinfer)
+SEM Expr
+  | IConst      loc         .   constTy             =   tyInt
+  | CConst      loc         .   constTy             =   tyChar
+%%[[5
+  | SConst      loc         .   constTy             =   tyString
+%%][11
+  | SConst      loc         .   constTy             =   tyString @lhs.opts
+%%]]
+%%[[97
+  | IIConst     loc         .   constTy             =   tyInteger
+%%]]
+%%]
+
+-- between variant 5 .. 99, reconstruction of AG rules, getting rid of ruler3 until Arie's ruler4 can be used
+%%[(5 noHmTyRuler hmtyinfer)
+SEM Expr
+  | IConst CConst SConst
+%%[[97
+    IIConst
+%%]]
+                loc         .   fo_                 =   fitsIn @lhs.fiOpts @fe @lUniq @lhs.tyVarMp @constTy @lhs.knTy
+                            .   ty                  =   foTy @fo_
+                            .   tyVarMp             =   foVarMp @fo_ |=> @lhs.tyVarMp
+                loc         .   lUniq               :   UNIQUEREF gUniq
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Var, identifier
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+-- generated from ruler rules into EHRulerRules, was 1.Var
+%%[(9090 hmtyinfer).Var
+SEM Expr
+  | Var         loc         .   (gTy,nmErrs)
+                                                    =   valGamLookupTy @nm @lhs.valGam
+                            .   ty_                 =   @gTy
+                            .   fo_                 =   @ty_ `fitsIn` @lhs.knTy
+                            .   ty                  =   foTy @fo_
+%%]
+
+-- generated from ruler rules into EHRulerRules, was 1.Var
+%%[(9090 hmtyinfer).Var
+SEM Expr
+  | Var         loc         .   ty_                 :=  @lhs.tyVarMp |=> @gTy
+                            .   fo_                 :=  @ty_ `fitsIn` (@lhs.tyVarMp |=> @lhs.knTy)
+                lhs         .   tyVarMp             =   foVarMp @fo_ |=> @lhs.tyVarMp
+%%]
+
+-- generated from ruler rules into EHRulerRules, was 2.Var
+%%[(9090 hmtyinfer).Var
+SEM Expr
+  | Var         loc         .   ty_                 :=  @lhs.tyVarMp |=> tyInst @lUniq @gTy
+                loc         .   lUniq               :   UNIQUEREF gUniq
+%%]
+
+-- generated from ruler rules into EHRulerRules, was 3.Var
+%%[(9090 hmtyinfer).Var
+SEM Expr
+  | Var         loc         .   fo_                 :=  fitsIn @lhs.fiOpts @fe @lUniq @lhs.tyVarMp @ty_ (@lhs.tyVarMp |=> @lhs.knTy)
+                            .   ty_                 :=  @lhs.tyVarMp |=> @gTy
+                loc         .   lUniq               :   UNIQUEREF gUniq
+%%]
+
+-- generated from ruler rules into EHRulerRules, was 4_2.Var
+%%[(9090 hmtyinfer).Var
+SEM Expr
+  | Var         loc         .   imprTy              =   @lhs.imprTyVarMp |=> @gTy
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Constructor, identifier
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+-- generated from ruler rules into EHRulerRules, was 1.Con
+%%[(9090 hmtyinfer).Con
+SEM Expr
+  | Con         loc         .   ty                  =   let  resTy = tyArrowRes @lhs.knTy
+                                                        in   tyProdArgs resTy `mkArrow` resTy
+%%]
+
+-- generated from ruler rules into EHRulerRules, was 2.Con
+%%[(9090 hmtyinfer).Con
+SEM Expr
+  | Con         loc         .   fo_                 =   let  gTy      = mkTyFreshProdFrom @lUniq (hsnProdArity @nm)
+                                                             foKnRes  = gTy `fitsIn` (@lhs.tyVarMp |=> tyArrowRes @lhs.knTy)
+                                                        in   foKnRes {foTy =  tyProdArgs (foTy foKnRes)
+                                                                                `mkArrow` (foTy foKnRes)}
+                            .   ty                  :=  foTy @fo_
+                lhs         .   tyVarMp             =   foVarMp @fo_ |=> @lhs.tyVarMp
+                loc         .   lUniq               :   UNIQUEREF gUniq
+%%]
+
+-- generated from ruler rules into EHRulerRules, was 4.Con
+%%[(9090 hmtyinfer).Con
+SEM Expr
+  | Con         loc         .   (gTy,nmErrs)        :=  valGamLookupTy @nm @lhs.valGam
+                            .   ty_                 :=  @lhs.tyVarMp |=> @gTy
+                            .   fo_                 :=  fitsIn @lhs.fiOpts @fe @lUniq2 @lhs.tyVarMp @ty_ (@lhs.tyVarMp |=> @lhs.knTy)
+                loc         .   lUniq2              :   UNIQUEREF gUniq
+%%]
+
+-- generated from ruler rules into EHRulerRules, was 4_2.Con
+%%[(9090 hmtyinfer).Con
+SEM Expr
+  | Con         loc         .   imprTy              =   @lhs.imprTyVarMp |=> @gTy
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Variable/Constructor, identifier
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 hmtyinfer noHmTyRuler) hs
+type DoFit = FIOpts -> VarMp -> FIOut
+%%]
+
+-- between variant 5 .. 99, reconstruction of AG rules, getting rid of ruler3 until Arie's ruler4 can be used
+%%[(8 hmtyinfer noHmTyRuler)
+SEM Expr
+  | Var Con     (loc.ty_g_,loc.nmErrs)              =   valGamLookupTy @nm @lhs.valGam
+                loc         .   doFit               =   \o m -> fitsIn o @fe @lUniq m @ty_g_ @lhs.knTy
+                            .   fo_                 =   @doFit @lhs.fiOpts @lhs.tyVarMp
+                            .   ty                  =   foTy @fo_
+                            .   tyVarMp             =   foVarMp @fo_ |=> @lhs.tyVarMp
+                loc         .   lUniq               :   UNIQUEREF gUniq
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Application
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+-- generated from ruler rules into EHRulerRules, was 1.App
+%%[(5 hmtyinfer).App
+SEM Expr
+  | App AppImpred
+                loc         .   argTy               =   Ty_Any
+                            .   knFunTy             =   [@argTy] `mkArrow` @lhs.knTy
+                func        .   knTy                =   @knFunTy
+                (arg.knTy,loc.ty_)                  =   tyArrowArgRes @func.ty
+                loc         .   ty                  =   @ty_
+%%]
+
+-- generated from ruler rules into EHRulerRules, was 2.App
+%%[(5 hmtyinfer).App
+SEM Expr
+  | App AppImpred
+                loc         .   argTy               :=  mkNewTyVar @lUniq
+                            .   ty                  :=  @lhs.knTy
+                arg         .   knTy                :=  @argTy
+                loc         .   lUniq               :   UNIQUEREF gUniq
+%%]
+                            .   ty                  :=  @arg.tyVarMp |=> @ty_
+
+%%[(9 hmtyinfer).App
+SEM Expr
+  | App AppImpred
+                loc         .   (knFunTy,imTy,argTy):=  let  [i,a] = mkNewUIDL 2 @lUniq
+                                                             im = mkImplsVar i
+                                                             at = mkTyVar a
+                                                        in   ([im,at] `mkArrow` @lhs.knTy,im,at)
+                loc         .   ty_                 :=  @lhs.knTy
+                loc         .   (prOccL,implsTl)    =   implsPredsTailWithLkup (varmpImplsLookupCyc2 @arg.tyVarMp) @lhs.predScope $ tyImplsWithLkup (varmpTyLookupCyc2 @arg.tyVarMp) @imTy
+                            .   tyVarMpApp          =   @prvOccTlVarMp |=> @arg.tyVarMp
+                lhs         .   tyVarMp             =   @tyVarMpApp
+%%]
+
+%%[(12 hmtyinfer).AppImpl
+SEM Expr
+  | AppImpl     loc         .   knFunTy             =   [@argPr.ty] `mkArrow` @lhs.knTy
+                func        .   knTy                =   @knFunTy
+                loc         .   (knImpls,ty_)       =   tyArrowImplsResWithLkup (varmpTyLookupCyc2 @func.tyVarMp) @func.ty
+                            .   (knArgImpl,knResImpls)
+                                                    =   case @knImpls of
+                                                            (a:r)  -> (a,r)
+                                                            []     -> (Ty_Any,[])
+                            .   foPr                =   fitPredToEvid @lUniq @func.tyVarMp @knArgImpl @lhs.clGam
+                arg         .   knTy                =   foTy @foPr
+                            .   tyVarMp             =   foVarMp @foPr |=> @func.tyVarMp
+                loc         .   ty                  =   @knResImpls `mkArrow` @ty_
+                loc         .   lUniq               :   UNIQUEREF gUniq
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Application top for removal of implicits
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(9 hmtyinfer) hs
+mkFreshAppImTy :: UID -> (Ty -> Ty) -> (Ty,Ty,Ty)
+mkFreshAppImTy u mkr
+  = (im,rt,[im] `mkArrow` rt)
+  where [i,r] = mkNewUIDL 2 u
+        im = mkImplsVar i
+        rt = mkr $ mkTyVar r
+%%]
+
+20100403, AD:
+Obsolete comment?
+
+20080228, AD:
+A type at apptop may not introduce an implicits.
+This is to avoid a scope introduction (see implsIsEmpty).
+Consequences are yet unclear.
+- Does not work, that is enforcing empty predicates here: im = mkImplsNil
+  Likely caused by partial apps yielding types taking more predicates (?)
+
+%%[(9 hmtyinfer)
+SEM Expr
+  | AppTop Rec Let
+                loc         .   (imTy,knTopTy,resTy)=   mkFreshAppImTy @lUniq_freshKnTy id
+                            .   doFit               =   \o m -> fitsIn o @fe @lUniq_fit m @resTy @lhs.knTy
+                            .   forExprTyVarMp      =   foVarMp @foKnRes |=> @lhs.tyVarMp
+                loc         .   lUniq_fit           :   UNIQUEREF gUniq
+  | Let         loc         .   lUniq_freshKnTy     :   UNIQUEREF gUniq
+%%]
+
+%%[(9 hmtyinfer)
+SEM Expr
+  | AppTop Let  loc         .   foKnRes             =   @doFit @lhs.fiOpts @lhs.tyVarMp
+  | Rec         loc         .   foKnRes             =   @doFit @recFiOpts @lhs.tyVarMp
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Let
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(9 hmtyinfer)
+SEM Expr
+  | Let         loc         .   knTy                =   @knTopTy
+                            .   ty                  =   @resTy
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Application top
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+-- generated from ruler rules into EHRulerRules, was 2.AppTop
+%%[(5 hmtyinfer).AppTop
+SEM Expr
+  | AppTop      loc         .   knTy                =   tyEnsureNonAny @lUniq_freshKnTy @lhs.knTy
+                            .   ty                  =   @expr.ty
+                loc         .   lUniq_freshKnTy     :   UNIQUEREF gUniq
+%%]
+
+%%[(9 hmtyinfer).AppTop
+SEM Expr
+  | AppTop      loc         .   knTy                :=  @knTopTy
+                            .   ty                  :=  @resTy
+                expr        .   tyVarMp             =   @forExprTyVarMp
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Lambda abstraction
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+-- generated from ruler rules into EHRulerRules, was 1.Lam
+%%[(5 hmtyinfer).Lam
+SEM Expr
+  | Lam         loc         .   funTy               =   [Ty_Any] `mkArrow` Ty_Any
+                            .   fo_fitF_            =   @funTy `fitsIn` @lhs.knTy
+                (arg.knTy,body.knTy)                =   tyArrowArgRes (foTy @fo_fitF_)
+                arg         .   valGam              =   gamPushNew @lhs.valGam
+                loc         .   ty                  =   @lhs.knTy
+%%]
+
+-- generated from ruler rules into EHRulerRules, was 2.Lam
+%%[(5 hmtyinfer).Lam
+SEM Expr
+  | Lam         loc         .   (argTy,resTy,funTy)
+                                                    :=  let  [a,r] = mkNewTyVarL 2 @lUniq
+                                                        in   (a,r,[a] `mkArrow` r)
+                            .   fo_fitF_            :=  @funTy `fitsIn` (@lhs.tyVarMp |=> @lhs.knTy)
+                arg         .   knTy                :=  @argTy
+                            .   patTyVarMp          =   foVarMp @fo_fitF_ |=> @lhs.tyVarMp
+                body        .   knTy                :=  @resTy
+                            .   tyVarMp             =   @arg.patTyVarMp
+                loc         .   bodyTyVarMp         =   @body.tyVarMp
+                            .   ty                  :=  [@bodyTyVarMp |=> @arg.ty] `mkArrow` @body.ty
+                loc         .   lUniq               :   UNIQUEREF gUniq
+%%]
+
+-- generated from ruler rules into EHRulerRules, was 4.Lam
+%%[(5 hmtyinfer).Lam
+SEM Expr
+  | Lam         loc         .   lamKnTyVarMp        =   @lhs.tyVarMp
+                            .   doFit               =   \o m -> fitsIn o @fe @lUniq2 m @funTy @lhs.knTy
+                            .   fo_fitF_            :=  @doFit @knFunFIOpts @lamKnTyVarMp
+                            .   forArgTyVarMp       =   foVarMp @fo_fitF_ |=> @lhs.tyVarMp
+                arg         .   patTyVarMp          :=  @forArgTyVarMp
+                loc         .   ty                  :=  [@arg.ty] `mkArrow` @body.ty
+                loc         .   lUniq2              :   UNIQUEREF gUniq
+%%]
+
+%%[(6 hmtyinfer)
+SEM Expr
+  | Lam         arg         .   tyGam               =   gamPushNew @lhs.tyGam
+%%]
+
+%%[(9 hmtyinfer) hs
+mkFreshLamImTy :: UID -> (Ty,Ty,Ty,Ty)
+mkFreshLamImTy u
+  = (im,at,rt,[im,at] `mkArrow` rt)
+  where [i,a,r] = mkNewUIDL 3 u
+        im = mkImplsVar i
+        at = mkTyVar a
+        rt = mkTyVar r
+%%]
+
+%%[(9 hmtyinfer).Lam
+SEM Expr
+  | Lam         loc         .   (imTy,argTy,resTy,funTy)
+                                                    :=  mkFreshLamImTy @lUniq
+                loc         .   (knImpls,_,_)       =   tyArrowImplsArgResWithLkup (varmpTyLookupCyc2 @forArgTyVarMp) @funTy
+                            .   ty                  :=  (@knImpls ++ [@arg.ty]) `mkArrow` @body.ty
+%%]
+
+%%[(12 hmtyinfer).LamImpl
+SEM Expr
+  | LamImpl     loc         .   funTy               =   let  r = mkNewTyVar @lUniq
+                                                        in   [@argPr.ty] `mkArrow` r
+                            .   doFit               =   \o m -> fitsIn o @fe @lUniq2 m @funTy @lhs.knTy
+                            .   fo_fitF_            =   @doFit (implFIOpts {fioBindRFirst=True}) @lhs.tyVarMp
+                            .   knImplsVarMp        =   foVarMp @fo_fitF_ |=> @lhs.tyVarMp
+                            .   (knImpls,ty_)       =   tyArrowImplsResWithLkup (varmpTyLookupCyc2 @knImplsVarMp) @funTy
+                            .   (knArgImpl,knResImpls)
+                                                    =   hdAndTl @knImpls
+                            .   foPr                =   fitPredToEvid @lUniq4 @knImplsVarMp @knArgImpl @lhs.clGam
+                            .   forArgTyVarMp       =   foVarMp @foPr |=> @knImplsVarMp
+                arg         .   knTy                =   foTy @foPr
+                            .   patTyVarMp          =   @forArgTyVarMp
+                body        .   knTy                =   @knResImpls `mkArrow` @ty_
+                            .   tyVarMp             =   @arg.patTyVarMp
+                loc         .   ty                  =   [@knArgImpl] `mkArrow` @body.ty
+                loc         .   lUniq               :   UNIQUEREF gUniq
+                loc         .   lUniq2              :   UNIQUEREF gUniq
+                loc         .   lUniq4              :   UNIQUEREF gUniq
+%%]
+
+%%[(97 hmtyinfer)
+SEM Expr
+  | Lam LamImpl
+                arg         .   tyVarMp             =   @arg.patTyVarMp
+                body        .   tyVarMp             :=  @arg.tyVarMp
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Undefine, case fail
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 hmtyinfer).Undefined
+SEM Expr
+  | Undefined CaseAltFail
+                loc         .   ty                  =   tyEnsureNonAny @lUniq @lhs.knTy
+                loc         .   lUniq               :   UNIQUEREF gUniq
+%%]
+                loc         .   ty                  =   @lhs.tyVarMp |=> (tyEnsureNonAny @lUniq @lhs.knTy)
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Type annotation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+-- generated from ruler rules into EHRulerRules, was 1.TypeAs
+%%[(5 hmtyinfer).TypeAs
+SEM Expr
+  | TypeAs      loc         .   fo_                 =   @tyExpr.ty `fitsIn` @lhs.knTy
+                expr        .   knTy                =   @tyExpr.ty
+%%]
+
+-- not generated from ruler rules into EHRulerRules:
+%%[(5 hmtyinfer).TypeAs
+SEM Expr
+  | TypeAs      loc         .   tyTy                =   @tyExpr.ty
+                            .   ty_q_               =   @tyTy
+%%]
+
+-- generated from ruler rules into EHRulerRules, was 2.TypeAs
+%%[(5 hmtyinfer).TypeAs
+SEM Expr
+  | TypeAs      loc         .   fo_                 :=  @ty_q_ `fitsIn` (@lhs.tyVarMp |=> @lhs.knTy)
+                expr        .   knTy                :=  foVarMp @fo_ |=> @ty_q_
+                            .   tyVarMp             =   foVarMp @fo_ |=> @lhs.tyVarMp
+%%]
+
+-- generated from ruler rules into EHRulerRules, was 4.TypeAs
+-- 20070205 - AD, this does not match ruler rules anymore. Split up in check for context and inner expression,
+--   latter should have (e.g.) forall skolemized. Which it now does.
+%%[(5 hmtyinfer).TypeAs
+SEM Expr
+  | TypeAs      loc         .   tyTy                :=  @lhs.tyVarMp |=> @tyExpr.ty
+%%[[5
+                            .   (gTyTvS,cycVarMp)   =   let  (vg,cycVarMp1) = @lhs.tyVarMp |==> @lhs.valGam
+                                                             (tg,cycVarMp2) = @lhs.tyVarMp |==> @lhs.tyGam
+                                                        in   (ftvSet vg `Set.union` ftvSet tg, cycVarMp1 |+> cycVarMp2)
+%%][99
+                            .   gTyTvS              =   @tyTyUpdFreeTvarS `Set.union` @valTyUpdFreeTvarS
+%%]]
+                            .   tyVarWildS          =   Map.keysSet @tyExpr.tyVarWildMp
+                            .   ty_q_               :=  tyQuantifyOuter (const kiStar {- TBD -}) (`Set.member` (@tyVarWildS `Set.union` @gTyTvS)) @tyTy
+                            .   fo_                 :=  fitsIn @knTyFIOpts @fe @lUniq @lhs.tyVarMp @ty_q_ @lhs.knTy
+                            .   ty_q_2_VarMp        =   foVarMp @fo_ |=> @lhs.tyVarMp
+                            .   knTyDown            =   mkTyVar @lUniq3
+                            .   fo_fitDown          =   fitsIn @downFIOpts @fe @lUniq2 @ty_q_2_VarMp @knTyDown @ty_q_
+                expr        .   knTy                :=  @knTyDown
+                            .   tyVarMp             :=  foVarMp @fo_fitDown |=> @ty_q_2_VarMp
+                loc         .   lUniq               :   UNIQUEREF gUniq
+                loc         .   lUniq2              :   UNIQUEREF gUniq
+                loc         .   lUniq3              :   UNIQUEREF gUniq
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Data based records
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(7 hmtyinfer) hs
+dfCheck :: UID -> FIOpts -> FIEnv -> HsName -> ValGam -> VarMp -> Ty -> (Ty,Ty,Ty,FIOut,[Err])
+dfCheck uniq fiOpts fe fldNm valGam knTyVarMp knTy
+  = (gTy,knDataTy,knFldTy,fo,nmErrs)
+  where (gTy,nmErrs) = valGamLookupTy (hsnFldUpd fldNm) valGam
+        (_,u1,u2)    = mkNewLevUID2 uniq
+        (knFldTy,knDataTy,knFldUpdTy)
+                     = (e,df,v `mkArrow` knTy)
+                     where v@[e,df] = mkNewTyVarL 2 u1
+        fo           = fitsIn fiOpts fe u2 knTyVarMp gTy knFldUpdTy
+%%]
+
+%%[(7 hmtyinfer)
+SEM DataFieldExpr
+  | Upd         (loc.gTy,loc.knDataTy,expr.knTy,loc.fo_,loc.nmErrs)
+                                                    =   dfCheck @lUniq @lhs.fiOpts @fe @nm @lhs.valGam @lhs.tyVarMp @lhs.knTy
+                dataFieldExpr
+                            .   knTy                =   @knDataTy
+                            .   tyVarMp             =   foVarMp @fo_ |=> @lhs.tyVarMp
+                loc         .   ty                  =   @expr.tyVarMp |=> @knDataTy
+                loc         .   lUniq               :   UNIQUEREF gUniq
+  | Con         loc         .   (gTy,nmErrs)        =   valGamLookupTy (hsnUn @nm) @lhs.valGam
+                            .   fo_                 =   let [u] = mkNewTyVarL 1 @lUniq
+                                                            t = @lhs.tyVarMp |=> @lhs.knTy
+                                                            fo = fitsIn @lhs.fiOpts @fe @lUniq2 @lhs.tyVarMp ([t] `mkArrow` u) (@lhs.tyVarMp |=> @gTy)
+                                                        in  fo {foTy = foVarMp fo |=> t}
+                            .   ty                  =   foTy @fo_
+                lhs         .   tyVarMp             =   foVarMp @fo_ |=> @lhs.tyVarMp
+                loc         .   lUniq               :   UNIQUEREF gUniq
+                loc         .   lUniq2              :   UNIQUEREF gUniq
+  | Expr        loc         .   ty                  =   @lhs.tyVarMp |=> @lhs.knTy
+%%]
+
+%%[(7 hmtyinfer)
+ATTR DataFieldExpr [ | updExprTyVarMp: VarMp | updExprTy: Ty ]
+
+SEM Expr
+  | DataFields  dataFieldExpr
+                            .   updExprTyVarMp      =   @lhs.tyVarMp
+
+SEM DataFieldExpr
+  | Expr        expr        .   tyVarMp             =   @lhs.updExprTyVarMp
+                            .   knTy                =   mkNewTyVar @lUniq
+                lhs         .   updExprTyVarMp      =   @expr.tyVarMp
+                            .   updExprTy           =   @expr.ty
+                            .   tyVarMp             =   @lhs.tyVarMp
+                loc         .   lUniq               :   UNIQUEREF gUniq
+  | Con         lhs         .   updExprTy           =   Ty_Any
+%%]
+
+%%[(7 hmtyinfer)
+SEM Expr
+  | DataFields  (dataFieldExpr.knTy,dataFieldExpr.tyVarMp,loc.dfErrs,loc.foL)
+                                                    =   case @dataFieldExpr.mbConNm of
+                                                          Just _
+                                                            -> (@lhs.knTy,@lhs.tyVarMp,[],[])
+                                                          _ -> (t,c,e,foL)
+                                                            where (t,_,c,e,foL,_)
+                                                                    = foldr (\fldNm (knTy,updExprTy,tyVarMp,errL,foL,u)
+                                                                               -> let (u',u1,u2) = mkNewLevUID2 u
+                                                                                      (_,knDTy,knFTy,fo1,e1) = dfCheck u1 @lhs.fiOpts @fe fldNm @lhs.valGam tyVarMp knTy
+                                                                                      tyVarMp' = foVarMp fo1 |=> tyVarMp
+                                                                                      (gTy,nmErrs) = valGamLookupTy fldNm @lhs.valGam
+                                                                                      fo2 = fitsIn @fldFIOpts @fe u2 tyVarMp' gTy ([updExprTy] `mkArrow` knFTy)
+                                                                                  in  (knDTy, updExprTy, foVarMp fo2 |=> tyVarMp', foErrL fo2 ++ foErrL fo1 ++ e1 ++ nmErrs ++ errL, fo1:fo2:foL, u')
+                                                                            )
+                                                                            (@lhs.knTy,@dataFieldExpr.updExprTy,@dataFieldExpr.updExprTyVarMp,[],[],@lUniq)
+                                                                            (Set.toList $ Set.unions [ Map.keysSet (dtiFldMp i) | i <- @dtiL ] `Set.difference` @fldS)
+                loc         .   lUniq               :   UNIQUEREF gUniq
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Row based records
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(7 hmtyinfer)
+SEM RecExpr
+  | Empty       loc         .   fo_                 =   fitsIn (@lhs.fiOpts) @fe @lUniq @lhs.tyVarMp tyRecEmpty @lhs.knTy
+                            .   ty                  =   foTy @fo_
+                lhs         .   tyVarMp             =   foVarMp @fo_ |=> @lhs.tyVarMp
+                loc         .   lUniq               :   UNIQUEREF gUniq
+  | Ext Upd     loc         .   (knRowTy,knRecTy,knTailTy,knExprTy)
+                                                    =   let  [r,e] = mkNewTyVarL 2 @lUniq
+                                                             tl = hsnRec `mkConApp` [r]
+                                                        in   (r, tl `mkTyRecExt` [(@nm,e)], tl, e)
+                            .   foKnRec             =   fitsIn @knFIOpts @fe @lUniq2 @lhs.tyVarMp @knRecTy @lhs.knTy
+                loc         .   recTyVarMp          =   foVarMp @foKnRec |=> @lhs.tyVarMp
+                (loc.knRecHasLab,loc.recKnTlTy,expr.knTy)
+                                                    =   maybe (False,@knTailTy,@knExprTy) (\(r,e) -> (True,r,e)) $ tyRecExtrWithLkup (varmpTyLookupCyc2 @recTyVarMp) @nm $ foTy @foKnRec
+                recExpr     .   tyVarMp             =   @recTyVarMp
+                loc         .   ty                  =   foTy @foKnRec
+                loc         .   lUniq               :   UNIQUEREF gUniq
+                loc         .   lUniq2              :   UNIQUEREF gUniq
+  | Ext         recExpr     .   knTy                =   @recKnTlTy
+  | Upd         recExpr     .   knTy                =   @recKnTlTy `mkTyRecExt` [(@nm,mkNewTyVar @lUniq3)]
+                loc         .   lUniq3              :   UNIQUEREF gUniq
+%%]
+
+%%[(7 hmtyinfer)
+SEM Expr
+  | Sel         (loc.knRowTy,loc.knExprTy)          =   let r = mkNewTyVar @lUniq_freshKnTy
+                                                        in  (r, (hsnRec `mkConApp` [r]) `mkTyRecExt` [(@lbl,@lhs.knTy)])
+                expr        .   knTy                =   @knExprTy
+                loc         .   (_,ty)              =   maybe (Ty_Any,Ty_Any) id (tyRecExtrWithLkup (varmpTyLookupCyc2 @expr.tyVarMp) @lbl @expr.ty)
+                loc         .   lUniq_freshKnTy     :   UNIQUEREF gUniq
+  | Rec         loc         .   knRecTy             =   let  r = mkNewTyVar @lUniq_freshKnTy
+                                                        in   hsnRec `mkConApp` [r]
+                            .   fo_                 =   fitsIn @recFiOpts @fe @lUniq2 @lhs.tyVarMp @knRecTy @lhs.knTy
+                recExpr     .   knTy                =   @knRecTy
+                            .   tyVarMp             =   foVarMp @fo_ |=> @lhs.tyVarMp
+                loc         .   ty                  =   foTy @fo_
+                loc         .   lUniq_freshKnTy     :   UNIQUEREF gUniq
+                loc         .   lUniq2              :   UNIQUEREF gUniq
+%%]
+
+%%[(9 hmtyinfer)
+SEM Expr
+  | Rec         loc         .   knRecTy             :=  @knTopTy
+                            .   fo_                 :=  @foKnRes
+                recExpr     .   tyVarMp             :=  @forExprTyVarMp
+                loc         .   ty                  :=  @resTy
+%%]
+
+%%[(9 hmtyinfer)
+SEM Expr
+  | Sel         (loc.knRowTy,loc.knExprTy)          :=  let r = mkNewTyVar @lUniq_freshKnTy
+                                                        in  (r, [Ty_Impls Impls_Nil] `mkArrow` ((hsnRec `mkConApp` [r]) `mkTyRecExt` [(@lbl,@lhs.knTy)]))
+                loc         .   (_,ty)              :=  maybe (Ty_Any,Ty_Any) id (tyRecExtrWithLkup (varmpTyLookupCyc2 @expr.tyVarMp) @lbl $ snd $ tyArrowImplsResWithLkup (varmpTyLookupCyc2 @expr.tyVarMp) @expr.ty)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Unfinished...
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(10 hmtyinfer)
+SEM Expr
+  | DynVar      loc         .   ty                  =   Ty_Any
+%%]

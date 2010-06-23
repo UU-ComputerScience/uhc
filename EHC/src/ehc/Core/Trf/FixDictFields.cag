@@ -1,0 +1,261 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Fix fields of a dictionaries
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(9 codegen) hs module {%{EH}Core.Trf.FixDictFields} export(cmodTrfFixDictFields)
+%%]
+%%[(9 codegen) hs import(Data.Maybe, qualified Data.Set as Set, qualified Data.Map as Map)
+%%]
+%%[(9 codegen) hs import(EH.Util.Utils,qualified EH.Util.FastSeq as Seq,{%{EH}Base.Common},{%{EH}Core},{%{EH}Ty})
+%%]
+%%[(9 codegen) hs import({%{EH}AbstractCore})
+%%]
+
+-- for debug
+%%[(9 codegen) hs import({%{EH}Base.Debug},EH.Util.Pretty)
+%%]
+%%[(9 codegen) hs import(Debug.Trace)
+%%]
+
+%%[(9 codegen).WRAPPER ag import({Core/AbsSyn})
+WRAPPER CodeAGItf
+%%]
+
+%%[(99 codegen)
+PRAGMA strictcase
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell itf
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(9 codegen) hs
+cmodTrfFixDictFields :: CModule -> CModule
+cmodTrfFixDictFields cmod
+  =  let  t = wrap_CodeAGItf  (sem_CodeAGItf (CodeAGItf_AGItf cmod))
+                              (Inh_CodeAGItf)
+     in   cTrf_Syn_CodeAGItf t
+%%]
+
+%%[(9 codegen)
+ATTR CodeAGItf [ | | cTrf: CModule ]
+ATTR AllCodeNT [ | | cTrf: SELF    ]
+%%]
+
+
+
+
+%%[(9 codegen) hs
+
+type Env = Map.Map HsName Track
+
+isntTrackApply :: Track -> Bool
+isntTrackApply (TrackVarApply _ xs) = null xs
+isntTrackApply _                    = True
+
+mbTrackApply :: Track -> Track -> Maybe Track
+mbTrackApply (TrackVarApply v ts) t | isntTrackApply t = Just (TrackVarApply v (ts++[t]))
+mbTrackApply _ _                                       = Nothing
+
+
+substTrack :: Env -> Track -> Track
+substTrack e t@(TrackVarApply nm xs) | null xs = Map.findWithDefault t nm e
+substTrack _ t                                 = t
+
+%%]
+
+
+
+%%[(9 codegen)
+
+
+ATTR CMetas CMetaVal [ mbTrack : {Maybe Track}  envFinal:Env  | | ]
+
+SEM CMetaVal
+  | DictClass      lhs.cTrf  =  CMetaVal_DictClass    (map (substTrack @lhs.envFinal) @tracks)
+  | DictInstance   lhs.cTrf  =  CMetaVal_DictInstance (map (substTrack @lhs.envFinal) @tracks)
+  | Track          lhs.cTrf  =  @loc.cTrf
+  | Val
+    Dict           lhs.cTrf  =  maybe @loc.cTrf
+                                      (\t -> CMetaVal_Track t)
+                                      @lhs.mbTrack
+
+
+SEM CBind
+  | Bind  bindMeta.mbTrack  = @expr.mbTrack
+          bindMeta.envFinal = @expr.envUp
+  
+SEM CExpr
+  | Lam
+    App   argMeta.mbTrack  = Nothing
+          argMeta.envFinal = Map.empty
+
+
+
+
+
+
+ATTR CExpr CBind CBindL CAlt CAltL CPat CPatL CPatFld CPatFldL [  envDown:Env  | |  ]
+
+SEM CModule
+  | Mod  expr.envDown = Map.empty
+  
+  
+ATTR CBind CBindL CExpr [ | | envUp USE {`Map.union`} {Map.empty} : Env ]
+
+SEM CBind
+  | Bind   lhs.envUp  =  maybe (Map.empty)
+                               (\t -> Map.singleton @nm t)
+                               @expr.mbTrack
+
+SEM CExpr
+  | Let    lhs.envUp = Map.union @binds.envUp @body.envUp
+  | Lam    lhs.envUp = @body.envUp
+  | *-Let
+      Lam  lhs.envUp = Map.empty
+
+
+
+
+
+ATTR CExpr [ mbCtxCount:{Maybe Int} isDictClass:{Bool} | | ]
+
+SEM CModule
+  | Mod  expr.mbCtxCount = Nothing
+         expr.isDictClass = False
+  
+SEM CAlt
+  | Alt  expr.mbCtxCount = Nothing
+         expr.isDictClass = False
+  
+SEM CPatFld
+  | Fld  offset.mbCtxCount = Nothing
+         offset.isDictClass = False
+
+SEM CBind
+  | Bind  expr.mbCtxCount = if @bindMeta.isDictInstance
+                            then Just 0
+                            else Nothing
+          expr.isDictClass = @bindMeta.isDictClass
+
+SEM CExpr
+  | Lam   body.mbCtxCount = do { n <- @lhs.mbCtxCount
+                               ; return (n+1)
+                               }
+  | Let   body.mbCtxCount = Nothing
+          body.isDictClass = False
+
+
+ATTR CMetaVal CMetas [ | | isDictClass:Bool isDictInstance:Bool ]
+
+SEM CMetaVal
+  | DictClass      lhs.isDictClass    = True
+  | *-DictClass    lhs.isDictClass    = False
+  | DictInstance   lhs.isDictInstance = True
+  | *-DictInstance lhs.isDictInstance = False
+
+
+
+
+
+
+
+
+
+
+
+
+
+ATTR CExpr [ | | mbVar : {Maybe HsName} ]
+
+SEM CExpr
+  | Var   lhs.mbVar = Just @nm
+  |*-Var  lhs.mbVar = Nothing
+  
+
+ATTR CExpr [ | | mbTrack : {Maybe Track} ]
+
+SEM CExpr
+  | Case     lhs.mbTrack  = do { n <- @alts.mbSel
+                               ; t <- @expr.mbTrack
+                               ; return (TrackSelect n t)
+                               }
+  | App      lhs.mbTrack  = do { tf <- @func.mbTrack
+                               ; ta <- @arg.mbTrack
+                               ; tr <- mbTrackApply tf ta
+                               ; return tr
+                               }
+  | Let      lhs.mbTrack  = @body.mbTrack
+  | Var      lhs.mbTrack  = Just (Map.findWithDefault (TrackVarApply @nm []) @nm @lhs.envDown)
+  | *- Case
+       App 
+       Let 
+       Var   lhs.mbTrack  = Nothing
+
+
+SEM CExpr
+  | Let      body.envDown = Map.union @lhs.envDown @binds.envUp
+  | Lam      body.envDown = maybe (if @lhs.isDictClass
+                                   then Map.insert @arg TrackSelf @lhs.envDown
+                                   else @lhs.envDown
+                                  )
+                                  (\n -> Map.insert @arg (TrackCtx n) @lhs.envDown)
+                                  @lhs.mbCtxCount
+
+
+
+ATTR CAlt CAltL [ | | mbSel : {Maybe Int} ]
+
+SEM CAlt
+  | Alt  lhs.mbSel = do { var <- @expr.mbVar
+                        ; let positions = @pat.positionMap
+                        ; pos <- Map.lookup var positions
+                        ; return pos
+                        }
+
+SEM CAltL
+  | Nil  lhs.mbSel = Nothing
+  | Cons lhs.mbSel = if @tl.isNil
+                     then @hd.mbSel
+                     else Nothing
+
+
+
+-- is a list of alternatives nil?
+
+ATTR CAltL [ | | isNil : {Bool} ]
+
+SEM CAltL
+  | Nil  lhs.isNil = True
+  | Cons lhs.isNil = False
+
+
+-- Make each field aware of its position number
+
+ATTR CPatFld CPatFldL [ pos:{Int} | | ]
+
+SEM CPat
+  | Con  binds.pos = 0
+  
+SEM CPatFldL
+  | Cons hd.pos = @lhs.pos
+         tl.pos = @lhs.pos + 1
+
+-- Determine a map of fieldnames to position numbers
+
+ATTR CPat CPatFldL CPatFld [ | | positionMap USE {`Map.union`} {Map.empty} : {Map.Map HsName Int} ]
+
+SEM CPatFld
+  | Fld lhs.positionMap = Map.singleton @fldNm @lhs.pos
+
+
+
+
+
+%%]

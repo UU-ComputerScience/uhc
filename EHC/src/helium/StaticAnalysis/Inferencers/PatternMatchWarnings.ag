@@ -1,0 +1,462 @@
+-----------------------------------------------------------------------------
+-- |The Helium Compiler : Static Analysis
+-- 
+-- Maintainer  :  bastiaan@cs.uu.nl
+-- Stability   :  experimental
+-- Portability :  unknown
+--
+-- Generates warnings for incomplete and overlapping pattern matches
+-- (PatternMatchWarnings.ag by Maarten Loffler)
+-- 
+-----------------------------------------------------------------------------
+
+{
+pmError = internalError "PatternMatchWarnings"
+}
+
+-- substitution is needed for the type of a pattern
+-- new warnings attribute to avoid problems with other warnings
+-- warnings are merged in "TypeInferencing.ag"
+ATTR Expression Expressions MaybeExpression Pattern Patterns Alternative Alternatives
+     Statement Statements Declaration Declarations MaybeDeclarations LeftHandSide RightHandSide
+     FunctionBinding FunctionBindings Body Qualifier Qualifiers          
+     GuardedExpression GuardedExpressions
+     RecordExpressionBinding RecordExpressionBindings
+     RecordPatternBinding RecordPatternBindings
+     [ | patternMatchWarnings : {[Warning]} | ]
+
+SEM Module
+  | Module    body . patternMatchWarnings = []
+
+-- attributes to convert a Pattern to a [PatternElement]
+ATTR                  LeftHandSide              Pattern  Literal [ || elements  : {  [PatternElement]        }]
+ATTR                                            Patterns         [ || elementss : {[ [PatternElement]       ]}]
+ATTR FunctionBinding               Alternative                   [ || elements  : { ([PatternElement], Bool) }]
+ATTR FunctionBindings              Alternatives                  [ || elementss : {[([PatternElement], Bool)]}]
+
+ATTR FunctionBinding  Alternative  [ || unrwar  :   Warning  ]
+ATTR FunctionBindings Alternatives [ || unrwars : {[Warning]}]
+
+ATTR FunctionBinding FunctionBindings LeftHandSide [ || argcount : Int]
+
+SEM FunctionBindings
+  | Nil              lhs . elementss = []
+                     lhs . unrwars   = []
+                     lhs . argcount  = pmError "FunctionBindings_Nil.argcount" "?empty list of function bindings?"
+  | Cons             lhs . elementss = @hd.elements : @tl.elementss
+                     lhs . unrwars   = @hd.unrwar   : @tl.unrwars
+                     lhs . argcount  = @hd.argcount
+
+SEM FunctionBinding
+  | FunctionBinding  lhs . unrwar    = UnreachablePatternLHS @lefthandside.self
+                     lhs . elements  = (@lefthandside.elements, @righthandside.fallthrough)
+
+SEM LeftHandSide
+  | Function         lhs . elements  = concat @patterns.elementss
+                     lhs . argcount  = length @patterns.self
+  | Infix            lhs . elements  = @leftPattern.elements ++ @rightPattern.elements
+                     lhs . argcount  = 2
+
+SEM Alternatives
+  | Nil              lhs . elementss = []
+                     lhs . unrwars   = []
+  | Cons             lhs . elementss = @hd.elements : @tl.elementss
+                     lhs . unrwars   = @hd.unrwar   : @tl.unrwars
+  
+SEM Alternative
+  | Alternative      lhs . elements  = (@pattern.elements, @righthandside.fallthrough)
+                     lhs . unrwar    = UnreachablePatternCase @range.self @pattern.self
+  | Empty            lhs . elements  = ([], False)
+                     lhs . unrwar    = pmError "Alternative_Empty.unrwar" "empty alternative"
+
+SEM Patterns
+  | Nil              lhs . elementss = []
+  | Cons             lhs . elementss = @hd.elements : @tl.elementss
+
+SEM Pattern
+  | Variable         lhs . elements  = [WildcardElement]
+  | Wildcard         lhs . elements  = [WildcardElement]
+  | Constructor      lhs . elements  = FiniteElement (getNameName @name.self) : concat @patterns.elementss
+  | InfixConstructor lhs . elements  = FiniteElement (getNameName @constructorOperator.self) : @leftPattern.elements ++ @rightPattern.elements
+  | Record           lhs . elements  = pmError "Pattern_Record.elements" "Records are not supported"
+  | Successor        lhs . elements  = pmError "Pattern_Successor.elements" "Successors are not supported"
+  | Tuple            lhs . elements  = FiniteElement ("(" ++ replicate (length $ tail @patterns.self) ',' ++ ")") : concat @patterns.elementss
+  | List             lhs . elements  = listPat @patterns.elementss
+
+SEM Literal
+  | Int              lhs . elements  = [InfiniteElement @value]
+  | Char             lhs . elements  = [InfiniteElement @value]
+  | Float            lhs . elements  = [InfiniteElement @value]
+  | String           lhs . elements  = stringPat @value
+
+-- putting everything together
+{
+expandTypeFromImportEnvironment :: ImportEnvironment -> Tp -> Tp
+expandTypeFromImportEnvironment env = expandType (snd $ getOrderedTypeSynonyms env)
+
+patternMatchWarnings :: Substitution substitution
+                     => ImportEnvironment          -- the importenvironment
+                     -> substitution               -- substitution that contains the real types
+                     -> Tp                         -- type of the patterns, unsubstituted
+                     -> (Tp -> Tps)                -- how should the type be interpreted?
+                     -> [([PatternElement], Bool)] -- the patterns to be processed
+                     -> Range                      -- range for the missing-warnings
+                     -> Maybe Name                 -- maybe the name of the function
+                     -> Bool                       -- should there be parentheses around the patterns?
+                     -> [Warning]                  -- list of overlap-warnings for all of the patterns  
+                     -> String                     -- description of the place where the patterns are
+                     -> String                     -- symbol after the patterns
+                     -> [Warning]                  -- returns: list of warnings
+patternMatchWarnings impenv sub tp strip elementss rng name parens unrwars place sym
+  = unreachablewarnings ++ missingwarnings
+    where
+      env                 = importEnvironmentToEnv impenv
+      exprtype            = expandTypeFromImportEnvironment impenv $ sub |-> tp
+      types               = strip exprtype
+      unreachables        = unreachable impenv types $ map (\((a, b), c) -> (a, c)) $ filter (not.snd.fst) $ zip elementss [0..]
+      missing             = complement  impenv types $ map fst elementss
+      unreachablewarnings = map (unrwars !!) unreachables
+      missingwarnings
+        | null $ unMissing missing = []
+        | otherwise                = [MissingPatterns rng name exprtype (map (nicePattern parens env) $ missingList missing) place sym]
+}
+
+SEM Expression
+  | Case             lhs . patternMatchWarnings = patternMatchWarnings @lhs.importEnvironment
+                                                                       @lhs.substitution
+                                                                       @expression.beta
+                                                                       (:[])
+                                                                       @alternatives.elementss
+                                                                       @range.self
+                                                                       Nothing
+                                                                       False
+                                                                       @alternatives.unrwars
+                                                                       "case expression"
+                                                                       "->"
+                                                  ++ @alternatives.patternMatchWarnings                     
+  | Lambda           lhs . patternMatchWarnings = patternMatchWarnings @lhs.importEnvironment
+                                                                       @lhs.substitution
+                                                                       @loc.beta
+                                                                       (take (length @patterns.self) . fst . functionSpine)
+                                                                       [(concat @patterns.elementss, False)]
+                                                                       @range.self
+                                                                       (Just $ Name_Special noRange [] "\\") -- !!!Name
+                                                                       True
+                                                                       []
+                                                                       "lambda expression"
+                                                                       "->"
+                                                  ++ @expression.patternMatchWarnings                     
+
+SEM Declaration
+  | FunctionBindings lhs . patternMatchWarnings = patternMatchWarnings @lhs.importEnvironment
+                                                                       @lhs.substitution
+                                                                       @loc.beta
+                                                                       (take @bindings.argcount . fst . functionSpine)
+                                                                       @bindings.elementss
+                                                                       @range.self
+                                                                       (Just @bindings.name)
+                                                                       True
+                                                                       @bindings.unrwars
+                                                                       "function bindings"
+                                                                       "="
+                                                  ++ @bindings.patternMatchWarnings 
+  | PatternBinding   lhs . patternMatchWarnings = patternMatchWarnings @lhs.importEnvironment
+                                                                       @lhs.substitution
+                                                                       @pattern.beta
+                                                                       (:[])
+                                                                       [(@pattern.elements, @righthandside.fallthrough)]
+                                                                       @range.self
+                                                                       Nothing
+                                                                       False
+                                                                       []
+                                                                       "pattern binding"
+                                                                       "="
+                                                  ++ @righthandside.patternMatchWarnings
+
+SEM Statement        
+  | Generator        lhs . patternMatchWarnings = patternMatchWarnings @lhs.importEnvironment
+                                                                       @lhs.substitution
+                                                                       @pattern.beta
+                                                                       (:[])
+                                                                       [(@pattern.elements, False)]
+                                                                       @range.self
+                                                                       Nothing
+                                                                       False
+                                                                       []
+                                                                       "generator"
+                                                                       "<-"
+                                                  ++ @expression.patternMatchWarnings
+                                                  
+SEM Qualifier                                                  
+  | Generator        lhs . patternMatchWarnings = patternMatchWarnings @lhs.importEnvironment
+                                                                       @lhs.substitution
+                                                                       @pattern.beta
+                                                                       (:[])
+                                                                       [(@pattern.elements, False)]
+                                                                       @range.self
+                                                                       Nothing
+                                                                       False
+                                                                       []
+                                                                       "generator"
+                                                                       "<-"
+                                                  ++ @expression.patternMatchWarnings
+
+ATTR RightHandSide GuardedExpression GuardedExpressions [             || fallthrough : Bool    ]
+ATTR                                 GuardedExpressions [ open : Bool ||                       ]
+ATTR               GuardedExpression                    [             || range       : Range   ]
+ATTR               GuardedExpression                    [             || unrwar      : Warning ]
+
+SEM RightHandSide
+  | Expression        lhs . fallthrough = False
+  | Guarded           lhs . fallthrough = @guardedexpressions.fallthrough
+                      guardedexpressions . open = True
+                      lhs . patternMatchWarnings = (if @guardedexpressions.fallthrough then [FallThrough @range.self] else [])
+                                                   ++ @where.patternMatchWarnings
+
+SEM GuardedExpressions
+  | Nil               lhs . fallthrough = True
+  | Cons              lhs . fallthrough = @hd.fallthrough && @tl.fallthrough
+                      tl  . open        = @hd.fallthrough && @lhs.open
+                      lhs . patternMatchWarnings = (if not @lhs.open then [@hd.unrwar] else [])
+                                                   ++ @tl.patternMatchWarnings
+
+SEM GuardedExpression
+  | GuardedExpression lhs . fallthrough = case @guard.self
+                                          of Expression_Variable    _ (Name_Identifier _ _ "otherwise") -> False -- !!!Name
+                                             Expression_Constructor _ (Name_Identifier _ _ "True"     ) -> False -- !!!Name
+                                             _                                                          -> True
+                      lhs . unrwar = UnreachableGuard @range.self @guard.self
+
+SEM GuardedExpression
+  | GuardedExpression lhs . range = @range.self
+
+{
+
+----------
+-- misc --
+----------
+
+-- lifted or
+(|^|) :: (a -> Bool) -> (a -> Bool) -> a -> Bool
+(|^|) f g x = f x || g x
+
+----------------------------------------------
+--- environments and substitution of types ---
+----------------------------------------------
+
+-- environment of constructors [(type, (constructorname, arguments))]
+type Env = [(Tp, (Name, [Tp]))]
+importEnvironmentToEnv = map rearrange . M.assocs . valueConstructors
+
+-- return the number of arguments of a constructor
+-- tuples ar not in the Env so they require special treatment
+nrOfArguments :: Env -> String -> Int
+nrOfArguments env con | isTupleConstructor con = length con - 1
+                      | otherwise = case lookup (nameFromString con) $ map snd env
+                                    of Just args -> length args
+                                       Nothing   -> 0
+
+-- convert constructor to fit in an Env
+rearrange :: (Name, TpScheme) -> (Tp, (Name, [Tp]))
+rearrange (name, tpscheme) = let (args, res) = functionSpine $ unqualify $ unquantify tpscheme
+                             in (res, (name, args))
+
+-- get the constructors of a given type out of an Env
+-- tuples ar not in the Env so they require special treatment
+constructors :: ImportEnvironment -> Tp -> [(Name, [Tp])]
+constructors _ (TVar _) = []
+constructors impenv tp | isTupleConstructor name = [tupleconstructor]
+                       | otherwise               = map expand $ concatMap (substitute tp) $ importEnvironmentToEnv impenv
+  where
+    name :: String
+    name = unTCon $ fst $ leftSpine tp
+    tupleconstructor :: (Name, [Tp])
+    tupleconstructor = (nameFromString name, snd $ leftSpine tp)
+    unTCon :: Tp -> String
+    unTCon (TCon c) = c
+    unTCon tp = pmError "unTCon" $ "type " ++ show tp ++ " is not a TCon"
+    expand :: (Name, [Tp]) -> (Name, [Tp])
+    expand (n, ts) = (n, map (expandTypeFromImportEnvironment impenv) ts)
+
+-- check of an entry in an Env is a constructor for the given type
+-- if so, return this constructor, but with variables substituted for whatever is in the given type
+-- the list returns zero or one elements
+-- for example: substitute (Maybe Int) (Maybe a, (Just, [a])) will return [(Just, [Int])]
+substitute :: Tp -> (Tp, (Name, [Tp])) -> [(Name, [Tp])]
+substitute t1 (t2, (con, args)) = let (c1, ts1) = leftSpine t1
+                                      (c2, ts2) = leftSpine t2
+                                      sub = listToSubstitution $ zip (map unTVar ts2) ts1
+                                  in if c1 == c2
+                                     then [(con, map (sub |->) args)]
+                                     else []
+  where
+    unTVar :: Tp -> Int
+    unTVar (TVar v) = v
+    unTVar _ = pmError "unTVar" "type is not a TVar"
+
+---------------------------------------------------------------
+--- datastructures and functions for the solution structure ---
+---------------------------------------------------------------
+
+-- a pattern is a list of patternelements
+data PatternElement = WildcardElement | InfiniteElement String | FiniteElement String deriving Eq
+isInfiniteElement :: PatternElement -> Bool
+isInfiniteElement (InfiniteElement _) = True
+isInfiniteElement _                   = False
+elementString :: PatternElement -> String
+elementString (InfiniteElement s) = s
+elementString (  FiniteElement s) = s
+elementString _                   = []
+
+-- needed for Pattern_List and Literal_String occurences
+listPat :: [[PatternElement]] -> [PatternElement]
+listPat [] = [FiniteElement "[]"]
+listPat (ps:pss) = FiniteElement ":" : ps ++ listPat pss
+
+stringPat :: String -> [PatternElement]
+stringPat [] = [FiniteElement "[]"]
+stringPat (c:cs) = FiniteElement ":" : InfiniteElement [c] : stringPat cs
+
+-- tree of missing patterns
+data PatternsMissing = PatternsMissing [(PatternElement, PatternsMissing)]
+unMissing :: PatternsMissing -> [(PatternElement, PatternsMissing)]
+unMissing (PatternsMissing l) = l
+
+-- create a branch consisting of only wildcards
+wildMissing :: Int -> PatternsMissing
+wildMissing 0 = PatternsMissing []
+wildMissing n = PatternsMissing [(WildcardElement, wildMissing $ n - 1)]
+
+-- convert a missing patterns tree to a list of seperated missing patterns
+missingList :: PatternsMissing -> [[PatternElement]]
+missingList (PatternsMissing []) = [[]]
+missingList (PatternsMissing [(d,t)]) = map (d:) $ missingList t
+missingList (PatternsMissing (d:ds)) = (missingList $ PatternsMissing [d]) ++ (missingList $ PatternsMissing ds)
+
+-------------------------------------------------------------------
+--- functions to create a UHA_Pattern out of a [PatternElement] ---
+-------------------------------------------------------------------
+
+-- nice creates the actual pattern without parentheses
+-- [Just, True, True, (,), Just, Nothing, False] -> [Just True, True, (Just Nothing, False)]
+nicePattern :: Bool -> Env -> [PatternElement] -> [Pattern]
+nicePattern b env = map (parensPattern b) . nice
+  where
+    nice :: [PatternElement] -> [Pattern]
+    nice []             = []
+    nice (WildcardElement    :ps) = Pattern_Wildcard noRange : nice ps
+    nice (InfiniteElement _  :ps) = pmError "nicePattern" "InfiniteElement in pattern!"
+    nice (FiniteElement con:ps) =
+      let rest = nice ps
+          name = nameFromString con
+          n    = nrOfArguments env con
+      in case name 
+         of Name_Identifier _ _ _                          -> Pattern_Constructor noRange name (take n rest) : drop n rest -- !!!Name
+            Name_Operator   _ _ _ | con == ":"             -> case head $ tail rest -- !!!Name
+                                                              of Pattern_List _ ps -> Pattern_List noRange (head rest:ps) : (tail $ tail rest)
+                                                                 _ -> Pattern_InfixConstructor noRange (head rest) name (head $ tail rest) : (tail $ tail rest)
+                                  | otherwise              -> Pattern_InfixConstructor noRange (head rest) name (head $ tail rest) : (tail $ tail rest)
+            Name_Special    _ _ _ | isTupleConstructor con -> Pattern_Tuple noRange (take n rest) : drop n rest -- !!!Name
+                                  | con == "[]"            -> Pattern_List  noRange [] : rest
+                                  | otherwise              -> Pattern_Constructor noRange name (take n rest) : drop n rest
+
+-- add parentheses to a pattern in the correct places
+-- bool means: if needed, should there be parenthesis around the complete pattern?
+parensPattern :: Bool -> Pattern -> Pattern
+parensPattern b = if b then rap . par else fst . par
+  where
+    par :: Pattern -> (Pattern, Bool) -- Bool means: are parentheses needed around this pattern, shoud it be used in a more complex pattern
+    par p@(Pattern_Literal          _ _    ) = (p, False)
+    par p@(Pattern_Variable         _ _    ) = (p, False)
+    par   (Pattern_Constructor      r n ps ) = (Pattern_Constructor r n $ map (rap.par) ps, length ps > 0)
+    par   (Pattern_Parenthesized    _ p    ) = par p
+    par   (Pattern_InfixConstructor r l n k) = (Pattern_InfixConstructor r (rap $ par l) n (rap $ par k), True)
+    par   (Pattern_List             r ps   ) = (Pattern_List r $ map (fst.par) ps, False)
+    par   (Pattern_Tuple            r ps   ) = (Pattern_Tuple r $ map (fst.par) ps, False)
+    par   (Pattern_Record           _ _ _  ) = pmError "parensPattern" "Records are not supported" 
+    par p@(Pattern_Negate           _ _    ) = (p, True)
+    par p@(Pattern_NegateFloat      _ _    ) = (p, True)
+    par   (Pattern_As               r n p  ) = (Pattern_As r n (rap $ par p), False)
+    par p@(Pattern_Wildcard         _      ) = (p, False)
+    par   (Pattern_Irrefutable      _ _    ) = pmError "parensPattern" "Irrefutable patterns are not supported"  
+    par   (Pattern_Successor        _ _ _  ) = pmError "parensPattern" "Successors are not supported" 
+    rap :: (Pattern, Bool) -> Pattern
+    rap (p, False) = p
+    rap (p, True ) = Pattern_Parenthesized noRange p
+
+--------------------------------------
+--- finally, the algorithm itself! ---
+--------------------------------------
+
+-- returns the tree of missing patterns for a given list of patterns    
+complement :: ImportEnvironment -> [Tp] -> [[PatternElement]] -> PatternsMissing
+complement _   []       _      = PatternsMissing []
+complement _   _        ([]:_) = PatternsMissing []
+complement env (tp:tps) pss    | null $ unMissing anyComplement                              = PatternsMissing []
+                               | all (((== WildcardElement) |^| isInfiniteElement).head) pss = anyComplement
+                               | otherwise                                                   = finComplement
+  where
+    patComplement :: [[PatternElement]] -> PatternElement -> [Tp] -> PatternsMissing
+    patComplement []  current tps = PatternsMissing [(current, wildMissing $ length tps)]
+    patComplement pss current tps = case unMissing $ complement env tps $ map tail $ pss
+                                    of []   -> PatternsMissing []
+                                       tegs -> PatternsMissing [(current, PatternsMissing tegs)]
+    anyComplement :: PatternsMissing
+    anyComplement = patComplement (filter ((== WildcardElement).head) pss) WildcardElement tps
+    conComplement :: (Name, [Tp]) -> PatternsMissing
+    conComplement (con, args) = patComplement (  filter ((== FiniteElement (getNameName con)).head) pss
+                                              ++ map (\ps -> FiniteElement (getNameName con) : replicate (length args) WildcardElement ++ tail ps)
+                                                     (filter ((== WildcardElement).head) pss)
+                                              )
+                                              (FiniteElement (getNameName con)) (args ++ tps)
+    finComplement :: PatternsMissing
+    finComplement = case constructors env tp
+                    of []   -> wildMissing $ 1 + length tps
+                       cons -> PatternsMissing $ concatMap (unMissing.conComplement) cons
+
+----------------------------
+--- unreachable patterns ---
+----------------------------
+
+-- complements the list of reachable patterns
+unreachable :: ImportEnvironment -> [Tp] -> [([PatternElement], Int)] -> [Int]
+unreachable env tps ps = let reach = reachable env tps ps
+                         in  filter (not . flip elem reach) (map snd ps)
+
+-- determines which patterns are reachable
+-- possibly multiple occurances of indices
+reachable :: ImportEnvironment -> [Tp] -> [([PatternElement], Int)] -> [Int]
+reachable _   []       _  = pmError "reachable" "empty type list!"
+reachable env (tp:tps) ps 
+  | all ((== WildcardElement).head.fst) ps = conReachable ps
+  | otherwise                              = concat $ map (conReachable.conPats) $ stop cons
+  where
+    cons :: [PatternElement]
+    cons = thin $ map (head.fst) ps
+    conPats :: PatternElement -> [([PatternElement], Int)]
+    conPats con = map (\(es, i) -> (fill con es, i)) $ filter (((== con) |^| (== WildcardElement)).head.fst) ps
+    fill :: PatternElement -> [PatternElement] -> [PatternElement]
+    fill e@(FiniteElement c) (WildcardElement : es) = e : replicate (nrOfArguments (importEnvironmentToEnv env) c) WildcardElement ++ es
+    fill e                   (_               : es) = e : es
+    stop :: [PatternElement] -> [PatternElement]
+    stop es | length (constructors env tp) > length es = FiniteElement "[*]" : es
+            | length (constructors env tp) == 0        = FiniteElement "[*]" : es
+            | otherwise                                = es
+    conReachable :: [([PatternElement], Int)] -> [Int]
+    conReachable [] = []
+    conReachable pats 
+      | null.tail.fst.head $ pats = [snd.head $ pats]
+      | otherwise                 = reachable env (arguments (elementString.head.fst.head $ pats) ++ tps) 
+                                            $ map (\(es, i) -> (tail es, i)) pats
+    arguments :: String -> [Tp]
+    arguments c = maybe [] id $ lookup c $ map (\(n, tps) -> (getNameName n, tps)) $ constructors env tp
+
+-- remove double occurances and wildcards
+thin :: [PatternElement] -> [PatternElement]
+thin []                     = []
+thin (WildcardElement : es) = thin es
+thin (e               : es) | elem e thines =     thines
+                            | otherwise     = e : thines
+  where thines = thin es                            
+                       
+}

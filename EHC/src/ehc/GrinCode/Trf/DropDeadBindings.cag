@@ -1,0 +1,88 @@
+%%[doesWhat doclatex
+
+Drop bindings of which static analysis has revealed that they return AbsBottom.
+Also, remove corresponding alternatives from Case expressions.
+
+For example, if f returns AbsBottom, remove cases F/f and P/f from scrutinizations.
+Inspects the HPT table, but does not change it.
+
+%%]
+
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%[(8 codegen grin) ag import({GrinCode/AbsSyn})
+%%]
+%%[(8 codegen grin) hs import(Debug.Trace)
+%%]
+
+
+%%[(8 codegen grin).wrapper
+WRAPPER GrAGItf
+%%]
+
+%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.DropDeadBindings}
+%%]
+
+%%[(8 codegen grin) hs import(qualified Data.Map as Map, {%{EH}Base.Common}, {%{EH}GrinCode.Common}, {%{EH}GrinCode}, Data.Maybe) export(dropDeadBindings)
+dropDeadBindings :: (GrModule,HptMap) -> GrModule
+dropDeadBindings (input,hptMap)
+  = let inh = Inh_GrAGItf {hptMap_Inh_GrAGItf=hptMap}
+        syn = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf input)) inh
+    in  grTrf_Syn_GrAGItf syn
+
+
+%%]
+
+
+%%[(8 codegen grin)
+ATTR GrAGItf [ hptMap: HptMap | | grTrf: GrModule ]
+ATTR AllNT [ hptMap: HptMap | | grTrf: SELF ]
+%%]
+
+
+%%[(8 codegen grin)
+
+ATTR GrBind [ | | functionName : HsName ]
+SEM GrBind
+  | Bind  lhs.functionName = @nm
+  | Rec   lhs.functionName = HNmNr 0 OrigNone
+
+ATTR AllBind [ | | isDead USE {&&} {True}: Bool ]
+
+SEM GrBind
+  | Bind    lhs.isDead =  isBottom (getEnvVar @lhs.hptMap (getNr @nm))
+  
+SEM GrBindL
+  | Cons               lhs.grTrf  =  if @hd.isDead
+                                      then             @tl.grTrf
+                                      else @hd.grTrf : @tl.grTrf   
+%%]
+
+
+%%[(8 codegen grin)
+ATTR GrAlt GrPatAlt GrTag [ | | isDead: Bool ]
+
+SEM GrAlt
+  | Alt    lhs.isDead = @pat.isDead
+  
+SEM GrPatAlt
+  | LitInt
+    Otherwise          lhs.isDead = False
+  | * - LitInt
+        Otherwise      lhs.isDead = @tag.isDead
+  
+SEM GrTag
+  | Fun
+    PApp
+    App                lhs.isDead  =  isBottom (getEnvVar @lhs.hptMap (getNr @nm))
+  | * - Fun PApp App   lhs.isDead  =  False
+
+SEM GrAltL
+  | Cons               lhs.grTrf  =  if @hd.isDead
+                                      then @tl.grTrf
+                                      else @hd.grTrf : @tl.grTrf   
+
+%%]

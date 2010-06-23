@@ -1,0 +1,54 @@
+\documentclass{article}
+
+\usepackage{a4}
+
+\usepackage[square,numbers,comma,sort&compress]{natbib}
+\usepackage{hyperref}
+\title{Heap-points-to analysis}
+
+\begin{document}
+
+\section{Introduction}
+
+\subsection{why heap-points-to}
+
+simplification, eval, apply, transformations, inline, specialise
+
+\subsection{how does it look}
+
+store, heap, eval, apply, environment, flow insensitive, call insensitive,
+whole program, closed world, unique identifiers, abstract interpretation
+
+- show example of an analysis result. (sum [1..10])
+
+\section{results}
+
+save results, keep results up to date, transformations
+
+\section{Implementation}
+
+retrieving equations, fixpoint
+
+- show example equations
+
+\subsection{Deriving equations}
+
+- show equation derivation
+
+select equations, case statement, artificial identifiers, result variable,
+formals, actuals, unknown function application, caf variable
+
+retrieving equations, store, eval, tag to function map, apply, function to tag
+map, tag to tag map,
+
+\subsection{fixpoint}
+
+- the actual fixpoint implementation
+
+dependencies, destructive updates, arrays, work list, change sets
+
+\bibliographystyle{abbrvnat}
+
+\bibliography{../papers}
+
+\end{document}

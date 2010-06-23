@@ -1,0 +1,160 @@
+%%[example
+\frame<presentation>
+{
+\frametitle{Code generation example to GRIN}
+\begin{itemize}
+\item Compilation to imperative (non-lazy) machine
+\begin{itemize}
+\item
+to Graph Reduction Intermediate Notation (GRIN)
+\item
+all lazy constructs are coded imperatively
+\item
+intermediate imperative notation translated to @C@ (@C--@)
+\end{itemize}
+\item Example
+%%[[wrap=safecode
+%%@[file:test/regress/8/demo-grin2.eh%%]
+%%]
+\end{itemize}
+}
+
+\frame<presentation>[containsverbatim]
+{
+\frametitle{Intermediate core language}
+\begin{itemize}
+\item Explicit strictness, ...
+%%[[wrap=tt
+let  Tup = \x1 -> \x2 -> #(0/Tup/2) (x1) (x2)
+in
+ let  app = \f -> \x -> f (x)
+ in
+  let  snd = \t ->  let ! t!_0 = t
+                    in  case t!_0 of
+                          (0/Tup/2 x y))
+                             -> y
+                          _  -> undefined
+  in
+   let  5_0_22 = Tup (1)
+   in
+    let  5_0_20 = app (5_0_22) (42)
+    in
+     let  main = snd (5_0_20)
+     in
+      main
+%%]
+\end{itemize}
+}
+
+\frame<presentation>[plain,containsverbatim]
+{
+\frametitle{GRIN}
+\begin{itemize}
+\item Explicit evaluation and application
+%%[[wrap=tttiny
+  _Tup x1 x2
+    = { unit (#0/C/_Tup x1 x2)} 
+; _app f x
+    = { eval f ; \f' ->
+        apply f' x
+      } 
+; _snd t
+    = { unit t ; \t' ->
+        eval t' ; \t'' ->
+        case t'' of
+          { (#0/C/_Tup x y)
+                -> { unit y ; \y' ->
+                     eval y'
+                   } 
+          } 
+      } 
+; $_5_0_22 
+    = { store (#0/C/$_Int 1 1) ; \i ->
+        unit (#0/P/1/_Tup 1 i)
+      } 
+; $_5_0_20 
+    = { store (#0/C/$_Int 1 42) ; \i ->
+        _app $_5_0_22 i
+      } 
+; main 
+    = { _snd $_5_0_20} 
+%%]
+\end{itemize}
+}
+
+\frame<presentation>[plain,containsverbatim]
+{
+\frametitle{GRIN}
+\begin{itemize}
+\item Explicit evaluation and application
+%%[[wrap=tttiny
+; apply f a
+    = { case f of
+          { (#0/P/1/_Tup x)
+                -> { _Tup x a} 
+          ; (#0/P/2/_Tup)
+                -> { unit (#0/P/1/_Tup a)} 
+          } 
+      } 
+; eval v
+    = { fetch v   ; \v' ->
+        case v' of
+          { (#0/C/_Tup _ _)
+                -> { unit v'} 
+          ; (#0/P/1/_Tup _)
+                -> { unit v'} 
+          ; (#0/P/2/_Tup _)
+                -> { unit v'} 
+          ; (#0/F/_Tup x y)
+                -> { _Tup x y ; \t ->
+                     update v t  ; \() ->
+                     unit t
+                   } 
+          ; (#0/F/_app x y)
+                -> { _app x y ; \a ->
+                     update v a  ; \() ->
+                     unit a
+                   } 
+          } 
+      } 
+%%]
+\end{itemize}
+}
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+

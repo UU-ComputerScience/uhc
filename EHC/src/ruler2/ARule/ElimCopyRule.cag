@@ -1,0 +1,117 @@
+-------------------------------------------------------------------------
+-- Optimisation: ARule copy rule elimination
+-------------------------------------------------------------------------
+
+%%[1 hs module (ARule.ElimCopyRule)
+%%]
+
+%%[1 hs export (module Gam, AtDefdGam, AtDefdGam', adGamUnion, ppADGam, CrOrdGam, arlElimCopyRule)
+%%]
+
+%%[1 hs import (qualified Data.Map as Map, qualified Data.Set as Set, EH.Util.Pretty, Common, Expr.Expr, ARule.ARule, Gam)
+%%]
+
+%%[1 ag import ({Expr/AbsSynAG}, {ARule/AbsSynAG}, {Expr/SelfAG}, {ARule/SelfAG})
+%%]
+
+%%[1 ag import ({ARule/CopyRuleNmAG}, {ARule/EqnDest1NmAG}, {ARule/InCompDestAG})
+%%]
+
+%%[1 ag
+WRAPPER  AGARuleItf
+%%]
+
+%%[1 hs
+arlElimCopyRule :: [Nm] -> AtDefdGam -> AtDefdGam' -> ARule -> ARule
+arlElimCopyRule co ag ag2 rl
+  = self_Syn_AGARuleItf r2
+  where r1 = sem_AGARuleItf (AGARuleItf_AGItf rl)
+        r2 = wrap_AGARuleItf r1
+                (Inh_AGARuleItf {croNmL_Inh_AGARuleItf = co
+                                ,adGam_Inh_AGARuleItf = ag
+                                ,ad2Gam_Inh_AGARuleItf = ag2
+                                })
+%%]
+
+-------------------------------------------------------------------------
+-- Copy rule order, ref to previous node
+-------------------------------------------------------------------------
+
+%%[1 hs
+type CrOrdGam = Gam Nm Nm
+%%]
+
+-------------------------------------------------------------------------
+-- Non local attr's defined, threaded?
+-------------------------------------------------------------------------
+
+%%[1 hs
+type AtDefdGam = Gam Nm Bool
+type AtDefdGam' = Gam Nm (Set.Set Nm)
+
+adGamUnion :: AtDefdGam' -> AtDefdGam' -> AtDefdGam'
+adGamUnion = gamUnionWith Set.union
+
+ppADGam :: AtDefdGam' -> PP_Doc
+ppADGam = ppGam . gamMap (pp.show)
+
+adGamIsThr :: AtDefdGam -> AtDefdGam' -> CrOrdGam -> Nm -> Nm -> Nm -> Bool
+adGamIsThr ag1 ag2 cg
+  = if gamIsEmpty ag2 then isThr1 else isThr2
+  where isThr1 _    _    nAt = gamFindWithDefault False nAt ag1
+        isThr2 nNd1 nNd2 nAt
+          = case gamLookup nNd2 cg of
+              Nothing -> False
+              Just nNd1'
+                | nNd1 == nNd1'
+                  -> isComingOut
+                | not isComingOut
+                  -> isThr2 nNd1 nNd1' nAt
+                | otherwise
+                  -> False
+                where isComingOut = maybe False (nNd1' `Set.member`) $ gamLookup nAt ag2
+%%]
+
+-------------------------------------------------------------------------
+-- Context
+-------------------------------------------------------------------------
+
+%%[1 ag
+ATTR AllARuleRule AllARuleEqn AGARuleItf [ adGam: AtDefdGam | | ]
+ATTR AllARuleRule AllARuleEqn AGARuleItf [ ad2Gam: {AtDefdGam'} | | ]
+ATTR AllARuleRule AllARuleEqn [ croGam: CrOrdGam | | ]
+
+SEM AGARuleItf
+  | AGItf           rule    .   croGam      =   fst . foldl (\(g,pn) n -> (gamInsert n pn g,n)) (emptyGam,head @lhs.croNmL) $ tail @lhs.croNmL
+%%]
+
+-------------------------------------------------------------------------
+-- Replica
+-------------------------------------------------------------------------
+
+%%[1 ag
+ATTR AEqns AEqn [ | | replCrEqns USE {++} {[]}: {[AEqn]} ]
+
+SEM AEqn
+  | Eqn             lhs     .   replCrEqns  =   let -- isThr n = gamFindWithDefault False n @lhs.adGam
+                                                    isThr = adGamIsThr @lhs.adGam @lhs.ad2Gam @lhs.croGam
+                                                    isPrev1 n1 n2 = maybe False (==n1) $ gamLookup n2 @lhs.croGam
+                                                    isPrev = if gamIsEmpty @lhs.ad2Gam then isPrev1 else \_ _ -> True
+                                                in  case (@dest.mbSingleANm,@val.mbSingleANm) of
+                                                      (Just (ANm_Node nn dn),Just (ANm_Lhs sn _)) | gamIsEmpty @lhs.ad2Gam && dn == sn && not (isThr nmLhs nn dn)
+                                                        -> []
+                                                      (Just (ANm_Node nn dn),Just (ANm_Lhs sn _)) | dn == sn && (isThr nmLhs nn dn) && nmLhs `isPrev` nn
+                                                        -> []
+                                                      (Just (ANm_Node nn1 dn),Just (ANm_Node nn2 sn)) | dn == sn && (isThr nn2 nn1 dn) && nn2 `isPrev` nn1
+                                                        -> []
+                                                      (Just (ANm_Lhs dn _),Just (ANm_Node nn sn)) | dn == sn {- && (isThr sn) -} && nn `isPrev` nmLhs
+                                                        -> []
+                                                      (Just (ANm_Lhs dn _),Just (ANm_Lhs sn _)) | dn == sn && (isThr nmLhs nmLhs dn) && nmLhs `isPrev` nmLhs
+                                                        -> []
+                                                      _ -> [@self]
+  | * - Eqn         lhs     .   replCrEqns  =   [@self]
+
+SEM ARule
+  | Rule            lhs     .   self        =   ARule_Rule @ndNmL @rlNm @info @eqns.replCrEqns
+
+%%]

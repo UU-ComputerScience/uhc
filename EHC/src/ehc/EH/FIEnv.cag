@@ -1,0 +1,263 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Setup contextual/environmental/gamma info used by fitsIn and other functions indirectly need this info.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[doesWhat doclatex
+Setup various bits and pieces of contextual info needed by fitsIn and other functions:
+environments (gamma's), options, location info (for error messages), etc.
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Gamma/Environment for fitting
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(98 hmtyinfer)
+SEM AGItf
+  | AGItf       loc         .   fe                  =   defaultFIEnv
+                                                            { feEHCOpts = @lhs.opts
+                                                            , fePredScope = @predScope
+                                                            , feTyGam = @expr.gathTyGam
+                                                            , fePolGam = @expr.gathPolGam
+%%[[99
+                                                            , feRange = emptyRange
+%%]]
+                                                            }
+%%]
+
+%%[(4 hmtyinfer).Decl.fe
+SEM Decl
+  | *           loc         .   fe                  =   defaultFIEnv
+%%]
+
+%%[(11 hmtyinfer) -4.Decl.fe
+SEM Decl
+  | *           loc         .   fe                  =   defaultFIEnv
+                                                            { feTyGam = @lhs.tyGam
+%%[[98
+                                                            , feEHCOpts = @lhs.opts
+                                                            , feDataGam = @lhs.dataGam		-- required for proper FFI type expansion
+%%]]
+%%[[17
+                                                            , fePolGam = @lhs.polGam
+%%]]
+%%[[99
+                                                            , feRange = @range
+%%]]
+                                                            }
+%%]
+
+%%[(8 hmtyinfer)
+SEM DataConstr
+  | Constr      loc         .   fe                  :=  defaultFIEnv
+%%[[9
+                                                            { feEHCOpts = @lhs.opts
+                                                            , fePredScope = @lhs.predScope
+%%[[11
+                                                            , feTyGam = @lhs.tyGam
+%%]]
+%%[[17
+                                                            , fePolGam = @lhs.polGam
+%%]]
+%%[[99
+                                                            , feRange = @range
+%%]]
+                                                            }
+%%]]
+%%]
+
+%%[(9 hmtyinfer)
+SEM Decl
+  | Instance    loc         .   fe                  :=  defaultFIEnv
+                                                            { feEHCOpts = @lhs.opts
+                                                            , fePredScope = @lhs.predScope
+%%[[11
+                                                            , feTyGam = @lhs.tyGam
+%%]]
+%%[[17
+                                                            , fePolGam = @lhs.polGam
+%%]]
+%%[[99
+                                                            , feRange = @range
+%%]]
+                                                            }
+                            .   fe2                 =   defaultFIEnv
+%%[[11
+                                                            { feTyGam = @lhs.tyGam
+%%[[17
+                                                            , fePolGam = @lhs.polGam
+%%]]
+%%[[99
+                                                            , feRange = @range
+%%]]
+                                                            }
+%%]]
+%%]
+
+%%[(4 hmtyinfer).FIEnv
+SEM Expr
+  | *           loc         .   fe                  =   defaultFIEnv
+%%]
+
+%%[(7 hmtyinfer).FIEnv
+SEM RecExpr
+  | *           loc         .   fe                  =   defaultFIEnv
+
+SEM DataFieldExpr
+  | *           loc         .   fe                  =   defaultFIEnv
+%%]
+
+%%[(9 hmtyinfer).FIEnv -(4.FIEnv 7.FIEnv)
+SEM Expr
+  | Let         loc         .   fe                  =   defaultFIEnv
+                                                            { feEHCOpts = @lhs.opts
+                                                            , fePredScope = @lhs.predScope
+%%[[11
+                                                            , feTyGam = @lhs.tyGam
+%%]]
+%%[[17
+                                                            , fePolGam = @lhs.polGam
+%%]]
+%%[[99
+                                                            , feRange = @range
+%%]]
+                                                            }
+  | Lam AppTop Rec
+%%[[12
+    LamImpl
+%%]]
+                loc         .   fe                  =   defaultFIEnv
+                                                            { feEHCOpts = @lhs.opts
+                                                            , fePredScope = @predScope
+%%[[11
+                                                            , feTyGam = @lhs.tyGam
+%%]]
+%%[[17
+                                                            , fePolGam = @lhs.polGam
+%%]]
+%%[[99
+                                                            , feRange = @range
+%%]]
+                                                            }
+  | * - Lam AppTop Rec Let
+%%[[12
+    LamImpl
+%%]]
+                loc         .   fe                  =   defaultFIEnv
+                                                            { feEHCOpts = @lhs.opts
+                                                            , fePredScope = @lhs.predScope
+%%[[11
+                                                            , feTyGam = @lhs.tyGam
+%%]]
+%%[[17
+                                                            , fePolGam = @lhs.polGam
+%%]]
+%%[[99
+                                                            , feRange = @range
+%%]]
+                                                            }
+
+SEM RecExpr
+  | *           loc         .   fe                  =   defaultFIEnv
+                                                            { feEHCOpts = @lhs.opts
+                                                            , fePredScope = @lhs.predScope
+%%[[11
+                                                            , feTyGam = @lhs.tyGam
+%%]]
+%%[[17
+                                                            , fePolGam = @lhs.polGam
+%%]]
+%%[[99
+                                                            , feRange = @range
+%%]]
+                                                            }
+
+SEM DataFieldExpr
+  | *           loc         .   fe                  =   defaultFIEnv
+                                                            { feEHCOpts = @lhs.opts
+                                                            , fePredScope = @lhs.predScope
+%%[[11
+                                                            , feTyGam = @lhs.tyGam
+%%]]
+%%[[17
+                                                            , fePolGam = @lhs.polGam
+%%]]
+%%[[99
+                                                            , feRange = @range
+%%]]
+                                                            }
+%%]
+
+%%[(4 hmtyinfer)
+SEM PatExpr
+  | *           loc         .   fe                  =   defaultFIEnv
+%%[[9
+                                                            { feEHCOpts = @lhs.opts
+                                                            , fePredScope = @lhs.predScope
+%%[[11
+                                                            , feTyGam = @lhs.tyGam
+%%]]
+%%[[17
+                                                            , fePolGam = @lhs.polGam
+%%]]
+%%[[99
+                                                            , feRange = @range
+%%]]
+                                                            }
+%%]]
+%%]
+
+%%[(7 hmtyinfer)
+SEM RecPatExpr
+  | *           loc         .   fe                  =   defaultFIEnv
+%%[[9
+                                                            { feEHCOpts = @lhs.opts
+                                                            , fePredScope = @lhs.predScope
+%%[[11
+                                                            , feTyGam = @lhs.tyGam
+%%]]
+%%[[17
+                                                            , fePolGam = @lhs.polGam
+%%]]
+%%[[99
+                                                            , feRange = @range
+%%]]
+                                                            }
+%%]]
+%%]
+
+%%[(7 hmtyinfer)
+SEM DataFieldPatExpr
+  | *           loc         .   fe                  =   defaultFIEnv
+%%[[9
+                                                            { feEHCOpts = @lhs.opts
+                                                            , fePredScope = @lhs.predScope
+%%[[11
+                                                            , feTyGam = @lhs.tyGam
+%%]]
+%%[[17
+                                                            , fePolGam = @lhs.polGam
+%%]]
+%%[[99
+                                                            , feRange = @range
+%%]]
+                                                            }
+%%]]
+%%]
+
+%%[(4 hmtyinfer)
+SEM TyExpr
+  | *           loc         .   fe                  =   defaultFIEnv
+%%]
+
+%%[(9 hmtyinfer)
+SEM PrExpr
+  | *           loc         .   fe2                 =   defaultFIEnv
+%%[[11
+                                                            { feTyGam = @lhs.tyGam
+%%[[17
+                                                            , fePolGam = @lhs.polGam
+%%]]
+                                                            }
+%%]]
+%%]
+

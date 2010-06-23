@@ -1,0 +1,129 @@
+%%[doesWhat doclatex
+
+Inline functions that are used only once.
+(To do: inline more functions, e.g. small ones. But than the body should be cloned, with introduced fresh variables etc).
+
+The inlined function is not completely dropped,
+because its arity is still needed in SplitFetch.
+So we keep a binding with a trivial body.
+
+Requires FlattenSeq to be the next transformation.
+Inspects the HPT table, and returns it unchanged. It does not (yet) update the HPT table because it does not yet clone function bodies.
+
+%%]
+
+
+
+%%[(8 codegen grin) ag import({GrinCode/AbsSyn})
+%%]
+%%[(8 codegen grin) hs import(Debug.Trace)
+%%]
+%%[(8 codegen grin) hs import({%{EH}GrinCode.Trf.SubstExpr})
+%%]
+
+
+%%[(8 codegen grin)
+PRAGMA nocycle
+%%]
+
+%%[(8 codegen grin)
+WRAPPER GrAGItf
+%%]
+
+%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.LateInline} import(qualified Data.Map as Map, {%{EH}GrinCode.Common}, {%{EH}Base.Common}, {%{EH}GrinCode}) export(lateInline)
+
+lateInline :: (GrModule,HptMap) -> (GrModule,HptMap)
+lateInline (grmod,hptMap) 
+  = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod)) 
+            (Inh_GrAGItf { })
+    in -- trace ("adjustcount: " ++ show (finalCount_Syn_GrAGItf t)) $
+       (grTrf_Syn_GrAGItf t, hptMap)
+
+%%]
+
+%%[(8 codegen grin)
+ATTR GrAGItf [ | | grTrf: GrModule ]
+ATTR AllNT   [ | | grTrf: SELF     ]
+%%]
+
+
+
+%%[(8 codegen grin)
+
+-- build a map with usage count
+
+ATTR GrAGItf GrModule [ | | finalCount : {Map.Map Int Int} ]
+ATTR AllBind AllGrExpr [ | updateCount : {Map.Map Int Int} | ]
+ATTR AllBind  [ finalCount : {Map.Map Int Int} | | ]
+ 
+SEM GrModule  
+  | Mod       bindL.updateCount   = Map.empty
+              bindL.finalCount    = @bindL.updateCount
+              lhs.finalCount      = @bindL.updateCount
+
+SEM GrExpr
+  | Call      lhs.updateCount     = Map.insertWith (+) (getNr @nm) 1 @lhs.updateCount
+  
+  
+-- build a map with inline info
+  
+ATTR AllBind AllExpr [ | | copy : SELF ]  
+ATTR AllBind [ | insertInfo : {Map.Map Int ([HsName],GrExpr)} | ]
+ATTR AllBind AllGrExpr [ finalInfo : {Map.Map Int ([HsName],GrExpr)} |  | ]
+
+SEM GrModule  
+  | Mod       bindL.insertInfo   = Map.empty
+              bindL.finalInfo    = @bindL.insertInfo
+
+SEM GrBind
+  | Bind      lhs.insertInfo  =  if   Map.findWithDefault 0 (getNr @nm) @lhs.finalCount == 1
+                                 then Map.insert (getNr @nm) (@argNmL, @expr.grTrf) @lhs.insertInfo
+                                 else @lhs.insertInfo
+  
+
+-- perform the inlining
+
+SEM GrExpr
+  | Call      lhs.grTrf  =  maybe @loc.grTrf
+                                  ( \(args,body) -> substitute args @argL.copy body )
+                                  ( Map.lookup (getNr @nm) @lhs.finalInfo )
+
+
+-- drop the inlined bindings
+
+{-
+ATTR GrBind [ | | drop : {Bool} ]
+
+SEM GrBind
+  | Bind   lhs . drop  =  Map.member (getNr @nm) @lhs.finalInfo || (Map.findWithDefault 1 (getNr @nm) @lhs.finalCount == 0 && getNr @nm/=1)
+  | Rec    lhs . drop  =  null @bindL.grTrf
+
+SEM GrBindL
+  | Cons  lhs  .  grTrf  =  if @hd.drop
+                            then             @tl.grTrf
+                            else @hd.grTrf : @tl.grTrf
+-}
+
+-- Do not completely drop the function, because its arity is still needed in SplitFetch
+-- So, keep an "Arity" binding to retain the arity
+
+SEM GrBind
+  | Bind   loc . drop  =  Map.member (getNr @nm) @lhs.finalInfo || (Map.findWithDefault 1 (getNr @nm) @lhs.finalCount == 0 && getNr @nm/=1)
+           lhs . grTrf  =  if   @loc.drop
+                           then GrBind_Arity @nm (length @argNmL)
+                           else @loc.grTrf
+
+%%]
+
+
+%%[(8 codegen grin) hs
+
+val2name :: GrVal -> HsName
+val2name (GrVal_Var nm) = nm
+val2name v              = error $ "LateInline: variable is not a name: " ++ show v
+
+
+substitute argnms vals expr = let env = Map.fromList (zip argnms (map val2name vals))
+                              in  substExpr env expr
+
+%%]

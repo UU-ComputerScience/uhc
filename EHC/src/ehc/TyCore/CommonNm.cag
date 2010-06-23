@@ -1,0 +1,31 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Common AG for Core: names
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[doesWhat doclatex
+Common name related attributes.
+
+Note: assumes CommonSELF to be included.
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Expr: bound names
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR Expr AllExprSeq1 [ | | bindNmL USE {++} {[]} : {[(HsName,MetaLev,Expr)]} ]
+
+SEM Expr
+  | * - Seq Seq1
+                lhs         .   bindNmL         =   []
+
+SEM ExprSeq1
+  | L0Bind      lhs         .   bindNmL         =   [(@nm,0,@l1.t)]
+  | L1Bind      lhs         .   bindNmL         =   [(@nm,1,@l2.t)]
+%%]
+
+%%[(8 codegen)
+SEM ValBind
+  | Val         loc         .   (nm,_,l1)       =   let e = "Error ValBind.Val.bindNmL"
+                                                    in  maybeHd (mkHNm e,0,tyErr e) id @bind.bindNmL
+%%]

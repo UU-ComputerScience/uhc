@@ -1,0 +1,196 @@
+%%[doesWhat doclatex
+
+Identify selectorfunctions, that is functions that select a field from a dictionary.
+Also identify constant dictionaries.
+Now replace applications of selectorfunctions to dictionaries by the selected field directly.
+
+%%]
+
+
+In code involving dictionaries, we often select a function from a dictionary.
+If the selection function is known and has structure
+   sel x = { EVAL x ; \y -> CASE v OF (#C/record y1 y2 y3) -> EVAL yk }
+and the dictionary is known and has structure
+   dict <- STORE (#C/record x1 x2 x3)
+then we can replace
+   CALL sel dict
+by
+   EVAL xk
+
+
+similarly, replace
+   STORE (F/sel dict)
+by
+   UNIT xk
+
+
+
+The idea below seems to be obsolete:
+
+xk is known to be bound by
+   xk <- STORE (#P/i/fk cs)
+  
+Similarly we can also replace
+  STORE (P/0/sel dict) ; \f ->
+  STORE (A/_ f bs)
+by
+  STORE (F/fk cs bs)
+
+
+
+
+
+%%[(8 codegen grin) ag import({GrinCode/AbsSyn})
+%%]
+%%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}GrinCode.Common}, {%{EH}GrinCode})
+%%]
+%%[(8 codegen grin) hs import(qualified Data.Map as Map, Data.Maybe)
+%%]
+%%[(8 codegen grin) hs import(Control.Monad(when))
+%%]
+%%[(8 codegen grin) hs import(Debug.Trace)
+%%]
+
+%%[(8 codegen grin)
+WRAPPER GrAGItf
+%%]
+
+%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.MemberSelect} export(memberSelect)
+memberSelect :: GrModule -> GrModule
+memberSelect grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
+                                          (Inh_GrAGItf)
+                     in grTrf_Syn_GrAGItf t
+%%]
+
+
+%%[(8 codegen grin)
+ATTR GrAGItf [ | | grTrf: GrModule ]
+ATTR AllNT [ | | grTrf: SELF ]
+%%]
+
+%%[(8 codegen grin)
+
+
+-- Gather the required information bottom-up
+
+ATTR AllGlobal [ | | dictionaries USE {`Map.union`} {Map.empty}: {Map.Map HsName [HsName]}    
+                     globals      USE {`Map.union`} {Map.empty}: {Map.Map HsName GrVal}    
+               ]
+
+ATTR AllBind   [ | | selectors USE {`Map.union`} {Map.empty} : {Map.Map HsName Int} 
+               ]
+
+-- Distribute the required information top-down
+
+ATTR AllBind
+     AllGrExpr 
+     AllGrVal  [ allDicts : {Map.Map HsName [HsName]}   
+                 allSels  : {Map.Map HsName Int} 
+               | | ]
+
+ATTR AllBind
+     AllGrExpr [ allGlobs : {Map.Map HsName GrVal} 
+               | | ]
+
+-- Do the transformation
+
+SEM GrExpr
+  | Call   lhs.grTrf  =  maybe @loc.grTrf 
+                               id
+                               (do   -- in the Maybe monad
+                                { n <- Map.lookup @nm @lhs.allSels
+                                ; v <- @argL.singleVar
+                                ; d <- Map.lookup v @lhs.allDicts
+                                ; let field = d !! n
+                                ; return (GrExpr_Eval field)
+                                })
+
+  | Store  lhs.grTrf  =  maybe @loc.grTrf
+                               id
+                               (do   -- in the Maybe monad
+                                { name <- @val.mbFname
+                                ; n <- Map.lookup name @lhs.allSels
+                                ; v <- @val.singleVar
+                                ; d <- Map.lookup v @lhs.allDicts
+                                ; let field = d !! n
+                                ; return (GrExpr_Unit (GrVal_Var field) GrType_None )
+                                })
+
+
+-- Bend the required information from bottom-up to top-down at the top of the tree
+
+SEM GrModule
+  | Mod   bindL.allDicts = @globalL.dictionaries
+          bindL.allSels  = @bindL.selectors
+          bindL.allGlobs = @globalL.globals
+
+-- Trivial definitions for values in other contexts
+
+SEM GrGlobal
+  | Global val.allDicts  = Map.empty
+           val.allSels   = Map.empty
+
+%%[[(10 codegen grin)
+SEM GrSplit
+  | Sel    off.allDicts  = Map.empty
+           off.allSels   = Map.empty
+%%]]
+
+
+-- Auxiliary attributes needed for gathering
+
+ATTR GrValL [ | | singleVar : {Maybe HsName}   isEmpty : Bool ]
+ATTR GrVal  [ | | singleVar : {Maybe HsName}   mbFname : {Maybe HsName} ]
+ATTR GrVal  [ | | mbVar : {Maybe HsName} ]
+ATTR GrVal  [ | | mbTupel : {Maybe [HsName]} ]
+ATTR GrVal 
+     GrValL [ | | variables USE {++} {[]} : {[HsName]} ]
+ATTR GrTag  [ | | isTupel : Bool    mbFname : {Maybe HsName} ]
+
+SEM GrValL
+  | Nil    lhs.isEmpty      = True
+  | Cons   lhs.isEmpty      = False
+
+  | Nil    lhs.singleVar    = Nothing
+  | Cons   lhs.singleVar    = if @tl.isEmpty
+                              then @hd.mbVar
+                              else Nothing
+
+SEM GrVal
+  | Var    lhs.mbVar        = Just @nm
+  | *-Var  lhs.mbVar        = Nothing
+  
+  | Node   lhs.mbFname      = @tag.mbFname
+           lhs.singleVar    = @fldL.singleVar
+  | *-Node lhs.mbFname      = Nothing
+           lhs.singleVar    = Nothing
+  
+SEM GrTag
+  | Fun    lhs.mbFname      = Just @nm
+  | *-Fun  lhs.mbFname      = Nothing
+  
+  
+
+SEM GrGlobal
+ | Global  lhs.dictionaries = maybe Map.empty
+                                    (\t -> Map.singleton @nm t)
+                                    @val.mbTupel
+           lhs.globals      = Map.singleton @nm @val.grTrf
+ 
+SEM GrVal
+  | Node   lhs.mbTupel  =  if @tag.isTupel
+                           then Just @fldL.variables
+                           else Nothing
+  | *-Node lhs.mbTupel  =  Nothing
+
+SEM GrVal
+  | Var    lhs.variables = [ @nm ]
+
+ 
+SEM GrTag
+  | Con     lhs.isTupel = True
+  | *-Con   lhs.isTupel = False
+
+
+
+%%]

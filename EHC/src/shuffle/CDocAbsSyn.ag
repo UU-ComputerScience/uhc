@@ -1,0 +1,23 @@
+-------------------------------------------------------------------------
+-- Chunk doc AST
+-------------------------------------------------------------------------
+
+-- Outside itf
+DATA AGCDocItf
+  | AGItf               cdoc            : CDoc
+
+DATA CDoc
+  | Emp
+  | Inl                 uref            : {URef}
+  | Ref                 cref            : {CRef}
+                        mbVariantReqm   : {Maybe VariantReqm}
+                        chDest          : {ChDest}
+  | Str                 str             : {String}
+  | Hor                 ldoc            : CDoc
+                        rdoc            : CDoc
+  | Ver                 ldoc            : CDoc
+                        rdoc            : CDoc
+  | Pos                 cpos            : CPos
+                        cdoc            : CDoc
+
+DERIVING * : Show

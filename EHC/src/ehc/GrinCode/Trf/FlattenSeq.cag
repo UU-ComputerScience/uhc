@@ -1,0 +1,62 @@
+%%[doesWhat doclatex
+
+Makes sure repeated applications of \textit{SEQ} associate to the right.
+Most Grin transformations assume that this invariant holds.
+But some transformations break it (notably the ones that replace simple
+expressions by complicated ones, like Inlining).
+
+%%]
+
+
+When: After applying any transformation that breaks the invariant,
+apply the Flatten transformation to re-establish the invariant.
+
+
+%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.FlattenSeq} export(grFlattenSeq)
+%%]
+%%[(8 codegen grin) ag import({GrinCode/AbsSyn})
+%%]
+%%[(8 codegen grin) hs import(qualified Data.Map as Map, qualified EH.Util.FastSeq as FastSeq)
+%%]
+%%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}GrinCode.Common}, {%{EH}GrinCode})
+%%]
+%%[(8 codegen grin).wrapper
+WRAPPER GrAGItf
+%%]
+
+%%[(8 codegen grin) hs
+grFlattenSeq :: GrModule -> GrModule
+grFlattenSeq grmod
+  = trf_Syn_GrAGItf t
+  where t = wrap_GrAGItf (sem_GrAGItf $ GrAGItf_AGItf grmod)
+            $ Inh_GrAGItf
+%%]
+
+
+%%[(8 codegen grin)
+-- synthesize a modified copy
+ATTR GrAGItf [ | | trf: GrModule ]
+ATTR AllNT   [ | | trf: SELF     ]
+
+-- split each expression in a sequence of (Expr,Pat) pairs, and the last expression
+
+ATTR GrExpr  [ | | trfPairs: {FastSeq.FastSeq (GrExpr,GrPatLam)}
+                   trfLast:  GrExpr                          ]
+
+SEM GrExpr
+  | Seq         lhs.trfPairs  =  @expr.trfPairs 
+                                 FastSeq.:++: FastSeq.singleton (@expr.trfLast,@pat.trf) 
+                                 FastSeq.:++: @body.trfPairs
+  | * - Seq     lhs.trfPairs  =  FastSeq.empty
+
+SEM GrExpr
+  | Seq         lhs.trfLast   =  @body.trfLast
+  | * - Seq     lhs.trfLast   =  @trf
+
+-- then from the sequence, rebuild the tree in a right-associative way
+
+SEM GrExpr
+  | Seq         lhs.trf       =  foldr (\(e,p) b -> GrExpr_Seq e p b)
+                                       (GrExpr_Seq @expr.trfLast @pat.trf @body.trf)
+                                       (FastSeq.toList @expr.trfPairs)
+%%]

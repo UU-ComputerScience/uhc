@@ -1,0 +1,644 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Let expressions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+-- generated from ruler rules into EHRulerRules, was 1.Let
+%%[(5 hmtyinfer).Let
+SEM Expr
+  | Let         loc         .   gathTySigGam_l_     =   @decls.gathTySigGam
+                decls       .   patValGam           =   gamPushGam @gathTySigGam_l_ @lhs.valGam
+                loc         .   (valGam_l_,valGam_g_)
+                                                    =   gamPop @decls.patValGam
+                decls       .   valGam              =   @decls.patValGam
+                loc         .   bodyValGam          =   @decls.patValGam
+                body        .   valGam              =   @bodyValGam
+%%]
+
+-- generated from ruler rules into EHRulerRules, was 2.Let
+%%[(5 hmtyinfer).Let
+SEM Expr
+  | Let         decls       .   patTyVarMp          =   @lhs.tyVarMp
+                            .   tyVarMp             =   @decls.patTyVarMp
+%%]
+
+-- generated from ruler rules into EHRulerRules, was 3.Let
+-- 20080212, AD: incompatible because of addition of marked lines, for lexically scoped type variables
+%%[(5 hmtyinfer).Let
+SEM Expr
+  | Let         -- (loc.lSubsValGam_,loc.cycTyVarMp_l) =   @decls.tyVarMp |==> @valGam_l_
+%%[[5
+                (loc.gSubsValGam_,loc.cycTyVarMp_g) =   @tyVarMpDeclsL0 |==> @valGam_g_
+                loc         .   gTyTvS              =   ftvSet @gSubsValGam_
+                                                        `Set.union` ftvSet (@tyVarMpDeclsL0 |=> @lhs.tyGam)      -- 20080212 incompatibility with ruler version
+%%][99
+                loc         .   gTyTvS              =   @valTyUpdFreeTvarS `Set.union` @tyTyUpdFreeTvarS
+                            .   gSubsValGam_        =   @valGam_g_
+%%]]
+                			.	noLetQuantTyVarIdS	=	setSubst @tyVarMpDeclsL0 @decls.noLetQuantTyVarIdS `Set.union` @gTyTvS
+                            .   (quValGam_qu_,cycTyVarMp_l)
+                                                    =   let (g,cycMp) = @tyVarMpDeclsQuant |==> @valGam_l_
+%%[[5
+                                                        in  (valGamQuantify @noLetQuantTyVarIdS g,cycMp)
+%%][6
+                                                        in  (valGamQuantify @valQuTyKiGam @quTvKiVarMp @tyVarMpDeclsQuant @noLetQuantTyVarIdS g,cycMp)
+%%]]
+                            .   quValGam_           =   @quValGam_qu_
+                loc         .   bodyValGam          :=  gamPushGam @quValGam_ @gSubsValGam_
+%%]
+
+-- generated from ruler rules into EHRulerRules, was 4.Let
+%%[(5 hmtyinfer).Let
+SEM Expr
+  | Let         loc         .   gathTySigGam_l_     :=  valGamInst1Exists @lUniq @decls.gathTySigGam
+                loc         .   quValGam_ex_        =   valGamInst1Exists @lUniq2 @quValGam_qu_
+                            .   quValGam_ex_subst   =   @quValGam_ex_
+                            .   quValGam_           :=  @quValGam_ex_
+                loc         .   lUniq               :   UNIQUEREF gUniq
+                loc         .   lUniq2              :   UNIQUEREF gUniq
+%%]
+
+%%[(6 hmtyinfer)
+SEM Expr
+  | Let         loc         .   valQuTyKiGam		=	gamUnions [@finTyKiGam,@decls.intlTyKiGam]
+%%]
+                decls       .   tyVarMp             :=  valGamRestrictKiVarMp @valGam_l_ |=> @decls.patTyVarMp
+
+%%[(8 hmtyinfer)
+SEM Expr
+  | Let         loc         .   (gathTySigGam_l_,exTyVarMp1)
+                                                    :=  (valGamInst1Exists {- WithVarMp @lhs.tyVarMp -} @lUniq @decls.gathTySigGam,emptyVarMp)
+                decls       .   patTyVarMp          :=  @exTyVarMp1 |=> @lhs.tyVarMp
+                loc         .   (quValGam_qu_,quTyVarMp, cycTyVarMp_l)
+                                                    :=  valGamQuantifyWithVarMp @valQuTyKiGam @quTvKiVarMp @tyVarMpDeclsQuant @noLetQuantTyVarIdS @valGam_l_
+                            .   bodyVarMp1          =   @quTyVarMp |=> @tyVarMpDeclsL0
+                            .   (quValGam_ex_,exTyVarMp2)
+                                                    :=  (valGamInst1Exists {- WithVarMp @bodyVarMp1 -} @lUniq2 (@quTyVarMp |=> @quValGam_qu_), emptyVarMp)
+                            .   bodyVarMp2          =   @exTyVarMp2 |=> @bodyVarMp1
+                            .   quValGam_ex_subst   :=  @bodyVarMp2 |=> @quValGam_ex_
+                body        .   tyVarMp             =   @bodyVarMp2
+%%]
+                                                    :=  valGamInst1ExistsWithVarMp @bodyVarMp1 @lUniq2 @quValGam_qu_
+                                                    :=  (valGamInst1Exists {- WithVarMp @bodyVarMp1 -} @lUniq2 (@quTyVarMp |=> @quValGam_qu_), emptyVarMp)
+
+%%[(9 hmtyinfer)
+SEM Expr
+  | Let         decls       .   patTyVarMp          :=  @forExprTyVarMp |=> @exTyVarMp1 |=> @lhs.tyVarMp
+                loc         .   doValGamQuantify	=	\doQuant tyVarMp prOccL -> valGamQuantifyWithVarMp doQuant @valQuTyKiGam @quTvKiVarMp tyVarMp @noLetQuantTyVarIdS prOccL @valGam_l_
+                            .   doPredAmbigSplit    =   \tqoGam prOccL
+                                                           -> let assumedByQuant = Set.unions $ map tmpoInsPrIdSet $ gamElts tqoGam
+                                                              in  partition (\o -> poPoi o `Set.member` assumedByQuant) prOccL
+                            .   (quValGam_qu_,quTyVarMp, (cycTyVarMp_l,tqoGam))
+                                                    :=  @doValGamQuantify True @tyVarMpDeclsQuant @toQuantOverPrOccL
+                            .   tmpoTyVarMp         =   foldr (\tmpo c -> tmpoImplsVarMp tmpo |=> c) emptyVarMp (gamElts @tqoGam)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Restriction of @decls.tyVarMp to meta level 0
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(4 hmtyinfer)
+SEM Expr
+  | Let         loc         .   tyVarMpDeclsL0      =   @decls.tyVarMp
+%%]
+
+%%[(6 hmtyinfer)
+SEM Expr
+  | Let         loc         .   tyVarMpDeclsL0      :=  {- varmpIncMetaLev @quTvKiVarMp |=> -} varmpSelectMetaLev [0] @decls.tyVarMp
+%%]
+
+%%[(9 hmtyinfer)
+SEM Decl
+  | Instance    loc         .   tyVarMpDeclsL0      =   varmpSelectMetaLev [0] $
+%%[[92
+                                                        foVarMp @foGenerDeriv |=>
+%%]]
+                                                        @decls.tyVarMp
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Combination meta level 0 restricted @decls.tyVarMp with meta level 1
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(4 hmtyinfer)
+SEM Expr
+  | Let         loc         .   tyVarMpDeclsL01     =   @tyVarMpDeclsL0
+                            .   tyVarMpDeclsQuant   =   @tyVarMpDeclsL01
+%%]
+
+%%[(6 hmtyinfer)
+SEM Expr
+  | Let         loc         .   tyVarMpDeclsL01     :=  varmpIncMetaLev @quTvKiVarMp |=> @tyVarMpDeclsL0
+%%]
+
+%%[(9 hmtyinfer)
+SEM Expr
+  | Let         loc         .   tyVarMpDeclsQuant   :=  @chrSolve1SimpTyVarMp |=> @tyVarMpDeclsL01
+%%]
+
+%%[(9 hmtyinfer)
+SEM Decl
+  | Instance    loc         .   tyVarMpDeclsL01     =   @tyVarMpDeclsL0
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Known type and instantiation required
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+-- generated from ruler rules into EHRulerRules, was 1.tyInstKnown
+%%[(5 hmtyinfer).tyInstKnown
+SEM Decl
+  | Val         loc         .   knTy                =   @ty_sig_
+                            .   exprKnTy            =   @knTy
+                expr        .   knTy                =   @exprKnTy
+%%]
+
+-- generated from ruler rules into EHRulerRules, was 2.tyInstKnown
+%%[(5 hmtyinfer).tyInstKnown
+SEM Decl
+  | Val         loc         .   exprKnTy            :=  if @hasTySig then @knTy else @patExpr.ty
+%%]
+
+-- generated from ruler rules into EHRulerRules, was 3.tyInstKnown
+%%[(5 hmtyinfer).tyInstKnown
+SEM Decl
+  | Val         loc         .   knTy                :=  tyInstKnown @lUniq @ty_sig_
+                loc         .   lUniq               :   UNIQUEREF gUniq
+%%]
+
+-- generated from ruler rules into EHRulerRules, was 4.tyInstKnown
+%%[(5 hmtyinfer).tyInstKnown
+SEM Decl
+  | Val         loc         .   knTy                :=  @ty_sig_
+%%]
+
+%%[(9 hmtyinfer).tyInstKnown
+%%]
+
+%%[(90 hmtyinfer)
+SEM Decl
+  | FFE         loc         .   knTy                =   @ty_sig_
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Known kind
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(6 hmtyinfer)
+SEM Decl
+  | Data
+%%[[11
+    Type
+%%]]
+                loc         .   knKi                =   @sigKi
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Value identifier environment: valGam, patValGam
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(1 hmtyinfer).valGam
+ATTR
+  AllDecl AllExpr
+%%[[5
+  AllDataConstr AllCase
+%%]]
+    [ valGam: ValGam | | ]
+%%]
+
+%%[(1 hmtyinfer).PatExpr.valGam
+ATTR AllPatExpr [ | valGam: ValGam | ]
+%%]
+
+%%[(1 hmtyinfer).patValGam
+ATTR AllDecl [ | patValGam: ValGam | ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Type inferencing, decls, top level, abstraction: valGam
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+-- generated from ruler rules into EHRulerRules, was 1.patValGam.Val
+%%[(5 hmtyinfer).patValGam.Val
+SEM Decl
+  | Val         patExpr     .   valGam              =   @lhs.patValGam
+                lhs         .   patValGam           =   @patExpr.valGam
+                expr        .   valGam              =   @lhs.valGam
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Value identifier subst: tyVarMp, patTyVarMp
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(2 hmtyinfer).tyVarMp
+ATTR AllDecl [ | tyVarMp: VarMp  patTyVarMp: VarMp | ]
+
+SEM AGItf
+  | AGItf       expr        .   tyVarMp             =   emptyVarMp
+%%]
+
+%%[(2 hmtyinfer).tyVarMp
+ATTR AllExpr [ | tyVarMp: VarMp | ]
+%%]
+
+%%[(2 hmtyinfer).tyNtyVarMp
+ATTR AllPatExpr [ | patTyVarMp: VarMp | ]
+%%]
+
+%%[(5 hmtyinfer)
+ATTR AllCase [ | tyVarMp: VarMp   patTyVarMp: VarMp | ]
+ATTR AllDataConstr AllData [ | patTyVarMp: VarMp | ]
+%%]
+
+%%[(97 hmtyinfer)
+ATTR AllPatExpr [ | tyVarMp: VarMp | ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Type inferencing, decls, top level, abstraction: tyVarMp, patTyVarMp
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+-- generated from ruler rules into EHRulerRules, was 2.tyVarMp.Val
+%%[(5 hmtyinfer).tyVarMp.Val
+SEM Decl
+  | Val         patExpr     .   patTyVarMp          =   @lhs.patTyVarMp
+                lhs         .   patTyVarMp          =   @patExpr.patTyVarMp
+                expr        .   tyVarMp             =   @lhs.tyVarMp
+%%]
+
+%%[(97 hmtyinfer) -5.tyVarMp.Val
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Kind inferencing, decls, top level, abstraction
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Decl should merge with one in InferTyExpr
+
+%%[(1 hmtyinfer).tyGam
+ATTR AllDecl AllExpr [ tyGam: TyGam | | ]
+%%]
+
+%%[(4 hmtyinfer)
+ATTR AllPatExpr [ | tyGam: TyGam | ]
+%%]
+
+%%[(5 hmtyinfer)
+ATTR AllDataConstr AllCase [ tyGam: TyGam | | ]
+ATTR AllDecl [ | patTyGam: TyGam | ]
+%%]
+
+%%[(5 hmtyinfer)
+SEM Expr
+  | Let         decls       .   patTyGam            =   gamPushNew @lhs.tyGam
+                            .   tyGam               =   @decls.patTyGam
+%%]
+
+%%[(7 hmtyinfer)
+ATTR AllDataField [ | tyGam: TyGam | ]
+%%]
+
+%%[(16 hmtyinfer)
+ATTR AllDataConstrEq [ | tyGam: TyGam | ]
+
+-- tyvarid of .tyVar already present in @lhs.tyGam
+SEM DataConstrEq
+  | Eq  tyExpr.tyGam = @lhs.tyGam
+%%]
+
+%%[(50 hmtyinfer)
+ATTR AllDataConstrEq [ | tyGam: TyGam | ]
+%%]
+
+%%[(6 hmtyinfer)
+ATTR AllDecl AllExpr AllDataConstr AllCase [ tyKiGam: TyKiGam | | ]
+ATTR
+  AllPatExpr
+%%[[7
+  AllDataField
+%%]]
+%%[[16
+  AllDataConstrEq
+%%]]
+    [ | tyKiGam: TyKiGam | ]
+%%]
+
+%%[(6 hmtyinfer)
+ATTR AllDecl [ | patTyKiGam: TyKiGam | ]
+%%]
+
+%%[(6 hmtyinfer)
+ATTR AllExpr AllPatExpr AllData AllCase AllDecl [ | kiVarMp: VarMp | ]
+ATTR AllDecl [ | patKiVarMp: VarMp | ]
+%%]
+
+%%[(6 hmtyinfer)
+SEM Expr
+  | Let         decls       .   patTyGam            :=  gamPushGam @decls.gathKiSigGam @lhs.tyGam
+                            .   patTyKiGam          =   gamPushGam @decls.gathTyKiSigGam @lhs.tyKiGam
+                            .   patKiVarMp          =   @lhs.kiVarMp
+                loc         .   (tyGam_l_,tyGam_g_) =   gamPop @decls.patTyGam
+                            .   tyGam_l_extra       =   gamUnion @extraTyGam @tyGam_l_
+                            .   (tyKiGam_l_,tyKiGam_g_)
+                                                    =   gamPop @decls.patTyKiGam
+                decls       .   tyGam               :=  gamPushGam @tyGam_l_ @lhs.tyGam
+                            .   tyKiGam             =   gamPushGam @tyKiGam_l_ @lhs.tyKiGam
+                            .   kiVarMp             =   @decls.patKiVarMp
+                loc         .   (lSubsTyKiGam,cycTyKiVarMp_l)
+                                                    =   @decls.kiVarMp |==> @tyKiGam_l_
+%%[[6
+                            .   (gSubsTyKiGam,cycTyKiVarMp_g)
+                                                    =   @decls.kiVarMp |==> @tyKiGam_g_
+                            .   gKiTvS              =   ftvSet @gSubsTyKiGam
+%%][99
+                            .   gSubsTyKiGam        =   @tyKiGam_g_
+                            .   gKiTvS              =   @tyKiUpdFreeTvarS
+%%]]
+                            .   lQuTyGam            =   @tyGam_l_extra
+                            .   lQuTyKiGam_qu       =   tyKiGamQuantify @gKiTvS @lSubsTyKiGam
+                            .   lQuTyKiGam_ex       =   tyKiGamInst1Exists @lUniq3 @lQuTyKiGam_qu
+                            .   lQuTyKiGam          =   @lQuTyKiGam_ex_extra
+                            .   lQuTyKiGam_ex_extra =   gamUnion @extraTyKiGam @lQuTyKiGam_ex
+                            .   lQuTyKiGam_ex_subst =   @lQuTyKiGam_ex_extra
+                body        .   tyGam               =   gamAddGam @lQuTyGam @tyGam_g_
+                            .   tyKiGam             =   gamAddGam @lQuTyKiGam @gSubsTyKiGam
+                loc         .   lUniq3              :   UNIQUEREF gUniq
+%%]
+
+%%[(6 hmtyinfer)
+SEM Decl
+  | TySig       tyExpr      .   tyGam               =   gamPushNew @lhs.tyGam
+                            .   tyKiGam             =   gamPushNew @lhs.tyKiGam
+                loc         .   fo_                 =   fitsIn weakFIOpts defaultFIEnv @lUniq2 @tyExpr.kiVarMp @tyExpr.ki kiStar
+                lhs         .   kiVarMp             =   foVarMp @fo_ |=> @tyExpr.kiVarMp
+                loc         .   lUniq2              :   UNIQUEREF gUniq
+%%]
+
+%%[(6 hmtyinfer)
+SEM Expr
+  | TypeAs      tyExpr      .   tyGam               =   gamPushNew @lhs.tyGam
+                            .   tyKiGam             =   gamPushNew @lhs.tyKiGam
+%%]
+
+%%[(8 hmtyinfer)
+SEM Expr
+  | Let         loc         .   (lQuTyKiGam_qu,quTyKiVarMp, cycTyKiVarMp_l)
+                                                    :=  tyKiGamQuantifyWithVarMp @decls.kiVarMp @gKiTvS @tyKiGam_l_
+                            .   bodyTyKiVarMp1      =   @quTyKiVarMp |=> @decls.kiVarMp
+                            .   (lQuTyKiGam_ex,exTyKiVarMp2)
+                                                    :=  tyKiGamInst1ExistsWithVarMp @bodyTyKiVarMp1 @lUniq3 @lQuTyKiGam_qu
+                            .   bodyTyKiVarMp2      =   @exTyKiVarMp2 |=> @bodyTyKiVarMp1
+                            .   lQuTyKiGam_ex_subst :=  @bodyTyKiVarMp2 |=> @lQuTyKiGam_ex_extra
+                body        .   kiVarMp             =   @bodyTyKiVarMp2
+%%]
+                                                    :=  tyKiGamInst1ExistsWithVarMp @bodyTyKiVarMp1 @lUniq3 @lQuTyKiGam_qu
+                                                    :=  (tyKiGamInst1Exists {- WithVarMp @bodyTyKiVarMp1 -} @lUniq3 (@bodyTyKiVarMp1 |=> @lQuTyKiGam_qu), emptyVarMp)
+
+%%[(11 hmtyinfer)
+ATTR AllDecl [ | tyTyVarMp: VarMp | ]
+
+SEM Expr
+  | Let         decls       .   tyTyVarMp           =   emptyVarMp
+                loc         .   lQuTyGam            :=  @decls.tyTyVarMp |=> @tyGam_l_extra
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Id of case
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 hmtyinfer codegen)
+SEM Expr
+  | Case        loc         .   caseIds     =   maybe (Set.singleton uidStart) id @mbCaseIds
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Sort, but no inferencing && etc
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(6 hmtyinfer)
+ATTR AllExpr AllTyExpr AllPatExpr AllData AllCase AllDecl [ kiGam: KiGam | | ]
+%%]
+
+%%[(6 hmtyinfer)
+SEM AGItf
+  | AGItf       loc         .   kiVarMp             =   emptyVarMp
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Type signatures
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(1 hmtyinfer).gathTySigGam
+ATTR AllDecl [ | | gathTySigGam USE {`gamAddGam`} {emptyGam}: ValGam ]
+%%]
+
+%%[(1 hmtyinfer)
+%%]
+SEM Decls
+  | Cons        lhs         .   gathTySigGam        =   @hd.gathTySigGam `gamAddGam` @tl.gathTySigGam
+
+-- generated from ruler rules into EHRulerRules, was 1.gamSigTyGath
+%%[(5 hmtyinfer).gamSigTyGath
+SEM Decl
+  | TySig       loc         .   gamSigTy            =   @tyExpr.ty
+                            .   gathTySigGam        =   @nm `gamSingleton` ValGamInfo @gamSigTy
+%%]
+
+%%[(1 hmtyinfer).tySigGam
+ATTR AllDecl AllPatExpr [ tySigGam: ValGam | | ]
+%%]
+
+%%[(1 hmtyinfer)
+SEM Expr
+  | Lam
+%%[[12
+    LamImpl
+%%]]
+                loc         .   tySigGam            =   emptyGam
+%%]
+
+%%[(5 hmtyinfer)
+SEM CaseAlt
+  | Pat         loc         .   tySigGam            =   emptyGam
+%%]
+
+-- generated from ruler rules into EHRulerRules, was 1.tySigGam.TysigLet
+%%[(5 hmtyinfer).tySigGam.TysigLet
+SEM Expr
+  | Let         decls       .   tySigGam            =   @decls.gathTySigGam
+%%]
+
+-- generated from ruler rules into EHRulerRules, was 1.tySigGam.Val
+%%[(5 hmtyinfer).tySigGam.Val
+SEM Decl
+  | Val         loc         .   (ty_sig_,hasTySig)  =   case @patExpr.mbTopNm of
+                                                          Nothing
+                                                            ->  (Ty_Any,False)
+                                                          Just nm
+                                                            ->  case gamLookup nm @lhs.tySigGam of
+                                                                  Nothing   -> (Ty_Any,False)
+                                                                  Just vgi  -> (vgiTy vgi,True)
+%%]
+
+-- generated from ruler rules into EHRulerRules, was 3.TySig
+%%[(5 hmtyinfer).TySig
+SEM Decl
+  | TySig       loc         .   ty_sig_             =   tyQuantifyOuter (`Map.member` @tyExpr.tyVarWildMp) @tyExpr.ty
+                            .   gamSigTy            :=  @ty_sig_
+%%]
+
+%%[(6 hmtyinfer)
+SEM Decl
+  | TySig       loc         .   gTyTvS              =   ftvSet . map (tgiTy.snd) . gamToAssocL $ @lhs.tyGam
+                            .   ty_sig_             :=  let fv  = Map.keysSet @tyExpr.tyVarWildMp `Set.union` @gTyTvS
+                                                            t   = varmpIncMetaLev @lhs.finKiVarMp |=> @tyExpr.ty
+                                                            tkg = gamUnion @lhs.finTyKiGam @tyExpr.intlTyKiGam
+                                                            t2k = tvarKi tkg @lhs.finKiVarMp emptyVarMp
+                                                        in  tyQuantifyOuter t2k (`Set.member` fv) t
+%%]
+
+%%[(99 hmtyinfer)
+SEM Decl
+  | TySig       loc         .   gTyTvS              :=  @tyTyUpdFreeTvarS
+%%]
+
+%%[(8 hmtyinfer)
+SEM Decl
+  | FFI
+%%[[90
+    FFE
+%%]]
+                loc         .   ty_sig_             =   let t   = varmpIncMetaLev @lhs.finKiVarMp |=> @tyExpr.ty
+                                                            tkg = gamUnion @lhs.finTyKiGam @tyExpr.intlTyKiGam
+                                                            t2k = tvarKi tkg @lhs.finKiVarMp emptyVarMp
+                                                        in  tyQuantifyOuter t2k (const False) t
+%%[[8
+                            .   ty_sig_expanded     =   @ty_sig_
+%%][11
+                            .   ty_sig_expanded     =   tyCanonicFFI (emptyFI {fiEnv = @fe}) @ty_sig_
+%%]]
+                lhs         .   gathTySigGam        =   @nm `gamSingleton` ValGamInfo @ty_sig_
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Kind signatures
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(6 hmtyinfer).kiSigGam
+ATTR AllDecl [ kiSigGam: TyGam | gathKiSigGam: TyGam | ]
+
+SEM Expr
+  | Let         decls       .   gathKiSigGam        =   emptyGam
+                            .   kiSigGam            =   @decls.gathKiSigGam
+
+SEM Decl
+  | KiSig       lhs         .   gathKiSigGam        =   gamAdd @nm (mkTGI (Ty_Con @nm)) @lhs.gathKiSigGam
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Kind signatures (based on TyKiGam)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+20070529: Not finished
+
+%%[(6 hmtyinfer)
+ATTR AllDecl [ tyKiSigGam: TyKiGam | | gathTyKiSigGam USE {`gamUnion`} {emptyGam}: TyKiGam ]
+
+SEM Decl
+  | KiSig       lhs         .   gathTyKiSigGam      =   tyKiGamNameSingleton @nm (TyKiGamInfo @sigKi)
+
+SEM Expr
+  | Let         decls       .   tyKiSigGam          =   @decls.gathTyKiSigGam
+%%]
+
+%%[(6 hmtyinfer)
+SEM Decl
+  | Data
+%%[[11
+    Type
+%%]]
+                loc         .   (sigKi,hasKiSig)    =   case tyKiGamLookupByName @tyNm @lhs.tyKiSigGam of
+                                                          Nothing -> (Ty_Any,False)
+                                                          Just i  -> (tkgiKi i,True)
+%%]
+
+%%[(6 hmtyinfer)
+SEM Decl
+  | KiSig       loc         .   sigKi               =   tyKiQuantify (const False) @kiExpr.ki
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Predicate env, for intro of predicates
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(9 hmtyinfer)
+ATTR AllDecl [ | patClGam1: ClGam  patClGam2: ClGam | ]
+ATTR NTPrf AllPrExpr AllTyExpr AllData AllPatExpr [ clGam: ClGam | | ]
+%%]
+
+%%[(9 hmtyinfer)
+SEM Expr
+  | Let         decls       .   patClGam1           =   gamPushNew @lhs.clGam
+                            .   patClGam2           =   @decls.patClGam1
+                loc         .   (lClGam,_)          =   gamPop @decls.patClGam2
+                            .   lClGamNoDups        =   gamNoDups @lClGam
+                            .   forDeclsClGam       =   gamPushGam @lClGamNoDups @lhs.clGam
+                decls       .   clGam               =   @forDeclsClGam
+                body        .   clGam               =   gamAddGam @lClGamNoDups @lhs.clGam
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Extra declarations can be introduced, dealt with as higher order AG
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+This cannot be done. All AG is thrown into 1 visit (I think), with many many induced dependencies.
+
+%%[(9999 hmtyinfer)
+ATTR Decl  [ | | ehGathExtraDeclL: Decls ]
+ATTR Decls [ ehExtraDeclL: Decls | | ]
+
+SEM Expr
+  | Let			decls		.	ehExtraDeclL		=	[]
+
+SEM Decl
+  | Class Instance
+  				decls		.	ehExtraDeclL		=	[]
+
+SEM Decl
+  | Data		lhs			.	ehGathExtraDeclL	=	const [] @dgi
+  | * - Data	lhs			.	ehGathExtraDeclL	=	[]
+
+SEM Decls
+  | Cons		tl			.	ehExtraDeclL		=	@hd.ehGathExtraDeclL ++ @lhs.ehExtraDeclL
+  | Nil			inst		.	decls				:	Decls
+  				inst		.	decls				=	[]  -- @lhs.ehExtraDeclL
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Extra gams
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(6 hmtyinfer).extraGam
+SEM Expr
+  | Let         loc         .   extraTyGam          =   emptyGam
+                            .   extraTyKiGam        =   emptyGam
+                            .   extraDataGam        =   emptyGam
+%%]
+
+%%[(17 hmtyinfer).extraGam
+SEM Expr
+  | Let         loc         .   extraPolGam         =   emptyGam
+%%]
+
+%%[(92 hmtyinfer) -(6.extraGam 17.extraGam)
+SEM Expr
+  | Let         loc         .   extraTyGam          =   @generTyGam
+                            .   extraTyKiGam        =   @generTyKiGam
+                            .   extraDataGam        =   @generDataGam
+                            .   extraPolGam         =   @generPolGam
+%%]
+

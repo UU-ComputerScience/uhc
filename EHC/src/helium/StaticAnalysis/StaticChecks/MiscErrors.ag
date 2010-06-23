@@ -1,0 +1,285 @@
+-----------------------------------------------------------------------------
+-- |The Helium Compiler : Static Analysis
+-- 
+-- Maintainer  :  bastiaan@cs.uu.nl
+-- Stability   :  experimental
+-- Portability :  unknown
+--
+-- Miscellaneous errors
+--
+-------------------------------------------------------------------------------
+
+ATTR Expression Expressions MaybeExpression Pattern Patterns Alternative Alternatives
+     Statement Statements Declaration Declarations MaybeDeclarations LeftHandSide RightHandSide
+     FunctionBinding FunctionBindings Body Qualifier Qualifiers          
+     GuardedExpression GuardedExpressions Literal 
+     Type Types AnnotatedTypes AnnotatedType ContextItem ContextItems Constructors Constructor FieldDeclaration
+     FieldDeclarations  
+     [ | miscerrors : {[Error]} | ]
+
+SEM Module
+  | Module  body . miscerrors = []
+            loc  . miscerrors = @body.miscerrors
+                            
+-----------------------------------------
+-- Body
+
+SEM Body 
+  | Body   lhs . miscerrors = @typeSignatureErrors ++ @declarations.miscerrors
+           loc . typeSignatureErrors = checkTypeSignatures @declarations.declVarNames @declarations.restrictedNames @declarations.typeSignatures
+
+-----------------------------------------
+-- Declaration
+
+SEM Declaration
+    | FunctionBindings   lhs . miscerrors  = @arityErrors ++ @bindings.miscerrors
+                         loc . arityErrors = if all (== head @bindings.arities) @bindings.arities
+                                               then []
+                                               else [ DefArityMismatch @bindings.name (mode @bindings.arities) @range.self ]
+                                               
+    | PatternBinding   lhs . miscerrors =  @patternDefinesNoVarsErrors ++ @righthandside.miscerrors
+                       loc . patternDefinesNoVarsErrors = if null @pattern.patVarNames
+                                                            then [ PatternDefinesNoVars (getPatRange @pattern.self) ]
+                                                            else []
+    
+    | Data   lhs . miscerrors = concat [ makeDuplicated TypeVariable @doubles
+                                       , makeUndefined TypeVariable @undef @simpletype.typevariables
+                                       , @lhs.miscerrors 
+                                       , @unknCls
+                                       , if null @unknCls then @cantDer else []
+                                       ]
+             loc . unused  = filter (`notElem` @constructors.typevariables) @simpletype.typevariables
+                 . doubles = filter ((>1) . length) . group . sort $        @simpletype.typevariables
+                 . undef   = filter (`notElem` @simpletype.typevariables)   @constructors.typevariables                 
+                 . unknCls = [ if className `elem` [ "Num", "Enum", "Ord" ]
+                                then NonDerivableClass c
+                                else UnknownClass c
+                             | c <- @derivings.self, let className = show c
+                             , className `notElem` ["Show", "Eq"]
+                             ]
+                 . cantDer = [ CannotDerive c [ tp | ReductionError (Predicate _ tp) <- errs ]
+                             | c <- @derivings.self
+                             , let preds     = map (Predicate (show c)) @constructors.parameterTypes
+                                   (_, errs) = contextReduction @lhs.orderedTypeSynonyms @lhs.classEnvironment preds
+                             , not (null errs)
+                             ]
+                       
+    | Type   lhs . miscerrors = concat [ makeDuplicated TypeVariable @doubles
+                                       , makeUndefined TypeVariable @undef @simpletype.typevariables
+                                       , @lhs.miscerrors
+                                       ] 
+             loc . unused  = filter (`notElem` @type.typevariables)       @simpletype.typevariables
+                 . doubles = filter ((>1) . length) . group . sort $      @simpletype.typevariables
+                 . undef   = filter (`notElem` @simpletype.typevariables) @type.typevariables 
+       
+SEM MaybeDeclarations
+  | Just   lhs . miscerrors = @typeSignatureErrors ++ @declarations.miscerrors
+           loc . (_,doubles) = uniqueAppearance (map fst @declarations.typeSignatures)
+           loc . typeSignatureErrors = checkTypeSignatures @declarations.declVarNames @declarations.restrictedNames @declarations.typeSignatures
+
+{- utility attribute: collecting the arities of the function bindings -}
+ATTR FunctionBindings [ | | arities : { [Int] } ]
+ATTR FunctionBinding  [ | | arity   :    Int    ]
+
+SEM FunctionBindings
+  | Cons lhs.arities = @hd.arity : @tl.arities
+  | Nil  lhs.arities = []
+
+SEM FunctionBinding
+  | FunctionBinding lhs . arity = @lefthandside.numberOfPatterns
+
+{- utility attribute:  is the last statement an expression? -}  
+ATTR Statements Statement [ | lastStatementIsExpr : Bool | ]
+
+SEM Expression
+  | Do    statements . lastStatementIsExpr = False
+
+SEM Statement
+  | Expression  lhs . lastStatementIsExpr = True
+  | Generator   lhs . lastStatementIsExpr = False
+  | Let         lhs . lastStatementIsExpr = False
+  
+{
+mode :: Ord a => [a] -> Maybe a -- Just ... IF any of the elements is more common
+mode xs = 
+    case filter ((== maxFreq) . snd) fs of
+        [(x, _)] -> Just x
+        _ -> Nothing        
+  where
+    maxFreq = maximum (map snd fs)
+    fs = frequencies xs
+
+frequencies :: Ord a => [a] -> [(a, Int)]
+frequencies = map (\ys -> (head ys, length ys)) . group . sort
+}    
+
+-----------------------------------------
+-- Expression
+
+SEM Expression
+  | Variable     lhs . miscerrors     = @undefinedErrors ++ @lhs.miscerrors 
+                 loc . undefinedErrors = if @name.self `elem` @lhs.namesInScope
+                                           then []
+                                           else [ Undefined Variable @name.self @lhs.namesInScope [] ]
+  | Do           lhs . miscerrors = @lastStatementErrors ++ @statements.miscerrors
+                 loc . lastStatementErrors = if @statements.lastStatementIsExpr
+                                               then []
+                                               else let range = getStatementRange (last @statements.self)
+                                                    in [ LastStatementNotExpr range ]  
+                                                
+  | Constructor  lhs . miscerrors = @undefinedConstructorErrors ++ @lhs.miscerrors
+                 loc . undefinedConstructorErrors = case M.lookup @name.self @lhs.valueConstructors of
+                                                       Nothing -> [ undefinedConstructorInExpr @name.self (@lhs.namesInScope ++ @lhs.allValueConstructors) @lhs.allTypeConstructors ]
+                                                       Just _  -> []
+
+  | Let          lhs . miscerrors = @typeSignatureErrors ++ @expression.miscerrors
+                 loc . (_,doubles) = uniqueAppearance (map fst @declarations.typeSignatures)
+                 loc . typeSignatureErrors = checkTypeSignatures @declarations.declVarNames @declarations.restrictedNames @declarations.typeSignatures
+
+  | Tuple        lhs . miscerrors = @tupleTooBigErrors ++ @expressions.miscerrors
+                 loc . tupleTooBigErrors =
+                        [ TupleTooBig @range.self
+                        | length @expressions.self > 10
+                        ]
+
+-----------------------------------------
+-- Pattern
+
+SEM Pattern
+    | Constructor        lhs . miscerrors = @patConstructorErrors ++ @patterns.miscerrors
+                         loc . patConstructorErrors = patternConstructorErrors @maybetp @name.self @lhs.allValueConstructors @patterns.numberOfPatterns @lhs.lhsPattern @lhs.allTypeConstructors
+                             . maybetp    = M.lookup @name.self @lhs.valueConstructors
+
+    | InfixConstructor   lhs . miscerrors = @patConstructorErrors ++ @rightPattern.miscerrors
+                         loc . patConstructorErrors = patternConstructorErrors @maybetp @constructorOperator.self @lhs.allValueConstructors 2 False @lhs.allTypeConstructors
+                             . maybetp    = M.lookup @constructorOperator.self @lhs.valueConstructors
+
+
+{
+patternConstructorErrors :: Maybe TpScheme -> Name -> Names -> Int -> Bool -> Names -> [Error]
+patternConstructorErrors maybetparity name env useArity lhsPattern namesTyconEnv =
+    case maybetparity of
+        Nothing ->
+            [ undefinedConstructorInPat lhsPattern name env namesTyconEnv ]
+        Just tpScheme ->
+            let arity = arityOfTpScheme tpScheme
+            in if arity /= useArity
+               then [ ArityMismatch Constructor name arity useArity ]
+               else []
+}
+
+ATTR Patterns Pattern [ lhsPattern : Bool | | ]
+
+SEM Declaration  | PatternBinding pattern      . lhsPattern = simplePattern @pattern.self
+
+SEM Pattern      | Constructor    patterns     . lhsPattern = False
+SEM Expression   | Lambda         patterns     . lhsPattern = False
+SEM Alternative  | Alternative    pattern      . lhsPattern = False
+SEM Statement    | Generator      pattern      . lhsPattern = False
+SEM Qualifier    | Generator      pattern      . lhsPattern = False
+SEM LeftHandSide | Infix          leftPattern  . lhsPattern = False
+                                  rightPattern . lhsPattern = False
+                 | Function       patterns     . lhsPattern = False
+                 | Parenthesized  patterns     . lhsPattern = False
+
+SEM RecordPatternBinding | RecordPatternBinding   pattern . lhsPattern = False
+
+{
+simplePattern :: Pattern -> Bool
+simplePattern pattern =
+   case pattern of
+      Pattern_Constructor _ name _ -> case show name of 
+                                         x:_ -> isUpper x
+                                         _   -> False
+      _                            -> False
+}
+  
+-----------------------------------------
+-- Statement  
+
+ SEM Statement
+   | Let        lhs . miscerrors = @typeSignatureErrors ++ @declarations.miscerrors 
+                loc . (_,doubles) = uniqueAppearance (map fst @declarations.typeSignatures)
+                    . typeSignatureErrors = checkTypeSignatures @declarations.declVarNames @declarations.restrictedNames @declarations.typeSignatures
+                       
+-----------------------------------------
+-- Qualifier    
+       
+SEM Qualifier
+  | Let       lhs . miscerrors = @typeSignatureErrors ++ @declarations.miscerrors
+              loc . (_,doubles) = uniqueAppearance (map fst @declarations.typeSignatures)
+                  . typeSignatureErrors = checkTypeSignatures @declarations.declVarNames @declarations.restrictedNames @declarations.typeSignatures
+
+{
+-- Type signature but no function definition
+-- Duplicated type signatures
+-- Overloaded type scheme for a restricted pattern
+checkTypeSignatures :: Names -> Names -> [(Name,TpScheme)] -> Errors
+checkTypeSignatures declVarNames restrictedNames xs = 
+   let (unique, doubles) = uniqueAppearance (map fst xs)
+   in [ Duplicated TypeSignature names 
+      | names <- doubles 
+      ] 
+   ++ [ NoFunDef TypeSignature name declVarNames
+      | name <- unique
+      , name `notElem` declVarNames
+      ]
+   ++ [ OverloadedRestrPat name
+      | (name, scheme) <- xs
+      , name `elem` unique 
+      , name `elem` restrictedNames     
+      , isOverloaded scheme
+      ] 
+}
+
+-----------------------------------------
+-- Literal
+
+SEM Literal
+  | Int loc . intLiteralTooBigErrors = 
+                 let val = read @value :: Integer in
+                 if length @value > 9 && (val > maxInt || val < minInt)  then 
+                    [ IntLiteralTooBig @range.self @value ]
+                 else 
+                    []
+        lhs . miscerrors = @intLiteralTooBigErrors ++ @lhs.miscerrors
+        
+-- Qualified types
+
+SEM Type -- does every type variable in the contexts appear in the type?
+  | Qualified lhs.miscerrors =
+        ( if Overloading `elem` @lhs.options then
+            [ AmbiguousContext v | v <-  @context.contextVars, v `notElem` @type.typevariables ]
+          else 
+            [ OverloadingDisabled @range.self ]
+        )
+        ++ 
+        @type.miscerrors
+                
+ATTR ContextItems ContextItem [ | | contextVars USE { ++ } { [] } : {[Name]} ]
+
+SEM ContextItem
+  | ContextItem lhs.contextVars = @types.typevariables
+                lhs.miscerrors = if elem (getNameName @name.self) (M.keys standardClasses) 
+                                    then @types.miscerrors  
+                                    else UnknownClass @name.self : @types.miscerrors
+
+-- context for restricted pattern error
+ATTR Declaration Declarations [ | | restrictedNames USE { ++ } { [] } : Names ]
+
+SEM Declaration
+  | PatternBinding   
+       lhs . restrictedNames = if isSimplePattern @pattern.self
+                                 then []
+                                 else @pattern.patVarNames
+
+{
+isSimplePattern :: Pattern -> Bool
+isSimplePattern pattern =
+   case pattern of
+      Pattern_Variable _ _ -> True
+      Pattern_Parenthesized  _ p -> isSimplePattern p
+      _ -> False
+}
+                                 
+       

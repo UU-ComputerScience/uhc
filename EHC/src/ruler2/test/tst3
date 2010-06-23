@@ -1,0 +1,23 @@
+preamble "%include lhs2TeX.fmt\n%include afp.fmt"
+
+extern Int
+
+scheme expr "Expr" =
+  hole [ node e: Expr, gam: Gamma, dir: Dir | | ty: Ty ]
+  judgeshape tex gam :-.dir e : ty
+  judgeshape spec gam :- dir ; e : ty
+
+rules expr scheme expr "ALALALA" =
+  rule int =
+    -
+    judge expr
+        | e = i
+        | ty = Int 
+        | dir = delta
+        | gam = Gamma
+
+  rule int2 =
+    -
+    judge expr = Gamma :- delta ; i : Int
+
+

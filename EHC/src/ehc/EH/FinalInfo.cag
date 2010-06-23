@@ -1,0 +1,108 @@
+%%[doesWhat doclatex
+Final, frozen info is defined here:
+\begin{itemize}
+\item Final type variable mapping + its application to Gam's and Ty's
+\item Final kind variable mapping
+\end{itemize}
+This info is used for TyCore generation and pretty printing.
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Final type
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(2 hmtyinfer).finValGam
+ATTR
+  AllDecl
+%%[[92
+  AllExpr AllPatExpr AllCase
+%%]]
+    [ finValGam: ValGam | | ]
+
+ATTR AllNT [ finTyVarMp: VarMp | | ]
+
+SEM Expr
+  | Let         loc         .   finValGamDecls      =   gamTop @decls.patValGam
+%%[[2
+                decls       .   finValGam           =   @finValGamDecls
+%%][92
+				loc			.	finValGam			=	(if @lhs.isFirstLet then gamUnion @gathValGam else id) @lhs.finValGam
+%%]]
+
+SEM AGItf
+  | AGItf       loc         .   finTyVarMp          =   @expr.tyVarMp
+%%[[92
+                            .   finValGam           =   @expr.gathValGam `gamUnion` @lhs.valGam
+%%]]
+%%]
+
+%%[(2 hmtyinfer)
+SEM Decl
+  | TySig       loc         .   finalTy             =   vgiTy $ fromJust
+                                                        $ valGamLookup @nm $ @lhs.finValGam
+%%]
+
+%%[(3 hmtyinfer).finValGam
+SEM Expr
+  | Let         loc         .   finValGamDecls      :=  @quValGam_
+%%]
+
+%%[(4 hmtyinfer).finValGam
+SEM Expr
+  | Let         loc         .   finValGamDecls      :=  @quValGam_ex_
+%%]
+
+%%[(8 hmtyinfer).finValGam
+SEM Expr
+  | Let         loc         .   finValGamDecls      :=  @quValGam_ex_subst
+%%]
+
+%%[(5 hmtyinfer)
+SEM DataConstr
+  | Constr      loc         .   finDataConTy        =   @lhs.finTyVarMp |=> @dataConTyAsVar
+
+SEM PatExpr
+  | AppTop Con
+%%[[7
+    Rec
+%%]]
+  				loc         .   finKnPatTy          =   @lhs.finTyVarMp |=> @knPatTy
+%%]
+
+%%[(8 hmtyinfer)
+SEM Expr
+  | AppTop		loc			.	finalTy				=	@lhs.finTyVarMp |=> @ty
+%%[[8
+                            .   finalTyExpanded     =   @finalTy
+%%][11
+                            .   finalTyExpanded     =   tyCanonicFFI (emptyFI {fiEnv = @fe}) @finalTy
+%%]]
+%%]
+
+%%[(9 hmtyinfer)
+SEM Expr
+  | Let         loc         .   finTyVarMp          =   @tmpoTyVarMp |=> @lhs.finTyVarMp
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Final kind
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(6 hmtyinfer).finTyGam
+ATTR AllNT [ finKiVarMp: VarMp | | ]
+
+SEM AGItf
+  | AGItf       expr        .   finKiVarMp          =   @expr.kiVarMp
+%%]
+
+%%[(6 hmtyinfer)
+ATTR AllNT [ finTyKiGam: TyKiGam |  | ]
+
+SEM AGItf
+  | AGItf       expr        .   finTyKiGam          =   emptyGam
+
+SEM Expr
+  | Let         loc         .   finTyKiGam          =   @lhs.finKiVarMp |=> @tyKiGam_l_ `gamUnion` @lhs.finTyKiGam
+
+%%]
+

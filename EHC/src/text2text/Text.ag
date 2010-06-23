@@ -1,0 +1,30 @@
+-------------------------------------------------------------------------
+-- Haskell interface to Text AST
+-------------------------------------------------------------------------
+
+{
+module Text
+  ( 
+  -- AST:
+    AGItf(..)
+  , TextItems, TextItem(..)
+  , GroupType(..)
+  , TextStyle(..)
+  , RefType(..)
+  , LabelType(..)
+  , ItemizeStyle(..)
+  , HeaderLevel(..)
+  , DocumentOption(..), DocumentOptions, MbDocumentOptions
+  , GraphicsInlineOption(..), GraphicsInlineOptions, MbGraphicsInlineOptions
+  , TableRow(..), TableRows, TableFormat, TableColFormat(..), TableFields, TableField(..)
+  )
+where
+
+import Common
+
+import EH.Util.ScanUtils
+
+}
+
+INCLUDE "Text/AbsSyn.ag"
+

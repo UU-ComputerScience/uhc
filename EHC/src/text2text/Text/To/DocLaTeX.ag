@@ -1,0 +1,205 @@
+-------------------------------------------------------------------------
+-- Convert Text to DocLaTeX
+-------------------------------------------------------------------------
+
+{
+module Text.To.DocLaTeX
+  ( textToOutDoc
+  )
+  where
+
+import Data.Maybe
+import qualified Data.Map as Map
+import qualified Data.Set as Set
+
+import qualified EH.Util.FastSeq as Seq
+import EH.Util.ScanUtils
+
+import Common
+import Text
+}
+
+-------------------------------------------------------------------------
+-- Interfacing
+-------------------------------------------------------------------------
+
+WRAPPER AGItf
+
+{
+textToOutDoc :: Opts -> AGItf -> OutDoc
+textToOutDoc opts txt
+  = out_Syn_AGItf t
+  where t = wrap_AGItf (sem_AGItf txt)
+                       (Inh_AGItf { opts_Inh_AGItf = opts
+                                  })
+}
+
+-------------------------------------------------------------------------
+-- AST
+-------------------------------------------------------------------------
+
+INCLUDE "Text/AbsSyn.ag"
+INCLUDE "Text/To/Common.ag"
+
+-------------------------------------------------------------------------
+-- Combinators
+-------------------------------------------------------------------------
+
+{
+dltxCmd :: Out c => c -> OutDoc
+dltxCmd c = "\\" +++ c
+
+dltxArg :: Out a => a -> OutDoc
+dltxArg a = "{" +++ a +++ "}"
+
+dltxArgs :: [OutDoc] -> OutDoc
+dltxArgs a = outList $ map dltxArg a
+
+dltxOptsBeginEnd :: (Out body, Out env, Out opt) => env -> opt -> body -> OutDoc
+dltxOptsBeginEnd env opt body = dltxCmd "begin" +++ dltxArg env +++ opt +++ body +++ dltxCmd "end" +++ dltxArg env
+
+dltxBeginEnd :: (Out body, Out env) => env -> body -> OutDoc
+dltxBeginEnd env body = dltxOptsBeginEnd env emptyout body
+}
+
+-------------------------------------------------------------------------
+-- Global info
+-------------------------------------------------------------------------
+
+ATTR AGItf AllNT [ opts: Opts | | ]
+
+-------------------------------------------------------------------------
+-- Graphics has caption?
+-------------------------------------------------------------------------
+
+ATTR AllGraphicsInlineOption [ | | mbCaption USE {`cmbMb`} {Nothing}: {Maybe OutDoc} ]
+
+SEM GraphicsInlineOption
+  | Caption         lhs         .   mbCaption   =   Just @text.out
+
+-------------------------------------------------------------------------
+-- Graphics has label?
+-------------------------------------------------------------------------
+
+ATTR AllGraphicsInlineOption [ | | mbLabel USE {`cmbMb`} {Nothing}: {Maybe OutDoc} ]
+
+SEM GraphicsInlineOption
+  | Label           lhs         .   mbLabel     =   Just @text.out
+
+-------------------------------------------------------------------------
+-- Replacement, as OutDoc
+-------------------------------------------------------------------------
+
+ATTR AGItf AllNT [ | | out USE {+++} {emptyout}: OutDoc ]
+
+SEM TextItem
+  | Space           loc         .   out         =   out @str
+  | NonSpace        loc         .   out         =   out @str
+  | CommentLF       loc         .   out         =   "%" +++ @str +++ "\n"
+  | Line            loc         .   out         =   @str +++ "\n"
+  | LineFeed        loc         .   out         =   out "\n"
+  | ParBreak        loc         .   out         =   out "\n\n"
+  | T2T             loc         .   out         =   ("@@[" +++ show @texttype) +++ "should not happen!!" +++ "@@]"  -- for now
+  | RefTo           loc         .   out         =   @reftype.out +++ dltxArgs [@reftext.out, @text.out]
+  | Styled          loc         .   out         =   @style.out +++ dltxArg @text.out
+  | VerbatimInline  loc         .   out         =   dltxCmd "verb" +++ @delim +++ @str +++ @delim
+  | BreakLine       loc         .   out         =   dltxCmd "\\"
+  | HorRuler TableHorRuler
+                    loc         .   out         =   dltxCmd "hline"
+  | Header          loc         .   out         =   @level.out +++ dltxArg @text.out
+  | Group           loc         .   out         =   dltxBeginEnd @envtype.out @text.out
+  | DocumentContent loc         .   out         =   dltxBeginEnd "document" @text.out
+  | Table           loc         .   out         =   dltxBeginEnd "center"
+                                                    $ dltxBeginEnd "tabular"
+                                                    $ dltxArg @tablefmt.out +++ @extratext.out +++ @rows.out
+  | Itemize         loc         .   out         =   dltxBeginEnd @itemizestyle.out @text.out
+  | ItemizeItem     loc         .   out         =   dltxCmd "item" +++ @text.out
+  | Title           loc         .   out         =   dltxCmd "title" +++ dltxArg @text.out
+  | Author          loc         .   out         =   dltxCmd "author" +++ dltxArg @text.out
+  | Import          loc         .   out         =   dltxCmd "usepackage" +++ dltxArg @text.out
+  | Label           loc         .   out         =   dltxCmd "label" +++ dltxArg @reftext.out
+  | MakeTitle       loc         .   out         =   dltxCmd "maketitle"
+  | DocumentHeader  loc         .   out         =   dltxCmd "documentclass" +++ @mboptions.out +++ dltxArg @text.out
+  | GraphicsInline  loc         .   out         =   let mkFig = if isJust @mboptions.mbCaption || isJust @mboptions.mbLabel
+                                                                then \x -> dltxOptsBeginEnd "figure" "[ht]" x
+                                                                else id
+                                                        mkCen = dltxBeginEnd "center"
+                                                        mkLbl = maybe id (\l x -> x +++ dltxCmd "label" +++ dltxArg l) @mboptions.mbLabel
+                                                        mkCap = maybe id (\c x -> x +++ dltxCmd "caption" +++ dltxArg c) @mboptions.mbCaption
+                                                    in  mkFig $ mkCen $ mkCap $ mkLbl $ dltxCmd "includegraphics" +++ @mboptions.out +++ dltxArg @text.out
+  | TOC             loc         .   out         =   dltxCmd "tableofcontents"
+  
+SEM RefType
+  | Local           loc         .   out         =   dltxCmd "lref"
+  | URL             loc         .   out         =   dltxCmd "href"
+  | EhcWeb          loc         .   out         =   dltxCmd "eref"
+  | UhcWeb          loc         .   out         =   dltxCmd "uref"
+  | STWiki          loc         .   out         =   dltxCmd "tref"
+  | EhcSrc          loc         .   out         =   dltxCmd "sref"
+  | Cite            loc         .   out         =   dltxCmd "cref"
+
+SEM TextStyle
+  -- | Verbatim     loc         .   out         =   dltxCmd "verb"
+  | Bold            loc         .   out         =   dltxCmd "textbf"
+  | Italic          loc         .   out         =   dltxCmd "textit"
+  | Teletype        loc         .   out         =   dltxCmd "texttt"
+  | Emphasized      loc         .   out         =   dltxCmd "emph"
+
+SEM GroupType
+  | Verbatim        lhs         .   out         =   out "pre"
+  -- | Document     lhs         .   out         =   out "document"
+  -- | Tabular          lhs         .   out         =   out "tabular"
+
+SEM ItemizeStyle
+  | Bullet          lhs         .   out         =   out "itemize"
+  | Number          lhs         .   out         =   out "enumerate"
+
+SEM HeaderLevel
+  | Level           lhs         .   out         =   dltxCmd (outList (replicate @level "sub") +++ "section")
+  | Paragraph       lhs         .   out         =   dltxCmd "paragraph"
+
+SEM DocumentOption
+  | A4Paper         loc         .   out         =   out "a4paper"
+
+SEM MbDocumentOptions
+  | Just            loc         .   out         =   outListSep "[" "]" "," @just.outL
+
+SEM GraphicsInlineOption
+  | Scale           loc         .   out         =   "scale=" +++ @text.out
+
+SEM MbGraphicsInlineOptions
+  | Just            loc         .   out         =   outListSep "[" "]" "," @just.outL
+
+SEM TableColFormat
+  | JustifyLeft     loc         .   out         =   out "l"
+  | JustifyCenter   loc         .   out         =   out "c"
+  | JustifyRight    loc         .   out         =   out "r"
+  | SepbyLine       loc         .   out         =   out "|"
+  | ParBox		    loc         .   out         =   out "p" +++ dltxArg @sizetext.out
+
+SEM TableRow
+  | Row             lhs         .   out         =   outListSep "" "" "&" @cols.outL +++ "\\\\" +++ @extrabrktext.out
+
+SEM TableField
+  | Fld             lhs         .   out         =   @extraseptext.out +++ @fld.out
+
+-------------------------------------------------------------------------
+-- Replacement, as [OutDoc]
+-------------------------------------------------------------------------
+
+ATTR
+  AllDocumentOption
+  AllGraphicsInlineOption
+  TableFields
+    [ | | outL USE {++} {[]}: {[OutDoc]} ]
+
+SEM DocumentOption
+  | *               lhs         .   outL        =   [@out]
+
+SEM GraphicsInlineOption
+  | Scale           lhs         .   outL        =   [@out]
+  | * - Scale       lhs         .   outL        =   []
+
+SEM TableFields
+  | Cons            lhs         .   outL        =   @hd.out : @tl.outL
+  | Nil             lhs         .   outL        =   []

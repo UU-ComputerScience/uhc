@@ -1,0 +1,797 @@
+%%[title
+\frame<presentation>{\titlepage}
+%%]
+
+%%[motivationalExample1
+\frame<presentation>
+{
+\frametitle{Motivational example}
+\begin{itemize}
+\item Within context of Haskell
+\item Remove duplicates from a list:
+%%[[wrap=safecode
+%%@CodeFragsExplImpl.nubAsHSSimplified
+
+%%@CodeFragsExplImpl.nubUseWithInt1
+%%]
+\item
+Class system implicitly parameterises |nub| with implementation (class instance) for |/=| (and |==|) on |Int|
+\item
+Can we pass another implementation?
+%%@CodeFragsExplImpl.nubUseWithInt2 wrap=safecode
+\begin{itemize}
+\item
+\emph{No}: Haskell only allows one, globally defined, class instance for |Eq Int|
+\item
+but implementation of |nub| can be organised differently
+\end{itemize}
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Motivational example}
+\begin{itemize}
+\item Build class based (implicit) variant on top of explicit variant
+%%[[wrap=safecode
+%%@CodeFragsExplImpl.nubAsHS
+
+%%@CodeFragsExplImpl.nubByUseWithInt2
+%%]
+\item
+Requirement to be able to both pass implicitly and explicitly:
+\begin{itemize}
+\item
+explicit variant always needs to be defined first
+\item
+explicit variant often is limited in its use (here in terms of |eq|/|==| only)
+\item
+requires additional effort and forethought by (library) programmer
+\end{itemize}
+\end{itemize}
+}
+%%]
+
+%%[problemInGeneral
+\frame<presentation>
+{
+\frametitle{Parameter passing}
+\begin{itemize}
+\item Mechanisms for passing a value
+\begin{itemize}
+\item
+\emph{explicit} function argument (parameter to specific code)
+\item
+\emph{implicit} function argument (parameter to specific code, but mostly implicitly controlled by language)
+\item
+\emph{global} variables (parameter to all code)
+\end{itemize}
+\item Level of awareness of what is passed
+\begin{tabular}{l||p{.2\linewidth}p{.2\linewidth}p{.2\linewidth}}
+& set & get & specify \\
+\hline
+\emph{explicit} & pass argument & refer to parameter & in type signature \\
+\emph{implicit} & define instance & import instance & in type signature \\
+\emph{global} & assign & refer & - \\
+\end{tabular}
+\item Goal: allow full control of implicit parameters by programmer
+\end{itemize}
+}
+%%]
+
+%%[problem
+\frame<presentation>
+{
+\frametitle{Explicit parameters}
+\begin{itemize}
+\item `Explicit': corresponds to program text specified by programmer
+\item We all are familiar with it
+\item Haskell:
+%%[[wrap=safecode
+square  ::  Int  ->  Int
+square      x    =   x * x
+%%]
+\item C:
+%%[[wrap=safecode
+int square(int x) {
+  return x * x ;
+}
+%%]
+\item ...
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Implicit parameters}
+\begin{itemize}
+\item `Implicit': not specified explicitly
+\item Also familiar?
+\begin{itemize}
+\item Yes!
+\item functions often are parameterized by data without the data being explicitly passed
+\end{itemize}
+\item Haskell's class system:
+%%[[wrap=safecode
+class Num a where
+  (*) :: a -> a -> a
+
+instance Num Int where
+  (*) = primMulInt
+
+square  ::  Num a => a  ->  a
+square               x  =   x * x
+
+... square 2 ...
+%%]
+\item
+Implicit parameter: how multiplication should be done
+\begin{itemize}
+\item fully determined by language
+\item type describes implicit behavior
+\end{itemize}
+\end{itemize}
+}
+
+%if False
+\frame<presentation>
+{
+\frametitle{Implicit parameters}
+\begin{itemize}
+\item Explicit equivalent
+%%[[wrap=safecode
+data DictNum a = DictNum (a -> a -> a)
+dictNum = DictNum primMulInt
+
+square  ::  DictNum a ->  a  ->  a
+square      (DictNum m)   x  =   m x x
+
+... square dictNum y ...
+%%]
+\end{itemize}
+}
+%endif
+
+\frame<presentation>
+{
+\frametitle{Implicit parameters}
+\begin{itemize}
+\item C too, e.g. global values:
+%%[[wrap=safecode
+int factor = ... ;
+
+int square(int x) {
+  return factor * x * x ;
+}
+%%]
+\item
+But the type does not include a description of this behavior
+\begin{itemize}
+\item that's `cheating'!
+\end{itemize}
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Explicit implicit parameters}
+\begin{itemize}
+\item Haskell views explicit and implicit parameter passing as separate
+\begin{itemize}
+\item function requires implicit parameter?
+\item programmer cannot directly pass a value for the implicit parameter
+\item only indirectly via |instance| declarations, used by the language to automatically determine the proper implicit parameter
+\end{itemize}
+\item Language defines what to pass implicitly
+\begin{itemize}
+\item breaks when no automatic choice can be made
+\item breaks when a wrong choice is made
+\end{itemize}
+\item Our approach: provide the means to allow programmer and compiler jointly specify a program
+\begin{itemize}
+\item language fills in the parts (types, implicit parameter passing) as far as it is capable of
+\item programmer specifies the remaining parts
+\item gradual shift between implicit and explicit
+\end{itemize}
+\end{itemize}
+}
+%%]
+
+%%[tyInxExamplesSmall
+\frame<presentation>
+{
+\frametitle{EH version 9}
+\begin{itemize}
+\item Being explicit using implicit mechanism
+\BoxCode{%
+%%@SlidesExplImpl.nubFullAlaEH
+}
+\end{itemize}
+}
+%%]
+
+%%[tyInxExamples
+\section{(Ab)use of class system}
+
+\frame<presentation>
+{
+\frametitle{Reuse by explicit parameter passing}
+\begin{itemize}
+\item Being explicit in Haskell
+%%[[wrap=safecode
+%%@CodeFragsExplImpl.nubAsHS
+
+%%@CodeFragsExplImpl.nubUseWithInt1
+t2 = nubBy (\x y -> (x `mod` 2) == (y `mod` 2)) [3,3,4,5]
+%%]
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Reuse by explicit parameter passing}
+\begin{itemize}
+\item Being explicit using implicit mechanism (EH)
+%%[[wrap=safecode nubFullAlaEH
+%%@TopicExplImpl.HaskellsNubBy
+
+%%@CodeFragsExplImpl.nubUseWithInt1
+t2 = nub {! ((==) = ...) <: Eq Int !} [3,3,4,5]
+%%]
+\item This can almost be done in Haskell, but how?
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Being explicit using implicit mechanism (Haskell)}
+%%[[wrap=safecode
+class Eq' l a where leq :: l -> a -> a -> Bool
+
+data Usual
+instance Eq a => Eq' Usual a where
+  leq _ = (==)
+
+data EqMod2
+instance Eq' EqMod2 Int where
+  leq _ x y = (x `mod` 2) == (y `mod` 2)
+
+newtype WL l a = WL{unWL:: [a]}
+
+nub' :: Eq' l a => WL l a -> WL l a
+nub' x@(WL []) = x
+nub' (WL (h:t) :: WL l a) 
+    =  WL $ (h:) $ unWL $ nub' $ 
+          (WL $ filter (not . leq (undefined::l) h) t :: WL l a)
+
+t1 = unWL $ nub' (WL [3,3,4,5] :: WL Usual Int)
+t2 = unWL $ nub' (WL [3,3,4,5] :: WL EqMod2 Int)
+%%]
+}
+
+\frame<presentation>
+{
+\frametitle{Haskell's `solution'}
+\begin{itemize}
+\item Verbose and clumsy
+\item Requires type wizardry
+\item All explicit parameters must be known at compile time
+\begin{itemize}
+\item Type of explicit parameter is index in set of instances
+\end{itemize}
+\end{itemize}
+}
+%%]
+
+%%[content15
+\section{Content}
+
+\frame<presentation>
+{
+\frametitle{Content of this talk}
+\begin{itemize}
+\item Haskell's class system
+\item How to `solve' the problem in Haskell
+\begin{itemize}
+\item (Ab)use of Haskell class system
+\item Side by side with what EH offers
+\end{itemize}
+\item EH mechanism's for explicitly passing values for implicit parameters
+\item `Problematic' examples
+\item Partial type signatures
+\end{itemize}
+}
+%%]
+
+%%[content16
+\section{Content}
+
+\frame<presentation>
+{
+\frametitle{Content of this talk}
+\begin{itemize}
+\item Haskell's class system
+\item How to `solve' the problem in Haskell
+\begin{itemize}
+\item (Ab)use of Haskell class system
+\item Side by side with what EH offers
+\end{itemize}
+\item EH mechanism's for explicitly passing values for implicit parameters
+\item (`Problematic' examples)
+\item (Partial type signatures)
+\end{itemize}
+}
+%%]
+
+%%[haskellSummary
+\section{Haskell classes}
+
+\frame<presentation>
+{
+\frametitle{Haskell's class system}
+\begin{itemize}
+\item Class defines a predicate over type(s)
+\begin{itemize}
+\item together with values (class members)
+\item which are available when predicate is satisfied
+\end{itemize}
+\item Example: equality on values of type |a|:
+\BoxCode{%
+%%@TopicExplImpl.classEq
+}
+\item Predicate is part of type of value
+\BoxCode{%
+%%@TopicExplImpl.defF
+}
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Haskell's class system}
+\begin{itemize}
+\item Meaning (in practical terms):
+\begin{itemize}
+\item for body of |f|: |Eq a| is satisfied hence |==| on values of type |a| can be used
+\item for caller of |f|: has to prove |Eq a| if values of type |a| are passed
+\end{itemize}
+\item Implementation via evidence for proof of satisfaction:
+\begin{itemize}
+\item for body of |f|: is passed a dictionary (record) holding value for |==| (and other class members)
+\item for caller of |f|: constructs and passes this dictionary
+\end{itemize}
+\item Basic proofs (instances) given by programmer
+\BoxCode{%
+%%@TopicExplImpl.EqIntChar
+}
+\item Used under the hood to construct dictionaries to be passed
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Haskell translation}
+\begin{itemize}
+\item Do it ourselves Haskell implementation
+%%[[wrap=safecode
+%%@TopicExplImpl.translEqD
+
+%%@TopicExplImpl.translDefF
+%%]
+\item Usual translation to internal machinery
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{EH translation}
+\begin{itemize}
+\item Class and instance
+%%[[wrap=safecode
+let  class Eq a where
+       eq :: a -> a -> Bool                                                         
+     instance Eq Int where
+       eq = primEqInt
+     ...
+%%]
+\item Dictionary is record, each field corresponds to class member
+%%[[wrap=safecode
+            (eq :: a -> a -> Bool)            -- class Eq
+eqDInt   =  (eq = primEqInt)                  -- Eq Int
+eqDChar  =  (eq = primEqChar)                 -- Eq Char
+
+f  ::         (eq :: a -> a -> Bool)  ->  a ->  a ->  Int
+f  =   \  ^^  dEq x y -> if dEq.eq x y then 3 else 4
+%%]
+\begin{itemize}
+\item class translates to record type
+\item instance translates to record value
+\end{itemize}
+\end{itemize}
+}
+%%]
+
+%%[eh
+\section{EH}
+
+\frame<presentation>
+{
+\frametitle{EH}
+\begin{itemize}
+\item Starting point: Haskell
+\begin{itemize}
+\item already provides combination of strong type checking and class system
+\end{itemize}
+\item Explicit implicit parameter passing situated in context of Explicit Haskell (EH)
+\begin{itemize}
+\item `as simple as possible' Haskell
+\item while also providing extensions: higher ranked types, existentials, records
+\item used for research and education
+\end{itemize}
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{EH language}
+\begin{itemize}
+\item Language constructs
+\begin{itemize}
+\item core (|lambda|-calculus) of Haskell\\
+\begin{tabular}%
+%%@AppxNotation.termTableFormat
+%%@AppxNotation.exprBasicIntChar
+%%@AppxNotation.exprBasic
+%%@AppxNotation.exprLetVecDecl
+%%@AppxNotation.exprLamIdent
+\end{tabular}
+\item + extensions (records, higher rank polymorphism, existentials, ...)\\
+\begin{tabular}%
+%%@AppxNotation.termTableFormat
+%%@AppxNotation.exprTheUsual
+%%@AppxNotation.exprRecBasic
+%%@AppxNotation.exprRecExt
+\end{tabular}
+\end{itemize}
+\end{itemize}
+}
+
+
+\frame<presentation>
+{
+\frametitle{Explicit passing for implicit parameter}
+\begin{itemize}
+\item Parameter passing
+%%[[wrap=safecode
+     ...
+     f :: forall ^ a . Eq a => a -> a -> forall ^ b . Eq b => b -> b -> (Bool,Bool)
+     f = \p q r s -> (eq p q, eq r s)
+     eqMod2 = \x y -> eq (mod x 2) (mod y 2)
+in   f  ^                              3 4
+        {! (eq = eqMod2) <: Eq Int !}  5 6
+%%]
+\item Predicate position in type determines parameter passing position
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Explicit passing for implicit parameter}
+\begin{itemize}
+\item |{! ^^ !}| specifies value to be passed for an implicit parameter
+\begin{itemize}
+\item implicitly passed: dictionary for |Eq a| for |eq p q|
+\item explicitly passed: dictionary for |Eq b| for |eq r s|
+\end{itemize}
+\item |{! (eq = eqMod2) <: Eq Int !}|
+\begin{itemize}
+\item |(eq = eqMod2)| must be evidence for predicate |Eq Int|
+\end{itemize}
+%if False
+\item |<:| appears as @<:@ in program text
+\begin{itemize}
+\item resembles @::@ (explicit typing, type annotation)
+\item resembles an arrow @<-@ (leads to, proves)
+\end{itemize}
+%endif
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Overlapping instances}
+\begin{itemize}
+\item Multiple instances for same predicate
+%%[[wrap=safecode
+let  instance Eq Int where
+       eq = primEqInt
+     instance Eq Int where
+       eq = eqMod2
+     f = \p q r s -> ...
+in   f 3 4 5 6
+%%]
+\item Overlapping instances
+\begin{itemize}
+\item Which dictionary must be passed?
+\item Language definition does not specify a choice
+\end{itemize}
+\item Solutions:
+\begin{itemize}
+\item give a name to the dictionary for each instance, use it to pass dictionary explicitly
+\item avoid multiple instances for use by implicit parameter mechanism
+\item allow scoped instances, a shadowing mechanism
+\end{itemize}
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Named instance}
+\begin{itemize}
+\item Bind dictionary for an instance to value identifier
+\BoxCode{%
+%%@TopicExplImpl.test9eq3TwoExpl
+}
+\item |<:| binds to identifier + allows participation in underlying machinery
+\item At parameter passing location: override automatic decisions made by underlying machinery
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Selectively naming an instance}
+\begin{itemize}
+\item Don't let instance participate in automatic choice for implicit parameter
+%%[[wrap=safecode
+let  instance Eq Int where
+       eq = primEqInt
+     instance dEqInt2 :: Eq Int where
+       eq = eqMod2
+     f = \p q r s -> ...
+in   f  ^                        3 4
+        {! dEqInt2 <: Eq Int !}  5 6
+%%]
+\item |::| (only) binds to identifier
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Scoped instances}
+\begin{itemize}
+\item Shadow previous instances
+%%[[wrap=safecode
+let  instance dEqInt1  <:  Eq Int where ...
+     instance dEqInt2  ::  Eq Int where ...
+     g  = \x y -> eq x y
+in   let  v1 =  g 3 4                              -- (1)
+          v2 =  let  instance dEqInt2 <: Eq Int    ^
+                in   g 3 4                         -- (2)
+in   ...
+%%]
+\item |instance dEqInt2 <: Eq Int| without |where| introduces |dEqInt2| for use by internal machinery
+\begin{itemize}
+\item shadows outer |Eq Int| instances
+\end{itemize}
+\item Actual values used
+\begin{itemize}
+\item (1): dEqInt1
+\item (2): dEqInt2
+\end{itemize}
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Instances which require other instances}
+\begin{itemize}
+\item Equality on lists needs equality on elements
+\BoxCode{%
+%%@TopicExplImpl.test9eq4EqList
+}
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Instances which require other instances}
+\begin{itemize}
+\item Dictionary for |List| instance needs dictionary for elements
+\item Translation:
+%%[[wrap=safecode
+let  dEqInt   ::  (eq :: Int -> Int -> Bool)
+     dEqList  ::  forall ^ a .  (eq :: a -> a -> Bool)
+                                  -> (eq :: List a -> List a -> Bool)
+     eq       =   \dEq    x y -> dEq.eq x y
+     f        =   \dEq_a  p q -> eq (dEqList dEq_a) (Cons p Nil) q
+in   f dEqInt 3 (Cons 4 Nil)
+%%]
+\item |dEqList|: dictionary transformer
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Dictionary transformers}
+\begin{itemize}
+\item Implicit variant
+%%[[wrap=safecode
+f ::  forall a . Eq a  =>  a ->  List a  -> Bool
+f =   \                    p     q       -> eq (Cons p Nil) q
+%%]
+\item Explicit variant
+\BoxCode{%
+%%@TopicExplImpl.test9eq5EqExplPassed
+}
+\item Translated variant
+\BoxCode{%
+%%@TopicExplImpl.translFEqImplPassed
+}
+\item We can do it ourselves, explicitly, if necessary!
+\end{itemize}
+}
+%%]
+
+%%[sndOrderGRose1
+\frame<presentation>
+{
+\frametitle{Dictionary transformers}
+\begin{itemize}
+\item Are first class
+\BoxCode{%
+%%@TopicExplImpl.test9eq6DictTransf
+}
+\item Here explicit passing may be omitted to achieve same effect
+\begin{itemize}
+\item but done by underlying machinery
+\end{itemize}
+\end{itemize}
+}
+%%]
+
+%%[sndOrderGRose2
+\frame<presentation>
+{
+\frametitle{Dictionary transformers}
+\begin{itemize}
+\item Useful in class based implementation of generics
+{\small
+%%[[wrap=safecode
+%%@[file:text/eh-frags/9-snd-order1.eh%%]
+%%]
+}
+\end{itemize}
+}
+
+\frame<presentation>[plain]
+{
+\frametitle{Dictionary transformers, translation}
+{\small
+%%[[wrap=safecode
+let  dfltB    =  \_ -> (showBin = undefined)
+     showBin  =  \x  -> x.showBin
+     dBI      =  let  dBI'  =  let  dBI'! = dfltB dBI'
+                               in   (dBI'! | showBin := ...)
+                 in   dBI'
+     dBL =  \_ ->  let  dBL' =  let  dBL'! = dfltB dBL'
+                                in   (dBL'! | showBin := ...)
+                   in   dBL'
+     dBG =  \dx df ->
+              let  dBG'  =  let  dBG'! = dfltB dBG'
+                            in   (dBG'! | showBin :=
+                                   \gr ->  case gr of
+                                             (GBranch x ts)
+                                               ->  showBin dx x
+                                                   ++ showBin (df dBG') ts
+                                 )
+              in   dBG'
+in
+let  v1   =  showBin (dBG dBI dBL) (GBranch 3 Nil)
+in   v1
+%%]
+}
+}
+
+\frame<presentation>
+{
+\frametitle{Dictionary transformers, puzzle/exercise}
+\begin{itemize}
+\item Paper reviewer alternative, what is the difference?
+{\small
+%%[[wrap=safecode
+%%@[file:text/eh-frags/9-snd-order2.eh%%]
+%%]
+}
+\item GHC: option @-fallow-undecidable-instances@
+\end{itemize}
+}
+
+%%]
+
+%%[localInstances
+\frame<presentation>[plain]
+{
+\frametitle{Local instances}
+\begin{itemize}
+\item Haskell forbids local instances
+{\small
+%%[[wrap=safecode
+%%@[file:test/regress/9/local-inst1.eh%%]
+%%]
+}
+\item Why? (EHC: type checking fails)
+\begin{itemize}
+\item What is the (principal) type of |f| and |eq| in |f|'s body?
+\item What is the type of |v|?
+\item Which change(s) would make the fragment type correct (in particular/general)?
+\end{itemize}
+\end{itemize}
+}
+%%]
+
+%%[remIssues
+\frame<presentation>[plain]
+{
+\frametitle{Remaining issues/examples}
+\begin{itemize}
+\item
+Dictionary transformers for generics
+\item
+Local instances
+\end{itemize}
+}
+%%]
+
+%%[conclusion
+\section{Summary}
+
+\frame<presentation>
+{
+\frametitle{Summary}
+\begin{itemize}
+\item Explicit mechanisms (for parameter passing and/or in general)
+\begin{itemize}
+\item allow full control by programmer
+\item but also burden the programmer
+\end{itemize}
+\item Implicit mechanisms
+\begin{itemize}
+\item allow the language to do `boring' stuff for the programmer
+\item but limit expressiveness if the programmer cannot intervene when the language fails
+\end{itemize}
+\item Explicit and implicit
+\begin{itemize}
+\item Haskell: black and white only
+\item EH: also the grey in between
+\end{itemize}
+\item The message: grey is good
+\begin{itemize}
+\item co\"operation with compiler instead of fighting against
+\end{itemize}
+\end{itemize}
+}
+
+%if False
+\frame<presentation>
+{
+\frametitle{XX}
+\begin{itemize}
+\item XX
+\begin{itemize}
+\item XX
+\end{itemize}
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{XX}
+\begin{itemize}
+\item XX
+\begin{itemize}
+\item XX
+\end{itemize}
+\end{itemize}
+}
+%endif
+%%]

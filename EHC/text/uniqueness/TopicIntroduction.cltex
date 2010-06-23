@@ -1,0 +1,304 @@
+%%[main
+
+\chapter{Introduction}
+\label{chapt.Introduction}
+
+Jan is a student with, aside from programming, only one passion in life: a daily shot of coffee at school in the morning. But, Jan is lazy
+and does not want to bring his own coffee cup with him. Each time he buys a plastic cup and throws it away afterwards, since he
+does not need the cup anymore after a single use. One day Jan thinks about the cost of buying all these plastic cups and the cost for
+the government to collect the waste. Jan suddenly gets a brilliant idea: recycling. If he puts his cup in a dish washing machine 
+(normally reserved for teachers) after using the coffee and picks it up the following day, then he does not need to buy plastic cups all
+the time. Neither does he need to throw them away. This gives him the best of both worlds. He can both be lazy and reduce the cost of
+acquiring and disposing of the cup.
+
+Taking notice of this life lesson, consider lazy purely functional programming languages. A program written in
+such a language produces much more garbage than a program written in an imperative language. Referential
+transparency is to blame. With referential transparency, any expression may be replaced with its result
+without changing the behavior of the program. Consider the expression:
+
+%%[[wrap=code
+let  a   = array (1, 10000) (zip [1..] (repeat 5))
+     a'  = a \\ [(1, 10)]
+in   (a, a')
+%%]
+
+Here, |a| is a huge array with the value five for each element. The array |a'| is obtained from |a| by
+changing the first element to ten. Suppose that this is done by updating the memory where |a| points to, which
+is typical for assignments in imperative languages.
+
+Referential transparency tells us that we are allowed to replace an expression by its value. Due to the
+side-effect, |a| and |a'| point to the same value. So, the behavior of this program is that a tuple
+is constructed where the first component points to an array with the first element having the value ten.
+
+But, if we evaluate this expression by beta reduction, we get a different result. If we beta reduce the
+above expression a few steps, we get the expression:
+
+%%[[wrap=code
+(  array (1, 10000) (zip [1..] (repeat 5))
+,  array (1, 10000) (zip [1..] (repeat 5)) \\ [(1, 10)] )
+%%]
+
+Further beta reduction results in a tuple being constructed, with the first component pointing to an
+array, of which the first component has the value five. This tuple differs from the tuple above,
+so the two evaluations of the expressions give different results. Referential transparency
+does not hold! The problem is that we changed the value where |a| pointed to, in order to obtain
+the value of |a'|. In general, referential transparency and destructive updates cannot be combined.
+
+To guarantee referential transparency, compilers generate code that treat values as atomic. In other
+words, code is generated in such a way that the value where |a| points to, is never changed. This
+is done by making a copy of the original value before performing a destructive update. So, in our
+example, a copy of |a| is made before updating it. This has a considerable impact on performance.
+
+However, performing a destructive update without making a copy does not always violate referential
+transparency. Consider the following variation of the above expression:
+
+%%[[wrap=code
+let  a   =  array (1, 10000) (zip [1..] (repeat 5))
+     a'  =  a \\ [(1, 10)]
+ in  a'
+%%]
+
+Suppose that |a| points to a value |v|, and |v| is only used once. After making a copy of |v| to perform the destructive update,
+|v| becomes garbage, since there are no references to it anymore. If we directly recycle |v|, then a copy does not need to be
+made, and |v| can be changed instead. Referential transparency holds in this case (verify this).
+
+The lesson that we learn here is that values that are used at most once can by recycled or updated without
+violating referential transparency. The |\\| operator is normally implemented as:
+
+%%[[wrap=code
+arr \\ changes
+  =  unsafePerformIO
+  $  do  arr' <- copySpineOfArray arr
+         updateInPlace changes arr'
+         return arr'
+%%]
+
+If it can be guaranteed that the array is used at most once, then the implementation can be changed into:
+
+%%[[wrap=code
+arr \\ changes
+  = unsafePerformIO
+  $ do updateInPlace changes arr
+       return arr
+%%]
+
+In case the array is used at most once, then the changed implementation does not copy the array and reuses the
+old value. The changed implementation of the |\\| operator does not have the overhead of copying and produces
+less garbage by reusing the old value of the array.
+
+This optimisation does not only work for arrays, but for many more operations, such as updates on fields of a
+data type for example, or the addition of integers, as long as such values are used at most once. The identification
+of values that are used at most once, is the focus of this master's thesis.
+
+
+\section{Usage analysis, typing, and uniqueness}
+
+%format linearannot = "\bullet"
+%format nonlinearannot = "\circ"
+
+  Usage analysis is the topic of research that deals with the identification of values that can be recycled. The interest for
+  usage analysis originated from the inefficiency of updating large data structures in functional programming languages, such
+  as arrays. A copy of the entire array is made just to update a single element. Because of this, arrays in functional
+  programming languages have a bad impact on performance. A diversity of approaches to eliminate the inefficiency were
+  investigated~\cite{wadler86new}. Among these approaches, usage analysis plays an important role, since values that are
+  used at most once can be updated without making a copy, removing the inefficiency effectively.
+
+  Usage analysis on values turns out to be difficult as the representation of values can be infinite. Lazy infinite
+  lists are commonly used in Haskell - for instance |fibs = 0 : 1 : zipWith (+) fibs (tail fibs)|. But how can uniqueness properties
+  of such a value be described? With first-order logic, some invariants can be defined over infinite values, but the
+  inference of such invariants from the definition of |fibs| is difficult, and the verification of invariants
+  undecidable. However, the properties on values can be approximated by describing the properties on the types of these
+  values. The Fibonacci sequence may be infinite, but its type |List Int| is not. The type constructors in the type,
+  in this case |List| and |Int|, can be individually given a usage property, for example |(Sup(List)(20)) (Sup(Int)(10))|,
+  where the List is considered to be used up to twenty times, and each element of the list up to ten times, for some program
+  that only evaluates a few Fibonacci numbers. Note that this is an approximation of the original problem, since the |Int|
+  ranges over all elements of the list, and each element gets the same property, although given our intuition of the
+  definition of |fibs|, lower numbers are used much more than higher numbers, since the lower numbers are used to obtain
+  a higher number. The approximation makes it easier to deal with usage properties, hence usage analyses are defined in
+  terms of type systems, at the cost of accuracy (see Figure~\ref{fig.ListRep} for an example why types cannot
+  differentiate between individual bits of memory). In practice this is not much of a problem: if a programmer uses a list,
+  then the elements of this list are typically used in a similar way, otherwise the programmer would have used two lists or
+  another data type.
+
+  However, natural numbers as annotations on types are still too difficult to handle. If we would know such a number, we would also
+  know that a program terminates, and the verification of termination is known to be undecidable for languages
+  like Haskell. It is not always possible to know an exact number. Again, an approximation is needed.
+  A usage property of zero of a value is interesting for a compiler, since that means that a compiler does not need to
+  generate code for the construction of the value. Likewise, knowing that a value is used once is useful as we mentioned in the beginning of
+  this chapter. But knowing that a value is used twice, thrice or maybe a zillion times is not that interesting for us,
+  since there at not many optimisations possible for such a value. It can be used to help an optimising compiler in
+  making a trade-off between code size and execution speed, or to identify often used values for caching purposes. However, more detail
+  has a cost at runtime (the number of iterations of the fixpoint iteration process of Section~\ref{sect.TheInferencer} depends on
+  the amount of detail), therefore a typical approximation is to distinguish |0| for not used, |1| for at most once, and |*| for
+  arbitrary usage.
+
+  This approximation is clearly visible in linear typing~\cite{wadler90linear} (which has roots in linear logic~\cite{girard95linear}).
+  In linear typing, values of a non-linear type can be used an arbitrary number of times, but for a type to be linear, the
+  corresponding values must be used exactly once. If we demand that all types are linear, we get a pure linear type
+  system (see Figure~\ref{RulerUniquenessExamples.L.expr.base}). An elegant aspect of this
+  type system is that it is just a conventional type system with restrictions on the environment that guarantee that
+  each identifier is used exactly once. An identifier can only be taken from the environment if it is the only occupant. An environment
+  is partitioned into two environments at a function application, and identifiers are added to the environment at lambda abstractions.
+  An identifier cannot be used more than once, because it is only once added to the environment. Likewise, an identifier has to be
+  used, otherwise the identifier one of the |Int| or |Var| leafs in the AST of the program has the identifier in their environment, which causes
+  the typing to fail for the leaf.
+
+  \rulerCmdUse{RulerUniquenessExamples.L.expr.base}
+
+  In practice, a linear type system mixes linear type and non-linear types, demanding
+  the environment restrictions on linear types, and no restrictions for non-linear types (see the type systems given
+  by Wadler~\cite{wadler90linear} for more information). In this master's thesis, we use a richer representation than just
+  linear and non-linear to represent uniqueness properties (Section~\ref{sect.Annotations}), but assume that linear types are annotated with
+  a |1| (i.e. |(Sup(Int)(1))|), and non-linear types with a |*| (i.e. |(Sup(Int)(*))|).
+
+  Linear types open up a can of optimizations~\cite{DBLP:conf/icfp/JonesPS96,DBLP:journals/entcs/Santos98,DBLP:conf/ifip/GillJ94,DBLP:conf/esop/Jones96a}.
+  Let us consider a few of them. Linear typing solves the problem of array updates, since an array with a linear type can be updated without making a copy.
+  But there are also optimizations for smaller values. A function is strict in its linear arguments, so any linear argument can be evaluated before passing
+  it to a function. The place where a linear value is used, is known, so code can be inserted to allocate the value on a heap that is not
+  garbage collected, and code inserted to manually deallocate the value after its use. Expressions with a linear type---functions that
+  are used exactly once for example---can be safely inlined without causing the inliner to loop. These are all optimizations that improve
+  the memory utilization and runtime of functional programs.
+
+  Clean~\cite{plasmeijer01clean-rep-2} uses the results of usage analysis not only for optimisation, but requires it for
+  the IO model~\cite{achten95ins}. The usage analysis of Clean is called \emph{uniqueness typing}, although it has a close correspondence to linear
+  typing~\cite{barendsen96uniqueness, DBLP:journals/tcs/Harrington06}. A type is called unique if it is used
+  at most once (i.e. affine instead of linear). Haskell programs uses monads for IO~\cite{DBLP:conf/icfp/JonesPS96}. A monad guarantees that interaction with the outside world is
+  single-threaded, or, in other words, that there is a guaranteed evaluation order on computations that interact with the
+  outside world, which is made explicit with the |do| notation. Clean programs do not use monads, but use uniqueness typing to
+  enforce that interaction with the outside world is single-threaded. The world is represented by values of the type
+  |(Sup(World)(1))|. The initial function of a program gets a world but has to return it as well\footnote{In this thesis, we write all code in Haskell-like notation.}:
+  |main :: (Sup(World)(1)) -> (Sup(World)(1))|. Any function with side-effect, such as
+  |readline :: (Sup(World)(1)) -> (String, (Sup(World)(1)))|, requires the current world as parameter and returns a new world.
+  Suppose that |w| is an identifier representing a unique world. Passing |w| to a function means that |w| cannot be used
+  elsewhere. Since the main function demands a unique world as result, this means that if we pass |w| to a function, the
+  function has to return a unique world, otherwise there is no way to get a unique world. This effectively means that a
+  world is threaded (without sharing) through all function calls, which ensures an evaluation order between functions with side-effects.
+
+  What distinguishes Clean from other compilers that perform usage analysis, is that the uniqueness typing is part of the
+  language and performed in the front-end of the compiler. The programmer can
+  interact with the uniqueness type system by writing uniqueness type signatures, or inspecting the signatures returned
+  by the type inferencer. Production compilers such as GHC~\cite{DBLP:conf/fp/HallHPJW92}, typically perform some form usage
+  analysis (linear type inference for example) on a core language in the back-end of the compiler, but that is not
+  visible to the programmer. As we discover later in this thesis, it is difficult to see for a human being which
+  uniqueness properties can be derived by the compiler and which not. Since the outcome of the compiler can have
+  a severe impact on the performance of a program, these are actually properties of which the programmer wants to
+  verify that they hold or enforce. An analysis in the back-end cannot provide the required interaction with the
+  programmer.
+
+\section{Goals}
+
+  The goal of this master's thesis is to explore uniqueness typing in the context of Haskell using a constraint-based
+  uniqueness-type system. As mentioned in the previous section, some work has already been performed in this area
+  for Clean. The question is how uniqueness typing for Clean translates to Haskell. We show that some of the ideas
+  translate to Haskell, and present some improvements.
+
+  Clean uses a mechanism called \emph{marking} that analyses term graphs to find out how often a particular identifier
+  occurs on execution paths. For each occurrence of an identifier, the marking mechanism determines if the value is used
+  for reading or writing. Based upon information about execution order and whether identifiers always occur on the
+  same execution path or always in mutual exclusive execution paths, the marks are combined to a uniqueness type
+  for identifiers. These types are then propagated according to the type system of Clean. In our approach, we do not
+  have a separate procedure for marking, but generate an aggregation constraint of which the interpretation provides
+  similar functionality. Our approach does not take evaluation order in account, as this is largely implicit in
+  Haskell. Our marking-like approach is defined in a more conventional notation of a typed abstract syntax tree of
+  the program (Chapter~\ref{chapt.Parallel}) instead of term graphs.
+
+  An improvement is that we consider the components of a value independent of the spine of the value. In Clean, if
+  a component of a value is unique, then the spine of the value must necessarily be unique as well. For example,
+  the following expression is not correctly typed in Clean:
+
+%%[[wrap=code
+  let  xs = map (+ length xs) [1,2,3,4]
+  in   xs :: (Sup(List)(*)) (Sup(Int)(1))
+%%]
+
+  We add the length of a list to each element of the list. The elements of the list are not touched in order to
+  compute the length (otherwise evaluation of this expression does not terminate), so this expression touches
+  the elements of the list only once. So, the elements of the list are in fact unique, but Clean does not allow
+  it because the list may not be shared if the elements are unique due to a limitation of the type system of
+  Clean. Our approach does not have this limitation and accepts the program, although we pay a price of it in
+  terms of complexity (Chapter~\ref{chapt.Polymorphic}).
+
+  In fact, the above restriction is rather unfortunate in the presence of partial application, as the result of
+  passing a unique parameter must be unique as well. The order in which parameters are passed to a function matters
+  in the presence of the above restriction, because unique parameters are best passed as late as possible. At the
+  moment a unique parameter is passed to a function, the function itself becomes unique. This is not a severe restriction
+  in Clean because parameters to a function can be passed all at once (although currying is supported), such that the compiler can shuffle the order
+  in which the parameters are passed. This is not the case in Haskell, where we curry one argument at a time. This
+  makes a difference when we abstract from certain recurring patterns. For example, consider the expression:
+  
+%%[[wrap=code
+  let  f x y g = g x y
+       h = f 3 4
+  in   h (+) + h const
+%%]
+
+  Our inferencer discovers that |4| is a unique value and |3| is a shared value. The Clean compiler infers that both
+  |3| and |4| are (coerced to) shared.
+
+  Besides for uniqueness, our approach can be used to infer strictness properties~\cite{wadler87projections} as well. Uniqueness and strictness
+  are complementary problems, and we show that we can infer them both with our approach. However, we will not go
+  into strictness in detail.
+
+  The results of this master's thesis project are this master's thesis that explains how uniqueness typing can be integrated
+  in a Haskell-like language, using conventional type theory, and a prototype implementation in the EH compiler~\cite{dijkstra04ehc-web}.
+  
+  We only focus on typing uniqueness and strictness properties. We did not focus on using the inferred types
+  for optimizations. There are several reasons for this. The first reason is that the EHC code generation facility
+  was under construction during the lifetime of this project. The second reason is that there is already a lot of
+  research done in the field of Haskell on, for example, strictness and inlining. Finally, a reason is that a type
+  system that captures uniqueness and strictness in the front-end of the compiler, already posed many questions that
+  demanded an answer, that we leave optimizations as a future work.
+
+\section{Organisation of this thesis}
+
+  This thesis is organised as follows. We start with our choice for EHC as starting point for our prototype, followed by
+  several chapters that gradually explain our uniqueness-type system. We introduce language features such as recursion and
+  algebraic data types chapter by chapter. The chosen
+  order allows us to discuss features in isolation, and to let earlier chapters pave the way for subsequent chapters. The following
+  table lists the chapters and their main contents:
+
+  \begin{tabular}{l||p{40em}}
+  Chapter & Contents \\
+  \hline
+  Chapter~\ref{chapt.NoBindings} & Constraint-based uniqueness type checking on a simply typed lambda calculus. We show how types
+                               are annotated, and how constraints are generated between annotations on the types. We show how to
+                               interpret constraints to verify that types are correctly annotated.\\
+  Chapter~\ref{chapt.Polyvariant} & Polyvariant uniqueness-type inference on generated constraints, and the support for a monomorphic and
+                               non-recursive |let|. Constraints are translated to a graph representation. Heeren~\cite{heeren05phd-errormsg}
+                               provided some inspiration on this topic, although our graph representation is unrelated to type graphs.\\
+  Chapter~\ref{chapt.Recursion} & We extend the |let| in this chapter with support for recursion. Recursion influences the
+                               constraint-generation process. By means of an instantiation constraint, we support different approaches
+                               to instantiate constraint graphs.\\
+  Chapter~\ref{chapt.Polymorphic} & Support for a full Haskell-like |let|, by supporting polymorphism. We show that instantiation of
+                               a polymorphic type to a type with more structure, gives complications and we give several approaches
+                               to deal with this problem.\\
+  Chapter~\ref{chapt.Parallel} & This chapter is yet another step towards the support for data types. In this chapter, we show how
+                                 to deal with an |if ... then ... else| expression, which presents an opportunity to write about parallel execution paths.
+                                 It also allows us to deal with this particular aspect of |case| expressions (Chapter~\ref{chapt.DataTypes}) in isolation.\\
+  Chapter~\ref{chapt.DataTypes} & In this chapter, we add algebraic data types to the language. We do not need many new concepts in order to support
+                               algebraic data types, but some complications arise because we need some information about type constructors. A thorough understanding of Chapter~\ref{chapt.NoBindings} and Chapter~\ref{chapt.Polyvariant} is required.\\
+  Chapter~\ref{chapt.Polarity} & We show how we can use the analysis on the type level (on kinds) for analyses on algebraic data types. As an
+                               example, we show how we can use it to determine polarity (variance) for data types of Haskell.\\
+  Chapter~\ref{chapt.Overloading} & This chapter covers overloading. Overloading presents some difficulties for the uniqueness-type
+                                    system. We present several ways of how to deal with overloading and show what the consequences are.\\
+  Chapter~\ref{chapt.BeyondEH} & The remainder of this thesis deals with some practical issues, such as separate compilation what is
+                                 covered in this chapter. It turns out that it is not difficult for the type system to deal with
+                                 separate complication, but that we run into problems with code generation.\\
+  Chapter~\ref{chap.InspectingResults} & There comes a time when the programmer is not satisfied with the results of the
+                                         uniqueness typing, or wants to make sure that some result is enforced. Our type
+                                         system is located in the front-end of the compiler, allowing interaction between
+                                         the type system and the programmer. We discuss some mechanisms that the
+                                         programmer can use to influence the type system, or to inspect the derived
+                                         uniqueness types of a program.
+  \end{tabular}
+
+  Of these chapters, Chapter~\ref{chapt.NoBindings} and Chapter~\ref{chapt.Polyvariant} are required to understand the
+  other chapters, and some understanding of these chapters is required to understand the others. The other chapters
+  are incremental in the sense that they build on the results of previous chapters, but less heavily.
+
+  Finally, as an aside, we want to disambiguate our uses of the word Haskell. With Haskell, we mean Haskell 98
+  as defined by Peyton Jones et al.\cite{peytonjones03has98-rev-rep}. If required, we assume the
+  presence of some commonly used extensions such as multi-parameter type classes~\cite{duggan02check-multipclass},
+  functional dependencies~\cite{jones00class-fundep}, and higher-ranked types~\cite{peytonjones04pract-inf-rank}.
+
+%%]

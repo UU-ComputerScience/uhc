@@ -1,0 +1,95 @@
+%%[1 ag
+
+-------------------------------------------------------------------------
+-- PP for Expr
+-------------------------------------------------------------------------
+
+ATTR AllExpr AGExprItf [ | | pp USE {>-<} {empty} : PP_Doc ]
+
+SEM Expr
+  | App             lhs     .   pp          =   exprNeedPar ParCtxtAppL nmUnk @lExpr.self @lExpr.pp
+                                                >#< exprNeedPar ParCtxtAppR nmUnk @rExpr.self @rExpr.pp
+  | Op              lhs     .   pp          =   let op = if @nm == nmSp1 then empty else @nmExpr.pp
+                                                in  ppExprMbEmpty @lExpr.self (>|< " ")
+                                                        (exprNeedPar ParCtxtOpL @nm @lExpr.self @lExpr.pp)
+                                                    >|< op
+                                                    >|< ppExprMbEmpty @rExpr.self (" " >|<)
+                                                            (exprNeedPar ParCtxtOpR @nm @rExpr.self @rExpr.pp)
+  | LF              lhs     .   pp          =   exprNeedPar ParCtxtAppR nmUnk @lExpr.self @lExpr.pp
+                                                >-< exprNeedPar ParCtxtAppR nmUnk @rExpr.self @rExpr.pp
+  | SP              lhs     .   pp          =   @lExpr.pp >|< @rExpr.pp
+  | Int             lhs     .   pp          =   pp @int
+  | StrText StrAsIs lhs     .   pp          =   pp @str
+  | Named           lhs     .   pp          =   @expr.pp
+  | Cnstr           lhs     .   pp          =   ppCurlys (@expr.pp >|< "|" >|< @cnstr.pp)
+  | Uniq            lhs     .   pp          =   pp "?uniq?"
+  | Undefined       lhs     .   pp          =   pp "_"
+SEM Expr
+  | Sel             lhs     .   pp          =   exprNeedPar ParCtxtOther nmUnk @expr.self @expr.pp >|< cfgStrSel >|< @selMbExpr.pp
+  | Var             lhs     .   pp          =   pp @nm
+  | Paren           lhs     .   pp          =   {-ppParens-} @expr.pp
+  | AppTop          lhs     .   pp          =   @expr.pp
+{-
+-}
+{-
+SEM Expr
+  | Sel             lhs     .   pp          =   ppBrackets ("SEL" >#< exprNeedPar ParCtxtOther nmUnk @expr.self @expr.pp) >|< cfgStrSel >|< @selMbExpr.pp
+  | Var             lhs     .   pp          =   ppBrackets ("VAR" >#< pp @nm)
+  | AVar            lhs     .   pp          =   ppBrackets ("AVR" >#< @anm.pp)
+  | Paren           lhs     .   pp          =   ppBrackets ("PAR" >#< @expr.pp)
+  | AppTop          lhs     .   pp          =   ppBrackets ("TOP" >#< @expr.pp)
+-}
+
+SEM ECnstr
+  | Ty              lhs     .   pp          =   ppCommas' @nms
+  | Var             lhs     .   pp          =   pp @nm
+
+SEM ANm
+  | Wild            loc     .   nm          =   nmWild
+                    lhs     .   pp          =   ppDest "W" @lhs.isDest @lhs.mbDstWd @lhs.mbPrevNdStr ""     ""     @nm
+  | Loc             lhs     .   pp          =   ppDest "L" @lhs.isDest @lhs.mbDstWd @lhs.mbPrevNdStr @ndStr ""     @nm
+  | Lhs             lhs     .   pp          =   ppDest "P" @lhs.isDest @lhs.mbDstWd @lhs.mbPrevNdStr @ndStr @ndStr @nm
+  | Fld             lhs     .   pp          =   ppDest "F" @lhs.isDest @lhs.mbDstWd @lhs.mbPrevNdStr "??"   @ndStr @nm
+  | Node            lhs     .   pp          =   ppDest "N" @lhs.isDest @lhs.mbDstWd @lhs.mbPrevNdStr @ndStr @ndStr @nm
+
+-------------------------------------------------------------------------
+-- Context of ANm
+-------------------------------------------------------------------------
+
+ATTR ANm [ isDest: Bool | | ]
+
+SEM Expr
+  | AVar            anm     .   isDest      =   False
+
+-------------------------------------------------------------------------
+-- ARule max column width info, for tabular like PP
+-------------------------------------------------------------------------
+
+ATTR ANm [ mbDstWd: {Maybe (Int,Int)} | | mxDstNdWd, mxDstAtWd USE {`max`} {0}: Int ]
+
+SEM ANm
+  | Loc Lhs         lhs     .   mxDstNdWd   =   3
+  | Wild            lhs     .   mxDstNdWd   =   0
+  | Node            lhs     .   mxDstNdWd   =   length @ndStr
+  | *               lhs     .   mxDstAtWd   =   length . show $ @nm
+
+SEM Expr
+  | AVar            loc     .   mbDstWd     =   Nothing
+
+-------------------------------------------------------------------------
+-- Node name of AEqnDest in an AEqn, for emitting only first of a series of same node names
+-------------------------------------------------------------------------
+
+ATTR ANm [ | | ndStr: String ]
+ATTR ANm [ mbPrevNdStr: {Maybe String} | | ]
+
+SEM ANm
+  | Loc             loc     .   ndStr       =   strLoc
+  | Lhs             loc     .   ndStr       =   if AtRetain `elem` @props then strLoc else strLhs
+  | Node            loc     .   ndStr       =   show @ndNm
+  | Fld Wild        loc     .   ndStr       =   ""
+
+SEM Expr
+  | AVar            loc     .   mbPrevNdStr =   Nothing
+
+%%]

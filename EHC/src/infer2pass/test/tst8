@@ -1,0 +1,9 @@
+let choose  ::  forall a . a -> a -> a
+            =   \x -> \y -> x
+  ; id      ::  forall a . a -> a
+            =  \x -> x
+  ; ii      ::  Int -> Int
+            =  \x -> x
+  ; v1      = choose id
+  ; v2      = choose ii
+in v1

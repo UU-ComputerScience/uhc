@@ -1,0 +1,98 @@
+\documentclass{article}
+\usepackage{a4}
+\usepackage[dutch]{babel}
+\topmargin=-10mm
+\textwidth=150mm
+\textheight=250mm
+\oddsidemargin=6mm
+\evensidemargin=6mm
+\parindent=0pt
+\parskip=3pt
+\pagestyle{empty}
+
+\begin{document}
+
+
+\paragraph{Programmeertalen}
+
+Computerprogramma's zijn geschreven in een programmertaal.
+Bekende programmeertalen zijn bijvoorbeeld C++, Python, Java en Basic.
+Er zijn nog vele (duizenden) minder bekende programmeertalen,
+en om een beetje orde in de chaos te scheppen onderscheidt men
+(met een knipoog naar de wetenschapsfilosofie) diverse {\em programmeerparadigma's}.
+
+Dan blijkt dat de meest bekende talen behoren tot het {\em imperatieve} paradigma.
+Hierin worden de opdrachten van een programma stuk voor stuk uitgevoerd,
+met als blijvend effect dat variabelen aan andere waarde krijgen.
+Een deel-paradigma  is het {\em object-geori\"enteerde} paradigma,
+waarin groepjes variabelen tot `objecten' worden samengevoegd,
+en verschillende soorten objecten (`klassen') hi\"erarchisch worden geordend.
+
+Om toch eens een radicaal andere programmeertaal te zien, moeten we onze
+toevlucht nemen tot een ander paradigma, bijvoorbeeld het {\em functionele}.
+Een simpel voorbeeld is het prepareren van een spreadsheet met formules: door aan te geven
+dat een bepaalde cel de totaalwaarde van een rij andere cellen moet weergeven
+(het leggen van een functioneel verband) schrijf je in feite een programma,
+dat wordt uitgevoerd op het moment dat er waarden in de rij cellen worden ingevuld.
+Toch bestaat het programma niet uit een reeks opdrachten die achtereenvolgens
+worden uitgevoerd, zoals in het imperatieve paradigma.
+
+
+\paragraph{Functioneel programmeren}
+
+Een prettige eigenschap van functionele programmeertalen is dat het resultaat
+van een functie geheel bepaald wordt door duidelijk zichtbare parameters.
+Het wordt dus niet be\"{\i}nvloed door andere omgevingsfactoren,
+zoals de waarde van globale variabelen, en evenmin kunnen functies die
+globale variabelen (al dan niet per ongeluk) veranderen.
+
+Dit maakt dat over het gedrag van functionele programma's goed te redeneren valt,
+en dat het haalbaar wordt om de correctheid van programma's te kunnen garanderen
+zonder ze uitgebreid te hoeven testen.
+Met name bij grote, door meerdere programmeurs gemaakte programma's, is dat van levensbelang.
+
+Een goed uitgewerkte taal in het functionele paradigma is Haskell.
+Deze taal heeft bovendien:
+\begin{itemize}
+\item Statische typering: types verhinderen dat je per ongeluk een getal bij een tekst 
+kan proberen op te tellen, en `statisch' wil zeggen dat dit van tevoren wordt gecontroleerd,
+en niet pas bij het gebruik van het programma tot uiting komt.
+\item Hogere-orde functies: functies kunnen andere functies als parameter krijgen,
+en ook weer functies als resultaat opleveren, dit alles op type-correcte wijze.
+\item `Lazy' semantiek: bij het gebruik van functies wordt het berekenen van de parameters
+uitgesteld totdat het zeker is dat die echt nodig zijn voor het resultaat;
+zo niet, dan kan de mogelijk tijdrovende berekening mooi worden uitgespaard.
+\end{itemize}
+
+
+\paragraph{Compilers voor Haskell}
+
+Om een programma te kunnen uitvoeren is een {\em interpreter} voor de gebruikte
+programmeertaal nodig, of een {\em compiler} die de door de programmeur geschreven
+`broncode' vertaalt naar een uitvoerbaar programma.
+Een veel gebruikte compiler voor Haskell is de `Glasgow Haskell Compiler' (GHC)
+(die zelf ook in Haskell is geschreven en daarmee een levend bewijs is voor de bruikbaarheid van Haskell).
+Helaas heeft GHC een lange onstaansgeschiedenis waardoor lastig is geworden
+om er nog uitbreidingen aan toe te voegen.
+
+Daarom hebben we een nieuwe compiler gemaakt: de `Utrecht Haskell Compiler' (UHC).
+Dit is, net als GHC, een zelf in Haskell geschreven compiler voor Haskell,
+maar daarbij is nu ook consequent gebruik gemaakt van de mogelijkheden van hogere-orde functies
+en lazy semantiek. Bovendien is de compiler opgedeeld in vele afzonderlijke stappen,
+waarmee het veel eenvoudiger is om te experimenteren.
+
+In dit project is zo'n experiment gedaan: UHC is uitgebreid met 
+een mogelijkheid voor `gehele-programma analyse'.
+In veel compilers worden de afzonderlijke modules van een programma afzonderlijk gecompileerd.
+Bij gehele-programma analyse worden echter ook inter-modulaire aspecten 
+van een programma geanalyseerd, met als doel om het programma uiteindelijk sneller uit te kunnen voeren.
+
+Dit heeft als resultaat dat UHC nu een effici\"entere implementatie heeft van het
+'lazyness' mechanisme, en van `overloaded' functies (functies die op parameters van verschillende
+types kunnen werken).
+Omdat we praktizeren wat we preken (UHC maakt ook volop gebruik van deze aspecten van Haskell)
+hebben we straks zelf ook baat van ons werk als we UHC zichzelf laten compileren\dots
+
+
+
+\end{document}

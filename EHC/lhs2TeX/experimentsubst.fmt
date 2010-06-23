@@ -1,0 +1,13 @@
+%format bind = "\mathbf{bind}"
+%format fst = "\mathbf{fst}"
+%format snd = "\mathbf{snd}"
+%format Subst = "{\theta}"
+%format Subst' = "{\sigma}"
+%format Subst'' = "{\vartheta}"
+
+%format t_n
+%format v_n
+%format se_1
+%format se_2
+
+%format |@     		= "\mathrel{|@}"

@@ -1,0 +1,103 @@
+%%[scratch
+Topics: by introducing user definable type constructors and expressions using them,
+user errors can be made, hence checking types of types.
+
+No additional syntax required
+
+Kind of a type
+\chunkCmdUseMark{EHCommon.6}
+\chunkCmdUseMark{EHTy.6}
+
+\subsection{Kind inference}
+
+\subsubsection{Environment/Gamma/Assumptions}
+\chunkCmdUseMark{EHGam.6}
+
+\subsubsection{Implementing kind constraints}
+
+\chunkCmdUseMark{EHTyFitsIn.6}
+
+TyExpr, extracting the type
+\chunkCmdUseMark{EHInferTyExpr.6}
+
+Data, checking, together with type rules
+\chunkCmdUseMark{EHInferData.6}
+
+Tying it
+\chunkCmdUseMark{EHInfer.6}
+
+
+\subsection<article>{Omitted, more of the same}
+Error gathering, pretty printing, uniq
+
+\subsection<article>{Literature}
+
+\TBD{}
+%%]
+
+%%[fromEH3
+\subsubsection{Type expressions}
+
+Finally, type expressions need to return a type where all
+occurrences of type variable names (of type |HsName|) coincide with type variables (of type |TyVarId|).
+Type variable names are identifiers just as well so 
+a |TyGam| similar to |ValGam|
+is used to map type variable names to freshly created type variables.
+
+\chunkCmdUseMark{EHInferTyExpr.3}
+
+Either a type variable is defined in |tyGam|, in that case the type bound to the identifier is used,
+otherwise a new type variable is created.
+
+%if inclOmitted
+\subsection{Omitted}
+Details concerning pretty printing
+have been omitted.
+
+Generation of unique identifiers for type variables
+in a type for pretty printing
+has been omitted here, but
+can be found in \appRef{app-ag-pattern-uid}.
+%endif
+
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+

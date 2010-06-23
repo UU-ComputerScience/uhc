@@ -1,0 +1,58 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Common stuff related to possible later evaluation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Is name evaluated later on? Then (e.g.) building of closures can be avoided.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin)
+ATTR GrExpr GrAlt [ | | willUseForMp: WillUseForMp ]
+
+SEM GrExpr
+  | *			loc			.	willUseForMp	:	WillUseForMp
+  | Seq         loc         .   willUseForMp    =   willUseUnion @expr.willUseForMp @body.willUseForMp
+  | Case		loc			.	willUseForMp    =   foldr1 willUseIntersection @altL.willUseForMpL
+  | Eval        loc         .   willUseForMp    =   Map.singleton @nm (Set.singleton WillUseFor_Eval)
+  | * - Eval Seq Case
+                loc         .   willUseForMp    =   Map.empty
+%%]
+
+%%[(8 codegen grin)
+ATTR GrAltL [ | | willUseForMpL: {[WillUseForMp]} ]
+
+SEM GrAltL
+  | Nil			lhs			.	willUseForMpL	=   []
+  | Cons		lhs			.	willUseForMpL	=   @hd.willUseForMp : @tl.willUseForMpL
+%%]
+
+%%[(8 codegen grin)
+ATTR GrExpr GrVal [ willUseFor: WillUseForS | | ]
+
+SEM GrExpr
+  | Seq         expr        .   willUseFor      =   case @pat.nmAlias of
+                                                    NmAlias_Nm nmp
+                                                      -> -- (\v -> tr "XX" (nmp >#< show v) v) $
+                                                         willUseFor nmp @body.willUseForMp
+                                                    _ -> Set.empty
+
+SEM GrAlt
+  | Alt         expr        .   willUseFor      =   Set.empty
+
+SEM GrGlobal
+  | Global      loc         .   willUseFor      =   Set.empty
+
+SEM GrValL
+  | Cons        hd          .   willUseFor      =   Set.empty
+%%]
+SEM GrBind
+  | Bind        expr        .   willUseFor      =   Set.empty
+
+
+%%[(10 codegen grin)
+SEM GrAdapt
+  | *           loc         .   willUseFor      =   Set.empty
+
+SEM GrSplit
+  | *           loc         .   willUseFor      =   Set.empty
+%%]

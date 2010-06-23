@@ -1,0 +1,72 @@
+# location of GMP's src
+SRC_EXTLIBS_GMP_PREFIX					:= $(TOP_PREFIX)extlibs/gmp/
+SRCABS_EXTLIBS_GMP_PREFIX				:= $(TOPABS2_PREFIX)extlibs/gmp/
+
+# this file
+EXTLIBS_GMP_MKF							:= $(SRC_EXTLIBS_GMP_PREFIX)files.mk
+
+# srcs
+EXTLIBS_GMP_ARCHIVE						:= $(EHC_CFG_GMP_LIB_ARCHIVE)
+EXTLIBS_GMP_NAME						:= $(shell echo $(EXTLIBS_GMP_ARCHIVE) | sed -n -e 's/.*\(gmp-[0-9]*\.[0-9]*\.[0-9]*\).*/\1/p')
+
+
+# lib/cabal config
+EXTLIBS_GMP_INSTALL_FLAG				:= $(call FUN_INSTALLABS_FLAG_PREFIX,$(EHC_VARIANT_ASPECTS))$(EXTLIBS_GMP_PKG_NAME)
+
+# options for C compiler
+EHC_GCC_LD_OPTS							+= -l$(EXTLIBS_GMP_PKG_NAME)
+
+# dependencies for rts
+#EHC_RTS_INSTALLFORBLD_DPDS_EXTLIBS		+= $(if $(findstring $(EHC_VARIANT),$(EHC_GMP_VARIANTS)),$(EXTLIBS_GMP_INSTALLFORBLD_FLAG),)
+EHC_RTS_INSTALL_DPDS_EXTLIBS			+= $(if $(EHC_CFG_USE_GMP),$(EXTLIBS_GMP_INSTALL_FLAG),)
+
+# building location
+BLDABS_EXTLIBS_GMP_PREFIX				:= $(BLDABS_PREFIX)gmp/
+
+# install location
+INSTALLFORBLDABS_EXTLIBS_GMP_PREFIX		:= $(INSTALLFORBLDABS_PREFIX)
+INSTALLABS_EXTLIBS_GMP_PREFIX			:= $(call FUN_INSTALLABS_VARIANT_SHARED_PREFIX,$(EHC_VARIANT_ASPECTS))
+INSTALLABS_EXTLIBS_GMP_LIB_PREFIX		:= $(call FUN_INSTALLABS_VARIANT_LIB_SHARED_PREFIX,$(EHC_VARIANT_ASPECTS))
+INSTALLABS_EXTLIBS_GMP_INC_PREFIX		:= $(call FUN_INSTALLABS_VARIANT_INC_SHARED_PREFIX,$(EHC_VARIANT_ASPECTS))
+
+# files to remove before building, relative to build directory
+EXTLIBS_GMP_REMOVE_BEFORE_BUILD			:= $(patsubst %,lib%.la,gmp)
+
+# distribution
+LIBUTIL_DIST_FILES						:= $(EXTLIBS_GMP_MKF) $(EXTLIBS_GMP_ARCHIVE)
+
+# target: build
+#lib-gmp: $(EXTLIBS_GMP_INSTALLFORBLD_FLAG)
+
+# target: clean
+gmp-clean:
+	rm -rf $(BLDABS_EXTLIBS_GMP_PREFIX)
+
+# rules
+#$(EXTLIBS_GMP_INSTALLFORBLD_FLAG): $(EXTLIBS_GMP_ARCHIVE) $(EXTLIBS_GMP_MKF)
+#	mkdir -p $(BLDABS_EXTLIBS_GMP_PREFIX) && \
+#	cd $(BLDABS_EXTLIBS_GMP_PREFIX) && \
+#	tar xfz $(EXTLIBS_GMP_ARCHIVE) && \
+#	cd $(EXTLIBS_GMP_NAME) && \
+#	./configure --prefix=$(INSTALLFORBLDABS_EXTLIBS_GMP_PREFIX) && \
+#	make && \
+#	make install && \
+#	touch $@
+
+$(EXTLIBS_GMP_INSTALL_FLAG): $(EXTLIBS_GMP_ARCHIVE) $(EXTLIBS_GMP_MKF)
+	export CFLAGS=$(EXTLIBS_GCC_CC_OPTS) ; \
+	export ABI=$(EXTLIBS_GMP_ABI) ; \
+	mkdir -p $(BLDABS_EXTLIBS_GMP_PREFIX) $(@D) $(INSTALLABS_EXTLIBS_GMP_LIB_PREFIX) $(INSTALLABS_EXTLIBS_GMP_INC_PREFIX) && \
+	cd $(BLDABS_EXTLIBS_GMP_PREFIX) && \
+	tar xfz $(EXTLIBS_GMP_ARCHIVE) && \
+	cd $(EXTLIBS_GMP_NAME) && \
+	rm -f $(EXTLIBS_GMP_REMOVE_BEFORE_BUILD) && \
+	./configure \
+	  --prefix=$(INSTALLABS_EXTLIBS_GMP_PREFIX) \
+	  --libdir=$(call FUN_PREFIX2DIR,$(INSTALLABS_EXTLIBS_GMP_LIB_PREFIX)) \
+	  --includedir=$(call FUN_PREFIX2DIR,$(INSTALLABS_EXTLIBS_GMP_INC_PREFIX)) \
+	  && \
+	make && \
+	make install && \
+	touch $@
+

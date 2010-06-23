@@ -1,0 +1,39 @@
+-------------------------------------------------------------------------
+-- PP for Ty
+-------------------------------------------------------------------------
+
+%%[1 hs module (Ty.PrettyPrint)
+%%]
+
+%%[1 hs export(ppTy)
+%%]
+
+%%[1 hs import(EH.Util.Pretty)
+%%]
+
+%%[1 hs import(Common)
+%%]
+
+%%[1 hs import(Ty.Ty)
+%%]
+
+%%[1 ag import ({Ty/AbsSynAG}, {Ty/PrettyPrintAG})
+%%]
+
+%%[1 ag
+WRAPPER AGTyItf
+%%]
+
+%%[1 hs
+
+ppTy :: Ty -> PP_Doc
+ppTy e
+  = pp_Syn_AGTyItf r2
+  where r1 = sem_AGTyItf (AGTyItf_AGItf e)
+        r2 = wrap_AGTyItf r1
+                (Inh_AGTyItf )
+
+instance PP Ty where
+  pp = ppTy
+
+%%]

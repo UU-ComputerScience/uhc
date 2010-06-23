@@ -1,0 +1,585 @@
+###########################################################################################
+# this file
+###########################################################################################
+
+MK_SHARED_MKF								:= $(MK_PREFIX)shared.mk
+
+###########################################################################################
+# Shared makefile stuff
+###########################################################################################
+
+.SUFFIXES:
+.SUFFIXES: .pdf .tex .bib .html .lhs .sty .lag .cag .chs
+
+###########################################################################################
+# EHC variants.
+# 90-99 are reserved for very Haskell specific functionality (like deriving)
+# 100 is Haskell
+# 101 is used (temporary hopefully) for debugging performance problems
+###########################################################################################
+
+# 1 : explicitly typed lambda calculus
+# 2 : + type inference (implicit typing)
+# 3 : + polymorphism
+# 4 : + quantifiers everywhere, existentials
+# 5 : + datatypes
+# 6 : + kinds (+inference)
+# 7 : + fixed size records
+# 8 : + code gen
+# 9 : + CHR, class system, local instances
+# 10: + (extensible) records (lack predicates)
+# 11: + type synonyms
+# 12: + explicit passing of implicit parameters (partially done)
+# 13: + higher order predicates (dict trafo's) (partially done)
+# 14: + existentially quantified class predicates (TBD)
+# 15: + functional dependencies (TBD)
+# 16: + GADT (TBD)
+# 17: + Polarity inference (co/contravariance)
+# 18: + Unboxed types
+# 20: + module system
+# 90: + full FFI (foreign function interface) (TBD)
+# 91: + deriving construct
+# 92: + generics (for deriving)
+# 96: + exception handling
+# 97: + numbers: Integer, Float, Double
+# 98: + IO
+# 99: + the rest to make uhc
+# 100: - debugging/tracing stuff
+# 101: same as 100, but built for installation
+# 102: - removal of necessary stuff (i.e. error messages) to play with AG dependencies, mem usage
+# 103: 99 + Holgers debugger work
+
+# 50: + GADT experiment
+# 4_2: + 2 pass type inference, quantifier propagation experiment
+# 8_2: + A bit prettier output for intermediate languages, in order to include
+#        in doc/llvm.pdf. This version is temporary until a framework to output
+#        shuffle post-processed intermediate output is available.
+
+###########################################################################################
+# EHC variant partitioning into public/non-public (experimental, ...) + code/noncode variants
+###########################################################################################
+
+EHC_PREL_VARIANT				:= 99
+EHC_UHC_VARIANT					:= 100
+EHC_UHC_INSTALL_VARIANT			:= 101
+EHC_PREL_VARIANTS				:= $(EHC_PREL_VARIANT) $(EHC_UHC_VARIANT) $(EHC_UHC_INSTALL_VARIANT)
+EHC_GMP_VARIANTS				:= $(EHC_PREL_VARIANTS) 97 98 $(EHC_OTHER_CODE_VARIANTS)
+EHC_LTM_VARIANTS				:= $(EHC_GMP_VARIANTS)
+EHC_PUB_NOCODE_VARIANTS			:= 1 2 3 4 5 6 7
+EHC_PUB_NOPREL_VARIANTS			:= 8 9 10 11 12 13 14 15 17 20 90 91 92 96 97 98
+EHC_PUB_CODE_VARIANTS			:= $(EHC_PUB_NOPREL_VARIANTS) $(EHC_PREL_VARIANTS)
+EHC_PUB_VARIANTS				:= $(EHC_PUB_NOCODE_VARIANTS) $(EHC_PUB_CODE_VARIANTS)
+EHC_OTHER_NOCODE_VARIANTS		:= 4_2 6_4 7_2
+EHC_OTHER_NOPREL_VARIANTS		:= 8_2
+EHC_OTHER_PREL_VARIANTS			:= 102 103
+EHC_OTHER_CODE_VARIANTS			:= $(EHC_OTHER_NOPREL_VARIANTS) $(EHC_OTHER_PREL_VARIANTS) 
+EHC_OTHER_VARIANTS				:= $(EHC_OTHER_NOCODE_VARIANTS) $(EHC_OTHER_CODE_VARIANTS)
+EHC_CODE_VARIANTS				:= $(EHC_PUB_CODE_VARIANTS) $(EHC_OTHER_CODE_VARIANTS)
+EHC_VARIANTS					:= $(EHC_PUB_VARIANTS) $(EHC_OTHER_VARIANTS)
+
+GRIN_PUB_VARIANTS				:= $(EHC_PUB_CODE_VARIANTS)
+GRIN_VARIANTS					:= $(GRIN_PUB_VARIANTS)
+
+TEST_VARIANTS					:= $(EHC_PUB_NOCODE_VARIANTS) 8 9 10 11 $(EHC_PREL_VARIANT)
+
+###########################################################################################
+# Check whether tools are missing
+###########################################################################################
+
+EXIT_IF_ABSENT_LIB_OR_TOOL		:= @EXIT_IF_ABSENT_LIB_OR_TOOL@
+
+###########################################################################################
+# rts building depends on target
+###########################################################################################
+
+# which specific target is built, used by rts
+EHC_CFG_TARGET_IS_bc					:= $(filter bc,$(EHC_VARIANT_TARGET))
+EHC_CFG_TARGET_IS_C						:= $(filter C,$(EHC_VARIANT_TARGET))
+EHC_CFG_TARGET_IS_llvm					:= $(filter llvm,$(EHC_VARIANT_TARGET))
+
+# which MP lib
+EHC_CFG_MPLIB							:= @MPLIB@
+
+# whether LTM sources should be included in rts
+ifeq (@MPLIB@,ltm)
+EHC_CFG_USE_LTM							:= $(filter $(EHC_VARIANT),$(EHC_LTM_VARIANTS))
+endif
+
+# whether GMP library should be build and linked in when compiling
+ifeq (@MPLIB@,gmp)
+EHC_CFG_USE_GMP							:= $(filter $(EHC_VARIANT),$(EHC_GMP_VARIANTS))
+EHC_CFG_GMP_LIB_ARCHIVE					:= @GMP_LIB_ARCHIVE@
+endif
+
+###########################################################################################
+# Names of compiler executables
+###########################################################################################
+
+EHC_EXEC_NAME		:= @EHC_EXEC_NAME@
+UHC_EXEC_NAME		:= @UHC_EXEC_NAME@
+
+###########################################################################################
+# Platform we develop on; stuff depending on it, in particular to cater for cygwin
+###########################################################################################
+
+# platform: UNIX, CYGWIN
+DEVELOPMENT_PLATFORM				:= @DEVELOPMENT_PLATFORM@
+
+# A prefix to be added for direct access to otherwise hidden (by cygwin) locations
+TOPLEVEL_SYSTEM_ABSPATH_PREFIX		:= @TOPLEVEL_SYSTEM_ABSPATH_PREFIX@
+
+###########################################################################################
+# SVN revision nr, and cmd to extract, if present
+###########################################################################################
+
+SVN_VERSION_EXISTS		:= @SVN_VERSION_EXISTS@
+SVN_VERSION_CMD			:= @SVN_VERSION_CMD@
+SVN_REVISION			:= @SVN_REVISION@
+
+###########################################################################################
+# Locations in source, build and install
+###########################################################################################
+
+# suffix for build + (temporary) install locations + package names
+EHC_BUILD_SUFFIX	:= @EHC_BUILD_SUFFIX@
+ifneq ($(EHC_BUILD_SUFFIX),)
+EHC_BUILD_SUFFIX_DASH					:= -$(EHC_BUILD_SUFFIX)
+endif
+
+# location for binaries
+BIN_PREFIX			:= $(TOP_PREFIX)bin/
+BINABS_PREFIX		:= $(TOPABS_PREFIX)bin/
+
+# location for haddock
+HDOC_PREFIX			:= $(TOP_PREFIX)hdoc/
+HDOCABS_PREFIX		:= $(TOPABS_PREFIX)hdoc/
+
+# location for libraries
+LIB_PREFIX			:= $(TOP_PREFIX)lib/
+
+# location for cabal installed stuff (mainly libraries), and other build time installs, used when building ehc
+INSTALLFORBLD_PREFIX			:= $(TOP_PREFIX)@INPLACE_INSTALLFORBLD_DIR@$(EHC_BUILD_SUFFIX_DASH)/
+INSTALLFORBLDABS_PREFIX			:= $(TOPABS_PREFIX)@INPLACE_INSTALLFORBLD_DIR@$(EHC_BUILD_SUFFIX_DASH)/
+INSTALLFORBLDABS2_PREFIX		:= $(TOPABS2_PREFIX)@INPLACE_INSTALLFORBLD_DIR@$(EHC_BUILD_SUFFIX_DASH)/
+INSTALLFORBLDABS_FLAG_PREFIX	:= $(INSTALLFORBLDABS2_PREFIX)ins-flg-
+INSTALLFORBLDABS_LIB_PREFIX		:= $(INSTALLFORBLDABS_PREFIX)lib/
+INSTALLFORBLDABS_INC_PREFIX		:= $(INSTALLFORBLDABS_PREFIX)include/
+
+# location installed stuff, used when running ehc
+INSTALL_DIR						:= $(TOP_PREFIX)@INPLACE_INSTALL_DIR@$(EHC_BUILD_SUFFIX_DASH)
+INSTALLABS_DIR					:= $(TOPABS_PREFIX)@INPLACE_INSTALL_DIR@$(EHC_BUILD_SUFFIX_DASH)
+INSTALLABS2_DIR					:= $(TOPABS2_PREFIX)@INPLACE_INSTALL_DIR@$(EHC_BUILD_SUFFIX_DASH)
+
+INSTALL_PREFIX					:= $(INSTALL_DIR)/
+INSTALLABS_PREFIX				:= $(INSTALLABS_DIR)/
+INSTALLABS_FLAG_PREFIX			:= $(INSTALLABS_PREFIX)ins-flg-
+INSTALLABS_LIB_PREFIX			:= $(INSTALLABS_PREFIX)lib/
+INSTALLABS_INC_PREFIX			:= $(INSTALLABS_PREFIX)include/
+
+# location for uhc installs, as specified by configure
+INSTALL_UHC_ROOT		:= @prefix@/lib
+INSTALL_UHC_DIR			:= @prefix@/@INSTALL_LIB_SUFFIX@
+INSTALL_UHC_PREFIX		:= $(INSTALL_UHC_DIR)/
+INSTALL_UHC_BIN_PREFIX	:= @prefix@/bin/
+INSTALL_UHC_LIB_PREFIX	:= $(INSTALL_UHC_PREFIX)lib/
+INSTALL_UHC_INC_PREFIX	:= $(INSTALL_UHC_PREFIX)include/
+
+# location for building
+BLD_PREFIX			:= $(TOP_PREFIX)build$(EHC_BUILD_SUFFIX_DASH)/
+BLDABS_PREFIX		:= $(TOPABS_PREFIX)build$(EHC_BUILD_SUFFIX_DASH)/
+BLD_BIN_PREFIX		:= $(BLD_PREFIX)bin/
+BLD_LIBUTIL_PREFIX	:= $(BLD_PREFIX)libutil/
+
+# location for barebones
+BARE_PREFIX			:= $(TOP_PREFIX)bare$(EHC_BUILD_SUFFIX_DASH)/
+
+# location for doc (end products)
+DOC_PREFIX			:= $(TOP_PREFIX)doc/
+
+# location of test src
+TEST_SRC_PREFIX						:= $(TOP_PREFIX)test/
+TEST_REGRESS_SRC_PREFIX				:= $(TEST_SRC_PREFIX)regress/
+
+# location for testing, is done after cd to test src dir, hence these relative paths, must correspond to above dirs w.r.t. nr of dir levels
+TEST_TOP_PREFIX						:= ../../
+TEST_BLD_PREFIX						:= $(TEST_TOP_PREFIX)build$(EHC_BUILD_SUFFIX_DASH)/
+
+# name of subdirectory for shared ehc library artifacts
+EHCLIB_SHARED						:= @EHCLIB_SHARED@
+
+###########################################################################################
+# Commands
+###########################################################################################
+
+# compilers and tools used
+AGC							:= @UUAGC_CMD@
+GHC							:= @GHC_CMD@
+GHC1						:= @GHC_CMD1@
+GHC_VERSION         		:= @GHC_VERSION@
+HSC2HS						:= @HSC2HS_CMD@
+HADDOCK						:= @HADDOCK_CMD@
+HADDOCK_VERSION     		:= @HADDOCK_VERSION@
+GCC							:= @GCC_CMD@
+AR							:= @AR_CMD@
+RANLIB						:= @RANLIB_CMD@
+OPEN_FOR_EDIT				:= bbedit
+STRIP						:= $(STRIP_CMD)
+JAVAC						:= @JAVAC_CMD@
+JAR							:= @JAR_CMD@
+SHELL_FILTER_NONEMP_FILES	:= $(BINABS_PREFIX)filterOutEmptyFiles
+SHELL_AGDEPEND				:= $(BINABS_PREFIX)agdepend
+TAR							:= @TAR_CMD@
+
+# lhs2TeX
+LHS2TEX_ENV					:= $(LHS2TEX)
+LHS2TEX_CMD					:= LHS2TEX=".$(PATHS_SEP)../../$(FMT_SRC_PREFIX)$(PATHS_SEP)$(LHS2TEX_ENV)" lhs2TeX
+
+# latex
+LATEX_ENV					:= $(TEXINPUTS)
+PDFLATEX					:= TEXINPUTS=".$(PATHS_SEP_COL)../../$(LATEX_SRC_PREFIX)$(PATHS_SEP_COL)$(LATEX_EHC_SUBDIRS)$(LATEX_ENV)" pdflatex
+BIBTEX						:= BSTINPUTS=".$(PATHS_SEP_COL)../../$(LATEX_SRC_PREFIX)$(PATHS_SEP_COL)$(LATEX_ENV)" BIBINPUTS=".$(PATHS_SEP_COL)../../$(LATEX_SRC_PREFIX)$(LATEX_ENV)" bibtex
+MAKEINDEX					:= makeindex
+
+# misc
+# $1: files to md5
+ifneq (@MD5_CMD@,)
+FUN_MD5						= cat $(1) | @MD5_CMD@
+else
+FUN_MD5						= echo -n "no md5"
+endif
+
+###########################################################################################
+# installation locations for ehc running time, as functions still depending on variant + target
+###########################################################################################
+
+FUN_DIR_VARIANT_PREFIX						= $(1)/$(2)/
+FUN_DIR_VARIANT_XXX_PREFIX					= $(call FUN_DIR_VARIANT_PREFIX,$(1),$(2))$(3)/
+FUN_DIR_VARIANT_SHARED_PREFIX				= $(call FUN_DIR_VARIANT_XXX_PREFIX,$(1),$(2),shared)
+FUN_DIR_VARIANT_LIB_PREFIX					= $(call FUN_DIR_VARIANT_XXX_PREFIX,$(1),$(2),lib)
+FUN_DIR_VARIANT_LIB_PKG_PREFIX              = $(call FUN_DIR_VARIANT_LIB_PREFIX,$(1),$(2))pkg/
+FUN_DIR_VARIANT_BIN_PREFIX					= $(call FUN_DIR_VARIANT_XXX_PREFIX,$(1),$(2),bin)
+FUN_DIR_VARIANT_LIB_TARGET_PREFIX			= $(call FUN_DIR_VARIANT_LIB_PREFIX,$(1),$(2))$(3)/
+FUN_DIR_VARIANT_LIB_SHARED_PREFIX			= $(call FUN_DIR_VARIANT_SHARED_PREFIX,$(1),$(2))lib/
+#FUN_DIR_VARIANT_PKGLIB_TARGET_PREFIX		= $(call FUN_DIR_VARIANT_LIB_TARGET_PREFIX,$(1),$(2),$(3))pkg/
+#FUN_DIR_VARIANT_LIB_TARGET_PKG_PREFIX		= $(call FUN_DIR_VARIANT_PKGLIB_TARGET_PREFIX,$(1),$(2),$(3))$(4)/
+FUN_DIR_VARIANT_INC_PREFIX					= $(call FUN_DIR_VARIANT_XXX_PREFIX,$(1),$(2),include)
+FUN_DIR_VARIANT_INC_TARGET_PREFIX			= $(call FUN_DIR_VARIANT_INC_PREFIX,$(1),$(2))$(3)/
+FUN_DIR_VARIANT_INC_SHARED_PREFIX			= $(call FUN_DIR_VARIANT_SHARED_PREFIX,$(1),$(2))include/
+
+FUN_PKG_VARIANT_TARGET_TVARIANT             = $(1)/$(2)/$(3)/$(4)
+FUN_DIR_PKG_VARIANT_TARGET_TVARIANT         = $(call FUN_DIR_VARIANT_LIB_PKG_PREFIX,$(1),$(3))$(call FUN_PKG_VARIANT_TARGET_TVARIANT,$(2),$(3),$(4),$(5))
+
+FUN_INSTALL_VARIANT_SHARED_PREFIX			= $(call FUN_DIR_VARIANT_SHARED_PREFIX,$(INSTALL_DIR),$(1))
+FUN_INSTALLABS_VARIANT_SHARED_PREFIX		= $(call FUN_DIR_VARIANT_SHARED_PREFIX,$(INSTALLABS_DIR),$(1))
+
+FUN_INSTALL_VARIANT_PREFIX					= $(call FUN_DIR_VARIANT_PREFIX,$(INSTALL_DIR),$(1))
+FUN_INSTALLABS_VARIANT_PREFIX				= $(call FUN_DIR_VARIANT_PREFIX,$(INSTALLABS_DIR),$(1))
+FUN_INSTALLABS2_VARIANT_PREFIX				= $(call FUN_DIR_VARIANT_PREFIX,$(INSTALLABS2_DIR),$(1))
+FUN_INSTALL_VARIANT_XXX_PREFIX				= $(call    FUN_INSTALL_VARIANT_PREFIX,$(1))$(2)/
+FUN_INSTALLABS_VARIANT_XXX_PREFIX			= $(call FUN_INSTALLABS_VARIANT_PREFIX,$(1))$(2)/
+FUN_INSTALLABS2_VARIANT_XXX_PREFIX			= $(call FUN_INSTALLABS2_VARIANT_PREFIX,$(1))$(2)/
+
+FUN_INSTALL_VARIANT_LIB_PREFIX				= $(call    FUN_INSTALL_VARIANT_XXX_PREFIX,$(1),lib)
+FUN_INSTALLABS_VARIANT_LIB_PREFIX			= $(call FUN_INSTALLABS_VARIANT_XXX_PREFIX,$(1),lib)
+FUN_INSTALL_VARIANT_BIN_PREFIX				= $(call    FUN_INSTALL_VARIANT_XXX_PREFIX,$(1),bin)
+FUN_INSTALLABS_VARIANT_BIN_PREFIX			= $(call FUN_INSTALLABS_VARIANT_XXX_PREFIX,$(1),bin)
+FUN_INSTALL_VARIANT_INC_PREFIX				= $(call    FUN_INSTALL_VARIANT_XXX_PREFIX,$(1),include)
+FUN_INSTALLABS_VARIANT_INC_PREFIX			= $(call FUN_INSTALLABS_VARIANT_XXX_PREFIX,$(1),include)
+
+#FUN_INSTALL_VARIANT_LIB_TARGET_PREFIX		= $(call FUN_DIR_VARIANT_LIB_TARGET_PREFIX,$(INSTALL_DIR),$(1),$(2))
+FUN_INSTALLABS_VARIANT_LIB_TARGET_PREFIX	= $(call FUN_DIR_VARIANT_LIB_TARGET_PREFIX,$(INSTALLABS2_DIR),$(1),$(2))
+#FUN_INSTALL_VARIANT_LIB_SHARED_PREFIX		= $(call FUN_DIR_VARIANT_LIB_SHARED_PREFIX,$(INSTALL_DIR),$(1))
+FUN_INSTALLABS_VARIANT_LIB_SHARED_PREFIX	= $(call FUN_DIR_VARIANT_LIB_SHARED_PREFIX,$(INSTALLABS_DIR),$(1))
+
+FUN_INSTALL_PKG_VARIANT_TARGET_TVARIANT_PREFIX \
+                                            = $(call FUN_DIR_PKG_VARIANT_TARGET_TVARIANT,$(INSTALL_DIR),$(1),$(2),$(3),$(4))/
+FUN_INSTALL_PKG_VARIANT_TARGET_PREFIX       = $(call FUN_INSTALL_PKG_VARIANT_TARGET_TVARIANT_PREFIX,$(1),$(2),$(3),plain)
+FUN_INSTALL_PKG_PREFIX                      = $(call FUN_INSTALL_PKG_VARIANT_TARGET_PREFIX,$(1),$(EHC_VARIANT),$(EHC_VARIANT_TARGET))
+
+#FUN_INSTALL_VARIANT_PKGLIB_TARGET_PREFIX	= $(call FUN_DIR_VARIANT_PKGLIB_TARGET_PREFIX,$(INSTALL_DIR),$(1),$(2))
+#FUN_INSTALLABS_VARIANT_PKGLIB_TARGET_PREFIX	= $(call FUN_DIR_VARIANT_PKGLIB_TARGET_PREFIX,$(INSTALLABS_DIR),$(1),$(2))
+
+FUN_INSTALL_VARIANT_INC_TARGET_PREFIX		= $(call FUN_DIR_VARIANT_INC_TARGET_PREFIX,$(INSTALL_DIR),$(1),$(2))
+FUN_INSTALLABS_VARIANT_INC_TARGET_PREFIX	= $(call FUN_DIR_VARIANT_INC_TARGET_PREFIX,$(INSTALLABS2_DIR),$(1),$(2))
+FUN_INSTALL_VARIANT_INC_SHARED_PREFIX		= $(call FUN_DIR_VARIANT_INC_SHARED_PREFIX,$(INSTALL_DIR),$(1))
+FUN_INSTALLABS_VARIANT_INC_SHARED_PREFIX	= $(call FUN_DIR_VARIANT_INC_SHARED_PREFIX,$(INSTALLABS_DIR),$(1))
+
+FUN_INSTALL_FLAG_PREFIX						= $(call    FUN_INSTALL_VARIANT_XXX_PREFIX,$(1),ins-flg)
+FUN_INSTALLABS_FLAG_PREFIX					= $(call FUN_INSTALLABS2_VARIANT_XXX_PREFIX,$(1),ins-flg)
+
+###########################################################################################
+# Construction of the name of a library, specific directories
+###########################################################################################
+
+# for an include directory inside a package
+# $1: directory prefix of package
+FUN_MK_PKG_INC_DIR						= $(1)include
+
+# for a C library
+# $1: directory/location prefix
+# $2: package name
+FUN_MK_CLIB_FILENAME					= $(1)lib$(2)$(LIB_SUFFIX)
+
+# for a java library
+# $1: directory/location prefix
+# $2: package name
+FUN_MK_JAVALIB_FILENAME					= $(1)lib$(2).jar
+
+###########################################################################################
+# Regular options to commands, as functions still depending on variant + target
+###########################################################################################
+
+# C compiler options, some are also extended by sub makefiles
+FUN_EHC_GCC_CC_OPTS							= -I$(call FUN_INSTALLABS_VARIANT_INC_SHARED_PREFIX,$(1)) $(GCC_OPTS_WHEN_EHC)
+FUN_EHC_GCC_LD_OPTS							= -L$(call FUN_INSTALLABS_VARIANT_LIB_SHARED_PREFIX,$(1))
+
+###########################################################################################
+# Regular options to commands
+###########################################################################################
+
+# GHC options
+GHC_OPTS								:= -fglasgow-exts $(OPT_GHC_STANDARD_PACKAGES) -package uulib
+GHC_OPTS_OPTIM							:= -O2
+GHC_OPTS_WHEN_EHC						:= @GHC_EHC_OPTIONS@
+
+# HADDOCK options
+HADDOCK_OPTS							:= 
+
+# SHUFFLE options
+SHUFFLE_OPTS_WHEN_EHC					:= @SHUFFLE_EHC_OPTIONS@
+SHUFFLE_OPTS_WHEN_UHC					:= --agmodheader=yes
+
+# UUAGC options
+UUAGC_OPTS_WHEN_EHC						:= @UUAGC_OPTIONS@
+UUAGC_OPTS_WHEN_EHC_AST_DATA			:= @UUAGC_EHC_AST_OPTIONS@
+UUAGC_OPTS_WHEN_EHC_AST_SEM				:= @UUAGC_EHC_SEM_OPTIONS@
+
+# UUAGC options for production version (i.e. uhc, ehc variant >= $(EHC_PREL_VARIANT))
+UUAGC_OPTS_WHEN_UHC						:=
+UUAGC_OPTS_WHEN_UHC_AST_DATA			:= --strictdata
+#UUAGC_OPTS_WHEN_UHC_AST_SEM				:= --Wignore --strictwrap -O
+UUAGC_OPTS_WHEN_UHC_AST_SEM				:= --strictwrap -O
+
+# GCC options
+GCC_OPTS_WHEN_EHC						:= @CC_STD_FLAG@ @GCC_EHC_OPTIONS@ -fomit-frame-pointer
+
+# CPP options
+CPP_OPTS_WHEN_EHC						:= @CPP_EHC_OPTIONS@
+
+# cabal options
+CABAL_CONFIGURE_OPTS_WHEN_EHC			:= @CABAL_CONFIGURE_OPTIONS@
+CABAL_SETUP_OPTS						:= --ghc --with-compiler=$(GHC1) $(CABAL_CONFIGURE_OPTS_WHEN_EHC)
+CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES 	:= @CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES@
+
+# C compiler options, some are also extended by sub makefiles
+EXTLIBS_GCC_CC_OPTS						:=  @GCC_EXTLIBS_OPTIONS@
+EXTLIBS_GMP_ABI							:=  @GMP_ABI@
+EHC_GCC_CC_OPTS							:= -I$(INSTALLFORBLDABS_INC_PREFIX) -I$(INSTALLFORBLDABS_INC_PREFIX)/gc $(GCC_OPTS_WHEN_EHC)
+EHC_GCC_LD_OPTS							:= -L$(INSTALLFORBLDABS_LIB_PREFIX)
+#RTS_GCC_CC_OPTS							:= -D__UHC_BUILDS_RTS__ -D__UHC_TARGET_$(if $(EHC_CFG_TARGET_IS_bc),BC,$(if $(EHC_CFG_TARGET_IS_C),C,$(if $(EHC_CFG_TARGET_IS_llvm),LLVM,)))__ -D__UHC_TARGET__=$(EHC_VARIANT_TARGET)
+#RTS_GCC_CC_OPTS							:= -D__UHC_BUILDS_RTS__ -D__UHC_TARGET_$(shell echo $(EHC_VARIANT_TARGET) | tr "[a-z]" "[A-Z]")__ -D__UHC_TARGET__=$(EHC_VARIANT_TARGET)
+RTS_GCC_CC_OPTS							:= -D__UHC_BUILDS_RTS__
+RTS_GCC_CC_OPTS_OPTIM					:= $(RTS_GCC_CC_OPTS) -O3
+
+# library building, using libtool
+LIBTOOL_STATIC_CMD						:= @LIBTOOL_STATIC_CMD@
+LIBTOOL_STATIC							:= $(LIBTOOL_STATIC_CMD) @LIBTOOL_STATIC_OPTS@
+LIBTOOL_DYNAMIC							:= @LIBTOOL_DYNAMIC_CMD@ @LIBTOOL_DYNAMIC_OPTS@
+
+# lhs2tex options
+LHS2TEX_OPTS_DFLT						:= 
+LHS2TEX_OPTS_POLY						:= $(LHS2TEX_OPTS_DFLT) --poly
+LHS2TEX_OPTS_NEWC						:= $(LHS2TEX_OPTS_DFLT) --newcode
+
+# ruler2 options
+RULER2_OPTS_DFLT						:= $(RULER2_OPTS_VERSION)
+RULER2_OPTS								:= $(RULER2_OPTS_DFLT)
+
+###########################################################################################
+# Installation configuration: options to commands, naming of libraries
+###########################################################################################
+
+# cabal options
+CABAL_OPT_INSTALL_LOC 					:= --user
+
+# prefix for library name, to make them globally unique
+GHC_PKG_NAME_PREFIX						:= 
+
+###########################################################################################
+# Shuffle order for EHC variants
+###########################################################################################
+
+# order to shuffle (see ehc/src/files1.mk for a complete list)
+# 4_99: interim for stuff from 4, needed for 4_2, because of ruler generated material uptil 4_2
+EHC_SHUFFLE_ORDER	:= 1 < 2 < 3 < 4 < 4_99 < 5 < 6 < 7 < 8 < 9 < 10 < 11 < 12 < 13 < 14 < 15 < 17 < 18 < 20 < 90 < 91 < 92 < 96 < 97 < 98 < $(EHC_PREL_VARIANT) < $(EHC_UHC_VARIANT) < $(EHC_UHC_INSTALL_VARIANT), \
+						$(EHC_UHC_VARIANT) < 102, \
+						$(EHC_PREL_VARIANT) < 103, \
+						4_99 < 4_2, \
+						6 < 6_4, \
+						7 < 7_2, \
+						10 < 50, \
+						15 < 16, \
+						8 < 8_2
+
+###########################################################################################
+# Shell script generation: shell alias to executable with config options
+###########################################################################################
+
+# $1: executable
+# $2: shell script
+# $3: config options
+FUN_GEN_SHELL_ALIAS	= \
+					( \
+					  echo "\#!/bin/sh" ; \
+					  echo $(1) '$(3) $$*' ; \
+					) > $(2) ; \
+					chmod +x $(2)
+
+###########################################################################################
+# Cabal
+###########################################################################################
+
+# generate cabal file
+# $1: pkg name
+# $2: version
+# $3: build-depends (additional)
+# $4: extensions (additional)
+# $5: synopsis
+# $6: exposed modules
+# $7: extra C sources
+# $8: build type
+# $9: license
+FUN_GEN_CABAL		= \
+					( \
+					echo   "Name:				$(strip $(1))" ; \
+					echo   "Version:			$(strip $(2))" ; \
+					echo   "License:			BSD3" ; \
+					echo   "Copyright:			Utrecht University, Department of Information and Computing Sciences, Software Technology group" ; \
+					echo   "Build-Type:			$(8)" ; \
+					echo   "license-file:		$(9)" ; \
+					echo   "Author:				UHC Team" ; \
+					echo   "Homepage:			http://www.cs.uu.nl/wiki/UHC" ; \
+					echo   "Category:			Testing" ; \
+					echo   "Build-Depends:		$(subst $(space),$(comma),$(strip @CABAL_BASE_LIB_DEPENDS@ @CABAL_EXTRA_LIB_DEPENDS@ $(3)))" ; \
+					echo   "Build-Tools:		" ; \
+					echo   "Extensions:			$(subst $(space),$(comma),$(strip RankNTypes MultiParamTypeClasses FunctionalDependencies $(4)))" ; \
+					echo   "Synopsis:			$(strip $(5))" ; \
+					echo   "Exposed-Modules:	$(subst $(space),$(comma),$(strip $(6)))" ; \
+					echo   "Exposed:			False" ; \
+					echo   "C-Sources:			$(subst $(space),$(comma),$(strip $(7)))" ; \
+					echo   "Ghc-Options:		$(GHC_OPTS_WHEN_EHC) -fglasgow-exts" \
+					)
+
+# generate cabal file for library
+# $1: pkg name
+# $2: version
+# $3: build-depends (additional)
+# $4: extensions (additional)
+# $5: synopsis
+# $6: exposed modules
+# $7: extra C sources
+FUN_GEN_CABAL_LIB	= $(call FUN_GEN_CABAL,\
+						$(1),$(2),$(3),$(4),$(5),$(6),$(7),\
+						Simple,\
+						$(TOPABS_PREFIX)LICENSE \
+						)
+
+# generate cabal file for executable
+# $1: pkg name
+# $2: version
+# $3: build-depends (additional)
+# $4: extensions (additional)
+# $5: synopsis
+# $6: exposed modules
+# $7: extra C sources
+FUN_GEN_CABAL_EXEC	= $(call FUN_GEN_CABAL,\
+						$(1),$(2),$(3),$(4),$(5),$(6),$(7),\
+						Custom,\
+						LICENSE \
+						)
+
+# generate simplest cabal Setup.hs
+GEN_CABAL_SETUP		= @(echo "import Distribution.Simple" ; echo "main = defaultMain")
+
+# compile cabal setup
+# $1: src
+# $2: exec
+GHC_CABAL			= $(GHC) -package Cabal -o $(2) $(1)  ; $(STRIP_CMD) $(2)
+
+###########################################################################################
+# Filter out empty files
+###########################################################################################
+
+# remove files with empty content from list of files
+# $1: file list
+FILTER_OUT_EMPTY_FILES		= $(if $(strip $(1)),$(shell echo $(1) | sed -e 's/\([^ ]*\)\s*/ls \1\* ;/g' | sh | sed -e 's/\s+/ /g' | sort | uniq | xargs $(SHELL_FILTER_NONEMP_FILES)),)
+
+# FILTER_OUT_EMPTY_FILES		= $(shell echo $(1) | sed -e 's/\([^ ]*\)\.hs\s*/ls \1\*\.hs ;/g' | sh | sed -e 's/\s+/ /g' | sort | uniq | xargs $(SHELL_FILTER_NONEMP_FILES) )
+
+###########################################################################################
+# Copy files
+###########################################################################################
+
+# copy files using tar
+# $1: src dir
+# $2: dest dir
+# $3: src files relative to src dir
+FUN_COPY_FILES_BY_TAR			= ((cd $(1) && $(TAR) --ignore-failed-read -cf - $(3)) | (cd $(2) && $(TAR) xf -))
+
+# copy files recursively while renaming the variant subdirectory
+# $1: src dir
+# $2: dest dir
+# $3: original variant name
+# $4: target variant name
+FUN_COPY_FILES_AND_RENAME		= (cd $(1) && for i in `find . -type f`; do tgt=$(2)/`echo $${i} | sed s+$(3)/+$(4)/+g`; mkdir -p  `dirname $${tgt}` ; install $${i} $${tgt}; done)
+
+###########################################################################################
+# Misc
+###########################################################################################
+
+# strip dashes
+# $1: dashed text
+FUN_STRIP_DASH		= $(subst -,,$(1))
+
+# date
+TODAY				:= $(shell date '+%G%m%d')
+
+# strip a '/' at the end, turning a prefix into a directory
+FUN_PREFIX2DIR			= $(patsubst %/,%,$(1))
+
+# target suffix for core
+CORE_TARG_SUFFIX	:= grin2
+
+# subst's
+SUBST_BAR_IN_TT		:= sed -e '/begin{TT[^}]*}/,/end{TT[^}]*}/s/|/||/g'
+SUBST_EHC			:= perl $(BIN_PREFIX)substehc.pl
+SUBST_LINE_CMT		:= sed -e 's/{-\# LINE[^\#]*\#-}//' -e '/{-\#  \#-}/d'
+SUBST_SH			:= perl $(BIN_PREFIX)substsh.pl
+
+# indentation of (test) output
+INDENT2				:= sed -e 's/^/  /'
+INDENT4				:= sed -e 's/^/    /'
+
+# make programming utils
+head				= $(word 1,$(1))
+tail				= $(wordlist 2,$(words $(1)),$(1))
+comma				:= ,
+empty				:=
+space				:= $(empty) $(empty)
+dollar				:= $$
+ddollar				:= $(dollar)$(dollar)
+cparen				:= )
+
+# subst _ by x
+# $1: text
+SUBS_US_X			= $(subst _,x,$(1))
+
+# make a static library, see also src/ehc/Config.chs.in
+# $1: library
+# $2: files
+ifeq ($(LIBTOOL_STATIC_CMD),no)
+FUN_LIB_MK_STATIC		= $(AR) r $(1) $(2) ; $(RANLIB) $(1)
+else
+FUN_LIB_MK_STATIC		= $(LIBTOOL_STATIC) $(1) $(2)
+endif
+

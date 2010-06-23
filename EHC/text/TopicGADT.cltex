@@ -1,0 +1,76 @@
+%%[scratch
+\subsection{Type language}
+
+\begin{code}
+sigma  =  ...
+       |  tvare /=/ sigma
+\end{code}
+
+\subsection{Type rules}
+
+A few notes:
+\begin{itemize}
+\item
+Threading of constraints/substitution until now has been implicit.
+Only result constraints have been compositionally described.
+This bites back now because a more precise manipulation of constraints is required.
+The implementation correctly expresses the required threading but the type rules here/currently handle it via the
+immediate application of constraints to |Gamma| and the expected type |sigmak|.
+This requires fixing in all type rules dealing with constraints and/or see remarks in \secRef{ehc2}.
+\item
+A pattern in a lambda expression require similar treatment as a pattern in a case alternative.
+This has been omitted.
+\end{itemize}
+
+\rulerCmdUse{rules.fit11.varGADT}
+\rulerCmdUse{rules.fit11.gadt}
+\rulerCmdUse{rules.pat11}
+\rulerCmdUse{rules.casealt11}
+\rulerCmdUse{rules.casealts11}
+\rulerCmdUse{rules.expr9.case}
+
+\subsection<article>{Literature}
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+

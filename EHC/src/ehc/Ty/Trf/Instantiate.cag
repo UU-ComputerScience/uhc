@@ -1,0 +1,280 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell importable interface to Ty instantiate
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(3 hmtyinfer || hmtyast) hs module {%{EH}Ty.Trf.Instantiate}
+%%]
+
+%%[(3 hmtyinfer || hmtyast) hs import({%{EH}Base.Common},{%{EH}Ty},{%{EH}VarMp},{%{EH}Substitutable})
+%%]
+
+%%[(4 hmtyinfer || hmtyast) hs import({%{EH}Base.Debug})
+%%]
+%%[(4 hmtyinfer || hmtyast) hs import(EH.Util.Pretty)
+%%]
+%%[(4 hmtyinfer || hmtyast) hs import(Data.List) export(tyInst1Quants, tyInst1Exists, instCoConst, instContra,instCo)
+%%]
+%%[(4 hmtyinfer || hmtyast) hs import(qualified Data.Set as Set)
+%%]
+
+%%[(8 codegen hmtyinfer) hs import(qualified {%{EH}TyCore.Full0} as C)
+%%]
+
+%%[(4_2 hmtyinfer || hmtyast) hs export(instPlain,instFixed,instMeet)
+%%]
+
+%%[(6_4 hmtyinfer || hmtyast) hs export(instCoExist)
+%%]
+
+%%[(50 hmtyinfer || hmtyast) hs export(HowToInst,instCoFixed)
+%%]
+
+%%[doesWhat
+Instantiation replaces quantification with fresh type vars or constants (for existentials).
+This also depends on context, e.g. the side in fitsIn:
+In \verb|forall a. ... <= ...| it must be instantiated to a variable, but on the right hand side to a constant (skolem).
+Values of type @HowToInst@ steer this.
+
+Additionally, for TyCore code generation we need to translate instantiations to explicit parameters.
+A trace of the done instantiation is therefore computed as well, see type @InstTo@.
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% tyInst interface
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(4 hmtyinfer || hmtyast) ag import({Ty/AbsSyn})
+WRAPPER TyAGItf
+%%]
+%%[(4444 hmtyinfer || hmtyast) ag import({Ty/CommonAG})
+%%]
+
+%%[(3 hmtyinfer || hmtyast).tyInst hs export(tyInst)
+tyInst' :: (TyVarId -> Ty) -> UID -> Ty -> Ty
+tyInst' mkFreshTy uniq ty
+  = s |=> ty'
+  where  i u (Ty_Quant v t)  =  let  (u',v') = mkNewUID u
+                                     (s,t') = i u' t
+                                in   ((v `varmpTyUnit` (mkFreshTy v')) |=> s,t')
+         i _ t               =  (emptyVarMp,t)
+         (s,ty')             =  i uniq ty
+
+tyInst :: UID -> Ty -> Ty
+tyInst = tyInst' mkTyVar
+%%]
+
+%%[(3 hmtyinfer || hmtyast).tyInstKnown hs export(tyInstKnown)
+tyInstKnown :: UID -> Ty -> Ty
+tyInstKnown = tyInst' (\tv -> Ty_Var tv TyVarCateg_Fixed)
+%%]
+
+%%[(4 hmtyinfer || hmtyast).tyInst -(3.tyInst 3.tyInstKnown) hs
+tyInst :: UID -> Bool -> HowToInst -> Ty -> (Ty,TyVarIdL,[InstTo])
+tyInst uniq onlyExists howToInst ty
+  = (repl_Syn_TyAGItf t, replTvL_Syn_TyAGItf t, instToL_Syn_TyAGItf t)
+  where t = wrap_TyAGItf
+              (sem_TyAGItf (TyAGItf_AGItf ty))
+              (Inh_TyAGItf
+                 { gUniq_Inh_TyAGItf 		= uniq
+                 , onlyExists_Inh_TyAGItf 	= onlyExists
+                 , howToInst_Inh_TyAGItf 	= howToInst
+                 })
+
+tyInst1Quants :: UID -> HowToInst -> Ty -> (Ty,TyVarIdL,[InstTo])
+tyInst1Quants uniq howToInst ty = tyInst uniq False howToInst ty
+%%]
+
+%%[(4 hmtyinfer || hmtyast).tyInst1Exists hs
+tyInst1Exists :: UID -> Ty -> Ty
+tyInst1Exists uniq ty
+  = t
+  where (t,_,_) = tyInst uniq True instCoConst ty
+%%]
+
+%%[(6_4 hmtyinfer || hmtyast).tyInst1Exists -4.tyInst1Exists hs
+tyInst1Exists :: UID -> Ty -> Ty
+tyInst1Exists uniq ty = fst (tyInst uniq True instCoExist ty)
+%%]
+
+tyInst :: UID -> Bool -> HowToInst -> Ty -> (Ty,TyVarIdL)
+tyInst uniq onlyExists howToInst ty
+  = (s |=> ty',tvl)
+  where  i u mbQ (Ty_Quant q v t) | not (tyquIsForall q && onlyExists) && maybe True (==q) mbQ
+                             =  let  (u',v')        = mkNewUID u
+                                     (s,t',tvl')    = i u' (Just q) t
+                                in   ((v `varmpTyUnit` (howToInst q v')) |=> s,t',v':tvl')
+         i _ _ t             =  (emptyVarMp,t,[])
+         (s,ty',tvl)         =  i uniq Nothing ty
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% How to instantiate
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(4 hmtyinfer || hmtyast).HowToInst hs
+type HowToInst = TyQu -> TyVarId -> Ty
+
+instCoConst, instContra, instCo :: HowToInst
+instCoConst  q v = if tyquIsForall q then Ty_Var v TyVarCateg_Plain else mkTyCon ("C_" ++ show v)
+instContra   q v = if tyquIsForall q then Ty_Var v TyVarCateg_Fixed else Ty_Var v TyVarCateg_Plain
+instCo       q v = if tyquIsForall q then Ty_Var v TyVarCateg_Plain else Ty_Var v TyVarCateg_Fixed
+%%]
+instCoConst      = instCo
+instCoConst  q v = if tyquIsForall q then Ty_Var v TyVarCateg_Plain else mkTyCon ("C_" ++ show v)
+
+%%[(4_2 hmtyinfer || hmtyast) hs
+instPlain, instFixed, instMeet :: HowToInst
+instPlain  _    = mkTyVar
+instFixed  _ v  = Ty_Var v TyVarCateg_Fixed
+instMeet   _ v  = Ty_Both v []
+%%]
+
+%%[(6_4 hmtyinfer || hmtyast) hs
+instCoExist :: HowToInst
+instCoExist  q v = if tyquIsForall q then Ty_Var v TyVarCateg_Plain else Ty_Var v TyVarCateg_Exist
+%%]
+
+%%[(50 hmtyinfer || hmtyast) hs
+instCoFixed :: HowToInst
+instCoFixed  q v = if tyquIsForall q then Ty_Var v TyVarCateg_Plain else Ty_Var v TyVarCateg_Fixed
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Options
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(4 hmtyinfer || hmtyast)
+ATTR TyAGItf AllTy [ howToInst: HowToInst  onlyExists: Bool | | ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Where to stop
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(4 hmtyinfer || hmtyast)
+ATTR AllTy [ allow: Bool  mbQ: {Maybe TyQu} | | ]
+
+SEM TyAGItf
+  | AGItf           ty          .   allow       =   True
+                                .   mbQ         =   Nothing
+
+SEM Ty
+  | Quant           loc         .   allow       =   @lhs.allow
+                                                        && not (tyquIsForall @qu.repl && @lhs.onlyExists)
+                                                        && maybe True (== @qu.repl) @lhs.mbQ
+                    ty          .   mbQ         =   Just @qu.repl
+  | * - Quant       loc         .   allow       =   False
+%%]
+
+%%[(9 hmtyinfer || hmtyast)
+SEM Ty
+  | Quant           loc         .   allow       :   Bool
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Unique
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(4 hmtyinfer || hmtyast)
+ATTR AllTy [ | gUniq: UID | ]
+ATTR TyAGItf [ gUniq: UID | | ]
+
+SEM Ty
+  | Quant           (ty.gUniq,loc.lUniq)        =   mkNewUID @lhs.gUniq
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Substution to replace tvars
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(4 hmtyinfer || hmtyast)
+ATTR AllTy [ replSubst: VarMp | gathSubst: VarMp | ]
+ATTR Ty TyAGItf [ | | replTvL USE {++} {[]}: TyVarIdL ]
+ATTR AllTyAndFlds [ | | repl: SELF ]
+ATTR TyAGItf [ | | repl: Ty ]
+
+SEM TyAGItf
+  | AGItf           ty          .   gathSubst   =   emptyVarMp
+                                .   replSubst   =   @ty.gathSubst
+
+SEM Ty
+  | Quant           loc         .   tvNew       =   @lUniq
+                    (loc.tyNew,ty.gathSubst)    =   if @allow
+                                                    then let t = @lhs.howToInst @qu.repl @tvNew
+                                                         in ( t
+%%[[4
+                                                            , (varmpTyUnit @tv t)
+%%][6
+                                                            , (varmpMetaLevTyUnit (tyquMetaLev @qu.repl) @tv t)
+%%]]
+                                                                `varmpPlus` @lhs.gathSubst
+                                                            )
+                                                    else (Ty_Any,@lhs.gathSubst)
+%%]
+
+%%[(9 hmtyinfer || hmtyast)
+SEM Ty
+  | Quant           loc         .   tvNew       :   UID
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Instantiation trace
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(4 hmtyinfer || hmtyast)
+ATTR Ty TyAGItf [ | | instToL USE {++} {[]}: {[InstTo]} ]
+
+%%]
+SEM Ty
+  | App				lhs			.	instToL		=	if @isArrowRoot then InstTo_Plain : (@instToSpineL !! 0) else []
+
+%%[(4 hmtyinfer || hmtyast)
+%%]
+ATTR Ty [ | | instToSpineL: {[[InstTo]]} ]
+
+SEM Ty
+  | App				loc			.	instToSpineL=	@arg.instToL : @func.instToSpineL
+  | * - App			lhs			.	instToSpineL=	[]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Replacement
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(4 hmtyinfer || hmtyast)
+SEM Ty
+  | Quant           loc         .   instTo      =   InstTo_Qu @qu.repl @tv @tvNew
+%%]
+
+%%[(6 hmtyinfer || hmtyast)
+SEM Ty
+  | Quant           loc         .   l1Subst     =   varmpDecMetaLev @lhs.replSubst |=> @l1
+                                .   instTo      :=  InstTo_Qu @qu.repl @tv @tvNew @l1Subst
+%%]
+
+%%[(4 hmtyinfer || hmtyast)
+SEM Ty
+  | Quant           lhs         .   (repl,replTvL,instToL)
+                                                =   if @allow
+                                                    then (@ty.repl,@tvNew : @ty.replTvL, @instTo : @ty.instToL)
+                                                    else (@repl,[],[])
+  | Var             lhs         .   repl        =   maybe @repl id (varmpTyLookup @tv @lhs.replSubst)
+%%]
+
+%%[(50 hmtyinfer || hmtyast)
+SEM Ty
+  | Equal           lhs         .   repl        =   maybe @repl (\t -> Ty_Equal (tyVar t) @ty.repl) (varmpTyLookup @tv @lhs.replSubst)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Type signatures for attributes
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(9 hmtyinfer || hmtyast)
+SEM Ty
+  | Quant			loc			.	tyNew		: 	Ty
+%%]

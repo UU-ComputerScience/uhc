@@ -1,0 +1,80 @@
+	    Utrecht Haskell Compiler -- first release, version 1.0.0
+	    ========================================================
+
+
+The UHC team is happy to announce the first public release of the
+Utrecht Haskell Compiler (UHC). UHC supports almost all Haskell98
+features plus many experimental extensions. The compiler runs on MacOSX,
+Windows (cygwin), and various Unix flavors.
+
+Features:
+
+  * Multiple backends, including a bytecode interpreter backend and a
+    GRIN based, full program analysing backend, both via C.
+                                                                            
+  * Experimental language extensions, some of which have not been
+    implemented before.
+  
+  * Implementation via attribute grammars and other high-level tools.
+
+  * Ease of experimentation with language variants, thanks to an
+    aspect-oriented internal organisation.
+
+
+Getting started & Download
+--------------------------
+
+UHC is available for download as source distribution via the UHC home
+page:
+
+	http://www.cs.uu.nl/wiki/UHC
+	
+Here you will also find instructions to get started.
+
+
+Status of the implementation
+----------------------------
+
+Like any university project UHC is very much work in progress. We feel
+that it is mature and stable enough to offer to the public, but much
+work still needs to be done; hence we welcome contributions by others.
+
+UHC grew out of our Haskell compiler project (called Essential Haskell
+Compiler, or EHC) over the past 5 years. UHC internally is organised as
+a combination of separate aspects, which makes UHC very suitable to
+experiment with; it is relatively easy to build compilers for
+sublanguages, or to generate related tools such as documentation
+generators, all from the same code base. Extensions to the language can
+be described separately, and be switched on or of as need arises.
+
+
+Warning
+-------
+
+Although we think  that the compiler is stable enough to compile
+subtantial Haskell programs, we do not recommend yet to use it for any
+serious development work in Haskell. We ourselves use the GHC as a
+development platform! We think however that it provides a great platform
+for experimenting with language implementations, language extensions,
+etc.
+
+
+Mailing lists
+-------------
+
+For UHC users and developers respectively:
+
+	http://mail.cs.uu.nl/mailman/listinfo/uhc-users
+	http://mail.cs.uu.nl/mailman/listinfo/uhc-developers
+
+
+Bug reporting
+-------------
+
+Please report bugs at:
+
+	http://code.google.com/p/uhc/issues/list
+
+
+The UHC Team
+

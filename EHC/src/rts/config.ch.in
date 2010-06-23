@@ -1,0 +1,63 @@
+%%[8
+#ifndef __CONFIG_H__
+#define __CONFIG_H__
+
+#include "MachDeps.h"
+%%]
+
+
+%%[8
+/* use Boehm's GC */
+#undef USE_BOEHM_GC
+
+/* size of Pointer */
+#define SIZEOF_POINTER	SIZEOF_INTPTR_T
+
+/* size of GrWord */
+#define SIZEOF_GRWORD	SIZEOF_INTPTR_T
+
+%%]
+
+%%[97
+// Mutually exclusive use a MP (Multiple Precision) library.
+
+/* use GMP */
+#undef USE_GMP
+
+/* use LTM */
+#undef USE_LTM
+%%]
+
+%%[8
+/* endianness */
+
+#undef BIGENDIAN
+#undef LITTLEENDIAN
+
+%%]
+
+%%[8
+/* Timing of GC */
+#define GC_TIMING 0
+%%]
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Misc
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+// the empty PRIM define is used to mark exported functions from prim.c, used to automatically generate prim.h
+#define PRIM
+%%]
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% EOF
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+#endif /* __CONFIG_H__ */
+%%]

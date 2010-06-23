@@ -1,0 +1,786 @@
+%%[1
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%[39
+\usepackage{fancyvrb}
+\usepackage{graphicx}
+\usepackage[left=2.75cm,right=2.75cm,top=3cm,bottom=3cm,nohead]{geometry}
+
+\def\latexRef#1{\ref{#1}}
+\def\latexPageref#1{\pageref{#1}}
+\usepackage{hyperref} %% preferably the last package (according to the manual)
+%%]
+
+%%[1
+% list environments
+\def\@@ListSetupA{%
+%if storyPHD || storyEhcBook || storyRulerDoc
+  \setlength{\partopsep}{0pt}
+  \setlength{\topsep}{.5\topsep}
+%endif
+}
+\def\@@ListSetupB{%
+%if storyPHD || storyEhcBook || storyRulerDoc
+  \setlength{\parskip}{.5\parskip}
+  \setlength{\itemsep}{.5\itemsep}
+%endif
+}
+
+\newenvironment{Itemize}{%
+  \@@ListSetupA
+  \begin{itemize}
+  \@@ListSetupB
+}{%
+  \end{itemize}
+}
+
+\newenvironment{Enumerate}{%
+  \@@ListSetupA
+  \begin{enumerate}
+  \@@ListSetupB
+}{%
+  \end{enumerate}
+}
+
+% xfig figure
+\newcommand{\FigCenterXFigTex}[1]{%
+ \begin{center}
+ \input #1.tex
+ \end{center}
+}
+
+\newcommand{\FigScaledEPS}[2]{%
+ \includegraphics[scale=#1]{#2.eps}
+}
+
+\newcommand{\FigEPS}[1]{%
+ \FigScaledEPS{1}{#1}
+}
+
+\newcommand{\FigScaledPDF}[2]{%
+ \includegraphics[scale=#1]{#2.pdf}
+}
+
+\newcommand{\FigScaledJPEG}[2]{%
+ \includegraphics[scale=#1]{#2.jpg}
+}
+
+\newcommand{\FigPDF}[1]{%
+ \FigScaledPDF{1}{#1}
+}
+
+\newcommand{\FigCenteredScaledPDF}[2]{%
+ \begin{center}
+ \includegraphics[scale=#1]{#2.pdf}
+ \end{center}
+}
+
+\newcommand{\FigCenterPDF}[2]{%
+ \begin{center}
+ \FigScaledPDF{#1}{#2}
+ \end{center}
+}
+
+%% AFP TeX macro's
+\def\spacecorrection{\;}
+\def\isspacecorrection{\spacecorrection}
+\def\allowforspacecorrection#1{%
+  \gdef\temp{#1}%
+  \ifx\isspacecorrection\temp
+    \let\next=\empty
+  \else
+    \let\next=\temp
+  \fi
+  \next}
+
+\newcommand{\chooseFigPos}[1]{%
+ %\def\CFP@@Pos{#1}
+ \def\CFP@@Pos{}
+ \def\CFP@@Tail{{figure}[\CFP@@Pos]}
+ \ifx\CFP@@Pos\empty
+%if acm
+  \begin{figure}[t]%
+%elif llncs
+  \begin{figure}[tp]%
+%elif storyPHD || storyEhcBook || storyRulerDoc
+  \begin{figure}[tp]%
+%else
+  \begin{figure}[htbp]%
+%endif
+ \else\expandafter\begin\CFP@@Tail\fi
+}
+
+% Env for figure
+\newenvironment{Figure}[3]{%
+  \def\F@@Pos{\chooseFigPos{#1}}
+  \def\F@@Cap{#2}
+  \def\F@@Lab{#3}
+  \F@@Pos
+}{%
+  \caption{\F@@Cap}
+  \label{\F@@Lab}
+  \end{figure}
+}
+
+\newenvironment{CenterFigure}[3]{%
+  \def\F@@Pos{\chooseFigPos{#1}}
+  \def\F@@Cap{#2}
+  \def\F@@Lab{#3}
+  \F@@Pos
+  \begin{center}
+}{%
+  \end{center}
+  \caption{\F@@Cap}
+  \label{\F@@Lab}
+  \end{figure}
+}
+
+% Env for tabular figure
+\newenvironment{TabularFigure}[4]{%
+  \begin{Figure}{#1}{#2}{#3}
+  \begin{tabular}{#4}
+%if not useSigplanconfSty
+  \hline
+%  \\
+%endif
+}{%
+%if not useSigplanconfSty
+  \\
+  \hline
+%endif
+  \end{tabular}
+  \end{Figure}
+}
+
+% Env for centered tabular figure
+\newenvironment{TabularCenterFigure}[4]{%
+  \begin{CenterFigure}{#1}{#2}{#3}
+  \begin{tabular}{#4}
+%if not useSigplanconfSty
+  \hline
+%  \\
+%endif
+}{%
+%if not useSigplanconfSty
+  \\
+  \hline
+%endif
+  \end{tabular}
+  \end{CenterFigure}
+}
+
+% Plain figure
+\newenvironment{PlainFigure}[3]{%
+  \begin{TabularFigure}{#1}{#2}{#3}{p{.98\linewidth}}
+}{%
+  \end{TabularFigure}
+}
+
+% Plain figure
+\newenvironment{PlainCenterFigure}[3]{%
+  \begin{PlainFigure}{#1}{#2}{#3}
+  \begin{center}
+}{%
+  \end{center}
+  \end{PlainFigure}
+}
+
+% Env for xfig in a figure
+\newenvironment{XFigFigure}[4]{%
+  \begin{PlainFigure}{#1}{#3}{#4}
+  \FigCenterXFigTex{#2}
+}{%
+  \end{PlainFigure}
+}
+
+% Cmd for pdf (from xfig) in a figure
+\newcommand{\FigurePDF}[5]{%
+  \begin{PlainFigure}{#1}{#4}{#5}
+  \FigCenterPDF{#2}{#3}
+  \end{PlainFigure}
+}
+
+% Cmd for pdf (from xfig) in a figure
+\newcommand{\FigureXFigTex}[4]{%
+  \begin{PlainFigure}{#1}{#3}{#4}
+  \FigCenterXFigTex{#2}
+  \end{PlainFigure}
+}
+
+% Env for rules in a figure
+\newenvironment{RulesFigure}[3]{%
+  \begin{TabularFigure}{}{#2}{#3}{P}
+  \fbox{#1}
+  \\
+}{%
+  \end{TabularFigure}
+}
+%%]
+
+%%[1.rulerRulesetFigure
+% Env for rules in a figure
+% #1: scheme (displayed as judgement)
+% #2: caption text
+% #3: ruleset name
+% #4: view name
+\newenvironment{rulerRulesetFigure}[4]{%
+  \def\R@@Version{#4}
+  \def\R@@Info{\ifx\R@@Version\empty #2\else #2 (\R@@Version)\fi}
+%if not asSlides
+  \begin{TabularCenterFigure}{}{\R@@Info}{#3}{p{0.95\linewidth}}
+%endif
+  \begin{center}
+  \fbox{#1}
+  \\
+}{%
+%if not asSlides
+  \par
+  \csname RulesFigureBEndHook\endcsname
+%endif
+  \end{center}
+%if not asSlides
+  \end{TabularCenterFigure}
+%endif
+}
+%%]
+
+%%[1.rulerRule
+% Cmd for single rule, name horizontally
+% #1: rule name
+% #2: view name
+% #3: premise judgements
+% #4: conclusion judgement
+\newcommand{\rulerRule}[4]{%
+\begingroup
+\renewcommand{\arraystretch}{1}%
+\mbox{%
+\ensuremath{%
+  \frac{%
+    \begin{array}{@@{}c@@{}}%
+    \ \\
+    #3
+    \end{array}%
+  }{%
+    \begin{array}{@@{}c@@{}}%
+    #4
+    \end{array}%
+  }%
+  \, \textsc{#1}_{#2}%
+ }%
+}
+\endgroup
+}
+%%]
+
+%%[1
+%%]
+% Cmd for single rule, name vertically
+% #1: rule name
+% #2: view name
+% #3: premise judgements
+% #4: conclusion judgement
+\newcommand{\rulerRuleVert}[4]{%
+\begingroup
+\renewcommand{\arraystretch}{1}%
+\mbox{%
+\ensuremath{%
+  (\textsc{#1}_{#2})%
+  \\
+  \frac{%
+    \begin{array}{@@{}c@@{}}%
+    \ \\
+    #3
+    \end{array}%
+  }{%
+    \begin{array}{@@{}c@@{}}%
+    #4
+    \end{array}%
+  }%
+ }%
+}
+\endgroup
+}
+
+%%[1
+% Cmd for single rule, name vertically
+% #1: rule name
+% #2: view name
+% #3: premise judgements
+% #4: conclusion judgement
+\newcommand{\rulerRuleVert}[4]{%
+\begingroup
+\renewcommand{\arraystretch}{1}%
+\begin{array}{@@{}l@@{}}
+\mbox{%
+\ensuremath{%
+  \frac{%
+    \begin{array}{@@{}c@@{}}%
+    \ \\
+    #3
+    \end{array}%
+  }{%
+    \begin{array}{@@{}c@@{}}%
+    #4
+    \end{array}%
+  }%
+ }%
+}
+\\
+(\textsc{#1}_{#2})%
+\\
+\end{array}
+\endgroup
+}
+%%]
+
+%%[1
+% Old style
+\newcommand{\ehinfrule}[4]{%
+\begingroup
+%\linespread{1}\selectfont
+\renewcommand{\arraystretch}{1}%
+\mbox{%
+%\linespread{1}\selectfont
+%\vspace{.5\baselineskip}
+\ensuremath{%
+  \frac{%
+    \begin{array}{@@{}c@@{}}%
+    %\renewcommand{\arraystretch}{1}%
+    #3
+    \end{array}%
+  }{%
+    \begin{array}{@@{}c@@{}}%
+    %\renewcommand{\arraystretch}{1}%
+    #4
+    \end{array}%
+  }%
+  \, \textsc{#1}_{#2}%
+ }%
+}
+\endgroup
+}
+%%]
+
+%%[1
+% Env for code in a figure
+\newenvironment{CodeFigure}[3]{%
+  \begin{TabularFigure}{#1}{#2}{#3}{c}
+  \begin{minipage}{0.9\textwidth}
+  %\vspace{.5ex}
+  \setlength{\mathindent}{0pt}
+}{%
+  %\vspace{.5ex}
+  \end{minipage}
+  \end{TabularFigure}
+}
+
+% safe way of using code env in slides
+%\newcommand{\BoxCode}[1]{\parbox{\textwidth}{#1}}
+\newcommand{\BoxCode}[1]{\parbox{\textwidth}{#1}}
+
+% input
+% 'If' depending on file existence
+\newread\TmpRead
+% IfInputExists( filename, exec-then, exec-else )
+\def\IfInputExists#1#2#3{%
+\immediate\openin\TmpRead=#1
+\ifeof\TmpRead\immediate\closein\TmpRead\def\TmpA{#3}%
+\else\immediate\closein\TmpRead\def\TmpA{#2}%
+\fi\TmpA}   
+% input
+\newcommand{\Input}[1]{\IfInputExists{#1}{\input{#1}}{}}
+
+% stripAfterDot
+\def\@@stripAfterDot#1.#2;{#1}
+
+% section structure related
+%if llncs
+\newcommand{\Paragraph}[1]{\paragraph{#1.}}
+%else
+\newcommand{\Paragraph}[1]{\paragraph{#1}}
+%endif
+
+% chunk related
+\newcommand{\chunkHideDef}[2]{%
+ \subsection{#2}\label{#1}
+%if asDraft
+ \marginpar{#1}
+%endif
+}
+\newcommand{\chunkHideRefAppx}[1]{\marginpar[{\hfill\footnotesize\secPageRefB{#1}}]{{\footnotesize\secPageRefB{#1}}}}
+%if targetForPaper
+\newcommand{\chunkHideRef}[1]{\refHideWWW{#1}}
+%else
+\newcommand{\chunkHideRef}[1]{\chunkHideRefAppx{#1}}
+%endif
+\newcommand{\chunkCmdDef}[1]{\expandafter\def\csname #1\endcsname}
+\newcommand{\chunkCmdUseRaw}[1]{%
+ \csname #1\endcsname
+}
+\newcommand{\chunkCmdUse}[1]{%
+%if asSlides
+ \parbox{\textwidth}{\chunkCmdUseRaw{#1}}
+%else
+%if blockstyle
+%else
+ \vspace{.2ex}
+%endif
+ \chunkCmdUseRaw{#1}
+%if blockstyle
+ \vspace{-1.1ex}
+%else
+ \vspace{-.6ex}
+%endif
+%endif
+}
+\newcommand{\chunkCmdFrameUse}[1]{%
+%if asSlides
+ \chunkCmdUse{#1}
+%endif
+}
+\newcommand{\chunkCmdUsePrevLit}[1]{{\color{blue}\chunkCmdUse{#1}}}
+\newcommand{\chunkCmdUsePrev}[1]{\par\chunkRefsExpanded{#1}}
+\newcommand{\chunkCmdUseOnPrev}[2]{%
+%if optExpandPrevRef
+{\par\chunkRefsExpanded{#1}\chunkCmdUseMark{#2}}
+%else
+{\chunkCmdUseMark{#2}}
+% {\par{[see page(s)~\chunkRefs{#1}]}\setlength{\parskip}{0cm}\chunkCmdUseMark{#2}}
+% {\par{\color{blue}...page(s)~\chunkRefs{#1}}\setlength{\parskip}{0cm}\chunkCmdUseMark{#2}}
+%endif
+}
+\newcommand{\chunkMark}[1]{%
+%if inclChunkMarks
+ \expandafter\marginpar{\footnotesize\color{blue}\@@stripAfterDot#1;}
+%endif
+}
+\newcommand{\chunkCmdUseMark}[1]{\chunkMark{#1}\chunkCmdUse{#1}}
+\newcommand{\chunkIndex}[1]{\index{#1}}
+\newcommand{\chunkRefs}[1]{\@@for\@@chunkRef:=#1\do{,~\pageref{\@@chunkRef}}}
+\newcommand{\chunkRefsExpanded}[1]{\@@for\@@chunkRef:=#1\do{{\color{blue}\chunkCmdUse{\@@chunkRef}}\setlength{\parskip}{0cm}}}
+
+% font usage
+\newcommand{\textRL}[1]{\textsc{#1}}
+%%]
+
+%%[1
+% ruler related
+%%]
+
+%%[1.rulerCmdDef
+% Cmd to define a ruler cmd (for rules, figures, ...)
+% #1: cmd name
+% #2: body
+\newcommand{\rulerCmdDef}[1]{\expandafter\def\csname #1\endcsname}
+%%]
+
+%%[1.rulerCmdUse
+% Cmd to use a ruler cmd (for rules, figures, ...)
+% #1: cmd name
+\newcommand{\rulerCmdUse}[1]{\csname #1\endcsname}
+%%]
+
+%%[1
+\newcommand{\rulerCmdUseExplain}[3]{%
+ \begingroup
+ \def\RulesFigureBEndHook{%
+  \vspace{1.5ex}
+  \small
+  \renewcommand{\arraystretch}{1.2}
+  \begin{tabular}{l@@{\ :\ }p{.75\linewidth}}
+   \hline\hline \multicolumn{2}{p{.85\linewidth}}{#2} \\\hline #3
+  \end{tabular}
+ }
+ \def\RulesFigureBCaptionHook{, with explanation}
+ \rulerCmdUse{#1}
+ \endgroup
+}
+\newcommand{\ruleRef}[1]{rule~\textRL{#1}}
+\newcommand{\RuleRef}[1]{Rule~\textsc{#1}}
+\newcommand{\rulerChngBegMark}{\color{blue}}
+\newcommand{\rulerChngEndMark}{\color{black}}
+\newcommand{\rulerSameBegMark}{\color{gray!75}}
+\newcommand{\rulerSameEndMark}{\color{black}}
+
+
+% referencing
+\newcommand{\refHideWWW}[1]{\marginpar[\hfill\WWWlogo]{\WWWlogo}}
+\def\myRef#1{\ref{#1}}
+%if acm
+\newcommand{\figRef}[1]{Figure~\myRef{#1}}
+\newcommand{\FigRef}[1]{Figure~\myRef{#1}}
+%else
+\newcommand{\figRef}[1]{Fig.~\myRef{#1}}
+\newcommand{\FigRef}[1]{Fig.~\myRef{#1}}
+%endif
+\newcommand{\secRef}[1]{Section~\myRef{#1}}
+\newcommand{\exRef}[1]{Example~\myRef{#1}}
+\newcommand{\thRef}[1]{Theorem~\myRef{#1}}
+%if llncs || acm
+\newcommand{\pageRef}[1]{}
+\newcommand{\figPageRef}[1]{\figRef{#1}}
+\newcommand{\secPageRef}[1]{\secRef{#1}}
+\newcommand{\exPageRef}[1]{\exRef{#1}}
+\newcommand{\thPageRef}[1]{\thRef{#1}}
+%else
+\newcommand{\pageRef}[1]{page~\pageref{#1}}
+\newcommand{\pageRefB}[1]{p~\pageref{#1}}
+\newcommand{\figPageRef}[1]{\figRef{#1}, \pageRef{#1}}
+\newcommand{\secPageRef}[1]{\secRef{#1}, \pageRef{#1}}
+\newcommand{\exPageRef}[1]{\exRef{#1}, \pageRef{#1}}
+\newcommand{\thPageRef}[1]{\thRef{#1}, \pageRef{#1}}
+\newcommand{\thPageRefB}[1]{\thRef{#1} (\pageRef{#1})}
+\newcommand{\secPageRefB}[1]{\pageRefB{#1}, \myRef{#1}}
+%endif
+\newcommand{\chapterRef}[1]{%
+%if asArticle
+\secRef{#1}%
+%else
+Chapter~\myRef{#1}%
+%endif
+}
+\let\chaptRef=\chapterRef
+%if omitAppendix
+\newcommand{\appRef}[1]{\chapterRef{#1}}
+%else
+\newcommand{\appRef}[1]{appendix~\myRef{#1}}
+%endif
+
+% citations
+\newcommand{\refPDF}[1]{%
+%if refToPDF && useHyperref
+\IfInputExists{#1}{({\color{blue}\href{#1}{pdf}})}{}
+%else
+%endif
+}
+% \newcommand{\Cite}[1]{\cite{#1}\ifx#2\empty\else(#2)\fi\refPDF{papers/#1.pdf}}
+
+% reference to citations (compatibility with doclatex):
+% #1: citations
+% #2: title
+\newcommand{\cref}[2]{#2 \cite{#1}}
+
+% verbatim
+\DefineVerbatimEnvironment%
+ {TT}{Verbatim}
+%if asSlides
+ {xleftmargin=.05\textwidth,fontsize=\small}
+%else
+ {xleftmargin=.05\textwidth,fontsize=\small}
+%endif
+\DefineVerbatimEnvironment%
+ {TTtiny}{Verbatim}
+ {fontsize=\tiny}
+\DefineVerbatimEnvironment%
+ {TTfootnotesize}{Verbatim}
+ {fontsize=\footnotesize}
+
+% AG feature appearing later in the text, after the primer
+\newenvironment{AGFeature}[2]{%
+\label{#1}
+\begin{description}
+\item[|AGFeature|: #2.]
+}{%
+\end{description}
+}
+
+\newenvironment{AGFeatureLater}[2]{%
+\item
+\textbf{#2} \emph{(Context and example at \pageRef{#1})}:
+}{%
+}
+
+% theorem env: example
+%if not asSlides
+%if asArticle
+\newtheorem{ExampleEnv}{Example}
+%else
+\newtheorem{ExampleEnv}{Example}[chapter]
+%endif
+\newtheorem{Theorem}[ExampleEnv]{Theorem}
+\newtheorem{Definition}[ExampleEnv]{Definition}
+\newenvironment{Example}[1]{%
+\begin{ExampleEnv}\ \label{#1}
+}{%
+\end{ExampleEnv}
+}
+%endif
+
+%% overlay (to be sorted out, these are just placeholders)
+\newcommand{\overlayChunks}[1]{}
+
+%% handling of `
+
+\def\obacktick{\mathop{\ifnum0=`}\fi`\mathord{\ifnum0=`}\fi\let\backtick\cbacktick}
+\def\cbacktick{\ifnum0=`{\fi}`\ifnum0=`{\fi}}
+\let\backtick\obacktick
+
+% Indexing
+\newcommand{\Ix}[1]{\index{#1}}
+\newcommand{\IxDef}[1]{\Ix{#1}}
+\newcommand{\IxUse}[1]{\Ix{#1}}
+\newcommand{\IxAndDef}[1]{\emph{#1}\IxDef{#1}}
+\newcommand{\IxAndUse}[1]{#1\IxUse{#1}}
+% older variants:
+\newcommand{\IxAsIs}[1]{\IxAndUse{#1}}
+\newcommand{\IxAsDef}[1]{\IxAndDef{#1}}
+
+% To be done
+%if omitTBD
+\def\TBD#1{}
+%else
+\def\TBD#1{{\color{red}TBD: #1}}
+%endif
+
+% slides
+%if not asSlides
+% \def\frame#1{}
+%endif
+
+% binary operators
+%\newcommand{\bvartriangle}{\mathrel{\vartriangle}}
+%\newcommand{\btriangledown}{\mathrel{\triangledown}}
+
+% cfg for versions
+\def\ifInfTwoPass#1#2{%
+%if infer2pass
+#1
+%else
+#2
+%endif
+}
+%%]
+
+Anonymity, blinding things
+
+%%[1
+\newsavebox{\blindbox}
+\newlength{\blindboxwd}
+\newlength{\blindboxht}
+\newlength{\blindboxdp}
+\newcommand{\blindtext}[1]{%
+ \begin{lrbox}{\blindbox}#1\end{lrbox}%
+ \settowidth{\blindboxwd}{\usebox{\blindbox}}%
+ \settoheight{\blindboxht}{\usebox{\blindbox}}%
+ \settodepth{\blindboxdp}{\usebox{\blindbox}}%
+ \rule[-\blindboxdp]{\blindboxwd}{\blindboxht}%
+}
+
+%if blinded
+\newcommand{\blind}[1]{\blindtext{#1}}
+\newcommand{\blindcite}[1]{\blindtext{XXX}}
+%else
+\newcommand{\blind}[1]{#1}
+\newcommand{\blindcite}[1]{\blind{\cite{#1}}}
+%endif
+%%]
+
+%%[35
+\newcommand{\comment}[1]{}
+\newcommand{\todo}[1]{\textcolor{red}{TODO: \textbf{#1}}}
+
+\newcommand{\refA}[1]{Appendix~\ref{#1}}
+\newcommand{\refC}[1]{Chapter~\ref{#1}}
+\newcommand{\refS}[1]{Section~\ref{#1}}
+\newcommand{\refF}[1]{Figure~\ref{#1}}
+\newcommand{\refT}[1]{Table~\ref{#1}}
+
+% Language definitions
+\lstdefinelanguage[EHC]{C}[ANSI]{C}
+  { morekeywords={bool, size_t}
+  , morekeywords=[2]{GrWord}
+  , ndkeywordstyle={\itshape} 
+  }
+\lstdefinelanguage[Core]{Haskell}[]{Haskell}
+  { morekeywords={foreign, ccall, safe, \!, rec}
+  , literate={->}{{$\rightarrow$}}1  {\\}{{$\lambda$}}1
+  }
+
+\lstdefinelanguage{grin}
+  { morekeywords={case, of, fetch, update, unit, store, apply}
+  , sensitive={true}
+  , literate={->}{{$\rightarrow$}}1  {\\}{{$\lambda$}}1
+  }
+
+\lstdefinelanguage{LLVM}
+  { morekeywords={define,declare,fastcc,add,sub,call,i32,i64,i1,store,inttoptr,ptrtoint,switch,label,ret,nounwind,i8,internal,constant,getelementptr,i1,load,br,phi,icmp,mul,slt,alloca}
+  , sensitive={true}
+  }
+
+\lstset{ defaultdialect={[EHC]C} }
+
+\newcommand{\inlCode}[2]{
+	\lstinline[language={#1}]!#2!
+}
+
+% Add a frame around a piece of Lhs2TeX code to include it
+% in a figure.
+\newcommand{\hsbox}[1]{
+	\framebox[\textwidth][l]{         
+		\begin{math} 
+			\mathhs 
+			#1 
+		\end{math} 
+	}%
+}
+
+% Style for a listing in a figure. Framed and numbered.
+\lstdefinestyle{figureLst}
+    {tabsize={2}, frame={single}}
+
+\lstdefinestyle{figureLstSmall}
+    {tabsize={2}, frame={single}, basicstyle={\small}}
+
+\lstdefinestyle{figureLstFootnote}
+    {tabsize={2}, frame={single}, basicstyle={\footnotesize}}
+%%]
+
+%%[39
+% blockstyle
+\setlength{\parindent}{0mm}
+\addtolength{\parskip}{0.25\baselineskip}
+
+% redef of toc to avoid blockstyle behavior
+\let\my@tableofcontents=\tableofcontents
+\def\tableofcontents{{\setlength{\parskip}{0cm}\my@tableofcontents}}
+
+% pre environment (a verbatim environment based upon the fancyvrb package)
+\DefineVerbatimEnvironment{pre}{Verbatim}
+  {xleftmargin=0.03\linewidth,fontsize=\small}
+
+% reference to label in url style:
+% #1: label
+% #2: title
+\newcommand{\lref}[2]{#2 (page~\latexPageref{#1})}
+
+% reference to label local to ST wiki:
+% #1: ref
+% #2: title
+\newcommand{\tref}[2]{\href{http://www.cs.uu.nl/wiki/#1}{#2}} % does not work, #1 contains '.'
+
+% reference to label local to EH web:
+% #1: ref
+% #2: title
+\newcommand{\eref}[2]{\href{http://www.cs.uu.nl/wiki/Ehc/#1}{#2}}
+
+% reference to label local to UHC web:
+% #1: ref
+% #2: title
+\newcommand{\uref}[2]{\href{http://www.cs.uu.nl/wiki/UHC/#1}{#2}}
+
+% reference to label local src/svn repository:
+% #1: ref
+% #2: title
+\newcommand{\sref}[2]{#2 (\texttt{EHCHOME/#1})}
+
+% reference to citations (compatible with plain LaTeX, currently citations not used):
+% #1: citations
+% #2: title
+\newcommand{\cref}[2]{#2}
+
+% index a def
+% #1: index term
+\newcommand{\IxAsDef}[1]{\emph{#1}}
+%%]

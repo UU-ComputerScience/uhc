@@ -1,0 +1,232 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Common AG functionality for Ty
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Type constructor name
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(1 hmtyinfer || hmtyast).ConNm
+ATTR Ty [ | | appFunNm: HsName ]
+%%]
+
+%%[(1 hmtyinfer || hmtyast).ConNm.ConApp
+SEM Ty
+  | Con         lhs         .   appFunNm        =   @nm
+  | App         loc         .   appFunNm        =   @func.appFunNm
+%%]
+
+%%[(1 hmtyinfer || hmtyast).ConNm.Ty
+SEM Ty
+  | * - Con App
+                lhs         .   appFunNm        =   hsnUnknown
+%%]
+
+%%[(7 hmtyinfer || hmtyast) -1.ConNm.Ty
+SEM Ty
+  | Ext         loc         .   appFunNm        =   @ty.appFunNm
+  | * - Con App Ext
+                lhs         .   appFunNm        =   hsnUnknown
+%%]
+
+%%[(9 hmtyinfer || hmtyast)
+SEM Ty
+  | Ext App     loc         .   appFunNm        :   {HsName}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Which type con
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(4 hmtyinfer || hmtyast)
+SEM Ty
+  | App         loc         .   appIsArrow      =   hsnIsArrow @func.appFunNm
+                            .   appIsLikeProd   =   hsnIsProd @func.appFunNm
+                            .   appIsOther      =   not (@appIsArrow || @appIsLikeProd)
+%%]
+
+%%[(7 hmtyinfer || hmtyast)
+SEM Ty
+  | App         loc         .   appIsRec        =   hsnIsRec @func.appFunNm
+                            .   appIsSum        =   hsnIsSum @func.appFunNm
+                            .   appIsRecOrSum   =   @appIsRec || @appIsSum
+                            .   appIsLikeProd   :=  hsnIsProd @func.appFunNm || @appIsRec
+%%]
+
+%%[(9 hmtyinfer || hmtyast)
+SEM Ty
+  | App         loc         .   appIsLikeProd   :   Bool
+                loc         .   appIsArrow      :   Bool
+                loc         .   appIsRec        :   Bool
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Is ty at top?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(4 hmtyinfer || hmtyast)
+ATTR AllTy [ isAtTop: Bool | | ]
+
+SEM TyAGItf
+  | AGItf       ty          .   isAtTop         =   True
+
+SEM Ty
+  | *           loc         .   isAtTop         =   False
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Is ty a row?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(7 hmtyinfer || hmtyast)
+ATTR AllTy [ isRow: Bool | | ]
+
+SEM TyAGItf
+  | AGItf       ty          .   isRow           =   False
+
+SEM Ty
+  | App         loc         .   argIsRow        =   @isSpineRoot && @appIsRecOrSum
+                arg         .   isRow           =   @argIsRow
+  | * - App     loc         .   isRow           =   False
+%%]
+
+%%[(7_1 hmtyinfer || hmtyast)
+SEM TyL
+  | Cons        hd          .   isRow           =   False
+%%]
+
+%%[(9 hmtyinfer || hmtyast)
+SEM Ty
+  | App     	loc         .   argIsRow   		:   Bool
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Position on app spine, ==0 implies at a root
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(1 hmtyinfer || hmtyast).appSpinePos
+ATTR AllTyTy [ appSpinePos : Int | | ]
+
+SEM TyAGItf
+  | AGItf       ty          .   appSpinePos     =   0
+
+SEM Ty
+  | App         func        .   appSpinePos     =   @lhs.appSpinePos + 1
+                arg         .   appSpinePos     =   0
+%%]
+
+%%[(3 hmtyinfer || hmtyast)
+SEM Ty
+  | Quant       ty          .   appSpinePos     =   0
+%%]
+
+%%[(7 hmtyinfer || hmtyast)
+SEM Ty
+  | Ext         ty          .   appSpinePos     =   @lhs.appSpinePos + 1 {- 0 -}
+                extTy       .   appSpinePos     =   0
+%%]
+
+%%[(9 hmtyinfer || hmtyast)
+SEM Pred
+  | *           loc         .   appSpinePos     =   0
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Context of type, i.e. where it is
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(4 hmtyinfer || hmtyast) hs
+data TyQuCtxt = TyQuCtxtArrow | TyQuCtxtProd | TyQuCtxtOnTop | TyQuCtxtOther deriving (Show,Eq)
+%%]
+
+%%[(1 hmtyinfer || hmtyast)
+SEM Ty
+  | App
+%%[[7
+    Ext
+%%]
+                loc         .   isSpineRoot     =   @lhs.appSpinePos == 0
+%%]
+
+%%[(4 hmtyinfer || hmtyast)
+SEM Ty
+  | App         loc         .   isArrowRoot     =   @appIsArrow && @isSpineRoot
+                            .   isArrowArg      =   @appIsArrow && @lhs.appSpinePos == 1
+                            .   isProdRoot      =   @appIsLikeProd && @isSpineRoot
+%%]
+
+%%[(4 hmtyinfer || hmtyast)
+ATTR Ty [ | | isArrow: Bool ]
+
+SEM Ty
+  | App         lhs         .   isArrow         =   @isArrowRoot
+  | * - App     lhs         .   isArrow         =   False
+%%]
+
+%%[(4 hmtyinfer || hmtyast)
+ATTR AllTy [ tyCtxt: TyQuCtxt | | ]
+
+SEM Ty
+  | App         loc         .   tyCtxt          =   if      @appIsArrow     then TyQuCtxtArrow
+                                                    else if @appIsLikeProd  then TyQuCtxtProd
+                                                                            else TyQuCtxtOther
+  | * - App     loc         .   tyCtxt          =   TyQuCtxtOther
+
+SEM TyAGItf
+  | AGItf       ty          .   tyCtxt          =   TyQuCtxtOnTop
+%%]
+
+%%[(9 hmtyinfer || hmtyast)
+ATTR Ty [ | | isPred: Bool ]
+
+SEM Ty
+  | Pred Impls  lhs         .   isPred          =   True
+  | App         lhs         .   isPred          =   if @isArrowArg then @arg.isPred else False
+  | * - Pred Impls App
+                lhs         .   isPred          =   False
+%%]
+
+%%[(9 hmtyinfer || hmtyast)
+SEM Ty
+  | App         loc         .   isArrowArg      :   Bool
+                loc         .   isSpineRoot     :   Bool
+                loc         .   isArrowRoot     :   Bool
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Introduced ty vars
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(3 hmtyinfer || hmtyast)
+SEM Ty
+  | Quant
+%%[[11
+    Lam
+%%]]
+                loc         .   introTVarL      =   [@tv]
+                            .   introTVarS      =   Set.singleton @tv
+%%]
+
+%%[(9 hmtyinfer || hmtyast)
+SEM Ty
+  | Quant
+%%[[11
+    Lam
+%%]]
+                loc         .   introTVarS      :   TyVarIdS
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Clone
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(3 hmtyinfer || hmtyast)
+ATTR AllTyAndFlds [ | | self: SELF ]
+%%]
+
+

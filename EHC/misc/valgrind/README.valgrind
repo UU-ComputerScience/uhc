@@ -1,0 +1,63 @@
+Using valgrind to analyze EHC programs
+
+Valgrind is a great framework for dynamic analysis of binaries. The standard 
+distribution includes a tool to check for memory errors and a tool for measuring
+the cache behaviour of a executable. 
+
+Valgrind simulates the CPU and memory of the platform in order to control and
+analyze the program. This works quite well, but breaks when using the Boehm GC.
+This has two reasons:
+
+Boehm GC will walk the stack, while Valgrind uses some stackspace for itself.
+When the GC tries to touch the pages that are mapped by Valgrind itself, Valgrind
+exits the program with a SEGFAULT. In order to fix this, we need to tell the 
+GC where the real stackbottom is (1)
+
+Another problem arises on the linux platform. sbrk() is a system call to enlarge
+the data segment of the program (heap). The garbage collector probably tries to
+extend the heap in the mmap()'ed segment used by Valgrind. Thus valgrind refuses
+to extend the heap, leading to a GC termination.(2)
+
+Furthermore, the boehm gc does a lot of fiddling with uninitialized values and
+pointer magic. This leads to many warnings in Valgrind which are not interesting.
+
+Solutions:
+1) In $EHC_HOME/src/rts/llvm-gc.cc the following piece of code is commented in
+   llvmgc_init()
+  
+//#include <unistd.h>
+...  
+void llvmgc_init()
+{
+  #if USE_BOEHM_GC
+    // Find the 'cold' stack bottom. Useful when runned under control ofvalgrind.
+    // The environment pointer passed to main is at the bottom of the stack, so
+    // we use this as 'cold' stack bottom.
+    //
+    //GC_stackbottom = (char*) __environ;
+...
+
+  Uncomment the last line and the include to set the correct stack bottom.
+
+2) In $EHC_HOME/extlibs/bgc/files.mk you see the following make target:
+
+$(EXTLIBS_BGC_INS_FLAG): $(EXTLIBS_BGC_ARCHIVE) $(EXTLIBS_BGC_MKF)
+  mkdir -p $(BLDABS_EXTLIBS_BGC_PREFIX) && \
+  cd $(BLDABS_EXTLIBS_BGC_PREFIX) && \
+  tar xfz $(EXTLIBS_BGC_ARCHIVE) && \
+  cd $(EXTLIBS_BGC_NAME) && \
+  ./configure --prefix=$(INSABS_EXTLIBS_BGC_PREFIX) --disable-threads && \
+  make && \
+  make install && \
+  touch $@
+
+  Change the ./configure call to the following:
+
+  ./configure --prefix=$(INSABS_EXTLIBS_BGC_PREFIX) --disable-threads CFLAGS=-DUSE_MMAP && \
+
+  This way you configure Boehm GC to use mmap() instead of sbrk()
+
+3) Use the suppression file ($EHC_HOME/boehm-gc.suppressions) to filter out the most garbage collection
+   noise
+
+   valgrind --tool=<toolname> --suppressions=$EHC_HOME/boehm-gc.suppressions <EXE>

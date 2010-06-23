@@ -1,0 +1,65 @@
+%%[doesWhat doclatex
+
+Clean up the Grin program in two ways:
+instead of P/0 tags, use F tags;
+do not delay constructorfunctions: instead of F/Con, use C/Con;
+
+%%]
+
+%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.CleanupPass} export(cleanupPass)
+%%]
+%%[(8 codegen grin) hs import(qualified Data.Set as Set,qualified Data.Map as Map, {%{EH}Base.Builtin}(hsnIsConstructorName), Maybe(fromJust))
+%%]
+%%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}GrinCode.Common}, {%{EH}GrinCode}) 
+%%]
+%%[(8 codegen grin) ag import({GrinCode/AbsSyn})
+%%]
+%%[(8 codegen grin).wrapper
+WRAPPER GrAGItf
+%%]
+
+%%[(8 codegen grin) hs
+cleanupPass :: GrModule -> GrModule
+cleanupPass grmod 
+   = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
+                          (Inh_GrAGItf)
+     in grTrf_Syn_GrAGItf t
+%%]
+
+%%[(8 codegen grin)
+-- synthesize a modified copy
+ATTR GrAGItf [ | | grTrf: GrModule ]
+ATTR AllNT   [ | | grTrf: SELF ]
+%%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%% translate #P/0/f to #F/f
+%%%%% translate #F/c   to #C/c
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin)
+-- Pass down the ctagMap to all GrTag positions, because it is needed when generating #C tags.
+-- The map is taken from the module header and slightly tweaked before passing down.
+
+ATTR AllDef AllExpr [ tagMap : {Map.Map HsName GrTag} | | ]
+
+SEM GrModule
+  | Mod  loc.tagMap  =  Map.fromList [ (nm,x) | xs <- Map.elems @tagsMp, x <- xs, let GrTag_Con _ _ nm = x ]
+
+-- do the translations
+SEM GrTag
+  | Fun  lhs . grTrf = dontDelayConstructors @lhs.tagMap @nm
+  | PApp lhs . grTrf = if   @needs==0 
+                       then dontDelayConstructors @lhs.tagMap @nm
+                       else @loc.grTrf
+%%]
+
+%%[(8 codegen grin) hs
+dontDelayConstructors :: Map.Map HsName GrTag -> HsName -> GrTag
+dontDelayConstructors tagMap nm
+  = maybe (GrTag_Fun nm)
+          id
+          (Map.lookup nm tagMap)
+%%]
+

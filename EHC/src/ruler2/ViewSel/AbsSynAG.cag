@@ -1,0 +1,53 @@
+%%[1 ag
+
+-------------------------------------------------------------------------
+-- Interfacing
+-------------------------------------------------------------------------
+
+DATA AGViewSelItf
+  | AGItf               viewSel     : ViewSel
+
+DATA AGViewSelsItf
+  | AGItf               viewSels    : ViewSels
+
+DATA AGRlSelItf
+  | AGItf               rlSel       : RlSel
+
+-------------------------------------------------------------------------
+-- View selection
+-------------------------------------------------------------------------
+
+DATA ViewSel
+  | All
+  | View                nm          : {Nm}
+  | Renamed             nmNew       : {Nm}
+                        nm          : {Nm}
+  | Range               vwFr        : ViewSel
+                        vwTo        : ViewSel
+
+TYPE ViewSels = [ViewSel]
+
+SET AllViewSel = ViewSel ViewSels
+
+-------------------------------------------------------------------------
+-- Rule selection
+-------------------------------------------------------------------------
+
+DATA RlSel
+  | Sel                 vwSel       : ViewSels
+                        rsSel       : NmSel
+                        rlSel       : NmSel
+
+SET AllRlSel = RlSel
+
+-------------------------------------------------------------------------
+-- Nm selection
+-------------------------------------------------------------------------
+
+DATA NmSel
+  | All
+  | Nms                 nms         : {[Nm]}
+
+SET AllNmSel = NmSel
+
+%%]

@@ -1,0 +1,183 @@
+%%[doesWhat doclatex
+
+Drop all functions not reachable from main,
+either through direct calls, or through deferred (F) or partially applied (P) or apply (A) calls.
+
+%%]
+
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%[(8 codegen grin) ag import({GrinCode/AbsSyn})
+%%]
+%%[(8 codegen grin) hs import(Debug.Trace)
+%%]
+
+%%[(8 codegen grin).wrapper
+WRAPPER GrAGItf
+%%]
+
+%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.DropUnreachableBindings} import(qualified Data.Set as Set,qualified Data.Map as Map,Data.Graph,Data.Array, Maybe(fromJust))
+
+type IdentSet  = Set.Set Vertex
+type UsageMap  = Map.Map Vertex IdentSet
+
+%%]
+
+%%[(8 codegen grin) hs import({%{EH}Base.Common},{%{EH}Base.Builtin(hsnMain)}, {%{EH}GrinCode.Common}, {%{EH}GrinCode}) export(dropUnreachableBindings)
+dropUnreachableBindings :: Bool -> GrModule -> GrModule
+dropUnreachableBindings numbered grmod 
+   = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
+                          (Inh_GrAGItf {numbered_Inh_GrAGItf=numbered})
+     in grTrf_Syn_GrAGItf t
+%%]
+
+%%[(8 codegen grin)
+ATTR GrAGItf [ | | grTrf: GrModule ]
+ATTR AllNT   [ | | grTrf: SELF     ]
+%%]
+
+
+Do a provisional numbering of all global definitions and global bindings
+
+%%[(8 codegen grin)
+{
+type Env = Map.Map HsName Int
+
+usedGlob :: Env -> HsName -> Set.Set Int
+usedGlob env nm = maybe Set.empty
+                        Set.singleton
+                        (Map.lookup nm env)
+
+}
+
+ATTR AllGlobal AllBind  [ | globalNumber : Int | genEnv USE {`Map.union`} {Map.empty} : Env ]
+
+ATTR AllExpr AllBind AllGlobal [ env : Env | | ]
+
+
+
+SEM GrModule
+  | Mod       globalL . globalNumber   = 0
+              loc     . bothEnv        = @bindL.genEnv `Map.union` @globalL.genEnv
+              globalL . env            = @loc.bothEnv
+              bindL   . env            = @loc.bothEnv
+  
+SEM GrGlobal
+  | Global    lhs.globalNumber = @lhs.globalNumber+1
+              lhs.genEnv       = Map.singleton @nm @lhs.globalNumber
+  
+SEM GrBind
+  | Bind
+    Arity     lhs.globalNumber = @lhs.globalNumber+1
+              lhs.genEnv       = Map.singleton @nm @lhs.globalNumber
+  
+%%]
+
+
+
+
+
+For each definition (globals and bindings) we determine which other globals and functions it uses: the "usage".
+
+%%[(8 codegen grin)
+ATTR AllDef             [ | | usage    USE {`Map.union`} {Map.empty}: UsageMap ]
+
+ATTR AllGrExpr
+     AllGrVal
+     AllGrTag           [ | | used     USE {`Set.union`} {Set.empty}: IdentSet ]
+
+
+SEM GrExpr
+  | Call
+    App           lhs.used = usedGlob @lhs.env @nm `Set.union` @argL.used
+  | Eval
+    FetchNode
+    FetchField    lhs.used = usedGlob @lhs.env @nm
+  
+SEM GrVal
+    | Var         lhs.used = usedGlob @lhs.env @nm
+%%[[10
+    | NodeAdapt   lhs.used = usedGlob @lhs.env @nm `Set.union` @fldL.used
+%%]]
+
+SEM GrTag
+    | Fun
+      App
+      PApp        lhs.used = usedGlob @lhs.env @nm
+      
+
+SEM GrBind
+    | Bind        lhs.usage    = Map.singleton @lhs.globalNumber @expr.used
+    | Arity       lhs.usage    = Map.singleton @lhs.globalNumber Set.empty
+
+SEM GrGlobal
+    | Global      lhs.usage    = Map.singleton @lhs.globalNumber @val.used
+
+%%]
+
+At module level, we create a graph from the collected usage sets.
+Life bindings are those reachable from the main function.
+Bindings that appear not to be life are removed in the transformed program.
+
+%%[(8 codegen grin)
+SEM GrModule
+  | Mod  loc  .  usageL  = Map.toAscList (Map.map Set.toList (Map.union @globalL.usage @bindL.usage))
+              .  biggest = fst (last @loc.usageL)
+              .  graph   = array (0, @loc.biggest) @loc.usageL
+         lhs  .  grTrf   = -- trace ("environment: " ++ show @loc.bothEnv ++ "usageList: " ++ show @loc.usageL) ++ " lifelist: " ++ show @loc.lifeList) $
+                           GrModule_Mod @moduleNm @globalL.grTrf @bindL.grTrf @tagsMp
+%%]
+
+%%[(8 codegen grin)
+
+ATTR GrAGItf GrModule [ numbered : {Bool} | | ]
+
+
+ATTR AllDef AllExpr  [ lifeSet: {Set.Set Int} | |             ]
+ATTR GrBind GrGlobal
+     GrAlt  GrPatAlt
+     GrTag           [                        | | life : Bool ]
+
+SEM GrModule
+  | Mod  loc   . mainfn   =  if @lhs.numbered then mainNr else hsnMain
+         -- loc   . lifeList =  reachable @graph (maybe (error (show @loc.mainfn ++ " not found in " ++ show @globalL.genEnv) ) id (Map.lookup @loc.mainfn @globalL.genEnv))
+         loc   . lifeList =  reachable @graph (maybe (error ("DropUnreachableBindings: " ++ show @loc.mainfn ++ " not found in " ++ show @loc.bothEnv) ) id (Map.lookup @loc.mainfn @loc.bothEnv))
+               . lifeSet  =  Set.fromList @loc.lifeList
+         
+SEM GrBind
+  | Bind
+    Arity  lhs . life  =  @lhs.globalNumber `Set.member` @lhs.lifeSet  ||  @nm == hsnMainFullProg
+  | Rec    lhs . life  =  not (null @bindL.grTrf)
+
+SEM GrGlobal
+  | Global lhs . life  =  @lhs.globalNumber `Set.member` @lhs.lifeSet
+
+SEM GrAlt
+  | Alt    lhs . life  =  @pat.life
+  
+SEM GrPatAlt
+  | Tag 
+    Node   lhs . life  =  @tag.life
+  | * - Tag
+       Node lhs. life  =  True
+       
+SEM GrTag
+  | Fun
+    PApp
+    App     lhs . life  =  Map.findWithDefault 0 @nm @lhs.env `Set.member` @lhs.lifeSet
+  | Con
+    Unboxed
+    Hole
+    Rec     lhs . life  =  True
+      
+  
+  
+
+SEM GrBindL GrGlobalL GrAltL
+  | Cons  lhs  .  grTrf  =  if @hd.life
+                            then @hd.grTrf : @tl.grTrf
+                            else             @tl.grTrf
+%%]

@@ -1,0 +1,665 @@
+%%[eh2
+The next version of EH drops the requirement that all value definitions
+need to be accompanied by an explicit type signature.
+For example, the example from the introduction:
+
+%%[[wrap=code
+%%@[file:test/regress/1/sig-fail.eh%%]
+%%]
+is accepted by this version of EH.
+From now on, and when relevant,
+we will also give the output as produced by the corresponding EH compiler,
+because additional type information is inferred:
+\begin{TT}
+%%2ppfile(test/regress/1/sig-fail.eh%%)
+\end{TT}
+
+The idea is that the type system implementation has an internal representation
+for ``knowing a type is some type, but not yet which one'' which can be replaced
+by a more specific type if that becomes known.
+The internal representation for a yet unknown type
+is called a \IxAsDef{type variable}.
+
+The implementation attempts to gather as much information as possible
+from a program
+to reconstruct (or infer) types for type variables.
+However, the types it can reconstruct are limited to those allowed by
+the used type language, that is, basic types, tuples, and functions.
+All types are assumed to be monomorphic, that is, polymorphism is not yet allowed.
+The next version of EH deals with polymorphism.
+
+So
+%%[[wrap=code
+%%@[file:test/regress/2/demo1.eh%%]
+%%]
+will give
+\begin{TT}
+%%2ppfile(test/regress/2/demo1.eh%%)
+\end{TT}
+
+If the use of |id| to define |v| would be omitted,
+less information (namely the argument of |id| is an int) to infer a type for |id| is available.
+Because no more specific type information for the argument (and result) of |id| could be retrieved 
+the representation for ``not knowing which type'', that is, a type variable, is shown:
+
+\begin{TT}
+%%2ppinline(let id = \x -> x in id%%)
+\end{TT}
+
+On the other hand, if contradictory information in case of a monomorphic |id| applied to values of different type, we will obtain the following error:
+\begin{TT}
+%%2ppfile(test/regress/2/id-intchar.eh%%)
+\end{TT}
+
+The next version of EH dealing with Haskell style polymorphism
+(\chapterRef{ehc3}) accepts this program.
+This version of EH also allows partial type signatures;
+we will discuss this feature in \chapterRef{ehc-partial-sig-quant-guess}.
+
+%if False
+Partial type signatures are also allowed.
+A partial type signature specifies a type only for a part, allowing
+a cooperation between the programmer who specifies what is (e.g.) already
+known about a type signature and the type inferencer filling in the unspecified details.
+For example:
+
+%%[[wrap=code
+%%@[file:test/regress/2/ty-wild.eh%%]
+%%]
+
+The type inferencer pretty prints the inferred type instead of the explicit type signature:
+
+\begin{TT}
+%%2ppfile(test/regress/2/ty-wild.eh%%)
+\end{TT}
+
+The discussion of this feature is postponed until
+\chapterRef{ehc-partial-sig-quant-guess}.
+%endif
+
+\subsection{Type variables}
+
+In order to be able to represent yet unknown types the type language needs
+\IxAsDef{type variable}s to represent this, and therefore we extend our set of types as follows:
+
+%%[[wrap=code
+%%@SharedTypeLang.ehc2
+%%]
+
+The corresponding type structure |Ty| needs to be extended with an alternative for a variable.
+Note that the AG system allows us to define this additional type variant independent of the previous definition,
+thus allowing an isolated explanation:
+
+%%@EHTyAbsSyn.2.TyVar wrap=code
+
+%if incl01TopicPP
+
+The AG system allows us to separately describe the extension with a new variant as well
+as describe separately the additionaly required attribution,
+for example the pretty printing of the type
+
+ %%@EHTyPretty.2 wrap=code
+
+%endif %% incl01TopicPP
+
+A type variable is identified by a unique identifier, a |UID|:
+
+%%[[hide wrap=code impl.UID="UID basics"
+%%@EHBaseCommon.1.UID.UIDL
+
+%%@EHBaseCommon.1.UID.Show
+
+%%@EHTy.2.TyVarId.Rest
+%%]
+%%[[wrap=code
+%%@EHBaseCommon.1.UID.Base
+
+%%@EHTy.2.TyVarId.Base
+%%]
+
+We thread a counter as global variable through the AST,
+incrementing it whenever a new unique value is required.
+The implementation used throughout all EH compiler versions is more complex because
+a |UID| actually is a hierarchy of counters, each level counting within the context of an outer level.
+This structure allows the outer level to be threaded, while avoiding this for an inner level
+when passed to a function, thus avoiding the introduction of possible cycles.
+This is not discussed any further;
+we will ignore this aspect and just assume a unique |UID| can be obtained.
+Its use is visible whenever we need a so called fresh type variable in a type rule.
+%if False
+However, a bit of its implementation is visible in the pretty printed representation as a underscore separated
+list of integer values,
+occasionaly visible in sample output of the compiler.
+%endif
+
+\subsection{Constraints}
+
+Although the typing rules in \figPageRef{rules3.K.expr.baseForEH1} still hold
+we need to look at the meaning of |<=| (or |fitsIn|) in the presence of
+type variables.
+The idea here is that what is unknown may be replaced by that which is known.
+For example, when the check |tvarv <= sigma| is encountered,
+the easiest way to make |tvarv <= sigma| true
+is to state that the (previously) unknown type |tvarv| equals |sigma|.
+An alternative way to look at this is that |tvarv <= sigma| is true under the
+constraint that |tvarv| equals |sigma|.
+Alternatively, we say that |tvarv| binds to |sigma|.
+
+\subsubsection{Remembering and applying constraints}
+
+As soon as we have determined that a type variable |tvarv| equals a type |sigma|,
+we must remember this and propagate it to wherever |tvarv| is used.
+We use constraints, denoted by |VarMp|, to remember such a binding of a type variable to a type:
+
+%%[[wrap=code
+VarMp                       =  [tvarv :-> sigma]
+%%]
+
+A set of \IxAsDef{constraint}s |VarMp| (appearing in its non pretty printed form as @VarMp@ in the source text)
+is a set of bindings for type variables,
+represented as an association list:
+
+%%[[wrap=code
+%%@EHVarMp.2.VarMpQ.Base
+
+%%@EHVarMp.2.VarMp.emptyVarMp
+
+%%@EHVarMp.2.VarMp.varmpTyUnit
+%%]
+
+If |varmpTyUnit| is used as an infix operator it is printed as |`varmpTyUnit`| in
+the same way as used in type rules.
+
+Different strategies can be used to cope with constraints
+\cite{pottier05ml-essence,heeren05phd-errormsg,sulzmann97constrained-type}.
+Here
+constraints |VarMp| are used to replace all other
+references to |tvarv| by |sigma|,
+for this reason often named a \IxAsDef{substitution}.
+In this version of EH the replacement of type variables
+with types is done immediately after constraints are obtained,
+to avoid finding a new and probably conflicting constraint for
+a type variable.
+Applying constraints means substituting type
+variables with the bindings in
+the constraints, hence the class
+|Substitutable|
+for those structures which have references to type
+variables inside and can replace, or substitute those type variables:
+
+\chunkHideRef{impl.UID}
+%%@EHSubstitutable.2.Substitutable wrap=code
+
+The operator | ||=>| applies constraints |VarMp| to a
+|Substitutable|.
+Function |ftv| extracts the free type variable references as a set (implemented as a list) of
+|TVarId|'s.
+
+A |VarMp| can be applied to a type:
+
+%%@EHSubstitutable.2.SubstitutableTy wrap=code
+
+This is another place where we use the AG notation and the automatic propagation of values
+as attributes throughout the type representation to make the description of the application of
+a |VarMp| to a |Ty| easier.
+The functions |tyAppVarMp| and |tyFtv| are defined in terms of the following AG:
+
+%%[[hide wrap=code impl.tyFtvSubst="Haskell wrapping for tyFtv, tyAppVarMp; varmpTyLookup"
+%%@EHTyTrfSubst.2.tyAppVarMp
+
+%%@EHTyFtv.2.tyFtv
+
+%%@EHVarMp.2.varmpTyLookup
+%%]
+%%[[wrap=code
+%%@EHTyTrfSubst.2.TySubst
+
+%%@EHTyFtv.2.TyFtv
+%%]
+
+\label{ag-self-attr}
+
+The application of a |VarMp| is straightforwardly lifted to lists:
+
+%%[[hide wrap=code impl.unions="unions"
+%%@EHBaseCommon.2.unions
+%%]
+%%@EHSubstitutable.2.SubstitutableList wrap=code
+
+A |VarMp| can also be applied to another |VarMp|:
+
+%%@EHSubstitutable.2.SubstitutableVarMp wrap=code
+
+Substituting a substitution is non-commutative as constraints |s1| in |s1 ||=> s2| take precedence
+over |s2|.
+To make this even clearer all constraints for type variables in |s1| are removed from |s2|,
+even though for a list implementation this would not be required.
+
+\subsubsection{Computing constraints}
+
+The only source of constraints is the check |fitsIn| which determines
+whether one type flows into another one.
+The previous version of EH could only do one thing in case a type did not fit
+in another: report an error.
+Now,
+if one of the types is unknown, this means that it is a type variable, and we have the additional possibility of
+returning a constraint on that type variable.
+The implementation |fitsIn| of |<=| additionaly has to return constraints:
+
+%%[[wrap=code
+%%@EHTyFitsInCommon.2.FIOut
+
+%%@EHTyFitsInCommon.2.FIOut.empty
+%%]
+
+Computation and proper combination of constraints necessitates
+|fitsIn| to be rewritten in order to deal with type variables and constraints.
+The rules describing the desired behavior are shown in
+\figRef{rules3.C.match.all} and \figRef{rules3.C.fit}.
+We show the changed part of the full implementation for this version.
+The function |comp| deals with the proper combination of constraints for composite types:
+
+%%[[hide wrap=code impl.fitsinEH2="fitsIn for EH2"
+%%@EHTyFitsIn.2.fitsIn.Base
+
+%%@EHTyFitsIn.2.fitsIn.Bind
+
+%%@EHTyFitsIn.2.fitsIn.app
+
+%%@EHTyFitsIn.2.fitsIn.BotCon
+
+%%@EHTyFitsIn.2.fitsIn.Var
+
+%%@EHTyFitsIn.2.fitsIn.AppRest
+%%]
+%%[[wrap=code
+%%@EHTyFitsIn.2.fitsIn.Base
+
+%%@EHTyFitsIn.2.fitsIn.Bind
+
+%%@EHTyFitsIn.2.fitsIn.app
+
+%%@EHTyFitsIn.2.fitsIn.Var
+%%]
+
+\rulerCmdUseExplain{rules3.C.match.all}
+{
+%%@rules3Explain.match.C.explain.scheme
+}{
+%%@rules3Explain.match.C.explain.holes
+}
+\rulerCmdUseExplain{rules3.C.fit}
+{
+%%@rules3Explain.fit.C.explain.scheme
+}{
+%%@rules3Explain.fit.C.explain.holes
+}
+
+Although this version of the implementation of |fitsIn| resembles the previous one
+it differs in the following aspects:
+
+\begin{Itemize}
+\item
+The datatype |FIOut| returned by |fitsIn| has an additional field |foVarMp| holding found constraints.
+This requires constraints to be combined for composite types
+like the |App| variant of |Ty|.
+The constraints returned by |fitsIn| further participate in type inferencing.
+\item
+The function |bind| creates a binding for a type variable to a type.
+The use of |bind| is shielded by |occurBind| which checks if the type variable for
+which a binding is created does not occur free in the bound type too.
+This is to prevent (e.g.) |a <= a -> a| to succeed.
+This is because it is not clear if |a :-> a -> a| should be the resulting constraint
+or |a :-> (a -> a) -> (a -> a)| or one of infinitely many other possible solutions.
+A so called \IxAsDef{infinite type}
+like this is inhibited by the so called \IxAsDef{occurs check}.
+\item
+An application |App| recursively fits its components with components of another |App|.
+The constraints from the first fit |ffo| are applied immediately to the following component
+before fitting that one.
+This is to prevent |a -> a <= Int -> Char| from finding two conflicting
+constraints
+|[a :-> Int,a :-> Char]| instead of properly reporting an error.
+\end{Itemize}
+
+\subsection{Type inference for expressions (Expr)}
+
+Constraints are used to make knowledge found about previously unknown
+types explicit.
+The typing rules in \figRef{rules3.K.expr.baseForEH1}
+and \figRef{rules3.K.decl.base}
+in principle do not need to be changed.
+The only reason to adapt some of the rules to the variant in
+\figRef{rules3.C.expr.baseForEH2}
+is to clarify the way constraints are used.
+
+%\rulerCmdUse{rules.expr2}
+\rulerCmdUseExplain{rules3.C.expr.baseForEH2}
+{
+%%@rules3Explain.expr.C.explain.scheme
+}{
+%%@rules3Explain.expr.C.explain.holes
+}
+\rulerCmdUseExplain{rules3.C.decl.base}
+{
+%%@rules3Explain.decl.C.explain.scheme
+}{
+%%@rules3Explain.decl.C.explain.holes
+}
+
+The type rules in \figRef{rules3.C.expr.baseForEH2} enforce an order in which
+checking and inferring types has to be done.
+Constraints are threaded through the type rules.
+The flow of these constraints defines the computation order.
+In AG the threading of constraints is expressed by the following declaration of
+|tyVarMp|:
+
+%%@EHInferExpr.2.tyVarMp wrap=code
+
+For a type rule the (already) known constraints |VarMpk| correspond to the use of |lhs.tyVarMp| and the result constraints
+(like |VarMpa| for \ruleRef{e.app}) are assigned to |lhs.tyVarMp|.
+For \ruleRef{e.app} this translates to the following implementation:
+
+%%@EHRulerRules.2.expr.e.app wrap=code
+
+The freshness of a type variable is guaranteed by threading a seed |gUniq|
+for unique values (|UID|'s)
+through the AST:
+
+%%[[hide wrap=code impl.UID="UID"
+%%@EHBaseCommon.1.UID.Base
+
+%%@EHBaseCommon.1.UID.UIDL
+
+%%@EHBaseCommon.1.UID.Show
+
+%%@EHBaseCommon.1.UID.mkNewLevUID
+%%]
+%%@EHMainAG.2.gUniq wrap=code
+
+When a unique value is needed we use |gUniq|'s current value as the `fresh' UID,
+and pass the adapted seed
+onwards to the first child which requires unique values as well.
+
+
+
+%if False
+The flow of constraints is made explicit as they are passed through the rules,
+from the context (left of |:-|) to a result (right of |~>|).
+We feel this does not benefit clarity, even though it is correct.
+It is our opinion that
+typing rules serve their purpose best by providing a basis for proof as well
+as understanding and discussion.
+An AG description serves its purpose best by showing how it really is implemented.
+Used in tandem they strengthen each other.
+%endif
+
+Our type rules and their corresponding
+AG description preserve the following invariant:
+\begin{Itemize}
+\item
+The resulting type |ty| has all known constraints applied to it.
+\end{Itemize}
+
+This invariant is not preserved for |knTy| and |valGam|, which also can contain type variables.
+The application of constraints to these attributes is postponed until the following places (in the AST or other code):
+
+\begin{Itemize}
+\item
+Such an attribute
+is used in a setting which may yield new constraints, that is, it is used by |<= =@= fitsIn|.
+\item
+Such an attribute
+is used to return a type of an expression, for example in \ruleRef{e.var}.
+We apply known constraints to the type extracted from |Gamma =@= valGam|.
+\end{Itemize}
+
+\Paragraph{Variable occurrences |Var|}
+The abovementioned invariant and non-invariant are
+illustrated by the AG code for \ruleRef{e.var},
+in which |lhs.tyVarMp| is applied to both the expected type |knTy|
+and the type |ty_g_| extracted from |valGam|:
+
+%%@EHRulerRules.2.expr.e.var wrap=code
+
+Newly found constraints (from |<= =@= fitsIn|) are combined with the already known constraints (|lhs.tyVarMp|).
+
+\Paragraph{Tuples}
+The construction of tuples is handled by the combination of \ruleRef{e.con} and \ruleRef{e.app}.
+It is now the responsibility of \ruleRef{e.con} to return the proper function type for constructing a tuple.
+In the previous version we could use the expected type, which was guaranteed to be available in |knTy|.
+This information is no longer available, so we use the arity |n| encoded in the name `|,n|' of the constructor
+to compute the constructor function type.
+This function is polymorphic,
+this is the only place where we need to deal with polymorphism for this version of EH.
+We compute the function type using fresh type variables:
+
+\chunkHideRef{impl.SemAppFull}
+%%@EHRulerRules.2.expr.e.con wrap=code
+
+%%[[hide wrap=code impl.eh2RemRules="EH2, AG for \ruleRef{e.int}, \ruleRef{e.lam} and \ruleRef{e.ann}"
+%%@EHRulerRules.2.expr.e.int
+
+%%@EHRulerRules.2.expr.e.lam
+
+%%@EHRulerRules.2.expr.e.ann
+%%]
+The remaining rules follow the same strategy of applying constraints to types,
+matching types and propagating the resulting constraints.
+We omit their implementation, except for \ruleRef{e.let} which we discuss later in \thischapt.
+
+Some observations are in place:
+\begin{Itemize}
+\item
+The main difference with the previous implementation is the use
+of type variables to represent unknown knowledge.
+Previously |ANY| was used for that purpose, for example,
+the \ruleRef{e-lam2} and its implementation show that fresh
+type variables |tvari| in |tvar1 -> tvar2| are used instead
+of |ANY -> ANY| to enforce a |.. -> ..| structure.
+If |ANY| still would be used, for example in:
+%%[[wrap=code
+let  id = \x -> x
+in   id 3
+%%]
+the conclusion would be drawn that |id :: ANY -> ANY|: the absence of the (type variable) identity of |x|'s type
+has as a consequence that we do not infer |id :: Int -> Int| from the application |id 3|.
+So, |ANY| represents ``unknown knowledge'',
+a type variable |tvarv| represents ``not yet known knowledge''
+to which the inferencing process later has to refer to make it ``known knowledge''.
+\item
+Type variables are introduced under the condition that they are
+\Ix{fresh type variable}``fresh''.
+For a typing rule this means that these type
+variables are not in use elsewhere,
+often more concretely specified with a condition |tvarv `notElem` ftv(Gamma)|.
+%Freshness in the implementation is implemented via unique identifiers UID.
+\end{Itemize}
+
+\subsection{Type inference for pattern expressions (PatExpr)}
+
+In the previous version of EH we were only interested in bindings for
+identifiers in a pattern.
+The type of a pattern was already known via a corresponding type signature.
+For this version this is no longer the case.
+We now have to use the occurrence of an identifier in a pattern or expression
+to infer type information about the identifier.
+The structure of a pattern
+reveals already some type structure.
+Hence we compute types for patterns too, and use this type as the known type
+if no type signature is available (\figRef{rules3.C.patexpr.baseForEH2}).
+Again, constraints are threaded through the pattern to accumulate information about type variables.
+For example, \ruleRef{p.int} enforces the known type to be an |Int|:
+\[
+\rulerCmdUse{rules3.C.patexpr.base.p.int}
+\]
+
+The use of |<=| in patterns is opposite compared to the use in expressions.
+Patterns are used to dissect values as opposed to expressions, which construct values.
+Hence values flow into the pattern, simulated by fitting the known type into the pattern type.
+
+The final new ingredient is the use of \IxAsDef{pattern function} type |sigmapf|,
+the type which encodes the structure of the dissection
+occurring in a composite pattern.
+A composite pattern takes a value and extracts its components.
+We encode this by a function type |sigmapf|, which takes this value and returns a tuple holding the components.
+The rules are organized in such a way that this type is computed in \ruleRef{p.con};
+by doing so, we already prepare for data types where the data constructor determines how a value should be dissected.
+However, for this version we only have tuple constructors,
+hence |sigmapf| is the identity function on tuples of size equal to the arity of the pattern.
+In \ruleRef{p.con} (\figRef{rules3.C.patexpr.baseForEH2})
+we use the structure of the identifier to determine the arity and compute |sigmapf|.
+
+
+%\rulerCmdUse{rules.pat2}
+\rulerCmdUseExplain{rules3.C.patexpr.baseForEH2}
+{
+%%@rules3Explain.patexpr.C.explain.scheme
+}{
+%%@rules3Explain.patexpr.C.explain.holes
+}
+
+The remainder of the computation of the type of a pattern is similar to and yet more straightforward than
+for expressions.
+The \ruleRef{p.var} (\figRef{rules3.C.patexpr.baseForEH2}) binds the identifier
+to the known type and if no such known type is available it invents a fresh one,
+by means of |tyEnsureNonAny|:
+
+%%[[hide wrap=code impl.pIntCharVaras2="\ruleRef{p.varas}, \ruleRef{p.int}, \ruleRef{p.char}, tyEnsureNonAny"
+%%@EHTy.2.tyEnsureNonAny
+
+%%@EHRulerRules.2.patexpr.p.varas
+
+%%@EHRulerRules.2.patexpr.p.int
+
+%%@EHRulerRules.2.patexpr.p.char
+%%]
+%%@EHRulerRules.2.patexpr.p.var wrap=code
+
+%if False
+For tuples we again exploit that the |Con| alternative will always
+represent a tuple.
+When datatypes are introduced (\chapterEHVRef) this will no longer be the case.
+We already make the required \ruleRef{p.con} more general
+than is required here,
+in preparation for datatypes.
+%endif
+
+The dissection occurring in a pattern is represented by the pattern function |sigmapf| of the form |sigma -> (sigma1,...)|.
+Conceptually this function takes the value (of type |sigma|) to be dissected by the pattern into its constituents.
+For now, because we have only tuples to dissect, the
+function returned by the |Con| alternative is just the identity
+on tuples of the correct size:
+
+%%@EHRulerRules.2.patexpr.p.con wrap=code
+
+At the top of a pattern, in \ruleRef{p.apptop}, this function |sigmapf =@= patFunTy| is dissected into
+the argument |sigmaa =@= ty_a_| and
+result |sigma_r =@= ty_r_|:
+
+%%@EHRulerRules.2.patexpr.p.apptop wrap=code
+
+The argument |sigmaa|, representing the value ``going in the pattern'', is matched with the expected type of the pattern;
+the result |sigma_r| is dissected in \ruleRef{p.app} as in the previous EH version:
+
+%%@EHRulerRules.2.patexpr.p.app wrap=code
+
+The pattern function type |sigmapf =@= patFunTy| is constructed from fresh type variables.
+Each occurrence of a tuple pattern deals with different unknown types; hence fresh type variables are needed.
+The availability of polymorphism in later versions of EH allows us to describe this in a more general way.
+
+%if False
+The careful reader may have observed that the direction of |<=|
+for fitting actual (synthesized, bottom-up) and known type (inherited, top-down)
+is the opposite of the direction used for expressions.
+This is a result of a difference in the meaning of an expression and a pattern.
+An expression builds a value from bottom to top as seen in the context of an abstract syntax
+tree.
+A pattern dissects a value from top to bottom.
+The flow of data is opposite, hence the direction of |<=| too.
+%endif
+
+\subsection{Declarations (Let, Decl)}
+
+Again, at the level of declarations all is tied together
+(\figRef{rules3.C.expr.baseForEH2}
+and \figRef{rules3.C.decl.base}).
+We can no longer assume that type signatures are specified for all value expressions.
+The basic strategy for declarations (see \secPageRef{eh1-let-strategy}) must be changed as follows:
+
+\begin{Itemize}
+\item
+Parallel to |patValGam| and |valGam| we need to gather information about introduced type variables.
+|VarMpp =@= patTyVarMp| gathers information about the types of type variables for identifiers introduced as part of pattern expressions;
+|VarMp =@= tyVarMp| gathers information from the use of those identifiers in expressions.
+\item
+If a type signature is defined for the toplevel identifier of a pattern in a value declaration
+(\ruleRef{d.val}) we use that type as the known type for both pattern and expression.
+Otherwise, a fresh type variable is used for the pattern and the pattern type for the value expression.
+\item
+The pattern constraints |patTyVarMp| is threaded independently through all declarations, only
+to be used as the starting point for |tyVarMp| in \ruleRef{e.let}.
+\end{Itemize}
+
+Here we omit the corresponding AG code: it follows the type rules faithfully.
+%%[[hide wrap=code impl.declEH2
+%%@EHInfer.2.tyVarMp
+
+%%@EHRulerRules.2.decl.d.val
+
+%%@EHRulerRules.2.expr.e.let
+%%]
+
+\subsection{Conclusion}
+
+In \thischapt\ we have described the second version of EH,
+that is, monomorphic type inference.
+Types are still simple (no polymorphism), but may be omitted.
+Type inference uses the full program to reconstruct types.
+The next version adds polymorphic, that is Hindley-Milner, type inference.
+
+
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+

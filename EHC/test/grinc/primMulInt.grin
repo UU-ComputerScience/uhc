@@ -1,0 +1,29 @@
+module "primMulInt"
+{ main <- store (#0/F/main 0)
+}
+{ $mul $x $y
+    = { eval $x ; \(#0/C/$_Int $__ $x') ->
+        eval $y ; \(#0/C/$_Int $__ $y') ->
+        ffi primMulInt $x' $y' ; \(#U $z') ->
+        unit (#0/C/$_Int 1 $z')
+      }
+; main 
+    = { store (#0/C/$_Int 1 7) ; \$a ->
+        store (#0/C/$_Int 1 3) ; \$b ->
+        $mul $a $b
+      } 
+} 
+
+ctags
+{ $_Int = $_Int 0 1
+} 
+
+evalmap
+{ #0/C/$_Int 1 -> unit
+; #0/F/$mul  2 -> $mul
+; #0/F/main  0 -> main
+}
+
+applymap
+{ 
+}

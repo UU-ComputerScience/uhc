@@ -1,0 +1,990 @@
+%%[impredAFP
+This version of EH adds explicit types with quantifiers at all positions in a type,
+existential quantification and an interpretation of unquantified types to
+quantified types.
+
+\Paragraph{Higher ranked explicit polymorphism}
+For example in
+\begin{code}
+%%@[file:test/regress/3/demo-rank.eh%%]
+\end{code}
+|f| has type |f :: %%4file(test/3/demo-rank.eh%%)|,
+which means that |i| has type |forall a. a ->a| in the body of |f|.
+Therefore |i| can be used polymorphically in the body of |f|.
+
+%{
+%format forall1
+%format forall2
+%format forall3
+%format forall4
+%format forall5
+
+The quantifier |forall| in the type of |f| is on a so called higher-ranked position
+in the type, rank 1 being in front of the type or in front of a result of a function type.
+A rank-2 position is in front of the argument of a function type.
+Higher ranked positions are defined recursively by the same definition.
+So, in
+\begin{code}
+forall1 a . a -> (forall2 b . b -> b) -> ((forall3 c . c -> c) -> (forall4 d . d -> d)) -> forall5 e . e -> e -> a
+\end{code}
+|forall1| and |forall5| are on a rank 1 position, |forall2| and |forall4| on rank 2 and |forall3| on rank 3.
+%}
+
+Standard Hindley-Milner inferencing as described for the previous version of EH can infer rank 1 universal quantifiers.
+We will not do better than that, but the inferencer described for this version of EH will
+not throw away any type information about higher-ranked quantifiers defined via a type signature.
+No attempt is made to be smart in reconstructing higher-ranked types, only smartness is
+implemented by not forgetting higher-ranked type information.
+
+\Paragraph{Existentially quantified types}
+Quantifiers on higher-ranked positions are also necessary to make existential types useful
+
+\begin{code}
+%%@[file:test/regress/4/demo1.eh%%]
+\end{code}
+
+An existentially quantified type \Ix{existential quantification}
+is specified with keyword @exists@, or |exists|.
+The type variable which is existentially quantified represents a type but we
+do not know which one.
+Existential quantification hides, or forgets, more specific type information.
+In the given example |xy| is a tuple for which we have forgotten
+that its first component is an |Int|.
+All we know is that we can apply the second component to the first component
+(as done by |ixy|).
+This constraint is not upheld for |pq|, so an error is produced:
+
+\begin{TT}
+%%4ppfile(test/regress/4/demo1.eh%%)
+\end{TT}
+
+\Paragraph{Opening an existentially quantified type}
+The inverse of existential quantification of a type variable is often called `opening'.
+It means that we get to know the original type.
+This of course cannot \TBD{(???? type carrying code, analysis, etc)} be done
+as this information was forgotten in the first place.
+Instead, the compiler `invents' a fresh new type, a type constant,
+which acts as a placeholder for the opened type variable.
+This fresh type is guaranteed to be different from any type the programmer can construct.
+Only if functions accepting parameters of this type are available anything useful can be done with it,
+as in the example.
+
+It also means that we can create values with which we cannot do much useful.
+For example
+
+\begin{code}
+%%@[file:test/regress/4/ex-extr3.eh%%]
+\end{code}
+
+gives
+
+\begin{TT}
+%%4ppfile(test/regress/4/ex-extr3.eh%%)
+\end{TT}
+
+Both examples also demonstrate the place where opening an existentially quantified type is done.
+Opening an existential type is done when the type is bound to an identifier.
+However, only the type variables for the top level existential quantifiers are opened.
+If an existentially quantified type is buried in a composite type it will only be opened if
+bound to a value identifier.
+For example:
+
+\begin{code}
+%%@[file:test/regress/4/ex-extr4.eh%%]
+\end{code}
+
+gives
+
+\begin{TT}
+%%4ppfile(test/regress/4/ex-extr4.eh%%)
+\end{TT}
+
+Also, opening the same type twice, as done in the given example for |v1|,
+will twice give fresh type constants too.
+
+This behavior simplifies the use of existential types in that no additional
+language construct for opening is necessary.
+%if not omitTBD
+More about this in \TBD{[literature ...]}.
+%endif
+
+\Paragraph{Guessing locations for quantifiers}
+Quantifiers need not always be specified.
+For example in
+
+\begin{code}
+%%@[file:test/regress/4/ex-extr2.eh%%]
+\end{code}
+
+no quantifiers are specified in the type signatures, for |ixy| a type signature is even absent.
+The following interpretation of the meaning of a type is used to determine
+where a quantifier should be inserted when a type is quantified.
+
+\begin{Itemize}
+\item
+If a type variable |a| occurs somewhere in |sigma1| and |sigma2| in |sigma1 -> sigma2| but not outside the function type,
+|a| will be universally quantified, i.e. with |forall|.
+\item
+If a type variable |a| occurs somewhere in |sigma1| and |sigma2| in |(sigma1,sigma2)| but not outside the tuple type,
+|a| will be existentially quantified, i.e. with |exists|.
+\end{Itemize}
+
+The idea is that the first rule covers the notion that if an |a| is passed in and comes out a function,
+this function will work for all |a|, hence the universal quantification.
+On the other hand, the second rule covers the notion that if an |a| is stored together with another and nothing
+more is known about |a| we might as well hide |a|, hence the existential quantification.
+More rules are needed but we will look into this further when we look at the implementation.
+
+For the given example the following will be concluded
+
+\begin{TT}
+%%4ppfile(test/regress/4/ex-extr2.eh%%)
+\end{TT}
+
+Note that an explicit type is needed to hide type information (as for |xy|),
+but is not required to pass it to a function expecting an existential.
+
+\Paragraph{Outline of the rest}
+First we will look at the type structure (\secRef{ehc4-type-lang}).
+The |fitsIn| function will have to be redesigned almost completely (\secRef{ehc4-fitsin}),
+partly because of the presence of quantifiers everywhere,
+partly because |fitsIn| now really is asymmetric because (e.g.)
+forgetting type information is one-way only.
+Quantification as well as instantiation become more complicated because
+of the presence of quantifiers anywhere in a type (\secRef{ehc4-quant}, \secRef{ehc4-inst}).
+Finally type inferencing expressions and patterns will have to be modified (\secRef{ehc4-ty-infer}),
+luckily not much because the hard work is done in |fitsIn|.
+
+\subsection{Type language}
+\label{ehc4-type-lang}
+
+The type language for this version of EH adds quantification with the existential quantifier |exists|
+\begin{code}
+%%@SharedTypeLang.ehc4
+\end{code}
+We also need an infinite supply of type constants |tcon|.
+Quantifiers |Qu| may now appear anywhere in a type.
+
+The |Quant| alternative of the type structure has to made more general
+to be able to encode |exists| too.
+
+\chunkCmdUseMark{EHTyAbsSyn.4}
+
+Some additional functions on quantifiers |TyQu| are defined here too.
+These may seem unnecessary but the extra layer of abstraction
+is convenient when the range of quantifiers is extended
+%if not incl06
+later on (not included in \thispaper):
+%else
+in \chapterRef{ehc6}:
+%endif
+
+\chunkCmdUseMark{EHTy.4.tyquMisc}
+
+These functions inquire the kind of quantifier and flip between universal and existential quantifier.
+
+\subsection{Fitting, subsumption}
+\label{ehc4-fitsin}
+
+First we will look at the issues arising with the presence of quantifiers in a type.
+Next we will look at the implementation.
+
+\subsubsection{Issues}
+
+\Paragraph{|<=| is a partial ordering}
+With the presence of quantifiers during type inferencing,
+the function |fitsIn|, implementating the so called \IxAsDef{subsumption}
+relation |<=| between types, now
+becomes a partial ordering on types.
+For example,
+\label{ehc4-exists-sub}
+\begin{code}
+%%@[file:test/regress/4/exists-sub.eh%%]
+\end{code}
+
+makes the type inferencer check |Int <= exists a . a|,
+if the type of the actual value |3| fits in the specified type |exists a . a|.
+This corresponds to the flow of |3| into some location, which in turn is then later on used elsewhere.
+This checks out well, but not the other way around because we cannot
+assume that some unknown type is an |Int|.
+
+Similarly for universal quantification
+the check |forall a . a -> a <= Int -> Int|
+holds as we can use a more generally applicable function |id|
+in the more restricted required setting |Int -> Int|.
+\label{ehc4-forall-sub}
+\begin{code}
+%%@[file:test/regress/4/forall-sub.eh%%]
+\end{code}
+
+Losing generality, or specialization/instantiation to a specific type is ok,
+but the other way around, for the definition of |id| it is not.
+
+So, in a nutshell
+\[
+|forall a . a <= sigma <= exists a . a|
+\]
+meaning that a universally quantified type can be used at
+a place where any other type is expected, say some type |sigma| (e.g. an |Int|),
+which in turn can be used at a place where all is forgotten about a type.
+Or, in other words, first we choose some type for |a|, then we forget this choice.
+
+Let us look at some other examples to get a better idea of what |fitsIn =@= <=|
+has to deal with.
+
+\Paragraph{Impredicativeness}
+The following example (from Botlan \cite{botlan03ml-power-f})
+
+\label{ehc4-choose}
+\begin{code}
+%%@[file:test/regress/4/impred-choose.eh%%]
+\end{code}
+
+demonstrates a choice we can make.
+This choice coincides with the question what the type of |v| is.
+\begin{Itemize}
+\item
+|v :: forall b . (b -> b) -> b -> b|.
+This is Haskell's answer.
+This answer is given because all types are monomorphic, that is,
+without quantifiers during inferencing.
+The type variable |a| of the type of |choose| is bound to the instantiated
+type if |id|.
+So, |id| is instantiated to |tvarv1 -> tvarv1|, giving |choose id :: (tvarv1 -> tvarv1) -> tvarv1 -> tvarv1|
+resulting in the given quantified type.
+Function |v| can safely be applied to a function of type |Int -> Int|.
+\item
+|v :: (forall c . c -> c) -> (forall d . d -> d)|.
+This is system-F's answer \cite{reynolds74type-struct-sysF}.
+This answer is given because the type variable |a| of |choose|
+is bound to the type of the parameter as it is known, with quantifiers, in its
+uninstantiated original form.
+Now |v| cannot be applied to a function of type |Int -> Int| because this function is
+not general enough to be used as if it were of type |forall a . a -> a|.
+Paradoxically enough a more general function will be returned;
+this relates to a phenomenon called \IxAsDef{contravariance} which we will discuss later.
+\end{Itemize}
+
+Allowing type variables to be bound to, or instantiated with,
+quantified types is called \IxAsDef{impredicativeness} \TBD{[cite...]}.
+
+The critical observation for this version of EH is that it is difficult \TBD{[cite...]} to
+infer that a type variable should be bound to
+a quantified type,
+but that it is relatively easy not to forget that a type is quantified if
+we already knew in the first place that it was quantified.
+The latter is what we do except in situations where it would break Haskell's choice,
+thereby still inferring types in a standard Hindley-Milner way but
+using |fitsIn =@= <=| to allow richer types still to match properly.
+
+\Paragraph{Subsumption |<=| needs to instantiate types}
+These examples also demonstrate that |fitsIn| needs to instantiate types.
+In the previous version of EH all types partaking in the inference process
+were expected to be fully instantiated.
+By definition this can no longer be done if as much as possible type information
+is to be retained.
+Still, at some point instantiation has to be done,
+at the latest moment possible.
+This latest moment is the place where a type
+really is compared with another one, in |fitsIn|.
+
+\Paragraph{Subsumption |<=| depends on context}
+|fitsIn| is used as a tool to enforce the |<=| relation between types.
+It is used to check the type of an actual parameter with its expected one,
+as in the previous example for |choose| (\pageRef{ehc4-choose}).
+It is also used to check the type of a value against its known type as in
+the earlier example with |ii| and |id| (\pageRef{ehc4-forall-sub}).
+However, the precise use of |fitsIn| in these contexts differs slightly
+in the way instantiation is done.
+
+\begin{Itemize}
+\item
+For an application |f a| of |f :: sigma2 -> ...| to |a :: sigma1|
+we have
+to check the type |sigma1| of an actual argument against 
+the type |sigma2| of an expected
+via |sigma1 <= sigma2|.
+As we learned from looking at the |choose| example, Haskell's convention
+is to instantiate |sigma1| before binding it to a type variable |tvarv|
+in the case |sigma2 == tvarv|.
+This information is passed as an additional parameter to |fitsIn|, notated
+by |instLFIOpts|, named an \IxAsDef{instantiating context}.
+\item
+For checking an expression |e :: sigma2| of a declaration |v :: sigma1; v = e| to its known type
+|sigma1|
+we check |sigma2 <= sigma1|.
+In this case we want to avoid instantiating |sigma2|.
+The necessity of avoiding this becomes clear if we look at a situation where
+|sigma2 == (exists a . a, ...)| and |sigma1 == (tvarv,...)|,
+coinciding with a situation where an explicit type signature is absent.
+Now, if |exists a . a| is instantiated with type constants before it is bound to |tvarv|
+all information about the existential is irretrievably lost,
+something we do only when an existential is bound to an identifier.
+So, in this case we say that |fitsIn| needs to told
+it is checking types in a \IxAsDef{strong context}, notated by |strongFIOpts|.
+\item
+A third context will also be mentioned here for completeness,
+a so called \IxAsDef{weak context} |weakFIOpts|.
+It is used whenever an expression can have |>1| alternative expressions as a result,
+which is the case for |case|-expressions,
+to be dealt with no sooner than the introduction of datatypes in the next version of EH
+(\chapterEHVRef).
+\end{Itemize}
+
+\label{ehc4-fitsIn-strength}
+|fitsIn =@= <=| therefore needs an option |fiopt| to describe these variations
+\begin{code}
+fiopt  =  strongFIOpts  ^^ -- strong context
+       |  instLFIOpts   ^^ -- instantiating context, for expr |App|
+       |  instFIOpts    ^^ -- instantiating context, for patterns
+\end{code}
+
+These contextual variations actually are
+configurations of lowlevel boolean flags for |fitsIn|
+
+\begin{code}
+fioBindRFirst   =   fioBindRFirstY       ^^ -- prefer binding of a rhs tvar over instantiating
+                |   fioBindRFirstN
+fioBindLFirst   =   fioBindLFirstY       ^^ -- prefer binding of a lhs tvar over instantiating
+                |   fioBindLFirstN
+fioLeaveRInst   =   fioLeaveRInstY       ^^ -- leave rhs (of fitsIn) instantiated
+                |   fioLeaveRInstN
+\end{code}
+
+where the |+| variants stand for |True|.
+A |True| value for the flag |fioBindRFirst| states that in case of |sigma <= tvarv|
+a constraint |(tvarv :-> sigma)| will result,
+otherwise first |sigma| will be instantiated and |tvarv| be bound to
+the instantiated |sigma|.
+Similary we have |fioBindLFirst| for |tvarv <= sigma|.
+Finally, |fioLeaveRInst| determines if an instantiation done for |sigma|
+in |... <= sigma| will return the instantiated |sigma| or |sigma| itself.
+Summarizing, |fioBindRFirst| and |fioBindLFirst| turn off greedy
+instantiating and |fioLeaveRInst| leaves visible what has been instantiated.
+
+Context variations and these flags relate as follows
+
+\begin{tabular}{llll}
+ & |fioBindRFirst| & |fioBindLFirst| & |fioLeaveRInst| \\
+\hline
+|strongFIOpts| & |fioBindRFirstY| & |fioBindLFirstY| & |fioLeaveRInstN| \\
+|instLFIOpts| & |fioBindRFirstN| & |fioBindLFirstY| & |fioLeaveRInstN| \\
+|instFIOpts| & |fioBindRFirstN| & |fioBindLFirstN| & |fioLeaveRInstY| \\
+\end{tabular}
+
+So, for example the |instFIOpts| context variant used for an expression application
+has as its effect that instantiation will be done a la Hindley-Milner.
+
+Finally, all of this is encoded as follows
+
+\savecolumns
+\chunkCmdUseMark{EHCommon.4.FIOpts.hd}
+\restorecolumns
+\chunkCmdUseMark{EHCommon.4.FIOpts.tl}
+\chunkCmdUseMark{EHCommon.4.FIOpts.instLFIOpts}
+\chunkCmdUseMark{EHCommon.4.FIOpts.instFIOpts}
+
+\Paragraph{Co- and contravariance}
+For tuples the check |(sigma1,sigma2) <= (sigma3,sigma4)|
+will break down into |sigma1 <= sigma3| and |sigma2 <= sigma4|
+because conceptually a tuple value can be put into
+a location if that location expects a tuple and
+the elements of the tuple also fit.
+
+For functions this works differently.
+Checking |sigma1 -> sigma2 <= sigma3 -> sigma4| means that
+a |f :: sigma3 -> sigma4| is expected but a |g :: sigma1 -> sigma2| is available.
+This happens for example in
+
+\begin{code}
+let  g :: sigma1 -> sigma2
+     f :: sigma3 -> sigma4
+     f = g
+     a :: sigma3
+in   f a
+\end{code}
+
+So, what happens when |f| is called and what does it mean in terms of types |sigma|?
+The caller of |f| in the application |f a| expects that the function |f|
+accepts a |sigma3|.
+However, |g| is invoked instead, so a value of type |sigma3| is passed to a function
+expecting a |sigma1|, which in terms of fitting means |sigma3 <= sigma1|.
+The observation here is that the direction of |<=| for fitting the
+argument types of |f| and |g| is opposite to the direction
+of fitting |f| and |g|.
+This behavior is called \IxAsDef{contravariance}.
+
+In general, fitting a composite type breaks down into fitting the components of the composite type.
+If the direction of |<=| for fitting a component is the same as for the composite type,
+it is said that that component of the type is \IxAsDef{covariant},
+if the direction is opposite the component is
+\IxAsDef{contravariant}.
+
+The following notation is used to denote this variance
+
+\begin{code}
+coco                =   CoVariant           ^^ -- CoVariant
+                    |   ContraVariant       ^^ -- ContraVariant
+                    |   CoContraVariant     ^^ -- CoContraVariant (both co/contra)
+\end{code}
+
+with a corresponding Haskell definition
+
+\chunkCmdUseMark{EHCommon.4.CoContraVariance}
+
+in which the same notation is used for the alternatives of |CoContraVariance|.
+
+\subsubsection{Implementation}
+
+\Paragraph{Typing rules}
+Let us look more precisely at |<=| which we now also will
+describe with rules,
+in \figRef{rules.fit4.quant} and \figRef{rules.fit4.app}.
+\RuleRef{f-prod4} and \ruleRef{f-arrow4} both follow the discussion about co- and
+contravariance.
+These rules are both instances of the by now usual |App| structure which will
+be used by |fitsIn|.
+
+The fine detail here lies with \ruleRef{f-arrow4} which specifies
+a strong context |strongFIOpts| for fitting its arguments.
+This means that for higher-ranked positions in a type any implicit
+instantiation of types is inhibited, that is, it is not visible
+for the inference process.
+\TBD{more explanation why...}
+
+\rulerCmdUse{rules.fit4.app}
+\rulerCmdUse{rules.fit4.quant}
+
+The rules for quantified types also deserve a bit more attention.
+
+\begin{Itemize}
+\item
+\RuleRef{f-forall-r2} applies in
+\begin{code}
+%%@[file:test/regress/4/forall-sub.eh%%]
+\end{code}
+to the check |Int -> Int <= forall a . a -> a| which has to be done for |id = ii|.
+If |forall a . a -> a| is instantiated with type variables |tvarv|,
+the check would succeed with a constraint |(tvarv :-> Int)|.
+This is not correct.
+Recall that by succesfully passing this check |Int -> Int| will be used
+as if it were a |forall a . a -> a|, which definitely will not work for
+all types.
+So, in order to let this check fail we instantiate with the fixed variant |tvarf|
+of type variables, indicated by |instf|.
+These fixed type variables cannot be further constrained but quantification
+over them is allowed (see ...).
+
+\item
+Dually, \ruleRef{f-exists-r2} applies in
+\begin{code}
+let  f :: (exists a . a) -> Int
+     v = f 3
+in   v
+\end{code}
+to the check |Int <= exists a . a| for the application |f 3|.
+The body of |f| only knows it gets passed a value of some unknown type,
+no assumptions about it are made in the body of |f|.
+Consequently, type variable may be instantiated with any type by the caller of
+|f|.
+This is simulated by instantiating with fresh constrainable type variables |tvarv|,
+via |instv|.
+In that case we also are not interested in any found constraints
+concerning the fresh type variables, so these are removed.
+\end{Itemize}
+
+\Paragraph{Co- and contravariance}
+The encoding of co- and contravariance behavior is solved a bit more general then really
+is required at this point. The idea is that for a type application |tcon a b ...|
+the |tcon| determines how the fitting of its arguments should be done.
+For example, for |tcon == ->|,
+the first argument should be fitted with the opposite variance and
+options |fiopt| should be made strong. This is described via a environment
+encoding this information
+
+\chunkCmdUseMark{EHTyFitsInCommon.4.AppSpine}
+\chunkCmdUseMark{EHOpts.4.fioMkStrong}
+\chunkCmdUseMark{EHGam.4.AppSpineGam}
+\chunkCmdUseMark{EHGam.4.appSpineGam}
+
+It also shows that only for function and tuple types we know what to do in such a situation.
+Complications in this area will arise with the introduction of datatypes
+(\chapterEHVRef).
+
+\Paragraph{|fitsIn| parameters and result}
+So, let us know finally look at the implementation of |<=|,
+and redo the implementation of |fitsIn|.
+First, |fitsIn| needs to pass information both up and downwards.
+Upwards was already implemented via
+
+\savecolumns
+\chunkCmdUseMark{EHTyFitsInCommon.4.FIOut}
+\restorecolumns
+\chunkCmdUseMark{EHTyFitsInCommon.4.FIOut.tl}
+
+which is extended with |CoContraVariant| information and threads a UID value
+needed for instantiating types together with the downward information stored in
+
+\savecolumns
+\chunkCmdUseMark{EHTyFitsIn.4.FIIn.hd}
+\restorecolumns
+\chunkCmdUseMark{EHTyFitsIn.4.FIIn.tl}
+\restorecolumns
+\chunkCmdUseMark{EHTyFitsIn.4.FIIn.emptyFI.hd}
+\restorecolumns
+\chunkCmdUseMark{EHTyFitsIn.4.FIIn.emptyFI.tl}
+
+The parameter |fiCoContra| is used to indicate if the comparison |<=| is flipped.
+
+Finally, an environment is passed to |fitsIn|:
+
+\chunkCmdUseMark{EHTyFitsIn.4.FIEnv}
+
+In this version |FIEnv| acts as a placeholder for use in later versions.
+The intention of a |FIEnv| is to pass environmental information needed by |fitsIn|,
+usually stored in |Gamma|'s throughout the type rules and attribute grammar implementation.
+
+\Paragraph{The fitting}
+The preliminaries of |fitsIn| have not changed much compared to
+the previous version (\pageRef{EHTyFitsIn.2.fitsIn.Base}).
+All internally defined functions now take an additional top-down |fi :: FIIn|
+parameter and some work has to be done for extracting and passing variance information
+(in function |res|).
+
+\savecolumns
+\chunkCmdUseMark{EHTyFitsIn.4.fitsIn.Prelim}
+\restorecolumns
+\chunkCmdUseMark{EHTyFitsIn.4.fitsIn.bind}
+\restorecolumns
+\chunkCmdUseMark{EHTyFitsIn.4.fitsIn.allowBind}
+\restorecolumns
+\chunkCmdUseMark{EHTyFitsIn.4.fitsIn.allowImpredTVBind}
+
+The fitting of quantified types uses |unquant| which removes all top level quantifiers.
+
+\restorecolumns
+\chunkCmdUseMark{EHTyFitsIn.4.fitsIn.unquant}
+\restorecolumns
+\chunkCmdUseMark{EHTyFitsIn.4.fitsIn.FOUtils}
+
+The instantiation is parameterized a flag |hide|
+telling if any found constraints for the fresh
+type variables |rtvs| should be hidden.
+A second parameter |howToInst :: HowToInst|
+specifies how to instantiate.
+When discussing the implementation
+for quantifiers we will look at this further.
+
+The first cases of the actual implementation of |<=| are similar
+to the previous version with the exception
+of an alternative for flipping
+|t1 <= t2| into |t2 <= t1| if the variance is |ContraVariant|,
+and
+an additional guard on |fioBindLFirst| and |fioBindRFirst|.
+
+Finally, before looking at the case analysis, some convenience functions for
+updating the output |FIOut| are introduced:
+
+\restorecolumns
+\chunkCmdUseMark{EHTyFitsIn.4.fitsIn.foCmb}
+\restorecolumns
+\chunkCmdUseMark{EHTyFitsIn.4.fitsIn.foCmbApp}
+
+These functions straightforwardly combine fields from two different |FIOut|'s.
+These combination functions specify how aspects of |fitsIn| should be combined
+for |Ty_App|. For example |foCmbCnstr| applies the constraints resulting
+from fitting the second subtype |afo| (of |Ty_App|) to the constraints coming out
+of the first subtype |ffo|.
+The overal combination |foCmbApp| used by the fitting of
+two |Ty_App|'s is the composition of all the smaller combinations.
+
+\restorecolumns
+\chunkCmdUseMark{EHTyFitsIn.4.fitsIn.Base}
+\restorecolumns
+\chunkCmdUseMark{EHTyFitsIn.4.fitsIn.Var1}
+
+The order in which all these case are listed is now important
+as the cases for |fioBindLFirstN| and |fioBindRFirstN| will
+be executed only after types are stripped of their top level quantifiers.
+
+Compared to the rules in \figRef{rules.fit4.quant}
+an additional case has been included for an exact match of
+two quantified types when we want |t1 <= t2| and |t2 <= t1| both
+to hold. We will postpone discussion until
+%if not incl05
+later (not included in \thispaper).
+%else
+\chapterRef{ehc5}.
+%endif
+
+\restorecolumns
+\chunkCmdUseMark{EHTyFitsIn.4.fitsIn.QLR}
+
+The function |unquant| has to be told how to do the instantiation,
+this is specified by a function which creates a type from a type
+variable and a quantifier.
+
+\chunkCmdUseMark{EHTyInstantiate.4.HowToInst}
+
+The rules in \figRef{rules.fit4.quant} indicate for different combinations of options
+and quantifiers how to instantiate type variables.
+For example,
+the first case of
+
+\restorecolumns
+\chunkCmdUseMark{EHTyFitsIn.4.fitsIn.QR}
+
+implements \ruleRef{f-forall-r1} and \ruleRef{f-exists-r1}.
+The behavior with respect to the different ways of instantiating is encoded
+in |instCoConst| which tells us that the universally quantified types
+should be instantiated with type variables,
+and existentially quantified types with type constants.
+The second case similarly covers \ruleRef{f-forall-r2} and \ruleRef{f-exists-r2}
+while
+
+\restorecolumns
+\chunkCmdUseMark{EHTyFitsIn.4.fitsIn.QL}
+
+covers the remaining \ruleRef{f-forall-l} and \ruleRef{f-exists-l}.
+
+Checking two application of types, implementing both \ruleRef{f-prod4} and \ruleRef{f-arrow4},
+has changed with respect to the handling of co- and contravariance.
+From the resulting |foCoContraL| the first element describes the
+co- and contravariance behavior, as such it is used to update
+the |fi :: FIIn| accordingly.
+
+\restorecolumns
+\chunkCmdUseMark{EHTyFitsIn.4.fitsIn.App}
+
+All is left of |fitsIn| are the remaining cases for type variables, now for the
+|fioBindLFirstN| and |fioBindRFirstN| cases
+
+\restorecolumns
+\chunkCmdUseMark{EHTyFitsIn.4.fitsIn.Var2}
+
+and starting it all
+
+\restorecolumns
+\chunkCmdUseMark{EHTyFitsIn.4.fitsIn.DefaultCase}
+\chunkCmdUseMark{EHTyFitsIn.4.fitsIn.SetupAndResult}
+
+\subsection{Instantiation}
+\label{ehc4-inst}
+
+Function |fitsIn| is
+now one of the two places
+where instantiation of a type occurs.
+
+\begin{Itemize}
+\item
+In |fitsIn| the
+instantiation of a quantified type now is entangled with
+matching two types.
+|fitsIn| peels off top level quantifiers layer by layer during
+the matching of types.
+\item
+When a type is bound to an identifier,
+we have to instantiate top level |exists|'s to
+open the type.
+\end{Itemize}
+
+These variants are implemented by |tyInst1Quants|
+and |tyInst1Exists| respectively:
+
+\chunkCmdUseMark{EHTyInstantiate.4.tyInst}
+
+An additional |onlyExists :: Bool| is passed to the more general function |tyInst|
+to inhibit quantification of |forall|'s.
+
+Note that in  the previous version of EH instantiation was done explicitly,
+as indicated by type rules.
+In this version instantiation is done implicitly by |fitsIn|.
+
+\subsection{Quantification}
+\label{ehc4-quant}
+
+Quantification is more complicated because the place of omitted quantifiers
+has to be guessed.
+This guessing is done according to the rules in
+\figRef{rules.qu4}.
+The structure of a type and the occurrences of
+type variables are used to determine where which quantifier is inserted
+during the quantification of a type.
+
+\rulerCmdUse{rules.qu4}
+\rulerCmdUse{rules.quGam4}
+
+Informally, the following rules are obeyed
+\begin{Itemize}
+\item
+The first step is to find for a type variable |a| the smallest part of a type
+where |a| occurs.
+For example, for |a -> (a,b,b,b->c->(b,c))| this is the complete
+type for |a|, |(a,b,b,b->c->(b,c))| for |b| and |c->(b,c)| for |c|.
+\item
+If this smallest part is a function type it is assumed
+that universal quantification is the right choice (\ruleRef{q-arrow}).
+\item
+If this smallest part is a tuple type
+the type variable is existentially quantified (\ruleRef{q-prod}).
+\item
+For the remaining cases the position of the smallest part as part
+of a function type determines which quantifier is put in front.
+For example, in |a -> b| the type variable |a| occurs in a contravariant
+(argument) position, |b| in a covariant position.
+Here the observation is that |a| apparently is not used at all by
+the corresponding function because it does not show up in the result type.
+So, we might as well hide |a|, hence the |exists| in \ruleRef{q-var-contra}.
+Conversely, the choice of what |b| is apparently is up to the caller of
+the function, hence the |forall| in \ruleRef{q-var-co}.
+\item
+The \ruleRef{q-app} covers remaining type constructors,
+which is irrelevant for this version of EH as there are no other type constructors.
+It becomes relevant for the next version of EH,
+when datatypes are introduced
+%if not incl05
+later on (not included in \thispaper).
+%else
+(\chapterRef{ehc5}).
+%endif
+\end{Itemize}
+
+Because these rules represent a form of syntactic sugar they always
+can be overruled by explicit quantifiers, as indicated by \ruleRef{q-quant}.
+The quantification is lifted to a |Gamma| in a straightforward way as
+specified by \figRef{rules.quGam4}.
+
+The implementation, in terms of AG, follows the rules with the exception of
+some details. First all free type variables are gathered:
+
+\chunkCmdUseMark{EHTyQuantify.4.frTvLL}
+\chunkCmdUseMark{EHCommon.4.listCombineUniq}
+
+At the top of a type application, say |App (App (Con "->") (Var 1)) (Var 1)| representing
+|a -> a| we need to be able to determine which type variables occur in both arguments of
+the type constructor |->|.
+Therefore a list |frTvLL: [TyVarIdL]| of type variables is gathered, each element corresponding
+with the free type variables of an argument.
+This list corresponds to the |fv|'s in the rules in \figRef{rules.qu4}.
+For the given example this would be |[[1],[1]]|.
+
+Next we determine which locations in the type structure are a candidate
+for quantification:
+
+\chunkCmdUseMark{EHTyQuantify.4.coco}
+\chunkCmdUseMark{EHTyQuantify.4.isQuLoc}
+
+Quantifiability of a location is based
+on co- and contravariance information as passed from top to bottom,
+as prescribed by the rules in \figRef{rules.qu4}.
+We also need to know what an |App| represents, that is, if
+it is a function type (|appIsArrow|) or tuple type (|appIsLikeProd|):
+
+\chunkCmdUseMark{EHTyCommonAG.4.whereIAm}
+
+If a location in the type structure is a place where
+quantification may take place, the candidate free type
+variables |qHereTvL| are computed:
+
+\chunkCmdUseMark{EHTyQuantify.4.qHereTvL}
+\chunkCmdUseMark{EHTyQuantify.4.tvarOccurCount}
+
+The auxiliary function |tvarOccurGE2| selects those
+type variables which occur at least twice in the arguments
+of a type constructor.
+
+From the top of the type downwards then the function |tvIsBound|
+is constructed,
+ensuring that candidate free type variables are not in the
+|bv| of the rules in \figRef{rules.qu4}.
+
+\chunkCmdUseMark{EHTyQuantify.4.tvIsBound}
+\chunkCmdUseMark{EHTyQuantify.4.tvarsToQuant}
+
+The resulting selection of type variables |qBndTvL|
+is then used with the quantifier |hereQu|
+which in turn is based on |qExists|,
+telling us if it is a location where |exists| is to be used:
+
+\chunkCmdUseMark{EHTyQuantify.4.hereQu}
+
+Finally the quantified type |quTy| is constructed:
+
+\chunkCmdUseMark{EHTyQuantify.4.quTy}
+
+concluding with wrapping the AG functionality in the
+function |tyQuantify| which can be used in
+the Haskell world:
+
+\chunkCmdUseMark{EHTyQuantify.4.tyQuantify}
+
+\subsection{Type inference}
+\label{ehc4-ty-infer}
+
+Type inferencing for this version of EH and the previous version are very
+similar.
+\FigRef{rules.expr4} holds the adapted rules for expressions,
+\figRef{rules.pat4} for patterns.
+The main differences are as follows:
+
+\rulerCmdUse{rules.expr4}
+\rulerCmdUse{rules.pat4}
+
+\begin{Itemize}
+\item
+All rules are passed an additional context parameter indicating
+the way |<=| has to be done with respect to strength |fiopt|.
+See \pageRef{ehc4-fitsIn-strength} for the relevant discussion.
+\item
+The |fiopt| is mostly passed on unchanged, except in the argument
+of an expression application (\ruleRef{e-app4}) and a pattern
+|Con| (\ruleRef{p-con4}).
+The latter is due to a different way of handling tuple constructors.
+Instantiation in a pattern \ruleRef{p-con4} instantiates as greedily as possible.
+\TBD{needs more discussion}
+\item
+Types of tuple constructors (and destructors) are now stored in the |Gamma| for
+types, |valGam|.
+The lookup for types in |valGam| (|valGamLookup|) now takes care of
+returning a proper quantified type for tuples, thereby resembling more the
+normal retrieval of types from a |Gamma|.
+The \ruleRef{p-var4} now covers the case for (tuple)constructors too.
+This change also prepares for the introduction of datatypes in the next version of EH.
+\item
+A |let|-expression in \ruleRef{e-let4} and \ruleRef{e-let-tysig4} quantify
+bindings via the rules in \figRef{rules.quGam4} and \figRef{rules.qu4}.
+Additionaly, to take care of always opening existentially quantified types
+bound by a value identifier, a function |instE| is used.
+Function |instE| corresponds to |tyInst1Exists|.
+\end{Itemize}
+
+Changes in the implementation are also small, mostly to take care
+of the additional parameters to |fitsIn| (|fiopt|, a |UID| for instantiations)
+and the previous remarks.
+
+\subsubsection{Handling of tuples}
+
+The alternative for |Con| looks up the value associated with
+the tuple constructor name in |valGam|.
+
+\chunkCmdUseMark{EHInferExpr.4.Con}
+
+Previously, the type was constructed in situ,
+now it is delegated to |valGamLookup|:
+
+\chunkCmdUseMark{EHGam.4.valGamLookup}
+
+This modification also introduces a new convention where |valGam|
+contains for a value constructor |X| a binding for the type
+of the function which constructs the value,
+and a type of the function which dissects the value into
+a tuple of all fields of the value.
+The convention is that the constructor has name |X|, the dissector/deconstructor
+has name |unX|.
+For tuples these bindings are created on the fly.
+For example,for a 3-tuple the following
+bindings are simulated to be present in |valGam|:
+
+\begin{code}
+,3    :: forall a . a -> forall b . b -> forall c . c -> (a,b,c)
+un,3  :: forall a b c . (a,b,c) -> (a,b,c)
+\end{code}
+
+The |unX| binding corresponds to the type created in the \ruleRef{p-con2} (\figPageRef{rules.pat2}).
+The |Con| alternative now also uses the |valGam| to find a binding for a tuple dissector/destructor:
+
+\chunkCmdUseMark{EHInferPatExpr.4.patFunTy}
+
+\subsubsection{Declarations and options}
+
+Declarations als need some modifications to take care of the quantification and instantiation
+of toplevel existential quantifiers as specified in \ruleRef{e-let4} and \ruleRef{e-let-tysig4}:
+
+\chunkCmdUseMark{EHInfer.4}
+
+Setting up proper values for the ``strength'' |fiopt| is also done here.
+
+\subsubsection{Type expressions}
+
+Type signatures may include quantifiers.
+This requires additional abstract syntax for type expressions:
+
+\chunkCmdUseMark{EHAbsSyn.4}
+
+and additional parsing
+
+\chunkCmdUseMark{EHParser.4.pTyExprPrefix}
+\chunkCmdUseMark{EHParser.4.pTyExpr}
+
+The parser |pTyExpr| is slightly complicated because of the right associativity of 
+the function type constructor |->| in combination with quantifiers.
+For example, the type
+\[
+|forall a . a -> forall b . b -> (a,b)|
+\]
+parses to an abstract syntax fragment corresponding to
+\[
+|forall a . (a -> (forall b . (b -> (a,b))))|
+\]
+
+Rewriting to a form similar to the parser for expressions, with a prefix would lead
+to a parser with common prefixes (the |pTyExprBase|) in its alternatives.
+For LL(k) parsers such as the parser combinators used here this is not a good idea.
+Hence the construction where the quantifier is parsed as a prefix of
+the parts between |->| but still applies right associatively.
+
+\chunkCmdUseMark{EHInferExpr.4.Var}
+\chunkCmdUseMark{EHInferExpr.4.Const}
+
+\chunkCmdUseMark{EHInferPatExpr.4.Rest}
+
+
+\TBD{previous should be redone.}
+%%]
+
+%%[partialTySigAFP
+\subsection{Partial type signatures: a test case for extendability}
+\label{ehc2partial-sig}
+
+Partial type signatures allow the programmer to specify only a part of a type 
+in a type signature. The description of the implementation of this feature is
+separated from the discussion of other features to show the effects of an additional
+feature on the compiler.
+In other words, the following is an impact analysis.
+
+First, both abstract syntax and the parser
+%if not incl01TopicParsing
+(not included in \thispaper)
+%endif
+contain an additional alternative for parsing the "@...@" notation
+chosen for unspecified type information designated by |Wild| for wildcard:
+
+\chunkCmdUseMark{EHAbsSyn.2.TyExpr}
+%if incl01TopicParsing
+The parser for |pTyExprBase| needs an additional alternative:
+\chunkCmdUseMark{EHParser.2.pTyExpr}
+%endif
+
+A wildcard type is treated in the same way as a type variable as it also represents unknown 
+type information:
+
+\chunkCmdUseMark{EHInferTyExpr.2.tyVarGather}
+\chunkCmdUseMark{EHInferTyExpr.2.ty}
+
+Changes also have to be made to the omitted parts of the implementation, in particular the pretty printing
+of the AST
+and generation of unique identifiers.
+We mention the necessity of this but omit the relevant code.
+
+The pretty printing of a type signature is enhanced a bit further by either printing the type signature
+(if no wildcard types are present in it)
+or by printing the type of the type signature combined with all found constraints.
+The decision is based on the presence of wildcard type variables in the type signature:
+
+\chunkCmdUseMark{EHInferTyExpr.2.tyVarWildL}
+
+The set of all constraints is retrieved at the root of the AST and passed back into the tree:
+
+\chunkCmdUseMark{EHInfer.2.finValGam}
+%%]
+

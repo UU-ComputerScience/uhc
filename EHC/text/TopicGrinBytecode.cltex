@@ -1,0 +1,2617 @@
+%%[abstract
+This document describes the design of a bytecode virtual machine for GRIN.
+The reader is assumed to be familiar with the EH project
+\cite{dijkstra05phd,dijkstra04ehc-web} and its overall design.
+Although we intend this document primarily to be for the understanding by EHC developers,
+we provide some introductory notes and background before delving into the internals of
+the machinery.
+
+%%]
+
+%%[defs
+%format CSBase      = "C"
+%format CSDep       = "d"
+%format CSDep'
+%format CSDep''
+%format CSGetFld    = "F"
+%format CSEnv       = Gamma
+%format <<          = "{\llbracket}"
+%format >>          = "{\rrbracket}"
+%format CSOne(x)(off)(offo)(env)    = G<< x >> ^^ "{\downarrow}" off ^^ "{\uparrow}" offo ^^ env
+%format CSSeq(x)(off)(offo)(env)    = S<< x >> ^^ "{\downarrow}" off ^^ "{\uparrow}" offo ^^ env
+%format CSPat(x)(off)(offo)(env)    = P<< x >> ^^ "{\downarrow}" off ^^ "{\uparrow}" offo ^^ env
+%format CSVar(x)(off)(offo)(env)    = V<< x >> ^^ "{\downarrow}" off ^^ "{\uparrow}" offo ^^ env
+%format CSAlt(x)(off)(offo)(env)    = A<< x >> ^^ "{\downarrow}" off ^^ "{\uparrow}" offo ^^ env
+
+%format angle(x)     = "\langle{" x "}\rangle"
+
+%format unit        = "\mathbf{unit}"
+%format store        = "\mathbf{store}"
+%format apply        = "\mathbf{apply}"
+%format eval        = "\mathbf{eval}"
+%format ffi        = "\mathbf{ffi}"
+%format ilnt         = "\mathsf{lnt}"
+%format ild(i)(rd)(rs)(x)        = "\mathsf{l}\langle{" i "}\rangle\langle{" rd "}\rangle\langle{" rs "}\rangle" ^^ x
+%format ist(i)(rd)(rs)(x)       = "\mathsf{s}\langle{" i "}\rangle\langle{" rd "}\rangle\langle{" rs "}\rangle" ^^ x
+%format ist2(i)(rd)(rs)(x)       = "\mathsf{s}\langle{" i "}\rangle\langle{" rd "}\rangle\langle{" rs "}\rangle" ^^ x
+%format icp(i)(rs)(x)         = "\mathsf{cp}\langle{" i "}\rangle\langle{" rs "}\rangle" ^^ x
+%format iop(ot)(dt)(i)(rd)(rs)(x)       = "\mathsf{o}\langle{" ot "}\rangle\langle{" dt "}\rangle\langle{" i "}\rangle\langle{" rd "}\rangle\langle{" rs "}\rangle" ^^ x
+%format iop2(ot)(dt)(od)(i)(rs)(x)       = "\mathsf{o}\langle{" ot "}\rangle\langle{" dt "}\rangle\langle{" od "}\rangle\langle{" i "}\rangle\langle{" rs "}\rangle" ^^ x
+%format iaddi(rd)(x)         = "\mathsf{addi}\langle{" rd "}\rangle" ^^ x
+%format icall(rs)         = "\mathsf{call}\langle{" rs "}\rangle"
+%format itailcall(rs)(n)(m)         = "\mathsf{tailcall}\langle{" rs "}\rangle" ^^ n ^^ m
+%format itailapply(rs)(n)(m)         = "\mathsf{tailapply}\langle{" rs "}\rangle" ^^ n ^^ m
+%format ildg(rd)(a)         = "\mathsf{ldg}\langle{" rd "}\rangle" ^^ a
+%format iretcall(n)(m)         = "\mathsf{retcall}" ^^ n ^^ m
+%format iretcase(n)(r)(c)         = "\mathsf{retcase}" ^^ n ^^ r ^^ c
+%format icasecall         = "\mathsf{casecall}"
+%format ieval(rs)         = "\mathsf{eval}\langle{" rs "}\rangle"
+%format itaileval(rs)(m)         = "\mathsf{taileval}\langle{" rs "}\rangle" ^^ m
+%format iapply(rs)       = "\mathsf{apply}\langle{" rs "}\rangle"
+%format ialloc(rs)         = "\mathsf{alloc}\langle{" rs "}\rangle"
+%format iallocstore(rs)         = "\mathsf{allocstore}\langle{" rs "}\rangle"
+%format isplit(rs)(n)       = "\mathsf{split}\langle{" rs "}\rangle" ^^ n
+%format iadapt(rs)(n)       = "\mathsf{adapt}\langle{" rs "}\rangle" ^^ n
+%format istore(rs)         = "\mathsf{store}\langle{" rs "}\rangle"
+%format ifetch(rs)         = "\mathsf{fetch}\langle{" rs "}\rangle"
+%format icallc(n)         = "\mathsf{callc}" ^^ n
+%format tailcall         = "\mathsf{tailcall}"
+%format tailapply         = "\mathsf{tailapply}"
+%format taileval         = "\mathsf{taileval}"
+%format fetchupd         = "\mathsf{fetchupd}"
+%format applycont         = "\mathsf{applycont}"
+%format evappcont         = "\mathsf{evappcont}"
+%format papplycont         = "\mathsf{papplycont}"
+%format retcall         = "\mathsf{retcall}"
+%format retcase         = "\mathsf{retcase}"
+%format call         = "\mathsf{call}"
+%format callc         = "\mathsf{callc}"
+%format alloc         = "\mathsf{alloc}"
+%format stores         = "\mathsf{store}"
+%format allocstore         = "\mathsf{allocstore}"
+%format fetcht         = "\mathsf{fetch}"
+%format evupdcont         = "\mathsf{evupdcont}"
+%format casecall         = "\mathsf{casecall}"
+%format evalt         = "\mathsf{eval}"
+%format applyt        = "\mathsf{apply}"
+%format adaptt        = "\mathsf{adapt}"
+%format splitt        = "\mathsf{split}"
+%format nop         = "\mathsf{nop}"
+%format ldl         = "\mathsf{ldl}"
+%format lnt         = "\mathsf{lnt}"
+%format ldc         = "\mathsf{ldc}"
+%format ldi         = "\mathsf{ldi}"
+%format ldg         = "\mathsf{ldg}"
+%format ldgt        = "\mathsf{ldgt}"
+%format l1tt        = "\mathsf{l1tt}"
+%format l0ti        = "\mathsf{l0ti}"
+%format l0tt        = "\mathsf{l0tt}"
+%format sts         = "\mathsf{sts}"
+%format s1tt        = "\mathsf{s1tt}"
+
+%format **          = "**"
+
+%format sv          = "s_v"
+%format an          = "a_n"
+%format cn          = "c_n"
+%format wn          = "w_n"
+%format bm          = "b_m"
+%format fm          = "f_m"
+%format bk          = "b_k"
+
+%format xpos        = "x^{+}"
+%format Enc(x)      = "\overline{" x "}"
+%format Frac(x)(y)  = "\frac{" x "}{" y "}"
+
+%format gcode       = "\textit{is}"
+%format gcode'
+%format gb_code_ExcHdl_NormalReturn_MarkedAsHandler = gcode "_{hret}"
+%format gb_code_ExcHdl_EvalValue = gcode "_{heval}"
+%format gb_code_ExcHdl_ThrowReturn = gcode "_{tret}"
+%format gstack      = "\textit{st}"
+%format gstack'
+%format gheap       = "\textit{hp}"
+%format greg        = "\textit{r}"
+%format gpc         = "\textit{pc}"
+%format gframep     = "\textit{bp}"
+%format gframep'
+%format gframep''
+%format gframep'''
+%format gframepOff	= gframep "_{off}"
+%format gsp         = "\textit{sp}"
+
+%format trace		= t
+%format exc			= x
+
+%format callinfo		= "\mathsf{ci}"
+%format callinfoCall	= callinfo "_{call}"
+%format callinfoTail	= callinfo "_{tail}"
+%format callinfoTailEv	= callinfo "_{tailev}"
+%format callinfoEval	= callinfo "_{ev}"
+%format callinfoApply	= callinfo "_{ap}"
+%format callinfoCCall	= callinfo "_{C}"
+%format callinfoEvCont	= callinfo "_{evcont}"
+%format callinfoEvWrap	= callinfo "_{evwrap}"
+%format callinfoApCont	= callinfo "_{apcont}"
+%format callinfoPApCont	= callinfo "_{papcont}"
+%format callinfoHdlr	= callinfo "_{hdlr}"
+%format callinfoEvAppFunCont	= callinfo "_{evappfcont}"
+%format callinfoEvAppFunEvCont	= callinfo "_{evappfevcont}"
+%format callinfoExcHdlEvalValue	= callinfo "_{heval}"
+%format callinfoIntlCCall	= callinfo "_{C-intl}"
+
+%format (ixx1(x)(f))    = x "_{" f "}"
+%format (ixx(x)(f)(t))  = x "_{" f "} .. " x "_{" t "}"
+%format (ixxjuxt(x)(f)(t))  = x "_{" f "}" x "_{" t "}"
+%format (pow2(p))   = "2^{" p "}"
+
+\newenvironment{GrinCS}{%
+\begin{tabular}{p{.40\linewidth}cp{.55\linewidth}}
+}{%
+\end{tabular}
+}
+
+\newcommand{\GriniStateBefore}[5]{%
+#1 &
+#2 &
+#3 &
+#4 &
+#5
+}
+
+\newcommand{\GriniStateAfter}[5]{%
+$\Longrightarrow$ &
+#2 &
+#3 &
+#4 &
+#5
+}
+
+\newenvironment{GriniSteps}{%
+\begin{tabular}{lllll}
+\hline
+& Code & Stack & Heap & Regs \\
+\hline
+}{%
+\hline
+\end{tabular}
+}
+
+\newcommand{\GriniStep}[2]{%
+\begin{GriniSteps}
+#1 \\ #2 \\
+\end{GriniSteps}
+}
+
+\newenvironment{GrinEncoding}[1]{%
+\begin{tabular}{lllll}
+\hline
+#1 & byte 0 & byte 1 & byte 2 & byte 3 \\
+\hline
+}{%
+\hline
+\end{tabular}
+}
+
+%%]
+
+
+%%[intro
+The Grin Bytecode Machine (GBM) is a virtual machine for the Graph Reduction Intermediate Notation (GRIN)
+\cite{boquist99phd-optim-lazy,boquist96grin-optim}.
+GRIN is an intermediate representation for functional programs where all lazy and higher order constructs have been made
+explicit.
+This is accomplished by the following:
+\begin{Itemize}
+\item
+  Computation is done imperatively, that is the order in which computations are performed is made explicit.
+\item
+  Computation is non-lazy and always yields a result.
+  Whenever lazy behavior is desired, an appropriate datastructure is build to represent the delayed computation.
+  Computation of such a structure is enforced by an explicit evaluation.
+\end{Itemize}
+
+For example, the following program:
+
+%%[[wrap=code
+id x = x
+v = id 3
+main = v
+%%]]
+
+translates to the following GRIN program:
+
+%%[[wrap=code
+{  id x
+     =  {  unit x ; \x' ->
+           eval x'
+        } 
+;  v 
+     =  {  store (#0 ^ / ^ C ^ / ^ Int ^^ 3) ; \x ->
+           id x
+        } 
+;  main 
+     =  {  unit v ; \v' ->
+           eval v'
+        } 
+}
+%%]]
+
+Both |main| and |v| are CAF's. Computation is triggered by the context (a runtime system) requesting for the evaluation of |main|.
+The body of |main| is then invoked, requesting for the evaluation of |v|.
+|v| then heap allocates a boxed integer which is then passed to |id|, which evaluates and returns its parameter.
+The builtin function |eval| checks whether a stored node represents a delayed computation and then proceeds to compute it.
+
+The primary use of GRIN is to represent a whole program with it, and then analyse this complete self contained program.
+The most important assumption for such an analysis is that the program is closed, no other code will be invoked,
+nor will any part of the program be invoked by outside code.
+This allows the most important source of inefficiency, the builtin |eval|, to be analysed for its use, inlined, specialised for its specific use at
+each call site.
+This analysis is done as part of EH (ehc variant 8) and described elsewhere \cite{boquist99phd-optim-lazy}.
+
+\paragraph{Why a Grin Bytecode Machine?}
+Although GRIN is intended as a notation allowing whole program analysis, it also represents a program which can directly be interpreted.
+At this place the Grin Bytecode Machine (GBM) steps in.
+There are a couple of reasons as why to do this:
+
+\begin{Itemize}
+\item
+  It is yet unclear how whole program analysis scales.
+  Although it promises highly optimised code, where the price for laziness no longer has to be paid when laziness is not used,
+  its analysis and optimisation techniques are not yet sorted out completely, may be too resource expensive,
+  and inhibits fast compilation turn around times.
+\item
+  It is yet unclear how practical language features like exceptions, modules, and threads
+  interact with GRIN and whole program analysis.
+\end{Itemize}
+
+An interpreter circumvents these problems by avoiding whole program analysis, 
+and interpreting the 'optimized away' constructs like |eval| instead.
+In the context of EH there are also other benefits to using an interpretive technique in addition to full program analysis:
+
+\begin{Itemize}
+\item
+  Two implementations, one based on highly optimised code, one based on interpretation, allow correctness checks of eachother by
+  comparing test output.
+\item
+  Because GRIN already makes explicit much of the laziness, its interpretation may well turn out to be fast enough to be of real practical use.
+\item
+  It allows research into hybrid techniques where part is fully optimised, part is interpreted.
+\end{Itemize}
+
+\Paragraph{An example of GBM code}
+
+We present the translation of the example into GBM code to give the reader an intuition of what the GBM does:
+
+%%[[wrap=code
+{  id x
+     =  {  unit x ; \x' ->
+                ldl         x                   -- load parameter x
+           eval x'                             
+                ldl         x'                  -- load x' (alias for x)
+                taileval                        -- tail evaluate
+        } 
+;  v 
+     =  {  store (#0 ^ / ^ C ^ / ^ Int ^^ 3) ; \x ->
+                ldi         3                   -- load (unboxed) int 3
+                ldl         x                   -- load x (alias for 3)
+                ldgt        id                  -- load global id
+           id x
+                tailcall                        -- tail call
+        } 
+;  main 
+     =  {  unit v ; \v' ->
+                ldgt        v                   -- load global v
+                ldl         v'                  -- load v' (alias for v)
+           eval v'
+                taileval                        -- tail evaluate
+        } 
+}
+%%]]
+
+Note that the GBM follows quite literally, that is unoptimised, the corresponding GRIN.
+Also note that int's are treated in unboxed for, thereby avoiding the need to allocate storage for a boxed representation.
+
+%%]
+
+
+%%[grin2GrinB
+\subsection{Invariants and assumptions}
+
+\begin{Itemize}
+\item
+  Stack grows from high to low addresses.
+\item
+  The size of all values pushed on the stack is known.
+  All access can be done relative to the top of the stack.
+\item
+  A frame/base pointer is required for unwinding the stack in case of an exception.
+\item
+  After each call a pointer to call info is inlined. A return address points
+  to the location immediately after this pointer.
+  The kind of call is administered, as to be able to differentiate between normal calls and
+  the installation of an exception handler.
+  Furthermore, a saved return address is always pushed before a saved basepointer,
+  so exception can find this info via the basepointer.
+\item
+  No scoping mechanism is required, all values are either local or global.
+  Global values are either functions (their start address) and CAF's.
+  All access is done using absolute addresses, which are computed it initialisation time.
+\end{Itemize}
+
+\subsection{Compilation schemes}
+
+Compilation for a construct |x| is expressed by:
+
+%%[[wrap=code
+CSOne(x)(CSDep)(CSDep')(CSEnv)                  -- one grin expression
+CSPat(\w -> e)(CSDep)(CSDep')(CSEnv)            -- binding
+CSSeq(x ; \w -> e)(CSDep)(CSDep')(CSEnv)        -- sequence special cases
+CSVar(v)(CSDep)(CSDep')(CSEnv)                  -- single identifier reference
+%%]]
+
+where |CSDep| is the current depth of the stack, and |CSEnv| an environment mapping identifiers to their stack depth.
+
+\subsubsection{Sequencing}
+
+\begin{GrinCS}
+|CSOne(e ; \w -> e')(CSDep)(CSDep')(CSEnv)|
+&=&
+|CSSeq(e ; \w -> e')(CSDep)(CSDep')(CSEnv)|
+\end{GrinCS}
+
+\begin{GrinCS}
+|CSSeq(e ; \w -> e')(CSDep)(CSDep'')(CSEnv)|
+&=&
+|CSOne(e)(CSDep)(CSDep')(CSEnv) : CSPat(\w -> e')(CSDep')(CSDep'')(CSEnv)|
+\end{GrinCS}
+
+\subsubsection{Value construction}
+
+Variable use:
+
+\begin{GrinCS}
+|CSOne(unit v)(CSDep)(CSDep')(CSEnv)|
+&=&
+|CSVar(v)(CSDep)(CSDep')(CSEnv)|
+\end{GrinCS}
+
+\begin{GrinCS}
+|CSVar(v)(CSDep)((CSDep+1))(CSEnv)|
+&=&
+|ldl (CSDep - CSEnv v)|
+\end{GrinCS}
+
+Node construction:
+
+\begin{GrinCS}
+|CSOne(unit (C ^^ Sub(v)(1..n)))(Sub(CSDep)(1))(Sub(CSDep)(n+1))(CSEnv)|
+&=&
+|Vecr(CSVar(Sub(v)(i))(Sub(CSDep)(i))(Sub(CSDep)(i+1))(CSEnv)) : ldc C : ldc n : allocstore gcinfo|
+\end{GrinCS}
+
+Note:
+\begin{Itemize}
+\item
+  For simplicity we omit the handling of constants in node construction.
+\item
+  |store| and |unit| are treated in the same way.
+\end{Itemize}
+
+Calling:
+
+\begin{GrinCS}
+|CSOne(f ^^ Sub(a)(1..n))(CSDep)((CSDep+1))(CSEnv)|
+&=&
+|Vecr(CSVar(Sub(a)(i))(Sub(CSDep)(i))(Sub(CSDep)(i+1))(CSEnv)) : ldg f : call |
+\end{GrinCS}
+
+Calling a primitive, foreign function:
+
+\begin{GrinCS}
+|CSOne(ffi f ^^ Sub(a)(1..n))(CSDep)((CSDep+1))(CSEnv)|
+&=&
+|Vecr(CSVar(Sub(a)(i))(Sub(CSDep)(i))(Sub(CSDep)(i+1))(CSEnv)) : push (f (pop n)) |
+\end{GrinCS}
+
+
+\subsubsection{Eval and apply}
+
+\begin{GrinCS}
+|CSOne(eval v)(CSDep)(CSDep')(CSEnv)|
+&=&
+|CSVar(v)(CSDep)(CSDep')(CSEnv) : evalt|
+\end{GrinCS}
+
+\begin{GrinCS}
+|CSOne(apply f ^^ Sub(a)(1..n))(CSDep)((CSDep+1))(CSEnv)|
+&=&
+|Vecr(CSVar(Sub(a)(i))(Sub(CSDep)(i))(Sub(CSDep)(i+1))(CSEnv)) : ldc n : |
+\\&&
+|CSVar(f)((Sub(CSDep)(n+1)+1))(CSDep')(CSEnv) : applyt|
+\end{GrinCS}
+
+\subsubsection{Binding}
+
+One variable:
+
+\begin{GrinCS}
+|CSPat(\w -> e)(CSDep)(CSDep)(CSEnv)|
+&=&
+|CSOne(e)(CSDep)(CSDep)(CSEnv ^ [w :-> CSDep])|
+\end{GrinCS}
+
+Node:
+
+\begin{GrinCS}
+|CSPat(\(C ^^ Sub(w)(1..n)) -> e)(CSDep)(CSDep')(CSEnv)|
+&=&
+|fetcht : CSOne(e)((CSDep + n - 1))(CSDep')(CSEnv ^ Vec([Sub(w)(i) :-> CSDep + n - i]))|
+\end{GrinCS}
+
+\subsubsection{Case}
+
+\begin{GrinCS}
+|CSOne(case v ^^ {Vec(Sub(p)(i) -> Sub(e)(i))})(CSDep)((CSDep+1))(CSEnv)|
+&=&
+|CSVar(v)(CSDep)(CSDep')(CSEnv) : lnt : casecall :|
+\\&&
+|Vec(CSAlt(Sub(p)(i) -> Sub(e)(i))(CSDep')(CSDep'')(CSEnv))|
+\end{GrinCS}
+
+\begin{GrinCS}
+|CSAlt(p -> e)(CSDep)(CSDep')(CSEnv)|
+&=&
+|CSPat(\p -> e)(CSDep)(CSDep')(CSEnv) |
+\end{GrinCS}
+
+\subsubsection{Returning}
+
+Sequence continuation
+
+Normal return from function
+
+Tailcall
+
+Case return
+
+\subsubsection{Optimisations}
+
+Alias need not be stored.
+
+\begin{GrinCS}
+|CSSeq(unit v ; \w -> e)(CSDep)(CSDep')(CSEnv)|
+&=&
+|CSOne(e)(CSDep)(CSDep')(CSEnv ^ [w :-> CSEnv v])|
+\end{GrinCS}
+
+|Int| can be treated unboxed in tagged pointer model.
+
+Enumeration datatypes can be represented by an integer.
+A |lnt| in front of a |casecall| then is no longer necessary.
+
+Avoid building closures which are evaluated anyway, and then don't evaluate these.
+
+%%]
+
+%%[grinBSemantics
+%%]
+
+%%[grinBMemoryModel
+
+\Paragraph{Memory}
+GBM uses:
+
+\begin{Itemize}
+\item
+  A stack, growing downwards, a register |gstack| points to the top.
+\item
+  A heap, referred to by |gheap|.
+\item
+  A single register |greg|.
+\end{Itemize}
+
+Currently the general purpose |greg| is not used, but the GBM design allows future use. It is also unclear whether the availability of
+such a register benefits the speed of the interpreter.
+It also requires the GBM code generation to be aware of this register.
+
+The heap currently is either non-garbagecollected, or under control of the Boehm garbage collector \cite{boehm88gc-c,boehm06gc-www},
+depending on configuration.
+
+Memory consists of words, either 32 bits or 64 bits, depending on the platform.
+A word is guaranteed to be able to hold a pointer.
+
+\Paragraph{Nodes and tagging}
+Nodes reside in the heap, and occupies at least 1 word.
+A node consists of a header (a word) + zero or more words.
+
+The following is the layout for a 32 bits header, a 64 bits header spends its available space on the |size| and |tag| field.
+%%[[wrap=code
+size            16  bits                                -- nr of words, incl header
+needsEval       2   bit                                 -- 1 == possibly needs eval, 2 == black hole
+tagCateg        2   bits                                -- eval == 0: {C,P}, eval == 1: {F,A,I,CF}
+gc              2   bits                                -- reserved for future use by garbage collecting
+tag             10  bits                                -- also used for size info for P, A
+%%]]
+
+A bit |needsEval| is reserved to indicate whether the node possibly needs evaluation.
+This is the case for saturated function closures (|tagCateg = F/CF|),
+general application nodes (|tagCateg = A|),
+indirection nodes (|tagCateg = I|).
+Data constructors (|tagCateg = C|) and partial applications (|tagCateg = P|) need no further evaluation.
+
+Tag categories summary:
+%%[[wrap=code
+F               00              -- function closure
+A               01              -- general application
+I               10              -- indirection
+CF              11              -- C function closure
+
+C               00              -- constructor
+P               01              -- partial app
+%%]]
+
+\Paragraph{Node pointers and Int's}
+A word represents a pointer to a node or an integer.
+A pointer is required to have its least significant bit set to 0, for an integer this is 1.
+The encoding for an integer equals the original integer value shifted left |sh| positions
+plus the int tag value |t|.
+Currently |sh = 1, t = 1|,
+which means that the encoding |Enc(x)| of |x| is defined as follows, with |s = pow2(1)| (see Leroy \cite{leroy90zinc-ml-impl}):
+
+%%[[wrap=code
+Enc(x)          =   x * s + t
+Enc(x1+x2)      =   (x1+x2) * s + t
+                =   x1 * s + t + x2 * s + t - t
+                =   Enc(x1) + Enc(x2) - t
+Enc(x1-x2)      =   (x1-x2) * s + t
+                =   x1 * s + t - x2 * s - t + t
+                =   Enc(x1) - Enc(x2) + t
+Enc(x1*x2)      =   (x1*x2) * s + t
+                =   (x1 * s) * (x2 * s) / s + t
+                =   (x1 * s + t - t) * (x2 * s + t - t) / s + t         ^
+                =   (Enc(x1) - t) * (Enc(x2) - t) / s + t
+                =   (Enc(x1) - t) * (Enc(x2) / s) + t                   ^ -- t/s shifts out
+Enc(x1/x2)      =   (x1/x2) * s + t
+                =   Frac(x1 * s)(x2 * s) * s + t
+                =   Frac(x1 * s + t - t)(x2 * s + t - t) * s + t
+                =   Frac(Enc(x1) - t)(Enc(x2) - t) * s + t
+%%]]
+%                =   Frac(Enc(x1) - t)(Enc(x2) / s - t / s) + t
+%                =   Frac(Enc(x1) - t)(Enc(x2) / s) + t                  ^ -- t/s shifts out
+
+Assuming a word size of 32 bits, for signed ints |x| in the range |- pow2(32-sh-1) <= x < pow2(32-sh-1)|, |32-sh| bits are used.
+
+\Paragraph{Constant values (like Strings)}
+String constants are encoded in a platform dependent manner with a wrapper function constructing the expected node based representation.
+Constants are stored in a separate table, to be accessed by a specialised instruction |ldg| for accessing global values,
+together with runtime linking functionality.
+
+\Paragraph{Platform dependencies}
+GBM is dependent on
+\begin{Itemize}
+\item \textbf{Word size.}
+  Word size may be 32 or 64 bits.
+  Some instruction depend on this parameter.
+  For example, the load global |ldg| instruction refers to a global via a pointer, which has the size of a word and is inlined in the instruction stream.
+\item \textbf{Endianness.}
+  The encoding of literal integer values is done in the encoding used by the platform.
+\end{Itemize}
+
+GBM is not designed to be platform independent.
+For a platform independent encoding of instructions a choice between these dependencies would have to be made.
+
+\Paragraph{Modules}
+\emph{This paragraph is left here for later rewrite.}
+
+Incoming and outgoing references need to be resolved during initialization time with the help of some tables
+\begin{itemize}
+\item
+  Imported modules, mapping module names to global module numbers assigned during linking time.
+\item
+\end{itemize}
+
+\Paragraph{Initialization}
+Initialization takes places in the following order, possible referring to module |angle(m)|.
+\begin{itemize}
+\item
+  Stack, heap are set up.
+\item
+  Resolve imported modules for |angle(m)|.
+  Each |angle(m)| is assigned a unique number, also referred to as |angle(m)|.
+\item
+  Each module |angle(m)| initializes itself, via a call to function |angle(m)_initialize|.
+\item
+  Resolve exported entrypoints for |angle(m)| (is this necessary?).
+\end{itemize}
+
+\Paragraph{Table summary}
+\emph{This paragraph is left here for later rewrite.}
+
+The following tables are used, |angle(m)| is the module nr, starting at |1|, global tables have module nr |0|.
+Format is |table : table nr :: functionality :: actual C encoding|.
+
+%%[[wrap=code
+bytecode                :   angle(m).0  ::  PC -> Instr             ::  Instr[]                 -- per module
+strings                 :   angle(m).1  ::  Offset -> String        ::  char[][]                -- per module
+imported modules        :   angle(m).2  ::  ModNm -> Module         ::  Node[]                  -- per module, filled at link time
+exported entrypoints    :   angle(m).3  ::  Module                  ::  PC[]                    -- mem locations, filled at link time
+CAF entrypoints         :   angle(m).4  ::  PC                      ::  PC[]                    -- mem locations, filled at link time
+all modules             :   0.0         ::  ModNm -> Module         ::  Node[]                  -- 
+CAF                     :   0.1         ::
+%%]]
+
+\subsection{Strings}
+
+Strings are represented in the usual way, as |[Char]|, but string constants are platform dependent strings with a wrapper around.
+A string constant |s| like the following:
+
+%%[[wrap=code
+s = "Hello world"
+%%]]
+
+is translated to
+
+%%[[wrap=code
+data PackedString
+  = PackedString        Ptr
+
+foreign import ccall "primCString2String" fromPackedString :: PackedString -> [Char]
+
+s = fromPackedString $ PackedString "Hello world"
+%%]]
+
+The internal representation of |PackedString| is hidden and only known to GBM.
+The |Ptr| of a |PackedString| points to the string, which itself is stored in a strings table.
+The |Ptr| is also stored as a constant in a constants table, which is used by the |ldg| + linking combination.
+
+%%]
+
+%%[grinBMetavarEncoding
+Although only a few instructions are required for the interpretation of GRIN by GBM,
+the design of the instruction set has been made as general as possible.
+We first describe the notation used to describe instruction variation.
+With each individual instruction the implemented and used variants are listed.
+
+\subsubsection{Load source, store destination: extended variant}
+%%[[wrap=code
+angle(rd), angle(rs)  =  i  -- immediate constant
+                      |  p  -- program counter relative
+                      |  s  -- top of stack relative
+                      |  r  -- scratch register relative
+%%]]
+
+%%[[wrap=code
+s  =  00
+r  =  01
+i  =  10
+p  =  11
+%%]]
+
+Store destinations can only be |s| or |r|, hence the encoding omits the most significant bit in store instructions.
+
+\subsubsection{Load destination, store source: basic variant}
+%%[[wrap=code
+angle(rd), angle(rs)  =  t  -- top of stack, with push/pop side effect
+                      |  r  -- scratch register
+%%]]
+
+%%[[wrap=code
+t  =  0
+r  =  1
+%%]]
+
+\subsubsection{Operator destination: operand variant}
+
+%%[[wrap=code
+angle(od)  =  t  -- top of stack, update in place
+           |  r  -- scratch register
+%%]]
+
+%%[[wrap=code
+t  =  0
+r  =  1
+%%]]
+
+\subsubsection{Operator source: operand variant}
+
+%%[[wrap=code
+angle(os)  =  s  -- top of stack relative
+           |  r  -- scratch register
+           |  i  -- immediate constant
+           |  t  -- top of stack, with push/pop side effect
+%%]]
+
+%%[[wrap=code
+s  =  00
+r  =  01
+i  =  10
+t  =  11
+%%]]
+
+\subsubsection{Operator type}
+%%[[wrap=code
+angle(ot)  =  a  -- add
+           |  s  -- subtract
+           |  m  -- multiply
+           |  d  -- divide
+%%]]
+
+%%[[wrap=code
+a  =  00
+s  =  01
+m  =  10
+d  =  11
+%%]]
+
+\subsubsection{Data type}
+
+%%[[wrap=code
+angle(dt)  =  iw  -- int word
+           |  ii  -- multiple precision int
+           |  fw  -- float word
+%%]]
+
+%%[[wrap=code
+iw  =  00
+ii  =  01
+fw  =  10
+%%]]
+
+\subsubsection{Immediate signed int constant size}
+%%[[wrap=code
+angle(is)  =  08, b  -- byte, 8 bits
+           |  16, s  -- short, 16 bits
+           |  32, w  -- word, 32 bits
+           |  64, d  -- double, 64 bits
+%%]]
+
+%%[[wrap=code
+08, b  =  00
+16, s  =  01
+32, w  =  10
+64, d  =  11
+%%]]
+
+\subsubsection{Indirection level}
+%%[[wrap=code
+angle(i)  =  0      -- as is, use itself (don't follow as address)
+          |  1      -- use content pointed to (do follow as address)
+          |  2      -- and another time
+          |  3, i   -- use as int, that is yield tagged int representation
+%%]]
+
+Level 0 is only used for a source.
+When a level is used for a destination, level 0 is not allowed, only 1 and 2.
+In that case encoding equals the encoding for |i - 1|.
+
+A level 3 represents a variation on level 0 with an implicit conversion to int encoding |Enc(x)|.
+It is not used with destinations.
+
+\subsubsection{Node adapt kind}
+%%[[wrap=code
+angle(na)  =  u      -- update
+           |  e      -- extend
+           |  d      -- delete
+%%]]
+
+%%[[wrap=code
+u  =  00
+e  =  01
+d  =  10
+%%]]
+
+\subsubsection{Node adapt/split offset src}
+%%[[wrap=code
+angle(no)  =  i      -- immediate
+           |  t      -- top of stack, with implicit pop side effect, see relevant instruction
+%%]]
+
+Similar to |angle(rs), angle(rd)|
+
+%%[[wrap=code
+i  =  0
+t  =  1
+%%]]
+
+\subsubsection{Call information}
+
+After each call, call info |callinfo| is stored.
+The information stored contains:
+
+\begin{itemize}
+\item
+ Kind of call:
+ \\
+%%[[wrap=code
+callinfoCall                =  0     -- normal call
+callinfoTail                =  1     -- tail call
+callinfoEval                =  2     -- eval call
+callinfoEvWrap              =  3     -- eval call wrapper
+callinfoTailEv              =  4     -- tail eval call
+callinfoApply               =  5     -- apply call
+callinfoCCall               =  6     -- C call
+callinfoEvCont              =  7     -- eval update continuation
+callinfoApCont              =  8     -- apply continuation
+callinfoPApCont             =  9     -- partial apply continuation
+callinfoHdlr                =  10    -- exception handler installment
+callinfoEvAppFunCont        =  11    -- apply function eval update continuation
+callinfoEvAppFunEvCont      =  12    -- apply function eval update eval continuation
+callinfoIntlCCall           =  13    -- internal C call which must look like foreign function call (for exception handling)
+%%]]
+\end{itemize}
+
+Invariant: a return address into bytecodes has this information in just before the location pointed to by the return address.
+
+Issue: C call? primitives?
+
+Calling instructions also put a pointer to the previous |gframep| on the stack, using an offset |gframepOff| to this location which is part of the instruction.
+???? This is not going to work for |evalt| which uses |callt| indirectly: global |gframep| is required.
+
+\subsubsection{Instruction prefixes/categories}
+
+Instructions occupy 1 byte, plus additional immediate (inlined) parameters.
+Instructions are grouped, based on common functionality.
+Each group shares an initial bitsequence, that is their higher significant bits are equal.
+For example, all loading instructions start with |0|.
+
+Currently the following categories are used.
+Those without comment are not yet used.
+
+\paragraph{Plain instructions}
+%{
+%format <<  = "{\ll}"
+%%[[wrap=code
+0           ^^  x00        ^^  x00        -- loading
+10          ^^  x02 << 6   ^^  x80        -- storing
+110         ^^  x06 << 5   ^^  xC0        -- arithmetic
+1110  0     ^^  x1C << 3   ^^  xE0        -- eval/apply/ldg
+1110  1     ^^  x1D << 3   ^^  xE8        -- heap: node alloc/fetch, extensible rec
+1111  0     ^^  x1E << 3   ^^  xF0        -- calling, case
+1111  1     ^^  x1F << 3   ^^  xF8        -- no arg instrs, extension, other
+%%]]
+
+\paragraph{Extension instructions, prefixed with |xFE|}
+
+%%[[wrap=code
+0000  0     ^^  x00        ^^  x00        -- tail variants
+%%]]
+%}
+
+%%]
+
+%%[grinBConstants
+Constants may appear as part of an instruction, after its initial bytecode.
+These immediate constants may be of 8, 16, 32 or 64 bits size.
+
+\begin{GrinEncoding}{instruction with |x=c|}
+|- pow2(7) <= c < pow2(7), angle(is) = b | &
+|.. ^ ixxjuxt(is)(1)(0) ..| &
+|ixx(c)(7)(0)| &
+&
+\\
+|- pow2(15) <= c < pow2(15), angle(is) = s | &
+|.. ^ ixxjuxt(is)(1)(0) ..| &
+|ixx(c)(7)(0)| &
+|ixx(c)(15)(8)| &
+\\
+etc.
+\\
+\end{GrinEncoding}
+
+Whenever a constant |x| is referred to from the instruction encoding,
+its two bits |ixxjuxt(x)(1)(0)| refer to the above encoded size information.
+
+%%]
+
+%%[grinBMovingData
+
+\subsubsection{Loading}
+
+\begin{GrinEncoding}{|ild(i)(rd)(rs)(x)|}
+ &
+|0 ^ ixxjuxt(i)(1)(0) ^ ixx1(rd)(0) ^ ixxjuxt(rs)(1)(0) ^ ixxjuxt(x)(1)(0)| &
+... &
+&
+\\
+\end{GrinEncoding}
+
+\textbf{Semantics}\\
+
+%%[[wrap=code
+ild(i)(rd)(rs)(x)
+  =  case angle(i) of
+       0  ->  d  :=  s
+       1  ->  d  :=  *s
+       2  ->  d  :=  *s'
+       i  ->  d  :=  Enc(s)
+  where  (s,s')  <-  case ^^ angle(rs) of
+                       s  -> (gstack + x,*gstack+x)
+                       r  -> (greg + x,*greg+x)
+                       p  -> (gpc + x,*gpc+x)        -- after instruction fetch
+                       i  -> (x,*x)
+         d  <-  case ^^ angle(rd) of
+                  t  ->  gstack := [gstack]-1
+                         *(gstack + x)
+                  r  ->  greg
+%%]]
+
+Offset |x| in bytes.
+
+\textbf{Abbreviations}\\
+
+%%[[wrap=code
+ldl d       =   l1tt  d            -- push content displacement d relative to tos on stack
+ldc c       =   l0ti  c            -- push constant c on stack
+ldi c       =   liti  c            -- push constant c in int encoding on stack
+%%]]
+
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |ldl v : gcode|
+ }{%
+  |s0 : ... : sv : gstack|
+ }{%
+  |gheap|
+ }{
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |gcode|
+ }{%
+  |gstack|
+ }{%
+  |gheap|
+ }{
+ }{}
+}
+
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |ldc c : gcode|
+ }{%
+  |s0 : ... : sv : gstack|
+ }{%
+  |gheap|
+ }{
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |gcode|
+ }{%
+  |c : gstack|
+ }{%
+  |gheap|
+ }{
+ }{}
+}
+
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |ldi c : gcode|
+ }{%
+  |s0 : ... : sv : gstack|
+ }{%
+  |gheap|
+ }{
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |gcode|
+ }{%
+  |Enc(c) : gstack|
+ }{%
+  |gheap|
+ }{
+ }{}
+}
+
+\subsubsection{Load global}
+
+\emph{This section is left here for later rewrite, |ldg| depends on additional linking tables}
+
+\begin{GrinEncoding}{|ildg(rd)(v)|}
+ &
+|1110 ^^ 100 ^ ixx1(rd)(0)| &
+v &
+... &
+\\
+\end{GrinEncoding}
+
+|v| is a word sized value, patched by linking during initialisation.
+
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |ldgt p : gcode|
+ }{%
+  |gstack|
+ }{%
+  |gheap|
+ }{
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |gcode|
+ }{%
+  |*p : gstack|
+ }{%
+  |gheap|
+ }{
+ }{}
+}
+
+
+
+\subsubsection{Load node tag}
+
+\begin{GrinEncoding}{|ilnt|}
+ &
+|1111 ^^ 1100| &
+ &
+ &
+\\
+\end{GrinEncoding}
+
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |lnt : gcode|
+ }{%
+  |p : gstack|
+ }{%
+  |[p :-> ((C,t) : f1 .. Sub(f)(n))] `elem` gheap|
+ }{
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |gcode|
+ }{%
+  |Enc(t) : p : gstack|
+ }{%
+  |gheap|
+ }{
+ }{}
+}
+
+
+\subsubsection{Storing}
+
+\emph{No store instructions are required; storing is handled by node related instructions.}
+
+\begin{GrinEncoding}{|ist2(i)(rd)(rs)(x)|}
+ &
+|10 ^^ ixx1(i)(0) ^ ixxjuxt(rd)(1)(0) ^ ixx1(rs)(0) ^ ixxjuxt(x)(1)(0)| &
+... &
+ &
+\\
+\end{GrinEncoding}
+
+\textbf{Semantics}\\
+
+%%[[wrap=code
+ist(i)(rd)(rs)(x)
+  =  case angle(i) of
+       1  ->  *d         :=  s
+       2  ->  *d'        :=  s
+  where  (d,d')  <-  case ^^ angle(rd) of
+                       t  -> (gstack + x,*gstack+x)
+                       r  -> (greg + x,*greg+x)
+                       p  -> (gpc + x,*gpc+x)        -- after instruction fetch
+                       i  -> (x,*x)
+         s  <-  ...
+%%]]
+
+\textbf{Abbreviations}\\
+
+%%[[wrap=code
+sts d       =   s1tt   d            -- pop tos content into displacement d relative to tos on stack
+%%]]
+
+
+
+%%]
+
+%%[grinBArithmetic
+
+\subsubsection{General operators}
+
+%\emph{No arithmetic instructions are required; arithmetic is currently handled by primitives.}
+
+\begin{GrinEncoding}{|iop2(ot)(dt)(od)(i)(os)(x)|}
+ &
+|110 ^ ixxjuxt(ot)(1)(0) ^ ixxjuxt(dt)(1)(0) ^ ixx1(od)(0)| &
+|00 ^ ixxjuxt(i)(1)(0) ^^ ixxjuxt(os)(1)(0) ^ ixxjuxt(x)(1)(0)| &
+... &
+\\
+\end{GrinEncoding}
+
+%%]
+
+%%[grinBControl
+\subsubsection{Call}
+
+\begin{GrinEncoding}{|icall(rs)|}
+ &
+|1111 ^^ 000 ^ ixx1(rs)(0)| &
+... &
+ &
+\\
+\end{GrinEncoding}
+
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |call : callinfo : gcode|
+ }{%
+  |d : gstack|
+ }{%
+  |gheap|
+ }{
+  |gframep=gframep'|
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |d|
+ }{%
+  |(gframep :-> gframep') : gcode : gstack|
+ }{%
+  |gheap|
+ }{
+  |gframep|
+ }{}
+}
+
+Callinfo |callinfo| depends on context from which is called: |callinfoCall, callinfoEvAppFunCont, callinfoEvAppFunEvCont ...|
+
+\subsubsection{Tail call}
+
+\begin{GrinEncoding}{|itailcall(rs)(n)(m)|}
+ &
+|1111 ^^ 111 ^ 0| &
+|0000 ^^ 000 ^ ixx1(rs)(0)| &
+|0000 ^ ixxjuxt(n)(1)(0) ^ ixxjuxt(m)(1)(0)| &
+... \\
+\end{GrinEncoding}
+
+where |n, m :: angle(is)|.
+
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |tailcall n m : _|
+ }{%
+  |d : a1 .. an : .. : (gframep :-> gframep') : gcode : b1 .. bm : gstack|
+ }{%
+  |gheap|
+ }{
+  |gframep|
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |d|
+ }{%
+  |(gframep :-> gframep') : gcode : a1 .. an : gstack|
+ }{%
+  |gheap|
+ }{
+  |gframep|
+ }{}
+}
+
+
+
+\subsubsection{Tail apply}
+
+\begin{GrinEncoding}{|itailapply(rs)(n)(m)|}
+ &
+|1111 ^^ 111 ^ 0| &
+|0000 ^^ 010 ^ ixx1(rs)(0)| &
+|0000 ^ ixxjuxt(n)(1)(0) ^ ixxjuxt(m)(1)(0)| &
+... \\
+\end{GrinEncoding}
+
+where |n, m :: angle(is)|.
+
+20091013. To be done... (copied from tail call)
+
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |tailapply n m : _|
+ }{%
+  |p : n : a1 .. an : .. : (gframep :-> gframep') : gcode : b1 .. bm : gstack|
+ }{%
+  |gheap|
+ }{
+  |gframep|
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |applyt : gcode|
+ }{%
+  |p : n : a1 .. an : gstack|
+ }{%
+  |gheap|
+ }{
+  |gframep'|
+ }{}
+}
+
+Note: no callinfo is inlined for |tailapply|. This is not necessary as |tailapply| has no stackframe itself,
+but builds on top of the stackframe of the context calling the function in which the |tailapply| is invoked.
+
+
+
+\subsubsection{Return from call}
+
+\begin{GrinEncoding}{|iretcall(n)(m)|}
+ &
+|1111 ^^ 0100| &
+|0000 ^^ ixxjuxt(n)(1)(0) ^ ixxjuxt(m)(1)(0)| &
+... &
+\\
+\end{GrinEncoding}
+
+where |n, m :: angle(is)|
+
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |retcall n m : _|
+ }{%
+  |a1 .. an : .. : (gframep :-> gframep') : gcode : b1 .. bm : gstack|
+ }{%
+  |gheap|
+ }{
+  |gframep|
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |gcode|
+ }{%
+  |a1 .. an : gstack|
+ }{%
+  |gheap|
+ }{
+  |gframep = gframep'|
+ }{}
+}
+
+
+
+\subsubsection{Return from case}
+
+\begin{GrinEncoding}{|iretcase(n)(r)(c)|}
+ &
+|1111 ^^ 0101| &
+|00 ^ ixxjuxt(n)(1)(0) ^ ixxjuxt(r)(1)(0)| &
+|n|, |r|, code location |c| &
+... \\
+\end{GrinEncoding}
+
+where |n, r:: angle(is)|
+
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |retcase n r c : _|
+ }{%
+  |a1 : .. : an : .. : Sub(s)(r) : gstack|
+ }{%
+  |gheap|
+ }{
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |c|
+ }{%
+  |a1 : .. : an : Sub(s)(r) : gstack|
+ }{%
+  |gheap|
+ }{
+ }{}
+}
+
+
+\subsubsection{Case 'call'}
+
+\begin{GrinEncoding}{|icasecall|}
+ &
+|1111 ^^ 0110| &
+|n|, |n| locations &
+... &
+\\
+\end{GrinEncoding}
+
+|n| offsets, each off same size (i.e. nr of bytes) as |n|, relative to |gpc| after each location.
+During runtime initialization the offsets are patched to their absolute addresses.
+Return is handled by |retcase|.
+|n| is omitted from code.
+
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |casecall n : c1 : .. : cn : _|
+ }{%
+  |t : gstack|
+ }{%
+  |gheap|
+ }{
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |Sub(c)(t)|
+ }{%
+  |gstack|
+ }{%
+  |gheap|
+ }{
+ }{}
+}
+
+\subsubsection{Call C function}
+
+\begin{GrinEncoding}{|icallc(n)|}
+ &
+|1111 ^^ 0111| &
+|0000 ^^ 00 ^ ixxjuxt(n)(1)(0)| &
+... &
+\\
+\end{GrinEncoding}
+
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |callc n : callinfoCCall : gcode|
+ }{%
+  |f : a1 .. an : gstack|
+ }{%
+  |gheap|
+ }{
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |gcode|
+ }{%
+  |(f a1 .. an) : gstack|
+ }{%
+  |gheap|
+ }{
+ }{}
+}
+
+Internally, |gframep| is pushed onto the stack as well, before invoking the C function.
+This allows calling Haskell functions from C.
+
+
+
+
+\subsubsection{Eval}
+
+\begin{GrinEncoding}{|ieval(rs)|}
+ &
+|1110 ^^ 000 ^ ixx1(rs)(0)| &
+ &
+ &
+\\
+\end{GrinEncoding}
+
+\Paragraph{Normal call}
+A saturated function call closure:
+
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |evalt : callinfoEval : gcode|
+ }{%
+  |p : gstack|
+ }{%
+  |[ p :-> (F : f : a1 .. an) ] `elem` gheap|
+ }{
+  |gframep = gframep'|
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |call : callinfoEvCont : evupdcont|
+ }{%
+  |f : a1 .. an : (gframep :-> gframep') : gcode : p : gstack|
+ }{%
+  |gheap|
+ }{
+  |gframep|
+ }{}
+}
+
+
+\Paragraph{C call}
+A saturated C function call closure:
+
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |evalt : callinfoEval : gcode|
+ }{%
+  |p : gstack|
+ }{%
+  |[ p :-> (CF : f : a1 : .. : an) ] `elem` gheap|
+ }{
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |gcode|
+ }{%
+  |(f a1 .. an) : gstack|
+ }{%
+  |gheap|
+ }{
+ }{}
+}
+
+
+\Paragraph{Apply call}
+Special case, apply closure:
+
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |evalt : callinfoEval : gcode|
+ }{%
+  |p : gstack|
+ }{%
+  |[ p :-> (A : f : a1 .. an) ] `elem` gheap|
+ }{
+  |gframep = gframep'|
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |evalt : callinfoEvAppFunCont : evappcont : callinfoEvAppFunEvCont : evupdcont|
+ }{%
+  |f : (gframep :-> gframep') : gcode : p : gstack|
+ }{%
+  |gheap|
+ }{
+  |gframep|
+ }{}
+}
+
+
+\Paragraph{Indirection}
+An indirection is just followed:
+
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |evalt : callinfoEval : gcode|
+ }{%
+  |p : gstack|
+ }{%
+  |[ p :-> (I : p') ] `elem` gheap|
+ }{
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |evalt : callinfoEval : gcode|
+ }{%
+  |p' : gstack|
+ }{%
+  |gheap|
+ }{
+ }{}
+}
+
+
+\Paragraph{WHNF}
+Nodes which require no evaluation are left as is, e.g. constructors and partial applications:
+
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |evalt : callinfoEval : gcode|
+ }{%
+  |p : gstack|
+ }{%
+  |[ p :-> (C/P : _) ] `elem` gheap|
+ }{
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |gcode|
+ }{%
+  |p : gstack|
+ }{%
+  |gheap|
+ }{
+ }{}
+}
+
+
+
+\subsubsection{Eval Update continuation}
+
+\begin{GrinEncoding}{|evupdcont|}
+ &
+|1111 ^^ 1101| &
+ &
+ &
+\\
+\end{GrinEncoding}
+
+Updating only is done as part of |evalt|, hence is not generated/called directly.
+
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |evupdcont : _|
+ }{%
+  |p' : (gframep :-> gframep') : gcode : p : gstack|
+ }{%
+  |[p' :-> x] `elem` gheap|
+ }{
+  |gframep|
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |gcode|
+ }{%
+  |p' : gstack|
+ }{%
+  |gheap[ p :-> (x || (I : p')) ]|
+ }{
+  |gframep = gframep'|
+ }{}
+}
+
+|p| is updated either with the content of |p'|, if it fits, or an indirection pointer, if it does not fit.
+Evaluation follows the indirection.
+
+
+\subsubsection{Eval Apply continuation}
+
+\begin{GrinEncoding}{|evappcont|}
+ &
+|1111 ^^ 1010| &
+ &
+ &
+\\
+\end{GrinEncoding}
+
+Only is done as part of |evalt|, hence is not generated/called directly.
+
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |evappcont : callinfoEvAppFunEvCont : gcode|
+ }{%
+  |f : gframep : gcode' : p : gstack|
+ }{%
+  |[f :-> (P m, _) : _, p :-> (A : f : a1 .. an) ] `elem` gheap|
+ }{
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |applyt : callinfoEvAppFunEvCont : gcode|
+ }{%
+  |f : n : a1 .. an : gframep : gcode' : p : gstack|
+ }{%
+  |gheap|
+ }{
+ }{}
+}
+
+Context call info of |gcode|: |callinfoEval|.
+
+
+
+
+\subsubsection{Tail eval}
+
+\begin{GrinEncoding}{|itaileval(rs)(m)|}
+|1111 ^^ 111 ^ 0| &
+|0000 ^^ 001 ^ ixx1(rs)(0)| &
+|0000 ^^ 00 ^ ixxjuxt(m)(1)(0)|  &
+... \\
+\end{GrinEncoding}
+
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |taileval m : _|
+ }{%
+  |p : .. : (gframep :-> gframep') : gcode : b1 .. bm : gstack|
+ }{%
+  |gheap|
+ }{
+  |gframep|
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |evalt : callinfoCall : gcode|
+ }{%
+  |p : gstack|
+ }{%
+  |gheap|
+ }{
+  |gframep = gframep'|
+ }{}
+}
+
+
+
+
+\subsubsection{Apply}
+
+\begin{GrinEncoding}{|iapply(rs)|}
+ &
+|1110 ^^ 001 ^ ixx1(rs)(0)| &
+ &
+ &
+\\
+\end{GrinEncoding}
+
+\Paragraph{Over saturated}
+
+When |m<n|, i.e. more parameters |Sub(a)(i)| than are missing:
+
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |applyt : callinfoApply / callinfoEvAppFunEvCont : gcode|
+ }{%
+  |p : n : a1 .. an : gstack|
+ }{%
+  |[p :-> (P m, f) : b1 .. bk] `elem` gheap|
+ }{
+  |gframep|
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |call : callinfoPApCont : papplycont|
+ }{%
+  |f : b1 .. bk : a1 .. Sub(a)(m) : gcode : (n-m) : Sub(a)(1+m) .. an : gstack|
+ }{%
+  |gheap|
+ }{
+  |gframep|
+ }{}
+}
+
+
+
+\Paragraph{Exactly saturated}
+
+When |m = n|, i.e. exactly the number of missing parameters |Sub(a)(i)|:
+
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |applyt : callinfoApply / callinfoEvAppFunEvCont : gcode|
+ }{%
+  |p : n : a1 .. an : gstack|
+ }{%
+  |[p :-> (P m, f) : b1 .. bk] `elem` gheap|
+ }{
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |call : callinfoApply / callinfoEvAppFunEvCont : gcode|
+ }{%
+  |f : b1 .. bk : a1 .. an : gstack|
+ }{%
+  |gheap|
+ }{
+ }{}
+}
+
+
+
+\Paragraph{Under saturated}
+
+When |m > n|, still missing parameters:
+
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |applyt : callinfoApply / callinfoEvAppFunEvCont : gcode|
+ }{%
+  |p : n : a1 .. an : gstack|
+ }{%
+  |[p :-> (P m, f) : b1 .. bk] `elem` gheap|
+ }{
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |gcode|
+ }{%
+  |p' : gstack|
+ }{%
+  |gheap[p' :-> (P (m-n), f) : b1 .. bk : a1 .. an]|
+ }{
+ }{}
+}
+
+
+
+\subsubsection{Partial Apply continuation}
+
+\begin{GrinEncoding}{|papplycont|}
+ &
+|1111 ^^ 1011| &
+ &
+ &
+\\
+\end{GrinEncoding}
+
+Apply continuation only is done as part of |applyt|, hence is not generated/called directly.
+The saved return address of the apply and result are shuffled to be ready for the next apply.
+
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |papplycont : _|
+ }{%
+  |p : gcode : n : a1 .. an : gstack|
+ }{%
+  |gheap|
+ }{
+  |gframep|
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |applyt : callinfoApply : gcode|
+ }{%
+  |p : n : a1 : .. : an : gstack|
+ }{%
+  |gheap|
+ }{
+  |gframep|
+ }{}
+}
+
+Context call info of |gcode|: |callinfoApply|.
+
+
+
+%%]
+
+%%[grinBStorage
+\subsubsection{Split node}
+
+\emph{Under construction}
+
+\begin{GrinEncoding}{|isplit(rs)(n)|}
+ &
+|1110 ^^ 100 ^ ixx1(rs)(0)| &
+ &
+ &
+\\
+\end{GrinEncoding}
+
+\subsubsection{Adapt node}
+
+\emph{Under construction}
+
+\begin{GrinEncoding}{|iadapt(rs)(n)|}
+ &
+|1110 ^^ 101 ^ ixx1(rs)(0)| &
+ &
+ &
+\\
+\end{GrinEncoding}
+
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |adaptt n' : Sub(na)(1) .. Sub(na)(n') : Subp(no)(1)(i) .. Subp(no)(k)(i) : gcode|
+ }{%
+  |p : Subp(no)(1)(t) .. Subp(no)(m)(t) : v1 .. Sub(v)(n') : gstack|
+ }{%
+  |[ p :-> (t : f1 : .. : Sub(f)(n)) ] `elem` gheap|
+ }{
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |gcode|
+ }{%
+  |p' : gstack[ p :-> (t : f1 : .. : Sub(f)(n')) ]|
+ }{%
+  |gheap|
+ }{
+ }{}
+}
+
+where |n' = m+k|.
+
+
+\subsubsection{Alloc + Store}
+
+\begin{GrinEncoding}{|iallocstore(rs)|}
+ &
+|1110 ^^ 110 ^ ixx1(rs)(0)| &
+gcinfo &
+... &
+\\
+\end{GrinEncoding}
+
+|gcinfo| is a word sized value, patched by linking during initialisation, passed to the garbage collector.
+It is used to point to info about what can and cannot be collected.
+
+Size in bytes, including tag.
+
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |allocstore gcinfo: gcode|
+ }{%
+  |s : t : f1 : .. : Sub(f)(s-1) : gstack|
+ }{%
+  |gheap|
+ }{
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |gcode|
+ }{%
+  |p : gstack|
+ }{%
+  |gheap[ p :-> (t : f1 : .. : Sub(f)(s-1)) ]|
+ }{
+ }{}
+}
+
+
+\subsubsection{Fetch}
+
+\begin{GrinEncoding}{|ifetch(rs)|}
+ &
+|1110 ^^ 111 ^ ixx1(rs)(0)| &
+ &
+ &
+\\
+\end{GrinEncoding}
+
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |fetcht : gcode|
+ }{%
+  |p : gstack|
+ }{%
+  |[ p :-> ((t,s) : f1 : .. : Sub(f)(s-1)) ] `elem` gheap|
+ }{
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |gcode|
+ }{%
+  |f1 : .. : Sub(f)(s-1) : gstack|
+ }{%
+  |gheap|
+ }{
+ }{}
+}
+
+
+\subsubsection{Fetch + Update}
+
+\begin{GrinEncoding}{|fetchupd|}
+ &
+|1111 ^^ 1001| &
+ &
+ &
+\\
+\end{GrinEncoding}
+
+To tie the knot for mutual recursive structures on a non-global level (linking solves this for global mutual references).
+
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |fetchupd : gcode|
+ }{%
+  |p' : p : gstack|
+ }{%
+  |[p :-> (H : _) ] `elem` gheap|
+ }{
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |gcode|
+ }{%
+  |gstack|
+ }{%
+  |gheap[p :-> (I : p') ]|
+ }{
+ }{}
+}
+
+
+
+%%]
+
+%%[grinBRest
+
+\subsubsection{Nop}
+
+\begin{GrinEncoding}{|nop|}
+ &
+|1111 ^^ 1111| &
+ &
+ &
+\\
+\end{GrinEncoding}
+
+Obsolete (20091009).
+Instruction code has been recycled for |tailevalcont|
+
+
+\subsubsection{Extension prefix}
+
+\begin{GrinEncoding}{|xxx|}
+ &
+|1111 ^^ 1110| &
+|ixx(xxx)(7)(0)| &
+... &
+\\
+\end{GrinEncoding}
+
+
+\subsubsection{Halt}
+
+\begin{GrinEncoding}{|halt|}
+ &
+|1111 ^^ 1110| &
+|1111 ^^ 1111| &
+ &
+\\
+\end{GrinEncoding}
+
+
+\subsubsection{Reset thrown exception}
+
+Reset the global interpreter variable holding the thrown exception to |NULL|.
+The variable is used to indicate exception handling throughout C primitive calls.
+
+\begin{GrinEncoding}{|resetexc|}
+ &
+|1111 ^^ 1110| &
+|1111 ^^ 1110| &
+ &
+\\
+\end{GrinEncoding}
+
+
+\subsubsection{Convert from untagged signed int to tagged word representation (plain word)}
+
+\begin{GrinEncoding}{|tagi2w|}
+ &
+|1111 ^^ 1110| &
+|1111 ^^ 1100| &
+ &
+\\
+\end{GrinEncoding}
+
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |tagi2w : gcode|
+ }{%
+  |w : gstack|
+ }{%
+  |gheap|
+ }{
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |gcode|
+ }{%
+  |Enc(w) : gstack|
+ }{%
+  |gheap|
+ }{
+ }{}
+}
+
+
+
+\subsubsection{Convert from tagged word representation (plain word) to untagged signed int}
+
+\begin{GrinEncoding}{|untagw2i|}
+ &
+|1111 ^^ 1110| &
+|1111 ^^ 1101| &
+ &
+\\
+\end{GrinEncoding}
+
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |untagw2i : gcode|
+ }{%
+  |Enc(w) : gstack|
+ }{%
+  |gheap|
+ }{
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |gcode|
+ }{%
+  |w : gstack|
+ }{%
+  |gheap|
+ }{
+ }{}
+}
+
+
+\subsubsection{Convert from untagged word to tagged word representation (plain word)}
+
+\begin{GrinEncoding}{|tagw2w|}
+ &
+|1111 ^^ 1110| &
+|1111 ^^ 1010| &
+ &
+\\
+\end{GrinEncoding}
+
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |tagw2w : gcode|
+ }{%
+  |w : gstack|
+ }{%
+  |gheap|
+ }{
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |gcode|
+ }{%
+  |Enc(w) : gstack|
+ }{%
+  |gheap|
+ }{
+ }{}
+}
+
+
+
+\subsubsection{Convert from tagged word representation (plain word) to untagged word}
+
+\begin{GrinEncoding}{|untagw2w|}
+ &
+|1111 ^^ 1110| &
+|1111 ^^ 1011| &
+ &
+\\
+\end{GrinEncoding}
+
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |untagw2w : gcode|
+ }{%
+  |Enc(w) : gstack|
+ }{%
+  |gheap|
+ }{
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |gcode|
+ }{%
+  |w : gstack|
+ }{%
+  |gheap|
+ }{
+ }{}
+}
+
+%%]
+
+%%[grinBExampleTranslations
+%%[[wrap=code
+; $x2 
+    =  {  store (#0/C/$Int 5) ; \$10_0_42_1 ->
+            ldc         5
+            ldc         #0/C/$Int       ^
+            ldc         2
+            allocstore  gcinfo          CSEnv ^ [$10_0_42_1 :-> offset ...]
+          $$+ $x1 $10_0_42_1
+            ldl         $10_0_42_1
+            ldg         $x1
+            ldg         $$+
+            tailcall    2 0 ..
+       }
+%%]]
+
+%%[[wrap=code
+; $x4 
+    =  {    unit $x3 ; \$10_0_55_0 ->
+                                                    ^               ^               CSEnv ^ [$10_0_55_0 :-> global $x3]
+            eval $10_0_55_0 ; \$1_289_0!__26_0 ->
+                                                    ldg             $x3
+                                                    evalt
+            case $1_289_0!__26_0 of
+                                                    casecall        2
+                                                    [l3,l1,l2]
+                                                l1:
+              {  (#0/C/$$: $x__27_2 $1_298_0__27_4)
+                                                    fetcht                          CSEnv ^ [$x__27_2, ... :-> offset ...]
+                    ->  {    unit $1_298_0__27_4 ; \$10_0_59_0 ->
+                             eval $10_0_59_0 ; \$1_298_0!__28_0 ->
+                                                    ldl             $10_0_59_0      ^
+                                                    evalt
+                                                    casecall        2               ^
+                                                    [l6,l4,l5]
+                             case $1_298_0!__28_0 of
+                                                l4:
+                               {  (#0/C/$$: $___29_4 $___29_4)
+                                                    fetcht                          CSEnv ^ [$___29_4, ... :-> offset ...]
+                                     ->  {  unit $undefined ; \$10_0_63_0 ->
+                                                    ldg             $undefined
+                                            eval $10_0_63_0
+                                                    evalt
+                                                    retcall         1 1 3           ^
+                                         } 
+                                                l5:
+                               ;  (#1/C/$[])
+                                     ->  {  unit $x__27_2 ; \$10_0_65_0 ->
+                                                    ldl             $x__27_2
+                                            eval $10_0_65_0
+                                                    evalt
+                                                    retcall         1 1 1
+                                         } 
+                               }
+                                                l6:
+                                                    
+                                                    retcall         1 1 3
+                        }
+                                                l2:
+              ;  (#1/C/$[])
+                    ->  { unit (#0/C/$Int 4)} 
+                                                    ldi             4
+                                                    ldc             #0/C/$Int
+                                                    ldc             2
+                                                    allocstore      gcinfo
+                                                    retcall         1 1 1
+              } 
+                                                l3:
+                                                    retcall         1 1 1
+        } 
+%%]]
+
+%%]
+
+%%[oldStuff
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Block copy}
+
+\begin{GrinEncoding}{|icp(i)(rs)(x)|}
+ &
+|1111 ^ 1110| &
+|11 ^ ixxjuxt(i)(1)(0) ^ ixxjuxt(rs)(1)(0) ^ ixxjuxt(x)(1)(0)| &
+... &
+\\
+\end{GrinEncoding}
+
+Is this instruction necessary?
+
+\textbf{Semantics}\\
+
+%%[[wrap=code
+icp(i)(rs)(x)
+  =  (*(gstack+1))[0..sz-1]  :=  (*(gstack))[0..sz-1]
+  where  s  <-  case ^^ angle(rs) of
+                  t  -> gstack + xpos
+                  r  -> greg + xpos
+                  p  -> gpc + xpos        -- after instruction fetch
+                  i  -> xpos
+         sz <-  case angle(i) of
+                  0  ->  s
+                  1  ->  *s
+                  2  ->  **s
+%%]]
+
+Behavior in case of overlap of src/dst is unpredictable.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Sign}
+
+%%[[wrap=code
+angle(sg)  =  +  -- positive
+           |     -- positive
+           |  -  -- negative (2's complement)
+%%]]
+
+%%[[wrap=code
++  =  0
+-  =  1
+%%]]
+
+\subsubsection{Immediate constant}
+%%[[wrap=code
+angle(c)  =  ci  -- constant in instruction
+          |  cf  -- constant following instruction
+%%]]
+
+%%[[wrap=code
+ci  =  0
+cf  =  1
+%%]]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Signed int constants are denoted with |x|, unsigned (positive) int constants with |xpos|.
+
+Byte at a time encoding, signed:
+
+\begin{GrinEncoding}{instruction with |x=angle(sg)c|}
+|0 <= c < pow2(1) | &
+|.. ^ ci ^^ ixx1(c)(0) ..| &
+&
+&
+\\
+|- pow2(7) <= c < pow2(7) | &
+|.. ^ cf ^^ sg ..| &
+|0 ^ ixx(c)(6)(0)| &
+&
+\\
+|- pow2(14) <= c < pow2(14) | &
+|.. ^ cf ^^ sg ..| &
+|1 ^ ixx(c)(13)(7)| &
+|0 ^ ixx(c)(6)(0)| &
+\\
+|- pow2(21) <= c < pow2(21) | &
+|.. ^ cf ^^ sg ..| &
+|1 ^ ixx(c)(20)(14)| &
+|1 ^ ixx(c)(13)(7)| &
+|0 ^ ixx(c)(6)(0)|
+\\
+etc.
+\\
+\end{GrinEncoding}
+
+Byte at a time encoding, unsigned:
+
+\begin{GrinEncoding}{instruction with |xpos=c|}
+|0 <= c < pow2(1) | &
+|.. ^ ci ^^ ixx1(c)(0) ..| &
+&
+&
+\\
+|0 <= c < pow2(8) | &
+|.. ^ cf ^^ ixx1(c)(7) ..| &
+|0 ^ ixx(c)(6)(0)| &
+&
+\\
+|0 <= c < pow2(15) | &
+|.. ^ cf ^^ ixx1(c)(14) ..| &
+|1 ^ ixx(c)(13)(7)| &
+|0 ^ ixx(c)(6)(0)| &
+\\
+|0 <= c < pow2(22) | &
+|.. ^ cf ^^ ixx1(c)(21) ..| &
+|1 ^ ixx(c)(20)(14)| &
+|1 ^ ixx(c)(13)(7)| &
+|0 ^ ixx(c)(6)(0)|
+\\
+etc.
+\\
+\end{GrinEncoding}
+
+
+
+%%]
+
+%%[runtimeInteraction
+
+\subsection{Code format: C}
+
+Example program:
+%%[[wrap=tttiny
+/* bytecode in C encoding for module gr1 */
+#include "rts.h"
+
+static GB_Byte gr1_bytecode[] =
+  { /* 0: l1tt08 0x04 */                                        /* [ id ] */
+       0x20,0x04 /* x__1 */
+  , /* 2: l1tt08 0x00 */
+       0x20,0x00 /* 10_0_2_0 */
+  , /* 4: tailevalt0808 0x04 0x08 */
+       0xe4,0x00,0x04,0x08
+  , /* 8: liti08 0x03 */                                        /* [ v ] */
+       0x68,0x03 /* constant 3 */
+  , /* 10: l1tt08 0x00 */
+       0x20,0x00 /* 10_0_4_0 */
+  , /* 12: ldg */
+       0xfc,0x00,0x00,0x00,0x00 /* id */
+  , /* 17: tailcallt080808 0x04 0x00 0x0c */
+       0xc2,0x00,0x04,0x00,0x0c
+  , /* 22: ldg */                                        /* [ main ] */
+       0xfc,0x00,0x00,0x00,0x01 /* v */
+  , /* 27: l1tt08 0x00 */
+       0x20,0x00 /* 10_0_6_0 */
+  , /* 29: tailevalt0808 0x00 0x08 */
+       0xe4,0x00,0x00,0x08
+  , /* 33: halt */
+       0xfe,0xff
+  } ;
+
+static char* gr1_strings[] =
+  { "gr1"} ;
+
+static GB_Word gr1_constants[] =
+  { ((GB_Word)(&(gr1_strings[0])))} ;
+
+static GB_BytePtr gr1_globalEntries[] =
+  { &(gr1_bytecode[0]), &(gr1_bytecode[8]), &(gr1_bytecode[22])} ;
+
+static GB_BytePtr* gr1_cafEntries[] =
+  { &(gr1_globalEntries[1]), &(gr1_globalEntries[2])} ;
+
+static GB_BytePtr* gr1_mainEntryPtr = &(gr1_globalEntries[2]) ;
+
+static GB_LinkEntry gr1_linkEntries[] =
+  { { 2, 0, ((GB_Ptr)(&(gr1_bytecode[13])))}, { 2, 1, ((GB_Ptr)(&(gr1_bytecode[23])))}} ;
+
+static GB_FixOffset gr1_fixOffsets[] =
+  { } ;
+
+/* Initialization */
+void gr1_initModuleTables() {
+  gb_InitTables( 35, gr1_bytecode, 2, gr1_linkEntries, gr1_globalEntries, 2, gr1_cafEntries, 0, gr1_fixOffsets, gr1_constants) ;
+}
+
+void gr1_main_GB_Init2() {
+  gr1_initModuleTables() ;
+}
+
+/* Dummy defs for Silly */
+void fun_main(void){}
+void initialize(void){}
+
+/* Main entry point */
+int main(int argc, char** argv) {
+  int nRtsOpts = 0 ;
+  main_GB_Init1( argc, argv, &nRtsOpts ) ;
+  gb_Opt_TraceSteps = True ;
+  argc -= nRtsOpts ; argv += nRtsOpts ;
+  gr1_main_GB_Init2( argc, argv) ;
+  main_GB_Run( argc, argv, gb_code_Eval, Cast(GB_Word,*gr1_mainEntryPtr) ) ;
+  return main_GB_Exit( argc, argv) ;
+}
+%%]]
+
+\subsection{Linking, constants, modules}
+
+\subsection{Primitives}
+
+\subsection{Exception handling}
+
+The primitive |primCatchException|, |primThrowException| raises an exception:
+
+%%[[wrap=code
+foreign import ccall primCatchException :: forall a . a -> (([(Int,String)],Exception) -> a) -> a
+primCatchException e h = ...
+
+foreign import ccall primThrowException :: forall a . Exception -> a
+primThrowException exc = ...
+%%]]
+
+
+Catching pushes a special stackframe, of which the call info has kind |callinfoHdlr|. Installing such a stackframe is complicated by the necessity not to leave
+the stack frame for calling on primitive on the stack. This is solved by:
+\begin{itemize}
+\item
+ leaving the stack frame for the call to the primitive on the stack,
+\item
+ pushing a handler stack frame,
+\item
+ and pushing a copy of the primitive call stack frame, which will be removed by the primitive return.
+ The only modification to this stack frame is the return address, which points to code for the evaluation of the expression wrapped by the handler.
+\end{itemize}
+
+To be more precise, the following sequence of catch + throw is executed:
+
+
+\begin{GriniSteps}
+ \GriniStateBefore{%
+ }{%
+  |callc 2 : callinfoCCall : gcode|
+ }{%
+  |primCatchException : e : h : gstack|
+ }{%
+  |gheap|
+ }{
+  |gframep|
+ }
+\\
+ \GriniStateAfter{%
+ }{%
+ }{%
+  |(gframep'' :-> gframep') : gb_code_ExcHdl_NormalReturn_MarkedAsHandler : 1 : e : (gframep' :-> gframep) : gcode : 2 : e : h : gstack|
+ }{%
+  |gheap|
+ }{
+  |gframep = gframep''|
+ }{}
+\\
+ \GriniStateAfter{%
+ }{%
+ }{%
+  |e : (gframep''' :-> gframep'') : gb_code_ExcHdl_EvalValue : 2 : e : h : (gframep'' :-> gframep') : gb_code_ExcHdl_NormalReturn_MarkedAsHandler : 1 : e : (gframep' :-> gframep) : gcode : 2 : e : h : gstack|
+ }{%
+  |gheap|
+ }{
+  |gframep = gframep'''|
+ }{}
+\\
+\end{GriniSteps}
+
+where
+
+%%[[wrap=code
+callinfoHdlr                                : (gb_code_ExcHdl_NormalReturn_MarkedAsHandler  :-> retcall 1 3)                                        -- remove primCatchException stack frame
+callinfoExcHdlEvalValue                     : (gb_code_ExcHdl_EvalValue                     :-> evalt) : callinfoEvWrap : retcall 1 1               -- eval expr and return
+%%]]
+
+At this point the stack is set up such that the expression |e| passed to |primCatchException| will be evaluated after the return from the C call to |primCatchException|.
+After a normal evaluation the stack will unwind through the frames, which just return.
+When an exception |exc| occurs the stack is unwound until a frame marked with |callinfoHdlr| is encountered.
+This marks the presence of a handler, which is then invoked.
+
+Note also that the number of arguments of a C call is pushed as well. This is done internally (currently) as part of the interpreter implementation of |callc|,
+and is required because an exception can be thrown by other primitives than |primThrowException|.
+The handling of the |callc| can then no longer assume it knows how much arguments are to be popped from the stack.
+The number of arguments must therefore be part of the C call.
+
+\begin{GriniSteps}
+ \GriniStateBefore{%
+ }{%
+  |callc 1 : callinfoCCall : gcode|
+ }{%
+  |primThrowException : exc : ... : (gframep'' :-> gframep') : gb_code_ExcHdl_NormalReturn_MarkedAsHandler : 1 : e : (gframep' :-> gframep) : gcode : 2 : e : h : gstack|
+ }{%
+  |gheap|
+ }{
+  |gframep|
+ }
+\\
+ \GriniStateAfter{%
+ }{%
+  \mbox{internal C call return}
+ }{%
+  |(trace,exc) : (gframep'' :-> gframep') : gb_code_ExcHdl_NormalReturn_MarkedAsHandler : 1 : e : (gframep' :-> gframep) : gcode : 2 : e : h : gstack|
+ }{%
+  |gheap|
+ }{
+  |gframep = gframep''|
+ }{}
+\\
+ \GriniStateAfter{%
+ }{%
+ }{%
+  |(trace,exc) : (gframep' :-> gframep) : gcode : 2 : e : h : gstack|
+ }{%
+  |gheap|
+ }{
+  |gframep = gframep''|
+ }{}
+\\
+\end{GriniSteps}
+
+After unwinding, the stack is set up such that the call to |primThrowException| returns to code which calls the handler:
+
+%%[[wrap=code
+callinfoCall                     : (gb_code_ExcHdl_ThrowReturn                     :-> ldi 1) : ldl 6 : evalt : callinfoEvWrap : applyt : callinfoApply : retcall 1 3              -- call handler
+%%]]
+
+During unwinding all thunks under evaluation are replaced by an indirection node to the thrown exception |exc|.
+This is to prevent the code causing the exception to be reevaluated.
+The unwound part of the stack is reified as a trace |trace|, tupled with the exception |exc| and passed to the handler.
+
+\begin{GriniSteps}
+ \GriniStateAfter{%
+ }{%
+  |ldi 1 : ldl 5 : evalt : callinfoEvWrap : applyt : callinfoApply : retcall 1 3|
+ }{%
+  |(trace,exc) : (gframep' :-> gframep) : gcode : 2 : e : h : gstack|
+ }{%
+  |gheap|
+ }{
+  |gframep = gframep'|
+ }{}
+\\
+ \GriniStateAfter{%
+ }{%
+  |evalt : callinfoEvWrap : applyt : callinfoApply : retcall 1 3|
+ }{%
+  |h : 1 : (trace,exc) : (gframep' :-> gframep) : gcode : 2 : e : h : gstack|
+ }{%
+  |gheap|
+ }{
+  |gframep = gframep'|
+ }{}
+\\
+ \GriniStateAfter{%
+ }{%
+  |retcall 1 3|
+ }{%
+  |h (trace,exc) : (gframep' :-> gframep) : gcode : 2 : e : h : gstack|
+ }{%
+  |gheap|
+ }{
+  |gframep = gframep'|
+ }{}
+\\
+ \GriniStateAfter{%
+ }{%
+  |gcode|
+ }{%
+  |h (trace,exc) : gstack|
+ }{%
+  |gheap|
+ }{
+  |gframep|
+ }{}
+\\
+\end{GriniSteps}
+
+At this point the handler has returned to the caller of the |primCatchException| which did install the handler.
+
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+

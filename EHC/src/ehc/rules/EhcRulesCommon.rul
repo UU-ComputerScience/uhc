@@ -1,0 +1,317 @@
+-------------------------------------------------------------------------
+-- Preliminaries
+-------------------------------------------------------------------------
+
+preamble tex "%include lhs2TeX.fmt\n%include afp.fmt\n%include ehrules.fmt"
+preamble ag "%%[0\n%include lhs2TeX.fmt\n%include afp.fmt\n%%]\n"
+
+external _ instTyFixed ftv alpha tvarv exists forall
+
+-------------------------------------------------------------------------
+-- View hierarchy
+-------------------------------------------------------------------------
+
+viewhierarchy = E < K < C < HM < I1 < EX < DT < CG < P < TS < EP < MD < NUM < HS, I1 < I2, DT < ANN
+
+-------------------------------------------------------------------------
+-- Rewriting
+-------------------------------------------------------------------------
+
+-- Ty for expr
+format ag def  (a | Ty) -> (r | t) = ([a] `mkArrow` (r) | t)
+format ag def  (p | Ty) => (a | Ty) -> (r | t) = ([p,a] `mkArrow` (r) | t)
+format ag def  (a | TyL) -> (r | t) = ((a) `mkArrow` (r) | t)
+
+format ag use ((a|Ty) -> r) `=` v = (a,r) `=` tyArrowArgRes (v)
+format ag use ((...) -> r) `=` v = r `=` tyArrowRes (v)
+format ag use (p => a -> r) `=` v = (p,a,r) `=` tyArrowImplsArgRes (v)
+
+-- VarMp
+format ag def  (c | VarMp, IVarMp) (v | a) = (((c) |=> (v) | a))
+format ag def  (c1 | VarMp, IVarMp) (c2 | VarMp, IVarMp) (v | a) = (((c1) |=> (c2) |=> (v) | a))
+format ag def  (c1 | VarMp, IVarMp) (c2 | VarMp, IVarMp) (c3 | VarMp, IVarMp) (v | a) = (((c1) |=> (c2) |=> (c3) |=> (v) | a))
+format ag def  (c1 | VarMp, IVarMp) (c2 | VarMp, IVarMp) (c3 | VarMp, IVarMp) (c4 | VarMp, IVarMp) (v | a) = (((c1) |=> (c2) |=> (c3) |=> (c4) |=> (v) | a))
+-- format ag def  (c1) (c2) (c3) (v) = c1 |=> c2 |=> c3 |=> v
+
+-- Gam
+format ag def  (g1 | ValGam, TyGam) +  (g2 | ValGam, TyGam) = (gamAddGam (g1) (g2) | ValGam, TyGam)
+format ag def  (g1 | ValGam, TyGam) ++ (g2 | ValGam, TyGam) = (gamPushGam (g1) (g2) | ValGam, TyGam)
+format ag def  (i :-> (t|Ty)) = (gamSingleton i (ValGamInfo (t)) | ValGam, TyGam)
+
+format ag use  (g1 | ValGam, TyGam) ++ (g2 | ValGam, TyGam) `=` (g | ValGam, TyGam) = ((g1|ValGam, TyGam),(g2|ValGam, TyGam)) `=` (gamPop (g) | ValGam, TyGam)
+
+-- Coercion
+format ag def  (coe | Coe) (transl | TranslExpr) = (foAppLRCoe' "@lhs.opts" (coe) "@lhs.finTyVarMp" "@lhs.cSubst" (transl) | TranslExpr)
+
+-- Nm
+format ag def `|` (nm | Nm) `|` = (hsnProdArity (nm) | Int)
+
+-- FIOpts
+format ag def f, (o|FIOpts) = ((o {f})|FIOpts)
+format ag def f1, f2, (o|FIOpts) = ((o {f1, f2})|FIOpts)
+
+-- Ty for tyexpr
+format ag def (t1 | Ty) (t2 | Ty) = (Ty_App (t1) (t2) | Ty)
+format ag def Ty_Quant q v `.` t = (Ty_Quant (q) (tyVar (v)) (t) | Ty)
+
+-- TyVarIdS
+format ag def  (l1 | TyVarIdS) + (l2 | TyVarIdS) = (l1 ++ l2 | TyVarIdS)
+format ag def  (l1 | TyVarIdS) + (l2 | TyVarIdS) + (l3 | TyVarIdS) = (l1 ++ l2 ++ l3 | TyVarIdS)
+
+-------------------------------------------------------------------------
+-- Formatting
+-------------------------------------------------------------------------
+
+-- Nm
+external hsnUn
+
+format tex hsnUn = "\"un\""
+
+-- matching
+external
+  strongFIOpts weakFIOpts instLFIOpts instLRFIOpts instFIOpts
+  impredFIOpts
+  meetFIOpts joinFIOpts
+  implFIOpts predFIOpts
+  fioBindToTyAltsY fioBindToTyAltsN
+  fioLeaveRInstY fioLeaveRInstN
+  fioBindLFirstY fioBindLFirstN
+  fioBindRFirstY fioBindRFirstN
+  fioBindLBeforeRY fioBindLBeforeRN
+  fioJoinY fioMeetY fioFitY
+  fioDontBind
+  emptyFO
+  foCSubst foLRCoe
+
+format tex howToMatch = <=>
+format ag  fiopt = fiOpts
+
+format ag  fioBindRFirstY = fioBindRFirst `=` True
+format ag  fioBindRFirstN = fioBindRFirst `=` False
+format ag  fioBindLFirstY = fioBindLFirst `=` True
+format ag  fioBindLFirstN = fioBindLFirst `=` False
+format ag  fioBindToTyAltsY = fioBindToTyAlts `=` True
+format ag  fioBindToTyAltsN = fioBindToTyAlts `=` False
+format ag  fioBindLBeforeRY = fioBindLBeforeR `=` True
+format ag  fioBindLBeforeRN = fioBindLBeforeR `=` False
+
+-- Gam
+external emptyGam
+
+format tex emptyGam = []
+format tex valGam = Gamma
+format tex valGam.inh = Gamma..k
+format tex valGam.syn = Gamma
+format tex gathTySigGam = Gamma.t
+format tex gathTySigGam.ex = Gamma.t.nexists
+format tex tySigGam = Gamma.t.k
+format tex patValGam = Gamma.p
+format tex patValGam.inh = Gamma.p.k
+format tex patValGam.syn = Gamma.p
+format tex quValGam = Gamma.q
+format tex quValGam.ex = Gamma.q.nexists
+
+format tex tyGam = TGamma
+format tex tyGam.inh = TGamma..k
+format tex tyGam.syn = TGamma
+
+format tex kiGam = KGamma
+
+format tex predGam = Gamma
+format tex PredGam = Gamma
+
+-- Type
+external tyInt tyChar tyFloat tyInteger tyDouble tyString ANY thardS thardH tneedR tneedO
+
+format tex ity = isigma
+format tex lty = sigma.l
+format tex rty = sigma.r
+format tex ty = sigma
+format tex knTy = sigma..k
+format tex knTy.1 = sigma.1.k
+format tex knTy.2 = sigma.2.k
+format tex pred = pi
+format tex tyInt = Int
+format tex tyChar = Char
+format tex instTyFixed = inst.f
+format tex patFunTy = sigma.pf
+format tex ty.sig = ty.s
+format tex ty.q = sigma.q
+format tex ty.elim = sigma.e
+format tex ty.tboth = sigma./=/
+format tex tboth =  /=/
+format tex ty' = sigma'
+
+format ag tvarv..._ = tvars
+format ag ty..._ = tys
+format ag ANY = (Ty_Any|Ty)
+format ag ity = imprTy
+format ag ty.ident = gTy
+
+-- tvars
+external tyLVar
+
+format tex tyLVar =
+format tvars.f = tvarv.f.._
+format tvars.g = tvarv.g.._
+
+format ag tyLVar = map tyVar
+
+-- Impred VarMp
+format tex ityVarMp = IVarMp
+format tex ityVarMp.in = IVarMp..k
+format tex ityVarMp.inh = IVarMp..k
+format tex ityVarMp.syn = IVarMp
+format tex ityVarMp.fitA = IVarMp.A
+format tex ityVarMp.fitF = IVarMp.F
+format tex ityVarMp.valGam = ityVarMp.Gamma
+format tex ityVarMp.elim = tyVarMp.Gamma
+
+format ag ityVarMp = imprTyVarMp
+
+-- Plain VarMp
+external emptyVarMp'
+external emptyVarMp
+
+format tex cnstr = VarMp
+format tex emptyVarMp = []
+format tex emptyVarMp' =
+format tex patTyVarMp.syn = VarMp.p
+format tex patTyVarMp.inh = VarMp.p.k
+format tex tyVarMp = VarMp
+format tex tyVarMp.inh = VarMp..k
+format tex tyVarMp.syn = VarMp
+format tex tySigTyVarMp.inh = VarMp.t.k
+format tex tySigTyVarMp.syn = VarMp.t
+format tex tyVarMp.r = VarMp.r
+format tex tyVarMp.fun = VarMp.f
+format tex tyVarMp.fitP = VarMp.P
+format tex tyVarMp.fitF = VarMp.F
+format tex tyVarMp.fitE = VarMp.E
+format tex tyVarMp.arg = VarMp.a
+
+format ag emptyVarMp' = emptyVarMp
+
+-- Decl
+format tex declExpr = e
+format tex declTyExpr = t
+format tex declPat = p
+
+format ag declExpr = expr
+format ag declTyExpr = tyExpr
+format ag declPat = patExpr
+
+-- Expr
+format tex letDecls = d
+format tex letBody = b
+format tex lamPat = p
+format tex lamBody = e
+format tex eFun = e.1
+format tex eArg = e.2
+format tex eAnn = e
+format tex eTop = eFun ^^ (eArg)..._
+
+format ag letDecls = decls
+format ag letBody = body
+format ag eFun = func
+format ag eArg = arg
+format ag eAnn = expr
+format ag eTop = expr
+format ag lamPat = arg
+format ag lamBody = body
+format ag ident = nm
+format ag identv = nm
+format ag identc = nm
+format ag uniq = gUniq
+format fmtcmd rulerMk1Uniq = mkNewLevUID
+format fmtcmd rulerMk2Uniq = mkNewLevUID2
+format fmtcmd rulerMk3Uniq = mkNewLevUID3
+format fmtcmd rulerMk4Uniq = mkNewLevUID4
+format fmtcmd rulerMk5Uniq = mkNewLevUID5
+format fmtcmd rulerMk6Uniq = mkNewLevUID6
+
+format ag decls.hd = hd
+format ag decls.tl = tl
+
+format tex decls.hd = d
+format tex decls.tl = ds
+
+-- Type expr
+external tyexprCon tyexprQuant
+
+format tex tQu = Qu
+format tex tVar = identv
+format tex tAnn = t
+format tex tExpr = t
+format tex tFun = t.1
+format tex tArg = t.2
+
+format tex tyexprCon = 
+format tex tyexprQuant = 
+
+format ag tQu = qu
+format ag tVar = tyVar
+format ag tAnn = tyExpr
+format ag tExpr = tyExpr
+format ag tFun = func
+format ag tArg = arg
+
+-- Ty wildcard
+format tex tyWildL =  tvarv.w.._
+
+format ag tvarv.w.._ = tyWildL
+
+-- Pat expr
+format tex pFun = p.1
+format tex pArg = p.2
+format tex pAsPat = p
+format tex pTopPatK = p
+format tex pExpr = p
+
+format ag pFun = func
+format ag pArg = arg
+format ag pAsPat = patExpr
+format ag pTopPatK = patExpr
+format ag pExpr = patExpr
+
+-- Translation from TyExpr to Ty
+format ag tyexprCon = Ty_Con
+format ag tyexprQuant = Ty_Quant
+
+-- Translation to core (CExpr)
+external translInt translChar translString translFloat translDouble translInteger translVar emptyTranslBind
+
+format tex translExpr = Transl
+format tex TranslExpr = Transl
+format tex translBind = Transl
+format tex TranslBind = Transl
+format tex emptyTranslBind = []
+
+format ag translExpr = cexpr
+
+format tex translInt = Transl
+format ag  translInt = CExpr_Int
+format tex translChar = Transl
+format ag  translChar = CExpr_Char
+format tex translString = Transl
+format ag  translString = cstring
+format tex translFloat = Transl
+format ag  translFloat = CExpr_Float
+format tex translDouble = Transl
+format ag  translDouble = CExpr_Double
+format tex translInteger = Transl
+format ag  translInteger = CExpr_Integer
+format tex translVar = Transl
+format ag  translVar = CExpr_Var
+
+-- Coercion
+external coeId
+
+format tex coe = Coe
+
+-- Co-, Contravariance
+external cocoY cocoN cocoNo
+
+-- Errors
+external Err_PatArity
+

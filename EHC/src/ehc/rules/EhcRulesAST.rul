@@ -1,0 +1,88 @@
+-------------------------------------------------------------------------
+-- AST
+-------------------------------------------------------------------------
+
+data Expr   		[ expr, expr.impr 	]
+  view E
+    = IConst    	[ e.int 			]       int     	:: Int
+    | CConst    	[ e.char : e.int	]       char    	:: Char
+    | Var       	[ e.var 			]       ident   	:: HsName
+    | Con       	[ e.con : e.var 	]       identc      :: HsName
+    | App       	[ e.app 			]       eFun    	:: Expr
+                                				eArg    	:: Expr
+    | Lam       	[ e.lam 			]       identv  	:: HsName
+                                				lamBody 	:: Expr
+	| Let			[ e.let				]		letDecls	:: Decls
+												letBody		:: Expr
+	| TypeAs		[ e.ann				]		tAnn		:: TyExpr
+												eAnn		:: Expr
+  view K
+    = Lam       	[ e.lam 			]       lamPat  	:: PatExpr
+                                				lamBody 	:: Expr
+  view C
+    = AppTop	  	[ e.apptop			]		eTop		:: Expr
+  view DT
+    = SConst    	[ e.str : e.int		]       str     	:: String
+{-
+  view CG
+    = FConst    	[ e.float : e.int	]       float     	:: Float
+-}
+  view I1
+    = AppImpred  	[ e.app.f : e.app	]       eFun    	:: Expr
+                                				eArg    	:: Expr
+  view EP
+    = AppImpl       [ e.iapp 			]       eFun    	:: Expr
+                                				eArg    	:: Expr
+                                				ePred   	:: Pred
+    | LamImpl      	[ e.ilam 			]       lamPat  	:: PatExpr
+                                				lamBody 	:: Expr
+                                				lamPred 	:: Pred
+  view NUM
+    = IIConst    	[ e.iint : e.int	]       integer   	:: Integer
+
+data Decl			[ decl, decl.impr	]
+  view K
+    = TySig			[ d.tysig			]		identv		:: HsName
+    											declTyExpr	:: TyExpr
+  	| Val			[ d.val				]		declPat		:: PatExpr
+  												declExpr	:: Expr
+
+data Decls			[					]
+
+data PatExpr		[ patexpr, patexpr.impr	]
+  view K
+    = IConst		[ p.int				]		int			:: Int
+    | CConst		[ p.char : p.int	]		char		:: Char
+    | Var			[ p.var				]		identv		:: HsName
+    | Con			[ p.con				]		identc		:: HsName
+    | VarAs			[ p.varas			]		identv		:: HsName
+    											pAsPat		:: PatExpr
+	| AppTop		[ p.apptop			]		pTopPatK	:: PatExpr
+	| App			[ p.app				]		pFun		:: PatExpr
+												pArg		:: PatExpr
+  view DT
+    = SConst    	[ p.str : p.int		]       str     	:: String
+{-
+  view CG
+    = FConst    	[ p.float : p.int	]       float     	:: Float
+-}
+  view I1
+	= TypeAs		[ p.ann				]		tAnn		:: TyExpr
+												pExpr		:: PatExpr
+
+data TyExpr			[ tyexpr, tyexpr.impr ]
+  view E
+    = Con			[ t.con				]		identc		:: HsName
+    | App			[ t.app				]		tFun		:: TyExpr
+    											tArg		:: TyExpr
+  view C
+    = Wild			[ t.wild			]
+  view HM
+    = Var			[ t.var				]		identv		:: HsName
+    | VarWild		[ t.var.w : t.var	]		identv		:: HsName
+  view I1
+    = Quant			[ t.quant			]		tVar		:: HsName
+    											tExpr		:: TyExpr
+
+data Pred			[ pred		]
+

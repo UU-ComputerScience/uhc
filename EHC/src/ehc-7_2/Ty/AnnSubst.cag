@@ -1,0 +1,101 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Substitute annotations of types on fields of a data type
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 hs module {%{EH}Ty.AnnSubst}
+%%]
+
+%%[7_2 hs import({%{EH}Base.Common}, {%{EH}Ty}, qualified Data.Map as Map, Data.Map(Map), Data.Maybe, qualified Data.Set as Set, Data.Set(Set))
+%%]
+
+%%[7_2 ag import({Ty/AbsSyn})
+%%]
+
+%%[7_2 hs export(substAnns)
+%%]
+
+
+%%[7_2.interface hs
+substAnns :: [Annotation Ty] -> Map (Annotation Ty) (Annotations Ty) -> Ty -> Ty
+substAnns anns exposedAnnsMap ty
+  = let inh = Inh_TyAGItf { anns_Inh_TyAGItf = anns
+                          , exposedAnnsMap_Inh_TyAGItf = exposedAnnsMap
+                          }
+        syn = wrap_TyAGItf (sem_TyAGItf (TyAGItf_AGItf ty)) inh
+     in substTy_Syn_TyAGItf syn
+%%]
+
+
+%%[7_2.wrapper
+
+WRAPPER TyAGItf
+
+%%]
+
+
+%%[7_2.mainAttrs
+
+ATTR TyAGItf TyAGItf -> Ty [ exposedAnnsMap : {Map (Annotation Ty) (Annotations Ty)} ||]
+ATTR TyAGItf [ anns : {[Annotation Ty]} || substTy : Ty ]
+ATTR AllTyAndFlds [|| substTy : SELF origTy : SELF ]
+
+%%]
+
+
+Note: due to the way we annotate fields of a data type, the following holds:
+        let xs = [ annInstFrom a | a <- @lhs.anns ]
+         in nub xs == xs
+
+%%[7_2.substF
+
+ATTR TyAGItf -> Ty [ subst : {Annotation Ty -> Annotation Ty} ||]
+SEM TyAGItf
+  | AGItf  loc.parentMap = Map.fromList $ @lhs.anns >>= \a -> maybe [] (\p -> return (p, a { annInstFrom = annInstFrom p })) (annInstFrom a)
+           ty.subst = \ann -> maybe ann id (Map.lookup ann @loc.parentMap)
+
+%%]
+
+
+%%[7_2.replaceAnns
+
+SEM Ty
+  | Ann  loc.substAnn = @lhs.subst @ann
+         lhs.substTy  = Ty_Ann @loc.substAnn @ty.substTy
+
+%%]
+
+
+%%[7_2.propagateAnn
+
+ATTR Ty -> Ty [ ann : {Annotation Ty} ||]
+
+SEM TyAGItf
+  | AGItf  ty.ann      = error "annSubst: No ann encountered yet"
+
+SEM Ty
+  | Ann    ty.ann      = @ann
+
+%%]
+
+
+%%[7_2.skip
+
+SEM Ty
+  | TruncTyCon  lhs.substTy = @loc.origTy
+  | ExpTyCon    lhs.substTy = @loc.origTy
+
+%%]
+
+
+Annotated fields of a data type do not have trunc annotations. They have "exposed annotations".
+We convert those to trunc annotations.
+
+%%[7_2.conToTruncCon
+
+SEM Ty
+  | Con  loc.substTy   = Ty_TruncTyCon @loc.substAnns @loc.origTy
+         loc.anns      = Map.findWithDefault Set.empty @lhs.ann @lhs.exposedAnnsMap
+                         -- Map.findWithDefault (error ("No exposed anns for: " ++ show @lhs.ann ++ ", nm: " ++ show @nm)) @lhs.ann @lhs.exposedAnnsMap
+         loc.substAnns = Set.map @lhs.subst @loc.anns
+
+%%]

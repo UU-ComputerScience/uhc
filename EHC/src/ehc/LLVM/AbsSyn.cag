@@ -1,0 +1,240 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%[(8 codegen grin).LLVMModule
+{- 
+  Modules consist of 
+    * comments:  Just plain comments added to the LLVM IR.
+    * constants: The first element of the tuple is the declaration of the 
+                 constant while the second element is the value of the
+                 constant.
+    * globals:   Always zero initialized.
+    * fwdDecls:  Functions used in this module, defined in other modules.
+    * funcs:     Functions defined in this module. 
+-}
+DATA LLVMModule
+  |  LLVMModule  comments   : {[String]}
+                 constants  : {[(LLVMVar,LLVMVar)]}
+                 globals    : {[LLVMVar]} 
+                 fwdDecls   : LLVMFunctionDecls
+                 funcs      : LLVMFunctions
+
+%%]
+
+%%[(8 codegen grin).LLVMFunc
+{- 
+  Functions have
+    * funcDecl: The signature of this declared function.
+    * internal: LinkageType of the function.
+    * body:     The body of the functions.
+-}
+DATA LLVMFunction
+  |  Func    funcDecl       : LLVMFunctionDecl
+             linkage        : {LLVMLinkageType}
+             body           : LLVMStatements
+
+TYPE LLVMFunctions  = [LLVMFunction]
+%%]
+
+%%[(8 codegen grin).LLVMFuncDecl
+{-
+  A function declaration has the following elements
+    * name:       Unique identifier for the function.
+    * returnType: Type of the returned value
+    * varargs:    ParameterListType indicating if this function uses varargs
+    * params:     Signature of the parameters 
+-}
+DATA LLVMFunctionDecl
+  | LLVMFunctionDecl  name       : {String}
+                      returnType : {LLVMType} 
+                      varargs    : {LLVMParameterListType}
+                      params     : {[LLVMVar]}
+
+TYPE LLVMFunctionDecls = [LLVMFunctionDecl]
+%%]
+
+%%[(8 codegen grin).LLVMStmt
+DATA LLVMStatement
+  {-
+    Assignment
+    Assign an expression to an variable
+      * dest:   Variable to assign to
+      * source: Source expression
+  -}
+  | Assignment   dest       : {LLVMVar}
+                 source     : LLVMExpression
+                 
+  {-
+    Branch
+    Always branch to the target label
+  -}               
+  | Branch       target     : {LLVMVar}
+  
+  {-
+    BranchIf
+    Branch to label targetTrue if cond is true otherwise to label targetFalse
+      * cond:        condition that will be tested, must be of type i1
+      * targetTrue:  label to branch to if cond is true
+      * targetFalse: label to branch to if cond is false
+  -}
+  | BranchIf     cond       : {LLVMVar}
+                 targetTrue : {LLVMVar}
+                 targetFalse: {LLVMVar}
+                 
+  {-
+    Call
+    Call a function without storing the return value, usually functions
+    returning Void.
+      * func:      Signature of the function to call
+      * tailJumps: CallType to signal if the function should be tail called
+      * args:      Concrete arguments for the parameters 
+  -}               
+  | Call         func       : LLVMFunctionDecl
+                 tailJumps  : {LLVMCallType}
+                 args       : {[LLVMVar]}
+                 
+  {-
+    Comment
+    Plain comment.
+  -}               
+  | Comment      comment    : {[String]}
+  
+  {-
+    Label
+    Set a label on this position.
+      * name: Identifier of this label, unique for this module
+  -}     
+  | Label        name       : {LLVMVar}
+  
+  {- 
+    Store
+    Store variable value in pointer ptr. If value is of type t then ptr must
+    be of type t*.
+      * value: Variable/Constant to store.
+      * ptr:   Location to store the value in
+  -}         
+  | Store        value      : {LLVMVar}
+                 ptr        : {LLVMVar}
+  {-
+    Switch
+      * scrutinee: Variable or constant which must be of integer type that is
+                   determines which arm is chosen.
+      * default:   The default label if there is no match in target.
+      * target:    A list of (value,label) where the value is an integer 
+                   constant and label the corresponding label to jump to if the 
+                   scrutinee matches the value.
+  -}
+  | Switch       scrutinee  : {LLVMVar}
+                 default    : {LLVMVar}
+                 targets    : {[(LLVMVar,LLVMVar)]}
+  
+  {-
+    Return
+      * result: The variable or constant to return
+  -}                  
+  | Return       result     : {LLVMVar}
+
+  {-
+    Unreachable
+      An instruction for the optimizer that the code following is not reachable
+  -}
+  | Unreachable
+
+TYPE LLVMStatements = [LLVMStatement]
+%%]
+
+%%[(8 codegen grin).LLVMExpression
+DATA LLVMExpression
+  {- 
+    Alloca
+    Allocate amount * sizeof(tp) bytes on the stack
+      * tp:     LLVMType to reserve room for
+      * amount: The nr of tp's which must be allocated
+  -} 
+  | Alloca       tp         : {LLVMType}
+                 amount     : {Int}
+                 
+  {-
+    BinOp
+    Perform the binary operator op on the operands left and right
+      * op:    operator
+      * left:  left operand
+      * right: right operand
+  -}
+  | BinOp        op         : {LLVMBinOp}
+                 left       : {LLVMVar}
+                 right      : {LLVMVar}
+  
+  {-
+    Compare
+    Perform a compare operation on the operands left and right
+      * op:    operator
+      * left:  left operand
+      * right: right operand
+  -}
+  | Compare      op         : {LLVMCmpOp}
+                 left       : {LLVMVar}
+                 right      : {LLVMVar}
+                 
+  {- 
+    Malloc
+    Allocate amount * sizeof(tp) bytes on the heap
+      * tp:     LLVMType to reserve room for
+      * amount: The nr of tp's which must be allocated
+  -} 
+  | Malloc       tp         : {LLVMType}
+                 amount     : {Int}
+                 
+  {-
+    Load
+    Load the value at location ptr
+  -}               
+  | Load         ptr        : {LLVMVar}
+  
+  {-
+    GetElemPtr
+    Navigate in an structure, selecting elements
+      * ptr:     Location of the structure
+      * indexes: A list of indexes to select the correct value. For example
+                 the first element of the third element of the structure ptr
+                 is selected with [3,1] (zero indexed)
+  -}
+  | GetElemPtr   ptr        : {LLVMVar}
+                 indexes    : {[Int]}
+                 
+  {- Cast
+     Cast the variable from to the to type. This is an abstraction of three
+     cast operators in LLVM, inttoptr, prttoint and bitcast.
+       * from: Variable to cast
+       * to:   type to cast to
+  -}                
+  | Cast         from       : {LLVMVar}
+                 to         : {LLVMType}
+                 
+  {-
+    Call
+    Call a function. The result is the value of the expression.
+      * func:      Signature of the function to call
+      * tailJumps: CallType to signal if the function should be tail called
+      * args:      Concrete arguments for the parameters 
+  -}                   
+  | Call         func       : LLVMFunctionDecl
+                 tailJumps  : {LLVMCallType}
+                 args       : {[LLVMVar]}
+                 
+  {- 
+    Phi
+    Merge variables from different basic blocks which are predecessors of this
+    basic block in a new variable of type tp.
+      * tp:         type of the merged variable, must match the types of the
+                    precessors variables.
+      * precessors: A list of variables and the basic block that they originate
+                    from.
+  -}               
+  | Phi          tp         : {LLVMType}
+                 precessors : {[(LLVMVar,LLVMVar)]} 
+                 
+DERIVING * : Show, Eq
+%%]

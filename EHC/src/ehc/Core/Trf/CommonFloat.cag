@@ -1,0 +1,65 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Common AG for Core transformations having to do with Floatation: FloatToGlobal, CAFGlobalAsArg
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Defines  CBind | Bind loc.isClosurableBind
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Is expr (other than a Lam) a candidate for making a closure out of it?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%[(8 codegen)
+
+ATTR CExpr [ | | isClosurableExpr: Bool ]
+
+SEM CExpr
+  | Case 
+    Let
+    TupDel
+    TupIns
+    TupUpd
+                lhs         .   isClosurableExpr    =   True
+    
+  | Lam
+    Var
+    Int
+    Char
+    String
+    Tup
+    CaseAltFail
+%%[[(9 codegen)
+    Hole
+    HoleLet
+    CoeArg
+    ImplsApp
+    ImplsLam
+%%]]
+%%[[(97 codegen)
+    Integer
+%%]]
+                lhs         .   isClosurableExpr    =   False
+                
+  | App
+                lhs         .   isClosurableExpr    =   False
+
+%%]
+
+
+
+
+
+%%[(8 codegen)
+SEM CBind
+  | Bind        loc         .  isClosurableBind =   (  @lhs.letBindingsCateg /= CBindings_Strict
+                                                    && @expr.isClosurableExpr
+                                                    && isNothing @expr.mbTupApp   -- superfluous test at the moment, because mbTupApp is only Just for Tup and App, which are not Closurable anyway
+                                                    )
+                                                    
+%%]
+

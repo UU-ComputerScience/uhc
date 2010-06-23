@@ -1,0 +1,23 @@
+%%[main
+\section{Changes from 1.0.0 to 1.0.1 (20090425)}
+%%@ReleaseHistory.versionFrom100To101
+
+%%]
+
+%%[versionFrom100To101
+Release 1.0.1 primarily fixes reported installation issues.
+
+\subsection{Issues}
+\begin{itemize}
+\item Avoidance of build of derived makefiles when not necessary.
+\item Full implementation of @make clean@.
+\item Checks for presence of various libraries and tools. Refuses to build when absent.
+\end{itemize}
+
+Fixed \href{http://code.google.com/p/uhc/issues/list}{issues 1 - 7}
+
+\subsection{SVN log}
+\begin{pre}
+%%@[exec:svn log -rHEAD:1576%%]
+\end{pre}
+%%]

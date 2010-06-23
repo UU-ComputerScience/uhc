@@ -1,0 +1,535 @@
+{
+module Helium.Syntax.UHA_OneLine
+where
+}
+{
+import Char
+import List
+import Helium.Utils.OneLiner
+import Helium.Syntax.UHA_Utils (showNameAsOperator)
+import Helium.StaticAnalysis.Miscellaneous.TypeConversion
+import Helium.Syntax.UHA
+import Helium.Utils.Utils (internalError)
+import Top.Types
+}
+
+INCLUDE "UHA_Syntax.ag"
+
+{
+
+encloseSep :: String -> String -> String -> [OneLineTree] -> OneLineTree
+encloseSep left sep right [] = OneLineNode [OneLineText left, OneLineText right]
+encloseSep left sep right (t:ts) =
+    OneLineNode ([ OneLineText left] ++ (t : concatMap (\t -> [OneLineText sep,t]) ts) ++ [OneLineText right] )
+
+punctuate :: String -> [OneLineTree] -> OneLineTree
+punctuate _ [] = OneLineText ""
+punctuate _ [t] = t
+punctuate s (t:ts) = OneLineNode (t : concatMap (\t -> [OneLineText s,t]) ts)
+    
+parens :: OneLineTree -> OneLineTree
+parens tree = OneLineNode [ OneLineText "(", tree, OneLineText ")" ]
+
+sepBy :: OneLineTree -> [OneLineTree] -> [OneLineTree]
+sepBy separator list =
+    intersperse separator (map (\x -> OneLineNode [x]) list)
+
+intErr :: String -> String -> a
+intErr node message = internalError "UHA_OneLine" node message
+
+oneLineTreeAsOperator :: OneLineTree -> OneLineTree
+oneLineTreeAsOperator tree =
+   case tree of
+      OneLineNode [OneLineText (first:_)]
+         |  isAlpha first || first == '_'
+         -> OneLineNode [ OneLineText "`", tree, OneLineText "`" ]
+      _  -> tree
+}
+
+ATTR
+    Names Name Types Type Range Position Strings ContextItems ContextItem
+    [
+    |
+    | self : SELF
+    ]
+
+ATTR
+    Declaration
+    Expression Statement
+    Qualifier Alternative
+    FunctionBinding LeftHandSide
+    Pattern Literal Name
+    [
+    |
+    | oneLineTree :          OneLineTree
+    ]
+
+ATTR GuardedExpression RightHandSide
+    [
+    |
+    | oneLineTree : { String -> OneLineTree }
+    ]
+
+ATTR GuardedExpressions
+    [
+    |
+    | oneLineTree USE { : } { [] } : { [ String -> OneLineTree ] }
+    ]
+
+ATTR
+    Declarations Expressions
+    Statements Qualifiers Alternatives
+    FunctionBindings Patterns Names Strings
+    [
+    |
+    | oneLineTree USE { : } { [] } : { [ OneLineTree] }
+    ]
+
+ATTR
+    MaybeExpression    [
+    |
+    | oneLineTree : { Maybe OneLineTree }
+    ]
+
+ATTR
+    MaybeDeclarations
+    [
+    |
+    | oneLineTree : { Maybe [OneLineTree] }
+    ]
+
+ATTR
+    Name 
+    [ | | isOperator, isIdentifier, isSpecial USE { (error "Name has no children!") } { False } : Bool ]
+
+ATTR
+    Names
+    [ | | isOperator, isIdentifier, isSpecial USE { : } { [] } : { [Bool] } ]
+    
+-- ------------------------------------------------------------------------
+-- -- Declarations                                                       --
+-- ------------------------------------------------------------------------
+
+SEM MaybeDeclarations
+    | Nothing           loc.oneLineTree = Nothing
+    | Just              loc.oneLineTree = Just @declarations.oneLineTree
+    --  declarations             : Declarations
+
+SEM Declaration                                  {- *** -}
+    | Type              loc.oneLineTree = intErr "Declaration" "type"
+    --  range                    : Range
+    --  simpletype               : SimpleType
+    --  type                     : Type
+    | Data              loc.oneLineTree = intErr "Declaration" "data"
+    --  range                    : Range        {- *** -}
+    --  context                  : ContextItems
+    --  simpletype               : SimpleType
+    --  constructors             : Constructors
+    --  derivings                : Names
+    | Newtype           loc.oneLineTree = intErr "Declaration" "newtype"
+    --  range                    : Range
+    --  context                  : ContextItems
+    --  simpletype               : SimpleType
+    --  constructor              : Constructor  -- has only one field, no strictness
+    --  derivings                : Names
+    | Class             loc.oneLineTree = intErr "Declaration" "class"
+    --  range                    : Range
+    --  context                  : ContextItems -- is a "simple" context
+    --  simpletype               : SimpleType   -- Haskell 98 allows only one variable
+    --  where                    : MaybeDeclarations -- cannot have everything
+    | Instance          loc.oneLineTree = intErr "Declaration" "instance"
+    --  range                    : Range
+    --  context                  : ContextItems -- is a "simple" context
+    --  name                     : Name
+    --  types                    : Types        -- Haskell 98 allows only one type
+                                                -- that is severely restricted
+    --  where                    : MaybeDeclarations -- cannot have everything
+    | Default           loc.oneLineTree = intErr "Declaration" "default"
+    --  range                    : Range
+    --  types                    : Types        -- should be instances of Num
+    | FunctionBindings  loc.oneLineTree = 
+            punctuate ";" @bindings.oneLineTree
+    --  range                    : Range          {- *** -}
+    --  bindings                 : FunctionBindings -- should all be for the same function
+    | PatternBinding    loc.oneLineTree =
+            OneLineNode
+                [ OneLineNode [@pattern.oneLineTree]
+                , OneLineNode [@righthandside.oneLineTree " = "]
+                ]
+    --  range                    : Range
+    --  pattern                  : Pattern
+    --  righthandside            : RightHandSide
+    | TypeSignature     loc.oneLineTree = 
+            OneLineNode 
+                 [ OneLineText (concat . intersperse "," . map show $ @names.self)
+                 , OneLineText " :: " 
+                 , OneLineText (show (makeTpSchemeFromType @type.self))
+                 ]
+    --  range                    : Range
+    --  names                    : Names
+    --  type                     : Type   -- may have context
+    | Fixity            loc.oneLineTree = intErr "Declaration" "fixity"
+    --  range                    : Range
+    --  fixity                   : Fixity
+    --  priority                 : MaybeInt
+    --  operators                : Names
+    | Empty loc.oneLineTree = OneLineText ""
+    --  range                    : Range
+
+-- ------------------------------------------------------------------------
+-- -- Expressions                                                        --
+-- ------------------------------------------------------------------------
+
+SEM MaybeExpression
+    | Nothing           loc.oneLineTree = Nothing
+    | Just              loc.oneLineTree = Just @expression.oneLineTree
+    --  expression               : Expression
+
+SEM Expression                                   {- *** -}
+    | Literal           loc.oneLineTree = OneLineNode [@literal.oneLineTree]
+    --  range                    : Range
+    --  literal                  : Literal
+    | Variable          loc.oneLineTree = OneLineNode [@name.oneLineTree]
+    --  range                    : Range
+    --  name                     : Name
+    | Constructor       loc.oneLineTree = OneLineNode [@name.oneLineTree]
+    --  range                    : Range
+    --  name                     : Name
+    | Parenthesized     loc.oneLineTree = parens @expression.oneLineTree
+    --  range                    : Range
+    --  expression               : Expression
+    | NormalApplication  loc.oneLineTree =
+            punctuate " " (@function.oneLineTree : @arguments.oneLineTree)
+    --  range                    : Range
+    --  function                 : Expression
+    --  arguments                : Expressions
+    | InfixApplication  loc.operatorName = oneLineTreeAsOperator @operator.oneLineTree
+                        loc.oneLineTree =
+            case (@leftExpression.oneLineTree, @rightExpression.oneLineTree) of
+                (Nothing, Nothing) -> parens @operatorName
+                (Just l , Nothing) -> encloseSep "(" " " ")" [l, @operatorName]
+                (Nothing, Just r ) -> encloseSep "(" " " ")" [@operatorName, r]
+                (Just l , Just r ) -> OneLineNode [ l, OneLineText " ", @operatorName, OneLineText " ", r ]
+    --  range                    : Range
+    --  leftExpression           : MaybeExpression
+    --  operator                 : Expression
+    --  rightExpression          : MaybeExpression
+    | If                loc.oneLineTree =
+            OneLineNode
+                [ OneLineText "if "
+                , OneLineNode [@guardExpression.oneLineTree]
+                , OneLineText " then "
+                , OneLineNode [@thenExpression.oneLineTree]
+                , OneLineText " else "
+                , OneLineNode [@elseExpression.oneLineTree]
+                ]
+    --  range                    : Range
+    --  guardExpression          : Expression
+    --  thenExpression           : Expression
+    --  elseExpression           : Expression
+    | Lambda
+            loc.oneLineTree =
+                OneLineNode
+                    (  [ OneLineText "\\", punctuate " " @patterns.oneLineTree, OneLineText " -> "
+                       , OneLineNode [@expression.oneLineTree]
+                       ]
+                    )
+    --  range                    : Range
+    --  patterns                 : Patterns
+    --  expression               : Expression
+    | Case  loc.oneLineTree =
+                OneLineNode
+                    [ OneLineText "case "
+                    , OneLineNode [@expression.oneLineTree]
+                    , OneLineText " of "
+                    , encloseSep "{" "; " "}" @alternatives.oneLineTree
+                    ]
+    --  range                    : Range
+    --  expression               : Expression
+    --  alternatives             : Alternatives
+    | Let   loc.oneLineTree =
+                OneLineNode
+                    [ OneLineText "let "
+                    , encloseSep "{" "; " "}" @declarations.oneLineTree
+                    , OneLineText " in "
+                    , OneLineNode [@expression.oneLineTree]
+                    ]
+    --  range                    : Range
+    --  declarations             : Declarations
+    --  expression               : Expression
+    | Do    loc.oneLineTree =
+                OneLineNode
+                    [ OneLineText "do "
+                    , OneLineNode (sepBy (OneLineText "; ") @statements.oneLineTree)
+                    ]
+    --  range                    : Range
+    --  statements               : Statements
+    | List  loc.oneLineTree = encloseSep "[" ", " "]" @expressions.oneLineTree
+    --  range                    : Range
+    --  expressions              : Expressions
+    | Tuple loc.oneLineTree = encloseSep "(" ", " ")" @expressions.oneLineTree
+    --  range                    : Range
+    --  expressions              : Expressions
+    | Comprehension
+            loc.oneLineTree =
+                OneLineNode
+                    [ OneLineText "[ "
+                    , OneLineNode [@expression.oneLineTree]
+                    , OneLineText " | "
+                    , OneLineNode [ punctuate ", " @qualifiers.oneLineTree ]
+                    , OneLineText " ]"
+                    ]
+    --  range                    : Range
+    --  expression               : Expression
+    --  qualifiers               : Qualifiers
+    | Typed loc.oneLineTree =
+                OneLineNode
+                    [ OneLineNode [@expression.oneLineTree]
+                    , OneLineText " :: "
+                    , OneLineNode [ OneLineText (show (makeTpSchemeFromType @type.self))]
+                    ]
+    --  range                    : Range
+    --  expression               : Expression
+    --  type                     : Type
+    | RecordConstruction
+            loc.oneLineTree = intErr "Expression" "record construction"
+    --  range                    : Range
+    --  name                     : Name
+    --  recordExpressionBindings : RecordExpressionBindings
+    | RecordUpdate
+            loc.oneLineTree = intErr "Expression" "record update"
+    --  range                    : Range
+    --  expression               : Expression
+    --  recordExpressionBindings : RecordExpressionBindings
+    | Enum  loc.oneLineTree =
+                OneLineNode (
+                    [ OneLineText "["
+                    , OneLineNode [@from.oneLineTree]
+                    ]
+                    ++
+                    maybe [] (\x -> [OneLineText ", ", x]) @then.oneLineTree
+                    ++
+                    [ OneLineText " .. " ]
+                    ++
+                    maybe [] (\x -> [OneLineNode [x]]) @to.oneLineTree
+                    ++
+                    [ OneLineText "]" ]
+                )
+    --  range                    : Range
+    --  from                     : Expression
+    --  then                     : MaybeExpression
+    --  to                       : MaybeExpression
+    | Negate
+            loc.oneLineTree = OneLineNode [ OneLineText "-", OneLineNode [@expression.oneLineTree] ]
+    | NegateFloat
+            loc.oneLineTree = OneLineNode [ OneLineText "-.", OneLineNode [@expression.oneLineTree] ]
+    --  range                    : Range
+    --  expression               : Expression
+
+SEM Statement
+    | Expression        loc.oneLineTree = @expression.oneLineTree
+    --  range                    : Range
+    --  expression               : Expression
+    | Let               loc.oneLineTree =
+            OneLineNode [ OneLineText "let ", encloseSep "{" "; " "}" @declarations.oneLineTree ]
+    --  range                    : Range
+    --  declarations             : Declarations
+    | Generator         loc.oneLineTree =
+            OneLineNode [ @pattern.oneLineTree, OneLineText " <- ", @expression.oneLineTree ]
+    --  range                    : Range
+    --  pattern                  : Pattern
+    --  expression               : Expression
+    | Empty             loc.oneLineTree = OneLineText ""
+    --  range                    : Range
+
+SEM Qualifier
+    | Guard             loc.oneLineTree = @guard.oneLineTree
+    --  range                    : Range
+    --  guard                    : Expression -- type: Boolean
+    | Let               loc.oneLineTree =
+            OneLineNode [ OneLineText "let ", encloseSep "{" "; " "}" @declarations.oneLineTree ]
+    --  range                    : Range
+    --  declarations             : Declarations
+    | Generator         loc.oneLineTree =
+            OneLineNode [ @pattern.oneLineTree, OneLineText " <- ", @expression.oneLineTree ]
+    --  range                    : Range
+    --  pattern                  : Pattern
+    --  expression               : Expression
+    | Empty             loc.oneLineTree = OneLineText ""
+    --  range                    : Range
+
+SEM Alternative
+    | Alternative       loc.oneLineTree =
+            OneLineNode [ @pattern.oneLineTree, @righthandside.oneLineTree " -> " ]
+    --  range                    : Range
+    --  pattern                  : Pattern
+    --  righthandside            : RightHandSide
+    | Empty             loc.oneLineTree = OneLineText ""
+    --  range                    : Range
+
+SEM GuardedExpression -- ToDo: or _Guard?
+    | GuardedExpression loc.oneLineTree =
+            \assign -> OneLineNode [ OneLineText " | ", @guard.oneLineTree, OneLineText assign, @expression.oneLineTree ]
+    --  range                    : Range
+    --  guard                    : Expression -- type: Boolean
+    --  expression               : Expression
+
+SEM FunctionBinding
+    | FunctionBinding   loc.oneLineTree =
+            OneLineNode [@lefthandside.oneLineTree, @righthandside.oneLineTree " = " ]
+    --  range                    : Range
+    --  lefthandside             : LeftHandSide
+    --  righthandside            : RightHandSide
+
+SEM LeftHandSide
+    | Function          loc.oneLineTree = punctuate " " (@name.oneLineTree : @patterns.oneLineTree)
+    --  range                    : Range
+    --  name                     : Name
+    --  patterns                 : Patterns
+    | Infix             loc.operatorName = oneLineTreeAsOperator @operator.oneLineTree
+                        loc.oneLineTree =
+            punctuate " " [@leftPattern.oneLineTree, @operatorName, @rightPattern.oneLineTree]
+    --  range                    : Range
+    --  leftPattern              : Pattern
+    --  operator                 : Name
+    --  rightPattern             : Pattern
+    | Parenthesized     loc.oneLineTree =
+            punctuate " " ( parens @lefthandside.oneLineTree : @patterns.oneLineTree )
+    --  range                    : Range
+    --  lefthandside             : LeftHandSide
+    --  patterns                 : Patterns
+
+SEM RightHandSide
+    | Expression        loc.oneLineTree =
+            \assign -> OneLineNode
+                (  [ OneLineText assign, @expression.oneLineTree ]
+                ++ case @where.oneLineTree of
+                    Nothing -> []
+                    Just ds -> [ OneLineText " where ", encloseSep "{" "; " "}" ds ]
+                )
+    --  range                    : Range
+    --  expression               : Expression
+    --  where                    : MaybeDeclarations
+    | Guarded           loc.oneLineTree =
+            \assign -> OneLineNode
+                (  [ ge assign | ge <- @guardedexpressions.oneLineTree ] 
+                ++ case @where.oneLineTree of
+                    Nothing -> []
+                    Just ds -> [ OneLineText " where ", encloseSep "{" "; " "}" ds ]
+                )
+    --  range                    : Range
+    --  guardedexpressions       : GuardedExpressions
+    --  where                    : MaybeDeclarations
+
+-- ------------------------------------------------------------------------
+-- -- Patterns                                                           --
+-- ------------------------------------------------------------------------
+
+SEM Pattern
+    | Literal
+             loc.oneLineTree = @literal.oneLineTree
+    --  range                    : Range
+    --  literal                  : Literal
+    | Variable
+             loc.oneLineTree = @name.oneLineTree
+    --  range                    : Range
+    --  name                     : Name
+    | Constructor
+             loc.operatorName = if @name.isOperator
+                                  then OneLineNode [OneLineText "(", @name.oneLineTree, OneLineText ")"]
+                                  else @name.oneLineTree
+             loc.oneLineTree = OneLineNode (sepBy (OneLineText " ") (@operatorName : @patterns.oneLineTree))
+    --  range                    : Range
+    --  name                     : Name
+    --  patterns                 : Patterns
+    | Parenthesized
+             loc.oneLineTree = parens @pattern.oneLineTree
+    --  range                    : Range
+    --  pattern                  : Pattern
+    | InfixConstructor
+             loc.operatorName = OneLineText (showNameAsOperator @constructorOperator.self)
+             loc.oneLineTree =
+                OneLineNode
+                    [ OneLineNode [@leftPattern.oneLineTree]
+                    , OneLineText " "
+                    , OneLineNode [@operatorName]
+                    , OneLineText " "
+                    , OneLineNode [@rightPattern.oneLineTree]
+                    ]
+    --  range                    : Range
+    --  leftPattern              : Pattern
+    --  constructorOperator      : Name
+    --  rightPattern             : Pattern
+    | List              loc.oneLineTree = encloseSep "[" ", " "]" @patterns.oneLineTree
+    --  range                    : Range
+    --  patterns                 : Patterns
+    | Tuple             loc.oneLineTree = encloseSep "(" ", " ")" @patterns.oneLineTree
+    --  range                    : Range
+    --  patterns                 : Patterns
+    | Record            loc.oneLineTree = intErr "pattern" "record"
+    --  range                    : Range
+    --  name                     : Name
+    --  recordPatternBindings    : RecordPatternBindings
+    | Negate            loc.oneLineTree = OneLineNode [ OneLineText "-", @literal.oneLineTree ]
+    --  range                    : Range
+    --  literal                  : Literal -- only numbers allowed here
+    | NegateFloat       loc.oneLineTree = OneLineNode [ OneLineText "-." , @literal.oneLineTree ]
+    --  range                    : Range
+    --  literal                  : Literal -- only numbers allowed here
+    | As
+             loc.oneLineTree =
+                OneLineNode
+                    [ OneLineNode [@name.oneLineTree]
+                    , OneLineText "@"
+                    , OneLineNode [@pattern.oneLineTree]
+                    ]
+    --  range                    : Range
+    --  name                     : Name
+    --  pattern                  : Pattern
+    | Wildcard
+             loc.oneLineTree = OneLineText "_"
+    --  range                    : Range
+    | Irrefutable
+             loc.oneLineTree = intErr "pattern" "irrefutable"
+    --  range                    : Range
+    --  pattern                  : Pattern
+    | Successor
+             loc.oneLineTree = intErr "pattern" "successor"
+    --  range                    : Range
+    --  name                     : Name
+    --  literal                  : Literal -- only integers allowed here
+
+-- ------------------------------------------------------------------------
+-- -- Basics                                                             --
+-- ------------------------------------------------------------------------
+
+SEM Literal                                      {- *** -}
+    | Int               loc.oneLineTree = OneLineText @value
+    --  range                    : Range
+    --  value                    : String
+    | Char              loc.oneLineTree = OneLineText ("'" ++ @value ++ "'")
+    --  range                    : Range
+    --  value                    : String -- without the quotes
+    | Float             loc.oneLineTree = OneLineText @value
+    --  range                    : Range
+    --  value                    : String
+    | String            loc.oneLineTree = OneLineText ("\"" ++ @value ++ "\"")
+    --  range                    : Range
+    --  value                    : String -- without the quotes
+
+SEM Name                                         {- *** -}
+    | Identifier        lhs.isIdentifier = True
+                        loc.oneLineTree = OneLineText @name
+    --  range                    : Range
+    --  module                   : Strings
+    --  name                     : String
+    | Operator          lhs.isOperator = True
+                        loc.oneLineTree = OneLineText @name
+    --  range                    : Range
+    --  module                   : Strings
+    --  name                     : String
+    | Special           lhs.isSpecial = True
+                        loc.oneLineTree = OneLineText @name
+    --  range                    : Range
+    --  module                   : Strings
+    --  name                     : String

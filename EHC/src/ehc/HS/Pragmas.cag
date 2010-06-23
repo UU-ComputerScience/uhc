@@ -1,0 +1,37 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Gathering pragmas
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99
+ATTR AllPragma AllDeclaration [ | | gathPragmas USE {`Set.union`} {Set.empty}: {Set.Set Pragma.Pragma} ]
+ATTR AGItf Module [ | | fileHeaderPragmas USE {`Set.union`} {Set.empty}: {Set.Set Pragma.Pragma} ]
+
+SEM Pragma
+    | Language
+        loc             .   pragmaNames =   [ p |      p  <- map show @pragmas ]
+    | OptionsGHC
+        loc             .   pragmaNames =   [] -- [ p | ('X':p) <- map show @options ]
+
+SEM Pragma
+    | Language OptionsGHC
+        lhs             .   gathPragmas =   Set.fromList $ catMaybes [ Map.lookup p Pragma.allSimplePragmaMp | p <- @pragmaNames ]
+    | Derivable
+        lhs             .   gathPragmas =   Set.singleton (Pragma.Pragma_Derivable @className @fieldName @defaultName)
+
+SEM Module
+    | Module
+        loc             .   fileHeaderPragmas
+                                        =   @fileheaderpragmas.gathPragmas
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Distribution of pragmas
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Is dealt with in MainAG, because this file is shared, used in module
+analysis where pragma distribution over the AST is not necessary
