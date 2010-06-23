@@ -99,7 +99,7 @@ void mm_plan_SS_Init( MM_Plan* plan ) {
 		, &plss->residentAllocator
 		, &plss->gbmTrace
 		, &plss->gbmModule
-%%[[94
+%%[[90
 		, &mm_weakPtr					// init later
 		, &plss->weakPtrFinalizeQue		// init later
 %%]]
@@ -303,8 +303,9 @@ Bool mm_plan_SS_DoGC( MM_Plan* plan, Bool isPreemptiveGC /*isSpaceFull*/, Word g
 		plss->collector.collect( &plss->collector, gcInfo ) ;
         Word afterUsedSz = plss->ssAllocator.getUsedSize( &plss->ssAllocator ) ;
 
-        if(beforeUsedSz != afterUsedSz)
+        //if(beforeUsedSz != afterUsedSz) {
             //fprintf(stderr, "#### TOTAL MEM: %i | USED MEM BEFORE GC: %i AFTER GC: %i \n", prevTotalSz, beforeUsedSz, afterUsedSz);
+        // }
 
 		// total as used now
 		if ( ! isPreemptiveGC ) {

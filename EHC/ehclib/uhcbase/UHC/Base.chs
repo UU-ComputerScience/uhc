@@ -58,7 +58,7 @@ module UHC.Base   -- adapted from the Hugs prelude
     AsyncException(..),
     IOException       ,
     ExitCode      (..),
-#ifdef __UHC_TARGET_C__
+#if defined (__UHC_TARGET_C__) || defined (__UHC_TARGET_LLVM__)
     forceString,
 #else
     throw,
@@ -188,7 +188,7 @@ foreign import prim "primUnsafeId" unsafeCoerce :: forall a b . a -> b
 -- error, undefined
 ----------------------------------------------------------------
 
-#ifdef __UHC_TARGET_C__
+#if defined (__UHC_TARGET_C__) || defined (__UHC_TARGET_LLVM__)
 
 forceString :: String -> String
 forceString s = stringSum s `seq` s
@@ -216,15 +216,13 @@ undefined       = error "Prelude.undefined"
 -- Throw exception
 ----------------------------------------------------------------
 
-#ifdef __UHC_TARGET_C__
--- defined in UHC.OldException, on top of error because exceptions are not implemented, and show of exc is needed.
-#else
-
+#ifdef __UHC_TARGET_BC__
 foreign import prim primThrowException :: forall a x . SomeException' x -> a
 
 throw :: SomeException' x -> a
 throw e = primThrowException e
-
+#else
+-- defined in UHC.OldException, on top of error because exceptions are not implemented, and show of exc is needed.
 #endif
 
 ----------------------------------------------------------------
@@ -253,7 +251,7 @@ foreign import prim primByteArrayLength   :: ByteArray -> Int
 foreign import prim primByteArrayToString :: ByteArray -> String
 
 
-#ifdef __UHC_TARGET_C__
+#if defined (__UHC_TARGET_C__) || defined (__UHC_TARGET_LLVM__)
 foreign import prim packedStringToInteger :: PackedString -> Integer
 #else
 foreign import prim "primCStringToInteger" packedStringToInteger :: PackedString -> Integer
@@ -336,10 +334,10 @@ numericEnumFromThenTo n n' m = takeWhile p (numericEnumFromThen n n')
                                        | otherwise = (>= m + (n'-n)/2)
 
 iterate' :: (a -> a) -> a -> [a]        -- strict version of iterate
-#ifdef __UHC_TARGET_BC__
-iterate' f x = x : (letstrict fx = f x in iterate' f fx)
-#else
+#if defined (__UHC_TARGET_C__) || defined (__UHC_TARGET_LLVM__)
 iterate' f x = x : (iterate' f $! f x)
+#else
+iterate' f x = x : (letstrict fx = f x in iterate' f fx)
 #endif
 
 --------------------------------------------------------------
@@ -861,7 +859,7 @@ foreign import prim primQuotInt      :: Int -> Int -> Int
 foreign import prim primRemInt       :: Int -> Int -> Int
 
 
-#ifdef __UHC_TARGET_C__
+#if defined (__UHC_TARGET_C__) || defined (__UHC_TARGET_LLVM__)
 
 instance Integral Int where
     divMod x y   = (primDivInt x y, primModInt x y)
@@ -904,7 +902,7 @@ instance Read Int where
     readsPrec p = readSigned readDec
 
 
-#ifdef __UHC_TARGET_C__
+#if defined (__UHC_TARGET_C__) || defined (__UHC_TARGET_LLVM__)
 {-
  This implementation fails for showInt minBound because in 2's complement arithmetic
  -minBound == maxBound+1 == minBound
@@ -965,7 +963,7 @@ foreign import prim primDivInteger           :: Integer -> Integer -> Integer
 foreign import prim primModInteger           :: Integer -> Integer -> Integer
 
 
-#ifdef __UHC_TARGET_C__
+#if defined (__UHC_TARGET_C__) || defined (__UHC_TARGET_LLVM__)
 
 instance Integral Integer where
     divMod x y  = (primDivInteger x y, primModInteger x y)
@@ -1010,7 +1008,7 @@ instance Enum Integer where
 
 
 
-#ifdef __UHC_TARGET_C__
+#if defined (__UHC_TARGET_C__) || defined (__UHC_TARGET_LLVM__)
 {-
  This implementation fails for showInt minBound because in 2's complement arithmetic
  -minBound == maxBound+1 == minBound
@@ -1556,7 +1554,7 @@ foldl f z (x:xs)  = foldl f (f z x) xs
 
 foldl'           :: (a -> b -> a) -> a -> [b] -> a
 foldl' f a []     = a
-#ifdef __UHC_TARGET_C__
+#if defined (__UHC_TARGET_C__) || defined (__UHC_TARGET_LLVM__)
 foldl' f a (x:xs) = (foldl' f $! f a x) xs
 #else
 foldl' f a (x:xs) = letstrict fax = f a x in foldl' f fax xs

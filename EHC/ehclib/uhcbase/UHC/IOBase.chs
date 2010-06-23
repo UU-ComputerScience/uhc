@@ -39,7 +39,7 @@ module UHC.IOBase
     
         -- Exception
     SomeException,
-#ifdef __UHC_TARGET_C__
+#if defined (__UHC_TARGET_C__) || defined (__UHC_TARGET_LLVM__)
     throw,
 #endif
     
@@ -49,13 +49,13 @@ module UHC.IOBase
     try,
 
         -- Exception related: catch, throw
-#ifdef __UHC_TARGET_C__
+#if defined (__UHC_TARGET_C__) || defined (__UHC_TARGET_LLVM__)
 #else
     catchTracedException,
 #endif
     catch, catchException,
     
-#ifdef __UHC_TARGET_C__
+#if defined (__UHC_TARGET_C__) || defined (__UHC_TARGET_LLVM__)
     FHandle,
 #endif
   )
@@ -372,13 +372,13 @@ data IOMode             -- alphabetical order of constructors required, assumed 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[99
-#ifdef __UHC_TARGET_C__
+#if defined (__UHC_TARGET_C__) || defined (__UHC_TARGET_LLVM__)
 data FHandle    -- opaque, contains FILE*
 #else
 data GBHandle   -- opaque, contains GB_Chan
 #endif
 
-#ifdef __UHC_TARGET_C__
+#if defined (__UHC_TARGET_C__) || defined (__UHC_TARGET_LLVM__)
 
 instance Eq FHandle where
     _ == _ = False
@@ -418,7 +418,7 @@ data Handle
         !(MVar Handle__)                -- The write side
 
   | OldHandle                            
-#ifdef __UHC_TARGET_C__
+#if defined (__UHC_TARGET_C__) || defined (__UHC_TARGET_LLVM__)
         FHandle                        
 #else
         GBHandle                        
@@ -631,7 +631,7 @@ showException tag msg =
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[99
-#ifdef __UHC_TARGET_C__
+#if defined (__UHC_TARGET_C__) || defined (__UHC_TARGET_LLVM__)
 
 catch :: IO a -> (IOError -> IO a) -> IO a
 catch m h = m
@@ -665,7 +665,7 @@ catch m h = catchException m $ \e -> case e of
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[99
-#ifdef __UHC_TARGET_C__
+#if defined (__UHC_TARGET_C__) || defined (__UHC_TARGET_LLVM__)
 
 throw :: SomeException -> a
 throw e = error (show e)
@@ -679,7 +679,7 @@ throw e = error (show e)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[99
-#ifdef __UHC_TARGET_C__
+#if defined (__UHC_TARGET_C__) || defined (__UHC_TARGET_LLVM__)
 ioError :: IOError -> IO a
 ioError = error "ioError"
 

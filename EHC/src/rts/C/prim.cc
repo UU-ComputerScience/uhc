@@ -42,6 +42,7 @@ PRIM Word primOdd(Word x)
 
 PRIM Word primError(Word s)
 {
+    printf("DEBUG err: %u \n", s);
 	Word c;
 	char x;
 
@@ -117,6 +118,7 @@ PRIM Word primStdin()
 
 PRIM Word primStdout()
 {
+    printf("DEBUG: stdout: %u \n", stdout);
   	return (Word)stdout;
 }
 
@@ -191,6 +193,7 @@ PRIM Word primHGetChar(Word h)
 
 PRIM Word primHPutChar(Word h, Word c)
 {
+    printf("DEBUG: h:%u c:%u \n", h, c);
 	putc(c, (FILE*)h );
 	return RTS_Unit;
 }

@@ -227,6 +227,7 @@ PRIM Word primRadixDoubleFloat( )
 %%[11
 PRIM Word primUnsafeId(Word x)
 {
+    printf("DEBUG unsafeid: %u \n", x);
 	return x;
 }
 %%]
@@ -280,6 +281,7 @@ PRIM Word primCharToLower( Word x )
 
 PRIM Word primPackedStringNull(Word w)
 {
+    printf("DEBUG null: w:%u \n", w);
 	char *s = (char *)w;
 	if ( *s )
 		return RTS_False ;
@@ -288,6 +290,7 @@ PRIM Word primPackedStringNull(Word w)
 
 PRIM Word primPackedStringTail(Word w)
 {
+    printf("DEBUG tail: w:%u \n", w);
 	char *s = (char *)w;
   	return Cast(Word,s+1) ;
 }
@@ -295,6 +298,7 @@ PRIM Word primPackedStringTail(Word w)
 
 PRIM Word primPackedStringHead(Word w)
 {
+    printf("DEBUG head: w:%u \n", w);
 	char *s = (char *)w;
   	return Cast(Word,(*s)) ;
 }
