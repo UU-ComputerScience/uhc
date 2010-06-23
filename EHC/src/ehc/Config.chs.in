@@ -246,7 +246,7 @@ libnamesGccEhcExtraExternalLibs
 %%% File suffixes
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(mbSuffixExec)
+%%[8 export(mbSuffixExec,linkerSymbolPrefix)
 suffixExec :: String
 suffixExec = "@SUFFIX_EXEC@"
 
@@ -256,4 +256,8 @@ mbSuffixExec
       ('.':s) -> Just s
       ""      -> Nothing
       s       -> Just s
+
+linkerSymbolPrefix :: String
+linkerSymbolPrefix = "@LINKER_SYMBOL_PREFIX@"
+
 %%]

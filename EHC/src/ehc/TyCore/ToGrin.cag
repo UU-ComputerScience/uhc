@@ -495,7 +495,6 @@ SEM ValBind
                                                                  _           -> error "ToGrin: RHS of Apply0-bind is not a variable"
                                                      in  ( [], [GrGlobal_Global @nm (GrVal_Node (GrTag_Fun nm2) [])] )
                                                 else ( [GrBind_Bind @nm @bindMeta.grBindAnn @expr.grLamArgL @expr.grLamBody], [] )
-                bindMeta    .   lamArgDicts =   @expr.lamArgDicts
 
 %%]
 
@@ -831,14 +830,11 @@ SEM Expr
 
 %%[(8 codegen grin)
 ATTR Expr [ | | grLamArgL: {[HsName]}  grLamBody: GrExpr  ]
-ATTR Expr [ | | lamArgDicts: {[Int]} ]
 
 SEM Expr
   | Lam         lhs         .   grLamArgL   =   @arg : @body.grLamArgL
-                lhs         .   lamArgDicts =   @argMeta.argDicts ++ @body.lamArgDicts
   | * - Lam     lhs         .   grLamArgL   =   []
                 lhs         .   grLamBody   =   @grExpr
-                lhs         .   lamArgDicts =   []
 
 %%]
 
@@ -864,21 +860,14 @@ SEM Expr
 
 
 %%[(8 codegen grin)
-ATTR AllMetaVal [ lamArgDicts: {[Int]} | | ]
-ATTR AllMetaVal [ | | grBindAnn : {GrBindAnn} argDicts: {[Int]} ]
+ATTR AllMetaVal [ | | grBindAnn : {GrBindAnn}  ]
 
 SEM MetaVal
-  | Val          lhs          .   grBindAnn   =  if null @lhs.lamArgDicts
-                                                 then GrBindAnnNormal
-                                                 else GrBindAnnOverloaded @lhs.lamArgDicts
-                 lhs          .   argDicts    =  []
+  | Val          lhs          .   grBindAnn   =  GrBindAnnNormal
 %%[[9
   | Dict         lhs          .   grBindAnn   =  GrBindAnnNormal
-                 lhs          .   argDicts    =  maybe [] (:[]) @mbPos
   | DictClass    lhs          .   grBindAnn   =  GrBindAnnClass @names
-                 lhs          .   argDicts    =  []
   | DictInstance lhs          .   grBindAnn   =  GrBindAnnInstance @names
-                 lhs          .   argDicts    =  []
 %%]]
 
 ATTR AllMetaBind [ | | isApply0 : Bool ]
@@ -887,15 +876,4 @@ SEM CMetaBind
   | Apply0       lhs . isApply0  =  True
   | * - Apply0   lhs . isApply0  =  False
 
-
-
--- The synthesized attribute grBindAnn is only needed for MetaVal's occuring in a CBind_Bind,
--- not for MetaVal's occuring in a Expr_Lam.
--- Therefore the inherited attribute lamArgDict is only needed in CBind_Bind, not in Expr_Lam.
-
-SEM Expr
-  | Lam   argMeta.lamArgDicts = undefined
-
 %%]
-
-

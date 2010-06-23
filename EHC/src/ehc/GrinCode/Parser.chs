@@ -130,9 +130,10 @@ pAltAnn         =    (    GrAltAnnNormal  <$ pKey "normal"
 
 pGrBindAnn      ::   GRIParser GrBindAnn
 pGrBindAnn      =    pSucceed GrBindAnnNormal
-                <|>  GrBindAnnClass      <$ pKey "DICTCLASS"      <*> pCurlyList pMbGrNm
-                <|>  GrBindAnnInstance   <$ pKey "DICTINSTANCE"   <*> pCurlyList1 pManyGrNm
-                <|>  GrBindAnnOverloaded <$ pKey "DICTOVERLOADED" <*> pCurlyList (pCurlyList pInt)
+%%[[9
+                <|>  GrBindAnnClass      <$ pKey "DICTCLASS"      <*> pCurlyList pTrack
+                <|>  GrBindAnnInstance   <$ pKey "DICTINSTANCE"   <*> pCurlyList1 pTrack
+%%]]
                 <|>  GrBindAnnSpecialized <$
                        pKey "SPECIALIZED" <*> pGrNm <*> pInt <*> pCurlyList pMbGrNm
 
@@ -141,6 +142,11 @@ pCurlyList p    =    pCurly $ pListSep pComma p
 
 pCurlyList1      ::   GRIParser a -> GRIParser [a]
 pCurlyList1 p    =    pCurly $ pList1Sep pComma p
+
+%%[[9
+pTrack          ::   GRIParser Track
+pTrack          =    (\x -> TrackVarApply x [])  <$> pGrNm     -- TODO: this is just a mockup, should do real track parsing
+%%]]
 
 pMbGrNm         ::   GRIParser (Maybe HsName)
 pMbGrNm         =    Just    <$> pGrNm

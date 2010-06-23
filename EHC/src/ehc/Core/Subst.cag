@@ -314,7 +314,7 @@ coeImplsAppRVarMp c coe
        _             -> [coe]
 
 mkPoisAppCoe :: EHCOpts -> [PredOccId] -> [Coe]
-mkPoisAppCoe opts = map (\i -> mkAppCoe1With (mkCExprPrHole opts i) (CMetaVal_Dict Nothing))
+mkPoisAppCoe opts = map (\i -> mkAppCoe1With (mkCExprPrHole opts i) CMetaVal_Dict)
 
 mkImplsAppCoe :: EHCOpts -> Impls -> [Coe]
 mkImplsAppCoe opts = mkPoisAppCoe opts . implsPrIds
@@ -326,7 +326,7 @@ mkPoiLLamCoe onLast poiL
                           where (h,t) = fromJust $ initlast l
        _ | coeIsId onLast -> []
          | otherwise      -> [onLast]
-  where mk poi = mkLamCoe1With (poiHNm poi) (CMetaVal_Dict Nothing)
+  where mk poi = mkLamCoe1With (poiHNm poi) CMetaVal_Dict
 
 mkImplsLamCoe :: Coe -> Impls -> [Coe]
 mkImplsLamCoe onLast is = mkPoiLLamCoe onLast (implsPrIds is)

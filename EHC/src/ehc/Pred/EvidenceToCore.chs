@@ -160,11 +160,11 @@ evidMpToCore env evidMp
                                         CExpr_Var _ -> c
                                         _           -> c'
         ann (RedHow_Assumption   vun sc) _     = ( mknm $ vunmNm vun, sc )
-        ann (RedHow_ByInstance   n _   sc) ctxt= ( acoreAppMeta (mknm n) (map (\c -> (tcrCExpr c,(CMetaVal_Dict Nothing))) ctxt), maximumBy pscpCmpByLen $ sc : map tcrScope ctxt )
+        ann (RedHow_ByInstance   n _   sc) ctxt= ( acoreAppMeta (mknm n) (map (\c -> (tcrCExpr c,CMetaVal_Dict)) ctxt), maximumBy pscpCmpByLen $ sc : map tcrScope ctxt )
         ann (RedHow_BySuperClass n o t ) [sub] = let res = mkCExprSatSelsCaseMeta
                                                              (emptyRCEEnv $ feEHCOpts $ fiEnv env)
                                                              (Just $ hsnUniqifyEval n) 
-                                                             (CMetaVal_Dict (Just [o])) 
+                                                             CMetaVal_Dict 
                                                              (tcrCExpr sub) 
                                                              t
                                                              [(n,n,o)] 
@@ -213,12 +213,12 @@ evidKeyCoreMpToBinds m
                -> let deepestScope = subevdId . maximumBy (\evd1 evd2 -> subevdScope evd1 `pscpCmpByLen` subevdScope evd2) . Set.toList
                   in  Map.singleton (deepestScope uses) [b]
             )
-      $ [ (acoreBind1Meta (mkHNm i) (CMetaVal_Dict Nothing) e,u)    -- Nothing will be replaced by the correct annotation in ToCore
+      $ [ (acoreBind1Meta (mkHNm i) CMetaVal_Dict e,u)
         | (i,(e,u,_ )) <- dbg "evidKeyCoreMpToBinds.dependentOnAssumes"   $! Map.toList dependentOnAssumes   
         ]
     , dbg "evidKeyCoreMpToBinds.res2"
       $! Map.fromListWith (++)
-      $ [ (sc,[acoreBind1Meta (mkHNm i) (CMetaVal_Dict Nothing) e]) 
+      $ [ (sc,[acoreBind1Meta (mkHNm i) CMetaVal_Dict e]) 
         | (i,(e,_,sc)) <- dbg "evidKeyCoreMpToBinds.independentOfAssumes" $! Map.toList independentOfAssumes 
         ]
     )
@@ -262,7 +262,7 @@ evidKeyCoreMpToBinds2 m
           = Map.partition (\(_,uses,_) -> Set.null uses) m
         (dependentOn1Assume, dependentOnNAssumes)
           = Map.partition (\(_,uses,_) -> Set.size uses == 1) m
-        mkd i e           = acoreBind1Meta (mkHNm i) (CMetaVal_Dict Nothing) e    -- Nothing will be replaced by the correct annotation in ToCore
+        mkd i e           = acoreBind1Meta (mkHNm i) CMetaVal_Dict e
         deepestScope sc u = maximumBy pscpCmpByLen $ sc : (map subevdScope $ Set.toList u)
 %%]
 

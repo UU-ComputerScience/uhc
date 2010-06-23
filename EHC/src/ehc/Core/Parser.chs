@@ -103,6 +103,9 @@ pCExpr
           <|> CBindings_Strict <$ pBANG
 
 
+pTrack          ::   CParser Track
+pTrack          =    (\x -> TrackVarApply x [])  <$> pDollNm     -- TODO: this is just a mockup, should do real track parsing
+
 pMbDollNm :: CParser (Maybe HsName)
 pMbDollNm
   =  f <$> pDollNm
@@ -139,11 +142,10 @@ pCMetaBind
 pCMetaVal :: CParser CMetaVal
 pCMetaVal
   =   CMetaVal_Val          <$ pKeyTk "VAL"
-  <|> CMetaVal_Dict         <$ pKeyTk "DICT"  <*> ( Just <$ pOCURLY <*> pListSep pCOMMA (pInt <|> ((\_ n -> 0-n) <$> pMINUS <*> pInt)) <* pCCURLY
-                                                  <|> pSucceed Nothing
-                                                  )
-  <|> CMetaVal_DictClass    <$ pKeyTk "DICTCLASS"    <* pOCURLY <*> pListSep pCOMMA pMbDollNm <* pCCURLY
-  <|> CMetaVal_DictInstance <$ pKeyTk "DICTINSTANCE" <* pOCURLY <*> pList1Sep pCOMMA pManyDollNm <* pCCURLY
+  <|> CMetaVal_Dict         <$ pKeyTk "DICT"
+  <|> CMetaVal_DictClass    <$ pKeyTk "DICTCLASS"    <* pOCURLY <*> pListSep pCOMMA pTrack <* pCCURLY
+  <|> CMetaVal_DictInstance <$ pKeyTk "DICTINSTANCE" <* pOCURLY <*> pList1Sep pCOMMA pTrack <* pCCURLY
+  -- TODO: parse Track
 
 pCMetaValOpt :: CParser CMetaVal
 pCMetaValOpt
