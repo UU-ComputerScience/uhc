@@ -128,9 +128,9 @@ The implementation matches the polarity against a -> b -> Covariant, and observe
 In case of failure, the worst is assumed and all is invariant.
 TBD: failure should not happen, the encoding of polarity is too strict by not matching Invariant <= Covariant, thus failing.
 
-%%[(4 hmtyinfer)
+%%[(8 hmtyinfer)
 fiAppSpineLookup :: FIIn -> HsName -> AppSpineGam -> Maybe AppSpineInfo
-%%[[4
+%%[[8
 fiAppSpineLookup fi n gappSpineGam = asGamLookup n $ feAppSpineGam $ fiEnv fi
 %%][17
 fiAppSpineLookup fi n gappSpineGam
@@ -294,7 +294,7 @@ fitsInFI :: FIIn -> Ty -> Ty -> FIOut
 fitsInFI fi ty1 ty2
   =  foRes {foTrace = reverse $ foTrace foRes}
   where
-%%[[4
+%%[[8
             appSpineGam             =  feAppSpineGam $ fiEnv fi
 %%]]
 %%[[8
@@ -347,7 +347,12 @@ fitsInFI fi ty1 ty2
 
             -- results
             res' fi tv t            =  (\fo -> trfo "res" (ppTyWithFI fi tv >|< ", spine" >#< (tyConNm t) >|< ":" >#< pp (foAppSpineInfo fo) {- >-< "polgam:" >#< ppGam (fePolGam $ fiEnv fi) -}) fo)
-                                       $ (fifo fi emptyFO) {foTy = tv, foMbAppSpineInfo = fiAppSpineLookup fi (tyConNm t) appSpineGam}
+-- %%[4.basic
+                                       $ (fifo fi emptyFO) {foTy = tv}
+-- %%]
+-- %%[8 -4.basic
+--                                       $ (fifo fi emptyFO) {foTy = tv, foMbAppSpineInfo = fiAppSpineLookup fi (tyConNm t) appSpineGam}
+-- %%]
             res  fi    t            =  res' fi t t
 
             -- errors

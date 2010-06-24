@@ -1,0 +1,104 @@
+DATA AGItf
+  | AGItf           expr            : Expr
+
+DATA Decl
+  | TySig           nm              : {HsName}
+                    tyExpr          : TyExpr
+  | Val             patExpr         : PatExpr
+                    expr            : Expr
+
+TYPE Decls          = [Decl]
+
+SET AllDecl         = Decl Decls
+
+DATA TyExpr
+  | Con             nm              : {HsName}
+  | App             func            : TyExpr
+                    arg             : TyExpr
+  | AppTop          tyExpr          : TyExpr
+  | Parens          tyExpr          : TyExpr
+  | Ann             ann             : TyExprAnn
+                    tyExpr          : TyExpr
+
+DATA TyExpr
+  | Wild											-- wildcard tyvar over which the TyExpr will not quantify, but later let binding will
+  | Mono											-- same as Wild, but no quantification in the let binding either
+
+DATA TyExpr
+  | Var             nm              : {HsName}
+
+DATA TyExpr
+  | VarWild         nm              : {HsName}
+
+DATA TyExpr
+  | Quant           qu              : {TyQu}
+                    tyVar           : {HsName}
+                    tyExpr          : TyExpr
+
+SET AllTyExpr
+    = TyExpr
+      -- TyExprAnn
+
+DATA Expr
+  | IConst          int             : {Int}
+  | CConst          char            : {Char}
+  | Con             nm              : {HsName}
+  | Var             nm              : {HsName}
+  | App             func            : Expr
+                    arg             : Expr
+  | Let             decls           : Decls
+                    body            : Expr
+  | Lam             arg             : PatExpr
+                    body            : Expr
+  | AppTop          expr            : Expr
+  | Parens          expr            : Expr
+  | TypeAs          tyExpr          : TyExpr
+                    expr            : Expr
+  | Ann             ann             : ExprAnn
+                    expr            : Expr
+
+DATA Expr
+  | AppImpred       func            : Expr
+                    arg             : Expr
+
+SET AllExpr
+    = Expr
+      -- ExprAnn
+
+DATA PatExpr
+  | IConst          int             : {Int}
+  | CConst          char            : {Char}
+  | Con             nm              : {HsName}
+  | Var             nm              : {HsName}
+  | VarAs           nm              : {HsName}
+                    patExpr         : PatExpr
+  | App             func            : PatExpr
+                    arg             : PatExpr
+  | AppTop          patExpr         : PatExpr
+  | Parens          patExpr         : PatExpr
+  | Ann             ann             : PatExprAnn
+                    patExpr         : PatExpr
+
+DATA PatExpr
+  | TypeAs          tyExpr          : TyExpr
+                    patExpr         : PatExpr
+
+SET AllPatExpr
+    = PatExpr
+      -- PatExprAnn
+
+DATA ExprAnn
+  | Empty
+
+DATA TyExprAnn
+  | Empty
+
+DATA PatExprAnn
+  | Empty
+
+SET AllAnn
+    = ExprAnn TyExprAnn PatExprAnn
+
+SET AllNT
+    = AllTyExpr AllDecl AllPatExpr AllExpr
+

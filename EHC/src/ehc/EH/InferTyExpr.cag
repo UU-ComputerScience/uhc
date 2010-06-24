@@ -211,7 +211,8 @@ SEM TyExpr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 -- generated from ruler rules into EHRulerRules, was 2.tyVarWildL
-%%[(5 hmtyinfer).tyVarWildL
+-- This can't be 5, doesn't make sense since if it's 5 then the Decl below doesn't compile
+%%[(2 hmtyinfer).tyVarWildL
 ATTR AllTyExpr [ | | tyVarWildMp USE {`Map.union`} {Map.empty}: TyVarWildMp ]
 %%]
 

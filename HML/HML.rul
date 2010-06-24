@@ -1,0 +1,163 @@
+{
+{-# LANGUAGE BangPatterns #-}
+module HML where
+
+import Control.Monad.Error
+
+type HsName  = String
+type Decls   = [Decl]
+type TyExprs = [TyExpr]
+type Prefix  = [TyIndex]
+
+mkName :: String -> HsName
+mkName = id
+}
+
+data Decl
+  con TySig
+    nm      :: HsName
+    tyExpr  :: TyExpr
+  con Val
+    patExpr :: PatExpr
+    expr    :: Expr
+    
+data TyQu
+  con TyForall
+    
+data TyExpr
+  con Con
+    nm      :: HsName
+  con App
+    func    :: TyExpr
+    arg     :: TyExpr
+  con AppTop
+    tyExpr  :: TyExpr
+  con Parens
+    tyExpr  :: TyExpr
+  con Ann
+    ann     :: TyExprAnn
+    tyExpr  :: TyExpr
+  con Wild
+  con Mono
+  con Var
+    nm      :: HsName
+  con VarWild
+    mm      :: HsName
+  con Quant
+    qu      :: TyQu
+    tyVar   :: HsName
+    tyExpr  :: TyExpr
+    
+{ -- Type Index }
+data TyIndex
+  con Group
+    var     :: HsName
+    bounds  :: TyQuantifiedScheme
+    
+{ -- Quantified type scheme }
+data TyQuantifiedScheme
+  con Quant
+    tyIndex  :: TyIndex
+    tyScheme :: TyScheme
+  con Bottom
+   
+{ -- Type Schemes }   
+data TyScheme
+  con Qaunt
+    var     :: HsName
+    bounds  :: TyScheme
+    tyExpr  :: TyScheme
+  con SystemF
+    tyExpr  :: TyExpr
+  con Bottom
+  
+{ -- Mono type }
+data TyMono 
+  con Var 
+    nm      :: HsName
+  con App
+    func    :: TyMono
+    arg     :: TyMono
+  con Con
+    nm      :: HsName
+  con AppTop
+    tyMono  :: TyMono
+    
+{ -- Unqualified typed }
+data TyPoly
+  con Var 
+    nm      :: HsName
+  con App
+    func    :: TyExpr
+    arg     :: TyExpr
+  con Con
+    nm      :: HsName
+  con AppTop
+    tyMono  :: TyPoly
+    
+data Expr
+  con IConst
+    int     :: Int
+  con CConst
+    char    :: Char
+  con Con
+    nm      :: HsName
+  con Var
+    nm      :: HsName
+  con App
+    func    :: Expr
+    arg     :: Expr
+  con Let
+    decls   :: Decls
+    body    :: Expr
+  con Lam
+    arg     :: PatExpr
+    body    :: Expr
+  con AppTop
+    expr    :: Expr
+  con Parens
+    expr    :: Expr
+  con TypeAs
+    tyExpr  :: TyExpr
+    expr    :: Expr
+  con Ann
+    ann     :: ExprAnn
+    expr    :: Expr
+  con AppImpred
+    func    :: Expr
+    arg     :: Expr
+    
+data PatExpr
+  con IConst
+    int     :: Int
+  con CConst
+    char    :: Char
+  con Con
+    nm      :: HsName
+  con Var
+    nm      :: HsName
+  con VarAs
+    nm      :: HsName
+    patExpr :: PatExpr
+  con App
+    func    :: PatExpr
+    arg     :: PatExpr
+  con AppTop
+    patExpr :: PatExpr
+  con Parens
+    patExpr :: PatExpr
+  con Ann
+    ann     :: PatExprAnn
+    patExpr :: PatExpr
+  con TypeAs
+    tyExpr  :: TyExpr
+    patExpr :: PatExpr
+    
+data ExprAnn
+  con Empty
+  
+data TyExprAnn
+  con Empty
+
+data PatExprAnn
+  con Empty
