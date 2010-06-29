@@ -13,7 +13,7 @@ TOP_PREFIX				:=
 ###########################################################################################
 
 default: uhc
-
+#default: 99/ehclib
 help: explanation
 
 ###########################################################################################
@@ -66,8 +66,13 @@ include $(SRC_PREFIX)ehc/files1.mk
 -include $(SRC_PREFIX)experiments/files.mk
 -include $(SRC_EXPERIMENTS_PREFIX)subst/files.mk
 
-include extlibs/bgc/files.mk
-include extlibs/gmp/files.mk
+include extlibs/files.mk
+include $(EXTLIBS_PREFIX)bgc/files.mk
+ifeq ($(EHC_CFG_MPLIB),gmp)
+include $(EXTLIBS_PREFIX)gmp/files.mk
+endif
+include $(EXTLIBS_PREFIX)ltm/files.mk
+include ehclib/files1.mk
 include $(SRC_PREFIX)rts/files.mk
 ifeq ($(ENABLE_JAVA),yes)
 -include $(SRC_PREFIX)jazy/files.mk
@@ -84,7 +89,7 @@ include $(SRC_PREFIX)ehc/files2.mk
 -include text/files-targets.mk
 -include $(wildcard text/files2-*.mk)
 -include www/files.mk
-include ehclib/files.mk
+include ehclib/files2.mk
 include test/files.mk
 include test/benchmark/files.mk
 
@@ -101,6 +106,15 @@ VERSIONS			:= $(EHC_PUB_VARIANTS)
 #WWW_DOC_PDF					:= www/current-ehc-doc.pdf
 
 ###########################################################################################
+# UHC specific definitions
+###########################################################################################
+
+UHC_INSTALL_VARIANT_PREFIX 	:= $(call FUN_INSTALLABS_VARIANT_PREFIX,$(EHC_UHC_INSTALL_VARIANT))
+UHC_INSTALL_VARIANTNAME		:= $(UHC_EXEC_NAME)-$(EH_VERSION_FULL)
+UHC_INSTALL_PREFIX			:= $(call FUN_DIR_VARIANT_PREFIX,$(INSTALL_UHC_ROOT),$(UHC_INSTALL_VARIANTNAME))
+UHC_INSTALL_EHCBINARY		:= $(UHC_INSTALL_PREFIX)bin/$(EHC_EXEC_NAME)$(EXEC_SUFFIX)
+
+###########################################################################################
 # Target: explain what can be done
 ###########################################################################################
 
@@ -108,9 +122,10 @@ explanation:
 	@$(EXIT_IF_ABSENT_LIB_OR_TOOL)
 	@echo "UHC" ; \
 	echo  "===" ; \
-	echo  "make                     : default is 'make uhc'" ; \
+	echo  "make                     : defaults to 'make uhc'" ; \
 	echo  "make uhc                 : make uhc and library (ehc variant 101)" ; \
-	echo  "make install             : make uhc and install globally, possibly needing admin permission" ; \
+	echo  "make install             : make uhc and install globally (into $(UHC_INSTALL_PREFIX)), possibly needing admin permission" ; \
+	echo  "make uninstall           : uninstall uhc, possibly needing admin permission" ; \
 	echo  "make test                : regress test uhc" ; \
 	echo  "" ; \
     echo  "EHC & tools" ; \
@@ -208,27 +223,33 @@ heliumdoc: $(LIB_HELIUM_ALL_DRV_HS) $(LIB_TOP_HS_DRV) $(LIB_LVM_HS_DRV)
 
 uhc: $(EHC_FOR_UHC_BLD_EXEC) $(EHC_UHC_INSTALL_VARIANT)/ehclibs
 
-UHC_INSTALL_VARIANT_PREFIX 	:= $(call FUN_INSTALLABS_VARIANT_PREFIX,$(EHC_UHC_INSTALL_VARIANT))
-UHC_INSTALL_VARIANTNAME		:= $(UHC_EXEC_NAME)-$(EH_VERSION_FULL)
-UHC_INSTALL_PREFIX			:= $(call FUN_DIR_VARIANT_PREFIX,$(INSTALL_UHC_ROOT),$(UHC_INSTALL_VARIANTNAME))
-
 uhc-install: uhc
-	mkdir -p $(UHC_INSTALL_PREFIX)
-	$(call FUN_COPY_FILES_BY_TAR,$(UHC_INSTALL_VARIANT_PREFIX),$(UHC_INSTALL_PREFIX),*) ; \
+	@rm -f $(UHC_INSTALL_EXEC)
+	@echo "Copying files to $(UHC_INSTALL_PREFIX) ..."
+	@mkdir -p $(UHC_INSTALL_PREFIX)
+	@$(call FUN_COPY_FILES_AND_RENAME,$(UHC_INSTALL_VARIANT_PREFIX),$(UHC_INSTALL_PREFIX),$(EHC_UHC_INSTALL_VARIANT),$(UHC_INSTALL_VARIANTNAME)) ; \
 	alltargets="`$(EHC_FOR_UHC_BLD_EXEC) --meta-targets`" ; \
+	echo "Postprocessing installation ..." ; \
 	for target in $${alltargets} ; \
 	do \
 	  $(MAKE) uhc-install-postprocess-$${target} EHC_VARIANT_TARGET=$${target} ; \
 	done ; \
 	rm -f $(UHC_INSTALL_EXEC) ; \
 	mkdir -p $(INSTALL_UHC_BIN_PREFIX) ; \
-	ehc="$(UHC_INSTALL_PREFIX)bin/$(EHC_EXEC_NAME)$(EXEC_SUFFIX)" ; \
-	$(STRIP) $${ehc} ; \
-	ln -s $${ehc} $(UHC_INSTALL_EXEC)
-	$(UHC_INSTALL_EXEC) --meta-export-env=$(TOPLEVEL_SYSTEM_ABSPATH_PREFIX)$(INSTALL_UHC_ROOT),$(UHC_INSTALL_VARIANTNAME)
+	$(STRIP) $(UHC_INSTALL_EHCBINARY) ; \
+	echo "Generating wrapper ..." ; \
+	$(call FUN_GEN_SHELL_ALIAS,$(UHC_INSTALL_EHCBINARY),$(UHC_INSTALL_SHELL),--cfg-install-root=$(TOPLEVEL_SYSTEM_ABSPATH_PREFIX)$(INSTALL_UHC_ROOT) --cfg-install-variant=$(UHC_INSTALL_VARIANTNAME))
+	@echo "Installation done"
+
+#	ln -s $(UHC_INSTALL_EHCBINARY) $(UHC_INSTALL_EXEC)
+#	$(UHC_INSTALL_EXEC) --meta-export-env=$(TOPLEVEL_SYSTEM_ABSPATH_PREFIX)$(INSTALL_UHC_ROOT),$(UHC_INSTALL_VARIANTNAME)
+
+uhc-uninstall:
+	@echo "Removing installation $(UHC_INSTALL_PREFIX) ..."
+	rm -fr $(UHC_INSTALL_PREFIX) $(UHC_INSTALL_EXEC)
 
 uhc-install-postprocess-bc:
-	cd $(call FUN_DIR_VARIANT_LIB_TARGET_PREFIX,$(INSTALL_UHC_ROOT),$(UHC_INSTALL_VARIANTNAME),$(EHC_VARIANT_TARGET)) ; \
+	@cd $(call FUN_DIR_VARIANT_LIB_TARGET_PREFIX,$(INSTALL_UHC_ROOT),$(UHC_INSTALL_VARIANTNAME),$(EHC_VARIANT_TARGET)) ; \
 	for pkg in $(EHC_PACKAGES_ASSUMED) ; \
 	do \
 	  rm -f $${pkg}/$(EHCLIB_MAIN)* ; \
@@ -237,7 +258,7 @@ uhc-install-postprocess-bc:
 #	  rm -f $${pkg}/*.{hs,hs-cpp,c} $${pkg}/*/*.{hs,hs-cpp,c} $${pkg}/$(EHCLIB_MAIN)* ; \
 
 uhc-install-postprocess-C:
-	cd $(call FUN_DIR_VARIANT_LIB_TARGET_PREFIX,$(INSTALL_UHC_ROOT),$(UHC_INSTALL_VARIANTNAME),$(EHC_VARIANT_TARGET)) ; \
+	@cd $(call FUN_DIR_VARIANT_LIB_TARGET_PREFIX,$(INSTALL_UHC_ROOT),$(UHC_INSTALL_VARIANTNAME),$(EHC_VARIANT_TARGET)) ; \
 	for pkg in $(EHC_PACKAGES_ASSUMED) ; \
 	do \
 	  rm -f $${pkg}/$(EHCLIB_MAIN)* ; \
@@ -249,6 +270,8 @@ uhc-install-postprocess-core:
 	
 uhc-install-postprocess-jazy:
 	
+uhc-install-postprocess-llvm:
+	
 # still to do: uhc --meta-export-env=$(INSTALL_UHC_LIB_PREFIX),$(UHC_EXEC_NAME)
 
 ###########################################################################################
@@ -257,12 +280,15 @@ uhc-install-postprocess-jazy:
 
 install: uhc-install
 
+uninstall: uhc-uninstall
+
 ###########################################################################################
 # Target: UHC: regression test
 ###########################################################################################
 
 uhc-test: thaw-test-expect
-	@echo "WARNING: output may slightly differ for the following tests: " IO2.hs IO3.hs SysEnv1.hs
+	@echo "WARNING: output may slightly differ for tests commented with 'platform',"
+	@echo "         and (because of visible internal naming) for:" IO2.hs IO3.hs
 	$(MAKE) test-regress TEST_VARIANTS=uhc
 
 test: uhc-test
@@ -355,8 +381,7 @@ release-prepare:
 FUN_PREFIX2DIR			= $(patsubst %/,%,$(1))
 
 tst:
-	@echo $(EHC_CFG_TARGET_IS_bc_C)
-	@echo 
+	@echo $(EHCLIB_SH_MAP_PKG2VERSIONED)
 
 tstv:
 	$(MAKE) EHC_VARIANT=100 tst

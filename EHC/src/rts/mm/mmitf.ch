@@ -1,5 +1,10 @@
+%%[8
+#ifndef __MM_MMITF_H__
+#define __MM_MMITF_H__
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Memory management
+%%% Memory management: interface to outside MM
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 The design is inspired by:
@@ -83,7 +88,9 @@ Order of imports is important because of usage dependencies between types.
 %%[8
 #include "config.h"
 #include "common.h"
+#include "basic/iterator.h"
 #include "basic/flexarray.h"
+#include "basic/freelistarray.h"
 #include "basic/dll.h"
 #include "basic/deque.h"
 #include "basic/rangemap.h"
@@ -93,25 +100,90 @@ Order of imports is important because of usage dependencies between types.
 #include "collector.h"
 #include "trace.h"
 #include "roots.h"
-#include "tracesupply.h"
 #include "module.h"
+#include "mutatormutrec.h"
 #include "mutator.h"
+#include "tracesupply.h"
 #include "plan.h"
+#include "weakptr.h"
+%%]
+
+%%[8
+#if MM_BYPASS_PLAN
+#	if (MM_Cfg_Plan == MM_Cfg_Plan_SS)
+#		include "allocator/bump.h"
+#	endif
+#endif
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Interface to outside of MM
+%%% Bypass to internals of MM
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+#if MM_BYPASS_PLAN
+extern MM_Allocator* mm_bypass_allocator ;
+#endif
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Interface: allocation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
 // Allocate sz bytes, to be managed by GC
-// Pre: sz >= size required to admin forwarding pointers. This depends on the node encoding. For GBM: sz >= sizeof(header) + sizeof(word)
-static inline Ptr mm_itf_alloc( size_t sz ) {
-	return mm_mutator.allocator->alloc( mm_mutator.allocator, sz ) ;
+// Pre: sz >= size required to admin forwarding pointers. This depends on the node encoding. For GBM: sz >= sizeof(header) + sizeof(word).
+// If gcInfo == 0 means no gcInfo
+static inline Ptr mm_itf_alloc( size_t sz, Word gcInfo ) {
+#	if MM_BYPASS_PLAN
+#		if (MM_Cfg_Plan == MM_Cfg_Plan_SS)
+			return mm_allocator_Bump_Alloc( mm_bypass_allocator, sz, gcInfo ) ;
+#		endif
+#	else
+		return mm_mutator.allocator->alloc( mm_mutator.allocator, sz, gcInfo ) ;
+#	endif
+}
+
+// check that no more than maxAllocSize of allocator is requested, otherwise panic
+static inline Bool mm_itf_maxAllocCheck( size_t sz ) {
+	if ( mm_mutator.allocator->maxAllocSize && sz > mm_mutator.allocator->maxAllocSize ) {
+		rts_panic1_1( "allocator cannot allocate more than maxAllocSize", sz ) ;
+		return False ; // never reached
+	}
+	return True ;
+}
+
+// only ensure enough mem for alloc, assume no more than maxAllocSize is requested
+static inline void mm_itf_allocEnsure( size_t sz, Word gcInfo ) {
+#	if MM_BYPASS_PLAN
+#		if (MM_Cfg_Plan == MM_Cfg_Plan_SS)
+			mm_allocator_Bump_Ensure( mm_bypass_allocator, sz, gcInfo ) ;
+#		endif
+#	else
+		mm_mutator.allocator->ensure( mm_mutator.allocator, sz, gcInfo ) ;
+#	endif
+}
+
+// only alloc after enough mem is ensured
+static inline Ptr mm_itf_allocEnsured( size_t sz ) {
+#	if MM_BYPASS_PLAN
+#		if (MM_Cfg_Plan == MM_Cfg_Plan_SS)
+			return mm_allocator_Bump_AllocEnsured( mm_bypass_allocator, sz ) ;
+#		endif
+#	else
+		return mm_mutator.allocator->allocEnsured( mm_mutator.allocator, sz ) ;
+#	endif
 }
 
 static inline Ptr mm_itf_allocResident( size_t sz ) {
-	return mm_mutator.residentAllocator->alloc( mm_mutator.residentAllocator, sz ) ;
+	// printf( ">mm_itf_allocResident sz=%x\n", sz ) ; fflush(stdout);
+	Ptr p = mm_mutator.residentAllocator->alloc( mm_mutator.residentAllocator, sz, 0 ) ;
+	// printf( "<mm_itf_allocResident sz=%x p=%p\n", sz,p ) ; fflush(stdout);
+	return p ;
+}
+
+static inline void mm_itf_deallocResident( Ptr p ) {
+	mm_mutator.residentAllocator->dealloc( mm_mutator.residentAllocator, p ) ;
 }
 %%]
 
@@ -126,6 +198,10 @@ static inline void mm_itf_free( Ptr p ) {
 }
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Interface: root registration
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %%[8
 // registration of location of GC root
 static inline void mm_itf_registerGCRoot( WPtr p ) {
@@ -134,7 +210,7 @@ static inline void mm_itf_registerGCRoot( WPtr p ) {
 
 %%]
 static inline void mm_itf_registerGCRoots( WPtr p, Word n ) {
-	mm_Roots_Register1( (WPtr)(&n) ) ;
+	mm_Roots_RegisterN( p, n ) ;
 }
 
 %%[8
@@ -144,9 +220,83 @@ static inline int mm_itf_registerModule( Ptr m ) {
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Initialization
+%%% Interface: weak ptr
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[90
+#define	MM_Itf_WeakPtr_NoFinalizer		(-1)
+#define	MM_Itf_WeakPtr_BeingFinalized	(-2)		// delayed finalization
+%%]
+
+%%[90
+// interface to use as a primitive
+// assume: val /= 0
+static inline Word mm_itf_NewWeakPtr( Word key, Word val, Word finalizer ) {
+	return mm_weakPtr.newWeakPtr( &mm_weakPtr, key, val, finalizer ) ;
+}
+
+static inline Word mm_itf_DerefWeakPtr( Word wp ) {
+	return mm_weakPtr.derefWeakPtr( &mm_weakPtr, wp ) ;
+}
+
+static inline Word mm_itf_FinalizeWeakPtr( Word wp ) {
+	return mm_weakPtr.finalizeWeakPtr( &mm_weakPtr, wp ) ;
+}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Interface: finalization, internal case of weak ptr without value and C finalizer
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[90
+// register for finalization only, to be used by rts only
+static inline void mm_itf_registerFinalization( Word x, MM_WeakPtr_Finalizer finalizer ) {
+	mm_weakPtr.newWeakPtr( &mm_weakPtr, x, 0, (Word)finalizer ) ;
+}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Interface: GC
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+// trigger GC
+static inline Bool mm_itf_gc( ) {
+	return mm_plan.doGC( &mm_plan, True, 0 ) ;
+}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Tracing, debugging
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+#if TRACE
+// check (and panic) if n is pointing (dangling) to fresh mem
+static inline void mm_assert_IsNotDangling( Word x, char* msg ) {
+	// printf("mm_assert_IsNotDangling x=%x space(x)=%p\n",x,mm_Spaces_GetSpaceForAddress( x )) ;
+	if ( mm_plan.mutator->isMaintainedByGC( mm_plan.mutator, x ) && *((Word*)x) == MM_GC_FreshMem_Pattern_Word ) {
+		rts_panic2_1( "dangling pointer", msg, x ) ;
+	}
+}
+#else
+#define mm_assert_IsNotDangling(n,msg)
+#endif
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Initialization, finalization
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
 extern void mm_init() ;
+extern void mm_exit() ;
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% EOF
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+#endif /* __MM_MMITF_H__ */
 %%]

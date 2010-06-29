@@ -8,10 +8,10 @@
 #
 DEF_TYPE="normal"
 DEF_TARGET="all"
-DEF_HC="../../bin/8/ehc"
-DEF_EHC_FLAGS="-cexe --verbose=0 --optimise=0 -p-"
+DEF_HC="../../install/11/bin/ehc"
+DEF_EHC_FLAGS="-tC --verbose=3 --optimise=1 -p- --dump-core-stages=1 --dump-grin-stages=1 --gen-trace=0 --gen-trace-assign=0"
 DEF_GHC_FLAGS="-O2"
-DEF_EHC_PRELUDE_FILE="tools/Prelude8.hs"
+DEF_EHC_PRELUDE_FILE="tools/Prelude11.hs"
 
 # Haskell main file for each benchmark
 #
@@ -163,7 +163,7 @@ function run {
         ;;
     esac
     echo "Compiling $HC $FLAGS $EFLAGS $BENCHMARK_FILE"
-    $HC $FLAGS $EFLAGS $BENCHMARK_FILE >> $LOG_FILE 2>&1
+    $HC $FLAGS $EFLAGS $BENCHMARK_FILE >> $LOG_FILE 2> erroroutput.txt
     
     if [ $? -eq 0 ]; then
       BENCHMARK_DIR=${BENCHMARK_FILE%/*}

@@ -12,10 +12,13 @@
 %%[(8 codegen) import(Data.Maybe)
 %%]
 
+%%[(8 codegen) hs import({%{EH}AbstractCore})
+%%]
+
 %%[(20 codegen) export(pCModule,pCExpr)
 %%]
 
-%%[(94 codegen) import({%{EH}Foreign.Parser})
+%%[(90 codegen) import({%{EH}Foreign.Parser})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -36,7 +39,7 @@ pCTagOnly = pNUMBER *> pKeyTk "Tag" *> pCTag
 pCNumber :: CParser CExpr
 pCNumber
   =    pNUMBER
-       *> (   (   (CExpr_Int     . read) <$ pKeyTk "Int"
+       *> (   (   (acoreInt2     . read) <$ pKeyTk "Int"
               <|> (CExpr_Char    . head) <$ pKeyTk "Char"
               <|> (CExpr_String        ) <$ pKeyTk "String"
 %%[[97
@@ -47,15 +50,22 @@ pCNumber
           <|> CExpr_Tup <$ pKeyTk "Tag" <*> pCTag
           )
 
+pCExprAnn :: CParser (CExpr -> CExpr)
+pCExprAnn
+  =   CExpr_Ann
+      <$> (pDCOLON *> (CExprAnn_Ty <$> pTy)
+          )
+  <|> pSucceed id
+
 pCExprBase :: CParser CExpr
 pCExprBase
-  =   CExpr_Var <$> pDollNm
+  =   acoreVar <$> pDollNm
   <|> pCNumber
-  <|> pOPAREN *> pCExpr <* pCPAREN
+  <|> pOPAREN *> (pCExpr <**> pCExprAnn) <* pCPAREN
 
 pCExprBaseMeta :: CParser (CExpr,CMetaVal)
 pCExprBaseMeta
-  =   (\v m -> (CExpr_Var v, m))<$> pDollNm <*> pCMetaValOpt
+  =   (\v m -> (acoreVar v, m))<$> pDollNm <*> pCMetaValOpt
   <|> (\n   -> (n, CMetaVal_Val)  ) <$> pCNumber
   <|> pOPAREN *> pCExpr P.<+> pCMetaValOpt <* pCPAREN
 
@@ -78,8 +88,8 @@ pCExprSel = pCExprBase <??> pCExprSelSuffix
 
 pCExpr :: CParser CExpr
 pCExpr
-  =   mkCExprAppMeta <$> pCExprSel <*> pList pCExprSelMeta
-  <|> mkCExprLamMeta <$  pLAM <*> pList1 (pDollNm P.<+> pCMetaValOpt) <* pRARROW <*> pCExpr
+  =   acoreAppMeta   <$> pCExprSel <*> pList pCExprSelMeta
+  <|> acoreLamMeta   <$  pLAM <*> pList1 (pDollNm P.<+> pCMetaValOpt) <* pRARROW <*> pCExpr
   <|> CExpr_Let      <$  pLET <*> pMaybe CBindings_Plain id pCBindingsCateg <* pOCURLY <*> pListSep pSEMI pCBind <* pCCURLY <* pIN <*> pCExpr
   <|> CExpr_Case <$ pCASE <*> pCExpr <* pOF
       <* pOCURLY <*> pListSep pSEMI pCAlt <* pCCURLY
@@ -87,11 +97,14 @@ pCExpr
   where pCBindingsCateg
           =   CBindings_Rec    <$ pKeyTk "rec"
           <|> CBindings_FFI    <$ pFOREIGN
-%%[[94
+%%[[90
           <|> CBindings_FFE    <$ pKeyTk "foreignexport"
 %%]]
           <|> CBindings_Strict <$ pBANG
 
+
+pTrack          ::   CParser Track
+pTrack          =    (\x -> TrackVarApply x [])  <$> pDollNm     -- TODO: this is just a mockup, should do real track parsing
 
 pMbDollNm :: CParser (Maybe HsName)
 pMbDollNm
@@ -100,6 +113,16 @@ pMbDollNm
                       = Nothing
                       where ms = mbHNm n
           f x         = Just x
+
+pManyDollNm :: CParser [HsName]
+pManyDollNm
+  =  f <$> pList pDollNm
+    where -- for backward compatibility with libraries created before 20090917
+          f [n] | isJust ms && fromJust ms == "_"
+                      = []
+                      where ms = mbHNm n
+          f ns        = ns
+
 
 pCMetas :: CParser CMetas
 pCMetas
@@ -119,11 +142,10 @@ pCMetaBind
 pCMetaVal :: CParser CMetaVal
 pCMetaVal
   =   CMetaVal_Val          <$ pKeyTk "VAL"
-  <|> CMetaVal_Dict         <$ pKeyTk "DICT"  <*> ( Just <$ pOCURLY <*> pListSep pCOMMA (pInt <|> ((\_ n -> 0-n) <$> pMINUS <*> pInt)) <* pCCURLY
-                                                  <|> pSucceed Nothing
-                                                  )
-  <|> CMetaVal_DictClass    <$ pKeyTk "DICTCLASS"    <* pOCURLY <*> pListSep pCOMMA pMbDollNm <* pCCURLY
-  <|> CMetaVal_DictInstance <$ pKeyTk "DICTINSTANCE" <* pOCURLY <*> pListSep pCOMMA pMbDollNm <* pCCURLY
+  <|> CMetaVal_Dict         <$ pKeyTk "DICT"
+  <|> CMetaVal_DictClass    <$ pKeyTk "DICTCLASS"    <* pOCURLY <*> pListSep pCOMMA pTrack <* pCCURLY
+  <|> CMetaVal_DictInstance <$ pKeyTk "DICTINSTANCE" <* pOCURLY <*> pList1Sep pCOMMA pTrack <* pCCURLY
+  -- TODO: parse Track
 
 pCMetaValOpt :: CParser CMetaVal
 pCMetaValOpt
@@ -135,7 +157,7 @@ pCBind
     <**> (   (\e (n,m)        -> CBind_Bind n m e) <$> pCExpr
          <|> (\(c,_) s i t (n,m)  -> CBind_FFI c s (mkEnt c i) n t)
              <$ pFOREIGN <* pOCURLY <*> pFFIWay <* pCOMMA <*> pS <* pCOMMA <*> pS <* pCOMMA <*> pTy <* pCCURLY
-%%[[94
+%%[[90
          <|> (\(c,_) e en t (n,m) -> CBind_FFE n c (mkEnt c e) en t)
              <$ pKeyTk "foreignexport" <* pOCURLY <*> pFFIWay <* pCOMMA <*> pS <* pCOMMA <*> pDollNm <* pCOMMA <*> pTy <* pCCURLY
 %%]]
@@ -143,7 +165,7 @@ pCBind
   where pS = tokMkStr <$> pStringTk
 %%[[8
         mkEnt _ e = e
-%%][94
+%%][90
         mkEnt c e = fst $ parseForeignEnt c Nothing e
 %%]]
 
@@ -153,22 +175,20 @@ pCAlt
 
 pCPat :: CParser CPat
 pCPat
-  =   pDollNm
-      <**> (   pNUMBER
-				*> (   (   (\s n -> CPat_Int  n (read s)) <$ pKeyTk "Int"
-					   <|> (\s n -> CPat_Char n (head s)) <$ pKeyTk "Char"
-					   )
-				       <*> (tokMkStr <$> pStringTk)
-				   <|> (\t r bs n -> CPat_Con n t r bs)
-				       <$  pKeyTk "Tag" <*> pCTag
-				       <*  pOCURLY <*> pCPatRest <* pVBAR <*> pListSep pCOMMA pCPatBind <* pCCURLY
-				   )
-           <|> pSucceed CPat_Var
-           )
+  =   pNUMBER
+       *> (   (   (CPat_Int  . read) <$ pKeyTk "Int"
+              <|> (CPat_Char . head) <$ pKeyTk "Char"
+              )
+              <*> (tokMkStr <$> pStringTk)
+          <|> CPat_Con
+              <$  pKeyTk "Tag" <*> pCTag
+              <*  pOCURLY <*> pCPatRest <* pVBAR <*> pListSep pCOMMA pCPatFld <* pCCURLY
+          )
+  <|> CPat_Var <$> pDollNm
   where -- pRPatNm = RPatNmOrig <$> pDollNm <|> RPatNmUniq <$ pKeyTk "uniq" <*> pDollNm
         pCPatRest = pMaybe CPatRest_Empty CPatRest_Var pDollNm
 
-pCPatBind :: CParser CPatBind
-pCPatBind
-  = CPatBind_Bind <$ pOCURLY <*> pDollNm <* pCOMMA <*> pCExpr <* pCOMMA <*> pDollNm <* pCCURLY <* pEQUAL <*> pCPat
+pCPatFld :: CParser CPatFld
+pCPatFld
+  = CPatFld_Fld <$ pOCURLY <*> pDollNm <* pCOMMA <*> pCExpr <* pCCURLY <* pEQUAL <*> pDollNm -- pCPat
 %%]

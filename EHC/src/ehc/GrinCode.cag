@@ -7,7 +7,7 @@
 %%% Haskell importable interface to GRIN code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin) hs module {%{EH}GrinCode} import({%{EH}Base.Common},{%{EH}Base.Opts},EH.Util.Pretty)
+%%[(8 codegen grin) hs module {%{EH}GrinCode} import({%{EH}Base.Common},{%{EH}Base.Opts},EH.Util.Pretty,EH.Util.Utils)
 %%]
 
 %%[(8 codegen grin) hs import(qualified Data.Map as Map,qualified Data.Set as Set,qualified Data.List as List)
@@ -20,6 +20,9 @@
 %%]
 
 %%[(8 codegen grin) hs export(GrAGItf(..), GrModule(..))
+%%]
+
+%%[(8 codegen grin) hs export(GrType(..), GrTypeBase(..), GrTypeBaseL)
 %%]
 
 %%[(8 codegen grin) hs export(GrAlt(..), GrAltL, GrPatAlt(..), GrPatLam(..), GrVal(..), GrValL, GrTag(..), GrTagL, GrVar(..), GrVarL)
@@ -40,15 +43,28 @@
 %%[(10 codegen grin) hs export(mkGrPatRecSplit,mkGrPatConSplit)
 %%]
 
-%%[(94 codegen grin) hs import({%{EH}Foreign},{%{EH}Base.Target}) export(FFIWay(..),module {%{EH}Foreign})
+%%[(20 codegen grin) hs import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
+%%]
+%%[(20 codegen grin) hs import(Data.Typeable(Typeable), Data.Generics(Data))
+%%]
+
+%%[(90 codegen grin) hs import({%{EH}Foreign},{%{EH}Base.Target}) export(FFIWay(..),module {%{EH}Foreign})
 %%]
 
 %%[(99 codegen grin) hs export(GrFFIAnnot(..))
 %%]
 
 %%[(8 codegen grin) ag import({GrinCode/AbsSyn})
-DERIVING * - GrTag    : Show, Eq
-DERIVING GrTag        : Show
+DERIVING * - GrTag
+  : Show, Eq
+%%[[20
+  , Typeable, Data
+%%]]
+DERIVING GrTag
+  : Show
+%%[[20
+  , Typeable, Data
+%%]]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -100,10 +116,14 @@ mkGrTagAnn = GrTagAnn
 emptyGrTagAnn = mkGrTagAnn 0 0
 %%]
 
+%%[(20 codegen grin) hs
+deriving instance Typeable GrTagAnn
+deriving instance Data GrTagAnn
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Binding categories
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 
 %%[(8 codegen grin) hs export(GrBindAnn(..))
 
@@ -111,34 +131,34 @@ emptyGrTagAnn = mkGrTagAnn 0 0
 --   Normal:  normal binding
 --   Class:    binds a dictionary with default definitions for al class
 --      The list entries correspond 1-to-1 with the class members
---      They contain "Just" the name of the default implementation, or "Nothing" if there is none.
---      Note that the dictionary may also contain superclass pointers, but they are not recorded in the annotation.
 --   Instance: binds a dictionary with definitions form an instance declaration
---      The first element of the list is Just the name of the dictionary constructor.
---      The second element of the list is Just the name of the dictionary containing the default definitions.
+--      The first element of the list encodes the name of the dictionary constructor.
+--      The second element of the list encodes the name of the dictionary containing the default definitions.
 --      The remaining list entries correspond 1-to-1 with the class members
---      They contain "Just" the name of the instance implementation, or "Nothing" if it relies on the default implementation.
---   Overloaded: binds a function with dictionary parameters
---      The numbers specify which dictionaries are needed:
---            [-1] if the dictionary of which the function is a member is needed
---            [0]  if the first superclass is needed (for example, the Eq dictionary for a member of Ord)
---            [1]  if the second superclass is needed, etc.
---            [2,1] if the third superclass of the second superclass is needed
+--   Specialized: this is a specialization of another function
+--      The HsName is the name of the original function
+--      The Int is a sequence number that enumerates all specializations of an original function
+--      The list holds "Just" the argument that was specialized, or "Nothing" if it was not specialized
 
 data GrBindAnn
   = GrBindAnnNormal
-  | GrBindAnnClass    [Maybe HsName]
-  | GrBindAnnInstance [Maybe HsName]
-  | GrBindAnnOverloaded [[Int]]
+%%[[(9 codegen)
+  | GrBindAnnClass    [Track]
+  | GrBindAnnInstance [Track]
+%%]
   | GrBindAnnSpecialized HsName Int [Maybe HsName]
   deriving (Eq,Ord,Show)
 
 %%]
 
+%%[(20 codegen grin) hs
+deriving instance Typeable GrBindAnn
+deriving instance Data GrBindAnn
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Alternative categories
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 
 %%[(8 codegen grin) hs export(GrAltAnn(..))
 
@@ -155,6 +175,11 @@ data GrAltAnn
   | GrAltAnnReenter
   deriving (Eq,Ord,Show)
 
+%%]
+
+%%[(20 codegen grin) hs
+deriving instance Typeable GrAltAnn
+deriving instance Data GrAltAnn
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -216,12 +241,13 @@ fviMpFromList = fviMpFromList' FvUse_Other
 
 %%[(8 codegen grin) hs export(NmAlias(..),NmAliasMp, mkNmAliasMp)
 data NmAlias
- = NmAlias_Nm       !HsName                                                 -- name to name
- | NmAlias_Eval     !HsName                                                 -- name to evaluated name
- | NmAlias_Const    {naliNm :: !HsName, naliVal  :: !GrVal        }         -- name to single constant (other than name)
- | NmAlias_Grp      {naliNm :: !HsName, naliAlis :: ![NmAlias]    }         -- name to group of values, i.e. node constituents
- | NmAlias_Basic    {naliNm :: !HsName, naliAli  :: !NmAlias, naliAnnot :: BasicAnnot  }
-                                                                            -- name to basic value, i.e. node element used for FFI
+ = NmAlias_Nm       			!HsName                                                 -- name to name
+ | NmAlias_NmAfterSideEffect	!HsName                                                 -- name to name, but after an eval
+ | NmAlias_Eval     			!HsName                                                 -- name to evaluated name
+ | NmAlias_Const    			{naliNm :: !HsName, naliVal  :: !GrVal        }         -- name to single constant (other than name)
+ | NmAlias_Grp      			{naliNm :: !HsName, naliAlis :: ![NmAlias]    }         -- name to group of values, i.e. node constituents
+ | NmAlias_Basic    			{naliNm :: !HsName, naliAli  :: !NmAlias, naliAnnot :: BasicAnnot  }
+                                                                     		       	-- name to basic value, i.e. node element used for FFI
  | NmAlias_None
 
 type NmAliasMp = Map.Map HsName NmAlias
@@ -261,6 +287,9 @@ data GrInl
   | GrInl_CAF
       { inlGrExpr   :: !GrExpr
       }
+%%[[20
+  deriving (Typeable, Data)
+%%]]
 
 type GrInlMp = Map.Map HsName GrInl
 %%]
@@ -326,3 +355,280 @@ grModMerge mL
           = GrModule_Mod m2 (List.union g1 g2) (b1 ++ b2) (Map.union t1 t2)
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% How will name be evaluated, used in (e.g.) EvalElim, CommonWillEval
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+How a name will be used later on in code.
+Used by CommonWillEval to indicate evaluation (WillUseFor_Eval).
+EvalElim also must now whether a name is used as a field, or argument (WillUseFor_NodeField).
+
+%%[(8 codegen grin) hs export(WillUseFor(..),WillUseForMp,WillUseForS,willUseIntersection,willUseUnion,willUseFor,willUseForEval,willUseForNodeField)
+data WillUseFor
+  = WillUseFor_Eval
+  | WillUseFor_NodeField
+  deriving (Eq,Ord,Show)
+
+instance PP WillUseFor where
+  pp = pp . show
+
+type WillUseForS  = Set.Set WillUseFor
+type WillUseForMp = Map.Map HsName WillUseForS
+
+willUseUnion :: WillUseForMp -> WillUseForMp -> WillUseForMp
+willUseUnion = Map.unionWith Set.union
+
+willUseIntersection :: WillUseForMp -> WillUseForMp -> WillUseForMp
+willUseIntersection = Map.intersectionWith Set.intersection
+
+willUseFor :: HsName -> WillUseForMp -> WillUseForS
+willUseFor n m = maybe Set.empty id $ Map.lookup n m
+
+willUseForEval :: HsName -> WillUseForMp -> Bool
+willUseForEval n m = maybe False (WillUseFor_Eval `Set.member`) $ Map.lookup n m
+
+willUseForNodeField :: HsName -> WillUseForMp -> Bool
+willUseForNodeField n m = maybe False (WillUseFor_NodeField `Set.member`) $ Map.lookup n m
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Instances: Binary, Serialize
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(20 codegen grin) hs
+-- instance Serialize GrInl
+%%]
+
+%%[(20 codegen grin) hs
+instance Serialize GrInl where
+  sput (GrInl_Call a b) = sputWord8  0 >> sput a >> sput b
+  sput (GrInl_CAF  a  ) = sputWord8  1 >> sput a
+  sget = do t <- sgetWord8
+            case t of
+              0 -> liftM2 GrInl_Call sget sget
+              1 -> liftM  GrInl_CAF  sget
+
+instance Serialize GrExpr where
+  sput (GrExpr_Seq         a b c  ) = sputWord8 0  >> sput a >> sput b >> sput c
+  sput (GrExpr_Unit        a b    ) = sputWord8 1  >> sput a >> sput b
+  sput (GrExpr_UpdateUnit  a b    ) = sputWord8 2  >> sput a >> sput b
+  sput (GrExpr_Case        a b    ) = sputWord8 3  >> sput a >> sput b
+  sput (GrExpr_FetchNode   a      ) = sputWord8 4  >> sput a
+  sput (GrExpr_FetchUpdate a b    ) = sputWord8 5  >> sput a >> sput b
+  sput (GrExpr_FetchField  a b c  ) = sputWord8 6  >> sput a >> sput b >> sput c
+  sput (GrExpr_Store       a      ) = sputWord8 7  >> sput a
+  sput (GrExpr_Call        a b    ) = sputWord8 8  >> sput a >> sput b
+%%[[20
+  sput (GrExpr_FFI         a b    ) = sputWord8 9  >> sput a >> sput b
+%%][90
+  sput (GrExpr_FFI         a b c  ) = sputWord8 9  >> sput a >> sput b >> sput c
+%%][99
+  sput (GrExpr_FFI         a b c d) = sputWord8 9  >> sput a >> sput b >> sput c >> sput d
+%%]]
+  sput (GrExpr_Eval        a      ) = sputWord8 10 >> sput a
+  sput (GrExpr_App         a b    ) = sputWord8 11 >> sput a >> sput b
+  sput _                            = panic "GrinCode.Serialize.GrExpr.sput"		-- unused are unimplemented
+  sget = do t <- sgetWord8
+            case t of
+              0  -> liftM3 GrExpr_Seq          sget sget sget
+              1  -> liftM2 GrExpr_Unit         sget sget
+              2  -> liftM2 GrExpr_UpdateUnit   sget sget
+              3  -> liftM2 GrExpr_Case         sget sget
+              4  -> liftM  GrExpr_FetchNode    sget
+              5  -> liftM2 GrExpr_FetchUpdate  sget sget
+              6  -> liftM3 GrExpr_FetchField   sget sget sget
+              7  -> liftM  GrExpr_Store        sget
+              8  -> liftM2 GrExpr_Call         sget sget
+%%[[20
+              9  -> liftM2 GrExpr_FFI          sget sget
+%%][90
+              9  -> liftM3 GrExpr_FFI          sget sget sget
+%%][99
+              9  -> liftM4 GrExpr_FFI          sget sget sget sget
+%%]]
+              10 -> liftM  GrExpr_Eval         sget
+              11 -> liftM2 GrExpr_App          sget sget
+              _  -> panic "GrinCode.Serialize.GrExpr.sget"		-- unused are unimplemented
+
+instance Serialize GrType where
+  sput (GrType_None     ) = sputWord8 0
+  sput (GrType_Arrow a b) = sputWord8 1  >> sput a >> sput b
+  sget = do t <- sgetWord8
+            case t of
+              0  -> return GrType_None
+              1  -> liftM2 GrType_Arrow         sget sget
+
+instance Serialize GrTypeBase where
+  sput (GrTypeBase_Node     ) = sputWord8 0
+  sput (GrTypeBase_Pointer  ) = sputWord8 1
+  sget = do t <- sgetWord8
+            case t of
+              0  -> return GrTypeBase_Node
+              1  -> return GrTypeBase_Pointer
+
+instance Serialize GrAlt where
+  sput (GrAlt_Alt          a b c  ) = sputWord8 0  >> sput a >> sput b >> sput c
+  sget = do t <- sgetWord8
+            case t of
+              0  -> liftM3 GrAlt_Alt          sget sget sget
+
+instance Serialize GrTag where
+  sput (GrTag_Con         a b c  ) = sputWord8 0  >> sput a >> sput b >> sput c
+  sput (GrTag_Fun         a      ) = sputWord8 1  >> sput a
+  sput (GrTag_PApp        a b    ) = sputWord8 2  >> sput a >> sput b
+  sput (GrTag_App         a      ) = sputWord8 3  >> sput a
+  sput (GrTag_Unboxed            ) = sputWord8 4
+  sput (GrTag_Hole               ) = sputWord8 5
+  sput (GrTag_Rec                ) = sputWord8 6
+  sget = do t <- sgetWord8
+            case t of
+              0  -> liftM3 GrTag_Con          sget sget sget
+              1  -> liftM  GrTag_Fun          sget
+              2  -> liftM2 GrTag_PApp         sget sget
+              3  -> liftM  GrTag_App          sget
+              4  -> return GrTag_Unboxed
+              5  -> return GrTag_Hole
+              6  -> return GrTag_Rec
+
+instance Serialize GrPatLam where
+  sput (GrPatLam_Empty              ) = sputWord8 0
+  sput (GrPatLam_Var         a      ) = sputWord8 1  >> sput a
+  sput (GrPatLam_VarNode     a      ) = sputWord8 2  >> sput a
+  sput (GrPatLam_BasicNode   a b    ) = sputWord8 3  >> sput a >> sput b
+  sput (GrPatLam_EnumNode    a      ) = sputWord8 4  >> sput a
+  sput (GrPatLam_PtrNode     a      ) = sputWord8 5  >> sput a
+  sput (GrPatLam_OpaqueNode  a      ) = sputWord8 6  >> sput a
+  sput (GrPatLam_BasicAnnot  a b    ) = sputWord8 7  >> sput a >> sput b
+  sput (GrPatLam_EnumAnnot   a b    ) = sputWord8 8  >> sput a >> sput b
+  sput (GrPatLam_PtrAnnot    a b    ) = sputWord8 9  >> sput a >> sput b
+  sput (GrPatLam_OpaqueAnnot a      ) = sputWord8 10 >> sput a
+  sget = do t <- sgetWord8
+            case t of
+              0  -> return GrPatLam_Empty
+              1  -> liftM  GrPatLam_Var          sget
+              2  -> liftM  GrPatLam_VarNode      sget
+              3  -> liftM2 GrPatLam_BasicNode    sget sget
+              4  -> liftM  GrPatLam_EnumNode     sget
+              5  -> liftM  GrPatLam_PtrNode      sget
+              6  -> liftM  GrPatLam_OpaqueNode   sget
+              7  -> liftM2 GrPatLam_BasicAnnot   sget sget
+              8  -> liftM2 GrPatLam_EnumAnnot    sget sget
+              9  -> liftM2 GrPatLam_PtrAnnot     sget sget
+              10 -> liftM  GrPatLam_OpaqueAnnot  sget
+
+instance Serialize GrVal where
+  sput (GrVal_Empty              ) = sputWord8 0
+  sput (GrVal_Var         a      ) = sputWord8 1  >> sput a
+  sput (GrVal_VarNode     a      ) = sputWord8 2  >> sput a
+  sput (GrVal_BasicNode   a b    ) = sputWord8 3  >> sput a >> sput b
+  sput (GrVal_EnumNode    a      ) = sputWord8 4  >> sput a
+  sput (GrVal_PtrNode     a      ) = sputWord8 5  >> sput a
+  sput (GrVal_LitInt      a      ) = sputWord8 6  >> sput a
+  sput (GrVal_LitStr      a      ) = sputWord8 7  >> sput a
+  sput (GrVal_Tag         a      ) = sputWord8 8  >> sput a
+  sput (GrVal_Node        a b    ) = sputWord8 9  >> sput a >> sput b
+  sput (GrVal_OpaqueNode  a      ) = sputWord8 10 >> sput a
+  sput _                           = panic "GrinCode.Serialize.GrVal.sput"		-- unused are unimplemented
+  sget = do t <- sgetWord8
+            case t of
+              0  -> return GrVal_Empty
+              1  -> liftM  GrVal_Var          sget
+              2  -> liftM  GrVal_VarNode      sget
+              3  -> liftM2 GrVal_BasicNode    sget sget
+              4  -> liftM  GrVal_EnumNode     sget
+              5  -> liftM  GrVal_PtrNode      sget
+              6  -> liftM  GrVal_LitInt       sget
+              7  -> liftM  GrVal_LitStr       sget
+              8  -> liftM  GrVal_Tag          sget
+              9  -> liftM2 GrVal_Node         sget sget
+              10 -> liftM  GrVal_OpaqueNode   sget
+              _  -> panic "GrinCode.Serialize.GrVal.sget"		-- unused are unimplemented
+
+instance Serialize GrPatAlt where
+  sput (GrPatAlt_LitInt      a      ) = sputWord8 0  >> sput a
+  sput (GrPatAlt_Tag         a      ) = sputWord8 1  >> sput a
+  sput (GrPatAlt_Node        a b    ) = sputWord8 2  >> sput a >> sput b
+  sput (GrPatAlt_Otherwise          ) = sputWord8 3
+  sput _                              = panic "GrinCode.Serialize.GrPatAlt.sput"		-- unused are unimplemented
+  sget = do t <- sgetWord8
+            case t of
+              0  -> liftM  GrPatAlt_LitInt       sget
+              1  -> liftM  GrPatAlt_Tag          sget
+              2  -> liftM2 GrPatAlt_Node         sget sget
+              3  -> return GrPatAlt_Otherwise
+              _  -> panic "GrinCode.Serialize.GrPatAlt.sget"		-- unused are unimplemented
+
+instance Serialize GrVar where
+  sput (GrVar_Var           a      ) = sputWord8 0  >> sput a
+  sput (GrVar_KnownTag      a      ) = sputWord8 1  >> sput a
+  sput (GrVar_Ignore               ) = sputWord8 2
+  sget = do t <- sgetWord8
+            case t of
+              0  -> liftM  GrVar_Var         sget
+              1  -> liftM  GrVar_KnownTag    sget
+              2  -> return GrVar_Ignore
+
+instance Serialize GrAltAnn where
+  sput (GrAltAnnNormal              ) = sputWord8 0
+  sput (GrAltAnnIdent               ) = sputWord8 1
+  sput (GrAltAnnCalling      a b    ) = sputWord8 2  >> sput a >> sput b
+  sput (GrAltAnnReenter             ) = sputWord8 3
+  sget = do t <- sgetWord8
+            case t of
+              0  -> return GrAltAnnNormal
+              1  -> return GrAltAnnIdent
+              2  -> liftM2 GrAltAnnCalling      sget sget
+              3  -> return GrAltAnnReenter
+
+instance Serialize GrTagAnn where
+  sput (GrTagAnn a b) = sput a >> sput b
+  sget = liftM2 GrTagAnn sget sget
+
+instance Serialize GrBind where
+  sput (GrBind_Bind  a b c d) = sputWord8 0  >> sput a >> sput b >> sput c >> sput d
+  sput (GrBind_Arity a b    ) = sputWord8 1  >> sput a >> sput b
+  sput (GrBind_Rec   a      ) = sputWord8 2  >> sput a
+  sget 
+    = do t <- sgetWord8
+         case t of
+           0 -> liftM4 GrBind_Bind  sget sget sget sget
+           1 -> liftM2 GrBind_Arity sget sget
+           2 -> liftM  GrBind_Rec   sget
+
+instance Serialize GrModule where
+  sput (GrModule_Mod  a b c d) = sput a >> sput b >> sput c >> sput d
+  sget = liftM4 GrModule_Mod  sget sget sget sget
+
+instance Serialize GrGlobal where
+  sput (GrGlobal_Global a b) = sputWord8 0  >> sput a >> sput b
+  sget
+    = do t <- sgetWord8
+         case t of
+           0  -> liftM2 GrGlobal_Global sget sget
+
+
+
+%%]
+
+%%[(99 codegen grin) hs
+instance Serialize GrFFIAnnot where
+  sput (GrFFIAnnot_IsResEval a) = sputWord8 0  >> sput a 
+  sget = do t <- sgetWord8
+            case t of
+              0  -> liftM GrFFIAnnot_IsResEval sget
+%%]
+
+%%[(20 codegen grin) hs
+instance Serialize GrBindAnn where
+  sput (GrBindAnnNormal           ) = sputWord8 0
+  sput (GrBindAnnClass       a    ) = sputWord8 1 >> sput a
+  sput (GrBindAnnInstance    a    ) = sputWord8 2 >> sput a
+  sput (GrBindAnnSpecialized a b c) = sputWord8 4 >> sput a >> sput b >> sput c
+  sget
+    = do t <- sgetWord8
+         case t of
+           0 -> return GrBindAnnNormal
+           1 -> liftM  GrBindAnnClass         sget
+           2 -> liftM  GrBindAnnInstance      sget
+           4 -> liftM3 GrBindAnnSpecialized   sget sget sget
+%%]

@@ -13,7 +13,7 @@
 %%[(8 codegen java) hs import(Data.Maybe)
 %%]
 
-%%[(94 codegen java) hs import({%{EH}Foreign.Extract})
+%%[(90 codegen java) hs import({%{EH}Foreign.Extract})
 %%]
 
 %%[(8 codegen java).WRAPPER ag import({Core/CommonLev},{Core/CommonToXX},{Core/AbsSyn})
@@ -197,7 +197,7 @@ SEM CExpr
   												       Nothing                -> jvApp f as
   | Let         loc         .   jvBinds     =   case @categ of
                                                     CBindings_FFI     -> @binds.jvSrc
-%%[[94
+%%[[90
                                                     CBindings_FFE     -> @binds.jvSrc
 %%]]
                                                     CBindings_Plain   -> @binds.jvSrc
@@ -229,6 +229,7 @@ SEM CExpr
   | TupDel      loc         .   jvSrc       =   empty
   | TupIns      loc         .   jvSrc       =   jvApp (jvNmPP (ctag (jvInsNm) (\_ _ _ _ _ -> jvIns1Nm) @tag)) [@expr.jvSrc,@offset.jvSrc,@fldExpr.jvSrc]
   | TupUpd      loc         .   jvSrc       =   jvApp (jvNmPP (ctag (jvUpdNm) (\_ _ _ _ _ -> jvUpd1Nm) @tag)) [@expr.jvSrc,@offset.jvSrc,@fldExpr.jvSrc]
+  | Ann     	loc			.	jvSrc		=	@expr.jvSrc
   | CaseAltFail loc			.	jvSrc		=	empty -- cannot happen
 
 SEM CBind
@@ -237,22 +238,14 @@ SEM CBind
                             .   jvSrc       =   jvBind "Object" @nm @expr.jvSrc
                             .   jvSrcStrict =   jvBind "Object" @nm (jvForceEval @expr.jvSrc)
   | FFI         lhs         .   jvSrc       =   jvBind "Object" @nm . maybe (jvNmPP hsnUnknown) (jvNmPP) . lookup @impEntNm $ primToJavaMp
-%%[[94
+%%[[90
   | FFE         lhs         .   jvSrc       =   pp "ffe not implemented"
 %%]]
 
 ATTR AllAlt AllPat [ jvCaseScrutinee: HsName  jvCaseResult: HsName | | ]
-ATTR CPat [ | | fldNm: HsName ]
 
-SEM CPat
-  | Var Con Int Char
-%%[[97
-    BoolExpr
-%%]]
-                lhs         .   fldNm       =   @pnm
-
-SEM CPatBind
-  | Bind        lhs         .   jvSrc       =   jvBind  "Object" @pat.fldNm
+SEM CPatFld
+  | Fld         lhs         .   jvSrc       =   jvBind  "Object" @fldNm
                                                         (jvInx  (jvNmPP @lhs.jvCaseScrutinee)
                                                                 (jvForceInt @offset.jvSrc >|< (if @lhs.tagSz == 0 then empty else ("+" >|< pp @lhs.tagSz))))
 
@@ -293,8 +286,8 @@ SEM CExpr
 SEM CBind
   | Bind        expr        .   jvBuiltin   =   empty
 
-SEM CPatBind
-  | Bind        offset      .   jvBuiltin   =   empty
+SEM CPatFld
+  | Fld         offset      .   jvBuiltin   =   empty
 
 SEM CAlt
   | Alt         expr        .   jvBuiltin   =   empty
@@ -317,7 +310,7 @@ SEM CExpr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen java)
-ATTR AllPatBind [ tagSz: Int | | ]
+ATTR AllPatFld [ tagSz: Int | | ]
 ATTR CPatL CPat AllAlt [ | | tagSz USE {`const`} {0}: Int ]
 
 SEM CPat
@@ -381,8 +374,8 @@ SEM CAlt
 SEM CBind
   | Bind        expr        .   mbLamNm     =   Just @nm
 
-SEM CPatBind
-  | Bind        offset      .   mbLamNm     =   Nothing
+SEM CPatFld
+  | Fld         offset      .   mbLamNm     =   Nothing
 
 SEM CModule
   | Mod         expr        .   mbLamNm     =   Nothing

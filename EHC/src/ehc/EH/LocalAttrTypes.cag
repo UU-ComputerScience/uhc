@@ -8,18 +8,26 @@ Signatures for local attributes
 SEM *
   | *
 		loc.foL		 					: {[FIOut]}
+		loc.generDataTyAndConNmL		: {[HsName]}
+		loc.generForFitsInL				: {[GenerForFitsIn]}
+		loc.doPredAmbigSplit			: {TQOGam -> [CHRPredOcc] -> ([CHRPredOcc],[CHRPredOcc])}
+		loc.generInstInfoL				: {[GenerDataInstInfo]}
+		loc.generInstDeclL				: {[CHRScopedInstanceDecl Pred RedHowAnnotation PredScope]}
 		loc.gathTvKiVarMp2				: {VarMp}
 		loc.bodyTyKiVarMp2				: {VarMp}
 		loc.tyVarMpDeclsL0				: {VarMp}
 		loc.tyVarMpDeclsL01				: {VarMp}
+		loc.gathTvKiVarMp1				: {VarMp}
 		loc.tyVarMpDeclsQuant			: {VarMp}
 		loc.chrSolve1SimpTyVarMp		: {VarMp}
 		loc.exTyKiVarMp2				: {VarMp}
 		loc.quTyKiVarMp					: {VarMp}
 		loc.doFit	 					: DoFit
 		loc.altsFiOpts 					: FIOpts
+		loc.exprFiOpts 					: FIOpts
 		loc.arity  						: Int
 		loc.arityErrs  					: ErrL
+		loc.chrSolve1RemPrOccL 			: {[CHRPredOcc]}
 		loc.cannotProveCnstrMp 			: CHRPredOccCnstrMp
 		loc.cannotRes1CnstrMp  			: CHRPredOccCnstrMp
 		loc.chrFIIn  					: FIIn
@@ -43,11 +51,13 @@ SEM *
 		loc.clsAllFldL 					: {[Assoc HsName Ty]}
 		loc.clsFldL 					: {[Assoc HsName Ty]}
 		loc.clsNm 						: HsName
+		loc.dataDictNm 					: HsName
 		loc.clsTyRec 					: Ty
 		loc.dataConTy	 				: Ty
 		loc.dataConTyAsVar 				: Ty
 		loc.clsTySigGam 				: ValGam
 		loc.quValGam_qu_ 				: ValGam
+		loc.bodyValGam 					: ValGam
 		loc.constTy 					: Ty
 		loc.cpNm  						: RPatNm
 		loc.ctxtPrTyFixL 				: {[Ty]}
@@ -59,17 +69,24 @@ SEM *
 		loc.cycTyVarMp_l  				: VarMp
 		loc.cycVarMp  					: VarMp
 		loc.quTyVarMp  					: VarMp
+		loc.gathBodyDataGam  			: DataGam
 		loc.dataAltTy 					: Ty
 		loc.dataConTy1  				: Ty
 		loc.polArgVar	  				: Ty
 		loc.dataDictTag 				: CTag
 		loc.dataTkgi 					: TyKiGamInfo
 		loc.dataTy 						: Ty
+		loc.dataKi 						: Ty
 		loc.exprKnTy 					: Ty
 		loc.derivDataDGI 				: DataGamInfo
 		loc.derivDataTGI 				: TyGamInfo
 		loc.derivHdDataTy 				: Ty
 		loc.derivHdPrTyCon 				: Ty
+		loc.derivDataTyArgs 			: TyL
+		loc.derivDataTyNm	 			: HsName
+		loc.derivArity	 				: Int
+		loc.derivTruncTailArity	 		: Int
+		loc.generTySynProjL  			: {[GenerTySynProjInfo]}
 		loc.dfErrs  					: ErrL
 		loc.dgi 						: DataGamInfo
 		loc.dictNm  					: HsName
@@ -83,11 +100,12 @@ SEM *
 		loc.extTy 						: Ty
 		loc.fe  						: FIEnv
 		loc.finGathPolGam  				: PolGam
+		loc.finGathPolGam_extra  		: PolGam
 		loc.fiOpts 						: FIOpts
 		loc.fixPrTyVarMp  				: VarMp
 		loc.bodyVarMp2  				: VarMp
 		loc.fldL  						: {[HsName]}
-		loc.fldS  						: {Set.Set HsName}
+		loc.fldS  						: HsNameS
 		loc.fo_  						: FIOut
 		loc.fo_fitDown 					: FIOut
 		loc.fo_fitF_  					: FIOut
@@ -105,13 +123,19 @@ SEM *
 		loc.gSubsTyKiGam 				: TyKiGam
 		loc.lQuTyKiGam_qu 				: TyKiGam
 		loc.lQuTyKiGam_ex 				: TyKiGam
+		loc.lQuTyKiGam_ex_extra 		: TyKiGam
 		loc.lQuTyKiGam_ex_subst 		: TyKiGam
 		loc.gSubsValGam_  				: ValGam
+		loc.gathValGam  				: ValGam
+		loc.finValGam		  			: ValGam
+		loc.finValGamDecls	  			: ValGam
 		loc.gTy 						: Ty
 		loc.gTyTvL  					: {[TyVarId]}
+		loc.dataTyVarIdL  				: {[TyVarId]}
         loc.dataConProdTy       		: Ty
 		loc.dataConTyFv  				: {[TyVarId]}
-		loc.gTyTvS  					: {Set.Set TyVarId}
+		loc.gTyTvS  					: TyVarIdS
+		loc.noLetQuantTyVarIdS  		: TyVarIdS
 		loc.gUniq  						: UID
 		loc.gUniq2  					: UID
 		loc.gUniq3  					: UID
@@ -149,8 +173,10 @@ SEM *
 		loc.knTyL  						: TyL
 		loc.lClGam  					: ClGam
 		loc.lClGamNoDups  				: ClGam
+		loc.forDeclsClGam  				: ClGam
 		loc.lexLev  					: Int
 		loc.lQuTyGam  					: TyGam
+		loc.tyGam_l_extra  				: TyGam
 		loc.lQuTyKiGam 					: TyKiGam
 		loc.lSubsPolGam1  				: PolGam
 		loc.lSubsTyKiGam 				: TyKiGam
@@ -179,7 +205,7 @@ SEM *
 		loc.prOccL  					: {[PredOcc]}
 		loc.prTyFix  					: Ty
 		loc.prUid  						: PredOccId
-		loc.quantPrOccL 				: {[PredOcc]}
+		loc.toQuantOverPrOccL 			: {[PredOcc]}
 		loc.quValGam_ex_ 				: ValGam
 		loc.quValGam_ex_subst 			: ValGam
 		loc.range	  					: Range
@@ -198,8 +224,9 @@ SEM *
 		loc.toProveElsewhereCnstrMp		: CHRPredOccCnstrMp
 		loc.toProveHereCnstrMp 			: CHRPredOccCnstrMp
 		loc.toProveHereCnstrMpCanon 	: CHRPredOccCnstrMp
-		loc.tqoGam  					: {Gam HsName TyMergePredOut}
+		loc.tqoGam  					: TQOGam
 		loc.tv   						: UID
+		loc.tvarv  						: Ty
 		loc.tvarv1_  					: Ty
 		loc.tvarv2_  					: Ty
 		loc.ty 							: Ty
@@ -218,6 +245,7 @@ SEM *
 		loc.tyVarMp_p_  				: VarMp
 		loc.tyVarMpApp					: VarMp
 		loc.unfixPrTyVarMp  			: VarMp
+		loc.metaPrTyVarMp	  			: VarMp
 		loc.uniq2  						: UID
 		loc.uniq3  						: UID
 		loc.uniq4  						: UID

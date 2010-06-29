@@ -90,7 +90,7 @@ ruler-clean:
 ###########################################################################################
 
 $(RULER2_BLD_EXEC): $(RULER2_AG_ALL_MAIN_DRV_HS) $(RULER2_HS_ALL_DRV_HS) $(RULER2_CHS_UTIL_DRV_HS) $(LIB_EH_UTIL_INS_FLAG)
-	$(GHC) --make $(GHC_OPTS) $(GHC_OPTS_WHEN_EHC) -package $(LIB_EH_UTIL_PKG_NAME) -i$(RULER2_BLD_PREFIX) $(RULER2_BLD_PREFIX)$(RULER2_MAIN).hs -o $@
+	$(GHC) --make $(GHC_OPTS) $(GHC_OPTS_WHEN_EHC) -ignore-package uulib-debug -package $(LIB_EH_UTIL_PKG_NAME) -i$(RULER2_BLD_PREFIX) $(RULER2_BLD_PREFIX)$(RULER2_MAIN).hs -o $@
 	$(STRIP) $@
 
 $(RULER2_BLD_PREFIX)%.ag: $(SRC_RULER2_PREFIX)%.cag $(SHUFFLE)

@@ -1,3 +1,8 @@
+%%[8
+#ifndef __PRIMINLINE_H__
+#define __PRIMINLINE_H__
+%%]
+
 Some C functions are overloaded for various numeric C types:
 - arithmetic
 - minimum and maximum values of type
@@ -83,10 +88,20 @@ extern PrimTypeCWord 		 primRotateRight 	## PrimTypeName( PrimTypeC x, Word y ) 
 %%]
 
 %%[99
+
+#ifdef __UHC_TARGET_C__
+
+#define PRIMS_STORABLE_INTERFACE(PrimTypeName,PrimTypeC) 											\
+extern PrimTypeC  primRead ## PrimTypeName ## OffAddr( Word ptr, Word off ) ;					\
+extern Word       primWrite ## PrimTypeName ## OffAddr( Word ptr, Word off, Word val ) ;	\
+
+#else
+
 #define PRIMS_STORABLE_INTERFACE(PrimTypeName,PrimTypeC) 											\
 extern PrimTypeC  primRead ## PrimTypeName ## OffAddr( PrimTypeC* ptr, Word off ) ;					\
 extern Word       primWrite ## PrimTypeName ## OffAddr( PrimTypeC* ptr, Word off, PrimTypeC val ) ;	\
 
+#endif
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -346,6 +361,23 @@ PRIM PrimTypeCWord  primRotateRight ## PrimTypeName( PrimTypeC x, Word y ) {				
 
 
 %%[99
+
+#ifdef __UHC_TARGET_C__
+
+#define PRIMS_STORABLE_CODE(PrimTypeName,PrimTypeC) 																	\
+																														\
+PRIM PrimTypeC  primRead ## PrimTypeName ## OffAddr( Word ptr, Word off ) {										\
+	return ((PrimTypeC*)ptr)[ off ] ;																									\
+}																														\
+																														\
+PRIM Word  primWrite ## PrimTypeName ## OffAddr( Word ptr, Word off, Word val ) {							\
+	((PrimTypeC*)ptr)[ off ] = (PrimTypeC) val ;																									\
+	return (Word)RTS_Unit ;																								\
+}																														\
+
+
+#else
+
 #define PRIMS_STORABLE_CODE(PrimTypeName,PrimTypeC) 																	\
 																														\
 PRIM PrimTypeC  primRead ## PrimTypeName ## OffAddr( PrimTypeC* ptr, Word off ) {										\
@@ -357,5 +389,14 @@ PRIM Word  primWrite ## PrimTypeName ## OffAddr( PrimTypeC* ptr, Word off, PrimT
 	return (Word)RTS_Unit ;																								\
 }																														\
 
+#endif
+
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% EOF
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+#endif /* __PRIMINLINE_H__ */
+%%]

@@ -11,7 +11,10 @@
 %%[(8 codegen) hs import(EH.Util.Pretty, EH.Util.Utils)
 %%]
 
-%%[(8 codegen) hs import(qualified {%{EH}Config} as Cfg)
+%%[(8 codegen) hs import(qualified {%{EH}Config} as Cfg, {%{EH}Base.Bits})
+%%]
+
+%%[(20 codegen) hs import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -29,6 +32,11 @@ data BasicSize
   | BasicSize_Double
 %%]]
   deriving (Eq,Ord,Enum)
+%%]
+
+%%[(20 codegen) hs
+deriving instance Typeable BasicSize
+deriving instance Data BasicSize
 %%]
 
 The Show of BasicSize should returns strings of which the first letter is unique for the type.
@@ -83,6 +91,40 @@ basicSizeInBytes BasicSize_Word64  = 8
 basicSizeInBytes BasicSize_Float   = Cfg.sizeofFloat
 basicSizeInBytes BasicSize_Double  = Cfg.sizeofDouble
 %%]]
+%%]
+
+%%[(8 codegen) hs export(basicSizeInWords)
+basicSizeInWords :: BasicSize -> Int
+basicSizeInWords sz = entierLogUpShrBy Cfg.sizeofWordInLog (basicSizeInBytes sz)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% GC permission
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Permitted (May), not permitted (Not), or required (Must).
+Currently only Not is used, intended for GC which traces/copies live ptrs and must know what not to inspect.
+
+%%[(8 codegen grin) hs export(GCPermit(..))
+data GCPermit
+  = GCPermit_Not
+  | GCPermit_May
+  | GCPermit_Must
+  deriving (Eq,Ord)
+
+instance Show GCPermit where
+  show GCPermit_Not  = "GC-"
+  show GCPermit_May  = "GC-+"
+  show GCPermit_Must = "GC+"
+
+instance PP GCPermit where
+  pp = pp . show
+%%]
+
+%%[(8 codegen) hs export(basicSizeGCPermit)
+-- a value about which we know it is of BasicSize corresponds to unboxed, hence no GC tracing
+basicSizeGCPermit :: BasicSize -> GCPermit
+basicSizeGCPermit _ = GCPermit_Not
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -202,6 +244,11 @@ data BasicTy
   deriving (Eq,Ord,Enum)
 %%]
 
+%%[(20 codegen) hs
+deriving instance Typeable BasicTy
+deriving instance Data BasicTy
+%%]
+
 The Show of BasicTy should returns strings of which the first letter is unique for the type.
 When used to pass to code, only this first letter is used.
 
@@ -228,6 +275,16 @@ instance PP BasicTy where
   pp = pp . show
 %%]
 
+%%[(8 codegen) hs
+-- a value about which we know it is of BasicSize corresponds to unboxed, hence no GC tracing
+btGCPermit :: BasicTy -> GCPermit
+%%[[97
+btGCPermit BasicTy_Float  = GCPermit_Not
+btGCPermit BasicTy_Double = GCPermit_Not
+%%]]
+btGCPermit _              = GCPermit_Must
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% BasicAnnot
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -245,9 +302,17 @@ defaultGrinBasicAnnot :: BasicAnnot
 defaultGrinBasicAnnot = BasicAnnot_Size basicSizeWord BasicTy_Word
 %%]
 
-%%[(8 codegen grin) hs export(grinBasicAnnotSizeInBytes)
+%%[(20 codegen) hs
+deriving instance Typeable BasicAnnot
+deriving instance Data BasicAnnot
+%%]
+
+%%[(8 codegen grin) hs export(grinBasicAnnotSizeInBytes,grinBasicAnnotSizeInWords)
 grinBasicAnnotSizeInBytes :: BasicAnnot -> Int
 grinBasicAnnotSizeInBytes = basicSizeInBytes . grinBasicAnnotSize
+
+grinBasicAnnotSizeInWords :: BasicAnnot -> Int
+grinBasicAnnotSizeInWords = basicSizeInWords . grinBasicAnnotSize
 %%]
 
 %%[(8 codegen grin) hs export(grinBasicAnnotSize)
@@ -258,13 +323,13 @@ grinBasicAnnotSize (BasicAnnot_ToTaggedPtr   _ t) = btBasicSize t
 grinBasicAnnotSize (BasicAnnot_Dflt             ) = basicSizeWord
 %%]
 
-%%[(8 codegen grin) hs
+%%[(8 codegen grin) hs export(grinBasicAnnotGCPermit)
+grinBasicAnnotGCPermit :: BasicAnnot -> GCPermit
+grinBasicAnnotGCPermit (BasicAnnot_Size          _ t) = btGCPermit t
+grinBasicAnnotGCPermit (BasicAnnot_FromTaggedPtr _ t) = GCPermit_Not		-- is unboxed
+grinBasicAnnotGCPermit (BasicAnnot_ToTaggedPtr   _ t) = GCPermit_May		-- freshly tagged, no GC will ever be necessary, but GC checks for it anyway
+grinBasicAnnotGCPermit (BasicAnnot_Dflt             ) = GCPermit_Must
 %%]
-grinBasicAnnotTy :: BasicAnnot -> BasicTy
-grinBasicAnnotTy (BasicAnnot_Size          _ t) = t
-grinBasicAnnotTy (BasicAnnot_FromTaggedPtr _ t) = t
-grinBasicAnnotTy (BasicAnnot_ToTaggedPtr   _ t) = t
-grinBasicAnnotTy (BasicAnnot_Dflt             ) = BasicTy_Word
 
 %%[(8 codegen) hs
 instance PP BasicAnnot where
@@ -274,3 +339,32 @@ instance PP BasicAnnot where
   pp (BasicAnnot_Dflt             ) = pp "annotdflt"
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Instances: Binary
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(20 codegen) hs
+instance Binary BasicAnnot where
+  put (BasicAnnot_Size          s t) = putWord8 0 >> put s >> put t
+  put (BasicAnnot_FromTaggedPtr b t) = putWord8 1 >> put b >> put t
+  put (BasicAnnot_ToTaggedPtr   b t) = putWord8 2 >> put b >> put t
+  put (BasicAnnot_Dflt             ) = putWord8 3
+  get = do t <- getWord8
+           case t of
+             0 -> liftM2 BasicAnnot_Size get get
+             1 -> liftM2 BasicAnnot_FromTaggedPtr get get
+             2 -> liftM2 BasicAnnot_ToTaggedPtr get get
+             3 -> return BasicAnnot_Dflt
+
+instance Serialize BasicAnnot where
+  sput = sputPlain
+  sget = sgetPlain
+
+instance Binary BasicTy where
+  put = putEnum8
+  get = getEnum8
+
+instance Binary BasicSize where
+  put = putEnum8
+  get = getEnum8
+%%]

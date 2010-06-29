@@ -26,7 +26,10 @@
 %%[(3 hmtyinfer) import({%{EH}Ty.Trf.Quantify})
 %%]
 
-%%[99 import({%{EH}Base.ForceEval})
+%%[20 import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
+%%]
+
+%%[9999 import({%{EH}Base.ForceEval})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -41,16 +44,34 @@ defaultFixityGamInfo = FixityGamInfo fixityMaxPrio Fixity_Infixl
 type FixityGam = Gam HsName FixityGamInfo
 %%]
 
+%%[20
+deriving instance Typeable FixityGamInfo
+deriving instance Data FixityGamInfo
+
+%%]
+
 %%[1 export(fixityGamLookup)
 fixityGamLookup :: HsName -> FixityGam -> FixityGamInfo
 fixityGamLookup nm fg = maybe defaultFixityGamInfo id $ gamLookup nm fg
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Init of fixityGam
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1.initFixityGam export(initFixityGam)
+initFixityGam :: FixityGam
+initFixityGam
+  = assocLToGam
+      [ (hsnArrow,  FixityGamInfo 1 Fixity_Infixr)
+      ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Instances
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[99
+%%[9999
 instance ForceEval FixityGamInfo
 %%[[102
   where
@@ -58,3 +79,8 @@ instance ForceEval FixityGamInfo
 %%]]
 %%]
 
+%%[20
+instance Serialize FixityGamInfo where
+  sput (FixityGamInfo a b) = sput a >> sput b
+  sget = liftM2 FixityGamInfo sget sget
+%%]

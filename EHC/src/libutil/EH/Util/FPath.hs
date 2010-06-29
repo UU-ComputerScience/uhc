@@ -1,6 +1,7 @@
 module EH.Util.FPath 
   ( FPath(..), fpathSuff
   , FPATH(..)
+  , FPathError -- (..)
   , emptyFPath
   -- , mkFPath
   , fpathFromStr
@@ -21,14 +22,17 @@ module EH.Util.FPath
   
   , fpathOpenOrStdin, openFPath
   
-  , SearchPath, FileSuffixes
+  , SearchPath
+  , FileSuffixes, FileSuffix
   , mkInitSearchPath, searchPathFromFPath, searchPathFromFPaths
   , searchPathFromString
+  , searchFPathFromLoc
   , searchLocationsForReadableFiles, searchPathForReadableFiles, searchPathForReadableFile
   
   , fpathEnsureExists
   
   , filePathMkPrefix, filePathUnPrefix
+  , filePathCoalesceSeparator
   , filePathMkAbsolute, filePathUnAbsolute
   )
 where
@@ -51,10 +55,15 @@ filePathMkPrefix d@(_:_) | last d /= '/'    = d ++ "/"
 filePathMkPrefix d                          = d
 
 filePathUnPrefix :: String -> String
-filePathUnPrefix d | isJust il && l == '/'  = i
+filePathUnPrefix d | isJust il && l == '/'  = filePathUnPrefix i
   where il = initlast d
         (i,l) = fromJust il
 filePathUnPrefix d                          = d
+
+filePathCoalesceSeparator :: String -> String
+filePathCoalesceSeparator ('/':d@('/':_)) = filePathCoalesceSeparator d
+filePathCoalesceSeparator (c:d) = c : filePathCoalesceSeparator d
+filePathCoalesceSeparator d     = d
 
 -------------------------------------------------------------------------------------------
 -- Making into absolute path and inverse, where absolute means a heading '/'
@@ -232,6 +241,14 @@ instance FPATH FPath where
   mkFPath = id
 
 -------------------------------------------------------------------------------------------
+-- Class 'is error related to FPath'
+-------------------------------------------------------------------------------------------
+
+class FPathError e
+
+instance FPathError String
+
+-------------------------------------------------------------------------------------------
 -- Open path for read or return stdin
 -------------------------------------------------------------------------------------------
 
@@ -273,7 +290,8 @@ fpathEnsureExists fp
 -------------------------------------------------------------------------------------------
 
 type SearchPath = [String]
-type FileSuffixes = [String]
+type FileSuffix   =  Maybe String
+type FileSuffixes = [FileSuffix]
 
 searchPathFromFPaths :: [FPath] -> SearchPath
 searchPathFromFPaths fpL = nub [ d | (Just d) <- map fpathMbDir fpL ] ++ [""]
@@ -290,8 +308,13 @@ searchPathFromString
   where f "" = Nothing
         f sp = Just (break (== ';') sp)
 
-searchLocationsForReadableFiles :: (loc -> String) -> Bool -> [loc] -> FileSuffixes -> FPath -> IO [(FPath,loc)]
-searchLocationsForReadableFiles getdir stopAtFirst locs suffs fp
+-- Simple function that returns a particular file under a
+-- certain root dir.
+searchFPathFromLoc :: FilePath -> FPath -> [(FilePath,FPath)]
+searchFPathFromLoc loc fp = [(loc,fpathPrependDir loc fp)]
+
+searchLocationsForReadableFiles :: FPathError e => (loc -> FPath -> [(loc,FPath,[e])]) -> Bool -> [loc] -> FileSuffixes -> FPath -> IO [(FPath,loc,[e])]
+searchLocationsForReadableFiles getfp stopAtFirst locs suffs fp
   = let select stop f fps
           = foldM chk [] fps
           where chk r fp
@@ -307,19 +330,20 @@ searchLocationsForReadableFiles getdir stopAtFirst locs suffs fp
                  then return [(fp',loc)]
                  else return []
                }
-        tryToOpenWithSuffs loc suffs fp
-          = case suffs of
+        tryToOpenWithSuffs suffs (loc,fp,x)
+          = fmap (map (tup12to123 x)) $ 
+            case suffs of
               [] -> tryToOpen loc Nothing fp
               _  -> select stopAtFirst
                       (\(ms,f) -> tryToOpen loc ms f)
-                      ((Nothing,fp) : zipWith (\s f -> (Just s,f)) suffs (repeat fp))
+                      ({- (Nothing,fp) : -} zipWith (\s f -> (s,f)) suffs (repeat fp))
         tryToOpenInDir loc
-          = select True (tryToOpenWithSuffs loc suffs) [fpathPrependDir (getdir loc) fp {-,fpathSetDir dir fp -}]
+          = select True (tryToOpenWithSuffs suffs) (getfp loc fp)
      in select True tryToOpenInDir locs
 
 searchPathForReadableFiles :: Bool -> SearchPath -> FileSuffixes -> FPath -> IO [FPath]
 searchPathForReadableFiles stopAtFirst locs suffs fp
-  = fmap (map fst) $ searchLocationsForReadableFiles id stopAtFirst locs suffs fp
+  = fmap (map tup123to1) $ searchLocationsForReadableFiles (\s f -> map (tup12to123 ([]::[String])) $ searchFPathFromLoc s f) stopAtFirst locs suffs fp
 
 searchPathForReadableFile :: SearchPath -> FileSuffixes -> FPath -> IO (Maybe FPath)
 searchPathForReadableFile paths suffs fp

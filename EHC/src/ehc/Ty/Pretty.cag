@@ -140,9 +140,12 @@ instance PP PredOccId where
 instance PP PredOcc where
   pp po = pp (poPr po) >|< "/" >|< pp (poPoi po) >|< "/" >|< pp (poScope po)
 
+instance PP CHRPredOccCxt where
+  pp (CHRPredOccCxt_Scope1 sc) = pp sc
+
 instance PP CHRPredOcc where
   pp po = ppParensCommas
-            [ pp (cpoPr po), pp (cpoScope po)
+            [ pp (cpoPr po), pp (cpoCxt po)
 %%[[99
             , pp (cpoRange po)
 %%]]
@@ -168,7 +171,7 @@ instance PP LabelOffset where
   pp = pp . show
 %%]
 
-%%[(20 hmtyinfer || hmtyast) hs
+%%[(2020 hmtyinfer || hmtyast) hs
 instance PPForHI Ty where
   -- ppForHI = ppTyWithCfg' CfgPP_HI
   ppForHI = ppTyWithCfg (cfgPPTyExtraForHI $ cfgPPTy CfgPP_HI)
@@ -183,8 +186,11 @@ instance PPForHI TyKiKey where
   ppForHI (TyKiKey_Name  n) = ppForHI n
   ppForHI (TyKiKey_TyVar v) = ppForHI v
 
+instance PPForHI CHRPredOccCxt where
+  ppForHI (CHRPredOccCxt_Scope1 sc) = {- "cxtscope1" >#< -} ppForHI sc
+
 instance PPForHI CHRPredOcc where
-  ppForHI po = ppCurlysCommas [ppForHI (cpoPr po), ppForHI (cpoScope po)]
+  ppForHI po = ppCurlysCommas [ppForHI (cpoPr po), ppForHI (cpoCxt po)]
 
 instance PPForHI PredScope where
   ppForHI (PredScope_Lev l) = "scope" >#< (ppBracketsCommas $ map pp $ rllToList l)
@@ -418,8 +424,8 @@ mkDefaultTvNmPP cfg pre tv = cfgPPTyPPHsn cfg $ mkHNm $ pre ++ "_" ++ show tv
 tvCategPrefix :: TyVarCateg -> String
 tvCategPrefix TyVarCateg_Fixed = "c"
 tvCategPrefix TyVarCateg_Plain = "v"
-%%[[6_4
-tvCategPrefix TyVarCateg_Exist = "C"
+%%[[9
+tvCategPrefix TyVarCateg_Meta  = "m"
 %%]
 %%]
 
@@ -482,7 +488,7 @@ SEM Ty
                             .   ppNice  =   ppParNeed  @parNeed @lhs.parNeed @ppAppTop
                             .   pp      =   if @isSpineRoot then @ppNice else @ppDflt
   | Any             loc     .   pp      =   pp hsnUnknown
-  | Ann             loc     .   pp      =   {- @ann.pp >#< -} @ty.pp
+  | Ann             loc     .   pp      =   {- @ann.pp >#< -} ppParens @ty.pp >|< "@" >|< @ann.pp	-- this pp currently only for debugging, change as required
 %%]
 
 %%[(8 hmtyinfer || hmtyast)
@@ -691,6 +697,9 @@ SEM Ty
 %%[(1 hmtyinfer || hmtyast)
 SEM TyAnn
   | Empty			loc		.	pp		=	empty
+%%[[4
+  | Mono			loc		.	pp		=	pp "<MONO>"
+%%]]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -698,7 +707,7 @@ SEM TyAnn
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(7 hmtyinfer || hmtyast)
-ATTR Ty Ty->Ty [ | positionalFldNmL: {[HsName]} | ]
+ATTR Ty [ | positionalFldNmL: {[HsName]} | ]
 
 SEM TyAGItf
   | AGItf           ty      .   positionalFldNmL    =   positionalFldNames
@@ -796,7 +805,7 @@ SEM RowExts
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(1 hmtyinfer || hmtyast).ParNeed
-ATTR Ty Ty->Ty [ parNeed: ParNeed  parNeedL: ParNeedL | | ]
+ATTR Ty [ parNeed: ParNeed  parNeedL: ParNeedL | | ]
 
 SEM TyAGItf
   | AGItf       ty      .   parNeed             =   ParNotNeeded

@@ -12,7 +12,7 @@
 %%@ToolDocEHC.testRegress
 
 \section{Shoot trouble (hopefully optional)}
-See the troubleshooting FAQ in the \eref{EhcUserDocumentation}{UHC manual}.
+See the troubleshooting FAQ in the \eref{UhcUserDocumentation}{UHC manual}.
 
 %%]
 
@@ -25,7 +25,7 @@ See the troubleshooting FAQ in the \eref{EhcUserDocumentation}{UHC manual}.
 
 
 %%[main doclatex
-\section{Introduction}
+\section{Introduction and installation}
 %%@ToolDocEHC.introduction
 \subsection{System overview}
 
@@ -36,19 +36,20 @@ For now, see the \eref{EhcStructureDocumentation}{UHC structure overview}.
 \label{DownloadBuildCompileRun}
 %%@ToolDocEHC.downloadBuildCompileRun
 
-\subsection{Installation}
-See \lref{DownloadBuildCompileRun}{downloading etc}.
+% \subsection{Installation}
+% See \lref{DownloadBuildCompileRun}{downloading etc}.
 
-\subsection{Using UHC}
-
-\section{Commandline}
+\section{Using UHC}
 \subsection{Commandline invocation}
 %%@ToolDocEHC.commandlineInvocation
 
 \subsection{Commandline options}
 %%@ToolDocEHC.commandlineOptions
 
-\section{Language extensions and differences with Haskell98}
+\subsection{Using packages}
+%%@ToolDocEHC.usingPackages
+
+\section{Language extensions}
 \glabel{LanguageExtensions}
 \label{LanguageExtensions}
 Bear in mind that these extensions are all but tried and tested!
@@ -64,6 +65,14 @@ Bear in mind that these extensions are all but tried and tested!
 %%@ToolDocEHC.impredicativity
 \subsubsection{Caveats}
 %%@ToolDocEHC.rankImpredCaveats
+
+\subsection{Generic deriving}
+\label{generic-deriving}
+%%@ToolDocEHC.genericDeriving
+
+\subsection{Standalone deriving instance}
+\label{standalone-deriving-instance}
+%%@ToolDocEHC.standaloneDerivingInstance
 
 \subsection{Partial type signature}
 \label{partial-type-signatures}
@@ -98,13 +107,37 @@ hence no documentation is currently available.
 \label{absence-monomorphism-restriction}
 %%@ToolDocEHC.absenceMonomorphismRestriction
 
+\subsection{Default for ambiguous overloading}
+\label{default-ambiguous-overloading}
+%%@ToolDocEHC.defaultAmbiguousOverloading
+
+\subsection{Typelevel operators}
+\label{typelevel-operators}
+%%@ToolDocEHC.typelevelOperators
+
+\subsection{Pragmas}
+\label{pragmas}
+%%@ToolDocEHC.pragmas
+
+\section{Haskell compatibility}
+\label{HaskellCompatibility}
+\glabel{HaskellCompatibility}
+
+\subsection{Haskell 98}
+\glabel{Haskell98Compatibility}
+%%@ToolDocEHC.haskell98Compatibility
+
+\subsection{Haskell 2010}
+\glabel{Haskell2010Compatibility}
+%%@ToolDocEHC.haskell2010Compatibility
+
 \section{Language implementation status}
 \glabel{LanguageImplementationStatus}
 %%@ToolDocEHC.languageStatus
 
 
 \subsection{Feature availability and status}
-
+\glabel{feature-availability}
 %%@ToolDocEHC.featureAvailability
 
 %\subsection{Available in Haskell98 but not or partially in UHC}
@@ -234,8 +267,8 @@ This flag is useful during changes in the interface file format.
 
 
 \DocOpt{@--debug-stopat-core-error=<bool>@}{Stop at Haskell core file parse error}
-When performing full program analysis core files are the endproduct of per module compilation.
-For full program analysis these core files are read and combined for further full program analysis.
+When performing whole program analysis core files are the endproduct of per module compilation.
+For whole program analysis these core files are read and combined for further whole program analysis.
 Parsing errors are ignored.
 This flag turns this default behavior off, so an error is reported when it occurs.
 The compilation is then halted.
@@ -366,7 +399,7 @@ Show full version information (see also option \DocOptRef{--numeric-version}).
 \\
 |GFULL|
 & Graph Reduction Intermediate Notation.
-  When relevant the use of this term implies full program analysis.
+  When relevant the use of this term implies whole program analysis.
 \\
 |LLVM|
 & Low Level Virtual Machine
@@ -405,7 +438,7 @@ A list of often occurring build problems is maintained \eref{BuildProblems}{here
 \begin{itemize}
 \item Prerequisites:
 \begin{itemize}
- \item \href{http://haskell.org/ghc/}{GHC}: a recent version, preferably >= 6.8, the installed libraries should include the @mtl@ and @fgl@ library.
+ \item \href{http://haskell.org/ghc/}{GHC}: a recent version, preferably @>= 6.8@, the installed libraries should include the @mtl@ and @fgl@ library.
   Depending on platform and GHC distribution more libraries may need to be installed.
  \item Additional libraries, available via \href{http://hackage.haskell.org/packages/hackage.html}{Hackage} or \href{http://www.cs.uu.nl/wiki/HUT/WebHome}{locally}.
  \begin{itemize}
@@ -434,8 +467,7 @@ A list of often occurring build problems is maintained \eref{BuildProblems}{here
 % make uhc                         # under the hood, this is EHC variant 101
 % make install                     # sudo may be required, depending on your permissions
 \end{verbatim}
-A configuration file (+ directory) will be created in your home directory,
-therefore a systemwide install does not work yet.
+During the build part of the compiler is built as a library, installed as a ghc user package, via cabal.
 
 \end{itemize}
 %%]]
@@ -479,7 +511,8 @@ make test-regress TEST_VARIANTS=uhc
 \end{verbatim}
 
 Differences may also be reported because of platform dependent representation of linefeeds.
-This is not intended.
+The tests where this is likely to happen are marked with the word |platform| to indicate 
+the platform or runtime environment differences.
 \end{itemize}
 %%]]
 
@@ -717,6 +750,14 @@ cons2' = (:) (\x->x :: forall a . a -> a) ~ids	-- the extra annotation fixes thi
 \end{itemize}
 %%]
 
+%%[genericDeriving doclatex
+TBD...
+%%]
+
+%%[standaloneDerivingInstance doclatex
+TBD...
+%%]
+
 %%[partialTySig doclatex
 Partial type signatures are fully specified type signatures where parts may be omitted and then later filled in by the type inferencer.
 Partial type signatures offer a middle way between
@@ -909,6 +950,39 @@ Existential types do not work with:
 
 %%]
 
+%%[pragmas doclatex
+TBD...
+%%]
+
+%%[typelevelOperators doclatex
+TBD...
+%%]
+
+%%[defaultAmbiguousOverloading doclatex
+WARNING 20100601: this did not make it into the release, so the text here describes our intention, not the current state.
+
+Defaults can only be defined per class,
+following a \href{http://hackage.haskell.org/trac/haskell-prime/wiki/Defaulting}{Haskell prime defaulting} proposal.
+\begin{pre}
+class C a where
+  c :: a -> a
+
+instance C Int where
+  c = id
+
+default C Int
+\end{pre}
+The Haskell98 form of @default@ is syntactically allowed, but silently ignored.
+Multiple types may be specified, currently only the first one is used:
+
+\begin{pre}
+default C (Int,Integer)
+\end{pre}
+
+The scope of @default@ declarations is the same as for instances: a default definition is silently imported when an import declaration.
+Defaults cannot be turned off.
+%%]
+
 %%[absenceMonomorphismRestriction doclatex
 UHC does not feature the monomorphism restriction. For variable bindings like
 \begin{pre}
@@ -955,6 +1029,32 @@ In the above \lref{partial-type-signatures}{partial type signatures} were also u
 
 %%]
 
+%%[haskell98Compatibility doclatex
+The following Haskell98 features are not or partially supported:
+
+\begin{itemize}
+\item N+k patterns are not implemented.
+\item Bound variables in an irrefutable pattern all are individually irrefutable, nested irrefutability is ignored.
+\item Defaulting with @default@ is not implemented. When implemented it will be \lref{default-ambiguous-overloading}{done different}.
+\item Literate Haskell allows \verb@\begin{code}@ .. \verb@\end{code}@, but not individual lines prefixed with @> @.
+\item Strictness annotation in datatype definitions is allowed but ignored.
+\item The monomorphism restriction is not implemented.
+\end{itemize}
+%%]
+
+%%[haskell2010Compatibility doclatex
+The following Haskell 2010 features are not or partially supported:
+
+\begin{itemize}
+\item The foreign function interface (See \href{http://hackage.haskell.org/trac/haskell-prime/ticket/35}{ForeignFunctionInterface})
+  is implemented to the point where base libraries can be constructed.
+  In particular @export@ is not implemented, and neither are @dynamic@ and @wrapper@ imports.
+  The @stdcall@ calling convention is not implemented.
+\item @LANGUAGE@ pragmas (\href{http://hackage.haskell.org/trac/haskell-prime/ticket/128}{LanguagePragma}) @NoImplicitPrelude@ and @CPP@ are recognised, others are ignored.
+\item Pattern guards (\href{http://hackage.haskell.org/trac/haskell-prime/ticket/56}{PatternGuards}) are not implemented.
+\end{itemize}
+%%]
+
 %%[languageStatus doclatex
 Encoding of availability:
 
@@ -970,21 +1070,17 @@ NN & is not and will never be available \\
 %%]
 
 %%[featureAvailability doclatex
+See \lref{HaskellCompatibility}{Haskell compatibility} first as the overview below will become obsolete.
+
 \begin{tabular}{ll}
 \textbf{Feature} & \textbf{Available?} \\ \hline
-n+k patterns & NN \\
 @deriving@ construct & YN, for @Show@, @Read@, @Eq@, @Ord@, @Enum@, @Bounded@ \\ 
-@default@ construct & N?, silently ignored \\ 
 @Prelude@: predefined instances & YN, not for tuples \\ 
-Irrefutable patterns & YN, nested patterns too lazy \\
-Strictness annotation in data types & YN, ignored \\
-Literate Haskell source format & YN, only \verb@\begin{code}@ .. \verb@\end{code}@ \\
 Operator infixity determines parsing & YN, some subtle report examples are not treated as defined \\
 \lref{ffi}{Foreign function interface} & YN, enough to make @Prelude@ work \\
 Exceptions & YN, depending on backend, 'old style' data type based (non extensible) \\
 Bounded not derivable for aggregrate types (tuples of Bounded) & N \\
 Ix not derivable & N \\
-\lref{absence-monomorphism-restriction}{Monomorphism restriction} & N \\
 Functional dependencies & N, pending route taken with Haskell prime \\
 \lref{lexically-scoped-type-variables}{Lexically scoped type variables} & Y \\
 \lref{existential-types}{Existential quantification} & Y \\
@@ -994,7 +1090,7 @@ Functional dependencies & N \\
 \lref{kind-inference}{Explicit kinding} & Y \\
 \lref{kind-inference}{Polymorphic kind inference} & Y \\
 Extensible records & YN, no runtime support \\
-Existential + context + datatype def like: @data Handler a = forall e . Exception e => Handler (e -> IO a)@ & N \\
+Existential + context + datatype: @data H a = forall e . E e => H (e -> IO a)@ & N \\
 UTF8 Char, String & N \\
 \end{tabular}
 
@@ -1078,13 +1174,13 @@ There are no backwards compatibility wrapper modules, as this is part of the @ha
 \item @List@: in @Data.List@, fully available.
 \item @Maybe@: in @Data.Maybe@, fully available.
 \item @Monad@: in @Control.Monad@, fully available.
-\item @IO@: under construction, the @Prelude@ part is as a temporary implementation available.
-\item @Directory@: not available.
+\item @IO@: in @System.IO@ and @System.IO.Error@ and @UHC.OldException@, fully available.
+\item @Directory@: in @System.Directory@, fully availble.
 \item @System@: in @System.Environment@ and @System.Exit@, fully available.
-\item @Time@: not available.
-\item @Locale@: not available.
-\item @CPUTime@: not available.
-\item @Random@: not available.
+\item @Time@: in @System.Time@, fully available.
+\item @Locale@: in @System.Locale@, fully available.
+\item @CPUTime@: in @System.CPUTime@, fully available.
+\item @Random@: in @System.Random@, fully available.
 \end{itemize}
 
 More library modules are available, we only list those which are not fully implemented:
@@ -1096,6 +1192,13 @@ More library modules are available, we only list those which are not fully imple
 \item @Foreign@, @Ptr@, @Weak@, etc:
  garbage collection related functionality is influenced by the use of Boehm GC,
  e.g. only a minimal interface for weak pointers, finalizers, etc is available, not doing very much.
+\end{itemize}
+
+There are several known problems in the library:
+
+\begin{itemize}
+  \item Using functions that works with the internal structure of a handle (eg. @Prelude.print@ inside a weak pointer finalizer will cause the program to crash.
+  \item Nested calls of the internal function @UHC.Handle.withHandle@ will cause the program to fail. 
 \end{itemize}
 
 \subsection{Library + runtime}
@@ -1114,29 +1217,27 @@ The C based backends (C, bc) use the following public domain libraries:
 \item Error messages involving types are difficult to decode; too much of the internals of the type system machinery is exposed.
 \item
  Compilation of a single module which uses many imports (directly or indirectly) takes noticably more time because reading in @.hi@ files takes time.
- Currently @.hi@ files are stored as text files and parsed as such, which is less efficient than a binary representation.
 \item
  Executables for code generation target @bc@ get quite large: the C encoding of bytecode files for modules is rather inefficient and linking together with the base libraries draws in most of the library code.
 \item
  Large expressions involving many class constraints take non lineair compile time, consumed by context reduction.
 \item
- When compiling with option @--cpp@ the file preprocessed by @cpp@ is put in the same directory as the source file.
+ When compiling with option @--cpp@ or language pragma @CPP@ the file preprocessed by @cpp@ is put in the same directory as the source file.
  Without write permission this will fail.
 \item
- Overlapping instances are not reported as such, but indirectly by producing an error that a class constraint could not be proved.
+ Overlapping instances are not reported as such, but indirectly by producing an error that a class constraint could not be proven.
 \item
  Local instances are not always working properly. Stick to its use without abstraction, i.e. only ground instances as in the \lref{local-instances}{examples}.
 \item
- Building uhc on top of a previous one, with a different version number, does not work because the settings file holding the location of libraries is not yet updated.
- See the \lref{TroubleshootingFAQ}{troubleshooting FAQ}.
-\item
  Regression testing may report differences because of different linefeed encoding on different platforms.
-\item
- UHC partially works on 64 bit platforms.
- Runtime system seems to be ok, but some of the libraries not, the regression tests therefore partially fail.
 \item
  Instances for tuples are currently limited to at most 5-tuples.
  Also not all standard classes have definitions for tuples, in particular @Read@.
+\item
+ The symbol @:=@ is still reserved for extensible record update, so it cannot be used as a constructor operator like in
+ \begin{verbatim}
+ data D = Int := Int
+ \end{verbatim}
 \end{itemize}
 %%]
 
@@ -1160,7 +1261,7 @@ If the package is put in the default location (usually something like @lib@ insi
 %%]
 
 %%[backendsFull doclatex
-\subsubsection{@bc@: GRIN based interpreter, no full program analysis}
+\subsubsection{@bc@: GRIN based interpreter, no whole program analysis}
 
 This is the default backend, and the most complete.
 
@@ -1172,7 +1273,7 @@ This is the default backend, and the most complete.
 %%]
 
 %%[backendsAlmost doclatex
-\subsubsection{@C@: GRIN based C, with full program analysis}
+\subsubsection{@C@: GRIN based C, with whole program analysis}
 
 \begin{itemize}
 \item No exceptions, throwing an exception will stop the program.
@@ -1180,7 +1281,7 @@ This is the default backend, and the most complete.
 \item The size of the stack is hardcoded. No runtime overflow check is done.
 \end{itemize}
 
-\subsubsection{@jazy@: Core based Java, no full program analysis}
+\subsubsection{@jazy@: Core based Java, no whole program analysis}
 
 \begin{itemize}
 \item Only when enabled via @configure --enable-java@.
@@ -1191,13 +1292,13 @@ This is the default backend, and the most complete.
 %%]
 
 %%[backendsPartial doclatex
-\subsubsection{@llvm@: GRIN based LLVM, with full program analysis}
+\subsubsection{@llvm@: GRIN based LLVM, with whole program analysis}
 
 \begin{itemize}
 \item For variant 8 only, little runtime support.
 \end{itemize}
 
-\subsubsection{@clr@: GRIN based CLR, with full program analysis}
+\subsubsection{@clr@: GRIN based CLR, with whole program analysis}
 
 \begin{itemize}
 \item For variant 8 only, no runtime support.
@@ -1221,6 +1322,10 @@ As printed by \verb=install/100/bin/ehc --help=:
 
 %%]
 
+%%[usingPackages doclatex
+TBD...
+%%]
+
 %%[commandlineOptions doclatex
 Only options offered by UHC are discussed, lower variants of UHC have more options for debugging available.
 Other options can be used but are either for internal use of can be disabled sometime.
@@ -1228,24 +1333,11 @@ Defaults for options are valid only for variant 100 of EHC.
 Boolean options are indicated by @Bool@, where @True@ and @False@ can be indicated by one of \verb@0|1|no|yes|off|on|-|+@.
 
 \begin{itemize}
-\item \verb|-t[<target>]|, \verb|--target[=<target>]|. Generate code for a target. Code generation \verb|<target>|s (Default: %%@[exec:install/100/bin/ehc --meta-target-default%%]):
- \begin{itemize}
- \item \verb|bc|: bytecode interpreter based executable.
- \item \verb|C|: full program analysis C code based executable.
- \item \verb|core|: only intermediate Core file. Cannot be run.
- \end{itemize}
-\item \verb|--cpp|. Preprocess with \href{http://gcc.gnu.org/onlinedocs/cpp/}{cpp}.\item \verb|-h|, \verb|--help|. Print commandline help and quit.
-\item \verb|--no-prelude|. Don't assume the presence of @Prelude@.
-\item \verb|--no-recomp|. Don't check for the necessity to recompile, recompile allways instead.
-\item \verb|--no-version-check|. Don't use out of date of compiler version as a reason to recompile. This is useful for debugging the compiler together with libraries (and their generated .hi and other files) remaining the same.
-\item \verb|--numeric-version|. Print version and quit.
-\item \verb|-O[<level>]|, \verb|--optimise[=<level>]|. Optimisation level. Currently this makes little difference. Levels:
- \begin{itemize}
- \item \verb|0|: none.
- \item \verb|1| (default): basic.
- \item \verb|2|: much
- \end{itemize}
-\item \verb|-i<path>|, \verb|--import-path=<path>|. Add @<path>@ to the search path for importing modules and |cpp|.
+\item \verb|-h|, \verb|--help|. Print commandline help and quit.
+\item \verb|--version|. Print a longer version description.
+\item \verb|--version-dotted|. Print the version in a dotted format, as used by many version aware utilities (like cabal)..
+\item \verb|--version-asnumber|. Same as \verb|--version-dotted| but without the dots, the value \verb|__UHC__| has when preprocessing with cpp.
+\item \verb|--numeric-version|. See \verb|--version-dotted|.
 \item \verb|-v[<level>]|, \verb|--verbose[=<level>]|. Verbosity level. Verbosity \verb|<level>|s are accumulative in their reported messages:
  \begin{itemize}
  \item \verb|0|: quiet.
@@ -1254,26 +1346,61 @@ Boolean options are indicated by @Bool@, where @True@ and @False@ can be indicat
  \item \verb|3|: progress of internal processing.
  \item \verb|4|: additional debugging info.
  \end{itemize}
+\item \verb|-t[<target>]|, \verb|--target[=<target>]|. Generate code for a target. Code generation \verb|<target>|s (Default: %%@[exec:install/100/bin/ehc --meta-target-default%%]):
+ \begin{itemize}
+ \item \verb|bc|: bytecode interpreter based executable.
+ \item \verb|C|: whole program analysis C code based executable.
+ \item \verb|core|: only intermediate Core file. Cannot be run.
+ \end{itemize}
+\item \verb|--target-flavor[=<flavor>]|. Generate code for a target. Code generation \verb|<flavor>|s (Default: plain).
+Flavors distinguish between incompatible ways of generating code.
+This is not yet used, except for experimenting with code generation with extra debugging, in particular stack tracing.
+ \begin{itemize}
+ \item \verb|plain|: nothing special.
+ \item \verb|debug|: debugging experiments.
+ \end{itemize}
+\item \verb|-O[<level>]|, \verb|--optimise[=<level>]|. Optimisation level. Currently this makes little difference as few optimisations are done. Levels:
+ \begin{itemize}
+ \item \verb|0|: none.
+ \item \verb|1| (default): basic.
+ \item \verb|2|: much
+ \end{itemize}
+\item \verb|--no-recomp|. Don't check for the necessity to recompile, recompile allways instead.
+\item \verb|--no-prelude|. Don't assume the presence of @Prelude@.
+\item \verb|--no-hi-check|. Don't use out of date of compiler version w.r.t. to .hi files as a reason to recompile.
+  This is useful when debugging the compiler if you know that .hi files will not change.
+  Use this option only if you know what you are doing.
+\item \verb|--cpp|. Preprocess with \href{http://gcc.gnu.org/onlinedocs/cpp/}{cpp}.
+\item \verb|--limit-tysyn-expand=<nr>|. Limit the level of type synonym expansion.
+\item \verb|-i<path>|, \verb|--import-path=<path>|. Add @<path>@ to the search path for importing modules and |cpp|.
 \item \verb|--odir=dir|. Generated files are put in @dir@. More precisely, for each generated artefact for a module,
   the module name with dots @'.'@ replaced by slashes @'/'@ is appended to @dir@ and used as the actual base name.
+  When compiling for the construction of a package, an additional 4 level directory structure is prefixed, encoding package name, compiler version, target, and flavor.
 \item \verb|--keep-intermediate-files|. Keep intermediate files (such as @.c@ files and output of @cpp@).
 \item \verb|--meta| options. These are mostly used to let makefiles know what can be done.
  \begin{itemize}
  \item \verb|--meta-targets|: all possible code generation targets.
  \item \verb|--meta-target-default|: default code generation target.
  \item \verb|--meta-variant|: EHC variant.
- \item \verb|--meta-export-env[=installdir[,variant]]|: configure the environment of the compiler, currently for the install location of libraries. E.g. \verb|--meta-export-env=/usr/local/lib,uhc-0.1.1.alpha| for a UHC installation.
-  This is usually done at installation time.
- \item \verb|--meta-dir-env|: directory which holds the configuration file.
+ \item \verb|--meta-pkgdir-system|: Print the builtin system dir holding packages, and quit.
+ \item \verb|--meta-pkgdir-user|: Same as \verb|--meta-pkgdir-system|, but user dir.
  \end{itemize}
 \item \verb|--pkg| options. These are currently used as a simplistic equivalent of ghc-pkg, to be used only internally by library construction. Expect changes here.
  \begin{itemize}
- \item \verb|--pkg-build=<pkg>|: build <pkg> from generated files. Put in current directory of the one specified with @--odir@.
+ \item \verb|--pkg-build=<pkg>|: build @<pkg>@ from generated files. Put in current directory of the one specified with @--odir@.
+ \item \verb|--pkg-expose=<pkg>|: expose @<pkg>@ to be visible so its modules can be imported.
+ \item \verb|--pkg-hide=<pkg>|: reverse of @--pkg-expose@.
+ \item \verb|--pkg-hide-all|: hide all packages.
+ \item \verb|--pkg-searchpath=path|: additional locations to search for packages.
  \end{itemize}
 \end{itemize}
 %%]
 
 %%[troubleShootFAQ doclatex
+\subsection{The compiler seems to loop, or complains about premature end of file}
+Remove @.hi@ files manually,
+as it seems not to be possible to guarantee that @.hi@ files from a previous version, or another haskell compiler, are detected as invalid.
+
 \subsection{I have installed UHC previously, now the libraries do not compile}
 
 From a previous install the library path settings may linger around.

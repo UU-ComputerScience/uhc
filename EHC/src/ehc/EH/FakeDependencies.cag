@@ -47,7 +47,7 @@ SEM Decl
 
 %%[(9 hmtyinfer)
 SEM TyExprs
-  | Cons        hd          .   tyVarWildL          <   hd.clGam
+  | Cons        hd          .   tyVarWildMp         <   hd.clGam
 %%]
 
 %%[(9 hmtyinfer)
@@ -62,9 +62,9 @@ SEM Decl
 
 %%[(17 hmtyinfer)
 SEM DataConstr
-  | Constr      lhs         .   polGam              <   loc.dataAltTyL
+  | Constr      -- lhs         .   polGam              <   loc.dataAltTyL
                 lhs         .   knPolCtx            <   loc.dataAltTyL
-                lhs         .   polVarMp            <   loc.dataAltTyL
+                -- lhs         .   polVarMp            <   loc.dataAltTyL
   
 SEM TyExpr
   | Pred		lhs			.	knPolCtx			< 	prExpr.tyGam
@@ -90,6 +90,8 @@ SEM AGItf
   | AGItf		expr		.	predSameScopeCounter	<	expr.predScope
        			expr		.	predSameScopeCounter	<	expr.tyGam
                 expr        .   gUniq              		<   expr.predSameScopeCounter
+                -- expr        .   gUniq              		<   expr.valTyGlobFreeTvarS
+                -- expr		.	gathDataGam 			<	expr.valTyGlobFreeTvarS
 SEM Expr
   | Let			decls       .   predSameScopeCounter    <   decls.gathKiSigGam
 %%]

@@ -38,6 +38,13 @@
 \section{Commandline invocation}
 %%@ToolDocText2Text.commandline
 
+\section{Installation via cabal}
+From the @README@ file:
+
+\begin{verbatim}
+%%@[file:src/text2text/README%%]
+\end{verbatim}
+
 \section{Further reading}
 %%@ToolDocText2Text.andFurther
 %%]

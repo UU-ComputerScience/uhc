@@ -3,6 +3,7 @@
    expected: ok, copy output of file
 ---------------------------------------------------------------------------------------- -}
 
+
 module Main where
 
 main :: IO ()
@@ -12,4 +13,5 @@ main
        l2 <- hGetLine h1
        hPutStrLn stdout l1
        hPutStrLn stdout l2
+       hFlush stdout -- [@@@] bug with flushing stdout. remove after fix
        hClose h1

@@ -41,6 +41,7 @@ A combination of 2 strategies
       less usually because this is pessimistically estimated for the largest size possible.
       Internal fragmentation is 1 / 2^s (because of rounding up).
     - n*2^s free lists are kept
+    
     n better be bounded, currently n = 6 so, for the typical values:
     - max contiguous  area = 2^(n+p) = 2^16 = 65K words
     - max allocatable size = (2^n-1)*2^s = (2^6-1)*2^4 = 1008 words
@@ -61,11 +62,11 @@ A combination of 2 strategies
 
 %%[8
 #define MM_Allocator_LOF_RoundGroupSize_Log		4
-#define MM_Allocator_LOF_RoundGroupSize			(1 << MM_Allocator_LOF_RoundGroupSize_Log)
+#define MM_Allocator_LOF_RoundGroupSize			(((Word)(1)) << MM_Allocator_LOF_RoundGroupSize_Log)
 #define MM_Allocator_LOF_NrRoundGroup			6
 
 #define MM_Allocator_LOF_NrRoundedFit			(MM_Allocator_LOF_NrRoundGroup * MM_Allocator_LOF_RoundGroupSize)
-#define MM_Allocator_LOF_MaxRoundedSize_Words	(((1 << MM_Allocator_LOF_NrRoundGroup) - 1) << MM_Allocator_LOF_RoundGroupSize_Log)
+#define MM_Allocator_LOF_MaxRoundedSize_Words	(((((Word)(1)) << MM_Allocator_LOF_NrRoundGroup) - 1) << MM_Allocator_LOF_RoundGroupSize_Log)
 #define MM_Allocator_LOF_MaxRoundedSize			(MM_Allocator_LOF_MaxRoundedSize_Words << Word_SizeInBytes_Log)
 %%]
 
@@ -90,6 +91,7 @@ typedef struct MM_Allocator_LOF_FreeRounded {
 typedef struct MM_Allocator_LOF_PerSize {
 	MM_Allocator_LOF_FreeRounded*			free ;		// free chunks
 	MM_Allocator_LOF_PageRounded*			pages ;		// used pages
+	Word									chunkSize ;	// size of chunks as maintained by this PerSize
 } __attribute__ ((__packed__)) MM_Allocator_LOF_PerSize ;
 %%]
 
@@ -107,7 +109,7 @@ typedef struct MM_Allocator_LOF_Data {
 
 %%[8
 extern void mm_allocator_LOF_Init( MM_Allocator*, MM_Malloc* memmgt, MM_Space* space ) ;
-extern Ptr mm_allocator_LOF_Alloc( MM_Allocator*, Word sz ) ;
+extern Ptr mm_allocator_LOF_Alloc( MM_Allocator*, Word sz, Word gcInfo ) ;
 extern void mm_allocator_LOF_Dealloc( MM_Allocator*, Ptr ptr ) ;
 %%]
 

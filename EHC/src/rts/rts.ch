@@ -1,14 +1,6 @@
-%%[8.TRACE
-#define TRACE 					1
-
-#if TRACE
-#define GB_COUNT_STEPS			1
-#else
-#define GB_COUNT_STEPS			0
-#endif
-%%]
-
-%%[100 -8.TRACE
+%%[8
+#ifndef __RTS_H__
+#define __RTS_H__
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -16,38 +8,15 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-#ifndef __RTS_H__
-#define __RTS_H__
-%%]
-
-%%[8
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <inttypes.h>
-#include <limits.h>
-#include "config.h"
-#include "sizes.h"
-#include "bits.h"
-#include "types.h"
-#include "utils.h"
-#include "mm/mmitf.h"
+#include "rtsbase.h"
+#include "base/trace.h"
+#include "event/event.h"
 #include "mm/mm.h"
-%%]
-
-%%[97
-#include <math.h>
-#include <float.h>
-#ifndef FP_ZERO
-#warning FP_ZERO not defined (assuming value 2). Using floating point numbers may give problems.
-#define FP_ZERO 2
-#endif
 %%]
 
 %%[98
 #include <errno.h>
 %%]
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Primitives
@@ -89,31 +58,6 @@
 #endif
 
 
-// the empty PRIM define is used to mark exported functions from prim.c, used to automatically generate prim.h
-#define PRIM
-
-%%]
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Internal config
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-For now, switch off Boehm GC, turn on own GC
-
-%%[8
-%%]
-#undef USE_BOEHM_GC
-#define USE_EHC_MM				1
-
-%%[8
-%%]
-// not used
-#define GB_IND_IN_HDR			1
-
-
-%%[8
-#define INFO_EXITSTATE			1
 %%]
 
 
@@ -142,7 +86,7 @@ For now, switch off Boehm GC, turn on own GC
 #elif USE_EHC_MM
 #else
 
-#define HEAPSIZE 1000000
+#define HEAPSIZE 100000000
 
 extern WPtr HP;
 extern WPtr HeapAreaLow;
@@ -155,7 +99,7 @@ extern WPtr HeapAreaHigh;
 #	define heapalloc(sz)                Cast(Word,GC_MALLOC(sz*sizeof(Word)))
 #	define heapalloc_uncollectable(sz)  Cast(Word,GC_MALLOC_UNCOLLECTABLE(sz*sizeof(Word)))
 #elif USE_EHC_MM
-#	define heapalloc(sz)                Cast(Word,mm_itf_alloc(sz*sizeof(Word)))
+#	define heapalloc(sz)                Cast(Word,mm_itf_alloc(sz*sizeof(Word),0))
 #	define heapalloc_uncollectable(sz)  Cast(Word,mm_itf_allocResident(sz*sizeof(Word)))
 #else
 	Word heapalloc(int);
@@ -164,13 +108,34 @@ extern WPtr HeapAreaHigh;
 %%]
 
 %%[8
-#define STACKSIZE 800000
+#define STACKSIZE 					0xF00000
+#define STACKSIZE_SPARE_UNUSED 		0x100		/* part of stack which is left as unused spare, but can be used by exception handling */
 #define RETURNSIZE 100
-extern WPtr SP, RP;
-extern WPtr Stack, ReturnArea;
-extern WPtr StackAreaHigh, StackAreaLow ;
-%%]
+#define LOCALSSIZE 1000
 
+extern WPtr SP, RP;
+extern WPtr Stack, ReturnArea, LocalsArea;
+extern WPtr StackAreaHigh, StackAreaLow ;
+
+#ifdef __UHC_TARGET_C__
+extern Word 
+  Ret0,  Ret1,  Ret2,  Ret3,  Ret4,  Ret5,  Ret6,  Ret7,  Ret8,  Ret9
+, Ret10, Ret11, Ret12, Ret13, Ret14, Ret15, Ret16, Ret17, Ret18, Ret19
+, Ret20, Ret21, Ret22, Ret23, Ret24, Ret25, Ret26, Ret27, Ret28, Ret29
+, Ret30, Ret31, Ret32, Ret33, Ret34, Ret35, Ret36, Ret37, Ret38, Ret39
+, Ret40, Ret41, Ret42, Ret43, Ret44, Ret45, Ret46, Ret47, Ret48, Ret49
+, Ret50, Ret51, Ret52, Ret53, Ret54, Ret55, Ret56, Ret57, Ret58, Ret59
+, Ret60, Ret61, Ret62, Ret63, Ret64, Ret65, Ret66, Ret67, Ret68, Ret69
+, Ret70, Ret71, Ret72, Ret73, Ret74, Ret75, Ret76, Ret77, Ret78, Ret79
+, Ret80, Ret81, Ret82, Ret83, Ret84, Ret85, Ret86, Ret87, Ret88, Ret89
+, Ret90, Ret91, Ret92, Ret93, Ret94, Ret95, Ret96, Ret97, Ret98, Ret99;
+
+#define makeNodeDescriptor(bruto,netto,hasptr) ((bruto)<<16|(netto)<<1|(hasptr))
+
+#endif
+
+
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Globals
@@ -242,7 +207,7 @@ extern int traceLevel ;
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Postamble
+%%% EOF
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8

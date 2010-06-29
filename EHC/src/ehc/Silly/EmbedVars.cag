@@ -18,6 +18,8 @@ WRAPPER SilModule
 %%]
 %%[(8 codegen grin) hs import({%{EH}Base.Opts})
 %%]
+%%[(8 codegen grin) hs import(Data.Bits)
+%%]
 %%[(8 codegen grin) hs import(qualified Data.Map as Map)
 %%]
 %%[(8 codegen grin) hs import(qualified Data.Set as Set)
@@ -26,14 +28,15 @@ WRAPPER SilModule
 %%]
 
 %%[(8 codegen grin) hs
+
+
+decrement :: Int -> Int
+decrement n = n-1
+
 embedVars :: EHCOpts -> SilModule -> SilModule
 embedVars options input   
   = let t = wrap_SilModule (sem_SilModule input)
-                           (Inh_SilModule {opts_Inh_SilModule = if ehcOptEmitLLVM options
-                                                                then options{ ehcOptOwn = 0 }
-                                                                else options
-                                          } 
-                           )
+                           (Inh_SilModule {opts_Inh_SilModule = options})
     in trf_Syn_SilModule t
 %%]
 
@@ -41,68 +44,226 @@ embedVars options input
 
 ATTR SilModule   [ opts : {EHCOpts} | | ]
 ATTR AllNT [ | | trf: SELF ]
-ATTR Statement Statements Alternative Alternatives Variable Value Values [ distance : {Int} | | ]
+
+ATTR Statement Statements Alternative Alternatives Variable Value Values [ numberLocals : {Int} | | ]
 ATTR Statement Statements Alternative Alternatives                       [ | embedMap : {EmbedMap} | ]
 ATTR Variable Value Values                                               [ embedMap : {EmbedMap} | | ]
+
+
 ATTR Statement Statements Alternative Alternatives Variable              [ | | localsSet USE {`Set.union`} {Set.empty}: {Set.Set HsName} ]
-ATTR Statement Statements Alternative Alternatives Variable Value Values [ | | usedSet USE {`Set.union`} {Set.empty}: {Set.Set HsName} ]
-ATTR Statement Statements Alternative Alternatives                       [ neededSet: {Set.Set HsName} | | ]
+
+ATTR Statement Statements Alternative Alternatives Variable              [ | | definedBelow USE {`Set.union`} {Set.empty}: {Set.Set HsName} ]
+ATTR Statement Statements Alternative Alternatives                       [ definedEarlier: {Set.Set HsName} | | ]
+
+ATTR Statement Statements Alternative Alternatives Variable Value Values [ | | usedBelow USE {`Set.union`} {Set.empty}: {Set.Set HsName} ]
+ATTR Statement Statements Alternative Alternatives                       [ usedLater: {Set.Set HsName} | | ]
+
+-- Old style, but still in use for embedding
+--ATTR Statement Statements Alternative Alternatives                       [ neededSet: {Set.Set HsName} | | ]
+--ATTR Statement Statements Alternative Alternatives Variable Value Values [ | | usedSet USE {`Set.union`} {Set.empty}: {Set.Set HsName} ]
+
+
+
 ATTR Statement Statements Alternative Alternatives                       [ numberParameters : {Int} | | ]
 ATTR Statement                                                           [ | | trfStats: {[Statement]} ]
 ATTR Function Functions 
-     Statement Statements Alternative Alternatives Value Values Variable [ optOwn  : {Int}  | | ]
+     Statement Statements Alternative Alternatives Value Values Variable [ optGenOwn  : {Bool}  | | ]
+
+ATTR Function Functions                                                  [ | | frameSizes USE {`Map.union`} {Map.empty}: {Map.Map HsName Int} ]
+ATTR Function Functions 
+     Statement Statements Alternative Alternatives                       [ frameSizeMp : {Map.Map HsName Int} | | ]
+
 
 SEM SilModule
-  | SilModule  loc.optOwn  = ehcOptOwn @lhs.opts
+  | SilModule  loc.optGenOwn            = not (ehcOptEmitLLVM @lhs.opts)
+               functions. frameSizeMp   = @functions.frameSizes
+
+
+ATTR Values [ | | length : {Int} ]
+
+SEM Values
+  | Nil lhs.length = 0
+  | Cons lhs.length = 1 + @tl.length
+
+
+ATTR Functions Function 
+     Statements Statement 
+     Alternatives Alternative             [  |  retNr : {Int} |  ]
+                                
+
+SEM SilModule
+  | SilModule     functions . retNr   = 3
+
+
+ATTR Statements Statement Alternatives Alternative [ localsEnv : {Map.Map HsName SilTp}  |  |  ]
+
+SEM Function
+  | Function      body.localsEnv = Map.fromList @locals
+
+
+--SEM Statements
+--  | Cons  lhs.retNr < lhs.definedBelow
+
+
 
 
 %%]
 
 %%[(8 codegen grin)
-SEM Statements
-  | Cons      lhs . trf      = @hd.trfStats ++ @tl.trf
+
+{
+worthyIsPointer :: HsName -> Map.Map HsName SilTp -> Bool
+worthyIsPointer x env
+  =  case Map.lookup x env of
+       Nothing -> trace ("warning: " ++ show x ++ " not in localsEnv\n") False
+       Just t  -> case t of
+                    SilTpPtr   -> True
+                    SilTpWord  -> False
+                    SilTpTag   -> False
+                    SilTpUnion -> {- trace ("warning: " ++ show x ++ " has ambiguous type " ++ show t ++ "\n") -} True
+                    _          -> {- trace ("warning: " ++ show x ++ " has unknown type "   ++ show t ++ "\n") -} True
+       
+}
 
 SEM Statement
-  | Smart     lhs . trf      = Statement_Comment ["Smart"]
-  | Smart     lhs . trfStats = let dp = @lhs.distance+ @lhs.numberParameters
-                                   smartTups = zip [dp+1,dp ..] @vals.trf
-                                in smartAssignment smartTups
-  | * - Smart lhs . trfStats = [@loc.trf]
-  
+  | Call      lhs . trfStats =  if not @lhs.optGenOwn
+                                then [@loc.trf]
+                                else if @tailJumps
+                                then (  let nl = @lhs.numberLocals
+                                            np = @lhs.numberParameters
+                                            frameSize    = nl + np + 1
+                                            sources      = reverse @args.trf                                                    -- put arguments on the stack
+                                            destinations = iterate decrement (frameSize -2)
+                                            adjust       = frameSize - (Map.findWithDefault (error (show @name ++ " not found in frameSizeMp")) @name @lhs.frameSizeMp)
+                                        in  Statement_Comment ["Tailcall"]
+                                            :
+                                            smartAssignment (zip destinations sources)                                          -- do stack-putting in an overlapping fashion with the original stack contents
+                                            ++
+                                            [ Statement_Assignment Variable_SP (Value_Offset Variable_SP adjust)                -- adjust stack: increment for original parameters&callinfo&locals, decrement for new parameters&callinfo
+                                            | adjust /= 0                                                                       --   (if necessary)
+                                            ]
+                                            ++
+                                            [ Statement_Call @name True []                                                      -- do the jump, which will return to the original return address
+                                            ]
+                                     )
+                                else (  let nl = @lhs.numberLocals
+                                            np = @lhs.numberParameters
+                                            worthyVars  = [ (nl-n,v)
+                                                          | Variable_Local n v <- Map.elems @lhs.embedMap
+                                                          , Set.member v @lhs.usedLater
+                                                          , Set.member v @lhs.definedEarlier
+                                                          , worthyIsPointer v @lhs.localsEnv
+                                                          ]
+                                            worthyNames   = map snd worthyVars
+                                            worthyIndexes = map fst worthyVars ++ [nl .. nl+np-1]
+                                            stackInfo = (nl+np, Set.fromList worthyIndexes)
+                                            sources       = Value_Label @loc.label                                              -- put return address on the stack
+                                                            : reverse @args.trf                                                 -- put arguments on stack
+                                            destinations  = (map (Variable_Subs Variable_SP) (iterate decrement (-1)))
+                                            adjust        = - (Map.findWithDefault (error (show @name ++ " not found in frameSizeMp")) @name @lhs.frameSizeMp)
+                                        in  Statement_Comment ["Call, worthy: " ++ show worthyNames]
+                                            : zipWith Statement_Assignment destinations sources                                 -- do stack-putting by assignments
+                                            ++ 
+                                            [ Statement_Assignment Variable_SP (Value_Offset Variable_SP adjust)                -- adjust stack: decrement for new parameters&callinfo
+                                            , Statement_Call @name False []                                                     -- do the call (in fact a jump, which will return one line below here)
+                                            , Statement_Label @loc.label stackInfo                                              -- return here after the call
+                                            ]
+                                     )
+           lhs.retNr     = if @tailJumps
+                           then @lhs.retNr
+                           else @lhs.retNr + 1       -- increment the return label counter if necessary
+           loc.label     = "retlab"++show @lhs.retNr
 
+                                
+  | Return    lhs . trfStats = let nl = @lhs.numberLocals
+                                   np = @lhs.numberParameters
+                                   frameSize = nl +  np + 1
+                               in  zipWith Statement_Assignment 
+                                           [Variable_Subs Variable_RP i | i <- [0..] ]
+                                           @vals.trf
+                                   ++
+                                   (  if @lhs.optGenOwn
+                                      then [ Statement_Assignment Variable_SP (Value_Offset Variable_SP frameSize)
+                                           , Statement_Return []
+                                           ]                                    
+                                      else []
+                                   )
+
+  | Assignment lhs . trfStats     = if @source.isAlloc
+                                    then let worthyNames = [ v
+                                                           | Variable_Local n v <- Map.elems @lhs.embedMap
+                                                           , Set.member v @lhs.usedLater
+                                                           , Set.member v @lhs.definedEarlier
+                                                           , worthyIsPointer v @lhs.localsEnv
+                                                           ]
+                                         in  [ Statement_Comment ["Allocation, worthy: " ++ show worthyNames]
+                                             , @loc.trf
+                                             ]
+                                    else [@loc.trf]
+               source.stackInfo   = if @source.isAlloc
+                                    then let   nl = @lhs.numberLocals
+                                               np = @lhs.numberParameters
+                                               worthyIndexes  = [ nl - n
+                                                                | Variable_Local n v <- Map.elems @lhs.embedMap
+                                                                , Set.member v @lhs.usedLater
+                                                                , Set.member v @lhs.definedEarlier
+                                                                , worthyIsPointer v @lhs.localsEnv
+                                                                ]
+                                                                ++ 
+                                                                [nl .. nl + @lhs.numberParameters-1]
+                                         in  (nl+np, Set.fromList worthyIndexes)
+                                    else undefined
+
+  | * - Return
+        Assignment
+        Call   lhs . trfStats = [@loc.trf]
+        
+        
+SEM Statement        
+  | Assignment2 source   . stackInfo  = undefined
+  | IfThenElse  condition. stackInfo  = undefined
+  | Switch      scrutinee. stackInfo  = undefined
+  | Voiden      val      . stackInfo  = undefined
+  
+SEM Values
+  | Cons        hd       . stackInfo  = undefined
+               
+
+SEM Statements
+  | Cons      lhs . trf      =   @hd.trfStats ++ @tl.trf
+
+
+ATTR Value [ stackInfo : {StackInfo} | | isAlloc : {Bool} ]
+
+SEM Value
+  | Alloc    lhs . isAlloc = True
+             lhs . trf     = Value_Alloc @size @gcManaged @lhs.stackInfo
+  | *-Alloc  lhs . isAlloc = False
 
 SEM Function
   | Function  lhs . trf    =  Function_Function @name
-                                                @tailJumps
                                                 -- parameters
-                                                (if @lhs.optOwn>=1 then [] else @parameters)
+                                                (if @lhs.optGenOwn then [] else @parameters)
                                                 -- locals
-                                                (if @lhs.optOwn>=2
-                                                 then [] 
-                                                 else if @lhs.optOwn>=1 then @loc.newlocals ++ @parameters else @loc.newlocals
-                                                )
+                                                (if @lhs.optGenOwn then [] else @locals)
                                                 -- body
-                                                (  (if   @lhs.optOwn==1 && not (null @parameters)
-                                                    then Statement_Comment ["Parameters"]
-                                                         : zipWith Statement_Assignment
-                                                                   (map (Variable_Param undefined) @parameters)
-                                                                   (map (Value_Var . Variable_Subs Variable_SP) [2..])
-                                                    else []
+                                                (  ( if   @lhs.optGenOwn
+                                                     then [ Statement_Comment ["Expects " ++ show (length @parameters) ++ " parameters, uses " ++ show @loc.numberLocals ++ " local variables" ]
+                                                          ]
+                                                     else []
                                                    )
-                                                ++ (if   @lhs.optOwn>=1
-                                                    then [ Statement_Assignment Variable_SP (Value_Offset Variable_SP (- @loc.distance))
-                                                         ]
-                                                    else []
-                                                   )
-                                                ++ @body.trf
+                                                   ++ @body.trf
                                                 )
+
+SEM Function
+  | Function  lhs . frameSizes = Map.singleton @name (@loc.numberLocals + length @parameters + 1)
+
                                                 
 SEM Function
   | Function  body . numberParameters = length @parameters
-              loc  . distance = maxNeededLocal @body.localsSet @body.embedMap + @loc.roomForCcalls
-              loc  . roomForCcalls= 2
-              loc  . newlocals  =  Set.toList (Set.difference @body.localsSet (Set.fromList @parameters))
               body . embedMap = Map.fromList (zipWith (makeEmbedTupel Variable_Param) [1..] @parameters)
+              loc  . numberLocals : {Int}
+              loc  . numberLocals = maxNeededLocal @body.localsSet @body.embedMap
 
 
 ATTR Variable [ | | unembeddedName : {Maybe HsName} ]
@@ -116,7 +277,9 @@ SEM Statement
                 loc . embedMap = maybe @lhs.embedMap
                                        (\name@(HNmNr nr _) -> if    Map.member nr @lhs.embedMap
                                                               then  @lhs.embedMap
-                                                              else  let newint = 1 + maxNeededLocal @lhs.neededSet @lhs.embedMap
+                                                              else  let -- newint = 1 + maxNeededLocal undefined @lhs.embedMap
+                                                                        newint = 1 + maxNeededLocal @lhs.usedLater @lhs.embedMap
+                                                                        -- newint = 1 + maxNeededLocal @lhs.neededSet @lhs.embedMap
                                                                         newvar = Variable_Local newint name
                                                                     in  -- trace ("new local: " ++ show newvar ) $
                                                                         Map.insert nr newvar @lhs.embedMap
@@ -125,20 +288,50 @@ SEM Statement
   
 {
 maxNeededLocal :: Set.Set HsName -> EmbedMap -> Int
-maxNeededLocal s m = let ns = [ n |  Variable_Local n v <- Map.elems m , Set.member v s ]
+maxNeededLocal s m = let ns = [ n |  Variable_Local n v <- Map.elems m 
+                              -- , Set.member v s 
+                              ]
                      in  if null ns then 0 else maximum ns
 }
 
 
 
+-------------------------------------------------------------------------
+--  Sets of variables that are defined or used in various places
+-------------------------------------------------------------------------
+
+
+--SEM Variable
+--  | Unembedded      lhs . usedSet = Set.singleton @name
+
+--SEM Function
+--  | Function       body . neededSet = Set.empty
+  
+--SEM Statements
+--  | Cons           hd . neededSet = Set.union @lhs.neededSet @tl.usedSet
+
+--SEM Alternatives
+--  | Cons           hd . neededSet = Set.union @lhs.neededSet @tl.usedSet
+
+
+
+
+SEM Variable
+  | Unembedded      lhs . usedBelow              = Set.singleton @name     -- for all Variables, also those in Values
+  | Unembedded      lhs . definedBelow           = Set.singleton @name     -- only for Variables that are destination of an Assignment
+
 SEM Function
-  | Function       body . neededSet = Set.empty
+  | Function        body . usedLater             = Set.empty
+  | Function        body . definedEarlier        = Set.empty
   
 SEM Statements
-  | Cons           hd . neededSet = Set.union @lhs.neededSet @tl.usedSet
+  | Cons            hd . usedLater               = Set.union @tl.usedBelow    @lhs.usedLater 
+  | Cons            tl . definedEarlier          = Set.union @hd.definedBelow @lhs.definedEarlier
 
 SEM Alternatives
-  | Cons           hd . neededSet = Set.union @lhs.neededSet @tl.usedSet
+  | Cons            lhs . definedBelow           = Set.union @hd.definedBelow @tl.definedBelow
+--  | Cons            hd . usedLater         = Set.union @lhs.usedLater @tl.usedBelow                  -- should not be necessary
+
 
 
 SEM Variable
@@ -147,22 +340,15 @@ SEM Variable
                                        _                      -> Set.singleton @name
   | *-Unembedded    lhs . localsSet = Set.empty
 
-SEM Variable
-  | Unembedded      lhs . usedSet = Set.singleton @name
 
 
 SEM Variable
-  | Unembedded   lhs.trf = (if @lhs.optOwn>=2 then (embed2 @lhs.distance) else embed) @lhs.embedMap @name
-
-SEM Variable
-  | Subs         lhs.trf = if @array.trf==Variable_BP
-                            then Variable_Subs Variable_SP (@index + @lhs.distance)
-                            else Variable_Subs @array.trf @index
-
-SEM Value
-  | Offset       lhs.trf = if @var.trf==Variable_BP
-                            then Value_Offset Variable_SP (@off + @lhs.distance)
-                            else Value_Offset @var.trf @off
+  | Unembedded   lhs.trf =  embedUsing (if   @lhs.optGenOwn 
+                                        then strategyOnStack @lhs.numberLocals
+                                        else strategyId
+                                       ) 
+                                       @lhs.embedMap 
+                                       @name
 
 %%]
 
@@ -174,26 +360,25 @@ SEM Value
 
 type EmbedMap = Map.Map Int Variable
 type EmbedFunction = HsName->Variable
+type EmbedStrategy = Variable -> Variable
 
 makeEmbedTupel :: (Int->HsName->Variable) -> Int -> HsName -> (Int,Variable)
 makeEmbedTupel constr k x@(HNmNr n _) = (n, constr k x)
 
-embed :: EmbedMap -> EmbedFunction
-embed m x@(HNmNr n _) = if n==0
-                         then Variable_None
-                         else maybe (Variable_Global x)
-                                    id
-                                    (Map.lookup n m)
+strategyId :: EmbedStrategy
+strategyId v = v
 
-embed2 :: Int -> EmbedMap -> EmbedFunction
-embed2 d m x@(HNmNr n _) = if n==0
-                            then Variable_None
-                            else maybe (Variable_Global x)
-                                       (\v -> case v of
-                                                Variable_Local n _ -> Variable_Subs Variable_SP (d+0-n)
-                                                Variable_Param n _ -> Variable_Subs Variable_SP (d+1+n)
-                                       )
-                                       (Map.lookup n m)
+strategyOnStack :: Int -> EmbedStrategy
+strategyOnStack d (Variable_Local n _) = Variable_Subs Variable_SP (d-n)
+strategyOnStack d (Variable_Param n _) = Variable_Subs Variable_SP (d+n-1)
+
+embedUsing :: EmbedStrategy -> EmbedMap -> EmbedFunction
+embedUsing strat m x@(HNmNr n _) = if n==0
+                                   then Variable_None
+                                   else maybe (Variable_Global x)
+                                              strat
+                                              (Map.lookup n m)
+
 
 --showEmbedPair :: Int -> HptMap -> (Int,Variable) -> String
 --showEmbedPair d h (i, Variable_Param n name) = "Param " ++ show n ++ " \t" ++ postPad 12 (hsnShowAlphanumeric name) ++ "\tSP[" ++ show (d+1+n) ++ "]\t(" ++ show (getEnvVar h i) ++ ")"

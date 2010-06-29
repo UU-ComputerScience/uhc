@@ -7,14 +7,14 @@
 %%% Haskell importable interface to Foreign pretty print
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[94 hs module {%{EH}Foreign.Pretty} import(EH.Util.Pretty,{%{EH}Base.Common},{%{EH}Foreign}) 
+%%[90 hs module {%{EH}Foreign.Pretty} import(EH.Util.Pretty,{%{EH}Base.Common},{%{EH}Foreign}) 
 %%]
 
-%%[94.WRAPPER ag import({Foreign/AbsSyn})
+%%[90.WRAPPER ag import({Foreign/AbsSyn})
 WRAPPER ForeignAGItf
 %%]
 
-%%[94 hs export(ppForeignEnt)
+%%[90 hs export(ppForeignEnt)
 ppForeignEnt :: ForeignEnt -> PP_Doc
 ppForeignEnt ent
   =  let  t =  wrap_ForeignAGItf
@@ -30,7 +30,7 @@ instance PP ForeignEnt where
 %%% Foreign entity
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[94
+%%[90
 ATTR ForeignAGItf AllForeign [ | | pp: PP_Doc ]
 
 SEM PlainCall

@@ -33,6 +33,9 @@
 %%[(20 codegen) import ({%{EH}Core}(HsName2OffsetMp))
 %%]
 
+%%[20 import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
+%%]
+
 %%[99 export(modImpPrelude)
 %%]
 
@@ -71,7 +74,20 @@ mentIsCon e = mentKind e == IdOcc_Data || mentKind e == IdOcc_Class
 
 %%]
 
-%%[20 export(ppModMp)
+%%[20 export(mentrelStrip)
+mentStrip :: ModEnt -> ModEnt
+mentStrip e = e {mentRange = emptyRange}
+
+mentrelStrip :: ModEntRel -> ModEntRel
+mentrelStrip = Rel.mapDomRng (\(n,e) -> (n,mentStrip e))
+%%]
+
+%%[20
+deriving instance Typeable ModEnt
+deriving instance Data ModEnt
+%%]
+
+%%[20
 -- intended for parsing
 ppModEnt :: CfgPP x => x -> ModEnt -> PP_Doc
 ppModEnt x e
@@ -98,12 +114,58 @@ instance PP ModEntRel where
   pp = ppModEntRel' CfgPP_Plain
 %%]
 
-%%[20
+%%[2020
 instance PPForHI ModEnt where
   ppForHI = ppModEnt CfgPP_HI
 
 instance PPForHI ModEntRel where
   ppForHI = ppModEntRel' CfgPP_HI
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Filter Map, for filtering HIInfo by visibility as known from a ModEntRel
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[20 export(ModEntRelFilterMp,mentrelFilterMpUnion,mentrelFilterMpUnions,mentrelToFilterMp,mentrelToFilterMp')
+-- | names used per category of identifier
+type ModEntRelFilterMp = Map.Map IdOccKind HsNameS
+
+mentrelFilterMpUnion :: ModEntRelFilterMp -> ModEntRelFilterMp -> ModEntRelFilterMp
+mentrelFilterMpUnion = Map.unionWith Set.union
+
+mentrelFilterMpUnions :: [ModEntRelFilterMp] -> ModEntRelFilterMp
+mentrelFilterMpUnions [] = Map.empty
+mentrelFilterMpUnions l  = foldr mentrelFilterMpUnion Map.empty l
+
+-- | extract ModEntRelFilterMp from export relation
+mentrelToFilterMp' :: Bool -> [HsName] -> ModEntRel -> ModEntRelFilterMp
+mentrelToFilterMp' inclOwns exclModNmL r
+  = rget True $ Rel.rng r
+  where get (ModEnt {mentIdOcc=(IdOcc {ioccKind=k, ioccNm=n}), mentOwns=owns})
+                       = mentrelFilterMpUnion (mentrelFilterMpSingleton exclModNmL k n) (rget inclOwns owns)
+        rget True occs = mentrelFilterMpUnions [ get e | e <- Set.toList occs ]
+        rget _    _    = Map.empty
+
+-- | extract ModEntRelFilterMp from export relation
+mentrelToFilterMp :: [HsName] -> ModEntRel -> ModEntRelFilterMp
+mentrelToFilterMp = mentrelToFilterMp' True
+%%]
+
+%%[20 export(mentrelFilterMpModuleNames)
+-- | extract used module names from ModEntRelFilterMp
+mentrelFilterMpModuleNames :: ModEntRelFilterMp -> HsNameS
+mentrelFilterMpModuleNames m = Set.unions [ Set.map fromJust $ Set.filter isJust $ Set.map hsnQualifier s | s <- Map.elems m ]
+%%]
+
+%%[20 export(mentrelFilterMpSingleton)
+-- | construct a singleton, only not of the current module
+mentrelFilterMpSingleton :: [HsName] -> IdOccKind -> HsName -> ModEntRelFilterMp
+mentrelFilterMpSingleton exclModNmL k n
+  = case hsnQualifier n of
+      Just m | not (m `elem` exclModNmL)
+        -> Map.singleton k (Set.singleton n)
+        where
+      _ -> Map.empty
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -398,7 +460,7 @@ data ModMpInfo
       , mmiExps     		:: !ModEntRel
       , mmiHiddenExps     	:: !ModEntRel
 %%[[(20 codegen)
-      , mmiNmOffMp  		:: !HsName2OffsetMp
+      , mmiNmOffMp  		:: !HsName2OffsetMp		-- cached mapping of names to offsets, for all that is exported, visible or hidden
 %%]]
       }
 
@@ -406,8 +468,8 @@ instance Show ModMpInfo where
   show _ = "ModMpInfo"
 
 instance PP ModMpInfo where
-  pp i =   "In scp     :" >#< (ppAssocL $ Rel.toList $ mmiInscps i)
-       >-< "Exps       :" >#< (ppAssocL $ Rel.toList $ mmiExps   i)
+  pp i =   "In scp     :" >#< (ppAssocL $ Rel.toList $ mmiInscps       i)
+       >-< "Exps       :" >#< (ppAssocL $ Rel.toList $ mmiExps         i)
        >-< "Hidden Exps:" >#< (ppAssocL $ Rel.toList $ mmiHiddenExps   i)
 
 emptyModMpInfo :: ModMpInfo
@@ -415,19 +477,41 @@ emptyModMpInfo = mkModMpInfo hsnUnknown Rel.empty Rel.empty Rel.empty
 
 mkModMpInfo :: HsName -> ModEntRel -> ModEntRel -> ModEntRel -> ModMpInfo
 mkModMpInfo modNm i e he
-  = ModMpInfo
-      { mmiInscps   		= i
-      , mmiExps     		= e
-      , mmiHiddenExps     	= he
+  = resetModMpInfo modNm
+    $ ModMpInfo
+        { mmiInscps   		= i
+        , mmiExps     		= e
+        , mmiHiddenExps     = he
 %%[[(20 codegen)
-      , mmiNmOffMp  		= expsNmOffMp modNm $ e `Rel.union` he
+        , mmiNmOffMp  		= Map.empty
 %%]]
-      }
+        }
 
+resetModMpInfo :: HsName -> ModMpInfo -> ModMpInfo
+%%[[20
+resetModMpInfo _     i = i
+%%][(20 codegen)
+resetModMpInfo modNm i = i {mmiNmOffMp = expsNmOffMp modNm $ mmiExps i `Rel.union` mmiHiddenExps i}
+%%]]
+%%]
+
+%%[20 export(ppModMp)
 type ModMp = Map.Map HsName ModMpInfo
 
 ppModMp :: ModMp -> PP_Doc
 ppModMp = vlist . map (\(n,i) -> n >#< pp i) . Map.toList
+%%]
+
+%%[20 export(modMpAddHiddenExps)
+modMpAddHiddenExps :: HsName -> [(HsName,IdOccKind)] -> ModMp -> ModMp
+modMpAddHiddenExps modNm newExpNms mm
+  = Map.update (\i@(ModMpInfo {mmiHiddenExps=he})
+                  -> Just $ resetModMpInfo modNm
+                          $ i { mmiHiddenExps
+                                  = Rel.fromList [ (n, ModEnt occk (IdOcc n occk) Set.empty emptyRange) | (n,occk) <- newExpNms ]
+                                    `Rel.union` he
+                              }
+               ) modNm mm
 %%]
 
 The exported names of the module
@@ -442,8 +526,10 @@ expsNmOffMp modNm exps
     $ [ nm
       | e <- Set.toList $ Rel.rng exps
       , mentKind e == IdOcc_Val
-      , let nm = ioccNm (mentIdOcc e)
-      , panicJust "Module.expsNmOffMp" (hsnQualifier nm) == modNm
+      , let nm     = ioccNm (mentIdOcc e)
+            mbqual = hsnQualifier nm
+      , isJust mbqual		-- unqualified names cannot be exported, but they should not intro'd in the 1st place!! TBD 20100303 AD
+      , panicJust ("Module.expsNmOffMp: " ++ show nm) mbqual == modNm
       ]
 %%]
 
@@ -460,7 +546,7 @@ modMpCombine ms mp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% ForceEval
+%%% Instances: ForceEval
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[102
@@ -468,4 +554,13 @@ instance ForceEval ModEnt where
   fevCount (ModEnt k i o) = cmUnions [cm1 "ModEnt",fevCount k,fevCount i,fevCount o]
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Instances: Binary, Serialize
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[20
+instance Serialize ModEnt where
+  sput (ModEnt a b c d) = sput a >> sput b >> sput c >> sput d
+  sget = liftM4 ModEnt sget sget sget sget
+%%]
 

@@ -12,6 +12,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
+%%]
 Ptr mm_malloc( size_t size ) {
 	void* p = malloc( size ) ;
 	if ( p == NULL ) { rts_panic1_1( "malloc failed", size ) ; }
@@ -28,22 +29,17 @@ void mm_free( Ptr ptr ) {
 	free( ptr ) ;
 }
 
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Abstraction interface around allocation: system provided malloc
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-MM_Malloc mm_malloc_Sys =
-	{ mm_malloc
-	, mm_realloc
-	, mm_free
-	} ;
+MM_Malloc* mm_malloc_Sys = &sys_malloc_Sys ;
 %%]
 
 %%[8
-MM_Malloc* mm_malloc_EHC = &mm_malloc_Sys ;
+MM_Malloc* mm_malloc_EHC = &sys_malloc_Sys ;
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

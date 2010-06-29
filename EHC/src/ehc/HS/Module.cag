@@ -70,6 +70,7 @@ SEM Module
                                                || @realModuleNm == hsnModPrelude
                                                || hsnIsInPrelude @realModuleNm
                                                || not (ehcOptUseAssumePrelude @lhs.opts)
+                                               || Set.member Pragma.Pragma_NoImplicitPrelude @fileHeaderPragmas
                                             then @body.modImpL
                                             else modImpPrelude : @body.modImpL
 %%]
@@ -162,7 +163,7 @@ mkInstDefsRel useimplicitly instancename maybeinstancename idOccDef idOccDefVal
 %%[20
 ATTR
   Declaration Declarations Body
-%%[[95
+%%[[91
   AllDeriving
 %%]]
     [ | | modDefsRel     USE {`Rel.union`} {Rel.empty}: ModEntRel
@@ -176,16 +177,21 @@ SEM Declaration
         lhs             .   modDefsRel  =   Rel.fromList [ (hsnQualified (ioccNm o),ModEnt IdOcc_Type o Set.empty @range) | o <- @idOccDefs ]
     | Data Newtype
         loc             .   modDefsRel  =   Rel.singleton
-                                              @simpletype.name
+                                              @typelefthandside.name
                                               (ModEnt IdOcc_Data @idOccDef (Set.fromList @modEntsSub) @range)
-%%[[95
+%%[[91
                                             `Rel.union`
                                             @derivings.modDefsRel
 %%]]
-                        .   modEntsSub  =   [ ModEnt IdOcc_Val o Set.empty @range | o <- @idOccDefsCon ++ @idOccDefsFld ]
+                        .   modEntsSub  =   [ ModEnt (ioccKind o) o Set.empty @range
+                                            | o <- @idOccDefsCon ++ @idOccDefsFld
+%%[[92
+                                                   ++ @idOccDefsGener
+%%]]
+                                            ]
     | Class
         loc             .   modDefsRel  =   Rel.singleton
-                                              @simpletype.name
+                                              @typelefthandside.name
                                               (ModEnt IdOcc_Class @idOccDef (Set.fromList @modEntsSub) @range)
                         .   (_,modHideDefsRel)
                                         =   mkInstDefsRel False @instancename Nothing @idOccDef @idOccDefVal
@@ -206,7 +212,7 @@ SEM Body
                                             `Rel.union` 
                                             (Rel.fromList [ (hsnQualified n,ModEnt IdOcc_Val (doccOcc d) Set.empty @range) | (n,d) <- idDefOccGamByKind IdOcc_Val @declarations.idDefOccGam ])
 
-%%[95
+%%[91
 SEM Deriving
     | Deriving
         lhs             .   (modDefsRel,modHideDefsRel)

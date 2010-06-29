@@ -37,8 +37,9 @@ MK_SHARED_MKF								:= $(MK_PREFIX)shared.mk
 # 17: + Polarity inference (co/contravariance)
 # 18: + Unboxed types
 # 20: + module system
-# 94: + full FFI (foreign function interface) (TBD)
-# 95: + deriving construct
+# 90: + full FFI (foreign function interface) (TBD)
+# 91: + deriving construct
+# 92: + generics (for deriving)
 # 96: + exception handling
 # 97: + numbers: Integer, Float, Double
 # 98: + IO
@@ -63,8 +64,9 @@ EHC_UHC_VARIANT					:= 100
 EHC_UHC_INSTALL_VARIANT			:= 101
 EHC_PREL_VARIANTS				:= $(EHC_PREL_VARIANT) $(EHC_UHC_VARIANT) $(EHC_UHC_INSTALL_VARIANT)
 EHC_GMP_VARIANTS				:= $(EHC_PREL_VARIANTS) 97 98 $(EHC_OTHER_CODE_VARIANTS)
+EHC_LTM_VARIANTS				:= $(EHC_GMP_VARIANTS)
 EHC_PUB_NOCODE_VARIANTS			:= 1 2 3 4 5 6 7
-EHC_PUB_NOPREL_VARIANTS			:= 8 9 10 11 12 13 14 15 17 20 94 95 96 97 98
+EHC_PUB_NOPREL_VARIANTS			:= 8 9 10 11 12 13 14 15 17 20 90 91 92 96 97 98
 EHC_PUB_CODE_VARIANTS			:= $(EHC_PUB_NOPREL_VARIANTS) $(EHC_PREL_VARIANTS)
 EHC_PUB_VARIANTS				:= $(EHC_PUB_NOCODE_VARIANTS) $(EHC_PUB_CODE_VARIANTS)
 EHC_OTHER_NOCODE_VARIANTS		:= 4_2 6_4 7_2
@@ -93,6 +95,21 @@ EXIT_IF_ABSENT_LIB_OR_TOOL		:= @EXIT_IF_ABSENT_LIB_OR_TOOL@
 # which specific target is built, used by rts
 EHC_CFG_TARGET_IS_bc					:= $(filter bc,$(EHC_VARIANT_TARGET))
 EHC_CFG_TARGET_IS_C						:= $(filter C,$(EHC_VARIANT_TARGET))
+EHC_CFG_TARGET_IS_llvm					:= $(filter llvm,$(EHC_VARIANT_TARGET))
+
+# which MP lib
+EHC_CFG_MPLIB							:= @MPLIB@
+
+# whether LTM sources should be included in rts
+ifeq (@MPLIB@,ltm)
+EHC_CFG_USE_LTM							:= $(filter $(EHC_VARIANT),$(EHC_LTM_VARIANTS))
+endif
+
+# whether GMP library should be build and linked in when compiling
+ifeq (@MPLIB@,gmp)
+EHC_CFG_USE_GMP							:= $(filter $(EHC_VARIANT),$(EHC_GMP_VARIANTS))
+EHC_CFG_GMP_LIB_ARCHIVE					:= @GMP_LIB_ARCHIVE@
+endif
 
 ###########################################################################################
 # Names of compiler executables
@@ -112,24 +129,22 @@ DEVELOPMENT_PLATFORM				:= @DEVELOPMENT_PLATFORM@
 TOPLEVEL_SYSTEM_ABSPATH_PREFIX		:= @TOPLEVEL_SYSTEM_ABSPATH_PREFIX@
 
 ###########################################################################################
-# WinXX specific file name conversions
+# SVN revision nr, and cmd to extract, if present
 ###########################################################################################
 
-# convert prefix '/cygdrive/c' to 'c:', if any
-# $1: filepath
-WINXX_CYGWIN_NAME1		= $(if $(filter /cygdrive/c%,$(1)),$(subst /cygdrive/c,c:,$(1)),$(1))
-
-# convert prefix '/c/' to '/cygdrive/c/' (and similarly, some others), if any
-# $1: filepath
-WINXX_CYGWIN_NAME2		= $(if $(filter /c/% /d/% /e/% /f/% /g/% /h/%,$(1)),$(patsubst %,/cygdrive%,$(1)),$(1))
-
-# convert prefix 'd:/' to '/d/', if any
-# $1: filepath
-WINXX_CYGWIN_NAME3D		= $(if $(filter d:/%,$(1)),$(patsubst d:/%,/d/%,$(1)),$(1))
+SVN_VERSION_EXISTS		:= @SVN_VERSION_EXISTS@
+SVN_VERSION_CMD			:= @SVN_VERSION_CMD@
+SVN_REVISION			:= @SVN_REVISION@
 
 ###########################################################################################
 # Locations in source, build and install
 ###########################################################################################
+
+# suffix for build + (temporary) install locations + package names
+EHC_BUILD_SUFFIX	:= @EHC_BUILD_SUFFIX@
+ifneq ($(EHC_BUILD_SUFFIX),)
+EHC_BUILD_SUFFIX_DASH					:= -$(EHC_BUILD_SUFFIX)
+endif
 
 # location for binaries
 BIN_PREFIX			:= $(TOP_PREFIX)bin/
@@ -143,15 +158,17 @@ HDOCABS_PREFIX		:= $(TOPABS_PREFIX)hdoc/
 LIB_PREFIX			:= $(TOP_PREFIX)lib/
 
 # location for cabal installed stuff (mainly libraries), and other build time installs, used when building ehc
-INSTALLFORBLD_PREFIX			:= $(TOP_PREFIX)@INPLACE_INSTALLFORBLD_DIR@/
-INSTALLFORBLDABS_PREFIX			:= $(TOPABS_PREFIX)@INPLACE_INSTALLFORBLD_DIR@/
-INSTALLFORBLDABS_FLAG_PREFIX	:= $(INSTALLFORBLDABS_PREFIX)ins-flg-
+INSTALLFORBLD_PREFIX			:= $(TOP_PREFIX)@INPLACE_INSTALLFORBLD_DIR@$(EHC_BUILD_SUFFIX_DASH)/
+INSTALLFORBLDABS_PREFIX			:= $(TOPABS_PREFIX)@INPLACE_INSTALLFORBLD_DIR@$(EHC_BUILD_SUFFIX_DASH)/
+INSTALLFORBLDABS2_PREFIX		:= $(TOPABS2_PREFIX)@INPLACE_INSTALLFORBLD_DIR@$(EHC_BUILD_SUFFIX_DASH)/
+INSTALLFORBLDABS_FLAG_PREFIX	:= $(INSTALLFORBLDABS2_PREFIX)ins-flg-
 INSTALLFORBLDABS_LIB_PREFIX		:= $(INSTALLFORBLDABS_PREFIX)lib/
 INSTALLFORBLDABS_INC_PREFIX		:= $(INSTALLFORBLDABS_PREFIX)include/
 
 # location installed stuff, used when running ehc
-INSTALL_DIR						:= $(TOP_PREFIX)@INPLACE_INSTALL_DIR@
-INSTALLABS_DIR					:= $(TOPABS_PREFIX)@INPLACE_INSTALL_DIR@
+INSTALL_DIR						:= $(TOP_PREFIX)@INPLACE_INSTALL_DIR@$(EHC_BUILD_SUFFIX_DASH)
+INSTALLABS_DIR					:= $(TOPABS_PREFIX)@INPLACE_INSTALL_DIR@$(EHC_BUILD_SUFFIX_DASH)
+INSTALLABS2_DIR					:= $(TOPABS2_PREFIX)@INPLACE_INSTALL_DIR@$(EHC_BUILD_SUFFIX_DASH)
 
 INSTALL_PREFIX					:= $(INSTALL_DIR)/
 INSTALLABS_PREFIX				:= $(INSTALLABS_DIR)/
@@ -168,13 +185,13 @@ INSTALL_UHC_LIB_PREFIX	:= $(INSTALL_UHC_PREFIX)lib/
 INSTALL_UHC_INC_PREFIX	:= $(INSTALL_UHC_PREFIX)include/
 
 # location for building
-BLD_PREFIX			:= $(TOP_PREFIX)build/
-BLDABS_PREFIX		:= $(TOPABS_PREFIX)build/
+BLD_PREFIX			:= $(TOP_PREFIX)build$(EHC_BUILD_SUFFIX_DASH)/
+BLDABS_PREFIX		:= $(TOPABS_PREFIX)build$(EHC_BUILD_SUFFIX_DASH)/
 BLD_BIN_PREFIX		:= $(BLD_PREFIX)bin/
 BLD_LIBUTIL_PREFIX	:= $(BLD_PREFIX)libutil/
 
 # location for barebones
-BARE_PREFIX			:= $(TOP_PREFIX)bare/
+BARE_PREFIX			:= $(TOP_PREFIX)bare$(EHC_BUILD_SUFFIX_DASH)/
 
 # location for doc (end products)
 DOC_PREFIX			:= $(TOP_PREFIX)doc/
@@ -185,8 +202,7 @@ TEST_REGRESS_SRC_PREFIX				:= $(TEST_SRC_PREFIX)regress/
 
 # location for testing, is done after cd to test src dir, hence these relative paths, must correspond to above dirs w.r.t. nr of dir levels
 TEST_TOP_PREFIX						:= ../../
-#TEST_BIN_PREFIX						:= $(TEST_TOP_PREFIX)bin/
-TEST_BLD_PREFIX						:= $(TEST_TOP_PREFIX)build/
+TEST_BLD_PREFIX						:= $(TEST_TOP_PREFIX)build$(EHC_BUILD_SUFFIX_DASH)/
 
 # name of subdirectory for shared ehc library artifacts
 EHCLIB_SHARED						:= @EHCLIB_SHARED@
@@ -198,7 +214,9 @@ EHCLIB_SHARED						:= @EHCLIB_SHARED@
 # compilers and tools used
 AGC							:= @UUAGC_CMD@
 GHC							:= @GHC_CMD@
+GHC1						:= @GHC_CMD1@
 GHC_VERSION         		:= @GHC_VERSION@
+HSC2HS						:= @HSC2HS_CMD@
 HADDOCK						:= @HADDOCK_CMD@
 HADDOCK_VERSION     		:= @HADDOCK_VERSION@
 GCC							:= @GCC_CMD@
@@ -210,6 +228,7 @@ JAVAC						:= @JAVAC_CMD@
 JAR							:= @JAR_CMD@
 SHELL_FILTER_NONEMP_FILES	:= $(BINABS_PREFIX)filterOutEmptyFiles
 SHELL_AGDEPEND				:= $(BINABS_PREFIX)agdepend
+TAR							:= @TAR_CMD@
 
 # lhs2TeX
 LHS2TEX_ENV					:= $(LHS2TEX)
@@ -237,20 +256,28 @@ FUN_DIR_VARIANT_PREFIX						= $(1)/$(2)/
 FUN_DIR_VARIANT_XXX_PREFIX					= $(call FUN_DIR_VARIANT_PREFIX,$(1),$(2))$(3)/
 FUN_DIR_VARIANT_SHARED_PREFIX				= $(call FUN_DIR_VARIANT_XXX_PREFIX,$(1),$(2),shared)
 FUN_DIR_VARIANT_LIB_PREFIX					= $(call FUN_DIR_VARIANT_XXX_PREFIX,$(1),$(2),lib)
+FUN_DIR_VARIANT_LIB_PKG_PREFIX              = $(call FUN_DIR_VARIANT_LIB_PREFIX,$(1),$(2))pkg/
+FUN_DIR_VARIANT_BIN_PREFIX					= $(call FUN_DIR_VARIANT_XXX_PREFIX,$(1),$(2),bin)
 FUN_DIR_VARIANT_LIB_TARGET_PREFIX			= $(call FUN_DIR_VARIANT_LIB_PREFIX,$(1),$(2))$(3)/
 FUN_DIR_VARIANT_LIB_SHARED_PREFIX			= $(call FUN_DIR_VARIANT_SHARED_PREFIX,$(1),$(2))lib/
-FUN_DIR_VARIANT_LIB_TARGET_PKG_PREFIX		= $(call FUN_DIR_VARIANT_LIB_TARGET_PREFIX,$(1),$(2),$(3))$(4)/
+#FUN_DIR_VARIANT_PKGLIB_TARGET_PREFIX		= $(call FUN_DIR_VARIANT_LIB_TARGET_PREFIX,$(1),$(2),$(3))pkg/
+#FUN_DIR_VARIANT_LIB_TARGET_PKG_PREFIX		= $(call FUN_DIR_VARIANT_PKGLIB_TARGET_PREFIX,$(1),$(2),$(3))$(4)/
 FUN_DIR_VARIANT_INC_PREFIX					= $(call FUN_DIR_VARIANT_XXX_PREFIX,$(1),$(2),include)
 FUN_DIR_VARIANT_INC_TARGET_PREFIX			= $(call FUN_DIR_VARIANT_INC_PREFIX,$(1),$(2))$(3)/
 FUN_DIR_VARIANT_INC_SHARED_PREFIX			= $(call FUN_DIR_VARIANT_SHARED_PREFIX,$(1),$(2))include/
+
+FUN_PKG_VARIANT_TARGET_TVARIANT             = $(1)/$(2)/$(3)/$(4)
+FUN_DIR_PKG_VARIANT_TARGET_TVARIANT         = $(call FUN_DIR_VARIANT_LIB_PKG_PREFIX,$(1),$(3))$(call FUN_PKG_VARIANT_TARGET_TVARIANT,$(2),$(3),$(4),$(5))
 
 FUN_INSTALL_VARIANT_SHARED_PREFIX			= $(call FUN_DIR_VARIANT_SHARED_PREFIX,$(INSTALL_DIR),$(1))
 FUN_INSTALLABS_VARIANT_SHARED_PREFIX		= $(call FUN_DIR_VARIANT_SHARED_PREFIX,$(INSTALLABS_DIR),$(1))
 
 FUN_INSTALL_VARIANT_PREFIX					= $(call FUN_DIR_VARIANT_PREFIX,$(INSTALL_DIR),$(1))
 FUN_INSTALLABS_VARIANT_PREFIX				= $(call FUN_DIR_VARIANT_PREFIX,$(INSTALLABS_DIR),$(1))
+FUN_INSTALLABS2_VARIANT_PREFIX				= $(call FUN_DIR_VARIANT_PREFIX,$(INSTALLABS2_DIR),$(1))
 FUN_INSTALL_VARIANT_XXX_PREFIX				= $(call    FUN_INSTALL_VARIANT_PREFIX,$(1))$(2)/
 FUN_INSTALLABS_VARIANT_XXX_PREFIX			= $(call FUN_INSTALLABS_VARIANT_PREFIX,$(1))$(2)/
+FUN_INSTALLABS2_VARIANT_XXX_PREFIX			= $(call FUN_INSTALLABS2_VARIANT_PREFIX,$(1))$(2)/
 
 FUN_INSTALL_VARIANT_LIB_PREFIX				= $(call    FUN_INSTALL_VARIANT_XXX_PREFIX,$(1),lib)
 FUN_INSTALLABS_VARIANT_LIB_PREFIX			= $(call FUN_INSTALLABS_VARIANT_XXX_PREFIX,$(1),lib)
@@ -259,18 +286,26 @@ FUN_INSTALLABS_VARIANT_BIN_PREFIX			= $(call FUN_INSTALLABS_VARIANT_XXX_PREFIX,$
 FUN_INSTALL_VARIANT_INC_PREFIX				= $(call    FUN_INSTALL_VARIANT_XXX_PREFIX,$(1),include)
 FUN_INSTALLABS_VARIANT_INC_PREFIX			= $(call FUN_INSTALLABS_VARIANT_XXX_PREFIX,$(1),include)
 
-FUN_INSTALL_VARIANT_LIB_TARGET_PREFIX		= $(call FUN_DIR_VARIANT_LIB_TARGET_PREFIX,$(INSTALL_DIR),$(1),$(2))
-FUN_INSTALLABS_VARIANT_LIB_TARGET_PREFIX	= $(call FUN_DIR_VARIANT_LIB_TARGET_PREFIX,$(INSTALLABS_DIR),$(1),$(2))
-FUN_INSTALL_VARIANT_LIB_SHARED_PREFIX		= $(call FUN_DIR_VARIANT_LIB_SHARED_PREFIX,$(INSTALL_DIR),$(1))
+#FUN_INSTALL_VARIANT_LIB_TARGET_PREFIX		= $(call FUN_DIR_VARIANT_LIB_TARGET_PREFIX,$(INSTALL_DIR),$(1),$(2))
+FUN_INSTALLABS_VARIANT_LIB_TARGET_PREFIX	= $(call FUN_DIR_VARIANT_LIB_TARGET_PREFIX,$(INSTALLABS2_DIR),$(1),$(2))
+#FUN_INSTALL_VARIANT_LIB_SHARED_PREFIX		= $(call FUN_DIR_VARIANT_LIB_SHARED_PREFIX,$(INSTALL_DIR),$(1))
 FUN_INSTALLABS_VARIANT_LIB_SHARED_PREFIX	= $(call FUN_DIR_VARIANT_LIB_SHARED_PREFIX,$(INSTALLABS_DIR),$(1))
 
+FUN_INSTALL_PKG_VARIANT_TARGET_TVARIANT_PREFIX \
+                                            = $(call FUN_DIR_PKG_VARIANT_TARGET_TVARIANT,$(INSTALL_DIR),$(1),$(2),$(3),$(4))/
+FUN_INSTALL_PKG_VARIANT_TARGET_PREFIX       = $(call FUN_INSTALL_PKG_VARIANT_TARGET_TVARIANT_PREFIX,$(1),$(2),$(3),plain)
+FUN_INSTALL_PKG_PREFIX                      = $(call FUN_INSTALL_PKG_VARIANT_TARGET_PREFIX,$(1),$(EHC_VARIANT),$(EHC_VARIANT_TARGET))
+
+#FUN_INSTALL_VARIANT_PKGLIB_TARGET_PREFIX	= $(call FUN_DIR_VARIANT_PKGLIB_TARGET_PREFIX,$(INSTALL_DIR),$(1),$(2))
+#FUN_INSTALLABS_VARIANT_PKGLIB_TARGET_PREFIX	= $(call FUN_DIR_VARIANT_PKGLIB_TARGET_PREFIX,$(INSTALLABS_DIR),$(1),$(2))
+
 FUN_INSTALL_VARIANT_INC_TARGET_PREFIX		= $(call FUN_DIR_VARIANT_INC_TARGET_PREFIX,$(INSTALL_DIR),$(1),$(2))
-FUN_INSTALLABS_VARIANT_INC_TARGET_PREFIX	= $(call FUN_DIR_VARIANT_INC_TARGET_PREFIX,$(INSTALLABS_DIR),$(1),$(2))
+FUN_INSTALLABS_VARIANT_INC_TARGET_PREFIX	= $(call FUN_DIR_VARIANT_INC_TARGET_PREFIX,$(INSTALLABS2_DIR),$(1),$(2))
 FUN_INSTALL_VARIANT_INC_SHARED_PREFIX		= $(call FUN_DIR_VARIANT_INC_SHARED_PREFIX,$(INSTALL_DIR),$(1))
 FUN_INSTALLABS_VARIANT_INC_SHARED_PREFIX	= $(call FUN_DIR_VARIANT_INC_SHARED_PREFIX,$(INSTALLABS_DIR),$(1))
 
 FUN_INSTALL_FLAG_PREFIX						= $(call    FUN_INSTALL_VARIANT_XXX_PREFIX,$(1),ins-flg)
-FUN_INSTALLABS_FLAG_PREFIX					= $(call FUN_INSTALLABS_VARIANT_XXX_PREFIX,$(1),ins-flg)
+FUN_INSTALLABS_FLAG_PREFIX					= $(call FUN_INSTALLABS2_VARIANT_XXX_PREFIX,$(1),ins-flg)
 
 ###########################################################################################
 # Construction of the name of a library, specific directories
@@ -303,8 +338,7 @@ FUN_EHC_GCC_LD_OPTS							= -L$(call FUN_INSTALLABS_VARIANT_LIB_SHARED_PREFIX,$(
 ###########################################################################################
 
 # GHC options
-GHC_EHC_PKG_UULIB						:= uulib
-GHC_OPTS								:= -fglasgow-exts $(OPT_GHC_STANDARD_PACKAGES) -package $(GHC_EHC_PKG_UULIB)
+GHC_OPTS								:= -fglasgow-exts $(OPT_GHC_STANDARD_PACKAGES) -package uulib
 GHC_OPTS_OPTIM							:= -O2
 GHC_OPTS_WHEN_EHC						:= @GHC_EHC_OPTIONS@
 
@@ -327,14 +361,14 @@ UUAGC_OPTS_WHEN_UHC_AST_DATA			:= --strictdata
 UUAGC_OPTS_WHEN_UHC_AST_SEM				:= --strictwrap -O
 
 # GCC options
-GCC_OPTS_WHEN_EHC						:= @CC_STD_FLAG@ @GCC_EHC_OPTIONS@
+GCC_OPTS_WHEN_EHC						:= @CC_STD_FLAG@ @GCC_EHC_OPTIONS@ -fomit-frame-pointer
 
 # CPP options
 CPP_OPTS_WHEN_EHC						:= @CPP_EHC_OPTIONS@
 
 # cabal options
 CABAL_CONFIGURE_OPTS_WHEN_EHC			:= @CABAL_CONFIGURE_OPTIONS@
-CABAL_SETUP_OPTS						:= --ghc --with-compiler=$(call WINXX_CYGWIN_NAME1,$(GHC)) $(CABAL_CONFIGURE_OPTS_WHEN_EHC)
+CABAL_SETUP_OPTS						:= --ghc --with-compiler=$(GHC1) $(CABAL_CONFIGURE_OPTS_WHEN_EHC)
 CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES 	:= @CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES@
 
 # C compiler options, some are also extended by sub makefiles
@@ -342,7 +376,9 @@ EXTLIBS_GCC_CC_OPTS						:=  @GCC_EXTLIBS_OPTIONS@
 EXTLIBS_GMP_ABI							:=  @GMP_ABI@
 EHC_GCC_CC_OPTS							:= -I$(INSTALLFORBLDABS_INC_PREFIX) -I$(INSTALLFORBLDABS_INC_PREFIX)/gc $(GCC_OPTS_WHEN_EHC)
 EHC_GCC_LD_OPTS							:= -L$(INSTALLFORBLDABS_LIB_PREFIX)
-RTS_GCC_CC_OPTS							:= -D__UHC_BUILDS_RTS__ -D__UHC_TARGET_$(if $(EHC_CFG_TARGET_IS_bc),BC,$(if $(EHC_CFG_TARGET_IS_C),C,))__ -D__UHC_TARGET__=$(EHC_VARIANT_TARGET)
+#RTS_GCC_CC_OPTS							:= -D__UHC_BUILDS_RTS__ -D__UHC_TARGET_$(if $(EHC_CFG_TARGET_IS_bc),BC,$(if $(EHC_CFG_TARGET_IS_C),C,$(if $(EHC_CFG_TARGET_IS_llvm),LLVM,)))__ -D__UHC_TARGET__=$(EHC_VARIANT_TARGET)
+#RTS_GCC_CC_OPTS							:= -D__UHC_BUILDS_RTS__ -D__UHC_TARGET_$(shell echo $(EHC_VARIANT_TARGET) | tr "[a-z]" "[A-Z]")__ -D__UHC_TARGET__=$(EHC_VARIANT_TARGET)
+RTS_GCC_CC_OPTS							:= -D__UHC_BUILDS_RTS__
 RTS_GCC_CC_OPTS_OPTIM					:= $(RTS_GCC_CC_OPTS) -O3
 
 # library building, using libtool
@@ -375,7 +411,7 @@ GHC_PKG_NAME_PREFIX						:=
 
 # order to shuffle (see ehc/src/files1.mk for a complete list)
 # 4_99: interim for stuff from 4, needed for 4_2, because of ruler generated material uptil 4_2
-EHC_SHUFFLE_ORDER	:= 1 < 2 < 3 < 4 < 4_99 < 5 < 6 < 7 < 8 < 9 < 10 < 11 < 12 < 13 < 14 < 15 < 17 < 18 < 20 < 94 < 95 < 96 < 97 < 98 < $(EHC_PREL_VARIANT) < $(EHC_UHC_VARIANT) < $(EHC_UHC_INSTALL_VARIANT), \
+EHC_SHUFFLE_ORDER	:= 1 < 2 < 3 < 4 < 4_99 < 5 < 6 < 7 < 8 < 9 < 10 < 11 < 12 < 13 < 14 < 15 < 17 < 18 < 20 < 90 < 91 < 92 < 96 < 97 < 98 < $(EHC_PREL_VARIANT) < $(EHC_UHC_VARIANT) < $(EHC_UHC_INSTALL_VARIANT), \
 						$(EHC_UHC_VARIANT) < 102, \
 						$(EHC_PREL_VARIANT) < 103, \
 						4_99 < 4_2, \
@@ -384,6 +420,20 @@ EHC_SHUFFLE_ORDER	:= 1 < 2 < 3 < 4 < 4_99 < 5 < 6 < 7 < 8 < 9 < 10 < 11 < 12 < 1
 						10 < 50, \
 						15 < 16, \
 						8 < 8_2
+
+###########################################################################################
+# Shell script generation: shell alias to executable with config options
+###########################################################################################
+
+# $1: executable
+# $2: shell script
+# $3: config options
+FUN_GEN_SHELL_ALIAS	= \
+					( \
+					  echo "\#!/bin/sh" ; \
+					  echo $(1) '$(3) $$*' ; \
+					) > $(2) ; \
+					chmod +x $(2)
 
 ###########################################################################################
 # Cabal
@@ -410,11 +460,12 @@ FUN_GEN_CABAL		= \
 					echo   "Author:				UHC Team" ; \
 					echo   "Homepage:			http://www.cs.uu.nl/wiki/UHC" ; \
 					echo   "Category:			Testing" ; \
-					echo   "Build-Depends:		$(subst $(space),$(comma),$(strip @CABAL_BASE_LIB_DEPENDS@ @CABAL_EXTRA_LIB_DEPENDS@ $(GHC_EHC_PKG_UULIB) $(3)))" ; \
+					echo   "Build-Depends:		$(subst $(space),$(comma),$(strip @CABAL_BASE_LIB_DEPENDS@ @CABAL_EXTRA_LIB_DEPENDS@ $(3)))" ; \
 					echo   "Build-Tools:		" ; \
 					echo   "Extensions:			$(subst $(space),$(comma),$(strip RankNTypes MultiParamTypeClasses FunctionalDependencies $(4)))" ; \
 					echo   "Synopsis:			$(strip $(5))" ; \
 					echo   "Exposed-Modules:	$(subst $(space),$(comma),$(strip $(6)))" ; \
+					echo   "Exposed:			False" ; \
 					echo   "C-Sources:			$(subst $(space),$(comma),$(strip $(7)))" ; \
 					echo   "Ghc-Options:		$(GHC_OPTS_WHEN_EHC) -fglasgow-exts" \
 					)
@@ -473,11 +524,22 @@ FILTER_OUT_EMPTY_FILES		= $(if $(strip $(1)),$(shell echo $(1) | sed -e 's/\([^ 
 # $1: src dir
 # $2: dest dir
 # $3: src files relative to src dir
-FUN_COPY_FILES_BY_TAR			= ((cd $(1) && tar --ignore-failed-read -cf - $(3)) | (cd $(2) && tar xf -))
+FUN_COPY_FILES_BY_TAR			= ((cd $(1) && $(TAR) --ignore-failed-read -cf - $(3)) | (cd $(2) && $(TAR) xf -))
+
+# copy files recursively while renaming the variant subdirectory
+# $1: src dir
+# $2: dest dir
+# $3: original variant name
+# $4: target variant name
+FUN_COPY_FILES_AND_RENAME		= (cd $(1) && for i in `find . -type f`; do tgt=$(2)/`echo $${i} | sed s+$(3)/+$(4)/+g`; mkdir -p  `dirname $${tgt}` ; install $${i} $${tgt}; done)
 
 ###########################################################################################
 # Misc
 ###########################################################################################
+
+# strip dashes
+# $1: dashed text
+FUN_STRIP_DASH		= $(subst -,,$(1))
 
 # date
 TODAY				:= $(shell date '+%G%m%d')
@@ -504,6 +566,9 @@ tail				= $(wordlist 2,$(words $(1)),$(1))
 comma				:= ,
 empty				:=
 space				:= $(empty) $(empty)
+dollar				:= $$
+ddollar				:= $(dollar)$(dollar)
+cparen				:= )
 
 # subst _ by x
 # $1: text

@@ -64,10 +64,10 @@ ATTR AllNT [ | | trf: SELF ]
 
 %%[(8 codegen grin) hs
 grExprIsElimable :: GrExpr -> Bool
-grExprIsElimable (GrExpr_Unit  _) = True
-grExprIsElimable (GrExpr_Store _) = True
-grExprIsElimable (GrExpr_App _ _) = True
-grExprIsElimable _                = False
+grExprIsElimable (GrExpr_Unit  _ _) = True
+grExprIsElimable (GrExpr_Store _  ) = True
+grExprIsElimable (GrExpr_App _ _  ) = True
+grExprIsElimable _                  = False
 %%]
 
 %%[(8 codegen grin)
@@ -83,6 +83,6 @@ SEM GrExpr
                                                       (NmAlias_Nm n1,GrExpr_Seq e (GrPatLam_Var p) b,_) | grExprIsElimable e && not (p `Map.member` @body.gathFviMp)
                                                         -> (b, @body.fviSeqBodyMp)
                                                       _ -> (@trf, @body.gathFviMp)
-                                                      (NmAlias_Nm n1,_,GrExpr_Seq (GrExpr_Unit (GrVal_Var n2)) p e) | n1 == n2 && not (n1 `Map.member` @body.fviSeqBodyMp)
+                                                      (NmAlias_Nm n1,_,GrExpr_Seq (GrExpr_Unit (GrVal_Var n2) GrType_None) p e) | n1 == n2 && not (n1 `Map.member` @body.fviSeqBodyMp)
                                                         -> (GrExpr_Seq @expr.trf p e, @body.fviSeqBodyMp)
 

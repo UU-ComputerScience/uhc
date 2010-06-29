@@ -47,6 +47,9 @@ DATA Decl
                     tyNm            : {HsName}
                     tyVars          : TyVars
                     constrs         : DataConstrs
+%%[[92
+					mbGenerInfo		: {Maybe Int}		-- max kind arity for generic behavior, currently \in {0,1}
+%%]]
 %%]
 
 %%[6.Decl
@@ -68,7 +71,7 @@ DATA Decl
                     safety          : {String}
 %%[[8
                     impEnt          : {String}
-%%][94
+%%][90
                     impEnt          : {ForeignEnt}
 %%]]
                     nm              : {HsName}
@@ -81,13 +84,23 @@ DATA Decl
                     tyExpr          : TyExpr
 %%]
 
-%%[(94 codegen)
+%%[(90 codegen)
 DATA Decl
   | FFE             nm              : {HsName}
                     callconv        : {FFIWay}
                     expEnt          : {ForeignEnt}
                     expr            : Expr
                     tyExpr          : TyExpr
+%%]
+
+Representation types + instances for generic deriving
+
+%%[92
+DATA Decl
+  | GenerRep        maxArity		: {Int}						-- max required unsaturated type arguments
+  					tyNm            : {HsName}					-- type name
+  					conNmL			: {[HsName]}		-- constructors + field names
+  					recFldNmL		: {[(HsName,[HsName])]}		-- record constructors + field names
 %%]
 
 %%[1010.Decl
@@ -115,7 +128,8 @@ DATA TyExpr
 
 %%[2.TyExpr
 DATA TyExpr
-  | Wild
+  | Wild											-- wildcard tyvar over which the TyExpr will not quantify, but later let binding will
+  | Mono											-- same as Wild, but no quantification in the let binding either
 %%]
 
 %%[3.TyExpr
@@ -331,7 +345,7 @@ DATA Expr
 %%[[8
                     mbCaseIds       : {Maybe UIDS}
                     caseFailS       : {UIDS}			-- can fail on these fail ids, encodes that this case implements a guard
-                    isTupOfArg      : {Bool}
+                    isTupOfArg      : {Bool}			-- tupling, only done as uncurry of arguments of lambda
 %%]]
 %%]
 
@@ -423,6 +437,7 @@ DATA PatExpr
 %%[97
 DATA PatExpr
   | Expr            expr            : Expr
+                    mbConst         : {Maybe SrcConst}
 %%]
 
 %%[1.AllPatExpr
@@ -455,8 +470,8 @@ SET AllCase         = CaseAlt CaseAlts
 %%[5.DataConstr1
 DATA DataConstr
   | Constr          conNm           : {HsName}
-%%[[95
-                    mbFixityPrio    : {Maybe Int}       -- Nothing: not infix
+%%[[91
+                    mbFixityPrio    : {Maybe (Int,Fixity)}       -- Nothing: not infix
 %%]]
 %%[[5
                     fields          : TyExprs
@@ -537,6 +552,9 @@ DATA Decl
 %%]]
                     mbDefaultInstNm : {Maybe HsName}
                     decls           : Decls
+%%[[92
+					generDerivs		: {[(HsName,HsName)]}			-- generically derivable fields, with their default
+%%]]
   | Instance        mbNmElim        : {Maybe (HsName,Bool)}
                     instVariant     : InstVariant
                     tyPrExpr        : TyExpr
@@ -544,6 +562,8 @@ DATA Decl
   | InstanceIntro   mbNmElim        : {Maybe (HsName)}
                     expr            : Expr
                     prExpr          : PrExpr
+  | Default         nm              : HsName
+                    tyExprs         : TyExprs
 %%]
 
 %%[15

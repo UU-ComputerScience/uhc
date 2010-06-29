@@ -13,7 +13,7 @@
 %%[(9 codegen) hs import(qualified Data.Map as Map,qualified Data.Set as Set,{%{EH}Ty.Pretty})
 %%]
 
-%%[(94 codegen) hs import({%{EH}Foreign.Pretty})
+%%[(90 codegen) hs import({%{EH}Foreign.Pretty})
 %%]
 
 %%[(8 codegen).WRAPPER ag import({Core/AbsSyn})
@@ -45,9 +45,16 @@ ppCNm = cfgppHsName CfgPP_Core
 
 ppMbCNm :: Maybe HsName -> PP_Doc
 ppMbCNm = maybe (ppCNm (hsnFromString "_")) ppCNm
+
+ppManyCNm :: [HsName] -> PP_Doc
+ppManyCNm  =  ppListSep "" "" " " . map ppCNm
+
 %%]
 
 %%[(9 codegen) hs
+ppTrack :: Track -> PP_Doc
+ppTrack t = text (show t)
+
 ppHole :: UID -> PP_Doc
 ppHole i = "<" >|< pp i >|< ">"
 %%]
@@ -97,6 +104,10 @@ ppLit kind val = "#" >|< kind >|< pp (show val)
 
 ppTag :: CTag -> PP_Doc
 ppTag t = ppCTag' CfgPP_Core t
+
+ppCurlyList :: (a -> PP_Doc) -> [a] -> PP_Doc
+ppCurlyList pL xs = ppListSep "{ " " }" ", " $ map pL xs
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -105,7 +116,7 @@ ppTag t = ppCTag' CfgPP_Core t
 
 %%[(8 codegen)
 ATTR CodeAGItf AllCodeNT [ | | pp USE {>-<} {empty} : PP_Doc ]
-ATTR CPatBindL CPatL CBindL CAltL [ | | ppL: {[PP_Doc]} ]
+ATTR CPatFldL CPatL CBindL CAltL [ | | ppL: {[PP_Doc]} ]
 ATTR CExpr [ | | lamBodyPP: PP_Doc  lamArgPPL: {[PP_Doc]} ]
 ATTR CExpr [ | | appFunPP : PP_Doc  appArgPPL: {[PP_Doc]} ]
 
@@ -141,7 +152,7 @@ SEM CExpr
                                                   CBindings_Rec     -> pp " rec"
                                                   CBindings_Strict  -> pp " !"
                                                   CBindings_FFI     -> pp " foreign"
-%%[[94
+%%[[90
                                                   CBindings_FFE     -> pp " foreignexport"
 %%]]
                                                   _                 -> empty
@@ -185,10 +196,10 @@ SEM CBind
 %%]]
 %%[[8
 				loc			.	ppent		=	pp (show @impEnt)
-%%][94
+%%][90
 				loc			.	ppent		=	"\"" >|< @impEnt >|< "\""
 %%]]
-%%[[94
+%%[[90
   | FFE         lhs         .   pp          =   ppDef (ppCNm @nm >#< "=")
                                                       ("foreignexport" >#< ppCurlysCommasBlock [pp (show @callconv),"\"" >|< @expEnt >|< "\"",ppCNm @expNm,ppTyWithCfg' CfgPP_HI @ty])
 %%]]
@@ -205,11 +216,11 @@ SEM CAltL
   | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
 
 SEM CPat
-  | Int         lhs         .   pp          =   ppCNm @pnm >#< ppLit "Int"    (show @int)
-  | Char        lhs         .   pp          =   ppCNm @pnm >#< ppLit "Char"   [@char]
+  | Int         lhs         .   pp          =   ppLit "Int"    (show @int)
+  | Char        lhs         .   pp          =   ppLit "Char"   [@char]
   | Var         lhs         .   pp          =   ppCNm @pnm
 %%[[8
-  | Con         lhs         .   pp          =   ppDef (ppCNm @pnm >#< "#Tag" >#< ppTag @tag)
+  | Con         lhs         .   pp          =   ppDef ("#Tag" >#< ppTag @tag)
                                                       (ppCurly (@rest.pp >#< "|" >#< ppCommas' @binds.ppL))
 %%][8_2
   | Con         lhs         .   pp          =   ppCTag'' CfgPP_Core @tag
@@ -219,13 +230,13 @@ SEM CPatL
   | Nil         lhs         .   ppL         =   []
   | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
 
-SEM CPatBind
-  | Bind        lhs         .   pp          =   ppCurlysCommas' [ppCNm @lbl,@offset.pp,ppCNm @nm] >|< "=" >|< @pat.pp
+SEM CPatFld
+  | Fld         lhs         .   pp          =   ppCurlysCommas' [ppCNm @lbl,@offset.pp {- ,ppCNm @nm -}] >|< "=" >|< ppCNm @fldNm -- @pat.pp
 
 SEM CPatRest
   | Var         lhs         .   pp          =   ppCNm @nm
 
-SEM CPatBindL
+SEM CPatFldL
   | Nil         lhs         .   ppL         =   []
   | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
 %%]
@@ -249,15 +260,24 @@ SEM CMetaBind
 SEM CMetaVal
   | Val         loc         .   pp          =   pp "VAL"
 %%[[9
-  | Dict        loc         .   pp          =   pp "DICT"         >|< maybe (pp "") (\ns -> ppCurlysCommasWith ppSignedInt ns) @mbPos
-  | DictClass   loc         .   pp          =   pp "DICTCLASS"    >|< ppCurlysCommasWith ppMbCNm @names
-  | DictInstance loc        .   pp          =   pp "DICTINSTANCE" >|< ppCurlysCommasWith ppMbCNm @names
+  | Dict        loc         .   pp          =   pp "DICT"
+  | DictClass   loc         .   pp          =   pp "DICTCLASS"    >|< ppCurlyList ppTrack @tracks
+  | DictInstance loc        .   pp          =   pp "DICTINSTANCE" >|< ppCurlyList ppTrack @tracks
+  | Track        loc        .   pp          =   pp "TRACK"        >|< ppCurlys (show @track)
 %%]]
 
 SEM CMetaVal
   | Val         loc         .   optPP       =   empty
   | * - Val     loc         .   optPP       =   " :" >#< @pp
 
+%%]
+
+%%[(8 codegen)
+SEM CExpr
+  | Ann			loc			.	pp			=	ppParens (@expr.pp >#< @ann.pp)
+
+SEM CExprAnn
+  | Ty			loc			.	pp			=	"::" >#< ppTyWithCfg' CfgPP_HI @ty
 %%]
 
 %%[(9 codegen)

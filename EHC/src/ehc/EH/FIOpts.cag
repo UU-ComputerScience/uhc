@@ -42,7 +42,7 @@ SEM Expr
 %%[(5 hmtyinfer).fiOpts.init
 SEM Decl
   | Val
-%%[[94
+%%[[90
     FFE
 %%]]
                 loc         .  exprFiOpts           =   strongFIOpts
@@ -108,9 +108,14 @@ SEM CaseAlt
 %%]]
 
 SEM Expr
-  | Case        expr        .  fiOpts               =   weakFIOpts
+  | Case        expr        .  fiOpts               =   @exprFiOpts
 %%[[16
                                                           { fioFitVarFailureToProveObl = True }
+%%]]
+%%[[5
+                loc         .  exprFiOpts           =   weakFIOpts
+%%][8
+                loc         .  exprFiOpts           =   (if @isTupOfArg then strongFIOpts else weakFIOpts)
 %%]]
                 loc         .  altsFiOpts           =   @lhs.fiOpts
                                                           -- { fioBindRFirst = False }

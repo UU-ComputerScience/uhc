@@ -59,9 +59,8 @@ $(TEXT_TMP_VARIANT_PREFIX)%: $(LLVM_CODE_DATA_PREFIX)%
 	cp $< $@
 
 $(LLVM_CODE_SRC_PREFIX)FibExe.core $(LLVM_CODE_SRC_PREFIX)FibExe-012-aliaselim.grin: $(LLVM_CODE_FILES)
-	cd $(LLVM_CODE_SRC_PREFIX) ; \
-	../../../bin/8_2/ehc -clexe --gen-cmt=0 --dump-grin-stages=1 --optimise=1 --priv=1 -p- $< && \
-	sed -i '56,59d' FibExe.core
+	install/8_2/bin/ehc --code=lexe --gen-cmt=0 --dump-grin-stages=1 --optimise=1 --priv=1 -p- $< && \
+	sed -i '56,59d' $(LLVM_CODE_SRC_PREFIX)FibExe.core
 
 $(LLVM_CODE_SRC_PREFIX)FibExe-opt.grin: $(LLVM_CODE_SRC_PREFIX)FibExe-179-final.grin
 	sed -i 's/fun_x_[0-9]\+_//g' $<    ; \

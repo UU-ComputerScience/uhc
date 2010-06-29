@@ -1,8 +1,8 @@
 ### Process this file with autoconf to produce a configure script.
-AC_INIT(EH, [0.1], [uhc-developers@cs.uu.nl, http://www.cs.uu.nl/wiki/UHC/WebHome])
+AC_INIT([EH],[0.1],[uhc-developers@cs.uu.nl, http://www.cs.uu.nl/wiki/UHC/WebHome])
 
 ### version of autoconf used (and required)
-#AC_PREREQ(2.52)
+#AC_PREREQ(2.64)
 
 ### revision
 AC_REVISION($Revision: 1.26 $)
@@ -13,7 +13,6 @@ AC_PROG_MAKE_SET
 AC_CANONICAL_HOST
 dnl ** canonicalize platform names
 HostPlatform=`/bin/sh $srcdir/config.sub $host` || exit 1
-
 ### Version info, extract from file VERSION
 # big change
 EH_VERSION_MAJOR=`awk -F . '{print $1}' VERSION`
@@ -31,6 +30,7 @@ AC_SUBST(EH_VERSION_MINORMINOR)
 AC_SUBST(EH_VERSION_STABILITY)
 AC_SUBST(EH_VERSION_SHORT,$EH_VERSION_MAJOR.$EH_VERSION_MINOR)
 AC_SUBST(EH_VERSION_FULL,$EH_VERSION_MAJOR.$EH_VERSION_MINOR.$EH_VERSION_MINORMINOR)
+AC_SUBST(EH_VERSION_ASNUMBER,$EH_VERSION_MAJOR$EH_VERSION_MINOR$EH_VERSION_MINORMINOR)
 
 dnl macro for missing program
 AC_DEFUN(MISSING_FOR_EH,
@@ -67,7 +67,36 @@ AC_DEFUN(REQUIRED_OPTIONAL_PROG_FOR_EH,
   fi
 ])
 
-### enable options
+### obvious utils which are amiss on some platforms: m4
+REQUIRED_PROG_FOR_EH(m4Cmd,m4)
+
+### svn log/history
+AC_PATH_PROG(svnCmd,svn)
+if test -x "$svnCmd"
+then
+  svnExists="yes"
+  ### $svnCmd log -rHEAD:1 --limit 100 > SVNLOG
+else
+  svnExists="no"
+fi
+AC_SUBST(SVN_EXISTS,$svnExists)
+AC_SUBST(SVN_CMD,$svnCmd)
+
+### svn revision
+AC_PATH_PROG(svnVersionCmd,svnversion)
+if test -x "$svnVersionCmd"
+then
+  svnVersionExists="yes"
+  $svnVersionCmd > SVNREVISION
+else
+  svnVersionExists="no"
+fi
+svnRevision=`cat SVNREVISION`
+AC_SUBST(SVN_VERSION_EXISTS,$svnVersionExists)
+AC_SUBST(SVN_VERSION_CMD,$svnVersionCmd)
+AC_SUBST(SVN_REVISION,$svnRevision)
+
+### enable options: java
 AC_ARG_ENABLE(java, AS_HELP_STRING([--enable-java],[include java code generation]), [enableJava=yes], [enableJava=no])
 AC_SUBST(ENABLE_JAVA,$enableJava)
 if test x$enableJava = xyes
@@ -99,10 +128,15 @@ then
   AC_SUBST(JAR_CMD,$jarCmd)
 fi
 
+### enable options: llvm
+AC_ARG_ENABLE(llvm, AS_HELP_STRING([--enable-llvm],[include llvm code generation]), [enableLlvm=yes], [enableLlvm=no])
+AC_SUBST(ENABLE_LLVM,$enableLlvm)
+
+### enable options: clr
 AC_ARG_ENABLE(clr, AS_HELP_STRING([--enable-clr],[include clr code generation]), [enableClr=yes], [enableClr=no])
 AC_SUBST(ENABLE_CLR,$enableClr)
 
-### ar, ranlib, libtool
+### ranlib
 REQUIRED_PROG_FOR_EH(ranlibCmd,ranlib)
 # See remarks about cpp
 case $HostPlatform in
@@ -117,6 +151,7 @@ case $HostPlatform in
 esac  
 AC_SUBST(RANLIB_CMD,$ranlibCmd)
 
+### ar
 REQUIRED_PROG_FOR_EH(arCmd,ar)
 # See remarks about cpp
 case $HostPlatform in
@@ -131,12 +166,23 @@ case $HostPlatform in
 esac  
 AC_SUBST(AR_CMD,$arCmd)
 
+### libtool
 REQUIRED_OPTIONAL_PROG_FOR_EH(libtoolStaticCmd,libtool)
+
+### 'with' option for build suffix
+AC_ARG_WITH(build-suffix,
+[AC_HELP_STRING([--with-build-suffix=<suffix for build locations>],
+                [Suffix for build locations and library names of globally visible cabal managed libraries.])],
+[ ehcBuildSuffix="$withval" ],)
+#if test "x$ehcBuildSuffix" != "x"
+#then
+#  ehcBuildSuffix="-$ehcBuildSuffix"
+#fi
+AC_SUBST(EHC_BUILD_SUFFIX, "$ehcBuildSuffix")
 
 ### 'with' option for gcc options
 AC_ARG_WITH(gcc-ehc-options,
-[AC_HELP_STRING([--with-gcc-ehc-options=<gcc compiler options for compiling runtime and ehc's gcc invocation>],
-                [Additional options to pass to GCC when compiling with EHC.])],
+[AS_HELP_STRING([--with-gcc-ehc-options=<gcc compiler options for compiling runtime and ehc's gcc invocation>],[Additional options to pass to GCC when compiling with EHC.])],
 [ gccEhcOptions="$withval" ],)
 
 # additional platform dependend options for gcc when compiling C from within ehc
@@ -152,8 +198,7 @@ AC_SUBST(GCC_EHC_OPTIONS, "$gccEhcOptions")
 
 ### 'with' option for cpp options
 AC_ARG_WITH(cpp-ehc-options,
-[AC_HELP_STRING([--with-cpp-ehc-options=<cpp preprocessor options for ehc's cpp invocation>],
-                [Additional options to pass to GCC when compiling with EHC.])],
+[AS_HELP_STRING([--with-cpp-ehc-options=<cpp preprocessor options for ehc's cpp invocation>],[Additional options to pass to GCC when compiling with EHC.])],
 [ cppEhcOptions="$withval" ],)
 
 # additional platform dependend options for cpp when compiling C from within ehc
@@ -174,51 +219,44 @@ AC_SUBST(CPP_EHC_OPTIONS, "$cppEhcOptions")
 
 ### 'with' option for ghc options
 AC_ARG_WITH(ghc-ehc-options,
-[AC_HELP_STRING([--with-ghc-ehc-options=<haskell compiler options for compiling ehc>],
-                [Additional options to pass to GHC when compiling EHC.])],
+[AS_HELP_STRING([--with-ghc-ehc-options=<haskell compiler options for compiling ehc>],[Additional options to pass to GHC when compiling EHC.])],
 [ ghcEhcOptions="$withval" ],)
 AC_SUBST(GHC_EHC_OPTIONS, "$ghcEhcOptions")
 
 ### 'with' option for shuffle options
 AC_ARG_WITH(shuffle-ehc-options,
-[AC_HELP_STRING([--with-shuffle-ehc-options=<shuffle options for compiling ehc>],
-                [Additional options to pass to SHUFFLE when compiling EHC.])],
+[AS_HELP_STRING([--with-shuffle-ehc-options=<shuffle options for compiling ehc>],[Additional options to pass to SHUFFLE when compiling EHC.])],
 [ shuffleEhcOptions="$withval" ],)
 AC_SUBST(SHUFFLE_EHC_OPTIONS, "$shuffleEhcOptions")
 
 ### 'with' option for uuagc options
 AC_ARG_WITH(uuagc-options,
-[AC_HELP_STRING([--with-uuagc-options=<AG compiler options for compiling ehc>],
-                [Additional options to pass to UUAGC when compiling EHC.])],
+[AS_HELP_STRING([--with-uuagc-options=<AG compiler options for compiling ehc>],[Additional options to pass to UUAGC when compiling EHC.])],
 [ uuagcOptions="$withval" ],)
 AC_SUBST(UUAGC_OPTIONS, "$uuagcOptions")
 
 ### 'with' option for uuagc options, specifically for EHC's AST
 AC_ARG_WITH(uuagc-ehc-ast-options,
-[AC_HELP_STRING([--with-uuagc-ehc-ast-options=<AG compiler options for compiling ehc's AST data types>],
-                [Additional options to pass to UUAGC when compiling EHC's AST data types.])],
+[AS_HELP_STRING([--with-uuagc-ehc-ast-options=<AG compiler options for compiling ehc's AST data types>],[Additional options to pass to UUAGC when compiling EHC's AST data types.])],
 [ uuagcEhcAstOptions="$withval" ],)
 AC_SUBST(UUAGC_EHC_AST_OPTIONS, "$uuagcEhcAstOptions")
 
 ### 'with' option for uuagc options, specifically for EHC's semantics
 AC_ARG_WITH(uuagc-ehc-sem-options,
-[AC_HELP_STRING([--with-uuagc-ehc-sem-options=<AG compiler options for compiling ehc's semantics>],
-                [Additional options to pass to UUAGC when compiling EHC's AST semantics.])],
+[AS_HELP_STRING([--with-uuagc-ehc-sem-options=<AG compiler options for compiling ehc's semantics>],[Additional options to pass to UUAGC when compiling EHC's AST semantics.])],
 [ uuagcEhcSemOptions="$withval" ],)
 AC_SUBST(UUAGC_EHC_SEM_OPTIONS, "$uuagcEhcSemOptions")
 
 ### 'with' option for cabal config options
 AC_ARG_WITH(cabal-config-options,
-[AC_HELP_STRING([--with-cabal-config-options=<cabal configure options for compiling ehc>],
-                [Additional options to pass to cabal's ./setup configure when compiling EHC.])],
+[AS_HELP_STRING([--with-cabal-config-options=<cabal configure options for compiling ehc>],[Additional options to pass to cabal's ./setup configure when compiling EHC.])],
 [ cabalConfigureOptions="$withval" ],)
 AC_SUBST(CABAL_CONFIGURE_OPTIONS, "$cabalConfigureOptions")
 
 ### 'with' option for additional ehc unixtool (gcc, cpp) prefix.
 ### Usually empty, but set for (e.g.) cygwin
 AC_ARG_WITH(ehc-unixtool-prefix,
-[AC_HELP_STRING([--with-ehc-unixtool-prefix=<additional prefix for unixtools (already with absolute pathnames) used by ehc>],
-                [Additional prefix for unixtools used by ehc.])],
+[AS_HELP_STRING([--with-ehc-unixtool-prefix=<additional prefix for unixtools (already with absolute pathnames) used by ehc>],[Additional prefix for unixtools used by ehc.])],
 [ toplevelSystemAbsolutePathPrefix="$withval" ],)
 
 # when no unixtool prefix is specified && running cygwin, take cygwin's equivalent of /
@@ -237,8 +275,7 @@ AC_SUBST(TOPLEVEL_SYSTEM_ABSPATH_PREFIX, "$toplevelSystemAbsolutePathPrefix")
 
 ### 'with' option for Haskell compiler, by default ghc
 AC_ARG_WITH(ghc,
-[AC_HELP_STRING([--with-hc=<haskell compiler>],
-                [Use a command different from 'ghc' to compile with GHC.])],
+[AS_HELP_STRING([--with-hc=<haskell compiler>],[Use a command different from 'ghc' to compile with GHC.])],
 [ ghcCmd="$withval" ],
 [ 
   if test "$GHC" = ""; then
@@ -258,10 +295,30 @@ fi
 AC_SUBST(GHC_CMD,$ghcCmd)
 AC_SUBST(GHC_VERSION, $ghcVersion)
 
-### now we know we have ghc, check for some libraries using ghc-pkg
+case $HostPlatform in
+  i*86-*-mingw* | i*86-*-cygwin* )
+  ghcCmd1=`echo $ghcCmd | sed 's+/\(.\)/+\1:/+'`
+  echo "ghcCmd is $ghcCmd, raw is $ghcCmd1"
+  echo $ghcCmd | sed 's+/\(.\)/+\1:/+'
+  ;;
+  *)
+  ghcCmd1=$ghcCmd
+  ;;
+esac
+
+AC_SUBST(GHC_CMD1,$ghcCmd1)
+
+
+### assuming we have ghc, check for some of the additional tools
 AC_PATH_PROG(ghcPkgCmd,ghc-pkg)
+AC_PATH_PROG(hsc2hsCmd,hsc2hs)
+AC_SUBST(HSC2HS_CMD,$hsc2hsCmd)
+
+### now we know we have ghc, check for some libraries using ghc-pkg
 ghcLibUulibExists=no
 ghcLibFglExists=no
+ghcLibNetwork=no
+ghcLibBinary=no
 if test x$ghcExists = xyes
 then
   if test -x "$ghcCmd" -a -x "$ghcPkgCmd"
@@ -283,13 +340,18 @@ then
     if test "x$ghcLibNetwork" != "x" ; then
       ghcLibNetworkExists=yes
     fi
+
+    # binary
+    ghcLibBinary=`$ghcPkgCmd list --simple-output binary`
+    if test "x$ghcLibBinary" != "x" ; then
+      ghcLibBinaryExists=yes
+    fi
   fi
 fi
 
 ### 'with' option for haddock
 AC_ARG_WITH(haddock,
-[AC_HELP_STRING([--with-haddock=<haddock>],
-                [Use a command different from 'haddock' to generate doc.])],
+[AS_HELP_STRING([--with-haddock=<haddock>],[Use a command different from 'haddock' to generate doc.])],
 [ haddockCmd="$withval" ],
 [ 
   if test "$HADDOCK" = ""; then
@@ -346,8 +408,7 @@ AC_SUBST(CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES,"$optCabalAllowUndecidableInstanc
 
 # uuagc
 AC_ARG_WITH(uuagc,
-[AC_HELP_STRING([--with-uuagc=<uu ag compiler>],
-                [Use a command different from 'uuagc' to compile with UUAGC.])],
+[AS_HELP_STRING([--with-uuagc=<uu ag compiler>],[Use a command different from 'uuagc' to compile with UUAGC.])],
 [ uuagcCmd="$withval" ],
 [ 
   if test "$UUAGC" = ""; then
@@ -368,8 +429,7 @@ AC_SUBST(UUAGC_CMD,$uuagcCmd)
 
 # gcc
 AC_ARG_WITH(gcc,
-[AC_HELP_STRING([--with-gcc=<gcc compiler>],
-                [Use a command different from 'gcc' to compile with GCC.])],
+[AS_HELP_STRING([--with-gcc=<gcc compiler>],[Use a command different from 'gcc' to compile with GCC.])],
 [ gccCmd="$withval" ],
 [ 
   if test "$GCC" = ""; then
@@ -393,6 +453,10 @@ case $HostPlatform in
         if test ! -x "$toplevelSystemAbsolutePathPrefix/$gccCmd"
         then
           gccCmd="`echo $gccCmd | sed -e 's+/usr++'`"
+          if test -L "$toplevelSystemAbsolutePathPrefix/$gccCmd"
+          then
+            gccCmd="$gccCmd-3"
+          fi
         fi
         ;;
   *)
@@ -435,8 +499,7 @@ AC_SUBST(CC_STD_FLAG,$cc_std_flag)
 
 # cpp
 AC_ARG_WITH(cpp,
-[AC_HELP_STRING([--with-cpp=<cpp preprocessor>],
-                [Use a command different from 'cpp' to compile with CPP.])],
+[AS_HELP_STRING([--with-cpp=<cpp preprocessor>],[Use a command different from 'cpp' to compile with CPP.])],
 [ cppCmd="$withval" ],
 [ 
   if test "$CPP" = ""; then
@@ -457,12 +520,17 @@ fi
 # Now we have to deal with weird cygwin behaviour which allows /usr/bin to be used
 # whereas in reality it is mapped onto /bin. Direct acccess to /usr/bin with a c:/cygwin prefix therefore does not work
 # and has to be stripped of the /usr part.
+# Then, the resulting filename may refer to a symbolic link. If so, Try to dereference it by postfixing -3, that is cpp becomes cpp-3
 # For other tools like gcc we have to this too.
 case $HostPlatform in
   i*86-*-mingw* | i*86-*-cygwin* )
         if test ! -x "$toplevelSystemAbsolutePathPrefix/$cppCmd"
         then
           cppCmd="`echo $cppCmd | sed -e 's+/usr++'`"
+          if test -L "$toplevelSystemAbsolutePathPrefix/$cppCmd"
+          then
+            cppCmd="$cppCmd-3"
+          fi
         fi
         ;;
   *)
@@ -471,54 +539,75 @@ esac
 
 AC_SUBST(CPP_CMD,$cppCmd)
 
-# LLVM Assembler 
-AC_ARG_WITH(llvm-as,
-[AC_HELP_STRING([--with-llvm-as=<LLVM Assembler>],
-                [Path to the LLVM Assembler])],
-[ llvmAs="$withval" ],
-[ 
-  if test "$LLVM_AS" = ""; then
-    AC_PATH_PROG(llvmAs,llvm-as)
-  else
-    llvmAs=$LLVM_AS
-  fi
-]
-)
-AC_SUBST(LLVM_AS_CMD,$llvmAs)
 
-# LLVM Optimizer 
-AC_ARG_WITH(opt,
-[AC_HELP_STRING([--with-llvm-opt=<LLVM bitcode optimizer>],
-                [Path to the LLVM bitcode optimizer])],
-[ llvmOpt="$withval" ],
-[
-  if test "$LLVM_OPT" = ""; then
-    AC_PATH_PROG(llvmOpt,opt)
+if test x$enableLlvm = xyes
+then
+  # LLVM Assembler 
+  AC_ARG_WITH(llvm-as,
+  [AS_HELP_STRING([--with-llvm-as=<LLVM Assembler>],[Path to the LLVM Assembler])],
+  [ llvmAs="$withval" ],
+  [ 
+    if test "x$LLVM_AS" = "x"; then
+      if test x$enableLlvm = xyes
+      then
+        REQUIRED_PROG_FOR_EH(llvmAs,llvm-as)
+      fi
+    else
+      llvmAs=$LLVM_AS
+    fi
+  ]
+  )
+  AC_SUBST(LLVM_AS_CMD,$llvmAs)
+  
+  # LLVM Optimizer 
+  AC_ARG_WITH(opt,
+  [AS_HELP_STRING([--with-llvm-opt=<LLVM bitcode optimizer>],[Path to the LLVM bitcode optimizer])],
+  [ llvmOpt="$withval" ],
+  [
+    if test "x$LLVM_OPT" = "x"; then
+      if test x$enableLlvm = xyes
+      then
+        REQUIRED_PROG_FOR_EH(llvmOpt,opt)
+      fi
+    else
+      llvmOpt=$LLVM_OPT
+    fi
+  ]
+  )
+  AC_SUBST(LLVM_OPT_CMD,$llvmOpt)
+  
+  # LLVM Compiler
+  AC_ARG_WITH(llc,
+  [AS_HELP_STRING([--with-llc=<LLVM Compiler>],[Path to the LLVM Compiler])],
+  [ llvmLlc="$withval" ],
+  [
+    if test "x$LLC" = "x"; then
+      if test x$enableLlvm = xyes
+      then
+        REQUIRED_PROG_FOR_EH(llvmLlc,llc)
+      fi
+    else
+      llvmLlc=$LLC
+    fi
+  ]
+  )
+  AC_SUBST(LLVM_LLC_CMD,$llvmLlc)
+  
+  if test -x $llvmLlc -a -x $llvmAs -a -x $llvmOpt
+  then
+    llvmExists=yes
   else
-    llvmOpt=$LLVM_OPT
+    llvmExists=no
   fi
-]
-)
-AC_SUBST(LLVM_OPT_CMD,$llvmOpt)
-
-# LLVM Compiler
-AC_ARG_WITH(llc,
-[AC_HELP_STRING([--with-llc=<LLVM Compiler>],
-                [Path to the LLVM Compiler])],
-[ llvmLlc="$withval" ],
-[
-  if test "$LLC" = ""; then
-    AC_PATH_PROG(llvmLlc, llc)
-  else
-    llvmLlc=$LLC
-  fi
-]
-)
-AC_SUBST(LLVM_LLC_CMD,$llvmLlc)
+fi
 
 # md5
 AC_PATH_PROG(md5Cmd,md5 md5sum)
 AC_SUBST(MD5_CMD,$md5Cmd)
+
+# (gnu)tar; gnutar is required, but sometimes it already is available as tar
+AC_CHECK_PROGS(tarCmd,gnutar tar)
+AC_SUBST(TAR_CMD,$tarCmd)
 
 # xxx
 #AC_PATH_PROG(xxxCmd,xxx)
@@ -538,15 +627,25 @@ AC_SUBST(MD5_CMD,$md5Cmd)
 ### header & function presence
 
 AC_HEADER_TIOCGWINSZ
-AC_CHECK_HEADERS(dirent.h errno.h fcntl.h inttypes.h limits.h signal.h stdint.h string.h sys/resource.h sys/select.h sys/stat.h sys/syscall.h sys/time.h sys/timeb.h sys/timers.h sys/times.h sys/types.h sys/utsname.h sys/wait.h termios.h time.h unistd.h utime.h vfork.h wctype.h windows.h)
+AC_CHECK_HEADERS([dirent.h errno.h fcntl.h inttypes.h limits.h signal.h stdint.h string.h sys/resource.h sys/select.h sys/stat.h sys/syscall.h sys/time.h sys/timeb.h sys/timers.h sys/times.h sys/types.h sys/utsname.h sys/wait.h termios.h time.h unistd.h utime.h vfork.h wctype.h windows.h])
 # problematic headers, currently not dealt with:
 #AC_CHECK_HEADERS(winsock.h)
-AC_CHECK_FUNCS(ftruncate getclock getrusage gettimeofday lstat readdir_r _chsize)
+AC_CHECK_FUNCS([ftruncate getclock getrusage gettimeofday lstat readdir_r _chsize])
+
+AC_CHECK_FUNCS([ftime gmtime_r localtime_r])
+
+AC_CHECK_FUNCS([lchown]) 
+
+dnl ** check if it is safe to include both <time.h> and <sys/time.h>
+AC_HEADER_TIME
+
+dnl ** how do we get a timezone name, and UTC offset ?
+AC_STRUCT_TIMEZONE
+
+dnl ** do we have altzone?
+FP_DECL_ALTZONE
 
 ### type configuration, machine characteristics
-
-# sizeof GrWord
-# AC_CHECK_SIZEOF([unsigned int])
 
 # sizeof GrWord*, Pointer, ...
 AC_CHECK_SIZEOF([char])
@@ -579,11 +678,11 @@ AC_CHECK_SIZEOF([ssize_t])
 AC_CHECK_SIZEOF([gid_t])
 AC_CHECK_SIZEOF([nlink_t])
 AC_CHECK_SIZEOF([uid_t])
-AC_CHECK_SIZEOF([cc_t])
-AC_CHECK_SIZEOF([speed_t])
-AC_CHECK_SIZEOF([tcflag_t])
-AC_CHECK_SIZEOF([rlim_t])
-AC_CHECK_SIZEOF([clock_t])
+AC_CHECK_SIZEOF([cc_t],,FP_INCLUDES_MORE)
+AC_CHECK_SIZEOF([speed_t],,FP_INCLUDES_MORE)
+AC_CHECK_SIZEOF([tcflag_t],,FP_INCLUDES_MORE)
+AC_CHECK_SIZEOF([rlim_t],,FP_INCLUDES_MORE)
+AC_CHECK_SIZEOF([clock_t],,FP_INCLUDES_MORE)
 AC_CHECK_SIZEOF([time_t])
 AC_CHECK_SIZEOF([size_t])
 AC_CHECK_SIZEOF([wchar_t])
@@ -609,10 +708,6 @@ AC_CHECK_ALIGNOF([uint16_t])
 AC_CHECK_ALIGNOF([uint32_t])
 AC_CHECK_ALIGNOF([uint64_t])
 
-AC_C_BIGENDIAN([AC_DEFINE([BIGENDIAN],[1],[Big Endian architecture]) AC_DEFINE([LITTLEENDIAN],[0],[Little Endian architecture])],
-               [AC_DEFINE([LITTLEENDIAN],[1],[Little Endian architecture]) AC_DEFINE([BIGENDIAN],[0],[Big Endian architecture])],
-               [])
-
 # Haskell types corresponding to C types, defined here for those independent of 32/64 bitness of platform
 AC_DEFINE([HTYPE_CHAR],[Int8],[Haskell type for char])
 AC_DEFINE([HTYPE_DOUBLE],[Double],[Haskell type for double])
@@ -625,6 +720,10 @@ AC_DEFINE([HTYPE_UINTMAX_T],[Word64],[Haskell type for uintmax_t])
 AC_DEFINE([HTYPE_UNSIGNED_CHAR],[Word8],[Haskell type for unsigned char])
 AC_DEFINE([HTYPE_UNSIGNED_LONG_LONG],[Word64],[Haskell type for unsigned long long])
 AC_DEFINE([HTYPE_UNSIGNED_SHORT],[Word16],[Haskell type for short])
+
+AC_C_BIGENDIAN([AC_DEFINE([BIGENDIAN],[1],[Big Endian architecture]) AC_DEFINE([LITTLEENDIAN],[0],[Little Endian architecture])],
+               [AC_DEFINE([LITTLEENDIAN],[1],[Little Endian architecture]) AC_DEFINE([BIGENDIAN],[0],[Big Endian architecture])],
+               [])
 
 # C error codes
 AC_DEFINE([CONST_E2BIG],[E2BIG],[Value of E2BIG])
@@ -766,49 +865,61 @@ AC_SUBST(GMP_ABI,$gmpABI)
 # Use Boehm's GC
 AC_DEFINE([USE_BOEHM_GC],[1],[Use Boehm's garbage collector])
 
-# Use GMP
-AC_DEFINE([USE_GMP],[1],[Use GNU Multiple Precision library])
+# which MP library
+AC_ARG_WITH(mplib,
+[AS_HELP_STRING([--with-mplib=ltm|gmp],[Specify which MP library to use. Default is ltm (builtin derivative of LibTomMath).])],
+[ mplib="$withval" ],
+[ mplib="ltm" ]
+)
+AC_SUBST(MPLIB,$mplib)
+
+# Use GMP or LTM
+if test "$mplib" = "gmp" ; then
+  AC_DEFINE([USE_GMP],[1],[Use GMP (GNU Multiple Precision) library])
+  AC_DEFINE([USE_LTM],[0],[Use LTM (LibTomMath) library])
+else
+  AC_DEFINE([USE_GMP],[0],[Use GMP (GNU Multiple Precision) library])
+  AC_DEFINE([USE_LTM],[1],[Use LTM (LibTomMath) library])
+fi
+
+# which GMP archive
+AC_ARG_WITH(gmplibarchive,
+[AS_HELP_STRING([--with-gmplibarchive=<gmp lib archive>],[If GMP is used, specify absolute location of GMP archive (named like .../gmp-X.Y.Z.tar.gz).])],
+[ gmpLibArchive="$withval" ],
+[ gmpLibArchive=`pwd`/"extlibs/gmp/gmp-4.2.1.tar.gz" ]
+)
+if test -r "$gmpLibArchive" ; then
+  gmpLibArchiveExists="yes"
+else
+  gmpLibArchiveExists="no"
+fi
+AC_SUBST(GMP_LIB_ARCHIVE, "$gmpLibArchive")
 
 # Prefix used for global values, assumed to be present by RTS
 AC_DEFINE([RTS_GLOBAL_VAR_PREFIX],["global_"],[Prefix for RTS globals (obsolete?)])
 
 ### machine dependent code
+
+
 case $HostPlatform in
   i*86-*-mingw* | i*86-*-cygwin* )
-        mach_dep_c_for_tailcall_leave1="asm(\\\"leave\\\") ;"
-        mach_dep_c_for_tailcall_leave2=""
-        mach_dep_c_for_tailcall_enter=""
         ;;
   powerpc-apple-* )
-        mach_dep_c_for_tailcall_leave1="asm(\\\"lwz r1,0(r1)\\\") ; asm(\\\"lwz r0,8(r1)\\\") ; asm(\\\"mtlr r0\\\") ;"
-        mach_dep_c_for_tailcall_leave2="asm(\\\"lmw r30,-8(r1)\\\") ;"
-        mach_dep_c_for_tailcall_enter="asm( \\\"lwz r2,0(r1)\\\" ) ; asm( \\\"stw r0,8(r2)\\\" ) ;"
         ;;
   i*86-pc-linux-gnu )
         gcc_ehc_extra_extern_libs="pthread"
-        mach_dep_c_for_tailcall_leave1="asm(\\\"leave\\\") ;"
         ;;
   *-linux-gnu )
         gcc_ehc_extra_extern_libs="pthread"
         ;;
   x86_64-* )
-        mach_dep_c_for_tailcall_leave1="asm(\\\"leave\\\") ;"
         ;;
   i386-apple-* )
-        mach_dep_c_for_tailcall_leave1="asm(\\\"leave\\\") ;"
-        mach_dep_c_for_tailcall_leave2="asm(\\\"movl -8(%esp), %ebx\\\") ;"
         ;;
   *)
-        mach_dep_c_for_tailcall_leave1=""
-        mach_dep_c_for_tailcall_leave2=""
-        mach_dep_c_for_tailcall_enter=""
         ;;
 esac
-AC_SUBST(MACH_DEP_C_FOR_TAILCALL_ENTER,"$mach_dep_c_for_tailcall_enter")
-AC_SUBST(MACH_DEP_C_FOR_TAILCALL_LEAVE1,"$mach_dep_c_for_tailcall_leave1")
-AC_SUBST(MACH_DEP_C_FOR_TAILCALL_LEAVE2,"$mach_dep_c_for_tailcall_leave2")
 AC_SUBST(GCC_EHC_EXTRA_EXTERN_LIBS,"$gcc_ehc_extra_extern_libs")
-
 ### other platform specific stuff
 # defaults:
 # file suffixes
@@ -827,6 +938,8 @@ libtoolStaticOpts="-static -o"
 libtoolDynamicCmd="echo Dynamic linking not available: "
 libtoolDynamicOpts=""
 ehcGccOptsStatic=""
+linker_symbol_prefix="_"
+
 case $HostPlatform in
   i*86-*-mingw* | i*86-*-cygwin* )
         # file suffixes
@@ -847,8 +960,9 @@ case $HostPlatform in
         # libtool usage
         #libtoolStaticCmd="no"
         # ehcGccOptsStatic="-static"
-	    # libtoolStaticCmd="libtool --mode=link gcc -static -o"
+	    # libtoolStaticCmd="libttcflagool --mode=link gcc -static -o"
         libtoolStaticCmd="no"
+        linker_symbol_prefix=""
         ;;
   x86*-*-linux-gnu )
         # file suffixes
@@ -870,6 +984,7 @@ AC_SUBST(SUFFIX_LIB,"$suffix_lib")
 AC_SUBST(PREFIX_LIB,"$prefix_lib")
 AC_SUBST(PATHS_SEP,"$paths_sep")
 AC_SUBST(SLASH,"$slash")
+AC_SUBST(LINKER_SYMBOL_PREFIX,"$linker_symbol_prefix")
 
 # misc
 AC_SUBST(DEVELOPMENT_PLATFORM,"$development_platform")
@@ -894,7 +1009,7 @@ case $HostPlatform in
         # get rid off /cygdrive/ prefix
         hardtop=`echo ${hardtop} | sed -e 's%^/cygdrive/\(.\)/%\1:/%' `
         hardtop_plat=`cygpath -w ${hardtop} | sed -e 's@\\\\@/@g' `
-        hardtop_plat2=`echo ${hardtop_plat} | sed -e 's@^\(.\):@/\1@' `
+        hardtop_plat2=${hardtop}
         shellrun="/bin/bash "
         ;;
   *)
@@ -931,13 +1046,14 @@ AC_SUBST(RTS_PKG_NAME, "EH-RTS")
 AC_SUBST(EXTLIBS_BGC_PKG_NAME, "gc") # should coincide with installed lib in extlibs/bgc
 AC_SUBST(EXTLIBS_GMP_PKG_NAME, "gmp") # should coincide with installed lib in extlibs/gmp
 
-### if some of the required libraries/tools are absent, this def will check for it and exit
+### if some of the required libraries/tools are absent, this def will check for it and exit when make is invoked
 if test "x$uuagcExists" = "xyes" \
    -a "x$ghcExists" = "xyes" \
    -a "x$gccExists" = "xyes" \
    -a "x$ghcLibFglExists" = "xyes" \
    -a "x$ghcLibUulibExists" = "xyes" \
-   -a "x$ghcLibNetworkExists" = "xyes"
+   -a "x$ghcLibNetworkExists" = "xyes" \
+   -a "x$ghcLibBinaryExists" = "xyes"
 then
   exitIfAbsentLibOrTool=""
 else
@@ -947,9 +1063,12 @@ AC_SUBST(EXIT_IF_ABSENT_LIB_OR_TOOL, $exitIfAbsentLibOrTool)
 
 ### file generation
 AC_CONFIG_FILES([mk/config.mk mk/shared.mk])
+AC_CONFIG_FILES([test/benchmark/runbenchmark.pl])
 AC_CONFIG_FILES([src/ehc/Config.chs src/helium/Utils/OSSpecific.hs])
-AC_CONFIG_FILES([bin/llvm-compilerdriver], [chmod +x bin/llvm-compilerdriver])
-AC_CONFIG_HEADERS([src/ehc/ConfigDefines.chs src/rts/config.ch src/rts/mm/config.ch ehclib/base/include/MachDeps.h ehclib/base/include/HsBaseConfig.h])
+# AC_CONFIG_FILES([bin/llvm-compilerdriver], [chmod +x bin/llvm-compilerdriver]
+AC_CONFIG_HEADERS([src/ehc/ConfigDefines.chs src/rts/config.ch src/rts/mm/config.ch ehclib/uhcbase/include/MachDeps.h ehclib/uhcbase/include/HsBaseConfig.h ehclib/old-time/include/HsTimeConfig.h ehclib/directory/include/HsDirectoryConfig.h ehclib/unix/include/HsUnixConfig.h])
+
+AC_CONFIG_FILES([src/text2text/text2text.cabal])
 AC_OUTPUT
 
 echo
@@ -957,6 +1076,7 @@ echo "Version: ${EH_VERSION_FULL}"
 echo "Installation/build summary."
 echo "  host                          : $host"
 echo "  prefix                        : $prefix"
+echo "  build suffix                  : $ehcBuildSuffix"
 
 echo "Required:"
 echo "  uuagc is available?           : $uuagcExists"
@@ -971,6 +1091,7 @@ echo "  ghc is available?             : $ghcExists"
 if test "x$ghcExists" = "xyes" ;then 
 echo "    version                     : $ghcVersion"
 echo "    command for ghc             : $ghcCmd"
+echo "    command for ghc raw         : $ghcCmd1"
 echo "    libraries:"
 echo "      uulib is available?       : $ghcLibUulibExists"
   if test "x$ghcLibUulibExists" = "xyes"
@@ -993,6 +1114,13 @@ echo "      network is available?     : $ghcLibNetworkExists"
   else
     echo "        **** ERROR **** : 'network' must be installed, use cabal+hackage"
   fi
+echo "      binary is available?      : $ghcLibBinaryExists"
+  if test "x$ghcLibBinaryExists" = "xyes"
+  then
+    echo "        version                 : $ghcLibBinary"
+  else
+    echo "        **** ERROR **** : 'binary' must be installed, use cabal+hackage"
+  fi
 else
 echo "    **** ERROR **** : ghc must be installed, see http://www.haskell.org/ghc"
 fi
@@ -1014,6 +1142,37 @@ then
   fi
 fi
 
+if test x$enableLlvm = xyes
+then
+  echo "  llvm is available?            : $llvmExists"
+  echo "    command for llc             : $llvmLlc"
+  if test -x $llvmLlc
+  then
+    echo "    version                     :" `$llvmLlc -version`
+  else
+    echo "    **** ERROR **** : llc is not available and/or executable"
+  fi
+  echo "    command for llvm-as         : $llvmAs"
+  if test ! -x $llvmAs
+  then
+    echo "    **** ERROR **** : llvm-as is not available and/or executable"
+  fi
+  echo "    command for opt             : $llvmOpt"
+  if test ! -x $llvmOpt
+  then
+    echo "    **** ERROR **** : opt is not available and/or executable"
+  fi
+fi
+
+echo "  MP library                    : $mplib"
+if test "$mplib" == "gmp" ; then
+  if test "x$gmpLibArchiveExists" = "xyes" ;then
+    echo "    gmp lib archive             : $gmpLibArchive"
+  else
+    echo "    **** ERROR **** : GMP lib archive not readable: $gmpLibArchive"
+  fi
+fi
+
 echo "Optional:"
 echo "  haddock is available?         : $haddockExists"
 if test "x$haddockExists" = "xyes" ;then 
@@ -1021,7 +1180,7 @@ echo "    version                     : $haddockVersion"
 echo "    command for haddock         : $haddockCmd"
 fi
 
-#echo
-#echo "Misc debug/tmp info:"
-#echo "  hardtop_plat                        : $hardtop_plat"
-
+echo "Absolute location of directories:"
+echo "  ehc repository                : $hardtop_plat2"
+echo "  ehc repository raw            : $hardtop_plat"
+echo "  unix root prefix raw          : $toplevelSystemAbsolutePathPrefix"

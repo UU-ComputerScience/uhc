@@ -79,7 +79,7 @@ SEM GrExpr
                                                       (NmAlias_Nm e,_,_) | isJust mbAli								-- use of name mapping to other value, may be replaced by orig value
                                                         -> case mbAli of
                                                              Just (NmAlias_Const _ c)
-                                                               -> (GrExpr_Seq (GrExpr_Unit c) @pat.trf @body.trf,Map.empty)
+                                                               -> (GrExpr_Seq (GrExpr_Unit c GrType_None) @pat.trf @body.trf,Map.empty)
                                                              _ -> (@trf,Map.empty)
                                                         where mbAli = Map.lookup e @lhs.nmAliasMp
                                                       _ -> (@trf,Map.empty)

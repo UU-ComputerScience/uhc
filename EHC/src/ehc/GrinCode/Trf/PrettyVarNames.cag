@@ -83,7 +83,7 @@ SEM GrBindL
   | Nil         lhs         .   uniqNr              = @lhs.uniqNr
 
 SEM GrBind
-  | Bind        lhs         .   trf                 = GrBind_Bind @nm @loc.ns @expr.trf
+  | Bind        lhs         .   trf                 = GrBind_Bind @nm GrBindAnnNormal @loc.ns @expr.trf
                 loc         .   (ns,mapping,uniqNr) = getPrettyNames @lhs.mapping @argNmL @lhs.uniqNr
 
 SEM GrPatLam
@@ -95,7 +95,7 @@ SEM GrPatLam
                 loc         .   (nm,mapping,uniqNr) = getPrettyName @lhs.mapping @nm GrinInteger @lhs.uniqNr
   | BasicAnnot  lhs         .   trf                 = GrPatLam_BasicAnnot @annot @loc.nm 
                 loc         .   (nm,mapping,uniqNr) = getPrettyName @lhs.mapping @nm GrinInteger @lhs.uniqNr
-  | EnumAnnot   lhs         .   trf                 = GrPatLam_EnumAnnot @tagL.trf @loc.nm 
+  | EnumAnnot   lhs         .   trf                 = GrPatLam_EnumAnnot @tycon @loc.nm 
                 loc         .   (nm,mapping,uniqNr) = getPrettyName @lhs.mapping @nm GrinTag @lhs.uniqNr
 
 SEM GrExpr

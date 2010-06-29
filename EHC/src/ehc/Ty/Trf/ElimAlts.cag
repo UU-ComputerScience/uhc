@@ -171,7 +171,7 @@ SEM Ty
                                                                                   eat = if null (foErrL fos) then foTy fos else foTy foh
                                                                                   fo = tyElimAlts @lhs.fitsIn @lhs.fio @lhs.globTvL @lUniq3 (foVarMp foh |=> @lhs.globVarMp) eat
                                                                                   eaVarMp = @tv `varmpTyUnit` foTy fo
-                                                                                  (_,foOtherL)
+                                                                                  (foOtherL,_)
                                                                                      = fitsInLWith (\_ _ -> emptyFO) @lhs.fitsIn fio @lUniq4 (@lhs.tyVarMp |=> @lhs.globVarMp) @tyL.otherTyL (repeat eat)
                                                                                      where fio = @lhs.fio {fioMode = if fioMode @lhs.fio == FitMeet then FitSubLR else FitSubRL} 
                                                                              in   (foTy fo,eaVarMp |=> foVarMp fo,if null (foErrL fo) then concat (map foErrL foOtherL) else foErrL fo)

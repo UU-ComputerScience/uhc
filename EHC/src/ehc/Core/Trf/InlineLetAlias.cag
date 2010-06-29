@@ -7,10 +7,13 @@
 %%% Inline let bindings for variables and constants
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs module {%{EH}Core.Trf.InlineLetAlias} import(Data.Maybe,qualified Data.Map as Map,{%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Core},{%{EH}Ty}) export(cmodTrfInlineLetAlias)
+%%[(8 codegen) hs module {%{EH}Core.Trf.InlineLetAlias} import(Data.Maybe,qualified Data.Map as Map,qualified Data.Set as Set,{%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Core},{%{EH}Ty}) export(cmodTrfInlineLetAlias)
 %%]
 
-%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev})
+%%[(8 codegen) hs import({%{EH}AbstractCore})
+%%]
+
+%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/Trf/CommonFv},{Core/Trf/CommonLev})
 WRAPPER CodeAGItf
 %%]
 
@@ -110,8 +113,8 @@ ATTR CodeAGItf CExpr CModule AllBind [ noTrfNmS: HsNameS | | ]
 SEM CAlt
   | Alt         loc         .   noTrfNmS    =   Set.empty
 
-SEM CPatBind
-  | Bind        loc         .   noTrfNmS    =   Set.empty
+SEM CPatFld
+  | Fld         loc         .   noTrfNmS    =   Set.empty
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -131,11 +134,11 @@ SEM CodeAGItf
 SEM CExpr
   | Let         loc         .   allowTrf    =   @categ /= CBindings_Strict
                                                 && @categ /= CBindings_FFI
-%%[[94
+%%[[90
                                                 && @categ /= CBindings_FFE
 %%]]
                             .   allowStrTrf =   @categ /= CBindings_FFI
-%%[[94
+%%[[90
                                                 && @categ /= CBindings_FFE
 %%]]
                             .   nmMpNew     =   Map.foldWithKey
@@ -156,7 +159,11 @@ SEM CExpr
                                                   )
                                                   Map.empty
                                                   @binds.bindNmMp
-                            .   nmMp        =   @nmMpNew `Map.union` @lhs.nmMp
+                            .   nmMp        =   Map.union @nmMpNew $ Map.difference @lhs.nmMp @binds.cvarIntroExprMp
+  | Lam			body		.	nmMp		=	Map.delete @arg @lhs.nmMp
+
+SEM CAlt
+  | Alt         expr        .   nmMp		=	foldr Map.delete @lhs.nmMp @pat.nmL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -173,7 +180,8 @@ SEM CExpr
     Char        lhs         .   mbRepl      =   if @lhs.allowTrfToCon
                                                 then Just @cTrf
                                                 else Nothing
-  | * - Var 
+  | * - Ann
+        Var 
         Int 
         Char    lhs         .   mbRepl      =   Nothing
 %%]
@@ -182,7 +190,7 @@ SEM CExpr
 %%% Gather additional names for which the def may not be eliminated: FFE
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(94 codegen)
+%%[(90 codegen)
 ATTR AllBind [ | | bindsNoTrfNmS USE {`Set.union`} {Set.empty}: HsNameS ]
 %%]
 
@@ -213,8 +221,8 @@ ATTR CExpr AllAlt AllBind [ allowTrfToCon: {Bool} | | ]
 SEM CModule
   | Mod   expr.allowTrfToCon  =  True
 
-SEM CPatBind
-  | Bind  offset.allowTrfToCon  =  True
+SEM CPatFld
+  | Fld   offset.allowTrfToCon  =  True
 
 %%]
 
@@ -225,8 +233,8 @@ ATTR CExpr AllBind AllAlt [ noTrfToConNmS : HsNameS | | ]
 SEM CModule
   | Mod   expr.noTrfToConNmS  =  Set.empty
 
-SEM CPatBind
-  | Bind  offset.noTrfToConNmS  =  Set.empty
+SEM CPatFld
+  | Fld   offset.noTrfToConNmS  =  Set.empty
 
   
 SEM CBind
@@ -248,17 +256,17 @@ ATTR CodeAGItf [ | | cTrf: CModule ]
 SEM CExpr
   | Let         lhs         .   cTrf        =   if Map.null @nmMpNew
                                                 then @cTrf
-                                                else mkCExprLet @categ
+                                                else acoreLet @categ
                                                        [ b | (n,b) <- @binds.bindL
                                                            , not (n `Map.member` @nmMpNew)
-%%[[94
+%%[[90
                                                              || n `Set.member` @binds.bindsNoTrfNmS
 %%]]
                                                        ] @body.cTrf
   | Var         lhs         .   cTrf        =   maybe @cTrf id $ Map.lookup @nm $ @lhs.nmMp
 %%]
 
-%%[(94 codegen)
+%%[(90 codegen)
 SEM CBind
   | FFE         loc         .   (replNm,bindsNoTrfNmS)
                                             =   case Map.lookup @expNm @lhs.nmMp of
@@ -285,10 +293,23 @@ SEM CExpr
 SEM CMetaVal
   | Dict
     Val             lhs.nameS = Set.empty
-  | DictClass
-    DictInstance    loc.subst =  maybe Nothing (\nm->Just (maybe nm (fromJust . cexprMbVar) (Map.lookup nm @lhs.bindNmMp)))
-                    lhs.nameS =  Set.fromList [ nm | Just nm <- @names ]
-  | DictClass       lhs.cTrf  =  CMetaVal_DictClass    (map @loc.subst @names)
-  | DictInstance    lhs.cTrf  =  CMetaVal_DictInstance (map @loc.subst @names)
+  | DictClass       
+    DictInstance    lhs.nameS =  Set.fromList (concatMap trackNames @tracks)
+  | DictClass       lhs.cTrf  =  CMetaVal_DictClass    (map (substTrack @lhs.bindNmMp) @tracks)
+  | DictInstance    lhs.cTrf  =  CMetaVal_DictInstance (map (substTrack @lhs.bindNmMp) @tracks)
+
+
+{
+trackNames :: Track -> [HsName]
+trackNames (TrackSelect n t) = trackNames t
+trackNames (TrackVarApply x ts) = x : concatMap trackNames ts
+trackNames _ = []
+    
+substTrack :: NmMp -> Track -> Track
+substTrack m (TrackSelect n t) = TrackSelect n (substTrack m t)
+substTrack m (TrackVarApply x ts) = TrackVarApply (maybe x (fromJust . cexprMbVar) (Map.lookup x m)) (map (substTrack m) ts)
+substTrack _ t = t
+}
+
 
 %%]

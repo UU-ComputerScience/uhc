@@ -43,22 +43,23 @@ ATTR SilModule Functions Function Statements Statement Alternatives Alternative 
 
 
 SEM SilModule
-  | SilModule  lhs.pretty = @functions.pretty
+  | SilModule  lhs.pretty = prettyConstants @constants
+                            >-< prettyVariables @variables
+                            >-< @functions.pretty
   
   
 %%[[8
 SEM Function
   | Function   lhs.pretty = "FUNCTION" >#< (hsnShowAlphanumeric @name) >#< "(" >#< foldr (>#<) empty (map hsnShowAlphanumeric @parameters) >#< ")"
                             >-< "{"
-                            >-< indent 4 ("DECLARE" >#< foldr (>#<) empty (map hsnShowAlphanumeric @locals) >#< ";")
+                            >-< indent 4 ("DECLARE" >#< foldr (>#<) empty (map showNameWithType @locals) >#< ";")
                             >-< indent 4 (@body.pretty)
                             >-< "}"
 %%][8_2
 SEM Function
   | Function   lhs.pretty = "function" >#< (hsnShowAlphanumeric @name) >|< "(" >|< foldr (>#<) empty (map hsnShowAlphanumeric @parameters) >|< ")"
-                            >#< (if @tailJumps then text "{ TailJump }" else text "{ NoTailJump }")
                             >-< "{"
-                            >-< indent 4 ("locals" >#< foldr (>#<) empty (map hsnShowAlphanumeric @locals) >|< ";")
+                            >-< indent 4 ("locals" >#< foldr (>#<) empty (map showNameWithType @locals) >|< ";")
                             >-< indent 4 (@body.pretty)
                             >-< "}"
 %%]]
@@ -68,10 +69,8 @@ SEM Statement
   | Assignment2 lhs.pretty = @dest.pretty >#< ":=" >#< @dest2.pretty >#< ":=" >#< @source.pretty >|< ";"
   | Switch      lhs.pretty = "SWITCH" >#< @scrutinee.pretty >-< "{" >-< @body.pretty >-< "}"
   | IfThenElse  lhs.pretty = "IF"     >#< @condition.pretty >-< "THEN {" >-< indent 4 @thenpart.pretty >-< "}" >-< "ELSE {" >-< indent 4 @elsepart.pretty >-< "}"
-  | Jump        lhs.pretty = "JUMP"   >#< hsnShowAlphanumeric @name >|< ";"
-  | Return      lhs.pretty = "RETURN" >#< text (show @retdiff) >|< ";"
+  | Return      lhs.pretty = "RETURN ("  >#< @vals.pretty >|< ")" >|< ";"
   | Label       lhs.pretty = "LABEL"  >#< text @name >|< ";"
-  | Smart       lhs.pretty = "SMART ("  >#< @vals.pretty >|< ");"
   | Voiden      lhs.pretty = "VOIDEN" >#< @val.pretty >|< ";"
 %%[[8
   | Call        lhs.pretty = "CALL"   >#< hsnShowAlphanumeric @name >|< "(" >|< @args.pretty >|< ");"
@@ -105,8 +104,8 @@ SEM Variable
   | Param          lhs.pretty = text (hsnShowAlphanumeric @name)
   | Global         lhs.pretty = text (hsnShowAlphanumeric @name)
 %%]]
+  | LP             lhs.pretty = text "LP"  
   | SP             lhs.pretty = text "SP"  
-  | BP             lhs.pretty = text "BP"  
   | RP             lhs.pretty = text "RP"  
   | Subs           lhs.pretty = @array.pretty >|< "[" >|< show @index >|< "]"
   | Aux            lhs.pretty = text "AUX"
@@ -137,4 +136,26 @@ comment :: [String] -> PP_Doc
 comment []  = text ""
 comment [s] = text ("// " ++ s)
 comment xs  = text "/* " >#< foldr1 (>-<) (map text xs) >-< text "*/"
+
+
+showNameWithType :: (HsName, SilTp) -> PP_Doc
+showNameWithType (nm,tp) = hsnShowAlphanumeric nm >|< ":" >|< show tp
+
+prettyConstants :: [ConstantInfo] -> PP_Doc
+prettyConstants xs 
+   = foldr1 (>-<) (text "CONSTANTS" : map prettyConstant xs)
+ 
+prettyConstant :: ConstantInfo -> PP_Doc
+prettyConstant ci
+  =  text (constantInfoName ci) 
+     >#< text (show (constantInfoSeqNr ci)) 
+     >#< text (show (constantInfoNodeSize ci)) 
+     >#< text (show (constantInfoPayloadSize ci)) 
+     >#< text (show (constantInfoHasPointers ci)) 
+
+
+prettyVariables :: [HsName] -> PP_Doc
+prettyVariables xs
+  = text "GLOBALS" >#< foldr (>#<) empty (map hsnShowAlphanumeric xs) >#< ";"
+
 %%]

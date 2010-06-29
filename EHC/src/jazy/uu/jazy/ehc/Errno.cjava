@@ -1,0 +1,366 @@
+%%[(99 jazy)
+package uu.jazy.ehc;
+
+// Constants defined in errno.h (copied from the man page).
+class Errno {
+	// Argument list too long (POSIX.1)
+	static final int E2BIG = 1;
+
+	// Permission denied (POSIX.1)
+	static final int EACCES = 2;
+
+	// Address already in use (POSIX.1)
+	static final int EADDRINUSE = 3;
+
+	// Address not available (POSIX.1)
+	static final int EADDRNOTAVAIL = 4;
+
+	// Address family not supported (POSIX.1)
+	static final int EAFNOSUPPORT = 5;
+
+	// Resource temporarily unavailable (POSIX.1)
+	static final int EAGAIN = 6;
+
+	// Connection already in progress (POSIX.1)
+	static final int EALREADY = 7;
+
+	// Invalid exchange
+	static final int EBADE = 8;
+
+	// Bad file descriptor (POSIX.1)
+	static final int EBADF = 9;
+
+	// File descriptor in bad state
+	static final int EBADFD = 10;
+
+	// Bad message (POSIX.1)
+	static final int EBADMSG = 11;
+
+	// Invalid request descriptor
+	static final int EBADR = 12;
+
+	// Invalid request code
+	static final int EBADRQC = 13;
+
+	// Invalid slot
+	static final int EBADSLT = 14;
+
+	// Device or resource busy (POSIX.1)
+	static final int EBUSY = 15;
+
+	// Operation canceled (POSIX.1)
+	static final int ECANCELED = 16;
+
+	// No child processes (POSIX.1)
+	static final int ECHILD = 17;
+
+	// Channel number out of range
+	static final int ECHRNG = 18;
+
+	// Communication error on send
+	static final int ECOMM = 19;
+
+	// Connection aborted (POSIX.1)
+	static final int ECONNABORTED = 20;
+
+	// Connection refused (POSIX.1)
+	static final int ECONNREFUSED = 21;
+
+	// Connection reset (POSIX.1)
+	static final int ECONNRESET = 22;
+
+	// Resource deadlock avoided (POSIX.1)
+	static final int EDEADLK = 23;
+
+	// Synonym for EDEADLK
+	static final int EDEADLOCK = 24;
+
+	// Destination address required (POSIX.1)
+	static final int EDESTADDRREQ = 25;
+
+	// Mathematics argument out of domain of function (POSIX.1, C99)
+	static final int EDOM = 26;
+
+	// Disk quota exceeded (POSIX.1)
+	static final int EDQUOT = 27;
+
+	// File exists (POSIX.1)
+	static final int EEXIST = 28;
+
+	// Bad address (POSIX.1)
+	static final int EFAULT = 29;
+
+	// File too large (POSIX.1)
+	static final int EFBIG = 30;
+
+	// Host is down
+	static final int EHOSTDOWN = 31;
+
+	// Host is unreachable (POSIX.1)
+	static final int EHOSTUNREACH = 32;
+
+	// Identifier removed (POSIX.1)
+	static final int EIDRM = 33;
+
+	// Illegal byte sequence (POSIX.1, C99)
+	static final int EILSEQ = 34;
+
+	// Operation in progress (POSIX.1)
+	static final int EINPROGRESS = 35;
+
+	// Interrupted function call (POSIX.1)
+	static final int EINTR = 36;
+
+	// Invalid argument (POSIX.1)
+	static final int EINVAL = 37;
+
+	// Input/output error (POSIX.1)
+	static final int EIO = 38;
+
+	// Socket is connected (POSIX.1)
+	static final int EISCONN = 39;
+
+	// Is a directory (POSIX.1)
+	static final int EISDIR = 40;
+
+	// Is a named type file
+	static final int EISNAM = 41;
+
+	// Key has expired
+	static final int EKEYEXPIRED = 42;
+
+	// Key was rejected by service
+	static final int EKEYREJECTED = 43;
+
+	// Key has been revoked
+	static final int EKEYREVOKED = 44;
+
+	// Level 2 halted
+	static final int EL2HLT = 45;
+
+	// Level 2 not synchronized
+	static final int EL2NSYNC = 46;
+
+	// Level 3 halted
+	static final int EL3HLT = 47;
+
+	// Level 3 halted
+	static final int EL3RST = 48;
+
+	// Cannot access a needed shared library
+	static final int ELIBACC = 49;
+
+	// Accessing a corrupted shared library
+	static final int ELIBBAD = 50;
+
+	// Attempting to link in too many shared libraries
+	static final int ELIBMAX = 51;
+
+	// lib section in a.out corrupted
+	static final int ELIBSCN = 52;
+
+	// Cannot exec a shared library directly
+	static final int ELIBEXEC = 53;
+
+	// Too many levels of symbolic links (POSIX.1)
+	static final int ELOOP = 54;
+
+	// Wrong medium type
+	static final int EMEDIUMTYPE = 55;
+
+	// Too many open files (POSIX.1)
+	static final int EMFILE = 56;
+
+	// Too many links (POSIX.1)
+	static final int EMLINK = 57;
+
+	// Message too long (POSIX.1)
+	static final int EMSGSIZE = 58;
+
+	// Multihop attempted (POSIX.1)
+	static final int EMULTIHOP = 59;
+
+	// Filename too long (POSIX.1)
+	static final int ENAMETOOLONG = 60;
+
+	// Network is down (POSIX.1)
+	static final int ENETDOWN = 61;
+
+	// Connection aborted by network (POSIX.1)
+	static final int ENETRESET = 62;
+
+	// Network unreachable (POSIX.1)
+	static final int ENETUNREACH = 63;
+
+	// Too many open files in system (POSIX.1)
+	static final int ENFILE = 64;
+
+	// No buffer space available (POSIX.1 (XSI STREAMS option))
+	static final int ENOBUFS = 65;
+
+	// No message is available on the STREAM head read queue (POSIX.1)
+	static final int ENODATA = 66;
+
+	// No such device (POSIX.1)
+	static final int ENODEV = 67;
+
+	// No such file or directory (POSIX.1)
+	static final int ENOENT = 68;
+
+	// Exec format error (POSIX.1)
+	static final int ENOEXEC = 69;
+
+	// Required key not available
+	static final int ENOKEY = 70;
+
+	// No locks available (POSIX.1)
+	static final int ENOLCK = 71;
+
+	// Link has been severed (POSIX.1)
+	static final int ENOLINK = 72;
+
+	// No medium found
+	static final int ENOMEDIUM = 73;
+
+	// Not enough space (POSIX.1)
+	static final int ENOMEM = 74;
+
+	// No message of the desired type (POSIX.1)
+	static final int ENOMSG = 75;
+
+	// Machine is not on the network
+	static final int ENONET = 76;
+
+	// Package not installed
+	static final int ENOPKG = 77;
+
+	// Protocol not available (POSIX.1)
+	static final int ENOPROTOOPT = 78;
+
+	// No space left on device (POSIX.1)
+	static final int ENOSPC = 79;
+
+	// No STREAM resources (POSIX.1 (XSI STREAMS option))
+	static final int ENOSR = 80;
+
+	// Not a STREAM (POSIX.1 (XSI STREAMS option))
+	static final int ENOSTR = 81;
+
+	// Function not implemented (POSIX.1)
+	static final int ENOSYS = 82;
+
+	// Block device required
+	static final int ENOTBLK = 83;
+
+	// The socket is not connected (POSIX.1)
+	static final int ENOTCONN = 84;
+
+	// Not a directory (POSIX.1)
+	static final int ENOTDIR = 85;
+
+	// Directory not empty (POSIX.1)
+	static final int ENOTEMPTY = 86;
+
+	// Not a socket (POSIX.1)
+	static final int ENOTSOCK = 87;
+
+	// Operation not supported (POSIX.1)
+	static final int ENOTSUP = 88;
+
+	// Inappropriate I/O control operation (POSIX.1)
+	static final int ENOTTY = 89;
+
+	// Name not unique on network
+	static final int ENOTUNIQ = 90;
+
+	// No such device or address (POSIX.1)
+	static final int ENXIO = 91;
+
+	// Operation not supported on socket (POSIX.1)
+	static final int EOPNOTSUPP = 92;
+
+	// Value too large to be stored in data type (POSIX.1)
+	static final int EOVERFLOW = 93;
+
+	// Operation not permitted (POSIX.1)
+	static final int EPERM = 94;
+
+	// Protocol family not supported
+	static final int EPFNOSUPPORT = 95;
+
+	// Broken pipe (POSIX.1)
+	static final int EPIPE = 96;
+
+	// Protocol error (POSIX.1)
+	static final int EPROTO = 97;
+
+	// Protocol not supported (POSIX.1)
+	static final int EPROTONOSUPPORT = 98;
+
+	// Protocol wrong type for socket (POSIX.1)
+	static final int EPROTOTYPE = 99;
+
+	// Result too large (POSIX.1, C99)
+	static final int ERANGE = 100;
+
+	// Remote address changed
+	static final int EREMCHG = 101;
+
+	// Object is remote
+	static final int EREMOTE = 102;
+
+	// Remote I/O error
+	static final int EREMOTEIO = 103;
+
+	// Interrupted system call should be restarted
+	static final int ERESTART = 104;
+
+	// Read-only file system (POSIX.1)
+	static final int EROFS = 105;
+
+	// Cannot send after transport endpoint shutdown
+	static final int ESHUTDOWN = 106;
+
+	// Invalid seek (POSIX.1)
+	static final int ESPIPE = 107;
+
+	// Socket type not supported
+	static final int ESOCKTNOSUPPORT = 108;
+
+	// No such process (POSIX.1)
+	static final int ESRCH = 109;
+
+	// Stale file handle (POSIX.1)
+	static final int ESTALE = 110;
+
+	// Streams pipe error
+	static final int ESTRPIPE = 111;
+
+	// Timer expired
+	static final int ETIME = 112;
+
+	// Connection timed out (POSIX.1)
+	static final int ETIMEDOUT = 113;
+
+	// Text file busy (POSIX.1)
+	static final int ETXTBSY = 114;
+
+	// Structure needs cleaning
+	static final int EUCLEAN = 115;
+
+	// Protocol driver not attached
+	static final int EUNATCH = 116;
+
+	// Too many users
+	static final int EUSERS = 117;
+
+	// Operation would block (may be same value as EAGAIN) (POSIX.1)
+	static final int EWOULDBLOCK = 118;
+
+	// Improper link (POSIX.1)
+	static final int EXDEV = 119;
+
+	// Exchange full
+	static final int EXFULL = 120;
+}
+%%]

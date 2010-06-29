@@ -13,6 +13,8 @@
 %%]
 %%[(8 codegen) hs import({%{EH}TyCore.Base})
 %%]
+%%[(8 codegen) hs import({%{EH}AbstractCore})
+%%]
 %%[(8 codegen) hs import({%{EH}VarMp})
 %%]
 
@@ -100,10 +102,8 @@ mkAppCoeWith :: [(HsName,MetaVal)] -> Coe
 mkAppCoeWith = Coe_App
 
 mkAppCoe :: [Expr] -> Coe
-mkAppCoe as = mkCoe (\e -> mkExprAppMeta e (metaLift as))
+mkAppCoe as = mkCoe (\e -> acoreAppMeta e (metaLift as))
 %%]
-mkAppCoeWith :: [(Expr,MetaVal)] -> Coe
-mkAppCoeWith as = mkCoe (\e -> mkExprAppMeta e as)
 
 %%[(8 codegen) hs export(mkLamCoe1With,mkLamCoe1)
 mkLamCoe1With :: HsName -> MetaVal -> Ty -> Coe

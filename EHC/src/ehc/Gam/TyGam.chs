@@ -26,7 +26,10 @@
 %%[(3 hmtyinfer) import({%{EH}Ty.Trf.Quantify})
 %%]
 
-%%[99 import({%{EH}Base.ForceEval})
+%%[(20 hmtyinfer) import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
+%%]
+
+%%[9999 import({%{EH}Base.ForceEval})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -41,6 +44,11 @@ data TyGamInfo
       }
 %%]]
       deriving Show
+%%]
+
+%%[(20 hmtyinfer)
+deriving instance Typeable TyGamInfo
+deriving instance Data TyGamInfo
 %%]
 
 %%[(6 hmtyinfer || hmtyast).mkTGIData export(mkTGIData)
@@ -208,7 +216,7 @@ instance PP TyGamInfo where
   pp tgi = ppTy (tgiTy tgi)
 %%]
 
-%%[(99 hmtyinfer || hmtyast)
+%%[(9999 hmtyinfer || hmtyast)
 instance ForceEval TyGamInfo where
   forceEval x@(TyGamInfo t) | forceEval t `seq` True = x
 %%[[102
@@ -216,3 +224,8 @@ instance ForceEval TyGamInfo where
 %%]]
 %%]
 
+%%[(20 hmtyinfer || hmtyast)
+instance Serialize TyGamInfo where
+  sput (TyGamInfo a) = sput a
+  sget = liftM TyGamInfo sget
+%%]

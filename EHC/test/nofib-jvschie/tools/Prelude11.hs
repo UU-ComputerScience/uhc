@@ -111,10 +111,15 @@ length           :: [a] -> Int
 length            = foldl' (\n _ -> n + 1) 0
 
 (!!)             :: [a] -> Int -> a
-xs     !! n | n<0 = error "Prelude.!!: negative index"
-[]     !! _       = error "Prelude.!!: index too large"
-(x:_)  !! 0       = x
-(_:xs) !! n       = xs !! (n-1)
+--xs     !! n | n<0 = error "Prelude.!!: negative index"
+--[]     !! _       = error "Prelude.!!: index too large"
+--(x:_)  !! 0       = x
+--(_:xs) !! n       = xs !! (n-1)
+(x:xs) !! n       = if n == 0
+                    then x
+                    else xs !! (n-1)
+
+
 
 foldl'           :: (a -> b -> a) -> a -> [b] -> a
 foldl' f a []     = a
@@ -159,7 +164,9 @@ concat           :: [[a]] -> [a]
 concat            = foldr (++) []
 
 concatMap        :: (a -> [b]) -> [a] -> [b]
-concatMap f       = concat . map f
+-- concatMap f       = concat . map f    -- this definition cannot be used, because map is defined as a list comprehension, which is desugared using concatMap
+concatMap _ []      = []
+concatMap f (x:xs)  = f x ++ concatMap f xs
 
 foldl            :: (a -> b -> a) -> a -> [b] -> a
 foldl f z []      = z
@@ -423,7 +430,7 @@ class Eq a where
     (==), (/=) :: a -> a -> Bool
     -- default definitions
     -- Minimal complete definition: (==) or (/=)
-    x == y      = not (x/=y)
+--    x == y      = not (x/=y)
     x /= y      = not (x==y)
 
 -- Ord class ---------------------------------------------
@@ -442,8 +449,9 @@ class (Eq a) => Ord a where
 
 -- Integral class-----------------------------------------
 
-class Integral a where
+class Num a => Integral a where
    quot, rem, div, mod :: a -> a -> a
+   toInt :: a->Int
 
 
 -- Num class----------------------------------------------
@@ -453,6 +461,11 @@ class (Eq a) => Num a where
     negate         :: a -> a
     abs, signum    :: a -> a
     fromInt        :: Int -> a
+    fromInt = fromIntegral
+
+fromIntegral :: (Integral a, Num b) => a->b
+fromIntegral = fromInt . toInt
+
 
 -- Bounded class----------------------------------------------
 
@@ -517,6 +530,7 @@ class Show a where
 
 instance Eq  Int where 
   (==)    = primEqInt
+  -- x /= y  = not (primEqInt x y)
 
 instance Ord Int where
   compare = primCmpInt
@@ -528,6 +542,7 @@ instance Integral Int where
   rem     = primRemInt
   div     = primDivInt
   mod     = primModInt
+  toInt x = x
 
 instance Num Int where
   (+)           = primAddInt
@@ -571,6 +586,10 @@ showInt x | x<0  = '-' : showInt(-x)
 
 
 -- List instance of Eq, Ord, Functor, Monad, Show
+
+hiero :: Int -> Int
+hiero x = x+1
+
 
 instance Eq a => Eq [a] where
     []     == []     =  True
@@ -632,11 +651,53 @@ instance Show Char where
     showsPrec p '\'' = showString "'\\''"
     showsPrec p c    = showChar '\'' . showLitChar c . showChar '\''
 
-    showList cs   = showChar '"' . showl cs
-                    where showl ""       = showChar '"'
-                          showl ('"':cs) = showString "\\\"" . showl cs
+    showList cs   = showChar '\"' . showl cs
+                    where showl ""       = showChar '\"'
+                          showl ('\"':cs) = showString "\\\"" . showl cs
                           showl (c:cs)   = showLitChar c . showl cs
 
+
+
+--------------------------------------------------------------
+-- Ratio and Rational type
+--------------------------------------------------------------
+
+data Ratio a = a :% a
+
+type Rational              = Ratio Int
+
+-- (%)                       :: Integral a => a -> a -> Ratio a
+-- x % y                      = reduce (x * signum y) (abs y)
+
+reduce                    :: Integral a => a -> a -> Ratio a
+reduce x y =  x :% y
+--reduce x y | y == fromInt 0= error "Ratio.%: zero denominator"
+--           | otherwise     = (x `quot` d) :% (y `quot` d)
+--                             where d = gcd x y
+
+
+instance (Eq a)  =>  Eq (Ratio a)  where
+   (x :% y) == (x' :% y')  =  x==x' && y==y'
+
+--instance Integral a => Ord (Ratio a) where
+--    compare (x:%y) (x':%y') = compare (x*y') (x'*y)
+
+instance (Integral a) => Num (Ratio a) where
+    (x:%y) + (x':%y') = reduce (x*y' + x'*y) (y*y')
+    (x:%y) * (x':%y') = reduce (x*x') (y*y')
+    negate (x :% y)   = negate x :% y
+    abs (x :% y)      = abs x :% y
+    signum (x :% y)   = signum x :% fromInt 1
+    fromInt           = intToRatio
+    --fromInt x         = fromInt x :% fromInt 1
+
+intToRatio :: Integral a => Int -> Ratio a
+intToRatio x = fromInt x :% fromInt 1
+
+
+instance (Show a,Integral a) => Show (Ratio a) where
+    showsPrec p (x:%y) = showParen (p > 7)
+                             (showsPrec 8 x . showString " % " . showsPrec 8 y)
 
 
 --==========================OVERLOADED FUNCTIONS=======================
@@ -647,7 +708,7 @@ odd              =  not . even
 
 -- gcd :: Integral a => a -> a -> a
 gcd x y         = gcd' (abs x) (abs y)
-                  where gcd' x y | y==0      = x
+                  where gcd' x y | y==fromInt 0      = x
                                  | otherwise = gcd' y (x `rem` y)
 
 elem, notElem    :: Eq a => a -> [a] -> Bool

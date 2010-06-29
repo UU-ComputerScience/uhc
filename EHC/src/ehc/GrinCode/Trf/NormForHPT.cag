@@ -114,7 +114,7 @@ SEM GrExpr
                              .  (var, unique)  = newVarIf @doUnitTrans @lhs.unique
                              .  (val2, pat2)   = newGrIdent @var
                         lhs  .  grTrf          = if @doUnitTrans 
-                                                 then GrExpr_Seq @grTrf @pat2 (GrExpr_Unit @val2)
+                                                 then GrExpr_Seq @grTrf @pat2 (GrExpr_Unit @val2 GrType_None)
                                                  else @grTrf
                              .  unique         = @unique -- note: we break the normal unique sequence (but it is 'safe')
 %%]
@@ -129,7 +129,7 @@ SEM GrExpr
           loc  .  (var, newUnique)  = newVarIf @doCaseTrans @lhs.unique
                .  (val', pat')      = newGrIdent @var
           lhs  .  grTrf             = if @doCaseTrans
-                                      then GrExpr_Seq (GrExpr_Unit @val.grTrf) @pat'
+                                      then GrExpr_Seq (GrExpr_Unit @val.grTrf GrType_None) @pat'
                                                       (GrExpr_Case @val' @altL.grTrf)
                                       else @grTrf
           altL . unique             = @newUnique
@@ -159,7 +159,7 @@ SEM GrExpr
               .  (val2, pat2)      = newGrIdent @var
          lhs  .  grTrf             = if @doPatternTrans
                                      then GrExpr_Seq @expr.grTrf @pat2
-                                                     (GrExpr_Seq (GrExpr_Unit @val2) @pat.grTrf @body.grTrf)
+                                                     (GrExpr_Seq (GrExpr_Unit @val2 GrType_None) @pat.grTrf @body.grTrf)
                                      else @grTrf
          body  .  unique           = @newUnique
 %%]
@@ -171,7 +171,7 @@ This is actually something for the code generator, but it is easier to prepare t
 %%[(8 codegen grin).catch
 SEM GrExpr
   | Catch   loc  .  var         =  HNmNr @handler.unique OrigNone
-                 .  appendUnit  =  GrExpr_Seq @grTrf (GrPatLam_Var @var) (GrExpr_Unit (GrVal_Var @var))
+                 .  appendUnit  =  GrExpr_Seq @grTrf (GrPatLam_Var @var) (GrExpr_Unit (GrVal_Var @var) GrType_None)
             lhs  .  grTrf       =  if @lhs.hasNext then @grTrf else @appendUnit
                  .  unique      =  if @lhs.hasNext then @handler.unique else @handler.unique + 1
 %%]

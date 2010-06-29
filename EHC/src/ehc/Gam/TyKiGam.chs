@@ -23,7 +23,10 @@
 %%[(6 hmtyinfer || hmtyast) import({%{EH}VarMp},{%{EH}Substitutable})
 %%]
 
-%%[99 import({%{EH}Base.ForceEval})
+%%[(20 hmtyinfer) import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
+%%]
+
+%%[9999 import({%{EH}Base.ForceEval})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -46,6 +49,11 @@ emptyTKGI
 %%]]
 
 type TyKiGam = Gam TyKiKey TyKiGamInfo
+%%]
+
+%%[(20 hmtyinfer || hmtyast)
+deriving instance Typeable TyKiGamInfo
+deriving instance Data TyKiGamInfo
 %%]
 
 %%[8 export(tkgiGetSet)
@@ -215,10 +223,17 @@ instance PP TyKiGamInfo where
   pp i = ppTy (tkgiKi i)
 %%]
 
-%%[(99 hmtyinfer || hmtyast)
+%%[(9999 hmtyinfer || hmtyast)
 instance ForceEval TyKiGamInfo where
   forceEval x@(TyKiGamInfo k) | forceEval k `seq` True = x
 %%[[102
   fevCount (TyKiGamInfo x) = cm1 "TyKiGamInfo" `cmUnion` fevCount x
 %%]]
 %%]
+
+%%[(20 hmtyinfer || hmtyast)
+instance Serialize TyKiGamInfo where
+  sput (TyKiGamInfo a) = sput a
+  sget = liftM TyKiGamInfo sget
+%%]
+

@@ -153,7 +153,7 @@ void mm_pages_Buddy_NewBuddyGroup( MM_Pages_Buddy_Data* pgs, MM_Pages_LogSize sz
 	// new pages
 	Word nrNewPages
 		= maxWord
-			( (5 * (1 << (szPagesLog - MM_Pages_MinSize_Log))) / 2		// 2.5 as many to make sure szPagesLog will fit
+			( (5 * (((Word)(1)) << (szPagesLog - MM_Pages_MinSize_Log))) / 2		// 2.5 as many to make sure szPagesLog will fit
 			, pgs->nextGroupNrPages										// or the next increment
 			) ;
 	// IF_GB_TR_ON(3,{printf("mm_pages_Buddy_NewBuddyGroup isFirstAlloc=%x doReuseExtl=%x nrNewPages=%x\n", isFirstAlloc, doReuseExtl, nrNewPages);}) ;
@@ -169,9 +169,9 @@ void mm_pages_Buddy_NewBuddyGroup( MM_Pages_Buddy_Data* pgs, MM_Pages_LogSize sz
 	}
 	
 	// allocate new group
-	MM_FlexArray_Inx grpNew = mm_flexArray_NewSlot( &pgs->buddyGroups ) ;
+	MM_FlexArray_Inx grpNew = mm_flexArray_AllocSlot( &pgs->buddyGroups ) ;
 	Word grpNewMallocSz = (nrNewPages + 2) << MM_Pages_MinSize_Log ;
-	Ptr grpNewMalloced = mm_malloc( grpNewMallocSz ) ;
+	Ptr grpNewMalloced = sys_malloc_Sys.malloc( grpNewMallocSz ) ;
 	MM_BuddyGroup* buddyGrpNew = (MM_BuddyGroup*)mm_flexArray_At( &pgs->buddyGroups, grpNew ) ;
 	mm_pages_Buddy_FillGroupWithMem( buddyGrpNew, grpNewMalloced, grpNewMallocSz ) ;
 	
@@ -185,7 +185,7 @@ void mm_pages_Buddy_NewBuddyGroup( MM_Pages_Buddy_Data* pgs, MM_Pages_LogSize sz
 	MM_BuddyGroup* buddyGrpExtl ;
 	MM_FlexArray_Inx grpExtl ;
 	if ( ! isFirstAlloc && doReuseExtl ) {
-		grpExtl = mm_flexArray_NewSlot( &pgs->buddyGroups ) ;
+		grpExtl = mm_flexArray_AllocSlot( &pgs->buddyGroups ) ;
 		buddyGrpExtl = (MM_BuddyGroup*)mm_flexArray_At( &pgs->buddyGroups, grpExtl ) ;
 		mm_pages_Buddy_FillGroupWithMem( buddyGrpExtl, pgs->extlData, pgs->extlDataSize ) ;
 		extlFirstPage = minWord( extlFirstPage, buddyGrpExtl->firstPage ) ;
@@ -194,7 +194,7 @@ void mm_pages_Buddy_NewBuddyGroup( MM_Pages_Buddy_Data* pgs, MM_Pages_LogSize sz
 	
 	// alloc new extlData
 	Word newExtlDataSize = (extlAfterLastPage - extlFirstPage) >> MM_Pages_Buddy_PagesExtlLogDiff ;
-	MM_BuddyPage_ExtlData* newExtlData = (MM_BuddyPage_ExtlData*)mm_malloc( newExtlDataSize ) ;
+	MM_BuddyPage_ExtlData* newExtlData = (MM_BuddyPage_ExtlData*)sys_malloc_Sys.malloc( newExtlDataSize ) ;
 	// IF_GB_TR_ON(3,{printf("mm_pages_Buddy_NewBuddyGroup newExtlData=%x newExtlDataSize=%x\n", newExtlData, newExtlDataSize);}) ;
 	
 	// init new part as unused, copy old part into new
@@ -220,7 +220,7 @@ void mm_pages_Buddy_NewBuddyGroup( MM_Pages_Buddy_Data* pgs, MM_Pages_LogSize sz
 	// if old extl not reused, free it
 	if ( ! isFirstAlloc && ! doReuseExtl ) {
 		// IF_GB_TR_ON(3,{printf("mm_pages_Buddy_NewBuddyGroup free extlData=%x extlDataSize=%x\n", pgs->extlData, pgs->extlDataSize);}) ;
-		mm_free( pgs->extlData ) ;
+		sys_malloc_Sys.free( pgs->extlData ) ;
 	}
 	
 	// IF_GB_TR_ON(3,{printf("mm_pages_Buddy_NewBuddyGroup B\n");}) ;
@@ -276,7 +276,7 @@ void mm_pages_Buddy_Init( MM_Pages* buddyPages, MM_Malloc* memmgt ) {
 
 MM_Page mm_pages_Buddy_AllocPagesLog2( MM_Pages* buddyPages, MM_Pages_LogSize szPagesLog ) {
 	MM_Pages_LogSize szPagesLog0 = szPagesLog - MM_Pages_MinSize_Log ;
-	// IF_GB_TR_ON(3,{printf("mm_pages_Buddy_AllocPagesLog2 szPagesLog0=%x\n", szPagesLog0);}) ;
+	// IF_GB_TR_ON(3,{printf("mm_pages_Buddy_AllocPagesLog2 szPagesLog0=%x max=%x\n", szPagesLog0, MM_Pages_Buddy_FreePages_Size);}) ;
 	if ( szPagesLog0 >= MM_Pages_Buddy_FreePages_Size ) { rts_panic1_1( "buddy alloc size request too large", szPagesLog ) ; }
 	
 	MM_Pages_Buddy_Data* pgs = (MM_Pages_Buddy_Data*)buddyPages->data ;
@@ -348,7 +348,7 @@ MM_Page mm_pages_Buddy_AllocPages( MM_Pages* buddyPages, Word sz ) {
 	pgd->system.data.sizePages = szPagesPgs ;
 	
 	// tag the 2nd half of the allocated pages, by initializing the allocated part and free part of this 2nd part as such
-	if ( szPages < (1 << szPagesLog) ) {
+	if ( szPages < (((Word)(1)) << szPagesLog) ) {
 		// but this only must be done when the size of the 2nd part is not a power of 2
 		MM_Pages_LogSize szHalfPagesLog = szPagesLog - 1 ;
 		// IF_GB_TR_ON(3,{printf("mm_pages_Buddy_AllocPages szHalfPagesLog=%x szPagesLog=%x\n", szHalfPagesLog, szPagesLog);}) ;
@@ -428,14 +428,14 @@ void mm_pages_Buddy_Dump( MM_Pages* buddyPages ) {
 	
 	printf( ">------------------------>\n" ) ;
 	printf
-		( "Pgs: nrPages=%x firstPage=%p aftPage=%p extl=%x extlSz=%x\n"
+		( "Pgs: nrPages=%x firstPage=%x aftPage=%x extl=%p extlSz=%x\n"
 		, pgs->nrPages, pgs->firstPage, pgs->afterLastPage, pgs->extlData, pgs->extlDataSize
 		) ;
 
 	for ( i = 0 ; i < mm_flexArray_SizeUsed(&pgs->buddyGroups) ; i++ ) {
 		MM_BuddyGroup* grp = (MM_BuddyGroup*)mm_flexArray_At( &pgs->buddyGroups, i ) ;
 		printf
-			( "  Grp: %d: nrPages=%x firstPage=%p aftPage=%p alloc=%p allocSz=%x\n"
+			( "  Grp: %d: nrPages=%x firstPage=%x aftPage=%x alloc=%p allocSz=%x\n"
 			, i, grp->nrPages, grp->firstPage, grp->afterLastPage, grp->malloced, grp->mallocedSize
 			) ;
 	}

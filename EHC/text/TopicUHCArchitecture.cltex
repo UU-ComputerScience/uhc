@@ -500,7 +500,7 @@ When processing HS we deal with the following tasks:
 In the remainder of this section on languages we use the following running example program to show how
 the various intermediate languages are used:
 
-%%[[wrap=code
+%%[[wrap=code exampleStepHS
 module M where
 
 len :: [a] -> Int
@@ -516,7 +516,7 @@ HS processing generates Essential Haskell (EH).
 The EH equivalent of the running example is shown below.
 Some details have been omitted and replaced by dots.
 
-%%[[wrap=code
+%%[[wrap=code exampleStepEH
 redOn^ let blackOn  M.len :: [a] -> Int
                     M.len
                       =  redOn ^ \x1 ->  redOn ^case x1 of blackOn
@@ -566,7 +566,7 @@ The Core equivalent of the running example program is:
 %format under = "\_"
 %format excl = "!"
 %format letrec = "\mathbf{letrec}"
-%%[[wrap=code
+%%[[wrap=code exampleStepCore
 module ^^ M =
 letrec blackOn
   { ^ M ^ .len =

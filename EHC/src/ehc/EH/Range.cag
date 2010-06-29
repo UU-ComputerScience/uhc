@@ -11,49 +11,51 @@ SEM AllNT
 ATTR AllNT [ | | range USE {`rangeUnion`} {emptyRange} : Range ]
 
 SEM Decl
-  | *           loc         .   range          		=   rangeUnions [@hsrange, @first__.range, @last__.range]
+  | GenerRep    loc         .   range               =   @hsrange
+  | * - GenerRep
+                loc         .   range               =   rangeUnions [@hsrange, @first__.range, @last__.range]
 
 SEM TyExpr
-  | Con Var VarWild Impls NoImpls Wild
-  				loc         .   range          		=   @hsrange
-  | * - Con Var VarWild Impls NoImpls Wild
-  				loc         .   range          		=   rangeUnions [@hsrange, @first__.range, @last__.range]
+  | Con Var VarWild Impls NoImpls Wild Mono
+                loc         .   range               =   @hsrange
+  | * - Con Var VarWild Impls NoImpls Wild Mono
+                loc         .   range               =   rangeUnions [@hsrange, @first__.range, @last__.range]
 
 SEM KiExpr
-  | Con Var		loc         .   range          		=   @hsrange
-  | * - Con Var	loc         .   range          		=   rangeUnions [@hsrange, @first__.range, @last__.range]
+  | Con Var     loc         .   range               =   @hsrange
+  | * - Con Var loc         .   range               =   rangeUnions [@hsrange, @first__.range, @last__.range]
 
 SEM TyVar
-  | Var			loc         .   range          		=   @hsrange
-  | * - Var		loc         .   range          		=   rangeUnions [@hsrange, @first__.range, @last__.range]
+  | Var         loc         .   range               =   @hsrange
+  | * - Var     loc         .   range               =   rangeUnions [@hsrange, @first__.range, @last__.range]
 
 SEM RowTyExpr
-  | Var	Empty	loc         .   range          		=   @hsrange
-  | * - Var	Empty
-  				loc         .   range          		=   rangeUnions [@hsrange, @first__.range, @last__.range]
+  | Var Empty   loc         .   range               =   @hsrange
+  | * - Var Empty
+                loc         .   range               =   rangeUnions [@hsrange, @first__.range, @last__.range]
 
 SEM DataFieldExpr DataFieldPatExpr
-  | Con			loc         .   range          		=   @hsrange
-  | * - Con		loc         .   range          		=   rangeUnions [@hsrange, @first__.range, @last__.range]
+  | Con         loc         .   range               =   @hsrange
+  | * - Con     loc         .   range               =   rangeUnions [@hsrange, @first__.range, @last__.range]
 
 SEM RecExpr RecPatExpr
-  | Empty		loc         .   range          		=   @hsrange
-  | * - Empty	loc         .   range          		=   rangeUnions [@hsrange, @first__.range, @last__.range]
+  | Empty       loc         .   range               =   @hsrange
+  | * - Empty   loc         .   range               =   rangeUnions [@hsrange, @first__.range, @last__.range]
 
 SEM PrExpr CaseAlt DataConstr DataField FuncDep
-  | *			loc         .   range          		=   rangeUnions [@hsrange, @first__.range, @last__.range]
+  | *           loc         .   range               =   rangeUnions [@hsrange, @first__.range, @last__.range]
 
 SEM Expr
   | Con Var IConst CConst SConst Undefined CaseAltFail DynVar IIConst
-  				loc         .   range          		=   @hsrange
+                loc         .   range               =   @hsrange
   | * - Con Var IConst CConst SConst Undefined CaseAltFail DynVar IIConst
-  				loc         .   range          		=   rangeUnions [@hsrange, @first__.range, @last__.range]
+                loc         .   range               =   rangeUnions [@hsrange, @first__.range, @last__.range]
 
 SEM PatExpr
   | Con Var IConst CConst SConst
-  				loc         .   range          		=   @hsrange
+                loc         .   range               =   @hsrange
   | * - Con Var IConst CConst SConst
-  				loc         .   range          		=   rangeUnions [@hsrange, @first__.range, @last__.range]
+                loc         .   range               =   rangeUnions [@hsrange, @first__.range, @last__.range]
 
 %%]
 ATTR AllNTList [ | | range USE {emptyRange} {`rangeUnion`}: Range ]

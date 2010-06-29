@@ -26,7 +26,10 @@
 %%[(3 hmtyinfer) import({%{EH}Ty.Trf.Quantify})
 %%]
 
-%%[99 import({%{EH}Base.ForceEval})
+%%[(20 hmtyinfer) import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
+%%]
+
+%%[9999 import({%{EH}Base.ForceEval})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -42,6 +45,11 @@ data ValGamInfo
       deriving Show
 
 type ValGam = Gam HsName ValGamInfo
+%%]
+
+%%[(20 hmtyinfer)
+deriving instance Typeable ValGamInfo
+deriving instance Data ValGamInfo
 %%]
 
 %%[8 export(vgiGetSet)
@@ -140,10 +148,17 @@ instance PP ValGamInfo where
   pp vgi = ppTy (vgiTy vgi)
 %%]
 
-%%[(99 hmtyinfer || hmtyast)
+%%[(9999 hmtyinfer || hmtyast)
 instance ForceEval ValGamInfo where
   forceEval x@(ValGamInfo t) | forceEval t `seq` True = x
 %%[[102
   fevCount (ValGamInfo x) = cm1 "ValGamInfo" `cmUnion` fevCount x
 %%]]
 %%]
+
+%%[(20 hmtyinfer || hmtyast)
+instance Serialize ValGamInfo where
+  sput (ValGamInfo a) = sput a
+  sget = liftM ValGamInfo sget
+%%]
+

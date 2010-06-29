@@ -34,7 +34,7 @@ SEM AGItf
 SEM Expr
   | Let         loc         .   gathTvKiVarMp1      =   varmpMapTyVarKey @tyVarMpDeclsL0 (varmpDecMetaLev @decls.tyVarMp) -- @decls.gathTvKiVarMp -- (varmpDecMetaLev @decls.gathTvKiVarMp)
                             .   quTvKiVarMp         =   @gathTvKiVarMp1 |=> @lhs.tvKiVarMp
-                            .   gathTvKiVarMp2      =   varmpFilterTy (\v _ -> v `Set.member` @gTyTvS) @gathTvKiVarMp1
+                            .   gathTvKiVarMp2      =   varmpFilterTy (\v _ -> v `Set.member` @noLetQuantTyVarIdS) @gathTvKiVarMp1
                 body        .   tvKiVarMp           =   @gathTvKiVarMp2 |=> @lhs.tvKiVarMp
 %%]
 
@@ -54,7 +54,7 @@ SEM Expr
 %%]]
   | Lam         lhs         .   gathTvKiVarMp       =   varmpUnions [foTvKiVarMp @fo_fitF_,@arg.gathTvKiVarMp,@body.gathTvKiVarMp]
   | TypeAs      lhs         .   gathTvKiVarMp       =   varmpUnions [foTvKiVarMp @fo_,foTvKiVarMp @fo_fitDown,@expr.gathTvKiVarMp]
-  | Let         lhs			.	gathTvKiVarMp       =   varmpUnions [@gathTvKiVarMp2,@body.gathTvKiVarMp]
+  | Let         lhs			.	gathTvKiVarMp       =   varmpUnions [{- foTvKiVarMp @foKnRes, -} @gathTvKiVarMp2,@body.gathTvKiVarMp]
 %%[[7
   | Rec         lhs         .   gathTvKiVarMp       =   varmpUnions [foTvKiVarMp @fo_,@recExpr.gathTvKiVarMp]
 %%]]

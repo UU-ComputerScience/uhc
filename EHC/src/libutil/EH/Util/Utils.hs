@@ -21,6 +21,9 @@ unionMapSet f = Set.unions . map f . Set.toList
 inverseMap :: (Ord k, Ord v') => (k -> v -> (v',k')) -> Map.Map k v -> Map.Map v' k'
 inverseMap mk = Map.fromList . map (uncurry mk) . Map.toList
 
+showStringMapKeys :: Map.Map String x -> String -> String
+showStringMapKeys m sep = concat $ intersperse sep $ Map.keys m
+
 -------------------------------------------------------------------------
 -- List
 -------------------------------------------------------------------------
@@ -94,6 +97,14 @@ spanOnRest p xs@(x:xs')
 					   where (ys,zs) = spanOnRest p xs'
 
 -------------------------------------------------------------------------
+-- Tupling, untupling
+-------------------------------------------------------------------------
+
+tup123to1  (a,_,_) = a			-- aka fst3
+tup123to12 (a,b,_) = (a,b)
+tup12to123 c (a,b) = (a,b,c)
+
+-------------------------------------------------------------------------
 -- String
 -------------------------------------------------------------------------
 
@@ -164,6 +175,15 @@ groupSortByOn cmp sel = groupByOn (\e1 e2 -> cmp e1 e2 == EQ) sel . sortByOn cmp
 nubOn :: Eq b => (a->b) -> [a] -> [a]
 nubOn sel = nubBy (\a1 a2 -> sel a1 == sel a2)
 
+-- | The 'consecutiveBy' function groups like groupBy, but based on a function which says whether 2 elements are consecutive
+consecutiveBy                  :: (a -> a -> Bool) -> [a] -> [[a]]
+consecutiveBy _        []      =  []
+consecutiveBy isConsec (x:xs)  =  ys : consecutiveBy isConsec zs
+  where (ys,zs) = consec x xs
+        consec x []                        = ([x],[])
+        consec x yys@(y:ys) | isConsec x y = let (yys',zs) = consec y ys in (x:yys',zs)
+                            | otherwise    = ([x],yys)
+
 -------------------------------------------------------------------------
 -- Ordering
 -------------------------------------------------------------------------
@@ -186,6 +206,22 @@ f $? mx = do x <- mx
 
 orMb :: Maybe a -> Maybe a -> Maybe a
 orMb m1 m2 = maybe m2 (const m1) m1
+-- orMb = maybeOr Nothing Just Just
+
+maybeAnd :: x -> (a -> b -> x) -> Maybe a -> Maybe b -> x
+maybeAnd n jj ma mb
+  = case ma of
+      Just a
+        -> case mb of {Just b -> jj a b ; _ -> n}
+      _ -> n
+
+maybeOr :: x -> (a -> x) -> (b -> x) -> Maybe a -> Maybe b -> x
+maybeOr n fa fb ma mb
+  = case ma of
+      Just a -> fa a
+      _      -> case mb of
+                  Just b -> fb b
+                  _      -> n
 
 -------------------------------------------------------------------------
 -- Strongly Connected Components

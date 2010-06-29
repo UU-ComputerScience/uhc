@@ -108,16 +108,6 @@ mkDefOccGam l r a os
   = mkDefOccGam' l r (const a) os
 %%]
 
-%%[1 hs
-%%]
-mkDefAspGam' :: (IdOcc -> IdAspect) -> [IdOcc] -> IdDefAspGam
-mkDefAspGam' mka os
-  = assocLToGamWithDups [ (o,mkIdDefAsp o (mka o)) | o <- os ]
-
-mkDefAspGam :: IdAspect -> [IdOcc] -> IdDefAspGam
-mkDefAspGam a os
-  = mkDefAspGam' (const a) os
-
 %%[3 hs
 varL2IdDefOccGam :: IdOccKind -> IdAspect -> NmLev -> Range -> [HsName] -> IdDefOccGam
 varL2IdDefOccGam k a l r ns
@@ -151,15 +141,17 @@ ATTR
   AllPattern
   AllDeclaration AllFunctionBinding
   LeftHandSide
+%%[[5
+  TypeLeftHandSide
+%%]]
 %%[[7
   AllRowRecordPatternBinding
   AllRecordPatternBinding
 %%]]
-%%[[95
+%%[[91
   AllDeriving
 %%]]
     [ | | idDefOccGam USE {`gamAddGam`} {emptyGam} : IdDefOccGam
-          -- idDefAspGam USE {`gamAddGam`} {emptyGam} : IdDefAspGam
     ]
 %%]
 
@@ -181,21 +173,28 @@ SEM Declaration
 %%[5
     | Data Newtype
         loc             .   idDefOccGamType
-                                        =   tvarS2IdDefOccGam @nmLev @simpletype.range @constructors.freeTvarS -- ???? or from constrs itself, so implicit exists is allowed
+                                        =   tvarS2IdDefOccGam @nmLev @typelefthandside.range @constructors.freeTvarS -- ???? or from constrs itself, so implicit exists is allowed
                         .   idDefOccGamType2
-                                        =   tvarL2IdDefOccGam @nmLev @simpletype.range @simpletype.typevariables -- ???? this should be it, now only used for check on duplicates
+                                        =   tvarL2IdDefOccGam @nmLev @typelefthandside.range @typelefthandside.typevariables -- ???? this should be it, now only used for check on duplicates
                         .   idDefOccGamConstrs
-                                        =   mkDefOccGam @lhs.nmLev @simpletype.range IdAsp_Val_Con @idOccDefsCon
+                                        =   mkDefOccGam @lhs.nmLev @typelefthandside.range IdAsp_Val_Con @idOccDefsCon
 %%[[7
                                             `gamAddGam`
-                                            mkDefOccGam'' @lhs.nmLev @simpletype.range (\c _ -> IdAsp_Val_Fld @typerefname c)
+                                            mkDefOccGam'' @lhs.nmLev @typelefthandside.range (\c _ -> IdAsp_Val_Fld @typerefname c)
                                                           [ (c,IdOcc n IdOcc_Val) | (c,ns) <- @constructors.conAndFldrefnames, n <- ns ]
                                                           -- [ IdOcc n IdOcc_Val | (con,ns) <- @constructors.conAndFldrefnames, n <- ns ]
 %%]]
-                        .   idDefOccGam =   mkDefOccGam @lhs.nmLev @simpletype.range (IdAsp_Type_Def @eh) [@idOccDef]
+%%[[92
+                        .   idDefOccGamGener
+                                        =   mkDefOccGam @lhs.nmLev @typelefthandside.range (IdAsp_Type_Def @ehGener) @idOccDefsGener
+%%]]
+                        .   idDefOccGam =   mkDefOccGam @lhs.nmLev @typelefthandside.range (IdAsp_Type_Def @eh) [@idOccDef]
                                             `gamAddGam` @idDefOccGamConstrs
-%%[[95
+%%[[91
                                             `gamAddGam` @derivings.idDefOccGam
+%%]]
+%%[[92
+                                            `gamAddGam` @idDefOccGamGener
 %%]]
 %%]
 %%[6
@@ -207,10 +206,11 @@ SEM Declaration
 %%[9
     | Class
         loc             .   idDefOccGamType
-                                        =   tvarL2IdDefOccGam @nmLev @simpletype.range @simpletype.typevariables
+                                        =   tvarL2IdDefOccGam @nmLev @typelefthandside.range @typelefthandside.typevariables
                         .   idDefOccGamSigAsVar
-                                        =   assocLToGam [ (o,d {doccAsp = IdAsp_Val_Var}) | (o,d) <- gamToAssocL @where.idDefOccGam, iaspIsValSig (doccAsp d) ]
-                        .   idDefOccGam =   mkDefOccGam @lhs.nmLev @simpletype.range (IdAsp_Class_Def @eh @ehInst) [@idOccDef]
+                                        -- =   assocLToGam [ (o,d {doccAsp = IdAsp_Val_Var}) | (o,d) <- gamToAssocL @where.idDefOccGam, iaspIsValSig (doccAsp d) ]
+                                        =   @where.idTySigDefOccGam
+                        .   idDefOccGam =   mkDefOccGam @lhs.nmLev @typelefthandside.range (IdAsp_Class_Def @eh @ehInst) [@idOccDef]
                                             `gamUnion` @idDefOccGamSigAsVar
     | Instance
         loc             .   idDefOccGamType
@@ -220,13 +220,13 @@ SEM Declaration
     | InstanceUseImplicitly
         loc             .   idDefOccGam =   mkDefOccGam @lhs.nmLev @range (IdAsp_Inst_Def @eh @classrefname) @idOccDefs
     | Default
-        loc             .   idDefOccGam =   mkDefOccGam @lhs.nmLev @range (IdAsp_Dflt_Def {- @eh -}) @idOccDefs
+        loc             .   idDefOccGam =   mkDefOccGam @lhs.nmLev @range (IdAsp_Dflt_Def @eh @ignoredecl) @idOccDefs
 %%]
 %%[11
     | Type
         loc             .   idDefOccGamType
-                                        =   tvarL2IdDefOccGam @nmLev @simpletype.range @simpletype.typevariables
-                        .   idDefOccGam =   mkDefOccGam @lhs.nmLev @simpletype.range (IdAsp_Type_Def @eh) @idOccDefs
+                                        =   tvarL2IdDefOccGam @nmLev @typelefthandside.range @typelefthandside.typevariables
+                        .   idDefOccGam =   mkDefOccGam @lhs.nmLev @typelefthandside.range (IdAsp_Type_Def @eh) @idOccDefs
 %%]
 %%[5
     | Data Newtype
@@ -237,17 +237,17 @@ SEM Declaration
       Type
 %%]]
         loc             .   idDefOccGamInside
-                                        =   tvarL2IdDefOccGam @nmLev @simpletype.range @simpletype.typevariables
+                                        =   tvarL2IdDefOccGam @nmLev @typelefthandside.range @typelefthandside.typevariables
 %%]
 %%[(8 codegen)
     | ForeignImport
-%%[[94
+%%[[90
       ForeignExport
 %%]]
         loc             .   idDefOccGamType
                                         =   tvarS2IdDefOccGam @lhs.nmLev @range @type.freeTvarS
     | ForeignImport
-%%[[94
+%%[[90
       ForeignExport
 %%]]
         loc             .   idDefOccGam =   mkDefOccGam @lhs.nmLev @range (IdAsp_Val_Foreign @eh) @idOccDefs
@@ -338,11 +338,29 @@ SEM ContextItem
                                         =   tvarL2IdDefOccGam @lhs.nmLev @range @typevariables
 %%]
 
-%%[95
+%%[91
 SEM Deriving
     | Deriving
         loc             .   idDefOccGam =   mkDefOccGam @lhs.nmLev @range (IdAsp_Inst_Def @eh @refname) [@idOccDef]
                                             `gamUnion` mkDefOccGam @lhs.nmLev @range IdAsp_Val_Var [@idOccDefVal]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Identifier def's: special case, only type signature names as variable, used inside class def only
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+ATTR
+  AllDeclaration
+    [ | | idTySigDefOccGam USE {`gamAddGam`} {emptyGam} : IdDefOccGam
+    ]
+%%]
+
+%%[9
+SEM Declaration
+    | TypeSignature
+        loc             .   idTySigDefOccGam
+        								=   mkDefOccGam' @lhs.nmLev @range (\o -> IdAsp_Val_Var) @idOccDefs
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -351,7 +369,6 @@ SEM Deriving
 
 %%[1
 ATTR AllNT [ idGam: IdDefOccGam
-             -- idAspGam: IdDefAspGam
            | | ]
 %%]
 
@@ -362,7 +379,6 @@ ATTR
   Statement
 %%]
     [ | | idGam: IdDefOccGam
-          -- idAspGam: IdDefAspGam
     ]
 %%]
 
@@ -396,6 +412,14 @@ SEM Body
         loc             .   idGam       =   gamAddGam @declarations.idDefOccGam @lhs.idGam
 %%]
 
+TBD: 20100205 AD: The code below to remap identifiers should be revised. Too complex.
+
+The basic idea is to combine:
+- a mapping from fully qualified identifiers to other here irrelevant info (lhs.idGam)
+- a mapping defining the visibility of identifiers (lhs.modInScope)
+Each defined identifier from idGam may introduce its unqualified version, depending whether an unqualified name is indeed in scope and comes from the right module.
+
+
 %%[20 -1.initIdGam
 ATTR AGItf Module Body [ modInScope: ModEntDomMp | | ]
 
@@ -409,25 +433,39 @@ SEM Body
                                                                 where es' = [ e | e <- es, isq (mentIdOcc e) ]
                                                               _ -> Nothing
                                                 -- for an id, get all inscope occurrences, with + without qualifier
-                                                lks :: IdOcc -> [(HsName,[ModEnt])]
-                                                lks o     = catMaybes $ ns1 ++ ns2
+                                                lks :: Bool -> IdOcc -> [(HsName,[ModEnt])]
+                                                lks allowRename o
+                                                          = ns1 ++ catMaybes ns2
                                                           where (mq,n)    = hsnSplitQualify (ioccNm o)
                                                                 (ns1,isq) = case mq of
-                                                                              Just q  -> ([lkn (const True) (hsnPrefixQual (as q) n)],(\o -> maybe False (==q) (hsnQualifier (ioccNm o))))
-                                                                              Nothing -> ([],const True)
+                                                                              Just q  -> ( qres
+                                                                                         , (\o' -> maybe False ({- == q -} `elem` qquals {- -}) (hsnQualifier (ioccNm o'))
+                                                                                           )
+                                                                                         )
+                                                                                      where (qres,qquals)
+                                                                                               = maybe ([],[q])
+                                                                                                       (\x@(_,es) -> ( [x]
+                                                                                                                     , q : extra es
+                                                                                                       )             )
+                                                                                                       (lkn (const True) (hsnPrefixQual (as q) n))
+                                                                              Nothing -> ( [], const True )
                                                                 ns2       = [lkn isq n]
+                                                                extra | allowRename = \es -> catMaybes $ map (hsnQualifier . ioccNm . mentIdOcc) es
+                                                                      | otherwise   = const []
                                                 -- map qualifier to a possible 'qualified as' alias
                                                 as :: HsName -> HsName
                                                 as n = Map.findWithDefault n n @importdeclarations.modAsMp
-                                                -- compute new gamma holding proper mapping for unqualified an qualified idents
+                                                -- compute new gamma holding proper mapping for unqualified & qualified idents
                                                 mkg sel g
                                                    = gamFromAssocL
-                                                       [ (o {ioccNm = n},d {doccNmAlts = Just ns})
+                                                       [ {- tr "NameAnalysis.mkg" (o >#< ns)
+                                                         $ -} (o {ioccNm = n},d {doccNmAlts = Just ns})
                                                        | (o,d) <- gamToAssocL g
                                                        , (n,es) <- sel o
                                                        , let ns = [ ioccNm eo | e <- es, let eo = mentIdOcc e, ioccKind eo == ioccKind o ]
                                                        ]
-                                            in  mkg lks @declarations.idDefOccGam `gamUnion` mkg lks @lhs.idGam
+                                                gnew = mkg (lks False) @lhs.idGam
+                                            in  mkg (lks False) @declarations.idDefOccGam `gamUnion` gnew
 %%]
 
 %%[1
@@ -470,7 +508,7 @@ SEM Declaration
 %%[[(8 codegen)
       ForeignImport
 %%]]
-%%[[(94 codegen)
+%%[[(90 codegen)
       ForeignExport
 %%]]
         type            .   idGam       =   gamAddGam @idDefOccGamType @lhs.idGam
@@ -487,6 +525,7 @@ SEM Declaration
 %%]]
 %%[[9
     | Class
+        -- simpletype		.	idGam		=	@lhs.idGam		-- avoid cycles
         loc             .   idGam       =   gamAddGam @idDefOccGamType @lhs.idGam
                         .   idDefOccGamInstForClass
                                         =   fst $ gamPartition (\_ d -> case doccAsp d of {IdAsp_Inst_Def _ n | n == @classrefname -> True ; _ -> False}) $ @lhs.idGam
@@ -573,7 +612,7 @@ litNames lit isPat sign
 %%[1.mkUseOccGam hs
 mkUseOccGam :: EHCOpts -> IdDefOccGam -> [HsName] -> IdOccKind -> IdAspect -> Range -> (HsName,[HsName],IdUseOccGam,[Err])
 mkUseOccGam _ _ [] _ _ _
-  = (undefined,[],emptyGam,[])
+  = (hsnUnknown,[],emptyGam,[])
 mkUseOccGam _ idGam names@(fstName:_) kind asp rng
   = (fstName,names,gamUnions [ mkUse idGam n kind asp rng | n <- names ],[])
   where mkUse idGam name kind asp rng
@@ -586,7 +625,7 @@ mkUseOccGam _ idGam names@(fstName:_) kind asp rng
 %%[20 -1.mkUseOccGam hs
 mkUseOccGam :: EHCOpts -> IdDefOccGam -> [HsName] -> IdOccKind -> IdAspect -> Range -> (HsName,[HsName],IdUseOccGam,[Err])
 mkUseOccGam _ _ [] _ _ _
-  = (undefined,[],emptyGam,[])
+  = (hsnUnknown,[],emptyGam,[])
 mkUseOccGam opts idGam names kind asp rng
   = (n, ns, gamUnions g, concat e)
   where (ns@(n:_),g,e) = unzip3 [ mkUse idGam n kind asp rng | n <- names ]
@@ -610,7 +649,7 @@ mkUseOccGam opts idGam names kind asp rng
                 idUseOccGam = gamSingleton occOfDef (IdUseOcc occOfDef asp rng (doccForUse mbDef))
                 errs        = case mbDef of
                                 Just d | isJust (doccNmAlts d) && length alts > 1
-                                  -> [rngLift rng Err_AmbiguousNameRef name alts]
+                                  -> [rngLift rng Err_AmbiguousNameRef "name" "name" name alts]
                                   where alts = fromJust (doccNmAlts d)
                                 _ -> []
 %%]
@@ -639,7 +678,12 @@ SEM Expression
       RecordConstruction
 %%]]
         loc             .   (refname,_,idUseOccGam,errIdUse)
-                                        =   mkUseOccGam @lhs.opts @lhs.idGam [@name] IdOcc_Val @idAsp @range
+                                        =   let x@(n,_,_,_) = mkUseOccGam @lhs.opts @lhs.idGam [@name] IdOcc_Val @idAsp @range
+                                                dbgnm = mkHNm "putStrLn"
+                                                dbgoc = IdOcc dbgnm IdOcc_Val
+                                            in  {- if @name == dbgnm
+                                                then tr "Expr.idGam" (dbgoc >-< n >-< gamLookup dbgoc @lhs.idGam >-< @lhs.idGam) x
+                                                else -} x
 %%[[7
     | RecordConstruction
         lhs             .   idUseOccGam =   gamUnions [@idUseOccGam,@recordExpressionBindings.idUseOccGam]
@@ -826,9 +870,12 @@ SEM Declaration
     | Instance InstanceUseImplicitly
         loc             .   (classrefname,_,idUseOccGamInst,errIdUse)
                                         =   mkUseOccGam @lhs.opts @lhs.idGam [@name] IdOcc_Class IdAsp_Class_Class @range
+    | Default
+        loc             .   (classrefname,classrefnames,idUseOccGamDflt,errIdUse)
+                                        =   mkUseOccGam @lhs.opts @lhs.idGam (catMaybes [@name]) IdOcc_Class IdAsp_Class_Class @range
 %%]
 
-%%[95
+%%[91
 SEM Deriving
     | Deriving
         loc             .   (refname,_,idUseOccGam,errIdUse)
@@ -873,16 +920,30 @@ SEM Declaration
         loc             .   (_,_,idUseOccGamVal,errIdUseVal)
                                         =   mkUseOccGam @lhs.opts @lhs.idGam [hsnPrelId] IdOcc_Val IdAsp_Val_Var @range
 %%]
-    | Data
-        loc             .   (_,_,idUseOccGamVal,errIdUseVal)
-                                        =   mkUseOccGam @lhs.opts @lhs.idGam (if @constructors.hasFlds then [hsnError] else []) IdOcc_Val IdAsp_Val_Var @range
 
-%%[94
+%%[92
+SEM Declaration
+    | Data Newtype
+		loc				.	(_,_,idUseOccGamClass,errIdUseClass)
+                                        =   mkUseOccGam @lhs.opts @lhs.idGam
+                                                        (if ehcOptGenGenerics @lhs.opts then builtinGenerClassNmL else [])
+                                                        IdOcc_Class IdAsp_Class_Class @range
+%%]
+
+%%[90
 SEM Declaration
     | ForeignExport
         loc             .   (refname,_,idUseOccGamExport,errIdUse)
                                         =   mkUseOccGam @lhs.opts @lhs.idGam [@name] IdOcc_Val IdAsp_Val_Var @range
 %%]
+
+%%[99
+SEM Declaration
+    | Class
+        loc             .   (_,_,idUseOccGamExtra,errIdUseExtra)
+                                        =   mkUseOccGam @lhs.opts @lhs.idGam @extranames IdOcc_Val IdAsp_Val_Var @range
+%%]
+        lhs             .   idUseOccGam =   gamUnions [@idUseOccGamExtra,@context.idUseOccGam,@typelefthandside.idUseOccGam,@dependencies.idUseOccGam,@where.idUseOccGam]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Is the presence of 'error' required?
@@ -929,7 +990,7 @@ idFrOccGam2DpdMp g ts
 %%[1
 ATTR
   AllDeclaration AllFunctionBinding
-%%[[95
+%%[[91
   AllDeriving
 %%]]
     [ | | idDpdMp USE {`idDpdMpUnion`} {Map.empty}: IdDpdMp ]
@@ -972,17 +1033,24 @@ SEM Declaration
 %%[[9
                                                     , @context.idUseOccGam
 %%]]
-%%[[95
+%%[[91
                                                     -- , @derivings.idUseOccGam
+%%]]
+%%[[92
+                                                    , @idUseOccGamClass
 %%]]
                                                     ]
                                                 )
                         .   idDpdMp     =   idToOccL2DpdMp [@idOccDef] @idUseHereOccL
                                             `idDpdMpUnion`
                                             idFrOccGam2DpdMp @idDefOccGamConstrs [@idOccDef]
-%%[[95
+%%[[91
                                             `idDpdMpUnion`
                                             @derivings.idDpdMp
+%%]]
+%%[[92
+                                            `idDpdMpUnion`
+                                            idFrOccGam2DpdMp @idDefOccGamGener [@idOccDef]
 %%]]
 %%]]
 %%[[6
@@ -1003,7 +1071,11 @@ SEM Declaration
     | Class
         loc             .   (idUseOccGam,idUseHereOccL,_,undefOccGam)
                                         =   splitIdUseOccGam @lhs.nmLev
-                                                (gamUnions [@context.idUseOccGam,@where.idUseOccGam])
+                                                (gamUnions [ @context.idUseOccGam,@where.idUseOccGam
+%%[[99
+                                                           , @idUseOccGamExtra
+%%]]
+                                                           ])
                         .   idDpdMp     =   idDpdMpUnions
                                                 [ idToOccL2DpdMp [@idOccDef] @idUseHereOccL
                                                 , idToOccGam2DpdMp [@idOccDef] @idDefOccGamSigAsVar
@@ -1030,8 +1102,10 @@ SEM Declaration
                         .   idDpdMp     =   idToOccL2DpdMp [@idOccDef] @idUseHereOccL
     | Default
         loc             .   (idUseOccGam,idUseHereOccL,_,undefOccGam)
-                                        =   splitIdUseOccGam @lhs.nmLev @types.idUseOccGam
+                                        =   splitIdUseOccGam @lhs.nmLev
+                                                (gamUnions [@idUseOccGamDflt,@types.idUseOccGam])
                         .   idDpdMp     =   idToOccL2DpdMp [@idOccDef] @idUseHereOccL
+        lhs             .   undefOccGam =   gamUnions [@undefOccGam,@types.undefOccGam]
 %%]]
 %%[[11
     | Type
@@ -1040,7 +1114,7 @@ SEM Declaration
                         .   idDpdMp     =   idToOccL2DpdMp [@idOccDef] @idUseHereOccL
         lhs             .   undefOccGam =   gamUnions [@undefOccGam,@type.undefOccGam]
 %%]]
-%%[[(94 codegen)
+%%[[(90 codegen)
     | ForeignExport
         loc             .   (idUseOccGam,idUseHereOccL,_,undefOccGam)
                                         =   splitIdUseOccGam @lhs.nmLev
@@ -1069,7 +1143,7 @@ SEM Body
                                             in  gamUnions [g,@declarations.undefOccGam]
 %%]
 
-%%[95
+%%[91
 SEM Deriving
     | Deriving
         lhs             .   idDpdMp     =   idDpdMpUnions
@@ -1108,7 +1182,7 @@ SEM Body
 %%% Data of deriving
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[95
+%%[91
 ATTR AllDeriving [ idOccDefData: IdOcc | | ]
 
 SEM Declaration
@@ -1218,8 +1292,8 @@ mkIdDefEH def
         -> [decl,declInst]
       IdAsp_Inst_Def decl _
         -> [decl]
-      IdAsp_Dflt_Def -- decl
-        -> [] -- [decl]
+      IdAsp_Dflt_Def decl ignore | not ignore
+        -> [decl]
 %%]]
       _ -> []
 %%]

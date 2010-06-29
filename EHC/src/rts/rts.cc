@@ -5,6 +5,9 @@
 
 %%[8
 #include "rts.h"
+#if __UHC_TARGET_BC__
+#include "bc/interpreter.h"
+#endif
 #include <getopt.h>
 %%]
 
@@ -48,7 +51,22 @@ void globalsSetup(int argc, char** argv)
 
 %%[8
 WPtr SP, RP ;
-WPtr Stack, ReturnArea ;
+WPtr Stack, ReturnArea, LocalsArea ;
+
+#ifdef __UHC_TARGET_C__
+Word 
+  Ret0,  Ret1,  Ret2,  Ret3,  Ret4,  Ret5,  Ret6,  Ret7,  Ret8,  Ret9
+, Ret10, Ret11, Ret12, Ret13, Ret14, Ret15, Ret16, Ret17, Ret18, Ret19
+, Ret20, Ret21, Ret22, Ret23, Ret24, Ret25, Ret26, Ret27, Ret28, Ret29
+, Ret30, Ret31, Ret32, Ret33, Ret34, Ret35, Ret36, Ret37, Ret38, Ret39
+, Ret40, Ret41, Ret42, Ret43, Ret44, Ret45, Ret46, Ret47, Ret48, Ret49
+, Ret50, Ret51, Ret52, Ret53, Ret54, Ret55, Ret56, Ret57, Ret58, Ret59
+, Ret60, Ret61, Ret62, Ret63, Ret64, Ret65, Ret66, Ret67, Ret68, Ret69
+, Ret70, Ret71, Ret72, Ret73, Ret74, Ret75, Ret76, Ret77, Ret78, Ret79
+, Ret80, Ret81, Ret82, Ret83, Ret84, Ret85, Ret86, Ret87, Ret88, Ret89
+, Ret90, Ret91, Ret92, Ret93, Ret94, Ret95, Ret96, Ret97, Ret98, Ret99;
+
+#endif
 
 WPtr StackAreaHigh, StackAreaLow ;
 
@@ -60,37 +78,37 @@ WPtr HeapAreaHigh;
 %%]
 
 %%[8
-void memorySetup()
+void memory_Initialization()
 {
 #if USE_BOEHM_GC
     GC_INIT() ;
-
-    Stack = (WPtr)GC_MALLOC_UNCOLLECTABLE(sizeof(Word)*STACKSIZE);
-    ReturnArea = (WPtr)GC_MALLOC_UNCOLLECTABLE(sizeof(Word)*RETURNSIZE);
+    Stack = (WPtr)GC_MALLOC_UNCOLLECTABLE(sizeof(Word)*STACKSIZE);    
 #elif USE_EHC_MM
     mm_init() ;
-
-    Stack = (WPtr)GC_MALLOC_UNCOLLECTABLE(sizeof(Word)*STACKSIZE);
-    ReturnArea = (WPtr)GC_MALLOC_UNCOLLECTABLE(sizeof(Word)*RETURNSIZE);
+    Stack = (WPtr)mm_itf_allocResident(sizeof(Word)*STACKSIZE);    
 #else
     HeapAreaLow = (WPtr)malloc(sizeof(Word)*HEAPSIZE);
     HeapAreaHigh = HeapAreaLow + HEAPSIZE;
     HP = HeapAreaLow;
-
-    Stack = (WPtr)malloc(sizeof(Word)*STACKSIZE);
-    ReturnArea = (WPtr)malloc(sizeof(Word)*RETURNSIZE);
+    Stack = (WPtr)malloc(sizeof(Word)*STACKSIZE);    
 #endif
+
+    ReturnArea = (WPtr)malloc(sizeof(Word)*RETURNSIZE);
+    LocalsArea = (WPtr)malloc(sizeof(Word)*LOCALSSIZE);
+
     RP = ReturnArea;
 
-	// stack builds bottom-up	    
-    // SP = Stack;
-    // StackEnd = Stack + STACKSIZE ;
-    
     // stack hangs top-down
-    SP = Stack + STACKSIZE - 1 - 2;
     StackAreaLow = Stack;
     StackAreaHigh = Stack + STACKSIZE;
-    
+    SP = StackAreaHigh;
+}
+
+void memory_Finalization()
+{
+#	if USE_EHC_MM
+    	mm_exit() ;
+#	endif
 }
 %%]
 
@@ -124,7 +142,7 @@ Word heapalloc(int n)
 
 int main_Sil_Init1(int argc, char** argv)
 {
-	memorySetup() ;
+	memory_Initialization() ;
 %%[[99
 	globalsSetup( argc, argv ) ;
 %%]]
@@ -146,14 +164,15 @@ int main_Sil_Run(int argc, char** argv, int (*sillymainfunction)() )
 int main_Sil_Exit(int argc, char** argv)
 {
 %%[[8
-     printf("%d\n", (int)RP[1] );
-%%][100
+     printf("%d\n", (int)Ret1 );
+%%][99
 %%]]
 	
 #	if TIMING
 		double clockDiff = ((double)clockStop - (double)clockStart) / CLOCKS_PER_SEC ;
 		printf("Time %.3f secs\n", clockDiff ) ;
 #	endif
+	memory_Finalization() ;
     return 0;
 }
 
@@ -185,14 +204,9 @@ extern unsigned long gb_StepCounter;
 
 int main_GB_Init1(int argc, char** argv, int* nRtsOpt)
 {
-	memorySetup() ;
+	memory_Initialization() ;
 %%[[99
 	globalsSetup( argc, argv ) ;
-%%]]
-%%[[97
-#	if USE_GPM
-		mp_set_memory_functions( gb_Alloc_GMP, gb_ReAlloc_GMP, gb_Free_GMP ) ;
-#	endif
 %%]]
 %%[[98
 	gb_chan_initstd() ;
@@ -253,14 +267,16 @@ static struct option gb_longopts2[] =
 
 int main_GB_Run(int argc, char** argv, GB_BytePtr initPC, GB_Word initCAF)
 {
+	GB_GCSafe_Enter ;
 	gb_push( initCAF ) ;
 %%[[99
 	GB_NodePtr initCAFApp, gbWorld ;
+	GB_GCSafe_2_Zeroed(initCAFApp,gbWorld) ;
 	
 #	if USE_BOEHM_GC
-		GB_MkConNodeN_Fixed(gbWorld,GB_GC_MinAlloc_Fields(0),0) ;
+		GB_MkConNodeN_Fixed(gbWorld,GB_GC_MinAlloc_Field_Words(0),0) ;
 #	else
-		GB_MkConNodeN_Rooted(gbWorld,GB_GC_MinAlloc_Fields(0),0) ;
+		GB_MkConNodeN(gbWorld,0,0) ;
 #	endif
 	
 	GB_MkAppNode1In( initCAFApp, gb_getTOS(), gbWorld ) ;
@@ -273,7 +289,10 @@ int main_GB_Run(int argc, char** argv, GB_BytePtr initPC, GB_Word initCAF)
 #	if GB_COUNT_STEPS
 		gb_StepCounter = 0 ;
 #	endif
+
+    // here we go...
     gb_interpretLoopWith( initPC ) ;
+
 #	if TIMING
 		clockStop = clock() ;
 #	endif
@@ -281,10 +300,10 @@ int main_GB_Run(int argc, char** argv, GB_BytePtr initPC, GB_Word initCAF)
 		gb_prState( "exit state", 1 ) ;
 	} else {
 #		ifdef DUMP_INTERNALS
-			gb_prTOSAsInt() ;
-			printf( "\n" ) ;
+			IF_GB_TR_ON(3,{gb_prTOSAsInt() ;printf( "\n" ) ;})
 #		endif
 	}
+	GB_GCSafe_Leave ;
 	return 0 ;
 }
 
@@ -307,6 +326,7 @@ int main_GB_Exit(int argc, char** argv)
 	// mm_deque_Test() ;
 	// mm_plan_Test() ;
 #endif
+	memory_Finalization() ;
 	return 0 ;
 }
 #endif

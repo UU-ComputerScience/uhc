@@ -37,7 +37,7 @@ thunks.
 %%]
 %%[(8 codegen clr) hs import({%{EH}Cil.Common}, {%{EH}Cil.TyTag})
 %%]
-%%[(94 codegen clr) hs import({%{EH}Foreign.Extract})
+%%[(90 codegen clr) hs import({%{EH}Foreign.Extract})
 %%]
 
 %%[(8 codegen clr)
@@ -61,7 +61,7 @@ type Code = [MethodDecl]
 
 -- The name of the pointer class.
 refObjNm :: DottedName
-refObjNm = hsn2TypeDottedName (HNm "ReferenceObject")
+refObjNm = hsn2TypeDottedName (mkHNmBase "ReferenceObject")
 
 -- The pointer class.
 refObj :: TypeDef

@@ -59,10 +59,13 @@ A multiple level VarMp knows its own absolute metalevel, which is the default to
 %%[(6 hmtyinfer || hmtyast) import({%{EH}Base.Debug}) export(VarMpInfo(..),varmpToAssocL)
 %%]
 
+%%[(20 hmtyinfer) import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
+%%]
+
 %%[(50 hmtyinfer || hmtyast) export(varmpKeys)
 %%]
 
-%%[(90 hmtyinfer || hmtyast) export(varmpMapTy)
+%%[(9090 hmtyinfer || hmtyast) export(varmpMapTy)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -79,6 +82,11 @@ data VarMp' k v
       { varmpMetaLev 	:: !MetaLev				-- the base meta level
       , varmpMpL 		:: [Map.Map k v]		-- for each level a map, starting at the base meta level
       }
+  deriving ( Eq, Ord
+%%[[20
+           , Typeable, Data
+%%]]
+           )
 %%]
 
 %%[(99 hmtyinfer || hmtyast) export(varmpToMap)
@@ -268,7 +276,12 @@ data VarMpInfo
 %%[[13
   | VMIPredSeq !PredSeq
 %%]]
-  deriving (Eq,Show)
+  deriving
+    ( Eq, Ord, Show
+%%[[20
+    , Typeable, Data
+%%]]
+    )
 %%]
 
 %%[(2 hmtyinfer || hmtyast).vmiMbTy export(vmiMbTy)
@@ -577,40 +590,6 @@ varmpLabelLookup2 m v = varmpLabelLookup v m
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Remove alpha rename of tvars
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(4_2 hmtyinfer || hmtyast)
-varmpDelAlphaRename :: VarMp -> VarMp
-varmpDelAlphaRename = varmpFilterTy (\_ t -> not (tyIsVar t))
-
-varmpFilterAlphaRename :: VarMp -> VarMp
-varmpFilterAlphaRename = varmpFilterTy (\_ t -> case t of {Ty_Var _ TyVarCateg_Plain -> True ; _ -> False})
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Ty as cnstr
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(4_2 hmtyinfer || hmtyast)
-tyAsVarMp :: UID -> Ty -> (Ty,VarMp)
-tyAsVarMp u ty
-  =  case ty of
-        Ty_Var _ TyVarCateg_Plain -> (ty,emptyVarMp)
-        _ -> let t = mkNewTyVar u in (t,u `varmpTyUnit` ty)
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Filter cnstr bound to Ty_Alts which has a cnstr in other
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(4_2 hmtyinfer || hmtyast)
-varmpFilterTyAltsMappedBy :: VarMp -> VarMp -> VarMp
-varmpFilterTyAltsMappedBy c cMp
-  =  varmpFilterTy (\_ t -> case t of {Ty_Alts v _ -> isJust (varmpTyLookup v cMp) ; _ -> False}) c
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Pretty printing
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -671,3 +650,33 @@ instance PP VarMpInfo where
 %%]]
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Instances: Binary, Serialize
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(20 hmtyinfer || hmtyast)
+instance Serialize VarMpInfo where
+  sput (VMITy      a) = sputWord8 0  >> sput a
+  sput (VMIImpls   a) = sputWord8 1  >> sput a
+  sput (VMIScope   a) = sputWord8 2  >> sput a
+  sput (VMIPred    a) = sputWord8 3  >> sput a
+  sput (VMIAssNm   a) = sputWord8 4  >> sput a
+  sput (VMILabel   a) = sputWord8 5  >> sput a
+  sput (VMIOffset  a) = sputWord8 6  >> sput a
+  sput (VMIPredSeq a) = sputWord8 7  >> sput a
+  sget = do t <- sgetWord8
+            case t of
+              0 -> liftM VMITy      sget
+              1 -> liftM VMIImpls   sget
+              2 -> liftM VMIScope   sget
+              3 -> liftM VMIPred    sget
+              4 -> liftM VMIAssNm   sget
+              5 -> liftM VMILabel   sget
+              6 -> liftM VMIOffset  sget
+              7 -> liftM VMIPredSeq sget
+
+instance (Ord k, Serialize k, Serialize v) => Serialize (VarMp' k v) where
+  sput (VarMp a b) = sput a >> sput b
+  sget = liftM2 VarMp sget sget
+
+%%]

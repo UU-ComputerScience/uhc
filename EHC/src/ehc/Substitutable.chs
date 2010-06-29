@@ -167,6 +167,10 @@ instance Substitutable PredScope TyVarId VarMp where
   ftv    (PredScope_Var v)    = [v]
   ftv    _                    = []
 
+instance Substitutable CHRPredOccCxt TyVarId VarMp where
+  s |=>  (CHRPredOccCxt_Scope1 sc) = CHRPredOccCxt_Scope1 (s |=> sc)
+  ftv    (CHRPredOccCxt_Scope1 sc) = ftv sc
+
 instance Substitutable PredOcc TyVarId VarMp where
 %%[[9
   s |=>  (PredOcc pr id sc)  = PredOcc (s |=> pr) id (s |=> sc)
@@ -251,18 +255,39 @@ instance Substitutable PredSeq TyVarId VarMp where
 %%% Fixating free type vars
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(9 hmtyinfer || hmtyast) export(tyFixTyVars)
-fixTyVarsVarMp :: UID -> Ty -> (VarMp,VarMp)
+%%[(9 hmtyinfer || hmtyast) export(tyFixTyVars,tyMetaTyVars)
+-- | Construct varmp for fixing tvars to new fresh fixed tvars + varmp for unfixing those to (again) fresh tvars, resp meta tvars
+fixTyVarsVarMp :: UID -> Ty -> (VarMp,VarMp,VarMp,VarMp)
 fixTyVarsVarMp uniq t
-  = (mk TyVarCateg_Fixed fv rv,mk TyVarCateg_Plain rv fv)
+  = ( mk TyVarCateg_Fixed fv rv
+    , mk TyVarCateg_Meta  fv rv
+    , mk TyVarCateg_Plain rv rv2
+    , mk TyVarCateg_Meta  rv rv2
+    )
   where fv = ftv t
-        rv = mkNewUIDL (length fv) uniq
+        l  = length fv
+        (rv,rv2) = splitAt l $ mkNewUIDL (2*l) uniq
         mk cat fv rv = mkVarMp $ Map.fromList $ zipWith (\v r -> (v,VMITy (Ty_Var r cat))) fv rv
 
-tyFixTyVars :: UID -> Ty -> (Ty,VarMp,VarMp)
+tyFixTyVars :: UID -> Ty -> (Ty,VarMp,VarMp,VarMp)
 tyFixTyVars uniq t
-  = (sTo |=> t, sTo, sFr)
-  where (sTo,sFr) = fixTyVarsVarMp uniq t
+  = (sTo |=> t, sTo, sFr, smFr)
+  where (sTo,_,sFr,smFr) = fixTyVarsVarMp uniq t
+
+-- | replace tvars with tvars having TyVarCateg_Meta
+tyMetaTyVars :: UID -> Ty -> Ty
+tyMetaTyVars uniq t
+  = smTo |=> t
+  where (_,smTo,_,_) = fixTyVarsVarMp uniq t
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Utilities
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 hmtyinfer || hmtyast) export(setSubst)
+setSubst :: VarMp -> TyVarIdS -> TyVarIdS
+setSubst m s = ftvSet $ (m |=>) $ map mkTyVar $ Set.toList s
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -272,7 +297,7 @@ tyFixTyVars uniq t
 %%[(6 hmtyinfer || hmtyast) export(varmpMapTyVarKey)
 varmpMapTyVarKey :: VarMp -> VarMp -> VarMp
 varmpMapTyVarKey mMap m
-  = varmpUnions [ varmpTyUnit v x | (Ty_Var v _,x) <- assocLMapKey (\v -> mMap |=> mkTyVar v) $ varmpToAssocTyL m ]
+  = varmpUnions [ varmpTyUnit v x | (Ty_Var v _,x) <- assocLMapKey (\v -> tyUnAnn $ mMap |=> mkTyVar v) $ varmpToAssocTyL m ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

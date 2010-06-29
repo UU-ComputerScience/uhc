@@ -16,7 +16,7 @@ if .hi interface files ppGrExpr requires a parameterised variant which prints na
 %%[(8 codegen grin) hs import({%{EH}Base.CfgPP})
 %%]
 
-%%[(94 codegen grin) hs import({%{EH}Foreign.Pretty})
+%%[(90 codegen grin) hs import({%{EH}Foreign.Pretty})
 %%]
 
 %%[(8 codegen grin).WRAPPER ag import({GrinCode/AbsSyn})
@@ -71,7 +71,9 @@ ppGrPatAlt tg
 %%[(20 codegen grin) hs
 instance PP GrExpr where
   pp = ppGrExpr2 CfgPP_Plain
+%%]
 
+%%[(2020 codegen grin) hs
 instance PPForHI GrExpr where
   ppForHI = ppGrExpr2 CfgPP_HI
 %%]
@@ -124,13 +126,22 @@ ppGrAltAnn GrAltAnnReenter        = pp "reenter "
 
 ppGrBindAnn :: PPGrNm -> GrBindAnn -> PP_Doc
 ppGrBindAnn _      GrBindAnnNormal            = pp ""
-ppGrBindAnn ppGrNm (GrBindAnnClass xs)        = pp "DICTCLASS"       >|<  ppCurlyList (ppMbGrNm ppGrNm) xs
-ppGrBindAnn ppGrNm (GrBindAnnInstance xs)     = pp "DICTINSTANCE"    >|<  ppCurlyList (ppMbGrNm ppGrNm) xs
-ppGrBindAnn _      (GrBindAnnOverloaded xs)   = pp "DICTOVERLOADED"  >|<  ppCurlyList (ppCurlyList ppInt) xs
+%%[[9
+ppGrBindAnn ppGrNm (GrBindAnnClass xs)        = pp "DICTCLASS"       >|<  ppCurlyList ppTrack xs
+ppGrBindAnn ppGrNm (GrBindAnnInstance xs)     = pp "DICTINSTANCE"    >|<  ppCurlyList ppTrack xs
+%%]]
 ppGrBindAnn ppGrNm (GrBindAnnSpecialized nm i xs)  = pp "SPECIALIZED"  >#< (ppGrNm nm) >#< show i >#<  ppCurlyList (ppMbGrNm ppGrNm) xs
 
 ppMbGrNm :: PPGrNm -> Maybe HsName -> PP_Doc
 ppMbGrNm ppGrNm = maybe (pp "_") ppGrNm
+
+ppManyGrNm :: PPGrNm -> [HsName] -> PP_Doc
+ppManyGrNm ppGrNm = ppListSep "" "" " " . map ppGrNm
+
+%%[[9
+ppTrack :: Track -> PP_Doc
+ppTrack t = text (show t)
+%%]]
 
 ppInt :: Int -> PP_Doc
 ppInt n = pp (show n)
@@ -202,7 +213,7 @@ SEM GrExpr
 %%]]
 %%[[8
   | FFI         loc         .   ppent       =   pp @nm
-%%][94
+%%][90
   | FFI         loc         .   ppent       =   @callconv >#< "\"" >|< @impEnt >|< "\""
 %%]]
 %%[[8
@@ -292,7 +303,8 @@ SEM GrPatLam
   | BasicAnnot  lhs         .   pp          =   @lhs.ppGrNm @nm
   | EnumAnnot   lhs         .   pp          =   @lhs.ppGrNm @nm
   | OpaqueAnnot lhs         .   pp          =   ppListSep "(" ")" " " [@lhs.ppGrNm @nm]
-  | PtrAnnot    lhs         .   pp          =   ppListSep "(" ")" " " [ppListSep "(" ")" " " @tagL.ppL, @lhs.ppGrNm @nm]
+  | PtrAnnot    lhs         .   pp          =   -- ppListSep "(" ")" " " [ppListSep "(" ")" " " @tagL.ppL, @lhs.ppGrNm @nm]
+                                                ppListSep "(" ")" " " [@lhs.ppGrNm @tycon, @lhs.ppGrNm @nm]
 %%]]
 
 SEM GrVarL

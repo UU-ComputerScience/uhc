@@ -104,7 +104,7 @@ patIsVal _ _ = False
 
 unitUpdate :: GrExpr -> HsName -> GrExpr
 unitUpdate (GrExpr_Seq e p b) nm = GrExpr_Seq e p (unitUpdate b nm)
-unitUpdate (GrExpr_Unit v)    nm = GrExpr_UpdateUnit nm v
+unitUpdate (GrExpr_Unit v _)  nm = GrExpr_UpdateUnit nm v
 unitUpdate e                  nm = e
 
 

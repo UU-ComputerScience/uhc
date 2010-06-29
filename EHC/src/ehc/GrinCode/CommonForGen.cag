@@ -16,7 +16,7 @@ Currently it only factors out access to FFI related info.
 SEM GrExpr
 %%[[8
   | FFI         loc         .   impEntNm        =   @nm
-%%][94
+%%][90
   | FFI         loc         .   foreignEntInfo  =   foreignEntExtract @impEnt
                             .   impEntNm        =   forextractEnt @foreignEntInfo
 %%]]

@@ -5,10 +5,6 @@ package uu.jazy.ehc ;
  * Lazy and Functional.
  * Package for laziness and functions as known from functional languages.
  * Written by Atze Dijkstra, atze@cs.uu.nl
- *
- * $Header:     $
- * $Archive:    $
- * $NoKeywords: $
  */
 
 import java.util.* ;
@@ -48,7 +44,13 @@ public class Prim
     public static float primIntToFloat( int v1 ) { return (float)v1 ; }
     public static double primIntToDouble( int v1 ) { return (double)v1 ; }
     public static BigInteger primIntToInteger( int v1 ) { return BigInteger.valueOf(v1) ; }
-    
+
+	// TODO: is that correct?
+    public static int primIntegerToWord32( BigInteger v1 ) { return v1.intValue() ; }
+    public static BigInteger primWord32ToInteger( int v1 ) { return BigInteger.valueOf(v1) ; }
+    public static long primIntegerToWord64( BigInteger v1 ) { return v1.intValue() ; }
+    public static BigInteger primWord64ToInteger( long v1 ) { return BigInteger.valueOf(v1) ; }
+
     public static float primDoubleToFloat( double v1 ) { return (float)v1 ; }
     public static BigInteger primDoubleToInteger( double v1 ) { return BigInteger.valueOf((long)v1) ; }
     
@@ -58,7 +60,12 @@ public class Prim
     public static int primIntegerToInt( BigInteger v1 ) { return v1.intValue() ; }
     public static float primIntegerToFloat( BigInteger v1 ) { return v1.floatValue() ; }
     public static double primIntegerToDouble( BigInteger v1 ) { return v1.doubleValue() ; }
-    
+
+	public static int primIntegerToInt32( BigInteger v1 ) { return v1.intValue() ; }
+	public static BigInteger primInt32ToInteger( int v1 ) { return BigInteger.valueOf(v1) ; }
+	public static int primIntToInt32( int v1 ) { return v1 ; }
+	public static int primInt32ToInt( int v1 ) { return v1 ; }
+
     public static BigInteger primCStringToInteger( String v1 ) { return new BigInteger(v1) ; }
     
     public static double primRationalToDouble( Object v1 ) {
@@ -103,9 +110,13 @@ public class Prim
 		}    	
     	return mod ;
     }
-    
+
     public static int primNegInt( int v1 ) { return -v1 ; }
-    
+    public static int primComplementInt( int v1 ) { return ~ v1 ; }
+    public static int primShiftLeftInt( int v1, int n ) { return v1 << n ; }
+    public static int primShiftRightInt( int v1, int n ) { return v1 >> n ; }
+
+    public static int primAddWord64( int v1, int v2 ) { return v1 + v2 ; }
 %%]
     
 %%[(8 jazy)
@@ -122,8 +133,11 @@ public class Prim
      * Int: comparison
      */
     public static Object primEqInt( int v1, int v2 ) { return RTS.mkBool(v1 == v2) ; }
+    public static Object primNeInt( int v1, int v2 ) { return RTS.mkBool(v1 != v2) ; }
     public static Object primLtInt( int v1, int v2 ) { return RTS.mkBool(v1 < v2) ; }
     public static Object primGtInt( int v1, int v2 ) { return RTS.mkBool(v1 > v2) ; }
+    public static Object primLeInt( int v1, int v2 ) { return RTS.mkBool(v1 <= v2) ; }
+    public static Object primGeInt( int v1, int v2 ) { return RTS.mkBool(v1 >= v2) ; }
     
     public static Object primCmpInt( int v1, int v2 ) {
     	if (v1 < v2) {
@@ -134,6 +148,8 @@ public class Prim
     		return RTS.EQ ;
     	}
     }
+
+    public static Object primEqInt64( int v1, int v2 ) { return RTS.mkBool(v1 == v2) ; }
 %%]
     
 %%[(95 jazy)
@@ -144,6 +160,34 @@ public class Prim
     public static int primMinInt() { return Integer.MIN_VALUE ; }
 %%]
     
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Word, Word8, etc
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(97 jazy)
+	// arithmetic
+	public static int primAndWord( int v1, int v2 ) { return v1 & v2; }
+	public static int primOrWord( int v1, int v2 ) { return v1 | v2; }
+	public static int primXorWord( int v1, int v2 ) { return v1 ^ v2; }
+
+	// min/max value
+    public static int primMaxWord8() { return 0 ; }
+    public static int primMinWord8() { return 255 ; }
+    public static int primMaxWord16() { return 0 ; }
+    public static int primMinWord16() { return 65535 ; }
+    public static int primMaxWord32() { return 0 ; }
+    public static int primMinWord32() {
+		// This should return 4294967295, but that's too large for an int value -- Java's
+		// int is also 32 bit, but signed.
+		return -1 ;
+	}
+    public static long primMaxWord64() { return 0 ; }
+    public static long primMinWord64() {
+		// Same problem as above: this one should really return 18446744073709551615.
+		return -1 ;
+	}
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Long
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -191,6 +235,8 @@ public class Prim
     public static Object primEqLong( long v1, long v2 ) { return RTS.mkBool(v1 == v2) ; }
     public static Object primLtLong( long v1, long v2 ) { return RTS.mkBool(v1 < v2) ; }
     public static Object primGtLong( long v1, long v2 ) { return RTS.mkBool(v1 > v2) ; }
+    public static Object primLeLong( long v1, long v2 ) { return RTS.mkBool(v1 <= v2) ; }
+    public static Object primGeLong( long v1, long v2 ) { return RTS.mkBool(v1 >= v2) ; }
     
     public static Object primCmpLong( long v1, long v2 ) {
     	if (v1 < v2) {
@@ -233,8 +279,14 @@ public class Prim
     public static BigInteger primModInteger( BigInteger v1, BigInteger v2 ) {
     	return ( v2.signum() < 0 ? v1.mod(v2.negate()).add(v2) : v1.mod(v2) ) ;
     }
+    public static BigInteger primAndInteger( BigInteger v1, BigInteger v2 ) { return v1.and(v2) ; }
+    public static BigInteger primOrInteger( BigInteger v1, BigInteger v2 ) { return v1.or(v2) ; }
+    public static BigInteger primXorInteger( BigInteger v1, BigInteger v2 ) { return v1.xor(v2) ; }
     
     public static BigInteger primNegInteger( BigInteger v1 ) { return v1.negate() ; }
+    public static BigInteger primComplementInteger( BigInteger v1 ) { return v1.not() ; }
+    public static BigInteger primShiftLeftInteger( BigInteger v1, int n ) { return v1.shiftLeft(n) ; }
+    public static BigInteger primShiftRightInteger( BigInteger v1, int n ) { return v1.shiftRight(n) ; }
     
 %%]
     
@@ -254,6 +306,8 @@ public class Prim
     public static Object primEqInteger( BigInteger v1, BigInteger v2 ) { return RTS.mkBool(v1.equals(v2)) ; }
     public static Object primLtInteger( BigInteger v1, BigInteger v2 ) { return RTS.mkBool(v1.compareTo(v2) < 0) ; }
     public static Object primGtInteger( BigInteger v1, BigInteger v2 ) { return RTS.mkBool(v1.compareTo(v2) > 0) ; }
+    public static Object primLeInteger( BigInteger v1, BigInteger v2 ) { return RTS.mkBool(v1.compareTo(v2) <= 0) ; }
+    public static Object primGeInteger( BigInteger v1, BigInteger v2 ) { return RTS.mkBool(v1.compareTo(v2) >= 0) ; }
     
     public static Object primCmpInteger( BigInteger v1, BigInteger v2 ) {
     	return RTS.mkOrdering( v1.compareTo(v2) ) ;
@@ -315,7 +369,7 @@ public class Prim
     		exp -= biasExpDouble + szmant ;
     	}
     	if ( sign > 0 ) { mant = -mant ; }
-    	System.out.println("primDecodeDouble " + v + "=" + mant + "^" + exp) ;
+    	//System.out.println("primDecodeDouble " + v + "=" + mant + "^" + exp) ;
     	return new Object[] {BigInteger.valueOf(mant), new Integer(exp)} ;
     }
     
@@ -331,7 +385,7 @@ public class Prim
     		exp -= biasExpFloat + szmant ;
     	}
     	if ( sign > 0 ) { mant = -mant ; }
-    	System.out.println("primDecodeFloat " + v + "=" + mant + "^" + exp) ;
+    	//System.out.println("primDecodeFloat " + v + "=" + mant + "^" + exp) ;
     	return new Object[] {BigInteger.valueOf(mant), new Integer(exp)} ;
     }
     
@@ -404,9 +458,10 @@ public class Prim
     public static float primAddFloat( float v1, float v2 ) { return v1 + v2 ; }
     public static float primSubFloat( float v1, float v2 ) { return v1 - v2 ; }
     public static float primMulFloat( float v1, float v2 ) { return v1 * v2 ; }
-    public static float primDivFloat( float v1, float v2 ) { return v1 / v2 ; }
+    public static float primDivideFloat( float v1, float v2 ) { return v1 / v2 ; }
     
     public static float primNegFloat( float v1 ) { return -v1 ; }
+    public static float primRecipFloat( float v1 ) { return 1f / v1 ; }
     
     // todo: NaN, IEEE, max exp, encode, decode, etc
 %%]
@@ -418,6 +473,8 @@ public class Prim
     public static Object primEqFloat( float v1, float v2 ) { return RTS.mkBool(v1 == v2) ; }
     public static Object primLtFloat( float v1, float v2 ) { return RTS.mkBool(v1 < v2) ; }
     public static Object primGtFloat( float v1, float v2 ) { return RTS.mkBool(v1 > v2) ; }
+    public static Object primLeFloat( float v1, float v2 ) { return RTS.mkBool(v1 <= v2) ; }
+    public static Object primGeFloat( float v1, float v2 ) { return RTS.mkBool(v1 >= v2) ; }
     
     public static Object primCmpFloat( float v1, float v2 ) {
     	if (v1 < v2) {
@@ -468,9 +525,10 @@ public class Prim
     public static double primAddDouble( double v1, double v2 ) { return v1 + v2 ; }
     public static double primSubDouble( double v1, double v2 ) { return v1 - v2 ; }
     public static double primMulDouble( double v1, double v2 ) { return v1 * v2 ; }
-    public static double primDivDouble( double v1, double v2 ) { return v1 / v2 ; }
+    public static double primDivideDouble( double v1, double v2 ) { return v1 / v2 ; }
     
     public static double primNegDouble( double v1 ) { return -v1 ; }
+    public static double primRecipDouble( double v1 ) { return 1d / v1 ; }
     
     // todo: NaN, IEEE, max exp, encode, decode, etc
 %%]
@@ -482,6 +540,8 @@ public class Prim
     public static Object primEqDouble( double v1, double v2 ) { return RTS.mkBool(v1 == v2) ; }
     public static Object primLtDouble( double v1, double v2 ) { return RTS.mkBool(v1 < v2) ; }
     public static Object primGtDouble( double v1, double v2 ) { return RTS.mkBool(v1 > v2) ; }
+    public static Object primLeDouble( double v1, double v2 ) { return RTS.mkBool(v1 <= v2) ; }
+    public static Object primGeDouble( double v1, double v2 ) { return RTS.mkBool(v1 >= v2) ; }
     
     public static Object primCmpDouble( double v1, double v2 ) {
     	if (v1 < v2) {
@@ -531,6 +591,8 @@ public class Prim
     public static Object primEqChar( char v1, char v2 ) { return RTS.mkBool(v1 == v2) ; }
     public static Object primLtChar( char v1, char v2 ) { return RTS.mkBool(v1 < v2) ; }
     public static Object primGtChar( char v1, char v2 ) { return RTS.mkBool(v1 > v2) ; }
+    public static Object primLeChar( char v1, char v2 ) { return RTS.mkBool(v1 <= v2) ; }
+    public static Object primGeChar( char v1, char v2 ) { return RTS.mkBool(v1 >= v2) ; }
     
     public static Object primCmpChar( char v1, char v2 ) {
     	if (v1 < v2) {
@@ -642,7 +704,18 @@ public class Prim
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(96 jazy)
-    // todo
+    // todo: these methods are not correct or tested; they're really just placeholders for the real implementations
+	// i had to put them here to make the generated JAR files run with the new IO implementation
+
+	public static Object primCatchException(Object a, Object func) {
+		warn("primCatchException");
+		return a;
+	}
+
+	public static Object primThrowException(Object exception) {
+		warn("primThrowException");
+		return null;
+	}
 %%]
     
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -651,11 +724,12 @@ public class Prim
 
 %%[(98 jazy)
     // TBD: deal with exceptions
-    public static Handle primStdin() { return RTS.stdin ; }
-    public static Handle primStdout() { return RTS.stdout ; }
-    public static Handle primStderr() { return RTS.stderr ; }
+    public static Object primStdin() { return RTS.stdin ; }
+    public static Object primStdout() { return RTS.stdout ; }
+    public static Object primStderr() { return RTS.stderr ; }
 
-    public static Object primHPutByteArray( Handle h, byte[] b ) {
+    public static Object primHPutByteArray( Object x, byte[] b ) {
+    	Handle h = (Handle)x ;
     	try {
     		h.out.write( b ) ;
 		} catch (IOException e) {
@@ -663,7 +737,8 @@ public class Prim
     	return RTS.Unit ;
     }
 
-    public static Object primHPutChar( Handle h, char c ) {
+    public static Object primHPutChar( Object x, char c ) {
+    	Handle h = (Handle)x ;
     	try {
     		h.out.write( c ) ;
 		} catch (IOException e) {
@@ -674,7 +749,8 @@ public class Prim
 
 // not a nice solution the get to know something about file nr, but Java does not let you know this nr.
 %%[(98 jazy)
-    public static Object primHEqFileno( Handle h, int fileno ) {
+    public static Object primHEqFileno( Object x, int fileno ) {
+    	Handle h = (Handle)x ;
     	switch ( fileno ) {
     		case 0 : return RTS.mkBool( System.in.equals( h.in ) ) ; 
     		case 1 : return RTS.mkBool( System.out.equals( h.out ) ) ;
@@ -803,7 +879,328 @@ PRIM GB_NodePtr gb_primOpenFileOrStd( GB_NodePtr nmNd, GB_Word modeEnum, GB_Node
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(99 jazy)
-    // todo
+    // todo: the functions for io are very incomplete
+
+	static Pointers pointers = new Pointers();
+
+	// Used to return error codes from system calls and library functions.
+	// Note: When we implement threading, we should probably have one of these per thread.
+	static int errno = 0;
+
+	static FileDescriptorTable fileDescriptorTable;
+	static {
+		fileDescriptorTable = new FileDescriptorTable();
+		fileDescriptorTable.add(new Handle(System.in));
+		fileDescriptorTable.add(new Handle(System.out));
+		fileDescriptorTable.add(new Handle(System.err));
+	}
+
+	// test whether a file descriptor refers to a terminal
+    public static Object isatty(int fd) {
+		Handle handle = fileDescriptorTable.getHandle(fd);
+		int val = 0;
+		if (handle == null)
+			errno = Errno.EBADF; // fd is invalid
+		else if (handle.file != null)
+			errno = Errno.EINVAL; // it's not a terminal
+		else
+			val = 1;
+		return ioReturn(new Integer(val));
+    }
+
+	public static int __hscore_bufsiz() {
+		return 8192;
+	}
+
+	public static byte[] primNewPinnedByteArray(int sz) {
+		// since we're only using Java here (no native code), we don't have to worry about pinning objects
+		byte[] bytes = new byte[sz];
+		pointers.registerObject(bytes);
+		return bytes;
+	}
+
+	public static Object primWriteWord8Array(byte[] array, int pos, char val) {
+		array[pos] = (byte)val;
+    	return RTS.Unit;
+	}
+
+	public static char primIndexWord8Array(byte[] array, int index) {
+		return (char)array[index];
+	}
+
+	// return the pointer to the array
+	public static int primByteArrayContents(byte[] array) {
+		return pointers.getPointer(array);
+	}
+
+	// copy 'n' bytes from the array pointed to by 'src' to the array pointed to by 'dest'
+	// 'src' and 'dest' must point to byte arrays
+	public static Object memcpy(int dest, int src, long n) {
+		byte[] destArray = (byte[])pointers.dereference(dest);
+		byte[] srcArray = (byte[])pointers.dereference(src);
+		System.arraycopy(srcArray, 0, destArray, 0, (int)n);
+		return ioReturn(new Integer(dest));
+	}
+
+	public static Object rtsSupportsBoundThreads() {
+		return RTS.False;
+	}
+
+	public static Object write(int fd, int buf, int count) {
+		// look up fd
+		Handle handle = fileDescriptorTable.getHandle(fd);
+		if (handle == null || handle.out == null) {
+			errno = Errno.EBADF;
+			return ioReturn(-1);
+		}
+		OutputStream out = handle.out;
+
+		// look up buf
+		byte[] array = (byte[])pointers.dereference(buf);
+
+		try {
+			out.write(array, 0, count);
+		} catch (IOException e) {
+			e.printStackTrace(System.out);
+			errno = Errno.EIO;
+			return ioReturn(new Integer(-1));
+		}
+		return ioReturn(new Integer(count));
+	}
+
+	// read from a file descriptor
+	public static Object read(int fd, int buf, int count) {
+		// look up fd
+		Handle handle = fileDescriptorTable.getHandle(fd);
+		if (handle == null || handle.in == null) {
+			errno = Errno.EBADF;
+			return ioReturn(-1);
+		}
+		InputStream in = handle.in;
+
+		// look up buf
+		byte[] array = (byte[])pointers.dereference(buf);
+
+		int bytesRead = 0;
+		try {
+			bytesRead = in.read(array, 0, count);
+		} catch (IOException e) {
+			e.printStackTrace(System.out);
+			errno = Errno.EIO;
+			return ioReturn(new Integer(-1));
+		}
+
+		if (bytesRead == -1)
+			bytesRead = 0; // end of file
+
+		return ioReturn(new Integer(bytesRead));
+	}
+
+	public static Object _getErrno() {
+		return ioReturn(new Integer(errno));
+	}
+
+	public static Object malloc(long size) {
+		byte[] array = new byte[(int)size];
+		int ptr = pointers.registerObject(array);
+		return ioReturn(ptr);
+	}
+
+	public static Object free(int ptr) {
+		pointers.remove(ptr);
+		return ioReturn(RTS.Unit);
+	}
+
+	public static int primNullAddr() {
+		return 0;
+	}
+
+	public static Object primWriteWord8OffAddr(int ptr, int offset, int val) {
+		byte[] array = (byte[])pointers.dereference(ptr);
+		return primWriteWord8Array(array, offset, (char)val);
+	}
+
+	// open and possibly create a file
+	public static Object __hscore_open(int strPtr, int how, int mode) {
+		// get filename
+		byte[] array = (byte[])pointers.dereference(strPtr);
+		String filename = Util.zstrToString(array);
+
+		// check flags
+		boolean append = (how & Fcntl.O_APPEND) != 0;
+
+		int accessMode = how & 0x3;
+		boolean readOnly = accessMode == Fcntl.O_RDONLY;
+		boolean writeOnly = accessMode == Fcntl.O_WRONLY;
+
+		boolean create = (how & Fcntl.O_CREAT) != 0;
+		boolean mustCreate = create && (how & Fcntl.O_EXCL) != 0;
+
+		// ignored: O_ASYNC, O_NOCTTY
+
+		// TODO: do we need to implement O_TRUNC, O_NONBLOCK, O_NDELAY, O_SYNC ?
+
+		// check if the file exists
+		File file = new File(filename);
+		if (mustCreate && file.exists()) {
+			errno = Errno.EEXIST;
+			return ioReturn(new Integer(-1));
+		}
+		if ( ! file.exists() && ! create) {
+			errno = Errno.ENOENT;
+			return ioReturn(new Integer(-1));
+		}
+		if (file.isDirectory()) {
+			errno = Errno.EISDIR;
+			return ioReturn(new Integer(-1));
+		}
+
+		// open stream(s)
+		OutputStream out = null;
+		InputStream in = null;
+		try {
+			if ( ! writeOnly)
+				in = new FileInputStream(file);
+			if ( ! readOnly)
+				out = new FileOutputStream(file, append);
+		} catch (IOException e) {
+			e.printStackTrace(System.out);
+			errno = Errno.EACCES;
+			return ioReturn(new Integer(-1));
+		}
+
+		// add entry to the FileDescriptorTable
+		Handle handle = new Handle(in, out, file);
+		int fd = fileDescriptorTable.add(handle);
+
+		return ioReturn(new Integer(fd));
+	}
+
+	// close a file descriptor, so that it no longer refers to any file and may be reused
+	public static Object close(int fd) {
+		Handle handle = fileDescriptorTable.getHandle(fd);
+		if (handle == null) {
+			errno = Errno.EBADF;
+			return ioReturn(new Integer(-1));
+		}
+		try {
+			if (handle.in != null)
+				handle.in.close();
+			if (handle.out != null)
+				handle.out.close();
+		} catch (IOException e) {
+			e.printStackTrace(System.out);
+			errno = Errno.EIO;
+			return ioReturn(new Integer(-1));
+		}
+		fileDescriptorTable.remove(fd);
+		return ioReturn(new Integer(0));
+	}
+
+	public static int __hscore_sizeof_stat() {
+		return Stat.bufferSize();
+	}
+
+	// get file status
+	public static Object __hscore_fstat(int fd, int bufPtr) {
+		Handle handle = fileDescriptorTable.getHandle(fd);
+		if (handle == null || handle.file == null) {
+			errno = Errno.EBADF;
+			return ioReturn(-1);
+		}
+
+		byte[] buffer = (byte[])pointers.dereference(bufPtr);
+
+		Stat stat = new Stat(handle.file);
+		stat.writeToBuffer(buffer);
+
+		return ioReturn(new Integer(0));
+	}
+
+	// accessing information from __hscore_fstat
+	public static Object __hscore_st_mtime(int ptr) {
+		byte[] buffer = (byte[])pointers.dereference(ptr);
+		Stat stat = new Stat(buffer);
+		return ioReturn(new Long(stat.mtime));
+	}
+	public static Object __hscore_st_size(int ptr) {
+		byte[] buffer = (byte[])pointers.dereference(ptr);
+		Stat stat = new Stat(buffer);
+		return ioReturn(new Long(stat.size));
+	}
+	public static Object __hscore_st_mode(int ptr) {
+		byte[] buffer = (byte[])pointers.dereference(ptr);
+		Stat stat = new Stat(buffer);
+		return ioReturn(new Integer(stat.mode));
+	}
+	public static Object __hscore_st_dev(int ptr) {
+		// get device id -- not possible in Java
+		warn("__hscore_st_dev");
+		return ioReturn(new Integer(0));
+	}
+	public static Object __hscore_st_ino(int ptr) {
+		// get inode number -- not possible in Java
+		warn("__hscore_st_ino");
+		return ioReturn(new Integer(0));
+	}
+
+	// interpret CMode values
+	public static int __hscore_s_isreg(int cmode) {
+		return cmode & StMode.S_IFREG;
+	};
+	public static int __hscore_s_ischr(int cmode) {
+		return cmode & StMode.S_IFCHR;
+	};
+	public static int __hscore_s_isblk(int cmode) {
+		return cmode & StMode.S_IFBLK;
+	};
+	public static int __hscore_s_isdir(int cmode) {
+		return cmode & StMode.S_IFDIR;
+	};
+	public static int __hscore_s_isfifo(int cmode) {
+		return cmode & StMode.S_IFIFO;
+	};
+	public static int __hscore_s_issock(int cmode) {
+		return cmode & StMode.S_IFSOCK;
+	};
+
+	// truncate a file to a specified length
+	public static Object __hscore_ftruncate(int fd, long where) {
+		// to implement this, we would probably need java.nio
+		// (introduced in Java 1.4)
+		warn("__hscore_ftruncate");
+		return ioReturn(new Integer(0));
+	}
+
+	// POSIX flags only:
+	public static int __hscore_o_rdonly() { return Fcntl.O_RDONLY; }
+	public static int __hscore_o_wronly() { return Fcntl.O_WRONLY; }
+	public static int __hscore_o_rdwr()   { return Fcntl.O_RDWR; }
+	public static int __hscore_o_append() { return Fcntl.O_APPEND; }
+	public static int __hscore_o_creat()  { return Fcntl.O_CREAT; }
+	public static int __hscore_o_excl()   { return Fcntl.O_EXCL; }
+	public static int __hscore_o_trunc()  { return Fcntl.O_TRUNC; }
+
+	// non-POSIX flags:
+	public static int __hscore_o_noctty()   { return Fcntl.O_NOCTTY; }
+	public static int __hscore_o_nonblock() { return Fcntl.O_NONBLOCK; }
+	public static int __hscore_o_binary()   { return Fcntl.O_BINARY; }
+
+
+
+	// "return a" in the IO monad
+	private static <A> Object ioReturn(A a) {
+		final A finalA = a;
+		return new Function1() {
+			protected Object eval1(Object state) {
+				return new Object[] { state, finalA };
+			}
+		};
+	}
+
+	private static void warn(String name) {
+		System.err.println("warning: "+name+" is not really implemented in the Jazy backend");
+	}
 %%]
     
 

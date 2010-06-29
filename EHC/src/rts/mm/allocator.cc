@@ -24,7 +24,7 @@ MM_Allocator mm_allocator_GC_1 ;
 
 %%[8
 void mm_init_allocator() {
-	mm_allocator_LOF.init( &mm_allocator_LOF, &mm_malloc_Sys, &mm_space_Fragment ) ;
+	mm_allocator_LOF.init( &mm_allocator_LOF, mm_malloc_Sys, &mm_space_Fragment ) ;
 	mm_allocator_Bump.init( &mm_allocator_Bump, &mm_malloc_LOF, &mm_space_Fragment ) ;
 	
 	mm_allocator_Fixed = mm_allocator_LOF ;

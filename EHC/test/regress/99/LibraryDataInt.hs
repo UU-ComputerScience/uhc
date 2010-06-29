@@ -1,6 +1,7 @@
 {- ----------------------------------------------------------------------------------------
    what    : base classes for Data.Int: Int64, Int32, Int16, Int8
    expected: ok
+   platform: word size dependent
 ---------------------------------------------------------------------------------------- -}
 
 module LibraryDataInt where

@@ -111,6 +111,10 @@ SEM Type
     | InfixApplication
         loc         .   errSq       =   Seq.unions [Seq.fromList @ctxtFormErrs, @leftType.errSq, @operator.errSq, @rightType.errSq]
 %%]]
+%%[[5
+    | InfixApplicationChainTop 
+        loc         .   errSq       =   Seq.unions [Seq.fromList @errRearr, @type.errSq]
+%%]]
 %%]
 
 %%[5
@@ -121,7 +125,7 @@ SEM Declaration
         loc         .   locErrs     =   Seq.fromList @errNewtype
     | Data Newtype
         loc         .   errSq       =   Seq.unions [ @locErrs
-                                                   , @simpletype.errSq
+                                                   , @typelefthandside.errSq
                                                    , Seq.fromList @errDupIntro
 %%[[8
                                                    , Seq.fromList @errIdUseVal
@@ -130,8 +134,11 @@ SEM Declaration
 %%[[9
                                                    , @context.errSq
 %%]]
-%%[[95
+%%[[91
                                                    , @derivings.errSq
+%%]]
+%%[[92
+                                                   , Seq.fromList @errIdUseClass
 %%]]
                                                    ]
 %%]
@@ -187,9 +194,12 @@ SEM ContextItem
 
 SEM Declaration
     | Class
-        loc         .   errSq       =   Seq.unions [ Seq.fromList @errDupIntro, Seq.fromList @errReorder, @context.errSq, @simpletype.errSq
+        loc         .   errSq       =   Seq.unions [ Seq.fromList @errDupIntro, Seq.fromList @errReorder, @context.errSq, @typelefthandside.errSq
 %%[[15
                                                    , @dependencies.errSq
+%%]]
+%%[[99
+                                                   , Seq.fromList @errIdUseExtra
 %%]]
                                                    , @where.errSq
                                                    ]
@@ -197,15 +207,17 @@ SEM Declaration
         loc         .   errSq       =   Seq.firstNotEmpty [Seq.fromList @errIdUse, @context.errSq, @types.errSq, @where.errSq, Seq.fromList @errReorder]
     | InstanceUseImplicitly
         loc         .   errSq       =   Seq.unions [Seq.fromList @errIdUse, @expression.errSq, @types.errSq]
+    | Default
+        loc         .   errSq       =   Seq.unions [Seq.fromList @errIdUse, @types.errSq]
 %%]
 
 %%[11
 SEM Declaration
     | Type
-        loc         .   errSq       =   Seq.unions [ Seq.fromList @errDupIntro, @simpletype.errSq, @type.errSq ]
+        loc         .   errSq       =   Seq.unions [ Seq.fromList @errDupIntro, @typelefthandside.errSq, @type.errSq ]
 %%]
 
-%%[94
+%%[90
 SEM Declaration
     | ForeignImport
         loc         .   errSq       =   Seq.unions [ Seq.fromList (rngLift @range mkNestErr (pp ("Parse of foreign entity '" ++ @nmForParse ++ "'")) @entErrs)
@@ -218,7 +230,7 @@ SEM Declaration
                                                    ]
 %%]
 
-%%[95
+%%[91
 SEM Deriving
     | Deriving
         loc         .   errSq       =   Seq.fromList @errIdUse

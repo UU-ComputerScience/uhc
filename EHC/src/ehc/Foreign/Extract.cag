@@ -16,17 +16,17 @@ Extract various info out of the FFI declaration:
 \end{itemize}
 %%]
 
-%%[94 hs module {%{EH}Foreign.Extract} import({%{EH}Base.Common},{%{EH}Foreign}) 
+%%[90 hs module {%{EH}Foreign.Extract} import({%{EH}Base.Common},{%{EH}Foreign}) 
 %%]
 
-%%[94 hs import(Data.Maybe) 
+%%[90 hs import(Data.Maybe) 
 %%]
 
-%%[94.WRAPPER ag import({Foreign/AbsSyn})
+%%[90.WRAPPER ag import({Foreign/AbsSyn})
 WRAPPER ForeignAGItf
 %%]
 
-%%[94 hs export(ForeignExtraction(..))
+%%[90 hs export(ForeignExtraction(..))
 data ForeignExtraction
   = ForeignExtraction
       {	forextractIncludes		:: [String]
@@ -38,7 +38,7 @@ data ForeignExtraction
 emptyForeignExtraction = ForeignExtraction [] "??" False False
 %%]
 
-%%[94 hs export(foreignEntExtract)
+%%[90 hs export(foreignEntExtract)
 foreignEntExtract :: ForeignEnt -> ForeignExtraction
 foreignEntExtract ty
   =  let  t =  wrap_ForeignAGItf
@@ -51,7 +51,7 @@ foreignEntExtract ty
 %%% Foreign entity
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[94
+%%[90
 ATTR ForeignAGItf AllForeign [ | | extr: ForeignExtraction ]
 
 SEM PlainCall

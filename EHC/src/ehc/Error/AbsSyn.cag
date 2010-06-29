@@ -145,6 +145,9 @@ DATA Err
                         ty2        : {PP_Doc}
                         ty1detail  : {PP_Doc}
                         ty2detail  : {PP_Doc}
+  | TyCoreSeqLevels     hereLev    : {Int}
+                        mustLev    : {Int}
+                        ty         : {PP_Doc}
   | NoCoerceDerivation  func       : {Ty}
                         arg        : {Ty}
 %%]
@@ -196,12 +199,14 @@ DATA Err
   | MustHaveMain
   | ModNameMismatch     nmOfFile   : HsName
                         nmFromSrc  : HsName
-  | AmbiguousNameRef    nm         : HsName
+  | AmbiguousNameRef    kindName   : {String}
+                        kind       : {String}
+                        nm         : HsName
                         nmAlts     : {[HsName]}
   | MutRecModules       mutRecL    : {[[HsName]]}
 %%]
 
-%%[(95 hmtyinfer || hmtyast)
+%%[(91 hmtyinfer || hmtyast)
 DATA Err
   | MalformedTy         kind       : String
                         purpose    : String
@@ -210,6 +215,14 @@ DATA Err
   | NoDerivForData      ty         : Ty
                         clNm       : HsName
                         reason     : String
+%%]
+
+%%[99
+DATA Err
+  | InconsistentHI      modNm      : String
+                        file       : String
+                        expected   : {[String]}
+                        inHI       : {[String]}
 %%]
 
 

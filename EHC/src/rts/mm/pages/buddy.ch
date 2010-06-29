@@ -25,7 +25,7 @@ This design allows incremental growth of the use of mallocable memory, and there
 #define MM_Pages_Buddy_OtherHalfOfPage(this,thisSzLog) \
 			( (Word)(this) ^ Bits_Pow2( Word, (thisSzLog) + MM_Pages_MinSize_Log ) )
 #define MM_Pages_Buddy_LastPageOfPage(this,thisSzLog) \
-			( (Word)(this) + (((1 << thisSzLog) - 1) << MM_Pages_MinSize_Log) )
+			( (Word)(this) + (((((Word)(1)) << thisSzLog) - 1) << MM_Pages_MinSize_Log) )
 
 %%]
 
@@ -64,7 +64,7 @@ typedef struct MM_BuddyPage_ExtlData {
 } __attribute__ ((__packed__)) MM_BuddyPage_ExtlData ;
 
 #define MM_BuddyPage_ExtlDataSize_Log	(Word_SizeInBytes_Log + 1)
-#define MM_BuddyPage_ExtlDataSize		(1 << MM_BuddyPage_ExtlDataSize_Log)
+#define MM_BuddyPage_ExtlDataSize		(((Word)(1)) << MM_BuddyPage_ExtlDataSize_Log)
 %%]
 
 %%[8
@@ -92,7 +92,12 @@ static inline Bool mm_pages_Buddy_Dealloc_IsEmpty( MM_Pages_Buddy_FreePage* fpg 
 %%]
 
 %%[8
-#define MM_Pages_Buddy_InitialGroupSize				(1024 * 1024 * 4)	// (10 * 1024 * 4) // 
+#if GB_DEBUG
+#	define MM_Pages_Buddy_InitialGroupSize__	10
+#else
+#	define MM_Pages_Buddy_InitialGroupSize__	1024
+#endif
+#define MM_Pages_Buddy_InitialGroupSize			(MM_Pages_Buddy_InitialGroupSize__ * 1024 * 4)	// (10 * 1024 * 4) // 
 
 // the administration
 typedef struct MM_Pages_Buddy_Data {
@@ -145,6 +150,11 @@ extern void mm_pages_Buddy_SetUserData( MM_Pages* buddyPages, MM_Page pg, Word s
 %%]
 
 %%[8
+static inline Bool mm_pages_Buddy_IsInRange( MM_Pages* buddyPages, MM_Page pg ) {
+	MM_Pages_Buddy_Data* pgs = (MM_Pages_Buddy_Data*)buddyPages->data ;
+	return (Word)pg >= pgs->firstPage && (Word)pg < pgs->afterLastPage ;
+}
+
 static inline Word* mm_pages_Buddy_GetUserData( MM_Pages* buddyPages, MM_Page pg ) {
 	MM_Pages_Buddy_Data* pgs = (MM_Pages_Buddy_Data*)buddyPages->data ;
 	return &(MM_Pages_Buddy_ExtlDataOfPage( pgs, pg )->user) ;

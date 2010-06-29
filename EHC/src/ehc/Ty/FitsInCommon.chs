@@ -19,13 +19,13 @@
 %%[(4 hmtyinfer) import({%{EH}Base.Opts})
 %%]
 
-%%[(4 hmtyinfer) import({%{EH}Substitutable}) export(FitsIn, FitsIn',fitsInLWith)
+%%[(4 hmtyinfer) import({%{EH}Substitutable}) export(FitsIn, FitsIn')
 %%]
 
 %%[(8 codegen hmtyinfer) import(qualified {%{EH}TyCore.Full0} as C)
 %%]
 
-%%[(9 hmtyinfer) import(qualified Data.Set as Set)
+%%[(7 hmtyinfer) import(qualified Data.Set as Set)
 %%]
 
 %%[(9 hmtyinfer) import({%{EH}Pred.CommonCHR})
@@ -84,6 +84,9 @@ data FIOut
        ,  foTrace           :: [PP_Doc]					-- trace
        ,  foLInstToL        :: [InstTo]					-- instantiation over arrow '->' of left ty
        ,  foRInstToL        :: [InstTo]					-- instantiation over arrow '->' of right ty
+%%[[7
+       ,  foDontBind        :: !TyVarIdS				-- output variant of fioDontBind
+%%]]
 %%[[(8 codegen)
        ,  foTCSubst         :: !(C.CSubst)				-- subst for holes in the Core
        ,  foLRTCoe          :: !(C.LRCoe)				-- coercion over arrow structure
@@ -123,8 +126,8 @@ emptyFO
        ,  foTrace           =   []
        ,  foLInstToL        =   []
        ,  foRInstToL        =   []
-%%[[6
-       -- ,  foTvKiVarMp       =   emptyVarMp
+%%[[7
+       ,  foDontBind        =	Set.empty
 %%]]
 %%[[(8 codegen)
        ,  foTCSubst         =   C.emptyCSubst
@@ -267,14 +270,14 @@ type FitsIn' = FIOpts -> UID -> VarMp -> Ty -> Ty -> FIOut
 type FitsIn = FIOpts -> UID -> VarMp -> Ty -> Ty -> (Ty,VarMp,ErrL)
 %%]
 
-%%[(4 hmtyinfer).fitsInLWith
-fitsInLWith :: (FIOut -> FIOut -> FIOut) -> FitsIn' -> FIOpts -> UID -> VarMp -> TyL -> TyL -> (FIOut,[FIOut])
+%%[(4 hmtyinfer).fitsInLWith export(fitsInLWith)
+fitsInLWith :: (FIOut -> FIOut -> FIOut) -> FitsIn' -> FIOpts -> UID -> VarMp -> TyL -> TyL -> ([FIOut],FIOut)
 fitsInLWith foCmb elemFits opts uniq varmp tyl1 tyl2
-  = (fo,foL)
+  = (foL,fo)
   where ((_,fo),foL)
           = foldr  (\(t1,t2) ((u,foThr),foL)
                       -> let  (u',ue) = mkNewLevUID u
-                              fo = elemFits opts u (foVarMp foThr |=> varmp) (foVarMp foThr |=> t1) (foVarMp foThr |=> t2)
+                              fo = elemFits opts ue (foVarMp foThr |=> varmp) (foVarMp foThr |=> t1) (foVarMp foThr |=> t2)
                          in   ((u',foCmb fo foThr),fo:foL)
                    )
                    ((uniq,emptyFO),[])

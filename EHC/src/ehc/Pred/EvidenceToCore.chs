@@ -14,6 +14,9 @@
 %%[(9 codegen hmtyinfer) import({%{EH}Ty.FitsInCommon2}(FIEnv(..),FIIn(..)),{%{EH}Core},{%{EH}Ty},{%{EH}Core.Utils},{%{EH}Core.Subst})
 %%]
 
+%%[(9 codegen) hs import({%{EH}AbstractCore})
+%%]
+
 %%[(9 codegen) import(EH.Util.Pretty)
 %%]
 
@@ -66,6 +69,7 @@ data ToCoreState p info
   = ToCoreState
       { tcsMp       :: !(Map.Map UID ToCoreRes)
       , tcsEvMp     :: !(Map.Map (Evidence p info) ToCoreRes)
+      , tcsPrMp     :: !(Map.Map p HsName)						-- map for recursive proof, names for predicates to be introduced
       , tcsUniq     :: !UID
       }
 
@@ -85,11 +89,11 @@ instance PP ToCoreRes where
   pp r = "TCR" >#< tcrCExpr r
 %%]
 
-%%[(9 codegen) export(AmbigEvid(..))
-data AmbigEvid
-  = AmbigEvid
-      { ambigevidPredOcc 	:: !CHRPredOcc
-      , ambigevidInfos   	:: ![RedHowAnnotation]
+%%[(9 codegen) export(OverlapEvid(..))
+data OverlapEvid
+  = OverlapEvid
+      { overlapevidPredOcc 	:: !CHRPredOcc
+      , overlapevidInfos   	:: ![RedHowAnnotation]
       }
 %%]
 
@@ -102,18 +106,22 @@ predScopeToCBindMapUnion = Map.unionWith (++)
 %%]
 
 %%[(9 codegen) export(evidMpToCore,EvidKeyToCExprMap)
-evidMpToCore :: FIIn -> InfoToEvidenceMap CHRPredOcc RedHowAnnotation -> (EvidKeyToCExprMap,[AmbigEvid])
+evidMpToCore :: FIIn -> InfoToEvidenceMap CHRPredOcc RedHowAnnotation -> (EvidKeyToCExprMap,[OverlapEvid])
 evidMpToCore env evidMp
   = ( Map.map (\r -> (tcrCExpr r,tcrUsed r,tcrScope r)) $ tcsMp
-      $ foldr mke (ToCoreState Map.empty Map.empty (fiUniq env))
+      $ foldr mke (ToCoreState Map.empty Map.empty Map.empty (fiUniq env))
       $ evidMp'
     , concat ambigs
     )
   where (evidMp',ambigs) = dbg "evidMpToCore.mk1.evidMp'" $ unzip [ ((i,ev3),as) | (i,ev) <- filter (not.ignore) (Map.toList evidMp), let (ev2,as) = splitAmbig ev ; ev3 = strip ev2 ]
         mke (RedHow_ProveObl i _,ev) st = fst $ mk1 st (Just i) ev
         mk1 st mbevk ev@(Evid_Proof p info evs)
-                      = dbg "evidMpToCore.mk1.a" $ ins (insk || isJust mbevk) evk evnm ev c sc (Set.unions (uses : map tcrUsed rs)) (st' {tcsUniq=u'})
-                      where (st'@(ToCoreState {tcsUniq=u}),rs) = mkn st evs
+                      = dbg "evidMpToCore.mk1.a" $
+                        ins (insk || isJust mbevk)
+                            evk evnm ev c sc
+                            (Set.unions (uses : map tcrUsed rs))
+                            (st' {tcsUniq=u'})
+                      where (st'@(ToCoreState {tcsUniq=u}),rs) = mkn (st {tcsPrMp = Map.insert p evnm $ tcsPrMp st}) evs
                             (c,sc)          = ann info rs
                             (u',evk,insk,evnm,uses)
                                             = case info of
@@ -124,10 +132,17 @@ evidMpToCore env evidMp
                                                                         where (u1,u2) = mkNewUID u
                             choosek k = maybe k id mbevk
                             choosen n = maybe n mkHNm mbevk
-        mk1 st _    _ = dbg "evidMpToCore.mk1.b" $ (st,ToCoreRes (cundefined $ feEHCOpts $ fiEnv env) Set.empty initPredScope)
+        mk1 st@(ToCoreState {tcsUniq=u}) mbevk ev@(Evid_Recurse p)
+                      = ins True
+                            u2 (mkHNm u2) ev (mknm recnm) (cpoScope p)
+                            Set.empty
+                            (st {tcsUniq=u1})
+                      where (u1,u2) = mkNewUID u
+                            recnm = panicJust "evidMpToCore.Evid_Recurse" $ Map.lookup p $ tcsPrMp st
+        mk1 st _    _ = dbg "evidMpToCore.mk1.b" $ (st,ToCoreRes (acoreBuiltinUndefined $ feEHCOpts $ fiEnv env) Set.empty initPredScope)
         mkn st        = dbg "evidMpToCore.mkn" $ foldr (\ev (st,rs) -> let (st',r) = mk1 st Nothing ev in (st',r:rs)) (st,[])
         mkv x         = mknm $ mkHNm x
-        mknm          = CExpr_Var
+        mknm          = acoreVar
         ins insk k evnm ev c sc uses st
                       = {- trp "XX" ((ppAssocLV $ Map.toList $ tcsMp st') >-< (ppAssocLV $ Map.toList $ tcsEvMp st')) $ -} res
                       where res@(st',_)
@@ -145,25 +160,25 @@ evidMpToCore env evidMp
                                         CExpr_Var _ -> c
                                         _           -> c'
         ann (RedHow_Assumption   vun sc) _     = ( mknm $ vunmNm vun, sc )
-        ann (RedHow_ByInstance   n _ sc) ctxt  = ( mkCExprAppMeta (mknm n) (map (\c -> (tcrCExpr c,(CMetaVal_Dict Nothing))) ctxt), maximumBy pscpCmpByLen $ sc : map tcrScope ctxt )
+        ann (RedHow_ByInstance   n _   sc) ctxt= ( acoreAppMeta (mknm n) (map (\c -> (tcrCExpr c,CMetaVal_Dict)) ctxt), maximumBy pscpCmpByLen $ sc : map tcrScope ctxt )
         ann (RedHow_BySuperClass n o t ) [sub] = let res = mkCExprSatSelsCaseMeta
                                                              (emptyRCEEnv $ feEHCOpts $ fiEnv env)
-                                                             (Just $ hsnSuffix n "!") 
-                                                             (CMetaVal_Dict (Just [o])) 
+                                                             (Just $ hsnUniqifyEval n) 
+                                                             CMetaVal_Dict 
                                                              (tcrCExpr sub) 
                                                              t
                                                              [(n,n,o)] 
                                                              Nothing 
-                                                             (CExpr_Var n)
+                                                             (acoreVar n)
                                                  in ( res
                                                     , tcrScope sub
                                                     )
 %%[[10
-        ann (RedHow_ByLabel _ (LabelOffset_Off o) sc) []     = ( CExpr_Int o, sc )
-        ann (RedHow_ByLabel _ (LabelOffset_Off o) sc) [roff] = ( caddint (feEHCOpts $ fiEnv env) (tcrCExpr roff) o, sc )
+        ann (RedHow_ByLabel _ (LabelOffset_Off o) sc) []     = ( acoreInt o, sc )
+        ann (RedHow_ByLabel _ (LabelOffset_Off o) sc) [roff] = ( acoreBuiltinAddInt (feEHCOpts $ fiEnv env) (tcrCExpr roff) o, sc )
 %%]]
 %%[[13
-        ann (RedHow_Lambda  i sc) [body]       = ( [mkHNm i] `mkCExprLam` tcrCExpr body, sc )
+        ann (RedHow_Lambda  i sc) [body]       = ( [mkHNm i] `acoreLam` tcrCExpr body, sc )
 %%]]
 %%[[16
         ignore (_, (Evid_Proof _ red  _))
@@ -174,13 +189,13 @@ evidMpToCore env evidMp
 %%]]
         ignore _ = False
 
-        strip (Evid_Proof _ RedHow_ByScope [ev]) = strip ev
-        strip (Evid_Proof p i              evs ) = Evid_Proof p i (map strip evs)
-        strip ev                                 = ev
-        splitAmbig  (Evid_Proof p i es            ) = let (es',as) = splitAmbigs es in (Evid_Proof p i es',as)
-        splitAmbig  (Evid_Ambig p   ess@((i,es):_)) = let (es',_ ) = splitAmbigs es in (Evid_Proof p i es',[AmbigEvid p (map fst ess)])
-        splitAmbig  ev                              = (ev,[])
-        splitAmbigs es                              = let (es',as) = unzip $ map splitAmbig es in (es',concat as)
+        strip (Evid_Proof _ (RedHow_ByScope _) [ev]) = strip ev
+        strip (Evid_Proof p i                  evs ) = Evid_Proof p i (map strip evs)
+        strip ev                                     = ev
+        splitAmbig  (Evid_Proof p i es            )  = let (es',as) = splitAmbigs es in (Evid_Proof p i es',as)
+        splitAmbig  (Evid_Ambig p   ess@((i,es):_))  = let (es',_ ) = splitAmbigs es in (Evid_Proof p i es',[OverlapEvid p (map fst ess)])
+        splitAmbig  ev                               = (ev,[])
+        splitAmbigs es                               = let (es',as) = unzip $ map splitAmbig es in (es',concat as)
         dbg m = id -- Debug.tr m empty
 %%]
                           Just r -> trp "XX" ("ev" >#< ev >#< insk >#< "k" >#< k >#< v >#< "r" >#< tcrCExpr r >#< tcrCExpr (vr r)) $ (        mkk r                  st,vr r)
@@ -198,12 +213,12 @@ evidKeyCoreMpToBinds m
                -> let deepestScope = subevdId . maximumBy (\evd1 evd2 -> subevdScope evd1 `pscpCmpByLen` subevdScope evd2) . Set.toList
                   in  Map.singleton (deepestScope uses) [b]
             )
-      $ [ (mkCBind1Meta (mkHNm i) (CMetaVal_Dict Nothing) e,u)    -- Nothing will be replaced by the correct annotation in ToCore
+      $ [ (acoreBind1Meta (mkHNm i) CMetaVal_Dict e,u)
         | (i,(e,u,_ )) <- dbg "evidKeyCoreMpToBinds.dependentOnAssumes"   $! Map.toList dependentOnAssumes   
         ]
     , dbg "evidKeyCoreMpToBinds.res2"
       $! Map.fromListWith (++)
-      $ [ (sc,[mkCBind1Meta (mkHNm i) (CMetaVal_Dict Nothing) e]) 
+      $ [ (sc,[acoreBind1Meta (mkHNm i) CMetaVal_Dict e]) 
         | (i,(e,_,sc)) <- dbg "evidKeyCoreMpToBinds.independentOfAssumes" $! Map.toList independentOfAssumes 
         ]
     )
@@ -247,7 +262,7 @@ evidKeyCoreMpToBinds2 m
           = Map.partition (\(_,uses,_) -> Set.null uses) m
         (dependentOn1Assume, dependentOnNAssumes)
           = Map.partition (\(_,uses,_) -> Set.size uses == 1) m
-        mkd i e           = mkCBind1Meta (mkHNm i) (CMetaVal_Dict Nothing) e    -- Nothing will be replaced by the correct annotation in ToCore
+        mkd i e           = acoreBind1Meta (mkHNm i) CMetaVal_Dict e
         deepestScope sc u = maximumBy pscpCmpByLen $ sc : (map subevdScope $ Set.toList u)
 %%]
 

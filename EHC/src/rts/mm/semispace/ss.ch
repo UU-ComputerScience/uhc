@@ -11,6 +11,12 @@ See XXX.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
+// state of gc progress
+#define	MM_PLAN_SS_GCPROGRESS_COLLECTING			(1<<0)		// busy with collecting
+#define	MM_PLAN_SS_GCPROGRESS_POSTCOLLECTING		(1<<1)		// busy with gc postprocessing
+%%]
+
+%%[8
 // the administration
 typedef struct MM_Plan_SS_Data {
 	MM_Space			fragSpace0 ; 		// the 2 lower level spaces
@@ -27,7 +33,11 @@ typedef struct MM_Plan_SS_Data {
 	MM_TraceSupply		allTraceSupply ;	// all trace supplies grouped together
 	MM_Trace			gbmTrace ;			// GBM specific
 	MM_Module			gbmModule ;			// GBM specific module info
-	Bool				gcInProgress ;
+%%[[90
+  	MM_DEQue 			weakPtrFinalizeQue ;	// queue of weakptrs to be finalized
+	MM_WeakPtr*			weakPtr ;				// weak ptr admin
+%%]]
+	Word				gcProgress ;		// gc state
 } MM_Plan_SS_Data ;
 %%]
 
@@ -37,8 +47,11 @@ typedef struct MM_Plan_SS_Data {
 
 %%[8
 extern void mm_plan_SS_Init( MM_Plan* ) ;
-extern Bool mm_plan_SS_PollForGC( MM_Plan*, Bool isSpaceFull, MM_Space* space ) ;
+#if MM_BYPASS_PLAN
+extern void mm_plan_SS_InitBypass( MM_Plan* plan ) ;
+#endif
 %%]
+extern Bool mm_plan_SS_PollForGC( MM_Plan*, Bool isSpaceFull, Word gcInfo ) ;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%  interface object

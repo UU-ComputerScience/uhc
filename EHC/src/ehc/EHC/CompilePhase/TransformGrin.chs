@@ -63,8 +63,11 @@ cpTransformGrin modNm
   =  do  {  cr <- get
          ;  let  (ecu,_,opts,_) = crBaseInfo modNm cr
                  forBytecode = not (ehcOptFullProgAnalysis opts)
-                 optimizing  = ehcOptOptimise opts >= OptimiseNormal
+                 optimizing  = ehcOptOptimizationLevel opts >= OptimizationLevel_Normal
          
+{- for debugging 
+                 trafos  =     mk [mte,unb,flt,cpr,nme]
+-}
                  trafos  =     (if forBytecode               then mk [mte,unb]               else [])
                            ++  (if optimizing                then mk evel                    else mk [flt])
                            ++  (if forBytecode && optimizing then inline ++ mk (evel++[cpr]) else [])
@@ -75,7 +78,7 @@ cpTransformGrin modNm
                          flt  = ( grFlattenSeq                   , "flatten"          )
                          ale  = ( grAliasElim                    , "alias elim"       )
                          nme  = ( grUnusedNameElim               , "unused name elim" )
-                         eve  = ( grEvalElim                     , "eval elim"        )
+                         eve  = ( grEvalElim opts                , "eval elim"        )
                          mte  = ( grUnusedMetaInfoElim           , "meta info elim"   )
                          cpr  = ( grConstPropagation             , "const prop"       )
                          unb  = ( grMayLiveUnboxed (Bytecode.tagAllowsUnboxedLife opts)
@@ -84,9 +87,9 @@ cpTransformGrin modNm
                          frm  = ( grPrettyNames                  , "rename uniform"   ) 
 %%]]
 %%[[8
-                         evel = [ flt, ale, eve, ale ]
+                         evel = [ flt, ale, eve, flt, ale ]
 %%][8_2
-                         evel = [ flt, ale, frm, eve, ale ]
+                         evel = [ flt, ale, frm, eve, flt, ale ]
 %%]]
 %%[[8                              
                          inline = mk [inl]
@@ -106,7 +109,7 @@ cpTransformGrin modNm
                               
                  optGrinNormal = map fst trafos
                  optGrinDump   = out 0 "from core" : concat [ [o,out n nm] | (n,(o,nm)) <- zip [1..] trafos ]
-                        where out n nm = cpOutputGrin ("-0" ++ show (10+n) ++ "-" ++ filter isAlpha nm) modNm
+                        where out n nm = cpOutputGrin False ("-0" ++ show (10+n) ++ "-" ++ filter isAlpha nm) modNm
          ;  when (isJust $ ecuMbGrin ecu)
                  (cpSeq (if ehcOptDumpGrinStages opts then optGrinDump else optGrinNormal))
          }

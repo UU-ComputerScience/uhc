@@ -47,45 +47,125 @@ void mm_plan_SS_Init( MM_Plan* plan ) {
 	plss->ssAllocator.init( &plss->ssAllocator, &plss->memMgt, plss->toSpace ) ;
 		
 	plss->collector = mm_collector_SS ;
-	plss->collector.init( &plss->collector, &plss->memMgt ) ;
+	plss->collector.init( &plss->collector, &plss->memMgt, plan ) ;
 	// plan->collector = &plss->collector ;
 	
+#ifdef __UHC_TARGET_BC__
 	mm_mutator = mm_mutator_GBSS ;
-	mm_mutator.init( &mm_mutator, &plss->memMgt, &plss->ssAllocator, &plss->residentAllocator, &plss->gbmTrace, &plss->gbmModule ) ;
+	mm_mutator.init
+		( &mm_mutator
+		, &plss->memMgt
+		, &plss->ssAllocator
+		, &plss->residentAllocator
+		, &plss->gbmTrace
+		, &plss->gbmModule
+%%[[90
+		, &mm_weakPtr					// init later
+		, &plss->weakPtrFinalizeQue		// init later
+%%]]
+		) ;
 	plan->mutator = &mm_mutator ;
-		
+#endif
+
+#ifdef __UHC_TARGET_C__
+	mm_mutator = mm_ssmutator_C ;
+	mm_mutator.init
+		( &mm_mutator
+		, &plss->memMgt
+		, &plss->ssAllocator
+		, &plss->residentAllocator
+		, &plss->gbmTrace
+		, &plss->gbmModule
+%%[[90
+		, &mm_weakPtr					// init later
+		, &plss->weakPtrFinalizeQue		// init later
+%%]]
+		) ;
+	plan->mutator = &mm_mutator ;
+#endif
+
+
+
+
+#ifdef __UHC_TARGET_BC__
+%%[[8
 	MM_FlexArray* traceSupplies = mm_flexArray_New( &plss->memMgt, NULL, sizeof(MM_TraceSupply), 5, 5 ) ;
+%%][99
+	MM_FlexArray* traceSupplies = mm_flexArray_New( &plss->memMgt, NULL, sizeof(MM_TraceSupply), 6, 6 ) ;
+%%]]
 	// IF_GB_TR_ON(3,{printf("mm_plan_SS_Init B\n");}) ;
 	// the order of these supplies matters, because they are run in this order, the last must be the one queueing
 	MM_TraceSupply* regsTraceSupply   = (MM_TraceSupply*)mm_flexArray_At( traceSupplies, 0 ) ;
 	MM_TraceSupply* rootsTraceSupply  = (MM_TraceSupply*)mm_flexArray_At( traceSupplies, 1 ) ;
 	MM_TraceSupply* stackTraceSupply  = (MM_TraceSupply*)mm_flexArray_At( traceSupplies, 2 ) ;
 	MM_TraceSupply* moduleTraceSupply = (MM_TraceSupply*)mm_flexArray_At( traceSupplies, 3 ) ;
+%%[[8
 	MM_TraceSupply* queTraceSupply    = (MM_TraceSupply*)mm_flexArray_At( traceSupplies, 4 ) ;
+%%][99
+	MM_TraceSupply* finQueTraceSupply = (MM_TraceSupply*)mm_flexArray_At( traceSupplies, 4 ) ;
+	MM_TraceSupply* queTraceSupply    = (MM_TraceSupply*)mm_flexArray_At( traceSupplies, 5 ) ;
+%%]]
+#endif
+
+#ifdef __UHC_TARGET_C__
+%%[[8
+	MM_FlexArray* traceSupplies = mm_flexArray_New( &plss->memMgt, NULL, sizeof(MM_TraceSupply), 2, 2 ) ;
+%%][99
+	MM_FlexArray* traceSupplies = mm_flexArray_New( &plss->memMgt, NULL, sizeof(MM_TraceSupply), 2, 2 ) ;
+%%]]
+	// IF_GB_TR_ON(3,{printf("mm_plan_SS_Init B\n");}) ;
+	// the order of these supplies matters, because they are run in this order, the last must be the one queueing
+	MM_TraceSupply* stackTraceSupply  = (MM_TraceSupply*)mm_flexArray_At( traceSupplies, 0 ) ;
+%%[[8
+	MM_TraceSupply* queTraceSupply    = (MM_TraceSupply*)mm_flexArray_At( traceSupplies, 1 ) ;
+%%][99
+//	MM_TraceSupply* finQueTraceSupply = (MM_TraceSupply*)mm_flexArray_At( traceSupplies, 1 ) ;
+	MM_TraceSupply* queTraceSupply    = (MM_TraceSupply*)mm_flexArray_At( traceSupplies, 1 ) ;
+%%]]
+#endif
+
+
+
+
 	
 #ifdef __UHC_TARGET_BC__
 	*regsTraceSupply = mm_traceSupply_GBRegs ;
-	regsTraceSupply->init( regsTraceSupply, &plss->memMgt, &plss->gbmTrace ) ;
-#endif
+	regsTraceSupply->init( regsTraceSupply, &plss->memMgt, plan->mutator ) ;
 	
 	*rootsTraceSupply = mm_traceSupply_Roots ;
-	rootsTraceSupply->init( rootsTraceSupply, &plss->memMgt, &plss->gbmTrace ) ;
-	
-#ifdef __UHC_TARGET_BC__
+	rootsTraceSupply->init( rootsTraceSupply, &plss->memMgt, plan->mutator ) ;
+
 	*stackTraceSupply = mm_traceSupply_GBStack ;
-	stackTraceSupply->init( stackTraceSupply, &plss->memMgt, &plss->gbmTrace ) ;
+	stackTraceSupply->init( stackTraceSupply, &plss->memMgt, plan->mutator ) ;
 	
 	*moduleTraceSupply = mm_traceSupply_GBModule ;
-	moduleTraceSupply->init( moduleTraceSupply, &plss->memMgt, &plss->gbmTrace ) ;
+	moduleTraceSupply->init( moduleTraceSupply, &plss->memMgt, plan->mutator ) ;
+
+%%[[99
+	*finQueTraceSupply = mm_traceSupply_WeakPtrFinalizeQue ;
+	finQueTraceSupply->init( finQueTraceSupply, &plss->memMgt, plan->mutator ) ;
+%%]]
+
 #endif
 
-	*queTraceSupply = mm_traceSupply_Bump ; // mm_traceSupply_Buffer ;
-	queTraceSupply->init( queTraceSupply, &plss->memMgt, &plss->gbmTrace ) ;
+#ifdef __UHC_TARGET_C__
+	*stackTraceSupply = mm_traceSupplyStack_C ;
+	stackTraceSupply->init( stackTraceSupply, &plss->memMgt, plan->mutator ) ;
+
+%%[[99
+//	*finQueTraceSupply = mm_traceSupply_WeakPtrFinalizeQue ;
+//	finQueTraceSupply->init( finQueTraceSupply, &plss->memMgt, plan->mutator ) ;
+%%]]
+
+#endif
+
+	*queTraceSupply = mm_traceSupply_Buffer ; // mm_traceSupply_Bump ; // mm_traceSupply_Buffer ;
+	queTraceSupply->init( queTraceSupply, &plss->memMgt, plan->mutator ) ;
 	plss->queTraceSupply = queTraceSupply ;
 	
 	plss->allTraceSupply = mm_traceSupply_Group ;
-	plss->allTraceSupply.initWithSub( &plss->allTraceSupply, &plss->memMgt, &plss->gbmTrace, traceSupplies ) ;
-	
+	plss->allTraceSupply.initWithSub( &plss->allTraceSupply, &plss->memMgt, plan->mutator, traceSupplies ) ;
+
 #ifdef __UHC_TARGET_BC__
 	plss->gbmTrace = mm_trace_GBM ;
 	plss->gbmTrace.init( &plss->gbmTrace, plss->queTraceSupply, &plss->ssAllocator, &plss->collector ) ;
@@ -93,52 +173,104 @@ void mm_plan_SS_Init( MM_Plan* plan ) {
 	plss->gbmModule = mm_module_GBSS ;
 	plss->gbmModule.init( &plss->gbmModule, &plss->memMgt ) ;
 #endif
+
+#ifdef __UHC_TARGET_C__
+	plss->gbmTrace = mm_trace_C ;
+	plss->gbmTrace.init( &plss->gbmTrace, plss->queTraceSupply, &plss->ssAllocator, &plss->collector ) ;
+#endif
+
+%%[[90
+	mm_weakPtr = mm_weakPtr_List ;
+	plss->weakPtr = &mm_weakPtr ;
+#ifdef __UHC_TARGET_BC__
+	plss->weakPtr->init( plss->weakPtr, &mm_mutator, &plss->collector ) ;
 	
-	plss->gcInProgress = False ;
+	mm_deque_InitWithSize( &plss->weakPtrFinalizeQue, &plss->memMgt, MM_WeakPtrFinalizeQue_Data_SizeInWords ) ;
+#endif
+%%]]
+
+	plss->gcProgress = 0 ;
 	
 	plan->data = (MM_Plan_Data_Priv*)plss ;
 	// IF_GB_TR_ON(3,{printf("mm_plan_SS_Init C plan=%x plss=%x\n",plan,plss);}) ;
 }
+
+void mm_plan_SS_Exit( MM_Plan* plan ) {
+	MM_Plan_SS_Data* plss = (MM_Plan_SS_Data*)plan->data ;
+	// IF_GB_TR_ON(3,{printf("mm_plan_SS_Init plan=%x plss=%x\n",plan,plss);}) ;
+#ifdef __UHC_TARGET_BC__
+%%[[90
+	plss->weakPtr->finalizeAllWeakPtr( plss->weakPtr ) ;
+%%]]
+#endif
+}
+
+#if MM_BYPASS_PLAN
+void mm_plan_SS_InitBypass( MM_Plan* plan ) {
+	MM_Plan_SS_Data* plss = (MM_Plan_SS_Data*)plan->data ;
+	
+	mm_bypass_allocator = &plss->ssAllocator ;	
+}
+#endif
+%%]
+
+%%[90
+MM_DEQue* mm_plan_SS_GetWeakPtrFinalizeQue( MM_Plan* plan ) {
+	MM_Plan_SS_Data* plss = (MM_Plan_SS_Data*)plan->data ;
+	
+	return &plss->weakPtrFinalizeQue ;	
+}
 %%]
 
 %%[8
-Bool mm_plan_SS_PollForGC( MM_Plan* plan, Bool isSpaceFull, MM_Space* space ) {
+Bool mm_plan_SS_DoGC( MM_Plan* plan, Bool isPreemptiveGC /*isSpaceFull*/, Word gcInfo ) {
 	MM_Plan_SS_Data* plss = (MM_Plan_SS_Data*)plan->data ;
 	Bool res ;
 
-	if ( plss->gcInProgress ) {
-		rts_panic1_1( "mm_plan_SS_PollForGC already in progress", 0 ) ;
-	}
-	plss->gcInProgress = True ;
+	plss->collector.collectPre( &plss->collector ) ;
 
-	IF_GB_TR_ON(3,{printf("mm_plan_SS_PollForGC plan=%p plss=%p\n",plan,plss);}) ;
-	if ( isSpaceFull ) {
+	if ( plss->gcProgress & MM_PLAN_SS_GCPROGRESS_COLLECTING ) {
+		rts_panic1_0( "mm_plan_SS_DoGC already in progress" ) ;
+	}
+	plss->gcProgress |= MM_PLAN_SS_GCPROGRESS_COLLECTING ;
+	
+	IF_GB_TR_ON(3,{printf("mm_plan_SS_DoGC-BEF plan=%p plss=%p\n",plan,plss);}) ;
+	// if ( isSpaceFull ) {
 		// total as used previously
 		Word prevTotalSz = plss->ssAllocator.getTotalSize( &plss->ssAllocator ) ;
 		// collect, which also switches spaces
-		plss->collector.collect( &plss->collector ) ;
-		// total as used previously
-		Word curUsedSz = plss->ssAllocator.getUsedSize( &plss->ssAllocator ) ;
-		Word onePercentSz = prevTotalSz / 100 ;
-		Word percentageFree = (prevTotalSz - curUsedSz) / onePercentSz ;
-		// adapt max size of space, based on current occupancy rate, this is currently a poor estimate
-		IF_GB_TR_ON(3,{printf("mm_plan_SS_PollForGC prevTotalSz=%x curUsedSz=%x percentageFree=%d newTotalSz=%x\n",prevTotalSz,curUsedSz,percentageFree,prevTotalSz + (60 - percentageFree) * onePercentSz);}) ;
-		if ( percentageFree < 40 ) {
-			// less then some percentage of free space left, so beef it up
-			Word newTotalSz = prevTotalSz + (60 - percentageFree) * onePercentSz ;
-			plss->ssAllocator.setTotalSize( &plss->ssAllocator, newTotalSz ) ;
+		plss->collector.collect( &plss->collector, gcInfo ) ;
+		// total as used now
+		if ( ! isPreemptiveGC ) {
+			Word curUsedSz = plss->ssAllocator.getUsedSize( &plss->ssAllocator ) ;
+			Word onePercentSz = prevTotalSz / 100 ;
+			Word percentageFree = (prevTotalSz - curUsedSz) / onePercentSz ;
+			// adapt max size of space, based on current occupancy rate, this is currently a poor and hardcoded estimate
+			IF_GB_TR_ON(3,{printf("mm_plan_SS_DoGC prevTotalSz=%x curUsedSz=%x percentageFree=%d newTotalSz=%x\n",prevTotalSz,curUsedSz,percentageFree,prevTotalSz + (60 - percentageFree) * onePercentSz);}) ;
+			if ( percentageFree < 40 ) {
+				// less then some percentage of free space left, so beef it up
+				Word newTotalSz = prevTotalSz + (60 - percentageFree) * onePercentSz ;
+				plss->ssAllocator.setTotalSize( &plss->ssAllocator, newTotalSz ) ;
+			}
 		}
 		res = True ;
-	} else {
-		res = False ;
+	// } else {
+	// 	res = False ;
+	// }
+	IF_GB_TR_ON(3,{printf("mm_plan_SS_DoGC-AFT plan=%p plss=%p\n",plan,plss);}) ;
+
+	plss->gcProgress &= ~MM_PLAN_SS_GCPROGRESS_COLLECTING ;
+
+	if ( ! (plss->gcProgress & MM_PLAN_SS_GCPROGRESS_POSTCOLLECTING) ) {
+		plss->gcProgress |= MM_PLAN_SS_GCPROGRESS_POSTCOLLECTING ;
+		plss->collector.collectPost( &plss->collector ) ;
+		plss->gcProgress &= ~MM_PLAN_SS_GCPROGRESS_POSTCOLLECTING ;
 	}
 
-	plss->gcInProgress = False ;
 	return res ;
 }
 
 %%]
-		// rts_panic1_1( "mm_plan_SS_PollForGC", 0 ) ;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% SS dump
@@ -169,7 +301,14 @@ MM_Plan mm_plan_SS =
 	{ NULL
 	, NULL
 	, &mm_plan_SS_Init
-	, &mm_plan_SS_PollForGC
+	, &mm_plan_SS_Exit
+#if MM_BYPASS_PLAN
+	, &mm_plan_SS_InitBypass
+#endif
+	, &mm_plan_SS_DoGC
+%%[[90
+	, &mm_plan_SS_GetWeakPtrFinalizeQue
+%%]]
 #ifdef TRACE
 	, &mm_plan_SS_Dump
 #endif

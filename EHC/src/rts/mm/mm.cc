@@ -8,6 +8,16 @@
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Bypass to internals of MM
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+#if MM_BYPASS_PLAN
+MM_Allocator* mm_bypass_allocator = NULL ;
+#endif
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Initialization
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -24,15 +34,29 @@ void mm_init() {
 	mm_init_space() ;
 	mm_init_allocator() ;
 #	if USE_EHC_MM
-		mm_malloc_EHC = &mm_malloc_LOF ;
+		mm_malloc_EHC  = &mm_malloc_LOF ;
+		sys_malloc_EHC = mm_malloc_EHC ;
 #	endif
 	mm_init_roots() ;
 	mm_init_traceSupply() ;
 	mm_init_trace() ;
 	mm_init_collector() ;
 	mm_init_mutator() ;
-	mm_init_plan() ;
-	
-	
+#ifdef __UHC_TARGET_BC__
+%%[[90
+	mm_init_weakPtr() ;
+%%]]
+#endif
+	mm_init_plan() ;	
+}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Finalization
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+void mm_exit() {
+	mm_exit_plan() ;	
 }
 %%]

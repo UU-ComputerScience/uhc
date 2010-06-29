@@ -40,7 +40,7 @@ SEM CExpr
                 loc         .(name,mapping,uniqNr) 
                                        = getPrettyName @lhs.mapping @arg @lhs.uniqNr
 
-  | Var         lhs         .cTrf      = CExpr_Var @loc.name 
+  | Var         lhs         .cTrf      = acoreVar @loc.name 
                 loc         .(name,mapping,uniqNr) 
                                        = getPrettyName @lhs.mapping @nm @lhs.uniqNr
 
@@ -83,8 +83,8 @@ SEM CBind
 SEM CAlt
   | Alt         expr        .isTopLvl  = False 
 
-SEM CPatBind
-  | Bind        offset      .isTopLvl  = False
+SEM CPatFld
+  | Fld         offset      .isTopLvl  = False
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

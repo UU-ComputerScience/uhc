@@ -11,6 +11,7 @@ module EH.Util.ScanUtils
   , isLF, isStr, isStrQuote
   , isWhite, isBlack
   , isVarStart, isVarRest
+  
   )
   where
 
@@ -22,6 +23,7 @@ import qualified Data.Set as Set
 import EH.Util.Pretty
 
 import UU.Parsing
+import EH.Util.ParseUtils
 import UU.Scanner.Position( noPos, Pos(..), Position(..) )
 import UU.Scanner.GenToken
 
@@ -109,6 +111,7 @@ Hence not all options are used by all scanners.
 data ScanOpts
   =  ScanOpts
         {   scoKeywordsTxt      ::  !(Set.Set String)       -- identifiers which are keywords
+        ,   scoPragmasTxt       ::  !(Set.Set String)       -- identifiers which are pragmas
         ,   scoCommandsTxt      ::  !(Set.Set String)       -- identifiers which are commands
         ,   scoKeywordsOps      ::  !(Set.Set String)       -- operators which are keywords
         ,   scoSpecChars        ::  !(Set.Set Char)         -- 1 char keywords
@@ -116,18 +119,21 @@ data ScanOpts
         ,   scoSpecPairs        ::  !(Set.Set String)       -- pairs of chars which form keywords
         ,   scoDollarIdent      ::  !Bool                   -- allow $ encoded identifiers
         ,   scoOffsideTrigs     ::  ![String]               -- offside triggers
+        ,   scoOffsideTrigsGE   ::  ![String]               -- offside triggers, but allowing equal indentation (for HS 'do' notation, as per Haskell2010)
         ,   scoOffsideModule    ::  !String                 -- offside start of module
         ,   scoOffsideOpen      ::  !String                 -- offside open symbol
         ,   scoOffsideClose     ::  !String                 -- offside close symbol
         ,   scoLitmode          ::  !Bool                   -- do literal scanning
         ,   scoVerbOpenClose    ::  ![(String,String)]      -- open/close pairs used for verbatim text
         ,   scoAllowQualified   ::  !Bool  					-- allow qualified variations, i.e. prefixing with "XXX."
+        ,   scoAllowFloat       ::  !Bool  					-- allow float notation, i.e. numbers with dots inside
         }
 
 defaultScanOpts :: ScanOpts
 defaultScanOpts
   =  ScanOpts
         {   scoKeywordsTxt      =   Set.empty
+        ,   scoPragmasTxt       =   Set.empty
         ,   scoCommandsTxt      =   Set.empty
         ,   scoKeywordsOps      =   Set.empty
         ,   scoSpecChars        =   Set.empty
@@ -135,12 +141,14 @@ defaultScanOpts
         ,   scoSpecPairs        =   Set.empty
         ,   scoDollarIdent      =   False
         ,   scoOffsideTrigs     =   []
+        ,   scoOffsideTrigsGE   =   []
         ,   scoOffsideModule    =   ""
         ,   scoOffsideOpen      =   ""
         ,   scoOffsideClose     =   ""
         ,   scoLitmode          =   False
         ,   scoVerbOpenClose    =   []
         ,   scoAllowQualified   =	True
+        ,   scoAllowFloat       =   True
         }
 
 -------------------------------------------------------------------------

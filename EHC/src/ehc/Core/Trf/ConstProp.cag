@@ -10,6 +10,9 @@
 %%[(8 codegen) hs module {%{EH}Core.Trf.ConstProp} import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Base.Opts},{%{EH}Core},{%{EH}Ty}) export(cmodTrfConstProp)
 %%]
 
+%%[(8 codegen) hs import({%{EH}AbstractCore})
+%%]
+
 %%[(8 codegen) hs import(Data.Maybe)
 %%]
 
@@ -53,7 +56,7 @@ ATTR CExpr [ | | appLam: CExpr  appArgL: {[CExpr]} ]
 SEM CExpr
   | App         loc         .   appLam      =   @func.appLam
                             .   appArgL     =   @arg.cTrf : @func.appArgL
-  | * - App     lhs         .   appLam      =   @cTrf
+  | * - App Ann lhs         .   appLam      =   @cTrf
                             .   appArgL     =   []
 %%]
 
@@ -68,8 +71,8 @@ ATTR CodeAGItf [ | | cTrf: CModule ]
 SEM CExpr
   | App         lhs         .   cTrf        =   if @lhs.isTopApp
                                                 then  case (@appLam,reverse @appArgL) of
-                                                        (CExpr_Var n,[CExpr_Int i1,CExpr_Int i2]) | n == (ehbnPrimAddInt $ ehcOptBuiltinNames @lhs.opts)
-                                                          -> CExpr_Int (i1 + i2)
+                                                        (CExpr_Var n,[CExpr_Int i1,CExpr_Int i2]) | n == (ehcOptBuiltin @lhs.opts ehbnPrimAddInt)
+                                                          -> acoreInt (i1 + i2)
                                                         _ -> @cTrf
                                                 else  @cTrf
 %%]

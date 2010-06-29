@@ -9,7 +9,10 @@ Note: everything is exported.
 %%% Main
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 module {%{EH}Scanner.Common} import(IO, UU.Parsing, UU.Parsing.Offside, UU.Scanner.Position, UU.Scanner.GenToken, UU.Scanner.GenTokenParser, EH.Util.ScanUtils(), {%{EH}Base.Builtin}, {%{EH}Base.Common})
+%%[1 module {%{EH}Scanner.Common}
+%%]
+
+%%[1 import(IO, UU.Parsing, UU.Parsing.Offside, UU.Scanner.Position, UU.Scanner.GenToken, UU.Scanner.GenTokenParser, EH.Util.ScanUtils(), {%{EH}Base.Builtin}, {%{EH}Base.Common})
 %%]
 
 %%[1 import(qualified Data.Set as Set)
@@ -18,7 +21,7 @@ Note: everything is exported.
 %%[1 import(EH.Util.ScanUtils)
 %%]
 
-%%[1.Scanner import(UU.Scanner) export(module UU.Scanner)
+%%[1.Scanner import(UU.Scanner, {%{EH}Scanner.TokenParser}) export(module UU.Scanner)
 %%]
 
 %%[1 export(module {%{EH}Scanner.Common})
@@ -71,10 +74,10 @@ ehScanOpts
 %%[20
                     ++ tokKeywStrsEH12
 %%]
-%%[94
+%%[90
                     ++ tokKeywStrsEH94
 %%]
-%%[95
+%%[91
                     ++ tokKeywStrsEH95
 %%]
 %%[1
@@ -129,6 +132,9 @@ ehScanOpts
 %%]
 %%[1
         ,   scoOffsideTrigs     =   offsideTrigs
+%%[[9
+        ,   scoOffsideTrigsGE   =   offsideTrigsGE
+%%]]
         ,   scoOffsideModule    =   "let"
         ,   scoOffsideOpen      =   "{"
         ,   scoOffsideClose     =   "}"
@@ -141,10 +147,12 @@ ehScanOpts
 %%[[8
             ,  "letstrict"
 %%]]
-%%[[9
-            ,  "do"
-%%]]
             ]
+%%[[9
+        offsideTrigsGE   =
+            [  "do"
+            ]
+%%]]
 %%]
 
 %%[1
@@ -179,9 +187,15 @@ hsScanOpts
 %%[[20
                     ++ tokKeywStrsHS12
 %%]]
-%%[[94
+%%[[90
                     ++ tokKeywStrsHS94
 %%]]
+                )
+%%]
+%%[99
+        ,   scoPragmasTxt      =
+                (Set.fromList $ 
+                       tokPragmaStrsHS99
                 )
 %%]
 %%[1
@@ -223,6 +237,8 @@ hsScanOpts
         ,   scoOffsideTrigs     =
                 scoOffsideTrigs ehScanOpts
                 ++ offsideTrigs
+        ,   scoOffsideTrigsGE   =
+                scoOffsideTrigsGE ehScanOpts
         ,   scoOffsideModule    =   "module"
         }
   where offsideTrigs     =
@@ -250,7 +266,7 @@ coreScanOpts
 %%[[20
                                         , "Integer" 
 %%]]
-%%[[94
+%%[[90
                                         , "foreignexport" 
 %%]]
                                         ])
@@ -282,7 +298,7 @@ tycoreScanOpts
 %%[[20
                                         , "Integer" 
 %%]]
-%%[[94
+%%[[90
                                         , "foreignexport" 
 %%]]
                                         ])
@@ -319,7 +335,7 @@ grinScanOpts
                                         , "True", "False"  -- for FFI annotation
 %%]]
                                         ]
-%%[[94
+%%[[90
                                         ++ map show allFFIWays
 %%]]
         ,   scoKeywordsOps      =   Set.fromList [ "<-", "->", "=", "+=", "-=", ":=", "-", "*" ]
@@ -346,6 +362,7 @@ hiScanOpts
                                         , "HasStrictCommonScope", "IsStrictParentScope", "IsVisibleInScope", "EqualScope", "NotEqualScope"
                                         , "redhowinst", "redhowsuper", "redhowprove", "redhowassume", "redhowscope", "redhoweqsym", "redhoweqtrans", "redhoweqcongr"
                                         , "varuidnmname", "varuidnmuid", "varuidnmvar"
+                                        , "cxtscope1"
 %%]]
 %%[[10
                                         , "label", "offset"
@@ -385,7 +402,7 @@ tyScanOpts
         }
 %%]
 
-%%[94
+%%[90
 foreignEntScanOpts :: ScanOpts
 foreignEntScanOpts
   =  defaultScanOpts
@@ -416,16 +433,34 @@ scanHandle opts fn fh
 %%[5 -1.scanHandle
 %%]
 
+%%[99
+splitTokensOnModuleTrigger :: ScanOpts -> [Token] -> Maybe ([Token],[Token])
+splitTokensOnModuleTrigger scanOpts ts
+  = case break ismod ts of
+      (ts1,ts2@[]) -> Nothing
+      tss          -> Just tss
+  where ismod (Reserved s _) | s == scoOffsideModule scanOpts = True
+        ismod _                                               = False
+%%]
+
 %%[1.offsideScanHandle
 offsideScanHandle scanOpts fn fh
   = do  {  tokens <- scanHandle scanOpts fn fh
         -- ;  putStrLn (" tokens: " ++ show tokens)
-        ;  return (scanOffside moduleT oBrace cBrace triggers tokens)
+%%[[1
+        ;  return (scanOffsideWithTriggers moduleT oBrace cBrace triggers tokens)
+%%][99
+        ;  case splitTokensOnModuleTrigger scanOpts tokens of
+             Just (ts1,ts2) -> return $ scanLiftTokensToOffside ts1
+                                      $ scanOffsideWithTriggers moduleT oBrace cBrace triggers ts2
+             _              -> return $ scanOffsideWithTriggers moduleT oBrace cBrace triggers tokens
+%%]]
         }
   where   moduleT   = reserved (scoOffsideModule scanOpts) noPos
           oBrace    = reserved (scoOffsideOpen scanOpts) noPos
           cBrace    = reserved (scoOffsideClose scanOpts) noPos
-          triggers  = [ reserved x noPos | x <- scoOffsideTrigs scanOpts ]
+          triggers  =  [ (Trigger_IndentGT,reserved x noPos) | x <- scoOffsideTrigs   scanOpts ]
+                    ++ [ (Trigger_IndentGE,reserved x noPos) | x <- scoOffsideTrigsGE scanOpts ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -485,33 +520,33 @@ pStringTk, pCharTk,
   pTextnmTk, pTextlnTk, pIntegerTk, pVarsymTk, pConsymTk
     :: IsParser p Token => p Token
 
-pStringTk     =   pCostValToken' 7 TkString    ""        
-pCharTk       =   pCostValToken' 7 TkChar      "\NUL"    
-pInteger8Tk   =   pCostValToken' 7 TkInteger8  "0"       
-pInteger10Tk  =   pCostValToken' 7 TkInteger10 "0"       
-pInteger16Tk  =   pCostValToken' 7 TkInteger16 "0"
-pFractionTk   =   pCostValToken' 7 TkFraction  "0.0"
-pVaridTk      =   pCostValToken' 7 TkVarid     "<identifier>" 
-pVaridTk'     =   pCostValToken' 6 TkVarid     "<identifier>" 
-pConidTk      =   pCostValToken' 7 TkConid     "<Identifier>" 
-pConidTk'     =   pCostValToken' 6 TkConid     "<Identifier>" 
-pConsymTk     =   pCostValToken' 7 TkConOp     "<conoperator>"
-pVarsymTk     =   pCostValToken' 7 TkOp        "<operator>" 
-pTextnmTk     =   pCostValToken' 7 TkTextnm    "<name>"       
-pTextlnTk     =   pCostValToken' 7 TkTextln    "<line>"     
+pStringTk     =   pHsCostValToken' 7 TkString    ""        
+pCharTk       =   pHsCostValToken' 7 TkChar      "\NUL"    
+pInteger8Tk   =   pHsCostValToken' 7 TkInteger8  "0"       
+pInteger10Tk  =   pHsCostValToken' 7 TkInteger10 "0"       
+pInteger16Tk  =   pHsCostValToken' 7 TkInteger16 "0"
+pFractionTk   =   pHsCostValToken' 7 TkFraction  "0.0"
+pVaridTk      =   pHsCostValToken' 7 TkVarid     "<identifier>" 
+pVaridTk'     =   pHsCostValToken' 6 TkVarid     "<identifier>" 
+pConidTk      =   pHsCostValToken' 7 TkConid     "<Identifier>" 
+pConidTk'     =   pHsCostValToken' 6 TkConid     "<Identifier>" 
+pConsymTk     =   pHsCostValToken' 7 TkConOp     "<conoperator>"
+pVarsymTk     =   pHsCostValToken' 7 TkOp        "<operator>" 
+pTextnmTk     =   pHsCostValToken' 7 TkTextnm    "<name>"       
+pTextlnTk     =   pHsCostValToken' 7 TkTextln    "<line>"     
 pIntegerTk    =   pInteger10Tk
 %%]
 %%[18
-pVaridUnboxedTk      =   pCostValToken' 7 TkVaridUnboxed     "<identifier#>" 
-pConidUnboxedTk      =   pCostValToken' 7 TkConidUnboxed     "<Identifier#>" 
-pConsymUnboxedTk     =   pCostValToken' 7 TkConOpUnboxed     "<conoperator#>"
-pVarsymUnboxedTk     =   pCostValToken' 7 TkOpUnboxed        "<operator#>" 
+pVaridUnboxedTk      =   pHsCostValToken' 7 TkVaridUnboxed     "<identifier#>" 
+pConidUnboxedTk      =   pHsCostValToken' 7 TkConidUnboxed     "<Identifier#>" 
+pConsymUnboxedTk     =   pHsCostValToken' 7 TkConOpUnboxed     "<conoperator#>"
+pVarsymUnboxedTk     =   pHsCostValToken' 7 TkOpUnboxed        "<operator#>" 
 %%]
 %%[20
-pQVaridTk     =   pCostValToken' 7 TkQVarid     "<identifier>" 
-pQConidTk     =   pCostValToken' 7 TkQConid     "<Identifier>" 
-pQConsymTk    =   pCostValToken' 7 TkQConOp     "<conoperator>"
-pQVarsymTk    =   pCostValToken' 7 TkQOp        "<operator>" 
+pQVaridTk     =   pHsCostValToken' 7 TkQVarid     "<identifier>" 
+pQConidTk     =   pHsCostValToken' 7 TkQConid     "<Identifier>" 
+pQConsymTk    =   pHsCostValToken' 7 TkQConOp     "<conoperator>"
+pQVarsymTk    =   pHsCostValToken' 7 TkQOp        "<operator>" 
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -554,9 +589,13 @@ pQVARSYM         = pQVarsymTk
 %%[1
 tokGetVal :: Token -> String
 tokGetVal x
+%%[[1
   = case x of
       ValToken _ v p -> v
       Reserved v p   -> v
+%%][5
+  = tokenVal x
+%%]]
 
 pV :: (IsParser p Token) => p Token -> p String
 pV p = tokGetVal <$> p
@@ -815,7 +854,7 @@ tokOpStrsHS9   = [  ]
 %%]
 
 %%[10
-tokOpStrsEH10  = [ show hsnDynVar ]
+tokOpStrsEH10  = [] -- [ show hsnDynVar ]
 tokOpStrsHS10  = [  ]
 %%]
 
@@ -858,7 +897,7 @@ tokKeywStrsEH12 = [  ]
 tokKeywStrsHS12 = [ "qualified", "as", "hiding" ]
 %%]
 
-%%[95
+%%[91
 pDERIVING   
   :: IsParser p Token => p Token
 
@@ -867,7 +906,7 @@ pDERIVING        = pKeyTk "deriving"
 tokKeywStrsEH95 = [ "deriving" ]
 %%]
 
-%%[94
+%%[90
 pUNSAFE     ,
     pTHREADSAFE ,
     pDYNAMIC    ,
@@ -885,11 +924,27 @@ pSTATIC          = pKeyTk "static" -- not a HS keyword, but only for foreign fun
 pH               = pKeyTk "h" -- not a HS keyword, but only for foreign function entity
 pAMPERSAND       = pKeyTk "&" -- not a HS keyword, but only for foreign function entity
 
-tokKeywStrsEH94 = [  ]
-tokKeywStrsHS94 = [ "unsafe", "threadsafe", "dynamic" ]
+tokKeywStrsEH94  = [  ]
+tokKeywStrsHS94  = [ "unsafe", "threadsafe", "dynamic" ]
 %%]
 
-%%[90
+%%[99
+pLANGUAGE_prag  		,
+	-- pOPTIONSGHC_prag  	,
+	pDERIVABLE_prag		,
+    pOPRAGMA    		,
+    pCPRAGMA
+  :: IsParser p Token => p Token
+
+pLANGUAGE_prag   = pKeyTk "LANGUAGE"
+pDERIVABLE_prag  = pKeyTk "DERIVABLE"
+-- pOPTIONSGHC_prag = pKeyTk "OPTIONS_GHC"
+pOPRAGMA         = pKeyTk "{-#"
+pCPRAGMA         = pKeyTk "#-}"
+
+tokPragmaStrsHS99= [ "LANGUAGE", "DERIVABLE" {-, "OPTIONS_GHC" , "INLINE", "NOINLINE", "SPECIALIZE" -} ]
+%%]
+
 pDEPRECATED_prag = pKeyTk "deprecated_prag"
 pCLOSE_prag      = pKeyTk "close_prag"
 pSOURCE_prag     = pKeyTk "source_prag"
@@ -926,7 +981,6 @@ p_SCC_           = pKeyTk "scc"
 pSCC_prag        = pKeyTk "scc_prag"
 pMDO             = pKeyTk "mdo"
 pPROC            = pKeyTk "proc"
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Position

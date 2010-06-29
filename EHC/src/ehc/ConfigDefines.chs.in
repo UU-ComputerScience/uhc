@@ -2,7 +2,7 @@
 {-# OPTIONS_GHC -cpp #-}
 %%]
 
-%%[8 module {%{EH}ConfigDefines}
+%%[8 module {%{EH}ConfigDefines} import({%{EH}Base.Opts})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -15,21 +15,45 @@ mkB x = if x /= 0 then True else False
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% GC variations
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+The chose variant should correspond with the choice made in src/rts/rts.ch.
+It is a temporary solution to make this dependent on the target.
+
+%%[8 export(GCVariant(..),gcVariant)
+#undef USE_BOEHM_GC
+
+data GCVariant
+  = GCVariant_Boehm | GCVariant_Uhc
+  deriving Eq
+
+gcVariant :: EHCOpts -> GCVariant
+gcVariant opts | ehcOptEmitExecBytecode opts = GCVariant_Uhc
+               | mkB USE_BOEHM_GC            = GCVariant_Boehm
+               | otherwise                   = GCVariant_Uhc
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Configuration
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 export(useBoehmGC)
-#undef USE_BOEHM_GC
-
-useBoehmGC :: Bool
-useBoehmGC = mkB USE_BOEHM_GC
+useBoehmGC :: EHCOpts -> Bool
+useBoehmGC opts = gcVariant opts == GCVariant_Boehm
 %%]
 
-%%[97 export(useGMP)
+%%[97 export(mpLib,MPLib(..))
+#undef USE_LTM
 #undef USE_GMP
 
-useGMP :: Bool
-useGMP = mkB USE_GMP
+data MPLib
+  = MPLib_LTM | MPLib_GMP
+  deriving (Show,Eq)
+
+mpLib :: MPLib
+mpLib | mkB USE_GMP = MPLib_GMP
+      | otherwise   = MPLib_LTM
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -40,12 +64,30 @@ useGMP = mkB USE_GMP
 #undef SIZEOF_INTPTR_T
 %%]
 
-%%[8 export(sizeofWord,sizeofWordAsInteger)
+%%[8 export(sizeofWord,sizeofWordInBits,sizeofWordAsInteger,sizeofWordInLog)
 sizeofWord :: Int
 sizeofWord = SIZEOF_INTPTR_T
 
+sizeofWordInBits :: Int
+sizeofWordInBits = sizeofWord * 8
+
+sizeofWordInLog :: Int
+sizeofWordInLog = if sizeofWord == 8 then 3 else 2
+
 sizeofWordAsInteger :: Integer
 sizeofWordAsInteger = toInteger sizeofWord
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Minimal size of node, in words, see also remarks at GCVariant
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 export(nodeNeedsForwarding)
+nodeNeedsForwarding :: EHCOpts -> Bool
+nodeNeedsForwarding opts
+  = case gcVariant opts of
+      GCVariant_Boehm -> False -- header only
+      GCVariant_Uhc   -> True  -- header + 1 fld for forwarding
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -64,6 +106,14 @@ sizeofFloat = SIZEOF_FLOAT
 sizeofDouble :: Int
 sizeofDouble = SIZEOF_DOUBLE
 %%]
+
+%%[97
+%%]
+sizeofFloatInLog :: Int
+sizeofFloatInLog = log2 sizeofFloat
+
+sizeofDoubleInLog :: Int
+sizeofDoubleInLog = log2 sizeofDouble
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Sizes

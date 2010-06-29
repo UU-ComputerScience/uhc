@@ -250,12 +250,17 @@ SEM Decl
 SEM Decl
   | TySig       tyExpr      .   knPolCtx            =   maybe @polCtxVar id @lhs.mbKnPolCtx
   | FFI
-%%[[94
+%%[[90
     FFE
 %%]]
                 tyExpr      .   knPolCtx            =   polCovariant
   | Class       tyPrExpr    .   knPolCtx            =   @polCtxVar -- polCovariant
   | Instance    tyPrExpr    .   knPolCtx            =   mkPolVar @lUniq_17_polCtx -- polCovariant
+                loc         .   lUniq_17_polCtx     :   UNIQUEREF gUniq
+  | InstanceIntro
+                prExpr      .   knPolCtx            =   mkPolVar @lUniq_17_polCtx -- polCovariant
+                loc         .   lUniq_17_polCtx     :   UNIQUEREF gUniq
+  | Default     tyExprs     .   knPolCtx            =   mkPolVar @lUniq_17_polCtx -- polCovariant
                 loc         .   lUniq_17_polCtx     :   UNIQUEREF gUniq
 
 SEM Expr PatExpr
@@ -264,11 +269,6 @@ SEM Expr PatExpr
 SEM Expr
   | AppImpl LamImpl
                 argPr       .   knPolCtx            =   polContravariant
-
-SEM Decl
-  | InstanceIntro
-                prExpr      .   knPolCtx            =   mkPolVar @lUniq_17_polCtx -- polCovariant
-                loc         .   lUniq_17_polCtx     :   UNIQUEREF gUniq
 
 SEM TyExprs
   | Cons        hd          .   knPolCtx            =   @polCtxVar
@@ -370,7 +370,7 @@ SEM TyExpr
 
 %%[(17 hmtyinfer) ag
 SEM TyExpr
-  | Wild VarWild
+  | Wild Mono VarWild
                 lhs         .   pol                 =   @lhs.knPolCtx
 %%]
 
@@ -514,7 +514,8 @@ SEM Expr
                             .   finGathPolGam       =   quantifyPolGam
                                                         $ mapPolGam (tyCanonic (emptyFI {fiEnv = @fe}))
                                                         $ @lSubsPolGam2
-                body        .   polGam              =   gamAddGam @finGathPolGam @lhs.polGam
+                            .   finGathPolGam_extra =   @extraPolGam `gamUnion` @finGathPolGam
+                body        .   polGam              =   gamAddGam @finGathPolGam_extra @lhs.polGam
 %%]
 
 

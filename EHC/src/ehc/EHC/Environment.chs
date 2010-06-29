@@ -2,9 +2,13 @@
 %%% EHC environmental info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[doesWhat doclatex
 Environmental info for EHC to run.
 Currently:
 - install directory (where e.g. libraries reside)
+
+20091210 AD: to become obsolete, because cmdline --cfg-XX parameters will take care of this from within a wrapper shell script.
+%%]
 
 %%[8 module {%{EH}EHC.Environment}
 %%]
@@ -44,7 +48,7 @@ mkEhcenvKey version progName ehcDefaultVariant
 %%% Import from/export into application user directory
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[8888
 ehcenvName :: String
 ehcenvName = "environment"
 
@@ -60,7 +64,7 @@ ehcenvDir progKey
        }
 %%]
 
-%%[8 export(importEHCEnvironment)
+%%[8888 export(importEHCEnvironment)
 importEHCEnvironment :: String -> IO (Maybe EHCEnvironment)
 importEHCEnvironment progKey
   = do { d <- ehcenvDir progKey
@@ -76,7 +80,7 @@ importEHCEnvironment progKey
        }
 %%]
 
-%%[8 export(exportEHCEnvironment)
+%%[8888 export(exportEHCEnvironment)
 exportEHCEnvironment :: String -> EHCEnvironment -> IO ()
 exportEHCEnvironment progKey env
   = do { d <- ehcenvDir progKey

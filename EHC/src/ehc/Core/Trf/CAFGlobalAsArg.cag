@@ -18,6 +18,9 @@ Assumes:
 %%[(8 codegen) hs import({%{EH}Core.Utils})
 %%]
 
+%%[(8 codegen) hs import({%{EH}AbstractCore})
+%%]
+
 
 %%[(8 codegen) hs import(qualified EH.Util.FastSeq as Seq)
 %%]
@@ -71,7 +74,7 @@ SEM CBind
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Free var of CAF's for which arg lifting is done
+%%% Free var of CAFs for which arg lifting is done
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen)
@@ -128,24 +131,24 @@ ATTR AllBind   [ | | varBindSq USE {`Seq.union`} {Seq.empty}: {Seq.Seq CBind}
 
 SEM CBind
   | Bind        loc         .   nmLam       =   mkFvNm @lUniq1 @nm
-                            .   cTrfVar     =   mkCBind1Metas @nm @bindMeta.cTrf
-                                                $ mkCExprAppMeta (CExpr_Var @nmLam)
+                            .   cTrfVar     =   acoreBind1Metas @nm @bindMeta.cTrf
+                                                $ acoreAppMeta (acoreVar @nmLam)
                                                 $ map (\(n,cvi) -> (fvVarRepl @lhs.argMp n,cviMeta cvi)) @argOldL
-                            .   cTrfLam     =   mkCBind1 @nmLam
-                                                $ mkCExprLamMeta [(n,cviMeta cvi) | (n,cvi) <- @argNewL] @expr.cTrf
+                            .   cTrfLam     =   acoreBind1Cat CBindings_Plain @nmLam
+                                                $ acoreLamMeta [(n,cviMeta cvi) | (n,cvi) <- @argNewL] @expr.cTrf
                 lhs         .   (varBindSq,lamBindSq)
                                             =   if null @argNewL
                                                 then (Seq.singleton @cTrf    , Seq.empty             )
                                                 else (Seq.singleton @cTrfVar , Seq.singleton @cTrfLam)
   | FFI
-%%[[94
+%%[[90
     FFE
 %%]]
                 lhs         .   varBindSq   =   Seq.singleton @cTrf
 
 SEM CExpr
   | Var         lhs         .   cTrf        =   fvVarRepl @lhs.argMp @nm
-  | Let         lhs         .   cTrf        =   mkCExprLet CBindings_Plain (Seq.toList @binds.lamBindSq)
-                                                $ mkCExprLet @categ (Seq.toList @binds.varBindSq)
+  | Let         lhs         .   cTrf        =   acoreLet CBindings_Plain (Seq.toList @binds.lamBindSq)
+                                                $ acoreLet @categ (Seq.toList @binds.varBindSq)
                                                 $ @body.cTrf
 %%]

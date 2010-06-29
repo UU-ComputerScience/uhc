@@ -20,7 +20,14 @@ Assumptions (to be documented further)
 %%[(9 hmtyinfer || hmtyast) import(EH.Util.Pretty as Pretty)
 %%]
 
-%%[(99 hmtyinfer || hmtyast) import({%{EH}Base.ForceEval})
+%%[20 import(Data.Typeable(Typeable,Typeable1), Data.Generics(Data))
+%%]
+%%[(20 hmtyinfer || hmtyast) import({%{EH}Base.Serialize})
+%%]
+%%[(20 hmtyinfer || hmtyast) import( Control.Monad)
+%%]
+
+%%[(9999 hmtyinfer || hmtyast) import({%{EH}Base.ForceEval})
 %%]
 
 -- For debug
@@ -44,14 +51,20 @@ data StoredCHR p i g s
       , storedKeys      :: ![Maybe CHRKey]               	-- keys of all constraints; at storedKeyedInx: Nothing
       , storedIdent     :: !UsedByKey                    	-- the identification of a CHR, used for propagation rules (see remark at begin)
       }
+%%[[20
+  deriving (Typeable, Data)
+%%]]
 
 storedSimpSz :: StoredCHR p i g s -> Int
 storedSimpSz = chrSimpSz . storedChr
 
-data CHRStore pred info guard subst
+newtype CHRStore pred info guard subst
   = CHRStore
       { chrstoreTrie    :: Trie.Trie Key [StoredCHR pred info guard subst]
       }
+%%[[20
+  deriving (Typeable, Data)
+%%]]
 
 mkCHRStore trie = CHRStore trie
 
@@ -389,7 +402,7 @@ chrSolve'' env chrStore cnstrs prevState
   = postState {stMatchCache = Map.empty}
   where postState
 %%[[9
-          = addStats Map.empty [("workMatches",ppAssocLV [(k,pp (fromJust l)) | (k,c) <- Map.toList $ stCountCnstr st, let l = Map.lookup "workMatched" c, isJust l])] st
+          = addStats Map.empty [("workMatches",ppAssocLV [(ppTrieKey k,pp (fromJust l)) | (k,c) <- Map.toList $ stCountCnstr st, let l = Map.lookup "workMatched" c, isJust l])] st
 %%][100
           = st
 %%]]
@@ -400,7 +413,7 @@ chrSolve'' env chrStore cnstrs prevState
 %%[[9
                 -> expandMatch
                        (addStats Map.empty
-                            [ ("(0) yes work", pp workHdKey)
+                            [ ("(0) yes work", ppTrieKey workHdKey)
                             ] stmatch)
                        matches
 %%][100
@@ -464,17 +477,17 @@ chrSolve'' env chrStore cnstrs prevState
                       
 %%[[9
               _ -> iter (addStats Map.empty
-                             [ ("no match work", pp workHdKey)
+                             [ ("no match work", ppTrieKey workHdKey)
                              , ("wl queue sz", pp (length (wlQueue wl')))
                              ] st')
 %%][100
               _ -> iter st'
 %%]]
                 where wl' = wl { wlScanned = workHd : wlScanned wl, wlQueue = workTl }
-                      st' = stmatch { stWorkList = wl', stTrace = {- SolveDbg (ppdbg) : -} stTrace stmatch }
+                      st' = stmatch { stWorkList = wl', stTrace = SolveDbg (ppdbg) : {- -} stTrace stmatch }
           where (matches,lastQuery,ppdbg,stats) = workMatches st
 %%[[9
-                stmatch = addStats stats [("(a) workHd", pp workHdKey), ("(b) matches", ppBracketsCommasV [ s `chrAppSubst` storedChr schr | ((schr,_),s) <- matches ])]
+                stmatch = addStats stats [("(a) workHd", ppTrieKey workHdKey), ("(b) matches", ppBracketsCommasV [ s `chrAppSubst` storedChr schr | ((schr,_),s) <- matches ])]
 %%][100
                 stmatch =
 %%]]
@@ -498,6 +511,7 @@ chrSolve'' env chrStore cnstrs prevState
           | otherwise         = ( r5
                                 , foldr lqUnion lastQuery [ lqSingleton ck wks histCount | (_,(_,(ck,wks))) <- r23 ]
 %%[[9
+                                -- , Pretty.empty
                                 , pp2 >-< {- pp2b >-< pp2c >-< -} pp3
                                 , mkStats Map.empty [("(1) lookup sz",pp (length r2)), ("(2) cand sz",pp (length r3)), ("(3) unused cand sz",pp (length r4)), ("(4) final cand sz",pp (length r5))]
 %%][100
@@ -557,10 +571,20 @@ chrSolve'' env chrStore cnstrs prevState
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% ForceEval
+%%% Instance: ForceEval, Serialize
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(99 hmtyinfer || hmtyast)
+%%[(20 hmtyinfer)
+instance (Serialize p, Serialize i, Serialize g, Serialize s) => Serialize (CHRStore p i g s) where
+  sput (CHRStore a) = sput a
+  sget = liftM CHRStore sget
+  
+instance (Serialize p, Serialize i, Serialize g, Serialize s) => Serialize (StoredCHR p i g s) where
+  sput (StoredCHR a b c d) = sput a >> sput b >> sput c >> sput d
+  sget = liftM4 StoredCHR sget sget sget sget
+%%]
+
+%%[(9999 hmtyinfer || hmtyast)
 instance ForceEval (CHR (Constraint p i) g s) => ForceEval (StoredCHR p i g s) where
   forceEval x@(StoredCHR c i ks id) | forceEval c `seq` forceEval ks `seq` forceEval id `seq` True = x
 %%[[102

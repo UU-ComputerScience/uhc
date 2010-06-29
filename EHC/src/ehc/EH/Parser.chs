@@ -19,7 +19,7 @@
 %%[8 import(qualified Data.Set as Set)
 %%]
 
-%%[94 import({%{EH}Foreign.Parser})
+%%[90 import({%{EH}Foreign.Parser})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -120,7 +120,12 @@ pDecl           =    mkEH Decl_Val        <$>  pPatExprBase  <*   pEQUAL   <*> p
                 <|>  mkEH Decl_TySig      <$>  pVar          <*   pDCOLON  <*> pTyExpr
 %%]
 %%[5.pDecl
-                <|>  mkEH Decl_Data False <$   pDATA         <*>  pCon       <*> pTyVars
+%%[[5
+                <|>  mkEH Decl_Data False
+%%][92
+                <|>  (\c tvs cons -> mkEH Decl_Data False c tvs cons Nothing)
+%%]]
+                                          <$   pDATA         <*>  pCon       <*> pTyVars
                                                              <*   pEQUAL     <*> pDataConstrs
 %%]
 %%[6.pDecl
@@ -130,7 +135,7 @@ pDecl           =    mkEH Decl_Val        <$>  pPatExprBase  <*   pEQUAL   <*> p
                 <|>  (\(conv,_) saf imp nm sig
                         -> mkEH Decl_FFI conv saf 
                              (
-%%[[94
+%%[[90
                                (\i -> fst $ parseForeignEnt conv Nothing i)
 %%]]
                                (if null imp then show nm else imp))
@@ -138,7 +143,7 @@ pDecl           =    mkEH Decl_Val        <$>  pPatExprBase  <*   pEQUAL   <*> p
                      )
                      <$   pFOREIGN <* pIMPORT <*> pFFIWay
                      <*>  (pV (   pSAFE
-%%[[94
+%%[[90
                               <|> pUNSAFE
 %%]]
                               ) `opt` "safe")
@@ -414,7 +419,7 @@ pDataConstr     =    mkEH DataConstr_Constr <$> pCon <*> pTyExprs
 %%[7.DataConstr1 -5.DataConstr1
 %%[[7
 pDataConstr     =    mkEH DataConstr_Constr
-%%][95
+%%][91
 pDataConstr     =    (\c f -> mkEH DataConstr_Constr c Nothing f)
 %%]]
                      <$> pCon <*> (pDataFields <|> pCurly pDataLabFields)
@@ -494,7 +499,7 @@ pExprSelSuffix  =    (\lbls e -> foldl (mkEH Expr_Sel) e lbls)
                      <$> pList (pHASH *> pSel)
 
 pSel            ::   EHCParser HsName
-pSel            =    pVar <|> pCon <|> HNPos <$> pInt
+pSel            =    pVar <|> pCon <|> mkHNmPos <$> pInt
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -556,6 +561,8 @@ pDeclClass      ::   EHCParser Decl
 pDeclClass      =    (\h d -> mkEH Decl_Class h Nothing d)
 %%][15
 pDeclClass      =    (\h deps d -> mkEH Decl_Class h deps Nothing d)
+%%][92
+pDeclClass      =    (\h deps d -> mkEH Decl_Class h deps Nothing d [])
 %%]]
                      <$   pKey "class"
                      <*>  pClassHead

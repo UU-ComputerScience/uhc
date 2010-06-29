@@ -1,0 +1,20 @@
+%%[(99 jazy)
+package uu.jazy.ehc;
+
+// Utility methods used to emulate C functions.
+abstract class Util {
+	// convert a zero-terminated string to a Java String
+	static String zstrToString(byte[] zstr) {
+		return new String(zstr, 0, strlen(zstr));
+	}
+
+	// get length of zero-terminated string
+	static int strlen(byte[] zstr) {
+		int i;
+		for (i = 0; i < zstr.length; i++)
+			if (zstr[i] == 0)
+				return i;
+		return i;
+	}
+}
+%%]

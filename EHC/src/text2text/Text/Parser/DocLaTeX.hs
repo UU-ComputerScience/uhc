@@ -163,6 +163,8 @@ specCharsAt                 =   "@"
 specCharsAmpersand          =   "&"
 specCharsOther              =   "=,"
 
+keywsInBeginEnd				=	[ "tabular", "document" ]
+
 doclatexScanOpts :: ScanOpts
 doclatexScanOpts
   = defaultScanOpts
@@ -170,7 +172,7 @@ doclatexScanOpts
                                 `Set.union` Map.keysSet itemizestyleMp
                                 `Set.union` Map.keysSet docoptionMp
                                 `Set.union` Map.keysSet graphicsinlineoptionMp
-                                `Set.union` Set.fromList [ "tabular", "document" ]
+                                `Set.union` Set.fromList keywsInBeginEnd
       , scoCommandsTxt      =   Set.fromList [ "begin", "end", "item", "documentclass", "includegraphics" ]
                                 -- `Set.union` Map.keysSet textstyleMp
                                 `Set.union` Map.keysSet cmd0argMp
@@ -217,6 +219,16 @@ pText3ItemsP' p1 p2 p3
                     =   (\i1 i2 i3 -> Seq.unions (Seq.fromList i1 : Seq.singleton i2 : map Seq.fromList i3))
                         <$> pList p1 <*> p2 <*> pList ((:[]) <$> p3 <|> pAST)
 
+pTextFirstAndItemsP'::  T2TPr3' TextItem TextItem (Seq.Seq TextItem)
+pTextFirstAndItemsP' p1 p2
+{-
+					=   Seq.singleton <$> p1
+					<|> (\i -> Seq.unions [ Seq.unions $ map Seq.fromList [i1,i2] | (i1,i2) <- i ])
+					    <$> pList (((:[]) <$> p2) <+> pList p1)
+-}
+					=   (\i1 i2 -> Seq.unions (Seq.fromList i1 : concat [ map Seq.fromList i | i <- i2 ]))
+					    <$> pList p1 <*> pList ((\i1 i2 -> [i1,i2]) <$> ((:[]) <$> p2 <|> pAST) <*> pList p1)
+
 pTextItemsP         ::  T2TPr2' TextItem TextItems
 pTextItemsP pItm    =   Seq.toList <$> pTextItemsP' pItm
 
@@ -227,11 +239,21 @@ pText3ItemsP        ::  T2TPr4' TextItem TextItem TextItem TextItems
 pText3ItemsP p1 p2 p3
                     =   Seq.toList <$> pText3ItemsP' p1 p2 p3
 
+pTextFirstAndItemsP ::  T2TPr3' TextItem TextItem TextItems
+pTextFirstAndItemsP p1 p2
+					=   Seq.toList <$> pTextFirstAndItemsP' p1 p2
+
 pTextItemsAll       ::  T2TPr TextItems
 pTextItemsAll       =   pTextItemsP pTextItemAll
 
+pTextItemsAllNKeyws       ::  T2TPr TextItems
+pTextItemsAllNKeyws       =   pTextItemsP (pTextItemAll <|> pTextItemSpecs keywsInBeginEnd)
+
 pTextItemsArg       ::  T2TPr TextItems
 pTextItemsArg       =   pTextItemsP pTextItemArg
+
+pTextItemsArgNKeyws ::  T2TPr TextItems
+pTextItemsArgNKeyws =   pTextFirstAndItemsP pTextItemArg (pTextItemSpecs keywsInBeginEnd)
 
 pTextItemsTbl       ::  T2TPr TextItems
 pTextItemsTbl       =   (:) <$> pTextItemTbl1 <*> pTextItemsP pTextItemTbl2 `opt` []
@@ -259,8 +281,8 @@ pTextItemNonSpace   =   TextItem_NonSpace <$> pText
 pTextItemBase1      ::  T2TPr TextItem
 pTextItemBase1      =   pTextItemNonSpace
                     <|> (\(c:v) -> TextItem_VerbatimInline [c] v) <$> pVerbInline
-                    <|> pCmd2Arg <*> pArg pTextItemsArg <*> pArg pTextItemsArg
-                    <|> pCmd1Arg <*> pArg pTextItemsArg
+                    <|> pCmd2Arg <*> pArg pTextItemsArgNKeyws <*> pArg pTextItemsArgNKeyws
+                    <|> pCmd1Arg <*> pArg pTextItemsArgNKeyws
                     <|> pCmd0Arg
 
 pTextItemBase2      ::  T2TPr TextItem
@@ -405,6 +427,12 @@ pGraphicsInlineOption
 pGraphicsInlineOption
                     =   pAnyFromMap pKey graphicsinlineoptionMp <* pKey "=" <*> pTextItemsP pTextItemOption
 
+
+-- keywords
+{-
+pKeywsInBeginEnd	::  T2TPr TextItem
+pKeywsInBeginEnd	= 	pTextItemSpecs keywsInBeginEnd
+-}
 
 -- cmds
 pCmd0Arg            ::  T2TPr TextItem

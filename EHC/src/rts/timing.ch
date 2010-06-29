@@ -1,4 +1,9 @@
 %%[8
+#ifndef __TIMING_H__
+#define __TIMING_H__
+%%]
+
+%%[8
 /**
  * Module to measure the amount of time spend by the program and time 
  * spend by the garbage collector.
@@ -47,4 +52,12 @@ void switch_to_user_code();
  * Finish the timing.
  */
 void timing_finalize();
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% EOF
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+#endif /* __TIMING_H__ */
 %%]

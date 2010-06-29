@@ -31,8 +31,8 @@ recursive canonicalization of inner components, type level beta
 reduction and canonicalization alternately done.
 
 A VarMp (substitution) with additional changes in the type is threaded.
-Currently (20090821) only empty implicits (Impls_Tail) are replaced by
-Impls_Nil, and removed in the type itself.
+Currently (20090821) only empty implicits \verb@Impls_Tail@ are replaced by
+\verb@Impls_Nil@, and removed in the type itself.
 %%]
 
 %%[(9 hmtyinfer) hs module {%{EH}Ty.Trf.Canonic} import({%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Ty},{%{EH}VarMp},{%{EH}Substitutable},{%{EH}Ty.FitsInCommon2})
@@ -47,15 +47,15 @@ Impls_Nil, and removed in the type itself.
 %%[(16 hmtyinfer) hs import({%{EH}Ty.Trf.MergePreds})
 %%]
 
-%%[(94 hmtyinfer) hs import(EH.Util.Utils)
+%%[(90 hmtyinfer) hs import(EH.Util.Utils)
 %%]
-%%[(94 hmtyinfer) hs import({%{EH}Gam.Full})
+%%[(90 hmtyinfer) hs import({%{EH}Gam.Full})
 %%]
 %%[(98 hmtyinfer) hs import({%{EH}Base.Builtin})
 %%]
 
 -- for debug
-%%[(94 hmtyinfer) hs import(EH.Util.Debug,EH.Util.Pretty)
+%%[(90 hmtyinfer) hs import(EH.Util.Debug,EH.Util.Pretty)
 %%]
 
 %%[(9 hmtyinfer).WRAPPER ag import({Ty/AbsSyn},{Ty/CommonAG})
@@ -146,7 +146,7 @@ predCanonic' opts (Pred_Eq t1 t2)
     )
     where
       (t1',m1) = tyCanonic' opts t1
-      (t2',m2) = tyCanonic' opts t2
+      (t2',m2) = tyCanonic' opts t2 -- (m1 |=> t2)
 %%]]
 predCanonic' opts pr
   = case tyCanonicMb' opts $ Ty_Pred pr of
@@ -176,7 +176,7 @@ tyCanonicFFI fi
         canonLkupTy' = canonLkupTy
 %%][98
         canonLkupTy' fi nm = newtypeLamLkup `orMb` canonLkupTy fi nm
-                     where newtypeLamLkup | ehbnIO (ehcOptBuiltinNames ehcopts) == nm
+                     where newtypeLamLkup | ehcOptBuiltin ehcopts ehbnIO == nm
                                                       = Nothing
                                           | otherwise = dgiMbNewtype $? dataGamLookup nm $ feDataGam fe 
         fe      = fiEnv fi
@@ -262,6 +262,7 @@ ATTR TyAGItf AllTyAndFlds [ | | isReplaced USE {||} {False}: Bool ]
 SEM Ty
   | App             loc     .   isReplaced      =   isJust @mbReplNoImplNil || isJust @mbRepl
   | Con Ext         loc     .   isReplaced      =   isJust @mbRepl
+  | Ann				loc		.	isReplaced		=	True
 
 SEM Ty
   | App             lhs     .   isReplaced      =   @isReplaced || @func.isReplaced || @arg.isReplaced
@@ -289,7 +290,7 @@ SEM Ty
 %%[(10 hmtyinfer)
 SEM Ty
   | Ext             loc     .   mbRepl          =   if @isSpineRoot
-                                                    then let (row,exts) = tyRowExts @repl
+                                                    then let (row,exts) = tyRowExtsUnAnn $ tyRowExts @repl
                                                          in  if tyRowIsCanonOrdered exts
                                                              then Nothing
                                                              else Just $ mkTyRow row $ tyRowCanonOrder exts
@@ -321,6 +322,7 @@ ATTR TyAGItf  [ | | repl: Ty ]
 SEM Ty
   | App             loc     .   replNoImplNil   =   maybe @repl id @mbReplNoImplNil
                     lhs     .   repl            =   @replNoImplNil
+  | Ann             lhs     .   repl			= 	@ty.repl
 %%]
 
 %%[(10 hmtyinfer)

@@ -45,14 +45,19 @@ SEM Expr
 
 %%[(9 hmtyinfer)
 SEM Expr
-  | AppTop Rec  loc         .   imSubsTy            =   foVarMp @foKnRes |=> @imTy
+  | AppTop Rec Let
+                loc         .   imSubsTy            =   foVarMp @foKnRes |=> @imTy
   | Lam         loc         .   imSubsTy            =   foVarMp @fo_fitF_ |=> @imTy
 %%]
 
 %%[(9 hmtyinfer)
 SEM Expr
-  | AppTop Rec Lam
+  | AppTop Rec Lam Let
                 loc         .   (knPrL,knImplsTl)   =   implsPredsTail @predScope $ tyImpls @imSubsTy
+                            .   implsIsEmpty        =   let (knpr,_)
+                                                              = implsPredsTailWithLkup (varmpImplsLookupCyc2 @lhs.tyVarMp) initPredScope
+                                                              $ tyImplsWithLkup (varmpTyLookupCyc2 @lhs.tyVarMp) @lhs.knTy
+                                                        in  null knpr
 %%]
 
 %%[(12 hmtyinfer)
@@ -73,8 +78,10 @@ SEM AGItf
   | AGItf       loc         .   cSubst              =   emptyCSubst
 
 SEM Decl
-  | Instance    decls       .   cSubst              =   cSubstApp @lhs.cSubst
+  | Instance    loc         .   cSubstDecls         =   cSubstApp @lhs.cSubst
                                                         $ evidKeyBindMpToCSubst @chrEvidBindMp
+                decls       .   cSubst              =   @cSubstDecls
+                lhs         .   cSubst              =   cSubstApp @decls.cSubst @cSubstInst
 
 SEM Expr
   | Let         decls       .   cSubst              =   cSubstApp @lhs.cSubst
@@ -103,7 +110,7 @@ SEM Expr
 
 %%[(9 hmtyinfer)
 SEM Expr
-  | AppTop Rec Lam
+  | AppTop Rec Lam Let
                 loc         .   impls2KnHd          =   tyImpls @imSubsTy
                             .   impls2KnTl          =   @lhs.finTyVarMp |=> @knImplsTl
                             .   poiLKnTl            =   implsPrIds @impls2KnTl
@@ -123,6 +130,8 @@ SEM Expr
 %%]]
                 loc         .   poiBindL            =   @chrAssumeBindL ++ @chrScopeBindL
                 loc         .   poiBindLTC          =   @chrAssumeBindLTC ++ @chrScopeBindLTC	-- for TyCore clone
+  | Let         loc         .   poiBindL            =   @chrAssumeBindL
+                loc         .   poiBindLTC          =   @chrAssumeBindLTC 						-- for TyCore clone
 %%]
 
 

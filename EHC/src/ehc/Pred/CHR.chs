@@ -31,7 +31,10 @@ Derived from work by Gerrit vd Geest.
 %%[(20 hmtyinfer) import({%{EH}Base.CfgPP})
 %%]
 
-%%[(99 hmtyinfer) import({%{EH}Base.ForceEval},{%{EH}Ty.Trf.ForceEval})
+%%[(20 hmtyinfer) import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
+%%]
+
+%%[(9999 hmtyinfer) import({%{EH}Base.ForceEval},{%{EH}Ty.Trf.ForceEval})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -47,6 +50,9 @@ instance CHRMatchable FIIn Pred VarMp where
 %%]
 
 %%[(9 hmtyinfer)
+instance CHRMatchable FIIn CHRPredOccCxt VarMp where
+  chrMatchTo e subst (CHRPredOccCxt_Scope1 sc1) (CHRPredOccCxt_Scope1 sc2) = chrMatchTo e subst sc1 sc2
+
 instance CHRMatchable FIIn PredScope VarMp where
   chrMatchTo _ subst (PredScope_Var v1) sc2@(PredScope_Var v2) | v1 == v2    = Just emptyVarMp
   chrMatchTo e subst (PredScope_Var v1) sc2                    | isJust mbSc = chrMatchTo e subst (fromJust mbSc) sc2
@@ -70,7 +76,7 @@ instance CHRMatchable FIIn PredScope VarMp where
 instance CHRMatchable FIIn CHRPredOcc VarMp where
   chrMatchTo fi subst po1 po2
     = do { subst1 <- chrMatchTo fi subst (cpoPr po1) (cpoPr po2)
-         ; subst2 <- chrMatchTo fi subst (cpoScope po1) (cpoScope po2)
+         ; subst2 <- chrMatchTo fi subst (cpoCxt po1) (cpoCxt po2)
          ; return $ subst2 |=> subst1
          }
 
@@ -237,13 +243,16 @@ data Guard
   | EqualScope              PredScope PredScope                             -- scopes are equal
   | IsStrictParentScope     PredScope PredScope PredScope                   -- parent scope of each other?
 %%[[10
-  | NonEmptyRowLacksLabel	Ty LabelOffset Ty Label							-- non empty row does not have label?, yielding its position + rest
+  | NonEmptyRowLacksLabel   Ty LabelOffset Ty Label                         -- non empty row does not have label?, yielding its position + rest
 %%]]
 %%[[16
-  | IsCtxNilReduction Ty Ty
-  | EqsByCongruence Ty Ty PredSeq
-  | UnequalTy Ty Ty
-  | EqualModuloUnification Ty Ty
+  | IsCtxNilReduction       Ty Ty
+  | EqsByCongruence         Ty Ty PredSeq
+  | UnequalTy               Ty Ty
+  | EqualModuloUnification  Ty Ty
+%%]]
+%%[[20
+  deriving (Typeable, Data)
 %%]]
 %%]
 
@@ -274,7 +283,7 @@ instance PP Guard where
   pp = ppGuard
 %%]
 
-%%[(20 hmtyinfer)
+%%[(2020 hmtyinfer)
 instance PPForHI Guard where
   ppForHI (HasStrictCommonScope   sc1 sc2 sc3) = "HasStrictCommonScope"  >#< (ppCurlysCommas $ map ppForHI [sc1,sc2,sc3])
   ppForHI (IsStrictParentScope    sc1 sc2 sc3) = "IsStrictParentScope"   >#< (ppCurlysCommas $ map ppForHI [sc1,sc2,sc3])
@@ -319,7 +328,9 @@ instance CHRCheckable FIIn Guard VarMp where
           chk (IsVisibleInScope scDst sc1) | pscpIsVisibleIn (chrAppSubst subst' scDst) (chrAppSubst subst' sc1)
             = return emptyVarMp
 %%[[10
-          chk (NonEmptyRowLacksLabel (Ty_Var tv TyVarCateg_Plain) (LabelOffset_Var vDst) ty lab) | not (null exts) && presence == Absent -- tyIsEmptyRow row
+          chk (NonEmptyRowLacksLabel r1@(Ty_Var tv _) (LabelOffset_Var vDst) ty lab)
+            |  fiAllowTyVarBind env r1
+            && not (null exts) && presence == Absent -- tyIsEmptyRow row
             = return $ (vDst `varmpOffsetUnit` LabelOffset_Off offset)
                        |=> (tv `varmpTyUnit` row)
             where (row,exts) = tyRowExtsWithLkup (varmpTyLookupCyc2 subst') ty
@@ -392,6 +403,7 @@ instance CHRCheckable FIIn Guard VarMp where
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(9 hmtyinfer) export(isLetProveCandidate,isLetProveFailure)
+-- | Consider a pred for proving if: no free tvars, or its free tvars do not coincide with those globally used
 isLetProveCandidate :: (Ord v, CHRSubstitutable x v s) => Set.Set v -> x -> Bool
 isLetProveCandidate glob x
   = Set.null fv || Set.null (fv `Set.intersection` glob)
@@ -404,24 +416,36 @@ isLetProveFailure glob x
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% ForceEval
+%%% Instances: Binary, Serialize
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(99 hmtyinfer)
-instance ForceEval Guard where
-  forceEval x@(HasStrictCommonScope   sc1 sc2 sc3) | forceEval sc1 `seq` forceEval sc2 `seq` forceEval sc3 `seq` True = x
-  forceEval x@(IsStrictParentScope    sc1 sc2 sc3) | forceEval sc1 `seq` forceEval sc2 `seq` forceEval sc3 `seq` True = x
-  forceEval x@(IsVisibleInScope       sc1 sc2    ) | forceEval sc1 `seq` forceEval sc2 `seq` True = x
-  forceEval x@(NotEqualScope          sc1 sc2    ) | forceEval sc1 `seq` forceEval sc2 `seq` True = x
-  forceEval x@(EqualScope             sc1 sc2    ) | forceEval sc1 `seq` forceEval sc2 `seq` True = x
-  forceEval x@(NonEmptyRowLacksLabel  r o t l    ) | forceEval r `seq` forceEval o `seq` forceEval t `seq` forceEval l `seq` True = x
-%%[[102
-  fevCount (HasStrictCommonScope   sc1 sc2 sc3) = cm1 "HasStrictCommonScope"  `cmUnion` fevCount sc1 `cmUnion` fevCount sc2 `cmUnion` fevCount sc3
-  fevCount (IsStrictParentScope    sc1 sc2 sc3) = cm1 "IsStrictParentScope"   `cmUnion` fevCount sc1 `cmUnion` fevCount sc2 `cmUnion` fevCount sc3
-  fevCount (IsVisibleInScope       sc1 sc2    ) = cm1 "IsVisibleInScope"      `cmUnion` fevCount sc1 `cmUnion` fevCount sc2
-  fevCount (NotEqualScope          sc1 sc2    ) = cm1 "NotEqualScope"         `cmUnion` fevCount sc1 `cmUnion` fevCount sc2
-  fevCount (EqualScope             sc1 sc2    ) = cm1 "EqualScope"            `cmUnion` fevCount sc1 `cmUnion` fevCount sc2
-  fevCount (NonEmptyRowLacksLabel  r o t l    ) = cm1 "NonEmptyRowLacksLabel" `cmUnion` fevCount r   `cmUnion` fevCount o `cmUnion` fevCount t `cmUnion` fevCount l
+%%[(20 hmtyinfer)
+instance Serialize Guard where
+  sput (HasStrictCommonScope     a b c  ) = sputWord8 0  >> sput a >> sput b >> sput c
+  sput (IsVisibleInScope         a b    ) = sputWord8 1  >> sput a >> sput b
+  sput (NotEqualScope            a b    ) = sputWord8 2  >> sput a >> sput b
+  sput (EqualScope               a b    ) = sputWord8 3  >> sput a >> sput b
+  sput (IsStrictParentScope      a b c  ) = sputWord8 4  >> sput a >> sput b >> sput c
+  sput (NonEmptyRowLacksLabel    a b c d) = sputWord8 5  >> sput a >> sput b >> sput c >> sput d
+%%[[16
+  sput (IsCtxNilReduction        a b    ) = sputWord8 6  >> sput a >> sput b
+  sput (EqsByCongruence          a b c  ) = sputWord8 7  >> sput a >> sput b >> sput c
+  sput (UnequalTy                a b    ) = sputWord8 8  >> sput a >> sput b
+  sput (EqualModuloUnification   a b    ) = sputWord8 9  >> sput a >> sput b
 %%]]
-%%]
+  sget = do t <- sgetWord8
+            case t of
+              0  -> liftM3 HasStrictCommonScope     sget sget sget
+              1  -> liftM2 IsVisibleInScope         sget sget
+              2  -> liftM2 NotEqualScope            sget sget
+              3  -> liftM2 EqualScope               sget sget
+              4  -> liftM3 IsStrictParentScope      sget sget sget
+              5  -> liftM4 NonEmptyRowLacksLabel    sget sget sget sget
+%%[[16
+              6  -> liftM2 IsCtxNilReduction        sget sget
+              7  -> liftM3 EqsByCongruence          sget sget sget
+              8  -> liftM2 UnequalTy                sget sget
+              9  -> liftM2 EqualModuloUnification   sget sget
+%%]]
 
+%%]

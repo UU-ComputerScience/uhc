@@ -28,11 +28,12 @@ DATA Module
     | Module
         range                    : Range
         name                     : MaybeName
-%%]
-%%[20
+%%[[99
+        fileheaderpragmas        : Pragmas
+%%]]
+%%[[20
         exports                  : MaybeExports
-%%]
-%%[1
+%%]]
         body                     : Body
 %%]
 
@@ -164,9 +165,10 @@ DATA Declaration                                  {- *** -}
 %%[[9
         context                  : ContextItems
 %%]]
-        simpletype               : SimpleType
+        typelefthandside         : TypeLeftHandSide
+        -- simpletype               : SimpleType
         constructors             : Constructors
-%%[[95
+%%[[91
         derivings                : Derivings
 %%]]
 %%]
@@ -176,9 +178,10 @@ DATA Declaration                                  {- *** -}
 %%[[9
         context                  : ContextItems
 %%]]
-        simpletype               : SimpleType
+        typelefthandside         : TypeLeftHandSide
+        -- simpletype               : SimpleType
         constructors             : Constructor  -- has only one field, no strictness
-%%[[95
+%%[[91
         derivings                : Derivings
 %%]]
 %%]
@@ -196,7 +199,7 @@ DATA Declaration                                  {- *** -}
         importname               : {Maybe String}
         name                     : Name
         type                     : Type
-%%[[94
+%%[[90
     | ForeignExport
         range                    : Range
         callconvention           : FFIWay
@@ -209,13 +212,15 @@ DATA Declaration                                  {- *** -}
     | Class
         range                    : Range
         context                  : ContextItems -- is a "simple" context
-        simpletype               : SimpleType   -- Haskell 98 allows only one variable
+        typelefthandside         : TypeLeftHandSide
+        -- simpletype               : SimpleType
 %%[[15
         dependencies             : FunctionalDependencies
 %%]]
         where                    : MaybeDeclarations -- cannot have everything
     | Instance
         range                    : Range
+        instVariant              : InstVariant
         maybeinstancename        : MaybeName
         useimplicitly            : Bool
         context                  : ContextItems -- is a "simple" context
@@ -230,23 +235,24 @@ DATA Declaration                                  {- *** -}
         types                    : Types
     | Default
         range                    : Range
+        name                     : MaybeName
         types                    : Types        -- should be instances of Num
 %%]
 %%[11
     | Type
         range                    : Range
-        simpletype               : SimpleType
+        typelefthandside         : TypeLeftHandSide
+        -- simpletype               : SimpleType
         type                     : Type
 %%]
-
-%%[90
-DATA Fixity
-    | Infixl
+%%[99
+    | Pragma
         range                    : Range
-    | Infixr
+        pragma               	 : Pragma
+    | Module
         range                    : Range
-    | Infix
-        range                    : Range
+        name                     : MaybeName
+        exports                  : MaybeExports
 %%]
 
 %%[15
@@ -259,7 +265,7 @@ DATA FunctionalDependency
         totypevariables          : Names
 %%]
 
-%%[95
+%%[91
 TYPE Derivings                   = [ Deriving ]
 
 DATA Deriving
@@ -282,12 +288,33 @@ SET AllDeclaration
 %%[[15
     FunctionalDependency FunctionalDependencies
 %%]]
-%%[[95
+%%[[91
     AllDeriving
 %%]]
-%%[[90
-    Fixity
-%%]]
+%%]
+
+-- ------------------------------------------------------------------------
+-- -- Pragmas                                                            --
+-- ------------------------------------------------------------------------
+
+%%[99
+TYPE Pragmas     				= [ Pragma ]
+
+DATA Pragma
+    | Language
+    	range					: Range
+    	pragmas					: Names
+    | OptionsGHC
+    	range					: Range
+    	options					: Names
+    | Derivable
+    	range					: Range
+    	className				: Name
+    	fieldName				: Name
+    	defaultName				: Name
+
+SET AllPragma
+  = Pragma Pragmas
 %%]
 
 -- ------------------------------------------------------------------------
@@ -351,6 +378,11 @@ DATA Type                                         {- *** -}
         leftType                 : Type
         operator                 : Type
         rightType                : Type
+%%[[5
+    | InfixApplicationChainTop
+        range                    : Range
+        type                     : Type
+%%]]
     | Constructor                            {- *** -}
         range                    : Range
         name                     : Name
@@ -473,7 +505,7 @@ DATA Type                                         {- *** -}
 --       True (Type_Constructor (Name_Identifier "Tree"))
 --       [Type_Constructor (Name_Identifier "Int")]
 
-%%[5
+%%[5555
 DATA SimpleType
     | SimpleType
         range                    : Range
@@ -577,10 +609,11 @@ SET AllType
   = Type Types MaybeType
     TypeAnnotation
 %%]
-%%[5
     SimpleType
+%%[5
     AllConstructor
     AllAnnotatedType
+    TypeLeftHandSide
 %%]
 %%[7
     AllFieldDeclaration
@@ -940,19 +973,8 @@ DATA RowRecordExpressionUpdate
         name                     : MaybeName
         expression               : Expression
 
-TYPE RowRecordPatternBindings    = [ RowRecordPatternBinding ]
-
 SET AllRowRecordExpressionUpdate
   = RowRecordExpressionUpdate RowRecordExpressionUpdates
-
-DATA RowRecordPatternBinding
-    | Binding
-        range                    : Range
-        name                     : MaybeName
-        pattern                  : Pattern
-
-SET AllRowRecordPatternBinding
-  = RowRecordPatternBinding RowRecordPatternBindings
 
 TYPE RowTypeUpdates              = [ RowTypeUpdate ]
 
@@ -966,21 +988,9 @@ SET AllRowTypeUpdate
   = RowTypeUpdate RowTypeUpdates
 %%]
 
-%%[7
-TYPE RecordPatternBindings       = [ RecordPatternBinding ]
-
-DATA RecordPatternBinding
-    | Binding
-        range                    : Range
-        name                     : Name
-        pattern                  : Pattern
-    | Pun
-        range                    : Range
-        name                     : Name
-
-SET AllRecordPatternBinding
-  = RecordPatternBinding RecordPatternBindings
-%%]
+-- ------------------------------------------------------------------------
+-- -- LHS of value binding
+-- ------------------------------------------------------------------------
 
 %%[1
 TYPE FunctionBindings            = [ FunctionBinding ]
@@ -1014,19 +1024,61 @@ DATA LeftHandSide
         lefthandside             : LeftHandSide
         type                     : Type
 %%]]
+%%]
 
+-- ------------------------------------------------------------------------
+-- -- LHS of type binding
+-- ------------------------------------------------------------------------
+
+TYPE TypeFunctionBindings            = [ TypeFunctionBinding ]
+
+DATA TypeFunctionBinding
+    | TypeFunctionBinding
+        range                    : Range
+        lefthandside             : TypeLeftHandSide
+        righthandside            : TypeRightHandSide
+
+SET AllTypeFunctionBinding
+  = TypeFunctionBinding TypeFunctionBindings
+
+%%[5
+DATA TypeLeftHandSide
+    | Function
+        range                    : Range
+        name                     : Name
+        patterns                 : TypePatterns
+    | Infix
+        range                    : Range
+        leftPattern              : TypePattern
+        operator                 : Name
+        rightPattern             : TypePattern
+    | Parenthesized
+        range                    : Range
+        lefthandside             : TypeLeftHandSide
+        patterns                 : TypePatterns
+%%]
+
+-- ------------------------------------------------------------------------
+-- -- RHS of value binding
+-- ------------------------------------------------------------------------
+
+%%[1
 DATA RightHandSide
     | Expression
         range                    : Range
         expression               : Expression
         where                    : MaybeDeclarations
-%%]
-%%[5
+%%[[5
     | Guarded
         range                    : Range
         guardedexpressions       : GuardedExpressions
         where                    : MaybeDeclarations
+%%]]
 %%]
+
+-- ------------------------------------------------------------------------
+-- -- Sets for Expressions
+-- ------------------------------------------------------------------------
 
 %%[1
 SET AllExpression
@@ -1052,7 +1104,7 @@ SET AllExpression
 %%]
 
 -- ------------------------------------------------------------------------
--- -- Patterns                                                           --
+-- -- Patterns for value
 -- ------------------------------------------------------------------------
 
 %%[1
@@ -1160,6 +1212,57 @@ SET AllPattern
 %%]
 %%[12
     AllContextedPattern
+%%]
+
+-- ------------------------------------------------------------------------
+-- -- Inside Pattern binding
+-- ------------------------------------------------------------------------
+
+%%[7
+TYPE RecordPatternBindings       = [ RecordPatternBinding ]
+
+DATA RecordPatternBinding
+    | Binding
+        range                    : Range
+        name                     : Name
+        pattern                  : Pattern
+    | Pun
+        range                    : Range
+        name                     : Name
+
+SET AllRecordPatternBinding
+  = RecordPatternBinding RecordPatternBindings
+%%]
+
+%%[7
+DATA RowRecordPatternBinding
+    | Binding
+        range                    : Range
+        name                     : MaybeName
+        pattern                  : Pattern
+
+TYPE RowRecordPatternBindings    = [ RowRecordPatternBinding ]
+
+SET AllRowRecordPatternBinding
+  = RowRecordPatternBinding RowRecordPatternBindings
+%%]
+
+-- ------------------------------------------------------------------------
+-- -- Patterns for type
+-- ------------------------------------------------------------------------
+
+%%[5
+TYPE TypePatterns                = [ TypePattern ]
+
+DATA TypePattern
+    | Variable
+        range                    : Range          
+        name                     : Name
+%%]
+
+%%[5
+SET AllTypePattern
+  = TypePattern TypePatterns
 %%]
 
 -- ------------------------------------------------------------------------
@@ -1271,10 +1374,18 @@ SET AllBasics
 
 %%[1
 SET AllNT
-  = AllModule AllDeclaration AllType AllPattern AllExpression
+  = AllModule AllDeclaration
+    AllType
+    AllPattern AllExpression
     AllBasics
+%%[[5
+    AllTypePattern
+%%]]
 %%[[6
     AllKind
+%%]]
+%%[[99
+    AllPragma
 %%]]
 %%]
 

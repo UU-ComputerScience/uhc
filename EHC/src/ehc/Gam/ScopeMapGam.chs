@@ -32,7 +32,12 @@ Conceptually thus the invariant is that no entry is in the map which is not in s
 %%[9 import({%{EH}Base.Common})
 %%]
 
-%%[99 import({%{EH}Base.ForceEval})
+%%[20 hs import(Data.Typeable(Typeable), Data.Generics(Data), {%{EH}Base.Serialize})
+%%]
+%%[20 import(Control.Monad, {%{EH}Base.Binary})
+%%]
+
+%%[9999 import({%{EH}Base.ForceEval})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -58,6 +63,9 @@ data SGamElt v
       { sgeScpId	:: !Int							-- scope ident
       , sgeVal		:: v							-- the value
       }
+%%[[20
+  deriving (Typeable, Data)
+%%]]
 
 type SMap k v = Map.Map k [SGamElt v]	
 
@@ -67,6 +75,9 @@ data SGam k v
       , sgScp		:: !Scp							-- scope stack
       , sgMap		:: SMap k v						-- map holding the values
       }
+%%[[20
+  deriving (Typeable, Data)
+%%]]
 
 mkSGam :: SMap k v -> SGam k v
 mkSGam = SGam 0 [0]
@@ -76,6 +87,7 @@ emptySGam = mkSGam Map.empty
 
 instance Show (SGam k v) where
   show _ = "SGam"
+
 %%]
 
 %%[9
@@ -239,10 +251,31 @@ sgamNoDups g@(SGam {sgScp = scp, sgMap = m})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% ForceEval
+%%% Instances: Binary, Serialize
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[99
+%%[20
+instance (Serialize v) => Serialize (SGamElt v) where
+  sput (SGamElt a b) = sput a >> sput b
+  sget = liftM2 SGamElt sget sget
+%%]
+
+%%[20
+instance (Ord k, Serialize k, Serialize v) => Serialize (SGam k v) where
+  sput (SGam a b c) = sput a >> sput b >> sput c
+  sget = liftM3 SGam sget sget sget
+%%]
+
+%%[20
+-- instance (Binary v) => Serialize (SGamElt v)
+-- instance (Ord k, Binary k, Binary v) => Serialize (SGam k v)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Instances: ForceEval
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9999
 instance ForceEval v => ForceEval (SGamElt v) where
   forceEval x@(SGamElt l v) | forceEval v `seq` True = x
 %%[[102

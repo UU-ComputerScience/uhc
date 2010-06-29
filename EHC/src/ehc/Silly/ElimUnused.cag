@@ -23,16 +23,11 @@ WRAPPER SilModule
 %%[(8 codegen grin) hs import(qualified Data.Set as Set)
 %%]
 
-
 %%[(8 codegen grin) hs
 elimUnused :: EHCOpts -> SilModule -> SilModule
 elimUnused options input   
   = let t = wrap_SilModule (sem_SilModule input)
-                           (Inh_SilModule {opts_Inh_SilModule = if ehcOptEmitLLVM options
-                                                                then options{ ehcOptOwn = 0 }
-                                                                else options
-                                          } 
-                           )
+                           (Inh_SilModule {opts_Inh_SilModule = options })
     in trf_Syn_SilModule t
 %%]
 
@@ -59,7 +54,7 @@ ATTR Value          [ | | isntCall : {Bool} ]
 SEM Function
   | Function  body.useMap    =  @loc.startMap
               body.allUseMap =  @body.useMap
-              loc.startMap   =  Map.fromList  [ (Variable_Unembedded nm, 0) | nm <- @locals ]
+              loc.startMap   =  Map.fromList  [ (Variable_Unembedded nm, 0) | (nm,tp) <- @locals ]
 
 -- the "multi" attribute is a bit of a hack:
 -- it makes variables in a Subs context count as a "use"
@@ -92,12 +87,10 @@ SEM Statement
 
 SEM Function
   |  Function   lhs.trf    =  Function_Function @name
-                                                @tailJumps 
                                                 @parameters 
-                                                [ nm | nm <- @locals , Map.lookup (Variable_Unembedded nm) @body.useMap /= Just 0 ]
+                                                [ (nm,tp) | (nm,tp) <- @locals , Map.lookup (Variable_Unembedded nm) @body.useMap /= Just 0 ]
                                                 @body.trf
   
-
 SEM Value
   | Call         lhs.isntCall  =  False
   | * - Call     lhs.isntCall  =  True

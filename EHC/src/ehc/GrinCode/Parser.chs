@@ -13,7 +13,10 @@
 %%[(8 codegen grin) export(pModule,pExprSeq)
 %%]
 
-%%[94 import({%{EH}Foreign.Parser},{%{EH}Scanner.Common(pFFIWay)})
+%%[90 import({%{EH}Foreign.Parser},{%{EH}Scanner.Common(pFFIWay)})
+%%]
+
+%%[(8 codegen) import(Data.Maybe)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -54,7 +57,8 @@ pExprSeq        ::   GRIParser GrExpr
 pExprSeq        =    pChainr ((\p e1 e2 -> GrExpr_Seq e1 p e2) <$ pSemi <* pKey "\\" <*> pPatLam <* pKey "->") pExpr
 
 pExpr           ::   GRIParser GrExpr
-pExpr           =    GrExpr_Unit    <$  pKey "unit"         <*> pVal
+pExpr           =    (\v -> GrExpr_Unit v GrType_None)
+                                    <$  pKey "unit"         <*> pVal
                 <|>  GrExpr_UpdateUnit <$  pKey "updateunit"<*> pGrNm <*> pVal    
                 <|>  GrExpr_Store   <$  pKey "store"        <*> pVal
                 <|>  GrExpr_Eval    <$  pKey "eval"         <*> pGrNm
@@ -68,12 +72,12 @@ pExpr           =    GrExpr_Unit    <$  pKey "unit"         <*> pVal
                 <|>  GrExpr_App     <$  pKey "apply"        <*> pGrNm   <*>  pSValL
 %%[[8
                 <|>  GrExpr_FFI     <$  pKey "ffi"          <*> pId
-%%][94
+%%][90
                 <|>  (\(conv,_) ent -> GrExpr_FFI conv (fst $ parseForeignEnt conv Nothing ent))
 %%][99
                 <|>  (\(conv,_) ent annot -> GrExpr_FFI conv (fst $ parseForeignEnt conv Nothing ent) annot)
 %%]]
-%%[[94
+%%[[90
                                     <$  pKey "ffi"
                                     <*> pFFIWay <*> pString
 %%]]
@@ -126,18 +130,33 @@ pAltAnn         =    (    GrAltAnnNormal  <$ pKey "normal"
 
 pGrBindAnn      ::   GRIParser GrBindAnn
 pGrBindAnn      =    pSucceed GrBindAnnNormal
-                <|>  GrBindAnnClass      <$ pKey "DICTCLASS"      <*> pCurlyList pMbGrNm
-                <|>  GrBindAnnInstance   <$ pKey "DICTINSTANCE"   <*> pCurlyList pMbGrNm
-                <|>  GrBindAnnOverloaded <$ pKey "DICTOVERLOADED" <*> pCurlyList (pCurlyList pInt)
+%%[[9
+                <|>  GrBindAnnClass      <$ pKey "DICTCLASS"      <*> pCurlyList pTrack
+                <|>  GrBindAnnInstance   <$ pKey "DICTINSTANCE"   <*> pCurlyList1 pTrack
+%%]]
                 <|>  GrBindAnnSpecialized <$
                        pKey "SPECIALIZED" <*> pGrNm <*> pInt <*> pCurlyList pMbGrNm
 
 pCurlyList      ::   GRIParser a -> GRIParser [a]
 pCurlyList p    =    pCurly $ pListSep pComma p
 
+pCurlyList1      ::   GRIParser a -> GRIParser [a]
+pCurlyList1 p    =    pCurly $ pList1Sep pComma p
+
+%%[[9
+pTrack          ::   GRIParser Track
+pTrack          =    (\x -> TrackVarApply x [])  <$> pGrNm     -- TODO: this is just a mockup, should do real track parsing
+%%]]
+
 pMbGrNm         ::   GRIParser (Maybe HsName)
 pMbGrNm         =    Just    <$> pGrNm
                 <|>  Nothing <$  pKey "_"
+
+
+pManyGrNm       ::   GRIParser ([HsName])
+pManyGrNm       =  pList pGrNm
+                   <|>  const [] <$> pKey "_"    -- for backward compatibility with libraries created before 20090917
+
 
 pPatLam         ::   GRIParser GrPatLam
 pPatLam         =    GrPatLam_Var      <$> pGrNm

@@ -50,7 +50,7 @@ SEM Module
 %%[(8 codegen)
 SEM Declaration
     | ForeignImport
-%%[[94
+%%[[90
       ForeignExport
 %%]]
         loc             .   errFFIWay   =   if maybe False (@callconvention `elem`) $ fmap targiAllowedFFI $ Map.lookup (ehcOptTarget @lhs.opts) allTargetInfoMp
@@ -70,7 +70,7 @@ SEM Declaration
 %%[[99
                                                                    _
 %%]]
-%%[[95
+%%[[91
                                                                    _
 %%]]
                                                                    [_]
@@ -78,7 +78,7 @@ SEM Declaration
                                                                    _
 %%]]
                                                 -> []
-                                              _ -> [rngLift @range Err_Newtype @simpletype.name]
+                                              _ -> [rngLift @range Err_Newtype @typelefthandside.name]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

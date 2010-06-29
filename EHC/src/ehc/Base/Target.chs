@@ -7,37 +7,72 @@
 
 %%[(8 codegen) import(qualified Data.Map as Map,Data.List)
 %%]
-%%[(8 codegen) import(EH.Util.Pretty)
+%%[(8 codegen) import(EH.Util.Pretty,EH.Util.Utils)
+%%]
+%%[(20 codegen) import({%{EH}Base.Binary}, {%{EH}Base.Serialize})
+%%]
+
+%%[doesWhat doclatex
+Abstract naming convention of Target alternatives reflect what is done:
+
+\paragraph{Target}
+Target_<treatment>_<intermediate-lang>_<codegen-lang>
+
+\begin{itemize}
+\item
+\textbf{treatment}
+  : type of internal analysis done
+    \begin{itemize}
+    \item FullProgAnal: full program analysis
+    \item Interpreter : enough for interpreting
+    \end{itemize}
+
+\item
+\textbf{intermediate-lang}
+  : the last intermediate language leading to final codegeneration
+    \begin{itemize}
+    \item Grin
+    \item Core
+    \end{itemize}
+
+\item
+\textbf{codegen-lang}
+  : the language for which code is generated
+    \begin{itemize}
+    \item C
+    \item LLVM
+    \item JVM
+    \item CLR
+    \item Jazy, Java lazy interpreter
+    \end{itemize}
+\end{itemize}
+
+Combinations are all hardcoded to make explicit that only particular combinations are allowed.
+This may change later if/when combinations can be chosen independent/orthogonal.
+
+\paragraph{TargetFlavor}
+Flavors of target are incompatible, that is cannot be used interchangedly.
+The code is specific for a particular meta purpose, such as profiling and debugging.
+Currently there are target flavors for:
+
+\begin{itemize}
+\item
+\textbf{plain}
+  : base flavor
+
+\item
+\textbf{debug}
+  : includes debugging info, currently:
+    \begin{itemize}
+    \item stack trace
+    \end{itemize}
+
+\end{itemize}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Targets for code generation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-Abstract naming convention of Target alternatives reflect what is done:
-
-Target_<treatment>_<intermediate-lang>_<codegen-lang>
-
-<treatment>
-  : type of internal analysis done
-    - FullProgAnal: full program analysis
-    - Interpreter : enough for interpreting
-
-<intermediate-lang>
-  : the last intermediate language leading to final codegeneration
-    - Grin
-    - Core
-
-<codegen-lang>
-  : the language for which code is generated
-    - C
-    - LLVM
-    - JVM
-    - CLR
-    - Jazy, Java lazy interpreter
-
-Combinations are all hardcoded to make explicit that only particular combinations are allowed.
-This may change later if/when combinations can be chosen independent/orthogonal.
 
 %%[(8 codegen) export(Target(..))
 data Target
@@ -120,6 +155,9 @@ supportedTargetMp :: Map.Map String Target
                     , mk Target_FullProgAnal_Grin_C [FFIWay_CCall]
                     ]
 %%]]
+%%[[(8 codegen llvm)
+                 ++ [ mk Target_FullProgAnal_Grin_LLVM [FFIWay_CCall] ]
+%%]]
 %%[[(8 codegen clr)
                  ++ [ mk Target_FullProgAnal_Grin_CLR [FFIWay_CCall] ]
 %%]]
@@ -127,12 +165,58 @@ supportedTargetMp :: Map.Map String Target
         mk t ffis = (t,TargetInfo (FFIWay_Prim : ffis)) 
 
 showSupportedTargets' :: String -> String
-showSupportedTargets' sep
-  = concat $ intersperse sep $ Map.keys supportedTargetMp
+showSupportedTargets'
+  = showStringMapKeys supportedTargetMp
 
 showSupportedTargets :: String
 showSupportedTargets
   = showSupportedTargets' " "
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Target flavors
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) export(TargetFlavor(..))
+data TargetFlavor
+  = TargetFlavor_Plain						-- no special stuff
+  | TargetFlavor_Debug						-- debugging variant
+  -- more: profiling, ....
+  deriving (Eq,Ord,Enum)
+%%]
+
+%%[(8 codegen) export(defaultTargetFlavor)
+defaultTargetFlavor :: TargetFlavor
+defaultTargetFlavor = TargetFlavor_Plain
+%%]
+
+%%[(8 codegen)
+instance Show TargetFlavor where
+  show TargetFlavor_Plain				= "plain"
+  show TargetFlavor_Debug				= "debug"
+%%]
+
+Supported target variants.
+
+%%[(8 codegen) export(allTargetFlavorMp,showAllTargetFlavors',showAllTargetFlavors)
+allTargetFlavorMp :: Map.Map String TargetFlavor
+allTargetFlavorMp
+  = Map.fromList ts
+  where ts
+          = [ (show t, t)
+            | t <-
+                  [ TargetFlavor_Plain
+                  , TargetFlavor_Debug
+                  ]
+            ]
+
+showAllTargetFlavors' :: String -> String
+showAllTargetFlavors'
+  = showStringMapKeys allTargetFlavorMp
+
+showAllTargetFlavors :: String
+showAllTargetFlavors
+  = showAllTargetFlavors' " "
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -262,7 +346,7 @@ data FFIWay
   | FFIWay_CCall			-- as C call
   | FFIWay_Jazy				-- as Java/Jazy
   | FFIWay_CLR				-- as CLR, just a placeholder
-  deriving (Eq,Ord)
+  deriving (Eq,Ord,Enum)
 
 instance Show FFIWay where
   show FFIWay_Prim	= "prim"
@@ -283,6 +367,9 @@ ffiWayForPrim Target_Interpreter_Core_Jazy			= Just FFIWay_Jazy
 %%]]
 %%[[(8 codegen clr)
 ffiWayForPrim Target_FullProgAnal_Grin_CLR			= Just FFIWay_CLR
+%%]]
+%%[[(8 codegen llvm)
+ffiWayForPrim Target_FullProgAnal_Grin_LLVM			= Just FFIWay_CCall
 %%]]
 ffiWayForPrim t | targetIsC t						= Just FFIWay_CCall
                 | otherwise							= Nothing
@@ -307,3 +394,40 @@ allTargetInfoMp :: TargInfoMp
 allFFIWays :: [FFIWay]
 allFFIWays = nub $ concatMap targiAllowedFFI $ Map.elems allTargetInfoMp
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Instances: Typeable, Data
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(20 codegen)
+deriving instance Typeable FFIWay
+deriving instance Data FFIWay
+
+deriving instance Typeable TargetFlavor
+deriving instance Data TargetFlavor
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Instances: Binary, Serialize
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(20 codegen)
+instance Binary FFIWay where
+  put = putEnum8
+  get = getEnum8
+
+instance Serialize FFIWay where
+  sput = sputPlain
+  sget = sgetPlain
+
+instance Binary TargetFlavor where
+  put = putEnum8
+  get = getEnum8
+
+instance Serialize TargetFlavor where
+  sput = sputPlain
+  sget = sgetPlain
+
+%%]
+
+

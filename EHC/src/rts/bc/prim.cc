@@ -24,13 +24,17 @@
 PRIM Word gb_Unit 
 	= GB_MkConEnumNodeAsTag( 0 ) ;
 
-PRIM Word gb_False
-	= GB_MkConEnumNodeAsTag( 0 ) ;
-PRIM Word gb_True
-	= GB_MkConEnumNodeAsTag( 1 ) ;
-
-PRIM GB_Node gb_Nil
+#if ! USE_EHC_MM
+GB_Node gb_Nil_Node
     = GB_MkConEnumNode( GB_Tag_List_Nil ) ;
+#endif
+
+PRIM GB_Node* gb_Nil
+#if USE_EHC_MM
+    = NULL ;
+#else
+    = &gb_Nil_Node ;
+#endif
 
 PRIM Word gb_EQ
 	= GB_MkConEnumNodeAsTag( 0 ) ;
@@ -42,8 +46,17 @@ PRIM Word gb_LT
 %%]
 
 %%[98
-PRIM GB_Node gb_Nothing
+#if ! USE_EHC_MM
+GB_Node gb_Nothing_Node
     = GB_MkConEnumNode( GB_Tag_Maybe_Nothing ) ;
+#endif
+
+PRIM GB_Node* gb_Nothing
+#if USE_EHC_MM
+    = NULL ;
+#else
+    = &gb_Nothing_Node ;
+#endif
 %%]
 
 The definition of IOErrorType must coincide with the one in Prelude.hs
@@ -105,6 +118,36 @@ PRIM Word gb_WriteMode
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Garbage Collection
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+PRIM Word primGC(  )
+{
+#	if USE_EHC_MM
+		return RTS_MkBool( mm_itf_gc() ) ;
+#	else
+		return gb_False ;
+#	endif
+}
+%%]
+
+%%[90
+%%]
+// finalize all weak ptrs
+PRIM Word primGetAllWeakPtrs(  )
+{
+#	if USE_EHC_MM
+		GB_GCSafe_Enter ;
+		// GB_GCSafe_1(*pn) ;
+		GB_GCSafe_Leave ;
+		return gb_Nil ;
+#	else
+		return gb_Nil ;
+#	endif
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Weak ptr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -117,23 +160,57 @@ Conceptually:
 %%[99
 PRIM Word primMakeWeakPtr( Word key, Word val, Word finalizer )
 {
-	return val ;
+#	if USE_EHC_MM
+		return mm_itf_NewWeakPtr( key, val, finalizer ) ;
+#	else
+		return val ;
+#	endif
+}
+
+PRIM Word primMakeWeakPtrWOFinalizer( Word key, Word val )
+{
+#	if USE_EHC_MM
+		return mm_itf_NewWeakPtr( key, val, MM_Itf_WeakPtr_NoFinalizer ) ;
+#	else
+		return val ;
+#	endif
 }
 
 PRIM GB_NodePtr primDeRefWeakPtr( Word wp )
 {
 	GB_NodePtr wpDeref ;
-	GB_GC_SafeEnter ;
-	GB_GC_Safe1_Zeroed(wpDeref) ;
-	GB_MkMaybeJust( wpDeref, wp ) ;
-	GB_GC_SafeLeave ;
+	GB_GCSafe_Enter ;
+	GB_GCSafe_1(wp) ;
+#	if USE_EHC_MM
+		wp = mm_itf_DerefWeakPtr( wp ) ;
+		if ( wp == 0 ) {
+			GB_MkMaybeNothing( wpDeref ) ;
+		} else {
+			GB_MkMaybeJust( wpDeref, wp ) ;
+		}
+#	else
+		GB_MkMaybeJust( wpDeref, wp ) ;
+#	endif
+	GB_GCSafe_Leave ;
 	return wpDeref ;
 }
 
 PRIM GB_NodePtr primFinalizeWeakPtr( Word wp )
 {
 	GB_NodePtr fin ;
-	GB_MkMaybeNothing( fin ) ;
+	GB_GCSafe_Enter ;
+	GB_GCSafe_1(wp) ;
+#	if USE_EHC_MM
+		wp = mm_itf_FinalizeWeakPtr( wp ) ;
+		if ( wp == 0 ) {
+			GB_MkMaybeNothing( fin ) ;
+		} else {
+			GB_MkMaybeJust( fin, wp ) ;
+		}
+#	else
+		GB_MkMaybeNothing( fin ) ;
+#	endif
+	GB_GCSafe_Leave ;
 	return fin ;
 }
 
@@ -163,35 +240,6 @@ PRIM GB_NodePtr primDivModInt( GB_Int x, GB_Int y )
 }
 
 %%]
-
-%%[95
-PRIM Word primMaxInt()
-{
-  	// return GB_Int2GBInt(Bits_MaxSInt(Word,Word_SizeInBits,GB_Word_SizeInBits-GB_Word_SizeOfWordTag)) ;
-  	return (Bits_MaxSInt(Word,Word_SizeInBits,GB_Word_SizeInBits-GB_Word_SizeOfWordTag)) ;
-}
-
-PRIM Word primMinInt()
-{
-  	// return GB_Int2GBInt(Bits_MinSInt(Word,Word_SizeInBits,GB_Word_SizeInBits-GB_Word_SizeOfWordTag)+1) ;
-  	return (Bits_MinSInt(Word,Word_SizeInBits,GB_Word_SizeInBits-GB_Word_SizeOfWordTag)+1) ;
-}
-%%]
-
-%%[97
-PRIM Word primMaxWord()
-{
-	// printf( "primMaxWord %x\n", Word32_MaxValue >> GB_Word_SizeOfWordTag ) ;
-  	return Word32_MaxValue >> GB_Word_SizeOfWordTag ;
-}
-
-PRIM Word primMinWord()
-{
-  	return Word32_MinValue ;
-}
-%%]
-
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% bitwise logical operators
@@ -252,8 +300,8 @@ GB_NodePtr primCStringToString1Char( char* s, GB_Int goff )
 {
 	char c = s[ GB_GBInt2Int(goff) ] ;
   	GB_NodePtr n, n2 ;
-	GB_GC_SafeEnter ;
-  	GB_GC_Safe2_Zeroed(n,n2) ;
+	GB_GCSafe_Enter ;
+  	GB_GCSafe_2_Zeroed(n,n2) ;
   	IF_GB_TR_ON(3,printf("primCStringToString1Char1 %p:'%s'[%d]\n", s, s, GB_GBInt2Int(goff) ););
 	if ( c ) {
 		GB_MkCFunNode2In(n2,&primCStringToString1Char,s,GB_Int_Add(goff,GB_Int1)) ;
@@ -262,7 +310,7 @@ GB_NodePtr primCStringToString1Char( char* s, GB_Int goff )
   		GB_MkListNil(n) ;
 	}
   	IF_GB_TR_ON(3,printf("primCStringToString1Char2 n %p\n", n ););
-  	GB_GC_SafeLeave ;
+  	GB_GCSafe_Leave ;
   	return n ;
 }
 
@@ -297,20 +345,20 @@ PRIM GB_NodePtr primTraceStringExit( GB_NodePtr n )
 	char buf[100] ;
 	int bufInx = 0 ;
 	int sz = 99 ;
-	GB_GC_SafeEnter ;
-	GB_GC_Safe1(n) ;
+	GB_GCSafe_Enter ;
+	GB_GCSafe_1(n) ;
   	IF_GB_TR_ON(3,printf("primTraceStringExit1 n %p\n", n ););
 %%[[8
-	gb_listForceEval( &n, &sz ) ;
+	gb_listForceEval2( n, &sz ) ;
 %%][96
-	GB_PassExc_GCSafe( gb_listForceEval( &n, &sz ) ) ;
+	GB_PassExc_GCSafe( gb_listForceEval2( n, &sz ) ) ;
 %%]]
   	IF_GB_TR_ON(3,printf("primTraceStringExit2 n %p\n", n ););
-	GB_List_Iterate(n,sz,{buf[bufInx++] = GB_GBInt2Int(GB_List_Head(n));}) ;
+	GB_List_Iterate(n,Cast(GB_NodePtr,gb_Indirection_FollowObject(Cast(Word,n))),sz,{buf[bufInx++] = GB_GBInt2Int(GB_List_Head(n));}) ;
   	IF_GB_TR_ON(3,printf("primTraceStringExit3 n %p\n", n ););
 	buf[bufInx] = 0 ;
   	IF_GB_TR_ON(3,printf("primTraceStringExit4 `%s'\n", buf ););
-	GB_GC_SafeLeave ;
+	GB_GCSafe_Leave ;
 	gb_error( buf ) ;
 	return n ;
 }
@@ -348,7 +396,7 @@ PRIM Word primExitWith( Word exitCode )
 %%% Show
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[95
+%%[91
 PRIM GB_NodePtr primShowInt( GB_Int intNd )
 {
 	char buf[sizeof(Word)*10] ;
@@ -430,30 +478,30 @@ PRIM GB_NodePtr primNewMutVar( Word init, Word state )
 {
 	GB_NodePtr mutVar ;
 	GB_NodePtr res ;
-	GB_GC_SafeEnter ;
-	GB_GC_Safe2(init,state) ;
-	GB_GC_Safe1_Zeroed(mutVar) ;
+	GB_GCSafe_Enter ;
+	GB_GCSafe_2(init,state) ;
+	GB_GCSafe_1_Zeroed(mutVar) ;
 	
 	// printf("primNewMutVar\n") ;
 
 	GB_MkTupNode1_In(mutVar,init) ;
 	GB_MkTupNode2_In(res,state,mutVar) ;
 	
-	GB_GC_SafeLeave ;
+	GB_GCSafe_Leave ;
 	return res ;
 }
 
 PRIM GB_NodePtr primReadMutVar( GB_NodePtr mutVar, Word state )
 {
 	GB_NodePtr res ;
-	GB_GC_SafeEnter ;
-	GB_GC_Safe2(mutVar,state) ;
+	GB_GCSafe_Enter ;
+	GB_GCSafe_2(mutVar,state) ;
 
 	// printf("primReadMutVar\n") ;
 
 	GB_MkTupNode2_In(res,state,mutVar->content.fields[0]) ;
 	
-	GB_GC_SafeLeave ;
+	GB_GCSafe_Leave ;
 	return res ;
 }
 
@@ -467,10 +515,7 @@ PRIM Word primWriteMutVar( GB_NodePtr mutVar, Word newVal, Word state )
 
 PRIM Word primSameMutVar( Word v1, Word v2 )
 {
-	if ( v1 == v2 )
-		return gb_True ;
-	else
-		return gb_False ;
+	return RTS_MkBool( v1 == v2 ) ;
 }
 
 %%]
@@ -479,28 +524,6 @@ PRIM Word primSameMutVar( Word v1, Word v2 )
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% System
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[99
-%%]
-PRIM GB_NodePtr primGetProgArgv( )
-{
-	GB_NodePtr res ;
-	GB_GC_SafeEnter ;
-	GB_GC_Safe1(res) ;
-	GB_MkListNil( res ) ;
-	
-	int i ;
-	for ( i = rtsArgC - 1 ; i >= 0 ; i-- ) {
-		GB_NodePtr n1, n2 ;
-		n2 = primCStringToString( rtsArgV[i] ) ;
-		GB_MkListCons(n1,n2,res) ;
-		res = n1 ;
-	}
-	
-	GB_GC_SafeLeave ;
-	return res ;
-}
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Environment
@@ -515,6 +538,27 @@ PRIM char** getEnviron()
 }
 
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Program arguments
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99
+PRIM void getProgArgv( int *argc, char ***argv )
+{
+	*argc = rtsArgC ;
+	*argv = rtsArgV ;
+}
+
+PRIM void setProgArgv( int argc, char **argv )
+{
+	rtsArgC = argc ;
+	rtsArgV = argv ;
+}
+%%]
+
+
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Error number
@@ -532,6 +576,21 @@ PRIM int _setErrno( int e )
 }
 
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Internals of interpreter
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[96
+PRIM Word primCallInfoKindIsVisible( Word kind )
+{
+	return RTS_MkBool( gb_CallInfo_Kind_IsVisible(kind) ) ;
+}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Dummy
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8.dummyForLinker
 int dummy_C ;

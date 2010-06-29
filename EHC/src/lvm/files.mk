@@ -75,9 +75,9 @@ lvm: $(LIB_LVM_INS_FLAG)
 # rules
 $(LIB_LVM_CABAL_DRV): $(LVM_MKF) $(LIB_LVM_HS_SRC)
 	mkdir -p $(@D)
-	$(call GEN_CABAL \
+	$(call FUN_GEN_CABAL_LIB \
 		, $(LIB_LVM_PKG_NAME) \
-		, $(EH_VERSION) \
+		, $(EH_VERSION_SHORT) \
 		, mtl parsec\
 		, $(CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES) OverlappingInstances \
 		, Lazy Virtual Machine library \

@@ -62,6 +62,10 @@
 %%[20 import({%{EH}Module}(modBuiltin))
 %%]
 
+-- packages
+%%[99 import({%{EH}Base.PackageDatabase})
+%%]
+
 -- Misc
 %%[(8 codegen) import({%{EH}Base.Target})
 %%]
@@ -87,25 +91,50 @@ main
 %%]]
 %%[[99
                                 where p = mkFPath progName
+%%][101
+                                where p = mkFPath "uhc"		-- hardbaked name
 %%]]
                  oo@(o,n,errs)  = getOpt Permute ehcCmdLineOpts args
                  opts2          = foldl (flip ($)) opts1 o
-         ;  case ehcOptImmQuit opts2 of
-              Just immq     -> handleImmQuitOption immq opts2
+%%[[1
+         ;  let opts3 = opts2
+%%][99
+         ;  userDir <- ehcenvDir (envkey opts2)
+         ;  let opts3 = opts2 { ehcOptUserDir = userDir
+                              , ehcOptOutputDir =
+                                  let outputDir = maybe "." id (ehcOptOutputDir opts2)
+                                  in  case ehcOptPkg opts2 of
+                                        Just (PkgOption_Build s)
+                                          -> case parsePkgKey s of
+                                               Just k  -> Just $
+                                                          outputDir ++ "/" ++
+                                                          mkInternalPkgFileBase k (Cfg.installVariant opts2)
+                                                                                (ehcOptTarget opts2) (ehcOptTargetFlavor opts2)
+                                               _       -> ehcOptOutputDir opts2
+                                        _ -> ehcOptOutputDir opts2
+                              }
+%%]]
+         ;  case ehcOptImmQuit opts3 of
+              Just immq     -> handleImmQuitOption immq opts3
               _ | null errs ->
 %%[[1
-                               doCompileRun (if null n then "" else head n) opts2
+                               doCompileRun (if null n then "" else head n) opts3
 %%][8
-                               unless (null n) (doCompileRun n opts2)
-%%][99
-                               do { mbEnv <- importEHCEnvironment (mkEhcenvKey (Cfg.verFull Cfg.version) (fpathToStr $ ehcProgName opts2) Cfg.ehcDefaultVariant)
-                                  ; let opts3 = maybe opts2 (\e -> opts2 {ehcOptEnvironment = e}) mbEnv
+                               unless (null n) (doCompileRun n opts3)
+%%][9999
+                               do { mbEnv <- importEHCEnvironment (envkey opts3)
+                                  ; let opts4 = opts3 -- maybe opts3 (\e -> opts3 {ehcOptEnvironment = e}) mbEnv
                                   -- ; putStrLn (show mbEnv)
                                   ; unless (null n) (doCompileRun n opts3)
                                   }
 %%]]
-                | otherwise -> putStr (head errs)
+                | otherwise -> do { putStr (head errs)
+                                  ; exitFailure
+                                  }
          }
+%%[[99
+  where envkey opts = mkEhcenvKey (Cfg.verFull Cfg.version) (fpathToStr $ ehcProgName opts) Cfg.ehcDefaultVariant
+%%]]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -127,23 +156,22 @@ handleImmQuitOption :: ImmediateQuitOption -> EHCOpts -> IO ()
 handleImmQuitOption immq opts
   = case immq of
       ImmediateQuitOption_Help
-        -> do { progName  <- getProgName
+        -> do {
 %%[[1
-              ; putStrLn (usageInfo ("version: " ++ Cfg.verInfo Cfg.version ++ ", aspects: " ++ ehcOptAspects opts
-                                    ++ "\n\nUsage: " ++ progName ++ " [options] [file[.eh|.hs]]\n\noptions:"
-                                    ) ehcCmdLineOpts)
-%%][8
+                progName  <- getProgName
+%%][99
+                let progName = fpathToStr (ehcProgName opts)
+%%]]
               ; putStrLn (usageInfo (  "version: " ++ Cfg.verInfo Cfg.version ++ ", aspects: " ++ ehcOptAspects opts
-                                    ++ "\n\nUsage: " ++ progName
-                                    ++ " [options] [file[.eh|.hs] ...]\n\noptions:"
+                                    ++ "\n\nUsage: " ++ progName ++ " [options] [file[.eh|.hs] ...]\n\noptions:"
                                     )
                                     ehcCmdLineOpts)
 %%[[(8 codegen)
-              ; putStrLn ("Transformations:\n" ++ (unlines . map (\(n,t) -> "  " ++ n ++ ": " ++ t) $ cmdLineTrfs))
+              -- ; putStrLn ("Transformations:\n" ++ (unlines . map (\(n,t) -> "  " ++ n ++ ": " ++ t) $ cmdLineTrfs))
 %%][100
 %%]]
-%%]]
               }
+        where 
       ImmediateQuitOption_Version
         -> putStrLn (Cfg.verInfo Cfg.version)
       ImmediateQuitOption_Meta_Variant
@@ -160,8 +188,11 @@ handleImmQuitOption immq opts
         -> putStr (show defaultTarget)
 %%]]
 %%[[99
-      ImmediateQuitOption_NumericVersion
-        -> putStrLn (Cfg.verNumeric Cfg.version)
+      ImmediateQuitOption_VersionDotted
+        -> putStrLn (Cfg.verFull Cfg.version)
+      ImmediateQuitOption_VersionAsNumber
+        -> putStrLn (Cfg.verAsNumber Cfg.version)
+{-
       ImmediateQuitOption_Meta_ExportEnv mvEnvOpt
         -> exportEHCEnvironment
              (mkEhcenvKey (Cfg.verFull Cfg.version) (fpathToStr $ ehcProgName opts) Cfg.ehcDefaultVariant)
@@ -176,6 +207,15 @@ handleImmQuitOption immq opts
         -> do { d <- ehcenvDir (mkEhcenvKey (Cfg.verFull Cfg.version) (fpathToStr $ ehcProgName opts) Cfg.ehcDefaultVariant)
               ; putStrLn d
               }
+-}
+      ImmediateQuitOption_Meta_Pkgdir_System
+        -> do { let d = Cfg.mkInstallPkgdirSystem opts
+              ; putStrLn d
+              }
+      ImmediateQuitOption_Meta_Pkgdir_User
+        -> do { let d = Cfg.mkInstallPkgdirUser opts
+              ; putStrLn d
+              }
 %%]]
 %%]
 
@@ -186,25 +226,33 @@ handleImmQuitOption immq opts
 Order is significant.
 
 %%[8
-type FileSuffMp = [(String,EHCompileUnitState)]
+type FileSuffMp = [(FileSuffix,EHCompileUnitState)]
 
 fileSuffMpHs :: FileSuffMp
 fileSuffMpHs
-  = [ ( "hs"  , ECUSHaskell HSStart )
+  = [ ( Just "hs"  , ECUSHaskell HSStart )
 %%[[99
-    , ( "lhs" , ECUSHaskell LHSStart )
+    , ( Just "lhs" , ECUSHaskell LHSStart )
 %%]]
-    , ( "eh"  , ECUSEh EHStart )
+    , ( Just "eh"  , ECUSEh EHStart )
 %%[[20
-    , ( "hi"  , ECUSHaskell HIStart )
+    , ( Just "hi"  , ECUSHaskell HIStart )
 %%]]
 %%[[(8 grin)
     -- currently not supported
-    , ( "grin", ECUSGrin )
+    , ( Just "grin", ECUSGrin )
 %%]]
-%%[[(94 codegen)
-    , ( "c"   , ECUSC CStart )
+%%[[(90 codegen)
+    , ( Just "c"   , ECUSC CStart )
 %%]]
+    ]
+%%]
+
+%%[8
+-- Suffix map for empty suffix, defaults to .hs
+fileSuffMpHsNoSuff :: FileSuffMp
+fileSuffMpHsNoSuff
+  = [ ( Nothing  , ECUSHaskell HSStart )
     ]
 %%]
 
@@ -281,50 +329,87 @@ doCompileRun filename opts
 %%]
 
 %%[8.doCompile -1.doCompile
-doCompileRun :: [String] -> EHCOpts -> IO ()
-doCompileRun fnL@(fn:_) opts
-  = do { let fpL@(fp:_)     = map (mkTopLevelFPath "hs") fnL
-             topModNmL@(topModNm:_)
-                            = map (mkHNm . fpathBase) fpL
-             searchPath     = [emptyFileLoc]
+doCompilePrepare :: [String] -> EHCOpts -> IO (Maybe (EHCOpts,[FPath],[HsName],EHCompileRun))
+doCompilePrepare fnL@(fn:_) opts
+  = do { let fpL@(fp:_)             = map (mkTopLevelFPath "hs") fnL
+             topModNmL@(topModNm:_) = map (mkHNm . fpathBase) fpL
+%%[[99
+             installRoot            = Cfg.installRoot    opts
+             installVariant         = Cfg.installVariant opts
+       -- ; userDir <- ehcenvDir (Cfg.verFull Cfg.version)
+       -- ; let opts2 = opts -- {ehcOptUserDir = userDir}
+       ; pkgDb1 <- pkgDbFromDirs opts
+                    ({-
+                        [ filePathCoalesceSeparator $ filePathUnPrefix
+                          $ Cfg.mkDirbasedInstallPrefix (filelocDir d) Cfg.INST_LIB_PKG "" (show (ehcOptTarget opts)) ""
+                        | d <- ehcOptPkgdirLocPath opts
+                        ]
+                     ++ [ filePathUnPrefix
+                          $ Cfg.mkDirbasedTargetVariantPkgPrefix installRoot installVariant (show (ehcOptTarget opts)) ""
+                        ]
+                     -}
+                     {-
+                     -}
+                        [ filePathUnPrefix d
+                        | d <- nub $ ehcOptPkgdirLocPath opts ++ [Cfg.mkInstallPkgdirUser opts, Cfg.mkInstallPkgdirSystem opts]
+                        ]
+                    )
+       ; let (pkgDb2,pkgErrs) = pkgDbSelectBySearchFilter (pkgSearchFilter Just PackageSearchFilter_ExposePkg (pkgExposedPackages pkgDb1)
+                                                           ++ ehcOptPackageSearchFilter opts
+                                                          ) pkgDb1
+             pkgDb3 = pkgDbFreeze pkgDb2
+       -- ; putStrLn $ "db1 " ++ show pkgDb1
+       -- ; putStrLn $ "db2 " ++ show pkgDb2
+       -- ; putStrLn $ "db3 " ++ show pkgDb3
+       -- ; putStrLn (show $ ehcOptPackageSearchFilter opts)
+%%]]
+       ; let searchPath     = [emptyFileLoc]
                               ++ ehcOptImportFileLocPath opts
 %%[[99
-                              ++ [ mkPkgFileLoc p $ filePathUnPrefix
+                              {-
+                              ++ [ mkPkgFileLoc (p, Nothing) $ filePathUnPrefix
                                    $ Cfg.mkDirbasedLibVariantTargetPkgPrefix (filelocDir d) "" (show (ehcOptTarget opts)) p
                                  | d <- ehcOptLibFileLocPath opts
                                  , p <- ehcOptLibPackages opts
                                  ]
                               ++ [ mkPkgFileLoc p $ filePathUnPrefix
-                                   $ Cfg.mkDirbasedTargetVariantPkgPrefix (ehcenvInstallRoot $ ehcOptEnvironment opts) (ehcenvVariant (ehcOptEnvironment opts)) (show (ehcOptTarget opts)) p
+                                   $ Cfg.mkDirbasedTargetVariantPkgPrefix installRoot installVariant (show (ehcOptTarget opts)) p
                                  | p <- (   ehcOptLibPackages opts
                                          ++ (if ehcOptHideAllPackages opts then [] else Cfg.ehcAssumedPackages)
                                         )
                                  ]
+                              -}
+                              ++ [fileLocPkgDb]
 %%]]
-             opts2          = opts { ehcOptImportFileLocPath = searchPath }
+             opts3          = opts { ehcOptImportFileLocPath = searchPath
+%%[[99
+                                    , ehcOptPkgDb = pkgDb3
+%%]]
+                                    }
 {- this does not work in ghc 6.8.2
              crsi           = emptyEHCompileRunStateInfo
-                                { crsiOpts		 =	 opts2
-                                , crsiHSInh      =   initialHSSem opts2
-                                , crsiEHInh      =   initialEHSem opts2 fp
+                                { crsiOpts		 =	 opts3
+                                , crsiHSInh      =   initialHSSem opts3
+                                , crsiEHInh      =   initialEHSem opts3 fp
 %%[[(8 codegen)
-                                , crsiCoreInh    =   initialCore2GrSem opts2
+                                , crsiCoreInh    =   initialCore2GrSem opts3
 %%]]
 %%[[20
-                                , crsiHIInh      =   initialHISem opts2
-                                , crsiHSModInh   =   initialHSSemMod opts2
+                                -- , crsiHIInh      =   initialHISem opts3
+                                , crsiHSModInh   =   initialHSSemMod opts3
 %%]]
                                 }
 -}
-             crsi           =   (EHCompileRunStateInfo opts2
+             crsi           =   (EHCompileRunStateInfo opts3
                                                        uidStart uidStart
-                                                       (initialHSSem opts2) (initialEHSem opts2 fp)
+                                                       (initialHSSem opts3) (initialEHSem opts3 fp)
 %%[[(8 codegen)
-                                                       (initialCore2GrSem opts2)
+                                                       (initialCore2GrSem opts3)
 %%]]
 %%[[20
                                                        Nothing
-                                                       (initialHISem opts2) (initialHSSemMod opts2)
+                                                       -- (initialHISem opts3)
+                                                       (initialHSSemMod opts3)
                                                        Map.empty Map.empty defaultOptim
 %%]]
 %%[[(20 codegen)
@@ -335,71 +420,86 @@ doCompileRun fnL@(fn:_) opts
 %%]]
                                 )
              initialState   = mkEmptyCompileRun topModNm crsi
-{-
--}
+       ; return $ Just (opts3,fpL,topModNmL,initialState)
+       }
+
+doCompileRun :: [String] -> EHCOpts -> IO ()
+doCompileRun fnL@(fn:_) opts
+  = do { mbPrep <- doCompilePrepare fnL opts
+       ; if isJust mbPrep
+         then do { let ( opts
+                        , fpL@(fp:_)
+                        , topModNmL@(topModNm:_)
+                        , initialState
+                        ) = fromJust mbPrep
+                       searchPath = ehcOptImportFileLocPath opts
 %%[[8
-             comp mbFp nm
-               = do { mbFoundFp <- cpFindFileForFPath fileSuffMpHs searchPath (Just nm) mbFp
-                    ; when (isJust mbFoundFp)
-                           (cpEhcModuleCompile1 nm)
-                    }
+                       comp mbFp nm
+                         = do { mbFoundFp <- cpFindFileForFPath fileSuffMpHs searchPath (Just nm) mbFp
+                              ; when (isJust mbFoundFp)
+                                     (cpEhcModuleCompile1 nm)
+                              }
 %%][20
-             imp :: Maybe FPath -> Maybe (HsName,(FPath,FileLoc)) -> HsName -> EHCompilePhase (HsName,Maybe (HsName,(FPath,FileLoc)))
-             imp mbFp mbPrev nm
+                       imp :: Maybe FPath -> Maybe (HsName,(FPath,FileLoc)) -> HsName -> EHCompilePhase (HsName,Maybe (HsName,(FPath,FileLoc)))
+                       imp mbFp mbPrev nm
+                         = do { let isTopModule = isJust mbFp
+                                    fileSuffMpHs' = (if isTopModule then fileSuffMpHsNoSuff else []) ++ fileSuffMpHs
 %%[[20
-               = do { fpsFound <- cpFindFilesForFPath False fileSuffMpHs searchPath (Just nm) mbFp
+                              ; fpsFound <- cpFindFilesForFPath False fileSuffMpHs' searchPath (Just nm) mbFp
 %%][99
-               = do { let searchPath' = adaptedSearchPath mbPrev
-                    ; fpsFound <- cpFindFilesForFPathInLocations filelocDir const False fileSuffMpHs searchPath' (Just nm) mbFp
+                              ; let searchPath' = adaptedSearchPath mbPrev
+                              ; fpsFound <- cpFindFilesForFPathInLocations (fileLocSearch opts) (\(x,_,_) -> x) False fileSuffMpHs' searchPath' (Just nm) mbFp
 %%]]
-                    ; when (ehcOptVerbosity opts >= VerboseDebug)
-                           (do { lift $ putStrLn $ show nm ++ ": " ++ show (fmap fpathToStr mbFp) ++ ": " ++ show (map fpathToStr fpsFound)
+                              ; when (ehcOptVerbosity opts >= VerboseDebug)
+                                     (do { lift $ putStrLn $ show nm ++ ": " ++ show (fmap fpathToStr mbFp) ++ ": " ++ show (map fpathToStr fpsFound)
 %%[[99
-                               ; lift $ putStrLn $ "searchPath: " ++ show searchPath'
+                                         ; lift $ putStrLn $ "searchPath: " ++ show searchPath'
 %%]]
-                               })
-                    ; when (isJust mbFp)
-                           (cpUpdCU nm (ecuSetIsTopMod True))
-                    ; case fpsFound of
-                        (fp:_)
-                          -> do { nm' <- cpEhcModuleCompile1 (Just HSOnlyImports) nm
-                                ; cr <- get
-                                ; let (ecu,_,_,_) = crBaseInfo nm' cr
-                                ; return (nm',Just (nm',(fp, ecuFileLocation ecu)))
-                                }
-                        _ -> return (nm,Nothing)
-                    }
+                                         })
+                              ; when isTopModule
+                                     (cpUpdCU nm (ecuSetIsTopMod True))
+                              ; case fpsFound of
+                                  (fp:_)
+                                    -> do { nm' <- cpEhcModuleCompile1 (Just HSOnlyImports) nm
+                                          ; cr <- get
+                                          ; let (ecu,_,_,_) = crBaseInfo nm' cr
+                                          ; return (nm',Just (nm',(fp, ecuFileLocation ecu)))
+                                          }
+                                  _ -> return (nm,Nothing)
+                              }
 %%[[99
-               where -- strip tail part corresponding to module name, and use it to search as well
-                     adaptedSearchPath (Just (prevNm,(prevFp,prevLoc)))
-                       = case (fpathMbDir (mkFPath prevNm), fpathMbDir prevFp, prevLoc) of
-                           (_, _, p@(FileLoc (FileLocKind_Pkg _) _))
-                             -> p : searchPath
-                           (Just n, Just p, _)
-                             -> mkDirFileLoc (filePathUnPrefix prefix) : searchPath
-                             where (prefix,_) = splitAt (length p - length n) p
-                           _ -> searchPath
-                     adaptedSearchPath _ = searchPath
+                         where -- strip tail part corresponding to module name, and use it to search as well
+                               adaptedSearchPath (Just (prevNm,(prevFp,prevLoc)))
+                                 = case (fpathMbDir (mkFPath prevNm), fpathMbDir prevFp, prevLoc) of
+                                     (_, _, p) | filelocIsPkg p
+                                       -> p : searchPath
+                                     (Just n, Just p, _)
+                                       -> mkDirFileLoc (filePathUnPrefix prefix) : searchPath
+                                       where (prefix,_) = splitAt (length p - length n) p
+                                     _ -> searchPath
+                               adaptedSearchPath _ = searchPath
 %%]]
 %%]]
-       ; when (ehcOptVerbosity opts >= VerboseDebug)
-              (putStrLn $ "search path: " ++ show searchPath)
+                 ; when (ehcOptVerbosity opts >= VerboseDebug)
+                        (putStrLn $ "search path: " ++ show searchPath)
 %%[[8
-       ; _ <- runStateT (cpSeq [ comp (Just fp) topModNm
-                               ]) initialState
+                 ; _ <- runStateT (cpSeq [ comp (Just fp) topModNm
+                                         ]) initialState
 %%][20
-       ; _ <- runStateT (do { topModNmL' <- zipWithM (\fp topModNm -> imp (Just fp) Nothing topModNm) fpL topModNmL
-                            ; cpImportGatherFromMods (imp Nothing) (map fst topModNmL')
-                            ; cpCheckMods' [modBuiltin]
-                            ; cpEhcCheckAbsenceOfMutRecModules
-                            ; cpEhcFullProgCompileAllModules
+                 ; _ <- runStateT (do { topModNmL' <- zipWithM (\fp topModNm -> imp (Just fp) Nothing topModNm) fpL topModNmL
+                                      ; cpImportGatherFromMods (imp Nothing) (map fst topModNmL')
+                                      ; cpCheckMods' [modBuiltin]
+                                      ; cpEhcCheckAbsenceOfMutRecModules
+                                      ; cpEhcFullProgCompileAllModules
 %%[[100
-                            ; unless (ehcOptKeepIntermediateFiles opts2) cpRmFilesToRm
+                                      ; unless (ehcOptKeepIntermediateFiles opts) cpRmFilesToRm
 %%]]
-                            })
-                        initialState
+                                      })
+                                  initialState
 %%]]
-       ; return ()
+                 ; return ()
+                 }
+         else exitFailure
        }
 
 %%]

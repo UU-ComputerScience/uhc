@@ -21,6 +21,7 @@ EHC_ALL_HADDOCKS						:= $(patsubst %,$(EHC_HDOC_PREFIX)%/$(EHC_HADDOCK_NAME),$(
 #UHC_EXEC_NAME							:= uhc
 #UHC_BLD_EXEC							:= $(EHC_BIN_PREFIX)$(UHC_EXEC_NAME)$(EXEC_SUFFIX)
 UHC_INSTALL_EXEC						:= $(INSTALL_UHC_BIN_PREFIX)$(UHC_EXEC_NAME)$(EXEC_SUFFIX)
+UHC_INSTALL_SHELL						:= $(INSTALL_UHC_BIN_PREFIX)$(UHC_EXEC_NAME)
 EHC_FOR_UHC_BLD_EXEC					:= $(call FUN_EHC_INSTALL_VARIANT_ASPECTS_EXEC,$(EHC_UHC_INSTALL_VARIANT))
 
 # sources + dpds, for .rul
@@ -53,21 +54,22 @@ EHC_HS_MAIN_SRC_CHS						:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,$(EHC_MAIN))
 EHC_HS_MAIN_DRV_HS						:= $(patsubst $(SRC_EHC_PREFIX)%.chs,$(EHC_BLD_VARIANT_ASPECTS_PREFIX)%.hs,$(EHC_HS_MAIN_SRC_CHS))
 
 EHC_HS_UTIL_SRC_CHS						:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
-													Substitutable Gam VarMp VarLookup Deriving Module Config BuiltinPrims NameAspect DerivationTree CHR Pred \
+													Substitutable Gam VarMp VarLookup Deriving Generics Module Config BuiltinPrims NameAspect DerivationTree CHR Pred HI LamInfo AbstractCore \
 													$(addprefix Core/Trf/Fusion/, AbsSynt Exception FsDeriv FunctorRep FuseFace HsPretty HsSyn HyloContext HyloFace HyloParser HyloRep Inline Messages RenVars Utils) \
 													$(addprefix CHR/,Key Constraint Solve) \
+													$(addprefix AbstractCore/,Utils) \
 													$(addprefix Cil/,Common TyTag) \
 													$(addprefix Pred/,ToCHR CHR Evidence EvidenceToCore EvidenceToTyCore Heuristics CommonCHR RedGraph) \
-													$(addprefix Base/,Opts Hashable Target BasicAnnot Common Builtin Builtin2 HsName Debug Trie CfgPP ForceEval LaTeX HtmlCommon Binary) \
+													$(addprefix Base/,UID Pragma Binary Serialize GenC Opts Hashable Target BasicAnnot Common Builtin Builtin2 HsName Debug Trie CfgPP LaTeX HtmlCommon Bits FileSearchLocation PackageDatabase ParseUtils) \
 													$(addprefix Scanner/,Common Machine Scanner Token TokenParser) \
-													$(addsuffix /Parser,Base Ty EH HS Foreign HI Core GrinCode) \
+													$(addsuffix /Parser,Base Ty EH HS Foreign Core GrinCode) \
 													$(addprefix Ty/,FIEnv FIEnv2 FitsInCommon FitsInCommon2 FitsIn Utils1 Utils2 AppSpineGam Trf/BetaReduce) \
-													$(addprefix Gam/,Utils Instantiate Quantify LevelMapGam ScopeMapGam Full AppSpineGam FixityGam TyGam KiGam DataGam PolGam TyKiGam ValGam) \
-													$(addprefix Core/,Utils Coercion) \
+													$(addprefix Gam/,Base Utils Instantiate Quantify LevelMapGam ScopeMapGam Full AppSpineGam FixityGam TyGam KiGam DataGam PolGam TyKiGam ValGam ClassDefaultGam) \
+													$(addprefix Core/,Utils Coercion Trf) \
 													$(addprefix TyCore/,Base Utils2 Coercion Full0 Full1 Full2 Subst) \
 													$(addprefix GrinCode/,Common SolveEqs) \
 													$(addprefix EHC/,Common Environment CompileUnit CompileGroup CompileRun GrinCompilerDriver InitialSetup \
-														$(addprefix CompilePhase/,Parsers Output Translations TransformCore \
+														$(addprefix CompilePhase/,Parsers Output Translations Transformations \
 															FlowBetweenPhase TransformGrin Semantics \
 															CompileLLVM CompileC CompileJVM Link \
 															Cleanup Module TopLevelPhases \
@@ -180,7 +182,8 @@ EHC_UUAGC_OPTS_WHEN_UHC_AST_SEM_101		:= $(EHC_UUAGC_OPTS_WHEN_UHC_AST_SEM_100)
 EHC_UUAGC_OPTS_WHEN_UHC_AST_SEM_102		:= $(EHC_UUAGC_OPTS_WHEN_UHC_AST_SEM_100)
 EHC_UUAGC_OPTS_WHEN_UHC_AST_SEM_103		:= $(EHC_UUAGC_OPTS_WHEN_UHC_AST_SEM_99)
 
-EHC_SHUFFLE_OPTS_WHEN_UHC_100			:= $(SHUFFLE_OPTS_WHEN_UHC)
+EHC_SHUFFLE_OPTS_WHEN_UHC_99			:= $(SHUFFLE_OPTS_WHEN_UHC)
+EHC_SHUFFLE_OPTS_WHEN_UHC_100			:= $(EHC_SHUFFLE_OPTS_WHEN_UHC_99)
 EHC_SHUFFLE_OPTS_WHEN_UHC_101			:= $(EHC_SHUFFLE_OPTS_WHEN_UHC_100)
 EHC_SHUFFLE_OPTS_WHEN_UHC_102			:= $(EHC_SHUFFLE_OPTS_WHEN_UHC_100)
 
@@ -320,8 +323,8 @@ $(LIB_EHC_CABAL_DRV): $(EHC_ALL_DPDS_NO_MAIN) $(EHC_MKF)
 	$(call FUN_GEN_CABAL_LIB \
 		, $(LIB_EHC_PKG_NAME) \
 		, $(EH_VERSION_SHORT) \
-		, $(LIB_EH_UTIL_PKG_NAME) \
-		, $(CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES) \
+		, $(LIB_EH_UTIL_PKG_NAME) binary syb bytestring uulib>=0.9.12 \
+		, $(CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES) DeriveDataTypeable OverlappingInstances ImpredicativeTypes \
 		, Part of EH$(EHC_VARIANT_ASPECTS) compiler packaged as library \
 		, $(subst $(PATH_SEP),.,$(patsubst $(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(LIB_EHC_QUAL_PREFIX)%,\
 			$(shell echo $(EHC_ALL_LIB_FROMHS_HS) $(EHC_ALL_LIB_FROMAG_HS) \
@@ -341,7 +344,7 @@ $(LIB_EHC_INS_FLAG): $(LIB_EHC_CABAL_DRV) $(LIB_EHC_SETUP2) $(INSABS_EHC_LIB_ALL
 	cd $(EHC_BLD_LIBEHC_VARIANT_PREFIX) && \
 	$(LIB_EHC_SETUP) configure $(CABAL_SETUP_OPTS) --prefix=$(INSTALLFORBLDABS_PREFIX) $(CABAL_OPT_INSTALL_LOC) && \
 	$(LIB_EHC_SETUP) build && \
-	$(LIB_EHC_SETUP) install $(CABAL_OPT_INSTALL_LOC) && \
+	$(LIB_EHC_SETUP) install && \
 	echo $@ > $@
 
 $(INSABS_EHC_LIB_ALL_AG): $(INSTALLFORBLDABS_EHC_LIB_AG_PREFIX)%: $(EHC_BLD_LIB_HS_VARIANT_PREFIX)%
@@ -353,7 +356,7 @@ $(INSABS_EHC_LIB_ALL_AG): $(INSTALLFORBLDABS_EHC_LIB_AG_PREFIX)%: $(EHC_BLD_LIB_
 ###########################################################################################
 
 # rules for ehc library sources+derived
-$(EHC_AG_ALL_MAIN_DRV_AG) $(EHC_AG_ALL_DPDS_DRV_AG): $(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.ag: $(SRC_EHC_PREFIX)%.cag $(SHUFFLE)
+$(EHC_AG_ALL_MAIN_DRV_AG) $(EHC_AG_ALL_DPDS_DRV_AG): $(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.ag: $(SRC_EHC_PREFIX)%.cag $(SHUFFLE) # $(MK_CONFIG_MKF)
 	mkdir -p $(@D)
 	$(SHUFFLE_AG) $(LIB_EHC_SHUFFLE_DEFS) $(SHUFFLE_OPTS_WHEN_EHC) $(EHC_SHUFFLE_OPTS_WHEN_UHC_$(EHC_VARIANT)) --gen-reqm="($(EHC_VARIANT) $(EHC_ASPECTS))" --base=$(*F)  --variant-order="$(EHC_SHUFFLE_ORDER)" $< > $@&& \
 	touch $@
@@ -377,7 +380,7 @@ $(EHC_HS_MAIN_DRV_HS): $(EHC_BLD_VARIANT_ASPECTS_PREFIX)%.hs: $(SRC_EHC_PREFIX)%
 	$(SHUFFLE_HS) $(LIB_EHC_SHUFFLE_DEFS) --gen-reqm="($(EHC_VARIANT) $(EHC_ASPECTS))" --base=Main --variant-order="$(EHC_SHUFFLE_ORDER)" $< > $@ && \
 	touch $@
 
-$(EHC_HS_UTIL_DRV_HS): $(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.hs: $(SRC_EHC_PREFIX)%.chs $(SHUFFLE)
+$(EHC_HS_UTIL_DRV_HS): $(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.hs: $(SRC_EHC_PREFIX)%.chs $(SHUFFLE) # $(MK_CONFIG_MKF)
 	mkdir -p $(@D)
 	$(SHUFFLE_HS) $(LIB_EHC_SHUFFLE_DEFS) --gen-reqm="($(EHC_VARIANT) $(EHC_ASPECTS))" --base=$(*F) --variant-order="$(EHC_SHUFFLE_ORDER)" $< > $@ && \
 	touch $@
@@ -414,21 +417,25 @@ $(EHC_HS_CFGINSTALL_DRV_HS): $(EHC_MKF) $(MK_SHARED_MKF)
 	  echo "" ; \
 	  echo "cppOpts = \"$(CPP_OPTS_WHEN_EHC)\"" ; \
 	  echo "" ; \
-	  echo "ehcSvnRevision = \"`svn info | grep Revision`\"" ; \
+	  if test x$(SVN_VERSION_EXISTS) = xyes ; \
+	  then \
+	    svnRevision=`$(SVN_VERSION_CMD)` ; \
+	  else \
+	    svnRevision=`$(SVN_REVISION)` ; \
+	  fi ; \
+	  echo "ehcSvnRevision = \"$$svnRevision\"" ; \
 	  echo "" ; \
 	  echo "ehcDefaultInplaceInstallDir = \"$(INSTALLABS_DIR)\"" ; \
 	  echo "" ; \
-	  echo "ehcAssumedPackages = words \"$(EHC_PACKAGES_ASSUMED)\"" ; \
+	  echo "ehcPkgConfigfileName = \"$(UHC_PKG_CONFIGFILE_NAME)\"" ; \
 	  echo "" ; \
-	  echo "data WhatInstallFile = LIB | LIB_SHARED | INCLUDE | INCLUDE_SHARED | LIB_PKG | LIB_PKG_INCLUDE " ; \
-	  echo "" ; \
-	  echo "mkDirbasedLibVariantTargetPkgPrefix dir variant target pkg = \"$(call FUN_DIR_VARIANT_LIB_TARGET_PKG_PREFIX,\" ++ dir ++ \",\" ++ variant ++ \",\" ++ target ++ \",\" ++ pkg ++ \")\"" ; \
-	  echo "" ; \
-	  echo "mkDirbasedTargetVariantPkgPrefix dir variant target pkg = \"$(call FUN_DIR_VARIANT_LIB_TARGET_PKG_PREFIX,\" ++ dir ++ \",\" ++ variant ++ \",\" ++ target ++ \",\" ++ pkg ++ \")\"" ; \
+	  echo "data WhatInstallFile = USER_PKG | INST_BIN | INST_LIB | INST_LIB_SHARED | INST_INCLUDE | INST_INCLUDE_SHARED | INST_LIB_PKG2 {- | INST_LIB_PKG | INST_LIB_PKG_INCLUDE -} " ; \
 	  echo "" ; \
 	  echo "mkCLibFilename dirprefix pkg = \"$(call FUN_MK_CLIB_FILENAME,\" ++ dirprefix ++ \",\" ++ pkg ++ \")\"" ; \
 	  echo "" ; \
 	  echo "mkJarFilename dirprefix pkg = \"$(call FUN_MK_JAVALIB_FILENAME,\" ++ dirprefix ++ \",\" ++ pkg ++ \")\"" ; \
+	  echo "" ; \
+	  echo "mkInternalPkgFileBase pkg variant target tvariant = \"$(call FUN_PKG_VARIANT_TARGET_TVARIANT,\" ++ pkg ++ \",\" ++ variant ++ \",\" ++ target ++ \",\" ++ tvariant ++ \")\"" ; \
 	  echo "" ; \
 	  echo "mkPkgIncludeDir libdirprefix = \"$(call FUN_MK_PKG_INC_DIR,\" ++ libdirprefix ++ \")\"" ; \
 	  echo "" ; \
@@ -438,11 +445,20 @@ $(EHC_HS_CFGINSTALL_DRV_HS): $(EHC_MKF) $(MK_SHARED_MKF)
 	    echo "" ; \
 	  fi ; \
 	  echo "mkDirbasedInstallPrefix dir what variant target pkg = case what of" ; \
-	  echo "  LIB              -> \"$(call FUN_DIR_VARIANT_LIB_TARGET_PREFIX,\" ++ dir ++ \",\" ++ variant ++ \",\" ++ target ++ \")\"" ; \
-	  echo "  INCLUDE          -> \"$(call FUN_DIR_VARIANT_INC_TARGET_PREFIX,\" ++ dir ++ \",\" ++ variant ++ \",\" ++ target ++ \")\"" ; \
-	  echo "  LIB_SHARED       -> \"$(call FUN_DIR_VARIANT_LIB_SHARED_PREFIX,\" ++ dir ++ \",\" ++ variant ++ \")\"" ; \
-	  echo "  INCLUDE_SHARED   -> \"$(call FUN_DIR_VARIANT_INC_SHARED_PREFIX,\" ++ dir ++ \",\" ++ variant ++ \")\"" ; \
-	  echo "  LIB_PKG          -> \"$(call FUN_DIR_VARIANT_LIB_TARGET_PKG_PREFIX,\" ++ dir ++ \",\" ++ variant ++ \",\" ++ target ++ \",\" ++ pkg ++ \")\"" ; \
-	  echo "  LIB_PKG_INCLUDE  -> \"$(call FUN_MK_PKG_INC_DIR,$(call FUN_DIR_VARIANT_LIB_TARGET_PKG_PREFIX,\" ++ dir ++ \",\" ++ variant ++ \",\" ++ target ++ \",\" ++ pkg ++ \"))\"" ; \
+	  echo "  USER_PKG              -> dir ++ \"/\" ++ target" ; \
+	  echo "  INST_LIB              -> \"$(call FUN_DIR_VARIANT_LIB_TARGET_PREFIX,\" ++ dir ++ \",\" ++ variant ++ \",\" ++ target ++ \")\"" ; \
+	  echo "  INST_BIN              -> \"$(call FUN_DIR_VARIANT_BIN_PREFIX,\" ++ dir ++ \",\" ++ variant ++ \")\"" ; \
+	  echo "  INST_INCLUDE          -> \"$(call FUN_DIR_VARIANT_INC_TARGET_PREFIX,\" ++ dir ++ \",\" ++ variant ++ \",\" ++ target ++ \")\"" ; \
+	  echo "  INST_LIB_SHARED       -> \"$(call FUN_DIR_VARIANT_LIB_SHARED_PREFIX,\" ++ dir ++ \",\" ++ variant ++ \")\"" ; \
+	  echo "  INST_INCLUDE_SHARED   -> \"$(call FUN_DIR_VARIANT_INC_SHARED_PREFIX,\" ++ dir ++ \",\" ++ variant ++ \")\"" ; \
+	  echo "  INST_LIB_PKG2         -> \"$(call FUN_DIR_VARIANT_LIB_PKG_PREFIX,\" ++ dir ++ \",\" ++ variant ++ \")\"" ; \
 	) > $@
 
+#	  echo "ehcAssumedPackages = words \"$(EHC_PACKAGES_ASSUMED)\"" ; \
+#	  echo "" ; \
+#	  echo "mkDirbasedLibVariantTargetPkgPrefix dir variant target pkg = \"$(call FUN_DIR_VARIANT_LIB_TARGET_PKG_PREFIX,\" ++ dir ++ \",\" ++ variant ++ \",\" ++ target ++ \",\" ++ pkg ++ \")\"" ; \
+#	  echo "" ; \
+#	  echo "mkDirbasedTargetVariantPkgPrefix dir variant target pkg = \"$(call FUN_DIR_VARIANT_LIB_TARGET_PKG_PREFIX,\" ++ dir ++ \",\" ++ variant ++ \",\" ++ target ++ \",\" ++ pkg ++ \")\"" ; \
+#	  echo "" ; \
+#	  echo "  INST_LIB_PKG_INCLUDE  -> \"$(call FUN_MK_PKG_INC_DIR,$(call FUN_DIR_VARIANT_LIB_TARGET_PKG_PREFIX,\" ++ dir ++ \",\" ++ variant ++ \",\" ++ target ++ \",\" ++ pkg ++ \"))\"" ; \
+#	  echo "  INST_LIB_PKG          -> \"$(call FUN_DIR_VARIANT_LIB_TARGET_PKG_PREFIX,\" ++ dir ++ \",\" ++ variant ++ \",\" ++ target ++ \",\" ++ pkg ++ \")\"" ; \
