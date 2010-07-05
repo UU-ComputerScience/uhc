@@ -34,14 +34,15 @@ ehSection uniq range semvar sempatvar semlam left op right
 %%]
 
 %%[1 hs
-ehTupleConstructor :: SemApp eh
-  => Range -> Int -> RngLiftArg (HsName -> eh) -> RngLiftArg (HsName -> ehp) -> RngLiftArg (ehp -> eh -> eh)
+ehTupleConstructor
+  :: SemApp eh
+     => Range -> Int -> RngLiftArg (HsName -> eh) -> RngLiftArg (HsName -> ehp) -> RngLiftArg (ehp -> eh -> eh)
 %%[[1
-  -> RngLiftArg (HsName -> eh)
+     -> RngLiftArg (HsName -> eh)
 %%][7
-  -> ([ehp] -> eh -> eh) -> RngLiftArg (r -> eh) -> RngLiftArg (r -> Maybe HsName -> eh -> r) -> RngLiftArg r
+     -> ([ehp] -> eh -> eh) -> RngLiftArg (r -> eh) -> RngLiftArg (r -> Maybe HsName -> eh -> r) -> RngLiftArg r
 %%]]
-  -> eh
+     -> eh
 ehTupleConstructor range arity semvar sempatvar semlam
 %%[[1
         semcon
@@ -1227,7 +1228,13 @@ SEM Pattern
     | Parenthesized
         lhs         .   eh          =   rngLift @range EH.PatExpr_Parens @pattern.eh
     | Tuple
+%%[[1
         lhs         .   eh          =   ehPatConApp @range (hsnProd (length @patterns.eh)) @patterns.eh
+%%][7
+        lhs         .   eh          =   foldl (\eh (n,p) -> ehRowRecPatExprUpd @range (Just n) (rngLift @range EH.RecPatExpr_Ext) p eh)
+                                              (rngLift @range EH.PatExpr_Rec $ rngLift @range EH.RecPatExpr_Empty)
+                                        $ zip positionalFldNames @patterns.eh
+%%]]
     | As
         lhs         .   eh          =   rngLift @range EH.PatExpr_VarAs
 %%[[1

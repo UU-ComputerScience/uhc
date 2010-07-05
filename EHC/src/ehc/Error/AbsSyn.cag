@@ -48,6 +48,9 @@ DATA Err
 DATA Err
   | PatArity            ty         : {Ty}
                         arity      : {Int}
+  | PatArity2           kind       : String
+                        what       : {PP_Doc}
+                        arity      : {Int}
 %%]
 
 %%[1.Rest

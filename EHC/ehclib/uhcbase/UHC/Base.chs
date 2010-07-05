@@ -2154,8 +2154,10 @@ M1 :: * -> * -> (* -> *) -> * -> *
 #endif
 newtype M1 i c f p = M1 { unM1 :: f p }
 
+{-
 unMeta :: M1 t x f a -> x
 unMeta = error "unMeta"
+-}
 
 -- | Sums: encode choice between constructors
 infixr 5 :+:
