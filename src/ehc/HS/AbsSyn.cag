@@ -1133,6 +1133,9 @@ DATA Pattern
         range                    : Range
     | Tuple
         range                    : Range
+%%[[7
+        arity                    : Int
+%%]]
         patterns                 : Patterns
 	| Annotate
         range                    : Range

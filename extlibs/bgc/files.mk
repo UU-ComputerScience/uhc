@@ -52,6 +52,6 @@ $(EXTLIBS_BGC_INSTALL_FLAG): $(EXTLIBS_BGC_ARCHIVE) $(EXTLIBS_BGC_MKF)
 	  --libdir=$(call FUN_PREFIX2DIR,$(INSTALLABS_EXTLIBS_BGC_LIB_PREFIX)) \
 	  --includedir=$(call FUN_PREFIX2DIR,$(INSTALLABS_EXTLIBS_BGC_INC_PREFIX)) \
 	  --disable-threads && \
-	make && \
+	make CFLAGS="$(CFLAGS) -D_XOPEN_SOURCE" && \
 	make install && \
 	touch $@

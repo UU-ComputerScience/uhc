@@ -148,8 +148,13 @@ SEM Err
 %%[[99
                                                         @range
 %%]]
-  | PatArity            lhs     .  pp   =   ppMsgErr    "Known type has wrong arity for pattern"
-                                                        ("type :" >#< ppTy @ty >-< "arity:" >#< @arity)
+  | PatArity            lhs     .  pp   =   ppMsgErr    ("Type has wrong arity for pattern")
+                                                        ("type :" >#< @ty >-< "arity:" >#< @arity)
+%%[[99
+                                                        @range
+%%]]
+  | PatArity2           lhs     .  pp   =   ppMsgErr    (strCapHeading @kind "has wrong arity for pattern")
+                                                        (@kind >#< ":" >#< @what >-< "arity:" >#< @arity)
 %%[[99
                                                         @range
 %%]]
