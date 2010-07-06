@@ -306,7 +306,7 @@ clean:
 
 clean-extlibs:
 	$(MAKE) bgc-clean
-	$(MAKE) gmp-clean
+	#$(MAKE) gmp-clean
 
 ###########################################################################################
 # Version incrementing/bumping
