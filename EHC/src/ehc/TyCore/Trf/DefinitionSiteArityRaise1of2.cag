@@ -63,11 +63,6 @@ cmodTrfDefinitionSiteArityRaise1of2 :: Module -> Module
 cmodTrfDefinitionSiteArityRaise1of2 tcmod
   =  let  t = wrap_AGItf (sem_AGItf (AGItf_AGItf tcmod)) Inh_AGItf
      in   cTrf_Syn_AGItf t
-
-data BindType = NameTypeBind | BodyBind | NoBind
-  deriving (Eq, Show)
-
-type Seq a = [a]
 %%]
 
 %%[(8 codegen)
@@ -125,7 +120,7 @@ SEM ExprSeq1L
                 lhs         .   cTrf        =   if @lhs.bindType == NoBind
                                                 then @cTrf
                                                 else case head @lhs.workWrapL of
-                                                       Introduced     -> @hd.worker  : (if @lhs.bindType == BodyBind then @hd.newWrapper else @hd.cTrf) : @tl.cTrf
+                                                       Introduced     -> @hd.worker  : @hd.newWrapper : @tl.cTrf
                                                        UpdatedWorker  -> @hd.worker  : @tl.cTrf
                                                        _              -> @hd.cTrf    : @tl.cTrf
                             .   workWrapL   =   @hd.workWrap : @tl.workWrapL
@@ -147,6 +142,7 @@ SEM ExprSeq1
                 lhs         .   newWrapper  =   ExprSeq1_L0Val (newWrapperBody @lhs.workerNm @lhs.lamArgs) @meta.newWrapper
   | L0Bind
                 lhs         .   worker      =   ExprSeq1_L0Bind @workerNm Nothing (workerType (map length @lhs.lamArgs) @l1.arrArgs @l1.arrTail)
+                lhs         .   newWrapper  =   ExprSeq1_L0Bind @nm @meta.newWrapper (newWrapperType @l1.arrArgs @l1.arrTail)
   | L1Bind
                 lhs         .   worker      =   ExprSeq1_L1Bind @workerNm (workerType (map length @lhs.lamArgs) @l2.arrArgs @l2.arrTail)
   | L2Bind
@@ -183,7 +179,7 @@ SEM Expr
   | Let
                 lhs         .   lamArgs     =   [] : @body.lamArgs
   | Lam
-                lhs         .   lamArgs     =   list [[@arg.cTrf]] (\xs xss -> (@arg.cTrf : xs) : xss) @res.lamArgs
+                lhs         .   lamArgs     =   list (\xs xss -> (@arg.cTrf : xs) : xss) [[@arg.cTrf]] @res.lamArgs
   | * - Lam Let
                 lhs         .   lamArgs     =   []
 
@@ -207,16 +203,12 @@ SEM Expr
                 lhs         .   workerArgs  =   []
                             .   arrArgs     =   []
 
--- New wrapper
-SEM ValBind
-  | Val
-
 
 {
 -- This function will be in list-extras:Data.List.Extras
-list :: b -> (a -> [a] -> b) -> [a] -> b
-list b _ []     = b
-list _ f (x:xs) = f x xs
+list :: (a -> [a] -> b) -> b -> [a] -> b
+list _ b []     = b
+list f _ (x:xs) = f x xs
 
 workerType :: [Int] -> [Expr] -> Expr -> Expr
 workerType []     _    res = res
@@ -227,6 +219,9 @@ workerType (x:xs) args res = let (args1, args2) = splitAt x args
 workerBody :: [Expr] -> Expr -> Expr
 workerBody []   body = body
 workerBody args body = Expr_Lam (Expr_Seq $ concatMap unSeqs args) body
+
+newWrapperType :: [Expr] -> Expr -> Expr
+newWrapperType args res = foldr Expr_Arrow res args
 
 newWrapperBody :: HsName -> [[Expr]] -> Expr
 newWrapperBody nm argss = foldr Expr_Lam body args

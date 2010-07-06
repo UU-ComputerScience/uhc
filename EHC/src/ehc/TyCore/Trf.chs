@@ -33,8 +33,9 @@
 %%]
 %%[(8 codegen) import({%{EH}TyCore.Trf.RemoveLazyFunctions1of2}, {%{EH}TyCore.Trf.RemoveLazyFunctions2of2})
 %%]
--- %%[(8 tauphi) import({%{EH}TyCore.Trf.OptimizeStrictness1of2}, {%{EH}TyCore.Trf.OptimizeStrictness2of2})
--- %%]
+%%[(8 tauphi) import({%{EH}TyCore.Trf.OptimizeStrictness1of2}, {%{EH}TyCore.Trf.OptimizeStrictness2of2})
+%%]
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Monad utils
@@ -96,7 +97,7 @@ trfTyCore opts modNm trftycore
                ; t_introduceWeirdConstructs
                ; t_introduceExplicitLaziness
                ; t_removeLazyFunctions
-               ; t_definitionSiteArityRaise
+              -- ; t_definitionSiteArityRaise
 %%[[(8 tauphi)
                ; t_optimizeStrictness
 %%]]
@@ -127,7 +128,7 @@ trfTyCore opts modNm trftycore
         t_introduceWeirdConstructs   = liftTyTrf "IntroduceWeirdConstructs"  $ cmodTrfIntroduceWeirdConstructs
         t_removeLazyFunctions        = liftTyTrf "RemoveLazyFunctions"       $ cmodTrfRemoveLazyFunctions2of2 . cmodTrfRemoveLazyFunctions1of2
 %%[[(8 tauphi)
-        t_optimizeStrictness         = liftTyTrf "OptimizeStrictness"        $ id -- cmodTrfOptimizeStrictness2of2 . cmodTrfOptimizeStrictness1of2
+        t_optimizeStrictness         = liftTyTrf "OptimizeStrictness"        $ cmodTrfOptimizeStrictness2of2 . cmodTrfOptimizeStrictness1of2
 %%]]
 %%]
 

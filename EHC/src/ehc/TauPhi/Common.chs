@@ -37,7 +37,7 @@ instance Show Uniqueness where
   show (UniquenessVar n) = "uniqueness:" ++ show n
 %%]
 
-%%[(8 tauphi) export(WorkWrap(..),(|||))
+%%[(8 codegen) export(WorkWrap(..),(|||))
 -- Status of Worker/Wrapper transformation
 data WorkWrap
   = Introduced      -- A Worker and Wrapper were introduced
@@ -53,6 +53,13 @@ Introduced     ||| Introduced     = Introduced
 UpdatedWorker  ||| UpdatedWorker  = UpdatedWorker
 UpdatedWrapper ||| UpdatedWrapper = UpdatedWrapper
 _              ||| _              = error "(|||): Can't merge arguments."
+%%]
+
+%%[(8 codegen) export(BindType (..), Seq)
+data BindType = NameTypeBind | BodyBind | NoBind
+  deriving (Eq, Show)
+
+type Seq a = [a]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

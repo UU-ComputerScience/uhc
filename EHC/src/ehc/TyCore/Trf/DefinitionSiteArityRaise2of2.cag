@@ -63,11 +63,6 @@ cmodTrfDefinitionSiteArityRaise2of2 :: Module -> Module
 cmodTrfDefinitionSiteArityRaise2of2 tcmod
   = let  t = wrap_AGItf (sem_AGItf (AGItf_AGItf tcmod)) Inh_AGItf
     in   cTrf_Syn_AGItf t
-
-data BindType = NameTypeBind | BodyBind | NoBind
-  deriving (Eq, Show)
-
-type Seq a = [a]
 %%]
 
 %%[(8 codegen)
