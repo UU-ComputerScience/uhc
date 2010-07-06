@@ -9,7 +9,7 @@ This is not a transformation, just an extra check whether SetGrinInvariant worke
 
 %%]
 
-%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.CheckGrinInvariant} export(checkGrinInvariant)
+%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.CheckGrinInvariant} export(checkGrinInvariant, InfoCheckInvariant)
 %%]
 %%[(8 codegen grin) ag import({GrinCode/AbsSyn},{GrinCode/CommonForGen})
 %%]
@@ -19,24 +19,21 @@ This is not a transformation, just an extra check whether SetGrinInvariant worke
 %%]
 %%[(94 codegen grin) hs import({%{EH}Foreign.Extract})
 %%]
+%%[(8 codegen grin) hs import(Data.Typeable(Typeable), Data.Generics(Data), {%{EH}Base.Serialize})
+%%]
 %%[(8 codegen grin)
 WRAPPER GrAGItf
 %%]
 
 %%[(8 codegen grin) hs
 
-checkGrinInvariant :: [GrModule] -> GrModule -> [String]
+checkGrinInvariant :: [InfoCheckInvariant] -> GrModule -> ([String], InfoCheckInvariant)
 checkGrinInvariant imports code
-  = let (envs, msgs) = unzip $ map extractEnv imports
-        inh  = Inh_GrAGItf envs
-        syn  = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf code)) inh
-    in  concat (messages_Syn_GrAGItf syn : msgs)
-
-extractEnv :: GrModule -> (Env, [String])
-extractEnv code
-  = let inh = Inh_GrAGItf []
-        syn = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf code)) inh
-    in  (finalEnv_Syn_GrAGItf syn, messages_Syn_GrAGItf syn)
+  = let envs  = map infoEnv imports
+        inh   = Inh_GrAGItf envs
+        syn   = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf code)) inh
+        inf   = InfoCheckInvariant (finalEnv_Syn_GrAGItf syn)
+    in  (messages_Syn_GrAGItf syn, inf)
 
 %%]
 
@@ -45,12 +42,22 @@ extractEnv code
 data Mode = ModeWord
           | ModeNode
           | ModeEmpty
-          | ModeFFIRes       
+          | ModeFFIRes
           | ModeUnknown
-     deriving (Eq, Show)
+     deriving (Eq, Show, Data, Typeable, Enum)
+
+instance Serialize Mode where
+  sput = sputWord8 . fromIntegral . fromEnum
+  sget = sgetWord8 >>= (return . toEnum . fromIntegral)
 
 type Env = Map.Map HsName Mode
 
+newtype InfoCheckInvariant = InfoCheckInvariant { infoEnv :: Env }
+  deriving (Show, Data, Typeable)
+
+instance Serialize InfoCheckInvariant where
+  sput = sput . infoEnv
+  sget = sget >>= (return . InfoCheckInvariant)
 
 checkMd :: String -> Mode -> Mode -> [String]
 checkMd s m1 m2 = if m1==m2 || (m1==ModeNode && m2==ModeFFIRes) then [] else [s ++ ": expected " ++ show m1 ++ " found " ++ show m2  ]

@@ -15,7 +15,7 @@ up to the transformations themselves.
 -- Import incremental transformations.
 %%[(9 codegen grin) hs import({%{EH}GrinCode.Trf.MergeInstance})
 %%]
-%%[(8 codegen grin) hs import({%{EH}GrinCode.Trf.MemberSelect}, {%{EH}GrinCode.Trf.SimpleNullary}, {%{EH}GrinCode.Trf.EvalStored}, {%{EH}GrinCode.Trf.CleanupPass}, {%{EH}GrinCode.Trf.SpecConst})
+%%[(8 codegen grin) hs import({%{EH}GrinCode.Trf.MemberSelect}, {%{EH}GrinCode.Trf.SimpleNullary}, {%{EH}GrinCode.Trf.EvalStored}, {%{EH}GrinCode.Trf.CleanupPass}, {%{EH}GrinCode.Trf.SpecConst}, {%{EH}GrinCode.Trf.CheckGrinInvariant})
 %%]
 %%[20 hs import(Data.Typeable(Typeable), Data.Generics(Data), {%{EH}Base.Serialize}, Control.Monad (ap))
 %%]
@@ -24,15 +24,16 @@ up to the transformations themselves.
 %%[(8 codegen grin) hs export(GrinInfo, emptyGrinInfo)
 
 data GrinInfo = GrinInfo
-  { grMbMemberSelect      :: Maybe InfoMemberSelect
-  , grMbMemberSelectSpec  :: [Maybe InfoMemberSelect]
-  , grMbSimpleNullary     :: Maybe InfoSimpleNullary
-  , grMbSimpleNullarySpec :: [Maybe InfoSimpleNullary]
-  , grMbEvalStoredSpec    :: [Maybe InfoEvalStored]
-  , grMbCleanupPass       :: Maybe InfoCleanupPass
-  , grMbSpecConstSpec     :: [Maybe InfoSpecConst]
+  { grMbMemberSelect          :: Maybe InfoMemberSelect
+  , grMbMemberSelectSpec      :: [Maybe InfoMemberSelect]
+  , grMbSimpleNullary         :: Maybe InfoSimpleNullary
+  , grMbSimpleNullarySpec     :: [Maybe InfoSimpleNullary]
+  , grMbEvalStoredSpec        :: [Maybe InfoEvalStored]
+  , grMbCleanupPass           :: Maybe InfoCleanupPass
+  , grMbSpecConstSpec         :: [Maybe InfoSpecConst]
+  , grMbCheckInvariantSpec    :: [Maybe InfoCheckInvariant]
 %%[[9
-  , grMbMergeInstance     :: Maybe InfoMergeInstance
+  , grMbMergeInstance         :: Maybe InfoMergeInstance
 %%]]
   } deriving (Show
 %%[[20
@@ -43,28 +44,30 @@ data GrinInfo = GrinInfo
 %%[[20
 instance Serialize GrinInfo where
   sput gr@(GrinInfo {}) =
-    sput ( grMbMemberSelect      gr ) >>
-    sput ( grMbMemberSelectSpec  gr ) >>
-    sput ( grMbSimpleNullary     gr ) >>
-    sput ( grMbSimpleNullarySpec gr ) >>
-    sput ( grMbEvalStoredSpec    gr ) >> 
-    sput ( grMbCleanupPass       gr ) >>
-    sput ( grMbSpecConstSpec     gr ) >>
-    sput ( grMbMergeInstance     gr )
-  sget = return GrinInfo `ap` sget `ap` sget `ap` sget `ap` sget `ap` sget `ap` sget `ap` sget `ap` sget
+    sput ( grMbMemberSelect         gr ) >>
+    sput ( grMbMemberSelectSpec     gr ) >>
+    sput ( grMbSimpleNullary        gr ) >>
+    sput ( grMbSimpleNullarySpec    gr ) >>
+    sput ( grMbEvalStoredSpec       gr ) >> 
+    sput ( grMbCleanupPass          gr ) >>
+    sput ( grMbSpecConstSpec        gr ) >>
+    sput ( grMbCheckInvariantSpec   gr ) >>
+    sput ( grMbMergeInstance        gr )
+  sget = return GrinInfo `ap` sget `ap` sget `ap` sget `ap` sget `ap` sget `ap` sget `ap` sget `ap` sget `ap` sget
 %%]]
 
 emptyGrinInfo :: GrinInfo
 emptyGrinInfo = GrinInfo
-  { grMbMemberSelect      = Nothing
-  , grMbMemberSelectSpec  = []
-  , grMbSimpleNullary     = Nothing
-  , grMbSimpleNullarySpec = []
-  , grMbEvalStoredSpec    = []
-  , grMbCleanupPass       = Nothing
-  , grMbSpecConstSpec     = []
+  { grMbMemberSelect          = Nothing
+  , grMbMemberSelectSpec      = []
+  , grMbSimpleNullary         = Nothing
+  , grMbSimpleNullarySpec     = []
+  , grMbEvalStoredSpec        = []
+  , grMbCleanupPass           = Nothing
+  , grMbSpecConstSpec         = []
+  , grMbCheckInvariantSpec    = []
 %%[[9
-  , grMbMergeInstance     = Nothing
+  , grMbMergeInstance         = Nothing
 %%]]
   }
 
@@ -74,7 +77,7 @@ emptyGrinInfo = GrinInfo
 %%[(9 codegen grin) hs export(grinInfoMergeInstance)
 %%]
 
-%%[(8 codegen grin) hs export(GrinInfoPart(..),grinInfoMemberSelect,grinInfoMemberSelectSpec,grinInfoSimpleNullary,grinInfoSimpleNullarySpec,grinInfoEvalStoredSpec,grinInfoCleanupPass,grinInfoSpecConstSpec)
+%%[(8 codegen grin) hs export(GrinInfoPart(..),grinInfoMemberSelect,grinInfoMemberSelectSpec,grinInfoSimpleNullary,grinInfoSimpleNullarySpec,grinInfoEvalStoredSpec,grinInfoCleanupPass,grinInfoSpecConstSpec,grinInfoCheckInvariantSpec)
 
 type GrinInfoUpd i = i -> GrinInfo -> GrinInfo
 
@@ -110,6 +113,8 @@ grinInfoEvalStoredSpec = grinInfoSpec grMbEvalStoredSpec (\x sem -> sem { grMbEv
 grinInfoCleanupPass = GrinInfoPart grMbCleanupPass (\x sem -> sem { grMbCleanupPass = Just x })
 
 grinInfoSpecConstSpec = grinInfoSpec grMbSpecConstSpec (\x sem -> sem { grMbSpecConstSpec = x })
+
+grinInfoCheckInvariantSpec = grinInfoSpec grMbCheckInvariantSpec (\x sem -> sem { grMbCheckInvariantSpec = x })
 
 %%]
 

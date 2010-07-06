@@ -59,7 +59,7 @@ Grin transformation
 %%]
 %%[(8 codegen grin) import({%{EH}GrinCode.Trf.SetGrinInvariant(setGrinInvariant)})
 %%]
-%%[(8 codegen grin) import({%{EH}GrinCode.Trf.CheckGrinInvariant(checkGrinInvariant)})
+%%[(8 codegen grin) import({%{EH}GrinCode.Trf.CheckGrinInvariant})
 %%]
 %%[(9 codegen grin) import({%{EH}GrinCode.Trf.MergeInstance})
 %%]
@@ -131,22 +131,35 @@ cpFullGrinTrf modNm trf m
        ; cpUpdCU modNm $ ecuStoreGrin $ trf (map theGrin imps) $ theGrin modNm
        }
 
-cpFullGrinInfoTrf :: HsName -> GrinInfoPart i -> ([i] -> Grin.GrModule -> (Grin.GrModule, i)) -> String -> EHCompilePhase ()
-cpFullGrinInfoTrf modNm inf trf m
+-- Op (operation) is an ad-hoc generalisation of functions that take some InfoX
+-- and a GrModule en return some result and new InfoX. For example
+-- transformations, that have a GrModule as a result.
+cpFullGrinInfoOp :: HsName -> GrinInfoPart i -> ([i] -> Grin.GrModule -> (result, i)) -> String -> EHCompilePhase result
+cpFullGrinInfoOp modNm inf op m
   = do { cr <- get
        ; imps <- allImports modNm
        ; let (ecu,_,_,fp) = crBaseInfo modNm cr
-       ; cpMsg' modNm VerboseALot ("Full GRIN optim, using " ++ show imps) (Just m) fp
+       ; cpMsg' modNm VerboseALot "Full GRIN optim" (Just m) fp -- TODO maybe a strange msg for non-transformations
        ; let grin = fromJust $ ecuMbGrin ecu
        ; let sem  = fromJust $ ecuMbGrinSem ecu
-       ; let (grTrf, nws) = trf (map (impSem inf cr) imps) grin
+       ; let (res, nws) = op (map (impSem inf cr) imps) grin
        ; let sem' = grinInfoUpd inf nws sem
-       ; cpUpdCU modNm (ecuStoreGrinSem sem' . ecuStoreGrin grTrf)
+       ; cpUpdCU modNm (ecuStoreGrinSem sem')
+       ; return res
        }
   where
     impSem inf cr nm =
       let (ecu,_,_,_) = crBaseInfo nm cr
       in  fromJust (ecuMbGrinSem ecu >>= grinInfoGet inf)
+
+-- Transformations are specific operations that store their result in the
+-- compiler state.
+cpFullGrinInfoTrf :: HsName -> GrinInfoPart i -> ([i] -> Grin.GrModule -> (Grin.GrModule, i)) -> String -> EHCompilePhase ()
+cpFullGrinInfoTrf modNm inf trf m
+  = do {
+       ; grTrf <- cpFullGrinInfoOp modNm inf trf m
+       ; cpUpdCU modNm (ecuStoreGrin grTrf)
+       }
 %%]
 
 %%[(8 codegen grin) export(cpTransformGrin)
@@ -227,7 +240,7 @@ cpTransformGrin modNm
 
 
 grPerModuleFullProg :: HsName -> [(EHCompilePhase (), String)]
-grPerModuleFullProg modNm = trafos1 ++ invariant ++ grSpecialize modNm ++ [dropUnreach] ++ invariant
+grPerModuleFullProg modNm = trafos1 ++ invariant 0 ++ grSpecialize modNm ++ [dropUnreach] ++ invariant 1
   where
     trafos1 =
       [ dropUnreach
@@ -258,14 +271,10 @@ grPerModuleFullProg modNm = trafos1 ++ invariant ++ grSpecialize modNm ++ [dropU
       ]
 
     dropUnreach = ( once id {- dropUnreachableBindings False -} "DropUnreachableBindings stub" )
-    invariant = [once setGrinInvariant "SetGrinInvariant", (checkInvariant, "CheckGrinInvariant")]
+    invariant i = [once setGrinInvariant "SetGrinInvariant", (checkInvariant i, "CheckGrinInvariant")]
 
-    checkInvariant =
-      do { cr <- get
-         ; imps <- allImports modNm
-         ; let theGrin nm     = case crBaseInfo nm cr of (ecu,_,_,_) -> fromJust $ ecuMbGrin ecu
-               errors         = checkGrinInvariant (map theGrin imps) $ theGrin modNm
-         ; cpMsgGrinTrf modNm "CheckGrinInvariant"
+    checkInvariant i =
+      do { errors <- cpFullGrinInfoOp modNm (grinInfoCheckInvariantSpec i) checkGrinInvariant "CheckGrinInvariant"
          ; when (not (null errors)) (error (unlines errors))
          }
 
