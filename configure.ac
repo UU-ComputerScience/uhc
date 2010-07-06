@@ -865,6 +865,19 @@ AC_SUBST(GMP_ABI,$gmpABI)
 # Use Boehm's GC
 AC_DEFINE([USE_BOEHM_GC],[1],[Use Boehm's garbage collector])
 
+# BGC needs additional flags sometimes
+case $HostPlatform in
+  i386-apple-darwin10.* )
+        # as from 10.6 this seems to be required
+        extlibsOptionsBGC="-D_XOPEN_SOURCE"
+        ;;
+  *)
+        extlibsOptionsBGC=""
+        ;;
+esac
+
+AC_SUBST(EXTLIBS_BGC_OPTS,$extlibsOptionsBGC)
+
 # which MP library
 AC_ARG_WITH(mplib,
 [AS_HELP_STRING([--with-mplib=ltm|gmp],[Specify which MP library to use. Default is ltm (builtin derivative of LibTomMath).])],
