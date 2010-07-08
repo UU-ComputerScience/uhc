@@ -143,16 +143,13 @@ SEM ExprSeq1
                 lhs         .   newWrapper  =   if @lhs.bindType2 == BodyBind
                                                 then ExprSeq1_L0Val (newWrapperBody @lhs.workerNm @lhs.lamArgs) @meta.newWrapper
                                                 else @cTrf
-                l0          .   newParams   =   (\x -> trace (show x) x) $ strictParams @l0.workerArgs `Map.union` @lhs.newParams
+                l0          .   newParams   =   strictParams @l0.workerArgs `Map.union` @lhs.newParams
   | L0Bind
                 lhs         .   worker      =   ExprSeq1_L0Bind @workerNm @meta.worker (workerType @l1.arrArgs @l1.arrTail)
-                          --  .   newWrapper  =   ExprSeq1_L0Bind @nm @meta.newWrapper (newWrapperType @l1.arrArgs @l1.arrTail)
   | L1Bind
                 lhs         .   worker      =   ExprSeq1_L1Bind @workerNm (workerType @l2.arrArgs @l2.arrTail)
-                           -- .   newWrapper  =   ExprSeq1_L1Bind @nm (newWrapperType @l2.arrArgs @l2.arrTail)
   | L2Bind
                 lhs         .   worker      =   ExprSeq1_L2Bind @workerNm (workerType @l3.arrArgs @l3.arrTail)
-                          --  .   newWrapper  =   ExprSeq1_L2Bind @nm (newWrapperType @l3.arrArgs @l3.arrTail)
   | L0Bind L1Bind L2Bind
                 lhs         .   workerNmL   =   [@workerNm]
                 loc         .   workWrap    =   case (@isWorker, @isWrapper, @hasWorker) of
@@ -209,6 +206,7 @@ SEM Expr
                 lhs         .   worker      =   maybe @worker (\nm -> fromMaybe @worker (Map.lookup nm @lhs.newParams)) @expr.mbVarNm
   | Var
                 lhs         .   mbVarNm     =   Just @nm
+                            .   worker      =   fromMaybe @worker (Expr_Delay `fmap` Map.lookup @nm @lhs.newParams)
 
 
 {
@@ -226,15 +224,17 @@ strictParams args = Map.unions $ map (Map.unions . map argNms . unSeqs) args
     argNms _                        = Map.empty
 
     argNms' ev nm e = case (argElem e) of
-                        [e'] -> Map.singleton nm $ Expr_Seq [ev (Expr_Var nm)]
-                        es'  -> Map.singleton nm $ Expr_Seq $ zipWith (\x _ -> ev (Expr_Var $ mkHNm (show nm ++ "_" ++ show x))) [0..] es'
+                        (b, [e']) -> if b then Map.singleton nm $ Expr_Seq [ev (Expr_Var nm)]
+                                          else Map.empty
+                        (b, es')  -> if b then Map.singleton nm $ Expr_Seq $ zipWith (\x _ -> ev (Expr_Var $ mkHNm (show nm ++ "_" ++ show x))) [0..] es'
+                                          else Map.empty
 
     argElem (Expr_Lazy (Expr_Seq es))
-      | all (ExprAnn_Strictness Strict `elem`) (map annsSeq1 es) = map (unStrict . exprSeq1ToExpr) es
+      | all (ExprAnn_Strictness Strict `elem`) (map annsSeq1 es) = (True, map (unStrict . exprSeq1ToExpr) es)
     argElem (Expr_Lazy e)
-      | ExprAnn_Strictness Strict `elem` anns e                  = argElem e
-    argElem (Expr_Ann (ExprAnn_Strictness Strict) e)             = argElem e
-    argElem e = [e]
+      | ExprAnn_Strictness Strict `elem` anns e                  = let (_, x) = argElem e in (True, x)
+    argElem (Expr_Ann (ExprAnn_Strictness Strict) e)             = let (_, x) = argElem e in (True, x)
+    argElem e = (False, [e])
 
 
 hasWorker :: [Expr] -> Bool

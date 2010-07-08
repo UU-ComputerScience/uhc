@@ -85,107 +85,107 @@ dummy =
       0
       (eseq [val $ Expr_Int 3 int])
 
-  -- , ValBind_Val
-  --     (eseq [ bind "foo1" (seqInt `arr` eseq [val char, val char] `arr` seqInt)
-  --           ])
-  --     Nothing
-  --     0
-  --     (eseq [val (Expr_Lam
-  --                   (eseq [bind "x" int])
-  --                   (Expr_Lam
-  --                     (eseq [bind "c" char, bind "d" char])
-  --                     (single $ var "x")))
-  --           ])
+  , ValBind_Val
+      (eseq [ bind "foo1" (seqInt `arr` eseq [val char, val char] `arr` seqInt)
+            ])
+      Nothing
+      0
+      (eseq [val (Expr_Lam
+                    (eseq [bind "x" int])
+                    (Expr_Lam
+                      (eseq [bind "c" char, bind "d" char])
+                      (single $ var "x")))
+            ])
 
-  -- , ValBind_Val
-  --     (eseq [ bind "foo2" (seqInt `arr` eseq [val char, val char] `arr` seqInt `arr` seqInt)
-  --           ])
-  --     Nothing
-  --     0
-  --     (eseq [val (Expr_Lam
-  --                   (eseq [bind "x" int])
-  --                   (Expr_Let
-  --                      ValBindCateg_Plain
-  --                      [ ValBind_Val
-  --                          (eseq [bind "y" int])
-  --                          Nothing
-  --                          0
-  --                          (eseq [val $ Expr_Int 3 int])
-  --                      ]
-  --                      (Expr_Lam
-  --                        (eseq [bind "c" char, bind "d" char])
-  --                        (Expr_Lam (eseq [bind "y" int]) (single $ var "x")))))
-  --           ])
+  , ValBind_Val
+      (eseq [ bind "foo2" (seqInt `arr` eseq [val char, val char] `arr` seqInt `arr` seqInt)
+            ])
+      Nothing
+      0
+      (eseq [val (Expr_Lam
+                    (eseq [bind "x" int])
+                    (Expr_Let
+                       ValBindCateg_Plain
+                       [ ValBind_Val
+                           (eseq [bind "y" int])
+                           Nothing
+                           0
+                           (eseq [val $ Expr_Int 3 int])
+                       ]
+                       (Expr_Lam
+                         (eseq [bind "c" char, bind "d" char])
+                         (Expr_Lam (eseq [bind "y" int]) (single $ var "x")))))
+            ])
 
-  -- , ValBind_Val
-  --     (eseq [ bind "foo3" (seqInt `arr` seqInt)
-  --           , bind "foo4" (seqInt `arr` seqChar `arr` seqInt)
-  --           ])
-  --     Nothing
-  --     0
-  --     (eseq [ val $ Expr_Lam (eseq [bind "x" int]) (single $ var "x")
-  --           , val $ Expr_Lam (eseq [bind "x" int]) (Expr_Lam (eseq [bind "y" char]) (single $ var "x"))
-  --           ])
+  , ValBind_Val
+      (eseq [ bind "foo3" (seqInt `arr` seqInt)
+            , bind "foo4" (seqInt `arr` seqChar `arr` seqInt)
+            ])
+      Nothing
+      0
+      (eseq [ val $ Expr_Lam (eseq [bind "x" int]) (single $ var "x")
+            , val $ Expr_Lam (eseq [bind "x" int]) (Expr_Lam (eseq [bind "y" char]) (single $ var "x"))
+            ])
 
-  -- , ValBind_Val
-  --     (eseq [ bind "foo5" $ Expr_Lazy (seqInt `arr` seqChar `arr` seqInt)
-  --           ])
-  --     Nothing
-  --     0
-  --     (eseq [ val $ Expr_Delay $ Expr_Lam (eseq [bind "x" int]) (Expr_Lam (eseq [bind "y" char]) (single $ var "x"))
-  --           ])
+  , ValBind_Val
+      (eseq [ bind "foo5" $ Expr_Lazy (seqInt `arr` seqChar `arr` seqInt)
+            ])
+      Nothing
+      0
+      (eseq [ val $ Expr_Delay $ Expr_Lam (eseq [bind "x" int]) (Expr_Lam (eseq [bind "y" char]) (single $ var "x"))
+            ])
 
-  -- , ValBind_Val
-  --     (eseq [ bind "foo6" $ lazy (eseq [val int, val char]) `arr` seqInt
-  --           ])
-  --     Nothing
-  --     0
-  --     (eseq [val (Expr_Lam
-  --                   (eseq [bind "x" (Expr_Lazy (eseq [val int, val char]))])
-  --                   (Expr_Let
-  --                      ValBindCateg_Plain
-  --                      [ ValBind_Val
-  --                          (eseq [bind "y" int, bind "z" char])
-  --                          Nothing
-  --                          0
-  --                          (Expr_Force $ var "x")
-  --                      ]
-  --                      (single $ var "y")))
-  --           ])
+  , ValBind_Val
+      (eseq [ bind "foo6" $ lazy (eseq [val int, val char]) `arr` seqInt
+            ])
+      Nothing
+      0
+      (eseq [val (Expr_Lam
+                    (eseq [bind "x" (Expr_Lazy (eseq [val int, val char]))])
+                    (Expr_Let
+                       ValBindCateg_Plain
+                       [ ValBind_Val
+                           (eseq [bind "y" int, bind "z" char])
+                           Nothing
+                           0
+                           (Expr_Force $ var "x")
+                       ]
+                       (single $ var "y")))
+            ])
 
-  -- , ValBind_Val
-  --     (eseq [ bind "foo8" $ eseq [ val $ Expr_Lazy (seqInt `arr` seqChar `arr` seqInt) ] `arr` seqInt
-  --           ])
-  --     Nothing
-  --     0
-  --     (eseq [ val $ Expr_Lam (eseq [bind "f" $ Expr_Lazy (seqInt `arr` seqChar `arr` seqInt)]) (single $ Expr_Int 4 int)
-  --           ])
+  , ValBind_Val
+      (eseq [ bind "foo8" $ eseq [ val $ Expr_Lazy (seqInt `arr` seqChar `arr` seqInt) ] `arr` seqInt
+            ])
+      Nothing
+      0
+      (eseq [ val $ Expr_Lam (eseq [bind "f" $ Expr_Lazy (seqInt `arr` seqChar `arr` seqInt)]) (single $ Expr_Int 4 int)
+            ])
 
-  -- , ValBind_Val
-  --     (eseq [ bind "foo9a" $ (lazy $ strict int) `arr` seqChar `arr` seqInt
-  --           ])
-  --     Nothing
-  --     0
-  --     (eseq [ val $ Expr_Lam (eseq [bind "x" $ Expr_Lazy (strict int)]) (Expr_Let ValBindCateg_Plain [] $ Expr_Lam (eseq [bind "y" char]) (Expr_Force $ var "x"))
-  --           ])
+  , ValBind_Val
+      (eseq [ bind "foo9a" $ (lazy $ strict int) `arr` seqChar `arr` seqInt
+            ])
+      Nothing
+      0
+      (eseq [ val $ Expr_Lam (eseq [bind "x" $ Expr_Lazy (strict int)]) (Expr_Let ValBindCateg_Plain [] $ Expr_Lam (eseq [bind "y" char]) (Expr_Force $ var "x"))
+            ])
 
- -- , ValBind_Val
- --     (eseq [ bind "foo9b" $ (eseq [val $ Expr_Lazy (strict int), val char]) `arr` seqInt `arr` (lazy $ strict char) `arr` seqInt
- --           ])
- --     Nothing
- --     0
- --     (eseq [ val $ Expr_Lam (eseq [bind "ax" $ Expr_Lazy (strict int), bind "bx" char])
- --                            (Expr_Lam (eseq [bind "ay" int])
- --                                      (Expr_Let ValBindCateg_Plain [] $ Expr_Lam (eseq [bind "az" $ Expr_Lazy (strict char)]) (Expr_Force $ var "ax")))
- --           ])
+  , ValBind_Val
+      (eseq [ bind "foo9b" $ (eseq [val $ Expr_Lazy (strict int), val char]) `arr` seqInt `arr` (lazy $ eseq [val $ strict char]) `arr` seqInt
+            ])
+      Nothing
+      0
+      (eseq [ val $ Expr_Lam (eseq [bind "ax" $ Expr_Lazy (strict int), bind "bx" char])
+                             (Expr_Lam (eseq [bind "ay" int])
+                                       (Expr_Let ValBindCateg_Plain [] $ Expr_Lam (eseq [bind "az" $ Expr_Lazy (eseq [val $ strict char])]) (Expr_Force $ var "ax")))
+            ])
 
- -- , ValBind_Val
- --     (eseq [ bind "foo9" $ (lazy $ strict int) `arr` seqChar `arr` seqInt
- --           ])
- --     Nothing
- --     0
- --     (eseq [ val $ Expr_Lam (eseq [bind "x" $ Expr_Lazy (strict int)]) (Expr_Lam (eseq [bind "y" char]) (Expr_Force $ var "x"))
- --           ])
+  , ValBind_Val
+      (eseq [ bind "foo9" $ (lazy $ strict int) `arr` seqChar `arr` seqInt
+            ])
+      Nothing
+      0
+      (eseq [ val $ Expr_Lam (eseq [bind "x" $ Expr_Lazy (strict int)]) (Expr_Lam (eseq [bind "y" char]) (Expr_Force $ var "x"))
+            ])
 
   , ValBind_Val
       (eseq [ bind "foo10" (lazy (eseq [val $ strict int, val $ strict char]) `arr` seqInt)
@@ -201,50 +201,50 @@ dummy =
                     (single (Expr_Int 4 int)))
             ])
 
- -- , ValBind_Val
- --     (eseq [ bind "foo10a" (lazy (eseq [val $ strict int, val $ strict char]) `arr` seqChar `arr` seqInt)
- --           , bind "bar10a" (lazy (eseq [val $ strict int, val $ char]) `arr` seqInt)
- --           ])
- --     Nothing
- --     0
- --     (eseq [ val (Expr_Lam
- --                   (eseq [bind "x" $ Expr_Lazy (eseq [val $ strict int, val $ strict char])])
- --                   (Expr_Lam (eseq [bind "c" char])
- --                     (var "bar10a" `Expr_App` (eseq [val $ Expr_Delay $ force $ var "x"]))))
- --           , val (Expr_Lam
- --                   (eseq [bind "x" $ Expr_Lazy (eseq [val $ strict int, val $ char])])
- --                   (single (Expr_Int 4 int)))
- --           ])
+  , ValBind_Val
+      (eseq [ bind "foo10a" (lazy (eseq [val $ strict int, val $ strict char]) `arr` seqChar `arr` seqInt)
+            , bind "bar10a" (lazy (eseq [val $ strict int, val $ char]) `arr` seqInt)
+            ])
+      Nothing
+      0
+      (eseq [ val (Expr_Lam
+                    (eseq [bind "x" $ Expr_Lazy (eseq [val $ strict int, val $ strict char])])
+                    (Expr_Lam (eseq [bind "c" char])
+                      (var "bar10a" `Expr_App` (eseq [val $ Expr_Delay $ force $ var "x"]))))
+            , val (Expr_Lam
+                    (eseq [bind "x" $ Expr_Lazy (eseq [val $ strict int, val $ char])])
+                    (single (Expr_Int 4 int)))
+            ])
 
- -- , ValBind_Val
- --     (eseq [ bind "foo11" (eseq [val $ Expr_Lazy (eseq [val $ strict int]), val char] `arr` seqInt)
- --           ])
- --     Nothing
- --     0
- --     (eseq [ val (Expr_Lam
- --                   (eseq [bind "x" $ Expr_Lazy (eseq [val $ strict int]), bind "y" char])
- --                   (Expr_Force $ var "x"))
- --           ])
+  , ValBind_Val
+      (eseq [ bind "foo11" (eseq [val $ Expr_Lazy (eseq [val $ strict int]), val char] `arr` seqInt)
+            ])
+      Nothing
+      0
+      (eseq [ val (Expr_Lam
+                    (eseq [bind "x" $ Expr_Lazy (eseq [val $ strict int]), bind "y" char])
+                    (Expr_Force $ var "x"))
+            ])
 
-  -- , ValBind_Val
-  --     (eseq [ bind "foo11a" (eseq [val $ Expr_Lazy (eseq [val $ int]), val char] `arr` seqInt)
-  --           ])
-  --     Nothing
-  --     0
-  --     (eseq [ val (Expr_Lam
-  --                   (eseq [bind "x" $ Expr_Lazy (eseq [val $ int]), bind "y" char])
-  --                   (Expr_Force $ var "x"))
-  --           ])
+  , ValBind_Val
+      (eseq [ bind "foo11a" (eseq [val $ Expr_Lazy (eseq [val $ int]), val char] `arr` seqInt)
+            ])
+      Nothing
+      0
+      (eseq [ val (Expr_Lam
+                    (eseq [bind "x" $ Expr_Lazy (eseq [val $ int]), bind "y" char])
+                    (Expr_Force $ var "x"))
+            ])
 
-  -- , ValBind_Val
-  --     (eseq [ bind "foo12" (eseq [val $ Expr_Lazy (eseq [val $ strict int, val $ strict char]), val int] `arr` seqInt)
-  --           ])
-  --     Nothing
-  --     0
-  --     (eseq [ val (Expr_Lam
-  --                   (eseq [bind "x" $ Expr_Lazy (eseq [val $ strict int, val $ strict char]), bind "y" int])
-  --                   (single $ var "y"))
-  --           ])
+  , ValBind_Val
+      (eseq [ bind "foo12" (eseq [val $ Expr_Lazy (eseq [val $ strict int, val $ strict char]), val int] `arr` seqInt)
+            ])
+      Nothing
+      0
+      (eseq [ val (Expr_Lam
+                    (eseq [bind "x" $ Expr_Lazy (eseq [val $ strict int, val $ strict char]), bind "y" int])
+                    (single $ var "y"))
+            ])
   ]
   where
     int  = var "Int"

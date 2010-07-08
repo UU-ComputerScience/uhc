@@ -153,7 +153,7 @@ SEM ExprSeq1
                                                   (True,  False, True) -> UpdatedWorker
                                                   (False, False, True) -> Introduced
                                                   (_,     _,     _)    -> Ignored
-                            .   workerNm    =   hsnFromString (show @nm ++ "_worker")
+                            .   workerNm    =   bool (mkHNm (show @nm ++ "_worker")) @nm @isWorker
                             .   isWorker    =   "_worker" `isSuffixOf` show @nm
                             .   isWrapper   =   hsnFromString (show @nm ++ "_worker") `Map.member` @lhs.tyEnv
                             .   hasWorker   =   any (\x -> length x > 1) @lhs.lamArgs

@@ -97,10 +97,10 @@ trfTyCore opts modNm trftycore
                ; t_introduceWeirdConstructs
                ; t_introduceExplicitLaziness
                ; t_removeLazyFunctions
-              -- ; t_definitionSiteArityRaise
 %%[[(8 tauphi)
                ; t_optimizeStrictness
 %%]]
+               ; t_definitionSiteArityRaise
                ; t_eliminateExplicitLaziness
                }
 

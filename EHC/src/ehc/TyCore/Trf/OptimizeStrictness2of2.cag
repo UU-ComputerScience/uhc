@@ -170,6 +170,10 @@ SEM Expr
                 loc         .   appArgs     =   @func.appArgs ++ [@arg.copy]
   | Var
                 lhs         .   mbVarNm     =   Just @nm
+  | Ann
+                lhs         .   wrapper     =   if @ann.cTrf == ExprAnn_Strictness Strict
+                                                then @expr.wrapper
+                                                else @wrapper
 
 {
 -- This function will be in list-extras:Data.List.Extras
