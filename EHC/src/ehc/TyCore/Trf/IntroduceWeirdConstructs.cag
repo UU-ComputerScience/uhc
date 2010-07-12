@@ -245,6 +245,40 @@ dummy =
                     (eseq [bind "x" $ Expr_Lazy (eseq [val $ strict int, val $ strict char]), bind "y" int])
                     (single $ var "y"))
             ])
+
+  , ValBind_Val
+      (eseq [ bind "foo13" (eseq [ val $ Expr_Lazy (eseq [val $ strict int, val $ char])
+                                 , val $ Expr_Lazy (eseq [val $ strict char, val $ strict char])
+                                 ]
+                                    `arr` seqInt
+                                        `arr` seqInt)
+            ])
+      Nothing
+      0
+      (eseq [ val (Expr_Lam (eseq [ bind "x" $ Expr_Lazy (eseq [val $ strict int, val $ char])
+                                  ,  bind "y" $ Expr_Lazy (eseq [val $ strict char, val $ strict char])
+                                  ])
+                                  (Expr_Lam (eseq [ bind "z" int])
+                                           (single $ Expr_Int 2 int)
+                                  )
+                  )
+            ])
+
+  , ValBind_Val
+      (eseq [ bind "foo14" (eseq [ val $ Expr_Lazy (eseq [val $ strict int, val $ strict char])
+                                 , val $ Expr_Lazy (eseq [val $ strict char, val $ strict char])
+                                 ]
+                                    `arr` seqInt `arr` seqInt)
+            ])
+      Nothing
+      0
+      (eseq [ val (Expr_Lam
+                    (eseq [ bind "x" $ Expr_Lazy (eseq [val $ strict int, val $ strict char])
+                          , bind "y" $ Expr_Lazy (eseq [val $ strict char, val $ strict char])
+                          ])
+                    (Expr_Lam (eseq [ bind "z" int])
+                              (single $ var "z")))
+            ])
   ]
   where
     int  = var "Int"

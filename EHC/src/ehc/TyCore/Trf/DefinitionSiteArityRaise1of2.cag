@@ -238,6 +238,27 @@ newWrapperBody nm argss = foldr Expr_Lam body args
     argSeq (ExprSeq1_L2Bind nm _)   = ExprSeq1_L2Val (Expr_Var nm)
     argSeq e                        = e
 
+
+rmStrict :: Ty -> Ty
+rmStrict = rmAnn $ ExprAnn_Strictness Strict
+
+rmAnn :: ExprAnn -> Expr -> Expr
+rmAnn ann (Expr_Seq ss) = Expr_Seq (map (argMap $ rmAnn ann) ss)
+rmAnn ann (Expr_Lazy e) = Expr_Lazy (rmAnn ann e)
+rmAnn ann (Expr_Ann a e)
+  | ann == a  = rmAnn ann e
+  | otherwise = Expr_Ann a (rmAnn ann e)
+rmAnn _   e             = e
+
+argMap :: (Expr -> Expr) -> ExprSeq1 -> ExprSeq1
+argMap f (ExprSeq1_L0Val e m)     = ExprSeq1_L0Val (f e) m
+argMap f (ExprSeq1_L0LblVal nm e) = ExprSeq1_L0LblVal nm (f e)
+argMap f (ExprSeq1_L0TagVal t e)  = ExprSeq1_L0TagVal t (f e)
+argMap f (ExprSeq1_L0Bind nm m e) = ExprSeq1_L0Bind nm m (f e)
+argMap f (ExprSeq1_L1Val e)       = ExprSeq1_L1Val (f e)
+argMap f (ExprSeq1_L1Bind nm e)   = ExprSeq1_L1Bind nm (f e)
+argMap f (ExprSeq1_L2Val e)       = ExprSeq1_L2Val (f e)
+argMap f (ExprSeq1_L2Bind nm e)   = ExprSeq1_L2Bind nm (f e)
 }
 %%]
 

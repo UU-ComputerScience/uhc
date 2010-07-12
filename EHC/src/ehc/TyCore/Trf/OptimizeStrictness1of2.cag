@@ -164,6 +164,7 @@ SEM ExprSeq1
 
 SEM ValBind
   | Val
+                lhs         .   cTrf        =   @cTrf
                 bind        .   bindType    =   NameTypeBind
                             .   bindType2   =   NameTypeBind
                             .   lamArgsL    =   @lamArgsL
@@ -280,13 +281,13 @@ argMap f (ExprSeq1_L2Bind nm e)   = ExprSeq1_L2Bind nm (f e)
 
 
 workerType :: [Expr] -> Expr -> Expr
-workerType args res = foldr Expr_Arrow res (map (Expr_Seq . concatSeq . map (argMap unStrict) . unSeqs) args)
+workerType args res = foldr Expr_Arrow res (map (Expr_Seq . concatMap (concatSeq . argMap unStrict) . unSeqs) args)
   where
-    concatSeq :: [ExprSeq1] -> [ExprSeq1]
-    concatSeq (ExprSeq1_L0Val (Expr_Seq es) _ : es') = es ++ concatSeq es'
-    concatSeq (ExprSeq1_L1Val (Expr_Seq es)   : es') = es ++ concatSeq es'
-    concatSeq (ExprSeq1_L2Val (Expr_Seq es)   : es') = es ++ concatSeq es'
-    concatSeq es                                     = es
+    concatSeq :: ExprSeq1 -> [ExprSeq1]
+    concatSeq (ExprSeq1_L0Val (Expr_Seq es) _) = es
+    concatSeq (ExprSeq1_L1Val (Expr_Seq es))   = es
+    concatSeq (ExprSeq1_L2Val (Expr_Seq es))   = es
+    concatSeq e                                = [e]
 
 workerBody :: [Expr] -> Expr -> Expr
 workerBody args body = foldr Expr_Lam body newArgs

@@ -8,6 +8,8 @@
 -- general imports
 %%[(8 codegen) import(qualified Data.Map as Map, qualified Data.Set as Set)
 %%]
+%%[(8 codegen) import(Debug.Trace)
+%%]
 %%[(8 codegen) import(Control.Monad, Control.Monad.State)
 %%]
 
@@ -95,12 +97,12 @@ trfTyCore opts modNm trftycore
   where trf
           = do { t_initial
                ; t_introduceWeirdConstructs
-               ; t_introduceExplicitLaziness
-               ; t_removeLazyFunctions
+               -- ; t_introduceExplicitLaziness
+               -- ; t_removeLazyFunctions
+               ; t_definitionSiteArityRaise
 %%[[(8 tauphi)
                ; t_optimizeStrictness
 %%]]
-               ; t_definitionSiteArityRaise
                ; t_eliminateExplicitLaziness
                }
 

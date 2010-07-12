@@ -170,6 +170,8 @@ SEM Expr
                 loc         .   appArgs     =   @func.appArgs ++ [@arg.copy]
   | Var
                 lhs         .   mbVarNm     =   Just @nm
+
+  -- Code below not correct, removes annotations that shouldn't have
   | Ann
                 lhs         .   wrapper     =   if @ann.cTrf == ExprAnn_Strictness Strict
                                                 then @expr.wrapper
