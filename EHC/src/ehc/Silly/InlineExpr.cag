@@ -94,8 +94,18 @@ SEM Statement
 -- In each assignment, insert the RHS in the environment for possible later inlining
 -- but remove environment-entries of which the RHS is isomorphic to the current LHS
 
+ATTR Value [ | | isAlloc : {Bool} ]
+
+SEM Value
+  | Alloc    lhs . isAlloc = True
+  | *-Alloc  lhs . isAlloc = False
+
+
 SEM Statement
-  | Assignment  lhs.env   =  let env2 = Map.filter (notSame @dest.trf) @lhs.env
+  | Assignment  lhs.env   =  let env1 = if   @source.isAlloc
+                                        then Map.filter (not . isRPValue) @lhs.env   -- during allocation a garbage collection can occur, during which we dont want active values in Ret-registers
+                                        else @lhs.env
+                                 env2 = Map.filter (notSame @dest.trf) env1
                              in  if @source.isntCall
                                     && virtualizable (Map.lookup @dest.self @lhs.allDefMap)
                                                      (Map.lookup @dest.self @lhs.allUseMap)
@@ -191,10 +201,10 @@ isSimpleVariable (Variable_Subs _           _) = False
 isSimpleVariable _                             = True
 
 isSimpleValue :: Value -> Bool
-isSimpleValue (Value_Alloc _ _) = False
-isSimpleValue (Value_Offset _ _)= False
-isSimpleValue (Value_Var v)     = isSimpleVariable v
-isSimpleValue _                 = True
+isSimpleValue (Value_Alloc _ _ _) = False
+isSimpleValue (Value_Offset _ _)  = False
+isSimpleValue (Value_Var v)       = isSimpleVariable v
+isSimpleValue _                   = True
 
 virtualizable (Just def) (Just use) simpleVal = def==1 && ( use==2 || simpleVal )
 virtualizable _ _ _ = False
@@ -204,4 +214,3 @@ notSame v1 (Value_Var v2) = v1 /= v2
 notSame _ _ = True
 
 %%]
-

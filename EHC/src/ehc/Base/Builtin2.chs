@@ -126,7 +126,7 @@ builtinMayLiveUnboxedTyMp opts
                { biGbcMayLiveUnboxed	= True
                , biIsSigned             = True
 %%[[(97 jazy)
-               , biJazyBasicTy    		= BasicJazy_Byte
+               , biJazyBasicTy    		= BasicJazy_Int
 %%]]
                }
            )
@@ -134,7 +134,7 @@ builtinMayLiveUnboxedTyMp opts
            , emptyBuiltinInfo
                { biGbcMayLiveUnboxed	= True
 %%[[(97 jazy)
-               , biJazyBasicTy    		= BasicJazy_Byte
+               , biJazyBasicTy    		= BasicJazy_Int
 %%]]
                }
            )
@@ -143,7 +143,7 @@ builtinMayLiveUnboxedTyMp opts
                { biGbcMayLiveUnboxed	= True
                , biIsSigned             = True
 %%[[(97 jazy)
-               , biJazyBasicTy    		= BasicJazy_Short
+               , biJazyBasicTy    		= BasicJazy_Int
 %%]]
                }
            )
@@ -151,7 +151,7 @@ builtinMayLiveUnboxedTyMp opts
            , emptyBuiltinInfo
                { biGbcMayLiveUnboxed	= True
 %%[[(97 jazy)
-               , biJazyBasicTy    		= BasicJazy_Short
+               , biJazyBasicTy    		= BasicJazy_Int
 %%]]
                }
            )
@@ -298,6 +298,6 @@ builtinKnownRecTyNmL
 
 %%[(8 codegen)
 builtinNm :: EHCOpts -> (EHBuiltinNames -> HsName) -> HsName
-builtinNm opts f = f $ ehcOptBuiltinNames opts
+builtinNm = ehcOptBuiltin
 %%]
 

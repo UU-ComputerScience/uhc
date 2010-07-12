@@ -65,7 +65,7 @@ A multiple level VarMp knows its own absolute metalevel, which is the default to
 %%[(50 hmtyinfer || hmtyast) export(varmpKeys)
 %%]
 
-%%[(90 hmtyinfer || hmtyast) export(varmpMapTy)
+%%[(9090 hmtyinfer || hmtyast) export(varmpMapTy)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -82,9 +82,11 @@ data VarMp' k v
       { varmpMetaLev 	:: !MetaLev				-- the base meta level
       , varmpMpL 		:: [Map.Map k v]		-- for each level a map, starting at the base meta level
       }
+  deriving ( Eq, Ord
 %%[[20
-  deriving (Typeable, Data)
+           , Typeable, Data
 %%]]
+           )
 %%]
 
 %%[(99 hmtyinfer || hmtyast) export(varmpToMap)
@@ -275,7 +277,7 @@ data VarMpInfo
   | VMIPredSeq !PredSeq
 %%]]
   deriving
-    ( Eq, Show
+    ( Eq, Ord, Show
 %%[[20
     , Typeable, Data
 %%]]
@@ -585,40 +587,6 @@ varmpAssNmLookup2 m v = varmpAssNmLookup v m
 %%[(10 hmtyinfer || hmtyast)
 varmpLabelLookup2 :: VarMp -> LabelVarId -> Maybe Label
 varmpLabelLookup2 m v = varmpLabelLookup v m
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Remove alpha rename of tvars
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(4_2 hmtyinfer || hmtyast)
-varmpDelAlphaRename :: VarMp -> VarMp
-varmpDelAlphaRename = varmpFilterTy (\_ t -> not (tyIsVar t))
-
-varmpFilterAlphaRename :: VarMp -> VarMp
-varmpFilterAlphaRename = varmpFilterTy (\_ t -> case t of {Ty_Var _ TyVarCateg_Plain -> True ; _ -> False})
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Ty as cnstr
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(4_2 hmtyinfer || hmtyast)
-tyAsVarMp :: UID -> Ty -> (Ty,VarMp)
-tyAsVarMp u ty
-  =  case ty of
-        Ty_Var _ TyVarCateg_Plain -> (ty,emptyVarMp)
-        _ -> let t = mkNewTyVar u in (t,u `varmpTyUnit` ty)
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Filter cnstr bound to Ty_Alts which has a cnstr in other
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(4_2 hmtyinfer || hmtyast)
-varmpFilterTyAltsMappedBy :: VarMp -> VarMp -> VarMp
-varmpFilterTyAltsMappedBy c cMp
-  =  varmpFilterTy (\_ t -> case t of {Ty_Alts v _ -> isJust (varmpTyLookup v cMp) ; _ -> False}) c
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

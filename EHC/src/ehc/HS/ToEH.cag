@@ -34,14 +34,15 @@ ehSection uniq range semvar sempatvar semlam left op right
 %%]
 
 %%[1 hs
-ehTupleConstructor :: SemApp eh
-  => Range -> Int -> RngLiftArg (HsName -> eh) -> RngLiftArg (HsName -> ehp) -> RngLiftArg (ehp -> eh -> eh)
+ehTupleConstructor
+  :: SemApp eh
+     => Range -> Int -> RngLiftArg (HsName -> eh) -> RngLiftArg (HsName -> ehp) -> RngLiftArg (ehp -> eh -> eh)
 %%[[1
-  -> RngLiftArg (HsName -> eh)
+     -> RngLiftArg (HsName -> eh)
 %%][7
-  -> ([ehp] -> eh -> eh) -> RngLiftArg (r -> eh) -> RngLiftArg (r -> Maybe HsName -> eh -> r) -> RngLiftArg r
+     -> ([ehp] -> eh -> eh) -> RngLiftArg (r -> eh) -> RngLiftArg (r -> Maybe HsName -> eh -> r) -> RngLiftArg r
 %%]]
-  -> eh
+     -> eh
 ehTupleConstructor range arity semvar sempatvar semlam
 %%[[1
         semcon
@@ -157,11 +158,21 @@ SEM Declaration
 %%]
 %%[5
     | Data
-        loc         .   eh          =   rngLift @range EH.Decl_Data False @typerefname (map (rngLift @range EH.TyVar_Var) @simpletype.typevariables) @constructors.eh
+        loc         .   eh          =   rngLift @range EH.Decl_Data False @typerefname (map (rngLift @range EH.TyVar_Var) @typelefthandside.typevariables) @constructors.eh
+%%[[92
+                                                (if ehcOptGenGenerics @lhs.opts then Just @generMaxRemArity else Nothing)
+%%]]
         lhs         .   eh          =   [@eh]
     | Newtype
-        loc         .   eh          =   rngLift @range EH.Decl_Data True @typerefname (map (rngLift @range EH.TyVar_Var) @simpletype.typevariables) [@constructors.eh]
+        loc         .   eh          =   rngLift @range EH.Decl_Data True @typerefname (map (rngLift @range EH.TyVar_Var) @typelefthandside.typevariables) [@constructors.eh]
+%%[[92
+                                                (if ehcOptGenGenerics @lhs.opts then Just @generMaxRemArity else Nothing)
+%%]]
         lhs         .   eh          =   [@eh]
+%%[[92
+    | Data Newtype
+        loc         .   ehGener     =   rngLift @range EH.Decl_GenerRep @generMaxRemArity @typerefname @constructors.conrefnames @constructors.conAndFldrefnames
+%%]]
 %%]
 %%[6
     | KindSignature
@@ -172,7 +183,7 @@ SEM Declaration
     | ForeignImport
 %%[[8
         loc         .   ent         =   maybe (show @name) id @importname
-%%][94
+%%][90
         loc         .   nmForParse 	=	maybe "" id @importname
                     . 	(ent,entErrs)
                                     =   parseForeignEnt @callconvention (Just $ show @name) @nmForParse
@@ -183,7 +194,7 @@ SEM Declaration
 %%[9
     | Class
         loc         .   (eh,ehInst) =   let h = rngLift @range EH.TyExpr_Pred
-                                                $ rngLift @range EH.PrExpr_Class @classrefname (map (rngLift @range EH.TyExpr_Var) @simpletype.typevariables)
+                                                $ rngLift @range EH.PrExpr_Class @classrefname (map (rngLift @range EH.TyExpr_Var) @typelefthandside.typevariables)
                                             c = map (rngLift @range EH.TyExpr_Pred) @context.eh
                                             a = mkArrow c h
                                             (vals,sigs) = partition EH.ehIsDeclVal $ concat @ehReorderedDecls
@@ -192,6 +203,11 @@ SEM Declaration
                                                       @dependencies.eh
 %%]]
                                                       (Just @instancerefname) sigs
+%%[[92
+                                                      []
+%%][99
+                                                      @generDerivInfoL
+%%]]
                                             , rngLift @range EH.Decl_Instance (Just (@instancerefname,False)) InstDefault a vals
                                             )
         lhs         .   eh          =   [@eh,@ehInst]
@@ -199,7 +215,7 @@ SEM Declaration
         loc         .   eh          =   let h = rngLift @range EH.TyExpr_Pred
                                                 $ rngLift @range EH.PrExpr_Class @classrefname @types.eh
                                             c = map (rngLift @range EH.TyExpr_Pred) @context.eh
-                                        in  rngLift @range EH.Decl_Instance (Just (@instancerefname,@useimplicitly)) InstNormal (mkArrow c h) (concat @ehReorderedDecls)
+                                        in  rngLift @range EH.Decl_Instance (Just (@instancerefname,@useimplicitly)) @instVariant (mkArrow c h) (concat @ehReorderedDecls)
         lhs         .   eh          =   [@eh]
     | InstanceUseImplicitly
         loc         .   eh          =   let h = rngLift @range EH.PrExpr_Class @classrefname @types.eh
@@ -212,10 +228,10 @@ SEM Declaration
 %%]
 %%[11
     | Type
-        loc         .   eh          =   rngLift @range EH.Decl_Type @typerefname (foldr (rngLift @range EH.TyExpr_Lam) @type.eh @simpletype.typevariables)
+        loc         .   eh          =   rngLift @range EH.Decl_Type @typerefname (foldr (rngLift @range EH.TyExpr_Lam) @type.eh @typelefthandside.typevariables)
         lhs         .   eh          =   [@eh]
 %%]
-%%[(94 codegen)
+%%[(90 codegen)
     | ForeignExport
         loc         .   nmForParse 	=	maybe "" id @exportname
                     .   (ent,entErrs)
@@ -241,18 +257,18 @@ SEM FunctionalDependency
                                           (map (rngLift @range EH.TyVar_Var) @totypevariables)
 %%]
 
-%%[95
+%%[91
 ATTR AllDeriving [ ehDataTyExpr: {EH.TyExpr} | | ]
 
 SEM Declaration
     | Data Newtype
-        derivings   .   ehDataTyExpr=   mkApp (rngLift @range EH.TyExpr_Con @typerefname : map (rngLift @range EH.TyExpr_Var) @simpletype.typevariables)
+        derivings   .   ehDataTyExpr=   mkApp (rngLift @range EH.TyExpr_Con @typerefname : map (rngLift @range EH.TyExpr_Var) @typelefthandside.typevariables)
 
 SEM Deriving
     | Deriving
         loc         .   eh          =   let h = rngLift @range EH.TyExpr_Pred
                                                 $ rngLift @range EH.PrExpr_Class @refname [rngLift @range EH.TyExpr_Parens @lhs.ehDataTyExpr]
-                                        in  rngLift @range EH.Decl_Instance (Just (@instancerefname,@useimplicitly)) InstDeriving h []
+                                        in  rngLift @range EH.Decl_Instance (Just (@instancerefname,@useimplicitly)) (InstDeriving InstDerivingFrom_Datatype) h []
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -311,20 +327,24 @@ SEM MaybeType
 %%[1
 SEM Type
     | NormalApplication
-        lhs         .   eh          =   mkApp (@function.eh : @arguments.eh)
+        loc         .   eh          =   mkApp (@function.eh : @arguments.eh)
 %%[[1
     | InfixApplication
         loc         .   eh          =   mkRngParApp @range [@operator.eh,@leftType.eh,@rightType.eh]
 %%][9
     | InfixApplication
-        loc         .   (eh,ctxtFormErrs)
+        loc         .   (eh,ctxtFormErrs,isPredOp)
                                     =   if @operator.isPrArrow && not @lhs.isAsPred
                                         then let t = foldr mk1Arrow @rightType.eh [ pr | (Just pr) <- @leftType.ehMbAsTyPrL ]
                                              in  if all isJust @leftType.ehMbAsTyPrL
-                                                 then (t, [])
-                                                 else (t, [rngLift @range Err_MalformedPred @leftType.pp])
-                                        else (mkRngParApp @range [@operator.eh,@leftType.eh,@rightType.eh],[])
-%%]
+                                                 then (t, []                                                  , True )
+                                                 else (t, [rngLift @range Err_MalformedPred @leftType.pp]     , False)
+                                        else (mkRngParApp @range [@operator.eh,@leftType.eh,@rightType.eh], [], False)
+%%]]
+%%[[5
+    | InfixApplicationChainTop
+        loc         .   eh          =   @ehFromOpChain
+%%]]
     | SectionApplication
         loc         .   eh          =   ehSection
                                             @lUniq_1_nm @range
@@ -342,49 +362,49 @@ SEM Type
                                             @leftType.eh @operator.eh @rightType.eh
         loc         .   lUniq_1_nm  :   UNIQUEREF gUniq
     | Constructor
-        lhs         .   eh          =   rngLift @range EH.TyExpr_Con @refname
+        loc         .   eh          =   rngLift @range EH.TyExpr_Con @refname
     | Parenthesized
-        lhs         .   eh          =   rngLift @range EH.TyExpr_Parens @type.eh
+        loc         .   eh          =   rngLift @range EH.TyExpr_Parens @type.eh
 	| Annotate
 		loc			.	eh			=	rngLift @range EH.TyExpr_Ann @annotation.eh @type.eh
 %%]
 %%[2
     | Wildcard
-        lhs         .   eh          =   rngLift @range EH.TyExpr_Wild
+        loc         .   eh          =   rngLift @range EH.TyExpr_Wild
 %%]
 %%[3
     | Variable
 %%[[1
-        lhs         .   eh          =   rngLift @range EH.TyExpr_Var @name
+        loc         .   eh          =   rngLift @range EH.TyExpr_Var @name
 %%][4
-        lhs         .   eh          =   rngLift @range (if @lhs.doGenVarWild then EH.TyExpr_VarWild else EH.TyExpr_Var) @name
+        loc         .   eh          =   rngLift @range (if @lhs.doGenVarWild then EH.TyExpr_VarWild else EH.TyExpr_Var) @name
 %%]]
     | NamedWildcard
-        lhs         .   eh          =   rngLift @range EH.TyExpr_VarWild @name
+        loc         .   eh          =   rngLift @range EH.TyExpr_VarWild @name
 %%]
 %%[4
     | Forall
-        lhs         .   eh          =   foldr (rngLift @range EH.TyExpr_Quant tyQu_Forall) @type.eh @typevariables
+        loc         .   eh          =   foldr (rngLift @range EH.TyExpr_Quant tyQu_Forall) @type.eh @typevariables
     | Exists
-        lhs         .   eh          =   foldr (rngLift @range EH.TyExpr_Quant tyQu_Exists) @type.eh @typevariables
+        loc         .   eh          =   foldr (rngLift @range EH.TyExpr_Quant tyQu_Exists) @type.eh @typevariables
 %%]
 %%[7
     | RowUpdate
-        lhs         .   eh          =   foldl (flip ($)) @type.eh @rowTypeUpdates.eh
+        loc         .   eh          =   foldl (flip ($)) @type.eh @rowTypeUpdates.eh
     | RowEmpty
-        lhs         .   eh          =   rngLift @range EH.TyExpr_Row (rngLift @range EH.RowTyExpr_Empty)
+        loc         .   eh          =   rngLift @range EH.TyExpr_Row (rngLift @range EH.RowTyExpr_Empty)
     | RowRecUpdate
-        lhs         .   eh          =   foldl (\e u -> mk1ConApp hsnRec $ u $ ehTyExprArg $ e) @type.eh @rowTypeUpdates.eh
+        loc         .   eh          =   foldl (\e u -> mk1ConApp hsnRec $ u $ ehTyExprArg $ e) @type.eh @rowTypeUpdates.eh
     | RowRecEmpty
-        lhs         .   eh          =   mk1ConApp hsnRec $ rngLift @range EH.TyExpr_Row (rngLift @range EH.RowTyExpr_Empty)
+        loc         .   eh          =   mk1ConApp hsnRec $ rngLift @range EH.TyExpr_Row (rngLift @range EH.RowTyExpr_Empty)
     | RowSumUpdate
-        lhs         .   eh          =   foldl (\e u -> mk1ConApp hsnSum $ u $ ehTyExprArg $ e) @type.eh @rowTypeUpdates.eh
+        loc         .   eh          =   foldl (\e u -> mk1ConApp hsnSum $ u $ ehTyExprArg $ e) @type.eh @rowTypeUpdates.eh
     | RowSumEmpty
-        lhs         .   eh          =   mk1ConApp hsnSum $ rngLift @range EH.TyExpr_Row (rngLift @range EH.RowTyExpr_Empty)
+        loc         .   eh          =   mk1ConApp hsnSum $ rngLift @range EH.TyExpr_Row (rngLift @range EH.RowTyExpr_Empty)
 %%]
 %%[9
     | Qualified
-        lhs         .   eh          =   foldr mk1Arrow @type.eh @context.ehTy
+        loc         .   eh          =   foldr mk1Arrow @type.eh @context.ehTy
 %%]
 %%[11
     | TupleConstructor
@@ -395,9 +415,9 @@ SEM Type
                                             EH.RowTyExpr_Ext EH.RowTyExpr_Empty
 %%]
     | Implicits
-        lhs         .   eh          =   rngLift @range EH.TyExpr_Impls
+        loc         .   eh          =   rngLift @range EH.TyExpr_Impls
     | NoImplicits
-        lhs         .   eh          =   rngLift @range EH.TyExpr_NoImpls
+        loc         .   eh          =   rngLift @range EH.TyExpr_NoImpls
 
 %%[9 hs
 %%]
@@ -467,7 +487,7 @@ SEM Constructor
 SEM Constructor
     | Constructor 
         lhs         .   eh          =   rngLift @range EH.DataConstr_Constr @conrefname
-%%[[95
+%%[[91
                                                 Nothing
 %%]]
                                                 (map (ehPlainDataField emptyRange) @types.eh)
@@ -476,8 +496,11 @@ SEM Constructor
 %%]]
     | Infix
         lhs         .   eh          =   rngLift @range EH.DataConstr_Constr @conrefname
-%%[[95
-                                                (Just $ fgiPrio $ fixityGamLookup @conrefname @lhs.fixityGam)
+%%[[91
+                                                -- (Just $ fgiPrio $ fixityGamLookup @conrefname @lhs.fixityGam)
+                                                (let fgi = fixityGamLookup @conrefname @lhs.fixityGam
+                                                  in Just (fgiPrio fgi, fgiFixity fgi)
+                                                )
 %%]]
                                                 (map (ehPlainDataField emptyRange) [@leftType.eh,@rightType.eh])
 %%[[16
@@ -485,7 +508,7 @@ SEM Constructor
 %%]]
     | Record
         lhs         .   eh          =   rngLift @range EH.DataConstr_Constr @conrefname
-%%[[95
+%%[[91
                                                 Nothing
 %%]]
                                                 @fieldDeclarations.eh
@@ -523,8 +546,12 @@ SEM Type
         loc         .   ehMbAsPr    =   case (@leftType.ehMbAsPr,@rightType.ehMbAsPr) of
                                           (Just l,Just r) | @operator.isPrArrow && @lhs.isAsPred
                                             -> Just $ rngLift @range EH.PrExpr_Arrow l r
+                                          (Nothing,Nothing) | isJust @operator.mbRefConNm && @lhs.isAsPred
+                                            -> Just $ rngLift @range EH.PrExpr_Class (fromJust @operator.mbRefConNm) [@leftType.eh,@rightType.eh]
                                           _ -> Nothing
-    | * - NormalApplication Forall InfixApplication
+    | InfixApplicationChainTop
+        loc         .   ehMbAsPr    =   @type.ehMbAsPr
+    | * - NormalApplication Forall InfixApplication InfixApplicationChainTop
         loc         .   ehMbAsPr    =   Nothing
 
 ATTR Type AllRowTypeUpdate [ | | ehMbAsPrL USE {++} {[]}: {[Maybe EH.PrExpr]} ]
@@ -542,13 +569,16 @@ SEM RowTypeUpdate
 
 %%[9
 ATTR Type [ | | ehMbAsTyPr: {Maybe EH.TyExpr} ]
-ATTR Type AllRowTypeUpdate [ | | ehMbAsTyPrL USE {++} {[]}: {[Maybe EH.TyExpr]} ]
 
 SEM Type
 	| Wildcard
 		loc			.	ehMbAsTyPr	=	Just $ rngLift @range EH.TyExpr_Impls
 	| * - Wildcard
 		loc			.	ehMbAsTyPr	=	fmap (rngLift @range EH.TyExpr_Pred) @ehMbAsPr
+
+ATTR Type AllRowTypeUpdate [ | | ehMbAsTyPrL USE {++} {[]}: {[Maybe EH.TyExpr]} ]
+
+SEM Type
     | RowRecUpdate
         loc         .   ehMbAsTyPrL =   @rowTypeUpdates.ehMbAsTyPrL
 	| Wildcard
@@ -1050,6 +1080,10 @@ SEM FunctionBinding
                                                      t)
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% LHS, RHS for value bindings     
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %%[1
 ATTR LeftHandSide [ | | eh: {[EH.PatExpr]} ]
 
@@ -1108,7 +1142,26 @@ SEM RightHandSide
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Patterns        
+%%% LHS, RHS for type bindings     
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[5
+ATTR TypeLeftHandSide [ | | eh: {[EH.TyVar]} ]
+
+SEM TypeLeftHandSide
+    | Function
+        lhs         .   eh          =   rngLift @range EH.TyVar_Var @name : @patterns.eh
+    | Infix
+        lhs         .   eh          =   [ rngLift @range EH.TyVar_Var @operator
+                                        , @leftPattern.eh
+                                        , @rightPattern.eh
+                                        ]
+    | Parenthesized
+        lhs         .   eh          =   @lefthandside.eh ++ @patterns.eh
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Patterns for values
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1 hs
@@ -1165,7 +1218,13 @@ SEM Pattern
     | Parenthesized
         lhs         .   eh          =   rngLift @range EH.PatExpr_Parens @pattern.eh
     | Tuple
+%%[[1
         lhs         .   eh          =   ehPatConApp @range (hsnProd (length @patterns.eh)) @patterns.eh
+%%][7
+        lhs         .   eh          =   foldl (\eh (n,p) -> ehRowRecPatExprUpd @range (Just n) (rngLift @range EH.RecPatExpr_Ext) p eh)
+                                              (rngLift @range EH.PatExpr_Rec $ rngLift @range EH.RecPatExpr_Empty)
+                                        $ zip positionalFldNames @patterns.eh
+%%]]
     | As
         lhs         .   eh          =   rngLift @range EH.PatExpr_VarAs
 %%[[1
@@ -1221,6 +1280,22 @@ ATTR ContextedPattern [ | | eh: {(EH.PatExpr,EH.PrExpr)} ]
 SEM ContextedPattern
     | Contexted
         lhs         .   eh          =   (@pattern.eh,@context.eh)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Patterns for types
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[5
+ATTR TypePatterns [ | | eh USE {:} {[]}: {[EH.TyVar]} ]
+
+ATTR TypePattern [ | | eh: {EH.TyVar} ]
+%%]
+
+%%[5
+SEM TypePattern
+    | Variable
+        lhs         .   eh          =   rngLift @range EH.TyVar_Var @refname
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

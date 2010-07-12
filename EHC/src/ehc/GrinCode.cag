@@ -48,7 +48,7 @@
 %%[(20 codegen grin) hs import(Data.Typeable(Typeable), Data.Generics(Data))
 %%]
 
-%%[(94 codegen grin) hs import({%{EH}Foreign},{%{EH}Base.Target}) export(FFIWay(..),module {%{EH}Foreign})
+%%[(90 codegen grin) hs import({%{EH}Foreign},{%{EH}Base.Target}) export(FFIWay(..),module {%{EH}Foreign})
 %%]
 
 %%[(99 codegen grin) hs export(GrFFIAnnot(..))
@@ -131,25 +131,21 @@ deriving instance Data GrTagAnn
 --   Normal:  normal binding
 --   Class:    binds a dictionary with default definitions for al class
 --      The list entries correspond 1-to-1 with the class members
---      They contain "Just" the name of the default implementation, or "Nothing" if there is none.
---      Note that the dictionary may also contain superclass pointers, but they are not recorded in the annotation.
 --   Instance: binds a dictionary with definitions form an instance declaration
---      The first element of the list is a singleton of the name of the dictionary constructor.
---      The second element of the list is a singleton of the name of the dictionary containing the default definitions.
+--      The first element of the list encodes the name of the dictionary constructor.
+--      The second element of the list encodes the name of the dictionary containing the default definitions.
 --      The remaining list entries correspond 1-to-1 with the class members
---      They contain the name of the instance implementation (possibly with some arguments), or [] if it relies on the default implementation.
---   Overloaded: binds a function with dictionary parameters
---      The numbers specify which dictionaries are needed:
---            [-1] if the dictionary of which the function is a member is needed
---            [0]  if the first superclass is needed (for example, the Eq dictionary for a member of Ord)
---            [1]  if the second superclass is needed, etc.
---            [2,1] if the third superclass of the second superclass is needed
+--   Specialized: this is a specialization of another function
+--      The HsName is the name of the original function
+--      The Int is a sequence number that enumerates all specializations of an original function
+--      The list holds "Just" the argument that was specialized, or "Nothing" if it was not specialized
 
 data GrBindAnn
   = GrBindAnnNormal
-  | GrBindAnnClass    [Maybe HsName]
-  | GrBindAnnInstance [[HsName]]
-  | GrBindAnnOverloaded [[Int]]
+%%[[(9 codegen)
+  | GrBindAnnClass    [Track]
+  | GrBindAnnInstance [Track]
+%%]
   | GrBindAnnSpecialized HsName Int [Maybe HsName]
   deriving (Eq,Ord,Show)
 
@@ -424,7 +420,7 @@ instance Serialize GrExpr where
   sput (GrExpr_Call        a b    ) = sputWord8 8  >> sput a >> sput b
 %%[[20
   sput (GrExpr_FFI         a b    ) = sputWord8 9  >> sput a >> sput b
-%%][94
+%%][90
   sput (GrExpr_FFI         a b c  ) = sputWord8 9  >> sput a >> sput b >> sput c
 %%][99
   sput (GrExpr_FFI         a b c d) = sputWord8 9  >> sput a >> sput b >> sput c >> sput d
@@ -445,7 +441,7 @@ instance Serialize GrExpr where
               8  -> liftM2 GrExpr_Call         sget sget
 %%[[20
               9  -> liftM2 GrExpr_FFI          sget sget
-%%][94
+%%][90
               9  -> liftM3 GrExpr_FFI          sget sget sget
 %%][99
               9  -> liftM4 GrExpr_FFI          sget sget sget sget
@@ -627,7 +623,6 @@ instance Serialize GrBindAnn where
   sput (GrBindAnnNormal           ) = sputWord8 0
   sput (GrBindAnnClass       a    ) = sputWord8 1 >> sput a
   sput (GrBindAnnInstance    a    ) = sputWord8 2 >> sput a
-  sput (GrBindAnnOverloaded  a    ) = sputWord8 3 >> sput a
   sput (GrBindAnnSpecialized a b c) = sputWord8 4 >> sput a >> sput b >> sput c
   sget
     = do t <- sgetWord8
@@ -635,6 +630,5 @@ instance Serialize GrBindAnn where
            0 -> return GrBindAnnNormal
            1 -> liftM  GrBindAnnClass         sget
            2 -> liftM  GrBindAnnInstance      sget
-           3 -> liftM  GrBindAnnOverloaded    sget
            4 -> liftM3 GrBindAnnSpecialized   sget sget sget
 %%]

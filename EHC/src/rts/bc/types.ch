@@ -213,13 +213,13 @@ These must coincide with the values in function src/ehc/GrinCode/GrinByteCode.ta
 
 #define GB_NodeTagCat_Con				0			/* data, constructor 											*/
 #define GB_NodeTagCat_PAp				1			/* partial application, tag is size of missing 					*/
-%%[[94
+%%[[90
 #define GB_NodeTagCat_Intl				3			/* other internal structures, further described by tag 			*/
 %%]]
 %%]
 
 
-%%[95
+%%[91
 #define GB_NodeTag_Intl_Malloc			0			// Internal node: A malloc'ed ptr, requiring finalisation
 #define GB_NodeTag_Intl_Malloc2			1			// Internal node: A malloc'ed ptr with length info, requiring finalisation
 %%]
@@ -242,7 +242,7 @@ These must coincide with the values in function src/ehc/GrinCode/GrinByteCode.ta
 #define GB_NodeTag_Intl_Chan			7			// Internal node: GB_Chan
 %%]
 
-%%[94
+%%[90
 #define GB_NodeTag_Intl_WeakPtr			8			// Internal node: GB_WeakPtr
 %%]
 
@@ -265,11 +265,11 @@ These must coincide with the values in function src/ehc/GrinCode/GrinByteCode.ta
 // has node traceable content?
 static inline Bool gb_NH_HasTraceableFields( GB_NodeHeader h ) {
 	Bool doTrace = True ;
-%%[[94
+%%[[90
 	if ( GB_NH_Fld_NdEv(h) == GB_NodeNdEv_No && GB_NH_Fld_TagCat(h) == GB_NodeTagCat_Intl ) {
 		switch( GB_NH_Fld_Tag(h) ) {
 			case GB_NodeTag_Intl_WeakPtr :
-%%[[95
+%%[[91
 			case GB_NodeTag_Intl_Malloc :
 			case GB_NodeTag_Intl_Malloc2 :
 %%]]
@@ -381,12 +381,12 @@ static inline Bool gb_NH_HasTraceableFields( GB_NodeHeader h ) {
 %%]
 extern GB_NodePtr gb_MkCAF( GB_BytePtr pc ) ;
 
-%%[94
+%%[90
 #define GB_NodeWeakPtrSize					(EntierUpDivBy(sizeof(GB_WeakPtr),sizeof(GB_Word)) + 1)
 #define GB_MkWeakPtrHeader					GB_MkHeader(GB_NodeWeakPtrSize, GB_NodeNdEv_No, GB_NodeTagCat_Intl, GB_NodeTag_Intl_WeakPtr)
 %%]
 
-%%[95
+%%[91
 #define GB_NodeMallocSize					(EntierUpDivBy(sizeof(void*),sizeof(GB_Word)) + 1)
 #define GB_NodeMallocSize_ByteArray			(EntierUpDivBy(sizeof(GB_ByteArray),sizeof(GB_Word)) + 1)
 
@@ -441,7 +441,7 @@ extern GB_NodePtr gb_MkCAF( GB_BytePtr pc ) ;
 %%% WeakPtr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[94
+%%[90
 typedef MM_WeakPtr_Object	GB_WeakPtr ;
 %%]
 
@@ -449,7 +449,7 @@ typedef MM_WeakPtr_Object	GB_WeakPtr ;
 %%% Byte array
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[95
+%%[91
 typedef struct GB_ByteArray {
   GB_Word	size ;
   void* 	ptr	;
@@ -499,7 +499,7 @@ typedef struct GB_Node {
   GB_NodeHeader	header ;
   union {
     GB_Word 		fields[1] ;			/* size 1 is ok for a CAF, but not for other static node initializers */
-%%[[95
+%%[[91
     void*			ptr ;				/* when GB_NodeTag_Intl_Malloc */ /* will be replaced by following */
     GB_ByteArray	bytearray ;			/* when GB_NodeTag_Intl_Malloc2 */
 %%]]
@@ -513,7 +513,7 @@ typedef struct GB_Node {
     GB_LTM_Int		mpz ;				/* when GB_NodeTag_Intl_LTM_mpz */
 #endif
 %%]]
-%%[[94
+%%[[90
     GB_WeakPtr		weakptr ;			/* when GB_NodeTag_Intl_WeakPtr */
 %%]]
 %%[[98
@@ -749,7 +749,7 @@ For finalizers boehm's gc is assumed!!!!
 This breaks when compiled without bgc.
 20091001: EHC MM is under construction.
 
-%%[95
+%%[91
 #if USE_BOEHM_GC
 #	define GB_Register_Finalizer(n,cd)			GC_REGISTER_FINALIZER(n, &gb_Node_Finalize, cd, Cast(GC_finalization_proc*,&gb_Dummy_Finalization_Proc), &gb_Dummy_Finalization_cd)
 #	define GB_Register_FinalizerEnsured(n,cd)	GB_Register_Finalizer(n,cd)
@@ -773,7 +773,7 @@ This breaks when compiled without bgc.
 #define GB_AllocEnsure_Words_Finalizer(sz,nrFin)	GB_AllocEnsure_Bytes_Finalizer((sz)<<Word_SizeInBytes_Log,nrFin)
 %%]
 
-%%[95
+%%[91
 #define GB_NodeAlloc_ByteArray_In(nBytes,n)	{ GB_NodeAlloc_Hdr_In(GB_NodeMallocSize_ByteArray,GB_MkMallocHeader_ByteArray,n) ; \
 											  (n)->content.bytearray.size = nBytes ; \
 											  (n)->content.bytearray.ptr = gb_malloc(GB_GC_MinAlloc_Malloc(nBytes)) ; \

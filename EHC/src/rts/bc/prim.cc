@@ -132,7 +132,7 @@ PRIM Word primGC(  )
 }
 %%]
 
-%%[94
+%%[90
 %%]
 // finalize all weak ptrs
 PRIM Word primGetAllWeakPtrs(  )
@@ -396,7 +396,7 @@ PRIM Word primExitWith( Word exitCode )
 %%% Show
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[95
+%%[91
 PRIM GB_NodePtr primShowInt( GB_Int intNd )
 {
 	char buf[sizeof(Word)*10] ;

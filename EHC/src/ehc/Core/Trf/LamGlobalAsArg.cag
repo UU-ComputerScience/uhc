@@ -34,6 +34,9 @@ in ...f g...
 %%[(8 codegen) hs import({%{EH}Core.Utils})
 %%]
 
+%%[(8 codegen) hs import({%{EH}AbstractCore})
+%%]
+
 -- for debug
 %%[(8 codegen) hs import({%{EH}Base.Debug},EH.Util.Pretty)
 %%]
@@ -188,7 +191,7 @@ SEM CMetaVal
 
 SEM CExpr
   | Lam			argMeta		.	bindLamArgMp=	Map.empty
-%%]]
+%%]
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -212,38 +215,16 @@ SEM CBind
 %%[(8 codegen)
 SEM CBind
 %%[[8
-  | Bind        lhs         .   cTrf        =   mkCBind1 @nm $ mkCExprLam (assocLKeys @argNewL) @expr.cTrf
+  | Bind        lhs         .   cTrf        =   acoreBind1Cat CBindings_Plain @nm $ acoreLam (assocLKeys @argNewL) @expr.cTrf
 %%][9
   | Bind        lhs         .   cTrf        =   --trace ("use of global: " ++ show @nm ++ " uses " ++ show @bindLamArgMp ++ "\n"
                                                 --      ++ (if @bindMeta.isInstance then ("instance " ++ show @nm ++ " finds " ++ show @expr.bindLamArgMp ++ "\n") else "")
                                                 --      ) $
-                                                (mkCBind1Metas @nm @bindMeta.cTrf $ mkCExprLamMeta [(n,cviMeta cvi) | (n,cvi) <- @argNewL] @expr.cTrf)
+                                                (acoreBind1Metas @nm @bindMeta.cTrf $ acoreLamMeta [(n,cviMeta cvi) | (n,cvi) <- @argNewL] @expr.cTrf)
                 bindMeta    . bindLamArgMp  =  @expr.bindLamArgMp
 %%]]
 %%]
 
-
-%%[(8 codegen)
-
-ATTR CExpr [ | | mbBodyVar : {Maybe HsName} ]
-
-SEM CExpr
-  | Let         lhs.mbBodyVar  =  @body.mbBodyVar   
-  | Var         lhs.mbBodyVar  =  Just @nm
-  | *-Let Var Ann
-  				lhs.mbBodyVar  =  Nothing
-
-%%]
-
-%%[(9 codegen)
-ATTR CMetaVal CMetas [ mbBodyVar : {Maybe HsName} | | ]
-
-SEM CBind
-  | Bind   bindMeta.mbBodyVar = @expr.mbBodyVar
-
-SEM CExpr
-  | Lam			argMeta		.	mbBodyVar	=	Nothing
-%%]]
 
 
 
@@ -253,34 +234,108 @@ SEM CExpr
   | Var         lhs         .   cTrf        =   let  r n = fvVarRepl @lhs.argMp n
                                                      v1 = r @nm
 %%[[8
-                                                     mk as = mkCExprApp v1 $ [r a | (a,_) <- as]
+                                                     mk as = acoreApp v1 $ [r a | (a,_) <- as]
 %%][9
-                                                     mk as = mkCExprAppMeta v1 $ [(r a,cviMeta cvi) | (a,cvi) <- as]
+                                                     mk as = acoreAppMeta v1 $ [(r a,cviMeta cvi) | (a,cvi) <- as]
 %%]]
                                                      v2 = maybe v1 mk $ Map.lookup @nm $ @lhs.lamArgMp
                                                 in   v2
 %%]
 
 
-%%[(8 codegen)
+%%[(9 codegen)
 
 {
 
-metaExtend :: LamArgMp -> Maybe HsName -> [HsName] -> [HsName]
+type Env = Map.Map HsName Track
 
-metaExtend mp self []       = []
-metaExtend mp self (nm:nms) = let r = Map.lookup nm mp
-                                  e = maybe [] assocLKeys r
-                                  e2 = maybe e (\s -> filter (/=s) e) self
-                              in  -- trace (show nm ++ " extended with " ++ show e2 ) $
-                                  (nm : (e2 ++ nms))
+metaExtendTrack :: LamArgMp -> Env -> Track -> Track
+metaExtendTrack mp env (TrackVarApply nm ps) = let r = Map.lookup nm mp
+                                                   xs = maybe [] assocLKeys r
+                                                   ts = map (\x -> Map.findWithDefault (TrackVarApply x []) x env) xs
+                                               in  -- trace (show nm ++ " extended with " ++ show ts) $
+                                                         (TrackVarApply nm (ts++ps))
+metaExtendTrack _ _ t = t
 
-  
 }
 
-%%[[9
-SEM CMetaVal
-  |  DictInstance   lhs.cTrf = CMetaVal_DictInstance (map (metaExtend @lhs.bindLamArgMp  @lhs.mbBodyVar) @names)
-%%]]
-%%]
+ATTR CExpr [ mbCtxCount:{Maybe Int} isDictClass:{Bool} | | ]
 
+SEM CModule
+  | Mod  expr.mbCtxCount = Nothing
+         expr.isDictClass = False
+  
+SEM CAlt
+  | Alt  expr.mbCtxCount = Nothing
+         expr.isDictClass = False
+  
+SEM CPatFld
+  | Fld  offset.mbCtxCount = Nothing
+         offset.isDictClass = False
+
+SEM CBind
+  | Bind  expr.mbCtxCount = if @bindMeta.isDictInstance
+                            then Just 0
+                            else Nothing
+          expr.isDictClass = @bindMeta.isDictClass
+
+SEM CExpr
+  | Lam   body.mbCtxCount = do { n <- @lhs.mbCtxCount
+                               ; return (n+1)
+                               }
+  | Let   body.mbCtxCount = Nothing
+          body.isDictClass = False
+
+
+ATTR CMetaVal CMetas [ | | isDictClass:Bool isDictInstance:Bool ]
+
+SEM CMetaVal
+  | DictClass      lhs.isDictClass    = True
+  | *-DictClass    lhs.isDictClass    = False
+  | DictInstance   lhs.isDictInstance = True
+  | *-DictInstance lhs.isDictInstance = False
+
+
+
+ATTR CMetas CMetaVal [ | | mbTrack : {Maybe Track} ]
+ATTR CMetas CMetaVal [ envFinal:Env  | | ]
+
+
+SEM CMetaVal
+  | Track          lhs.mbTrack  =  Just @track
+  | *-Track        lhs.mbTrack  =  Nothing
+
+SEM CBind
+  | Bind  bindMeta.envFinal = @expr.envUp
+  
+SEM CExpr
+  | Lam
+    App   argMeta.envFinal = undefined
+
+
+
+
+ATTR CBind CBindL CExpr [ | | envUp USE {`Map.union`} {Map.empty} : Env ]
+
+SEM CBind
+  | Bind   lhs.envUp  =  maybe (Map.empty)
+                               (\t -> Map.singleton @nm t)
+                               @bindMeta.mbTrack
+
+SEM CExpr
+  | Let    lhs.envUp = Map.union @binds.envUp @body.envUp
+  | Lam    lhs.envUp = maybe (if @lhs.isDictClass
+                              then Map.insert @arg TrackSelf @body.envUp
+                              else @body.envUp
+                             )
+                             (\n -> Map.insert @arg (TrackCtx n) @body.envUp)
+                             @lhs.mbCtxCount
+  | *-Let
+      Lam  lhs.envUp = Map.empty
+
+
+ SEM CMetaVal
+   |  DictClass      lhs.cTrf = CMetaVal_DictClass    (map (metaExtendTrack @lhs.bindLamArgMp @lhs.envFinal) @tracks)
+   |  DictInstance   lhs.cTrf = CMetaVal_DictInstance (map (metaExtendTrack @lhs.bindLamArgMp @lhs.envFinal) @tracks)
+
+%%]

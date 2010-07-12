@@ -13,6 +13,9 @@
 %%[(9 codegen) hs export(mkPoisAppCoe,mkImplsAppCoe, mkImplsLamCoe,mkLamBodyCoe,mkPoiLLamCoe)
 %%]
 
+%%[(9 codegen) hs import({%{EH}AbstractCore})
+%%]
+
 %%[(9 codegen) hs import({%{EH}Core.Coercion})
 %%]
 
@@ -161,7 +164,7 @@ SEM CExpr
                                                   Just (CSIExpr ce)  -> (ce,True)
                                                   _                  -> (@cRepl,False)
   | HoleLet     (loc.replv,loc.isRepl)      =   case Map.lookup @bindsUid @lhs.cSubst of
-                                                  Just (CSIBinds b)  -> (@lhs.cSubst `cSubstApp` mkCExprLetRec b @body.cRepl,True)
+                                                  Just (CSIBinds b)  -> (@lhs.cSubst `cSubstApp` acoreLetRec b @body.cRepl,True)
                                                   _                  -> (@cRepl,False)
   | CoeArg      (loc.replv,loc.isRepl)      =   (@lhs.coeArg,True)
   | ImplsApp ImplsLam
@@ -207,10 +210,10 @@ coeEvalOnAsSubst uniq coe ce
           = case coe of
               c | coeIsId c     -> mk ce
               Coe  f            -> mk $ f ce
-              CoeApp a m        -> mk $ mkCExprApp1Meta ce a m
-              CoeLam n m        -> mk $ mkCExprLam1Meta n m ce
-              CoeLamLet n i     -> mk $ n `mkCExprLam1` mkCExprLetHole i ce
-              CoeLetRec b       -> mk $ mkCExprLet CBindings_Rec b ce
+              CoeApp a m        -> mk $ acoreApp1Meta ce a m
+              CoeLam n m        -> mk $ acoreLam1Meta n m ce
+              CoeLamLet n i     -> mk $ n `acoreLam1` mkCExprLetHole i ce
+              CoeLetRec b       -> mk $ acoreLetRec b ce
               CoeCompose c1 c2  -> (u2, c1', s2 `cSubstAppSubst` s1)
                                 where (u1,c2',s1) = ev uniq c2 ce
                                       (u2,c1',s2) = ev u1   c1 c2'
@@ -226,20 +229,6 @@ coeEvalOn :: Coe -> CExpr -> CExpr
 coeEvalOn coe ce
   = s `cSubstApp` ce'
   where (ce',s) = coeEvalOnAsSubst uidStart coe ce
-{-
-  =  case coe of
-       -- CoeId            -> ce
-       Coe  f           -> f ce
-       CoeApp a m       -> mkCExprApp1Meta ce a m
-       CoeLam n m       -> mkCExprLam1Meta n m ce
-       CoeLamLet n i    -> n `mkCExprLam1` mkCExprLetHole i ce
-       CoeLetRec b      -> mkCExprLet CBindings_Rec b ce
-       -- CoeCaseAlt e n p -> rceMatch e [n] [RAlt_Alt [p] ce False]
-       CoeCompose c1 c2	-> c1 `coeEvalOn` (c2 `coeEvalOn` ce)
-       CoeC e           -> e `cAppCoeArg` ce
-       CoeImplApp iv    -> CExpr_ImplsApp ce iv
-       CoeImplLam iv    -> CExpr_ImplsLam iv ce
--}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -325,7 +314,7 @@ coeImplsAppRVarMp c coe
        _             -> [coe]
 
 mkPoisAppCoe :: EHCOpts -> [PredOccId] -> [Coe]
-mkPoisAppCoe opts = map (\i -> mkAppCoe1With (mkCExprPrHole opts i) (CMetaVal_Dict Nothing))
+mkPoisAppCoe opts = map (\i -> mkAppCoe1With (mkCExprPrHole opts i) CMetaVal_Dict)
 
 mkImplsAppCoe :: EHCOpts -> Impls -> [Coe]
 mkImplsAppCoe opts = mkPoisAppCoe opts . implsPrIds
@@ -337,7 +326,7 @@ mkPoiLLamCoe onLast poiL
                           where (h,t) = fromJust $ initlast l
        _ | coeIsId onLast -> []
          | otherwise      -> [onLast]
-  where mk poi = mkLamCoe1With (poiHNm poi) (CMetaVal_Dict Nothing)
+  where mk poi = mkLamCoe1With (poiHNm poi) CMetaVal_Dict
 
 mkImplsLamCoe :: Coe -> Impls -> [Coe]
 mkImplsLamCoe onLast is = mkPoiLLamCoe onLast (implsPrIds is)
@@ -377,10 +366,10 @@ lrcoeForLamTyAppAsSubst opts uniq f a
               lr@(LRCoe LRCoeOther _ _)
                 -> (lrcoeKindOfCoe c, mkAppCoe [a], cSubstAppSubst s1 s2)
                 where (c,s1) = lrcoeWipeWeaveAsSubst opts u2 emptyVarMp lr
-                      (a,s2) = coeEvalOnAsSubst u3 c (CExpr_Var n)
+                      (a,s2) = coeEvalOnAsSubst u3 c (acoreVar n)
               LRCoe LRCoeId _ _
                 -> (LRCoeId, l, emptyCSubst)
-                where l = mkAppCoe [CExpr_Var n]
+                where l = mkAppCoe [acoreVar n]
 
 %%]
 
@@ -398,10 +387,10 @@ lrcoeForLamTyApp opts uniq csubst f a
           = case f of
               lr@(LRCoe LRCoeOther _ _)
                 -> (lrcoeKindOfCoe c, l)
-                where l = mkAppCoe [c `coeEvalOn` CExpr_Var n]
+                where l = mkAppCoe [c `coeEvalOn` acoreVar n]
                       c = lrcoeWipeWeave opts emptyVarMp csubst lr
               LRCoe LRCoeId _ _
                 -> (LRCoeId, l)
-                where l = mkAppCoe [CExpr_Var n]
+                where l = mkAppCoe [acoreVar n]
 %%]
 

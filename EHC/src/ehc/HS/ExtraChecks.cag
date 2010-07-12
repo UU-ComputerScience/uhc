@@ -12,23 +12,16 @@ SEM Module
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% ..
+%%% Arity of (,,) must match nr of args in pattern ((,,) ...)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 hs
+%%[7
+SEM Pattern
+    | Tuple
+        loc             .   errArity    =   if @arity == length @patterns.eh
+                                            then []
+                                            else [rngLift @range Err_PatArity2 "pat " @pp @arity]
 %%]
-idDefOccGamCheckAllowedKind :: String -> [IdOccKind] -> IdDefOccGam -> [Err]
-idDefOccGamCheckAllowedKind m ks g
-  = case idDefOccGamPartitionByKind ks g of
-      (_,[]) -> []
-      (_,ds) -> [rngLift @range Err_DeclsNotAllowed m [ (ioccKind o,map ioccNm os) | os@(o:_) <- groupSortOn ioccKind (assocLKeys ds)]]
-
-%%[9
-%%]
-SEM Declaration
-    | Class
-        loc             .   errNotAllowed
-                                        =   idDefOccGamCheckAllowedKind "class" [IdOcc_Val] @where.idDefOccGam
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Module name
@@ -50,7 +43,7 @@ SEM Module
 %%[(8 codegen)
 SEM Declaration
     | ForeignImport
-%%[[94
+%%[[90
       ForeignExport
 %%]]
         loc             .   errFFIWay   =   if maybe False (@callconvention `elem`) $ fmap targiAllowedFFI $ Map.lookup (ehcOptTarget @lhs.opts) allTargetInfoMp
@@ -70,7 +63,7 @@ SEM Declaration
 %%[[99
                                                                    _
 %%]]
-%%[[95
+%%[[91
                                                                    _
 %%]]
                                                                    [_]
@@ -78,7 +71,7 @@ SEM Declaration
                                                                    _
 %%]]
                                                 -> []
-                                              _ -> [rngLift @range Err_Newtype @simpletype.name]
+                                              _ -> [rngLift @range Err_Newtype @typelefthandside.name]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

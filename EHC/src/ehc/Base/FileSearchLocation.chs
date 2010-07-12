@@ -39,6 +39,7 @@ data FileLocKind
   = FileLocKind_Dir									-- plain directory
   | FileLocKind_Pkg	PkgKey							-- specific package
   | FileLocKind_PkgDb								-- yet unknown package in the package database
+  deriving Eq
 
 instance Show FileLocKind where
   show  FileLocKind_Dir		= "directory"
@@ -66,6 +67,7 @@ data FileLoc
       {	filelocKind		:: FileLocKind
       , filelocDir		:: String
       }
+  deriving Eq
 
 instance Show FileLoc where
   show (FileLoc k d) = d ++ " (" ++ show k ++ ")"
@@ -180,7 +182,7 @@ data PackageInfo
       { pkginfoLoc					:: !FileLoc						-- directory location
       , pkginfoOrder				:: !Int							-- for multiple packages the relative order
       -- , pkginfoKeyVals				:: PackageCfgKeyVals			-- key/value pairs of pkg config info
-      , pkginfoExposedModules		:: !(Set.Set HsName)			-- exposed modules
+      , pkginfoExposedModules		:: !HsNameS						-- exposed modules
       , pkginfoIsExposed		    :: !Bool						-- pkg is exposed?
       }
       deriving Show

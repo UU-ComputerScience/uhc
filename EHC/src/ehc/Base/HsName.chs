@@ -67,6 +67,9 @@ data HsNameUniqifier
   | HsNameUniqifier_GrinUpdated			-- Grin: updated value
   | HsNameUniqifier_FFIArg				-- arg evaluated for FFI
   | HsNameUniqifier_LacksLabel			-- label used in lacking predicates
+%%[[92
+  | HsNameUniqifier_GenericClass		-- a name introduced by generics
+%%]]
   deriving (Eq,Ord,Enum)
 
 -- | The show of a HsNameUniqifier is found back in the pretty printed code, current convention is 3 uppercase letters, as a balance between size and clarity of meaning
@@ -88,6 +91,9 @@ instance Show HsNameUniqifier where
   show HsNameUniqifier_GrinUpdated			= "UPD"
   show HsNameUniqifier_FFIArg				= "FFI"
   show HsNameUniqifier_LacksLabel			= "LBL"
+%%[[91
+  show HsNameUniqifier_GenericClass			= "GEN"
+%%]]
 %%]
 
 %%[7 export(HsNameUnique(..))
@@ -162,7 +168,7 @@ instance Eq HsName where
 instance Ord HsName where
   n1 `compare` n2 = hsnCanonicSplit n1 `compare` hsnCanonicSplit n2
 
-%%[1 export(mkHNmBase,hsnMbBaseString,hsnBaseUnpack)
+%%[1 export(mkHNmBase,hsnMbBaseString,hsnBaseUnpack,hsnBaseString)
 -- | Just lift a string to the base HsName variant
 mkHNmBase :: String -> HsName
 %%[[1
@@ -183,6 +189,9 @@ hsnBaseUnpack _                   = Nothing
 -- | If name is a HsName_Base after some unpacking, return the base string, without qualifiers, without uniqifiers
 hsnMbBaseString :: HsName -> Maybe String
 hsnMbBaseString = fmap fst . hsnBaseUnpack
+
+hsnBaseString :: HsName -> String
+hsnBaseString = maybe "??" id . hsnMbBaseString
 
 %%]
 
@@ -735,4 +744,73 @@ type HsNameMp = Map.Map HsName HsName
 hsnRepl :: HsNameMp -> HsName -> HsName
 hsnRepl m n = Map.findWithDefault n n m
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Name of a pattern var/con
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs export(RPatNm(..))
+data RPatNm
+  = RPatNmOrig {rpatNmNm :: !HsName}
+  | RPatNmUniq {rpatNmNm :: !HsName}
+  deriving Eq
+
+instance Ord RPatNm where
+  x `compare` y = rpatNmNm x `cmpHsNameOnNm` rpatNmNm y  
+
+instance Show RPatNm where
+  show pnm = show (rpatNmNm pnm)
+
+instance PP RPatNm where
+  pp (RPatNmOrig n) = n >|< "(O)"
+  pp (RPatNmUniq n) = n >|< "(U)"
+%%]
+
+%%[(8 codegen) hs export(rpatNmIsOrig)
+rpatNmIsOrig :: RPatNm -> Bool
+rpatNmIsOrig (RPatNmOrig _) = True
+rpatNmIsOrig _              = False
+%%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Track dictionary intentions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(9 codegen) hs export(Track(..))
+
+data Track
+  = TrackNone
+  | TrackSelf
+  | TrackCtx Int
+  | TrackSelect Int Track
+  | TrackVarApply HsName [Track]
+  deriving (Eq, Ord, Show)
+  
+%%]
+
+%%[(20 codegen grin) hs
+
+instance Serialize Track where
+  sput (TrackNone             ) = sputWord8 0
+  sput (TrackSelf             ) = sputWord8 1
+  sput (TrackCtx        a     ) = sputWord8 2 >> sput a
+  sput (TrackSelect     a  b  ) = sputWord8 3 >> sput a >> sput b
+  sput (TrackVarApply   a  b  ) = sputWord8 4 >> sput a >> sput b
+
+  sget
+    = do t <- sgetWord8
+         case t of
+           0 -> return TrackNone
+           1 -> return TrackSelf
+           2 -> liftM  TrackCtx      sget
+           3 -> liftM2 TrackSelect   sget sget
+           4 -> liftM2 TrackVarApply sget sget
+
+deriving instance Data Track
+deriving instance Typeable Track
+
+
+%%]
+
 

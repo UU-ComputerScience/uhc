@@ -91,8 +91,6 @@
 %%]
 %%[(8 codegen grin) import({%{EH}Silly.PrettyC(prettyC)})
 %%]
-%%[(8 codegen grin) import({%{EH}Silly.PrettyS(prettyS)})
-%%]
 %%[(8 codegen grin) import({%{EH}Silly.ToLLVM(silly2llvm)})
 %%]
 %%[(8 codegen grin) import({%{EH}LLVM(LLVMModule)})
@@ -158,11 +156,12 @@ doCompileGrin input opts
 %%]]
          ; transformCode         buildAppBindings   "BuildAppBindings" ; caWriteGrin "-117-appsbound"
          ; transformCode         globalConstants    "GlobalConstants"  ; caWriteGrin "-118-globconst"
-         ; transformCodeInline                      "Inline" 
-         ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-119-inlined"
+         
+         -- ; transformCodeInline                      "Inline" 
+         -- ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-119-inlined"
 
-         ; transformCode         singleCase         "singleCase"       ; 
-         ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-121-singleCase"
+         -- ; transformCode         singleCase         "singleCase"       ; 
+         -- ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-121-singleCase"
 
          ; transformCode         setGrinInvariant   "SetGrinInvariant" ; caWriteGrin "-122-invariant"
          ; checkCode             checkGrinInvariant "CheckGrinInvariant"
@@ -175,6 +174,12 @@ doCompileGrin input opts
          ; specialize "-123-6"
          -- ; specialize "-123-7"
          -- ; specialize "-123-8"
+
+         ; transformCodeInline                      "Inline" 
+         ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-124-inlined"
+
+         ; transformCode         evalStored         "EvalStored"       ; caWriteGrin ("125-evalstored")
+
 
          ; transformCode         (dropUnreachableBindings False) 
                                              "DropUnreachableBindings" ; caWriteGrin "-126-reachable"
@@ -242,7 +247,6 @@ doCompileGrin input opts
                    )
 %%]]
                 ; caWriteSilly "" "c" prettyC ehcOptEmitC
---              ; caWriteSilly "" "s" prettyS ehcOptEmitC
                 }
            )
          }

@@ -242,7 +242,7 @@ fileSuffMpHs
     -- currently not supported
     , ( Just "grin", ECUSGrin )
 %%]]
-%%[[(94 codegen)
+%%[[(90 codegen)
     , ( Just "c"   , ECUSC CStart )
 %%]]
     ]
@@ -351,7 +351,7 @@ doCompilePrepare fnL@(fn:_) opts
                      {-
                      -}
                         [ filePathUnPrefix d
-                        | d <- ehcOptPkgdirLocPath opts ++ [Cfg.mkInstallPkgdirUser opts, Cfg.mkInstallPkgdirSystem opts]
+                        | d <- nub $ ehcOptPkgdirLocPath opts ++ [Cfg.mkInstallPkgdirUser opts, Cfg.mkInstallPkgdirSystem opts]
                         ]
                     )
        ; let (pkgDb2,pkgErrs) = pkgDbSelectBySearchFilter (pkgSearchFilter Just PackageSearchFilter_ExposePkg (pkgExposedPackages pkgDb1)

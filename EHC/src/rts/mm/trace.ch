@@ -14,7 +14,7 @@ typedef QuartWord 				MM_Trace_Flg ;
 
 #define	MM_Trace_Flg_Copy		(1<<0)			// copy inspected object
 #define	MM_Trace_Flg_Trace		(1<<1)			// trace content of object 1 level
-%%[[94
+%%[[90
 #define	MM_Trace_Flg_TraceWkPtr	(1<<2)			// also trace weakptr
 %%]]
 

@@ -250,7 +250,7 @@ SEM Decl
 SEM Decl
   | TySig       tyExpr      .   knPolCtx            =   maybe @polCtxVar id @lhs.mbKnPolCtx
   | FFI
-%%[[94
+%%[[90
     FFE
 %%]]
                 tyExpr      .   knPolCtx            =   polCovariant
@@ -514,7 +514,8 @@ SEM Expr
                             .   finGathPolGam       =   quantifyPolGam
                                                         $ mapPolGam (tyCanonic (emptyFI {fiEnv = @fe}))
                                                         $ @lSubsPolGam2
-                body        .   polGam              =   gamAddGam @finGathPolGam @lhs.polGam
+                            .   finGathPolGam_extra =   @extraPolGam `gamUnion` @finGathPolGam
+                body        .   polGam              =   gamAddGam @finGathPolGam_extra @lhs.polGam
 %%]
 
 

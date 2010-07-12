@@ -20,7 +20,7 @@ The size of a page, basic unit of contiguous mem allocation.
 #	define MM_Page_Size_Log__					10
 #endif
 #define MM_Page_Size_Log						(MM_Page_Size_Log__ + Word_SizeInBytes_Log)
-#define MM_Page_Size							(1 << MM_Page_Size_Log)
+#define MM_Page_Size							(((Word)(1)) << MM_Page_Size_Log)
 %%]
 
 For Fragments as used by GC allocators
@@ -34,7 +34,7 @@ For Fragments as used by GC allocators
 #define MM_GC_CopySpace_FragmentSize_Log		(MM_GC_CopySpace_FragmentSize_Log__ + MM_Page_Size_Log)
 #define MM_GC_CopySpace_FragmentSize_HiMask		Bits_Size2HiMask(Word,MM_GC_CopySpace_FragmentSize_Log)
 #define MM_GC_CopySpace_FragmentSize_LoMask		Bits_Size2LoMask(Word,MM_GC_CopySpace_FragmentSize_Log)
-#define MM_GC_CopySpace_FragmentSize			(1 << MM_GC_CopySpace_FragmentSize_Log)
+#define MM_GC_CopySpace_FragmentSize			(((Word)(1)) << MM_GC_CopySpace_FragmentSize_Log)
 
 #define MM_Allocator_GC_FragmentInitialMax		4
 %%]

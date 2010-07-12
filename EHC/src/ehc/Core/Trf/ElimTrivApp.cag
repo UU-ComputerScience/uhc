@@ -55,7 +55,7 @@ ATTR CodeAGItf [ | | cTrf: CModule ]
 SEM CExpr
   | App         lhs         .   cTrf        =   if @lhs.isTopApp
                                                 then case (@func.mbFunVar,reverse @argL) of
-                                                       (Just f,[a]) | f == (ehbnId $ ehcOptBuiltinNames @lhs.opts)
+                                                       (Just f,[a]) | f == (ehcOptBuiltin @lhs.opts ehbnId)
                                                          -> a
                                                        _ -> @cTrf
                                                 else @cTrf

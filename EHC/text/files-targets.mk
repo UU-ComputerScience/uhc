@@ -166,6 +166,16 @@ text-variant-howtoexperiment-doc:
 	  TEXT_SHUFFLE_VARIANT=45 \
 	  text-variant-dflt-doc
 
+text-variant-ehc-library-doc:
+	$(MAKE) \
+	  TEXT_SHUFFLE_VARIANT=60 \
+	  text-variant-dflt-doc
+	  
+text-variant-ehc-jazy-doc:
+	$(MAKE) \
+	  TEXT_SHUFFLE_VARIANT=61 \
+	  text-variant-dflt-doc
+	  
 text-variant-ehc-structure-doc:
 	$(MAKE) TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC=yes \
 	  INCLUDE_DERIVED_MK=yes \
@@ -269,7 +279,14 @@ text-variant-slides-ehcstruct-ufmg:
 text-variant-slides-hs09-uhcarch:
 	$(MAKE) TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC=yes \
 	  INCLUDE_DERIVED_MK=yes \
-	  LHS2TEX_OPTS_VARIANT_CONFIG="--set=yesBeamer --set=storyStructure --unset=asArticle --set=asSlides --unset=useHyperref --unset=refToPDF --set=shortStory" \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--set=yesBeamer --set=storyStructure --unset=asArticle --set=asSlides --unset=useHyperref --unset=refToPDF --set=shortStory --set=hs09" \
+	  TEXT_SHUFFLE_VARIANT=53 \
+	  text-variant-dflt-once
+
+text-variant-slides-uhcarch:
+	$(MAKE) TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC=yes \
+	  INCLUDE_DERIVED_MK=yes \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--set=yesBeamer --set=storyStructure --unset=asArticle --set=asSlides --unset=useHyperref --unset=refToPDF --set=longStory --set=gentfpg10" \
 	  TEXT_SHUFFLE_VARIANT=53 \
 	  text-variant-dflt-once
 
@@ -379,4 +396,5 @@ text-variant-theplan:
 	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=theplan --set=kscode --set=blockstyle --set=asArticle --set=wide" \
 	  TEXT_SHUFFLE_VARIANT=57 \
 	  text-variant-dflt-bib-dotdpd
+
 

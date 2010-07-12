@@ -20,7 +20,11 @@ Assumptions (to be documented further)
 %%[(9 hmtyinfer || hmtyast) import(EH.Util.Pretty as Pretty)
 %%]
 
-%%[(2020 hmtyinfer || hmtyast) import({%{EH}Base.Binary})
+%%[20 import(Data.Typeable(Typeable,Typeable1), Data.Generics(Data))
+%%]
+%%[(20 hmtyinfer || hmtyast) import({%{EH}Base.Serialize})
+%%]
+%%[(20 hmtyinfer || hmtyast) import( Control.Monad)
 %%]
 
 %%[(9999 hmtyinfer || hmtyast) import({%{EH}Base.ForceEval})
@@ -48,18 +52,18 @@ data StoredCHR p i g s
       , storedIdent     :: !UsedByKey                    	-- the identification of a CHR, used for propagation rules (see remark at begin)
       }
 %%[[20
-  -- deriving (Typeable, Data)
+  deriving (Typeable, Data)
 %%]]
 
 storedSimpSz :: StoredCHR p i g s -> Int
 storedSimpSz = chrSimpSz . storedChr
 
-data CHRStore pred info guard subst
+newtype CHRStore pred info guard subst
   = CHRStore
       { chrstoreTrie    :: Trie.Trie Key [StoredCHR pred info guard subst]
       }
 %%[[20
-  -- deriving (Typeable, Data)
+  deriving (Typeable, Data)
 %%]]
 
 mkCHRStore trie = CHRStore trie
@@ -507,7 +511,8 @@ chrSolve'' env chrStore cnstrs prevState
           | otherwise         = ( r5
                                 , foldr lqUnion lastQuery [ lqSingleton ck wks histCount | (_,(_,(ck,wks))) <- r23 ]
 %%[[9
-                                , Pretty.empty -- pp2 >-< {- pp2b >-< pp2c >-< -} pp3
+                                -- , Pretty.empty
+                                , pp2 >-< {- pp2b >-< pp2c >-< -} pp3
                                 , mkStats Map.empty [("(1) lookup sz",pp (length r2)), ("(2) cand sz",pp (length r3)), ("(3) unused cand sz",pp (length r4)), ("(4) final cand sz",pp (length r5))]
 %%][100
                                 , Pretty.empty
@@ -523,10 +528,10 @@ chrSolve'' env chrStore cnstrs prevState
                 r4  = filter (not . isUsedByPropPart wlUsedIn) r3
                 r5  = mapMaybe (\r@(chr,kw@(_,works)) -> fmap (\s -> (r,s)) $ match chr (map workCnstr works)) r4
 %%[[9
-                -- pp2  = "lookups"    >#< ("for" >#< ppTrieKey workHdKey >-< ppBracketsCommasV r2)
+                pp2  = "lookups"    >#< ("for" >#< ppTrieKey workHdKey >-< ppBracketsCommasV r2)
                 -- pp2b = "cand1"      >#< (ppBracketsCommasV $ map (ppBracketsCommasV . map (ppBracketsCommasV . map (\(k,w) -> ppTrieKey k >#< w)) . fst . candidate) r2)
                 -- pp2c = "cand2"      >#< (ppBracketsCommasV $ map (ppBracketsCommasV . map (ppBracketsCommasV) . combineToDistinguishedElts . fst . candidate) r2)
-                -- pp3  = "candidates" >#< (ppBracketsCommasV $ map (\(chr,(ks,ws)) -> "chr" >#< chr >-< "keys" >#< ppBracketsCommas (map ppTrieKey ks) >-< "works" >#< ppBracketsCommasV ws) $ r3)
+                pp3  = "candidates" >#< (ppBracketsCommasV $ map (\(chr,(ks,ws)) -> "chr" >#< chr >-< "keys" >#< ppBracketsCommas (map ppTrieKey ks) >-< "works" >#< ppBracketsCommasV ws) $ r3)
 %%][100
 %%]]
                 -- util functions
@@ -566,8 +571,18 @@ chrSolve'' env chrStore cnstrs prevState
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% ForceEval
+%%% Instance: ForceEval, Serialize
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(20 hmtyinfer)
+instance (Serialize p, Serialize i, Serialize g, Serialize s) => Serialize (CHRStore p i g s) where
+  sput (CHRStore a) = sput a
+  sget = liftM CHRStore sget
+  
+instance (Serialize p, Serialize i, Serialize g, Serialize s) => Serialize (StoredCHR p i g s) where
+  sput (StoredCHR a b c d) = sput a >> sput b >> sput c >> sput d
+  sget = liftM4 StoredCHR sget sget sget sget
+%%]
 
 %%[(9999 hmtyinfer || hmtyast)
 instance ForceEval (CHR (Constraint p i) g s) => ForceEval (StoredCHR p i g s) where

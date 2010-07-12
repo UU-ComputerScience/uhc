@@ -6,16 +6,15 @@ template can be found here:
 
 	http://www.opensource.org/licenses/bsd-license.php
 
-UHC uses the following libraries with their own license, both LGPL:
-- GNU Multiple Precision (GMP) library, see extlibs/gmp
+UHC uses the following libraries with their own license:
 - Boehm Garbage Collector (BGC) library, see extlibs/bgc
 - Library code from the GHC distribution, see comment in the modules in ehclib
 
 License text
 ============
 
-Copyright (c) 2009, Utrecht University, Department of Information and
-Computing Sciences, Software Technology group
+Copyright (c) 2009-2010, Utrecht University, Department of Information
+and Computing Sciences, Software Technology group
 
 All rights reserved.
 

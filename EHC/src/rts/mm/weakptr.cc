@@ -15,14 +15,14 @@
 int dummy_weakPtr ;
 %%]
 
-%%[94 -8.dummyForLinker
+%%[90 -8.dummyForLinker
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Default WeakPtr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[94
+%%[90
 MM_WeakPtr mm_weakPtr ;
 %%]
 
@@ -30,7 +30,7 @@ MM_WeakPtr mm_weakPtr ;
 %%% Initialization
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[94
+%%[90
 void mm_init_weakPtr() {
 	// init done as part of a MM_Plan
 	// mm_weakPtr.init( &mm_weakPtr ) ;

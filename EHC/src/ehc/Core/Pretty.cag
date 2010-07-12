@@ -13,7 +13,7 @@
 %%[(9 codegen) hs import(qualified Data.Map as Map,qualified Data.Set as Set,{%{EH}Ty.Pretty})
 %%]
 
-%%[(94 codegen) hs import({%{EH}Foreign.Pretty})
+%%[(90 codegen) hs import({%{EH}Foreign.Pretty})
 %%]
 
 %%[(8 codegen).WRAPPER ag import({Core/AbsSyn})
@@ -48,9 +48,13 @@ ppMbCNm = maybe (ppCNm (hsnFromString "_")) ppCNm
 
 ppManyCNm :: [HsName] -> PP_Doc
 ppManyCNm  =  ppListSep "" "" " " . map ppCNm
+
 %%]
 
 %%[(9 codegen) hs
+ppTrack :: Track -> PP_Doc
+ppTrack t = text (show t)
+
 ppHole :: UID -> PP_Doc
 ppHole i = "<" >|< pp i >|< ">"
 %%]
@@ -100,6 +104,10 @@ ppLit kind val = "#" >|< kind >|< pp (show val)
 
 ppTag :: CTag -> PP_Doc
 ppTag t = ppCTag' CfgPP_Core t
+
+ppCurlyList :: (a -> PP_Doc) -> [a] -> PP_Doc
+ppCurlyList pL xs = ppListSep "{ " " }" ", " $ map pL xs
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -144,7 +152,7 @@ SEM CExpr
                                                   CBindings_Rec     -> pp " rec"
                                                   CBindings_Strict  -> pp " !"
                                                   CBindings_FFI     -> pp " foreign"
-%%[[94
+%%[[90
                                                   CBindings_FFE     -> pp " foreignexport"
 %%]]
                                                   _                 -> empty
@@ -188,10 +196,10 @@ SEM CBind
 %%]]
 %%[[8
 				loc			.	ppent		=	pp (show @impEnt)
-%%][94
+%%][90
 				loc			.	ppent		=	"\"" >|< @impEnt >|< "\""
 %%]]
-%%[[94
+%%[[90
   | FFE         lhs         .   pp          =   ppDef (ppCNm @nm >#< "=")
                                                       ("foreignexport" >#< ppCurlysCommasBlock [pp (show @callconv),"\"" >|< @expEnt >|< "\"",ppCNm @expNm,ppTyWithCfg' CfgPP_HI @ty])
 %%]]
@@ -252,9 +260,10 @@ SEM CMetaBind
 SEM CMetaVal
   | Val         loc         .   pp          =   pp "VAL"
 %%[[9
-  | Dict        loc         .   pp          =   pp "DICT"         >|< maybe (pp "") (\ns -> ppCurlysCommasWith ppSignedInt ns) @mbPos
-  | DictClass   loc         .   pp          =   pp "DICTCLASS"    >|< ppCurlysCommasWith ppMbCNm @names
-  | DictInstance loc        .   pp          =   pp "DICTINSTANCE" >|< ppCurlysCommasWith ppManyCNm @names
+  | Dict        loc         .   pp          =   pp "DICT"
+  | DictClass   loc         .   pp          =   pp "DICTCLASS"    >|< ppCurlyList ppTrack @tracks
+  | DictInstance loc        .   pp          =   pp "DICTINSTANCE" >|< ppCurlyList ppTrack @tracks
+  | Track        loc        .   pp          =   pp "TRACK"        >|< ppCurlys (show @track)
 %%]]
 
 SEM CMetaVal

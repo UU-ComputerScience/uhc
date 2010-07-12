@@ -13,7 +13,7 @@
 %%[(8 codegen java) hs import(Data.Maybe)
 %%]
 
-%%[(94 codegen java) hs import({%{EH}Foreign.Extract})
+%%[(90 codegen java) hs import({%{EH}Foreign.Extract})
 %%]
 
 %%[(8 codegen java).WRAPPER ag import({Core/CommonLev},{Core/CommonToXX},{Core/AbsSyn})
@@ -197,7 +197,7 @@ SEM CExpr
   												       Nothing                -> jvApp f as
   | Let         loc         .   jvBinds     =   case @categ of
                                                     CBindings_FFI     -> @binds.jvSrc
-%%[[94
+%%[[90
                                                     CBindings_FFE     -> @binds.jvSrc
 %%]]
                                                     CBindings_Plain   -> @binds.jvSrc
@@ -238,7 +238,7 @@ SEM CBind
                             .   jvSrc       =   jvBind "Object" @nm @expr.jvSrc
                             .   jvSrcStrict =   jvBind "Object" @nm (jvForceEval @expr.jvSrc)
   | FFI         lhs         .   jvSrc       =   jvBind "Object" @nm . maybe (jvNmPP hsnUnknown) (jvNmPP) . lookup @impEntNm $ primToJavaMp
-%%[[94
+%%[[90
   | FFE         lhs         .   jvSrc       =   pp "ffe not implemented"
 %%]]
 

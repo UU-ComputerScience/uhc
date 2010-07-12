@@ -54,8 +54,9 @@ EHC_HS_MAIN_SRC_CHS						:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,$(EHC_MAIN))
 EHC_HS_MAIN_DRV_HS						:= $(patsubst $(SRC_EHC_PREFIX)%.chs,$(EHC_BLD_VARIANT_ASPECTS_PREFIX)%.hs,$(EHC_HS_MAIN_SRC_CHS))
 
 EHC_HS_UTIL_SRC_CHS						:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
-													Substitutable Gam VarMp VarLookup Deriving Module Config BuiltinPrims NameAspect DerivationTree CHR Pred HI LamInfo \
+													Substitutable Gam VarMp VarLookup Deriving Generics Module Config BuiltinPrims NameAspect DerivationTree CHR Pred HI LamInfo AbstractCore \
 													$(addprefix CHR/,Key Constraint Solve) \
+													$(addprefix AbstractCore/,Utils) \
 													$(addprefix Cil/,Common TyTag) \
 													$(addprefix TauPhi/,Common) \
 													$(addprefix Pred/,ToCHR CHR Evidence EvidenceToCore EvidenceToTyCore Heuristics CommonCHR RedGraph) \
@@ -63,7 +64,7 @@ EHC_HS_UTIL_SRC_CHS						:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
 													$(addprefix Scanner/,Common Machine Scanner Token TokenParser) \
 													$(addsuffix /Parser,Base Ty EH HS Foreign Core GrinCode) \
 													$(addprefix Ty/,FIEnv FIEnv2 FitsInCommon FitsInCommon2 FitsIn Utils1 Utils2 AppSpineGam Trf/BetaReduce) \
-													$(addprefix Gam/,Utils Instantiate Quantify LevelMapGam ScopeMapGam Full AppSpineGam FixityGam TyGam KiGam DataGam PolGam TyKiGam ValGam ClassDefaultGam) \
+													$(addprefix Gam/,Base Utils Instantiate Quantify LevelMapGam ScopeMapGam Full AppSpineGam FixityGam TyGam KiGam DataGam PolGam TyKiGam ValGam ClassDefaultGam) \
 													$(addprefix Core/,Utils Coercion Trf) \
 													$(addprefix TyCore/,Base Utils2 Coercion Full0 Full1 Full2 Subst Trf) \
 													$(addprefix GrinCode/,Common SolveEqs) \

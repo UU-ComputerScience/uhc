@@ -723,7 +723,7 @@ SEM Module
                                                 let top     = ppLine $ ppCmtC @lhs.opts ("bytecode in C encoding for module" >#< @moduleNm)
                                                                        >-< (vlist $ map gencInclude $
                                                                               (  ["rts.h", "bc/interpreter.h"]
-%%[[94
+%%[[90
                                                                               ++ @includeL
 %%]]
                                                                            )  )

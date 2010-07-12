@@ -95,7 +95,7 @@ Hence we can safely use non-unique variables.
   = ( map PredScope_Var [u1,u2,u3]
     , map Pred_Var [u7,u8,u9]
 %%[[10
-    , map mkTyVar [u10,u11,u14,u15]
+    , map mkTyMetaVar {- mkTyVar -} [u10,u11,u14,u15]
     , map Label_Var [u12]
     , map LabelOffset_Var [u13]
 %%]]
@@ -117,6 +117,12 @@ obligations, i.e. that there is no sequence of reductions that can lead from the
 new proof obligations to the original ones.
 
 In terms of entailment: for a CHR rule H => B, B may not entail H.
+
+20100508 AD: this is no longer true, a cycle thus may arise, which is
+reflected in a letrec definition on the evidence/witness level. However,
+the CHR + solver uses set semantics, meaning that an individual
+constraint can only be reduced once still. However, the reduction steps
+will reflect the cycle still.
 
 %%[(9 hmtyinfer) export(initScopedPredStore)
 initScopedPredStore :: ScopedPredStore
@@ -303,13 +309,15 @@ data SimplifyResult p i g s
       -- for debugging only:
       , simpresRedAlts			:: [HeurAlts p i]
       , simpresRedTrees			:: [[(i, Evidence p i)]]
+      , simpresRedGraphs		:: [(String,RedGraph p i)]
+      , simpresRemPredL         :: [p]							-- remaining pred occurrences, which cannot be proven, as a list
       }
 
 emptySimplifyResult :: Ord p => SimplifyResult p i g s
 emptySimplifyResult
   = SimplifyResult
       emptySolveState emptyRedGraph
-      [] []
+      [] [] [] []
 %%]
 
 %%[(9 hmtyinfer) export(simplifyResultResetForAdditionalWork)
@@ -366,7 +374,8 @@ partitionUnresolved2AssumableAndOthers unresCnstrMp
   = (unres,cannotResCnstrMp)
   where (unresCnstrMp',cannotResCnstrMp)
                       = Map.partitionWithKey canAssume unresCnstrMp
-                      where canAssume (Prove p) _ = Map.null $ Map.filter (tvCatIsFixed . tvinfoCateg) $ tyFtvMp $ predTy $ cpoPr p
+                      where -- if p only ranges over non-fixed tvars, we potentially can assume them (if not found ambiguous later)
+                            canAssume (Prove p) _ = Map.null $ Map.filter (tvCatIsFixed . tvinfoCateg) $ tyFtvMp $ predTy $ cpoPr p
                             canAssume _         _ = True
         unres         = [ (p,sc) | (Prove p,sc) <- shareUnresolvedAssumptionsByScope (Map.keys unresCnstrMp') ]
 %%]
@@ -418,7 +427,11 @@ chrSimplifySolveToRedGraph
              )
 chrSimplifySolveToRedGraph env chrStore cnstrInfoMpPrev cnstrInfoMp prevRes
   = ( cnstrInfoMpAll
-    , emptySimplifyResult {simpresSolveState = solveState, simpresRedGraph = redGraph}
+    , emptySimplifyResult
+        { simpresSolveState = solveState
+        , simpresRedGraph   = redGraph
+        , simpresRedGraphs  = ("chrSimplifySolveToRedGraph",redGraph) : simpresRedGraphs prevRes
+        }
     )
   where (_,u1,u2) = mkNewLevUID2 $ fiUniq env
         solveState = chrSolve'' (env {fiUniq = u1}) chrStore (Map.keys $ cnstrInfoMp `Map.difference` cnstrInfoMpPrev) (simpresSolveState prevRes)

@@ -78,6 +78,9 @@ RTS_SRC_CC_BYTECODE	:= \
 
 RTS_SRC_CC_WHOLEPROG := \
     $(patsubst %,$(RTS_SRC_PREFIX)%.cc,\
+        mm/C/ssmutator \
+        mm/C/trace \
+        mm/C/tracesupplystack \
     )
 
 RTS_SRC_CH_SHARED := \
@@ -153,6 +156,9 @@ RTS_SRC_CH_BYTECODE := \
 
 RTS_SRC_CH_WHOLEPROG := \
     $(patsubst %,$(RTS_SRC_PREFIX)%.ch,\
+        mm/C/ssmutator \
+        mm/C/trace \
+        mm/C/tracesupplystack \
     	C/prim-const \
     )
 
@@ -224,7 +230,9 @@ RTS_ALL_SRC := \
 
 RTS_SRC_CC := \
     $(RTS_SRC_CC_SHARED) \
-    $(if $(EHC_CFG_TARGET_IS_bc),$(RTS_SRC_CC_BYTECODE),) \
+    $(if $(EHC_CFG_TARGET_IS_bc),    $(RTS_SRC_CC_BYTECODE),) \
+    $(if $(EHC_CFG_TARGET_IS_C),     $(RTS_SRC_CC_WHOLEPROG),) \
+    $(if $(EHC_CFG_TARGET_IS_llvm),  $(RTS_SRC_CC_WHOLEPROG) ,)
 
 PRM_SRC_CC := \
     $(PRM_SRC_CC_SHARED) \
@@ -256,7 +264,7 @@ RTS_GEN_H := \
 ###########################################################################################
 
 # external, outside rts
-RTS_EHCLIB_DRV_H	:= $(patsubst $(EHCLIB_BASE_INC_SRC_PREFIX)%,$(RTS_BLD_PREFIX)%,$(RTS_EHCLIB_SRC_H))
+RTS_EHCLIB_DRV_H	:= $(patsubst $(EHCLIB_UHCBASE_INC_SRC_PREFIX)%,$(RTS_BLD_PREFIX)%,$(RTS_EHCLIB_SRC_H))
 RTS_LTM_DRV_H		:= $(patsubst $(EXTLIBS_PREFIX)%,$(RTS_BLD_PREFIX)%,$(RTS_LTM_SRC_H))
 RTS_LTM_DRV_C		:= $(patsubst $(EXTLIBS_PREFIX)%,$(RTS_BLD_PREFIX)%,$(RTS_LTM_SRC_C))
 
@@ -357,7 +365,7 @@ $(RTS_INS_H) $(PRM_INS_H): $(RTS_INC_PREFIX)%: $(RTS_BLD_PREFIX)%
 
 # install special 'outside rts' .h files in the ehc/install/99/include directory
 
-$(RTS_EHCLIB_DRV_H): $(RTS_BLD_PREFIX)%: $(EHCLIB_BASE_INC_SRC_PREFIX)%
+$(RTS_EHCLIB_DRV_H): $(RTS_BLD_PREFIX)%: $(EHCLIB_UHCBASE_INC_SRC_PREFIX)%
 	mkdir -p $(@D)
 	install $< $@
 

@@ -98,6 +98,7 @@ test-expect test-regress: test-lists
 	    gri=$(call FUN_INSTALLABS_VARIANT_BIN_PREFIX,$${v})$(GRINI_EXEC_NAME)$(EXEC_SUFFIX) ; \
 	    optPreludePath="" ; \
 	  fi ; \
+      echo "== testing with cmd: $${ehc} $${ehcOpts} ==" ; \
 	  echo "== version $${v} ==" ; \
 	  if test -x $${ehc} ; \
 	  then \

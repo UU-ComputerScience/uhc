@@ -12,34 +12,49 @@ This info is used for TyCore generation and pretty printing.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(2 hmtyinfer).finValGam
-ATTR AllDecl [ finValGam: ValGam | | ]
+ATTR
+  AllDecl
+%%[[92
+  AllExpr AllPatExpr AllCase
+%%]]
+    [ finValGam: ValGam | | ]
+
 ATTR AllNT [ finTyVarMp: VarMp | | ]
 
 SEM Expr
-  | Let         loc         .   finValGamDecls      =   @lhs.finTyVarMp |=> (gamTop @decls.patValGam)
+  | Let         loc         .   finValGamDecls      =   gamTop @decls.patValGam
+%%[[2
                 decls       .   finValGam           =   @finValGamDecls
+%%][92
+				loc			.	finValGam			=	(if @lhs.isFirstLet then gamUnion @gathValGam else id) @lhs.finValGam
+%%]]
 
+SEM AGItf
+  | AGItf       loc         .   finTyVarMp          =   @expr.tyVarMp
+%%[[92
+                            .   finValGam           =   @expr.gathValGam `gamUnion` @lhs.valGam
+%%]]
+%%]
+
+%%[(2 hmtyinfer)
 SEM Decl
   | TySig       loc         .   finalTy             =   vgiTy $ fromJust
                                                         $ valGamLookup @nm $ @lhs.finValGam
-
-SEM AGItf
-  | AGItf       expr        .   finTyVarMp          =   @expr.tyVarMp
 %%]
 
 %%[(3 hmtyinfer).finValGam
 SEM Expr
-  | Let         loc         .   finValGamDecls      :=  @lhs.finTyVarMp |=> @quValGam_
+  | Let         loc         .   finValGamDecls      :=  @quValGam_
 %%]
 
 %%[(4 hmtyinfer).finValGam
 SEM Expr
-  | Let         loc         .   finValGamDecls      :=  @lhs.finTyVarMp |=> @quValGam_ex_
+  | Let         loc         .   finValGamDecls      :=  @quValGam_ex_
 %%]
 
 %%[(8 hmtyinfer).finValGam
 SEM Expr
-  | Let         loc         .   finValGamDecls      :=  @lhs.finTyVarMp |=> @quValGam_ex_subst
+  | Let         loc         .   finValGamDecls      :=  @quValGam_ex_subst
 %%]
 
 %%[(5 hmtyinfer)

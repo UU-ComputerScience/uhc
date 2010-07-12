@@ -220,10 +220,6 @@ data EHCOpts
 
       ,  ehcOptGenCaseDefault ::  Bool
       ,  ehcOptGenCmt         ::  Bool
-      ,  ehcOptGenOwn         ::  Bool
-      ,  ehcOptGenRVS         ::  Bool
-      ,  ehcOptGenLink        ::  Bool
-      ,  ehcOptGenLocReg      ::  Bool
       ,  ehcOptGenDebug       ::  Bool              -- generate runtime debug info
       ,  ehcOptGenTrace       ::  Bool
       ,  ehcOptGenTrace2      ::  Bool
@@ -261,6 +257,9 @@ data EHCOpts
       ,  ehcOptCheckRecompile ::  Bool
       ,  ehcDebugStopAtHIError::  Bool              -- stop when HI parse error occurs (otherwise it is ignored, .hi thrown away)
       ,  ehcOptDoLinking      ::  Bool              -- do link, if False compile only
+%%]]
+%%[[92
+      ,  ehcOptGenGenerics    ::  Bool				-- generate for use of generics
 %%]]
 %%[[(99 hmtyinfer)
       ,  ehcOptEmitDerivTree  ::  DerivTreeWay      -- show derivation tree on stdout
@@ -407,10 +406,6 @@ defaultEHCOpts
 %%]]
 %%[[(8 codegen grin)
       ,  ehcOptTimeCompile      =   False
-      ,  ehcOptGenOwn           =   True
-      ,  ehcOptGenRVS           =   False
-      ,  ehcOptGenLink          =   False
-      ,  ehcOptGenLocReg        =   False
       ,  ehcOptGenCaseDefault   =   False
       ,  ehcOptGenDebug         =   True
       ,  ehcOptGenTrace         =   False
@@ -456,6 +451,9 @@ defaultEHCOpts
       ,  ehcOptCheckRecompile   =   True
       ,  ehcDebugStopAtHIError  =   False
       ,  ehcOptDoLinking        =   True
+%%]]
+%%[[92
+      ,  ehcOptGenGenerics      =	True
 %%]]
 %%[[(99 hmtyinfer)
       ,  ehcOptEmitDerivTree    =   DerivTreeWay_None
@@ -552,10 +550,6 @@ ehcCmdLineOpts
 %%[[(8 codegen grin)
      ,  Option ""   ["time-compilation"] (NoArg oTimeCompile)                 "show grin compiler CPU usage for each compilation phase (only with -v2)"
      ,  Option ""   ["gen-casedefault"]  (boolArg optSetGenCaseDefault)       "trap wrong casedistinction in C (no)"
-     ,  Option "g"  ["gen-own"]          (boolArg optSetGenOwn)               "use own stack, thus enabling tailcalls (yes)"
-     ,  Option ""   ["gen-rvs"]          (boolArg optSetGenRVS)               "put return values on stack (no)"
-     ,  Option ""   ["gen-link"]         (boolArg optSetGenLink)              "generate code for static link (no)"
-     ,  Option ""   ["gen-locreg"]       (boolArg optSetGenLocReg)            "allocate locals in registers that are saved before calls (no)"
      ,  Option ""   ["gen-cmt"]          (boolArg optSetGenCmt)               "include comment about code in generated code"
      ,  Option ""   ["gen-debug"]        (boolArg optSetGenDebug)             "include debug info in generated code (yes)"
      ,  Option ""   ["gen-trace"]        (boolArg optSetGenTrace)             "trace functioncalls in C (no)"
@@ -572,6 +566,12 @@ ehcCmdLineOpts
 %%]]
 %%[[20
      ,  Option ""   ["no-recomp"]        (NoArg oNoRecomp)                    "turn off recompilation check (force recompile)"
+%%]]
+%%[[99
+     ,  Option ""   ["no-prelude"]       (NoArg oNoPrelude)                   "do not assume presence of Prelude"
+     ,  Option ""   ["no-hi-check"] 	 (NoArg oNoHiCheck)                   "no check on .hi files not matching the compiler version"
+%%]]
+%%[[20
      ,  Option "c"  ["compile-only"]     (NoArg oCompileOnly)                 "compile only, do not link"
 %%]]
 %%[[20
@@ -585,18 +585,14 @@ ehcCmdLineOpts
 %%][100
 %%]]
 %%[[99
-     ,  Option "i"  ["import-path"]      (ReqArg oUsrFileLocPath "path")       "search path for user files, path separators=';', appended to previous"
+     ,  Option "i"  ["import-path"]      (ReqArg oUsrFileLocPath "path")       "search path for user files, separators=';', appended to previous"
      ,  Option "L"  ["lib-search-path"]  (ReqArg oLibFileLocPath "path")       "search path for library files, see also --import-path"
-     ,  Option ""   ["no-prelude"]       (NoArg oNoPrelude)                   "do not assume presence of Prelude"
-     ,  Option ""   ["no-hi-check"] 	 (NoArg oNoHiCheck)                   "no check on .hi files not matching the compiler version"
      ,  Option ""   ["cpp"]              (NoArg oCPP)                         "preprocess source with CPP"
      ,  Option ""   ["limit-tysyn-expand"]
                                          (intArg oLimitTyBetaRed)             "type synonym expansion limit"
      -- 20071002: limiting the number of context reduction steps is not supported starting with the use of CHRs
      -- ,  Option ""   ["limit-ctxt-red"]   (intArg oLimitCtxtRed)               "context reduction steps limit"
      
-     ,  Option ""   ["package"]          (ReqArg oExposePackage "package")    "see --pkg-expose"
-     ,  Option ""   ["hide-all-packages"](NoArg oHideAllPackages)             "see --pkg-hide-all"
      ,  Option ""   ["odir"]             (ReqArg oOutputDir "dir")            "base directory for generated files. Implies --compile-only"
      ,  Option ""   ["keep-intermediate-files"] (NoArg oKeepIntermediateFiles) "keep intermediate files (default=off)"
 %%]]
@@ -607,17 +603,19 @@ ehcCmdLineOpts
 %%]]
      ,  Option ""   ["meta-variant"]        (NoArg oVariant)                     "meta: print variant (then stop)"
      ,  Option ""   ["meta-target-default"] (NoArg oTargetDflt)                  "meta: print the default codegeneration target (then stop)"
-     ,  Option ""   ["meta-targets"]        (NoArg oTargets)                     "meta: print list of supported codegeneration targets (then stop)"
+     ,  Option ""   ["meta-targets"]        (NoArg oTargets)                     "meta: print supported codegeneration targets (then stop)"
 %%[[99
      -- ,  Option ""   ["meta-export-env"]  	(OptArg oExportEnv "installdir[,variant]") "meta: export environmental info of installation (then stop) (will become obsolete soon)"
      -- ,  Option ""   ["meta-dir-env"]     	(NoArg oDirEnv)                      "meta: print directory holding environmental info of installation (then stop) (will become obsolete soon)"
      ,  Option ""   ["meta-pkgdir-system"]  (NoArg oMetaPkgdirSys) 				 "meta: print system package dir (then stop)"
      ,  Option ""   ["meta-pkgdir-user"]    (NoArg oMetaPkgdirUser) 			 "meta: print user package dir (then stop)"
-     ,  Option ""   ["pkg-build"]        	(ReqArg oPkgBuild "package")         "pkg: build package from generated files. Implies --compile-only"
+     ,  Option ""   ["package"]          (ReqArg oExposePackage "package")    "see --pkg-expose"
+     ,  Option ""   ["hide-all-packages"](NoArg oHideAllPackages)             "see --pkg-hide-all"
+     ,  Option ""   ["pkg-build"]        	(ReqArg oPkgBuild "package")         "pkg: build package from files. Implies --compile-only"
      ,  Option ""   ["pkg-expose"]       	(ReqArg oExposePackage "package")    "pkg: expose/use package"
      ,  Option ""   ["pkg-hide"]         	(ReqArg oHidePackage   "package")    "pkg: hide package"
      ,  Option ""   ["pkg-hide-all"]     	(NoArg oHideAllPackages)             "pkg: hide all (implicitly) assumed/used packages"
-     ,  Option ""   ["pkg-searchpath"]      (ReqArg oPkgdirLocPath "path")       "pkg: additional package search directories, each dir must have subdir <pkg>/<variant>/<target>/<flavor> (this may change)"
+     ,  Option ""   ["pkg-searchpath"]      (ReqArg oPkgdirLocPath "path")       "pkg: package search directories, each dir has <pkg>/<variant>/<target>/<flavor>"
      ,  Option ""   ["cfg-install-root"]    (ReqArg oCfgInstallRoot "dir")        "cfg: installation root (to be used only by wrapper script)"
      ,  Option ""   ["cfg-install-variant"] (ReqArg oCfgInstallVariant "variant") "cfg: installation variant (to be used only by wrapper script)"
 %%]]
@@ -902,10 +900,6 @@ optSetGenTrace2      o b = o { ehcOptGenTrace2      = b }
 optSetGenRTSInfo     o b = o { ehcOptGenRTSInfo     = b }
 optSetGenCaseDefault o b = o { ehcOptGenCaseDefault = b }
 optSetGenCmt         o b = o { ehcOptGenCmt         = b }
-optSetGenOwn         o b = o { ehcOptGenOwn         = b }
-optSetGenRVS         o b = o { ehcOptGenRVS         = b }
-optSetGenLink        o b = o { ehcOptGenLink        = b }
-optSetGenLocReg      o b = o { ehcOptGenLocReg      = b }
 optSetGenDebug       o b = o { ehcOptGenDebug       = b }
 optDumpGrinStages    o b = o { ehcOptDumpGrinStages = b {-, ehcOptEmitGrin = b -} }
 optEarlyModMerge     o b = o { ehcOptEarlyModMerge  = b }
@@ -950,7 +944,9 @@ strong: in a context where information is known (i.e. type signature)
 strong allows impredicative binding whereas weak will instantiate quantifiers
 
 %%[(9 hmtyinfer) export(FIOBind(..),fioBindIsYes,fioBindNoSet)
-data FIOBind = FIOBindYes | FIOBindNoBut TyVarIdS
+data FIOBind
+  = FIOBindYes | FIOBindNoBut TyVarIdS
+  deriving (Show)
 
 fioBindNoSet :: FIOBind -> TyVarIdS
 fioBindNoSet (FIOBindNoBut s) = s
@@ -962,26 +958,27 @@ fioBindIsYes _          = False
 %%]
 
 %%[(4 hmtyinfer).FIOpts.hd export(FIOpts(..))
-data FIOpts =  FIOpts   {  fioLeaveRInst     ::  Bool                ,  fioBindRFirst           ::  Bool
-                        ,  fioBindLFirst     ::  Bool                ,  fioBindLBeforeR         ::  Bool
-                        ,  fioMode           ::  FIMode              ,  fioUniq                 ::  UID
+data FIOpts =  FIOpts   {  fioLeaveRInst     ::  !Bool                ,  fioBindRFirst           ::  !Bool
+                        ,  fioBindLFirst     ::  !Bool                ,  fioBindLBeforeR         ::  !Bool
+                        ,  fioMode           ::  !FIMode              ,  fioUniq                 ::  !UID
+                        ,  fioBindCategs     ::  ![TyVarCateg]
 %%[[7
-                        ,  fioNoRLabElimFor  ::  [HsName]            ,  fioNoLLabElimFor        ::  [HsName]
-                        ,  fioDontBind       ::  TyVarIdS
+                        ,  fioNoRLabElimFor  ::  ![HsName]            ,  fioNoLLabElimFor        ::  ![HsName]
+                        ,  fioDontBind       ::  !TyVarIdS
 %%]]
 %%[[8
-                        ,  fioExpandEqTyVar  ::  Bool                -- expand tyvars also when equal. Required for Sys F translation.
+                        ,  fioExpandEqTyVar  ::  !Bool                -- expand tyvars also when equal. Required for Sys F translation.
 %%]]
 %%[[9
-                        ,  fioPredAsTy       ::  Bool                ,  fioAllowRPredElim       ::  Bool
-                        ,  fioBindLVars      ::  FIOBind             ,  fioBindRVars            ::  FIOBind
+                        ,  fioPredAsTy       ::  !Bool                ,  fioAllowRPredElim       ::  !Bool
+                        ,  fioBindLVars      ::  !FIOBind             ,  fioBindRVars            ::  !FIOBind
 %%]]
 %%[[16
-                        ,  fioFitFailureToProveObl    :: Bool
-                        ,  fioFitVarFailureToProveObl :: Bool
+                        ,  fioFitFailureToProveObl    :: !Bool
+                        ,  fioFitVarFailureToProveObl :: !Bool
 %%]]
 %%[[50
-                        ,  fioAllowEqOpen    ::  Bool                ,  fioInstCoConst          ::  HowToInst
+                        ,  fioAllowEqOpen    ::  !Bool                ,  fioInstCoConst          ::  !HowToInst
 %%]]
                         }
 %%]
@@ -991,6 +988,7 @@ strongFIOpts :: FIOpts
 strongFIOpts =  FIOpts  {  fioLeaveRInst     =   False               ,  fioBindRFirst           =   True
                         ,  fioBindLFirst     =   True                ,  fioBindLBeforeR         =   True
                         ,  fioMode           =   FitSubLR            ,  fioUniq                 =   uidStart
+                        ,  fioBindCategs     =   [TyVarCateg_Plain]
 %%[[7
                         ,  fioNoRLabElimFor  =   []                  ,  fioNoLLabElimFor        =   []
                         ,  fioDontBind       =   Set.empty
@@ -1115,3 +1113,22 @@ fioIsSubsume fio =  case fioMode fio of {FitSubLR -> True ; _ -> False}
 fioIsMeetJoin :: FIOpts -> Bool
 fioIsMeetJoin fio =  case fioMode fio of {FitMeet -> True ; FitJoin -> True ; _ -> False}
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Getting a builtin name via EHCOpts
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 export(ehcOptBuiltin,ehcOptBuiltin2)
+ehcOptBuiltin :: EHCOpts -> (EHBuiltinNames -> HsName) -> HsName
+ehcOptBuiltin o f = f $ ehcOptBuiltinNames o
+
+ehcOptBuiltin2 :: EHCOpts -> (EHBuiltinNames -> Int -> HsName) -> Int -> HsName
+ehcOptBuiltin2 o f i = f (ehcOptBuiltinNames o) i
+%%]
+
+not the right place..., but can't be in Ty because module cycle would result
+%%[(11 hmtyinfer || hmtyast) hs export(tyString)
+tyString :: EHCOpts -> Ty
+tyString o = Ty_Con (ehcOptBuiltin o ehbnPrelString)
+%%]
+

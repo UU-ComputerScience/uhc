@@ -909,7 +909,13 @@ WWW home page:
 %%[53
 \title{The Architecture  of the Utrecht Haskell Compiler}
 \author{Atze Dijkstra, Jeroen Fokker, Doaitse Swierstra\\~~Utrecht University~~}
+%if hs09
 \date{HS09, September 3, 2009}
+%elif gentfpg10
+\date{GhentFPG, May 13, 2010}
+%else
+\date{\today}
+%endif
 %%]
 
 %%[12
@@ -990,7 +996,9 @@ WWW home page:
 %%]
 
 %%[43
-\title{UHC user manual}
+\title{UHC user manual,
+version
+%%@[exec:install/100/bin/ehc --version-dotted%%]}
 \author{Atze Dijkstra}
 %%]
 
@@ -1037,6 +1045,16 @@ WWW home page:
 %%[57
 \title{The UHC Plan}
 \author{Atze Dijkstra}
+%%]
+
+%%[60
+\title{UHC Library}
+\author{C\u alin Juravle}
+%%]
+
+%%[61
+\title{Jazy Backend}
+\author{Levin Fritz}
 %%]
 
 
@@ -2965,6 +2983,22 @@ To be done ...
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% EHC Library doc
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[60 doclatex
+%%@InternalDocEhcLibrary.main
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Jazy backend
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[61 doclatex
+%%@InternalDocJazy.main
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Uniqueness
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -3470,6 +3504,12 @@ We thank both (anonymous) reviewers for their extremely valuable and helpful com
 %%@SlidesUHCStructure.toolsAG
 %%@SlidesUHCStructure.agInUHC
 %%@SlidesUHCStructure.aspectsAndVariants
+
+%%@SlidesUHCStructure.metrics
+
+%if longStory
+%%@SlidesUHCStructure.embedding
+%endif
 
 %%@SlidesUHCStructure.conclusions
 

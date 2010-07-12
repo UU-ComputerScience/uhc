@@ -1,0 +1,116 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Gathering of used names
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[doesWhat doclatex
+It is necessary to gather used names because info (types used, kind,
+etc) related to these names must be available when used via this module
+in another module via import. This is a consequence of re-exports,
+possibly inlining (not dealt with here). The gathered info is used to:
+
+\begin{itemize}
+\item Determine which modules are implicitly imported (because an instance is used, a type, ...).
+      These modules must then be imported also.
+\item To allow for efficient caching of the imported hi info by filtering out what is not used.
+      No import chasing need then be done for those modules anymore.
+      At the time of writing (20100605) this is becoming a serious performance bottleneck.
+\end{itemize}
+
+The gathering must be done here because:
+
+\begin{itemize}
+\item All names have been expanded to full qualified form, which we need for determining module names.
+\item Types (classes, ...) of value identifiers need to be inspected as well, because those can be/are implicitly used.
+\end{itemize}
+
+It is unclear whether later stages (i.e. Core transformations) introduce name usage which may require additional imports.
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% The gathering, already partitioned per category
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[20 hs
+gathMentrelFilterMpFromSimplifyResult :: HsName -> SimplifyResult p RedHowAnnotation g m -> ModEntRelFilterMp
+gathMentrelFilterMpFromSimplifyResult moduleNm simpRes
+  = mentrelFilterMpUnions
+      [ mentrelFilterMpSingleton [moduleNm] IdOcc_Val nm
+      | (Reduction _ (RedHow_ByInstance nm _ _) _) <- chrSolveStateDoneConstraints $ simpresSolveState simpRes
+      ]
+%%]
+
+%%[20
+ATTR AllNT AGItf [ | | gathMentrelFilterMp USE {`mentrelFilterMpUnion`} {Map.empty}: ModEntRelFilterMp ]
+%%]
+
+%%[20
+SEM AGItf
+  | AGItf       loc         .   gathMentrelFilterMp =   mentrelFilterMpUnions 
+                                                          [ @expr.gathMentrelFilterMp
+                                                          , gathMentrelFilterMpFromSimplifyResult @lhs.moduleNm @chrSimplifyResult
+                                                          ]
+%%]
+
+%%[20
+SEM DataFieldPatExpr
+  | Con         loc         .   gathMentrelFilterMp =   mentrelFilterMpSingleton [@lhs.moduleNm] IdOcc_Val (hsnUn @nm)
+                                                        `mentrelFilterMpUnion`
+                                                        tyUsedNames @lhs.moduleNm @gTy
+  | Ext         loc         .   gathMentrelFilterMp =   mentrelFilterMpSingleton [@lhs.moduleNm] IdOcc_Val @nm
+                                                        `mentrelFilterMpUnion`
+                                                        tyUsedNames @lhs.moduleNm @gTy
+
+SEM DataFieldExpr
+  | Con         loc         .   gathMentrelFilterMp =   mentrelFilterMpSingleton [@lhs.moduleNm] IdOcc_Val (hsnUn @nm)
+                                                        `mentrelFilterMpUnion`
+                                                        tyUsedNames @lhs.moduleNm @gTy
+  | Upd         loc         .   gathMentrelFilterMp =   mentrelFilterMpSingleton [@lhs.moduleNm] IdOcc_Val (hsnFldUpd @nm)
+                                                        `mentrelFilterMpUnion`
+                                                        tyUsedNames @lhs.moduleNm @gTy
+
+SEM Expr
+  | Var Con     loc         .   gathMentrelFilterMp =   mentrelFilterMpSingleton [@lhs.moduleNm] IdOcc_Val @nm
+                                                        `mentrelFilterMpUnion`
+                                                        tyUsedNames @lhs.moduleNm @ty_g_
+  | Let         loc         .   gathMentrelFilterMp =   mentrelFilterMpUnions
+                                                          [ @decls.gathMentrelFilterMp, @body.gathMentrelFilterMp
+                                                          , gathMentrelFilterMpFromSimplifyResult @lhs.moduleNm @chrSimplifyResult1
+                                                          , gathMentrelFilterMpFromSimplifyResult @lhs.moduleNm @chrSimplifyResult2
+                                                          ]
+                                                          
+
+SEM Decl
+  | Default     loc         .   gathMentrelFilterMp =   mentrelFilterMpSingleton [@lhs.moduleNm] IdOcc_Type {- IdOcc_Class -} @nm
+                                                        `mentrelFilterMpUnion`
+                                                        @tyExprs.gathMentrelFilterMp
+  | Instance    loc         .   gathMentrelFilterMp =   mentrelFilterMpUnions
+                                                          [ mentrelFilterMpSingleton [@lhs.moduleNm] IdOcc_Val (clgiDfltDictNm @clgi)
+                                                          , @decls.gathMentrelFilterMp
+                                                          , gathMentrelFilterMpFromSimplifyResult @lhs.moduleNm @chrDeclsSimplifyResult
+                                                          , gathMentrelFilterMpFromSimplifyResult @lhs.moduleNm @chrSuperSimplifyResult
+                                                          ]
+%%[[90
+  | FFE         loc         .   gathMentrelFilterMp =   mentrelFilterMpSingleton [@lhs.moduleNm] IdOcc_Val @nm
+                                                        `mentrelFilterMpUnion`
+                                                        @tyExpr.gathMentrelFilterMp
+%%]]
+
+SEM TyExpr
+  | Con         loc         .   gathMentrelFilterMp =   mentrelFilterMpSingleton [@lhs.moduleNm] IdOcc_Type @nm
+
+SEM PatExpr
+  | Con         loc         .   gathMentrelFilterMp =   mentrelFilterMpSingleton [@lhs.moduleNm] IdOcc_Val @nm
+                                                        `mentrelFilterMpUnion`
+                                                        tyUsedNames @lhs.moduleNm @ty_g_
+%%[[97
+  | Expr        loc         .   gathMentrelFilterMp =   mentrelFilterMpSingleton [@lhs.moduleNm] IdOcc_Val @eqFldNm
+                                                        `mentrelFilterMpUnion`
+                                                        tyUsedNames @lhs.moduleNm @eqTy
+%%]]
+
+SEM PrExpr
+  | Class       loc         .   gathMentrelFilterMp =   mentrelFilterMpSingleton [@lhs.moduleNm] IdOcc_Type {- IdOcc_Class -} @nm
+                                                        `mentrelFilterMpUnion`
+                                                        @tyExprs.gathMentrelFilterMp
+
+%%]

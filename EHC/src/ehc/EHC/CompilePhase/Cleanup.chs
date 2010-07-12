@@ -112,7 +112,7 @@ cpCleanupFlow modNm
       (\e -> e { ecuMbHSSemMod        = Nothing
                -- , ecuMbPrevHI          = Nothing
                -- , ecuMbPrevHISem       = Nothing
-               , ecuMbPrevHIInfo      = Nothing
+               -- , ecuMbPrevHIInfo      = Nothing
                }
       )
 %%]

@@ -39,7 +39,7 @@ typedef struct MM_Plan {
   	// return True if collection is/was required/done
   	Bool 						(*doGC)( struct MM_Plan*, Bool isPreemptiveGC, Word gcInfo ) ;
 
-%%[[94
+%%[[90
   	// get the queue of to be finalized weak ptrs
   	MM_DEQue* 					(*getWeakPtrFinalizeQue)( struct MM_Plan* ) ;
 %%]]

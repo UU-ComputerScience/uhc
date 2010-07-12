@@ -13,7 +13,7 @@ TOP_PREFIX				:=
 ###########################################################################################
 
 default: uhc
-
+#default: 99/ehclib
 help: explanation
 
 ###########################################################################################
@@ -306,7 +306,7 @@ clean:
 
 clean-extlibs:
 	$(MAKE) bgc-clean
-	$(MAKE) gmp-clean
+	#$(MAKE) gmp-clean
 
 ###########################################################################################
 # Version incrementing/bumping
@@ -381,7 +381,7 @@ release-prepare:
 FUN_PREFIX2DIR			= $(patsubst %/,%,$(1))
 
 tst:
-	@echo $(EHCLIB_ALL_LIBS2)
+	@echo $(EHCLIB_SH_MAP_PKG2VERSIONED)
 
 tstv:
 	$(MAKE) EHC_VARIANT=100 tst

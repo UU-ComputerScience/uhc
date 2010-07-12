@@ -69,7 +69,7 @@ SEM Statement
   | Assignment2 lhs.pretty = @dest.pretty >#< ":=" >#< @dest2.pretty >#< ":=" >#< @source.pretty >|< ";"
   | Switch      lhs.pretty = "SWITCH" >#< @scrutinee.pretty >-< "{" >-< @body.pretty >-< "}"
   | IfThenElse  lhs.pretty = "IF"     >#< @condition.pretty >-< "THEN {" >-< indent 4 @thenpart.pretty >-< "}" >-< "ELSE {" >-< indent 4 @elsepart.pretty >-< "}"
-  | Return      lhs.pretty = "RETURN ("  >#< @vals.pretty >|< ")" >#< text (show @mbRetDiff) >|< ";"
+  | Return      lhs.pretty = "RETURN ("  >#< @vals.pretty >|< ")" >|< ";"
   | Label       lhs.pretty = "LABEL"  >#< text @name >|< ";"
   | Voiden      lhs.pretty = "VOIDEN" >#< @val.pretty >|< ";"
 %%[[8
@@ -141,14 +141,17 @@ comment xs  = text "/* " >#< foldr1 (>-<) (map text xs) >-< text "*/"
 showNameWithType :: (HsName, SilTp) -> PP_Doc
 showNameWithType (nm,tp) = hsnShowAlphanumeric nm >|< ":" >|< show tp
 
-
-prettyConstants :: [(String,Int,[SilTp])] -> PP_Doc
+prettyConstants :: [ConstantInfo] -> PP_Doc
 prettyConstants xs 
    = foldr1 (>-<) (text "CONSTANTS" : map prettyConstant xs)
  
-prettyConstant :: (String,Int,[SilTp]) -> PP_Doc
-prettyConstant (s,n,ps)
-  =  text s >#< text (show n) >#< text (show ps)
+prettyConstant :: ConstantInfo -> PP_Doc
+prettyConstant ci
+  =  text (constantInfoName ci) 
+     >#< text (show (constantInfoSeqNr ci)) 
+     >#< text (show (constantInfoNodeSize ci)) 
+     >#< text (show (constantInfoPayloadSize ci)) 
+     >#< text (show (constantInfoHasPointers ci)) 
 
 
 prettyVariables :: [HsName] -> PP_Doc

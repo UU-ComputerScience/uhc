@@ -24,23 +24,23 @@ foreign import ccall unsafe "string.h" memcpy  :: Ptr a -> Ptr a -> CSize -> IO 
 
 %%]
 
-%%[94 module {%{EH}Foreign.Parser} import(UU.Scanner.GenToken, {%{EH}Base.Builtin},{%{EH}Base.Common}, {%{EH}Scanner.Common}, {%{EH}Foreign})
+%%[90 module {%{EH}Foreign.Parser} import(UU.Scanner.GenToken, {%{EH}Base.Builtin},{%{EH}Base.Common}, {%{EH}Scanner.Common}, {%{EH}Foreign})
 %%]
 
-%%[94 import(EH.Util.ParseUtils, UU.Parsing, EH.Util.Utils)
+%%[90 import(EH.Util.ParseUtils, UU.Parsing, EH.Util.Utils)
 %%]
 
-%%[94 import({%{EH}Error},{%{EH}Error.Pretty})
+%%[90 import({%{EH}Error},{%{EH}Error.Pretty})
 %%]
 
-%%[94 import({%{EH}Base.Target})
+%%[90 import({%{EH}Base.Target})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Parse to ForeignEnt
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[94 hs export(parseForeignEnt)
+%%[90 hs export(parseForeignEnt)
 parseForeignEnt :: FFIWay -> Maybe String -> String -> (ForeignEnt,ErrL)
 parseForeignEnt way dfltNm s
   = (res,errs)
@@ -56,11 +56,11 @@ parseForeignEnt way dfltNm s
 These parsers are only used by the HS frontend to parse the string holding the import/export entity of a foreign function
 to a corresponding abstract syntax.
 
-%%[94
+%%[90
 type ForeignParser        ep    =    PlainParser Token ep
 %%]
 
-%%[94 export(pForeignEnt)
+%%[90 export(pForeignEnt)
 pForeignEnt :: FFIWay -> Maybe String -> ForeignParser ForeignEnt
 pForeignEnt way dfltNm
   = case way of

@@ -255,20 +255,30 @@ instance Substitutable PredSeq TyVarId VarMp where
 %%% Fixating free type vars
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(9 hmtyinfer || hmtyast) export(tyFixTyVars)
--- | Construct varmp for fixing tvars to new fresh fixed tvars + varmp for unfixing those to (again) fresh tvars
-fixTyVarsVarMp :: UID -> Ty -> (VarMp,VarMp)
+%%[(9 hmtyinfer || hmtyast) export(tyFixTyVars,tyMetaTyVars)
+-- | Construct varmp for fixing tvars to new fresh fixed tvars + varmp for unfixing those to (again) fresh tvars, resp meta tvars
+fixTyVarsVarMp :: UID -> Ty -> (VarMp,VarMp,VarMp,VarMp)
 fixTyVarsVarMp uniq t
-  = (mk TyVarCateg_Fixed fv rv,mk TyVarCateg_Plain rv rv2)
+  = ( mk TyVarCateg_Fixed fv rv
+    , mk TyVarCateg_Meta  fv rv
+    , mk TyVarCateg_Plain rv rv2
+    , mk TyVarCateg_Meta  rv rv2
+    )
   where fv = ftv t
         l  = length fv
         (rv,rv2) = splitAt l $ mkNewUIDL (2*l) uniq
         mk cat fv rv = mkVarMp $ Map.fromList $ zipWith (\v r -> (v,VMITy (Ty_Var r cat))) fv rv
 
-tyFixTyVars :: UID -> Ty -> (Ty,VarMp,VarMp)
+tyFixTyVars :: UID -> Ty -> (Ty,VarMp,VarMp,VarMp)
 tyFixTyVars uniq t
-  = (sTo |=> t, sTo, sFr)
-  where (sTo,sFr) = fixTyVarsVarMp uniq t
+  = (sTo |=> t, sTo, sFr, smFr)
+  where (sTo,_,sFr,smFr) = fixTyVarsVarMp uniq t
+
+-- | replace tvars with tvars having TyVarCateg_Meta
+tyMetaTyVars :: UID -> Ty -> Ty
+tyMetaTyVars uniq t
+  = smTo |=> t
+  where (_,smTo,_,_) = fixTyVarsVarMp uniq t
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

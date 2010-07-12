@@ -63,7 +63,7 @@ cpCompileWithGCC how othModNmL modNm
   =  do  {  cr <- get
          ;  let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
                  fpC    = case ecuStateToKind $ ecuState ecu of
-%%[[94
+%%[[90
                             EHCUKind_C -> fp
 %%]]
                             _          -> mkOutputFPath opts modNm fp "c"
@@ -154,9 +154,9 @@ cpPreprocessWithCPP pkgKeyL modNm
   = do { cr <- get
        ; let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
               fpCPP = fpathSetSuff {- mkOutputFPath opts modNm fp -} (maybe "" (\s -> s ++ "-") (fpathMbSuff fp) ++ "cpp") fp
-       ; when (  ehcOptCPP opts
+       ; {- when (  ehcOptCPP opts
               || modNm == hsnModIntlBase      -- 20080211, AD: builtin hack to preprocess EHC.Prelude with cpp, for now, to avoid implementation of pragmas
-              )
+              ) -}
               (do { let defs    = [ "UHC", "TARGET_" ++ (map toUpper $ show $ ehcOptTarget opts) ]
 %%[[(99 codegen grin)
                                   ++ (if ehcOptFullProgAnalysis opts then ["UHC_FULL_PROGRAM_ANALYSIS"] else [])

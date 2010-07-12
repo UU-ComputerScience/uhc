@@ -37,8 +37,9 @@ MK_SHARED_MKF								:= $(MK_PREFIX)shared.mk
 # 17: + Polarity inference (co/contravariance)
 # 18: + Unboxed types
 # 20: + module system
-# 94: + full FFI (foreign function interface) (TBD)
-# 95: + deriving construct
+# 90: + full FFI (foreign function interface) (TBD)
+# 91: + deriving construct
+# 92: + generics (for deriving)
 # 96: + exception handling
 # 97: + numbers: Integer, Float, Double
 # 98: + IO
@@ -65,7 +66,7 @@ EHC_PREL_VARIANTS				:= $(EHC_PREL_VARIANT) $(EHC_UHC_VARIANT) $(EHC_UHC_INSTALL
 EHC_GMP_VARIANTS				:= $(EHC_PREL_VARIANTS) 97 98 $(EHC_OTHER_CODE_VARIANTS)
 EHC_LTM_VARIANTS				:= $(EHC_GMP_VARIANTS)
 EHC_PUB_NOCODE_VARIANTS			:= 1 2 3 4 5 6 7
-EHC_PUB_NOPREL_VARIANTS			:= 8 9 10 11 12 13 14 15 17 20 94 95 96 97 98
+EHC_PUB_NOPREL_VARIANTS			:= 8 9 10 11 12 13 14 15 17 20 90 91 92 96 97 98
 EHC_PUB_CODE_VARIANTS			:= $(EHC_PUB_NOPREL_VARIANTS) $(EHC_PREL_VARIANTS)
 EHC_PUB_VARIANTS				:= $(EHC_PUB_NOCODE_VARIANTS) $(EHC_PUB_CODE_VARIANTS)
 EHC_OTHER_NOCODE_VARIANTS		:= 4_2 6_4 7_2
@@ -373,6 +374,7 @@ CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES 	:= @CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES
 # C compiler options, some are also extended by sub makefiles
 EXTLIBS_GCC_CC_OPTS						:=  @GCC_EXTLIBS_OPTIONS@
 EXTLIBS_GMP_ABI							:=  @GMP_ABI@
+EXTLIBS_BGC_OPTS						:=  @EXTLIBS_BGC_OPTS@
 EHC_GCC_CC_OPTS							:= -I$(INSTALLFORBLDABS_INC_PREFIX) -I$(INSTALLFORBLDABS_INC_PREFIX)/gc $(GCC_OPTS_WHEN_EHC)
 EHC_GCC_LD_OPTS							:= -L$(INSTALLFORBLDABS_LIB_PREFIX)
 #RTS_GCC_CC_OPTS							:= -D__UHC_BUILDS_RTS__ -D__UHC_TARGET_$(if $(EHC_CFG_TARGET_IS_bc),BC,$(if $(EHC_CFG_TARGET_IS_C),C,$(if $(EHC_CFG_TARGET_IS_llvm),LLVM,)))__ -D__UHC_TARGET__=$(EHC_VARIANT_TARGET)
@@ -410,7 +412,7 @@ GHC_PKG_NAME_PREFIX						:=
 
 # order to shuffle (see ehc/src/files1.mk for a complete list)
 # 4_99: interim for stuff from 4, needed for 4_2, because of ruler generated material uptil 4_2
-EHC_SHUFFLE_ORDER	:= 1 < 2 < 3 < 4 < 4_99 < 5 < 6 < 7 < 8 < 9 < 10 < 11 < 12 < 13 < 14 < 15 < 17 < 18 < 20 < 94 < 95 < 96 < 97 < 98 < $(EHC_PREL_VARIANT) < $(EHC_UHC_VARIANT) < $(EHC_UHC_INSTALL_VARIANT), \
+EHC_SHUFFLE_ORDER	:= 1 < 2 < 3 < 4 < 4_99 < 5 < 6 < 7 < 8 < 9 < 10 < 11 < 12 < 13 < 14 < 15 < 17 < 18 < 20 < 90 < 91 < 92 < 96 < 97 < 98 < $(EHC_PREL_VARIANT) < $(EHC_UHC_VARIANT) < $(EHC_UHC_INSTALL_VARIANT), \
 						$(EHC_UHC_VARIANT) < 102, \
 						$(EHC_PREL_VARIANT) < 103, \
 						4_99 < 4_2, \
@@ -536,6 +538,10 @@ FUN_COPY_FILES_AND_RENAME		= (cd $(1) && for i in `find . -type f`; do tgt=$(2)/
 # Misc
 ###########################################################################################
 
+# strip dashes
+# $1: dashed text
+FUN_STRIP_DASH		= $(subst -,,$(1))
+
 # date
 TODAY				:= $(shell date '+%G%m%d')
 
@@ -561,6 +567,9 @@ tail				= $(wordlist 2,$(words $(1)),$(1))
 comma				:= ,
 empty				:=
 space				:= $(empty) $(empty)
+dollar				:= $$
+ddollar				:= $(dollar)$(dollar)
+cparen				:= )
 
 # subst _ by x
 # $1: text

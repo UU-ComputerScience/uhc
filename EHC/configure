@@ -616,6 +616,7 @@ LIBTOOL_DYNAMIC_CMD
 LIBTOOL_STATIC_OPTS
 LIBTOOL_STATIC_CMD
 DEVELOPMENT_PLATFORM
+LINKER_SYMBOL_PREFIX
 SLASH
 PATHS_SEP
 PREFIX_LIB
@@ -625,6 +626,7 @@ SUFFIX_SHELL
 GCC_EHC_EXTRA_EXTERN_LIBS
 GMP_LIB_ARCHIVE
 MPLIB
+EXTLIBS_BGC_OPTS
 GMP_ABI
 GCC_EXTLIBS_OPTIONS
 EGREP
@@ -1912,6 +1914,102 @@ $as_echo "$ac_res" >&6; }
 
 } # ac_fn_c_check_func
 
+# ac_fn_c_check_member LINENO AGGR MEMBER VAR INCLUDES
+# ----------------------------------------------------
+# Tries to find if the field MEMBER exists in type AGGR, after including
+# INCLUDES, setting cache variable VAR accordingly.
+ac_fn_c_check_member ()
+{
+  as_lineno=${as_lineno-"$1"} as_lineno_stack=as_lineno_stack=$as_lineno_stack
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $2.$3" >&5
+$as_echo_n "checking for $2.$3... " >&6; }
+if { as_var=$4; eval "test \"\${$as_var+set}\" = set"; }; then :
+  $as_echo_n "(cached) " >&6
+else
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+$5
+int
+main ()
+{
+static $2 ac_aggr;
+if (ac_aggr.$3)
+return 0;
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  eval "$4=yes"
+else
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+$5
+int
+main ()
+{
+static $2 ac_aggr;
+if (sizeof ac_aggr.$3)
+return 0;
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  eval "$4=yes"
+else
+  eval "$4=no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+fi
+eval ac_res=\$$4
+	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
+$as_echo "$ac_res" >&6; }
+  eval $as_lineno_stack; test "x$as_lineno_stack" = x && { as_lineno=; unset as_lineno;}
+
+} # ac_fn_c_check_member
+
+# ac_fn_c_check_decl LINENO SYMBOL VAR
+# ------------------------------------
+# Tests whether SYMBOL is declared, setting cache variable VAR accordingly.
+ac_fn_c_check_decl ()
+{
+  as_lineno=${as_lineno-"$1"} as_lineno_stack=as_lineno_stack=$as_lineno_stack
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $2 is declared" >&5
+$as_echo_n "checking whether $2 is declared... " >&6; }
+if { as_var=$3; eval "test \"\${$as_var+set}\" = set"; }; then :
+  $as_echo_n "(cached) " >&6
+else
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+$4
+int
+main ()
+{
+#ifndef $2
+  (void) $2;
+#endif
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  eval "$3=yes"
+else
+  eval "$3=no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+fi
+eval ac_res=\$$3
+	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
+$as_echo "$ac_res" >&6; }
+  eval $as_lineno_stack; test "x$as_lineno_stack" = x && { as_lineno=; unset as_lineno;}
+
+} # ac_fn_c_check_decl
+
 # ac_fn_c_compute_int LINENO EXPR VAR INCLUDES
 # --------------------------------------------
 # Tries to find the compile-time value of EXPR in a program that includes
@@ -2442,7 +2540,7 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
 ### version of autoconf used (and required)
-#AC_PREREQ(2.52)
+#AC_PREREQ(2.64)
 
 ### revision
 
@@ -2575,7 +2673,6 @@ case $host_os in *\ *) host_os=`echo "$host_os" | sed 's/ /-/g'`;; esac
 
 
 HostPlatform=`/bin/sh $srcdir/config.sub $host` || exit 1
-
 ### Version info, extract from file VERSION
 # big change
 EH_VERSION_MAJOR=`awk -F . '{print $1}' VERSION`
@@ -5447,10 +5544,207 @@ fi
 done
 
 
-### type configuration, machine characteristics
+for ac_func in ftime gmtime_r localtime_r
+do :
+  as_ac_var=`$as_echo "ac_cv_func_$ac_func" | $as_tr_sh`
+ac_fn_c_check_func "$LINENO" "$ac_func" "$as_ac_var"
+eval as_val=\$$as_ac_var
+   if test "x$as_val" = x""yes; then :
+  cat >>confdefs.h <<_ACEOF
+#define `$as_echo "HAVE_$ac_func" | $as_tr_cpp` 1
+_ACEOF
 
-# sizeof GrWord
-# AC_CHECK_SIZEOF([unsigned int])
+fi
+done
+
+
+for ac_func in lchown
+do :
+  ac_fn_c_check_func "$LINENO" "lchown" "ac_cv_func_lchown"
+if test "x$ac_cv_func_lchown" = x""yes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_LCHOWN 1
+_ACEOF
+
+fi
+done
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether time.h and sys/time.h may both be included" >&5
+$as_echo_n "checking whether time.h and sys/time.h may both be included... " >&6; }
+if test "${ac_cv_header_time+set}" = set; then :
+  $as_echo_n "(cached) " >&6
+else
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <sys/types.h>
+#include <sys/time.h>
+#include <time.h>
+
+int
+main ()
+{
+if ((struct tm *) 0)
+return 0;
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  ac_cv_header_time=yes
+else
+  ac_cv_header_time=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_header_time" >&5
+$as_echo "$ac_cv_header_time" >&6; }
+if test $ac_cv_header_time = yes; then
+
+$as_echo "#define TIME_WITH_SYS_TIME 1" >>confdefs.h
+
+fi
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether struct tm is in sys/time.h or time.h" >&5
+$as_echo_n "checking whether struct tm is in sys/time.h or time.h... " >&6; }
+if test "${ac_cv_struct_tm+set}" = set; then :
+  $as_echo_n "(cached) " >&6
+else
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <sys/types.h>
+#include <time.h>
+
+int
+main ()
+{
+struct tm tm;
+				     int *p = &tm.tm_sec;
+				     return !p;
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  ac_cv_struct_tm=time.h
+else
+  ac_cv_struct_tm=sys/time.h
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_struct_tm" >&5
+$as_echo "$ac_cv_struct_tm" >&6; }
+if test $ac_cv_struct_tm = sys/time.h; then
+
+$as_echo "#define TM_IN_SYS_TIME 1" >>confdefs.h
+
+fi
+
+ac_fn_c_check_member "$LINENO" "struct tm" "tm_zone" "ac_cv_member_struct_tm_tm_zone" "#include <sys/types.h>
+#include <$ac_cv_struct_tm>
+
+"
+if test "x$ac_cv_member_struct_tm_tm_zone" = x""yes; then :
+
+cat >>confdefs.h <<_ACEOF
+#define HAVE_STRUCT_TM_TM_ZONE 1
+_ACEOF
+
+
+fi
+
+if test "$ac_cv_member_struct_tm_tm_zone" = yes; then
+
+$as_echo "#define HAVE_TM_ZONE 1" >>confdefs.h
+
+else
+  ac_fn_c_check_decl "$LINENO" "tzname" "ac_cv_have_decl_tzname" "#include <time.h>
+"
+if test "x$ac_cv_have_decl_tzname" = x""yes; then :
+  ac_have_decl=1
+else
+  ac_have_decl=0
+fi
+
+cat >>confdefs.h <<_ACEOF
+#define HAVE_DECL_TZNAME $ac_have_decl
+_ACEOF
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for tzname" >&5
+$as_echo_n "checking for tzname... " >&6; }
+if test "${ac_cv_var_tzname+set}" = set; then :
+  $as_echo_n "(cached) " >&6
+else
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <time.h>
+#if !HAVE_DECL_TZNAME
+extern char *tzname[];
+#endif
+
+int
+main ()
+{
+return tzname[0][0];
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_var_tzname=yes
+else
+  ac_cv_var_tzname=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_var_tzname" >&5
+$as_echo "$ac_cv_var_tzname" >&6; }
+  if test $ac_cv_var_tzname = yes; then
+
+$as_echo "#define HAVE_TZNAME 1" >>confdefs.h
+
+  fi
+fi
+
+
+for ac_header in sys/time.h
+do :
+  ac_fn_c_check_header_mongrel "$LINENO" "sys/time.h" "ac_cv_header_sys_time_h" "$ac_includes_default"
+if test "x$ac_cv_header_sys_time_h" = x""yes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_SYS_TIME_H 1
+_ACEOF
+
+fi
+
+done
+
+ac_fn_c_check_decl "$LINENO" "altzone" "ac_cv_have_decl_altzone" "#if TIME_WITH_SYS_TIME
+# include <sys/time.h>
+# include <time.h>
+#else
+# if HAVE_SYS_TIME_H
+#  include <sys/time.h>
+# else
+#  include <time.h>
+# endif
+#endif
+"
+if test "x$ac_cv_have_decl_altzone" = x""yes; then :
+  ac_have_decl=1
+else
+  ac_have_decl=0
+fi
+
+cat >>confdefs.h <<_ACEOF
+#define HAVE_DECL_ALTZONE $ac_have_decl
+_ACEOF
+
+
+
+### type configuration, machine characteristics
 
 # sizeof GrWord*, Pointer, ...
 # The cast to long int works around a bug in the HP C Compiler
@@ -6416,7 +6710,34 @@ $as_echo_n "checking size of cc_t... " >&6; }
 if test "${ac_cv_sizeof_cc_t+set}" = set; then :
   $as_echo_n "(cached) " >&6
 else
-  if ac_fn_c_compute_int "$LINENO" "(long int) (sizeof (cc_t))" "ac_cv_sizeof_cc_t"        "$ac_includes_default"; then :
+  if ac_fn_c_compute_int "$LINENO" "(long int) (sizeof (cc_t))" "ac_cv_sizeof_cc_t"        "$ac_includes_default
+#include <stddef.h>
+
+#if HAVE_FCNTL_H
+# include <fcntl.h>
+#endif
+
+#if HAVE_SIGNAL_H
+# include <signal.h>
+#endif
+
+#if HAVE_TIME_H
+# include <time.h>
+#endif
+
+#if HAVE_TERMIOS_H
+# include <termios.h>
+#endif
+
+#if HAVE_STRING_H
+# include <string.h>
+#endif
+
+#if HAVE_SYS_RESOURCE_H
+# include <sys/resource.h>
+#endif
+
+"; then :
 
 else
   if test "$ac_cv_type_cc_t" = yes; then
@@ -6450,7 +6771,34 @@ $as_echo_n "checking size of speed_t... " >&6; }
 if test "${ac_cv_sizeof_speed_t+set}" = set; then :
   $as_echo_n "(cached) " >&6
 else
-  if ac_fn_c_compute_int "$LINENO" "(long int) (sizeof (speed_t))" "ac_cv_sizeof_speed_t"        "$ac_includes_default"; then :
+  if ac_fn_c_compute_int "$LINENO" "(long int) (sizeof (speed_t))" "ac_cv_sizeof_speed_t"        "$ac_includes_default
+#include <stddef.h>
+
+#if HAVE_FCNTL_H
+# include <fcntl.h>
+#endif
+
+#if HAVE_SIGNAL_H
+# include <signal.h>
+#endif
+
+#if HAVE_TIME_H
+# include <time.h>
+#endif
+
+#if HAVE_TERMIOS_H
+# include <termios.h>
+#endif
+
+#if HAVE_STRING_H
+# include <string.h>
+#endif
+
+#if HAVE_SYS_RESOURCE_H
+# include <sys/resource.h>
+#endif
+
+"; then :
 
 else
   if test "$ac_cv_type_speed_t" = yes; then
@@ -6484,7 +6832,34 @@ $as_echo_n "checking size of tcflag_t... " >&6; }
 if test "${ac_cv_sizeof_tcflag_t+set}" = set; then :
   $as_echo_n "(cached) " >&6
 else
-  if ac_fn_c_compute_int "$LINENO" "(long int) (sizeof (tcflag_t))" "ac_cv_sizeof_tcflag_t"        "$ac_includes_default"; then :
+  if ac_fn_c_compute_int "$LINENO" "(long int) (sizeof (tcflag_t))" "ac_cv_sizeof_tcflag_t"        "$ac_includes_default
+#include <stddef.h>
+
+#if HAVE_FCNTL_H
+# include <fcntl.h>
+#endif
+
+#if HAVE_SIGNAL_H
+# include <signal.h>
+#endif
+
+#if HAVE_TIME_H
+# include <time.h>
+#endif
+
+#if HAVE_TERMIOS_H
+# include <termios.h>
+#endif
+
+#if HAVE_STRING_H
+# include <string.h>
+#endif
+
+#if HAVE_SYS_RESOURCE_H
+# include <sys/resource.h>
+#endif
+
+"; then :
 
 else
   if test "$ac_cv_type_tcflag_t" = yes; then
@@ -6518,7 +6893,34 @@ $as_echo_n "checking size of rlim_t... " >&6; }
 if test "${ac_cv_sizeof_rlim_t+set}" = set; then :
   $as_echo_n "(cached) " >&6
 else
-  if ac_fn_c_compute_int "$LINENO" "(long int) (sizeof (rlim_t))" "ac_cv_sizeof_rlim_t"        "$ac_includes_default"; then :
+  if ac_fn_c_compute_int "$LINENO" "(long int) (sizeof (rlim_t))" "ac_cv_sizeof_rlim_t"        "$ac_includes_default
+#include <stddef.h>
+
+#if HAVE_FCNTL_H
+# include <fcntl.h>
+#endif
+
+#if HAVE_SIGNAL_H
+# include <signal.h>
+#endif
+
+#if HAVE_TIME_H
+# include <time.h>
+#endif
+
+#if HAVE_TERMIOS_H
+# include <termios.h>
+#endif
+
+#if HAVE_STRING_H
+# include <string.h>
+#endif
+
+#if HAVE_SYS_RESOURCE_H
+# include <sys/resource.h>
+#endif
+
+"; then :
 
 else
   if test "$ac_cv_type_rlim_t" = yes; then
@@ -6552,7 +6954,34 @@ $as_echo_n "checking size of clock_t... " >&6; }
 if test "${ac_cv_sizeof_clock_t+set}" = set; then :
   $as_echo_n "(cached) " >&6
 else
-  if ac_fn_c_compute_int "$LINENO" "(long int) (sizeof (clock_t))" "ac_cv_sizeof_clock_t"        "$ac_includes_default"; then :
+  if ac_fn_c_compute_int "$LINENO" "(long int) (sizeof (clock_t))" "ac_cv_sizeof_clock_t"        "$ac_includes_default
+#include <stddef.h>
+
+#if HAVE_FCNTL_H
+# include <fcntl.h>
+#endif
+
+#if HAVE_SIGNAL_H
+# include <signal.h>
+#endif
+
+#if HAVE_TIME_H
+# include <time.h>
+#endif
+
+#if HAVE_TERMIOS_H
+# include <termios.h>
+#endif
+
+#if HAVE_STRING_H
+# include <string.h>
+#endif
+
+#if HAVE_SYS_RESOURCE_H
+# include <sys/resource.h>
+#endif
+
+"; then :
 
 else
   if test "$ac_cv_type_clock_t" = yes; then
@@ -7366,6 +7795,41 @@ _ACEOF
 
 
 
+# Haskell types corresponding to C types, defined here for those independent of 32/64 bitness of platform
+
+$as_echo "#define HTYPE_CHAR Int8" >>confdefs.h
+
+
+$as_echo "#define HTYPE_DOUBLE Double" >>confdefs.h
+
+
+$as_echo "#define HTYPE_FLOAT Float" >>confdefs.h
+
+
+$as_echo "#define HTYPE_INTMAX_T Int64" >>confdefs.h
+
+
+$as_echo "#define HTYPE_LONG_LONG Int64" >>confdefs.h
+
+
+$as_echo "#define HTYPE_SHORT Int16" >>confdefs.h
+
+
+$as_echo "#define HTYPE_SIGNED_CHAR Int8" >>confdefs.h
+
+
+$as_echo "#define HTYPE_UINTMAX_T Word64" >>confdefs.h
+
+
+$as_echo "#define HTYPE_UNSIGNED_CHAR Word8" >>confdefs.h
+
+
+$as_echo "#define HTYPE_UNSIGNED_LONG_LONG Word64" >>confdefs.h
+
+
+$as_echo "#define HTYPE_UNSIGNED_SHORT Word16" >>confdefs.h
+
+
  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether byte ordering is bigendian" >&5
 $as_echo_n "checking whether byte ordering is bigendian... " >&6; }
 if test "${ac_cv_c_bigendian+set}" = set; then :
@@ -7596,41 +8060,6 @@ $as_echo "#define AC_APPLE_UNIVERSAL_BUILD 1" >>confdefs.h
      as_fn_error "unknown endianness
  presetting ac_cv_c_bigendian=no (or yes) will help" "$LINENO" 5 ;;
  esac
-
-
-# Haskell types corresponding to C types, defined here for those independent of 32/64 bitness of platform
-
-$as_echo "#define HTYPE_CHAR Int8" >>confdefs.h
-
-
-$as_echo "#define HTYPE_DOUBLE Double" >>confdefs.h
-
-
-$as_echo "#define HTYPE_FLOAT Float" >>confdefs.h
-
-
-$as_echo "#define HTYPE_INTMAX_T Int64" >>confdefs.h
-
-
-$as_echo "#define HTYPE_LONG_LONG Int64" >>confdefs.h
-
-
-$as_echo "#define HTYPE_SHORT Int16" >>confdefs.h
-
-
-$as_echo "#define HTYPE_SIGNED_CHAR Int8" >>confdefs.h
-
-
-$as_echo "#define HTYPE_UINTMAX_T Word64" >>confdefs.h
-
-
-$as_echo "#define HTYPE_UNSIGNED_CHAR Word8" >>confdefs.h
-
-
-$as_echo "#define HTYPE_UNSIGNED_LONG_LONG Word64" >>confdefs.h
-
-
-$as_echo "#define HTYPE_UNSIGNED_SHORT Word16" >>confdefs.h
 
 
 # C error codes
@@ -7979,6 +8408,20 @@ GMP_ABI=$gmpABI
 $as_echo "#define USE_BOEHM_GC 1" >>confdefs.h
 
 
+# BGC needs additional flags sometimes
+case $HostPlatform in
+  i386-apple-darwin10.* )
+        # as from 10.6 this seems to be required
+        extlibsOptionsBGC="-D_XOPEN_SOURCE"
+        ;;
+  *)
+        extlibsOptionsBGC=""
+        ;;
+esac
+
+EXTLIBS_BGC_OPTS=$extlibsOptionsBGC
+
+
 # which MP library
 
 # Check whether --with-mplib was given.
@@ -8033,6 +8476,8 @@ $as_echo "#define RTS_GLOBAL_VAR_PREFIX \"global_\"" >>confdefs.h
 
 
 ### machine dependent code
+
+
 case $HostPlatform in
   i*86-*-mingw* | i*86-*-cygwin* )
         ;;
@@ -8053,7 +8498,6 @@ case $HostPlatform in
 esac
 GCC_EHC_EXTRA_EXTERN_LIBS="$gcc_ehc_extra_extern_libs"
 
-
 ### other platform specific stuff
 # defaults:
 # file suffixes
@@ -8072,6 +8516,8 @@ libtoolStaticOpts="-static -o"
 libtoolDynamicCmd="echo Dynamic linking not available: "
 libtoolDynamicOpts=""
 ehcGccOptsStatic=""
+linker_symbol_prefix="_"
+
 case $HostPlatform in
   i*86-*-mingw* | i*86-*-cygwin* )
         # file suffixes
@@ -8092,8 +8538,9 @@ case $HostPlatform in
         # libtool usage
         #libtoolStaticCmd="no"
         # ehcGccOptsStatic="-static"
-	    # libtoolStaticCmd="libtool --mode=link gcc -static -o"
+	    # libtoolStaticCmd="libttcflagool --mode=link gcc -static -o"
         libtoolStaticCmd="no"
+        linker_symbol_prefix=""
         ;;
   x86*-*-linux-gnu )
         # file suffixes
@@ -8120,6 +8567,8 @@ PREFIX_LIB="$prefix_lib"
 PATHS_SEP="$paths_sep"
 
 SLASH="$slash"
+
+LINKER_SYMBOL_PREFIX="$linker_symbol_prefix"
 
 
 # misc
@@ -8226,8 +8675,9 @@ ac_config_files="$ac_config_files test/benchmark/runbenchmark.pl"
 
 ac_config_files="$ac_config_files src/ehc/Config.chs src/helium/Utils/OSSpecific.hs"
 
-# AC_CONFIG_FILES([bin/llvm-compilerdriver], [chmod +x bin/llvm-compilerdriver])
-ac_config_headers="$ac_config_headers src/ehc/ConfigDefines.chs src/rts/config.ch src/rts/mm/config.ch ehclib/base/include/MachDeps.h ehclib/base/include/HsBaseConfig.h"
+# AC_CONFIG_FILES([bin/llvm-compilerdriver], [chmod +x bin/llvm-compilerdriver]
+ac_config_headers="$ac_config_headers src/ehc/ConfigDefines.chs src/rts/config.ch src/rts/mm/config.ch ehclib/uhcbase/include/MachDeps.h ehclib/uhcbase/include/HsBaseConfig.h ehclib/old-time/include/HsTimeConfig.h ehclib/directory/include/HsDirectoryConfig.h ehclib/unix/include/HsUnixConfig.h"
+
 
 ac_config_files="$ac_config_files src/text2text/text2text.cabal"
 
@@ -8918,8 +9368,11 @@ do
     "src/ehc/ConfigDefines.chs") CONFIG_HEADERS="$CONFIG_HEADERS src/ehc/ConfigDefines.chs" ;;
     "src/rts/config.ch") CONFIG_HEADERS="$CONFIG_HEADERS src/rts/config.ch" ;;
     "src/rts/mm/config.ch") CONFIG_HEADERS="$CONFIG_HEADERS src/rts/mm/config.ch" ;;
-    "ehclib/base/include/MachDeps.h") CONFIG_HEADERS="$CONFIG_HEADERS ehclib/base/include/MachDeps.h" ;;
-    "ehclib/base/include/HsBaseConfig.h") CONFIG_HEADERS="$CONFIG_HEADERS ehclib/base/include/HsBaseConfig.h" ;;
+    "ehclib/uhcbase/include/MachDeps.h") CONFIG_HEADERS="$CONFIG_HEADERS ehclib/uhcbase/include/MachDeps.h" ;;
+    "ehclib/uhcbase/include/HsBaseConfig.h") CONFIG_HEADERS="$CONFIG_HEADERS ehclib/uhcbase/include/HsBaseConfig.h" ;;
+    "ehclib/old-time/include/HsTimeConfig.h") CONFIG_HEADERS="$CONFIG_HEADERS ehclib/old-time/include/HsTimeConfig.h" ;;
+    "ehclib/directory/include/HsDirectoryConfig.h") CONFIG_HEADERS="$CONFIG_HEADERS ehclib/directory/include/HsDirectoryConfig.h" ;;
+    "ehclib/unix/include/HsUnixConfig.h") CONFIG_HEADERS="$CONFIG_HEADERS ehclib/unix/include/HsUnixConfig.h" ;;
     "src/text2text/text2text.cabal") CONFIG_FILES="$CONFIG_FILES src/text2text/text2text.cabal" ;;
 
   *) as_fn_error "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
