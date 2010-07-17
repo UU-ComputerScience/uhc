@@ -59,7 +59,7 @@
 
 #define GB_SetRegRel(r,o,v)			{ *GB_RegRel(r,o) = v ; }
 #define GB_SetRegByteRel(ty,r,o,v)	{ *GB_RegByteRel(ty,r,o) = v ; }
-#define GB_SetCallCResult(tys,tyv,r,o,v)	{ *GB_RegByteRel(tyv,r,o) = *Cast(tyv*,Cast(void*,&v)) ; }
+#define GB_SetCallCResult(tys,tyv,r,o,v)	{ *GB_RegByteRel(tys,r,o) = *Cast(tyv*,Cast(void*,&v)) ; }
 %%]
 
 

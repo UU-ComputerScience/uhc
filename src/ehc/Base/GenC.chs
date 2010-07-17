@@ -231,7 +231,7 @@ gencInclude f = "#include \"" >|< f >|< "\""
 %%[8 export(gencBasicSizeGBFunTyNm)
 gencBasicSizeGBFunTyNm :: String -> [BasicSize] -> String
 gencBasicSizeGBFunTyNm funPrefix (res:args)
-  = funPrefix ++ [basicGrinSizeCharEncoding res] ++ show (length args) ++ map basicGrinSizeCharEncoding args
+  = funPrefix ++ basicGrinSizeCharEncoding res ++ show (length args) ++ concatMap basicGrinSizeCharEncoding args
 %%]
 
 E.g.:
@@ -317,7 +317,8 @@ gencWrapperCFunDef tyPre mbNArgsNm
             , gencStat (gencCall "GB_PopIn" [nargsNm])
             -- , gencStat (gencCall "printf" [show $ "CallEnc pop args %d\n", nargsNm])
             , gencAssign spNm (gencCall "GB_RegByteRel" [genc "GB_Word", genc spNm, gencOp "-" (gencOp "*" nargsNm (gencSizeof "GB_Word")) (gencSizeof restyStck)])
-            , gencStat (gencCall "GB_SetCallCResult" [genc restyStck, genc (gbtyWordEquiv resgbty), genc spNm, genc "0", genc $ r' res])
+            , gencStat (gencCall "GB_SetCallCResult" [genc restyStck, genc (gbtyAsReturned resgbty), genc spNm, genc "0", genc $ r' res])
+            -- , gencStat (gencCall "printf" [genc $ show $ "TOS %lld %lld %llx " ++ r' res ++ " %d " ++ " %lld\n", gencDeref $ genc spNm, gencCall "GB_Int2GBInt" [gencDeref $ genc spNm], gencDeref $ genc spNm, genc $ r' res, genc $ r' res])
             ]
           where (cl,sz) = gencBasicSizeFunCall tyPre resArgs funcNm argsNm
                 resgbty = basicGBTy res

@@ -328,6 +328,8 @@ bump-minorminor:
 # Releasing, construct distribution
 ###########################################################################################
 
+# NOTE: not maintained for some time already; guaranteed to be broken
+
 DISTS_DIR		:= $(BLD_PREFIX)dists
 DIST_UHC_SRC_NM	:= uhc-$(TODAY)-$(EH_VERSION_FULL)-src
 

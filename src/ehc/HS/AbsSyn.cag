@@ -123,11 +123,15 @@ SET AllTopLevel
 
 SET AllModule
   = AllTopLevel
-%%]
-%%[20
+%%[[20
     AllImportDeclaration Import Imports
     AllImportSpecification
     Export Exports MaybeExports
+%%]]
+
+SET AllModuleDeclaration
+  = AllModule AllDeclaration
+
 %%]
 
 -- ------------------------------------------------------------------------
@@ -1377,7 +1381,7 @@ SET AllBasics
 
 %%[1
 SET AllNT
-  = AllModule AllDeclaration
+  = AllModuleDeclaration
     AllType
     AllPattern AllExpression
     AllBasics

@@ -1771,7 +1771,9 @@ gb_interpreter_TailEval_Default:
 
 					case GB_InsExt_TagInt2Word:
 						gb_assert_IsNotIndirection( GB_TOS, "GB_InsExt_TagInt2Word" ) ;
+						// printf( "GB_InsExt_TagInt2Word TOS A %lld\n", GB_TOS ) ;
 						GB_SetTOS( GB_Int2GBInt( GB_TOS ) ) ;
+						// printf( "GB_InsExt_TagInt2Word TOS B %lld %lld\n", GB_TOS, GB_GBInt2Int( GB_TOS ) ) ;
 						break ;
 
 					case GB_InsExt_UntagWord2Int:

@@ -312,6 +312,14 @@ SEM AGItf
         loc         .   isMainMod   =   @module.mainValExists
 %%]
 
+%%[99
+-- to keep uuagc happy with a not-used dummy value
+SEM Declaration
+    | Module
+        loc         .   isMainMod   =   False
+                    .   isTopMod    =   False
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Top level instance names, propagated from prev phase -- a hack :-(
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -346,7 +354,7 @@ SEM Deriving
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[99
-ATTR Body Module AllDeclaration AllExpression [ pragmas: {Set.Set Pragma.Pragma} | | ]
+ATTR Body AllDeclaration AllExpression [ pragmas: {Set.Set Pragma.Pragma} | | ]
 
 SEM Module
     | Module
@@ -366,7 +374,7 @@ The DERIVABLE pragma occurs in the same module as the class + generic definition
 so it does not participate in name analysis etc, and we brutally qualify the involved names.
 
 %%[99
-ATTR Body AllDeclaration AllExpression [ generDerivMp: {Map.Map HsName [(HsName,HsName)]} | | ]
+ATTR AllDeclaration AllExpression [ generDerivMp: {Map.Map HsName [(HsName,HsName)]} | | ]
 
 SEM Body
     | Body
@@ -380,5 +388,12 @@ SEM Declaration
     | Class
         loc             .   generDerivInfoL
                                         =   Map.findWithDefault [] @classrefname @lhs.generDerivMp
+%%]
+
+%%[9999
+-- to keep uuagc happy with a not-used dummy value
+SEM Module
+    | Module
+        loc             .   generDerivMp=   Map.empty
 %%]
 

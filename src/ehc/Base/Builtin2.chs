@@ -48,7 +48,7 @@ data BuiltinInfo
 emptyBuiltinInfo :: BuiltinInfo
 emptyBuiltinInfo
   = BuiltinInfo
-  	  { biGrinBoxAnnot			= BasicAnnot_Size basicSizeWord BasicTy_Word
+  	  { biGrinBoxAnnot			= basicAnnotWord
       , biGbcMayLiveUnboxed		= False
       , biIsSigned              = False
 %%[[(8 jazy)
@@ -65,6 +65,7 @@ builtin32BitsTyMp opts _
          , emptyBuiltinInfo
              { biGbcMayLiveUnboxed	= livesUnboxed
              , biIsSigned           = True
+             , biGrinBoxAnnot 	    = BasicAnnot_Size BasicSize_Int32 annHWord BasicAnnotTagging_None True -- annHWord
 %%[[(97 jazy)
              , biJazyBasicTy      	= BasicJazy_Int
 %%]]
@@ -73,6 +74,7 @@ builtin32BitsTyMp opts _
        , ( builtinNm opts ehbnWord32
          , emptyBuiltinInfo
              { biGbcMayLiveUnboxed	= livesUnboxed
+             , biGrinBoxAnnot 	    = BasicAnnot_Size BasicSize_Word32 annHWord BasicAnnotTagging_None False -- annHWord
 %%[[(97 jazy)
              , biJazyBasicTy      	= BasicJazy_Int
 %%]]
@@ -81,7 +83,7 @@ builtin32BitsTyMp opts _
        , ( builtinNm opts ehbnFloat
          , emptyBuiltinInfo
              { biGbcMayLiveUnboxed	= livesUnboxed
-             , biGrinBoxAnnot 		= BasicAnnot_Size basicSizeFloat  BasicTy_Float
+             , biGrinBoxAnnot 		= BasicAnnot_Size basicSizeFloat BasicTy_Float BasicAnnotTagging_None False
 %%[[(97 jazy)
              , biJazyBasicTy    	= BasicJazy_Float
 %%]]
@@ -89,6 +91,10 @@ builtin32BitsTyMp opts _
          )
        ]
   where livesUnboxed = Cfg.use64Bits
+%%[[97
+        annHWord | Cfg.isSameSizeForIntAndWord = BasicTy_SWord
+                 | otherwise                   = BasicTy_SHWord
+%%]]
 %%]
 
 %%[(8 codegen) hs export(builtinMayLiveUnboxedTyMp)
@@ -124,6 +130,9 @@ builtinMayLiveUnboxedTyMp opts
          , ( builtinNm opts ehbnInt8
            , emptyBuiltinInfo
                { biGbcMayLiveUnboxed	= True
+%%[[97
+               , biGrinBoxAnnot 	    = BasicAnnot_Size BasicSize_Int8 annHWord BasicAnnotTagging_None True -- annHWord
+%%]]
                , biIsSigned             = True
 %%[[(97 jazy)
                , biJazyBasicTy    		= BasicJazy_Int
@@ -133,6 +142,9 @@ builtinMayLiveUnboxedTyMp opts
          , ( builtinNm opts ehbnWord8
            , emptyBuiltinInfo
                { biGbcMayLiveUnboxed	= True
+%%[[97
+               , biGrinBoxAnnot 	    = BasicAnnot_Size BasicSize_Word8 annHWord BasicAnnotTagging_None False -- annHWord
+%%]]
 %%[[(97 jazy)
                , biJazyBasicTy    		= BasicJazy_Int
 %%]]
@@ -141,6 +153,9 @@ builtinMayLiveUnboxedTyMp opts
          , ( builtinNm opts ehbnInt16
            , emptyBuiltinInfo
                { biGbcMayLiveUnboxed	= True
+%%[[97
+               , biGrinBoxAnnot 	    = BasicAnnot_Size BasicSize_Int16 annHWord BasicAnnotTagging_None True -- annHWord
+%%]]
                , biIsSigned             = True
 %%[[(97 jazy)
                , biJazyBasicTy    		= BasicJazy_Int
@@ -150,6 +165,9 @@ builtinMayLiveUnboxedTyMp opts
          , ( builtinNm opts ehbnWord16
            , emptyBuiltinInfo
                { biGbcMayLiveUnboxed	= True
+%%[[97
+               , biGrinBoxAnnot 	    = BasicAnnot_Size BasicSize_Word16 annHWord BasicAnnotTagging_None False -- annHWord
+%%]]
 %%[[(97 jazy)
                , biJazyBasicTy    		= BasicJazy_Int
 %%]]
@@ -161,6 +179,10 @@ builtinMayLiveUnboxedTyMp opts
 %%[[97
     `Map.union`
        (if Cfg.use64Bits then builtin32BitsTyMp opts True else Map.empty)
+%%]]
+%%[[97
+  where annHWord | Cfg.isSameSizeForIntAndWord = BasicTy_SWord
+                 | otherwise                   = BasicTy_SHWord
 %%]]
 %%]
 
@@ -208,7 +230,7 @@ builtinKnownBoxedTyMp opts
            )
          , ( builtinNm opts ehbnDouble
            , emptyBuiltinInfo
-               { biGrinBoxAnnot 	= BasicAnnot_Size basicSizeDouble BasicTy_Double
+               { biGrinBoxAnnot 	= BasicAnnot_Size basicSizeDouble BasicTy_Double BasicAnnotTagging_None False
 %%[[(97 jazy)
                , biJazyBasicTy    	= BasicJazy_Double
 %%]]
@@ -216,7 +238,7 @@ builtinKnownBoxedTyMp opts
            )
          , ( builtinNm opts ehbnInt64
            , emptyBuiltinInfo
-               { biGrinBoxAnnot 	= BasicAnnot_Size BasicSize_Word64 BasicTy_Word
+               { biGrinBoxAnnot 	= BasicAnnot_Size BasicSize_Int64 BasicTy_Word BasicAnnotTagging_None True
                , biIsSigned         = True
 %%[[(97 jazy)
                , biJazyBasicTy    	= BasicJazy_Long
@@ -225,7 +247,7 @@ builtinKnownBoxedTyMp opts
            )
          , ( builtinNm opts ehbnWord64
            , emptyBuiltinInfo
-               { biGrinBoxAnnot 	= BasicAnnot_Size BasicSize_Word64 BasicTy_Word
+               { biGrinBoxAnnot 	= BasicAnnot_Size BasicSize_Word64 BasicTy_Word BasicAnnotTagging_None False
 %%[[(97 jazy)
                , biJazyBasicTy    	= BasicJazy_Long
 %%]]
@@ -235,7 +257,7 @@ builtinKnownBoxedTyMp opts
 %%[[99
          , ( builtinNm opts ehbnAddr
            , emptyBuiltinInfo
-               { biGrinBoxAnnot 	= BasicAnnot_Size (if Cfg.use32Bits then BasicSize_Word32 else BasicSize_Word64) BasicTy_Word
+               { biGrinBoxAnnot 	= BasicAnnot_Size (if Cfg.use32Bits then BasicSize_Word32 else BasicSize_Word64) BasicTy_Word BasicAnnotTagging_None False
 %%[[(99 jazy)
                , biJazyBasicTy    	= BasicJazy_Int
 %%]]
