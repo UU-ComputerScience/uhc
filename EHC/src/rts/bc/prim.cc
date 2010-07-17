@@ -402,7 +402,7 @@ PRIM GB_NodePtr primShowInt( GB_Int intNd )
 	char buf[sizeof(Word)*10] ;
 	char *s = buf ;
 	// int i = GB_GBInt2Int(intNd) ;
-	int i = (intNd) ;
+	Int i = (intNd) ;
 	if ( i < 0 )
 	{
 		i = -i ;

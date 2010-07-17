@@ -37,7 +37,7 @@ XXX
 -- Core semantics
 %%[(8 codegen grin) import(qualified {%{EH}Core.ToGrin} as Core2GrSem)
 %%]
-%%[(2020 codegen) import({%{EH}Core.UsedModNms})
+%%[(20 codegen) import({%{EH}Core.UsedModNms})
 %%]
 
 -- HI syntax and semantics
@@ -165,7 +165,8 @@ cpFlowEHSem1 modNm
                               }
 %%]]
                  hii'     = hii
-                              { HI.hiiHIUsedImpModL = usedImpL
+                              { -- 20100717 AD: redundant because later extracted from Core because of inlining etc, TBD
+                                HI.hiiHIUsedImpModL = usedImpL
 %%[[(20 hmtyinfer)
                               , HI.hiiValGam        = vg
                               , HI.hiiTyGam     	= tg
@@ -285,7 +286,10 @@ cpFlowCoreSem modNm
          ;  let  (ecu,crsi,opts,_) = crBaseInfo modNm cr
                  coreSem  = panicJust "cpFlowCoreSem.coreSem" $ ecuMbCoreSem ecu
                  core     = panicJust "cpFlowCoreSem.core"    $ ecuMbCore    ecu
-                 -- usedImpL = Set.toList $ cmodUsedModNms core
+                 
+                 -- 20100717 AD: required here because of inlining etc, TBD
+                 usedImpL = Set.toList $ cmodUsedModNms core
+                 
                  coreInh  = crsiCoreInh crsi
                  hii      = ecuHIInfo ecu
                  am       = prepFlow $! Core2GrSem.gathLamMp_Syn_CodeAGItf coreSem
@@ -294,14 +298,17 @@ cpFlowCoreSem modNm
                               }
                  hii'     = hii
 %%[[(20 codegen grin)
-                              { {- HI.hiiHIUsedImpModL = usedImpL
-                              , -} HI.hiiLamMp         = am
+                              { -- 20100717 AD: required here because of inlining etc, TBD
+                                {- -} HI.hiiHIUsedImpModL = usedImpL
+                              , {- -} HI.hiiLamMp         = am
                               }
 %%]]
          ;  when (isJust (ecuMbCoreSem ecu))
                  (do { cpUpdSI (\crsi -> crsi {crsiCoreInh = coreInh'})
                      ; cpUpdCU modNm ( ecuStoreHIInfo hii'
-                                     -- . ecuStoreHIUsedImpL usedImpL
+                                     -- 
+                                     -- 20100717 AD: required here because of inlining etc, TBD
+                                     . ecuStoreHIUsedImpL usedImpL
                                      )
                      })
          }

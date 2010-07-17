@@ -618,7 +618,7 @@ SEM CBind
                                                      isOpaqueTagL mbTagL = null (maybe [] id mbTagL)
                                                      annotOfUnboxed box annot t
                                                        = if maybe False biGbcMayLiveUnboxed mbt
-                                                         then (if box then BasicAnnot_ToTaggedPtr else BasicAnnot_FromTaggedPtr) sgn (baTy annot)
+                                                         then annot {baTagging = if box then BasicAnnotTagging_ToPtr else BasicAnnotTagging_FromPtr, baIsSigned = sgn}
                                                          else annot
                                                        where mbt = tyNmMayLiveAsTaggedPtr @lhs.opts t
                                                              sgn = biIsSigned $ panicJust "CBind.FFI.tyNmMayLiveAsTaggedPtr" mbt

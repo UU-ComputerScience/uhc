@@ -388,7 +388,7 @@ PRIM GB_NodePtr primIntToInteger( GB_Int x )
 	// GB_GCSafe_1_Zeroed(n) ;
 #	if USE_LTM
 		GB_NodeAlloc_LTMMpz_SetSignedInt_In( n, x ) ;
-		// printf("primIntToInteger x=%x\n",x) ;
+		// printf("primIntToInteger x=%x %llx %d %lld sz=%d\n",x,x,x,x,sizeof(x)) ;
 		// prLTM(n,"primIntToInteger") ;
 #	else
 		GB_AllocEnsure_GMPMpz(1) ;

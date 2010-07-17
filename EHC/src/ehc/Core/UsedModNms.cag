@@ -1,0 +1,46 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Used module names
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(20 codegen) hs module {%{EH}Core.UsedModNms} import(qualified Data.Set as Set,Data.Maybe)
+%%]
+
+%%[(20 codegen) hs import({%{EH}Base.Common},{%{EH}Core},{%{EH}Ty})
+%%]
+
+%%[(20 codegen).WRAPPER ag import({Core/AbsSyn})
+WRAPPER CodeAGItf
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell itf
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(20 codegen) hs export(cmodUsedModNms)
+cmodUsedModNms :: CModule -> HsNameS
+cmodUsedModNms m
+  =  let  t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf m)) Inh_CodeAGItf
+     in   usedModNmS_Syn_CodeAGItf t
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Used module names
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+It is necessary to gather used modules because of re-exporting there may be references to modules which are not imported explicitly.
+
+%%[(20 codegen)
+ATTR AllNT CodeAGItf [ | | usedModNmS USE {`Set.union`} {Set.empty}: HsNameS ]
+%%]
+
+20090127: The gathering is not yet complete...
+
+%%[(20 codegen)
+SEM CExpr
+  | Var         lhs         .   usedModNmS  =   Set.fromList $ maybeToList $ hsnQualifier @nm 
+%%]

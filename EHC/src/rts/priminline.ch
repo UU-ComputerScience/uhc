@@ -67,8 +67,8 @@ extern PrimTypeC         primMin   ## PrimTypeName()	;								\
 
 
 #define PRIMS_INTCONVERT_INTERFACE(PrimTypeName,PrimTypeC) 								\
-extern PrimTypeC         primIntTo ## PrimTypeName( Word x ) ;							\
-extern Word              prim      ## PrimTypeName ## ToInt( PrimTypeC x ) ;			\
+extern PrimTypeC         primIntTo ## PrimTypeName( Int x ) ;							\
+extern Int               prim      ## PrimTypeName ## ToInt( PrimTypeC x ) ;			\
 
 %%]
 
@@ -161,6 +161,9 @@ PRIM Word  primCmp ## PrimTypeName( PrimTypeC x, PrimTypeC y )														\
 }																													\
 																													\
 
+%%]
+
+%%[8
 #define PRIMS_NUM_CODE(PrimTypeName,PrimTypeC) 		\
 PRIM PrimTypeC  primAdd ## PrimTypeName( PrimTypeC x, PrimTypeC y )													\
 {																													\
@@ -182,6 +185,10 @@ PRIM PrimTypeC  primNeg ## PrimTypeName( PrimTypeC x )																\
 }																													\
 
 
+%%]
+	printf( "primNeg %d %lld -> %d %lld %d %lld\n", x, x, -x, -x, (PrimTypeC)(-x), (PrimTypeC)(-x) ) ;\
+
+%%[8
 #define PRIMS_INTEGRAL_CODE(PrimTypeName,PrimTypeC) 		\
 PRIM PrimTypeC  primDiv ## PrimTypeName( PrimTypeC numerator, PrimTypeC divisor )									\
 {																													\
@@ -243,11 +250,11 @@ PRIMS_FRACTIONAL_CODE(PrimTypeName,PrimTypeC) \
 
 %%[8
 #define PRIMS_INTCONVERT_CODE(PrimTypeName,PrimTypeC) 																\
-PRIM PrimTypeC  primIntTo ## PrimTypeName( Word x )																	\
+PRIM PrimTypeC  primIntTo ## PrimTypeName( Int x )																	\
 {																													\
 	return (x) ;																									\
 }																													\
-PRIM Word  prim ## PrimTypeName ## ToInt( PrimTypeC x )																\
+PRIM Int  prim ## PrimTypeName ## ToInt( PrimTypeC x )																\
 {																													\
 	return (x) ;																									\
 }																													\
@@ -269,6 +276,7 @@ PRIM PrimTypeC  primMin ## PrimTypeName()																			\
 }																				
 																				
 %%]
+	printf( "primMin %llx %llx %d\n", PrimTypeC ## _MinValue, (PrimTypeC)(PrimTypeC ## _MinValue), PrimTypeC ## _MinValue ) ; \
 
 
 

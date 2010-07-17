@@ -32,6 +32,7 @@ Core/Pretty.cag
 Core/Subst.cag
 Core/SubstCaseAltFail.cag
 Core/FvS.cag
+Core/UsedModNms.cag
 Core/Trf/ConstProp.cag
 Core/Trf/EtaRed.cag
 Core/Trf/ANormal.cag
