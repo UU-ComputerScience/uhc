@@ -13,7 +13,7 @@
 %%[20 import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
 %%]
 
-%%[(8 tauphi) hs export(Strictness(..), Uniqueness(..))
+%%[(8 codegen) hs export(Strictness(..), Uniqueness(..))
 data Strictness
   = Strict
   | NonStrict
@@ -66,7 +66,7 @@ type Seq a = [a]
 %%% Instances: Typeable, Data
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(20 tauphi)
+%%[(20 codegen)
 deriving instance Typeable Strictness
 deriving instance Data Strictness
 
@@ -78,11 +78,11 @@ deriving instance Data Uniqueness
 %%% Instances: Binary, Serialize
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(20 tauphi)
+%%[(20 codegen)
 instance Serialize Strictness where
-  sput (Strict)    = sputWord8 0
-  sput (NonStrict) = sputWord8 1
-  sput (Var nm)    = sputWord8 2 >> sput nm
+  sput (Strict)           = sputWord8 0
+  sput (NonStrict)        = sputWord8 1
+  sput (StrictnessVar nm) = sputWord8 2 >> sput nm
   sget = do t <- sgetWord8
             case t of
               0 -> return Strict
@@ -96,6 +96,6 @@ instance Serialize Uniqueness where
   sget = do t <- sgetWord8
             case t of
               0 -> return Unique
-              1 -> return NonUniqe
+              1 -> return NonUnique
               2 -> liftM UniquenessVar sget
 %%]

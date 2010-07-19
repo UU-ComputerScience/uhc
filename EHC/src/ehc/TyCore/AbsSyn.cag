@@ -180,7 +180,7 @@ DATA Expr
 DATA ExprAnn
   | Empty
   | Annotation      s           : String
-%%[[(8 tauphi)
+%%[[(8 codegen)
   | Strictness      s           : Strictness
   | Uniqueness      s           : Uniqueness
   | GrinHint        s           : String

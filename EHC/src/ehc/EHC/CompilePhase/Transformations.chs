@@ -134,12 +134,12 @@ cpTransformTyCore modNm
              lamMp = HI.hiiLamMp hii
        ; cpUpdCU modNm
            ( ecuStoreHIInfo
-               (hii { HI.hiiLamMp = trfcoreGathLamMp trfcoreOut `Map.union` lamMp
+               (hii { HI.hiiLamMp = trftycoreGathLamMp trftycoreOut `Map.union` lamMp
                     })
            )
        
          -- put back result: additional hidden exports, it should be in a cpFlowXX variant
-       ; cpUpdHiddenExports modNm (Set.toList $ trftycoreExtraExports trftycoreOut)
+       ; cpUpdHiddenExports modNm $ zip (Set.toList $ trftycoreExtraExports trftycoreOut) (repeat IdOcc_Val)
 %%]]
        }
 %%]

@@ -22,7 +22,7 @@
 %%[(8 codegen) hs import({%{EH}Gam.TyKiGam})
 %%]
 
-%%[(8 tauphi) hs import({%{EH}TauPhi.Common})
+%%[(8 codegen) hs import({%{EH}TauPhi.Common})
 %%]
 
 %%[(8 codegen).WRAPPER ag import({TyCore/AbsSyn})

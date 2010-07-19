@@ -186,6 +186,9 @@ WRAPPER AGItf
 
 %%[(8 codegen) ag import({EH/ToCore})
 %%]
+
+%%[1 hs import(Debug.Trace)
+%%]
 %%[(8 codegen) ag import({EH/ToTyCore})
 %%]
 

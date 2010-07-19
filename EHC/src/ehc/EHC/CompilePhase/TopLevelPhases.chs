@@ -900,7 +900,7 @@ cpProcessTyCoreBasic modNm
        ; cpSeq [ cpTransformTyCore modNm
                , when (ehcOptTyCore opts)
                       (do { cpOutputTyCore "tycore" modNm
-                          ; check modNm
+                          -- ; check modNm
                           })
                ]
         }

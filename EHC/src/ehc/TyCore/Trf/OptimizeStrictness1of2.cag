@@ -15,7 +15,7 @@
 %%[(8 codegen) hs module {%{EH}TyCore.Trf.OptimizeStrictness1of2}
 %%]
 
-%%[(8 tauphi) hs import({%{EH}TauPhi.Common})
+%%[(8 codegen) hs import({%{EH}TauPhi.Common})
 %%]
  
 %%[(8 codegen) hs import({%{EH}Base.Builtin},{%{EH}Base.Opts},{%{EH}Base.Common})

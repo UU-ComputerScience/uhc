@@ -24,6 +24,9 @@
 %%[(8 codegen) import({%{EH}TyCore})
 %%]
 
+%%[(20 codegen) import({%{EH}TyCore.Base})
+%%]
+
 -- TyCore transformations
 %%[(8 codegen) import({%{EH}TyCore.Trf.EliminateExplicitLaziness})
 %%]
@@ -35,7 +38,7 @@
 %%]
 %%[(8 codegen) import({%{EH}TyCore.Trf.RemoveLazyFunctions1of2}, {%{EH}TyCore.Trf.RemoveLazyFunctions2of2})
 %%]
-%%[(8 tauphi) import({%{EH}TyCore.Trf.OptimizeStrictness1of2}, {%{EH}TyCore.Trf.OptimizeStrictness2of2})
+%%[(8 codegen) import({%{EH}TyCore.Trf.OptimizeStrictness1of2}, {%{EH}TyCore.Trf.OptimizeStrictness2of2})
 %%]
 
 
@@ -96,13 +99,11 @@ trfTyCore opts modNm trftycore
   = snd $ runState trf trftycore
   where trf
           = do { t_initial
-               ; t_introduceWeirdConstructs
-               -- ; t_introduceExplicitLaziness
-               -- ; t_removeLazyFunctions
+              -- ; t_introduceWeirdConstructs
+               ; t_introduceExplicitLaziness
+               ; t_removeLazyFunctions
                ; t_definitionSiteArityRaise
-%%[[(8 tauphi)
                ; t_optimizeStrictness
-%%]]
                ; t_eliminateExplicitLaziness
                }
 
@@ -129,8 +130,6 @@ trfTyCore opts modNm trftycore
         t_introduceExplicitLaziness  = liftTyTrf "IntroduceExplicitLaziness" $ cmodTrfIntroduceExplicitLaziness
         t_introduceWeirdConstructs   = liftTyTrf "IntroduceWeirdConstructs"  $ cmodTrfIntroduceWeirdConstructs
         t_removeLazyFunctions        = liftTyTrf "RemoveLazyFunctions"       $ cmodTrfRemoveLazyFunctions2of2 . cmodTrfRemoveLazyFunctions1of2
-%%[[(8 tauphi)
         t_optimizeStrictness         = liftTyTrf "OptimizeStrictness"        $ cmodTrfOptimizeStrictness2of2 . cmodTrfOptimizeStrictness1of2
-%%]]
 %%]
 

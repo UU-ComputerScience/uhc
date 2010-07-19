@@ -27,7 +27,7 @@ Differences:
 %%[(90 codegen) hs import({%{EH}Foreign.Pretty})
 %%]
 
-%%[(8 tauphi) hs import({%{EH}TauPhi.Common})
+%%[(8 codegen) hs import({%{EH}TauPhi.Common})
 %%]
 
 %%[(8 codegen).WRAPPER ag import({TyCore/AbsSyn})
@@ -405,7 +405,7 @@ SEM Expr
 SEM ExprAnn
   | Empty       loc         .   pp          =   empty
   | Annotation  loc         .   pp          =   pp ("{" ++ @s ++ "}")
-%%[[(8 tauphi)
+%%[[(8 codegen)
   | Strictness  loc         .   pp          =   pp (show @s)
   | Uniqueness  loc         .   pp          =   pp (show @s)
   | GrinHint    loc         .   pp          =   pp ("GrinHint{" ++ @s ++ "}")
