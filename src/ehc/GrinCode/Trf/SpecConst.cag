@@ -269,8 +269,6 @@ SEM GrModule
           -- All specialized functions that are or will be available.
           loc.allSpec              = mapUnionWithMapUnion @loc.existing @loc.toBeSpecialized
 
-          lhs.grTrf                = @loc.grTrf
-
 
 {
 
@@ -288,8 +286,13 @@ numberSpecs modNm start1 = snd . Map.mapAccumWithKey nrSet start1
   where nrSet start nm set
           = let list          = Set.toList set
                 (nrs, (nw:_)) = splitAt (length list) [start..]
-                names         = map (\i -> (i, hsnSuffix nm ("~spec~" ++ show modNm ++ "~" ++ show i))) nrs
-            in  (nw, Map.fromList $ zip list names)
+                -- Construct a unique name:
+                --    * Uniqify with the specialization index, which is unique
+                --      module-wide.
+                --    * Replace the qualification by the current module name.
+                -- The original unqualified name is kept for readability.
+                specName i    = (,) i $ hsnSetQual modNm $ hsnUniqifyInt HsNameUniqifier_Specialized i nm
+            in  (nw, Map.fromList $ zip list (map specName nrs))
 
 }
 
