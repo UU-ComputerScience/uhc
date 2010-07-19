@@ -103,8 +103,8 @@ SEM Decl
                                                               @isNewtype
 %%][90
                                                               (if @isNewtype
-                                                               then Just $ mkTyLam @dataTyVarIdL @constrs.dataAltForNewType
-                                                               else Nothing
+                                                               then DataGamInfoVariant_Newtype $ mkTyLam @dataTyVarIdL @constrs.dataAltForNewType
+                                                               else DataGamInfoVariant_Plain
                                                               )
 %%]]
 %%[[92

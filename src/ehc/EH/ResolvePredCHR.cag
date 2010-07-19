@@ -96,6 +96,9 @@ SEM Decl
                                                     =   case @instVariant of
                                                           InstDeriving _
                                                             | isJust derivDCL
+%%[[92
+                                                              && not (dgiIsRec @derivDataDGI)
+%%]]
                                                               -> ( gathPredLToProveCnstrMp $ foVarMp foDt |=> concat (extraPrOcc : altsPrOcc)
                                                                  , altsPrOcc, extraPrOcc
                                                                  , fromJust derivDCL

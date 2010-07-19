@@ -138,9 +138,15 @@ EHCLIB_ASIS_ALL_DRV_ASIS				:= $(foreach pkg,$(EHC_PACKAGES_ASSUMED),$(EHCLIB_AS
 #EHCLIB_FROZEN_ALL_DRV_base_ASIS			:= $(addprefix $(call FUN_INSTALL_PKG_PREFIX,base),$(EHCLIB_SYNC_ALL_PKG_base_ASIS))
 #EHCLIB_FROZEN_ALL_DRV_array_ASIS		:= $(addprefix $(call FUN_INSTALL_PKG_PREFIX,array),$(EHCLIB_SYNC_ALL_PKG_array_ASIS))
 
+# specials: tuple instances for generic deriving
+EHCLIB_GEN_GENERTUPINST_HS				:= $(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)uhcbase/UHC/Generics/Tuple.hs
+EHCLIB_GEN_HS							:= $(EHCLIB_GEN_GENERTUPINST_HS)
+
+EHCLIB_ALL_SPECIALS						:= $(EHCLIB_GEN_HS) $(GEN_GENERTUPINST_BLD_EXEC)
+
 # all
 EHCLIB_ALL_SRC							:= $(EHCLIB_HS_ALL_SRC_HS) $(EHCLIB_CHS_ALL_SRC_CHS) $(EHCLIB_ASIS_ALL_SRC_ASIS)
-EHCLIB_ALL_DRV_HS						:= $(EHCLIB_HS_ALL_DRV_HS) $(EHCLIB_CHS_ALL_DRV_HS) $(EHCLIB_FROZEN_ALL_DRV_HS) $(EHCLIB_HSC_ALL_DRV_HS)
+EHCLIB_ALL_DRV_HS						:= $(EHCLIB_HS_ALL_DRV_HS) $(EHCLIB_CHS_ALL_DRV_HS) $(EHCLIB_FROZEN_ALL_DRV_HS) $(EHCLIB_HSC_ALL_DRV_HS) $(EHCLIB_GEN_HS)
 EHCLIB_ALL_DRV_C						:= $(EHCLIB_C_ALL_DRV_C) $(EHCLIB_CC_ALL_DRV_C) $(EHCLIB_FROZEN_ALL_DRV_C)
 EHCLIB_ALL_DRV_ASIS						:= $(EHCLIB_FROZEN_ALL_DRV_ASIS) $(EHCLIB_ASIS_ALL_DRV_ASIS)
 EHCLIB_ALL_DRV							:= $(EHCLIB_ALL_DRV_HS) $(EHCLIB_ALL_DRV_ASIS) $(EHCLIB_ALL_DRV_C)
@@ -184,7 +190,7 @@ EHCLIB_BASE_OPTS						= -O2
 
 ehclib-variant-dflt: \
 			$(if $(EHC_CFG_USE_CODEGEN),ehclib-codegentargetspecific-$(EHC_VARIANT_TARGET),) \
-			$(if $(EHC_CFG_USE_PRELUDE),$(EHCLIB_ALL_DRV) $(EHCLIB_MAP_PKG2VERSIONED_SH),) \
+			$(if $(EHC_CFG_USE_PRELUDE),$(EHCLIB_ALL_DRV) $(EHCLIB_ALL_SPECIALS) $(EHCLIB_MAP_PKG2VERSIONED_SH),) \
 			$(EHC_INSTALL_VARIANT_ASPECTS_EXEC)
 	$(if $(EHC_CFG_USE_PRELUDE) \
 	     ,pkgs="" ; \
@@ -360,6 +366,11 @@ $(EHCLIB_MAP_PKG2VERSIONED_SH): $(EHCLIB_MKF)
 	  $(foreach pkg,$(EHC_PACKAGES_ASSUMED),echo "  $(pkg) $(cparen) echo $(call FUN_PKG_VERSIONED,$(pkg)) ;;" ;) \
 	  echo  "esac" ; \
 	) > $@
+
+# specials: generate tuple instances for generic deriving
+$(EHCLIB_GEN_GENERTUPINST_HS): $(GEN_GENERTUPINST_BLD_EXEC)
+	mkdir -p $(@D)
+	$(GEN_GENERTUPINST_BLD_EXEC) 15 > $@
 
 ###########################################################################################
 # ehclib sync with GHC libraries; needs to be done only when set of library module changes
