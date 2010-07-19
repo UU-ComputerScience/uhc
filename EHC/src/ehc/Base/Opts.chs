@@ -1106,7 +1106,7 @@ fioIsMeetJoin fio =  case fioMode fio of {FitMeet -> True ; FitJoin -> True ; _ 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 export(ehcOptBuiltin,ehcOptBuiltin2)
-ehcOptBuiltin :: EHCOpts -> (EHBuiltinNames -> HsName) -> HsName
+ehcOptBuiltin :: EHCOpts -> (EHBuiltinNames -> x) -> x
 ehcOptBuiltin o f = f $ ehcOptBuiltinNames o
 
 ehcOptBuiltin2 :: EHCOpts -> (EHBuiltinNames -> Int -> HsName) -> Int -> HsName

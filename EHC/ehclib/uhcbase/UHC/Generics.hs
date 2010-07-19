@@ -36,4 +36,5 @@ module UHC.Generics
   where
 
 import UHC.Base
+import UHC.Generics.Tuple
 

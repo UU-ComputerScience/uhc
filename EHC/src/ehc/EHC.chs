@@ -288,7 +288,7 @@ doCompileRun filename opts
               (do { tokens <- offsideScanHandle (if isHS then hsScanOpts else ehScanOpts) fn fh
                   ; resd <-
                       if isHS
-                      then do { let steps = parseOffside (HSPrs.pAGItf) tokens
+                      then do { let steps = parseOffside (HSPrs.pAGItf opts) tokens
                               ; (resd,_) <- evalStepsIO show steps
                               ; if ehcStopAtPoint opts >= CompilePoint_AnalHS
                                 then do { let res   = HSSem.sem_AGItf resd
