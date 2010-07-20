@@ -57,8 +57,10 @@ dataInstance m = let n = shows m
 
 conInstance :: Int -> ShowS
 conInstance m = let n = shows m
-                in   showString "instance Constructor " . tupDataName m
-                   . showString " where conName _ = \"" . tuple m . showChar '"'
+                    l1 = showString "instance Constructor " . tupConName m . showString " where"
+                    l2 = tab . showString "conName _ = \"" . tuple m . showChar '"'
+                    l3 = tab . showString "conIsTuple _ = Arity " . n
+                in  unlinesS [l1, l2, l3]
 
 -- x is 0 or 1
 pairPat, repName, rep, repInst, funs :: Int -> Int -> ShowS
