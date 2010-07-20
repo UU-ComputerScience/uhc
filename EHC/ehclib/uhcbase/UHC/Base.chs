@@ -139,7 +139,7 @@ module UHC.Base   -- adapted from the Hugs prelude
 
   -- * Meta-information
   , Datatype(..), Constructor(..), Selector(..)
-  , Fixity(..), Associativity(..)
+  , Arity(..), Fixity(..), Associativity(..)
   , NoSelector
 
   -- * Representable type classes
@@ -2276,6 +2276,16 @@ class Constructor c where
 #endif
   conIsRecord = const False
 
+  -- | Marks if this constructor is a tuple, returning arity >=0 if so, <0 if not
+#ifdef __UHC__
+  conIsTuple :: t c f a -> Arity
+#else
+  conIsTuple :: t c (f :: * -> *) a -> Arity
+#endif
+  conIsTuple = const NoArity
+  {-
+  -}
+
 {-
 -- 20100610, AD: This is what the def should be, but run into some trouble wrt polarity, cause yet unknown
 class Constructor c where
@@ -2295,6 +2305,10 @@ instance Constructor c => Constructor (M1 t c f a) where
   conFixity   = conFixity   . unMeta
   conIsRecord = conIsRecord . unMeta
 -}
+
+-- | Datatype to represent the arity of a tuple.
+data Arity = NoArity | Arity Int
+  deriving (Eq, Show, Ord, Read)
 
 -- | Datatype to represent the fixity of a constructor. An infix
 -- | declaration directly corresponds to an application of 'Infix'.
