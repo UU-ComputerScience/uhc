@@ -1319,7 +1319,12 @@ DATA Literal                                      {- *** -}
         value                    : String
 %%]
 
+
+-- ! The following block of code is part of an unused variant (55).
+-- ! The actual definitions of Name, Names, MaybeName and MaybeNames
+-- ! can be found in HS.cag
 %%[55
+
 TYPE Names                       = [ Name ]
 
 TYPE MaybeNames                  = MAYBE Names
