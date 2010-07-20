@@ -85,6 +85,9 @@ Grin transformation
 %%]
 %%[(8 codegen grin) import({%{EH}GrinCode.Trf.CopyPropagation(copyPropagation)})
 %%]
+%%[(8 codegen grin) import({%{EH}GrinCode.Trf.NumberIdents(numberIdents)})
+%%]
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Compile actions: transformations, on grin
@@ -120,16 +123,6 @@ cpIterGrinTrf modNm trf m = do
           (code, changed) <- return $ trf code
           cpUpdCU modNm $ ecuStoreGrin $ code
           if changed then (caFixCount $ n+1) else return n
-
-cpFullGrinTrf :: HsName -> ([Grin.GrModule] -> Grin.GrModule -> Grin.GrModule) -> String -> EHCompilePhase ()
-cpFullGrinTrf modNm trf m
-  = do { cr <- get
-       ; imps <- allImports modNm
-       ; let (_,_,_,fp) = crBaseInfo modNm cr
-       ; cpMsg' modNm VerboseALot ("Full GRIN optim, using " ++ show imps) (Just m) fp
-       ; let theGrin nm = case crBaseInfo nm cr of (ecu,_,_,_) -> fromJust $ ecuMbGrin ecu
-       ; cpUpdCU modNm $ ecuStoreGrin $ trf (map theGrin imps) $ theGrin modNm
-       }
 
 -- Op (operation) is an ad-hoc generalisation of functions that take some InfoX
 -- and a GrModule en return some result and new InfoX. For example
@@ -232,26 +225,26 @@ cpTransformGrin modNm
          ;  when (isJust $ ecuMbGrin ecu)
                  (cpSeq (if ehcOptDumpGrinStages opts then optGrinDump else optGrinNormal))
          
-         -- print GrinInfo:
-         ; cr <- get
-         ; let (ecu,_,_,fp) = crBaseInfo modNm cr
-         ; cpMsg' modNm VerboseALot (show (ecuMbGrinSem ecu)) (Just "aap") fp
+         -- -- print GrinInfo:
+         -- ; cr <- get
+         -- ; let (ecu,_,_,fp) = crBaseInfo modNm cr
+         -- ; cpMsg' modNm VerboseALot (show (ecuMbGrinSem ecu)) (Just "aap") fp
          }
 
 
 grPerModuleFullProg :: HsName -> [(EHCompilePhase (), String)]
-grPerModuleFullProg modNm = trafos1 ++ invariant 0 ++ grSpecialize modNm ++ [dropUnreach] ++ invariant 1
+grPerModuleFullProg modNm = trafos1 ++ invariant 0 ++ grSpecialize modNm ++ [dropUnreach] ++ invariant 1 -- ++ [hptAnalysis]
   where
     trafos1 =
       [ dropUnreach
 %%[[9
-      , full' grMergeInstance   "MergeInstance"   grinInfoMergeInstance
-      , full' grMemberSelect    "MemberSelect"    grinInfoMemberSelect
+      , full  grMergeInstance   "MergeInstance"   grinInfoMergeInstance
+      , full  grMemberSelect    "MemberSelect"    grinInfoMemberSelect
     
       , dropUnreach
 %%]]
-      , full' grCleanupPass     "CleanupPass"     grinInfoCleanupPass
-      , full' grSimpleNullary   "SimpleNullary"   grinInfoSimpleNullary
+      , full  grCleanupPass     "CleanupPass"     grinInfoCleanupPass
+      , full  grSimpleNullary   "SimpleNullary"   grinInfoSimpleNullary
 %%[[97
       , once constInt           "ConstInt"
 %%]]
@@ -277,35 +270,35 @@ grPerModuleFullProg modNm = trafos1 ++ invariant 0 ++ grSpecialize modNm ++ [dro
       do { errors <- cpFullGrinInfoOp modNm (grinInfoCheckInvariantSpec i) checkGrinInvariant "CheckGrinInvariant"
          ; when (not (null errors)) (error (unlines errors))
          }
+    
+    -- hptAnalysis   = cpFullGrinInfoOp modNm (grinInfoHptAnalysis) (heapPointsToAnalysis modNm) "Partial HPT analysis"
 
     mk            = map mk1
     mk1 (trf,msg) = (cpFromGrinTrf modNm trf msg, msg)
     
     once trf m = (cpFromGrinTrf modNm trf m, m)
     iter trf m = (cpIterGrinTrf modNm trf m, m)
-    full trf m = (cpFullGrinTrf modNm trf m, m)
-    full' trf m i = (cpFullGrinInfoTrf modNm i trf m, m)
+    full trf m i = (cpFullGrinInfoTrf modNm i trf m, m)
     
 
 -- grSpecialize :: [(Grin.GrModule -> Grin.GrModule, String)]
 grSpecialize modNm = concatMap (grSpecialize' modNm) [0..5]
 grSpecialize' modNm pass =
-    [ full' grEvalStored                     "eval stored"    grinInfoEvalStoredSpec
+    [ full grEvalStored                      "eval stored"    grinInfoEvalStoredSpec
     , once applyUnited                       "apply united"
     , once grFlattenSeq                      "flatten"
     -- , iter dropUnusedExpr                    "drop unused"
-    , full' grSpecConst                      "spec const"     grinInfoSpecConstSpec
+    , full grSpecConst                       "spec const"     grinInfoSpecConstSpec
     , iter copyPropagation                   "copy prop"
     , once singleCase                        "single case"
     , once grFlattenSeq                      "flatten"
-    , full' grSimpleNullary                  "simply nullary" grinInfoSimpleNullarySpec
-    , full' grMemberSelect                   "member select"  grinInfoMemberSelectSpec
+    , full grSimpleNullary                   "simply nullary" grinInfoSimpleNullarySpec
+    , full grMemberSelect                    "member select"  grinInfoMemberSelectSpec
     -- , once (dropUnreachableBindings False)   "drop unreachable"
     ]
   where once trf m = (cpFromGrinTrf modNm trf m, m)
         iter trf m = (cpIterGrinTrf modNm trf m, m)
-        full trf m = (cpFullGrinTrf modNm trf m, m)
-        full' trf m i = (cpFullGrinInfoTrf modNm (i pass) trf m, m)
+        full trf m i = (cpFullGrinInfoTrf modNm (i pass) trf m, m)
 
 %%]
 
