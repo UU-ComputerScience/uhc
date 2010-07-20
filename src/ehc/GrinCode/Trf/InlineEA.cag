@@ -40,7 +40,7 @@ WRAPPER GrAGItf
 %%]
 %%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{EH}GrinCode})
 %%]
-%%[(8 codegen grin) hs import({%{EH}GrinCode.Common(HptMap, Variable, getBaseEnvList, getNr, absFetch, getEnvVar, getNodes, addEnvElems, getEnvSize, throwTag, AbstractValue(..), AbstractNodes(..), evaluateNr, evaluateArgNr)})
+%%[(8 codegen grin) hs import({%{EH}GrinCode.Common(HptMap, Variable, getBaseEnvList, getNr, absFetch, getEnvVar, getNodes, addEnvElems, getEnvSize, throwTag, AbstractValueG(..), AbstractValue(..), AbstractNodesG(..), AbstractNodes, evaluateNr, evaluateArgNr)})
 %%]
 %%[(8 codegen grin) hs import(Debug.Trace)
 %%]
