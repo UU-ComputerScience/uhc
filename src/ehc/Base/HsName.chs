@@ -68,6 +68,7 @@ data HsNameUniqifier
   | HsNameUniqifier_FFIArg				-- arg evaluated for FFI
   | HsNameUniqifier_LacksLabel			-- label used in lacking predicates
   | HsNameUniqifier_Specialized			-- specialization of another function
+  | HsNameUniqifier_Exception			-- exception variable for a binding
   deriving (Eq,Ord,Enum)
 
 -- | The show of a HsNameUniqifier is found back in the pretty printed code, current convention is 3 uppercase letters, as a balance between size and clarity of meaning
@@ -90,6 +91,7 @@ instance Show HsNameUniqifier where
   show HsNameUniqifier_FFIArg				= "FFI"
   show HsNameUniqifier_LacksLabel			= "LBL"
   show HsNameUniqifier_Specialized			= "SPC"
+  show HsNameUniqifier_Exception			= "EXC"
 %%]
 
 %%[7 export(HsNameUnique(..))

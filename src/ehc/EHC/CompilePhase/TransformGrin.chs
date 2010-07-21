@@ -71,7 +71,7 @@ Grin transformation
 %%]
 %%[(8 codegen grin) import({%{EH}GrinCode.Trf.DropUnusedExpr(dropUnusedExpr)})
 %%]
-%%[(8 codegen grin) import({%{EH}GrinCode.PointsToAnalysis(heapPointsToAnalysis)})
+%%[(8 codegen grin) import({%{EH}GrinCode.PointsToAnalysis})
 %%]
 %%[(8 codegen grin) import({%{EH}GrinCode.Trf.InlineEA(inlineEA)})
 %%]
@@ -153,6 +153,18 @@ cpFullGrinInfoTrf modNm inf trf m
        ; grTrf <- cpFullGrinInfoOp modNm inf trf m
        ; cpUpdCU modNm (ecuStoreGrin grTrf)
        }
+
+
+cpPartialHptAnalysis modNm
+  = do { cr <- get
+       ; let (ecu,_,_,fp) = crBaseInfo modNm cr
+       ; let imps         = ecuImpNmL ecu
+       ; let grin         = fromJust $ ecuMbGrin ecu
+       -- TODO retreive PartialHptResult
+       ; cpMsg' modNm VerboseALot "Partial HPT Analysis" Nothing fp
+       ; seq (partialHptAnalysis (fpathBase fp) [] grin) $ return ()
+       }
+
 %%]
 
 %%[(8 codegen grin) export(cpTransformGrin)
@@ -233,7 +245,7 @@ cpTransformGrin modNm
 
 
 grPerModuleFullProg :: HsName -> [(EHCompilePhase (), String)]
-grPerModuleFullProg modNm = trafos1 ++ invariant 0 ++ grSpecialize modNm ++ [dropUnreach] ++ invariant 1 -- ++ [hptAnalysis]
+grPerModuleFullProg modNm = trafos1 ++ invariant 0 ++ grSpecialize modNm ++ [dropUnreach] ++ invariant 1 ++ [(cpPartialHptAnalysis modNm, "Partial HPT")]
   where
     trafos1 =
       [ dropUnreach

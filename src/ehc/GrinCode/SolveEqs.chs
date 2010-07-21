@@ -296,8 +296,8 @@ ttt :: STArray s Variable Bool -> ST s [(Variable,Bool)]
 ttt a = getAssocs a
 
 
-solveEquations :: String -> Int -> [Int] -> Equations -> Limitations -> (Int,HptMap)
-solveEquations modNm lenEnv multiplyUsed eqs lims =
+solveEquations :: String -> Int -> [Int] -> Equations -> Limitations -> PartialHptMap Int -> (Int,HptMap)
+solveEquations modNm lenEnv multiplyUsed eqs lims hptStart =
     runST (
     do { 
        ; let eqsStr = unlines (map show eqs )
@@ -309,7 +309,8 @@ solveEquations modNm lenEnv multiplyUsed eqs lims =
                               )
 
        -- create array
-       ; env     <- newArray (0, lenEnv-1) (True,False,AbsBottom)
+       ; env     <- newArray_ (0, lenEnv-1)
+       ; mapM_ (\(i, v) -> writeArray env i (True, False, v)) (Map.toList hptStart)
        -- ; shared  <- newArray (0, lenEnv-1) False
 
        -- ; trace (show multiplyUsed) $ return ()

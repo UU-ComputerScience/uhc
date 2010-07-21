@@ -61,7 +61,7 @@ tagArity t                    _        = error ("tagArity " ++ show t)
 %% Abstract interpretation domain %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin) export(AbstractNodesG(..), AbstractValueG(..), AbstractCallG, AbstractCallListG)
+%%[(8 codegen grin) export(AbstractNodesG(..), AbstractValueG(..), AbstractCallG, AbstractCallListG, mapAbstractNodes, mapAbstractValue)
 %%]
 %%[(8 codegen grin) export(Variable, AbstractNodes, AbstractValue, AbstractCall, AbstractCallList)
 %%]
@@ -74,6 +74,11 @@ type AbstractNodes = AbstractNodesG Variable
 data AbstractNodesG var
   = Nodes (Map.Map GrTag [Set.Set var])
     deriving (Eq, Ord)
+
+-- 'fmap' on AbstractNodesG; cannot be an instance of Functor because of the
+-- Ord constraints.
+mapAbstractNodes :: (Ord a, Ord b) => (a -> b) -> AbstractNodesG a -> AbstractNodesG b
+mapAbstractNodes f (Nodes m) = Nodes (Map.map (map (Set.map f)) m)
 
 type AbstractValue = AbstractValueG Variable
 data AbstractValueG var
@@ -90,6 +95,24 @@ data AbstractValueG var
   | AbsUnion (Map.Map GrTag  (AbstractValueG var) )
   | AbsError String
     deriving (Eq, Ord)
+
+-- 'fmap' on AbstractValuesG; cannot be an instance of Functor because of the
+-- Ord constraints.
+mapAbstractValue :: (Ord a, Ord b) => (a -> b) -> AbstractValueG a -> AbstractValueG b
+mapAbstractValue f absV = case absV of
+    AbsBottom           -> AbsBottom
+    AbsBasic            -> AbsBasic
+    AbsImposs           -> AbsImposs
+    AbsTags s           -> AbsTags s
+    AbsNodes ns         -> AbsNodes (mANs ns)
+    AbsPtr   ns         -> AbsPtr (mANs ns)
+    AbsPtr0  ns vs      -> AbsPtr0 (mANs ns) (Set.map f vs)
+    AbsPtr1  ns vs      -> AbsPtr1 (mANs ns) (Set.map f vs)
+    AbsPtr2  ns vs1 vs2 -> AbsPtr2 (mANs ns) (Set.map f vs1) (Set.map f vs2)
+    AbsUnion  ts        -> AbsUnion (Map.map mAV ts)
+    AbsError s          -> AbsError s
+  where mAV  = mapAbstractValue f
+        mANs = mapAbstractNodes f
 
 
 type AbstractCall = AbstractCallG Variable
@@ -198,7 +221,7 @@ instance Ord GrTag where
 %% Abstract interpretation constraints     %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin) export(Equation, EquationG(..), Equations, Limitation, Limitations, limitIntersect)
+%%[(8 codegen grin) export(Equation, EquationG(..), Equations, EquationsG, Limitation, LimitationG, Limitations, LimitationsG, limitIntersect)
 
 type Equation = EquationG Variable
 data EquationG var
@@ -215,6 +238,19 @@ data EquationG var
   | IsApplication         var  [var]                   var
     deriving (Show, Eq)
 
+instance Functor EquationG where
+  fmap f eq = case eq of
+    IsBasic        v              ->  IsBasic (f v)
+    IsImpossible   v              ->  IsImpossible (f v)
+    IsTags         v  gs          ->  IsTags (f v) gs
+    IsPointer      v  g   mvs     ->  IsPointer (f v) g (fmap (fmap f) mvs)
+    IsConstruction v  g   mvs mv  ->  IsConstruction (f v) g (fmap (fmap f) mvs) (fmap f mv)
+    IsUpdate       v1 v2          ->  IsUpdate (f v1) (f v2)
+    IsEqual        v1 v2          ->  IsEqual (f v1) (f v2)
+    IsSelection    v1 v2  i   g   ->  IsSelection (f v1) (f v2) i g
+    IsEnumeration  v1 v2          ->  IsEnumeration (f v1) (f v2)
+    IsEvaluation   v1 v2  v3      ->  IsEvaluation (f v1) (f v2) (f v3)
+    IsApplication  v1 vs  v2      ->  IsApplication (f v1) (fmap f vs) (f v2)
 
 type Limitation = LimitationG Variable
 type LimitationG var
@@ -232,9 +268,12 @@ type LimitationsG var = [LimitationG var]
 %% Abstract interpretation result          %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin) export(HptMap, getBaseEnvList, getEnvVar, absFetch, addEnvElems, getEnvSize, getTags, getNodes, isBottom, showHptMap, isPAppTag, isFinalTag, isApplyTag, filterTaggedNodes, getApplyNodeVars)
+%%[(8 codegen grin) export(HptMap, PartialHptMap, getBaseEnvList, getEnvVar, absFetch, addEnvElems, getEnvSize, getTags, getNodes, isBottom, showHptMap, isPAppTag, isFinalTag, isApplyTag, filterTaggedNodes, getApplyNodeVars)
 
 type HptMap  = Array Int AbstractValue
+
+type PartialHptMap var = Map.Map var (AbstractValueG var)
+
 
 showHptElem :: (Int,AbstractValue) -> String
 showHptElem (n,v) = show n ++ ": " ++ show v
