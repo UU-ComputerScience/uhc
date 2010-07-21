@@ -4,13 +4,15 @@
 %%]
 %%[(8 codegen grin) module {%{EH}GrinCode.Common}
 %%]
-%%[(8 codegen grin) import( qualified Data.Map as Map, qualified Data.Set as Set, Data.Array, Data.Monoid, Char(isDigit) )
+%%[(8 codegen grin) import( qualified Data.Map as Map, qualified Data.Set as Set, Data.Array, Data.Monoid, Char(isDigit), Control.Monad )
 %%]
 %%[(8 codegen grin) import( {%{EH}Base.Common}, {%{EH}Base.Builtin} )
 %%]
 %%[(8 codegen grin) import( {%{EH}GrinCode} )
 %%]
 %%[(8 codegen grin) hs import(Debug.Trace)
+%%]
+%%[(8 codegen grin) hs import(Data.Typeable(Typeable), Data.Generics(Data), {%{EH}Base.Serialize}, Control.Monad (ap))
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -73,7 +75,11 @@ type Variable = Int
 type AbstractNodes = AbstractNodesG Variable
 data AbstractNodesG var
   = Nodes (Map.Map GrTag [Set.Set var])
-    deriving (Eq, Ord)
+    deriving (Eq, Ord, Data, Typeable)
+
+instance (Ord var, Serialize var) => Serialize (AbstractNodesG var) where
+  sput (Nodes m) = sput m
+  sget = liftM Nodes sget
 
 -- 'fmap' on AbstractNodesG; cannot be an instance of Functor because of the
 -- Ord constraints.
@@ -94,7 +100,35 @@ data AbstractValueG var
   | AbsPtr2  (AbstractNodesG var) (Set.Set var) (Set.Set var)       -- this representation still doesn't work
   | AbsUnion (Map.Map GrTag  (AbstractValueG var) )
   | AbsError String
-    deriving (Eq, Ord)
+    deriving (Eq, Ord, Data, Typeable)
+
+instance (Ord var, Serialize var) => Serialize (AbstractValueG var) where
+  sput absV = case absV of
+    AbsBottom           -> do sputWord8  0
+    AbsBasic            -> do sputWord8  1
+    AbsImposs           -> do sputWord8  2
+    AbsTags s           -> do sputWord8  3; sput s
+    AbsNodes ns         -> do sputWord8  4; sput ns
+    AbsPtr   ns         -> do sputWord8  5; sput ns
+    AbsPtr0  ns vs      -> do sputWord8  6; sput ns; sput vs
+    AbsPtr1  ns vs      -> do sputWord8  7; sput ns; sput vs
+    AbsPtr2  ns vs1 vs2 -> do sputWord8  8; sput ns; sput vs1; sput vs2
+    AbsUnion  ts        -> do sputWord8  9; sput ts
+    AbsError s          -> do sputWord8 10; sput s
+  sget = do
+    t <- sgetWord8
+    case t of
+      0  -> return AbsBottom
+      1  -> return AbsBasic
+      2  -> return AbsImposs
+      3  -> liftM AbsTags sget
+      4  -> liftM AbsNodes sget
+      5  -> liftM AbsPtr sget
+      6  -> liftM2 AbsPtr0 sget sget
+      7  -> liftM2 AbsPtr1 sget sget
+      8  -> liftM3 AbsPtr2 sget sget sget
+      9  -> liftM AbsUnion sget
+      10 -> liftM AbsError sget
 
 -- 'fmap' on AbstractValuesG; cannot be an instance of Functor because of the
 -- Ord constraints.
@@ -236,7 +270,35 @@ data EquationG var
   | IsEnumeration         var  var
   | IsEvaluation          var  var                     var
   | IsApplication         var  [var]                   var
-    deriving (Show, Eq)
+    deriving (Show, Eq, Data, Typeable)
+
+instance Serialize var => Serialize (EquationG var) where
+  sput eq = case eq of
+    IsBasic        v              ->  do sputWord8  0; sput v
+    IsImpossible   v              ->  do sputWord8  1; sput v
+    IsTags         v  gs          ->  do sputWord8  2; sput v; sput gs
+    IsPointer      v  g   mvs     ->  do sputWord8  3; sput v; sput g; sput mvs
+    IsConstruction v  g   mvs mv  ->  do sputWord8  4; sput v; sput g; sput mvs; sput mv
+    IsUpdate       v1 v2          ->  do sputWord8  5; sput v1; sput v2
+    IsEqual        v1 v2          ->  do sputWord8  6; sput v1; sput v2
+    IsSelection    v1 v2  i   g   ->  do sputWord8  7; sput v1; sput v2; sput i; sput g
+    IsEnumeration  v1 v2          ->  do sputWord8  8; sput v1; sput v2
+    IsEvaluation   v1 v2  v3      ->  do sputWord8  9; sput v1; sput v2; sput v3
+    IsApplication  v1 vs  v2      ->  do sputWord8 10; sput v1; sput vs; sput v2
+  sget = do
+    t <- sgetWord8
+    case t of
+      0  -> liftM IsBasic sget
+      1  -> liftM IsImpossible sget
+      2  -> liftM2 IsTags sget sget
+      3  -> liftM3 IsPointer sget sget sget
+      4  -> liftM4 IsConstruction sget sget sget sget
+      5  -> liftM2 IsUpdate sget sget
+      6  -> liftM2 IsEqual sget sget
+      7  -> liftM4 IsSelection sget sget sget sget
+      8  -> liftM2 IsEnumeration sget sget
+      9  -> liftM3 IsEvaluation sget sget sget
+      10 -> liftM3 IsApplication  sget sget sget
 
 instance Functor EquationG where
   fmap f eq = case eq of

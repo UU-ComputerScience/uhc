@@ -18,7 +18,7 @@ WRAPPER GrAGItf
 %%]
 %%[(8 codegen grin) hs module {%{EH}GrinCode.PointsToAnalysis}
 %%]
-%%[(8 codegen grin) hs import(qualified Data.Map as Map, qualified Data.Set as Set, Data.Maybe, Data.List(transpose, union), Data.Monoid)
+%%[(8 codegen grin) hs import(qualified Data.Map as Map, qualified Data.Set as Set, Data.Maybe, Data.List(transpose, union), Data.Monoid, Data.Array(assocs))
 %%]
 %%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}GrinCode})
 %%]
@@ -26,16 +26,26 @@ WRAPPER GrAGItf
 %%]
 %%[(8 codegen grin) hs import(Debug.Trace, EH.Util.Utils (panicJust))
 %%]
+%%[(8 codegen grin) hs import(Data.Typeable(Typeable), Data.Generics(Data), {%{EH}Base.Serialize}, Control.Monad (ap))
+%%]
 
 
-%%[(8 codegen grin) hs export(heapPointsToAnalysis, partialHptAnalysis)
+%%[(8 codegen grin) hs export(heapPointsToAnalysis, partialHptAnalysis, PartialHptResult)
 
 data PartialHptResult = PartialHptResult
   { infoEquations   :: EquationsG HsName
   , infoLimitations :: LimitationsG HsName
   , infoParamMap    :: ParamMap
   , infoHptMap      :: PartialHptMap HsName
-  } deriving Show
+  } deriving (Show, Data, Typeable)
+
+instance Serialize PartialHptResult where
+  sput res = do
+    sput $ infoEquations res
+    sput $ infoLimitations res
+    sput $ infoParamMap res
+    sput $ infoHptMap res
+  sget = return PartialHptResult `ap` sget `ap` sget `ap` sget `ap` sget
 
 type ParamMap = Map.Map HsName [HsName]
 
@@ -57,24 +67,37 @@ instance Monoid PartialHptResult where
   mappend = mergePHR
 
 
-type VarMap = Map.Map HsName Int
+type VarMap   = Map.Map HsName  Int
+type NameMap  = Map.Map Int     HsName
 
 mkVarMap :: PartialHptMap HsName -> (Int, VarMap)
 mkVarMap = Map.mapAccum num 0
   where num i _ = (succ i, i)
 
-numberHptMap :: VarMap -> PartialHptMap HsName -> PartialHptMap Int
-numberHptMap varMap = Map.map (mapAbstractValue nr) . Map.mapKeys nr
-  where nr = number varMap
+mkNameMap :: VarMap -> NameMap
+mkNameMap = Map.fromList . map swap . Map.toList
+  where swap (a,b) = (b,a)
 
-number :: VarMap -> HsName -> Int
-number varMap nm = panicJust ("PointsToAnalysis.number: no number for " ++ show nm ++ " in " ++ show varMap) $ Map.lookup nm varMap
+convertHptMap :: (Show a, Ord a, Ord b) =>
+                  Map.Map a b -> PartialHptMap a -> PartialHptMap b
+convertHptMap mp = Map.map (mapAbstractValue conv) . Map.mapKeys conv
+  where conv = forceLookup mp
+
+convertEquations :: (Show a, Ord a) =>
+                    Map.Map a b -> EquationsG a -> EquationsG b
+convertEquations mp = fmap (fmap conv)
+  where conv = forceLookup mp
+
+forceLookup :: (Ord a, Show a) => Map.Map a b -> a -> b
+forceLookup mp a
+  = panicJust ("PointsToAnalysis.forceLookup: no entry for " ++ show a)
+    $ Map.lookup a mp
 
 {-
 Main module entry point:
 -}
 
-partialHptAnalysis :: String -> [PartialHptResult] -> GrModule -> (GrModule, PartialHptResult)
+partialHptAnalysis :: String -> [PartialHptResult] -> GrModule -> (Int, PartialHptResult)
 partialHptAnalysis modNm imps grmod
   = let -- combine imported stuff
         infoImps = mconcat imps
@@ -97,20 +120,26 @@ partialHptAnalysis modNm imps grmod
         allInfo     = info `mappend` infoImps
         
         (len, varMap) = mkVarMap (infoHptMap allInfo)
-        equations     = fmap (fmap (number varMap)) (infoEquations allInfo)
-        hptMapStart   = numberHptMap varMap (infoHptMap allInfo)
+        equations     = convertEquations varMap (infoEquations allInfo)
+        hptMapStart   = convertHptMap varMap    (infoHptMap allInfo)
         -- hptArray      = array (0, len - 1) (Map.toList hptMapStart)
 
         -- lenEnv      = maxVar_Syn_GrAGItf syn + 1
         -- useCountMap = Map.filter (>1) (useCountMap_Syn_GrAGItf syn)
         -- multiplyUsed = map fst (Map.toList useCountMap)
-        multiplyUsed    = []
-        limitations     = []
+        multiplyUsed    = []  -- TODO
+        limitations     = []  -- TODO
 
-        hptMapSolved    = solveEquations modNm len multiplyUsed equations limitations hptMapStart
-        
         -- now solve the equations
-    in  traceShow hptMapSolved $ error "BLA!"
+        (iters, hptMapSolved) = solveEquations modNm len multiplyUsed equations limitations hptMapStart
+        -- hptMapSolvedP   = Map.fromList
+        --                 $ map (\(i, v) -> (forceLookup (mkNameMap varMap) i, v))
+        --                 $ assocs hptMapSolved
+        hptMapSolvedP = convertHptMap (mkNameMap varMap) $ Map.fromList $ assocs hptMapSolved
+
+        infoFinal       = info { infoHptMap = hptMapSolvedP }
+        
+    in  traceShow infoFinal (iters, infoFinal)
 
 
 heapPointsToAnalysis :: String -> GrModule -> (Int,HptMap)

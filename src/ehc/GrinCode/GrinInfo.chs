@@ -12,10 +12,13 @@ whole program.
 This Haskell module is oblivious to what 'information' actually means; this is
 up to the transformations themselves.
 
+-- TODO(?) Modules do not exist in variants < 20, but this code is in effect
+-- from variant 8 onward. We might want to change this to 20.
+
 -- Import incremental transformations.
 %%[(9 codegen grin) hs import({%{EH}GrinCode.Trf.MergeInstance})
 %%]
-%%[(8 codegen grin) hs import({%{EH}GrinCode.Trf.MemberSelect}, {%{EH}GrinCode.Trf.SimpleNullary}, {%{EH}GrinCode.Trf.EvalStored}, {%{EH}GrinCode.Trf.CleanupPass}, {%{EH}GrinCode.Trf.SpecConst}, {%{EH}GrinCode.Trf.CheckGrinInvariant})
+%%[(8 codegen grin) hs import({%{EH}GrinCode.Trf.MemberSelect}, {%{EH}GrinCode.Trf.SimpleNullary}, {%{EH}GrinCode.Trf.EvalStored}, {%{EH}GrinCode.Trf.CleanupPass}, {%{EH}GrinCode.Trf.SpecConst}, {%{EH}GrinCode.Trf.CheckGrinInvariant}, {%{EH}GrinCode.PointsToAnalysis})
 %%]
 %%[20 hs import(Data.Typeable(Typeable), Data.Generics(Data), {%{EH}Base.Serialize}, Control.Monad (ap))
 %%]
@@ -35,6 +38,7 @@ data GrinInfo = GrinInfo
 %%[[9
   , grMbMergeInstance         :: Maybe InfoMergeInstance
 %%]]
+  , grMbPartialHpt            :: Maybe PartialHptResult
   } deriving (Show
 %%[[20
       , Data, Typeable
@@ -52,8 +56,9 @@ instance Serialize GrinInfo where
     sput ( grMbCleanupPass          gr ) >>
     sput ( grMbSpecConstSpec        gr ) >>
     sput ( grMbCheckInvariantSpec   gr ) >>
-    sput ( grMbMergeInstance        gr )
-  sget = return GrinInfo `ap` sget `ap` sget `ap` sget `ap` sget `ap` sget `ap` sget `ap` sget `ap` sget `ap` sget
+    sput ( grMbMergeInstance        gr ) >>
+    sput ( grMbPartialHpt           gr )
+  sget = return GrinInfo `ap` sget `ap` sget `ap` sget `ap` sget `ap` sget `ap` sget `ap` sget `ap` sget `ap` sget `ap` sget
 %%]]
 
 emptyGrinInfo :: GrinInfo
@@ -69,6 +74,7 @@ emptyGrinInfo = GrinInfo
 %%[[9
   , grMbMergeInstance         = Nothing
 %%]]
+  , grMbPartialHpt            = Nothing
   }
 
 %%]
@@ -77,7 +83,7 @@ emptyGrinInfo = GrinInfo
 %%[(9 codegen grin) hs export(grinInfoMergeInstance)
 %%]
 
-%%[(8 codegen grin) hs export(GrinInfoPart(..),grinInfoMemberSelect,grinInfoMemberSelectSpec,grinInfoSimpleNullary,grinInfoSimpleNullarySpec,grinInfoEvalStoredSpec,grinInfoCleanupPass,grinInfoSpecConstSpec,grinInfoCheckInvariantSpec)
+%%[(8 codegen grin) hs export(GrinInfoPart(..),grinInfoMemberSelect,grinInfoMemberSelectSpec,grinInfoSimpleNullary,grinInfoSimpleNullarySpec,grinInfoEvalStoredSpec,grinInfoCleanupPass,grinInfoSpecConstSpec,grinInfoCheckInvariantSpec,grinInfoPartialHpt)
 
 type GrinInfoUpd i = i -> GrinInfo -> GrinInfo
 
@@ -115,6 +121,8 @@ grinInfoCleanupPass = GrinInfoPart grMbCleanupPass (\x sem -> sem { grMbCleanupP
 grinInfoSpecConstSpec = grinInfoSpec grMbSpecConstSpec (\x sem -> sem { grMbSpecConstSpec = x })
 
 grinInfoCheckInvariantSpec = grinInfoSpec grMbCheckInvariantSpec (\x sem -> sem { grMbCheckInvariantSpec = x })
+
+grinInfoPartialHpt = GrinInfoPart grMbPartialHpt (\x sem -> sem { grMbPartialHpt = Just x })
 
 %%]
 

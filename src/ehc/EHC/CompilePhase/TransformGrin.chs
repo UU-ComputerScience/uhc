@@ -155,15 +155,23 @@ cpFullGrinInfoTrf modNm inf trf m
        }
 
 
+-- TODO Refactor these functions (this is almost a duplicate of cpFullGrinInfoOp)
 cpPartialHptAnalysis modNm
   = do { cr <- get
        ; let (ecu,_,_,fp) = crBaseInfo modNm cr
-       ; let imps         = ecuImpNmL ecu
-       ; let grin         = fromJust $ ecuMbGrin ecu
-       -- TODO retreive PartialHptResult
        ; cpMsg' modNm VerboseALot "Partial HPT Analysis" Nothing fp
-       ; seq (partialHptAnalysis (fpathBase fp) [] grin) $ return ()
+       ; let imps         = ecuImpNmL ecu -- only direct imports
+       ; let grin         = fromJust $ ecuMbGrin ecu
+       ; let sem          = fromJust $ ecuMbGrinSem ecu
+       ; let (iters, nws) = partialHptAnalysis (fpathBase fp) (map (impSem cr) imps) grin
+       ; let sem' = grinInfoUpd grinInfoPartialHpt nws sem
+       ; cpUpdCU modNm (ecuStoreGrinSem sem')
+       ; cpMsg' modNm VerboseALot ("  done in " ++ show iters ++ " iteration(s)") Nothing fp
        }
+  where
+    impSem cr nm =
+      let (ecu,_,_,_) = crBaseInfo nm cr
+      in  fromJust (ecuMbGrinSem ecu >>= grinInfoGet grinInfoPartialHpt)
 
 %%]
 

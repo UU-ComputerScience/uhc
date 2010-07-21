@@ -356,7 +356,7 @@ solveEquations modNm lenEnv multiplyUsed eqs lims hptStart =
 
        ; let procEqs = do { mapM_ procEq eqs1b
                           -- ; mapM close [0..lenEnv-1]            -- enbable this line if the AbsPtr2 representation is chosen
-                          ; r <- foldM shift 0 [0..lenEnv-1]
+                          ; r <- foldM shift 0 [0..lenEnv-1]  -- TODO !!! this correlation between function and args no longer holds!
                           -- ; mapM_ procShare multiplyUsed
                           ; return r
                           }
