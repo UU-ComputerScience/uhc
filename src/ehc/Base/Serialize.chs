@@ -85,7 +85,7 @@ instance Serialize Foo where
 
 %%[20 import(Data.Typeable)
 %%]
-%%[20 import(qualified Data.Map as Map, qualified Data.Set as Set, Data.Maybe, Data.Word, Data.Array)
+%%[20 import(qualified Data.Map as Map, qualified Data.Set as Set, Data.Maybe, Data.Word, qualified Data.Array as Array)
 %%]
 %%[20 import(Control.Monad, qualified Control.Monad.State as St, Control.Monad.Trans)
 %%]
@@ -396,6 +396,10 @@ instance (Ord a, Serialize a) => Serialize (Set.Set a) where
 instance (Ord k, Serialize k, Serialize e) => Serialize (Map.Map k e) where
     sput = sput . Map.toAscList
     sget = liftM Map.fromDistinctAscList sget
+
+instance (Array.Ix i, Serialize i, Serialize e) => Serialize (Array.Array i e) where
+    sput arr = sput (Array.bounds arr) >> sput (Array.assocs arr)
+    sget     = liftM2 Array.array sget sget
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

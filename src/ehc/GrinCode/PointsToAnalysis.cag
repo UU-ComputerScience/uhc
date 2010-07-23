@@ -30,41 +30,53 @@ WRAPPER GrAGItf
 %%]
 
 
-%%[(8 codegen grin) hs export(heapPointsToAnalysis, partialHptAnalysis, PartialHptResult)
+%%[(8 codegen grin) hs export(heapPointsToAnalysis, PartialHptResult, FinalHptResult(..), VarMap)
 
 data PartialHptResult = PartialHptResult
-  { infoEquations   :: EquationsG HsName
-  , infoLimitations :: LimitationsG HsName
-  , infoParamMap    :: ParamMap
-  , infoHptMap      :: PartialHptMap HsName
+  { partialEquations   :: EquationsG HsName
+  , partialLimitations :: LimitationsG HsName
+  , partialParamMap    :: ParamMap
+  , partialHptMap      :: PartialHptMap HsName
   } deriving (Show, Data, Typeable)
 
 instance Serialize PartialHptResult where
   sput res = do
-    sput $ infoEquations res
-    sput $ infoLimitations res
-    sput $ infoParamMap res
-    sput $ infoHptMap res
+    sput $ partialEquations res
+    sput $ partialLimitations res
+    sput $ partialParamMap res
+    sput $ partialHptMap res
   sget = return PartialHptResult `ap` sget `ap` sget `ap` sget `ap` sget
 
 type ParamMap = Map.Map HsName [HsName]
 
 mergePHR :: PartialHptResult -> PartialHptResult -> PartialHptResult
 mergePHR p1 p2 = PartialHptResult
-  { infoEquations   = union (infoEquations p1) (infoEquations p2)
-  , infoLimitations = union (infoLimitations p1) (infoLimitations p2)
-  , infoParamMap    = Map.union (infoParamMap p1) (infoParamMap p2)
-  , infoHptMap      = Map.unionWith mappend (infoHptMap p1) (infoHptMap p2)
+  { partialEquations   = union (partialEquations p1) (partialEquations p2)
+  , partialLimitations = union (partialLimitations p1) (partialLimitations p2)
+  , partialParamMap    = Map.union (partialParamMap p1) (partialParamMap p2)
+  , partialHptMap      = Map.unionWith mappend (partialHptMap p1) (partialHptMap p2)
   }
 
 instance Monoid PartialHptResult where
   mempty = PartialHptResult
-    { infoEquations   = []
-    , infoLimitations = []
-    , infoParamMap    = Map.empty
-    , infoHptMap      = Map.empty
+    { partialEquations   = []
+    , partialLimitations = []
+    , partialParamMap    = Map.empty
+    , partialHptMap      = Map.empty
     }
   mappend = mergePHR
+
+
+data FinalHptResult = FinalHptResult
+  { finalHptMap :: HptMap
+  , finalVarMap :: VarMap
+  } deriving (Show, Data, Typeable)
+
+instance Serialize FinalHptResult where
+  sput res = do
+    sput $ finalHptMap res
+    sput $ finalVarMap res
+  sget = return FinalHptResult `ap` sget `ap` sget
 
 
 type VarMap   = Map.Map HsName  Int
@@ -97,33 +109,34 @@ forceLookup mp a
 Main module entry point:
 -}
 
-partialHptAnalysis :: String -> [PartialHptResult] -> GrModule -> (Int, PartialHptResult)
-partialHptAnalysis modNm imps grmod
+heapPointsToAnalysis :: String -> [PartialHptResult] -> GrModule -> (Int, PartialHptResult, FinalHptResult)
+heapPointsToAnalysis modNm imps grmod
   = let -- combine imported stuff
         infoImps = mconcat imps
         
         -- traverse the tree
         inh = Inh_GrAGItf
-          { startParamMap_Inh_GrAGItf = infoParamMap infoImps
+          { startParamMap_Inh_GrAGItf = partialParamMap infoImps
           }
         syn = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod)) inh
         
         -- get synthesized attributes
         allVars     = allVars_Syn_GrAGItf syn
         info        = PartialHptResult
-          { infoEquations   = equations_Syn_GrAGItf syn
-          , infoLimitations = limitations_Syn_GrAGItf syn
-          , infoParamMap    = finalParamMap_Syn_GrAGItf syn
-          , infoHptMap      = Map.fromList $ map (\v -> (v, AbsBottom)) $ Set.toList allVars
+          { partialEquations   = equations_Syn_GrAGItf syn
+          , partialLimitations = limitations_Syn_GrAGItf syn
+          , partialParamMap    = finalParamMap_Syn_GrAGItf syn
+          , partialHptMap      = Map.fromList $ map (\v -> (v, AbsBottom)) $ Set.toList allVars
           }
 
         allInfo     = info `mappend` infoImps
         
-        (len, varMap) = mkVarMap (infoHptMap allInfo)
-        equations     = convertEquations varMap (infoEquations allInfo)
-        hptMapStart   = convertHptMap varMap    (infoHptMap allInfo)
+        (len, varMap) = mkVarMap (partialHptMap allInfo)
+        equations     = convertEquations varMap (partialEquations allInfo)
+        hptMapStart   = convertHptMap varMap    (partialHptMap allInfo)
         -- hptArray      = array (0, len - 1) (Map.toList hptMapStart)
 
+        -- limitations = limitations_Syn_GrAGItf syn
         -- lenEnv      = maxVar_Syn_GrAGItf syn + 1
         -- useCountMap = Map.filter (>1) (useCountMap_Syn_GrAGItf syn)
         -- multiplyUsed = map fst (Map.toList useCountMap)
@@ -132,31 +145,21 @@ partialHptAnalysis modNm imps grmod
 
         -- now solve the equations
         (iters, hptMapSolved) = solveEquations modNm len multiplyUsed equations limitations hptMapStart
-        -- hptMapSolvedP   = Map.fromList
-        --                 $ map (\(i, v) -> (forceLookup (mkNameMap varMap) i, v))
-        --                 $ assocs hptMapSolved
         hptMapSolvedP = convertHptMap (mkNameMap varMap) $ Map.fromList $ assocs hptMapSolved
 
-        infoFinal       = info { infoHptMap = hptMapSolvedP }
+        infoFinal       = info { partialHptMap = hptMapSolvedP }
+        final           = FinalHptResult
+          { finalHptMap = hptMapSolved
+          , finalVarMap = varMap
+          }
         
-    in  traceShow infoFinal (iters, infoFinal)
+    in  traceShow infoFinal (iters, infoFinal, final)
 
 
-heapPointsToAnalysis :: String -> GrModule -> (Int,HptMap)
-heapPointsToAnalysis modNm grmod = error "BLUB!"
---   = let -- traverse the tree
---         inh = Inh_GrAGItf {  }
---         syn = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod)) inh
--- 
---         -- get four synthesized attributes
---         equations   = equations_Syn_GrAGItf syn
---         limitations = limitations_Syn_GrAGItf syn
---         lenEnv      = maxVar_Syn_GrAGItf syn + 1
---         useCountMap = Map.filter (>1) (useCountMap_Syn_GrAGItf syn)
---         multiplyUsed = map fst (Map.toList useCountMap)
---         
---         -- now solve the equations
---     in  solveEquations modNm lenEnv multiplyUsed equations limitations
+-- partialHPTAnalysis :: String -> [PartialHptResult] -> GrModule -> (Int, PartialHptResult)
+-- partialHPTAnalysis modNm imps grmod
+--   = let  (iters, info, _, _) = heapPointsToAnalysis modNm imps grmod
+--     in   (iters, info)
 
 %%]
 

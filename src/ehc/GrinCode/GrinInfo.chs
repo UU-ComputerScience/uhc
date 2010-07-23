@@ -39,6 +39,8 @@ data GrinInfo = GrinInfo
   , grMbMergeInstance         :: Maybe InfoMergeInstance
 %%]]
   , grMbPartialHpt            :: Maybe PartialHptResult
+  -- TODO FinalHptResult should go elsewhere, because it should not be stored in a HI file.
+  , grMbFinalHpt              :: Maybe FinalHptResult
   } deriving (Show
 %%[[20
       , Data, Typeable
@@ -57,8 +59,10 @@ instance Serialize GrinInfo where
     sput ( grMbSpecConstSpec        gr ) >>
     sput ( grMbCheckInvariantSpec   gr ) >>
     sput ( grMbMergeInstance        gr ) >>
-    sput ( grMbPartialHpt           gr )
-  sget = return GrinInfo `ap` sget `ap` sget `ap` sget `ap` sget `ap` sget `ap` sget `ap` sget `ap` sget `ap` sget `ap` sget
+    sput ( grMbPartialHpt           gr ) >>
+    sput ( grMbFinalHpt             gr )
+  sget = return GrinInfo `ap` sget `ap` sget `ap` sget `ap` sget `ap` sget `ap`
+          sget `ap` sget `ap` sget `ap` sget `ap` sget `ap` sget
 %%]]
 
 emptyGrinInfo :: GrinInfo
@@ -75,6 +79,7 @@ emptyGrinInfo = GrinInfo
   , grMbMergeInstance         = Nothing
 %%]]
   , grMbPartialHpt            = Nothing
+  , grMbFinalHpt              = Nothing
   }
 
 %%]
@@ -83,7 +88,7 @@ emptyGrinInfo = GrinInfo
 %%[(9 codegen grin) hs export(grinInfoMergeInstance)
 %%]
 
-%%[(8 codegen grin) hs export(GrinInfoPart(..),grinInfoMemberSelect,grinInfoMemberSelectSpec,grinInfoSimpleNullary,grinInfoSimpleNullarySpec,grinInfoEvalStoredSpec,grinInfoCleanupPass,grinInfoSpecConstSpec,grinInfoCheckInvariantSpec,grinInfoPartialHpt)
+%%[(8 codegen grin) hs export(GrinInfoPart(..),grinInfoMemberSelect,grinInfoMemberSelectSpec,grinInfoSimpleNullary,grinInfoSimpleNullarySpec,grinInfoEvalStoredSpec,grinInfoCleanupPass,grinInfoSpecConstSpec,grinInfoCheckInvariantSpec,grinInfoPartialHpt,grinInfoFinalHpt)
 
 type GrinInfoUpd i = i -> GrinInfo -> GrinInfo
 
@@ -123,6 +128,7 @@ grinInfoSpecConstSpec = grinInfoSpec grMbSpecConstSpec (\x sem -> sem { grMbSpec
 grinInfoCheckInvariantSpec = grinInfoSpec grMbCheckInvariantSpec (\x sem -> sem { grMbCheckInvariantSpec = x })
 
 grinInfoPartialHpt = GrinInfoPart grMbPartialHpt (\x sem -> sem { grMbPartialHpt = Just x })
+grinInfoFinalHpt = GrinInfoPart grMbFinalHpt (\x sem -> sem { grMbFinalHpt = Just x })
 
 %%]
 

@@ -163,8 +163,11 @@ cpPartialHptAnalysis modNm
        ; let imps         = ecuImpNmL ecu -- only direct imports
        ; let grin         = fromJust $ ecuMbGrin ecu
        ; let sem          = fromJust $ ecuMbGrinSem ecu
-       ; let (iters, nws) = partialHptAnalysis (fpathBase fp) (map (impSem cr) imps) grin
-       ; let sem' = grinInfoUpd grinInfoPartialHpt nws sem
+       ; let (iters, partial, final) = heapPointsToAnalysis (fpathBase fp) (map (impSem cr) imps) grin
+       ; let sem' = (if ecuIsMainMod ecu
+                     then grinInfoUpd grinInfoFinalHpt final
+                     else id)
+                    $ grinInfoUpd grinInfoPartialHpt partial sem
        ; cpUpdCU modNm (ecuStoreGrinSem sem')
        ; cpMsg' modNm VerboseALot ("  done in " ++ show iters ++ " iteration(s)") Nothing fp
        }

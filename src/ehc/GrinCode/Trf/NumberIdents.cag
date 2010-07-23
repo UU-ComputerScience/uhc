@@ -27,7 +27,7 @@ The parameters of a function are numbered consecutively after that.
 %%]
 %%[(8 codegen grin) hs import({%{EH}GrinCode.Common}, {%{EH}Config})
 %%]
-%%[(8 codegen grin) hs import(Debug.Trace)
+%%[(8 codegen grin) hs import(Debug.Trace, EH.Util.Utils (panicJust))
 %%]
 
 %%[(8 codegen grin) ag import({GrinCode/AbsSyn})
@@ -39,9 +39,9 @@ WRAPPER GrAGItf
 %%]
 
 %%[(8 codegen grin) hs
-numberIdents :: GrModule -> GrModule
-numberIdents code
-  = let inh = Inh_GrAGItf {}
+numberIdents :: Map.Map HsName Int -> GrModule -> GrModule
+numberIdents varMap code
+  = let inh = Inh_GrAGItf { lookupNr_Inh_GrAGItf = lookupNr varMap }
         syn = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf code)) inh
     in  grTrf_Syn_GrAGItf syn
 %%]
@@ -52,18 +52,24 @@ Haskell datatype NameMapping and utility functions for it
 
 %%[(8 codegen grin) hs
 type NameMapping = Map.Map HsName HsName
+type Numbering   = (HsName -> OrigName) -> HsName -> HsName
+
+lookupNr :: Map.Map HsName Int -> Numbering
+lookupNr mp orig nm = HNmNr nr (orig nm)
+  where nr = panicJust ("NumberIdents.lookupNr: " ++ show nm ++ " not found in " ++ show mp)
+             $ Map.lookup nm mp
 
 findNewVar fm e  = Map.findWithDefault (trace ("NumberIdents.findNewVar: " ++ show e ++ " not found in " ++ show fm) e) e fm
 
 
 -- numbers the non-wildcard variables in xs, counting from left-to-right (because that is needed when numbering argument lists)
 
-addList :: Int -> [HsName] -> (NameMapping, [HsName], Int)
-addList u xs = foldl addName (Map.empty, [], u) xs
+addList :: Numbering -> [HsName] -> (NameMapping, [HsName])
+addList num xs = foldl addName (Map.empty, []) xs
     where
-    addName (mapping, names, u) e | e == wildcardNm  = (mapping, names++[wildcardNr] , u  )
-                                  | otherwise        = let newname = HNmNr u (OrigLocal e)
-                                                       in (Map.insert e newname mapping, names++[newname], u+1)
+    addName (mapping, names) e | e == wildcardNm  = (mapping, names++[wildcardNr]) -- TODO moet dit?
+                               | otherwise        = let newname = num OrigLocal e
+                                                    in (Map.insert e newname mapping, names++[newname])
                                               
 %%]
 
@@ -80,6 +86,8 @@ SEM GrAGItf
 
 
 %%[(8 codegen grin)
+
+ATTR AllNT GrAGItf  [ lookupNr : Numbering | | ]
 
 ATTR AllBind  [ 
               | 
@@ -118,16 +126,15 @@ SEM GrVar
 
 SEM GrGlobal
   | Global     loc   .  newName  : HsName
-               loc   .  newName  = HNmNr @lhs.unique (OrigGlobal @nm)
+               loc   .  newName  = @lhs.lookupNr OrigGlobal @nm
                lhs   .  genVarMap  = Map.singleton @nm @newName
-               lhs   .  unique   = @lhs.unique + 1
 
 SEM GrPatAlt
-  | Node       (lhs.genVarMap, loc.newNames, lhs.unique) = addList @lhs.unique @fldL
+  | Node       (lhs.genVarMap, loc.newNames)  = addList @lhs.lookupNr @fldL
   			   loc  .  newNames                   :  {[HsName]}
 
 SEM GrPatLam
-  | VarNode    (loc.genVarMap, loc.newNames, lhs.unique) = addList @lhs.unique @fldL.names
+  | VarNode    (loc.genVarMap, loc.newNames) = addList @lhs.lookupNr @fldL.names
   			   loc  .  newNames                   :  {[HsName]}
   			   loc  .  genVarMap                  :  {NameMapping}
 
@@ -140,16 +147,14 @@ SEM GrPatLam
     EnumAnnot
     OpaqueAnnot
     PtrAnnot   lhs.genVarMap    = Map.singleton @nm @newName
-               lhs.unique       = @lhs.unique + 1
                loc  .  newName  : HsName
-               loc  .  newName  = HNmNr @lhs.unique (OrigLocal @nm)
+               loc  .  newName  = @lhs.lookupNr OrigLocal @nm
                
 
 SEM GrExpr
   | Catch      handler  .  varMap   = Map.insert @arg @newName @lhs.varMap
-               handler  .  unique   = @body.unique + 1
                loc      .  newName  : HsName
-               loc      .  newName  = HNmNr @body.unique (OrigLocal @arg)
+               loc      .  newName  = @lhs.lookupNr OrigLocal @arg
 
   | Seq        body     .  varMap   = @lhs.varMap `Map.union` @pat.genVarMap
 
@@ -160,18 +165,16 @@ SEM GrAlt
 
 
 SEM GrBind
-  | Bind  lhs.genBindMap =  Map.singleton @nm (HNmNr @lhs.unique (OrigFunc @nm))
+  | Bind  lhs.genBindMap =  Map.singleton @nm (@lhs.lookupNr OrigFunc @nm)
                               
           ( loc.parameterMap
           , loc.newNames
-          , expr.unique
-          )                         =  addList (@lhs.unique + 2) @argNmL    -- arguments must be numbered left-to-right (addList indeed does so)
+          )                         =  addList @lhs.lookupNr @argNmL
           
           expr  .  varMap           =  @lhs.varMap `Map.union` @loc.parameterMap
           
           loc   .  parameterMap     :  {NameMapping}
           loc   .  newNames         :  {[HsName]}
-          lhs   .  unique           =  @expr.unique
 
 %%]
 

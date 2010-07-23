@@ -7,7 +7,7 @@
 %%]
 %%[(8 codegen grin) import(Data.Maybe, Data.Array.IArray, qualified Data.Map as Map, qualified Data.Set as Set)
 %%]
-%%[(8 codegen grin) import(Debug.Trace)
+%%[(8 codegen grin) import(Debug.Trace, EH.Util.Utils (panicJust))
 %%]
 %%[(8 codegen grin) import(UU.Parsing)
 %%]
@@ -17,7 +17,7 @@
 %%]
 %%[(8 codegen grin) import({%{EH}GrinCode}, {%{EH}GrinCode.Parser}, {%{EH}GrinCode.Pretty})
 %%]
-%%[(8 codegen grin) import({%{EH}GrinCode.Common})
+%%[(8 codegen grin) import({%{EH}GrinCode.Common}, {%{EH}GrinCode.GrinInfo})
 %%]
 %%[(8 codegen grin) import({%{EH}GrinCode.Trf.DropUnreachableBindings(dropUnreachableBindings)})
 %%]
@@ -53,7 +53,7 @@
 %%]
 %%[(8 codegen grin) import({%{EH}GrinCode.Trf.DropUnusedExpr(dropUnusedExpr)})
 %%]
-%%[(8 codegen grin) import({%{EH}GrinCode.PointsToAnalysis(heapPointsToAnalysis)})
+%%[(8 codegen grin) import({%{EH}GrinCode.PointsToAnalysis})
 %%]
 %%[(8 codegen grin) import({%{EH}GrinCode.Trf.InlineEA(inlineEA)})
 %%]
@@ -143,7 +143,7 @@ doCompileGrin
 --   = doDrive 
 
 
-doCompileGrin :: Either String (FPath,GrModule)  -> EHCOpts -> IO ()
+doCompileGrin :: Either String (FPath,GrModule,GrinInfo)  -> EHCOpts -> IO ()
 doCompileGrin input opts
   = drive (initialState opts input) putErrs $
         do 
@@ -191,8 +191,8 @@ doCompileGrin input opts
 --          ; checkCode             checkGrinInvariant "CheckGrinInvariant"
 
          
-         ; transformCode         numberIdents       "NumberIdents"     ; caWriteGrin "-129-numbered"
-         ; caHeapPointsTo                                              ; caWriteHptMap "-130-hpt"
+         ; transformCodeNumber                      "NumberIdents"     ; caWriteGrin "-129-numbered"
+         -- ; caHeapPointsTo                                              ; caWriteHptMap "-130-hpt"
          ; transformCodeChgHpt   (inlineEA False)   "InlineEA" 
          ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-131-evalinlined"
 
@@ -254,8 +254,14 @@ doCompileGrin input opts
            )
          }
       
-initialState opts (Left fn)          = (initState opts) {gcsPath=mkTopLevelFPath "grin" fn}
-initialState opts (Right (fp,grmod)) = (initState opts) {gcsPath=fp, gcsGrin=grmod}
+initialState opts (Left fn)
+  = (initState opts) {gcsPath=mkTopLevelFPath "grin" fn}
+initialState opts (Right (fp,grmod,grsem))
+  = (initState opts) {gcsPath=fp, gcsGrin=grmod, gcsHptMap=hptMap, gcsVarMap=varMap}
+  where fin = panicJust "GrinCompilerDriver.initialState"
+              $ grinInfoGet grinInfoFinalHpt grsem
+        hptMap = finalHptMap fin
+        varMap = finalVarMap fin
 
 initState opts
   = GRINCompileState { gcsGrin       = undefined
@@ -267,6 +273,7 @@ initState opts
 %%]
 %%[(8 codegen grin) -1.doCompileGrin
                      , gcsHptMap     = undefined
+                     , gcsVarMap     = undefined
                      , gcsPath       = emptyFPath
                      , gcsOpts       = opts
                      }
@@ -302,16 +309,16 @@ caParseGrin
 
 %%[(8 codegen grin)
 
-caHeapPointsTo :: CompileAction ()
-caHeapPointsTo = task VerboseALot "Heap-points-to analysis"
-    ( do { code    <- gets gcsGrin
-         ; input  <- gets gcsPath -- HACK
-         ; let modNm = fpathBase input -- HACK
-         ; let (iterCount,hptMap) = heapPointsToAnalysis modNm code -- HACK
-         ; modify (gcsUpdateHptMap hptMap)
-         ; return iterCount
-         }
-     ) (\i -> Just $ show i ++ " iteration(s)")
+-- caHeapPointsTo :: CompileAction ()
+-- caHeapPointsTo = task VerboseALot "Heap-points-to analysis"
+--     ( do { code    <- gets gcsGrin
+--          ; input  <- gets gcsPath -- HACK
+--          ; let modNm = fpathBase input -- HACK
+--          ; let (iterCount,hptMap) = heapPointsToAnalysis modNm code -- HACK
+--          ; modify (gcsUpdateHptMap hptMap)
+--          ; return iterCount
+--          }
+--      ) (\i -> Just $ show i ++ " iteration(s)")
 
 caGrin2Silly :: CompileAction ()
 caGrin2Silly = do
@@ -423,6 +430,7 @@ data GRINCompileState = GRINCompileState
     , gcsCil       :: Assembly
 %%]]
     , gcsHptMap    :: HptMap
+    , gcsVarMap    :: VarMap
     , gcsPath      :: FPath
     , gcsOpts      :: EHCOpts
     }
@@ -434,6 +442,7 @@ gcsUpdateLLVM   x s = s { gcsLLVM   = x }
 gcsUpdateCil    x s = s { gcsCil    = x }
 %%]]
 gcsUpdateHptMap x s = s { gcsHptMap = x }
+gcsUpdateVarMap x s = s { gcsVarMap = x }
 
 gcsGetCodeHpt
   = do{ code   <- gets gcsGrin
@@ -478,6 +487,15 @@ transformCodeInline message
        ; let (code,_) = grInline False Set.empty Map.empty grin 
 %%]]
        ; modify (gcsUpdateGrin code)
+       }
+
+transformCodeNumber :: String -> CompileAction ()
+transformCodeNumber message
+  = do { putMsg VerboseALot message Nothing
+       ; grin   <- gets gcsGrin
+       ; varMap <- gets gcsVarMap
+       ; let code = numberIdents varMap grin
+       ; modify (gcsUpdateVarMap undefined . gcsUpdateGrin code)
        }
 
 transformCodeUseHpt :: ((GrModule,HptMap)->GrModule) -> String -> CompileAction ()

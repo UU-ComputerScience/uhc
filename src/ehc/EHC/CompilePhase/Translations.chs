@@ -245,9 +245,11 @@ cpTranslateGrin modNm
   =  do { cr <- get
         ; let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
                mbGrin = ecuMbGrin ecu
+               mbSem  = ecuMbGrinSem ecu
                grin   = panicJust "cpTranslateGrin" mbGrin
-        ; when (isJust mbGrin)
-               (lift $ GRINC.doCompileGrin (Right (fp,grin)) opts)
+               grSem  = panicJust "cpTranslateGrin" mbSem
+        ; when (isJust mbGrin && isJust mbSem)
+               (lift $ GRINC.doCompileGrin (Right (fp,grin,grSem)) opts)
         }
 %%]
 
