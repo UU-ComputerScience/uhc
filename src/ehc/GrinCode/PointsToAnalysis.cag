@@ -33,21 +33,21 @@ WRAPPER GrAGItf
 %%[(8 codegen grin) hs export(heapPointsToAnalysis, PartialHptResult, FinalHptResult(..), VarMap)
 
 data PartialHptResult = PartialHptResult
-  { partialEquations   :: EquationsG HsName
-  , partialLimitations :: LimitationsG HsName
-  , partialParamMap    :: ParamMap
+  { partialEquations   :: EquationsG    HsName
+  , partialLimitations :: LimitationsG  HsName
+  , partialParamMap    :: ParamMap      HsName
   , partialHptMap      :: PartialHptMap HsName
   } deriving (Show, Data, Typeable)
 
 instance Serialize PartialHptResult where
   sput res = do
-    sput $ partialEquations res
+    sput $ partialEquations   res
     sput $ partialLimitations res
-    sput $ partialParamMap res
-    sput $ partialHptMap res
+    sput $ partialParamMap    res
+    sput $ partialHptMap      res
   sget = return PartialHptResult `ap` sget `ap` sget `ap` sget `ap` sget
 
-type ParamMap = Map.Map HsName [HsName]
+type ParamMap var = Map.Map var [var]
 
 mergePHR :: PartialHptResult -> PartialHptResult -> PartialHptResult
 mergePHR p1 p2 = PartialHptResult
@@ -100,6 +100,11 @@ convertEquations :: (Show a, Ord a) =>
 convertEquations mp = fmap (fmap conv)
   where conv = forceLookup mp
 
+convertParamMap :: (Show a, Ord a, Ord b) =>
+                    Map.Map a b -> ParamMap a -> ParamMap b
+convertParamMap mp = Map.map (map conv) . Map.mapKeys conv
+  where conv = forceLookup mp
+
 forceLookup :: (Ord a, Show a) => Map.Map a b -> a -> b
 forceLookup mp a
   = panicJust ("PointsToAnalysis.forceLookup: no entry for " ++ show a)
@@ -142,9 +147,10 @@ heapPointsToAnalysis modNm imps grmod
         -- multiplyUsed = map fst (Map.toList useCountMap)
         multiplyUsed    = []  -- TODO
         limitations     = []  -- TODO
+        parMp           = convertParamMap varMap (partialParamMap allInfo)
 
         -- now solve the equations
-        (iters, hptMapSolved) = solveEquations modNm len multiplyUsed equations limitations hptMapStart
+        (iters, hptMapSolved) = solveEquations modNm len multiplyUsed equations limitations parMp hptMapStart
         hptMapSolvedP = convertHptMap (mkNameMap varMap) $ Map.fromList $ assocs hptMapSolved
 
         infoFinal       = info { partialHptMap = hptMapSolvedP }
@@ -231,7 +237,7 @@ SEM GrPatLam
     PtrAnnot     lhs . allVars = Set.singleton @nm
 
 
-ATTR GrAGItf [ startParamMap : {ParamMap} | | finalParamMap : {ParamMap} ]
+ATTR GrAGItf [ startParamMap : {ParamMap HsName} | | finalParamMap : {ParamMap HsName} ]
 
 SEM GrAGItf
   | AGItf  lhs.equations = [ IsEqual x y
@@ -665,7 +671,7 @@ SEM GrBind
 
 ATTR AllGrVal AllGrExpr AllDef GrModule [ | | allCalls USE {++} {[]} : {AbstractCallListG HsName} ]
 ATTR GrTag                              [ | | mbFPAnr                : {Maybe HsName}        ]
-ATTR AllBind GrModule [ | | paramMap USE {`Map.union`} {Map.empty} : {ParamMap} ]
+ATTR AllBind GrModule [ | | paramMap USE {`Map.union`} {Map.empty} : {ParamMap HsName} ]
 
 
 SEM GrBind

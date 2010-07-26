@@ -81,8 +81,8 @@ readAVifChanged env v
 -- When AbsPtr2 is chosen, also enable a line in the procEqs function further below, but this representation currently doesn't work.
 
 
-envChanges :: Equation -> STArray s Variable (Bool,Bool,AbstractValue) -> ST s [(Variable,AbstractValue)]
-envChanges equat env
+envChanges :: Equation -> ParamMap -> STArray s Variable (Bool,Bool,AbstractValue) -> ST s [(Variable,AbstractValue)]
+envChanges equat parMp env
   = case equat of
       IsBasic         d            -> return [(d, AbsBasic)]
       IsImpossible    d            -> return [(d, AbsImposs)]
@@ -235,7 +235,8 @@ envChanges equat env
                          newtag   = GrTag_PApp (needs-n) nm
                          funnr    = getNr nm
                    ; absArgs <- mapM (readAV env) args
-                   ; let sfx      = zip  [funnr+2+length oldArgs ..] absArgs
+                   ; let pms      = drop (length oldArgs) $ fromJust $ Map.lookup funnr parMp
+                   ; let sfx      = zip  pms absArgs
                    ; res <-  if    n<needs
                              then  return $ AbsNodes (Nodes (Map.singleton newtag (oldArgs++map Set.singleton args)))
                              else  -- trace ("res from env" ++ show funnr) $ 
@@ -295,9 +296,10 @@ procChange env (i,e1) =
 ttt :: STArray s Variable Bool -> ST s [(Variable,Bool)]
 ttt a = getAssocs a
 
+type ParamMap = Map.Map Int [Int]
 
-solveEquations :: String -> Int -> [Int] -> Equations -> Limitations -> PartialHptMap Int -> (Int,HptMap)
-solveEquations modNm lenEnv multiplyUsed eqs lims hptStart =
+solveEquations :: String -> Int -> [Int] -> Equations -> Limitations -> ParamMap -> PartialHptMap Int -> (Int,HptMap)
+solveEquations modNm lenEnv multiplyUsed eqs lims parMp hptStart =
     runST (
     do { 
        ; let eqsStr = unlines (map show eqs )
@@ -340,7 +342,7 @@ solveEquations modNm lenEnv multiplyUsed eqs lims hptStart =
        ; let procEq equat
                 = do
                   { 
-                  ; cs <- envChanges equat env
+                  ; cs <- envChanges equat parMp env
                   ; mapM_ (procChange env) cs
                   ; return ()
                   }
@@ -356,7 +358,7 @@ solveEquations modNm lenEnv multiplyUsed eqs lims hptStart =
 
        ; let procEqs = do { mapM_ procEq eqs1b
                           -- ; mapM close [0..lenEnv-1]            -- enbable this line if the AbsPtr2 representation is chosen
-                          ; r <- foldM shift 0 [0..lenEnv-1]  -- TODO !!! this correlation between function and args no longer holds!
+                          ; r <- foldM shift 0 [0..lenEnv-1]
                           -- ; mapM_ procShare multiplyUsed
                           ; return r
                           }
