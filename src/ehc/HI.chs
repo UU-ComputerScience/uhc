@@ -262,7 +262,7 @@ sgetHIInfo opts = do
             ; cdg       <- sget
             ; cs        <- sget
 %%]]
-%%[[(99 codegen)
+%%[[(20 codegen)
             ; am        <- sget
 %%]]
 %%[[(99 codegen grin)
@@ -301,7 +301,7 @@ sgetHIInfo opts = do
                   , hiiClDfGam              = cdg
                   , hiiCHRStoreL            = cs
 %%]]
-%%[[(99 codegen)
+%%[[(20 codegen)
                   , hiiLamMp                = am
 %%]]
 %%[[(99 codegen grin)
@@ -358,7 +358,7 @@ instance Serialize HIInfo where
                   , hiiClDfGam              = cdg
                   , hiiCHRStoreL            = cs
 %%]]
-%%[[(99 codegen)
+%%[[(20 codegen)
                   , hiiLamMp                = am
 %%]]
 %%[[(99 codegen grin)
@@ -394,7 +394,7 @@ instance Serialize HIInfo where
                 >> sput (gamFlatten cdg)
                 >> sput cs
 %%]]
-%%[[(99 codegen)
+%%[[(20 codegen)
                 >> sput am
 %%]]
 %%[[(99 codegen grin)
