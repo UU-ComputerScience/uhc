@@ -62,10 +62,10 @@ instance Serialize InfoCheckInvariant where
 checkMd :: String -> Mode -> Mode -> [String]
 checkMd s m1 m2 = if m1==m2 || (m1==ModeNode && m2==ModeFFIRes) then [] else [s ++ ": expected " ++ show m1 ++ " found " ++ show m2  ]
 
-check :: Env -> HsName -> Mode -> [String]
-check env nm mode
-   =  maybe [ show nm ++ " not declared"  ]
-            (checkMd (show nm) mode)
+check :: String -> Env -> HsName -> Mode -> [String]
+check s env nm mode
+   =  maybe [ s ++ ": " ++ show nm ++ " not declared"  ]
+            (checkMd (s ++ ": " ++ show nm) mode)
             (Map.lookup nm env) 
             
 unifyModes :: String -> [Mode] -> (Mode, [String])
@@ -178,16 +178,16 @@ SEM GrExpr
 SEM GrExpr
   | Seq          lhs.messages    = @expr.messages ++ @pat.messages ++ @body.messages
   | Unit         lhs.messages    = []
-  | UpdateUnit   lhs.messages    = check @lhs.env @nm ModeWord
+  | UpdateUnit   lhs.messages    = check (@lhs.inFun ++ "UpdateUnit " ++ show @nm ++ " " ++ @val.text) @lhs.env @nm ModeWord
   | Case         lhs.messages    = checkMd (@lhs.inFun ++ "Case " ++ @val.text) ModeNode @val.derivedMode ++ @loc.mes ++ @altL.messages
-  | FetchNode    lhs.messages    = check @lhs.env @nm ModeWord
-  | FetchUpdate  lhs.messages    = check @lhs.env @src ModeWord ++ check @lhs.env @dst ModeWord
-  | FetchField   lhs.messages    = check @lhs.env @nm ModeNode
-  | Store        lhs.messages    = checkMd "Store" ModeNode @val.derivedMode ++ @val.messages
+  | FetchNode    lhs.messages    = check (@lhs.inFun ++ "FetchNode " ++ show @nm) @lhs.env @nm ModeWord
+  | FetchUpdate  lhs.messages    = check (@lhs.inFun ++ "FetchUpdate " ++ show @src) @lhs.env @src ModeWord ++ check (@lhs.inFun ++ "FetchUpdate " ++ show @dst) @lhs.env @dst ModeWord
+  | FetchField   lhs.messages    = check (@lhs.inFun ++ "FetchField " ++ show @nm) @lhs.env @nm ModeNode
+  | Store        lhs.messages    = checkMd (@lhs.inFun ++ "Store") ModeNode @val.derivedMode ++ @val.messages
   | Call         lhs.messages    = concatMap (checkMd (@lhs.inFun ++ "Call "++show @nm ++ "(" ++ @argL.text ++ ")") ModeWord) @argL.derivedModes
   | FFI          lhs.messages    = concatMap (checkMd (@lhs.inFun ++ "FFI" ++show @impEntNm) ModeWord) @argL.derivedModes
-  | Eval         lhs.messages    = check @lhs.env @nm ModeWord
-  | App          lhs.messages    = check @lhs.env @nm ModeNode ++
+  | Eval         lhs.messages    = check (@lhs.inFun ++ "Eval " ++ show @nm) @lhs.env @nm ModeWord
+  | App          lhs.messages    = check (@lhs.inFun ++ "App " ++ show @nm) @lhs.env @nm ModeNode ++
                                    concatMap (checkMd (@lhs.inFun ++ "App" ++show @nm) ModeWord) @argL.derivedModes
   | Throw        lhs.messages    = []
   | Catch        lhs.messages    = []
