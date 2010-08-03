@@ -159,7 +159,7 @@ heapPointsToAnalysis modNm imps grmod
           , finalVarMap = varMap
           }
         
-    in  infoFinal (iters, infoFinal, final)
+    in  (iters, infoFinal, final)
 
 
 -- partialHPTAnalysis :: String -> [PartialHptResult] -> GrModule -> (Int, PartialHptResult)
