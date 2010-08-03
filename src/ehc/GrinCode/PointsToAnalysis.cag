@@ -147,10 +147,10 @@ heapPointsToAnalysis modNm imps grmod
         -- multiplyUsed = map fst (Map.toList useCountMap)
         multiplyUsed    = []  -- TODO
         limitations     = []  -- TODO
-        parMp           = convertParamMap varMap (partialParamMap allInfo)
+        parMap          = convertParamMap varMap (partialParamMap allInfo)
 
         -- now solve the equations
-        (iters, hptMapSolved) = solveEquations modNm len multiplyUsed equations limitations parMp hptMapStart
+        (iters, hptMapSolved) = solveEquations modNm len multiplyUsed equations limitations varMap parMap hptMapStart
         hptMapSolvedP = convertHptMap (mkNameMap varMap) $ Map.fromList $ assocs hptMapSolved
 
         infoFinal       = info { partialHptMap = hptMapSolvedP }
@@ -159,7 +159,7 @@ heapPointsToAnalysis modNm imps grmod
           , finalVarMap = varMap
           }
         
-    in  traceShow infoFinal (iters, infoFinal, final)
+    in  infoFinal (iters, infoFinal, final)
 
 
 -- partialHPTAnalysis :: String -> [PartialHptResult] -> GrModule -> (Int, PartialHptResult)

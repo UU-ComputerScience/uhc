@@ -15,7 +15,7 @@
 %%]
 %%[(8 codegen grin) import({%{EH}GrinCode.Common})
 %%]
-%%[(8 codegen grin) import(Debug.Trace)
+%%[(8 codegen grin) import(Debug.Trace, EH.Util.Utils (panicJust))
 %%]
 %%[(8 codegen grin) import(System.IO.Unsafe)
 %%]
@@ -81,8 +81,8 @@ readAVifChanged env v
 -- When AbsPtr2 is chosen, also enable a line in the procEqs function further below, but this representation currently doesn't work.
 
 
-envChanges :: Equation -> ParamMap -> STArray s Variable (Bool,Bool,AbstractValue) -> ST s [(Variable,AbstractValue)]
-envChanges equat parMp env
+envChanges :: Equation -> VarMap -> ParamMap -> STArray s Variable (Bool,Bool,AbstractValue) -> ST s [(Variable,AbstractValue)]
+envChanges equat varMp parMp env
   = case equat of
       IsBasic         d            -> return [(d, AbsBasic)]
       IsImpossible    d            -> return [(d, AbsImposs)]
@@ -219,7 +219,7 @@ envChanges equat parMp env
 
     findFinalValueForNodes nodes
       = do { let x = AbsNodes (Nodes (Map.filterWithKey (const . isFinalTag) nodes))
-           ; zs <- mapM (readAVifChanged env) [ getNr nm  | (GrTag_App nm, (f:_)) <- Map.toList nodes ]
+           ; zs <- mapM (readAVifChanged env) [ forceLookup varMp nm  | (GrTag_App nm, (f:_)) <- Map.toList nodes ]
            ; avs <- mapM findFinalValue zs
            ; return (mconcat (x:avs))
            }
@@ -233,9 +233,9 @@ envChanges equat parMp env
       where addArgs (tag@(GrTag_PApp needs nm) , oldArgs) 
               = do { let n        = length args
                          newtag   = GrTag_PApp (needs-n) nm
-                         funnr    = getNr nm
+                         funnr    = forceLookup varMp nm
                    ; absArgs <- mapM (readAV env) args
-                   ; let pms      = drop (length oldArgs) $ fromJust $ Map.lookup funnr parMp
+                   ; let pms      = drop (length oldArgs) $ forceLookup parMp funnr
                    ; let sfx      = zip  pms absArgs
                    ; res <-  if    n<needs
                              then  return $ AbsNodes (Nodes (Map.singleton newtag (oldArgs++map Set.singleton args)))
@@ -296,10 +296,17 @@ procChange env (i,e1) =
 ttt :: STArray s Variable Bool -> ST s [(Variable,Bool)]
 ttt a = getAssocs a
 
+-- TODO Refactor a bit. This stuff is duplicated from PointsToAnalysis.
 type ParamMap = Map.Map Int [Int]
+type VarMap   = Map.Map HsName Int
 
-solveEquations :: String -> Int -> [Int] -> Equations -> Limitations -> ParamMap -> PartialHptMap Int -> (Int,HptMap)
-solveEquations modNm lenEnv multiplyUsed eqs lims parMp hptStart =
+forceLookup :: (Ord a, Show a) => Map.Map a b -> a -> b
+forceLookup mp a
+  = panicJust ("SolveEqs.forceLookup: no entry for " ++ show a)
+    $ Map.lookup a mp
+
+solveEquations :: String -> Int -> [Int] -> Equations -> Limitations -> VarMap -> ParamMap -> PartialHptMap Int -> (Int,HptMap)
+solveEquations modNm lenEnv multiplyUsed eqs lims varMp parMp hptStart =
     runST (
     do { 
        ; let eqsStr = unlines (map show eqs )
@@ -342,7 +349,7 @@ solveEquations modNm lenEnv multiplyUsed eqs lims parMp hptStart =
        ; let procEq equat
                 = do
                   { 
-                  ; cs <- envChanges equat parMp env
+                  ; cs <- envChanges equat varMp parMp env
                   ; mapM_ (procChange env) cs
                   ; return ()
                   }
