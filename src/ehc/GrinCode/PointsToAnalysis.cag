@@ -347,7 +347,9 @@ SEM GrPatLam
   | EnumAnnot   lhs.patInfo =  InEnum @nm (Map.findWithDefault (error ("PointsToAnalysis: EnumAnnot " ++ show @tycon ++ " not found")) @tycon @lhs.tagsMp)
   | PtrNode     lhs.patInfo =  InPtr  @nm
   | PtrAnnot    lhs.patInfo =  maybe (InPtr  @nm) 
-                                     (error "PointsToAnalysis: cant analyze FFI returning pointer") 
+                                     -- only show the error, don't stop (debugging)
+                                     -- (error "PointsToAnalysis: cant analyze FFI returning pointer") 
+                                     (trace ("PointsToAnalysis: can't analyze FFI returning pointer: " ++ show @tycon ++ "/" ++ show @nm) $ const $ InPtr @nm)
                                      (Map.lookup @tycon @lhs.tagsMp)
   | * - VarNode lhs.tag     =  Nothing
 

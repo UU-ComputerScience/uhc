@@ -227,7 +227,7 @@ packedStringToString p = if packedStringNull p
 data ByteArray
 
 foreign import prim primByteArrayLength   :: ByteArray -> Int
-foreign import prim primByteArrayToString :: ByteArray -> String
+-- foreign import prim primByteArrayToString :: ByteArray -> String
 
 
 #ifdef __UHC_TARGET_C__
@@ -628,7 +628,7 @@ f =<< x           = x >>= f
 
 data Bool    = False | True
                -- deriving (Eq, Ord, Ix, Enum, Read, Show, Bounded)
-               deriving (Eq, Ord, Enum, Show, Read)
+               deriving (Eq, Ord, Show, Read)
 
 (&&), (||)  :: Bool -> Bool -> Bool
 False && x   = False
@@ -675,7 +675,7 @@ instance Ord Char where
     compare = primCmpChar
 
 instance Enum Char where
-    toEnum           = primIntToChar
+    -- toEnum           = primIntToChar
     fromEnum         = primCharToInt
     --enumFrom c       = map toEnum [fromEnum c .. fromEnum (maxBound::Char)]
     --enumFromThen     = boundedEnumFromThen
@@ -766,7 +766,7 @@ either l r (Right y) = r y
 --------------------------------------------------------------
 
 data Ordering = LT | EQ | GT
-                deriving (Eq, Ord, Enum, Show) -- TODO: Ix, Read, Bounded
+                deriving (Eq, Ord, Show) -- TODO: Ix, Read, Bounded
 
 --------------------------------------------------------------
 -- Lists
@@ -864,7 +864,7 @@ instance Integral Int where
 instance Enum Int where
     succ           = boundedSucc
     pred           = boundedPred
-    toEnum         = id
+    -- toEnum         = id
     fromEnum       = id
     enumFrom       = boundedEnumFrom
     enumFromTo     = boundedEnumFromTo
@@ -970,7 +970,7 @@ instance Enum Integer where
     succ x         = x + 1
     pred x         = x - 1
 
-    toEnum         = primIntToInteger
+    -- toEnum         = primIntToInteger
     fromEnum       = primIntegerToInt
     enumFrom       = numericEnumFrom
     enumFromThen   = numericEnumFromThen
@@ -1244,7 +1244,7 @@ foreign import prim primIsInfiniteFloat  :: Float -> Bool
 foreign import prim primDigitsFloat  :: Int
 foreign import prim primMaxExpFloat  :: Int
 foreign import prim primMinExpFloat  :: Int
-foreign import prim primDecodeFloat  :: Float -> (Integer, Int)
+-- foreign import prim primDecodeFloat  :: Float -> (Integer, Int)
 foreign import prim primEncodeFloat  :: Integer -> Int -> Float
 #ifdef __UHC_TARGET_JAZY__
 foreign import prim   primAtan2Float   :: Float -> Float -> Float
@@ -1257,7 +1257,7 @@ instance RealFloat Float where
     floatDigits _ = primDigitsFloat
     floatRange  _ = (primMinExpFloat, primMaxExpFloat)
     encodeFloat   = primEncodeFloat
-    decodeFloat   = primDecodeFloat
+--    decodeFloat   = primDecodeFloat
     isNaN         = primIsNaNFloat
     isInfinite    = primIsInfiniteFloat
     isDenormalized= primIsDenormalizedFloat
@@ -1272,7 +1272,7 @@ foreign import prim primIsInfiniteDouble  :: Double -> Bool
 foreign import prim primDigitsDouble  :: Int
 foreign import prim primMaxExpDouble  :: Int
 foreign import prim primMinExpDouble  :: Int
-foreign import prim primDecodeDouble  :: Double -> (Integer, Int)
+-- foreign import prim primDecodeDouble  :: Double -> (Integer, Int)
 foreign import prim primEncodeDouble  :: Integer -> Int -> Double
 #ifdef __UHC_TARGET_JAZY__
 foreign import prim   primAtan2Double   :: Double -> Double -> Double
@@ -1285,7 +1285,7 @@ instance RealFloat Double where
     floatDigits _ = primDigitsDouble
     floatRange  _ = (primMinExpDouble, primMaxExpDouble)
     encodeFloat   = primEncodeDouble
-    decodeFloat   = primDecodeDouble
+--    decodeFloat   = primDecodeDouble
     isNaN         = primIsNaNDouble
     isInfinite    = primIsInfiniteDouble
     isDenormalized= primIsDenormalizedDouble
@@ -1296,7 +1296,7 @@ instance RealFloat Double where
 instance Enum Float where
     succ x                = x+1
     pred x                = x-1
-    toEnum                = primIntToFloat
+    -- toEnum                = primIntToFloat
     fromEnum              = fromInteger . truncate   -- may overflow
     enumFrom              = numericEnumFrom
     enumFromThen          = numericEnumFromThen
@@ -1306,7 +1306,7 @@ instance Enum Float where
 instance Enum Double where
     succ x                = x+1
     pred x                = x-1
-    toEnum                = primIntToDouble
+    -- toEnum                = primIntToDouble
     fromEnum              = fromInteger . truncate   -- may overflow
     enumFrom              = numericEnumFrom
     enumFromThen          = numericEnumFromThen
@@ -1316,7 +1316,7 @@ instance Enum Double where
 #ifdef __UHC_TARGET_JAZY__
 foreign import prim primShowFloatToPackedString :: Float -> PackedString
 #else
-foreign import prim primShowFloat :: Float -> String
+-- foreign import prim primShowFloat :: Float -> String
 #endif
 -- TODO: replace this by a function Float -> PackedString
 
@@ -1332,13 +1332,13 @@ instance Show Float where
 #ifdef __UHC_TARGET_JAZY__
     show   = packedStringToString . primShowFloatToPackedString
 #else
-    show   = primShowFloat
+    -- show   = primShowFloat
 #endif
 
 #ifdef __UHC_TARGET_JAZY__
 foreign import prim primShowDoubleToPackedString :: Double -> PackedString
 #else
-foreign import prim primShowDouble :: Double -> String
+-- foreign import prim primShowDouble :: Double -> String
 #endif
 
 instance Read Double where
@@ -1353,7 +1353,7 @@ instance Show Double where
 #ifdef __UHC_TARGET_JAZY__
     show   = packedStringToString . primShowDoubleToPackedString
 #else
-    show   = primShowDouble
+--     show   = primShowDouble
 #endif
 
 
@@ -1418,7 +1418,7 @@ instance Integral a => RealFrac (Ratio a) where
 instance Integral a => Enum (Ratio a) where
     succ x         = x+1
     pred x         = x-1
-    toEnum         = fromInt
+    -- toEnum         = fromInt
     fromEnum       = fromInteger . truncate   -- may overflow
     enumFrom       = numericEnumFrom
     enumFromTo     = numericEnumFromTo

@@ -291,7 +291,9 @@ grPerModuleFullProg modNm = trafos1 ++ invariant 0 ++ grSpecialize modNm ++ [dro
 
     checkInvariant i =
       do { errors <- cpFullGrinInfoOp modNm (grinInfoCheckInvariantSpec i) checkGrinInvariant "CheckGrinInvariant"
-         ; when (not (null errors)) (error (unlines errors))
+         -- Show the errors, but do not stop (debugging):
+         -- ; when (not (null errors)) (error (unlines errors))
+         ; when (not (null errors)) (cpMsg modNm VerboseDebug $ (unlines errors))
          }
     
     -- hptAnalysis   = cpFullGrinInfoOp modNm (grinInfoHptAnalysis) (heapPointsToAnalysis modNm) "Partial HPT analysis"
@@ -305,7 +307,7 @@ grPerModuleFullProg modNm = trafos1 ++ invariant 0 ++ grSpecialize modNm ++ [dro
     
 
 -- grSpecialize :: [(Grin.GrModule -> Grin.GrModule, String)]
-grSpecialize modNm = concatMap (grSpecialize' modNm) [0..5]
+grSpecialize modNm = concatMap (grSpecialize' modNm) [0] -- [0..5]
 grSpecialize' modNm pass =
     [ full grEvalStored                      "eval stored"    grinInfoEvalStoredSpec
     , once applyUnited                       "apply united"

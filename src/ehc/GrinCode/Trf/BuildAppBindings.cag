@@ -148,21 +148,21 @@ SEM GrModule
                                       (@loc.mainFullProg ++ map buildAppBinding (Set.toList @bindL.applyNodeSizes) ++ @bindL.grTrf)
                                       @tagsMp 
                                       
-%%[[8
+-- %%[[8
          loc . mainFullProg = []
-%%][99
-         loc . mainFullProg = let worldNode = GrVal_Node GrTag_Hole []   
-                                  worldName = hsnFromString "world"
-                                  ioName    = hsnFromString "theio"
-                              in  [ GrBind_Bind hsnMainFullProg 
-                                                GrBindAnnNormal [] (GrExpr_Seq  (GrExpr_Store worldNode)
-                                                                                (GrPatLam_Var worldName)
-                                                                                (GrExpr_Seq (GrExpr_Eval hsnMain)
-                                                                                            (GrPatLam_Var ioName)
-                                                                                            (GrExpr_App ioName [GrVal_Var worldName])
-                                                                                )
-                                                                   ) 
-                                  ]
-%%]]
+-- %%][99
+--          loc . mainFullProg = let worldNode = GrVal_Node GrTag_Hole []   
+--                                   worldName = hsnFromString "world"
+--                                   ioName    = hsnFromString "theio"
+--                               in  [ GrBind_Bind hsnMainFullProg 
+--                                                 GrBindAnnNormal [] (GrExpr_Seq  (GrExpr_Store worldNode)
+--                                                                                 (GrPatLam_Var worldName)
+--                                                                                 (GrExpr_Seq (GrExpr_Eval hsnMain)
+--                                                                                             (GrPatLam_Var ioName)
+--                                                                                             (GrExpr_App ioName [GrVal_Var worldName])
+--                                                                                 )
+--                                                                    ) 
+--                                   ]
+-- %%]]
                                       
 %%]
