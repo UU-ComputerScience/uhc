@@ -182,7 +182,6 @@ DATA ExprAnn
   | Annotation      s           : String
 %%[[(8 codegen)
   | Strictness      s           : Strictness
-  | Uniqueness      s           : Uniqueness
   | GrinHint        s           : String
 %%]]
 %%]

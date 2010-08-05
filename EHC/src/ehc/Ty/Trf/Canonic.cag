@@ -41,7 +41,7 @@ Currently (20090821) only empty implicits \verb@Impls_Tail@ are replaced by
 %%[(9 hmtyinfer) hs import(Data.Maybe,qualified Data.Set as Set)
 %%]
 
-%%[(9 tauphi) hs import({%{EH}TauPhi.Common})
+%%[(9 codegen) hs import({%{EH}Base.Strictness})
 %%]
 
 %%[(11 hmtyinfer) hs import({%{EH}Base.Opts},{%{EH}Ty.Trf.BetaReduce})

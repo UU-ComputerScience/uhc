@@ -29,7 +29,7 @@
 %%[(8 codegen) hs import (Debug.Trace)
 %%]
 
-%%[(8 tauphi) hs import({%{EH}TauPhi.Common})
+%%[(8 codegen) hs import({%{EH}Base.Strictness})
 %%]
 
 %%[(8 codegen) ag import({Ty/AbsSyn},{Ty/CommonAG})
@@ -272,9 +272,8 @@ ATTR TyAnn [ | | ann : {C.ExprAnn}
 
 SEM TyAnn
   | Empty       lhs         .   ann         =   C.ExprAnn_Empty
-%%[[(8 tauphi)
+%%[[(8 codegen)
   | Strictness  lhs         .   ann         =   C.ExprAnn_Strictness @s
-  | Uniqueness  lhs         .   ann         =   C.ExprAnn_Uniqueness @s
 %%]]
 
 SEM TyAnn

@@ -24,7 +24,10 @@
 %%[(8 codegen) hs module {%{EH}TyCore.Trf.RemoveLazyFunctions2of2}
 %%]
 
-%%[(8 codegen) hs import({%{EH}TauPhi.Common})
+%%[(8 codegen) hs import({%{EH}TyCore.Trf.Common})
+%%]
+
+%%[(8 codegen) hs import({%{EH}Base.Strictness})
 %%]
  
 %%[(8 codegen) hs import({%{EH}Base.Builtin},{%{EH}Base.Opts},{%{EH}Base.Common})

@@ -34,9 +34,8 @@ DATA Ty
 %%[(1 hmtyinfer || hmtyast)
 DATA TyAnn
   | Empty
-%%[[(8 tauphi)
+%%[[4
   | Strictness      s               : Strictness
-  | Uniqueness      s               : Uniqueness
 %%]]
 %%[[4
   | Mono		-- enforce predicative binding when matching

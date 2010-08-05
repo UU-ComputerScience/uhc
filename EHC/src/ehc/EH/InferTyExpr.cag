@@ -445,9 +445,8 @@ ATTR TyExprAnn [ | | ann : TyAnn
 
 SEM TyExprAnn
   | Empty       lhs         .   ann         =   TyAnn_Empty
-%%[[(8 tauphi)
+%%[[(8 codegen)
   | Strictness  lhs         .   ann         =   TyAnn_Strictness @s
-  | Uniqueness  lhs         .   ann         =   TyAnn_Uniqueness @s
 %%]]
 
 SEM TyExprAnn

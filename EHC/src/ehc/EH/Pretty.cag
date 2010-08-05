@@ -431,7 +431,7 @@ SEM PatExprAnn
 
 SEM TyExprAnn
   | Empty		loc		.	pp		=	empty
-%%[[(8 tauphi)
+%%[[(8 codegen)
   | Strictness  loc     .   pp      =   "@" >|< show @s
 %%]]
 %%]

@@ -102,7 +102,7 @@ acoreBuiltinUndefined
 %%[(13 hmtyinfer || hmtyast) hs export(PredSeq(..))
 %%]
 
-%%[(8 tauphi) hs import({%{EH}TauPhi.Common})
+%%[(8 codegen) hs import({%{EH}Base.Strictness})
 %%]
 
 %%[(20 hmtyinfer || hmtyast) hs import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})

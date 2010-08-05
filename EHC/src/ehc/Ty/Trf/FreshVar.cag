@@ -13,7 +13,7 @@ Module is currently not used.
 %%[(4 hmtyinfer || hmtyast) hs module {%{EH}Ty.Trf.FreshVar} import({%{EH}Base.Common},{%{EH}Ty},{%{EH}VarMp},{%{EH}Substitutable}) export(tyFreshVar)
 %%]
 
-%%[(8 tauphi) hs import({%{EH}TauPhi.Common})
+%%[(8 codegen) hs import({%{EH}Base.Strictness})
 %%]
 
 %%[(4 hmtyinfer || hmtyast).WRAPPER ag import({Ty/AbsSyn})

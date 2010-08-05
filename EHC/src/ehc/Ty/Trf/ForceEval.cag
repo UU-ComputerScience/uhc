@@ -10,7 +10,7 @@
 %%[(99 hmtyinfer || hmtyast) hs module {%{EH}Ty.Trf.ForceEval} import({%{EH}Base.Common},{%{EH}Ty},{%{EH}Base.ForceEval})
 %%]
 
-%%[(99 tauphi) hs import({%{EH}TauPhi.Common})
+%%[(99 codegen) hs import({%{EH}Base.Strictness})
 %%]
 
 %%[(99 hmtyinfer || hmtyast).WRAPPER ag import({Ty/AbsSyn})

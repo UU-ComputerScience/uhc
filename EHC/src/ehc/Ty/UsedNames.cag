@@ -15,9 +15,6 @@ These are used for constructing cached hi files filtered for the names actually 
 %%[(20 hmtyinfer || hmtyast) hs module {%{EH}Ty.UsedNames} import(Data.List,{%{EH}Base.Common},{%{EH}Ty})
 %%]
 
-%%[(20 tauphi) hs import({%{EH}TauPhi.Common})
-%%]
-
 %%[(20 hmtyinfer || hmtyast) hs import(qualified Data.Set as Set)
 %%]
 %%[(20 hmtyinfer || hmtyast) hs import(qualified Data.Map as Map)

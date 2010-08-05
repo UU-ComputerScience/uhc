@@ -1484,25 +1484,7 @@ GADT: type clash between fixed type variable and some other type results in a eq
 %%]
 
 %%[(4 hmtyinfer).fitsIn.DefaultCase
--- <<<<<<< .working
-            fUpd fi updTy q@(Ty_Ann a1 t1)  t@(Ty_Ann a2 t2)
-            -- Cheap way to check integrity of annotations, but doesn't handle polyvariance.
-            -- Perhaps annotation check should be separate from type checking.
-            --                            | a1 /= a2  = errClash fi t1 t2
-                                        | otherwise = let fiout = fUpd fi updTy t1 t2
-                                                          ty    = foTy fiout
-                                                          r     = fiout { foTy = Ty_Ann a1 ty }
-                                                      in r
-            fUpd fi updTy (Ty_Ann a t1)          t2          = let fiout = fUpd fi updTy t1 t2
-                                                                   ty    = foTy fiout
-                                                               in fiout { foTy = Ty_Ann a ty }
-            fUpd fi updTy t1                 t@(Ty_Ann a t2) = let fiout = fUpd fi updTy t1 t2
-                                                                   ty    = foTy fiout
-                                                                   r     = fiout { foTy = Ty_Ann a ty }
-                                                               in r
--- =======
             fUpd fi updTy t1                     t2          = errClash fi t1 t2
--- >>>>>>> .merge-right.r1926
 %%]
 
 %%[(4 hmtyinfer).fitsIn.SetupAndResult

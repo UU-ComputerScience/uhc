@@ -586,9 +586,8 @@ DATA ExprAnn
 
 DATA TyExprAnn
   | Empty
-%%[[(8 tauphi)
+%%[[(8 codegen)
   | Strictness      s               : Strictness
-  | Uniqueness      s               : Uniqueness
 %%]]
 
 DATA PatExprAnn

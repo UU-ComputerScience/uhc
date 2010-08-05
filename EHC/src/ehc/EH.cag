@@ -72,7 +72,7 @@
 %%[90 hs import({%{EH}Foreign})
 %%]
 
-%%[(8 tauphi) hs import({%{EH}TauPhi.Common})
+%%[(8 codegen) hs import({%{EH}Base.Strictness})
 %%]
 
 %%[1 ag import({EH/AbsSyn})

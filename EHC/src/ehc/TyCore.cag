@@ -47,7 +47,7 @@
 %%[(90 codegen) hs import({%{EH}Foreign}) export(module {%{EH}Foreign})
 %%]
 
-%%[(8 codegen) hs import({%{EH}TauPhi.Common})
+%%[(8 codegen) hs import({%{EH}Base.Strictness})
 %%]
 
 %%[(8 codegen) ag import({TyCore/AbsSyn})

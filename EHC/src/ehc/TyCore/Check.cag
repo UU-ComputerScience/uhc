@@ -38,7 +38,7 @@ Matching of types to
 %%[(8 codegen) hs import(qualified {%{EH}Gam.Full} as G)
 %%]
 
-%%[(8 codegen) hs import({%{EH}TauPhi.Common})
+%%[(8 codegen) hs import({%{EH}Base.Strictness})
 %%]
 
 %%[(8 codegen).WRAPPER ag import({TyCore/AbsSyn},{TyCore/CommonSELF},{TyCore/CommonNm})

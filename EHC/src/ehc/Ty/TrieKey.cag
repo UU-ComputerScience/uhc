@@ -27,9 +27,6 @@ a -> (c -> d)                       (->) a ((->) c d)                       [->,
 %%[(9 hmtyinfer || hmtyast) hs import(qualified Data.Set as Set,Data.List as Lst,EH.Util.FastSeq as Seq,{%{EH}Base.Trie (TrieKey(..),TrieKeyKind(..))},{%{EH}CHR.Key})
 %%]
 
-%%[(9 tauphi) hs import({%{EH}TauPhi.Common})
-%%]
-
 %%[(9 hmtyinfer || hmtyast) ag import({Ty/AbsSyn},{Ty/CommonAG})
 WRAPPER TyAGItf
 %%]

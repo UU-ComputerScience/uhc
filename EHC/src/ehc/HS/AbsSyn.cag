@@ -1264,7 +1264,7 @@ DATA TypeAnnotation
     | Empty
 %%][5
 	| Strict
-%%[[(8 tauphi)
+%%[[(8 codegen)
     | AnnotationName
         name                     : Name
     | AnnotationVar
