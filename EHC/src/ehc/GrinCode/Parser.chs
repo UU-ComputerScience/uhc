@@ -195,6 +195,7 @@ pBasicTy        =    BasicTy_Word   <$ pKey "word"
 %%[[97
                 <|>  BasicTy_Float  <$ pKey "float"
                 <|>  BasicTy_Double <$ pKey "double"
+                -- <|>  BasicTy_SignedHalfWord <$ pKey "int"
 %%]]
 
 pBasicSize      ::   GRIParser BasicSize
@@ -202,13 +203,16 @@ pBasicSize      =    basicSizeOf      <$> pInt
 %%[[97
                 <|>  BasicSize_Float  <$  pKey "float"
                 <|>  BasicSize_Double <$  pKey "double"
+                -- <|>  BasicSize_CInt    <$  pKey "int"
 %%]]
 
 pBasicAnnot     ::   GRIParser BasicAnnot
-pBasicAnnot     =    BasicAnnot_Size          <$> pBasicSize <*> pBasicTy
+pBasicAnnot     =    BasicAnnot_Dflt          <$  pKey "annotdflt"
+{-
+                <|>  BasicAnnot_Size          <$> pBasicSize <*> pBasicTy
                 <|>  BasicAnnot_FromTaggedPtr <$  pKey "annotfromtaggedptr" <*> pBool <*> pBasicTy
                 <|>  BasicAnnot_ToTaggedPtr   <$  pKey "annottotaggedptr"   <*> pBool <*> pBasicTy
-                <|>  BasicAnnot_Dflt          <$  pKey "annotdflt"
+-}
 
 pTag            ::   GRIParser GrTag
 pTag            =    pKey "#"

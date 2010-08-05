@@ -599,9 +599,7 @@ SEM CBind
                                                      annotOfUnboxed box annot t
                                                        = case tyNmMayLiveAsTaggedPtr @lhs.opts t of
                                                               Just x  -> if biGbcMayLiveUnboxed x
-                                                                         then (if   box 
-                                                                               then BasicAnnot_ToTaggedPtr 
-                                                                               else BasicAnnot_FromTaggedPtr) (biIsSigned x) (baTy annot)
+                                                                         then annot {baTagging = if box then BasicAnnotTagging_ToPtr else BasicAnnotTagging_FromPtr, baIsSigned = biIsSigned x} 
                                                                          else annot
                                                               Nothing -> annot
                                                      mkPat ty n

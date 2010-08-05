@@ -164,7 +164,7 @@ Int16
 
 %%[99
 PRIMS_BOUNDED(Int16,primMinInt16,primMaxInt16)
-PRIMS2_CONVERSION_INTEGER(Int16,primIntegerToInt16,"primIntegerToInt",primInt16ToInteger,"primIntToInteger")
+PRIMS2_CONVERSION_INTEGER(Int16,primIntegerToInt16,"primIntegerToInt32",primInt16ToInteger,"primInt32ToInteger")
 PRIMS_CONVERSION_INT(Int16,primIntToInt16,primInt16ToInt)
 
 PRIMS2_EQ(Int16,primEqInt16,"primEqInt",primNeInt16,"primNeInt")
@@ -181,7 +181,7 @@ Int8
 
 %%[99
 PRIMS_BOUNDED(Int8,primMinInt8,primMaxInt8)
-PRIMS2_CONVERSION_INTEGER(Int8,primIntegerToInt8,"primIntegerToInt",primInt8ToInteger,"primIntToInteger")
+PRIMS2_CONVERSION_INTEGER(Int8,primIntegerToInt8,"primIntegerToInt32",primInt8ToInteger,"primInt32ToInteger")
 PRIMS_CONVERSION_INT(Int8,primIntToInt8,primInt8ToInt)
 
 PRIMS2_EQ(Int8,primEqInt8,"primEqInt",primNeInt8,"primNeInt")

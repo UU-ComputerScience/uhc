@@ -117,11 +117,19 @@ Utility functions for deriving
 -- | Get info about datatype and class for which derivation is done, looking up in various environments
 derivGetDataTyInfo :: HsName -> HsName -> TyGam -> TyKiGam -> DataGam -> (TyGamInfo,TyKiGamInfo,DataGamInfo,TyKiGamInfo,[Err])
 derivGetDataTyInfo clNm tyNm tyGam tyKiGam dataGam
-  = (tgi,tkgi,dgi,ctkgi,firstNotEmpty [errs1,errs2,errs3,errs4])
-  where (tgi  ,errs1) = tyGamLookupErr            tyNm 					tyGam                 -- lookup for kind signature
-        (tkgi ,errs2) = tyKiGamLookupByNameErr    tyNm 					tyKiGam               -- lookup for kind signature
-        (dgi  ,errs3) = dataGamLookupErr          tyNm 					dataGam               -- lookup for structure info
-        (ctkgi,errs4) = tyKiGamLookupByNameErr    (hsnClass2Kind clNm) 	tyKiGam               -- lookup for class kind signature
+  = (tgi,tkgi,dgi,ctkgi,firstNotEmpty [errs123,errs4])
+  where 
+        (tgi, tkgi, dgi, errs123)
+          -- special case to detect records/tuples
+          | hsnIsRec tyNm = ( emptyTGI, emptyTKGI
+                            , emptyDataGamInfo {dgiVariant = DataGamInfoVariant_Rec}
+                            , []
+                            )
+          | otherwise     = let (tgi, errs1) = tyGamLookupErr            tyNm                   tyGam                   -- lookup for type
+                                (dgi, errs3) = dataGamLookupErr          tyNm                   dataGam                 -- lookup for structure info
+                                (tkgi,errs2) = tyKiGamLookupByNameErr    tyNm                   tyKiGam                 -- lookup for kind signature
+                            in  (tgi, tkgi, dgi, firstNotEmpty [errs1,errs2,errs3])
+        (ctkgi,errs4)     =                    tyKiGamLookupByNameErr    (hsnClass2Kind clNm) 	tyKiGam               	-- lookup for class kind signature
 
 -- | make pred from kind and tvar
 mkDerivPredFromKi :: UID -> Int -> Ty -> Ty -> Ty -> Maybe (Ty,UID)
@@ -153,7 +161,7 @@ SEM Decl
                 loc         	.   lUniq		  	:   UNIQUEREF gUniq
   | Instance    tyPrExpr        .   tyGam           =   gamPushNew @lhs.tyGam
                 loc             .   (prTyFix,fixPrTyVarMp,unfixPrTyVarMp,metaPrTyVarMp)
-                                                    =   tyFixTyVars @lUniq_9_prTyFix $ tyQuantifyRank [2..] $ @tyPrExpr.ty
+                                                    =   tyFixTyVars @lUniq_9_prTyFix $ tyQuantifyRank [2..] $ tyCanonic emptyFI @tyPrExpr.ty
 %%[[9
                                 .   (ctxtPrTyFixL,hdPrTyFix)
                                                     =   tyArrowArgsRes @prTyFix
@@ -170,7 +178,7 @@ SEM Decl
                                                           InstDeriving instFrom
                                                             -> ( cx ++ cxDt, hd', predTyCon, dataTy, tgi, dgi, errs1 ++ errs2
 %%[[92
-                                                               , dataTyArgs, tyNm, derivArity, derivTruncTailArity
+                                                               , derivTyArgs, tyNm, derivArity, derivTruncTailArity
 %%]]
                                                                )
                                                             where (cx,hd@(Ty_Pred (Pred_Class predTy)))
@@ -184,13 +192,16 @@ SEM Decl
                                                                   clNm          = tyConNm predTyCon
                                                                   (tgi,tkgi,dgi,ctkgi,errs1)
                                                                                 = derivGetDataTyInfo clNm tyNm @lhs.tyGam @lhs.tyKiGam @lhs.dataGam
+                                                                  derivTyArgs
+                                                                    | dgiIsRec dgi = assocLElts $ snd $ tyRecExts dataTy
+                                                                    | otherwise    = dataTyArgs
                                                                   dataTyKi      = @decls.kiVarMp |=> tkgiKi tkgi
                                                                   classTyKi     = @decls.kiVarMp |=> tkgiKi ctkgi
 %%[[91
                                                                   -- no higher kind deriving
                                                                   derivArity    = (0::Int)
                                                                   hd'           = hd
-                                                                  dataTyArgs'   = dataTyArgs
+                                                                  dataTyArgs'   = derivTyArgs
                                                                   derivTruncTailArity
                                                                   				= derivArity
 %%][92
@@ -210,7 +221,7 @@ SEM Decl
                                                                                          $ mkDerivPredContext @lUniq derivArity predTyCon (tyArrowArgs dataTyKi) dataTyArgs'
                                                                                     InstDerivingFrom_Standalone
                                                                                       -> ([],@lUniq,[])
-                                                          _ -> ( cx,hd,Ty_Any,Ty_Any,emtpyTGI,emptyDGI,[]
+                                                          _ -> ( cx,hd,Ty_Any,Ty_Any,emptyTGI,emptyDGI,[]
 %%[[92
                                                                , [], hsnUnknown, 0, 0
 %%]]

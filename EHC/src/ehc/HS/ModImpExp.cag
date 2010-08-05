@@ -44,7 +44,7 @@ PRAGMA novisit nocycle
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[20
-ATTR AGItf AllModule AllDeclaration AllExpression [ opts: EHCOpts | | ]
+ATTR AGItf AllModuleDeclaration AllExpression [ opts: EHCOpts | | ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

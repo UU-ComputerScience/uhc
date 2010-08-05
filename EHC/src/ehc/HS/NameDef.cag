@@ -8,7 +8,7 @@
 
 %%[20
 ATTR
-  AGItf AllModule AllDeclaration AllFunctionBinding TypeLeftHandSide LeftHandSide AllFieldDeclaration AllConstructor
+  AGItf AllModuleDeclaration AllFunctionBinding TypeLeftHandSide LeftHandSide AllFieldDeclaration AllConstructor
   AllExpression AllPattern AllTypePattern AllRowRecordPatternBinding
     [ moduleNm: HsName | | ]
 %%]

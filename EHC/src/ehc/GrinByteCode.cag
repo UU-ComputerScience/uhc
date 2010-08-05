@@ -395,7 +395,7 @@ data CallInfoExtra
 
 %%[(8 codegen grin) hs
 instance PP CallInfoExtra where
-  pp (CallInfoExtra_CCall t) = pp $ show $ map basicGrinSizeCharEncoding t
+  pp (CallInfoExtra_CCall t) = pp $ show $ concatMap basicGrinSizeCharEncoding t
   pp CallInfoExtra_None      = pp "NULL"
 %%]
 
@@ -855,9 +855,11 @@ nmLd' ldcxt env stState gbState nm
                   )
                where (src,post)
                          = case annot of
-                             ValAccessAnnot_Annot (BasicAnnot_FromTaggedPtr sgn _) -> (srcDflt Cfg.sizeofGrWord ,[untag2 sgn])
-                             ValAccessAnnot_Annot (BasicAnnot_ToTaggedPtr   sgn _) -> (srcDflt Cfg.sizeofGrWord ,[])
-                             ValAccessAnnot_Annot (BasicAnnot_Size bsz _         ) -> (srcDflt (basicSizeInBytes bsz),[])
+                             ValAccessAnnot_Annot (BasicAnnot_Size bsz _    BasicAnnotTagging_FromPtr   sgn)
+                                                                                   -> (srcDflt Cfg.sizeofGrWord ,[untag2 sgn {-(basicSizeIsSigned bsz)-}])
+                             ValAccessAnnot_Annot (BasicAnnot_Size bsz _    BasicAnnotTagging_ToPtr     _)
+                                                                                   -> (srcDflt Cfg.sizeofGrWord ,[])
+                             ValAccessAnnot_Annot (BasicAnnot_Size bsz _    _   _) -> (srcDflt (basicSizeInBytes bsz),[])
                              ValAccessAnnot_Annot (BasicAnnot_Dflt               ) -> (srcDflt Cfg.sizeofGrWord ,[])
                              ValAccessAnnot_Basic _ _                              -> (srcDflt Cfg.sizeofGrWord ,[])
                          where srcDflt n = offSrc (stkDepth - o) (nrByte2Word n)
@@ -871,9 +873,11 @@ nmLd' ldcxt env stState gbState nm
                   )
                where a = meta' AnnIdUse (nm >#< valAccessAnnot pp (>#<) annot >#< vaAnnotGCPermit annot)
                      l = case annot of
-                           ValAccessAnnot_Annot (BasicAnnot_FromTaggedPtr sgn _) -> loadWithPost0From (offSrc (stkDepth - o) nrValWords) [a, untag2 sgn]
-                           ValAccessAnnot_Annot (BasicAnnot_ToTaggedPtr   sgn _) -> loadWithPost0From (offSrc (stkDepth - o) nrValWords) [a, tag2   sgn]
-                           ValAccessAnnot_Annot (BasicAnnot_Size bsz _         ) -> loadWithPre0From [a, ldlr (stkDepth - o)] (LoadSrc_Reg_Rel nrNodeHdrWords (nrByte2Word $ basicSizeInBytes bsz))
+                           ValAccessAnnot_Annot (BasicAnnot_Size bsz _    BasicAnnotTagging_FromPtr   sgn)
+                                                                                 -> loadWithPost0From (offSrc (stkDepth - o) nrValWords) [a, untag2 sgn {-(basicSizeIsSigned bsz)-}]
+                           ValAccessAnnot_Annot (BasicAnnot_Size bsz _    BasicAnnotTagging_ToPtr     sgn)
+                                                                                 -> loadWithPost0From (offSrc (stkDepth - o) nrValWords) [a, tag2   sgn {-(basicSizeIsSigned bsz)-}]
+                           ValAccessAnnot_Annot (BasicAnnot_Size bsz _    _   _) -> loadWithPre0From [a, ldlr (stkDepth - o)] (LoadSrc_Reg_Rel nrNodeHdrWords (nrByte2Word $ basicSizeInBytes bsz))
                            _                                                     -> panic "GrinByteCode.nmLd'.Val_NodeFldLocal"
              Val_Int i
                -> ( (mva,loadFrom (LoadSrc_Imm_Int i),dfltBasicSize,GCPermit_May)
@@ -1008,7 +1012,8 @@ gviLd' opts ldcxt env stState gbState intro
                      Just va | vaHasAnnot va
                        -> case vaAnnot va of
                             ValAccessAnnot_Annot BasicAnnot_Dflt                -> basicAnnotDflt ml
-                            ValAccessAnnot_Annot (BasicAnnot_ToTaggedPtr sgn _) -> basicAnnotTaggedPtr sgn nm ml dfltBasicSize
+                            ValAccessAnnot_Annot (BasicAnnot_Size bsz _ BasicAnnotTagging_ToPtr sgn)
+                                                                                -> basicAnnotTaggedPtr sgn {-(basicSizeIsSigned bsz)-} nm ml dfltBasicSize
                             _                                   -> panic "GrinByteCode.gviLd'.GrValIntro_Enum.Just"
                      _ -> panic "GrinByteCode.gviLd'.GrValIntro_Enum.Nothing"
                 where ml@((mbva,_,_,_),_) = nmLd' ldcxt env stState gbState nm
@@ -1017,15 +1022,16 @@ gviLd' opts ldcxt env stState gbState intro
                      Just va | vaHasAnnot va
                        -> case vaAnnot va of
                             ValAccessAnnot_Annot BasicAnnot_Dflt                    -> basicAnnotDflt ml
-                            ValAccessAnnot_Annot (a@(BasicAnnot_ToTaggedPtr sgn _)) -> basicAnnotTaggedPtr sgn nm ml (grinBasicAnnotSize a)
-                            ValAccessAnnot_Annot (BasicAnnot_Size bsz bty)
+                            ValAccessAnnot_Annot (a@(BasicAnnot_Size bsz _ BasicAnnotTagging_ToPtr sgn))
+                                                                                    -> basicAnnotTaggedPtr sgn {-(basicSizeIsSigned bsz)-} nm ml (grinBasicAnnotSize a)
+                            ValAccessAnnot_Annot (BasicAnnot_Size bsz _ _ _)
                               -> ( GrValIntroAlt_OnTOS (ins Seq.:++: Seq.fromList [meta' AnnTag (ppGrTag gtag)] Seq.:++: tins Seq.:++: sins)
                                                        sinc defaultOptimEffect [basicsz]
                                  , gbState6 `gbstIncByStackState` stState4
                                  )
                               where (ins,inc,gbState4) = vaAndLd2Ins ldcxt nm ml
                                     stState3 = stState2 `ststInc` inc
-                                    (tins,tinc,isEvaluated,gbState5) = tag env stState3 gtag (Just bty) wsz gbState4
+                                    (tins,tinc,isEvaluated,gbState5) = tag env stState3 gtag (Just bsz) wsz gbState4
                                     (gbState6,allocLbl) = newLabelId gbState5
                                     stState4 = stState3 `ststInc` tinc
                                     (sins,sinc) = ndStore stState4 (wsz + ststDepth tinc) allocLbl
@@ -1478,17 +1484,17 @@ tgIntl_GB_NodeTag_Intl_Double = 3
 load tag, yield stack increment and additional size to alloc
 
 %%[(8 codegen grin) hs export(tag)
-tag :: NmEnv -> StackState -> GrTag -> Maybe BasicTy -> StackDepth -> GBState -> (InsSeq,StackState,Bool,GBState)
-tag env stState gt bty sz gbState
+tag :: NmEnv -> StackState -> GrTag -> Maybe BasicSize -> StackDepth -> GBState -> (InsSeq,StackState,Bool,GBState)
+tag env stState gt bsz sz gbState
   = case gt of
       GrTag_Unboxed
         -> (Seq.empty,zero,False,gbState)
       _ -> (tins Seq.:++: Seq.fromList [ldc tword],tinc `ststInc` one,isEvaluated,gbState2)
         where (needEval,categ',tg',tins,tinc,gbState2)
-                = case bty of
+                = case bsz of
 %%[[97
-                    Just BasicTy_Double         -> (tgNeedEval_No ,tgCat_GB_NodeTagCat_Intl,tgIntl_GB_NodeTag_Intl_Double,Seq.empty           ,zero ,gbState )
-                    Just BasicTy_Float          -> (tgNeedEval_No ,tgCat_GB_NodeTagCat_Intl,tgIntl_GB_NodeTag_Intl_Float ,Seq.empty           ,zero ,gbState )
+                    Just BasicSize_Double       -> (tgNeedEval_No ,tgCat_GB_NodeTagCat_Intl,tgIntl_GB_NodeTag_Intl_Double,Seq.empty           ,zero ,gbState )
+                    Just BasicSize_Float        -> (tgNeedEval_No ,tgCat_GB_NodeTagCat_Intl,tgIntl_GB_NodeTag_Intl_Float ,Seq.empty           ,zero ,gbState )
 %%]]
                     _ -> case gt of
                            GrTag_Con _ tg nm    -> (tgNeedEval_No ,tgCat_GB_NodeTagCat_Con ,tg                           ,Seq.empty           ,zero ,gbState )

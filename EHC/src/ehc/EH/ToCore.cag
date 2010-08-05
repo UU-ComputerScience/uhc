@@ -473,11 +473,10 @@ mkDataBinds mkCon dataGam
 %%[[8
               , dgiIsNewtype    = isNewtype
 %%][90
-              , dgiMbNewtype    = isMbNewtype
 %%]]
               }) <- gamElts dataGam
 %%[[90
-      , let isNewtype = isJust isMbNewtype
+      , let isNewtype = isJust (dgiMbNewtype dgi)
 %%]]
       ]
 %%]

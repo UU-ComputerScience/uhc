@@ -264,8 +264,8 @@ SEM Expr
 type GenerForFitsIn
   = ( HsName            -- field name
     , HsName            -- default value name
-    , Ty                -- same, but respective types
-    , Ty            
+    , Ty                -- field type
+    , Ty                -- default value type
     )
 %%]
 
@@ -276,19 +276,21 @@ SEM Decl
                                                           InstDeriving _ | not $ null generDerivFlds
                                                             -> [ ( fldNm, dfltvalNm
                                                                  , -- (\v -> tr "Decl.Instance.mbFSig" (ppTy v >-< ppTy (vgiTy (fromJust mbDSig))) v) $
-                                                                   mkApp ([Ty_Con $ hsnNm2GenerReprSyn @derivArity @derivDataTyNm]
-                                                                          ++ take (length @derivDataTyArgs - @derivTruncTailArity) @derivDataTyArgs -- @derivDataTyArgs -- 
-                                                                          ++ [mkTyVar u]
-                                                                         )
-                                                                   `mk1Arrow`
-                                                                   vgiTy (fromJust mbFSig)
+                                                                   repTy `mk1Arrow` vgiTy (fromJust mbFSig)
                                                                  , vgiTy (fromJust mbDSig)
                                                                  )
                                                                | ((fldNm,dfltvalNm),u) <- zip generDerivFlds (mkNewLevUIDL (length generDerivFlds) @lUniq_generDeriv1)
                                                                , let mbFSig = valGamLookup fldNm     @tySigGam  , isJust mbFSig
                                                                , let mbDSig = valGamLookup dfltvalNm @lhs.valGam, isJust mbDSig
+                                                               , let repTy  = mkApp (  [Ty_Con repTyNm]
+                                                                                    ++ take (dataArity - @derivTruncTailArity) @derivDataTyArgs
+                                                                                    ++ [mkTyVar u]
+                                                                                    )
                                                                ]
                                                             where generDerivFlds = clgiGenerDerivableL @clgi
+                                                                  dataArity = length @derivDataTyArgs
+                                                                  repTyNm | dgiIsRec @derivDataDGI = ehcOptBuiltin @lhs.opts ehbnGenerTupleRepresentableN @derivArity dataArity
+                                                                          | otherwise              = hsnNm2GenerReprSyn @derivArity @derivDataTyNm
                                                           _ -> []
 
                             -- for subsumption, to extract predicates to Prove + coercion

@@ -61,9 +61,9 @@ mkTGI :: Ty -> TyGamInfo
 mkTGI t = mkTGIData t Ty_Any
 %%]
 
-%%[1.emtpyTGI export(emtpyTGI)
-emtpyTGI :: TyGamInfo
-emtpyTGI
+%%[1.emptyTGI export(emptyTGI)
+emptyTGI :: TyGamInfo
+emptyTGI
   = TyGamInfo
 %%[[(1 hmtyinfer || hmtyast)
       Ty_Any
@@ -82,7 +82,7 @@ tyGamLookup nm g
 %%[[(1 hmtyinfer || hmtyast) 
                  -> Just (TyGamInfo (Ty_Con nm))
 %%][1
-                 -> Just emtpyTGI
+                 -> Just emptyTGI
 %%]]
        Just tgi  -> Just tgi
        _         -> Nothing
@@ -92,7 +92,7 @@ tyGamLookup nm g
 tyGamLookupErr :: HsName -> TyGam -> (TyGamInfo,ErrL)
 tyGamLookupErr n g
   = case tyGamLookup n g of
-      Nothing  -> (emtpyTGI,[rngLift emptyRange mkErr_NamesNotIntrod "type" [n]])
+      Nothing  -> (emptyTGI,[rngLift emptyRange mkErr_NamesNotIntrod "type" [n]])
       Just tgi -> (tgi,[])
 %%]
 
@@ -105,7 +105,7 @@ tyGamLookup nm g
 %%[[(6 hmtyinfer || hmtyast) 
                  -> Just (TyGamInfo (Ty_Con nm))
 %%][6
-                 -> Just emtpyTGI
+                 -> Just emptyTGI
 %%]]
        Just tgi  -> Just tgi
        _         -> Nothing
@@ -130,9 +130,9 @@ initTyGam
       , (hsnChar,   TyGamInfo tyChar)
       ]
 %%][1
-      [ (hsnArrow,  emtpyTGI)
-      , (hsnInt,    emtpyTGI)
-      , (hsnChar,   emtpyTGI)
+      [ (hsnArrow,  emptyTGI)
+      , (hsnInt,    emptyTGI)
+      , (hsnChar,   emptyTGI)
       ]
 %%]]
 %%]
@@ -194,7 +194,7 @@ initTyGam
           , hsnAddrUnboxed
 %%]]
           ]
-          (repeat emtpyTGI)
+          (repeat emptyTGI)
 %%]]
 %%]
 

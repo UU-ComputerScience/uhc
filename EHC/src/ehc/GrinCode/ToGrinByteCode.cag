@@ -424,11 +424,13 @@ SEM GrPatLam
   | BasicNode   lhs         .   nmIntro         =   NmIntro_GrpBasic @nm @annot
   | EnumNode    lhs         .   nmIntro         =   NmIntro_GrpTag @nm
   | BasicAnnot  lhs         .   nmIntro         =   let ann = case @annot of
-                                                                BasicAnnot_ToTaggedPtr _ _
+                                                                BasicAnnot_Size _ _ BasicAnnotTagging_ToPtr _
                                                                   | @lhs.primResForIntl -> BasicAnnot_Dflt
                                                                 _                       -> @annot
                                                     in  NmIntro_Single @nm ann
-  | EnumAnnot   lhs         .   nmIntro         =   let ann = if @lhs.primResForIntl then BasicAnnot_Dflt else BasicAnnot_ToTaggedPtr False BasicTy_Word
+  | EnumAnnot   lhs         .   nmIntro         =   let ann = if @lhs.primResForIntl
+                                                              then BasicAnnot_Dflt
+                                                              else BasicAnnot_Size basicSizeWord BasicTy_Word BasicAnnotTagging_ToPtr False
                                                     in  NmIntro_Single @nm ann
   | * - Var VarNode BasicNode EnumNode BasicAnnot EnumAnnot
                 lhs         .   nmIntro         =   NmIntro_None
@@ -469,7 +471,7 @@ patNmL2DepL2 :: [HsName] -> AssocL HsName Int
 patNmL2DepL2 nmL = zip nmL [0, (- GB.nrValWords) ..]
 
 patNmL2VAGam' :: GB.StackDepth -> AssocL HsName Int -> GB.ValAccessGam
-patNmL2VAGam' dep nmDepL = Map.fromList [ (n,GB.Val_Local (dep+d) (GB.ValAccessAnnot_Annot defaultGrinBasicAnnot)) | (n,d) <- nmDepL ]
+patNmL2VAGam' dep nmDepL = Map.fromList [ (n,GB.Val_Local (dep+d) (GB.ValAccessAnnot_Annot basicAnnotWord)) | (n,d) <- nmDepL ]
 
 patNmL2VAGam :: GB.StackDepth -> [HsName] -> GB.ValAccessGam
 patNmL2VAGam dep nmL = patNmL2VAGam' dep $ patNmL2DepL nmL
@@ -485,7 +487,7 @@ SEM GrExpr
   | Seq         body        .   vaGam           =   @newVaGam `Map.union` @lhs.vaGam
 
 SEM GrBind
-  | Bind        loc         .   newVaGam        =   Map.fromList [ (n,GB.Val_Local (GB.ststDepth @stState - o) (GB.ValAccessAnnot_Annot defaultGrinBasicAnnot)) | (n,o) <- zip @argNmL [GB.nrCallRetWords ..] ]
+  | Bind        loc         .   newVaGam        =   Map.fromList [ (n,GB.Val_Local (GB.ststDepth @stState - o) (GB.ValAccessAnnot_Annot basicAnnotWord)) | (n,o) <- zip @argNmL [GB.nrCallRetWords ..] ]
                 expr        .   vaGam           =   @newVaGam `Map.union` @lhs.vaGam
 
 SEM GrAlt
@@ -698,7 +700,7 @@ SEM GrExpr
                                                                    patbasicsz = grinBasicAnnotSize @lhs.patBasicAnnot
                                                                    basicszs = patbasicsz : basicsz
                                                                    (callencInx,constMp3) = constCCallEncWrapper basicszs @constMp2
-                                                                   basicszStr = map basicGrinSizeCharEncoding basicszs
+                                                                   basicszStr = concatMap basicGrinSizeCharEncoding basicszs
                                                                    callStState = @ldStState `GB.ststInc` inc `GB.ststInc` finc
 %%[[8
                                                                    call  = cl
@@ -770,9 +772,9 @@ SEM GrExpr
                                                                 -> (ins Seq.:++: patins,incSt {-  -}`GB.ststInc` patinc,Map.fromList [(nm,val)],gbState)
                                                                 where (patins,val,patinc)
                                                                         = case (annot,@pat.mbi) of
-                                                                            (BasicAnnot_FromTaggedPtr _ _, Just (i,bSz,patinc))
+                                                                            (BasicAnnot_Size _ _ BasicAnnotTagging_FromPtr _, Just (i,bSz,patinc))
                                                                               -> (i        ,GB.Val_Local (GB.ststDepth @ldStState + inc)        (GB.ValAccessAnnot_Basic bSz    gcPermit), patinc              )
-                                                                            (BasicAnnot_FromTaggedPtr _ _, _                  )
+                                                                            (BasicAnnot_Size _ _ BasicAnnotTagging_FromPtr _, _                  )
                                                                               -> (Seq.empty,GB.Val_Local (GB.ststDepth @ldStState + inc)        (GB.ValAccessAnnot_Annot BasicAnnot_Dflt), GB.emptyStackState  )
                                                                             (_                           , Just (i,bSz,patinc))
                                                                               -> (i        ,GB.Val_NodeFldLocal (GB.ststDepth @ldStState + inc) (GB.ValAccessAnnot_Basic bSz    gcPermit), GB.emptyStackState  )   -- does this happen?
@@ -962,9 +964,9 @@ ATTR GrPatLam [ | | mbi: {Maybe (GB.InsSeq,BasicSize,GB.StackState)} ]
 SEM GrPatLam
   | BasicNode   lhs         .   mbi             =   let basicSize = grinBasicAnnotSize @annot
                                                     in  case @annot of
-                                                          BasicAnnot_FromTaggedPtr sgn _
+                                                          BasicAnnot_Size bsz _ BasicAnnotTagging_FromPtr sgn
                                                             | not @lhs.primArgForIntl
-                                                              -> Just (Seq.fromList [GB.untag2 sgn],basicSize,GB.ststPatchTOSGCNot)
+                                                              -> Just (Seq.fromList [GB.untag2 sgn {-(basicSizeIsSigned bsz)-}],basicSize,GB.ststPatchTOSGCNot)
                                                           _   -> Nothing
   | EnumNode    lhs         .   mbi             =   if @lhs.primArgForIntl
                                                     then Nothing
