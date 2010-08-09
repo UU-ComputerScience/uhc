@@ -72,7 +72,7 @@ ppOptCMetas x
 
 %%[(9 codegen) hs export(ppCBindL)
 ppCBindL :: CBindL -> PP_Doc
-ppCBindL = ppAssocL . map (\(CBind_Bind n m v) -> (n,v >|< ppOptCMetas m))
+ppCBindL = ppAssocL . map (\(CBind_Bind n [CBindAspect_Bind m v]) -> (n,v >|< ppOptCMetas m))
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -116,7 +116,7 @@ ppCurlyList pL xs = ppListSep "{ " " }" ", " $ map pL xs
 
 %%[(8 codegen)
 ATTR CodeAGItf AllCodeNT [ | | pp USE {>-<} {empty} : PP_Doc ]
-ATTR CPatFldL CPatL CBindL CAltL [ | | ppL: {[PP_Doc]} ]
+ATTR CPatFldL CPatL CBindL CAltL CBindAspectL [ | | ppL: {[PP_Doc]} ]
 ATTR CExpr [ | | lamBodyPP: PP_Doc  lamArgPPL: {[PP_Doc]} ]
 ATTR CExpr [ | | appFunPP : PP_Doc  appArgPPL: {[PP_Doc]} ]
 
@@ -172,7 +172,7 @@ SEM CExpr
   | TupDel      loc         .   pp          =   ppDef (ppParens @expr.pp) ("-=" >|< ppCurlysCommas' [ppTag @tag,@offset.pp,ppCNm @nm])
   | TupIns      loc         .   pp          =   ppDef (ppParens @expr.pp) (ppDef ("+=" >|< ppCurlysCommas' [ppTag @tag,@offset.pp,ppCNm @nm]) (ppParens @fldExpr.pp))
   | TupUpd      loc         .   pp          =   ppDef (ppParens @expr.pp) (ppDef (":=" >|< ppCurlysCommas' [ppTag @tag,@offset.pp,ppCNm @nm]) (ppParens @fldExpr.pp))
-  | CaseAltFail loc			.	pp			=	pp "FAIL" >#< @caseId
+  | CaseAltFail loc         .   pp          =   pp "FAIL" >#< @caseId
 
 SEM CExpr
   | Lam         loc         .   lamBodyPP   =   @body.lamBodyPP
@@ -187,22 +187,30 @@ SEM CExpr
                             .   appArgPPL   =   []
 
 SEM CBind
- | Bind         lhs         .   pp          =   ppDef (ppCNm @nm >|< @bindMeta.pp >#< "=") (@expr.pp)
- | FFI          lhs         .   pp          =   ppDef (ppCNm @nm >#< "=")
+ | Bind         lhs         .   pp          =   let p [a] = a
+                                                    p as  = ppCurlysSemisBlock as
+                                                in  ppDef (ppCNm @nm) (p @bindAspects.ppL)
+
+SEM CBindAspect
+ | Bind         lhs         .   pp          =   @bindMeta.pp >-< "=" >#< @expr.pp
+ | FFI          lhs         .   pp          =   "=" >#<
 %%[[8
                                                       ("foreign" >#< ppCurlysCommasBlock [pp (show @callconv),pp (show @safety),@ppent,ppTyWithCfg' CfgPP_HI @ty])
 %%][8_2
                                                       ("foreign" >#< pp (show @callconv) >#< pp @safety >#< pp @impEnt) >#< "::" >#< ppTyWithCfg' CfgPP_HI @ty
 %%]]
 %%[[8
-				loc			.	ppent		=	pp (show @impEnt)
+                loc         .   ppent       =   pp (show @impEnt)
 %%][90
-				loc			.	ppent		=	"\"" >|< @impEnt >|< "\""
+                loc         .   ppent       =   "\"" >|< @impEnt >|< "\""
 %%]]
 %%[[90
-  | FFE         lhs         .   pp          =   ppDef (ppCNm @nm >#< "=")
-                                                      ("foreignexport" >#< ppCurlysCommasBlock [pp (show @callconv),"\"" >|< @expEnt >|< "\"",ppCNm @expNm,ppTyWithCfg' CfgPP_HI @ty])
+  | FFE         lhs         .   pp          =   "=" >#< ("foreignexport" >#< ppCurlysCommasBlock [pp (show @callconv),"\"" >|< @expEnt >|< "\"",ppCNm @expNm,ppTyWithCfg' CfgPP_HI @ty])
 %%]]
+
+SEM CBindAspectL
+  | Nil         lhs         .   ppL         =   []
+  | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
 
 SEM CBindL
   | Nil         lhs         .   ppL         =   []
@@ -274,10 +282,10 @@ SEM CMetaVal
 
 %%[(8 codegen)
 SEM CExpr
-  | Ann			loc			.	pp			=	ppParens (@expr.pp >#< @ann.pp)
+  | Ann         loc         .   pp          =   ppParens (@expr.pp >#< @ann.pp)
 
 SEM CExprAnn
-  | Ty			loc			.	pp			=	"::" >#< ppTyWithCfg' CfgPP_HI @ty
+  | Ty          loc         .   pp          =   "::" >#< ppTyWithCfg' CfgPP_HI @ty
 %%]
 
 %%[(9 codegen)

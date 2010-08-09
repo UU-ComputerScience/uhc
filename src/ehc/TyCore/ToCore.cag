@@ -102,7 +102,7 @@ SEM ExprSeq1
 ATTR Expr [ | | mbFFI: {Maybe (HsName -> CBind)} ]
 
 SEM Expr
-  | FFI         lhs         .   mbFFI               =   Just (\n -> CBind_FFI @callconv @safety @impEnt n @ty.coreTy)
+  | FFI         lhs         .   mbFFI               =   Just (\n -> CBind_Bind n [CBindAspect_FFI @callconv @safety @impEnt @ty.coreTy])
   | * - FFI     lhs         .   mbFFI               =   Nothing
 %%]
 

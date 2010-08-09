@@ -16,7 +16,7 @@
 %%[(8 codegen) hs import({%{EH}Error})
 %%]
 
-%%[(8 codegen) hs import({%{EH}Core}(ctagTrue, ctagFalse, ctagCons,ctagNil)) export(ctagCons,ctagNil)
+%%[(8888 codegen) hs import({%{EH}Core}(ctagTrue, ctagFalse, ctagCons,ctagNil)) export(ctagCons,ctagNil)
 %%]
 
 %%[(8 codegen) hs import(Data.Maybe,Data.Char,Data.List,EH.Util.Pretty,qualified EH.Util.FastSeq as Seq)
@@ -36,79 +36,17 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen) hs export(RAlt,RPat,RPatConBind,RPatFld)
-type RAlt 			= RAlt' Expr Ty ValBind PatRest
-type RPat 			= RPat' Expr Ty ValBind PatRest
-type RPatConBind 	= RPatConBind' Expr Ty ValBind PatRest
-type RPatFld 		= RPatFld' Expr Ty ValBind PatRest
-
-%%]
-
-%%[(8 codegen) hs export(rcaPat,raltLPatNms)
-rcaPat :: RAlt -> RPat
-rcaPat = head . rcaPats
-
-raltLPatNms :: [RAlt] -> [RPatNm]
-raltLPatNms = nub . sort . map (rcpPNm . rcaPat)
-%%]
-
-%%[(8 codegen) hs export(rcaTag)
-rpatConTag :: RPat -> CTag
-rpatConTag (RPat_Int  _ _ _ )  = ctagInt
-rpatConTag (RPat_Char _ _ _ )  = ctagChar
-rpatConTag p                   = rcpTag p
-
-rcaTag :: RAlt -> CTag
-rcaTag = rpatConTag . head . rcaPats
-%%]
-
-%%[(8 codegen) hs export(raltIsVar,raltIsConst)
-raltIsVar :: RAlt -> Bool
-raltIsVar (RAlt_Alt (RPat_Var _ _ : _) _ _)  = True
-raltIsVar _                                  = False
-
-raltIsConst :: RAlt -> Bool
-raltIsConst (RAlt_Alt (p : _) _ _)
-  = c p
-  where c (RPat_Int   _ _ _) = True
-        c (RPat_Char  _ _ _) = True
-        c _                  = False
-%%]
-
-%%[(8 codegen) hs export(raltIsConMany)
-raltIsConMany :: RAlt -> Bool
-raltIsConMany (RAlt_Alt (RPat_Con _ _ _ (RPatConBind_Many _) : _) _ _) = True
-raltIsConMany _                                                      = False
-%%]
-
-%%[(8 codegen) hs export(raltIsIrrefutable)
-raltIsIrrefutable :: RAlt -> Bool
-raltIsIrrefutable (RAlt_Alt (RPat_Irrefutable _ _ _ : _) _ _) = True
-raltIsIrrefutable _                                         = False
-%%]
-
-%%[(97 codegen) hs export(raltMbBoolExpr,raltIsBoolExpr)
-raltMbBoolExpr :: RAlt -> Maybe (Maybe SrcConst)
-raltMbBoolExpr (RAlt_Alt (RPat_BoolExpr _ _ _ e : _) _ _)  = Just e
-raltMbBoolExpr _                                           = Nothing
-
-raltIsBoolExpr :: RAlt -> Bool
-raltIsBoolExpr = isJust . raltMbBoolExpr
-%%]
-
-Flatten bindings, delaying the handling of many bindings to the rewriting of case patterns.
-
-%%[(8 codegen) hs export(rpatConBindUnFlatten)
-rpatConBindUnFlatten :: RPatConBind -> [RPatConBind] -> RPatConBind
-rpatConBindUnFlatten z []  = z
-rpatConBindUnFlatten _ [b] = b
-rpatConBindUnFlatten _ bs  = RPatConBind_Many bs
+type RAlt 			= RAlt' 		Expr Ty ValBind PatRest
+type RPat 			= RPat' 		Expr Ty ValBind PatRest
+type RPatConBind 	= RPatConBind' 	Expr Ty ValBind PatRest
+type RPatFld 		= RPatFld' 		Expr Ty ValBind PatRest
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Conversion from Rxxx -> Cxxx
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs export(rpat2Pat)
+%%[(8888 codegen) hs export(rpat2Pat)
 rpat2Pat :: RPat -> Pat
 rpat2Pat p
   = case p of
@@ -122,7 +60,7 @@ rpat2Pat p
 %%]]
 %%]
 
-%%[(8 codegen) hs export(rpatConBind2PatConBind,rpatBind2FldBind)
+%%[(8888 codegen) hs export(rpatConBind2PatConBind,rpatBind2FldBind)
 rpatConBind2PatConBind :: RPatConBind -> (PatRest,[FldBind])
 rpatConBind2PatConBind b
   = case b of
@@ -210,17 +148,14 @@ valBindLNub = nubBy (\b1 b2 -> valBindNm b1 == valBindNm b2)
 %%% Lifting to MetaVal tupled
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs export(metaLift)
-metaLift' :: Functor f => MetaVal -> f x -> f (x,MetaVal)
-metaLift' m = fmap (\x -> (x,m))
-
+%%[(8888 codegen) hs export(metaLift)
 metaLift :: Functor f => f x -> f (x,MetaVal)
-metaLift = metaLift' MetaVal_Val
+metaLift = fmap2Tuple MetaVal_Val
 %%]
 
-%%[(9 codegen) hs export(metaLiftDict)
+%%[(9999 codegen) hs export(metaLiftDict)
 metaLiftDict :: Functor f => f x -> f (x,MetaVal)
-metaLiftDict = metaLift' (MetaVal_Dict Nothing)
+metaLiftDict = fmap2Tuple (MetaVal_Dict Nothing)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -285,7 +220,7 @@ mkInject tag toTy e
 %%% Construction
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs export(mkExprAppMeta,mkExprApp1Meta)
+%%[(8 codegen) hs
 mkExprApp1Meta' :: (Expr->Expr) -> Expr -> Expr -> MetaVal -> Expr
 mkExprApp1Meta' mka f a m = Expr_App f (mka $ Expr_Seq [ExprSeq1_L0Val a (if metaValIsDflt m then Nothing else Just m)])
 
@@ -299,7 +234,7 @@ mkExprAppMeta :: Expr -> [(Expr,MetaVal)] -> Expr
 mkExprAppMeta f as = foldl (\f (a,m) -> mkExprApp1Meta f a m) f as
 %%]
 
-%%[(8 codegen) hs export(mkExprAppTy,mkExprApp1Ty)
+%%[(8 codegen) hs
 mkExprApp1Ty :: Expr -> Ty -> Expr
 mkExprApp1Ty f t = Expr_App f (Expr_Seq [ExprSeq1_L1Val t])
 
@@ -307,12 +242,12 @@ mkExprAppTy :: Expr -> [Ty] -> Expr
 mkExprAppTy f as = foldl mkExprApp1Ty f as
 %%]
 
-%%[(8 codegen) hs export(mkTyApp)
+%%[(8 codegen) hs
 mkTyApp :: Ty -> [Ty] -> Ty
-mkTyApp f as = mkExprAppMeta' mkTySeq1 f (metaLift as)
+mkTyApp f as = mkExprAppMeta' mkTySeq1 f (acoreMetaLift as)
 %%]
 
-%%[(8 codegen) hs export(mkExprLamMeta,mkExprLam1Meta)
+%%[(8 codegen) hs
 mkExprLam1Meta' :: (Expr->Expr) -> HsName -> MetaVal -> Ty -> Expr -> Expr
 mkExprLam1Meta' mka a m t e = Expr_Lam (mka $ Expr_Seq [ExprSeq1_L0Bind a (if metaValIsDflt m then Nothing else Just m) t]) e
 
@@ -344,7 +279,7 @@ mkExprLam1Ty = mkExprLam1Ty' id
 mkExprLamTy :: [(HsName,Ty)] -> Expr -> Expr
 mkExprLamTy as e = foldr (\(n,t) e -> mkExprLam1Ty n t e) e as
 
-%%[(8 codegen) hs export(mkExprLam,mkExprLam1)
+%%[(8 codegen) hs
 mkExprLam1' :: (Expr->Expr) -> HsName -> Ty -> Expr -> Expr
 mkExprLam1' mka a t e = mkExprLam1Meta' mka a MetaVal_Val t e
 
@@ -369,12 +304,7 @@ mkExprTuple' :: CTag -> Ty -> [Expr] -> Expr
 mkExprTuple' t ty fs = mkExprTuple'' t ty (zip (repeat Nothing) fs) -- Expr_Node {- t -} . map (flip ExprSeq1_L0Val Nothing)
 %%]
 
-%%[(8 codegen) hs export(mkExprStrictInMeta)
-mkExprStrictInMeta :: HsName -> MetaVal -> Ty -> Expr -> (Expr -> Expr) -> Expr
-mkExprStrictInMeta nm m t e mkC = Expr_Let ValBindCateg_Strict [mkValStrictBind1Meta nm m (tyUnThunkTySeq t) (mkExprUnThunk e)] (mkC (Expr_Var nm))
-%%]
-
-%%[(8 codegen) hs export(mkExprLet,mkExprLet')
+%%[(8 codegen) hs
 mkExprLet' :: Bool -> ValBindCateg -> ValBindL -> Expr -> Expr
 mkExprLet' merge c bs e
   = if null bs
@@ -388,45 +318,6 @@ mkExprLet' merge c bs e
 
 mkExprLet :: ValBindCateg -> ValBindL -> Expr -> Expr
 mkExprLet c bs e = mkExprLet' False c bs e
-%%]
-
-%%[(8 codegen) hs export(mkExprLetRec,mkExprLetPlain,mkExprStrictIn,mkExprMbStrictIn)
-
-mkExprLetRec :: ValBindL -> Expr -> Expr
-mkExprLetRec = mkExprLet ValBindCateg_Rec
-
-mkExprLetPlain ::  HsName -> Ty -> Expr -> Expr -> Expr
-mkExprLetPlain nm t e = mkExprLet ValBindCateg_Plain [mkValBind1 nm t e]
-
-mkExprStrictIn :: HsName -> Ty -> Expr -> (Expr -> Expr) -> Expr
-mkExprStrictIn nm t e mkC = mkExprStrictInMeta nm MetaVal_Val t e mkC
-
-mkExprMbStrictIn :: Maybe (HsName,Ty) -> Expr -> (Expr -> Expr) -> Expr
-mkExprMbStrictIn (Just (nm,t)) e mkC = Expr_Let ValBindCateg_Strict [mkValStrictBind1 nm t e] (mkC (Expr_Var nm))
-mkExprMbStrictIn _             e mkC =                                                        mkC e
-%%]
-
-%%[(8888 codegen) hs
-mkCMod :: Expr -> CModule
-mkCMod e = CModule_Mod (hsnFromString "") e []
-%%]
-
-%%[(91 codegen) hs export(mkIf)
-mkIf :: EHCOpts -> Maybe HsName -> Expr -> Expr -> Expr -> Expr
-mkIf opts cn c t f
-  = mkExprMbStrictIn (fmap (\n -> (n,tyBool opts)) cn) c
-    $ (\c -> Expr_Case c
-               [ Alt_Alt (Pat_Con (ctagFalse opts) PatRest_Empty []) f
-               , Alt_Alt (Pat_Con (ctagTrue  opts) PatRest_Empty []) t
-               ]
-               Nothing {-(tcUndefined opts)-}
-      )
-%%]
-
-%%[(99 codegen) hs export(mkMatchChar)
-mkMatchChar :: EHCOpts -> Maybe HsName -> Char -> Expr -> Expr -> Expr -> Expr
-mkMatchChar opts cn cchar cexpr t f
-  = mkIf opts cn (acoreBuiltinEqChar opts cchar cexpr) t f
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -464,43 +355,6 @@ exprIsEvaluated _               = False
 %%[(8 codegen) hs export(tcVarAsArg)
 tcVarAsArg :: HsName -> Expr
 tcVarAsArg n = mkExprThunk $ Expr_Var n
-%%]
-
-%%[(97 codegen) hs export(tcInteger)
-tcInteger :: EHCOpts -> Integer -> Expr
-tcInteger opts i = acoreBuiltinApp opts ehbnPackedStringToInteger [Expr_String (show i) (tycString opts)]
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Tags, in general
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8888 codegen) hs export(altIntTag) 
-patConTag :: Pat -> CTag
-patConTag (Pat_Con  t _ _)  = t
-patConTag (Pat_Int  _ _  )  = ctagInt
-patConTag (Pat_Char _ _  )  = ctagChar
-
-patIntTag :: Pat -> Int
-patIntTag (Pat_Con  t _ _)  = ctagTag t
-patIntTag (Pat_Int  i _  )  = fromInteger i
-patIntTag (Pat_Char c _  )  = ord c
-
-altIntTag :: Alt -> Int
-altIntTag (Alt_Alt p _) = patIntTag p
-%%]
-altConTag :: Alt -> CTag
-altConTag (Alt_Alt p _) = patConTag p
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% List
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(99 codegen) hs export(mkListSingleton)
-mkListSingleton :: EHCOpts -> Ty -> Expr -> Expr
-mkListSingleton opts _ e
-  = acoreTagTupTy (ctagCons opts) (tyErr "TyCore.Base.mkListSingleton.Cons") [e, acoreTagTupTy (ctagNil opts) (tyErr "TyCore.Base.mkListSingleton.Nil") []]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -637,40 +491,11 @@ offMpMpKeysSet m = Set.unions [ Map.keysSet m' | (_,m') <- Map.elems m ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Hole construction
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(9 codegen) hs export(mkExprPrHole,mkExprHole,mkExprLetHole)
-mkExprHole :: EHCOpts -> UID -> Expr
-mkExprHole opts = Expr_Var . mkHNm
-
-mkExprPrHole :: EHCOpts -> PredOccId -> Expr
-mkExprPrHole opts = mkExprHole opts . poiId
-
-mkExprLetHole :: UID -> Expr -> Expr
-mkExprLetHole i b = i `Expr_HoleLet` b
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Module merge
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(2020 codegen) hs
-cModMerge :: [CModule] -> CModule
-cModMerge mL
-  = foldr1 cmb mL
-  where get (Expr_Let c b e) = Expr_Let c b . get e
-        get  _                = id
-        cmb (CModule_Mod m1 e1 t1) (CModule_Mod m2 e2 t2)
-          = CModule_Mod m2 (get e1 e2) (t1++t2)
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Subst to replace CaseAltFail
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen) hs export(CaseFailSubst)
-type CaseFailSubst = CaseFailSubst' Expr
+type CaseFailSubst = CaseFailSubst' Expr MetaVal ValBind ValBind Ty
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -759,13 +584,15 @@ envFromGam {- tkg -} getTy ml g
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen)
-instance AbstractCore Expr MetaVal ValBind ValBindCateg MetaBind Ty Pat PatRest FldBind Alt where
+instance AbstractCore Expr MetaVal ValBind ValBind ValBindCateg MetaBind Ty Pat PatRest FldBind Alt where
   -- expr
   acoreApp1Meta           				= mkExprApp1Meta
   acoreLam1MetaTy         				= mkExprLam1Meta
   acoreTagTupTy   tg t es 				= mkExprTuple' tg t es
-  acoreBind1CatLevMetasTy cat n l m t e	= mkValBind1LevMetas doMkSeq n l m t e
+  acoreBindasp1CatLevMetasTy cat n l m t e
+  										= mkValBind1LevMetas doMkSeq n l m t e
                                         where doMkSeq = cat /= ValBindCateg_Strict
+  acoreBind1Asp n [a]					= a
   acoreLetBase							= Expr_Let
   acoreCaseDflt	e as d					= Expr_Case e as d
   acoreVar								= Expr_Var
@@ -773,10 +600,23 @@ instance AbstractCore Expr MetaVal ValBind ValBindCateg MetaBind Ty Pat PatRest 
   acoreCharTy t i						= Expr_Char i t
   acoreIntTy t i						= Expr_Int (toInteger i) t
   acoreIntTy2							= flip Expr_Int
+  acoreUidHole							= Expr_Hole
+%%[[9
+  acoreHoleLet							= Expr_HoleLet
+%%]
   
+  -- ty
+  -- acoreTyInt2							= tyInt
+
   -- pat
   acorePatVarTy							= Pat_Var
   acorePatCon 							= Pat_Con
+  acorePatIntTy t i						= Pat_Int (toInteger i) t
+  acorePatIntTy2 t i					= Pat_Int i t
+  acorePatCharTy t i					= Pat_Char i t
+%%[[97
+  acorePatBoolExpr 						= Pat_BoolExpr
+%%]]
   
   -- patfld
   acorePatFldTy t (_,off) n 			= FldBind_Fld n t off
@@ -791,22 +631,26 @@ instance AbstractCore Expr MetaVal ValBind ValBindCateg MetaBind Ty Pat PatRest 
   -- acoreTy2ty            t = tyErr "acoreTy2ty"
   
   -- defaults
-  acoreMetavalDflt      _ 				= MetaVal_Val
-  acoreMetabindDflt     _ 				= MetaBind_Plain
-  acoreTyErr          _ s 				= tyErr s
-  acoreTyErr2         _ s 				= tyErr s
-  acoreTyChar _							= tyChar
-  acoreTyInt _							= tyInt
-  acoreTyString o _						= tycString o
+  acoreMetavalDflt      				= MetaVal_Val
+%%[[9
+  acoreMetavalDfltDict   				= MetaVal_Dict Nothing
+%%]]
+  acoreMetabindDflt      				= MetaBind_Plain
+  acoreTyErr           s 				= tyErr s
+  acoreTyChar 							= tyChar
+  acoreTyInt 							= tyInt
+  acoreTyString o 						= tycString o
 
   -- bindcateg
-  acoreBindcategRec _					= ValBindCateg_Rec
-  acoreBindcategStrict _				= ValBindCateg_Strict
-  acoreBindcategPlain _					= ValBindCateg_Plain
+  acoreBindcategRec 					= ValBindCateg_Rec
+  acoreBindcategStrict 					= ValBindCateg_Strict
+  acoreBindcategPlain					= ValBindCateg_Plain
 
   -- inspecting
   acoreExprMbLet (Expr_Let c b e)       = Just (c,b,e)
   acoreExprMbLet _                      = Nothing
+
+  acoreExprMbVar           				= exprMbVar
 
   acoreExprMbInt (Expr_Int i t)         = Just (t,i)
   acoreExprMbInt _                      = Nothing
@@ -825,5 +669,13 @@ instance AbstractCore Expr MetaVal ValBind ValBindCateg MetaBind Ty Pat PatRest 
 
   acoreUnAlt (Alt_Alt p e)				= (p,e)
   acoreUnPatFld (FldBind_Fld n t o)		= (t,(n,o),n)
+
+  -- transforming
+  acoreExprUnThunk 						= mkExprUnThunk
+  acoreTyUnThunk   						= tyUnThunkTySeq
+
+  -- coercion
+  acoreCoeArg 							= Expr_CoeArg
+  acoreExprIsCoeArg						= (== Expr_CoeArg)
 %%]
 

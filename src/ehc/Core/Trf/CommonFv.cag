@@ -22,7 +22,7 @@ SEM CExpr
   | App         loc         .   fvS         =   @func.fvS `Set.union` @arg.fvS
 
 SEM CBind
-  | Bind        lhs         .   fvSMp       =   Map.singleton @nm @expr.fvS
+  | Bind        lhs         .   fvSMp       =   Map.singleton @nm @bindAspects.fvS
 
 SEM CAlt
   | Alt         loc         .   fvS         =   @expr.fvS `Set.difference` Set.fromList @pat.nmL

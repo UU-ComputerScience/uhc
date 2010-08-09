@@ -12,7 +12,7 @@
 %%]
 %%[(8 codegen hmtyinfer) import(qualified {%{EH}TyCore.Full0} as C)
 %%]
-%%[(9 codegen hmtyinfer) import({%{EH}Core.Subst})
+%%[(9 codegen hmtyinfer) import({%{EH}AbstractCore},{%{EH}Core.Subst})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

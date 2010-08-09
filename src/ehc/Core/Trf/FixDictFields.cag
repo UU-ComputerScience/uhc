@@ -23,7 +23,7 @@
 %%[(9 codegen) hs import(Debug.Trace)
 %%]
 
-%%[(9 codegen).WRAPPER ag import({Core/AbsSyn})
+%%[(9 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonToXX},{Core/CommonLev})
 WRAPPER CodeAGItf
 %%]
 
@@ -87,7 +87,7 @@ SEM CMetaVal
                                       @lhs.mbTrack
 
 
-SEM CBind
+SEM CBindAspect
   | Bind  bindMeta.mbTrack  = @expr.mbTrack
           bindMeta.envFinal = @expr.envUp
   
@@ -101,17 +101,17 @@ SEM CExpr
 
 
 
-ATTR CExpr CBind CBindL CAlt CAltL CPat CPatL CPatFld CPatFldL [  envDown:Env  | |  ]
+ATTR CExpr AllBind CAlt CAltL CPat CPatL CPatFld CPatFldL [  envDown:Env  | |  ]
 
 SEM CModule
   | Mod  expr.envDown = Map.empty
   
   
-ATTR CBind CBindL CExpr [ | | envUp USE {`Map.union`} {Map.empty} : Env ]
+ATTR AllBind CExpr [ | | envUp USE {`Map.union`} {Map.empty} : Env ]
 
-SEM CBind
+SEM CBindAspect
   | Bind   lhs.envUp  =  maybe (Map.empty)
-                               (\t -> Map.singleton @nm t)
+                               (\t -> Map.singleton @lhs.nm t)
                                @expr.mbTrack
 
 SEM CExpr
@@ -138,7 +138,7 @@ SEM CPatFld
   | Fld  offset.mbCtxCount = Nothing
          offset.isDictClass = False
 
-SEM CBind
+SEM CBindAspect
   | Bind  expr.mbCtxCount = if @bindMeta.isDictInstance
                             then Just 0
                             else Nothing
@@ -171,13 +171,6 @@ SEM CMetaVal
 
 
 
-
-ATTR CExpr [ | | mbVar : {Maybe HsName} ]
-
-SEM CExpr
-  | Var   lhs.mbVar = Just @nm
-  |*-Var  lhs.mbVar = Nothing
-  
 
 ATTR CExpr [ | | mbTrack : {Maybe Track} ]
 

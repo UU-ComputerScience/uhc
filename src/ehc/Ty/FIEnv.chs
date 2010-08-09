@@ -30,6 +30,8 @@ If this is going to be avoided, the eagerness must be avoided, or use of subsump
 %%]
 %%[(8 hmtyinfer) import({%{EH}VarMp})
 %%]
+%%[(8 hmtyinfer) import({%{EH}AbstractCore})
+%%]
 %%[(8 hmtyinfer) import(qualified {%{EH}TyCore.Full0} as C)
 %%]
 %%[(9 hmtyinfer) import({%{EH}Ty})
@@ -143,12 +145,12 @@ data FitsInRequires
 %%[(8 hmtyinfer) export(emptyFitsInRequires)
 emptyFitsInRequires
   =   FitsInRequires
-        { fireqLRCoeForLamTyAppAsSubst  = \_ _ _ _ _ -> (C.emptyLRCoe,C.emptyCSubst)
+        { fireqLRCoeForLamTyAppAsSubst  = \_ _ _ _ _ -> (C.emptyLRCoe,emptyCSubst)
         , fireqCSubstAppExpr			= \_ a       -> a
         , fireqCSubstAppSubst			= \_ a       -> a
 %%[[10
-        , fireqCoeEvalOnAsSubst       	= \{- _ -} _ _ _   -> (C.Expr_Err "emptyFitsInRequires",C.emptyCSubst)
-        , fireqLRCoeWipeWeaveAsSubst	= \_ _ _ _   -> (C.coeId,C.emptyCSubst)
+        , fireqCoeEvalOnAsSubst       	= \{- _ -} _ _ _   -> (C.Expr_Err "emptyFitsInRequires",emptyCSubst)
+        , fireqLRCoeWipeWeaveAsSubst	= \_ _ _ _   -> (acoreCoeId,emptyCSubst)
 %%]]
         }
 %%]

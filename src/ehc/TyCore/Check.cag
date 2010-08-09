@@ -26,6 +26,8 @@ Matching of types to
 %%[(8 codegen) hs import({%{EH}Error})
 %%]
 
+%%[(8 codegen) hs import({%{EH}AbstractCore})
+%%]
 %%[(8 codegen) hs import({%{EH}TyCore.Full1})
 %%]
 
@@ -246,7 +248,7 @@ tyMatch' min ty1 ty2
         mm                                  = mm' (const,id)
 
         -- binding of tvar for output
-        bind mout v t = mout {moutCSubst = uidTyLToCSubst [(v,t)] `cSubstApp` moutCSubst mout}
+        bind mout v t = mout {moutCSubst = acoreCSubstFromUidTyL [(v,t)] `cSubstApp` moutCSubst mout}
         -- error
         err' mout pp1 pp2 = mout {moutErrL = [rngLift emptyRange Err_TyCoreMatchClash (ppTy ty1) (ppTy ty2) pp1 pp2]}
         err  mout t1  t2  = err' mout (ppTy t1) (ppTy t2)
