@@ -31,7 +31,7 @@ However, ideally, this trf should be placed before that, but this currently brea
 %%[(99 codegen) hs import(Data.Maybe, qualified Data.Map as Map)
 %%]
 
-%%[(99 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonLamInfo})
+%%[(99 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonToXX},{Core/CommonLamInfo})
 WRAPPER CodeAGItf
 %%]
 
@@ -99,7 +99,7 @@ SEM CExpr
                             .   traceCandidateLamBody
                                             =   @cTrf
 
-SEM CBind
+SEM CBindAspect
   | Bind        loc         .   isTraceCandidate
                                             =   @lhs.isGlobal || @expr.isTraceCandidate
 %%]
@@ -131,10 +131,10 @@ mbStackTrace opts isCand nm
 %%]
 
 %%[(99 codegen)
-SEM CBind
+SEM CBindAspect
   | Bind        (loc.mbStackTrace,lhs.bindLamMp)
-                                            =   let mbt = mbStackTrace @lhs.opts @isTraceCandidate @nm
-                                                in  (mbt,Map.singleton @nm (LamInfo 0 mbt Nothing))
+                                            =   let mbt = mbStackTrace @lhs.opts @isTraceCandidate @lhs.nm
+                                                in  (mbt,Map.singleton @lhs.nm (LamInfo 0 mbt Nothing))
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -149,7 +149,7 @@ ATTR AllCodeNT [ | uniq: Int | ]
 SEM CodeAGItf
   | AGItf       loc         .   uniq        =   0
 
-SEM CBind
+SEM CBindAspect
   | Bind        loc         .   uniq        =   @lhs.uniq + 1
                             .   nmStackTrace=   mkHNm $ "_$" ++ show @lhs.uniq ++ "_stacktrace"
 %%]
@@ -161,12 +161,12 @@ SEM CBind
 %%[(99 codegen)
 ATTR AllBind [ | | bindCTrfL USE {++} {[]}: {[CBind]} ]
 
-SEM CBind
+SEM CBindAspect
   | Bind        (loc.bindCTrfL,loc.mbInStackTraceCtxt,loc.newLamMp)
                                             =   case @mbStackTrace of
                                                   StackTraceInfo_HasStackTraceEquiv dbNm | @isTraceCandidate
                                                     -> ( [ acoreBind1Cat CBindings_Plain dbNm (acoreLam1 @nmStackTrace @expr.cTrf) 
-                                                         , acoreBind1Metas @nm @bindMeta.cTrf 
+                                                         , acoreBind1Metas @lhs.nm @bindMeta.cTrf 
                                                            $ acoreLam   @expr.traceCandidateLamArgs
                                                            $ acoreApp   (acoreVar dbNm)
                                                                         ( acoreVar (ehcOptBuiltin @lhs.opts ehbnDataListAltNil)
@@ -175,11 +175,11 @@ SEM CBind
                                                          ]
                                                        , Just @nmStackTrace
                                                        , Map.fromList
-                                                           [ (dbNm, LamInfo 0 (StackTraceInfo_IsStackTraceEquiv @nm) Nothing)
+                                                           [ (dbNm, LamInfo 0 (StackTraceInfo_IsStackTraceEquiv @lhs.nm) Nothing)
                                                            ]
                                                        )
-                                                  _ -> ([@cTrf], @lhs.mbInStackTraceCtxt, Map.empty)
-  | * - Bind    loc         .   bindCTrfL   =   [@cTrf]
+                                                  _ -> ([acoreBind1Asp1 @lhs.nm @cTrf], @lhs.mbInStackTraceCtxt, Map.empty)
+  | * - Bind    loc         .   bindCTrfL   =   [acoreBind1Asp1 @lhs.nm @cTrf]
 %%]
 
 %%[(99 codegen)
@@ -208,7 +208,7 @@ ATTR
   CodeAGItf
     [ | | debugLamMp USE {`Map.union`} {Map.empty}: LamMp ]
 
-SEM CBind
+SEM CBindAspect
   | Bind        lhs         .   debugLamMp
                                             =   @newLamMp `Map.union` @expr.debugLamMp
 %%]
@@ -220,5 +220,8 @@ SEM CBind
 %%[(99 codegen)
 SEM CBind
   | *           loc         .   cTrf        :   CBind
+
+SEM CBindAspect
+  | *           loc         .   cTrf        :   CBindAspect
 %%]
 

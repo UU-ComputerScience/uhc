@@ -14,7 +14,7 @@
 %%[(9 codegen hmtyinfer) import({%{EH}Ty.FitsInCommon2}(FIEnv(..),FIIn(..)),qualified {%{EH}TyCore.Full2} as C,{%{EH}Ty})
 %%]
 
-%%[(9 codegen) hs import({%{EH}AbstractCore})
+%%[(9 codegen) hs import({%{EH}AbstractCore},{%{EH}AbstractCore.Utils})
 %%]
 
 %%[(9 codegen) import(EH.Util.Pretty)
@@ -154,7 +154,7 @@ evidMpToCore env evidMp
                                         _           -> c'
         ann (RedHow_Assumption   vun sc) _     = ( mknm $ vunmNm vun, sc )
         ann (RedHow_ByInstance   n _   sc) ctxt= ( acoreAppMeta (mknm n) (map (\c -> (tcrExpr c,(C.MetaVal_Dict Nothing))) ctxt), maximumBy pscpCmpByLen $ sc : map tcrScope ctxt )
-        ann (RedHow_BySuperClass n o t ) [sub] = ( C.mkExprSatSelsCaseMeta
+        ann (RedHow_BySuperClass n o t ) [sub] = ( acoreSatSelsCaseMetaTy
                                                      (C.emptyRCEEnv $ feEHCOpts $ fiEnv env)
                                                      (Just (hsnUniqifyEval n,ty n)) (C.MetaVal_Dict (Just o)) (tcrExpr sub) t
                                                      [(n,o)] Nothing (acoreVar n)
@@ -166,7 +166,7 @@ evidMpToCore env evidMp
         ann (RedHow_ByLabel _ (LabelOffset_Off o) sc) [roff] = ( acoreBuiltinAddInt (feEHCOpts $ fiEnv env) (tcrExpr roff) o, sc )
 %%]]
 %%[[13
-        ann (RedHow_Lambda  i sc) [body]       = ( [(mkHNm i,C.tyErr ("evidMpToCore.RedHow_Lambda: " ++ show i))] `C.mkExprLam` tcrExpr body, sc )
+        ann (RedHow_Lambda  i sc) [body]       = ( [(mkHNm i,C.tyErr ("evidMpToCore.RedHow_Lambda: " ++ show i))] `acoreLamTy` tcrExpr body, sc )
 %%]]
 %%[[16
         ignore (_, (Evid_Proof _ red  _))
@@ -266,6 +266,6 @@ evidKeyCoreMpToBinds2 m
 %%[(9 codegen) export(evidKeyBindMpToSubst)
 evidKeyBindMpToSubst :: EvidKeyToValBindMap -> C.CSubst
 evidKeyBindMpToSubst
-  = C.uidValBindLLToCSubst . Map.toList
+  = acoreCSubstFromUidBindLL . Map.toList
 %%]
 

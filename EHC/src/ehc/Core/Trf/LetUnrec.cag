@@ -16,7 +16,7 @@
 %%[(8 codegen) hs import({%{EH}Base.Debug},EH.Util.Utils(scc))
 %%]
 
-%%[(8 codegen).WRAPPER ag import({Core/AbsSyn})
+%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonToXX},{Core/CommonLev})
 WRAPPER CodeAGItf
 %%]
 
@@ -65,9 +65,9 @@ SEM CExpr
   | Var         lhs         .   useMp       =   Map.fromList (zip @lhs.inNmL (repeat [@nm]))
   | Let         lhs         .   useMp       =   @remUseMp `useMpComb` @body.useMp
 
-SEM CBind
-  | Bind        expr        .   inNmL       =   @nm : @lhs.inNmL
-                lhs         .   useMp       =   (@nm `Map.singleton` []) `useMpComb` @expr.useMp
+SEM CBindAspect
+  | Bind        expr        .   inNmL       =   @lhs.nm : @lhs.inNmL
+                lhs         .   useMp       =   (@lhs.nm `Map.singleton` []) `useMpComb` @expr.useMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -81,8 +81,8 @@ type BindMp = Map.Map HsName (CExpr,CMetas)
 %%[(8 codegen)
 ATTR AllBind [ | | bindMp USE {`Map.union`} {Map.empty}: BindMp ]
 
-SEM CBind
-  | Bind        lhs         .   bindMp      =   @nm `Map.singleton` (@expr.cTrf,@bindMeta.cTrf)
+SEM CBindAspect
+  | Bind        lhs         .   bindMp      =   @lhs.nm `Map.singleton` (@expr.cTrf,@bindMeta.cTrf)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

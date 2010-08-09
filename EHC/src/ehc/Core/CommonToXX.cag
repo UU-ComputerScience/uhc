@@ -3,51 +3,14 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Utils
+%%% Name of binding
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen)
+ATTR AllBindAspect [ nm: HsName | | ]
+
 SEM CBind
-  | FFI         loc         .   ffiMbTyConNm    =   tyMbCon . fst . tyAppFunArgs        -- possibly get constructor name of type (application)
-                            .   ffiTyConNm      =   maybe hsnUnknown id . @ffiMbTyConNm -- get it, with defaulting
-                                                     
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% FFI
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8 codegen)
-SEM CBind
-%%[[8
-  | FFI         loc         .   impEntNm        =   @impEnt
-%%][90
-  | FFI         loc         .   impEntNm        =   let e = foreignEntExtract @impEnt
-                                                    in  forextractEnt e
-%%]]
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Type info
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8 codegen)
-SEM CBind
-  | FFI         loc         .   argTyLresTy 	:   {( TyL, Ty )}
-                loc         .   argTyLresTy 	=   tyArrowArgsRes @ty
-                loc         .   argTyL      	:   TyL
-                loc         .   argTyL      	=   fst @loc.argTyLresTy
-                loc         .   resTy       	=   snd @loc.argTyLresTy
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Type: derived info
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8 codegen)
-SEM CBind
-  | FFI         loc         .   argMbConL       =   map @ffiMbTyConNm @argTyL
-                            .   resMbCon        =   @ffiMbTyConNm @resTy
+  | Bind		bindAspects	.	nm				=	@nm
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -61,7 +24,7 @@ SEM CModule
   | Mod         expr        .   isStrict    =   True
                             .   isLamBody   =   False
 
-SEM CBind
+SEM CBindAspect
   | Bind        expr        .   isStrict    =   @lhs.isStrict || @expr.whatBelow == ExprIsLam
 
 SEM CPatFld
@@ -94,7 +57,7 @@ SEM CExpr
                                                     else EvalCtx_None
 %%]
 
-SEM CBind
+SEM CBindAspect
   | Bind        expr        .   evalCtx         =   if @expr.whatBelow == ExprIsLam
                                                     then EvalCtx_Eval
                                                     else @lhs.evalCtx

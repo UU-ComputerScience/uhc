@@ -55,7 +55,7 @@ SEM CExpr
 
 
 %%[(8 codegen)
-SEM CBind
+SEM CBindAspect
   | Bind        loc         .  isClosurableBind =   (  @lhs.letBindingsCateg /= CBindings_Strict
                                                     && @expr.isClosurableExpr
                                                     && isNothing @expr.mbTupApp   -- superfluous test at the moment, because mbTupApp is only Just for Tup and App, which are not Closurable anyway

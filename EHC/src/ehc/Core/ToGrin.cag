@@ -9,7 +9,7 @@
 
 %%[(8 codegen grin) hs module {%{EH}Core.ToGrin} export(Inh_CodeAGItf(..),Syn_CodeAGItf(..),wrap_CodeAGItf,sem_CodeAGItf)
 %%]
-%%[(8 codegen grin).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonToXX},{Core/CommonLamInfo})
+%%[(8 codegen grin).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonToXX},{Core/CommonFFI},{Core/CommonLamInfo})
 WRAPPER CodeAGItf
 %%]
 %%[(8 codegen grin) hs import(Char, Data.Maybe, Data.List, qualified Data.Set as Set, qualified Data.Map as Map)
@@ -41,7 +41,7 @@ none, directly exports wrap_CodeAGItf,sem_CodeAGItf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[99
-SEM CBind
+SEM CBindAspect
   | Bind      	lhs			.	opts				<	expr.gUniq
 %%]
 
@@ -88,7 +88,7 @@ SEM CExpr
   | App         (func.gUniq,loc.lUniq,loc.lUniq2)
                                             =   mkNewLevUID2  @lhs.gUniq
 
-SEM CBind
+SEM CBindAspect
 %%[[(8 codegen grin)
   | FFI         (lhs.gUniq,loc.lUniq)       =   mkNewLevUID   @lhs.gUniq
 %%][98
@@ -125,7 +125,7 @@ SEM CExpr
                                                     then EvalCtx_Eval
                                                     else EvalCtx_None
 
-SEM CBind
+SEM CBindAspect
   | Bind        expr        .   evalCtx     =   if not (null @expr.grLamArgL)
                                                 then EvalCtx_Eval
                                                 else @lhs.evalCtx
@@ -138,12 +138,12 @@ Here we only gather arity info, stack trace info is assumed to be gathered earli
 and assumed to propagate correctly when merged with this info.
 
 %%[(8 codegen grin)
-SEM CBind
+SEM CBindAspect
   | Bind        lhs         .   bindLamMp
-                                            =   Map.singleton @nm
+                                            =   Map.singleton @lhs.nm
                                                               (LamInfo (length @expr.grLamArgL) StackTraceInfo_None Nothing)
   | FFI         lhs         .   bindLamMp
-                                            =   Map.singleton @nm
+                                            =   Map.singleton @lhs.nm
                                                               (LamInfo (length @argTyL + length @argTyLExtra) StackTraceInfo_None Nothing)
 %%]
 
@@ -446,7 +446,7 @@ SEM CExpr
 SEM CModule
   | Mod         expr        .   doBox       =   True
 
-SEM CBind
+SEM CBindAspect
   | Bind        expr        .   doBox       =   True
 
 SEM CPatFld
@@ -461,17 +461,17 @@ SEM CAlt
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen grin)
-ATTR CBind CBindL  [ | | grBindL   USE {++} {[]}: GrBindL 
-                         grGlobalL USE {++} {[]}: GrGlobalL 
-                   ]
+ATTR AllBind [ | | grBindL   USE {++} {[]}: GrBindL 
+                   grGlobalL USE {++} {[]}: GrGlobalL 
+             ]
 
-SEM CBind
+SEM CBindAspect
   | Bind        (lhs.grBindL, lhs.grGlobalL)=   if   @bindMeta.isApply0
                                                 then let nm2 = case @expr.whatBelow of
                                                                  ExprIsVar n -> n
                                                                  _           -> error "ToGrin: RHS of Apply0-bind is not a variable"
-                                                     in  ( [], [GrGlobal_Global @nm (GrVal_Node (GrTag_Fun nm2) [])] )
-                                                else ( [GrBind_Bind @nm @bindMeta.grBindAnn @expr.grLamArgL @expr.grLamBody], [] )
+                                                     in  ( [], [GrGlobal_Global @lhs.nm (GrVal_Node (GrTag_Fun nm2) [])] )
+                                                else ( [GrBind_Bind @lhs.nm @bindMeta.grBindAnn @expr.grLamArgL @expr.grLamBody], [] )
 
 %%]
 
@@ -482,7 +482,7 @@ SEM CBind
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(98 codegen grin)
-SEM CBind
+SEM CBindAspect
   | FFI         loc         .   mbIORes     =   case tyMbAppConArgs @resTy of
                                                   Just (n,[a]) | ehcOptBuiltin @lhs.opts ehbnIO == n
                                                     -> Just a
@@ -491,7 +491,7 @@ SEM CBind
 %%]
 
 %%[(8 codegen grin)
-SEM CBind
+SEM CBindAspect
   | FFI         loc         .   resTyAdapted:   Ty
                 loc         .   argTyLExtra :   {[Ty]}
                 loc         .   nmArgLExtra :   {[HsName]}
@@ -499,7 +499,7 @@ SEM CBind
 %%]
 
 %%[(8 codegen grin).ioAdaption
-SEM CBind
+SEM CBindAspect
   | FFI         loc         .   resTyAdapted=   @resTy
                             .   argTyLExtra =   []
                             .   nmArgLExtra =   []
@@ -513,7 +513,7 @@ We deal with IO as follow:
 - the extra parameter s is left unevaluated.
 
 %%[(98 codegen grin) -8.ioAdaption
-SEM CBind
+SEM CBindAspect
   | FFI         loc         .   (resTyAdapted,argTyLExtra,nmArgLExtra,wrapRes)
                                             =   case @mbIORes of
                                                   Just iores
@@ -551,7 +551,7 @@ evalRes need nm e = if need then GrExpr_Seq e (GrPatLam_Var nm) (GrExpr_Eval nm)
 %%]
 
 %%[(96 codegen grin)
-SEM CBind
+SEM CBindAspect
   | FFI         loc         .   mbPrimNeedEval
                                             =   lookupPrimNeedsEval @impEntNm
                             .   primArgNeedsEvalL
@@ -561,12 +561,12 @@ SEM CBind
 %%]
 
 %%[(8 codegen grin).evalRes
-SEM CBind
+SEM CBindAspect
   | FFI         loc         .   evalRes     =   id
 %%]
 
 %%[(99 codegen grin).evalRes -8.evalRes
-SEM CBind
+SEM CBindAspect
   | FFI         loc         .   evalRes     =   evalRes @primResNeedsEval @nmEvalRes
 %%]
 
@@ -587,7 +587,7 @@ tyNmMayLiveAsTaggedPtr opts
 %%]
 
 %%[(8 codegen grin)
-SEM CBind
+SEM CBindAspect
   | FFI         loc         .   (nmRes,nmEvalRes,nmArgL,nmArgPatL)
                                             =   let  (nmRes:nmEvalRes:nmArgL) = take (length @argTyL + 2) (map (uidQualHNm @lhs.modNm) (iterate uidNext @lUniq))
                                                      nmArgPatL = map (hsnUniqify HsNameUniqifier_FFIArg) nmArgL
@@ -658,7 +658,7 @@ SEM CBind
                                                      mkEval (n,needEval,p)
                                                        = GrExpr_Seq (evalArg needEval n) p
 %%]]
-                                                in   [GrBind_Bind @nm GrBindAnnNormal (@nmArgL ++ @nmArgLExtra)
+                                                in   [GrBind_Bind @lhs.nm GrBindAnnNormal (@nmArgL ++ @nmArgLExtra)
                                                         (foldr mkEval
                                                                (@evalRes
                                                                 $ @wrapRes
@@ -685,7 +685,7 @@ SEM CBind
 %%]
 
 %%[(90 codegen grin)
-SEM CBind
+SEM CBindAspect
   | FFE         lhs         .   grBindL     = 	[]	-- not implemented yet
 %%]
 

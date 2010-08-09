@@ -32,7 +32,7 @@
 %%% Interface
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 jazy).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonToXX})
+%%[(8 jazy).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonToXX},{Core/CommonFFI})
 WRAPPER CodeAGItf
 %%]
 
@@ -273,8 +273,8 @@ methArgOffsets arity = [methArgOffset0 .. arity - methArgOffset0 + 1]
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 jazy)
-SEM CBind
-  | *			loc			.	varnm			=	nmVar @lhs.pkgNm @lhs.topClassNm @nm
+SEM CBindAspect
+  | *			loc			.	varnm			=	nmVar @lhs.pkgNm @lhs.topClassNm @lhs.nm
   				loc			.	varnm			:	HsName
 
 SEM CExpr
@@ -299,11 +299,11 @@ SEM CExpr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 jazy)
-SEM CBind
+SEM CBindAspect
 %%[[8
   | Bind        loc         .   isThrowOutMain  =   False
 %%][20
-  | Bind        loc         .   isThrowOutMain  =   @lhs.isGlobal && @nm == hsnMain
+  | Bind        loc         .   isThrowOutMain  =   @lhs.isGlobal && @lhs.nm == hsnMain
 %%]]
 %%]
 
@@ -622,7 +622,7 @@ SEM CExpr
 SEM CAlt
   | Alt         loc         .   mbLamNm         =   Nothing
 
-SEM CBind
+SEM CBindAspect
   | Bind        expr        .   mbLamNm         =   Just @varnm
 
 SEM CPatFld
@@ -640,7 +640,7 @@ SEM CExpr
                                                     else (False,hsnUnknown)
   | App         loc         .   hasAppHere      =   @lhs.whatAbove /= ExprIsApp
 
-SEM CBind
+SEM CBindAspect
   | Bind        loc         .   isCAF           =   @expr.whatBelow /= ExprIsLam
 %%]
 
@@ -878,14 +878,14 @@ ATTR AllBind CExpr [ | | jbinds USE {`Seq.union`} {Seq.empty}: JBinds]
 %%]
 
 %%[(8 jazy)
-SEM CBind
+SEM CBindAspect
   | Bind        loc         .   jiExpr          =   (if @lhs.evalCtx == EvalCtx_Eval then jiEvl else id) @expr.ji
 %%]
 
 %%[(8 jazy)
-SEM CBind
-  | FFI         lhs         .   jbinds          =   jBind @nm @varnm @ji
-  | Bind        lhs         .   jbinds          =   if @isThrowOutMain then Seq.empty else jBind @nm @varnm @ji
+SEM CBindAspect
+  | FFI         lhs         .   jbinds          =   jBind @lhs.nm @varnm @ji
+  | Bind        lhs         .   jbinds          =   if @isThrowOutMain then Seq.empty else jBind @lhs.nm @varnm @ji
 
 SEM CExpr
   | Let         lhs         .   jbinds          =   @jbindsLet `Seq.union` @body.jbinds
@@ -1123,7 +1123,7 @@ SEM CModule
 %%]
 
 %%[(8 jazy)
-SEM CBind
+SEM CBindAspect
   | Bind        loc         .   (subClasses,ji) =   let dflt = (@expr.subClasses, @jiExpr)
                                                     in  if @lhs.isGlobal
                                                         then if @isCAF
@@ -1156,7 +1156,7 @@ SEM CBind
                                                                     ]
                                                         (mkResJI,resTy)
                                                                 = mkbox @resMbCon
-                                                        funNmJiL= [(jiStrConst (show @nm),jtyStr)]
+                                                        funNmJiL= [(jiStrConst (show @lhs.nm),jtyStr)]
                                                         primJI  = j $ J.Instr_Invoke J.InvokeMode_Static (J.Const_Method nmPrim @impEntNm argsTy (Just resTy))
                                                     in  jFunCls @classNm nArgs argTyL (clsInitArgL ++ funNmJiL) (mkResJI $ argsJI ## primJI) Seq.empty Seq.empty
 %%]

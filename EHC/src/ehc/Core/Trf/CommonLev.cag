@@ -26,7 +26,7 @@ SEM CExpr
                                                           , cviMeta = @argMeta.self
                                                           }
 
-SEM CBind
+SEM CBindAspect
   | Bind        loc         .   cmetaVal            =   cmetasVal @bindMeta.self
                             .   cvi                 =   emptyCVarIntro { cviLev  = @lhs.lev   , cviMeta = @cmetaVal }
                             .   cviExpr             =   emptyCVarIntro { cviLev  = @expr.levOf, cviMeta = @cmetaVal }
@@ -83,9 +83,9 @@ SEM CAlt
 %%[(8 codegen)
 ATTR AllBind [ | | bindsIntroCVarIntroMp USE {`Map.union`} {Map.empty}: CVarIntroMp ]
 
-SEM CBind
+SEM CBindAspect
   | Bind        lhs         .   bindsIntroCVarIntroMp
-                                                    =   Map.singleton @nm @cvi
+                                                    =   Map.singleton @lhs.nm @cvi
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -113,8 +113,8 @@ SEM CAlt
 
 ATTR AllBind [ | | cvarIntroExprMp USE {`Map.union`} {Map.empty}: CVarIntroMp ]
 
-SEM CBind
+SEM CBindAspect
   | Bind        lhs         .   cvarIntroExprMp
-                                            =   Map.singleton @nm @cviExpr
+                                            =   Map.singleton @lhs.nm @cviExpr
 %%]
 

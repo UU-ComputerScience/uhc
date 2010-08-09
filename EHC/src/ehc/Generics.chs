@@ -132,7 +132,7 @@ projBuiltinNm opts proj
   where v  f   = ehcOptBuiltin  opts f
 
 -- | builtin var of constructor
-projBuiltinVar :: (AbstractCore e m b bcat mbind t p pr pf a) => EHCOpts -> Proj -> e
+projBuiltinVar :: (AbstractCore e m b basp bcat mbind t p pr pf a) => EHCOpts -> Proj -> e
 projBuiltinVar opts proj
   = acoreVar $ projBuiltinNm opts proj
 %%]
@@ -142,22 +142,23 @@ projBuiltinVar opts proj
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(92 hmtyinfer)
--- | pattern names arg to mkCExprSatSelsCases
-nmLForCase nL = zipWith (\n o -> (n,n,o)) nL [(0::Int) ..]
+-- | pattern names arg to acoreSatSelsCases
+nmLForCase nL = zipWith (\n o -> (n,{-n,-}o)) nL [(0::Int) ..]
 %%]
 
 %%[(92 hmtyinfer) export(projFrom)
 -- | from function, starting with a top level proj
 projFrom
-  :: EHCOpts
-     -> RCEEnv' CExpr
+  :: (AbstractCore e m b basp bcat mbind t p pr pf a, Eq bcat)
+     => EHCOpts
+     -> RCEEnv' e m b ba t
      -> Proj        	-- projection descriptor
-     -> CExpr       	-- resulting function
+     -> e       		-- resulting function
 projFrom
      opts rceEnv
      (Proj sum)
   = acoreLam [argNm]
-    $ mkCExprSatSelsCases -- :: RCEEnv -> Maybe HsName -> CExpr -> [(CTag,[(HsName,HsName,Int)],MbCPatRest,CExpr)] -> CExpr
+    $ acoreSatSelsCases
         rceEnv (Just $ hsnUniqifyEval argNm) (acoreVar argNm)
         [ (tg, nmLForCase nL, Nothing, fst $ mkExp proj nL)
         | proj <- projSumAlts sum
@@ -201,10 +202,11 @@ projFrom
 %%[(92 hmtyinfer) export(projTo)
 -- | from function, starting with a top level proj
 projTo
-  :: EHCOpts
-     -> RCEEnv' CExpr
+  :: (AbstractCore e m b basp bcat mbind t p pr pf a, Eq bcat)
+     => EHCOpts
+     -> RCEEnv' e m b ba t
      -> Proj        	-- projection descriptor
-     -> CExpr       	-- resulting function
+     -> e		       	-- resulting function
 projTo
      opts rceEnv
      (Proj sum)
@@ -219,7 +221,7 @@ projTo
         mkExp proj nL@(~(n:nL')) scrutL@(~(scrut:scrutL'))
           = case proj of
               -- product
-              Proj_Prod l r     -> ( \e -> mkCExprSatSelsCases rceEnv (Just $ hsnUniqifyEval scrut) (acoreVar scrut)
+              Proj_Prod l r     -> ( \e -> acoreSatSelsCases rceEnv (Just $ hsnUniqifyEval scrut) (acoreVar scrut)
                                              [ (prodTg ehbnGenerDataProdAltProd,nmLForCase [sl,sr],Nothing,l' $ r' e) ]
                                    , (scrut, nr, ssr)
                                    )
@@ -233,7 +235,7 @@ projTo
               Proj_M1_S1 _      -> wrap ehbnGenerDataMeta1  ehbnGenerDataMeta1AltM1
 
               -- sum
-              Proj_Sum   l r    -> ( \e -> mkCExprSatSelsCases rceEnv (Just $ hsnUniqifyEval scrut) (acoreVar scrut)
+              Proj_Sum   l r    -> ( \e -> acoreSatSelsCases rceEnv (Just $ hsnUniqifyEval scrut) (acoreVar scrut)
                                              [ (sumTg ehbnGenerDataSumAltLeft ,nmLForCase [sl],Nothing,l' e)
                                              , (sumTg ehbnGenerDataSumAltRight,nmLForCase [sr],Nothing,r' e)
                                              ]
@@ -261,7 +263,7 @@ projTo
                 var              = mkC scrut [n] nL' scrutL' id
                 unit             = mkC scrut []  nL  scrutL' id
                 mkC s nL nL' sL' mke ty con
-                                 = ( \e -> mkCExprSatSelsCases rceEnv (Just $ hsnUniqifyEval s) (acoreVar s)
+                                 = ( \e -> acoreSatSelsCases rceEnv (Just $ hsnUniqifyEval s) (acoreVar s)
                                              [ (tgOf ty con,nmLForCase nL,Nothing,mke e) ]
                                    , (s, nL', sL')
                                    )

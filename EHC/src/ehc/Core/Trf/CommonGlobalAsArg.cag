@@ -18,12 +18,12 @@ SEM CExpr
 %%[(8 codegen)
 ATTR AllBind [ | | bindVarS, bindLamS USE {`Set.union`} {Set.empty}: FvS ]
 
-SEM CBind
+SEM CBindAspect
   | Bind        lhs         .   (bindVarS,bindLamS)
                                             =   if @expr.isLam
-                                                then (Set.empty,Set.singleton @nm)
-                                                else (Set.singleton @nm,Set.empty)
-  | FFI         lhs         .   bindVarS    =   Set.singleton @nm
+                                                then (Set.empty,Set.singleton @lhs.nm)
+                                                else (Set.singleton @lhs.nm,Set.empty)
+  | FFI         lhs         .   bindVarS    =   Set.singleton @lhs.nm
 %%]
 
 %%[(8 codegen)

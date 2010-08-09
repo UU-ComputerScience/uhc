@@ -37,7 +37,7 @@ The meaning of a "closurable" CAF binding is defined in CommonFloat.
 %%[(8 codegen) hs import(Debug.Trace)
 %%]
 
-%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/Trf/CommonFv},{Core/CommonLev},{Core/Trf/CommonFloat})
+%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/Trf/CommonFv},{Core/CommonLev},{Core/Trf/CommonFloat},{Core/CommonToXX})
 WRAPPER CodeAGItf
 %%]
 
@@ -103,7 +103,7 @@ SEM CMetaVal
   | DictInstance   lhs.isInstance = True
   | *-DictInstance lhs.isInstance = False
 
-SEM CBind
+SEM CBindAspect
   | Bind   expr . isLocalInInstance = -- trace ("Bind " ++ show @nm ++ " passes " ++ show @bindMeta.isInstance)  $
                                       @bindMeta.isInstance || @lhs.isLocalInInstance
   
@@ -130,12 +130,13 @@ ATTR AllBind   [ | | cLamBinds,
 
 ATTR AllCodeNT [ | | cFloatedBinds USE {++} {[]}: {[(CBindingsCateg,Seq.FastSeq CBind)]} ]
 
-SEM CBind
-  | Bind        lhs . ( cLamBinds
+SEM CBindAspect
+  | Bind        loc	. cBindTrf		=	acoreBind1Asp1 @lhs.nm @cTrf
+                lhs . ( cLamBinds
                       , cLargeCAFBinds
                       , cSmallCAFBinds
                       )             =   if @expr.isLam
-                                        then ( Seq.singleton @cTrf
+                                        then ( Seq.singleton @cBindTrf
                                              , Seq.empty
                                              , Seq.empty
                                              )
@@ -144,18 +145,18 @@ SEM CBind
                                                 || @lhs.isLocalInInstance
 %%]]
                                         then ( Seq.empty
-                                             , Seq.singleton @cTrf
+                                             , Seq.singleton @cBindTrf
                                              , Seq.empty
                                              )
                                         else ( Seq.empty
                                              , Seq.empty
-                                             , Seq.singleton @cTrf
+                                             , Seq.singleton @cBindTrf
                                              )
   | FFI
 %%[[90
     FFE
 %%]]
-                lhs . cSmallCAFBinds   =   Seq.singleton @cTrf
+                lhs . cSmallCAFBinds   =   Seq.singleton (acoreBind1Asp1 @lhs.nm @cTrf)
 
 
 

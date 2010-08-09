@@ -108,7 +108,7 @@ SEM CModule
   | Mod         expr        .   isTopApp    =   True
                             .   isTopTup    =   True
 
-SEM CBind
+SEM CBindAspect
   | Bind        expr        .   isTopApp    =   True
                             .   isTopTup    =   True
 
@@ -145,7 +145,7 @@ SEM CExpr
   | * - Lam App Ann
   				loc			.	whatAbove		=	ExprIsOther
 
-SEM CBind
+SEM CBindAspect
   | Bind		loc			.	whatAbove		=	ExprIsOther
 
 SEM CPatFld

@@ -1434,3 +1434,12 @@ data SrcConst
   | SrcConst_Ratio	Integer Integer
   deriving (Eq,Show,Ord)
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Lifting
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 export(fmap2Tuple)
+fmap2Tuple :: Functor f => snd -> f x -> f (x,snd)
+fmap2Tuple snd = fmap (\x -> (x,snd))
+%%]

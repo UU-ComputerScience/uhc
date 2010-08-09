@@ -22,6 +22,8 @@
 %%[(4 hmtyinfer) import({%{EH}Substitutable}) export(FitsIn, FitsIn')
 %%]
 
+%%[(8 codegen hmtyinfer) import({%{EH}AbstractCore})
+%%]
 %%[(8 codegen hmtyinfer) import(qualified {%{EH}TyCore.Full0} as C)
 %%]
 
@@ -130,7 +132,7 @@ emptyFO
        ,  foDontBind        =	Set.empty
 %%]]
 %%[[(8 codegen)
-       ,  foTCSubst         =   C.emptyCSubst
+       ,  foTCSubst         =   emptyCSubst
        ,  foLRTCoe          =   C.emptyLRCoe
 %%]]
 %%[[(9 codegen)

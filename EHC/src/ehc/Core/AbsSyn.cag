@@ -81,6 +81,9 @@ DATA CExpr
   | Integer     integer         : {Integer}
 %%]
 
+%%[(8 codegen)
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Meta information
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -123,6 +126,10 @@ DATA CExprAnn
   | Ty			ty				: {Ty}
 %%]
 
+%%[(8 codegen)
+SET AllAnn		= CExprAnn
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Let binding
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -130,6 +137,10 @@ DATA CExprAnn
 %%[(8 codegen)
 DATA CBind
   | Bind        nm              : {HsName}
+                bindAspects     : CBindAspectL
+
+DATA CBindAspect
+  | Bind        -- nm              : {HsName}
                 bindMeta        : CMetas
                 expr            : CExpr
   | FFI         callconv        : {FFIWay}
@@ -139,17 +150,101 @@ DATA CBind
 %%][90
                 impEnt          : {ForeignEnt}
 %%]]
-                nm              : {HsName}
+                -- nm              : {HsName}
                 ty              : {Ty}
 %%[[90
-  | FFE         nm              : {HsName}
+  | FFE         -- nm              : {HsName}
                 callconv        : {FFIWay}
                 expEnt          : {ForeignEnt}
                 expNm           : {HsName}
                 ty              : {Ty}
 %%]]
 
-TYPE CBindL     =   [CBind]
+TYPE CBindL     	=   [CBind]
+TYPE CBindAspectL	=	[CBindAspect]
+%%]
+
+%%[(8 codegen)
+SET AllBindAspect   =   CBindAspect CBindAspectL
+SET AllBind     	=   CBind CBindL AllBindAspect
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% 20100731 AD: this is brainstorming about allowing a binding to bind to multiple aspects, indexed by a aspect key
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[doesWhat.CBind doclatex
+Design for multiple variations of same binding.
+
+The aim is to be able to express
+\begin{itemize}
+\item The difference between code and closure wrapped around the code
+\item Variants of code accepting different calling conventions, or other features (i.e. explicit stack tracing)
+\end{itemize}
+
+Design particular(itie)s:
+\begin{itemize}
+\item (HsName,ACoreBindAspectKeyS) pair is used to refer to values,
+\item CValTy describes some of its runtime structure. A type, but reflecting early representational choices
+\item Redundancy: ACoreBindAspectKey_Closure0 only goes with CValTy_Boxed
+\item a ACoreBindAspectKey_Closure0 implies always a ACoreBindAspectKey_Code for the same name
+\end{itemize}
+
+Extensibility at:
+\begin{itemize}
+\item ACoreBindAspectKey, additional alternatives describing extra aspects of a binding
+\item CValTyProp, additional typing expressivity for a boxed value
+\end{itemize}
+%%]
+
+-- overriding
+%%[(8889 codegen)
+DATA CBind
+  | Bind        nm              : {HsName}
+                bindAspects     : CBindAspectL
+
+DATA CExpr
+  | Var         nm              : {HsName}			-- reference to the Val of a CBindAspect
+  				aspectKeyS		: {ACoreBindAspectKeyS}
+%%]
+
+-- new
+%%[(8889 codegen)
+DATA CBindAspect
+  -- the classical binding to a CExpr; transitional
+  | Bind		bindMeta        : CMetas
+                expr            : CExpr
+  
+  -- + FFI/FFE stuff
+  
+  -- binding to a runtime related value, keyed
+  | Val			aspectKeyS		: {ACoreBindAspectKeyS}
+  				encoding		: CValTy
+  				expr            : CExpr
+  
+  -- non-runtime binding info/annotation, keyed
+  | Meta		aspectKeyS		: {ACoreBindAspectKeyS}
+  				meta            : CMetas
+
+TYPE CBindAspectL	=	[CBindAspect]
+
+DATA CValTy
+  | Unknown											-- type yet to be determined, only for transition to this encoding
+  | Boxed		props			: {CValTyPropS}		-- boxed
+  				mbVal			: MbCValTy			-- perhaps we know more about the contents
+  | Fun			args			: CValTyLL			-- known calling convention, specifying arg/res arity/grouping, boxedness/evaluation
+  				res				: CValTyL
+  | Basic		basicannot		: {BasicAnnot}		-- unboxed (and evaluated), with additional annotation about its basic size & type
+  
+TYPE MbCValTy		=	MAYBE CValTy
+TYPE CValTyL		=	[CValTy ]
+TYPE CValTyLL		=	[CValTyL]
+
+DATA CValTyProp
+  | Evaluated
+
+TYPE CValTyPropS	=	SET CValTyProp
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -201,19 +296,21 @@ DATA CPat
                 offset          : CExpr
                 fldPat          : CPat
 
+%%[(8 codegen)
+SET AllAlt      =   CAlt CAltL
+SET AllPat      =   CPatRest CPat CPatL AllPatFld
+SET AllPatFld   =   CPatFld CPatFldL
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Sets of NT's
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen)
-SET AllAlt      =   CAlt CAltL
-SET AllBind     =   CBind CBindL
-SET AllPatFld   =   CPatFld CPatFldL
-SET AllPat      =   CPatRest CPat CPatL AllPatFld
 SET AllCodeNT   =   CModule AllExpr
 
 SET AllExpr
-  = CExpr CExprAnn AllBind AllAlt AllPat
+  = CExpr AllAnn AllBind AllAlt AllPat
     AllMeta
 
 SET AllNT

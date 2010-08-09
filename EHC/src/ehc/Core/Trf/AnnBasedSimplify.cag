@@ -89,7 +89,7 @@ SEM CExpr
 SEM CModule
   | Mod         expr        .   propDown    =   Prop_None
 
-SEM CBind
+SEM CBindAspect
   | Bind        loc         .   propDown    =   Prop_None
 
 SEM CPatFld
