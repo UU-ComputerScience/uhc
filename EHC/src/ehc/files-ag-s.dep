@@ -22,7 +22,6 @@ TyCore/Pretty.cag
 TyCore/ToCore.cag
 TyCore/SubstApply.cag
 TyCore/Check.cag
-TyCore/SubstCaseAltFail.cag
 JVMClass/ToBinary.cag
 Error/Pretty.cag
 Core/ToGrin.cag
@@ -30,7 +29,6 @@ Core/ToJava.cag
 Core/ToJazy.cag
 Core/Pretty.cag
 Core/Subst.cag
-Core/SubstCaseAltFail.cag
 Core/FvS.cag
 Core/UsedModNms.cag
 Core/Trf/ConstProp.cag
@@ -45,8 +43,6 @@ Core/Trf/FixDictFields.cag
 Core/Trf/LetUnrec.cag
 Core/Trf/RenUniq.cag
 Core/Trf/ElimTrivApp.cag
-Core/Trf/Strip.cag
-Core/Trf/PrettyVarNames.cag
 Core/Trf/AnnBasedSimplify.cag
 Core/Trf/ExplicitStackTrace.cag
 GrinCode/Pretty.cag

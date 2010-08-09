@@ -172,7 +172,7 @@ mkDerivClsMp fe valGam dataGam
                               [ self
                               , acoreVar argFrom
                               , acoreVar argThen
-                              , mkCIf opts Nothing
+                              , acoreIf opts Nothing
                                   (acoreBuiltinApp opts ehbnPrimGtInt
                                      [ acoreBuiltinApp opts ehbnClassEnumFldFromEnum [self, acoreVar argFrom]
                                      , acoreBuiltinApp opts ehbnClassEnumFldFromEnum [self, acoreVar argThen]
@@ -210,10 +210,10 @@ mkDerivClsMp fe valGam dataGam
                 (\opts dgi nrOfAlts cNm _ body
                   -> let cNmv = acoreVar cNm
                          cNm1 = hsnUniqifyStr HsNameUniqifier_Evaluated "boundCheck" cNm
-                     in  mkCIf opts (Just cNm1)
+                     in  acoreIf opts (Just cNm1)
                            (acoreBuiltinApp opts ehbnPrimGtInt [cNmv,acoreInt (nrOfAlts-1)])
                            (acoreBuiltinError opts $ "too high for toEnum to " ++ show (dgiTyNm dgi))
-                           (mkCIf opts (Just cNm1)
+                           (acoreIf opts (Just cNm1)
                              (acoreBuiltinApp opts ehbnPrimGtInt [acoreInt 0,cNmv])
                              (acoreBuiltinError opts $ "too low for toEnum to " ++ show (dgiTyNm dgi))
                              body
@@ -339,12 +339,12 @@ mkDerivClsMp fe valGam dataGam
                                     remNmL  = nms "v"
                                     nmL = zip4 (nms "uv") (rNm:remNmL) (nms "u") remNmL
                                     nmLRemFinal = last remNmL
-                                    mkLamTup     x res rem cont = acoreLam1 x $ mkCMatchTuple env [res,rem] cont (acoreVar x)
-                                    mkLamStr str x res rem cont = mkLamTup x res rem $ mkCMatchString env str cont nil (acoreVar res)
+                                    mkLamTup     x res rem cont = acoreLam1 x $ acoreMatchTuple env [res,rem] cont (acoreVar x)
+                                    mkLamStr str x res rem cont = mkLamTup x res rem $ acoreMatchString env str cont nil (acoreVar res)
                                     mkConcatMapTup lam prio rem subCall = acoreApp (acoreVar $ fn ehbnPrelConcatMap) [lam,acoreApp subCall [prio,acoreVar rem]]
                                     mkConcatMapStr lam      rem         = acoreApp (acoreVar $ fn ehbnPrelConcatMap) [lam,acoreApp (acoreVar $ fn ehbnPrelLex) [acoreVar rem]]
                                     mkPrio prio = acoreInt (prio + 1)
-                                    mkRes  resL rem = mkCListSingleton opts $ acoreTup [acoreTagTup (dtiCTag dti) $ map acoreVar resL,acoreVar rem]
+                                    mkRes  resL rem = acoreBuiltinListSingleton opts $ acoreTup [acoreTagTup (dtiCTag dti) $ map acoreVar resL,acoreVar rem]
                                     mkConRead (resrem,remprev,res,rem) = \cont -> mkConcatMapStr (mkLamStr (tag2str (dtiCTag dti)) resrem res rem cont) remprev
                                     mkSubReads tlNmL subCalls = [ (\cont -> mkConcatMapTup (mkLamTup resrem res rem cont) (mkPrio fixityAppPrio) remPrev subCall, res) | ((resrem,remPrev,res,rem),subCall) <- zip tlNmL subCalls ]
                                     (needParen,v)

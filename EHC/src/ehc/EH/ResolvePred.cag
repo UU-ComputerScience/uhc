@@ -86,7 +86,7 @@ SEM Decl
 SEM Expr
   | Let         decls       .   cSubst              =   cSubstApp @lhs.cSubst
                                                         $ cSubstApp @prvArgCSubst
-                                                        $ cSubstApp (cnstrImplsToCSubst @lhs.opts @tmpoTyVarMp)
+                                                        $ cSubstApp (acoreCSubstFromVarMpImpls @tmpoTyVarMp)
                                                         $ evidKeyBindMpToCSubst @chrSolveEvidBindMp
 %%]
 
@@ -94,13 +94,13 @@ TyCore version/clone:
 
 %%[(9 codegen hmtyinfer)
 SEM Decl
-  | Instance    decls       .   tcSubst             =   C.cSubstApp @lhs.tcSubst
+  | Instance    decls       .   tcSubst             =   cSubstApp @lhs.tcSubst
                                                         $ E2C.evidKeyBindMpToSubst @chrEvidBindMpTC
 
 SEM Expr
-  | Let         decls       .   tcSubst             =   C.cSubstApp @lhs.tcSubst
-                                                        $ C.cSubstApp @prvArgTCSubst
-                                                        $ C.cSubstApp (C.cnstrImplsToCSubst @lhs.opts @tmpoTyVarMp)
+  | Let         decls       .   tcSubst             =   cSubstApp @lhs.tcSubst
+                                                        $ cSubstApp @prvArgTCSubst
+                                                        $ cSubstApp (acoreCSubstFromVarMpImpls @tmpoTyVarMp)
                                                         $ E2C.evidKeyBindMpToSubst @chrSolveEvidBindMpTC
 %%]
 

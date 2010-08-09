@@ -16,7 +16,7 @@
 %%[(90 codegen java) hs import({%{EH}Foreign.Extract})
 %%]
 
-%%[(8 codegen java).WRAPPER ag import({Core/CommonLev},{Core/CommonToXX},{Core/AbsSyn})
+%%[(8 codegen java).WRAPPER ag import({Core/CommonLev},{Core/CommonToXX},{Core/CommonFFI},{Core/AbsSyn})
 WRAPPER CodeAGItf
 %%]
 
@@ -139,7 +139,7 @@ jvIns1Nm  = mkHNm "_ins1"
 
 %%[(8 codegen java)
 ATTR CodeAGItf AllCodeNT [ | | jvSrc USE {>-<} {empty} : PP_Doc ]
-ATTR CBind CBindL [ | | jvSrcInd USE {>-<} {empty} : PP_Doc  jvSrcSetInd USE {>-<} {empty} : PP_Doc  jvSrcStrict USE {>-<} {empty} : PP_Doc ]
+ATTR AllBind [ | | jvSrcInd USE {>-<} {empty} : PP_Doc  jvSrcSetInd USE {>-<} {empty} : PP_Doc  jvSrcStrict USE {>-<} {empty} : PP_Doc ]
 ATTR CodeAGItf CModule [ | | jvBasename: String ]
 
 SEM CModule
@@ -232,12 +232,12 @@ SEM CExpr
   | Ann     	loc			.	jvSrc		=	@expr.jvSrc
   | CaseAltFail loc			.	jvSrc		=	empty -- cannot happen
 
-SEM CBind
-  | Bind        lhs         .   jvSrcInd    =   jvBind "Indirection" @nm "new Indirection()"
-                            .   jvSrcSetInd =   jvCall (jvNmPP @nm >|< ".set") [@expr.jvSrc] >#< ";"
-                            .   jvSrc       =   jvBind "Object" @nm @expr.jvSrc
-                            .   jvSrcStrict =   jvBind "Object" @nm (jvForceEval @expr.jvSrc)
-  | FFI         lhs         .   jvSrc       =   jvBind "Object" @nm . maybe (jvNmPP hsnUnknown) (jvNmPP) . lookup @impEntNm $ primToJavaMp
+SEM CBindAspect
+  | Bind        lhs         .   jvSrcInd    =   jvBind "Indirection" @lhs.nm "new Indirection()"
+                            .   jvSrcSetInd =   jvCall (jvNmPP @lhs.nm >|< ".set") [@expr.jvSrc] >#< ";"
+                            .   jvSrc       =   jvBind "Object" @lhs.nm @expr.jvSrc
+                            .   jvSrcStrict =   jvBind "Object" @lhs.nm (jvForceEval @expr.jvSrc)
+  | FFI         lhs         .   jvSrc       =   jvBind "Object" @lhs.nm . maybe (jvNmPP hsnUnknown) (jvNmPP) . lookup @impEntNm $ primToJavaMp
 %%[[90
   | FFE         lhs         .   jvSrc       =   pp "ffe not implemented"
 %%]]
@@ -283,7 +283,7 @@ ATTR CExpr [ jvBuiltin: PP_Doc | | ]
 SEM CExpr
   | Let         body        .   jvBuiltin   =   empty
 
-SEM CBind
+SEM CBindAspect
   | Bind        expr        .   jvBuiltin   =   empty
 
 SEM CPatFld
@@ -371,8 +371,8 @@ SEM CExpr
 SEM CAlt
   | Alt         loc         .   mbLamNm     =   Nothing
 
-SEM CBind
-  | Bind        expr        .   mbLamNm     =   Just @nm
+SEM CBindAspect
+  | Bind        expr        .   mbLamNm     =   Just @lhs.nm
 
 SEM CPatFld
   | Fld         offset      .   mbLamNm     =   Nothing

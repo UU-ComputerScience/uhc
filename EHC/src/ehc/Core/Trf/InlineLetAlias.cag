@@ -13,7 +13,7 @@
 %%[(8 codegen) hs import({%{EH}AbstractCore})
 %%]
 
-%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/Trf/CommonFv},{Core/Trf/CommonLev})
+%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/Trf/CommonFv},{Core/Trf/CommonLev},{Core/CommonToXX})
 WRAPPER CodeAGItf
 %%]
 
@@ -203,15 +203,15 @@ ATTR AllBind [ | | bindNmMp USE {`Map.union`} {Map.empty}: NmMp ]
 ATTR AllBind [ | | bindL USE {++} {[]}: {[(HsName,CBind)]} ]
 
 
-SEM CBind
+SEM CBindAspect
   | Bind        lhs         .   (bindNmMp,bindL)
                                             =   case @expr.mbRepl of
-                                                  Just r | @nm /= hsnMain
+                                                  Just r | @lhs.nm /= hsnMain
 %%[[20
-                                                           && not (@nm `Set.member` @lhs.noTrfNmS)
+                                                           && not (@lhs.nm `Set.member` @lhs.noTrfNmS)
 %%]]
-                                                    -> (@nm `Map.singleton` r,[(@nm,@cTrf)])
-                                                  _ -> (Map.empty,[(@nm,@cTrf)])
+                                                    -> (@lhs.nm `Map.singleton` r,[(@lhs.nm,acoreBind1Asp1 @lhs.nm @cTrf)])
+                                                  _ -> (Map.empty,[(@lhs.nm,acoreBind1Asp1 @lhs.nm @cTrf)])
 %%]
 
 %%[(8 codegen)
@@ -237,8 +237,8 @@ SEM CPatFld
   | Fld   offset.noTrfToConNmS  =  Set.empty
 
   
-SEM CBind
-  | Bind  expr.allowTrfToCon  =  not (@nm `Set.member` @lhs.noTrfToConNmS)
+SEM CBindAspect
+  | Bind  expr.allowTrfToCon  =  not (@lhs.nm `Set.member` @lhs.noTrfToConNmS)
           expr.noTrfToConNmS  =  @lhs.noTrfToConNmS `Set.union` @bindMeta.nameS
   
 %%]
@@ -267,14 +267,14 @@ SEM CExpr
 %%]
 
 %%[(90 codegen)
-SEM CBind
+SEM CBindAspect
   | FFE         loc         .   (replNm,bindsNoTrfNmS)
                                             =   case Map.lookup @expNm @lhs.nmMp of
                                                     Just e | isJust mbNm
                                                       -> (fromJust mbNm,Set.empty)
                                                       where mbNm = cexprMbVar e
                                                     _ -> (@expNm,Set.singleton @expNm)
-                lhs         .   cTrf        =   CBind_FFE @nm @callconv @expEnt @replNm @ty
+                lhs         .   cTrf        =   CBindAspect_FFE @callconv @expEnt @replNm @ty
 
 %%]
 
@@ -284,7 +284,7 @@ SEM CBind
 ATTR CExpr   [ | | bindNmMp USE {`Map.union`} {Map.empty}: NmMp ]
 ATTR AllMetaVal   [ bindNmMp: NmMp | | nameS: HsNameS ]
 
-SEM CBind
+SEM CBindAspect
   | Bind  bindMeta.bindNmMp  =  @expr.bindNmMp
 
 SEM CExpr

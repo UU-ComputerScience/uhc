@@ -305,7 +305,7 @@ format tex translVar = Transl
 format ag  translVar = CExpr_Var
 
 -- Coercion
-external coeId
+external acoreCoeId
 
 format tex coe = Coe
 

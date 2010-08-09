@@ -115,7 +115,7 @@ ruleset match.all scheme match viewsel K - * "Type matching rules" =
     view P =
       ---
       judge R : match
-          | coe = coeId
+          | coe = acoreCoeId
 
   rule m.any.r =
     view K =
@@ -128,7 +128,7 @@ ruleset match.all scheme match viewsel K - * "Type matching rules" =
     view P =
       ---
       judge R : match
-          | coe = coeId
+          | coe = acoreCoeId
 
   rule m.con =
     view K =
@@ -142,7 +142,7 @@ ruleset match.all scheme match viewsel K - * "Type matching rules" =
     view P =
       ---
       judge R : match
-          | coe = coeId
+          | coe = acoreCoeId
 
   rule m.var viewsel C - * =
     view C =
@@ -152,7 +152,7 @@ ruleset match.all scheme match viewsel K - * "Type matching rules" =
     view P =
       ---
       judge R : match
-          | coe = coeId
+          | coe = acoreCoeId
 
   rule m.var.l1 viewsel C - * =
     view C =
@@ -169,7 +169,7 @@ ruleset match.all scheme match viewsel K - * "Type matching rules" =
     view P =
       ---
       judge R : match
-          | coe = coeId
+          | coe = acoreCoeId
 
   rule m.var.l2 : m.var.l1 viewsel I1 - * =
     view I1 =

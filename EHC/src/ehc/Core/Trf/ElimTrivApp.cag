@@ -17,7 +17,7 @@ This is done for Prelude functions:
 %%[(8 codegen) hs import({%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Base.Opts},{%{EH}Core},{%{EH}Ty}) export(cmodTrfElimTrivApp)
 %%]
 
-%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/Trf/CommonFv},{Core/Trf/CommonStructureInfo})
+%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonToXX},{Core/Trf/CommonFv},{Core/Trf/CommonStructureInfo})
 WRAPPER CodeAGItf
 %%]
 

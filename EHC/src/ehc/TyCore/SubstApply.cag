@@ -88,16 +88,13 @@ cAppCoeArg ce coeArg
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen) hs
-instance CSubstitutable Expr where
+instance CSubstitutable Expr MetaVal ValBind ValBind Ty Expr where
   cSubstApp cs ce | Map.null cs
     = ce
   cSubstApp cs ce
     = cSubstAppExpr defaultCSubstOpts cs ce Nothing
 
-instance CSubstitutable CSubst where
-  cSubstApp cs s = cs `cSubstAppSubst` s
-
-instance CSubstitutable x => CSubstitutable [x] where
+instance CSubstitutable e m b ba t x => CSubstitutable e m b ba t [x] where
   cSubstApp cs l = map (cSubstApp cs) l
 %%]
 
@@ -174,7 +171,8 @@ SEM ExprSeq1
 %%[(8 codegen)
 SEM Expr
   | CoeArg      (loc.replv,loc.isRepl)      =   (@lhs.coeArg,True)
-  | Hole        (loc.replv,loc.isRepl)      =   case Map.lookup (CSKey_UID @uid) @lhs.cSubst of
+  | Hole CaseAltFail
+                (loc.replv,loc.isRepl)      =   case Map.lookup (CSKey_UID @uid) @lhs.cSubst of
                                                   Just (CSIExpr ce)  -> (ce,True)
                                                   _                  -> (@cRepl,False)
 %%]
@@ -182,7 +180,7 @@ SEM Expr
 %%[(9 codegen)
 SEM Expr
   | HoleLet     (loc.replv,loc.isRepl)      =   case Map.lookup (CSKey_UID @bindsUid) @lhs.cSubst of
-                                                  Just (CSIBinds b)  -> (@lhs.cSubst `cSubstApp` mkExprLetRec b @body.cRepl,True)
+                                                  Just (CSIBinds b)  -> (@lhs.cSubst `cSubstApp` acoreLetRec b @body.cRepl,True)
                                                   _                  -> (@cRepl,False)
   | ImplsApp ImplsLam
                 (loc.coeAppL,loc.coeLamL,loc.isRepl)
@@ -195,12 +193,15 @@ SEM Expr
 
 %%[(8 codegen)
 SEM Expr
-  | CoeArg Hole
+  | CoeArg Hole CaseAltFail
 %%[[9
     HoleLet ImplsApp ImplsLam
 %%]]
                 inst        .   repl'       :   Expr
                 inst        .   repl'       =   @replv
+
+SEM Expr
+  | CaseAltFail loc         .   uid         =   @caseId
 
 %%[[9
 SEM Expr
@@ -210,7 +211,7 @@ SEM Expr
 
 %%[(9 codegen)
 SEM Expr
-  | Hole HoleLet ImplsApp ImplsLam
+  | Hole CaseAltFail HoleLet ImplsApp ImplsLam
                 repl'       .   cSubst      =   Map.delete (CSKey_UID @uid) @lhs.cSubst
 %%]
 
@@ -239,7 +240,7 @@ SEM ExprSeq1
 %%[(8 codegen)
 SEM Expr
   | CoeArg      lhs         .   cRepl       =   @replv -- if @isRepl then @repl'.cRepl else @cRepl
-  | Hole
+  | Hole CaseAltFail
 %%[[9
     HoleLet ImplsApp ImplsLam
 %%]]
@@ -257,9 +258,9 @@ coeEvalOnAsSubst {- env -} uniq coe ce
   where (_,c,s) = ev uniq coe ce
         ev uniq coe ce
           = case coe of
-              c | coeIsId c     	-> mk ce
+              c | acoreCoeIsId c    -> mk ce
               Coe_Map  f        	-> mk $ f ce
-              Coe_C e           	-> (u', e `cAppCoeArg` Expr_Hole u, uidExprLToCSubst [(u,ce)])
+              Coe_C e           	-> (u', e `cAppCoeArg` acoreUidHole u, acoreCSubstFromUidExprL [(u,ce)])
                                 	where (u',u) = mkNewUID uniq
               Coe_Compose c1 c2 	-> (u2, c1', s2 `cSubstAppSubst` s1)
                                 	where (u1,c2',s1) = ev uniq c2 ce
@@ -275,8 +276,8 @@ coeEvalOnAsSubst {- env -} uniq coe ce
               Coe_OpenExists tv tyOpened ty
               						-> mk ce -- mk $ Expr_CloseExists
 %%[[9
-              Coe_LamLet n t i  	-> mk $ mkExprLam1 n t (mkExprLetHole i ce)
-              Coe_LetRec b      	-> mk $ mkExprLet ValBindCateg_Rec b ce
+              Coe_LamLet n t i  	-> mk $ acoreLam1Ty n t (acoreHoleLet i ce)
+              Coe_LetRec b      	-> mk $ acoreLet ValBindCateg_Rec b ce
               Coe_ImplApp iv    	-> mk $ Expr_ImplsApp ce iv
               Coe_ImplLam iv    	-> mk $ Expr_ImplsLam iv ce
 %%]]
@@ -365,7 +366,7 @@ coeWipeWeave opts c cs lCoeL rCoeL
 
 %%[(8 codegen) hs export(lrcoeWipeWeaveAsSubst)
 lrcoeWipeWeaveAsSubst :: EHCOpts -> UID -> VarMp -> LRCoe -> (Coe,CSubst)
-lrcoeWipeWeaveAsSubst opts uniq cnstr (LRCoe LRCoeId _ _) = (coeId,emptyCSubst)
+lrcoeWipeWeaveAsSubst opts uniq cnstr (LRCoe LRCoeId _ _) = (acoreCoeId,emptyCSubst)
 lrcoeWipeWeaveAsSubst opts uniq cnstr lrcoe               = coeWipeWeaveAsSubst opts uniq cnstr (lrcoeLeftL lrcoe) (lrcoeRightL lrcoe)
 %%]
 
@@ -375,22 +376,22 @@ lrcoeForLamTyAppAsSubst opts uniq ty f a
   = (LRCoe k [l] [r] `lrcoeUnion` a, s)
   where (u',u1,u2,u3) = mkNewLevUID3 uniq
         n = uidHNm u1
-        r = mkLamCoe1 n ty
+        r = acoreCoeLam1Ty n ty
         (k,l,s)
           = case f of
               lr@(LRCoe LRCoeOther _ _)
-                -> (lrcoeKindOfCoe c, mkAppCoe [a], cSubstAppSubst s1 s2)
+                -> (lrcoeKindOfCoe c, acoreCoeApp [a], cSubstAppSubst s1 s2)
                 where (c,s1) = lrcoeWipeWeaveAsSubst opts u2 emptyVarMp lr
                       (a,s2) = coeEvalOnAsSubst u3 c (Expr_Var n)
               LRCoe LRCoeId _ _
                 -> (LRCoeId, l, emptyCSubst)
-                where l = mkAppCoe [Expr_Var n]
+                where l = acoreCoeApp [Expr_Var n]
 
 %%]
 
 %%[(9 codegen && hmTyRuler) hs export(lrcoeWipeWeave)
 lrcoeWipeWeave :: EHCOpts -> VarMp -> CSubst -> LRCoe -> Coe
-lrcoeWipeWeave opts cnstr csubst (LRCoe LRCoeId _ _) = coeId
+lrcoeWipeWeave opts cnstr csubst (LRCoe LRCoeId _ _) = acoreCoeId
 lrcoeWipeWeave opts cnstr csubst lrcoe               = coeWipeWeave opts cnstr csubst (lrcoeLeftL lrcoe) (lrcoeRightL lrcoe)
 %%]
 
@@ -399,16 +400,16 @@ lrcoeForLamTyApp :: EHCOpts -> UID -> Ty -> CSubst -> LRCoe -> LRCoe -> LRCoe
 lrcoeForLamTyApp opts uniq ty csubst f a
   = LRCoe k [l] [r] `lrcoeUnion` a
   where n = uidHNm uniq
-        r = mkLamCoe1 n ty
+        r = acoreCoeLam1Ty n ty
         (k,l)
           = case f of
               lr@(LRCoe LRCoeOther _ _)
                 -> (lrcoeKindOfCoe c, l)
-                where l = mkAppCoe [c `coeEvalOn` Expr_Var n]
+                where l = acoreCoeApp [c `coeEvalOn` Expr_Var n]
                       c = lrcoeWipeWeave opts emptyVarMp csubst lr
               LRCoe LRCoeId _ _
                 -> (LRCoeId, l)
-                where l = mkAppCoe [Expr_Var n]
+                where l = acoreCoeApp [Expr_Var n]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -420,7 +421,7 @@ instance PP Coe where
   pp c = "<" >|< pp (fst $ coeEvalOnAsSubst uidStart c Expr_CoeArg) >|< ">"
 %%]
 
-%%[(8 codegen) hs
+%%[(8888 codegen) hs
 instance PP CSubstInfo where
   pp (CSITy         t    )  = pp t
 %%[[9
