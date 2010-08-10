@@ -27,7 +27,7 @@
 %%[(8 codegen) hs import(Control.Applicative)
 %%]
 
-%%[(8 codegen) hs import(Data.Bool.Extras, Data.Maybe, Data.Monoid, Data.List)
+%%[(8 codegen) hs import(Data.Maybe, Data.Monoid, Data.List)
 %%]
 
 %%[(8 codegen) hs import(qualified Data.Map as Map)
@@ -82,7 +82,7 @@ ATTR AllExpr
   |
     arrTail     : SELF
     worker      : SELF
-    newWrapper  : SELF
+    wrapper     : SELF
   ]
 ATTR Expr
   [
@@ -94,7 +94,7 @@ ATTR Expr
   ]
 ATTR AllExprBase
   [
-    workWrapL   : {[WorkWrap]}
+    workWrapL   : {Seq WorkWrap}
     workWrap    : {WorkWrap}
     bindType    : {BindType}
     bindType2   : {BindType}
@@ -108,8 +108,8 @@ ATTR AllExprBase
     workWrapL   USE {`mappend`} {mempty}    : {Seq WorkWrap}
     lamArgsL    USE {`mappend`} {mempty}    : {Seq [[Expr]]}
     lamArgs                                 : {[[Expr]]}
-    workerL     USE {`mappend`} {mempty}    : {[ExprSeq1]}
-    newWrapperL USE {`mappend`} {mempty}    : {[Expr]}
+    workerL     USE {`mappend`} {mempty}    : {Seq ExprSeq1}
+    wrapperL    USE {`mappend`} {mempty}    : {Seq Expr}
     workerNmL   USE {`mappend`} {mempty}    : {Seq HsName}
   ]
 
@@ -124,7 +124,7 @@ SEM ExprSeq1L
                 lhs         .   cTrf        =   if @lhs.bindType == NoBind
                                                 then @cTrf
                                                 else case head @lhs.workWrapL of
-                                                       Introduced     -> @hd.worker  : @hd.newWrapper : @tl.cTrf
+                                                       Introduced     -> @hd.worker  : @hd.wrapper : @tl.cTrf
                                                        UpdatedWorker  -> @hd.worker  : @tl.cTrf
                                                        _              -> @hd.cTrf    : @tl.cTrf
                             .   workWrapL   =   @hd.workWrap : @tl.workWrapL
@@ -143,8 +143,8 @@ SEM ExprSeq1L
 SEM ExprSeq1
   | L0Val
                 lhs         .   worker      =   ExprSeq1_L0Val (workerBody @l0.workerArgs @l0.worker) @meta.worker
-                lhs         .   newWrapper  =   if @lhs.bindType2 == BodyBind
-                                                then ExprSeq1_L0Val (newWrapperBody @lhs.workerNm @lhs.lamArgs) @meta.newWrapper
+                lhs         .   wrapper     =   if @lhs.bindType2 == BodyBind
+                                                then ExprSeq1_L0Val (newWrapperBody @lhs.workerNm @lhs.lamArgs) @meta.wrapper
                                                 else @cTrf
                 l0          .   newParams   =   strictParams @l0.workerArgs `Map.union` @lhs.newParams
   | L0Bind
@@ -189,7 +189,7 @@ SEM Expr
   | Let
                 lhs         .   lamArgs     =   [] : @body.lamArgs
   | Lam
-                lhs         .   lamArgs     =   list [[@arg.cTrf]] (\xs xss -> (@arg.cTrf : xs) : xss) @res.lamArgs
+                lhs         .   lamArgs     =   list (\xs xss -> (@arg.cTrf : xs) : xss) [[@arg.cTrf]] @res.lamArgs
   | * - Lam Let
                 lhs         .   lamArgs     =   []
 
@@ -214,11 +214,6 @@ SEM Expr
 
 
 {
--- This function will be in list-extras:Data.List.Extras
-list :: b -> (a -> [a] -> b) -> [a] -> b
-list b _ []     = b
-list _ f (x:xs) = f x xs
-
 strictParams :: [Expr] -> Map.Map HsName Expr
 strictParams args = Map.unions $ map (Map.unions . map argNms . unSeqs) args
   where

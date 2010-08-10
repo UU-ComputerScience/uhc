@@ -33,9 +33,6 @@
 %%[(8 codegen) hs import({%{EH}Base.Builtin},{%{EH}Base.Opts},{%{EH}Base.Common})
 %%]
 
-%%[(8 codegen) hs import(Data.Bool.Extras)
-%%]
-
 %%[(8 codegen) hs import(Data.Maybe)
 %%]
 

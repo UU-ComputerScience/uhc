@@ -32,7 +32,7 @@
 %%[(8 codegen) hs import(Control.Applicative)
 %%]
 
-%%[(8 codegen) hs import(Data.Bool.Extras, Data.Maybe, Data.Monoid, Data.List)
+%%[(8 codegen) hs import(Data.Maybe, Data.Monoid, Data.List)
 %%]
 
 %%[(8 codegen) hs import(qualified Data.Map as Map)
@@ -104,7 +104,7 @@ ATTR AllExprBase
     workWrapL   USE {`mappend`} {mempty}    : {Seq WorkWrap}
     lamArgsL    USE {`mappend`} {mempty}    : {Seq [[Expr]]}
     lamArgs                                 : {[[Expr]]}
-    wrapperL    USE {`mappend`} {mempty}    : {[Expr]}
+    wrapperL    USE {`mappend`} {mempty}    : {Seq Expr}
     workerNmL   USE {`mappend`} {mempty}    : {Seq HsName}
   ]
 
@@ -158,7 +158,7 @@ SEM Expr
   | Let
                 lhs         .   lamArgs     =   [] : @body.lamArgs
   | Lam
-                lhs         .   lamArgs     =   list [[@arg.cTrf]] (\xs xss -> (@arg.cTrf : xs) : xss) @res.lamArgs
+                lhs         .   lamArgs     =   list (\xs xss -> (@arg.cTrf : xs) : xss) [[@arg.cTrf]] @res.lamArgs
   | * - Lam Let
                 lhs         .   lamArgs     =   []
 
@@ -174,11 +174,6 @@ SEM Expr
                 lhs         .   mbVarNm     =   Just @nm
 
 {
--- This function will be in list-extras:Data.List.Extras
-list :: b -> (a -> [a] -> b) -> [a] -> b
-list b _ []     = b
-list _ f (x:xs) = f x xs
-
 updatedWrapperApp :: HsName -> [Expr] -> Ty -> Expr
 updatedWrapperApp nm args wt = foldl Expr_App (Expr_Var nm) (map Expr_Seq $ argss (init $ nrArgs wt) (concatMap unSeqs args))
   where

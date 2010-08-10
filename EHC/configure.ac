@@ -375,7 +375,7 @@ AC_SUBST(HADDOCK_CMD,$haddockCmd)
 AC_SUBST(HADDOCK_VERSION, $haddockVersion)
 
 # GHC version dependencies: packages passed as option, cabal packages
-cabal_base_lib_depends="base haskell98 mtl fgl directory old-time bool-extras"
+cabal_base_lib_depends="base haskell98 mtl fgl directory old-time"
 if test x$enableClr = "xyes"
 then
   cabal_base_lib_depends="$cabal_base_lib_depends language-cil"

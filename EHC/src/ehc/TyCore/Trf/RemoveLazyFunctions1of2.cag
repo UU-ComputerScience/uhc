@@ -33,7 +33,7 @@
 %%[(8 codegen) hs import({%{EH}Base.Builtin},{%{EH}Base.Opts},{%{EH}Base.Common})
 %%]
 
-%%[(8 codegen) hs import(Data.Bool.Extras, Data.Maybe, Data.Monoid)
+%%[(8 codegen) hs import(Data.Maybe, Data.Monoid)
 %%]
 
 %%[(8 codegen) hs import(qualified Data.Map as Map)

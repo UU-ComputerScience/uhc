@@ -32,7 +32,7 @@
 %%[(8 codegen) hs import(Control.Applicative)
 %%]
 
-%%[(8 codegen) hs import(Data.Bool.Extras, Data.Maybe, Data.Monoid, Data.List)
+%%[(8 codegen) hs import(Data.Maybe, Data.Monoid, Data.List)
 %%]
 
 %%[(8 codegen) hs import(qualified Data.Map as Map)
@@ -87,7 +87,7 @@ ATTR AllExpr
   |
     arrTail     : SELF
     worker      : SELF
-    newWrapper  : SELF
+    wrapper     : SELF
   ]
 ATTR Expr
   [
@@ -98,7 +98,7 @@ ATTR Expr
   ]
 ATTR AllExprBase
   [
-    workWrapL   : {[WorkWrap]}
+    workWrapL   : {Seq WorkWrap}
     workWrap    : {WorkWrap}
     bindType    : {BindType}
     lamArgsL    : {Seq [[Expr]]}
@@ -111,8 +111,8 @@ ATTR AllExprBase
     workWrapL   USE {`mappend`} {mempty}    : {Seq WorkWrap}
     lamArgsL    USE {`mappend`} {mempty}    : {Seq [[Expr]]}
     lamArgs                                 : {[[Expr]]}
-    workerL     USE {`mappend`} {mempty}    : {[ExprSeq1]}
-    newWrapperL USE {`mappend`} {mempty}    : {[Expr]}
+    workerL     USE {`mappend`} {mempty}    : {Seq ExprSeq1}
+    wrapperL    USE {`mappend`} {mempty}    : {Seq Expr}
     workerNmL   USE {`mappend`} {mempty}    : {Seq HsName}
   ]
 
@@ -123,7 +123,7 @@ SEM ExprSeq1L
                 lhs         .   cTrf        =   if @lhs.bindType == NoBind
                                                 then @cTrf
                                                 else case head @lhs.workWrapL of
-                                                       Introduced     -> @hd.worker  : @hd.newWrapper : @tl.cTrf
+                                                       Introduced     -> @hd.worker  : @hd.wrapper : @tl.cTrf
                                                        UpdatedWorker  -> @hd.worker  : @tl.cTrf
                                                        _              -> @hd.cTrf    : @tl.cTrf
                             .   workWrapL   =   @hd.workWrap : @tl.workWrapL
@@ -142,10 +142,10 @@ SEM ExprSeq1L
 SEM ExprSeq1
   | L0Val
                 lhs         .   worker      =   ExprSeq1_L0Val (workerBody @l0.workerArgs @l0.worker) @meta.worker
-                lhs         .   newWrapper  =   ExprSeq1_L0Val (newWrapperBody @lhs.workerNm @lhs.lamArgs) @meta.newWrapper
+                lhs         .   wrapper     =   ExprSeq1_L0Val (newWrapperBody @lhs.workerNm @lhs.lamArgs) @meta.wrapper
   | L0Bind
                 lhs         .   worker      =   ExprSeq1_L0Bind @workerNm Nothing (workerType (map length @lhs.lamArgs) @l1.arrArgs @l1.arrTail)
-                lhs         .   newWrapper  =   ExprSeq1_L0Bind @nm @meta.newWrapper (newWrapperType @l1.arrArgs @l1.arrTail)
+                lhs         .   wrapper     =   ExprSeq1_L0Bind @nm @meta.wrapper (newWrapperType @l1.arrArgs @l1.arrTail)
   | L1Bind
                 lhs         .   worker      =   ExprSeq1_L1Bind @workerNm (workerType (map length @lhs.lamArgs) @l2.arrArgs @l2.arrTail)
   | L2Bind
@@ -208,11 +208,6 @@ SEM Expr
 
 
 {
--- This function will be in list-extras:Data.List.Extras
-list :: (a -> [a] -> b) -> b -> [a] -> b
-list _ b []     = b
-list f _ (x:xs) = f x xs
-
 workerType :: [Int] -> [Expr] -> Expr -> Expr
 workerType []     _    res = res
 workerType (x:xs) args res = let (args1, args2) = splitAt x args

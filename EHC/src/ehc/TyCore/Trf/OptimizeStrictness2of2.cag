@@ -25,7 +25,7 @@
 %%[(8 codegen) hs import(Control.Applicative)
 %%]
 
-%%[(8 codegen) hs import(Data.Bool.Extras, Data.Maybe, Data.Monoid, Data.List)
+%%[(8 codegen) hs import(Data.Maybe, Data.Monoid, Data.List)
 %%]
 
 %%[(8 codegen) hs import(qualified Data.Map as Map)
@@ -103,7 +103,7 @@ ATTR AllExprBase
     workWrapL   USE {`mappend`} {mempty}    : {Seq WorkWrap}
     lamArgsL    USE {`mappend`} {mempty}    : {Seq [[Expr]]}
     lamArgs                                 : {[[Expr]]}
-    wrapperL    USE {`mappend`} {mempty}    : {[Expr]}
+    wrapperL    USE {`mappend`} {mempty}    : {Seq Expr}
     workerNmL   USE {`mappend`} {mempty}    : {Seq HsName}
   ]
 
@@ -159,7 +159,7 @@ SEM Expr
   | Let
                 lhs         .   lamArgs     =   [] : @body.lamArgs
   | Lam
-                lhs         .   lamArgs     =   list [[@arg.cTrf]] (\xs xss -> (@arg.cTrf : xs) : xss) @res.lamArgs
+                lhs         .   lamArgs     =   list (\xs xss -> (@arg.cTrf : xs) : xss) [[@arg.cTrf]] @res.lamArgs
                 lhs         .   wrapperArgs =   @arg.copy : @res.wrapperArgs
   | * - Lam Let
                 lhs         .   lamArgs     =   []
@@ -181,11 +181,6 @@ SEM Expr
                                                 else @wrapper
 
 {
--- This function will be in list-extras:Data.List.Extras
-list :: b -> (a -> [a] -> b) -> [a] -> b
-list b _ []     = b
-list _ f (x:xs) = f x xs
-
 strictParams :: [Expr] -> Map.Map HsName (Maybe ValBind, [ExprSeq1])
 strictParams args = Map.unions $ map (Map.unions . map argNms . unSeqs) args
   where
@@ -242,8 +237,12 @@ argMap f (ExprSeq1_L2Val e)       = ExprSeq1_L2Val (f e)
 argMap f (ExprSeq1_L2Bind nm e)   = ExprSeq1_L2Bind nm (f e)
 
 updatedWrapperApp :: HsName -> [Expr] -> Map.Map HsName (Maybe ValBind, [ExprSeq1]) -> Expr
-updatedWrapperApp nm args pmEnv = Expr_Let ValBindCateg_Plain (concatMap (concatMap bnd . unSeqs) args) $ foldl Expr_App (Expr_Var nm) (map (Expr_Seq . concatMap arg . unSeqs) args)
+updatedWrapperApp nm args pmEnv =
+  (if null binds then id else Expr_Let ValBindCateg_Plain binds)
+  $ foldl Expr_App (Expr_Var nm) (map (Expr_Seq . concatMap arg . unSeqs) args)
   where
+    binds = concatMap (concatMap bnd . unSeqs) args
+
     bnd (ExprSeq1_L0Val (Expr_Delay (Expr_Force (Expr_Var nm))) _) = bnd' nm
     bnd (ExprSeq1_L0Val (Expr_Force (Expr_Var nm)) _)              = bnd' nm
     bnd (ExprSeq1_L0Val (Expr_Var nm) _)                           = bnd' nm

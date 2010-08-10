@@ -13,6 +13,13 @@
 %%[20 import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
 %%]
 
+%%[(8 codegen) export(BindType (..), Seq)
+data BindType = NameTypeBind | BodyBind | NoBind
+  deriving (Eq, Show)
+
+type Seq a = [a]
+%%]
+
 %%[(8 codegen) export(WorkWrap(..),(|||))
 -- Status of Worker/Wrapper transformation
 data WorkWrap
@@ -31,10 +38,15 @@ UpdatedWrapper ||| UpdatedWrapper = UpdatedWrapper
 _              ||| _              = error "(|||): Can't merge arguments."
 %%]
 
-%%[(8 codegen) export(BindType (..), Seq)
-data BindType = NameTypeBind | BodyBind | NoBind
-  deriving (Eq, Show)
+%%[(8 codegen) export(bool, list)
+-- This function comes from bool-extras:Data.Bool.Extras
+bool :: a -> a -> Bool -> a
+bool x _ False = x
+bool _ y True  = y
 
-type Seq a = [a]
+-- This function comes from in list-extras:Data.List.Extras
+list :: (a -> [a] -> b) -> b -> [a] -> b
+list _ b []     = b
+list f _ (x:xs) = f x xs
 %%]
 
