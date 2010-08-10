@@ -59,10 +59,9 @@ instance Serialize GrinInfo where
     sput ( grMbSpecConstSpec        gr ) >>
     sput ( grMbCheckInvariantSpec   gr ) >>
     sput ( grMbMergeInstance        gr ) >>
-    sput ( grMbPartialHpt           gr ) >>
-    sput ( grMbFinalHpt             gr )
+    sput ( grMbPartialHpt           gr )
   sget = return GrinInfo `ap` sget `ap` sget `ap` sget `ap` sget `ap` sget `ap`
-          sget `ap` sget `ap` sget `ap` sget `ap` sget `ap` sget
+          sget `ap` sget `ap` sget `ap` sget `ap` sget `ap` return Nothing
 %%]]
 
 emptyGrinInfo :: GrinInfo

@@ -12,7 +12,7 @@
 %%]
 %%[(8 codegen grin) hs import(Debug.Trace)
 %%]
-%%[(8 codegen grin) hs import(Data.Typeable(Typeable), Data.Generics(Data), {%{EH}Base.Serialize}, Control.Monad (ap))
+%%[(8 codegen grin) hs import(Data.Typeable(Typeable), Data.Generics(Data), {%{EH}Base.Binary}, {%{EH}Base.Serialize}, Control.Monad (ap))
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -77,9 +77,9 @@ data AbstractNodesG var
   = Nodes (Map.Map GrTag [Set.Set var])
     deriving (Eq, Ord, Data, Typeable)
 
-instance (Ord var, Serialize var) => Serialize (AbstractNodesG var) where
-  sput (Nodes m) = sput m
-  sget = liftM Nodes sget
+instance (Ord var, Binary var) => Binary (AbstractNodesG var) where
+  put (Nodes m) = put m
+  get = liftM Nodes get
 
 -- 'fmap' on AbstractNodesG; cannot be an instance of Functor because of the
 -- Ord constraints.
@@ -102,33 +102,33 @@ data AbstractValueG var
   | AbsError String
     deriving (Eq, Ord, Data, Typeable)
 
-instance (Ord var, Serialize var) => Serialize (AbstractValueG var) where
-  sput absV = case absV of
-    AbsBottom           -> do sputWord8  0
-    AbsBasic            -> do sputWord8  1
-    AbsImposs           -> do sputWord8  2
-    AbsTags s           -> do sputWord8  3; sput s
-    AbsNodes ns         -> do sputWord8  4; sput ns
-    AbsPtr   ns         -> do sputWord8  5; sput ns
-    AbsPtr0  ns vs      -> do sputWord8  6; sput ns; sput vs
-    AbsPtr1  ns vs      -> do sputWord8  7; sput ns; sput vs
-    AbsPtr2  ns vs1 vs2 -> do sputWord8  8; sput ns; sput vs1; sput vs2
-    AbsUnion  ts        -> do sputWord8  9; sput ts
-    AbsError s          -> do sputWord8 10; sput s
-  sget = do
-    t <- sgetWord8
+instance (Ord var, Binary var) => Binary (AbstractValueG var) where
+  put absV = case absV of
+    AbsBottom           -> do putWord8  0
+    AbsBasic            -> do putWord8  1
+    AbsImposs           -> do putWord8  2
+    AbsTags s           -> do putWord8  3; put s
+    AbsNodes ns         -> do putWord8  4; put ns
+    AbsPtr   ns         -> do putWord8  5; put ns
+    AbsPtr0  ns vs      -> do putWord8  6; put ns; put vs
+    AbsPtr1  ns vs      -> do putWord8  7; put ns; put vs
+    AbsPtr2  ns vs1 vs2 -> do putWord8  8; put ns; put vs1; put vs2
+    AbsUnion  ts        -> do putWord8  9; put ts
+    AbsError s          -> do putWord8 10; put s
+  get = do
+    t <- getWord8
     case t of
       0  -> return AbsBottom
       1  -> return AbsBasic
       2  -> return AbsImposs
-      3  -> liftM AbsTags sget
-      4  -> liftM AbsNodes sget
-      5  -> liftM AbsPtr sget
-      6  -> liftM2 AbsPtr0 sget sget
-      7  -> liftM2 AbsPtr1 sget sget
-      8  -> liftM3 AbsPtr2 sget sget sget
-      9  -> liftM AbsUnion sget
-      10 -> liftM AbsError sget
+      3  -> liftM AbsTags get
+      4  -> liftM AbsNodes get
+      5  -> liftM AbsPtr get
+      6  -> liftM2 AbsPtr0 get get
+      7  -> liftM2 AbsPtr1 get get
+      8  -> liftM3 AbsPtr2 get get get
+      9  -> liftM AbsUnion get
+      10 -> liftM AbsError get
 
 -- 'fmap' on AbstractValuesG; cannot be an instance of Functor because of the
 -- Ord constraints.
@@ -272,33 +272,33 @@ data EquationG var
   | IsApplication         var  [var]                   var
     deriving (Show, Eq, Data, Typeable)
 
-instance Serialize var => Serialize (EquationG var) where
-  sput eq = case eq of
-    IsBasic        v              ->  do sputWord8  0; sput v
-    IsImpossible   v              ->  do sputWord8  1; sput v
-    IsTags         v  gs          ->  do sputWord8  2; sput v; sput gs
-    IsPointer      v  g   mvs     ->  do sputWord8  3; sput v; sput g; sput mvs
-    IsConstruction v  g   mvs mv  ->  do sputWord8  4; sput v; sput g; sput mvs; sput mv
-    IsUpdate       v1 v2          ->  do sputWord8  5; sput v1; sput v2
-    IsEqual        v1 v2          ->  do sputWord8  6; sput v1; sput v2
-    IsSelection    v1 v2  i   g   ->  do sputWord8  7; sput v1; sput v2; sput i; sput g
-    IsEnumeration  v1 v2          ->  do sputWord8  8; sput v1; sput v2
-    IsEvaluation   v1 v2  v3      ->  do sputWord8  9; sput v1; sput v2; sput v3
-    IsApplication  v1 vs  v2      ->  do sputWord8 10; sput v1; sput vs; sput v2
-  sget = do
-    t <- sgetWord8
+instance Binary var => Binary (EquationG var) where
+  put eq = case eq of
+    IsBasic        v              ->  do putWord8  0; put v
+    IsImpossible   v              ->  do putWord8  1; put v
+    IsTags         v  gs          ->  do putWord8  2; put v; put gs
+    IsPointer      v  g   mvs     ->  do putWord8  3; put v; put g; put mvs
+    IsConstruction v  g   mvs mv  ->  do putWord8  4; put v; put g; put mvs; put mv
+    IsUpdate       v1 v2          ->  do putWord8  5; put v1; put v2
+    IsEqual        v1 v2          ->  do putWord8  6; put v1; put v2
+    IsSelection    v1 v2  i   g   ->  do putWord8  7; put v1; put v2; put i; put g
+    IsEnumeration  v1 v2          ->  do putWord8  8; put v1; put v2
+    IsEvaluation   v1 v2  v3      ->  do putWord8  9; put v1; put v2; put v3
+    IsApplication  v1 vs  v2      ->  do putWord8 10; put v1; put vs; put v2
+  get = do
+    t <- getWord8
     case t of
-      0  -> liftM IsBasic sget
-      1  -> liftM IsImpossible sget
-      2  -> liftM2 IsTags sget sget
-      3  -> liftM3 IsPointer sget sget sget
-      4  -> liftM4 IsConstruction sget sget sget sget
-      5  -> liftM2 IsUpdate sget sget
-      6  -> liftM2 IsEqual sget sget
-      7  -> liftM4 IsSelection sget sget sget sget
-      8  -> liftM2 IsEnumeration sget sget
-      9  -> liftM3 IsEvaluation sget sget sget
-      10 -> liftM3 IsApplication  sget sget sget
+      0  -> liftM IsBasic get
+      1  -> liftM IsImpossible get
+      2  -> liftM2 IsTags get get
+      3  -> liftM3 IsPointer get get get
+      4  -> liftM4 IsConstruction get get get get
+      5  -> liftM2 IsUpdate get get
+      6  -> liftM2 IsEqual get get
+      7  -> liftM4 IsSelection get get get get
+      8  -> liftM2 IsEnumeration get get
+      9  -> liftM3 IsEvaluation get get get
+      10 -> liftM3 IsApplication  get get get
 
 instance Functor EquationG where
   fmap f eq = case eq of

@@ -26,7 +26,7 @@ WRAPPER GrAGItf
 %%]
 %%[(8 codegen grin) hs import(Debug.Trace, EH.Util.Utils (panicJust))
 %%]
-%%[(8 codegen grin) hs import(Data.Typeable(Typeable), Data.Generics(Data), {%{EH}Base.Serialize}, Control.Monad (ap))
+%%[(8 codegen grin) hs import(Data.Typeable(Typeable), Data.Generics(Data), {%{EH}Base.Binary}, {%{EH}Base.Serialize}, Control.Monad (ap))
 %%]
 
 
@@ -39,13 +39,17 @@ data PartialHptResult = PartialHptResult
   , partialHptMap      :: PartialHptMap HsName
   } deriving (Show, Data, Typeable)
 
+instance Binary PartialHptResult where
+  put res = do
+    put $ partialEquations   res
+    put $ partialLimitations res
+    put $ partialParamMap    res
+    put $ partialHptMap      res
+  get = return PartialHptResult `ap` get `ap` get `ap` get `ap` get
+
 instance Serialize PartialHptResult where
-  sput res = do
-    sput $ partialEquations   res
-    sput $ partialLimitations res
-    sput $ partialParamMap    res
-    sput $ partialHptMap      res
-  sget = return PartialHptResult `ap` sget `ap` sget `ap` sget `ap` sget
+  sput = sputPlain
+  sget = sgetPlain
 
 type ParamMap var = Map.Map var [var]
 
@@ -72,11 +76,11 @@ data FinalHptResult = FinalHptResult
   , finalVarMap :: VarMap
   } deriving (Show, Data, Typeable)
 
-instance Serialize FinalHptResult where
-  sput res = do
-    sput $ finalHptMap res
-    sput $ finalVarMap res
-  sget = return FinalHptResult `ap` sget `ap` sget
+-- instance Serialize FinalHptResult where
+--   sput res = do
+--     sput $ finalHptMap res
+--     sput $ finalVarMap res
+--   sget = return FinalHptResult `ap` sget `ap` sget
 
 
 type VarMap   = Map.Map HsName  Int

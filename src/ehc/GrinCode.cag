@@ -476,23 +476,27 @@ instance Serialize GrAlt where
             case t of
               0  -> liftM3 GrAlt_Alt          sget sget sget
 
+instance Binary GrTag where
+  put (GrTag_Con         a b c  ) = putWord8 0  >> put a >> put b >> put c
+  put (GrTag_Fun         a      ) = putWord8 1  >> put a
+  put (GrTag_PApp        a b    ) = putWord8 2  >> put a >> put b
+  put (GrTag_App         a      ) = putWord8 3  >> put a
+  put (GrTag_Unboxed            ) = putWord8 4
+  put (GrTag_Hole               ) = putWord8 5
+  put (GrTag_Rec                ) = putWord8 6
+  get = do t <- getWord8
+           case t of
+             0  -> liftM3 GrTag_Con          get get get
+             1  -> liftM  GrTag_Fun          get
+             2  -> liftM2 GrTag_PApp         get get
+             3  -> liftM  GrTag_App          get
+             4  -> return GrTag_Unboxed
+             5  -> return GrTag_Hole
+             6  -> return GrTag_Rec
+
 instance Serialize GrTag where
-  sput (GrTag_Con         a b c  ) = sputWord8 0  >> sput a >> sput b >> sput c
-  sput (GrTag_Fun         a      ) = sputWord8 1  >> sput a
-  sput (GrTag_PApp        a b    ) = sputWord8 2  >> sput a >> sput b
-  sput (GrTag_App         a      ) = sputWord8 3  >> sput a
-  sput (GrTag_Unboxed            ) = sputWord8 4
-  sput (GrTag_Hole               ) = sputWord8 5
-  sput (GrTag_Rec                ) = sputWord8 6
-  sget = do t <- sgetWord8
-            case t of
-              0  -> liftM3 GrTag_Con          sget sget sget
-              1  -> liftM  GrTag_Fun          sget
-              2  -> liftM2 GrTag_PApp         sget sget
-              3  -> liftM  GrTag_App          sget
-              4  -> return GrTag_Unboxed
-              5  -> return GrTag_Hole
-              6  -> return GrTag_Rec
+  sget = sgetPlain
+  sput = sputPlain
 
 instance Serialize GrPatLam where
   sput (GrPatLam_Empty              ) = sputWord8 0
@@ -587,6 +591,10 @@ instance Serialize GrAltAnn where
 instance Serialize GrTagAnn where
   sput (GrTagAnn a b) = sput a >> sput b
   sget = liftM2 GrTagAnn sget sget
+
+instance Binary GrTagAnn where
+  put (GrTagAnn a b) = put a >> put b
+  get = liftM2 GrTagAnn get get
 
 instance Serialize GrBind where
   sput (GrBind_Bind  a b c d) = sputWord8 0  >> sput a >> sput b >> sput c >> sput d
