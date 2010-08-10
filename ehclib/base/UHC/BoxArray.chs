@@ -34,31 +34,32 @@ newtype MutableBoxArray s x = MutableBoxArray (BoxArray x)
 %%[99
 -- allocate array, size in words, will only hold boxed values, init by x
 -- NOTE: the 'x' may not be evaluated, the compiler knows about this!!
-foreign import prim primNewArray :: Int -> x -> BoxArray x
+-- foreign import prim primNewArray :: Int -> x -> BoxArray x
 
 -- index, write, compare array
-foreign import prim "primIndexArray" 	indexArray 		:: BoxArray x -> Int -> x
+-- foreign import prim "primIndexArray" 	indexArray 		:: BoxArray x -> Int -> x
+indexArray = undefined
 
 -- NOTE: the 'x' may not be evaluated, the compiler knows about this!!
-foreign import prim "primWriteArray"  	primWriteArray 	:: BoxArray x -> Int -> x -> ()
+-- foreign import prim "primWriteArray"  	primWriteArray 	:: BoxArray x -> Int -> x -> ()
 
-foreign import prim "primSameArray"  	primSameArray 	:: BoxArray x -> BoxArray x -> Bool
+-- foreign import prim "primSameArray"  	primSameArray 	:: BoxArray x -> BoxArray x -> Bool
 %%]
 
 %%[99
 newArray :: Int -> x -> State s -> ( State s, MutableBoxArray s x )
-newArray i x s = letstrict a = primNewArray i x in (s, MutableBoxArray a)
+newArray i x s = undefined -- letstrict a = primNewArray i x in (s, MutableBoxArray a)
    
 sameMutableArray :: MutableBoxArray s x -> MutableBoxArray s x -> Bool
-sameMutableArray (MutableBoxArray a) (MutableBoxArray b) = primSameArray a b
+sameMutableArray (MutableBoxArray a) (MutableBoxArray b) = undefined -- primSameArray a b
 %%]
 
 %%[99
 readArray :: MutableBoxArray s x -> Int -> State s -> ( State s,x )
-readArray (MutableBoxArray a) i s = letstrict x = indexArray a i in (s, x)
+readArray (MutableBoxArray a) i s = undefined -- letstrict x = indexArray a i in (s, x)
 
 writeArray :: MutableBoxArray s x -> Int -> x -> State s -> State s
-writeArray (MutableBoxArray a) i x s = letstrict _ = primWriteArray a i x in s
+writeArray (MutableBoxArray a) i x s = undefined -- letstrict _ = primWriteArray a i x in s
 %%]
 
 %%[99
