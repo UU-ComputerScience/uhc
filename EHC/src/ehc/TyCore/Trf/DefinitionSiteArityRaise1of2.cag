@@ -98,22 +98,22 @@ ATTR Expr
   ]
 ATTR AllExprBase
   [
-    workWrapL   : {Seq WorkWrap}
+    workWrapSeq : {Seq WorkWrap}
     workWrap    : {WorkWrap}
     bindType    : {BindType}
-    lamArgsL    : {Seq [[Expr]]}
+    lamArgsSeq  : {Seq [[Expr]]}
     lamArgs     : {[[Expr]]}
-    workerNmL   : {Seq HsName}
+    workerNmSeq : {Seq HsName}
     workerNm    : {HsName}
   |
   |
     workWrap    USE {|||}       {Ignored}   : {WorkWrap}
-    workWrapL   USE {`mappend`} {mempty}    : {Seq WorkWrap}
-    lamArgsL    USE {`mappend`} {mempty}    : {Seq [[Expr]]}
+    workWrapSeq USE {`mappend`} {mempty}    : {Seq WorkWrap}
+    lamArgsSeq  USE {`mappend`} {mempty}    : {Seq [[Expr]]}
     lamArgs                                 : {[[Expr]]}
-    workerL     USE {`mappend`} {mempty}    : {Seq ExprSeq1}
-    wrapperL    USE {`mappend`} {mempty}    : {Seq Expr}
-    workerNmL   USE {`mappend`} {mempty}    : {Seq HsName}
+    workerSeq   USE {`mappend`} {mempty}    : {Seq ExprSeq1}
+    wrapperSeq  USE {`mappend`} {mempty}    : {Seq Expr}
+    workerNmSeq USE {`mappend`} {mempty}    : {Seq HsName}
   ]
 
 
@@ -122,22 +122,22 @@ SEM ExprSeq1L
   | Cons
                 lhs         .   cTrf        =   if @lhs.bindType == NoBind
                                                 then @cTrf
-                                                else case head @lhs.workWrapL of
+                                                else case head @lhs.workWrapSeq of
                                                        Introduced     -> @hd.worker  : @hd.wrapper : @tl.cTrf
                                                        UpdatedWorker  -> @hd.worker  : @tl.cTrf
                                                        _              -> @hd.cTrf    : @tl.cTrf
-                            .   workWrapL   =   @hd.workWrap : @tl.workWrapL
-                            .   lamArgsL    =   @hd.lamArgs : @tl.lamArgsL
-                            .   workerL     =   @hd.worker : @tl.workerL
+                            .   workWrapSeq =   @hd.workWrap : @tl.workWrapSeq
+                            .   lamArgsSeq  =   @hd.lamArgs : @tl.lamArgsSeq
+                            .   workerSeq   =   @hd.worker : @tl.workerSeq
                 hd
-                            .   workWrap    =   head @lhs.workWrapL
-                            .   lamArgs     =   head @lhs.lamArgsL
+                            .   workWrap    =   head @lhs.workWrapSeq
+                            .   lamArgs     =   head @lhs.lamArgsSeq
                             .   bindType    =   NoBind
-                            .   workerNm    =   head @lhs.workerNmL
+                            .   workerNm    =   head @lhs.workerNmSeq
                 tl
-                            .   lamArgsL    =   tail @lhs.lamArgsL
-                            .   workWrapL   =   tail @lhs.workWrapL
-                            .   workerNmL   =   tail @lhs.workerNmL
+                            .   lamArgsSeq  =   tail @lhs.lamArgsSeq
+                            .   workWrapSeq =   tail @lhs.workWrapSeq
+                            .   workerNmSeq =   tail @lhs.workerNmSeq
 
 SEM ExprSeq1
   | L0Val
@@ -151,7 +151,7 @@ SEM ExprSeq1
   | L2Bind
                 lhs         .   worker      =   ExprSeq1_L2Bind @workerNm (workerType (map length @lhs.lamArgs) @l3.arrArgs @l3.arrTail)
   | L0Bind L1Bind L2Bind
-                lhs         .   workerNmL   =   [@workerNm]
+                lhs         .   workerNmSeq =   [@workerNm]
                 loc         .   workWrap    =   case (@isWorker, @isWrapper, @hasWorker) of
                                                   (True,  False, True) -> UpdatedWorker
                                                   (False, False, True) -> Introduced
@@ -165,18 +165,18 @@ SEM ExprSeq1
 SEM ValBind
   | Val
                 bind        .   bindType    =   NameTypeBind
-                            .   lamArgsL    =   @lamArgsL
-                            .   workWrapL   =   @bind.workWrapL
+                            .   lamArgsSeq  =   @lamArgsSeq
+                            .   workWrapSeq =   @bind.workWrapSeq
                             --  Dummy data
                             .   lamArgs     =   []
 
                 l0          .   bindType    =   BodyBind
-                            .   lamArgsL    =   @lamArgsL
-                            .   workWrapL   =   @bind.workWrapL
-                            .   workerNmL   =   @bind.workerNmL
+                            .   lamArgsSeq  =   @lamArgsSeq
+                            .   workWrapSeq =   @bind.workWrapSeq
+                            .   workerNmSeq =   @bind.workerNmSeq
 
                 bindMeta    .   bindType    =   NoBind
-                loc         .   lamArgsL    =   @l0.lamArgsL ++ repeat [] -- example: let [x, y] = dup [3]
+                loc         .   lamArgsSeq  =   @l0.lamArgsSeq ++ repeat [] -- example: let [x, y] = dup [3]
 
 SEM Expr
   | Let
