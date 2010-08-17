@@ -59,9 +59,10 @@ cpCleanupCore :: HsName -> EHCompilePhase ()
 cpCleanupCore modNm
   = cpUpdCU modNm
       (\e -> e { ecuMbCore            = Nothing
+%%[[(99 tycore)
                , ecuMbTyCore          = Nothing
+%%]]
                , ecuMbCoreSem         = Nothing
-               -- , ecuMbTyCoreSem       = Nothing
                }
       )
 %%]

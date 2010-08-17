@@ -7,20 +7,20 @@
 %%% Common data types used by TyCore Transformations
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen tauphi) module {%{EH}TyCore.Trf.Common} import({%{EH}Base.Common})
+%%[(8 codegen tycore tauphi) module {%{EH}TyCore.Trf.Common} import({%{EH}Base.Common})
 %%]
 
-%%[(20 codegen tauphi) import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
+%%[(20 codegen tycore tauphi) import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
 %%]
 
-%%[(8 codegen tauphi) export(BindType (..), Seq)
+%%[(8 codegen tycore tauphi) export(BindType (..), Seq)
 data BindType = NameTypeBind | BodyBind | NoBind
   deriving (Eq, Show)
 
 type Seq a = [a]
 %%]
 
-%%[(8 codegen tauphi) export(WorkWrap(..),(|||))
+%%[(8 codegen tycore tauphi) export(WorkWrap(..),(|||))
 -- Status of Worker/Wrapper transformation
 data WorkWrap
   = Introduced      -- A Worker and Wrapper were introduced
@@ -38,7 +38,7 @@ UpdatedWrapper ||| UpdatedWrapper = UpdatedWrapper
 _              ||| _              = error "(|||): Can't merge arguments."
 %%]
 
-%%[(8 codegen tauphi) export(bool, list)
+%%[(8 codegen tycore tauphi) export(bool, list)
 -- This function comes from bool-extras:Data.Bool.Extras
 bool :: a -> a -> Bool -> a
 bool x _ False = x

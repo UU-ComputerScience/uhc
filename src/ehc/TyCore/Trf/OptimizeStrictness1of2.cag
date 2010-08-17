@@ -12,28 +12,28 @@
 %%%    instead of [{[Int, Char}]}]
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen tauphi) hs module {%{EH}TyCore.Trf.OptimizeStrictness1of2}
+%%[(8 codegen tycore tauphi) hs module {%{EH}TyCore.Trf.OptimizeStrictness1of2}
 %%]
 
-%%[(8 codegen tauphi) hs import({%{EH}TyCore.Trf.Common})
+%%[(8 codegen tycore tauphi) hs import({%{EH}TyCore.Trf.Common})
 %%]
 
-%%[(8 codegen tauphi) hs import({%{EH}Base.Strictness})
+%%[(8 codegen tycore tauphi) hs import({%{EH}Base.Strictness})
 %%]
  
-%%[(8 codegen tauphi) hs import({%{EH}Base.Builtin},{%{EH}Base.Opts},{%{EH}Base.Common})
+%%[(8 codegen tycore tauphi) hs import({%{EH}Base.Builtin},{%{EH}Base.Opts},{%{EH}Base.Common})
 %%]
 
-%%[(8 codegen tauphi) hs import(Control.Applicative)
+%%[(8 codegen tycore tauphi) hs import(Control.Applicative)
 %%]
 
-%%[(8 codegen tauphi) hs import(Data.Maybe, Data.Monoid, Data.List)
+%%[(8 codegen tycore tauphi) hs import(Data.Maybe, Data.Monoid, Data.List)
 %%]
 
-%%[(8 codegen tauphi) hs import(qualified Data.Map as Map)
+%%[(8 codegen tycore tauphi) hs import(qualified Data.Map as Map)
 %%]
 
-%%[(8 codegen tauphi) hs import({%{EH}TyCore})
+%%[(8 codegen tycore tauphi) hs import({%{EH}TyCore})
 %%]
 
 
@@ -41,11 +41,11 @@
 %%% Wrapping
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen tauphi).WRAPPER ag import({TyCore/Trf/ConstructTypeEnvironment})
+%%[(8 codegen tycore tauphi).WRAPPER ag import({TyCore/Trf/ConstructTypeEnvironment})
 WRAPPER AGItf
 %%]
 
-%%[(8 codegen tauphi)
+%%[(8 codegen tycore tauphi)
 PRAGMA nocycle
 %%]
 
@@ -53,21 +53,21 @@ PRAGMA nocycle
 %%% Haskell itf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen tauphi).tcmodTrfOptimizeStrictness hs
+%%[(8 codegen tycore tauphi).tcmodTrfOptimizeStrictness hs
 cmodTrfOptimizeStrictness1of2 :: Module -> Module
 cmodTrfOptimizeStrictness1of2 tcmod
   =  let  t = wrap_AGItf (sem_AGItf (AGItf_AGItf tcmod)) Inh_AGItf
      in   cTrf_Syn_AGItf t
 %%]
 
-%%[(8 codegen tauphi)
+%%[(8 codegen tycore tauphi)
 ATTR AGItf [ | | cTrf : Module ]
 
 SEM AGItf
   | AGItf       lhs         .   cTrf        =   @module.cTrf
 %%]
 
-%%[(8 codegen tauphi)
+%%[(8 codegen tycore tauphi)
 ATTR AllCodeNT
   [
   |

@@ -35,7 +35,7 @@ Output generation, on stdout or file
 %%[(8 codegen) import({%{EH}Core},{%{EH}Core.Pretty})
 %%]
 -- TyCore output
-%%[(8 codegen) import({%{EH}TyCore},{%{EH}TyCore.Pretty})
+%%[(8 codegen tycore) import({%{EH}TyCore},{%{EH}TyCore.Pretty})
 %%]
 -- Grin input and output
 %%[(8 codegen grin) import({%{EH}GrinCode.Pretty})
@@ -64,7 +64,7 @@ Output generation, on stdout or file
 %%% Compile actions: output
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) export(cpOutputTyCoreModule,cpOutputTyCore)
+%%[(8 codegen tycore) export(cpOutputTyCoreModule,cpOutputTyCore)
 cpOutputTyCoreModule :: Bool -> String -> String -> HsName -> Module -> EHCompilePhase ()
 cpOutputTyCoreModule binary nmsuff suff modNm tyMod
   =  do  {  cr <- get

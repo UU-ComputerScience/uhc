@@ -7,31 +7,31 @@
 %%% Core utilities
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) module {%{EH}TyCore.Utils2} import(qualified Data.Map as Map,Data.Maybe,{%{EH}Base.Builtin},{%{EH}Base.Opts},{%{EH}Base.Common}) 
+%%[(8 codegen tycore) module {%{EH}TyCore.Utils2} import(qualified Data.Map as Map,Data.Maybe,{%{EH}Base.Builtin},{%{EH}Base.Opts},{%{EH}Base.Common}) 
 %%]
-%%[(8 codegen) import({%{EH}TyCore.Base})
-%%]
-
-%%[(8 codegen) hs import({%{EH}AbstractCore})
-%%]
-%%[(8 codegen) hs import({%{EH}AbstractCore.Utils} hiding (rceMatch)) export(module {%{EH}AbstractCore.Utils})
+%%[(8 codegen tycore) import({%{EH}TyCore.Base})
 %%]
 
-%%[(8 codegen) import({%{EH}Gam},{%{EH}VarMp},{%{EH}Substitutable},{%{EH}Gam.ValGam},{%{EH}Gam.DataGam})
+%%[(8 codegen tycore) hs import({%{EH}AbstractCore})
+%%]
+%%[(8 codegen tycore) hs import({%{EH}AbstractCore.Utils} hiding (rceMatch)) export(module {%{EH}AbstractCore.Utils})
 %%]
 
-%%[(8 codegen) import(Data.List,qualified Data.Set as Set,Data.List,qualified Data.Map as Map,EH.Util.Utils)
+%%[(8 codegen tycore) import({%{EH}Gam},{%{EH}VarMp},{%{EH}Substitutable},{%{EH}Gam.ValGam},{%{EH}Gam.DataGam})
+%%]
+
+%%[(8 codegen tycore) import(Data.List,qualified Data.Set as Set,Data.List,qualified Data.Map as Map,EH.Util.Utils)
 %%]
 
 -- debug
-%%[(8 codegen) import({%{EH}Base.Debug},EH.Util.Pretty)
+%%[(8 codegen tycore) import({%{EH}Base.Debug},EH.Util.Pretty)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Env to support Reordering of Case Expression (RCE)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) export(RCEEnv)
+%%[(8 codegen tycore) export(RCEEnv)
 type RCEEnv = RCEEnv' Expr MetaVal ValBind ValBind Ty
 %%]
 
@@ -39,7 +39,7 @@ type RCEEnv = RCEEnv' Expr MetaVal ValBind ValBind Ty
 %%% Remainder of pattern for extensible records
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8888 codegen) export(MbPatRest)
+%%[(8888 codegen tycore) export(MbPatRest)
 type MbPatRest = MbPatRest' PatRest
 %%]
 
@@ -47,7 +47,7 @@ type MbPatRest = MbPatRest' PatRest
 %%% Reorder record Field Update (to sorted on label, upd's first, then ext's)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) export(FieldUpdateL,fuL2ExprL,fuL2ExprNodeFldL,fuMap)
+%%[(8 codegen tycore) export(FieldUpdateL,fuL2ExprL,fuL2ExprNodeFldL,fuMap)
 type FieldUpdateL e = AssocL HsName (e,Maybe Int)
 
 fuMap :: (HsName -> e -> (e',Int)) -> FieldUpdateL e -> FieldUpdateL e'
@@ -88,7 +88,7 @@ fuReorder opts nL fuL
      in   (offL, sortBy cmpFU fuL')
 %%]
 
-%%[(10 codegen) export(fuMkExpr)
+%%[(10 codegen tycore) export(fuMkExpr)
 fuMkExpr :: EHCOpts -> UID -> FieldUpdateL Expr -> Expr -> Expr
 fuMkExpr opts u fuL r
   =  let  (n:nL) = map (uidHNm . uidChild) . mkNewUIDL (length fuL + 1) $ u
@@ -101,7 +101,7 @@ fuMkExpr opts u fuL r
 %%% Free var closure, and other utils used by Trf/...GlobalAsArg transformation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) export(fvsClosure,fvsTransClosure)
+%%[(8 codegen tycore) export(fvsClosure,fvsTransClosure)
 fvsClosure :: FvS -> FvS -> FvS -> FvSMp -> FvSMp -> (FvSMp,FvSMp)
 fvsClosure newS lamOuterS varOuterS fvmOuter fvmNew
   =  let  fvmNew2  =  Map.filterWithKey (\n _ -> n `Set.member` newS) fvmNew
@@ -127,7 +127,7 @@ fvsTransClosure lamFvSMp varFvSMp
           else varFvSMp
 %%]
 
-%%[(8 codegen) export(fvLAsArg,mkFvNm,fvLArgRepl,fvVarRepl)
+%%[(8 codegen tycore) export(fvLAsArg,mkFvNm,fvLArgRepl,fvVarRepl)
 fvLAsArg :: VarIntroMp -> FvS -> VarIntroL
 fvLAsArg cvarIntroMp fvS
   =  sortOn (vintroLev . snd)
@@ -154,7 +154,7 @@ fvVarRepl nMp n = maybe (Expr_Var n) (Expr_Var . vreplRepl) $ Map.lookup n nMp
 %%% RPatFld -> ValBind
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8888 codegen) hs export(rpatBindL2ValBindL)
+%%[(8888 codegen tycore) hs export(rpatBindL2ValBindL)
 rpatBindL2ValBindL :: RCEEnv -> Bool -> HsName -> CTag -> MbPatRest -> AssocL RPatFld (Maybe Int) -> [ValBind]
 rpatBindL2ValBindL env hasSub parNm ct rest pbL 
   = concat
@@ -179,7 +179,7 @@ rpatBindL2ValBindL env hasSub parNm ct rest pbL
 %%% Reorder record Field pattern
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) export(FldOffset(..),foffMkOff,foffLabel)
+%%[(8 codegen tycore) export(FldOffset(..),foffMkOff,foffLabel)
 data FldOffset
   = FldKnownOffset      { foffLabel'     :: !HsName, foffOffset   :: !Int      }
   | FldComputeOffset    { foffLabel'     :: !HsName, foffExpr     :: !Expr    }
@@ -203,7 +203,7 @@ foffLabel FldImplicitOffset = hsnUnknown
 foffLabel foff				= foffLabel' foff
 %%]
 
-%%[(8 codegen) export(FieldSplitL,fsL2PatL,fsL2PatOffsetL)
+%%[(8 codegen tycore) export(FieldSplitL,fsL2PatL,fsL2PatOffsetL)
 type FieldSplitL = AssocL FldOffset RPat
 
 fsL2PatL :: FieldSplitL -> [RPat]
@@ -215,7 +215,7 @@ fsL2PatOffsetL l = [ (RPatFld_Fld n oe (rpatNmNm $ rcpPNm p) p,Just oi) | (o,(fo
 
 -- Reordering compensates for the offset shift caused by predicate computation, which is predicate by predicate
 -- whereas these sets of patterns are dealt with in one go.
-%%[(8 codegen) export(fsLReorder)
+%%[(8 codegen tycore) export(fsLReorder)
 fsLReorder :: EHCOpts -> FieldSplitL -> FieldSplitL
 fsLReorder opts fsL
   =  let  (fsL',_)
@@ -231,7 +231,7 @@ fsLReorder opts fsL
      in   rowCanonOrderBy compare fsL'
 %%]
 
-%%[(8888 codegen) export(rpbReorder,patBindLOffset)
+%%[(8888 codegen tycore) export(rpbReorder,patBindLOffset)
 rpbReorder :: EHCOpts -> [RPatFld] -> [RPatFld]
 rpbReorder opts pbL
   =  let  (pbL',_)

@@ -68,7 +68,7 @@ level 2..6 : with prefix 'cpEhc'
 %%[(20 codegen grin) import(qualified {%{EH}Core} as Core(cModMerge))
 %%]
 -- Language syntax: TyCore
-%%[(8 codegen) import(qualified {%{EH}TyCore.Full2} as C)
+%%[(8 codegen tycore) import(qualified {%{EH}TyCore.Full2} as C)
 %%]
 -- Language syntax: Grin
 %%[(20 codegen grin) import(qualified {%{EH}GrinCode} as Grin(grModMerge))
@@ -758,6 +758,7 @@ cpEhcCorePerModulePart1 earlyMerge modNm
        ; let (_,opts) = crBaseInfo' cr
        ; cpSeq
            (  [ cpStepUID ]
+%%[[(8 tycore)
            ++ (if ehcOptTyCore opts
                then [ cpProcessTyCoreBasic modNm
                     , cpMsg modNm VerboseALot "TyCore (basic) done"
@@ -766,6 +767,7 @@ cpEhcCorePerModulePart1 earlyMerge modNm
                     ]
                else []
               )
+%%]]
            ++ [ cpProcessCoreBasic modNm
               , cpMsg modNm VerboseALot "Core (basic) done"
               , when (not earlyMerge) $ cpProcessCoreRest modNm
@@ -873,10 +875,12 @@ cpProcessEH modNm
 %%]]
                , cpFlowEHSem1 modNm
                , cpTranslateEH2Output modNm
-%%[[(8 codegen)
+%%[[(8 codegen tycore)
                , if ehcOptTyCore opts
                  then cpTranslateEH2TyCore modNm
                  else cpTranslateEH2Core modNm
+%%][(8 codegen)
+               , cpTranslateEH2Core modNm
 %%]]
 %%[[99
                , cpCleanupEH modNm
@@ -885,7 +889,7 @@ cpProcessEH modNm
        }
 %%]
 
-%%[(8 codegen)
+%%[(8 codegen tycore)
 -- | TBD: finish it, only a sketch now
 cpProcessTyCoreBasic :: HsName -> EHCompilePhase ()
 cpProcessTyCoreBasic modNm 

@@ -2,43 +2,43 @@
 %%% Encapsulation of TyCore transformations
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs module {%{EH}TyCore.Trf}
+%%[(8 codegen tycore) hs module {%{EH}TyCore.Trf}
 %%]
 
 -- general imports
-%%[(8 codegen) import(qualified Data.Map as Map, qualified Data.Set as Set)
+%%[(8 codegen tycore) import(qualified Data.Map as Map, qualified Data.Set as Set)
 %%]
-%%[(8 codegen) import(Debug.Trace)
+%%[(8 codegen tycore) import(Debug.Trace)
 %%]
-%%[(8 codegen) import(Control.Monad, Control.Monad.State)
+%%[(8 codegen tycore) import(Control.Monad, Control.Monad.State)
 %%]
 
-%%[(8 codegen) import({%{EH}EHC.Common})
+%%[(8 codegen tycore) import({%{EH}EHC.Common})
 %%]
 
 -- LamInfo
-%%[(8 codegen) import({%{EH}LamInfo})
+%%[(8 codegen tycore) import({%{EH}LamInfo})
 %%]
 
 -- TyCore
-%%[(8 codegen) import({%{EH}TyCore})
+%%[(8 codegen tycore) import({%{EH}TyCore})
 %%]
 
-%%[(20 codegen) import({%{EH}TyCore.Base})
+%%[(20 codegen tycore) import({%{EH}TyCore.Base})
 %%]
 
 -- TyCore transformations
-%%[(8 codegen tauphi) import({%{EH}TyCore.Trf.EliminateExplicitLaziness})
+%%[(8 codegen tycore tauphi) import({%{EH}TyCore.Trf.EliminateExplicitLaziness})
 %%]
-%%[(8 codegen tauphi) import({%{EH}TyCore.Trf.DefinitionSiteArityRaise1of2}, {%{EH}TyCore.Trf.DefinitionSiteArityRaise2of2})
+%%[(8 codegen tycore tauphi) import({%{EH}TyCore.Trf.DefinitionSiteArityRaise1of2}, {%{EH}TyCore.Trf.DefinitionSiteArityRaise2of2})
 %%]
-%%[(8 codegen tauphi) import({%{EH}TyCore.Trf.IntroduceExplicitLaziness})
+%%[(8 codegen tycore tauphi) import({%{EH}TyCore.Trf.IntroduceExplicitLaziness})
 %%]
-%%[(8 codegen tauphi) import({%{EH}TyCore.Trf.IntroduceWeirdConstructs})
+%%[(8 codegen tycore tauphi) import({%{EH}TyCore.Trf.IntroduceWeirdConstructs})
 %%]
-%%[(8 codegen tauphi) import({%{EH}TyCore.Trf.RemoveLazyFunctions1of2}, {%{EH}TyCore.Trf.RemoveLazyFunctions2of2})
+%%[(8 codegen tycore tauphi) import({%{EH}TyCore.Trf.RemoveLazyFunctions1of2}, {%{EH}TyCore.Trf.RemoveLazyFunctions2of2})
 %%]
-%%[(8 codegen tauphi) import({%{EH}TyCore.Trf.OptimizeStrictness1of2}, {%{EH}TyCore.Trf.OptimizeStrictness2of2})
+%%[(8 codegen tycore tauphi) import({%{EH}TyCore.Trf.OptimizeStrictness1of2}, {%{EH}TyCore.Trf.OptimizeStrictness2of2})
 %%]
 
 
@@ -46,7 +46,7 @@
 %%% Monad utils
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 codegen tycore)
 modifyGets :: MonadState s m => (s -> (a,s)) -> m a
 modifyGets update
   = do { s <- get
@@ -60,7 +60,7 @@ modifyGets update
 %%% Interface to transformations, used internally as state
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) export(TrfTyCore(..),emptyTrfTyCore)
+%%[(8 codegen tycore) export(TrfTyCore(..),emptyTrfTyCore)
 data TrfTyCore
   = TrfTyCore
       { trftycoreTyCore       	:: !Module
@@ -93,7 +93,7 @@ emptyTrfTyCore = TrfTyCore emptyModule [] uidStart
 %%% Running the transformations
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) export(trfTyCore)
+%%[(8 codegen tycore) export(trfTyCore)
 trfTyCore :: EHCOpts -> HsName -> TrfTyCore -> TrfTyCore
 trfTyCore opts modNm trftycore
   = snd $ runState trf trftycore

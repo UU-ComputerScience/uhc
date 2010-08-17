@@ -657,11 +657,7 @@ SEM Decl
                         .  info_8   =   []
 %%]
 
-%%[(8 codegen)
-SEM AGItf
-  | AGItf       loc     .  info_8   :=  [ mkInfo1 "expr.cexpr" (pp @expr.cexpr)
-                                        ]
-
+%%[(8 codegen tycore)
 SEM Decl
   | Val         loc     .  info_8   :=  [ mkInfo1 "ctyExprKnTy" (C.ppTy @ctyExprKnTy)
                                         , mkInfo1 "ctyExprTy" (C.ppTy @ctyExprTy)
@@ -697,6 +693,21 @@ SEM Expr
   | Rec         loc     .  info_8   :=  [ mkInfo1 "ctyTopDown" (C.ppTy @lhs.ctyTopDown)
                                         ]
 
+SEM DataConstr
+  | Constr      loc     .  info_8   :=  [ mkInfo1 "foRInstToL" (ppCommas $ foRInstToL @fo_fin)
+                                        -- , mkInfo1 "ctyDataCon" (C.ppTy @ctyDataCon)
+                                        -- , mkInfo1 "moutErrL moutDataCon" (ppErrL $ C.moutErrL @moutDataCon)
+                                        -- , mkInfo1 "moutCSubst moutDataCon" (ppAssocLV . Map.toList $ C.moutCSubst @moutDataCon)
+                                        ]
+%%]
+
+%%[(8 codegen)
+SEM AGItf
+  | AGItf       loc     .  info_8   :=  [ mkInfo1 "expr.cexpr" (pp @expr.cexpr)
+                                        ]
+%%]
+
+%%[(8 codegen tycore)
 SEM PatExpr
   | AppTop Rec  loc     .  info_8   :=  [ mkInfo1 "ctyTopDown" (C.ppTy @lhs.ctyTopDown)
                                         , mkInfo1 "ctyPat" (C.ppTy @ctyPat)
@@ -704,13 +715,6 @@ SEM PatExpr
                                         , mkInfo1 "moutErrL moutPat" (ppErrL $ C.moutErrL @moutPat)
                                         ]
   | Var         loc     .  info_8   :=  [ mkInfo1 "ctyTopDown" (C.ppTy @lhs.ctyTopDown)
-                                        ]
-
-SEM DataConstr
-  | Constr      loc     .  info_8   :=  [ mkInfo1 "foRInstToL" (ppCommas $ foRInstToL @fo_fin)
-                                        -- , mkInfo1 "ctyDataCon" (C.ppTy @ctyDataCon)
-                                        -- , mkInfo1 "moutErrL moutDataCon" (ppErrL $ C.moutErrL @moutDataCon)
-                                        -- , mkInfo1 "moutCSubst moutDataCon" (ppAssocLV . Map.toList $ C.moutCSubst @moutDataCon)
                                         ]
 %%]
 
@@ -784,6 +788,8 @@ SEM Expr
 %%[[(9 codegen)
                                         , mkInfo1 "foLCoeL @fo_" (ppBracketsCommas (lrcoeLeftL  $ foLRCoe @fo_))
                                         , mkInfo1 "foRCoeL @fo_" (ppBracketsCommas (lrcoeRightL $ foLRCoe @fo_))
+%%]]
+%%[[(9 codegen tycore)
                                         , mkInfo1 "foLTCoeL @fo_" (ppBracketsCommas (C.lrcoeLeftL  $ foLRTCoe @fo_))
                                         , mkInfo1 "foRTCoeL @fo_" (ppBracketsCommas (C.lrcoeRightL $ foLRTCoe @fo_))
 %%]]

@@ -33,9 +33,9 @@ Translation to another AST
 %%]
 
 -- TyCore semantics
-%%[(8 codegen grin) import(qualified {%{EH}TyCore.ToCore} as TyCore2Core)
+%%[(8 codegen tycore grin) import(qualified {%{EH}TyCore.ToCore} as TyCore2Core)
 %%]
-%%[(8 codegen grin) import(qualified {%{EH}TyCore.PrettyAST} as TyCoreSem)
+%%[(8 codegen tycore grin) import(qualified {%{EH}TyCore.PrettyAST} as TyCoreSem)
 %%]
 
 -- Grin semantics
@@ -146,7 +146,7 @@ cpTranslateEH2Core modNm
          }
 %%]
 
-%%[(8 codegen) export(cpTranslateEH2TyCore)
+%%[(8 codegen tycore) export(cpTranslateEH2TyCore)
 cpTranslateEH2TyCore :: HsName -> EHCompilePhase ()
 cpTranslateEH2TyCore modNm
   =  do  {  cr <- get
@@ -175,7 +175,7 @@ cpTranslateCore2Grin modNm
          }
 %%]
 
-%%[(8 codegen grin) export(cpTranslateTyCore2Core)
+%%[(8 codegen tycore grin) export(cpTranslateTyCore2Core)
 cpTranslateTyCore2Core :: HsName -> EHCompilePhase ()
 cpTranslateTyCore2Core modNm
   =  do  {  cr <- get
