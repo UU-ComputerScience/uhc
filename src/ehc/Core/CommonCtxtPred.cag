@@ -4,27 +4,8 @@
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Common AG for Core
+%%% Common AG for Core: predicates about context of something
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Level
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-Level is not defined for Expr_Let, as the lexical level is assigned differently for various AGs
-
-%%[(8 codegen)
-ATTR AllCodeNT [ lev: Int | | ]
-
-SEM AGItf
-  | AGItf       module      .   lev         =   cLevModule
-
-SEM Expr
-  | Lam         loc         .   lev         =   @lhs.lev + 1
-
-SEM Alt
-  | Alt         loc         .   lev         =   @lhs.lev + 1
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Binding global?
@@ -33,34 +14,8 @@ SEM Alt
 %%[(8 codegen)
 ATTR AllBind [ isGlobal: Bool | | ]
 
-SEM Expr
+SEM CExpr
   | Let         loc	       	.   isGlobal    =   @lhs.lev == cLevModule
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Is Expr the creation of a tuple?
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8 codegen)
-ATTR Expr [ | | mbTupApp: {Maybe CTag} ]
-
-SEM Expr
-  | Tup         lhs         .   mbTupApp    =   Just @tag
-  | App         lhs         .   mbTupApp    =   @func.mbTupApp
-  | * - Tup App
-                lhs         .   mbTupApp    =   Nothing
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Is expr a var?
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8 codegen)
-ATTR Expr [ | | mbVar: {Maybe HsName} ]
-
-SEM Expr
-  | Var         loc         .   mbVar       =   Just @nm
-  | * - Var     lhs         .   mbVar       =   Nothing
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -68,9 +23,9 @@ SEM Expr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen)
-ATTR AllBind [ letBindingsCateg: ValBindCateg | | ]
+ATTR AllBind [ letBindingsCateg: CBindingsCateg | | ]
 
-SEM Expr
+SEM CExpr
   | Let         loc         .   letBindingsCateg    =   @categ
 %%]
 
@@ -79,31 +34,31 @@ SEM Expr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen)
-ATTR Expr [ isTopApp: Bool  isTopTup: Bool | | ]
+ATTR CExpr [ isTopApp: Bool  isTopTup: Bool | | ]
 
-SEM Expr
+SEM CExpr
   | App         func        .   isTopApp    =   False
                 arg         .   isTopApp    =   True
-  | * - App     loc         .   isTopApp    =   True
+  | * - App Ann loc         .   isTopApp    =   True
   | TupUpd TupIns TupDel
                 expr        .   isTopTup    =   False
                 loc         .   isTopTup    =   True
-  | * - TupUpd TupIns TupDel
+  | * - TupUpd TupIns TupDel Ann
                 loc         .   isTopTup    =   True
 
 SEM CModule
   | Mod         expr        .   isTopApp    =   True
                             .   isTopTup    =   True
 
-SEM ValBind
-  | Val         expr        .   isTopApp    =   True
+SEM CBindAspect
+  | Bind        expr        .   isTopApp    =   True
                             .   isTopTup    =   True
 
-SEM FldBind
+SEM CPatFld
   | Fld         offset      .   isTopApp    =   True
                             .   isTopTup    =   True
 
-SEM Alt
+SEM CAlt
   | Alt         expr        .   isTopApp    =   True
                             .   isTopTup    =   True
 %%]
@@ -113,32 +68,32 @@ SEM Alt
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen)
-ATTR Expr [ | | whatBelow: WhatExpr ]
+ATTR CExpr [ | | whatBelow: WhatExpr ]
 
-SEM Expr
+SEM CExpr
   | Lam         loc         .   whatBelow       =   ExprIsLam
   | Var         loc         .   whatBelow       =   ExprIsVar @nm
   | Int         loc         .   whatBelow       =   ExprIsInt @int
-  | * - Lam Var Int
+  | * - Lam Var Int Ann
                 loc         .   whatBelow       =   ExprIsOther
 %%]
 
 %%[(8 codegen)
-ATTR Expr [ whatAbove: WhatExpr | | ]
+ATTR CExpr [ whatAbove: WhatExpr | | ]
 
-SEM Expr
+SEM CExpr
   | Lam			loc			.	whatAbove		=	ExprIsLam
   | App			loc			.	whatAbove		=	ExprIsApp
-  | * - Lam App
+  | * - Lam App Ann
   				loc			.	whatAbove		=	ExprIsOther
 
-SEM ValBind
-  | Val 		loc			.	whatAbove		=	ExprIsOther
+SEM CBindAspect
+  | Bind		loc			.	whatAbove		=	ExprIsOther
 
-SEM FldBind
+SEM CPatFld
   | Fld 		loc			.	whatAbove		=	ExprIsOther
 
-SEM Alt
+SEM CAlt
   | Alt			loc			.	whatAbove		=	ExprIsOther
 
 SEM CModule
@@ -146,3 +101,51 @@ SEM CModule
 %%]
 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Context: strict yes/no, rhs of lam yes/no
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin)
+ATTR CExpr AllAlt AllBind [ isStrict, isLamBody: Bool | | ]
+
+SEM CModule
+  | Mod         expr        .   isStrict    =   True
+                            .   isLamBody   =   False
+
+SEM CBindAspect
+  | Bind        expr        .   isStrict    =   @lhs.isStrict || @expr.whatBelow == ExprIsLam
+
+SEM CPatFld
+  | Fld         offset      .   isStrict    =   True
+                            .   isLamBody   =   False
+
+SEM CExpr
+  | Let			binds		.	isStrict	=	@isGlobal || @categ == CBindings_Strict
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Context: evaluation context (to replace isStrict), partially overridden in AG which includes this
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+not used yet as it seems not to be equivalent to isStrict. Can't find out why...
+
+%%[(8 codegen)
+ATTR CExpr AllAlt AllBind [ evalCtx: EvalCtx | | ]
+
+SEM CModule
+  | Mod         expr        .   evalCtx         =   EvalCtx_Eval
+
+SEM CPatFld
+  | Fld         offset      .   evalCtx         =   EvalCtx_Eval
+
+
+SEM CExpr
+  | Let         loc         .   evalCtx         =   if @categ == CBindings_Strict
+                                                    then EvalCtx_Eval
+                                                    else EvalCtx_None
+%%]
+
+SEM CBindAspect
+  | Bind        expr        .   evalCtx         =   if @expr.whatBelow == ExprIsLam
+                                                    then EvalCtx_Eval
+                                                    else @lhs.evalCtx

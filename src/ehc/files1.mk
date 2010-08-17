@@ -57,6 +57,7 @@ EHC_HS_UTIL_SRC_CHS						:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
 													Substitutable Gam VarMp VarLookup Deriving Generics Module Config BuiltinPrims NameAspect DerivationTree CHR Pred HI LamInfo AbstractCore \
 													$(addprefix CHR/,Key Constraint Solve) \
 													$(addprefix AbstractCore/,Utils) \
+													$(addprefix AnaDomain/,Utils) \
 													$(addprefix Cil/,Common TyTag) \
 													$(addprefix Pred/,ToCHR CHR Evidence EvidenceToCore EvidenceToTyCore Heuristics CommonCHR RedGraph) \
 													$(addprefix Base/,UID Pragma Binary Serialize GenC Opts Hashable Target BasicAnnot Common Builtin Builtin2 HsName Debug Trie CfgPP LaTeX HtmlCommon Bits FileSearchLocation PackageDatabase ParseUtils) \

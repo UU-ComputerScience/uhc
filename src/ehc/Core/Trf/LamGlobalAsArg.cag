@@ -43,7 +43,7 @@ in ...f g...
 %%[(8 codegen) hs import(Debug.Trace)
 %%]
 
-%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonToXX},{Core/Trf/CommonFv},{Core/Trf/CommonLev},{Core/Trf/CommonGlobalAsArg})
+%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonCtxtPred},{Core/CommonBindNm},{Core/Trf/CommonFv},{Core/Trf/CommonLev},{Core/Trf/CommonGlobalAsArg})
 WRAPPER CodeAGItf
 %%]
 
@@ -204,7 +204,7 @@ ATTR CodeAGItf [ | | cTrf: CModule ]
 
 SEM CBindAspect
   | Bind        loc         .   (argNewL,argMpNew,bindLamArgMp)
-                                            =   if {- @isLiftable && @lhs.lev /= cLevModule -} @expr.isLam
+                                            =   if {- @isLiftable && @lhs.lev /= cLevModule -} isJust @expr.mbLam
                                                 then  let  argLevL = fvLAsArg @lhs.introCVarIntroMp $ panicJust "LamGlobalAsArg.CBind.Bind.argLevL" $ Map.lookup @lhs.nm $ @lhs.lamFvSMp
                                                            (argOL,argNL,argONMp) = fvLArgRepl @lhs.gUniq $ argLevL
                                                       in   (argNL, argONMp, @lhs.nm `Map.singleton` argOL)

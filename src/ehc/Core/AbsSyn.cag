@@ -124,6 +124,7 @@ DATA CExpr
 %%[(8 codegen)
 DATA CExprAnn
   | Ty			ty				: {Ty}
+  | Coe			coe				: {RelevCoe}
 %%]
 
 %%[(8 codegen)
@@ -143,6 +144,7 @@ DATA CBindAspect
   | Bind        -- nm              : {HsName}
                 bindMeta        : CMetas
                 expr            : CExpr
+  | RelevTy		relevTy			: {RelevTy}
   | FFI         callconv        : {FFIWay}
                 safety          : {String}
 %%[[8
@@ -309,8 +311,11 @@ SET AllPatFld   =   CPatFld CPatFldL
 %%[(8 codegen)
 SET AllCodeNT   =   CModule AllExpr
 
-SET AllExpr
+SET AllExprBase
   = CExpr AllAnn AllBind AllAlt AllPat
+
+SET AllExpr
+  = AllExprBase
     AllMeta
 
 SET AllNT

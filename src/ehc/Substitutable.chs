@@ -44,6 +44,7 @@ infixr 6 |==>
 %%[(2 hmtyinfer || hmtyast).Substitutable
 %%[[2
 class Ord k => Substitutable vv k subst | vv -> subst k where
+-- class Ord k => Substitutable vv k subst | subst -> k, vv -> k where
 %%][9999
 class VarLookup subst k vv => Substitutable vv k subst where
 %%]]
@@ -150,6 +151,9 @@ instance Substitutable VarMp TyVarId VarMp where
   (|=>)                                =   varmpPlus
   ftvSet               (VarMp _ sl)    =   Set.unions $ map (ftvSet . Map.elems) sl
 %%]
+instance Substitutable v TyVarId v => Substitutable (VarMp' TyVarId v) TyVarId (VarMp' TyVarId v) where
+  (|=>)                                =   varmpPlus
+  ftvSet               (VarMp _ sl)    =   Set.unions $ map (ftvSet . Map.elems) sl
 
 %%[(7 hmtyinfer || hmtyast)
 instance Substitutable vv k subst => Substitutable (HsName,vv) k subst where

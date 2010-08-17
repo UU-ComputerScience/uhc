@@ -3,6 +3,10 @@ Foreign/Extract.cag
 Foreign/Pretty.cag
 HS/MainAG.cag
 HS/ModImpExp.cag
+AnaDomain/Pretty.cag
+AnaDomain/Ftv.cag
+AnaDomain/Trf/Instantiate.cag
+AnaDomain/Trf/Subst.cag
 Ty/Ftv.cag
 Ty/UsedNames.cag
 Ty/ToTyCore.cag
@@ -44,6 +48,7 @@ Core/Trf/LetUnrec.cag
 Core/Trf/RenUniq.cag
 Core/Trf/ElimTrivApp.cag
 Core/Trf/AnnBasedSimplify.cag
+Core/Trf/AnaRelevance.cag
 Core/Trf/ExplicitStackTrace.cag
 GrinCode/Pretty.cag
 GrinCode/FreeVars.cag

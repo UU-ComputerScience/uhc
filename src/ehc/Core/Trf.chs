@@ -31,6 +31,8 @@
 %%]
 %%[(8 codegen) import({%{EH}Core.Trf.AnnBasedSimplify})
 %%]
+%%[(8 codegen) import({%{EH}Core.Trf.AnaRelevance})
+%%]
 %%[(9 codegen) import({%{EH}Core.Trf.FixDictFields})
 %%]
 %%[(8_2 codegen) import({%{EH}Core.Trf.PrettyVarNames})
@@ -160,6 +162,8 @@ trfCore opts modNm trfcore
 %%]]
                ; when (ehcOptFullProgAnalysis opts)
                       t_find_null
+               ; when (ehcOptOptimizationLevel opts >= OptimizationLevel_Full)
+                      t_ana_relev
                }
 
         liftTrf nm t
@@ -197,6 +201,7 @@ trfCore opts modNm trfcore
         t_caf_asarg     = liftTrf  "caf-asarg"          $ cmodTrfCAFGlobalAsArg
         t_float_glob    = liftTrf  "float-glob"         $ cmodTrfFloatToGlobal
         t_find_null     = liftTrf  "find-null"          $ cmodTrfFindNullaries
+        t_ana_relev     = liftTrf  "ana-relev"          $ cmodTrfAnaRelevance opts
 %%[[9
         t_fix_dictfld   = liftTrf  "fix-dictfld"        $ cmodTrfFixDictFields
 %%]]

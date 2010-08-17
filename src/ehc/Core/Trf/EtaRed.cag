@@ -17,7 +17,7 @@ No special reason except it is the first transformation.
 %%[(8 codegen) hs import({%{EH}Base.Common},{%{EH}Core},{%{EH}Ty}) export(cmodTrfEtaRed)
 %%]
 
-%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonToXX},{Core/CommonLev},{Core/Trf/CommonFv})
+%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonPred},{Core/CommonCtxtPred},{Core/Trf/CommonFv})
 WRAPPER CodeAGItf
 %%]
 

@@ -1,0 +1,100 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell importable interface to RelevTy instantiate
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs module {%{EH}AnaDomain.Trf.Instantiate}
+%%]
+
+%%[(8 codegen) hs import({%{EH}Base.Common},{%{EH}AnaDomain},{%{EH}VarMp},{%{EH}Substitutable})
+%%]
+
+%%[(8 codegen) hs import(qualified Data.Map as Map, qualified Data.Set as Set)
+%%]
+
+%%[doesWhat
+Instantiation replaces quantification with fresh type vars.
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% relevtyInst interface
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) ag import({AnaDomain/AbsSyn})
+WRAPPER TyAGItf
+%%]
+
+%%[(8 codegen) hs export(relevtyInst)
+relevtyInst :: UID -> RelevTy -> (RelevTy,RelevQualS)
+relevtyInst uniq ty
+  = (repl_Syn_TyAGItf t, qualS_Syn_TyAGItf t)
+  where t = wrap_TyAGItf
+              (sem_TyAGItf (TyAGItf_AGItf ty))
+              (Inh_TyAGItf
+                 { gUniq_Inh_TyAGItf 		= uniq
+                 })
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Unique
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AllNT [ | gUniq: UID | ]
+ATTR TyAGItf QualAGItf [ gUniq: UID | | ]
+
+SEM RelevTy
+  | Fun             loc			.	lUniq     	: UNIQUEREF gUniq
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Fresh vars, and their use
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+SEM RelevTy
+  | Fun				loc			.	freshTvL	=	mkNewLevUIDL (length @quants) @lUniq
+%%]
+
+%%[(8 codegen)
+ATTR AllNT [ freshMp: {Map.Map UID UID} | | ]
+
+SEM TyAGItf QualAGItf
+  | AGItf			loc			.	freshMp		=	Map.empty
+
+SEM RelevTy
+  | Fun				loc			.	freshMp		=	Map.union (Map.fromList $ zip @quants @freshTvL) @lhs.freshMp
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Replacement
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AllNT [ | | repl: SELF ]
+ATTR TyAGItf [ | | repl: RelevTy ]
+%%]
+
+%%[(8 codegen)
+SEM RelevTy
+  | Fun				lhs			.	repl		=	RelevTy_Fun [] [] @args.repl @res.repl
+%%]
+
+%%[(8 codegen)
+SEM AnaEval
+  | Var             lhs         .   repl        =   AnaEval_Var $ Map.findWithDefault @av @av @lhs.freshMp
+%%]
+
+%%[(8 codegen)
+ATTR AllNT TyAGItf [ | | qualS USE {`Set.union`} {Set.empty} : RelevQualS ]
+%%]
+
+%%[(8 codegen)
+SEM RelevTy
+  | Fun				lhs			.	qualS		=	Set.unions [ Set.fromList @quals.repl, @args.qualS, @res.qualS ]
+%%]
+

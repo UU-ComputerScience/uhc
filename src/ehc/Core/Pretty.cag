@@ -10,7 +10,10 @@
 %%[(8 codegen) hs module {%{EH}Core.Pretty} import(EH.Util.Pretty,{%{EH}Base.Builtin},{%{EH}Base.CfgPP},{%{EH}Base.Opts},{%{EH}Base.Common},{%{EH}Ty},{%{EH}Ty.Pretty},{%{EH}Core},{%{EH}Scanner.Common(coreScanOpts)}) export(ppCModule)
 %%]
 
-%%[(9 codegen) hs import(qualified Data.Map as Map,qualified Data.Set as Set,{%{EH}Ty.Pretty})
+%%[(8 codegen) hs import({%{EH}AnaDomain.Pretty})
+%%]
+
+%%[(8 codegen) hs import(qualified Data.Map as Map,qualified Data.Set as Set,{%{EH}Ty.Pretty})
 %%]
 
 %%[(90 codegen) hs import({%{EH}Foreign.Pretty})
@@ -32,7 +35,10 @@ ppCModule opts cmod
 
 ppCExpr :: CExpr -> PP_Doc
 ppCExpr ce
-  =  let  t = wrap_CExpr (sem_CExpr ce) Inh_CExpr
+  =  let  t = wrap_CExpr (sem_CExpr ce)
+                         (Inh_CExpr
+                            { varPPMp_Inh_CExpr = Map.empty
+                            })
      in   (pp_Syn_CExpr t)
 
 instance PP CExpr where
@@ -62,7 +68,10 @@ ppHole i = "<" >|< pp i >|< ">"
 %%[(9 codegen) hs
 ppOptCMetas :: CMetas -> PP_Doc
 ppOptCMetas x
-  =  let  t = wrap_CMetas (sem_CMetas x) Inh_CMetas
+  =  let  t = wrap_CMetas (sem_CMetas x)
+                          (Inh_CMetas)
+                             -- { varMp_Inh_CMetas = Map.empty
+                             -- })
      in   (pp_Syn_CMetas t)
 %%]
 
@@ -193,6 +202,7 @@ SEM CBind
 
 SEM CBindAspect
  | Bind         lhs         .   pp          =   @bindMeta.pp >-< "=" >#< @expr.pp
+ | RelevTy      lhs         .   pp          =   "::" >#< @tyPP -- pp @relevTy
  | FFI          lhs         .   pp          =   "=" >#<
 %%[[8
                                                       ("foreign" >#< ppCurlysCommasBlock [pp (show @callconv),pp (show @safety),@ppent,ppTyWithCfg' CfgPP_HI @ty])
@@ -286,6 +296,7 @@ SEM CExpr
 
 SEM CExprAnn
   | Ty          loc         .   pp          =   "::" >#< ppTyWithCfg' CfgPP_HI @ty
+  | Coe			loc			.	pp			=	"~" >#< ppRelevCoe @lhs.varPPMp @coe
 %%]
 
 %%[(9 codegen)
@@ -298,3 +309,34 @@ SEM CExpr
 
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% UID mapping
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AllExprBase [ varPPMp: VarPPMp | | ]
+
+SEM CModule
+  | Mod			expr		.	varPPMp		=	Map.empty
+%%]
+
+%%[(8 codegen)
+ATTR AllBindAspect [ | | gathVarPPMp USE {`Map.union`} {Map.empty}: VarPPMp ]
+
+SEM CBindAspect
+  | RelevTy		(loc.tyPP,lhs.gathVarPPMp)	=	ppRelevTy @relevTy
+
+SEM CBind
+  | Bind        bindAspects	.	varPPMp		=	Map.union @bindAspects.gathVarPPMp @lhs.varPPMp
+%%]
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% AG type signatures
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+SEM *
+  | *			loc			.	tyPP		:	PP_Doc
+%%]
