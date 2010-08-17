@@ -1,0 +1,67 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell importable interface to AnaDomain subst
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[doesWhat doclatex
+Substitution for AnaDomain.
+%%]
+
+%%[(8 codegen) hs module {%{EH}AnaDomain.Ftv} import({%{EH}Base.Common},{%{EH}AnaDomain})
+%%]
+
+%%[(8 codegen) hs import(qualified Data.Set as Set)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Wrapping
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) ag import({AnaDomain/AbsSyn})
+WRAPPER TyAGItf QualAGItf CoeAGItf
+%%]
+
+%%[(8 codegen) hs export(relevtyFtv)
+relevtyFtv :: RelevTy -> UIDS
+relevtyFtv ty
+  = fvS_Syn_TyAGItf t
+  where t = wrap_TyAGItf
+              (sem_TyAGItf (TyAGItf_AGItf ty))
+              (Inh_TyAGItf )
+%%]
+
+%%[(8 codegen) hs export(relevqualFtv)
+relevqualFtv :: RelevQual -> UIDS
+relevqualFtv qual
+  = fvS_Syn_QualAGItf t
+  where t = wrap_QualAGItf
+              (sem_QualAGItf (QualAGItf_AGItf qual))
+              (Inh_QualAGItf )
+%%]
+
+%%[(8 codegen) hs export(relevcoeFtv)
+relevcoeFtv :: RelevCoe -> UIDS
+relevcoeFtv coe
+  = fvS_Syn_CoeAGItf t
+  where t = wrap_CoeAGItf
+              (sem_CoeAGItf (CoeAGItf_AGItf coe))
+              (Inh_CoeAGItf )
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Fv
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AllNT TyAGItf QualAGItf CoeAGItf [ | | fvS USE {`Set.union`} {Set.empty} : UIDS ]
+%%]
+
+%%[(8 codegen)
+SEM AnaEval
+  | Var             lhs		.	fvS			=	Set.singleton @av
+%%]
+

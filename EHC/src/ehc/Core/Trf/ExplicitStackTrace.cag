@@ -31,7 +31,7 @@ However, ideally, this trf should be placed before that, but this currently brea
 %%[(99 codegen) hs import(Data.Maybe, qualified Data.Map as Map)
 %%]
 
-%%[(99 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonToXX},{Core/CommonLamInfo})
+%%[(99 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonCtxtPred},{Core/CommonBindNm},{Core/CommonLamInfo})
 WRAPPER CodeAGItf
 %%]
 
@@ -134,7 +134,7 @@ mbStackTrace opts isCand nm
 SEM CBindAspect
   | Bind        (loc.mbStackTrace,lhs.bindLamMp)
                                             =   let mbt = mbStackTrace @lhs.opts @isTraceCandidate @lhs.nm
-                                                in  (mbt,Map.singleton @lhs.nm (LamInfo 0 mbt Nothing))
+                                                in  (mbt,Map.singleton @lhs.nm (emptyLamInfo {laminfoStackTrace = mbt}))
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -175,7 +175,7 @@ SEM CBindAspect
                                                          ]
                                                        , Just @nmStackTrace
                                                        , Map.fromList
-                                                           [ (dbNm, LamInfo 0 (StackTraceInfo_IsStackTraceEquiv @lhs.nm) Nothing)
+                                                           [ (dbNm, emptyLamInfo {laminfoStackTrace = StackTraceInfo_IsStackTraceEquiv @lhs.nm})
                                                            ]
                                                        )
                                                   _ -> ([acoreBind1Asp1 @lhs.nm @cTrf], @lhs.mbInStackTraceCtxt, Map.empty)

@@ -37,7 +37,7 @@ The meaning of a "closurable" CAF binding is defined in CommonFloat.
 %%[(8 codegen) hs import(Debug.Trace)
 %%]
 
-%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/Trf/CommonFv},{Core/CommonLev},{Core/Trf/CommonFloat},{Core/CommonToXX})
+%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/Trf/CommonFv},{Core/CommonLev},{Core/CommonPred},{Core/CommonCtxtPred},{Core/CommonBindNm},{Core/Trf/CommonFloat})
 WRAPPER CodeAGItf
 %%]
 
@@ -135,7 +135,7 @@ SEM CBindAspect
                 lhs . ( cLamBinds
                       , cLargeCAFBinds
                       , cSmallCAFBinds
-                      )             =   if @expr.isLam
+                      )             =   if isJust @expr.mbLam
                                         then ( Seq.singleton @cBindTrf
                                              , Seq.empty
                                              , Seq.empty

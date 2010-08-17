@@ -23,7 +23,7 @@
 %%[(9 codegen) hs import(Debug.Trace)
 %%]
 
-%%[(9 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonToXX},{Core/CommonLev})
+%%[(9 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonPred},{Core/CommonCtxtPred},{Core/CommonBindNm})
 WRAPPER CodeAGItf
 %%]
 

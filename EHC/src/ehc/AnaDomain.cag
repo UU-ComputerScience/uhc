@@ -1,0 +1,314 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%[doesWhat doclatex
+Analysis domains
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell importable interface to AnaDomain
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs module {%{EH}AnaDomain} import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Base.Opts},{%{EH}VarMp})
+%%]
+
+%%[(8 codegen) hs import(qualified Data.Map as Map,qualified Data.Set as Set, Data.List)
+%%]
+%%[(8 codegen) hs import(Control.Monad.State hiding (join), Control.Applicative)
+%%]
+
+%%[(8 codegen) hs export(QualAGItf(..), TyAGItf(..), CoeAGItf(..), AnaEval(..), AnaEvalL, RelevTy(..), RelevTyL, RelevQual(..), RelevQualL, RelevCoe(..), RelevCoeL) 
+%%]
+
+%%[(20 codegen grin) hs import(Control.Monad hiding(join), {%{EH}Base.Serialize})
+%%]
+%%[(20 codegen grin) hs import(Data.Typeable(Typeable), Data.Generics(Data))
+%%]
+
+%%[(8 codegen) ag import({AnaDomain/AbsSyn})
+DERIVING *
+  : Show
+%%[[20
+  , Typeable, Data
+%%]]
+
+DERIVING *
+  : Eq, Ord
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Derived types
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs export(RelevQualS)
+type RelevQualS = Set.Set RelevQual
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Lattices (should be in separate module)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs export(AnaLattice(..))
+class AnaLattice a where
+  top   :: a
+  bot   :: a
+  fresh :: UID -> a
+  meet  :: a -> a -> AMS a
+  join  :: a -> a -> AMS a
+  anaLE :: a -> a -> AMS (AMSOut a)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Lattice instances
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs
+instance AnaLattice AnaEval where
+  top   = AnaEval_Lazy
+  bot   = AnaEval_WHNF
+  fresh = AnaEval_Var
+
+  meet AnaEval_Lazy AnaEval_WHNF = return   bot
+  meet a1           a2           = return $ AnaEval_Meet [a1,a2]
+
+  join AnaEval_Lazy AnaEval_WHNF = return   top
+  join a1           a2           = return $ AnaEval_Join [a1,a2]
+  
+  anaLE a1@(AnaEval_Var v1) (AnaEval_Var v2)
+    | v1 == v2                   			= return $ AMSOut a1 a1 RelevCoe_Id
+  anaLE a1@(AnaEval_Var v1) a2      		= anaEvalVar (flip anaLE a2)       anaEvalLE  a1 a2
+  anaLE a1 a2@(AnaEval_Var v2)      		= anaEvalVar (     anaLE a1) (flip anaEvalLE) a2 a1
+  anaLE a1 a2      			                = anaEvalLE a1 a2
+
+anaEvalVar
+  :: (AnaEval -> AMS (AMSOut AnaEval))					-- when var found
+     -> (AnaEval -> AnaEval -> AMS (AMSOut AnaEval))	-- when var is not found
+     -> AnaEval -> AnaEval
+     -> AMS (AMSOut AnaEval)
+anaEvalVar found notfound a1@(AnaEval_Var v1) a2
+  = do { s <- get
+       ; case amsLookupEval v1 s of
+           Just a1' -> found    a1'
+           _        -> notfound a1 a2
+       }
+
+anaEvalLE :: AnaEval -> AnaEval -> AMS (AMSOut AnaEval)
+-- 2 unknowns remain both unknown, but only related
+anaEvalLE a1@(AnaEval_Var v1) a2@(AnaEval_Var v2)	= anaEvalDelay a1 a2
+-- at top all choice is still free
+anaEvalLE a1@(AnaEval_Var v1) a2@(AnaEval_Lazy	)	= anaEvalCoe   a1 a2
+-- remaining is automatically bot
+anaEvalLE    (AnaEval_Var v1) a2      				= anaEvalBind  v1 a2
+-- at bot all choice is still free
+anaEvalLE a1@(AnaEval_WHNF  ) a2@(AnaEval_Var v2) 	= anaEvalCoe   a1 a2
+-- remaining is automatically top
+anaEvalLE a1                     (AnaEval_Var v2)  	= anaEvalBind  v2 a1
+anaEvalLE a1@(AnaEval_WHNF  ) a2@(AnaEval_Lazy	)	= anaEvalCoe   a1 a2		-- forget that it is alreay evaluated
+anaEvalLE a1@(AnaEval_Lazy  ) a2@(AnaEval_WHNF	)	= anaEvalCoe   a1 a2		-- ensure evaluation (by evaluating)
+anaEvalLE a1                  a2             		= return $ AMSOut a1 a2 (RelevCoe_Err "anaEvalLE")
+
+
+-- | bind var directly
+anaEvalBind :: UID -> AnaEval -> AMS (AMSOut AnaEval)
+anaEvalBind v1 a2
+  = do { s <- get
+       ; put (amsBindEval v1 a2 s)
+       ; return $ AMSOut a2 a2 RelevCoe_Id
+       }
+
+
+-- | coerce
+anaEvalCoe :: AnaEval -> AnaEval -> AMS (AMSOut AnaEval)
+anaEvalCoe l h
+  = do { return $ AMSOut l h (RelevCoe_Eval l h) -- (RelevCoe_Qual $ RelevQual_SubEval l h)
+       }
+
+-- | postpone by generating a qualification, to be solved later
+anaEvalQual :: RelevQual -> AnaEval -> AnaEval -> AMS (AMSOut AnaEval)
+anaEvalQual q l h
+  = do { s <- get
+       ; put (amsQual q s)
+       ; return $ AMSOut l h (RelevCoe_Eval l h) -- (RelevCoe_Qual q)
+       }
+
+-- | postpone, abbrev for anaEvalQual
+anaEvalDelay :: AnaEval -> AnaEval -> AMS (AMSOut AnaEval)
+anaEvalDelay l h = anaEvalQual (RelevQual_SubEval l h) l h
+%%]
+
+%%[8 hs
+-- | Only valid for RelevTy_Ana as aggregrate of domains
+instance AnaLattice RelevTy where
+  top       = RelevTy_Ana top
+  bot       = RelevTy_Ana bot
+  fresh u   = RelevTy_Ana (fresh u1)
+            where (_,u1) = mkNewLevUID u
+
+  meet  (RelevTy_Ana a11) (RelevTy_Ana a21) = liftM RelevTy_Ana (meet  a11 a21)
+  meet  _                 _                 = return $ RelevTy_Err "meet"
+
+  join  (RelevTy_Ana a11) (RelevTy_Ana a21) = liftM RelevTy_Ana (join  a11 a21)
+  join  _                 _                 = return $ RelevTy_Err "join"
+
+  anaLE (RelevTy_Ana a11) (RelevTy_Ana a21) = do { AMSOut l h c <- anaLE a11 a21
+                                                 ; return $ AMSOut (RelevTy_Ana l) (RelevTy_Ana h) c
+                                                 }
+  anaLE (RelevTy_Fun _ _ a1 r1) (RelevTy_Fun _ _ a2 r2)
+                                            = do { r_amso <- anaLE r1 r2
+                                                 ; a_amso <- mapM (uncurry anaLE) (zip a2 a1)
+                                                 ; return $ AMSOut (RelevTy_Fun  [] [] (map amsoLo  a_amso) (amsoLo  r_amso))
+                                                                   (RelevTy_Fun  [] [] (map amsoHi  a_amso) (amsoHi  r_amso))
+                                                                   (RelevCoe_Fun       (map amsoCoe a_amso) (amsoCoe r_amso))
+                                                 }
+  anaLE _                 _                 = return $ AMSOut (RelevTy_Err "anaLE.lo") (RelevTy_Err "anaLE.hi") RelevCoe_Id
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Utils
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs export(anaMkBotFun)
+-- | construct 'worst case' assuming function signature, where we assume function assumes nothing and we cannot assume anything about result
+anaMkBotFun :: Int -> RelevTy
+anaMkBotFun arity = RelevTy_Fun [] [] (replicate arity top) top
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Utils: subst
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs export(RVarMpInfo(..))
+data RVarMpInfo				-- for all types of Var alternatives an alternative here
+  = RVMIEval	AnaEval
+%%]
+
+%%[(8 codegen) hs export(rvmiMbEval)
+rvmiMbEval :: RVarMpInfo -> Maybe AnaEval
+rvmiMbEval (RVMIEval x) = Just x
+-- for now, until more alternatives are in it
+-- rvmiMbEval _            = Nothing
+%%]
+
+%%[(8 codegen) hs export(RVarMp)
+type RVarMp  = VarMp' UID RVarMpInfo
+%%]
+
+%%[(8 codegen) hs export(rvarmpEvalUnit)
+rvarmpEvalUnit :: UID -> AnaEval -> RVarMp
+-- poor mens occurcheck...
+-- rvarmpEvalUnit v (AnaEval_Var v2) | v == v2  = emptyVarMp
+rvarmpEvalUnit v i                           = mkVarMp (Map.fromList [(v,RVMIEval i)])
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Utils: matching
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs export(AnaMatchState(..), AMS, emptyAnaMatchState)
+-- | state maintained during matching
+data AnaMatchState
+  = AnaMatchState
+      { amsOuterVarMp		:: RVarMp		-- as known from outside matching
+      , amsLocalVarMp		:: RVarMp		-- as gathered during a match (1 invocation of runState)
+      , amsGathQual			:: RelevQualS	-- gathered constraints
+      }
+
+type AMS    a = State AnaMatchState a
+
+emptyAnaMatchState :: AnaMatchState
+emptyAnaMatchState = AnaMatchState emptyVarMp emptyVarMp Set.empty
+%%]
+
+%%[(8 codegen) hs export(AMSOut(..))
+-- | direct (non state) output of matching
+data AMSOut a
+  = AMSOut
+      { amsoLo		:: a
+      , amsoHi		:: a
+      , amsoCoe		:: RelevCoe
+      }
+%%]
+
+%%[(8 codegen) hs
+amsBindEval :: UID -> AnaEval -> AnaMatchState -> AnaMatchState
+amsBindEval i a s = s {amsLocalVarMp = rvarmpEvalUnit i a `varmpPlus` amsLocalVarMp s}
+
+amsQual :: RelevQual -> AnaMatchState -> AnaMatchState
+amsQual q s = s {amsGathQual = Set.insert q (amsGathQual s)}
+%%]
+
+%%[(8 codegen) hs export(amsLE)
+amsLE :: AnaLattice x => RVarMp -> x -> x -> (AMSOut x,AnaMatchState)
+amsLE m x1 x2 = runState (anaLE x1 x2) (emptyAnaMatchState {amsOuterVarMp = m})
+%%]
+
+%%[(8 codegen) hs
+-- | Lookup in VarMp's of AnaMatchState
+amsLookup :: UID -> AnaMatchState -> Maybe RVarMpInfo
+amsLookup i s = varmpLookup i (amsOuterVarMp s) <|> varmpLookup i (amsLocalVarMp s)
+
+amsLookupEval :: UID -> AnaMatchState -> Maybe AnaEval
+amsLookupEval i s = do { i <- amsLookup i s ; rvmiMbEval i }
+%%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Instances: Binary, Serialize
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(20 codegen) hs
+instance Serialize RelevQual where
+  sput (RelevQual_SubEval a b   ) = sputWord8 0 >> sput a >> sput b
+  sget
+    = do t <- sgetWord8
+         case t of
+            0 -> liftM2 RelevQual_SubEval         sget sget
+
+instance Serialize RelevTy where
+  sput (RelevTy_Ana   a      ) = sputWord8 0 >> sput a
+  sput (RelevTy_Fun   a b c d) = sputWord8 1 >> sput a >> sput b >> sput c >> sput d
+  sput (RelevTy_None         ) = sputWord8 2
+  sput (RelevTy_Err   a      ) = sputWord8 3 >> sput a
+  sget
+    = do t <- sgetWord8
+         case t of
+            0 -> liftM  RelevTy_Ana         sget
+            1 -> liftM4 RelevTy_Fun         sget sget sget sget
+            2 -> return RelevTy_None
+            3 -> liftM  RelevTy_Err         sget
+
+instance Serialize RelevCoe where
+  sput (RelevCoe_Id           ) = sputWord8 0
+  sput (RelevCoe_Err   a      ) = sputWord8 1 >> sput a
+  sput (RelevCoe_Comp  a b    ) = sputWord8 2 >> sput a >> sput b
+  sput (RelevCoe_Fun   a b    ) = sputWord8 3 >> sput a >> sput b
+  sput (RelevCoe_Qual  a      ) = sputWord8 4 >> sput a
+  sput (RelevCoe_Eval  a b    ) = sputWord8 5 >> sput a >> sput b
+  sget
+    = do t <- sgetWord8
+         case t of
+            0 -> return RelevCoe_Id
+            1 -> liftM  RelevCoe_Err         sget
+            2 -> liftM2 RelevCoe_Comp        sget sget
+            3 -> liftM2 RelevCoe_Fun         sget sget
+            4 -> liftM  RelevCoe_Qual        sget
+            5 -> liftM2 RelevCoe_Eval        sget sget
+
+instance Serialize AnaEval where
+  sput (AnaEval_Var   a      ) = sputWord8 0 >> sput a
+  sput (AnaEval_WHNF         ) = sputWord8 1
+  sput (AnaEval_Lazy         ) = sputWord8 2
+  sput (AnaEval_Meet  a      ) = sputWord8 3 >> sput a
+  sput (AnaEval_Join  a      ) = sputWord8 4 >> sput a
+  sget
+    = do t <- sgetWord8
+         case t of
+            0 -> liftM  AnaEval_Var         sget
+            1 -> return AnaEval_WHNF         
+            2 -> return AnaEval_Lazy         
+            3 -> liftM  AnaEval_Meet        sget
+            4 -> liftM  AnaEval_Join        sget
+
+%%]
