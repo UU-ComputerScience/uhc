@@ -7,23 +7,23 @@
 %%% Substituting holes
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs module {%{EH}TyCore.Subst} import(Data.Maybe,qualified Data.Set as Set,qualified Data.Map as Map,EH.Util.Pretty,EH.Util.Utils,{%{EH}Base.Opts},{%{EH}Base.Common},{%{EH}VarMp})
+%%[(8 codegen tycore) hs module {%{EH}TyCore.Subst} import(Data.Maybe,qualified Data.Set as Set,qualified Data.Map as Map,EH.Util.Pretty,EH.Util.Utils,{%{EH}Base.Opts},{%{EH}Base.Common},{%{EH}VarMp})
 %%]
 
-%%[(8 codegen) hs import({%{EH}AbstractCore})
+%%[(8 codegen tycore) hs import({%{EH}AbstractCore})
 %%]
 
-%%[(8 codegen) hs import({%{EH}TyCore.Base},{%{EH}TyCore.Pretty},{%{EH}TyCore.Coercion})
+%%[(8 codegen tycore) hs import({%{EH}TyCore.Base},{%{EH}TyCore.Pretty},{%{EH}TyCore.Coercion})
 %%]
 
-%%[(8 codegen) hs import(qualified {%{EH}Ty} as T)
+%%[(8 codegen tycore) hs import(qualified {%{EH}Ty} as T)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Code substitution
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs export(CSubst,CSubstInfo)
+%%[(8 codegen tycore) hs export(CSubst,CSubstInfo)
 type CSubstInfo = CSubstInfo' Expr MetaVal ValBind ValBind Ty
 type CSubst     = CSubst'     Expr MetaVal ValBind ValBind Ty
 %%]

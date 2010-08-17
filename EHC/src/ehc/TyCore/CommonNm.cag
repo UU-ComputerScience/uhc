@@ -12,7 +12,7 @@ Note: assumes CommonSELF to be included.
 %%% Expr: bound names
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 codegen tycore)
 ATTR Expr AllExprSeq1 [ | | bindNmL USE {++} {[]} : {[(HsName,MetaLev,Expr)]} ]
 
 SEM Expr
@@ -24,7 +24,7 @@ SEM ExprSeq1
   | L1Bind      lhs         .   bindNmL         =   [(@nm,1,@l2.t)]
 %%]
 
-%%[(8 codegen)
+%%[(8 codegen tycore)
 SEM ValBind
   | Val         loc         .   (nm,_,l1)       =   let e = "Error ValBind.Val.bindNmL"
                                                     in  maybeHd (mkHNm e,0,tyErr e) id @bind.bindNmL

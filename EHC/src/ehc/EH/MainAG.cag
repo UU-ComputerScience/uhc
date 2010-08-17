@@ -53,12 +53,6 @@
 %%[(7 hmtyinfer) hs import({%{EH}Ty.Trf.FreshVar},{%{EH}Ty.Ftv})
 %%]
 
- %%[7_2 hs import({%{EH}Ty.AnnCommon},{%{EH}Ty.Trf.InfuseAnn},{%{EH}Ty.TyConPat},{%{EH}Ty.AnnInferKind}, {%{EH}Ty.InferExposedAnns}, {%{EH}Ty.Trf.InfuseExp}, {%{EH}Annotations.Constraints}, {%{EH}Ty.AnnSubst}, {%{EH}Ty.Expand}, {%{EH}EH.ConstrInferTy}, {%{EH}Annotations.ConstraintSolver}, {%{EH}Annotations.BelownessSolver}, {%{EH}Annotations.VarianceSolver}, {%{EH}Annotations.UniquenessSolver}, {%{EH}Ty.InfuseDataTruncs}, {%{EH}Base.HtmlCommon}, {%{EH}Ty.PrettyHTML}, Debug.Trace(trace))
- %%]
-
-%%[7_2 hs import(qualified Data.Set as Set,Data.Set(Set),qualified Data.Map as Map,Data.Map(Map))
-%%]
-
 %%[8 hs import(EH.Util.Utils(groupSortOn))
 %%]
 
@@ -66,9 +60,11 @@
 %%]
 %%[(8 codegen) hs import({%{EH}Core},{%{EH}Core.Utils},{%{EH}Core.Pretty})
 %%]
-%%[(8 codegen) hs import(qualified {%{EH}TyCore.Full2} as C)
+%%[(8 codegen tycore) hs import(qualified {%{EH}TyCore.Full2} as C)
 %%]
-%%[(8 codegen hmtyinfer) hs import({%{EH}Ty.Utils2})
+%%[(8 codegen tycore hmtyinfer) hs import({%{EH}Ty.Utils2})
+%%]
+%%[(9 codegen hmtyinfer) hs import({%{EH}Ty.Utils2})
 %%]
 
 %%[(9 codegen) hs import({%{EH}Base.Target})
@@ -85,7 +81,7 @@
 
 %%[(9 codegen) hs import({%{EH}Pred.EvidenceToCore})
 %%]
-%%[(9 codegen) hs import(qualified {%{EH}Pred.EvidenceToTyCore} as E2C)
+%%[(9 codegen tycore) hs import(qualified {%{EH}Pred.EvidenceToTyCore} as E2C)
 %%]
 %%[(9 hmtyinfer) hs import ({%{EH}Gam.ClassDefaultGam})
 %%]
@@ -178,12 +174,9 @@ WRAPPER AGItf
 %%[(6 hmtyinfer) ag import({EH/InferKiExpr})
 %%]
 
- %%[7_2 ag import({Ty/TyConPatCollect},{Annotations/AnnDT},{Ty/AnnDecomposePat},{EH/ConstrInferExpr},{EH/ConstrInferData}, {Annotations/AnnSolvers}, {EH/PrettyHTML})
- %%]
-
 %%[(8 codegen) ag import({EH/ToCore})
 %%]
-%%[(8 codegen) ag import({EH/ToTyCore})
+%%[(8 codegen tycore) ag import({EH/ToTyCore})
 %%]
 
 %%[(9 hmtyinfer) ag import({EH/ResolvePred},{EH/InferClass},{EH/InferClassCHR},{EH/ResolvePredCHR},{EH/InferDefault})

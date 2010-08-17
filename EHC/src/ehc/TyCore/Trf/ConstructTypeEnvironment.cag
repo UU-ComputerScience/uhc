@@ -10,10 +10,10 @@
 %%% not show up in this type environment until after the transformation completes.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen tauphi tauphi) ag import({TyCore/AbsSyn})
+%%[(8 codegen tycore tauphi) ag import({TyCore/AbsSyn})
 %%]
 
-%%[(8 codegen tauphi tauphi)
+%%[(8 codegen tycore tauphi)
 ATTR AllExpr
   [
   |

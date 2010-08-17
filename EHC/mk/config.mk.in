@@ -74,7 +74,14 @@ ifeq (@ENABLE_LLVM@,yes)
 ENABLE_LLVM					:= yes
 endif
 
+# include TyCore
+ifeq (@ENABLE_TYCORE@,yes)
+ENABLE_TYCORE				:= yes
+endif
+
+# include TyCore based transformations
 ifeq (@ENABLE_TAUPHI@,yes)
+ENABLE_TYCORE				:= yes
 ENABLE_TAUPHI				:= yes
 endif
 

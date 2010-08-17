@@ -27,11 +27,13 @@ Interface/wrapper to various transformations for Core, TyCore, etc.
 %%]
 
 -- TyCore transformations
-%%[(8 codegen) import({%{EH}TyCore.Trf})
+%%[(8 codegen tycore) import({%{EH}TyCore.Trf})
 %%]
 
 -- Output
-%%[8 import({%{EH}EHC.CompilePhase.Output(cpOutputCoreModule, cpOutputTyCoreModule)})
+%%[8 import({%{EH}EHC.CompilePhase.Output(cpOutputCoreModule)})
+%%]
+%%[(8 tycore) import({%{EH}EHC.CompilePhase.Output(cpOutputTyCoreModule)})
 %%]
 
 -- HI syntax and semantics
@@ -96,7 +98,7 @@ cpTransformCore modNm
 %%]
 
 
-%%[(8 codegen) export(cpTransformTyCore)
+%%[(8 codegen tycore) export(cpTransformTyCore)
 cpTransformTyCore :: HsName -> EHCompilePhase ()
 cpTransformTyCore modNm
   = do { cr <- get

@@ -7,51 +7,51 @@
 %%% Haskell importable interface to Code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs module {%{EH}TyCore} import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Base.Opts})
+%%[(8 codegen tycore) hs module {%{EH}TyCore} import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Base.Opts})
 %%]
 
-%%[(8 codegen) hs import({%{EH}AbstractCore})
+%%[(8 codegen tycore) hs import({%{EH}AbstractCore})
 %%]
 
-%%[(8 codegen) hs import ({%{EH}Base.Target}(FFIWay(..))) export(module {%{EH}Base.Target})
+%%[(8 codegen tycore) hs import ({%{EH}Base.Target}(FFIWay(..))) export(module {%{EH}Base.Target})
 %%]
 
-%%[(8 codegen) hs import(Data.Maybe,Data.Char,Data.List,EH.Util.Pretty,EH.Util.Utils)
+%%[(8 codegen tycore) hs import(Data.Maybe,Data.Char,Data.List,EH.Util.Pretty,EH.Util.Utils)
 %%]
 
-%%[(8 codegen) hs import(qualified Data.Map as Map,qualified Data.Set as Set) export(FvS,FvSMp)
+%%[(8 codegen tycore) hs import(qualified Data.Map as Map,qualified Data.Set as Set) export(FvS,FvSMp)
 %%]
 
 -- import unqualified from Ty only what needs to be exported as part of the AST
-%%[(8 codegen) hs import({%{EH}Ty}(TyVarId)) export(TyVarId)
+%%[(8 codegen tycore) hs import({%{EH}Ty}(TyVarId)) export(TyVarId)
 %%]
-%%[(9 codegen) hs import({%{EH}Ty}(ImplsVarId)) export(ImplsVarId)
+%%[(9 codegen tycore ) hs import({%{EH}Ty}(ImplsVarId)) export(ImplsVarId)
 %%]
 -- the remainder is imported qualified
-%%[(8 codegen) hs import(qualified {%{EH}Ty} as T)
+%%[(8 codegen tycore) hs import(qualified {%{EH}Ty} as T)
 %%]
 
-%%[(8 codegen) hs export(AGItf(..), Module(..), ValBind(..), ValBindL, TyBind(..), TyBindL, PatRest(..), Alt(..), AltL, Pat(..), PatL, FldBind(..), FldBindL) 
+%%[(8 codegen tycore) hs export(AGItf(..), Module(..), ValBind(..), ValBindL, TyBind(..), TyBindL, PatRest(..), Alt(..), AltL, Pat(..), PatL, FldBind(..), FldBindL) 
 %%]
-%%[(8888 codegen) hs export(Ty(..), TyL, TySeq1(..), TySeq1L, TyAnn(..), TyFld(..), TyFldL) 
+%%[(8888 codegen tycore) hs export(Ty(..), TyL, TySeq1(..), TySeq1L, TyAnn(..), TyFld(..), TyFldL) 
 %%]
-%%[(8 codegen) hs export(ExprSeq1(..), ExprSeq1L) 
+%%[(8 codegen tycore) hs export(ExprSeq1(..), ExprSeq1L) 
 %%]
-%%[(8 codegen) hs export(Expr(..), ExprAnn(..), MbExpr) 
+%%[(8 codegen tycore) hs export(Expr(..), ExprAnn(..), MbExpr) 
 %%]
-%%[(8 codegen) hs export(MetaVal(..), MetaBind(..), Metas, MbMetaVal, MbMetas) 
+%%[(8 codegen tycore) hs export(MetaVal(..), MetaBind(..), Metas, MbMetaVal, MbMetas) 
 %%]
-%%[(20 codegen grin) hs import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
-%%]
-
-%%[(90 codegen) hs import({%{EH}Foreign}) export(module {%{EH}Foreign})
+%%[(20 codegen tycore grin) hs import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
 %%]
 
-%%[(8 codegen) ag import({TyCore/AbsSyn})
+%%[(90 codegen tycore ) hs import({%{EH}Foreign}) export(module {%{EH}Foreign})
+%%]
+
+%%[(8 codegen tycore) ag import({TyCore/AbsSyn})
 DERIVING *     : Show, Eq
 %%]
 
-%%[(8 codegen) hs export(emptyModule)
+%%[(8 codegen tycore) hs export(emptyModule)
 emptyModule :: Module
 emptyModule = Module_Mod (hsnFromString "") [] []
 %%]
@@ -61,11 +61,11 @@ emptyModule = Module_Mod (hsnFromString "") [] []
 %%% Alias for Ty being also a TySeq
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs export(ExprSeq)
+%%[(8 codegen tycore) hs export(ExprSeq)
 type ExprSeq = Expr
 %%]
 
-%%[(8 codegen) hs export(Ty,TyL,TySeq,TySeq1,TySeq1L)
+%%[(8 codegen tycore) hs export(Ty,TyL,TySeq,TySeq1,TySeq1L)
 type Ty      = Expr
 type TyL     = [Ty]
 type TySeq   = Ty
@@ -77,7 +77,7 @@ type TySeq1L = ExprSeq1L
 %%% Binding category, per group of bindings
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs export(ValBindCateg(..))
+%%[(8 codegen tycore) hs export(ValBindCateg(..))
 data ValBindCateg
   = ValBindCateg_Rec				-- mutually recursive
   | ValBindCateg_Strict				-- strictly evaluated
@@ -93,7 +93,7 @@ data ValBindCateg
 %%% Annotation function for TyCore
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs export(ann)
+%%[(8 codegen tycore) hs export(ann)
 ann :: String -> Expr -> Expr
 ann s e = Expr_Ann (ExprAnn_Annotation s) e
 %%]
@@ -102,7 +102,7 @@ ann s e = Expr_Ann (ExprAnn_Annotation s) e
 %%% Builtin TyCore types/kinds
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs export(tyErr)
+%%[(8 codegen tycore) hs export(tyErr)
 -- a for the time being placeholder for yet unresolved/unpropagated type
 tyErr :: String -> Ty
 tyErr = Expr_Err
@@ -112,7 +112,7 @@ tyErr = Expr_Err
 %%% Lifting/Constructing Expr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs export(mkExprSeq,unExprSeq)
+%%[(8 codegen tycore) hs export(mkExprSeq,unExprSeq)
 -- lift & unlift to TySeq, with mkExprSeq . unExprSeq == id for singleton sequences
 mkExprSeq :: Expr -> ExprSeq
 mkExprSeq   (Expr_Seq1  s  ) = Expr_Seq [s]
@@ -125,7 +125,7 @@ unExprSeq (Expr_Seq [ExprSeq1_L0Val t _]) = t
 unExprSeq t                               = t
 %%]
 
-%%[(8 codegen) hs export(mkExprSeqVals,mkExprSeqNmVals)
+%%[(8 codegen tycore) hs export(mkExprSeqVals,mkExprSeqNmVals)
 mkExprSeqVals :: [Expr] -> ExprSeq1L
 mkExprSeqVals tl = map (flip ExprSeq1_L0Val Nothing) tl
 
@@ -133,7 +133,7 @@ mkExprSeqNmVals :: [(HsName,Expr)] -> ExprSeq1L
 mkExprSeqNmVals tl = [ExprSeq1_L0LblVal n t | (n,t) <- tl]
 %%]
 
-%%[(8 codegen) hs export(mkExprSeq1,unExprSeq1)
+%%[(8 codegen tycore) hs export(mkExprSeq1,unExprSeq1)
 mkExprSeq1 :: Expr -> ExprSeq
 mkExprSeq1   (Expr_Seq   [s] ) = Expr_Seq1 s
 mkExprSeq1 s@(Expr_Seq1   _  ) = s
@@ -149,7 +149,7 @@ unExprSeq1 t                                = t
 %%% Lifting/Constructing Ty
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs export(mkTySeq,unTySeq)
+%%[(8 codegen tycore) hs export(mkTySeq,unTySeq)
 -- lift & unlift to TySeq, with mkTySeq . unTySeq == id for singleton sequences
 mkTySeq :: Ty -> TySeq
 mkTySeq = mkExprSeq
@@ -158,7 +158,7 @@ unTySeq :: TySeq -> Ty
 unTySeq = unExprSeq
 %%]
 
-%%[(8 codegen) hs export(mkTySeq1,unTySeq1)
+%%[(8 codegen tycore) hs export(mkTySeq1,unTySeq1)
 mkTySeq1 :: Ty -> TySeq
 mkTySeq1 = mkExprSeq1
 
@@ -166,7 +166,7 @@ unTySeq1 :: TySeq -> Ty
 unTySeq1 = unExprSeq1
 %%]
 
-%%[(8 codegen) hs export(unSeq, unSeqs, isSeq)
+%%[(8 codegen tycore) hs export(unSeq, unSeqs, isSeq)
 unSeq :: Expr -> ExprSeq1
 unSeq (Expr_Seq1 s ) = s
 unSeq (Expr_Seq [s]) = s
@@ -183,7 +183,7 @@ isSeq Expr_Seq{}  = True
 isSeq _           = False
 %%]
 
-%%[(8 codegen) hs export(mkTySeqVals,mkTySeqNmVals)
+%%[(8 codegen tycore) hs export(mkTySeqVals,mkTySeqNmVals)
 mkTySeqVals :: [Ty] -> TySeq1L
 mkTySeqVals = mkExprSeqVals
 
@@ -191,7 +191,7 @@ mkTySeqNmVals :: [(HsName,Ty)] -> TySeq1L
 mkTySeqNmVals = mkExprSeqNmVals
 %%]
 
-%%[(8 codegen) hs export(mkTyLArrow1Ty,mkTyBareArrow1Ty,mkTyArrow1Ty)
+%%[(8 codegen tycore) hs export(mkTyLArrow1Ty,mkTyBareArrow1Ty,mkTyArrow1Ty)
 mkTyBareArrow1Ty :: Ty -> Ty -> Ty
 mkTyBareArrow1Ty = Expr_Arrow
 
@@ -211,7 +211,7 @@ mkTySeqArrowNTySeq :: [TySeq1L] -> TySeq -> TySeq
 mkTySeqArrowNTySeq a r = foldr mkTySeqArrow1TySeq r a
 %%]
 
-%%[(8 codegen) hs export(mkTyArrowNTy,mkTyVarKiArrowNTy)
+%%[(8 codegen tycore) hs export(mkTyArrowNTy,mkTyVarKiArrowNTy)
 mkTyArrowNTy :: TyL -> Ty -> TySeq
 mkTyArrowNTy a r = mkTySeqArrowNTySeq [ [ExprSeq1_L0Val t Nothing] | t <- a ] (mkTySeq r)
 
@@ -219,7 +219,7 @@ mkTyVarKiArrowNTy :: [(TyVarId,Ty)] -> Ty -> TySeq
 mkTyVarKiArrowNTy a r = mkTySeqArrowNTySeq [ [ExprSeq1_L0Bind (mkHNm n) Nothing k] | (n,k) <- a ] (mkTySeq r)
 %%]
 
-%%[(8 codegen) hs export(mkTyThunk)
+%%[(8 codegen tycore) hs export(mkTyThunk)
 mkTySeqThunk :: TySeq -> Ty
 mkTySeqThunk t = mkTySeqArrow1Ty [] t
 
@@ -227,7 +227,7 @@ mkTyThunk :: Ty -> Ty
 mkTyThunk t = mkTyArrow1Ty [] t
 %%]
 
-%%[(8 codegen) hs export(tyUnThunkTySeq,tyUnThunkTy)
+%%[(8 codegen tycore) hs export(tyUnThunkTySeq,tyUnThunkTy)
 tyUnThunkTySeq :: Ty -> TySeq
 tyUnThunkTySeq (Expr_Arrow (Expr_Seq []) r) = r
 tyUnThunkTySeq t                            = tyErr "TyCore.tyUnThunkTySeq"
@@ -236,7 +236,7 @@ tyUnThunkTy :: Ty -> Ty
 tyUnThunkTy = unTySeq . tyUnThunkTySeq
 %%]
 
-%%[(8 codegen) hs export(lazy, unLazy)
+%%[(8 codegen tycore) hs export(lazy, unLazy)
 lazy :: Ty -> Ty
 lazy t = Expr_Lazy t
 
@@ -249,7 +249,7 @@ unLazy _             = tyErr "TyCore.unLazy"
 %%% Type manipulation, structure changing
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs export(tyStripL1Args)
+%%[(8 codegen tycore) hs export(tyStripL1Args)
 -- strip L1 argument bindings of an arrow type
 tyStripL1Args :: Ty -> Ty
 tyStripL1Args t
@@ -257,7 +257,7 @@ tyStripL1Args t
   where (as,r) = tyArrowArgsRes t
 %%]
 
-%%[(8 codegen) hs export(tyL0BindToL1Val)
+%%[(8 codegen tycore) hs export(tyL0BindToL1Val)
 -- convert type level l0 binding to l1 argument, used to convert from type signature to value application
 tyL0BindToL1Val :: Ty -> Ty
 tyL0BindToL1Val t
@@ -270,7 +270,7 @@ tyL0BindToL1Val t
         to   t             = t
 %%]
 
-%%[(8 codegen) hs export(tyL0BindToL1Bind)
+%%[(8 codegen tycore) hs export(tyL0BindToL1Bind)
 -- convert type level l0 binding to l1 binding, used to convert from type signature to value abstraction
 tyL0BindToL1Bind :: Ty -> Ty
 tyL0BindToL1Bind t
@@ -287,7 +287,7 @@ tyL0BindToL1Bind t
 %%% Meta defaulting
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs export(dfltMetaVal,metaValIsDflt)
+%%[(8 codegen tycore) hs export(dfltMetaVal,metaValIsDflt)
 dfltMetaVal :: MetaVal
 dfltMetaVal = MetaVal_Val
 
@@ -295,7 +295,7 @@ metaValIsDflt :: MetaVal -> Bool
 metaValIsDflt m = m == dfltMetaVal
 %%]
 
-%%[(8 codegen) hs export(dfltMetas,metasIsDflt)
+%%[(8 codegen tycore) hs export(dfltMetas,metasIsDflt)
 dfltMetas :: Metas
 dfltMetas = (MetaBind_Plain,MetaVal_Val)
 
@@ -308,17 +308,17 @@ metasIsDflt _                            = False
 %%% Lifting/Constructing Expr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs export(mkExprThunk)
+%%[(8 codegen tycore) hs export(mkExprThunk)
 mkExprThunk :: Expr -> Expr
 mkExprThunk e = Expr_Lam (Expr_Seq []) e
 %%]
 
-%%[(8 codegen) hs export(mkExprUnThunk)
+%%[(8 codegen tycore) hs export(mkExprUnThunk)
 mkExprUnThunk :: Expr -> Expr
 mkExprUnThunk e = Expr_App e (Expr_Seq [])
 %%]
 
-%%[(8 codegen) hs export(delay, force)
+%%[(8 codegen tycore) hs export(delay, force)
 delay :: Expr -> Expr
 delay (Expr_Force e) = e
 delay e              = Expr_Delay e
@@ -328,7 +328,7 @@ force (Expr_Delay e) = e
 force e              = Expr_Force e
 %%]
 
-%%[(8 codegen) hs export(seqToList, exprSeq1ToExpr)
+%%[(8 codegen tycore) hs export(seqToList, exprSeq1ToExpr)
 seqToList :: Expr -> [Expr]
 seqToList (Expr_Seq es) = map exprSeq1ToExpr es
 seqToList (Expr_Seq1 e) = [exprSeq1ToExpr e]
@@ -349,7 +349,7 @@ exprSeq1ToExpr (ExprSeq1_L2Bind   _ e)   = e
 %%% Deconstructing Ty
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs export(tyArrowArgsResSeq,tyArrowArgsRes,tyArrowArgRes)
+%%[(8 codegen tycore) hs export(tyArrowArgsResSeq,tyArrowArgsRes,tyArrowArgRes)
 -- split arrow type into arguments and result as sequences
 tyArrowArgsResSeq :: Ty -> ([TySeq1L],TySeq)
 tyArrowArgsResSeq t
@@ -373,7 +373,7 @@ tyArrowArgsRes t
         extr t                = ([],t)
 %%]
 
-%%[(8 codegen) hs export(ArrowHowDecompose(..),tyArrowInstQuArgsRes)
+%%[(8 codegen tycore) hs export(ArrowHowDecompose(..),tyArrowInstQuArgsRes)
 data ArrowHowDecompose
  = ArrowDecompose_InstOnly		-- only ty instantiation
  | ArrowDecompose_ArgBefore		-- split off arg before
@@ -399,7 +399,7 @@ tyArrowInstQuArgsRes how instToL t
         extr _                          t                = ([],t)
 %%]
 
-%%[(8888 codegen) hs export(tyArrowGetExprArg)
+%%[(8888 codegen tycore) hs export(tyArrowGetExprArg)
 -- get from a arrow args+res: immediately preceding type args + 1 value arg + and the remainder as a lam result
 tyArrowGetExprArg :: Int -> ([TySeq1L],TySeq) -> ([Ty],TySeq1,TySeq)
 tyArrowGetExprArg n (as,res)
@@ -414,14 +414,14 @@ tyArrowGetExprArg n (as,res)
         ty _                       = tyErr "TyCore.tyArrowGetExprArg.ty"
 %%]
 
-%%[(8 codegen) hs export(tySeq1Ty)
+%%[(8 codegen tycore) hs export(tySeq1Ty)
 -- get the type from a value ty arg
 tySeq1Ty :: TySeq1 -> Ty
 tySeq1Ty (ExprSeq1_L0Val t _) = t
 tySeq1Ty _                    = tyErr "TyCore.tySeq1Ty"
 %%]
 
-%%[(8888 codegen) hs export(exprSeqMbL0Bind)
+%%[(8888 codegen tycore) hs export(exprSeqMbL0Bind)
 -- possibly get the l0 binding
 exprSeqMbL0Bind :: Expr -> Maybe (HsName,Expr)
 exprSeqMbL0Bind (Expr_Seq [ExprSeq1_L0Bind n _ l1]) = Just (n,l1)
@@ -432,7 +432,7 @@ exprSeqMbL0Bind _                                   = Nothing
 %%% Predicates
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(97 codegen) hs export(exprMbConst)
+%%[(97 codegen tycore) hs export(exprMbConst)
 exprMbConst :: Expr -> Maybe Integer
 exprMbConst e@(Expr_Int  i _) = Just i
 exprMbConst e@(Expr_Char c _) = Just $ toInteger $ ord c
@@ -444,7 +444,7 @@ exprMbConst _                 = Nothing
 %%% Instances: Binary, Serialize, ForceEval
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(20 codegen grin) hs
+%%[(20 codegen tycore grin) hs
 -- Note: This instance is completely useless.
 -- Should it ever be needed, it will have to be implemented correctly!
 instance Serialize Module where

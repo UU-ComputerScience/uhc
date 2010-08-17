@@ -17,23 +17,23 @@ TBD:
 \end{itemize}
 %%]
 
-%%[(8 codegen) hs module {%{EH}TyCore.ToCore} import({%{EH}Base.Builtin},{%{EH}Base.Opts},{%{EH}Base.Common})
+%%[(8 codegen tycore) hs module {%{EH}TyCore.ToCore} import({%{EH}Base.Builtin},{%{EH}Base.Opts},{%{EH}Base.Common})
 %%]
 
-%%[(8 codegen) hs import(EH.Util.Utils)
+%%[(8 codegen tycore) hs import(EH.Util.Utils)
 %%]
 
-%%[(8 codegen) hs import(Data.Maybe)
+%%[(8 codegen tycore) hs import(Data.Maybe)
 %%]
 
-%%[(8 codegen) hs import({%{EH}TyCore},{%{EH}Ty} as T,{%{EH}Core} as C)
+%%[(8 codegen tycore) hs import({%{EH}TyCore},{%{EH}Ty} as T,{%{EH}Core} as C)
 %%]
 
-%%[(8 codegen) hs import({%{EH}AbstractCore})
+%%[(8 codegen tycore) hs import({%{EH}AbstractCore})
 %%]
 
 -- for debug
-%%[(8 codegen) hs import({%{EH}Base.Debug},EH.Util.Pretty)
+%%[(8 codegen tycore) hs import({%{EH}Base.Debug},EH.Util.Pretty)
 %%]
 
 
@@ -41,11 +41,11 @@ TBD:
 %%% Wrapping
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen).WRAPPER ag import({TyCore/AbsSyn},{TyCore/CommonSELF},{TyCore/CommonNm})
+%%[(8 codegen tycore).WRAPPER ag import({TyCore/AbsSyn},{TyCore/CommonSELF},{TyCore/CommonNm})
 WRAPPER AGItf
 %%]
 
-%%[(8 codegen) hs export(tycore2core)
+%%[(8 codegen tycore) hs export(tycore2core)
 tycore2core :: EHCOpts -> Module -> CModule
 tycore2core opts mod
   = core_Syn_AGItf t
@@ -60,7 +60,7 @@ tycore2core opts mod
 %%% Utils
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs
+%%[(8 codegen tycore) hs
 type BindCore = [(Maybe CBindingsCateg,CBindL)]
 
 mkLet :: CBindingsCateg -> BindCore -> CExpr -> CExpr
@@ -71,7 +71,7 @@ mkLet dfltCateg bs e = foldr (\(c,b) e -> acoreLetMerge True (maybe dfltCateg id
 %%% Context
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 codegen tycore)
 ATTR AllNT AGItf [ opts: EHCOpts | | ]
 %%]
 
@@ -79,7 +79,7 @@ ATTR AllNT AGItf [ opts: EHCOpts | | ]
 %%% Lists of things
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 codegen tycore)
 ATTR AllExprSeq1 [ | | l0CoreL USE {++} {[]} : {[CExpr]}]
 
 SEM ExprSeq1
@@ -87,7 +87,7 @@ SEM ExprSeq1
   | L0LblVal    lhs         .   l0CoreL             =   [@l0.core]
 %%]
 
-%%[(8 codegen)
+%%[(8 codegen tycore)
 ATTR AllExprSeq1 [ | | l0NmL USE {++} {[]} : {[HsName]}]
 
 SEM ExprSeq1
@@ -98,7 +98,7 @@ SEM ExprSeq1
 %%% Various properties of Expr required for making a choice higher up in the AST
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 codegen tycore)
 ATTR Expr [ | | mbFFI: {Maybe (HsName -> CBind)} ]
 
 SEM Expr
@@ -106,7 +106,7 @@ SEM Expr
   | * - FFI     lhs         .   mbFFI               =   Nothing
 %%]
 
-%%[(8 codegen)
+%%[(8 codegen tycore)
 ATTR Expr [ | | mbAppArg: {Maybe [CExpr]} ]
 
 SEM Expr
@@ -114,7 +114,7 @@ SEM Expr
   | * - Seq     lhs         .   mbAppArg            =   Nothing
 %%]
 
-%%[(8 codegen)
+%%[(8 codegen tycore)
 ATTR Expr [ | | mbLamArg: {Maybe [HsName]} ]
 
 SEM Expr
@@ -122,7 +122,7 @@ SEM Expr
   | * - Seq     lhs         .   mbLamArg            =   Nothing
 %%]
 
-%%[(8 codegen)
+%%[(8 codegen tycore)
 ATTR MbExpr [ | | mbCore: {Maybe CExpr} ]
 
 SEM MbExpr
@@ -130,7 +130,7 @@ SEM MbExpr
   | * - Just    lhs         .   mbCore              =   Nothing
 %%]
 
-%%[(8 codegen)
+%%[(8 codegen tycore)
 ATTR Expr [ mbInj: {Maybe CTag} | | ]
 
 SEM Expr
@@ -145,7 +145,7 @@ SEM ExprSeq1 FldBind MbExpr ValBind Alt Pat
 %%% Core generation: Module
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 codegen tycore)
 ATTR Module AGItf [ | | core: CModule ]
 
 SEM Module
@@ -156,11 +156,11 @@ SEM Module
 %%% Core generation: Expr as expr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 codegen tycore)
 ATTR Expr [ | | core: CExpr ]
 %%]
 
-%%[(8 codegen)
+%%[(8 codegen tycore)
 SEM Expr
   | Let         loc         .   ccateg              =   case @categ of
                                                           ValBindCateg_Rec    -> CBindings_Rec    
@@ -192,11 +192,11 @@ SEM Expr
 %%% Core generation: Expr as ty
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 codegen tycore)
 ATTR Expr [ | | coreTy: {T.Ty} ]
 %%]
 
-%%[(8 codegen)
+%%[(8 codegen tycore)
 SEM Expr
   | *
                 loc         .   coreTy              =   T.Ty_Any
@@ -206,11 +206,11 @@ SEM Expr
 %%% Core generation: Bind
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 codegen tycore)
 ATTR AllValBind [ | | core USE {++} {[]}: BindCore ]
 %%]
 
-%%[(8 codegen)
+%%[(8 codegen tycore)
 SEM ValBind
   | Val         loc         .   core                =   if @mlev == 0
                                                         then if isJust @l0.mbFFI
@@ -223,11 +223,11 @@ SEM ValBind
 %%% Core generation: Pat
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 codegen tycore)
 ATTR Pat [ | | core: CPat ]
 %%]
 
-%%[(8 codegen)
+%%[(8 codegen tycore)
 SEM Pat
   | Var         loc         .   core                =   CPat_Var  @nm
   | Con         loc         .   core                =   CPat_Con  @tag @rest.core @flds.l0CoreL
@@ -238,17 +238,17 @@ SEM Pat
 %%]]
 %%]
 
-%%[(8 codegen)
+%%[(8 codegen tycore)
 ATTR PatRest [ | | core: CPatRest ]
 %%]
 
-%%[(8 codegen)
+%%[(8 codegen tycore)
 SEM PatRest
   | Var         loc         .   core                =   CPatRest_Var @nm
   | Empty       loc         .   core                =   CPatRest_Empty
 %%]
 
-%%[(8 codegen)
+%%[(8 codegen tycore)
 ATTR AllFldBind [ | | l0CoreL USE {++} {[]} : CPatFldL ]
 
 SEM FldBind
@@ -259,11 +259,11 @@ SEM FldBind
 %%% Core generation: Case alts
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 codegen tycore)
 ATTR AllAlt [ | | core USE {++} {[]}: CAltL ]
 %%]
 
-%%[(8 codegen)
+%%[(8 codegen tycore)
 SEM Alt
   | Alt         lhs         .   core                =   [CAlt_Alt @pat.core @expr.core]
 %%]

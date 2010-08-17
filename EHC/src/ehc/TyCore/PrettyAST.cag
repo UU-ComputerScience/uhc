@@ -11,7 +11,7 @@
 A not-so-pretty AST of TyCore
 %%]
 
-%%[(8 codegen) hs export(ppAST)
+%%[(8 codegen tycore) hs export(ppAST)
 ppAST :: EHCOpts -> Module -> PP_Doc
 ppAST opts cmod
   = ppAST_Syn_AGItf t
@@ -25,13 +25,13 @@ ppAST opts cmod
 %%]]
 
 
-%%[(8 codegen) hs module {%{EH}TyCore.PrettyAST} import(EH.Util.Pretty,{%{EH}Base.Builtin},{%{EH}Base.CfgPP},{%{EH}Base.Opts},{%{EH}Base.Common},{%{EH}TyCore},{%{EH}Scanner.Common(tycoreScanOpts)})
+%%[(8 codegen tycore) hs module {%{EH}TyCore.PrettyAST} import(EH.Util.Pretty,{%{EH}Base.Builtin},{%{EH}Base.CfgPP},{%{EH}Base.Opts},{%{EH}Base.Common},{%{EH}TyCore},{%{EH}Scanner.Common(tycoreScanOpts)})
 %%]
 
-%%[(8 codegen) hs import({%{EH}Base.Strictness})
+%%[(8 codegen tycore) hs import({%{EH}Base.Strictness})
 %%]
 
-%%[(8 codegen).WRAPPER ag import({TyCore/AbsSyn})
+%%[(8 codegen tycore).WRAPPER ag import({TyCore/AbsSyn})
 WRAPPER
   AGItf Expr ExprSeq1 ValBind
 %%[[9
@@ -40,7 +40,7 @@ WRAPPER
 %%]
 
 
-%%[(8 codegen)
+%%[(8 codegen tycore)
 ATTR AllNT AGItf [ | | ppAST USE {>-<} {empty} : PP_Doc ]
 ATTR AllCodeNT [ | | cTrf : SELF ]
 

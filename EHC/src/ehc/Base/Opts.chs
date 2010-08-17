@@ -153,7 +153,7 @@ optOptsIsYes :: Eq opt => Maybe [opt] -> opt -> Bool
 optOptsIsYes mos o = maybe False (o `elem`) mos
 %%]
 
-%%[(8 codegen) export(TyCoreOpt(..))
+%%[(8 codegen tycore) export(TyCoreOpt(..))
 data TyCoreOpt
   = TyCoreOpt_Sugar			-- produce/accept sugared version
   | TyCoreOpt_Unicode		-- produce/accept unicode, implies sugar
@@ -213,6 +213,8 @@ data EHCOpts
       ,  ehcOptDumpCoreStages ::  Bool              -- dump intermediate Core transformation stages
       ,  ehcOptTarget         ::  Target            -- code generation target
       ,  ehcOptTargetFlavor   ::  TargetFlavor      -- code generation target flavor
+%%]]
+%%[[(8 codegen tycore)
       ,  ehcOptUseTyCore      ::  Maybe [TyCoreOpt] -- use TyCore instead of Core (temporary option until Core is obsolete)
 %%]]
 %%[[(8 codegen grin)
@@ -354,7 +356,7 @@ ehcOptEmitCore opts
   = ehcOptFullProgAnalysis opts || targetIsCore (ehcOptTarget opts)
 %%]
 
-%%[(8 codegen) export(ehcOptEmitTyCore,ehcOptTyCore)
+%%[(8 codegen tycore) export(ehcOptEmitTyCore,ehcOptTyCore)
 -- generate TyCore
 ehcOptEmitTyCore :: EHCOpts -> Bool
 ehcOptEmitTyCore opts
@@ -402,6 +404,8 @@ defaultEHCOpts
       ,  ehcOptOptimizationScope=   OptimizationScope_PerModule
       ,  ehcOptTarget           =   defaultTarget
       ,  ehcOptTargetFlavor     =   defaultTargetFlavor
+%%]]
+%%[[(8 codegen tycore)
       ,  ehcOptUseTyCore        =   Nothing
 %%]]
 %%[[(8 codegen grin)
@@ -619,7 +623,7 @@ ehcCmdLineOpts
      ,  Option ""   ["cfg-install-root"]    (ReqArg oCfgInstallRoot "dir")        "cfg: installation root (to be used only by wrapper script)"
      ,  Option ""   ["cfg-install-variant"] (ReqArg oCfgInstallVariant "variant") "cfg: installation variant (to be used only by wrapper script)"
 %%]]
-%%[[(8 codegen)
+%%[[(8 codegen tycore)
      ,  Option ""   ["tycore"]              (OptArg oUseTyCore "opt[,...]")      ("temporary/development: use typed core. opts: " ++ (concat $ intersperse " " $ Map.keys tycoreOptMp))
 %%]]
      ]
@@ -670,6 +674,8 @@ ehcCmdLineOpts
 %%]]
 %%[[(8 codegen)
          oTimeCompile    o =  o { ehcOptTimeCompile       = True    }
+%%]]
+%%[[(8 codegen tycore)
          oUseTyCore ms   o =  case ms of
                                 Just s -> o { ehcOptUseTyCore = Just opts2 }
                                        where opts1 = optOpts tycoreOptMp s

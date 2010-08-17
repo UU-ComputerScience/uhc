@@ -16,34 +16,34 @@ Matching of types to
 \end{itemize}
 %%]
 
-%%[(8 codegen) hs module {%{EH}TyCore.Check} import({%{EH}Base.Common},{%{EH}Base.Opts})
+%%[(8 codegen tycore) hs module {%{EH}TyCore.Check} import({%{EH}Base.Common},{%{EH}Base.Opts})
 %%]
 
-%%[(8 codegen) hs import(EH.Util.Pretty,EH.Util.Utils,qualified EH.Util.FastSeq as Seq)
+%%[(8 codegen tycore) hs import(EH.Util.Pretty,EH.Util.Utils,qualified EH.Util.FastSeq as Seq)
 %%]
-%%[(8 codegen) hs import(qualified Data.Map as Map, Data.Maybe)
+%%[(8 codegen tycore) hs import(qualified Data.Map as Map, Data.Maybe)
 %%]
-%%[(8 codegen) hs import({%{EH}Error})
+%%[(8 codegen tycore) hs import({%{EH}Error})
 %%]
 
-%%[(8 codegen) hs import({%{EH}AbstractCore})
+%%[(8 codegen tycore) hs import({%{EH}AbstractCore})
 %%]
-%%[(8 codegen) hs import({%{EH}TyCore.Full1})
+%%[(8 codegen tycore) hs import({%{EH}TyCore.Full1})
 %%]
 
 -- import Ty + Gam only qualified
-%%[(8 codegen) hs import(qualified {%{EH}Ty} as T)
+%%[(8 codegen tycore) hs import(qualified {%{EH}Ty} as T)
 %%]
-%%[(8 codegen) hs import(qualified {%{EH}Gam.Full} as G)
+%%[(8 codegen tycore) hs import(qualified {%{EH}Gam.Full} as G)
 %%]
 
-%%[(8 codegen).WRAPPER ag import({TyCore/AbsSyn},{TyCore/CommonSELF},{TyCore/CommonNm})
+%%[(8 codegen tycore).WRAPPER ag import({TyCore/AbsSyn},{TyCore/CommonSELF},{TyCore/CommonNm})
 WRAPPER
   AGItf
 %%]
 
 -- 20090608: visit sequence generation AG bug
-%%[(99 codegen)
+%%[(99 codegen tycore)
 PRAGMA nocycle
 %%]
 
@@ -51,14 +51,14 @@ PRAGMA nocycle
 %%% Interface
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs export(CheckEnv(..),emptyCheckEnv)
+%%[(8 codegen tycore) hs export(CheckEnv(..),emptyCheckEnv)
 data CheckEnv
   = CheckEnv
 
 emptyCheckEnv = CheckEnv
 %%]
 
-%%[(8 codegen) hs export(tcCheck)
+%%[(8 codegen tycore) hs export(tcCheck)
 tcCheck :: EHCOpts -> CheckEnv -> Module -> ErrL
 tcCheck opts env cmod
   = Seq.toList $ gathErrs_Syn_AGItf t
@@ -72,7 +72,7 @@ tcCheck opts env cmod
 %%% Initial env
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs export(initEnv)
+%%[(8 codegen tycore) hs export(initEnv)
 initEnv :: Env
 initEnv
   = envUnions
@@ -87,7 +87,7 @@ initEnv
 %%% Utils
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs export(MatchIn(..),emptyMatchIn)
+%%[(8 codegen tycore) hs export(MatchIn(..),emptyMatchIn)
 -- match input/options
 data MatchIn
   = MatchIn
@@ -102,7 +102,7 @@ emptyMatchIn :: MatchIn
 emptyMatchIn = MatchIn False False False metaLevVal emptyEnv
 %%]
 
-%%[(8 codegen) hs export(allowLBindMatchIn)
+%%[(8 codegen tycore) hs export(allowLBindMatchIn)
 allowLBindMatchIn :: MatchIn
 allowLBindMatchIn = emptyMatchIn {minAllowLBind = True}
 
@@ -110,7 +110,7 @@ allowRL0BindMatchIn :: MatchIn
 allowRL0BindMatchIn = emptyMatchIn {minAllowRL0BindBind = True}
 %%]
 
-%%[(8 codegen) hs export(MatchOut(..))
+%%[(8 codegen tycore) hs export(MatchOut(..))
 -- match output/result
 data MatchOut
   = MatchOut
@@ -133,7 +133,7 @@ moutErrs = Seq.fromList . moutErrL
 %%% Match types
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs export(tyMatchBind)
+%%[(8 codegen tycore) hs export(tyMatchBind)
 tyMatchBind :: Expr -> Expr -> MatchOut
 tyMatchBind = tyMatch' allowLBindMatchIn
 
@@ -157,7 +157,7 @@ Matching is asymmetric in the following:
 For the rest, all matches are exact on syntactic structure.
 %%]
 
-%%[(8 codegen) hs
+%%[(8 codegen tycore) hs
 tyMatch' :: MatchIn -> Expr -> Expr -> MatchOut
 tyMatch' min ty1 ty2
   = m min emptyMatchOut ty1 ty2
@@ -258,7 +258,7 @@ tyMatch' min ty1 ty2
 %%% Type checking: environment
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 codegen tycore)
 ATTR AllNT [ env: Env | | ]
 
 SEM AGItf
@@ -267,7 +267,7 @@ SEM AGItf
 
 Gather:
 
-%%[(8 codegen)
+%%[(8 codegen tycore)
 ATTR AllValBind AllTyBind AllExprSeq1 AllPat Expr [ | | gathEnv USE {`envUnion`} {emptyEnv} : Env ]
 
 SEM ValBind
@@ -292,7 +292,7 @@ SEM Pat
 
 Bind:
 
-%%[(8 codegen)
+%%[(8 codegen tycore)
 SEM Expr
   | Let         loc         .   env                 =   @vbinds.gathEnv `envUnion` @lhs.env
   | Arrow Lam Exists
@@ -308,7 +308,7 @@ SEM Module
 
 Use:
 
-%%[(8 codegen)
+%%[(8 codegen tycore)
 SEM Expr
   | Var         loc         .   (ty,nmErrs)         =   envLookup @nm @lhs.mlev @lhs.env
   | Tup         loc         .   (tyTup,nmErrs)      =   ctag (tyErr "TUP",Seq.empty) (\_ cn _ _ _ -> envLookup cn @lhs.mlev @lhs.env) @tag
@@ -318,7 +318,7 @@ SEM Expr
 %%% Meta level, used to stratify name space
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 codegen tycore)
 ATTR AllNT [ mlev: MetaLev | | ]
 
 SEM AGItf
@@ -367,7 +367,7 @@ SEM FldBind
 
 No errors == ok
 
-%%[(8 codegen)
+%%[(8 codegen tycore)
 ATTR AllNT [ | | errs USE {`Seq.union`} {Seq.empty} : ErrSq ]
 ATTR AllNT AGItf [ | | gathErrs USE {`Seq.union`} {Seq.empty} : ErrSq ]
 
@@ -390,7 +390,7 @@ SEM Expr
 %%% Type checking: actual checking, bottom up ty construction, to be checked on top
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 codegen tycore)
 ATTR Expr ExprSeq1 Alt [ | | ty: Ty ]
 
 SEM Expr
@@ -422,13 +422,13 @@ SEM Alt
 
 TBD:
 
-%%[(8 codegen)
+%%[(8 codegen tycore)
 SEM Expr
   | Sum         loc         .   ty                  =   kiStar -- mkTySeq $ Expr_Sum       @flds.tySeq1L
   | Prod        loc         .   ty                  =   kiStar -- mkTySeq $ Expr_Prod      @flds.tySeq1L
 %%]
 
-%%[(8 codegen)
+%%[(8 codegen tycore)
 ATTR ExprSeq1 [ | | tySeq1: ExprSeq1 ]
 
 SEM ExprSeq1
@@ -442,12 +442,12 @@ SEM ExprSeq1
   | L2Val       loc         .   tySeq1              =   ExprSeq1_L1Val         @l2.t                    -- TBD, lifting
 %%]
 
-%%[(8 codegen)
+%%[(8 codegen tycore)
 SEM Expr
   | Unsafe      loc         .   ty                  =   @toTy.t
 %%]
 
-%%[(8 codegen)
+%%[(8 codegen tycore)
 SEM Expr
   | App         loc         .   mout                =   tyMatchRL0Bind @lhs.mlev @arg.ty @argTy
   | Case        loc         .   (ty,moutL)          =   let match ts = filter moutHasErr $ zipWith (tyMatch @lhs.mlev) (tail ts) (init ts)
@@ -464,15 +464,15 @@ SEM ValBind
 %%% Type checking: casting
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs
+%%[(8 codegen tycore) hs
 type DoCast = Ty -> (Ty,ErrSq)
 %%]
 
-%%[(8 codegen)
+%%[(8 codegen tycore)
 ATTR Expr [ | | doCast: DoCast ]
 %%]
 
-%%[(8 codegen)
+%%[(8 codegen tycore)
 SEM Expr
   | Unsafe      loc         .   doCast              =   \t -> (@toTy.t,moutErrs $ tyMatch @lhs.mlev t @fromTy.t)
   | * - Unsafe  loc         .   doCast              =   \t -> (tyErr "Check.Expr",Seq.empty)                                -- TBD: the rest
@@ -484,7 +484,7 @@ SEM Expr
 
 Let bindings must be sequences, only 1 level of sequencing (i.e. flattened).
 
-%%[(8 codegen)
+%%[(8 codegen tycore)
 ATTR Expr AllExprSeq1 [ | | seqLevels: Int ]
 
 SEM Expr
@@ -510,21 +510,21 @@ SEM ValBind
 %%% Lists of XX
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 codegen tycore)
 ATTR AltL [ | | tyL: {[Ty]} ]
 %%]
 
-%%[(8 codegen)
+%%[(8 codegen tycore)
 SEM AltL
   | Nil         lhs         .   tyL                 =   []
   | Cons        lhs         .   tyL                 =   @hd.ty : @tl.tyL
 %%]
 
-%%[(8 codegen)
+%%[(8 codegen tycore)
 ATTR ExprSeq1L [ | | tySeq1L: ExprSeq1L ]
 %%]
 
-%%[(8 codegen)
+%%[(8 codegen tycore)
 SEM ExprSeq1L
   | Nil         lhs         .   tySeq1L             =   []
   | Cons        lhs         .   tySeq1L             =   @hd.tySeq1 : @tl.tySeq1L
@@ -535,13 +535,13 @@ SEM ExprSeq1L
 %%% Type checking: maybe of ty
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 codegen tycore)
 ATTR
   MbExpr
     [ | | tyMb: {Maybe Ty} ]
 %%]
 
-%%[(8 codegen)
+%%[(8 codegen tycore)
 SEM MbExpr
   | Nothing     lhs         .   tyMb                =   Nothing
   | Just        lhs         .   tyMb                =   Just @just.ty
@@ -555,7 +555,7 @@ SEM MbExpr
 %%% AG specific: Ordering dependencies + type defs
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(99 codegen)
+%%[(99 codegen tycore)
 SEM *
   | *           loc         .   mlevHere            :   MetaLev
 

@@ -14,7 +14,7 @@ This must be done in a separate module because of the module cycles it solves to
 
 %%[(8 hmtyinfer) import({%{EH}AbstractCore})
 %%]
-%%[(8 hmtyinfer) import(qualified {%{EH}TyCore.Full1} as C)
+%%[(8 hmtyinfer tycore) import(qualified {%{EH}TyCore.Full1} as C)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -25,7 +25,7 @@ This must be done in a separate module because of the module cycles it solves to
 defaultFIEnv
   =   emptyFE
         { feAppSpineGam = mkAppSpineGam defaultFIEnv
-%%[[8
+%%[[(8 tycore)
         , feFIReqs
             = FitsInRequires
                 { fireqLRCoeForLamTyAppAsSubst	= C.lrcoeForLamTyAppAsSubst

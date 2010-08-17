@@ -15,7 +15,7 @@
 %%% Interface
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 codegen tycore)
 DATA AGItf
   | AGItf       module          : Module
 %%]
@@ -24,7 +24,7 @@ DATA AGItf
 %%% Top level
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 codegen tycore)
 DATA Module
   | Mod         moduleNm        : {HsName}
                 tbinds          : ValBindL
@@ -38,7 +38,7 @@ DATA Module
 Some expressions may only occur (or have meaning only on) a certain level.
 This is then indicated with e.g. l0, l1, etc.
 
-%%[(8 codegen)
+%%[(8 codegen tycore)
 DATA Expr
   | Let         categ           : {ValBindCateg}
                 vbinds          : ValBindL
@@ -70,7 +70,7 @@ TYPE MbExpr		= MAYBE Expr
 
 L0 only
 
-%%[(8 codegen)
+%%[(8 codegen tycore)
 DATA Expr
   -- related to actual node, tuples, data
   | Node        -- tag             : {CTag}
@@ -93,7 +93,7 @@ DATA Expr
 
 L1 only
 
-%%[(8 codegen)
+%%[(8 codegen tycore)
 DATA Expr
   -- related to actual node, tuples, data
   | Sum         flds            : ExprSeq1L	
@@ -108,7 +108,7 @@ DATA Expr
 
 Value, possibly bound as well
 
-%%[(8 codegen)
+%%[(8 codegen tycore)
 DATA ExprSeq1
   | L0Val       l0              : Expr				-- value on the same level
                 meta			: MbMetaVal			-- for backwards compatibility, will be obsolete some day
@@ -133,7 +133,7 @@ TYPE ExprSeq1L	= [ExprSeq1]
 %%% Dealing with errors, only to be used internally to avoid use of Haskell 'error'
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 codegen tycore)
 DATA Expr
   | Err			msg				: {String}
 %%]
@@ -142,7 +142,7 @@ DATA Expr
 %%% Coercions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 codegen tycore)
 -- use of coercion
 DATA Expr
   | Cast        expr            : Expr
@@ -152,7 +152,7 @@ DATA Expr
                 ty              : Expr
 %%]
 
-%%[(8 codegen)
+%%[(8 codegen tycore)
 -- coercion
 DATA Expr
   | Trans       fromTy          : Expr		-- transitive coercion
@@ -170,17 +170,17 @@ DATA Expr
 %%% Annotations
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 codegen tycore)
 DATA Expr
   | Ann         ann             : ExprAnn
                 expr            : Expr
 %%]
 
-%%[(8 codegen)
+%%[(8 codegen tycore)
 DATA ExprAnn
   | Empty
   | Annotation      s           : String
-%%[[(8 codegen)
+%%[[(8 codegen tycore)
   | Strictness      s           : Strictness
   | GrinHint        s           : String
 %%]]
@@ -190,7 +190,7 @@ DATA ExprAnn
 %%% Expression: (Un)boxing
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 codegen tycore)
 DATA Expr
   | Box         expr        	: Expr
                 fromTy          : Expr
@@ -204,7 +204,7 @@ DATA Expr
 %%% Expression: FFI
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 codegen tycore)
 DATA Expr
   | FFI         callconv        : {FFIWay}
                 safety          : {String}
@@ -226,7 +226,7 @@ DATA Expr
 %%% Expression: support for (extensible) records
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 codegen tycore)
 DATA Expr
   | TupDel      expr            : Expr
                 tag             : {CTag}
@@ -248,7 +248,7 @@ DATA Expr
 %%% Expression: only used for generating core, dealing with yet absent parts
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 codegen tycore)
 DATA Expr
   | CaseAltFail caseId          : {UID}
                 errorExpr       : Expr
@@ -270,7 +270,7 @@ DATA Expr
 %%% Meta information, probably becomes obsolete
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 codegen tycore)
 TYPE Metas 	= (MetaBind,MetaVal)
 
 DATA MetaBind
@@ -291,7 +291,7 @@ TYPE MbMetaVal	= MAYBE MetaVal
 TYPE MbMetas	= MAYBE Metas
 %%]
 
-%%[(8 codegen)
+%%[(8 codegen tycore)
 SET AllMetaVal	= MbMetaVal MetaVal Metas MbMetas
 SET AllMetaBind = MetaBind Metas MbMetas
 SET AllMeta		= MetaVal MbMetaVal MetaBind Metas MbMetas
@@ -301,7 +301,7 @@ SET AllMeta		= MetaVal MbMetaVal MetaBind Metas MbMetas
 %%% Binding variants: toplevel, let, lam arg
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 codegen tycore)
 DATA ValBind
   | Val         -- nm              : {HsName}
                 bind			: Expr
@@ -313,7 +313,7 @@ DATA ValBind
 TYPE ValBindL   =   [ValBind]
 %%]
 
-%%[(8 codegen)
+%%[(8 codegen tycore)
 DATA TyBind
   | Data        nm              : {HsName}
 
@@ -324,7 +324,7 @@ TYPE TyBindL    =   [TyBind]
 %%% Case alternative + pattern + pattern binding
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 codegen tycore)
 DATA Alt
   | Alt         pat             : Pat
                 expr            : Expr
@@ -332,7 +332,7 @@ DATA Alt
 TYPE AltL       =   [Alt]
 %%]
 
-%%[(8 codegen)
+%%[(8 codegen tycore)
 DATA Pat
   | Var         nm              : {HsName}
                 ty              : Expr
@@ -347,7 +347,7 @@ DATA Pat
 TYPE PatL       =   [Pat]
 %%]
 
-%%[(8 codegen)
+%%[(8 codegen tycore)
 DATA PatRest
   | Var         nm              : {HsName}
   | Empty
@@ -371,7 +371,7 @@ DATA Pat
 %%% Sets of NT's
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 codegen tycore)
 SET AllAlt      =   Alt AltL
 SET AllValBind  =   ValBind ValBindL
 SET AllTyBind   =   TyBind TyBindL
