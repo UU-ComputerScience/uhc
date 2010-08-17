@@ -627,6 +627,12 @@ pTypeBase
         <|> (\fs r -> Type_RowSumUpdate r (Type_RowSumEmpty r) fs) <$> pFlds
         )
 %%]]
+%%[[(5 tauphi)
+  <|> ((Type_Annotate . mkRange1) <$> pAT)
+     <*> (   (TypeAnnotation_AnnotationName . tokMkQName <$> tyvar)
+         <|> ((\n v -> TypeAnnotation_AnnotationVar (tokMkQName n) (tokMkQName v)) <$> tyvar <* pCOLON <*> tyvar) )
+     <*> pTypeBase
+%%]]
   where pInParens :: HSParser (Range -> Type)
         pInParens
           =   (pType
@@ -781,12 +787,27 @@ pTypeLeftHandSide
 %%]
 
 %%[5
-pAnnotatedType :: HSParser Type -> HSParser AnnotatedType
+pAnnotatedType :: HSParser Type -> HSParser Type
 pAnnotatedType pT
-  =   (\(r,s) t -> AnnotatedType_Type r s t)
+  =   (\(r,s) t -> if s
+                   then Type_Annotate r TypeAnnotation_Strict t
+                   else t
+      )
       <$> ((\t -> (mkRange1 t,True)) <$> pBANG <|> pSucceed (emptyRange,False))
       <*> pT
 %%]
+pAnnotatedType :: HSParser Type -> HSParser Type
+pAnnotatedType pT
+  =   (\x -> Type_Annotate (mkRange1 x) TypeAnnotation_Strict) <$> pBANG <*> pT
+pAnnotatedType :: HSParser Type -> HSParser AnnotatedType
+pAnnotatedType pT
+  =   (\(r,s) t -> Type_Annotate (mkRange1 r) TypeAnnotation_Strict t)
+      (\(r,s) t -> if s
+                   then Type_Annotate (mkRange1 r) TypeAnnotation_Strict t
+                   else t
+      )
+      <$> ((\t -> (mkRange1 t,True)) <$> pBANG <|> pSucceed (emptyRange,False))
+      <*> pT
 
 %%[9.pTypeContextPrefix
 pContextItemsPrefix1 :: HSParser ContextItems

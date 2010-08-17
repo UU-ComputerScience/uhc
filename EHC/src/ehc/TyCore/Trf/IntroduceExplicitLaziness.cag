@@ -1,0 +1,87 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Introduce explicit lazy constructs in TyCore
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen tauphi) hs module {%{EH}TyCore.Trf.IntroduceExplicitLaziness}
+%%]
+
+%%[(8 codegen tauphi) hs import({%{EH}Base.Strictness})
+%%]
+ 
+%%[(8 codegen tauphi) hs import({%{EH}Base.Builtin},{%{EH}Base.Opts},{%{EH}Base.Common})
+%%]
+
+%%[(8 codegen tauphi) hs import(Data.Maybe)
+%%]
+
+%%[(8 codegen tauphi) hs import({%{EH}TyCore})
+%%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Wrapping
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen tauphi).WRAPPER ag import({TyCore/AbsSyn})
+WRAPPER AGItf
+%%]
+
+%%[(8 codegen tauphi)
+PRAGMA nocycle
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell itf
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen tauphi).tcmodTrfIntroduceExplicitLaziness hs
+cmodTrfIntroduceExplicitLaziness :: Module -> Module
+cmodTrfIntroduceExplicitLaziness tcmod
+  =  let  t = wrap_AGItf (sem_AGItf (AGItf_AGItf tcmod)) Inh_AGItf
+     in   cTrf_Syn_AGItf t
+%%]
+
+%%[(8 codegen tauphi)
+ATTR AGItf [ | | cTrf: Module ]
+ATTR AllCodeNT [ | | cTrf: SELF ]
+
+SEM AGItf
+  | AGItf       lhs         .   cTrf        =   @module.cTrf
+
+SEM Expr
+  | App         lhs         .   cTrf        =   if @isUnThunk
+                                                then Expr_Force @func.cTrf
+                                                else Expr_App @func.cTrf @arg.cTrf
+  | Lam         lhs         .   cTrf        =   if @isThunk
+                                                then Expr_Delay @res.cTrf
+                                                else Expr_Lam @arg.cTrf @res.cTrf
+  | Arrow       lhs         .   cTrf        =   if @isThunk
+                                                then Expr_Lazy @res.cTrf
+                                                else Expr_Arrow @arg.cTrf @res.cTrf
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Utility attr's: is Expr a thunk? is Expr a Seq?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen tauphi)
+ATTR Expr [ | | emptySeq: {Bool} ]
+
+SEM Expr
+  | Seq			lhs			.	emptySeq    =   null @seq.cTrf
+  | Seq1		lhs			.	emptySeq    =   False
+  | * - Seq Seq1
+  				lhs			.	emptySeq    =   False
+%%]
+
+%%[(8 codegen tauphi)
+SEM Expr
+  | Arrow Lam	loc			.	isThunk		=	@arg.emptySeq
+  | App			loc			.	isUnThunk	=	@arg.emptySeq
+%%]
+

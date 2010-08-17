@@ -3,7 +3,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[doesWhat doclatex
-Interface/wrapper to various transformations for Core, Grin, etc.
+Interface/wrapper to various transformations for Core, TyCore, etc.
 %%]
 
 %%[8 module {%{EH}EHC.CompilePhase.Transformations}
@@ -26,8 +26,12 @@ Interface/wrapper to various transformations for Core, Grin, etc.
 %%[(8 codegen) import({%{EH}Core.Trf})
 %%]
 
+-- TyCore transformations
+%%[(8 codegen) import({%{EH}TyCore.Trf})
+%%]
+
 -- Output
-%%[8 import({%{EH}EHC.CompilePhase.Output(cpOutputCoreModule)})
+%%[8 import({%{EH}EHC.CompilePhase.Output(cpOutputCoreModule, cpOutputTyCoreModule)})
 %%]
 
 -- HI syntax and semantics
@@ -91,5 +95,53 @@ cpTransformCore modNm
        }
 %%]
 
+
+%%[(8 codegen) export(cpTransformTyCore)
+cpTransformTyCore :: HsName -> EHCompilePhase ()
+cpTransformTyCore modNm
+  = do { cr <- get
+       ; let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
+       ; cpMsg' modNm VerboseALot "Transforming TyCore ..." Nothing fp
+       
+         -- transform
+       ; let  mbTyCore    = ecuMbTyCore ecu
+              trftycoreIn = emptyTrfTyCore
+                              { trftycoreTyCore        = panicJust "cpTransformTyCore" mbTyCore
+                              , trftycoreUniq          = crsiNextUID crsi
+%%[[20
+                              , trftycoreExpNmOffMp    = crsiExpNmOffMp modNm crsi
+%%]]
+%%[[99
+                              , trftycoreInhLamMp      = lamMp_Inh_CodeAGItf $ crsiCoreInh crsi
+%%]]
+                              }
+              trftycoreOut = trfTyCore opts modNm trftycoreIn
+       
+         -- put back result: TyCore
+       ; cpUpdCU modNm $! ecuStoreTyCore (trftycoreTyCore trftycoreOut)
+
+         -- dump intermediate stages, if any
+       ; cpSeq [ cpOutputTyCoreModule False ("-" ++ show n ++ "-" ++ nm) "tycore" modNm c
+               | (n,(nm,c)) <- zip [1..] (trftycoreTyCoreStages trftycoreOut)
+               ]
+
+         -- put back result: unique counter
+       ; cpSetUID (trftycoreUniq trftycoreOut)
+
+%%[[99
+         -- put back result: call info map (lambda arity, ...)
+       ; let hii   = ecuHIInfo ecu
+             lamMp = HI.hiiLamMp hii
+       ; cpUpdCU modNm
+           ( ecuStoreHIInfo
+               (hii { HI.hiiLamMp = trftycoreGathLamMp trftycoreOut `Map.union` lamMp
+                    })
+           )
+       
+         -- put back result: additional hidden exports, it should be in a cpFlowXX variant
+       ; cpUpdHiddenExports modNm $ zip (Set.toList $ trftycoreExtraExports trftycoreOut) (repeat IdOcc_Val)
+%%]]
+       }
+%%]
 
 

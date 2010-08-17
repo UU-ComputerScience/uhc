@@ -1,0 +1,106 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Remove lazy bound lambdas, part 2 of 2
+%%%
+%%% Second part of transformation, updates call sites.
+%%% Note that the input to this second part is not a Type Correct program.
+%%% 
+%%% For example:
+%%% > let id = \x -> |x|
+%%% >     id :: {Int} -> Int
+%%% > in |id|
+%%% 
+%%% Becomes:
+%%% > let id = \x -> |x|
+%%% >     id :: {Int} -> Int
+%%% > in id
+%%% 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen tauphi) hs module {%{EH}TyCore.Trf.RemoveLazyFunctions2of2}
+%%]
+
+%%[(8 codegen tauphi) hs import({%{EH}TyCore.Trf.Common})
+%%]
+
+%%[(8 codegen tauphi) hs import({%{EH}Base.Strictness})
+%%]
+ 
+%%[(8 codegen tauphi) hs import({%{EH}Base.Builtin},{%{EH}Base.Opts},{%{EH}Base.Common})
+%%]
+
+%%[(8 codegen tauphi) hs import(Data.Maybe)
+%%]
+
+%%[(8 codegen tauphi) hs import(qualified Data.Map as Map)
+%%]
+
+%%[(8 codegen tauphi) hs import({%{EH}TyCore})
+%%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Wrapping
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen tauphi).WRAPPER ag import({TyCore/Trf/ConstructTypeEnvironment})
+WRAPPER AGItf
+%%]
+
+%%[(8 codegen tauphi)
+PRAGMA nocycle
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell itf
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen tauphi).tcmodTrfRemoveLazyFunctions2of2 hs
+cmodTrfRemoveLazyFunctions2of2 :: Module -> Module
+cmodTrfRemoveLazyFunctions2of2 tcmod
+  =  let  t = wrap_AGItf (sem_AGItf (AGItf_AGItf tcmod)) Inh_AGItf
+     in   cTrf_Syn_AGItf t
+%%]
+
+%%[(8 codegen tauphi)
+ATTR AGItf [ | | cTrf : Module ]
+
+SEM AGItf
+  | AGItf       lhs         .   cTrf        =   @module.cTrf
+%%]
+
+%%[(8 codegen tauphi)
+ATTR AllCodeNT [ | | cTrf : SELF ]
+
+
+-- Remove laziness
+
+SEM Expr
+  | Force
+                lhs         .   cTrf        =   maybe @cTrf
+                                                      (\n -> if n `lazyElem` @lhs.tyEnv
+                                                             then @cTrf
+                                                             else @expr.cTrf)
+                                                      @expr.mbVarNm
+%%]
+
+%%[(8 codegen tauphi)
+-- Attributes that are needed because AG doesn't have pattern matching
+
+ATTR Expr
+  [
+  |
+  | mbVarNm     : {Maybe HsName}
+  ]
+
+SEM Expr
+  | Var
+                lhs         .   mbVarNm     =   Just @nm
+  | * - Var
+                lhs         .   mbVarNm     =   Nothing
+%%]
+

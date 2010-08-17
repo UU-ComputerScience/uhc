@@ -35,6 +35,8 @@ Translation to another AST
 -- TyCore semantics
 %%[(8 codegen grin) import(qualified {%{EH}TyCore.ToCore} as TyCore2Core)
 %%]
+%%[(8 codegen grin) import(qualified {%{EH}TyCore.PrettyAST} as TyCoreSem)
+%%]
 
 -- Grin semantics
 %%[(8 codegen grin) import({%{EH}GrinCode.ToGrinByteCode}(grinMod2ByteCodeMod))
@@ -153,8 +155,10 @@ cpTranslateEH2TyCore modNm
                  ehSem  = panicJust "cpTranslateEH2Core" mbEHSem
                  tycore = EHSem.tcmodule_Syn_AGItf ehSem
          ;  when (isJust mbEHSem)
-                 (cpUpdCU modNm ( ecuStoreTyCore tycore
-                                ))
+                 (do { cpUpdCU modNm (ecuStoreTyCore tycore)
+                     ; when (ehcOptShowTyCore opts)
+                            (lift $ putPPLn (TyCoreSem.ppAST opts tycore))
+                     })
          }
 %%]
 
@@ -293,7 +297,4 @@ cpTranslateByteCode modNm
                    })
         }
 %%]
-
-
-
 

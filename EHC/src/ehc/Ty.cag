@@ -1976,12 +1976,14 @@ instance Serialize Ty where
               9  -> liftM  Ty_Impls sget
 
 instance Serialize TyAnn where
-  sput (TyAnn_Empty) = sputWord8 0
-  sput (TyAnn_Mono ) = sputWord8 1
+  sput (TyAnn_Empty       ) = sputWord8 0
+  sput (TyAnn_Mono        ) = sputWord8 1
+  sput (TyAnn_Strictness a) = sputWord8 2  >> sput a
   sget = do tag <- sgetWord8
             case tag of
               0 -> return TyAnn_Empty
               1 -> return TyAnn_Mono
+              2 -> liftM  TyAnn_Strictness sget
 
 instance Binary TyVarCateg where
   put = putEnum8

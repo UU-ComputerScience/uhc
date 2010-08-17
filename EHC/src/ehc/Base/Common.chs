@@ -94,6 +94,9 @@
 %%[9 export(snd3,thd)
 %%]
 
+%%[(8 codegen) import({%{EH}Base.Strictness}) export(module {%{EH}Base.Strictness})
+%%]
+
 %%[20 export(ppCurlysAssocL)
 %%]
 

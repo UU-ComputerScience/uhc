@@ -187,6 +187,9 @@ data EHCOpts
       {  ehcOptAspects        ::  String            -- which aspects are included in this compiler
       ,  ehcOptShowHS         ::  Bool              -- show HS pretty print on stdout
       ,  ehcOptShowEH         ::  Bool              -- show EH pretty print on stdout
+%%[[(8 codegen)
+      ,  ehcOptShowTyCore     ::  Bool              -- show TyCore ast on stout
+%%]]
       ,  ehcOptPriv           ::  Bool              -- privately used (in general during switch between 2 impls of 1 feature)
       ,  ehcOptHsChecksInEH   ::  Bool              -- do checks in EH which already have been done in HS (usually related to name absence/duplication). This is used for EH compilation only.
 %%[[1
@@ -370,6 +373,9 @@ defaultEHCOpts
   = EHCOpts
       {  ehcOptAspects          =   "%%@{%{ASPECTS}%%}"
       ,  ehcOptShowHS           =   False
+%%[[(8 codegen)
+      ,  ehcOptShowTyCore       =   False
+%%]]
       ,  ehcOptPriv             =   False
       ,  ehcOptHsChecksInEH     =   False
 %%[[1
@@ -507,6 +513,10 @@ ehcCmdLineOpts
 %%]]
 %%[[1
      ,  Option "p"  ["pretty"]           (OptArg oPretty "hs|eh|ast|-")       "show pretty printed source or EH abstract syntax tree, default=eh, -=off, (downstream only)"
+%%][(8 codegen)
+     ,  Option "p"  ["pretty"]           (OptArg oPretty "hs|eh|ast|ty|-")    "show pretty printed source, EH abstract syntax tree or TyCore ast, default=eh, -=off, (downstream only)"
+%%]]
+%%[[1
      ,  Option "d"  ["debug"]            (NoArg oDebug)                       "show debug information"
      ,  Option ""   ["priv"]             (boolArg oPriv)                      "private flag, used during development of 2 impls of 1 feature"
 %%][100
@@ -622,6 +632,9 @@ ehcCmdLineOpts
                                 Just "hs"    -> o { ehcOptShowHS       = True      }
                                 Just "eh"    -> o { ehcOptShowEH       = True      }
                                 Just "pp"    -> o { ehcOptShowEH       = True      }
+%%[[(8 codegen)
+                                Just "ty"    -> o { ehcOptShowTyCore   = True      }
+%%]]
 %%[[1
                                 Just "ast"   -> o { ehcOptShowAst      = True      }
 %%][100

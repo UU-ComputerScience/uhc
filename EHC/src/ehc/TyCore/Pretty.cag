@@ -231,8 +231,8 @@ SEM FldBind
   | Ty			ki			.	ppHow		= 	howHor
 
 SEM ValBind
-  | Val			l0  		.	ppHow		=	howVert
-  				bind		.	ppHow		=	howHor
+  | Val			bind		.	ppHow		=	howVert
+                l0  		.	ppHow		=	howVert
 %%]
 
 %%[(8 codegen)
@@ -269,8 +269,8 @@ symMpPlain
          , (Sym_C_Seq , "]" )
          , (Sym_O_Th  , "{" )
          , (Sym_C_Th  , "}" )
-         , (Sym_O_UnTh, "{" )
-         , (Sym_C_UnTh, "}" )
+         , (Sym_O_UnTh, "|" )
+         , (Sym_C_UnTh, "|" )
          , (Sym_RArrow, "->")
          ]
       ++ [ (Sym_Exists, ppKeyw "exists")
@@ -318,9 +318,9 @@ SEM Module
 													>-< ppCurlysBlock (semic @vbinds.ppL)
 
 SEM Expr
-  | Int         loc         .   pp          =   ppParens (show @int  >#< "::" >#< @ty.pp)
-  | Char        loc         .   pp          =   ppParens (show @char >#< "::" >#< @ty.pp)
-  | String      loc         .   pp          =   ppParens (show @str  >#< "::" >#< @ty.pp)
+  | Int         loc         .   pp          =   show @int  >#< "::" >#< @ty.pp -- ppParens (show @int  >#< "::" >#< @ty.pp)
+  | Char        loc         .   pp          =   show @char >#< "::" >#< @ty.pp -- ppParens (show @char >#< "::" >#< @ty.pp)
+  | String      loc         .   pp          =   show @str  >#< "::" >#< @ty.pp -- ppParens (show @str  >#< "::" >#< @ty.pp)
   | Var         loc         .   pp          =   ppNm @nm
   | App         loc         .   pp          =   let isUnThunk (Nothing:_) = True
                                                     isUnThunk _           = False
@@ -351,13 +351,16 @@ SEM Expr
 													>-< indent 1 (ppCurlysSemisBlock (@alts.ppL ++ dflt))
   | Tup         loc         .   pp          =   ppTag @tag
   | Node        loc         .   pp          =   howDef @lhs.ppHow (ppKeyw "node" {- >#< ppTag @tag -}) (ppSeq' @lhs.symMp @lhs.ppHow @flds.ppL)
+  | OpenExists  loc         .   pp          =   howDef @lhs.ppHow (ppKeyw "openexists"  >#< @bind.pp >#< "=" >#< @tyOpened.pp) (ppParens @ty.pp >-< ppParens @body.pp)
+  | CloseExists loc         .   pp          =   howDef @lhs.ppHow (ppKeyw "closeexists" >#< @bind.pp >#< "=" >#< @tyClosed.pp) (ppParens @ty.pp >-< ppParens @body.pp)
+  | Delay       loc         .   pp          =   ppToThnk @lhs.symMp @expr.pp
+  | Force       loc         .   pp          =   ppFrThnk @lhs.symMp @expr.pp
   | Sum         loc         .   pp          =   howDef @lhs.ppHow (ppKeyw "sum" ) (ppSeq' @lhs.symMp @lhs.ppHow @flds.ppL)
   | Prod        loc         .   pp          =   howDef @lhs.ppHow (ppKeyw "prod") (ppSeq' @lhs.symMp @lhs.ppHow @flds.ppL)
   | Exists      loc         .   pp          =   sym @lhs.symMp Sym_Exists >#< @arg.pp >#< "." >#< @expr.pp
-  | CloseExists loc         .   pp          =   howDef @lhs.ppHow (ppKeyw "closeexists" >#< @bind.pp >#< "=" >#< @tyClosed.pp) (ppParens @ty.pp >-< ppParens @body.pp)
-  | OpenExists  loc         .   pp          =   howDef @lhs.ppHow (ppKeyw "openexists"  >#< @bind.pp >#< "=" >#< @tyOpened.pp) (ppParens @ty.pp >-< ppParens @body.pp)
+  | Lazy        loc         .   pp          =   ppToThnk @lhs.symMp @expr.pp
   | Seq1		loc			.	pp			= 	ppSeq1 @lhs.symMp @seq1.pp
-  | Seq 		loc			.	pp			=	ppSeq  @lhs.symMp @seq.ppL
+  | Seq 		loc			.	pp			=	ppSeq'  @lhs.symMp @lhs.ppHow  @seq.ppL
   | CaseAltFail loc			.	pp			=	ppKeyw "fail" >#< @caseId
   | FFI         loc         .   pp          =   ppKeyw "external" >#< show @callconv >#< show @safety >#< @ppent >#< ppParens @ty.pp
 %%[[8
@@ -373,7 +376,7 @@ SEM Expr
   | TupUpd      loc         .   pp          =   ppDef (ppParens @expr.pp) (ppDef (":=" >|< ppCurlysCommas' [ppTag @tag,@offset.pp,ppNm @nm]) (ppParens @fldExpr.pp))
   | Box			loc			.	pp			=	ppDef (ppKeyw "box" >#< ppParens (@fromTy.pp >#< sym @lhs.symMp Sym_RArrow >#< @toTy.pp)) @expr.pp
   | Unbox		loc			.	pp			=	ppDef (ppKeyw "unbox" >#< ppParens (@fromTy.pp >#< sym @lhs.symMp Sym_RArrow >#< @toTy.pp)) @expr.pp
-  | Ann			loc			.	pp			=	@expr.pp {- annot ... -}
+  | Ann			loc			.	pp			=	"@" >|< @ann.pp >#< @expr.pp
   | CoeArg      loc         .   pp          =   ppKeyw "hole" >#< ppKeyw "_"
   | Hole        loc         .   pp          =   ppKeyw "hole" >#< @uid
   | Err			loc			.	pp			=	ppKeyw "ERR" >#< show @msg
@@ -393,6 +396,16 @@ SEM Expr
   | Sym			loc			.	pp			=	ppKeyw "sym"    >#< ppParens @ty.pp
   | Left		loc			.	pp			=	ppKeyw "left"   >#< ppParens @ty.pp
   | Right		loc			.	pp			=	ppKeyw "right"  >#< ppParens @ty.pp
+%%]
+
+%%[(8 codegen)
+SEM ExprAnn
+  | Empty       loc         .   pp          =   empty
+  | Annotation  loc         .   pp          =   pp ("{" ++ @s ++ "}")
+%%[[(8 codegen)
+  | Strictness  loc         .   pp          =   pp (show @s)
+  | GrinHint    loc         .   pp          =   pp ("GrinHint{" ++ @s ++ "}")
+%%]]
 %%]
 
 %%[(8 codegen)
@@ -579,7 +592,8 @@ ATTR Expr [ | | mbSeq: {Maybe [PP_Doc]} ]
 SEM Expr
   | Seq			lhs			.	mbSeq		=	Just @seq.ppL
   | Seq1		lhs			.	mbSeq		=	Just [@seq1.pp]
-  | * - Seq Seq1
+  | App         lhs         .   mbSeq       =   Just [pp "App"]
+  | * - Seq Seq1 App
   				lhs			.	mbSeq		=	Nothing
 %%]
 

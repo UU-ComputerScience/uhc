@@ -897,34 +897,11 @@ cpProcessTyCoreBasic modNm
                                  errs   = C.tcCheck opts C.emptyCheckEnv cMod
                            ; cpSetLimitErrsWhen 500 "Check TyCore" errs
                            }
-       ; cpSeq [ {-
-                 cpTransformCore
-                   modNm
-                     (
-%%[[102
-                       -- [ "CS" ] ++
-%%]]
-                       [ "CER", "CRU", "CLU", "CILA", "CETA", "CCP", "CILA", "CETA"
-                       , "CFL", "CLGA", "CCGA", "CLU", "CFL", {- "CLGA", -} "CLFG"    
-%%[[9               
-                       ,  "CLDF"
-%%]
-%%[[8_2        
-                       , "CPRNM"
-%%]]
-                       , "CFN"
-                       ]
-                     )
-                 -}
-               -- , when (ehcOptEmitCore opts)   (cpOutputCore   "core"   modNm)
-                 when (ehcOptTyCore opts)
+       ; cpSeq [ cpTransformTyCore modNm
+               , when (ehcOptTyCore opts)
                       (do { cpOutputTyCore "tycore" modNm
                           ; check modNm
                           })
-%%[[(8 codegen java)
-               -- , when (ehcOptEmitJava opts)   (cpOutputJava   "java"   modNm)
-%%]]
-               -- , cpProcessCoreFold modNm
                ]
         }
 %%]

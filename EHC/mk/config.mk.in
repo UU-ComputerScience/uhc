@@ -74,3 +74,7 @@ ifeq (@ENABLE_LLVM@,yes)
 ENABLE_LLVM					:= yes
 endif
 
+ifeq (@ENABLE_TAUPHI@,yes)
+ENABLE_TAUPHI				:= yes
+endif
+

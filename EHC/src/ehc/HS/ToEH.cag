@@ -531,16 +531,6 @@ SEM FieldDeclaration
         lhs         .   eh          =   rngLift @range EH.DataField_Field (Just @fldrefnames) @type.eh
 %%]
 
-%%[5
-ATTR AnnotatedTypes [ | | eh USE {:} {[]}: {[EH.TyExpr]} ]
-
-ATTR AnnotatedType [ | | eh: {EH.TyExpr} ]
-
-SEM AnnotatedType
-    | Type -- ToDo: or _Type?
-        lhs         .   eh          =   @type.eh
-%%]
-
 %%[9
 ATTR Type [ | | ehMbAsPr: {Maybe EH.PrExpr} ]
 
@@ -1343,8 +1333,25 @@ SEM Body
 ATTR TypeAnnotation [ | | eh: {EH.TyExprAnn} ]
 
 SEM TypeAnnotation
-	| Empty
+%%[[1
+    | Empty
 		loc			.	eh			=	EH.TyExprAnn_Empty
+%%][5
+    | Strict
+		loc			.	eh			=	EH.TyExprAnn_Empty
+%%][(8 codegen)
+    | Strict
+        loc         .   eh          =   EH.TyExprAnn_Strictness (Strict)
+    | AnnotationName
+        loc         .   eh          =   case show @name of
+                                          "strict"    ->  EH.TyExprAnn_Strictness (Strict)
+                                          "nonStrict" ->  EH.TyExprAnn_Strictness (NonStrict)
+                                          _           -> EH.TyExprAnn_Empty
+    | AnnotationVar
+        loc         .   eh          =   case show @name of
+                                          "strictness" -> EH.TyExprAnn_Strictness (StrictnessVar @var)
+                                          _            -> EH.TyExprAnn_Empty
+%%]]
 %%]
 
 %%[1

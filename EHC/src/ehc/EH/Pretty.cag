@@ -107,7 +107,7 @@ SEM TyExpr
   | AppTop      loc     .   pp      =   ppAppTop  (@tyExpr.appFunNm,@tyExpr.appFunPP)
                                                   @tyExpr.appArgPPL @tyExpr.pp
   | Parens      loc     .   pp      =   ppParens @tyExpr.pp
-  | Ann         loc     .   pp      =   {- @ann.pp >#< -} @tyExpr.pp
+  | Ann         loc     .   pp      =   @ann.pp >#< @tyExpr.pp
 
 SEM Decls
   | Cons        lhs     .   pp      =   @hd.pp
@@ -431,6 +431,9 @@ SEM PatExprAnn
 
 SEM TyExprAnn
   | Empty		loc		.	pp		=	empty
+%%[[(8 codegen)
+  | Strictness  loc     .   pp      =   "@" >|< show @s
+%%]]
 %%]
 
 %%[6

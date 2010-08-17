@@ -34,7 +34,8 @@ Output generation, on stdout or file
 -- Core output
 %%[(8 codegen) import({%{EH}Core},{%{EH}Core.Pretty})
 %%]
-%%[(8 codegen) import({%{EH}TyCore.Pretty})
+-- TyCore output
+%%[(8 codegen) import({%{EH}TyCore},{%{EH}TyCore.Pretty})
 %%]
 -- Grin input and output
 %%[(8 codegen grin) import({%{EH}GrinCode.Pretty})
@@ -63,7 +64,24 @@ Output generation, on stdout or file
 %%% Compile actions: output
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) export(cpOutputTyCore)
+%%[(8 codegen) export(cpOutputTyCoreModule,cpOutputTyCore)
+cpOutputTyCoreModule :: Bool -> String -> String -> HsName -> Module -> EHCompilePhase ()
+cpOutputTyCoreModule binary nmsuff suff modNm tyMod
+  =  do  {  cr <- get
+         ;  let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
+                 fpC = mkOutputFPath opts modNm fp (suff ++ nmsuff) -- for now nmsuff after suff, but should be inside name
+                 fnC    = fpathToStr fpC
+%%[[8
+         ;  lift $ putPPFPath fpC (ppModule opts tyMod) 100
+%%][20
+         ;  lift (if binary
+                  then do { fpathEnsureExists fpC		-- should be in FPath equivalent of putSerializeFile
+                          ; putSerializeFile fnC tyMod
+                          }
+                  else putPPFPath fpC (ppModule opts tyMod) 100
+                 )
+%%]]
+         }
 cpOutputTyCore :: String -> HsName -> EHCompilePhase ()
 cpOutputTyCore suff modNm
   =  do  {  cr <- get

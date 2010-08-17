@@ -195,6 +195,11 @@ mkValThunkBind1 :: HsName -> Ty -> Expr -> ValBind
 mkValThunkBind1 n t e = mkValBind1 n (mkTyThunk t) (mkExprThunk e)
 %%]
 
+%%[(8 codegen) hs export(mkValBind1FFI)
+mkValBind1FFI :: HsName -> Ty -> Expr -> ValBind
+mkValBind1FFI n t e = mkValBind1Meta n MetaVal_Val t e
+%%]
+
 %%[(8 codegen) hs export(mkTyBind1)
 mkTyBind1 :: HsName -> Ty -> Expr -> ValBind
 mkTyBind1 n t e = mkValBind1LevMeta True n 1 MetaVal_Val t e

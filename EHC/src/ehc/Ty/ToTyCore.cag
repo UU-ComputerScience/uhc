@@ -184,6 +184,9 @@ SEM TyAGItf
 ATTR Ty TyAGItf [ | | ct: {C.Ty} ]
 
 SEM Ty
+  | Ann         loc         .   ct          =   if @ann.isEmpty
+                                                then @ty.ct
+                                                else C.Expr_Ann @ann.ann @ty.ct
   | Var         loc         .   ctBase      =   C.Expr_Var $ mkHNm @tv
   | Con         loc         .   ctBase      =   C.Expr_Var @nm
   | App         loc         .   ct          =   let dflt = @tcKiArgAppWrap $ C.Expr_App @func.ct (argWrap (t2tcOptHowAppArg @lhs.opts) @arg.ct)
@@ -256,6 +259,21 @@ SEM Ty
 SEM Ty
   | * - App Ann
                 loc         .   ct          =   @tcKiArgAppWrap @ctBase
+%%]
+
+%%[(8 codegen)
+ATTR TyAnn [ | | ann : {C.ExprAnn}
+                 isEmpty : Bool]
+
+SEM TyAnn
+  | Empty Mono  lhs         .   ann         =   C.ExprAnn_Empty
+%%[[(8 codegen)
+  | Strictness  lhs         .   ann         =   C.ExprAnn_Strictness @s
+%%]]
+
+SEM TyAnn
+  | Empty       lhs         .   isEmpty     =   True
+  | * - Empty   lhs         .   isEmpty     =   False
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
