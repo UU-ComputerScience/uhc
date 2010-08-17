@@ -7,7 +7,10 @@
 %%% Strictness Common for HS, EH, Ty, TyCore
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 module {%{EH}Base.Strictness} import({%{EH}Base.Common})
+%%[8 module {%{EH}Base.Strictness}
+%%]
+
+%%[(8 codegen) hs import({%{EH}Base.HsName})
 %%]
 
 %%[(20 codegen) hs import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})

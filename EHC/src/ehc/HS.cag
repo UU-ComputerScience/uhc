@@ -78,9 +78,6 @@
 %%[5 -1.Token hs import({%{EH}Scanner.Token})
 %%]
 
-%%[(8 codegen) hs import({%{EH}Base.Strictness})
-%%]
-
 %%[1 ag import({HS/AbsSyn})
 %%]
 

@@ -23,13 +23,7 @@ TBD:
 %%[(8 codegen) hs import(EH.Util.Utils)
 %%]
 
-%%[(8 codegen) hs import(Debug.Trace)
-%%]
-
 %%[(8 codegen) hs import(Data.Maybe)
-%%]
-
-%%[(8 codegen) hs import({%{EH}Base.Strictness})
 %%]
 
 %%[(8 codegen) hs import({%{EH}TyCore},{%{EH}Ty} as T,{%{EH}Core} as C)

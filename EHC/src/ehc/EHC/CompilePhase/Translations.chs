@@ -7,9 +7,6 @@ Translation to another AST
 %%[8 module {%{EH}EHC.CompilePhase.Translations}
 %%]
 
-%%[1 import(Debug.Trace)
-%%]
-
 -- general imports
 %%[8 import(qualified Data.Map as Map, qualified Data.Set as Set, qualified EH.Util.FastSeq as Seq)
 %%]
@@ -299,22 +296,5 @@ cpTranslateByteCode modNm
 -}
                    })
         }
-%%]
-
-
-
-%%[1 import(Debug.Trace)
-%%]
-%%[1 import(Debug.Trace)
-%%]
-%%[1 import(Debug.Trace)
-%%]
-%%[1 import(Debug.Trace)
-%%]
-%%[1 import(Debug.Trace)
-%%]
-%%[1 import(Debug.Trace)
-%%]
-%%[1 import(Debug.Trace)
 %%]
 

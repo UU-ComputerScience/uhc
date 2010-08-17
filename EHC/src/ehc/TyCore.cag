@@ -47,9 +47,6 @@
 %%[(90 codegen) hs import({%{EH}Foreign}) export(module {%{EH}Foreign})
 %%]
 
-%%[(8 codegen) hs import({%{EH}Base.Strictness})
-%%]
-
 %%[(8 codegen) ag import({TyCore/AbsSyn})
 DERIVING *     : Show, Eq
 %%]
@@ -458,6 +455,8 @@ exprMbConst _                 = Nothing
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(20 codegen grin) hs
+-- Note: This instance is completely useless.
+-- Should it ever be needed, it will have to be implemented correctly!
 instance Serialize Module where
   sput (Module_Mod a b c) = sputWord8 0
   sget

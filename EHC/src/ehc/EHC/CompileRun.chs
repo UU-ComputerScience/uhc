@@ -62,7 +62,7 @@ data EHCompileRunStateInfo
       , crsiHSInh       :: !HSSem.Inh_AGItf                     -- current inh attrs for HS sem
       , crsiEHInh       :: !EHSem.Inh_AGItf                     -- current inh attrs for EH sem
 %%[[(8 codegen)
-	  , crsiCoreInh     :: !Core2GrSem.Inh_CodeAGItf            -- current inh attrs for Core2Grin sem
+      , crsiCoreInh     :: !Core2GrSem.Inh_CodeAGItf            -- current inh attrs for Core2Grin sem
 %%]]
 %%[[20
       , crsiMbMainNm    :: !(Maybe HsName)                      -- name of main module, if any

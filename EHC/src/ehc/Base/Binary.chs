@@ -186,4 +186,3 @@ instance Enum a => Binary a where
   get   = do n <- get
              return (toEnum n)
 
-

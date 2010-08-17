@@ -379,7 +379,7 @@ defaultEHCOpts
       ,  ehcOptPriv             =   False
       ,  ehcOptHsChecksInEH     =   False
 %%[[1
-      ,  ehcOptShowEH           =   False
+      ,  ehcOptShowEH           =   True
 %%][99
       ,  ehcOptShowEH           =   False
 %%]]
@@ -514,7 +514,7 @@ ehcCmdLineOpts
 %%[[1
      ,  Option "p"  ["pretty"]           (OptArg oPretty "hs|eh|ast|-")       "show pretty printed source or EH abstract syntax tree, default=eh, -=off, (downstream only)"
 %%][(8 codegen)
-     ,  Option "p"  ["pretty"]           (OptArg oPretty "hs|eh|ast|ty-")     "show pretty printed source, EH abstract syntax tree or TyCore ast, default=eh, -=off, (downstream only)"
+     ,  Option "p"  ["pretty"]           (OptArg oPretty "hs|eh|ast|ty|-")    "show pretty printed source, EH abstract syntax tree or TyCore ast, default=eh, -=off, (downstream only)"
 %%]]
 %%[[1
      ,  Option "d"  ["debug"]            (NoArg oDebug)                       "show debug information"

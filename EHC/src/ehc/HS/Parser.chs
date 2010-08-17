@@ -26,7 +26,7 @@
 %%]
 
 -- debugging
-%%[1 import(EH.Util.Utils, EH.Util.Pretty, Debug.Trace)
+%%[1 import(EH.Util.Utils, EH.Util.Pretty)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -440,14 +440,16 @@ pDeriving
 pConstructor :: HSParser Constructor
 pConstructor
   =   con
-      <**> (   (\ts c -> mkRngNm Constructor_Constructor c ts) <$> pList pTypeBase
+      <**> (   (\ts c -> mkRngNm Constructor_Constructor c ts) <$> pList pTB
 %%]
 %%[7
            <|> pCurlys' ((\fs r c -> mkRngNm Constructor_Record c fs) <$> pList1Sep pCOMMA pFieldDeclaration)
 %%]
 %%[5
            )
-  <|> (\l o r -> Constructor_Infix (mkRange1 o) l (tokMkQName o) r) <$> pType <*> conop <*> pType
+  <|> (\l o r -> Constructor_Infix (mkRange1 o) l (tokMkQName o) r) <$> pT <*> conop <*> pT
+  where pT  = pAnnotatedType pType
+        pTB = pAnnotatedType pTypeBase
 %%]
 
 %%[9
@@ -461,7 +463,7 @@ pContextedConstructor
 pFieldDeclaration :: HSParser FieldDeclaration
 pFieldDeclaration
   = (\vs@(v:_) -> FieldDeclaration_FieldDeclaration (mkRange1 v) (tokMkQNames vs))
-    <$> pList1Sep pCOMMA var <* pDCOLON <*> pType
+    <$> pList1Sep pCOMMA var <* pDCOLON <*> pAnnotatedType pType
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -625,9 +627,6 @@ pTypeBase
         <|> (\fs r -> Type_RowSumUpdate r (Type_RowSumEmpty r) fs) <$> pFlds
         )
 %%]]
-%%[[5
-  <|> (\x -> Type_Annotate (mkRange1 x) TypeAnnotation_Strict) <$> pBANG <*> pTypeBase
-%%]]
 %%[[(5 tauphi)
   <|> ((Type_Annotate . mkRange1) <$> pAT)
      <*> (   (TypeAnnotation_AnnotationName . tokMkQName <$> tyvar)
@@ -785,6 +784,12 @@ pTypeLeftHandSide
                      <$> pTypePatternBase <*> tyconop <*> pTypePatternBase
         pLhsTail ::  HSParser [TypePattern]
         pLhsTail =   pList1 pTypePatternBase
+%%]
+
+%%[5
+pAnnotatedType :: HSParser Type -> HSParser Type
+pAnnotatedType pT
+  =   (\x -> Type_Annotate (mkRange1 x) TypeAnnotation_Strict) <$> pBANG <*> pT
 %%]
 
 %%[9.pTypeContextPrefix

@@ -355,12 +355,12 @@ SEM TyExpr
 ATTR PrExpr [ | | ki: Ty ]
 
 SEM PrExpr
-  | *           lhs  .   ki                  =   kiStar
-  | Class       loc  .   (tkgi_,clKiNmErrs)  =   tyKiGamLookupByNameErr (hsnClass2Kind @nm) @lhs.tyKiGam
-                     .   fo_                 =   fitsIn weakFIOpts defaultFIEnv @lUniq @tyExprs.kiVarMp
-                                                   (@tyExprs.kiL `mkArrow` kiStar) (tkgiKi @tkgi_)
-                lhs  .   kiVarMp             =   foVarMp @fo_ |=> @tyExprs.kiVarMp
-                loc  .   lUniq               :   UNIQUEREF gUniq
+  | *           lhs         .   ki                  =   kiStar
+  | Class       loc         .   (tkgi_,clKiNmErrs)  =   tyKiGamLookupByNameErr (hsnClass2Kind @nm) @lhs.tyKiGam
+                            .   fo_                 =   fitsIn weakFIOpts defaultFIEnv @lUniq @tyExprs.kiVarMp
+                                                          (@tyExprs.kiL `mkArrow` kiStar) (tkgiKi @tkgi_)
+                lhs         .   kiVarMp             =   foVarMp @fo_ |=> @tyExprs.kiVarMp
+                loc         .   lUniq               :   UNIQUEREF gUniq
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

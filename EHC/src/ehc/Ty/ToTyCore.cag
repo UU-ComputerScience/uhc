@@ -26,11 +26,6 @@
 
 %%[(8 codegen) hs import (qualified Data.Set as Set)
 %%]
-%%[(8 codegen) hs import (Debug.Trace)
-%%]
-
-%%[(8 codegen) hs import({%{EH}Base.Strictness})
-%%]
 
 %%[(8 codegen) ag import({Ty/AbsSyn},{Ty/CommonAG})
 WRAPPER TyAGItf

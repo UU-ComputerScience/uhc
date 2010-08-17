@@ -27,9 +27,6 @@ Differences:
 %%[(90 codegen) hs import({%{EH}Foreign.Pretty})
 %%]
 
-%%[(8 codegen) hs import({%{EH}Base.Strictness})
-%%]
-
 %%[(8 codegen).WRAPPER ag import({TyCore/AbsSyn})
 WRAPPER
   AGItf Expr ExprSeq1 ValBind

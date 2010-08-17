@@ -117,9 +117,6 @@
 %%[(100 hmtyinfer) -99.DerivationTree
 %%]
 
-%%[(8 codegen) hs import({%{EH}Base.Strictness})
-%%]
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Import of all separate aspects
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -185,9 +182,6 @@ WRAPPER AGItf
  %%]
 
 %%[(8 codegen) ag import({EH/ToCore})
-%%]
-
-%%[1 hs import(Debug.Trace)
 %%]
 %%[(8 codegen) ag import({EH/ToTyCore})
 %%]

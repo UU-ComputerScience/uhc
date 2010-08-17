@@ -32,9 +32,6 @@
 %%[(2 hmtyinfer) import({%{EH}VarMp},{%{EH}Substitutable})
 %%]
 
-%%[(4 hmtyinfer) import(Debug.Trace)
-%%]
-
 %%[(4 hmtyinfer) import({%{EH}Ty.Trf.Instantiate}, {%{EH}Ty.FitsInCommon2}, {%{EH}Base.Opts}, {%{EH}Gam.Full}, Data.Maybe,Data.List as List)
 %%]
 %%[(4 hmtyinfer) import({%{EH}Ty.AppSpineGam})

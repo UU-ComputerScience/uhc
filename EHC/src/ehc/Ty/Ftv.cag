@@ -19,9 +19,6 @@ Compute free type variables of a type.
 %%[(4 hmtyinfer || hmtyast) hs import(qualified Data.Map as Map)
 %%]
 
-%%[(8 codegen) hs import({%{EH}Base.Strictness})
-%%]
-
 %%[(2 hmtyinfer || hmtyast).WRAPPER ag import({Ty/AbsSyn})
 WRAPPER
   TyAGItf

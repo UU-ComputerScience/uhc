@@ -182,7 +182,7 @@ SEM Type
     | Parenthesized
         loc         .   pp          =   ppParens @type.pp
     | Annotate
-        loc         .   pp          =   @annotation.ppWrap @type.pp -- "@" >|< @annotation.pp >#< @type.pp
+        loc         .   pp          =   @annotation.ppWrap @type.pp
 %%]
 %%[2
     | Wildcard
@@ -610,7 +610,7 @@ SEM Literal
     | Char
         loc         .   pp          =   pp ("'" ++ @value ++ "'")
 %%]
-%%[[5
+%%[5
     | String
         loc         .   pp          =   pp (show @value)
 %%]

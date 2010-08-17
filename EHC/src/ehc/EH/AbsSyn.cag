@@ -628,9 +628,6 @@ DERIVING AnnDtMonoRestrict : Eq, Ord
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1.AllNT
-
-DERIVING AllNT KiExprAnn TyExprAnn ExprAnn PatExprAnn : Show
-
 SET AllNT
     = AllTyExpr AllDecl AllPatExpr AllExpr
 %%[[5

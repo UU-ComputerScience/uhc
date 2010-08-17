@@ -28,9 +28,6 @@
 %%[(9 hmtyinfer || hmtyast) hs export(ppTyPr)
 %%]
 
-%%[(8 codegen) hs import({%{EH}Base.Strictness})
-%%]
-
 %%[(1 hmtyinfer || hmtyast).WRAPPER ag import({Ty/AbsSyn},{Ty/CommonAG})
 WRAPPER TyAGItf
 %%]

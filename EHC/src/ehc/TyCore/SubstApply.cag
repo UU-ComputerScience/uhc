@@ -22,9 +22,6 @@
 %%[(8 codegen) hs import({%{EH}Gam.TyKiGam})
 %%]
 
-%%[(8 codegen) hs import({%{EH}Base.Strictness})
-%%]
-
 %%[(8 codegen).WRAPPER ag import({TyCore/AbsSyn})
 WRAPPER Expr
 %%]

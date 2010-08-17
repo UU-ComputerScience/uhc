@@ -24,9 +24,6 @@ a -> (c -> d)                       (->) a ((->) c d)                       [->,
 %%[(9 hmtyinfer || hmtyast) hs module {%{EH}Ty.TrieKey} import({%{EH}Base.Common},{%{EH}Base.HsName},{%{EH}Base.Builtin},{%{EH}Ty})
 %%]
 
-%%[(9 hmtyinfer || hmtyast) hs import({%{EH}Base.Strictness})
-%%]
-
 %%[(9 hmtyinfer || hmtyast) hs import(qualified Data.Set as Set,Data.List as Lst,EH.Util.FastSeq as Seq,{%{EH}Base.Trie (TrieKey(..),TrieKeyKind(..))},{%{EH}CHR.Key})
 %%]
 
