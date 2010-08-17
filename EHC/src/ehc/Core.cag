@@ -19,6 +19,9 @@ Datatype LamInfo holds the implementation info to be exported from a module.
 %%[(8 codegen) hs import({%{EH}AbstractCore})
 %%]
 
+%%[(8 codegen) hs import({%{EH}AnaDomain}) export (module {%{EH}AnaDomain})
+%%]
+
 %%[(8 codegen) hs import ({%{EH}Base.Target}(FFIWay(..),TargetFlavor(..))) export(module {%{EH}Base.Target})
 %%]
 
@@ -437,8 +440,8 @@ cModMerge mL
 
 %%[(20 codegen) hs
 instance Serialize LamInfo where
-  sput (LamInfo a b c) = sput a >> sput b >> sput c
-  sget = liftM3 LamInfo  sget sget sget
+  sput (LamInfo a b c d) = sput a >> sput b >> sput c >> sput d
+  sget = liftM4 LamInfo  sget sget sget sget
 
 instance Serialize StackTraceInfo where
   sput (StackTraceInfo_None                ) = sputWord8 0
@@ -526,18 +529,21 @@ instance Serialize CMetaVal where
             4 -> liftM  CMetaVal_Track              sget
 
 instance Serialize CExprAnn where
-  sput (CExprAnn_Ty a) = sputWord8 0 >> sput a
+  sput (CExprAnn_Ty  a) = sputWord8 0 >> sput a
+  sput (CExprAnn_Coe a) = sputWord8 1 >> sput a
   sget
     = do t <- sgetWord8
          case t of
             0 -> liftM  CExprAnn_Ty         sget            
+            1 -> liftM  CExprAnn_Coe        sget            
 
 instance Serialize CBindAspect where
-  sput (CBindAspect_Bind a b      ) = sputWord8 0 >> sput a >> sput b
-  sput (CBindAspect_FFI  a b c d  ) = sputWord8 1 >> sput a >> sput b >> sput c >> sput d
+  sput (CBindAspect_Bind 	a b      ) = sputWord8 0 >> sput a >> sput b
+  sput (CBindAspect_FFI  	a b c d  ) = sputWord8 1 >> sput a >> sput b >> sput c >> sput d
 %%[[90
-  sput (CBindAspect_FFE  a b c d  ) = sputWord8 2 >> sput a >> sput b >> sput c >> sput d
+  sput (CBindAspect_FFE  	a b c d  ) = sputWord8 2 >> sput a >> sput b >> sput c >> sput d
 %%]]
+  sput (CBindAspect_RelevTy a        ) = sputWord8 3 >> sput a
   sget
     = do t <- sgetWord8
          case t of
@@ -546,6 +552,7 @@ instance Serialize CBindAspect where
 %%[[90           
             2 -> liftM4 CBindAspect_FFE           sget sget sget sget
 %%]]
+            3 -> liftM  CBindAspect_RelevTy       sget
 
 instance Serialize CBind where
   sput (CBind_Bind a b      ) = sputWord8 0 >> sput a >> sput b

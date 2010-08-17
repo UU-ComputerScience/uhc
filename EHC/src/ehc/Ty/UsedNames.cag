@@ -20,6 +20,9 @@ These are used for constructing cached hi files filtered for the names actually 
 %%[(20 hmtyinfer || hmtyast) hs import(qualified Data.Map as Map)
 %%]
 
+%%[(20 hmtyinfer || hmtyast) hs import({%{EH}Base.Strictness})
+%%]
+
 %%[(20 hmtyinfer || hmtyast) hs import({%{EH}Module})
 %%]
 

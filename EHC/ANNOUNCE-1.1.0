@@ -1,0 +1,87 @@
+	    Utrecht Haskell Compiler -- second release 1.1.0
+	    ================================================
+
+
+The UHC team is happy to announce the second public release of the
+Utrecht Haskell Compiler (UHC). UHC supports almost allmost all
+Haskell98 and Haskell2010 features plus some experimental extensions. The
+compiler runs on MacOSX, Windows (cygwin), and various Unix flavors.
+
+This second release has the following highlights relative to the
+previous first release:
+
+  * Supports most of the Haskell2010 features.
+  
+  * Generic deriving [1].
+  
+  * UHC knows about packages, and Cabal version 1.9.3 and later have basic
+    support for UHC, so that Cabal can be used to build UHC packages.
+  
+  * The runtime system is no longer dependent on Boehm garbage collector,
+    but uses its own.
+  
+  * More programs from the nofib test suite compile and run.
+
+For more info see http://www.cs.uu.nl/wiki/UHC
+
+
+Getting started & Download
+--------------------------
+
+UHC is available for download as source distribution via the UHC home
+page:
+
+	http://www.cs.uu.nl/wiki/UHC
+	
+Here you will also find instructions to get started and the specifics
+of what UHC can and cannot do.
+
+
+Status of the implementation
+----------------------------
+
+Over the past year much effort by many people has been put into
+improving UHC, in particular to make it compile and run more library
+modules and test programs. Although the UHC project is very much work in
+progress overall reliability has improved, bugs have been fixed, and
+some Hackage packages compile.
+
+
+Warning
+-------
+
+Although we think that the compiler is stable enough to compile
+subtantial Haskell programs, we do not recommend yet to use it for any
+serious development work in Haskell. We ourselves use the GHC as a
+development platform! We think however that it provides a great platform
+for experimenting with language implementations, language extensions,
+etc.
+
+
+Mailing lists
+-------------
+
+For UHC users and developers respectively:
+
+	http://mail.cs.uu.nl/mailman/listinfo/uhc-users
+	http://mail.cs.uu.nl/mailman/listinfo/uhc-developers
+
+
+Bug reporting
+-------------
+
+Please report bugs at:
+
+	http://code.google.com/p/uhc/issues/list
+
+
+The UHC Team
+
+
+
+[1] Jose Pedro Magalhaes, Atze Dijkstra, Johan Jeuring, and Andres Loeh.
+A generic deriving mechanism for Haskell.
+http://dreixel.net/research/pdf/gdmh_draft.pdf (see Section 7.1 for the
+discussion on constrained datatypes)
+
+

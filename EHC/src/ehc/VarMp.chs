@@ -29,7 +29,7 @@ A multiple level VarMp knows its own absolute metalevel, which is the default to
 %%% Substitution for types
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(2 hmtyinfer || hmtyast) module {%{EH}VarMp} import(Data.List, {%{EH}Base.Common}, {%{EH}Ty}) export(VarMp'(..), VarMp, emptyVarMp, varmpTyLookup)
+%%[(2 hmtyinfer || hmtyast) module {%{EH}VarMp} import(Data.List, {%{EH}Base.Common}, {%{EH}Ty}) export(VarMp'(..), VarMp)
 %%]
 
 %%[(2 hmtyinfer || hmtyast) import(qualified Data.Map as Map,qualified Data.Set as Set,Data.Maybe)
@@ -100,14 +100,17 @@ mkVarMp :: Map.Map k v -> VarMp' k v
 mkVarMp m = VarMp 0 [m]
 %%]
 
-%%[(2 hmtyinfer || hmtyast).VarMp.emptyVarMp
+%%[(2 hmtyinfer || hmtyast).VarMp.emptyVarMp export(emptyVarMp)
 emptyVarMp :: VarMp' k v
 emptyVarMp = VarMp []
 %%]
 
-%%[(6 hmtyinfer || hmtyast).VarMp.emptyVarMp -2.VarMp.emptyVarMp
+%%[(6 hmtyinfer || hmtyast).VarMp.emptyVarMp -2.VarMp.emptyVarMp export(emptyVarMp,varmpIsEmpty)
 emptyVarMp :: VarMp' k v
 emptyVarMp = mkVarMp Map.empty
+
+varmpIsEmpty :: VarMp' k v -> Bool
+varmpIsEmpty (VarMp {varmpMpL=l}) = all Map.null l
 %%]
 
 %%[(4 hmtyinfer || hmtyast).varmpFilter export(varmpFilter)
@@ -321,8 +324,8 @@ type VarMp  = VarMp' TyVarId Ty
 %%[(6 hmtyinfer || hmtyast) -2.VarMp.Base
 type VarMp  = VarMp' TyVarId VarMpInfo
 
-instance Show VarMp where
-  show (VarMp _ c) = show (map Map.toList c)
+instance Show (VarMp' k v) where
+  show _ = "VarMp"
 %%]
 
 %%[(4 hmtyinfer || hmtyast).varmpFilterTy
@@ -458,15 +461,15 @@ tyRestrictKiVarMp ts = varmpIncMetaLev $ assocTyLToVarMp [ (v,kiStar) | t <- ts,
 %%% VarMp lookup
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(2 hmtyinfer || hmtyast).varmpTyLookup
+%%[(2 hmtyinfer || hmtyast).varmpTyLookup export(varmpTyLookup)
 varmpTyLookup, varmpLookup :: Eq k => k -> VarMp' k v -> Maybe v
 varmpTyLookup tv (VarMp s) = lookup tv s
 
 varmpLookup = varmpTyLookup
 %%]
 
-%%[(6 hmtyinfer || hmtyast) -2.varmpTyLookup
-varmpLookup :: (VarLookup m k VarMpInfo,Ord k) => k -> m -> Maybe VarMpInfo
+%%[(6 hmtyinfer || hmtyast) -2.varmpTyLookup export(varmpLookup,varmpTyLookup)
+varmpLookup :: (VarLookup m k i,Ord k) => k -> m -> Maybe i
 varmpLookup = varlookupMap (Just . id)
 
 varmpTyLookup :: (VarLookup m k VarMpInfo,Ord k) => k -> m -> Maybe Ty
@@ -594,7 +597,7 @@ varmpLabelLookup2 m v = varmpLabelLookup v m
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(2 hmtyinfer || hmtyast).ppVarMp
-ppVarMp :: ([PP_Doc] -> PP_Doc) -> VarMp -> PP_Doc
+ppVarMp :: (PP k, PP v) => ([PP_Doc] -> PP_Doc) -> VarMp' k v -> PP_Doc
 ppVarMp ppL (VarMp l) = ppL . map (\(n,v) -> pp n >|< ":->" >|< pp v) $ l
 %%]
 
@@ -604,7 +607,7 @@ ppVarMpV = ppVarMp vlist
 %%]
 
 %%[(6 hmtyinfer || hmtyast).ppVarMp -2.ppVarMp export(ppVarMp)
-ppVarMp :: ([PP_Doc] -> PP_Doc) -> VarMp -> PP_Doc
+ppVarMp :: (PP k, PP v) => ([PP_Doc] -> PP_Doc) -> VarMp' k v -> PP_Doc
 ppVarMp ppL (VarMp mlev ms)
   = ppL [ "@" >|< pp lev >|< ":" >#< ppL [ pp n >|< ":->" >|< pp v | (n,v) <- Map.toList m]
         | (lev,m) <- zip [mlev..] ms
@@ -612,7 +615,7 @@ ppVarMp ppL (VarMp mlev ms)
 %%]
 
 %%[(2 hmtyinfer || hmtyast).PP
-instance PP VarMp where
+instance (PP k, PP v) => PP (VarMp' k v) where
   pp = ppVarMp (ppListSepFill "" "" ", ")
 %%]
 

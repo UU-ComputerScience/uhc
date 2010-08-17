@@ -9,7 +9,7 @@
 
 %%[(8 codegen grin) hs module {%{EH}Core.ToGrin} export(Inh_CodeAGItf(..),Syn_CodeAGItf(..),wrap_CodeAGItf,sem_CodeAGItf)
 %%]
-%%[(8 codegen grin).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonToXX},{Core/CommonFFI},{Core/CommonLamInfo})
+%%[(8 codegen grin).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonPred},{Core/CommonCtxtPred},{Core/CommonBindNm},{Core/CommonFFI},{Core/CommonLamInfo})
 WRAPPER CodeAGItf
 %%]
 %%[(8 codegen grin) hs import(Char, Data.Maybe, Data.List, qualified Data.Set as Set, qualified Data.Map as Map)
@@ -141,10 +141,10 @@ and assumed to propagate correctly when merged with this info.
 SEM CBindAspect
   | Bind        lhs         .   bindLamMp
                                             =   Map.singleton @lhs.nm
-                                                              (LamInfo (length @expr.grLamArgL) StackTraceInfo_None Nothing)
+                                                              (emptyLamInfo {laminfoArity = length @expr.grLamArgL})
   | FFI         lhs         .   bindLamMp
                                             =   Map.singleton @lhs.nm
-                                                              (LamInfo (length @argTyL + length @argTyLExtra) StackTraceInfo_None Nothing)
+                                                              (emptyLamInfo {laminfoArity = length @argTyL + length @argTyLExtra})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

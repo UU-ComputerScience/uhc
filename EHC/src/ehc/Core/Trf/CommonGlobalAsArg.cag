@@ -2,6 +2,9 @@
 %%% Common AG code for transformations to `passing globals as args'
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[(8 codegen) ag import({Core/CommonPred})
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Level
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -20,7 +23,7 @@ ATTR AllBind [ | | bindVarS, bindLamS USE {`Set.union`} {Set.empty}: FvS ]
 
 SEM CBindAspect
   | Bind        lhs         .   (bindVarS,bindLamS)
-                                            =   if @expr.isLam
+                                            =   if isJust @expr.mbLam
                                                 then (Set.empty,Set.singleton @lhs.nm)
                                                 else (Set.singleton @lhs.nm,Set.empty)
   | FFI         lhs         .   bindVarS    =   Set.singleton @lhs.nm

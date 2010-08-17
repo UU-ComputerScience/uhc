@@ -32,7 +32,7 @@
 %%% Interface
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 jazy).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonToXX},{Core/CommonFFI})
+%%[(8 jazy).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonFFI})
 WRAPPER CodeAGItf
 %%]
 

@@ -1,0 +1,91 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell importable interface to AnaDomain subst
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[doesWhat doclatex
+Substitution for AnaDomain.
+%%]
+
+%%[(8 codegen) hs module {%{EH}AnaDomain.Trf.Subst} import({%{EH}Base.Common},{%{EH}AnaDomain},{%{EH}VarMp})
+%%]
+
+%%[(8 codegen) hs import(EH.Util.Utils)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Wrapping
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) ag import({AnaDomain/AbsSyn})
+WRAPPER TyAGItf QualAGItf CoeAGItf
+%%]
+
+%%[(8 codegen) hs export(relevtyAppVarLookup)
+relevtyAppVarLookup :: RVarMp -> RelevTy -> RelevTy
+relevtyAppVarLookup varmp ty
+  = repl_Syn_TyAGItf t
+  where t = wrap_TyAGItf
+              (sem_TyAGItf (TyAGItf_AGItf ty))
+              (Inh_TyAGItf {rvarMp_Inh_TyAGItf = varmp})
+%%]
+
+%%[(8 codegen) hs export(relevqualAppVarLookup)
+relevqualAppVarLookup :: RVarMp -> RelevQual -> RelevQual
+relevqualAppVarLookup varmp qual
+  = repl_Syn_QualAGItf t
+  where t = wrap_QualAGItf
+              (sem_QualAGItf (QualAGItf_AGItf qual))
+              (Inh_QualAGItf {rvarMp_Inh_QualAGItf = varmp})
+%%]
+
+%%[(8 codegen) hs export(relevcoeAppVarLookup)
+relevcoeAppVarLookup :: RVarMp -> RelevCoe -> RelevCoe
+relevcoeAppVarLookup varmp coe
+  = repl_Syn_CoeAGItf t
+  where t = wrap_CoeAGItf
+              (sem_CoeAGItf (CoeAGItf_AGItf coe))
+              (Inh_CoeAGItf {rvarMp_Inh_CoeAGItf = varmp})
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% VarMp
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR TyAGItf QualAGItf CoeAGItf AllNT [ rvarMp: RVarMp | | ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Replacement
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+SEM AnaEval
+  | Var             inst    .   repl'       :   AnaEval
+                    (loc.replv,loc.isRepl)  =   maybe (@repl,False) (\t -> (t,True)) $ rvmiMbEval $? varmpLookup @av @lhs.rvarMp
+                    inst    .   repl'       =   @replv
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Apply substitution
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen).TySubst
+ATTR AllNT     [ | | repl: SELF  		]
+ATTR TyAGItf   [ | | repl: RelevTy    	]
+ATTR QualAGItf [ | | repl: RelevQual   	]
+ATTR CoeAGItf  [ | | repl: RelevCoe   	]
+%%]
+
+%%[(8 codegen)
+SEM AnaEval
+  | Var             lhs     .   repl        =   if @isRepl
+                                                then @repl'.repl
+                                                else @repl
+%%]
+

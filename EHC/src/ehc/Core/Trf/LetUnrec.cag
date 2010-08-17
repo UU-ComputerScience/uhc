@@ -16,7 +16,7 @@
 %%[(8 codegen) hs import({%{EH}Base.Debug},EH.Util.Utils(scc))
 %%]
 
-%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonToXX},{Core/CommonLev})
+%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonBindNm})
 WRAPPER CodeAGItf
 %%]
 

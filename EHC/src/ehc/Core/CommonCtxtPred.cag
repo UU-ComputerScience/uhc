@@ -1,0 +1,151 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Common AG for Core: predicates about context of something
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Binding global?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AllBind [ isGlobal: Bool | | ]
+
+SEM CExpr
+  | Let         loc	       	.   isGlobal    =   @lhs.lev == cLevModule
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Let context
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AllBind [ letBindingsCateg: CBindingsCateg | | ]
+
+SEM CExpr
+  | Let         loc         .   letBindingsCateg    =   @categ
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Is top App? Is top Tup adapt?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR CExpr [ isTopApp: Bool  isTopTup: Bool | | ]
+
+SEM CExpr
+  | App         func        .   isTopApp    =   False
+                arg         .   isTopApp    =   True
+  | * - App Ann loc         .   isTopApp    =   True
+  | TupUpd TupIns TupDel
+                expr        .   isTopTup    =   False
+                loc         .   isTopTup    =   True
+  | * - TupUpd TupIns TupDel Ann
+                loc         .   isTopTup    =   True
+
+SEM CModule
+  | Mod         expr        .   isTopApp    =   True
+                            .   isTopTup    =   True
+
+SEM CBindAspect
+  | Bind        expr        .   isTopApp    =   True
+                            .   isTopTup    =   True
+
+SEM CPatFld
+  | Fld         offset      .   isTopApp    =   True
+                            .   isTopTup    =   True
+
+SEM CAlt
+  | Alt         expr        .   isTopApp    =   True
+                            .   isTopTup    =   True
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Various contextual info, this should replace the above over time
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR CExpr [ | | whatBelow: WhatExpr ]
+
+SEM CExpr
+  | Lam         loc         .   whatBelow       =   ExprIsLam
+  | Var         loc         .   whatBelow       =   ExprIsVar @nm
+  | Int         loc         .   whatBelow       =   ExprIsInt @int
+  | * - Lam Var Int Ann
+                loc         .   whatBelow       =   ExprIsOther
+%%]
+
+%%[(8 codegen)
+ATTR CExpr [ whatAbove: WhatExpr | | ]
+
+SEM CExpr
+  | Lam			loc			.	whatAbove		=	ExprIsLam
+  | App			loc			.	whatAbove		=	ExprIsApp
+  | * - Lam App Ann
+  				loc			.	whatAbove		=	ExprIsOther
+
+SEM CBindAspect
+  | Bind		loc			.	whatAbove		=	ExprIsOther
+
+SEM CPatFld
+  | Fld 		loc			.	whatAbove		=	ExprIsOther
+
+SEM CAlt
+  | Alt			loc			.	whatAbove		=	ExprIsOther
+
+SEM CModule
+  | Mod			loc			.	whatAbove		=	ExprIsOther
+%%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Context: strict yes/no, rhs of lam yes/no
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin)
+ATTR CExpr AllAlt AllBind [ isStrict, isLamBody: Bool | | ]
+
+SEM CModule
+  | Mod         expr        .   isStrict    =   True
+                            .   isLamBody   =   False
+
+SEM CBindAspect
+  | Bind        expr        .   isStrict    =   @lhs.isStrict || @expr.whatBelow == ExprIsLam
+
+SEM CPatFld
+  | Fld         offset      .   isStrict    =   True
+                            .   isLamBody   =   False
+
+SEM CExpr
+  | Let			binds		.	isStrict	=	@isGlobal || @categ == CBindings_Strict
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Context: evaluation context (to replace isStrict), partially overridden in AG which includes this
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+not used yet as it seems not to be equivalent to isStrict. Can't find out why...
+
+%%[(8 codegen)
+ATTR CExpr AllAlt AllBind [ evalCtx: EvalCtx | | ]
+
+SEM CModule
+  | Mod         expr        .   evalCtx         =   EvalCtx_Eval
+
+SEM CPatFld
+  | Fld         offset      .   evalCtx         =   EvalCtx_Eval
+
+
+SEM CExpr
+  | Let         loc         .   evalCtx         =   if @categ == CBindings_Strict
+                                                    then EvalCtx_Eval
+                                                    else EvalCtx_None
+%%]
+
+SEM CBindAspect
+  | Bind        expr        .   evalCtx         =   if @expr.whatBelow == ExprIsLam
+                                                    then EvalCtx_Eval
+                                                    else @lhs.evalCtx

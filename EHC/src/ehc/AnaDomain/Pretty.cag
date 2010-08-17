@@ -1,0 +1,152 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% AnaDomain Pretty Printer
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs module {%{EH}AnaDomain.Pretty} import(EH.Util.Pretty,{%{EH}AnaDomain})
+%%]
+
+%%[(8 codegen) hs import({%{EH}Base.Common})
+%%]
+
+%%[(8 codegen) hs import(qualified Data.Map as Map, Data.Char)
+%%]
+
+%%[(8 codegen).WRAPPER ag import({AnaDomain/AbsSyn})
+WRAPPER
+  RelevTy RelevQual RelevCoe AnaEval
+%%]
+
+%%[(8 codegen) hs export(ppRelevTy)
+ppRelevTy :: RelevTy -> (PP_Doc,VarPPMp)
+ppRelevTy x
+  =  let  t = wrap_RelevTy (sem_RelevTy x)
+                           (Inh_RelevTy
+                             { varMp_Inh_RelevTy = Map.empty
+                             })
+     in   (pp_Syn_RelevTy t, quantVarMp_Syn_RelevTy t)
+
+instance PP RelevTy where
+  pp x = fst $ ppRelevTy x
+%%]
+
+%%[(8 codegen) hs export(ppRelevQual)
+ppRelevQual :: RelevQual -> PP_Doc
+ppRelevQual x
+  =  let  t = wrap_RelevQual (sem_RelevQual x)
+                             (Inh_RelevQual
+                               { varMp_Inh_RelevQual = Map.empty
+                               })
+     in   (pp_Syn_RelevQual t)
+
+instance PP RelevQual where
+  pp x = ppRelevQual x
+%%]
+
+%%[(8 codegen) hs export(ppAnaEval)
+ppAnaEval :: AnaEval -> PP_Doc
+ppAnaEval x
+  =  let  t = wrap_AnaEval (sem_AnaEval x)
+                             (Inh_AnaEval
+                               { varMp_Inh_AnaEval = Map.empty
+                               })
+     in   (pp_Syn_AnaEval t)
+
+instance PP AnaEval where
+  pp x = ppAnaEval x
+%%]
+
+%%[(8 codegen) hs export(ppRelevCoe)
+ppRelevCoe :: VarPPMp -> RelevCoe -> PP_Doc
+ppRelevCoe vm x
+  =  let  t = wrap_RelevCoe (sem_RelevCoe x)
+                             (Inh_RelevCoe
+                               { varMp_Inh_RelevCoe = vm
+                               })
+     in   (pp_Syn_RelevCoe t)
+
+instance PP RelevCoe where
+  pp x = ppRelevCoe Map.empty x
+%%]
+
+%%[(8 codegen) hs
+instance Show RVarMpInfo where
+  show _ = "RVarMpInfo"
+
+instance PP RVarMpInfo where
+  pp (RVMIEval a) = pp a
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Pretty printed code
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AllNT [ | | pp USE {>-<} {empty} : PP_Doc ]
+
+SEM RelevTy
+  | None        lhs         .   pp          =   pp "#"
+  | Err         lhs         .   pp          =   "#:" >#< @str
+  | Ana         lhs         .   pp          =   @eval.pp
+  | Fun         lhs         .   pp          =   (if null @quantNmL then empty else "forall" >#< ppSpaces @quantNmL >#< ". ")
+                                                >|< (if null @quals.ppL then empty else ppParensCommas' @quals.ppL >#< "=> ")
+                                                >|< ppParensCommas @args.ppL >#< "->" >#< ppParens @res.pp
+
+SEM RelevQual
+  | SubEval		lhs			.	pp			=	@l.pp >#< "<e=" >#< @r.pp
+
+SEM RelevCoe
+  | Id 			lhs			.	pp			=	pp "#_c"
+  | Err         lhs         .   pp          =   "#_c:" >#< @str
+  | Qual 		lhs			.	pp			=	"(q_c" >#< @qual.pp >|< ")"
+  | Eval 		lhs			.	pp			=	ppParens $ @from.pp >#< "~e>" >#< @to.pp
+  | Comp		lhs			.	pp			=	@l.pp >#< "._c" >#< @r.pp
+  | Fun			lhs			.	pp			=	ppParensCommas' @args.ppL >#< "-c>" >#< @res.pp
+
+SEM AnaEval
+  | Var         lhs         .   pp          =   Map.findWithDefault (pp @av) @av @lhs.varMp
+  | WHNF        lhs         .   pp          =   pp "S"
+  | Lazy        lhs         .   pp          =   pp "L"
+  | Meet        lhs         .   pp          =   ppListSep "" "" " /\\ " @opnds.ppL
+  | Join        lhs         .   pp          =   ppListSep "" "" " \\/ " @opnds.ppL
+
+%%]
+
+%%[(8 codegen)
+SEM RelevTyL RelevQualL AnaEvalL RelevCoeL [ | | ppL: {[PP_Doc]} ]
+  | Nil         lhs         .   ppL         =   []
+  | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Var map
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs export(VarPPMp)
+type VarPPMp = Map.Map UID PP_Doc
+%%]
+
+%%[(8 codegen)
+ATTR AllNT [ varMp: VarPPMp | | ]
+
+SEM QualAGItf TyAGItf CoeAGItf
+  | AGItf		loc			.	varMp		=	Map.empty
+
+SEM RelevTy
+  | Fun         loc         .   (varMp,quantNmL)
+                                            =   genNmMap pp @quants @lhs.varMp
+%%]
+
+%%[(8 codegen)
+ATTR TyAGItf RelevTy [ | | quantVarMp: VarPPMp ]
+
+SEM RelevTy
+  | Fun         loc         .   quantVarMp  =   @varMp
+  | * - Fun		loc			.	quantVarMp  =   Map.empty
+%%]
+

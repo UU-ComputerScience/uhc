@@ -10,6 +10,9 @@
 %%[8 module {%{EH}Base.Strictness} import({%{EH}Base.Common})
 %%]
 
+%%[(20 codegen) hs import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
+%%]
+
 %%[(8 codegen) hs export(Strictness(..))
 data Strictness
   = Strict
