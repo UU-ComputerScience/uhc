@@ -1,0 +1,254 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Optimize TyCore based on strictness annotations
+%%%
+%%% Note, this transformation:
+%%%  - Requires explicit Lazy/Delay/Force constructs
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen tauphi) hs module {%{EH}TyCore.Trf.OptimizeStrictness2of2}
+%%]
+
+%%[(8 codegen tauphi) hs import({%{EH}TyCore.Trf.Common})
+%%]
+
+%%[(8 codegen tauphi) hs import({%{EH}Base.Strictness})
+%%]
+ 
+%%[(8 codegen tauphi) hs import({%{EH}Base.Builtin},{%{EH}Base.Opts},{%{EH}Base.Common})
+%%]
+
+%%[(8 codegen tauphi) hs import(Control.Applicative)
+%%]
+
+%%[(8 codegen tauphi) hs import(Data.Maybe, Data.Monoid, Data.List)
+%%]
+
+%%[(8 codegen tauphi) hs import(qualified Data.Map as Map)
+%%]
+
+%%[(8 codegen tauphi) hs import({%{EH}TyCore})
+%%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Wrapping
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen tauphi).WRAPPER ag import({TyCore/Trf/ConstructTypeEnvironment})
+WRAPPER AGItf
+%%]
+
+%%[(8 codegen tauphi)
+PRAGMA nocycle
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell itf
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen tauphi).tcmodTrfOptimizeStrictness2of2 hs
+cmodTrfOptimizeStrictness2of2 :: Module -> Module
+cmodTrfOptimizeStrictness2of2 tcmod
+  = let  t = wrap_AGItf (sem_AGItf (AGItf_AGItf tcmod)) Inh_AGItf
+    in   cTrf_Syn_AGItf t
+%%]
+
+%%[(8 codegen tauphi)
+ATTR AGItf [ | | cTrf : Module ]
+
+SEM AGItf
+  | AGItf       lhs         .   cTrf        =   @module.cTrf
+%%]
+
+%%[(8 codegen tauphi)
+ATTR AllCodeNT
+  [
+  |
+  | cTrf    : SELF
+    wrapper : SELF
+  ]
+ATTR AllExpr
+  [ newParams   : {Map.Map HsName (Maybe ValBind, [ExprSeq1])}
+  |
+  |
+  ]
+ATTR Expr
+  [
+  |
+  |
+    mbVarNm    USE {<|>} {Nothing} : {Maybe HsName}
+    appArgs    USE {++}  {[]}      : {[Expr]}
+    wrapperArgs                    : {[Expr]}
+  ]
+ATTR AllExprBase
+  [
+    workWrapSeq : {Seq WorkWrap}
+    workWrap    : {WorkWrap}
+    bindType    : {BindType}
+    lamArgsSeq  : {Seq [[Expr]]}
+    lamArgs     : {[[Expr]]}
+    workerNmSeq : {Seq HsName}
+    workerNm    : {HsName}
+  |
+  |
+    workWrap    USE {|||}       {Ignored}   : {WorkWrap}
+    workWrapSeq USE {`mappend`} {mempty}    : {Seq WorkWrap}
+    lamArgsSeq  USE {`mappend`} {mempty}    : {Seq [[Expr]]}
+    lamArgs                                 : {[[Expr]]}
+    wrapperSeq  USE {`mappend`} {mempty}    : {Seq Expr}
+    workerNmSeq USE {`mappend`} {mempty}    : {Seq HsName}
+  ]
+
+
+-- Worker/Wrapper
+SEM ExprSeq1L
+  | Cons
+                lhs         .   cTrf        =   if @lhs.bindType == NoBind
+                                                then @cTrf
+                                                else case head @lhs.workWrapSeq of
+                                                       UpdatedWrapper -> @hd.wrapper : @tl.cTrf
+                                                       _              -> @hd.cTrf    : @tl.cTrf
+                            .   workWrapSeq =   @hd.workWrap : @tl.workWrapSeq
+                hd
+                            .   workWrap    =   head @lhs.workWrapSeq
+                            .   workerNm    =   head @lhs.workerNmSeq
+                            .   bindType    =   NoBind
+                tl
+                            .   workWrapSeq =   tail @lhs.workWrapSeq
+                            .   workerNmSeq =   tail @lhs.workerNmSeq
+
+SEM ExprSeq1
+  | L0Val
+                l0          .   newParams   =   strictParams @l0.wrapperArgs
+  | L0Bind L1Bind L2Bind
+                lhs         .   workerNmSeq =   [@workerNm]
+                loc         .   workWrap    =   case (@isWorker, @isWrapper) of
+                                                  (False, True) -> UpdatedWrapper
+                                                  (_,     _)    -> Ignored
+                            .   workerNm    =   hsnFromString (show @nm ++ "_worker")
+                            .   isWorker    =   "_worker" `isSuffixOf` show @nm
+                            .   isWrapper   =   hsnFromString (show @nm ++ "_worker") `Map.member` @lhs.tyEnv
+                            .   hasWorker   =   any (\x -> length x > 1) @lhs.lamArgs
+
+
+SEM ValBind
+  | Val
+                bind        .   bindType    =   NameTypeBind
+                            .   lamArgsSeq  =   @lamArgsSeq
+                            .   workWrapSeq =   @bind.workWrapSeq
+                            --  Dummy data
+                            .   lamArgs     =   []
+
+                l0          .   bindType    =   BodyBind
+                            .   lamArgsSeq  =   @lamArgsSeq
+                            .   workWrapSeq =   @bind.workWrapSeq
+                            .   workerNmSeq =   @bind.workerNmSeq
+
+                bindMeta    .   bindType    =   NoBind
+                loc         .   lamArgsSeq  =   @l0.lamArgsSeq ++ repeat [] -- example: let [x, y] = dup [3]
+
+SEM Expr
+  | Let
+                lhs         .   lamArgs     =   [] : @body.lamArgs
+  | Lam
+                lhs         .   lamArgs     =   list (\xs xss -> (@arg.cTrf : xs) : xss) [[@arg.cTrf]] @res.lamArgs
+                lhs         .   wrapperArgs =   @arg.copy : @res.wrapperArgs
+  | * - Lam Let
+                lhs         .   lamArgs     =   []
+                lhs         .   wrapperArgs =   []
+
+SEM Expr
+  | App
+                lhs         .   wrapper     =   if @func.mbVarNm == Just @lhs.workerNm
+                                                then updatedWrapperApp @lhs.workerNm @appArgs @lhs.newParams
+                                                else @wrapper
+                loc         .   appArgs     =   @func.appArgs ++ [@arg.copy]
+  | Var
+                lhs         .   mbVarNm     =   Just @nm
+
+  -- Code below not correct, removes annotations that shouldn't have
+  | Ann
+                lhs         .   wrapper     =   if @ann.cTrf == ExprAnn_Strictness Strict
+                                                then @expr.wrapper
+                                                else @wrapper
+
+{
+strictParams :: [Expr] -> Map.Map HsName (Maybe ValBind, [ExprSeq1])
+strictParams args = Map.unions $ map (Map.unions . map argNms . unSeqs) args
+  where
+    argNms (ExprSeq1_L0Bind nm m e) = argNms' (flip ExprSeq1_L0Bind m) (flip ExprSeq1_L0Val m) nm e
+    argNms (ExprSeq1_L1Bind nm e)   = argNms' ExprSeq1_L1Bind ExprSeq1_L1Val nm e
+    argNms (ExprSeq1_L2Bind nm e)   = argNms' ExprSeq1_L2Bind ExprSeq1_L2Val nm e
+    argNms _                        = Map.empty
+
+    argNms' eb ev nm e = case (argElem e) of
+                        (b, es')  -> Map.singleton nm $ ( if b then Just $ ValBind_Val (Expr_Seq $ zipWith (\x e' -> eb (mkHNm $ show nm ++ "_" ++ show x) e') [0..] es') Nothing 0 (Expr_Force $ Expr_Var nm) else Nothing
+                                                        , zipWith (\x _ -> ev (Expr_Var $ if b then mkHNm (show nm ++ "_" ++ show x) else nm)) [0..] es')
+
+    argElem (Expr_Lazy (Expr_Seq es))
+      | all (ExprAnn_Strictness Strict `elem`) (map annsSeq1 es) = (True, map (unStrict . exprSeq1ToExpr) es)
+    argElem (Expr_Lazy e)
+      | ExprAnn_Strictness Strict `elem` anns e                  = let (_, x) = argElem e in (True, x)
+    argElem (Expr_Ann (ExprAnn_Strictness Strict) e)             = let (_, x) = argElem e in (True, x)
+    argElem e = (False, [e])
+
+anns :: Ty -> [ExprAnn]
+anns (Expr_Lazy e)  = anns e
+anns (Expr_Ann a e) = a : anns e
+anns _              = []
+
+annsSeq1 :: ExprSeq1 -> [ExprAnn]
+annsSeq1 (ExprSeq1_L0Val e _)    = anns e
+annsSeq1 (ExprSeq1_L0LblVal _ e) = anns e
+annsSeq1 (ExprSeq1_L0TagVal _ e) = anns e
+annsSeq1 (ExprSeq1_L0Bind _ _ e) = anns e
+annsSeq1 (ExprSeq1_L1Val e)      = anns e
+annsSeq1 (ExprSeq1_L1Bind _ e)   = anns e
+annsSeq1 (ExprSeq1_L2Val e)      = anns e
+annsSeq1 (ExprSeq1_L2Bind _ e)   = anns e
+
+unStrict :: Expr -> Expr
+unStrict (Expr_Seq es)                                       = Expr_Seq $ map (argMap unStrict) es
+unStrict (Expr_Lazy (Expr_Seq es))
+  | all (ExprAnn_Strictness Strict `elem`) (map annsSeq1 es) = Expr_Seq $ map (argMap unStrict) es
+unStrict (Expr_Lazy e)
+  | ExprAnn_Strictness Strict `elem` anns e                  = unStrict e
+unStrict (Expr_Ann (ExprAnn_Strictness Strict) e)            = unStrict e
+unStrict e                                                   = e
+
+argMap :: (Expr -> Expr) -> ExprSeq1 -> ExprSeq1
+argMap f (ExprSeq1_L0Val e m)     = ExprSeq1_L0Val (f e) m
+argMap f (ExprSeq1_L0LblVal nm e) = ExprSeq1_L0LblVal nm (f e)
+argMap f (ExprSeq1_L0TagVal t e)  = ExprSeq1_L0TagVal t (f e)
+argMap f (ExprSeq1_L0Bind nm m e) = ExprSeq1_L0Bind nm m (f e)
+argMap f (ExprSeq1_L1Val e)       = ExprSeq1_L1Val (f e)
+argMap f (ExprSeq1_L1Bind nm e)   = ExprSeq1_L1Bind nm (f e)
+argMap f (ExprSeq1_L2Val e)       = ExprSeq1_L2Val (f e)
+argMap f (ExprSeq1_L2Bind nm e)   = ExprSeq1_L2Bind nm (f e)
+
+updatedWrapperApp :: HsName -> [Expr] -> Map.Map HsName (Maybe ValBind, [ExprSeq1]) -> Expr
+updatedWrapperApp nm args pmEnv =
+  (if null binds then id else Expr_Let ValBindCateg_Plain binds)
+  $ foldl Expr_App (Expr_Var nm) (map (Expr_Seq . concatMap arg . unSeqs) args)
+  where
+    binds = concatMap (concatMap bnd . unSeqs) args
+
+    bnd (ExprSeq1_L0Val (Expr_Delay (Expr_Force (Expr_Var nm))) _) = bnd' nm
+    bnd (ExprSeq1_L0Val (Expr_Force (Expr_Var nm)) _)              = bnd' nm
+    bnd (ExprSeq1_L0Val (Expr_Var nm) _)                           = bnd' nm
+
+    bnd' nm = maybeToList $ fst $ fromJust $ Map.lookup nm pmEnv
+
+    arg (ExprSeq1_L0Val (Expr_Delay (Expr_Force (Expr_Var nm))) _) = arg' nm
+    arg (ExprSeq1_L0Val (Expr_Force (Expr_Var nm)) _)              = arg' nm
+    arg (ExprSeq1_L0Val (Expr_Var nm) _)                           = arg' nm
+
+    arg' nm = snd $ fromJust $ Map.lookup nm pmEnv
+}
+%%]
+

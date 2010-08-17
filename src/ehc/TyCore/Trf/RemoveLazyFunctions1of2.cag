@@ -1,0 +1,137 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Remove lazy bound lambdas, part 1 of 2
+%%%
+%%% First part of transformation, removes unnecessary lazy definitions.
+%%% Note that the output of this first part is not a Type Correct program.
+%%% 
+%%% For example:
+%%% > let id = {\x -> |x|}
+%%% >     id :: {{Int} -> Int}
+%%% > in |id|
+%%% 
+%%% Becomes:
+%%% > let id = \x -> |x|
+%%% >     id :: {Int} -> Int
+%%% > in |id|
+%%% 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen tauphi) hs module {%{EH}TyCore.Trf.RemoveLazyFunctions1of2}
+%%]
+
+%%[(8 codegen tauphi) hs import({%{EH}TyCore.Trf.Common})
+%%]
+
+%%[(8 codegen tauphi) hs import({%{EH}Base.Strictness})
+%%]
+ 
+%%[(8 codegen tauphi) hs import({%{EH}Base.Builtin},{%{EH}Base.Opts},{%{EH}Base.Common})
+%%]
+
+%%[(8 codegen tauphi) hs import(Data.Maybe, Data.Monoid)
+%%]
+
+%%[(8 codegen tauphi) hs import(qualified Data.Map as Map)
+%%]
+
+%%[(8 codegen tauphi) hs import({%{EH}TyCore})
+%%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Wrapping
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen tauphi).WRAPPER ag import({TyCore/AbsSyn})
+WRAPPER AGItf
+%%]
+
+%%[(8 codegen tauphi)
+PRAGMA nocycle
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell itf
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen tauphi).tcmodTrfRemoveLazyFunctions1of2 hs
+cmodTrfRemoveLazyFunctions1of2 :: Module -> Module
+cmodTrfRemoveLazyFunctions1of2 tcmod
+  =  let  t = wrap_AGItf (sem_AGItf (AGItf_AGItf tcmod)) Inh_AGItf
+     in   cTrf_Syn_AGItf t
+%%]
+
+%%[(8 codegen tauphi)
+ATTR AGItf [ | | cTrf : Module ]
+
+SEM AGItf
+  | AGItf       lhs         .   cTrf        =   @module.cTrf
+%%]
+
+%%[(8 codegen tauphi)
+ATTR AllCodeNT [ | | cTrf : SELF ]
+ATTR AllExpr
+  [ boundLazyL  : {[Bool]}
+    boundLazy   : {Bool}
+  |
+  | isDelayLamL  USE {`mappend`} {mempty}   : {[Bool]}
+    isDelayLam   USE {||}        {False}    : {Bool}
+  ]
+
+-- Top level environment propagation
+
+SEM Module
+  | Mod
+                loc         .   boundLazyL  =   repeat @boundLazy
+                loc         .   boundLazy   =   False
+
+SEM ValBind
+  | Val
+                bind        .   boundLazyL  =   @l0.isDelayLamL
+
+SEM ExprSeq1L
+  | Cons
+                lhs         .   isDelayLamL =   @hd.isDelayLam : @tl.isDelayLamL
+                hd          .   boundLazy   =   head @lhs.boundLazyL
+                tl          .   boundLazyL  =   tail @lhs.boundLazyL
+
+-- Remove laziness
+
+SEM Expr
+  | Delay
+                lhs         .   cTrf        =   if @isDelayLam
+                                                then @expr.cTrf
+                                                else @cTrf
+
+  | Lazy
+                lhs         .   cTrf        =   if @lhs.boundLazy
+                                                then @expr.cTrf
+                                                else @cTrf
+                expr        .   boundLazyL  =   repeat False
+%%]
+
+%%[(8 codegen tauphi)
+-- Attributes that are needed because AG doesn't have pattern matching
+
+ATTR Expr
+  [
+  |
+  | isLam       : {Bool}
+  ]
+
+SEM Expr
+  | Lam
+                lhs         .   isLam       =   True
+  | * - Lam
+                lhs         .   isLam       =   False
+  | Delay
+                loc         .   isDelayLam  =   @expr.isLam
+  | * - Delay
+                lhs         .   isDelayLam  =   False
+%%]
+

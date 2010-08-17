@@ -41,6 +41,8 @@
 %%]
 %%[(8 codegen) hs export(MetaVal(..), MetaBind(..), Metas, MbMetaVal, MbMetas) 
 %%]
+%%[(20 codegen grin) hs import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
+%%]
 
 %%[(90 codegen) hs import({%{EH}Foreign}) export(module {%{EH}Foreign})
 %%]
@@ -48,6 +50,12 @@
 %%[(8 codegen) ag import({TyCore/AbsSyn})
 DERIVING *     : Show, Eq
 %%]
+
+%%[(8 codegen) hs export(emptyModule)
+emptyModule :: Module
+emptyModule = Module_Mod (hsnFromString "") [] []
+%%]
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Alias for Ty being also a TySeq
@@ -79,6 +87,15 @@ data ValBindCateg
   | ValBindCateg_FFE				-- exported function (not implemented yet)
 %%]]
   deriving (Show,Eq)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Annotation function for TyCore
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs export(ann)
+ann :: String -> Expr -> Expr
+ann s e = Expr_Ann (ExprAnn_Annotation s) e
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -149,11 +166,21 @@ unTySeq1 :: TySeq -> Ty
 unTySeq1 = unExprSeq1
 %%]
 
-%%[(8 codegen) hs
+%%[(8 codegen) hs export(unSeq, unSeqs, isSeq)
 unSeq :: Expr -> ExprSeq1
 unSeq (Expr_Seq1 s ) = s
 unSeq (Expr_Seq [s]) = s
 unSeq t              = panic "TyCore.unSeq"
+
+unSeqs :: Expr -> [ExprSeq1]
+unSeqs (Expr_Seq1 s) = [s]
+unSeqs (Expr_Seq es) = es
+unSeqs t             = panic "TyCore.unSeqs"
+
+isSeq :: Expr -> Bool
+isSeq Expr_Seq1{} = True
+isSeq Expr_Seq{}  = True
+isSeq _           = False
 %%]
 
 %%[(8 codegen) hs export(mkTySeqVals,mkTySeqNmVals)
@@ -207,6 +234,15 @@ tyUnThunkTySeq t                            = tyErr "TyCore.tyUnThunkTySeq"
 
 tyUnThunkTy :: Ty -> Ty
 tyUnThunkTy = unTySeq . tyUnThunkTySeq
+%%]
+
+%%[(8 codegen) hs export(lazy, unLazy)
+lazy :: Ty -> Ty
+lazy t = Expr_Lazy t
+
+unLazy :: Ty -> Ty
+unLazy (Expr_Lazy t) = t
+unLazy _             = tyErr "TyCore.unLazy"
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -280,6 +316,33 @@ mkExprThunk e = Expr_Lam (Expr_Seq []) e
 %%[(8 codegen) hs export(mkExprUnThunk)
 mkExprUnThunk :: Expr -> Expr
 mkExprUnThunk e = Expr_App e (Expr_Seq [])
+%%]
+
+%%[(8 codegen) hs export(delay, force)
+delay :: Expr -> Expr
+delay (Expr_Force e) = e
+delay e              = Expr_Delay e
+
+force :: Expr -> Expr
+force (Expr_Delay e) = e
+force e              = Expr_Force e
+%%]
+
+%%[(8 codegen) hs export(seqToList, exprSeq1ToExpr)
+seqToList :: Expr -> [Expr]
+seqToList (Expr_Seq es) = map exprSeq1ToExpr es
+seqToList (Expr_Seq1 e) = [exprSeq1ToExpr e]
+seqToList e             = [e]
+
+exprSeq1ToExpr :: ExprSeq1 -> Expr
+exprSeq1ToExpr (ExprSeq1_L0Val    e _)   = e
+exprSeq1ToExpr (ExprSeq1_L0LblVal _ e)   = e
+exprSeq1ToExpr (ExprSeq1_L0TagVal _ e)   = e
+exprSeq1ToExpr (ExprSeq1_L0Bind   _ _ e) = e
+exprSeq1ToExpr (ExprSeq1_L1Val    e)     = e
+exprSeq1ToExpr (ExprSeq1_L1Bind   _ e)   = e
+exprSeq1ToExpr (ExprSeq1_L2Val    e)     = e
+exprSeq1ToExpr (ExprSeq1_L2Bind   _ e)   = e
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -374,6 +437,22 @@ exprMbConst :: Expr -> Maybe Integer
 exprMbConst e@(Expr_Int  i _) = Just i
 exprMbConst e@(Expr_Char c _) = Just $ toInteger $ ord c
 exprMbConst _                 = Nothing
+%%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Instances: Binary, Serialize, ForceEval
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(20 codegen grin) hs
+-- Note: This instance is completely useless.
+-- Should it ever be needed, it will have to be implemented correctly!
+instance Serialize Module where
+  sput (Module_Mod a b c) = sputWord8 0
+  sget
+    = do t <- sgetWord8
+         case t of
+            0 -> return $ Module_Mod (mkHNm "") [] []
 %%]
 
 

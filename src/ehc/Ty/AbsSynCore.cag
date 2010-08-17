@@ -35,6 +35,9 @@ DATA Ty
 DATA TyAnn
   | Empty
 %%[[4
+  | Strictness      s               : Strictness
+%%]]
+%%[[4
   | Mono		-- enforce predicative binding when matching
 %%]]
 %%]

@@ -1,0 +1,50 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% TyCore AST Pretty Printer
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[doesWhat doclatex
+A not-so-pretty AST of TyCore
+%%]
+
+%%[(8 codegen) hs export(ppAST)
+ppAST :: EHCOpts -> Module -> PP_Doc
+ppAST opts cmod
+  = ppAST_Syn_AGItf t
+  where t = wrap_AGItf (sem_AGItf (AGItf_AGItf cmod))
+                       (Inh_AGItf)
+                       --  { opts_Inh_AGItf = opts
+  					   --  , symMp_Inh_AGItf = m
+                       --  })
+        -- m | ehcOptUseTyCore opts `optOptsIsYes` TyCoreOpt_Unicode = symMpUnicode
+        --   | otherwise                                             = symMpPlain
+%%]]
+
+
+%%[(8 codegen) hs module {%{EH}TyCore.PrettyAST} import(EH.Util.Pretty,{%{EH}Base.Builtin},{%{EH}Base.CfgPP},{%{EH}Base.Opts},{%{EH}Base.Common},{%{EH}TyCore},{%{EH}Scanner.Common(tycoreScanOpts)})
+%%]
+
+%%[(8 codegen) hs import({%{EH}Base.Strictness})
+%%]
+
+%%[(8 codegen).WRAPPER ag import({TyCore/AbsSyn})
+WRAPPER
+  AGItf Expr ExprSeq1 ValBind
+%%[[9
+  Metas
+%%]]
+%%]
+
+
+%%[(8 codegen)
+ATTR AllNT AGItf [ | | ppAST USE {>-<} {empty} : PP_Doc ]
+ATTR AllCodeNT [ | | cTrf : SELF ]
+
+SEM AGItf
+  | AGItf       lhs     .  ppAST    =   pp (show @module.cTrf)
+%%]
+

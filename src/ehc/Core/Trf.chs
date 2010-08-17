@@ -166,6 +166,7 @@ trfCore opts modNm trfcore
                       t_ana_relev
                }
 
+        liftTrf :: String -> (CModule -> CModule) -> State TrfCore ()
         liftTrf nm t
           = liftTrf2 nm (flip const) (\c -> (t c,()))
 

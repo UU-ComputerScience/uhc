@@ -586,6 +586,9 @@ DATA ExprAnn
 
 DATA TyExprAnn
   | Empty
+%%[[(8 codegen)
+  | Strictness      s               : Strictness
+%%]]
 
 DATA PatExprAnn
   | Empty

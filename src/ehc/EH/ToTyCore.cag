@@ -98,7 +98,8 @@ ATTR AllExpr AllPatExpr AllCase [ ctyTopDown: {C.Ty} | | ]
 ATTR AllCase [ ctyPatTopDown: {C.Ty} | | ]
 
 SEM Expr
-  | IConst      loc         .   cty         =   C.mkTySeq C.tyInt
+  | IConst      loc         .   cty         =   C.tyInt
+  | CConst      loc         .   cty         =   C.tyChar
   | Var Con     loc         .   cty         =   ctyFromTy @lhs.finTyKiGam @lhs.finTyVarMp @ty_g_
   | Lam         
 %%[[12
@@ -115,7 +116,7 @@ SEM Expr
                 loc         .   ctyTopDownArgBase
                                             =   cSubstApp @func.tcSubstAppSpine $ C.tyUnThunkTySeq $ C.unTySeq @ctyAppArg
                 loc         .   cty         =   @ctyTyAppRes
-  | * - Var Con IConst App AppImpred
+  | * - Var Con IConst CConst App AppImpred
 %%[[12
     AppImpl
 %%]]
@@ -338,6 +339,7 @@ SEM Decl
                             .   moutExpr    =   C.tyMatchBind @ctyExprKnTy @ctyExprTy
                             .   tcSubstLamSpine
                                             =   C.moutCSubst @moutExpr
+  | FFI         loc         .   ctyExprTy   =   C.tyToTyCore fitsInForToTyCore (tyKiGamLookupKi @lhs.finTyKiGam) @ty_sig_expanded
 %%]
 
 %%[(8 codegen)
@@ -474,7 +476,7 @@ SEM AGItf
                                                         map
                                                           (C.cSubstAppValBind True @expr.tcSubst)
                                                           (concatMap snd $
-                                                             (@extraValBindL ++ @expr.frontValBindL ++ @expr.letValBindL
+                                                             ((@extraValBindL ++ @expr.frontValBindL ++ @expr.letValBindL)
 %%[[90
                                                              ++ @expr.backValBindL
 %%]]
@@ -499,8 +501,8 @@ ATTR Expr [ | | tcexpr: {C.Expr} ]
 
 %%[(8 codegen noHmTyRuler)
 SEM Expr
-  | IConst      loc         .   tcexprBase  =   acoreIntTy @cty @int
-  | CConst      loc         .   tcexprBase  =   C.Expr_Char @char @cty
+  | IConst      loc         .   tcexprBase  =   C.mkExprSeq $ C.Expr_Int (toInteger @int) @cty
+  | CConst      loc         .   tcexprBase  =   C.mkExprSeq $ C.Expr_Char @char @cty
   | Var         loc         .   tcexprBase  =   C.mkExprUnThunk $ acoreVar @nm
   | Con         loc         .   tcexprBase  =   C.mkExprUnThunk $ acoreVar @nm
   | SConst      loc         .   tcexprBase  =   acoreBuiltinString @lhs.opts @str
@@ -1237,6 +1239,20 @@ ATTR
 %%]]
           USE {++} {[]}: {C.ValBindL}
     ]
+ATTR AllNT KiExprAnn TyExprAnn ExprAnn PatExprAnn
+  [ | | copy : SELF ]
+
+SEM KiExprAnn
+  | Empty       lhs         .   copy            =   KiExprAnn_Empty
+
+SEM TyExprAnn
+  | *           lhs         .   copy            =   TyExprAnn_Empty
+
+SEM ExprAnn
+  | *           lhs         .   copy            =   ExprAnn_Empty
+
+SEM PatExprAnn
+  | *           lhs         .   copy            =   PatExprAnn_Empty
 %%]
 
 %%[(8 codegen)
@@ -1258,10 +1274,11 @@ SEM Decl
 %%[(8888 codegen)
 %%]
 
-%%[(8888 codegen)
+%%[(8 codegen)
 SEM Decl
   | TySig       lhs         .   valBindL        =   []
-  | FFI         lhs         .   ffiValBindL     =   [ValBind_FFI @callconv @safety @impEnt @nm @ty_sig_expanded]
+  | FFI         lhs         .   ffiValBindL     =   [C.mkValBind1FFI @nm @ctyExprTy @ffiExpr]
+                loc         .   ffiExpr         =   C.Expr_FFI @callconv @safety @impEnt @ctyExprTy
 %%]
 
 %%[(99994 codegen)

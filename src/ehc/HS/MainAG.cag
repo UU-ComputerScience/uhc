@@ -207,8 +207,12 @@ SEM Type
     | NormalApplication
         arguments   .   isAsPred    =   False
 
-SEM AnnotatedType
-    | *
+SEM Constructor
+    | Constructor Infix
+        loc         .   isAsPred    =   False
+
+SEM FieldDeclaration
+    | FieldDeclaration
         loc         .   isAsPred    =   False
 
 SEM Declaration
@@ -263,10 +267,13 @@ SEM Expression
 SEM Declaration
     | *
         loc         .   doGenVarWild=   False
-%%]
-%%[5
-SEM AnnotatedType
-    | Type
+
+SEM Constructor
+    | Constructor Infix
+        loc         .   doGenVarWild=   False
+
+SEM FieldDeclaration
+    | FieldDeclaration
         loc         .   doGenVarWild=   False
 %%]
 

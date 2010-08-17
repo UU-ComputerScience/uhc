@@ -376,6 +376,9 @@ ATTR TyExpr [ | | ty: Ty ]
 SEM TyExpr
   | Con         loc         .   ty                  =   Ty_Con @nm
   | App         loc         .   ty                  =   Ty_App @func.ty @arg.ty
+  | Ann         loc         .   ty                  =   if @ann.isEmpty
+                                                        then @tyExpr.ty
+                                                        else Ty_Ann @ann.ann @tyExpr.ty
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 2.ty
@@ -430,6 +433,25 @@ SEM TyExpr
 %%[(11 hmtyinfer)
 SEM TyExpr
   | Lam         loc         .   ty                  =   mkTyLam [@tv] @tyExpr.ty
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Annotation on TyExprAnn
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(1 hmtyinfer).ty
+ATTR TyExprAnn [ | | ann : TyAnn
+                     isEmpty : Bool ]
+
+SEM TyExprAnn
+  | Empty       lhs         .   ann         =   TyAnn_Empty
+%%[[(8 codegen)
+  | Strictness  lhs         .   ann         =   TyAnn_Strictness @s
+%%]]
+
+SEM TyExprAnn
+  | Empty       lhs         .   isEmpty     =   True
+  | * - Empty   lhs         .   isEmpty     =   False
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

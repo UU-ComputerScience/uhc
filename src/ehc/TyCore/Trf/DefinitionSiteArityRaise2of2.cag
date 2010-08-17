@@ -1,0 +1,190 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Definition-site arity raising in TyCore
+%%%
+%%% To keep sharing when doing partial applications, this will only raise nested lambdas.
+%%%
+%%% For example:
+%%% > \[a] -> \[b] -> let g = f a b
+%%% >                 in \[c] -> [d] -> g c
+%%%
+%%% Becomes:
+%%% > \[a, b] -> let g = f a b
+%%% >            in \[c, d] -> g c
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen tauphi) hs module {%{EH}TyCore.Trf.DefinitionSiteArityRaise2of2}
+%%]
+
+%%[(8 codegen tauphi) hs import({%{EH}TyCore.Trf.Common})
+%%]
+
+%%[(8 codegen tauphi) hs import({%{EH}Base.Strictness})
+%%]
+ 
+%%[(8 codegen tauphi) hs import({%{EH}Base.Builtin},{%{EH}Base.Opts},{%{EH}Base.Common})
+%%]
+
+%%[(8 codegen tauphi) hs import(Control.Applicative)
+%%]
+
+%%[(8 codegen tauphi) hs import(Data.Maybe, Data.Monoid, Data.List)
+%%]
+
+%%[(8 codegen tauphi) hs import(qualified Data.Map as Map)
+%%]
+
+%%[(8 codegen tauphi) hs import({%{EH}TyCore})
+%%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Wrapping
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen tauphi).WRAPPER ag import({TyCore/Trf/ConstructTypeEnvironment})
+WRAPPER AGItf
+%%]
+
+%%[(8 codegen tauphi)
+PRAGMA nocycle
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell itf
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen tauphi).tcmodTrfDefinitionSiteArityRaise hs
+cmodTrfDefinitionSiteArityRaise2of2 :: Module -> Module
+cmodTrfDefinitionSiteArityRaise2of2 tcmod
+  = let  t = wrap_AGItf (sem_AGItf (AGItf_AGItf tcmod)) Inh_AGItf
+    in   cTrf_Syn_AGItf t
+%%]
+
+%%[(8 codegen tauphi)
+ATTR AGItf [ | | cTrf : Module ]
+
+SEM AGItf
+  | AGItf       lhs         .   cTrf        =   @module.cTrf
+%%]
+
+%%[(8 codegen tauphi)
+ATTR AllCodeNT
+  [
+  |
+  | cTrf    : SELF
+    wrapper : SELF
+  ]
+ATTR Expr
+  [
+  |
+  |
+    mbVarNm    USE {<|>} {Nothing} : {Maybe HsName}
+    appArgs    USE {++}  {[]}      : {[Expr]}
+  ]
+ATTR AllExprBase
+  [
+    workWrapSeq : {Seq WorkWrap}
+    workWrap    : {WorkWrap}
+    bindType    : {BindType}
+    lamArgsSeq  : {Seq [[Expr]]}
+    lamArgs     : {[[Expr]]}
+    workerNmSeq : {Seq HsName}
+    workerNm    : {HsName}
+  |
+  |
+    workWrap    USE {|||}       {Ignored}   : {WorkWrap}
+    workWrapSeq USE {`mappend`} {mempty}    : {Seq WorkWrap}
+    lamArgsSeq  USE {`mappend`} {mempty}    : {Seq [[Expr]]}
+    lamArgs                                 : {[[Expr]]}
+    wrapperSeq  USE {`mappend`} {mempty}    : {Seq Expr}
+    workerNmSeq USE {`mappend`} {mempty}    : {Seq HsName}
+  ]
+
+
+-- Worker/Wrapper
+SEM ExprSeq1L
+  | Cons
+                lhs         .   cTrf        =   if @lhs.bindType == NoBind
+                                                then @cTrf
+                                                else case head @lhs.workWrapSeq of
+                                                       UpdatedWrapper -> @hd.wrapper : @tl.cTrf
+                                                       _              -> @hd.cTrf    : @tl.cTrf
+                            .   workWrapSeq =   @hd.workWrap : @tl.workWrapSeq
+                hd
+                            .   workWrap    =   head @lhs.workWrapSeq
+                            .   workerNm    =   head @lhs.workerNmSeq
+                            .   bindType    =   NoBind
+                tl
+                            .   workWrapSeq =   tail @lhs.workWrapSeq
+                            .   workerNmSeq =   tail @lhs.workerNmSeq
+
+SEM ExprSeq1
+  | L0Bind L1Bind L2Bind
+                lhs         .   workerNmSeq =   [@workerNm]
+                loc         .   workWrap    =   case (@isWorker, @isWrapper) of
+                                                  (False, True) -> UpdatedWrapper
+                                                  (_,     _)    -> Ignored
+                            .   workerNm    =   hsnFromString (show @nm ++ "_worker")
+                            .   isWorker    =   "_worker" `isSuffixOf` show @nm
+                            .   isWrapper   =   hsnFromString (show @nm ++ "_worker") `Map.member` @lhs.tyEnv
+                            .   hasWorker   =   any (\x -> length x > 1) @lhs.lamArgs
+
+
+SEM ValBind
+  | Val
+                bind        .   bindType    =   NameTypeBind
+                            .   lamArgsSeq  =   @lamArgsSeq
+                            .   workWrapSeq =   @bind.workWrapSeq
+                            --  Dummy data
+                            .   lamArgs     =   []
+
+                l0          .   bindType    =   BodyBind
+                            .   lamArgsSeq  =   @lamArgsSeq
+                            .   workWrapSeq =   @bind.workWrapSeq
+                            .   workerNmSeq =   @bind.workerNmSeq
+
+                bindMeta    .   bindType    =   NoBind
+                loc         .   lamArgsSeq  =   @l0.lamArgsSeq ++ repeat [] -- example: let [x, y] = dup [3]
+
+SEM Expr
+  | Let
+                lhs         .   lamArgs     =   [] : @body.lamArgs
+  | Lam
+                lhs         .   lamArgs     =   list (\xs xss -> (@arg.cTrf : xs) : xss) [[@arg.cTrf]] @res.lamArgs
+  | * - Lam Let
+                lhs         .   lamArgs     =   []
+
+SEM Expr
+  | App
+                lhs         .   wrapper     =   if @func.mbVarNm == Just @lhs.workerNm
+                                                then updatedWrapperApp @lhs.workerNm @appArgs @wt
+                                                else @wrapper
+                loc         .   wt          =   fromMaybe (tyErr "DefinitionSiteArityRaise2of2: App.workerType lookup")
+                                                (@lhs.workerNm `Map.lookup` @lhs.tyEnv)
+                            .   appArgs     =   @func.appArgs ++ [@arg.copy]
+  | Var
+                lhs         .   mbVarNm     =   Just @nm
+
+{
+updatedWrapperApp :: HsName -> [Expr] -> Ty -> Expr
+updatedWrapperApp nm args wt = foldl Expr_App (Expr_Var nm) (map Expr_Seq $ argss (init $ nrArgs wt) (concatMap unSeqs args))
+  where
+    argss :: [Int] -> [ExprSeq1] -> [[ExprSeq1]]
+    argss _      []   = []
+    argss []     args = [args]
+    argss (x:xs) args = let (args1, args2) = splitAt x args
+                        in args1 : argss xs args2
+
+
+    nrArgs :: Ty -> [Int]
+    nrArgs (Expr_Seq es)    = [length es]
+    nrArgs (Expr_Arrow l r) = nrArgs l ++ nrArgs r
+    nrArgs _                = [1]
+}
+%%]
+

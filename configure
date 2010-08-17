@@ -683,6 +683,7 @@ JAVAC_CMD
 JAR_CMD
 ENABLE_LLVM
 ENABLE_CLR
+ENABLE_TAUPHI
 ranlibCmd
 RANLIB_CMD
 arCmd
@@ -1363,6 +1364,7 @@ Optional Features:
   --enable-java           include java code generation
   --enable-llvm           include llvm code generation
   --enable-clr            include clr code generation
+  --enable-tauphi         include TauPhi language extension and analyses
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -2377,6 +2379,16 @@ else
 fi
 
 ENABLE_CLR=$enableClr
+
+
+# Check whether --enable-tauphi was given.
+if test "${enable_tauphi+set}" = set; then
+  enableval=$enable_tauphi; enableTauPhi=yes
+else
+  enableTauPhi=no
+fi
+
+ENABLE_TAUPHI=$enableTauPhi
 
 
 ### ranlib
@@ -31738,6 +31750,7 @@ JAVAC_CMD!$JAVAC_CMD$ac_delim
 JAR_CMD!$JAR_CMD$ac_delim
 ENABLE_LLVM!$ENABLE_LLVM$ac_delim
 ENABLE_CLR!$ENABLE_CLR$ac_delim
+ENABLE_TAUPHI!$ENABLE_TAUPHI$ac_delim
 ranlibCmd!$ranlibCmd$ac_delim
 RANLIB_CMD!$RANLIB_CMD$ac_delim
 arCmd!$arCmd$ac_delim
@@ -31766,7 +31779,6 @@ HADDOCK_VERSION!$HADDOCK_VERSION$ac_delim
 OPT_GHC_STANDARD_PACKAGES!$OPT_GHC_STANDARD_PACKAGES$ac_delim
 CABAL_BASE_LIB_DEPENDS!$CABAL_BASE_LIB_DEPENDS$ac_delim
 CABAL_EXTRA_LIB_DEPENDS!$CABAL_EXTRA_LIB_DEPENDS$ac_delim
-CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES!$CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES$ac_delim
 _ACEOF
 
   if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 97; then
@@ -31808,6 +31820,7 @@ _ACEOF
 ac_delim='%!_!# '
 for ac_last_try in false false false false false :; do
   cat >conf$$subs.sed <<_ACEOF
+CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES!$CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES$ac_delim
 uuagcCmd!$uuagcCmd$ac_delim
 UUAGC_CMD!$UUAGC_CMD$ac_delim
 gccCmd!$gccCmd$ac_delim
@@ -31874,7 +31887,7 @@ LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 64; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 65; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5
