@@ -328,16 +328,6 @@ force (Expr_Delay e) = e
 force e              = Expr_Force e
 %%]
 
--- %%[(8 codegen) hs export(mkExprSeq, unExprSeq)
--- mkExprSeq :: Expr -> Expr
--- mkExprSeq e@(Expr_Seq [ExprSeq1_L0Val _ _]) = e
--- mkExprSeq e                                 = Expr_Seq [ExprSeq1_L0Val e Nothing]
--- 
--- unExprSeq :: Expr -> Expr
--- unExprSeq (Expr_Seq [ExprSeq1_L0Val e _]) = e
--- unExprSeq e                               = e
--- %%]
-
 %%[(8 codegen) hs export(seqToList, exprSeq1ToExpr)
 seqToList :: Expr -> [Expr]
 seqToList (Expr_Seq es) = map exprSeq1ToExpr es

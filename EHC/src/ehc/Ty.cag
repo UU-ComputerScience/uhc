@@ -1031,14 +1031,6 @@ tyProdArgs   = tyAppArgs
 tyLHdAndTl   = hdAndTl' Ty_Any
 %%]
 
-%%[(4 hmtyinfer) hs
-tyMbAnn :: Ty -> Maybe TyAnn
-tyMbAnn t = case t of {Ty_Ann ann _ -> Just ann ; _ -> Nothing}
-
-tyMbAnnTy :: Ty -> Maybe Ty
-tyMbAnnTy t = case t of {Ty_Ann _ ty -> Just ty ; _ -> Nothing}
-%%]
-
 %%[(4 hmtyinfer || hmtyast).unMkTy.tyConNm hs export(tyMbCon)
 tyMbCon :: Ty -> Maybe HsName
 tyMbCon t = case tyUnAnn t of {Ty_Con nm -> Just nm ; _ -> Nothing}
