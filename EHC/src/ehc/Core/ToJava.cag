@@ -16,7 +16,7 @@
 %%[(90 codegen java) hs import({%{EH}Foreign.Extract})
 %%]
 
-%%[(8 codegen java).WRAPPER ag import({Core/CommonLev},{Core/CommonFFI},{Core/AbsSyn})
+%%[(8 codegen java).WRAPPER ag import({Core/CommonLev},{Core/CommonBindNm},{Core/CommonPred},{Core/CommonFFI},{Core/AbsSyn})
 WRAPPER CodeAGItf
 %%]
 
