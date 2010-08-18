@@ -8,6 +8,8 @@
 %%%
 %%% Note, this transformation:
 %%%  - Requires explicit Lazy/Delay/Force constructs
+%%%  - Be careful when printing Seq attributes, using unsafe operation such as Debug.Trace,
+%%%    these attributes can be defined circularly, forcing it unsafe can cause infinite loops
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen tycore tauphi) hs module {%{EH}TyCore.Trf.OptimizeStrictness2of2}
@@ -32,6 +34,9 @@
 %%]
 
 %%[(8 codegen tycore tauphi) hs import({%{EH}TyCore})
+%%]
+
+%%[(8 codegen tycore tauphi) hs import(EH.Util.Utils)
 %%]
 
 
@@ -105,6 +110,9 @@ ATTR AllExprBase
   ]
 
 
+SEM Module
+  | Mod         loc         .   newParams   =   panic $ "TyCore.Trf.OptimizeStrictness1of2: Mod.*.newParams not initialized"
+
 -- Worker/Wrapper
 SEM ExprSeq1L
   | Cons
@@ -151,6 +159,14 @@ SEM ValBind
 
                 bindMeta    .   bindType    =   NoBind
                 loc         .   lamArgsSeq  =   @l0.lamArgsSeq ++ repeat [] -- example: let [x, y] = dup [3]
+
+                            -- Initialize attributes, to prevent warnings
+                bind        .   workWrap    =   @err "bind.workWrap"
+                            .   workerNmSeq =   @err "bind.workerNmSeq"
+                            .   workerNm    =   @err "bind.workerNm"
+                l0          .   workerNm    =   @err "l0.workerNm"
+                bindMeta    .   workerNm    =   @err "bindMeta.workerNm"
+                loc         .   err         =   \s -> panic $ "TyCore.Trf.OptimizeStrictness1of2: ValBind." ++ s ++ " not initialized"
 
 SEM Expr
   | Let
@@ -241,12 +257,16 @@ updatedWrapperApp nm args pmEnv =
     bnd (ExprSeq1_L0Val (Expr_Delay (Expr_Force (Expr_Var nm))) _) = bnd' nm
     bnd (ExprSeq1_L0Val (Expr_Force (Expr_Var nm)) _)              = bnd' nm
     bnd (ExprSeq1_L0Val (Expr_Var nm) _)                           = bnd' nm
+    bnd (ExprSeq1_L1Val (Expr_Var nm))                             = bnd' nm
+    bnd (ExprSeq1_L2Val (Expr_Var nm))                             = bnd' nm
 
     bnd' nm = maybeToList $ fst $ fromJust $ Map.lookup nm pmEnv
 
     arg (ExprSeq1_L0Val (Expr_Delay (Expr_Force (Expr_Var nm))) _) = arg' nm
     arg (ExprSeq1_L0Val (Expr_Force (Expr_Var nm)) _)              = arg' nm
     arg (ExprSeq1_L0Val (Expr_Var nm) _)                           = arg' nm
+    arg (ExprSeq1_L1Val (Expr_Var nm))                             = arg' nm
+    arg (ExprSeq1_L2Val (Expr_Var nm))                             = arg' nm
 
     arg' nm = snd $ fromJust $ Map.lookup nm pmEnv
 }
