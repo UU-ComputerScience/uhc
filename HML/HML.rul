@@ -1,25 +1,139 @@
 {
-{-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE BangPatterns, MultiParamTypeClasses #-}
 module HML where
 
 import Control.Monad.Error
+import {-# SOURCE #-} Pretty   
+import qualified Data.Map as M
 
-type HsName  = String
-type Decls   = [Decl]
-type TyExprs = [TyExpr]
-type Prefix  = [TyIndex]
+import Data.List
 
 mkName :: String -> HsName
 mkName = id
-}
 
-data Decl
-  con TySig
-    nm      :: HsName
-    tyExpr  :: TyExpr
-  con Val
-    patExpr :: PatExpr
-    expr    :: Expr
+
+type Prefix  = [TyIndex]
+type HsName  = String
+type Env     = M.Map HsName TyExpr
+type Sub     = (HsName, TyExpr)
+type ErrorMessage = String
+
+-- | Get the domain of a Prefix
+domain :: Prefix -> [HsName]
+domain = map varnm_TyIndex_Group
+
+-- | Apply a set of substitution to an environment
+apply :: Env -> Env -> Either Env [ErrorMessage]
+apply sub env 
+  = let subs = M.toList sub
+        lst  = map (M.mapMaybe . app) subs
+        set  = foldl' (.) id lst
+    in Left (set env)
+    
+-- | Apply a substitution
+createMask :: Sub -> (TyExpr -> Maybe TyExpr)
+createMask (nm, ty) = mask
+ where rep :: TyExpr -> Maybe TyExpr
+       rep val = case isTyVar val nm of
+                   False -> return val
+                   True  -> return ty
+                   
+       mask :: TyExpr -> Maybe TyExpr
+       mask val = case val of
+                    TyExpr_App a b -> 
+                      do a' <- rep a
+                         b' <- rep b
+                         return $ TyExpr_App a' b'
+                    TyExpr_AppTop a ->
+                      do a' <- rep a
+                         return $ TyExpr_AppTop a'
+                    TyExpr_Parens a ->
+                      do a' <- rep a
+                         return $ TyExpr_Parens a'
+                    TyExpr_Ann a b ->
+                      do b' <- rep b
+                         return $ TyExpr_Ann a b'
+                    TyExpr_Quant a b c ->
+                      do c' <- rep c
+                         return $ TyExpr_Quant a b c'
+                    x -> rep x
+       
+class Normal a where
+  nf :: a -> a
+  
+class Util a => Apply a where
+  app :: Sub -> a -> Maybe a
+  
+class Util a where
+  ftv :: a -> [HsName]
+  
+  isTyVar :: a -> HsName -> Bool
+  isTyVar _ _ = False
+  
+  isUnQualTy :: a -> Bool
+  isUnQualTy = const False
+  
+instance Apply TyExpr where
+    app = createMask
+  
+instance Util TyExpr where
+    ftv (TyExpr_App     a b) = ftv a ++ ftv b
+    ftv (TyExpr_AppTop    a) = ftv a
+    ftv (TyExpr_Parens    a) = ftv a
+    ftv (TyExpr_Ann     _ a) = ftv a
+    ftv (TyExpr_Var       a) = [a]
+    ftv (TyExpr_VarWild   a) = [a]
+    ftv (TyExpr_Quant _ a b) = (nub $ ftv b) \\ [a]
+    ftv                    _ = []
+
+    isTyVar (TyExpr_Var nm) hsnm = hsnm == nm
+    isTyVar _ _                   = False
+    
+    isUnQualTy (TyExpr_Quant{}) = False
+    isUnQualTy _                = True 
+  
+instance Apply TyScheme where
+    app tp = mask
+         where                           
+           mask :: TyScheme -> Maybe TyScheme
+           mask val = case val of
+                        TyScheme_Quant a b -> 
+                          do b' <- app tp b
+                             return $ TyScheme_Quant a b'
+                        TyScheme_SystemF a ->
+                          do a' <- app tp a
+                             return $ TyScheme_SystemF a'
+                        _                  -> return val
+                        
+
+instance Util TyScheme where
+    ftv TyScheme_Bottom      = []
+    ftv (TyScheme_SystemF a) = ftv a
+    ftv (TyScheme_Quant a b) = (nub $ ftv b) \\ (ftv a)
+
+    isTyVar (TyScheme_SystemF a) = isTyVar a
+    
+    isUnQualTy (TyScheme_SystemF a) = isUnQualTy a
+    isUnQualTy _                    = True  
+
+instance Util Scheme where
+    ftv (Scheme_Simple a b) = a : ftv b
+  
+instance Normal TyScheme where
+  nf (TyScheme_Quant (Scheme_Simple a phi1) phi2)
+       | a `notElem` (ftv phi2) = nf phi2
+       | isTyVar (nf phi2) a    = nf phi1
+       | isUnQualTy (nf phi1)   = let x = app (a, phi1') phi2
+                                      (TyScheme_SystemF phi1') = nf phi1
+                                  in maybe (error "Substitution failed in Normal for UnQualTy") nf x
+       | otherwise              = TyScheme_Quant (Scheme_Simple a (nf phi1)) (nf phi2)
+  nf a = a 
+
+extend :: (Prefix, Scheme) -> (Prefix, Env)
+extend (q, Scheme_Simple var phi) 
+ = let p = nf phi
+   in undefined
+}
     
 data TyQu
   con TyForall
@@ -48,30 +162,35 @@ data TyExpr
     tyVar   :: HsName
     tyExpr  :: TyExpr
     
-{ -- Type Index }
+-- Type Index
 data TyIndex
   con Group
-    var     :: HsName
+    varnm   :: HsName
     bounds  :: TyQuantifiedScheme
     
-{ -- Quantified type scheme }
+-- Quantified type scheme
 data TyQuantifiedScheme
   con Quant
     tyIndex  :: TyIndex
     tyScheme :: TyScheme
   con Bottom
    
-{ -- Type Schemes }   
+-- Type Schemes
 data TyScheme
-  con Qaunt
-    var     :: HsName
-    bounds  :: TyScheme
+  con Quant
+    subst   :: Scheme
     tyExpr  :: TyScheme
   con SystemF
     tyExpr  :: TyExpr
   con Bottom
   
-{ -- Mono type }
+-- A simple tybound e.f. (a >= phi)
+data Scheme
+  con Simple
+    vannm  :: HsName
+    bounds :: TyScheme
+  
+-- Mono type
 data TyMono 
   con Var 
     nm      :: HsName
@@ -83,17 +202,17 @@ data TyMono
   con AppTop
     tyMono  :: TyMono
     
-{ -- Unqualified typed }
+-- Unqualified typed
 data TyPoly
   con Var 
     nm      :: HsName
   con App
-    func    :: TyExpr
-    arg     :: TyExpr
+    func    :: TyPoly
+    arg     :: TyPoly
   con Con
     nm      :: HsName
-  con AppTop
-    tyMono  :: TyPoly
+  con SystemF
+    tyExpr  :: TyExpr
     
 data Expr
   con IConst
@@ -108,7 +227,7 @@ data Expr
     func    :: Expr
     arg     :: Expr
   con Let
-    decls   :: Decls
+    decls   :  Decls
     body    :: Expr
   con Lam
     arg     :: PatExpr
@@ -161,3 +280,175 @@ data TyExprAnn
 
 data PatExprAnn
   con Empty
+  
+data Decl
+  con TySig
+    nm      :: HsName
+    tyExpr  :: TyExpr
+  con Val
+    patExpr :: PatExpr
+    expr    :: Expr
+  
+type TyExprs : [TyExpr]
+type Decls   : [Decl]
+  
+itf Expr
+  visit infer
+    inh pre :: Prefix
+    inh env :: Env
+    inh exp :: Expr
+    inh ast :: Expr
+    syn nxe :: Prefix
+    syn sub :: Env
+    syn res :: Maybe TyExpr
+    
+itf Decls
+  visit infer
+    inh ast :: Decls
+    inh pre :: Prefix
+    inh env :: Env
+    syn nxe :: Prefix
+    syn sub :: Env
+    
+itf Decl
+  visit infer
+    inh pre :: Prefix
+    inh env :: Env
+    inh ast :: Decl
+    syn nxe :: Prefix
+    syn sub :: Env
+    
+datasem Decl
+  clause Val
+    match PatExpr.Var@loc = loc.patExpr
+
+    child expr : Expr
+
+    expr.pre = lhs.pre
+    expr.env = lhs.env
+    expr.exp = loc.expr
+    expr.ast = undefined
+
+    invoke infer of expr
+
+    lhs.nxe = expr.nxe
+    lhs.sub = let (Left adjusted) = apply expr.sub lhs.env
+              in case expr.res of
+                   Just result -> M.insert loc.nm result adjusted
+                   Nothing     -> error $ "Inference failed datasem Decl clause Val."
+  clause TySig
+    lhs.nxe = lhs.pre
+    lhs.sub = M.insert loc.nm loc.tyExpr lhs.env
+    
+datasem Decls
+  clause Cons
+    hd.pre = lhs.pre
+    hd.env = lhs.env
+    invoke infer of hd
+    
+    tl.env = hd.sub
+    tl.pre = hd.nxe
+    invoke infer of tl
+    
+    lhs.nxe = tl.nxe
+    lhs.sub = tl.sub
+  clause Nil
+    lhs.sub = M.empty
+    lhs.nxe = lhs.pre
+    
+datasem Expr
+    clause Var
+        lhs.res = M.lookup loc.nm lhs.env
+        lhs.sub = M.empty
+        lhs.nxe = lhs.pre
+    clause IConst
+       lhs.res = Just $ TyExpr_Con "Int"
+       lhs.sub = M.empty
+       lhs.nxe = lhs.pre
+    clause CConst
+       lhs.res = Just $ TyExpr_Con "Char"
+       lhs.sub = M.empty
+       lhs.nxe = lhs.pre
+    clause Con
+       lhs.res = error $ "Constructors are not supported at this time due to no datatype support yet"
+       lhs.sub = M.empty
+       lhs.nxe = lhs.pre
+    clause App
+       lhs.res = Nothing
+       lhs.sub = lhs.env
+       lhs.nxe = lhs.pre
+    clause Let
+        -- child decls : Decls
+        child body  : Expr
+        
+        decls.pre = lhs.pre
+        decls.env = lhs.env
+        -- decls.ast = loc.decls
+
+        invoke infer of decls
+
+        body.pre = decls.nxe
+        body.env = decls.sub
+        body.exp = loc.body
+        body.ast = undefined
+
+        invoke infer of body
+
+        lhs.nxe = body.nxe
+        lhs.res = body.res
+        lhs.sub = M.union decls.sub body.sub 
+    clause Lam
+       lhs.res = Nothing
+       lhs.sub = lhs.env
+       lhs.nxe = lhs.pre
+    clause AppTop
+       lhs.res = Nothing
+       lhs.sub = lhs.env
+       lhs.nxe = lhs.pre
+    clause Parens
+       lhs.res = Nothing
+       lhs.sub = lhs.env
+       lhs.nxe = lhs.pre
+    clause TypeAs
+       lhs.res = Nothing
+       lhs.sub = lhs.env
+       lhs.nxe = lhs.pre
+    clause Ann
+       lhs.res = Nothing
+       lhs.sub = lhs.env
+       lhs.nxe = lhs.pre
+    clause AppImpred
+       lhs.res = Nothing
+       lhs.sub = lhs.env
+       lhs.nxe = lhs.pre
+{
+-- infer = sem infer : Infer monad IO 
+          -- visit infer
+            -- clause varbind
+              -- match Expr.Var@loc = lhs.exp
+              -- lhs.res = M.lookup loc.nm lhs.env
+              -- lhs.sub = M.empty
+              -- lhs.nxe = lhs.pre
+            
+            -- clause letbind
+              -- match Expr.Let@loc = lhs.exp
+                            
+              -- child decls : Decls = infer
+              -- child body  : Infer = infer
+              
+              -- decls.pre = lhs.pre
+              -- decls.env = lhs.env
+              -- decls.ast = loc.decls
+              
+              -- invoke infer of decls
+              
+              -- body.pre = decls.nxe
+              -- body.env = decls.sub
+              -- body.exp = loc.body
+              
+              -- invoke infer of body
+              
+              -- lhs.nxe = body.nxe
+              -- lhs.res = body.res
+              -- lhs.sub = M.union decls.sub body.sub 
+}
