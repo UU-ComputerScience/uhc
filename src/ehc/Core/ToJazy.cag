@@ -32,7 +32,7 @@
 %%% Interface
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 jazy).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonFFI})
+%%[(8 jazy).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonBindNm},{Core/CommonPred},{Core/CommonCtxtPred},{Core/CommonFFI})
 WRAPPER CodeAGItf
 %%]
 
@@ -1003,7 +1003,7 @@ SEM CModule
                             .   methMain        =   let d f = jiNew (nmDataCon @pkgNm @topClassNm $ ehcOptBuiltin @lhs.opts f) []
 %%[[99
                                                         v f = jvRef @lhs.cvarMp (cvarGlob jtyObj @moduleClassNm n (nmVar @pkgNm @topClassNm n))
-                                                            where n = ehcOptBuiltinNames @lhs.opts f
+                                                            where n = ehcOptBuiltin @lhs.opts f
 %%]]
                                                     in  J.Method_Method [J.Flag_Public,J.Flag_Static] "main" [J.Type_Array jtyStr] Nothing
                                                             (jiToCd
