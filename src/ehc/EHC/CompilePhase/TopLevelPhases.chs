@@ -875,12 +875,14 @@ cpProcessEH modNm
 %%]]
                , cpFlowEHSem1 modNm
                , cpTranslateEH2Output modNm
-%%[[(8 codegen tycore)
-               , if ehcOptTyCore opts
+%%[[(8 codegen)
+               ,
+%%[[(8 tycore)
+                 if ehcOptTyCore opts
                  then cpTranslateEH2TyCore modNm
-                 else cpTranslateEH2Core modNm
-%%][(8 codegen)
-               , cpTranslateEH2Core modNm
+                 else 
+%%]]
+                      cpTranslateEH2Core modNm
 %%]]
 %%[[99
                , cpCleanupEH modNm

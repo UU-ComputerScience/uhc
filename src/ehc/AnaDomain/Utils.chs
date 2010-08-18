@@ -216,6 +216,11 @@ assSolve bound qualS
               -- and reverse
               (RelevQual_SubEval (AnaEval_Var l1) ar1, RelevQual_SubEval al2 (AnaEval_Var r2))
                   | r2 == var && l1 == var -> Just (i2, bindAnaEval var ar1, Set.singleton i1)
+              {-
+              -- transitivity for alternative (only 1 direction here!)
+              (RelevQual_SubEval al1 (AnaEval_Var r1), RelevQual_Alt (RelevQual_SubEval (AnaEval_Var l2) ar2) _ _ _)
+                  | r1 == var && l2 == var -> Just (i2, bindAnaEval var ar2, Set.singleton i1)
+              -}
               (_,_)
                   -> Nothing
 
