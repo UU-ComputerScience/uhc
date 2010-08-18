@@ -88,6 +88,11 @@ DATA RelevQual
   -- less than or equal in AnaEval lattice
   | SubEval		l				: AnaEval
   				r				: AnaEval
+  -- a qual which bridges an alternative and its surroundings
+  | Alt			qual			: RelevQual
+  				altId			: UID
+  				altNr			: Int
+  				altMax			: Int
 
 TYPE RelevQualL	=	[RelevQual]
 

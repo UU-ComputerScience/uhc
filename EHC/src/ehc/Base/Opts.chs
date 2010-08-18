@@ -187,7 +187,7 @@ data EHCOpts
       {  ehcOptAspects        ::  String            -- which aspects are included in this compiler
       ,  ehcOptShowHS         ::  Bool              -- show HS pretty print on stdout
       ,  ehcOptShowEH         ::  Bool              -- show EH pretty print on stdout
-%%[[(8 codegen)
+%%[[(8 codegen tycore)
       ,  ehcOptShowTyCore     ::  Bool              -- show TyCore ast on stout
 %%]]
       ,  ehcOptPriv           ::  Bool              -- privately used (in general during switch between 2 impls of 1 feature)
@@ -375,7 +375,7 @@ defaultEHCOpts
   = EHCOpts
       {  ehcOptAspects          =   "%%@{%{ASPECTS}%%}"
       ,  ehcOptShowHS           =   False
-%%[[(8 codegen)
+%%[[(8 codegen tycore)
       ,  ehcOptShowTyCore       =   False
 %%]]
       ,  ehcOptPriv             =   False
@@ -517,7 +517,7 @@ ehcCmdLineOpts
 %%]]
 %%[[1
      ,  Option "p"  ["pretty"]           (OptArg oPretty "hs|eh|ast|-")       "show pretty printed source or EH abstract syntax tree, default=eh, -=off, (downstream only)"
-%%][(8 codegen)
+%%][(8 codegen tycore)
      ,  Option "p"  ["pretty"]           (OptArg oPretty "hs|eh|ast|ty|-")    "show pretty printed source, EH abstract syntax tree or TyCore ast, default=eh, -=off, (downstream only)"
 %%]]
 %%[[1
@@ -636,7 +636,7 @@ ehcCmdLineOpts
                                 Just "hs"    -> o { ehcOptShowHS       = True      }
                                 Just "eh"    -> o { ehcOptShowEH       = True      }
                                 Just "pp"    -> o { ehcOptShowEH       = True      }
-%%[[(8 codegen)
+%%[[(8 codegen tycore)
                                 Just "ty"    -> o { ehcOptShowTyCore   = True      }
 %%]]
 %%[[1
