@@ -197,7 +197,7 @@ SEM Value
                                    NotManaged  -> "(Word) mm_itf_alloc("            >|< show @size >|< " *sizeof(Word), (Word)NULL" >|< ")"
                                    -- GCManaged  -> "mm_itf_alloc("            >|< show @size >|< " *sizeof(Word)," >|< (case @stackInfo of (n,xs) -> show n)  >|< ")"
                                    GCManaged  -> "(Word) mm_itf_alloc("            >|< show @size >|< " *sizeof(Word)," >|< ("(Word) (stackInfos+" ++ show @lhs.stackInfoIndex)  >|< "))"
-  | Label       lhs.prettyC   = "((Word)(&&" >|< @name >|< ") + sizeof(int) + sizeof(Word))"
+  | Label       lhs.prettyC   = "((Word)(&&" >|< @name >|< ") + sizeof(Word) + sizeof(Word))"
   | CompareGT   lhs.prettyC   = @val.prettyC >#< ">" >#< @con.prettyC
 
   | Offset      lhs.prettyPtr = @var.prettyPtr >|< "+" ++ show @off
@@ -349,7 +349,7 @@ label :: Bool -> String -> Maybe Int -> PP_Doc
 label tras nm mbStackInfo
  = nm >|< ":"
    >-< case mbStackInfo of
-        Just n    ->  text ("asm( \".int " ++ drop 6 nm ++ "\");" )
+        Just n    ->  text ("asm( \"" ++ asmWordMetaop ++ " " ++ drop 6 nm ++ "\");" )
                       >-< text ("asm( \"" ++ asmWordMetaop ++ " " ++ asmSymbolStackInfos ++  "+" ++ show sizeofStackInfo ++ "*" ++ show n ++ "\");" )
         _         -> empty
    >|< ppWhen tras
@@ -393,7 +393,7 @@ callCfunction f ps
 callSillyFunctionFromC :: Bool -> Int -> String -> PP_Doc
 callSillyFunctionFromC tras n nm
  = let lab = "mainlab" ++ show n
-   in  "*--SP = (Word)(&&" >|< lab >|< ") + sizeof(int) + sizeof(Word);"                   -- return address
+   in  "*--SP = (Word)(&&" >|< lab >|< ") + sizeof(Word) + sizeof(Word);"                   -- return address
        >-< ppWhen tras (" printf(\"push label" >#< lab >#< "= %08x at %08x \\n\", " >#< "SP[0]" >#< ", " >#< "SP" >#< "); fflush(stdout);")
        >-< "goto" >#< nm >|< ";"                         -- do the call
        >-< lab >|< ":"                                   -- return two lines below here
