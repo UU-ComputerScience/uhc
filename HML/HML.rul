@@ -5,6 +5,7 @@ module HML where
 import Control.Monad.Error
 import {-# SOURCE #-} Pretty   
 import qualified Data.Map as M
+import Control.Monad
 
 import Data.List
 
@@ -21,6 +22,17 @@ type ErrorMessage = String
 -- | Get the domain of a Prefix
 domain :: Prefix -> [HsName]
 domain = map varnm_TyIndex_Group
+
+-- | Split domains
+split :: (Prefix, [HsName]) -> (Prefix, Prefix)
+split ([], _)      = ([], [])
+split ((p@(TyIndex_Group var phi):q), vars) 
+ = case var `elem` vars of
+     True  -> let (TyQuantifiedScheme_Quant _ phi') = phi 
+                  (q1, q2) = split (q, (var `delete` vars) ++ ftv phi')
+              in (p:q1, q2)
+     False -> let (q1, q2) = split (q, vars)
+              in (q1, p:q2)
 
 -- | Apply a set of substitution to an environment
 apply :: Env -> Env -> Either Env [ErrorMessage]
@@ -62,7 +74,10 @@ class Normal a where
   nf :: a -> a
   
 class Util a => Apply a where
-  app :: Sub -> a -> Maybe a
+  app    :: Sub -> a -> Maybe a
+  appAll :: Env -> a -> Maybe a
+  appAll env a = let values = M.toList env
+                 in foldl1 (>=>) (map app values) a
   
 class Util a where
   ftv :: a -> [HsName]
@@ -130,9 +145,21 @@ instance Normal TyScheme where
   nf a = a 
 
 extend :: (Prefix, Scheme) -> (Prefix, Env)
-extend (q, Scheme_Simple var phi) 
+extend (q, scheme@(Scheme_Simple var phi))
  = let p = nf phi
-   in undefined
+   in case p of
+        TyScheme_SystemF p'  -> (q, M.fromList [(var, p')])
+        _                    -> ((TyIndex_Group var (promote phi)):q, M.empty)
+        
+promote phi = let vars = ftv phi
+             in case vars of
+                   [var'] -> TyQuantifiedScheme_Quant
+                                (TyIndex_Group var' TyQuantifiedScheme_Bottom)
+                                phi
+                   _      -> error $ "could not promote value to prefix using '[redacted]'"
+                   
+fresh :: Int -> (HsName, Int)
+fresh x = ("a" ++ show x, x+1)
 }
     
 data TyQu
@@ -162,7 +189,7 @@ data TyExpr
     tyVar   :: HsName
     tyExpr  :: TyExpr
     
--- Type Index
+-- Type Index (a1 >= TyQuantifiedScheme)
 data TyIndex
   con Group
     varnm   :: HsName
@@ -298,25 +325,73 @@ itf Expr
     inh env :: Env
     inh exp :: Expr
     inh ast :: Expr
+    inh frs :: Int
     syn nxe :: Prefix
     syn sub :: Env
-    syn res :: Maybe TyExpr
+    syn res :: Maybe TyScheme
+    syn frs :: Int
     
 itf Decls
   visit infer
     inh ast :: Decls
     inh pre :: Prefix
     inh env :: Env
+    inh frs :: Int
     syn nxe :: Prefix
     syn sub :: Env
+    syn frs :: Int
     
 itf Decl
   visit infer
     inh pre :: Prefix
     inh env :: Env
     inh ast :: Decl
+    inh frs :: Int
     syn nxe :: Prefix
     syn sub :: Env
+    syn frs :: Int
+    
+itf PatExpr
+  visit vars
+    inh ast    :: PatExpr
+    syn var_nm :: HsName
+    
+datasem PatExpr
+  clause IConst
+    lhs.var_nm = error "IConst not a var" 
+  clause CConst
+    lhs.var_nm = error "CConst not a var" 
+  clause Con
+    lhs.var_nm = error "Constructors not supported" 
+  clause Var
+    lhs.var_nm = loc.nm 
+  clause VarAs
+    lhs.var_nm = loc.nm 
+  clause App
+    lhs.var_nm = error "App not a var" 
+  clause AppTop
+    lhs.var_nm = error "AppTop not a var" 
+  clause Parens
+    child patExpr : PatExpr
+    patExpr.ast = undefined
+    
+    invoke vars of patExpr
+    
+    lhs.var_nm = patExpr.var_nm
+  clause Ann
+    child patExpr : PatExpr
+    patExpr.ast = undefined
+        
+    invoke vars of patExpr
+    
+    lhs.var_nm = patExpr.var_nm 
+  clause TypeAs
+    child patExpr : PatExpr
+    patExpr.ast = undefined
+        
+    invoke vars of patExpr
+    
+    lhs.var_nm = patExpr.var_nm 
     
 datasem Decl
   clause Val
@@ -327,6 +402,7 @@ datasem Decl
     expr.pre = lhs.pre
     expr.env = lhs.env
     expr.exp = loc.expr
+    expr.frs = lhs.frs
     expr.ast = undefined
 
     invoke infer of expr
@@ -334,55 +410,67 @@ datasem Decl
     lhs.nxe = expr.nxe
     lhs.sub = let (Left adjusted) = apply expr.sub lhs.env
               in case expr.res of
-                   Just result -> M.insert loc.nm result adjusted
+                   Just (TyScheme_SystemF result) -> fmap TyScheme_SystemF (M.insert loc.nm result adjusted)
                    Nothing     -> error $ "Inference failed datasem Decl clause Val."
+    lhs.frs = expr.frs
   clause TySig
     lhs.nxe = lhs.pre
     lhs.sub = M.insert loc.nm loc.tyExpr lhs.env
+    lhs.frs = lhs.frs
     
 datasem Decls
   clause Cons
     hd.pre = lhs.pre
     hd.env = lhs.env
+    hd.frs = lhs.frs
     invoke infer of hd
     
     tl.env = hd.sub
     tl.pre = hd.nxe
+    tl.frs = hd.frs
     invoke infer of tl
     
     lhs.nxe = tl.nxe
     lhs.sub = tl.sub
+    lhs.frs = tl.frs
   clause Nil
     lhs.sub = M.empty
     lhs.nxe = lhs.pre
+    lhs.frs = lhs.frs
     
 datasem Expr
     clause Var
-        lhs.res = M.lookup loc.nm lhs.env
+        lhs.res = fmap TyScheme_SystemF (M.lookup loc.nm lhs.env)
         lhs.sub = M.empty
         lhs.nxe = lhs.pre
+        lhs.frs = lhs.frs
     clause IConst
-       lhs.res = Just $ TyExpr_Con "Int"
+       lhs.res = Just $ TyScheme_SystemF $ TyExpr_Con "Int"
        lhs.sub = M.empty
        lhs.nxe = lhs.pre
+       lhs.frs = lhs.frs
     clause CConst
-       lhs.res = Just $ TyExpr_Con "Char"
+       lhs.res = Just $ TyScheme_SystemF $ TyExpr_Con "Char"
        lhs.sub = M.empty
        lhs.nxe = lhs.pre
+       lhs.frs = lhs.frs
     clause Con
        lhs.res = error $ "Constructors are not supported at this time due to no datatype support yet"
        lhs.sub = M.empty
        lhs.nxe = lhs.pre
+       lhs.frs = lhs.frs
     clause App
        lhs.res = Nothing
        lhs.sub = lhs.env
        lhs.nxe = lhs.pre
+       lhs.frs = lhs.frs
     clause Let
         -- child decls : Decls
         child body  : Expr
         
         decls.pre = lhs.pre
         decls.env = lhs.env
+        decls.frs = lhs.frs
         -- decls.ast = loc.decls
 
         invoke infer of decls
@@ -390,37 +478,77 @@ datasem Expr
         body.pre = decls.nxe
         body.env = decls.sub
         body.exp = loc.body
+        body.frs = decls.frs
         body.ast = undefined
 
         invoke infer of body
 
         lhs.nxe = body.nxe
         lhs.res = body.res
-        lhs.sub = M.union decls.sub body.sub 
+        lhs.sub = M.union decls.sub body.sub
+        lhs.frs = body.frs
     clause Lam
+        child arg : PatExpr
+        arg.ast = undefined
+        invoke vars of arg
+    
+        loc.frs          = lhs.frs
+       (loc.a, loc.frs1) = fresh loc.frs
+       loc.exp_a         = TyExpr_Var loc.a
+       (loc.b, loc.frs2) = fresh loc.frs1
+       loc.q'            = (TyIndex_Group loc.a TyQuantifiedScheme_Bottom):lhs.pre
+       loc.env'          = M.insert arg.var_nm loc.exp_a lhs.env
+       
+       child body : Expr
+       body.ast = undefined
+       body.frs = loc.frs2
+       body.env = loc.env'
+       body.pre = loc.q'
+       body.exp = loc.body
+       
+       invoke infer of body
+       
+       loc.tau = let x = appAll body.sub loc.exp_a
+                 in case x of
+                      (Just x') | isUnQualTy x' -> x
+                      _                         -> error "The resulting type is not a Tau type"
+       (loc.q2,  loc.q3)  = curry split body.nxe (domain lhs.pre)
+       loc.phi1           = case body.res of
+                              Just (TyScheme_SystemF a) -> TyScheme_SystemF a
+                              Nothing -> error "Inference of Expressions failed in Lam"
+       (loc.q3', loc.e3') = curry extend loc.q3 (Scheme_Simple loc.b loc.phi1)
+       
+       -- lhs.res = let 
+                 -- in TyExpr_Quant TyQu_TyForall 
        lhs.res = Nothing
-       lhs.sub = lhs.env
-       lhs.nxe = lhs.pre
+       lhs.sub = body.sub
+       lhs.nxe = loc.q2
+       lhs.frs = body.frs
     clause AppTop
        lhs.res = Nothing
        lhs.sub = lhs.env
        lhs.nxe = lhs.pre
+       lhs.frs = lhs.frs
     clause Parens
        lhs.res = Nothing
        lhs.sub = lhs.env
        lhs.nxe = lhs.pre
+       lhs.frs = lhs.frs
     clause TypeAs
        lhs.res = Nothing
        lhs.sub = lhs.env
        lhs.nxe = lhs.pre
+       lhs.frs = lhs.frs
     clause Ann
        lhs.res = Nothing
        lhs.sub = lhs.env
        lhs.nxe = lhs.pre
+       lhs.frs = lhs.frs
     clause AppImpred
        lhs.res = Nothing
        lhs.sub = lhs.env
        lhs.nxe = lhs.pre
+       lhs.frs = lhs.frs
 {
 -- infer = sem infer : Infer monad IO 
           -- visit infer
