@@ -8,6 +8,7 @@ import qualified Data.Map as M
 import Control.Monad
 
 import Data.List
+import Data.Maybe
 
 mkName :: String -> HsName
 mkName = id
@@ -15,8 +16,8 @@ mkName = id
 
 type Prefix  = [TyIndex]
 type HsName  = String
-type Env     = M.Map HsName TyExpr
-type Sub     = (HsName, TyExpr)
+type Env     = M.Map HsName TyScheme
+type Sub     = (HsName, TyScheme)
 type ErrorMessage = String
 
 -- | Get the domain of a Prefix
@@ -48,7 +49,8 @@ createMask (nm, ty) = mask
  where rep :: TyExpr -> Maybe TyExpr
        rep val = case isTyVar val nm of
                    False -> return val
-                   True  -> return ty
+                   True  -> let (TyScheme_SystemF ty') = ty
+                            in return ty'
                    
        mask :: TyExpr -> Maybe TyExpr
        mask val = case val of
@@ -138,7 +140,7 @@ instance Normal TyScheme where
   nf (TyScheme_Quant (Scheme_Simple a phi1) phi2)
        | a `notElem` (ftv phi2) = nf phi2
        | isTyVar (nf phi2) a    = nf phi1
-       | isUnQualTy (nf phi1)   = let x = app (a, phi1') phi2
+       | isUnQualTy (nf phi1)   = let x = app (a, TyScheme_SystemF phi1') phi2
                                       (TyScheme_SystemF phi1') = nf phi1
                                   in maybe (error "Substitution failed in Normal for UnQualTy") nf x
        | otherwise              = TyScheme_Quant (Scheme_Simple a (nf phi1)) (nf phi2)
@@ -148,7 +150,7 @@ extend :: (Prefix, Scheme) -> (Prefix, Env)
 extend (q, scheme@(Scheme_Simple var phi))
  = let p = nf phi
    in case p of
-        TyScheme_SystemF p'  -> (q, M.fromList [(var, p')])
+        TyScheme_SystemF p'  -> (q, M.fromList [(var, p)])
         _                    -> ((TyIndex_Group var (promote phi)):q, M.empty)
         
 promote phi = let vars = ftv phi
@@ -328,7 +330,7 @@ itf Expr
     inh frs :: Int
     syn nxe :: Prefix
     syn sub :: Env
-    syn res :: Maybe TyScheme
+    syn res :: [TyScheme]
     syn frs :: Int
     
 itf Decls
@@ -410,12 +412,12 @@ datasem Decl
     lhs.nxe = expr.nxe
     lhs.sub = let (Left adjusted) = apply expr.sub lhs.env
               in case expr.res of
-                   Just (TyScheme_SystemF result) -> fmap TyScheme_SystemF (M.insert loc.nm result adjusted)
-                   Nothing     -> error $ "Inference failed datasem Decl clause Val."
+                   [] -> error $ "Inference failed datasem Decl clause Val."
+                   x  -> foldr (\a->M.insert loc.nm a) adjusted x
     lhs.frs = expr.frs
   clause TySig
     lhs.nxe = lhs.pre
-    lhs.sub = M.insert loc.nm loc.tyExpr lhs.env
+    lhs.sub = M.insert loc.nm (TyScheme_SystemF loc.tyExpr) lhs.env
     lhs.frs = lhs.frs
     
 datasem Decls
@@ -440,17 +442,17 @@ datasem Decls
     
 datasem Expr
     clause Var
-        lhs.res = fmap TyScheme_SystemF (M.lookup loc.nm lhs.env)
+        lhs.res = maybeToList $ M.lookup loc.nm lhs.env
         lhs.sub = M.empty
         lhs.nxe = lhs.pre
         lhs.frs = lhs.frs
     clause IConst
-       lhs.res = Just $ TyScheme_SystemF $ TyExpr_Con "Int"
+       lhs.res = return $ TyScheme_SystemF $ TyExpr_Con "Int"
        lhs.sub = M.empty
        lhs.nxe = lhs.pre
        lhs.frs = lhs.frs
     clause CConst
-       lhs.res = Just $ TyScheme_SystemF $ TyExpr_Con "Char"
+       lhs.res = return $ TyScheme_SystemF $ TyExpr_Con "Char"
        lhs.sub = M.empty
        lhs.nxe = lhs.pre
        lhs.frs = lhs.frs
@@ -460,7 +462,7 @@ datasem Expr
        lhs.nxe = lhs.pre
        lhs.frs = lhs.frs
     clause App
-       lhs.res = Nothing
+       lhs.res = []
        lhs.sub = lhs.env
        lhs.nxe = lhs.pre
        lhs.frs = lhs.frs
@@ -494,7 +496,7 @@ datasem Expr
     
         loc.frs          = lhs.frs
        (loc.a, loc.frs1) = fresh loc.frs
-       loc.exp_a         = TyExpr_Var loc.a
+       loc.exp_a         = TyScheme_SystemF $ TyExpr_Var loc.a -- error reporting on local variables is off
        (loc.b, loc.frs2) = fresh loc.frs1
        loc.q'            = (TyIndex_Group loc.a TyQuantifiedScheme_Bottom):lhs.pre
        loc.env'          = M.insert arg.var_nm loc.exp_a lhs.env
@@ -514,38 +516,40 @@ datasem Expr
                       _                         -> error "The resulting type is not a Tau type"
        (loc.q2,  loc.q3)  = curry split body.nxe (domain lhs.pre)
        loc.phi1           = case body.res of
-                              Just (TyScheme_SystemF a) -> TyScheme_SystemF a
-                              Nothing -> error "Inference of Expressions failed in Lam"
+                              [] -> error "Inference of Expressions failed in Lam"
+                              [TyScheme_SystemF a] -> TyScheme_SystemF a
+                              _ -> error "Too many options, I only need one"
        (loc.q3', loc.e3') = curry extend loc.q3 (Scheme_Simple loc.b loc.phi1)
        
-       -- lhs.res = let 
-                 -- in TyExpr_Quant TyQu_TyForall 
-       lhs.res = Nothing
+       lhs.res = let (Just b')    = appAll loc.e3' (TyExpr_Var loc.b)
+                     (Just a')    = appAll body.sub (TyExpr_Var loc.a)
+                     arrow = TyExpr_App a' b'
+                 in [] -- TyExpr_Quant TyQu_TyForall 
        lhs.sub = body.sub
        lhs.nxe = loc.q2
        lhs.frs = body.frs
     clause AppTop
-       lhs.res = Nothing
+       lhs.res = []
        lhs.sub = lhs.env
        lhs.nxe = lhs.pre
        lhs.frs = lhs.frs
     clause Parens
-       lhs.res = Nothing
+       lhs.res = []
        lhs.sub = lhs.env
        lhs.nxe = lhs.pre
        lhs.frs = lhs.frs
     clause TypeAs
-       lhs.res = Nothing
+       lhs.res = []
        lhs.sub = lhs.env
        lhs.nxe = lhs.pre
        lhs.frs = lhs.frs
     clause Ann
-       lhs.res = Nothing
+       lhs.res = []
        lhs.sub = lhs.env
        lhs.nxe = lhs.pre
        lhs.frs = lhs.frs
     clause AppImpred
-       lhs.res = Nothing
+       lhs.res = []
        lhs.sub = lhs.env
        lhs.nxe = lhs.pre
        lhs.frs = lhs.frs
