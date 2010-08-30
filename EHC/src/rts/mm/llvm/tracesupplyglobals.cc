@@ -38,7 +38,7 @@ void mm_traceSupplyGlobals_llvm_Reset( MM_TraceSupply* traceSupply, Word gcStack
 void mm_traceSupplyGlobals_llvm_Run( MM_TraceSupply* traceSupply )
 {
 
-    printf("mm_traceSupplyGlobals_llvm_Run\n");
+    //printf("mm_traceSupplyGlobals_llvm_Run\n");
 
     Word nrObjs = _llvm_globals_descriptor_count;
     //printf("nr objs: %i \n", nrObjs);

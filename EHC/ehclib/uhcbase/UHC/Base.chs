@@ -336,8 +336,6 @@ numericEnumFromThenTo n n' m = takeWhile p (numericEnumFromThen n n')
 iterate' :: (a -> a) -> a -> [a]        -- strict version of iterate
 #if defined (__UHC_TARGET_C__) || defined (__UHC_TARGET_LLVM__)
 iterate' f x = x : (iterate' f $! f x)
-#else
-iterate' f x = x : (letstrict fx = f x in iterate' f fx)
 #endif
 
 --------------------------------------------------------------
