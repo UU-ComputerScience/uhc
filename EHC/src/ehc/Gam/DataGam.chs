@@ -104,7 +104,20 @@ data DataFldInConstr
 type DataFldInConstrMp = Map.Map HsName DataFldInConstr
 %%]
 
+%%[(90 hmtyinfer) export(DataGamInfoVariant(..))
+-- | specific info about what a DataGamInfo encodes
+data DataGamInfoVariant
+  = DataGamInfoVariant_Plain		-- plain data type
+  | DataGamInfoVariant_Newtype		-- newtype variation
+      Ty							-- the type lambda corresponding to a newtype
+%%[[92
+  | DataGamInfoVariant_Rec			-- tuple, record
+%%]]
+  deriving Eq
+%%]
+
 %%[(7 hmtyinfer) export(DataGamInfo(..))
+
 data DataGamInfo
   = DataGamInfo
       { dgiTyNm      		:: !HsName				-- type name (duplicate of key of gamma leading to this info)
@@ -118,7 +131,7 @@ data DataGamInfo
 %%[[8
       , dgiIsNewtype 		:: !Bool				-- defined as newtype
 %%][90
-      , dgiMbNewtype 		:: !(Maybe Ty)			-- the type lambda corresponding to a newtype
+      , dgiVariant 			:: !DataGamInfoVariant
 %%]]
       , dgiMaxConstrArity   :: !Int
 %%]]
@@ -131,6 +144,20 @@ instance Show DataGamInfo where
   show _ = "DataGamInfo"
 %%]
 
+%%[(90 hmtyinfer) export(dgiMbNewtype,dgiIsNewtype)
+dgiMbNewtype :: DataGamInfo -> Maybe Ty
+dgiMbNewtype (DataGamInfo {dgiVariant = DataGamInfoVariant_Newtype t}) = Just t
+dgiMbNewtype _                                                         = Nothing
+
+dgiIsNewtype :: DataGamInfo -> Bool
+dgiIsNewtype = isJust . dgiMbNewtype
+%%]
+
+%%[(92 hmtyinfer) export(dgiIsRec)
+dgiIsRec :: DataGamInfo -> Bool
+dgiIsRec dgi = dgiVariant dgi == DataGamInfoVariant_Rec
+%%]
+
 %%[(7 hmtyinfer) export(DataGam)
 type DataGam = Gam HsName DataGamInfo
 %%]
@@ -141,7 +168,7 @@ mkDGI :: HsName -> Ty -> [HsName] -> DataConstrTagMp -> Bool -> DataGamInfo
 %%][90
 mkDGI
   :: HsName
-     -> Ty -> [HsName] -> DataConstrTagMp -> Maybe Ty
+     -> Ty -> [HsName] -> DataConstrTagMp -> DataGamInfoVariant
 %%[[92
      -> Maybe Int
 %%]]
@@ -178,17 +205,12 @@ mkDGIPlain tyNm dty cNmL m
 %%[[7
           False
 %%][90
-          Nothing
+          DataGamInfoVariant_Plain
 %%]]
 %%[[92
           Nothing
 %%]]
 
-%%]
-
-%%[90 export(dgiIsNewtype)
-dgiIsNewtype :: DataGamInfo -> Bool
-dgiIsNewtype = isJust . dgiMbNewtype
 %%]
 
 %%[(7 hmtyinfer) export(emptyDataGamInfo,emptyDGI)
@@ -280,7 +302,11 @@ deriving instance Data DataFldInConstr
 
 deriving instance Typeable DataGamInfo
 deriving instance Data DataGamInfo
+%%]
 
+%%[(90 hmtyinfer)
+deriving instance Typeable DataGamInfoVariant
+deriving instance Data DataGamInfoVariant
 %%]
 
 %%[(9999 hmtyinfer)
@@ -307,6 +333,21 @@ instance ForceEval DataGamInfo where
 %%[[102
   fevCount (DataGamInfo n t nl tm cm nt mx) = cmUnions [cm1 "DataGamInfo",fevCount n,fevCount t,fevCount nl,fevCount tm,fevCount cm,fevCount nt,fevCount mx]
 %%]]
+%%]
+
+%%[(90 hmtyinfer)
+instance Serialize DataGamInfoVariant where
+  sput (DataGamInfoVariant_Plain    ) = sputWord8 0
+  sput (DataGamInfoVariant_Newtype a) = sputWord8 1 >> sput a
+%%[[92
+  sput (DataGamInfoVariant_Rec      ) = sputWord8 2
+%%]]
+  sget = do 
+    t <- sgetWord8
+    case t of
+      0 -> return DataGamInfoVariant_Plain
+      1 -> liftM  DataGamInfoVariant_Newtype sget
+      2 -> return DataGamInfoVariant_Rec
 %%]
 
 %%[(20 hmtyinfer)

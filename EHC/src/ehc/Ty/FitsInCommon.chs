@@ -22,7 +22,9 @@
 %%[(4 hmtyinfer) import({%{EH}Substitutable}) export(FitsIn, FitsIn')
 %%]
 
-%%[(8 codegen hmtyinfer) import(qualified {%{EH}TyCore.Full0} as C)
+%%[(8 codegen hmtyinfer) import({%{EH}AbstractCore})
+%%]
+%%[(8 codegen tycore hmtyinfer) import(qualified {%{EH}TyCore.Full0} as C)
 %%]
 
 %%[(7 hmtyinfer) import(qualified Data.Set as Set)
@@ -87,7 +89,7 @@ data FIOut
 %%[[7
        ,  foDontBind        :: !TyVarIdS				-- output variant of fioDontBind
 %%]]
-%%[[(8 codegen)
+%%[[(8 codegen tycore)
        ,  foTCSubst         :: !(C.CSubst)				-- subst for holes in the Core
        ,  foLRTCoe          :: !(C.LRCoe)				-- coercion over arrow structure
 %%]]
@@ -101,6 +103,8 @@ data FIOut
 %%]]
 %%[[(10 codegen)
        ,  foRowCoeL         :: !(AssocL HsName Coe)		-- internal, coercions for row fields
+%%]]
+%%[[(10 codegen tycore)
        ,  foRowTCoeL        :: !(AssocL HsName C.Coe)	-- 
 %%]]
 %%[[50
@@ -129,8 +133,8 @@ emptyFO
 %%[[7
        ,  foDontBind        =	Set.empty
 %%]]
-%%[[(8 codegen)
-       ,  foTCSubst         =   C.emptyCSubst
+%%[[(8 codegen tycore)
+       ,  foTCSubst         =   emptyCSubst
        ,  foLRTCoe          =   C.emptyLRCoe
 %%]]
 %%[[(9 codegen)
@@ -143,6 +147,8 @@ emptyFO
 %%]]
 %%[[(10 codegen)
        ,  foRowCoeL         =   []
+%%]]
+%%[[(10 codegen tycore)
        ,  foRowTCoeL        =   []
 %%]]
 %%[[50

@@ -94,8 +94,8 @@ SEM PatExpr
                                                             tL | @patExpr.arity == length tL
                                                                 ->  (reverse tL,[])
                                                             _   ->  (repeat Ty_Any
-                                                                    ,  [rngLift @range Err_PatArity
-                                                                         @knProdTy @patExpr.arity])
+                                                                    ,  [rngLift @range Err_PatArity2 "type"
+                                                                         (ppTy @knProdTy) @patExpr.arity])
   | App         loc         .  (knArgTy,knTyL)
                                                     =   hdAndTl @lhs.knTyL
                 func        .  knTy                 =   Ty_Any

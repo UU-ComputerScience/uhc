@@ -189,7 +189,7 @@ SEM CExpr
   | Lam         lhs         .   cTrf        =   CExpr_Lam (aRenRepl @aRenMp @arg) @argMeta.cTrf @body.cTrf
 
 SEM CBind
-  | Bind        lhs         .   cTrf        =   CBind_Bind (aRenRepl @lhs.aRenMp @nm) @bindMeta.cTrf @expr.cTrf
+  | Bind        lhs         .   cTrf        =   CBind_Bind (aRenRepl @lhs.aRenMp @nm) @bindAspects.cTrf
 
 SEM CPatFld
   | Fld         lhs         .   cTrf        =   CPatFld_Fld @lbl @offset.cTrf (aRenRepl @lhs.aRenMp @fldNm) -- @pat.cTrf
@@ -204,8 +204,8 @@ SEM CPatRest
 
 
 %%[(9 codegen)
-SEM CBind
-  | Bind        expr.protectedBindingNames  =   @bindMeta.protectableBindingNames ++ @lhs.protectedBindingNames
+SEM CBindAspect
+  | Bind         expr.protectedBindingNames  =   @bindMeta.protectableBindingNames ++ @lhs.protectedBindingNames
 
 SEM CMetaVal
   | DictClass

@@ -33,7 +33,7 @@ CompilePhase building blocks: parsers
 %%[(20 codegen) import(qualified {%{EH}Core} as Core, qualified {%{EH}Core.Parser} as CorePrs)
 %%]
 -- TyCore parser
-%%[(20 codegen) import(qualified {%{EH}TyCore} as C)
+%%[(20 codegen tycore) import(qualified {%{EH}TyCore} as C)
 %%]
 -- Grin parser
 %%[(8 codegen grin) import(qualified {%{EH}GrinCode} as Grin, qualified {%{EH}GrinCode.Parser} as GrinParser)
@@ -112,16 +112,20 @@ cpParseGrin modNm
 
 %%[8.cpParseHs export(cpParseHs)
 cpParseHs :: HsName -> EHCompilePhase ()
-cpParseHs = cpParseOffside HSPrs.pAGItf hsScanOpts ecuStoreHS "Parse (Haskell syntax) of module"
+cpParseHs modNm
+  = do { cr <- get
+       ; let (_,opts) = crBaseInfo' cr
+       ; cpParseOffside (HSPrs.pAGItf opts) hsScanOpts ecuStoreHS "Parse (Haskell syntax) of module" modNm
+       }
 %%]
 
 %%[99 -8.cpParseHs export(cpParseHs)
 cpParseHs :: Bool -> HsName -> EHCompilePhase ()
 cpParseHs litmode modNm
   = do { cr <- get
-       ; let  (ecu,_,_,_) = crBaseInfo modNm cr
+       ; let  (ecu,_,opts,_) = crBaseInfo modNm cr
        ; cpParseOffsideWithFPath
-           HSPrs.pAGItf (hsScanOpts {ScanUtils.scoLitmode = litmode}) ecuStoreHS
+           (HSPrs.pAGItf opts) (hsScanOpts {ScanUtils.scoLitmode = litmode}) ecuStoreHS
            ("Parse (" ++ (if litmode then "Literate " else "") ++ "Haskell syntax) of module")
            Nothing modNm
        }
@@ -140,12 +144,20 @@ cpParseOffsideStopAtErr parser scanOpts store modNm
 
 %%[20.cpParseHsImport export(cpParseHsImport)
 cpParseHsImport :: HsName -> EHCompilePhase ()
-cpParseHsImport = cpParseOffsideStopAtErr HSPrs.pAGItfImport hsScanOpts ecuStoreHS
+cpParseHsImport modNm
+  = do { cr <- get
+       ; let (_,opts) = crBaseInfo' cr
+       ; cpParseOffsideStopAtErr (HSPrs.pAGItfImport opts) hsScanOpts ecuStoreHS modNm
+       }
 %%]
 
 %%[99 -20.cpParseHsImport export(cpParseHsImport)
 cpParseHsImport :: Bool -> HsName -> EHCompilePhase ()
-cpParseHsImport litmode = cpParseOffsideStopAtErr HSPrs.pAGItfImport (hsScanOpts {ScanUtils.scoLitmode = litmode}) ecuStoreHS
+cpParseHsImport litmode modNm
+  = do { cr <- get
+       ; let (_,opts) = crBaseInfo' cr
+       ; cpParseOffsideStopAtErr (HSPrs.pAGItfImport opts) (hsScanOpts {ScanUtils.scoLitmode = litmode}) ecuStoreHS modNm
+       }
 %%]
 
 %%[(20 codegen) export(cpParseCore)

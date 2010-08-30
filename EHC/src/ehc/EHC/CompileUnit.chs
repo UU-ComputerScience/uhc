@@ -19,7 +19,7 @@ An EHC compile unit maintains info for one unit of compilation, a Haskell (HS) m
 -- Language syntax: Core, TyCore, Grin, ...
 %%[(8 codegen) import( qualified {%{EH}Core} as Core)
 %%]
-%%[(8 codegen) import(qualified {%{EH}TyCore} as C)
+%%[(8 codegen tycore) import(qualified {%{EH}TyCore} as C)
 %%]
 %%[(8 codegen grin) import(qualified {%{EH}GrinCode} as Grin, qualified {%{EH}GrinByteCode} as Bytecode)
 %%]
@@ -130,6 +130,8 @@ data EHCompileUnit
 %%[[(8 codegen)
       , ecuMbCore            :: !(Maybe Core.CModule)
       , ecuMbCoreSem         :: !(Maybe Core2GrSem.Syn_CodeAGItf)
+%%]]
+%%[[(8 codegen tycore)
       , ecuMbTyCore          :: !(Maybe C.Module)
 %%]]
 %%[[(8 grin)
@@ -220,6 +222,8 @@ emptyECU
 %%[[(8 codegen)
       , ecuMbCore            = Nothing
       , ecuMbCoreSem         = Nothing
+%%]]
+%%[[(8 codegen tycore)
       , ecuMbTyCore          = Nothing
 %%]]
 %%[[(8 grin)
@@ -383,10 +387,7 @@ ecuStoreCore x ecu | forceEval x `seq` True = ecu { ecuMbCore = Just x }
 %%]]
 %%]
 
-%%[(8 codegen) export(ecuStoreTyCore)
--- ecuStoreTyCoreSem :: EcuUpdater Core2GrSem.Syn_CodeAGItf
--- ecuStoreTyCoreSem x ecu = ecu { ecuMbCoreSem = Just x }
-
+%%[(8 codegen tycore) export(ecuStoreTyCore)
 ecuStoreTyCore :: EcuUpdater C.Module
 ecuStoreTyCore x ecu = ecu { ecuMbTyCore = Just x }
 %%]

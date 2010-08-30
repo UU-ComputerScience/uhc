@@ -2,31 +2,34 @@
 %%% Translation of Evidence (of Pred) to TyCore fragments
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(9 codegen) module {%{EH}Pred.EvidenceToTyCore} import({%{EH}Pred.Evidence},{%{EH}Pred.CommonCHR})
+%%[(9 codegen tycore) module {%{EH}Pred.EvidenceToTyCore} import({%{EH}Pred.Evidence},{%{EH}Pred.CommonCHR})
 %%]
 
-%%[(9 codegen) import(Data.List,qualified Data.Set as Set,qualified Data.Map as Map,Data.Maybe)
+%%[(9 codegen tycore) import(Data.List,qualified Data.Set as Set,qualified Data.Map as Map,Data.Maybe)
 %%]
 
-%%[(9 codegen) import({%{EH}Base.Common})
+%%[(9 codegen tycore) import({%{EH}Base.Common})
 %%]
 
-%%[(9 codegen hmtyinfer) import({%{EH}Ty.FitsInCommon2}(FIEnv(..),FIIn(..)),qualified {%{EH}TyCore.Full2} as C,{%{EH}Ty})
+%%[(9 codegen tycore hmtyinfer) import({%{EH}Ty.FitsInCommon2}(FIEnv(..),FIIn(..)),{%{EH}Ty})
 %%]
 
-%%[(9 codegen) hs import({%{EH}AbstractCore})
+%%[(9 codegen tycore tycore hmtyinfer) import(qualified {%{EH}TyCore.Full2} as C)
 %%]
 
-%%[(9 codegen) import(EH.Util.Pretty)
+%%[(9 codegen tycore) hs import({%{EH}AbstractCore},{%{EH}AbstractCore.Utils})
 %%]
 
-%%[(9 codegen) import(EH.Util.Utils)
+%%[(9 codegen tycore) import(EH.Util.Pretty)
 %%]
 
-%%[(9 codegen) import(Control.Monad.State)
+%%[(9 codegen tycore) import(EH.Util.Utils)
 %%]
 
-%%[(9 codegen) import({%{EH}Base.Debug} as Debug)
+%%[(9 codegen tycore) import(Control.Monad.State)
+%%]
+
+%%[(9 codegen tycore) import({%{EH}Base.Debug} as Debug)
 %%]
 
 
@@ -38,7 +41,7 @@ Sub evidence encodes the evidence needed to construct other evidence, as in Eq I
 The subevidence is identified/introduced by a UID and defined in scope.
 Subevidence can be an assumption (encoded below) or an already known instance (dealt with otherwise, but must be here too. 20090416)
 
-%%[(9 codegen)
+%%[(9 codegen tycore)
 data SubEvid
   = SubEvid_Assume
       { subevdId    :: UID
@@ -57,7 +60,7 @@ The translation to core yields:
   Each binding uses the assumed predicate (and the others in scope), and can safely be introduced when all assumed predicates are in scope.
 - a set of bindings which do not depend on assumptions.
 
-%%[(9 codegen) export(EvidKeyToValBindMap,PredScopeToValBindMap)
+%%[(9 codegen tycore) export(EvidKeyToValBindMap,PredScopeToValBindMap)
 type EvidKeyToExprMap = Map.Map UID (C.Expr,Set.Set SubEvid,PredScope)
 type EvidKeyToValBindMap = Map.Map UID [C.ValBind]
 type PredScopeToValBindMap = Map.Map PredScope [C.ValBind]
@@ -78,7 +81,7 @@ data ToCoreRes
       }
 %%]
 
-%%[(9 codegen)
+%%[(9 codegen tycore)
 instance Show ToCoreRes where
   show _ = "ToCoreRes"
 
@@ -86,7 +89,7 @@ instance PP ToCoreRes where
   pp r = "TCR" >#< tcrExpr r
 %%]
 
-%%[(9 codegen) export(OverlapEvid(..))
+%%[(9 codegen tycore) export(OverlapEvid(..))
 data OverlapEvid
   = OverlapEvid
       { overlapevidPredOcc 	:: !CHRPredOcc
@@ -94,7 +97,7 @@ data OverlapEvid
       }
 %%]
 
-%%[(9 codegen) export(evidKeyToValBindMapUnion,predScopeToValBindMapUnion)
+%%[(9 codegen tycore) export(evidKeyToValBindMapUnion,predScopeToValBindMapUnion)
 evidKeyToValBindMapUnion :: EvidKeyToValBindMap -> EvidKeyToValBindMap -> EvidKeyToValBindMap
 evidKeyToValBindMapUnion = Map.unionWith (++)
 
@@ -102,7 +105,7 @@ predScopeToValBindMapUnion :: PredScopeToValBindMap -> PredScopeToValBindMap -> 
 predScopeToValBindMapUnion = Map.unionWith (++)
 %%]
 
-%%[(9 codegen) export(evidMpToCore,EvidKeyToExprMap)
+%%[(9 codegen tycore) export(evidMpToCore,EvidKeyToExprMap)
 evidMpToCore :: FIIn -> InfoToEvidenceMap CHRPredOcc RedHowAnnotation -> (EvidKeyToExprMap,[OverlapEvid])
 evidMpToCore env evidMp
   = ( Map.map (\r -> (tcrExpr r,tcrUsed r,tcrScope r)) $ tcsMp
@@ -154,7 +157,7 @@ evidMpToCore env evidMp
                                         _           -> c'
         ann (RedHow_Assumption   vun sc) _     = ( mknm $ vunmNm vun, sc )
         ann (RedHow_ByInstance   n _   sc) ctxt= ( acoreAppMeta (mknm n) (map (\c -> (tcrExpr c,(C.MetaVal_Dict Nothing))) ctxt), maximumBy pscpCmpByLen $ sc : map tcrScope ctxt )
-        ann (RedHow_BySuperClass n o t ) [sub] = ( C.mkExprSatSelsCaseMeta
+        ann (RedHow_BySuperClass n o t ) [sub] = ( acoreSatSelsCaseMetaTy
                                                      (C.emptyRCEEnv $ feEHCOpts $ fiEnv env)
                                                      (Just (hsnUniqifyEval n,ty n)) (C.MetaVal_Dict (Just o)) (tcrExpr sub) t
                                                      [(n,o)] Nothing (acoreVar n)
@@ -166,7 +169,7 @@ evidMpToCore env evidMp
         ann (RedHow_ByLabel _ (LabelOffset_Off o) sc) [roff] = ( acoreBuiltinAddInt (feEHCOpts $ fiEnv env) (tcrExpr roff) o, sc )
 %%]]
 %%[[13
-        ann (RedHow_Lambda  i sc) [body]       = ( [(mkHNm i,C.tyErr ("evidMpToCore.RedHow_Lambda: " ++ show i))] `C.mkExprLam` tcrExpr body, sc )
+        ann (RedHow_Lambda  i sc) [body]       = ( [(mkHNm i,C.tyErr ("evidMpToCore.RedHow_Lambda: " ++ show i))] `acoreLamTy` tcrExpr body, sc )
 %%]]
 %%[[16
         ignore (_, (Evid_Proof _ red  _))
@@ -190,13 +193,13 @@ evidMpToCore env evidMp
                       = maybe (mkc r $ mkk (ToCoreRes c uses) st, r) (\r -> (mkk r st,vr r)) $ Map.lookup ev $ tcsEvMp st
 
 
-%%[(9 codegen)
+%%[(9 codegen tycore)
 getMetaDictMbPos :: C.Expr -> Maybe Int
 getMetaDictMbPos (C.Expr_Let _ (C.ValBind_Val _ (Just (_,C.MetaVal_Dict m)) _ _ : _) _) = m
 getMetaDictMbPos _ = Nothing
 %%]
 
-%%[(9 codegen) export(evidKeyCoreMpToBinds)
+%%[(9 codegen tycore) export(evidKeyCoreMpToBinds)
 evidKeyCoreMpToBinds :: EvidKeyToExprMap -> (EvidKeyToValBindMap,PredScopeToValBindMap)
 evidKeyCoreMpToBinds m
   = dbg "evidKeyCoreMpToBinds.res"
@@ -236,7 +239,7 @@ Extract from the basic bindings for prove obligations the following:
 - foreach introduced assumption, the bindings required for depending prove obligations which only require that assumption.
 - the rest, which depends on multiple assumptions, and thus can only be introduced at the deepest scope. Hence a map from scope to such bindings.
 
-%%[(9 codegen) export(EvidValBindL,evidKeyCoreMpToBinds2)
+%%[(9 codegen tycore) export(EvidValBindL,evidKeyCoreMpToBinds2)
 type EvidValBindL = [C.ValBind]
 
 evidKeyCoreMpToBinds2 :: EvidKeyToExprMap -> (EvidValBindL,EvidKeyToValBindMap,PredScopeToValBindMap)
@@ -263,9 +266,9 @@ evidKeyCoreMpToBinds2 m
 %%]
 
 
-%%[(9 codegen) export(evidKeyBindMpToSubst)
+%%[(9 codegen tycore) export(evidKeyBindMpToSubst)
 evidKeyBindMpToSubst :: EvidKeyToValBindMap -> C.CSubst
 evidKeyBindMpToSubst
-  = C.uidValBindLLToCSubst . Map.toList
+  = acoreCSubstFromUidBindLL . Map.toList
 %%]
 

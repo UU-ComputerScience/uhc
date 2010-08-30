@@ -54,7 +54,7 @@ import UHC.Base hiding
 
   -- * Meta-information
   -- , Datatype(..), Constructor(..), Selector(..)
-  , Fixity(..), Associativity(..)
+  , Arity(..), Fixity(..), Associativity(..)
   , NoSelector
 
   -- * Representable type classes

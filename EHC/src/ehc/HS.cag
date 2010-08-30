@@ -30,9 +30,6 @@
 %%[5555 hs export(SimpleType(..))
 %%]
 
-%%[5 hs export(AnnotatedType(..), AnnotatedTypes)
-%%]
-
 %%[6 hs export(Kind(..), Kinds, KindAnnotation(..))
 %%]
 

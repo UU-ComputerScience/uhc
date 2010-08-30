@@ -123,11 +123,15 @@ SET AllTopLevel
 
 SET AllModule
   = AllTopLevel
-%%]
-%%[20
+%%[[20
     AllImportDeclaration Import Imports
     AllImportSpecification
     Export Exports MaybeExports
+%%]]
+
+SET AllModuleDeclaration
+  = AllModule AllDeclaration
+
 %%]
 
 -- ------------------------------------------------------------------------
@@ -553,12 +557,12 @@ DATA Constructor
     | Constructor 
         range                    : Range
         constructor              : Name
-        types                    : AnnotatedTypes
+        types                    : Types
     | Infix
         range                    : Range
-        leftType                 : AnnotatedType
+        leftType                 : Type
         constructorOperator      : Name
-        rightType                : AnnotatedType
+        rightType                : Type
 %%]
 %%[7
     | Record
@@ -585,23 +589,10 @@ DATA FieldDeclaration
     | FieldDeclaration
         range                    : Range
         names                    : Names
-        type                     : AnnotatedType
+        type                     : Type
 
 SET AllFieldDeclaration
   = FieldDeclaration FieldDeclarations
-%%]
-
-%%[5
-TYPE AnnotatedTypes              = [ AnnotatedType ]
-
-DATA AnnotatedType
-    | Type -- ToDo: or _Type?
-        range                    : Range
-        strict                   : Bool
-        type                     : Type
-
-SET AllAnnotatedType
-  = AnnotatedType AnnotatedTypes
 %%]
 
 %%[1
@@ -612,7 +603,6 @@ SET AllType
     SimpleType
 %%[5
     AllConstructor
-    AllAnnotatedType
     TypeLeftHandSide
 %%]
 %%[7
@@ -1133,6 +1123,9 @@ DATA Pattern
         range                    : Range
     | Tuple
         range                    : Range
+%%[[7
+        arity                    : Int
+%%]]
         patterns                 : Patterns
 	| Annotate
         range                    : Range
@@ -1271,7 +1264,18 @@ SET AllTypePattern
 
 %%[1
 DATA TypeAnnotation
-	| Empty
+%%[[1
+    | Empty
+%%][5
+	| Strict
+%%[[(8 codegen)
+    | AnnotationName
+        name                     : Name
+    | AnnotationVar
+        name                     : Name
+        var                      : Name
+%%]]
+%%]]
 
 DATA ExpressionAnnotation
 	| Empty
@@ -1312,7 +1316,12 @@ DATA Literal                                      {- *** -}
         value                    : String
 %%]
 
+
+-- ! The following block of code is part of an unused variant (55).
+-- ! The actual definitions of Name, Names, MaybeName and MaybeNames
+-- ! can be found in HS.cag
 %%[55
+
 TYPE Names                       = [ Name ]
 
 TYPE MaybeNames                  = MAYBE Names
@@ -1374,7 +1383,7 @@ SET AllBasics
 
 %%[1
 SET AllNT
-  = AllModule AllDeclaration
+  = AllModuleDeclaration
     AllType
     AllPattern AllExpression
     AllBasics

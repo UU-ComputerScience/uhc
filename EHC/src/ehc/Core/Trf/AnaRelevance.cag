@@ -1,0 +1,332 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%[doesWhat doclatex
+Analyse Core, using relevance analysis, to relate properties (like relevance) of function args and result, and annotate core expressions with their relevance.
+
+20100811 AD: note this is just in the early design stages.
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Type based simplifications
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs module {%{EH}Core.Trf.AnaRelevance} import({%{EH}Ty},{%{EH}Base.Common},{%{EH}Gam},{%{EH}Base.Opts},{%{EH}Core},{%{EH}VarMp},{%{EH}Substitutable})
+%%]
+
+%%[(8 codegen) hs import(Data.Maybe,qualified Data.Set as Set)
+%%]
+
+%%[(8 codegen) hs import({%{EH}AbstractCore},{%{EH}AnaDomain},{%{EH}AnaDomain.Utils})
+%%]
+
+%%[(8 codegen) hs import({%{EH}AnaDomain.Trf.Instantiate})
+%%]
+
+%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonBindNm},{Core/CommonPred},{Core/CommonCtxtPred})
+WRAPPER CodeAGItf
+%%]
+
+%%[(99 codegen)
+PRAGMA strictcase
+-- PRAGMA nocycle
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell itf
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs export(cmodTrfAnaRelevance)
+cmodTrfAnaRelevance :: EHCOpts -> CModule -> CModule
+cmodTrfAnaRelevance opts cmod
+  =  let  t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf cmod))
+                             (Inh_CodeAGItf
+                               { opts_Inh_CodeAGItf = opts
+                               })
+     in   cTrf_Syn_CodeAGItf t
+%%]
+
+%%[(8 codegen)
+ATTR AllCodeNT CodeAGItf [ opts: EHCOpts | | ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Type sigs for AG
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+SEM *
+  | *           loc         .   amso            :   {AMSOut RelevTy}
+                loc         .   bindTy          :   RelevTy
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Utils: subst
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs
+type REnv    = Gam HsName RelevTy
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Unique counter
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AllCodeNT [ | gUniq: UID | ]
+
+SEM CodeAGItf
+  | AGItf       loc         .   gUniq           =   uidStart
+
+SEM CBindAspect
+  | Bind        loc         .   lUniq           :   UNIQUEREF gUniq
+
+SEM CExpr
+  | Var App Case
+                loc         .   lUniq           :   UNIQUEREF gUniq
+  | Case        loc         .   lUniq2          :   UNIQUEREF gUniq
+
+SEM CAltL
+  | Cons        loc         .   lUniq           :   UNIQUEREF gUniq
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Type env
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AllCodeNT [ env: REnv | | ]
+
+SEM CodeAGItf
+  | AGItf       loc         .   env             =   emptyGam
+
+SEM CBindAspect
+  | Bind        expr        .   env             =   gamAddGam @exprEnv @lhs.env
+
+SEM CExpr
+  | Var         loc         .   (gty,gQualS)    =   case gamLookup @nm @lhs.env of
+                                                      Just t -> relevtyInst @lUniq t
+                                                      _      -> (RelevTy_Err (show @nm), Set.empty)
+  | Let         body        .   env             =   gamAddGam @binds.gathEnv @lhs.env
+%%]
+
+%%[(8 codegen)
+ATTR AllBind [ | | gathEnv USE {`gamUnion`} {emptyGam}: REnv ]
+
+SEM CBindAspect
+  | Bind        lhs         .   gathEnv         =   gamSingleton @lhs.nm @bindTy
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Type down
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AllExpr [ knTy: RelevTy | | ]
+
+SEM CModule
+  | Mod         expr        .   knTy            =   RelevTy_None
+
+SEM CBindAspect
+  | Bind        expr        .   knTy            =   @exprKnTy
+
+SEM CExpr
+  | App         arg         .   knTy            =   @argTy
+                func        .   knTy            =   case @lhs.knTy of
+                                                      RelevTy_Fun v q as r -> RelevTy_Fun v  q  (fresh @lUniq : as) r
+                                                      t                    -> RelevTy_Fun [] [] [fresh @lUniq     ] t
+  | Case        expr        .   knTy            =   freshStrict @lUniq2
+%%]
+
+%%[(8 codegen)
+SEM CAltL
+  | Cons        hd          .   knTy            =   @altKnTy
+%%]
+
+%%[(97 codegen)
+%%]
+SEM CPat
+  | BoolExpr    cexpr       .   knTy            =   bot
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Analysis
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+SEM CExpr
+  | Int Char    loc         .   (amso,ams)      =   amsLE @lhs.rvarMp bot @lhs.knTy
+  | Var         loc         .   (amso,ams)      =   amsLE @lhs.rvarMp @gty @lhs.knTy
+  | App         loc         .   funTy           =   case @func.ty of
+                                                      t@(RelevTy_Fun _ _ (_:_) _) -> t
+                                                      _                           -> anaMkBotFun 1
+                            .   (argTy,resTy,resFunTy)
+                                                =   case @funTy of
+                                                      RelevTy_Fun v q (a:as) r -> (a,r,RelevTy_Fun v q as r)
+%%]
+
+%%[(8 codegen)
+SEM CAltL
+  | Cons        loc         .   (amso,ams)      =   amsLE @lhs.rvarMp @altKnTy @lhs.knTy
+                            .   aQualS          =   Set.map (\q -> RelevQual_Alt q @lhs.altId @altNr @lhs.altNrMax) $ amsGathQual @ams
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Alts of case
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR CAltL [ altId: UID  altNrMax: Int | | altNr: Int ]
+
+SEM CAltL
+  | Nil         loc         .   altNr           =   0
+  | Cons        loc         .   altNr           =   @tl.altNr + 1
+  | *			loc			.	altNr			:	Int
+
+SEM CExpr
+  | Case        alts        .   altNrMax        =   @alts.altNr
+                            .   altId           =   @lUniq
+%%]
+
+%%[(8 codegen)
+SEM CAltL
+  | Cons        loc         .   altKnTy         =   fresh @lUniq
+                loc         .   altKnTy         :   RelevTy
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Type up
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR CExpr CAltL [ | | ty: RelevTy ]
+
+SEM CExpr
+  | Var Int Char
+                lhs         .   ty              =   amsoHi @amso
+  | App         lhs         .   ty              =   if @lhs.isTopApp then @resTy else @resFunTy
+  | Case		lhs			.	ty				=	@alts.ty
+  | * - Var Int Char App Ann Case
+                lhs         .   ty              =   RelevTy_Err "unimpl"
+%%]
+
+%%[(8 codegen)
+SEM CAltL
+  | *           lhs         .   ty              =   @lhs.knTy
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% VarMp gathering
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AllNT [ | rvarMp: RVarMp | ]
+
+SEM CodeAGItf
+  | AGItf       loc         .   rvarMp          =   emptyVarMp
+
+SEM CBindAspect
+  | Bind        lhs         .   rvarMp          =   @quantVarMp `varmpPlus` @expr.rvarMp
+%%]
+
+%%[(8 codegen)
+SEM CExpr
+  | Var Int Char
+                lhs         .   rvarMp          =   amsLocalVarMp @ams `varmpPlus` @lhs.rvarMp
+%%]
+
+%%[(8 codegen)
+SEM CAltL
+  | Cons        hd          .   rvarMp          =   amsLocalVarMp @ams `varmpPlus` @lhs.rvarMp
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Final VarMp distribution
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AllNT [ finalRVarMp: RVarMp | | ]
+
+SEM CodeAGItf
+  | AGItf       module      .   finalRVarMp     =   @module.rvarMp
+%%]
+
+%%[(8888 codegen)
+SEM CBindAspect
+  | Bind        expr        .   finalRVarMp     =   varmpPlus @quantVarMp @lhs.finalRVarMp 
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Constraint gathering
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AllCodeNT [ | | qualS USE {`Set.union`} {Set.empty} : RelevQualS ]
+
+SEM CExpr
+  | Var
+                lhs         .   qualS           =   Set.union @gQualS (amsGathQual @ams)
+  | Int Char
+                lhs         .   qualS           =   amsGathQual @ams
+%%]
+
+%%[(8 codegen)
+SEM CAltL
+  | Cons        lhs         .   qualS           =   Set.unions [@aQualS, @hd.qualS, @tl.qualS]
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Type of a binding
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+SEM CBindAspect
+  | Bind        loc         .   ty              =   case @expr.mbLam of
+                                                      Just nmL
+                                                        -> RelevTy_Fun ras [] (map fresh as) (fresh r)
+                                                        where ras@(r:as) = mkNewLevUIDL (1 + length nmL) @lUniq
+                                                      _ | @lhs.letBindingsCateg == CBindings_Strict -> freshStrict @lUniq
+                                                        | otherwise                                 -> fresh       @lUniq
+                            .   (exprKnTy,exprEnv)
+                                                =   case @ty of
+                                                      RelevTy_Fun _ _ as r
+                                                        -> (r,gamFromAssocL (zip (fromJust @expr.mbLam) as))
+                                                      t -> (t,emptyGam)
+                            .   (bindTy,quantVarMp)
+                                                =   case @ty of
+                                                      t@(RelevTy_Fun _ _ _ _)
+                                                        -> relevtyQuant @expr.rvarMp @expr.qualS t
+                                                      t -> (t, emptyVarMp)
+                            .   (tyAspectL)
+                                                =   [CBindAspect_RelevTy @bindTy]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Transformation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AllBindAspect [ | | tyAspectL USE {++} {[]}: {[CBindAspect]} ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Transformation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AllCodeNT [ | | cTrf: SELF ]
+ATTR CodeAGItf [ | | cTrf: CModule ]
+
+SEM CBind
+  | Bind        loc         .   cTrf            =   CBind_Bind @nm (@bindAspects.tyAspectL ++ @bindAspects.cTrf)
+
+SEM CExpr
+  | Var Int Char
+                lhs         .   cTrf            =   CExpr_Ann (CExprAnn_Coe $ @lhs.finalRVarMp |=> amsoCoe @amso) @cTrf
+%%]
+

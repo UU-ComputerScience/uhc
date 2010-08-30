@@ -94,6 +94,9 @@
 %%[9 export(snd3,thd)
 %%]
 
+%%[(8 codegen) import({%{EH}Base.Strictness}) export(module {%{EH}Base.Strictness})
+%%]
+
 %%[20 export(ppCurlysAssocL)
 %%]
 
@@ -1434,3 +1437,31 @@ data SrcConst
   | SrcConst_Ratio	Integer Integer
   deriving (Eq,Show,Ord)
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Lifting
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 export(fmap2Tuple)
+fmap2Tuple :: Functor f => snd -> f x -> f (x,snd)
+fmap2Tuple snd = fmap (\x -> (x,snd))
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Name generation for variables, mapping from arbitrary to concise name from ['a' .. ]
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 export(genNmMap)
+genNmMap :: Ord x => (String->s) -> [x] -> Map.Map x s -> (Map.Map x s, [s])
+genNmMap mk xs m
+  = (m',reverse ns)
+  where (m',_,ns)
+          = foldl (\(m,sz,ns) x
+                    -> case Map.lookup x m of
+                         Just n -> (m, sz, n:ns)
+                         _      -> (Map.insert x n m, sz+1, n:ns)
+                                where n = mk [chr $ ord 'a' + sz]
+                  )
+                  (m,Map.size m,[]) xs
+%%]
+

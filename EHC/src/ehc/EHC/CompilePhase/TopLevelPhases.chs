@@ -68,7 +68,7 @@ level 2..6 : with prefix 'cpEhc'
 %%[(20 codegen grin) import(qualified {%{EH}Core} as Core(cModMerge))
 %%]
 -- Language syntax: TyCore
-%%[(8 codegen) import(qualified {%{EH}TyCore.Full2} as C)
+%%[(8 codegen tycore) import(qualified {%{EH}TyCore.Full2} as C)
 %%]
 -- Language syntax: Grin
 %%[(20 codegen grin) import(qualified {%{EH}GrinCode} as Grin(grModMerge))
@@ -758,6 +758,7 @@ cpEhcCorePerModulePart1 earlyMerge modNm
        ; let (_,opts) = crBaseInfo' cr
        ; cpSeq
            (  [ cpStepUID ]
+%%[[(8 tycore)
            ++ (if ehcOptTyCore opts
                then [ cpProcessTyCoreBasic modNm
                     , cpMsg modNm VerboseALot "TyCore (basic) done"
@@ -766,6 +767,7 @@ cpEhcCorePerModulePart1 earlyMerge modNm
                     ]
                else []
               )
+%%]]
            ++ [ cpProcessCoreBasic modNm
               , cpMsg modNm VerboseALot "Core (basic) done"
               , when (not earlyMerge) $ cpProcessCoreRest modNm
@@ -874,9 +876,13 @@ cpProcessEH modNm
                , cpFlowEHSem1 modNm
                , cpTranslateEH2Output modNm
 %%[[(8 codegen)
-               , if ehcOptTyCore opts
+               ,
+%%[[(8 tycore)
+                 if ehcOptTyCore opts
                  then cpTranslateEH2TyCore modNm
-                 else cpTranslateEH2Core modNm
+                 else 
+%%]]
+                      cpTranslateEH2Core modNm
 %%]]
 %%[[99
                , cpCleanupEH modNm
@@ -885,7 +891,7 @@ cpProcessEH modNm
        }
 %%]
 
-%%[(8 codegen)
+%%[(8 codegen tycore)
 -- | TBD: finish it, only a sketch now
 cpProcessTyCoreBasic :: HsName -> EHCompilePhase ()
 cpProcessTyCoreBasic modNm 
@@ -897,34 +903,11 @@ cpProcessTyCoreBasic modNm
                                  errs   = C.tcCheck opts C.emptyCheckEnv cMod
                            ; cpSetLimitErrsWhen 500 "Check TyCore" errs
                            }
-       ; cpSeq [ {-
-                 cpTransformCore
-                   modNm
-                     (
-%%[[102
-                       -- [ "CS" ] ++
-%%]]
-                       [ "CER", "CRU", "CLU", "CILA", "CETA", "CCP", "CILA", "CETA"
-                       , "CFL", "CLGA", "CCGA", "CLU", "CFL", {- "CLGA", -} "CLFG"    
-%%[[9               
-                       ,  "CLDF"
-%%]
-%%[[8_2        
-                       , "CPRNM"
-%%]]
-                       , "CFN"
-                       ]
-                     )
-                 -}
-               -- , when (ehcOptEmitCore opts)   (cpOutputCore   "core"   modNm)
-                 when (ehcOptTyCore opts)
+       ; cpSeq [ cpTransformTyCore modNm
+               , when (ehcOptTyCore opts)
                       (do { cpOutputTyCore "tycore" modNm
                           ; check modNm
                           })
-%%[[(8 codegen java)
-               -- , when (ehcOptEmitJava opts)   (cpOutputJava   "java"   modNm)
-%%]]
-               -- , cpProcessCoreFold modNm
                ]
         }
 %%]

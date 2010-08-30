@@ -91,48 +91,55 @@ nodeNeedsForwarding opts
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Size of other known types
+%%% Size of other known types, on the target platform
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[97
 #undef SIZEOF_FLOAT
 #undef SIZEOF_DOUBLE
+#undef SIZEOF_INT
 %%]
 
-%%[97 export(sizeofFloat,sizeofDouble)
+%%[97 export(sizeofFloat,sizeofDouble,sizeofCInt)
 sizeofFloat :: Int
 sizeofFloat = SIZEOF_FLOAT
 
 sizeofDouble :: Int
 sizeofDouble = SIZEOF_DOUBLE
-%%]
 
-%%[97
+sizeofCInt :: Int
+sizeofCInt = SIZEOF_INT
 %%]
-sizeofFloatInLog :: Int
-sizeofFloatInLog = log2 sizeofFloat
-
-sizeofDoubleInLog :: Int
-sizeofDoubleInLog = log2 sizeofDouble
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Sizes
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen grin) export(sizeofPointer)
-#undef SIZEOF_INTPTR_T
-
 sizeofPointer :: Int
-sizeofPointer = SIZEOF_INTPTR_T
+sizeofPointer = sizeofWord
 %%]
 
-%%[(8 codegen grin) export(sizeofGrWord,sizeofGrWordAsInteger,use64Bits,use32Bits)
+%%[(8 codegen grin) export(sizeofGrWord,sizeofGrWordAsInteger)
 sizeofGrWord :: Int
 sizeofGrWord = sizeofWord
 
 sizeofGrWordAsInteger :: Integer
 sizeofGrWordAsInteger = sizeofWordAsInteger
 
+%%]
+
+%%[(8 codegen grin) export(gbLabelOffsetSize)
+gbLabelOffsetSize :: Int
+gbLabelOffsetSize = sizeofGrWord
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Predicates about sizes
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin) export(use64Bits,use32Bits)
+-- which size is used for word?
 use64Bits, use32Bits :: Bool
 (use64Bits,use32Bits)
   = if sizeofGrWord == 8
@@ -140,9 +147,10 @@ use64Bits, use32Bits :: Bool
     else (False,True)
 %%]
 
-%%[(8 codegen grin) export(gbLabelOffsetSize)
-gbLabelOffsetSize :: Int
-gbLabelOffsetSize = sizeofGrWord
+%%[(97 codegen grin) export(isSameSizeForIntAndWord)
+-- are sizes of machine int and word same?
+isSameSizeForIntAndWord :: Bool
+isSameSizeForIntAndWord = sizeofCInt == sizeofWord
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

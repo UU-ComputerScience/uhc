@@ -30,7 +30,7 @@ Folding over AST to compute semantics
 %%[(8 codegen grin) import(qualified {%{EH}Core} as Core, qualified {%{EH}Core.ToGrin} as Core2GrSem)
 %%]
 -- TyCore syntax and semantics
-%%[(8 codegen) import(qualified {%{EH}TyCore} as C)
+%%[(8 codegen tycore) import(qualified {%{EH}TyCore} as C)
 %%]
 
 -- HI syntax and semantics

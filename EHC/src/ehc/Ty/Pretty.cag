@@ -488,7 +488,7 @@ SEM Ty
                             .   ppNice  =   ppParNeed  @parNeed @lhs.parNeed @ppAppTop
                             .   pp      =   if @isSpineRoot then @ppNice else @ppDflt
   | Any             loc     .   pp      =   pp hsnUnknown
-  | Ann             loc     .   pp      =   {- @ann.pp >#< -} ppParens @ty.pp >|< "@" >|< @ann.pp	-- this pp currently only for debugging, change as required
+  | Ann             loc     .   pp      =   @ann.pp >#< @ty.pp
 %%]
 
 %%[(8 hmtyinfer || hmtyast)
@@ -697,8 +697,11 @@ SEM Ty
 %%[(1 hmtyinfer || hmtyast)
 SEM TyAnn
   | Empty			loc		.	pp		=	empty
+%%[[(8 codegen)
+  | Strictness      loc     .   pp      =   "@" >|< show @s
+%%]]
 %%[[4
-  | Mono			loc		.	pp		=	pp "<MONO>"
+  | Mono			loc		.	pp		=	pp "MONO "
 %%]]
 %%]
 

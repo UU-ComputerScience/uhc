@@ -24,6 +24,8 @@ Currently the following is maintained:
 
 %%[(8 codegen) module {%{EH}LamInfo} import({%{EH}Base.Common})
 %%]
+%%[(8 codegen) import({%{EH}AnaDomain})
+%%]
 %%[(8 codegen) import(EH.Util.Utils)
 %%]
 
@@ -43,7 +45,7 @@ Note (20100301 AD): this def is asymmetric, that is Core info always is there, t
 Instead of everything being equal.
 Obvious action: fix it one day.
 
-%%[(8 codegen) hs export(StackTraceInfo(..),LamInfo(..),emptyLamInfo')
+%%[(8 codegen) hs export(StackTraceInfo(..),LamInfo(..),emptyLamInfo,emptyLamInfo')
 data StackTraceInfo
   = StackTraceInfo_None
   | StackTraceInfo_HasStackTraceEquiv	HsName		-- has a stack traced equivalent
@@ -57,19 +59,20 @@ data LamInfo
       { laminfoArity				:: !Int							-- arity of function
       , laminfoStackTrace  			:: !StackTraceInfo				-- stacktrace
       , laminfoGrinByteCode			:: Maybe GrinByteCodeLamInfo	-- GB specific info
+      , laminfoRelevTy				:: Maybe RelevTy				-- Relevance analysis specific info
       }
 %%[[20
   deriving (Data,Typeable)
 %%]]
 
 instance Show LamInfo where
-  show (LamInfo ar _ bc) = "LamInfo: arity=" ++ show ar ++ " bc=" ++ show bc
+  show (LamInfo ar _ bc _) = "LamInfo: arity=" ++ show ar ++ " bc=" ++ show bc
 
 emptyLamInfo' :: LamInfo
-emptyLamInfo' = LamInfo 0 StackTraceInfo_None (Just emptyGrinByteCodeLamInfo)
+emptyLamInfo' = LamInfo 0 StackTraceInfo_None (Just emptyGrinByteCodeLamInfo) Nothing
 
 emptyLamInfo :: LamInfo
-emptyLamInfo = LamInfo 0 StackTraceInfo_None Nothing
+emptyLamInfo = LamInfo 0 StackTraceInfo_None Nothing Nothing
 
 %%]
 
@@ -83,9 +86,20 @@ laminfo1stArgIsStackTrace _                                                     
 %%% LamMp, map for maintaining implementation info about functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs export(LamMp,lamMpUpdateWith)
+%%[(8 codegen) hs export(LamMp,lamMpMergeInto)
 type LamMp    = Map.Map HsName LamInfo
 
+-- propagate from new (left) to prev (right)
+lamMpMergeInto :: (LamInfo -> LamInfo -> LamInfo) -> (LamMp -> LamMp -> LamMp) -> LamMp -> LamMp -> LamMp
+lamMpMergeInto mergeL2R mergeMp newMp prevMp
+  = mergeMp newMpMerge prevMp
+  where newMpMerge
+          = Map.mapWithKey
+              (\n i -> maybe i (mergeL2R i) $ Map.lookup n prevMp
+              ) newMp
+%%]
+
+%%[(8888 codegen) hs export(lamMpUpdateWith)
 -- propagate from previous (left) to new (right) only the stacktrace info
 lamMpUpdateWith :: LamMp -> LamMp -> LamMp
 lamMpUpdateWith prev new

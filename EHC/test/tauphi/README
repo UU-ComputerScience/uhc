@@ -1,0 +1,40 @@
+TyCore test files
+=================
+
+These files serve to test some of the TyCore tranformations.
+They're all designed to work with variant 8 of the compiler, i.e. no IO.
+
+
+defsitearity-*
+Tests the DefinitionSiteArityRaise transformation
+
+  1: Simple curried function `const`, both parameters can be merged.
+  2: Polymorphic `id` function, explicit type parameter can be merged with
+     value parameter.
+  3: Complex function `foo`, with nested let bindings. Several value
+     parameters can be merged.
+
+
+lazyfun-*
+Tests the RemoveLazyFunctions transformation.
+
+  1: Test top level and let bound functions. Also tests CAFs.
+  2: Tests non-function with function type (undefined).
+
+
+strictness-*
+Tests the OptimizeStrictness transformation.
+
+  1: Monomorphic `id` function with @strict annotation.
+  2: Monomorphic `id` function with one @strict annotation, nice to test with
+     DefinitionSiteArityRaise transformation.
+  3: `succ` function wth @strict annotation.
+     At the time of writing, FFI isn't properly implemented in TypeChecker, so
+     that still gives an error.
+  4: The `foo` function is intended to show the concept of deep-unboxing.
+     However, since data types aren't yet implemented, this doesn't work.
+
+
+Tom Lokhorst,
+2010-08-18
+

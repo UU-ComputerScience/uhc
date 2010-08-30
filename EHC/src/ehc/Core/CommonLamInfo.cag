@@ -40,18 +40,20 @@ ATTR
 
 %%[(8 codegen).CodeAGItf.lamMp
 SEM CodeAGItf
-  | AGItf       module      .   lamMp  =   @module.gathLamMp
+  | AGItf       module      .   lamMp       =   @module.gathLamMp
 %%]
 
 %%[(20 codegen) -8.CodeAGItf.lamMp
 SEM CodeAGItf
-  | AGItf       loc         .   gathLamMp
-                                            =   lamMpUpdateWith @lhs.lamMp @module.gathLamMp
-                module      .   lamMp  =   @gathLamMp `Map.union` @lhs.lamMp
+  | AGItf       loc         .   gathLamMp   =   lamMpMergeInto ((\(LamInfo {laminfoStackTrace=t}) i -> i {laminfoStackTrace=t})) const @module.gathLamMp @lhs.lamMp -- lamMpUpdateWith @lhs.lamMp @module.gathLamMp
+                module      .   lamMp       =   @gathLamMp `Map.union` @lhs.lamMp
 %%]
+SEM CodeAGItf
+  | AGItf       loc         .   gathLamMp   =   lamMpUpdateWith @lhs.lamMp @module.gathLamMp
+                module      .   lamMp       =   @gathLamMp `Map.union` @lhs.lamMp
 
 %%[(8 codegen)
 SEM CExpr
-  | Lam         body        .   lamMp  =   Map.delete @arg @lhs.lamMp
+  | Lam         body        .   lamMp       =   Map.delete @arg @lhs.lamMp
 %%]
 

@@ -7,7 +7,10 @@
 %%% Main
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 module {%{EH}HS.Parser} import(UU.Parsing, UU.Parsing.Offside, EH.Util.ParseUtils, UU.Scanner.GenToken, EH.Util.ScanUtils, {%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{EH}Scanner.Common}, {%{EH}HS})
+%%[1 module {%{EH}HS.Parser} import(UU.Parsing, UU.Parsing.Offside, EH.Util.ParseUtils, UU.Scanner.GenToken, EH.Util.ScanUtils)
+%%]
+
+%%[1 import({%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{EH}Scanner.Common}, {%{EH}Base.Opts}, {%{EH}HS})
 %%]
 
 %%[1 import(IO)
@@ -36,41 +39,6 @@ tokConcat t1 t2 = Reserved (tokenVal t1 ++ tokenVal t2) (position t1)
 
 tokEmpty :: Token
 tokEmpty = Reserved "" noPos
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Parser
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[1 export(HSParser,HSParser')
-type HSParser         ep    =    LayoutParser Token ep
-type HSParser'        ep    =    PlainParser Token ep
-%%]
-
-%%[1 export(pAGItf)
-pAGItf :: HSParser AGItf
-pAGItf
-%%[[1
-  =   AGItf_AGItf <$> pModule pBody
-%%][99
-  =   AGItf_AGItf <$> pModule pBody'
-  -- =   AGItf_AGItf <$> pModule (pBody ())
-  where pBody :: () -> HSParser Body2Result
-        pBody _ = fst (pBody2 ())
-%%]]
-%%]
-
-%%[20 export(pAGItfImport)
-pAGItfImport :: HSParser AGItf
-pAGItfImport
-%%[[1
-  =   AGItf_AGItf <$> pModule pBodyImport
-%%][99
-  =   AGItf_AGItf <$> pModule (\_ -> pBodyImport)
-  -- =   AGItf_AGItf <$> pModule (pBody ())
-  where pBody :: () -> HSParser Body2Result
-        pBody _ = snd (pBody2 ())
-%%]]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -105,6 +73,35 @@ pApp p          =    mkApp <$> pList1 p
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Parser
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 export(HSParser,HSParser')
+type HSParser         ep    =    LayoutParser Token ep
+type HSParser'        ep    =    PlainParser Token ep
+%%]
+
+%%[1 export(pAGItf)
+pAGItf :: EHCOpts -> HSParser AGItf
+pAGItf opts
+%%[[1
+  =   AGItf_AGItf <$> pModule opts pBody
+%%][99
+  =   AGItf_AGItf <$> pModule opts pBody'
+%%]]
+%%]
+
+%%[20 export(pAGItfImport)
+pAGItfImport :: EHCOpts -> HSParser AGItf
+pAGItfImport opts
+%%[[20
+  =   AGItf_AGItf <$> pModule opts pBodyImport
+%%][99
+  =   AGItf_AGItf <$> pModule opts (\opts _ -> pBodyImport opts)
+%%]]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Pragma
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -134,38 +131,29 @@ pDeclarationPragma
 
 %%[1
 %%[[1
-pModule :: HSParser Body -> HSParser Module
+pModule :: EHCOpts -> (EHCOpts -> HSParser Body) -> HSParser Module
 %%][99
-pModule :: ((HSParser Declaration -> HSParser Declaration) -> HSParser Body) -> HSParser Module
--- pModule :: HSParser Body2Result -> HSParser Module
+pModule :: EHCOpts -> (EHCOpts -> (HSParser Declaration -> HSParser Declaration) -> HSParser Body) -> HSParser Module
 %%]]
-pModule pBody
+pModule opts pBody
 %%[[1
-  =          (\      b   -> Module_Module emptyRange   Nothing                           b) <$> pBody
-         <|> (\t m   b   -> Module_Module (mkRange1 t) (Just $ tokMkQName $ m)           b) <$> pMODULE <*> modid <* pWHERE <*> pBody
+  =          (\      b   -> Module_Module emptyRange   Nothing                           b) <$> pBody opts
+         <|> (\t m   b   -> Module_Module (mkRange1 t) (Just $ tokMkQName $ m)           b) <$> pMODULE <*> modid <* pWHERE <*> pBody opts
 %%][20
-  =          (\      b   -> Module_Module emptyRange   Nothing                   Nothing b) <$> pBody
-         <|> (\t m e b   -> Module_Module (mkRange1 t) (Just $ tokMkQName $ m)   e       b) <$> pMODULE <*> modid <*> pMaybeExports <* pWHERE <*> pBody
+  =          (\      b   -> Module_Module emptyRange   Nothing                   Nothing b) <$> pBody opts
+         <|> (\t m e b   -> Module_Module (mkRange1 t) (Just $ tokMkQName $ m)   e       b) <$> pMODULE <*> modid <*> pMaybeExports <* pWHERE <*> pBody opts
 %%][99
   = pList_gr pPragma
-    <**> (   (\      b p -> Module_Module emptyRange   Nothing                 p Nothing b) <$> pBody id
-         <|> (\t m e b p -> Module_Module (mkRange1 t) (Just $ tokMkQName $ m) p e       b) <$> pMODULE <*> modid <*> pMaybeExports <* pWHERE <*> pBody (\d -> d <|> pDeclarationPragma)
+    <**> (   (\      b p -> Module_Module emptyRange   Nothing                 p Nothing b) <$> pBody opts id
+         <|> (\t m e b p -> Module_Module (mkRange1 t) (Just $ tokMkQName $ m) p e       b) <$> pMODULE <*> modid <*> pMaybeExports <* pWHERE <*> pBody opts (\d -> d <|> pDeclarationPragma)
          )
-{-
-  = (\(pragmas,mbheaders,body)
-       -> case mbheaders of
-            [(r,nm,mbe)] -> Module_Module r          (Just nm) pragmas mbe     body
-            _            -> Module_Module emptyRange Nothing   pragmas Nothing body
-    )
-    <$> pBody
--}
 %%]]
   <?> "pModule"
 %%]
 
 %%[1
-pBody' :: (HSParser Declaration -> HSParser Declaration) -> HSParser Body
-pBody' addDecl
+pBody' :: EHCOpts -> (HSParser Declaration -> HSParser Declaration) -> HSParser Body
+pBody' opts addDecl
 %%[[1
   =   Body_Body emptyRange <$> pDeclarations1' (addDecl pTopDeclaration)
   <|> pSucceed (Body_Body emptyRange [])
@@ -183,98 +171,8 @@ pBody' addDecl
 %%]
 
 %%[1
-pBody :: HSParser Body
-pBody = pBody' id
-%%]
-
-%%[99
-type BodyModuleHeader = (Range,Name,MaybeExports)
-
-pHeaderModule :: HSParser BodyModuleHeader
-pHeaderModule
-  =   (\t m e -> (mkRange1 t,tokMkQName m,e)) <$> pMODULE <*> modid <*> pMaybeExports <* pWHERE
-%%]
-
-%%[1
-type Body2Result
-%%[[1
-  = Body
-%%][20
-  = Body
-%%][99
-  = ([Pragma],[BodyModuleHeader],Body)
-%%]]
-%%]
-
-%%[1
-pBody2 :: () {- dummy parameter -} ->
-%%[[1
-  (HSParser Body2Result,HSParser Body)
-%%][99
-  (HSParser Body2Result,HSParser Body2Result)
-%%]]
-pBody2 _
-  = (pBody,pBodyImport)
-  where pBody :: HSParser Body2Result
-        pBody
-%%[[1
-          =   Body_Body emptyRange <$> pDeclarations1' pTopDeclaration
-          <|> pSucceed (Body_Body emptyRange [])
-%%][20
-          =   (\ids -> let (i,d) = foldr cmb ([],[]) ids in Body_Body emptyRange i d)
-              <$> pDeclarations' (   (\d -> ([],[d])) <$> pTopDeclaration
-                                 <|> (\i -> ([i],[])) <$> pImportDeclaration
-                                 )
-%%][99
-          =   (\ids -> let (p,m,i,d) = foldl cmb (emp,emp,emp,emp) ids
-                       in  (l p, l m, Body_Body emptyRange (l i) (l d))
-              )
-              <$> pDeclarations' (pP <|> pM <|> pI <|> pD)
-%%]]
-          <?> "pBody"
-        pBodyImport :: HSParser Body2Result
-        pBodyImport
-%%[[1
-          =   undefined
-%%][20
-          =   (\d -> Body_Body emptyRange d [])
-              <$> pDeclarations' pImportDeclaration
-%%][99
-          =   (\ids -> let (p,m,i,_) = foldl cmb (emp,emp,emp,emp) ids
-                       in  (l p, l m, Body_Body emptyRange (l i) [])
-              )
-              <$> pDeclarations' (pP <|> pM <|> pI)
-%%]]
-          <?> "pBodyImport"
-%%[[20
-        -- combine declarations
-        cmb ([i],_) (is,ds) = (i:is,ds)
-        cmb (_,[d]) (_ ,ds) = ([],d:ds)
-%%][99
-        -- declaration parsers
-        pM, pD, pP, pI :: HSParser (Seq.Seq Pragma,Seq.Seq BodyModuleHeader,Seq.Seq ImportDeclaration,Seq.Seq Declaration)
-        pP = (\d -> (s d, emp, emp, emp)) <$> pPragma
-        pM = (\d -> (emp, s d, emp, emp)) <$> pHeaderModule
-        pI = (\d -> (emp, emp, s d, emp)) <$> pImportDeclaration
-        pD = (\d -> (emp, emp, emp, s d)) <$> pTopDeclaration
-        
-        -- combine declarations
-        cmb (ps,ms,is,ds) (p,_,_,_) | isnemp p && isemp ms && isemp is && isemp ds
-                                               = (p+ps,ms ,  is,   ds)
-                                    | isnemp p = (  ps,ms ,  is,p'+ds)
-                                    where p' = s $ Declaration_Pragma emptyRange $ head $ l p
-        cmb (ps,ms,is,ds) (_,m,_,_) | isnemp m = (  ps,m  ,  is,   ds)
-        cmb (ps,ms,is,ds) (_,_,i,_) | isnemp i = (  ps,ms ,i+is,   ds)
-        cmb (ps,ms,is,ds) (_,_,_,d) | isnemp d = (  ps,ms ,  is,d +ds)
-
-        -- Seq aliases
-        emp    = Seq.empty
-        (+)    = Seq.union
-        s      = Seq.singleton
-        isemp  = Seq.null
-        isnemp = not . isemp
-        l      = Seq.toList
-%%]]
+pBody :: EHCOpts -> HSParser Body
+pBody opts = pBody' opts id
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -282,8 +180,8 @@ pBody2 _
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[20
-pBodyImport :: HSParser Body
-pBodyImport
+pBodyImport :: EHCOpts -> HSParser Body
+pBodyImport opts
   =   (\d -> Body_Body emptyRange d []) <$> pDeclarations' pImportDeclaration
   <?> "pBodyImport"
 %%]
@@ -729,6 +627,12 @@ pTypeBase
         <|> (\fs r -> Type_RowSumUpdate r (Type_RowSumEmpty r) fs) <$> pFlds
         )
 %%]]
+%%[[(5 tauphi)
+  <|> ((Type_Annotate . mkRange1) <$> pAT)
+     <*> (   (TypeAnnotation_AnnotationName . tokMkQName <$> tyvar)
+         <|> ((\n v -> TypeAnnotation_AnnotationVar (tokMkQName n) (tokMkQName v)) <$> tyvar <* pCOLON <*> tyvar) )
+     <*> pTypeBase
+%%]]
   where pInParens :: HSParser (Range -> Type)
         pInParens
           =   (pType
@@ -751,7 +655,7 @@ pTypeBase
                <**> (   (\e (o,_) r -> Type_SectionApplication r Nothing o (Just e)) <$> pType
                     -- <|> pSucceed (\(o,_) r -> Type_SectionApplication r Nothing o Nothing)
               )     )
-          <|> (\ts r -> Type_TupleConstructor r (length ts + 1)) <$> commas'
+          <|> flip Type_TupleConstructor <$> commas_arity
 %%]]
 %%[[1
           <|> pSucceed (\r -> Type_Constructor r (hsnProd 0))
@@ -883,12 +787,27 @@ pTypeLeftHandSide
 %%]
 
 %%[5
-pAnnotatedType :: HSParser Type -> HSParser AnnotatedType
+pAnnotatedType :: HSParser Type -> HSParser Type
 pAnnotatedType pT
-  =   (\(r,s) t -> AnnotatedType_Type r s t)
+  =   (\(r,s) t -> if s
+                   then Type_Annotate r TypeAnnotation_Strict t
+                   else t
+      )
       <$> ((\t -> (mkRange1 t,True)) <$> pBANG <|> pSucceed (emptyRange,False))
       <*> pT
 %%]
+pAnnotatedType :: HSParser Type -> HSParser Type
+pAnnotatedType pT
+  =   (\x -> Type_Annotate (mkRange1 x) TypeAnnotation_Strict) <$> pBANG <*> pT
+pAnnotatedType :: HSParser Type -> HSParser AnnotatedType
+pAnnotatedType pT
+  =   (\(r,s) t -> Type_Annotate (mkRange1 r) TypeAnnotation_Strict t)
+      (\(r,s) t -> if s
+                   then Type_Annotate (mkRange1 r) TypeAnnotation_Strict t
+                   else t
+      )
+      <$> ((\t -> (mkRange1 t,True)) <$> pBANG <|> pSucceed (emptyRange,False))
+      <*> pT
 
 %%[9.pTypeContextPrefix
 pContextItemsPrefix1 :: HSParser ContextItems
@@ -1097,7 +1016,7 @@ pExpressionBase
 %%]]
               )     )
 -}
-          <|> (\ts r -> Expression_TupleConstructor r (length ts + 1)) <$> commas'
+          <|> flip Expression_TupleConstructor <$> commas_arity
           <|> (pOpm
                <**> (   (\e (o,_) r -> Expression_SectionApplication r Nothing o (Just e)) <$> pExpression
                     -- <|> pSucceed (\(o,_) r -> Expression_SectionApplication r Nothing o Nothing)
@@ -1334,91 +1253,6 @@ pExpression4' pPreNotOp = (\(e,_,_) -> e) <$> pExpression4'' False pOp pPreNotOp
 %%]
 
 %%[1
-%%]
-pExpression3' :: HSParser Expression -> HSParser Expression
-pExpression3' pBase
-  =   pE <??> ((\c t e -> Expression_Typed (mkRange1 c) e t) <$> pDCOLON <*> pType)
-  <?> "pExpression3'"
-  where pE  ::  HSParser Expression
-        pE     =   mkE 
-                   <$> pChainr -- _ng
-                           ((\(op,rng) (l,lc) (r,rc) ->
-                               (Expression_InfixApplication rng l op r, lc+rc+1)
-                            )
-                            <$> pOp
-                           )
-                           ((\e -> (e,0)) <$> pBase)
-        mkE (e,0) = e
-        mkE (e,_) = Expression_InfixApplicationChainTop emptyRange e
-
-data Expression3OpSectionResult
-  = Expression3OpSection_None
-  | Expression3OpSection_Op             (Expression,Range)
-  | Expression3OpSection_CommaList      [Expression]
-  | Expression3OpSection_Typed          (Type,Range)
-
-pExpression3OpSection :: HSParser (Expression,Range) -> HSParser Expression -> HSParser (Expression,[Expression3OpSectionResult])
-pExpression3OpSection pOp pBase
-  =   mkE <$> pE
-  <?> "pExpression3OpSection"
-  where pE  ::  HSParser (Expression,Int,[Expression3OpSectionResult])
-        pE = pBase <**>
-               (   pOp <**>
-                     (   (\(re,cnt,tailop) (op,rng) le ->
-                            (Expression_InfixApplication rng le op re, cnt+1, tailop)
-                         )
-                         <$> pE
-                     <|> pSucceed (\o e -> (e,0,[Expression3OpSection_Op o]))
-                     )
-               <|> (\es e -> (e,0,[Expression3OpSection_CommaList es]))
-                   <$> pList1 (pComma *> pExpression)
-               <|> (\c t es e -> (e,0,[Expression3OpSection_Typed (t,mkRange1 c)] ++ (if null es then [] else [Expression3OpSection_CommaList es])))
-                   <$> pDCOLON <*> pType
-                   <*> pList (pComma *> pExpression)
-               <|> pSucceed (\e -> (e,0,[Expression3OpSection_None]))
-               )
-        mkE (e,0,tailop) = (e,tailop)
-        mkE (e,_,tailop) = (Expression_InfixApplicationChainTop emptyRange e,tailop)
-
-
-
-%%[1
-%%]
-pExpression2' :: HSParser (Expression -> Expression) -> HSParser Expression
-pExpression2' pPre
-  =   pE <??> ((\c t e -> Expression_Typed (mkRange1 c) e t) <$> pDCOLON <*> pType)
-  <?> "pExpression2'"
-  where pE  ::  HSParser Expression
-        pE     =   mkE 
-                   <$> pChainr -- _ng
-                           ((\(op,rng) (l,lc) (r,rc) ->
-                               (Expression_InfixApplication rng l op r, lc+rc+1)
-                            )
-                            <$> pOp
-                           )
-                           ((\e -> (e,0)) <$> pPreE)
-        pPreE  ::  HSParser Expression
-        pPreE  =   pExpressionLayout
-               <|> (\ps e -> foldr ($) e ps) <$> pList1 pPre <*> pExpressionLayout
-        mkE (e,0) = e
-        mkE (e,_) = Expression_InfixApplicationChainTop emptyRange e
-
-%%[1
-%%]
-pExpression1' :: HSParser (Expression -> Expression) -> HSParser Expression
-pExpression1' pPreE
-  =   (mkE <$> pE) <??> ((\c t e -> Expression_Typed (mkRange1 c) e t) <$> pDCOLON <*> pType)
-  <?> "pExpression1'"
-  where pE  ::  HSParser (Expression,Int)
-        pE  =   pExpressionLayout
-                <**> (   pSucceed (\e -> (e,0))
-                     <|> (\(op,rng) (r,opCnt) l -> (Expression_InfixApplication rng l op r,opCnt+1)) <$> pOp <*> pE
-                     )
-            <|> (\p e -> (p $ mkE $ e,0)) <$> pPreE <*> pE
-        mkE (e,0) = e
-        mkE (e,_) = Expression_InfixApplicationChainTop emptyRange e
-
-%%[1
 pExpressionPreBase :: HSParser Expression
 pExpressionPreBase = (\ps e -> foldr ($) e ps) <$> pList_gr pExpressionPrefix <*> pExpressionLayout
 
@@ -1503,77 +1337,6 @@ pAlternative
 pAlternatives :: HSParser Alternatives
 pAlternatives
   = pBlock1 pOCURLY pSEMI pCCURLY pAlternative
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Try out layout parsing
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-hasSuccess :: Steps a s p -> Bool
-hasSuccess (StRepair _ _ _ ) = False
-hasSuccess (Best     _ _ _ ) = False 
-hasSuccess _                 = True
-
-pCloseTry :: (OutputState o, InputState i s p, Position p, Symbol s, Ord s) 
-           => OffsideParser i o s p ()
-pCloseTry = OP (pWrap f g ( () <$ pSym CloseBrace) )
-  where g state steps1 k = (state,ar,k)
-{-
--}
-          where ar = case state of
-                               Off _ _ _ (Just state')
-                                 -> let steps2 = k state'
-                                    in if not (hasSuccess steps1) && hasSuccess steps2
-                                       then Cost 1# steps2
-                                       else steps1
-                               _ -> steps1
-{-
-          where ar = steps1
--}
-            
-        f acc state steps k = let (stl,ar,str2rr) = g state (val snd steps)  k
-                              in (stl ,val (acc ()) ar , str2rr )
-
-pOffsideTry :: (InputState i s p, OutputState o, Position p, Symbol s, Ord s) 
-         => OffsideParser i o s p x 
-         -> OffsideParser i o s p y 
-         -> OffsideParser i o s p a 
-         -> OffsideParser i o s p a 
-         -> OffsideParser i o s p a
-pOffsideTry open close bodyE bodyI = 
-       open *> bodyE <* close
-   <|> pOpen *> bodyI <* pClose
-
-pBlockTry :: (InputState i s p, OutputState o, Position p, Symbol s, Ord s) 
-       => OffsideParser i o s p x 
-       -> OffsideParser i o s p y 
-       -> OffsideParser i o s p z 
-       -> OffsideParser i o s p a 
-       -> OffsideParser i o s p [a]
-pBlockTry open sep close p =  pOffsideTry open close explicit implicit
- where -- elem = (:) <$> p `opt` id
-       elem = pMb p
-       sep' = () <$ sep        
-       -- elems s = ($[]) <$> pFoldr1Sep ((.),id) s elem
-       elems s = (\h t -> catMaybes (h:t)) <$> elem <*> pList (s *> elem)
-       explicit = elems sep'
-       implicit = elems (sep' <|> pSeparator)
-
-pBlock1Try :: (InputState i s p, OutputState o, Position p, Symbol s, Ord s) 
-       => OffsideParser i o s p x 
-       -> OffsideParser i o s p y 
-       -> OffsideParser i o s p z 
-       -> OffsideParser i o s p a 
-       -> OffsideParser i o s p [a]
-pBlock1Try open sep close p =  pOffsideTry open close explicit implicit
- where elem = (Just <$> p) `opt` Nothing
-       sep' = () <$ sep
-       -- elems s = (\h t -> catMaybes (h:t)) <$ pList s <*> (Just <$> p) <*> pList ( s *> elem)
-       elems s = (\h t -> catMaybes (h:t)) <$ pList s <*> (Just <$> p) <*> pList (s *> pMb p)
-       -- elems s = (\h t -> catMaybes (h:t)) <$ pList s <*> (Just <$> p) <*> pListSep (pList1 s) (Just <$> p)
-       explicit = elems sep'
-       implicit = elems (sep' <|> pSeparator)
-%%[1
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1685,6 +1448,9 @@ pPatternApp
       <**> (   (\l c -> mkRngNm Pattern_Constructor c l) <$> pList1 pPatternBaseCon
            <|> pPatternConSuffix
            )
+%%[[7
+  <|> (Pattern_Tuple emptyRange) <$> pParens commas_arity <*> pList1 pPatternBaseCon
+%%]]
   <?> "pPatternApp"
 %%]
 
@@ -1762,6 +1528,11 @@ commas =  (map (\s -> strProd (length s + 1)) . foldr tokConcat tokEmpty) <$> co
 %%][5
   where map = tokenMap
 %%]]
+%%]
+
+%%[1
+commas_arity :: HSParser Int
+commas_arity =  (\ts -> length ts + 1) <$> commas'
 %%]
 
 The separator used for after conditional+then expressions in an if-then-else in a do.

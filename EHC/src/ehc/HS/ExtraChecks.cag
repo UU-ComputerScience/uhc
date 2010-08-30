@@ -12,23 +12,16 @@ SEM Module
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% ..
+%%% Arity of (,,) must match nr of args in pattern ((,,) ...)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 hs
+%%[7
+SEM Pattern
+    | Tuple
+        loc             .   errArity    =   if @arity == length @patterns.eh
+                                            then []
+                                            else [rngLift @range Err_PatArity2 "pat " @pp @arity]
 %%]
-idDefOccGamCheckAllowedKind :: String -> [IdOccKind] -> IdDefOccGam -> [Err]
-idDefOccGamCheckAllowedKind m ks g
-  = case idDefOccGamPartitionByKind ks g of
-      (_,[]) -> []
-      (_,ds) -> [rngLift @range Err_DeclsNotAllowed m [ (ioccKind o,map ioccNm os) | os@(o:_) <- groupSortOn ioccKind (assocLKeys ds)]]
-
-%%[9
-%%]
-SEM Declaration
-    | Class
-        loc             .   errNotAllowed
-                                        =   idDefOccGamCheckAllowedKind "class" [IdOcc_Val] @where.idDefOccGam
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Module name

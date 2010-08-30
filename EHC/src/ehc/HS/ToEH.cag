@@ -34,14 +34,15 @@ ehSection uniq range semvar sempatvar semlam left op right
 %%]
 
 %%[1 hs
-ehTupleConstructor :: SemApp eh
-  => Range -> Int -> RngLiftArg (HsName -> eh) -> RngLiftArg (HsName -> ehp) -> RngLiftArg (ehp -> eh -> eh)
+ehTupleConstructor
+  :: SemApp eh
+     => Range -> Int -> RngLiftArg (HsName -> eh) -> RngLiftArg (HsName -> ehp) -> RngLiftArg (ehp -> eh -> eh)
 %%[[1
-  -> RngLiftArg (HsName -> eh)
+     -> RngLiftArg (HsName -> eh)
 %%][7
-  -> ([ehp] -> eh -> eh) -> RngLiftArg (r -> eh) -> RngLiftArg (r -> Maybe HsName -> eh -> r) -> RngLiftArg r
+     -> ([ehp] -> eh -> eh) -> RngLiftArg (r -> eh) -> RngLiftArg (r -> Maybe HsName -> eh -> r) -> RngLiftArg r
 %%]]
-  -> eh
+     -> eh
 ehTupleConstructor range arity semvar sempatvar semlam
 %%[[1
         semcon
@@ -528,16 +529,6 @@ ATTR FieldDeclaration [ | | eh: {EH.DataField} ]
 SEM FieldDeclaration
     | FieldDeclaration
         lhs         .   eh          =   rngLift @range EH.DataField_Field (Just @fldrefnames) @type.eh
-%%]
-
-%%[5
-ATTR AnnotatedTypes [ | | eh USE {:} {[]}: {[EH.TyExpr]} ]
-
-ATTR AnnotatedType [ | | eh: {EH.TyExpr} ]
-
-SEM AnnotatedType
-    | Type -- ToDo: or _Type?
-        lhs         .   eh          =   @type.eh
 %%]
 
 %%[9
@@ -1227,7 +1218,13 @@ SEM Pattern
     | Parenthesized
         lhs         .   eh          =   rngLift @range EH.PatExpr_Parens @pattern.eh
     | Tuple
+%%[[1
         lhs         .   eh          =   ehPatConApp @range (hsnProd (length @patterns.eh)) @patterns.eh
+%%][7
+        lhs         .   eh          =   foldl (\eh (n,p) -> ehRowRecPatExprUpd @range (Just n) (rngLift @range EH.RecPatExpr_Ext) p eh)
+                                              (rngLift @range EH.PatExpr_Rec $ rngLift @range EH.RecPatExpr_Empty)
+                                        $ zip positionalFldNames @patterns.eh
+%%]]
     | As
         lhs         .   eh          =   rngLift @range EH.PatExpr_VarAs
 %%[[1
@@ -1336,8 +1333,25 @@ SEM Body
 ATTR TypeAnnotation [ | | eh: {EH.TyExprAnn} ]
 
 SEM TypeAnnotation
-	| Empty
+%%[[1
+    | Empty
 		loc			.	eh			=	EH.TyExprAnn_Empty
+%%][5
+    | Strict
+		loc			.	eh			=	EH.TyExprAnn_Empty
+%%][(8 codegen)
+    | Strict
+        loc         .   eh          =   EH.TyExprAnn_Strictness (Strict)
+    | AnnotationName
+        loc         .   eh          =   case show @name of
+                                          "strict"    ->  EH.TyExprAnn_Strictness (Strict)
+                                          "nonStrict" ->  EH.TyExprAnn_Strictness (NonStrict)
+                                          _           -> EH.TyExprAnn_Empty
+    | AnnotationVar
+        loc         .   eh          =   case show @name of
+                                          "strictness" -> EH.TyExprAnn_Strictness (StrictnessVar @var)
+                                          _            -> EH.TyExprAnn_Empty
+%%]]
 %%]
 
 %%[1

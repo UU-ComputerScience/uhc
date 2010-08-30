@@ -93,6 +93,8 @@ SEM Pattern
 %%[[7
     | Record
         loc         .   errSq       =   Seq.unions [Seq.fromList @errIdUse, @recordPatternBindings.errSq]
+    | Tuple
+        loc         .   errSq       =   Seq.unions [Seq.fromList @errArity, @patterns.errSq]
 %%]]
 %%]
 

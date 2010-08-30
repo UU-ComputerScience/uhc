@@ -121,7 +121,7 @@ SEM Decl
 
 TyCore variant/clone:
 
-%%[(8 hmtyinfer codegen)
+%%[(8 hmtyinfer codegen tycore)
 SEM Expr
   | Lam Sel DataFields
 %%[[12
@@ -134,18 +134,18 @@ SEM Expr
                                                             }
 %%]
 
-%%[(8 hmtyinfer codegen)
+%%[(8 hmtyinfer codegen tycore)
 SEM PatExpr
   | AppTop Rec DataFields
                 loc         .   rceEnvTC    =   (C.emptyRCEEnv @lhs.opts) { C.rceValGam = @lhs.valGam, C.rceDataGam = @lhs.dataGam, C.rceTyVarMp = @lhs.finTyVarMp }
 %%]
 
-%%[(8 hmtyinfer codegen)
+%%[(8 hmtyinfer codegen tycore)
 SEM Decl
   | Data        loc         .   rceEnvTC    =   (C.emptyRCEEnv @lhs.opts :: C.RCEEnv) { C.rceValGam = @lhs.valGam, C.rceDataGam = @lhs.dataGam, C.rceTyVarMp = @lhs.finTyVarMp }
 %%]
 
-%%[(91 hmtyinfer codegen)
+%%[(91 hmtyinfer codegen tycore)
 SEM Decl
   | Instance    loc         .   rceEnvTC    =   (C.emptyRCEEnv @lhs.opts) { C.rceValGam = @lhs.valGam, C.rceDataGam = @lhs.dataGam, C.rceTyVarMp = @lhs.finTyVarMp }
 %%]

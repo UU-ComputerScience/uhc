@@ -27,7 +27,7 @@ module UHC.Generics
 
   -- * Meta-information
   , Datatype(..), Constructor(..), Selector(..)
-  , Fixity(..), Associativity(..)
+  , Arity(..), Fixity(..), Associativity(..)
   , NoSelector
 
   -- * Representable type classes
@@ -36,4 +36,5 @@ module UHC.Generics
   where
 
 import UHC.Base
+import UHC.Generics.Tuple
 

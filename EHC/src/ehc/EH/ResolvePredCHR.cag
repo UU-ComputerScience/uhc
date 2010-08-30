@@ -96,6 +96,9 @@ SEM Decl
                                                     =   case @instVariant of
                                                           InstDeriving _
                                                             | isJust derivDCL
+%%[[92
+                                                              && not (dgiIsRec @derivDataDGI)
+%%]]
                                                               -> ( gathPredLToProveCnstrMp $ foVarMp foDt |=> concat (extraPrOcc : altsPrOcc)
                                                                  , altsPrOcc, extraPrOcc
                                                                  , fromJust derivDCL
@@ -160,6 +163,8 @@ simplify
         , EvidKeyToCBindMap																	-- map from occurrence to binding, globally
         , PredScopeToCBindMap																-- map from predscope to binding, per predscope opening/intro
         , EvidKeyToCExprMap																	-- map from occurrence to expr + additional nesting info, for debug only
+%%]]
+%%[[(9 codegen tycore)
         , E2C.EvidKeyToValBindMap															-- TyCore variants from the above 3 results
         , E2C.PredScopeToValBindMap
         , E2C.EvidKeyToExprMap																-- for debug only
@@ -182,6 +187,8 @@ simplify env chrStore clDfGam heur partitionUnresolved2AmbigAndOthers toProveHer
 %%[[(9 codegen)
     , chrSolveEvidBindMp, chrSolveScopeBindMp
     , chrSolveEvidCoreMp		-- for debug only
+%%]]
+%%[[(9 codegen tycore)
     -- TyCore variant
     , chrSolveEvidBindMpTC, chrSolveScopeBindMpTC
     , chrSolveEvidCoreMpTC		-- for debug only
@@ -277,7 +284,7 @@ simplify env chrStore clDfGam heur partitionUnresolved2AmbigAndOthers toProveHer
         overlapErrs = if null overlapEvids then [] else [rngLift range Err_OverlapPreds [ (cpoPr $ overlapevidPredOcc a,map pp $ overlapevidInfos a) | a <- overlapEvids]]
 %%]]
         -- TyCore variant
-%%[[(9 codegen)
+%%[[(9 codegen tycore)
         (chrSolveEvidCoreMpTC,overlapEvidsTC)
           = E2C.evidMpToCore (env' {fiUniq = u3}) chrSolveEvidMp2
         (chrSolveEvidBindMpTC,chrSolveScopeBindMpTC)
@@ -313,6 +320,8 @@ SEM AGItf
                             .   (_,chrSolveMainRemCnstrMp,_,chrSolveSimpTyVarMp,chrSolveMainErrs,chrSimplifyResult,_
 %%[[(9 codegen)
                                 ,chrSolveMainEvidBindMp,chrSolveMainScopeBindMp,chrSolveMainEvidCoreMp
+%%]]
+%%[[(9 codegen tycore)
                                 ,chrSolveMainEvidBindMpTC,chrSolveMainScopeBindMpTC,chrSolveMainEvidCoreMpTC
 %%]]
                                 )
@@ -335,6 +344,8 @@ SEM Expr
                             .   (toProveHereCnstrMpCanon,chrSolve1RemCnstrMp,cannotRes1CnstrMp,chrSolve1SimpTyVarMp,chrSolve1Errs,chrSimplifyResult1,chrSolve1EvidMp
 %%[[(9 codegen)
                                 ,chrSolve1EvidBindMp  ,chrSolve1ScopeBindMp  ,chrSolve1EvidCoreMp
+%%]]
+%%[[(9 codegen tycore)
                                 ,chrSolve1EvidBindMpTC,chrSolve1ScopeBindMpTC,chrSolve1EvidCoreMpTC
 %%]]
                                 )
@@ -352,6 +363,8 @@ SEM Expr
                             .   (_,chrSolve2RemCnstrMp,_,chrSolve2SimpTyVarMp,chrSolve2Errs,chrSimplifyResult2,_
 %%[[(9 codegen)
                                 ,chrSolve2EvidBindMp  ,chrSolve2ScopeBindMp  ,chrSolve2EvidCoreMp
+%%]]
+%%[[(9 codegen tycore)
                                 ,chrSolve2EvidBindMpTC,chrSolve2ScopeBindMpTC,chrSolve2EvidCoreMpTC
 %%]]
                                 )
@@ -361,6 +374,8 @@ SEM Expr
                                                         else ( emptyCnstrMp, @chrSolve1RemCnstrMp, emptyCnstrMp, emptyVarMp, [], @chrSimplifyResult1, @chrSolve1EvidMp
 %%[[(9 codegen)
                                                              , @chrSolve1EvidBindMp  , @chrSolve1ScopeBindMp  , @chrSolve1EvidCoreMp
+%%]]
+%%[[(9 codegen tycore)
                                                              , @chrSolve1EvidBindMpTC, @chrSolve1ScopeBindMpTC, @chrSolve1EvidCoreMpTC
 %%]]
                                                              )
@@ -377,6 +392,8 @@ SEM Decl
                             .   (_,chrSolveDeclsRemCnstrMp,cannotResDeclsCnstrMp,chrSolveSimpTyVarMp,chrSolveDeclsErrs,chrDeclsSimplifyResult,_
 %%[[(9 codegen)
                                 ,chrSolveDeclsEvidBindMp,chrSolveDeclsScopeBindMp,_
+%%]]
+%%[[(9 codegen tycore)
                                 ,chrSolveDeclsEvidBindMpTC,chrSolveDeclsScopeBindMpTC,_
 %%]]
                                 )
@@ -388,6 +405,8 @@ SEM Decl
                             .   (_,chrSolveSuperRemCnstrMp,cannotResSuperCnstrMp,chrSolveSuperSimpTyVarMp,chrSolveSuperErrs,chrSuperSimplifyResult,_
 %%[[(9 codegen)
                                 ,chrSolveSuperEvidBindMp,chrSolveSuperScopeBindMp,_
+%%]]
+%%[[(9 codegen tycore)
                                 ,chrSolveSuperEvidBindMpTC,chrSolveSuperScopeBindMpTC,_
 %%]]
                                 )
@@ -442,17 +461,17 @@ SEM Expr
                                                         in  ( cnstrMpUnions quantCnstrMps
                                                             , foldr (\(occ,arg) m -> Map.insertWith (++) occ [arg] m) Map.empty $ concat coeArgIds
                                                             )
-                            .   prvArgCSubst        =   let mk a = (mkCExprHole @lhs.opts a, CMetaVal_Dict)
-                                                        in  uidImplsLToCSubst [ (occ, ([mkAppCoeWith $ map mk args], [])) | (occ,args) <- Map.toList @coeArgIdMp ]
+                            .   prvArgCSubst        =   let mk a = (acoreNmHole a, CMetaVal_Dict)
+                                                        in  acoreCSubstFromUidImplsL [ (occ, ([acoreCoeAppMeta2 $ map mk args], [])) | (occ,args) <- Map.toList @coeArgIdMp ]
                 loc         .   lUniq6              :   UNIQUEREF gUniq
 %%]
 
 TyCore variant/clone:
 
-%%[(9 hmtyinfer)
+%%[(9 hmtyinfer tycore)
 SEM Expr
   | Let         loc         .   prvArgTCSubst       =   let mk a = (mkHNm a,(C.MetaVal_Dict Nothing))
-                                                        in  C.uidImplsLToCSubst [ (occ, ([C.mkAppCoeWith $ map mk args], [])) | (occ,args) <- Map.toList @coeArgIdMp ]
+                                                        in  acoreCSubstFromUidImplsL [ (occ, ([acoreCoeAppMeta $ map mk args], [])) | (occ,args) <- Map.toList @coeArgIdMp ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -478,7 +497,7 @@ SEM Expr
 
 TyCore variant/clone:
 
-%%[(9 codegen hmtyinfer)
+%%[(9 codegen tycore hmtyinfer)
 ATTR NTPrf [ chrEvidBindMpTC: {E2C.EvidKeyToValBindMap}   chrScopeBindMpTC: {E2C.PredScopeToValBindMap} | | ]
 
 SEM AGItf
@@ -533,7 +552,7 @@ SEM Expr
 
 TyCore variant/clone:
 
-%%[(9 codegen hmtyinfer) hs
+%%[(9 codegen tycore hmtyinfer) hs
 mkScopeValBinds :: Bool -> PredScope -> E2C.PredScopeToValBindMap -> ([C.ValBind],E2C.PredScopeToValBindMap)
 mkScopeValBinds alsoOuter sc mp
   = (concatMap f scs,foldr Map.delete mp scs)
@@ -541,7 +560,7 @@ mkScopeValBinds alsoOuter sc mp
         scs  = [sc] ++ (if alsoOuter then pscpParents sc else [])
 %%]
 
-%%[(9 codegen hmtyinfer)
+%%[(9 codegen tycore hmtyinfer)
 SEM AGItf
   | AGItf       loc         .   (chrScopeMainBindLTC,chrScopeBindMpTC)
                                                     =   mkScopeValBinds True @predScope @chrSolveMainScopeBindMpTC
@@ -573,7 +592,9 @@ SEM Expr
 mkAssumeBindings :: [UID] -> EvidKeyToCBindMap -> [CBind]
 mkAssumeBindings ids mp
   = concat [ maybe [] id $ Map.lookup i mp | i <- ids ]
+%%]
 
+%%[(9 codegen tycore hmtyinfer) hs
 mkAssumeValBinds :: [UID] -> E2C.EvidKeyToValBindMap -> [C.ValBind]
 mkAssumeValBinds ids mp
   = concat [ maybe [] id $ Map.lookup i mp | i <- ids ]
@@ -591,5 +612,7 @@ SEM Expr
     LamImpl
 %%]]
                 loc         .   chrAssumeBindL      =   mkAssumeBindings (map poiId @poiL) @lhs.chrEvidBindMp
+%%[[(9 tycore)
                 loc         .   chrAssumeBindLTC    =   mkAssumeValBinds (map poiId @poiL) @lhs.chrEvidBindMpTC	-- for TyCore
+%%]]
 %%]

@@ -132,9 +132,17 @@ fi
 AC_ARG_ENABLE(llvm, AS_HELP_STRING([--enable-llvm],[include llvm code generation]), [enableLlvm=yes], [enableLlvm=no])
 AC_SUBST(ENABLE_LLVM,$enableLlvm)
 
-### enable options: clr
+### enable options: clr (Tom Lokhorsts CLR backend)
 AC_ARG_ENABLE(clr, AS_HELP_STRING([--enable-clr],[include clr code generation]), [enableClr=yes], [enableClr=no])
 AC_SUBST(ENABLE_CLR,$enableClr)
+
+### enable options: tycore (Typed Core)
+AC_ARG_ENABLE(tycore, AS_HELP_STRING([--enable-tycore],[include TyCore typed intermediate language]), [enableTyCore=yes], [enableTyCore=no])
+AC_SUBST(ENABLE_TYCORE,$enableTyCore)
+
+### enable options: tauphi (Tom Lokhorsts type based transformations on TyCore, based on work by Stefan Holdermans)
+AC_ARG_ENABLE(tauphi, AS_HELP_STRING([--enable-tauphi],[include TauPhi language extension and analyses]), [enableTauPhi=yes], [enableTauPhi=no])
+AC_SUBST(ENABLE_TAUPHI,$enableTauPhi)
 
 ### ranlib
 REQUIRED_PROG_FOR_EH(ranlibCmd,ranlib)
@@ -864,6 +872,19 @@ AC_SUBST(GMP_ABI,$gmpABI)
 
 # Use Boehm's GC
 AC_DEFINE([USE_BOEHM_GC],[1],[Use Boehm's garbage collector])
+
+# BGC needs additional flags sometimes
+case $HostPlatform in
+  i386-apple-darwin10.* )
+        # as from 10.6 this seems to be required
+        extlibsOptionsBGC="-D_XOPEN_SOURCE"
+        ;;
+  *)
+        extlibsOptionsBGC=""
+        ;;
+esac
+
+AC_SUBST(EXTLIBS_BGC_OPTS,$extlibsOptionsBGC)
 
 # which MP library
 AC_ARG_WITH(mplib,

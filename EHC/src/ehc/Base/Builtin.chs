@@ -277,8 +277,11 @@ hsnAddrUnboxed     =   hsnFromString "Addr#"
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1.mkRV
+mkRV' :: HsName -> HsName -> HsName
+mkRV' _ = id
+
 mkRV :: String -> HsName
-mkRV = hsnFromString
+mkRV = mkRV' undefined . hsnFromString
 
 %%[[92
 mkGenerRV :: String -> HsName
@@ -287,8 +290,11 @@ mkGenerRV = mkRV
 %%]
 
 %%[99 -1.mkRV
+mkRV' :: HsName -> HsName -> HsName
+mkRV' m = hsnSetQual m
+
 mkRV :: HsName -> String -> HsName
-mkRV m = hsnSetQual m . hsnFromString
+mkRV m = mkRV' m . hsnFromString
 
 mkGenerRV :: String -> HsName
 mkGenerRV = mkRV hsnModIntlBase
@@ -672,6 +678,10 @@ hsnIsInPrelude n
       _         -> False
 %%]
 
+%%[92
+hsnModIntlGenericsTuple                 =   hsnPrefixQual hsnUHC (mkHNm         "Generics.Tuple")
+%%]
+
 %%[99 export(hsnModPrelude,hsnModIntlBase)
 -- hsnModIntlRatio                         =   hsnPrefixQual hsnUHC (hsnFromString "Ratio")
 -- hsnModIntlReal                          =   hsnPrefixQual hsnUHC (hsnFromString "Real")
@@ -718,24 +728,28 @@ hsnClass2Polarity = mkHNmHidden . hsnPrefix "ClassPolarity-"
 %%% Naming conventions for generic deriving
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[92 export(hsnNm2Gener,hsnNm2GenerReprSyn,hsnNm2GenerDatatype,hsnNm2GenerConstructor,hsnNm2GenerSelector)
--- a hidden name corresponding to visible names
+%%[92 export(hsnNm2Gener,hsnNm2GenerReprSyn,hsnNm2GenerDatatype,hsnNm2GenerConstructor,hsnNm2GenerSelector,hsnNm2GenerReprTuple)
+-- | a hidden name corresponding to visible names
 hsnNm2Gener :: HsName -> HsName
 hsnNm2Gener = mkHNmHidden -- . hsnPrefix "Dict-"
 
--- a hidden name for representation type synonym
+-- | a hidden, but programmer accessible, name for representation type synonym, for datatypes
 hsnNm2GenerReprSyn :: Int -> HsName -> HsName
 hsnNm2GenerReprSyn i = mkHNmSpecial . hsnPrefix ("Rep" ++ show i)
 
--- a hidden name for representation datatype for a datatype
+-- | a hidden, but programmer accessible, name for representation type synonym, for tuples
+hsnNm2GenerReprTuple :: Int -> Int -> HsName
+hsnNm2GenerReprTuple arity i = hsnNm2GenerReprSyn i (mkHNm $ "Tuple" ++ show arity)
+
+-- | a hidden name for representation datatype for a datatype
 hsnNm2GenerDatatype :: HsName -> HsName
 hsnNm2GenerDatatype = hsnNm2Gener . hsnPrefix ("D_")
 
--- a hidden name for representation datatype for a datatype constructor
+-- | a hidden name for representation datatype for a datatype constructor
 hsnNm2GenerConstructor :: HsName -> HsName
 hsnNm2GenerConstructor = hsnNm2Gener . hsnPrefix ("C_")
 
--- a hidden name for representation datatype for a datatype field selector
+-- | a hidden name for representation datatype for a datatype field selector
 hsnNm2GenerSelector :: HsName -> HsName
 hsnNm2GenerSelector = hsnNm2Gener . hsnPrefix ("S_")
 %%]
@@ -870,6 +884,7 @@ data EHBuiltinNames
       , ehbnGenerDataMetaDN    				:: Int -> HsName
       , ehbnGenerDataMetaCN    				:: Int -> HsName
       , ehbnGenerDataMetaS1    				:: HsName
+      , ehbnGenerTupleRepresentableN		:: Int -> Int -> HsName
 %%]]
 %%[[97
       , ehbnInt8                        :: HsName
@@ -1019,6 +1034,7 @@ mkEHBuiltinNames f
       , ehbnGenerDataMetaDN    				= \n -> f IdOcc_Type  (mkGenerRVN  n "D"				)
       , ehbnGenerDataMetaCN    				= \n -> f IdOcc_Type  (mkGenerRVN  n "C"				)
       , ehbnGenerDataMetaS1    				=       f IdOcc_Type  (mkGenerRV     "S1"				)
+      , ehbnGenerTupleRepresentableN    	= \n a -> f IdOcc_Type (mkRV' hsnModIntlGenericsTuple $ hsnNm2GenerReprTuple a n)
 %%]]
 %%[[97
       , ehbnInt8                        = f IdOcc_Type      hsnInt8

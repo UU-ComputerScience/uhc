@@ -153,7 +153,7 @@ optOptsIsYes :: Eq opt => Maybe [opt] -> opt -> Bool
 optOptsIsYes mos o = maybe False (o `elem`) mos
 %%]
 
-%%[(8 codegen) export(TyCoreOpt(..))
+%%[(8 codegen tycore) export(TyCoreOpt(..))
 data TyCoreOpt
   = TyCoreOpt_Sugar			-- produce/accept sugared version
   | TyCoreOpt_Unicode		-- produce/accept unicode, implies sugar
@@ -187,6 +187,9 @@ data EHCOpts
       {  ehcOptAspects        ::  String            -- which aspects are included in this compiler
       ,  ehcOptShowHS         ::  Bool              -- show HS pretty print on stdout
       ,  ehcOptShowEH         ::  Bool              -- show EH pretty print on stdout
+%%[[(8 codegen tycore)
+      ,  ehcOptShowTyCore     ::  Bool              -- show TyCore ast on stout
+%%]]
       ,  ehcOptPriv           ::  Bool              -- privately used (in general during switch between 2 impls of 1 feature)
       ,  ehcOptHsChecksInEH   ::  Bool              -- do checks in EH which already have been done in HS (usually related to name absence/duplication). This is used for EH compilation only.
 %%[[1
@@ -210,6 +213,8 @@ data EHCOpts
       ,  ehcOptDumpCoreStages ::  Bool              -- dump intermediate Core transformation stages
       ,  ehcOptTarget         ::  Target            -- code generation target
       ,  ehcOptTargetFlavor   ::  TargetFlavor      -- code generation target flavor
+%%]]
+%%[[(8 codegen tycore)
       ,  ehcOptUseTyCore      ::  Maybe [TyCoreOpt] -- use TyCore instead of Core (temporary option until Core is obsolete)
 %%]]
 %%[[(8 codegen grin)
@@ -351,7 +356,7 @@ ehcOptEmitCore opts
   = ehcOptFullProgAnalysis opts || targetIsCore (ehcOptTarget opts)
 %%]
 
-%%[(8 codegen) export(ehcOptEmitTyCore,ehcOptTyCore)
+%%[(8 codegen tycore) export(ehcOptEmitTyCore,ehcOptTyCore)
 -- generate TyCore
 ehcOptEmitTyCore :: EHCOpts -> Bool
 ehcOptEmitTyCore opts
@@ -370,6 +375,9 @@ defaultEHCOpts
   = EHCOpts
       {  ehcOptAspects          =   "%%@{%{ASPECTS}%%}"
       ,  ehcOptShowHS           =   False
+%%[[(8 codegen tycore)
+      ,  ehcOptShowTyCore       =   False
+%%]]
       ,  ehcOptPriv             =   False
       ,  ehcOptHsChecksInEH     =   False
 %%[[1
@@ -396,6 +404,8 @@ defaultEHCOpts
       ,  ehcOptOptimizationScope=   OptimizationScope_PerModule
       ,  ehcOptTarget           =   defaultTarget
       ,  ehcOptTargetFlavor     =   defaultTargetFlavor
+%%]]
+%%[[(8 codegen tycore)
       ,  ehcOptUseTyCore        =   Nothing
 %%]]
 %%[[(8 codegen grin)
@@ -507,6 +517,10 @@ ehcCmdLineOpts
 %%]]
 %%[[1
      ,  Option "p"  ["pretty"]           (OptArg oPretty "hs|eh|ast|-")       "show pretty printed source or EH abstract syntax tree, default=eh, -=off, (downstream only)"
+%%][(8 codegen tycore)
+     ,  Option "p"  ["pretty"]           (OptArg oPretty "hs|eh|ast|ty|-")    "show pretty printed source, EH abstract syntax tree or TyCore ast, default=eh, -=off, (downstream only)"
+%%]]
+%%[[1
      ,  Option "d"  ["debug"]            (NoArg oDebug)                       "show debug information"
      ,  Option ""   ["priv"]             (boolArg oPriv)                      "private flag, used during development of 2 impls of 1 feature"
 %%][100
@@ -609,7 +623,7 @@ ehcCmdLineOpts
      ,  Option ""   ["cfg-install-root"]    (ReqArg oCfgInstallRoot "dir")        "cfg: installation root (to be used only by wrapper script)"
      ,  Option ""   ["cfg-install-variant"] (ReqArg oCfgInstallVariant "variant") "cfg: installation variant (to be used only by wrapper script)"
 %%]]
-%%[[(8 codegen)
+%%[[(8 codegen tycore)
      ,  Option ""   ["tycore"]              (OptArg oUseTyCore "opt[,...]")      ("temporary/development: use typed core. opts: " ++ (concat $ intersperse " " $ Map.keys tycoreOptMp))
 %%]]
      ]
@@ -622,6 +636,9 @@ ehcCmdLineOpts
                                 Just "hs"    -> o { ehcOptShowHS       = True      }
                                 Just "eh"    -> o { ehcOptShowEH       = True      }
                                 Just "pp"    -> o { ehcOptShowEH       = True      }
+%%[[(8 codegen tycore)
+                                Just "ty"    -> o { ehcOptShowTyCore   = True      }
+%%]]
 %%[[1
                                 Just "ast"   -> o { ehcOptShowAst      = True      }
 %%][100
@@ -657,6 +674,8 @@ ehcCmdLineOpts
 %%]]
 %%[[(8 codegen)
          oTimeCompile    o =  o { ehcOptTimeCompile       = True    }
+%%]]
+%%[[(8 codegen tycore)
          oUseTyCore ms   o =  case ms of
                                 Just s -> o { ehcOptUseTyCore = Just opts2 }
                                        where opts1 = optOpts tycoreOptMp s
@@ -1106,7 +1125,7 @@ fioIsMeetJoin fio =  case fioMode fio of {FitMeet -> True ; FitJoin -> True ; _ 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 export(ehcOptBuiltin,ehcOptBuiltin2)
-ehcOptBuiltin :: EHCOpts -> (EHBuiltinNames -> HsName) -> HsName
+ehcOptBuiltin :: EHCOpts -> (EHBuiltinNames -> x) -> x
 ehcOptBuiltin o f = f $ ehcOptBuiltinNames o
 
 ehcOptBuiltin2 :: EHCOpts -> (EHBuiltinNames -> Int -> HsName) -> Int -> HsName
