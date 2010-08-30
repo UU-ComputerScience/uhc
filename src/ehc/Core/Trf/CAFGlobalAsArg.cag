@@ -132,19 +132,19 @@ ATTR AllBind   [ | | varBindSq USE {`Seq.union`} {Seq.empty}: {Seq.Seq CBind}
 SEM CBindAspect
   | Bind        loc         .   nmLam       =   mkFvNm @lUniq1 @lhs.nm
                             .   cTrfVar     =   acoreBind1Metas @lhs.nm @bindMeta.cTrf
-                                                $ acoreAppMeta (acoreVar @nmLam)
-                                                $ map (\(n,cvi) -> (fvVarRepl @lhs.argMp n,cviMeta cvi)) @argOldL
+                                                $ acoreApp (acoreVar @nmLam)
+                                                $ map (\(n,cvi) -> (fvVarRepl @lhs.argMp n)) @argOldL
                             .   cTrfLam     =   acoreBind1Cat CBindings_Plain @nmLam
-                                                $ acoreLamMeta [(n,cviMeta cvi) | (n,cvi) <- @argNewL] @expr.cTrf
+                                                $ acoreLam [(n) | (n,cvi) <- @argNewL] @expr.cTrf
                 lhs         .   (varBindSq,lamBindSq)
                                             =   if null @argNewL
                                                 then (Seq.singleton (acoreBind1Asp1 @lhs.nm @cTrf   ) , Seq.empty             )
                                                 else (Seq.singleton                         @cTrfVar  , Seq.singleton @cTrfLam)
-  | FFI
+  -- | FFI
 %%[[90
-    FFE
-%%]]
+  | FFE
                 lhs         .   varBindSq   =   Seq.singleton (acoreBind1Asp1 @lhs.nm @cTrf)
+%%]]
 
 SEM CExpr
   | Var         lhs         .   cTrf        =   fvVarRepl @lhs.argMp @nm

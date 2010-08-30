@@ -151,21 +151,26 @@ Many intermediate languages\uncover<1->{, {\em 7 transformations}}
 %\draw[step=1cm,blue,very thin] (0,0) grid (8,8);
 
 \draw (0,8) node[fill=white,text=black,anchor=north west] {
+%%[[pipelineExample.HS
 {\small
 %%[[wrap=safecode
 module Main where
 
+%%[[pipelineExample.HS.len
 len :: [a] -> Int
 len [] = 0
 len (x:xs) = 1 + len xs
+%%]]
 
 main = putStr (show (len (replicate 4 'x')))
 %%]]
 }
+%%]]
 };
 
 \uncover<2->{
 \draw (3.5,7.2) node[fill=uuyellow!20,text=black,anchor=north west,shape=rectangle,rounded corners] {
+%%[[pipelineExample.EH
 \parbox{8cm}{
 {\small
 %%[[wrap=code
@@ -187,11 +192,13 @@ main
 %%]]
 }
 }
+%%]]
 };
 }
 
 \uncover<3->{
 \draw (1,8.0) node[fill=uuyellow!40,text=black,anchor=north west,shape=rectangle,rounded corners] {
+%%[[pipelineExample.Core
 \parbox{10cm}{
 {\tiny
 %{
@@ -218,7 +225,7 @@ let redOn^ rec blackOn
              let
                { ^ doll ^ 13 ^ under ^ 0 ^ under ^ 12 =
                    ( ^ doll ^ EHC ^ doll ^ .Prelude ^ doll ^ .fromInteger)
-                     (redOn ^ doll ^ EHC ^ doll ^ .Prelude ^ doll ^ .3 ^ under ^ 237 ^ under ^ 0 ^ under ^ instance ^ under ^ Num : DICT blackOn)
+                     (redOn ^ doll ^ EHC ^ doll ^ .Prelude ^ doll ^ .3 ^ under ^ 237 ^ under ^ 0 ^ under ^ instance ^ under ^ Num blackOn)
                      ( ^ doll ^ 13 ^ under ^ 0 ^ under ^ 14)} in
              ^ doll ^ 13 ^ under ^ 0 ^ under ^ 12
          }
@@ -227,12 +234,14 @@ in ...
 %}
 }
 }
+%%]]
 };
 }
 
 
 \uncover<4->{
 \draw (0.2,6.8) node[fill=uuyellow!60,text=black,anchor=north west,shape=rectangle,rounded corners] {
+%%[[pipelineExample.Grin
 \parbox{11cm}{
 {\tiny
 %{
@@ -260,12 +269,14 @@ module ^^ doll ^ vb1
 %}
 }
 }
+%%]]
 };
 }
 
 
 \uncover<5->{
 \draw (0.5,5.5) node[fill=uuyellow!80,text=black,anchor=north west,shape=rectangle,rounded corners] {
+%%[[pipelineExample.bytecode
 \parbox{11cm}{
 {\tiny
 %{
@@ -294,6 +305,7 @@ static GB_Byte vb1_bytecode[] =
 %}
 }
 }
+%%]]
 };
 }
 

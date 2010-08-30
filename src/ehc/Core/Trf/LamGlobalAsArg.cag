@@ -159,6 +159,35 @@ SEM CBindAspect
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Passing info between aspects
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs
+%%[[8
+type AspBindLamArgInfo = LamArgMp
+%%][9
+type AspBindLamArgInfo = (LamArgMp,Env)
+%%]]
+%%]
+
+%%[(8 codegen)
+ATTR AllBindAspect   [ aspBindLamArgMp: {ACoreBindAspMp AspBindLamArgInfo} | | gathAspBindLamArgMp USE {`Map.union`} {Map.empty}: {ACoreBindAspMp AspBindLamArgInfo} ]
+
+SEM CBind
+  | Bind		loc			.	aspBindLamArgMp
+  											=	@bindAspects.gathAspBindLamArgMp
+
+SEM CBindAspect
+  | Bind  		lhs			.	gathAspBindLamArgMp
+  											=	Map.singleton acbaspkeyDefault
+  											                  ( @expr.bindLamArgMp
+%%[[9
+  											                  , @expr.envUp
+%%]]
+  											                  )
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Adding parameters to lam call sites
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -168,6 +197,17 @@ type LamArgMp = Map.Map HsName CVarIntroL
 
 %%[(8 codegen)
 ATTR AllBind CExpr [ | | bindLamArgMp USE {`Map.union`} {Map.empty}: LamArgMp ]
+ATTR AllMetaVal [ bindLamArgMp: LamArgMp | | ]
+
+SEM CBindAspect
+  | Meta  		cmetas  	.	( bindLamArgMp
+%%[[9
+                                , envFinal
+%%]]
+                                ) 			=  	panicJust "LamGlobalAsArg.CBindAspect.Meta.aspBindLamArgMp" $ Map.lookup acbaspkeyDefault @lhs.aspBindLamArgMp
+%%]
+
+%%[(8 codegen)
 ATTR AllCodeNT [ lamArgMp: LamArgMp | | ]
 
 SEM CodeAGItf
@@ -183,16 +223,12 @@ SEM CExpr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(9 codegen)
-ATTR CMetaVal CMetas [ bindLamArgMp: LamArgMp | | isInstance: {Bool} ]
+ATTR CMetaVal CMetas [ | | isInstance: {Bool} ]
 
 SEM CMetaVal
   | DictInstance    lhs.isInstance = True
   | *-DictInstance  lhs.isInstance = False
-
-SEM CExpr
-  | Lam			argMeta		.	bindLamArgMp=	Map.empty
 %%]
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Transformation
@@ -220,12 +256,10 @@ SEM CBindAspect
   | Bind        lhs         .   cTrf        =   --trace ("use of global: " ++ show @lhs.nm ++ " uses " ++ show @bindLamArgMp ++ "\n"
                                                 --      ++ (if @bindMeta.isInstance then ("instance " ++ show @lhs.nm ++ " finds " ++ show @expr.bindLamArgMp ++ "\n") else "")
                                                 --      ) $
-                                                (acoreBindasp1Metas @lhs.nm @bindMeta.cTrf $ acoreLamMeta [(n,cviMeta cvi) | (n,cvi) <- @argNewL] @expr.cTrf)
+                                                (acoreBindasp1Metas @lhs.nm @bindMeta.cTrf $ acoreLam [(n) | (n,cvi) <- @argNewL] @expr.cTrf)
                 bindMeta    . bindLamArgMp  =  @expr.bindLamArgMp
 %%]]
 %%]
-  | Bind        lhs         .   cTrf        =   acoreBind1Cat CBindings_Plain @lhs.nm $ acoreLam (assocLKeys @argNewL) @expr.cTrf
-                                                (acoreBind1Metas @lhs.nm @bindMeta.cTrf $ acoreLamMeta [(n,cviMeta cvi) | (n,cvi) <- @argNewL] @expr.cTrf)
 
 
 
@@ -238,7 +272,7 @@ SEM CExpr
 %%[[8
                                                      mk as = acoreApp v1 $ [r a | (a,_) <- as]
 %%][9
-                                                     mk as = acoreAppMeta v1 $ [(r a,cviMeta cvi) | (a,cvi) <- as]
+                                                     mk as = acoreApp v1 $ [(r a) | (a,cvi) <- as]
 %%]]
                                                      v2 = maybe v1 mk $ Map.lookup @nm $ @lhs.lamArgMp
                                                 in   v2
@@ -261,7 +295,7 @@ metaExtendTrack _ _ t = t
 
 }
 
-ATTR CExpr [ mbCtxCount:{Maybe Int} isDictClass:{Bool} | | ]
+ATTR AllExprOnly [ mbCtxCount:{Maybe Int} isDictClass:{Bool} | | ]
 
 SEM CModule
   | Mod  expr.mbCtxCount = Nothing
@@ -309,12 +343,6 @@ SEM CMetaVal
 
 SEM CBindAspect
   | Bind  bindMeta.envFinal = @expr.envUp
-  
-SEM CExpr
-  | Lam
-    App   argMeta.envFinal = undefined
-
-
 
 
 ATTR AllBind CExpr [ | | envUp USE {`Map.union`} {Map.empty} : Env ]

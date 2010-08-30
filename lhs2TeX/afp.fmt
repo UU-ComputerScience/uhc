@@ -80,6 +80,7 @@
 
 % various keywords
 %format letrec 	= "\mathbf{letrec}"
+%format ffi 	= "\mathbf{ffi}"
 
 %format restr		= "\backslash "
 

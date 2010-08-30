@@ -114,11 +114,11 @@ SEM CExpr
 %%% CMetaVal context
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8888 codegen)
 ATTR CExpr AllAlt [ cmeta: CMetaVal | | ]
 
 SEM CExpr
-  | App         arg         .   cmeta       =   @argMeta.self
+  | App         arg         .   cmeta       =   CMetaVal_Val -- @argMeta.self
   | Lam         body        .   cmeta       =   CMetaVal_Val
 
 SEM CBindAspect
@@ -171,11 +171,11 @@ SEM CExpr
 
 SEM CBindAspect
   | Bind        lhs         .   bindL       =   [(@expr.levOf,acoreBind1Asp1 @lhs.nm @cTrf)]
-  | FFI
+  -- | FFI
 %%[[90
-    FFE
-%%]]
+  | FFE
                 lhs         .   bindL       =   [(cLevModule,acoreBind1Asp1 @lhs.nm @cTrf)]
+%%]]
 
 SEM CAlt
   | Alt         (loc.hereBindSq,lhs.levBindSq)
@@ -192,7 +192,7 @@ data LamTop = LamYesLet | LamNoLet deriving (Eq,Ord)
 %%]
 
 %%[(8 codegen)
-ATTR CExpr [ appTrfIsOk: AppTop | | ]
+ATTR AllExprOnly [ appTrfIsOk: AppTop | | ]
 
 SEM CModule
   | Mod         expr        .   appTrfIsOk  =   AppYesLet
@@ -217,7 +217,7 @@ SEM CAlt
 %%]
 
 %%[(8 codegen)
-ATTR CExpr [ lamTrfIsOk: LamTop | | ]
+ATTR AllExprOnly [ lamTrfIsOk: LamTop | | ]
 
 SEM CModule
   | Mod         expr        .   lamTrfIsOk  =   LamYesLet
@@ -240,7 +240,7 @@ SEM CAlt
 %%]
 
 %%[(8 codegen)
-ATTR CExpr [ letTrfIsOk: Bool | | ]
+ATTR AllExprOnly [ letTrfIsOk: Bool | | ]
 
 SEM CModule
   | Mod         expr        .   letTrfIsOk  =   False
@@ -287,10 +287,10 @@ SEM CExpr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen) hs
-mkTrf :: Bool -> Int -> Int -> HsName -> CMetaVal -> CExpr -> (CExpr,LevBindSq)
-mkTrf cond outerLev hereLev n m e
+mkTrf :: Bool -> Int -> Int -> HsName -> CExpr -> (CExpr,LevBindSq)
+mkTrf cond outerLev hereLev n e
   =  if cond
-     then (acoreVar n,Seq.singleton (hereLev,(CBindings_Plain,[acoreBind1Meta n m e])))
+     then (acoreVar n,Seq.singleton (hereLev,(CBindings_Plain,[acoreBind1 n e])))
      else (e,Seq.empty)
 %%]
 
@@ -322,15 +322,15 @@ SEM CExpr
 %%[(8 codegen)
 SEM CExpr
   | TupIns TupUpd TupDel
-                (lhs.cTrf,loc.levBindSq)    =   mkTrf @trfIsOk @lhs.lev @levOf @trNm @lhs.cmeta @cTrf
-  | App Case    (lhs.cTrf,loc.levBindSq)    =   mkTrf @trfIsOk @lhs.lev @levOf @trNm @lhs.cmeta @cTrf
-  | Lam         (lhs.cTrf,loc.levBindSq)    =   let mkTLB = mkTrf @trfIsOk @lhs.lev @levOf @trNm @lhs.cmeta
-                                                          . acoreLam1Meta @arg @argMeta.cTrf
+                (lhs.cTrf,loc.levBindSq)    =   mkTrf @trfIsOk @lhs.lev @levOf @trNm @cTrf
+  | App Case    (lhs.cTrf,loc.levBindSq)    =   mkTrf @trfIsOk @lhs.lev @levOf @trNm @cTrf
+  | Lam         (lhs.cTrf,loc.levBindSq)    =   let mkTLB = mkTrf @trfIsOk @lhs.lev @levOf @trNm
+                                                          . acoreLam1 @arg
                                                           . mkLetTrf @hereBindSq
                                                 in  if cexprIsLam @body.cTrf && not (List.null (Seq.toList @hereBindSq))
                                                     then mkTLB (CExpr_Let CBindings_Plain [acoreBind1Cat CBindings_Plain @trNm2 @body.cTrf] (acoreVar @trNm2))
                                                     else mkTLB @body.cTrf
-  | Let         (lhs.cTrf,loc.levBindSq)    =   mkTrf @trfIsOk @lhs.lev @levOf @trNm @lhs.cmeta $ mkLetTrf @hereBindSq @body.cTrf
+  | Let         (lhs.cTrf,loc.levBindSq)    =   mkTrf @trfIsOk @lhs.lev @levOf @trNm $ mkLetTrf @hereBindSq @body.cTrf
 %%]
 
 

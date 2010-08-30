@@ -94,8 +94,8 @@ emptyTrfCore = TrfCore emptyCModule [] uidStart
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen) export(trfCore)
-trfCore :: EHCOpts -> HsName -> TrfCore -> TrfCore
-trfCore opts modNm trfcore
+trfCore :: EHCOpts -> DataGam -> HsName -> TrfCore -> TrfCore
+trfCore opts dataGam modNm trfcore
   = snd $ runState trf trfcore
   where trf
           = do { -- initial is just to obtain Core for dumping stages
@@ -162,7 +162,7 @@ trfCore opts modNm trfcore
 %%]]
                ; when (ehcOptFullProgAnalysis opts)
                       t_find_null
-               ; when (ehcOptOptimizationLevel opts >= OptimizationLevel_Full)
+               ; when (ehcOptOptimizes Optimize_StrictnessAnalysis opts)
                       t_ana_relev
                }
 
@@ -202,7 +202,7 @@ trfCore opts modNm trfcore
         t_caf_asarg     = liftTrf  "caf-asarg"          $ cmodTrfCAFGlobalAsArg
         t_float_glob    = liftTrf  "float-glob"         $ cmodTrfFloatToGlobal
         t_find_null     = liftTrf  "find-null"          $ cmodTrfFindNullaries
-        t_ana_relev     = liftTrf  "ana-relev"          $ cmodTrfAnaRelevance opts
+        t_ana_relev     = liftTrf  "ana-relev"          $ cmodTrfAnaRelevance opts dataGam
 %%[[9
         t_fix_dictfld   = liftTrf  "fix-dictfld"        $ cmodTrfFixDictFields
 %%]]

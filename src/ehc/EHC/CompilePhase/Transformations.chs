@@ -41,7 +41,7 @@ Interface/wrapper to various transformations for Core, TyCore, etc.
 %%]
 
 -- Core semantics
-%%[(99 codegen grin) import( {%{EH}Core.ToGrin(Inh_CodeAGItf(..))})
+%%[(8 codegen grin) import(qualified {%{EH}Core.ToGrin} as Core2GrSem)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -65,10 +65,10 @@ cpTransformCore modNm
                              , trfcoreExpNmOffMp    = crsiExpNmOffMp modNm crsi
 %%]]
 %%[[99
-                             , trfcoreInhLamMp      = lamMp_Inh_CodeAGItf $ crsiCoreInh crsi
+                             , trfcoreInhLamMp      = Core2GrSem.lamMp_Inh_CodeAGItf $ crsiCoreInh crsi
 %%]]
                              }
-              trfcoreOut = trfCore opts modNm trfcoreIn
+              trfcoreOut = trfCore opts (Core2GrSem.dataGam_Inh_CodeAGItf $ crsiCoreInh crsi) modNm trfcoreIn
        
          -- put back result: Core
        ; cpUpdCU modNm $! ecuStoreCore (trfcoreCore trfcoreOut)
@@ -114,7 +114,7 @@ cpTransformTyCore modNm
                               , trftycoreExpNmOffMp    = crsiExpNmOffMp modNm crsi
 %%]]
 %%[[99
-                              , trftycoreInhLamMp      = lamMp_Inh_CodeAGItf $ crsiCoreInh crsi
+                              , trftycoreInhLamMp      = Core2GrSem.lamMp_Inh_CodeAGItf $ crsiCoreInh crsi
 %%]]
                               }
               trftycoreOut = trfTyCore opts modNm trftycoreIn

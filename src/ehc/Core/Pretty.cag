@@ -147,7 +147,7 @@ SEM CExpr
 %%[[97
   | Integer     loc         .   pp          =   ppLit "Integer" (show @integer)
 %%]
-  | Var         loc         .   pp          =   ppCNm @nm
+  | Var         loc         .   pp          =   ppACoreBindRef ppCNm @ref
 %%[[8
   | App         loc         .   pp          =   let args = reverse $ map ppParens $ @appArgPPL
                                                     fun  = ppParens @appFunPP
@@ -182,16 +182,22 @@ SEM CExpr
   | TupIns      loc         .   pp          =   ppDef (ppParens @expr.pp) (ppDef ("+=" >|< ppCurlysCommas' [ppTag @tag,@offset.pp,ppCNm @nm]) (ppParens @fldExpr.pp))
   | TupUpd      loc         .   pp          =   ppDef (ppParens @expr.pp) (ppDef (":=" >|< ppCurlysCommas' [ppTag @tag,@offset.pp,ppCNm @nm]) (ppParens @fldExpr.pp))
   | CaseAltFail loc         .   pp          =   pp "FAIL" >#< @caseId
+  | FFI         loc         .   pp          =   ("foreign" >#< ppCurlysCommasBlock [pp (show @callconv),pp (show @safety),@ppent,ppTy @ty])
+%%[[8
+                loc         .   ppent       =   pp (show @impEnt)
+%%][90
+                loc         .   ppent       =   "\"" >|< @impEnt >|< "\""
+%%]]
 
 SEM CExpr
   | Lam         loc         .   lamBodyPP   =   @body.lamBodyPP
-                            .   lamArgPPL   =   (ppCNm @arg >|< @argMeta.optPP) : @body.lamArgPPL
+                            .   lamArgPPL   =   (ppCNm @arg) : @body.lamArgPPL
   | * - Lam     lhs         .   lamBodyPP   =   @pp
                             .   lamArgPPL   =   []
 
 SEM CExpr
   | App         loc         .   appFunPP    =   @func.appFunPP
-                            .   appArgPPL   =   (@arg.pp >|< @argMeta.optPP) : @func.appArgPPL
+                            .   appArgPPL   =   (@arg.pp) : @func.appArgPPL
   | * - App     lhs         .   appFunPP    =   @pp
                             .   appArgPPL   =   []
 
@@ -202,18 +208,8 @@ SEM CBind
 
 SEM CBindAspect
  | Bind         lhs         .   pp          =   @bindMeta.pp >-< "=" >#< @expr.pp
- | RelevTy      lhs         .   pp          =   "::" >#< @tyPP -- pp @relevTy
- | FFI          lhs         .   pp          =   "=" >#<
-%%[[8
-                                                      ("foreign" >#< ppCurlysCommasBlock [pp (show @callconv),pp (show @safety),@ppent,ppTyWithCfg' CfgPP_HI @ty])
-%%][8_2
-                                                      ("foreign" >#< pp (show @callconv) >#< pp @safety >#< pp @impEnt) >#< "::" >#< ppTyWithCfg' CfgPP_HI @ty
-%%]]
-%%[[8
-                loc         .   ppent       =   pp (show @impEnt)
-%%][90
-                loc         .   ppent       =   "\"" >|< @impEnt >|< "\""
-%%]]
+ | RelevTy      lhs         .   pp          =   "::_R" >#< ppACBaspKeyS @aspectKeyS >#< @tyPP -- pp @relevTy
+ | Meta         lhs         .   pp          =   "::_M" >#< ppACBaspKeyS @aspectKeyS >#< @cmetas.pp
 %%[[90
   | FFE         lhs         .   pp          =   "=" >#< ("foreignexport" >#< ppCurlysCommasBlock [pp (show @callconv),"\"" >|< @expEnt >|< "\"",ppCNm @expNm,ppTyWithCfg' CfgPP_HI @ty])
 %%]]
@@ -297,6 +293,7 @@ SEM CExpr
 SEM CExprAnn
   | Ty          loc         .   pp          =   "::" >#< ppTyWithCfg' CfgPP_HI @ty
   | Coe			loc			.	pp			=	"~" >#< ppRelevCoe @lhs.varPPMp @coe
+  | Debug		loc			.	pp			=	ppCmt $ pp @info
 %%]
 
 %%[(9 codegen)
@@ -324,7 +321,7 @@ SEM CModule
 ATTR AllBindAspect [ | | gathVarPPMp USE {`Map.union`} {Map.empty}: VarPPMp ]
 
 SEM CBindAspect
-  | RelevTy		(loc.tyPP,lhs.gathVarPPMp)	=	ppRelevTy @relevTy
+  | RelevTy		(loc.tyPP,lhs.gathVarPPMp)	=	ppRelevTy Map.empty @relevTy		-- circular when given desired @lhs.varPPMp
 
 SEM CBind
   | Bind        bindAspects	.	varPPMp		=	Map.union @bindAspects.gathVarPPMp @lhs.varPPMp

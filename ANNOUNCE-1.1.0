@@ -14,13 +14,16 @@ previous first release:
   
   * Generic deriving [1].
   
-  * UHC knows about packages, and Cabal version 1.9.3 and later have basic
-    support for UHC, so that Cabal can be used to build UHC packages.
+  * UHC knows about packages, and Cabal version 1.9.3 and later have
+    basic support for UHC, so that Cabal can be used to build UHC packages.
   
-  * The runtime system is no longer dependent on Boehm garbage collector,
-    but uses its own.
+  * The runtime system is no longer dependent on Boehm garbage
+    collector, but uses UHCs own, a swap space collector allowing
+    parameterization with backend specifics.
   
   * More programs from the nofib test suite compile and run.
+  
+  * Many smaller and larger problems fixed.
 
 For more info see http://www.cs.uu.nl/wiki/UHC
 

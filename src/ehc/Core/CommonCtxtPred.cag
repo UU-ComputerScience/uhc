@@ -46,6 +46,12 @@ SEM CExpr
   | * - TupUpd TupIns TupDel Ann
                 loc         .   isTopTup    =   True
 
+  | *			loc			.	isTopApp	:	Bool
+
+SEM MbCExpr
+  | Just        just        .   isTopApp    =   True
+                            .   isTopTup    =   True
+
 SEM CModule
   | Mod         expr        .   isTopApp    =   True
                             .   isTopTup    =   True
@@ -83,7 +89,7 @@ ATTR CExpr [ whatAbove: WhatExpr | | ]
 
 SEM CExpr
   | Lam			loc			.	whatAbove		=	ExprIsLam
-  | App			loc			.	whatAbove		=	ExprIsApp
+  | App			loc			.	whatAbove		=	maybe (ExprIsApp 1) (\a -> ExprIsApp $ a + 1) $ whatExprMbApp @lhs.whatAbove
   | * - Lam App Ann
   				loc			.	whatAbove		=	ExprIsOther
 
@@ -98,6 +104,12 @@ SEM CAlt
 
 SEM CModule
   | Mod			loc			.	whatAbove		=	ExprIsOther
+
+SEM MbCExpr
+  | Just		loc			.	whatAbove		=	ExprIsOther
+
+SEM *
+  | *			loc			.	whatAbove		:	WhatExpr
 %%]
 
 
@@ -106,7 +118,7 @@ SEM CModule
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen grin)
-ATTR CExpr AllAlt AllBind [ isStrict, isLamBody: Bool | | ]
+ATTR AllExprOnly AllAlt AllBind [ isStrict, isLamBody: Bool | | ]
 
 SEM CModule
   | Mod         expr        .   isStrict    =   True
@@ -130,7 +142,7 @@ SEM CExpr
 not used yet as it seems not to be equivalent to isStrict. Can't find out why...
 
 %%[(8 codegen)
-ATTR CExpr AllAlt AllBind [ evalCtx: EvalCtx | | ]
+ATTR AllExprOnly AllAlt AllBind [ evalCtx: EvalCtx | | ]
 
 SEM CModule
   | Mod         expr        .   evalCtx         =   EvalCtx_Eval

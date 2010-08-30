@@ -11,7 +11,7 @@
 %%[(8 codegen) import(EH.Util.Pretty,EH.Util.Utils)
 %%]
 
-%%[(8 codegen) import(Data.List, Data.Maybe, qualified Data.Map as Map, qualified Data.Set as Set, Control.Applicative)
+%%[(8 codegen) import(Data.List, Data.Maybe, qualified Data.Map as Map, qualified Data.Set as Set, Control.Applicative((<|>),(<$>)))
 %%]
 
 %%[(20 codegen grin) hs import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
@@ -47,10 +47,10 @@ class AbstractCore  expr metaval bind bindaspect bindcateg metabind ty pat patre
   where
   ------------------------- constructing: expr -------------------------
   -- | 1 arg application, together with meta info about the argument
-  acoreLam1MetaTy :: HsName -> metaval -> ty -> expr -> expr
+  acoreLam1Ty :: HsName -> ty -> expr -> expr
   
   -- | 1 lam abstraction, together with meta info about, and type of the argument
-  acoreApp1Meta :: expr -> expr -> metaval -> expr
+  acoreApp1 :: expr -> expr -> expr
   
   -- | a tuple, with tag, and ty
   acoreTagTupTy :: CTag -> ty -> [expr] -> expr
@@ -236,24 +236,45 @@ acoreMetaLiftDict = fmap2Tuple acoreMetavalDfltDict
 %%% Properties of binding aspects
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8888 codegen) export(ACoreBindPropertyKey(..))
-data ACoreBindPropertyKey
-  = ACoreBindPropertyKey_PlainCore			-- just core code, base case
-  deriving (Eq,Ord)
-%%]
-
 -- new
-%%[(8 codegen) export(ACoreBindAspectKey(..),ACoreBindAspectKeyS)
+%%[(8 codegen) export(ACoreBindAspectKey(..),ACoreBindAspectKeyS,ACoreBindAspMp)
+-- | A ACoreBindAspectKeyS formed out of multiple ACoreBindAspectKey identifies a particular binding aspect
 data ACoreBindAspectKey
-  = ACoreBindAspectKey_Code											-- code for computing the thing itself
-  | ACoreBindAspectKey_Closure0										-- 0-ary function closure, or CAF
+  = ACoreBindAspectKey_Default				-- identifies the default binding, if omitted in a reference this aspect is the one chosen.
+  | ACoreBindAspectKey_Strict				-- the as strict as possible variant
+  | ACoreBindAspectKey_Debug				-- internal debugging only
   deriving (Eq,Ord,Enum)
 
 instance Show ACoreBindAspectKey where
-  show ACoreBindAspectKey_Code 		= "code"
-  show ACoreBindAspectKey_Closure0 	= "clos0"
+  show ACoreBindAspectKey_Default 		= "default"
+  show ACoreBindAspectKey_Strict 		= "strict"
+  show ACoreBindAspectKey_Debug 		= "debug"
+
+instance PP ACoreBindAspectKey where
+  pp = pp . show
 
 type ACoreBindAspectKeyS		=	Set.Set ACoreBindAspectKey
+type ACoreBindAspMp x			=	Map.Map ACoreBindAspectKeyS x
+
+acbaspkeyMk :: [ACoreBindAspectKey] -> ACoreBindAspectKeyS
+acbaspkeyMk = Set.fromList
+%%]
+
+%%[(8 codegen) hs export(acbaspkeyDefault,acbaspkeyDebug)
+-- | predefined: 
+acbaspkeyDefault :: ACoreBindAspectKeyS
+acbaspkeyDefault = acbaspkeyMk
+  [ ACoreBindAspectKey_Default ]
+
+-- | predefined: 
+acbaspkeyDebug :: ACoreBindAspectKeyS
+acbaspkeyDebug = acbaspkeyMk
+  [ ACoreBindAspectKey_Debug ]
+%%]
+
+%%[(8 codegen) hs export(ppACBaspKeyS)
+ppACBaspKeyS :: ACoreBindAspectKeyS -> PP_Doc
+ppACBaspKeyS = ppCurlysCommas . Set.toList
 %%]
 
 %%[(20 codegen) hs
@@ -262,51 +283,64 @@ deriving instance Data ACoreBindAspectKey
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% A reference to an aspected value, i.e. a particular aspect of a binding
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) export(ACoreBindRef(..), acbrefAspKey)
+-- | reference to binding aspect: name + aspect keys
+data ACoreBindRef
+  = ACoreBindRef
+      { acbrefNm		:: !HsName
+      , acbrefMbAspKey	:: !(Maybe ACoreBindAspectKeyS)
+      }
+  deriving (Eq,Ord)
+
+acbrefAspKey :: ACoreBindRef -> ACoreBindAspectKeyS
+acbrefAspKey = maybe acbaspkeyDefault id . acbrefMbAspKey
+{-# INLINE acbrefAspKey #-}
+
+instance Show ACoreBindRef where
+  show (ACoreBindRef n a) = show n ++ "." ++ show a
+
+%%]
+
+%%[(8 codegen) hs export(ppACoreBindRef)
+ppACoreBindRef :: (HsName -> PP_Doc) -> ACoreBindRef -> PP_Doc
+ppACoreBindRef ppN (ACoreBindRef n (Just a)) = ppN n >|< (if a == acbaspkeyDefault then empty else "." >|< ppACBaspKeyS a)
+ppACoreBindRef ppN (ACoreBindRef n _       ) = ppN n
+
+instance PP ACoreBindRef where
+  pp = ppACoreBindRef pp
+%%]
+
+%%[(20 codegen) hs
+deriving instance Typeable ACoreBindRef
+deriving instance Data ACoreBindRef
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Derived functionality: application
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) export(acoreAppMeta,acoreApp1,acoreApp)
-acoreAppMeta :: (AbstractCore e m b basp bcat mbind t p pr pf a) => e -> [(e,m)] -> e
-acoreAppMeta f as = foldl (\f (a,m) -> acoreApp1Meta f a m) f as
-
-acoreApp1 :: (AbstractCore e m b basp bcat mbind t p pr pf a) => e -> e -> e
-acoreApp1 f a = acoreApp1Meta f a acoreMetavalDflt
-{-# INLINE acoreApp1 #-}
-
+%%[(8 codegen) export(acoreApp)
 acoreApp :: (AbstractCore e m b basp bcat mbind t p pr pf a) => e -> [e] -> e
-acoreApp f as = acoreAppMeta f (zip as $ repeat acoreMetavalDflt)
-{-# INLINE acoreApp #-}
+acoreApp f as = foldl (\f a -> acoreApp1 f a) f as
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Derived functionality: lambda abstraction
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) export(acoreLam1Meta,acoreLam1Ty,acoreLam1,acoreLamMetaTy,acoreLamMeta,acoreLamTy,acoreLam)
-acoreLam1Meta :: (AbstractCore e m b basp bcat mbind t p pr pf a) => HsName -> m -> e -> e
-acoreLam1Meta a m e = acoreLam1MetaTy a m (acoreTyErr "acoreLam1Meta") e
-{-# INLINE acoreLam1Meta #-}
-
-acoreLam1Ty :: (AbstractCore e m b basp bcat mbind t p pr pf a) => HsName -> t -> e -> e
-acoreLam1Ty a t e = acoreLam1MetaTy a acoreMetavalDflt t e
-{-# INLINE acoreLam1Ty #-}
-
+%%[(8 codegen) export(acoreLam1,acoreLamTy,acoreLam)
 acoreLam1 :: (AbstractCore e m b basp bcat mbind t p pr pf a) => HsName -> e -> e
-acoreLam1 a e = acoreLam1MetaTy a acoreMetavalDflt (acoreTyErr "acoreLam1") e
+acoreLam1 a e = acoreLam1Ty a (acoreTyErr "acoreLam1") e
 {-# INLINE acoreLam1 #-}
-
-acoreLamMetaTy :: (AbstractCore e m b basp bcat mbind t p pr pf a) => [(HsName,m,t)] -> e -> e
-acoreLamMetaTy as e = foldr (\(n,m,t) e -> acoreLam1MetaTy n m t e) e as
-
-acoreLamMeta :: (AbstractCore e m b basp bcat mbind t p pr pf a) => [(HsName,m)] -> e -> e
-acoreLamMeta as e = foldr (\(n,m) e -> acoreLam1Meta n m e) e as
 
 acoreLamTy :: (AbstractCore e m b basp bcat mbind t p pr pf a) => [(HsName,t)] -> e -> e
 acoreLamTy as e = foldr (\(n,t) e -> acoreLam1Ty n t e) e as
 
 acoreLam :: (AbstractCore e m b basp bcat mbind t p pr pf a) => [HsName] -> e -> e
 acoreLam as e = foldr (\(n) e -> acoreLam1 n e) e as
-
 %%]
 
 %%[(8 codegen) export(acoreTagTup,acoreTupTy,acoreTup,acoreTag)
@@ -464,6 +498,17 @@ acoreLet1PlainTy nm t e
 acoreLet1Plain :: (Eq bcat, AbstractCore e m b basp bcat mbind t p pr pf a) => HsName -> e -> e -> e
 acoreLet1Plain nm e = acoreLet1PlainTy nm (acoreTyErr "acoreLet1Plain") e
 {-# INLINE acoreLet1Plain #-}
+%%]
+
+%%[(8 codegen) export(acoreLet1StrictTy,acoreLet1Strict)
+acoreLet1StrictTy :: (Eq bcat, AbstractCore e m b basp bcat mbind t p pr pf a) => HsName -> t -> e -> e -> e
+acoreLet1StrictTy nm t e
+  = acoreLet cat [acoreBind1CatTy cat nm t e]
+  where cat = acoreBindcategStrict
+
+acoreLet1Strict :: (Eq bcat, AbstractCore e m b basp bcat mbind t p pr pf a) => HsName -> e -> e -> e
+acoreLet1Strict nm e = acoreLet1StrictTy nm (acoreTyErr "acoreLet1Strict") e
+{-# INLINE acoreLet1Strict #-}
 %%]
 
 %%[(8 codegen) hs export(acoreLet1StrictInMetaTyWith,acoreLet1StrictInMetaTy,acoreLet1StrictInMeta,acoreLet1StrictIn,acoreLet1StrictInTy)
@@ -657,9 +702,9 @@ data Coe' expr metaval bind bindasp ty
   | Coe_C        		!expr							-- constant
   | Coe_Compose  		!(Coe' expr metaval bind bindasp ty)	-- composition
                         !(Coe' expr metaval bind bindasp ty)
-  | Coe_App1     		!expr !metaval					-- apply
-  | Coe_App      		(AssocL HsName metaval)			-- apply n args
-  | Coe_Lam      		!HsName !metaval !ty			-- lambda
+  | Coe_App1     		!expr       					-- apply
+  | Coe_App      		[HsName]						-- apply n args
+  | Coe_Lam      		!HsName !ty						-- lambda
   | Coe_CloseExists		!TyVarId !ty !ty				-- closing existential
   | Coe_OpenExists		!TyVarId !ty !ty				-- opening existential
 %%[[9
@@ -704,40 +749,28 @@ acoreCoeLetRec [] = acoreCoeId
 acoreCoeLetRec b  = Coe_LetRec b
 %%]
 
-%%[(8 codegen) hs export(acoreCoeApp1Meta,acoreCoeApp1,acoreCoeAppMeta,acoreCoeAppMeta2,acoreCoeApp)
+%%[(8 codegen) hs export(acoreCoeApp1,acoreCoeAppN,acoreCoeAppNbyName)
 -- | Application still requiring a function
-acoreCoeApp1Meta :: e -> m -> Coe' e m b ba t
-acoreCoeApp1Meta = Coe_App1
-{-# INLINE acoreCoeApp1Meta #-}
-
 acoreCoeApp1 :: (AbstractCore e m b basp bcat mbind t p pr pf a) => e -> Coe' e m b ba t
-acoreCoeApp1 a = acoreCoeApp1Meta a acoreMetavalDflt
+acoreCoeApp1 = Coe_App1 -- a acoreMetavalDflt
 {-# INLINE acoreCoeApp1 #-}
 
-acoreCoeAppMeta :: [(HsName,m)] -> Coe' e m b ba t
-acoreCoeAppMeta = Coe_App
-{-# INLINE acoreCoeAppMeta #-}
+acoreCoeAppNbyName :: [(HsName)] -> Coe' e m b ba t
+acoreCoeAppNbyName = Coe_App
+{-# INLINE acoreCoeAppNbyName #-}
 
-acoreCoeAppMeta2 :: (AbstractCore e m b basp bcat mbind t p pr pf a) => [(e,m)] -> Coe' e m b ba t
-acoreCoeAppMeta2 as = acoreCoeMap (\e -> acoreAppMeta e as)
+-- acoreCoeApp2 :: (AbstractCore e m b basp bcat mbind t p pr pf a) => [(e)] -> Coe' e m b ba t
+-- acoreCoeApp2 as = acoreCoeMap (\e -> acoreApp e as)
 
-acoreCoeApp :: (AbstractCore e m b basp bcat mbind t p pr pf a) => [e] -> Coe' e m b ba t
-acoreCoeApp as = acoreCoeMap (\e -> acoreAppMeta e (acoreMetaLift as))
-{-# INLINE acoreCoeApp #-}
+acoreCoeAppN :: (AbstractCore e m b basp bcat mbind t p pr pf a) => [e] -> Coe' e m b ba t
+acoreCoeAppN as = acoreCoeMap (\e -> acoreApp e as)
+{-# INLINE acoreCoeAppN #-}
 %%]
 
-%%[(8 codegen) hs export(acoreCoeLam1MetaTy,acoreCoeLam1Meta,acoreCoeLam1Ty,acoreCoeLam1)
+%%[(8 codegen) hs export(acoreCoeLam1Ty,acoreCoeLam1)
 -- | Lambda still requiring a body
-acoreCoeLam1MetaTy :: HsName -> m -> t -> Coe' e m b ba t
-acoreCoeLam1MetaTy = Coe_Lam
-{-# INLINE acoreCoeLam1MetaTy #-}
-
-acoreCoeLam1Meta :: (AbstractCore e m b basp bcat mbind t p pr pf a) => HsName -> m -> Coe' e m b ba t
-acoreCoeLam1Meta n m = acoreCoeLam1MetaTy n m (acoreTyErr "acoreCoeLam1Meta")
-{-# INLINE acoreCoeLam1Meta #-}
-
 acoreCoeLam1Ty :: (AbstractCore e m b basp bcat mbind t p pr pf a) => HsName -> t -> Coe' e m b ba t
-acoreCoeLam1Ty n t = acoreCoeLam1MetaTy n acoreMetavalDflt t
+acoreCoeLam1Ty = Coe_Lam
 {-# INLINE acoreCoeLam1Ty #-}
 
 acoreCoeLam1 :: (AbstractCore e m b basp bcat mbind t p pr pf a) => HsName -> Coe' e m b ba t
@@ -756,7 +789,7 @@ acoreCoeCompose c1 c2
 
 %%[(9 codegen) hs export(acoreCoePoiLApp,acoreCoeImplsApp)
 acoreCoePoiLApp :: (AbstractCore e m b basp bcat mbind t p pr pf a) => [PredOccId] -> [Coe' e m b ba t]
-acoreCoePoiLApp = map (\i -> acoreCoeApp1Meta (acoreNmHolePred i) acoreMetavalDfltDict)
+acoreCoePoiLApp = map (\i -> acoreCoeApp1 (acoreNmHolePred i))
 
 acoreCoeImplsApp :: (AbstractCore e m b basp bcat mbind t p pr pf a) => Impls -> [Coe' e m b ba t]
 acoreCoeImplsApp = acoreCoePoiLApp . implsPrIds
@@ -770,7 +803,7 @@ acoreCoePoiLLamTy onLast poiL
                           where (h,t) = fromJust $ initlast l
        _ | acoreCoeIsId onLast -> []
          | otherwise      -> [onLast]
-  where mk (poi,ty) = acoreCoeLam1MetaTy (poiHNm poi) acoreMetavalDfltDict ty
+  where mk (poi,ty) = acoreCoeLam1Ty (poiHNm poi) ty
 
 acoreCoePoiLLam :: (AbstractCore e m b basp bcat mbind t p pr pf a) => Coe' e m b ba t -> [(PredOccId)] -> [Coe' e m b ba t]
 acoreCoePoiLLam onLast poiL = acoreCoePoiLLamTy onLast (acoreTyLift "acoreCoePoiLLam" poiL)
@@ -1021,6 +1054,44 @@ ctagNil  opts = CTag (ehcOptBuiltin opts ehbnDataList) (ehcOptBuiltin opts ehbnD
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Kind of function which is used in an app
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs export(AppFunKind(..))
+data AppFunKind
+  = AppFunKind_NoApp					-- inlined Nothing
+  | AppFunKind_Fun 	ACoreBindRef
+  | AppFunKind_Tag 	CTag
+  | AppFunKind_FFI
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Context: what is above/below
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs export(WhatExpr(..))
+data WhatExpr
+  = ExprIsLam
+  | ExprIsApp	Int			-- arity
+  | ExprIsVar 	HsName
+  | ExprIsInt 	Int
+  | ExprIsOther
+  deriving Eq
+%%]
+
+%%[(8 codegen) hs export(whatExprMbApp,whatExprAppArity)
+-- | is an app?
+whatExprMbApp :: WhatExpr -> Maybe Int
+whatExprMbApp (ExprIsApp a) = Just a
+whatExprMbApp _             = Nothing
+
+-- | app arity
+whatExprAppArity :: WhatExpr -> Int
+whatExprAppArity (ExprIsApp a) = a
+whatExprAppArity _             = 0
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Instances: Binary, Serialize, ForceEval
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -1028,6 +1099,12 @@ ctagNil  opts = CTag (ehcOptBuiltin opts ehbnDataList) (ehcOptBuiltin opts ehbnD
 instance Serialize ACoreBindAspectKey where
   sput = sputEnum8
   sget = sgetEnum8
+%%]
+
+%%[(20 codegen) hs
+instance Serialize ACoreBindRef where
+  sput (ACoreBindRef a b) = sput a >> sput b
+  sget = liftM2 ACoreBindRef sget sget
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

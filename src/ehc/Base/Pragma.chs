@@ -33,13 +33,11 @@ data Pragma
       , pragmaDerivFieldName        :: HsName       -- this field is derivable
       , pragmaDerivDefaultName      :: HsName       -- using this default value
       }
+  | Pragma_NoGenericDeriving				-- turn off generic deriving (default)
+  | Pragma_GenericDeriving					-- turn on generic deriving (default)
   deriving (Eq,Ord,Show,Typeable,Data)
 
 %%]
-instance Show Pragma where
-  show Pragma_NoImplicitPrelude = "NoImplicitPrelude"
-  show Pragma_CPP               = "CPP"
-  show (Pragma_Derivable _ _ _) = "Derivable"
 
 %%[99 export(allSimplePragmaMp,showAllSimplePragmas',showAllSimplePragmas)
 allSimplePragmaMp :: Map.Map String Pragma
@@ -50,7 +48,8 @@ allSimplePragmaMp
             | t <-
                   [ Pragma_NoImplicitPrelude
                   , Pragma_CPP
-                  -- , Pragma_Derivable undefined undefined undefined
+                  , Pragma_GenericDeriving
+                  , Pragma_NoGenericDeriving
                   ]
             ]
         prefixLen = length "Pragma_"
@@ -73,11 +72,15 @@ instance Serialize Pragma where
   sput (Pragma_NoImplicitPrelude   ) = sputWord8 0
   sput (Pragma_CPP                 ) = sputWord8 1
   sput (Pragma_Derivable  a b c    ) = sputWord8 2 >> sput a >> sput b >> sput c
+  sput (Pragma_NoGenericDeriving   ) = sputWord8 3
+  sput (Pragma_GenericDeriving     ) = sputWord8 4
   sget = do t <- sgetWord8
             case t of
               0 -> return Pragma_NoImplicitPrelude
               1 -> return Pragma_CPP
               2 -> liftM3 Pragma_Derivable          sget sget sget
+              3 -> return Pragma_NoGenericDeriving
+              4 -> return Pragma_GenericDeriving
 
 %%]
 

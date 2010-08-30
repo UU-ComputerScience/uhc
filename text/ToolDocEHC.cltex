@@ -26,6 +26,9 @@ See the troubleshooting FAQ in the \eref{UhcUserDocumentation}{UHC manual}.
 
 %%[main doclatex
 \section{Introduction and installation}
+For version
+%%@[exec:install/100/bin/ehc --version-dotted%%]
+
 %%@ToolDocEHC.introduction
 \subsection{System overview}
 
@@ -48,6 +51,10 @@ For now, see the \eref{EhcStructureDocumentation}{UHC structure overview}.
 
 \subsection{Cabal and packages}
 %%@ToolDocEHC.usingPackages
+
+\subsection{Optimizations}
+\label{optimizations}
+%%@ToolDocEHC.optimizations
 
 \section{Language extensions}
 \glabel{LanguageExtensions}
@@ -527,6 +534,17 @@ Type @make help@ to see what more can be build:
 \begin{pre}
 %%@[exec:make help%%]
 \end{pre}
+
+\subsubsection{Configuration parameters}
+
+Apart from the usual options @./configure@ accepts the following options enabling a particular feature:
+\begin{itemize}
+\item \verb|--enable-java|. Enable @jazy@ backend. 
+\item \verb|--enable-llvm|. Enable @llvm@ backend. 
+\item \verb|--enable-clr|. Enable @clr@ backend.
+\item \verb|--enable-tycore|. Enable @TyCore@ typed core intermediate representation.
+\item \verb|--enable-tauphi| (implies @tycore@). Enable @TyCore@ based experimental strictness optimizations.
+\end{itemize}
 
 %%]]
 
@@ -1036,6 +1054,7 @@ The following pragmas are supported.
 \begin{itemize}
 \item @CPP@: switch on \href{http://gcc.gnu.org/onlinedocs/cpp/}{cpp} preprocessing.
 \item @NoImplicitPrelude@: don't automatically import @Prelude@ and/or assume its presence.
+\item @GenericDeriving@, @NoGenericDeriving@: turn on/off respectively generic deriving, default is on.
 \end{itemize}
 \item \verb|{-# DERIVING class field generic-function #-}| pragma: see \lref{generic-deriving}{generic deriving}.
 \end{itemize}
@@ -1367,6 +1386,7 @@ This is the default backend, and the most complete.
 \label{backend-C}
 
 \begin{itemize}
+\item No 64-bit platform support.
 \item No exceptions, throwing an exception will stop the program.
 \item Runs simple programs using the Prelude only; primitives for many of the other libraries are not yet implemented.
       Not all modules available for the @bc@ backend are supported, in particular those interacting with the underlying system: IO, CPUTime, ...
@@ -1379,6 +1399,8 @@ This is the default backend, and the most complete.
 \item Only when enabled via @configure --enable-java@.
 \item Runs for latest variant, but partial implementation of required primitives.
 \item No exceptions.
+\item Jar files and created .class files all together get big. Code is not causing this, but the tables holding constants referring to other classes.
+ JVM expects this to be done per .class file. Because all functions and CAFs have a separate class definition this becomes quite costly in terms of jar file size.
 \end{itemize}
 
 %%]
@@ -1429,13 +1451,28 @@ packages available earlier in the package search path take precedence.
 No further disambiguation is done: e.g. module @X@ residing in both package @yy@ and @zz@ will cause unspecified behavior.
 There is no mechanism for specifying package names when importing.
 \end{itemize}
+
+Some missing language features however may stand in the way of faultless library compilation,
+in particular:
+\begin{itemize}
+\item Absence of @default@ing will easily cause a numeric constant to give rise to ambiguity if not further annotated with a type signature.
+\item Package @haskell98@ is not available (nor does it compile as a package).
+\end{itemize}
+%%]
+
+%%[optimizations doclatex
+Currently few optimizations are implemented, apart from the work on whole program analysis. Optimizations can be individually turned on and off:
+\begin{itemize}
+\item @GrinLocal@: non whole program analysis grin optimizations to remove the most obvious inefficiencies.
+\item @StrictnessAnalysis@ (in development): strictness analysis based on relevance analysis.
+\end{itemize}
 %%]
 
 %%[commandlineOptions doclatex
 Only options offered by UHC are discussed, lower variants of UHC have more options for debugging available.
 Other options can be used but are either for internal use of can be disabled sometime.
 Defaults for options are valid only for variant 100 of EHC.
-Boolean options are indicated by @Bool@, where @True@ and @False@ can be indicated by one of \verb@0|1|no|yes|off|on|-|+@.
+Boolean options are indicated by @Bool@, where @True@ and @False@ can be indicated by one of \verb@1|yes|on|+@ respectively \verb@0|no|off|-@.
 
 \begin{itemize}
 \item \verb|-h|, \verb|--help|. Print commandline help and quit.
@@ -1468,6 +1505,8 @@ This is not yet used, except for experimenting with code generation with extra d
  \item \verb|0|: none.
  \item \verb|1| (default): basic.
  \item \verb|2|: much
+ \item \verb|3|: all
+ \item \verb|<opt>[=Bool]|: turn on/off optimization option \verb|<opt>| on top of those already defined. See also @--meta-optimizations@ \lref{optimizations}{optimizations}.
  \end{itemize}
 \item \verb|--no-recomp|. Don't check for the necessity to recompile, recompile allways instead.
 \item \verb|--no-prelude|. Don't assume the presence of @Prelude@.
@@ -1483,6 +1522,7 @@ This is not yet used, except for experimenting with code generation with extra d
 \item \verb|--keep-intermediate-files|. Keep intermediate files (such as @.c@ files and output of \href{http://gcc.gnu.org/onlinedocs/cpp/}{cpp}).
 \item \verb|--meta| options. These are mostly used to let makefiles know what can be done.
  \begin{itemize}
+ \item \verb|--meta-optimizations|: names of all possible optimizations. See also \lref{optimizations}{optimizations}.
  \item \verb|--meta-targets|: all possible code generation targets.
  \item \verb|--meta-target-default|: default code generation target.
  \item \verb|--meta-variant|: EHC variant.

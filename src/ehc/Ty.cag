@@ -33,9 +33,6 @@ acoreBuiltinUndefined
 %%[4 hs export(TyQu(..)) 
 %%]
 
-%%[(4 hmtyinfer || hmtyast) hs export(tyConNm) 
-%%]
-
 %%[(4_2 hmtyinfer || hmtyast) hs export(tyMbQu,tyIsQu,tyIsAlts) 
 %%]
 
@@ -57,7 +54,7 @@ acoreBuiltinUndefined
 %%[(7 hmtyinfer || hmtyast) hs import(Data.List) export(kiRow,tyRowEmpty,tyRecEmpty,tySumEmpty,mkTyRow,mkTyRec,mkTySum,mkTyRecExt) 
 %%]
 
-%%[(7 hmtyinfer || hmtyast) hs export(tyAppFunArg,tyAppFunConNm) 
+%%[(7 hmtyinfer || hmtyast) hs export(tyAppFunArg) 
 %%]
 
 %%[(7_2 hmtyinfer || hmtyast) hs import(Data.Set(Set), qualified Data.Map as Map, Data.Map(Map))
@@ -1031,7 +1028,7 @@ tyProdArgs   = tyAppArgs
 tyLHdAndTl   = hdAndTl' Ty_Any
 %%]
 
-%%[(4 hmtyinfer || hmtyast).unMkTy.tyConNm hs export(tyMbCon)
+%%[(4 hmtyinfer || hmtyast).unMkTy.tyConNm hs export(tyMbCon,tyConNm)
 tyMbCon :: Ty -> Maybe HsName
 tyMbCon t = case tyUnAnn t of {Ty_Con nm -> Just nm ; _ -> Nothing}
 
@@ -1080,7 +1077,10 @@ tyMbAppConArgs t
   where (f,a) = tyAppFunArgs t
 %%]
 
-%%[(7 hmtyinfer || hmtyast) hs
+%%[(7 hmtyinfer || hmtyast) hs export(tyAppFunMbConNm,tyAppFunConNm)
+tyAppFunMbConNm :: Ty -> Maybe HsName
+tyAppFunMbConNm = tyMbCon . fst . tyAppFunArgs
+
 tyAppFunConNm :: Ty -> HsName
 tyAppFunConNm = tyConNm . fst . tyAppFunArgs
 %%]

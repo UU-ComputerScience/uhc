@@ -461,8 +461,8 @@ SEM Expr
                                                         in  ( cnstrMpUnions quantCnstrMps
                                                             , foldr (\(occ,arg) m -> Map.insertWith (++) occ [arg] m) Map.empty $ concat coeArgIds
                                                             )
-                            .   prvArgCSubst        =   let mk a = (acoreNmHole a, CMetaVal_Dict)
-                                                        in  acoreCSubstFromUidImplsL [ (occ, ([acoreCoeAppMeta2 $ map mk args], [])) | (occ,args) <- Map.toList @coeArgIdMp ]
+                            .   prvArgCSubst        =   let mk a = (acoreNmHole a)
+                                                        in  acoreCSubstFromUidImplsL [ (occ, ([acoreCoeAppN $ map mk args], [])) | (occ,args) <- Map.toList @coeArgIdMp ]
                 loc         .   lUniq6              :   UNIQUEREF gUniq
 %%]
 
@@ -470,8 +470,8 @@ TyCore variant/clone:
 
 %%[(9 hmtyinfer tycore)
 SEM Expr
-  | Let         loc         .   prvArgTCSubst       =   let mk a = (mkHNm a,(C.MetaVal_Dict Nothing))
-                                                        in  acoreCSubstFromUidImplsL [ (occ, ([acoreCoeAppMeta $ map mk args], [])) | (occ,args) <- Map.toList @coeArgIdMp ]
+  | Let         loc         .   prvArgTCSubst       =   let mk a = (mkHNm a)
+                                                        in  acoreCSubstFromUidImplsL [ (occ, ([acoreCoeAppNbyName $ map mk args], [])) | (occ,args) <- Map.toList @coeArgIdMp ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

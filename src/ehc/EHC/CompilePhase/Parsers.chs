@@ -217,7 +217,7 @@ cpDecodeHIInfo modNm
                      ; return i
                      })
                  (\_ -> return $ HI.emptyHIInfo {HI.hiiValidity = HI.HIValidity_Absent})
-       ; when (ehcOptVerbosity opts >= VerboseALot)
+       ; when (ehcOptVerbosity opts > VerboseALot)
               (do { lift $ putPPLn (pp hiinfo)
                   })
        ; case HI.hiiValidity hiinfo of

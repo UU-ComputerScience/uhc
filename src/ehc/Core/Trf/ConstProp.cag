@@ -16,7 +16,7 @@
 %%[(8 codegen) hs import(Data.Maybe)
 %%]
 
-%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonCtxtPred})
+%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonCtxtPred},{Core/CommonBindNm})
 WRAPPER CodeAGItf
 %%]
 
@@ -70,8 +70,8 @@ ATTR CodeAGItf [ | | cTrf: CModule ]
 
 SEM CExpr
   | App         lhs         .   cTrf        =   if @lhs.isTopApp
-                                                then  case (@appLam,reverse @appArgL) of
-                                                        (CExpr_Var n,[CExpr_Int i1,CExpr_Int i2]) | n == (ehcOptBuiltin @lhs.opts ehbnPrimAddInt)
+                                                then  case (acoreExprMbVar @appLam,reverse @appArgL) of
+                                                        (Just n,[CExpr_Int i1,CExpr_Int i2]) | n == (ehcOptBuiltin @lhs.opts ehbnPrimAddInt)
                                                           -> acoreInt (i1 + i2)
                                                         _ -> @cTrf
                                                 else  @cTrf

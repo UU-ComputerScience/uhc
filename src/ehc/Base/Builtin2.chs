@@ -57,8 +57,12 @@ emptyBuiltinInfo
   	  }
 %%]
 
+%%[(8 codegen) hs export(BuiltinInfoMp)
+type BuiltinInfoMp = Map.Map HsName BuiltinInfo
+%%]
+
 %%[(97 codegen) hs
-builtin32BitsTyMp :: EHCOpts -> Bool -> Map.Map HsName BuiltinInfo
+builtin32BitsTyMp :: EHCOpts -> Bool -> BuiltinInfoMp
 builtin32BitsTyMp opts _
   = Map.fromList
        [ ( builtinNm opts ehbnInt32
@@ -98,7 +102,7 @@ builtin32BitsTyMp opts _
 %%]
 
 %%[(8 codegen) hs export(builtinMayLiveUnboxedTyMp)
-builtinMayLiveUnboxedTyMp :: EHCOpts -> Map.Map HsName BuiltinInfo
+builtinMayLiveUnboxedTyMp :: EHCOpts -> BuiltinInfoMp
 builtinMayLiveUnboxedTyMp opts
   = Map.fromList
          [ ( hsnInt
@@ -193,7 +197,7 @@ builtinMayLiveUnboxedTyNmL opts
 %%]
 
 %%[(8 codegen) hs export(builtinKnownBoxedTyMp)
-builtinKnownBoxedTyMp :: EHCOpts -> Map.Map HsName BuiltinInfo
+builtinKnownBoxedTyMp :: EHCOpts -> BuiltinInfoMp
 builtinKnownBoxedTyMp opts
   = builtinMayLiveUnboxedTyMp opts
     `Map.union`

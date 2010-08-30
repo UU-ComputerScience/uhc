@@ -153,14 +153,14 @@ evidMpToCore env evidMp
                             mkc v st = st {tcsEvMp = Map.insert ev v $ tcsEvMp st}
                             v = mknm evnm
                             r = ToCoreRes (vc c v) uses sc
-                            vr r = case tcrCExpr r of
-                                     CExpr_Var _ -> r
-                                     _           -> r {tcrCExpr = v}
-                            vc c c' = case c of
-                                        CExpr_Var _ -> c
-                                        _           -> c'
+                            vr r = case acoreExprMbVar $ tcrCExpr r of
+                                     Just _ -> r
+                                     _      -> r {tcrCExpr = v}
+                            vc c c' = case acoreExprMbVar c of
+                                        Just _ -> c
+                                        _      -> c'
         ann (RedHow_Assumption   vun sc) _     = ( mknm $ vunmNm vun, sc )
-        ann (RedHow_ByInstance   n _   sc) ctxt= ( acoreAppMeta (mknm n) (map (\c -> (tcrCExpr c,CMetaVal_Dict)) ctxt), maximumBy pscpCmpByLen $ sc : map tcrScope ctxt )
+        ann (RedHow_ByInstance   n _   sc) ctxt= ( acoreApp (mknm n) (map (\c -> (tcrCExpr c)) ctxt), maximumBy pscpCmpByLen $ sc : map tcrScope ctxt )
         ann (RedHow_BySuperClass n o t ) [sub] = let res = acoreSatSelsCaseMeta
                                                              (emptyRCEEnv $ feEHCOpts $ fiEnv env)
                                                              (Just $ hsnUniqifyEval n) 

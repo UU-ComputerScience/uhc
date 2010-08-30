@@ -45,7 +45,7 @@ relevtyInst uniq ty
 
 %%[(8 codegen)
 ATTR AllNT [ | gUniq: UID | ]
-ATTR TyAGItf QualAGItf [ gUniq: UID | | ]
+ATTR TyAGItf QualAGItf CoeAGItf [ gUniq: UID | | ]
 
 SEM RelevTy
   | Fun             loc			.	lUniq     	: UNIQUEREF gUniq
@@ -63,7 +63,7 @@ SEM RelevTy
 %%[(8 codegen)
 ATTR AllNT [ freshMp: {Map.Map UID UID} | | ]
 
-SEM TyAGItf QualAGItf
+SEM TyAGItf QualAGItf CoeAGItf
   | AGItf			loc			.	freshMp		=	Map.empty
 
 SEM RelevTy

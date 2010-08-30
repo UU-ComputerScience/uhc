@@ -5,9 +5,9 @@
 %%[(8 codegen).mainUseExists
 SEM AGItf
   | AGItf       loc         .   mainUseExists
-                                            =   case @expr.letCBody of
-                                                  CExpr_Var n | n == hsnMain -> True
-                                                  _                          -> False
+                                            =   case acoreExprMbVar @expr.letCBody of
+                                                  Just n | n == hsnMain -> True
+                                                  _                     -> False
                             .   insertMainUse
                                             =   not @mainUseExists
 %%]
@@ -111,7 +111,7 @@ ATTR Expr [ | | cexpr: CExpr ]
 
 SEM Expr
   | Ann         loc         .   cexpr       =   @expr.cexpr
-  | Let         loc         .   frontCBindL =   [(CBindings_FFI,@decls.ffiCBindL)]
+  | Let         loc         .   frontCBindL =   [(if True {- ehcOptPriv @lhs.opts -} then CBindings_Plain else CBindings_FFI,@decls.ffiCBindL)]
 %%[[90
                             .   backCBindL  =   [(CBindings_FFE,@decls.ffeCBindL)]
 %%]]
@@ -136,7 +136,7 @@ SEM Expr
                                                     (rceMatch @rceEnv [@arg.topNm] [RAlt_Alt [@arg.rpat] @body.cexpr @body.caseFailS])
   | Case        loc         .   cexpr       =   let (ns,bs,as)
                                                       = if @isTupOfArg
-                                                        then let ns = [ n | (CExpr_Var n) <- fuL2ExprL (reverse @expr.fuCExprL) ]
+                                                        then let ns = [ acbrefNm ref | (CExpr_Var ref) <- fuL2ExprL (reverse @expr.fuCExprL) ]
                                                              in  (ns,[],@alts.raltL')
                                                         else let n = uidHNm @lUniq2
                                                              in  ([n],[acoreBind1Cat CBindings_Plain n @expr.cexpr],@alts.raltL)
@@ -448,15 +448,26 @@ SEM Decl
 
 %%[(8 codegen) hs
 -- | Make bindings for constructors, given various bits of info
-mkDataCBindL :: EHCOpts -> CTag -> HsName -> Bool -> [CBind]
-mkDataCBindL opts ctag conNm isNewtype
-  | isNewtype = [ acoreBind1Cat CBindings_Plain conNm (acoreVar $ ehcOptBuiltin opts ehbnId) ]
-  | otherwise = [ acoreBind1Cat CBindings_Plain conNm
+mkDataCBindL :: EHCOpts -> CTag -> [DataConFldAnnInfo] -> HsName -> Bool -> [CBind]
+mkDataCBindL opts ctag annL conNm isNewtype
+  | isNewtype = [ acoreBind1 conNm (acoreVar $ ehcOptBuiltin opts ehbnId) ]
+  | otherwise = [ acoreBind1 conNm
                     (acoreLam nms
-                      (acoreApp (CExpr_Tup ctag)
-                        (map acoreVar nms)))
+                      (foldr (.) id mkStrict
+                        (acoreApp (CExpr_Tup ctag)
+                          (map acoreVar nms'
+                    ) ) ) )
                 ]
   where nms = (map (\i -> hsnFromString ("x" ++ show i)) [1 .. ctagArity ctag])
+        (nms',mkStrict)
+          = (nms, replicate (ctagArity ctag) id)
+          where len = ctagArity ctag
+{-
+          = unzip [ if s then (n',\e -> acoreLet1StrictIn n' (acoreVar n) (const e)) else (n,id)
+                  | (n,s) <- zip nms $ map ((==Strictness_Strict) . dcfaiStrictness) annL
+                  , let n' = hsnUniqifyEval n
+                  ]
+-}
 %%]
 
 %%[(8 codegen) hs
@@ -489,10 +500,11 @@ SEM Expr
   | Let         loc         .   cDataBindL  =   mkDataBinds
                                                     (\isNewtype
                                                       (DataTagInfo
-                                                        { dtiConNm    = conNm
-                                                        , dtiFldMp    = fldMp
-                                                        , dtiCTag     = ctag
-                                                        }) -> mkDataCBindL @lhs.opts ctag conNm isNewtype
+                                                        { dtiConNm    	= conNm
+                                                        , dtiFldMp    	= fldMp
+                                                        , dtiConFldAnnL	= annL
+                                                        , dtiCTag     	= ctag
+                                                        }) -> mkDataCBindL @lhs.opts ctag annL conNm isNewtype
                                                     )
                                                     @decls.gathDeclDataGam
 %%]
@@ -731,7 +743,46 @@ ATTR
 SEM Decl
   | Val         lhs         .   cbindL          =   [acoreBind1Cat CBindings_Plain @patExpr.topNm @expr.cexpr] ++ @patExpr.cbindL -- cbindInPatFlatten @patExpr.cbindInPatL
   | TySig       lhs         .   cbindL          =   []
-  | FFI         lhs         .   ffiCBindL       =   [acoreBind1Asp1 @nm (CBindAspect_FFI @callconv @safety @impEnt  @ty_sig_expanded)]
+  | FFI         lhs         .   ffiCBindL       =   if True -- ehcOptPriv @lhs.opts
+                                                    then let (argTyL,resTy) = tyArrowArgsRes @ty_sig_expanded
+                                                             argLen = length argTyL
+                                                             (_,u1,u2) = mkNewLevUID2 @lUniqFFI
+                                                             (nmRes:nmEvalRes:nmArgL) = take (argLen + 2) (map (mkHNm) (iterate uidNext u1))
+                                                             nmArgPatL = map (hsnUniqify HsNameUniqifier_FFIArg) nmArgL
+                                                             (resTyAdapted,argTyLExtra,nmArgLExtra,wrapRes)
+                                                                =
+%%[[98
+                                                                    case ffiMbIORes @lhs.opts resTy of
+                                                                      Just iores
+                                                                        -> (iores,a,n,w)
+                                                                        where (a,n,w) = ffiCoreIOAdapt @lhs.opts u2 iores
+                                                                      _ ->
+%%]]
+                                                                           (resTy,[],[],id)
+%%[[8
+                                                             primArgNeedsEvalL
+                                                                             =   take argLen $ repeat True
+                                                             primResNeedsEval
+                                                                             =   False
+%%][96
+                                                             mbPrimNeedEval  =   lookupPrimNeedsEval $ forextractEnt $ foreignEntExtract @impEnt
+                                                             primArgNeedsEvalL
+                                                                             =   take argLen $ maybe (repeat True) (\p -> primArgNeedEval p ++ repeat True) mbPrimNeedEval
+                                                             primResNeedsEval
+                                                                             =   maybe False primResNeedEval mbPrimNeedEval
+%%]]
+                                                             ffi = acoreLam (nmArgL ++ nmArgLExtra)
+                                                                   $ ffiCoreEvalAdapt
+                                                                       ( zip3 nmArgL nmArgPatL primArgNeedsEvalL )
+                                                                       ( nmEvalRes
+                                                                       , wrapRes
+                                                                         $ acoreApp (CExpr_FFI @callconv @safety @impEnt $ argTyL `mkArrow` resTyAdapted)
+                                                                         $ map acoreVar nmArgPatL
+                                                                       , primResNeedsEval
+                                                                       )
+                                                         in  [acoreBind1 @nm ffi]
+                                                    else [] -- [acoreBind1Asp1 @nm (CBindAspect_FFI @callconv @safety @impEnt @ty_sig_expanded)]
+                loc         .   lUniqFFI        :   UNIQUEREF gUniq
 %%]
 
 %%[(9 codegen)
@@ -814,15 +865,15 @@ SEM Decl
                                                                  ((emptyRCEEnv @lhs.opts) {rceDataGam = @lhs.dataGam}) (Just xStrict) CMetaVal_Dict vx @dictTag
                                                                  [(n,{-n,-}cdictOffset n @clsTyRec)] Nothing (acoreVar n)
                                                      mkApp = if ehcCfgInstFldHaveSelf @lhs.opts
-                                                             then (\f -> acoreApp1Meta f vx CMetaVal_Dict)
+                                                             then (\f -> acoreApp1 f vx)
                                                              else id
                                                      dDflt
-                                                       = [acoreBind1Cat CBindings_Plain nDflt (acoreLam1Meta nD CMetaVal_Dict d)] 
+                                                       = [acoreBind1Cat CBindings_Plain nDflt (acoreLam1 nD d)] 
                                                        where nDflt = clgiDfltDictNm @clgi2
                                                              d = acoreApp (CExpr_Tup @dictTag) (replicate (length $ snd $ tyRecExts $ @clsTyRec) (acoreBuiltinUndefined @lhs.opts))
                                                              nD = hsnUniqify HsNameUniqifier_SelfDict nDflt
                                                 in   (maybe dDflt (const []) @mbDefaultInstNm)
-                                                     ++ [ acoreBind1Cat CBindings_Plain n $ acoreLam1Meta x CMetaVal_Dict $ mkApp $ mkSel n
+                                                     ++ [ acoreBind1Cat CBindings_Plain n $ acoreLam1 x $ mkApp $ mkSel n
                                                         | (n,_) <- @clsFldL
                                                         ]
 %%]
@@ -1005,7 +1056,7 @@ mkNormalInstance
 
         instanceCHRBindings = chrSuperCtxtAssumeCBindL ++ chrSuperProveCBindL ++ chrDeclsCBindL
 
-        dict1     = acoreApp1Meta dfltVar rsltVar CMetaVal_Dict
+        dict1     = acoreApp1 dfltVar rsltVar
         bind1     = acoreBind1Meta dfltNmStrict CMetaVal_Dict dict1
         
         dict2     = acoreLetBase (acoreBindcategStrict) [bind1] (mkSetFlds (superNameMapping ++ instanceNameMapping) dfltVarStrict)
@@ -1015,7 +1066,7 @@ mkNormalInstance
         bind3     = acoreBind1Meta rsltNm       (CMetaVal_Track TrackSelf) dict3
 
         dict4     = acoreLetRec ([bind3] ++ instanceNewBindings ++ instanceCHRBindings) rsltVar
-        bind4     = acoreLamMeta contextArguments dict4        
+        bind4     = acoreLam contextArguments dict4        
 
         -- The above generates the following Core code as dict4:
         --
@@ -1027,7 +1078,7 @@ mkNormalInstance
         --        inst4 = ...
         -- in reslt
 
-        contextArguments = acoreMetaLiftDict contextNmL
+        contextArguments = contextNmL
 %%]
 
 %%[(9 codegen) hs
@@ -1098,12 +1149,11 @@ mkInstanceCBindL
                                                               defaultBodies
                 defaultCHRBindings  = chrDeclsCBindL 
                                                    
-                dict5     = acoreAppMeta (CExpr_Tup dictTag)
-                                         (zip memberNewVars defaultMetas)
+                dict5     = acoreApp (CExpr_Tup dictTag) memberNewVars
                 bind5     = acoreBind1Meta rsltNm CMetaVal_Dict dict5
 
                 dict6     = acoreLetRec ([bind5] ++ defaultNewBindings ++ defaultCHRBindings) rsltVar
-                bind6     = acoreLam1Meta selfNm CMetaVal_Dict dict6
+                bind6     = acoreLam1 selfNm dict6
 
             in  ( bind6
                 , CMetaVal_DictClass defaultTracks
@@ -1129,16 +1179,16 @@ mkInstanceSetFlds opts dataGam dictTag instanceRecTy
         mkSetFldsData ts d0
           = acoreSatSelsCaseMeta env Nothing CMetaVal_Dict d0 dictTag nmLblOffL Nothing sel
           where env = (emptyRCEEnv opts) {rceDataGam = dataGam}
-                fullListWithTrivialValues = [ (o, (o, (acoreVar n,CMetaVal_Val) ) ) 
+                fullListWithTrivialValues = [ (o, (o, (acoreVar n) ) ) 
                                             | (n,o) <- nmLblOffL 
                                             ]
-                sparseListWithInterestingValues = [ (off n, (v,m) ) 
+                sparseListWithInterestingValues = [ (off n, (v) ) 
                                                   | (n,m,v) <- ts
                                                   ]
                 arity = ctagArity dictTag
                 ns = take arity hsnLclSupply
                 nmLblOffL = zip ns [0..]
-                sel = acoreAppMeta   (CExpr_Tup dictTag) 
+                sel = acoreApp       (CExpr_Tup dictTag) 
                                      (map snd
                                       $ listSaturateWith 0 
                                                          (arity-1) 
@@ -1193,13 +1243,13 @@ SEM Decl
 %%[(9 codegen) hs
 getBindRightVar :: CBind -> Maybe HsName
 
-getBindRightVar (CBind_Bind _ [CBindAspect_Bind _ (CExpr_Var nm)]) = Just nm
+getBindRightVar (CBind_Bind _ [CBindAspect_Bind _ v]) = acoreExprMbVar v
 getBindRightVar _ = Nothing
 
 
 getBindLeftAndRightVar :: CBind -> (HsName,HsName)
 
-getBindLeftAndRightVar (CBind_Bind nm1 [CBindAspect_Bind _ (CExpr_Var nm2)]) = (nm1,nm2)
+getBindLeftAndRightVar (CBind_Bind nm1 [CBindAspect_Bind _ (CExpr_Var ref2)]) = (nm1, acbrefNm ref2)
 getBindLeftAndRightVar _ = error "getBindLeftAndRightVar: not a bind"
 
 mbNameToTrack Nothing   = TrackNone
@@ -1246,10 +1296,10 @@ mkInstanceDerivingFldBind opts rceEnv dataGam uniq derivDataDGI derivHdDataTy di
                nsubs t n = take (ctagArity t) $ hsnLclSupplyWith n
                extraCxL = [ acoreNmHolePred (poPoi prOcc) | prOcc <- derivExtraPrOcc ]
                mkcSubs dti nmFldLL altPrOccL
-                 = [ acoreAppMeta
+                 = [ acoreApp
                        (acoreVar (dcfNm dcf))
-                       (acoreMetaLiftDict [acoreNmHolePred (poPoi prOcc)]
-                         ++ acoreMetaLift (dcfInitialSubArgL dcf dti ++ map acoreVar nmFldL))
+                       ([acoreNmHolePred (poPoi prOcc)]
+                         ++ (dcfInitialSubArgL dcf dti ++ map acoreVar nmFldL))
                    | (nmFldL,prOcc) <- zip nmFldLL altPrOccL
                    ]
                mkc tg@(dtisLT,dti,dtisGT) altInx arity nms nmFldLL altPrOccL

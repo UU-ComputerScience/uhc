@@ -56,13 +56,18 @@
 %%[8 hs import(EH.Util.Utils(groupSortOn))
 %%]
 
+%%[8 hs import(Control.Applicative((<|>)))
+%%]
+
 %%[(8 codegen) hs import({%{EH}AbstractCore}, {%{EH}AbstractCore.Utils})
 %%]
-%%[(8 codegen) hs import({%{EH}Core},{%{EH}Core.Utils},{%{EH}Core.Pretty})
+%%[(8 codegen) hs import({%{EH}Core},{%{EH}Core.FFI},{%{EH}Core.Utils},{%{EH}Core.Pretty})
 %%]
 %%[(8 codegen tycore) hs import(qualified {%{EH}TyCore.Full2} as C)
 %%]
 %%[(8 codegen tycore hmtyinfer) hs import({%{EH}Ty.Utils2})
+%%]
+%%[(96 codegen) hs import({%{EH}BuiltinPrims},{%{EH}Foreign},{%{EH}Foreign.Extract})
 %%]
 %%[(9 codegen hmtyinfer) hs import({%{EH}Ty.Utils2})
 %%]

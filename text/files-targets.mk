@@ -397,4 +397,11 @@ text-variant-theplan:
 	  TEXT_SHUFFLE_VARIANT=57 \
 	  text-variant-dflt-bib-dotdpd
 
+text-variant-slides-uhcinternals:
+	$(MAKE) TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC=yes \
+	  INCLUDE_DERIVED_MK=yes \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--set=yesBeamer --unset=asArticle --set=asSlides --unset=useHyperref --unset=refToPDF" \
+	  TEXT_SHUFFLE_VARIANT=62 \
+	  text-variant-dflt-once
+
 

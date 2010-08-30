@@ -22,6 +22,11 @@ DATA CoeAGItf
   | AGItf       relevCoe        : RelevCoe
 %%]
 
+%%[(8888 codegen)
+DATA AnaEvalAGItf
+  | AGItf       anaEval         : AnaEval
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Evaluation state
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -66,9 +71,12 @@ DATA RelevCoe
   | Fun 		args			: RelevCoeL
   				res				: RelevCoe
 
-  -- coercion based on qualifier, which still must be resolved to a 'real' coercion
-  -- ?? unnecessary
-  | Qual		qual			: RelevQual
+  -- coercion going in the 'wrong' direction of lattice, delegating the corresponding 'cast' to the outside
+  | Cast		coe 			: RelevCoe
+  
+  -- coercion casting between types
+  | CastTy		l	 			: RelevTy
+  				r				: RelevTy
   
   -- the real coercion, for each Ana lattice, may require substitutions later on
   | Eval		from			: AnaEval

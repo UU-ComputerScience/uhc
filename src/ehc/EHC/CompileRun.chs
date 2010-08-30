@@ -146,7 +146,15 @@ crBaseInfo' cr
 
 crBaseInfo :: HsName -> EHCompileRun -> (EHCompileUnit,EHCompileRunStateInfo,EHCOpts,FPath)
 crBaseInfo modNm cr
-  = (ecu,crsi,opts,fp)
+  = ( ecu ,crsi
+%%[[8
+    , opts
+%%][99
+    -- if any per module opts are available, use those
+    , maybe opts id $ ecuMbOpts ecu
+%%]]
+    , fp
+    )
   where ecu         = crCU modNm cr
         (crsi,opts) = crBaseInfo' cr
         fp          = ecuFilePath ecu

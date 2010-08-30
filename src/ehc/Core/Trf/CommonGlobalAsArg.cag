@@ -26,8 +26,8 @@ SEM CBindAspect
                                             =   if isJust @expr.mbLam
                                                 then (Set.empty,Set.singleton @lhs.nm)
                                                 else (Set.singleton @lhs.nm,Set.empty)
-  | FFI         lhs         .   bindVarS    =   Set.singleton @lhs.nm
 %%]
+  | FFI         lhs         .   bindVarS    =   Set.singleton @lhs.nm
 
 %%[(8 codegen)
 ATTR AllCodeNT [ varS, lamS: FvS | | ]

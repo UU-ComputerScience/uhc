@@ -218,12 +218,12 @@ tyMatch' min ty1 ty2
 -}
 
         -- matching: 1 sequence element
-        ms1 min mout    s1@(ExprSeq1_L0Val t1 _)        s2@(ExprSeq1_L0Bind n2 _ _)
+        ms1 min mout    s1@(ExprSeq1_L0Val t1  )        s2@(ExprSeq1_L0Bind n2   _)
             | minAllowRL0BindBind min                                               =   m (min {minAllowLBind=True}) mout (Expr_Var n2) t1
-        ms1 min mout    s1@(ExprSeq1_L0Val t1 _)        s2@(ExprSeq1_L0Val t2 _)    =   m min mout t1 t2
+        ms1 min mout    s1@(ExprSeq1_L0Val t1  )        s2@(ExprSeq1_L0Val t2  )    =   m min mout t1 t2
         ms1 min mout    s1@(ExprSeq1_L0LblVal _ t1)     s2@(ExprSeq1_L0LblVal _ t2) =   m min mout t1 t2
         ms1 min mout    s1@(ExprSeq1_L0TagVal _ t1)     s2@(ExprSeq1_L0TagVal _ t2) =   m min mout t1 t2
-        ms1 min mout    s1@(ExprSeq1_L0Bind n1 _ t1)    s2@(ExprSeq1_L0Bind n2 _ t2)
+        ms1 min mout    s1@(ExprSeq1_L0Bind n1   t1)    s2@(ExprSeq1_L0Bind n2   t2)
             | n1 == n2                                                              =   m (min {minMetaLev = minMetaLev min + 1}) mout t1 t2
             | minAllowAlphaRename min                                               =   let mout' = m (min {minMetaLev = minMetaLev min + 1}) mout t1 t2
                                                                                         in  mout' {moutEnv = envSingleton n1 (minMetaLev min) (Expr_Var n2) `envUnion` moutEnv mout' }
@@ -432,13 +432,13 @@ SEM Expr
 ATTR ExprSeq1 [ | | tySeq1: ExprSeq1 ]
 
 SEM ExprSeq1
-  | L0Val       loc         .   tySeq1              =   ExprSeq1_L0Val         @l0.ty Nothing
+  | L0Val       loc         .   tySeq1              =   ExprSeq1_L0Val         @l0.ty
   | L0LblVal    loc         .   tySeq1              =   ExprSeq1_L0LblVal @nm  @l0.ty
   | L0TagVal    loc         .   tySeq1              =   ExprSeq1_L0TagVal @tag @l0.ty
-  | L0Bind      loc         .   tySeq1              =   ExprSeq1_L0Val         @l1.t Nothing
-  | L1Bind      loc         .   tySeq1              =   ExprSeq1_L0Bind   @nm  Nothing @l2.t
+  | L0Bind      loc         .   tySeq1              =   ExprSeq1_L0Val         @l1.t
+  | L1Bind      loc         .   tySeq1              =   ExprSeq1_L0Bind   @nm  @l2.t
   | L2Bind      loc         .   tySeq1              =   ExprSeq1_L1Bind   @nm  @l3.t                    -- TBD, lifting
-  | L1Val       loc         .   tySeq1              =   ExprSeq1_L0Val         @l1.t Nothing
+  | L1Val       loc         .   tySeq1              =   ExprSeq1_L0Val         @l1.t
   | L2Val       loc         .   tySeq1              =   ExprSeq1_L1Val         @l2.t                    -- TBD, lifting
 %%]
 
