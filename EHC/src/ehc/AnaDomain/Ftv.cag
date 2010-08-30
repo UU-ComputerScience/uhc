@@ -25,27 +25,27 @@ Substitution for AnaDomain.
 WRAPPER TyAGItf QualAGItf CoeAGItf
 %%]
 
-%%[(8 codegen) hs export(relevtyFtv)
-relevtyFtv :: RelevTy -> UIDS
-relevtyFtv ty
+%%[(8 codegen) hs export(relevTyFtv)
+relevTyFtv :: RelevTy -> UIDS
+relevTyFtv ty
   = fvS_Syn_TyAGItf t
   where t = wrap_TyAGItf
               (sem_TyAGItf (TyAGItf_AGItf ty))
               (Inh_TyAGItf )
 %%]
 
-%%[(8 codegen) hs export(relevqualFtv)
-relevqualFtv :: RelevQual -> UIDS
-relevqualFtv qual
+%%[(8 codegen) hs export(relevQualFtv)
+relevQualFtv :: RelevQual -> UIDS
+relevQualFtv qual
   = fvS_Syn_QualAGItf t
   where t = wrap_QualAGItf
               (sem_QualAGItf (QualAGItf_AGItf qual))
               (Inh_QualAGItf )
 %%]
 
-%%[(8 codegen) hs export(relevcoeFtv)
-relevcoeFtv :: RelevCoe -> UIDS
-relevcoeFtv coe
+%%[(8 codegen) hs export(relevCoeFtv)
+relevCoeFtv :: RelevCoe -> UIDS
+relevCoeFtv coe
   = fvS_Syn_CoeAGItf t
   where t = wrap_CoeAGItf
               (sem_CoeAGItf (CoeAGItf_AGItf coe))

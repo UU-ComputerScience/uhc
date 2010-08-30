@@ -13,7 +13,7 @@
 %%[(8 codegen) hs import({%{EH}Base.Common})
 %%]
 
-%%[(8 codegen) hs import(qualified Data.Map as Map, Data.Char)
+%%[(8 codegen) hs import(qualified Data.Map as Map, qualified Data.Set as Set, Data.Char)
 %%]
 
 %%[(8 codegen).WRAPPER ag import({AnaDomain/AbsSyn})
@@ -22,16 +22,16 @@ WRAPPER
 %%]
 
 %%[(8 codegen) hs export(ppRelevTy)
-ppRelevTy :: RelevTy -> (PP_Doc,VarPPMp)
-ppRelevTy x
+ppRelevTy :: VarPPMp -> RelevTy -> (PP_Doc,VarPPMp)
+ppRelevTy vm x
   =  let  t = wrap_RelevTy (sem_RelevTy x)
                            (Inh_RelevTy
-                             { varMp_Inh_RelevTy = Map.empty
+                             { varMp_Inh_RelevTy = vm
                              })
      in   (pp_Syn_RelevTy t, quantVarMp_Syn_RelevTy t)
 
 instance PP RelevTy where
-  pp x = fst $ ppRelevTy x
+  pp x = fst $ ppRelevTy Map.empty x
 %%]
 
 %%[(8 codegen) hs export(ppRelevQual)
@@ -81,6 +81,14 @@ instance PP RVarMpInfo where
   pp (RVMIEval a) = pp a
 %%]
 
+%%[(8 codegen) hs
+instance PP AnaMatchState where
+  pp x = ppParens (amsOuterVarMp x) >#< amsLocalVarMp x >#< "~>" >#< ppCommas (Set.toList $ amsGathQual x)
+
+instance PP a => PP (AMSOut a) where
+  pp x = amsoLo x >#< "<=" >#< amsoHi x >#< "~" >#< amsoCoe x
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Pretty printed code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -103,10 +111,11 @@ SEM RelevQual
 SEM RelevCoe
   | Id 			lhs			.	pp			=	pp "#_c"
   | Err         lhs         .   pp          =   "#_c:" >#< @str
-  | Qual 		lhs			.	pp			=	"(q_c" >#< @qual.pp >|< ")"
+  | Cast 		lhs			.	pp			=	"(#!" >#< @coe.pp >|< ")"
   | Eval 		lhs			.	pp			=	ppParens $ @from.pp >#< "~e>" >#< @to.pp
   | Comp		lhs			.	pp			=	@l.pp >#< "._c" >#< @r.pp
   | Fun			lhs			.	pp			=	ppParensCommas' @args.ppL >#< "-c>" >#< @res.pp
+  | CastTy		lhs			.	pp			=	ppParens $ @l.pp >#< "`castTy`" >#< @r.pp
 
 SEM AnaEval
   | Var         lhs         .   pp          =   Map.findWithDefault (pp @av) @av @lhs.varMp

@@ -67,7 +67,7 @@
 %%]
 
 -- Misc
-%%[(8 codegen) import({%{EH}Base.Target})
+%%[(8 codegen) import({%{EH}Base.Target}, {%{EH}Base.Optimize}(allOptimizeMp))
 %%]
 %%[(102 codegen) import({%{EH}Core.Trf.Strip})
 %%]
@@ -186,6 +186,8 @@ handleImmQuitOption immq opts
         -> putStr showSupportedTargets
       ImmediateQuitOption_Meta_TargetDefault
         -> putStr (show defaultTarget)
+      ImmediateQuitOption_Meta_Optimizations
+        -> putStr (showStringMapKeys allOptimizeMp " ")
 %%]]
 %%[[99
       ImmediateQuitOption_VersionDotted

@@ -63,7 +63,7 @@ cpTransformGrin modNm
   =  do  {  cr <- get
          ;  let  (ecu,_,opts,_) = crBaseInfo modNm cr
                  forBytecode = not (ehcOptFullProgAnalysis opts)
-                 optimizing  = ehcOptOptimizationLevel opts >= OptimizationLevel_Normal
+                 optimizing  = ehcOptOptimizes Optimize_GrinLocal opts
          
 {- for debugging 
                  trafos  =     mk [mte,unb,flt,cpr,nme]

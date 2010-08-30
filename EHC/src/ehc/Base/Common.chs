@@ -629,26 +629,6 @@ data CHRScoped
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Optimisation level: combination of how much & scope (per module, whole program)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8 export(OptimizationLevel(..))
-data OptimizationLevel
-  = OptimizationLevel_Off				-- no optimizations					: -O0
-  | OptimizationLevel_Normal			-- easy and cheap optimizations		: -O1 (default)
-  | OptimizationLevel_Much				-- more and expensive optimizations	: -O2
-  | OptimizationLevel_Full				-- throw everything in it			: -O3
-  deriving (Eq,Ord,Show,Enum,Bounded)
-%%]
-
-%%[8 export(OptimizationScope(..))
-data OptimizationScope
-  = OptimizationScope_PerModule			
-  | OptimizationScope_WholeProgram
-  deriving (Eq,Ord,Show,Enum,Bounded)
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Point in sequence of EH compilation phases
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

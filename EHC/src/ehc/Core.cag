@@ -16,7 +16,7 @@ Datatype LamInfo holds the implementation info to be exported from a module.
 %%[(8 codegen) hs module {%{EH}Core} import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Base.Opts})
 %%]
 
-%%[(8 codegen) hs import({%{EH}AbstractCore})
+%%[(8 codegen) hs import({%{EH}AbstractCore}) export(module {%{EH}AbstractCore})
 %%]
 
 %%[(8 codegen) hs import({%{EH}AnaDomain}) export (module {%{EH}AnaDomain})
@@ -28,7 +28,7 @@ Datatype LamInfo holds the implementation info to be exported from a module.
 %%[(8 codegen) hs import(Data.Maybe,Data.Char,Data.List,EH.Util.Pretty,EH.Util.Utils)
 %%]
 
-%%[(8 codegen) hs export(CodeAGItf(..), CModule(..), CExpr(..), CBind(..), CBindAspect(..), CMetaVal(..), CExprAnn(..), CMetaBind(..), CMetas, CBindL, CBindAspectL, CPatRest(..), CAlt(..), CAltL, CPat(..), CPatL, CPatFld(..), CPatFldL) 
+%%[(8 codegen) hs export(CodeAGItf(..), CModule(..), CExpr(..), MbCExpr, CBind(..), CBindAspect(..), CMetaVal(..), CExprAnn(..), CMetaBind(..), CMetas, CBindL, CBindAspectL, CPatRest(..), CAlt(..), CAltL, CPat(..), CPatL, CPatFld(..), CPatFldL) 
 %%]
 
 %%[(8 codegen) hs import(qualified Data.Map as Map,qualified Data.Set as Set)
@@ -148,16 +148,6 @@ deriving instance Data CBindingsCateg
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Context: what is above/below
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8 codegen) hs export(WhatExpr(..))
-data WhatExpr
-  = ExprIsLam | ExprIsApp | ExprIsVar HsName | ExprIsInt Int | ExprIsOther
-  deriving Eq
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Context: strictness as required by context
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -180,8 +170,8 @@ isStrict _                   = False
 
 %%[(8 codegen) hs export(cexprIsLam)
 cexprIsLam :: CExpr -> Bool
-cexprIsLam (CExpr_Lam _ _ _) = True
-cexprIsLam _                 = False
+cexprIsLam (CExpr_Lam _ _) = True
+cexprIsLam _               = False
 %%]
 
 %%[(8 codegen) hs export(cbindNm)
@@ -241,7 +231,7 @@ emptyCModule = mkCMod (acoreInt 0)
 
 %%[(8 codegen) hs export(cexprMbVar,cexprVar)
 cexprMbVar :: CExpr -> Maybe HsName
-cexprMbVar (CExpr_Var n) = Just n
+cexprMbVar (CExpr_Var r) = Just (acbrefNm r)
 cexprMbVar _             = Nothing
 
 cexprVar :: CExpr -> HsName
@@ -465,8 +455,8 @@ instance Serialize CModule where
 
 instance Serialize CExpr where
   sput (CExpr_Let       a b c       ) = sputWord8  0 >> sput a >> sput b >> sput c
-  sput (CExpr_App       a b c       ) = sputWord8  1 >> sput a >> sput b >> sput c
-  sput (CExpr_Lam       a b c       ) = sputWord8  2 >> sput a >> sput b >> sput c
+  sput (CExpr_App       a b         ) = sputWord8  1 >> sput a >> sput b
+  sput (CExpr_Lam       a b         ) = sputWord8  2 >> sput a >> sput b
   sput (CExpr_Case      a b c       ) = sputWord8  3 >> sput a >> sput b >> sput c
   sput (CExpr_Var       a           ) = sputWord8  4 >> sput a
   sput (CExpr_Int       a           ) = sputWord8  5 >> sput a
@@ -487,12 +477,13 @@ instance Serialize CExpr where
   sput (CExpr_Integer   a           ) = sputWord8 18 >> sput a
 %%]]
   sput (CExpr_Ann       a b         ) = sputWord8 19 >> sput a >> sput b
+  sput (CExpr_FFI       a b c d     ) = sputWord8 20 >> sput a >> sput b >> sput c >> sput d
   sget
     = do t <- sgetWord8
          case t of
            0  -> liftM3 CExpr_Let           sget sget sget
-           1  -> liftM3 CExpr_App           sget sget sget
-           2  -> liftM3 CExpr_Lam           sget sget sget
+           1  -> liftM2 CExpr_App           sget sget
+           2  -> liftM2 CExpr_Lam           sget sget
            3  -> liftM3 CExpr_Case          sget sget sget
            4  -> liftM  CExpr_Var           sget
            5  -> liftM  CExpr_Int           sget
@@ -512,6 +503,7 @@ instance Serialize CExpr where
            18 -> liftM  CExpr_Integer       sget
 %%]]
            19 -> liftM2 CExpr_Ann           sget sget
+           20 -> liftM4 CExpr_FFI           sget sget sget sget
 
 instance Serialize CMetaVal where
   sput (CMetaVal_Val                ) = sputWord8 0
@@ -529,30 +521,34 @@ instance Serialize CMetaVal where
             4 -> liftM  CMetaVal_Track              sget
 
 instance Serialize CExprAnn where
-  sput (CExprAnn_Ty  a) = sputWord8 0 >> sput a
-  sput (CExprAnn_Coe a) = sputWord8 1 >> sput a
+  sput (CExprAnn_Ty    a) = sputWord8 0 >> sput a
+  sput (CExprAnn_Coe   a) = sputWord8 1 >> sput a
+  sput (CExprAnn_Debug _) = sputWord8 2
   sget
     = do t <- sgetWord8
          case t of
             0 -> liftM  CExprAnn_Ty         sget            
             1 -> liftM  CExprAnn_Coe        sget            
+            2 -> return (CExprAnn_Debug     "")
 
 instance Serialize CBindAspect where
   sput (CBindAspect_Bind 	a b      ) = sputWord8 0 >> sput a >> sput b
-  sput (CBindAspect_FFI  	a b c d  ) = sputWord8 1 >> sput a >> sput b >> sput c >> sput d
+  -- sput (CBindAspect_FFI  	a b c d  ) = sputWord8 1 >> sput a >> sput b >> sput c >> sput d
 %%[[90
   sput (CBindAspect_FFE  	a b c d  ) = sputWord8 2 >> sput a >> sput b >> sput c >> sput d
 %%]]
-  sput (CBindAspect_RelevTy a        ) = sputWord8 3 >> sput a
+  sput (CBindAspect_RelevTy a b      ) = sputWord8 3 >> sput a >> sput b
+  sput (CBindAspect_Meta    a b      ) = sputWord8 4 >> sput a >> sput b
   sget
     = do t <- sgetWord8
          case t of
             0 -> liftM2 CBindAspect_Bind          sget sget
-            1 -> liftM4 CBindAspect_FFI           sget sget sget sget
+            -- 1 -> liftM4 CBindAspect_FFI           sget sget sget sget
 %%[[90           
             2 -> liftM4 CBindAspect_FFE           sget sget sget sget
 %%]]
-            3 -> liftM  CBindAspect_RelevTy       sget
+            3 -> liftM2 CBindAspect_RelevTy       sget sget
+            4 -> liftM2 CBindAspect_Meta          sget sget
 
 instance Serialize CBind where
   sput (CBind_Bind a b      ) = sputWord8 0 >> sput a >> sput b
@@ -619,14 +615,14 @@ instance Serialize CMetaBind where
 %%[(8 codegen) hs
 instance AbstractCore CExpr CMetaVal CBind CBindAspect CBindingsCateg CMetaBind Ty CPat CPatRest CPatFld CAlt where
   -- expr
-  acoreApp1Meta           				= CExpr_App
-  acoreLam1MetaTy a m _ e 				= CExpr_Lam a m e
+  acoreApp1       f a      				= CExpr_App f a
+  acoreLam1Ty a _ e 				    = CExpr_Lam a e
   acoreTagTupTy   tg _ es 				= acoreApp (CExpr_Tup tg) es
   acoreBindasp1CatLevMetasTy _ _ _ m _ e= CBindAspect_Bind m e
   acoreBind1Asp n as					= CBind_Bind n as
   acoreLetBase							= CExpr_Let
-  acoreCaseDflt	e as d					= CExpr_Case e as $ maybe (acoreVar hsnUnknown) id d
-  acoreVar								= CExpr_Var
+  acoreCaseDflt	e as d					= CExpr_Case e as (maybe (acoreVar hsnUnknown) id d)
+  acoreVar n							= CExpr_Var (ACoreBindRef n Nothing) 
   acoreStringTy _ i						= CExpr_String i
   acoreCharTy _ i						= CExpr_Char i
   acoreIntTy _ i						= CExpr_Int i
@@ -689,7 +685,7 @@ instance AbstractCore CExpr CMetaVal CBind CBindAspect CBindingsCateg CMetaBind 
   acoreExprMbLet (CExpr_Let c b e)      = Just (c,b,e)
   acoreExprMbLet _                      = Nothing
 
-  acoreExprMbVar (CExpr_Var n)          = Just n
+  acoreExprMbVar (CExpr_Var r)          = Just (acbrefNm r)
   acoreExprMbVar _                      = Nothing
 
   acoreExprMbInt (CExpr_Int i)          = Just (tyInt,toInteger i)

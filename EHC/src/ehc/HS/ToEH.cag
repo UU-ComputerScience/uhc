@@ -1341,15 +1341,15 @@ SEM TypeAnnotation
 		loc			.	eh			=	EH.TyExprAnn_Empty
 %%][(8 codegen)
     | Strict
-        loc         .   eh          =   EH.TyExprAnn_Strictness (Strict)
+        loc         .   eh          =   EH.TyExprAnn_Strictness (Strictness_Strict)
     | AnnotationName
         loc         .   eh          =   case show @name of
-                                          "strict"    ->  EH.TyExprAnn_Strictness (Strict)
-                                          "nonStrict" ->  EH.TyExprAnn_Strictness (NonStrict)
+                                          "strict"    ->  EH.TyExprAnn_Strictness (Strictness_Strict)
+                                          "nonStrict" ->  EH.TyExprAnn_Strictness (Strictness_NonStrict)
                                           _           -> EH.TyExprAnn_Empty
     | AnnotationVar
         loc         .   eh          =   case show @name of
-                                          "strictness" -> EH.TyExprAnn_Strictness (StrictnessVar @var)
+                                          "strictness" -> EH.TyExprAnn_Strictness (Strictness_Var @var)
                                           _            -> EH.TyExprAnn_Empty
 %%]]
 %%]

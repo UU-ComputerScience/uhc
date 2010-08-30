@@ -32,3 +32,15 @@ SEM CExpr
   | * - App Ann lhs         .   argL        =   []
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Maybe an con pat with tag
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR CPat [ | | mbCTag: {Maybe CTag} ]
+
+SEM CPat
+  | Con			lhs			.	mbCTag		=	Just @tag
+  | * - Con		lhs			.	mbCTag		=	Nothing
+%%]
+

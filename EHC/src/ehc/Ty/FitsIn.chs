@@ -1386,10 +1386,10 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                                     fs    = foVarMp fo
                                     prfPrL= [rngLift range mkPredOccRng pr1 pv1 psc1]
 %%[[(9 codegen)
-                                    coe   = acoreCoeApp1Meta (acoreNmHolePred pv1) CMetaVal_Dict
+                                    coe   = acoreCoeApp1 (acoreNmHolePred pv1)
 %%]]
 %%[[(9 codegen tycore)
-                                    tcoe  = acoreCoeApp1Meta (acoreNmHolePred pv1) (C.MetaVal_Dict Nothing)
+                                    tcoe  = acoreCoeApp1 (acoreNmHolePred pv1)
 %%]]
                                in   ( fo
 %%[[(9 codegen)

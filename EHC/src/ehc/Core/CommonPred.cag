@@ -19,13 +19,15 @@ SEM CExpr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen)
-ATTR CExpr [ | | mbTupApp: {Maybe CTag} ]
+ATTR CExpr [ | | appFunKind: AppFunKind ]
 
 SEM CExpr
-  | Tup         lhs         .   mbTupApp    =   Just @tag
-  | App         lhs         .   mbTupApp    =   @func.mbTupApp
-  | * - Tup App Ann
-                lhs         .   mbTupApp    =   Nothing
+  | Tup         lhs         .   appFunKind  =   AppFunKind_Tag @tag
+  | FFI         lhs         .   appFunKind  =   AppFunKind_FFI
+  | Var         lhs         .   appFunKind  =   AppFunKind_Fun @ref
+  | App         lhs         .   appFunKind  =   @func.appFunKind
+  | * - Tup App Ann Var FFI
+                lhs         .   appFunKind  =   AppFunKind_NoApp
 %%]
 
 

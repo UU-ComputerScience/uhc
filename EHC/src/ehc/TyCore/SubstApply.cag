@@ -265,9 +265,9 @@ coeEvalOnAsSubst {- env -} uniq coe ce
               Coe_Compose c1 c2 	-> (u2, c1', s2 `cSubstAppSubst` s1)
                                 	where (u1,c2',s1) = ev uniq c2 ce
                                 	      (u2,c1',s2) = ev u1   c1 c2'
-              Coe_App1 a m      	-> mk $ acoreApp1Meta ce a m
-              Coe_App  as       	-> mk $ acoreAppMeta ce (assocLMapKey Expr_Var as)
-              Coe_Lam n m t     	-> mk $ acoreLam1MetaTy n m t ce
+              Coe_App1 a        	-> mk $ acoreApp1 ce a
+              Coe_App  as       	-> mk $ acoreApp ce (map Expr_Var as)
+              Coe_Lam n   t     	-> mk $ acoreLam1Ty n   t ce
               Coe_CloseExists tv tyClosed ty
               						-> mk $ Expr_CloseExists b tc t ce
               						where b = Expr_Seq1 (ExprSeq1_L1Bind (mkHNm tv) kiStar)
@@ -380,12 +380,12 @@ lrcoeForLamTyAppAsSubst opts uniq ty f a
         (k,l,s)
           = case f of
               lr@(LRCoe LRCoeOther _ _)
-                -> (lrcoeKindOfCoe c, acoreCoeApp [a], cSubstAppSubst s1 s2)
+                -> (lrcoeKindOfCoe c, acoreCoeAppN [a], cSubstAppSubst s1 s2)
                 where (c,s1) = lrcoeWipeWeaveAsSubst opts u2 emptyVarMp lr
                       (a,s2) = coeEvalOnAsSubst u3 c (Expr_Var n)
               LRCoe LRCoeId _ _
                 -> (LRCoeId, l, emptyCSubst)
-                where l = acoreCoeApp [Expr_Var n]
+                where l = acoreCoeAppN [Expr_Var n]
 
 %%]
 
@@ -405,11 +405,11 @@ lrcoeForLamTyApp opts uniq ty csubst f a
           = case f of
               lr@(LRCoe LRCoeOther _ _)
                 -> (lrcoeKindOfCoe c, l)
-                where l = acoreCoeApp [c `coeEvalOn` Expr_Var n]
+                where l = acoreCoeAppN [c `coeEvalOn` Expr_Var n]
                       c = lrcoeWipeWeave opts emptyVarMp csubst lr
               LRCoe LRCoeId _ _
                 -> (LRCoeId, l)
-                where l = acoreCoeApp [Expr_Var n]
+                where l = acoreCoeAppN [Expr_Var n]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

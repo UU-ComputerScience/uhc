@@ -30,7 +30,6 @@ TyCore/Check.cag
 JVMClass/ToBinary.cag
 Error/Pretty.cag
 Core/ToGrin.cag
-Core/ToJava.cag
 Core/ToJazy.cag
 Core/Pretty.cag
 Core/Subst.cag

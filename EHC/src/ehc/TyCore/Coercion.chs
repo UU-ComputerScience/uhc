@@ -77,7 +77,7 @@ mkIdLRCoe' l r = LRCoe LRCoeId [l] [r]
 
 %%[(9 codegen tycore) hs export(mkIdLRCoeWith)
 mkIdLRCoeWith :: HsName -> MetaVal -> Ty -> LRCoe
-mkIdLRCoeWith n m t = mkIdLRCoe' (acoreCoeAppMeta [(n,m)]) (acoreCoeLam1MetaTy n m t)
+mkIdLRCoeWith n m t = mkIdLRCoe' (acoreCoeAppNbyName [(n)]) (acoreCoeLam1Ty n t)
 %%]
 
 %%[(9 codegen tycore) hs export(lrcoeLSingleton,lrcoeRSingleton,lrcoeLFromList,lrcoeRFromList)

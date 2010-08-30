@@ -1,0 +1,561 @@
+%%[intro
+\begin{frame}
+\frametitle{Utrecht Haskell Compiler (UHC)}
+
+{\color{uured} Is a Haskell compiler (obviously)}
+\begin{itemize}
+\item<2-> Most of Haskell98, Haskell2010
+\item<2-> Extensions (higher ranked types, polymorphic kinds)
+\item<2-> Multiple backends
+\item<2-> Slowly matures towards usable tool
+\end{itemize}
+
+{\color{uured} Is a compiler \& language experimentation platform}
+\begin{itemize}
+\item<2-> Whole program analysis
+\item<2-> Type system
+\end{itemize}
+
+{\color{uured} Is an engineering challenge to deal with complexity}
+\begin{itemize}
+\item<2-> Tree-oriented programming: Attribute Grammar system (AG)
+\item<2-> DSLs for subproblems: aspectwise organisation, type system specification
+\item<2-> Divide \& conquer: into aspects, into isolated problems, into transformations, ...
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}
+\frametitle{Todays story}
+
+{\color{uured} Understand how functional program transforms to runnable program}
+\begin{itemize}
+\item<2-> Pipeline of transformations
+\item<2-> Relation between programming luxury and implementation price
+\end{itemize}
+
+{\color{uured} Compiler itself is case study of functional programming}
+\begin{itemize}
+\item<2-> Folds over abstract syntax tree representation
+\item<2-> Attribute grammar system
+\end{itemize}
+
+\end{frame}
+
+
+%%]
+
+%%[pipeline
+%%@SlidesUHCStructure.pipeline.picture
+
+\begin{frame}
+\frametitle{Pipeline running example}
+\begin{tikzpicture}
+
+\draw (0,8) node[fill=white,text=black,anchor=north west] {
+%%@SlidesEHCStructure.pipelineExample.HS
+};
+
+\end{tikzpicture}
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Pipeline: desugaring to ``Essential Haskell''}
+
+\begin{tikzpicture}
+\draw (0,8) node[fill=white,text=black,anchor=north west] {
+%%@SlidesEHCStructure.pipelineExample.EH
+};
+
+%%[[pipelineExample.HS.len
+\draw (8,7.5) node[fill=uuyellow!20,text=black,anchor=north west,shape=rectangle,rounded corners] {
+{\tiny
+\parbox{3cm}{
+%%@SlidesEHCStructure.pipelineExample.HS.len wrap=safecode
+}
+}
+};
+%%]]
+\end{tikzpicture}
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Pipeline: desugaring}
+{\color{uured} Name resolution}
+\begin{itemize}
+\item<2-> To which definition from which module refers an identifier?
+\item<2-> Replace by explicit qualified reference
+\end{itemize}
+
+{\color{uured} Binding groups}
+\begin{itemize}
+\item<2-> Subsequent (type) analysis requires ``define before use''
+\item<2-> Replace by ordered strongly connected components (based on dependency graph)
+\end{itemize}
+
+{\color{uured} Syntactic sugar}
+\begin{itemize}
+\item<2-> Alternate syntax for similar semantics: duplicate work later on
+\item<2-> Replace by simpler constructs:
+  \begin{tabular}[t]{l@@{|^^ ^^ ~> ^^ ^^|}l}
+   |do { s1 ; .. s2 }| 
+    & |s1 >>= .. s2|
+    \\
+   |e where d| 
+    & |let d in e|
+    \\
+   |if c then e1 else e2| 
+    & |case c of {True -> e1; False -> e2}|
+    \\
+   |f p1 = e1 ; f p2 = e2 | 
+    & |\x -> case x of {p1 -> e1; p2 -> e2} |
+    \\
+  \end{tabular}
+\end{itemize}
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Pipeline: type directed translation to untyped Core}
+
+\begin{tikzpicture}
+\draw (0,8) node[fill=white,text=black,anchor=north west] {
+%%@SlidesEHCStructure.pipelineExample.Core
+};
+
+%%@SlidesUHCInternals.pipelineExample.HS.len
+\end{tikzpicture}
+
+Core: untyped lambda calculus (+ ...)
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Core: basics}
+
+%%[[wrap=safecode
+e       ::=         x                                   ^ -- variable
+        |           int | char | string | integer       ^ -- literal
+        |           CTag                                ^ -- constructor tag
+        |           let [b] in e                        ^ -- binding
+        |           letrec [b] in e                     ^ -- recursive binding
+        |           let! [b] in e                       ^ -- strict binding
+        |           \x -> e                             ^ -- abstraction
+        |           e1 e2                               ^ -- application
+        |           case e of [a]                       ^ -- inspection
+
+b       ::=         x = e                               ^ -- plain binding
+        |           ffi ccall "x" x                     ^ -- ffi binding
+
+a       ::=         p -> e                              ^ -- case alternative
+
+p       ::=         CTag [x]                            ^ -- constructor pattern
+
+prog    ::=         module x = e                        ^ -- program    
+%%]]
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Pipeline: type analysis}
+{\color{uured} Type inference}
+\begin{itemize}
+\item<2-> Hindley-Milner
+\item<2-> Propagation of type annotations
+\end{itemize}
+
+{\color{uured} Class overloading resolution}
+\begin{itemize}
+\item<2-> Determine instance for class predicate
+  \begin{tabular}[t]{l@@{|^^ ^^ ~> ^^ ^^|}l}
+   |(+) 1 (len xs)|
+    & |((+) :: Num Int => Int -> Int) (1::Int) (len xs :: [Int])|
+    \\
+  \end{tabular}
+\end{itemize}
+
+{\color{uured} Type based code generation}
+\begin{itemize}
+\item<2-> Dictionary, deriving, and generics
+  \begin{tabular}[t]{l@@{|^^ ^^ ~> ^^ ^^|}l}
+   |[3] == [4]| 
+    & |(==) (dEqList dEqInt) [3] [4]|
+    \\
+   |data D .. = .. deriving C| 
+    & |instance C D where ..|
+    \\
+   |data D ..| 
+    & |instance Representable D |
+    \\
+    & |instance Datatype D ; ..|
+    \\
+  \end{tabular}
+\item<2-> Expressed in Core directly
+\end{itemize}
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Core: the rest}
+
+{\color{uured} Delayed code generation}
+\begin{itemize}
+\item<2-> Overloading resolution delayed (i.e. not following AST)
+\item<2-> ``yet to be generated code'' must be referred to
+%%[[wrap=safecode
+x == y  ~> (==) d?      x         y
+        ~> (==) d?      (x::Int)  (y::Int)
+        ~> (==) dEqInt  (x::Int)  (y::Int)
+%%]]
+\item<3-> Holes in code: ``code variables''
+%%[[wrap=safecode
+e       ::=         ..
+        |           UID       ^ -- hole, identified by globally unique id
+%%]]
+\item<3-> ... to be substituted later, before code emission
+\item<3-> Common solution idiom for dealing with ``yet unknown''
+\end{itemize}
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Core: simplifications}
+
+{\Large Same syntax, simpler form}\\\vspace*{.5em}
+{\color{uured} Unnecessary mutual recursion}
+\begin{itemize}
+\item<2-> 
+    Replace ``not really'' mutually recursive bindings
+%%[[wrap=safecode
+letrec {v1 = .. ; v2 = ..} in ..
+%%]]
+    by
+%%[[wrap=safecode
+let v1 = .. in let v2 = .. in ..
+%%]]
+\item<2-> Keeps Core generation simpler
+\end{itemize}
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Core: simplifications}
+
+{\color{uured} Trivial application arguments}
+\begin{itemize}
+\item 
+    Replace complex function arguments
+%%[[wrap=safecode
+f (g a) (h b)
+%%]]
+    by simple variables + extra bindings
+%%[[wrap=safecode
+let  v1 = g a  in
+let  v2 = h b  in
+     f v1 v2
+%%]]
+\item Closer to actual code
+\item Administrative normal (A-normal) form
+\end{itemize}
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Core: simplifications}
+
+{\color{uured} Lambda lifting}
+\begin{itemize}
+\item
+    Replace implicit globals
+%%[[wrap=safecode
+g = \x z ->  let  f = \y -> x + y in
+                  f z
+%%]]
+    by explicit arguments
+%%[[wrap=safecode
+f'  = \x y ->  x + y
+g   = \x z ->  let  f = f' x in
+                    f z
+%%]]
+\item No need to deal with environments (in analyses, when constructing closures)
+\item No local lambdas anymore, lifted to outermost level
+\end{itemize}
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Pipeline: lambda lifted translation to lazy-less Grin}
+
+\begin{tikzpicture}
+\draw (0,8) node[fill=white,text=black,anchor=north west] {
+%%@SlidesEHCStructure.pipelineExample.Grin
+};
+
+%%@SlidesUHCInternals.pipelineExample.HS.len
+\end{tikzpicture}
+
+\begin{itemize}
+\item Evaluation explicit
+\item Laziness explicit
+\item Starting point for both interpreter and whole program analysis
+\end{itemize}
+
+\end{frame}
+
+%{
+%format unit 	= "\mathbf{unit}"
+%format eval 	= "\mathbf{eval}"
+%format apply 	= "\mathbf{apply}"
+%format C 	= "\mathbf{C}"
+%format F 	= "\mathbf{F}"
+%format A 	= "\mathbf{A}"
+%format P 	= "\mathbf{P}"
+%format store 	= "\mathbf{store}"
+%format fetch 	= "\mathbf{fetch}"
+%format update 	= "\mathbf{update}"
+%format basic 	= "\mathbf{basic}"
+%format enum 	= "\mathbf{enum}"
+
+\begin{frame}
+\frametitle{Grin: basics}
+
+%%[[wrap=safecode
+e       ::=         unit v                              ^ -- basic value for direct use
+        |           e ; \p -> e                         ^ -- sequencing
+        |           eval x                              ^ -- evaluation
+        |           apply x [v]                         ^ -- application
+        |           store v                             ^ -- construct heap cell for node
+        |           fetch x                             ^ -- retrieve heap cell for node
+        |           update x v                          ^ -- overwrite heap cell
+        |           case v [a]                          ^ -- node inspection
+
+v       ::=         x                                   ^ -- variable
+        |           tag [v]                             ^ -- node construction
+        |           int | string                        ^ -- literal
+
+p       ::=         x                                   ^ -- variable (bind)
+        |           tag [x]                             ^ -- node (bind fields)
+
+a       ::=         p -> e                              ^ -- case alternative
+%%]]
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Grin: basics}
+
+%%[[wrap=safecode
+tag     ::=         C  CTag                             ^ -- plain constructor
+        |           F  x                                ^ -- saturated function closure
+        |           P  x int                            ^ -- non-saturated function closure
+        |           A                                   ^ -- apply closure
+
+prog    ::=         module x [c] [b]                    ^ -- program
+
+b       ::=         x [x] = e                           ^ -- function binding
+c       ::=         x = v                               ^ -- CAF binding
+%%]]
+
+\begin{itemize}
+\item Global bindings are mutual recursive
+\end{itemize}
+
+\end{frame}
+
+
+%{
+%format doll = "\$"
+%format under = "\_"
+%format excl = "!"
+%format slash = "/"
+\begin{frame}
+\frametitle{Grin: explicit eval (and apply)}
+
+Eval knows to evaluate\vspace*{.5ex}
+
+{\tiny
+%%[[wrap=safecode
+doll ^ eval ^^ doll ^ x ^ under ^ 5
+   =  {  fetch  doll ^ x ^ under ^ 5 ; \ doll ^ x ^ under ^ 1013 ->
+         case  doll ^ x ^ under ^ 1013 of
+           {  (#0 ^ slash ^ C{2,2} ^ slash ^ doll ^ doll ^ ,2  doll ^ x ^ under ^ 1132  doll ^ x ^ under ^ 1133)
+                -> { unit  doll ^ x ^ under ^ 1013} 
+           ;  (#0 ^ slash ^ C{1,1} ^ slash ^  doll ^ Int  doll ^ x ^ under ^ 1130)
+                -> { unit  doll ^ x ^ under ^ 1013} 
+           .. 
+           ;  (#0 ^ slash ^ P ^ slash ^ 1 ^ slash ^  doll ^ UHC.Base.primSubInt  doll ^ x ^ under ^ 1125)
+                -> { unit  doll ^ x ^ under ^ 1013} 
+           ;  (#0 ^ slash ^ P ^ slash ^ 2 ^ slash ^  doll ^ UHC.Base.primSubInt)
+                -> { unit  doll ^ x ^ under ^ 1013} 
+           .. 
+           ;  (#0 ^ slash ^ F ^ slash ^ redOn ^ doll ^ Main.len  doll ^ x ^ under ^ 1035 ^ blackOn)
+                -> {  call  doll ^ Main.len  doll ^ x ^ under ^ 1035 ; \ doll ^ x ^ under ^ 1036 ->
+                      update  doll ^ x ^ under ^ 1036  doll ^ x ^ under ^ 5} 
+           ;  (#0 ^ slash ^ F ^ slash ^ redOn ^ doll ^ UHC.Base.replicate~spec1 ^ blackOn)
+                -> {  call  doll ^ UHC.Base.replicate~spec1 ; \ doll ^ x ^ under ^ 1051 ->
+                      update  doll ^ x ^ under ^ 1051  doll ^ x ^ under ^ 5} 
+           .. 
+           } } 
+%%]]
+}
+
+Closed world when doing whole program analysis:
+\begin{itemize}
+\item |doll ^ eval| knows how to evaluate |all| nodes occurring in the program
+\item (and |apply| knows to apply)
+\end{itemize}
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Grin: eval inlining}
+
+Eval inlining\vspace*{.5ex}
+
+{\tiny
+%%[[wrap=safecode
+doll ^ vb1.len ^^ doll ^ vb1.x1 ^ under ^ under ^ 1
+  =  {  fetch  doll ^ vb1.x1 ^ under ^ under ^ 1 ; \ doll ^ x ^ under ^ 1009 ->
+        case  doll ^ x ^ under ^ 1009 of
+          {  (#0 ^ slash ^ C{2,2} ^ slash ^  doll ^ UHC.Base. doll ^ :  doll ^ x ^ under ^ 1011  doll ^ x ^ under ^ 1012)
+               -> { unit  doll ^ x ^ under ^ 1009} 
+          ;  (#1 ^ slash ^ C{0,2} ^ slash ^  doll ^ UHC.Base.[])
+               -> { unit  doll ^ x ^ under ^ 1009} 
+          ;  (#0 ^ slash ^ F ^ slash ^ redOn ^ doll ^ UHC.Base.replicate~spec1 ^ blackOn)
+               -> {  call  doll ^ UHC.Base.replicate~spec1 ; \ doll ^ x ^ under ^ 1010 ->
+                     update  doll ^ x ^ under ^ 1010  doll ^ vb1.x1 ^ under ^ under ^ 1} 
+          }   ; \ ...
+          } } 
+%%]]
+}
+
+Using ``Heap Points To'' (HPT) analysis
+\begin{itemize}
+\item Inline |doll ^ eval| alternatives only for node formats known to be pointed to
+\end{itemize}
+
+\end{frame}
+%}
+
+
+\begin{frame}
+\frametitle{Grin: the rest}
+
+{\color{uured} Foreign functions}
+
+\begin{itemize}
+\item Must be explicit in (un)boxing
+\item Requires annotation of variables
+\end{itemize}
+
+%%[[wrap=safecode
+e       ::=         ..
+        |           ffi ccall "x" x                     ^ -- foreign function call
+
+p       ::=         ..
+        |           basic ann x                         ^ -- unpack as unboxed basic type (Int, Float, ...)
+        |           enum x                              ^ -- unpack as enum
+        |           ..                                  ^ -- etc.
+
+ann     ::=         ..                                  ^ -- info about size, ...
+%%]]
+
+{\color{uured} Local mutual recursiveness}
+\begin{itemize}
+\item Requires special nodes not yet filled with data
+\end{itemize}
+
+\end{frame}
+
+%}
+
+\begin{frame}
+\frametitle{Pipeline: finally, a program!}
+
+\begin{itemize}
+\item Different backends tap at different points from the pipeline
+\item For example, interpreter based backend taps non-whole program analysed Grin:
+\end{itemize}
+
+\begin{tikzpicture}
+\draw (0,8) node[fill=white,text=black,anchor=north west] {
+%%@SlidesEHCStructure.pipelineExample.bytecode
+};
+\end{tikzpicture}
+
+\end{frame}
+
+
+%%]
+
+%%[toolsAG
+\begin{frame}
+\frametitle{Tree-oriented programming}
+How is UHC programmed?
+\begin{itemize}
+\item Tree representation, transformation, generation: UU Attribute Grammar system
+\end{itemize}
+\uncover<2->{
+But also
+\begin{itemize}
+\item Parser: UU parsing library
+\item Logistics: |Shuffle| for generating different compilers for different variants \& aspects
+\item Type system: |Ruler| for describing type system \& and generating implementation (current research)
+\end{itemize}
+}
+\end{frame}
+
+%%]
+
+%%[conclusion
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+

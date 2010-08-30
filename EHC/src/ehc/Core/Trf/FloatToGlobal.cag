@@ -96,7 +96,7 @@ Groups of bindings floated upwards are inserted when a particular Let is encount
 
 
 %%[(9 codegen)
-ATTR AllBind CExpr    [ isLocalInInstance : {Bool} | | ]
+ATTR AllBind AllExprOnly   [ isLocalInInstance : {Bool} | | ]
 ATTR CMetaVal CMetas  [ | | isInstance : {Bool} ]
 
 SEM CMetaVal
@@ -152,11 +152,11 @@ SEM CBindAspect
                                              , Seq.empty
                                              , Seq.singleton @cBindTrf
                                              )
-  | FFI
+  -- | FFI
 %%[[90
-    FFE
-%%]]
+  | FFE
                 lhs . cSmallCAFBinds   =   Seq.singleton (acoreBind1Asp1 @lhs.nm @cTrf)
+%%]]
 
 
 

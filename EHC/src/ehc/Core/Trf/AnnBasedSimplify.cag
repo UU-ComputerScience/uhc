@@ -24,7 +24,7 @@ Simplifies expressions based on their structure & annotation:
 %%[(8 codegen) hs import({%{EH}AbstractCore})
 %%]
 
-%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonCtxtPred},{Core/Trf/CommonStructureInfo})
+%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonCtxtPred},{Core/Trf/CommonStructureInfo},{Core/CommonBindNm})
 WRAPPER CodeAGItf
 %%]
 
@@ -76,7 +76,7 @@ ATTR AllCodeNT CodeAGItf [ opts: EHCOpts | | ]
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen)
-ATTR CExpr AllAlt [ propDown: Prop | | ]
+ATTR AllExprOnly AllAlt [ propDown: Prop | | ]
 ATTR CExpr [ | | propUp: Prop ]
 ATTR CExprAnn [ | | prop : Prop ]
 
@@ -99,6 +99,7 @@ SEM CPatFld
 %%[(8 codegen)
 SEM CExprAnn
   | Ty          loc         .   prop        =   Prop_HasTy @ty
+  | * - Ty		loc			.	prop		=	Prop_None
 
 %%]
 

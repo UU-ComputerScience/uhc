@@ -44,7 +44,15 @@ import UHC.Show          ( showHex )
 ------------------------------------------------------------------------
 -- Address
 
-#if USE_64_BITS
+#if __UHC_TARGET_JAZY__
+foreign import prim "primAddWord" primAddAddr :: Addr -> Int  -> Addr
+foreign import prim "primSubWord" primSubAddr :: Addr -> Addr -> Int
+foreign import prim "primRemWord" primRemAddr :: Addr -> Int  -> Int
+foreign import prim "primUnsafeId"  primAddrToWord :: Addr -> Word
+
+addrToInteger :: Addr -> Integer
+addrToInteger a = primWordToInteger (primAddrToWord a)
+#elif USE_64_BITS
 foreign import prim "primAddWord64" primAddAddr :: Addr -> Int  -> Addr
 foreign import prim "primSubWord64" primSubAddr :: Addr -> Addr -> Int
 foreign import prim "primRemWord64" primRemAddr :: Addr -> Int  -> Int

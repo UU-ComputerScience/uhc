@@ -6,10 +6,10 @@
 %%% Utils
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8888 codegen)
 SEM CBindAspect
-  | FFI         loc         .   ffiMbTyConNm    =   tyMbCon . fst . tyAppFunArgs        -- possibly get constructor name of type (application)
-                            .   ffiTyConNm      =   maybe hsnUnknown id . @ffiMbTyConNm -- get it, with defaulting
+  | FFI         loc         .   ffiMbTyConNm    =   tyAppFunMbConNm        -- possibly get constructor name of type (application)
+                            .   ffiTyConNm      =   tyAppFunConNm -- get it, with defaulting
                                                      
 %%]
 
@@ -17,13 +17,12 @@ SEM CBindAspect
 %%% FFI
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8888 codegen)
 SEM CBindAspect
 %%[[8
   | FFI         loc         .   impEntNm        =   @impEnt
 %%][90
-  | FFI         loc         .   impEntNm        =   let e = foreignEntExtract @impEnt
-                                                    in  forextractEnt e
+  | FFI         loc         .   impEntNm        =   forextractEnt $ foreignEntExtract @impEnt
 %%]]
 %%]
 
@@ -31,22 +30,132 @@ SEM CBindAspect
 %%% Type info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8888 codegen)
 SEM CBindAspect
-  | FFI         loc         .   argTyLresTy 	:   {( TyL, Ty )}
-                loc         .   argTyLresTy 	=   tyArrowArgsRes @ty
-                loc         .   argTyL      	:   TyL
-                loc         .   argTyL      	=   fst @loc.argTyLresTy
-                loc         .   resTy       	=   snd @loc.argTyLresTy
+  | FFI         loc         .   argTyLresTy     :   {( TyL, Ty )}
+                loc         .   argTyLresTy     =   tyArrowArgsRes @ty
+                loc         .   argTyL          :   TyL
+                loc         .   argTyL          =   fst @loc.argTyLresTy
+                loc         .   resTy           =   snd @loc.argTyLresTy
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Type: derived info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8888 codegen)
 SEM CBindAspect
-  | FFI         loc         .   argMbConL       =   map @ffiMbTyConNm @argTyL
-                            .   resMbCon        =   @ffiMbTyConNm @resTy
+  | FFI         loc         .   argMbConL       =   map tyAppFunMbConNm @argTyL
+                            .   resMbCon        =   tyAppFunMbConNm @resTy
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% FFI binding: evaluation need
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+The default is to evaluate arguments, and assume the primitive returns an evaluated result.
+These defaults are overridden by a table in BuiltinPrims, used here.
+
+%%[(8888 codegen grin).needsEval
+SEM CBindAspect
+  | FFI         loc         .   primArgNeedsEvalL
+                                            =   repeat True
+                            .   primResNeedsEval
+                                            =   False
+%%]
+
+%%[(9696 codegen grin) -8.needsEval
+SEM CBindAspect
+  | FFI         loc         .   mbPrimNeedEval
+                                            =   lookupPrimNeedsEval @impEntNm
+                            .   primArgNeedsEvalL
+                                            =   maybe (repeat True) (\p -> primArgNeedEval p ++ repeat True) @mbPrimNeedEval
+                            .   primResNeedsEval
+                                            =   maybe False primResNeedEval @mbPrimNeedEval
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% FFI expression, repetition of the above
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+SEM CExpr
+  | FFI         loc         .   argTyLresTy     =   tyArrowArgsRes @ty
+                            .   argTyL          =   fst @loc.argTyLresTy
+                            .   resTy           =   snd @loc.argTyLresTy
+%%[[8
+                            .   impEntNm        =   @impEnt
+%%][90
+                            .   impEntNm        =   forextractEnt $ foreignEntExtract @impEnt
+%%]]
+%%[[8
+                loc         .   primArgNeedsEvalL
+                                                =   repeat True
+                            .   primResNeedsEval
+                                                =   False
+%%][96
+                loc         .   mbPrimNeedEval  =   lookupPrimNeedsEval @impEntNm
+                            .   primArgNeedsEvalL
+                                                =   maybe (repeat True) (\p -> primArgNeedEval p ++ repeat True) @mbPrimNeedEval
+                            .   primResNeedsEval
+                                                =   maybe False primResNeedEval @mbPrimNeedEval
+%%]]
+                loc         .   argMbConL       =   map tyAppFunMbConNm @argTyL
+                            .   resMbCon        =   tyAppFunMbConNm @resTy
+
+                -- AG required types
+                loc         .   argTyLresTy     :   {( TyL, Ty )}
+                loc         .   argTyL          :   TyL
+                loc			.	primResNeedsEval:	Bool
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Is CExpr a FFI? If so propagate info to top of app spine
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR CExpr [ | | mbFFIApp: {Maybe ( Ty
+%%[[96
+                                  , Bool
+%%]]
+%%[[8
+                                  , String
+%%][90
+                                  , FFIWay
+                                  , ForeignEnt
+%%]]
+                                  , [Ty]
+                                  )} ]
+
+SEM CExpr
+  | FFI         lhs         .   mbFFIApp        =   Just ( @resTy               -- TBD: must be IO adapted still
+%%[[96
+                                                         , @primResNeedsEval
+%%]]
+%%[[90
+                                                         , @callconv
+%%]]
+                                                         , @impEnt
+                                                         , @argTyL              -- TBD: must be IO adapted still
+                                                         )
+  | App         lhs         .   mbFFIApp        =   @func.mbFFIApp
+  | * - FFI Ann App
+  				lhs			.	mbFFIApp		=	Nothing
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% IO special
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+FFI binding: IO, requires introduction behavior of EHC.Prelude.ioFromPrim:
+extra state param, extra state return (tupled with actual return value)
+
+%%[(9898 codegen grin)
+SEM CExpr
+  | FFI         loc         .   mbIORes     =   case tyMbAppConArgs @resTy of
+                                                  Just (n,[a]) | ehcOptBuiltin @lhs.opts ehbnIO == n
+                                                    -> Just a
+                                                  _ -> Nothing
+                            .   resIsIO     =   isJust @mbIORes
 %%]
 

@@ -36,6 +36,9 @@
 %%[(8 codegen) import({%{EH}Base.Target})
 %%]
 
+%%[(8 codegen) import({%{EH}Base.Optimize}) export(Optimize(..), OptimizationLevel(..))
+%%]
+
 %%[50 import({%{EH}Ty.Trf.Instantiate})
 %%]
 
@@ -43,6 +46,9 @@
 %%]
 
 %%[99 import(qualified {%{EH}ConfigInstall} as Cfg)
+%%]
+
+%%[99 import({%{EH}Base.Pragma})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -56,6 +62,9 @@ data ImmediateQuitOption
   | ImmediateQuitOption_Meta_Variant                        -- print variant number
   | ImmediateQuitOption_Meta_Targets                        -- print all codegeneration targets (empty if no codegen)
   | ImmediateQuitOption_Meta_TargetDefault                  -- print the default codegeneration target (dummy if no codegen)
+%%[[(8 codegen)
+  | ImmediateQuitOption_Meta_Optimizations                  -- print all optimizations
+%%]]
 %%[[99
   | ImmediateQuitOption_Meta_Pkgdir_System                  -- print system package dir
   | ImmediateQuitOption_Meta_Pkgdir_User                    -- print user package dir
@@ -85,48 +94,23 @@ data InOrOutputFor
 
 %%[99 export(PkgOption(..))
 data PkgOption
-  = PkgOption_Build	PkgName							-- build a package
+  = PkgOption_Build PkgName                         -- build a package
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Transformation
+%%% Adaption of options by pragmas
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8888 codegen) export(cmdLineTrfs)
-data TrfOpt = TrfYes String | TrfNo String | TrfAllYes | TrfAllNo
-
-cmdLineTrfs :: AssocL String String
-cmdLineTrfs
-  = [ ("CER"    , "Core Eta Reduction")
-    , ("CETA"   , "Core Eliminate Trivial Applications")
-    , ("CCP"    , "Core Constant Propagation (simple ones introduced by frontend)")
-    , ("CRU"    , "Core Rename Unique (all identifiers)")
-    , ("CLU"    , "Core Let Unrec (remove unnecessary recursive defs)")
-    , ("CILA"   , "Core Inline Let Alias (remove unnecessary alpha renamings)")
-    , ("CFL"    , "Core Full Laziness (give names to all expressions and float them outwards)")
-    , ("CLL"    , "Core Lambda Lift")
-    , ("CLGA"   , "Core Lambda Global as Arg")
-    , ("CCGA"   , "Core CAF Global as Arg")
-    , ("CLFG"   , "Core Lambda Float to Global")
-%%[[9
-    , ("CLDF"   , "Core Lift Dictionary Fields")
-%%]]
-%%[[102
-    , ("CS"     , "Core Strip (debug)")
-%%]]
-    ]
-%%]
-
-%%[(8888 codegen) export(trfOptOverrides)
-trfOptOverrides :: [TrfOpt] -> String -> Maybe Bool
-trfOptOverrides opts trf
-  =  ovr opts
-  where  ovr [] = Nothing
-         ovr (TrfYes s   :os) | trf == s  = Just True
-         ovr (TrfNo s    :os) | trf == s  = Just False
-         ovr (TrfAllYes  :os)             = Just True
-         ovr (TrfAllNo   :os)             = Just False
-         ovr (_          :os)             = ovr os
+%%[99 export(ehcOptUpdateWithPragmas)
+-- | possible adapt with pragmas
+ehcOptUpdateWithPragmas :: Set.Set Pragma -> EHCOpts -> (EHCOpts,Bool)
+ehcOptUpdateWithPragmas pragmas opts
+  = foldr (\p om@(o,modf) -> maybe om (\o -> (o,True)) $ upd p o) (opts,False) (Set.toList pragmas)
+  where upd pragma opts
+          = case pragma of
+              Pragma_NoGenericDeriving -> Just $ opts { ehcOptGenGenerics = False }
+              Pragma_GenericDeriving   -> Just $ opts { ehcOptGenGenerics = True  }
+              _                        -> Nothing
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -155,13 +139,13 @@ optOptsIsYes mos o = maybe False (o `elem`) mos
 
 %%[(8 codegen tycore) export(TyCoreOpt(..))
 data TyCoreOpt
-  = TyCoreOpt_Sugar			-- produce/accept sugared version
-  | TyCoreOpt_Unicode		-- produce/accept unicode, implies sugar
+  = TyCoreOpt_Sugar         -- produce/accept sugared version
+  | TyCoreOpt_Unicode       -- produce/accept unicode, implies sugar
   deriving Eq
 
 instance Show TyCoreOpt where
-  show TyCoreOpt_Sugar		= "sugar"		-- first letters of alternatives must be unique
-  show TyCoreOpt_Unicode	= "unicode"
+  show TyCoreOpt_Sugar      = "sugar"       -- first letters of alternatives must be unique
+  show TyCoreOpt_Unicode    = "unicode"
 
 tycoreOpts :: [TyCoreOpt]
 tycoreOpts = [TyCoreOpt_Sugar, TyCoreOpt_Unicode]
@@ -206,10 +190,11 @@ data EHCOpts
       ,  ehcOptUniqueness     ::  Bool
 %%]]
 %%[[(8 codegen)
+      ,  ehcOptOptimizations  ::  OptimizeS         -- individual optimizations to be done, derived from level + scope
       ,  ehcOptOptimizationLevel
-      						  ::  OptimizationLevel          -- optimisation level
+                              ::  OptimizationLevel          -- optimisation level
       ,  ehcOptOptimizationScope
-      						  ::  OptimizationScope          -- optimisation scope
+                              ::  OptimizationScope          -- optimisation scope
       ,  ehcOptDumpCoreStages ::  Bool              -- dump intermediate Core transformation stages
       ,  ehcOptTarget         ::  Target            -- code generation target
       ,  ehcOptTargetFlavor   ::  TargetFlavor      -- code generation target flavor
@@ -261,7 +246,7 @@ data EHCOpts
       ,  ehcOptDoLinking      ::  Bool              -- do link, if False compile only
 %%]]
 %%[[92
-      ,  ehcOptGenGenerics    ::  Bool				-- generate for use of generics
+      ,  ehcOptGenGenerics    ::  Bool              -- generate for use of generics
 %%]]
 %%[[(99 hmtyinfer)
       ,  ehcOptEmitDerivTree  ::  DerivTreeWay      -- show derivation tree on stdout
@@ -271,21 +256,21 @@ data EHCOpts
                               ::  Bool              -- show fitsIn derivation tree as well
 %%]]
 %%[[99
-      ,  ehcOptHiValidityCheck::  Bool				-- when .hi and compiler are out of sync w.r.t. timestamp and checksum, recompile
+      ,  ehcOptHiValidityCheck::  Bool              -- when .hi and compiler are out of sync w.r.t. timestamp and checksum, recompile
       ,  ehcOptLibFileLocPath ::  FileLocPath
       ,  ehcOptPkgdirLocPath  ::  StringPath
-      ,  ehcOptPkgDb          ::  PackageDatabase	-- package database to be used for searching packages
+      ,  ehcOptPkgDb          ::  PackageDatabase   -- package database to be used for searching packages
       ,  ehcOptLibPackages    ::  [String]
       ,  ehcProgName          ::  FPath             -- name of this program
       ,  ehcOptUserDir        ::  String            -- user dir for storing user specific stuff
       ,  ehcOptCPP            ::  Bool              -- do preprocess with C preprecessor CPP
       ,  ehcOptUseAssumePrelude                     -- use & assume presence of prelude
                               ::  Bool
-      ,  ehcOptPackageSearchFilter	 ::  [PackageSearchFilter]	-- description of what to expose from package database
+      ,  ehcOptPackageSearchFilter   ::  [PackageSearchFilter]  -- description of what to expose from package database
       ,  ehcOptOutputDir      ::  Maybe String      -- where to put output, instead of same dir as input file
       ,  ehcOptKeepIntermediateFiles
                               ::  Bool              -- keep intermediate files
-      ,  ehcOptPkg            ::  Maybe PkgOption	-- package building (etc) option
+      ,  ehcOptPkg            ::  Maybe PkgOption   -- package building (etc) option
       ,  ehcOptCfgInstallRoot        ::  Maybe String      -- the directory where the installation resides; overrides ehcenvInstallRoot
       ,  ehcOptCfgInstallVariant     ::  Maybe String      -- the installation variant; overrides ehcenvVariant
 %%]]
@@ -331,7 +316,7 @@ ehcOptEmitC :: EHCOpts -> Bool
 ehcOptEmitC = targetIsC . ehcOptTarget
 %%]
 
-%%[(8 codegen java) export(ehcOptEmitJava)
+%%[(8888 codegen java) export(ehcOptEmitJava)
 -- generate Java, as src text
 ehcOptEmitJava :: EHCOpts -> Bool
 ehcOptEmitJava o = ehcOptTarget o == Target_Interpreter_Core_Java
@@ -366,6 +351,12 @@ ehcOptTyCore :: EHCOpts -> Bool
 ehcOptTyCore opts = ehcOptEmitTyCore opts || isJust (ehcOptUseTyCore opts)
 %%]
 
+%%[(8 codegen) export(ehcOptOptimizes)
+-- | optimizes a particular option
+ehcOptOptimizes :: Optimize -> EHCOpts -> Bool
+ehcOptOptimizes o opts = o `Set.member` ehcOptOptimizations opts
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Default compiler options
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -378,7 +369,7 @@ defaultEHCOpts
 %%[[(8 codegen tycore)
       ,  ehcOptShowTyCore       =   False
 %%]]
-      ,  ehcOptPriv             =   False
+      ,  ehcOptPriv             =   True
       ,  ehcOptHsChecksInEH     =   False
 %%[[1
       ,  ehcOptShowEH           =   True
@@ -400,6 +391,7 @@ defaultEHCOpts
 %%]]
 %%[[(8 codegen)
       ,  ehcOptDumpCoreStages   =   False
+      ,  ehcOptOptimizations    =   optimizeRequiresClosure $ Map.findWithDefault Set.empty OptimizationLevel_Normal optimizationLevelMp
       ,  ehcOptOptimizationLevel=   OptimizationLevel_Normal
       ,  ehcOptOptimizationScope=   OptimizationScope_PerModule
       ,  ehcOptTarget           =   defaultTarget
@@ -457,7 +449,7 @@ defaultEHCOpts
       ,  ehcOptDoLinking        =   True
 %%]]
 %%[[92
-      ,  ehcOptGenGenerics      =	True
+      ,  ehcOptGenGenerics      =   True
 %%]]
 %%[[(99 hmtyinfer)
       ,  ehcOptEmitDerivTree    =   DerivTreeWay_None
@@ -469,14 +461,14 @@ defaultEHCOpts
       ,  ehcOptHiValidityCheck  =   True
       ,  ehcOptLibFileLocPath   =   []
       ,  ehcOptPkgdirLocPath    =   []
-      ,  ehcOptPkgDb          	=	emptyPackageDatabase
+      ,  ehcOptPkgDb            =   emptyPackageDatabase
       ,  ehcOptLibPackages      =   []
       ,  ehcProgName            =   emptyFPath
       ,  ehcOptUserDir          =   ""
       ,  ehcOptCPP              =   False
       ,  ehcOptUseAssumePrelude =   True
       ,  ehcOptPackageSearchFilter
-      							=	[] -- pkgSearchFilter parsePkgKey PackageSearchFilter_ExposePkg Cfg.ehcAssumedPackages
+                                =   [] -- pkgSearchFilter parsePkgKey PackageSearchFilter_ExposePkg Cfg.ehcAssumedPackages
       ,  ehcOptOutputDir        =   Nothing
       ,  ehcOptKeepIntermediateFiles
                                 =   False
@@ -544,7 +536,8 @@ ehcCmdLineOpts
      ,  Option ""   ["nounique"]         (NoArg oUnique)                      "do not compute uniqueness solution"
 %%]]
 %%[[(8 codegen)
-     ,  Option "O"  ["optimise"]         (OptArg oOptimization "0|1|2")           "optimise, 0=none 1=normal 2=more, default=1"
+     ,  Option "O"  ["optimise"]         (OptArg oOptimization ("0|1|2|3|<opt>[=" ++ boolArgStr ++ "]"))
+                                                                              "optimise with level or specific by name, default=1"
 %%]]
 %%[[(8 codegen)
      ,  Option ""   ["code"]             (OptArg oCode "hs|eh|exe[c]|lexe[c]|bexe[c]|-")  "write code to file, default=bexe (will be obsolete and/or changed, use --target)"
@@ -573,7 +566,7 @@ ehcCmdLineOpts
 %%]]
 %%[[99
      ,  Option ""   ["no-prelude"]       (NoArg oNoPrelude)                   "do not assume presence of Prelude"
-     ,  Option ""   ["no-hi-check"] 	 (NoArg oNoHiCheck)                   "no check on .hi files not matching the compiler version"
+     ,  Option ""   ["no-hi-check"]      (NoArg oNoHiCheck)                   "no check on .hi files not matching the compiler version"
 %%]]
 %%[[20
      ,  Option "c"  ["compile-only"]     (NoArg oCompileOnly)                 "compile only, do not link"
@@ -608,17 +601,20 @@ ehcCmdLineOpts
      ,  Option ""   ["meta-variant"]        (NoArg oVariant)                     "meta: print variant (then stop)"
      ,  Option ""   ["meta-target-default"] (NoArg oTargetDflt)                  "meta: print the default codegeneration target (then stop)"
      ,  Option ""   ["meta-targets"]        (NoArg oTargets)                     "meta: print supported codegeneration targets (then stop)"
+%%[[(8 codegen)
+     ,  Option ""   ["meta-optimizations"]  (NoArg oOptimizations)               "meta: print optimization names (then stop)"
+%%]
 %%[[99
-     -- ,  Option ""   ["meta-export-env"]  	(OptArg oExportEnv "installdir[,variant]") "meta: export environmental info of installation (then stop) (will become obsolete soon)"
-     -- ,  Option ""   ["meta-dir-env"]     	(NoArg oDirEnv)                      "meta: print directory holding environmental info of installation (then stop) (will become obsolete soon)"
-     ,  Option ""   ["meta-pkgdir-system"]  (NoArg oMetaPkgdirSys) 				 "meta: print system package dir (then stop)"
-     ,  Option ""   ["meta-pkgdir-user"]    (NoArg oMetaPkgdirUser) 			 "meta: print user package dir (then stop)"
+     -- ,  Option ""   ["meta-export-env"]      (OptArg oExportEnv "installdir[,variant]") "meta: export environmental info of installation (then stop) (will become obsolete soon)"
+     -- ,  Option ""   ["meta-dir-env"]         (NoArg oDirEnv)                      "meta: print directory holding environmental info of installation (then stop) (will become obsolete soon)"
+     ,  Option ""   ["meta-pkgdir-system"]  (NoArg oMetaPkgdirSys)               "meta: print system package dir (then stop)"
+     ,  Option ""   ["meta-pkgdir-user"]    (NoArg oMetaPkgdirUser)              "meta: print user package dir (then stop)"
      ,  Option ""   ["package"]          (ReqArg oExposePackage "package")    "see --pkg-expose"
      ,  Option ""   ["hide-all-packages"](NoArg oHideAllPackages)             "see --pkg-hide-all"
-     ,  Option ""   ["pkg-build"]        	(ReqArg oPkgBuild "package")         "pkg: build package from files. Implies --compile-only"
-     ,  Option ""   ["pkg-expose"]       	(ReqArg oExposePackage "package")    "pkg: expose/use package"
-     ,  Option ""   ["pkg-hide"]         	(ReqArg oHidePackage   "package")    "pkg: hide package"
-     ,  Option ""   ["pkg-hide-all"]     	(NoArg oHideAllPackages)             "pkg: hide all (implicitly) assumed/used packages"
+     ,  Option ""   ["pkg-build"]           (ReqArg oPkgBuild "package")         "pkg: build package from files. Implies --compile-only"
+     ,  Option ""   ["pkg-expose"]          (ReqArg oExposePackage "package")    "pkg: expose/use package"
+     ,  Option ""   ["pkg-hide"]            (ReqArg oHidePackage   "package")    "pkg: hide package"
+     ,  Option ""   ["pkg-hide-all"]        (NoArg oHideAllPackages)             "pkg: hide all (implicitly) assumed/used packages"
      ,  Option ""   ["pkg-searchpath"]      (ReqArg oPkgdirLocPath "path")       "pkg: package search directories, each dir has <pkg>/<variant>/<target>/<flavor>"
      ,  Option ""   ["cfg-install-root"]    (ReqArg oCfgInstallRoot "dir")        "cfg: installation root (to be used only by wrapper script)"
      ,  Option ""   ["cfg-install-variant"] (ReqArg oCfgInstallVariant "variant") "cfg: installation variant (to be used only by wrapper script)"
@@ -691,6 +687,7 @@ ehcCmdLineOpts
                             where target = Map.findWithDefault defaultTarget s supportedTargetMp
                                   oscope = ehcOptOptimizationScope o
          oTargetFlavor  s o =  o { ehcOptTargetFlavor  = Map.findWithDefault defaultTargetFlavor  s allTargetFlavorMp }
+         oOptimizations   o =  o { ehcOptImmQuit       = Just ImmediateQuitOption_Meta_Optimizations       }
 %%]]
 %%[[1
          oTargets        o =  o { ehcOptImmQuit       = Just ImmediateQuitOption_Meta_Targets       }
@@ -708,7 +705,7 @@ ehcCmdLineOpts
                                 Just "tycore"-> o { ehcOptTarget           = Target_None_TyCore_None
                                                   }
 %%]]
-%%[[(8 codegen java)
+%%[[(8888 codegen java)
                                 Just "java"  -> o { ehcOptTarget           = Target_Interpreter_Core_Java   }
 %%]]
 %%[[(8 codegen grin)
@@ -774,27 +771,34 @@ ehcCmdLineOpts
                                 Nothing     -> o { ehcOptVerbosity     = succ (ehcOptVerbosity o)}
                                 _           -> o
 %%[[(8 codegen grin)
-         oOptimization   ms  o =  case ms of
-                                Just olevel | l >= 0 && l < (maxsc * maxlev)
-                                            -> o { ehcOptOptimizationLevel = toEnum lev
-                                                 , ehcOptOptimizationScope = toEnum sc
-                                                 }
-                                            where l = read olevel :: Int
-                                                  (sc,lev) = quotRem l maxlev
-                                                  maxlev = fromEnum (maxBound :: OptimizationLevel) + 1
-                                                  maxsc  = fromEnum (maxBound :: OptimizationScope) + 1
-{-
-                                Just "0"    -> o { ehcOptOptimizationLevel      = OptimizationLevel_Off        }
-                                Just "1"    -> o { ehcOptOptimizationLevel      = OptimizationLevel_Normal     }
-                                Just "2"    -> o { ehcOptOptimizationLevel      = OptimizationLevel_Much       }
-                                Just "3"    -> o { ehcOptOptimizationLevel      = OptimizationLevel_Full       }
-                                Just olevel | l >= 4 && l < 8
-                                               oOptimization (Just $ show $ l - 4)
-                                               $ o { ehcOptOptimizationScope    = OptimizationScope_WholeProgram       }
-                                            where l = read olevel :: Int
--}
-                                Nothing     -> o { ehcOptOptimizationLevel      = OptimizationLevel_Much       }
-                                _           -> o
+         oOptimization ms o
+                           = o' {ehcOptOptimizations = optimizeRequiresClosure os}
+                           where (o',doSetOpts)
+                                    = case ms of
+                                        Just olevel@(c:_) | isDigit c && l >= 0 && l < (maxsc * maxlev)
+                                          -> ( o { ehcOptOptimizationLevel = toEnum lev, ehcOptOptimizationScope = toEnum sc }
+                                             , True
+                                             )
+                                          where l = read olevel :: Int
+                                                (sc,lev) = quotRem l maxlev
+                                                maxlev = fromEnum (maxBound :: OptimizationLevel) + 1
+                                                maxsc  = fromEnum (maxBound :: OptimizationScope) + 1
+                                        Just optname@(_:_)
+                                          -> case break (== '=') optname of
+                                               (nm, yesno)
+                                                 -> (o {ehcOptOptimizations = os}, False)
+                                                 where os = -- lookup name, and attempt to extract boolean of assumedly '=' prefixed string
+                                                            case (Map.lookup nm allOptimizeMp, optBooleanTake $ drop 1 yesno) of
+                                                              (Just opt, Just (b,_))
+                                                                | b         -> Set.insert opt $ ehcOptOptimizations o
+                                                                | otherwise -> Set.delete opt $ ehcOptOptimizations o
+                                                              (Just opt, _) -> Set.insert opt $ ehcOptOptimizations o
+                                                              _             ->                  ehcOptOptimizations o
+                                        Nothing
+                                          -> (o { ehcOptOptimizationLevel      = OptimizationLevel_Much       }, True)
+                                        _ -> (o, False)
+                                 os | doSetOpts = Map.findWithDefault Set.empty (ehcOptOptimizationLevel o') optimizationLevelMp
+                                    | otherwise = ehcOptOptimizations o'
 %%]]
 %%]]
 %%[[9
@@ -888,7 +892,11 @@ optBoolean tr ms o
      Just s -> maybe o (tr o . fst) (optBooleanTake s)
      _      -> o
 
+%%[[1
 boolArgStr = "0|1|no|yes|off|on|-|+"
+%%][100
+boolArgStr = "Bool"
+%%]]
 boolArg tr = OptArg (optBoolean tr) boolArgStr
 %%]
 

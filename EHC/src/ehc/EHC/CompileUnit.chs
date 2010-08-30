@@ -166,6 +166,7 @@ data EHCompileUnit
       , ecuDirIsWritable     :: !Bool								-- can be written in dir of module?
 %%]]
 %%[[99
+      , ecuMbOpts            :: (Maybe EHCOpts)						-- possibly per module adaption of options (caused by pragmas)
       , ecuPragmas           :: !(Set.Set Pragma.Pragma)			-- pragmas of module
       , ecuUsedNames         :: ModEntRelFilterMp					-- map holding actually used names, to later filter cache of imported hi's to be included in this module's hi
 %%]]
@@ -258,6 +259,7 @@ emptyECU
       , ecuDirIsWritable     = False
 %%]]
 %%[[99
+      , ecuMbOpts			 = Nothing
       , ecuPragmas           = Set.empty
       , ecuUsedNames		 = Map.empty
 %%]]
@@ -494,7 +496,10 @@ ecuStoreDirIsWritable :: EcuUpdater Bool
 ecuStoreDirIsWritable x ecu = ecu { ecuDirIsWritable = x }
 %%]
 
-%%[99 export(ecuStorePragmas,ecuStoreUsedNames)
+%%[99 export(ecuStoreOpts,ecuStorePragmas,ecuStoreUsedNames)
+ecuStoreOpts :: EcuUpdater EHCOpts
+ecuStoreOpts x ecu = ecu { ecuMbOpts = Just x }
+
 ecuStorePragmas :: EcuUpdater (Set.Set Pragma.Pragma)
 ecuStorePragmas x ecu = ecu { ecuPragmas = x }
 

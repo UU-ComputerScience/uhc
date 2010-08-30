@@ -3,6 +3,30 @@
 %include afp.fmt
 %%]
 
+%%[doesWhat.CBind doclatex
+Design for multiple variations of same binding.
+
+The aim is to be able to express
+\begin{itemize}
+\item [Idea only] The difference between code and closure wrapped around the code
+\item Variants of code accepting different calling conventions, or other features (i.e. explicit stack tracing)
+\end{itemize}
+
+Design particular(itie)s:
+\begin{itemize}
+\item (HsName,ACoreBindAspectKeyS) pair (encoded as ACoreBindRef) is used to refer to values,
+\item [Idea only] CValTy describes some of its runtime structure. A type, but reflecting early representational choices
+\item [Idea only] Redundancy: ACoreBindAspectKey_Strict only goes with CValTy_Boxed
+\item a ACoreBindAspectKey_Strict implies always a ACoreBindAspectKey_Default for the same name
+\end{itemize}
+
+Extensibility at:
+\begin{itemize}
+\item ACoreBindAspectKey, additional alternatives describing extra aspects of a binding
+\item [Idea only] CValTyProp, additional typing expressivity for a boxed value
+\end{itemize}
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Abstract syntax for Core code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -29,23 +53,37 @@ DATA CModule
 
 %%[(8 codegen)
 DATA CExpr
-  | Let         categ           : {CBindingsCateg}
-                binds           : CBindL
-                body            : CExpr
-  | App         func            : CExpr
-                arg             : CExpr
-                argMeta         : CMetaVal
-  | Lam         arg             : {HsName}
-                argMeta         : CMetaVal
-                body            : CExpr
-  | Var         nm              : {HsName}
-  | Case        expr            : CExpr
-                alts            : CAltL
-                dflt            : CExpr
+  -- base cases
+  | Var         ref             : {ACoreBindRef}
   | Int         int             : {Int}
   | Char        char            : {Char}
   | String      str             : {String}
+%%[[(97 codegen)
+  | Integer     integer         : {Integer}
+%%]]
+
+  -- node constructor, tuple or data constructor, determined by tag
   | Tup         tag             : {CTag}
+
+  -- let bindings
+  | Let         categ           : {CBindingsCateg}
+                binds           : CBindL
+                body            : CExpr
+
+  -- application, abstraction
+  | App         func            : CExpr
+                arg             : CExpr
+  | Lam         arg             : {HsName}
+                body            : CExpr
+
+  -- case
+  | Case        expr            : CExpr
+                alts            : CAltL
+                dflt            : CExpr
+  | CaseAltFail caseId          : {UID}
+                errorExpr       : CExpr
+
+  -- extensible records (no longer supported, but you never know for now)
   | TupDel      expr            : CExpr
                 tag             : {CTag}
                 nm              : {HsName}
@@ -60,12 +98,21 @@ DATA CExpr
                 nm              : {HsName}
                 offset          : CExpr
                 fldExpr         : CExpr
-  | CaseAltFail caseId          : {UID}
-                errorExpr       : CExpr
+
+  -- FFI call
+  | FFI         callconv        : {FFIWay}
+                safety          : {String}
+%%[[8
+                impEnt          : {String}
+%%][90
+                impEnt          : {ForeignEnt}
+%%]]
+                ty              : {Ty}
 %%]
 
 %%[(9 codegen)
 DATA CExpr
+  -- coercion related
   | Hole        uid             : {UID}
   | HoleLet     bindsUid        : {UID}
                 body            : CExpr
@@ -76,12 +123,8 @@ DATA CExpr
                 body            : CExpr
 %%]
 
-%%[(97 codegen)
-DATA CExpr
-  | Integer     integer         : {Integer}
-%%]
-
 %%[(8 codegen)
+TYPE MbCExpr	= MAYBE CExpr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -125,6 +168,7 @@ DATA CExpr
 DATA CExprAnn
   | Ty			ty				: {Ty}
   | Coe			coe				: {RelevCoe}
+  | Debug		info			: {String}
 %%]
 
 %%[(8 codegen)
@@ -141,10 +185,20 @@ DATA CBind
                 bindAspects     : CBindAspectL
 
 DATA CBindAspect
-  | Bind        -- nm              : {HsName}
-                bindMeta        : CMetas
+  -- default: binding used when (1) no specialized version is available, (2) the one passed higher order
+  | Bind        bindMeta        : CMetas
                 expr            : CExpr
-  | RelevTy		relevTy			: {RelevTy}
+  
+  -- a (keyed) CMetas
+  | Meta		aspectKeyS		: {ACoreBindAspectKeyS}
+  				cmetas			: CMetas
+  
+  -- a (keyed) RelevTy
+  | RelevTy		aspectKeyS		: {ACoreBindAspectKeyS}
+  				relevTy			: {RelevTy}
+  
+  -- FFI binding
+  {-
   | FFI         callconv        : {FFIWay}
                 safety          : {String}
 %%[[8
@@ -154,7 +208,9 @@ DATA CBindAspect
 %%]]
                 -- nm              : {HsName}
                 ty              : {Ty}
+  -}
 %%[[90
+  -- FFE binding (not yet further implemented)
   | FFE         -- nm              : {HsName}
                 callconv        : {FFIWay}
                 expEnt          : {ForeignEnt}
@@ -174,30 +230,6 @@ SET AllBind     	=   CBind CBindL AllBindAspect
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% 20100731 AD: this is brainstorming about allowing a binding to bind to multiple aspects, indexed by a aspect key
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[doesWhat.CBind doclatex
-Design for multiple variations of same binding.
-
-The aim is to be able to express
-\begin{itemize}
-\item The difference between code and closure wrapped around the code
-\item Variants of code accepting different calling conventions, or other features (i.e. explicit stack tracing)
-\end{itemize}
-
-Design particular(itie)s:
-\begin{itemize}
-\item (HsName,ACoreBindAspectKeyS) pair is used to refer to values,
-\item CValTy describes some of its runtime structure. A type, but reflecting early representational choices
-\item Redundancy: ACoreBindAspectKey_Closure0 only goes with CValTy_Boxed
-\item a ACoreBindAspectKey_Closure0 implies always a ACoreBindAspectKey_Code for the same name
-\end{itemize}
-
-Extensibility at:
-\begin{itemize}
-\item ACoreBindAspectKey, additional alternatives describing extra aspects of a binding
-\item CValTyProp, additional typing expressivity for a boxed value
-\end{itemize}
-%%]
 
 -- overriding
 %%[(8889 codegen)
@@ -311,8 +343,11 @@ SET AllPatFld   =   CPatFld CPatFldL
 %%[(8 codegen)
 SET AllCodeNT   =   CModule AllExpr
 
+SET AllExprOnly
+  = CExpr MbCExpr
+
 SET AllExprBase
-  = CExpr AllAnn AllBind AllAlt AllPat
+  = AllExprOnly AllAnn AllBind AllAlt AllPat
 
 SET AllExpr
   = AllExprBase

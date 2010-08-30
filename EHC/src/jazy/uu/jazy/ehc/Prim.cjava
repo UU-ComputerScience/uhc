@@ -152,7 +152,7 @@ public class Prim
     public static Object primEqInt64( int v1, int v2 ) { return RTS.mkBool(v1 == v2) ; }
 %%]
     
-%%[(95 jazy)
+%%[(97 jazy)
     /**
      * Int: min/max value
      */
@@ -166,6 +166,8 @@ public class Prim
 
 %%[(97 jazy)
 	// arithmetic
+	public static int primAddWord( int v1, int v2 ) { return v1 + v2; }
+	public static int primSubWord( int v1, int v2 ) { return v1 - v2; }
 	public static int primAndWord( int v1, int v2 ) { return v1 & v2; }
 	public static int primOrWord( int v1, int v2 ) { return v1 | v2; }
 	public static int primXorWord( int v1, int v2 ) { return v1 ^ v2; }
@@ -605,7 +607,7 @@ public class Prim
     }
 %%]
     
-%%[(95 jazy)
+%%[(97 jazy)
     /**
      * Char: min/max value
      */
@@ -613,7 +615,7 @@ public class Prim
     public static char primMinChar() { return 255 ; }
 %%]
     
-%%[(95 jazy)
+%%[(97 jazy)
     /**
      * Char: predicates
      */
@@ -645,7 +647,7 @@ public class Prim
 %%% Byte array
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(95 jazy)
+%%[(97 jazy)
     public static int primByteArrayLength( byte[] a ) { return a.length ; }
     // public static String primByteArrayToString( byte[] a ) { return new String(a) ; }
     public static byte[] primStringToByteArray( Object s, int len ) {
@@ -675,13 +677,13 @@ public class Prim
 %%% Show
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(95 jazy)
+%%[(97 jazy)
     public static String primShowIntegerToPackedString( BigInteger v1 ) {
     	return v1.toString() ;
     }
 %%]
     
-%%[(95 jazy)
+%%[(97 jazy)
     public static String primShowFloatToPackedString( float v1 ) {
     	return Float.toString(v1) ;
     }
@@ -708,7 +710,7 @@ public class Prim
 	// i had to put them here to make the generated JAR files run with the new IO implementation
 
 	public static Object primCatchException(Object a, Object func) {
-		warn("primCatchException");
+		// warn("primCatchException");
 		return a;
 	}
 
@@ -896,7 +898,7 @@ PRIM GB_NodePtr gb_primOpenFileOrStd( GB_NodePtr nmNd, GB_Word modeEnum, GB_Node
 	}
 
 	// test whether a file descriptor refers to a terminal
-    public static Object isatty(int fd) {
+    public static int isatty(int fd) {
 		Handle handle = fileDescriptorTable.getHandle(fd);
 		int val = 0;
 		if (handle == null)
@@ -905,7 +907,7 @@ PRIM GB_NodePtr gb_primOpenFileOrStd( GB_NodePtr nmNd, GB_Word modeEnum, GB_Node
 			errno = Errno.EINVAL; // it's not a terminal
 		else
 			val = 1;
-		return ioReturn(new Integer(val));
+		return val ;
     }
 
 	public static int __hscore_bufsiz() {
@@ -935,23 +937,23 @@ PRIM GB_NodePtr gb_primOpenFileOrStd( GB_NodePtr nmNd, GB_Word modeEnum, GB_Node
 
 	// copy 'n' bytes from the array pointed to by 'src' to the array pointed to by 'dest'
 	// 'src' and 'dest' must point to byte arrays
-	public static Object memcpy(int dest, int src, long n) {
+	public static int memcpy(int dest, int src, long n) {
 		byte[] destArray = (byte[])pointers.dereference(dest);
 		byte[] srcArray = (byte[])pointers.dereference(src);
 		System.arraycopy(srcArray, 0, destArray, 0, (int)n);
-		return ioReturn(new Integer(dest));
+		return dest;
 	}
 
 	public static Object rtsSupportsBoundThreads() {
 		return RTS.False;
 	}
 
-	public static Object write(int fd, int buf, int count) {
+	public static int write(int fd, int buf, int count) {
 		// look up fd
 		Handle handle = fileDescriptorTable.getHandle(fd);
 		if (handle == null || handle.out == null) {
 			errno = Errno.EBADF;
-			return ioReturn(-1);
+			return -1 ;
 		}
 		OutputStream out = handle.out;
 
@@ -963,18 +965,18 @@ PRIM GB_NodePtr gb_primOpenFileOrStd( GB_NodePtr nmNd, GB_Word modeEnum, GB_Node
 		} catch (IOException e) {
 			e.printStackTrace(System.out);
 			errno = Errno.EIO;
-			return ioReturn(new Integer(-1));
+			return -1 ;
 		}
-		return ioReturn(new Integer(count));
+		return count;
 	}
 
 	// read from a file descriptor
-	public static Object read(int fd, int buf, int count) {
+	public static int read(int fd, int buf, int count) {
 		// look up fd
 		Handle handle = fileDescriptorTable.getHandle(fd);
 		if (handle == null || handle.in == null) {
 			errno = Errno.EBADF;
-			return ioReturn(-1);
+			return -1 ;
 		}
 		InputStream in = handle.in;
 
@@ -987,28 +989,28 @@ PRIM GB_NodePtr gb_primOpenFileOrStd( GB_NodePtr nmNd, GB_Word modeEnum, GB_Node
 		} catch (IOException e) {
 			e.printStackTrace(System.out);
 			errno = Errno.EIO;
-			return ioReturn(new Integer(-1));
+			return -1 ;
 		}
 
 		if (bytesRead == -1)
 			bytesRead = 0; // end of file
 
-		return ioReturn(new Integer(bytesRead));
+		return bytesRead ;
 	}
 
-	public static Object _getErrno() {
-		return ioReturn(new Integer(errno));
+	public static int _getErrno() {
+		return errno ;
 	}
 
-	public static Object malloc(long size) {
+	public static int malloc(long size) {
 		byte[] array = new byte[(int)size];
 		int ptr = pointers.registerObject(array);
-		return ioReturn(ptr);
+		return ptr ;
 	}
 
 	public static Object free(int ptr) {
 		pointers.remove(ptr);
-		return ioReturn(RTS.Unit);
+		return RTS.Unit ;
 	}
 
 	public static int primNullAddr() {
@@ -1021,7 +1023,7 @@ PRIM GB_NodePtr gb_primOpenFileOrStd( GB_NodePtr nmNd, GB_Word modeEnum, GB_Node
 	}
 
 	// open and possibly create a file
-	public static Object __hscore_open(int strPtr, int how, int mode) {
+	public static int __hscore_open(int strPtr, int how, int mode) {
 		// get filename
 		byte[] array = (byte[])pointers.dereference(strPtr);
 		String filename = Util.zstrToString(array);
@@ -1044,15 +1046,15 @@ PRIM GB_NodePtr gb_primOpenFileOrStd( GB_NodePtr nmNd, GB_Word modeEnum, GB_Node
 		File file = new File(filename);
 		if (mustCreate && file.exists()) {
 			errno = Errno.EEXIST;
-			return ioReturn(new Integer(-1));
+			return -1 ;
 		}
 		if ( ! file.exists() && ! create) {
 			errno = Errno.ENOENT;
-			return ioReturn(new Integer(-1));
+			return -1 ;
 		}
 		if (file.isDirectory()) {
 			errno = Errno.EISDIR;
-			return ioReturn(new Integer(-1));
+			return -1 ;
 		}
 
 		// open stream(s)
@@ -1066,22 +1068,22 @@ PRIM GB_NodePtr gb_primOpenFileOrStd( GB_NodePtr nmNd, GB_Word modeEnum, GB_Node
 		} catch (IOException e) {
 			e.printStackTrace(System.out);
 			errno = Errno.EACCES;
-			return ioReturn(new Integer(-1));
+			return -1 ;
 		}
 
 		// add entry to the FileDescriptorTable
 		Handle handle = new Handle(in, out, file);
 		int fd = fileDescriptorTable.add(handle);
 
-		return ioReturn(new Integer(fd));
+		return fd ;
 	}
 
 	// close a file descriptor, so that it no longer refers to any file and may be reused
-	public static Object close(int fd) {
+	public static int close(int fd) {
 		Handle handle = fileDescriptorTable.getHandle(fd);
 		if (handle == null) {
 			errno = Errno.EBADF;
-			return ioReturn(new Integer(-1));
+			return -1 ;
 		}
 		try {
 			if (handle.in != null)
@@ -1091,10 +1093,10 @@ PRIM GB_NodePtr gb_primOpenFileOrStd( GB_NodePtr nmNd, GB_Word modeEnum, GB_Node
 		} catch (IOException e) {
 			e.printStackTrace(System.out);
 			errno = Errno.EIO;
-			return ioReturn(new Integer(-1));
+			return -1 ;
 		}
 		fileDescriptorTable.remove(fd);
-		return ioReturn(new Integer(0));
+		return 0 ;
 	}
 
 	public static int __hscore_sizeof_stat() {
@@ -1102,11 +1104,11 @@ PRIM GB_NodePtr gb_primOpenFileOrStd( GB_NodePtr nmNd, GB_Word modeEnum, GB_Node
 	}
 
 	// get file status
-	public static Object __hscore_fstat(int fd, int bufPtr) {
+	public static int __hscore_fstat(int fd, int bufPtr) {
 		Handle handle = fileDescriptorTable.getHandle(fd);
 		if (handle == null || handle.file == null) {
 			errno = Errno.EBADF;
-			return ioReturn(-1);
+			return -1 ;
 		}
 
 		byte[] buffer = (byte[])pointers.dereference(bufPtr);
@@ -1114,34 +1116,34 @@ PRIM GB_NodePtr gb_primOpenFileOrStd( GB_NodePtr nmNd, GB_Word modeEnum, GB_Node
 		Stat stat = new Stat(handle.file);
 		stat.writeToBuffer(buffer);
 
-		return ioReturn(new Integer(0));
+		return 0 ;
 	}
 
 	// accessing information from __hscore_fstat
-	public static Object __hscore_st_mtime(int ptr) {
+	public static long __hscore_st_mtime(int ptr) {
 		byte[] buffer = (byte[])pointers.dereference(ptr);
 		Stat stat = new Stat(buffer);
-		return ioReturn(new Long(stat.mtime));
+		return stat.mtime ;
 	}
-	public static Object __hscore_st_size(int ptr) {
+	public static long __hscore_st_size(int ptr) {
 		byte[] buffer = (byte[])pointers.dereference(ptr);
 		Stat stat = new Stat(buffer);
-		return ioReturn(new Long(stat.size));
+		return stat.size ;
 	}
-	public static Object __hscore_st_mode(int ptr) {
+	public static int __hscore_st_mode(int ptr) {
 		byte[] buffer = (byte[])pointers.dereference(ptr);
 		Stat stat = new Stat(buffer);
-		return ioReturn(new Integer(stat.mode));
+		return stat.mode ;
 	}
-	public static Object __hscore_st_dev(int ptr) {
+	public static int __hscore_st_dev(int ptr) {
 		// get device id -- not possible in Java
 		warn("__hscore_st_dev");
-		return ioReturn(new Integer(0));
+		return 0 ;
 	}
-	public static Object __hscore_st_ino(int ptr) {
+	public static int __hscore_st_ino(int ptr) {
 		// get inode number -- not possible in Java
 		warn("__hscore_st_ino");
-		return ioReturn(new Integer(0));
+		return 0 ;
 	}
 
 	// interpret CMode values
@@ -1165,11 +1167,11 @@ PRIM GB_NodePtr gb_primOpenFileOrStd( GB_NodePtr nmNd, GB_Word modeEnum, GB_Node
 	};
 
 	// truncate a file to a specified length
-	public static Object __hscore_ftruncate(int fd, long where) {
+	public static int __hscore_ftruncate(int fd, long where) {
 		// to implement this, we would probably need java.nio
 		// (introduced in Java 1.4)
 		warn("__hscore_ftruncate");
-		return ioReturn(new Integer(0));
+		return 0 ;
 	}
 
 	// POSIX flags only:

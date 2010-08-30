@@ -142,13 +142,13 @@ SEM ExprSeq1L
 
 SEM ExprSeq1
   | L0Val
-                lhs         .   worker      =   ExprSeq1_L0Val (workerBody @l0.workerArgs @l0.worker) @meta.worker
+                lhs         .   worker      =   ExprSeq1_L0Val (workerBody @l0.workerArgs @l0.worker)
                 lhs         .   wrapper     =   if @lhs.curBindType == BodyBind
-                                                then ExprSeq1_L0Val (newWrapperBody @lhs.workerNm @lhs.lamArgs) @meta.wrapper
+                                                then ExprSeq1_L0Val (newWrapperBody @lhs.workerNm @lhs.lamArgs)
                                                 else @cTrf
                 l0          .   newParams   =   strictParams @l0.workerArgs `Map.union` @lhs.newParams
   | L0Bind
-                lhs         .   worker      =   ExprSeq1_L0Bind @workerNm @meta.worker (workerType @l1.arrArgs @l1.arrTail)
+                lhs         .   worker      =   ExprSeq1_L0Bind @workerNm (workerType @l1.arrArgs @l1.arrTail)
   | L1Bind
                 lhs         .   worker      =   ExprSeq1_L1Bind @workerNm (workerType @l2.arrArgs @l2.arrTail)
   | L2Bind
@@ -225,7 +225,7 @@ SEM Expr
 strictParams :: [Expr] -> Map.Map HsName Expr
 strictParams args = Map.unions $ map (Map.unions . map argNms . unSeqs) args
   where
-    argNms (ExprSeq1_L0Bind nm m e) = argNms' (flip ExprSeq1_L0Val m) nm e
+    argNms (ExprSeq1_L0Bind nm   e) = argNms' ExprSeq1_L0Val nm e
     argNms (ExprSeq1_L1Bind nm e)   = argNms' ExprSeq1_L1Val nm e
     argNms (ExprSeq1_L2Bind nm e)   = argNms' ExprSeq1_L2Val nm e
     argNms _                        = Map.empty
@@ -237,18 +237,18 @@ strictParams args = Map.unions $ map (Map.unions . map argNms . unSeqs) args
                                           else Map.empty
 
     argElem (Expr_Lazy (Expr_Seq es))
-      | all (ExprAnn_Strictness Strict `elem`) (map annsSeq1 es) = (True, map (unStrict . exprSeq1ToExpr) es)
+      | all (ExprAnn_Strictness Strictness_Strict `elem`) (map annsSeq1 es) = (True, map (unStrict . exprSeq1ToExpr) es)
     argElem (Expr_Lazy e)
-      | ExprAnn_Strictness Strict `elem` anns e                  = let (_, x) = argElem e in (True, x)
-    argElem (Expr_Ann (ExprAnn_Strictness Strict) e)             = let (_, x) = argElem e in (True, x)
+      | ExprAnn_Strictness Strictness_Strict `elem` anns e                  = let (_, x) = argElem e in (True, x)
+    argElem (Expr_Ann (ExprAnn_Strictness Strictness_Strict) e)             = let (_, x) = argElem e in (True, x)
     argElem e = (False, [e])
 
 
 hasWorker :: [Expr] -> Bool
 hasWorker es = any hasStrict $ concatMap seqToList es
   where
-    hasStrict (Expr_Lazy (Expr_Seq es)) = all (ExprAnn_Strictness Strict `elem`) (map annsSeq1 es)
-    hasStrict (Expr_Lazy e)             = ExprAnn_Strictness Strict `elem` anns e
+    hasStrict (Expr_Lazy (Expr_Seq es)) = all (ExprAnn_Strictness Strictness_Strict `elem`) (map annsSeq1 es)
+    hasStrict (Expr_Lazy e)             = ExprAnn_Strictness Strictness_Strict `elem` anns e
     hasStrict _                         = False
 
 anns :: Ty -> [ExprAnn]
@@ -257,10 +257,10 @@ anns (Expr_Ann a e) = a : anns e
 anns _              = []
 
 annsSeq1 :: ExprSeq1 -> [ExprAnn]
-annsSeq1 (ExprSeq1_L0Val e _)    = anns e
+annsSeq1 (ExprSeq1_L0Val e  )    = anns e
 annsSeq1 (ExprSeq1_L0LblVal _ e) = anns e
 annsSeq1 (ExprSeq1_L0TagVal _ e) = anns e
-annsSeq1 (ExprSeq1_L0Bind _ _ e) = anns e
+annsSeq1 (ExprSeq1_L0Bind _   e) = anns e
 annsSeq1 (ExprSeq1_L1Val e)      = anns e
 annsSeq1 (ExprSeq1_L1Bind _ e)   = anns e
 annsSeq1 (ExprSeq1_L2Val e)      = anns e
@@ -269,17 +269,17 @@ annsSeq1 (ExprSeq1_L2Bind _ e)   = anns e
 unStrict :: Expr -> Expr
 unStrict (Expr_Seq es)                                       = Expr_Seq $ map (argMap unStrict) es
 unStrict (Expr_Lazy (Expr_Seq es))
-  | all (ExprAnn_Strictness Strict `elem`) (map annsSeq1 es) = Expr_Seq $ map (argMap unStrict) es
+  | all (ExprAnn_Strictness Strictness_Strict `elem`) (map annsSeq1 es) = Expr_Seq $ map (argMap unStrict) es
 unStrict (Expr_Lazy e)
-  | ExprAnn_Strictness Strict `elem` anns e                  = unStrict e
-unStrict (Expr_Ann (ExprAnn_Strictness Strict) e)            = unStrict e
+  | ExprAnn_Strictness Strictness_Strict `elem` anns e                  = unStrict e
+unStrict (Expr_Ann (ExprAnn_Strictness Strictness_Strict) e)            = unStrict e
 unStrict e                                                   = e
 
 argMap :: (Expr -> Expr) -> ExprSeq1 -> ExprSeq1
-argMap f (ExprSeq1_L0Val e m)     = ExprSeq1_L0Val (f e) m
+argMap f (ExprSeq1_L0Val e  )     = ExprSeq1_L0Val (f e)  
 argMap f (ExprSeq1_L0LblVal nm e) = ExprSeq1_L0LblVal nm (f e)
 argMap f (ExprSeq1_L0TagVal t e)  = ExprSeq1_L0TagVal t (f e)
-argMap f (ExprSeq1_L0Bind nm m e) = ExprSeq1_L0Bind nm m (f e)
+argMap f (ExprSeq1_L0Bind nm   e) = ExprSeq1_L0Bind nm (f e)
 argMap f (ExprSeq1_L1Val e)       = ExprSeq1_L1Val (f e)
 argMap f (ExprSeq1_L1Bind nm e)   = ExprSeq1_L1Bind nm (f e)
 argMap f (ExprSeq1_L2Val e)       = ExprSeq1_L2Val (f e)
@@ -290,7 +290,7 @@ workerType :: [Expr] -> Expr -> Expr
 workerType args res = foldr Expr_Arrow res (map (Expr_Seq . concatMap (concatSeq . argMap unStrict) . unSeqs) args)
   where
     concatSeq :: ExprSeq1 -> [ExprSeq1]
-    concatSeq (ExprSeq1_L0Val (Expr_Seq es) _) = es
+    concatSeq (ExprSeq1_L0Val (Expr_Seq es)  ) = es
     concatSeq (ExprSeq1_L1Val (Expr_Seq es))   = es
     concatSeq (ExprSeq1_L2Val (Expr_Seq es))   = es
     concatSeq e                                = [e]
@@ -299,18 +299,18 @@ workerBody :: [Expr] -> Expr -> Expr
 workerBody args body = foldr Expr_Lam body newArgs
   where
     newArgs = map (Expr_Seq . concatMap newArg . unSeqs) args
-    newArg (ExprSeq1_L0Bind nm m e) = case (argElem e) of
-                                        [e'] -> [ExprSeq1_L0Bind nm m e']
-                                        es'  -> zipWith (\x e' -> ExprSeq1_L0Bind (mkHNm (show nm ++ "_" ++ show x)) m e') [0..] es'
+    newArg (ExprSeq1_L0Bind nm   e) = case (argElem e) of
+                                        [e'] -> [ExprSeq1_L0Bind nm e']
+                                        es'  -> zipWith (\x e' -> ExprSeq1_L0Bind (mkHNm (show nm ++ "_" ++ show x)) e') [0..] es'
     newArg (ExprSeq1_L1Bind nm e)   = [ExprSeq1_L1Bind nm e]
     newArg (ExprSeq1_L2Bind nm e)   = [ExprSeq1_L2Bind nm e]
     newArg e                        = [e]
 
     argElem (Expr_Lazy (Expr_Seq es))
-      | all (ExprAnn_Strictness Strict `elem`) (map annsSeq1 es) = map (unStrict . exprSeq1ToExpr) es -- [Expr_Seq (map (argMap unStrict) es)]
+      | all (ExprAnn_Strictness Strictness_Strict `elem`) (map annsSeq1 es) = map (unStrict . exprSeq1ToExpr) es -- [Expr_Seq (map (argMap unStrict) es)]
     argElem (Expr_Lazy e)
-      | ExprAnn_Strictness Strict `elem` anns e                  = argElem e
-    argElem (Expr_Ann (ExprAnn_Strictness Strict) e)             = argElem e
+      | ExprAnn_Strictness Strictness_Strict `elem` anns e                  = argElem e
+    argElem (Expr_Ann (ExprAnn_Strictness Strictness_Strict) e)             = argElem e
     argElem e = [e]
 
 newWrapperType :: [Expr] -> Expr -> Expr
@@ -326,14 +326,14 @@ newWrapperBody nm argss = foldr Expr_Lam body args
     args = concat argss
 
     argSeq :: ExprSeq1 -> ExprSeq1
-    argSeq (ExprSeq1_L0Bind nm _ _) = ExprSeq1_L0Val (Expr_Delay $ Expr_Force $ Expr_Var nm) Nothing
+    argSeq (ExprSeq1_L0Bind nm   _) = ExprSeq1_L0Val (Expr_Delay $ Expr_Force $ Expr_Var nm)
     argSeq (ExprSeq1_L1Bind nm _)   = ExprSeq1_L1Val (Expr_Delay $ Expr_Force $ Expr_Var nm)
     argSeq (ExprSeq1_L2Bind nm _)   = ExprSeq1_L2Val (Expr_Delay $ Expr_Force $ Expr_Var nm)
     argSeq e                        = e
 
 
 rmStrict :: Ty -> Ty
-rmStrict = rmAnn $ ExprAnn_Strictness Strict
+rmStrict = rmAnn $ ExprAnn_Strictness Strictness_Strict
 
 rmAnn :: ExprAnn -> Expr -> Expr
 rmAnn ann (Expr_Seq ss) = Expr_Seq (map (argMap $ rmAnn ann) ss)

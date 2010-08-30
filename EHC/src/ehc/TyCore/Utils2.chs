@@ -62,7 +62,7 @@ fuL2ExprL = fuL2ExprL' (\n e -> exprTupFld e)
 fuL2ExprNodeFldL :: Bool -> (HsName -> Maybe HsName) -> FieldUpdateL Expr -> [ExprSeq1]
 fuL2ExprNodeFldL yesThunk withLbl
   = fuL2ExprL' (\n e -> mk (withLbl n) e)
-  where mk mbNm e = maybe (ExprSeq1_L0Val f Nothing) (\n -> ExprSeq1_L0LblVal n f) mbNm
+  where mk mbNm e = maybe (ExprSeq1_L0Val f) (\n -> ExprSeq1_L0LblVal n f) mbNm
            where f = mkth $ exprTupFld e
         mkth = if yesThunk then mkExprThunk else id
 

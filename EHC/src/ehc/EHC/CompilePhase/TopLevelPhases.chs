@@ -755,7 +755,7 @@ Part 1 Core processing, on a per module basis, part1 is done always
 cpEhcCorePerModulePart1 :: Bool -> HsName -> EHCompilePhase ()
 cpEhcCorePerModulePart1 earlyMerge modNm
   = do { cr <- get
-       ; let (_,opts) = crBaseInfo' cr
+       ; let (_,_,opts,_) = crBaseInfo modNm cr
        ; cpSeq
            (  [ cpStepUID ]
 %%[[(8 tycore)
@@ -868,7 +868,7 @@ cpProcessHs modNm
 cpProcessEH :: HsName -> EHCompilePhase ()
 cpProcessEH modNm
   = do { cr <- get
-       ; let (_,opts) = crBaseInfo' cr
+       ; let (_,_,opts,_) = crBaseInfo modNm cr
        ; cpSeq [ cpFoldEH modNm
 %%[[99
                , cpCleanupFoldEH modNm
@@ -896,7 +896,7 @@ cpProcessEH modNm
 cpProcessTyCoreBasic :: HsName -> EHCompilePhase ()
 cpProcessTyCoreBasic modNm 
   = do { cr <- get
-       ; let (_,opts) = crBaseInfo' cr    -- '
+       ; let (_,_,opts,_) = crBaseInfo modNm cr
              check m  = do { cr <- get
                            ; let (ecu,_,opts,_) = crBaseInfo m cr
                                  cMod   = panicJust "cpProcessTyCoreBasic" $ ecuMbTyCore ecu
@@ -917,13 +917,13 @@ cpProcessTyCoreBasic modNm
 cpProcessCoreBasic :: HsName -> EHCompilePhase ()
 cpProcessCoreBasic modNm 
   = do { cr <- get
-       ; let (_,opts) = crBaseInfo' cr   -- '
+       ; let (_,_,opts,_) = crBaseInfo modNm cr
        ; cpSeq [ cpTransformCore modNm
 %%[[20
                , cpFlowHILamMp modNm
 %%]]
                , when (ehcOptEmitCore opts) (cpOutputCore True "" "core" modNm)
-%%[[(8 codegen java)
+%%[[(8888 codegen java)
                , when (ehcOptEmitJava opts) (cpOutputJava         "java" modNm)
 %%]]
                , cpProcessCoreFold modNm
@@ -948,7 +948,7 @@ cpProcessCoreFold modNm
 cpProcessCoreRest :: HsName -> EHCompilePhase ()
 cpProcessCoreRest modNm
   = do { cr <- get
-       ; let (_,opts) = crBaseInfo' cr
+       ; let (_,_,opts,_) = crBaseInfo modNm cr
        ; cpSeq (   [ cpTranslateCore2Grin modNm ]
                 ++ (if ehcOptFullProgAnalysis opts then [ cpOutputGrin True "" modNm ] else [])
 %%[[(8 jazy)
@@ -966,7 +966,7 @@ cpProcessCoreRest modNm
 cpProcessGrin :: HsName -> EHCompilePhase ()
 cpProcessGrin modNm 
   = do { cr <- get
-       ; let (_,opts) = crBaseInfo' cr     -- '
+       ; let (_,_,opts,_) = crBaseInfo modNm cr
        ; cpSeq (   (if ehcOptDumpGrinStages opts then [cpOutputGrin False "-000-initial" modNm] else [])
                 ++ [cpTransformGrin modNm]
                 ++ (if ehcOptDumpGrinStages opts then [cpOutputGrin False "-099-final" modNm]  else [])
@@ -980,7 +980,7 @@ cpProcessGrin modNm
 cpProcessBytecode :: HsName -> EHCompilePhase ()
 cpProcessBytecode modNm 
   = do { cr <- get
-       ; let (_,opts) = crBaseInfo' cr    -- '
+       ; let (_,_,opts,_) = crBaseInfo modNm cr
        ; cpSeq [ cpMsg modNm VerboseALot "Translate ByteCode"
                , cpTranslateByteCode modNm
 %%[[20

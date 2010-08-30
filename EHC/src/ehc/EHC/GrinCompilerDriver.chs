@@ -13,7 +13,7 @@
 %%]
 %%[(8 codegen grin) import(EH.Util.Pretty, EH.Util.CompileRun, EH.Util.FPath)
 %%]
-%%[(8 codegen grin) import({%{EH}Base.Common}, {%{EH}Base.Opts}, {%{EH}Scanner.Scanner}, {%{EH}Scanner.Common(grinScanOpts)})
+%%[(8 codegen grin) import({%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{EH}Base.Opts}, {%{EH}Scanner.Scanner}, {%{EH}Scanner.Common(grinScanOpts)})
 %%]
 %%[(8 codegen grin) import({%{EH}GrinCode}, {%{EH}GrinCode.Parser}, {%{EH}GrinCode.Pretty})
 %%]
@@ -77,7 +77,7 @@
 %%]
 %%[(8 codegen grin) import({%{EH}GrinCode.ToSilly(grin2silly)})
 %%]
-%%[(8 codegen grin) import({%{EH}Silly(SilModule)})
+%%[(8 codegen grin) import({%{EH}Silly(SilModule(..))})
 %%]
 %%[(8 codegen grin) import({%{EH}Silly.InlineExpr(inlineExpr)})
 %%]
@@ -93,7 +93,7 @@
 %%]
 %%[(8 codegen grin) import({%{EH}Silly.ToLLVM(silly2llvm)})
 %%]
-%%[(8 codegen grin) import({%{EH}LLVM(LLVMModule)})
+%%[(8 codegen grin) import({%{EH}LLVM(LLVMModule(..))})
 %%]
 %%[(8 codegen grin) import({%{EH}LLVM.Pretty(prettyLLVMModule)})
 %%]
@@ -255,15 +255,15 @@ initialState opts (Left fn)          = (initState opts) {gcsPath=mkTopLevelFPath
 initialState opts (Right (fp,grmod)) = (initState opts) {gcsPath=fp, gcsGrin=grmod}
 
 initState opts
-  = GRINCompileState { gcsGrin       = undefined
-                     , gcsSilly      = undefined
-                     , gcsLLVM       = undefined
+  = GRINCompileState { gcsGrin       = GrModule_Mod hsnUnknown [] [] Map.empty
+                     , gcsSilly      = SilModule_SilModule [] [] []
+                     , gcsLLVM       = LLVMModule_LLVMModule [] [] [] [] []
 %%]
 %%[(8 codegen clr)
                      , gcsCil        = undefined
 %%]
 %%[(8 codegen grin) -1.doCompileGrin
-                     , gcsHptMap     = undefined
+                     , gcsHptMap     = listArray (1,0) []
                      , gcsPath       = emptyFPath
                      , gcsOpts       = opts
                      }
@@ -411,15 +411,15 @@ caWriteHptMap fn
 
 %%[(8 codegen grin).State
 data GRINCompileState = GRINCompileState
-    { gcsGrin      :: GrModule
-    , gcsSilly     :: SilModule
-    , gcsLLVM      :: LLVMModule
+    { gcsGrin      :: !GrModule
+    , gcsSilly     :: !SilModule
+    , gcsLLVM      :: !LLVMModule
 %%[[(8 codegen clr)
     , gcsCil       :: Assembly
 %%]]
-    , gcsHptMap    :: HptMap
-    , gcsPath      :: FPath
-    , gcsOpts      :: EHCOpts
+    , gcsHptMap    :: !HptMap
+    , gcsPath      :: !FPath
+    , gcsOpts      :: !EHCOpts
     }
 
 gcsUpdateGrin   x s = s { gcsGrin   = x }
@@ -571,6 +571,8 @@ task minVerbosity taskDesc ca f = do
     { startMsg minVerbosity taskDesc
     ; start   <- liftIO getCPUTime
     ; result  <- ca
+    -- ; g <- gets gcsGrin
+    -- ; liftIO $ putStrLn (result `seq` g `seq` "debug")
     ; end     <- liftIO getCPUTime
     ; finishMsg minVerbosity (f result) (end-start)
     }

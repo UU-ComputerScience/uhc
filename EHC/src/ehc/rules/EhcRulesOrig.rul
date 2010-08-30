@@ -308,7 +308,7 @@ format ag  translDouble = CExpr_Double
 format tex translInteger = Transl
 format ag  translInteger = "cinteger @lhs.opts"
 format tex translVar = Transl
-format ag  translVar = CExpr_Var
+format ag  translVar = acoreVar
 
 -- Coercion
 external acoreCoeId
