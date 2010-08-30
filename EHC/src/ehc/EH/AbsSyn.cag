@@ -626,7 +626,7 @@ DERIVING AnnDtMonoRestrict : Eq, Ord
 
 %%[1.AllNT
 SET AllNT
-    = AllTyExpr AllDecl AllPatExpr AllExpr
+    = AllTyExpr AllDecl AllPatExpr AllExpr AllHML
 %%[[5
       AllData AllCase AllTyVar
 %%]]
@@ -648,4 +648,49 @@ SET NTPrf
     = NTCode AllData
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% HML Types
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[1
+DATA TyIndex
+  | Group       varnm   : {HsName}
+                bounds  : TyQuantifiedScheme
+    
+DATA TyQuantifiedScheme
+  | Quant       tyIndex  : TyIndex
+                tyScheme : TyScheme
+  | Bottom
+   
+DATA TyScheme
+  | Quant       subst   : Scheme
+                tyExpr  : TyScheme
+  | SystemF     tyExpr  : TyExpr
+  | Bottom
+  | Sugar       prefix : Prefix
+                tyExpr : TyScheme
+  
+DATA Scheme
+  | Simple      varnm  : {HsName}
+                bounds : TyScheme
+  
+DATA TyMono 
+  | Var         nm      : {HsName}
+  | App         func    : TyMono
+                arg     : TyMono
+  | Con         nm      : {HsName}
+  | AppTop      tyMono  : TyMono
+    
+DATA TyPoly
+  | Var         nm      : {HsName}
+  | App         func    : TyPoly
+                arg     : TyPoly
+  | Con         nm      : {HsName}
+  | SystemF     tyExpr  : TyExpr
+
+TYPE TyExprs = [TyExpr]
+TYPE Prefix  = [TyIndex]
+
+SET AllHML 
+    = TyIndex TyQuantifiedScheme TyScheme Scheme TyMono TyPoly TyExprs Prefix
+%%]

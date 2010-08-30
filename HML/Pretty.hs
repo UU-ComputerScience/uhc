@@ -4,18 +4,25 @@
 -- | Pretty printing module
 module Pretty where
 
-import HML
+import EH4.EH
+import EH4.Ty
+import EH4.Base.HsName
+
+import EH.Util.Pretty
+
 import Data.List
 import GHC.Show
+
+type Prefix  = [TyIndex]
 
 class Pretty a where
    pp :: a -> String
    
-instance Pretty a => Show a where
-   show = pp
+-- instance Pretty a => Show a where
+   -- show = pp
 
 instance Pretty HsName where
-   pp = id
+   pp = pp
 
 instance Pretty Prefix where
   pp = (\x->"(" ++ x ++ ")") . intercalate "," . map pp
@@ -48,7 +55,7 @@ instance Pretty TyPoly where
   -- pp (TyPoly_AppTop a)= pp a
   
 instance Pretty TyQu where
-  pp TyQu_TyForall = "forall"
+  pp (TyQu_Forall _) = "forall"
   
 instance Pretty Decl where
   pp (Decl_TySig nm decl) = pp nm  ++ " :: " ++ pp decl
@@ -75,15 +82,24 @@ instance Pretty TyExprAnn where
 instance Pretty PatExprAnn where
   pp PatExprAnn_Empty = ""  
   
-instance Pretty Char where
-  pp = (:[])
+-- instance Pretty Char where
+  -- pp = (:[])
   
-instance Pretty Int where
-  pp a = showSignedInt 0 a ""
+-- instance Pretty Int where
+  -- pp a = showSignedInt 0 a ""
+  
+instance Show TyScheme where
+  show = pp
+  
+instance Show TyIndex where
+  show = pp
+  
+instance Show Expr where
+  show = pp
   
 instance Pretty PatExpr where
-  pp (PatExpr_IConst a   ) = pp a
-  pp (PatExpr_CConst a   ) = pp a
+  pp (PatExpr_IConst a   ) = showSignedInt 0 a ""
+  pp (PatExpr_CConst a   ) = [a]
   pp (PatExpr_Con nm     ) = pp nm
   pp (PatExpr_Var nm     ) = pp nm
   pp (PatExpr_VarAs nm ty) = pp nm ++ "@" ++ pp ty
@@ -94,13 +110,13 @@ instance Pretty PatExpr where
   pp (PatExpr_TypeAs ty e) = pp e ++ " :: " ++ pp ty
   
 instance Pretty Expr where
-  pp (Expr_IConst a     ) = pp a
-  pp (Expr_CConst a     ) = pp a
+  pp (Expr_IConst a     ) = showSignedInt 0 a ""
+  pp (Expr_CConst a     ) = [a]
   pp (Expr_Con nm       ) = pp nm
   pp (Expr_Var nm       ) = pp nm
   pp (Expr_App f a      ) = pp f  ++ " " ++ pp a
   pp (Expr_Let d b      ) = let decls = map pp d
-                            in "Let " ++ unlines decls ++ " in " ++ pp b
+                            in "Let " ++ unlines decls ++ "in " ++ pp b
   pp (Expr_Lam arg b    ) = "\\" ++ pp arg ++ " -> " ++ pp b
   pp (Expr_AppTop a     ) = pp a
   pp (Expr_Parens a     ) = "(" ++ pp a ++ ")"

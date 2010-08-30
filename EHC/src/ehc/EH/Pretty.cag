@@ -697,3 +697,41 @@ SEM AGItf
   | AGItf       lhs     .   topTyPP     :=  ppTy (tyQuantifyClosed @expr.ty)
 %%]
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Show HML types
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1
+SEM TyIndex
+  | Group       lhs     .   pp          = "(" >#< @varnm >#< " >= " >#< @bounds.pp >#< ")"
+
+SEM TyQuantifiedScheme
+  | Quant       lhs     .   pp          = "forall (" >#< @tyIndex.pp >#< "). " >#< @tyScheme.pp
+  | Bottom      lhs     .   pp          = pp "_|_"
+  
+SEM TyScheme
+  | Quant       lhs     .   pp          = @subst.pp >#< ". " >#< @tyExpr.pp
+  | SystemF     lhs     .   pp          = @tyExpr.pp
+  | Bottom      lhs     .   pp          = pp "_|_"
+  | Sugar       lhs     .   pp          = "forall " >#< @prefix.pp >#< @tyExpr.pp
+  
+SEM Scheme
+  | Simple      lhs     .   pp          = "(" >#< @varnm >#< " >= " >#< @bounds.pp >#< ")"
+  
+SEM TyMono
+  | Var         lhs     .   pp          = pp @nm
+  | App         lhs     .   pp          = @func.pp >#< " " >#< @arg.pp
+  | Con         lhs     .   pp          = ppCon @nm
+  | AppTop      lhs     .   pp          = @tyMono.pp
+  
+SEM TyPoly
+  | Var         lhs     .   pp          = pp @nm
+  | App         lhs     .   pp          = @func.pp >#< " " >#< @arg.pp
+  | Con         lhs     .   pp          = ppCon @nm
+  | SystemF     lhs     .   pp          = @tyExpr.pp
+  
+SEM Prefix
+  | Nil         lhs     .   pp          = empty
+  | Cons        lhs     .   pp          = @hd.pp >#< " ." >#< @tl.pp
+%%]

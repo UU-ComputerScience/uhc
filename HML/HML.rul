@@ -3,26 +3,31 @@
 module HML where
 
 import Control.Monad.Error
-import {-# SOURCE #-} Pretty   
+-- import Pretty   
 import qualified Data.Map as M
 import Control.Monad
 
 import Data.List
 import Data.Maybe
 
+import EH4.EH
+import EH4.Base.HsName
+
+import EH.Util.Pretty
+
 mkName :: String -> HsName
-mkName = id
+mkName = mkHNmBase -- id
 
 
-type Prefix  = [TyIndex]
-type HsName  = String
+-- type Prefix  = [TyIndex]
+-- type HsName  = String
 type Env     = M.Map HsName TyScheme
 type Sub     = (HsName, TyScheme)
 type ErrorMessage = String
 
 -- | Get the domain of a Prefix
 domain :: Prefix -> [HsName]
-domain = map varnm_TyIndex_Group
+domain = map (\(TyIndex_Group a _)-> a)
 
 -- | Split domains
 split :: (Prefix, [HsName]) -> (Prefix, Prefix)
@@ -161,7 +166,7 @@ promote phi = let vars = ftv phi
                    _      -> error $ "could not promote value to prefix using '[redacted]'"
                    
 fresh :: Int -> (HsName, Int)
-fresh x = ("a" ++ show x, x+1)
+fresh x = (mkName $ "a" ++ show x, x+1)
 }
     
 data TyQu
@@ -212,11 +217,14 @@ data TyScheme
   con SystemF
     tyExpr  :: TyExpr
   con Bottom
+  con Sugar
+     prefix :: Prefix
+     tyExpr :: TyScheme
   
 -- A simple tybound e.f. (a >= phi)
 data Scheme
   con Simple
-    vannm  :: HsName
+    varnm  :: HsName
     bounds :: TyScheme
   
 -- Mono type
@@ -375,21 +383,21 @@ datasem PatExpr
     lhs.var_nm = error "AppTop not a var" 
   clause Parens
     child patExpr : PatExpr
-    patExpr.ast = undefined
+    patExpr.ast = loc.patExpr
     
     invoke vars of patExpr
     
     lhs.var_nm = patExpr.var_nm
   clause Ann
     child patExpr : PatExpr
-    patExpr.ast = undefined
+    patExpr.ast = loc.patExpr
         
     invoke vars of patExpr
     
     lhs.var_nm = patExpr.var_nm 
   clause TypeAs
     child patExpr : PatExpr
-    patExpr.ast = undefined
+    patExpr.ast = loc.patExpr
         
     invoke vars of patExpr
     
@@ -405,7 +413,7 @@ datasem Decl
     expr.env = lhs.env
     expr.exp = loc.expr
     expr.frs = lhs.frs
-    expr.ast = undefined
+    expr.ast = loc.expr
 
     invoke infer of expr
 
@@ -447,12 +455,12 @@ datasem Expr
         lhs.nxe = lhs.pre
         lhs.frs = lhs.frs
     clause IConst
-       lhs.res = return $ TyScheme_SystemF $ TyExpr_Con "Int"
+       lhs.res = return $ TyScheme_SystemF $ TyExpr_Con $ mkName "Int"
        lhs.sub = M.empty
        lhs.nxe = lhs.pre
        lhs.frs = lhs.frs
     clause CConst
-       lhs.res = return $ TyScheme_SystemF $ TyExpr_Con "Char"
+       lhs.res = return $ TyScheme_SystemF $ TyExpr_Con $ mkName "Char"
        lhs.sub = M.empty
        lhs.nxe = lhs.pre
        lhs.frs = lhs.frs
@@ -462,10 +470,42 @@ datasem Expr
        lhs.nxe = lhs.pre
        lhs.frs = lhs.frs
     clause App
-       lhs.res = []
-       lhs.sub = lhs.env
-       lhs.nxe = lhs.pre
-       lhs.frs = lhs.frs
+       loc.frs            = lhs.frs
+       (loc.a1, loc.frs1) = fresh loc.frs
+       (loc.a2, loc.frs2) = fresh loc.frs1
+       (loc.b , loc.frs3) = fresh loc.frs2
+       
+       child func : Expr
+       func.ast = loc.func
+       func.exp = loc.func
+       func.frs = loc.frs3
+       func.pre = lhs.pre
+       func.env = lhs.env
+       
+       invoke infer of func
+       
+       child arg : Expr
+       arg.ast = loc.arg
+       arg.exp = loc.arg
+       arg.frs = func.frs
+       arg.pre = func.nxe
+       arg.env = func.sub `M.union` lhs.env
+       
+       invoke infer of arg
+       
+       loc.temp1 = curry extend arg.nxe $ Scheme_Simple loc.a1 (fromJust $ appAll arg.sub (head func.res))
+       loc.temp2 = curry extend (fst loc.temp1) $ Scheme_Simple loc.a2 (head arg.res)
+       loc.temp3 = curry extend (fst loc.temp2) $ Scheme_Simple loc.b  (TyScheme_Bottom)
+       
+       (loc.q2', loc.e2') = (fst loc.temp3, (snd loc.temp1) `M.union` (snd loc.temp2) `M.union` (snd loc.temp3))
+       (loc.q3, loc.e3) = undefined -- temporary placeholder. Unification needs to be implemented to finish this
+       (loc.q4, loc.q5) = curry split loc.q3 (domain lhs.pre)
+    
+       lhs.res = let b = TyScheme_SystemF (TyExpr_Var loc.b)
+                 in return $ TyScheme_Sugar loc.q5 (fromJust $ appAll loc.e3 b)
+       lhs.sub = func.sub `M.union` arg.sub `M.union` loc.e3
+       lhs.nxe = loc.q4
+       lhs.frs = arg.frs
     clause Let
         -- child decls : Decls
         child body  : Expr
@@ -481,7 +521,7 @@ datasem Expr
         body.env = decls.sub
         body.exp = loc.body
         body.frs = decls.frs
-        body.ast = undefined
+        body.ast = loc.body
 
         invoke infer of body
 
@@ -491,7 +531,7 @@ datasem Expr
         lhs.frs = body.frs
     clause Lam
         child arg : PatExpr
-        arg.ast = undefined
+        arg.ast = loc.arg
         invoke vars of arg
     
         loc.frs          = lhs.frs
@@ -502,7 +542,7 @@ datasem Expr
        loc.env'          = M.insert arg.var_nm loc.exp_a lhs.env
        
        child body : Expr
-       body.ast = undefined
+       body.ast = loc.body
        body.frs = loc.frs2
        body.env = loc.env'
        body.pre = loc.q'
@@ -524,63 +564,78 @@ datasem Expr
        lhs.res = let (Just b')    = appAll loc.e3' (TyExpr_Var loc.b)
                      (Just a')    = appAll body.sub (TyExpr_Var loc.a)
                      arrow = TyExpr_App a' b'
-                 in [] -- TyExpr_Quant TyQu_TyForall 
+                 in return $ TyScheme_Sugar loc.q3' (TyScheme_SystemF arrow)
        lhs.sub = body.sub
        lhs.nxe = loc.q2
        lhs.frs = body.frs
     clause AppTop
-       lhs.res = []
-       lhs.sub = lhs.env
-       lhs.nxe = lhs.pre
-       lhs.frs = lhs.frs
+       child expr : Expr
+       expr.ast = loc.expr
+       expr.pre = lhs.pre
+       expr.env = lhs.env
+       expr.frs = lhs.frs
+       expr.exp = loc.expr
+       
+       invoke infer of expr
+       
+       lhs.res = expr.res
+       lhs.sub = expr.sub
+       lhs.nxe = expr.nxe
+       lhs.frs = expr.frs
     clause Parens
-       lhs.res = []
-       lhs.sub = lhs.env
-       lhs.nxe = lhs.pre
-       lhs.frs = lhs.frs
+       child expr : Expr
+       expr.ast = loc.expr
+       expr.pre = lhs.pre
+       expr.env = lhs.env
+       expr.frs = lhs.frs
+       expr.exp = loc.expr
+       
+       invoke infer of expr
+       
+       lhs.res = expr.res
+       lhs.sub = expr.sub
+       lhs.nxe = expr.nxe
+       lhs.frs = expr.frs
     clause TypeAs
        lhs.res = []
        lhs.sub = lhs.env
        lhs.nxe = lhs.pre
        lhs.frs = lhs.frs
     clause Ann
-       lhs.res = []
-       lhs.sub = lhs.env
-       lhs.nxe = lhs.pre
-       lhs.frs = lhs.frs
+       child expr : Expr
+       expr.ast = loc.expr
+       expr.pre = lhs.pre
+       expr.env = lhs.env
+       expr.frs = lhs.frs
+       expr.exp = loc.expr
+       
+       invoke infer of expr
+       
+       lhs.res = expr.res
+       lhs.sub = expr.sub
+       lhs.nxe = expr.nxe
+       lhs.frs = expr.frs
     clause AppImpred
        lhs.res = []
        lhs.sub = lhs.env
        lhs.nxe = lhs.pre
        lhs.frs = lhs.frs
 {
--- infer = sem infer : Infer monad IO 
-          -- visit infer
-            -- clause varbind
-              -- match Expr.Var@loc = lhs.exp
-              -- lhs.res = M.lookup loc.nm lhs.env
-              -- lhs.sub = M.empty
-              -- lhs.nxe = lhs.pre
-            
-            -- clause letbind
-              -- match Expr.Let@loc = lhs.exp
-                            
-              -- child decls : Decls = infer
-              -- child body  : Infer = infer
-              
-              -- decls.pre = lhs.pre
-              -- decls.env = lhs.env
-              -- decls.ast = loc.decls
-              
-              -- invoke infer of decls
-              
-              -- body.pre = decls.nxe
-              -- body.env = decls.sub
-              -- body.exp = loc.body
-              
-              -- invoke infer of body
-              
-              -- lhs.nxe = body.nxe
-              -- lhs.res = body.res
-              -- lhs.sub = M.union decls.sub body.sub 
+typeCheck :: Expr -> IO ([TyScheme], Env, Prefix, Int)
+typeCheck exp = do
+  let inh = Inh_Expr_infer { exp_Inh_Expr = exp
+                           , env_Inh_Expr = M.empty
+                           , pre_Inh_Expr = []
+                           , ast_Inh_Expr = exp
+                           , frs_Inh_Expr = 1
+                           }
+  syn <- invoke_Expr_infer dnt_Expr inh
+  let res = res_Syn_Expr syn
+      sub = sub_Syn_Expr syn
+      nxe = nxe_Syn_Expr syn
+      frs = frs_Syn_Expr syn
+  return (res, sub, nxe, frs - 1)
+  
+exampleLet  = Expr_Let [] (Expr_IConst 3)
+exampleLet2 = Expr_Let [Decl_Val (PatExpr_Var $ mkName "a") (Expr_IConst 3)] (Expr_Var $ mkName "a")
 }
