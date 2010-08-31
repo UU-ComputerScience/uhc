@@ -32,10 +32,15 @@ WRAPPER GrAGItf
 
 %%[(8 codegen grin) hs export(heapPointsToAnalysis, PartialHptResult, FinalHptResult(..), VarMap, ModOffsets, lookupMod, lookupVar, renumber)
 
+-- data InfoPointsToAnalysis = InfoPointsToAnalysis
+--   { infoTagMap :: TagMap
+--   }
+
 data PartialHptResult = PartialHptResult
   { partialEquations   :: EquationsG    HsName
   , partialLimitations :: LimitationsG  HsName
   , partialParamMap    :: ParamMap      HsName
+  , partialTagMap      :: TagMap
   , partialHptMap      :: PartialHptMap HsName
   } deriving (Show, Data, Typeable)
 
@@ -146,8 +151,9 @@ instance Binary PartialHptResult where
     put $ partialEquations   res
     put $ partialLimitations res
     put $ partialParamMap    res
+    put $ partialTagMap      res
     put $ partialHptMap      res
-  get = return PartialHptResult `ap` get `ap` get `ap` get `ap` get
+  get = return PartialHptResult `ap` get `ap` get `ap` get `ap` get `ap` get
 
 instance Serialize PartialHptResult where
   sput = sputPlain
@@ -160,6 +166,7 @@ mergePHR p1 p2 = PartialHptResult
   { partialEquations   = union (partialEquations p1) (partialEquations p2)
   , partialLimitations = union (partialLimitations p1) (partialLimitations p2)
   , partialParamMap    = Map.union (partialParamMap p1) (partialParamMap p2)
+  , partialTagMap      = Map.union (partialTagMap p1) (partialTagMap p2)
   , partialHptMap      = Map.unionWith mappend (partialHptMap p1) (partialHptMap p2)
   }
 
@@ -168,6 +175,7 @@ instance Monoid PartialHptResult where
     { partialEquations   = []
     , partialLimitations = []
     , partialParamMap    = Map.empty
+    , partialTagMap      = Map.empty
     , partialHptMap      = Map.empty
     }
   mappend = mergePHR
@@ -184,6 +192,7 @@ data FinalHptResult = FinalHptResult
 --     sput $ finalVarMap res
 --   sget = return FinalHptResult `ap` sget `ap` sget
 
+type TagMap = Map.Map HsName [GrTag]
 
 type VarMap   = Map.Map HsName  Int
 type NameMap  = Map.Map Int     HsName
@@ -228,6 +237,7 @@ heapPointsToAnalysis modNm imps grmod
         -- traverse the tree
         inh = Inh_GrAGItf
           { startParamMap_Inh_GrAGItf = partialParamMap infoImps
+          , startTagMap_Inh_GrAGItf   = partialTagMap   infoImps
           }
         syn = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod)) inh
         
@@ -237,6 +247,7 @@ heapPointsToAnalysis modNm imps grmod
           { partialEquations   = equations_Syn_GrAGItf syn
           , partialLimitations = limitations_Syn_GrAGItf syn
           , partialParamMap    = finalParamMap_Syn_GrAGItf syn
+          , partialTagMap      = finalTagMap_Syn_GrAGItf syn
           , partialHptMap      = Map.fromList $ map (\v -> (v, AbsBottom)) $ Set.toList allVars
           }
 
@@ -385,7 +396,14 @@ fromInVar _          = error "HPT: Apply arguments should all be variables"
 
 %%[(8 codegen grin).valInfo
 
-ATTR GrBindL GrBind GrExpr GrPatLam GrAltL GrAlt [ tagsMp : {Map.Map HsName [GrTag]} | | ] 
+ATTR GrBindL GrBind GrExpr GrPatLam GrAltL GrAlt [ tagsMap : {TagMap} | | ] 
+
+ATTR GrModule GrAGItf [ startTagMap : {TagMap} | | finalTagMap : {TagMap} ]
+
+SEM GrModule
+  | Mod        loc.tagsMap      = Map.union @tagsMp @lhs.startTagMap
+               lhs.finalTagMap  = @loc.tagsMap
+               bindL.tagsMap    = @loc.tagsMap
 
 
 ATTR GrVal             [ | | valInfo : { NodeInfo (Maybe HsName) }  var   : { Maybe HsName } ]
@@ -393,10 +411,6 @@ ATTR GrValL            [ | | valsInfo: {[NodeInfo (Maybe HsName)]}  vars  : {[Ma
 ATTR GrPatAlt GrPatLam [ | | patInfo : { NodeInfo        HsName  }  tag   : { Maybe GrTag}     ]
 ATTR GrVar             [ | | tag     : GrTag                          var   : { HsName }       ]
 ATTR GrVarL            [ | | headTag : GrTag                          vars  : {[HsName]}       ]
-
-
-SEM GrModule
-  | Mod        bindL.tagsMp = @tagsMp
 
 SEM GrVal
   | Tag        lhs.valInfo  =  InNode  @tag.self []
@@ -450,13 +464,13 @@ SEM GrPatLam
   | OpaqueNode
     OpaqueAnnot lhs.patInfo =  InBasic @nm
   | EnumNode    lhs.patInfo =  InEnum @nm []   -- any tag is possible
-  | EnumAnnot   lhs.patInfo =  InEnum @nm (Map.findWithDefault (error ("PointsToAnalysis: EnumAnnot " ++ show @tycon ++ " not found")) @tycon @lhs.tagsMp)
+  | EnumAnnot   lhs.patInfo =  InEnum @nm (Map.findWithDefault (error ("PointsToAnalysis: EnumAnnot " ++ show @tycon ++ " not found")) @tycon @lhs.tagsMap)
   | PtrNode     lhs.patInfo =  InPtr  @nm
   | PtrAnnot    lhs.patInfo =  maybe (InPtr  @nm) 
                                      -- only show the error, don't stop (debugging)
                                      -- (error "PointsToAnalysis: cant analyze FFI returning pointer") 
                                      (trace ("PointsToAnalysis: can't analyze FFI returning pointer: " ++ show @tycon ++ "/" ++ show @nm) $ const $ InPtr @nm)
-                                     (Map.lookup @tycon @lhs.tagsMp)
+                                     (Map.lookup @tycon @lhs.tagsMap)
   | * - VarNode lhs.tag     =  Nothing
 
 SEM GrVarL  
