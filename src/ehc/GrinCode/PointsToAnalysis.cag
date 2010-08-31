@@ -30,7 +30,7 @@ WRAPPER GrAGItf
 %%]
 
 
-%%[(8 codegen grin) hs export(heapPointsToAnalysis, PartialHptResult, FinalHptResult(..), VarMap)
+%%[(8 codegen grin) hs export(heapPointsToAnalysis, PartialHptResult, FinalHptResult(..), VarMap, ModOffsets, lookupMod, lookupVar, renumber)
 
 data PartialHptResult = PartialHptResult
   { partialEquations   :: EquationsG    HsName
@@ -38,6 +38,108 @@ data PartialHptResult = PartialHptResult
   , partialParamMap    :: ParamMap      HsName
   , partialHptMap      :: PartialHptMap HsName
   } deriving (Show, Data, Typeable)
+
+{-
+data PartialHptResult = PartialHptResult
+  { partialEquations   :: Equations
+  , partialLimitations :: Limitations
+  , partialParamMap    :: ParamMap       Int
+  , partialModOffsets  :: ModOffsets
+  , partialVarMap      :: VarMap
+  , partialHptMap      :: HptMap
+  } deriving (Show, Data, Typeable)
+-}
+
+type ModOffsets = [(Int, Int, HsName)]  -- (offset, length, modname)
+
+lookupMod :: HsName -> ModOffsets -> Maybe (Int, Int)
+lookupMod _  [] = Nothing
+lookupMod lu ((i,l,nm):xs) | lu == nm  = Just (i,l)
+                           | otherwise = lookupMod lu xs
+
+lookupVar :: Int -> ModOffsets -> Maybe (Int, Int, HsName)
+lookupVar _ [] = Nothing
+lookupVar lu (r@(i,l,nm):xs) | lu >= i && lu < i + l = Just r
+                             | otherwise             = lookupVar lu xs
+
+renumber :: ModOffsets -> ModOffsets -> (Int -> Int)
+renumber from to i = panicJust "PointsToAnalysis.renumber" $ do
+  (ooff, _, mod) <- lookupVar i from
+  (noff, _)      <- lookupMod mod to
+  return $ i + noff - ooff
+
+
+{-
+module A where
+succ n = ...
+
+partialVarMap =
+  { "A.succ" -> 0
+  , "A.n"    -> 1
+  }
+partialModOffsets =
+  [ (0, 2, "A")
+  ]
+partialEquations = []
+partialParamMap =
+  { 0 -> [1]  -- "A.succ" -> [ "A.n" ]
+  }
+-}
+
+{-
+module B where
+pred m = ...
+
+partialVarMap =
+  { "B.pred" -> 0
+  , "B.m"    -> 1
+  }
+partialModOffsets =
+  [ (0, 2, "B")
+  ]
+partialEquations = []
+partialParamMap =
+  { 0 -> [1]
+  }
+-}
+
+{-
+module C where
+import A, B
+f x = succ x
+g = f constante
+
+partialVarMap = mconcat
+  [ Map.map (renumber (A.partialModOffsets C.partialModOffsets)) $ A.partialVarMap
+  , Map.map (renumber (B.partialModOffsets C.partialModOffsets)) $ B.partialVarMap
+  , number C.declaredVars
+  ]
+partialVarMap =
+  { "A.succ"      -> 0
+  , "A.n"         -> 1
+  , "B.pred"      -> 2
+  , "B.m"         -> 3
+  , "C.f"         -> 4
+  , "C.x"         -> 5
+  , "C.g"         -> 6
+  , "C.constante" -> 7
+  }
+partialModOffsets = -- voor elke module vers berekend, uit closure van imports
+  [ (0, 2, "A")
+  , (2, 2, "B")
+  , (4, 4, "C")
+  ]
+partialEquations =
+  [ IsEqual 3 5  -- IsEqual "C.x" "C.constante"
+  , IsEqual 2 0  -- IsEqual "C.f" "A.succ"
+  , IsEqual 4 2  -- IsEqual "C.g" "C.f"
+  , IsEqual 1 3  -- IsEqual "A.n" "C.x"
+  ]
+partialParamMap =
+  { 0 -> [1]  -- "A.succ" -> [ "A.n" ]
+  , 2 -> [3]  -- "C.f"    -> [ "C.x" ]
+  }
+-}
 
 instance Binary PartialHptResult where
   put res = do
