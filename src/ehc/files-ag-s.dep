@@ -93,6 +93,7 @@ GrinCode/Trf/SplitFetch.cag
 GrinCode/Trf/SubstExpr.cag
 GrinCode/Trf/UnusedMetaInfoElim.cag
 GrinCode/Trf/UnusedNameElim.cag
+GrinCode/Trf/BasicAnnotAliasElim.cag
 GrinByteCode/ToC.cag
 LLVM/Pretty.cag
 Silly/ElimUnused.cag

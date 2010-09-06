@@ -104,8 +104,8 @@ Order of imports is important because of usage dependencies between types.
 #include "mutatormutrec.h"
 #include "mutator.h"
 #include "tracesupply.h"
-#include "plan.h"
 #include "weakptr.h"
+#include "plan.h"
 %%]
 
 %%[8

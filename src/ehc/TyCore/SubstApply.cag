@@ -173,8 +173,8 @@ SEM Expr
   | CoeArg      (loc.replv,loc.isRepl)      =   (@lhs.coeArg,True)
   | Hole CaseAltFail
                 (loc.replv,loc.isRepl)      =   case Map.lookup (CSKey_UID @uid) @lhs.cSubst of
-                                                  Just (CSIExpr ce)  -> (ce,True)
-                                                  _                  -> (@cRepl,False)
+                                                  Just (CSIExpr ce) | @canSubst -> (ce,True)
+                                                  _                             -> (@cRepl,False)
 %%]
 
 %%[(9 codegen tycore)
@@ -201,7 +201,9 @@ SEM Expr
                 inst        .   repl'       =   @replv
 
 SEM Expr
-  | CaseAltFail loc         .   uid         =   @caseId
+  | CaseAltFail loc         .   (canSubst,uid)
+                                            =   cafailHasId @failReason
+  | Hole        loc         .   canSubst    =   True
 
 %%[[9
 SEM Expr

@@ -113,7 +113,8 @@ ATTR AllCodeNT CodeAGItf [ coeArg: CExpr | | ]
 
 %%[(8 codegen)
 SEM CExpr
-  | CaseAltFail loc			.	uid	        =   @caseId
+  | CaseAltFail loc         .   (canSubst,uid)
+                                            =   cafailHasId @failReason
 %%]
 
 %%[(9 codegen)
@@ -123,11 +124,16 @@ SEM CExpr
 
 %%[(8 codegen)
 SEM CExpr
-  | CaseAltFail
-%%[[9
-    Hole
-%%]]
-                (loc.replv,loc.isRepl)      =   case Map.lookup (CSKey_UID @uid) @lhs.cSubst of
+  | CaseAltFail (loc.replv,loc.isRepl)      =   if @canSubst
+                                                then case Map.lookup (CSKey_UID @uid) @lhs.cSubst of
+                                                       Just (CSIExpr ce)  -> (ce,True)
+                                                       _                  -> (@cRepl,False)
+                                                else (@cRepl,False)
+%%]
+
+%%[(9 codegen)
+SEM CExpr
+  | Hole        (loc.replv,loc.isRepl)      =   case Map.lookup (CSKey_UID @uid) @lhs.cSubst of
                                                   Just (CSIExpr ce)  -> (ce,True)
                                                   _                  -> (@cRepl,False)
 %%]

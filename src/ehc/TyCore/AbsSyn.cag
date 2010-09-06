@@ -250,7 +250,7 @@ DATA Expr
 
 %%[(8 codegen tycore)
 DATA Expr
-  | CaseAltFail caseId          : {UID}
+  | CaseAltFail failReason      : {CaseAltFailReason}
                 errorExpr       : Expr
   | CoeArg
   | Hole        uid             : {UID}

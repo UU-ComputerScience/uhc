@@ -361,7 +361,7 @@ SEM Expr
   | Lazy        loc         .   pp          =   ppToThnk @lhs.symMp @expr.pp
   | Seq1		loc			.	pp			= 	ppSeq1 @lhs.symMp @seq1.pp
   | Seq 		loc			.	pp			=	ppSeq'  @lhs.symMp @lhs.ppHow  @seq.ppL
-  | CaseAltFail loc			.	pp			=	ppKeyw "fail" >#< @caseId
+  | CaseAltFail loc			.	pp			=	ppKeyw "fail" >#< @failReason
   | FFI         loc         .   pp          =   ppKeyw "external" >#< show @callconv >#< show @safety >#< @ppent >#< ppParens @ty.pp
 %%[[8
 				loc			.	ppent		=	pp (show @impEnt)

@@ -79,7 +79,7 @@ RTS_SRC_CC_BYTECODE	:= \
 RTS_SRC_CC_WHOLEPROG := \
     $(patsubst %,$(RTS_SRC_PREFIX)%.cc,\
         mm/C/ssmutator \
-        mm/C/trace \
+        mm/C/Ctrace \
         mm/C/tracesupplystack \
     )
 
@@ -157,7 +157,7 @@ RTS_SRC_CH_BYTECODE := \
 RTS_SRC_CH_WHOLEPROG := \
     $(patsubst %,$(RTS_SRC_PREFIX)%.ch,\
         mm/C/ssmutator \
-        mm/C/trace \
+        mm/C/Ctrace \
         mm/C/tracesupplystack \
     	C/prim-const \
     )

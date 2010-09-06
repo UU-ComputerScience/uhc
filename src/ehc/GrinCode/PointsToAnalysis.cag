@@ -310,6 +310,7 @@ SEM GrExpr
                                  (InBasic tvar      ,  _                 )  -> [ IsBasic tvar ]
                                  (InEnum  tvar ttags,  _                 )  -> [ IsTags  tvar ttags ]
                                  (InPtr   tvar      ,  InNode stag snms  )  -> [ IsPointer tvar stag snms ]
+                                 (t                 ,  v                 )  -> error ("PointsToAnalysis.UpdateUnit: illegal target/value combi " ++ show @lhs.targetInfo ++ " / " ++ show @val.valInfo)
 
                                  
   | UpdateUnit loc.equations2 =  [ IsEqual (getNr @nm)  (fromJust @val.var) ]

@@ -41,7 +41,7 @@ Order of imports is important because of usage dependencies between types.
 #endif
 
 #ifdef __UHC_TARGET_C__
-#include "C/trace.h"
+#include "C/Ctrace.h"
 #include "C/tracesupplystack.h"
 #include "C/ssmutator.h"
 #endif

@@ -213,7 +213,7 @@ assocMetaLevTyLToVarMp l = varmpUnions [ varmpMetaLevTyUnit lev v t | (v,(lev,t)
 assocTyLToVarMp :: Ord k => AssocL k Ty -> VarMp' k VarMpInfo
 assocTyLToVarMp l = mkVarMp (Map.fromList $ assocLMapElt VMITy l)
 
-varmpToAssocL :: VarMp' k VarMpInfo -> AssocL k VarMpInfo
+varmpToAssocL :: VarMp' k i -> AssocL k i
 varmpToAssocL (VarMp _ []   ) = []
 varmpToAssocL (VarMp _ (l:_)) = Map.toList l
 

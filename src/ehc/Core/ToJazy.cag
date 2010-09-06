@@ -650,7 +650,7 @@ SEM CExpr
   | String      lhs         .   jty             =   jtyStr
   | Lam         lhs         .   jty             =   jtyFun
   | App         lhs         .   jty             =   jtyApp
-  | * - Int Char String Lam App Ann
+  | * - Int Char String Lam App Ann CaseAltFail
                 loc         .   jty             =   jtyObj
 %%]
 
@@ -801,7 +801,8 @@ SEM CExpr
                                                                           dflt    = J.Case_Case 0 @lblDefault $ mka @lblDefault @dflt.ji
                                                     in  @scrutineeJI ## alts
   | Ann         loc         .   ji              =   @expr.ji
-  | * - Int Char Var Let Lam App Case Tup String FFI Ann
+  | CaseAltFail loc         .   ji              =   @errorExpr.ji
+  | * - Int Char Var Let Lam App Case Tup String FFI Ann CaseAltFail
                 loc         .   ji              =   emptyJI
 
 %%]
