@@ -429,6 +429,7 @@ SEM CExpr
                                                           []
                                                           @resTy
   | Ann         loc         .   grExpr      =   @expr.grExpr
+  | CaseAltFail loc         .   grExpr      =   @errorExpr.grExpr
 %%[[9
   | HoleLet     loc         .   grExpr      =   @body.grExpr    -- when this occurs, there were no bindings for the possible (caused by implicit parameters) bindings encoded by HoleLet
 %%]]
@@ -438,7 +439,7 @@ SEM CExpr
                                                 then  mkGrAdapt @lhs.modNm @lUniq @lhs.lamMp @lhs.isStrict (reverse @grTupFldL) (maybe hsnUnknown id (grV2HNm @grTupRec))
                                                 else  GrExpr_Unit GrVal_Empty GrType_None
 %%]]
-  | * - Let Case App Var Tup Int Char Ann FFI
+  | * - Let Case App Var Tup Int Char Ann FFI CaseAltFail
 %%[[9
     HoleLet
 %%]]                                      
@@ -740,7 +741,8 @@ ATTR CExpr [ | | grLetBody: GrExpr ]
 
 SEM CExpr
   | Let         lhs         .   grLetBody   =   @body.grLetBody
-  | * - Let Ann lhs         .   grLetBody   =   @grExpr
+  | * - Let Ann CaseAltFail
+  				lhs         .   grLetBody   =   @grExpr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -752,7 +754,8 @@ ATTR CExpr [ | | grLamArgL: {[HsName]}  grLamBody: GrExpr  ]
 
 SEM CExpr
   | Lam         lhs         .   grLamArgL   =   @arg : @body.grLamArgL
-  | * - Lam Ann lhs         .   grLamArgL   =   []
+  | * - Lam Ann CaseAltFail
+  				lhs         .   grLamArgL   =   []
                 lhs         .   grLamBody   =   @grExpr
 
 %%]

@@ -80,7 +80,7 @@ DATA CExpr
   | Case        expr            : CExpr
                 alts            : CAltL
                 dflt            : CExpr
-  | CaseAltFail caseId          : {UID}
+  | CaseAltFail failReason      : CaseAltFailReason
                 errorExpr       : CExpr
 
   -- extensible records (no longer supported, but you never know for now)

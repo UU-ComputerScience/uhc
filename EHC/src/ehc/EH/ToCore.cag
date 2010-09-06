@@ -148,7 +148,7 @@ SEM Expr
   | AppTop Rec Let
                 loc         .   cexpr       =   @cexprtop
   | Undefined   loc         .   cexpr       =   acoreBuiltinUndefined @lhs.opts
-  | CaseAltFail loc         .   cexpr       =   CExpr_CaseAltFail @caseId (acoreBuiltinError @lhs.opts ("FAIL " ++ show @caseId))
+  | CaseAltFail loc         .   cexpr       =   CExpr_CaseAltFail (CaseAltFailReason_Continue @caseId) (acoreBuiltinError @lhs.opts ("FAIL " ++ show @caseId))
 %%]
 
 -- generated from ruler rules into EHRulerRules

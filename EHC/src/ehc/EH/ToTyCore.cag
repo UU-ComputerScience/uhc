@@ -583,7 +583,7 @@ SEM Expr
                                                              in  ([(n, ty "2" n)],[C.mkValBind1 n (ty "3" n) @expr.tcexpr],@alts.raltTCL)
                                                     ty m n = C.tyErr ("Expr.Case.tcexpr." ++ m ++ ": " ++ show n)
                                                 in  acoreLet C.ValBindCateg_Plain bs (rceMatchTy @rceEnvTC ns as)
-  | CaseAltFail loc         .   tcexpr      =   C.Expr_CaseAltFail @caseId (acoreBuiltinError @lhs.opts ("FAIL " ++ show @caseId))
+  | CaseAltFail loc         .   tcexpr      =   C.Expr_CaseAltFail (CaseAltFailReason_Continue @caseId) (acoreBuiltinError @lhs.opts ("FAIL " ++ show @caseId))
   | Undefined   loc         .   tcexpr      =   acoreBuiltinUndefined @lhs.opts
   | Parens      loc         .   tcexpr      =   @expr.tcexpr
 %%]

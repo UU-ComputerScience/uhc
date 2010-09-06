@@ -35,20 +35,23 @@
 
 %%[(8 codegen) hs export(relevtyQuant)
 relevtyQuant
-  :: RVarMp -> RelevQualS -> RelevTy
+  :: Bool
+     -> RVarMp -> RelevQualS -> RelevTy
      -> ( RelevTy
         , RVarMp    -- extra subst
         -- , [UID]      -- quantified over
         -- , [UID]      -- remaining
         )
-relevtyQuant m qs t
+relevtyQuant doSolve m qs t
   = case funTy of
       t'@(RelevTy_Fun _ _ as r)
          -> ( RelevTy_Fun quantOver qs'' as' r', solveVarMp
             -- , quantOver, Set.toList $ ftvSet (solveVarMp |=> qs) `Set.difference` ftvTQ
             )
          where ftvT = ftvSet t'
-               (qs',solveVarMp) = assSolve ftvT $ Set.map (m |=>) qs
+               (qs',solveVarMp) | doSolve   = assSolve ftvT qsm
+                                | otherwise = (qsm, emptyVarMp)
+                                where qsm = Set.map (m |=>) qs
                qs'' = Set.toList qs'
                as' = solveVarMp |=> as
                r'  = solveVarMp |=> r
@@ -184,19 +187,21 @@ assSolve bound qualS
 
         -- solve combination of all quals related to single AnaEval var
         solveN v is ass@(ASS {assWl=wl, assQm=qualM})
-          = do (q,s,slv) <- solveQN1 (l,al) v r
+          = do (q,s,slv,_) <- solveQN1 (l,al) v (r,ar)
                let (qualM2,isNw) = qmAddL q qualM
                    slvS          = Set.fromList slv
                    (qualM3,wl') = updQualWl slvS s wl qualM2 $ filter (\i -> Set.notMember i slvS) $ isNw ++ isL
                updAss wl' qualM3 s slvS ass
           where isL = Set.toList is
-                (l, al, r, o) = split ([],[],[],[]) [ (qual qualM i, i) | i <- isL ]
-                split (l,al,r,o) ((   RelevQual_SubEval a1 (AnaEval_Var v2), i) : qs) | v2 == v  = split ((i,a1):l,          al,        r,   o) qs
-                split (l,al,r,o) ((q@(RelevQual_Alt (RelevQual_SubEval a1 (AnaEval_Var v2)) _ _ _)
-                                                                           , i) : qs) | v2 == v  = split (       l, (q,i,a1):al,        r,   o) qs
-                split (l,al,r,o) ((   RelevQual_SubEval (AnaEval_Var v1) a2, i) : qs) | v1 == v  = split (       l,          al, (i,a2):r,   o) qs
-                split (l,al,r,o) ((   _                                    , i) : qs)            = split (       l,          al,        r, i:o) qs
-                split res     _                                                                  = res
+                (l, al, r, ar, o) = split ([],[],[],[],[]) [ (qual qualM i, i) | i <- isL ]
+                split (l,al,r,ar,o) ((   RelevQual_SubEval a1 (AnaEval_Var v2), i) : qs) | v2 == v  = split ((i,a1):l,          al,        r,          ar,   o) qs
+                split (l,al,r,ar,o) ((q@(RelevQual_Alt (RelevQual_SubEval a1 (AnaEval_Var v2)) _ _ _)
+                                                                              , i) : qs) | v2 == v  = split (       l, (q,i,a1):al,        r,          ar,   o) qs
+                split (l,al,r,ar,o) ((   RelevQual_SubEval (AnaEval_Var v1) a2, i) : qs) | v1 == v  = split (       l,          al, (i,a2):r,          ar,   o) qs
+                split (l,al,r,ar,o) ((q@(RelevQual_Alt (RelevQual_SubEval (AnaEval_Var v1) a2) _ _ _)
+                                                                              , i) : qs) | v1 == v  = split (       l,          al,        r, (q,i,a2):ar,   o) qs
+                split (l,al,r,ar,o) ((   _                                    , i) : qs)            = split (       l,          al,        r,          ar, i:o) qs
+                split res           _                                                               = res
 
         -- access qual via index
         qual   m q     = panicJust "amsSolve.qual" $ Map.lookup q m
@@ -222,63 +227,98 @@ assSolve bound qualS
         wlInit = wlAddL initQualM (Map.keys initQualM) Map.empty
 
         -- solve a combi of quals with sharing of middle AnaEval var
-        solveQN1 (als,aals) var ars
-          = (\x -> tr "solveQN1.res" (ppCommas als >-< ppCommas (map (\(x,y,z) -> ppParensCommas [pp x,pp y,pp z]) aals) >-< var >-< ppCommas ars >-< "=>" >#< maybe (pp "-") (\(q,s,slv) -> "qual:" >#< q >#< "subs:" >#< s >-< "slv:" >#< show slv) x) x) $
-            case (als,aals,ars) of
+        solveQN1 (als,aals) var (ars,aars)
+          = (\x -> tr "solveQN1.res" (ppCommas als >-< ppCommas (map (\(x,y,z) -> ppParensCommas [pp x,pp y,pp z]) aals) >-< var >|< ppParens varIsBound >-< ppCommas ars >-< ppCommas (map (\(x,y,z) -> ppParensCommas [pp x,pp y,pp z]) aars) >-< "=>" >#< maybe (pp "-") (\(q,s,slv,reason) -> (reason ++ ":") >#< "qual:" >#< q >#< "subs:" >#< s >-< "slv:" >#< show slv) x) x) $
+            case (als,aals,ars,aars) of
               -- transitive
-              (l1, l2, (_:_))
-                | varIsFree && not (null l1 && null l2)
-                -> do (jn,ams1) <- if null l1
+              (ll1, ll2, rr1, rr2)
+                | varIsFree && not (null ll1 && null ll2) && not (null rr1 && null rr2)
+                -> do (jn,ams1) <- if null ll1
                                    then return (bot,ams0)
                                    else r1 ams0 join alsq
-                      (mt,ams2) <- r1 ams1 meet arsq
-                      return ( (if null l1 then [] else [RelevQual_SubEval jn mt])
-                               ++ [ RelevQual_Alt (RelevQual_SubEval a mt) x y z | (RelevQual_Alt _ x y z, _, a) <- aals ]
-                             , (if null l1 then emptyVarMp else bindAnaEval var jn) `varmpPlus` amsLocalVarMp ams2
-                             , (slv $ als ++ ars) ++ [i | (_,i,_) <- aals]
+                      (mt,ams2) <- if null rr1
+                                   then return (top,ams0)
+                                   else r1 ams1 meet arsq
+                      return ( (if null ll1 || null rr1 then [] else [RelevQual_SubEval jn mt])
+                               ++ [ RelevQual_Alt (RelevQual_SubEval a  mt) x y z | (RelevQual_Alt _ x y z, _, a) <- aals ]
+                               ++ [ RelevQual_Alt (RelevQual_SubEval jn a ) x y z | (RelevQual_Alt _ x y z, _, a) <- aars ]
+                             , -- (if null ll1 then emptyVarMp else bindAnaEval var jn)
+                               (if null rr1 then emptyVarMp else bindAnaEval var mt)
+                               `varmpPlus` amsLocalVarMp ams2
+                             , (slv $ als ++ ars) ++ [i | (_,i,_) <- aals] ++ [i | (_,i,_) <- aars]
+                             , "transitivity"
                              )
               -- alternative removal
               {-
               -}
-              (_, l@((RelevQual_Alt _ id _ mx, _, a) : _), _) 
+              (_, l@((RelevQual_Alt _ id _ mx, _, a) : _), _, _) 
                 | Set.isSubsetOf all thisnrs
                 -> return
                      ( [RelevQual_SubEval a (AnaEval_Var var)]
                      , emptyVarMp
                      , [i | (_,i,_) <- thisid]
+                     , "alternative"
                      )
                 where all = Set.fromList [1 .. mx]
                       thisid = filter (\(RelevQual_Alt _ id' _ _, _, a') -> id == id' && a == a') l
                       thisnrs = Set.fromList [ nr | (RelevQual_Alt _ _ nr _, _, _) <- thisid ]
-              -- reflexive
-              ((_:_), _, (_:_)) | not (null lr)
+              -- symmetry
+              ((_:_), _, (_:_), _)
+                | varIsFree && not (null lr)
                 -> case lr of
                      ((l,v,r):_)
-                       -> return ([], bindAnaEval var (AnaEval_Var v), [l,r])
+                       -> return ( [], bindAnaEval var (AnaEval_Var v), [l,r]
+                                 , "symmetry"
+                                 )
                 where mbV l = [ (fromJust mbv,i) | (i,a) <- l, let mbv = isVar a, isJust mbv ]
                       l = mbV als
                       r = mbV ars
                       lr = [ (il, v, fromJust mbr) | (v,il) <- l, let mbr = lookup v r, isJust mbr ]
+              -- reflexivity
+              {-
+              -}
+              ((_:_), _, _, _)
+                | not (null l)
+                -> case l of
+                     (i:_)
+                       -> return ( [], emptyVarMp, [i]
+                                 , "reflexivity"
+                                 )
+                where l = [ i | (i,a) <- als, maybe False (==var) (isVar a) ]
               --
-              ((_:_), _, [])
+              {-
+              ((_:_), _, [], _)
                 | varIsFree
                 -> do (jn,ams1) <- r1 ams0 join alsq
-                      return ([], bindAnaEval var jn `varmpPlus` amsLocalVarMp ams1, slv als)
-              {-
-              ((_:_:_), _, [])		-- ??
-                | varIsBound
-                -> do (jn,ams1) <- r ams0 join alsq
-                      return ([RelevQual_SubEval jn (AnaEval_Var var)], amsLocalVarMp ams1, slv)
+                      return ( [], bindAnaEval var jn `varmpPlus` amsLocalVarMp ams1, slv als
+                             , "left join"
+                             )
+              ([], _, (_:_), _)
+                | varIsFree
+                -> do (mt,ams1) <- r1 ams0 meet arsq
+                      return ( [], bindAnaEval var mt `varmpPlus` amsLocalVarMp ams1, slv ars
+                             , "right meet"
+                             )
               -}
-              ([], _, (_:_)) | not (null b)
-                -> return ([], bindAnaEval var a2, [i])
+              -- overlaps with transitivity, fired only when we can conclude var <= bot anyway
+              ([], _, (_:_), _)
+                | not (null b)
+                -> return ( [], bindAnaEval var a2, [i]
+                          , "right bot"
+                          )
                 where (b,_) = partition (\(_,a) -> isBot a) ars
                       ~(i,a2) = head b
-              (_, _, (_:_)) | not (null t)
-                -> return ([], emptyVarMp, map fst t)
+              (_, _, (_:_), _)
+                | not (null t)
+                -> return ( [], emptyVarMp, map fst t
+                          , "right top"
+                          )
                 where (t,_) = partition (\(_,a) -> isTop a) ars
-              ((_:_), _, _) | not (null b)
-                -> return ([], emptyVarMp, map fst b)
+              ((_:_), _, _, _)
+                | not (null b)
+                -> return ( [], emptyVarMp, map fst b
+                          , "left bot"
+                          )
                 where (b,_) = partition (\(_,a) -> isBot a) als
               _ -> Nothing
           where alsq  = map snd als

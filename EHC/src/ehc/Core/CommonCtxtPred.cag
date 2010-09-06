@@ -80,7 +80,7 @@ SEM CExpr
   | Lam         loc         .   whatBelow       =   ExprIsLam
   | Var         loc         .   whatBelow       =   ExprIsVar @nm
   | Int         loc         .   whatBelow       =   ExprIsInt @int
-  | * - Lam Var Int Ann
+  | * - Lam Var Int Ann CaseAltFail
                 loc         .   whatBelow       =   ExprIsOther
 %%]
 

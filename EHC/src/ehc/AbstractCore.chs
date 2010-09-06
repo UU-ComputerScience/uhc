@@ -1054,6 +1054,35 @@ ctagNil  opts = CTag (ehcOptBuiltin opts ehbnDataList) (ehcOptBuiltin opts ehbnD
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Reason a case alternative can fail
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs export(CaseAltFailReason(..))
+-- | Reason to fail a case alternative
+data CaseAltFailReason
+  = CaseAltFailReason_Absence					-- failed because of absence
+  | CaseAltFailReason_Continue
+      { cafailCaseId		:: UID				-- failed as part of case match attempt, but continues with code identified by id
+      }
+  deriving (Show,Eq,Ord)
+
+instance PP CaseAltFailReason where
+  pp (CaseAltFailReason_Continue i) = pp i
+  pp (CaseAltFailReason_Absence   ) = pp "absent"
+%%]
+
+%%[(8 codegen) hs export(cafailHasId)
+cafailHasId :: CaseAltFailReason -> (Bool,UID)
+cafailHasId (CaseAltFailReason_Absence   ) = (False,uidUnused)
+cafailHasId (CaseAltFailReason_Continue i) = (True ,i)
+%%]
+
+%%[(20 codegen) hs
+deriving instance Typeable CaseAltFailReason
+deriving instance Data CaseAltFailReason
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Kind of function which is used in an app
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -1105,6 +1134,17 @@ instance Serialize ACoreBindAspectKey where
 instance Serialize ACoreBindRef where
   sput (ACoreBindRef a b) = sput a >> sput b
   sget = liftM2 ACoreBindRef sget sget
+%%]
+
+%%[(20 codegen) hs
+instance Serialize CaseAltFailReason where
+  sput (CaseAltFailReason_Continue a) = sputWord8 0 >> sput a
+  sput (CaseAltFailReason_Absence   ) = sputWord8 1
+  sget = do
+    t <- sgetWord8
+    case t of
+      0 -> liftM  CaseAltFailReason_Continue sget
+      1 -> return CaseAltFailReason_Absence
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

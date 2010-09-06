@@ -11,6 +11,8 @@ Note:
 removal of CaseAltFail is done here.
 No special reason except it is the first transformation.
 
+20100902 AD: Note: to be removed soon, that is, fail is propagated until codegen and has meaning
+
 %%[(8 codegen) hs module {%{EH}Core.Trf.EtaRed} import(Data.Maybe,qualified Data.Set as Set,qualified Data.Map as Map)
 %%]
 
@@ -81,6 +83,6 @@ SEM CExpr
                                                     where mbV@(~(Just a)) = acoreExprMbVar v
                                                   _ -> (@cTrf,False)
                 lhs         .   cTrf        =   @cNew
-  | CaseAltFail lhs         .   cTrf        =   @errorExpr.cTrf
 %%]
+  | CaseAltFail lhs         .   cTrf        =   @errorExpr.cTrf
 

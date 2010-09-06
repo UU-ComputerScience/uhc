@@ -40,6 +40,10 @@ DERIVING *
   : Eq, Ord
 %%]
 
+-- debug only
+%%[(8 codegen) hs import({%{EH}Base.Debug},EH.Util.Pretty)
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Derived types, functions, ...
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -49,11 +53,11 @@ type RelevQualS = Set.Set RelevQual
 %%]
 
 %%[(8 codegen) hs export((<.>))
-infixr 3 `RelevCoe_Comp`
+infixl 3 `RelevCoe_Comp`
 infixl 3 <.>
 
 -- for convenience, so the order now reads left to right when combined with other coercions
-(<.>) = flip RelevCoe_Comp
+(<.>) = RelevCoe_Comp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -89,7 +93,14 @@ class AnaLattice a where
   join  :: a -> a -> AMS (Maybe a)
   
   -- base <= base
+  leBB_l :: a -> a -> AMS (AMSOut a)
+  leBB_r :: a -> a -> AMS (AMSOut a)
+  leBB_l = leBB
+  leBB_r = leBB
+
+  -- base <= base
   leBB :: a -> a -> AMS (AMSOut a)
+  leBB = leBB_l
 
   -- base <= fun, default compares to fun result
   leBF :: a -> [a] -> a -> AMS (AMSOut a)
@@ -100,7 +111,7 @@ class AnaLattice a where
 -- | wrap action inside var looking up
 anaVar
   :: AnaLattice x
-     => (UID -> AnaMatchState -> Maybe x)          -- lookup
+     => (UID -> AnaMatchState -> Maybe x)       -- lookup
      -> res                          			-- when vars are equal anyway
      -> (x -> AMS res)                          -- when var found
      -> (x -> x -> AMS res)                     -- when var is not found
@@ -156,12 +167,24 @@ instance AnaLattice AnaEval where
   join a1 a2@(AnaEval_Var v2)               = anaVar amsLookupEval (Just a1) (join a1) anaEvalJoin v2 a2 a1
   join a1 a2                                = anaEvalJoin a1 a2
   
+  leBB_l a1@(AnaEval_Var v1) a2             = anaVar amsLookupEval (amsoMkOk a1 a1 $ RelevCoe_Eval a1 a1) (flip leBB_l a2)       leBB_r     v1 a1 a2
+  leBB_l a1 a2                              = leBB_r a1 a2
+  leBB_r a1 a2@(AnaEval_Var v2)             = anaVar amsLookupEval (amsoMkOk a1 a1 $ RelevCoe_Eval a1 a1) (     leBB_r a1) (flip anaEvalLE) v2 a2 a1
+  leBB_r a1 a2                              = anaEvalLE a1 a2
+
+%%]
+  leBB_l a1@(AnaEval_Var v1) a2             = do ams <- anaVar amsLookupEval (amsoMkOk a1 a1 $ RelevCoe_Eval a1 a1) (flip leBB_l a2)       leBB_r     v1 a1 a2
+                                                 s <- get 
+                                                 return $ tr "AnaEval.leBB.L" (pp $ show a1 ++ ", " ++ show a2 ++ ", " ++ show ams ++ ", " ++ show s) $ ams
+  leBB_l a1 a2                              = leBB_r a1 a2
+  leBB_r a1 a2@(AnaEval_Var v2)             = do ams <- anaVar amsLookupEval (amsoMkOk a1 a1 $ RelevCoe_Eval a1 a1) (     leBB_r a1) (flip anaEvalLE) v2 a2 a1
+                                                 s <- get 
+                                                 return $ tr "AnaEval.leBB.R" (pp $ show a1 ++ ", " ++ show a2 ++ ", " ++ show ams ++ ", " ++ show s) $ ams
+  leBB_r a1 a2                              = anaEvalLE a1 a2
+
   leBB a1@(AnaEval_Var v1) a2               = anaVar amsLookupEval (amsoMkOk a1 a1 $ RelevCoe_Eval a1 a1) (flip leBB a2)       anaEvalLE  v1 a1 a2
   leBB a1 a2@(AnaEval_Var v2)               = anaVar amsLookupEval (amsoMkOk a1 a1 $ RelevCoe_Eval a1 a1) (     leBB a1) (flip anaEvalLE) v2 a2 a1
   leBB a1 a2                                = anaEvalLE a1 a2
-
-%%]
-
 
 
 %%[8 hs
@@ -326,6 +349,15 @@ relevCoeUnCompose (RelevCoe_Comp l r)
 relevCoeUnCompose c = (c, [])
 %%]
 
+%%[(8 codegen) hs export(relevCoeToComposeList)
+-- | decompose RelevCoe composition in list of subsequently applied coe's
+relevCoeToComposeList :: RelevCoe -> [RelevCoe]
+relevCoeToComposeList c
+  = u [] c
+  where u a (RelevCoe_Comp l r) = u (r:a) l
+        u a c                   = [c] ++ a
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Utils: subst
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -373,10 +405,11 @@ emptyAnaMatchState :: AnaMatchState
 emptyAnaMatchState = AnaMatchState Set.empty emptyVarMp emptyVarMp Set.empty
 
 instance Show AnaMatchState where
-  show _ = "AnaMatchState"
+  show x = "AMS " ++ s (amsOuterVarMp x) ++ s (amsLocalVarMp x)
+    where s m = show (assocLMapElt rvmiMbEval $ varmpToAssocL m)
 %%]
 
-%%[(8 codegen) hs export(AMSOut(..),emptyAMSOut)
+%%[(8 codegen) hs export(AMSOut(..),emptyAMSOut,amsoMkOk)
 -- | direct (non state) output of matching
 data AMSOut a
   = AMSOut
@@ -398,8 +431,8 @@ amsoMkOk l h c = amsoMk l h c True
 amsoMkFail :: AnaLattice a => AMSOut a
 amsoMkFail = emptyAMSOut {amsoIsOk = False}
 
-instance Show (AMSOut a) where
-  show _ = "AMSOut"
+instance Show a => Show (AMSOut a) where
+  show x = "AMSOut (" ++ show (amsoLo x) ++ " <= " ++ show (amsoHi x) ++ ")"
 %%]
 
 %%[(8 codegen) hs

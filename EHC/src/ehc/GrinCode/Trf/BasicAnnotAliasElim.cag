@@ -1,0 +1,141 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Transformation meant for GBM (bytecode machine) codegen
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Eliminate name aliases combined with FFI wrapping
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[doesWhat doclatex
+
+Remove a particular construct combination in FFI wrappers. As of 20100904 this combination breaks the HPT analysis.
+This transformation is therefore temporary until either HPT analysis does not break or generation is done differently.
+
+The problem arises because of a recent move of FFI wrapper generation to Core.
+The Core generation introduces extra bindings which in a later stage are not eliminated by alias elimination.
+For example: 
+
+\begin{verbatim}
+{ $T.primAddInt  x y
+  = { eval x ; \x' ->
+      eval y ; \y' ->
+      unit x' ; \(basicnode w8 word untag True x'') ->
+      unit y' ; \(basicnode w8 word untag True y'') ->
+      ffi prim "primAddInt" True x'' y'' ; \(basicannot w8 word tag True z) ->
+      unit (basicnode #0/C{1,1}/$Int z)} 
+\end{verbatim}
+
+The evaluation of |x| is bound to |x'| to be later annotated as a Word64 named |x''|.
+Previously, the |x'| did not sit in between, so this transformation removes it for this particular combi.
+
+%%]
+
+
+
+%%[(8 codegen grin) ag import({GrinCode/AbsSyn})
+%%]
+
+%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.BasicAnnotAliasElim}
+%%]
+
+%%[(8 codegen grin) hs import(qualified Data.Map as Map,qualified Data.Set as Set,Data.Maybe)
+%%]
+
+%%[(8 codegen grin) hs import({%{EH}Base.Builtin}, {%{EH}Base.Common}, {%{EH}GrinCode.Common}, {%{EH}GrinCode})
+%%]
+
+%%[(8888 codegen grin) hs import(qualified {%{EH}Config} as Cfg)
+%%]
+
+%%[(9090 codegen grin) hs import({%{EH}Foreign.Extract})
+%%]
+
+%%[(8888 codegen grin) ag import({GrinCode/CommonForGen})
+%%]
+%%[(8888 codegen grin) ag import({GrinCode/Trf/CommonAliasAG},{GrinCode/CommonForGen},{GrinCode/Trf/CommonRenameAG})
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Wrapper
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin) hs export(grBasicAnnotAliasElim)
+grBasicAnnotAliasElim :: GrModule -> GrModule
+grBasicAnnotAliasElim grmod
+  = trf_Syn_GrAGItf t
+  where t = wrap_GrAGItf (sem_GrAGItf $ GrAGItf_AGItf grmod)
+            $ Inh_GrAGItf
+%%]
+
+%%[(8 codegen grin).wrapper
+WRAPPER GrAGItf
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Propagate down the bindings to an eval, to be replaced later
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin)
+ATTR GrExpr [ unitNmBoundByEval: FvS | | ]
+
+SEM GrAlt
+  | Alt         expr        .   unitNmBoundByEval
+                                                =   Set.empty
+
+SEM GrBind
+  | Bind        expr        .   unitNmBoundByEval
+                                                =   Set.empty
+
+SEM GrExpr
+  | Seq         loc         .   newBnd          =   case (@expr.trf,@pat.trf) of
+                                                      (GrExpr_Eval _, GrPatLam_Var n) -> Set.singleton n
+                                                      _ -> Set.empty
+                body        .   unitNmBoundByEval
+                                                =   Set.union @newBnd @lhs.unitNmBoundByEval
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Gather the units to be removed for direct binding
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin) hs
+type UnitUnwrapMp = Map.Map HsName GrPatLam
+%%]
+
+%%[(8 codegen grin)
+ATTR GrExpr [ | | unitUnwrapMp USE {`Map.union`} {Map.empty} : UnitUnwrapMp ]
+
+SEM GrExpr
+  | Seq         loc         .   newMp           =   case @expr.trf of
+                                                      GrExpr_Unit (GrVal_Var n) _ | Set.member n @lhs.unitNmBoundByEval
+                                                        -> case @pat.trf of
+                                                             GrPatLam_BasicNode  _ _ -> Map.singleton n @pat.trf
+                                                             GrPatLam_EnumNode   _   -> Map.singleton n @pat.trf
+                                                             GrPatLam_PtrNode    _   -> Map.singleton n @pat.trf
+                                                             GrPatLam_OpaqueNode _   -> Map.singleton n @pat.trf
+                                                             _ -> Map.empty
+                                                      _ -> Map.empty
+                lhs         .   unitUnwrapMp    =   Map.union @newMp @body.unitUnwrapMp
+                                                      
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Transformation: remove 'unit n1 : \(basicnode ..) -> ...' combi (and equivalents of basicnode)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin)
+ATTR GrAGItf [ | | trf: GrModule ]
+ATTR AllNT [ | | trf: SELF ]
+%%]
+
+%%[(8 codegen grin) hs
+%%]
+
+%%[(8 codegen grin)
+SEM GrExpr
+  | Seq         lhs         .   trf             =   if not (Set.null @newBnd)
+                                                    then maybe @trf (\b -> GrExpr_Seq @expr.trf b @body.trf) (Map.lookup (Set.findMin @newBnd) @body.unitUnwrapMp)
+                                                    else if not (Map.null @newMp)
+                                                    then @body.trf
+                                                    else @trf
+%%]
