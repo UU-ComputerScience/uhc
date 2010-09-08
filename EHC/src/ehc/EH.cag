@@ -14,7 +14,7 @@
 %%]
 %%[1 hs export(ExprAnn(..), PatExprAnn(..), TyExprAnn(..))
 %%]
-%%[1 hs export(TyIndex(..), TyQuantifiedScheme(..), TyScheme(..), Scheme(..), TyMono(..), TyPoly(..), TyExprs, Prefix)
+%%[1 hs export(TyIndex(..), TyQuantifiedScheme(..), TyScheme(..), Scheme(..), TyMono(..), TyPoly(..), TyExprs, Prefix, Env, TySchemes, HMLItf(..))
 %%]
 
 %%[1 hs import({%{EH}HS}(Range))
@@ -45,6 +45,9 @@
 %%]
 
 %%[8 hs import(qualified Data.Set as Set)
+%%]
+
+%%[1 hs import(Data.Map as Map)
 %%]
 
 %%[(8 codegen) hs import ({%{EH}Base.Target}(FFIWay)) export(module {%{EH}Base.Target})

@@ -95,6 +95,7 @@ SEM Expr
 %%]
 
 -- between variant 5 .. 99, reconstruction of AG rules, getting rid of ruler3 until Arie's ruler4 can be used
+-- uhm.. having this as 5 breaks since it'll conflicts with EhcRulesOrig.rul
 %%[(5 noHmTyRuler hmtyinfer)
 SEM Expr
   | IConst CConst SConst

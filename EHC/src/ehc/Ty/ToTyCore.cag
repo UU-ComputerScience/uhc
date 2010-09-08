@@ -7,7 +7,8 @@
 %%% Module itf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs module {%{EH}Ty.ToTyCore} import(EH.Util.Utils,{%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Base.Opts})
+-- | need to export the module name from 5
+%%[(5 codegen) hs module {%{EH}Ty.ToTyCore} import(EH.Util.Utils,{%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Base.Opts})
 %%]
 %%[(8 codegen) hs import({%{EH}Ty}(TyVarCateg(..),TyQu(..),TyAGItf(..),Ty(..),TyVarId,TyAnn(..)))
 %%]
@@ -80,7 +81,7 @@ defaultT2TCOpts
       (\_ _ _ -> [])
 %%]
 
-%%[(8 codegen) hs
+%%[(5 codegen) hs
 tyToTyCore' :: T2TCOpts -> Ty -> C.Ty
 tyToTyCore' opts ty
   = ct_Syn_TyAGItf t
@@ -91,7 +92,7 @@ tyToTyCore' opts ty
                      })
 %%]
 
-%%[(8 codegen) hs export(tyToTyCore, tyToTyCoreBare, tyToTyCoreBase, tyToTyCoreKi)
+%%[(5 codegen) hs export(tyToTyCore, tyToTyCoreBare, tyToTyCoreBase, tyToTyCoreKi)
 -- with all additional annotation
 tyToTyCore :: KiFitsIn -> Ty2Ki -> Ty -> C.Ty
 tyToTyCore fit t2k
@@ -136,7 +137,8 @@ tyInt  = tyToTyCoreBase T.tyInt
 tyChar = tyToTyCoreBase T.tyChar
 %%]
 
-%%[(8 codegen) hs export(kiStar)
+-- This is used in 5, so again, why was it only exported in 8
+%%[(5 codegen) hs export(kiStar)
 kiStar = tyToTyCoreBase T.kiStar
 %%]
 

@@ -2232,7 +2232,8 @@ qtyconid
   <?> "qtyconid"
 %%]
 
-%%[8
+-- | This is used in 5, so it can't be 8
+%%[5
 -- | Unqualified infix type operator, e.g.: `Either`, :+:
 tyconop :: HSParser Token   -- Unqualified
 tyconop

@@ -123,6 +123,7 @@
 
 %%[1 ag import({EH/AbsSyn},{EH/Range})
 WRAPPER AGItf
+WRAPPER HMLItf
 %%]
 
 %%[(1 hmtyinfer) ag import({EH/InferUtils},{EH/Infer},{EH/InferExpr},{EH/InferTyUpDown},{EH/InferPatExpr},{EH/InferTyExpr},{EH/InferInit})
@@ -183,7 +184,9 @@ WRAPPER AGItf
 
 %%[(8 codegen) ag import({EH/ToCore})
 %%]
-%%[(8 codegen) ag import({EH/ToTyCore})
+
+-- Import at 5
+%%[(5 codegen) ag import({EH/ToTyCore})
 %%]
 
 %%[(9 hmtyinfer) ag import({EH/ResolvePred},{EH/InferClass},{EH/InferClassCHR},{EH/ResolvePredCHR},{EH/InferDefault})

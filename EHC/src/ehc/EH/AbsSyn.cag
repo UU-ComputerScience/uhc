@@ -25,6 +25,14 @@ DATA AGItf
   | AGItf           expr            : Expr
 %%]
 
+%%[1.HMLItf
+DATA HMLItf
+  | HMLItf          scheme          : TySchemes
+                    env             : Env
+                    pref            : Prefix
+                    varc            : {Int}
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Decl
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -688,9 +696,11 @@ DATA TyPoly
   | Con         nm      : {HsName}
   | SystemF     tyExpr  : TyExpr
 
-TYPE TyExprs = [TyExpr]
-TYPE Prefix  = [TyIndex]
+-- TYPE TyExprs   = [TyExpr]
+TYPE Prefix    = [TyIndex]
+TYPE TySchemes = [TyScheme]
+TYPE Env       = MAP {HsName} TyScheme
 
 SET AllHML 
-    = TyIndex TyQuantifiedScheme TyScheme Scheme TyMono TyPoly TyExprs Prefix
+    = TyIndex TyQuantifiedScheme TyScheme Scheme TyMono TyPoly TyExprs Prefix TySchemes Env
 %%]
