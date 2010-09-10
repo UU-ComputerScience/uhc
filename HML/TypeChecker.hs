@@ -2,16 +2,17 @@ module Main where
 
 import System.Console.GetOpt
 import qualified EH.Util.FastSeq as Seq
-import qualified EH4.Config as Cfg
-import EH4.EHC.Common
-import qualified EH4.HS.MainAG as HSSem
-import qualified EH4.EH.MainAG as EHSem
-import EH4.Scanner.Common
+import qualified EH8.Config as Cfg
+import EH8.EHC.Common
+import qualified EH8.HS.MainAG as HSSem
+import qualified EH8.EH.MainAG as EHSem
+import EH8.Scanner.Common
 import UU.Parsing
 import UU.Parsing.Offside
-import qualified EH4.EH.Parser as EHPrs
-import qualified EH4.HS.Parser as HSPrs
-import EH4.EH
+import qualified EH8.EH.Parser as EHPrs
+import qualified EH8.HS.Parser as HSPrs
+import EH8.EHC.InitialSetup
+import EH8.EH
 
 import qualified HML as HML
 
@@ -70,10 +71,7 @@ doCompileRun filename opts
                               ; (resd,_) <- evalStepsIO show steps
                               ; if ehcStopAtPoint opts >= CompilePoint_AnalHS
                                 then do { let res   = HSSem.sem_AGItf resd
-                                              wrRes = HSSem.wrap_AGItf res
-                                                        (HSSem.Inh_AGItf
-                                                          { HSSem.opts_Inh_AGItf = opts
-                                                          })
+                                              wrRes = HSSem.wrap_AGItf res (initialHSSem opts)
                                         ; putStrLn (disp (ppErrL $ Seq.toList $ HSSem.errSq_Syn_AGItf $ wrRes) 1000 "")
                                         ; when (ehcOptShowHS opts)
                                                (putStrLn (disp (HSSem.pp_Syn_AGItf wrRes) 1000 ""))
@@ -85,7 +83,13 @@ doCompileRun filename opts
                               ; (resd,_) <- evalStepsIO show steps
                               ; return resd
                               }
-                  ; (result, env, prefix, freevarcount) <- HML.typeCheck resd
-                  ; return ()
+                  ; bind_res <- HML.typeCheck resd
+                  ; visualize bind_res 
                   })
          }
+         
+visualize :: ([TyScheme], Env, Prefix, Int) -> IO ()
+visualize (result, env, prefix, freevarcount) 
+  = do let hml_sem = EHSem.sem_HMLItf $ HMLItf_HMLItf result env prefix freevarcount
+           hml     = EHSem.wrap_HMLItf hml_sem (EHSem.Inh_HMLItf {})
+       putStrLn (disp (EHSem.ppHML_Syn_HMLItf hml) 1000 "")

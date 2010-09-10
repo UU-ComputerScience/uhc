@@ -10,18 +10,18 @@ import Control.Monad
 import Data.List
 import Data.Maybe
 
-import EH4.EH
-import EH4.Base.HsName
+import EH8.EH
+import EH8.Base.HsName
 
 import EH.Util.Pretty
+import qualified Debug.Trace as D
 
 mkName :: String -> HsName
 mkName = mkHNmBase -- id
 
-
 -- type Prefix  = [TyIndex]
 -- type HsName  = String
-type Env     = M.Map HsName TyScheme
+-- type Env     = M.Map HsName TyScheme
 type Sub     = (HsName, TyScheme)
 type ErrorMessage = String
 
@@ -84,7 +84,7 @@ class Util a => Apply a where
   app    :: Sub -> a -> Maybe a
   appAll :: Env -> a -> Maybe a
   appAll env a = let values = M.toList env
-                 in foldl1 (>=>) (map app values) a
+                 in foldl (>=>) return (map app values) a
   
 class Util a where
   ftv :: a -> [HsName]
@@ -133,10 +133,11 @@ instance Util TyScheme where
     ftv (TyScheme_SystemF a) = ftv a
     ftv (TyScheme_Quant a b) = (nub $ ftv b) \\ (ftv a)
 
-    isTyVar (TyScheme_SystemF a) = isTyVar a
+    isTyVar (TyScheme_SystemF a) hnm = isTyVar a hnm
+    isTyVar  _ _                     = False
     
     isUnQualTy (TyScheme_SystemF a) = isUnQualTy a
-    isUnQualTy _                    = True  
+    isUnQualTy _                    = False  
 
 instance Util Scheme where
     ftv (Scheme_Simple a b) = a : ftv b
@@ -157,16 +158,37 @@ extend (q, scheme@(Scheme_Simple var phi))
    in case p of
         TyScheme_SystemF p'  -> (q, M.fromList [(var, p)])
         _                    -> ((TyIndex_Group var (promote phi)):q, M.empty)
-        
-promote phi = let vars = ftv phi
-             in case vars of
-                   [var'] -> TyQuantifiedScheme_Quant
-                                (TyIndex_Group var' TyQuantifiedScheme_Bottom)
-                                phi
-                   _      -> error $ "could not promote value to prefix using '[redacted]'"
-                   
+      
+promote :: TyScheme -> TyQuantifiedScheme
+promote TyScheme_Bottom                            = TyQuantifiedScheme_Bottom
+promote (TyScheme_Quant (Scheme_Simple nm ty) ty') = TyQuantifiedScheme_Quant (TyIndex_Group nm (promote ty)) ty'
+promote phi@(TyScheme_SystemF{})                   
+  = let vars = ftv phi
+    in compact vars phi
+   where compact (x:xs) p = TyQuantifiedScheme_Quant (TyIndex_Group x (compact xs p)) p
+         compact []     p = TyQuantifiedScheme_Bottom
+promote (TyScheme_Sugar{})                         = error "TyScheme_Sugar cannot be promoted. It's purely syntaxtical sugar. Please call desugar before that"
+
 fresh :: Int -> (HsName, Int)
 fresh x = (mkName $ "a" ++ show x, x+1)
+
+mkArrow :: TyExpr -> TyExpr -> TyExpr
+mkArrow a b = TyExpr_App a (TyExpr_App (TyExpr_Con $ mkName "->") b)
+
+desugar :: TyScheme -> TyScheme
+desugar (TyScheme_Sugar q t) = let bounds = [TyScheme_Quant (Scheme_Simple nm (toScheme b)) | (TyIndex_Group nm b) <- q] 
+                               in foldr (.) id bounds t
+  where toScheme :: TyQuantifiedScheme -> TyScheme
+        toScheme TyQuantifiedScheme_Bottom                             = TyScheme_Bottom
+        toScheme (TyQuantifiedScheme_Quant (TyIndex_Group nm bound) t) = TyScheme_Quant (Scheme_Simple nm (toScheme bound)) t
+desugar x = x
+
+mkQuantified :: TyExpr -> TyScheme
+mkQuantified exp 
+  = let vars = [TyScheme_Quant (Scheme_Simple x TyScheme_Bottom) | x <- ftv exp]
+    in  if null vars
+           then TyScheme_SystemF exp
+           else foldl' (.) id vars (TyScheme_SystemF exp)
 }
     
 data TyQu
@@ -174,27 +196,35 @@ data TyQu
     
 data TyExpr
   con Con
-    nm      :: HsName
+    nm        :: HsName
   con App
-    func    :: TyExpr
-    arg     :: TyExpr
+    func      :: TyExpr
+    arg       :: TyExpr
   con AppTop
-    tyExpr  :: TyExpr
+    tyExpr    :: TyExpr
   con Parens
-    tyExpr  :: TyExpr
+    tyExpr    :: TyExpr
   con Ann
-    ann     :: TyExprAnn
-    tyExpr  :: TyExpr
+    ann       :: TyExprAnn
+    tyExpr    :: TyExpr
   con Wild
   con Mono
   con Var
-    nm      :: HsName
+    nm        :: HsName
   con VarWild
-    mm      :: HsName
+    mm        :: HsName
   con Quant
-    qu      :: TyQu
-    tyVar   :: HsName
-    tyExpr  :: TyExpr
+    qu        :: TyQu
+    tyVar     :: HsName
+    tyExpr    :: TyExpr
+  con Row
+    rowTyExpr :: RowTyExpr
+    
+data TyVar
+  con Var
+    nm      :: HsName
+    
+type TyVars : [TyVar]
     
 -- Type Index (a1 >= TyQuantifiedScheme)
 data TyIndex
@@ -251,64 +281,175 @@ data TyPoly
   con SystemF
     tyExpr  :: TyExpr
     
+data DataFieldExpr
+  con Upd
+    dataFieldExpr  :  DataFieldExpr
+    nm             :: HsName
+    expr           :  Expr
+  con Con
+    nm             :: HsName
+  con Expr
+    expr           :  Expr
+   
+data DataFieldPatExpr
+  con Ext
+    dataFieldPatExpr  :: DataFieldPatExpr
+    nm                :: HsName
+    patExpr           :: PatExpr
+  con Con
+    nm                :: HsName
+    
+data RecExpr
+  con Empty
+  con Ext
+    recExpr     :  RecExpr
+    mbNm        :: (Maybe HsName)
+    expr        :  Expr
+  con Upd
+    recExpr     :  RecExpr
+    mbNm        :: HsName
+    expr        :  Expr
+  con Expr
+    expr        :  Expr
+    
+data RecPatExpr
+  con Empty
+  con Ext
+    recPatExpr  :  RecPatExpr
+    mbNm        :: (Maybe HsName)
+    patExpr     :: PatExpr
+  con Expr
+    patExpr     :: PatExpr
+    
+data RowTyExpr
+  con Empty
+  con Ext
+    rowTyExpr       :: RowTyExpr
+    mbNm            :: (Maybe HsName)
+    tyExpr          :: TyExpr
+    
+data KiExpr
+  con Con
+    nm       :: HsName
+  con Var
+    nm       :: HsName
+  con App
+    func     :: KiExpr
+    arg      :: KiExpr
+  con AppTop
+    kiExpr   :: KiExpr
+  con Parens
+    kiExpr   :: KiExpr
+  con Ann
+    ann      :: KiExprAnn
+    kiExpr   :: KiExpr
+    
 data Expr
   con IConst
-    int     :: Int
+    int           :: Int
   con CConst
-    char    :: Char
+    char          :: Char
   con Con
-    nm      :: HsName
+    nm            :: HsName
   con Var
-    nm      :: HsName
+    nm            :: HsName
   con App
-    func    :: Expr
-    arg     :: Expr
+    func          :  Expr
+    arg           :  Expr
   con Let
-    decls   :  Decls
-    body    :: Expr
+    isStrict      :: Bool
+    decls         :  Decls
+    body          :  Expr
   con Lam
-    arg     :: PatExpr
-    body    :: Expr
+    arg           :: PatExpr
+    body          :  Expr
   con AppTop
-    expr    :: Expr
+    expr          :  Expr
   con Parens
-    expr    :: Expr
+    expr          :  Expr
   con TypeAs
-    tyExpr  :: TyExpr
-    expr    :: Expr
+    tyExpr        :: TyExpr
+    expr          :  Expr
   con Ann
-    ann     :: ExprAnn
-    expr    :: Expr
+    ann           :: ExprAnn
+    expr          :  Expr
   con AppImpred
-    func    :: Expr
-    arg     :: Expr
+    func          :  Expr
+    arg           :  Expr
+  con SConst 
+    str           :: String
+  con Case
+    expr          :  Expr
+    alts          :: CaseAlts
+    mbCaseIds     :: (Maybe UIDS)
+    caseFailS     :: UIDS
+    isTupOfArg    :: Bool
+  con DataFields
+    dataFieldExpr :: DataFieldExpr
+  con Rec
+    recExpr       :: RecExpr
+  con Sel
+    expr          :  Expr
+    lbl           :: HsName
+  con Undefined
+  con CaseAltFail 
+    caseId        :: UID
     
 data PatExpr
   con IConst
-    int     :: Int
+    int              :: Int
   con CConst
-    char    :: Char
+    char             :: Char
   con Con
-    nm      :: HsName
+    nm               :: HsName
   con Var
-    nm      :: HsName
+    nm               :: HsName
   con VarAs
-    nm      :: HsName
-    patExpr :: PatExpr
+    nm               :: HsName
+    patExpr          :: PatExpr
   con App
-    func    :: PatExpr
-    arg     :: PatExpr
+    func             :: PatExpr
+    arg              :: PatExpr
   con AppTop
-    patExpr :: PatExpr
+    patExpr          :: PatExpr
   con Parens
-    patExpr :: PatExpr
+    patExpr          :: PatExpr
   con Ann
-    ann     :: PatExprAnn
-    patExpr :: PatExpr
+    ann              :: PatExprAnn
+    patExpr          :: PatExpr
   con TypeAs
-    tyExpr  :: TyExpr
-    patExpr :: PatExpr
+    tyExpr           :: TyExpr
+    patExpr          :: PatExpr
+  con SConst
+    str              :: String
+  con Rec
+    recPatExpr       :: RecPatExpr
+  con DataFields
+    dataFieldPatExpr :: DataFieldPatExpr
+  con Irrefutable
+    patExpr          :: PatExpr
     
+data CaseAlt
+  con Pat
+    patExpr   :: PatExpr
+    expr      :  Expr
+
+type CaseAlts : [CaseAlt]
+    
+data DataConstr
+  con Constr
+    conNm      :: HsName
+    fields     :  DataFields
+    
+type DataConstrs : [DataConstr]
+
+data DataField
+  con Field
+    mbLabels     :: (Maybe [HsName])
+    tyExpr       :: TyExpr
+    
+type DataFields : [DataField]
+   
 data ExprAnn
   con Empty
   
@@ -318,13 +459,30 @@ data TyExprAnn
 data PatExprAnn
   con Empty
   
+data KiExprAnn
+  con Empty
+  
 data Decl
   con TySig
-    nm      :: HsName
-    tyExpr  :: TyExpr
+    nm         :: HsName
+    tyExpr     :: TyExpr
   con Val
-    patExpr :: PatExpr
-    expr    :: Expr
+    patExpr    :: PatExpr
+    expr       :  Expr
+  con Data
+    isNewType  :: Bool
+    tyNm       :: HsName
+    tyVars     :: TyVars
+    constrs    :: DataConstrs
+  con KiSig
+    nm         :: HsName
+    kiExpr     :: KiExpr
+  con FFI
+    callconv   :: FFIWay
+    safety     :: String
+    impEnt     :: String
+    nm         :: HsName
+    tyExpr     :: TyExpr
   
 type TyExprs : [TyExpr]
 type Decls   : [Decl]
@@ -333,13 +491,35 @@ itf Expr
   visit infer
     inh pre :: Prefix
     inh env :: Env
-    inh exp :: Expr
     inh ast :: Expr
+    inh exp :: Expr
     inh frs :: Int
     syn nxe :: Prefix
     syn sub :: Env
     syn res :: [TyScheme]
     syn frs :: Int
+    
+itf DataConstrs
+  visit findTypes
+    inh ast :: DataConstrs
+    inh nm  :: TyExpr
+    syn ty  :: [(HsName, TyExpr)]
+    
+itf DataConstr
+  visit findType
+    inh ast :: DataConstr
+    inh nm  :: TyExpr
+    syn ty  :: (HsName, TyExpr)
+    
+itf DataFields
+  visit findTypes
+    inh ast :: DataFields
+    syn ty  :: TyExprs
+    
+itf DataField
+  visit findType
+    inh ast :: DataField
+    syn ty  :: TyExpr
     
 itf Decls
   visit infer
@@ -353,9 +533,9 @@ itf Decls
     
 itf Decl
   visit infer
+    inh ast :: Decl
     inh pre :: Prefix
     inh env :: Env
-    inh ast :: Decl
     inh frs :: Int
     syn nxe :: Prefix
     syn sub :: Env
@@ -366,21 +546,43 @@ itf PatExpr
     inh ast    :: PatExpr
     syn var_nm :: HsName
     
-datasem PatExpr
+datasem DataFields monad IO
+  clause Cons
+    lhs.ty = hd.ty : tl.ty
+  clause Nil
+    lhs.ty = []
+    
+datasem DataField monad IO
+  clause Field
+    lhs.ty = loc.tyExpr
+    
+datasem DataConstr monad IO
+  clause Constr
+    lhs.ty = (loc.conNm, foldr mkArrow lhs.nm fields.ty)
+    
+datasem DataConstrs monad IO
+  clause Cons
+    hd.nm = lhs.nm
+    tl.nm = lhs.nm
+    lhs.ty = hd.ty : tl.ty
+  clause Nil
+    lhs.ty = []
+    
+datasem PatExpr monad IO
   clause IConst
-    lhs.var_nm = error "IConst not a var" 
+    lhs.var_nm = const (error "IConst not a var") loc.int
   clause CConst
-    lhs.var_nm = error "CConst not a var" 
+    lhs.var_nm = const (error "CConst not a var") loc.char
   clause Con
-    lhs.var_nm = error "Constructors not supported" 
+    lhs.var_nm = const (error "Constructors not supported") loc.nm
   clause Var
     lhs.var_nm = loc.nm 
   clause VarAs
     lhs.var_nm = loc.nm 
   clause App
-    lhs.var_nm = error "App not a var" 
+    lhs.var_nm = const (error "App not a var") loc.func
   clause AppTop
-    lhs.var_nm = error "AppTop not a var" 
+    lhs.var_nm = const (error "AppTop not a var") loc.patExpr
   clause Parens
     child patExpr : PatExpr
     patExpr.ast = loc.patExpr
@@ -401,34 +603,58 @@ datasem PatExpr
         
     invoke vars of patExpr
     
-    lhs.var_nm = patExpr.var_nm 
+    lhs.var_nm = patExpr.var_nm
+  clause SConst
+    lhs.var_nm = const (error "SConst not a var") loc.str
+  clause Rec
+    lhs.var_nm = const (error "Rec not a var") loc.recPatExpr
+  clause DataFields
+    lhs.var_nm = const (error "DataFields not a var") loc.dataFieldPatExpr
+  clause Irrefutable 
+    lhs.var_nm = const (error "Irrefutable not a var") loc.patExpr
     
-datasem Decl
+datasem Decl monad IO
   clause Val
     match PatExpr.Var@loc = loc.patExpr
-
-    child expr : Expr
 
     expr.pre = lhs.pre
     expr.env = lhs.env
     expr.exp = loc.expr
     expr.frs = lhs.frs
-    expr.ast = loc.expr
 
     invoke infer of expr
 
     lhs.nxe = expr.nxe
     lhs.sub = let (Left adjusted) = apply expr.sub lhs.env
               in case expr.res of
-                   [] -> error $ "Inference failed datasem Decl clause Val."
+                   [] -> error  $ "Inference failed datasem Decl clause Val. No result"
                    x  -> foldr (\a->M.insert loc.nm a) adjusted x
     lhs.frs = expr.frs
   clause TySig
     lhs.nxe = lhs.pre
     lhs.sub = M.insert loc.nm (TyScheme_SystemF loc.tyExpr) lhs.env
     lhs.frs = lhs.frs
+  clause Data
+     child constrs : DataConstrs
+     constrs.ast = loc.constrs
+     constrs.nm = let vars = map (\(TyVar_Var x) -> TyExpr_Var x) loc.tyVars
+                  in  foldl TyExpr_App (TyExpr_Con loc.tyNm) vars
+     
+     invoke findTypes of constrs
+     
+     lhs.sub = (foldr (.) id . map (\(k,v)->M.insert k (mkQuantified v))) constrs.ty lhs.env
+     lhs.nxe = lhs.pre
+     lhs.frs = lhs.frs
+  clause FFI
+     lhs.sub = M.insert loc.nm (TyScheme_SystemF loc.tyExpr) lhs.env
+     lhs.nxe = lhs.pre
+     lhs.frs = lhs.frs
+  clause KiSig
+     lhs.sub = lhs.env
+     lhs.nxe = lhs.pre
+     lhs.frs = lhs.frs
     
-datasem Decls
+datasem Decls monad IO
   clause Cons
     hd.pre = lhs.pre
     hd.env = lhs.env
@@ -444,13 +670,13 @@ datasem Decls
     lhs.sub = tl.sub
     lhs.frs = tl.frs
   clause Nil
-    lhs.sub = M.empty
+    lhs.sub = lhs.env
     lhs.nxe = lhs.pre
     lhs.frs = lhs.frs
     
-datasem Expr
+datasem Expr monad IO
     clause Var
-        lhs.res = maybeToList $ M.lookup loc.nm lhs.env
+        lhs.res = maybe (error "Variable not found in lookup") (:[]) $ M.lookup loc.nm lhs.env
         lhs.sub = M.empty
         lhs.nxe = lhs.pre
         lhs.frs = lhs.frs
@@ -465,7 +691,7 @@ datasem Expr
        lhs.nxe = lhs.pre
        lhs.frs = lhs.frs
     clause Con
-       lhs.res = error $ "Constructors are not supported at this time due to no datatype support yet"
+       lhs.res = maybe (error "Constructor not found in lookup") (:[]) $ M.lookup loc.nm lhs.env
        lhs.sub = M.empty
        lhs.nxe = lhs.pre
        lhs.frs = lhs.frs
@@ -475,8 +701,6 @@ datasem Expr
        (loc.a2, loc.frs2) = fresh loc.frs1
        (loc.b , loc.frs3) = fresh loc.frs2
        
-       child func : Expr
-       func.ast = loc.func
        func.exp = loc.func
        func.frs = loc.frs3
        func.pre = lhs.pre
@@ -484,8 +708,6 @@ datasem Expr
        
        invoke infer of func
        
-       child arg : Expr
-       arg.ast = loc.arg
        arg.exp = loc.arg
        arg.frs = func.frs
        arg.pre = func.nxe
@@ -498,22 +720,18 @@ datasem Expr
        loc.temp3 = curry extend (fst loc.temp2) $ Scheme_Simple loc.b  (TyScheme_Bottom)
        
        (loc.q2', loc.e2') = (fst loc.temp3, (snd loc.temp1) `M.union` (snd loc.temp2) `M.union` (snd loc.temp3))
-       (loc.q3, loc.e3) = undefined -- temporary placeholder. Unification needs to be implemented to finish this
+       (loc.q3, loc.e3) = const undefined loc.q2' -- temporary placeholder. Unification needs to be implemented to finish this
        (loc.q4, loc.q5) = curry split loc.q3 (domain lhs.pre)
     
        lhs.res = let b = TyScheme_SystemF (TyExpr_Var loc.b)
-                 in return $ TyScheme_Sugar loc.q5 (fromJust $ appAll loc.e3 b)
+                 in return $ desugar $ TyScheme_Sugar loc.q5 (fromJust $ appAll loc.e3 b)
        lhs.sub = func.sub `M.union` arg.sub `M.union` loc.e3
        lhs.nxe = loc.q4
        lhs.frs = arg.frs
-    clause Let
-        -- child decls : Decls
-        child body  : Expr
-        
+    clause Let        
         decls.pre = lhs.pre
         decls.env = lhs.env
         decls.frs = lhs.frs
-        -- decls.ast = loc.decls
 
         invoke infer of decls
 
@@ -521,7 +739,6 @@ datasem Expr
         body.env = decls.sub
         body.exp = loc.body
         body.frs = decls.frs
-        body.ast = loc.body
 
         invoke infer of body
 
@@ -534,15 +751,13 @@ datasem Expr
         arg.ast = loc.arg
         invoke vars of arg
     
-        loc.frs          = lhs.frs
+       loc.frs           = lhs.frs
        (loc.a, loc.frs1) = fresh loc.frs
        loc.exp_a         = TyScheme_SystemF $ TyExpr_Var loc.a -- error reporting on local variables is off
        (loc.b, loc.frs2) = fresh loc.frs1
        loc.q'            = (TyIndex_Group loc.a TyQuantifiedScheme_Bottom):lhs.pre
        loc.env'          = M.insert arg.var_nm loc.exp_a lhs.env
        
-       child body : Expr
-       body.ast = loc.body
        body.frs = loc.frs2
        body.env = loc.env'
        body.pre = loc.q'
@@ -556,21 +771,19 @@ datasem Expr
                       _                         -> error "The resulting type is not a Tau type"
        (loc.q2,  loc.q3)  = curry split body.nxe (domain lhs.pre)
        loc.phi1           = case body.res of
-                              [] -> error "Inference of Expressions failed in Lam"
-                              [TyScheme_SystemF a] -> TyScheme_SystemF a
-                              _ -> error "Too many options, I only need one"
+                              []  -> error "Inference of Expressions failed in Lam"
+                              [x] -> x
+                              _   -> error "Too many options, I only need one"
        (loc.q3', loc.e3') = curry extend loc.q3 (Scheme_Simple loc.b loc.phi1)
        
        lhs.res = let (Just b')    = appAll loc.e3' (TyExpr_Var loc.b)
                      (Just a')    = appAll body.sub (TyExpr_Var loc.a)
-                     arrow = TyExpr_App a' b'
-                 in return $ TyScheme_Sugar loc.q3' (TyScheme_SystemF arrow)
+                     arrow = mkArrow a' b'
+                 in return $ desugar $ TyScheme_Sugar loc.q3' (TyScheme_SystemF arrow)
        lhs.sub = body.sub
        lhs.nxe = loc.q2
        lhs.frs = body.frs
     clause AppTop
-       child expr : Expr
-       expr.ast = loc.expr
        expr.pre = lhs.pre
        expr.env = lhs.env
        expr.frs = lhs.frs
@@ -583,8 +796,6 @@ datasem Expr
        lhs.nxe = expr.nxe
        lhs.frs = expr.frs
     clause Parens
-       child expr : Expr
-       expr.ast = loc.expr
        expr.pre = lhs.pre
        expr.env = lhs.env
        expr.frs = lhs.frs
@@ -602,8 +813,6 @@ datasem Expr
        lhs.nxe = lhs.pre
        lhs.frs = lhs.frs
     clause Ann
-       child expr : Expr
-       expr.ast = loc.expr
        expr.pre = lhs.pre
        expr.env = lhs.env
        expr.frs = lhs.frs
@@ -620,8 +829,44 @@ datasem Expr
        lhs.sub = lhs.env
        lhs.nxe = lhs.pre
        lhs.frs = lhs.frs
+    clause Case
+       lhs.res = []
+       lhs.sub = lhs.env
+       lhs.nxe = lhs.pre
+       lhs.frs = lhs.frs
+    clause CaseAltFail
+       lhs.res = []
+       lhs.sub = lhs.env
+       lhs.nxe = lhs.pre
+       lhs.frs = lhs.frs
+    clause DataFields
+       lhs.res = []
+       lhs.sub = lhs.env
+       lhs.nxe = lhs.pre
+       lhs.frs = lhs.frs
+    clause Rec
+       lhs.res = []
+       lhs.sub = lhs.env
+       lhs.nxe = lhs.pre
+       lhs.frs = lhs.frs
+    clause SConst
+       lhs.res = []
+       lhs.sub = lhs.env
+       lhs.nxe = lhs.pre
+       lhs.frs = lhs.frs
+    clause Sel
+       lhs.res = []
+       lhs.sub = lhs.env
+       lhs.nxe = lhs.pre
+       lhs.frs = lhs.frs
+    clause Undefined
+       (loc.a, loc.frs1) = fresh lhs.frs
+       lhs.res = [TyScheme_SystemF $ TyExpr_Var loc.a]
+       lhs.sub = lhs.env
+       lhs.nxe = lhs.pre
+       lhs.frs = loc.frs1
 {
-typeCheck :: Expr -> IO ([TyScheme], Env, Prefix, Int)
+typeCheck ::  Expr -> IO ([TyScheme], Env, Prefix, Int)
 typeCheck exp = do
   let inh = Inh_Expr_infer { exp_Inh_Expr = exp
                            , env_Inh_Expr = M.empty
@@ -634,8 +879,8 @@ typeCheck exp = do
       sub = sub_Syn_Expr syn
       nxe = nxe_Syn_Expr syn
       frs = frs_Syn_Expr syn
-  return (res, sub, nxe, frs - 1)
+  return (res, sub, nxe, frs)
   
-exampleLet  = Expr_Let [] (Expr_IConst 3)
-exampleLet2 = Expr_Let [Decl_Val (PatExpr_Var $ mkName "a") (Expr_IConst 3)] (Expr_Var $ mkName "a")
+exampleLet  = Expr_Let False [] (Expr_IConst 3)
+exampleLet2 = Expr_Let False [Decl_Val (PatExpr_Var $ mkName "a") (Expr_IConst 3)] (Expr_Var $ mkName "a")
 }
