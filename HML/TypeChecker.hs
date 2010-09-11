@@ -15,6 +15,7 @@ import EH8.EHC.InitialSetup
 import EH8.EH
 
 import qualified HML as HML
+import qualified Data.Map as M
 
 main :: IO ()
 main
@@ -90,6 +91,6 @@ doCompileRun filename opts
          
 visualize :: ([TyScheme], Env, Prefix, Int) -> IO ()
 visualize (result, env, prefix, freevarcount) 
-  = do let hml_sem = EHSem.sem_HMLItf $ HMLItf_HMLItf result env prefix freevarcount
+  = do let hml_sem = EHSem.sem_HMLItf $ HMLItf_HMLItf result env (M.map (HML.alpha_rename . HML.simplify) env) prefix freevarcount
            hml     = EHSem.wrap_HMLItf hml_sem (EHSem.Inh_HMLItf {})
        putStrLn (disp (EHSem.ppHML_Syn_HMLItf hml) 1000 "")
