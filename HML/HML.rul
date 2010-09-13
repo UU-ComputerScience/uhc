@@ -6,6 +6,7 @@ import Control.Monad.Error
 -- import Pretty   
 import qualified Data.Map as M
 import Control.Monad
+import Control.Arrow hiding (app)
 
 import Data.List
 import Data.Maybe
@@ -282,6 +283,11 @@ instance Simplify TyExpr where
             simpl f       (TyExpr_Ann     a b) = TyExpr_Ann a     (simpl f b)
             simpl f       (TyExpr_Quant a b c) = TyExpr_Quant a b (simpl f c)   
             simpl _ a                          = a
+            
+-- | Checks to see if a pattern expression is a variable or something else
+isVar :: PatExpr -> Bool
+isVar (PatExpr_Var{}) = True
+isVar _               = False
 }
     
 data TyQu
@@ -698,10 +704,12 @@ datasem PatExpr monad IO
   clause Var
     lhs.var_nm = loc.nm 
     
-    lhs.res = []
-    lhs.sub = lhs.env
-    lhs.nxe = lhs.pre
-    lhs.frs = lhs.frs
+    (loc.a, loc.frs1) = fresh lhs.frs
+    loc.exp_a  = TyScheme_SystemF $ TyExpr_Var loc.a
+    lhs.res    = [loc.exp_a]
+    lhs.sub    = M.insert loc.nm loc.exp_a lhs.env
+    lhs.nxe    = (TyIndex_Group loc.a TyQuantifiedScheme_Bottom):lhs.pre
+    lhs.frs    = loc.frs1
   clause VarAs
     lhs.var_nm = loc.nm 
     
@@ -752,8 +760,6 @@ datasem PatExpr monad IO
     patExpr.frs = lhs.frs
     patExpr.pre = lhs.pre
     
-    -- invoke infer of patExpr
-    
     lhs.var_nm = patExpr.var_nm 
     
     lhs.res = patExpr.res
@@ -763,18 +769,12 @@ datasem PatExpr monad IO
   clause TypeAs
     child patExpr : PatExpr
     patExpr.ast = loc.patExpr
-        
-    -- patExpr.exp = loc.patExpr
-    -- patExpr.env = lhs.env
-    -- patExpr.frs = lhs.frs
-    -- patExpr.pre = lhs.pre
     
     invoke vars of patExpr
-    -- invoke infer of patExpr -- this produces an infinite recursion
     
     lhs.var_nm = patExpr.var_nm
     
-    loc.ans = TyScheme_SystemF loc.tyExpr
+    loc.ans = TyScheme_SystemF (TyExpr_Parens loc.tyExpr)
     lhs.res = [loc.ans]
     lhs.sub = M.insert patExpr.var_nm loc.ans lhs.env
     lhs.nxe = lhs.pre
@@ -871,10 +871,14 @@ datasem Decls monad IO
     
 datasem Expr monad IO
     clause Var
-        lhs.res = maybe (error "Variable not found in lookup") (:[]) $ M.lookup loc.nm lhs.env
+        -- lhs.res = maybe (error "Variable not found in lookup") (:[]) $ M.lookup loc.nm lhs.env
+        (lhs.res, loc.frs)
+             = case M.lookup loc.nm lhs.env of
+                Just a  -> ([a], lhs.frs) -- Is this the proper way to get mutual recursion working?
+                Nothing -> (return . TyScheme_SystemF . TyExpr_Var *** id) (fresh lhs.frs)
         lhs.sub = M.empty
         lhs.nxe = lhs.pre
-        lhs.frs = lhs.frs
+        lhs.frs = loc.frs
     clause IConst
        lhs.res = return $ TyScheme_SystemF $ TyExpr_Con $ mkName "Int"
        lhs.sub = M.empty
@@ -953,11 +957,12 @@ datasem Expr monad IO
         invoke infer of arg
     
        loc.frs           = arg.frs
-       (loc.a, loc.frs1) = fresh loc.frs
-       loc.exp_a         = TyScheme_SystemF $ TyExpr_Var loc.a -- error reporting on local variables is off
-       (loc.b, loc.frs2) = fresh loc.frs1
-       loc.q'            = (TyIndex_Group loc.a TyQuantifiedScheme_Bottom):arg.nxe
-       loc.env'          = M.insert arg.var_nm loc.exp_a arg.sub
+       (TyScheme_SystemF loc.exp_a) = case arg.res of -- error reporting on local variables is off
+                                        [x] -> x
+                                        _   -> error "No type infered from PatExpr in Lam"
+       (loc.b, loc.frs2) = fresh loc.frs
+       loc.q'            = arg.nxe
+       loc.env'          = arg.sub
        
        body.frs = loc.frs2
        body.env = loc.env'
@@ -968,9 +973,10 @@ datasem Expr monad IO
        
        loc.tau = let x = appAll body.sub loc.exp_a
                  in case x of
-                      (Just x') | isUnQualTy x' -> x
-                      _                         -> error "The resulting type is not a Tau type"
-       (loc.q2,  loc.q3)  = curry split body.nxe (domain arg.nxe)
+                      (Just x') | (isUnQualTy x' || not (isVar loc.arg))
+                                       -> x
+                      _                -> error "The resulting type is not a Tau type"
+       (loc.q2,  loc.q3)  = curry split body.nxe (domain lhs.pre)
        loc.phi1           = case body.res of
                               []  -> error "Inference of Expressions failed in Lam"
                               [x] -> x
@@ -978,7 +984,7 @@ datasem Expr monad IO
        (loc.q3', loc.e3') = curry extend loc.q3 (Scheme_Simple loc.b loc.phi1)
        
        lhs.res = let (Just b')    = appAll loc.e3' (TyExpr_Var loc.b)
-                     (Just a')    = appAll body.sub (TyExpr_Var loc.a)
+                     (Just a')    = appAll body.sub loc.exp_a -- (TyExpr_Var loc.a)
                      arrow = mkArrow a' b'
                  in return $ desugar $ TyScheme_Sugar loc.q3' (TyScheme_SystemF arrow)
        lhs.sub = body.sub

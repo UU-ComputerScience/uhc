@@ -1,21 +1,23 @@
--- test = let y = x
-           -- x = 0
-       -- in y
+test = let y = x
+           x = 0
+       in y
        
--- main = test
+main = test
 
--- data List a = Cons a (List a)
-            -- | Nil
+data List a = Cons a (List a)
+            | Nil
 
-id (x::Int) = x
+-- id (x::forall a. a->a) = x
+id x = x
 
--- consNil a = Nil
+consNil a = Nil
 
 -- | Mutual recursive function is a problem, Need to think of a solution that fits within HML
--- foo = bar
--- bar = foo
+-- foo = (bar :: Char)
+foo = bar2
+bar = foo
 
--- const a b = a
--- const' a b c = a
+const a b = a
+const' a b c = a
 
--- toChar = \_ -> 'o'
+toChar = \_ -> 'o'
