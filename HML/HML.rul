@@ -17,6 +17,7 @@ import EH8.Base.HsName
 import EH.Util.Pretty
 import qualified Debug.Trace as D
 
+-- | Create a HsName from a string.
 mkName :: String -> HsName
 mkName = mkHNmBase -- id
 
@@ -26,9 +27,16 @@ mkName = mkHNmBase -- id
 type Sub     = (HsName, TyScheme)
 type ErrorMessage = String
 
--- | Get the domain of a Prefix
-domain :: Prefix -> [HsName]
-domain = map (\(TyIndex_Group a _)-> a)
+-- | Remove entries from a Env based on their key
+remove :: Env -> [HsName] -> Env
+remove env entries = foldl (.) id (map M.delete entries) env
+
+-- | Filter a prefix based on the bounds and not the variable
+elide :: Prefix -> TyQuantifiedScheme -> Prefix
+elide []     _     = []
+elide (x:xs) bound = case x of 
+                       TyIndex_Group _ b | b == bound = elide xs bound
+                       _ -> x : elide xs bound
 
 -- | Split domains
 split :: (Prefix, [HsName]) -> (Prefix, Prefix)
@@ -87,14 +95,19 @@ createMask (nm, ty) = mask
                       do rep var
                     x -> rep x
        
-class Normal a where
+class Eq a => Normal a where
   nf :: a -> a
+  isNf :: a -> Bool
+  isNf x = nf x == x
   
 class Util a => Apply a where
   app    :: Sub -> a -> Maybe a
   appAll :: Env -> a -> Maybe a
   appAll env a = let values = M.toList env
                  in foldl (>=>) return (map app values) a
+  
+instance Apply a => Apply [a] where
+  app s = return . catMaybes . map (app s)
   
 class Util a where
   ftv  :: a -> [HsName]
@@ -108,6 +121,9 @@ class Util a where
   
 instance Apply TyExpr where
     app = createMask
+    
+instance Apply TyIndex where
+    app s (TyIndex_Group nm a) = TyIndex_Group nm (app s a)
   
 instance Util TyExpr where
     ftv (TyExpr_App     a b) = ftv a ++ ftv b
@@ -175,6 +191,14 @@ instance Util TyScheme where
     isUnQualTy (TyScheme_SystemF a) = isUnQualTy a
     isUnQualTy _                    = False  
 
+instance Util TyQuantifiedScheme where
+  ftv  (TyQuantifiedScheme_Quant a b) = (nub $ ftv b) \\ (ftv a)
+  vars (TyQuantifiedScheme_Quant a b) = nub $ (vars b) ++ (vars a)
+  
+instance Util TyIndex where
+  ftv  (TyIndex_Group nm a) = (nub $ ftv a) \\ [nm]
+  vars (TyIndex_Group nm a) = nm : vars a
+    
 instance Util Scheme where
     ftv (Scheme_Simple a b) = a : ftv b
     vars (Scheme_Simple a b) = a : vars b
@@ -189,6 +213,31 @@ instance Normal TyScheme where
        | otherwise              = TyScheme_Quant (Scheme_Simple a (nf phi1)) (nf phi2)
   nf a = a 
 
+instance Normal TyExpr where
+  nf = id
+  
+class Domain a where
+  domain   :: a -> [HsName]
+  codomain :: a -> [HsName]
+  
+instance Domain a => Domain [a] where
+  domain   = concatMap domain
+  codomain = concatMap codomain
+  
+instance Domain TyIndex where
+  domain   (TyIndex_Group a _) = a
+  codomain (TyIndex_Group _ a) = ftv a
+  
+instance Domain Env where
+  domain   = M.keys
+  codomain = codomain . M.elems
+  
+-- | Updating a prefix
+update :: (Prefix, Either Scheme Sub) -> (Prefix, Env)
+update (q, Right (a, p))
+  = let (q0, qr) = split (q, ftv p)
+    in undefined 
+  
 -- | Extending a Prefix with a Scheme
 extend :: (Prefix, Scheme) -> (Prefix, Env)
 extend (q, scheme@(Scheme_Simple var phi))
@@ -196,6 +245,10 @@ extend (q, scheme@(Scheme_Simple var phi))
    in case p of
         TyScheme_SystemF p'  -> (q, M.fromList [(var, p)])
         _                    -> ((TyIndex_Group var (promote phi)):q, M.empty)
+        
+-- | Checks a prefix to see if it has a binding for a variable and select it
+contains :: Prefix -> HsName -> Maybe TyQuantifiedScheme
+contains pref name = msum $ map (\(TyIndex_Group nm b) -> when (nm == name) >> return b)
       
 -- | Promote/Convert a Type Scheme to a quantified type scheme. 
 --   This greatly influences the types. Might need to be reconsidered and checked 
@@ -204,7 +257,7 @@ promote :: TyScheme -> TyQuantifiedScheme
 promote TyScheme_Bottom                            = TyQuantifiedScheme_Bottom
 promote (TyScheme_Quant (Scheme_Simple nm ty) ty') = TyQuantifiedScheme_Quant (TyIndex_Group nm (promote ty)) ty'
 promote phi@(TyScheme_SystemF{})                   
-  = let vars = ftv phi
+  = let vars = ftv phi -- replace by bounds variables
     in compact vars phi
    where compact (x:xs) p = TyQuantifiedScheme_Quant (TyIndex_Group x (compact xs p)) p
          compact []     p = TyQuantifiedScheme_Bottom
@@ -219,15 +272,36 @@ fresh x = (mkName $ "a" ++ show x, x+1)
 mkArrow :: TyExpr -> TyExpr -> TyExpr
 mkArrow a b = TyExpr_App a (TyExpr_App (TyExpr_Con $ mkName "->") b)
 
+mkVar :: TyExpr -> TyScheme
+mkVar = TyScheme_SystemF . TyExpr_Var
+
 -- | Desugar a forall Q.phi to (a>=phi1).(b>=phi2).phi etc
 --   basically unfolds the type
 desugar :: TyScheme -> TyScheme
 desugar (TyScheme_Sugar q t) = let bounds = [TyScheme_Quant (Scheme_Simple nm (toScheme b)) | (TyIndex_Group nm b) <- q] 
                                in foldr (.) id bounds t
-  where toScheme :: TyQuantifiedScheme -> TyScheme
-        toScheme TyQuantifiedScheme_Bottom                             = TyScheme_Bottom
-        toScheme (TyQuantifiedScheme_Quant (TyIndex_Group nm bound) t) = TyScheme_Quant (Scheme_Simple nm (toScheme bound)) t
 desugar x = x
+
+-- | Insure that the TyScheme is in a sugared form if possible
+sugar :: TyScheme -> TyScheme
+sugar (TyScheme_Quant (Scheme_Simple nm b) t) 
+    = let q' = TyIndex_Group nm (fromScheme b)
+      in case sugar t of
+          TyScheme_Sugar q t -> TyScheme_Sugar (q':q) t
+          x                  -> TyScheme_Sugar [q']   t
+sugar x = x
+
+-- | Convert a Quantified Scheme to a TyScheme such that
+--   toScheme . fromScheme == id
+toScheme :: TyQuantifiedScheme -> TyScheme
+toScheme TyQuantifiedScheme_Bottom                             = TyScheme_Bottom
+toScheme (TyQuantifiedScheme_Quant (TyIndex_Group nm bound) t) = TyScheme_Quant (Scheme_Simple nm (toScheme bound)) t
+
+-- | Convert a TyScheme to a Quantified Scheme such that
+--   toScheme . fromScheme == id
+fromScheme :: TyScheme -> TyQuantifiedScheme
+fromScheme TyScheme_Bottom                         = TyQuantifiedScheme_Bottom
+fromScheme (TyScheme_Quant (Scheme_Simple nm b) t) = TyQuantifiedScheme_Quant (TyIndex_Group nm (fromScheme b)) t
 
 -- | Fully quantify a type based on the type variable it contains.
 --   e.g. List a becomes forall (a>=_|_). List a
@@ -241,14 +315,19 @@ mkQuantified exp
 class Simplify a where
   simplify :: a -> a
   
--- | A strong but inefficient alpha renamer (for 
+-- | A strong but inefficient alpha renamer (for pretty printing)
 alpha_rename :: TyScheme -> TyScheme
 alpha_rename ty 
  = let nvars = map (TyScheme_SystemF . TyExpr_Var . mkName) $ (map (:[]) ['a'..'z']) ++ liftM2 (\b a -> a : show b) [1..] ['a'..'z']
        fvars = nub $ vars ty
        env   = zip fvars nvars
    in  maybe ty id $ appAll (M.fromList env) ty
-  
+     
+-- | Check to see if a tyScheme is _|_    
+isBottom :: TyScheme -> Bool
+isBottom TyScheme_Bottom = True
+isBottom _               = False
+   
 instance Simplify TyScheme where           
     -- | Simplify a type scheme for presentation, dropping trivial quantifications
     --   e.g. (a>=_|_) to a, and expanding types.
@@ -352,7 +431,7 @@ data TyScheme
   con Forall
      tyQuant :: [HsName]
      tyExpr  :: TyScheme
-  
+
 -- A simple tybound e.f. (a >= phi)
 data Scheme
   con Simple
@@ -919,14 +998,24 @@ datasem Expr monad IO
        loc.temp3 = curry extend (fst loc.temp2) $ Scheme_Simple loc.b  (TyScheme_Bottom)
        
        (loc.q2', loc.e2') = (fst loc.temp3, (snd loc.temp1) `M.union` (snd loc.temp2) `M.union` (snd loc.temp3))
-       (loc.q3, loc.e3) = const undefined loc.q2' -- temporary placeholder. Unification needs to be implemented to finish this
+       
+       child u : Unify = unify
+       u.pre  = loc.q2'
+       u.exp1 = appAll loc.e2' (mkVar loc.a1)
+       u.exp2 = (appAll loc.e2' (mkVar loc.a2)) `mkArrow` (mkVar loc.b)
+       u.frs  = arg.frs
+       
+       invoke unify of u
+       
+       loc.q3 = u.pre
+       loc.e3 = u.sub
        (loc.q4, loc.q5) = curry split loc.q3 (domain lhs.pre)
     
        lhs.res = let b = TyScheme_SystemF (TyExpr_Var loc.b)
                  in return $ desugar $ TyScheme_Sugar loc.q5 (fromJust $ appAll loc.e3 b)
        lhs.sub = func.sub `M.union` arg.sub `M.union` loc.e3
        lhs.nxe = loc.q4
-       lhs.frs = arg.frs
+       lhs.frs = u.frs
     clause Let        
         decls.pre = lhs.pre
         decls.env = lhs.env
@@ -1072,7 +1161,233 @@ datasem Expr monad IO
        lhs.sub = lhs.env
        lhs.nxe = lhs.pre
        lhs.frs = loc.frs1
+       
+itf Unify
+  visit unify
+    inh pre  :: Prefix
+    inh exp1 :: TyExpr
+    inh exp2 :: TyExpr
+    inh frs  :: Int
+    syn pre  :: Prefix
+    syn sub  :: Env
+    syn frs  :: Int
+
+itf Subsume
+  visit subsume
+    inh pre  :: Prefix
+    inh exp  :: TyExpr
+    inh ty   :: TyScheme
+    inh frs  :: Int
+    syn pre  :: Prefix
+    syn sub  :: Env
+    syn frs  :: Int
+    
+itf UnifyScheme
+  visit unifyScheme
+    inh pre  :: Prefix
+    inh ty1  :: TyScheme
+    inh ty2  :: TyScheme
+    inh frs  :: Int
+    syn pre  :: Prefix
+    syn sub  :: Env
+    syn ty   :: TyScheme
+    syn frs  :: Int
+
 {
+unifyScheme = sem unifyScheme : UnifyScheme monad IO
+                visit unifyScheme
+                  default? pre = last
+                  default? frs = last
+                  default? sub = const M.empty
+                  clause Main_unifyScheme
+                    loc.nfTy = isNf lhs.ty1
+                    loc.nfTs = isNf lhs.ty2
+                    loc.nf   = loc.nfTy && loc.nfTs
+                    internal nf_check
+                        loc.b1 = isBottom lhs.ty1
+                        loc.b2 = isBottom lhs.ty2
+                        clause s_subsume
+                          match True       = loc.nf
+                          internal bot_check
+                            clause first_bottom
+                                match True = loc.b1
+                                lhs.ty     = lhs.ty2
+                            clause second_bottom
+                                match True = loc.b2
+                                lhs.ty     = lhs.ty1
+                            clause norm
+                                match False = loc.b1 || loc.b2
+                                match TyScheme.Sugar@exp1 = sugar lhs.ty1
+                                match TyScheme.Sugar@exp2 = sugar lhs.ty2
+                                
+                                loc.q = lhs.pre
+                                
+                                child u : Unify = unify
+                                
+                                u.pre  = loc.q ++ exp1.prefix ++ exp2.prefix
+                                u.exp1 = exp1.tyExpr
+                                u.exp2 = exp2.tyExpr
+                                u.frs  = lhs.frs
+                                
+                                invoke unify of u
+                                
+                                loc.q3 = u.pre
+                                loc.e3 = u.sub
+                                
+                                (loc.q4, loc.q5) = split (loc.q3, domain loc.q)
+                                
+                                lhs.frs = u.frs
+                                lhs.pre = loc.q4
+                                lhs.sub = loc.e3
+                                lhs.ty  = let ty  = appAll loc.e3 exp1.tyExpr
+                                              ret = TyScheme_Sugar loc.q5 ty
+                                          in desugar ret
+                        clause f_subsume
+                          match False                 = loc.nf
+                          lhs.ty = error "unifyScheme failure, ty1 or ty2 is not in normal form"
+
+subsume = sem subsume : Subsume monad IO 
+             visit subsume
+               default? pre = last
+               default? frs = last
+               clause Main_sumsume
+                loc.nfTy = isNf lhs.exp
+                loc.nfTs = isNf lhs.ty
+                loc.nf   = loc.nfTy && loc.nfTs
+                internal nf_check
+                    clause s_subsume
+                      match True                  = loc.nf
+                      match TyExpr.Quant@exp      = lhs.exp
+                      match TyScheme.Sugar@scheme = sugar lhs.ty
+                      
+                      loc.q  = lhs.pre
+                      loc.q2 = scheme.prefix
+                      
+                      child u : Unify = unify
+                      
+                      (loc.c, loc.frs1) = fresh lhs.frs
+                      u.pre  = loc.q ++ loc.q2
+                      u.exp1 = app (exp.tyVar, mkVar loc.c ) exp.tyExpr
+                      u.exp2 = scheme.tyExpr
+                      u.frs  = loc.frs1
+                      
+                      invoke unify of u
+                      
+                      loc.q1 = u.pre
+                      loc.e1 = u.sub
+                      
+                      (loc.q3, loc.q4) = split (loc.q1, domain loc.q)
+                      loc.e2 = loc.e1 `remove` (domain loc.q)
+                      
+                      loc.check = loc.c `elem` (codomain loc.e2 ++ codomain loc.q3)
+                      
+                      internal skol_check
+                        clause succeeded
+                          match True  = loc.check
+                          lhs.pre = loc.q3
+                          lhs.sub = loc.e2
+                          lhs.frs = u.frs
+                        clause failed
+                          match False = loc.check
+                          lhs.sub = error "Subsume failure, the TyExpr or TyScheme is not in normal form"
+                  
+                    clause f_subsume
+                      match False                 = loc.nf
+                      lhs.sub = cerror "Subsume failure, the resulting types still have reference to a fresh skolem constant"
+
+unify = sem unify : Unify monad IO    
+          visit unify
+             default? pre = last
+             default? frs = last
+             default? sub = const (error "Generic Unify failure")
+             clause Main_unify
+               loc.nfTy1 = isNf lhs.exp1
+               loc.nfTy2 = isNf lhs.exp2
+               loc.nf    = loc.nfTy1 && loc.nfTy2
+               internal nf_check
+                 clause s_unify
+                   match True  = loc.nf
+                   internal ty_check
+                     clause vars
+                       match TyExpr.Var@var1 = lhs.exp1
+                       match TyExpr.Var@var2 = lhs.exp2
+                       
+                       loc.q  = lhs.pre
+                       loc.p1 = loc.q `contains` var1.nm
+                       loc.p2 = loc.q `contains` var2.nm
+                       internal var_check
+                         loc.isJust    = isJust loc.p1 && isJust loc.p2
+                         clause pure_var
+                           match False = loc.isJust
+                           lhs.sub = M.empty 
+                         clause ty_var
+                           match True  = loc.isJust
+                           loc.phi1 = fromJust loc.p1
+                           loc.phi2 = fromJust loc.p2
+                           loc.exists = let v1 = (loc.q `elide` phi1) `contains` var1.nm
+                                            v2 = (loc.q `elide` phi2) `contains` var2.nm
+                                        in v1 || v2
+                           internal dom_check
+                             clause s_dom_check
+                               match True  = loc.exists
+                               lhs.sub = error "Domain check failed in Unify"
+                             clause f_dom_check
+                               match False = loc.exists
+                               
+                               child s : UnifyScheme = unifyScheme
+                               
+                               s.pre = loc.q
+                               s.frs = lhs.frs
+                               s.ty1 = phi1
+                               s.ty2 = phi2
+                               
+                               invoke unifyScheme of s
+                               
+                               loc.q1  = s.pre
+                               loc.e1  = s.sub
+                               loc.phi = s.ty
+                               
+                               (loc.q2, loc.e2) = update (loc.q1, Right (var1.nm, mkVar var2.nm))
+                               (loc.q3, loc.e3) = update (loc.q2, Left (Scheme_Simple var2.nm loc.phi)) 
+                               
+                               lhs.frs = s.frs
+                               lhs.pre = loc.q3
+                               lhs.sub = loc.e3 `M.union` loc.e2 `M.union` loc.e1
+                     clause cons
+                     clause quant
+                       match TyExpr.Quant@var1 = lhs.exp1
+                       match TyExpr.Quant@var2 = lhs.exp2
+                       
+                       child u : Unify = unify
+                       
+                       (loc.c, loc.frs1) = fresh lhs.frs
+                       loc.varc = mkVar loc.c
+                       u.frs  = loc.frs1
+                       u.pre  = lhs.pre
+                       u.exp1 = app (var1.tyVar, loc.varc) var1.tyExpr
+                       u.exp2 = app (var2.tyVar, loc.varc) var2.tyExpr
+                       
+                       invoke unify of u
+                       
+                       loc.q1 = u.pre
+                       loc.e1 = u.sub
+                       
+                       loc.check = loc.c `elem` (codomain loc.e1 ++ codomain loc.q1)
+                       
+                       internal skol_check
+                          clause succeeded
+                            match True  = loc.check
+                            lhs.pre = loc.q1
+                            lhs.sub = loc.e1
+                            lhs.frs = u.frs
+                          clause failed
+                            match False = loc.check
+                            lhs.sub = error "Subsume failure, the TyExpr or TyScheme is not in normal form"
+                            
+                 clause f_unify
+                   match False = loc.nf
+                   lhs.sub = error "Unify failure, one or both of the TyExpr are not in normal form."
+ 
 typeCheck ::  Expr -> IO ([TyScheme], Env, Prefix, Int)
 typeCheck exp = do
   let inh = Inh_Expr_infer { exp_Inh_Expr = exp
