@@ -16,6 +16,11 @@ Lambda bindings always float up all the way to the module level.
 CAF bindings may be intercepted on their way up if they encounter a *strict* Let.
 The meaning of a "closurable" CAF binding is defined in CommonFloat.
 
+20100914 AD:
+The following invariants are and must be maintained:
+* keep order of defs intact, that is. 'define before use'. In particular nested defs must end before (!) the def they are lifted from
+* keep mutual recursiveness (mutrec), that is nested non-mutrec is implicitly mutrec when inside a mutrec def, so they must end up in the same mutrec binding group.
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Float lambdas to global level
@@ -57,11 +62,6 @@ cmodTrfFloatToGlobal cmod
      in   cTrf_Syn_CodeAGItf t
 %%]
 
-%%[(8 codegen)
-ATTR CodeAGItf [ | | cTrf: CModule ]
-ATTR AllCodeNT [ | | cTrf: SELF    ]
-%%]
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Level
@@ -95,32 +95,43 @@ Groups of bindings floated upwards are inserted when a particular Let is encount
 * Let at lower level:       
 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Is expr an instance? Based on meta info.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %%[(9 codegen)
 ATTR AllBind AllExprOnly   [ isLocalInInstance : {Bool} | | ]
 ATTR CMetaVal CMetas  [ | | isInstance : {Bool} ]
 
 SEM CMetaVal
-  | DictInstance   lhs.isInstance = True
-  | *-DictInstance lhs.isInstance = False
+  | DictInstance        lhs         .   isInstance          =   True
+  | * - DictInstance    lhs         .   isInstance          =   False
 
 SEM CBindAspect
-  | Bind   expr . isLocalInInstance = -- trace ("Bind " ++ show @nm ++ " passes " ++ show @bindMeta.isInstance)  $
-                                      @bindMeta.isInstance || @lhs.isLocalInInstance
+  | Bind                expr        .   isLocalInInstance   =   -- trace ("Bind " ++ show @nm ++ " passes " ++ show @bindMeta.isInstance)  $
+                                                                @bindMeta.isInstance || @lhs.isLocalInInstance
   
   
 SEM CExpr
-  | Let    body  . isLocalInInstance = -- trace ("Let passes to body " ++ show @lhs.isLocalInInstance)  $
-                                       @lhs.isLocalInInstance
-           binds . isLocalInInstance = -- trace ("Let passes to binds " ++ show @lhs.isLocalInInstance)  $
-                                       @lhs.isLocalInInstance
-  | *-Let  loc   . isLocalInInstance = False
+  | Let                 body        .   isLocalInInstance   =   -- trace ("Let passes to body " ++ show @lhs.isLocalInInstance)  $
+                                                                @lhs.isLocalInInstance
+                        binds       .   isLocalInInstance   =   -- trace ("Let passes to binds " ++ show @lhs.isLocalInInstance)  $
+                                                                @lhs.isLocalInInstance
+  | * - Let             loc         .   isLocalInInstance   =   False
+
 SEM CAlt
-  | Alt    expr  . isLocalInInstance = False
+  | Alt                 expr        .   isLocalInInstance   =   False
+
 SEM CModule
-  | Mod    expr  . isLocalInInstance = False
+  | Mod                 expr        .   isLocalInInstance   =   False
+
 SEM CPatFld
-  | Fld    offset. isLocalInInstance = False
+  | Fld                 offset      .   isLocalInInstance   =   False
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% The various sets of bindings
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen)
 ATTR AllBind   [ | | cLamBinds, 
@@ -128,85 +139,119 @@ ATTR AllBind   [ | | cLamBinds,
                      cSmallCAFBinds   USE {`Seq.union`} {Seq.empty}: {Seq.FastSeq CBind}                          ]
 
 
-ATTR AllCodeNT [ | | cFloatedBinds USE {++} {[]}: {[(CBindingsCateg,Seq.FastSeq CBind)]} ]
-
 SEM CBindAspect
-  | Bind        loc	. cBindTrf		=	acoreBind1Asp1 @lhs.nm @cTrf
+  | Bind        loc . cBindTrf          =   acoreBind1Asp1 @lhs.nm @cTrf
                 lhs . ( cLamBinds
                       , cLargeCAFBinds
                       , cSmallCAFBinds
-                      )             =   if isJust @expr.mbLam
-                                        then ( Seq.singleton @cBindTrf
-                                             , Seq.empty
-                                             , Seq.empty
-                                             )
-                                        else if @loc.isClosurableBind
+                      )                 =   if isJust @expr.mbLam
+                                            then ( Seq.singleton @cBindTrf
+                                                 , Seq.empty
+                                                 , Seq.empty
+                                                 )
+                                            else if @loc.isClosurableBind
 %%[[9
-                                                || @lhs.isLocalInInstance
+                                                    || @lhs.isLocalInInstance
 %%]]
-                                        then ( Seq.empty
-                                             , Seq.singleton @cBindTrf
-                                             , Seq.empty
-                                             )
-                                        else ( Seq.empty
-                                             , Seq.empty
-                                             , Seq.singleton @cBindTrf
-                                             )
+                                            then ( Seq.empty
+                                                 , Seq.singleton @cBindTrf
+                                                 , Seq.empty
+                                                 )
+                                            else ( Seq.empty
+                                                 , Seq.empty
+                                                 , Seq.singleton @cBindTrf
+                                                 )
   -- | FFI
 %%[[90
   | FFE
-                lhs . cSmallCAFBinds   =   Seq.singleton (acoreBind1Asp1 @lhs.nm @cTrf)
+                lhs . cSmallCAFBinds    =   Seq.singleton (acoreBind1Asp1 @lhs.nm @cTrf)
 %%]]
 
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Floated binding groups
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AllCodeNT [ | | cFloatedBindGrps USE {`Seq.union`} {Seq.empty}: {Seq.FastSeq (CBindingsCateg,Seq.FastSeq CBind)} ]
+
+SEM CExpr
+  | Let         lhs . cFloatedBindGrps  =   if @lhs.lev == cLevModule
+                                            then Seq.empty
+                                            else @loc.bindingGroupsToFloat
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Sorting out what should be floated
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+SEM CExpr
+  | Let         loc.( bindingsToKeep
+                    , bindingsToFloat
+                    )                   =   if @lhs.lev == cLevModule
+                                            then  ( @binds.cLargeCAFBinds `Seq.union` @binds.cSmallCAFBinds `Seq.union` @binds.cLamBinds
+                                                  , Seq.empty
+                                                  )
+                                            else if @categ == CBindings_Strict 
+                                            then  ( @binds.cLargeCAFBinds `Seq.union` @binds.cSmallCAFBinds
+                                                  , @binds.cLamBinds
+                                                  )
+                                            else  ( @binds.cSmallCAFBinds
+                                                  , @binds.cLamBinds `Seq.union` @binds.cLargeCAFBinds
+                                                  )
 
 
 SEM CExpr
-  | Let         loc.bindingsToKeep    = if @lhs.lev == cLevModule
-                                        then  @binds.cLargeCAFBinds `Seq.union` @binds.cSmallCAFBinds `Seq.union` @binds.cLamBinds
-                                        else if  @categ == CBindings_Strict 
-                                        then  @binds.cLargeCAFBinds `Seq.union` @binds.cSmallCAFBinds
-                                        else  @binds.cSmallCAFBinds
-
-                loc.bindingsToFloat   = if @lhs.lev == cLevModule
-                                        then  Seq.empty
-                                        else if  @categ == CBindings_Strict 
-                                        then  @binds.cLamBinds
-                                        else  (@binds.cLamBinds `Seq.union` @binds.cLargeCAFBinds)
+  | Let         loc.bindingGroupsToCertainlyInsert
+                                        =   if @lhs.lev == cLevModule
+                                            then -- merge inner floating binds if a recursive group; by definition no strict defs are floated, plain defs safely can be recursive
+                                                 case @categ of
+                                                   CBindings_Rec -> Seq.singleton (@categ, (flatten $ Seq.map snd @binds.cFloatedBindGrps) `Seq.union` @loc.bindingsToKeep)
+                                                   _             -> @binds.cFloatedBindGrps `Seq.union` Seq.singleton (@categ, @loc.bindingsToKeep)
+                                            else Seq.singleton (@categ, @loc.bindingsToKeep)
 
 SEM CExpr
-  | Let         loc.bindingGroupsToCertainlyInsert  =  (@categ, @loc.bindingsToKeep) :
-                                                       if @lhs.lev == cLevModule
-                                                       then @binds.cFloatedBinds
-                                                       else []
+  | Let         loc.bindingGroupsToPossiblyFloat
+                                        =   if @lhs.lev == cLevModule
+                                            then Seq.empty
+                                            else (Seq.singleton (@categ, @loc.bindingsToFloat) `Seq.union` @binds.cFloatedBindGrps `Seq.union` @body.cFloatedBindGrps)
 
 SEM CExpr
-  | Let         loc.bindingGroupsToPossiblyFloat   =  if @lhs.lev == cLevModule
-                                                      then []
-                                                      else ((@categ, @loc.bindingsToFloat) :  ( @binds.cFloatedBinds ++ @body.cFloatedBinds ))
+  | Let         loc.( bindingGroupsToInsert
+                    , bindingGroupsToFloat
+                    )                   =   move (@loc.bindingGroupsToCertainlyInsert, @loc.bindingGroupsToPossiblyFloat)
 
-SEM CExpr
-  | Let         loc.(bindingGroupsToInsert
-                    ,bindingGroupsToFloat
-                    )                           =  move (@loc.bindingGroupsToCertainlyInsert, @loc.bindingGroupsToPossiblyFloat)
+%%]
 
-{
+%%[(8 codegen) hs
+flatten :: Seq.FastSeq (Seq.FastSeq a) -> Seq.FastSeq a
+flatten = Seq.unions . Seq.toList
+%%]
+
+%%[(8 codegen) hs
+move insflt@(ins,flt)
+  = insflt
+%%]
 move insflt@(ins,flt)
   =  let (g1,g2) = partition p flt
      in  case g1 of
               [] -> insflt
               _  -> move (ins++g1, g2)
      where p f = False    
-    
-}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% The actual transformation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[(8 codegen)
+ATTR CodeAGItf [ | | cTrf: CModule ]
+ATTR AllCodeNT [ | | cTrf: SELF    ]
+%%]
+
+%%[(8 codegen)
 SEM CExpr
-  | Let         lhs . cFloatedBinds   =  if @lhs.lev == cLevModule
-                                         then []
-                                         else @loc.bindingGroupsToFloat
-
-SEM CExpr
-  | Let         lhs . cTrf           =   foldr (\(c,b) r -> acoreLet c (Seq.toList b) r)  @body.cTrf  @loc.bindingGroupsToInsert
-
-
+  | Let         lhs . cTrf              =   foldr (\(c,b) r -> acoreLet c (Seq.toList b) r) @body.cTrf
+                                            $ Seq.toList @loc.bindingGroupsToInsert
 %%]

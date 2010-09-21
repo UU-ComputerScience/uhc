@@ -57,7 +57,7 @@ SEM CModule
                             .   isTopTup    =   True
 
 SEM CBindAspect
-  | Bind        expr        .   isTopApp    =   True
+  | Bind Val    expr        .   isTopApp    =   True
                             .   isTopTup    =   True
 
 SEM CPatFld
@@ -80,7 +80,8 @@ SEM CExpr
   | Lam         loc         .   whatBelow       =   ExprIsLam
   | Var         loc         .   whatBelow       =   ExprIsVar @nm
   | Int         loc         .   whatBelow       =   ExprIsInt @int
-  | * - Lam Var Int Ann CaseAltFail
+  | App			loc			.	whatBelow		=	maybe (ExprIsApp 1) (\a -> ExprIsApp $ a + 1) $ whatExprMbApp @func.whatBelow
+  | * - Lam App Var Int Ann CaseAltFail
                 loc         .   whatBelow       =   ExprIsOther
 %%]
 
@@ -94,7 +95,7 @@ SEM CExpr
   				loc			.	whatAbove		=	ExprIsOther
 
 SEM CBindAspect
-  | Bind		loc			.	whatAbove		=	ExprIsOther
+  | Bind Val	loc			.	whatAbove		=	ExprIsOther
 
 SEM CPatFld
   | Fld 		loc			.	whatAbove		=	ExprIsOther
@@ -125,7 +126,7 @@ SEM CModule
                             .   isLamBody   =   False
 
 SEM CBindAspect
-  | Bind        expr        .   isStrict    =   @lhs.isStrict || @expr.whatBelow == ExprIsLam
+  | Bind Val    expr        .   isStrict    =   @lhs.isStrict || @expr.whatBelow == ExprIsLam
 
 SEM CPatFld
   | Fld         offset      .   isStrict    =   True
@@ -158,6 +159,6 @@ SEM CExpr
 %%]
 
 SEM CBindAspect
-  | Bind        expr        .   evalCtx         =   if @expr.whatBelow == ExprIsLam
+  | Bind Val    expr        .   evalCtx         =   if @expr.whatBelow == ExprIsLam
                                                     then EvalCtx_Eval
                                                     else @lhs.evalCtx

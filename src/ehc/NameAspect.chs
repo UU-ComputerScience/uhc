@@ -11,9 +11,6 @@
 %%[1 export(IdDefOcc(..),emptyIdDefOcc,mkIdDefOcc)
 %%]
 
-%%[8 import({%{EH}Base.CfgPP})
-%%]
-
 %%[9999 import({%{EH}Base.ForceEval})
 %%]
 
@@ -288,24 +285,8 @@ instance ForceEval IdDefAsp where
 %%% PP
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(ppIdOcc)
--- intended for parsing
-ppIdOcc :: CfgPP x => x -> IdOcc -> PP_Doc
-ppIdOcc x o = ppCurlysCommas [cfgppHsName x (ioccNm o),pp (ioccKind o)]
-%%]
-
 %%[1.PP.IdOcc
 instance PP IdOcc where
   pp o = ppCurlysCommas [pp (ioccNm o),pp (ioccKind o)]
-%%]
-
-%%[8 -1.PP.IdOcc
-instance PP IdOcc where
-  pp = ppIdOcc CfgPP_Plain
-%%]
-
-%%[2020
-instance PPForHI IdOcc where
-  ppForHI = ppIdOcc CfgPP_HI
 %%]
 

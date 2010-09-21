@@ -5,7 +5,7 @@
 The content of this module depends on Base.Builtin and Base.Opts,
 hence must be in a separate module.
 
-%%[8 module {%{EH}Base.Builtin2} import({%{EH}Base.HsName},{%{EH}Base.Builtin},{%{EH}Base.Opts})
+%%[8 module {%{EH}Base.Builtin2} import({%{EH}Base.HsName},{%{EH}Base.Builtin},{%{EH}Opts})
 %%]
 
 %%[8 import(qualified {%{EH}Config} as Cfg)

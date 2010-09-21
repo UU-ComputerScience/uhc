@@ -58,13 +58,6 @@ DATA Decl
                     kiExpr          : KiExpr
 %%]
 
-Nonterminals for controlling restrictions on annotations.
-
-%%[7_2
-  | AnnSigExpSeq    pat             : {TyConSeqPat}
-  | AnnSigDtMono    tycons          : AnnDtMonoRestrictions
-%%]
-
 %%[(8 codegen)
 DATA Decl
   | FFI             callconv        : {FFIWay}

@@ -7,7 +7,7 @@
 %%% Haskell interface to AG generated code for compiler
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 hs module {%{EH}EH.MainAG} import(Data.Char,Data.List as List,EH.Util.Pretty,{%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Base.Opts}, {%{EH}Gam.Full},{%{EH}Error},{%{EH}Error.Pretty}, {%{EH}EH})
+%%[1 hs module {%{EH}EH.MainAG} import(Data.Char,Data.List as List,EH.Util.Pretty,{%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Opts}, {%{EH}Gam.Full},{%{EH}Error},{%{EH}Error.Pretty}, {%{EH}EH})
 %%]
 
 %%[(1 hmtyinfer || hmtyast).Ty hs import({%{EH}Ty})
@@ -69,6 +69,10 @@
 %%]
 %%[(96 codegen) hs import({%{EH}BuiltinPrims},{%{EH}Foreign},{%{EH}Foreign.Extract})
 %%]
+
+%%[(9 hmtyinfer) hs import(Control.Monad.State)
+%%]
+
 %%[(9 codegen hmtyinfer) hs import({%{EH}Ty.Utils2})
 %%]
 
@@ -468,7 +472,7 @@ SEM KiExpr
 ATTR PatExpr [ | | mbTopNm: {Maybe HsName} ]
 
 SEM PatExpr
-  | Var VarAs   loc         .   mbTopNm             =   if @nm == hsnWild then Nothing else Just @nm
+  | Var VarAs   loc         .   mbTopNm             =   if hsnIsWild @nm then Nothing else Just @nm
 %%[[1
   | * - Var VarAs
                 loc         .   mbTopNm             =   Nothing
@@ -483,7 +487,7 @@ SEM PatExpr
 ATTR PatExpr [ | | topNm: HsName ]
 
 SEM PatExpr
-  | Var VarAs   loc         .   topNm               =   if @nm == hsnWild then uidHNm @lUniq else @nm
+  | Var VarAs   loc         .   topNm               =   if hsnIsWild @nm then uidHNm @lUniq else @nm
   | App         lhs         .   topNm               =   hsnUnknown
   | AppTop Con Rec CConst IConst DataFields
 %%[[97

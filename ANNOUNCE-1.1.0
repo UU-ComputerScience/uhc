@@ -17,6 +17,9 @@ previous first release:
   * UHC knows about packages, and Cabal version 1.9.3 and later have
     basic support for UHC, so that Cabal can be used to build UHC packages.
   
+  * For the default backend libraries are provided until including
+    package haskell98.
+  
   * The runtime system is no longer dependent on Boehm garbage
     collector, but uses UHCs own, a swap space collector allowing
     parameterization with backend specifics.
@@ -54,7 +57,7 @@ Warning
 -------
 
 Although we think that the compiler is stable enough to compile
-subtantial Haskell programs, we do not recommend yet to use it for any
+substantial Haskell programs, we do not recommend yet to use it for any
 serious development work in Haskell. We ourselves use the GHC as a
 development platform! We think however that it provides a great platform
 for experimenting with language implementations, language extensions,

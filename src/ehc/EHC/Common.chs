@@ -14,7 +14,7 @@ Used by all compiler driver code
 %%]
 %%[1 import(EH.Util.CompileRun, EH.Util.Pretty, EH.Util.FPath, EH.Util.Utils) export(module EH.Util.CompileRun, module EH.Util.Pretty, module EH.Util.FPath, module EH.Util.Utils)
 %%]
-%%[1 import({%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{EH}Base.Opts}) export(module {%{EH}Base.Common}, module {%{EH}Base.Builtin}, module {%{EH}Base.Opts})
+%%[1 import({%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{EH}Opts}) export(module {%{EH}Base.Common}, module {%{EH}Base.Builtin}, module {%{EH}Opts})
 %%]
 %%[1 import({%{EH}Error},{%{EH}Error.Pretty}) export(module {%{EH}Error},module {%{EH}Error.Pretty})
 %%]

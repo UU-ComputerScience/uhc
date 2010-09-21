@@ -7,7 +7,7 @@
 %%% Utilities for dealing with FFI, for now part of Core, meant for Grin gen
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) module {%{EH}Core.FFI} import({%{EH}Base.Builtin},{%{EH}Base.Builtin2},{%{EH}Base.Opts},{%{EH}Base.Common})
+%%[(8 codegen) module {%{EH}Core.FFI} import({%{EH}Base.Builtin},{%{EH}Base.Builtin2},{%{EH}Opts},{%{EH}Base.Common})
 %%]
 
 %%[(8 codegen) hs import(qualified Data.Map as Map,Data.Maybe)

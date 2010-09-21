@@ -7,7 +7,7 @@
 %%% Haskell importable interface to GRIN code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin) hs module {%{EH}GrinCode} import({%{EH}Base.Common},{%{EH}Base.Opts},EH.Util.Pretty,EH.Util.Utils)
+%%[(8 codegen grin) hs module {%{EH}GrinCode} import({%{EH}Base.Common},{%{EH}Opts},EH.Util.Pretty,EH.Util.Utils)
 %%]
 
 %%[(8 codegen grin) hs import(qualified Data.Map as Map,qualified Data.Set as Set,qualified Data.List as List)

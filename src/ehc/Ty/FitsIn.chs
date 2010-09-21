@@ -32,7 +32,7 @@
 %%[(2 hmtyinfer) import({%{EH}VarMp},{%{EH}Substitutable})
 %%]
 
-%%[(4 hmtyinfer) import({%{EH}Ty.Trf.Instantiate}, {%{EH}Ty.FitsInCommon2}, {%{EH}Base.Opts}, {%{EH}Gam.Full}, Data.Maybe,Data.List as List)
+%%[(4 hmtyinfer) import({%{EH}Ty.Trf.Instantiate}, {%{EH}Ty.FitsInCommon2}, {%{EH}Opts}, {%{EH}Gam.Full}, Data.Maybe,Data.List as List)
 %%]
 %%[(4 hmtyinfer) import({%{EH}Ty.AppSpineGam})
 %%]
@@ -1030,6 +1030,16 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                 |     lBefR && fiAllowTyVarBind fi t1   = Just $ bind fi True  v1 (updTy t2)
                 | not lBefR && fiAllowTyVarBind fi t2   = Just $ bind fi False v2 (updTy t1)
                 where lBefR = fioBindLBeforeR (fiFIOpts fi)
+            {-
+            varBind1  fi updTy t1@(Ty_Var v1 f1)      t2
+                | isJust mbNoise                        = case fromJust mbNoise of
+                                                            (Ty_Var v2 f2) | v1 == v2 && f1 == f2 -> Just $ res fi t1
+                where mbNoise = tyUnNoiseForVarBind t2
+            varBind1  fi updTy t1                     t2@(Ty_Var v2 f2)
+                | isJust mbNoise                        = case fromJust mbNoise of
+                                                            (Ty_Var v1 f1) | v1 == v2 && f1 == f2 -> Just $ res fi t2
+                where mbNoise = tyUnNoiseForVarBind t1
+            -}
             varBind1  _  _     _                      _ = Nothing       
 
 			-- | tvar binding part 2: 1 of 2 tvars, impredicatively
@@ -1037,6 +1047,16 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                 | allowImpredTVBindL fi t1 t2           = Just $ occurBind fi True  v1 (updTy t2)
             varBind2  fi updTy t1                     t2@(Ty_Var v2 _)
                 | allowImpredTVBindR fi t2 t1           = Just $ occurBind fi False v2 (updTy t1)
+            {-
+            varBind2  fi updTy t1@(Ty_Var v1 f1)      t2
+                | isJust mbNoise                        = case fromJust mbNoise of
+                                                            (Ty_Var v2 f2) | v1 == v2 && f1 == f2 -> Just $ res fi t1
+                where mbNoise = tyUnNoiseForVarBind t2
+            varBind2  fi updTy t1                     t2@(Ty_Var v2 f2)
+                | isJust mbNoise                        = case fromJust mbNoise of
+                                                            (Ty_Var v1 f1) | v1 == v2 && f1 == f2 -> Just $ res fi t2
+                where mbNoise = tyUnNoiseForVarBind t1
+            -}
             varBind2  _  _     _                      _ = Nothing       
 
 			-- | tvar binding part 3: 1 of 2 tvars, non impredicatively
@@ -1099,6 +1119,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
 %%]
 
 %%[(4 hmtyinfer).fitsIn.Ann
+            -- get rid of annotation for fitsIn, but preserve as result
             fUpd fi updTy t1@(Ty_Ann TyAnn_Mono at1)     	t2          = fo
                 where fi2 = fi { fiFIOpts = (fiFIOpts fi) {fioBindLFirst = False} }
                       fo  = fVar' fUpd fi2 (updTy . tyAnnMono) at1 t2
@@ -1112,7 +1133,28 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                                                     			        = fVar' fUpd fi updTy t1 at2
 %%]
 
-%%[(4 hmtyinfer).fitsIn.Ann
+%%[(9 hmtyinfer)
+            -- always get rid of empty implicits
+            fUpd fi updTy  t1@(Ty_App (Ty_App (Ty_Con c1) tpr1) tr1)
+                           t2
+                    | hsnIsArrow c1 && not (fioPredAsTy (fiFIOpts fi)) && isJust mbfp
+                = fromJust mbfp
+                where  mbfp             = fVarPred1 fP fi tpr1
+                       fP fi (Ty_Impls (Impls_Nil))
+                            =  Just (fVar' fTySyn fi updTy tr1 t2)
+                       fP fi _ =  Nothing
+            fUpd fi updTy  t1
+                           t2@(Ty_App (Ty_App (Ty_Con c2) tpr2) tr2)
+                    | hsnIsArrow c2 && not (fioPredAsTy (fiFIOpts fi)) && isJust mbfp
+                = fromJust mbfp
+                where  mbfp             = fVarPred1 fP fi tpr2
+                       fP fi (Ty_Impls (Impls_Nil))
+                            =  Just (fVar' fTySyn fi updTy t1 tr2)
+                       fP fi _ =  Nothing
+%%]
+
+%%[(4 hmtyinfer)
+            -- here we decide whether to bind impredicatively, anything not to be bounded as such must be dealt with before here
             fUpd fi updTy t1                     t2
                 | isJust mbVarBind					         = fromJust mbVarBind
                 where  mbVarBind = varBind2 fi updTy t1 t2
@@ -1318,9 +1360,11 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                                     , trCoe
 %%]]
                                     )
+                       {-
                        fP fi (Ty_Impls (Impls_Nil))
                             =  Just fo
                             where fo = fVar' fTySyn fi updTy t1 tr2
+                       -}
                        fP fi (Ty_Impls (Impls_Tail iv2 _))
                             =  Just (foUpdVarMp (iv2 `varmpImplsUnit` Impls_Nil) fo)
                             where fo = fVar' fTySyn fi updTy t1 tr2
@@ -1400,8 +1444,10 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
 %%]]
                                     , gathPredLToProveCnstrMp prfPrL
                                     )
+                       {-
                        fP fi (Ty_Impls (Impls_Nil))
                             =  Just (fVar' fTySyn fi updTy tr1 t2)
+                       -}
                        fP fi (Ty_Impls (Impls_Tail iv1 _))
                             =  Just (foUpdVarMp (iv1 `varmpImplsUnit` Impls_Nil) (fVar' fTySyn fi updTy tr1 t2))
 %%[[9

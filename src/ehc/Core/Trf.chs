@@ -35,8 +35,6 @@
 %%]
 %%[(9 codegen) import({%{EH}Core.Trf.FixDictFields})
 %%]
-%%[(8_2 codegen) import({%{EH}Core.Trf.PrettyVarNames})
-%%]
 %%[(99 codegen) import({%{EH}Core.Trf.ExplicitStackTrace})
 %%]
 %%[(8 codegen grin) hs import(Debug.Trace)
@@ -157,9 +155,6 @@ trfCore opts dataGam modNm trfcore
                
                  -- float lam/CAF to global level
                ; t_float_glob
-%%[[8_2        
-               ; t_pretty_nm
-%%]]
                ; when (ehcOptFullProgAnalysis opts)
                       t_find_null
                ; when (ehcOptOptimizes Optimize_StrictnessAnalysis opts)
@@ -205,9 +200,6 @@ trfCore opts dataGam modNm trfcore
         t_ana_relev     = liftTrf  "ana-relev"          $ cmodTrfAnaRelevance opts dataGam
 %%[[9
         t_fix_dictfld   = liftTrf  "fix-dictfld"        $ cmodTrfFixDictFields
-%%]]
-%%[[8_2        
-        t_pretty_nm     = liftTrf  "pretty-nm"          $ cmodTrfPrettyNames
 %%]]
 %%[[99        
         t_expl_trace    = liftTrf2 "expl-sttrace" (\m s@(TrfCore {trfcoreExtraExports=exps})

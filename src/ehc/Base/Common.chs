@@ -1440,8 +1440,10 @@ genNmMap mk xs m
                     -> case Map.lookup x m of
                          Just n -> (m, sz, n:ns)
                          _      -> (Map.insert x n m, sz+1, n:ns)
-                                where n = mk [chr $ ord 'a' + sz]
+                                where n = mk $ ch sz
                   )
                   (m,Map.size m,[]) xs
+        ch x | x < 26    = [chr $ ord 'a' + x]
+             | otherwise = let (q,r) = x `quotRem` 26 in ch q ++ ch r
 %%]
 

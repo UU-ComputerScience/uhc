@@ -123,6 +123,7 @@ SEM CExpr
 
 SEM CBindAspect
   | Bind        expr        .   cmeta       =   cmetasVal @bindMeta.self
+  | Val         expr        .   cmeta       =   CMetaVal_Val	-- TBD
 
 SEM CModule
   | Mod         expr        .   cmeta       =   CMetaVal_Val
@@ -198,7 +199,7 @@ SEM CModule
   | Mod         expr        .   appTrfIsOk  =   AppYesLet
 
 SEM CBindAspect
-  | Bind        expr        .   appTrfIsOk  =   AppNoLet
+  | Bind Val    expr        .   appTrfIsOk  =   AppNoLet
 
 SEM CPatFld
   | Fld         offset      .   appTrfIsOk  =   AppYesLet
@@ -223,7 +224,7 @@ SEM CModule
   | Mod         expr        .   lamTrfIsOk  =   LamYesLet
 
 SEM CBindAspect
-  | Bind        expr        .   lamTrfIsOk  =   LamNoLet
+  | Bind Val    expr        .   lamTrfIsOk  =   LamNoLet
 
 SEM CPatFld
   | Fld         offset      .   lamTrfIsOk  =   LamNoLet
@@ -246,7 +247,7 @@ SEM CModule
   | Mod         expr        .   letTrfIsOk  =   False
 
 SEM CBindAspect
-  | Bind        expr        .   letTrfIsOk  =   False
+  | Bind Val    expr        .   letTrfIsOk  =   False
 
 SEM CPatFld
   | Fld         offset      .   letTrfIsOk  =   True

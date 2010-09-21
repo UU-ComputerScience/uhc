@@ -419,7 +419,6 @@ class (Real a, Fractional a) => RealFrac a where
     truncate, round  :: (Integral b) => a -> b
     ceiling, floor   :: (Integral b) => a -> b
 
-{-----------------------------
     -- Minimal complete definition: properFraction
     truncate x        = m where (m,_) = properFraction x
 
@@ -435,7 +434,7 @@ class (Real a, Fractional a) => RealFrac a where
 
     floor x           = if r < 0 then n - 1 else n
                         where (n,r) = properFraction x
------------------------------}
+{-----------------------------
     -- Minimal complete definition: properFraction
     truncate x :: xt  = m where (m::xt,_) = properFraction x
 
@@ -451,6 +450,7 @@ class (Real a, Fractional a) => RealFrac a where
 
     floor x :: xt     = if r < 0 then n - 1 else n
                         where (n::xt,r) = properFraction x
+-----------------------------}
 
 
 class (RealFrac a, Floating a) => RealFloat a where
@@ -800,6 +800,7 @@ data Ordering = LT | EQ | GT
 
 data [] a = ''[]'' | a : [a]
 
+{-
 instance Eq a => Eq [a] where
     []     == []     =  True
     (x:xs) == (y:ys) =  x==y && xs==ys
@@ -807,6 +808,7 @@ instance Eq a => Eq [a] where
     []     /= []     =  False
     (x:xs) /= (y:ys) =  x/=y || xs/=ys
     _      /= _      =  True
+-}
 
 instance Ord a => Ord [a] where
     compare []     (_:_)  = LT
@@ -2105,6 +2107,23 @@ exitWithIntCode e   =  ioFromPrim (\_ -> primExitWith e)
 %%[99
 
 ----------------------------------------------------------------
+-- Defaulting
+----------------------------------------------------------------
+
+default Num Integer
+default Real Integer
+default Enum Integer
+default Integral Integer
+default Fractional Double
+default RealFrac Double
+default Floating Double
+default RealFloat Double
+
+%%]
+
+%%[99
+
+----------------------------------------------------------------
 -- Generics
 ----------------------------------------------------------------
 
@@ -2393,6 +2412,41 @@ maxBoundDefault  ::  (Representable0 aT repT, Bounded' repT)
                        =>  repT xT -> aT
 maxBoundDefault rep = to0 (maxBound' `asTypeOf` rep)
 
+%%]
+
+%%[99
+--------------------------------------------------------------------------------
+-- Generic Eq
+--------------------------------------------------------------------------------
+
+class Eq' f where
+  geq' :: f a -> f a -> Bool
+
+instance Eq' U1 where
+  geq' _ _ = True
+
+instance (Eq c) => Eq' (K1 i c) where
+  geq' (K1 a) (K1 b) = a == b
+
+-- No instances for P or Rec because geq is only applicable to types of kind *
+
+instance (Eq' a) => Eq' (M1 i c a) where
+  geq' (M1 a) (M1 b) = geq' a b
+
+instance (Eq' a, Eq' b) => Eq' (a :+: b) where
+  geq' (L1 a) (L1 b) = geq' a b
+  geq' (R1 a) (R1 b) = geq' a b
+  geq' _      _      = False
+
+instance (Eq' a, Eq' b) => Eq' (a :*: b) where
+  geq' (a1 :*: b1) (a2 :*: b2) = geq' a1 a2 && geq' b1 b2
+
+{-# DERIVABLE Eq (==) geqdefault #-}
+-- deriving instance (Eq a) => Eq (Maybe a)
+deriving instance (Eq a) => Eq [a]
+
+geqdefault :: (Representable0 a rep0, Eq' rep0) => rep0 x -> a -> a -> Bool
+geqdefault (rep :: r) x y = geq' (from0 x :: r) (from0 y :: r)
 %%]
 
 %%[99

@@ -11,7 +11,7 @@ Analysis domains
 %%% Haskell importable interface to AnaDomain
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs module {%{EH}AnaDomain} import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Base.Opts},{%{EH}VarMp})
+%%[(8 codegen) hs module {%{EH}AnaDomain} import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Opts.Base},{%{EH}VarMp})
 %%]
 
 %%[(8 codegen) hs import(qualified Data.Map as Map,qualified Data.Set as Set, Data.List, Data.Maybe)
@@ -21,10 +21,10 @@ Analysis domains
 
 %%[(8 codegen) hs export(QualAGItf(..), TyAGItf(..), CoeAGItf(..)) 
 %%]
-%%[(8 codegen) hs export(AnaEval(..), AnaEvalL, RelevTy(..), RelevTyL, RelevQual(..), RelevQualL, RelevCoe(..), RelevCoeL) 
+%%[(8 codegen) hs export(AnaEval(..), AnaEvalL, RelevTy(..), RelevTyL, MbRelevTy, RelevQual(..), RelevQualL, RelevCoe(..), RelevCoeL) 
 %%]
 
-%%[(20 codegen grin) hs import(Control.Monad hiding(join), {%{EH}Base.Serialize})
+%%[(20 codegen grin) hs import(Control.Monad hiding(join), {%{EH}Base.Serialize}, {%{EH}Base.Binary}(liftM6))
 %%]
 %%[(20 codegen grin) hs import(Data.Typeable(Typeable), Data.Generics(Data))
 %%]
@@ -56,8 +56,18 @@ type RelevQualS = Set.Set RelevQual
 infixl 3 `RelevCoe_Comp`
 infixl 3 <.>
 
--- for convenience, so the order now reads left to right when combined with other coercions
-(<.>) = RelevCoe_Comp
+-- | smart variant of RelevCoe_Comp
+(<.>) :: RelevCoe -> RelevCoe -> RelevCoe
+RelevCoe_Id           <.> r                   = r
+l                     <.> RelevCoe_Id         = l
+RelevCoe_Eval   ll lr <.> RelevCoe_Eval rl rr
+  | lr == rl                                  = RelevCoe_Eval ll rr
+RelevCoe_CastTy ll (RelevTy_Ana lr)
+                      <.> RelevCoe_Eval rl rr
+  | lr == rl                                  = RelevCoe_CastTy ll (RelevTy_Ana rr)
+l                     <.> RelevCoe_Comp rl rr = (l <.> rl) `RelevCoe_Comp` rr
+RelevCoe_Comp   ll lr <.> r                   = ll `RelevCoe_Comp` (lr <.> r)
+l                     <.> r                   = RelevCoe_Comp l r
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -320,7 +330,7 @@ freshLazy u
       RelevTy_Ana _ -> RelevTy_Ana top
 %%]
 
-%%[(8 codegen) hs export(freshFromAnn)
+%%[(8888 codegen) hs export(freshFromAnn)
 -- | convert from Strictness
 freshFromAnn :: UID -> Strictness -> RelevTy
 freshFromAnn u s
@@ -354,7 +364,7 @@ relevCoeUnCompose c = (c, [])
 relevCoeToComposeList :: RelevCoe -> [RelevCoe]
 relevCoeToComposeList c
   = u [] c
-  where u a (RelevCoe_Comp l r) = u (r:a) l
+  where u a (RelevCoe_Comp l r) = let a' = u a r in u a' l
         u a c                   = [c] ++ a
 %%]
 
@@ -472,13 +482,13 @@ amsLookupEval i s = do { i <- amsLookup i s ; rvmiMbEval i }
 
 %%[(20 codegen) hs
 instance Serialize RelevQual where
-  sput (RelevQual_SubEval a b    ) = sputWord8 0 >> sput a >> sput b
-  sput (RelevQual_Alt     a b c d) = sputWord8 1 >> sput a >> sput b >> sput c >> sput d
+  sput (RelevQual_SubEval a b        ) = sputWord8 0 >> sput a >> sput b
+  -- sput (RelevQual_Alt     a b c d e f) = sputWord8 1 >> sput a >> sput b >> sput c >> sput d >> sput e >> sput f
   sget
     = do t <- sgetWord8
          case t of
             0 -> liftM2 RelevQual_SubEval         sget sget
-            1 -> liftM4 RelevQual_Alt             sget sget sget sget
+            -- 1 -> liftM6 RelevQual_Alt             sget sget sget sget sget sget
 
 instance Serialize RelevTy where
   sput (RelevTy_Ana   a      ) = sputWord8 0 >> sput a

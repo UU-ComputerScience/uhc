@@ -14,7 +14,7 @@ All is paremeterized with lookup for type constants.
 The reduction is limited by the expansion cutoff limit indicated by option @ehcOptTyBetaRedCutOffAt@.
 %%]
 
-%%[(11 hmtyinfer) module {%{EH}Ty.Trf.BetaReduce} import({%{EH}Base.Builtin}, {%{EH}Base.Common}, {%{EH}Base.Opts}, {%{EH}Ty.FitsInCommon}, {%{EH}Ty.FitsInCommon2}, {%{EH}Ty}, {%{EH}Gam.Full}, {%{EH}Substitutable}, {%{EH}VarMp})
+%%[(11 hmtyinfer) module {%{EH}Ty.Trf.BetaReduce} import({%{EH}Base.Builtin}, {%{EH}Base.Common}, {%{EH}Opts}, {%{EH}Ty.FitsInCommon}, {%{EH}Ty.FitsInCommon2}, {%{EH}Ty}, {%{EH}Gam.Full}, {%{EH}Substitutable}, {%{EH}VarMp})
 %%]
 
 %%[(11 hmtyinfer) import(Data.Maybe)

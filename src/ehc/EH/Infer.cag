@@ -85,13 +85,27 @@ SEM Expr
                                                     :=  valGamInst1ExistsWithVarMp @bodyVarMp1 @lUniq2 @quValGam_qu_
                                                     :=  (valGamInst1Exists {- WithVarMp @bodyVarMp1 -} @lUniq2 (@quTyVarMp |=> @quValGam_qu_), emptyVarMp)
 
+%%[(9 hmtyinfer) hs
+-- | split a list of predicates into non-ambiguous & ambiguous, using quantifications results tqoGam,
+--   which (a.o.) administers which predicates could be merged for quantification, those not are then ambiguous
+doPredAmbigSplit :: (x -> PredOcc) -> TQOGam -> [x] -> ([x],[x])
+doPredAmbigSplit get tqoGam prOccL
+  = partition (\o -> poPoi (get o) `Set.member` assumedByQuant) prOccL
+  where assumedByQuant = Set.unions $ map tmpoInsPrIdSet $ gamElts tqoGam
+%%]
+
 %%[(9 hmtyinfer)
 SEM Expr
   | Let         decls       .   patTyVarMp          :=  @forExprTyVarMp |=> @exTyVarMp1 |=> @lhs.tyVarMp
                 loc         .   doValGamQuantify	=	\doQuant tyVarMp prOccL -> valGamQuantifyWithVarMp doQuant @valQuTyKiGam @quTvKiVarMp tyVarMp @noLetQuantTyVarIdS prOccL @valGam_l_
-                            .   doPredAmbigSplit    =   \tqoGam prOccL
-                                                           -> let assumedByQuant = Set.unions $ map tmpoInsPrIdSet $ gamElts tqoGam
-                                                              in  partition (\o -> poPoi o `Set.member` assumedByQuant) prOccL
+                            .   doPredAmbigSplitForSimplify
+                                                    =   \chrPrOccL
+                                                           -> let us                = mkNewLevUIDL (length chrPrOccL) uidStart
+                                                                  -- couple with arbitrary id's to make quantify & split work
+                                                                  prOccL            = zipWith (\u (o,_) -> cpo2PredOcc (mkPrId u) o) us chrPrOccL
+                                                                  (_,_, (_,tqoGam)) = @doValGamQuantify False @tyVarMpDeclsL01 prOccL
+                                                                  (namb,amb)        = doPredAmbigSplit fst tqoGam $ zip prOccL chrPrOccL
+                                                              in  (map snd amb, map snd namb)
                             .   (quValGam_qu_,quTyVarMp, (cycTyVarMp_l,tqoGam))
                                                     :=  @doValGamQuantify True @tyVarMpDeclsQuant @toQuantOverPrOccL
                             .   tmpoTyVarMp         =   foldr (\tmpo c -> tmpoImplsVarMp tmpo |=> c) emptyVarMp (gamElts @tqoGam)

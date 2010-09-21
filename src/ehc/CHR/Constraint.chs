@@ -16,7 +16,7 @@
 %%[(20 hmtyinfer || hmtyast) import(Data.Typeable(Typeable,Typeable2), Data.Generics(Data))
 %%]
 
-%%[(20 hmtyinfer || hmtyast) import({%{EH}Base.CfgPP})
+%%[(20 hmtyinfer || hmtyast) import({%{EH}Opts.Base})
 %%]
 
 %%[(9999 hmtyinfer || hmtyast) import({%{EH}Base.ForceEval})
@@ -117,13 +117,6 @@ instance (PP p, PP info) => PP (Constraint p info) where
   pp (Prove     p     ) = "Prove"  >#< p
   pp (Assume    p     ) = "Assume" >#< p
   pp (Reduction p i ps) = "Red"    >#< p >#< "<" >#< i >#< "<" >#< ppBracketsCommas ps
-%%]
-
-%%[(2020 hmtyinfer || hmtyast)
-instance (PPForHI p, PPForHI info) => PPForHI (Constraint p info) where
-  ppForHI (Prove     p     ) = "Prove"     >#< ppCurlysCommasBlock [ppForHI p]
-  ppForHI (Assume    p     ) = "Assume"    >#< ppCurlysCommasBlock [ppForHI p]
-  ppForHI (Reduction p i ps) = "Reduction" >#< ppCurlysCommasBlock [ppForHI p, ppForHI i, ppCurlysCommasBlock $ map ppForHI ps]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

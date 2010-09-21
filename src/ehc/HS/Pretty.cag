@@ -187,6 +187,8 @@ SEM Type
 %%[2
     | Wildcard
         loc         .   pp          =   pp "..."
+    | MonoWildcard
+        loc         .   pp          =   pp "...."
 %%]
 %%[3
     | Variable

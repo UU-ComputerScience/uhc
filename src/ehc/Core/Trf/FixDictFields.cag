@@ -153,6 +153,8 @@ SEM CBindAspect
                             then Just 0
                             else Nothing
           expr.isDictClass = @bindMeta.isDictClass
+  | Val   expr.mbCtxCount = Nothing						-- TBD
+          expr.isDictClass = False						-- TBD
 
 SEM CExpr
   | Lam   body.mbCtxCount = do { n <- @lhs.mbCtxCount

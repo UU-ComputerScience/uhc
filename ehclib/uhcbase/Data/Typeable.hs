@@ -94,6 +94,7 @@ import Unsafe.Coerce
 #ifdef __UHC__
 import UHC.Base
 import UHC.IOBase (Handle)
+import UHC.Generics
 #endif
 
 #ifdef __GLASGOW_HASKELL__
@@ -508,11 +509,52 @@ gcast2 x = r
 
 -------------------------------------------------------------
 --
+--      Generic deriving for Typeable
+--
+-------------------------------------------------------------
+
+#ifdef __UHC__
+class Typeable0' f where
+  typeOf0' :: f a -> TypeRep
+
+instance (Datatype d) => Typeable0' (M1 D d a) where
+  typeOf0' x = mkTyConApp (mkTyCon (datatypeName x)) []
+
+
+typeOf0default :: (Representable0 a rep, Typeable0' rep)
+              => rep x -> a -> TypeRep
+typeOf0default rep x = typeOf0' (from0 x `asTypeOf` rep)
+
+{-# DERIVABLE Typeable typeOf typeOf0default #-}
+
+class Typeable1' f a where
+  typeOf1' :: f a -> TypeRep
+
+instance (Typeable a, Datatype d) => Typeable1' (M1 D d f) a where
+  typeOf1' x = mkTyConApp (mkTyCon (datatypeName x)) [typeOf (y x)]
+    where y :: M1 D d f b -> b
+          y _ = undefined
+
+
+typeOf1default :: (Representable1 f rep, Typeable1' rep a)
+              => rep a -> f a -> TypeRep
+typeOf1default rep x = typeOf1' (from1 x `asTypeOf` rep)
+
+{-# DERIVABLE Typeable1 typeOf1 typeOf1default #-}
+
+#endif
+
+-------------------------------------------------------------
+--
 --      Instances of the Typeable classes for Prelude types
 --
 -------------------------------------------------------------
 
+#ifdef __UHC__
+deriving instance Typeable ()
+#else
 INSTANCE_TYPEABLE0((),unitTc,"()")
+#endif
 INSTANCE_TYPEABLE1([],listTc,"[]")
 INSTANCE_TYPEABLE1(Maybe,maybeTc,"Maybe")
 INSTANCE_TYPEABLE1(Ratio,ratioTc,"Ratio")
@@ -566,21 +608,31 @@ INSTANCE_TYPEABLE1(IORef,iORefTc,"IORef")
 --
 -------------------------------------------------------
 
+#ifdef __UHC__
+deriving instance Typeable Bool
+deriving instance Typeable Float
+deriving instance Typeable Double
+#else
 INSTANCE_TYPEABLE0(Bool,boolTc,"Bool")
-INSTANCE_TYPEABLE0(Char,charTc,"Char")
 INSTANCE_TYPEABLE0(Float,floatTc,"Float")
 INSTANCE_TYPEABLE0(Double,doubleTc,"Double")
+#endif
+INSTANCE_TYPEABLE0(Char,charTc,"Char")
 INSTANCE_TYPEABLE0(Int,intTc,"Int")
 #ifndef __UHC__
 #ifndef __NHC__
 INSTANCE_TYPEABLE0(Word,wordTc,"Word" )
 #endif
 #endif
-INSTANCE_TYPEABLE0(Integer,integerTc,"Integer")
+#ifdef __UHC__
+deriving instance Typeable Ordering
+deriving instance Typeable Handle
+#else
 INSTANCE_TYPEABLE0(Ordering,orderingTc,"Ordering")
 INSTANCE_TYPEABLE0(Handle,handleTc,"Handle")
+#endif
+INSTANCE_TYPEABLE0(Integer,integerTc,"Integer")
 
-#ifndef __UHC__
 INSTANCE_TYPEABLE0(Int8,int8Tc,"Int8")
 INSTANCE_TYPEABLE0(Int16,int16Tc,"Int16")
 INSTANCE_TYPEABLE0(Int32,int32Tc,"Int32")
@@ -590,10 +642,14 @@ INSTANCE_TYPEABLE0(Word8,word8Tc,"Word8" )
 INSTANCE_TYPEABLE0(Word16,word16Tc,"Word16")
 INSTANCE_TYPEABLE0(Word32,word32Tc,"Word32")
 INSTANCE_TYPEABLE0(Word64,word64Tc,"Word64")
-#endif
 
+#ifdef __UHC__
+deriving instance Typeable TyCon
+deriving instance Typeable TypeRep
+#else
 INSTANCE_TYPEABLE0(TyCon,tyconTc,"TyCon")
 INSTANCE_TYPEABLE0(TypeRep,typeRepTc,"TypeRep")
+#endif
 
 #ifdef __GLASGOW_HASKELL__
 INSTANCE_TYPEABLE0(RealWorld,realWorldTc,"RealWorld")

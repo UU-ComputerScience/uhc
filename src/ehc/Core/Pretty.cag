@@ -7,7 +7,7 @@
 %%% Core Pretty Printer
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs module {%{EH}Core.Pretty} import(EH.Util.Pretty,{%{EH}Base.Builtin},{%{EH}Base.CfgPP},{%{EH}Base.Opts},{%{EH}Base.Common},{%{EH}Ty},{%{EH}Ty.Pretty},{%{EH}Core},{%{EH}Scanner.Common(coreScanOpts)}) export(ppCModule)
+%%[(8 codegen) hs module {%{EH}Core.Pretty} import(EH.Util.Pretty,{%{EH}Base.Builtin},{%{EH}Base.CfgPP},{%{EH}Opts.Base},{%{EH}Base.Common},{%{EH}Ty},{%{EH}Ty.Pretty},{%{EH}Core},{%{EH}Scanner.Common(coreScanOpts)}) export(ppCModule)
 %%]
 
 %%[(8 codegen) hs import({%{EH}AnaDomain.Pretty})
@@ -47,7 +47,9 @@ instance PP CExpr where
 
 %%[(8 codegen) hs
 ppCNm :: HsName -> PP_Doc
-ppCNm = cfgppHsName CfgPP_Core
+-- ppCNm = cfgppHsName CfgPP_Core
+ppCNm = ppHsnNonAlpha coreScanOpts'
+  where coreScanOpts' = coreScanOpts emptyEHCOpts
 
 ppMbCNm :: Maybe HsName -> PP_Doc
 ppMbCNm = maybe (ppCNm (hsnFromString "_")) ppCNm
@@ -130,33 +132,19 @@ ATTR CExpr [ | | lamBodyPP: PP_Doc  lamArgPPL: {[PP_Doc]} ]
 ATTR CExpr [ | | appFunPP : PP_Doc  appArgPPL: {[PP_Doc]} ]
 
 SEM CModule
-%%[[8  
   | Mod         lhs         .   pp          =   "module" >#< ppCNm @moduleNm >#< "=" >-< @expr.pp >-< "-- data type tag map:" >-< ppCTagsMp CfgPP_Core @ctagsMp
-%%][8_2
-  | Mod         lhs         .   pp          =   "module" >#< ppCNm @moduleNm >#< "=" >-< @expr.pp
-%%]]
 
 SEM CExpr
-%%[[8
   | Int         loc         .   pp          =   ppLit "Int"    (show @int)
-%%][8_2
-  | Int         loc         .   pp          =   pp @int
-%%]]
   | Char        loc         .   pp          =   ppLit "Char"   [@char]
   | String      loc         .   pp          =   ppLit "String" @str
 %%[[97
   | Integer     loc         .   pp          =   ppLit "Integer" (show @integer)
 %%]
   | Var         loc         .   pp          =   ppACoreBindRef ppCNm @ref
-%%[[8
   | App         loc         .   pp          =   let args = reverse $ map ppParens $ @appArgPPL
                                                     fun  = ppParens @appFunPP
                                                 in  ppDef fun (vlist args)
-%%][8_2
-  | App         loc         .   pp          =   let args = reverse $ @appArgPPL
-                                                    fun  = @appFunPP
-                                                in  fun >#< ppSpaces args
-%%]]
   | Let         loc         .   ppCateg     =   case @categ of
                                                   CBindings_Rec     -> pp " rec"
                                                   CBindings_Strict  -> pp " !"
@@ -165,18 +153,10 @@ SEM CExpr
                                                   CBindings_FFE     -> pp " foreignexport"
 %%]]
                                                   _                 -> empty
-%%[[8
                             .   pp          =   ppDef ("let" >|< @ppCateg) (ppCurlysSemisBlock @binds.ppL) >#< "in" >-< @body.pp
-%%][8_2
-                            .   pp          =   ppDef ("let" >|< @ppCateg) @binds.ppL >#< "in" >-< @body.pp
-%%]
   | Lam         loc         .   pp          =   ppDef ("\\" >|< ppSpaces @lamArgPPL >#< "->") (@lamBodyPP)
   | Case        loc         .   pp          =   "case" >#< @expr.pp >#< "of"
-%%[[8
                                                 >-< indent 1 (ppCurlysSemisBlock @alts.ppL >-< ppCurlysSemisBlock [ppDef "default" @dflt.pp])
-%%][8_2
-                                                >-< indent 2 (vlist (reverse @alts.ppL ++ [ppDef "default" @dflt.pp]))
-%%]]
   | Tup         loc         .   pp          =   "#Tag" >#< ppTag @tag
   | TupDel      loc         .   pp          =   ppDef (ppParens @expr.pp) ("-=" >|< ppCurlysCommas' [ppTag @tag,@offset.pp,ppCNm @nm])
   | TupIns      loc         .   pp          =   ppDef (ppParens @expr.pp) (ppDef ("+=" >|< ppCurlysCommas' [ppTag @tag,@offset.pp,ppCNm @nm]) (ppParens @fldExpr.pp))
@@ -210,8 +190,9 @@ SEM CBindAspect
  | Bind         lhs         .   pp          =   @bindMeta.pp >-< "=" >#< @expr.pp
  | RelevTy      lhs         .   pp          =   "::_R" >#< ppACBaspKeyS @aspectKeyS >#< @tyPP -- pp @relevTy
  | Meta         lhs         .   pp          =   "::_M" >#< ppACBaspKeyS @aspectKeyS >#< @cmetas.pp
+ | Val          lhs         .   pp          =   "=" >#< ppACBaspKeyS @aspectKeyS >#< @expr.pp
 %%[[90
-  | FFE         lhs         .   pp          =   "=" >#< ("foreignexport" >#< ppCurlysCommasBlock [pp (show @callconv),"\"" >|< @expEnt >|< "\"",ppCNm @expNm,ppTyWithCfg' CfgPP_HI @ty])
+  | FFE         lhs         .   pp          =   "=" >#< ("foreignexport" >#< ppCurlysCommasBlock [pp (show @callconv),"\"" >|< @expEnt >|< "\"",ppCNm @expNm,ppTyWithCfg' CfgPP_Plain @ty])
 %%]]
 
 SEM CBindAspectL
@@ -233,12 +214,8 @@ SEM CPat
   | Int         lhs         .   pp          =   ppLit "Int"    (show @int)
   | Char        lhs         .   pp          =   ppLit "Char"   [@char]
   | Var         lhs         .   pp          =   ppCNm @pnm
-%%[[8
   | Con         lhs         .   pp          =   ppDef ("#Tag" >#< ppTag @tag)
                                                       (ppCurly (@rest.pp >#< "|" >#< ppCommas' @binds.ppL))
-%%][8_2
-  | Con         lhs         .   pp          =   ppCTag'' CfgPP_Core @tag
-%%]]
 
 SEM CPatL
   | Nil         lhs         .   ppL         =   []
@@ -291,7 +268,7 @@ SEM CExpr
   | Ann         loc         .   pp          =   ppParens (@expr.pp >#< @ann.pp)
 
 SEM CExprAnn
-  | Ty          loc         .   pp          =   "::" >#< ppTyWithCfg' CfgPP_HI @ty
+  | Ty          loc         .   pp          =   "::" >#< ppTyWithCfg' CfgPP_Plain @ty
   | Coe			loc			.	pp			=	"~" >#< ppRelevCoe @lhs.varPPMp @coe
   | Debug		loc			.	pp			=	ppCmt $ pp @info
 %%]

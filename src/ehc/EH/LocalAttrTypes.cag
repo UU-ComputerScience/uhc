@@ -10,7 +10,8 @@ SEM *
 		loc.foL		 					: {[FIOut]}
 		loc.generDataTyAndConNmL		: {[HsName]}
 		loc.generForFitsInL				: {[GenerForFitsIn]}
-		loc.doPredAmbigSplit			: {TQOGam -> [CHRPredOcc] -> ([CHRPredOcc],[CHRPredOcc])}
+		-- loc.doPredAmbigSplit			: {forall x . (x -> PredOcc) -> TQOGam -> [x] -> ([x],[x])}
+		loc.doPredAmbigSplitForSimplify	: {[(CHRPredOcc,PredScope)] -> ([(CHRPredOcc,PredScope)],[(CHRPredOcc,PredScope)])}
 		loc.generInstInfoL				: {[GenerDataInstInfo]}
 		loc.generInstDeclL				: {[CHRScopedInstanceDecl Pred RedHowAnnotation PredScope]}
 		loc.gathTvKiVarMp2				: {VarMp}

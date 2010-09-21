@@ -7,7 +7,7 @@
 %%% Code generation for jazy
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 jazy) hs module {%{EH}Core.ToJazy} import({%{EH}Base.Common},{%{EH}Base.Opts},{%{EH}Ty},{%{EH}Core})
+%%[(8 jazy) hs module {%{EH}Core.ToJazy} import({%{EH}Base.Common},{%{EH}Opts},{%{EH}Ty},{%{EH}Core})
 %%]
 
 %%[(8 jazy) hs import(Data.Maybe, qualified Data.Map as Map, Data.Char)
@@ -614,7 +614,7 @@ SEM CAlt
   | Alt         loc         .   mbLamNm         =   Nothing
 
 SEM CBindAspect
-  | Bind        expr        .   mbLamNm         =   Just @varnm
+  | Bind Val    expr        .   mbLamNm         =   Just @varnm
 
 SEM CPatFld
   | Fld         offset      .   mbLamNm         =   Nothing
@@ -632,7 +632,7 @@ SEM CExpr
   | App         loc         .   isTopApp        =   isNothing $ whatExprMbApp @lhs.whatAbove
 
 SEM CBindAspect
-  | Bind        loc         .   isCAF           =   @expr.whatBelow /= ExprIsLam
+  | Bind Val    loc         .   isCAF           =   @expr.whatBelow /= ExprIsLam
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -900,7 +900,7 @@ ATTR AllBind CExpr [ | | jbinds USE {`Seq.union`} {Seq.empty}: JBinds]
 
 %%[(8 jazy)
 SEM CBindAspect
-  | Bind        loc         .   jiExpr          =   (if @lhs.evalCtx == EvalCtx_Eval then jiEvl else id) @expr.ji
+  | Bind Val    loc         .   jiExpr          =   (if @lhs.evalCtx == EvalCtx_Eval then jiEvl else id) @expr.ji
 %%]
 
 %%[(8 jazy)

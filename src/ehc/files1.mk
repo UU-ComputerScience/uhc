@@ -54,15 +54,16 @@ EHC_HS_MAIN_SRC_CHS						:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,$(EHC_MAIN))
 EHC_HS_MAIN_DRV_HS						:= $(patsubst $(SRC_EHC_PREFIX)%.chs,$(EHC_BLD_VARIANT_ASPECTS_PREFIX)%.hs,$(EHC_HS_MAIN_SRC_CHS))
 
 EHC_HS_UTIL_SRC_CHS						:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
-													Substitutable Gam VarMp VarLookup Deriving Generics Module Config BuiltinPrims NameAspect DerivationTree CHR Pred HI LamInfo AbstractCore \
+													Substitutable Opts Gam VarMp VarLookup Deriving Generics Module Config BuiltinPrims NameAspect DerivationTree CHR Pred HI LamInfo AbstractCore \
 													$(addprefix CHR/,Key Constraint Solve) \
 													$(addprefix AbstractCore/,Utils) \
 													$(addprefix AnaDomain/,Utils) \
 													$(addprefix Cil/,Common TyTag) \
+													$(addprefix Opts/,Base) \
 													$(addprefix Pred/,ToCHR CHR Evidence EvidenceToCore EvidenceToTyCore Heuristics CommonCHR RedGraph) \
-													$(addprefix Base/,UID Pragma Binary Serialize Strictness GenC Opts Hashable Target BasicAnnot Common Builtin Builtin2 HsName Debug Trie CfgPP LaTeX HtmlCommon Bits FileSearchLocation PackageDatabase ParseUtils Optimize) \
+													$(addprefix Base/,UID Parser Parser2 Pragma Binary Serialize Strictness GenC Hashable Target BasicAnnot Common Builtin Builtin2 HsName Debug Trie CfgPP LaTeX HtmlCommon Bits FileSearchLocation PackageDatabase ParseUtils Optimize) \
 													$(addprefix Scanner/,Common Machine Scanner Token TokenParser) \
-													$(addsuffix /Parser,Base Ty EH HS Foreign Core GrinCode) \
+													$(addsuffix /Parser,Ty EH HS Foreign Core GrinCode) \
 													$(addprefix Ty/,FIEnv FIEnv2 FitsInCommon FitsInCommon2 FitsIn Utils1 Utils2 AppSpineGam Trf/BetaReduce) \
 													$(addprefix Gam/,Base Utils Instantiate Quantify LevelMapGam ScopeMapGam Full AppSpineGam FixityGam TyGam KiGam DataGam PolGam TyKiGam ValGam ClassDefaultGam) \
 													$(addprefix Core/,Utils FFI Coercion Trf) \
@@ -199,7 +200,6 @@ EHC_ON_RULES_VIEW_6						:= DT
 EHC_ON_RULES_VIEW_7						:= DT
 EHC_ON_RULES_VIEW_7_2					:= ANN
 EHC_ON_RULES_VIEW_8						:= CG
-EHC_ON_RULES_VIEW_8_2					:= CG
 EHC_ON_RULES_VIEW_9						:= P
 EHC_ON_RULES_VIEW_10					:= P
 EHC_ON_RULES_VIEW_11					:= TS
@@ -241,7 +241,6 @@ EHC_BY_RULER_RULES_6					:= $(EHC_BY_RULER_RULES_5)
 EHC_BY_RULER_RULES_7					:= $(EHC_BY_RULER_RULES_6)
 EHC_BY_RULER_RULES_7_2					:= $(EHC_BY_RULER_RULES_6)
 EHC_BY_RULER_RULES_8					:= $(EHC_BY_RULER_RULES_7)
-EHC_BY_RULER_RULES_8_2					:= $(EHC_BY_RULER_RULES_8)
 EHC_BY_RULER_RULES_9					:= $(EHC_BY_RULER_RULES_8)
 EHC_BY_RULER_RULES_10					:= $(EHC_BY_RULER_RULES_9)
 EHC_BY_RULER_RULES_11					:= $(EHC_BY_RULER_RULES_10)

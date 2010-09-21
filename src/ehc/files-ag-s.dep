@@ -84,7 +84,6 @@ GrinCode/Trf/MergeCase.cag
 GrinCode/Trf/MergeInstance.cag
 GrinCode/Trf/NormForHPT.cag
 GrinCode/Trf/NumberIdents.cag
-GrinCode/Trf/PrettyVarNames.cag
 GrinCode/Trf/SetGrinInvariant.cag
 GrinCode/Trf/SimpleNullary.cag
 GrinCode/Trf/SingleCase.cag

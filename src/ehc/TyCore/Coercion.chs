@@ -2,7 +2,7 @@
 %%% Coercion
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen tycore) hs module {%{EH}TyCore.Coercion} import({%{EH}Base.Common},{%{EH}Base.Opts})
+%%[(8 codegen tycore) hs module {%{EH}TyCore.Coercion} import({%{EH}Base.Common},{%{EH}Opts})
 %%]
 
 %%[(8 codegen tycore) hs import(Data.Maybe)

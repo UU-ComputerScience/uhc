@@ -11,7 +11,7 @@
 %%[8 import(Data.Maybe,Data.List,EH.Util.Utils,EH.Util.FPath)
 %%]
 
-%%[8 import({%{EH}ConfigDefines}, {%{EH}Base.Opts}) export(module {%{EH}ConfigDefines})
+%%[8 import({%{EH}ConfigDefines}, {%{EH}Opts}) export(module {%{EH}ConfigDefines})
 %%]
 
 %%[8 import({%{EH}EHC.Environment})

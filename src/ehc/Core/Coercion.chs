@@ -2,7 +2,7 @@
 %%% Coercion
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(9 codegen) hs module {%{EH}Core.Coercion} import({%{EH}Base.Common},{%{EH}Base.Opts})
+%%[(9 codegen) hs module {%{EH}Core.Coercion} import({%{EH}Base.Common},{%{EH}Opts.Base})
 %%]
 
 %%[(9 codegen) hs import({%{EH}Ty},{%{EH}Core})

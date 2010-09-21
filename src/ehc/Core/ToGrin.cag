@@ -16,7 +16,7 @@ WRAPPER CodeAGItf
 %%]
 %%[(8 codegen grin) hs import(EH.Util.Utils, EH.Util.Pretty)
 %%]
-%%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}Base.Opts}, qualified {%{EH}Config} as Cfg, {%{EH}Base.Builtin},{%{EH}Base.Builtin2})
+%%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}Opts}, qualified {%{EH}Config} as Cfg, {%{EH}Base.Builtin},{%{EH}Base.Builtin2})
 %%]
 %%[(8 codegen grin) hs import({%{EH}LamInfo}, {%{EH}Core}, {%{EH}Ty}, {%{EH}Gam.Full}, {%{EH}GrinCode})
 %%]
@@ -500,7 +500,7 @@ SEM CModule
   | Mod         expr        .   doBox       =   True
 
 SEM CBindAspect
-  | Bind        expr        .   doBox       =   True
+  | Bind Val    expr        .   doBox       =   True
 
 SEM CPatFld
   | Fld         offset      .   doBox       =   True

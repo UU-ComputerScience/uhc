@@ -406,6 +406,8 @@ DATA Type                                         {- *** -}
 %%[2
     | Wildcard
         range                    : Range
+    | MonoWildcard
+        range                    : Range
 %%]
 %%[3
     | Variable                               {- *** -}

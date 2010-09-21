@@ -7,7 +7,7 @@
 %%% TyCore base
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen tycore) hs module {%{EH}TyCore.Base} import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Base.Opts})
+%%[(8 codegen tycore) hs module {%{EH}TyCore.Base} import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Opts})
 %%]
 %%[(8 codegen tycore) hs import ({%{EH}TyCore},{%{EH}Ty.ToTyCore}) export(module {%{EH}TyCore},module {%{EH}Ty.ToTyCore})
 %%]
@@ -94,7 +94,7 @@ metasMapVal f (b,v) = (b,f v)
 %%% Context: what is above/below
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen tycore) hs export(WhatExpr(..))
+%%[(8888 codegen tycore) hs export(WhatExpr(..))
 data WhatExpr
   = ExprIsLam | ExprIsApp | ExprIsVar HsName | ExprIsInt Int | ExprIsOther
   deriving Eq

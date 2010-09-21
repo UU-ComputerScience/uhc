@@ -8,7 +8,7 @@
 %%[(8 codegen grin) hs import(Data.Maybe,Data.List,EH.Util.Pretty,qualified EH.Util.FastSeq as Seq,EH.Util.Utils,qualified Data.Set as Set,qualified Data.Map as Map)
 %%]
 
-%%[(8 codegen grin) hs import({%{EH}Base.Common},{%{EH}Base.Opts},{%{EH}Base.Builtin},qualified {%{EH}Config} as Cfg)
+%%[(8 codegen grin) hs import({%{EH}Base.Common},{%{EH}Opts},{%{EH}Base.Builtin},qualified {%{EH}Config} as Cfg)
 %%]
 
 %%[(8 codegen grin) hs import({%{EH}Error},{%{EH}BuiltinPrims})

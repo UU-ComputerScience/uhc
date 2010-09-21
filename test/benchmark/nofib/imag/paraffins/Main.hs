@@ -53,7 +53,7 @@ four_partitions m =
   [ (i,j,k,l)
   | i <- [0..(div m 4)],
     j <- [i..(div (m-i) 3)],
-    k <- [(max j ((div m 2) - i - j))..(div (m-i-j) 2)],
+    k <- [(max j (ceiling ((fromIntegral m)/(fromInteger 2)::Double) - i - j))..(div (m-i-j) 2)],
     l <- [(m - (i+j+k))]]
 
 ccp_generator :: Array Int [Radical] -> Int -> [Paraffin]
@@ -86,7 +86,7 @@ paraffins_until n =
 
 main = do
   [arg] <- getArgs
-  let num::Int = read arg
+  let num = read arg
   print [length (rads!i) | rads <- [(radical_generator num)], i <- [0..num]]
   print (bcp_until num)
   print (ccp_until num)

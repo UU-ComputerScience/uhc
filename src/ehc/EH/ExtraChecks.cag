@@ -164,7 +164,7 @@ SEM Expr
 %%][99
   | Let         loc         .   predNotPrfErrs      =   mkPrvErr @lhs.rangeMp @range @cannotProveCnstrMp
 %%]]
-                            .   predAmbigErrs       =   let (_,amb) = @doPredAmbigSplit @tqoGam @toQuantOverPrOccL
+                            .   predAmbigErrs       =   let (_,amb) = doPredAmbigSplit id @tqoGam @toQuantOverPrOccL
                                                             mkg = assocLMapElt (ppTy . vgiTy) . gamToAssocL
                                                         in  if null amb
                                                             then []

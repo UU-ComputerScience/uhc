@@ -8,7 +8,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-%%[1 hs module {%{EH}HS.MainAG} import(Data.Char,Data.Maybe,Data.List as List,qualified Data.Map as Map,EH.Util.Pretty,{%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Base.Opts},{%{EH}Gam.Full},{%{EH}Error},{%{EH}Error.Pretty}, {%{EH}HS}, {%{EH}NameAspect}, EH.Util.DependencyGraph)
+%%[1 hs module {%{EH}HS.MainAG} import(Data.Char,Data.Maybe,Data.List as List,qualified Data.Map as Map,EH.Util.Pretty,{%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Opts},{%{EH}Gam.Full},{%{EH}Error},{%{EH}Error.Pretty}, {%{EH}HS}, {%{EH}NameAspect}, EH.Util.DependencyGraph)
 %%]
 
 %%[1 hs import(qualified EH.Util.FastSeq as Seq,EH.Util.Utils)
@@ -325,6 +325,52 @@ SEM Declaration
     | Module
         loc         .   isMainMod   =   False
                     .   isTopMod    =   False
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Is a pattern just a binding, or really inspecting something?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[2
+ATTR Pattern [ | | isVar: Bool ]
+%%]
+
+%%[2
+SEM Pattern
+    | Variable
+        lhs         .   isVar       =   True
+    | * - Variable As Parenthesized Wildcard Annotate
+%%[[4
+          Typed
+%%]]
+%%[[8
+          Irrefutable
+%%]]
+        lhs         .   isVar       =   False
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Must rhs of pattern binding be enforced to be monomorphic?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[2
+ATTR RightHandSide AllGuardedExpression [ mustBeMono: Bool | | ]
+%%]
+
+%%[2
+SEM Declaration
+    | PatternBinding
+        righthandside   .   mustBeMono  =   not @pattern.isVar
+
+SEM FunctionBinding
+    | FunctionBinding
+        righthandside   .   mustBeMono  =   False
+%%]
+
+%%[5
+SEM Alternative
+    | Alternative
+        righthandside   .   mustBeMono  =   False
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -35,3 +35,8 @@ atomicModifyMutVar mv f s1
         (vnew,vres) = letstrict _ = s2 in f v
         s3 = writeMutVar mv vnew s2
 %%]
+
+  = letstrict v = readMutVar mv in
+    let (vnew,vres) = f v in
+    letstrict vres = writeMutVar mv vnew in
+    (s1, vres)

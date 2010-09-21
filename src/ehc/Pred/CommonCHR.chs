@@ -23,9 +23,6 @@ This file exists to avoid module circularities.
 %%[(9 hmtyinfer) import({%{EH}VarMp})
 %%]
 
-%%[(9 hmtyinfer) import({%{EH}Base.CfgPP})
-%%]
-
 %%[(20 hmtyinfer) import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
 %%]
 

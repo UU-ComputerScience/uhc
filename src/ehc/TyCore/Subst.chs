@@ -7,7 +7,7 @@
 %%% Substituting holes
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen tycore) hs module {%{EH}TyCore.Subst} import(Data.Maybe,qualified Data.Set as Set,qualified Data.Map as Map,EH.Util.Pretty,EH.Util.Utils,{%{EH}Base.Opts},{%{EH}Base.Common},{%{EH}VarMp})
+%%[(8 codegen tycore) hs module {%{EH}TyCore.Subst} import(Data.Maybe,qualified Data.Set as Set,qualified Data.Map as Map,EH.Util.Pretty,EH.Util.Utils,{%{EH}Opts},{%{EH}Base.Common},{%{EH}VarMp})
 %%]
 
 %%[(8 codegen tycore) hs import({%{EH}AbstractCore})

@@ -5,7 +5,7 @@
 %%[(8 codegen) module {%{EH}AbstractCore}
 %%]
 
-%%[(8 codegen) import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Base.Opts},{%{EH}Ty})
+%%[(8 codegen) import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Opts.Base},{%{EH}Ty})
 %%]
 
 %%[(8 codegen) import(EH.Util.Pretty,EH.Util.Utils)
@@ -260,11 +260,16 @@ acbaspkeyMk :: [ACoreBindAspectKey] -> ACoreBindAspectKeyS
 acbaspkeyMk = Set.fromList
 %%]
 
-%%[(8 codegen) hs export(acbaspkeyDefault,acbaspkeyDebug)
+%%[(8 codegen) hs export(acbaspkeyDefault,acbaspkeyStrict,acbaspkeyDebug)
 -- | predefined: 
 acbaspkeyDefault :: ACoreBindAspectKeyS
 acbaspkeyDefault = acbaspkeyMk
   [ ACoreBindAspectKey_Default ]
+
+-- | predefined: 
+acbaspkeyStrict :: ACoreBindAspectKeyS
+acbaspkeyStrict = acbaspkeyMk
+  [ ACoreBindAspectKey_Strict ]
 
 -- | predefined: 
 acbaspkeyDebug :: ACoreBindAspectKeyS

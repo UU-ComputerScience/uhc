@@ -7,7 +7,7 @@
 %%% Core utilities
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen tycore) module {%{EH}TyCore.Utils2} import(qualified Data.Map as Map,Data.Maybe,{%{EH}Base.Builtin},{%{EH}Base.Opts},{%{EH}Base.Common}) 
+%%[(8 codegen tycore) module {%{EH}TyCore.Utils2} import(qualified Data.Map as Map,Data.Maybe,{%{EH}Base.Builtin},{%{EH}Opts},{%{EH}Base.Common}) 
 %%]
 %%[(8 codegen tycore) import({%{EH}TyCore.Base})
 %%]
