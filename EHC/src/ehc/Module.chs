@@ -12,7 +12,7 @@
 %%% Module adm
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20 module {%{EH}Module} import({%{EH}Base.Builtin},{%{EH}Base.CfgPP},{%{EH}Base.Common},{%{EH}Error},{%{EH}NameAspect})
+%%[20 module {%{EH}Module} import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Error},{%{EH}NameAspect})
 %%]
 
 %%[20 import(Data.Maybe,Data.List,qualified Data.Set as Set,qualified Data.Map as Map)
@@ -27,7 +27,7 @@
 %%[20 export(emptyMod)
 %%]
 
-%%[20 import ({%{EH}Gam.Full}) export(modBuiltin,modImpBuiltin)
+%%[20 import ({%{EH}Gam},{%{EH}Gam.TyGam},{%{EH}Gam.KiGam}) 
 %%]
 
 %%[(20 codegen) import ({%{EH}Core}(HsName2OffsetMp))
@@ -89,18 +89,15 @@ deriving instance Data ModEnt
 
 %%[20
 -- intended for parsing
-ppModEnt :: CfgPP x => x -> ModEnt -> PP_Doc
-ppModEnt x e
+ppModEnt :: ModEnt -> PP_Doc
+ppModEnt e
   = ppCurlysCommasBlock (l1 ++ l2)
-  where l1 = [pp (mentKind e),ppIdOcc x (mentIdOcc e)]
-        l2 = if Set.null (mentOwns e) then [] else [ppCurlysCommasBlock (map (ppModEnt x) $ Set.toList $ mentOwns e)]
+  where l1 = [pp (mentKind e),pp (mentIdOcc e)]
+        l2 = if Set.null (mentOwns e) then [] else [ppCurlysCommasBlock (map ppModEnt $ Set.toList $ mentOwns e)]
 
 -- intended for parsing
-ppModEntRel' :: CfgPP x => x -> ModEntRel -> PP_Doc
-ppModEntRel' x = ppCurlysAssocL (cfgppHsName x) (ppModEnt x) . Rel.toList
-
 ppModEntRel :: ModEntRel -> PP_Doc
-ppModEntRel = ppModEntRel' CfgPP_Plain
+ppModEntRel = ppCurlysAssocL pp ppModEnt . Rel.toList
 
 %%]
 ppModEntDomMp :: ModEntDomMp -> PP_Doc
@@ -108,18 +105,10 @@ ppModEntDomMp = ppCurlysCommasBlock . map (\(a,b) -> pp a >|< "<>" >|< ppBracket
 
 %%[20
 instance PP ModEnt where
-  pp = ppModEnt CfgPP_Plain
+  pp = ppModEnt
 
 instance PP ModEntRel where
-  pp = ppModEntRel' CfgPP_Plain
-%%]
-
-%%[2020
-instance PPForHI ModEnt where
-  ppForHI = ppModEnt CfgPP_HI
-
-instance PPForHI ModEntRel where
-  ppForHI = ppModEntRel' CfgPP_HI
+  pp = ppModEntRel
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -201,6 +190,9 @@ data ModImp
 emptyModImp :: ModImp
 emptyModImp = ModImp False hsnUnknown hsnUnknown True [] emptyRange
 
+%%]
+
+%%[20 export(modImpBuiltin)
 modImpBuiltin :: ModImp
 modImpBuiltin
   = emptyModImp
@@ -252,7 +244,9 @@ data Mod
   deriving (Show)
 
 emptyMod = Mod hsnUnknown Nothing Nothing [] Rel.empty Rel.empty []
+%%]
 
+%%[20 export(modBuiltin)
 modBuiltin
   = emptyMod
       { modName         = hsnModBuiltin

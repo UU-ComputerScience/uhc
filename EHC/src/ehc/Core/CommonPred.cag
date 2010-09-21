@@ -41,6 +41,7 @@ ATTR CExpr [ | | mbVar: {Maybe HsName} ]
 
 SEM CExpr
   | Var         loc         .   mbVar       =   Just @nm
+  				loc			.	mbVar		:	{Maybe HsName}
   | * - Var Ann CaseAltFail
   				lhs         .   mbVar       =   Nothing
 %%]

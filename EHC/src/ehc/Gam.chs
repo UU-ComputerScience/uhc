@@ -40,7 +40,7 @@
 %%[(3333 hmtyinfer || hmtyast) import({%{EH}Ty.Trf.Quantify})
 %%]
 
-%%[4 import({%{EH}Base.Opts})
+%%[4 import({%{EH}Opts.Base})
 %%]
 
 %%[(4444 hmtyinfer || hmtyast) import({%{EH}Ty.Trf.Instantiate})

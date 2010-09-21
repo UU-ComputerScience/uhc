@@ -12,7 +12,7 @@ used by EHC. The AST is described in Ty/AbsSyn.
 %%% Haskell importable interface to Ty
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 hs module {%{EH}Ty} import(EH.Util.Utils,{%{EH}Base.Common}, {%{EH}Base.Builtin})
+%%[1 hs module {%{EH}Ty} import(EH.Util.Utils,{%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{EH}Opts.Base})
 %%]
 
 %%[(1 hmtyinfer || hmtyast) hs export(TyAGItf(..), Ty(..), TyAnn(..), TyL, tyInt, tyChar, mkTyCon)
@@ -170,6 +170,11 @@ data TyVarWild
   deriving Eq
 
 type TyVarWildMp = Map.Map TyVarId TyVarWild
+%%]
+
+%%[(2 hmtyinfer) hs export(tvwmpNoQuantS)
+tvwmpNoQuantS :: TyVarWildMp -> UIDS
+tvwmpNoQuantS = Map.keysSet . Map.filter (== TyVarWild_NoQuantTyExpr_NoQuantLetBinding)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -552,6 +557,18 @@ cpoScope :: CHRPredOcc -> PredScope
 cpoScope = cpocxScope . cpoCxt
 %%]
 
+%%[(9 hmtyinfer || hmtyast) hs export(cpo2PredOcc)
+cpo2PredOcc :: PredOccId -> CHRPredOcc -> PredOcc
+cpo2PredOcc i o
+  = mkPredOccRng
+%%[[99
+      (cpoRange o) 
+%%]]
+      (cpoPr o)
+      i
+      (cpoScope o)
+%%]
+
 %%[(20 hmtyinfer || hmtyast) hs
 deriving instance Typeable CHRPredOcc
 deriving instance Data CHRPredOcc
@@ -693,6 +710,27 @@ tyAnnDecomposeMk t
       Ty_Ann a t'       -> (ta,as,\ta' -> tyAnn a $ mk ta')
                         where (ta,as,mk) = tyAnnDecomposeMk t'
       _                 -> (t ,[],id)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Removal of non semantics, noise
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Annotations, empty implicits do not carry type info, but sit in the way of finding out what is underneath.
+
+%%[(9 hmtyinfer || hmtyast) hs export(tyUnNoiseForVarBind)
+-- | un-noise with the purpose of finding out whether we end up with Ty_Var
+tyUnNoiseForVarBind :: Ty -> Maybe Ty
+tyUnNoiseForVarBind t
+  = un t
+  where un t | not (null impls) && all isNil impls
+             = tv t'
+             where (impls,t') = tyArrowImplsRes t
+                   isNil (Ty_Impls (Impls_Nil)) = True
+                   isNil _                      = False
+        un t = tv t
+        tv t | tyIsVar t = Just t
+             | otherwise = Nothing
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -920,6 +958,11 @@ tyWord64Unboxed   = Ty_Con hsnWord64Unboxed
 %%[(99 hmtyinfer || hmtyast) hs
 %%]
 tyAddrUnboxed   = Ty_Con hsnAddrUnboxed
+
+%%[(11 hmtyinfer || hmtyast) hs export(tyString)
+tyString :: EHCOpts -> Ty
+tyString o = Ty_Con (ehcOptBuiltin o ehbnPrelString)
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Destruction

@@ -60,27 +60,29 @@ type STRep s a = State s -> ( State s, a )
 instance Functor (ST s) where
     fmap f (ST m) = ST $ \ s ->
       case (m s) of { ( new_s, r ) ->
-      ( new_s, f r ) }
+      letstrict new_s' = new_s in
+      ( new_s', f r ) }
 
 instance Monad (ST s) where
     {-# INLINE return #-}
     {-# INLINE (>>)   #-}
     {-# INLINE (>>=)  #-}
-    return x = ST (\ s -> ( s, x ))
+    return x = ST (\ s -> letstrict s' = s in ( s', x ))
     m >> k   = m >>= \ _ -> k
 
     (ST m) >>= k
       = ST (\ s ->
         case (m s) of { ( new_s, r ) ->
+        letstrict new_s' = new_s in
         case (k r) of { ST k2 ->
-        (k2 new_s) }})
+        (k2 new_s') }})
 
 data STret s a = STret (State s) a
 
 -- liftST is useful when we want a lifted result from an ST computation.  See
 -- fixST below.
 liftST :: ST s a -> State s -> STret s a
-liftST (ST m) = \s -> case m s of ( s', r ) -> STret s' r
+liftST (ST m) = \s -> case m s of ( s', r ) -> letstrict s'' = s' in STret s'' r
 
 {-# NOINLINE unsafeInterleaveST #-}
 unsafeInterleaveST :: ST s a -> ST s a
@@ -163,5 +165,5 @@ runST st = runSTRep (case st of { ST st_rep -> st_rep })
 {-# NOINLINE runSTRep #-}
 runSTRep :: (forall s. STRep s a) -> a
 runSTRep st_rep = case st_rep {- realWorld -} (State realWorld) of
-                        ( _, r ) -> r
+                        ( s, r ) -> letstrict _ = s in r
 \end{code}

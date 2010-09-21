@@ -33,8 +33,9 @@ data Pragma
       , pragmaDerivFieldName        :: HsName       -- this field is derivable
       , pragmaDerivDefaultName      :: HsName       -- using this default value
       }
-  | Pragma_NoGenericDeriving				-- turn off generic deriving (default)
+  | Pragma_NoGenericDeriving				-- turn off generic deriving
   | Pragma_GenericDeriving					-- turn on generic deriving (default)
+  | Pragma_ExtensibleRecords				-- turn on extensible records
   deriving (Eq,Ord,Show,Typeable,Data)
 
 %%]
@@ -50,6 +51,7 @@ allSimplePragmaMp
                   , Pragma_CPP
                   , Pragma_GenericDeriving
                   , Pragma_NoGenericDeriving
+                  , Pragma_ExtensibleRecords
                   ]
             ]
         prefixLen = length "Pragma_"

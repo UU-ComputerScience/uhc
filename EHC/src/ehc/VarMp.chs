@@ -62,9 +62,6 @@ A multiple level VarMp knows its own absolute metalevel, which is the default to
 %%[(20 hmtyinfer) import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
 %%]
 
-%%[(50 hmtyinfer || hmtyast) export(varmpKeys)
-%%]
-
 %%[(9090 hmtyinfer || hmtyast) export(varmpMapTy)
 %%]
 

@@ -63,7 +63,7 @@
 %%]
 
 -- packages
-%%[99 import({%{EH}Base.PackageDatabase})
+%%[99 import({%{EH}Base.PackageDatabase},{%{EH}Base.Parser2})
 %%]
 
 -- Misc
@@ -287,7 +287,7 @@ doCompileRun filename opts
          ;  let isHS = isSuffixOf ".hs" fn
          ;  when
               (ehcStopAtPoint opts >= CompilePoint_Parse)
-              (do { tokens <- offsideScanHandle (if isHS then hsScanOpts else ehScanOpts) fn fh
+              (do { tokens <- offsideScanHandle (if isHS then (hsScanOpts opts) else (ehScanOpts opts)) fn fh
                   ; resd <-
                       if isHS
                       then do { let steps = parseOffside (HSPrs.pAGItf opts) tokens

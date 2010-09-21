@@ -38,11 +38,11 @@ SEM CExpr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen)
-ATTR CPat [ | | mbCTag: {Maybe CTag} ]
+ATTR CAlt CPat [ | | mbCTag: {Maybe CTag} ]
 
 SEM CPat
   | Con			lhs			.	mbCTag		=	Just @tag
-  | * - Con	Ann CaseAltFail
+  | * - Con	Ann
   				lhs			.	mbCTag		=	Nothing
 %%]
 

@@ -13,10 +13,10 @@
 %%[8 import({%{EH}Base.ParseUtils}) export(module {%{EH}Base.ParseUtils})
 %%]
 
-%%[20 import({%{EH}Module},qualified Data.Set as Set,qualified EH.Util.Rel as Rel)
+%%[20 import(qualified Data.Set as Set,qualified EH.Util.Rel as Rel)
 %%]
 
-%%[(20 hmtyinfer) import(qualified {%{EH}Pred} as Pr)
+%%[(2020 hmtyinfer) import(qualified {%{EH}Pred} as Pr)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -63,7 +63,7 @@ pPredOccId
   = mkPrId <$> pUIDHI
 %%]
 
-%%[20 export(pIdOcc)
+%%[20 export(pIdOcc,pIdOccKind)
 -- counterpart of PP IdOccKind instance
 pIdOccKind :: P IdOccKind
 pIdOccKind
@@ -81,22 +81,9 @@ pIdOcc :: P IdOcc
 pIdOcc = IdOcc <$ pOCURLY <*> pDollNm <* pCOMMA <*> pIdOccKind <* pCCURLY
 %%]
 
-%%[20
+%%[20 export(pAssocL)
 pAssocL :: P a -> P b -> P (AssocL a b)
 pAssocL pA pB = pOCURLY *> pListSep pCOMMA ((,) <$> pA <* pEQUAL <*> pB) <* pCCURLY
-%%]
-
-%%[20 export(pModEntRel)
-pModEnt :: P ModEnt
-pModEnt
-  = (\kind occ owns -> ModEnt kind occ owns emptyRange)
-    <$  pOCURLY <*> pIdOccKind <* pCOMMA <*> pIdOcc
-    <*> pMaybe Set.empty id (Set.fromList <$ pCOMMA <* pOCURLY <*> pListSep pCOMMA pModEnt <* pCCURLY)
-    <*  pCCURLY
-
-pModEntRel :: P ModEntRel
-pModEntRel
-  = Rel.fromList <$> pAssocL pDollNm pModEnt
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

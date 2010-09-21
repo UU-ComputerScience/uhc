@@ -96,12 +96,16 @@ DATA RelevQual
   -- less than or equal in AnaEval lattice
   | SubEval		l				: AnaEval
   				r				: AnaEval
+%%]
   -- a qual which bridges an alternative and its surroundings
   | Alt			qual			: RelevQual
   				altId			: UID
   				altNr			: Int
   				altMax			: Int
+  				altMbTag		: {Maybe CTag}			-- tag to which this alt belongs
+  				altMbScrutTy	: MbRelevTy				-- the ty for which this tag is taken/chosen
 
+%%[(8 codegen)
 TYPE RelevQualL	=	[RelevQual]
 
 DATA RelevTy
@@ -121,8 +125,9 @@ DATA RelevTy
   				res				: RelevTy
 
 TYPE RelevTyL	=	[RelevTy]
+TYPE MbRelevTy	=	MAYBE RelevTy
 
-SET AllRelevTy	=	RelevTy RelevTyL RelevQual RelevQualL
+SET AllRelevTy	=	RelevTy RelevTyL MbRelevTy RelevQual RelevQualL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

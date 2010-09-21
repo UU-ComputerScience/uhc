@@ -371,6 +371,8 @@ SEM Type
 %%[2
     | Wildcard
         loc         .   eh          =   rngLift @range EH.TyExpr_Wild
+    | MonoWildcard
+        loc         .   eh          =   rngLift @range EH.TyExpr_Mono
 %%]
 %%[3
     | Variable
@@ -571,9 +573,9 @@ SEM RowTypeUpdate
 ATTR Type [ | | ehMbAsTyPr: {Maybe EH.TyExpr} ]
 
 SEM Type
-	| Wildcard
+	| Wildcard MonoWildcard
 		loc			.	ehMbAsTyPr	=	Just $ rngLift @range EH.TyExpr_Impls
-	| * - Wildcard
+	| * - Wildcard MonoWildcard
 		loc			.	ehMbAsTyPr	=	fmap (rngLift @range EH.TyExpr_Pred) @ehMbAsPr
 
 ATTR Type AllRowTypeUpdate [ | | ehMbAsTyPrL USE {++} {[]}: {[Maybe EH.TyExpr]} ]
@@ -581,9 +583,9 @@ ATTR Type AllRowTypeUpdate [ | | ehMbAsTyPrL USE {++} {[]}: {[Maybe EH.TyExpr]} 
 SEM Type
     | RowRecUpdate
         loc         .   ehMbAsTyPrL =   @rowTypeUpdates.ehMbAsTyPrL
-	| Wildcard
+	| Wildcard MonoWildcard
 		loc			.	ehMbAsTyPrL	=	[@ehMbAsTyPr]
-	| * - Wildcard Parenthesized RowRecUpdate
+	| * - Wildcard MonoWildcard Parenthesized RowRecUpdate
 		loc			.	ehMbAsTyPrL	=	map (fmap (rngLift @range EH.TyExpr_Pred)) @ehMbAsPrL
 %%]
 
@@ -943,10 +945,10 @@ ATTR GuardedExpression [ | | eh: {UIDS -> EH.Expr -> EH.Expr} ]
 SEM GuardedExpression -- ToDo: or _Guard?
 %%[[5
     | GuardedExpression
-        lhs         .   eh          =   EH.mkIf' (@typerefname : @valrefnames) @range @guard.eh @expression.eh
+        lhs         .   eh          =   EH.mkIf' (@typerefname : @valrefnames) @range @guard.eh $ ehMkEnforceMono @range @lhs.mustBeMono @expression.eh
 %%][8
     | GuardedExpression
-        lhs         .   eh          =   \failS e -> EH.mkIf'' (@typerefname : @valrefnames) @range @guard.eh @expression.eh e Nothing failS -- (Just @lhs.caseId)
+        lhs         .   eh          =   \failS e -> EH.mkIf'' (@typerefname : @valrefnames) @range @guard.eh (ehMkEnforceMono @range @lhs.mustBeMono @expression.eh) e Nothing failS -- (Just @lhs.caseId)
 %%]]
 %%]
 
@@ -1084,6 +1086,13 @@ SEM FunctionBinding
 %%% LHS, RHS for value bindings     
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[2 hs
+-- | enforce monomorphism
+ehMkEnforceMono :: Range -> Bool -> EH.Expr -> EH.Expr
+ehMkEnforceMono r True e = rngLift r EH.Expr_TypeAs (rngLift r EH.TyExpr_Mono) e
+ehMkEnforceMono _ _    e =                                                     e
+%%]
+
 %%[1
 ATTR LeftHandSide [ | | eh: {[EH.PatExpr]} ]
 
@@ -1129,7 +1138,11 @@ ATTR RightHandSide [ | | eh: {EH.Expr} ]
 
 SEM RightHandSide
     | Expression
-        lhs         .   eh          =   @mkSccLet @expression.eh
+        lhs         .   eh          =   @mkSccLet
+%%[[2
+                                        $ ehMkEnforceMono @range @lhs.mustBeMono
+%%]]
+                                          @expression.eh
 %%[[5
     | Guarded
         lhs         .   eh          =   @mkSccLet (foldr ($) (EH.mkError @range "guarded expr") @guardedexpressions.eh)

@@ -106,7 +106,7 @@ SEM RelevTy
 
 SEM RelevQual
   | SubEval		lhs			.	pp			=	@l.pp >#< "<e=" >#< @r.pp
-  | Alt			lhs			.	pp			=	@qual.pp >#< "@" >|< @altId >#< @altNr >|< "/" >|< @altMax
+  -- | Alt			lhs			.	pp			=	@qual.pp >#< "@" >|< @altId  >|< "/" >|< @altMbScrutTy.pp >#< {- fmap ctagNm -} @altMbTag >|< "/" >|< @altNr >|< "/" >|< @altMax
 
 SEM RelevCoe
   | Id 			lhs			.	pp			=	pp "#_c"

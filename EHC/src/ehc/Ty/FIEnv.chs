@@ -21,7 +21,7 @@ If this is going to be avoided, the eagerness must be avoided, or use of subsump
 %%[(4 hmtyinfer) module {%{EH}Ty.FIEnv} import({%{EH}Base.Common})
 %%]
 
-%%[(4 hmtyinfer) import({%{EH}Base.Opts})
+%%[(4 hmtyinfer) import({%{EH}Opts})
 %%]
 
 %%[(4 hmtyinfer) import(qualified Data.Set as Set)

@@ -15,10 +15,10 @@
 %%[(8 codegen tycore tauphi) hs module {%{EH}TyCore.Trf.IntroduceWeirdConstructs}
 %%]
 
-%%[(8 codegen tycore tauphi) hs import({%{EH}Base.Strictness})
+%%[(8 codegen tycore tauphi) hs import({%{EH}AbstractCore})
 %%]
  
-%%[(8 codegen tycore tauphi) hs import({%{EH}Base.Builtin},{%{EH}Base.Opts},{%{EH}Base.Common})
+%%[(8 codegen tycore tauphi) hs import({%{EH}Base.Builtin},{%{EH}Opts},{%{EH}Base.Common})
 %%]
 
 %%[(8 codegen tycore tauphi) hs import(Data.Maybe)

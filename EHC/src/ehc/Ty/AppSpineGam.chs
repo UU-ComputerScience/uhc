@@ -2,7 +2,7 @@
 %%% "Ty app spine" gam
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4 module {%{EH}Ty.AppSpineGam} import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Base.Opts})
+%%[4 module {%{EH}Ty.AppSpineGam} import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Opts})
 %%]
 %%[4 import({%{EH}Ty},{%{EH}Gam},{%{EH}Gam.AppSpineGam})
 %%]

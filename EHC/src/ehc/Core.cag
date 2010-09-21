@@ -13,7 +13,7 @@ Datatype LamInfo holds the implementation info to be exported from a module.
 %%% Haskell importable interface to Code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs module {%{EH}Core} import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Base.Opts})
+%%[(8 codegen) hs module {%{EH}Core} import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Opts.Base})
 %%]
 
 %%[(8 codegen) hs import({%{EH}AbstractCore}) export(module {%{EH}AbstractCore})
@@ -539,6 +539,7 @@ instance Serialize CBindAspect where
 %%]]
   sput (CBindAspect_RelevTy a b      ) = sputWord8 3 >> sput a >> sput b
   sput (CBindAspect_Meta    a b      ) = sputWord8 4 >> sput a >> sput b
+  sput (CBindAspect_Val     a b      ) = sputWord8 5 >> sput a >> sput b
   sget
     = do t <- sgetWord8
          case t of
@@ -549,6 +550,7 @@ instance Serialize CBindAspect where
 %%]]
             3 -> liftM2 CBindAspect_RelevTy       sget sget
             4 -> liftM2 CBindAspect_Meta          sget sget
+            5 -> liftM2 CBindAspect_Val           sget sget
 
 instance Serialize CBind where
   sput (CBind_Bind a b      ) = sputWord8 0 >> sput a >> sput b

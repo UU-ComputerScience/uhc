@@ -16,7 +16,7 @@ Matching of types to
 \end{itemize}
 %%]
 
-%%[(8 codegen tycore) hs module {%{EH}TyCore.Check} import({%{EH}Base.Common},{%{EH}Base.Opts})
+%%[(8 codegen tycore) hs module {%{EH}TyCore.Check} import({%{EH}Base.Common},{%{EH}Opts})
 %%]
 
 %%[(8 codegen tycore) hs import(EH.Util.Pretty,EH.Util.Utils,qualified EH.Util.FastSeq as Seq)

@@ -106,7 +106,8 @@ SEM CExpr
                 -- AG required types
                 loc         .   argTyLresTy     :   {( TyL, Ty )}
                 loc         .   argTyL          :   TyL
-                loc			.	primResNeedsEval:	Bool
+                loc         .   primResNeedsEval:   Bool
+                loc         .   mbPrimNeedEval	:   {Maybe PrimitiveNeedsEval}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -140,7 +141,7 @@ SEM CExpr
                                                          )
   | App         lhs         .   mbFFIApp        =   @func.mbFFIApp
   | * - FFI Ann App
-  				lhs			.	mbFFIApp		=	Nothing
+                lhs         .   mbFFIApp        =   Nothing
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -17,7 +17,7 @@ TBD:
 \end{itemize}
 %%]
 
-%%[(8 codegen tycore) hs module {%{EH}TyCore.ToCore} import({%{EH}Base.Builtin},{%{EH}Base.Opts},{%{EH}Base.Common})
+%%[(8 codegen tycore) hs module {%{EH}TyCore.ToCore} import({%{EH}Base.Builtin},{%{EH}Opts},{%{EH}Base.Common})
 %%]
 
 %%[(8 codegen tycore) hs import(EH.Util.Utils)

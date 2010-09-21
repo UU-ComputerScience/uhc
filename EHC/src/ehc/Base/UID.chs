@@ -111,7 +111,7 @@ mkNewUID   uid = (uidNext uid,uid)
 
 mkInfNewUIDL' :: (UID -> (UID,UID)) -> UID -> [UID]
 mkInfNewUIDL' mk uid
-  =  let  l = iterate (\(nxt,uid) -> mk nxt) . mkNewUID $ uid
+  =  let  l = drop 1 $ iterate (\(nxt,uid) -> mk nxt) $ mkNewUID uid
      in   map snd l
 
 mkNewUIDL' :: (UID -> (UID,UID)) -> Int -> UID -> [UID] -- assume sz > 0

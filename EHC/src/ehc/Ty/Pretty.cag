@@ -171,40 +171,6 @@ instance PP LabelOffset where
   pp = pp . show
 %%]
 
-%%[(2020 hmtyinfer || hmtyast) hs
-instance PPForHI Ty where
-  -- ppForHI = ppTyWithCfg' CfgPP_HI
-  ppForHI = ppTyWithCfg (cfgPPTyExtraForHI $ cfgPPTy CfgPP_HI)
-
-instance PPForHI Pred where
-  ppForHI p = ppForHI (Ty_Pred p)
-
-instance PPForHI PredOccId where
-  ppForHI = ppPredOccId' CfgPP_HI
-
-instance PPForHI TyKiKey where
-  ppForHI (TyKiKey_Name  n) = ppForHI n
-  ppForHI (TyKiKey_TyVar v) = ppForHI v
-
-instance PPForHI CHRPredOccCxt where
-  ppForHI (CHRPredOccCxt_Scope1 sc) = {- "cxtscope1" >#< -} ppForHI sc
-
-instance PPForHI CHRPredOcc where
-  ppForHI po = ppCurlysCommas [ppForHI (cpoPr po), ppForHI (cpoCxt po)]
-
-instance PPForHI PredScope where
-  ppForHI (PredScope_Lev l) = "scope" >#< (ppBracketsCommas $ map pp $ rllToList l)
-  ppForHI (PredScope_Var v) = "scope" >#< ppForHI v
-
-instance PPForHI LabelOffset where
-  ppForHI (LabelOffset_Off o) = "offset" >#< ppForHI o
-  ppForHI (LabelOffset_Var v) = "offset" >#< ppForHI v
-
-instance PPForHI Label where
-  ppForHI (Label_Lab l) = "label" >#< ppForHI l
-  ppForHI (Label_Var v) = "label" >#< ppForHI v
-%%]
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Interface specifically for Label
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -493,19 +459,9 @@ SEM Ty
 
 %%[(8 hmtyinfer || hmtyast)
 SEM Ty
-%%[[8
   | Con             loc     .   pp      :=  cfgPPTyPPCon @lhs.cfg @lhs.cfg @nm
-%%][8_2
-  -- Pretty print constructors as just their name
-  | Con             loc     .   pp      :=  ppCon @nm
-%%]]
   | App             loc     .   ppDflt  :=  if cfgPPTyFollowAST @lhs.cfg then ppParens @func.pp >#< ppParens @arg.pp else @func.pp >#< @arg.pp
-%%[[8
                             .   ppAST   :=  hv ([ppParens @appFunPP] ++ map ((" " >|<) . ppParens) @appArgPPL)
-%%][8_2
-  -- Print applications readable (Int -> Int) in contrast to parsable ({ -> } {Int, Int}
-                            .   ppAST   :=  @ppNice
-%%]]
                             .   pp      :=  if @isSpineRoot
                                             then if cfgPPTyFollowAST @lhs.cfg
                                                  then @ppAST

@@ -7,7 +7,7 @@
 %%% Utilities for pretty printing derivation tree
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(99 hmtyinfer) hs module {%{EH}DerivationTree} import({%{EH}Base.Common},{%{EH}Base.Opts},{%{EH}Ty.FitsInCommon})
+%%[(99 hmtyinfer) hs module {%{EH}DerivationTree} import({%{EH}Base.Common},{%{EH}Opts},{%{EH}Ty.FitsInCommon})
 %%]
 
 %%[(99 hmtyinfer) hs import({%{EH}Ty},{%{EH}Ty.Ftv},{%{EH}VarMp},{%{EH}Base.LaTeX},{%{EH}Substitutable},{%{EH}Gam.Full})

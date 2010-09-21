@@ -13,7 +13,7 @@ structures for fitsIn and related functions.
 %%[(4 hmtyinfer) module {%{EH}Ty.FitsInCommon2} import({%{EH}Base.Common}, {%{EH}Ty.FitsInCommon}, {%{EH}Ty}, {%{EH}Ty.Utils1}, {%{EH}Substitutable})
 %%]
 
-%%[(4 hmtyinfer) import({%{EH}Base.Opts}, {%{EH}VarMp})
+%%[(4 hmtyinfer) import({%{EH}Opts}, {%{EH}VarMp})
 %%]
 %%[(4 hmtyinfer) import({%{EH}Ty.FIEnv}) export(module {%{EH}Ty.FIEnv})
 %%]

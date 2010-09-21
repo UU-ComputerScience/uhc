@@ -197,6 +197,10 @@ DATA CBindAspect
   | RelevTy		aspectKeyS		: {ACoreBindAspectKeyS}
   				relevTy			: {RelevTy}
   
+  -- a (keyed) CExpr
+  | Val		    aspectKeyS		: {ACoreBindAspectKeyS}
+  				expr 			: CExpr
+  
   -- FFI binding
   {-
   | FFI         callconv        : {FFIWay}

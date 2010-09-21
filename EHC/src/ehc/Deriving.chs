@@ -2,7 +2,7 @@
 %%% Deriving info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(91 codegen) module {%{EH}Deriving} import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Base.Opts},{%{EH}Gam.Full},{%{EH}Ty})
+%%[(91 codegen) module {%{EH}Deriving} import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Opts},{%{EH}Gam.Full},{%{EH}Ty})
 %%]
 
 %%[(91 codegen) import({%{EH}Core},{%{EH}Core.Utils})
@@ -96,6 +96,7 @@ mkDerivClsMp fe valGam dataGam
     $ map (uncurry Map.singleton)
     $ [
       -- Eq
+      {-
          mkc ehbnClassEq []
            [
            -- Eq((==))
@@ -113,9 +114,10 @@ mkDerivClsMp fe valGam dataGam
                 false false
                 nowrap
            ]
-           
+      -}
+   
       -- Ord
-      ,  mkc ehbnClassOrd []
+         mkc ehbnClassOrd []
            [
            -- Ord(compare)
              mkf ehbnClassOrdFldCompare
@@ -379,6 +381,7 @@ mkDerivClsMp fe valGam dataGam
                 asSubs = maybe (const []) id mbAsSubs
                 cNoArg = maybe (\_ _ _ _ _ _ -> undef) id mbCNoArg
         fn f  = ehcOptBuiltin opts f
+        false, true :: CExpr
         false = acoreVar $ fn ehbnBoolFalse
         true  = acoreVar $ fn ehbnBoolTrue
         nil = CExpr_Tup $ ctagNil opts

@@ -16,12 +16,15 @@ Differences:
 \end{itemize}
 %%]
 
-%%[(8 codegen tycore) hs module {%{EH}TyCore.Pretty} import(EH.Util.Pretty,{%{EH}Base.Builtin},{%{EH}Base.CfgPP},{%{EH}Base.Opts},{%{EH}Base.Common},{%{EH}TyCore},{%{EH}Scanner.Common(tycoreScanOpts)})
+%%[(8 codegen tycore) hs module {%{EH}TyCore.Pretty} import(EH.Util.Pretty,{%{EH}Base.Builtin},{%{EH}Base.CfgPP},{%{EH}Opts},{%{EH}Base.Common},{%{EH}TyCore},{%{EH}Scanner.Common(tycoreScanOpts)})
 %%]
 
 %%[(8 codegen tycore) hs import(Data.Bits,Data.Maybe)
 %%]
 %%[(8 codegen tycore) hs import(qualified Data.Map as Map,qualified Data.Set as Set)
+%%]
+
+%%[(8 codegen tycore) hs import({%{EH}AbstractCore})
 %%]
 
 %%[(90 codegen tycore) hs import({%{EH}Foreign.Pretty})

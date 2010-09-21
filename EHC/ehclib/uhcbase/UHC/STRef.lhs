@@ -35,6 +35,10 @@ newSTRef :: a -> ST s (STRef s a)
 newSTRef init = ST $ \s1 ->
     case newMutVar init s1            of { ( s2, var ) ->
     ( s2, STRef var ) }
+    {-
+    letstrict var = newMutVar init
+    in ( s1, STRef var )
+    -}
 
 -- |Read the value of an 'STRef'
 readSTRef :: STRef s a -> ST s a
