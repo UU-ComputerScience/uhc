@@ -7,7 +7,7 @@
 %%% TyCore base
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen tycore) hs module {%{EH}TyCore.Base} import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Base.Opts})
+%%[(8 codegen tycore) hs module {%{EH}TyCore.Base} import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Opts})
 %%]
 %%[(8 codegen tycore) hs import ({%{EH}TyCore},{%{EH}Ty.ToTyCore}) export(module {%{EH}TyCore},module {%{EH}Ty.ToTyCore})
 %%]
@@ -94,7 +94,7 @@ metasMapVal f (b,v) = (b,f v)
 %%% Context: what is above/below
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen tycore) hs export(WhatExpr(..))
+%%[(8888 codegen tycore) hs export(WhatExpr(..))
 data WhatExpr
   = ExprIsLam | ExprIsApp | ExprIsVar HsName | ExprIsInt Int | ExprIsOther
   deriving Eq
@@ -168,7 +168,7 @@ mkValBind1LevMetas doMkSeq n l m t e
   = ValBind_Val b (if metasIsDflt m then Nothing else Just m) l e'
   where e' = if doMkSeq then mkExprSeq  e
                         else mkExprSeq1 e
-        s  = ExprSeq1_L0Bind n Nothing t
+        s  = ExprSeq1_L0Bind n t
         b  = if doMkSeq then Expr_Seq  [s]
                         else Expr_Seq1  s
 %%]
@@ -226,8 +226,14 @@ mkInject tag toTy e
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen tycore) hs
+mkExprApp1' :: (Expr->Expr) -> Expr -> Expr -> Expr
+mkExprApp1' mka f a = Expr_App f (mka $ Expr_Seq [ExprSeq1_L0Val a])
+
+mkExprApp1 :: Expr -> Expr -> Expr
+mkExprApp1 = mkExprApp1' id
+
 mkExprApp1Meta' :: (Expr->Expr) -> Expr -> Expr -> MetaVal -> Expr
-mkExprApp1Meta' mka f a m = Expr_App f (mka $ Expr_Seq [ExprSeq1_L0Val a (if metaValIsDflt m then Nothing else Just m)])
+mkExprApp1Meta' mka f a m = mkExprApp1' mka f a
 
 mkExprApp1Meta :: Expr -> Expr -> MetaVal -> Expr
 mkExprApp1Meta = mkExprApp1Meta' id
@@ -254,7 +260,7 @@ mkTyApp f as = mkExprAppMeta' mkTySeq1 f (acoreMetaLift as)
 
 %%[(8 codegen tycore) hs
 mkExprLam1Meta' :: (Expr->Expr) -> HsName -> MetaVal -> Ty -> Expr -> Expr
-mkExprLam1Meta' mka a m t e = Expr_Lam (mka $ Expr_Seq [ExprSeq1_L0Bind a (if metaValIsDflt m then Nothing else Just m) t]) e
+mkExprLam1Meta' mka a m t e = Expr_Lam (mka $ Expr_Seq [ExprSeq1_L0Bind a t]) e
 
 mkExprLam1Meta :: HsName -> MetaVal -> Ty -> Expr -> Expr
 mkExprLam1Meta = mkExprLam1Meta' id
@@ -306,7 +312,7 @@ mkExprTuple'' t ty
         mkseq1 n (_       ,e) = ExprSeq1_L0LblVal n e
 
 mkExprTuple' :: CTag -> Ty -> [Expr] -> Expr
-mkExprTuple' t ty fs = mkExprTuple'' t ty (zip (repeat Nothing) fs) -- Expr_Node {- t -} . map (flip ExprSeq1_L0Val Nothing)
+mkExprTuple' t ty fs = mkExprTuple'' t ty (zip (repeat Nothing) fs) -- Expr_Node {- t -} . map ExprSeq1_L0Val
 %%]
 
 %%[(8 codegen tycore) hs
@@ -513,9 +519,9 @@ Assumption: singleton argument sequences in the type
 tcMergeArgTypeSeqAndCode' :: (Ty -> TySeq) -> [TySeq1L] -> [(HsName,Expr->Expr)] -> (Expr->Expr,[TySeq])
 tcMergeArgTypeSeqAndCode' mka ts as
   = merge ts as
-  where merge ((ExprSeq1_L0Val  t   _:ts):tss) ((argNm,mkBody):as) = (mkExprLam1'   mka argNm t . mkBody . body, mka t : args)
+  where merge ((ExprSeq1_L0Val  t    :ts):tss) ((argNm,mkBody):as) = (mkExprLam1'   mka argNm t . mkBody . body, mka t : args)
                                                                    where (body,args) = merge (ts:tss) as
-        merge ((ExprSeq1_L0Bind v _ k:ts):tss)                 as  = (mkExprLam1Ty' mka v     k          . body,         args)
+        merge ((ExprSeq1_L0Bind v   k:ts):tss)                 as  = (mkExprLam1Ty' mka v     k          . body,         args)
                                                                    where (body,args) = merge (ts:tss) as
         merge ((ExprSeq1_L1Bind v   k:ts):tss)                 as  = (mkExprLam1Ki' mka v     k          . body,         args)
                                                                    where (body,args) = merge (ts:tss) as
@@ -591,8 +597,8 @@ envFromGam {- tkg -} getTy ml g
 %%[(8 codegen tycore)
 instance AbstractCore Expr MetaVal ValBind ValBind ValBindCateg MetaBind Ty Pat PatRest FldBind Alt where
   -- expr
-  acoreApp1Meta           				= mkExprApp1Meta
-  acoreLam1MetaTy         				= mkExprLam1Meta
+  acoreApp1           			    	= mkExprApp1
+  acoreLam1Ty         				    = mkExprLam1
   acoreTagTupTy   tg t es 				= mkExprTuple' tg t es
   acoreBindasp1CatLevMetasTy cat n l m t e
   										= mkValBind1LevMetas doMkSeq n l m t e

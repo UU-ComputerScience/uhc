@@ -41,7 +41,7 @@ Output generation, on stdout or file
 %%[(8 codegen grin) import({%{EH}GrinCode.Pretty})
 %%]
 -- Java output
-%%[(8 codegen java) import({%{EH}Core.ToJava})
+%%[(8888 codegen java) import({%{EH}Core.ToJava})
 %%]
 
 -- serialization
@@ -126,7 +126,7 @@ cpOutputCore binary nmsuff suff modNm
          }
 %%]
 
-%%[(8 codegen java) export(cpOutputJava)
+%%[(8888 codegen java) export(cpOutputJava)
 cpOutputJava :: String -> HsName -> EHCompilePhase ()
 cpOutputJava suff modNm
   =  do  {  cr <- get

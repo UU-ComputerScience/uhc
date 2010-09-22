@@ -11,7 +11,8 @@ ATTR CExpr [ | | mbLam: {Maybe [HsName]} ]
 
 SEM CExpr
   | Lam         lhs         .   mbLam       =   Just $ maybe [@arg] (@arg:) @body.mbLam
-  | * - Lam Ann lhs         .   mbLam       =   Nothing
+  | * - Lam Ann CaseAltFail
+  				lhs         .   mbLam       =   Nothing
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -19,13 +20,15 @@ SEM CExpr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen)
-ATTR CExpr [ | | mbTupApp: {Maybe CTag} ]
+ATTR CExpr [ | | appFunKind: AppFunKind ]
 
 SEM CExpr
-  | Tup         lhs         .   mbTupApp    =   Just @tag
-  | App         lhs         .   mbTupApp    =   @func.mbTupApp
-  | * - Tup App Ann
-                lhs         .   mbTupApp    =   Nothing
+  | Tup         lhs         .   appFunKind  =   AppFunKind_Tag @tag
+  | FFI         lhs         .   appFunKind  =   AppFunKind_FFI
+  | Var         lhs         .   appFunKind  =   AppFunKind_Fun @ref
+  | App         lhs         .   appFunKind  =   @func.appFunKind
+  | * - Tup App Ann Var FFI CaseAltFail
+                lhs         .   appFunKind  =   AppFunKind_NoApp
 %%]
 
 
@@ -38,6 +41,8 @@ ATTR CExpr [ | | mbVar: {Maybe HsName} ]
 
 SEM CExpr
   | Var         loc         .   mbVar       =   Just @nm
-  | * - Var Ann lhs         .   mbVar       =   Nothing
+  				loc			.	mbVar		:	{Maybe HsName}
+  | * - Var Ann CaseAltFail
+  				lhs         .   mbVar       =   Nothing
 %%]
 

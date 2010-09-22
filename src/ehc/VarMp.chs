@@ -62,9 +62,6 @@ A multiple level VarMp knows its own absolute metalevel, which is the default to
 %%[(20 hmtyinfer) import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
 %%]
 
-%%[(50 hmtyinfer || hmtyast) export(varmpKeys)
-%%]
-
 %%[(9090 hmtyinfer || hmtyast) export(varmpMapTy)
 %%]
 
@@ -213,7 +210,7 @@ assocMetaLevTyLToVarMp l = varmpUnions [ varmpMetaLevTyUnit lev v t | (v,(lev,t)
 assocTyLToVarMp :: Ord k => AssocL k Ty -> VarMp' k VarMpInfo
 assocTyLToVarMp l = mkVarMp (Map.fromList $ assocLMapElt VMITy l)
 
-varmpToAssocL :: VarMp' k VarMpInfo -> AssocL k VarMpInfo
+varmpToAssocL :: VarMp' k i -> AssocL k i
 varmpToAssocL (VarMp _ []   ) = []
 varmpToAssocL (VarMp _ (l:_)) = Map.toList l
 

@@ -17,7 +17,7 @@ In principle such files reside in directories or packages.
 %%[99 import(UU.Parsing, EH.Util.ParseUtils)
 %%]
 -- scanning
-%%[99 import(EH.Util.ScanUtils, {%{EH}Scanner.Common}, {%{EH}Base.HsName}, {%{EH}Base.ParseUtils})
+%%[99 import(EH.Util.ScanUtils, {%{EH}Base.HsName})
 %%]
 
 
@@ -128,23 +128,8 @@ instance HSNM PkgKey where
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Parsing/showing the package name as it is used
+%%% Showing the package name as it is used
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[99
-pPkgKey :: P PkgKey
-pPkgKey = (concat <$> pList1_ng (pVarid <|> pConid <|> ("-" <$ pMINUS))) <+> pMb (pMINUS *> pVersion)
-
-pVersion :: P Version
-pVersion = (\v -> Version (map read v) []) <$> pList1Sep pDOT pInteger10
-%%]
-
-%%[99 export(parsePkgKey)
-parsePkgKey :: String -> Maybe PkgKey
-parsePkgKey
-  = parseString scanOpts pPkgKey
-  where scanOpts   = defaultScanOpts {scoSpecChars = Set.fromList ".-", scoAllowFloat = False}
-%%]
 
 %%[99 export(showPkgKey)
 showPkgKey :: PkgKey -> String

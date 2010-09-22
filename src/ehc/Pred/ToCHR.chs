@@ -6,7 +6,7 @@ Derived from work by Gerrit vd Geest.
 
 Conversion from Pred to CHR.
 
-%%[(9 hmtyinfer) module {%{EH}Pred.ToCHR} import({%{EH}Base.Opts},{%{EH}Base.Common},{%{EH}Ty},{%{EH}Ty.Ftv},{%{EH}Error},{%{EH}VarMp})
+%%[(9 hmtyinfer) module {%{EH}Pred.ToCHR} import({%{EH}Opts},{%{EH}Base.Common},{%{EH}Ty},{%{EH}Ty.Ftv},{%{EH}Error},{%{EH}VarMp})
 %%]
 
 %%[(9 hmtyinfer) import(Data.Maybe,qualified Data.Set as Set,qualified Data.Map as Map)

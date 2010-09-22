@@ -35,8 +35,6 @@
 %%]
 %%[(9 codegen) import({%{EH}Core.Trf.FixDictFields})
 %%]
-%%[(8_2 codegen) import({%{EH}Core.Trf.PrettyVarNames})
-%%]
 %%[(99 codegen) import({%{EH}Core.Trf.ExplicitStackTrace})
 %%]
 %%[(8 codegen grin) hs import(Debug.Trace)
@@ -94,8 +92,8 @@ emptyTrfCore = TrfCore emptyCModule [] uidStart
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen) export(trfCore)
-trfCore :: EHCOpts -> HsName -> TrfCore -> TrfCore
-trfCore opts modNm trfcore
+trfCore :: EHCOpts -> DataGam -> HsName -> TrfCore -> TrfCore
+trfCore opts dataGam modNm trfcore
   = snd $ runState trf trfcore
   where trf
           = do { -- initial is just to obtain Core for dumping stages
@@ -157,12 +155,9 @@ trfCore opts modNm trfcore
                
                  -- float lam/CAF to global level
                ; t_float_glob
-%%[[8_2        
-               ; t_pretty_nm
-%%]]
                ; when (ehcOptFullProgAnalysis opts)
                       t_find_null
-               ; when (ehcOptOptimizationLevel opts >= OptimizationLevel_Full)
+               ; when (ehcOptOptimizes Optimize_StrictnessAnalysis opts)
                       t_ana_relev
                }
 
@@ -202,12 +197,9 @@ trfCore opts modNm trfcore
         t_caf_asarg     = liftTrf  "caf-asarg"          $ cmodTrfCAFGlobalAsArg
         t_float_glob    = liftTrf  "float-glob"         $ cmodTrfFloatToGlobal
         t_find_null     = liftTrf  "find-null"          $ cmodTrfFindNullaries
-        t_ana_relev     = liftTrf  "ana-relev"          $ cmodTrfAnaRelevance opts
+        t_ana_relev     = liftTrf  "ana-relev"          $ cmodTrfAnaRelevance opts dataGam
 %%[[9
         t_fix_dictfld   = liftTrf  "fix-dictfld"        $ cmodTrfFixDictFields
-%%]]
-%%[[8_2        
-        t_pretty_nm     = liftTrf  "pretty-nm"          $ cmodTrfPrettyNames
 %%]]
 %%[[99        
         t_expl_trace    = liftTrf2 "expl-sttrace" (\m s@(TrfCore {trfcoreExtraExports=exps})

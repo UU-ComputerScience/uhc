@@ -20,7 +20,7 @@ As class variations on PP
 %%[8 hs module {%{EH}Base.CfgPP}
 %%]
 
-%%[8 import({%{EH}Base.Common},{%{EH}Base.HsName},{%{EH}Base.Builtin},{%{EH}Scanner.Common})
+%%[8 import({%{EH}Base.Common},{%{EH}Base.HsName},{%{EH}Opts.Base},{%{EH}Base.Builtin},{%{EH}Scanner.Common})
 %%]
 
 %%[8 import(Data.Char,qualified Data.Set as Set)
@@ -50,9 +50,8 @@ class CfgPP x where
   cfgppFollowAST _              = False
 %%]
 
-%%[8 export(CfgPP_Plain(..),CfgPP_HI(..),CfgPP_Core(..),CfgPP_Grin(..),CfgPP_TyCore(..))
+%%[8 export(CfgPP_Plain(..),CfgPP_Core(..),CfgPP_Grin(..),CfgPP_TyCore(..))
 data CfgPP_Plain   = CfgPP_Plain
-data CfgPP_HI      = CfgPP_HI
 data CfgPP_Core    = CfgPP_Core
 data CfgPP_TyCore  = CfgPP_TyCore
 data CfgPP_Grin    = CfgPP_Grin
@@ -63,25 +62,9 @@ instance CfgPP CfgPP_Plain
 %%]
 
 %%[8
-instance CfgPP CfgPP_HI where
-  cfgppHsName   _ n
-%%[[8
-    = ppHsnNonAlpha hiScanOpts n
-%%][20
-    = case n of
-        HsName_Pos i
-          -> pp i
-        _ -> ppHsnNonAlpha hiScanOpts n
-%%]]
-  cfgppConHsName x n            = {-  -} if n == hsnRowEmpty then hsnORow >#< hsnCRow else cfgppHsName x n
-  cfgppVarHsName x _ (Just u) _ = cfgppUID x u
-  cfgppUID       _ u            = "uid" >#< ppUID' u
-  cfgppFollowAST _              = True
-%%]
-
-%%[8
 instance CfgPP CfgPP_Core where
-  cfgppHsName    _ = ppHsnNonAlpha coreScanOpts
+  cfgppHsName    _ = ppHsnNonAlpha coreScanOpts'
+    where coreScanOpts' = coreScanOpts emptyEHCOpts
 %%]
 
 %%[8
@@ -125,65 +108,10 @@ ppCTag' x t
   where ppNm n = cfgppHsName x n
 %%]
 
-%%[8_2 -8.ppCTag export(ppCTag', ppCTag'')
-
-ppCTag'' :: CfgPP x => x -> CTag -> PP_Doc
-ppCTag'' x t =
-  case t of
-    CTagRec         -> ppCurly "Rec"
-    CTag _ nm _ _ _ -> pp nm 
-
--- intended for parsing
-ppCTag' :: CfgPP x => x -> CTag -> PP_Doc
-ppCTag' x t =
-  case t of
-    CTagRec                      -> ppCurly "Rec"
-    CTag ty nm tag arity mxarity -> pp nm >#< "::" >#< pp ty
-%%]
-
 %%[8 export(ppCTagsMp)
 ppCTagsMp :: CfgPP x => x -> CTagsMp -> PP_Doc
 ppCTagsMp x
   = mkl (mkl (ppCTag' x))
   where mkl pe = ppCurlysSemisBlock . map (\(n,e) -> cfgppHsName x n >-< indent 1 ("=" >#< pe e))
-%%]
-
-%%[2020
-instance PPForHI CTag where
-  ppForHI = ppCTag' CfgPP_HI
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% PP variants for: HI
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[2020 export(PPForHI(..))
-class (PP x) => PPForHI x where
-  ppForHI :: x -> PP_Doc
-
-  ppForHI = pp
-%%]
-
-%%[2020
-instance PPForHI UID where
-  ppForHI = cfgppUID CfgPP_HI
-
-instance PPForHI HsName where
-  ppForHI = cfgppHsName CfgPP_HI
-
-instance PPForHI Int
-
-instance PPForHI String where
-  ppForHI = pp . show
-
-instance PPForHI a => PPForHI (AlwaysEq a) where
-  ppForHI (AlwaysEq x) = ppForHI x
-%%]
-
-%%[2020
-instance PPForHI VarUIDHsName where
-  ppForHI (VarUIDHs_Name i n) = "varuidnmname" >#< ppCurlysCommasBlock [ppForHI i, ppForHI n]
-  ppForHI (VarUIDHs_UID  i  ) = "varuidnmuid"  >#< ppForHI i
-  ppForHI (VarUIDHs_Var  i  ) = "varuidnmvar"  >#< ppForHI i
 %%]
 

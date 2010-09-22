@@ -31,7 +31,7 @@ thunks.
 %%]
 %%[(8 codegen clr) hs import(EH.Util.Pretty, EH.Util.Utils)
 %%]
-%%[(8 codegen clr) hs import({%{EH}Base.Common}, {%{EH}Base.Opts}, {%{EH}GrinCode})
+%%[(8 codegen clr) hs import({%{EH}Base.Common}, {%{EH}Opts}, {%{EH}GrinCode})
 %%]
 %%[(8 codegen clr) hs import({%{EH}GrinCode.Common} hiding (Variable(..)), {%{EH}Config}, {%{EH}Silly})
 %%]

@@ -77,7 +77,7 @@ SEM GrValL [ | | fieldCount: Int ]
   | Nil   lhs  .  fieldCount  =  0
 
 SEM GrTag [ | | isGenApplyTag : Bool ]
-  | App      lhs  .  isGenApplyTag  =  @nm == hsnWild
+  | App      lhs  .  isGenApplyTag  =  hsnIsWild @nm
   | * - App  lhs  .  isGenApplyTag  =  False
 %%]
 

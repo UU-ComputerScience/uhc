@@ -10,6 +10,18 @@
 ATTR AllBindAspect [ nm: HsName | | ]
 
 SEM CBind
-  | Bind		bindAspects	.	nm				=	@nm
+  | Bind        bindAspects .   nm              =   @nm
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Name of use of binding
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+SEM CExpr
+  | Var         loc         .   nm              =   acbrefNm @ref
+                loc         .   nm              :   HsName
+%%]
+
+
 

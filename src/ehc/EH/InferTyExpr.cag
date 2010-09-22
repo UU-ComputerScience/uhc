@@ -239,10 +239,14 @@ SEM TyExpr
 
 -- gather tvars over which explicitly is declared not to quantify, thus enforcing monomorphism
 %%[(2 hmtyinfer)
-ATTR AllDecl [ | | noLetQuantTyVarIdS USE {`Set.union`} {Set.empty} : TyVarIdS ]
+ATTR AllDecl AllExpr [ | | noLetQuantTyVarIdS USE {`Set.union`} {Set.empty} : TyVarIdS ]
 
 SEM Decl
-  | TySig		lhs			.	noLetQuantTyVarIdS	=	Map.keysSet $ Map.filter (== TyVarWild_NoQuantTyExpr_NoQuantLetBinding) @tyExpr.tyVarWildMp
+  | TySig		lhs			.	noLetQuantTyVarIdS	=	tvwmpNoQuantS @tyExpr.tyVarWildMp
+
+SEM Expr
+  | TypeAs		lhs			.	noLetQuantTyVarIdS	=	tvwmpNoQuantS @tyExpr.tyVarWildMp `Set.union` @expr.noLetQuantTyVarIdS
+  | Let			lhs			.	noLetQuantTyVarIdS	=	@body.noLetQuantTyVarIdS
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -446,7 +450,7 @@ ATTR TyExprAnn [ | | ann : TyAnn
 SEM TyExprAnn
   | Empty       lhs         .   ann         =   TyAnn_Empty
 %%[[(8 codegen)
-  | Strictness  lhs         .   ann         =   TyAnn_Strictness @s
+  | Strictness  lhs         .   ann         =   TyAnn_Strictness @strictness
 %%]]
 
 SEM TyExprAnn

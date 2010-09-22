@@ -18,13 +18,13 @@ packages.
 %%[99 module {%{EH}Base.PackageDatabase}
 %%]
 
-%%[99 import({%{EH}Base.Common},{%{EH}Base.Opts},{%{EH}Error})
+%%[99 import({%{EH}Base.Common},{%{EH}Opts},{%{EH}Error})
 %%]
 %%[99 import(qualified {%{EH}Config} as Cfg)
 %%]
 
 -- parsing
-%%[99 import(UU.Parsing, EH.Util.ParseUtils)
+%%[99 import(UU.Parsing, EH.Util.ParseUtils, {%{EH}Base.Parser2})
 %%]
 -- scanning
 %%[99 import(EH.Util.ScanUtils, {%{EH}Scanner.Common}, {%{EH}Base.HsName}, {%{EH}Base.ParseUtils})
@@ -143,7 +143,7 @@ pModuleNames :: P [HsName]
 pModuleNames = pList (tokMkQName <$> (pQConidTk <|> pConidTk))
 
 parseModuleNames :: String -> Maybe [HsName]
-parseModuleNames = parseString hsScanOpts pModuleNames
+parseModuleNames = parseString (hsScanOpts defaultEHCOpts) pModuleNames
 %%]
 
 %%[99

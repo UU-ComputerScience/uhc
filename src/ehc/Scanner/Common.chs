@@ -15,6 +15,9 @@ Note: everything is exported.
 %%[1 import(IO, UU.Parsing, UU.Parsing.Offside, UU.Scanner.Position, UU.Scanner.GenToken, UU.Scanner.GenTokenParser, EH.Util.ScanUtils(), {%{EH}Base.Builtin}, {%{EH}Base.Common})
 %%]
 
+%%[1 import({%{EH}Opts.Base})
+%%]
+
 %%[1 import(qualified Data.Set as Set)
 %%]
 
@@ -43,8 +46,8 @@ Note: everything is exported.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1.ehScanOpts
-ehScanOpts :: ScanOpts
-ehScanOpts
+ehScanOpts :: EHCOpts -> ScanOpts
+ehScanOpts opts
   =  defaultScanOpts
 %%]
 %%[1
@@ -101,7 +104,7 @@ ehScanOpts
                     ++ tokOpStrsEH6
 %%]
 %%[7
-                    ++ tokOpStrsEH7
+                    ++ (if ehcOptExtensibleRecords opts then tokOpStrsEH7 else [])
 %%]
 %%[9
                     ++ tokOpStrsEH9
@@ -156,13 +159,13 @@ ehScanOpts
 %%]
 
 %%[1
-hsScanOpts :: ScanOpts
-hsScanOpts
-  = ehScanOpts
+hsScanOpts :: EHCOpts -> ScanOpts
+hsScanOpts opts
+  = ehScanOpts'
 %%]
 %%[1
         {   scoKeywordsTxt      =
-                scoKeywordsTxt ehScanOpts `Set.union`
+                scoKeywordsTxt ehScanOpts' `Set.union`
                 (Set.fromList $
                        offsideTrigs
                     ++ tokKeywStrsHS1
@@ -200,7 +203,7 @@ hsScanOpts
 %%]
 %%[1
         ,   scoKeywordsOps      =
-                scoKeywordsOps ehScanOpts
+                scoKeywordsOps ehScanOpts'
                 `Set.union`
                 (Set.fromList $ 
                        tokOpStrsHS1
@@ -235,15 +238,16 @@ hsScanOpts
 %%]
 %%[1
         ,   scoOffsideTrigs     =
-                scoOffsideTrigs ehScanOpts
+                scoOffsideTrigs ehScanOpts'
                 ++ offsideTrigs
         ,   scoOffsideTrigsGE   =
-                scoOffsideTrigsGE ehScanOpts
+                scoOffsideTrigsGE ehScanOpts'
         ,   scoOffsideModule    =   "module"
         }
   where offsideTrigs     =
             [  "where"
             ]
+        ehScanOpts' = ehScanOpts opts
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -251,8 +255,8 @@ hsScanOpts
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-coreScanOpts :: ScanOpts
-coreScanOpts
+coreScanOpts :: EHCOpts -> ScanOpts
+coreScanOpts opts
   =  grinScanOpts
         {   scoKeywordsTxt      =   (Set.fromList $
                                         [ "let", "in", "case", "of", "rec", "foreign", "uniq"
@@ -271,13 +275,14 @@ coreScanOpts
 %%]]
                                         ])
                                     `Set.union` scoKeywordsTxt tyScanOpts
-                                    `Set.union` scoKeywordsTxt hsScanOpts
-        ,   scoKeywordsOps      =   scoKeywordsOps grinScanOpts `Set.union` scoKeywordsOps hsScanOpts
+                                    `Set.union` scoKeywordsTxt hsScanOpts'
+        ,   scoKeywordsOps      =   scoKeywordsOps grinScanOpts `Set.union` scoKeywordsOps hsScanOpts'
         ,   scoDollarIdent      =   True
-        ,   scoOpChars          =   scoOpChars grinScanOpts `Set.union` scoOpChars hsScanOpts
-        ,   scoSpecChars        =   Set.fromList "!=" `Set.union` scoSpecChars grinScanOpts `Set.union` scoSpecChars hsScanOpts
-        ,   scoSpecPairs        =   scoSpecPairs hsScanOpts
+        ,   scoOpChars          =   scoOpChars grinScanOpts `Set.union` scoOpChars hsScanOpts'
+        ,   scoSpecChars        =   Set.fromList "!=" `Set.union` scoSpecChars grinScanOpts `Set.union` scoSpecChars hsScanOpts'
+        ,   scoSpecPairs        =   scoSpecPairs hsScanOpts'
         }
+  where hsScanOpts' = hsScanOpts opts
 %%]
 
 Todo:
@@ -346,9 +351,9 @@ grinScanOpts
 %%]
 
 %%[8
-hiScanOpts :: ScanOpts
-hiScanOpts
-  =  hsScanOpts
+hiScanOpts :: EHCOpts -> ScanOpts
+hiScanOpts opts
+  =  hsScanOpts'
         {   scoKeywordsTxt      =   (Set.fromList $
                                         [ "value", "fixity", "stamp", "uid", "rule", "var", "ctxt", "sup", "iddef", "arity", "grInline"
                                         , "Value", "Pat", "Type", "Kind", "Class", "Instance", "Default", "Any", "Data"
@@ -384,14 +389,16 @@ hiScanOpts
                                         ++ tokKeywStrsHI6
 %%]]
                                     )
-                                    `Set.union` scoKeywordsTxt hsScanOpts
+                                    `Set.union` scoKeywordsTxt hsScanOpts'
                                     `Set.union` scoKeywordsTxt tyScanOpts
                                     `Set.union` scoKeywordsTxt grinScanOpts
-        ,   scoOpChars          =   scoOpChars coreScanOpts
+        ,   scoOpChars          =   scoOpChars coreScanOpts'
         ,   scoDollarIdent      =   True
-        ,   scoSpecChars        =   scoSpecChars coreScanOpts
-        ,   scoKeywordsOps      =   Set.fromList [ "??" ] `Set.union` scoKeywordsOps coreScanOpts
+        ,   scoSpecChars        =   scoSpecChars coreScanOpts'
+        ,   scoKeywordsOps      =   Set.fromList [ "??" ] `Set.union` scoKeywordsOps coreScanOpts'
         }
+  where hsScanOpts' = hsScanOpts opts
+        coreScanOpts' = coreScanOpts opts
 %%]
 
 %%[8
@@ -681,14 +688,16 @@ tokOpStrsHS1   = [ "-", "*", "!", "_", "%", "." ]
 %%]
 
 %%[2
-pTDOT    
+pTDOT    	,
+    pQDOT
   :: IsParser p Token => p Token
 %%]
 
 %%[2
 pTDOT            = pKeyTk "..."
+pQDOT            = pKeyTk "...."
 
-tokOpStrsEH2   = [ "..." ]
+tokOpStrsEH2   = [ "...", "...." ]
 tokOpStrsHS2   = [  ]
 %%]
 

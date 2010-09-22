@@ -283,7 +283,7 @@ relation bind1PatIdToTy =
     holes [ nm: Nm, ty: Ty | | valGam: ValGam ]
     judgespec valGam === [nm :-> ty]
     judgeuse ag  (retain valGam)
-                        `=` ( if "@lhs.inclVarBind" && nm /= hsnWild
+                        `=` ( if "@lhs.inclVarBind" && not (hsnIsWild nm)
                             - then  gamSingleton nm (ValGamInfo ty)
                             - else  emptyGam
                             )

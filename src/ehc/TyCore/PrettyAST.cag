@@ -25,10 +25,10 @@ ppAST opts cmod
 %%]]
 
 
-%%[(8 codegen tycore) hs module {%{EH}TyCore.PrettyAST} import(EH.Util.Pretty,{%{EH}Base.Builtin},{%{EH}Base.CfgPP},{%{EH}Base.Opts},{%{EH}Base.Common},{%{EH}TyCore},{%{EH}Scanner.Common(tycoreScanOpts)})
+%%[(8 codegen tycore) hs module {%{EH}TyCore.PrettyAST} import(EH.Util.Pretty,{%{EH}Base.Builtin},{%{EH}Opts.Base},{%{EH}Base.Common},{%{EH}TyCore},{%{EH}Scanner.Common(tycoreScanOpts)})
 %%]
 
-%%[(8 codegen tycore) hs import({%{EH}Base.Strictness})
+%%[(8 codegen tycore) hs import({%{EH}AbstractCore})
 %%]
 
 %%[(8 codegen tycore).WRAPPER ag import({TyCore/AbsSyn})

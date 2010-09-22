@@ -63,11 +63,11 @@
 %%]
 
 -- packages
-%%[99 import({%{EH}Base.PackageDatabase})
+%%[99 import({%{EH}Base.PackageDatabase},{%{EH}Base.Parser2})
 %%]
 
 -- Misc
-%%[(8 codegen) import({%{EH}Base.Target})
+%%[(8 codegen) import({%{EH}Base.Target}, {%{EH}Base.Optimize}(allOptimizeMp))
 %%]
 %%[(102 codegen) import({%{EH}Core.Trf.Strip})
 %%]
@@ -186,6 +186,8 @@ handleImmQuitOption immq opts
         -> putStr showSupportedTargets
       ImmediateQuitOption_Meta_TargetDefault
         -> putStr (show defaultTarget)
+      ImmediateQuitOption_Meta_Optimizations
+        -> putStr (showStringMapKeys allOptimizeMp " ")
 %%]]
 %%[[99
       ImmediateQuitOption_VersionDotted
@@ -285,7 +287,7 @@ doCompileRun filename opts
          ;  let isHS = isSuffixOf ".hs" fn
          ;  when
               (ehcStopAtPoint opts >= CompilePoint_Parse)
-              (do { tokens <- offsideScanHandle (if isHS then hsScanOpts else ehScanOpts) fn fh
+              (do { tokens <- offsideScanHandle (if isHS then (hsScanOpts opts) else (ehScanOpts opts)) fn fh
                   ; resd <-
                       if isHS
                       then do { let steps = parseOffside (HSPrs.pAGItf opts) tokens

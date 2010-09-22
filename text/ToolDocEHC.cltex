@@ -26,6 +26,9 @@ See the troubleshooting FAQ in the \eref{UhcUserDocumentation}{UHC manual}.
 
 %%[main doclatex
 \section{Introduction and installation}
+For version
+%%@[exec:install/100/bin/ehc --version-dotted%%]
+
 %%@ToolDocEHC.introduction
 \subsection{System overview}
 
@@ -48,6 +51,10 @@ For now, see the \eref{EhcStructureDocumentation}{UHC structure overview}.
 
 \subsection{Cabal and packages}
 %%@ToolDocEHC.usingPackages
+
+\subsection{Optimizations}
+\label{optimizations}
+%%@ToolDocEHC.optimizations
 
 \section{Language extensions}
 \glabel{LanguageExtensions}
@@ -103,7 +110,7 @@ Bear in mind that these extensions are all but tried and tested!
 Code generation for extensible records is not supported,
 hence no documentation is currently available.
 
-\subsection{Absence of monomorphism restriction}
+\subsection{Relaxed monomorphism restriction}
 \label{absence-monomorphism-restriction}
 %%@ToolDocEHC.absenceMonomorphismRestriction
 
@@ -133,12 +140,12 @@ hence no documentation is currently available.
 
 \section{Language implementation status}
 \glabel{LanguageImplementationStatus}
-%%@ToolDocEHC.languageStatus
+% %%@ToolDocEHC.languageStatus
 
 
-\subsection{Feature availability and status}
-\glabel{feature-availability}
-%%@ToolDocEHC.featureAvailability
+%\subsection{Feature availability and status}
+%\glabel{feature-availability}
+ %%@ToolDocEHC.featureAvailability
 
 %\subsection{Available in Haskell98 but not or partially in UHC}
  %%@ToolDocEHC.inHaskell98NotInEhc
@@ -160,12 +167,12 @@ An older overview can be found on older pages on the \eref{FirstRelease}{first r
 \label{ffi}
 %%@ToolDocEHC.ffi
 
+\subsection{Included packages}
+%%@ToolDocEHC.includedPackages
+
 \subsection{Library modules}
 %%@ToolDocEHC.libraryModules
 
-
-%\subsection{Packages}
- %%@ToolDocEHC.packages
 
 \subsection{Fully functional backends}
 %%@ToolDocEHC.backendsFull
@@ -438,7 +445,9 @@ A list of often occurring build problems is maintained \eref{BuildProblems}{here
 \begin{itemize}
 \item Prerequisites:
 \begin{itemize}
- \item \href{http://haskell.org/ghc/}{GHC}: a recent version, preferably @>= 6.8@, the installed libraries should include the @mtl@ and @fgl@ library.
+ \item \href{http://haskell.org/ghc/}{GHC}: a recent version, preferably @>= 6.12.1@; @GHC 6.12.1@ has been used for development.
+  Older GHC versions may do as well, but are not used for developing.
+  The installed libraries should include the @mtl@ and @fgl@ library.
   Depending on platform and GHC distribution more libraries may need to be installed.
  \item Additional libraries, available via \href{http://hackage.haskell.org/packages/hackage.html}{Hackage} or \href{http://www.cs.uu.nl/wiki/HUT/WebHome}{locally}.
  \begin{itemize}
@@ -527,6 +536,17 @@ Type @make help@ to see what more can be build:
 \begin{pre}
 %%@[exec:make help%%]
 \end{pre}
+
+\subsubsection{Configuration parameters}
+
+Apart from the usual options @./configure@ accepts the following options enabling a particular feature:
+\begin{itemize}
+\item \verb|--enable-java|. Enable @jazy@ backend. 
+\item \verb|--enable-llvm|. Enable @llvm@ backend. 
+\item \verb|--enable-clr|. Enable @clr@ backend.
+\item \verb|--enable-tycore|. Enable @TyCore@ typed core intermediate representation.
+\item \verb|--enable-tauphi| (implies @tycore@). Enable @TyCore@ based experimental strictness optimizations.
+\end{itemize}
 
 %%]]
 
@@ -754,6 +774,7 @@ cons2' = (:) (\x->x :: forall a . a -> a) ~ids	-- the extra annotation fixes thi
 Instance deriving can be generically specified.
 The mechanism consists of three ingredients: specifying deriving behavior, binding the behavior to an instance, and declaring an instance.
 The latter -declaring an instance- is done as usual, by a deriving clause, either as part of a datatype definition or as a standalone clause.
+Currently generic deriving is used for classes @Eq@, @Bounded@, @Functor@, and @Typeable@ in the base libraries.
 
 As an example the code for @Bounded@ from the @Prelude@ is shown here; the details, datatypes, and limitations are explained in
 the paper \href{http://dreixel.net/index.php?content=research}{A generic deriving mechanism for Haskell}.
@@ -950,7 +971,12 @@ The implementation still has some quirks when abstracted dictionaries are involv
 %%]
 
 %%[lexicallyScopedTyVar doclatex
-Lexically scoped type variables can be introduced via pattern type signatures:
+Lexically scoped type variables can be introduced via pattern type signatures,
+for example in the following result type and type of an intermediate computation are connected:
+\begin{pre}
+z (Wrap x) :: (mt,...) = let (m::mt,y) = properFraction x in (m::mt, Wrap y)
+\end{pre}
+
 %%]
 
 %%[existentialTypes doclatex
@@ -1036,6 +1062,8 @@ The following pragmas are supported.
 \begin{itemize}
 \item @CPP@: switch on \href{http://gcc.gnu.org/onlinedocs/cpp/}{cpp} preprocessing.
 \item @NoImplicitPrelude@: don't automatically import @Prelude@ and/or assume its presence.
+\item @GenericDeriving@, @NoGenericDeriving@: turn on/off respectively generic deriving, default is on.
+\item @ExtensibleRecords@: turn on special syntax for extensible records. Available for internal backwards compatibility, but otherwise useless as codegeneration and runtime currently does not support extensible records. It reserves the operators \verb|#| and \verb|:=| for record selection and update respectively.
 \end{itemize}
 \item \verb|{-# DERIVING class field generic-function #-}| pragma: see \lref{generic-deriving}{generic deriving}.
 \end{itemize}
@@ -1050,10 +1078,9 @@ See GHC's documentation on
 %%]
 
 %%[defaultAmbiguousOverloading doclatex
-WARNING 20100601: this did not make it into the release, so the text here describes our intention, not the current state.
-
-Defaults can only be defined per class,
-following a \href{http://hackage.haskell.org/trac/haskell-prime/wiki/Defaulting}{Haskell prime defaulting} proposal.
+Defaulting is implemented following mostly \href{http://hackage.haskell.org/trac/haskell-prime/wiki/Defaulting}{Haskell prime defaulting proposal 2},
+i.e. per class defaulting is allowed.
+One default can be defined per class, e.g. for class C:
 \begin{pre}
 class C a where
   c :: a -> a
@@ -1063,6 +1090,9 @@ instance C Int where
 
 default C Int
 \end{pre}
+
+Interaction with multiple parameter type classed is unpredictable, and should be avoided.
+Defaults cannot be turned off (with \verb|default ()|).
 The Haskell98 form of @default@ is syntactically allowed, but silently ignored.
 Multiple types may be specified, currently only the first one is used:
 
@@ -1070,16 +1100,31 @@ Multiple types may be specified, currently only the first one is used:
 default C (Int,Integer)
 \end{pre}
 
-The scope of @default@ declarations is the same as for instances: a default definition is silently imported when an import declaration.
-Defaults cannot be turned off.
+Scope of default definitions is global, that is, once imported somewhere on an import chain, always imported,
+thereby having the same behavior as instance declarations w.r.t. scope.
+This may change in the future.
+
+The prelude defines
+\begin{pre}
+default Num Integer
+default Real Integer
+default Enum Integer
+default Integral Integer
+default Fractional Double
+default RealFrac Double
+default Floating Double
+default RealFloat Double
+\end{pre}
+
 %%]
 
 %%[absenceMonomorphismRestriction doclatex
-UHC does not feature the monomorphism restriction. For variable bindings like
+UHC does feature a relaxed form of the monomorphism restriction: only bindings to non-variable pattern are enforced to be monomorphic. So,
+for example, for variable bindings like
 \begin{pre}
 x = 1
 \end{pre}
-this leads to type @Num a => a@ for @x@.
+the type @Num a => a@ is inferred for @x@.
 This overloading and loss of sharing can be avoided by using a type signature:
 \begin{pre}
 x :: Int
@@ -1090,7 +1135,21 @@ or
 x = (1 :: Int)
 \end{pre}
 
-More problematic are overloaded bindings inside a tuple (or other aggregrates):
+Monomorphism however is enforced for bindings to a pattern:
+\begin{pre}
+x1 = [1,2]          -- :: Num a => [a]
+x2@(x2a:_) = x1     -- :: [Integer]
+\end{pre}
+
+A first reason for monomorphism currently is pragmatic because in principle the definition of @x2a@ is equivalent to:
+\begin{pre}
+x2a = head x1		-- :: Num a => a
+\end{pre}
+That is, the need for a @Num a@ propagates to fields of an aggregrate value.
+Automatic propagation of these required predicates is not done automatically in UHC, hence the monomorphism restriction in this case.
+
+
+Potentially more subtly problematic however are overloaded bindings inside a tuple (or other aggregrates):
 
 \begin{pre}
 newtype Wrap = Wrap Double
@@ -1100,23 +1159,25 @@ newtype Wrap = Wrap Double
 z (Wrap x) = let my@(m,y) = properFraction x in (m, Wrap y)
 \end{pre}
 
+If generalized on their own, both @m@ and @y@ would be generalized and overloaded, losing any typing connection/constraint between them, which
+in turn leads to overgeneralization, which leads to unexpected ambiguity.
+
 On its own the non-monomorphically restricted @m@ would have the following type:
 
 \begin{pre}
 m :: Integral a => a
 \end{pre}
 
-If this would be allowed, the dictionary for @Integral@ to be passed to @m@ would have to be passed to @my@ as to pass it to @properFraction@.
-In the end we indirectly would require as many invocations of properFraction as the members of the tuple @my@ are used (without being shared by a let).
-This is currently not allowed in UHC, but the error message is a bit cryptic in that in complains about ambiguity (over the type variable associated with @m@).
-Currently this can be fixed only by using
+This could be fixed by using
 \lref{lexically-scoped-type-variables}{lexically scoped type variables}:
 
 \begin{pre}
 z (Wrap x) :: (mt,...) = let (m::mt,y) = properFraction x in (m::mt, Wrap y)
 \end{pre}
 
-In the above \lref{partial-type-signatures}{partial type signatures} were also used.
+but the above is the second reason for enforcing monomorphism for the aggregrate value.
+
+(In the above \lref{partial-type-signatures}{partial type signatures} were also used.)
 
 %%]
 
@@ -1126,10 +1187,9 @@ The following Haskell98 features are not or partially supported:
 \begin{itemize}
 \item N+k patterns are not implemented.
 \item Bound variables in an irrefutable pattern all are individually irrefutable, nested irrefutability is ignored.
-\item Defaulting with @default@ is not implemented. When implemented it will be \lref{default-ambiguous-overloading}{done different}.
 \item Literate Haskell allows \verb@\begin{code}@ .. \verb@\end{code}@, but not individual lines prefixed with @> @.
 \item Strictness annotation in datatype definitions is allowed but ignored.
-\item The monomorphism restriction is not implemented.
+\item The monomorphism restriction is implemented in a relaxed variant.
 \end{itemize}
 %%]
 
@@ -1141,7 +1201,7 @@ The following Haskell 2010 features are not or partially supported:
   is implemented to the point where base libraries can be constructed.
   In particular @export@ is not implemented, and neither are @dynamic@ and @wrapper@ imports.
   The @stdcall@ calling convention is not implemented.
-\item @LANGUAGE@ pragmas (\href{http://hackage.haskell.org/trac/haskell-prime/ticket/128}{LanguagePragma}) @NoImplicitPrelude@ and @CPP@ are recognised, others are ignored.
+\item Some, but not all @LANGUAGE@ pragmas (\href{http://hackage.haskell.org/trac/haskell-prime/ticket/128}{LanguagePragma}) are recognised, others are ignored.
   See \lref{pragmas}{pragmas}.
 \item Pattern guards (\href{http://hackage.haskell.org/trac/haskell-prime/ticket/56}{PatternGuards}) are not implemented.
 \end{itemize}
@@ -1244,38 +1304,34 @@ Calling conventions @dynamic@, @wrapper@, @export@ as well as wrapping as finali
 
 %%]
 
+%%[includedPackages doclatex
+The following packages are included and precompiled. When marked with version 1.0.0.0 it has no relationship with the 'real' (hackage) package providing just enough for package @haskell98@,
+other version numbers mean the same functionality is offered unless specified otherwise.
+\begin{itemize}
+\item @uhcbase@, version same as compiler version.
+\item @base@, version 3.0.0.0, which is arbitrary. The @C@ backend only has a minimal @System.IO@, which propagates to the @haskell98@ package.
+\item @array@, version 1.0.0.0
+\item @filepath@, version 1.1.0.4
+\item @oldlocale@, version 1.0.0.2
+\item @oldtime@, version 1.0.0.4
+\item @unix@, version 1.0.0.0
+\item @directory@, version 1.0.0.0
+\item @random@, version 1.0.0.2
+\item @haskell98@, version 1.0.1.1, lacking \verb|System.Cmd(system)|, handicapped as described by @base@ package.
+\end{itemize}
+%%]
+
 %%[libraryModules doclatex
 The library consists of 
 \begin{itemize}
 \item UHC specific modules, tightly coupled with the underlying implementation. The names of these modules start with @UHC.@.
 \item Modules from the GHC distribution, used without changes.
 \item Modules cloned + adapted from the GHC distribution. This maybe involve a couple of \verb|#ifdef|s or more extensive changes. The intention is to have these changes merged back into the GHC library as to avoid library differences between Haskell implementations.
+\item Modules taken from \href{http://hackage.haskell.org/}{hackage}.
 \end{itemize}
+In due time the intention is to build as much as possible with cabal, sharing as much as possible with hackage.
 
-Currently, mostly modules from the @base@ package are available, only arrays from package @array@ are available.
-For each library module in the Haskell98 report we summarize what is working and what not.
-There are no backwards compatibility wrapper modules, as this is part of the @haskell98@ package.
-
-\begin{itemize}
-\item @Prelude@: fully available.
-\item @Ratio@: in @Data.Ratio@, fully available.
-\item @Complex@: in @Data.Complex@, fully available.
-\item @Numeric@: fully available.
-\item @Ix@: in @Data.Ix@, fully available.
-\item @Array@: in @Data.Array@, fully available.
-\item @List@: in @Data.List@, fully available.
-\item @Maybe@: in @Data.Maybe@, fully available.
-\item @Monad@: in @Control.Monad@, fully available.
-\item @IO@: in @System.IO@ and @System.IO.Error@ and @UHC.OldException@, fully available.
-\item @Directory@: in @System.Directory@, fully availble.
-\item @System@: in @System.Environment@ and @System.Exit@, fully available.
-\item @Time@: in @System.Time@, fully available.
-\item @Locale@: in @System.Locale@, fully available.
-\item @CPUTime@: in @System.CPUTime@, fully available.
-\item @Random@: in @System.Random@, fully available.
-\end{itemize}
-
-More library modules are available, we only list those which are not fully implemented:
+There are several known problems in the @uhcbase@ and @base@ package:
 
 \begin{itemize}
 \item @Data.Typeable@: @cast@ (and variants) always yields @Nothing@.
@@ -1284,11 +1340,6 @@ More library modules are available, we only list those which are not fully imple
 \item @Foreign@, @Ptr@, @Weak@, etc:
  garbage collection related functionality is influenced by the use of Boehm GC,
  e.g. only a minimal interface for weak pointers, finalizers, etc is available, not doing very much.
-\end{itemize}
-
-There are several known problems in the library:
-
-\begin{itemize}
   \item Using functions that works with the internal structure of a handle (eg. @Prelude.print@ inside a weak pointer finalizer will cause the program to crash.
   \item Nested calls of the internal function @UHC.Handle.withHandle@ will cause the program to fail. 
 \end{itemize}
@@ -1298,11 +1349,11 @@ The C based backends (C, bc) use the following public domain libraries:
 
 \subsubsection{Third party libraries}
 \begin{itemize}
-\item \href{http://www.hpl.hp.com/personal/Hans_Boehm/gc/}{Boehm Garbage Collection} library.
+\item \href{http://www.hpl.hp.com/personal/Hans_Boehm/gc/}{Boehm Garbage Collection} (BGC) library.
  Some corners of some backends (notably llvm) still linger onto the BGC library, other backends are not using BGC anymore.
 \end{itemize}
 
-\subsubsection{Known issues}
+\subsection{Known issues}
 \begin{itemize}
 \item Stacksize for the C backend is fixed and not checked for overflow.
 \item Error messages involving types are difficult to decode; too much of the internals of the type system machinery is exposed.
@@ -1324,30 +1375,10 @@ The C based backends (C, bc) use the following public domain libraries:
 \item
  Instances for tuples are currently limited to at most 5-tuples.
  Also not all standard classes have definitions for tuples, in particular @Read@.
-\item
- The symbol @:=@ is still reserved for extensible record update, so it cannot be used as a constructor operator like in
- \begin{verbatim}
- data D = Int := Int
- \end{verbatim}
-\end{itemize}
-%%]
-
-%%[packages doclatex
-Packages can not be used, although a minimal framework for packages is already in use internally. If so desired one can build and use packages in separate locations as follows:
-
-\begin{itemize}
-\item \emph{Build} a pkg @<pkg>@:
-\begin{pre}
-uhc --target=<target> --odir=<install>/<target>/<pkg> --pkg-build-libdir=<install>/<target>/ --pkg-build=<pkg> --import-path=<install>/<target>/<pkg>/include <pkg-files>
-\end{pre}
-Optionally provide specify commandline options @--cpp@, if \href{http://gcc.gnu.org/onlinedocs/cpp/}{cpp} preprocessing is necessary.
-If \href{http://gcc.gnu.org/onlinedocs/cpp/}{cpp} includes are part of the package, these should be in @<install>/<target>/<pkg>/include@; then also pass option @--import-path=<install>/<target>/<pkg>/include@.
-Generated library files like @.hi@ interface files and a linked library are put in the location specified by @--odir@.
-\item \emph{Use} a pkg @<pkg>@:
-\begin{pre}
-uhc --lib-search-path=<install> ...
-\end{pre}
-If the package is put in the default location (usually something like @lib@ inside @/usr/local/lib/uhc-<version>@), option @--lib-search-path@ can be omitted.
+\item Resulting code does not execute fast.
+ Yes we know, many 'standard' optimizations are not yet implemented,
+ and the whole program analysis backends require those optimizations as well to be effective.
+\item Whole program analysis takes a lot of time.
 \end{itemize}
 %%]
 
@@ -1367,6 +1398,8 @@ This is the default backend, and the most complete.
 \label{backend-C}
 
 \begin{itemize}
+\item The HPT analysis is sensitive to particular generated code constructs, especially when related to foreign functions. Some libraries, when used,
+therefore make compilation fail.
 \item No exceptions, throwing an exception will stop the program.
 \item Runs simple programs using the Prelude only; primitives for many of the other libraries are not yet implemented.
       Not all modules available for the @bc@ backend are supported, in particular those interacting with the underlying system: IO, CPUTime, ...
@@ -1379,6 +1412,8 @@ This is the default backend, and the most complete.
 \item Only when enabled via @configure --enable-java@.
 \item Runs for latest variant, but partial implementation of required primitives.
 \item No exceptions.
+\item Jar files and created .class files all together get big. Code is not causing this, but the tables holding constants referring to other classes.
+ JVM expects this to be done per .class file. Because all functions and CAFs have a separate class definition this becomes quite costly in terms of jar file size and runtime startup time.
 \end{itemize}
 
 %%]
@@ -1429,13 +1464,26 @@ packages available earlier in the package search path take precedence.
 No further disambiguation is done: e.g. module @X@ residing in both package @yy@ and @zz@ will cause unspecified behavior.
 There is no mechanism for specifying package names when importing.
 \end{itemize}
+
+Some missing language features however may stand in the way of faultless library compilation,
+but all should be well if packages only assume package @haskell98@ (part of the distribution).
+Keep in mind that cabal support for this release is new, largely untested, and works only for libraries.
+Executables cannot yet be build with cabal.
+%%]
+
+%%[optimizations doclatex
+Currently few optimizations are implemented, apart from the work on whole program analysis. Optimizations can be individually turned on and off:
+\begin{itemize}
+\item @GrinLocal@: non whole program analysis grin optimizations to remove the most obvious inefficiencies.
+\item @StrictnessAnalysis@ (in development): strictness analysis based on relevance analysis.
+\end{itemize}
 %%]
 
 %%[commandlineOptions doclatex
 Only options offered by UHC are discussed, lower variants of UHC have more options for debugging available.
 Other options can be used but are either for internal use of can be disabled sometime.
 Defaults for options are valid only for variant 100 of EHC.
-Boolean options are indicated by @Bool@, where @True@ and @False@ can be indicated by one of \verb@0|1|no|yes|off|on|-|+@.
+Boolean options are indicated by @Bool@, where @True@ and @False@ can be indicated by one of \verb@1|yes|on|+@ respectively \verb@0|no|off|-@.
 
 \begin{itemize}
 \item \verb|-h|, \verb|--help|. Print commandline help and quit.
@@ -1468,6 +1516,8 @@ This is not yet used, except for experimenting with code generation with extra d
  \item \verb|0|: none.
  \item \verb|1| (default): basic.
  \item \verb|2|: much
+ \item \verb|3|: all
+ \item \verb|<opt>[=Bool]|: turn on/off optimization option \verb|<opt>| on top of those already defined. See also @--meta-optimizations@ \lref{optimizations}{optimizations}.
  \end{itemize}
 \item \verb|--no-recomp|. Don't check for the necessity to recompile, recompile allways instead.
 \item \verb|--no-prelude|. Don't assume the presence of @Prelude@.
@@ -1483,6 +1533,7 @@ This is not yet used, except for experimenting with code generation with extra d
 \item \verb|--keep-intermediate-files|. Keep intermediate files (such as @.c@ files and output of \href{http://gcc.gnu.org/onlinedocs/cpp/}{cpp}).
 \item \verb|--meta| options. These are mostly used to let makefiles know what can be done.
  \begin{itemize}
+ \item \verb|--meta-optimizations|: names of all possible optimizations. See also \lref{optimizations}{optimizations}.
  \item \verb|--meta-targets|: all possible code generation targets.
  \item \verb|--meta-target-default|: default code generation target.
  \item \verb|--meta-variant|: EHC variant.

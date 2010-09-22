@@ -2,8 +2,8 @@
    what    : test for previous bug, loop in EH.Ty.tyAppFunArgsWithLkup
              test for correct resolution of overloading of a, and indirectly also c,
                   however as of 20090819 not resolved yet (pun intended)
-   expected: now: ambiguous type for b, c
-             should be: correct resolution for c
+                  as of 20100918: correct
+   expected: correct resolution for c
 ---------------------------------------------------------------------------------------- -}
 
 module AmbigType1 where

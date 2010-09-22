@@ -20,6 +20,7 @@
 %%]
 
 %%[pipeline
+%%[[pipeline.picture
 \begin{frame}
 \frametitle{UHC pipeline}
 \begin{center}
@@ -133,7 +134,7 @@
 \end{tikzpicture}
 \end{center}
 \end{frame}
-
+%%]]
 
 
 
@@ -179,6 +180,7 @@
 \begin{frame}
 \frametitle{Tree-oriented programming}
 
+%%[[picture.treeOrientedProgramming
 \setlength{\mathindent}{0pt}
 
 \begin{tikzpicture}
@@ -413,6 +415,8 @@ SEM  Expr |  Mul   THIS.val  =  @lef.val * @rit.val
 
 
 \end{tikzpicture}
+%%]
+
 \end{frame}
 
 

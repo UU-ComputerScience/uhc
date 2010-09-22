@@ -169,7 +169,7 @@ SEM PatExpr
 SEM PatExpr
   | Var VarAs   loc         .   ty                  =   @lhs.knTy
                             .   varTy               =   @ty
-                            .   addToGam            =   if @lhs.inclVarBind && @nm /= hsnWild
+                            .   addToGam            =   if @lhs.inclVarBind && not (hsnIsWild @nm)
                                                         then  \g ->  gamAdd @nm
                                                                        (ValGamInfo @varTy) g
                                                         else  id

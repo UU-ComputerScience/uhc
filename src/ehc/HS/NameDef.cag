@@ -240,7 +240,7 @@ SEM Declaration
 %%[1
 SEM Pattern
     | Variable As
-        loc             .   isWildcard  =   @name == hsnWild
+        loc             .   isWildcard  =   hsnIsWild @name
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

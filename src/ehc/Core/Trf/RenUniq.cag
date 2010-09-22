@@ -15,7 +15,7 @@
 %%[(8 codegen) hs import({%{EH}AbstractCore})
 %%]
 
-%%[(8 codegen).WRAPPER ag import({Core/AbsSyn})
+%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonBindNm})
 WRAPPER CodeAGItf
 %%]
 
@@ -126,7 +126,7 @@ ATTR AllBind AllPat [ | | nmL USE {++} {[]}: {[HsName]} ]
 %%]
 
 %%[(9 codegen)
-ATTR CExpr 
+ATTR AllExprOnly 
      AllAlt 
      AllBind    [ protectedBindingNames : {[HsName]} | | ]
 ATTR AllMetaVal [ | | protectableBindingNames : {[HsName]} ]
@@ -186,7 +186,7 @@ SEM CExpr
 %%[(8 codegen)
 SEM CExpr
   | Var         lhs         .   cTrf        =   acoreVar (aRenRepl @lhs.aRenMp @nm)
-  | Lam         lhs         .   cTrf        =   CExpr_Lam (aRenRepl @aRenMp @arg) @argMeta.cTrf @body.cTrf
+  | Lam         lhs         .   cTrf        =   CExpr_Lam (aRenRepl @aRenMp @arg) @body.cTrf
 
 SEM CBind
   | Bind        lhs         .   cTrf        =   CBind_Bind (aRenRepl @lhs.aRenMp @nm) @bindAspects.cTrf

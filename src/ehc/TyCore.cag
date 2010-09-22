@@ -7,7 +7,7 @@
 %%% Haskell importable interface to Code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen tycore) hs module {%{EH}TyCore} import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Base.Opts})
+%%[(8 codegen tycore) hs module {%{EH}TyCore} import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Opts})
 %%]
 
 %%[(8 codegen tycore) hs import({%{EH}AbstractCore})
@@ -121,13 +121,13 @@ mkExprSeq t@(Expr_Arrow _ _) = t		-- functions cannot be sequenced, they are alr
 mkExprSeq t                  = Expr_Seq $ mkExprSeqVals [t]
 
 unExprSeq :: ExprSeq -> Expr
-unExprSeq (Expr_Seq [ExprSeq1_L0Val t _]) = t
+unExprSeq (Expr_Seq [ExprSeq1_L0Val t  ]) = t
 unExprSeq t                               = t
 %%]
 
 %%[(8 codegen tycore) hs export(mkExprSeqVals,mkExprSeqNmVals)
 mkExprSeqVals :: [Expr] -> ExprSeq1L
-mkExprSeqVals tl = map (flip ExprSeq1_L0Val Nothing) tl
+mkExprSeqVals tl = map ExprSeq1_L0Val tl
 
 mkExprSeqNmVals :: [(HsName,Expr)] -> ExprSeq1L
 mkExprSeqNmVals tl = [ExprSeq1_L0LblVal n t | (n,t) <- tl]
@@ -141,7 +141,7 @@ mkExprSeq1 t@(Expr_Arrow _ _ ) = t		-- functions cannot be thunked, they are alr
 mkExprSeq1 t                   = Expr_Seq1 $ head $ mkExprSeqVals [t]
 
 unExprSeq1 :: ExprSeq -> Expr
-unExprSeq1 (Expr_Seq1 (ExprSeq1_L0Val t _)) = t
+unExprSeq1 (Expr_Seq1 (ExprSeq1_L0Val t  )) = t
 unExprSeq1 t                                = t
 %%]
 
@@ -213,10 +213,10 @@ mkTySeqArrowNTySeq a r = foldr mkTySeqArrow1TySeq r a
 
 %%[(8 codegen tycore) hs export(mkTyArrowNTy,mkTyVarKiArrowNTy)
 mkTyArrowNTy :: TyL -> Ty -> TySeq
-mkTyArrowNTy a r = mkTySeqArrowNTySeq [ [ExprSeq1_L0Val t Nothing] | t <- a ] (mkTySeq r)
+mkTyArrowNTy a r = mkTySeqArrowNTySeq [ [ExprSeq1_L0Val t] | t <- a ] (mkTySeq r)
 
 mkTyVarKiArrowNTy :: [(TyVarId,Ty)] -> Ty -> TySeq
-mkTyVarKiArrowNTy a r = mkTySeqArrowNTySeq [ [ExprSeq1_L0Bind (mkHNm n) Nothing k] | (n,k) <- a ] (mkTySeq r)
+mkTyVarKiArrowNTy a r = mkTySeqArrowNTySeq [ [ExprSeq1_L0Bind (mkHNm n) k] | (n,k) <- a ] (mkTySeq r)
 %%]
 
 %%[(8 codegen tycore) hs export(mkTyThunk)
@@ -253,7 +253,7 @@ unLazy _             = tyErr "TyCore.unLazy"
 -- strip L1 argument bindings of an arrow type
 tyStripL1Args :: Ty -> Ty
 tyStripL1Args t
-  = foldr Expr_Arrow r $ filter (\x -> case unSeq x of {ExprSeq1_L0Bind _ _ _ -> False ; _ -> True}) as
+  = foldr Expr_Arrow r $ filter (\x -> case unSeq x of {ExprSeq1_L0Bind _ _ -> False ; _ -> True}) as
   where (as,r) = tyArrowArgsRes t
 %%]
 
@@ -262,7 +262,7 @@ tyStripL1Args t
 tyL0BindToL1Val :: Ty -> Ty
 tyL0BindToL1Val t
   = to t
-  where tosq (ExprSeq1_L0Bind n _ _) = ExprSeq1_L1Val (Expr_Var n)
+  where tosq (ExprSeq1_L0Bind n   _) = ExprSeq1_L1Val (Expr_Var n)
         tosq (ExprSeq1_L1Bind n   _) = ExprSeq1_L2Val (Expr_Var n)
         tosq s                       = s
         to   (Expr_Seq  s) = Expr_Seq  (map tosq s)
@@ -275,7 +275,7 @@ tyL0BindToL1Val t
 tyL0BindToL1Bind :: Ty -> Ty
 tyL0BindToL1Bind t
   = to t
-  where tosq (ExprSeq1_L0Bind n _ t) = ExprSeq1_L1Bind n t
+  where tosq (ExprSeq1_L0Bind n   t) = ExprSeq1_L1Bind n t
         tosq (ExprSeq1_L1Bind n   t) = ExprSeq1_L2Bind n t
         tosq s                       = s
         to   (Expr_Seq  s) = Expr_Seq  (map tosq s)
@@ -335,10 +335,10 @@ seqToList (Expr_Seq1 e) = [exprSeq1ToExpr e]
 seqToList e             = [e]
 
 exprSeq1ToExpr :: ExprSeq1 -> Expr
-exprSeq1ToExpr (ExprSeq1_L0Val    e _)   = e
+exprSeq1ToExpr (ExprSeq1_L0Val    e  )   = e
 exprSeq1ToExpr (ExprSeq1_L0LblVal _ e)   = e
 exprSeq1ToExpr (ExprSeq1_L0TagVal _ e)   = e
-exprSeq1ToExpr (ExprSeq1_L0Bind   _ _ e) = e
+exprSeq1ToExpr (ExprSeq1_L0Bind   _   e) = e
 exprSeq1ToExpr (ExprSeq1_L1Val    e)     = e
 exprSeq1ToExpr (ExprSeq1_L1Bind   _ e)   = e
 exprSeq1ToExpr (ExprSeq1_L2Val    e)     = e
@@ -405,26 +405,26 @@ tyArrowGetExprArg :: Int -> ([TySeq1L],TySeq) -> ([Ty],TySeq1,TySeq)
 tyArrowGetExprArg n (as,res)
   = ([ ty t | ts <- reverse tss, t <- ts],a,r)
   where (tss,a,r) = get [] n as
-        get ts n ((a@(ExprSeq1_L0Val _ _):as):ass) | n == 0    = (reverse ts,a,mkTySeqArrowNTySeq ((if null as then [] else [as]) ++ ass) res)
+        get ts n ((a@(ExprSeq1_L0Val _  ):as):ass) | n == 0    = (reverse ts,a,mkTySeqArrowNTySeq ((if null as then [] else [as]) ++ ass) res)
                                                    | otherwise = get  []      (n-1) (as:ass)
         get ts n ((a                     :as):ass)             = get ([a]:ts)  n    (as:ass)
         get ts n (as                         :ass)             = get (as :ts)  n        ass
-        get ts _ _                                             = ([],ExprSeq1_L0Val (tyErr "TyCore.tyArrowGetExprArg.get") Nothing,res)
-        ty (ExprSeq1_L0Bind n _ _) = Expr_Var n
+        get ts _ _                                             = ([],ExprSeq1_L0Val (tyErr "TyCore.tyArrowGetExprArg.get"),res)
+        ty (ExprSeq1_L0Bind n   _) = Expr_Var n
         ty _                       = tyErr "TyCore.tyArrowGetExprArg.ty"
 %%]
 
 %%[(8 codegen tycore) hs export(tySeq1Ty)
 -- get the type from a value ty arg
 tySeq1Ty :: TySeq1 -> Ty
-tySeq1Ty (ExprSeq1_L0Val t _) = t
+tySeq1Ty (ExprSeq1_L0Val t  ) = t
 tySeq1Ty _                    = tyErr "TyCore.tySeq1Ty"
 %%]
 
 %%[(8888 codegen tycore) hs export(exprSeqMbL0Bind)
 -- possibly get the l0 binding
 exprSeqMbL0Bind :: Expr -> Maybe (HsName,Expr)
-exprSeqMbL0Bind (Expr_Seq [ExprSeq1_L0Bind n _ l1]) = Just (n,l1)
+exprSeqMbL0Bind (Expr_Seq [ExprSeq1_L0Bind n   l1]) = Just (n,l1)
 exprSeqMbL0Bind _                                   = Nothing
 %%]
 

@@ -21,6 +21,7 @@ EHCLIB_PKG_oldtime_VERSION				:= 1.0.0.4
 EHCLIB_PKG_unix_VERSION					:= 1.0.0.0
 EHCLIB_PKG_directory_VERSION			:= 1.0.0.0
 EHCLIB_PKG_random_VERSION				:= 1.0.0.2
+EHCLIB_PKG_haskell98_VERSION			:= 1.0.1.1
 
 #EHC_PACKAGES_ASSUMED_VERSIONED			:= $(foreach pkg,$(EHC_PACKAGES_ASSUMED),$(call FUN_PKG_VERSIONED,$(pkg)))
 
@@ -91,6 +92,7 @@ EHCLIB_HSC_ALL_SRC_HSC          		:= $(foreach pkg,$(EHC_PACKAGES_ASSUMED),\
 											 $(wildcard $(EHCLIB_SRC_PREFIX)$(pkg)/*.$(suff) \
 											            $(EHCLIB_SRC_PREFIX)$(pkg)/[A-Z]*/*.$(suff) \
 											            $(EHCLIB_SRC_PREFIX)$(pkg)/[A-Z]*/*/*.$(suff) \
+											            $(EHCLIB_SRC_PREFIX)$(pkg)/[A-Z]*/*/*/*.$(suff) \
 											  )))
 
 EHCLIB_HSC_ALL_DRV_HS					:= $(patsubst $(EHCLIB_SRC_PREFIX)%.hsc,$(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)%.hs,$(EHCLIB_HSC_ALL_SRC_HSC))
@@ -105,6 +107,7 @@ EHCLIB_HS_ALL_SRC_HS					:= $(foreach pkg,$(EHC_PACKAGES_ASSUMED),\
 											 $(wildcard $(EHCLIB_SRC_PREFIX)$(pkg)/*.$(suff) \
 											            $(EHCLIB_SRC_PREFIX)$(pkg)/[A-Z]*/*.$(suff) \
 											            $(EHCLIB_SRC_PREFIX)$(pkg)/[A-Z]*/*/*.$(suff) \
+											            $(EHCLIB_SRC_PREFIX)$(pkg)/[A-Z]*/*/*/*.$(suff) \
 											  )))
 
 EHCLIB_HS_ALL_DRV_HS					:= $(patsubst $(EHCLIB_SRC_PREFIX)%,$(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)%,$(EHCLIB_HS_ALL_SRC_HS))
@@ -175,6 +178,8 @@ EHCLIB_DIST_FILES						:= $(EHCLIB_ALL_SRC) $(EHCLIB_MKF)
 EHCLIB_BASE_OPTS						= -O2
 
 EHCLIB_DEBUG_OPTS						=
+#EHCLIB_DEBUG_OPTS						= --dump-core-stages=1 -OStrictnessAnalysis
+#EHCLIB_DEBUG_OPTS						= --priv=1
 #EHCLIB_DEBUG_OPTS						= -peh -v3
 #EHCLIB_DEBUG_OPTS						= --no-hi-check
 #EHCLIB_DEBUG_OPTS						= --dump-core-stages=1 --dump-grin-stages=1 --gen-trace=1 --gen-cmt=1

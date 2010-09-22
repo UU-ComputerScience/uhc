@@ -5,7 +5,7 @@
 %%[(8 codegen) module {%{EH}AbstractCore.Utils} import ({%{EH}AbstractCore})
 %%]
 
-%%[(8 codegen) import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Base.Opts},{%{EH}Ty})
+%%[(8 codegen) import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Opts},{%{EH}Ty})
 %%]
 
 %%[(8 codegen) import({%{EH}Gam},{%{EH}Gam.ValGam},{%{EH}Gam.DataGam})
@@ -432,8 +432,10 @@ rceRebinds origOnly (nm,ty) alts
 %%[(8 codegen) hs
 rceMatchVar :: (Eq bcat, AbstractCore e m b basp bcat mbind t p pr pf a, CSubstitutable e m b ba t e) => RCEEnv' e m b ba t ->  [(HsName,t)] -> RCEAltL' e t b pr -> e
 rceMatchVar env ((arg,ty):args') alts
-  = acoreLet acoreBindcategPlain (rceRebinds True (arg,ty) alts) remMatch
-  where remMatch  = rceMatchTy env args' [RAlt_Alt remPats e f | (RAlt_Alt (RPat_Var _ _ : remPats) e f) <- alts]
+  = -- acoreLet acoreBindcategPlain (rceRebinds True (arg,ty) alts) remMatch
+    remMatch
+  where -- remMatch  = rceMatchTy env args' [RAlt_Alt remPats e f | a@(RAlt_Alt (RPat_Var _ _ : remPats) e f) <- alts]
+        remMatch  = rceMatchTy env args' [RAlt_Alt remPats (acoreLet acoreBindcategPlain (rceRebinds True (arg,ty) [a]) e) f | a@(RAlt_Alt (RPat_Var _ _ : remPats) e f) <- alts]
 
 rceMatchIrrefutable :: (Eq bcat, AbstractCore e m b basp bcat mbind t p pr pf a, CSubstitutable e m b ba t e) => RCEEnv' e m b ba t ->  [(HsName,t)] -> RCEAltL' e t b pr -> e
 rceMatchIrrefutable env (argty@(arg,ty):args') alts@[RAlt_Alt (RPat_Irrefutable n _ b : remPats) e f]
@@ -445,17 +447,28 @@ rceMkConAltAndSubAlts env ((arg,ty):args) alts@(alt:_)
   = acoreAlt altPat (acoreLet acoreBindcategPlain (rceRebinds True (arg,ty) alts) subMatch)
   where (subAlts,subAltSubs)
           =  unzip
-               [ (RAlt_Alt (pats ++ ps) e f, map (\p -> let n = rpatNmNm (rcpPNm p) in (n,rcpTy p)) pats)
+               [ ( RAlt_Alt (pats ++ ps) e f
+                 , map (\p -> let n = rpatNmNm (rcpPNm p) in (n,rcpTy p)) pats
+                 )
                | (RAlt_Alt (RPat_Con _ _ _ (RPatConBind_One _ pbinds) : ps) e f) <- alts
                , let pats = [ p | (RPatFld_Fld _ _ _ p) <- pbinds ]
                ]
         subMatch
-          =  rceMatchTy env (head subAltSubs ++ args) subAlts
-        altPat
+          =  rceMatchTy env (subAltSub ++ args) subAlts
+          where subAltSub = zipWith (\(_,t) (n,ni) -> (ni,t)) (head subAltSubs) altNmIntroAssocL
+        (altPat, altNmIntroAssocL)
           =  case alt of
                RAlt_Alt (RPat_Con n _ t (RPatConBind_One r pbL) : _) _ _
-                 ->  acorePatCon {- (rpatNmNm n) -} t r pbL'
-                     where  pbL' = [ {- FldBind_Fld l o n (Pat_Var (rpatNmNm $ rcpPNm p)) -} acorePatFldTy (rcpTy p) (l,o) (rpatNmNm $ rcpPNm p) | (RPatFld_Fld l o n p) <- pbL ]
+                 ->  (acorePatCon t r pbL', nmIntroAssocL)
+                     where (pbL',nmIntroAssocL)
+                               = unzip
+                                   [ ( acorePatFldTy (rcpTy p) (l,o) introNm -- nm
+                                     , (nm, introNm)
+                                     )
+                                   | (RPatFld_Fld l o n p, inx) <- zip pbL [(0 :: Int) ..]
+                                   , let nm      = rpatNmNm $ rcpPNm p
+                                   , let introNm = hsnUniqifyInt HsNameUniqifier_Field inx nm
+                                   ]
         tyerr n = acoreTyErr ("rceMkConAltAndSubAlts: " ++ show n)
 
 rceMatchCon :: (Eq bcat, AbstractCore e m b basp bcat mbind t p pr pf a, CSubstitutable e m b ba t e) => RCEEnv' e m b ba t -> [(HsName,t)] -> RCEAltL' e t b pr -> e

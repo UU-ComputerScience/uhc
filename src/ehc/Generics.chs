@@ -5,7 +5,7 @@
 %%[(92 hmtyinfer) module {%{EH}Generics}
 %%]
 
-%%[(92 hmtyinfer) import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Base.Opts},{%{EH}Ty})
+%%[(92 hmtyinfer) import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Opts},{%{EH}Ty})
 %%]
 
 %%[(92 hmtyinfer) import({%{EH}AbstractCore},{%{EH}AbstractCore.Utils})

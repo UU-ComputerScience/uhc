@@ -16,7 +16,7 @@
 %%[(2 hmtyinfer) import({%{EH}VarMp})
 %%]
 
-%%[(4 hmtyinfer) import({%{EH}Base.Opts})
+%%[(4 hmtyinfer) import({%{EH}Opts})
 %%]
 
 %%[(4 hmtyinfer) import({%{EH}Substitutable}) export(FitsIn, FitsIn')

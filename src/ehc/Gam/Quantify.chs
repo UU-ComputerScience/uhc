@@ -73,8 +73,9 @@ valGamQuantifyWithVarMp doQuant tyKiGam tvKiVarMp gamVarMp globTvS prL valGam
             , (tyCycVarMp |=> cycVarMp
               , gamAdd nm (tmpo {tmpoTy = ty}) tmpoGam
             ) )
-          where tmpo        = tyMergePreds prL t
-                ty          = valTyQuantify (tvarKi tyKiGam tvKiVarMp gamVarMp) (`Set.member` globTvS) (tmpoTy tmpo)
+          where tmpo           = tyMergePreds prL t
+                ty | doQuant   = valTyQuantify (tvarKi tyKiGam tvKiVarMp gamVarMp) (`Set.member` globTvS) (tmpoTy tmpo)
+                   | otherwise = tmpoTy tmpo
 %%]
                 newVarMp'   = newVarMp -- tmpoImplsVarMp tmpo `varmpPlus` m
                 tmpoGam'    = gamAdd nm (tmpo {tmpoTy = ty}) tmpoGam

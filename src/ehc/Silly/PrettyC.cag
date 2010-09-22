@@ -15,7 +15,7 @@
 %%]
 %%[(8 codegen grin) hs import(qualified {%{EH}Config} as Cfg)
 %%]
-%%[(8 codegen grin) hs import({%{EH}Base.Opts})
+%%[(8 codegen grin) hs import({%{EH}Opts})
 %%]
 %%[(8 codegen grin) import({Silly/AbsSyn})
 %%]
@@ -397,7 +397,7 @@ callSillyFunctionFromC tras n nm
        >-< ppWhen tras (" printf(\"push label" >#< lab >#< "= %08x at %08x \\n\", " >#< "SP[0]" >#< ", " >#< "SP" >#< "); fflush(stdout);")
        >-< "goto" >#< nm >|< ";"                         -- do the call
        >-< lab >|< ":"                                   -- return two lines below here
-       >-< "asm( \".int 0\" );"                          -- calldata "what"
+       >-< "asm( \"" ++ asmWordMetaop ++ " 0\" );"       -- calldata "what"
        >-< "asm( \"" ++ asmWordMetaop ++ " 0\" );"       -- calldata "stackInfo"
  
  
