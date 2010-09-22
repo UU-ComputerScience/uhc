@@ -138,9 +138,16 @@ mkLkup m = \mlev v -> {- trm "Subst.lkup" (\r -> mlev >#< v >#< r) $ -} varlooku
 ATTR TyAGItf AllTy [ lkup: Lkup | | ]
 %%]
 
-%%[(6 hmtyinfer || hmtyast)
+%%[(3 hmtyinfer || hmtyast)
 SEM Ty
-  | Quant			l1'		.	lkup		=	\mlev v -> @lhs.lkup (mlev+1) v
+  | Quant
+%%[[11
+    Lam
+%%]]
+                    ty      .   lkup        =   \mlev v -> if v == @tv then Nothing else @lhs.lkup mlev v
+%%[[6
+  | Quant           l1'     .   lkup        =   \mlev v -> @lhs.lkup (mlev+1) v
+%%]]
 %%]
 
 %%[(10 hmtyinfer || hmtyast)
