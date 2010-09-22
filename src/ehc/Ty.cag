@@ -744,17 +744,6 @@ tyIsVar = isJust . tyMbVar
 tyIsCon :: Ty -> Bool
 tyIsCon = isJust . tyMbCon
 
-tyMbQu :: Ty -> Maybe TyQu
-tyMbQu t
-  = case tyUnAnn t of
-%%[[4
-      Ty_Quant q _ _
-%%][6
-      Ty_Quant q _ _ _
-%%]]
-        -> Just q
-      _ -> Nothing
-
 tyIsQu :: Ty -> Bool
 tyIsQu = isJust . tyMbQu
 %%]
@@ -774,6 +763,13 @@ Only used to steer PP:
 %%[(4 hmtyinfer || hmtyast) hs export(tyIsSimple)
 tyIsSimple :: Ty -> Bool
 tyIsSimple t = tyIsVar t || tyIsCon t
+%%]
+
+%%[(11 hmtyinfer || hmtyast) hs export(tyIsLam)
+tyIsLam :: Ty -> Bool
+tyIsLam ty
+  = not (null as)
+  where (as,_) = tyLamArgsRes ty
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1087,6 +1083,19 @@ tyMbConWithLkup lookup = tyVarChkVisitLift lookup tyMbCon tyMbCon
 %%[(3 hmtyinfer || hmtyast).unMkTy.tyMbVar hs export(tyMbVar)
 tyMbVar :: Ty -> Maybe TyVarId
 tyMbVar t = case tyUnAnn t of {Ty_Var v _ -> Just v ; _ -> Nothing}
+%%]
+
+%%[(4 hmtyinfer || hmtyast) hs
+tyMbQu :: Ty -> Maybe TyQu
+tyMbQu t
+  = case tyUnAnn t of
+%%[[4
+      Ty_Quant q _ _
+%%][6
+      Ty_Quant q _ _ _
+%%]]
+        -> Just q
+      _ -> Nothing
 %%]
 
 %%[(3 hmtyinfer || hmtyast).unMkTy.tyVar hs export(tyVar)

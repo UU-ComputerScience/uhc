@@ -445,7 +445,9 @@ A list of often occurring build problems is maintained \eref{BuildProblems}{here
 \begin{itemize}
 \item Prerequisites:
 \begin{itemize}
- \item \href{http://haskell.org/ghc/}{GHC}: a recent version, preferably @>= 6.8@, the installed libraries should include the @mtl@ and @fgl@ library.
+ \item \href{http://haskell.org/ghc/}{GHC}: a recent version, preferably @>= 6.12.1@; @GHC 6.12.1@ has been used for development.
+  Older GHC versions may do as well, but are not used for developing.
+  The installed libraries should include the @mtl@ and @fgl@ library.
   Depending on platform and GHC distribution more libraries may need to be installed.
  \item Additional libraries, available via \href{http://hackage.haskell.org/packages/hackage.html}{Hackage} or \href{http://www.cs.uu.nl/wiki/HUT/WebHome}{locally}.
  \begin{itemize}
@@ -772,6 +774,7 @@ cons2' = (:) (\x->x :: forall a . a -> a) ~ids	-- the extra annotation fixes thi
 Instance deriving can be generically specified.
 The mechanism consists of three ingredients: specifying deriving behavior, binding the behavior to an instance, and declaring an instance.
 The latter -declaring an instance- is done as usual, by a deriving clause, either as part of a datatype definition or as a standalone clause.
+Currently generic deriving is used for classes @Eq@, @Bounded@, @Functor@, and @Typeable@ in the base libraries.
 
 As an example the code for @Bounded@ from the @Prelude@ is shown here; the details, datatypes, and limitations are explained in
 the paper \href{http://dreixel.net/index.php?content=research}{A generic deriving mechanism for Haskell}.
@@ -1174,8 +1177,6 @@ z (Wrap x) :: (mt,...) = let (m::mt,y) = properFraction x in (m::mt, Wrap y)
 
 but the above is the second reason for enforcing monomorphism for the aggregrate value.
 
-This all may change in the future.
-
 (In the above \lref{partial-type-signatures}{partial type signatures} were also used.)
 
 %%]
@@ -1465,10 +1466,9 @@ There is no mechanism for specifying package names when importing.
 \end{itemize}
 
 Some missing language features however may stand in the way of faultless library compilation,
-in particular:
-\begin{itemize}
-\item Package @haskell98@ is not available (nor does it compile as a package).
-\end{itemize}
+but all should be well if packages only assume package @haskell98@ (part of the distribution).
+Keep in mind that cabal support for this release is new, largely untested, and works only for libraries.
+Executables cannot yet be build with cabal.
 %%]
 
 %%[optimizations doclatex
