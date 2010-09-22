@@ -6,8 +6,10 @@
 
 -- data List a = Cons a (List a)
             -- | Nil
-            
-test = "hallo"
+         
+id x = x  
+       
+test = id 1
 
 -- id (x::forall a. a->a) = x
 -- id (x::forall a. a->a) = x
