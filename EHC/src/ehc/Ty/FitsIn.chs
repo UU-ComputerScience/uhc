@@ -633,7 +633,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                        fR fi r1 r2 e1 e12@(_:_) e2
                          = foR
                          where (e1L,e2L) = unzip e12
-                               (foL,fi2) = fPairWise (fiUpdOpts fioMkStrong fi) (assocLElts e1L) (assocLElts e2L)
+                               (foL,fi2) = fPairWise ({- fiUpdOpts fioMkStrong -} fi) (assocLElts e1L) (assocLElts e2L)
                                eKeys = assocLKeys e1L
                                eL = zip eKeys (map foTy foL)
                                fo = fR fi2 r1 r2 e1 [] e2

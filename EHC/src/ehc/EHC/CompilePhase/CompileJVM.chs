@@ -168,7 +168,8 @@ cpCompileJazyJVM how othModNmL modNm
                               ; cpRegisterFilesToRm [fpManifest]
                               ; cpLinkJar (Just fpManifest) (modNm : othModNmL2) (JarMk_Exec modNm fp)
                               }
-                        where (pkgKeyL,othModNmL2) = crPartitionIntoPkgAndOthers cr othModNmL
+                        where (pkgKeyDirL,othModNmL2) = crPartitionIntoPkgAndOthers cr othModNmL
+                              pkgKeyL = map fst pkgKeyDirL
                               libJarL
                                 =    map mkl1 (["jazy"])
                                   ++ map mkl2 pkgKeyL

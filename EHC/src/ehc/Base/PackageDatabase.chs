@@ -240,10 +240,12 @@ pkgDbSelectBySearchFilter searchFilters fullDb
 %%% The exposed packages, as specified by their config file
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+TBD: return proper directory path
+
 %%[99 export(pkgExposedPackages)
-pkgExposedPackages :: PackageDatabase -> [PkgKey]
+pkgExposedPackages :: PackageDatabase -> [(PkgKey,String)]
 pkgExposedPackages db
-  = [ (k1,k2)
+  = [ ((k1,k2),"")
     | (k1,mp1) <- Map.toList $ pkgDbPkgMp db
     , (k2,is ) <- Map.toList mp1
     , i        <- is						-- TBD: disambiguation

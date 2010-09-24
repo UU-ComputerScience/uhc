@@ -38,13 +38,14 @@ FileLocKind indicates where something can be found. After found, a FileLocKind_P
 data FileLocKind
   = FileLocKind_Dir									-- plain directory
   | FileLocKind_Pkg	PkgKey							-- specific package
+  					String							-- with the dir inside package it was found
   | FileLocKind_PkgDb								-- yet unknown package in the package database
   deriving Eq
 
 instance Show FileLocKind where
-  show  FileLocKind_Dir		= "directory"
-  show (FileLocKind_Pkg p)	= "package: " ++ showPkgKey p
-  show  FileLocKind_PkgDb	= "package database"
+  show  FileLocKind_Dir		    = "directory"
+  show (FileLocKind_Pkg p d)	= "package: " ++ showPkgKey p ++ "(in: " ++ d ++ ")"
+  show  FileLocKind_PkgDb    	= "package database"
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -90,14 +91,14 @@ mkDirFileLoc
 
 %%[99 export(mkPkgFileLoc)
 mkPkgFileLoc :: PkgKey -> String -> FileLoc
-mkPkgFileLoc p = FileLoc (FileLocKind_Pkg p)
+mkPkgFileLoc p d = FileLoc (FileLocKind_Pkg p d) d
 %%]
 
 %%[99 export(filelocIsPkg)
 filelocIsPkg :: FileLoc -> Bool
-filelocIsPkg (FileLoc (FileLocKind_Pkg _) _) = True
-filelocIsPkg (FileLoc  FileLocKind_PkgDb  _) = True
-filelocIsPkg _                               = False
+filelocIsPkg (FileLoc (FileLocKind_Pkg _ _) _) = True
+filelocIsPkg (FileLoc  FileLocKind_PkgDb    _) = True
+filelocIsPkg _                                 = False
 %%]
 
 %%[8 export(StringPath,FileLocPath)

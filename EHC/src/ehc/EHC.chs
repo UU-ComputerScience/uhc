@@ -356,7 +356,7 @@ doCompilePrepare fnL@(fn:_) opts
                         | d <- nub $ ehcOptPkgdirLocPath opts ++ [Cfg.mkInstallPkgdirUser opts, Cfg.mkInstallPkgdirSystem opts]
                         ]
                     )
-       ; let (pkgDb2,pkgErrs) = pkgDbSelectBySearchFilter (pkgSearchFilter Just PackageSearchFilter_ExposePkg (pkgExposedPackages pkgDb1)
+       ; let (pkgDb2,pkgErrs) = pkgDbSelectBySearchFilter (pkgSearchFilter Just PackageSearchFilter_ExposePkg (map fst $ pkgExposedPackages pkgDb1)
                                                            ++ ehcOptPackageSearchFilter opts
                                                           ) pkgDb1
              pkgDb3 = pkgDbFreeze pkgDb2
