@@ -313,6 +313,7 @@ ehcCmdLineOpts
      -- ,  Option ""   ["limit-ctxt-red"]   (intArg oLimitCtxtRed)               "context reduction steps limit"
      
      ,  Option ""   ["odir"]             (ReqArg oOutputDir "dir")            "base directory for generated files. Implies --compile-only"
+     ,  Option "o"  ["output"]           (ReqArg oOutputFile "file")          "file to generate executable to"
      ,  Option ""   ["keep-intermediate-files"] (NoArg oKeepIntermediateFiles) "keep intermediate files (default=off)"
 %%]]
 %%[[(99 hmtyinfer)
@@ -549,8 +550,6 @@ ehcCmdLineOpts
          oCPP                   o   = o { ehcOptCPP                         = True    }
          oLimitTyBetaRed        o l = o { ehcOptTyBetaRedCutOffAt           = l }
          oLimitCtxtRed          o l = o { ehcOptPrfCutOffAt                 = l }
-         -- oExportEnv          ms o   = o { ehcOptImmQuit                     = Just (ImmediateQuitOption_Meta_ExportEnv ms) }
-         -- oDirEnv                o   = o { ehcOptImmQuit                     = Just ImmediateQuitOption_Meta_DirEnv }
          oMetaPkgdirSys         o   = o { ehcOptImmQuit                     = Just ImmediateQuitOption_Meta_Pkgdir_System }
          oMetaPkgdirUser        o   = o { ehcOptImmQuit                     = Just ImmediateQuitOption_Meta_Pkgdir_User }
          oExposePackage       s o   = o { ehcOptLibPackages                 = ehcOptLibPackages   o ++ [s]
@@ -562,9 +561,12 @@ ehcCmdLineOpts
                                         -- , ehcOptHideAllPackages             = True
                                         }
          oOutputDir           s o   = o { ehcOptOutputDir                   = Just s
-                                        , ehcOptDoLinking                   = False
+                                          -- no linking when no output file is generated. This is not failsafe, requires better solution as now no executable is generated when no --output is specified. Should depend on existence of main.
+                                        , ehcOptDoLinking                   = isJust (ehcOptMbOutputFile o)
                                         }
-         -- oOutputPkgLibDir     s o   = o { ehcOptOutputPkgLibDir             = Just s }
+         oOutputFile          s o   = o { ehcOptMbOutputFile                = Just (mkFPath s)
+                                        , ehcOptDoLinking                   = True
+                                        }
          oKeepIntermediateFiles o   = o { ehcOptKeepIntermediateFiles       = True }
          oPkgBuild            s o   = o { ehcOptPkg                         = Just (PkgOption_Build s)
                                         , ehcOptDoLinking                   = False
@@ -800,7 +802,7 @@ impredFIOpts = strongFIOpts {fioBindToTyAlts = True}
 
 %%[(5 hmtyinfer) export(weakFIOpts)
 weakFIOpts :: FIOpts
-weakFIOpts = strongFIOpts {fioLeaveRInst = True, fioBindRFirst = False}
+weakFIOpts = fioMkWeak strongFIOpts
 %%]
 
 %%[(9 hmtyinfer) export(predFIOpts,implFIOpts)
@@ -831,6 +833,11 @@ fioSwapPolarity pol fio = fio {fioMode = fimSwapPol pol (fioMode fio)}
 %%[(4 hmtyinfer).fioMkStrong export(fioMkStrong)
 fioMkStrong :: FIOpts -> FIOpts
 fioMkStrong fi = fi {fioLeaveRInst = False, fioBindRFirst = True, fioBindLFirst = True}
+%%]
+
+%%[(4 hmtyinfer).fioMkStrong export(fioMkWeak)
+fioMkWeak :: FIOpts -> FIOpts
+fioMkWeak fi = fi {fioLeaveRInst = True, fioBindRFirst = False}
 %%]
 
 %%[(4 hmtyinfer).fioMkUnify export(fioMkUnify)

@@ -211,6 +211,7 @@ data EHCOpts
       ,  ehcOptLibPackages    ::  [String]
       ,  ehcProgName          ::  FPath             -- name of this program
       ,  ehcOptUserDir        ::  String            -- user dir for storing user specific stuff
+      ,  ehcOptMbOutputFile   ::  Maybe FPath       -- in which file to put generated output/executable
       ,  ehcOptCPP            ::  Bool              -- do preprocess with C preprecessor CPP
       ,  ehcOptUseAssumePrelude                     -- use & assume presence of prelude
                               ::  Bool
@@ -338,6 +339,7 @@ emptyEHCOpts
       ,  ehcOptLibPackages      =   []
       ,  ehcProgName            =   emptyFPath
       ,  ehcOptUserDir          =   ""
+      ,  ehcOptMbOutputFile     =   Nothing
       ,  ehcOptCPP              =   False
       ,  ehcOptUseAssumePrelude =   True
       ,  ehcOptPackageSearchFilter
