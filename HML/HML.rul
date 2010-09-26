@@ -5,7 +5,7 @@
 module HML where
 
 import Control.Monad.Error
--- import Pretty   
+import Pretty   
 import qualified Data.Map as M
 import Control.Monad
 import Control.Arrow hiding (app)
@@ -16,10 +16,11 @@ import Data.Maybe
 
 import EH8.EH
 import EH8.Base.HsName
+import EH8.Ty(tyQu_Forall)
 
 import EqHML
 
-import EH.Util.Pretty
+import EH.Util.Pretty hiding (pp)
 import qualified Debug.Trace as D
 
 -- | Create a HsName from a string.
@@ -247,7 +248,7 @@ instance Domain TyIndex where
   
 instance Domain Env where
   domain   = M.keys
-  codomain = error "Can't convert the codomain of an Env to a [HsName]" -- codomain . M.elems
+  codomain = concatMap ftv . M.elems
   
 -- | Updating a prefix
 update :: (Prefix, Either Scheme (HsName, TyExpr)) -> (Prefix, Env)
@@ -344,9 +345,15 @@ desugar x = x
 sugar :: TyScheme -> TyScheme
 sugar (TyScheme_Quant (Scheme_Simple nm b) t) 
     = let q' = TyIndex_Group nm (fromScheme b)
-      in case sugar t of
-          TyScheme_Sugar q t -> TyScheme_Sugar (q':q) t
-          x                  -> TyScheme_Sugar [q']   t
+      in case t of
+          (TyScheme_SystemF _) -> TyScheme_Sugar [q']   t
+          _                    ->
+             case sugar t of
+              TyScheme_Sugar q t -> TyScheme_Sugar (q':q) t
+              x                  -> TyScheme_Sugar [q']   t
+sugar (TyScheme_SystemF a) = case mkQuantified a of
+                               y@(TyScheme_SystemF {}) -> TyScheme_Sugar [] y
+                               x                       -> sugar x
 sugar x = x
 
 -- | Convert a Quantified Scheme to a TyScheme such that
@@ -425,6 +432,14 @@ instance Simplify TyExpr where
 isVar :: PatExpr -> Bool
 isVar (PatExpr_Var{}) = True
 isVar _               = False
+
+mkQuant :: TyExpr -> TyExpr
+mkQuant x@(TyExpr_Quant{}) = x
+mkQuant x                 = 
+  let vars = ftv x
+      f    = TyExpr_Quant tyQu_Forall
+      c    = map f vars
+  in  foldl (.) id c x
 }
     
 data TyQu
@@ -474,6 +489,26 @@ data TyQuantifiedScheme
     tyIndex  :: TyIndex
     tyScheme :: TyScheme
   con Bottom
+   
+{
+sche :: TyScheme -> String
+sche (TyScheme_Quant{})   = "Quant"
+sche (TyScheme_SystemF{}) = "SystemF"
+sche (TyScheme_Bottom{})  = "Bottom"
+sche (TyScheme_Sugar{})   = "Sugar"
+sche (TyScheme_Forall{})  = "Forall"
+}
+
+{
+con :: TyExpr -> String
+con (TyExpr_Con a)    = "Con " ++ show a
+con (TyExpr_Var a)    = "Var " ++ show a
+con (TyExpr_App a b)  = con a ++ " " ++ con b
+con (TyExpr_AppTop a) = "AppTop " ++ con a
+con (TyExpr_Parens a) = "(" ++ con a ++ ")"
+con (TyExpr_Quant _ _ a) = "Quant: " ++ con a
+con _                 = "unmapped"
+}
    
 -- Type Schemes
 data TyScheme
@@ -1038,14 +1073,14 @@ datasem Expr monad IO
        (loc.a2, loc.frs2) = fresh loc.frs1
        (loc.b , loc.frs3) = fresh loc.frs2
        
-       func.exp = loc.func
+       func.exp = D.trace "app - func" loc.func
        func.frs = loc.frs3
        func.pre = lhs.pre
        func.env = lhs.env
        
        invoke infer of func
        
-       arg.exp = loc.arg
+       arg.exp = D.trace "app - arg" loc.arg
        arg.frs = func.frs
        arg.pre = func.nxe
        arg.env = func.sub `M.union` lhs.env
@@ -1059,16 +1094,18 @@ datasem Expr monad IO
        (loc.q2', loc.e2') = (fst loc.temp3, (snd loc.temp1) `M.union` (snd loc.temp2) `M.union` (snd loc.temp3))
        
        child u : Unify = unify
-       u.pre  = loc.q2'
+       u.pre  = D.trace ("app - unify " ++ pp loc.q2' ++ " -- " ++ pp loc.e2') loc.q2'
        -- unsafe. Needs to be rewritten
-       u.exp1 = fromJust $ appAll loc.e2' (TyExpr_Var loc.a1)
-       u.exp2 = (fromJust $ appAll loc.e2' (TyExpr_Var loc.a2)) `mkArrow` (TyExpr_Var loc.b)
+       u.exp1 = let c = fromJust $ appAll loc.e2' (TyExpr_Var loc.a1)
+                in D.trace ("Con1: " ++ con c) c
+       u.exp2 = let c = (fromJust $ appAll loc.e2' (TyExpr_Var loc.a2)) `mkArrow` (TyExpr_Var loc.b)
+                in D.trace ("Con2: " ++ con c) c
        u.frs  = arg.frs
        
        invoke unify of u
        
        loc.q3 = u.pre
-       loc.e3 = u.sub
+       loc.e3 = D.trace "unify done" u.sub
        (loc.q4, loc.q5) = curry split loc.q3 (domain lhs.pre)
     
        lhs.res = let b = TyExpr_Var loc.b
@@ -1318,27 +1355,29 @@ subsume = sem subsume : Subsume monad IO
              visit subsume
                default? pre = last
                default? frs = last
-               clause Main_sumsume
+               clause Main_subsume
                 loc.nfTy = isNf lhs.exp
                 loc.nfTs = isNf lhs.ty
                 loc.nf   = loc.nfTy && loc.nfTs
                 internal nf_check
                     clause s_subsume
-                      match True                 = loc.nf
+                      match True                  = loc.nf
                       match TyExpr.Quant@exp      = lhs.exp
                       match TyScheme.Sugar@scheme = sugar lhs.ty
                       
                       loc.q  = lhs.pre
-                      loc.q2 = scheme.prefix
+                      loc.q2 = D.trace ("subsume - init " ++ pp scheme.prefix) scheme.prefix
                       
                       child u : Unify = unify
                       
                       (loc.c, loc.frs1) = fresh lhs.frs
-                      u.pre  = loc.q ++ loc.q2
+                      u.pre  = let q = loc.q ++ loc.q2
+                               in D.trace ("subsume -- " ++ pp q) q
                       u.exp1 = case app (exp.tyVar, mkVar loc.c ) exp.tyExpr of
-                                 Just a  -> a
+                                 Just a  -> D.trace ("un1: " ++ con a) a
                                  Nothing -> error "Subsume failure, substitution failed"
-                      u.exp2 = dropScheme scheme.tyExpr
+                      u.exp2 = let f = dropScheme scheme.tyExpr
+                               in D.trace ("un2: " ++ con f) f
                       u.frs  = loc.frs1
                       
                       invoke unify of u
@@ -1358,12 +1397,12 @@ subsume = sem subsume : Subsume monad IO
                           lhs.sub = loc.e2
                           lhs.frs = u.frs
                         clause failed
-                          match False = loc.check
-                          lhs.sub = error "Subsume failure, the TyExpr or TyScheme is not in normal form"
+                          match (loc.bla, False) = ((), loc.check)
+                          lhs.sub = const (error "Subsume failure, the TyExpr or TyScheme is not in normal form") loc.bla
                   
                     clause f_subsume
-                      match False                 = loc.nf
-                      lhs.sub = error $ "Subsume failure, the resulting types still have reference to a fresh skolem constant" ++ show loc.nf
+                      match (loc.bla, False) = ((), loc.nf)
+                      lhs.sub = const (error $ "Subsume failure, the resulting types still have reference to a fresh skolem constant - " ++ show loc.nf) loc.bla
 
 unify = sem unify : Unify monad IO    
           visit unify
@@ -1445,36 +1484,37 @@ unify = sem unify : Unify monad IO
                            loc.expr  = lhs.exp2
                            loc.varnm = var1.nm
                            -- | code duplication, bah, the graph reordering is screwed up
-                           loc.q = lhs.pre
+                           loc.q = D.trace ("unify - leftvar " ++ show (domain lhs.pre)) lhs.pre
                            loc.phi = loc.q `contains` loc.varnm
                            
                            match True = isJust loc.phi
                            loc.phi' = fromJust loc.phi
                            
-                           loc.p =  TyExpr_Var loc.varnm
+                           loc.p =  mkQuant $ TyExpr_Var loc.varnm
                            
                            child s : Subsume = subsume
                            
                            s.pre = loc.q
                            s.exp = loc.p
-                           s.frs = lhs.frs
-                           s.ty  = dropQuant loc.phi'
+                           s.frs = D.trace ("Left: " ++ con loc.p) lhs.frs
+                           s.ty  = let c = dropQuant loc.phi'
+                                   in D.trace ("Ty: " ++ sche c) c
                            
                            invoke subsume of s
                            
                            (loc.q2, loc.e2) = case appAll s.sub loc.expr of
-                                               Nothing -> error "Application failed in unify"
-                                               Just a  -> update (s.pre, Right (loc.varnm, a))
+                                                Nothing -> error "Application failed in unify"
+                                                Just a  -> update (s.pre, Right (loc.varnm, a))
                            
                            lhs.pre = loc.q2
                            lhs.sub = loc.e2
-                           lhs.frs = s.frs   
+                           lhs.frs = D.trace "unify - leftvar***" s.frs   
                          clause rightvar
                            match TyExpr.Con@var2 = lhs.exp2
                            loc.expr  = lhs.exp1
                            loc.varnm = var2.nm
                            -- | code duplication, bah, the graph reordering is screwed up
-                           loc.q = lhs.pre
+                           loc.q = D.trace "unify - rightvar" lhs.pre
                            loc.phi = loc.q `contains` loc.varnm
                            
                            match True = isJust loc.phi
@@ -1525,12 +1565,12 @@ unify = sem unify : Unify monad IO
                             lhs.sub = loc.e1
                             lhs.frs = u.frs
                           clause failed
-                            match False = loc.check
-                            lhs.sub = error "Subsume failure, the TyExpr or TyScheme is not in normal form"
+                            match (loc.bla, False) = ((), loc.check)
+                            lhs.sub = const (error "Subsume failure, the TyExpr or TyScheme is not in normal form") loc.bla
                             
                  clause f_unify
-                   match False = loc.nf
-                   lhs.sub = error "Unify failure, one or both of the TyExpr are not in normal form."
+                   match (loc.bla, False) = ((), loc.nf)
+                   lhs.sub = const (error "Unify failure, one or both of the TyExpr are not in normal form.") loc.bla
  
 typeCheck ::  Expr -> IO ([TyScheme], Env, Prefix, Int)
 typeCheck exp = do

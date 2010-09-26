@@ -4,16 +4,16 @@
 -- | Pretty printing module
 module Pretty where
 
-import EH4.EH
-import EH4.Ty
-import EH4.Base.HsName
+import EH8.EH
+import EH8.Ty
+import EH8.Base.HsName
 
-import EH.Util.Pretty
+import EH.Util.Pretty hiding (pp)
 
 import Data.List
 import GHC.Show
 
-type Prefix  = [TyIndex]
+import qualified Data.Map as M
 
 class Pretty a where
    pp :: a -> String
@@ -21,12 +21,18 @@ class Pretty a where
 -- instance Pretty a => Show a where
    -- show = pp
 
+instance (Pretty a, Pretty b) => Pretty (M.Map a b) where
+   pp = pp . M.toList
+   
+instance Pretty a => Pretty [a] where
+   pp = ("["++) . (++"]") . intercalate "," . map pp
+   
+instance (Pretty a, Pretty b) => Pretty (a, b) where
+   pp (a,b) = "("++pp a++", "++pp b++")"
+   
 instance Pretty HsName where
-   pp = pp
+   pp = show
 
-instance Pretty Prefix where
-  pp = (\x->"(" ++ x ++ ")") . intercalate "," . map pp
-  
 instance Pretty TyIndex where
   pp (TyIndex_Group var bound) = "(" ++ pp var ++ " >= " ++ pp bound ++ ")"
   
@@ -115,7 +121,7 @@ instance Pretty Expr where
   pp (Expr_Con nm       ) = pp nm
   pp (Expr_Var nm       ) = pp nm
   pp (Expr_App f a      ) = pp f  ++ " " ++ pp a
-  pp (Expr_Let d b      ) = let decls = map pp d
+  pp (Expr_Let s d b    ) = let decls = map pp d
                             in "Let " ++ unlines decls ++ "in " ++ pp b
   pp (Expr_Lam arg b    ) = "\\" ++ pp arg ++ " -> " ++ pp b
   pp (Expr_AppTop a     ) = pp a
