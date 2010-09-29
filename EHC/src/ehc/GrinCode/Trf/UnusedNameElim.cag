@@ -73,7 +73,7 @@ grExprIsElimable _                  = False
 %%[(8 codegen grin)
 SEM GrExpr
   | Seq         lhs         .   trf             =   case (@pat.nmAlias, @trf, @body.trf) of
-                                                      (NmAlias_Nm n1,GrExpr_Seq e (GrPatLam_Var p) b,_) | grExprIsElimable e && not (p `Map.member` @body.gathFviMp)
+                                                      (NmAlias_Nm n1,GrExpr_Seq e (GrPatLam_Var p) b,_) | grExprIsElimable e && not (n1 `Map.member` @body.gathFviMp)
                                                         -> b
                                                       _ -> @trf
 %%]

@@ -150,3 +150,22 @@ SEM Decl
   | Instance    loc         .   rceEnvTC    =   (C.emptyRCEEnv @lhs.opts) { C.rceValGam = @lhs.valGam, C.rceDataGam = @lhs.dataGam, C.rceTyVarMp = @lhs.finTyVarMp }
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Strictness
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Only toplevel propagation allowed.
+
+%%[(8 codegen)
+ATTR TyExpr TyExprAnn [ | | mbStrictness: {Maybe Strictness} ]
+
+SEM TyExpr
+  | Ann			lhs			.	mbStrictness=	@ann.mbStrictness <|> @tyExpr.mbStrictness
+  | * - Ann		lhs			.	mbStrictness=	Nothing
+
+SEM TyExprAnn
+  | Strictness	lhs			.	mbStrictness=	Just @strictness
+  | * - Strictness
+  				lhs			.	mbStrictness=	Nothing
+%%]
+

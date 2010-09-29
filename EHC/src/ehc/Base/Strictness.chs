@@ -18,15 +18,15 @@
 
 %%[(8 codegen) hs export(Strictness(..))
 data Strictness
-  = Strict
-  | NonStrict
-  | StrictnessVar HsName
+  = Strictness_Strict
+  | Strictness_NonStrict
+  | Strictness_Var HsName
   deriving (Eq, Ord)
 
 instance Show Strictness where
-  show Strict            = "strict"
-  show NonStrict         = "nonStrict"
-  show (StrictnessVar n) = "strictness:" ++ show n
+  show Strictness_Strict    = "strict"
+  show Strictness_NonStrict = "nonStrict"
+  show (Strictness_Var n)   = "strictness:" ++ show n
 %%]
 
 
@@ -45,13 +45,13 @@ deriving instance Data Strictness
 
 %%[(20 codegen)
 instance Serialize Strictness where
-  sput (Strict)           = sputWord8 0
-  sput (NonStrict)        = sputWord8 1
-  sput (StrictnessVar nm) = sputWord8 2 >> sput nm
+  sput (Strictness_Strict           )   = sputWord8 0
+  sput (Strictness_NonStrict        )   = sputWord8 1
+  sput (Strictness_Var          nm  )   = sputWord8 2 >> sput nm
   sget = do t <- sgetWord8
             case t of
-              0 -> return Strict
-              1 -> return NonStrict
-              2 -> liftM StrictnessVar sget
+              0 -> return Strictness_Strict
+              1 -> return Strictness_NonStrict
+              2 -> liftM  Strictness_Var sget
 %%]
 

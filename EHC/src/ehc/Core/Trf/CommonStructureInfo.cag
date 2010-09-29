@@ -20,7 +20,7 @@ ATTR CExpr [ | | mbFunVar: {Maybe HsName} ]
 SEM CExpr
   | Var         lhs         .   mbFunVar    =   @mbVar
   | App         lhs         .   mbFunVar    =   @func.mbFunVar
-  | * - Var App Ann
+  | * - Var App Ann CaseAltFail
   				lhs         .   mbFunVar    =   Nothing
 %%]
 
@@ -29,6 +29,20 @@ ATTR CExpr [ | | argL: {[CExpr]} ]
 
 SEM CExpr
   | App         loc         .   argL        =   @arg.cTrf : @func.argL
-  | * - App Ann lhs         .   argL        =   []
+  | * - App Ann CaseAltFail
+  				lhs         .   argL        =   []
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Maybe an con pat with tag
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR CAlt CPat [ | | mbCTag: {Maybe CTag} ]
+
+SEM CPat
+  | Con			lhs			.	mbCTag		=	Just @tag
+  | * - Con	Ann
+  				lhs			.	mbCTag		=	Nothing
 %%]
 

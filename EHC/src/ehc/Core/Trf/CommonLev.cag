@@ -23,7 +23,7 @@ ATTR AllMeta [ | | self: SELF ]
 SEM CExpr
   | Lam         loc         .   cvi                 =   CVarIntro
                                                           { cviLev  = @lev
-                                                          , cviMeta = @argMeta.self
+                                                          , cviMeta = CMetaVal_Val -- @argMeta.self
                                                           }
 
 SEM CBindAspect

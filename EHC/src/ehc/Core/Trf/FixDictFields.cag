@@ -28,7 +28,7 @@ WRAPPER CodeAGItf
 %%]
 
 %%[(99 codegen)
-PRAGMA strictcase
+PRAGMA nocycle
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -43,13 +43,33 @@ cmodTrfFixDictFields cmod
      in   cTrf_Syn_CodeAGItf t
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Transformed result
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %%[(9 codegen)
 ATTR CodeAGItf [ | | cTrf: CModule ]
 ATTR AllCodeNT [ | | cTrf: SELF    ]
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Passing info between aspects
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[(9 codegen)
+ATTR AllBindAspect   [ aspBindInfo: {ACoreBindAspMp (Maybe Track,Env)} | | gathAspBindInfo USE {`Map.union`} {Map.empty}: {ACoreBindAspMp (Maybe Track,Env)} ]
 
+SEM CBind
+  | Bind		loc			.	aspBindInfo =	@bindAspects.gathAspBindInfo
+
+SEM CBindAspect
+  | Bind  		lhs			.	gathAspBindInfo
+  											=	Map.singleton acbaspkeyDefault (@expr.mbTrack,@expr.envUp)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% The real work
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(9 codegen) hs
 
@@ -70,8 +90,6 @@ substTrack _ t                                 = t
 
 %%]
 
-
-
 %%[(9 codegen)
 
 
@@ -90,18 +108,10 @@ SEM CMetaVal
 SEM CBindAspect
   | Bind  bindMeta.mbTrack  = @expr.mbTrack
           bindMeta.envFinal = @expr.envUp
-  
-SEM CExpr
-  | Lam
-    App   argMeta.mbTrack  = Nothing
-          argMeta.envFinal = Map.empty
+  | Meta  cmetas.(mbTrack,envFinal) = panicJust "FixDictFields.CBindAspect.Meta.aspBindInfo" $ Map.lookup acbaspkeyDefault @lhs.aspBindInfo
+ 
 
-
-
-
-
-
-ATTR CExpr AllBind CAlt CAltL CPat CPatL CPatFld CPatFldL [  envDown:Env  | |  ]
+ATTR AllExprOnly AllBind AllAlt AllPat [  envDown:Env  | |  ]
 
 SEM CModule
   | Mod  expr.envDown = Map.empty
@@ -124,7 +134,7 @@ SEM CExpr
 
 
 
-ATTR CExpr [ mbCtxCount:{Maybe Int} isDictClass:{Bool} | | ]
+ATTR AllExprOnly [ mbCtxCount:{Maybe Int} isDictClass:{Bool} | | ]
 
 SEM CModule
   | Mod  expr.mbCtxCount = Nothing
@@ -143,6 +153,8 @@ SEM CBindAspect
                             then Just 0
                             else Nothing
           expr.isDictClass = @bindMeta.isDictClass
+  | Val   expr.mbCtxCount = Nothing						-- TBD
+          expr.isDictClass = False						-- TBD
 
 SEM CExpr
   | Lam   body.mbCtxCount = do { n <- @lhs.mbCtxCount

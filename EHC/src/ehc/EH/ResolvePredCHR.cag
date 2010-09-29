@@ -143,12 +143,161 @@ SEM Decl
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(9 hmtyinfer) hs
-simplify
-  :: FIIn
+-- | behavior configuration of simplify
+data SimplifyHow
+  = SimplifyHow_Canonicalize			-- canonicalize predicates
+  deriving Eq
+%%]
+
+%%[(9 hmtyinfer) hs
+data SimplifyState
+  = SimplifyState
+      { simpToProveHereCnstrMp			:: !CHRPredOccCnstrMp								-- new constraints to prove
+      , simpAllCnstrMp					:: !CHRPredOccCnstrMp								-- all constraints to prove, including previous
+      , simpRemCnstrMp					:: !CHRPredOccCnstrMp								-- remaining to be proven, as Assume's
+      , simpRemOccL						:: ![(CHRPredOcc,PredScope)]						-- same, but only occurrences (as list), no associated info
+      , simpCannotCnstrMp				:: !CHRPredOccCnstrMp								-- cannot be proven
+      , simpVarMp						:: !VarMp											-- additional substitution
+      , simpEvidMp						:: !CHRPredOccEvidMp								-- map from constraint/pred occurrence to evidence
+      , simpEnv							:: !FIIn
+      , simpRes							:: !(SimplifyResult CHRPredOcc RedHowAnnotation Guard VarMp)								-- simplification work done at a previous call
+      , simpErrs						:: ![Err]											-- errors
+      }
+
+emptySimplifyState :: SimplifyState
+emptySimplifyState = SimplifyState Map.empty Map.empty Map.empty [] Map.empty emptyVarMp Map.empty emptyFI emptySimplifyResult []
+
+simplify'
+  :: [SimplifyHow]
      -> ScopedPredStore																		-- available CHR rules
      -> ClassDefaultGam																		-- environment/gam for defaulting
      -> Heuristic CHRPredOcc RedHowAnnotation												-- graph reduction heuristic
-     -> (forall x . [(CHRPredOcc,x)] -> ([(CHRPredOcc,x)],[(CHRPredOcc,x)]))				-- partition into ambiguous predicates (and others), for defaulting
+     -> ([(CHRPredOcc,PredScope)] -> ([(CHRPredOcc,PredScope)],[(CHRPredOcc,PredScope)]))	-- partition into ambiguous predicates (and others), for defaulting
+     -> CHRPredOccCnstrMp																	-- constraints already proven a previous call
+     -> State SimplifyState ()
+simplify' simplifyHow chrStore clDfGam heur partitionUnresolved2AmbigAndOthers toProveHereCnstrMpPrev
+  = do { s <- get
+
+       ; let -- unique seeds 
+             (_,u1,u2,u3) = mkNewLevUID3 $ fiUniq origEnv
+
+             -- remember for later
+             origEnv = simpEnv s
+         
+       -- canonicalize predicate occurrences (expand type signatures, record fields in same order)
+       ; when (SimplifyHow_Canonicalize `elem` simplifyHow)
+              (do { s <- get
+                  ; let (pr,mp)
+                          = Map.foldWithKey (\p c (cm,m)
+                                               -> let (p',m') = canon s p
+                                                  in  (Map.insertWith (++) p' c cm, m' |=> m)
+                                            )
+                                            (Map.empty,emptyVarMp :: VarMp) (simpToProveHereCnstrMp s) 
+                  ; put (s {simpToProveHereCnstrMp = pr, simpVarMp = mp |=> simpVarMp s})
+                  })
+
+       -- adapt env to inhibit bindings for variables freely occurring in predicates, these are fixed (apart from improving substitutions, when resolving defaulting)
+       ; modify (\s -> let e = simpEnv s
+                           o = fiFIOpts e
+                       in  s {simpEnv = e {fiFIOpts = o {fioDontBind = fixedFtv (simpToProveHereCnstrMp s), fioBindCategs = TyVarCateg_Meta : fioBindCategs o}}}
+                )
+       
+       -- get base result, for backtracking to when restarting for defaulting
+       ; s <- get
+       ; let prevSimplifyRes = simpRes s
+       
+       -- 1st simplification run
+       ; (cannotResCnstrMp,chrSolveAssumablePrOccL) <- fullSimp u1 toProveHereCnstrMpPrev prevSimplifyRes
+       ; modify (\s -> s {simpCannotCnstrMp = cannotResCnstrMp, simpRemOccL = chrSolveAssumablePrOccL})
+       
+       -- defaulting is done here very crudely, find defaulting candidates, apply the improving substitution, and restart. TBD: this is a hack, do this better, probably when improving subst are done right.
+       ; s <- get
+       ; let (chrSolveAmbigPrOccL,chrSolveAssumablePrOccL)
+               = partitionUnresolved2AmbigAndOthers (simpRemOccL s)
+       ; when ( -- Debug.tr "chrSolveAmbigPrOccL" (ppCommas (simpRemOccL s) >-< ppCommas chrSolveAmbigPrOccL >-< ppCommas chrSolveAssumablePrOccL) $
+                not (null chrSolveAmbigPrOccL))
+              (do { let (dfltPrOccL,dfltTyVarMp) = foldr cmb ([],emptyVarMp) chrSolveAmbigPrOccL
+                          where cmb (o,_) r@(os,m) = maybe r (\m' -> (o:os,m' |=> m)) $ clDfGamLookupDefault (origEnv {fiVarMp = m |=> fiVarMp (simpEnv s)}) (cpoPr o) clDfGam
+                  ; when ( -- Debug.tr "dfltPrOccL" (ppCommas (simpRemOccL s) >-< ppCommas dfltPrOccL >-< dfltTyVarMp) $
+                           not (null dfltPrOccL))
+                         -- when a match is found, apply the substitution and kick off proving again
+                         (do { modify (\s -> s {simpToProveHereCnstrMp = dfltTyVarMp `chrAppSubst` simpToProveHereCnstrMp s})
+                             ; (cannotResCnstrMp,chrSolveAssumablePrOccL) <- fullSimp u1 toProveHereCnstrMpPrev prevSimplifyRes
+                             ; modify (\s -> s {simpCannotCnstrMp = cannotResCnstrMp, simpRemOccL = chrSolveAssumablePrOccL})
+                             })
+                  })
+       
+       -- (possibly) 2nd simplification run, to deal with unproven constraints which can be assumed or defaulted
+       ; s <- get
+       ; if   not (null (simpRemOccL s))
+         then -- if not all could be proven, assumptions have to be made: clean up, prove again with additional assumptions
+              do { s <- get
+                 ; let -- remember for later use
+                       chrSimplifyResult = simpRes s
+
+                       -- prune the redgraph, remove that which depends on unresolved predicates
+                       redGraphPruned
+                         = redPruneReductionsUntil (map fst (simpRemOccL s))
+                                                   (let m = Set.map cnstrPred $ Map.keysSet (simpToProveHereCnstrMp s) in \p -> Set.member p m)
+                                                   (simpresRedGraph chrSimplifyResult)
+                       
+                 ; modify (\s -> s {simpRes = chrSimplifyResult {simpresRedGraph = redGraphPruned, simpresRedGraphs = ("simplify pruned",redGraphPruned) : simpresRedGraphs chrSimplifyResult}})
+
+                 -- (2nd time) RedGraph to Evidence etc
+                 ; (_,chrSolveAssumablePrOccL) <- basicSimpRedGraph (simpAllCnstrMp s)
+                 ; modify (\s -> s {simpRemOccL = chrSolveAssumablePrOccL})
+                 
+                 -- convert to Assume constraints
+                 ; s <- get
+                 ; let (chrSolveRemCnstrMp,chrSolveEvidMp)
+                         = patchUnresolvedWithAssumption ((simpEnv s) {fiUniq = u3}) (simpRemOccL s) (simpresRedGraph chrSimplifyResult) (simpEvidMp s)
+                 ; modify (\s -> s {simpRemCnstrMp = chrSolveRemCnstrMp, simpEvidMp = chrSolveEvidMp})
+                 }
+         else modify (\s -> s {simpRemCnstrMp = Map.empty, simpRemOccL = []})
+
+       ; return ()
+       }
+  where canon s (Prove p) = (Prove $ p {cpoPr = p'}, m)
+                          where (p',m) = predCanonic (simpEnv s) $ cpoPr p
+        canon s  c        = (c, emptyVarMp)
+        
+        -- basic simplification of reduction graph
+        basicSimpRedGraph chrSolveAllCnstrMp
+          = do { s <- get
+               ; let -- RedGraph to Evidence
+                     ((chrSolveRemCnstrMp,chrSolveEvidMp,errs),chrSimplifyResult2)
+                       = chrSimplifyRedGraphToEvidence heur chrSolveAllCnstrMp (simpRes s)
+        
+                     -- split unresolved into those who can be resolved by assuming them (via qualified types) and the others
+                     (chrSolveAssumablePrOccL,cannotResCnstrMp)
+                       = partitionUnresolved2AssumableAndOthers chrSolveRemCnstrMp
+        
+               ; put (s {simpRemCnstrMp = chrSolveRemCnstrMp, simpEvidMp = chrSolveEvidMp, simpErrs = errs, simpRes = chrSimplifyResult2})
+               ; return (cannotResCnstrMp,chrSolveAssumablePrOccL)
+               }
+
+        -- full simplification
+        fullSimp u toProveHereCnstrMpPrev chrSimplifyResult
+          = do { s <- get
+               ; let -- simplification, to RedGraph
+                     (chrSolveAllCnstrMp,chrSimplifyResult1)
+                       = chrSimplifySolveToRedGraph ((simpEnv s) {fiUniq = u}) chrStore toProveHereCnstrMpPrev (simpToProveHereCnstrMp s) chrSimplifyResult
+
+               ; put (s {simpRes = chrSimplifyResult1, simpAllCnstrMp = chrSolveAllCnstrMp})
+               
+               -- RedGraph to Evidence etc
+               ; basicSimpRedGraph chrSolveAllCnstrMp
+               }
+%%]
+
+%%[(9 hmtyinfer) hs
+simplify
+  :: [SimplifyHow]																			-- config
+     -> FIIn																				-- environment
+     -> ScopedPredStore																		-- available CHR rules
+     -> ClassDefaultGam																		-- environment/gam for defaulting
+     -> Heuristic CHRPredOcc RedHowAnnotation												-- graph reduction heuristic
+     -> ([(CHRPredOcc,PredScope)] -> ([(CHRPredOcc,PredScope)],[(CHRPredOcc,PredScope)]))	-- partition into ambiguous predicates (and others), for defaulting
      -> CHRPredOccCnstrMp																	-- constraints already proven a previous call
      -> CHRPredOccCnstrMp																	-- constraints to prove
      -> SimplifyResult CHRPredOcc RedHowAnnotation Guard VarMp								-- simplification work done at a previous call
@@ -170,8 +319,16 @@ simplify
         , E2C.EvidKeyToExprMap																-- for debug only
 %%]]
         )
-simplify env chrStore clDfGam heur partitionUnresolved2AmbigAndOthers toProveHereCnstrMpPrev toProveHereCnstrMp prevRes
-  = ( toProveHereCnstrMpCanon
+simplify simplifyHow env chrStore clDfGam heur partitionUnresolved2AmbigAndOthers toProveHereCnstrMpPrev toProveHereCnstrMp prevRes
+  = {- Debug.tr "simplify"
+      (   (if toProveHereCnstrMpCanon == toProveHereCnstrMpCanon' then empty else pp "toProveHereCnstrMpCanon wrong")
+      >-< (if canonVarMp == canonVarMp' then empty else pp "canonVarMp wrong")
+      >-< (if cannotResCnstrMp1 == cannotResCnstrMp1' then empty else pp "cannotResCnstrMp1 wrong")
+      >-< (if chrSolveRemCnstrMp3 == chrSolveRemCnstrMp3' then empty else pp "chrSolveRemCnstrMp3 wrong" >-< show chrSolveRemCnstrMp3 >-< show chrSolveRemCnstrMp3')
+      -- >-< (if chrSolveAssumablePrOccL3 == chrSolveAssumablePrOccL3' then empty else pp "chrSolveAssumablePrOccL3 wrong" >-< ppCommas chrSolveAssumablePrOccL3 >-< ppCommas chrSolveAssumablePrOccL3')
+      ) $
+    -}
+    ( toProveHereCnstrMpCanon
     , chrSolveRemCnstrMp3, cannotResCnstrMp1
     , canonVarMp
     , firstNotEmpty
@@ -194,82 +351,20 @@ simplify env chrStore clDfGam heur partitionUnresolved2AmbigAndOthers toProveHer
     , chrSolveEvidCoreMpTC		-- for debug only
 %%]]
     )
-  where -- some unique seeds
+  where (_,s) = runState (simplify' simplifyHow chrStore clDfGam heur partitionUnresolved2AmbigAndOthers toProveHereCnstrMpPrev)
+                         (emptySimplifyState {simpEnv = env {fiUniq = u1}, simpToProveHereCnstrMp = toProveHereCnstrMp, simpRes = prevRes})
+        env'                        =   simpEnv s
+        chrSimplifyResult4          =   simpRes s
+        chrSolveAssumablePrOccL3    =   simpRemOccL s
+        chrSolveRemCnstrMp3         =   simpRemCnstrMp s
+        chrSolveEvidMp2             =   simpEvidMp s
+        chrSolveErrs2               =   simpErrs s
+        toProveHereCnstrMpCanon     =   simpToProveHereCnstrMp s
+        canonVarMp                  =   simpVarMp s
+        cannotResCnstrMp1           =   simpCannotCnstrMp s
+  
+        -- some unique seeds
         (_,u1,u2,u3) = mkNewLevUID3 $ fiUniq env
-        
-        -- canonicalize predicate occurrences (expand type signatures, record fields in same order)
-        (toProveHereCnstrMpCanon,canonVarMp)
-          = Map.foldWithKey (\p c (cm,m)
-                               -> let (p',m') = mk p
-                                  in  (Map.insertWith (++) p' c cm, m' |=> m)
-                            )
-                            (Map.empty,emptyVarMp :: VarMp) toProveHereCnstrMp 
-          where mk (Prove p) = (Prove $ p {cpoPr = p'}, m)
-                             where (p',m) = predCanonic env $ cpoPr p
-                mk c         = (c, emptyVarMp)
-        
-        --
-        fiOpts = fiFIOpts env
-        env' = env {fiFIOpts = fiOpts {fioDontBind = fixedFtv toProveHereCnstrMpCanon, fioBindCategs = TyVarCateg_Meta : fioBindCategs fiOpts}}
-        
-        -- simplification, to RedGraph
-        (chrSolveAllCnstrMp,chrSimplifyResult1)
-          = chrSimplifySolveToRedGraph (env' {fiUniq = u1}) chrStore toProveHereCnstrMpPrev toProveHereCnstrMpCanon prevRes
-        
-        -- (1st time) RedGraph to Evidence
-        ((chrSolveRemCnstrMp1,chrSolveEvidMp1,chrSolveErrs1),chrSimplifyResult2)
-          = chrSimplifyRedGraphToEvidence heur chrSolveAllCnstrMp chrSimplifyResult1
-        
-        -- (1st time) split unresolved into those who can be resolved by assuming them (via qualified types) and the others
-        (chrSolveAssumablePrOccL1,cannotResCnstrMp1)
-          = partitionUnresolved2AssumableAndOthers chrSolveRemCnstrMp1
-
-        (chrSimplifyResult4,chrSolveAssumablePrOccL3,chrSolveRemCnstrMp3,chrSolveEvidMp2,chrSolveErrs2)
-          = -- if not all could be proven, assumptions have to be made: clean up, prove again with additional assumptions
-            if not (null chrSolveAssumablePrOccL1)
-            then let -- prune the redgraph, remove that which depends on unresolved predicates
-                     redGraphPruned
-                       = redPruneReductionsUntil (map fst chrSolveAssumablePrOccL1)
-                                                 (let m = Set.map cnstrPred $ Map.keysSet toProveHereCnstrMpCanon in \p -> Set.member p m)
-                                                 (simpresRedGraph chrSimplifyResult2)
-                     chrSimplifyResult3
-                       = chrSimplifyResult2
-                           { simpresRedGraph  = redGraphPruned
-                           , simpresRedGraphs = ("simplify pruned",redGraphPruned) : simpresRedGraphs chrSimplifyResult2
-                           }
-
-                     -- (2nd time) RedGraph to Evidence
-                     ((chrSolveRemCnstrMp2,chrSolveEvidMp,chrSolveErrs2),chrSimplifyResult4)
-                       = chrSimplifyRedGraphToEvidence heur chrSolveAllCnstrMp chrSimplifyResult3
-                     
-                     -- (2nd time) split unresolved's into those who can be resolved by assuming; now ensuring absence of reductions purely based on hypothesizing on the presence of unresolved predicates
-                     (chrSolveAssumablePrOccL2,_)
-                       = partitionUnresolved2AssumableAndOthers chrSolveRemCnstrMp2
-                
-                     -- split remaining unresolved into those which would lead to an ambiguous type, and the others
-                     (chrSolveAmbigPrOccL1,chrSolveAssumablePrOccL3)
-                       = partitionUnresolved2AmbigAndOthers chrSolveAssumablePrOccL2
-                     
-{-
-                     ()
-                       = -- now we attempt to default the ambiguous predicates, followed by repeating context reduction
-                         if not (null chrSolveAmbigPrOccL1)
-                         then let dfltTyVarMp = foldr cmb (emptyVarMp) chrSolveAmbigPrOccL1
-                                    where cmb (o,_) m = maybe m (|=> m) $ clDfGamLookupDefault (env' {fiVarMp = m |=> fiVarMp env'}) (cpoPr o) clDfGam
-                              in  -- when a match is found, apply the substitution and kick off proving again
-                                  if not (Map.null dfltTyVarMp)
-                                  then let
-                                       in  ()
-                                  else ()
-                         else ()
--}
-
-                     -- convert to Assume constraints
-                     (chrSolveRemCnstrMp3,chrSolveEvidMp2)
-                       = patchUnresolvedWithAssumption (env' {fiUniq = u2}) chrSolveAssumablePrOccL3 (simpresRedGraph chrSimplifyResult2) chrSolveEvidMp
-                
-                 in  (chrSimplifyResult4, chrSolveAssumablePrOccL3, chrSolveRemCnstrMp3, chrSolveEvidMp2, chrSolveErrs2)
-            else     (chrSimplifyResult2, []                      , Map.empty          , chrSolveEvidMp1, chrSolveErrs1)
         
 %%[[(9 codegen)
         -- (1) compute code (Core) for dictionaries/witness, (2) get the overlapping instances
@@ -325,7 +420,7 @@ SEM AGItf
                                 ,chrSolveMainEvidBindMpTC,chrSolveMainScopeBindMpTC,chrSolveMainEvidCoreMpTC
 %%]]
                                 )
-                                                    =   simplify (@chrProveFIIn {fiUniq = @lUniq_9_simplify}) @chrStore @clDfGam (heurScopedEHC @chrProveFIIn) ((,) []) Map.empty @toProveHereCnstrMp emptySimplifyResult
+                                                    =   simplify [SimplifyHow_Canonicalize] (@chrProveFIIn {fiUniq = @lUniq_9_simplify}) @chrStore @clDfGam (heurScopedEHC @chrProveFIIn) (\x -> (x,[])) Map.empty @toProveHereCnstrMp emptySimplifyResult
                             .   (chrSolveMainState,chrSolveMainRedGraph,chrSolveMainDoneConstraints,chrSolveMainTrace,_,_,_)
                                                     =   debugInfo @chrSimplifyResult
                             .   cannotProveCnstrMp  =   @chrSolveMainRemCnstrMp
@@ -349,7 +444,7 @@ SEM Expr
                                 ,chrSolve1EvidBindMpTC,chrSolve1ScopeBindMpTC,chrSolve1EvidCoreMpTC
 %%]]
                                 )
-                                                    =   simplify (@chrProveFIIn {fiUniq = @lUniq5}) @lhs.chrStore @lhs.clDfGam (heurScopedEHC @chrProveFIIn) ((,) []) Map.empty @toProveHereCnstrMp emptySimplifyResult
+                                                    =   simplify [SimplifyHow_Canonicalize] (@chrProveFIIn {fiUniq = @lUniq5}) @lhs.chrStore @lhs.clDfGam (heurScopedEHC @chrProveFIIn) @doPredAmbigSplitForSimplify Map.empty @toProveHereCnstrMp emptySimplifyResult
                             .   (chrSolve1State,chrSolve1RedGraph,chrSolve1DoneConstraints,chrSolve1Trace,_,_,chrSolve1RemPrOccL)
                                                     =   debugInfo @chrSimplifyResult1
 
@@ -369,7 +464,7 @@ SEM Expr
 %%]]
                                 )
                                                     =   if @secondProofIsNeeded
-                                                        then simplify (@chrProveFIIn {fiUniq = @lUniq4}) @lhs.chrStore @lhs.clDfGam (heurScopedEHC @chrProveFIIn) ((,) []) @toProveHereCnstrMpCanon @quantCnstrMp
+                                                        then simplify [] (@chrProveFIIn {fiUniq = @lUniq4}) @lhs.chrStore @lhs.clDfGam (heurScopedEHC @chrProveFIIn) ((,) []) @toProveHereCnstrMpCanon @quantCnstrMp
                                                              $ simplifyResultResetForAdditionalWork @chrSimplifyResult1
                                                         else ( emptyCnstrMp, @chrSolve1RemCnstrMp, emptyCnstrMp, emptyVarMp, [], @chrSimplifyResult1, @chrSolve1EvidMp
 %%[[(9 codegen)
@@ -397,7 +492,7 @@ SEM Decl
                                 ,chrSolveDeclsEvidBindMpTC,chrSolveDeclsScopeBindMpTC,_
 %%]]
                                 )
-                                                    =   simplify (@chrProveFIIn {fiUniq = @lUniq7}) @lhs.chrStore @lhs.clDfGam (heurScopedEHC @chrProveFIIn) ((,) []) Map.empty @toProveDeclsCnstrMp emptySimplifyResult
+                                                    =   simplify [SimplifyHow_Canonicalize] (@chrProveFIIn {fiUniq = @lUniq7}) @lhs.chrStore @lhs.clDfGam (heurScopedEHC @chrProveFIIn) ((,) []) Map.empty @toProveDeclsCnstrMp emptySimplifyResult
                             .   (chrSolveDeclsState,chrSolveDeclsRedGraph,chrSolveDeclsDoneConstraints,chrSolveDeclsTrace,_,_,_)
                                                     =   debugInfo @chrDeclsSimplifyResult
 
@@ -410,7 +505,7 @@ SEM Decl
                                 ,chrSolveSuperEvidBindMpTC,chrSolveSuperScopeBindMpTC,_
 %%]]
                                 )
-                                                    =   simplify (@chrProveFIIn {fiUniq = @lUniq5}) @lhs.chrStore @lhs.clDfGam (heurScopedEHC @chrProveFIIn) ((,) []) Map.empty @toProveSuperCnstrMp emptySimplifyResult
+                                                    =   simplify [SimplifyHow_Canonicalize] (@chrProveFIIn {fiUniq = @lUniq5}) @lhs.chrStore @lhs.clDfGam (heurScopedEHC @chrProveFIIn) ((,) []) Map.empty @toProveSuperCnstrMp emptySimplifyResult
                             .   (chrSolveSuperState,chrSolveSuperRedGraph,chrSolveSuperDoneConstraints,chrSolveSuperTrace,_,_,_)
                                                     =   debugInfo @chrSuperSimplifyResult
 
@@ -461,8 +556,8 @@ SEM Expr
                                                         in  ( cnstrMpUnions quantCnstrMps
                                                             , foldr (\(occ,arg) m -> Map.insertWith (++) occ [arg] m) Map.empty $ concat coeArgIds
                                                             )
-                            .   prvArgCSubst        =   let mk a = (acoreNmHole a, CMetaVal_Dict)
-                                                        in  acoreCSubstFromUidImplsL [ (occ, ([acoreCoeAppMeta2 $ map mk args], [])) | (occ,args) <- Map.toList @coeArgIdMp ]
+                            .   prvArgCSubst        =   let mk a = (acoreNmHole a)
+                                                        in  acoreCSubstFromUidImplsL [ (occ, ([acoreCoeAppN $ map mk args], [])) | (occ,args) <- Map.toList @coeArgIdMp ]
                 loc         .   lUniq6              :   UNIQUEREF gUniq
 %%]
 
@@ -470,8 +565,8 @@ TyCore variant/clone:
 
 %%[(9 hmtyinfer tycore)
 SEM Expr
-  | Let         loc         .   prvArgTCSubst       =   let mk a = (mkHNm a,(C.MetaVal_Dict Nothing))
-                                                        in  acoreCSubstFromUidImplsL [ (occ, ([acoreCoeAppMeta $ map mk args], [])) | (occ,args) <- Map.toList @coeArgIdMp ]
+  | Let         loc         .   prvArgTCSubst       =   let mk a = (mkHNm a)
+                                                        in  acoreCSubstFromUidImplsL [ (occ, ([acoreCoeAppNbyName $ map mk args], [])) | (occ,args) <- Map.toList @coeArgIdMp ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

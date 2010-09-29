@@ -31,9 +31,9 @@ Grin transformation
 -- Grin transformations
 %%[(8 codegen grin) import({%{EH}GrinCode.Trf.UnusedMetaInfoElim}, {%{EH}GrinCode.Trf.UnusedNameElim}, {%{EH}GrinCode.Trf.AliasElim}, {%{EH}GrinCode.Trf.MayLiveUnboxed})
 %%]
-%%[(8 codegen grin) hs import({%{EH}GrinCode.Trf.ConstPropagation}, {%{EH}GrinCode.Trf.FlattenSeq}, {%{EH}GrinCode.Trf.EvalElim}, {%{EH}GrinCode.Trf.Inline})
+%%[(8 codegen grin) import({%{EH}GrinCode.Trf.BasicAnnotAliasElim})
 %%]
-%%[(8_2 codegen grin) hs import({%{EH}GrinCode.Trf.PrettyVarNames})
+%%[(8 codegen grin) hs import({%{EH}GrinCode.Trf.ConstPropagation}, {%{EH}GrinCode.Trf.FlattenSeq}, {%{EH}GrinCode.Trf.EvalElim}, {%{EH}GrinCode.Trf.Inline})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -63,19 +63,21 @@ cpTransformGrin modNm
   =  do  {  cr <- get
          ;  let  (ecu,_,opts,_) = crBaseInfo modNm cr
                  forBytecode = not (ehcOptFullProgAnalysis opts)
-                 optimizing  = ehcOptOptimizationLevel opts >= OptimizationLevel_Normal
+                 optimizing  = ehcOptOptimizes Optimize_GrinLocal opts
          
 {- for debugging 
                  trafos  =     mk [mte,unb,flt,cpr,nme]
 -}
-                 trafos  =     (if forBytecode               then mk [mte,unb]               else [])
-                           ++  (if optimizing                then mk evel                    else mk [flt])
-                           ++  (if forBytecode && optimizing then inline ++ mk (evel++[cpr]) else [])
-                           ++  (if optimizing                then mk [nme]                   else [])
+                 trafos  =     (                                  mk [flt,bae]                             )
+                           ++  (if forBytecode               then mk [mte,unb]                else []      )
+                           ++  (if optimizing                then mk evel1                    else []      )
+                           ++  (if forBytecode && optimizing then inline ++ mk (evel2++[cpr]) else []      )
+                           ++  (if optimizing                then mk [nme]                    else []      )
 
                    where mk   = map (\(trf,msg) -> (cpFromGrinTrf modNm trf msg,msg))
                          inl  = ( grInline True                  , "inline"           )
                          flt  = ( grFlattenSeq                   , "flatten"          )
+                         bae  = ( grBasicAnnotAliasElim          , "ffi unwrap alias elim")
                          ale  = ( grAliasElim                    , "alias elim"       )
                          nme  = ( grUnusedNameElim               , "unused name elim" )
                          eve  = ( grEvalElim opts                , "eval elim"        )
@@ -83,13 +85,9 @@ cpTransformGrin modNm
                          cpr  = ( grConstPropagation             , "const prop"       )
                          unb  = ( grMayLiveUnboxed (Bytecode.tagAllowsUnboxedLife opts)
                                                                  , "unbox"            )
-%%[[8_2
-                         frm  = ( grPrettyNames                  , "rename uniform"   ) 
-%%]]
 %%[[8
-                         evel = [ flt, ale, eve, flt, ale ]
-%%][8_2
-                         evel = [ flt, ale, frm, eve, flt, ale ]
+                         evel1 = [ ale, eve, flt, ale ]
+                         evel2 = [ flt ] ++ evel1
 %%]]
 %%[[8                              
                          inline = mk [inl]

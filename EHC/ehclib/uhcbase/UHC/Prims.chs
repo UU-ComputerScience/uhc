@@ -68,16 +68,16 @@ PRIMS_BOUNDED(Word32,primMinWord32,primMaxWord32)
 PRIMS_CONVERSION_INTEGER(Word32,primIntegerToWord32,primWord32ToInteger)
 PRIMS_CONVERSION_INT(Word32,primIntToWord32,primWord32ToInt)
 
-#if USE_32_BITS
-PRIMS_EQ(Word32,primEqWord32,primNeWord32)
-PRIMS_ORD(Word32,primCmpWord32,primLtWord32,primGtWord32,primLeWord32,primGeWord32)
-PRIMS_NUM(Word32,primAddWord32,primSubWord32,primMulWord32,primNegWord32)
-PRIMS_INTEGRAL1(Word32,primDivWord32,primModWord32,primQuotWord32,primRemWord32)
-#else
+#if USE_64_BITS || __UHC_TARGET_JAZY__
 PRIMS2_EQ(Word32,primEqWord32,"primEqWord",primNeWord32,"primNeWord")
 PRIMS2_ORD(Word32,primCmpWord32,"primCmpWord",primLtWord32,"primLtWord",primGtWord32,"primGtWord",primLeWord32,"primLeWord",primGeWord32,"primGeWord")
 PRIMS2_NUM(Word32,primAddWord32,"primAddWord",primSubWord32,"primSubWord",primMulWord32,"primMulWord",primNegWord32,"primNegWord")
 PRIMS2_INTEGRAL1(Word32,primDivWord32,"primDivWord",primModWord32,"primModWord",primQuotWord32,"primQuotWord",primRemWord32,"primRemWord")
+#else
+PRIMS_EQ(Word32,primEqWord32,primNeWord32)
+PRIMS_ORD(Word32,primCmpWord32,primLtWord32,primGtWord32,primLeWord32,primGeWord32)
+PRIMS_NUM(Word32,primAddWord32,primSubWord32,primMulWord32,primNegWord32)
+PRIMS_INTEGRAL1(Word32,primDivWord32,primModWord32,primQuotWord32,primRemWord32)
 #endif
 
 PRIMS2_BITLOGIC(Word32,primAndWord32,"primAndWord",primOrWord32,"primOrWord",primXorWord32,"primXorWord")
@@ -143,16 +143,16 @@ PRIMS_BOUNDED(Int32,primMinInt32,primMaxInt32)
 PRIMS_CONVERSION_INTEGER(Int32,primIntegerToInt32,primInt32ToInteger)
 PRIMS_CONVERSION_INT(Int32,primIntToInt32,primInt32ToInt)
 
-#if USE_32_BITS
-PRIMS_EQ(Int32,primEqInt32,primNeInt32)
-PRIMS_ORD(Int32,primCmpInt32,primLtInt32,primGtInt32,primLeInt32,primGeInt32)
-PRIMS_NUM(Int32,primAddInt32,primSubInt32,primMulInt32,primNegInt32)
-PRIMS_INTEGRAL1(Int32,primDivInt32,primModInt32,primQuotInt32,primRemInt32)
-#else
+#if USE_64_BITS || __UHC_TARGET_JAZY__
 PRIMS2_EQ(Int32,primEqInt32,"primEqInt",primNeInt32,"primNeInt")
 PRIMS2_ORD(Int32,primCmpInt32,"primCmpInt",primLtInt32,"primLtInt",primGtInt32,"primGtInt",primLeInt32,"primLeInt",primGeInt32,"primGeInt")
 PRIMS2_NUM(Int32,primAddInt32,"primAddInt",primSubInt32,"primSubInt",primMulInt32,"primMulInt",primNegInt32,"primNegInt")
 PRIMS2_INTEGRAL1(Int32,primDivInt32,"primDivInt",primModInt32,"primModInt",primQuotInt32,"primQuotInt",primRemInt32,"primRemInt")
+#else
+PRIMS_EQ(Int32,primEqInt32,primNeInt32)
+PRIMS_ORD(Int32,primCmpInt32,primLtInt32,primGtInt32,primLeInt32,primGeInt32)
+PRIMS_NUM(Int32,primAddInt32,primSubInt32,primMulInt32,primNegInt32)
+PRIMS_INTEGRAL1(Int32,primDivInt32,primModInt32,primQuotInt32,primRemInt32)
 #endif
 
 PRIMS2_BITLOGIC(Int32,primAndInt32,"primAndWord",primOrInt32,"primOrWord",primXorInt32,"primXorWord")

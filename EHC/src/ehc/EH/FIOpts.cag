@@ -75,18 +75,24 @@ SEM Expr
 %%[[16
                                                           { fioFitVarFailureToProveObl = True }
 %%]]
-  | TypeAs      loc         .   knTyFIOpts          =   strongFIOpts
-                            .   downFIOpts          =   strongFIOpts {fioBindLFirst = False}
-%%]
-
--- 20070205 - AD, should be generated from ruler rules, but not yet is
-%%[(5 hmtyinfer)
-SEM Expr
-  | TypeAs      loc         .  asFiOpts             =   strongFIOpts
+-- 20100924 AD. Shouldn't this be strong for the subexpr?
+  | TypeAs      loc         .  knTyFIOpts           =   -- strongFIOpts
+                                                        @lhs.fiOpts
 %%[[16
                                                           { fioFitVarFailureToProveObl = True }
 %%]]
-                expr        .  fiOpts               =   @asFiOpts
+                            .  downFIOpts           =   strongFIOpts {fioBindLFirst = False}
+                expr        .  fiOpts               =   @lhs.fiOpts -- @asFiOpts
+                                                        -- strongFIOpts
+%%[[16
+                                                          { fioFitVarFailureToProveObl = True }
+%%]]
+%%]
+
+-- 20070205 - AD, should be generated from ruler rules, but not yet is
+%%[(5555 hmtyinfer)
+SEM Expr
+  | TypeAs      loc         .  asFiOpts             =   strongFIOpts
 %%[[16
                                                           { fioFitVarFailureToProveObl = True }
 %%]]
@@ -118,7 +124,7 @@ SEM Expr
                 loc         .  exprFiOpts           =   (if @isTupOfArg then strongFIOpts else weakFIOpts)
 %%]]
                 loc         .  altsFiOpts           =   @lhs.fiOpts
-                                                          -- { fioBindRFirst = False }
+                                                          { fioBindRFirst = False }
                 alts        .  fiOpts               =   @altsFiOpts
 %%]
 
@@ -126,7 +132,7 @@ SEM Expr
 ATTR DataFieldExpr [ fldFIOpts: FIOpts | | ]
 
 SEM RecExpr
-  | Ext         loc         .  knFIOpts             =   strongFIOpts
+  | Ext         loc         .  knFIOpts             =   @lhs.fiOpts
 %%[[16
                                                           { fioFitVarFailureToProveObl = True }
 %%]]
@@ -134,7 +140,7 @@ SEM RecExpr
 %%[[16
                                                           { fioFitVarFailureToProveObl = True }
 %%]]
-  | Upd         loc         .  knFIOpts             =   strongFIOpts -- {fioNoRLabElimFor = [@nm]}
+  | Upd         loc         .  knFIOpts             =   @lhs.fiOpts -- {fioNoRLabElimFor = [@nm]}
 %%[[16
                                                           { fioFitVarFailureToProveObl = True }
 %%]]

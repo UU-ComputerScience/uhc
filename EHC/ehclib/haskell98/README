@@ -1,0 +1,3 @@
+Difference with haskell-1.0.1.1:
+- System.Cmd lacks (requires process package).
+- __UHC_TARGET_C__ has commented out IO functionality.

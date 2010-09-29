@@ -19,7 +19,7 @@
 %%[3 export(gamPartition)
 %%]
 
-%%[4 import({%{EH}Base.Opts})
+%%[4 import({%{EH}Opts.Base})
 %%]
 
 %%[4 export(gamMapThr)

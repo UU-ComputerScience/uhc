@@ -60,10 +60,10 @@ type PrvReqs = [InsPrPrvOcc]
 
 data TyMergePredOut
   = TyMergePredOut
-      { tmpoTy               ::  Ty
-      , tmpoInsPrIdSet       ::  Set.Set PredOccId
-      , tmpoImplsVarMp       ::  VarMp
-      , tmpoImplsPrvReq      ::  PrvReqs
+      { tmpoTy               ::  Ty						-- resulting ty
+      , tmpoInsPrIdSet       ::  Set.Set PredOccId		-- idents of merged predicates
+      , tmpoImplsVarMp       ::  VarMp					-- additional bindings, for implicits
+      , tmpoImplsPrvReq      ::  PrvReqs				-- additional occurrences of predicate occurrences, arising from implicits
       }
 
 instance Show TyMergePredOut where

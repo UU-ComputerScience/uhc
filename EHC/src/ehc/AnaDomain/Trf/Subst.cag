@@ -83,6 +83,9 @@ ATTR CoeAGItf  [ | | repl: RelevCoe   	]
 %%]
 
 %%[(8 codegen)
+SEM RelevTy
+  | Fun				loc		.	rvarMp		=	varmpDel @quants @lhs.rvarMp
+
 SEM AnaEval
   | Var             lhs     .   repl        =   if @isRepl
                                                 then @repl'.repl

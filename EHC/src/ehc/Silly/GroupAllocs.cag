@@ -47,7 +47,7 @@ WRAPPER SilModule
 %%]
 %%[(8 codegen grin) hs import({%{EH}Base.Common})
 %%]
-%%[(8 codegen grin) hs import({%{EH}Base.Opts})
+%%[(8 codegen grin) hs import({%{EH}Opts})
 %%]
 %%[(8 codegen grin) hs import(Data.Maybe)
 %%]

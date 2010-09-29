@@ -27,10 +27,10 @@
 %%[(8 codegen tycore tauphi) hs import({%{EH}TyCore.Trf.Common})
 %%]
 
-%%[(8 codegen tycore tauphi) hs import({%{EH}Base.Strictness})
+%%[(8 codegen tycore tauphi) hs import({%{EH}AbstractCore})
 %%]
  
-%%[(8 codegen tycore tauphi) hs import({%{EH}Base.Builtin},{%{EH}Base.Opts},{%{EH}Base.Common})
+%%[(8 codegen tycore tauphi) hs import({%{EH}Base.Builtin},{%{EH}Opts},{%{EH}Base.Common})
 %%]
 
 %%[(8 codegen tycore tauphi) hs import(Control.Applicative)
@@ -145,11 +145,11 @@ SEM ExprSeq1L
 
 SEM ExprSeq1
   | L0Val
-                lhs         .   worker      =   ExprSeq1_L0Val (workerBody @l0.workerArgs @l0.worker) @meta.worker
-                lhs         .   wrapper     =   ExprSeq1_L0Val (newWrapperBody @lhs.workerNm @lhs.lamArgs) @meta.wrapper
+                lhs         .   worker      =   ExprSeq1_L0Val (workerBody @l0.workerArgs @l0.worker)
+                lhs         .   wrapper     =   ExprSeq1_L0Val (newWrapperBody @lhs.workerNm @lhs.lamArgs)
   | L0Bind
-                lhs         .   worker      =   ExprSeq1_L0Bind @workerNm Nothing (workerType (map length @lhs.lamArgs) @l1.arrArgs @l1.arrTail)
-                lhs         .   wrapper     =   ExprSeq1_L0Bind @nm @meta.wrapper (newWrapperType @l1.arrArgs @l1.arrTail)
+                lhs         .   worker      =   ExprSeq1_L0Bind @workerNm (workerType (map length @lhs.lamArgs) @l1.arrArgs @l1.arrTail)
+                lhs         .   wrapper     =   ExprSeq1_L0Bind @nm (newWrapperType @l1.arrArgs @l1.arrTail)
   | L1Bind
                 lhs         .   worker      =   ExprSeq1_L1Bind @workerNm (workerType (map length @lhs.lamArgs) @l2.arrArgs @l2.arrTail)
   | L2Bind
@@ -243,14 +243,14 @@ newWrapperBody nm argss = foldr Expr_Lam body args
     args = concat argss
 
     argSeq :: ExprSeq1 -> ExprSeq1
-    argSeq (ExprSeq1_L0Bind nm _ _) = ExprSeq1_L0Val (Expr_Var nm) Nothing
+    argSeq (ExprSeq1_L0Bind nm   _) = ExprSeq1_L0Val (Expr_Var nm)
     argSeq (ExprSeq1_L1Bind nm _)   = ExprSeq1_L1Val (Expr_Var nm)
     argSeq (ExprSeq1_L2Bind nm _)   = ExprSeq1_L2Val (Expr_Var nm)
     argSeq e                        = e
 
 
 rmStrict :: Ty -> Ty
-rmStrict = rmAnn $ ExprAnn_Strictness Strict
+rmStrict = rmAnn $ ExprAnn_Strictness Strictness_Strict
 
 rmAnn :: ExprAnn -> Expr -> Expr
 rmAnn ann (Expr_Seq ss) = Expr_Seq (map (argMap $ rmAnn ann) ss)
@@ -261,10 +261,10 @@ rmAnn ann (Expr_Ann a e)
 rmAnn _   e             = e
 
 argMap :: (Expr -> Expr) -> ExprSeq1 -> ExprSeq1
-argMap f (ExprSeq1_L0Val e m)     = ExprSeq1_L0Val (f e) m
+argMap f (ExprSeq1_L0Val e  )     = ExprSeq1_L0Val (f e)
 argMap f (ExprSeq1_L0LblVal nm e) = ExprSeq1_L0LblVal nm (f e)
 argMap f (ExprSeq1_L0TagVal t e)  = ExprSeq1_L0TagVal t (f e)
-argMap f (ExprSeq1_L0Bind nm m e) = ExprSeq1_L0Bind nm m (f e)
+argMap f (ExprSeq1_L0Bind nm   e) = ExprSeq1_L0Bind nm (f e)
 argMap f (ExprSeq1_L1Val e)       = ExprSeq1_L1Val (f e)
 argMap f (ExprSeq1_L1Bind nm e)   = ExprSeq1_L1Bind nm (f e)
 argMap f (ExprSeq1_L2Val e)       = ExprSeq1_L2Val (f e)

@@ -11,13 +11,18 @@ Note:
 removal of CaseAltFail is done here.
 No special reason except it is the first transformation.
 
+20100902 AD: Note: to be removed soon, that is, fail is propagated until codegen and has meaning
+
 %%[(8 codegen) hs module {%{EH}Core.Trf.EtaRed} import(Data.Maybe,qualified Data.Set as Set,qualified Data.Map as Map)
 %%]
 
-%%[(8 codegen) hs import({%{EH}Base.Common},{%{EH}Core},{%{EH}Ty}) export(cmodTrfEtaRed)
+%%[(8 codegen) hs import({%{EH}Base.Common},{%{EH}Core},{%{EH}Ty})
 %%]
 
-%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonPred},{Core/CommonCtxtPred},{Core/Trf/CommonFv})
+%%[(8 codegen) hs import({%{EH}AbstractCore})
+%%]
+
+%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonPred},{Core/CommonCtxtPred},{Core/Trf/CommonFv},{Core/CommonBindNm})
 WRAPPER CodeAGItf
 %%]
 
@@ -29,7 +34,7 @@ PRAGMA strictcase
 %%% Haskell itf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs
+%%[(8 codegen) hs export(cmodTrfEtaRed)
 cmodTrfEtaRed :: CModule -> CModule
 cmodTrfEtaRed cmod
   =  let  t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf cmod)) Inh_CodeAGItf
@@ -48,9 +53,10 @@ type MbApp = Maybe ((CExpr,FvS),CExpr)
 ATTR CExpr [ | | mbApp: MbApp  mbFunAppL: {[MbApp]} ]
 
 SEM CExpr
-  | App         lhs         .   mbApp       =   case @func.mbTupApp of
-                                                  Just _  -> Nothing
-                                                  Nothing -> Just ((@func.cTrf,@func.fvS),@arg.cTrf)
+  | App         lhs         .   mbApp       =   case @func.appFunKind of
+                                                  AppFunKind_Tag _  -> Nothing
+                                                  AppFunKind_FFI    -> Nothing
+                                                  _                 -> Just ((@func.cTrf,@func.fvS),@arg.cTrf)
                             .   mbFunAppL   =   @func.mbApp : @func.mbFunAppL
   | Lam         lhs         .   (mbApp,mbFunAppL)
                                             =   case @body.mbFunAppL of
@@ -58,9 +64,8 @@ SEM CExpr
                                                     -> (f,fs)
                                                   _ -> (Nothing,@body.mbFunAppL)
   | * - App Lam Ann
-  				lhs         .   mbApp       =   Nothing
-  | * - App Lam Ann
-  				lhs         .   mbFunAppL   =   []
+                lhs         .   mbApp       =   Nothing
+                            .   mbFunAppL   =   []
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -73,10 +78,11 @@ ATTR CodeAGItf [ | | cTrf: CModule ]
 
 SEM CExpr
   | Lam         (loc.cNew,loc.isMatch)      =   case @body.mbApp of
-                                                  Just ((f,fFvS),CExpr_Var a) | a == @arg && not (a `Set.member` fFvS)
+                                                  Just ((f,fFvS),v) | isJust mbV && a == @arg && not (a `Set.member` fFvS)
                                                     -> (f,True)
+                                                    where mbV@(~(Just a)) = acoreExprMbVar v
                                                   _ -> (@cTrf,False)
                 lhs         .   cTrf        =   @cNew
-  | CaseAltFail lhs         .   cTrf        =   @errorExpr.cTrf
 %%]
+  | CaseAltFail lhs         .   cTrf        =   @errorExpr.cTrf
 

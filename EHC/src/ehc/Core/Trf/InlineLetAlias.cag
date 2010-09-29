@@ -17,6 +17,8 @@
 WRAPPER CodeAGItf
 %%]
 
+%%[(8 codegen) hs import(EH.Util.Utils)
+%%]
 %%[(9 codegen) hs import(qualified Data.Set as Set)
 %%]
 
@@ -108,7 +110,7 @@ cmodTrfInlineLetAlias globNmS cmod
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(20 codegen)
-ATTR CodeAGItf CExpr CModule AllBind [ noTrfNmS: HsNameS | | ]
+ATTR CodeAGItf AllExprOnly CModule AllBind [ noTrfNmS: HsNameS | | ]
 
 SEM CAlt
   | Alt         loc         .   noTrfNmS    =   Set.empty
@@ -144,12 +146,13 @@ SEM CExpr
                             .   nmMpNew     =   Map.foldWithKey
                                                   (\n r m
                                                     -> case r of
-                                                         CExpr_Var nm
+                                                         CExpr_Var ref
                                                            | nm `Map.member` @binds.bindNmMp
                                                              -> m
                                                            | @allowTrf || (@allowStrTrf && cexprIsEvaluated r')
                                                              -> Map.insert n r' m
-                                                           where r' = maybe r id . Map.lookup nm $ @lhs.nmMp
+                                                           where nm = acbrefNm ref
+                                                                 r' = maybe r id . Map.lookup nm $ @lhs.nmMp
                                                          _ | @allowTrf
                                                              -> Map.insert n r m
                                                          CExpr_Int i
@@ -216,7 +219,7 @@ SEM CBindAspect
 
 %%[(8 codegen)
 
-ATTR CExpr AllAlt AllBind [ allowTrfToCon: {Bool} | | ]
+ATTR AllExprOnly AllAlt AllBind [ allowTrfToCon: {Bool} | | ]
 
 SEM CModule
   | Mod   expr.allowTrfToCon  =  True
@@ -228,7 +231,7 @@ SEM CPatFld
 
 %%[(9 codegen)
   
-ATTR CExpr AllBind AllAlt [ noTrfToConNmS : HsNameS | | ]
+ATTR AllExprOnly AllBind AllAlt [ noTrfToConNmS : HsNameS | | ]
 
 SEM CModule
   | Mod   expr.noTrfToConNmS  =  Set.empty
@@ -241,6 +244,21 @@ SEM CBindAspect
   | Bind  expr.allowTrfToCon  =  not (@lhs.nm `Set.member` @lhs.noTrfToConNmS)
           expr.noTrfToConNmS  =  @lhs.noTrfToConNmS `Set.union` @bindMeta.nameS
   
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Passing info between aspects
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(9 codegen)
+ATTR AllBindAspect   [ aspBindNmMp: {ACoreBindAspMp NmMp} | | gathAspBindNmMp USE {`Map.union`} {Map.empty}: {ACoreBindAspMp NmMp} ]
+
+SEM CBind
+  | Bind		loc			.	aspBindNmMp =	@bindAspects.gathAspBindNmMp
+
+SEM CBindAspect
+  | Bind  		lhs			.	gathAspBindNmMp
+  											=	Map.singleton acbaspkeyDefault @expr.bindNmMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -278,23 +296,24 @@ SEM CBindAspect
 
 %%]
 
-
 %%[(9 codegen)
+ATTR CExpr           [ | | bindNmMp     USE {`Map.union`} {Map.empty}: NmMp ]
 
-ATTR CExpr   [ | | bindNmMp USE {`Map.union`} {Map.empty}: NmMp ]
-ATTR AllMetaVal   [ bindNmMp: NmMp | | nameS: HsNameS ]
+ATTR AllMetaVal      [ bindNmMp: NmMp | | nameS: HsNameS ]
 
 SEM CBindAspect
-  | Bind  bindMeta.bindNmMp  =  @expr.bindNmMp
+  | Bind  		bindMeta	.	bindNmMp  	=  	@expr.bindNmMp
+  | Meta  		cmetas  	.	bindNmMp  	=  	panicJust "InlineLetAlias.CBindAspect.Meta.aspBindNmMp" $ Map.lookup acbaspkeyDefault @lhs.aspBindNmMp
 
-SEM CExpr
-  | Lam   argMeta.bindNmMp  =  Map.empty
-  
 SEM CMetaVal
   | Dict
     Val             lhs.nameS = Set.empty
   | DictClass       
     DictInstance    lhs.nameS =  Set.fromList (concatMap trackNames @tracks)
+  | * - Dict Val DictClass DictInstance
+  					lhs.nameS =  Set.empty
+  
+SEM CMetaVal
   | DictClass       lhs.cTrf  =  CMetaVal_DictClass    (map (substTrack @lhs.bindNmMp) @tracks)
   | DictInstance    lhs.cTrf  =  CMetaVal_DictInstance (map (substTrack @lhs.bindNmMp) @tracks)
 

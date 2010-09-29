@@ -22,7 +22,7 @@ However, ideally, this trf should be placed before that, but this currently brea
 
 %%[(99 codegen) hs module {%{EH}Core.Trf.ExplicitStackTrace}
 %%]
-%%[(99 codegen) hs import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Base.Opts},{%{EH}Core},{%{EH}Ty},{%{EH}LamInfo})
+%%[(99 codegen) hs import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Opts},{%{EH}Core},{%{EH}Ty},{%{EH}LamInfo})
 %%]
 
 %%[(99 codegen) hs import({%{EH}AbstractCore})

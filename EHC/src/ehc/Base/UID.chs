@@ -5,7 +5,7 @@
 %%[1 module {%{EH}Base.UID}
 %%]
 
-%%[1 export(mkNewLevUID, mkNewLevUID2, mkNewLevUID3, mkNewLevUID4, mkNewLevUID5, mkNewLevUID6, mkNewLevUID7, mkNewLevUID8, uidNext, mkNewUID, mkNewUIDL, uidStart, uidNull, uidChild, mkInfNewUIDL)
+%%[1 export(mkNewLevUID, mkNewLevUID2, mkNewLevUID3, mkNewLevUID4, mkNewLevUID5, mkNewLevUID6, mkNewLevUID7, mkNewLevUID8, uidNext, mkNewUID, mkNewUIDL, uidNull, uidChild, mkInfNewUIDL)
 %%]
 
 %%[1 import(EH.Util.Pretty)
@@ -86,9 +86,12 @@ uidFromInt :: Int -> UID
 uidFromInt i = mkUID [i]
 %%]
 
-%%[1
+%%[1 export(uidStart,uidUnused)
 uidStart :: UID
 uidStart = uidFromInt 0
+
+uidUnused :: UID
+uidUnused = uidFromInt (-1)
 %%]
 
 %%[1.UID.Utils
@@ -108,7 +111,7 @@ mkNewUID   uid = (uidNext uid,uid)
 
 mkInfNewUIDL' :: (UID -> (UID,UID)) -> UID -> [UID]
 mkInfNewUIDL' mk uid
-  =  let  l = iterate (\(nxt,uid) -> mk nxt) . mkNewUID $ uid
+  =  let  l = drop 1 $ iterate (\(nxt,uid) -> mk nxt) $ mkNewUID uid
      in   map snd l
 
 mkNewUIDL' :: (UID -> (UID,UID)) -> Int -> UID -> [UID] -- assume sz > 0

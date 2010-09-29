@@ -3,8 +3,7 @@ Compute the digits of "e" using continued fractions.
 Original program due to Dale Thurston, Aug 2001
 -}
 
-module Main where
-import System.Environment (getArgs)
+import System.Environment
 
 type ContFrac = [Integer]
 
@@ -37,9 +36,7 @@ ratTrans (a,b,c,d) xs |
   where q = b `div` d
 ratTrans (a,b,c,d) (x:xs) = ratTrans (b,a+x*b,d,c+x*d) xs
 
-{-
-Finally, we convert a continued fraction to digits by repeatedly multiplying by 10.
--}
+-- Finally, we convert a continued fraction to digits by repeatedly multiplying by 10.
 
 toDigits :: ContFrac -> [Integer]
 toDigits (x:xs) = x:toDigits (ratTrans (10,0,0,1) xs)
@@ -48,7 +45,7 @@ e :: [Integer]
 e = toDigits eContFrac
 
 main = do
-  [digits] <- getArgs
-  print (take (read digits) e)
+    [digits] <- getArgs
+    print (take (read digits) e)
 
 

@@ -629,26 +629,6 @@ data CHRScoped
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Optimisation level: combination of how much & scope (per module, whole program)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8 export(OptimizationLevel(..))
-data OptimizationLevel
-  = OptimizationLevel_Off				-- no optimizations					: -O0
-  | OptimizationLevel_Normal			-- easy and cheap optimizations		: -O1 (default)
-  | OptimizationLevel_Much				-- more and expensive optimizations	: -O2
-  | OptimizationLevel_Full				-- throw everything in it			: -O3
-  deriving (Eq,Ord,Show,Enum,Bounded)
-%%]
-
-%%[8 export(OptimizationScope(..))
-data OptimizationScope
-  = OptimizationScope_PerModule			
-  | OptimizationScope_WholeProgram
-  deriving (Eq,Ord,Show,Enum,Bounded)
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Point in sequence of EH compilation phases
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -1460,8 +1440,10 @@ genNmMap mk xs m
                     -> case Map.lookup x m of
                          Just n -> (m, sz, n:ns)
                          _      -> (Map.insert x n m, sz+1, n:ns)
-                                where n = mk [chr $ ord 'a' + sz]
+                                where n = mk $ ch sz
                   )
                   (m,Map.size m,[]) xs
+        ch x | x < 26    = [chr $ ord 'a' + x]
+             | otherwise = let (q,r) = x `quotRem` 26 in ch q ++ ch r
 %%]
 

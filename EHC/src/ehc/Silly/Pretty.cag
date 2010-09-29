@@ -11,7 +11,7 @@
 %%]
 %%[(8 codegen grin) hs import({%{EH}Base.Common})
 %%]
-%%[(8 codegen grin) hs import({%{EH}Base.Opts})
+%%[(8 codegen grin) hs import({%{EH}Opts})
 %%]
 %%[(8 codegen grin) import({Silly/AbsSyn})
 %%]
@@ -48,21 +48,12 @@ SEM SilModule
                             >-< @functions.pretty
   
   
-%%[[8
 SEM Function
   | Function   lhs.pretty = "FUNCTION" >#< (hsnShowAlphanumeric @name) >#< "(" >#< foldr (>#<) empty (map hsnShowAlphanumeric @parameters) >#< ")"
                             >-< "{"
                             >-< indent 4 ("DECLARE" >#< foldr (>#<) empty (map showNameWithType @locals) >#< ";")
                             >-< indent 4 (@body.pretty)
                             >-< "}"
-%%][8_2
-SEM Function
-  | Function   lhs.pretty = "function" >#< (hsnShowAlphanumeric @name) >|< "(" >|< foldr (>#<) empty (map hsnShowAlphanumeric @parameters) >|< ")"
-                            >-< "{"
-                            >-< indent 4 ("locals" >#< foldr (>#<) empty (map showNameWithType @locals) >|< ";")
-                            >-< indent 4 (@body.pretty)
-                            >-< "}"
-%%]]
 
 SEM Statement
   | Assignment  lhs.pretty = @dest.pretty >#< ":=" >#< @source.pretty >|< ";"
@@ -72,21 +63,11 @@ SEM Statement
   | Return      lhs.pretty = "RETURN ("  >#< @vals.pretty >|< ")" >|< ";"
   | Label       lhs.pretty = "LABEL"  >#< text @name >|< ";"
   | Voiden      lhs.pretty = "VOIDEN" >#< @val.pretty >|< ";"
-%%[[8
   | Call        lhs.pretty = "CALL"   >#< hsnShowAlphanumeric @name >|< "(" >|< @args.pretty >|< ");"
   | Comment     lhs.pretty = comment @comment
-%%][8_2
-  | Call        lhs.pretty = hsnShowAlphanumeric @name >|< "(" >|< @args.pretty >|< ");"
-  | Comment     lhs.pretty = empty
-%%]]    
   
-%%[[8
 SEM Alternative
   | Alternative lhs.pretty = "WHEN" >#< @when.pretty >-< indent 4 (@body.pretty)
-%%][8_2
-SEM Alternative
-  | Alternative lhs.pretty = "case" >#< @when.pretty >-< indent 4 (@body.pretty)
-%%]]
 
 SEM Constant
   | LiteralInt  lhs.pretty = text (show @value)
@@ -95,15 +76,9 @@ SEM Constant
 
 SEM Variable
   | Unembedded     lhs.pretty = text ("U" ++ hsnShowAlphanumeric @name)
-%%[[8
   | Local          lhs.pretty = text ("L" ++ hsnShowAlphanumeric @name)
   | Param          lhs.pretty = text ("P" ++ hsnShowAlphanumeric @name)
   | Global         lhs.pretty = text ("G" ++ hsnShowAlphanumeric @name)
-%%][8_2
-  | Local          lhs.pretty = text (hsnShowAlphanumeric @name)
-  | Param          lhs.pretty = text (hsnShowAlphanumeric @name)
-  | Global         lhs.pretty = text (hsnShowAlphanumeric @name)
-%%]]
   | LP             lhs.pretty = text "LP"  
   | SP             lhs.pretty = text "SP"  
   | RP             lhs.pretty = text "RP"  
@@ -113,15 +88,9 @@ SEM Variable
   | None           lhs.pretty = text "NONE"
 
 SEM Value
-%%[[8
   | Con            lhs.pretty = text "CON" >#< @con.pretty
   | Alloc          lhs.pretty = text "ALLOC" >#< show @size >#< "(" >#< show @gcManaged >#< ")"
   | Call           lhs.pretty = "FFICALL"   >#< @name >|< "(" >|< @args.pretty >|< ")"
-%%][8_2
-  | Con            lhs.pretty = @con.pretty
-  | Alloc          lhs.pretty = text "allocate(" >|< show @size >|< ") {" >#< show @gcManaged >#< "}"
-  | Call           lhs.pretty = "foreign"   >#< @name >|< "(" >|< @args.pretty >|< ")"
-%%]]
   | Offset         lhs.pretty = @var.pretty >#< "+" >#< show @off
   | Label          lhs.pretty = text "LABEL" >#< show @name
   | CompareGT      lhs.pretty = @val.pretty >#< ">" >#< @con.pretty

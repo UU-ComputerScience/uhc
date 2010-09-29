@@ -66,9 +66,13 @@ Actual MVar
 %%[99
 -- |Create an 'MVar' which is initially empty.
 newEmptyMVar  :: IO (MVar a)
-newEmptyMVar = IO $ \ s ->
-    case newMutVar Nothing s of
-       ( s2, svar ) -> ( s2, MVar svar )
+newEmptyMVar = IO $ \ s1 ->
+    case newMutVar Nothing s1 of
+      (s2, svar) -> ( s2, MVar svar )
+    {-
+    letstrict svar = newMutVar Nothing
+    in ( s, MVar svar )
+    -}
 
 -- |Create an 'MVar' which contains the supplied value.
 newMVar :: a -> IO (MVar a)

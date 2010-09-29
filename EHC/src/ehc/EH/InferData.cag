@@ -65,11 +65,11 @@ SEM AGItf
   | AGItf       expr        .   gathDataGam         =   emptyGam
 
 SEM CaseAlt
-  | Pat			expr        .   gathDataGam         =   emptyGam
+  | Pat         expr        .   gathDataGam         =   emptyGam
 
 %%[[97
 SEM PatExpr
-  | Expr		expr        .   gathDataGam         =   emptyGam
+  | Expr        expr        .   gathDataGam         =   emptyGam
 %%]]
 %%]
 
@@ -97,7 +97,7 @@ SEM AGItf
 ATTR AllDecl [ | | gathDeclDataGam USE {`gamUnion`} {emptyGam}: DataGam ]
 
 SEM Decl
-  | Data        loc         .	dataTyVarIdL		=	map (panicJust "EH.InferData.Decl.Data.tyMbVar" . tyMbVar) @tyVars.tyL
+  | Data        loc         .   dataTyVarIdL        =   map (panicJust "EH.InferData.Decl.Data.tyMbVar" . tyMbVar) @tyVars.tyL
                             .   dgi                 =   mkDGI @tyNm ([@dataTy] `mkArrow` @dataAltTy) @constrs.dataConstrNmL @constrs.dataConstrTagMp
 %%[[7
                                                               @isNewtype
@@ -113,8 +113,8 @@ SEM Decl
                 lhs         .   gathDeclDataGam     =   gamUnion @extraDataGam $ gamSingleton @tyNm @dgi
 
 SEM Expr
-  | Let			loc			.	gathBodyDataGam		=	@extraDataGam `gamUnion` @decls.gathDeclDataGam `gamUnion` @decls.gathDataGam
-     			body		.	gathDataGam			=	@gathBodyDataGam
+  | Let         loc         .   gathBodyDataGam     =   @extraDataGam `gamUnion` @decls.gathDeclDataGam `gamUnion` @decls.gathDataGam
+                body        .   gathDataGam         =   @gathBodyDataGam
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -267,15 +267,16 @@ SEM DataConstr
   | Constr      lhs         .   dataConstrTagMp     =   @conNm `Map.singleton` @dti
                             .   dataConstrNmL       =   [@conNm]
                 loc         .   dti                 =   emptyDataTagInfo
-                                                          { dtiFldMp = @fldMp
-                                                          , dtiFldTyL= @fields.fldTyL
-                                                          , dtiConNm = @conNm
-                                                          , dtiConTy = @dataConTyAsVar
+                                                          { dtiFldMp        = @fldMp
+                                                          , dtiFldTyL       = @fields.fldTyL
+                                                          , dtiConFldAnnL   = @fields.fldAnnL
+                                                          , dtiConNm        = @conNm
+                                                          , dtiConTy        = @dataConTyAsVar
 %%[[8
-                                                          , dtiCTag  = @ctag
+                                                          , dtiCTag         = @ctag
 %%]]
 %%[[91
-                                                          , dtiMbFixityPrio  = @mbFixityPrio
+                                                          , dtiMbFixityPrio = @mbFixityPrio
 %%]]
                                                           }
 %%[[8
@@ -312,6 +313,21 @@ SEM DataField
                                                           Just ls -> zipWith (\l t -> (Just l,t)) ls (repeat @tyExpr.ty)
                                                           _       -> [(Nothing,@tyExpr.ty)]
                 loc         .   fldTyL              :   FldTyL
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Annotation info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(7 hmtyinfer)
+ATTR AllDataField [ | | fldAnnL USE {++} {[]}: {[DataConFldAnnInfo]} ]
+
+SEM DataField
+  | Field       lhs         .   fldAnnL             =   [ DataConFldAnnInfo
+%%[[(8 codegen)
+                                                            (maybe Strictness_NonStrict id @tyExpr.mbStrictness)
+%%]]
+                                                        ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

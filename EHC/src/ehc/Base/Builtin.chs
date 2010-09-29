@@ -58,6 +58,15 @@ hsnProdArity    n | isJust ms       = case fromJust ms of
                                     where ms = mbHNm n
 %%]
 
+%%[1 export(hsnIsWild)
+hsnIsWild :: HsName -> Bool
+%%[[1
+hsnIsWild x = x == hsnWild
+%%][20
+hsnIsWild x = hsnQualified x == hsnWild
+%%]]
+%%]
+
 %%[1.strHiddenPrefix export(hsnStrHiddenPrefix)
 hsnStrHiddenPrefix                  =   "$"
 %%]

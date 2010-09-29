@@ -5,7 +5,7 @@
 %%[(8 codegen hmtyinfer) module {%{EH}Ty.Utils2} import({%{EH}Base.Common}, {%{EH}Ty}) 
 %%]
 
-%%[(8 codegen hmtyinfer) import({%{EH}Base.Builtin}, {%{EH}Base.Opts}) 
+%%[(8 codegen hmtyinfer) import({%{EH}Base.Builtin}, {%{EH}Opts}) 
 %%]
 %%[(8 codegen hmtyinfer) import({%{EH}VarMp}) 
 %%]

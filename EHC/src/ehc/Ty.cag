@@ -12,7 +12,7 @@ used by EHC. The AST is described in Ty/AbsSyn.
 %%% Haskell importable interface to Ty
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 hs module {%{EH}Ty} import(EH.Util.Utils,{%{EH}Base.Common}, {%{EH}Base.Builtin})
+%%[1 hs module {%{EH}Ty} import(EH.Util.Utils,{%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{EH}Opts.Base})
 %%]
 
 %%[(1 hmtyinfer || hmtyast) hs export(TyAGItf(..), Ty(..), TyAnn(..), TyL, tyInt, tyChar, mkTyCon)
@@ -31,9 +31,6 @@ used by EHC. The AST is described in Ty/AbsSyn.
 %%]
 acoreBuiltinUndefined
 %%[4 hs export(TyQu(..)) 
-%%]
-
-%%[(4 hmtyinfer || hmtyast) hs export(tyConNm) 
 %%]
 
 %%[(4_2 hmtyinfer || hmtyast) hs export(tyMbQu,tyIsQu,tyIsAlts) 
@@ -57,7 +54,7 @@ acoreBuiltinUndefined
 %%[(7 hmtyinfer || hmtyast) hs import(Data.List) export(kiRow,tyRowEmpty,tyRecEmpty,tySumEmpty,mkTyRow,mkTyRec,mkTySum,mkTyRecExt) 
 %%]
 
-%%[(7 hmtyinfer || hmtyast) hs export(tyAppFunArg,tyAppFunConNm) 
+%%[(7 hmtyinfer || hmtyast) hs export(tyAppFunArg) 
 %%]
 
 %%[(7_2 hmtyinfer || hmtyast) hs import(Data.Set(Set), qualified Data.Map as Map, Data.Map(Map))
@@ -173,6 +170,11 @@ data TyVarWild
   deriving Eq
 
 type TyVarWildMp = Map.Map TyVarId TyVarWild
+%%]
+
+%%[(2 hmtyinfer) hs export(tvwmpNoQuantS)
+tvwmpNoQuantS :: TyVarWildMp -> UIDS
+tvwmpNoQuantS = Map.keysSet . Map.filter (== TyVarWild_NoQuantTyExpr_NoQuantLetBinding)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -555,6 +557,18 @@ cpoScope :: CHRPredOcc -> PredScope
 cpoScope = cpocxScope . cpoCxt
 %%]
 
+%%[(9 hmtyinfer || hmtyast) hs export(cpo2PredOcc)
+cpo2PredOcc :: PredOccId -> CHRPredOcc -> PredOcc
+cpo2PredOcc i o
+  = mkPredOccRng
+%%[[99
+      (cpoRange o) 
+%%]]
+      (cpoPr o)
+      i
+      (cpoScope o)
+%%]
+
 %%[(20 hmtyinfer || hmtyast) hs
 deriving instance Typeable CHRPredOcc
 deriving instance Data CHRPredOcc
@@ -699,6 +713,27 @@ tyAnnDecomposeMk t
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Removal of non semantics, noise
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Annotations, empty implicits do not carry type info, but sit in the way of finding out what is underneath.
+
+%%[(9 hmtyinfer || hmtyast) hs export(tyUnNoiseForVarBind)
+-- | un-noise with the purpose of finding out whether we end up with Ty_Var
+tyUnNoiseForVarBind :: Ty -> Maybe Ty
+tyUnNoiseForVarBind t
+  = un t
+  where un t | not (null impls) && all isNil impls
+             = tv t'
+             where (impls,t') = tyArrowImplsRes t
+                   isNil (Ty_Impls (Impls_Nil)) = True
+                   isNil _                      = False
+        un t = tv t
+        tv t | tyIsVar t = Just t
+             | otherwise = Nothing
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Properties of type
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -708,17 +743,6 @@ tyIsVar = isJust . tyMbVar
 
 tyIsCon :: Ty -> Bool
 tyIsCon = isJust . tyMbCon
-
-tyMbQu :: Ty -> Maybe TyQu
-tyMbQu t
-  = case tyUnAnn t of
-%%[[4
-      Ty_Quant q _ _
-%%][6
-      Ty_Quant q _ _ _
-%%]]
-        -> Just q
-      _ -> Nothing
 
 tyIsQu :: Ty -> Bool
 tyIsQu = isJust . tyMbQu
@@ -739,6 +763,13 @@ Only used to steer PP:
 %%[(4 hmtyinfer || hmtyast) hs export(tyIsSimple)
 tyIsSimple :: Ty -> Bool
 tyIsSimple t = tyIsVar t || tyIsCon t
+%%]
+
+%%[(11 hmtyinfer || hmtyast) hs export(tyIsLam)
+tyIsLam :: Ty -> Bool
+tyIsLam ty
+  = not (null as)
+  where (as,_) = tyLamArgsRes ty
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -924,6 +955,11 @@ tyWord64Unboxed   = Ty_Con hsnWord64Unboxed
 %%]
 tyAddrUnboxed   = Ty_Con hsnAddrUnboxed
 
+%%[(11 hmtyinfer || hmtyast) hs export(tyString)
+tyString :: EHCOpts -> Ty
+tyString o = Ty_Con (ehcOptBuiltin o ehbnPrelString)
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Destruction
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1031,7 +1067,7 @@ tyProdArgs   = tyAppArgs
 tyLHdAndTl   = hdAndTl' Ty_Any
 %%]
 
-%%[(4 hmtyinfer || hmtyast).unMkTy.tyConNm hs export(tyMbCon)
+%%[(4 hmtyinfer || hmtyast).unMkTy.tyConNm hs export(tyMbCon,tyConNm)
 tyMbCon :: Ty -> Maybe HsName
 tyMbCon t = case tyUnAnn t of {Ty_Con nm -> Just nm ; _ -> Nothing}
 
@@ -1047,6 +1083,19 @@ tyMbConWithLkup lookup = tyVarChkVisitLift lookup tyMbCon tyMbCon
 %%[(3 hmtyinfer || hmtyast).unMkTy.tyMbVar hs export(tyMbVar)
 tyMbVar :: Ty -> Maybe TyVarId
 tyMbVar t = case tyUnAnn t of {Ty_Var v _ -> Just v ; _ -> Nothing}
+%%]
+
+%%[(4 hmtyinfer || hmtyast) hs
+tyMbQu :: Ty -> Maybe TyQu
+tyMbQu t
+  = case tyUnAnn t of
+%%[[4
+      Ty_Quant q _ _
+%%][6
+      Ty_Quant q _ _ _
+%%]]
+        -> Just q
+      _ -> Nothing
 %%]
 
 %%[(3 hmtyinfer || hmtyast).unMkTy.tyVar hs export(tyVar)
@@ -1080,7 +1129,10 @@ tyMbAppConArgs t
   where (f,a) = tyAppFunArgs t
 %%]
 
-%%[(7 hmtyinfer || hmtyast) hs
+%%[(7 hmtyinfer || hmtyast) hs export(tyAppFunMbConNm,tyAppFunConNm)
+tyAppFunMbConNm :: Ty -> Maybe HsName
+tyAppFunMbConNm = tyMbCon . fst . tyAppFunArgs
+
 tyAppFunConNm :: Ty -> HsName
 tyAppFunConNm = tyConNm . fst . tyAppFunArgs
 %%]

@@ -17,7 +17,7 @@ In principle such files reside in directories or packages.
 %%[99 import(UU.Parsing, EH.Util.ParseUtils)
 %%]
 -- scanning
-%%[99 import(EH.Util.ScanUtils, {%{EH}Scanner.Common}, {%{EH}Base.HsName}, {%{EH}Base.ParseUtils})
+%%[99 import(EH.Util.ScanUtils, {%{EH}Base.HsName})
 %%]
 
 
@@ -38,13 +38,14 @@ FileLocKind indicates where something can be found. After found, a FileLocKind_P
 data FileLocKind
   = FileLocKind_Dir									-- plain directory
   | FileLocKind_Pkg	PkgKey							-- specific package
+  					String							-- with the dir inside package it was found
   | FileLocKind_PkgDb								-- yet unknown package in the package database
   deriving Eq
 
 instance Show FileLocKind where
-  show  FileLocKind_Dir		= "directory"
-  show (FileLocKind_Pkg p)	= "package: " ++ showPkgKey p
-  show  FileLocKind_PkgDb	= "package database"
+  show  FileLocKind_Dir		    = "directory"
+  show (FileLocKind_Pkg p d)	= "package: " ++ showPkgKey p ++ "(in: " ++ d ++ ")"
+  show  FileLocKind_PkgDb    	= "package database"
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -90,14 +91,14 @@ mkDirFileLoc
 
 %%[99 export(mkPkgFileLoc)
 mkPkgFileLoc :: PkgKey -> String -> FileLoc
-mkPkgFileLoc p = FileLoc (FileLocKind_Pkg p)
+mkPkgFileLoc p d = FileLoc (FileLocKind_Pkg p d) d
 %%]
 
 %%[99 export(filelocIsPkg)
 filelocIsPkg :: FileLoc -> Bool
-filelocIsPkg (FileLoc (FileLocKind_Pkg _) _) = True
-filelocIsPkg (FileLoc  FileLocKind_PkgDb  _) = True
-filelocIsPkg _                               = False
+filelocIsPkg (FileLoc (FileLocKind_Pkg _ _) _) = True
+filelocIsPkg (FileLoc  FileLocKind_PkgDb    _) = True
+filelocIsPkg _                                 = False
 %%]
 
 %%[8 export(StringPath,FileLocPath)
@@ -128,23 +129,8 @@ instance HSNM PkgKey where
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Parsing/showing the package name as it is used
+%%% Showing the package name as it is used
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[99
-pPkgKey :: P PkgKey
-pPkgKey = (concat <$> pList1_ng (pVarid <|> pConid <|> ("-" <$ pMINUS))) <+> pMb (pMINUS *> pVersion)
-
-pVersion :: P Version
-pVersion = (\v -> Version (map read v) []) <$> pList1Sep pDOT pInteger10
-%%]
-
-%%[99 export(parsePkgKey)
-parsePkgKey :: String -> Maybe PkgKey
-parsePkgKey
-  = parseString scanOpts pPkgKey
-  where scanOpts   = defaultScanOpts {scoSpecChars = Set.fromList ".-", scoAllowFloat = False}
-%%]
 
 %%[99 export(showPkgKey)
 showPkgKey :: PkgKey -> String

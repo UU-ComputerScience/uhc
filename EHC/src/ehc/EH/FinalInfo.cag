@@ -30,7 +30,11 @@ SEM Expr
 %%]]
 
 SEM AGItf
-  | AGItf       loc         .   finTyVarMp          =   @expr.tyVarMp
+  | AGItf       loc         .   finTyVarMp          =   
+%%[[9
+                                                        @chrSolveSimpTyVarMp |=>
+%%]]
+                                                        @expr.tyVarMp
 %%[[92
                             .   finValGam           =   @expr.gathValGam `gamUnion` @lhs.valGam
 %%]]

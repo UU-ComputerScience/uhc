@@ -2,7 +2,7 @@
 %%% Coercion
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(9 codegen) hs module {%{EH}Core.Coercion} import({%{EH}Base.Common},{%{EH}Base.Opts})
+%%[(9 codegen) hs module {%{EH}Core.Coercion} import({%{EH}Base.Common},{%{EH}Opts.Base})
 %%]
 
 %%[(9 codegen) hs import({%{EH}Ty},{%{EH}Core})
@@ -87,7 +87,7 @@ mkIdLRCoe' l r = LRCoe LRCoeId [l] [r]
 
 %%[(9 codegen) hs export(mkIdLRCoeWith)
 mkIdLRCoeWith :: HsName -> CMetaVal -> LRCoe
-mkIdLRCoeWith n m = mkIdLRCoe' (acoreCoeAppMeta2 [(acoreVar n,m)]) (acoreCoeLam1Meta n m)
+mkIdLRCoeWith n m = mkIdLRCoe' (acoreCoeAppN [(acoreVar n)]) (acoreCoeLam1 n)
 %%]
 
 %%[(9 codegen) hs export(lrcoeLSingleton,lrcoeRSingleton,lrcoeLFromList,lrcoeRFromList)

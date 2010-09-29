@@ -64,7 +64,7 @@ cpFoldCore modNm
                  coreSem  = Core2GrSem.wrap_CodeAGItf
                               (Core2GrSem.sem_CodeAGItf (Core.CodeAGItf_AGItf core))
                               (coreInh { Core2GrSem.gUniq_Inh_CodeAGItf            = crsiHereUID crsi
-                                       , Core2GrSem.opts_Inh_CodeAGItf             = crsiOpts crsi
+                                       , Core2GrSem.opts_Inh_CodeAGItf             = opts
                                        })
          ;  when (isJust mbCore)
                  (cpUpdCU modNm ( ecuStoreCoreSem coreSem
@@ -100,7 +100,7 @@ cpFoldHs modNm
                  mbHS   = ecuMbHS ecu
                  inh    = crsiHSInh crsi
                  hsSem  = HSSem.wrap_AGItf (HSSem.sem_AGItf $ panicJust "cpFoldHs" mbHS)
-                                           (inh { HSSem.opts_Inh_AGItf             = crsiOpts crsi
+                                           (inh { HSSem.opts_Inh_AGItf             = opts
                                                 , HSSem.gUniq_Inh_AGItf            = crsiHereUID crsi
 %%[[20
                                                 , HSSem.moduleNm_Inh_AGItf         = modNm
@@ -139,7 +139,7 @@ cpFoldHs modNm
 cpFoldHsMod :: HsName -> EHCompilePhase ()
 cpFoldHsMod modNm
   =  do  {  cr <- get
-         ;  let  (ecu,crsi,_,_) = crBaseInfo modNm cr
+         ;  let  (ecu,crsi,opts,_) = crBaseInfo modNm cr
                  mbHS       = ecuMbHS ecu
                  inh        = crsiHSModInh crsi
                  hsSemMod   = HSSemMod.wrap_AGItf (HSSemMod.sem_AGItf $ panicJust "cpFoldHsMod" mbHS)
@@ -147,11 +147,17 @@ cpFoldHsMod modNm
                                                        , HSSemMod.moduleNm_Inh_AGItf     = modNm
                                                        })
                  hasMain= HSSemMod.mainValExists_Syn_AGItf hsSemMod
+%%[[99
+                 pragmas = HSSemMod.fileHeaderPragmas_Syn_AGItf hsSemMod
+                 (ecuOpts,modifiedOpts)
+                         = ehcOptUpdateWithPragmas pragmas opts
+%%]]
          ;  when (isJust mbHS)
                  (cpUpdCU modNm ( ecuStoreHSSemMod hsSemMod
                                 . ecuSetHasMain hasMain
 %%[[99
-                                . ecuStorePragmas (HSSemMod.fileHeaderPragmas_Syn_AGItf hsSemMod)
+                                . ecuStorePragmas pragmas
+                                . (if modifiedOpts then ecuStoreOpts ecuOpts else id)
 %%]]
                  )              )
          }

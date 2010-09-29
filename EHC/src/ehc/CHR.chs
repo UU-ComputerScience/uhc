@@ -17,9 +17,6 @@ to avoid explosion of search space during resolution.
 %%[(9 hmtyinfer || hmtyast) import({%{EH}CHR.Key}) export(module {%{EH}CHR.Key})
 %%]
 
-%%[(20 hmtyinfer || hmtyast) import({%{EH}Base.CfgPP})
-%%]
-
 %%[(20 hmtyinfer || hmtyast) import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
 %%]
 
@@ -66,17 +63,6 @@ instance (PP c,PP g) => PP (CHR c g s) where
           ppL [x] = pp x
           ppL xs  = ppBracketsCommasV xs -- ppParensCommasBlock xs
           ppChr l = vlist l -- ppCurlysBlock
-%%]
-
-%%[(2020 hmtyinfer || hmtyast)
-instance (PPForHI c, PPForHI g) => PPForHI (CHR c g s) where
-  ppForHI chr
-    = ppCurlysSemisBlock
-        [ ppCurlysSemisBlock $ map ppForHI $ chrHead   chr
-        , ppForHI                          $ chrSimpSz chr
-        , ppCurlysSemisBlock $ map ppForHI $ chrGuard  chr
-        , ppCurlysSemisBlock $ map ppForHI $ chrBody   chr
-        ]
 %%]
 
 %%[(9 hmtyinfer || hmtyast)

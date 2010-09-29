@@ -41,7 +41,7 @@ Currently (20090821) only empty implicits \verb@Impls_Tail@ are replaced by
 %%[(9 hmtyinfer) hs import(Data.Maybe,qualified Data.Set as Set)
 %%]
 
-%%[(11 hmtyinfer) hs import({%{EH}Base.Opts},{%{EH}Ty.Trf.BetaReduce})
+%%[(11 hmtyinfer) hs import({%{EH}Opts},{%{EH}Ty.Trf.BetaReduce})
 %%]
 
 %%[(16 hmtyinfer) hs import({%{EH}Ty.Trf.MergePreds})

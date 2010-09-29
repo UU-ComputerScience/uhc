@@ -88,12 +88,13 @@ pCExprSel = pCExprBase <??> pCExprSelSuffix
 
 pCExpr :: CParser CExpr
 pCExpr
-  =   acoreAppMeta   <$> pCExprSel <*> pList pCExprSelMeta
-  <|> acoreLamMeta   <$  pLAM <*> pList1 (pDollNm P.<+> pCMetaValOpt) <* pRARROW <*> pCExpr
+  =   (\f as -> acoreApp f (map fst as))
+                     <$> pCExprSel <*> pList pCExprSelMeta
+  <|> acoreLam       <$  pLAM <*> pList1 (pDollNm) <* pRARROW <*> pCExpr
   <|> CExpr_Let      <$  pLET <*> pMaybe CBindings_Plain id pCBindingsCateg <* pOCURLY <*> pListSep pSEMI pCBind <* pCCURLY <* pIN <*> pCExpr
   <|> CExpr_Case <$ pCASE <*> pCExpr <* pOF
       <* pOCURLY <*> pListSep pSEMI pCAlt <* pCCURLY
-      <* pOCURLY <*  pDEFAULT <*> pCExpr <* pCCURLY
+      <* pOCURLY <*  pDEFAULT <*> {- pMb -} pCExpr <* pCCURLY
   where pCBindingsCateg
           =   CBindings_Rec    <$ pKeyTk "rec"
           <|> CBindings_FFI    <$ pFOREIGN
@@ -156,7 +157,7 @@ pCBind :: CParser CBind
 pCBind
   = (  (pDollNm P.<+> pCMetasOpt) <* pEQUAL)
     <**> (   (\e (n,m)        -> CBind_Bind n [CBindAspect_Bind m e]) <$> pCExpr
-         <|> (\(c,_) s i t (n,m)  -> CBind_Bind n [CBindAspect_FFI c s (mkEnt c i) t])
+         <|> (\(c,_) s i t (n,m)  -> CBind_Bind n [CBindAspect_Bind m $ CExpr_FFI c s (mkEnt c i) t])
              <$ pFOREIGN <* pOCURLY <*> pFFIWay <* pCOMMA <*> pS <* pCOMMA <*> pS <* pCOMMA <*> pTy <* pCCURLY
 %%[[90
          <|> (\(c,_) e en t (n,m) -> CBind_Bind n [CBindAspect_FFE c (mkEnt c e) en t])

@@ -17,7 +17,7 @@ TBD:
 \end{itemize}
 %%]
 
-%%[(8 codegen tycore) hs module {%{EH}TyCore.ToCore} import({%{EH}Base.Builtin},{%{EH}Base.Opts},{%{EH}Base.Common})
+%%[(8 codegen tycore) hs module {%{EH}TyCore.ToCore} import({%{EH}Base.Builtin},{%{EH}Opts},{%{EH}Base.Common})
 %%]
 
 %%[(8 codegen tycore) hs import(EH.Util.Utils)
@@ -101,8 +101,9 @@ SEM ExprSeq1
 %%[(8 codegen tycore)
 ATTR Expr [ | | mbFFI: {Maybe (HsName -> CBind)} ]
 
+-- 20100828 AD, TBD: correct translation of FFI
 SEM Expr
-  | FFI         lhs         .   mbFFI               =   Just (\n -> CBind_Bind n [CBindAspect_FFI @callconv @safety @impEnt @ty.coreTy])
+  | FFI         lhs         .   mbFFI               =   Nothing -- Just (\n -> CBind_Bind n [CBindAspect_FFI @callconv @safety @impEnt @ty.coreTy])
   | * - FFI     lhs         .   mbFFI               =   Nothing
 %%]
 
@@ -179,7 +180,7 @@ SEM Expr
   | String      loc         .   core                =   CExpr_String @str
   | Tup         loc         .   core                =   CExpr_Tup @tag
   | Node        loc         .   core                =   acoreApp (CExpr_Tup (maybe CTagRec id @lhs.mbInj)) @flds.l0CoreL
-  | Case        loc         .   core                =   CExpr_Case @expr.core @alts.core (maybe (acoreBuiltinUndefined @lhs.opts) id @dflt.mbCore)
+  | Case        loc         .   core                =   CExpr_Case @expr.core @alts.core (maybe (acoreVar hsnUnknown) id @dflt.mbCore)
   | Inject Cast Ann
                 loc         .   core                =   @expr.core
   | OpenExists CloseExists

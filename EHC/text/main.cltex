@@ -417,6 +417,13 @@
 \usepackage{tikz}
 %%]
 
+%%[62
+\usepackage{tikz}
+\usetikzlibrary{shadows}
+\usetikzlibrary{shapes.callouts}
+\usetikzlibrary{calc}
+%%]
+
 %%[53
 \usepackage{tikz}
 \usetikzlibrary{arrows}
@@ -1055,6 +1062,12 @@ version
 %%[61
 \title{Jazy Backend}
 \author{Levin Fritz}
+%%]
+
+%%[62
+\title[UHC]{Utrecht Haskell Compiler}
+\author{Atze Dijkstra, Jeroen Fokker, Doaitse Swierstra\\~~Utrecht University~~}
+\date[AFP 2010, Aug 25]{AFP 2010, Aug 25}
 %%]
 
 
@@ -3515,6 +3528,53 @@ We thank both (anonymous) reviewers for their extremely valuable and helpful com
 
 %%]
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Slides for UHC internals
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[62
+\begin{frame}
+\titlepage
+\end{frame}
+
+\section{UHC pipeline}
+%%@SlidesUHCInternals.intro
+
+%%@SlidesUHCInternals.pipeline
+
+\section{Attribute Grammar system}
+%%@SlidesUHCInternals.toolsAG
+
+%%@SlidesUHCStructure.toolsAG
+
+\section{Summary}
+%%@SlidesEHCStructure.summary
+
+%%@SlidesUHCInternals.conclusion
+%%]
+
+\begin{frame}
+\frametitle{old stuff}
+------------------------------------
+\end{frame}
+
+
+
+%%@SlidesEHCStructure.intro
+
+\section{Coping with complexity}
+%%@SlidesEHCStructure.coping
+
+\section{Tools}
+\subsection{Attribute Grammar Compiler}
+%%@SlidesEHCStructure.toolsAG
+\subsection{Ruler}
+%%@SlidesEHCStructure.toolsRuler
+\subsection{Shuffle}
+%%@SlidesEHCStructure.toolsShuffle
+
+\section{}
 
 
 

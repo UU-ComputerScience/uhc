@@ -11,7 +11,7 @@
 %%[(8 codegen grin) hs import(EH.Util.Utils,EH.Util.Pretty as Pretty,Data.Bits,Data.Maybe,qualified EH.Util.FastSeq as Seq,qualified Data.Map as Map)
 %%]
 
-%%[(8 codegen grin) hs import({%{EH}Base.Builtin},{%{EH}Base.Builtin2},{%{EH}Base.Opts})
+%%[(8 codegen grin) hs import({%{EH}Base.Builtin},{%{EH}Base.Builtin2},{%{EH}Opts})
 %%]
 
 %%[(8 codegen grin) hs import({%{EH}Base.Bits} as Binary)
@@ -289,7 +289,7 @@ ststGCEncoding stState
         fillGaps off sz (p@(poff,psz,_):ps)
              | poff >  off = [(off,poff-off,GCPermit_Must)] ++ [p] ++ ps'
              | poff == off = [p] ++ ps'
-             | otherwise   = panic "GrinByteCode.ststGCEncoding"
+             | otherwise   = panic $ "GrinByteCode.ststGCEncoding: sz/poff/off " ++ show sz ++ "/" ++ show poff ++ "/" ++ show off
              where off' = poff + psz
                    ps' = fillGaps off' (sz - off') ps
         encs

@@ -17,6 +17,7 @@ TEXT_PRIV_VARIANTS			+= flops06-ruler-paper flops06-ruler \
 								slides-ruler slides-ruler-long \
 								slides-explimpl slides-explimpl-fpnl slides-overview slides-status \
 								slides-ehcstruct slides-ehcstruct-ufmg slides-hs09-uhcarch slides-uhcarch \
+								slides-uhcinternals \
 								gbm \
 								uniqueness slides-uniqueness \
 								icfp07-chr-locinst icfp07-chr-locinst-blind cc08-chr-locinst \
@@ -31,7 +32,7 @@ TEXT_PRIV_VARIANTS			+= flops06-ruler-paper flops06-ruler \
 TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 								SharedTypeLang SharedFIOpts \
 								TopicRuler TopicExplImpl TopicGRIN TopicRec TopicKinds TopicDataTy TopicImpred TopicHM TopicExtRec TopicGADT TopicReflection TopicPartialTySig \
-								SlidesIntro Slides SlidesPartTySig SlidesExplImpl SlidesImpred SlidesRuler SlidesShuffle SlidesGRIN SlidesStatus SlidesEHCStructure SlidesUHCStructure \
+								SlidesIntro Slides SlidesPartTySig SlidesExplImpl SlidesImpred SlidesRuler SlidesShuffle SlidesGRIN SlidesStatus SlidesEHCStructure SlidesUHCStructure SlidesUHCInternals \
 								CodeFragsExplImpl \
 								ToolDocShuffle ToolDocRuler ToolDocEHC ToolDocText2Text \
 								InternalDocEhcTechnical InternalDocEhcStructure InternalDocBuildSystem InternalDocEhcLibrary InternalDocJazy \
@@ -118,6 +119,7 @@ TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 # 57: the big plan, i.e. 'vision' + roadmap + directions + projects
 # 60: doc: library
 # 61: doc: Jazy backend
+# 62: slides "UHC Internals" (AFP2010)
 # 77: scratch (article format)
 
 TEXT_SHUFFLE_ORDER	+= \
@@ -149,6 +151,7 @@ TEXT_SHUFFLE_ORDER	+= \
 		18 < 23, \
 		18 < 28, \
 		18 < 53, \
+		18 < 62, \
 		26 < 24, \
 		26 < 25, \
 		26 < 36, \

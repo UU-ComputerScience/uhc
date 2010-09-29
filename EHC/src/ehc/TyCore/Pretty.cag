@@ -16,12 +16,15 @@ Differences:
 \end{itemize}
 %%]
 
-%%[(8 codegen tycore) hs module {%{EH}TyCore.Pretty} import(EH.Util.Pretty,{%{EH}Base.Builtin},{%{EH}Base.CfgPP},{%{EH}Base.Opts},{%{EH}Base.Common},{%{EH}TyCore},{%{EH}Scanner.Common(tycoreScanOpts)})
+%%[(8 codegen tycore) hs module {%{EH}TyCore.Pretty} import(EH.Util.Pretty,{%{EH}Base.Builtin},{%{EH}Base.CfgPP},{%{EH}Opts},{%{EH}Base.Common},{%{EH}TyCore},{%{EH}Scanner.Common(tycoreScanOpts)})
 %%]
 
 %%[(8 codegen tycore) hs import(Data.Bits,Data.Maybe)
 %%]
 %%[(8 codegen tycore) hs import(qualified Data.Map as Map,qualified Data.Set as Set)
+%%]
+
+%%[(8 codegen tycore) hs import({%{EH}AbstractCore})
 %%]
 
 %%[(90 codegen tycore) hs import({%{EH}Foreign.Pretty})
@@ -361,7 +364,7 @@ SEM Expr
   | Lazy        loc         .   pp          =   ppToThnk @lhs.symMp @expr.pp
   | Seq1		loc			.	pp			= 	ppSeq1 @lhs.symMp @seq1.pp
   | Seq 		loc			.	pp			=	ppSeq'  @lhs.symMp @lhs.ppHow  @seq.ppL
-  | CaseAltFail loc			.	pp			=	ppKeyw "fail" >#< @caseId
+  | CaseAltFail loc			.	pp			=	ppKeyw "fail" >#< @failReason
   | FFI         loc         .   pp          =   ppKeyw "external" >#< show @callconv >#< show @safety >#< @ppent >#< ppParens @ty.pp
 %%[[8
 				loc			.	ppent		=	pp (show @impEnt)
@@ -480,14 +483,10 @@ SEM TySeq1
 
 %%[(8 codegen tycore)
 SEM ExprSeq1
-  | L0Val       loc         .   pp          =   case @meta.ppMb of
-                                                  Just m -> @l0.pp >#< ":" >#< m
-                                                  _      -> @l0.pp
+  | L0Val       loc         .   pp          =   @l0.pp
   | L0LblVal    loc         .   pp          =   ppKeyw "lbl" >#< ppNm  @nm  >#< "=" >#< @l0.pp
   | L0TagVal    loc         .   pp          =   ppTag @tag >#< "=" >#< @l0.pp
-  | L0Bind      loc         .   pp          =   case @meta.ppMb of
-                                                  Just m -> ppNm @nm >#< ":" >#< m >#< "::" >#< @l1.pp
-                                                  _      -> ppNm @nm >#<               "::" >#< @l1.pp
+  | L0Bind      loc         .   pp          =   ppNm @nm >#<               "::" >#< @l1.pp
   | L1Val       loc         .   pp          =   "@" >#< @l1.pp
   | L1Bind      loc         .   pp          =   "@" >#< ppNm @nm >#< "::" >#< @l2.pp
   | L2Val       loc         .   pp          =   "@@" >#< @l2.pp

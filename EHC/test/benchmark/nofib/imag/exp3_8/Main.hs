@@ -28,6 +28,8 @@ instance Num Nat where
     x   * Z   = Z
     x   * S y = x * y + x
     fromInteger x = if x < 1 then Z else S (fromInteger (x-1))
+    abs         = undefined
+    signum      = undefined
 
 -- partain:sig
 int :: Nat -> Int

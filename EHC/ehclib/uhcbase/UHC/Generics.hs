@@ -32,9 +32,34 @@ module UHC.Generics
 
   -- * Representable type classes
   , Representable0(..), Representable1(..)
+
+  -- * Tuples
+  , module UHC.Generics.Tuple
+
   )
   where
 
 import UHC.Base
 import UHC.Generics.Tuple
+
+--------------------------------------------------------------------------------
+
+{-
+data _D_Tuple0
+data _C_Tuple0
+
+instance Datatype _D_Tuple0 where
+  datatypeName _ = "()"
+  moduleName   _ = "Prelude"
+
+instance Constructor _C_Tuple0 where
+  conName _ = "()"
+  conIsTuple _ = Arity 0
+
+type _Rep0Tuple0 = D1 _D_Tuple0 (C1 _C_Tuple0 (S1 NoSelector U1))
+
+instance Representable0 () _Rep0Tuple0 where
+  from0 () = (M1 (M1 (M1 (U1))))
+  to0 (M1 (M1 (M1 (U1)))) = ()
+-}
 

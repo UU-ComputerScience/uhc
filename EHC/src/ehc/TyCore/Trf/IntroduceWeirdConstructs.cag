@@ -15,10 +15,10 @@
 %%[(8 codegen tycore tauphi) hs module {%{EH}TyCore.Trf.IntroduceWeirdConstructs}
 %%]
 
-%%[(8 codegen tycore tauphi) hs import({%{EH}Base.Strictness})
+%%[(8 codegen tycore tauphi) hs import({%{EH}AbstractCore})
 %%]
  
-%%[(8 codegen tycore tauphi) hs import({%{EH}Base.Builtin},{%{EH}Base.Opts},{%{EH}Base.Common})
+%%[(8 codegen tycore tauphi) hs import({%{EH}Base.Builtin},{%{EH}Opts},{%{EH}Base.Common})
 %%]
 
 %%[(8 codegen tycore tauphi) hs import(Data.Maybe)
@@ -282,15 +282,15 @@ dummy =
     char = var "Char"
     seqInt  = eseq [val int]
     seqChar = eseq [val char]
-    strict  = Expr_Ann (ExprAnn_Strictness Strict)
+    strict  = Expr_Ann (ExprAnn_Strictness Strictness_Strict)
 
     single e   = eseq [val e]
     force e    = Expr_Force e
     lazy ty    = single $ Expr_Lazy ty
-    val e      = ExprSeq1_L0Val e Nothing
+    val e      = ExprSeq1_L0Val e
     var nm     = Expr_Var $ mkHNm nm
     eseq es    = Expr_Seq es
-    bind nm ty = ExprSeq1_L0Bind (mkHNm nm) Nothing ty
+    bind nm ty = ExprSeq1_L0Bind (mkHNm nm) ty
 
 infixr 5 `arr`
 

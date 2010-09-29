@@ -30,7 +30,6 @@ TyCore/Check.cag
 JVMClass/ToBinary.cag
 Error/Pretty.cag
 Core/ToGrin.cag
-Core/ToJava.cag
 Core/ToJazy.cag
 Core/Pretty.cag
 Core/Subst.cag
@@ -85,7 +84,6 @@ GrinCode/Trf/MergeCase.cag
 GrinCode/Trf/MergeInstance.cag
 GrinCode/Trf/NormForHPT.cag
 GrinCode/Trf/NumberIdents.cag
-GrinCode/Trf/PrettyVarNames.cag
 GrinCode/Trf/SetGrinInvariant.cag
 GrinCode/Trf/SimpleNullary.cag
 GrinCode/Trf/SingleCase.cag
@@ -94,6 +92,7 @@ GrinCode/Trf/SplitFetch.cag
 GrinCode/Trf/SubstExpr.cag
 GrinCode/Trf/UnusedMetaInfoElim.cag
 GrinCode/Trf/UnusedNameElim.cag
+GrinCode/Trf/BasicAnnotAliasElim.cag
 GrinByteCode/ToC.cag
 LLVM/Pretty.cag
 Silly/ElimUnused.cag

@@ -7,7 +7,7 @@
 %%% Module itf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen tycore) hs module {%{EH}Ty.ToTyCore} import(EH.Util.Utils,{%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Base.Opts})
+%%[(8 codegen tycore) hs module {%{EH}Ty.ToTyCore} import(EH.Util.Utils,{%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Opts})
 %%]
 %%[(8 codegen tycore) hs import({%{EH}Ty}(TyVarCateg(..),TyQu(..),TyAGItf(..),Ty(..),TyVarId,TyAnn(..)))
 %%]
@@ -57,7 +57,7 @@ argWrap' T2TArg_Seq1' sq x = case x of {C.Expr_Seq1 _ -> x ; C.Expr_Arrow _ _ ->
 argWrap' T2TArg_Seq'  sq x = case x of {C.Expr_Seq  _ -> x ; C.Expr_Arrow _ _ -> x ; _ -> argWrap' T2TArg_Seq   sq x}
 
 argWrap :: T2THowArg -> C.Ty -> C.Ty
-argWrap how t = argWrap' how (flip C.ExprSeq1_L0Val Nothing) t
+argWrap how t = argWrap' how C.ExprSeq1_L0Val t
 %%]
 
 %%[(8 codegen tycore) hs
@@ -215,7 +215,7 @@ SEM Ty
   | Quant       loc         .   ctBase      =   let dflt = @ty.ct
                                                 in  if t2tcOptQuantvarKi @lhs.opts && T.tyquIsForall @qu.self
                                                     then let a   = case T.tyquMetaLev @qu.self of
-                                                                     0 -> C.ExprSeq1_L0Bind (mkHNm @tv) Nothing
+                                                                     0 -> C.ExprSeq1_L0Bind (mkHNm @tv)
                                                                      1 -> C.ExprSeq1_L1Bind (mkHNm @tv)
                                                              wra = argWrap' (t2tcOptHowArrowArg @lhs.opts) a
                                                              wrr = argWrap  (t2tcOptHowArrowRes @lhs.opts)
@@ -223,14 +223,14 @@ SEM Ty
                                                                (wra $ tyToTyCoreKi @l1   )
                                                                (wrr                @ty.ct)
                                                     {- else if T.tyquIsExists @qu.self
-                                                         then let a = C.ExprSeq1_L0Bind (mkHNm @tv) Nothing
+                                                         then let a = C.ExprSeq1_L0Bind (mkHNm @tv)
                                                                   wra = argWrap' T2TArg_Seq1 a
                                                               in  C.Expr_Exists 
                                                                     (wra $ tyToTyCoreKi @l1   )
                                                                     (                   @ty.ct)
                                                          else dflt -}
                                                     else if T.tyquIsExists @qu.self
-                                                    then let a = C.ExprSeq1_L0Bind (mkHNm @tv) Nothing
+                                                    then let a = C.ExprSeq1_L0Bind (mkHNm @tv)
                                                              wra = argWrap' T2TArg_Seq1 a
                                                          in  C.Expr_Exists 
                                                                (wra $ tyToTyCoreKi @l1   )

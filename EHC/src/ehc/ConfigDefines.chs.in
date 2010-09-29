@@ -2,7 +2,7 @@
 {-# OPTIONS_GHC -cpp #-}
 %%]
 
-%%[8 module {%{EH}ConfigDefines} import({%{EH}Base.Opts})
+%%[8 module {%{EH}ConfigDefines} import({%{EH}Opts})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

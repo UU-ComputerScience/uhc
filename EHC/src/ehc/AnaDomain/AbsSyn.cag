@@ -22,6 +22,11 @@ DATA CoeAGItf
   | AGItf       relevCoe        : RelevCoe
 %%]
 
+%%[(8888 codegen)
+DATA AnaEvalAGItf
+  | AGItf       anaEval         : AnaEval
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Evaluation state
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -66,9 +71,12 @@ DATA RelevCoe
   | Fun 		args			: RelevCoeL
   				res				: RelevCoe
 
-  -- coercion based on qualifier, which still must be resolved to a 'real' coercion
-  -- ?? unnecessary
-  | Qual		qual			: RelevQual
+  -- coercion going in the 'wrong' direction of lattice, delegating the corresponding 'cast' to the outside
+  | Cast		coe 			: RelevCoe
+  
+  -- coercion casting between types
+  | CastTy		l	 			: RelevTy
+  				r				: RelevTy
   
   -- the real coercion, for each Ana lattice, may require substitutions later on
   | Eval		from			: AnaEval
@@ -88,12 +96,16 @@ DATA RelevQual
   -- less than or equal in AnaEval lattice
   | SubEval		l				: AnaEval
   				r				: AnaEval
+%%]
   -- a qual which bridges an alternative and its surroundings
   | Alt			qual			: RelevQual
   				altId			: UID
   				altNr			: Int
   				altMax			: Int
+  				altMbTag		: {Maybe CTag}			-- tag to which this alt belongs
+  				altMbScrutTy	: MbRelevTy				-- the ty for which this tag is taken/chosen
 
+%%[(8 codegen)
 TYPE RelevQualL	=	[RelevQual]
 
 DATA RelevTy
@@ -113,8 +125,9 @@ DATA RelevTy
   				res				: RelevTy
 
 TYPE RelevTyL	=	[RelevTy]
+TYPE MbRelevTy	=	MAYBE RelevTy
 
-SET AllRelevTy	=	RelevTy RelevTyL RelevQual RelevQualL
+SET AllRelevTy	=	RelevTy RelevTyL MbRelevTy RelevQual RelevQualL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

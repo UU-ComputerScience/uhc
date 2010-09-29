@@ -5,11 +5,7 @@
 -- It's not a very good test, I suspect, because it manipulates big integers,
 -- and so probably spends most of its time in GMP.  
 
-#ifndef __UHC__
-import Ratio
-#endif
-
-
+import Data.Ratio
 import System.Environment
 
 -- powers = [[r^n | r<-[2..]] | n<-1..]
@@ -18,15 +14,13 @@ powers :: [[Integer]]
 powers = [2..] : map (zipWith (*) (head powers)) powers
 
 -- powers = [[(-1)^r * r^n | r<-[2..]] | n<-1..]
--- type signature required for compilers lacking the monomorphism restriction
-neg_powers :: [[Integer]]
 neg_powers = 
   map (zipWith (\n x -> if n then x else -x) (iterate not True)) powers
 
 pascal:: [[Integer]]
 pascal = [1,2,1] : map (\line -> zipWith (+) (line++[0]) (0:line)) pascal
 
-bernoulli :: Integral b => Int -> Ratio b
+bernoulli :: Int -> Rational
 bernoulli 0 = 1
 bernoulli 1 = -(1%2)	
 bernoulli n | odd n = 0
@@ -42,4 +36,4 @@ main = do
  [arg] <- getArgs
  let n = (read arg)::Int
  putStr $ "Bernoulli of " ++ (show n) ++ " is "
- print ((bernoulli n)::Ratio Integer)
+ putStrLn . filter (\c -> not (c `elem` "( )")) . show . bernoulli $ n

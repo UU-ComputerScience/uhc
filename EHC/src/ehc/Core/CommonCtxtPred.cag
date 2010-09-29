@@ -46,12 +46,18 @@ SEM CExpr
   | * - TupUpd TupIns TupDel Ann
                 loc         .   isTopTup    =   True
 
+  | *			loc			.	isTopApp	:	Bool
+
+SEM MbCExpr
+  | Just        just        .   isTopApp    =   True
+                            .   isTopTup    =   True
+
 SEM CModule
   | Mod         expr        .   isTopApp    =   True
                             .   isTopTup    =   True
 
 SEM CBindAspect
-  | Bind        expr        .   isTopApp    =   True
+  | Bind Val    expr        .   isTopApp    =   True
                             .   isTopTup    =   True
 
 SEM CPatFld
@@ -74,7 +80,8 @@ SEM CExpr
   | Lam         loc         .   whatBelow       =   ExprIsLam
   | Var         loc         .   whatBelow       =   ExprIsVar @nm
   | Int         loc         .   whatBelow       =   ExprIsInt @int
-  | * - Lam Var Int Ann
+  | App			loc			.	whatBelow		=	maybe (ExprIsApp 1) (\a -> ExprIsApp $ a + 1) $ whatExprMbApp @func.whatBelow
+  | * - Lam App Var Int Ann CaseAltFail
                 loc         .   whatBelow       =   ExprIsOther
 %%]
 
@@ -83,12 +90,12 @@ ATTR CExpr [ whatAbove: WhatExpr | | ]
 
 SEM CExpr
   | Lam			loc			.	whatAbove		=	ExprIsLam
-  | App			loc			.	whatAbove		=	ExprIsApp
+  | App			loc			.	whatAbove		=	maybe (ExprIsApp 1) (\a -> ExprIsApp $ a + 1) $ whatExprMbApp @lhs.whatAbove
   | * - Lam App Ann
   				loc			.	whatAbove		=	ExprIsOther
 
 SEM CBindAspect
-  | Bind		loc			.	whatAbove		=	ExprIsOther
+  | Bind Val	loc			.	whatAbove		=	ExprIsOther
 
 SEM CPatFld
   | Fld 		loc			.	whatAbove		=	ExprIsOther
@@ -98,6 +105,12 @@ SEM CAlt
 
 SEM CModule
   | Mod			loc			.	whatAbove		=	ExprIsOther
+
+SEM MbCExpr
+  | Just		loc			.	whatAbove		=	ExprIsOther
+
+SEM *
+  | *			loc			.	whatAbove		:	WhatExpr
 %%]
 
 
@@ -106,14 +119,14 @@ SEM CModule
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen grin)
-ATTR CExpr AllAlt AllBind [ isStrict, isLamBody: Bool | | ]
+ATTR AllExprOnly AllAlt AllBind [ isStrict, isLamBody: Bool | | ]
 
 SEM CModule
   | Mod         expr        .   isStrict    =   True
                             .   isLamBody   =   False
 
 SEM CBindAspect
-  | Bind        expr        .   isStrict    =   @lhs.isStrict || @expr.whatBelow == ExprIsLam
+  | Bind Val    expr        .   isStrict    =   @lhs.isStrict || @expr.whatBelow == ExprIsLam
 
 SEM CPatFld
   | Fld         offset      .   isStrict    =   True
@@ -130,7 +143,7 @@ SEM CExpr
 not used yet as it seems not to be equivalent to isStrict. Can't find out why...
 
 %%[(8 codegen)
-ATTR CExpr AllAlt AllBind [ evalCtx: EvalCtx | | ]
+ATTR AllExprOnly AllAlt AllBind [ evalCtx: EvalCtx | | ]
 
 SEM CModule
   | Mod         expr        .   evalCtx         =   EvalCtx_Eval
@@ -146,6 +159,6 @@ SEM CExpr
 %%]
 
 SEM CBindAspect
-  | Bind        expr        .   evalCtx         =   if @expr.whatBelow == ExprIsLam
+  | Bind Val    expr        .   evalCtx         =   if @expr.whatBelow == ExprIsLam
                                                     then EvalCtx_Eval
                                                     else @lhs.evalCtx

@@ -583,7 +583,7 @@ SEM Expr
                                                              in  ([(n, ty "2" n)],[C.mkValBind1 n (ty "3" n) @expr.tcexpr],@alts.raltTCL)
                                                     ty m n = C.tyErr ("Expr.Case.tcexpr." ++ m ++ ": " ++ show n)
                                                 in  acoreLet C.ValBindCateg_Plain bs (rceMatchTy @rceEnvTC ns as)
-  | CaseAltFail loc         .   tcexpr      =   C.Expr_CaseAltFail @caseId (acoreBuiltinError @lhs.opts ("FAIL " ++ show @caseId))
+  | CaseAltFail loc         .   tcexpr      =   C.Expr_CaseAltFail (CaseAltFailReason_Continue @caseId) (acoreBuiltinError @lhs.opts ("FAIL " ++ show @caseId))
   | Undefined   loc         .   tcexpr      =   acoreBuiltinUndefined @lhs.opts
   | Parens      loc         .   tcexpr      =   @expr.tcexpr
 %%]
@@ -838,7 +838,7 @@ SEM DataConstr
                                                           in  mk (if @lhs.isNewtype
                                                                   then C.mkCast (C.tyUnThunkTySeq $ head args) res
                                                                        $ C.mkExprUnThunk $ acoreVar $ head nms
-                                                                  else -- C.mkCast (C.mkTySeq $ C.Expr_Node @ctag [ C.ExprSeq1_L0Val a Nothing | a <- args ] ) res
+                                                                  else -- C.mkCast (C.mkTySeq $ C.Expr_Node @ctag [ C.ExprSeq1_L0Val a | a <- args ] ) res
                                                                        C.mkInject @ctag res
                                                                        $ C.Expr_Node {- @ctag -} $ C.fuL2ExprNodeFldL False (const Nothing) [ (n,(acoreVar n,Nothing)) | n <- nms ]
                                                                    -- acoreApp (C.Expr_Tup @ctag) (map acoreVar nms)
@@ -887,7 +887,7 @@ mkDataValBindL opts ctag conNm isNewtype ty
           in  mk (if isNewtype
                   then C.mkCast (C.tyUnThunkTySeq $ head args) res
                        $ C.mkExprUnThunk $ acoreVar $ head nms
-                  else -- C.mkCast (C.mkTySeq $ C.Expr_Node ctag [ C.ExprSeq1_L0Val a Nothing | a <- args ] ) res
+                  else -- C.mkCast (C.mkTySeq $ C.Expr_Node ctag [ C.ExprSeq1_L0Val a | a <- args ] ) res
                        C.mkInject ctag res
                        $ C.Expr_Node {- @ctag -} $ C.fuL2ExprNodeFldL False (const Nothing) [ (n,(acoreVar n,Nothing)) | n <- nms ]
                    -- acoreApp (C.Expr_Tup ctag) (map acoreVar nms)
@@ -1568,8 +1568,7 @@ SEM Decl
                                                                                                 (  @chrScopeDeclsBindL 
                                                                                                 ++ @chrAssumeDeclsInstBindL
                                                                                                 )
-                                                             dict5     = acoreAppMeta (Expr_Tup @dictTag)
-                                                                                        (zip memberNewVars defaultMetas)
+                                                             dict5     = acoreApp (Expr_Tup @dictTag) memberNewVars
                                                              dict6     = mkExprLetRec ([bind5] ++ defaultNewBindings ++ defaultCHRBindings) rsltVar
                                                              
                                                              bind5     = C.mkValBind1Meta rsltNm CMetaVal_Dict dict5
