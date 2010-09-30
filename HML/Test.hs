@@ -18,7 +18,7 @@ test = id 1
 
 -- -- | Mutual recursive function is a problem, Need to think of a solution that fits within HML
 -- -- foo = (bar :: Char)
--- foo = bar2
+-- foo = bar
 -- bar = foo
 
 -- const a b = a
