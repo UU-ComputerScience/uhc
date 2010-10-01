@@ -6,10 +6,16 @@
 
 -- data List a = Cons a (List a)
             -- | Nil
+            
+-- data Bool = True | False
+         
+foreign import ccall "Prelude" (+) :: Int -> Int -> Int
+-- foreign import ccall "Prelude" map :: (a -> b) -> List a -> List b
+-- foreign import ccall "Prelude" (.) :: (b -> c) -> (a -> b) -> a -> c         
          
 id x = x  
        
-test = id 1
+test = 1 + 1
 
 -- id (x::forall a. a->a) = x
 -- id (x::forall a. a->a) = x

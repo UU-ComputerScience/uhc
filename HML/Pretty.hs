@@ -69,7 +69,10 @@ instance Pretty Decl where
   
 instance Pretty TyExpr where
   pp (TyExpr_Con a)        = pp a
-  pp (TyExpr_App a b)      = pp a ++ " " ++ pp b
+  pp (TyExpr_App a b)      = case a of
+                               (TyExpr_App x a) 
+                                   | pp x == "->" -> pp a ++ " " ++ pp x ++ " " ++ pp b
+                               _  -> pp a ++ " " ++ pp b
   pp (TyExpr_AppTop a)     = pp a
   pp (TyExpr_Parens a)     = "(" ++ pp a ++ ")"
   pp (TyExpr_Ann ann expr) = "[ann] " ++ pp expr
