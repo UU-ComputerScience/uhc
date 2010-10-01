@@ -348,7 +348,7 @@ freshM s c = fresh' c ([], s)
 -- | Creates an arrow between two types.
 --   e.g given type a and b returns the type a -> b or (-> b) a rather
 mkArrow :: TyExpr -> TyExpr -> TyExpr
-mkArrow a b =  TyExpr_App (TyExpr_App (TyExpr_Con $ mkName "->") a) b
+mkArrow a b =  TyExpr_AppTop $ TyExpr_App (TyExpr_App (TyExpr_Con $ mkName "->") a) b
 
 -- | The same as mkArrow except it allows a TyScheme as first argument and resulting type
 mkArrowL :: TyScheme -> TyExpr -> TyScheme
@@ -1231,7 +1231,7 @@ datasem Expr monad IO
                       _                -> error "The resulting type is not a Tau type"
        (loc.q2,  loc.q3)  = curry split body.nxe (domain lhs.pre)
        loc.phi1           = case body.res of
-                              []  -> error "Inference of Expressions failed in Lam"
+                              []  -> error "Inference of Expressions failed in Lam, no type infered for body"
                               [x] -> x
                               _   -> error "Too many options, I only need one"
        (loc.q3', loc.e3') = curry extend loc.q3 (Scheme_Simple loc.b loc.phi1)
@@ -1433,7 +1433,7 @@ subsume = sem subsume : Subsume monad IO
                       u.pre  = let q = loc.q ++ loc.q2
                                in D.trace ("subsume -- " ++ pp q) q
                       u.exp1 = case appAll (M.fromList $ zipWith (\a b->(a, mkVar b)) exp.tyVar loc.c) exp.tyExpr of
-                                 Just a  -> D.trace ("un1: " ++ con exp.tyExpr) (const exp.tyExpr scheme.prefix)
+                                 Just a  -> D.trace ("un1: " ++ con a) (const a scheme.prefix)
                                  Nothing -> error "Subsume failure, substitution failed"
                       u.exp2 = let f = dropScheme scheme.tyExpr
                                in D.trace ("un2: " ++ con f) (const f exp.tyExpr)
@@ -1484,7 +1484,7 @@ unify = sem unify : Unify monad IO
                  clause s_unify
                    match True  = loc.nf
                    internal ty_check
-                     clause leftTop
+                     clause LeftTop
                        match TyExpr.AppTop@app = lhs.exp1
                        
                        child u : Unify = unify
@@ -1508,6 +1508,36 @@ unify = sem unify : Unify monad IO
                        u.frs  = lhs.frs
                        u.exp1 = lhs.exp1
                        u.exp2 = D.trace ("AppTop Stripped. # " ++ con app.tyExpr) app.tyExpr
+                       
+                       invoke unify of u
+                       
+                       lhs.frs = u.frs
+                       lhs.pre = u.pre
+                       lhs.sub = u.sub
+                     clause LeftParens
+                       match TyExpr.Parens@app = lhs.exp1
+                       
+                       child u : Unify = unify
+                       
+                       u.pre  = lhs.pre
+                       u.frs  = lhs.frs
+                       u.exp2 = lhs.exp2
+                       u.exp1 = D.trace ("Parens Stripped. # " ++ con app.tyExpr) app.tyExpr
+                       
+                       invoke unify of u
+                       
+                       lhs.frs = u.frs
+                       lhs.pre = u.pre
+                       lhs.sub = u.sub
+                     clause RightParens
+                       match TyExpr.Parens@app = lhs.exp2
+                       
+                       child u : Unify = unify
+                       
+                       u.pre  = lhs.pre
+                       u.frs  = lhs.frs
+                       u.exp1 = lhs.exp1
+                       u.exp2 = D.trace ("Parens Stripped. # " ++ con app.tyExpr) app.tyExpr
                        
                        invoke unify of u
                        
@@ -1649,9 +1679,10 @@ unify = sem unify : Unify monad IO
                                lhs.frs = D.trace "unify - ***leftvar***" s.frs  
                              clause invalid
                                match False = isJust loc.phi
-                               lhs.sub = error $ "Unable to execute unification on '"
-                                              ++ pp lhs.exp1 ++ "' and '"++ pp lhs.exp2 ++ "', occurs check failed in prefix: "
-                                              ++ pp lhs.pre
+                               lhs.sub = M.empty
+                               -- lhs.sub = error $ "Unable to execute unification on '"
+                                              -- ++ pp lhs.exp1 ++ "' and '"++ pp lhs.exp2 ++ "', occurs check failed in prefix: "
+                                              -- ++ pp lhs.pre
                          clause rightvar
                            match TyExpr.Var@var2 = lhs.exp2
                            loc.expr  = lhs.exp1
@@ -1691,9 +1722,10 @@ unify = sem unify : Unify monad IO
                                lhs.frs = D.trace "unify - ***rightvar***" s.frs  
                              clause invalid2
                                match False = isJust loc.phi
-                               lhs.sub = error $ "Unable to execute unification on '"
-                                              ++ pp lhs.exp1 ++ "' and '"++ pp lhs.exp2 ++ "', occurs check failed in prefix: "
-                                              ++ pp lhs.pre
+                               lhs.sub = M.empty
+                               -- lhs.sub = error $ "Unable to execute unification on '"
+                                              -- ++ pp lhs.exp1 ++ "' and '"++ pp lhs.exp2 ++ "', occurs check failed in prefix: "
+                                              -- ++ pp lhs.pre
                      clause quant
                        match TyExpr.Quant@var1 = lhs.exp1
                        match TyExpr.Quant@var2 = lhs.exp2
@@ -1725,7 +1757,46 @@ unify = sem unify : Unify monad IO
                           clause failed
                             match (loc.bla, True) = ((), loc.check)
                             lhs.sub = const (error "Subsume failure, A skolem constant has leaked outside") loc.bla
-                            
+                     clause explicit_quant_left
+                       match TyExpr.Quant@var1 = lhs.exp1
+                       
+                       child u : Unify = unify
+                       
+                       (loc.c, loc.frs1) = fresh lhs.frs
+                       loc.varc = mkVar loc.c
+                       
+                       u.frs = loc.frs1
+                       u.pre = D.trace ("Expanding Environment, Adding Universally quantified variable" ++ pp loc.c) 
+                                  $ lhs.pre ++ [TyIndex_Group loc.c TyQuantifiedScheme_Bottom]
+                       u.exp2 = lhs.exp2
+                       u.exp1 = case app (var1.tyVar, loc.varc) var1.tyExpr of
+                                  Nothing -> error "Explicit quantification failed in app"
+                                  Just a  -> a
+                                  
+                       invoke unify of u
+                       
+                       lhs.pre = u.pre
+                       lhs.sub = u.sub
+                     clause explicit_quant_right
+                       match TyExpr.Quant@var1 = lhs.exp2
+                       
+                       child u : Unify = unify
+                       
+                       (loc.c, loc.frs1) = fresh lhs.frs
+                       loc.varc = mkVar loc.c
+                       
+                       u.frs = loc.frs1
+                       u.pre = D.trace ("Expanding Environment, Adding Universally quantified variable" ++ pp loc.c) 
+                                  $ lhs.pre ++ [TyIndex_Group loc.c TyQuantifiedScheme_Bottom]
+                       u.exp1 = lhs.exp1
+                       u.exp2 = case app (var1.tyVar, loc.varc) var1.tyExpr of
+                                  Nothing -> error "Explicit quantification failed in app"
+                                  Just a  -> a
+                                  
+                       invoke unify of u
+                       
+                       lhs.pre = u.pre
+                       lhs.sub = u.sub
                  clause f_unify
                    match (loc.bla, False) = ((), loc.nf)
                    lhs.sub = const (error "Unify failure, one or both of the TyExpr are not in normal form.") loc.bla
