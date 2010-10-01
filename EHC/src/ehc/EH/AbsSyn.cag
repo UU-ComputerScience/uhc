@@ -29,6 +29,7 @@ DATA AGItf
 DATA HMLItf
   | HMLItf          scheme          : TySchemes
                     env             : Env
+                    envS            : Env -- simplified environment
                     pref            : Prefix
                     varc            : {Int}
 %%]
@@ -154,6 +155,9 @@ DATA TyExpr
 DATA TyExpr
   | Quant           qu              : {TyQu}
                     tyVar           : {HsName}
+                    tyExpr          : TyExpr
+  | Forall          qu              : {TyQu}
+                    tyVar           : {[HsName]}
                     tyExpr          : TyExpr
 %%]
 
@@ -675,8 +679,10 @@ DATA TyScheme
                 tyExpr  : TyScheme
   | SystemF     tyExpr  : TyExpr
   | Bottom
-  | Sugar       prefix : Prefix
-                tyExpr : TyScheme
+  | Sugar       prefix  : Prefix
+                tyExpr  : TyScheme
+  | Forall      tyQuant : {[HsName]}
+                tyExpr  : TyScheme
   
 DATA Scheme
   | Simple      varnm  : {HsName}

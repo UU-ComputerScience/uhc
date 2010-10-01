@@ -184,6 +184,7 @@ SEM PatExpr
 
 SEM TyExpr
   | Quant       loc     .   pp      =   showTyQu @qu >#< @tyVar >#< "." >#< @tyExpr.pp
+  | Forall      loc     .   pp      =   showTyQu @qu >#< @tyVar >#< "." >#< @tyExpr.pp
 %%]
 
 %%[5
@@ -706,7 +707,13 @@ SEM AGItf
 ATTR HMLItf [ | | ppHML: PP_Doc ]
 
 SEM HMLItf
-  | HMLItf      lhs     .   ppHML       := "---- Result --------------------------------" >-< "Infered Types:" >#< @scheme.pp >-< "Environment  :" >#< @env.pp >-< "Prefixes used:" >#< @pref.pp >-< "Fresh varsc  :" >#< (pp (@varc - 1)) >-< "--------------------------------------------"
+  | HMLItf      lhs     .   ppHML       := "---- Result --------------------------------" >-< 
+                                           "Infered Types:" >#< @scheme.pp                >-< 
+                                           "Environment  :" >-< @env.pp                   >|< 
+                                           "Cleaned Env. :" >-< @envS.pp                  >|< 
+                                           "Prefixes used:" >#< @pref.pp                  >-< 
+                                           "Fresh varsc  :" >#< (pp (@varc - 1))          >-< 
+                                           "--------------------------------------------"
 
 SEM TyIndex
   | Group       lhs     .   pp          = "(" >|< @varnm >|< " >= " >|< @bounds.pp >|< ")"
@@ -716,14 +723,17 @@ SEM TyQuantifiedScheme
   | Bottom      lhs     .   pp          = pp "_|_"
   
 SEM Env
-  | Entry       lhs     .   pp          = pp "(" >|< (pp @key) >|< ":" >|< @val.pp >|< ")," >#< @tl.pp
+  | Entry       lhs     .   pp          = pp "  " >|< (pp @key) >#< "::" >#< @val.pp >|< "" >-< @tl.pp
   | Nil         lhs     .   pp          = pp ""
   
 SEM TyScheme
-  | Quant       lhs     .   pp          = @subst.pp >|< "." >#< @tyExpr.pp
+  | Quant       lhs     .   pp          = "forall " >|< @subst.pp >|< "." >#< @tyExpr.pp
   | SystemF     lhs     .   pp          = @tyExpr.pp
   | Bottom      lhs     .   pp          = pp "_|_"
   | Sugar       lhs     .   pp          = "forall" >#< @prefix.pp >#< @tyExpr.pp
+  | Forall      lhs     .   pp          = case null @tyQuant of
+                                             True  -> @tyExpr.pp
+                                             False -> "forall" >|< (foldl (>#<) empty $ map pp @tyQuant) >|< "." >#< @tyExpr.pp
   
 SEM Scheme
   | Simple      lhs     .   pp          = "(" >|< @varnm >|< ">=" >|< @bounds.pp >|< ")"
