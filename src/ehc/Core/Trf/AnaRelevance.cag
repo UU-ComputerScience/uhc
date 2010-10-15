@@ -71,6 +71,26 @@ ATTR AllCodeNT CodeAGItf [ opts: EHCOpts | | ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Configuration, only for debugging purposes to temporarily switch on/off specfic parts
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs
+data WhatToRelevInfer
+  = WhatToRelevInfer_InstToBot			-- specialize/instantiate types to bot (strict)
+  | WhatToRelevInfer_Quant				-- quantify
+  deriving Eq
+%%]
+
+%%[(8 codegen)
+ATTR AllCodeNT [ whatTo: {[WhatToRelevInfer]} | | ]
+
+SEM CodeAGItf
+  | AGItf       loc         .   whatTo          =   [ WhatToRelevInfer_Quant
+                                                    , WhatToRelevInfer_InstToBot
+                                                    ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% DataGam required tags (strictness info), FFI
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -140,16 +160,31 @@ SEM CExpr
 SEM CAlt
   | Alt         loc         .   mbCTagEnv       =   do { ct <- @pat.mbCTag
                                                        ; (argTyL,_) <- relevTyArgsFromCTag True ct Nothing (length @pat.nmL) @lhs.dataGam @lUniq
-                                                       ; return $ gamFromAssocL $ zip @pat.nmL argTyL
+                                                       ; return (gamFromAssocL $ zip @pat.nmL argTyL, argTyL)
                                                        }
-                loc         .   patEnv          =   maybe (gamFromAssocL $ zipWith (\n u -> (n,fresh u)) @pat.nmL $ mkNewLevUIDL (length @pat.nmL) @lUniq2)
-                                                          id @mbCTagEnv
+                loc         .   patFldGivenTyL  =   maybe (map freshLazy $ mkNewLevUIDL (length @pat.nmL) @lUniq3)
+                                                          snd @mbCTagEnv
+                            .   patFldUsedTyL   =   map fresh $ mkNewLevUIDL (length @pat.nmL) @lUniq2
+                            .   patEnv          =   gamFromAssocL $ zip @pat.nmL @patFldUsedTyL
+                                                    -- maybe (gamFromAssocL $ zip @pat.nmL @patFldUsedTyL)
+                                                    --       id @mbCTagEnv
+                pat         .   patFldTyL       =   zip @patFldGivenTyL @patFldUsedTyL
                 expr        .   env             =   gamAddGam @patEnv @lhs.env
                 loc         .   lUniq           :   UNIQUEREF gUniq
                 loc         .   lUniq2          :   UNIQUEREF gUniq
+                loc         .   lUniq3          :   UNIQUEREF gUniq
+                loc			.	patFldUsedTyL	:	{[RelevTy]}
 %%]
-SEM CAlt
-  | Alt         expr        .   env             =   gamAddGam @pat.gathEnv    @lhs.env
+
+%%[(8 codegen)
+ATTR CPat CPatFldL CPatFld [ | patFldTyL: {[(RelevTy,RelevTy)]} | ]
+
+SEM CPatFld
+  | Fld         (loc.patFldTy,lhs.patFldTyL)    =   hdAndTl @lhs.patFldTyL
+                loc         .   fldCoe          =   let (tgiven,tused) = @patFldTy
+                                                    in  RelevCoe_CastTy tgiven tused
+
+%%]
 
 %%[(8 codegen)
 ATTR AllBind -- AllPatFld AllPat
@@ -350,7 +385,6 @@ SEM CExpr
   | Lam         loc         .   hereBodyCoe     =   case @body.whatBelow of
                                                       ExprIsLam -> RelevCoe_Id
                                                       _         -> @body.coe
-  -- | Let         loc         .   hereBodyCoe     =   @body.coe
 
 SEM CBindAspect
   | Bind        loc         .   hereBindCoe     =   @expr.coe <.> maybe RelevCoe_Id (@finalRVarMp |=>) @mbBindCoe
@@ -359,7 +393,8 @@ SEM CAltL
   | Cons        loc         .   hereAltCoe      =   @hd.coe <.> (@hdFinalRVarMp |=> amsoCoe @amsoDw)
 
 SEM CPatFld
-  | Fld         loc         .   hereOffCoe      =   @offset.coe
+  | Fld         loc         .   hereOffCoe      =   @lhs.finalRVarMp |=> @offset.coe
+                            .   hereFldCoe      =   @lhs.finalRVarMp |=> @fldCoe
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -421,11 +456,19 @@ SEM CExpr
   | Var Int Char Tup FFI
                 lhs         .   rvarMp          =   amsLocalVarMp @ams `varmpPlus` @lhs.rvarMp
   | Case        lhs         .   rvarMp          =   @alts.rvarMp        -- skip @dflt
+  | Let         body        .   rvarMp          =   @binds.extraBindRVarMp `varmpPlus` @binds.rvarMp
 %%]
 
 %%[(8 codegen)
 SEM CAltL
   | Cons        hd          .   rvarMp          =   @rvarMpUp
+%%]
+
+%%[(8 codegen)
+ATTR AllBind [ forQuantRVarMp: RVarMp | | ]
+
+SEM CExpr
+  | Let         binds       .   forQuantRVarMp  =   @binds.rvarMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -439,21 +482,29 @@ SEM CodeAGItf
   | AGItf       module      .   finalRVarMp     =   @module.rvarMp
 
 SEM CBindAspect
-  | Bind        loc         .   finalRVarMp     =   @extraBindRVarMp `varmpPlus` @lhs.finalRVarMp
+  | Bind        loc         .   finalRVarMp     =   {- @extraBindRVarMp `varmpPlus` -} @lhs.finalRVarMp
 
-SEM CExpr
-  | Let         body        .   finalRVarMp     =   @binds.extraBindRVarMp `varmpPlus` @lhs.finalRVarMp
+-- SEM CExpr
+--   | Let         loc         .   finalRVarMp     =   @binds.extraBindRVarMp `varmpPlus` @lhs.finalRVarMp
 
 SEM CAltL
-  | Cons        loc         .   hdFinalRVarMp   =   @altSolveVarMp `varmpPlus` @lhs.finalRVarMp
+  | Cons        loc         .   hdFinalRVarMp   =   @altSolveVarMp -- `varmpPlus` @lhs.finalRVarMp
                 hd          .   finalRVarMp     =   @hdFinalRVarMp
+%%]
+
+%%[(8888 codegen)
+ATTR AllBind [ forQuantRVarMp: RVarMp | | ]
+
+SEM CExpr
+  | Let         binds       .   forQuantRVarMp  =   @lhs.finalRVarMp
 %%]
 
 %%[(8 codegen)
 ATTR AllBind [ | | extraBindRVarMp USE {`varmpPlus`} {emptyVarMp}: RVarMp ]
 
 SEM CBindAspect
-  | Bind        loc         .   extraBindRVarMp =   @strictVarMp
+  | Bind        loc         .   extraBindRVarMp =   if WhatToRelevInfer_InstToBot `elem` @lhs.whatTo then @strictVarMp else emptyVarMp
+                                                    -- @strictVarMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -580,25 +631,27 @@ SEM CBindAspect
                             .   (quantTy,quantVarMp,quantRemQualS)
                                                 =   case @ty of
                                                       t@(RelevTy_Fun _ _ _ _)
-                                                        -> relevtyQuant [RelevTyQuantHow_Solve,RelevTyQuantHow_RemoveAmbig]
+                                                        -> relevtyQuant ([RelevTyQuantHow_Solve] ++ how)
                                                                         @rvarMpExpr @expr.qualS t
+                                                        where how | WhatToRelevInfer_Quant `elem` @lhs.whatTo = [RelevTyQuantHow_RemoveAmbig,RelevTyQuantHow_Quant]
+                                                                  | otherwise                                 = []
                                                       t -> (m |=> t, m, q)
                                                         where (q,m) = assSolve @lhs.boundRelevTyVarS (Set.map (@rvarMpExpr |=>) @expr.qualS)
-                            .   bindTy          =   @lhs.finalRVarMp |=> @quantTy
+                            .   bindTy          =   @lhs.forQuantRVarMp |=> @quantTy
                             .   (strictTy,strictVarMp)
                                                 =   case @bindTy of
                                                       t@(RelevTy_Fun _ qs a r@(RelevTy_Ana (AnaEval_Var rv)))
                                                         -> (sty, smp2 `varmpPlus` smpAssume2 `varmpPlus` smp1 `varmpPlus` smpAssume1)
                                                         where smpAssume1 = rvarmpEvalUnit rv bot
                                                               (RelevTy_Fun vs' qs' a' r',smp1,rem1)
-                                                                = relevtyQuant [RelevTyQuantHow_Solve,RelevTyQuantHow_RemoveAmbig]
+                                                                = relevtyQuant [RelevTyQuantHow_Solve,RelevTyQuantHow_RemoveAmbig,RelevTyQuantHow_Quant]
                                                                                smpAssume1 (Set.fromList qs `Set.union` @quantRemQualS) (RelevTy_Fun [] [] a (smpAssume1 |=> r))
                                                               smpAssume2 = varmpUnions [ rvarmpEvalUnit v top | v <- vs' ]
                                                               (sty,smp2,_)
-                                                                = relevtyQuant [RelevTyQuantHow_Solve,RelevTyQuantHow_RemoveAmbig]
+                                                                = relevtyQuant [RelevTyQuantHow_Solve,RelevTyQuantHow_RemoveAmbig,RelevTyQuantHow_Quant]
                                                                                smpAssume2 (Set.fromList qs' `Set.union` rem1) (RelevTy_Fun [] [] (smpAssume2 |=> a') r')
                                                       t -> (m |=> t, m)
-                                                        where (q,m) = assSolve Set.empty (Set.map (@lhs.finalRVarMp |=>) @quantRemQualS)
+                                                        where (q,m) = assSolve Set.empty (Set.map (@lhs.forQuantRVarMp |=>) @quantRemQualS)
                             .   debugTy1        =   case @rvarMpExpr |=> @ty of
                                                       RelevTy_Fun _ _ a r
                                                         -> RelevTy_Fun v q a r
@@ -611,12 +664,18 @@ SEM CBindAspect
                                                         where q = @lhs.finalRVarMp |=> Set.toList @expr.qualS
                                                       t -> t
                             .   tyAspectL       =   [ CBindAspect_RelevTy acbaspkeyDefault @bindTy
-                                                    , CBindAspect_RelevTy acbaspkeyStrict  @strictTy
+                                                    -- , CBindAspect_RelevTy acbaspkeyStrict  @strictTy
                                                     -- , CBindAspect_RelevTy acbaspkeyDebug @debugTy2
                                                     ]
+                                                    ++ (if WhatToRelevInfer_InstToBot `elem` @lhs.whatTo
+                                                        then [CBindAspect_RelevTy acbaspkeyStrict $ @lhs.finalRVarMp |=> @strictTy]
+                                                        else []
+                                                       )
                 loc         .   ty              :   RelevTy
+                loc         .   strictTy        :   RelevTy
                 loc         .   exprKnTy        :   RelevTy
                 loc         .   quantVarMp   	:   RVarMp
+                loc         .   strictVarMp   	:   RVarMp
                 loc         .   quantRemQualS   :   RelevQualS
                 loc         .   exprEnv         :   REnv
                 loc         .   mbBindCoe       :   {Maybe RelevCoe}
@@ -690,7 +749,7 @@ SEM CAltL
                                                       CAlt_Alt p e -> CAlt_Alt p (annCoe @hereAltCoe e) : @tl.cTrf
 
 SEM CPatFld
-  | Fld         lhs         .   cTrf            =   CPatFld_Fld @lbl (annCoe @hereOffCoe @offset.cTrf) @fldNm
+  | Fld         lhs         .   cTrf            =   CPatFld_Fld @lbl (annCoe @hereOffCoe @offset.cTrf) @fldNm [CBindAnn_Coe @hereFldCoe]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

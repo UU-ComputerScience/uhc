@@ -404,4 +404,10 @@ text-variant-slides-uhcinternals:
 	  TEXT_SHUFFLE_VARIANT=62 \
 	  text-variant-dflt-once
 
+text-variant-slides-uhcstatus:
+	$(MAKE) \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--set=yesBeamer --set=storyStatus --unset=asArticle --set=asSlides --unset=useHyperref --unset=refToPDF" \
+	  TEXT_SHUFFLE_VARIANT=63 \
+	  text-variant-dflt-once
+
 

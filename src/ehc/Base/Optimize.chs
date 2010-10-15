@@ -53,9 +53,13 @@ data OptimizationLevel
 %%]
 
 %%[(8 codegen) export(OptimizationScope(..))
+-- | Scope of optimizations, increasingly more global
 data OptimizationScope
-  = OptimizationScope_PerModule         
-  | OptimizationScope_WholeProgram
+  = OptimizationScope_PerModule			-- per module
+%%[[20
+  | OptimizationScope_WholeGrin			-- whole program, starting with GRIN
+  | OptimizationScope_WholeCore			-- whole program, starting with Core
+%%]]
   deriving (Eq,Ord,Show,Enum,Bounded)
 %%]
 

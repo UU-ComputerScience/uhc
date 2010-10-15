@@ -1,5 +1,6 @@
 %%[99
 {-# LANGUAGE NoImplicitPrelude, CPP #-}
+{-# EXCLUDE_IF_TARGET jscript #-}
 
 -----------------------------------------------------------------------------
 -- |

@@ -681,6 +681,7 @@ javacCmd
 jarCmd
 JAVAC_CMD
 JAR_CMD
+ENABLE_JSCRIPT
 ENABLE_LLVM
 ENABLE_CLR
 ENABLE_TYCORE
@@ -689,6 +690,8 @@ ranlibCmd
 RANLIB_CMD
 arCmd
 AR_CMD
+catCmd
+CAT_CMD
 libtoolStaticCmd
 EHC_BUILD_SUFFIX
 GCC_EHC_OPTIONS
@@ -749,7 +752,8 @@ GMP_LIB_ARCHIVE
 GCC_EHC_EXTRA_EXTERN_LIBS
 SUFFIX_SHELL
 SUFFIX_EXEC
-SUFFIX_LIB
+SUFFIX_LIBC
+SUFFIX_LIBJSCRIPT
 PREFIX_LIB
 PATHS_SEP
 SLASH
@@ -1363,6 +1367,7 @@ Optional Features:
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
   --enable-java           include java code generation
+  --enable-jscript        include JavaScript code generation
   --enable-llvm           include llvm code generation
   --enable-clr            include clr code generation
   --enable-tycore         include TyCore typed intermediate language
@@ -2361,6 +2366,17 @@ echo "$as_me: error:
 
 fi
 
+### enable options: jscript (JavaScript)
+# Check whether --enable-jscript was given.
+if test "${enable_jscript+set}" = set; then
+  enableval=$enable_jscript; enableJScript=yes
+else
+  enableJScript=no
+fi
+
+ENABLE_JSCRIPT=$enableJScript
+
+
 ### enable options: llvm
 # Check whether --enable-llvm was given.
 if test "${enable_llvm+set}" = set; then
@@ -2539,6 +2555,74 @@ case $HostPlatform in
         ;;
 esac
 AR_CMD=$arCmd
+
+
+### cat
+
+  # Extract the first word of "cat", so it can be a program name with args.
+set dummy cat; ac_word=$2
+{ echo "$as_me:$LINENO: checking for $ac_word" >&5
+echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6; }
+if test "${ac_cv_path_catCmd+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  case $catCmd in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_catCmd="$catCmd" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+  for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_catCmd="$as_dir/$ac_word$ac_exec_ext"
+    echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+catCmd=$ac_cv_path_catCmd
+if test -n "$catCmd"; then
+  { echo "$as_me:$LINENO: result: $catCmd" >&5
+echo "${ECHO_T}$catCmd" >&6; }
+else
+  { echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6; }
+fi
+
+
+  if test -z "$catCmd"; then
+
+  { { echo "$as_me:$LINENO: error:
+     You must install cat before you can continue
+     Perhaps it is already installed, but not in your PATH?" >&5
+echo "$as_me: error:
+     You must install cat before you can continue
+     Perhaps it is already installed, but not in your PATH?" >&2;}
+   { (exit 1); exit 1; }; }
+
+  fi
+
+# See remarks about cpp
+case $HostPlatform in
+  i*86-*-mingw* | i*86-*-cygwin* )
+        if test ! -x "$toplevelSystemAbsolutePathPrefix/$catCmd"
+        then
+          catCmd="`echo $catCmd | sed -e 's+/usr++'`"
+        fi
+        ;;
+  *)
+        ;;
+esac
+CAT_CMD=$catCmd
 
 
 ### libtool
@@ -30891,7 +30975,8 @@ GCC_EHC_EXTRA_EXTERN_LIBS="$gcc_ehc_extra_extern_libs"
 # file suffixes
 suffix_shell=""
 suffix_exec=""
-suffix_lib=".a"
+suffix_libC=".a"
+suffix_libJScript=".mjs"
 prefix_lib=""
 # development platform
 development_platform="UNIX"
@@ -30911,7 +30996,7 @@ case $HostPlatform in
         # file suffixes
         suffix_shell=".bat"
         suffix_exec=".exe"
-        #suffix_lib=".lib"
+        #suffix_libC=".lib"
         #prefix_lib="lib"
         development_platform="CYGWIN"
         # path separator
@@ -30948,7 +31033,9 @@ SUFFIX_SHELL="$suffix_shell"
 
 SUFFIX_EXEC="$suffix_exec"
 
-SUFFIX_LIB="$suffix_lib"
+SUFFIX_LIBC="$suffix_libC"
+
+SUFFIX_LIBJSCRIPT="$suffix_libJScript"
 
 PREFIX_LIB="$prefix_lib"
 
@@ -31762,6 +31849,7 @@ javacCmd!$javacCmd$ac_delim
 jarCmd!$jarCmd$ac_delim
 JAVAC_CMD!$JAVAC_CMD$ac_delim
 JAR_CMD!$JAR_CMD$ac_delim
+ENABLE_JSCRIPT!$ENABLE_JSCRIPT$ac_delim
 ENABLE_LLVM!$ENABLE_LLVM$ac_delim
 ENABLE_CLR!$ENABLE_CLR$ac_delim
 ENABLE_TYCORE!$ENABLE_TYCORE$ac_delim
@@ -31770,6 +31858,8 @@ ranlibCmd!$ranlibCmd$ac_delim
 RANLIB_CMD!$RANLIB_CMD$ac_delim
 arCmd!$arCmd$ac_delim
 AR_CMD!$AR_CMD$ac_delim
+catCmd!$catCmd$ac_delim
+CAT_CMD!$CAT_CMD$ac_delim
 libtoolStaticCmd!$libtoolStaticCmd$ac_delim
 EHC_BUILD_SUFFIX!$EHC_BUILD_SUFFIX$ac_delim
 GCC_EHC_OPTIONS!$GCC_EHC_OPTIONS$ac_delim
@@ -31790,9 +31880,6 @@ hsc2hsCmd!$hsc2hsCmd$ac_delim
 HSC2HS_CMD!$HSC2HS_CMD$ac_delim
 haddockCmd!$haddockCmd$ac_delim
 HADDOCK_CMD!$HADDOCK_CMD$ac_delim
-HADDOCK_VERSION!$HADDOCK_VERSION$ac_delim
-OPT_GHC_STANDARD_PACKAGES!$OPT_GHC_STANDARD_PACKAGES$ac_delim
-CABAL_BASE_LIB_DEPENDS!$CABAL_BASE_LIB_DEPENDS$ac_delim
 _ACEOF
 
   if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 97; then
@@ -31834,6 +31921,9 @@ _ACEOF
 ac_delim='%!_!# '
 for ac_last_try in false false false false false :; do
   cat >conf$$subs.sed <<_ACEOF
+HADDOCK_VERSION!$HADDOCK_VERSION$ac_delim
+OPT_GHC_STANDARD_PACKAGES!$OPT_GHC_STANDARD_PACKAGES$ac_delim
+CABAL_BASE_LIB_DEPENDS!$CABAL_BASE_LIB_DEPENDS$ac_delim
 CABAL_EXTRA_LIB_DEPENDS!$CABAL_EXTRA_LIB_DEPENDS$ac_delim
 CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES!$CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES$ac_delim
 uuagcCmd!$uuagcCmd$ac_delim
@@ -31871,7 +31961,8 @@ GMP_LIB_ARCHIVE!$GMP_LIB_ARCHIVE$ac_delim
 GCC_EHC_EXTRA_EXTERN_LIBS!$GCC_EHC_EXTRA_EXTERN_LIBS$ac_delim
 SUFFIX_SHELL!$SUFFIX_SHELL$ac_delim
 SUFFIX_EXEC!$SUFFIX_EXEC$ac_delim
-SUFFIX_LIB!$SUFFIX_LIB$ac_delim
+SUFFIX_LIBC!$SUFFIX_LIBC$ac_delim
+SUFFIX_LIBJSCRIPT!$SUFFIX_LIBJSCRIPT$ac_delim
 PREFIX_LIB!$PREFIX_LIB$ac_delim
 PATHS_SEP!$PATHS_SEP$ac_delim
 SLASH!$SLASH$ac_delim
@@ -31902,7 +31993,7 @@ LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 66; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 70; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5

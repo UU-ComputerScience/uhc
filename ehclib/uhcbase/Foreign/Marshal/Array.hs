@@ -1,5 +1,6 @@
 {-# LANGUAGE NoImplicitPrelude, CPP #-}
 {-# OPTIONS_GHC -XNoImplicitPrelude #-}
+{-# EXCLUDE_IF_TARGET jscript #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Foreign.Marshal.Array

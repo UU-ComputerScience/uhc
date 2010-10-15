@@ -1,3 +1,4 @@
+{-# EXCLUDE_IF_TARGET jscript #-}
 module Time (
     ClockTime, 
     Month(January,February,March,April,May,June,

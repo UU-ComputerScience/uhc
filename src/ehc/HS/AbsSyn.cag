@@ -316,6 +316,9 @@ DATA Pragma
     	className				: Name
     	fieldName				: Name
     	defaultName				: Name
+    | ExcludeIfTarget
+    	range					: Range
+    	targetNames				: {[String]}
 
 SET AllPragma
   = Pragma Pragmas

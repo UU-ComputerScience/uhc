@@ -33,6 +33,9 @@ instance PP ForeignEnt where
 %%[90
 ATTR ForeignAGItf AllForeign [ | | pp: PP_Doc ]
 
+SEM PrimCall
+  | Id          lhs     .   pp      =   pp @nm >#< maybe empty pp @mbKnownPrim
+
 SEM PlainCall
   | Id          lhs     .   pp      =   pp @nm
 

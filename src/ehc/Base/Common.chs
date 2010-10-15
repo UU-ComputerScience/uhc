@@ -85,9 +85,6 @@
 %%[8 hs export(ctag,ppCTag,ppCTagInt) 
 %%]
 
-%%[8 export(CTagsMp)
-%%]
-
 %%[9 export(ppListV)
 %%]
 
@@ -493,8 +490,11 @@ data Unbox
 %%% Misc info passed to backend
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs
+%%[8 hs export(CTagsMp, emptyCTagsMp)
 type CTagsMp = AssocL HsName (AssocL HsName CTag)
+
+emptyCTagsMp :: CTagsMp
+emptyCTagsMp = []
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1314,7 +1314,7 @@ deriving instance Data Pos
 
 %%[7
 uidHNm :: UID -> HsName
-uidHNm = hsnFromString . show
+uidHNm = mkHNm -- hsnFromString . show
 %%]
 
 %%[7
@@ -1328,7 +1328,7 @@ uidQualHNm modnm uid =
 
 %%[1
 instance HSNM UID where
-  mkHNm = mkHNm . show
+  mkHNm x = hsnFromString ('_' : show x)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1351,6 +1351,14 @@ instance Binary Fixity where
   get = getEnum8
 
 instance Serialize Fixity where
+  sput = sputPlain
+  sget = sgetPlain
+
+instance Binary KnownPrim where
+  put = putEnum8
+  get = getEnum8
+
+instance Serialize KnownPrim where
   sput = sputPlain
   sget = sgetPlain
 
@@ -1445,5 +1453,68 @@ genNmMap mk xs m
                   (m,Map.size m,[]) xs
         ch x | x < 26    = [chr $ ord 'a' + x]
              | otherwise = let (q,r) = x `quotRem` 26 in ch q ++ ch r
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Known primitives, encoding semantics of particular primitives in a FFI decl, propagated to backend
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) export(KnownPrim(..))
+data KnownPrim
+  = 
+    -- platform Int
+    KnownPrim_AddI
+  | KnownPrim_SubI
+  | KnownPrim_MulI
+
+%%[[97
+    -- platform Float
+  | KnownPrim_AddF
+  | KnownPrim_SubF
+  | KnownPrim_MulF
+  
+    -- platform Double
+  | KnownPrim_AddD
+  | KnownPrim_SubD
+  | KnownPrim_MulD
+  
+    -- 8 bit
+  | KnownPrim_Add8			-- add: 1 byte / 8 bit, etc etc
+  | KnownPrim_Sub8
+  | KnownPrim_Mul8
+  
+    -- 16 bit
+  | KnownPrim_Add16
+  | KnownPrim_Sub16
+  | KnownPrim_Mul16
+  
+    -- 32 bit
+  | KnownPrim_Add32
+  | KnownPrim_Sub32
+  | KnownPrim_Mul32
+
+    -- 64 bit
+  | KnownPrim_Add64
+  | KnownPrim_Sub64
+  | KnownPrim_Mul64
+%%]]
+  deriving (Show,Eq,Enum,Bounded)
+%%]
+
+%%[(20 codegen)
+deriving instance Data KnownPrim
+deriving instance Typeable KnownPrim
+%%]
+
+%%[(8 codegen)
+instance PP KnownPrim where
+  pp = pp . show
+%%]
+
+%%[(8 codegen) export(allKnownPrimMp)
+allKnownPrimMp :: Map.Map String KnownPrim
+allKnownPrimMp
+  = Map.fromList [ (drop prefixLen $ show t, t) | t <- [ minBound .. maxBound ] ]
+  where prefixLen = length "KnownPrim_"
 %%]
 

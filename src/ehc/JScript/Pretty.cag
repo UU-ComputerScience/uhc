@@ -1,0 +1,112 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell importable interface to JScript pretty print
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 jscript) hs module {%{EH}JScript.Pretty} import(EH.Util.Pretty,{%{EH}Base.Common},{%{EH}JScript}) 
+%%]
+
+%%[(8 jscript).WRAPPER ag import({JScript/AbsSyn})
+WRAPPER AGItf
+%%]
+
+%%[(8 jscript) hs export(ppJScriptModule)
+ppJScriptModule :: JScriptModule -> PP_Doc
+ppJScriptModule ent
+  =  let  t =  wrap_AGItf
+                 (sem_AGItf (AGItf_AGItf ent))
+                 Inh_AGItf
+     in   pp_Syn_AGItf t
+%%]
+
+instance Show JScriptModule where
+  show t = "JScriptModule t"
+
+instance PP JScriptModule where
+  pp t = ppJScriptModule t
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Utilities & combinators
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 jscript) hs
+ppStat :: PP_Doc -> PP_Doc
+ppStat x = x >|< ";"
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% JScript entity
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 jscript)
+ATTR
+  AGItf AllNT
+  - NmExprL NmExpr ExprL MbExpr StatL AltL
+    [ | | pp USE {>-<} {empty}: PP_Doc ]
+
+SEM Expr
+  | Var         loc     .   pp      =   pp @nm
+  | Int         loc     .   pp      =   pp $ show @int
+  | Str			loc		.	pp		=	pp $ show @str
+  | Char		loc		.	pp		=	pp $ show @char
+  | Sel			loc		.	pp		=	@expr.pp >|< "." >|< @nm
+  | Call		loc		.	pp		=	@fun.pp >|< ppParensCommas @args.ppL
+  -- | Fun			loc		.	pp		=	"function" >|< maybe empty (\n -> " " >|< n) @mbNm >|< ppParensCommas @args >|< @body.pp
+  | Fun			loc		.	pp		=	"function" >|< maybe empty (\n -> " " >|< n) @mbNm >|< ppParensCommas @args >-< @body.pp
+  | New			loc		.	pp		=	"new" >#< @expr.pp
+  | Arr			loc		.	pp		=	ppBracketsCommas @elts.ppL
+  | ArrInx		loc		.	pp		=	{- ppParens -} @arr.pp >|< ppBrackets @inx.pp
+  | Obj			loc		.	pp		=	ppCurlysCommas $ map (\(x,y) -> x >|< ":" >|< y) @elts.ppL
+  | ObjFld		loc		.	pp		=	@obj.pp >|< "." >|< @fld
+  | This		loc		.	pp		=	pp "this"
+  | True		loc		.	pp		=	pp "true"
+  | False		loc		.	pp		=	pp "false"
+  | Inline		loc		.	pp		=	pp @str
+
+SEM Stat
+  -- | VarDecl     lhs     .   pp      =   ppStat $ "var" >#< @nm >|< maybe empty (\e -> "=" >|< e ) @mbExpr.ppMb
+  | VarDecl     lhs     .   pp      =   ppStat $
+                                        case @mbExpr.ppMb of
+                                          Just e -> pp "var" >#< @nm >|< "=" >-< indent 1 e
+                                          _      -> pp "var" >#< @nm
+  | FunDecl     lhs     .   pp      =   @expr.pp
+  -- | Assign		lhs		.	pp		=	ppStat $ @nm >|< "=" >|< @expr.pp
+  | Assign		lhs		.	pp		=	ppStat $ @to.pp >|< "=" >-< indent 1 @expr.pp
+  | Expr		lhs		.	pp		=	ppStat $ @expr.pp
+  -- | Block		lhs		.	pp		=	ppListSep "{" "}" "" @stats.ppL
+  | Block		lhs		.	pp		=	ppCurlys $ vlist @stats.ppL
+  | Throw		lhs		.	pp		=	ppStat $ "throw" >#< @expr.pp
+  | Ret			loc		.	pp		=	ppStat $ "return" >#< @expr.pp
+  | Switch		loc		.	pp		=	"switch" >|< ppParens @expr.pp >-< indent 1 (ppCurlys $ vlist @alts.ppL)
+  | Break		loc		.	pp		=	ppStat $ pp "break"
+
+SEM Alt
+  | Alt			lhs		.	pp		=	"case" >#< @tag >|< ":" >-< indent 1 (vlist @stats.ppL)
+
+SEM JScriptModule
+  | Mod			lhs		.	pp		=	vlist @decls.ppL
+%%]
+
+%%[(8 jscript)
+SEM ExprL StatL AltL [ | | ppL: {[PP_Doc]} ]
+  | Cons		lhs		.	ppL		=	@hd.pp : @tl.ppL
+  | Nil			lhs		.	ppL		=	[]
+%%]
+
+%%[(8 jscript)
+ATTR NmExprL NmExpr [ | | ppL USE {++} {[]} : {[(HsName,PP_Doc)]} ]
+
+SEM NmExpr
+  | Tuple		lhs		.	ppL		=	[(@x1, @x2.pp)]
+%%]
+
+%%[(8 jscript)
+SEM MbExpr [ | | ppMb: {Maybe PP_Doc} ]
+  | Just		lhs		.	ppMb	=	Just @just.pp
+  | Nothing		lhs		.	ppMb	=	Nothing
+%%]
+

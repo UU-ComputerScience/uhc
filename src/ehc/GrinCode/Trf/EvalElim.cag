@@ -91,7 +91,7 @@ Note: when HPT analysis is done, in apply the name f is used instead of f'.
 %%[(8 codegen grin) hs import(qualified Data.Set as Set,qualified Data.Map as Map, Data.Maybe)
 %%]
 
-%%[(8 codegen grin) hs import({%{EH}Base.Builtin}, {%{EH}Base.Common}, {%{EH}Opts}, {%{EH}GrinCode.Common}, {%{EH}GrinCode})
+%%[(8 codegen grin) hs import({%{EH}Base.Builtin}, {%{EH}Base.Target}, {%{EH}Base.Common}, {%{EH}Opts}, {%{EH}GrinCode.Common}, {%{EH}GrinCode})
 %%]
 
 %%[(8 codegen grin) hs import(qualified {%{EH}Config} as Cfg)
@@ -130,7 +130,7 @@ WRAPPER GrAGItf
 
 %%[(8 codegen grin) hs
 optsAllowNodePtrMix :: EHCOpts -> Bool
-optsAllowNodePtrMix opts = not (ehcOptFullProgAnalysis opts)
+optsAllowNodePtrMix opts = targetIsGrinBytecode (ehcOptTarget opts)
 %%]
 
 %%[(8 codegen grin)

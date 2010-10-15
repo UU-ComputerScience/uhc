@@ -37,8 +37,9 @@
 -- | configuring quantification, for debugging
 data RelevTyQuantHow
   = RelevTyQuantHow_Solve				-- solve
-  | RelevTyQuantHow_RemoveAmbig			-- vars not in type are removed
-  | RelevTyQuantHow_VarDefaultToTop		-- vars left over, and in type, are default to top
+  | RelevTyQuantHow_RemoveAmbig			-- constraints over vars not in type are removed
+  | RelevTyQuantHow_VarDefaultToTop		-- vars left over, and in type, are defaulted to top
+  | RelevTyQuantHow_Quant				-- quant
   deriving Eq
 %%]
 
@@ -71,7 +72,9 @@ relevtyQuant how m qs t
                    where qsm = Set.map (solveVarMp |=>) qs2
                qs4 = Set.toList qs3
                ftvTQ = ftvT' `Set.union` ftvSet qs4
-               quantOver = Set.toList ftvTQ
+               quantOver
+                   | RelevTyQuantHow_Quant `elem` how = Set.toList ftvTQ
+                   | otherwise                        = []
       t' -> ( t'
             , emptyVarMp
             , Set.empty
@@ -364,9 +367,9 @@ assSolve bound qualS
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen) hs export(relevTyArgsFromCTag)
--- | relev ty for tuple/constructor. isJust mbResTy <=> not whenInPat
+-- | relev ty for tuple/constructor. isJust mbResTy <=> not isInPat
 relevTyArgsFromCTag :: Bool -> CTag -> Maybe RelevTy -> Int -> DataGam -> UID -> Maybe ([RelevTy],RelevQualS)
-relevTyArgsFromCTag whenInPat ct mbResTy arity dataGam u
+relevTyArgsFromCTag isInPat ct mbResTy arity dataGam u
   = case ct of
       CTagRec
         -> Just (map fresh $ mkNewLevUIDL arity u, Set.empty)
@@ -381,7 +384,7 @@ relevTyArgsFromCTag whenInPat ct mbResTy arity dataGam u
                                     where fr _ = fresh
                                   _ -> (top, fr, \_               _               -> []                     )
                                     where fr e | e         = freshStrict
-                                               | otherwise = fresh
+                                               | otherwise = freshLazy
              _ -> Nothing
 
 %%]

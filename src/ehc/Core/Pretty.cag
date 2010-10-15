@@ -127,7 +127,7 @@ ppCurlyList pL xs = ppListSep "{ " " }" ", " $ map pL xs
 
 %%[(8 codegen)
 ATTR CodeAGItf AllCodeNT [ | | pp USE {>-<} {empty} : PP_Doc ]
-ATTR CPatFldL CPatL CBindL CAltL CBindAspectL [ | | ppL: {[PP_Doc]} ]
+ATTR CPatFldL CBindL CAltL CBindAspectL CBindAnnL [ | | ppL: {[PP_Doc]} ]
 ATTR CExpr [ | | lamBodyPP: PP_Doc  lamArgPPL: {[PP_Doc]} ]
 ATTR CExpr [ | | appFunPP : PP_Doc  appArgPPL: {[PP_Doc]} ]
 
@@ -195,20 +195,12 @@ SEM CBindAspect
   | FFE         lhs         .   pp          =   "=" >#< ("foreignexport" >#< ppCurlysCommasBlock [pp (show @callconv),"\"" >|< @expEnt >|< "\"",ppCNm @expNm,ppTyWithCfg' CfgPP_Plain @ty])
 %%]]
 
-SEM CBindAspectL
-  | Nil         lhs         .   ppL         =   []
-  | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
-
-SEM CBindL
+SEM CBindAspectL CBindL CPatFldL CAltL CBindAnnL
   | Nil         lhs         .   ppL         =   []
   | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
 
 SEM CAlt
   | Alt         lhs         .   pp          =   ppDef (@pat.pp >#< "->") (@expr.pp)
-
-SEM CAltL
-  | Nil         lhs         .   ppL         =   []
-  | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
 
 SEM CPat
   | Int         lhs         .   pp          =   ppLit "Int"    (show @int)
@@ -217,19 +209,13 @@ SEM CPat
   | Con         lhs         .   pp          =   ppDef ("#Tag" >#< ppTag @tag)
                                                       (ppCurly (@rest.pp >#< "|" >#< ppCommas' @binds.ppL))
 
-SEM CPatL
-  | Nil         lhs         .   ppL         =   []
-  | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
-
 SEM CPatFld
-  | Fld         lhs         .   pp          =   ppCurlysCommas' [ppCNm @lbl,@offset.pp {- ,ppCNm @nm -}] >|< "=" >|< ppCNm @fldNm -- @pat.pp
+  | Fld         lhs         .   pp          =   ppCurlysCommas' [ppCNm @lbl,@offset.pp {- ,ppCNm @nm -}] >|< "=" >|< ppCNm @fldNm
+                                                >|< (if null @fldAnns.ppL then empty else ppParensCommas' @fldAnns.ppL)
 
 SEM CPatRest
   | Var         lhs         .   pp          =   ppCNm @nm
 
-SEM CPatFldL
-  | Nil         lhs         .   ppL         =   []
-  | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
 %%]
   | Undef       lhs         .   pp          =   pp hsnUnknown
 
@@ -271,6 +257,9 @@ SEM CExprAnn
   | Ty          loc         .   pp          =   "::" >#< ppTyWithCfg' CfgPP_Plain @ty
   | Coe			loc			.	pp			=	"~" >#< ppRelevCoe @lhs.varPPMp @coe
   | Debug		loc			.	pp			=	ppCmt $ pp @info
+
+SEM CBindAnn
+  | Coe			loc			.	pp			=	"~" >#< ppRelevCoe @lhs.varPPMp @coe
 %%]
 
 %%[(9 codegen)

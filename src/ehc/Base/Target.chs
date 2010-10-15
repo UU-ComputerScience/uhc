@@ -80,10 +80,13 @@ data Target
   | Target_None_Core_None					-- only Core
   | Target_None_TyCore_None					-- only TyCore
 %%[[(8 codegen jazy)
-  | Target_Interpreter_Core_Jazy			-- java base on Core, using jazy library
+  | Target_Interpreter_Core_Jazy			-- java based on Core, using jazy library
+%%]]
+%%[[(8 codegen jscript)
+  | Target_Interpreter_Core_JScript			-- jscript based on Core
 %%]]
 %%[[(8888 codegen java)
-  | Target_Interpreter_Core_Java			-- java base on Core, as src. Will be obsolete.
+  | Target_Interpreter_Core_Java			-- java based on Core, as src. Will be obsolete.
 %%]]
 %%[[(8 codegen grin)
   | Target_FullProgAnal_Grin_C				-- full program analysis on grin, generating C
@@ -94,7 +97,7 @@ data Target
 %%[[(8 codegen clr)
   | Target_FullProgAnal_Grin_CLR			-- full program analysis on grin, generating for Common Language Runtime (.NET / Mono)
 %%]]
-  deriving (Eq,Ord)
+  deriving ( Eq, Ord, Enum )
 %%]
 
 Concrete naming convention.
@@ -107,6 +110,9 @@ instance Show Target where
   show Target_None_TyCore_None				= "tycore"
 %%[[(8 codegen jazy)
   show Target_Interpreter_Core_Jazy			= "jazy"
+%%]]
+%%[[(8 codegen jscript)
+  show Target_Interpreter_Core_JScript		= "jscript"
 %%]]
 %%[[(8888 codegen java)
   show Target_Interpreter_Core_Java			= "java"
@@ -146,6 +152,9 @@ supportedTargetMp :: Map.Map String Target
                  -- ++ [ mk Target_None_Core_None [] ]
 %%[[(8 codegen jazy)
                  ++ [ mk Target_Interpreter_Core_Jazy [FFIWay_Jazy] ]
+%%]]
+%%[[(8 codegen jscript)
+                 ++ [ mk Target_Interpreter_Core_JScript [FFIWay_JScript] ]
 %%]]
 %%[[(8888 codegen java)
                  -- ++ [ mk Target_Interpreter_Core_Java [] ]
@@ -223,9 +232,9 @@ showAllTargetFlavors
 %%% Predicates
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) export(targetIsFullProgAnal)
-targetIsFullProgAnal :: Target -> Bool
-targetIsFullProgAnal t
+%%[(8 codegen) export(targetDoesHPTAnalysis)
+targetDoesHPTAnalysis :: Target -> Bool
+targetDoesHPTAnalysis t
   = case t of
 %%[[(8 codegen grin)
       Target_FullProgAnal_Grin_C 		-> True
@@ -238,17 +247,6 @@ targetIsFullProgAnal t
       _ 								-> False
 %%]
 
-%%[(8 codegen) export(targetIsGrin)
-targetIsGrin :: Target -> Bool
-targetIsGrin t
-  = case t of
-%%[[(8 codegen grin)
-      _ 								-> True
-%%][8
-      _ 								-> False
-%%]]
-%%]
-
 %%[(8 codegen) export(targetIsGrinBytecode)
 targetIsGrinBytecode :: Target -> Bool
 targetIsGrinBytecode t
@@ -257,6 +255,17 @@ targetIsGrinBytecode t
       Target_Interpreter_Grin_C		 	-> True
 %%]]
       _ 								-> False
+%%]
+
+%%[(8 codegen) export(targetIsGrin)
+targetIsGrin :: Target -> Bool
+targetIsGrin t
+  = case t of
+%%[[(8 codegen grin)
+      _ 								-> targetIsGrinBytecode t || targetIsGrinBytecode t
+%%][8
+      _ 								-> False
+%%]]
 %%]
 
 %%[(8 codegen) export(targetIsC)
@@ -316,6 +325,16 @@ targetIsJVM t
       _ 								-> False
 %%]
 
+%%[(8 codegen) export(targetIsJScript)
+targetIsJScript :: Target -> Bool
+targetIsJScript t
+  = case t of
+%%[[(8 codegen jscript)
+      Target_Interpreter_Core_JScript	-> True
+%%]]
+      _ 								-> False
+%%]
+
 %%[(8 codegen) export(targetIsLLVM)
 targetIsLLVM :: Target -> Bool
 targetIsLLVM t
@@ -336,6 +355,13 @@ targetIsCLR t
       _ 								-> False
 %%]
 
+%%[(8 codegen) export(targetIsOnUnixAndOrC)
+-- | target runs on (possibly emulated) UNIX / C environment? this should coincide with flag EHC_CFG_USE_UNIX_AND_C in src/ehc/variant.mk
+targetIsOnUnixAndOrC :: Target -> Bool
+targetIsOnUnixAndOrC t
+  = targetIsC t || targetIsJVM t
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Possible FFI interface routes
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -345,14 +371,20 @@ data FFIWay
   = FFIWay_Prim				-- as primitive
   | FFIWay_CCall			-- as C call
   | FFIWay_Jazy				-- as Java/Jazy
+%%[[(8 codegen jscript)
+  | FFIWay_JScript			-- JScript
+%%]]
   | FFIWay_CLR				-- as CLR, just a placeholder
   deriving (Eq,Ord,Enum)
 
 instance Show FFIWay where
-  show FFIWay_Prim	= "prim"
-  show FFIWay_CCall	= "ccall"
-  show FFIWay_Jazy	= "jazy"
-  show FFIWay_CLR	= "dotnet"
+  show FFIWay_Prim		= "prim"
+  show FFIWay_CCall		= "ccall"
+  show FFIWay_Jazy		= "jazy"
+%%[[(8 codegen jscript)
+  show FFIWay_JScript	= "jscript"
+%%]]
+  show FFIWay_CLR		= "dotnet"
 
 instance PP FFIWay where
   pp = pp . show
@@ -364,6 +396,9 @@ The default FFIWay for FFIWay_Prim for a target
 ffiWayForPrim :: Target -> Maybe FFIWay
 %%[[(8 codegen jazy)
 ffiWayForPrim Target_Interpreter_Core_Jazy			= Just FFIWay_Jazy
+%%]]
+%%[[(8 codegen jscript)
+ffiWayForPrim Target_Interpreter_Core_JScript		= Just FFIWay_JScript
 %%]]
 %%[[(8 codegen clr)
 ffiWayForPrim Target_FullProgAnal_Grin_CLR			= Just FFIWay_CLR
@@ -400,6 +435,9 @@ allFFIWays = nub $ concatMap targiAllowedFFI $ Map.elems allTargetInfoMp
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(20 codegen)
+deriving instance Typeable Target
+deriving instance Data Target
+
 deriving instance Typeable FFIWay
 deriving instance Data FFIWay
 
@@ -412,6 +450,14 @@ deriving instance Data TargetFlavor
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(20 codegen)
+instance Binary Target where
+  put = putEnum8
+  get = getEnum8
+
+instance Serialize Target where
+  sput = sputPlain
+  sget = sgetPlain
+
 instance Binary FFIWay where
   put = putEnum8
   get = getEnum8

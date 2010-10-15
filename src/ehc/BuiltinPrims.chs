@@ -2,17 +2,19 @@
 %%% Implementation of primitives
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[doesWhat doclatex
 The prims table describes special handling for some primitives, independent of the backend (for now).
 Module {%{EH}BuiltinPrims} describes similar information required in the frontend.
 Ideally, these tables should be merged.
-
-%%[(8 codegen grin).moduleHeader module {%{EH}BuiltinPrims}
 %%]
 
-%%[(8 codegen grin) import({%{EH}Base.HsName},{%{EH}Base.Common},{%{EH}Opts},{%{EH}Base.BasicAnnot},{%{EH}Base.Builtin},{%{EH}GrinByteCode})
+%%[(8 codegen).moduleHeader module {%{EH}BuiltinPrims}
 %%]
 
-%%[(8 codegen grin) import(qualified Data.Map as Map, qualified EH.Util.FastSeq as Seq, EH.Util.Pretty, EH.Util.Utils)
+%%[(8 codegen) import({%{EH}Base.HsName},{%{EH}Base.Common},{%{EH}Opts},{%{EH}Base.BasicAnnot},{%{EH}Base.Builtin},{%{EH}GrinByteCode})
+%%]
+
+%%[(8 codegen) import(qualified Data.Map as Map, qualified EH.Util.FastSeq as Seq, EH.Util.Pretty, EH.Util.Utils)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -10,10 +10,16 @@ module UHC.OldIO
   , IOMode(..)
   
   -- IO functions
-  , hClose, hGetContents, hGetChar, hGetLine, hPutChar, hPutStr, hPutStrLn, hFlush
-  , stdin, stdout, stderr, openFile
-  , putChar, putStr, putStrLn, print, {- hPrint, -} getChar, getLine, getContents, interact
+  , hClose, hPutChar, hPutStr, hPutStrLn, hFlush
+  , putChar, putStr, putStrLn, print{- hPrint, -} 
+  , stdout, stderr
+#if !defined(__UHC_TARGET_JSCRIPT__)
+  , stdin
+  , openFile
+  , hGetContents, hGetChar, hGetLine
+  , getChar, getLine, getContents, interact
   , readFile, writeFile, appendFile
+#endif
   )
   where
 
@@ -91,6 +97,7 @@ hPutChar h c =  ioFromPrim (\_ -> primHPutChar h c)
 #endif
 
 
+
 #ifdef __UHC_TARGET_C__
 
 openFile     :: FilePath -> IOMode -> IO Handle
@@ -104,20 +111,29 @@ stderr = OldHandle primStderr
 hIsEOF       :: Handle -> IO Bool
 hIsEOF (OldHandle h) =  ioFromPrim (\_ -> primHIsEOF h)
 
+#elif defined(__UHC_TARGET_JSCRIPT__)
+stdout, stderr :: Handle
+stdout = OldHandle (JSHandle "stdout")
+stderr = OldHandle (JSHandle "stderr")
 #else
 
 openFile     :: FilePath -> IOMode -> IO Handle
 openFile f m =  ioFromPrim (\_ -> primOpenFileOrStd f m Nothing)
 
-stdin, stdout, stderr :: Handle
 #ifdef __UHC_TARGET_JAZY__
+
+stdin, stdout, stderr :: Handle
 stdin  = primStdin
 stdout = primStdout
 stderr = primStderr
+
 #else
+
+stdin, stdout, stderr :: Handle
 stdin  = primOpenFileOrStd "<stdin>"  ReadMode  (Just 0)
 stdout = primOpenFileOrStd "<stdout>" WriteMode (Just 1)
 stderr = primOpenFileOrStd "<stderr>" WriteMode (Just 2)
+
 #endif
 
 #endif
@@ -132,6 +148,7 @@ stderr = primOpenFileOrStd "<stderr>" WriteMode (Just 2)
 
 -- specializations for stdin, stdout
 
+#if !defined(__UHC_TARGET_JSCRIPT__)
 getChar     :: IO Char
 getChar     = hGetChar stdin
 
@@ -140,6 +157,7 @@ getLine     = hGetLine stdin
 
 getContents :: IO String
 getContents = hGetContents stdin
+#endif
 
 putChar     :: Char -> IO ()
 putChar     = hPutChar stdout
@@ -153,8 +171,10 @@ putStr      = hPutStr   stdout
 putStrLn    :: String -> IO ()
 putStrLn    = hPutStrLn stdout
 
+#if !defined(__UHC_TARGET_JSCRIPT__)
 interact    :: (String -> String) -> IO ()
 interact f  = getContents >>= (putStr . f)
+#endif
 
 
 -- combinations with newline and show
@@ -167,6 +187,7 @@ hPutStrLn h s =  do { hPutStr h s
 hPrint        :: Show a => Handle -> a -> IO ()
 hPrint h      =  hPutStrLn h . show
 
+#if !defined(__UHC_TARGET_JSCRIPT__)
 hGetLine :: Handle -> IO String
 hGetLine h = do { c <- hGetChar h
                 ; hGetLine2 c
@@ -187,8 +208,9 @@ hGetLine h = do { c <- hGetChar h
                        hGetLine2 c
    isEOFError ex = ioe_type ex == EOF
 #endif
+#endif
 
-
+#if !defined(__UHC_TARGET_JSCRIPT__)
 -- combinations with Read
 -- raises an exception instead of an error
 readIO          :: Read a => String -> IO a
@@ -202,11 +224,12 @@ readLn          :: Read a => IO a
 readLn           = do l <- getLine
                       r <- readIO l
                       return r
-
+#endif
 
 
 -- file open&process&close wrapped in one function
 
+#if !defined(__UHC_TARGET_JSCRIPT__)
 readFile        :: FilePath -> IO String
 readFile name    = openFile name ReadMode >>= hGetContents
 
@@ -225,7 +248,7 @@ writeFile2 mode name s
          catchException (hPutStr h s) (\e -> hClose h >> throw e)
 #endif
          hClose h
-
+#endif
 
 %%]
 
@@ -248,7 +271,9 @@ foreign import prim primHGetContents    :: Handle -> String
 --  or for efficiency using additional primitives
 ----------------------------------------------------------------
 
+#if !defined(__UHC_TARGET_JSCRIPT__)
 hGetContents     :: Handle -> IO String
+#endif
 hPutStr          :: Handle -> String -> IO ()
 
 
@@ -262,6 +287,15 @@ hGetContents h = do b <- hIsEOF h
                              ; return (c:cs) 
                              }
 
+#else
+
+hGetContents h   = ioFromPrim (\_ -> primHGetContents h)
+                   
+#endif
+
+
+#if defined(__UHC_TARGET_C__) || defined(__UHC_TARGET_JSCRIPT__)
+
 hPutStr h s = do if null s 
                   then return () 
                   else do { hPutChar h (head s)
@@ -271,8 +305,6 @@ hPutStr h s = do if null s
 #else
 
 foreign import prim primStringToByteArray :: String -> Int -> ByteArray
-
-hGetContents h   = ioFromPrim (\_ -> primHGetContents h)
 
 hPutStr h s = do let (shd,stl) = splitAt 1000 s
                  ioFromPrim (\_ -> primHPutByteArray h (primStringToByteArray shd 1000))

@@ -79,6 +79,8 @@ ehc-codegentargetspecific-C:
 
 ehc-codegentargetspecific-jazy:
 
+ehc-codegentargetspecific-jscript:
+
 ehc-codegentargetspecific-core:
 
 ehc-codegentargetspecific-clr:

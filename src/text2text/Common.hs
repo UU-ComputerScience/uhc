@@ -19,6 +19,15 @@ module Common
   , hPutOutLn
   
   , cmbMb
+  
+  , dhtmTagAttrs, dhtmTag, dhtmTag'
+  , dhtmCmt
+  , dhtmOpenCloseAttrs, dhtmOpenClose
+  , dhtmOne
+
+  , ensureHtmlCharsAreEscaped
+  
+  , HeaderSeqNrMp
   )
   where
 
@@ -36,16 +45,18 @@ import qualified EH.Util.FastSeq as Seq
 data TextType
   = TextType_DocLaTeX
   | TextType_TWiki
+  | TextType_Html
   | TextType_None
   deriving (Eq,Ord)
 
 instance Show TextType where
   show TextType_DocLaTeX = "doclatex"
   show TextType_TWiki    = "twiki"
+  show TextType_Html     = "html"
   show TextType_None     = "none"
 
 texttypeMp :: Map.Map String TextType
-texttypeMp = Map.fromList [ (show t, t) | t <- [TextType_DocLaTeX,TextType_TWiki] ]
+texttypeMp = Map.fromList [ (show t, t) | t <- [TextType_DocLaTeX,TextType_TWiki,TextType_Html] ]
 
 -------------------------------------------------------------------------
 -- Options
@@ -148,4 +159,51 @@ putOutFile fn ou wid
          ;  hPutOutFile h ou wid
          ;  hClose h
          }
+
+-------------------------------------------------------------------------
+-- Shared OutDoc Html combinators & utils
+-------------------------------------------------------------------------
+
+-- | a tag + attributes
+dhtmTagAttrs :: (Out a, Out x) => a -> [x] -> OutDoc
+dhtmTagAttrs a as = "<" +++ a +++ (if null as then emptyout else outListSep " " "" " " as) +++ ">"
+
+-- | a tag
+dhtmTag :: forall a . Out a => a -> OutDoc
+dhtmTag a = dhtmTagAttrs a ([] :: [a])
+
+-- | single direct open+close tag
+dhtmTag' :: Out a => a -> OutDoc
+dhtmTag' a = "<" +++ a +++ "/>"
+
+-- | comment
+dhtmCmt :: Out a => a -> OutDoc
+dhtmCmt a = dhtmTag ("!-- " +++ a +++ " --")
+
+-- | open + close, body inside + attributes
+dhtmOpenCloseAttrs :: (Out x, Out env) => env -> [x] -> x -> OutDoc
+dhtmOpenCloseAttrs env attrs body = dhtmTagAttrs env attrs +++ body +++ dhtmTag ("/" +++ env)
+
+-- | open + close, body inside
+dhtmOpenClose :: (Out body, Out env) => env -> body -> OutDoc
+dhtmOpenClose env body = dhtmOpenCloseAttrs env [] body
+
+-- | single open+close tag, including body inside tag
+dhtmOne :: (Out body, Out env) => env -> body -> OutDoc
+dhtmOne env body = dhtmTag' (env +++ " " +++ body)
+
+-- | escape html chars
+ensureHtmlCharsAreEscaped :: String -> String
+ensureHtmlCharsAreEscaped
+  = concatMap asis
+  where asis '<' = c "lt"
+        asis '>' = c "gt"
+        asis c   = [c]
+        c ch = "&" ++ ch ++ ";"
+
+-------------------------------------------------------------------------
+-- Header numbering
+-------------------------------------------------------------------------
+
+type HeaderSeqNrMp = Map.Map Int Int
 

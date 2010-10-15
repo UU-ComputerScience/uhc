@@ -3,6 +3,7 @@
 
 {-# OPTIONS_GHC -XNoImplicitPrelude #-}
 {-# OPTIONS_HADDOCK hide #-}
+{-# EXCLUDE_IF_TARGET jscript #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  GHC.Stable

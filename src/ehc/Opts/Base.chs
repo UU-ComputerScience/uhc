@@ -161,7 +161,7 @@ data EHCOpts
 
       ,  ehcOptGenRTSInfo     ::  Int               -- flags to tell rts to dump internal info, currently: 1=on
       ,  ehcOptDumpGrinStages ::  Bool              -- dump intermediate Grin transformation stages
-      ,  ehcOptEarlyModMerge  ::  Bool              -- produce OneBigCore instead of OneBigGrin; useful for future Core-only optimizations
+      -- ,  ehcOptEarlyModMerge  ::  Bool              -- produce OneBigCore instead of OneBigGrin; useful for future Core-only optimizations
 %%]]
 %%[[8
       ,  ehcOptEmitHS         ::  Bool
@@ -283,7 +283,7 @@ emptyEHCOpts
       ,  ehcOptGenRTSInfo       =   0
 
       ,  ehcOptDumpGrinStages   =   False
-      ,  ehcOptEarlyModMerge    =   False
+      -- ,  ehcOptEarlyModMerge    =   False
 %%]]
 %%[[8
       ,  ehcOptVerbosity        =   VerboseNormal

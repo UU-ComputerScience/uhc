@@ -19,19 +19,28 @@ module UHC.ByteArray
   , unsafeFreezeByteArray
   
   , indexCharArray, indexWideCharArray
-  , indexIntArray, indexWordArray, indexAddrArray, indexStablePtrArray
+  , indexIntArray, indexWordArray, indexAddrArray
+#if !defined( __UHC_TARGET_JSCRIPT__ )
+  , indexStablePtrArray
+#endif
   , indexFloatArray, indexDoubleArray
   , indexInt8Array, indexInt16Array, indexInt32Array, indexInt64Array
   , indexWord8Array, indexWord16Array, indexWord32Array, indexWord64Array
 
   , readCharArray, readWideCharArray
-  , readIntArray, readWordArray, readAddrArray, readStablePtrArray
+  , readIntArray, readWordArray, readAddrArray
+#if !defined( __UHC_TARGET_JSCRIPT__ )
+  , readStablePtrArray
+#endif
   , readFloatArray, readDoubleArray
   , readInt8Array, readInt16Array, readInt32Array, readInt64Array
   , readWord8Array, readWord16Array, readWord32Array, readWord64Array
 
   , writeCharArray, writeWideCharArray
-  , writeIntArray, writeWordArray, writeAddrArray, writeStablePtrArray
+  , writeIntArray, writeWordArray, writeAddrArray
+#if !defined( __UHC_TARGET_JSCRIPT__ )
+  , writeStablePtrArray
+#endif
   , writeFloatArray, writeDoubleArray
   , writeInt8Array, writeInt16Array, writeInt32Array, writeInt64Array
   , writeWord8Array, writeWord16Array, writeWord32Array, writeWord64Array
@@ -41,7 +50,9 @@ module UHC.ByteArray
 
 import UHC.Base
 import UHC.Ptr
+#if !defined( __UHC_TARGET_JSCRIPT__ )
 import UHC.StablePtr
+#endif
 import UHC.Types
 
 #include "MachDeps.h"
@@ -137,8 +148,10 @@ foreign import prim "primIndexWord64Array" 	indexWord64Array 	:: ByteArray -> In
 %%]
 
 %%[99
+#if !defined( __UHC_TARGET_JSCRIPT__ )
 indexStablePtrArray :: forall s . ByteArray -> Int -> StablePtr s
 indexStablePtrArray a i = letstrict x = indexAddrArray a i in StablePtr x
+#endif
 %%]
 
 %%[99
@@ -167,8 +180,10 @@ readFloatArray (MutableByteArray a) i s = letstrict x = indexFloatArray a i in (
 readDoubleArray :: MutableByteArray s -> Int -> State s -> ( State s,Double )
 readDoubleArray (MutableByteArray a) i s = letstrict x = indexDoubleArray a i in (s, x)
 
+#if !defined( __UHC_TARGET_JSCRIPT__ )
 readStablePtrArray :: MutableByteArray s -> Int -> State s -> ( State s,StablePtr s )
 readStablePtrArray (MutableByteArray a) i s = letstrict x = indexStablePtrArray a i in (s, x)
+#endif
 
 readInt8Array :: MutableByteArray s -> Int -> State s -> ( State s,Int8 )
 readInt8Array (MutableByteArray a) i s = letstrict x = indexInt8Array a i in (s, x)
@@ -252,8 +267,10 @@ writeFloatArray (MutableByteArray a) i x s = letstrict _ = primWriteFloatArray a
 writeDoubleArray :: MutableByteArray s -> Int -> Double -> State s -> State s
 writeDoubleArray (MutableByteArray a) i x s = letstrict _ = primWriteDoubleArray a i x in s
 
+#if !defined( __UHC_TARGET_JSCRIPT__ )
 writeStablePtrArray :: MutableByteArray s -> Int -> StablePtr s -> State s -> State s
 writeStablePtrArray (MutableByteArray a) i (StablePtr x) s = letstrict _ = primWriteAddrArray a i x in s
+#endif
 
 writeInt8Array :: MutableByteArray s -> Int -> Int8 -> State s -> State s
 writeInt8Array (MutableByteArray a) i x s = letstrict _ = primWriteInt8Array a i x in s

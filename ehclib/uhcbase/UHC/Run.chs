@@ -13,16 +13,18 @@ module UHC.Run
 import UHC.Base
 import UHC.IOBase
 import UHC.OldException
+#ifndef __UHC_TARGET_JSCRIPT__
 import UHC.Handle
+#endif
 import UHC.StackTrace
 
-#ifndef __UHC_TARGET_C__
+#if !( defined(__UHC_TARGET_C__) || defined(__UHC_TARGET_JSCRIPT__) )
 import System.IO (hPutStrLn)
 #endif
 %%]
 
 %%[99
-#ifdef __UHC_TARGET_C__
+#if defined(__UHC_TARGET_C__) || defined(__UHC_TARGET_JSCRIPT__)
 
 -- Wrapper around 'main', invoked as 'ehcRunMain main'
 ehcRunMain :: IO a -> IO a
@@ -57,7 +59,6 @@ ehcRunMain m =
                     }
     )
 
-#endif
 
 -- try to flush stdout/stderr, but don't worry if we fail
 -- (these handles might have errors, and we don't want to go into
@@ -71,4 +72,6 @@ wrapCleanUp :: IO a -> IO a
 wrapCleanUp m = do x <- m
                    cleanUp
                    return x
+
+#endif
 %%]

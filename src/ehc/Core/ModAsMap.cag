@@ -1,0 +1,78 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Free variables
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(20 codegen) hs module {%{EH}Core.ModAsMap} 
+%%]
+
+%%[(20 codegen) hs import(qualified Data.Set as Set,qualified Data.Map as Map, Data.Array)
+%%]
+
+%%[(20 codegen) hs import(qualified EH.Util.FastSeq as Seq)
+%%]
+
+%%[(20 codegen) hs import({%{EH}Base.Common},{%{EH}Core},{%{EH}Ty})
+%%]
+
+%%[(20 codegen).WRAPPER ag import({Core/AbsSyn})
+WRAPPER CodeAGItf
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell itf
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(20 codegen) hs export(cexprModAsDatabase)
+cexprModAsDatabase :: CModule -> CModuleDatabase
+cexprModAsDatabase m
+  = db_Syn_CodeAGItf t
+  where t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf m)) Inh_CodeAGItf
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Database/Map
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(20 codegen)
+ATTR CodeAGItf CModule [ | | db: CModuleDatabase ]
+
+SEM CModule
+  | Mod         lhs         .   db              =   let binds = Seq.toList @expr.bindSq
+                                                        nrBinds = length binds
+                                                        (refs,arrs)
+                                                              = unzip
+                                                                  [ (Map.unions refs, (cat, listArray (0, nrSubBinds-1) bs))
+                                                                  | (bi,(cat,bs)) <- zip [0 .. nrBinds-1] binds
+                                                                  , let nrSubBinds = length bs
+                                                                  , let refs = zipWith (\b i -> Map.singleton (cbindNm b) (bi,i)) bs [0 .. nrSubBinds-1]
+                                                                  ]
+                                                    in  emptyCModuleDatabase
+                                                            { cmoddbModNm       = @moduleNm
+                                                            , cmoddbBindMp      = Map.unions refs
+                                                            , cmoddbBindArr     = listArray (0, nrBinds-1) arrs
+                                                            , cmoddbMainExpr    = @expr.expr
+                                                            , cmoddbTagsMp      = @ctagsMp
+                                                            }
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Bindings, Expr, and other pieces of info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(20 codegen)
+ATTR AllNT [ | | copy: SELF ]
+ATTR CExpr [ | | bindSq: {Seq.Seq CDbBindLetInfo}
+                 expr  : CExpr
+           ]
+
+SEM CExpr
+  | Let         lhs         .   bindSq          =   Seq.singleton (@categ,@binds.copy) `Seq.union` @body.bindSq
+                            .   expr            =   @body.expr
+  | * - Let     lhs         .   bindSq          =   Seq.empty
+                            .   expr            =   @copy
+%%]

@@ -6,18 +6,9 @@
 # aspects, EHC_ASPECTS to be configured at top level, for now here
 ###########################################################################################
 
-EHC_ASPECTS								:= $(if $(ASPECTS),$(ASPECTS),base hmtyinfer codegen grin noHmTyRuler $(if $(ENABLE_JAVA),java jazy,) $(if $(ENABLE_LLVM),llvm,) $(if $(ENABLE_CLR),clr,) $(if $(ENABLE_TYCORE),tycore,) $(if $(ENABLE_TAUPHI),tauphi,))
+EHC_ASPECTS								:= $(if $(ASPECTS),$(ASPECTS),base hmtyinfer codegen grin noHmTyRuler $(if $(ENABLE_JAVA),java jazy,) $(if $(ENABLE_LLVM),llvm,) $(if $(ENABLE_JSCRIPT),jscript,) $(if $(ENABLE_CLR),clr,) $(if $(ENABLE_TYCORE),tycore,) $(if $(ENABLE_TAUPHI),tauphi,))
 EHC_ASPECTS_SUFFIX						:= $(if $(ASPECTS),-$(subst $(space),-,$(ASPECTS)),)
 EHC_ASPECTS_SUFFIX2						:= $(subst -,,$(EHC_ASPECTS_SUFFIX))
-
-###########################################################################################
-# config depending on EHC_ASPECTS, EHC_VARIANT: Booleans telling whether some aspect is used
-###########################################################################################
-
-EHC_CFG_USE_GRIN						:= $(filter grin,$(EHC_ASPECTS))
-EHC_CFG_USE_CODEGEN						:= $(filter $(EHC_VARIANT),$(EHC_CODE_VARIANTS))
-EHC_CFG_USE_PRELUDE						:= $(filter $(EHC_VARIANT),$(EHC_PREL_VARIANTS) $(EHC_OTHER_PREL_VARIANTS))
-EHC_CFG_IS_A_VARIANT					:= $(filter $(EHC_VARIANT),$(EHC_VARIANTS))
 
 ###########################################################################################
 # variant, EHC_VARIANT to be configured at top level, by a recursive make invocation
@@ -80,11 +71,34 @@ LIB_EHC_INS_FLAG						:= $(INSTALLFORBLDABS_FLAG_PREFIX)$(LIB_EHC_PKG_NAME)
 EHC_BASE								:= $(LIB_EHC_BASE)C
 
 ###########################################################################################
+# config depending on EHC_ASPECTS, EHC_VARIANT: Booleans telling whether some aspect is used
+###########################################################################################
+
+# backend uses UNIX/C facilities (or emulation thereof)
+# this should coincide with targetIsOnUnixAndOrC in src/ehc/Base/Target
+EHC_CFG_USE_UNIX_AND_C					:= $(filter $(EHC_VARIANT_TARGET),C bc jazy)
+
+# grin is used?
+EHC_CFG_USE_GRIN						:= $(filter grin,$(EHC_ASPECTS))
+
+# variant does codegeneration?
+EHC_CFG_USE_CODEGEN						:= $(filter $(EHC_VARIANT),$(EHC_CODE_VARIANTS))
+
+# variant uses prelude
+EHC_CFG_USE_PRELUDE						:= $(filter $(EHC_VARIANT),$(EHC_PREL_VARIANTS) $(EHC_OTHER_PREL_VARIANTS))
+
+#
+EHC_CFG_IS_A_VARIANT					:= $(filter $(EHC_VARIANT),$(EHC_VARIANTS))
+
+###########################################################################################
 # ehc runtime config
 ###########################################################################################
 
-# assumed packages, useful only for prelude variants
-EHC_PACKAGES_ASSUMED					:= uhcbase base array filepath old-locale old-time unix directory random haskell98
+# assumed packages, useful only for prelude variants; order matters.
+# EHC_PACKAGES_ALL						:= uhcbase base array filepath old-locale old-time unix directory random haskell98
+EHC_PACKAGES_ASSUMED					:= uhcbase base array \
+											$(if $(EHC_CFG_USE_UNIX_AND_C),filepath old-locale old-time unix directory random,) \
+											haskell98
 
 ###########################################################################################
 # installation locations for ehc building time

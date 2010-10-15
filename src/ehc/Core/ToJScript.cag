@@ -1,0 +1,1052 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Code generation for Javascript
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 jscript) hs module {%{EH}Core.ToJScript} import({%{EH}Base.Common},{%{EH}Opts},{%{EH}Ty},{%{EH}Core})
+%%]
+
+%%[(8 jscript) hs import(Data.Maybe, qualified Data.Map as Map, qualified Data.Set as Set, Data.Char, Data.Maybe, Data.List)
+%%]
+%%[(8 jscript) hs import(EH.Util.Utils, qualified EH.Util.FastSeq as Seq)
+%%]
+
+%%[(8 jscript) hs import({%{EH}Base.Builtin},{%{EH}Base.Builtin2},{%{EH}BuiltinPrims},{%{EH}Base.BasicAnnot},{%{EH}Base.GenJavaLike})
+%%]
+
+%%[(8 jscript) hs import({%{EH}Gam.DataGam})
+%%]
+
+%%[(8 jscript) hs import(qualified {%{EH}JScript} as J)
+%%]
+
+%%[(90 jscript) hs import({%{EH}Foreign.Extract})
+%%]
+
+-- debug
+%%[(8 jscript) hs import({%{EH}Base.Debug},EH.Util.Pretty)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Interface
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 jscript).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonBindNm},{Core/CommonJavaLike},{Core/CommonPred},{Core/CommonCtxtPred},{Core/CommonFFI})
+WRAPPER CodeAGItf
+%%]
+
+%%[(8 jscript) hs export(cmod2JScriptModule)
+cmod2JScriptModule :: EHCOpts -> DataGam -> CModule -> J.JScriptModule
+cmod2JScriptModule opts dataGam cmod
+  =  js_Syn_CodeAGItf t
+  where t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf cmod))
+                                          (Inh_CodeAGItf { opts_Inh_CodeAGItf = opts
+                                                         , dataGam_Inh_CodeAGItf = dataGam
+                                                         })
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Global info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 jscript)
+ATTR CodeAGItf AllNT [ opts: EHCOpts | | ]
+%%]
+
+%%[(8 jscript)
+ATTR CodeAGItf AllNT [ dataGam: DataGam | | ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Unique
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 jscript)
+ATTR AllNT [ | gUniq: UID | ]
+
+SEM CodeAGItf
+  | AGItf       loc         .   gUniq           =   uidStart
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Names
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 jscript) hs
+nmFunSuff :: Int -> String
+nmFunSuff n | n >  5    = "N"
+            | n >= 0    = show n
+            | otherwise = ""
+-- nmApplyN n  = "_a" ++ nmFunSuff n ++ "_"
+nmEvalN  n  = "_e" ++ nmFunSuff n ++ "_"
+nmEval      = nmEvalN (-1)
+nmFunN   n  = mkHNm ("_F" {- ++ nmFunSuff n -} ++ "_")
+nmAppN   n  = "_A" {- ++ nmFunSuff n -} ++ "_"
+nmTag       = mkHNm "_tag_"
+nmInd       = mkHNm "_i_"
+nmIndSet    = mkHNm "_i_set_"
+nmSwitchRes = mkHNm "_sw"
+%%]
+
+%%[(8 jscript) hs
+hsnJScriptVar :: Bool -> HsName -> HsName -> HsName -> HsName
+%%[[8
+hsnJScriptVar isGlobal = hsnJavaLikeVar (id, id, id)
+%%][20
+hsnJScriptVar isGlobal = hsnJavaLikeVar (if isGlobal then id else hsnQualified, hsnPrefix "$", ('$':))
+%%]]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Safe name
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 jscript)
+SEM CBindAspect
+  | *           loc         .   varnm           =   hsnJScriptVar @lhs.isGlobal @lhs.pkgNm @lhs.topClassNm @lhs.nm
+                loc         .   varnm           :   HsName
+
+SEM CExpr
+  | Var         loc         .   varnm           =   hsnJScriptVar True @lhs.pkgNm @lhs.topClassNm @nm
+
+SEM CPatFld
+  | Fld         loc         .   varnm           =   hsnJScriptVar False @lhs.pkgNm @lhs.topClassNm @fldNm
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Extract all module names of globally introduced identifers
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(20 jscript)
+ATTR CExpr AllBind [ | | usedModNmS USE {`Set.union`} {Set.empty} : {FvS} ]
+
+SEM CBindAspect
+  | *           lhs         .   usedModNmS      =   maybe Set.empty Set.singleton $ hsnQualifier @varnm
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Known types
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8888 jscript) hs
+jtyInt  = J.Type_Class nmInt
+jtyChar = J.Type_Class nmChar
+jtyStr  = J.Type_Class nmStr
+jtyObj  = J.Type_Class nmObj
+jtyTup  = J.Type_Array jtyObj
+jtyData = J.Type_Class nmData
+jtyFun  = J.Type_Class nmFun
+jtyApp  = J.Type_Class nmApp
+jtyEvl  = J.Type_Class nmEvl
+jtyInd  = J.Type_Class nmInd
+%%]
+
+%%[(9797 jscript) hs
+jtyByte   = J.Type_Class nmByte
+jtyShort  = J.Type_Class nmShort
+jtyLong   = J.Type_Class nmLong
+jtyFloat  = J.Type_Class nmFloat
+jtyDouble = J.Type_Class nmDouble
+%%]
+
+%%[(9898 jscript) hs
+jtyHandle = J.Type_Class nmHandle
+jtyByteArray = J.Type_Array J.Type_Byte
+jtyInteger = J.Type_Class (mkHNm "java.math.BigInteger")
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Known offsets: arguments to a non static method
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8888 jscript) hs
+methArgOffset0 :: Int
+methArgOffset0 = 1
+
+methArgOffsets :: Int -> [Int]
+methArgOffsets arity = [methArgOffset0 .. arity - methArgOffset0 + 1]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Labels
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8888 jscript) hs
+lblTake1 :: J.Label -> (J.Label,J.Label)
+lblTake1 l = (l,l+1)
+%%]
+
+%%[(8888 jscript)
+ATTR AllNT [ | lblSeed: {J.Label} | ]
+
+SEM CodeAGItf
+  | AGItf       loc         .   lblSeed         =   0
+
+SEM CExpr
+  | Case        (loc.lblDefault,loc.lblSeed2)   =   lblTake1 @lhs.lblSeed
+                (loc.lblAftCase,alts.lblSeed)   =   lblTake1 @lblSeed2
+
+SEM CAlt
+  | Alt         (loc.lblAlt,pat.lblSeed)        =   lblTake1 @lhs.lblSeed
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Variable bindings for other than global
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 jscript) hs
+type CVarInfo = CVarInfo' () HsName Int
+type CVarMp   = CVarMp'   () HsName Int
+%%]
+
+%%[(8 jscript) hs
+tyDefault = ()
+%%]
+
+%%[(8 jscript) hs
+jvRef :: CVarMp -> CVarInfo -> J.Expr
+jvRef
+  = cvarToRef
+      ( \_       -> J.Expr_This
+      , \_ o     -> jsVar o
+      , \_ _ f   -> jsVar f
+      , \_ e _ f -> J.Expr_ObjFld e (mkHNm f)
+      , \  e o   -> J.Expr_ArrInx e o
+      , jsIntConst
+      )
+%%]
+
+%%[(8 jscript)
+SEM CExpr
+  | Let         loc         .   nmToRefAssocL   =   map (\x -> (x, hsnJScriptVar @isGlobal @lhs.pkgNm @lhs.topClassNm x)) @binds.bindNmL
+%%]
+
+%%[(8 jscript)
+SEM CExpr
+  | Lam         loc         .   (jsArgTyL,_,lamBindings)
+                                                =   if @hasFunHere
+                                                    then jsArgsUnpack (map (hsnJScriptVar False @lhs.pkgNm @lhs.topClassNm)) @nmArgL
+                                                    else ([],[],[])
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Case: scrutinee
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 jscript)
+%%]
+-- dummy
+SEM CExpr
+  | Case        loc         .   scrutineeCVarInfo =   CVarInfo_None
+
+%%[(8 jscript)
+SEM CExpr
+  | Case        loc         .   (scrutineeTagJS,scrutineeCVarInfo)
+                                                =   case @alts.scrutinees of
+                                                      (Scrutinee_Var nm : _)
+                                                        -> panic ("Core.ToJScript.CExpr.Case.Scrutinee_Var: " ++ show nm ++ " : not yet implemented")
+                                                      (Scrutinee_Int _ : _)
+                                                        -> ( @expr.js
+                                                           , CVarInfo_None
+                                                           )
+                                                      (Scrutinee_Tag tag : _)
+                                                        -> ( gettag
+                                                           , CVarInfo_Local () $ panicJust "ToJScript.CExpr.Case scrutinee" $ J.exprMbVar @expr.js
+                                                           )
+                                                        where (gettag)
+                                                                 = case tag of
+                                                                     CTagRec         -> ( J.Expr_Str "*** ERR GETTAG ***" )
+                                                                     CTag _ _ _ _ _  -> ( J.Expr_Sel @expr.js nmTag
+                                                                                        )
+                                                      (Scrutinee_Other x : _)
+                                                        -> panic ("Core.ToJScript.CExpr.Case.Scrutinee_Other: " ++ x ++ " : not yet implemented")
+                                                      []
+                                                        -> panic ("Core.ToJScript.CExpr.Case.-")
+%%]
+
+%%[(8888 jscript)
+SEM CExpr
+  | Case        loc         .   altsLocalOffset =   @lhs.localOffset + 1
+                            .   (scrutineeJI,scrutineeTagJI,scrutineeCVarInfo)
+                                                =   case @alts.scrutinees of
+                                                      (Scrutinee_Var nm : _)
+                                                        -> panic ("Core.ToJScript.CExpr.Case.Scrutinee_Var: " ++ show nm ++ " : not yet implemented")
+                                                      (Scrutinee_Int _ : _)
+                                                        -> ( emptyJI
+                                                           , unbox @expr.ji
+                                                           , CVarInfo_None
+                                                           )
+                                                        where (unbox,ty) = basicTyJUnbox False BasicJazy_Int
+                                                      (Scrutinee_Tag tag : _)
+                                                        -> ( jiCast ty @expr.ji ## J.Instr_Store ty @lhs.localOffset
+                                                           , gettag
+                                                           , cvi
+                                                           )
+                                                        where (ty,gettag,cvi)
+                                                                 = case tag of
+                                                                     CTagRec         -> (jtyTup,emptyJI,mkcvi jtyTup)
+                                                                     CTag tn _ _ _ _ -> ( J.Type_Class tn'
+                                                                                        , jvRef @lhs.cvarMp cvi
+                                                                                          ## J.Instr_Get False (J.Const_Field tn' nmTag J.Type_Int)
+                                                                                        , cvi
+                                                                                        )
+                                                                                     where cvi = mkcvi (J.Type_Class tn')
+                                                                                           tn' = hsnJavaLikeDataTy @lhs.pkgNm @lhs.topClassNm tn
+                                                              mkcvi ty = CVarInfo_Local ty @lhs.localOffset
+                                                      (Scrutinee_Other x : _)
+                                                        -> panic ("Core.ToJScript.CExpr.Case.Scrutinee_Other: " ++ x ++ " : not yet implemented")
+                                                      []
+                                                        -> panic ("Core.ToJScript.CExpr.Case.-")
+%%]
+
+%%[(8 jscript)
+SEM CAlt
+  | Alt         loc         .   (scrutineeTag)
+                                                =   case @pat.scrutinees of
+                                                      (Scrutinee_Tag (CTag _ cn tag _ _) : _)
+                                                        -> ( tag
+                                                           )
+                                                      (Scrutinee_Int i : _)
+                                                        -> ( i
+                                                           )
+                                                      _ -> (0)
+%%]
+
+%%[(8888 jscript)
+SEM CAlt
+  | Alt         loc         .   (scrutineeAltJI,scrutineeCVarInfo,scrutineeTag)
+                                                =   case @pat.scrutinees of
+                                                      (Scrutinee_Tag (CTag _ cn tag _ _) : _)
+                                                        -> ( jiCast ty (jvRef @lhs.cvarMp cvi)
+                                                             ## J.Instr_Store ty (cvarOffset cvi)       -- assume here it is a CVarInfo_Local as constructed above
+                                                           , cvi {cvarType = ty}
+                                                           , tag
+                                                           )
+                                                        where cn' = hsnJavaLikeDataCon @lhs.pkgNm @lhs.topClassNm cn
+                                                              ty  = J.Type_Class cn'
+                                                              cvi = @lhs.scrutineeCVarInfo
+                                                      (Scrutinee_Int i : _)
+                                                        -> ( emptyJI
+                                                           , @lhs.scrutineeCVarInfo
+                                                           , i
+                                                           )
+                                                      _ -> (emptyJI,@lhs.scrutineeCVarInfo,0)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Offset of locals
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+TBD: assume presence of self, assume size == 1
+TBD: outside current lexical level, cannot be accessed locally, is closure (which is only half baked available in JVM)
+
+%%[(8888 jscript)
+ATTR AllNT [ localOffset: {J.Local} | | ]
+ATTR AllPat [ | offsetOffset: {J.Local} | ]
+
+SEM CodeAGItf
+  | AGItf       loc         .   localOffset     =   0   -- dummy value
+
+SEM CExpr
+  | Lam         (loc.localOffset,body.localOffset)
+                                                =   if @hasFunHere
+                                                    then (methArgOffset0  , methArgOffset0 + length @nmArgL)
+                                                    else (@lhs.localOffset, @lhs.localOffset               )
+  | Let         loc         .   localOffset     =   @lhs.localOffset + @nLocals
+  | Case        alts        .   localOffset     =   @altsLocalOffset
+
+SEM CAlt
+  | Alt         pat         .   offsetOffset    =   @lhs.localOffset
+                expr        .   localOffset     =   @pat.offsetOffset
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Case alt: names of fields, used to access fields in object representing data constructor
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 jscript)
+ATTR AllPatFld [ | dataFldNmL: {[HsName]} | ]
+
+SEM CPat
+  | Con         binds       .   dataFldNmL      =   jsDataFldNames @lhs.dataGam @tag
+
+SEM CPatFld
+  | Fld         (loc.objFldNm,lhs.dataFldNmL)   =   hdAndTl' (panic "ToJScript.CPatFld.Fld.dataFldNmL") @lhs.dataFldNmL
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Case: offsets of offsets in tuple
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 jscript)
+ATTR AllPat [ | | offsetBinds USE {++} {[]} : {[(HsName,CVarInfo,J.Expr)]} ]
+%%]
+
+%%[(8 jscript)
+%%]
+-- dummy
+SEM CPatFld
+  | Fld         loc.cviField = CVarInfo_None
+
+%%[(8 jscript)
+SEM CPatFld
+  | Fld         (loc.cviField,loc.offsetBinds)
+                                                =   case @lhs.ctag of
+                                                      CTagRec
+                                                        -> case @offset.whatBelow of
+                                                             ExprIsInt i -> (mkf $ Left  i,[])
+                                                             ExprIsVar n -> (mkf $ Right n,[])
+                                                             {-
+                                                             _           -> (mkf $ Right n,[(n,CVarInfo_Local t o,mkj @offset.js)])
+                                                                         where n = @varnm
+                                                                               o = @lhs.offsetOffset
+                                                                               (mkj,t) = (id,())
+                                                             -}
+                                                        where mkf o = CVarInfo_TupFld tyDefault @lhs.scrutineeCVarInfo o
+                                                      CTag _ cn _ _ _
+                                                        -> case @offset.whatBelow of
+                                                             ExprIsInt i -> (CVarInfo_DataFld tyDefault @lhs.scrutineeCVarInfo hsnUnknown (show @objFldNm),[])
+                                                             _           -> panic "Core.ToJScript.CPatFld.Fld.cviField"
+                                                        -- where cn' = hsnJavaLikeDataCon @lhs.pkgNm @lhs.topClassNm cn
+%%]
+
+%%[(8888 jscript)
+SEM CPatFld
+  | Fld         (loc.cviField,lhs.offsetOffset,loc.offsetBinds)
+                                                =   case @lhs.ctag of
+                                                      CTagRec
+                                                        -> case @offset.whatBelow of
+                                                             ExprIsInt i -> (mkf $ Left  i,@lhs.offsetOffset,[])
+                                                             ExprIsVar n -> (mkf $ Right n,@lhs.offsetOffset,[])
+                                                             _           -> (mkf $ Right n,o+1,[(n,CVarInfo_Local t o,mkj @offset.js)])
+                                                                         where n = @varnm
+                                                                               o = @lhs.offsetOffset
+                                                                               (mkj,t) = (id,())
+                                                        where mkf o = CVarInfo_TupFld tyDefault @lhs.scrutineeCVarInfo o
+                                                      CTag _ cn _ _ _
+                                                        -> case @offset.whatBelow of
+                                                             ExprIsInt i -> (CVarInfo_DataFld tyDefault @lhs.scrutineeCVarInfo cn' (hsnJavaLikeDataFldAt i),@lhs.offsetOffset,[])
+                                                             _           -> panic "Core.ToJazy.CPatFld.Fld.cviField"
+                                                        where cn' = hsnJavaLikeDataCon @lhs.pkgNm @lhs.topClassNm cn
+%%]
+
+%%[(8888 jscript)
+SEM CAlt
+  | Alt         loc         .   offsetsJI       =   j [ ji ## J.Instr_Store t o | (_,CVarInfo_Local t o,ji) <- @pat.offsetBinds ]
+%%]
+
+%%[(8888 jscript)
+SEM CAlt
+  | Alt         loc         .   offsetsJI       =   j [ ji ## J.Instr_Store t o | (_,CVarInfo_Local t o,ji) <- @pat.offsetBinds ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Generation: App as args ++ func
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 jscript)
+ATTR CExpr [ | | jsArgFunL: {[J.Expr]} ]
+
+SEM CExpr
+  | App         loc         .   jsArgFunL   =   @argUnpackWrap @arg.js : @func.jsArgFunL
+  | * - App Ann lhs         .   jsArgFunL   =   [@js]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Generation: Lam as body + args
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 jscript)
+ATTR CExpr [ | | jsBody: {J.Expr} ]
+
+SEM CExpr
+  | Lam         loc         .   jsBody      =   @body.jsBody
+  | * - Lam Ann lhs         .   jsBody      =   @js
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Generation: expr
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 jscript) hs
+-- | tracing
+jsTr :: PP x => String -> x -> Seq.Seq J.Stat
+jsTr m x = Seq.singleton $ J.Stat_Expr $ J.Expr_Call (jsVar $ mkHNm "trace") [J.Expr_Str m, J.Expr_Inline $ showPP $ pp x]
+
+-- constant
+jsIntConst :: Integral x => x -> J.Expr
+jsIntConst i = J.Expr_Int $ fromIntegral i
+
+-- var
+jsVar :: HSNM x => x -> J.Expr
+jsVar nm = J.Expr_Var $ mkHNm nm
+
+-- call
+jsCall :: HSNM n => n -> [J.Expr] -> J.Expr
+jsCall f as = J.Expr_Call (jsVar $ mkHNm f) as
+
+-- apply
+jsApp :: J.Expr -> [J.Expr] -> J.Expr
+jsApp f as
+  = J.Expr_New $ jsCall nm (f : as')
+  where (nm,_,as') = jsArgsPack as
+        nArgs      = length as'
+
+-- lam
+jsFun :: HsName -> [HsName] -> [J.Stat] -> J.Expr
+jsFun fNm as stats
+  = J.Expr_New $ jsCall (nmFunN $ length as) (extra ++ [J.Expr_Fun Nothing as stat])
+  where stat = J.Stat_Block stats
+%%[[8
+        extra = [J.Expr_Str $ show fNm]
+%%][100
+        extra = []
+%%]]
+
+-- force evaluation
+jsEvl :: J.Expr -> J.Expr
+jsEvl x = jsCall nmEval [x]
+
+-- assign
+jsAssign :: HSNM x => x -> J.Expr -> J.Stat
+jsAssign n e = J.Stat_Assign (jsVar $ mkHNm n) e
+
+-- new tuple
+jsNewTup :: [J.Expr] -> J.Expr
+jsNewTup = J.Expr_Arr
+
+-- | field names used for data constructors, either as provided by program, or made up here
+--   20101012 AD, note: internally generated datatypes not yet have correct meta info, so fill up names as needed, as temporary hack
+jsDataFldNames :: DataGam -> CTag -> [HsName]
+jsDataFldNames dataGam ctag
+  = zipWith (\o mbn -> maybe o hsnQualified mbn) hsnLclSupply $ nms ++ fill
+  where nms  = maybe [] (\(_,dti) -> map fst $ dtiFldTyL dti) $ dataGamTagLookup ctag dataGam
+        fill = repeat Nothing
+
+-- either new data constructor or tuple
+jsNewTupOrData :: DataGam -> HsName -> HsName -> CTag -> [J.Expr] -> J.Expr
+jsNewTupOrData dataGam _ _ ctag as
+  = case ctag of
+      CTag _ _ t _ _ -> J.Expr_Obj $ ((nmTag,jsIntConst t):)
+                                    $ zip (jsDataFldNames dataGam ctag) as
+      CTagRec        -> jsNewTup as
+
+-- | body
+jsBody :: (J.Expr -> J.Stat) -> Seq.Seq JBind -> Seq.Seq J.Stat -> J.Expr -> [J.Stat]
+jsBody mkRet binds stats lastExpr
+  = Seq.toList $
+                Seq.map (\(JBind _ n _ e _) -> J.jsVarDecl n e) binds
+    `Seq.union` stats
+    `Seq.union` Seq.fromList [mkRet lastExpr]
+%%]
+
+
+%%[(8888 jscript) hs
+-- constant
+jiIntConst :: Integral x => x -> J.JInstr
+jiIntConst i = j $ J.Instr_Const $ J.Const_Int $ fromIntegral i
+
+jiStrConst :: String -> J.JInstr
+jiStrConst s = j $ J.Instr_Const $ J.Const_String s
+
+-- new something
+jiNew :: HsName -> [(J.JInstr,J.Type)] -> J.JInstr
+jiNew nmCl argL
+  =    J.Instr_New nmCl
+    ## J.Instr_Dup (J.Type_Class nmCl)
+    ## map fst argL
+    ## J.Instr_Invoke J.InvokeMode_Special (J.Const_Method nmCl "<init>" (map snd argL) Nothing)
+
+-- put into (static) field
+jiPut :: J.ClassRef -> Bool -> J.JInstr -> String -> J.Type -> J.JInstr
+jiPut clNm static e n t
+  = (if static then emptyJI else j $ J.Instr_Load (J.Type_Class clNm) 0 ) ## e ## J.Instr_Put static (J.Const_Field clNm n t)
+
+-- new tuple
+jiNewTup :: [J.JInstr] -> J.JInstr
+jiNewTup as
+  =    jiIntConst nArgs
+    ## J.Instr_NewArray jtyObj
+    ## [  J.Instr_Dup jtyObj
+       ## jiIntConst o
+       ## a
+       ## J.Instr_AStore jtyObj
+       | (o,a) <- zip [0..] as
+       ]
+  where nArgs = length as
+
+-- cast to type
+jiCast :: J.Type -> J.JInstr -> J.JInstr
+jiCast ty ji
+  =    ji
+    ## J.Instr_CheckCast ty
+
+-- apply
+jiApp :: J.JInstr -> [J.JInstr] -> J.JInstr
+jiApp f as
+  =    jiCast jtyEvl f
+    ## as'
+    ## J.Instr_Invoke J.InvokeMode_Virtual (J.Const_Method nmEvl nm (replicate nArgs ty) (Just jtyApp))
+  where (nm,ty,as') = jiArgsPack as
+        nArgs       = length as'
+
+-- set an indirection
+jiSetInd :: J.JInstr -> J.JInstr -> J.JInstr
+jiSetInd ind val
+  =    ind ## val
+    ## J.Instr_Invoke J.InvokeMode_Virtual (J.Const_Method nmInd nmIndSet [jtyObj] Nothing)
+
+-- either new data constructor or tuple
+jiNewTupOrData :: J.ClassRef -> J.ClassRef -> CTag -> [J.JInstr] -> J.JInstr
+jiNewTupOrData pkg mod ctag as
+  = case ctag of
+      CTag _ cn _ _ _ -> jiNew (hsnJavaLikeDataCon pkg mod cn) [ (a,jtyObj) | a <- as ]
+      CTagRec         -> jiNewTup as
+
+-- force evaluation
+jiEvl :: J.JInstr -> J.JInstr
+jiEvl x = x ## J.Instr_Invoke J.InvokeMode_Static (J.Const_Method nmEvl nmEval [jtyObj] (Just jtyObj))
+
+%%]
+
+%%[(8888 jscript) hs
+jiToCd :: J.JInstr -> J.Code
+jiToCd i = J.Code_Code Nothing Nothing (Seq.toList i)
+%%]
+
+%%[(8 jscript)
+ATTR CExpr [ | | js: {J.Expr} ]
+%%]
+
+%%[(8 jscript)
+SEM CExpr
+  | Var         loc         .   js              =   jvRef @lhs.cvarMp @cvi
+  | Int         loc         .   js              =   jsIntConst  @int
+  | Char        loc         .   js              =   jsIntConst (ord @char) -- J.Expr_Char @char
+  | String      loc         .   js              =   J.Expr_Str  @str
+  | Tup         loc         .   js              =   jsNewTupOrData @lhs.dataGam @lhs.pkgNm @lhs.topClassNm @tag []
+  | App         loc         .   js              =   if @isTopApp'
+                                                    then let (f:as) = reverse @jsArgFunL
+                                                         in  case @func.appFunKind of
+                                                               AppFunKind_Tag tag -> jsNewTupOrData @lhs.dataGam @lhs.pkgNm @lhs.topClassNm tag as
+                                                               AppFunKind_FFI     -> @func.resPackWrap $ @func.mkFFI f as
+                                                               _                  -> jsApp f as
+                                                    else J.Expr_Str "*** ERR APP ***"
+  | FFI         loc         .   (mkArgsJS,mkResJS,mkFFI)
+                                                =   ffiJScriptMkCall @lhs.opts False @impEntNm @argMbConL @resMbCon
+                            .   js              =   let ent = jsVar $ mkHNm @impEntNm
+                                                        ffi = @mkFFI ent []
+                                                    in  if null @argMbConL then @mkResJS ffi else ent
+  | Let         loc         .   (jbindsLet,jstatsLet,js)
+                                                =   if @isGlobal
+                                                    then ( @binds.jbinds, Seq.empty, @body.js )
+                                                    else let binds = [ ((offof n),t,e) | JBind n _ t e _ <- Seq.toList @binds.jbinds ]
+                                                             offof n = cvarOffset $ panicJust "ToJScript.CExpr.Let.js offset" $ Map.lookup n @cvarMpNew
+                                                             initbinds
+                                                                   = case @categ of
+                                                                       CBindings_Rec
+                                                                         ->             Seq.fromList [ J.Stat_VarDecl o $ Just $ jsCall nmInd [] | (o,_,_) <- binds ]
+                                                                            `Seq.union` Seq.fromList [ J.Stat_Expr $ jsCall nmIndSet [jsVar o, e] | (o,_,e) <- binds ]
+                                                                       _ -> Seq.fromList [ J.Stat_VarDecl o (Just e) | (o,_,e) <- binds ]
+                                                         in  ( Seq.empty, initbinds, @body.js )
+  | Case        loc         .   (jstatsCase,js)
+                                                =   let alts = case @alts.altsJsL of
+                                                                 [(_,stats,e)]
+                                                                    -> (stats,e)
+                                                                 as -> ( Seq.fromList $
+                                                                           [ J.Stat_VarDecl swRes Nothing
+                                                                           , J.Stat_Switch @scrutineeTagJS
+                                                                               [ J.Alt_Alt tag $ Seq.toList $ stats `Seq.union` Seq.fromList [jsAssign swRes e, J.Stat_Break]
+                                                                               | (tag,stats,e) <- as
+                                                                               ]
+                                                                           ]
+                                                                       , jsVar swRes
+                                                                       )
+                                                                    where swRes   = hsnJScriptVar False @lhs.pkgNm @lhs.topClassNm $ hsnUniqifyUID HsNameUniqifier_JSSwitchResult @lUniq nmSwitchRes
+                                                    in  alts
+                loc         .   lUniq           :   UNIQUEREF gUniq
+  | CaseAltFail loc         .   js              =   @errorExpr.js
+  | Ann         loc         .   js              =   @expr.js
+  | * - Var Int Char String App Tup Let CaseAltFail Lam FFI Case Ann
+                loc         .   js              =   J.Expr_Str "*** TODO ***"
+%%]
+
+%%[(8 jscript)
+ATTR AllAlt [ | | altsJsL USE {++} {[]} : {[(Int,Seq.Seq J.Stat,J.Expr)]} ]
+%%]
+
+%%[(8 jscript)
+SEM CAlt
+  | Alt         loc         .   altsJsL         =   [(@scrutineeTag,@expr.jstats,@expr.js)]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Additional unwrapping of arguments resp packing of res, in particular for FFI call
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 jscript)
+ATTR CExpr [ | | argUnpackWrapL : {[J.Expr -> J.Expr]} ]
+
+SEM CExpr
+  | FFI         lhs         .   argUnpackWrapL  =   @mkArgsJS
+  | App         (loc.argUnpackWrap,lhs.argUnpackWrapL)
+                                                =   hdAndTl' id @func.argUnpackWrapL
+  | * - FFI App Ann
+                lhs         .   argUnpackWrapL  =   []
+%%]
+
+%%[(8 jscript)
+ATTR CExpr [ | | resPackWrap : {J.Expr -> J.Expr} ]
+
+SEM CExpr
+  | FFI         lhs         .   resPackWrap     =   @mkResJS
+  | App         lhs         .   resPackWrap     =   @func.resPackWrap
+  | * - FFI App Ann
+                lhs         .   resPackWrap     =   id
+%%]
+
+%%[(8 jscript)
+ATTR CExpr [ | | mkFFI : {J.Expr -> [J.Expr] -> J.Expr} ]
+
+SEM CExpr
+  | App         lhs         .   mkFFI           =   @func.mkFFI
+  | * - FFI App Ann
+                lhs         .   mkFFI           =   \f _ -> f
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Dealing with >5 args
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 jscript) hs
+-- pack > 5 args into tuple, otherwise normal
+jsArgsPack :: [J.Expr] -> (String,(),[J.Expr])
+jsArgsPack = javalikeArgsPack (-1) ((),(),J.Expr_Arr,nmAppN)
+%%]
+
+%%[(8 jscript) hs
+-- unpack > 5 args from tuple, otherwise normal
+jsArgsUnpack :: ([HsName]->[HsName]) -> [HsName] -> ([(HsName,())],[(J.Expr,())],[(HsName,CVarInfo)])
+jsArgsUnpack toRef = javalikeArgsUnpack maxBound ((), (), (), toRef, jsIntConst, \_ a -> a, \n -> take n hsnLclSupply)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Generation: single binding
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 jscript) hs
+type JBind  = JBind'  () J.Expr ()
+type JBinds = JBinds' () J.Expr ()
+%%]
+
+%%[(8 jscript) hs
+jBind :: HsName -> HsName -> J.Expr -> JBinds
+jBind = jBind' (tyDefault, id, const ())
+%%]
+
+%%[(8 jscript)
+SEM CBindAspect
+  | Bind Val    loc         .   jsExpr          =   (if @lhs.evalCtx == EvalCtx_Eval then jsEvl else id) @expr.js
+%%]
+
+%%[(8888 jscript)
+SEM CBindAspect
+  | Bind Val    loc         .   jiExpr          =   (if @lhs.evalCtx == EvalCtx_Eval then jiEvl else id) @expr.ji
+%%]
+
+%%[(8 jscript)
+SEM CBindAspect
+  | Bind        lhs         .   jbinds          =   {- if @isThrowOutMain then Seq.empty else -} jBind @lhs.nm @varnm @js
+%%]
+
+%%[(8 jscript)
+ATTR CExpr [ | | jstats: {Seq.Seq J.Stat} ]
+
+SEM CExpr
+  | Let         lhs         .   jstats          =   @jstatsLet `Seq.union` @body.jstats
+  | Case        lhs         .   jstats          =   @jstatsCase
+  | Lam         lhs         .   jstats          =   if @hasFunHere then Seq.empty else @body.jstats
+  | * - Let Case Lam Ann
+                lhs         .   jstats          =   Seq.empty
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Generation: FFI binding
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8888 jscript) hs
+basicTyJBox :: BasicJazy -> (J.JInstr -> J.JInstr,J.Type)
+basicTyJBox t
+  = case t of
+      BasicJazy_Int         -> (bx nmInt    J.Type_Int   ,J.Type_Int   )
+      BasicJazy_Char        -> (bx nmChar   J.Type_Char  ,J.Type_Char  )
+      BasicJazy_Object      -> (id                       ,jtyObj       )
+      BasicJazy_String      -> (id                       ,jtyStr       )
+%%[[97
+      BasicJazy_Byte        -> (bx nmByte   J.Type_Byte  ,J.Type_Byte  )
+      BasicJazy_Short       -> (bx nmShort  J.Type_Short ,J.Type_Short )
+      BasicJazy_Long        -> (bx nmLong   J.Type_Long  ,J.Type_Long  )
+      BasicJazy_Float       -> (bx nmFloat  J.Type_Float ,J.Type_Float )
+      BasicJazy_Double      -> (bx nmDouble J.Type_Double,J.Type_Double)
+      BasicJazy_Integer     -> (id                       ,jtyInteger   )
+%%]]
+%%[[98
+      BasicJazy_Handle      -> (id                       ,jtyHandle    )
+      BasicJazy_ByteArray   -> (id                       ,jtyByteArray )
+%%]]
+  where bx nm ty jiVal = jiNew nm [(jiVal,ty)]
+
+basicTyJUnbox :: Bool -> BasicJazy -> (J.JInstr -> J.JInstr,J.Type)
+basicTyJUnbox doEval t
+  = case t of
+      BasicJazy_Int         -> (un1 nmInt    jtyInt    "intValue"    J.Type_Int   ,J.Type_Int   )
+      BasicJazy_Char        -> (un1 nmChar   jtyChar   "charValue"   J.Type_Char  ,J.Type_Char  )
+      BasicJazy_Object      -> (un2                                  jtyObj       ,jtyObj       )
+      BasicJazy_String      -> (un2                                  jtyStr       ,jtyStr       )
+%%[[97
+      BasicJazy_Byte        -> (un1 nmByte   jtyByte   "byteValue"   J.Type_Byte  ,J.Type_Byte  )
+      BasicJazy_Short       -> (un1 nmShort  jtyShort  "shortValue"  J.Type_Short ,J.Type_Short )
+      BasicJazy_Long        -> (un1 nmLong   jtyLong   "longValue"   J.Type_Long  ,J.Type_Long  )
+      BasicJazy_Float       -> (un1 nmFloat  jtyFloat  "floatValue"  J.Type_Float ,J.Type_Float )
+      BasicJazy_Double      -> (un1 nmDouble jtyDouble "doubleValue" J.Type_Double,J.Type_Double)
+      BasicJazy_Integer     -> (un2                                  jtyInteger   ,jtyInteger   )
+%%]]
+%%[[98
+      BasicJazy_Handle      -> (un2                                  jtyHandle    ,jtyHandle    )
+      BasicJazy_ByteArray   -> (un2                                  jtyByteArray ,jtyByteArray )
+%%]]
+  where un1 nmTy ty nmGet tyRes jiVal
+          =    un2 ty jiVal
+            ## J.Instr_Invoke J.InvokeMode_Virtual (J.Const_Method nmTy nmGet [] (Just tyRes))
+        un2 ty jiVal
+          =    jiCast ty (if doEval then jiEvl jiVal else jiVal)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Generation: methods
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8888 jscript) hs
+jmInitInstWith :: [(J.JInstr,J.Type)] -> J.JInstr -> J.ClassRef -> J.ClassRef -> [(String)] -> J.Method
+jmInitInstWith jiInitL ji thisNm superNm fldL
+  = J.Method_Method [J.Flag_Public] "<init>" (replicate nArgs jtyObj) retTy
+        (jiToCd
+          $  J.Instr_Load jtyObj 0
+          ## map fst jiInitL
+          ## J.Instr_Invoke J.InvokeMode_Special (J.Const_Method superNm "<init>" (map snd jiInitL) Nothing)
+          ## [ jiPut thisNm False (j $ J.Instr_Load jtyObj o) f jtyObj | (o,f) <- zip (methArgOffsets nArgs) fldL ]
+          ## ji
+          ## J.Instr_Return retTy
+        )
+  where retTy = Nothing
+        nArgs = length fldL
+
+jmInit0InstWith :: J.JInstr -> J.ClassRef -> J.ClassRef -> J.Method
+jmInit0InstWith ji thisNm superNm = jmInitInstWith [] ji thisNm superNm []
+
+jmInit0Inst :: J.ClassRef -> J.ClassRef -> J.Method
+jmInit0Inst = jmInit0InstWith emptyJI
+
+jmEvalN :: Int -> [J.Type] -> J.JInstr -> J.Method
+jmEvalN n args ji
+  = J.Method_Method [J.Flag_Public] (nmEvalN n) args retTy
+        (jiToCd
+          $  ji
+          ## J.Instr_Return retTy
+        )
+  where retTy = Just jtyObj
+
+jmEvalSet :: J.JInstr -> J.Method
+jmEvalSet ji
+  = J.Method_Method [J.Flag_Public] "evalSet" [] retTy
+        (jiToCd
+          $  J.Instr_Load jtyObj 0
+          ## ji
+          ## J.Instr_Invoke J.InvokeMode_Virtual (J.Const_Method (nmAppN 0) "setValue" [jtyObj] retTy)
+          ## J.Instr_Return retTy
+        )
+  where retTy = Nothing
+%%]
+
+%%[(8 jscript)
+SEM CModule
+  | Mod         loc         .   jmodStats       =   jsBody J.Stat_Expr @expr.jbinds @expr.jstats
+                                                    $ jsEvl
+%%[[99
+                                                    $ (\m -> jsApp m [J.Expr_Arr []])
+%%]]
+                                                      @expr.js
+%%]
+
+%%[(8888 jscript)
+SEM CModule
+  | Mod         loc         .   methClinit      =   J.Method_Method [J.Flag_Static] "<clinit>" [] Nothing
+                                                        (jiToCd
+                                                          $  [ e ## J.Instr_Put True (J.Const_Field @moduleClassNm (show $ hsnJavaLikeVarToFld n) t)
+                                                             | JBind _ n t e _ <- Seq.toList @expr.jbinds
+                                                             ]
+                                                          ## J.Instr_Return Nothing
+                                                        )
+                            .   methInit        =   jmInit0Inst @moduleNm nmObj
+                            .   methMainNm      =   if ehcOptGenTrace @lhs.opts then "runVisuallyTraced" else "runTimed"
+                            .   methMain        =   let d f = jiNew (hsnJavaLikeDataCon @pkgNm @topClassNm $ ehcOptBuiltin @lhs.opts f) []
+%%[[99
+                                                        v f = jvRef @lhs.cvarMp (cvarGlob jtyObj @moduleClassNm n (hsnJScriptVar @pkgNm @topClassNm n))
+                                                            where n = ehcOptBuiltin @lhs.opts f
+%%]]
+                                                    in  J.Method_Method [J.Flag_Public,J.Flag_Static] "main" [J.Type_Array jtyStr] Nothing
+                                                            (jiToCd
+                                                              $  d ehbnBoolTrue
+                                                              ## d ehbnBoolFalse
+                                                              ## J.Instr_Invoke J.InvokeMode_Static (J.Const_Method nmRTS "setBoolConstructors" [jtyObj,jtyObj] Nothing)
+                                                              ## d ehbnDataOrderingAltEQ
+                                                              ## d ehbnDataOrderingAltLT
+                                                              ## d ehbnDataOrderingAltGT
+                                                              ## J.Instr_Invoke J.InvokeMode_Static (J.Const_Method nmRTS "setOrderingConstructors" [jtyObj,jtyObj,jtyObj] Nothing)
+%%[[99
+                                                              ## d ehbnDataListAltNil
+                                                              ## v ehbnDataListAltCons
+                                                              ## J.Instr_Invoke J.InvokeMode_Static (J.Const_Method nmRTS "setListConstructors" [jtyObj,jtyObj] Nothing)
+%%]]
+                                                              ## @expr.ji
+                                                              ## J.Instr_Invoke J.InvokeMode_Static (J.Const_Method nmRTS @methMainNm [jtyObj] Nothing)
+                                                              ## J.Instr_Return Nothing
+                                                            )
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Generation: classes
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8888 jscript) hs
+type JClasses = Seq.Seq J.Class
+%%]
+
+%%[(8888 jscript) hs
+jCls :: J.Flags -> J.ClassRef -> J.ClassRef -> J.Fields -> J.Methods -> J.Classes -> J.Class
+jCls flags nmThis nmSuper flds meths subs
+  = J.Class_Class 0 49 flags nmThis nmSuper [] flds meths subs
+
+jFunCls :: HsName -> Int -> [J.Type] -> [(J.JInstr,J.Type)] -> J.JInstr -> JBinds -> JClasses -> (JClasses,J.JInstr)
+jFunCls thisNm nOrigArgs args jiInitL jbody jbinds subclasses
+  = ( Seq.fromList
+      [ jCls [J.Flag_Public,J.Flag_Static] thisNm superNm
+          (map jbindFld $ Seq.toList jbinds)
+          [ jmInitInstWith jiInitL emptyJI thisInitNm superNm []
+          , if nOrigArgs == 0 then jmEvalSet jbody else jmEvalN nOrigArgs args jbody
+          ]
+          (Seq.toList subclasses)
+      ]  
+    , jiNew thisNm []
+    )
+  where superNm = nmCafOrFunN nOrigArgs
+        thisInitNm = thisNm
+%%]
+
+%%[(8 jscript)
+SEM CExpr
+  | Lam         loc         .   js              =   if @hasFunHere
+                                                    then let as = [o | (o,_) <- @jsArgTyL]
+                                                             v = mkHNm "_"
+                                                             t1 x = if ehcOptGenTrace @lhs.opts
+                                                                    then Seq.unions [ jsTr (n ">" @lamNm) $ m $ [s " <- "] ++ intersperse (s ", ") (map p as)
+                                                                                    , x
+                                                                                    , Seq.singleton $ J.Stat_VarDecl v (Just @body.jsBody)
+                                                                                    , jsTr (n "<" @lamNm) $ m [s " -> ", s v]
+                                                                                    ]
+                                                                    else x
+                                                                  where m l = hlist $ intersperse (pp "+") l
+                                                                        s x = pp (show x)
+                                                                        s' x = pp (show $ show x)
+                                                                        p x = pp x
+                                                                        n p x = p ++ show x
+                                                             b = if ehcOptGenTrace @lhs.opts then jsVar v else @body.jsBody
+                                                         in  jsFun @origLamNm as $ jsBody J.Stat_Ret @body.jbinds (t1 @body.jstats) b
+                                                    else J.Expr_Str "*** ERR LAM ***"
+%%]
+
+%%[(8888 jscript)
+SEM CExpr
+  | Lam         loc         .   (subClasses,ji) =   if @hasFunHere
+                                                    then let funNmJiL= [(jiStrConst (show @lamNm),jtyStr)]
+                                                             classNm = hsnJavaLikeVarCls @lhs.pkgNm @lhs.topClassNm @lamNm
+                                                         in  jFunCls classNm (length @nmArgL) @jiArgTyL (@clsInitArgL ++ funNmJiL) @body.jiBody @body.jbinds @body.subClasses
+                                                    else (@body.subClasses, emptyJI)
+%%]
+
+%%[(8 jscript) hs
+-- | construct the ffi call
+ffiJScriptMkCall
+  :: EHCOpts
+     -> Bool                        -- do eval of args
+     -> String                      -- name of ffi entity
+     -> [Maybe HsName]              -- list of (possibly) type constructor names of arguments
+     -> Maybe HsName                -- and result
+     -> ( [J.Expr -> J.Expr]        -- additional unwrapping for each argument
+        ,  J.Expr -> J.Expr         -- and result
+        ,  J.Expr -> [J.Expr] -> J.Expr                 -- and primitive call itself
+        )
+ffiJScriptMkCall
+  = javalikeMkFFICall
+      ( const tyDefault,\_ _ -> bx,\_ -> bx
+      , \_ _ _ f as -> J.Expr_Call f as
+      , jsEvl, tyDefault
+      )
+  where bx = (id,tyDefault)
+%%]
+
+%%[(8 jscript)
+SEM CBindAspect
+  | Bind        loc         .   js              =   let dflt = @jsExpr
+                                                    in  if @lhs.isGlobal
+                                                        then if @isCAF
+                                                             then jsApp (jsFun @lhs.nm [] $ jsBody J.Stat_Ret @expr.jbinds @expr.jstats @jsExpr) []
+                                                                -- Seq.toList $ @expr.jstats `Seq.union` Seq.fromList  [J.Stat_Ret @jsExpr]) []
+                                                             else dflt
+                                                        else dflt
+%%]
+
+%%[(8888 jscript)
+SEM CBindAspect
+  | Bind        loc         .   (subClasses,ji) =   let dflt = (@expr.subClasses, @jiExpr)
+                                                    in  if @lhs.isGlobal
+                                                        then if @isCAF
+                                                             then jFunCls (hsnJavaLikeVarCls @lhs.pkgNm @lhs.topClassNm @varnm) 0 [] [] @jiExpr @expr.jbinds @expr.subClasses
+                                                             else dflt
+                                                        else dflt
+                lhs         .   subClasses      =   if @isThrowOutMain then Seq.empty else @subClasses
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Generation: toplevel
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 jscript)
+ATTR CodeAGItf CModule [ | | js: {J.JScriptModule} ]
+%%]
+
+%%[(8 jscript)
+SEM CModule
+ | Mod          lhs         .   js              =   J.JScriptModule_Mod $ @jsModTraceStats ++ @jsModInitStats ++ @jmodStats
+%%[[8
+                loc         .   jsModInitStats  =   []
+%%][20
+                loc         .   jsModInitStats  =   let prefixes = nub . catMaybes . map hsnQualifier
+                                                    in  map (\n -> jsAssign n $ J.Expr_Obj []) $ concat $ reverse $ takeWhile (not.null) $ iterate prefixes $ Set.toList @expr.usedModNmS
+%%]]
+%%[[8
+                loc         .   jsModTraceStats =   if ehcOptGenTrace @lhs.opts then [jsAssign (mkHNm "traceOn") J.Expr_True] else []
+%%][100
+                loc         .   jsModTraceStats =   []
+%%]]
+%%]
+
+
+
+
+

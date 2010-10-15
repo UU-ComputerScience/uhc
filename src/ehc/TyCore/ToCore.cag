@@ -253,7 +253,7 @@ SEM PatRest
 ATTR AllFldBind [ | | l0CoreL USE {++} {[]} : CPatFldL ]
 
 SEM FldBind
-  | Fld         lhs         .   l0CoreL             =   [CPatFld_Fld hsnUnknown @offset.core @nm]
+  | Fld         lhs         .   l0CoreL             =   [CPatFld_Fld hsnUnknown @offset.core @nm []]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

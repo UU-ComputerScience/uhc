@@ -13,3 +13,10 @@ SEM TextItem
   | LineFeed		lhs			.	lines		=   Seq.singleton (Line_LF   @pp)
   | * - LineFeed	lhs			.	lines		=   Seq.singleton (Line_Item @pp)
 -}
+
+-------------------------------------------------------------------------
+-- Global info
+-------------------------------------------------------------------------
+
+ATTR AGItf AllNT [ opts: Opts | | ]
+
