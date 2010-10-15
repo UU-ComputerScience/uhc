@@ -1,3 +1,4 @@
+{-# EXCLUDE_IF_TARGET jscript #-}
 module MarshalError (
   	module Foreign.Marshal.Error,
 	IOErrorType,

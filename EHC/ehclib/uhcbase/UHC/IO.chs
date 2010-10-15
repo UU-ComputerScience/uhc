@@ -1,6 +1,7 @@
 %%[99
 {-# LANGUAGE NoImplicitPrelude, CPP #-}
 {-# OPTIONS_HADDOCK hide #-}
+{-# EXCLUDE_IF_TARGET jscript #-}
 
 #undef DEBUG_DUMP
 

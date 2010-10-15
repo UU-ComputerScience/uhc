@@ -1,0 +1,47 @@
+-------------------------------------------------------------------------
+-- Header numbering
+-------------------------------------------------------------------------
+
+ATTR AllText AllTable [ | headerLevel: Int  headerSeqNrMp: HeaderSeqNrMp | ]
+ATTR HeaderLevel [ | headerLevel: Int | allowHeaderCounting: Bool ]
+
+SEM AGItf
+  | AGItf           loc         .   headerLevel =   -1
+                                .   headerSeqNrMp
+                                                =   Map.empty
+
+SEM HeaderLevel
+  | Level           lhs         .   headerLevel =   @level
+
+SEM HeaderLevel
+  | Level           lhs         .   allowHeaderCounting
+  												=   True
+  | Paragraph       lhs         .   allowHeaderCounting
+  												=   False
+
+SEM TextItem
+  | Header          (loc.headerTxt,lhs.headerSeqNrMp)
+                                                =   if @level.allowHeaderCounting
+                                                    then let mkTxt h m = concat $ intersperse "." [ show $ fromJust $ Map.lookup l m | l <- [0 .. h] ]
+                                                             seqNr h = fromJust $ Map.lookup h @lhs.headerSeqNrMp
+                                                         in  case @lhs.headerLevel `compare` @level.headerLevel of
+                                                               GT -> ( mkTxt @level.headerLevel m, m )
+                                                                     where m = Map.insert @level.headerLevel (seqNr @level.headerLevel + 1) @lhs.headerSeqNrMp
+                                                               EQ -> ( mkTxt @lhs.headerLevel m, m )
+                                                                     where m = Map.insert @lhs.headerLevel (seqNr @lhs.headerLevel + 1) @lhs.headerSeqNrMp
+                                                               LT -> ( mkTxt @level.headerLevel m, m )
+                                                                     where m = Map.insert @level.headerLevel 1 @lhs.headerSeqNrMp
+                                                    else ( "", @lhs.headerSeqNrMp )
+
+-------------------------------------------------------------------------
+-- Itemize level
+-------------------------------------------------------------------------
+
+ATTR AllText AllTable [ itemizeLevel: Int | | ]
+
+SEM TextItem
+  | Itemize         loc         .   itemizeLevel=   @lhs.itemizeLevel + 1
+
+SEM AGItf
+  | AGItf           loc         .   itemizeLevel=   0
+

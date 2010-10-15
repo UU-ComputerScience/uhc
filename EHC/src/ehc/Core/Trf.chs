@@ -11,6 +11,9 @@
 %%[(8 codegen) import(Control.Monad, Control.Monad.State)
 %%]
 
+%%[(8 codegen) import({%{EH}Base.Target})
+%%]
+
 %%[(8 codegen) import({%{EH}EHC.Common})
 %%]
 
@@ -106,7 +109,7 @@ trfCore opts dataGam modNm trfcore
                ; t_eta_red
 
                  -- make names unique
-               ; t_ren_uniq
+               ; t_ren_uniq emptyRenUniqOpts
                  -- from now on INVARIANT: keep all names globally unique
                  --             ASSUME   : no need to shadow identifiers
 
@@ -140,7 +143,7 @@ trfCore opts dataGam modNm trfcore
                ; t_anormal u1
 
 %%[[9
-               ; when (ehcOptFullProgAnalysis opts)
+               ; when (targetDoesHPTAnalysis (ehcOptTarget opts))
                       t_fix_dictfld
 %%]]
                
@@ -155,10 +158,12 @@ trfCore opts dataGam modNm trfcore
                
                  -- float lam/CAF to global level
                ; t_float_glob
-               ; when (ehcOptFullProgAnalysis opts)
+               ; when (targetDoesHPTAnalysis (ehcOptTarget opts))
                       t_find_null
                ; when (ehcOptOptimizes Optimize_StrictnessAnalysis opts)
                       t_ana_relev
+               ; when (targetIsJScript (ehcOptTarget opts))
+                      (t_ren_uniq (emptyRenUniqOpts {renuniqOptResetOnlyInLam = True}))
                }
 
         liftTrf :: String -> (CModule -> CModule) -> State TrfCore ()
@@ -187,7 +192,7 @@ trfCore opts dataGam modNm trfcore
         t_initial       = liftTrf  "initial"            $ id
         t_eta_red       = liftTrf  "eta-red"            $ cmodTrfEtaRed
         t_ann_simpl     = liftTrf  "ann-simpl"          $ cmodTrfAnnBasedSimplify opts
-        t_ren_uniq      = liftTrf  "ren-uniq"           $ cmodTrfRenUniq
+        t_ren_uniq    o = liftTrf  "ren-uniq"           $ cmodTrfRenUniq o
         t_let_unrec     = liftTrf  "let-unrec"          $ cmodTrfLetUnrec
         t_inl_letali    = liftTrf  "inl-letali"         $ inlineLetAlias
         t_elim_trivapp  = liftTrf  "elim-trivapp"       $ cmodTrfElimTrivApp opts

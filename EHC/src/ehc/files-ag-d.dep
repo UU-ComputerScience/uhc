@@ -4,6 +4,7 @@ Ty
 Core
 TyCore
 JVMClass
+JScript
 Foreign
 GrinCode
 GrinByteCode

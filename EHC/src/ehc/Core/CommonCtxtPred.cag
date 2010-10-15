@@ -83,6 +83,9 @@ SEM CExpr
   | App			loc			.	whatBelow		=	maybe (ExprIsApp 1) (\a -> ExprIsApp $ a + 1) $ whatExprMbApp @func.whatBelow
   | * - Lam App Var Int Ann CaseAltFail
                 loc         .   whatBelow       =   ExprIsOther
+
+SEM CExpr
+  | App			loc			.   isTopApp'       =   isNothing $ whatExprMbApp @lhs.whatAbove
 %%]
 
 %%[(8 codegen)
@@ -94,8 +97,11 @@ SEM CExpr
   | * - Lam App Ann
   				loc			.	whatAbove		=	ExprIsOther
 
+SEM CExpr
+  | Let			loc			.   isTopLet        =   @lhs.whatAbove == ExprIsBind
+
 SEM CBindAspect
-  | Bind Val	loc			.	whatAbove		=	ExprIsOther
+  | Bind Val	loc			.	whatAbove		=	ExprIsBind
 
 SEM CPatFld
   | Fld 		loc			.	whatAbove		=	ExprIsOther

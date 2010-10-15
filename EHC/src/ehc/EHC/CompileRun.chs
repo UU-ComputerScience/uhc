@@ -10,7 +10,7 @@ An EHC compile run maintains info for one compilation invocation
 -- general imports
 %%[8 import(qualified Data.Map as Map,qualified Data.Set as Set)
 %%]
-%%[8 import(System.Cmd)
+%%[8 import(System, System.Cmd(rawSystem))
 %%]
 %%[99 import(System.Directory)
 %%]

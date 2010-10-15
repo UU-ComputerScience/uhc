@@ -25,6 +25,8 @@ An EHC compile unit maintains info for one unit of compilation, a Haskell (HS) m
 %%]
 %%[(8 jazy) hs import(qualified {%{EH}JVMClass} as Jvm)
 %%]
+%%[(8 jscript) hs import(qualified {%{EH}JScript} as JS)
+%%]
 -- Language semantics: HS, EH
 %%[8 import(qualified {%{EH}EH.MainAG} as EHSem, qualified {%{EH}HS.MainAG} as HSSem)
 %%]
@@ -53,8 +55,8 @@ An EHC compile unit maintains info for one unit of compilation, a Haskell (HS) m
 %%[(9999 codegen grin) import({%{EH}GrinCode.Trf.ForceEval}, {%{EH}GrinByteCode.Trf.ForceEval})
 %%]
 
--- pragma
-%%[99 hs import(qualified {%{EH}Base.Pragma} as Pragma)
+-- pragma, target
+%%[99 hs import(qualified {%{EH}Base.Pragma} as Pragma, {%{EH}Base.Target})
 %%]
 
 -- debug
@@ -100,6 +102,7 @@ data EHCCompileSeqNr
       }
   deriving (Eq,Ord)
 
+zeroEHCCompileSeqNr :: EHCCompileSeqNr
 zeroEHCCompileSeqNr = EHCCompileSeqNr 0 0
 
 instance Show EHCCompileSeqNr where
@@ -142,6 +145,9 @@ data EHCompileUnit
 %%[[(8 jazy)
       , ecuMbJVMClassL       :: !(Maybe (HsName,[Jvm.Class]))
 %%]]
+%%[[(8 jscript)
+      , ecuMbJScript         :: !(Maybe JS.JScriptModule)
+%%]]
       , ecuState             :: !EHCompileUnitState
 %%[[20
       , ecuHSDeclImpNmL      :: ![HsName]							-- imported modules as declared in src .hs
@@ -167,6 +173,7 @@ data EHCompileUnit
 %%]]
 %%[[99
       , ecuMbOpts            :: (Maybe EHCOpts)						-- possibly per module adaption of options (caused by pragmas)
+      , ecuTarget            :: Target								-- target for which we compile
       , ecuPragmas           :: !(Set.Set Pragma.Pragma)			-- pragmas of module
       , ecuUsedNames         :: ModEntRelFilterMp					-- map holding actually used names, to later filter cache of imported hi's to be included in this module's hi
 %%]]
@@ -235,6 +242,9 @@ emptyECU
 %%[[(8 jazy)
       , ecuMbJVMClassL       = Nothing
 %%]]
+%%[[(8 jscript)
+      , ecuMbJScript         = Nothing
+%%]]
       , ecuState             = ECUSUnknown
 %%[[20
       , ecuHSDeclImpNmL      = []
@@ -260,6 +270,7 @@ emptyECU
 %%]]
 %%[[99
       , ecuMbOpts			 = Nothing
+      , ecuTarget		 	 = defaultTarget
       , ecuPragmas           = Set.empty
       , ecuUsedNames		 = Map.empty
 %%]]
@@ -322,6 +333,11 @@ instance CompileUnit EHCompileUnit HsName FileLoc EHCompileUnitState where
   cuImports         = const []
 %%][20
   cuImports         = ecuImpNmL
+%%]]
+%%[[99
+  cuParticipation u = if not (Set.null $ Set.filter (Pragma.pragmaIsExcludeTarget $ ecuTarget u) $ ecuPragmas u)
+                      then [CompileParticipation_NoImport]
+                      else []
 %%]]
 
 instance FPathError Err
@@ -397,6 +413,11 @@ ecuStoreTyCore x ecu = ecu { ecuMbTyCore = Just x }
 %%[(8 jazy) export(ecuStoreJVMClassL)
 ecuStoreJVMClassL :: EcuUpdater (HsName,[Jvm.Class])
 ecuStoreJVMClassL x ecu = ecu { ecuMbJVMClassL = Just x }
+%%]
+
+%%[(8 jscript) export(ecuStoreJScript)
+ecuStoreJScript :: EcuUpdater (JS.JScriptModule)
+ecuStoreJScript x ecu = ecu { ecuMbJScript = Just x }
 %%]
 
 ecuStoreJVMClassFPathL :: EcuUpdater [FPath]
@@ -496,9 +517,12 @@ ecuStoreDirIsWritable :: EcuUpdater Bool
 ecuStoreDirIsWritable x ecu = ecu { ecuDirIsWritable = x }
 %%]
 
-%%[99 export(ecuStoreOpts,ecuStorePragmas,ecuStoreUsedNames)
+%%[99 export(ecuStoreOpts,ecuStorePragmas,ecuStoreUsedNames,ecuSetTarget)
 ecuStoreOpts :: EcuUpdater EHCOpts
 ecuStoreOpts x ecu = ecu { ecuMbOpts = Just x }
+
+ecuSetTarget :: EcuUpdater Target
+ecuSetTarget x ecu = ecu { ecuTarget = x }
 
 ecuStorePragmas :: EcuUpdater (Set.Set Pragma.Pragma)
 ecuStorePragmas x ecu = ecu { ecuPragmas = x }

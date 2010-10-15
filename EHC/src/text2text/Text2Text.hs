@@ -41,6 +41,7 @@ import Plugin
 -- for plugin: generation of output
 import qualified Text.To.DocLaTeX       as O_DocLaTeX
 import qualified Text.To.TWiki          as O_TWiki
+import qualified Text.To.Html           as O_Html
 
 -- for plugin: parsing input
 import qualified Text.Parser.DocLaTeX   as P_DocLaTeX
@@ -94,6 +95,11 @@ pluginMp
       , ( TextType_TWiki
         , defaultPlugin
             { plgToOutDoc			= Just O_TWiki.textToOutDoc
+            }
+        )
+      , ( TextType_Html
+        , defaultPlugin
+            { plgToOutDoc			= Just O_Html.textToOutDoc
             }
         )
       ]

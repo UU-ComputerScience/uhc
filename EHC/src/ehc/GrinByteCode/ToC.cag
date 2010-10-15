@@ -462,7 +462,7 @@ SEM Instr
 %%[[8
                                                                          d = noInx
 %%][20
-                                                                         d = Map.findWithDefault noInx (panicJust "ToC.Instr.Call" $ hsnQualifier nm) @lhs.impNmMp
+                                                                         d = Map.findWithDefault noInx (panicJust ("ToC.Instr.Call: " ++ show nm) $ hsnQualifier nm) @lhs.impNmMp
 %%]]
                                                                          e = maybe noInx id $ @lhs.lkupLookupFunctionInfoInx nm
                                                       _            -> dflt

@@ -250,11 +250,18 @@ packedStringToString p = if packedStringNull p
 data ByteArray
 
 foreign import prim primByteArrayLength   :: ByteArray -> Int
+#if defined(__UHC_TARGET_JSCRIPT__)
+foreign import prim primByteArrayToPackedString :: ByteArray -> PackedString
+primByteArrayToString = packedStringToString . primByteArrayToPackedString
+#else
 foreign import prim primByteArrayToString :: ByteArray -> String
+#endif
 
 
-#ifdef __UHC_TARGET_C__
+#if defined(__UHC_TARGET_C__)
 foreign import prim packedStringToInteger :: PackedString -> Integer
+#elif defined(__UHC_TARGET_JSCRIPT__)
+foreign import prim "primPackedStringToInteger" packedStringToInteger :: PackedString -> Integer
 #else
 foreign import prim "primCStringToInteger" packedStringToInteger :: PackedString -> Integer
 #endif
@@ -932,19 +939,42 @@ instance Show Int where
 -- Integer type
 --------------------------------------------------------------
 
-foreign import prim primEqInteger  :: Integer -> Integer -> Bool
-foreign import prim primCmpInteger :: Integer -> Integer -> Ordering
+#if defined(__UHC_TARGET_JSCRIPT__)
+-- Integers are (for now) represented by Int
+foreign import prim "primEqInt"   primEqInteger      :: Integer -> Integer -> Bool
+foreign import prim "primCmpInt"  primCmpInteger     :: Integer -> Integer -> Ordering
+foreign import prim "primAddInt"  primAddInteger     :: Integer -> Integer -> Integer
+foreign import prim "primSubInt"  primSubInteger     :: Integer -> Integer -> Integer
+foreign import prim "primMulInt"  primMulInteger     :: Integer -> Integer -> Integer
+foreign import prim "primNegInt"  primNegInteger     :: Integer -> Integer
+foreign import prim "primQuotInt" primQuotInteger    :: Integer -> Integer -> Integer
+foreign import prim "primRemInt"  primRemInteger     :: Integer -> Integer -> Integer
+foreign import prim "primDivInt"  primDivInteger     :: Integer -> Integer -> Integer
+foreign import prim "primModInt"  primModInteger     :: Integer -> Integer -> Integer
+foreign import prim "primQuotRemInt" primQuotRemInteger       :: Integer -> Integer -> (Integer,Integer)
+foreign import prim "primDivModInt"  primDivModInteger        :: Integer -> Integer -> (Integer,Integer)
+#else
+foreign import prim primEqInteger   :: Integer -> Integer -> Bool
+foreign import prim primCmpInteger  :: Integer -> Integer -> Ordering
+foreign import prim primAddInteger  :: Integer -> Integer -> Integer
+foreign import prim primSubInteger  :: Integer -> Integer -> Integer
+foreign import prim primMulInteger  :: Integer -> Integer -> Integer
+foreign import prim primNegInteger  :: Integer -> Integer
+foreign import prim primQuotInteger :: Integer -> Integer -> Integer
+foreign import prim primRemInteger  :: Integer -> Integer -> Integer
+foreign import prim primDivInteger  :: Integer -> Integer -> Integer
+foreign import prim primModInteger  :: Integer -> Integer -> Integer
+#ifdef __UHC_TARGET_BC__
+foreign import prim primQuotRemInteger       :: Integer -> Integer -> (Integer,Integer)
+foreign import prim primDivModInteger        :: Integer -> Integer -> (Integer,Integer)
+#endif
+#endif
 
 instance Eq  Integer where 
     (==)    = primEqInteger
     
 instance Ord Integer where
     compare = primCmpInteger
-
-foreign import prim primAddInteger       :: Integer -> Integer -> Integer
-foreign import prim primSubInteger       :: Integer -> Integer -> Integer
-foreign import prim primMulInteger       :: Integer -> Integer -> Integer
-foreign import prim primNegInteger       :: Integer -> Integer
 
 instance Num Integer where
     (+)           = primAddInteger
@@ -956,18 +986,11 @@ instance Num Integer where
     fromInteger x = x
     fromInt       = primIntToInteger
 
-
 instance Real Integer where
     toRational x = x % 1
 
 
-foreign import prim primQuotInteger          :: Integer -> Integer -> Integer
-foreign import prim primRemInteger           :: Integer -> Integer -> Integer
-foreign import prim primDivInteger           :: Integer -> Integer -> Integer
-foreign import prim primModInteger           :: Integer -> Integer -> Integer
-
-
-#ifdef __UHC_TARGET_C__
+#if defined( __UHC_TARGET_C__) || defined(__UHC_TARGET_JAZY__)
 
 instance Integral Integer where
     divMod x y  = (primDivInteger x y, primModInteger x y)
@@ -981,9 +1004,6 @@ instance Integral Integer where
 
 #else
 
-foreign import prim primQuotRemInteger       :: Integer -> Integer -> (Integer,Integer)
-foreign import prim primDivModInteger        :: Integer -> Integer -> (Integer,Integer)
-
 instance Integral Integer where
     divMod      = primDivModInteger
     quotRem     = primQuotRemInteger
@@ -995,7 +1015,6 @@ instance Integral Integer where
     toInt       = primIntegerToInt
 
 #endif
-
 
 instance Enum Integer where
     succ x         = x + 1
@@ -1009,8 +1028,6 @@ instance Enum Integer where
     enumFromThenTo n n2 m = takeWhile p (numericEnumFromThen n n2)
                                 where p | n2 >= n   = (<= m)
                                         | otherwise = (>= m)
-
-
 
 #ifdef __UHC_TARGET_C__
 {-
@@ -1056,10 +1073,63 @@ instance Read Integer where
 data Float     -- opaque datatype of 32bit IEEE floating point numbers
 data Double    -- opaque datatype of 64bit IEEE floating point numbers
 
-foreign import prim primEqFloat   :: Float -> Float -> Bool
-foreign import prim primCmpFloat  :: Float -> Float -> Ordering
-foreign import prim primEqDouble  :: Double -> Double -> Bool
-foreign import prim primCmpDouble :: Double -> Double -> Ordering
+#if defined(__UHC_TARGET_JSCRIPT__)
+foreign import prim "primEqInt"          	primEqFloat             :: Float -> Float -> Bool
+foreign import prim "primCmpInt"         	primCmpFloat            :: Float -> Float -> Ordering
+
+foreign import prim "primEqDouble"         	primEqDouble            :: Double -> Double -> Bool
+foreign import prim "primCmpDouble"        	primCmpDouble           :: Double -> Double -> Ordering
+
+foreign import prim "primAddInt"         	primAddFloat            :: Float -> Float -> Float
+foreign import prim "primSubInt"         	primSubFloat            :: Float -> Float -> Float
+foreign import prim "primMulInt"         	primMulFloat            :: Float -> Float -> Float
+foreign import prim "primNegInt"         	primNegFloat            :: Float -> Float
+foreign import prim "primUnsafeId"       	primIntToFloat          :: Int -> Float
+foreign import prim "primUnsafeId"   		primIntegerToFloat      :: Integer -> Float
+
+foreign import prim "primAddDouble"        	primAddDouble           :: Double -> Double -> Double
+foreign import prim "primSubDouble"        	primSubDouble           :: Double -> Double -> Double
+foreign import prim "primMulDouble"        	primMulDouble           :: Double -> Double -> Double
+foreign import prim "primNegDouble"        	primNegDouble           :: Double -> Double
+foreign import prim "primUnsafeId"      	primIntToDouble         :: Int -> Double
+foreign import prim "primUnsafeId"  		primIntegerToDouble     :: Integer -> Double
+
+foreign import prim "primQuotInt"      		primDivideFloat         :: Float -> Float -> Float
+foreign import prim "primRecipDouble"       primRecipFloat          :: Float -> Float
+foreign import prim "primUnsafeId"    		primDoubleToFloat       :: Double -> Float
+
+foreign import prim "primUnsafeId"    		primFloatToDouble       :: Float -> Double
+foreign import prim "primRationalToDouble"  primRationalToFloat     :: Rational -> Float
+foreign import prim "primRationalToDouble" 	primRationalToDouble    :: Rational -> Double
+#else
+foreign import prim primEqFloat             :: Float -> Float -> Bool
+foreign import prim primCmpFloat            :: Float -> Float -> Ordering
+
+foreign import prim primEqDouble            :: Double -> Double -> Bool
+foreign import prim primCmpDouble           :: Double -> Double -> Ordering
+
+foreign import prim primAddFloat            :: Float -> Float -> Float
+foreign import prim primSubFloat            :: Float -> Float -> Float
+foreign import prim primMulFloat            :: Float -> Float -> Float
+foreign import prim primNegFloat            :: Float -> Float
+foreign import prim primIntToFloat          :: Int -> Float
+foreign import prim primIntegerToFloat      :: Integer -> Float
+
+foreign import prim primAddDouble           :: Double -> Double -> Double
+foreign import prim primSubDouble           :: Double -> Double -> Double
+foreign import prim primMulDouble           :: Double -> Double -> Double
+foreign import prim primNegDouble           :: Double -> Double
+foreign import prim primIntToDouble         :: Int -> Double
+foreign import prim primIntegerToDouble     :: Integer -> Double
+
+foreign import prim primDivideFloat         :: Float -> Float -> Float
+foreign import prim primRecipFloat          :: Float -> Float
+foreign import prim primDoubleToFloat       :: Double -> Float
+
+foreign import prim primFloatToDouble       :: Float -> Double
+foreign import prim primRationalToFloat     :: Rational -> Float
+foreign import prim primRationalToDouble    :: Rational -> Double
+#endif
 
 instance Eq  Float  where (==) = primEqFloat
 instance Eq  Double where (==) = primEqDouble
@@ -1067,12 +1137,6 @@ instance Eq  Double where (==) = primEqDouble
 instance Ord Float  where compare = primCmpFloat
 instance Ord Double where compare = primCmpDouble
 
-foreign import prim primAddFloat       :: Float -> Float -> Float
-foreign import prim primSubFloat       :: Float -> Float -> Float
-foreign import prim primMulFloat       :: Float -> Float -> Float
-foreign import prim primNegFloat       :: Float -> Float
-foreign import prim primIntToFloat     :: Int -> Float
-foreign import prim primIntegerToFloat :: Integer -> Float
 
 instance Num Float where
     (+)           = primAddFloat
@@ -1084,12 +1148,6 @@ instance Num Float where
     fromInteger   = primIntegerToFloat
     fromInt       = primIntToFloat
 
-foreign import prim primAddDouble       :: Double -> Double -> Double
-foreign import prim primSubDouble       :: Double -> Double -> Double
-foreign import prim primMulDouble       :: Double -> Double -> Double
-foreign import prim primNegDouble       :: Double -> Double
-foreign import prim primIntToDouble     :: Int -> Double
-foreign import prim primIntegerToDouble :: Integer -> Double
 
 instance Num Double where
     (+)         = primAddDouble
@@ -1118,10 +1176,6 @@ fromRat x = (m%1)*(b%1)^^n
           where (m,n) = decodeFloat x
                 b     = floatRadix x
 
-foreign import prim primDivideFloat      :: Float -> Float -> Float
-foreign import prim primRecipFloat      :: Float -> Float
-foreign import prim primDoubleToFloat :: Double -> Float
-foreign import prim primFloatToDouble :: Float -> Double
 
 instance Fractional Float where
     (/)          = primDivideFloat
@@ -1146,8 +1200,6 @@ instance Fractional Double where
 primitive primRationalToFloat  :: Rational -> Float
 primitive primRationalToDouble :: Rational -> Double
 -----------------------------}
-foreign import prim primRationalToFloat  :: Rational -> Float
-foreign import prim primRationalToDouble :: Rational -> Double
 
 {-----------------------------
 -- These functions are used by Hugs - don't change their types.
@@ -1178,7 +1230,22 @@ foreign import prim  primAtanFloat  :: Float -> Float
 foreign import prim  primExpFloat   :: Float -> Float
 foreign import prim  primLogFloat   :: Float -> Float
 foreign import prim  primSqrtFloat  :: Float -> Float
-#else
+foreign import prim  primAtan2Float :: Float -> Float -> Float
+#elif defined(__UHC_TARGET_JSCRIPT__)
+foreign import prim "primSinDouble"  primSinFloat   :: Float -> Float
+foreign import prim "primCosDouble"  primCosFloat   :: Float -> Float
+foreign import prim "primTanDouble"  primTanFloat   :: Float -> Float
+foreign import prim "primAsinDouble" primAsinFloat  :: Float -> Float
+foreign import prim "primAcosDouble" primAcosFloat  :: Float -> Float
+foreign import prim "primAtanDouble" primAtanFloat  :: Float -> Float
+foreign import prim "primExpDouble"  primExpFloat   :: Float -> Float
+foreign import prim "primLogDouble"  primLogFloat   :: Float -> Float
+foreign import prim "primSqrtDouble" primSqrtFloat  :: Float -> Float
+foreign import prim "primSinhDouble" primSinhFloat  :: Float -> Float
+foreign import prim "primCoshDouble" primCoshFloat  :: Float -> Float
+foreign import prim "primTanhDouble" primTanhFloat  :: Float -> Float
+foreign import prim "primAtan2Double"  primAtan2Float   :: Float -> Float -> Float
+#else 
 foreign import ccall "sinf"  primSinFloat   :: Float -> Float
 foreign import ccall "cosf"  primCosFloat   :: Float -> Float
 foreign import ccall "tanf"  primTanFloat   :: Float -> Float
@@ -1192,6 +1259,7 @@ foreign import ccall "sqrtf" primSqrtFloat  :: Float -> Float
 foreign import ccall "sinhf" primSinhFloat  :: Float -> Float
 foreign import ccall "coshf" primCoshFloat  :: Float -> Float
 foreign import ccall "tanhf" primTanhFloat  :: Float -> Float
+foreign import ccall "atan2f"  primAtan2Float   :: Float -> Float -> Float
 #endif
 
 instance Floating Float where
@@ -1220,6 +1288,21 @@ foreign import prim  primAtanDouble  :: Double -> Double
 foreign import prim  primExpDouble   :: Double -> Double
 foreign import prim  primLogDouble   :: Double -> Double
 foreign import prim  primSqrtDouble  :: Double -> Double
+foreign import prim  primAtan2Double :: Double -> Double -> Double
+#elif defined(__UHC_TARGET_JSCRIPT__)
+foreign import prim primSinDouble   :: Double -> Double
+foreign import prim primCosDouble   :: Double -> Double
+foreign import prim primTanDouble   :: Double -> Double
+foreign import prim primAsinDouble  :: Double -> Double
+foreign import prim primAcosDouble  :: Double -> Double
+foreign import prim primAtanDouble  :: Double -> Double
+foreign import prim primExpDouble   :: Double -> Double
+foreign import prim primLogDouble   :: Double -> Double
+foreign import prim primSqrtDouble  :: Double -> Double
+foreign import prim primSinhDouble  :: Double -> Double
+foreign import prim primCoshDouble  :: Double -> Double
+foreign import prim primTanhDouble  :: Double -> Double
+foreign import prim primAtan2Double :: Double -> Double -> Double
 #else
 foreign import ccall "sin"  primSinDouble   :: Double -> Double
 foreign import ccall "cos"  primCosDouble   :: Double -> Double
@@ -1233,6 +1316,7 @@ foreign import ccall "sqrt" primSqrtDouble  :: Double -> Double
 foreign import ccall "sinh" primSinhDouble  :: Double -> Double
 foreign import ccall "cosh" primCoshDouble  :: Double -> Double
 foreign import ccall "tanh" primTanhDouble  :: Double -> Double
+foreign import ccall "atan2"  primAtan2Double   :: Double -> Double -> Double
 #endif
 
 instance Floating Double where
@@ -1268,20 +1352,15 @@ floatProperFraction x
 foreign import prim primIsIEEE  :: Bool
 foreign import prim primRadixDoubleFloat  :: Int
 
-foreign import prim primIsNaNFloat  :: Float -> Bool
-foreign import prim primIsNegativeZeroFloat  :: Float -> Bool
-foreign import prim primIsDenormalizedFloat  :: Float -> Bool
-foreign import prim primIsInfiniteFloat  :: Float -> Bool
-foreign import prim primDigitsFloat  :: Int
-foreign import prim primMaxExpFloat  :: Int
-foreign import prim primMinExpFloat  :: Int
-foreign import prim primDecodeFloat  :: Float -> (Integer, Int)
-foreign import prim primEncodeFloat  :: Integer -> Int -> Float
-#ifdef __UHC_TARGET_JAZY__
-foreign import prim   primAtan2Float   :: Float -> Float -> Float
-#else
-foreign import ccall "atan2f"  primAtan2Float   :: Float -> Float -> Float
-#endif
+foreign import prim primIsNaNFloat              :: Float -> Bool
+foreign import prim primIsNegativeZeroFloat     :: Float -> Bool
+foreign import prim primIsDenormalizedFloat     :: Float -> Bool
+foreign import prim primIsInfiniteFloat         :: Float -> Bool
+foreign import prim primDigitsFloat             :: Int
+foreign import prim primMaxExpFloat             :: Int
+foreign import prim primMinExpFloat             :: Int
+foreign import prim primDecodeFloat             :: Float -> (Integer, Int)
+foreign import prim primEncodeFloat             :: Integer -> Int -> Float
 
 instance RealFloat Float where
     floatRadix  _ = toInteger primRadixDoubleFloat
@@ -1296,20 +1375,15 @@ instance RealFloat Float where
     isIEEE      _ = primIsIEEE
     atan2         = primAtan2Float
 
-foreign import prim primIsNaNDouble  :: Double -> Bool
-foreign import prim primIsNegativeZeroDouble  :: Double -> Bool
-foreign import prim primIsDenormalizedDouble  :: Double -> Bool
-foreign import prim primIsInfiniteDouble  :: Double -> Bool
-foreign import prim primDigitsDouble  :: Int
-foreign import prim primMaxExpDouble  :: Int
-foreign import prim primMinExpDouble  :: Int
-foreign import prim primDecodeDouble  :: Double -> (Integer, Int)
-foreign import prim primEncodeDouble  :: Integer -> Int -> Double
-#ifdef __UHC_TARGET_JAZY__
-foreign import prim   primAtan2Double   :: Double -> Double -> Double
-#else
-foreign import ccall "atan2"  primAtan2Double   :: Double -> Double -> Double
-#endif
+foreign import prim primIsNaNDouble             :: Double -> Bool
+foreign import prim primIsNegativeZeroDouble    :: Double -> Bool
+foreign import prim primIsDenormalizedDouble    :: Double -> Bool
+foreign import prim primIsInfiniteDouble        :: Double -> Bool
+foreign import prim primDigitsDouble            :: Int
+foreign import prim primMaxExpDouble            :: Int
+foreign import prim primMinExpDouble            :: Int
+foreign import prim primDecodeDouble            :: Double -> (Integer, Int)
+foreign import prim primEncodeDouble            :: Integer -> Int -> Double
 
 instance RealFloat Double where
     floatRadix  _ = toInteger primRadixDoubleFloat
@@ -2043,15 +2117,23 @@ primbindIO (IO io) f
 ioFromPrim :: (IOWorld -> a) -> IO a
 ioFromPrim f
   = IO (\w -> let x = f w
-              in  letstrict x2 = x   -- as a side effect, this will update x
-                  in (w, x)          -- do not use x2 here, because the code generated by letstrict violates the Grin-invariant if the result is used directly
+              in  letstrict x' = x   -- as a side effect, this will update x
+#ifdef __UHC_TARGET_C__
+                  in (w, x)          -- do not use x' here, because the code generated by letstrict violates the Grin-invariant if the result is used directly
+#else
+                  in (w, x')
+#endif
        )
 
 primbindIO :: IO a -> (a -> IO b) -> IO b
 primbindIO (IO io) f
   = IO (\w -> case io w of
                 (w', x) -> letstrict x' = x    -- as a side effect, this will update x
+#ifdef __UHC_TARGET_C__
                            in case f x of      -- do not use x' here, because the code generated by letstrict violates the Grin-invariant if the result is used directly
+#else
+                           in case f x' of
+#endif
                                IO fx -> fx w'
        )
 

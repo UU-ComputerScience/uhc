@@ -7,7 +7,10 @@
 %%% Core utilities
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) module {%{EH}Core.Utils} import(qualified Data.Map as Map,Data.Maybe,{%{EH}Base.Builtin},{%{EH}Opts},{%{EH}Base.Common},{%{EH}Ty},{%{EH}Core},{%{EH}Gam.Full})
+%%[(8 codegen) module {%{EH}Core.Utils}
+%%]
+
+%%[(8 codegen) hs import({%{EH}Base.Builtin},{%{EH}Opts},{%{EH}Base.Common},{%{EH}Ty},{%{EH}Core},{%{EH}Gam.Full})
 %%]
 
 %%[(8 codegen) hs import({%{EH}AbstractCore})
@@ -19,7 +22,14 @@
 %%]
 %%[(8 codegen) import({%{EH}VarMp},{%{EH}Substitutable})
 %%]
-%%[(8 codegen) import(Data.List,qualified Data.Set as Set,Data.List,qualified Data.Map as Map,EH.Util.Utils)
+%%[(8 codegen) import(Data.List,Data.Maybe,qualified Data.Set as Set,Data.List,qualified Data.Map as Map,EH.Util.Utils)
+%%]
+
+%%[(20 codegen) import(Control.Monad.State, Data.Array)
+%%]
+%%[(20 codegen) import(qualified EH.Util.FastSeq as Seq)
+%%]
+%%[(20 codegen) import({%{EH}Core.FvS}, {%{EH}Core.ModAsMap})
 %%]
 
 -- debug
@@ -167,7 +177,7 @@ foffMkOff (FldComputeOffset _ e) o = (o,e)
 
 foffLabel :: FldOffset -> HsName
 foffLabel FldImplicitOffset = hsnUnknown
-foffLabel foff				= foffLabel' foff
+foffLabel foff              = foffLabel' foff
 %%]
 
 %%[(8 codegen) export(FieldSplitL,fsL2PatL)
@@ -226,5 +236,101 @@ patBindLOffset
                       _            -> (RPatFld_Fld l (acoreVar offNm) n p,[acoreBind1Cat CBindings_Plain offNm o])
        )
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Module merge by pulling in only that which is required
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+cModMergeByPullingIn is independent of AST, so should be placed in shared module when used for (say) GRIN
+
+%%[(20 codegen) hs export(cModMergeByPullingIn)
+data PullState cat bind
+  = PullState
+      { pullstBinds     :: Seq.Seq (CDbBindLetInfo'2 cat bind)  -- pulled in bindings
+      , pullstPulledNmS :: !HsNameS                             -- pulled in names  
+      , pullstToDo      :: ![HsName]                            -- todo
+      }
+
+emptyPullState :: PullState cat bind
+emptyPullState = PullState Seq.empty Set.empty []
+
+-- | merge by pulling in that which is required only
+cModMergeByPullingIn
+  ::                                -- function giving bindings for name
+     (HsName                        -- name
+      -> Maybe
+           ( cat                    -- category
+           , [bind]                 -- and bindings
+           , HsNameS                -- pulled in names (might be > 1 for mutual recursiveness)
+     )     )
+     -> (expr -> HsNameS)           -- extract free vars
+     -> (bind -> [expr])            -- extract relevant exprs for binding
+     -> ([(cat,[bind])] -> mod -> mod)
+                                    -- update module with pulled bindings
+     -> expr                        -- start of pulling in, usually top level name "main"
+     -> ( (mod -> mod)              -- conversion of resulting module
+        , HsNameS                   -- modules from which something was taken
+        )
+cModMergeByPullingIn
+     pullIn getExprFvS getBindExprs updMod
+     rootExpr
+  = ( updMod (Seq.toList $ pullstBinds st)
+    , Set.map (panicJust "cModMergeByPullingIn" . hsnQualifier) $ pullstPulledNmS st
+    )
+  where (_,st) = runState (pull) (emptyPullState {pullstToDo = Set.toList $ getExprFvS rootExpr})
+        pull = do
+          s <- get
+          case pullstToDo s of
+            (nm:nmRest)
+              | nm `Set.notMember` pullstPulledNmS s && isJust mbPull
+                -> do let pulledNms = pullstPulledNmS s `Set.union` pulled
+                          newNms
+                            = -- (\x -> tr "cModMergeByPullingIn.pulledNms" (nm >#< show x) x) $
+                              (Set.unions $ map (Set.unions . map getExprFvS . getBindExprs) binds)
+                              `Set.difference` pulledNms
+                      put $
+                        s { pullstToDo = Set.toList newNms ++ nmRest
+                          , pullstBinds = Seq.singleton (cat,binds) `Seq.union` pullstBinds s
+                          , pullstPulledNmS = pulledNms
+                          }
+                      pull
+              | otherwise
+                -> do put $
+                        s { pullstToDo = nmRest
+                          }
+                      pull
+              where mbPull@(~(Just (cat,binds,pulled))) = pullIn nm
+            _ -> return ()
+%%]
+
+%%[(20 codegen) hs export(cModMerge2)
+-- | merge by pulling
+cModMerge2 :: ([CModule],CModule) -> CModule
+cModMerge2 (mimpL,mmain)
+  = mkM mmain
+  where (mkM,_)   = cModMergeByPullingIn lkupPull cexprFvS cbindExprs
+                                         (\bs (CModule_Mod modNm _ _) -> CModule_Mod modNm (acoreLetN bs $ rootExpr) allTags)
+                                         rootExpr
+        rootExpr  = cmoddbMainExpr modDbMain
+        allTags   = concatMap cmoddbTagsMp $ modDbMain : modDbImp
+        modDbMain =     cexprModAsDatabase mmain
+        modDbImp  = map cexprModAsDatabase mimpL
+        modDbMp = Map.unions [ Map.singleton (cmoddbModNm db) db | db <- modDbMain : modDbImp ]
+        lkupMod  n = -- (\x -> tr "cModMerge2.lkupMod" (n >#< fmap cmoddbModNm x) x) $
+                     maybe (Just modDbMain) (\m -> Map.lookup m modDbMp) $ hsnQualifier n
+        lkupPull n = do
+           db <- lkupMod n
+           (bi,_) <- cmoddbLookup n db
+           let (cat,bsarr) = cmoddbBindArr db ! bi
+               bs = elems bsarr
+           return ( cat, bs
+                  , -- (\x -> tr "cModMerge2.lkupPull" (n >#< show x) x) $
+                    Set.fromList $ map cbindNm bs
+                  )
+%%]
+        lkupMod  n = do
+           m <- (\x -> tr "cModMerge2.lkupMod" (n >#< x) x) $
+                hsnQualifier n
+           Map.lookup m modDbMp
 
 

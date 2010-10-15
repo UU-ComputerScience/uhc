@@ -177,7 +177,7 @@ type MbPatRest' pr = Maybe (pr,Int) -- (pat rest, arity)
 acoreStrictSatCaseMetaTy :: (Eq bcat, AbstractCore e m b basp bcat mbind t p pr pf a) => RCEEnv' e m b ba t -> Maybe (HsName,t) -> m -> e -> [a] -> e
 acoreStrictSatCaseMetaTy env mbNm meta e []
   = rceCaseCont env			-- TBD: should be error message "scrutinizing datatype without constructors"
-acoreStrictSatCaseMetaTy env mbNm meta e [alt] -- [CAlt_Alt (CPat_Con (CTag tyNm _ _ _ _) CPatRest_Empty [CPatFld_Fld _ _ pnm]) ae]
+acoreStrictSatCaseMetaTy env mbNm meta e [alt] -- [CAlt_Alt (CPat_Con (CTag tyNm _ _ _ _) CPatRest_Empty [CPatFld_Fld _ _ pnm _]) ae]
   | isJust mbPatCon && length flds == 1 && dgiIsNewtype dgi
   = acoreLet cat
       ( [ acoreBind1CatMetaTy cat pnm meta (acoreTyErr "TBD: mkExprStrictSatCaseMeta.1") e ]
@@ -193,10 +193,11 @@ acoreStrictSatCaseMetaTy env mbNm meta e alts
       Just (n,ty)  -> acoreLet1StrictInMetaTy n meta ty e $ mk alts
       Nothing -> mk alts e
   where mk (alt:alts) n
-          = acoreLet (acoreBindcategStrict) altOffBL (acoreCaseDflt n (acoreAltLSaturate env (alt':alts)) (Just $ rceCaseCont env))
+          = acoreLet (acoreBindcategStrict) altOffBL (acoreCaseDflt n (acoreAltLSaturate env (alt':alts)) (Just undef))
           where (alt',altOffBL) = acoreAltOffsetL alt
         mk [] n
-          = acoreCaseDflt n [] (Just $ rceCaseCont env) -- dummy case
+          = acoreCaseDflt n [] (Just undef) -- dummy case
+        undef = acoreBuiltinUndefined (rceEHCOpts env)
 
 acoreStrictSatCaseMeta :: (Eq bcat, AbstractCore e m b basp bcat mbind t p pr pf a) => RCEEnv' e m b ba t -> Maybe (HsName) -> m -> e -> [a] -> e
 acoreStrictSatCaseMeta env eNm m e alts = acoreStrictSatCaseMetaTy env (acoreTyLift "acoreStrictSatCaseMeta" eNm) m e alts

@@ -1,4 +1,4 @@
-%%[currentStatus
+%%[currentStatus2007
 \frame<presentation>
 {
 \frametitle{Current status}
@@ -23,7 +23,7 @@ Working towards a release as a Haskell compiler
 }
 %%]
 
-%%[currentWork
+%%[currentWork2007
 \frame<presentation>
 {
 \frametitle{Current and future work}
@@ -55,16 +55,165 @@ Working towards a release as a Haskell compiler
 }
 %%]
 
-%%[XX
+%%[currentUHCStatus201009
+\frame<presentation>
+{
+\frametitle{UHC 1.1.0: generic deriving}
+Just released before ICFP
+\begin{itemize}
+\item {\color{red} Generic deriving} (Haskell Symposium)
+
+%%[[wrap=safecode
+class Functor f where
+  fmap :: (a -> b) -> (f a -> f b)
+
+deriving instance Functor Maybe
+deriving instance Functor []
+%%]]
+\item<2> {\color{red} User programmable} deriving
+
+%%[[wrap=safecode
+class Functor' f where
+  fmap' :: (a -> b) -> f a -> f b
+
+instance (Functor' f, Functor' g) => Functor' (f :*: g) where
+  fmap' f (a :*: b) = fmap' f a :*: fmap' f b
+
+fmapDefault = ...
+
+{-# DERIVABLE Functor fmap fmapDefault #-}
+%%]]
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{UHC 1.1.0: cabal}
+\begin{itemize}
+\item {\color{red} Cabal} support (Cabal version |>| @1.9.2@)
+ \begin{itemize}
+ \item E.g.
+%%[[wrap=verbatim
+> cabal install containers-0.2.0.1 --uhc
+%%]]
+ \item Package awareness
+ \item Sufficient library support for package @haskell98@
+ \item Building executables up and coming
+ \end{itemize}
+\item Implementers note
+ \begin{itemize}
+ \item Base libraries depend on non-standard features (E.g. extensible exceptions), hence difficult to port and/or bootstrap
+ \end{itemize}
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{UHC 1.1.0: defaulting}
+\begin{itemize}
+\item Per class {\color{red} @default@} (an alternative from Haskell Prime proposal)
+\item In @Prelude@:
+
+%%[[wrap=safecode
+default Num Integer
+default Integral Integer
+...
+%%]]
+\item Implementers note
+ \begin{itemize}
+ \item Would prefer replacing it by use of type annotations + syntactic sugar \\
+       (kinda ad-hoc improving substitution)
+ \end{itemize}
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{UHC 1.1.0}
+\begin{itemize}
+\item Monomorphic pattern bindings
+%%[[wrap=safecode
+ab     = ...   -- unrestricted
+(a,b)  = ab    -- monomorphic
+%%]]
+\item Runtime
+ \begin{itemize}
+ \item Customizable garbage collector (currently swap space)
+ \item For @Integer@: cloned `Libtommath', adapted (w.r.t. GC) \& extended
+ \end{itemize}
+\item Compatibility
+ \begin{itemize}
+ \item Haskell98 (no |n ^ + ^ k| patterns)
+ \item Haskell2010 (partial FFI, no pattern guards, some LANGUAGE pragmas)
+ \end{itemize}
+\end{itemize}
+}
+
+%%]
+
+%%[futureUHCWork201009
+\frame<presentation>
+{
+\frametitle{Current and future work}
+\begin{itemize}
+\item Release focus
+ \begin{itemize}
+ \item Current: make it work (cabal, haskell98, haskell2010, bug fixing)
+ \item Future: better combine whole-progam analysis work into compiler pipeline, complete alternate backends, optimizations
+ \end{itemize}
+%if False
+\item Unique selling point
+ \begin{itemize}
+ \item Current: allow (relatively) easy experimentation; \\
+       for developers only
+ \item Future: 
+ \end{itemize}
+%endif
+\item Experiments \& partially done
+ \begin{itemize}
+ \item Intermediate typed core (combi of Henk, calling conventions, GHC's core)
+ \item Partially working backends: jvm, llvm
+ \end{itemize}
+\item Can I use UHC? Of course! But:
+ \begin{itemize}
+ \item Is work in progress
+ \item Not (yet) used for realworld programming
+ \end{itemize}
+\item \verb|http://www.cs.uu.nl/wiki/UHC|
+% \item<2> Finally, when Dutch is a problem, pronounce UHC like: \\ ``You Hate C''
+\end{itemize}
+}
 %%]
 
 %%[XX
+\frame<presentation>
+{
+\frametitle{Current and future work}
+\begin{itemize}
+\item 
+\end{itemize}
+}
 %%]
 
-%%[XX
-%%]
+%%[irritations201009
+\frame<presentation>
+{
+\frametitle{Irritations}
+\begin{itemize}
+\item Alternative to @default@
+ \begin{itemize}
+ \item explicit annotations
+%%[[wrap=safecode
+show (1 :: Int)
+%%]]
+ \item + syntactic sugar
+%%[[wrap=safecode
+show (1 :: Int)
+%%]]
+ \end{itemize}
+\end{itemize}
+}
 
-%%[XX
 %%]
 
 %%[XX

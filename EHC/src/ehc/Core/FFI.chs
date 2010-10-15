@@ -7,7 +7,7 @@
 %%% Utilities for dealing with FFI, for now part of Core, meant for Grin gen
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) module {%{EH}Core.FFI} import({%{EH}Base.Builtin},{%{EH}Base.Builtin2},{%{EH}Opts},{%{EH}Base.Common})
+%%[(8 codegen) module {%{EH}Core.FFI} import({%{EH}Base.Builtin},{%{EH}Base.Builtin2},{%{EH}Opts},{%{EH}Base.Target},{%{EH}Base.Common})
 %%]
 
 %%[(8 codegen) hs import(qualified Data.Map as Map,Data.Maybe)
@@ -62,8 +62,8 @@ tyNmFFIBoxBasicAnnot opts
 -- | is ty living as a tagged pointer?
 tyNmGBMayLiveAsTaggedPtr :: EHCOpts -> HsName -> Maybe BuiltinInfo
 tyNmGBMayLiveAsTaggedPtr opts
-  | ehcOptFullProgAnalysis opts = const Nothing
-  | otherwise                   = builtinGrinInfo opts
+  | targetIsGrinBytecode (ehcOptTarget opts) = builtinGrinInfo opts
+  | otherwise                                = const Nothing
 
 -- | BasicAnnot when unboxing also means living as tagged pointer
 tyNmGBTagPtrBasicAnnot :: EHCOpts -> Bool -> HsName -> BasicAnnot -> BasicAnnot

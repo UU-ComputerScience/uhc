@@ -4,15 +4,15 @@ use Time::HiRes qw(gettimeofday tv_interval);
 @dirs = ("nofib/imag/bernouilli", "nofib/imag/binarytrees", "nofib/imag/digits-of-e1", "nofib/imag/digits-of-e2", "nofib/imag/exp3_8", "nofib/imag/gen-regexps", "nofib/imag/integrate", "nofib/imag/loop", "nofib/imag/nsieve", "nofib/imag/paraffins", "nofib/imag/partial-sums", "nofib/imag/pidigits", "nofib/imag/primes", "nofib/imag/queens", "nofib/imag/recursive", "nofib/imag/rfib-int", "nofib/imag/rfib-integer", "nofib/imag/rfib-double", "nofib/imag/ru_list", "nofib/imag/tak", "nofib/imag/wheel-sieve1", "nofib/imag/wheel-sieve2", "nofib/imag/x2n1", "nofib/real/infer" );
 
 
-@compilernames = ("uhc -O2 -tbc", "uhc -tC", "ghc", "ghc -O2");
+@compilernames = ("uhc -O2 -tbc", "uhc -O2,2 -tbc", "uhc -tC", "ghc", "ghc -O2");
 
 
 for $dir (@dirs) {
 
-    @compilers = ("uhc -O2 -tbc --cpp --import-path=$dir", "uhc -tC --cpp --import-path=$dir", "ghc --make -cpp -i$dir", "ghc -O2 --make -cpp -i$dir");
+    @compilers = ("uhc -O2 -tbc --cpp --import-path=$dir", "uhc -O2,2 -tbc --cpp --import-path=$dir", "uhc -tC --cpp --import-path=$dir", "ghc --make -cpp -i$dir", "ghc -O2 --make -cpp -i$dir");
 
     
-    for $j (0,1,2,3) {
+    for $j (0,1,2,3,4) {
     
         $compiler = $compilers[$j];
     

@@ -64,7 +64,8 @@ type ForeignParser        ep    =    PlainParser Token ep
 pForeignEnt :: FFIWay -> Maybe String -> ForeignParser ForeignEnt
 pForeignEnt way dfltNm
   = case way of
-      FFIWay_CCall -> ForeignEnt_CCall <$> pCCall dfltNm
+      FFIWay_CCall -> ForeignEnt_CCall     <$> pCCall dfltNm
+      FFIWay_Prim  -> ForeignEnt_PrimCall  <$> pPrimCall dfltNm
       _            -> ForeignEnt_PlainCall <$> pPlainCall dfltNm
 
 pCCall :: Maybe String -> ForeignParser CCall
@@ -119,6 +120,12 @@ pPlainCall dfltNm
   =     PlainCall_Id <$> pForeignVar
   `opt` PlainCall_Id nm
   where nm = maybe "" id dfltNm
+
+pPrimCall :: Maybe String -> ForeignParser PrimCall
+pPrimCall dfltNm
+  = PrimCall_Id <$> (pForeignVar `opt` nm) <*> pKnownPrim
+  where nm = maybe "" id dfltNm
+        pKnownPrim = pMb (pAnyFromMap pKeyTk allKnownPrimMp)
 
 pForeignVar :: ForeignParser String
 pForeignVar = tokGetVal <$> (pVARID <|> pCONID)

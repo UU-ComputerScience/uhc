@@ -23,6 +23,8 @@ Linking
 %%]
 %%[(99 codegen jazy) import({%{EH}EHC.CompilePhase.CompileJVM}) export(cpLinkJar)
 %%]
+%%[(9999 codegen jscript) import({%{EH}EHC.CompilePhase.CompileJScript}) export(cpLinkJScript)
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Compile actions: Linking into library for package

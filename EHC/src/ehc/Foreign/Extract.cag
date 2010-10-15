@@ -29,13 +29,14 @@ WRAPPER ForeignAGItf
 %%[90 hs export(ForeignExtraction(..))
 data ForeignExtraction
   = ForeignExtraction
-      {	forextractIncludes		:: [String]
-      ,	forextractEnt			:: String
-      ,	forextractOptIsStatic	:: Bool
-      ,	forextractOptIsPtr		:: Bool
+      {	forextractIncludes		:: ![String]
+      ,	forextractEnt			:: !String
+      ,	forextractMbKnownPrim	:: !(Maybe KnownPrim)
+      ,	forextractOptIsStatic	:: !Bool
+      ,	forextractOptIsPtr		:: !Bool
       }
 
-emptyForeignExtraction = ForeignExtraction [] "??" False False
+emptyForeignExtraction = ForeignExtraction [] "??" Nothing False False
 %%]
 
 %%[90 hs export(foreignEntExtract)
@@ -54,6 +55,9 @@ foreignEntExtract ty
 %%[90
 ATTR ForeignAGItf AllForeign [ | | extr: ForeignExtraction ]
 
+SEM PrimCall
+  | Id          lhs     .   extr    =   emptyForeignExtraction {forextractEnt = @nm, forextractMbKnownPrim = @mbKnownPrim}
+
 SEM PlainCall
   | Id          lhs     .   extr    =   emptyForeignExtraction {forextractEnt = @nm}
 
@@ -61,6 +65,7 @@ SEM CCall
   | Id          lhs     .   extr    =   ForeignExtraction
   											(maybeToList @mbInclude)
   											@nm
+  											Nothing
   											@isStatic
   											@asPointer
   | * - Id      lhs     .   extr    =   emptyForeignExtraction

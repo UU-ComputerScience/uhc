@@ -7,6 +7,9 @@ Grin transformation
 %%[8 module {%{EH}EHC.CompilePhase.TransformGrin}
 %%]
 
+%%[8 import({%{EH}Base.Target})
+%%]
+
 -- general imports
 %%[8 import(qualified Data.Map as Map)
 %%]
@@ -62,7 +65,7 @@ cpTransformGrin :: HsName -> EHCompilePhase ()
 cpTransformGrin modNm
   =  do  {  cr <- get
          ;  let  (ecu,_,opts,_) = crBaseInfo modNm cr
-                 forBytecode = not (ehcOptFullProgAnalysis opts)
+                 forBytecode = targetIsGrinBytecode (ehcOptTarget opts)
                  optimizing  = ehcOptOptimizes Optimize_GrinLocal opts
          
 {- for debugging 

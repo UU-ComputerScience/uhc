@@ -10,10 +10,13 @@
 %%[90 hs module {%{EH}Foreign} import({%{EH}Base.Common})
 %%]
 
-%%[90 hs export(ForeignEnt(..), CCall(..), PlainCall(..), ForeignAGItf(..)) 
+%%[90 hs export(ForeignEnt(..), CCall(..), PlainCall(..), PrimCall(..), ForeignAGItf(..)) 
 %%]
 
 %%[9999 hs import({%{EH}Base.ForceEval})
+%%]
+
+%%[9090 hs import({%{EH}BuiltinPrims})
 %%]
 
 %%[90 hs import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
@@ -42,10 +45,12 @@ instance ForceEval ForeignEnt
 instance Serialize ForeignEnt where
   sput (ForeignEnt_CCall     a) = sputWord8 0 >> sput a
   sput (ForeignEnt_PlainCall a) = sputWord8 1 >> sput a
+  sput (ForeignEnt_PrimCall  a) = sputWord8 2 >> sput a
   sget = do t <- sgetWord8
             case t of
               0 -> liftM ForeignEnt_CCall     sget
               1 -> liftM ForeignEnt_PlainCall sget
+              2 -> liftM ForeignEnt_PrimCall  sget
 
 instance Serialize CCall where
   sput (CCall_Id      a b c d) = sputWord8 0 >> sput a >> sput b >> sput c >> sput d
@@ -64,5 +69,11 @@ instance Serialize PlainCall where
   sget = do t <- sgetWord8
             case t of
               0 -> liftM  PlainCall_Id sget
+
+instance Serialize PrimCall where
+  sput (PrimCall_Id      a b) = sputWord8 0 >> sput a >> sput b
+  sget = do t <- sgetWord8
+            case t of
+              0 -> liftM2 PrimCall_Id sget sget
 
 %%]

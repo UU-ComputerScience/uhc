@@ -501,7 +501,7 @@ SEM Expr
                                                     (\isNewtype
                                                       (DataTagInfo
                                                         { dtiConNm    	= conNm
-                                                        , dtiFldMp    	= fldMp
+                                                        -- , dtiFldMp    	= fldMp
                                                         , dtiConFldAnnL	= annL
                                                         , dtiCTag     	= ctag
                                                         }) -> mkDataCBindL @lhs.opts ctag annL conNm isNewtype

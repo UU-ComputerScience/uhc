@@ -122,6 +122,12 @@ mkInstallPkgdirUser opts
   = filePathCoalesceSeparator $ filePathUnPrefix $ mkDirbasedInstallPrefix (ehcOptUserDir opts) INST_LIB_PKG2 "" (show $ ehcOptTarget opts) ""
 %%]
 
+%%[(8 codegen) export(mkInstalledRts)
+-- | construct path for RTS
+mkInstalledRts :: EHCOpts -> (String -> String -> String) -> WhatInstallFile -> String -> String -> String
+mkInstalledRts opts mkLib how variant rts = mkLib (mkInstallFilePrefix opts how variant rts) rts
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Cmds
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -144,6 +150,11 @@ shellCmdLLVM = "@TOPLEVEL_SYSTEM_ABSPATH_PREFIX@@SHELLRUN@" ++ "@TOP_ABS@/bin/ll
 %%[(8 java || jazy) export(shellCmdJar)
 shellCmdJar :: String
 shellCmdJar = "@TOPLEVEL_SYSTEM_ABSPATH_PREFIX@@JAR_CMD@@SUFFIX_EXEC@"
+%%]
+
+%%[(8 jscript) export(shellCmdCat)
+shellCmdCat :: String
+shellCmdCat = "@TOPLEVEL_SYSTEM_ABSPATH_PREFIX@@CAT_CMD@@SUFFIX_EXEC@"
 %%]
 
 %%[99 export(shellCmdCpp)
@@ -186,11 +197,6 @@ mkShellCmdLibtool archive files
 %%% Libraries
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
-prefixLib :: String
-prefixLib = "@PREFIX_LIB@"
-%%]
-
 %%[8 export(libnamesGcc)
 libnamesGcc :: EHCOpts -> [String]
 libnamesGcc opts
@@ -207,9 +213,9 @@ libnamesGcc opts
 %%]]
 %%]
 
-%%[8 export(libnamesGccPerVariant)
-libnamesGccPerVariant :: [String]
-libnamesGccPerVariant
+%%[8 export(libnamesRts)
+libnamesRts :: [String]
+libnamesRts
   = [ prefixLib ++ "@RTS_PKG_NAME@"]
 %%]
 
@@ -243,8 +249,13 @@ libnamesGccEhcExtraExternalLibs
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% File suffixes
+%%% File suffixes, prefixes
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+prefixLib :: String
+prefixLib = "@PREFIX_LIB@"
+%%]
 
 %%[8 export(mbSuffixExec,linkerSymbolPrefix)
 suffixExec :: String
@@ -261,3 +272,9 @@ linkerSymbolPrefix :: String
 linkerSymbolPrefix = "@LINKER_SYMBOL_PREFIX@"
 
 %%]
+
+%%[(8 jscript) export(suffixJScriptLib)
+suffixJScriptLib :: String
+suffixJScriptLib = filter (/= '.') "@SUFFIX_LIBJSCRIPT@"
+%%]
+

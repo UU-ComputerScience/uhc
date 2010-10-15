@@ -10,6 +10,8 @@
 %%[(8 codegen) hs module {%{EH}Core.Trf.RenUniq} import(Data.Maybe,Data.Char,Control.Monad(liftM),qualified Data.Map as Map)
 %%]
 
+%%[(8 codegen) hs import(EH.Util.Utils)
+%%]
 %%[(8 codegen) hs import({%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Core},{%{EH}Ty})
 %%]
 %%[(8 codegen) hs import({%{EH}AbstractCore})
@@ -27,12 +29,42 @@ PRAGMA strictcase
 %%% Haskell itf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[(8 codegen) hs export(RenUniqOpts(..),emptyRenUniqOpts)
+data RenUniqOpts
+  = RenUniqOpts
+      { renuniqOptResetOnlyInLam	:: Bool				-- restart numbering in lambda only, throwing away all name modifiers previously added
+      }
+
+emptyRenUniqOpts :: RenUniqOpts
+emptyRenUniqOpts = RenUniqOpts False
+%%]
+
 %%[(8 codegen) hs export(cmodTrfRenUniq)
-cmodTrfRenUniq :: CModule -> CModule
-cmodTrfRenUniq cmod
+cmodTrfRenUniq :: RenUniqOpts -> CModule -> CModule
+cmodTrfRenUniq ropts cmod
   =  let  t = wrap_CodeAGItf  (sem_CodeAGItf (CodeAGItf_AGItf cmod))
-                              (Inh_CodeAGItf {gUniq_Inh_CodeAGItf = uidStart})
+                              (Inh_CodeAGItf { gUniq_Inh_CodeAGItf = uidStart
+                                             , ropts_Inh_CodeAGItf = ropts
+                                             })
      in   cTrf_Syn_CodeAGItf t
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Global info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AllCodeNT CodeAGItf [ ropts: RenUniqOpts | | ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Dependencies for AG visits
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(99 codegen)
+SEM CModule
+  | Mod         expr.gUniq < expr.protectedBindingNames
+                expr.gUniq < expr.aRenMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -76,48 +108,140 @@ ATTR CodeAGItf [ | | cTrf: CModule ]
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen) hs
-type ARenMp = Map.Map HsName HsName
+type NmMp = Map.Map HsName HsName
+type ARenMp
+  = ( NmMp			-- forward map, from old -> new
+    , NmMp			-- backward map, from new -> old
+    )
+
+emptyARenMp :: ARenMp
+emptyARenMp = (Map.empty, Map.empty)
 %%]
 
 %%[(8 codegen) hs
 -- breaks assumption that globals are qualified, locals not. Problem in future when records are used for globals and access differs.
-mkUniq :: HsName -> HsName -> UID -> HsName
-mkUniq q n u
-  = 
+mkUniqGlob :: NmMp -> HsName -> HsName -> Maybe UID -> (HsName,NmMp)
+mkUniqGlob mb q n mbU
+  = (
 %%[[20
-    (if hsnIsQual n
-     then id
-     else hsnSetQual q
-    ) $ 
+      (if hsnIsQual n
+       then id
+       else hsnSetQual q
+      ) $ 
 %%]]
-    hsnUniqifyUID HsNameUniqifier_GloballyUnique u n
+      maybe n (\u -> hsnUniqifyUID HsNameUniqifier_GloballyUnique u n) mbU
+    , mb
+    )
+%%]
+
+%%[(8 codegen) hs
+-- breaks assumption that globals are qualified, locals not. Problem in future when records are used for globals and access differs.
+mkUniqLoc :: NmMp -> HsName -> HsName -> Maybe UID -> (HsName,NmMp)
+mkUniqLoc mb q n mbU
+  = ( n3
+    , Map.insert n3 n mb
+    )
+  where n2 = hsnStripUniqifiers $ hsnQualified n
+        n3 | Map.member n2 mb = hsnUniqifyUID HsNameUniqifier_Blank (panicJust "RenUniq.mkUniqLoc" mbU) n2
+           | otherwise        = n2
 %%]
 
 %%[(8 codegen) hs
 %%[[8
-aRenAdd :: Bool -> [HsName] -> UID -> ARenMp -> ARenMp
-aRenAdd isGlob nL u m
+aRenAdd :: RenUniqOpts -> Bool -> [HsName] -> UID -> ARenMp -> ARenMp
+aRenAdd ropts isGlob nL u mfb@(mf,mb)
 %%][20
-aRenAdd :: Bool -> HsName -> [HsName] -> UID -> ARenMp -> ARenMp
-aRenAdd isGlob q nL u m
+aRenAdd :: RenUniqOpts -> Bool -> HsName -> [HsName] -> UID -> ARenMp -> ARenMp
+aRenAdd ropts isGlob q nL u mfb@(mf,mb)
 %%]]
-  = Map.fromList [ (n,mkNm n u) | (n,u) <- zip nL uL ] `Map.union` m
+  -- = (Map.fromList [ (n,mkNm n u) | (n,u) <- zip nL uL ] `Map.union` mf, mb)
+  = foldr (\(n,u) (mf,mb) -> let (n',mb') = mkNm mb n u in (Map.insert n n' mf,mb')) mfb $ zip nL uL
   where uL = mkNewUIDL (length nL) u
-        doChngNm n = not isGlob || n `Map.member` m
-        mkNm n u = if doChngNm n
+        mkNm mb n u 
 %%[[8
-                   then mkUniq hsnUnknown n u
+          | doChng     = mkUniq mb hsnUnknown n (Just u)
 %%][20
-                   then mkUniq q n u
+          | doChng && isUnqualifiedGlob
+                       = mkUniq mb q n Nothing
+          | doChng     = mkUniq mb q n (Just u)
 %%]]
-                   else n
+          | otherwise  = (n,mb)
+          where doChng
+                   = isChangeable
+%%[[20
+                     || isUnqualifiedGlob
+                isUnqualifiedGlob = isGlob && not onlyLam && isNothing (hsnQualifier n) && n /= hsnMain
+%%]]
+                isChangeable = not isGlob || n `Map.member` mf
+                onlyLam = renuniqOptResetOnlyInLam ropts
+                mkUniq | onlyLam   = mkUniqLoc
+                       | otherwise = mkUniqGlob
 %%]
 
 %%[(8 codegen) hs
 aRenRepl :: ARenMp -> HsName -> HsName
-aRenRepl m n = maybe n id . Map.lookup n $ m
+aRenRepl (mf,_) n = maybe n id . Map.lookup n $ mf
 %%]
 
+%%[(8 codegen)
+ATTR CExpr [ | accumARenMp: ARenMp | ]
+
+SEM CExpr
+  | Let         loc         .   isGlobal    =   @lhs.lev == cLevModule
+                            .   addToARenMp =   \m -> aRenAdd @lhs.ropts @isGlobal
+%%[[20
+                                                              @lhs.moduleNm
+%%]]
+                                                              @binds.nmL @lUniq m
+                body        .   accumARenMp =   if   @isGlobal
+                                                then @addToARenMp @lhs.accumARenMp
+                                                else              @lhs.accumARenMp
+                loc         .   aRenMp      =   if   @isGlobal
+                                                then              @lhs.aRenMp
+                                                else @addToARenMp @lhs.aRenMp
+                lhs         .   accumARenMp =   @body.accumARenMp
+  | Lam         body        .   accumARenMp =   aRenAdd @lhs.ropts False
+%%[[20
+                                                        @lhs.moduleNm
+%%]]
+                                                        [@arg] @lUniq @lhs.aRenMp
+                loc         .   aRenMp      =   @body.accumARenMp
+  | * - Lam Let Char Int String Tup FFI Var Ann
+%%[[9
+        CoeArg Hole
+%%]]
+%%[[97
+        Integer
+%%]]
+                first__     .   accumARenMp =   @lhs.aRenMp
+                loc         .   aRenMp      =   @last__.accumARenMp
+  | * - Let Ann lhs         .   accumARenMp =   @lhs.accumARenMp
+                loc         .   accumARenMp =   @lhs.aRenMp
+
+SEM CAlt
+  | Alt         expr        .   accumARenMp =   aRenAdd @lhs.ropts False
+%%[[20
+                                                        @lhs.moduleNm
+%%]]
+                                                        @pat.nmL @lUniq @lhs.aRenMp
+                loc         .   aRenMp      =   @expr.accumARenMp
+
+SEM CBindAspect
+  | Bind Val    expr        .   accumARenMp =   @lhs.aRenMp
+                loc         .   aRenMp      =   @expr.accumARenMp
+
+SEM CModule
+  | Mod         expr        .   accumARenMp =   @lhs.aRenMp
+                loc         .   aRenMp      =   @expr.accumARenMp
+
+SEM MbCExpr
+  | Just        just        .   accumARenMp =   @lhs.aRenMp
+                loc         .   aRenMp      =   @just.accumARenMp
+
+SEM CPatFld
+  | Fld         offset      .   accumARenMp =   @lhs.aRenMp
+                loc         .   aRenMp      =   @offset.accumARenMp
+%%]
 
 
 %%[(8 codegen)
@@ -134,7 +258,7 @@ ATTR AllMetaVal [ | | protectableBindingNames : {[HsName]} ]
 
 %%[(8 codegen)
 SEM CodeAGItf
-  | AGItf       module      .   aRenMp      =   Map.empty
+  | AGItf       module      .   aRenMp      =   emptyARenMp
                             .   lev         =   cLevModule
 SEM CBind
 %%[[8
@@ -156,23 +280,23 @@ SEM CPatRest
   | Var         lhs         .   nmL         =   [@nm]
 
 SEM CExpr
-  | Let         loc         .   aRenMp      =   aRenAdd (@lhs.lev == cLevModule) @binds.nmL @lUniq @lhs.aRenMp
+  | Let         -- loc         .   aRenMp      =   aRenAdd (@lhs.lev == cLevModule) @binds.nmL @lUniq @lhs.aRenMp
                 binds       .   lev         =   @lhs.lev + 1
-  | Lam         loc         .   aRenMp      =   aRenAdd False [@arg] @lUniq @lhs.aRenMp
+  | Lam         -- loc         .   aRenMp      =   aRenAdd False [@arg] @lUniq @lhs.aRenMp
                 body        .   lev         =   if @body.isLamBody then @lhs.lev + 1 else @lhs.lev
 
 SEM CAlt
-  | Alt         loc         .   aRenMp      =   aRenAdd False @pat.nmL @lUniq @lhs.aRenMp
+  | Alt         -- loc         .   aRenMp      =   aRenAdd False @pat.nmL @lUniq @lhs.aRenMp
                 expr        .   lev         =   @lhs.lev + 1
 %%]
 
 %%[(20 codegen)
 SEM CExpr
-  | Let         loc         .   aRenMp      :=  aRenAdd (@lhs.lev == cLevModule) @lhs.moduleNm @binds.nmL @lUniq @lhs.aRenMp
-  | Lam         loc         .   aRenMp      :=  aRenAdd False @lhs.moduleNm [@arg] @lUniq @lhs.aRenMp
+  -- | Let         loc         .   aRenMp      :=  aRenAdd (@lhs.lev == cLevModule) @lhs.moduleNm @binds.nmL @lUniq @lhs.aRenMp
+  -- | Lam         loc         .   aRenMp      :=  aRenAdd False @lhs.moduleNm [@arg] @lUniq @lhs.aRenMp
 
 SEM CAlt
-  | Alt         loc         .   aRenMp      :=  aRenAdd False @lhs.moduleNm @pat.nmL @lUniq @lhs.aRenMp
+  -- | Alt         loc         .   aRenMp      :=  aRenAdd False @lhs.moduleNm @pat.nmL @lUniq @lhs.aRenMp
 %%]
 
 %%[(8 codegen)
@@ -192,7 +316,8 @@ SEM CBind
   | Bind        lhs         .   cTrf        =   CBind_Bind (aRenRepl @lhs.aRenMp @nm) @bindAspects.cTrf
 
 SEM CPatFld
-  | Fld         lhs         .   cTrf        =   CPatFld_Fld @lbl @offset.cTrf (aRenRepl @lhs.aRenMp @fldNm) -- @pat.cTrf
+  -- | Fld         lhs         .   cTrf        =   CPatFld_Fld @lbl @offset.cTrf (aRenRepl @lhs.aRenMp @fldNm) @fldAnns.cTrf -- @pat.cTrf
+  | Fld         lhs         .   cTrf        =   CPatFld_Fld @lbl @offset.cTrf (aRenRepl @aRenMp @fldNm) @fldAnns.cTrf -- @pat.cTrf
 
 SEM CPat
   | Var         lhs         .   cTrf        =   CPat_Var (aRenRepl @lhs.aRenMp $ @pnm)

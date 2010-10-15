@@ -15,7 +15,8 @@ TEXT_PRIV_VARIANTS			+= flops06-ruler-paper flops06-ruler \
 								scratch scratch2 \
 								poster posterLDL posterTrOrPr poster-uhcarch \
 								slides-ruler slides-ruler-long \
-								slides-explimpl slides-explimpl-fpnl slides-overview slides-status \
+								slides-explimpl slides-explimpl-fpnl slides-overview \
+								slides-status slides-uhcstatus \
 								slides-ehcstruct slides-ehcstruct-ufmg slides-hs09-uhcarch slides-uhcarch \
 								slides-uhcinternals \
 								gbm \
@@ -120,6 +121,7 @@ TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 # 60: doc: library
 # 61: doc: Jazy backend
 # 62: slides "UHC Internals" (AFP2010)
+# 63: slides UHC status
 # 77: scratch (article format)
 
 TEXT_SHUFFLE_ORDER	+= \
@@ -152,6 +154,7 @@ TEXT_SHUFFLE_ORDER	+= \
 		18 < 28, \
 		18 < 53, \
 		18 < 62, \
+		18 < 63, \
 		26 < 24, \
 		26 < 25, \
 		26 < 36, \

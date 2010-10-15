@@ -28,7 +28,7 @@ HsNameUniqifier to guarantee such an invariant.
 %%[3 import(qualified Data.Set as Set,Data.Maybe)
 %%]
 
-%%[8 export(hsnShowAlphanumeric, hsnShowAlphanumericShort)
+%%[8 import(qualified Data.Set as Set,Data.Maybe, Data.Char, Numeric)
 %%]
 
 %%[8 import(EH.Util.FPath,Char,qualified Data.Map as Map)
@@ -50,7 +50,8 @@ HsNameUniqifier to guarantee such an invariant.
 %%[7 export(HsNameUniqifier(..))
 -- | A HsNameUniqifier represents the 'type' of unification
 data HsNameUniqifier
-  = HsNameUniqifier_New					-- just a new identifier
+  = HsNameUniqifier_Blank				-- just a new identifier, with an empty show
+  | HsNameUniqifier_New					-- just a new identifier
   | HsNameUniqifier_GloballyUnique		-- globally unique
   | HsNameUniqifier_Evaluated			-- evaluated
   | HsNameUniqifier_Field				-- extracted field
@@ -70,10 +71,14 @@ data HsNameUniqifier
 %%[[92
   | HsNameUniqifier_GenericClass		-- a name introduced by generics
 %%]]
+%%[[(8 jscript)
+  | HsNameUniqifier_JSSwitchResult		-- var for result of switch
+%%]]
   deriving (Eq,Ord,Enum)
 
 -- | The show of a HsNameUniqifier is found back in the pretty printed code, current convention is 3 uppercase letters, as a balance between size and clarity of meaning
 instance Show HsNameUniqifier where
+  show HsNameUniqifier_Blank			 	= ""
   show HsNameUniqifier_New			 		= "NEW"
   show HsNameUniqifier_GloballyUnique 		= "UNQ"
   show HsNameUniqifier_Evaluated 			= "EVL"
@@ -93,6 +98,9 @@ instance Show HsNameUniqifier where
   show HsNameUniqifier_LacksLabel			= "LBL"
 %%[[91
   show HsNameUniqifier_GenericClass			= "GEN"
+%%]]
+%%[[(8 jscript)
+  show HsNameUniqifier_JSSwitchResult		= "JSW"
 %%]]
 %%]
 
@@ -114,6 +122,9 @@ instance Show HsNameUnique where
 
 %%[7
 type HsNameUniqifierMp = Map.Map HsNameUniqifier [HsNameUnique]
+
+emptyHsNameUniqifierMp :: HsNameUniqifierMp
+emptyHsNameUniqifierMp = Map.empty
 
 showHsNameUniqifierMp :: String -> HsNameUniqifierMp -> [String]
 showHsNameUniqifierMp usep us = [ usep ++ show (length u) ++ show uqf ++ concat [ usep ++ show uu | uu <- u, uu /= HsNameUnique_None ] | (uqf,u) <- Map.toList us ]
@@ -168,7 +179,7 @@ instance Eq HsName where
 instance Ord HsName where
   n1 `compare` n2 = hsnCanonicSplit n1 `compare` hsnCanonicSplit n2
 
-%%[1 export(mkHNmBase,hsnMbBaseString,hsnBaseUnpack,hsnBaseString)
+%%[1 export(mkHNmBase)
 -- | Just lift a string to the base HsName variant
 mkHNmBase :: String -> HsName
 %%[[1
@@ -176,16 +187,27 @@ mkHNmBase = HsName_Base
 %%][7
 mkHNmBase s = HsName_Modf [] (HsName_Base s) Map.empty
 %%]]
+%%]
+
+%%[1 export(hsnBaseUnpack',hsnBaseUnpack)
+-- | unpack a HsName into qualifiers + base string + repack function
+hsnBaseUnpack' :: HsName -> Maybe ([String],String,[String] -> String -> HsName)
+hsnBaseUnpack' (HsName_Base s    ) = Just ([],s,\_ s -> HsName_Base s)
+%%[[7
+hsnBaseUnpack' (HsName_Modf q b u) = fmap (\(bs,mk) -> (q, bs, \q s -> HsName_Modf q (mk s) u)) (hsnBaseUnpack b)
+hsnBaseUnpack' _                   = Nothing
+%%]]
 
 -- | unpack a HsName into base string + repack function
 hsnBaseUnpack :: HsName -> Maybe (String,String -> HsName)
 hsnBaseUnpack (HsName_Base s    ) = Just (s,HsName_Base)
 %%[[7
 hsnBaseUnpack (HsName_Modf q b u) = fmap (\(bs,mk) -> (bs, \s -> HsName_Modf q (mk s) u)) (hsnBaseUnpack b)
--- hsnBaseUnpack (HNmQ        ns   ) = do { (i,l) <- initlast ns ; (bs,mk) <- hsnBaseUnpack l ; return (bs, \s -> (HNmQ $ i ++ [mk s])) }
 hsnBaseUnpack _                   = Nothing
 %%]]
+%%]
 
+%%[1 export(hsnMbBaseString,hsnBaseString)
 -- | If name is a HsName_Base after some unpacking, return the base string, without qualifiers, without uniqifiers
 hsnMbBaseString :: HsName -> Maybe String
 hsnMbBaseString = fmap fst . hsnBaseUnpack
@@ -349,7 +371,7 @@ charAlphanumeric  c  = [c]
 charAlphanumeric  c  | isDigit c = [c]
                      | otherwise = error ("no alphanumeric representation for " ++ show c)
 
-%%[8
+%%[8 export(hsnShowAlphanumeric, hsnShowAlphanumericShort)
 dontStartWithDigit :: String -> String
 dontStartWithDigit xs@(a:_) | isDigit a || a=='_' = "y"++xs
                             | otherwise           = xs
@@ -490,9 +512,22 @@ hsnSetLevQual _ _ n = n
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 export(hsnFixUniqifiers)
+hsnFixUniqifiers' :: String -> HsName -> HsName
+hsnFixUniqifiers' sep (HsName_Modf qs n us) = HsName_Modf qs (hsnSuffix n (concat $ showHsNameUniqifierMp sep us)) Map.empty
+hsnFixUniqifiers' _   n                     = n
+
 hsnFixUniqifiers :: HsName -> HsName
-hsnFixUniqifiers (HsName_Modf qs n us) = HsName_Modf qs (hsnSuffix n (concat $ showHsNameUniqifierMp "_@" us)) Map.empty
-hsnFixUniqifiers n                     = n
+hsnFixUniqifiers = hsnFixUniqifiers' "_@"
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Strip the uniqifier part
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 export(hsnStripUniqifiers)
+hsnStripUniqifiers :: HsName -> HsName
+hsnStripUniqifiers (HsName_Modf qs n us) = HsName_Modf qs n emptyHsNameUniqifierMp
+hsnStripUniqifiers n                     = n
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -724,6 +759,95 @@ data IdOcc
 %%[3 export(HsNameS)
 type HsNameS = Set.Set HsName
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Safe names for Java like backends
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 jazy || jscript) hs export(hsnSafeJavaLike)
+-- ensure a name valid for JVM like backends
+hsnSafeJavaLike :: HsName -> HsName
+hsnSafeJavaLike
+  = hsnMapQualified (concatMap safe) . hsnFixUniqifiers' ""
+  where safe '_'                                      = "__"
+        safe c | isDigit c || isLetter c || c == '_'  = [c]
+               | otherwise                            = "_" ++ showHex (ord c) ""
+%%]
+        safe '.'  = "_dot"
+        safe ':'  = "_colon"
+        safe '/'  = "_fslash"
+        -- safe '<'  = "_lt"
+        -- safe '>'  = "_gt"
+        safe '\\' = "_bslash"
+        safe '['  = "_lbrack"
+        safe ']'  = "_rbrack"
+        safe '@'  = "_at"
+        safe  c   = [c]
+
+%%[(8 jazy || jscript) hs export(hsnJavaLikeVar)
+-- safe name of a variable
+hsnJavaLikeVar
+  :: ( HsName -> HsName				-- adapt for particular platform, before mangling here
+     , HsName -> HsName				-- post prefix
+     , String -> String				-- adapt module qualifiers
+     )
+     -> HsName -> HsName -> HsName -> HsName
+hsnJavaLikeVar (preadapt, postprefix, updqual) pkg mod v
+%%[[8
+  = hsnSafeJavaLike v
+%%][20
+  = postprefix $ hsnSafeJavaLike $ handleUpper $ qual $ preadapt v
+  where handleUpper v
+          = case hsnBaseUnpack v of
+               Just (s@(c:vs), mk) | isUpper c -> mk (s ++ "_")
+               _ -> v
+        qual v
+          = case hsnBaseUnpack' v of
+               Just (q, s, mk) -> mk (map updqual q) s
+               _ -> v
+%%]]
+%%]
+
+%%[(8 jazy || jscript) hs export(hsnJavaLikeVarCls)
+-- name of the class of a variable
+hsnJavaLikeVarCls :: HsName -> HsName -> HsName -> HsName
+hsnJavaLikeVarCls pkg mod v
+%%[[8
+  = hsnSuffix mod ("-" ++ show v)
+%%][20
+  = hsnSetQual pkg v
+%%]]
+%%]
+
+%%[(8 jazy || jscript) hs export(hsnJavaLikeVarToFld)
+-- field name of var name
+hsnJavaLikeVarToFld :: HsName -> HsName
+hsnJavaLikeVarToFld v
+%%[[8
+  = v
+%%][20
+  = hsnQualified v
+%%]]
+%%]
+
+%%[(8 jazy || jscript) hs export(hsnJavaLikeDataTy, hsnJavaLikeDataCon, hsnJavaLikeDataFldAt, hsnJavaLikeDataFlds)
+-- name of class of data type
+hsnJavaLikeDataTy :: HsName -> HsName -> HsName -> HsName
+hsnJavaLikeDataTy pkg mod d = hsnSafeJavaLike d `hsnSuffix` "_Ty"
+
+-- name of class of data constructor
+hsnJavaLikeDataCon :: HsName -> HsName -> HsName -> HsName
+hsnJavaLikeDataCon pkg mod d = hsnSafeJavaLike d `hsnSuffix` "_Con"
+
+-- name of field of data
+hsnJavaLikeDataFldAt :: Int -> String
+hsnJavaLikeDataFldAt i = show i
+
+-- all names of fields of data
+hsnJavaLikeDataFlds :: Int -> [String]
+hsnJavaLikeDataFlds arity = map hsnJavaLikeDataFldAt [0..arity-1]
+%%]
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Support for transformations

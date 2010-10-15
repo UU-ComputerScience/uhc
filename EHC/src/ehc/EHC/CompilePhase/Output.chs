@@ -144,26 +144,24 @@ cpOutputJava suff modNm
 %%[(8 codegen grin) export(cpOutputGrin)
 cpOutputGrin :: Bool -> String -> HsName -> EHCompilePhase ()
 cpOutputGrin binary suff modNm
-  =  do  {  cr <- get
-         ;  let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
-                 mbGrin = ecuMbGrin ecu
-                 grin   = panicJust "cpOutputGrin" mbGrin
-                 mkb x  = x ++ suff
-                 fpG    = mkOutputFPath opts (mkHNm $ mkb $ show modNm) (fpathUpdBase mkb fp) "grin"
-                 fnG    = fpathToStr fpG
-         ;  when (True) -- ehcOptFullProgAnalysis opts)
-                 (do { cpMsg modNm VerboseALot "Emit Grin"
+  =  do  { cr <- get
+         ; let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
+                mbGrin = ecuMbGrin ecu
+                grin   = panicJust "cpOutputGrin" mbGrin
+                mkb x  = x ++ suff
+                fpG    = mkOutputFPath opts (mkHNm $ mkb $ show modNm) (fpathUpdBase mkb fp) "grin"
+                fnG    = fpathToStr fpG
+         ; cpMsg modNm VerboseALot "Emit Grin"
 %%[[8
-                     ; lift $ putPPFPath fpG (ppGrModule grin) 1000 --TODO ? getal
+         ; lift $ putPPFPath fpG (ppGrModule grin) 1000 --TODO ? getal
 %%][20
-                     ; lift (if binary
-                             then do { fpathEnsureExists fpG
-                                     ; putSerializeFile fnG grin
-                                     }
-                             else putPPFPath fpG (ppGrModule grin) 1000 --TODO ? getal
-                            )
+         ; lift (if binary
+                 then do { fpathEnsureExists fpG
+                         ; putSerializeFile fnG grin
+                         }
+                 else putPPFPath fpG (ppGrModule grin) 1000 --TODO ? getal
+                )
 %%]]
-                     })
          }
 
 %%]
