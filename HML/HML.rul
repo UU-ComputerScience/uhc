@@ -73,7 +73,7 @@ createMask (nm, ty) = mask
        rep val = case isTyVar val nm of
                    False -> return val
                    True  -> let ty' = strip ty
-                            in return ty'
+                            in return $ mkParens ty'
                    
        strip :: TyScheme -> TyExpr
        strip (TyScheme_SystemF  a) = a
@@ -128,6 +128,16 @@ class Util a where
   isUnQualTy :: a -> Bool
   isUnQualTy = const False
   
+-- | Conditionally add Parenthesis around expressions that contain any kind of Application.
+--   They are most likely higher order, and if they weren't meant to be, the simplifier would take care of it
+mkParens :: TyExpr -> TyExpr
+mkParens x@(TyExpr_App{}) = TyExpr_Parens x
+mkParens x                = x
+
+-- | Wraps a AppTop around the right places
+mkTop :: TyExpr -> TyExpr
+mkTop a = if noArr a then a else TyExpr_Parens $ TyExpr_AppTop a
+  
 instance Util a => Util [a] where
   ftv  = concatMap ftv
   vars = concatMap vars
@@ -173,7 +183,7 @@ instance Apply TyQuantifiedScheme where
   
 instance Apply TyScheme where
     app tp@(x1,x2) = mask
-         where                           
+         where          
            mask :: TyScheme -> Maybe TyScheme
            mask val = case val of
                         TyScheme_Quant a b -> 
@@ -196,8 +206,12 @@ replace p@(a,b) (x:xs) |  a == x   = b:replace p xs
 instance Util TyScheme where
     ftv TyScheme_Bottom       = []
     ftv (TyScheme_SystemF  a) = ftv a
-    ftv (TyScheme_Quant  a b) = (nub $ ftv b) \\ (ftv a)
-    ftv (TyScheme_Sugar  _ b) = ftv b
+    ftv (TyScheme_Quant (Scheme_Simple a ph1) ph2) 
+      = let f2 = nub $ ftv ph2
+        in case a `elem` f2 of
+             True  -> (nub $ ftv ph1) ++ (a `delete` f2)
+             False -> f2
+    ftv b@(TyScheme_Sugar{}) = ftv (desugar b)
     ftv (TyScheme_Forall a b) = (ftv b) \\ a
     
     vars TyScheme_Bottom       = []
@@ -229,8 +243,8 @@ instance Normal TyScheme where
   nf (TyScheme_Quant (Scheme_Simple a phi1) phi2)
        | a `notElem` (ftv phi2) = nf phi2
        | isTyVar (nf phi2) a    = nf phi1
-       | isUnQualTy (nf phi1)   = let x = app (a, TyScheme_SystemF phi1') phi2
-                                      (TyScheme_SystemF phi1') = nf phi1
+       | isUnQualTy (nf phi1)   = let x = app (a, p) phi2
+                                      p = nf phi1
                                   in maybe (error "Substitution failed in Normal for UnQualTy") nf x
        | otherwise              = TyScheme_Quant (Scheme_Simple a (nf phi1)) (nf phi2)
   nf a = a 
@@ -254,11 +268,15 @@ instance Domain Env where
   domain   = M.keys
   codomain = concatMap ftv . M.elems
   
+instance Domain Scheme where
+  domain   (Scheme_Simple a _) = [a]
+  codomain (Scheme_Simple _ a) = nub $ vars a
+  
 -- | Updating a prefix
 update :: (Prefix, Either Scheme Sub) -> (Prefix, Env)
 update (q, Right (a, p))
   = let (q0, (q1,q2)) = id *** (`splitOn` a) $ split (q, ftv p)
-        q2' = case app (a,p) q2 of
+        q2' = case app (a,p) (safeTail q2) of
                Nothing -> error "Update failed. Could not apply substitution"
                Just ax -> D.trace (   "** Var:" ++ pp a
                                    ++ "\n** Q1 :" ++ pp q1
@@ -267,14 +285,17 @@ update (q, Right (a, p))
 update (q, Left (Scheme_Simple var phi2))
   = let (q0, (q1,q2)) = id *** (`splitOn` var) $ split (q, ftv phi2)
         p   = nf phi2
-        q2' = case app (var,p) q2 of
+        q2' = case app (var,p) (safeTail q2) of
                Nothing -> error "Update failed. Could not apply substitution"
                Just ax -> ax
     in case isUnQualTy p of
          True  -> (q0 ++ q1 ++ q2', M.fromList [(var, p)])
-         False -> (q0 ++ q1 ++ (TyIndex_Group var (promote phi2):q2) ,M.empty)
+         False -> (q0 ++ q1 ++ (TyIndex_Group var (promote phi2):(safeTail q2)) ,M.empty)
         
-
+safeTail :: [a] -> [a]
+safeTail []     = []
+safeTail (x:xs) = x:xs
+        
 -- | Split a prefix based on a variable
 splitOn :: Prefix -> HsName -> (Prefix, Prefix)
 splitOn [] _ 
@@ -286,12 +307,55 @@ splitOn (x@(TyIndex_Group v1 _):xs) v2
                in (x:a, b)
   
 -- | Extending a Prefix with a Scheme
-extend :: (Prefix, Scheme) -> (Prefix, Env)
-extend (q, scheme@(Scheme_Simple var phi))
+extend :: (Prefix, Scheme, Int) -> ((Prefix, Env), Int)
+extend (q, scheme@(Scheme_Simple var phi), frs)
  = let p = nf phi
    in case p of
-        TyScheme_SystemF p'  -> (q, M.fromList [(var, p)])
-        _                    -> (q++[TyIndex_Group var (promote phi)], M.empty)
+        TyScheme_SystemF p'  -> ((q, M.fromList [(var, p)]), frs)
+        -- TyScheme_Quant s t   -> case s of
+                                 -- Scheme_Simple v t' 
+                                   -- -> let s' = Scheme_Simple var t'
+                                          -- (Just tx) = app (v, mkVar var) t
+                                          -- ty = TyScheme_Quant s' tx
+                                      -- in ((q++[TyIndex_Group var (promote ty)], M.empty), frs)
+        -- _  -> case sweep p of
+               -- (schemes, ph2) | not (null schemes) ->
+                  -- let (varsc, frs') = freshM frs (length schemes)
+                      -- env           = zipWith (\a b-> (a, mkVar b)) (domain schemes) varsc
+                      -- (Just ph2')   = appAll (M.fromList env) ph2
+                      -- pre           = q ++ [TyIndex_Group v (promote p) | (v, p) <- zipWith (\a (Scheme_Simple _ x)->(a, x)) varsc schemes ]
+                  -- in ((pre, M.fromList [(var, ph2')]), frs')
+        _                    -> let (ph2, frs') = (phi, frs)
+                                in ((q++[TyIndex_Group var (promote ph2)], M.empty), frs')
+
+renameVars :: Int -> TyScheme -> (TyScheme, Int)
+renameVars frs ty 
+ = (fc ty, frs')
+  where
+    fc (TyScheme_Quant (Scheme_Simple a b) c) = TyScheme_Quant (Scheme_Simple (ren a) (fc b)) (fc c)
+    fc (TyScheme_SystemF exp) = let (Just a) = appAll env exp
+                                in  TyScheme_SystemF a
+    fc TyScheme_Bottom        = TyScheme_Bottom
+    fc (TyScheme_Sugar a b)   = TyScheme_Sugar (map fi a) (fc b)
+    fc (TyScheme_Forall a b)  = TyScheme_Forall (map ren a) (fc b)
+   
+    fi (TyIndex_Group a d) 
+       = let d' = case d of
+                   TyQuantifiedScheme_Quant b c -> TyQuantifiedScheme_Quant (fi b) (fc c)
+                   TyQuantifiedScheme_Bottom    -> TyQuantifiedScheme_Bottom
+         in TyIndex_Group (ren a) d'
+    vc         = vars ty
+    (nvc,frs') = freshM frs (length vc)
+    env        = M.fromList $ zipWith (\a b->(a, mkVar b)) vc nvc
+    env'       = M.fromList $ zipWith (\a b->(a, b)) vc nvc
+    ren x      = maybe x id $ M.lookup x env'
+   
+-- | Collects all the schemes for TyScheme_Quant
+sweep :: TyScheme -> ([Scheme], TyScheme)
+sweep (TyScheme_Quant a p) 
+  = let (s,r) = sweep p
+    in  (a:s, r)
+sweep x = ([], x)
         
 -- | Checks a prefix to see if it has a binding for a variable and select it
 contains :: Prefix -> HsName -> Maybe TyQuantifiedScheme
@@ -305,9 +369,9 @@ dropQuant TyQuantifiedScheme_Bottom      = TyScheme_Bottom
 -- | Drop a TyScheme to a TyExpr
 dropScheme :: TyScheme -> TyExpr
 dropScheme (TyScheme_SystemF a) = a
-dropScheme (TyScheme_Quant{} )  = error "Cannot drop a Quant to a TyExpr"
-dropScheme (TyScheme_Sugar{} )  = error "Cannot drop a Sugar to a TyExpr"
-dropScheme (TyScheme_Forall{})  = error "Cannot drop a Forall to a TyExpr"
+dropScheme (TyScheme_Quant{}  ) = error "Cannot drop a Quant to a TyExpr"
+dropScheme (TyScheme_Sugar{}  ) = error "Cannot drop a Sugar to a TyExpr"
+dropScheme (TyScheme_Forall{} ) = error "Cannot drop a Forall to a TyExpr"
 dropScheme TyScheme_Bottom      = error "Cannot drop a _|_ to a TyExpr"
 
 -- | Collect the LHS bindings (Names)
@@ -363,6 +427,9 @@ mkArrowL a b =
 mkVar :: HsName -> TyScheme
 mkVar = TyScheme_SystemF . TyExpr_Var
 
+mkQVar :: HsName -> TyScheme
+mkQVar = mkQuantified . TyExpr_Var
+
 mkSkolem :: HsName -> TyScheme
 mkSkolem = TyScheme_SystemF . TyExpr_Con
 
@@ -411,12 +478,17 @@ mkQuantified exp
            
 class Simplify a where
   simplify :: a -> a
+  clean    :: a -> a
   
 -- | A strong but inefficient alpha renamer (for pretty printing)
 alpha_rename :: TyScheme -> TyScheme
 alpha_rename ty 
  = let nvars = map (TyScheme_SystemF . TyExpr_Var . mkName) $ (map (:[]) ['a'..'z']) ++ liftM2 (\b a -> a : show b) [1..] ['a'..'z']
-       fvars = nub $ vars ty
+       fvars = sortBy lexord $ nub $ vars ty
+       lexord a b = case length (pp a) `compare` length (pp b) of
+                     LT -> LT
+                     GT -> GT
+                     EQ -> a `compare` b
        env   = zip fvars nvars
    in  maybe ty id $ appAll (M.fromList env) ty
      
@@ -429,40 +501,63 @@ instance Simplify TyScheme where
     -- | Simplify a type scheme for presentation, dropping trivial quantifications
     --   e.g. (a>=_|_) to a, and expanding types.
     --   simplify :: TyScheme -> TyScheme
-    simplify s@(TyScheme_Quant scheme ty) 
-     = case scheme of
-        Scheme_Simple a TyScheme_Bottom -> let next = simplify ty
-                                           in case next of
-                                                TyScheme_Forall x ty' -> case a `elem` ftv ty' of
-                                                                           True  -> TyScheme_Forall (nub $ a:x) ty'
-                                                                           False -> TyScheme_Forall x ty'
-                                                z                     -> case a `elem` ftv z of
-                                                                           True  -> TyScheme_Forall [a] z
-                                                                           False -> TyScheme_Forall []  z
-        Scheme_Simple a bounds          -> let newb = simplify bounds
-                                           in  case app (a, newb) ty of
-                                                 Nothing -> s
-                                                 Just x  -> let next = simplify x
-                                                                newv = nub $ ftv next
-                                                            in case next of
-                                                                 TyScheme_Forall x' ty' -> TyScheme_Forall (nub $ newv++x') ty'
-                                                                 z                      -> TyScheme_Forall newv z
-    simplify s@(TyScheme_Sugar{})   = simplify (desugar s)
-    simplify (TyScheme_SystemF exp) = TyScheme_SystemF (simplify exp)
-    simplify scheme                 = scheme
+    simplify exp = let (v, e) = simpl' M.empty exp
+                   in case appAll e v of
+                       Just a  -> a
+                       Nothing -> v
+      where simpl' env s@(TyScheme_Quant scheme ty) 
+              = case scheme of
+                 Scheme_Simple a TyScheme_Bottom -> let (next, e2) = simpl' env ty
+                                                    in case next of
+                                                         TyScheme_Forall x ty' -> case a `elem` ftv ty' of
+                                                                                    True  -> (TyScheme_Forall (nub $ a:x) ty', e2)
+                                                                                    False -> (TyScheme_Forall x ty', e2)
+                                                         z                     -> case a `elem` ftv z of
+                                                                                    True  -> (TyScheme_Forall [a] z, e2)
+                                                                                    False -> (TyScheme_Forall []  z, e2)
+                 Scheme_Simple a bounds          -> let (newb, e1) = simpl' env bounds
+                                                        env' = M.insert a newb e1
+                                                    in  case appAll env' ty of
+                                                          Nothing -> (s, env')
+                                                          Just x  -> let (next, e3) = simpl' env' x
+                                                                         newv = nub $ ftv next
+                                                                     in case next of
+                                                                          TyScheme_Forall x' ty' -> (TyScheme_Forall (nub $ newv++x') ty', e3)
+                                                                          z                      -> (TyScheme_Forall newv z, e3)
+            simpl' env s@(TyScheme_Sugar{})   = simpl' env (desugar s)
+            simpl' env (TyScheme_SystemF exp) = (TyScheme_SystemF (simplify exp), env)
+            simpl' env scheme                 = (scheme, env)
+    
+    clean = alpha_rename . simplify
     
 instance Simplify TyExpr where
     -- | Simplify a type expression for presentation. This version just drops superflous parenthesis
-    --   simplify :: TyExpr -> TyExpr
-    simplify = simpl True
+    --   simplify :: TyExpr -> TyExpr and wrap things in an AppTop for pretty printing
+    simplify = simpl False
       where simpl :: Bool -> TyExpr -> TyExpr
-            simpl True    (TyExpr_Parens    a) = a
-            simpl False p@(TyExpr_Parens{}   ) = p
-            simpl _       (TyExpr_App     a b) = TyExpr_App       (simpl True a) (simpl True b)
+            simpl True  p@(TyExpr_Parens    a) = let x  = noArr a
+                                                     p' = TyExpr_Parens (simpl x a)
+                                                 in if x then p' else TyExpr_AppTop p'
+            simpl False p@(TyExpr_Parens    a) = let x  = noArr a
+                                                     a' = simpl True a
+                                                 in if x then a' else TyExpr_AppTop a'
+            simpl _       (TyExpr_App     a b) = let e1 = noArr a
+                                                     e2 = noArr b
+                                                 in TyExpr_App (simpl e1 a) (simpl e2 b)
             simpl f       (TyExpr_AppTop    a) = TyExpr_AppTop    (simpl f a)
             simpl f       (TyExpr_Ann     a b) = TyExpr_Ann a     (simpl f b)
             simpl f       (TyExpr_Quant a b c) = TyExpr_Quant a b (simpl f c)   
             simpl _ a                          = a
+            
+    clean = (\(TyScheme_SystemF a)->a) . alpha_rename . simplify . TyScheme_SystemF
+
+-- | Checks if the expression contains an arrow. False will be returned if it does. This is needed for pretty printing in UHC
+noArr :: TyExpr -> Bool
+noArr (TyExpr_Con a)    = not $ pp a == "->"
+noArr (TyExpr_App a b)  = noArr a && noArr b
+-- noArr (TyExpr_AppTop a) = noArr a
+noArr (TyExpr_Parens a) = noArr a
+noArr _                 = True
             
 -- | Checks to see if a pattern expression is a variable or something else
 isVar :: PatExpr -> Bool
@@ -489,8 +584,26 @@ mkForall (TyExpr_Quant q a t)
               False -> ([a], y)
               True  -> (b:x, t')
      mk x = ([a], x)
-mkForall x 
+mkForall x@(TyExpr_Forall{}) 
  = x
+mkForall x 
+ = TyExpr_Forall tyQu_Forall [] x
+ 
+occursCheck :: HsName -> Prefix -> TyScheme -> Bool
+occursCheck a q phi 
+  = let (q0,q1,q2) = let (r1,r2) = (q `splitOn` a)
+                        in case r2 of
+                             (x:xs) -> (r1, [x], xs)
+                             []     -> (r1, [], [])
+        fvs           = ftv (TyScheme_Sugar q2 phi)
+    in case null q1 of
+         True  -> let d1 = D.trace ("++Var: " ++ pp a)
+                      d2 = D.trace ("++Pre: " ++ pp q)
+                  in d1 $ d2 $ error "Cannot occurs check. The split does not return a value"
+         False -> let d1 = D.trace ("++Var: " ++ pp a)
+                      d2 = D.trace ("++Pre: " ++ pp q ++ "\n++Q0 = " ++ pp q0 ++ "\n++Q1 = " ++ pp q1 ++ "\n++Q2 = " ++ pp q2)
+                      d3 = D.trace ("++Phi: " ++ pp phi ++ "\n++Ftv: " ++ pp (ftv phi) ++ "\n\n")
+                  in a `elem` fvs
 }
     
 data TyQu
@@ -1068,7 +1181,11 @@ datasem Decl monad IO
      lhs.nxe = lhs.pre
      lhs.frs = lhs.frs
   clause FFI
-     lhs.sub = M.insert loc.nm (TyScheme_SystemF loc.tyExpr) lhs.env
+     loc.vars = nub $ ftv loc.tyExpr
+     loc.exp = case null loc.vars of
+                True  -> loc.tyExpr
+                False -> foldl (.) id (map (TyExpr_Quant tyQu_Forall) loc.vars) loc.tyExpr
+     lhs.sub = M.insert loc.nm (TyScheme_SystemF loc.exp) lhs.env
      lhs.nxe = lhs.pre
      lhs.frs = lhs.frs
   clause KiSig
@@ -1146,9 +1263,9 @@ datasem Expr monad IO
        loc.debug2 = D.trace ("[App] arg  -- " ++ concatMap sche arg.res  ++ " # " ++ pp arg.res) arg.res
        loc.debug3 = D.trace ("A1: " ++ show loc.a1 ++ ", A2: " ++ show loc.a2 ++ ", B: " ++ show loc.b) arg.res
        
-       loc.temp1 = curry extend arg.nxe $ Scheme_Simple loc.a1 (fromJust $ appAll arg.sub (head func.res))
-       loc.temp2 = curry extend (fst loc.temp1) $ Scheme_Simple loc.a2 (head arg.res)
-       loc.temp3 = curry extend (fst loc.temp2) $ Scheme_Simple loc.b  (TyScheme_Bottom)
+       (loc.temp1, loc.frt1) = extend (arg.nxe, Scheme_Simple loc.a1 (fromJust $ appAll arg.sub (head func.res)), arg.frs)
+       (loc.temp2, loc.frt2) = extend (fst loc.temp1, Scheme_Simple loc.a2 (head arg.res), loc.frt1)
+       (loc.temp3, loc.frt3) = extend (fst loc.temp2, Scheme_Simple loc.b  (TyScheme_Bottom), loc.frt2)
        
        (loc.q2', loc.e2') = (fst loc.temp3, (snd loc.temp1) `M.union` (snd loc.temp2) `M.union` (snd loc.temp3))
        
@@ -1159,7 +1276,7 @@ datasem Expr monad IO
                 in D.trace ("Con1: " ++ con c ++ " # " ++ pp c) c
        u.exp2 = let c = (fromJust $ appAll loc.e2' (TyExpr_Var loc.a2)) `mkArrow` (TyExpr_Var loc.b)
                 in D.trace ("Con2: " ++ con c ++ " # " ++ pp c) c
-       u.frs  = arg.frs
+       u.frs  = loc.frt3
        
        invoke unify of u
        
@@ -1178,7 +1295,7 @@ datasem Expr monad IO
         -- | Preprocess the binds to fill the environemnt
         (loc.frs, loc.binds)  = let nms         = getBindLHs loc.decls
                                     (vars, frs) = freshM lhs.frs (length nms)
-                                in (frs, zipWith (\a b->(a, mkVar b)) nms vars)
+                                in (frs, zipWith (\a b->(a, mkQVar b)) nms vars)
         loc.env   = foldr (.) id (map (\(k,v)->M.insert k v) loc.binds) lhs.env
         
         decls.pre = lhs.pre
@@ -1234,7 +1351,7 @@ datasem Expr monad IO
                               []  -> error "Inference of Expressions failed in Lam, no type infered for body"
                               [x] -> x
                               _   -> error "Too many options, I only need one"
-       (loc.q3', loc.e3') = curry extend loc.q3 (Scheme_Simple loc.b loc.phi1)
+       ((loc.q3', loc.e3'), loc.frs') = extend (loc.q3, (Scheme_Simple loc.b loc.phi1), body.frs)
        
        lhs.res = let (Just b')    = appAll loc.e3' (TyExpr_Var loc.b)
                      (Just a')    = appAll body.sub loc.exp_a -- (TyExpr_Var loc.a)
@@ -1242,7 +1359,7 @@ datasem Expr monad IO
                  in return $ desugar $ TyScheme_Sugar loc.q3' (TyScheme_SystemF arrow)
        lhs.sub = body.sub
        lhs.nxe = loc.q2
-       lhs.frs = body.frs
+       lhs.frs = loc.frs'
     clause AppTop
        expr.pre = lhs.pre
        expr.env = lhs.env
@@ -1421,7 +1538,7 @@ subsume = sem subsume : Subsume monad IO
                 internal nf_check
                     clause s_subsume
                       match True                  = loc.nf
-                      match TyExpr.Forall@exp      = mkForall $ mkQuant lhs.exp
+                      match TyExpr.Forall@exp     = mkForall lhs.exp -- $ mkQuant lhs.exp
                       match TyScheme.Sugar@scheme = sugar lhs.ty
                       
                       loc.q  = lhs.pre
@@ -1432,7 +1549,7 @@ subsume = sem subsume : Subsume monad IO
                       (loc.c, loc.frs1) = D.trace ("subsume - init " ++ pp (const scheme.prefix exp.tyExpr)) $ freshM lhs.frs (length exp.tyVar)
                       u.pre  = let q = loc.q ++ loc.q2
                                in D.trace ("subsume -- " ++ pp q) q
-                      u.exp1 = case appAll (M.fromList $ zipWith (\a b->(a, mkVar b)) exp.tyVar loc.c) exp.tyExpr of
+                      u.exp1 = case appAll (M.fromList $ zipWith (\a b->(a, mkSkolem b)) exp.tyVar loc.c) exp.tyExpr of
                                  Just a  -> D.trace ("un1: " ++ con a) (const a scheme.prefix)
                                  Nothing -> error "Subsume failure, substitution failed"
                       u.exp2 = let f = dropScheme scheme.tyExpr
@@ -1445,7 +1562,7 @@ subsume = sem subsume : Subsume monad IO
                       loc.e1 = u.sub
                       
                       (loc.q3, loc.q4) = split (loc.q1, domain loc.q)
-                      loc.e2 = let x = (domain loc.q4)
+                      loc.e2 = let x = nub (domain loc.q4)
                                in D.trace (   "Removing domain: " ++ pp x 
                                            ++ "\n\t&&> " ++ pp loc.e1
                                            ++ "\n\t&&> " ++ pp (loc.e1 `remove` x)) $ loc.e1 `remove` x
@@ -1469,7 +1586,7 @@ subsume = sem subsume : Subsume monad IO
                       
                     clause f_subsume
                       match (loc.bla, False) = ((), loc.nf)
-                      lhs.sub = const (error $ "Subsume failure, the resulting types still have reference to a fresh skolem constant - " ++ show loc.nf) loc.bla
+                      lhs.sub = const (error $ "Subsume failure, the given type is not in normal form.") loc.bla
 
 unify = sem unify : Unify monad IO    
           visit unify
@@ -1565,9 +1682,12 @@ unify = sem unify : Unify monad IO
                                match True  = loc.isJust
                                loc.phi1 = fromJust loc.p1
                                loc.phi2 = fromJust loc.p2
-                               loc.exists = let v1 = (loc.q `elide` loc.phi1) `contains` var1.nm
-                                                v2 = (loc.q `elide` loc.phi2) `contains` var2.nm
-                                            in isJust v1 || isJust v2
+                               -- loc.exists = let v1 = (loc.q `elide` loc.phi1) `contains` var1.nm
+                                                -- v2 = (loc.q `elide` loc.phi2) `contains` var2.nm
+                                            -- in isJust v1 || isJust v2
+                               loc.exists = let v1 = occursCheck var1.nm loc.q (toScheme loc.phi2)
+                                                v2 = occursCheck var2.nm loc.q (toScheme loc.phi1)
+                                            in v1 || v2
                                internal dom_check
                                  clause s_dom_check
                                    match True  = loc.exists
@@ -1593,7 +1713,8 @@ unify = sem unify : Unify monad IO
                                    
                                    lhs.frs = s.frs
                                    lhs.pre = loc.q3
-                                   lhs.sub = loc.e3 `M.union` loc.e2 `M.union` loc.e1
+                                   lhs.sub = let x = loc.e3 `M.union` loc.e2 `M.union` loc.e1
+                                             in D.trace ("++ unifyScheme + unify done: " ++ pp x) x
                      clause cons
                        match TyExpr.Con@var1 = lhs.exp1
                        match TyExpr.Con@var2 = lhs.exp2
@@ -1650,7 +1771,7 @@ unify = sem unify : Unify monad IO
                            
                            internal occurs_check
                              clause valid
-                               match True = isJust loc.phi
+                               match False = occursCheck loc.varnm loc.q (TyScheme_SystemF loc.expr)
                                loc.phi' = fromJust loc.phi
                                
                                loc.p = loc.expr
@@ -1667,7 +1788,7 @@ unify = sem unify : Unify monad IO
                                
                                (loc.q2, loc.e2) = case D.trace "--> subsume end" $ appAll s.sub loc.expr of
                                                     Nothing -> error "Application failed in unify"
-                                                    Just a  -> let sub = (loc.varnm, TyScheme_SystemF a) 
+                                                    Just a  -> let sub = (loc.varnm, TyScheme_SystemF $ mkTop a) 
                                                                in D.trace ("!!! " ++ pp sub) $ update (s.pre, Right sub)
                                
                                lhs.pre = loc.q2
@@ -1678,7 +1799,7 @@ unify = sem unify : Unify monad IO
                                                ++ " \n\t("  ++ pp loc.expr ++ " => " ++ pp loc.ret ++ ")") loc.ret
                                lhs.frs = D.trace "unify - ***leftvar***" s.frs  
                              clause invalid
-                               match False = isJust loc.phi
+                               match True = isJust loc.phi
                                lhs.sub = M.empty
                                -- lhs.sub = error $ "Unable to execute unification on '"
                                               -- ++ pp lhs.exp1 ++ "' and '"++ pp lhs.exp2 ++ "', occurs check failed in prefix: "
@@ -1693,7 +1814,7 @@ unify = sem unify : Unify monad IO
                            
                            internal occurs_check
                              clause valid2
-                               match True = isJust loc.phi
+                               match False = occursCheck loc.varnm loc.q (TyScheme_SystemF loc.expr)
                                loc.phi' = fromJust loc.phi
                                
                                loc.p = loc.expr
@@ -1710,7 +1831,7 @@ unify = sem unify : Unify monad IO
                                
                                (loc.q2, loc.e2) = case D.trace "--> subsume end" $ appAll s.sub loc.expr of
                                                     Nothing -> error "Application failed in unify"
-                                                    Just a  -> let sub = (loc.varnm, TyScheme_SystemF a) 
+                                                    Just a  -> let sub = (loc.varnm, TyScheme_SystemF $ mkTop a) 
                                                                in D.trace ("!!! " ++ pp sub) $ update (s.pre, Right sub)
                                
                                lhs.pre = loc.q2
@@ -1721,7 +1842,7 @@ unify = sem unify : Unify monad IO
                                                ++ " \n\t("  ++ pp loc.expr ++ " => " ++ pp loc.ret ++ ")") loc.ret
                                lhs.frs = D.trace "unify - ***rightvar***" s.frs  
                              clause invalid2
-                               match False = isJust loc.phi
+                               match True = isJust loc.phi
                                lhs.sub = M.empty
                                -- lhs.sub = error $ "Unable to execute unification on '"
                                               -- ++ pp lhs.exp1 ++ "' and '"++ pp lhs.exp2 ++ "', occurs check failed in prefix: "
@@ -1733,7 +1854,7 @@ unify = sem unify : Unify monad IO
                        child u : Unify = unify
                        
                        (loc.c, loc.frs1) = fresh lhs.frs
-                       loc.varc = mkVar loc.c
+                       loc.varc = mkSkolem loc.c
                        u.frs  = loc.frs1
                        u.pre  = D.trace (  "[App] - Quant =>"
                                         ++ "\n\t(1) [" ++ pp var1.tyVar ++ ":=" ++ pp loc.varc ++ "] " ++ pp var1.tyExpr
@@ -1766,7 +1887,7 @@ unify = sem unify : Unify monad IO
                        loc.varc = mkVar loc.c
                        
                        u.frs = loc.frs1
-                       u.pre = D.trace ("Expanding Environment, Adding Universally quantified variable" ++ pp loc.c) 
+                       u.pre = D.trace ("Expanding Environment, Adding Universally quantified variable - " ++ pp loc.c) 
                                   $ lhs.pre ++ [TyIndex_Group loc.c TyQuantifiedScheme_Bottom]
                        u.exp2 = lhs.exp2
                        u.exp1 = case app (var1.tyVar, loc.varc) var1.tyExpr of
@@ -1797,6 +1918,11 @@ unify = sem unify : Unify monad IO
                        
                        lhs.pre = u.pre
                        lhs.sub = u.sub
+                     clause mismatch
+                       lhs.sub = error $   "Could not match expected type '" 
+                                        ++ pp (clean lhs.exp1) ++ "' with inferred type '" 
+                                        ++ pp (clean lhs.exp2) -- ++ "' under Prefix: " 
+                                        -- ++ pp lhs.pre
                  clause f_unify
                    match (loc.bla, False) = ((), loc.nf)
                    lhs.sub = const (error "Unify failure, one or both of the TyExpr are not in normal form.") loc.bla

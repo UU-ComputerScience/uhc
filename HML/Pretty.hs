@@ -40,6 +40,8 @@ instance Pretty TyScheme where
   pp TyScheme_Bottom                 = "_|_"
   pp (TyScheme_SystemF typ)          = pp typ
   pp (TyScheme_Quant bound expr)     = pp bound ++ ". " ++ pp expr
+  pp p@(TyScheme_Sugar{})            = "S@"
+  pp (TyScheme_Forall a p)           = "forall " ++ pp a ++ ". " ++ pp p
                                        
 instance Pretty TyQuantifiedScheme where
   pp (TyQuantifiedScheme_Quant i b) = "forall (" ++ pp i ++ "). " ++ pp b
