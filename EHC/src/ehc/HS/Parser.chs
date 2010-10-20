@@ -129,7 +129,8 @@ pPragma' mk
           <$> pLANGUAGE_prag   <*> pCommas (tokMkQName <$>           conid)
       <|> (\t cl fld val r -> mk r $ Pragma_Derivable (mkRange1 t) (tokMkQName cl) (tokMkQName fld) (tokMkQName val))
           <$> pDERIVABLE_prag  <*> gtycon' tyconsym <*> var <*> qvar
-      -- <|> (\t ps r -> mk r $ Pragma_OptionsGHC (mkRange1 t) ps) <$> pOPTIONSGHC_prag <*> pCommas (tokMkQName <$ pMINUS <*> conid)
+      <|> (\t targ r -> mk r $ Pragma_ExcludeIfTarget (mkRange1 t) (map tokMkStr $ concat targ))
+          <$> pEXCLUDEIFTARGET_prag  <*> pList1Sep pCOMMA (pList1 (conid <|> varid))
       )
 
 pPragma :: HSParser Pragma

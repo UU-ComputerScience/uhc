@@ -494,6 +494,11 @@ acoreLetRec bs e = acoreLet (acoreBindcategRec) bs e
 {-# INLINE acoreLetRec #-}
 %%]
 
+%%[(8 codegen) export(acoreLetN)
+acoreLetN :: (Eq bcat, AbstractCore e m b basp bcat mbind t p pr pf a) => [(bcat,[b])] -> e -> e
+acoreLetN cbs e = foldr (\(c,bs) e -> acoreLet c bs e) e cbs
+%%]
+
 %%[(8 codegen) export(acoreLet1PlainTy,acoreLet1Plain)
 acoreLet1PlainTy :: (Eq bcat, AbstractCore e m b basp bcat mbind t p pr pf a) => HsName -> t -> e -> e -> e
 acoreLet1PlainTy nm t e
@@ -1110,6 +1115,7 @@ data WhatExpr
   | ExprIsVar 	HsName
   | ExprIsInt 	Int
   | ExprIsOther
+  | ExprIsBind
   deriving Eq
 %%]
 

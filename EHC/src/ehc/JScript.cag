@@ -1,0 +1,54 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell importable interface to JScript/AbsSyn
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 jscript) hs module {%{EH}JScript} import({%{EH}Base.Common})
+%%]
+
+%%[(8 jscript) hs export(JScriptModule(..), Stat(..), StatL, NmExpr, NmExprL, Expr(..), ExprL, MbExpr, AGItf(..)) 
+%%]
+
+%%[(8 jscript) hs export(Alt(..), AltL) 
+%%]
+
+%%[(8 jscript) ag import({JScript/AbsSyn})
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Instances
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 jscript) hs
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Smart constructors
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 jscript) hs export(jsVarDecl)
+-- | declare a var, or a field in object, depending on name being qualified
+jsVarDecl :: HsName -> Expr -> Stat
+%%[[8
+jsVarDecl n e = Stat_VarDecl n (Just e)
+%%][20
+jsVarDecl n e
+  = case hsnQualifier n of
+      Just _ -> Stat_Assign (Expr_Var n) e
+      _      -> Stat_VarDecl n (Just e)
+%%]]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Observations
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 jscript) hs export(exprMbVar)
+exprMbVar :: Expr -> Maybe HsName
+exprMbVar (Expr_Var n) = Just n
+exprMbVar _            = Nothing
+%%]

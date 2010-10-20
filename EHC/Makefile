@@ -77,6 +77,9 @@ include $(SRC_PREFIX)rts/files.mk
 ifeq ($(ENABLE_JAVA),yes)
 -include $(SRC_PREFIX)jazy/files.mk
 endif
+ifeq ($(ENABLE_JSCRIPT),yes)
+-include $(SRC_PREFIX)jscript/files.mk
+endif
 include $(SRC_PREFIX)ehc/files2.mk
 -include $(SRC_PREFIX)agprimer/files.mk
 -include $(SRC_PREFIX)infer2pass/variant.mk
@@ -383,7 +386,8 @@ release-prepare:
 FUN_PREFIX2DIR			= $(patsubst %/,%,$(1))
 
 tst:
-	@echo $(EHCLIB_SH_MAP_PKG2VERSIONED)
+	@echo $(EHC_VARIANT_TARGET)
+	@echo $(EHC_CFG_USE_UNIX_AND_C)
 
 tstv:
 	$(MAKE) EHC_VARIANT=100 tst

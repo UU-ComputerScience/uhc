@@ -1,0 +1,113 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Abstract syntax for JavaScript files
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[doesWhat doclatex
+Representation of the subset of JavaScript required for UHC codegeneration.
+
+This AST and semantics are under construction.
+%%]
+
+%%[(8 jscript)
+DATA AGItf
+  | AGItf       module          : JScriptModule
+
+DATA JScriptModule
+  | Mod			decls			: StatL
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Statements
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 jscript)
+DATA Stat
+  | VarDecl     nm              : {HsName}
+                mbExpr          : MbExpr
+  | FunDecl     expr          	: Expr
+  | Assign		to				: Expr
+  				expr			: Expr
+  | Expr		expr			: Expr
+  | Block		stats			: StatL
+  | Throw		expr			: Expr
+  | Ret			expr			: Expr
+  | Switch		expr			: Expr
+  				alts			: AltL
+  | Break
+
+TYPE StatL		= [Stat]
+%%]
+
+%%[(8 jscript)
+SET AllStat		= StatL Stat
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Expressions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 jscript)
+DATA Expr
+  | Var         nm              : {HsName}
+  | Int         int             : {Integer}
+  | Str         str             : {String}
+  | Char        char            : {Char}
+  | Sel			expr			: Expr
+  				nm				: {HsName}
+  | Call		fun				: Expr
+  				args			: ExprL
+  | New			expr			: Expr					-- must be a Call
+  | Fun			mbNm			: {Maybe HsName}
+  				args			: {[HsName]}
+  				body			: Stat
+  | Arr			elts			: ExprL
+  | ArrInx		arr				: Expr
+  				inx				: Expr
+  | Obj			elts			: NmExprL
+  | ObjFld		obj				: Expr
+  				fld				: {HsName}
+  | This
+  | True
+  | False
+  | Inline		str				: {String}				-- for debuggin
+
+
+TYPE NmExpr		= (HsName,Expr)
+TYPE NmExprL	= [NmExpr]
+
+TYPE ExprL		= [Expr]
+TYPE MbExpr		= MAYBE Expr
+%%]
+
+%%[(8 jscript)
+SET AllExpr		= ExprL Expr MbExpr NmExpr NmExprL
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Alternatives (of switch)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 jscript)
+DATA Alt
+  | Alt			tag				: {Int}
+  				stats			: StatL
+
+TYPE AltL		= [Alt]
+%%]
+
+%%[(8 jscript)
+SET AllAlt		= Alt AltL
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Sets
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 jscript)
+SET AllNT
+  = AllStat
+    AllExpr
+    AllAlt
+    JScriptModule
+%%]
+

@@ -1,3 +1,5 @@
+{-# EXCLUDE_IF_TARGET jscript #-}
+
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  System.Console.GetOpt

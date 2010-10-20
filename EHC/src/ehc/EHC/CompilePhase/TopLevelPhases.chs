@@ -26,6 +26,11 @@ level 2..6 : with prefix 'cpEhc'
 %%[8 import(qualified Data.Map as Map,qualified Data.Set as Set)
 %%]
 
+%%[8 import({%{EH}Base.Optimize})
+%%]
+%%[(8 codegen) import({%{EH}Base.Target})
+%%]
+
 %%[8 import({%{EH}EHC.Common})
 %%]
 %%[8 import({%{EH}EHC.CompileUnit})
@@ -53,9 +58,11 @@ level 2..6 : with prefix 'cpEhc'
 %%]
 %%[(8 codegen java) import({%{EH}EHC.CompilePhase.CompileJVM})
 %%]
+%%[(8 codegen jscript) import({%{EH}EHC.CompilePhase.CompileJScript})
+%%]
 %%[99 import({%{EH}Base.PackageDatabase})
 %%]
-%%[(99 codegen) import({%{EH}Base.Target},{%{EH}EHC.CompilePhase.Link})
+%%[(99 codegen) import({%{EH}EHC.CompilePhase.Link})
 %%]
 %%[20 import({%{EH}EHC.CompilePhase.Module})
 %%]
@@ -65,7 +72,9 @@ level 2..6 : with prefix 'cpEhc'
 %%]
 
 -- Language syntax: Core
-%%[(20 codegen grin) import(qualified {%{EH}Core} as Core(cModMerge))
+%%[(20 codegen) import(qualified {%{EH}Core} as Core(cModMerge))
+%%]
+%%[(20 codegen) import({%{EH}Core.Utils} (cModMerge2))
 %%]
 -- Language syntax: TyCore
 %%[(8 codegen tycore) import(qualified {%{EH}TyCore.Full2} as C)
@@ -83,42 +92,53 @@ Top level entry point into compilation by the compiler driver, apart from import
 %%]
 
 %%[20
+-- | top lever driver for after all per-module work has been done, and whole program stuff like combining/linking can start
 cpEhcFullProgLinkAllModules :: [HsName] -> EHCompilePhase ()
 cpEhcFullProgLinkAllModules modNmL
  = do { cr <- get
       ; let (mainModNmL,impModNmL) = splitMain cr modNmL
             (_,opts) = crBaseInfo' cr   -- '
-      ; cpMsg (head modNmL) VerboseDebug ("Main mod split: " ++ show mainModNmL ++ ": " ++ show impModNmL)
+      ; when (not $ null modNmL)
+             (cpMsg (head modNmL) VerboseDebug ("Main mod split: " ++ show mainModNmL ++ ": " ++ show impModNmL))
       ; case mainModNmL of
           [mainModNm]
             | ehcOptDoLinking opts
-              -> cpSeq (   (if ehcOptFullProgAnalysis opts
-                            then [ cpEhcFullProgPostModulePhases opts modNmL (impModNmL,mainModNm)
-                                 -- , cpMsg mainModNm VerboseDebug "XX"
-                                 , cpEhcCorePerModulePart2 (ehcOptEarlyModMerge opts) mainModNm
-                                 -- , cpMsg mainModNm VerboseDebug "YY"
-                                 ]
-                            else []
-                           )
-                        ++ [cpEhcExecutablePerModule FinalCompile_Exec impModNmL mainModNm]
-                       )
+                -> case () of
+                     () | ehcOptOptimizationScope opts >= OptimizationScope_WholeCore
+                            -> cpSeq (  hpt
+                                     ++ [ when (targetIsGrinBytecode (ehcOptTarget opts)) (cpProcessBytecode mainModNm)
+%%[[99
+                                        , cpCleanupGrin [mainModNm]
+%%]]
+                                        ]
+
+                                     ++ exec
+                                     )
+                        | targetDoesHPTAnalysis (ehcOptTarget opts)
+                            -> cpSeq $ hpt ++ exec
+                        | otherwise
+                            -> cpSeq exec
+                        where exec = [ cpEhcExecutablePerModule FinalCompile_Exec impModNmL mainModNm ]
+                              hpt  = [ cpEhcFullProgPostModulePhases opts modNmL (impModNmL,mainModNm)
+                                     , cpEhcCorePerModulePart2 mainModNm
+                                     ]
             | otherwise
-              -> cpSetLimitErrs 1 "compilation run" [rngLift emptyRange Err_MayNotHaveMain mainModNm]
+                -> cpSetLimitErrs 1 "compilation run" [rngLift emptyRange Err_MayNotHaveMain mainModNm]
           _ | ehcOptDoLinking opts
-              -> cpSetLimitErrs 1 "compilation run" [rngLift emptyRange Err_MustHaveMain]
+                -> cpSetLimitErrs 1 "compilation run" [rngLift emptyRange Err_MustHaveMain]
             | otherwise
 %%[[20
-              -> return ()
+                -> return ()
 %%][99
-              -> case ehcOptPkg opts of
-                   Just (PkgOption_Build pkg)
-                     | targetAllowsOLinking (ehcOptTarget opts)
-                       -> cpLinkO impModNmL pkg
+                -> case ehcOptPkg opts of
+                     Just (PkgOption_Build pkg)
+                       | targetAllowsOLinking (ehcOptTarget opts)
+                         -> cpLinkO impModNmL pkg
 %%[[(99 jazy)
-                     | targetAllowsJarLinking (ehcOptTarget opts)
-                       -> cpLinkJar Nothing impModNmL (JarMk_Pkg pkg)
+                       | targetAllowsJarLinking (ehcOptTarget opts)
+                         -> cpLinkJar Nothing impModNmL (JarMk_Pkg pkg)
 %%]]
-                   _ -> return ()
+                     _ -> return ()
 %%]]
       }
   where splitMain cr = partition (\n -> ecuHasMain $ crCU n cr)
@@ -172,7 +192,7 @@ cpEhcFullProgPostModulePhases, cpEhcGrinFullProgPostModulePhases, cpEhcCoreFullP
   :: EHCOpts -> [HsName] -> ([HsName],HsName) -> EHCompilePhase ()
 
 cpEhcFullProgPostModulePhases opts modNmL modSpl
-  = (if ehcOptEarlyModMerge opts
+  = (if  ehcOptOptimizationScope opts >= OptimizationScope_WholeCore
     then cpEhcCoreFullProgPostModulePhases
     else cpEhcGrinFullProgPostModulePhases
     ) opts modNmL modSpl
@@ -181,7 +201,7 @@ cpEhcGrinFullProgPostModulePhases opts modNmL (impModNmL,mainModNm)
   = cpSeq ([ cpSeq [cpEnsureGrin m | m <- modNmL]
            , mergeIntoOneBigGrin
 %%[[99
-           , cpSeq [cpCleanupGrin m | m <- impModNmL] -- clean up unused Grin (moved here from cpCleanupCU)
+           , cpCleanupGrin impModNmL -- clean up unused Grin (moved here from cpCleanupCU)
 %%]]
            ]
            ++ (if ehcOptDumpGrinStages opts then [cpOutputGrin False "-fullgrin" mainModNm] else [])
@@ -190,7 +210,7 @@ cpEhcGrinFullProgPostModulePhases opts modNmL (impModNmL,mainModNm)
           )
   where mergeIntoOneBigGrin
           = do { cr <- get
-               ; cpUpdCU mainModNm (ecuStoreGrin (Grin.grModMerge [ panicJust "cpEhcFullProgPostModulePhases.mergeIntoOneBigGrin" $ ecuMbGrin $ crCU m cr
+               ; cpUpdCU mainModNm (ecuStoreGrin (Grin.grModMerge [ panicJust "cpEhcGrinFullProgPostModulePhases.mergeIntoOneBigGrin" $ ecuMbGrin $ crCU m cr
                                                                   | m <- modNmL
                                                                   ]
                                    )             )
@@ -216,14 +236,14 @@ cpEhcCoreFullProgPostModulePhases opts modNmL (impModNmL,mainModNm)
           )
   where mergeIntoOneBigCore
           = do { cr <- get
+               ; cpUpdCU mainModNm 
+                 $ ecuStoreCore 
+                 $ cModMerge2 ([ mOf m cr | m <- impModNmL ], mOf mainModNm cr)
 %%[[99
-               ; cpSeq [cpCleanupCore m | m <- modNmL] -- clean up Core and CoreSem (it can still be read through cr in the next statement)
+               ; cpCleanupCore impModNmL -- clean up Core and CoreSem (it can still be read through cr in the next statement)
 %%]]
-               ; cpUpdCU mainModNm (ecuStoreCore (Core.cModMerge [ panicJust "cpEhcFullProgPostModulePhases.mergeIntoOneBigCore" $ ecuMbCore $ crCU m cr
-                                                                 | m <- modNmL
-                                                                 ]
-                                   )             )
                }
+          where mOf m cr = panicJust "cpEhcCoreFullProgPostModulePhases.mergeIntoOneBigCore" $ ecuMbCore $ crCU m cr
 %%]
 
 %%[20 haddock
@@ -424,8 +444,8 @@ cpEhcModuleCompile1 targHSState modNm
 %%]]
                                        modNm
                    ; cpEhcHaskellModuleCommonPhases True True opts modNm
-                   ; when (ehcOptFullProgAnalysis opts)
-                          (cpEhcCoreGrinPerModuleDoneFullProgAnalysis (ehcOptEarlyModMerge opts) modNm)
+                   ; when (ehcOptWholeProgHPTAnalysis opts)
+                          (cpEhcCoreGrinPerModuleDoneFullProgAnalysis modNm)
                    ; cpUpdCU modNm (ecuStoreState (ECUSHaskell HSAllSem))
                    ; return defaultResult
                    }
@@ -442,17 +462,22 @@ cpEhcModuleCompile1 targHSState modNm
 %%]]   
                    ; cpEhcEhModuleCommonPhases True True True opts modNm
                    
-                   ; when (ehcOptFullProgAnalysis opts)
-                          (cpEhcCoreGrinPerModuleDoneFullProgAnalysis (ehcOptEarlyModMerge opts) modNm)
+                   ; when (ehcOptWholeProgHPTAnalysis opts)
+                          (cpEhcCoreGrinPerModuleDoneFullProgAnalysis modNm)
                    ; cpUpdCU modNm (ecuStoreState (ECUSEh EHAllSem))
                    ; return defaultResult
                    }
 %%[[90
            (ECUSC CStart,_)
+             | targetIsOnUnixAndOrC (ehcOptTarget opts)
              -> do { cpSeq [ cpMsg modNm VerboseMinimal "Compiling C"
                            , cpCompileWithGCC FinalCompile_Module [] modNm
                            , cpUpdCU modNm (ecuStoreState (ECUSC CAllSem))
                            ]
+                   ; return defaultResult
+                   }
+             | otherwise
+             -> do { cpMsg modNm VerboseMinimal "Skipping C"
                    ; return defaultResult
                    }
 %%]]
@@ -483,11 +508,11 @@ cpEhcEhModuleCommonPhases :: Bool -> Bool -> Bool -> EHCOpts -> HsName -> EHComp
 cpEhcEhModuleCommonPhases isMainMod isTopMod doMkExec opts modNm
   = cpSeq ([ cpEhcEhAnalyseModuleDefs modNm
 %%[[(8 codegen)
-           , cpEhcCorePerModulePart1 (ehcOptEarlyModMerge opts) modNm
+           , cpEhcCorePerModulePart1 modNm
 %%]]
            ]
 %%[[(8 codegen grin)
-           ++ (if ehcOptFullProgAnalysis opts
+           ++ (if ehcOptWholeProgHPTAnalysis opts
                then []
                else [cpEhcCoreGrinPerModuleDoneNoFullProgAnalysis opts isMainMod isTopMod doMkExec modNm]
               )
@@ -755,10 +780,15 @@ Part 1 Core processing, on a per module basis, part1 is done always
 %%]
 
 %%[(8 codegen)
-cpEhcCorePerModulePart1 :: Bool -> HsName -> EHCompilePhase ()
-cpEhcCorePerModulePart1 earlyMerge modNm
+cpEhcCorePerModulePart1 :: HsName -> EHCompilePhase ()
+cpEhcCorePerModulePart1 modNm
   = do { cr <- get
        ; let (_,_,opts,_) = crBaseInfo modNm cr
+%%[[8
+             earlyMerge = False
+%%][20
+             earlyMerge = ehcOptOptimizationScope opts >= OptimizationScope_WholeCore
+%%]]
        ; cpSeq
            (  [ cpStepUID ]
 %%[[(8 tycore)
@@ -785,11 +815,19 @@ Part 2 Core processing, part2 is done either for individual modules or after ful
 %%]
 
 %%[(8 codegen)
-cpEhcCorePerModulePart2 :: Bool -> HsName -> EHCompilePhase ()
-cpEhcCorePerModulePart2 earlyMerge modNm
-  = cpSeq [ when earlyMerge $ cpProcessCoreRest modNm
-          , cpProcessGrin modNm
-          ]
+cpEhcCorePerModulePart2 :: HsName -> EHCompilePhase ()
+cpEhcCorePerModulePart2 modNm
+  = do { cr <- get
+       ; let (_,_,opts,_) = crBaseInfo modNm cr
+%%[[8
+             earlyMerge = False
+%%][20
+             earlyMerge = ehcOptOptimizationScope opts >= OptimizationScope_WholeCore
+%%]]
+       ; cpSeq [ when earlyMerge $ cpProcessCoreRest modNm
+               , when (targetIsGrin (ehcOptTarget opts)) (cpProcessGrin modNm)
+               ]
+       }
 %%]
 
 %%[(8 codegen grin) haddock
@@ -799,25 +837,26 @@ Core+grin processing, on a per module basis, may only be done when no full progr
 %%[(8 codegen grin)
 cpEhcCoreGrinPerModuleDoneNoFullProgAnalysis :: EHCOpts -> Bool -> Bool -> Bool -> HsName -> EHCompilePhase ()
 cpEhcCoreGrinPerModuleDoneNoFullProgAnalysis opts isMainMod isTopMod doMkExec modNm
-  = cpSeq (  [ cpEhcCorePerModulePart2 (ehcOptEarlyModMerge opts) modNm
+  = cpSeq (  [ cpEhcCorePerModulePart2 modNm
 %%[[20
              , cpMsg modNm VerboseDebug "cpFlowOptim"
              , cpFlowOptim modNm
 %%]]
 %%[[99
-             , cpCleanupGrin modNm
+             , cpCleanupGrin [modNm]
 %%]]
-             , cpProcessBytecode modNm
+             , when doesGrin (cpProcessBytecode modNm)
              ]
           ++ (if not isMainMod || doMkExec
               then let how = if doMkExec then FinalCompile_Exec else FinalCompile_Module
                    in  [cpEhcExecutablePerModule how [] modNm]
               else []
              )
-          ++ [ cpMsg modNm VerboseALot "Core+Grin done"
+          ++ [ cpMsg modNm VerboseALot ("Core" ++ (if doesGrin then "+Grin" else "") ++ " done")
              , cpMsg modNm VerboseDebug ("isMainMod: " ++ show isMainMod)
              ]
           )
+  where doesGrin = targetIsGrinBytecode (ehcOptTarget opts)
 %%]
 
 %%[(8 codegen grin) haddock
@@ -825,26 +864,29 @@ Core+grin processing, on a per module basis, may only be done when full program 
 %%]
 
 %%[(8 codegen grin)
-cpEhcCoreGrinPerModuleDoneFullProgAnalysis :: Bool -> HsName -> EHCompilePhase ()
-cpEhcCoreGrinPerModuleDoneFullProgAnalysis earlyMerge modNm
-  = cpSeq (  [ cpEhcCorePerModulePart2 earlyMerge modNm
+cpEhcCoreGrinPerModuleDoneFullProgAnalysis :: HsName -> EHCompilePhase ()
+cpEhcCoreGrinPerModuleDoneFullProgAnalysis modNm
+  = cpSeq (  [ cpEhcCorePerModulePart2 modNm
              , cpEhcExecutablePerModule FinalCompile_Exec [] modNm
-             , cpMsg modNm VerboseALot "Full Program Analysis Core+Grin done"
+             , cpMsg modNm VerboseALot "Full Program Analysis (Core+Grin) done"
              ]
           )
 %%]
 
-%%[(8 codegen grin) haddock
+%%[(8 codegen) haddock
 Make final executable code, either still partly or fully (i.e. also linking)
 %%]
 
-%%[(8 codegen grin)
+%%[(8 codegen)
 cpEhcExecutablePerModule :: FinalCompileHow -> [HsName] -> HsName -> EHCompilePhase ()
 cpEhcExecutablePerModule how impModNmL modNm
   = cpSeq [ cpCompileWithGCC how impModNmL modNm
           , cpCompileWithLLVM modNm
 %%[[(8 jazy)
           , cpCompileJazyJVM how impModNmL modNm
+%%]]
+%%[[(8 jscript)
+          , cpCompileJScript how impModNmL modNm
 %%]]
           ]
 %%]
@@ -925,7 +967,8 @@ cpProcessCoreBasic modNm
 %%[[20
                , cpFlowHILamMp modNm
 %%]]
-               , when (ehcOptEmitCore opts) (cpOutputCore True "" "core" modNm)
+               -- , when (ehcOptEmitCore opts) (cpOutputCore True "" "core" modNm)
+               , cpOutputCore True "" "core" modNm
 %%[[(8888 codegen java)
                , when (ehcOptEmitJava opts) (cpOutputJava         "java" modNm)
 %%]]
@@ -947,18 +990,22 @@ cpProcessCoreFold modNm
 %%]
 
 %%[(8 codegen)
--- folded core -> grin and jazy
+-- folded core -> grin, jazy, and the rest
 cpProcessCoreRest :: HsName -> EHCompilePhase ()
 cpProcessCoreRest modNm
   = do { cr <- get
        ; let (_,_,opts,_) = crBaseInfo modNm cr
        ; cpSeq (   [ cpTranslateCore2Grin modNm ]
-                ++ (if ehcOptFullProgAnalysis opts then [ cpOutputGrin True "" modNm ] else [])
+                -- ++ (if ehcOptWholeProgHPTAnalysis opts then [ cpOutputGrin True "" modNm ] else [])
+                ++ (if targetIsGrin (ehcOptTarget opts) then [ cpOutputGrin True "" modNm ] else [])
 %%[[(8 jazy)
                 ++ [ cpTranslateCore2Jazy modNm ]
 %%]]
+%%[[(8 jscript)
+                ++ [ cpTranslateCore2JScript modNm ]
+%%]]
 %%[[99
-                ++ [ cpCleanupCore modNm ]
+                ++ [ cpCleanupCore [modNm] ]
 %%]]
                )
        }
@@ -974,7 +1021,7 @@ cpProcessGrin modNm
                 ++ [cpTransformGrin modNm]
                 ++ (if ehcOptDumpGrinStages opts then [cpOutputGrin False "-099-final" modNm]  else [])
                 ++ (if ehcOptEmitBytecode opts then [cpTranslateGrin2Bytecode modNm] else [])
-                ++ (if ehcOptFullProgAnalysis opts then [cpTranslateGrin modNm] else [])
+                ++ (if targetDoesHPTAnalysis (ehcOptTarget opts) then [cpTranslateGrin modNm] else [])
                )
        }
 %%]

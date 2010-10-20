@@ -14,6 +14,8 @@ module EH.Util.CompileRun
   , CompileModName(..)
   , CompileRunStateInfo(..)
   
+  , CompileParticipation(..)
+  
   , FileLocatable(..)
   
   , mkEmptyCompileRun
@@ -62,6 +64,14 @@ forgetM m
        }
 
 -------------------------------------------------------------------------
+-- The way a CompileUnit can participate
+-------------------------------------------------------------------------
+
+data CompileParticipation
+  = CompileParticipation_NoImport
+  deriving (Eq, Ord)
+
+-------------------------------------------------------------------------
 -- Interfacing with actual state info
 -------------------------------------------------------------------------
 
@@ -69,22 +79,26 @@ class CompileModName n where
   mkCMNm      	:: String -> n
 
 class CompileUnitState s where
-  cusDefault  	:: s
-  cusUnk      	:: s
-  cusIsUnk      :: s -> Bool
-  cusIsImpKnown	:: s -> Bool
+  cusDefault  		:: s
+  cusUnk      		:: s
+  cusIsUnk      	:: s -> Bool
+  cusIsImpKnown		:: s -> Bool
 
 class CompileUnit u n l s | u -> n l s where
-  cuDefault 	:: u
-  cuFPath   	:: u -> FPath
-  cuUpdFPath    :: FPath -> u -> u
-  cuLocation	:: u -> l
-  cuUpdLocation :: l -> u -> u
-  cuKey     	:: u -> n
-  cuUpdKey      :: n -> u -> u
-  cuState   	:: u -> s
-  cuUpdState    :: s -> u -> u
-  cuImports     :: u -> [n]
+  cuDefault 		:: u
+  cuFPath   		:: u -> FPath
+  cuUpdFPath    	:: FPath -> u -> u
+  cuLocation		:: u -> l
+  cuUpdLocation 	:: l -> u -> u
+  cuKey     		:: u -> n
+  cuUpdKey      	:: n -> u -> u
+  cuState   		:: u -> s
+  cuUpdState    	:: s -> u -> u
+  cuImports     	:: u -> [n]
+  cuParticipation 	:: u -> [CompileParticipation]
+  
+  -- defaults
+  cuParticipation _	=  []
 
 class FPathError e => CompileRunError e p | e -> p where
   crePPErrL         :: [e] -> PP_Doc
@@ -310,9 +324,12 @@ cpFindFileForFPath suffs sp mbModNm mbFp
 -- Gather all imports
 -------------------------------------------------------------------------
 
+-- | recursively extract imported modules
 cpImportGatherFromMods
-  :: (Show n,Ord n,CompileUnit u n l s,CompileRunError e p,CompileUnitState s)
-       => (Maybe prev -> n -> CompilePhase n u i e (x,Maybe prev)) -> [n] -> CompilePhase n u i e ()
+  :: (Show n, Ord n, CompileUnit u n l s, CompileRunError e p, CompileUnitState s)
+     => (Maybe prev -> n -> CompilePhase n u i e (x,Maybe prev))		-- extract imports from 1 module
+     -> [n]																-- to be imported modules
+     -> CompilePhase n u i e ()
 cpImportGatherFromMods imp1Mod modNmL
   = do { cr <- get
        ; cpSeq (   [ one Nothing modNm | modNm <- modNmL ]
@@ -322,7 +339,10 @@ cpImportGatherFromMods imp1Mod modNmL
   where one prev modNm
           = do { (_,new) <- imp1Mod prev modNm
                ; cpHandleErr
-               ; imps new modNm
+               ; cr <- get
+               ; if CompileParticipation_NoImport `elem` cuParticipation (crCU modNm cr)
+                 then cpDelCU modNm
+                 else imps new modNm
                }
         imps prev m
           = do { cr <- get
@@ -384,6 +404,12 @@ cpUpdCU :: (Ord n,CompileUnit u n l s) => n -> (u -> u) -> CompilePhase n u i e 
 cpUpdCU modNm upd
   = do { cpUpdCUWithKey modNm (\k u -> (k, upd u))
        ; return ()
+       }
+
+-- | delete unit
+cpDelCU :: (Ord n,CompileUnit u n l s) => n -> CompilePhase n u i e ()
+cpDelCU modNm
+  = do { modify (\cr -> cr {crCUCache = Map.delete modNm $ crCUCache cr})
        }
 {-
   = do { cr <- get

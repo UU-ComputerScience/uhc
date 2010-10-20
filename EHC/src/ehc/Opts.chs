@@ -116,14 +116,30 @@ tycoreOptMp
 %%% Derived options
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-These are there for (temporary) backwards compatibility.
+Some are there for (temporary) backwards compatibility.
 
-%%[(8 codegen grin) export(ehcOptFullProgAnalysis)
--- do full GRIN program analysis
-ehcOptFullProgAnalysis :: EHCOpts -> Bool
-ehcOptFullProgAnalysis opts
-  =  targetIsFullProgAnal (ehcOptTarget opts)
-  || ehcOptOptimizationScope opts >= OptimizationScope_WholeProgram
+%%[(20 codegen) export(ehcOptWholeProgOptimizationScope)
+-- do something with whole program
+ehcOptWholeProgOptimizationScope :: EHCOpts -> Bool
+ehcOptWholeProgOptimizationScope opts
+  = ehcOptOptimizationScope opts >= OptimizationScope_WholeGrin
+%%]
+
+%%[(20 codegen) export(ehcOptEarlyModMerge)
+-- compatibility option
+ehcOptEarlyModMerge :: EHCOpts -> Bool
+ehcOptEarlyModMerge opts
+  = ehcOptOptimizationScope opts >= OptimizationScope_WholeCore
+%%]
+
+%%[(8 codegen grin) export(ehcOptWholeProgHPTAnalysis)
+-- do whole program analysis, with HPT
+ehcOptWholeProgHPTAnalysis :: EHCOpts -> Bool
+ehcOptWholeProgHPTAnalysis opts
+  =  targetDoesHPTAnalysis (ehcOptTarget opts)
+%%[[20
+  || ehcOptWholeProgOptimizationScope opts
+%%]]
 %%]
 
 %%[(8 codegen grin) export(ehcOptErrAboutBytecode)
@@ -173,14 +189,14 @@ ehcOptEmitCLR = targetIsCLR . ehcOptTarget
 -- generate Core
 ehcOptEmitCore :: EHCOpts -> Bool
 ehcOptEmitCore opts
-  = ehcOptFullProgAnalysis opts || targetIsCore (ehcOptTarget opts)
+  = ehcOptWholeProgHPTAnalysis opts || targetIsCore (ehcOptTarget opts)
 %%]
 
 %%[(8 codegen tycore) export(ehcOptEmitTyCore,ehcOptTyCore)
 -- generate TyCore
 ehcOptEmitTyCore :: EHCOpts -> Bool
 ehcOptEmitTyCore opts
-  = {- ehcOptFullProgAnalysis opts || -} targetIsTyCore (ehcOptTarget opts)
+  = {- ehcOptWholeProgHPTAnalysis opts || -} targetIsTyCore (ehcOptTarget opts)
 
 ehcOptTyCore :: EHCOpts -> Bool
 ehcOptTyCore opts = ehcOptEmitTyCore opts || isJust (ehcOptUseTyCore opts)
@@ -275,7 +291,7 @@ ehcCmdLineOpts
      ,  Option ""   ["gen-trace-assign"] (boolArg optSetGenTrace2)            "trace assignments in C (no)"
      ,  Option ""   ["gen-rtsinfo"]      (ReqArg oRTSInfo "<nr>")             "flags for rts info dumping (default=0)"
      ,  Option ""   ["dump-grin-stages"] (boolArg optDumpGrinStages)          "dump intermediate Grin and Silly transformation stages (no)"
-     ,  Option ""   ["early-mod-merge"]  (boolArg optEarlyModMerge)           "merge modules early, at Core stage (no)"
+--     ,  Option ""   ["early-mod-merge"]  (boolArg optEarlyModMerge)           "merge modules early, at Core stage (no)"
 %%][100
 %%]]
 %%[[(8 codegen java)
@@ -405,7 +421,11 @@ ehcCmdLineOpts
          oTarget        _ o =  o
 %%][(8 codegen)
          oTarget        s o =  o { ehcOptTarget            = target
-                                 , ehcOptOptimizationScope = if targetIsFullProgAnal target then OptimizationScope_WholeProgram else oscope
+%%[[20
+                                 , ehcOptOptimizationScope = if targetDoesHPTAnalysis target
+                                                             then max oscope OptimizationScope_WholeGrin
+                                                             else oscope
+%%]]
                                  }
                             where target = Map.findWithDefault defaultTarget s supportedTargetMp
                                   oscope = ehcOptOptimizationScope o
@@ -434,14 +454,14 @@ ehcCmdLineOpts
 %%[[(8 codegen grin)
                                 Just "grin"  -> o -- { ehcOptEmitGrin         = True   }
                                 Just "bc"    -> o -- { ehcOptEmitBytecode     = True 
-                                                  -- , ehcOptFullProgAnalysis = False
+                                                  -- , ehcOptWholeProgHPTAnalysis = False
                                                   -- }
                                 Just m | m `elem` ["bexe","bexec"]
                                              -> o { ehcOptTarget           = Target_Interpreter_Grin_C
                                                   }
 
                                 Just "c"     -> o -- { ehcOptEmitC            = True
-                                                  -- , ehcOptFullProgAnalysis = True
+                                                  -- , ehcOptWholeProgHPTAnalysis = True
                                                   -- , ehcOptEmitExecBytecode = False
                                                   -- , ehcOptEmitBytecode     = False
                                                   -- , ehcOptErrAboutBytecode = False
@@ -452,7 +472,7 @@ ehcCmdLineOpts
                                                   }
 
                                 Just "llvm"  -> o -- { ehcOptEmitLLVM         = True
-                                                  -- , ehcOptFullProgAnalysis = True
+                                                  -- , ehcOptWholeProgHPTAnalysis = True
                                                   -- , ehcOptEmitExecBytecode = False
                                                   -- , ehcOptEmitBytecode     = False
                                                   -- , ehcOptErrAboutBytecode = False
@@ -498,14 +518,28 @@ ehcCmdLineOpts
                            = o' {ehcOptOptimizations = optimizeRequiresClosure os}
                            where (o',doSetOpts)
                                     = case ms of
-                                        Just olevel@(c:_) | isDigit c && l >= 0 && l < (maxsc * maxlev)
-                                          -> ( o { ehcOptOptimizationLevel = toEnum lev, ehcOptOptimizationScope = toEnum sc }
-                                             , True
-                                             )
+                                        Just (clevel:',':cscope:_)
+                                          | isJust mbO -> (fromJust mbO o, True)
+                                          where mbO = mbLevelScope (Just clevel) (Just cscope)
+                                        Just (',':cscope:_)
+                                          | isJust mbO -> (fromJust mbO o, True)
+                                          where mbO = mbLevelScope Nothing (Just cscope)
+                                        {-
+                                        Just olevel@(clevel:',':cscope:_)
+                                          | isDigit clevel && isDigit cscope && l >= 0 && l < maxlev && s >= 0 && s < maxscp
+                                            -> ( o { ehcOptOptimizationLevel = toEnum l, ehcOptOptimizationScope = toEnum s }
+                                               , True
+                                               )
+                                          where l = read [clevel] :: Int
+                                                s = read [cscope] :: Int
+                                        -}
+                                        Just olevel@(clevel:_)
+                                          | isDigit clevel && l >= 0 && l < (maxscp * maxlev)
+                                            -> ( o { ehcOptOptimizationLevel = toEnum lev, ehcOptOptimizationScope = toEnum sc }
+                                               , True
+                                               )
                                           where l = read olevel :: Int
                                                 (sc,lev) = quotRem l maxlev
-                                                maxlev = fromEnum (maxBound :: OptimizationLevel) + 1
-                                                maxsc  = fromEnum (maxBound :: OptimizationScope) + 1
                                         Just optname@(_:_)
                                           -> case break (== '=') optname of
                                                (nm, yesno)
@@ -522,6 +556,19 @@ ehcCmdLineOpts
                                         _ -> (o, False)
                                  os | doSetOpts = Map.findWithDefault Set.empty (ehcOptOptimizationLevel o') optimizationLevelMp
                                     | otherwise = ehcOptOptimizations o'
+                                 maxlev = fromEnum (maxBound :: OptimizationLevel) + 1
+                                 maxscp = fromEnum (maxBound :: OptimizationScope) + 1
+                                 {-
+                                 -}
+                                 mbLevelScope ml ms
+                                   | isJust l && isJust s = Just (\o -> o { ehcOptOptimizationLevel = toEnum (fromJust l), ehcOptOptimizationScope = toEnum (fromJust s) })
+                                   | otherwise            = Nothing
+                                   where l = r ehcOptOptimizationLevel maxlev ml
+                                         s = r ehcOptOptimizationScope maxscp ms
+                                         r dflt mx m
+                                           | x >= 0 && x < mx = Just x
+                                           | otherwise        = Nothing
+                                           where x = (maybe (fromEnum $ dflt o) (\c -> read [c]) m) :: Int
 %%]]
 %%]]
 %%[[9
@@ -640,7 +687,7 @@ optSetGenCaseDefault o b = o { ehcOptGenCaseDefault = b }
 optSetGenCmt         o b = o { ehcOptGenCmt         = b }
 optSetGenDebug       o b = o { ehcOptGenDebug       = b }
 optDumpGrinStages    o b = o { ehcOptDumpGrinStages = b {-, ehcOptEmitGrin = b -} }
-optEarlyModMerge     o b = o { ehcOptEarlyModMerge  = b }
+-- optEarlyModMerge     o b = o { ehcOptEarlyModMerge  = b }
 %%]
 
 %%[(20 codegen)

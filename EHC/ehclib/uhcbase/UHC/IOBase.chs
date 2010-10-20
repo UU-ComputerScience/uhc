@@ -55,8 +55,10 @@ module UHC.IOBase
 #endif
     catch, catchException,
     
-#if defined (__UHC_TARGET_C__) || defined (__UHC_TARGET_LLVM__)
+#if defined( __UHC_TARGET_C__ ) || defined (__UHC_TARGET_LLVM__)
     FHandle,
+#elif defined( __UHC_TARGET_JSCRIPT__ )
+    JSHandle(..),
 #endif
   )
   where
@@ -372,8 +374,11 @@ data IOMode             -- alphabetical order of constructors required, assumed 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[99
-#if defined (__UHC_TARGET_C__) || defined (__UHC_TARGET_LLVM__)
+#if defined( __UHC_TARGET_C__ ) || defined (__UHC_TARGET_LLVM__)
+
 data FHandle    -- opaque, contains FILE*
+#elif defined( __UHC_TARGET_JSCRIPT__ )
+data JSHandle = JSHandle String
 #else
 data GBHandle   -- opaque, contains GB_Chan
 #endif
@@ -384,6 +389,14 @@ instance Eq FHandle where
     _ == _ = False
 
 instance Show FHandle where
+    showsPrec _ h = showString "<handle>"
+
+#elif defined( __UHC_TARGET_JSCRIPT__ )
+
+instance Eq JSHandle where
+    _ == _ = False
+
+instance Show JSHandle where
     showsPrec _ h = showString "<handle>"
 
 #else
@@ -418,8 +431,10 @@ data Handle
         !(MVar Handle__)                -- The write side
 
   | OldHandle                            
-#if defined (__UHC_TARGET_C__) || defined (__UHC_TARGET_LLVM__)
+#if defined( __UHC_TARGET_C__ )  || defined (__UHC_TARGET_LLVM__)
         FHandle                        
+#elif defined( __UHC_TARGET_JSCRIPT__ )
+        JSHandle                        
 #else
         GBHandle                        
 #endif

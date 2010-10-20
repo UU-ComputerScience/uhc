@@ -86,8 +86,10 @@ module Data.Typeable
 import qualified Data.HashTable as HT
 #endif
 import Data.Maybe
+#if !defined(__UHC_TARGET_JSCRIPT__)
 import Data.Int
 import Data.Word
+#endif
 import Data.List( foldl, intersperse )
 import Unsafe.Coerce
 
@@ -633,6 +635,7 @@ INSTANCE_TYPEABLE0(Handle,handleTc,"Handle")
 #endif
 INSTANCE_TYPEABLE0(Integer,integerTc,"Integer")
 
+#if !defined(__UHC_TARGET_JSCRIPT__)
 INSTANCE_TYPEABLE0(Int8,int8Tc,"Int8")
 INSTANCE_TYPEABLE0(Int16,int16Tc,"Int16")
 INSTANCE_TYPEABLE0(Int32,int32Tc,"Int32")
@@ -642,6 +645,7 @@ INSTANCE_TYPEABLE0(Word8,word8Tc,"Word8" )
 INSTANCE_TYPEABLE0(Word16,word16Tc,"Word16")
 INSTANCE_TYPEABLE0(Word32,word32Tc,"Word32")
 INSTANCE_TYPEABLE0(Word64,word64Tc,"Word64")
+#endif
 
 #ifdef __UHC__
 deriving instance Typeable TyCon

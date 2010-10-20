@@ -10,7 +10,7 @@
 %%[1 module Main
 %%]
 
-%%[1 import(System.Console.GetOpt)
+%%[1 import(System.Console.GetOpt, System)
 %%]
 %%[1.fastseq import(qualified EH.Util.FastSeq as Seq)
 %%]
@@ -230,8 +230,8 @@ Order is significant.
 %%[8
 type FileSuffMp = [(FileSuffix,EHCompileUnitState)]
 
-fileSuffMpHs :: FileSuffMp
-fileSuffMpHs
+mkFileSuffMpHs :: EHCOpts -> FileSuffMp
+mkFileSuffMpHs opts
   = [ ( Just "hs"  , ECUSHaskell HSStart )
 %%[[99
     , ( Just "lhs" , ECUSHaskell LHSStart )
@@ -244,10 +244,10 @@ fileSuffMpHs
     -- currently not supported
     , ( Just "grin", ECUSGrin )
 %%]]
-%%[[(90 codegen)
-    , ( Just "c"   , ECUSC CStart )
-%%]]
     ]
+%%[[(90 codegen)
+    ++ (if targetIsOnUnixAndOrC (ehcOptTarget opts) then [ ( Just "c"   , ECUSC CStart ) ] else [])
+%%]]
 %%]
 
 %%[8
@@ -435,6 +435,7 @@ doCompileRun fnL@(fn:_) opts
                         , initialState
                         ) = fromJust mbPrep
                        searchPath = ehcOptImportFileLocPath opts
+                       fileSuffMpHs = mkFileSuffMpHs opts
 %%[[8
                        comp mbFp nm
                          = do { mbFoundFp <- cpFindFileForFPath fileSuffMpHs searchPath (Just nm) mbFp
@@ -460,6 +461,10 @@ doCompileRun fnL@(fn:_) opts
                                          })
                               ; when isTopModule
                                      (cpUpdCU nm (ecuSetIsTopMod True))
+                              -- ; cpUpdCU nm (ecuSetIsTopMod isTopModule)		-- ???? not equivalent to above
+%%[[99
+                              ; cpUpdCU nm (ecuSetTarget (ehcOptTarget opts))
+%%]]
                               ; case fpsFound of
                                   (fp:_)
                                     -> do { nm' <- cpEhcModuleCompile1 (Just HSOnlyImports) nm

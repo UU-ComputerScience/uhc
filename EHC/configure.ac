@@ -128,6 +128,10 @@ then
   AC_SUBST(JAR_CMD,$jarCmd)
 fi
 
+### enable options: jscript (JavaScript)
+AC_ARG_ENABLE(jscript, AS_HELP_STRING([--enable-jscript],[include JavaScript code generation]), [enableJScript=yes], [enableJScript=no])
+AC_SUBST(ENABLE_JSCRIPT,$enableJScript)
+
 ### enable options: llvm
 AC_ARG_ENABLE(llvm, AS_HELP_STRING([--enable-llvm],[include llvm code generation]), [enableLlvm=yes], [enableLlvm=no])
 AC_SUBST(ENABLE_LLVM,$enableLlvm)
@@ -173,6 +177,21 @@ case $HostPlatform in
         ;;
 esac  
 AC_SUBST(AR_CMD,$arCmd)
+
+### cat
+REQUIRED_PROG_FOR_EH(catCmd,cat)
+# See remarks about cpp
+case $HostPlatform in
+  i*86-*-mingw* | i*86-*-cygwin* )
+        if test ! -x "$toplevelSystemAbsolutePathPrefix/$catCmd"
+        then
+          catCmd="`echo $catCmd | sed -e 's+/usr++'`"
+        fi
+        ;;
+  *)
+        ;;
+esac  
+AC_SUBST(CAT_CMD,$catCmd)
 
 ### libtool
 REQUIRED_OPTIONAL_PROG_FOR_EH(libtoolStaticCmd,libtool)
@@ -946,7 +965,8 @@ AC_SUBST(GCC_EHC_EXTRA_EXTERN_LIBS,"$gcc_ehc_extra_extern_libs")
 # file suffixes
 suffix_shell=""
 suffix_exec=""
-suffix_lib=".a"
+suffix_libC=".a"
+suffix_libJScript=".mjs"
 prefix_lib=""
 # development platform
 development_platform="UNIX"
@@ -966,7 +986,7 @@ case $HostPlatform in
         # file suffixes
         suffix_shell=".bat"
         suffix_exec=".exe"
-        #suffix_lib=".lib"
+        #suffix_libC=".lib"
         #prefix_lib="lib"
         development_platform="CYGWIN"
         # path separator
@@ -1001,7 +1021,8 @@ esac
 # suffixes, path separator, ...
 AC_SUBST(SUFFIX_SHELL,"$suffix_shell")
 AC_SUBST(SUFFIX_EXEC,"$suffix_exec")
-AC_SUBST(SUFFIX_LIB,"$suffix_lib")
+AC_SUBST(SUFFIX_LIBC,"$suffix_libC")
+AC_SUBST(SUFFIX_LIBJSCRIPT,"$suffix_libJScript")
 AC_SUBST(PREFIX_LIB,"$prefix_lib")
 AC_SUBST(PATHS_SEP,"$paths_sep")
 AC_SUBST(SLASH,"$slash")

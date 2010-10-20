@@ -13,7 +13,7 @@
 %%]
 %%[(8 codegen grin) import(EH.Util.Pretty, EH.Util.CompileRun, EH.Util.FPath)
 %%]
-%%[(8 codegen grin) import({%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{EH}Opts}, {%{EH}Scanner.Scanner}, {%{EH}Scanner.Common(grinScanOpts)})
+%%[(8 codegen grin) import({%{EH}Base.Common}, {%{EH}Base.Target}, {%{EH}Base.Builtin}, {%{EH}Opts}, {%{EH}Scanner.Scanner}, {%{EH}Scanner.Common(grinScanOpts)})
 %%]
 %%[(8 codegen grin) import({%{EH}GrinCode}, {%{EH}GrinCode.Parser}, {%{EH}GrinCode.Pretty})
 %%]
@@ -225,7 +225,7 @@ doCompileGrin input opts
          ; transformCodeIterated copyPropagation    "copyPropagation"  ; caWriteGrin "-179-final"
                                                                        ; caWriteHptMap "-180-hpt"
 
-         ; when (ehcOptFullProgAnalysis options)
+         ; when (targetDoesHPTAnalysis (ehcOptTarget options))
            ( do { caGrin2Silly                                         ; caWriteSilly "-201" "sil" pretty ehcOptDumpGrinStages
                 ; transformSilly inlineExpr         "InlineExpr"       ; caWriteSilly "-202" "sil" pretty ehcOptDumpGrinStages
                 ; transformSilly elimUnused         "ElimUnused"       ; caWriteSilly "-203" "sil" pretty ehcOptDumpGrinStages

@@ -91,6 +91,7 @@ SHUFFLE_AG_PRE			:= $(SHUFFLE) --ag --preamble=yes --lhs2tex=no --line=no --comp
 SHUFFLE_PLAIN		:= $(SHUFFLE) --plain --preamble=no --lhs2tex=no --line=no
 SHUFFLE_C			:= $(SHUFFLE_PLAIN)
 SHUFFLE_JAVA		:= $(SHUFFLE_PLAIN)
+SHUFFLE_JS			:= $(SHUFFLE_PLAIN)
 # setting --line=yes for AG is not possible because of uuagc's weird interpretation of the layout rule
 
 

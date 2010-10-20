@@ -43,20 +43,7 @@ textToOutDoc opts txt
 
 INCLUDE "Text/AbsSyn.ag"
 INCLUDE "Text/To/Common.ag"
-
--------------------------------------------------------------------------
--- Adapt html specific chars
--------------------------------------------------------------------------
-
-{
-ensureHtmlCharsAreEscaped :: String -> String
-ensureHtmlCharsAreEscaped
-  = concatMap asis
-  where asis '<' = c "lt"
-        asis '>' = c "gt"
-        asis c   = [c]
-        c ch = "&" ++ ch ++ ";"
-}
+INCLUDE "Text/To/CommonHeaderNumbering.ag"
 
 -------------------------------------------------------------------------
 -- Is text a twiki word?
@@ -101,23 +88,9 @@ dtwkCmd c = "%" +++ c +++ "%"
 dtwkHdr :: Int -> OutDoc
 dtwkHdr l = "\n---+" +++ replicate l '+' +++ " "
 
-dhtmTag :: Out a => a -> OutDoc
-dhtmTag a = "<" +++ a +++ ">"
-
-dhtmTag' :: Out a => a -> OutDoc
-dhtmTag' a = "<" +++ a +++ "/>"
-
-dhtmCmt :: Out a => a -> OutDoc
-dhtmCmt a = dhtmTag ("!-- " +++ a +++ " --")
-
 dtwkRef :: (Out lbl,Out txt) => lbl -> txt -> OutDoc
 dtwkRef lbl txt = "[[" +++ lbl +++ "][" +++ txt +++ "]]"
 
-dhtmOpenClose :: (Out body, Out env) => env -> body -> OutDoc
-dhtmOpenClose env body = dhtmTag env +++ body +++ dhtmTag ("/" +++ env)
-
-dhtmOne :: (Out body, Out env) => env -> body -> OutDoc
-dhtmOne env body = dhtmTag' (env +++ " " +++ body)
 }
 
 {
@@ -127,63 +100,6 @@ dtwkArg a = "{" +++ a +++ "}"
 dtwkArgs :: [OutDoc] -> OutDoc
 dtwkArgs a = outList $ map dtwkArg a
 }
-
--------------------------------------------------------------------------
--- Global info
--------------------------------------------------------------------------
-
-ATTR AGItf AllNT [ opts: Opts | | ]
-
--------------------------------------------------------------------------
--- Header numbering
--------------------------------------------------------------------------
-
-{
-type HeaderSeqNrMp = Map.Map Int Int
-}
-
-ATTR AllText AllTable [ | headerLevel: Int  headerSeqNrMp: HeaderSeqNrMp | ]
-ATTR HeaderLevel [ | headerLevel: Int | allowHeaderCounting: Bool ]
-
-SEM AGItf
-  | AGItf           loc         .   headerLevel =   -1
-                                .   headerSeqNrMp
-                                                =   Map.empty
-
-SEM HeaderLevel
-  | Level           lhs         .   headerLevel =   @level
-
-SEM HeaderLevel
-  | Level           lhs         .   allowHeaderCounting
-  												=   True
-  | Paragraph       lhs         .   allowHeaderCounting
-  												=   False
-
-SEM TextItem
-  | Header          (loc.headerTxt,lhs.headerSeqNrMp)
-                                                =   if @level.allowHeaderCounting
-                                                    then let mkTxt h m = concat $ intersperse "." [ show $ fromJust $ Map.lookup l m | l <- [0 .. h] ]
-                                                             seqNr h = fromJust $ Map.lookup h @lhs.headerSeqNrMp
-                                                         in  case @lhs.headerLevel `compare` @level.headerLevel of
-                                                               GT -> ( mkTxt @level.headerLevel m, m )
-                                                                     where m = Map.insert @level.headerLevel (seqNr @level.headerLevel + 1) @lhs.headerSeqNrMp
-                                                               EQ -> ( mkTxt @lhs.headerLevel m, m )
-                                                                     where m = Map.insert @lhs.headerLevel (seqNr @lhs.headerLevel + 1) @lhs.headerSeqNrMp
-                                                               LT -> ( mkTxt @level.headerLevel m, m )
-                                                                     where m = Map.insert @level.headerLevel 1 @lhs.headerSeqNrMp
-                                                    else ( "", @lhs.headerSeqNrMp )
-
--------------------------------------------------------------------------
--- Itemize level
--------------------------------------------------------------------------
-
-ATTR AllText AllTable [ itemizeLevel: Int | | ]
-
-SEM TextItem
-  | Itemize         loc         .   itemizeLevel=   @lhs.itemizeLevel + 1
-
-SEM AGItf
-  | AGItf           loc         .   itemizeLevel=   0
 
 -------------------------------------------------------------------------
 -- Itemize style

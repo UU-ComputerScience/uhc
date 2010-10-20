@@ -29,7 +29,8 @@ EH_VERSION_ASNUMBER		:= @EH_VERSION_ASNUMBER@
 # TOPABS_PREFIX	: absolute prefix/pathname to top dir
 
 EXEC_SUFFIX			:= @SUFFIX_EXEC@
-LIB_SUFFIX			:= @SUFFIX_LIB@
+LIBC_SUFFIX			:= @SUFFIX_LIBC@
+LIBJSCRIPT_SUFFIX	:= @SUFFIX_LIBJSCRIPT@
 PATH_SEP			:= /
 PATHS_SEP			:= @PATHS_SEP@
 PATHS_SEP_COL		:= :
@@ -64,9 +65,14 @@ ifeq (@ENABLE_JAVA@,yes)
 ENABLE_JAVA					:= yes
 endif
 
-# include java code generation
+# include clr code generation
 ifeq (@ENABLE_CLR@,yes)
 ENABLE_CLR					:= yes
+endif
+
+# include javascript code generation
+ifeq (@ENABLE_JSCRIPT@,yes)
+ENABLE_JSCRIPT				:= yes
 endif
 
 # include llvm code generation

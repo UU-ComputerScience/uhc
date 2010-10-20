@@ -159,20 +159,31 @@ SET AllMeta		= CMetaVal CMetaBind CMetas
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen)
+-- | on CExpr
 DATA CExpr
   | Ann         ann             : CExprAnn
                 expr            : CExpr
 %%]
 
 %%[(8 codegen)
+-- | ann for CExpr
 DATA CExprAnn
   | Ty			ty				: {Ty}
   | Coe			coe				: {RelevCoe}
   | Debug		info			: {String}
+
+-- | ann for name intro
+DATA CBindAnn
+  | Coe			coe				: {RelevCoe}
 %%]
 
 %%[(8 codegen)
-SET AllAnn		= CExprAnn
+TYPE CBindAnnL	= [CBindAnn]
+%%]
+
+%%[(8 codegen)
+SET AllExprAnn	= CExprAnn
+SET AllBindAnn	= CBindAnn CBindAnnL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -305,8 +316,6 @@ DATA CPat
                 binds           : CPatFldL
   | Int         int             : {Int}
   | Char        char            : {Char}
-
-TYPE CPatL      =   [CPat]
 %%]
 
 %%[(8 codegen)
@@ -318,6 +327,7 @@ DATA CPatFld
   | Fld         lbl             : {HsName}
                 offset          : CExpr
                 fldNm           : {HsName}
+                fldAnns			: CBindAnnL
 
 TYPE CPatFldL   =   [CPatFld]
 %%]
@@ -336,8 +346,8 @@ DATA CPat
 
 %%[(8 codegen)
 SET AllAlt      =   CAlt CAltL
-SET AllPat      =   CPatRest CPat CPatL AllPatFld
-SET AllPatFld   =   CPatFld CPatFldL
+SET AllPat      =   CPatRest CPat AllPatFld
+SET AllPatFld   =   CPatFld CPatFldL AllBindAnn
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -351,7 +361,7 @@ SET AllExprOnly
   = CExpr MbCExpr
 
 SET AllExprBase
-  = AllExprOnly AllAnn AllBind AllAlt AllPat
+  = AllExprOnly AllExprAnn AllBind AllAlt AllPat
 
 SET AllExpr
   = AllExprBase

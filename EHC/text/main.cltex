@@ -1070,6 +1070,12 @@ version
 \date[AFP 2010, Aug 25]{AFP 2010, Aug 25}
 %%]
 
+%%[63
+\title{Utrecht Haskell Compiler (UHC) \\ status and progress}
+\author{Atze Dijkstra, Jeroen Fokker, Doaitse Swierstra}
+\date{Oct 1, 2010}
+%%]
+
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -3469,14 +3475,31 @@ We thank both (anonymous) reviewers for their extremely valuable and helpful com
 
 \section{Current status}
 
-%%@SlidesStatus.currentStatus
+%%@SlidesStatus.currentStatus2007
 
 \section{Near future work}
 
-%%@SlidesStatus.currentWork
+%%@SlidesStatus.currentWork2007
 
 %%]
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Slides for UHC status
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[63
+%%@Slides.titlepage
+
+\section{Current status}
+
+%%@SlidesStatus.currentUHCStatus201009
+
+\section{Near future work}
+
+%%@SlidesStatus.futureUHCWork201009
+
+%%]
 
 
 

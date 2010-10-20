@@ -28,7 +28,10 @@ Datatype LamInfo holds the implementation info to be exported from a module.
 %%[(8 codegen) hs import(Data.Maybe,Data.Char,Data.List,EH.Util.Pretty,EH.Util.Utils)
 %%]
 
-%%[(8 codegen) hs export(CodeAGItf(..), CModule(..), CExpr(..), MbCExpr, CBind(..), CBindAspect(..), CMetaVal(..), CExprAnn(..), CMetaBind(..), CMetas, CBindL, CBindAspectL, CPatRest(..), CAlt(..), CAltL, CPat(..), CPatL, CPatFld(..), CPatFldL) 
+%%[(8 codegen) hs export(CodeAGItf(..), CModule(..), CExpr(..), MbCExpr, CBind(..), CBindAspect(..), CMetaVal(..), CMetaBind(..), CMetas, CBindL, CBindAspectL, CPatRest(..), CAlt(..), CAltL, CPat(..), CPatFld(..), CPatFldL) 
+%%]
+
+%%[(8 codegen) hs export(CBindAnn(..), CBindAnnL, CExprAnn(..))
 %%]
 
 %%[(8 codegen) hs import(qualified Data.Map as Map,qualified Data.Set as Set)
@@ -37,9 +40,11 @@ Datatype LamInfo holds the implementation info to be exported from a module.
 %%[(8 codegen) hs import({%{EH}LamInfo},{%{EH}Ty})
 %%]
 
-%%[(20 codegen grin) hs import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
+%%[(20 codegen) hs import(Data.Array)
 %%]
-%%[(20 codegen grin) hs import(Data.Typeable(Typeable), Data.Generics(Data))
+%%[(20 codegen) hs import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
+%%]
+%%[(20 codegen) hs import(Data.Typeable(Typeable), Data.Generics(Data))
 %%]
 
 %%[(90 codegen) hs import({%{EH}Foreign}) export(module {%{EH}Foreign})
@@ -178,6 +183,18 @@ cexprIsLam _               = False
 cbindNm :: CBind -> HsName
 cbindNm (CBind_Bind      n _) = n
 -- cbindNm (CBind_FFI _ _ _ n _  ) = n
+%%]
+
+%%[(20 codegen) hs export(cbindAspectMbExpr,cbindExprs)
+-- | extract expr for aspect, relevant for later use/analysis/...
+cbindAspectMbExpr :: CBindAspect -> Maybe CExpr
+cbindAspectMbExpr (CBindAspect_Bind _ e) = Just e
+cbindAspectMbExpr (CBindAspect_Val  _ e) = Just e
+cbindAspectMbExpr _                      = Nothing
+
+-- | extract exprs of a binding which are relevant for use/analysis/...
+cbindExprs :: CBind -> [CExpr]
+cbindExprs (CBind_Bind _ a) = catMaybes $ map cbindAspectMbExpr a
 %%]
 
 %%[(9797 codegen) hs export(cexprMbConst)
@@ -415,6 +432,7 @@ offMpMpKeysSet m = Set.unions [ Map.keysSet m' | (_,m') <- Map.elems m ]
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(20 codegen) hs export(cModMerge)
+-- | merge by concatenation
 cModMerge :: [CModule] -> CModule
 cModMerge mL
   = foldr1 cmb mL
@@ -422,6 +440,49 @@ cModMerge mL
         get  _                = id
         cmb (CModule_Mod m1 e1 t1) (CModule_Mod m2 e2 t2)
           = CModule_Mod m2 (get e1 e2) (t1++t2)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Map/Database representation of a module
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(20 codegen) hs export(CDbBindLetInfo, CDbBindLetInfo'2)
+-- | the binding info required for let bind
+type CDbBindLetInfo'' f cat bind = (cat,f bind)
+type CDbBindLetInfo'  f          = CDbBindLetInfo'' f  CBindingsCateg CBind
+type CDbBindLetInfo'2   cat bind = CDbBindLetInfo'' [] cat            bind
+type CDbBindLetInfo              = CDbBindLetInfo'  []
+%%]
+
+%%[(20 codegen) hs export(CDbBindArray, CDbBindRef, CDbModuleBindMp)
+-- | actual bindings stored in separate array to allow for sharing
+type CDbBindArray = Array Int (CDbBindLetInfo' (Array Int))
+
+-- | reference into database of bindings, agnostic of name given to it
+type CDbBindRef = (Int,Int)
+
+-- | binding map of global names to individual bindings
+type CDbModuleBindMp = Map.Map HsName CDbBindRef
+%%]
+
+%%[(20 codegen) hs export(CModuleDatabase(..), emptyCModuleDatabase)
+-- | the full module represented in a map/database like format (20101004 AD: to be made into persistent db soon)
+data CModuleDatabase
+  = CModuleDatabase
+      { cmoddbModNm			:: !HsName				-- module name
+      , cmoddbBindArr		:: !CDbBindArray		-- bindings
+      , cmoddbBindMp		:: !CDbModuleBindMp		-- map of name to bindings
+      , cmoddbMainExpr		:: !CExpr				-- the final expr of the module's let expr
+      , cmoddbTagsMp		:: !CTagsMp				-- datatype info
+      }
+
+emptyCModuleDatabase :: CModuleDatabase
+emptyCModuleDatabase = CModuleDatabase hsnUnknown (array (1,0) []) Map.empty (acoreInt 0) emptyCTagsMp
+%%]
+
+%%[(20 codegen) hs export(cmoddbLookup)
+cmoddbLookup :: HsName -> CModuleDatabase -> Maybe CDbBindRef
+cmoddbLookup n db = Map.lookup n $ cmoddbBindMp db
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -531,6 +592,13 @@ instance Serialize CExprAnn where
             1 -> liftM  CExprAnn_Coe        sget            
             2 -> return (CExprAnn_Debug     "")
 
+instance Serialize CBindAnn where
+  sput (CBindAnn_Coe   a) = sputWord8 0 >> sput a
+  sget
+    = do t <- sgetWord8
+         case t of
+            0 -> liftM  CBindAnn_Coe         sget            
+
 instance Serialize CBindAspect where
   sput (CBindAspect_Bind 	a b      ) = sputWord8 0 >> sput a >> sput b
   -- sput (CBindAspect_FFI  	a b c d  ) = sputWord8 1 >> sput a >> sput b >> sput c >> sput d
@@ -595,11 +663,11 @@ instance Serialize CPatRest where
             1 -> return CPatRest_Empty  
 
 instance Serialize CPatFld where
-  sput (CPatFld_Fld   a b c   ) = sputWord8 0 >> sput a >> sput b >> sput c
+  sput (CPatFld_Fld   a b c d ) = sputWord8 0 >> sput a >> sput b >> sput c >> sput d
   sget
     = do t <- sgetWord8
          case t of
-            0 -> liftM3 CPatFld_Fld         sget sget sget
+            0 -> liftM4 CPatFld_Fld         sget sget sget sget
 
 instance Serialize CBindingsCateg where
   sput = sputEnum8
@@ -652,7 +720,7 @@ instance AbstractCore CExpr CMetaVal CBind CBindAspect CBindingsCateg CMetaBind 
 %%]]
   
   -- patfld
-  acorePatFldTy _ (lbl,off) n 			= CPatFld_Fld lbl off n
+  acorePatFldTy _ (lbl,off) n 			= CPatFld_Fld lbl off n []
 
   -- patrest
   acorePatRestEmpty  					= CPatRest_Empty
@@ -706,7 +774,7 @@ instance AbstractCore CExpr CMetaVal CBind CBindAspect CBindingsCateg CMetaBind 
   acorePatMbChar _                 		= Nothing
 
   acoreUnAlt (CAlt_Alt p e)				= (p,e)
-  acoreUnPatFld (CPatFld_Fld l o n)		= (Ty_Any,(l,o),n)
+  acoreUnPatFld (CPatFld_Fld l o n _)   = (Ty_Any,(l,o),n)
 
   -- coercion
 %%[[8

@@ -542,6 +542,7 @@ Type @make help@ to see what more can be build:
 Apart from the usual options @./configure@ accepts the following options enabling a particular feature:
 \begin{itemize}
 \item \verb|--enable-java|. Enable @jazy@ backend. 
+\item \verb|--enable-jscript|. Enable @jscript@ backend. 
 \item \verb|--enable-llvm|. Enable @llvm@ backend. 
 \item \verb|--enable-clr|. Enable @clr@ backend.
 \item \verb|--enable-tycore|. Enable @TyCore@ typed core intermediate representation.
@@ -1058,14 +1059,15 @@ UHC allows pragmas, wrapped inside special commentlike delimiters \verb|{-#| and
 \end{verbatim}
 The following pragmas are supported.
 \begin{itemize}
-\item \verb|{-# LANGAUGE pragma #-}| pragmas, where pragma may be:
+\item \verb|{-# LANGAUGE pragma #-}| (file header) pragmas, where pragma may be:
 \begin{itemize}
-\item @CPP@: switch on \href{http://gcc.gnu.org/onlinedocs/cpp/}{cpp} preprocessing.
+\item @CPP@ : switch on \href{http://gcc.gnu.org/onlinedocs/cpp/}{cpp} preprocessing.
 \item @NoImplicitPrelude@: don't automatically import @Prelude@ and/or assume its presence.
 \item @GenericDeriving@, @NoGenericDeriving@: turn on/off respectively generic deriving, default is on.
 \item @ExtensibleRecords@: turn on special syntax for extensible records. Available for internal backwards compatibility, but otherwise useless as codegeneration and runtime currently does not support extensible records. It reserves the operators \verb|#| and \verb|:=| for record selection and update respectively.
 \end{itemize}
 \item \verb|{-# DERIVING class field generic-function #-}| pragma: see \lref{generic-deriving}{generic deriving}.
+\item \verb|{-# EXCLUDE_IF_TARGET targets #-}| (file header pragma) make the module invisible for compilation. This is a (hopefully) temporary measure to deal with the abilities of distinctive backend. For example, the @jscript@ backend does not support (e.g.) file access.
 \end{itemize}
 Other or unsupported pragmas are silently ignored, even when appropriate currently no warning will be given.
 The text inside the pragma delimiters is then treated as normal comment, as were it inside plain \verb|{-| and \verb|-}| comment delimiters.
@@ -1416,6 +1418,14 @@ therefore make compilation fail.
  JVM expects this to be done per .class file. Because all functions and CAFs have a separate class definition this becomes quite costly in terms of jar file size and runtime startup time.
 \end{itemize}
 
+\subsubsection{@jscript@: Core based JavaScript, no whole program analysis}
+
+\begin{itemize}
+\item Only when enabled via @configure --enable-jscript@.
+\item Runs for latest variant, but all FFI related to the usual OS stuff is not available.
+\item No exceptions.
+\end{itemize}
+
 %%]
 
 %%[backendsPartial doclatex
@@ -1511,7 +1521,7 @@ This is not yet used, except for experimenting with code generation with extra d
  \item \verb|plain|: nothing special.
  \item \verb|debug|: debugging experiments.
  \end{itemize}
-\item \verb|-O[<level>]|, \verb|--optimise[=<level>]|. Optimisation level. Currently this makes little difference as few optimisations are implemented. Levels:
+\item \verb|-O[<level>][,<scope>]|, \verb|--optimise[=<level>][,<scope>]|. Optimisation level and scope. Currently this makes little difference as few optimisations are implemented. Levels:
  \begin{itemize}
  \item \verb|0|: none.
  \item \verb|1| (default): basic.
@@ -1519,6 +1529,12 @@ This is not yet used, except for experimenting with code generation with extra d
  \item \verb|3|: all
  \item \verb|<opt>[=Bool]|: turn on/off optimization option \verb|<opt>| on top of those already defined. See also @--meta-optimizations@ \lref{optimizations}{optimizations}.
  \end{itemize}
+ The scope determines at which point the optimizations are done, by default on a per module basis, optionally on a whole program by linking in an earlier compiler pipeline stage.
+ The linking then only pulls in that what is required, and can do the cheaper optimisations on the full program as well.
+ \begin{itemize}
+ \item \verb|0|: per module (default).
+ \item \verb|1|: link per module GRIN to whole program GRIN, and continue from there (not yet implemented)
+ \item \verb|2|: link per module Core to whole program COre, and continue from ther; Core precedes GRIN in the compiler pipeline.
 \item \verb|--no-recomp|. Don't check for the necessity to recompile, recompile allways instead.
 \item \verb|--no-prelude|. Don't assume the presence of @Prelude@.
 \item \verb|--no-hi-check|. Don't use out of date of compiler version w.r.t. to .hi files as a reason to recompile.

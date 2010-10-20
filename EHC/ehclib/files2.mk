@@ -10,8 +10,6 @@ FUN_PKG_VERSIONED						= $(1)-$(EHCLIB_PKG_$(call FUN_STRIP_DASH,$(1))_VERSION)
 # $1: versioned pkg name
 #FUN_PKG_UNVERSIONED						= $(patsubst %-%,,$(1))
 
-# not yet used
-
 EHCLIB_PKG_uhcbase_VERSION				:= $(EH_VERSION_FULL)
 EHCLIB_PKG_base_VERSION					:= 3.0.0.0
 EHCLIB_PKG_array_VERSION				:= 1.0.0.0
@@ -149,7 +147,9 @@ EHCLIB_ALL_SPECIALS						:= $(EHCLIB_GEN_HS) $(GEN_GENERTUPINST_BLD_EXEC)
 
 # all
 EHCLIB_ALL_SRC							:= $(EHCLIB_HS_ALL_SRC_HS) $(EHCLIB_CHS_ALL_SRC_CHS) $(EHCLIB_ASIS_ALL_SRC_ASIS)
-EHCLIB_ALL_DRV_HS						:= $(EHCLIB_HS_ALL_DRV_HS) $(EHCLIB_CHS_ALL_DRV_HS) $(EHCLIB_FROZEN_ALL_DRV_HS) $(EHCLIB_HSC_ALL_DRV_HS) $(EHCLIB_GEN_HS)
+EHCLIB_ALL_DRV_HS						:= $(EHCLIB_HS_ALL_DRV_HS) $(EHCLIB_CHS_ALL_DRV_HS) $(EHCLIB_FROZEN_ALL_DRV_HS) \
+											$(if $(EHC_CFG_USE_UNIX_AND_C),$(EHCLIB_HSC_ALL_DRV_HS),) \
+											$(EHCLIB_GEN_HS)
 EHCLIB_ALL_DRV_C						:= $(EHCLIB_C_ALL_DRV_C) $(EHCLIB_CC_ALL_DRV_C) $(EHCLIB_FROZEN_ALL_DRV_C)
 EHCLIB_ALL_DRV_ASIS						:= $(EHCLIB_FROZEN_ALL_DRV_ASIS) $(EHCLIB_ASIS_ALL_DRV_ASIS)
 EHCLIB_ALL_DRV							:= $(EHCLIB_ALL_DRV_HS) $(EHCLIB_ALL_DRV_ASIS) $(EHCLIB_ALL_DRV_C)
@@ -178,11 +178,12 @@ EHCLIB_DIST_FILES						:= $(EHCLIB_ALL_SRC) $(EHCLIB_MKF)
 EHCLIB_BASE_OPTS						= -O2
 
 EHCLIB_DEBUG_OPTS						=
+#EHCLIB_DEBUG_OPTS						= --gen-trace=1 --dump-core-stages=1
 #EHCLIB_DEBUG_OPTS						= --dump-core-stages=1 -OStrictnessAnalysis
 #EHCLIB_DEBUG_OPTS						= --priv=1
 #EHCLIB_DEBUG_OPTS						= -peh -v3
 #EHCLIB_DEBUG_OPTS						= --no-hi-check
-#EHCLIB_DEBUG_OPTS						= --dump-core-stages=1 --dump-grin-stages=1 --gen-trace=1 --gen-cmt=1
+#EHCLIB_DEBUG_OPTS						= --dump-core-stages=1 --dump-grin-stages=1  --gen-cmt=1
 #EHCLIB_DEBUG_OPTS						= --dump-core-stages=1 --dump-grin-stages=1 -v4
 #EHCLIB_DEBUG_OPTS						= --target-flavor=debug --dump-core-stages=1 --dump-grin-stages=1 --gen-trace=1 --gen-cmt=1
 #EHCLIB_DEBUG_OPTS						= -O0
@@ -222,7 +223,7 @@ ehclib-variant-dflt: \
 	          --import-path=$(call FUN_MK_PKG_INC_DIR,$(call FUN_INSTALL_PKG_PREFIX,$${pkgv})) \
 	          $${pkgs} \
 	          $${hsFiles} \
-	          `find $(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)$${pkg} -name '*.c'` \
+	          $(if $(EHC_CFG_USE_UNIX_AND_C),`find $(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)$${pkg} -name '*.c'`,) \
 	          +RTS -K30m ; \
 	        err=$$? ; \
 	        if test $${err} -ne 0 ; then exit $${err} ; fi ; \
@@ -250,6 +251,8 @@ ehclib-codegentargetspecific-bc: $(if $(EHC_CFG_USE_GRIN),$(INSTALL_LIB_RTS),)
 ehclib-codegentargetspecific-C: $(if $(EHC_CFG_USE_GRIN),$(INSTALL_LIB_RTS),)
 
 ehclib-codegentargetspecific-jazy: $(if $(ENABLE_JAVA),$(INSTALL_LIB_JAZY),)
+
+ehclib-codegentargetspecific-jscript: $(if $(ENABLE_JSCRIPT),$(INSTALL_LIB_JSCRIPT),)
 
 ehclib-codegentargetspecific-core:
 

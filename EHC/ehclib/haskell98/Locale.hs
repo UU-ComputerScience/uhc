@@ -1,3 +1,4 @@
+{-# EXCLUDE_IF_TARGET jscript #-}
 module Locale (
     TimeLocale(..), defaultTimeLocale
   ) where

@@ -1,6 +1,7 @@
 {-# LANGUAGE NoImplicitPrelude, CPP #-}
 {-# OPTIONS_GHC -XNoImplicitPrelude #-}
 {-# OPTIONS_GHC -fno-warn-unused-binds #-}
+{-# EXCLUDE_IF_TARGET jscript #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  System.Posix.Types

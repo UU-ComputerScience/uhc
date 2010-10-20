@@ -10,7 +10,7 @@ Used by all compiler driver code
 -- general imports
 %%[1 import(Data.List, Data.Char, Data.Maybe) export(module Data.Maybe, module Data.List, module Data.Char)
 %%]
-%%[1 import(Control.Monad.State, IO, System) export(module IO, module Control.Monad.State, module System)
+%%[1 import(Control.Monad.State, IO, System) export(module IO, module Control.Monad.State)
 %%]
 %%[1 import(EH.Util.CompileRun, EH.Util.Pretty, EH.Util.FPath, EH.Util.Utils) export(module EH.Util.CompileRun, module EH.Util.Pretty, module EH.Util.FPath, module EH.Util.Utils)
 %%]
@@ -37,17 +37,17 @@ The state HS compilation can be in
 
 %%[8 export(HSState(..))
 data HSState
-  = HSStart					-- starting from .hs
-  | HSAllSem				-- done all semantics for .hs
+  = HSStart                 -- starting from .hs
+  | HSAllSem                -- done all semantics for .hs
 %%[[20
-  | HSOnlyImports			-- done imports from .hs
-  | HIStart					-- starting from .hi
-  | HIAllSem				-- done all semantics for .hi
-  | HIOnlyImports			-- done imports from .hi
+  | HSOnlyImports           -- done imports from .hs
+  | HIStart                 -- starting from .hi
+  | HIAllSem                -- done all semantics for .hi
+  | HIOnlyImports           -- done imports from .hi
 %%]]
 %%[[99
-  | LHSStart				-- starting from .lhs
-  | LHSOnlyImports			-- done imports from .lhs
+  | LHSStart                -- starting from .lhs
+  | LHSOnlyImports          -- done imports from .lhs
 %%]]
   deriving (Show,Eq)
 %%]
@@ -123,11 +123,11 @@ data EHCompileUnitState
 
 %%[8 export(EHCompileUnitKind(..))
 data EHCompileUnitKind
-  = EHCUKind_HS		-- Haskell: .hs .lhs .hi
+  = EHCUKind_HS     -- Haskell: .hs .lhs .hi
 %%[[90
-  | EHCUKind_C		-- C: .c
+  | EHCUKind_C      -- C: .c
 %%]]
-  | EHCUKind_None	-- Nothing
+  | EHCUKind_None   -- Nothing
   deriving Eq
 %%]
 
@@ -195,5 +195,39 @@ mkInOrOutputFPathFor inoutputfor opts modNm fp suffix
 %%[8 export(mkOutputFPath)
 mkOutputFPath :: FPATH nm => EHCOpts -> nm -> FPath -> String -> FPath
 mkOutputFPath = mkInOrOutputFPathFor OutputFor_Module
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Construction of output names
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 export(mkPerModuleOutputFPath)
+-- | FPath for per module output
+mkPerModuleOutputFPath :: EHCOpts -> Bool -> HsName -> FPath -> String -> FPath
+mkPerModuleOutputFPath opts doSepBy_ modNm fp suffix
+  = fpO modNm fp
+%%[[8
+  where fpO m f= mkOutputFPath opts m f suffix
+%%][99
+  where fpO m f= case ehcOptPkg opts of
+                   Just _        -> nm_
+                   _ | doSepBy_  -> nm_
+                     | otherwise -> mkOutputFPath opts m f suffix
+               where nm_ = mkOutputFPath opts (hsnMapQualified (const base) m) (fpathSetBase base f) suffix
+                         where base = hsnShow "_" "_" m
+%%]]
+%%]
+
+%%[8 export(mkPerExecOutputFPath)
+-- | FPath for final executable
+mkPerExecOutputFPath :: EHCOpts -> HsName -> FPath -> Maybe String -> FPath
+mkPerExecOutputFPath opts modNm fp mbSuffix
+  = fpExec
+  where fpExecBasedOnSrc = maybe (mkOutputFPath opts modNm fp "") (\s -> mkOutputFPath opts modNm fp s) mbSuffix
+%%[[8
+        fpExec = fpExecBasedOnSrc
+%%][99
+        fpExec = maybe fpExecBasedOnSrc id (ehcOptMbOutputFile opts)
+%%]]
 %%]
 

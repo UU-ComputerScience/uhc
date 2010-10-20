@@ -1,4 +1,5 @@
 {-# LANGUAGE CPP #-}
+
 #define MODULE_NAME     Posix
 
 #ifndef IS_WINDOWS

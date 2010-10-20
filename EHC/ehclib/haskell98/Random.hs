@@ -1,3 +1,4 @@
+{-# EXCLUDE_IF_TARGET jscript #-}
 module Random (
    RandomGen(next, split, genRange),
    StdGen, mkStdGen,

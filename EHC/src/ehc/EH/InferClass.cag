@@ -78,7 +78,8 @@ SEM Decl
                 decls           .   gathDataGam     =   emptyGam
                 lhs             .   gathDeclDataGam =   if ehcCfgClassViaRec @lhs.opts
                                                         then emptyGam
-                                                        else let dgi = mkDGIPlain @dataDictNm Ty_Any [@dataDictNm] (@dataDictNm `Map.singleton` emptyDataTagInfo {dtiCTag = @dataDictTag})
+                                                        else let dgi = mkDGIPlain @dataDictNm Ty_Any [@dataDictNm] (@dataDictNm `Map.singleton` dti)
+                                                                 dti = emptyDataTagInfo {dtiCTag = @dataDictTag, dtiConNm = @dataDictNm}
                                                              in  gamSingleton @dataDictNm dgi
                                 .   gathDataGam     =   @lhs.gathDataGam
 %%]

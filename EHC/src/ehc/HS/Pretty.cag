@@ -139,6 +139,8 @@ SEM Pragma
   		loc			.	pp			=	"LANGUAGE" >#< ppCommas @pragmas
   | Derivable
   		loc			.	pp			=	"DERIVABLE" >#< @className >#< @fieldName >#< @defaultName
+  | ExcludeIfTarget
+  		loc			.	pp			=	"EXCLUDE_IF_TARGET" >#< ppCommas @targetNames
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -1,4 +1,5 @@
 {-# LANGUAGE CPP #-}
+{-# EXCLUDE_IF_TARGET jscript #-}
 
 module System (
     ExitCode(ExitSuccess,ExitFailure),
