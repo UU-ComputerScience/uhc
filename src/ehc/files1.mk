@@ -65,7 +65,7 @@ EHC_HS_UTIL_SRC_CHS						:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
 													$(addprefix Gam/,Utils Instantiate Quantify LevelMapGam ScopeMapGam Full AppSpineGam FixityGam TyGam KiGam DataGam PolGam TyKiGam ValGam ClassDefaultGam) \
 													$(addprefix Core/,Utils Coercion Trf) \
 													$(addprefix TyCore/,Base Utils2 Coercion Full0 Full1 Full2 Subst) \
-													$(addprefix GrinCode/,Common SolveEqs GrinInfo) \
+													$(addprefix GrinCode/,Common SolveEqs GrinInfo CommonCrossModule) \
 													$(addprefix EHC/,Common Environment CompileUnit CompileGroup CompileRun GrinCompilerDriver InitialSetup \
 														$(addprefix CompilePhase/,Parsers Output Translations Transformations \
 															FlowBetweenPhase TransformGrin Semantics \
