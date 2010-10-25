@@ -174,8 +174,10 @@ instance Util TyExpr where
     isTyVar (TyExpr_Var nm) hsnm = hsnm == nm
     isTyVar _ _                  = False
     
-    isUnQualTy (TyExpr_Quant{}) = False
-    isUnQualTy _                = True 
+    isUnQualTy (TyExpr_Quant{})  = False
+    isUnQualTy (TyExpr_Parens a) = isUnQualTy a
+    isUnQualTy (TyExpr_AppTop a) = isUnQualTy a
+    isUnQualTy _                 = True 
     
 instance Apply TyQuantifiedScheme where
     app m (TyQuantifiedScheme_Quant i s) = TyQuantifiedScheme_Quant i <$> app m s
@@ -202,6 +204,9 @@ replace :: Eq a => (a,a) -> [a] -> [a]
 replace   (_,_) [] = []
 replace p@(a,b) (x:xs) |  a == x   = b:replace p xs
                        | otherwise = x:replace p xs
+                        
+munion :: Ord k => M.Map k v -> M.Map k v -> M.Map k v
+munion a b = M.fromList (M.toList a ++ M.toList b)
                         
 instance Util TyScheme where
     ftv TyScheme_Bottom       = []
@@ -284,7 +289,7 @@ update (q, Right (a, p))
     in  (q0 ++ q1 ++ q2', M.fromList [(a,p)])
 update (q, Left (Scheme_Simple var phi2))
   = let (q0, (q1,q2)) = id *** (`splitOn` var) $ split (q, ftv phi2)
-        p   = nf phi2
+        p   = nf phi2       
         q2' = case app (var,p) (safeTail q2) of
                Nothing -> error "Update failed. Could not apply substitution"
                Just ax -> ax
@@ -294,7 +299,7 @@ update (q, Left (Scheme_Simple var phi2))
         
 safeTail :: [a] -> [a]
 safeTail []     = []
-safeTail (x:xs) = x:xs
+safeTail (x:xs) = xs
         
 -- | Split a prefix based on a variable
 splitOn :: Prefix -> HsName -> (Prefix, Prefix)
@@ -310,8 +315,8 @@ splitOn (x@(TyIndex_Group v1 _):xs) v2
 extend :: (Prefix, Scheme, Int) -> ((Prefix, Env), Int)
 extend (q, scheme@(Scheme_Simple var phi), frs)
  = let p = nf phi
-   in case p of
-        TyScheme_SystemF p'  -> ((q, M.fromList [(var, p)]), frs)
+   in case isUnQualTy p of
+        True  -> ((q, M.fromList [(var, p)]), frs)
         -- TyScheme_Quant s t   -> case s of
                                  -- Scheme_Simple v t' 
                                    -- -> let s' = Scheme_Simple var t'
@@ -325,8 +330,8 @@ extend (q, scheme@(Scheme_Simple var phi), frs)
                       -- (Just ph2')   = appAll (M.fromList env) ph2
                       -- pre           = q ++ [TyIndex_Group v (promote p) | (v, p) <- zipWith (\a (Scheme_Simple _ x)->(a, x)) varsc schemes ]
                   -- in ((pre, M.fromList [(var, ph2')]), frs')
-        _                    -> let (ph2, frs') = (phi, frs)
-                                in ((q++[TyIndex_Group var (promote ph2)], M.empty), frs')
+        _     -> let (ph2, frs') = renameVars frs phi
+                 in D.trace ("@" ++ pp var ++ " == " ++ pp phi ++ " -- " ++ pp (promote phi)) ((q++[TyIndex_Group var (promote phi)], M.empty), frs)
 
 renameVars :: Int -> TyScheme -> (TyScheme, Int)
 renameVars frs ty 
@@ -391,10 +396,15 @@ getBindLHs = concatMap getBindLH
 promote :: TyScheme -> TyQuantifiedScheme
 promote TyScheme_Bottom                            = TyQuantifiedScheme_Bottom
 promote (TyScheme_Quant (Scheme_Simple nm ty) ty') = TyQuantifiedScheme_Quant (TyIndex_Group nm (promote ty)) ty'
-promote phi@(TyScheme_SystemF{})                   
-  = let vars = ftv phi -- replace by bounds variables
-    in compact vars phi
-   where compact (x:xs) p = TyQuantifiedScheme_Quant (TyIndex_Group x (compact xs p)) p
+promote phi@(TyScheme_SystemF x)                   
+  = let (vars, p) = mk x -- ftv phi -- replace by bounds variables
+    in compact vars (TyScheme_SystemF p)
+   where mk (TyExpr_Quant _ a b) 
+              = let (b', y) = mk b 
+                in (a:b', y)
+         mk x = ([], x)
+   
+         compact (x:xs) p = TyQuantifiedScheme_Quant (TyIndex_Group x (compact xs p)) p
          compact []     p = TyQuantifiedScheme_Bottom
 promote (TyScheme_Sugar{})                         = error "TyScheme_Sugar cannot be promoted. It's purely syntaxtical sugar. Please call desugar before that"
 
@@ -1255,7 +1265,7 @@ datasem Expr monad IO
        arg.exp = loc.arg
        arg.frs = func.frs
        arg.pre = func.nxe
-       arg.env = func.sub `M.union` lhs.env
+       arg.env = func.sub `munion` lhs.env
        
        invoke infer of arg
        
@@ -1267,7 +1277,7 @@ datasem Expr monad IO
        (loc.temp2, loc.frt2) = extend (fst loc.temp1, Scheme_Simple loc.a2 (head arg.res), loc.frt1)
        (loc.temp3, loc.frt3) = extend (fst loc.temp2, Scheme_Simple loc.b  (TyScheme_Bottom), loc.frt2)
        
-       (loc.q2', loc.e2') = (fst loc.temp3, (snd loc.temp1) `M.union` (snd loc.temp2) `M.union` (snd loc.temp3))
+       (loc.q2', loc.e2') = (fst loc.temp3, (snd loc.temp1) `munion` (snd loc.temp2) `munion` (snd loc.temp3))
        
        child u : Unify = unify
        u.pre  = D.trace ("app - unify " ++ pp loc.q2' ++ " -- " ++ pp loc.e2') loc.q2'
@@ -1288,9 +1298,13 @@ datasem Expr monad IO
                  in case appAll loc.e3 b of
                       Just v  -> return $ desugar $ TyScheme_Sugar loc.q5 (TyScheme_SystemF v)
                       Nothing -> error "App failed, cannot apply substitution"
-       lhs.sub = func.sub `M.union` arg.sub `M.union` loc.e3
+       loc.temp_sub = func.sub `munion` arg.sub `munion` loc.e3
+       lhs.sub = loc.temp_sub
        lhs.nxe = loc.q4
-       lhs.frs = u.frs
+       lhs.frs = let d1 = D.trace ("^^Unify pre: " ++ pp u.pre)
+                     d2 = D.trace ("^^NXE: " ++ pp loc.q4)
+                     d3 = D.trace ("^^Sub: " ++ pp loc.temp_sub)
+                 in d1 $ d2 $ d3 u.frs
     clause Let
         -- | Preprocess the binds to fill the environemnt
         (loc.frs, loc.binds)  = let nms         = getBindLHs loc.decls
@@ -1313,7 +1327,7 @@ datasem Expr monad IO
 
         lhs.nxe = body.nxe
         lhs.res = body.res
-        lhs.sub = M.union decls.sub body.sub
+        lhs.sub = munion decls.sub body.sub
         lhs.frs = body.frs
     clause Lam
         child arg : PatExpr
@@ -1547,8 +1561,9 @@ subsume = sem subsume : Subsume monad IO
                       child u : Unify = unify
                       
                       (loc.c, loc.frs1) = D.trace ("subsume - init " ++ pp (const scheme.prefix exp.tyExpr)) $ freshM lhs.frs (length exp.tyVar)
-                      u.pre  = let q = loc.q ++ loc.q2
-                               in D.trace ("subsume -- " ++ pp q) q
+                      loc.qq2 = let q = loc.q ++ loc.q2
+                                in D.trace ("subsume -- " ++ pp q) q
+                      u.pre  = loc.qq2
                       u.exp1 = case appAll (M.fromList $ zipWith (\a b->(a, mkSkolem b)) exp.tyVar loc.c) exp.tyExpr of
                                  Just a  -> D.trace ("un1: " ++ con a) (const a scheme.prefix)
                                  Nothing -> error "Subsume failure, substitution failed"
@@ -1561,7 +1576,7 @@ subsume = sem subsume : Subsume monad IO
                       loc.q1 = u.pre
                       loc.e1 = u.sub
                       
-                      (loc.q3, loc.q4) = split (loc.q1, domain loc.q)
+                      (loc.q3, loc.q4) = split (loc.q1, domain loc.qq2)
                       loc.e2 = let x = nub (domain loc.q4)
                                in D.trace (   "Removing domain: " ++ pp x 
                                            ++ "\n\t&&> " ++ pp loc.e1
@@ -1668,7 +1683,7 @@ unify = sem unify : Unify monad IO
                        internal case_check
                          clause eq_vars
                            match True = var1.nm == var2.nm
-                           lhs.sub = M.empty
+                           lhs.sub = D.trace "Variable match" M.empty
                          clause rest_vars
                            loc.q  = lhs.pre
                            loc.p1 = loc.q `contains` var1.nm
@@ -1713,8 +1728,11 @@ unify = sem unify : Unify monad IO
                                    
                                    lhs.frs = s.frs
                                    lhs.pre = loc.q3
-                                   lhs.sub = let x = loc.e3 `M.union` loc.e2 `M.union` loc.e1
-                                             in D.trace ("++ unifyScheme + unify done: " ++ pp x) x
+                                   lhs.sub = let x = loc.e3 `munion` loc.e2 `munion` loc.e1
+                                                 d1 = D.trace ("++ e3 = " ++ pp loc.e3)
+                                                 d2 = D.trace ("++ e2 = " ++ pp loc.e2)
+                                                 d3 = D.trace ("++ e1 = " ++ pp loc.e1)
+                                             in d1 $ d2 $ d3 $ D.trace ("++ unifyScheme + unify done: " ++ pp x) x
                      clause cons
                        match TyExpr.Con@var1 = lhs.exp1
                        match TyExpr.Con@var2 = lhs.exp2
@@ -1748,14 +1766,15 @@ unify = sem unify : Unify monad IO
                        ua.frs  = uf.frs
                        ua.pre  = uf.pre
                        ua.exp1 = let (Just arg) = appAll uf.sub app1.arg
-                                 in D.trace ("Func1R: " ++ con arg) arg
+                                     d1 = D.trace ("&Pref: " ++ pp uf.pre ++ "\n&Sub:  " ++ pp uf.sub)
+                                 in d1 $ D.trace ("Func1R: " ++ con arg) arg
                        ua.exp2 = let (Just arg) = appAll uf.sub app2.arg
                                  in D.trace ("Func2R: " ++ con arg) arg
                        
                        invoke unify of ua
                        
                        lhs.pre = ua.pre
-                       lhs.sub = uf.sub `M.union` ua.sub
+                       lhs.sub = uf.sub `munion` ua.sub
                        
                      clause vartype
                        -- hopefully clauses are tried in-order, or else this would be a problem  
@@ -1792,7 +1811,7 @@ unify = sem unify : Unify monad IO
                                                                in D.trace ("!!! " ++ pp sub) $ update (s.pre, Right sub)
                                
                                lhs.pre = loc.q2
-                               loc.ret = loc.e2 `M.union` s.sub
+                               loc.ret = loc.e2 `munion` s.sub
                                lhs.sub = D.trace ("updating prefix: " ++ pp s.sub
                                                ++ " \n\t# " ++ pp s.pre 
                                                ++ " \n\t> " ++ pp loc.q2 
@@ -1835,7 +1854,7 @@ unify = sem unify : Unify monad IO
                                                                in D.trace ("!!! " ++ pp sub) $ update (s.pre, Right sub)
                                
                                lhs.pre = loc.q2
-                               loc.ret = loc.e2 `M.union` s.sub
+                               loc.ret = loc.e2 `munion` s.sub
                                lhs.sub = D.trace ("updating prefix: " ++ pp s.sub
                                                ++ " \n\t# " ++ pp s.pre 
                                                ++ " \n\t> " ++ pp loc.q2 
@@ -1878,46 +1897,46 @@ unify = sem unify : Unify monad IO
                           clause failed
                             match (loc.bla, True) = ((), loc.check)
                             lhs.sub = const (error "Subsume failure, A skolem constant has leaked outside") loc.bla
-                     clause explicit_quant_left
-                       match TyExpr.Quant@var1 = lhs.exp1
+                     -- clause explicit_quant_left
+                       -- match TyExpr.Quant@var1 = lhs.exp1
                        
-                       child u : Unify = unify
+                       -- child u : Unify = unify
                        
-                       (loc.c, loc.frs1) = fresh lhs.frs
-                       loc.varc = mkVar loc.c
+                       -- (loc.c, loc.frs1) = fresh lhs.frs
+                       -- loc.varc = mkVar loc.c
                        
-                       u.frs = loc.frs1
-                       u.pre = D.trace ("Expanding Environment, Adding Universally quantified variable - " ++ pp loc.c) 
-                                  $ lhs.pre ++ [TyIndex_Group loc.c TyQuantifiedScheme_Bottom]
-                       u.exp2 = lhs.exp2
-                       u.exp1 = case app (var1.tyVar, loc.varc) var1.tyExpr of
-                                  Nothing -> error "Explicit quantification failed in app"
-                                  Just a  -> a
+                       -- u.frs = loc.frs1
+                       -- u.pre = D.trace ("Expanding Environment, Adding Universally quantified variable - " ++ pp loc.c) 
+                                  -- $ lhs.pre ++ [TyIndex_Group loc.c TyQuantifiedScheme_Bottom]
+                       -- u.exp2 = lhs.exp2
+                       -- u.exp1 = case app (var1.tyVar, loc.varc) var1.tyExpr of
+                                  -- Nothing -> error "Explicit quantification failed in app"
+                                  -- Just a  -> a
                                   
-                       invoke unify of u
+                       -- invoke unify of u
                        
-                       lhs.pre = u.pre
-                       lhs.sub = u.sub
-                     clause explicit_quant_right
-                       match TyExpr.Quant@var1 = lhs.exp2
+                       -- lhs.pre = u.pre
+                       -- lhs.sub = u.sub
+                     -- clause explicit_quant_right
+                       -- match TyExpr.Quant@var1 = lhs.exp2
                        
-                       child u : Unify = unify
+                       -- child u : Unify = unify
                        
-                       (loc.c, loc.frs1) = fresh lhs.frs
-                       loc.varc = mkVar loc.c
+                       -- (loc.c, loc.frs1) = fresh lhs.frs
+                       -- loc.varc = mkVar loc.c
                        
-                       u.frs = loc.frs1
-                       u.pre = D.trace ("Expanding Environment, Adding Universally quantified variable" ++ pp loc.c) 
-                                  $ lhs.pre ++ [TyIndex_Group loc.c TyQuantifiedScheme_Bottom]
-                       u.exp1 = lhs.exp1
-                       u.exp2 = case app (var1.tyVar, loc.varc) var1.tyExpr of
-                                  Nothing -> error "Explicit quantification failed in app"
-                                  Just a  -> a
+                       -- u.frs = loc.frs1
+                       -- u.pre = D.trace ("Expanding Environment, Adding Universally quantified variable" ++ pp loc.c) 
+                                  -- $ lhs.pre ++ [TyIndex_Group loc.c TyQuantifiedScheme_Bottom]
+                       -- u.exp1 = lhs.exp1
+                       -- u.exp2 = case app (var1.tyVar, loc.varc) var1.tyExpr of
+                                  -- Nothing -> error "Explicit quantification failed in app"
+                                  -- Just a  -> a
                                   
-                       invoke unify of u
+                       -- invoke unify of u
                        
-                       lhs.pre = u.pre
-                       lhs.sub = u.sub
+                       -- lhs.pre = u.pre
+                       -- lhs.sub = u.sub
                      clause mismatch
                        lhs.sub = error $   "Could not match expected type '" 
                                         ++ pp (clean lhs.exp1) ++ "' with inferred type '" 
