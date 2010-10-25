@@ -64,9 +64,10 @@ type ForeignParser        ep    =    PlainParser Token ep
 pForeignEnt :: FFIWay -> Maybe String -> ForeignParser ForeignEnt
 pForeignEnt way dfltNm
   = case way of
-      FFIWay_CCall -> ForeignEnt_CCall     <$> pCCall dfltNm
-      FFIWay_Prim  -> ForeignEnt_PrimCall  <$> pPrimCall dfltNm
-      _            -> ForeignEnt_PlainCall <$> pPlainCall dfltNm
+      FFIWay_CCall   -> ForeignEnt_CCall        <$> pCCall       dfltNm
+      FFIWay_Prim    -> ForeignEnt_PrimCall     <$> pPrimCall    dfltNm
+      FFIWay_JScript -> ForeignEnt_JScriptCall  <$> pJScriptCall dfltNm
+      _              -> ForeignEnt_PlainCall    <$> pPlainCall   dfltNm
 
 pCCall :: Maybe String -> ForeignParser CCall
 pCCall dfltNm
@@ -127,8 +128,47 @@ pPrimCall dfltNm
   where nm = maybe "" id dfltNm
         pKnownPrim = pMb (pAnyFromMap pKeyTk allKnownPrimMp)
 
+pJScriptCall :: Maybe String -> ForeignParser JScriptCall
+pJScriptCall dfltNm
+{-
+-}
+  = JScriptCall_Id nm <$> pMb pForeignExpr
+  where nm = maybe "" id dfltNm
+{-
+  = mk <$> pAsPtr <*> pThisArgNr <*> pMb pForeignVar <*> pIndexArgNr
+  where nm = maybe "" id dfltNm
+        pThisArgNr  = pMb (tokMkInt <$ pPERCENT <*> pInteger10Tk <* pDOT)
+        pIndexArgNr = pMb (tokMkInt <$ pOBRACK <* pPERCENT <*> pInteger10Tk <* pCBRACK)
+        pAsPtr      = pMaybe False (const True) pAMPERSAND
+        mk p t@Nothing Nothing  i@Nothing = JScriptCall_Id p t nm i
+        mk p t         Nothing  i         = JScriptCall_Id p t "" i
+        mk p t         (Just n) i         = JScriptCall_Id p t n  i
+-}
+{-
+pJScriptCall2 :: Maybe String -> ForeignParser JScriptCall
+pJScriptCall2 dfltNm
+  =   Left  <$> pMaybe nm id pForeignVar
+  <|> RIght <$> pForeignExpr
+  where nm = maybe "" id dfltNm
+-}
+
 pForeignVar :: ForeignParser String
 pForeignVar = tokGetVal <$> (pVARID <|> pCONID)
+
+pForeignExpr :: ForeignParser ForeignExpr
+pForeignExpr
+  = pExp
+  where pExp  = mk <$> pPre <*> pExpB <*> pPost
+        pPre  = pList (pPtr)
+        pPost = pList (pSel <|> pInx <|> pCall)
+        pExpB = pArg <|> pEnt
+        pArg  = (ForeignExpr_Arg . tokMkInt) <$ pPERCENT <*> pInteger10Tk
+        pEnt  = ForeignExpr_EntNm <$> pForeignVar
+        pPtr  = ForeignExpr_Ptr <$ pAMPERSAND
+        pInx  = (flip ForeignExpr_Inx) <$ pOBRACK <*> pExp <* pCBRACK
+        pSel  = (flip ForeignExpr_Sel) <$ pDOT <*> pEnt
+        pCall = ForeignExpr_Call <$ pOPAREN <* pCPAREN
+        mk    = \pre e post -> foldr ($) e $ pre ++ reverse post
 %%]
 
 pCCall :: Maybe String -> ForeignParser CCall

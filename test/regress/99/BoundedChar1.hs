@@ -4,7 +4,7 @@
 ---------------------------------------------------------------------------------------- -}
 
 module BoundedChar1 where
-import System.IO
+-- import System.IO
 
 main :: IO ()
 main

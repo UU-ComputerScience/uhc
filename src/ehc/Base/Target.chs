@@ -262,7 +262,7 @@ targetIsGrin :: Target -> Bool
 targetIsGrin t
   = case t of
 %%[[(8 codegen grin)
-      _ 								-> targetIsGrinBytecode t || targetIsGrinBytecode t
+      _ 								-> targetIsGrinBytecode t || targetDoesHPTAnalysis t
 %%][8
       _ 								-> False
 %%]]

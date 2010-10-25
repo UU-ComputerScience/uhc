@@ -243,6 +243,7 @@ packedStringToString p = if packedStringNull p
                           then []
                           else packedStringHead p : packedStringToString (packedStringTail p)
 
+
 ----------------------------------------------------------------
 -- ByteArray
 ----------------------------------------------------------------
@@ -939,8 +940,15 @@ instance Show Int where
 -- Integer type
 --------------------------------------------------------------
 
+foreign import prim primEqInteger   :: Integer -> Integer -> Bool
+foreign import prim primCmpInteger  :: Integer -> Integer -> Ordering
+
+foreign import prim primDivInteger  :: Integer -> Integer -> Integer
+foreign import prim primModInteger  :: Integer -> Integer -> Integer
+
 #if defined(__UHC_TARGET_JSCRIPT__)
--- Integers are (for now) represented by Int
+-- Integers are represented by `jsbn' BigInteger library
+{-
 foreign import prim "primEqInt"   primEqInteger      :: Integer -> Integer -> Bool
 foreign import prim "primCmpInt"  primCmpInteger     :: Integer -> Integer -> Ordering
 foreign import prim "primAddInt"  primAddInteger     :: Integer -> Integer -> Integer
@@ -953,21 +961,25 @@ foreign import prim "primDivInt"  primDivInteger     :: Integer -> Integer -> In
 foreign import prim "primModInt"  primModInteger     :: Integer -> Integer -> Integer
 foreign import prim "primQuotRemInt" primQuotRemInteger       :: Integer -> Integer -> (Integer,Integer)
 foreign import prim "primDivModInt"  primDivModInteger        :: Integer -> Integer -> (Integer,Integer)
+-}
+foreign import jscript "%1.add()"				primAddInteger 				:: Integer -> Integer -> Integer
+foreign import jscript "%1.subtract()" 			primSubInteger 				:: Integer -> Integer -> Integer
+foreign import jscript "%1.multiply()" 			primMulInteger 				:: Integer -> Integer -> Integer
+foreign import jscript "%1.negate()" 			primNegInteger 				:: Integer -> Integer
+foreign import jscript "%1.divide()" 			primQuotInteger 			:: Integer -> Integer -> Integer
+foreign import jscript "%1.remainder()" 		primRemInteger 				:: Integer -> Integer -> Integer
 #else
-foreign import prim primEqInteger   :: Integer -> Integer -> Bool
-foreign import prim primCmpInteger  :: Integer -> Integer -> Ordering
 foreign import prim primAddInteger  :: Integer -> Integer -> Integer
 foreign import prim primSubInteger  :: Integer -> Integer -> Integer
 foreign import prim primMulInteger  :: Integer -> Integer -> Integer
 foreign import prim primNegInteger  :: Integer -> Integer
 foreign import prim primQuotInteger :: Integer -> Integer -> Integer
 foreign import prim primRemInteger  :: Integer -> Integer -> Integer
-foreign import prim primDivInteger  :: Integer -> Integer -> Integer
-foreign import prim primModInteger  :: Integer -> Integer -> Integer
-#ifdef __UHC_TARGET_BC__
+#endif
+
+#if defined( __UHC_TARGET_BC__ ) || defined(__UHC_TARGET_JSCRIPT__)
 foreign import prim primQuotRemInteger       :: Integer -> Integer -> (Integer,Integer)
 foreign import prim primDivModInteger        :: Integer -> Integer -> (Integer,Integer)
-#endif
 #endif
 
 instance Eq  Integer where 
@@ -1029,7 +1041,7 @@ instance Enum Integer where
                                 where p | n2 >= n   = (<= m)
                                         | otherwise = (>= m)
 
-#ifdef __UHC_TARGET_C__
+#if defined( __UHC_TARGET_C__ )
 {-
  This implementation fails for showInt minBound because in 2's complement arithmetic
  -minBound == maxBound+1 == minBound
@@ -1043,8 +1055,14 @@ showInteger x | x<0  = '-' : showInteger(-x)
 instance Show Integer where
     show   = showInteger
     
-#else
-#ifdef __UHC_TARGET_JAZY__
+#elif defined( __UHC_TARGET_JSCRIPT__ )
+
+foreign import jscript "%1.toString()" 			primIntegerToPackedString 	:: Integer -> PackedString
+
+instance Show Integer where
+    show   = packedStringToString . primIntegerToPackedString
+
+#elif defined( __UHC_TARGET_JAZY__ )
 
 foreign import prim primShowIntegerToPackedString :: Integer -> PackedString
 
@@ -1058,7 +1076,6 @@ foreign import prim primShowInteger :: Integer -> String
 instance Show Integer where
     show   = primShowInteger
 
-#endif
 #endif
 
 
@@ -1077,22 +1094,20 @@ data Double    -- opaque datatype of 64bit IEEE floating point numbers
 foreign import prim "primEqInt"          	primEqFloat             :: Float -> Float -> Bool
 foreign import prim "primCmpInt"         	primCmpFloat            :: Float -> Float -> Ordering
 
-foreign import prim "primEqDouble"         	primEqDouble            :: Double -> Double -> Bool
-foreign import prim "primCmpDouble"        	primCmpDouble           :: Double -> Double -> Ordering
+foreign import prim "primEqInt"         	primEqDouble            :: Double -> Double -> Bool
+foreign import prim "primCmpInt"        	primCmpDouble           :: Double -> Double -> Ordering
 
 foreign import prim "primAddInt"         	primAddFloat            :: Float -> Float -> Float
 foreign import prim "primSubInt"         	primSubFloat            :: Float -> Float -> Float
 foreign import prim "primMulInt"         	primMulFloat            :: Float -> Float -> Float
 foreign import prim "primNegInt"         	primNegFloat            :: Float -> Float
 foreign import prim "primUnsafeId"       	primIntToFloat          :: Int -> Float
-foreign import prim "primUnsafeId"   		primIntegerToFloat      :: Integer -> Float
 
-foreign import prim "primAddDouble"        	primAddDouble           :: Double -> Double -> Double
-foreign import prim "primSubDouble"        	primSubDouble           :: Double -> Double -> Double
-foreign import prim "primMulDouble"        	primMulDouble           :: Double -> Double -> Double
-foreign import prim "primNegDouble"        	primNegDouble           :: Double -> Double
+foreign import prim "primAddInt"        	primAddDouble           :: Double -> Double -> Double
+foreign import prim "primSubInt"        	primSubDouble           :: Double -> Double -> Double
+foreign import prim "primMulInt"        	primMulDouble           :: Double -> Double -> Double
+foreign import prim "primNegInt"        	primNegDouble           :: Double -> Double
 foreign import prim "primUnsafeId"      	primIntToDouble         :: Int -> Double
-foreign import prim "primUnsafeId"  		primIntegerToDouble     :: Integer -> Double
 
 foreign import prim "primQuotInt"      		primDivideFloat         :: Float -> Float -> Float
 foreign import prim "primRecipDouble"       primRecipFloat          :: Float -> Float
@@ -1113,14 +1128,12 @@ foreign import prim primSubFloat            :: Float -> Float -> Float
 foreign import prim primMulFloat            :: Float -> Float -> Float
 foreign import prim primNegFloat            :: Float -> Float
 foreign import prim primIntToFloat          :: Int -> Float
-foreign import prim primIntegerToFloat      :: Integer -> Float
 
 foreign import prim primAddDouble           :: Double -> Double -> Double
 foreign import prim primSubDouble           :: Double -> Double -> Double
 foreign import prim primMulDouble           :: Double -> Double -> Double
 foreign import prim primNegDouble           :: Double -> Double
 foreign import prim primIntToDouble         :: Int -> Double
-foreign import prim primIntegerToDouble     :: Integer -> Double
 
 foreign import prim primDivideFloat         :: Float -> Float -> Float
 foreign import prim primRecipFloat          :: Float -> Float
@@ -1129,6 +1142,14 @@ foreign import prim primDoubleToFloat       :: Double -> Float
 foreign import prim primFloatToDouble       :: Float -> Double
 foreign import prim primRationalToFloat     :: Rational -> Float
 foreign import prim primRationalToDouble    :: Rational -> Double
+#endif
+
+#if defined(__UHC_TARGET_JSCRIPT__)
+foreign import jscript "%1.doubleValue()"  		primIntegerToFloat      :: Integer -> Float
+foreign import jscript "%1.doubleValue()"  		primIntegerToDouble     :: Integer -> Double
+#else
+foreign import prim primIntegerToFloat      :: Integer -> Float
+foreign import prim primIntegerToDouble     :: Integer -> Double
 #endif
 
 instance Eq  Float  where (==) = primEqFloat
@@ -1220,7 +1241,7 @@ rationalToRealFloat x = x'
 
 -- primitive Float functions
 
-#ifdef __UHC_TARGET_JAZY__
+#if defined( __UHC_TARGET_JAZY__ )
 foreign import prim  primSinFloat   :: Float -> Float
 foreign import prim  primCosFloat   :: Float -> Float
 foreign import prim  primTanFloat   :: Float -> Float
@@ -1262,23 +1283,31 @@ foreign import ccall "tanhf" primTanhFloat  :: Float -> Float
 foreign import ccall "atan2f"  primAtan2Float   :: Float -> Float -> Float
 #endif
 
-instance Floating Float where
-    exp   = primExpFloat
-    log   = primLogFloat
-    sqrt  = primSqrtFloat
-    sin   = primSinFloat
-    cos   = primCosFloat
-    tan   = primTanFloat
-    asin  = primAsinFloat
-    acos  = primAcosFloat
-    atan  = primAtanFloat
-#ifndef __UHC_TARGET_JAZY__
-    sinh  = primSinhFloat
+#if defined(__UHC_TARGET_JSCRIPT__)
+foreign import prim "primIsNaNDouble         " primIsNaNFloat              :: Float -> Bool
+foreign import prim "primIsNegativeZeroDouble" primIsNegativeZeroFloat     :: Float -> Bool
+foreign import prim "primIsDenormalizedDouble" primIsDenormalizedFloat     :: Float -> Bool
+foreign import prim "primIsInfiniteDouble    " primIsInfiniteFloat         :: Float -> Bool
+foreign import prim "primDigitsDouble        " primDigitsFloat             :: Int
+foreign import prim "primMaxExpDouble        " primMaxExpFloat             :: Int
+foreign import prim "primMinExpDouble        " primMinExpFloat             :: Int
+foreign import prim "primDecodeDouble        " primDecodeFloat             :: Float -> (Integer, Int)
+foreign import prim "primEncodeDouble        " primEncodeFloat             :: Integer -> Int -> Float
+#else
+foreign import prim primIsNaNFloat              :: Float -> Bool
+foreign import prim primIsNegativeZeroFloat     :: Float -> Bool
+foreign import prim primIsDenormalizedFloat     :: Float -> Bool
+foreign import prim primIsInfiniteFloat         :: Float -> Bool
+foreign import prim primDigitsFloat             :: Int
+foreign import prim primMaxExpFloat             :: Int
+foreign import prim primMinExpFloat             :: Int
+foreign import prim primDecodeFloat             :: Float -> (Integer, Int)
+foreign import prim primEncodeFloat             :: Integer -> Int -> Float
 #endif
 
 -- primitive Double functions
 
-#ifdef __UHC_TARGET_JAZY__
+#if defined( __UHC_TARGET_JAZY__ ) || defined(__UHC_TARGET_JSCRIPT__)
 foreign import prim  primSinDouble   :: Double -> Double
 foreign import prim  primCosDouble   :: Double -> Double
 foreign import prim  primTanDouble   :: Double -> Double
@@ -1289,20 +1318,11 @@ foreign import prim  primExpDouble   :: Double -> Double
 foreign import prim  primLogDouble   :: Double -> Double
 foreign import prim  primSqrtDouble  :: Double -> Double
 foreign import prim  primAtan2Double :: Double -> Double -> Double
-#elif defined(__UHC_TARGET_JSCRIPT__)
-foreign import prim primSinDouble   :: Double -> Double
-foreign import prim primCosDouble   :: Double -> Double
-foreign import prim primTanDouble   :: Double -> Double
-foreign import prim primAsinDouble  :: Double -> Double
-foreign import prim primAcosDouble  :: Double -> Double
-foreign import prim primAtanDouble  :: Double -> Double
-foreign import prim primExpDouble   :: Double -> Double
-foreign import prim primLogDouble   :: Double -> Double
-foreign import prim primSqrtDouble  :: Double -> Double
+#if !defined(__UHC_TARGET_JAZY__)
 foreign import prim primSinhDouble  :: Double -> Double
 foreign import prim primCoshDouble  :: Double -> Double
 foreign import prim primTanhDouble  :: Double -> Double
-foreign import prim primAtan2Double :: Double -> Double -> Double
+#endif
 #else
 foreign import ccall "sin"  primSinDouble   :: Double -> Double
 foreign import ccall "cos"  primCosDouble   :: Double -> Double
@@ -1319,6 +1339,40 @@ foreign import ccall "tanh" primTanhDouble  :: Double -> Double
 foreign import ccall "atan2"  primAtan2Double   :: Double -> Double -> Double
 #endif
 
+foreign import prim primIsNaNDouble             :: Double -> Bool
+foreign import prim primIsNegativeZeroDouble    :: Double -> Bool
+foreign import prim primIsDenormalizedDouble    :: Double -> Bool
+foreign import prim primIsInfiniteDouble        :: Double -> Bool
+foreign import prim primDigitsDouble            :: Int
+foreign import prim primMaxExpDouble            :: Int
+foreign import prim primMinExpDouble            :: Int
+foreign import prim primDecodeDouble            :: Double -> (Integer, Int)
+foreign import prim primEncodeDouble            :: Integer -> Int -> Double
+
+foreign import prim primIsIEEE  :: Bool
+foreign import prim primRadixDoubleFloat  :: Int
+
+#if defined( __UHC_TARGET_JAZY__ ) || defined( __UHC_TARGET_JSCRIPT__ )
+foreign import prim primShowFloatToPackedString :: Float -> PackedString
+#else
+foreign import prim primShowFloat :: Float -> String
+-- TODO: replace this by a function Float -> PackedString
+#endif
+
+instance Floating Float where
+    exp   = primExpFloat
+    log   = primLogFloat
+    sqrt  = primSqrtFloat
+    sin   = primSinFloat
+    cos   = primCosFloat
+    tan   = primTanFloat
+    asin  = primAsinFloat
+    acos  = primAcosFloat
+    atan  = primAtanFloat
+#ifndef __UHC_TARGET_JAZY__
+    sinh  = primSinhFloat
+#endif
+
 instance Floating Double where
     exp   = primExpDouble
     log   = primLogDouble
@@ -1329,7 +1383,7 @@ instance Floating Double where
     asin  = primAsinDouble
     acos  = primAcosDouble
     atan  = primAtanDouble
-#ifndef __UHC_TARGET_JAZY__
+#if !defined(__UHC_TARGET_JAZY__)
     sinh  = primSinhDouble
     cosh  = primCoshDouble
     tanh  = primTanhDouble
@@ -1349,19 +1403,6 @@ floatProperFraction x
                          b     = floatRadix x
                          (w,r) = quotRem m (b^(-n))
 
-foreign import prim primIsIEEE  :: Bool
-foreign import prim primRadixDoubleFloat  :: Int
-
-foreign import prim primIsNaNFloat              :: Float -> Bool
-foreign import prim primIsNegativeZeroFloat     :: Float -> Bool
-foreign import prim primIsDenormalizedFloat     :: Float -> Bool
-foreign import prim primIsInfiniteFloat         :: Float -> Bool
-foreign import prim primDigitsFloat             :: Int
-foreign import prim primMaxExpFloat             :: Int
-foreign import prim primMinExpFloat             :: Int
-foreign import prim primDecodeFloat             :: Float -> (Integer, Int)
-foreign import prim primEncodeFloat             :: Integer -> Int -> Float
-
 instance RealFloat Float where
     floatRadix  _ = toInteger primRadixDoubleFloat
     floatDigits _ = primDigitsFloat
@@ -1374,16 +1415,6 @@ instance RealFloat Float where
     isNegativeZero= primIsNegativeZeroFloat
     isIEEE      _ = primIsIEEE
     atan2         = primAtan2Float
-
-foreign import prim primIsNaNDouble             :: Double -> Bool
-foreign import prim primIsNegativeZeroDouble    :: Double -> Bool
-foreign import prim primIsDenormalizedDouble    :: Double -> Bool
-foreign import prim primIsInfiniteDouble        :: Double -> Bool
-foreign import prim primDigitsDouble            :: Int
-foreign import prim primMaxExpDouble            :: Int
-foreign import prim primMinExpDouble            :: Int
-foreign import prim primDecodeDouble            :: Double -> (Integer, Int)
-foreign import prim primEncodeDouble            :: Integer -> Int -> Double
 
 instance RealFloat Double where
     floatRadix  _ = toInteger primRadixDoubleFloat
@@ -1418,13 +1449,6 @@ instance Enum Double where
     enumFromTo            = numericEnumFromTo
     enumFromThenTo        = numericEnumFromThenTo
 
-#ifdef __UHC_TARGET_JAZY__
-foreign import prim primShowFloatToPackedString :: Float -> PackedString
-#else
-foreign import prim primShowFloat :: Float -> String
-#endif
--- TODO: replace this by a function Float -> PackedString
-
 instance Read Float where
     readsPrec p = readSigned readFloat
 
@@ -1434,13 +1458,13 @@ instance Show Float where
     showsPrec   = primShowsFloat
 -----------------------------}
 instance Show Float where
-#ifdef __UHC_TARGET_JAZY__
+#if defined( __UHC_TARGET_JAZY__ ) || defined( __UHC_TARGET_JSCRIPT__ )
     show   = packedStringToString . primShowFloatToPackedString
 #else
     show   = primShowFloat
 #endif
 
-#ifdef __UHC_TARGET_JAZY__
+#if defined( __UHC_TARGET_JAZY__ ) || defined( __UHC_TARGET_JSCRIPT__ )
 foreign import prim primShowDoubleToPackedString :: Double -> PackedString
 #else
 foreign import prim primShowDouble :: Double -> String
@@ -1455,7 +1479,7 @@ instance Show Double where
     showsPrec   = primShowsDouble
 -----------------------------}
 instance Show Double where
-#ifdef __UHC_TARGET_JAZY__
+#if defined( __UHC_TARGET_JAZY__ ) || defined( __UHC_TARGET_JSCRIPT__ )
     show   = packedStringToString . primShowDoubleToPackedString
 #else
     show   = primShowDouble
@@ -1512,10 +1536,22 @@ doubleToRatio x
             | n>=0      = (round (x / fromInteger pow) * fromInteger pow) % 1
             | otherwise = fromRational (round (x * fromInteger denom) % denom)
                           where (m,n) = decodeFloat x
-                                n_dec :: Integer
-                                n_dec = ceiling (logBase 10 (encodeFloat 1 n :: Double))
+                                denom, pow, radix :: Integer
+                                radix = floatRadix x
+                                denom = radix ^ (-n)
+                                pow   = radix ^ n
+
+{-
+doubleToRatio :: Integral a => Double -> Ratio a   -- TODO: optimies fromRational (doubleToRatio x)
+doubleToRatio x
+            | n>=0      = (round (x / fromInteger pow) * fromInteger pow) % 1
+            | otherwise = fromRational (round (x * fromInteger denom) % denom)
+                          where (m,n) = decodeFloat x
+                                n_dec, denom, pow :: Integer
+                                n_dec = floor (logBase 10 (encodeFloat 1 n :: Double))
                                 denom = 10 ^ (-n_dec)
                                 pow   = 10 ^ n_dec
+-}
 
 instance Integral a => RealFrac (Ratio a) where
     properFraction (x:%y) = (fromIntegral q, r:%y)

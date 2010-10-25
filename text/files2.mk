@@ -267,7 +267,7 @@ $(TEXT_DOCMAIN_DRV_TWIKI) : %.twiki : %.ttex $(TEXT2TEXT)
 	  > $@
 
 $(TEXT_DOCMAIN_DRV_HTML) : %.html : %.ttex $(TEXT2TEXT)
-	$(TEXT2TEXT) --html --gen-header-numbering=yes $< \
+	$(TEXT2TEXT) --html $< \
 	  > $@
 
 $(TEXT_ALL_DOCLTX_GIFS): $(DOC_PREFIX)%.gif : $(FIGS_SRC_PREFIX)%.pdf $(TEXT_MKF)

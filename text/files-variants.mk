@@ -5,7 +5,8 @@ TEXT_DOC_VARIANTS			+= shuffle-doc text2text-doc \
 								ehc-technical-doc ehc-structure-doc ehc-user-doc ehc-library-doc ehc-jazy-doc \
 								build-system-doc \
 								getting-started-doc announce-doc release-history-doc \
-								roadmap-doc
+								roadmap-doc \
+								blog
 TEXT_PRIV_VARIANTS			+= flops06-ruler-paper flops06-ruler \
 								popl07-explimpl \
 								hw06-impred esop07-impred esop07-impred-tr \
@@ -54,7 +55,8 @@ TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 								HowToDoc HowToExperiment \
 								ReleaseHistory \
 								RoadMap \
-								ThePlan 
+								ThePlan \
+								Blog
 								
 
 # chunk view order for text variants, use shuffle hierarchy as crude variant mechanism
@@ -122,6 +124,7 @@ TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 # 61: doc: Jazy backend
 # 62: slides "UHC Internals" (AFP2010)
 # 63: slides UHC status
+# 64: doc: blog
 # 77: scratch (article format)
 
 TEXT_SHUFFLE_ORDER	+= \
@@ -175,6 +178,7 @@ TEXT_SHUFFLE_ORDER	+= \
 		39 < 49, \
 		39 < 50, \
 		39 < 52, \
+		39 < 64, \
 		54 < 13, \
 		54 < 27, \
 		54 < 31, \

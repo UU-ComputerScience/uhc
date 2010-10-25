@@ -97,7 +97,7 @@ isError  tn   = maybe True (const False)  (dataGamTagsOfTy tn @lhs.dataGam)
 %%% Construct code fragments based on FFI info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs export(ffiMkArgUnpack,ffiGrinMkArgUnpack)
+%%[(8 codegen) hs export(ffiMkArgUnpack)
 -- | make argument, i.e. wrap given argument name in proper introduction with annotation about what it is
 ffiMkArgUnpack
   :: EHCOpts
@@ -122,7 +122,9 @@ ffiMkArgUnpack
            | isJust (tyMbRecRow ty)         = mkVarI  argNm
            | tyIsFFIOpaque ty dataGam       = mkOpaqI argNm
            | otherwise                      = mkPtrI  argNm
+%%]
 
+%%[(8 codegen grin) hs export(ffiGrinMkArgUnpack)
 -- | make argument, specialization of ffiMkArgUnpack for GrinCode
 ffiGrinMkArgUnpack
   :: EHCOpts
@@ -139,7 +141,7 @@ ffiGrinMkArgUnpack
          argNm ty
 %%]
 
-%%[(8 codegen) hs export(ffiMkResPack,ffiGrinMkResPack)
+%%[(8 codegen) hs export(ffiMkResPack)
 -- | make result, i.e. wrap given argument name in proper adaption with annotation about what it is
 -- Note: 0-tuple is assumed to be Enumerable (change this here, and in the RTS, if the 0-tuple is to be regarded as a basis for extensible rows)
 ffiMkResPack
@@ -177,7 +179,9 @@ ffiMkResPack
            where isRec = isJust $ tyMbRecRow resTy
                  arity = length $ snd $ tyRecExts resTy
                  recNm = builtinRecNm arity
+%%]
 
+%%[(8 codegen grin) hs export(ffiGrinMkResPack)
 -- | make result, specialization of ffiMkResPack for GrinCode
 ffiGrinMkResPack
   :: EHCOpts
@@ -201,7 +205,7 @@ ffiGrinMkResPack
   where u x = GrExpr_Unit x GrType_None
 %%]
 
-%%[(8 codegen) export(ffiGrinMk)
+%%[(8 codegen grin) export(ffiGrinMk)
 -- | make ffi call, specifically for Grin
 ffiGrinMk
   :: EHCOpts
@@ -280,7 +284,7 @@ ffiMbIORes opts resTy
 %%% IO adaption of FFI call
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(98 codegen) hs export(ffiIOAdapt,ffiGrinIOAdapt,ffiCoreIOAdapt)
+%%[(98 codegen) hs export(ffiIOAdapt)
 -- | adapt type etc for IO ffi call
 ffiIOAdapt
   :: EHCOpts
@@ -307,7 +311,9 @@ ffiIOAdapt
                         = case tyMbRecExts iores of
                             Just (_,[]) -> mkUnitRes nmIgnoreRes
                             _           -> id
+%%]
 
+%%[(98 codegen grin) export(ffiGrinIOAdapt)
 -- | adapt type etc for IO ffi call, specialized for Grin
 ffiGrinIOAdapt
   :: EHCOpts
@@ -327,7 +333,9 @@ ffiGrinIOAdapt
   where unit2store :: GrExpr -> GrExpr
         unit2store (GrExpr_Seq e p (GrExpr_Unit x _))  =  GrExpr_Seq e p (GrExpr_Store x)
         unit2store e                                   =  error $ "ffiGrinIOAdapt: unit2store applied to non-unit " ++ show e
+%%]
 
+%%[(98 codegen) export(ffiCoreIOAdapt)
 -- | adapt type etc for IO ffi call, specialized for Core
 ffiCoreIOAdapt
   :: EHCOpts
@@ -340,8 +348,8 @@ ffiCoreIOAdapt
   = ffiIOAdapt
       opts
       mkHNm
-      (\nmIgnoreRes   r -> acoreLet1Plain nmIgnoreRes r $ acoreTup [])
-      (\nmState nmRes r -> acoreLet1Plain nmRes r $ acoreTup [acoreVar nmState,acoreVar nmRes])
+      (\nmIgnoreRes   r -> acoreLet1Strict nmIgnoreRes r $ acoreTup [])
+      (\nmState nmRes r -> acoreLet1Strict nmRes r $ acoreTup [acoreVar nmState,acoreVar nmRes])
       uniq iores
 %%]
 
@@ -349,7 +357,7 @@ ffiCoreIOAdapt
 %%% Evalution adaption of FFI call
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) export(ffiEvalAdapt,ffiGrinEvalAdapt,ffiCoreEvalAdapt)
+%%[(8 codegen) export(ffiEvalAdapt)
 -- | evaluate value etc for ffi call
 ffiEvalAdapt
   :: ((HsName,intro,Bool) -> e -> e)		-- construct arg w.r.t. eval need, and bind to intro
@@ -367,7 +375,9 @@ ffiEvalAdapt
           )
           (evalRes res)
           args
+%%]
 
+%%[(8 codegen grin) export(ffiGrinEvalAdapt)
 -- | evaluate value etc for ffi call, specialized for Grin
 ffiGrinEvalAdapt
   :: [(HsName,GrPatLam,Bool)]				-- arg name + introduction + eval need
@@ -377,7 +387,9 @@ ffiGrinEvalAdapt
   = ffiEvalAdapt
       (\(n,i,ev) e -> GrExpr_Seq (if ev then GrExpr_Eval n else GrExpr_Unit (GrVal_Var n) GrType_None) i e)
       (\(n,e,ev) -> if ev then GrExpr_Seq e (GrPatLam_Var n) (GrExpr_Eval n) else e)
+%%]
 
+%%[(8 codegen) export(ffiCoreEvalAdapt)
 -- | evaluate value etc for ffi call, specialized for Core
 ffiCoreEvalAdapt
   :: [(HsName,HsName,Bool)]				-- arg name + introduction + eval need
@@ -385,7 +397,7 @@ ffiCoreEvalAdapt
      -> CExpr
 ffiCoreEvalAdapt
   = ffiEvalAdapt
-      (\(n,i,ev) e -> (if ev then acoreLet1Strict else acoreLet1Plain) i (acoreVar n) e)
-      (\(n,e,ev)   -> if ev then acoreLet1Strict n e (acoreVar n) else e)
+      (\(n,i,ev) e -> (if ev then acoreLet1Strict                  else acoreLet1Plain) i (acoreVar n) e)
+      (\(n,e,ev)   ->  if ev then acoreLet1Strict n e (acoreVar n) else e             )
 
 %%]

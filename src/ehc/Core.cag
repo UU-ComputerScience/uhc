@@ -764,6 +764,9 @@ instance AbstractCore CExpr CMetaVal CBind CBindAspect CBindingsCateg CMetaBind 
   acoreBindcategMbRec CBindings_Rec     = Just CBindings_Rec
   acoreBindcategMbRec _                 = Nothing
 
+  acoreBindcategMbStrict CBindings_Strict  = Just CBindings_Strict
+  acoreBindcategMbStrict _                 = Nothing
+
   acorePatMbCon (CPat_Con tg r fs)		= Just (tg,r,fs)
   acorePatMbCon _                 		= Nothing
 

@@ -2,6 +2,7 @@
    what    : Testing CPUTime
    expected: ok
    platform: run time depends on platform   
+   constraints: exclude-if-jscript
 ---------------------------------------------------------------------------------------- -}
 
 module Main where

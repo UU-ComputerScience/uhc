@@ -184,6 +184,9 @@ class AbstractCore  expr metaval bind bindaspect bindcateg metabind ty pat patre
   -- | is bindcateg recursive?
   acoreBindcategMbRec :: bindcateg -> Maybe bindcateg
 
+  -- | is bindcateg strict?
+  acoreBindcategMbStrict :: bindcateg -> Maybe bindcateg
+
   -- | is pat a con?
   acorePatMbCon :: pat -> Maybe(CTag,patrest,[patfld])
 
@@ -476,10 +479,15 @@ acoreLetMerge :: (Eq bcat, AbstractCore e m b basp bcat mbind t p pr pf a) => Bo
 acoreLetMerge merge c bs e
   = if null bs
     then e
-    else case acoreExprMbLet e of
-           Just (c',bs',e') | merge && c' == c
-             -> mk c (bs++bs') e'
-           _ -> mk c bs e
+    else case acoreBindcategMbStrict c of
+           {-
+           Just _
+             -> 
+           -}
+           _ -> case acoreExprMbLet e of
+                  Just (c',bs',e') | merge && c' == c
+                    -> mk c (bs++bs') e'
+                  _ -> mk c bs e
   where mk c bs e
           = case acoreBindcategMbRec c of
               Just c -> acoreLetBase c bs e

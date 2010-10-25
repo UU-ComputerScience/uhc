@@ -2,6 +2,7 @@
    what    : Working with directories
    expected: ok
    platform: environment dependent output
+   constraints: exclude-if-jscript
 ---------------------------------------------------------------------------------------- -}
 
 module Main where

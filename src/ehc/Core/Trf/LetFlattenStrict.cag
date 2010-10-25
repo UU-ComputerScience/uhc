@@ -1,0 +1,164 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Flatten nested, but consecutive strict lets
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[doesWhat doclatex
+Flatten nested, but consecutive strict lets.
+For example:
+
+\begin{verbatim}
+let! x = let! y = v1
+         in   v2
+in   ..
+\end{verbatim}
+
+to
+
+\begin{verbatim}
+let! y = v1
+in
+let! x = v2
+in   ..
+\end{verbatim}
+
+Limitation: only works for 1 CBindAspect_Bind, if more aspects are defined the transformation is not done.
+
+%%]
+
+%%[(8 codegen) hs module {%{EH}Core.Trf.LetFlattenStrict} import({%{EH}Base.Common},{%{EH}Core},{%{EH}Ty})
+%%]
+
+%%[(8 codegen) hs import({%{EH}AbstractCore})
+%%]
+
+%%[(8 codegen) hs import(Data.Maybe,qualified EH.Util.FastSeq as Seq)
+%%]
+
+%%[(8 codegen).WRAPPER ag import({Core/AbsSyn})
+WRAPPER CodeAGItf
+%%]
+
+%%[(99 codegen)
+-- PRAGMA strictcase
+PRAGMA nocycle
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell itf
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs export(cmodTrfLetFlattenStrict)
+cmodTrfLetFlattenStrict :: CModule -> CModule
+cmodTrfLetFlattenStrict cmod
+  =  let  t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf cmod)) Inh_CodeAGItf
+     in   cTrf_Syn_CodeAGItf t
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Determining where chain of strict lets starts and ends
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Chain starts with a strict binding, and only is relevant for nested bindings.
+
+%%[(8 codegen)
+ATTR CExpr AllBind [ | isStrictChain: Bool | ]
+
+SEM CExpr
+  | Let         loc         .   isStrictChain   =   @categ == CBindings_Strict
+                            .   isFirstInChain  =   @isStrictChain && not @lhs.isStrictChain
+                            .   isLaterInChain  =   @isStrictChain &&     @lhs.isStrictChain
+                binds       .   isStrictChain   =   @isStrictChain
+                body        .   isStrictChain   =   @isStrictChain && @binds.isStrictChain
+                lhs         .   isStrictChain   =   @isStrictChain && @body.isStrictChain
+  | * - Let Ann lhs         .   isStrictChain   =   @lhs.isStrictChain
+
+SEM CModule CAlt MbCExpr CPatFld
+  | *           loc         .   isStrictChain   =   False
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Transformation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AllCodeNT [ | | cTrf: SELF ]
+ATTR CodeAGItf [ | | cTrf: CModule ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Split into lifted bindings & remaining expr
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs
+type Lift   = (Seq.Seq CBind,CExpr)
+type MbLift = Maybe Lift
+%%]
+
+%%[(8 codegen)
+ATTR CExpr [ | | mbLift: MbLift ]
+
+SEM CExpr
+  | Let         lhs         .   mbLift          =   if @isLaterInChain
+                                                    then Just (@letbinds, @body.flatExpr)
+                                                    else Nothing
+  | * - Let     lhs         .   mbLift          =   Nothing
+%%]
+
+%%[(8 codegen)
+ATTR CExpr [ | | flatExpr: CExpr ]
+ATTR CExpr AllBindOnly [ | | binds USE {`Seq.union`} {Seq.empty}: {Seq.Seq CBind} ]
+
+SEM CExpr
+  | Let         loc         .   letbinds        =   @binds.binds `Seq.union` @body.binds
+                lhs         .   (binds,flatExpr)=   if @isLaterInChain
+                                                    then (@letbinds,@body.flatExpr)
+                                                    else (Seq.empty,@cTrf)
+  | * - Let     lhs         .   (binds,flatExpr)=   (Seq.empty,@cTrf)
+%%]
+
+%%[(8 codegen)
+ATTR AllBindAspect [ | | hasNonPlainBinds USE {||} {False} : Bool ]
+
+SEM CBindAspect
+  | * - Bind    lhs         .   hasNonPlainBinds=   True
+%%]
+
+%%[(8 codegen)
+ATTR AllBindAspect [ | | aspLiftL USE {++} {[]}: {[Lift]} ]
+
+SEM CBindAspect
+  | Bind        lhs         .   aspLiftL        =   maybe [] (:[]) @expr.mbLift
+%%]
+
+%%[(8 codegen)
+
+SEM CBind
+  | Bind        lhs         .   binds
+                                                =   case @bindAspects.aspLiftL of
+                                                      [(flatBinds,flatExpr)] | not @bindAspects.hasNonPlainBinds
+                                                        -> flatBinds `Seq.union` Seq.singleton (acoreBind1Cat CBindings_Strict @nm flatExpr)
+                                                      _ -> Seq.singleton @cTrf
+%%]
+
+%%[(8 codegen)
+SEM CExpr
+  | Let         lhs         .   cTrf            =   if @isFirstInChain
+                                                    then foldr (\b e -> CExpr_Let @categ [b] e) @body.flatExpr $ Seq.toList @letbinds
+                                                    else @cTrf
+%%]
+SEM CExpr
+  | Let         loc         .   cTrf            =   if @isFirstInChain
+                                                    then foldr (\b e -> CExpr_Let @categ [b] e) @body.flatExpr $ Seq.toList @letbinds
+                                                    else CExpr_Let @categ @binds.cTrf @body.cTrf
+SEM CExpr
+  | Let         loc         .   cTrf            =   let bs | @isFirstInChain = Seq.toList @letbinds
+                                                           | otherwise       = @binds.cTrf
+                                                        le | @isStrictChain  = foldr (\b e -> CExpr_Let @categ [b] e) @body.flatExpr bs
+                                                           | otherwise       = CExpr_Let @categ @binds.cTrf @body.cTrf
+                                                    in  le -- CExpr_Let @categ b @body.flatExpr
+
