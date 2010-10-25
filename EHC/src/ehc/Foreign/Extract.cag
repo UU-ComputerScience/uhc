@@ -27,16 +27,20 @@ WRAPPER ForeignAGItf
 %%]
 
 %%[90 hs export(ForeignExtraction(..))
+-- | all relevant info for all calling conventions is gathered in one place, for backends to choose from
 data ForeignExtraction
   = ForeignExtraction
-      {	forextractIncludes		:: ![String]
-      ,	forextractEnt			:: !String
-      ,	forextractMbKnownPrim	:: !(Maybe KnownPrim)
-      ,	forextractOptIsStatic	:: !Bool
-      ,	forextractOptIsPtr		:: !Bool
+      { forextractIncludes      :: ![String]            -- ccall: include files
+      , forextractEnt           :: !String              -- all: name of function/...
+      , forextractMbKnownPrim   :: !(Maybe KnownPrim)   -- prim: known semantics
+      , forextractMbThisArgNr   :: !(Maybe Int)         -- jscript: which arg acts as this/receiver of call
+      , forextractMbIndexArgNr  :: !(Maybe Int)         -- jscript: combination with indexing an array
+      , forextractOptIsStatic   :: !Bool                -- ccall: static
+      , forextractOptIsPtr      :: !Bool                -- ccall: pointer
+      , forextractForeignExpr	:: !ForeignExpr			-- the AST for building the FFI call in terms of the target language (20101020 AD: soon replaces flags above)
       }
 
-emptyForeignExtraction = ForeignExtraction [] "??" Nothing False False
+emptyForeignExtraction = ForeignExtraction [] "??" Nothing Nothing Nothing False False (ForeignExpr_Call ForeignExpr_Ent)
 %%]
 
 %%[90 hs export(foreignEntExtract)
@@ -49,25 +53,43 @@ foreignEntExtract ty
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Foreign entity
+%%% Foreign entity, extraction of info from calling convention specific AST
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[90
 ATTR ForeignAGItf AllForeign [ | | extr: ForeignExtraction ]
 
+SEM JScriptCall
+  | Id          lhs     .   extr    =   emptyForeignExtraction
+                                            { forextractEnt             = @nm
+                                            {-
+                                            , forextractOptIsPtr        = @asPointer
+                                            , forextractMbThisArgNr     = @mbThisArgNr
+                                            , forextractMbIndexArgNr	= @mbIndexArgNr
+                                            -}
+                                            {-
+                                            -}
+                                            , forextractForeignExpr		= maybe (forextractForeignExpr emptyForeignExtraction) id @mbForeignExpr
+                                            }
+
 SEM PrimCall
-  | Id          lhs     .   extr    =   emptyForeignExtraction {forextractEnt = @nm, forextractMbKnownPrim = @mbKnownPrim}
+  | Id          lhs     .   extr    =   emptyForeignExtraction
+                                            { forextractEnt             = @nm
+                                            , forextractMbKnownPrim     = @mbKnownPrim
+                                            }
 
 SEM PlainCall
-  | Id          lhs     .   extr    =   emptyForeignExtraction {forextractEnt = @nm}
+  | Id          lhs     .   extr    =   emptyForeignExtraction
+                                            { forextractEnt             = @nm
+                                            }
 
 SEM CCall
-  | Id          lhs     .   extr    =   ForeignExtraction
-  											(maybeToList @mbInclude)
-  											@nm
-  											Nothing
-  											@isStatic
-  											@asPointer
+  | Id          lhs     .   extr    =   emptyForeignExtraction
+                                            { forextractIncludes        = maybeToList @mbInclude
+                                            , forextractEnt             = @nm
+                                            , forextractOptIsStatic     = @isStatic
+                                            , forextractOptIsPtr        = @asPointer
+                                            }
   | * - Id      lhs     .   extr    =   emptyForeignExtraction
 %%]
 

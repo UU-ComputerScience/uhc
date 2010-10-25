@@ -1,6 +1,7 @@
 {- ----------------------------------------------------------------------------------------
    what    : yield prog name + args
    expected: ok, result may vary on how program is invoked from testing environment
+   constraints: exclude-if-jscript
 ---------------------------------------------------------------------------------------- -}
 
 module GetProgName where

@@ -1,0 +1,635 @@
+%%[main
+%%@Blog.entry20101020.javascript
+%%]
+
+%%[entry20101020.javascript doclatex
+My first blog ever, and for a Haskell oriented blog a Javascript flavored topic seemed to be a good start @:-)@. I intend to spend time on my UHC adventures: internals, problems, solutions, open questions, etc etc. As I have been working on a Javascript backend for UHC it thus fits quite well here.
+
+I started making a Javascript backend after ICFP 2010. A couple of people I spoke to at the ICFP (and already before) had expressed it would be a good idea to do so. There seem to be various attempts to do something functional with Javascript, either as a Haskell compiler backend (\href{http://www.haskell.org/haskellwiki/Yhc/Javascript}{YHC}), or as a library (\href{http://osteele.com/sources/javascript/functional/}{Functional Javascript}), or as a Haskell interpreter written in Javascript (\href{http://github.com/johang88/haskellinjavascript}{haskellinjavascript}). Regretfully, none of these seem to be either alive or mature. Perhaps there is more.
+
+For this entry, I'll explain the interpreter for which code is generated, and how it interacts with Javascript. To make it into a full Haskell to Javascript compiler more than that is required, but I'll go into the issues and todos in a followup blog entry.
+
+\section{Javascript interpreter}
+Functional programming in Haskell (obviously) is about |functions|, lazy |applications| of those functions, and forcing |evaluation| when we are interested in the actual computed value of applications. So those are the three ingredients modeled by objects in Javascript. A function @Fun@ object is constructed given a Javascript function @fun@, and can be applied to arbitrary Javascript values:
+
+\begin{pre}
+function Fun( fun ) { ...
+}
+
+Fun.prototype = {
+    applyN : function ( args ) ...
+    needsNrArgs : function() ...
+}
+\end{pre}
+
+The main difference between strict and lazy functional languages is that the delay of a an actual computation must be represented explicitly, usually this is done by remembering the not yet applied function and its arguments (a closure, thunk). Here a Javascript apply object is used, in two variations, one for undersaturated function applications still lacking a known number of arguments (@AppLT@), and one for the applications of which we do not know under-, over-, or exactly right saturation (@App@):
+
+\begin{pre}
+AppLT.prototype = {
+    applyN : function ( args ) ...
+    needsNrArgs : function() ...
+}
+
+function AppLT( fun, args ) { ...
+}
+
+App.prototype = {
+    applyN : function ( args ) ...
+}
+
+function App( fun, args ) { ...
+}
+
+\end{pre}
+
+The last ingredient is a function @eval@, necessary to force evaluation of an application:
+
+\begin{pre}
+function eval( x ) ...
+\end{pre}
+
+So, let's look at these in more detail, beginning with arbitrary, lazy, application. A design choice is to be able to arbitrarily mix Javascript values and interpreter values like evaluated and not yet evaluated applications. In order to distinguish these, the interpreter maintained values have a field @eOrV@, short for ``evaluator or value'', which either holds a Javascript function to |evaluate| a not yet evaluated application, or the resulting |value| of this computation:
+
+\begin{pre}
+function App( fun, args ) {
+    this.eOrV = function() {
+        var x = ( fun.applyN( args ) ) ;
+        this.eOrV = x ;
+        return x ;
+    }
+}
+\end{pre}
+
+The above constructor for an application takes a function and its arguments. The function @fun@ can be a @Fun@, @AppLT@, or another @App@, the arguments @args@ are represented by a Javascript @Array@ holding arbitrary values. The @App@ construction piggybacks on Javascript closures by building a parameterless Javascript function to force evaluation. This function is put in the @eOrV@ field, which itself is overwritten when invoked: long live untyped interpreted languages @:-)@! An @App@ thus represents closures; forcing an @App@ to evaluate (to WHNF) is done by the following (yet incorrect version of) @eval@:
+
+\begin{pre}
+// Incorrect version of eval:
+function eval( x ) {
+    if ( typeof x.eOrV == 'function' ) {
+        x = x.eOrV() ;
+    } else if ( x.eOrV ) {
+        x = x.eOrV ;
+    }
+    return x ;
+}
+\end{pre}
+
+This not yet correct version of @eval@ (two reasons why..) inspects the @eOrV@ field. If a function, it simply invokes it, if not, it returns the value. Internally, @applyN@ is used to actually (i.e. strictly) do the application. Each of the objects used by the interpreter knows how to deal with this. For an @App@ we first need to evaluate the @App@ closure (i.e. compute the delayed application), then apply it directly to the newly given arguments. However, we do not do the last part directly as this may lead us into too deep recursion, in particular tail recursion! Instead a new anonymous Javascript object is returned holding as its only field the function which will do this, thus allowing to return and free some of the Javascript stack:
+
+\begin{pre}
+App.prototype = {
+    applyN : function ( args ) {
+        var fun = eval(this) ;
+        return {
+            eOrV : function() {
+                return fun.applyN( args ) ;
+            } } ;
+    } 
+}
+\end{pre}
+
+It now has become the responsibility of the caller of @applyN@ to continue with the evaluation, in our case the @eval@ function. The @eval@ function has to repeatedly test whether still progress can be made, the correct version is as follows:
+
+\begin{pre}
+function eval( x ) {
+    while ( x && x.eOrV ) {
+        if ( typeof x.eOrV == 'function' ) {
+            x = x.eOrV() ;
+        } else {
+            x = x.eOrV ;
+        }
+    }
+    return x ;
+}
+\end{pre}
+
+Additionally it also checks whether @x@ and @x.eOrV@ are defined before actually using them. Plain Javascript values pass unmodified through @eval@, thus allowing interpreter and Javascript values to coexist.
+
+When @applyN@ is invoked on an @App@ it actually does not much more than delegate the real work to @Fun@ and @AppLT@, which both deal with application by consuming the right amount of arguments to achieve a saturated function call. A @Fun@ knows how many arguments it requires, this can be extracted from Javascript function objects:
+
+\begin{pre}
+function Fun( fun ) {
+    this.needs = fun.length ;
+    this.fun = fun ;
+}
+\end{pre}
+
+When @applyN@ is invoked on a @Fun@ with too few arguments, an @AppLT@ is constructed, thus remembering the partial unsaturated application. When given exactly enough it just calls the function, and when given more arguments than required, it slices off the right amount of arguments for calling the function, and then continues in the same way as @App@ did by returning a Javascript continuation object for the remainder of the application.
+
+\begin{pre}
+Fun.prototype = {
+    applyN : function ( args ) {
+        if ( args.length < this.needs ) {
+            return new AppLT( this, args ) ;
+        } else if ( args.length == this.needs ) {
+            var x = this.fun.apply( null, args ) ;
+            return x ;
+        } else {
+            var fun = eval( this.fun.apply( null, args.slice( 0, this.needs ) ) ) ;
+            var remargs = args.slice( this.needs ) ;
+            return {
+                eOrV : function() {
+                    return fun.applyN( remargs ) ;
+                } } ;
+        }
+    } ,
+    needsNrArgs : function() {
+        return this.needs ;
+    } ,
+}
+\end{pre}
+
+Finally, undersaturated applications are encoded with @AppLT@ objects. Its implementation resembles @App@ and @Fun@, so the code is just here for completeness:
+
+\begin{pre}
+AppLT.prototype = {
+    applyN : function ( args ) {
+        var needs = this.needsNrArgs() ;
+        if ( args.length < needs ) {
+            return new AppLT( this, args ) ;
+        } else if ( args.length == needs ) {
+            return this.fun.applyN( this.args.concat( args ) ) ;
+        } else {
+            var fun = eval( this.applyN( args.slice( 0, needs ) ) ) ;
+            return {
+                eOrV : function() {
+                    return fun.applyN( args.slice( needs ) ) ;
+                } } ;
+        }
+    } ,
+    needsNrArgs : function() {
+        return this.fun.needsNrArgs() - this.args.length ;
+    } ,
+}
+function AppLT( fun, args ) {
+    this.fun = fun ;
+    this.args = args ;
+}
+\end{pre}
+
+
+This is it! We can now do some real Haskell programming, although it is still manual labor.
+
+\section{Using the interpreter}
+
+As an example, a version of the primes sieve is used:
+
+\begin{pre}
+-- Haskell version
+module Sieve where
+
+notMultiple x y = not ((y `div` x) * x == y)
+sieve (h:t) = h : sieve (filter (notMultiple h) t)
+
+main :: IO ()
+main = putStrLn (show (last (take 500 (sieve [2..]))))
+\end{pre}
+
+Without a @Prelude@ all functions have to be manually encoded, for example with the aid of helper function @fun@ multiplication is defined as follows:
+
+\begin{pre}
+function fun(f) { return new Fun(f) ; }
+
+var mul = fun( function(a,b) {
+    return eval(a) * eval(b) ;
+} ) ;
+\end{pre}
+
+Multiplication is a primitive and requires its operands to be evaluated.
+
+For manipulating lazy lists a couple of additional helper functions come in handy:
+
+\begin{pre}
+function app1(f,a  ) { return new App(f,[a  ]) ; }
+function app2(f,a,b) { return new App(f,[a,b]) ; }
+
+function eval1(f,a  ) { return eval( f.applyN([a  ]) ) ; }
+function eval2(f,a,b) { return eval( f.applyN([a,b]) ) ; }
+\end{pre}
+
+@app1@ (and variants) construct lazy application nodes, @eval1@ (and variants) apply arguments and enforce evaluation.
+
+Lists are encoded as arrays, with a tag in front:
+
+\begin{pre}
+function cons(x,y) { return [0,x,y]   ; }
+var nil = [1] ;
+function head(l)   { return l[1]      ; }
+function tail(l)   { return l[2]      ; }
+function isNil(x)  { return x[0] == 1 ; }
+\end{pre}
+
+The above functions already assume that their arguments are already evaluated. With these functions @filter@ can now be implemented:
+
+\begin{pre}
+var filter = fun( function(a,b) {
+	var list = eval(b) ;
+	var test = eval1( a, head(list) ) ;
+	if ( test ) {
+		return cons( head(list), app2( filter, a, tail(list) ) ) ;
+	} else {
+		return app2( filter, a, tail(list) ) ;
+	}
+} ) ;
+\end{pre}
+
+The equivalent of the infinite lazy list \verb|[a..]| is the function @from@:
+
+\begin{pre}
+var from = fun( function(a) {
+    return cons( a, app1( from, app2( add, a, 1 ) ) ) ;
+} ) ;
+\end{pre}
+
+Other function definitions are 'just like that', i.e. predictably follow the same ideas. We then end with the equivalent of @sieve@ and its application:
+
+\begin{pre}
+var sieve = fun( function(a) {
+    var list = eval(a) ;
+    return cons( head(list)
+               , app1( sieve
+                     , app2( filter
+                           , app1( notMultiple2, head(list) )
+                           , tail(list)
+               )     )     ) ;
+} ) ;
+
+var mainSieve = app2( take, 500, app1( sieve, app1( from, 2 ) ) ) ;
+\end{pre}
+
+Finally, we just show the last element:
+
+\begin{pre}
+function show( x ) {
+    var x = eval(x) ;
+    document.write( eval(x) ) ;
+}
+
+show( app1( last, mainSieve ) ) ;
+\end{pre}
+
+So, is this is all there is to functional programming in Javascript? Regretfully not, as a Haskell compiler needs to deal with foreign function interfaces in general, libraries, deployment, IO interfacing, etc etc. But that is for the next blog entry...
+
+In the meantime the source code for this entry can be found on \verb|git@github.com:atzedijkstra/javascript-runtime-for-UHC.git|
+%%]
+
+%%[test
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[interpreter
+function eval( x ) {
+    while ( x && x.eOrV ) {
+        if ( typeof x.eOrV == 'function' ) {
+            x = x.eOrV() ;
+        } else {
+            x = x.eOrV ;
+        }
+    }
+    return x ;
+}
+
+// Apply node, not enough args
+AppLT.prototype = {
+    applyN : function ( args ) {
+        var needs = this.needsNrArgs() ;
+        if ( args.length < needs ) {
+            return new AppLT( this, args ) ;
+        } else if ( args.length == needs ) {
+            return this.fun.applyN( this.args.concat( args ) ) ;
+        } else {
+            var fun = eval( this.applyN( args.slice( 0, needs ) ) ) ;
+            return {
+                eOrV : function() {
+                    return fun.applyN( args.slice( needs ) ) ;
+                } } ;
+        }
+    } ,
+    needsNrArgs : function() {
+        return this.fun.needsNrArgs() - this.args.length ;
+    } ,
+}
+function AppLT( fun, args ) {
+    // this.needs = fun.needs - args.length ;
+    this.fun = fun ;
+    this.args = args ;
+}
+
+// Apply node, unknown how much is missing or too much
+App.prototype = {
+    applyN : function ( args ) {
+        var fun = eval(this) ;
+        return {
+            eOrV : function() {
+                return fun.applyN( args ) ;
+            } } ;
+    } ,
+}
+function App( fun, args ) {
+    this.eOrV = function() {
+        // var x = eval( fun.applyN( args ) ) ;
+        var x = ( fun.applyN( args ) ) ;
+        this.eOrV = x ;
+        return x ;
+    }
+}
+
+// Function node
+Fun.prototype = {
+    applyN : function ( args ) {
+        if ( args.length < this.needs ) {
+            return new AppLT( this, args ) ;
+        } else if ( args.length == this.needs ) {
+            var x = this.fun.apply( null, args ) ;
+            return x ;
+        } else {
+            var fun = eval( this.fun.apply( null, args.slice( 0, this.needs ) ) ) ;
+            var remargs = args.slice( this.needs ) ;
+            return {
+                eOrV : function() {
+                    return fun.applyN( remargs ) ;
+                } } ;
+        }
+    } ,
+    needsNrArgs : function() {
+        return this.needs ;
+    } ,
+}
+function Fun( fun ) {
+    this.needs = fun.length ;
+    this.fun = fun ;
+}
+
+// lazy application wrappers
+function _a0_(f) {
+    return new App(f,[]) ;
+}
+
+// indirection
+function ind() {
+    return new App(function(){throw "ind: attempt to prematurely evaluate indirection";},[]) ;
+}
+
+function indset_(i,x) {
+    i.eOrV = x ;
+}
+
+//[8
+//]
+// function construction wrappers
+function fun(f) {
+    return new Fun(f) ;
+}
+
+//[8
+//]
+// strict application wrappers
+function eval1(f,a) {
+    return eval( f.applyN([a]) ) ;
+}
+
+function eval2(f,a,b) {
+    return eval( f.applyN([a,b]) ) ;
+}
+
+function _e3_(f,a,b,c) {
+    return eval( f.applyN([a,b,c]) ) ;
+}
+
+function _e4_(f,a,b,c,d) {
+    return eval( f.applyN([a,b,c,d]) ) ;
+}
+
+function _e5_(f,a,b,c,d,e) {
+    return eval( f.applyN([a,b,c,d,e]) ) ;
+}
+
+function _eN_(f,a) {
+    return eval( f.applyN(a) ) ;
+}
+
+//[8
+// lazy application wrappers
+function _a0_(f) {
+    return new App(f,[]) ;
+}
+//]
+
+function app1(f,a) {
+    return new App(f,[a]) ;
+}
+
+function app2(f,a,b) {
+    return new App(f,[a,b]) ;
+}
+
+function _a3_(f,a,b,c) {
+    return new App(f,[a,b,c]) ;
+}
+
+function _a4_(f,a,b,c,d) {
+    return new App(f,[a,b,c,d]) ;
+}
+
+function _a5_(f,a,b,c,d,e) {
+    return new App(f,[a,b,c,d,e]) ;
+}
+
+function _aN_(f,a) {
+    return new App(f,a) ;
+}
+
+//[8
+// indirection
+function ind() {
+    return new App(function(){throw "ind: attempt to prematurely evaluate indirection";},[]) ; 
+}
+
+function indset_(i,x) {
+    i.eOrV = x ;
+}
+//]
+
+// setup
+function init() {
+}
+
+function cons(x,y) { return [0,x,y]; }
+function head(l) { return l[1]; }
+function tail(l) { return l[2]; }
+var nil = [1] ;
+function isNil(x) { return x[0] == 1 ; }
+
+
+function show( x ) {
+    var x = eval(x) ;
+    document.write( ""+eval(x) ) ;
+}
+
+function showList( l ) {
+    var list = eval(l) ;
+    switch (list[0]) {
+        case 0 :
+            document.write( eval(head(list)) + ":" ) ;
+            showList( tail(list) ) ;
+            break ;
+        case 1 :
+            document.write( "[]" ) ;
+            break ;
+    }
+}
+
+// test: sieve
+function testSieve() {
+    var id = fun( function(a) {
+        // trace( "id: " + a ) ;
+        return a ;
+    } ) ;
+    var even = fun( function(a) {
+        // return _eval_(a[0]) % 2 == 0 ;
+        return app2( eq, app2( mod, a, 2 ), 0 ) ;
+    } ) ;
+    var eq = fun( function(a,b) {
+        return eval(a) == eval(b) ;
+    } ) ;
+    var ne = fun( function(a,b) {
+        return eval(a) != eval(b) ;
+    } ) ;
+    var add = fun( function(a,b) {
+        return eval(a) + eval(b) ;
+    } ) ;
+    var sub = fun( function(a,b) {
+        return eval(a) - eval(b) ;
+    } ) ;
+    var mul = fun( function(a,b) {
+        return eval(a) * eval(b) ;
+    } ) ;
+    var div = fun( function(a,b) {
+        return Math.floor ( eval(a) / eval(b) ) ;
+    } ) ;
+    var mod = fun( function(a,b) {
+        return ( eval(a) % eval(b) ) ;
+    } ) ;
+    var from = fun( function(a) {
+        return cons( a, app1( from, app2( add, a, 1 ) ) ) ;
+    } ) ;
+    var last = fun( function(a) {
+        var list = eval(a) ;
+        switch (list[0]) {
+            case 0 :
+                var list2 = eval(tail(list)) ;
+                switch (list2[0]) {
+                    case 0 :
+                        return app1( last, tail(list) ) ;
+                    case 1 :
+                        return head(list) ;
+                }
+            case 1 :
+                return undefined ;
+        }
+    } ) ;
+    var take = fun( function(a,b) {
+        var len  = eval(a) ;
+        var list = eval(b) ;
+        if ( len <= 0 || isNil(list) ) {
+            return nil ;
+        } else {
+            return cons( head(list), app2( take, app2( sub, len, 1 ), tail(list) ) ) ;
+        }
+    } ) ;
+    var filter = fun( function(a,b) {
+        var list = eval(b) ;
+        var test = eval1( a, head(list) ) ;
+        if ( test ) {
+            return cons( head(list), app2( filter, a, tail(list) ) ) ;
+        } else {
+            return app2( filter, a, tail(list) ) ;
+        }
+    } ) ;
+    var notMultiple = fun( function(a,b) {
+        return app2( ne, app2( mul, app2( div, b, a), a ), b ) ;
+    } ) ;
+    var notMultiple2 = fun( function(a,b) {
+        var x = eval(a) ;
+        var y = eval(b) ;
+        return (Math.floor(y / x) * x) != y ;
+    } ) ;
+    var sieve = fun( function(a) {
+        var list = eval(a) ;
+        return cons( head(list), app1( sieve, app2( filter, app1( notMultiple2, head(list) ), tail(list) ) ) ) ;
+    } ) ;
+    var sieve2 = fun( function(nmz,a) {
+        var list = eval(a) ;
+        return cons( head(list), app2( sieve2, app1( id, nmz ), app2( filter, app1( nmz, head(list) ), tail(list) ) ) ) ;
+    } ) ;
+    var mainSieve = app2( take, 1000, app1( sieve, app1( from, 2 ) ) ) ;
+    var mainSieve2 = app2( take, 500, app2( sieve2, app1( id, notMultiple2 ), app1( from, 2 ) ) ) ;
+    
+    // running it...
+    evalCounter = 0 ;
+    var d = new Date() ;
+    var t1 = d.getTime() ;
+    // showList( mainSieve ) ;
+    show( app1( last, mainSieve ) ) ;
+    d = new Date() ;
+    var t2 = d.getTime() - t1 ;
+    document.write("<hr/>time= " + t2 + " ms" + ((evalCounter>0) ? ", nreval= " + evalCounter + ", ms/ev= " + (t2/evalCounter) : "") + "<br/>") ;
+}
+
+function testMisc()  {
+    trace("load & init ok") ;
+    var plus = fun( function(a,b){return eval(a)+eval(b);}) ;
+    trace("plus: " + plus) ;
+    var inc1 = fun( function(a){trace("inc: " + a) ; var x = eval(a) ; return x+1;}) ;
+    trace("inc1: " + inc1) ;
+    var inc2 = plus.applyN([10]) ;
+    trace("inc2: " + inc2) ;
+    var two1 = 2 ;
+    // var two2 = new AppN_WHNF(2) ;
+    var two3 = new App(new Fun(0,function(){return 2;}),[]) ;
+    var arr = [two1] ;
+    // trace("two2: " + two2) ;
+    trace("two3: " + two3) ;
+    trace("two3 eval: " + eval(two3)) ;
+    trace("two3: " + two3) ;
+    trace("two3 eval: " + eval(two3)) ;
+    trace("arr: " + arr) ;
+    var x1 = inc2.applyN( arr ) ;
+    trace("inc 2: " + x1) ;
+    var x2 = new App( inc2, arr ) ;
+    trace("inc del 2: " + x2) ;
+    trace("inc del 2 eval: " + eval(x2)) ;
+}
+
+function tryOut() {
+    var f = function(a,b) {} ;
+    var l = cons(1,nil) ;
+    // trace(ToPropertyDescriptor(f)) ;
+    // trace(ToPropertyDescriptor(Function)) ;
+    // trace(ToPropertyDescriptor("a")) ;
+    // trace(ToPropertyDescriptor(String)) ;
+    trace("f "+f.length) ;
+}
+
+function main() {
+    init() ;
+    // testMisc() ;
+    // tryOut() ;
+    testSieve() ;
+}
+%%]
+

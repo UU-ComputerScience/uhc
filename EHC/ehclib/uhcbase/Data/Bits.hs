@@ -263,7 +263,9 @@ instance Bits Int where
     shiftR                 = primShiftRightInt
     rotateL                = primRotateLeftInt
     rotateR                = primRotateRightInt
-#ifdef __UHC_TARGET_BC__
+#if defined( __UHC_TARGET_JSCRIPT__ )
+    bitSize  _             = 31 -- for now...
+#elif defined( __UHC_TARGET_BC__ )
     bitSize _              = SIZEOF_HSINT*8 - BITSIZEOF_WORDTAG
 #else
     bitSize _              = SIZEOF_HSINT*8

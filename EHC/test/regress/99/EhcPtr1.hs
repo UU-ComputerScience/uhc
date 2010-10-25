@@ -2,6 +2,7 @@
    what    : EHC.Ptr test, partial impl for Foreign.Ptr
    expected: ok
    platform: word size dependent
+   constraints: exclude-if-jscript
 ---------------------------------------------------------------------------------------- -}
 
 module EhcPtr1 where

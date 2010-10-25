@@ -659,6 +659,9 @@ instance AbstractCore Expr MetaVal ValBind ValBind ValBindCateg MetaBind Ty Pat 
   acoreBindcategMbRec ValBindCateg_Rec  = Just ValBindCateg_Rec
   acoreBindcategMbRec _                 = Nothing
 
+  acoreBindcategMbStrict ValBindCateg_Strict  = Just ValBindCateg_Strict
+  acoreBindcategMbStrict _                    = Nothing
+
   acorePatMbCon (Pat_Con tg r fs)		= Just (tg,r,fs)
   acorePatMbCon _                 		= Nothing
 

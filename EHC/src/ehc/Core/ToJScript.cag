@@ -261,7 +261,7 @@ SEM CExpr
                                                         where (gettag)
                                                                  = case tag of
                                                                      CTagRec         -> ( J.Expr_Str "*** ERR GETTAG ***" )
-                                                                     CTag _ _ _ _ _  -> ( J.Expr_Sel @expr.js nmTag
+                                                                     CTag _ _ _ _ _  -> ( J.Expr_Sel @expr.js (jsVar nmTag)
                                                                                         )
                                                       (Scrutinee_Other x : _)
                                                         -> panic ("Core.ToJScript.CExpr.Case.Scrutinee_Other: " ++ x ++ " : not yet implemented")
@@ -454,7 +454,7 @@ ATTR CExpr [ | | jsArgFunL: {[J.Expr]} ]
 
 SEM CExpr
   | App         loc         .   jsArgFunL   =   @argUnpackWrap @arg.js : @func.jsArgFunL
-  | * - App Ann lhs         .   jsArgFunL   =   [@js]
+  | * - App     lhs         .   jsArgFunL   =   [@js]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -638,7 +638,11 @@ SEM CExpr
                                                                _                  -> jsApp f as
                                                     else J.Expr_Str "*** ERR APP ***"
   | FFI         loc         .   (mkArgsJS,mkResJS,mkFFI)
-                                                =   ffiJScriptMkCall @lhs.opts False @impEntNm @argMbConL @resMbCon
+                                                =   ffiJScriptMkCall
+%%[[90
+                                                		@foreignEntInfo
+%%]]
+                                                		@lhs.opts False @impEntNm @argMbConL @resMbCon
                             .   js              =   let ent = jsVar $ mkHNm @impEntNm
                                                         ffi = @mkFFI ent []
                                                     in  if null @argMbConL then @mkResJS ffi else ent
@@ -694,8 +698,9 @@ ATTR CExpr [ | | argUnpackWrapL : {[J.Expr -> J.Expr]} ]
 
 SEM CExpr
   | FFI         lhs         .   argUnpackWrapL  =   @mkArgsJS
-  | App         (loc.argUnpackWrap,lhs.argUnpackWrapL)
+  | App         (loc.argUnpackWrap,loc.argUnpackWrapL)
                                                 =   hdAndTl' id @func.argUnpackWrapL
+                lhs         .   argUnpackWrapL  =   if @isTopApp' then [] else @argUnpackWrapL
   | * - FFI App Ann
                 lhs         .   argUnpackWrapL  =   []
 %%]
@@ -705,7 +710,7 @@ ATTR CExpr [ | | resPackWrap : {J.Expr -> J.Expr} ]
 
 SEM CExpr
   | FFI         lhs         .   resPackWrap     =   @mkResJS
-  | App         lhs         .   resPackWrap     =   @func.resPackWrap
+  | App         lhs         .   resPackWrap     =   if @isTopApp' then id else @func.resPackWrap
   | * - FFI App Ann
                 lhs         .   resPackWrap     =   id
 %%]
@@ -714,9 +719,9 @@ SEM CExpr
 ATTR CExpr [ | | mkFFI : {J.Expr -> [J.Expr] -> J.Expr} ]
 
 SEM CExpr
-  | App         lhs         .   mkFFI           =   @func.mkFFI
+  | App         lhs         .   mkFFI           =   if @isTopApp' then const else @func.mkFFI
   | * - FFI App Ann
-                lhs         .   mkFFI           =   \f _ -> f
+                lhs         .   mkFFI           =   const
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -749,14 +754,9 @@ jBind :: HsName -> HsName -> J.Expr -> JBinds
 jBind = jBind' (tyDefault, id, const ())
 %%]
 
-%%[(8 jscript)
-SEM CBindAspect
-  | Bind Val    loc         .   jsExpr          =   (if @lhs.evalCtx == EvalCtx_Eval then jsEvl else id) @expr.js
-%%]
-
 %%[(8888 jscript)
 SEM CBindAspect
-  | Bind Val    loc         .   jiExpr          =   (if @lhs.evalCtx == EvalCtx_Eval then jiEvl else id) @expr.ji
+  | Bind Val    loc         .   jsExpr          =   (if @lhs.evalCtx == EvalCtx_Eval then jsEvl else id) @expr.js
 %%]
 
 %%[(8 jscript)
@@ -982,7 +982,12 @@ SEM CExpr
 %%[(8 jscript) hs
 -- | construct the ffi call
 ffiJScriptMkCall
-  :: EHCOpts
+  :: 
+%%[[90
+     ForeignExtraction 
+     -> 
+%%]]
+        EHCOpts
      -> Bool                        -- do eval of args
      -> String                      -- name of ffi entity
      -> [Maybe HsName]              -- list of (possibly) type constructor names of arguments
@@ -992,35 +997,59 @@ ffiJScriptMkCall
         ,  J.Expr -> [J.Expr] -> J.Expr                 -- and primitive call itself
         )
 ffiJScriptMkCall
+%%[[90
+     ent
+%%]]
   = javalikeMkFFICall
       ( const tyDefault,\_ _ -> bx,\_ -> bx
-      , \_ _ _ f as -> J.Expr_Call f as
+      -- , \_ _ _ f as -> mkcall $ mkfargs f as 
+      , \_ _ _ -> mk
       , jsEvl, tyDefault
       )
   where bx = (id,tyDefault)
+        mkfargs f as
+%%[[90
+          | isJust mbArgThis = (J.Expr_Sel this f, as')
+%%]]
+          | otherwise        = (f,as)
+%%[[90
+          where mbArgThis@(~(Just nr)) = forextractMbThisArgNr ent
+                this = as !! inx
+                inx = nr-1 
+                as' = take inx as ++ drop nr as
+%%]]
+%%[[8
+        mk = J.Expr_Call
+%%][90
+        mk = foreignexprEval (J.Expr_Sel,J.Expr_ArrInx,J.Expr_Call,id,jsVar) (forextractForeignExpr ent)
+%%]]
+        mkcall (f,as)
+%%[[90
+          | forextractOptIsPtr ent = f
+%%]]
+          | otherwise              = J.Expr_Call f as
 %%]
 
 %%[(8 jscript)
+SEM CBindAspect
+  | Bind        loc         .   js              =   let str  = if @lhs.evalCtx == EvalCtx_Eval then jsEvl else id
+                                                        dflt = @expr.js
+                                                        caf  = jsApp (jsFun @lhs.nm [] $ jsBody J.Stat_Ret @expr.jbinds @expr.jstats dflt) []
+                                                    in  if @lhs.isGlobal
+                                                        then if @isCAF
+                                                             then caf
+                                                             else dflt
+                                                        else if Seq.null @expr.jstats -- not @isCAF
+                                                             then str dflt
+                                                             else str caf
+%%]
 SEM CBindAspect
   | Bind        loc         .   js              =   let dflt = @jsExpr
                                                     in  if @lhs.isGlobal
                                                         then if @isCAF
                                                              then jsApp (jsFun @lhs.nm [] $ jsBody J.Stat_Ret @expr.jbinds @expr.jstats @jsExpr) []
-                                                                -- Seq.toList $ @expr.jstats `Seq.union` Seq.fromList  [J.Stat_Ret @jsExpr]) []
                                                              else dflt
                                                         else dflt
-%%]
-
-%%[(8888 jscript)
-SEM CBindAspect
-  | Bind        loc         .   (subClasses,ji) =   let dflt = (@expr.subClasses, @jiExpr)
-                                                    in  if @lhs.isGlobal
-                                                        then if @isCAF
-                                                             then jFunCls (hsnJavaLikeVarCls @lhs.pkgNm @lhs.topClassNm @varnm) 0 [] [] @jiExpr @expr.jbinds @expr.subClasses
-                                                             else dflt
-                                                        else dflt
-                lhs         .   subClasses      =   if @isThrowOutMain then Seq.empty else @subClasses
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Generation: toplevel
@@ -1037,7 +1066,11 @@ SEM CModule
                 loc         .   jsModInitStats  =   []
 %%][20
                 loc         .   jsModInitStats  =   let prefixes = nub . catMaybes . map hsnQualifier
-                                                    in  map (\n -> jsAssign n $ J.Expr_Obj []) $ concat $ reverse $ takeWhile (not.null) $ iterate prefixes $ Set.toList @expr.usedModNmS
+                                                        mk  n = J.Expr_If (jsVar n) (jsVar n) (J.Expr_Obj [])
+                                                        mkd n e | isJust q  = jsAssign n e
+                                                                | otherwise = J.Stat_VarDecl n (Just e)
+                                                          where q = hsnQualifier n
+                                                    in  map (\n -> mkd n $ mk n) $ concat $ reverse $ takeWhile (not.null) $ iterate prefixes $ Set.toList @expr.usedModNmS
 %%]]
 %%[[8
                 loc         .   jsModTraceStats =   if ehcOptGenTrace @lhs.opts then [jsAssign (mkHNm "traceOn") J.Expr_True] else []

@@ -126,8 +126,14 @@ type HsNameUniqifierMp = Map.Map HsNameUniqifier [HsNameUnique]
 emptyHsNameUniqifierMp :: HsNameUniqifierMp
 emptyHsNameUniqifierMp = Map.empty
 
+showHsNameUniqifierMp' :: Bool -> String -> HsNameUniqifierMp -> [String]
+showHsNameUniqifierMp' showLen usep us
+  = [ slen u ++ show uqf ++ concat [ usep ++ show uu | uu <- u, uu /= HsNameUnique_None ] | (uqf,u) <- Map.toList us ]
+  where slen u | showLen   = usep ++ show (length u)
+               | otherwise = ""
+
 showHsNameUniqifierMp :: String -> HsNameUniqifierMp -> [String]
-showHsNameUniqifierMp usep us = [ usep ++ show (length u) ++ show uqf ++ concat [ usep ++ show uu | uu <- u, uu /= HsNameUnique_None ] | (uqf,u) <- Map.toList us ]
+showHsNameUniqifierMp = showHsNameUniqifierMp' True
 %%]
 
 %%[7
@@ -262,16 +268,15 @@ instance PP HsName where
 
 
 %%[7 export(hsnShow)
-hsnShow :: String -> String -> HsName -> String
-hsnShow _    _    (HsName_Base   s         )  = {- hsnHNmFldToString -} s
-hsnShow qsep usep (HsName_Modf qs b us     )  = concat $ (intersperse qsep $ qs ++ [hsnShow qsep usep b]) ++ showHsNameUniqifierMp usep us
-hsnShow _    _    (HsName_Pos  p           )  = show p
--- hsnShow qsep usep (HNmQ   ns               )  = concat $ intersperse qsep $ map (hsnShow qsep usep) ns
+hsnShow :: Bool -> String -> String -> HsName -> String
+hsnShow _ _    _    (HsName_Base   s         )  = {- hsnHNmFldToString -} s
+hsnShow l qsep usep (HsName_Modf qs b us     )  = concat $ (intersperse qsep $ qs ++ [hsnShow l qsep usep b]) ++ showHsNameUniqifierMp' l usep us
+hsnShow _ _    _    (HsName_Pos  p           )  = show p
 %%[[8
-hsnShow _    _    (HNmNr n OrigNone        )  = "x_"        ++ show n
-hsnShow _    usep (HNmNr n (OrigLocal  hsn))  = "x_"        ++ show n ++ "_" ++ hsnShow "." usep hsn
-hsnShow _    usep (HNmNr n (OrigGlobal hsn))  = "global_x_" ++ show n ++ "_" ++ hsnShow "." usep hsn
-hsnShow _    usep (HNmNr n (OrigFunc   hsn))  = "fun_x_"    ++ show n ++ "_" ++ hsnShow "." usep hsn
+hsnShow _ _    _    (HNmNr n OrigNone        )  = "x_"        ++ show n
+hsnShow l _    usep (HNmNr n (OrigLocal  hsn))  = "x_"        ++ show n ++ "_" ++ hsnShow l "." usep hsn
+hsnShow l _    usep (HNmNr n (OrigGlobal hsn))  = "global_x_" ++ show n ++ "_" ++ hsnShow l "." usep hsn
+hsnShow l _    usep (HNmNr n (OrigFunc   hsn))  = "fun_x_"    ++ show n ++ "_" ++ hsnShow l "." usep hsn
 %%]]
 %%]
 
@@ -280,7 +285,7 @@ instance Show HsName where
 %%[[1
   show (HsName_Base s) = s
 %%][7
-  show = hsnShow "." "_@"
+  show = hsnShow True "." "_@"
 %%]]
 %%]
 
@@ -512,12 +517,15 @@ hsnSetLevQual _ _ n = n
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 export(hsnFixUniqifiers)
-hsnFixUniqifiers' :: String -> HsName -> HsName
-hsnFixUniqifiers' sep (HsName_Modf qs n us) = HsName_Modf qs (hsnSuffix n (concat $ showHsNameUniqifierMp sep us)) Map.empty
-hsnFixUniqifiers' _   n                     = n
+hsnFixUniqifiers' :: Bool -> String -> HsName -> HsName
+hsnFixUniqifiers' showlen sep (HsName_Modf qs n us) = HsName_Modf qs (hsnSuffix n (concat $ showHsNameUniqifierMp' showlen sep us)) Map.empty
+hsnFixUniqifiers' _       _   n                     = n
 
 hsnFixUniqifiers :: HsName -> HsName
-hsnFixUniqifiers = hsnFixUniqifiers' "_@"
+hsnFixUniqifiers = hsnFixUniqifiers' True "_@"
+
+hsnJavalikeFixUniqifiers :: HsName -> HsName
+hsnJavalikeFixUniqifiers = hsnFixUniqifiers' False ""
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -768,7 +776,7 @@ type HsNameS = Set.Set HsName
 -- ensure a name valid for JVM like backends
 hsnSafeJavaLike :: HsName -> HsName
 hsnSafeJavaLike
-  = hsnMapQualified (concatMap safe) . hsnFixUniqifiers' ""
+  = hsnMapQualified (concatMap safe) . hsnJavalikeFixUniqifiers
   where safe '_'                                      = "__"
         safe c | isDigit c || isLetter c || c == '_'  = [c]
                | otherwise                            = "_" ++ showHex (ord c) ""

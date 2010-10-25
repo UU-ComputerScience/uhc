@@ -52,8 +52,14 @@ DATA Expr
   | Int         int             : {Integer}
   | Str         str             : {String}
   | Char        char            : {Char}
+  | Op			nm              : {HsName}
+  				l				: Expr
+  				r				: Expr
+  | If			c               : Expr
+  				t				: Expr
+  				e				: Expr
   | Sel			expr			: Expr
-  				nm				: {HsName}
+  				sel				: Expr
   | Call		fun				: Expr
   				args			: ExprL
   | New			expr			: Expr					-- must be a Call
@@ -69,6 +75,7 @@ DATA Expr
   | This
   | True
   | False
+  | Undefined
   | Inline		str				: {String}				-- for debuggin
 
 

@@ -7,6 +7,9 @@ For use by foreign functions.
 %%[90
 DATA ForeignAGItf
   | AGItf           ent             : ForeignEnt
+
+DATA ForeignExprAGItf
+  | AGItf           expr            : ForeignExpr
 %%]
 
 %%[90
@@ -14,6 +17,7 @@ DATA ForeignEnt
   | CCall           ent             : CCall
   | PlainCall       ent             : PlainCall
   | PrimCall        ent             : PrimCall
+  | JScriptCall     ent             : JScriptCall
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -42,6 +46,41 @@ DATA PrimCall
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Javascript specific call
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[90
+{-
+DATA JScriptCall
+  | Id              asPointer       : Bool
+
+					-- argument which acts as receiver object (if any), starting at 1, e.g. for arg 1:
+					-- "%1.g", f x y ~> to x.g(y)
+  					mbThisArgNr		: {Maybe Int}
+                    nm              : String
+                    
+                    -- args which is used as index, e.g. for arg 1:
+                    -- "g[%1]"    , f x y ~> g[x](y)
+                    -- "&%1.g[%2]", f x y ~> x.g[y]
+  					mbIndexArgNr	: {Maybe Int}
+  					-- mbForeignExpr	: {Maybe ForeignExpr}
+-}
+DATA JScriptCall
+  | Id              -- asPointer       : Bool
+
+					-- argument which acts as receiver object (if any), starting at 1, e.g. for arg 1:
+					-- "%1.g", f x y ~> to x.g(y)
+  					-- mbThisArgNr		: {Maybe Int}
+                    nm              : String
+                    
+                    -- args which is used as index, e.g. for arg 1:
+                    -- "g[%1]"    , f x y ~> g[x](y)
+                    -- "&%1.g[%2]", f x y ~> x.g[y]
+  					-- mbIndexArgNr	: {Maybe Int}
+  					mbForeignExpr	: {Maybe ForeignExpr}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Default/Plain Call: only name of entity
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -51,10 +90,28 @@ DATA PlainCall
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Foreign expressions, for now experimental
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[90
+DATA ForeignExpr
+  | Call			expr			: ForeignExpr		-- actual call, pasting in remaining arguments
+  | Ptr				expr			: ForeignExpr		-- as pointer, or as value, not calling anything
+  | Sel				expr			: ForeignExpr		-- select
+  					sel				: ForeignExpr
+  | Inx				expr			: ForeignExpr		-- index
+  					inx				: ForeignExpr
+  | Ent													-- the named entity in the FFI spec
+  | EntNm			nm				: String			-- explicitly named entity, overriding Ent
+  | Arg				nr				: Int				-- an explicitly named arg, which will then not be passed as remaining arg
+  | Empty												-- nothing
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Sets
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[90
-SET AllForeign      =   ForeignEnt CCall PlainCall PrimCall
+SET AllForeign      =   ForeignEnt CCall PlainCall PrimCall JScriptCall
 %%]
 

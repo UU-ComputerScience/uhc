@@ -3,78 +3,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Utils
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8888 codegen)
-SEM CBindAspect
-  | FFI         loc         .   ffiMbTyConNm    =   tyAppFunMbConNm        -- possibly get constructor name of type (application)
-                            .   ffiTyConNm      =   tyAppFunConNm -- get it, with defaulting
-                                                     
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% FFI
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8888 codegen)
-SEM CBindAspect
-%%[[8
-  | FFI         loc         .   impEntNm        =   @impEnt
-%%][90
-  | FFI         loc         .   impEntNm        =   forextractEnt $ foreignEntExtract @impEnt
-%%]]
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Type info
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8888 codegen)
-SEM CBindAspect
-  | FFI         loc         .   argTyLresTy     :   {( TyL, Ty )}
-                loc         .   argTyLresTy     =   tyArrowArgsRes @ty
-                loc         .   argTyL          :   TyL
-                loc         .   argTyL          =   fst @loc.argTyLresTy
-                loc         .   resTy           =   snd @loc.argTyLresTy
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Type: derived info
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8888 codegen)
-SEM CBindAspect
-  | FFI         loc         .   argMbConL       =   map tyAppFunMbConNm @argTyL
-                            .   resMbCon        =   tyAppFunMbConNm @resTy
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% FFI binding: evaluation need
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-The default is to evaluate arguments, and assume the primitive returns an evaluated result.
-These defaults are overridden by a table in BuiltinPrims, used here.
-
-%%[(8888 codegen grin).needsEval
-SEM CBindAspect
-  | FFI         loc         .   primArgNeedsEvalL
-                                            =   repeat True
-                            .   primResNeedsEval
-                                            =   False
-%%]
-
-%%[(9696 codegen grin) -8.needsEval
-SEM CBindAspect
-  | FFI         loc         .   mbPrimNeedEval
-                                            =   lookupPrimNeedsEval @impEntNm
-                            .   primArgNeedsEvalL
-                                            =   maybe (repeat True) (\p -> primArgNeedEval p ++ repeat True) @mbPrimNeedEval
-                            .   primResNeedsEval
-                                            =   maybe False primResNeedEval @mbPrimNeedEval
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% FFI expression, repetition of the above
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -86,7 +14,8 @@ SEM CExpr
 %%[[8
                             .   impEntNm        =   @impEnt
 %%][90
-                            .   impEntNm        =   forextractEnt $ foreignEntExtract @impEnt
+                            .   foreignEntInfo  =   foreignEntExtract @impEnt
+                            .   impEntNm        =   forextractEnt @foreignEntInfo 
 %%]]
 %%[[8
                 loc         .   primArgNeedsEvalL

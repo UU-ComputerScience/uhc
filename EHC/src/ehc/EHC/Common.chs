@@ -214,7 +214,7 @@ mkPerModuleOutputFPath opts doSepBy_ modNm fp suffix
                    _ | doSepBy_  -> nm_
                      | otherwise -> mkOutputFPath opts m f suffix
                where nm_ = mkOutputFPath opts (hsnMapQualified (const base) m) (fpathSetBase base f) suffix
-                         where base = hsnShow "_" "_" m
+                         where base = hsnShow True "_" "_" m
 %%]]
 %%]
 

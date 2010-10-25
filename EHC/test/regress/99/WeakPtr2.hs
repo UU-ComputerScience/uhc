@@ -2,6 +2,7 @@
    what    : weak ptr implicit finalization
    expected: finalization messages
    note    : output depends on inlining. Currently for bc backend "fin1" should appear
+   constraints: exclude-if-jscript
 ---------------------------------------------------------------------------------------- -}
 
 module WeakPtr2 where

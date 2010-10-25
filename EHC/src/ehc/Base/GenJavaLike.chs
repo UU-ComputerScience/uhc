@@ -192,31 +192,23 @@ javalikeMkFFICall
   = (mkArgsE,mkResE,primE)
   where lkupBuiltin = \n -> Map.lookup n m
           where m = builtinKnownBoxedTyMp opts
-        mkxxbox how mbCon
+        mkxxbox evl how mbCon
           = case mbCon of
               Just c -> case lkupBuiltin c of
                           Just bi -> how (getInfo bi)
                           _       -> dflt
               _      -> dflt
-          where dflt = (jiEvl,jtyObj)
-        mkunbox = mkxxbox (unbox doArgEval)
-        mkbox   = mkxxbox box
+          where dflt = (evl,jtyObj)
+        evl | doArgEval = jiEvl
+            | otherwise = id
+        mkunbox = mkxxbox evl (unbox doArgEval)
+        mkbox   = mkxxbox evl box
         (mkArgsE,argsTy)
                 = unzip $ map mkunbox argMbConL
         (mkResE,resTy)
                 = mkbox resMbCon
         primE   = mkPrim argsTy resTy impEntNm
 %%]
-
-ffiJazyMkCall
-  = javalikeMkFFICall
-      ( biJazyBasicTy,basicTyJUnbox,basicTyJBox
-      , \argsTy resTy impEntNm f as -> (j $ J.Instr_Invoke J.InvokeMode_Static (J.Const_Method nmPrim impEntNm argsTy (Just resTy)))
-      , jiEvl, jtyObj
-      )
-
-basicTyJUnbox :: Bool -> BasicJazy -> (J.JInstr -> J.JInstr,J.Type)
-basicTyJBox :: BasicJazy -> (J.JInstr -> J.JInstr,J.Type)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Binding
