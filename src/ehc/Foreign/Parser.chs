@@ -66,7 +66,9 @@ pForeignEnt way dfltNm
   = case way of
       FFIWay_CCall   -> ForeignEnt_CCall        <$> pCCall       dfltNm
       FFIWay_Prim    -> ForeignEnt_PrimCall     <$> pPrimCall    dfltNm
+%%[[(90 jscript)
       FFIWay_JScript -> ForeignEnt_JScriptCall  <$> pJScriptCall dfltNm
+%%]]
       _              -> ForeignEnt_PlainCall    <$> pPlainCall   dfltNm
 
 pCCall :: Maybe String -> ForeignParser CCall
