@@ -12,7 +12,7 @@ import Control.Arrow hiding (app)
 import Control.Applicative((<$>))
 
 import Data.List
-import Data.Maybe
+import Data.Maybe hiding (mapMaybe)
 
 import EH8.EH
 import EH8.Base.HsName
@@ -20,7 +20,7 @@ import EH8.Ty(tyQu_Forall)
 
 import EqHML
 
-import EH.Util.Pretty hiding (pp)
+import EH.Util.Pretty hiding (pp, empty)
 import qualified Debug.Trace as D
 
 -- | Create a HsName from a string.
@@ -35,7 +35,7 @@ type ErrorMessage = String
 
 -- | Remove entries from a Env based on their key
 remove :: Env -> [HsName] -> Env
-remove env entries = foldl (.) id (map M.delete entries) env
+remove env entries = foldl (.) id (map rm entries) env
 
 -- | Filter a prefix based on the bounds and not the variable
 elide :: Prefix -> TyQuantifiedScheme -> Prefix
@@ -57,12 +57,19 @@ split ((p@(TyIndex_Group var phi):q), vars)
               in (p:q1, q2)
      False -> let (q1, q2) = split (q, vars)
               in (q1, p:q2)
+          
+-- | Helper functions to make the convertion from map to list easier          
+mapMaybe = \v -> map (id *** \a -> (maybe a id (v a)))
+empty = []
+rm :: Eq k => k -> [(k, v)] -> [(k, v)]
+rm _ [] = []
+rm k1 (x@(k,v):xs) | k1 == k   = rm k1 xs
+                       | otherwise = x : rm k1 xs
 
 -- | Apply a set of substitution to an environment
 apply :: Env -> Env -> Either Env [ErrorMessage]
 apply sub env 
-  = let subs = M.toList sub
-        lst  = map (M.mapMaybe . app) subs
+  = let lst  = map (mapMaybe . app) sub
         set  = foldl' (.) id lst
     in Left (set env)
     
@@ -112,8 +119,7 @@ class Eq a => Normal a where
 class Util a => Apply a where
   app    :: Sub -> a -> Maybe a
   appAll :: Env -> a -> Maybe a
-  appAll env a = let values = M.toList env
-                 in foldl (>=>) return (map app values) a
+  appAll env a = foldl (>=>) return (map app env) a
   
 instance Apply a => Apply [a] where
   app s = return . catMaybes . map (app s)
@@ -205,9 +211,15 @@ replace   (_,_) [] = []
 replace p@(a,b) (x:xs) |  a == x   = b:replace p xs
                        | otherwise = x:replace p xs
                         
-munion :: Ord k => M.Map k v -> M.Map k v -> M.Map k v
-munion a b = M.fromList (M.toList a ++ M.toList b)
-                        
+munion a b = let f = map (uncurry minsert)
+                 xs = f a ++ f b
+             in foldl' (.) id xs []
+-- munion = (++)
+
+minsert k v []  = [(k,v)]
+minsert k v (x@(k',v'):xs) | k == k'   = (k, v):xs
+                           | otherwise = x : minsert k v xs
+
 instance Util TyScheme where
     ftv TyScheme_Bottom       = []
     ftv (TyScheme_SystemF  a) = ftv a
@@ -265,13 +277,25 @@ instance Domain a => Domain [a] where
   domain   = concatMap domain
   codomain = concatMap codomain
   
+instance (Domain a, Domain b) => Domain (a, b) where
+  domain   = domain . fst
+  codomain = codomain . snd
+  
+instance Domain HsName where
+  domain   = return
+  codomain = return
+  
+instance Domain TyScheme where
+  domain   = nub . ftv
+  codomain = nub . ftv 
+  
 instance Domain TyIndex where
   domain   (TyIndex_Group a _) = return a
   codomain (TyIndex_Group _ a) = ftv a
   
-instance Domain Env where
-  domain   = M.keys
-  codomain = concatMap ftv . M.elems
+-- instance Domain Env where
+  -- domain   = M.keys
+  -- codomain = concatMap ftv . M.Elems
   
 instance Domain Scheme where
   domain   (Scheme_Simple a _) = [a]
@@ -286,7 +310,7 @@ update (q, Right (a, p))
                Just ax -> D.trace (   "** Var:" ++ pp a
                                    ++ "\n** Q1 :" ++ pp q1
                                    ++ "\n** Q2 :" ++ pp q2) ax
-    in  (q0 ++ q1 ++ q2', M.fromList [(a,p)])
+    in  (q0 ++ q1 ++ q2', [(a,p)])
 update (q, Left (Scheme_Simple var phi2))
   = let (q0, (q1,q2)) = id *** (`splitOn` var) $ split (q, ftv phi2)
         p   = nf phi2       
@@ -294,8 +318,8 @@ update (q, Left (Scheme_Simple var phi2))
                Nothing -> error "Update failed. Could not apply substitution"
                Just ax -> ax
     in case isUnQualTy p of
-         True  -> (q0 ++ q1 ++ q2', M.fromList [(var, p)])
-         False -> (q0 ++ q1 ++ (TyIndex_Group var (promote phi2):(safeTail q2)) ,M.empty)
+         True  -> (q0 ++ q1 ++ q2', [(var, p)])
+         False -> (q0 ++ q1 ++ (TyIndex_Group var (promote phi2):(safeTail q2)) ,empty)
         
 safeTail :: [a] -> [a]
 safeTail []     = []
@@ -316,22 +340,22 @@ extend :: (Prefix, Scheme, Int) -> ((Prefix, Env), Int)
 extend (q, scheme@(Scheme_Simple var phi), frs)
  = let p = nf phi
    in case isUnQualTy p of
-        True  -> ((q, M.fromList [(var, p)]), frs)
+        True  -> ((q, [(var, p)]), frs)
         -- TyScheme_Quant s t   -> case s of
                                  -- Scheme_Simple v t' 
                                    -- -> let s' = Scheme_Simple var t'
                                           -- (Just tx) = app (v, mkVar var) t
                                           -- ty = TyScheme_Quant s' tx
-                                      -- in ((q++[TyIndex_Group var (promote ty)], M.empty), frs)
+                                      -- in ((q++[TyIndex_Group var (promote ty)], empty), frs)
         -- _  -> case sweep p of
                -- (schemes, ph2) | not (null schemes) ->
                   -- let (varsc, frs') = freshM frs (length schemes)
                       -- env           = zipWith (\a b-> (a, mkVar b)) (domain schemes) varsc
-                      -- (Just ph2')   = appAll (M.fromList env) ph2
+                      -- (Just ph2')   = appAll (M.fromAscList env) ph2
                       -- pre           = q ++ [TyIndex_Group v (promote p) | (v, p) <- zipWith (\a (Scheme_Simple _ x)->(a, x)) varsc schemes ]
-                  -- in ((pre, M.fromList [(var, ph2')]), frs')
+                  -- in ((pre, M.fromAscList [(var, ph2')]), frs')
         _     -> let (ph2, frs') = renameVars frs phi
-                 in D.trace ("@" ++ pp var ++ " == " ++ pp phi ++ " -- " ++ pp (promote phi)) ((q++[TyIndex_Group var (promote phi)], M.empty), frs)
+                 in D.trace ("@" ++ pp var ++ " == " ++ pp phi ++ " -- " ++ pp (promote phi)) ((q++[TyIndex_Group var (promote phi)], empty), frs)
 
 renameVars :: Int -> TyScheme -> (TyScheme, Int)
 renameVars frs ty 
@@ -351,9 +375,9 @@ renameVars frs ty
          in TyIndex_Group (ren a) d'
     vc         = vars ty
     (nvc,frs') = freshM frs (length vc)
-    env        = M.fromList $ zipWith (\a b->(a, mkVar b)) vc nvc
-    env'       = M.fromList $ zipWith (\a b->(a, b)) vc nvc
-    ren x      = maybe x id $ M.lookup x env'
+    env        = zipWith (\a b->(a, mkVar b)) vc nvc
+    env'       = zipWith (\a b->(a, b)) vc nvc
+    ren x      = maybe x id $ lookup x env'
    
 -- | Collects all the schemes for TyScheme_Quant
 sweep :: TyScheme -> ([Scheme], TyScheme)
@@ -490,6 +514,14 @@ class Simplify a where
   simplify :: a -> a
   clean    :: a -> a
   
+instance (Simplify a, Simplify b) => Simplify (a,b) where
+  simplify (k,v) = (simplify k, simplify v)
+  clean    (k,v) = (simplify k, clean v)
+  
+instance Simplify HsName where
+  simplify = id
+  clean    = id 
+  
 -- | A strong but inefficient alpha renamer (for pretty printing)
 alpha_rename :: TyScheme -> TyScheme
 alpha_rename ty 
@@ -500,7 +532,7 @@ alpha_rename ty
                      GT -> GT
                      EQ -> a `compare` b
        env   = zip fvars nvars
-   in  maybe ty id $ appAll (M.fromList env) ty
+   in  maybe ty id $ appAll env ty
      
 -- | Check to see if a tyScheme is _|_    
 isBottom :: TyScheme -> Bool
@@ -511,7 +543,7 @@ instance Simplify TyScheme where
     -- | Simplify a type scheme for presentation, dropping trivial quantifications
     --   e.g. (a>=_|_) to a, and expanding types.
     --   simplify :: TyScheme -> TyScheme
-    simplify exp = let (v, e) = simpl' M.empty exp
+    simplify exp = let (v, e) = simpl' empty exp
                    in case appAll e v of
                        Just a  -> a
                        Nothing -> v
@@ -526,7 +558,7 @@ instance Simplify TyScheme where
                                                                                     True  -> (TyScheme_Forall [a] z, e2)
                                                                                     False -> (TyScheme_Forall []  z, e2)
                  Scheme_Simple a bounds          -> let (newb, e1) = simpl' env bounds
-                                                        env' = M.insert a newb e1
+                                                        env' = (a, newb): e1
                                                     in  case appAll env' ty of
                                                           Nothing -> (s, env')
                                                           Just x  -> let (next, e3) = simpl' env' x
@@ -1057,7 +1089,7 @@ datasem PatExpr monad IO
     (loc.a, loc.frs1) = fresh lhs.frs
     loc.exp_a  = TyScheme_SystemF $ TyExpr_Var loc.a
     lhs.res    = [loc.exp_a]
-    lhs.sub    = M.insert loc.nm loc.exp_a lhs.env
+    lhs.sub    = minsert loc.nm loc.exp_a lhs.env
     lhs.nxe    = (TyIndex_Group loc.a TyQuantifiedScheme_Bottom):lhs.pre
     lhs.frs    = loc.frs1
   clause VarAs
@@ -1126,7 +1158,7 @@ datasem PatExpr monad IO
     
     loc.ans = TyScheme_SystemF (TyExpr_Parens loc.tyExpr)
     lhs.res = [loc.ans]
-    lhs.sub = M.insert patExpr.var_nm loc.ans lhs.env
+    lhs.sub = minsert patExpr.var_nm loc.ans lhs.env
     lhs.nxe = lhs.pre
     lhs.frs = lhs.frs
   clause SConst
@@ -1173,11 +1205,11 @@ datasem Decl monad IO
     lhs.sub = let (Left adjusted) = apply expr.sub lhs.env
               in case expr.res of
                    [] -> error  $ "Inference failed datasem Decl clause Val. No result"
-                   x  -> foldr (\a->M.insert loc.nm a) adjusted x
+                   x  -> foldr (\a->minsert loc.nm a) adjusted x
     lhs.frs = expr.frs
   clause TySig
     lhs.nxe = lhs.pre
-    lhs.sub = M.insert loc.nm (TyScheme_SystemF loc.tyExpr) lhs.env
+    lhs.sub = minsert loc.nm (TyScheme_SystemF loc.tyExpr) lhs.env
     lhs.frs = lhs.frs
   clause Data
      child constrs : DataConstrs
@@ -1187,15 +1219,16 @@ datasem Decl monad IO
      
      invoke findTypes of constrs
      
-     lhs.sub = (foldr (.) id . map (\(k,v)->M.insert k (mkQuantified v))) constrs.ty lhs.env
+     lhs.sub = (foldr (.) id . map (\(k,v)->minsert k (mkQuantified v))) constrs.ty lhs.env
      lhs.nxe = lhs.pre
      lhs.frs = lhs.frs
   clause FFI
      loc.vars = nub $ ftv loc.tyExpr
-     loc.exp = case null loc.vars of
-                True  -> loc.tyExpr
-                False -> foldl (.) id (map (TyExpr_Quant tyQu_Forall) loc.vars) loc.tyExpr
-     lhs.sub = M.insert loc.nm (TyScheme_SystemF loc.exp) lhs.env
+     loc.exp = let tyExpr = simplify loc.tyExpr
+               in case null loc.vars of
+                   True  -> tyExpr
+                   False -> foldl (.) id (map (TyExpr_Quant tyQu_Forall) loc.vars) tyExpr
+     lhs.sub = minsert loc.nm (TyScheme_SystemF loc.exp) lhs.env
      lhs.nxe = lhs.pre
      lhs.frs = lhs.frs
   clause KiSig
@@ -1227,26 +1260,26 @@ datasem Expr monad IO
     clause Var
         -- lhs.res = maybe (error "Variable not found in lookup") (:[]) $ M.lookup loc.nm lhs.env
         (lhs.res, loc.frs)
-             = case M.lookup loc.nm lhs.env of
+             = case lookup loc.nm lhs.env of
                 Just a  -> ([a], lhs.frs) -- Is this the proper way to get mutual recursion working?
                 Nothing -> error $ "Variable '" ++ show loc.nm ++ "' not in scope"
                 -- Nothing -> (return . TyScheme_SystemF . TyExpr_Var *** id) (fresh lhs.frs)
-        lhs.sub = M.empty
+        lhs.sub = empty
         lhs.nxe = lhs.pre
         lhs.frs = loc.frs
     clause IConst
        lhs.res = return $ TyScheme_SystemF $ TyExpr_Con $ mkName "Int"
-       lhs.sub = M.empty
+       lhs.sub = empty
        lhs.nxe = lhs.pre
        lhs.frs = lhs.frs
     clause CConst
        lhs.res = return $ TyScheme_SystemF $ TyExpr_Con $ mkName "Char"
-       lhs.sub = M.empty
+       lhs.sub = empty
        lhs.nxe = lhs.pre
        lhs.frs = lhs.frs
     clause Con
-       lhs.res = maybe (error "Constructor not found in lookup") (:[]) $ M.lookup loc.nm lhs.env
-       lhs.sub = M.empty
+       lhs.res = maybe (error "Constructor not found in lookup") (:[]) $ lookup loc.nm lhs.env
+       lhs.sub = empty
        lhs.nxe = lhs.pre
        lhs.frs = lhs.frs
     clause App
@@ -1310,7 +1343,7 @@ datasem Expr monad IO
         (loc.frs, loc.binds)  = let nms         = getBindLHs loc.decls
                                     (vars, frs) = freshM lhs.frs (length nms)
                                 in (frs, zipWith (\a b->(a, mkQVar b)) nms vars)
-        loc.env   = foldr (.) id (map (\(k,v)->M.insert k v) loc.binds) lhs.env
+        loc.env   = foldr (.) id (map (\(k,v)->minsert k v) loc.binds) lhs.env
         
         decls.pre = lhs.pre
         decls.env = loc.env
@@ -1493,7 +1526,7 @@ unifyScheme = sem unifyScheme : UnifyScheme monad IO
                 visit unifyScheme
                   default? pre = last
                   default? frs = last
-                  default? sub = const M.empty
+                  default? sub = const empty
                   clause Main_unifyScheme
                     loc.nfTy = isNf lhs.ty1
                     loc.nfTs = isNf lhs.ty2
@@ -1564,7 +1597,7 @@ subsume = sem subsume : Subsume monad IO
                       loc.qq2 = let q = loc.q ++ loc.q2
                                 in D.trace ("subsume -- " ++ pp q) q
                       u.pre  = loc.qq2
-                      u.exp1 = case appAll (M.fromList $ zipWith (\a b->(a, mkSkolem b)) exp.tyVar loc.c) exp.tyExpr of
+                      u.exp1 = case appAll (zipWith (\a b->(a, mkSkolem b)) exp.tyVar loc.c) exp.tyExpr of
                                  Just a  -> D.trace ("un1: " ++ con a) (const a scheme.prefix)
                                  Nothing -> error "Subsume failure, substitution failed"
                       u.exp2 = let f = dropScheme scheme.tyExpr
@@ -1597,7 +1630,7 @@ subsume = sem subsume : Subsume monad IO
                     clause wild_subsume
                       match True                  = loc.nf
                       match (loc.fo, TyScheme.Bottom@l)     = ((), sugar lhs.ty)
-                      lhs.sub = D.trace "Wild subsume" (const M.empty loc.fo)
+                      lhs.sub = D.trace "Wild subsume" (const empty loc.fo)
                       
                     clause f_subsume
                       match (loc.bla, False) = ((), loc.nf)
@@ -1683,7 +1716,7 @@ unify = sem unify : Unify monad IO
                        internal case_check
                          clause eq_vars
                            match True = var1.nm == var2.nm
-                           lhs.sub = D.trace "Variable match" M.empty
+                           lhs.sub = D.trace "Variable match" empty
                          clause rest_vars
                            loc.q  = lhs.pre
                            loc.p1 = loc.q `contains` var1.nm
@@ -1692,7 +1725,7 @@ unify = sem unify : Unify monad IO
                              loc.isJust    = isJust loc.p1 && isJust loc.p2
                              clause pure_var
                                match False = loc.isJust
-                               lhs.sub = M.empty 
+                               lhs.sub = empty 
                              clause ty_var
                                match True  = loc.isJust
                                loc.phi1 = fromJust loc.p1
@@ -1742,7 +1775,7 @@ unify = sem unify : Unify monad IO
                        internal con_check
                           clause succeeded1
                             match True  = loc.eq
-                            lhs.sub     = M.empty
+                            lhs.sub     = empty
                           clause failed1
                             match False = loc.eq
                             lhs.sub = error $ "Constructor mismatch, expected '" ++ show var1.nm ++ "' but got '" ++ show var2.nm ++ "'"
@@ -1819,7 +1852,7 @@ unify = sem unify : Unify monad IO
                                lhs.frs = D.trace "unify - ***leftvar***" s.frs  
                              clause invalid
                                match True = isJust loc.phi
-                               lhs.sub = M.empty
+                               lhs.sub = empty
                                -- lhs.sub = error $ "Unable to execute unification on '"
                                               -- ++ pp lhs.exp1 ++ "' and '"++ pp lhs.exp2 ++ "', occurs check failed in prefix: "
                                               -- ++ pp lhs.pre
@@ -1862,7 +1895,7 @@ unify = sem unify : Unify monad IO
                                lhs.frs = D.trace "unify - ***rightvar***" s.frs  
                              clause invalid2
                                match True = isJust loc.phi
-                               lhs.sub = M.empty
+                               lhs.sub = empty
                                -- lhs.sub = error $ "Unable to execute unification on '"
                                               -- ++ pp lhs.exp1 ++ "' and '"++ pp lhs.exp2 ++ "', occurs check failed in prefix: "
                                               -- ++ pp lhs.pre
@@ -1949,7 +1982,7 @@ unify = sem unify : Unify monad IO
 typeCheck ::  Expr -> IO ([TyScheme], Env, Prefix, Int)
 typeCheck exp = do
   let inh = Inh_Expr_infer { exp_Inh_Expr = exp
-                           , env_Inh_Expr = M.empty
+                           , env_Inh_Expr = empty
                            , pre_Inh_Expr = []
                            , ast_Inh_Expr = exp
                            , frs_Inh_Expr = 1

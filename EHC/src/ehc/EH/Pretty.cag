@@ -723,8 +723,11 @@ SEM TyQuantifiedScheme
   | Bottom      lhs     .   pp          = pp "_|_"
   
 SEM Env
-  | Entry       lhs     .   pp          = pp "  " >|< (pp @key) >#< "::" >#< @val.pp >|< "" >-< @tl.pp
+  | Cons        lhs     .   pp          = @hd.pp >|< "" >-< @tl.pp
   | Nil         lhs     .   pp          = pp ""
+  
+SEM KeyVal
+  | Tuple       lhs     .   pp          = pp "  " >|< (pp @x1) >#< "::" >#< @x2.pp
   
 SEM TyScheme
   | Quant       lhs     .   pp          = "forall " >|< @subst.pp >|< "." >#< @tyExpr.pp

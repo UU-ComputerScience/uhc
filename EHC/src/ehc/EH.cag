@@ -14,7 +14,7 @@
 %%]
 %%[1 hs export(ExprAnn(..), PatExprAnn(..), TyExprAnn(..))
 %%]
-%%[1 hs export(TyIndex(..), TyQuantifiedScheme(..), TyScheme(..), Scheme(..), TyMono(..), TyPoly(..), Prefix, Env, TySchemes, HMLItf(..))
+%%[1 hs export(TyIndex(..), TyQuantifiedScheme(..), TyScheme(..), Scheme(..), TyMono(..), TyPoly(..), Prefix, Env,KeyVal, TySchemes, HMLItf(..))
 %%]
 
 %%[1 hs import({%{EH}HS}(Range))

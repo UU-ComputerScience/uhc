@@ -705,8 +705,9 @@ DATA TyPoly
 -- TYPE TyExprs   = [TyExpr]
 TYPE Prefix    = [TyIndex]
 TYPE TySchemes = [TyScheme]
-TYPE Env       = MAP {HsName} TyScheme
+TYPE KeyVal    = ({HsName}, TyScheme)
+TYPE Env       = [KeyVal]
 
 SET AllHML 
-    = TyIndex TyQuantifiedScheme TyScheme Scheme TyMono TyPoly TyExprs Prefix TySchemes Env
+    = TyIndex TyQuantifiedScheme TyScheme Scheme TyMono TyPoly TyExprs Prefix TySchemes Env KeyVal
 %%]
