@@ -22,7 +22,7 @@ function _e_( x ) {
 	trace( "> _e_", x ) ;
 %%][100
 %%]]
-	while ( x && x.__eOrV__ ) {
+	while ( x && x.__eOrV__ !== undefined ) {
 		if ( typeof x.__eOrV__ == 'function' ) {
 %%[[8
 			trace( ">> _e_()", typeof x + "/" + typeof x.__eOrV__ + ":" + x ) ;
@@ -132,8 +132,8 @@ function _A_( fun, args ) {
 		trace("> _A_.__eOrV__", fun + "(|args#" + args.length + "=" + args + "|)") ;
 %%][100
 %%]]
-		// var x = _e_( fun.__aN__( args ) ) ;
-		var x = ( fun.__aN__( args ) ) ;
+		var x = _e_( fun.__aN__( args ) ) ;
+		// var x = ( fun.__aN__( args ) ) ;
 		this.__eOrV__ = x ;
 %%[[8
 		trace("< _A_.__eOrV__", fun + "(|args#" + args.length + "=" + args + "|)") ;
@@ -292,6 +292,15 @@ function _i_set_(i,x) {
 // setup
 function init() {
 }
+
+%%[8
+if ( typeof document != 'object' ) {
+	document = {
+		write   : function(x) {return write(x) ;},
+		writeln : function(x) {return writeln(x) ;}
+	}
+}
+%%]
 
 function cons(x,y) { return [0,x,y]; }
 function head(l) { return l[1]; }

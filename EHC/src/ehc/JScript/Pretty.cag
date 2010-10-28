@@ -53,7 +53,9 @@ SEM Expr
   | Int         loc     .   pp      =   pp $ show @int
   | Str			loc		.	pp		=	pp $ show @str
   | Char		loc		.	pp		=	pp $ show @char
-  | Sel			loc		.	pp		=	@expr.pp >|< "." >|< @nm
+  | Sel			loc		.	pp		=	@expr.pp >|< "." >|< @sel.pp
+  | Op			loc		.	pp		=	ppParens (@l.pp >|< @nm >|< @r.pp)
+  | If			loc		.	pp		=	ppParens (@c.pp >#< "?" >#< @t.pp >#< ":" >#< @e.pp)
   | Call		loc		.	pp		=	@fun.pp >|< ppParensCommas @args.ppL
   -- | Fun			loc		.	pp		=	"function" >|< maybe empty (\n -> " " >|< n) @mbNm >|< ppParensCommas @args >|< @body.pp
   | Fun			loc		.	pp		=	"function" >|< maybe empty (\n -> " " >|< n) @mbNm >|< ppParensCommas @args >-< @body.pp
@@ -65,6 +67,7 @@ SEM Expr
   | This		loc		.	pp		=	pp "this"
   | True		loc		.	pp		=	pp "true"
   | False		loc		.	pp		=	pp "false"
+  | Undefined	loc		.	pp		=	pp "undefined"
   | Inline		loc		.	pp		=	pp @str
 
 SEM Stat

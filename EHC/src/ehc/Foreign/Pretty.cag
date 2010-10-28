@@ -11,7 +11,7 @@
 %%]
 
 %%[90.WRAPPER ag import({Foreign/AbsSyn})
-WRAPPER ForeignAGItf
+WRAPPER ForeignAGItf ForeignExprAGItf
 %%]
 
 %%[90 hs export(ppForeignEnt)
@@ -26,12 +26,35 @@ instance PP ForeignEnt where
   pp t = ppForeignEnt t
 %%]
 
+%%[90 hs export(ppForeignExpr)
+ppForeignExpr :: String -> ForeignExpr -> PP_Doc
+ppForeignExpr nm e
+  =  let  t =  wrap_ForeignExprAGItf
+                 (sem_ForeignExprAGItf (ForeignExprAGItf_AGItf e))
+                 (Inh_ForeignExprAGItf
+                   { entNm_Inh_ForeignExprAGItf = nm
+                   })
+     in   pp_Syn_ForeignExprAGItf t
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Foreign entity
+%%% Global info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[90
-ATTR ForeignAGItf AllForeign [ | | pp: PP_Doc ]
+ATTR ForeignExprAGItf ForeignExpr [ entNm: String | | ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% PP
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[90
+ATTR ForeignAGItf ForeignExprAGItf AllForeign ForeignExpr [ | | pp: PP_Doc ]
+
+SEM JScriptCall
+  -- | Id          lhs     .   pp      =   maybe empty (\i -> "%" >|< i >|< ".") @mbThisArgNr >|< pp @nm >|< maybe empty (\i -> "[%" >|< i >|< "]") @mbIndexArgNr
+  | Id          lhs     .   pp      =   maybe (pp @nm) (ppForeignExpr @nm) @mbForeignExpr
 
 SEM PrimCall
   | Id          lhs     .   pp      =   pp @nm >#< maybe empty pp @mbKnownPrim
@@ -47,5 +70,14 @@ SEM CCall
   | Wrapper     lhs     .   pp      =   pp "wrapper"
   | Dynamic     lhs     .   pp      =   pp "dynamic"
   | Empty       lhs     .   pp      =   empty
+
+SEM ForeignExpr
+  | Ent			lhs		.	pp		=	pp @lhs.entNm
+  | EntNm		lhs		.	pp		=	pp @nm
+  | Arg			lhs		.	pp		=	"%" >|< @nr
+  | Sel			lhs		.	pp		=	@expr.pp >|< "." >|< @sel.pp
+  | Inx			lhs		.	pp		=	@expr.pp >|< "[" >|< @inx.pp >|< "]"
+  | Ptr			lhs		.	pp		=	"&" >|< @expr.pp
+  | Empty		lhs		.	pp		=	empty
 %%]
 

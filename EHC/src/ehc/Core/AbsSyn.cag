@@ -239,7 +239,8 @@ TYPE CBindAspectL	=	[CBindAspect]
 
 %%[(8 codegen)
 SET AllBindAspect   =   CBindAspect CBindAspectL
-SET AllBind     	=   CBind CBindL AllBindAspect
+SET AllBindOnly 	=   CBind CBindL
+SET AllBind     	=   AllBindOnly AllBindAspect
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

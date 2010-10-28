@@ -2,6 +2,7 @@
    what    : weak ptr implicit finalization
    expected: finalization messages, but up til the 1500'th; correct intertwining with gc itself
    note    : output depends on gc frequency, which in the current config every 100 weakptrs; adapt the 1500 if not enough
+   constraints: exclude-if-jscript
 ---------------------------------------------------------------------------------------- -}
 
 module WeakPtr3 where

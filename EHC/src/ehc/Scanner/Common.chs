@@ -414,7 +414,7 @@ foreignEntScanOpts :: ScanOpts
 foreignEntScanOpts
   =  defaultScanOpts
         {   scoKeywordsTxt      =   Set.fromList [ "dynamic", "wrapper", "h", "static" ]
-        ,   scoSpecChars        =   Set.fromList ".&"
+        ,   scoSpecChars        =   Set.fromList ".&%[]()"
         ,   scoDollarIdent      =   False
         , 	scoAllowQualified	=	False
         }

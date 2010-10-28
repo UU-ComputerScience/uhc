@@ -36,6 +36,8 @@
 %%]
 %%[(8 codegen) import({%{EH}Core.Trf.AnaRelevance})
 %%]
+%%[(8 codegen) import({%{EH}Core.Trf.LetFlattenStrict})
+%%]
 %%[(9 codegen) import({%{EH}Core.Trf.FixDictFields})
 %%]
 %%[(99 codegen) import({%{EH}Core.Trf.ExplicitStackTrace})
@@ -115,6 +117,8 @@ trfCore opts dataGam modNm trfcore
 
                  -- removal of unnecessary constructs: mutual recursiveness
                ; t_let_unrec
+                 -- flattening of nested strictness
+               ; t_let_flatstr
 
                  -- removal of unnecessary constructs: aliases
                ; t_inl_letali
@@ -163,7 +167,9 @@ trfCore opts dataGam modNm trfcore
                ; when (ehcOptOptimizes Optimize_StrictnessAnalysis opts)
                       t_ana_relev
                ; when (targetIsJScript (ehcOptTarget opts))
-                      (t_ren_uniq (emptyRenUniqOpts {renuniqOptResetOnlyInLam = True}))
+                      (do { {- t_let_flatstr
+                          ; -} t_ren_uniq (emptyRenUniqOpts {renuniqOptResetOnlyInLam = True})
+                          })
                }
 
         liftTrf :: String -> (CModule -> CModule) -> State TrfCore ()
@@ -194,6 +200,7 @@ trfCore opts dataGam modNm trfcore
         t_ann_simpl     = liftTrf  "ann-simpl"          $ cmodTrfAnnBasedSimplify opts
         t_ren_uniq    o = liftTrf  "ren-uniq"           $ cmodTrfRenUniq o
         t_let_unrec     = liftTrf  "let-unrec"          $ cmodTrfLetUnrec
+        t_let_flatstr   = liftTrf  "let-flatstr"        $ cmodTrfLetFlattenStrict
         t_inl_letali    = liftTrf  "inl-letali"         $ inlineLetAlias
         t_elim_trivapp  = liftTrf  "elim-trivapp"       $ cmodTrfElimTrivApp opts
         t_const_prop    = liftTrf  "const-prop"         $ cmodTrfConstProp opts

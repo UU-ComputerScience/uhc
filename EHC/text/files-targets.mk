@@ -410,4 +410,9 @@ text-variant-slides-uhcstatus:
 	  TEXT_SHUFFLE_VARIANT=63 \
 	  text-variant-dflt-once
 
+text-variant-blog:
+	$(MAKE) \
+	  TEXT_SHUFFLE_VARIANT=64 \
+	  text-variant-dflt-doc
+
 

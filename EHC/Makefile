@@ -273,6 +273,8 @@ uhc-install-postprocess-core:
 	
 uhc-install-postprocess-jazy:
 	
+uhc-install-postprocess-jscript:
+	
 uhc-install-postprocess-llvm:
 	
 # still to do: uhc --meta-export-env=$(INSTALL_UHC_LIB_PREFIX),$(UHC_EXEC_NAME)

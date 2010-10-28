@@ -58,7 +58,7 @@ set -x
 
 $LLVM_AS -f -o $INPUT_BASE.bc $INPUT_LL   && \
 $LLVM_OPT -f -o ${INPUT_BASE}_opt.bc $INPUT_BASE.bc && \
-$LLC -f -o $OUTPUT_BASE.s ${INPUT_BASE}_opt.bc && \
+$LLC -o $OUTPUT_BASE.s ${INPUT_BASE}_opt.bc && \
 $NATIVE_LD -g -o $OUTPUT $OUTPUT_BASE.s $LIBS && \
 $STRIP $OUTPUT
 

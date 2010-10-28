@@ -45,6 +45,7 @@ foreign import prim "primIndexArray" 	indexArray 		:: BoxArray x -> Int -> x
 foreign import prim "primWriteArray"  	primWriteArray 	:: BoxArray x -> Int -> x -> ()
 
 foreign import prim "primSameArray"  	primSameArray 	:: BoxArray x -> BoxArray x -> Bool
+
 %%]
 
 %%[99
