@@ -21,8 +21,8 @@ foreign import ccall "Prelude" id :: a -> a
 -- app = map (id id) (Cons 1 Nil)
      
 -- f $ x = f x
-  
--- test = map (id id)
+main = test  
+test = map (id id)
 -- foo = id id
 -- id x = x  
 -- intList = Cons 1 Nil

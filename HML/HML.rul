@@ -32,6 +32,7 @@ mkName = mkHNmBase -- id
 -- type Env     = M.Map HsName TyScheme
 type Sub     = (HsName, TyScheme)
 type ErrorMessage = String
+newtype Gamma = Gamma { unGam :: Env }
 
 -- | Remove entries from a Env based on their key
 remove :: Env -> [HsName] -> Env
@@ -67,11 +68,23 @@ rm k1 (x@(k,v):xs) | k1 == k   = rm k1 xs
                        | otherwise = x : rm k1 xs
 
 -- | Apply a set of substitution to an environment
-apply :: Env -> Env -> Either Env [ErrorMessage]
+apply :: Env -> Gamma -> Either Gamma [ErrorMessage]
 apply sub env 
   = let lst  = map (mapMaybe . app) sub
         set  = foldl' (.) id lst
-    in Left (set env)
+    in Left (Gamma $ set $ unGam env)
+    
+instance Apply Gamma where
+   app s   gam = case apply [s] gam of
+                  Left e  -> Just e
+                  Right _ -> Nothing
+   appAll e gam = case apply e gam of
+                   Left e  -> Just e
+                   Right _ -> Nothing
+                   
+instance Util Gamma where
+    ftv  _ = []
+    vars _ = []
     
 -- | Apply a substitution
 createMask :: Sub -> (TyExpr -> Maybe TyExpr)
@@ -211,10 +224,10 @@ replace   (_,_) [] = []
 replace p@(a,b) (x:xs) |  a == x   = b:replace p xs
                        | otherwise = x:replace p xs
                         
-munion a b = let f = map (uncurry minsert)
-                 xs = f a ++ f b
-             in foldl' (.) id xs []
--- munion = (++)
+-- munion a b = let f = map (uncurry minsert)
+                 -- xs = f a ++ f b
+             -- in foldl' (.) id xs []
+munion = (++)
 
 minsert k v []  = [(k,v)]
 minsert k v (x@(k',v'):xs) | k == k'   = (k, v):xs
@@ -355,7 +368,7 @@ extend (q, scheme@(Scheme_Simple var phi), frs)
                       -- pre           = q ++ [TyIndex_Group v (promote p) | (v, p) <- zipWith (\a (Scheme_Simple _ x)->(a, x)) varsc schemes ]
                   -- in ((pre, M.fromAscList [(var, ph2')]), frs')
         _     -> let (ph2, frs') = renameVars frs phi
-                 in D.trace ("@" ++ pp var ++ " == " ++ pp phi ++ " -- " ++ pp (promote phi)) ((q++[TyIndex_Group var (promote phi)], empty), frs)
+                 in D.trace ("@" ++ pp var ++ " == " ++ pp phi ++ " -- " ++ pp (promote ph2)) ((q++[TyIndex_Group var (promote ph2)], empty), frs')
 
 renameVars :: Int -> TyScheme -> (TyScheme, Int)
 renameVars frs ty 
@@ -974,7 +987,7 @@ type Decls   : [Decl]
 itf Expr
   visit infer
     inh pre :: Prefix
-    inh env :: Env
+    inh env :: Gamma
     inh ast :: Expr
     inh exp :: Expr
     inh frs :: Int
@@ -1009,9 +1022,10 @@ itf Decls
   visit infer
     inh ast :: Decls
     inh pre :: Prefix
-    inh env :: Env
+    inh env :: Gamma
     inh frs :: Int
     syn nxe :: Prefix
+    syn env :: Gamma
     syn sub :: Env
     syn frs :: Int
     
@@ -1019,9 +1033,10 @@ itf Decl
   visit infer
     inh ast :: Decl
     inh pre :: Prefix
-    inh env :: Env
+    inh env :: Gamma
     inh frs :: Int
     syn nxe :: Prefix
+    syn env :: Gamma -- These declarations can update the gamma in a non-linear way, so we have to return the new one
     syn sub :: Env
     syn frs :: Int
     
@@ -1031,10 +1046,11 @@ itf PatExpr
     syn var_nm :: HsName
   visit infer
     inh pre :: Prefix
-    inh env :: Env
+    inh env :: Gamma
     inh exp :: PatExpr
     inh frs :: Int
     syn nxe :: Prefix
+    syn env :: Gamma -- A PatExpr might want to expand the Gamma, so we need to again return it.
     syn sub :: Env
     syn res :: [TyScheme]
     syn frs :: Int
@@ -1066,21 +1082,27 @@ datasem PatExpr monad IO
     lhs.var_nm = error "IConst not a var"
     
     lhs.res = []
-    lhs.sub = lhs.env
+    -- lhs.sub = lhs.env
+    lhs.env = lhs.env
+    lhs.sub = []
     lhs.nxe = lhs.pre
     lhs.frs = lhs.frs
   clause CConst
     lhs.var_nm = error "CConst not a var"
     
     lhs.res = []
-    lhs.sub = lhs.env
+    -- lhs.sub = lhs.env
+    lhs.env = lhs.env
+    lhs.sub = []
     lhs.nxe = lhs.pre
     lhs.frs = lhs.frs
   clause Con
     lhs.var_nm = error "Constructors not supported"
     
     lhs.res = []
-    lhs.sub = lhs.env
+    -- lhs.sub = lhs.env
+    lhs.env = lhs.env
+    lhs.sub = []
     lhs.nxe = lhs.pre
     lhs.frs = lhs.frs
   clause Var
@@ -1089,28 +1111,35 @@ datasem PatExpr monad IO
     (loc.a, loc.frs1) = fresh lhs.frs
     loc.exp_a  = TyScheme_SystemF $ TyExpr_Var loc.a
     lhs.res    = [loc.exp_a]
-    lhs.sub    = minsert loc.nm loc.exp_a lhs.env
+    lhs.env    = Gamma $ minsert loc.nm loc.exp_a (unGam lhs.env)
+    lhs.sub    = []
     lhs.nxe    = (TyIndex_Group loc.a TyQuantifiedScheme_Bottom):lhs.pre
     lhs.frs    = loc.frs1
   clause VarAs
     lhs.var_nm = loc.nm 
     
     lhs.res = []
-    lhs.sub = lhs.env
+    -- lhs.sub = lhs.env
+    lhs.env = lhs.env
+    lhs.sub = []
     lhs.nxe = lhs.pre
     lhs.frs = lhs.frs
   clause App
     lhs.var_nm = error "App not a var"
     
     lhs.res = []
-    lhs.sub = lhs.env
+    -- lhs.sub = lhs.env
+    lhs.env = lhs.env
+    lhs.sub = []
     lhs.nxe = lhs.pre
     lhs.frs = lhs.frs
   clause AppTop
     lhs.var_nm = error "AppTop not a var"
     
     lhs.res = []
-    lhs.sub = lhs.env
+    -- lhs.sub = lhs.env
+    lhs.env = lhs.env
+    lhs.sub = []
     lhs.nxe = lhs.pre
     lhs.frs = lhs.frs
   clause Parens
@@ -1130,6 +1159,7 @@ datasem PatExpr monad IO
     lhs.res = patExpr.res
     lhs.sub = patExpr.sub
     lhs.nxe = patExpr.nxe
+    lhs.env = patExpr.env
     lhs.frs = patExpr.frs
   clause Ann
     child patExpr : PatExpr
@@ -1146,6 +1176,7 @@ datasem PatExpr monad IO
     
     lhs.res = patExpr.res
     lhs.sub = patExpr.sub
+    lhs.env = patExpr.env
     lhs.nxe = patExpr.nxe
     lhs.frs = patExpr.frs
   clause TypeAs
@@ -1158,39 +1189,50 @@ datasem PatExpr monad IO
     
     loc.ans = TyScheme_SystemF (TyExpr_Parens loc.tyExpr)
     lhs.res = [loc.ans]
-    lhs.sub = minsert patExpr.var_nm loc.ans lhs.env
+    lhs.env = Gamma $ minsert patExpr.var_nm loc.ans (unGam lhs.env)
+    lhs.sub = []
     lhs.nxe = lhs.pre
     lhs.frs = lhs.frs
   clause SConst
     lhs.var_nm = error "SConst not a var"
     
     lhs.res = []
-    lhs.sub = lhs.env
+    -- lhs.sub = lhs.env
+    lhs.sub = []
     lhs.nxe = lhs.pre
+    lhs.env = lhs.env
     lhs.frs = lhs.frs
   clause Rec
     lhs.var_nm = error "Rec not a var"
     
     lhs.res = []
-    lhs.sub = lhs.env
+    -- lhs.sub = lhs.env
+    lhs.sub = []
     lhs.nxe = lhs.pre
+    lhs.env = lhs.env
     lhs.frs = lhs.frs
   clause DataFields
     lhs.var_nm = error "DataFields not a var"
     
     lhs.res = []
-    lhs.sub = lhs.env
+    -- lhs.sub = lhs.env
+    lhs.sub = []
     lhs.nxe = lhs.pre
+    lhs.env = lhs.env
     lhs.frs = lhs.frs
   clause Irrefutable 
     lhs.var_nm = error "Irrefutable not a var"
     
     lhs.res = []
-    lhs.sub = lhs.env
+    -- lhs.sub = lhs.env
+    lhs.sub = []
     lhs.nxe = lhs.pre
+    lhs.env = lhs.env
     lhs.frs = lhs.frs
     
 datasem Decl monad IO
+  default? sub = const []
+  -- default? env = last
   clause Val
     match PatExpr.Var@loc = loc.patExpr
     
@@ -1202,14 +1244,14 @@ datasem Decl monad IO
     invoke infer of expr
 
     lhs.nxe = expr.nxe
-    lhs.sub = let (Left adjusted) = apply expr.sub lhs.env
+    lhs.env = let (Left adjusted) = apply expr.sub lhs.env
               in case expr.res of
                    [] -> error  $ "Inference failed datasem Decl clause Val. No result"
-                   x  -> foldr (\a->minsert loc.nm a) adjusted x
+                   x  -> Gamma $ foldr (\a->minsert loc.nm a) (unGam adjusted) x -- update the Gamma
     lhs.frs = expr.frs
   clause TySig
     lhs.nxe = lhs.pre
-    lhs.sub = minsert loc.nm (TyScheme_SystemF loc.tyExpr) lhs.env
+    lhs.env = Gamma $ minsert loc.nm (TyScheme_SystemF loc.tyExpr) (unGam lhs.env)  -- update the Gamma
     lhs.frs = lhs.frs
   clause Data
      child constrs : DataConstrs
@@ -1219,7 +1261,7 @@ datasem Decl monad IO
      
      invoke findTypes of constrs
      
-     lhs.sub = (foldr (.) id . map (\(k,v)->minsert k (mkQuantified v))) constrs.ty lhs.env
+     lhs.env = Gamma $ (foldr (.) id . map (\(k,v)->minsert k (mkQuantified v))) constrs.ty (unGam lhs.env) -- update the Gamma
      lhs.nxe = lhs.pre
      lhs.frs = lhs.frs
   clause FFI
@@ -1228,39 +1270,46 @@ datasem Decl monad IO
                in case null loc.vars of
                    True  -> tyExpr
                    False -> foldl (.) id (map (TyExpr_Quant tyQu_Forall) loc.vars) tyExpr
-     lhs.sub = minsert loc.nm (TyScheme_SystemF loc.exp) lhs.env
+     lhs.env = Gamma $ minsert loc.nm (TyScheme_SystemF loc.exp) (unGam lhs.env) -- update the Gamma
      lhs.nxe = lhs.pre
      lhs.frs = lhs.frs
   clause KiSig
-     lhs.sub = lhs.env
+     -- lhs.sub = lhs.env
+     lhs.env = lhs.env
      lhs.nxe = lhs.pre
      lhs.frs = lhs.frs
     
 datasem Decls monad IO
+  default? sub = const []
+  -- default? env = last
+  -- default? nxe = last
+  -- default? frs = last
   clause Cons
     hd.pre     = lhs.pre
     hd.env     = lhs.env
     hd.frs     = lhs.frs
     invoke infer of hd
     
-    tl.env     = hd.sub
+    tl.env     = hd.env
     tl.pre     = hd.nxe
     tl.frs     = hd.frs
     invoke infer of tl
     
     lhs.nxe       = tl.nxe
-    lhs.sub       = tl.sub
+    lhs.sub       = munion hd.sub tl.sub
     lhs.frs       = tl.frs
+    lhs.env       = tl.env
   clause Nil
-    lhs.sub       = lhs.env
+    -- lhs.sub       = lhs.env
     lhs.nxe       = lhs.pre
     lhs.frs       = lhs.frs
+    lhs.env       = lhs.env
        
 datasem Expr monad IO
     clause Var
         -- lhs.res = maybe (error "Variable not found in lookup") (:[]) $ M.lookup loc.nm lhs.env
         (lhs.res, loc.frs)
-             = case lookup loc.nm lhs.env of
+             = case lookup loc.nm (unGam lhs.env) of
                 Just a  -> ([a], lhs.frs) -- Is this the proper way to get mutual recursion working?
                 Nothing -> error $ "Variable '" ++ show loc.nm ++ "' not in scope"
                 -- Nothing -> (return . TyScheme_SystemF . TyExpr_Var *** id) (fresh lhs.frs)
@@ -1278,7 +1327,7 @@ datasem Expr monad IO
        lhs.nxe = lhs.pre
        lhs.frs = lhs.frs
     clause Con
-       lhs.res = maybe (error "Constructor not found in lookup") (:[]) $ lookup loc.nm lhs.env
+       lhs.res = maybe (error "Constructor not found in lookup") (:[]) $ lookup loc.nm (unGam lhs.env)
        lhs.sub = empty
        lhs.nxe = lhs.pre
        lhs.frs = lhs.frs
@@ -1298,7 +1347,8 @@ datasem Expr monad IO
        arg.exp = loc.arg
        arg.frs = func.frs
        arg.pre = func.nxe
-       arg.env = func.sub `munion` lhs.env
+       arg.env = let (Just e) = appAll func.sub lhs.env
+                 in e
        
        invoke infer of arg
        
@@ -1343,7 +1393,7 @@ datasem Expr monad IO
         (loc.frs, loc.binds)  = let nms         = getBindLHs loc.decls
                                     (vars, frs) = freshM lhs.frs (length nms)
                                 in (frs, zipWith (\a b->(a, mkQVar b)) nms vars)
-        loc.env   = foldr (.) id (map (\(k,v)->minsert k v) loc.binds) lhs.env
+        loc.env   = Gamma $ foldr (.) id (map (\(k,v)->minsert k v) loc.binds) (unGam lhs.env) -- temporaty update the environment. this will later be updated
         
         decls.pre = lhs.pre
         decls.env = loc.env
@@ -1352,7 +1402,7 @@ datasem Expr monad IO
         invoke infer of decls
 
         body.pre = decls.nxe
-        body.env = decls.sub
+        body.env = decls.env
         body.exp = loc.body
         body.frs = decls.frs
 
@@ -1379,7 +1429,7 @@ datasem Expr monad IO
                                         _   -> error "No type infered from PatExpr in Lam"
        (loc.b, loc.frs2) = fresh loc.frs
        loc.q'            = arg.nxe
-       loc.env'          = arg.sub
+       loc.env'          = arg.env
        
        body.frs = loc.frs2
        body.env = loc.env'
@@ -1388,7 +1438,9 @@ datasem Expr monad IO
        
        invoke infer of body
        
-       loc.tau = let x = appAll body.sub loc.exp_a
+       loc.env_full = munion arg.sub body.sub
+       
+       loc.tau = let x = appAll loc.env_full loc.exp_a
                  in case x of
                       (Just x') | (isUnQualTy x' || not (isVar loc.arg))
                                        -> x
@@ -1433,7 +1485,7 @@ datasem Expr monad IO
        lhs.frs = expr.frs
     clause TypeAs
        lhs.res = []
-       lhs.sub = lhs.env
+       lhs.sub = []
        lhs.nxe = lhs.pre
        lhs.frs = lhs.frs
     clause Ann
@@ -1448,45 +1500,45 @@ datasem Expr monad IO
        lhs.sub = expr.sub
        lhs.nxe = expr.nxe
        lhs.frs = expr.frs
-    clause AppImpred
+    clause   AppImpred
        lhs.res = []
-       lhs.sub = lhs.env
+       lhs.sub = [] -- lhs.env
        lhs.nxe = lhs.pre
        lhs.frs = lhs.frs
     clause Case
        lhs.res = []
-       lhs.sub = lhs.env
+       lhs.sub = [] -- lhs.env
        lhs.nxe = lhs.pre
        lhs.frs = lhs.frs
     clause CaseAltFail
        lhs.res = []
-       lhs.sub = lhs.env
+       lhs.sub = [] -- lhs.env
        lhs.nxe = lhs.pre
        lhs.frs = lhs.frs
     clause DataFields
        lhs.res = []
-       lhs.sub = lhs.env
+       lhs.sub = [] -- lhs.env
        lhs.nxe = lhs.pre
        lhs.frs = lhs.frs
     clause Rec
        lhs.res = []
-       lhs.sub = lhs.env
+       lhs.sub = [] -- lhs.env
        lhs.nxe = lhs.pre
        lhs.frs = lhs.frs
     clause SConst
        lhs.res = []
-       lhs.sub = lhs.env
+       lhs.sub = [] -- lhs.env
        lhs.nxe = lhs.pre
        lhs.frs = lhs.frs
     clause Sel
        lhs.res = []
-       lhs.sub = lhs.env
+       lhs.sub = [] -- lhs.env
        lhs.nxe = lhs.pre
        lhs.frs = lhs.frs
     clause Undefined
        (loc.a, loc.frs1) = fresh lhs.frs
        lhs.res = [TyScheme_SystemF $ TyExpr_Var loc.a]
-       lhs.sub = lhs.env
+       lhs.sub = [] -- lhs.env
        lhs.nxe = lhs.pre
        lhs.frs = loc.frs1
        
@@ -1982,7 +2034,7 @@ unify = sem unify : Unify monad IO
 typeCheck ::  Expr -> IO ([TyScheme], Env, Prefix, Int)
 typeCheck exp = do
   let inh = Inh_Expr_infer { exp_Inh_Expr = exp
-                           , env_Inh_Expr = empty
+                           , env_Inh_Expr = Gamma empty
                            , pre_Inh_Expr = []
                            , ast_Inh_Expr = exp
                            , frs_Inh_Expr = 1
