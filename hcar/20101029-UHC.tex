@@ -1,0 +1,82 @@
+\begin{hcarentry}[section,updated]{UHC, Utrecht Haskell Compiler}
+\report{Atze Dijkstra}%05/10
+\status{active development}
+\participants{many others%Jeroen Fokker,
+% Doaitse Swierstra,
+% Arie Middelkoop,
+% Luc\'ilia Camar\~{a}o de Figueiredo,
+% Carlos Camar\~{a}o de Figueiredo,
+% Andres L\"oh, Jos\'e Pedro Magalh\~{a}es,
+% Vincent van Oostrum, Clemens Grabmayer, Jan Rochel,
+% Tom Lokhorst, Jeroen Leeuwestein, Atze van der Ploeg, Paul van der Ende, Calin Juravle, Levin Fritz
+}
+\label{uhc}
+\label{ehc}
+\makeheader
+
+\paragraph{What is new?}
+UHC is the Utrecht Haskell Compiler, supporting almost all Haskell98 features and most of Haskell2010, plus
+experimental extensions.
+Recently version 1.1.0 was released, featuring generic deriving \cref{sec:genericDeriving},
+a new configurable garbage collector, initial support for building with UHC via cabal, and many bug fixes.
+
+We plan the next release to offer a Javascript backend.
+Furthermore we hope to add optimizations to eliminate some of the obvious inefficiencies.
+As part of this work the intent is also to better integrate the work done on whole program analysis.
+
+\paragraph{UHC Blog}
+Recently a UHC blog has been started.
+The intent is to scribble about the internals of UHC and issues arising out of the implementation.
+
+\paragraph{What do we currently do and/or has recently been completed?}
+As part of the UHC project, the following (student) projects and other activities are underway (in arbitrary order):
+\begin{itemize}
+\item Jeroen Bransen (PhD): ``Incremental Global Analysis'' (starting up).
+\item Jan Rochel (PhD): ``Realising Optimal Sharing'', based on work by Vincent van Oostrum and Clemens Grabmayer.
+\item Arie Middelkoop (PhD): type system formalization and automatic generation from type rules.
+\item Tom Lokhorst: type based static analyses (recently completed, available with proper configuration).
+\item Jeroen Leeuwestein: incrementalization of whole program analysis.
+\item Atze van der Ploeg: lazy closures (recently completed).
+\item Paul van der Ende: garbage collection \& LLVM (recently completed, available with proper configuration).
+\item Jeroen Fokker: GRIN backend, whole program analysis.
+\item C\u alin Juravle: base libraries (completed upto Haskell98, integrated).
+\item Levin Fritz: base libraries for Java backend (completed, integrated).
+\item Andres L\"oh: Cabal support (completed initial support, integrated).
+\item Jos\'e Pedro Magalh\~{a}es: generic deriving (\cref{sec:genericDeriving}, completed, integrated, presented at Haskell Symposium).
+\item Doaitse Swierstra: parser combinator library.
+\item Atze Dijkstra: overall architecture, type system, bytecode interpreter + java + javascript backend, garbage collector.
+\end{itemize}
+
+\paragraph{Background}
+
+UHC actually is a series of compilers of which the last is UHC, plus
+infrastructure for facilitating experimentation and extension.
+The distinguishing features for dealing with the complexity of the compiler and for experimentation are
+(1) its stepwise organisation as a series of increasingly more complex standalone compilers,
+the use of DSL and tools for its (2) aspectwise organisation (called Shuffle) and
+(3) tree-oriented programming (Attribute Grammars, by way of the
+Utrecht University Attribute Grammar (UUAG) system~\cref{uuag}.
+
+For more information, see the references provided.
+
+\FurtherReading
+\begin{compactitem}
+\item UHC Homepage:
+\url{http://www.cs.uu.nl/wiki/UHC/WebHome}
+
+\item UHC Blog:
+\url{http://utrechthaskellcompiler.wordpress.com}
+
+\item Attribute grammar system:
+\url{http://www.cs.uu.nl/wiki/HUT/AttributeGrammarSystem}
+
+\item Parser combinators:
+\url{http://www.cs.uu.nl/wiki/HUT/ParserCombinators}
+
+\item Shuffle:
+\url{http://www.cs.uu.nl/wiki/Ehc/Shuffle}
+
+\item Ruler:
+\url{http://www.cs.uu.nl/wiki/Ehc/Ruler}
+\end{compactitem}
+\end{hcarentry}

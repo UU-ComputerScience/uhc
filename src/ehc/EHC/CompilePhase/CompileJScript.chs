@@ -58,6 +58,7 @@ cpCompileJScript how othModNmL modNm
               fpO m f = mkPerModuleOutputFPath opts True m f Cfg.suffixJScriptLib
               fpM     = fpO modNm fp
               fpExec  = mkPerExecOutputFPath opts modNm fp (Just "js")
+              fpHtml  = mkPerExecOutputFPath opts modNm fp (Just "html")
        ; when (isJust mbJs && targetIsJScript (ehcOptTarget opts))
               (do { cpMsg modNm VerboseALot "Emit JScript"
                   ; when (ehcOptVerbosity opts >= VerboseDebug)
@@ -68,7 +69,15 @@ cpCompileJScript how othModNmL modNm
                   ; lift $ putPPFPath fpM ("//" >#< modNm >-< ppMod) 1000
                   ; case how of
                       FinalCompile_Exec
-                        -> do { cpJScript (fpathToStr fpExec) (rts ++ (map fpathToStr $ oth ++ [fpM]))
+%%[[20
+                        | ehcOptWholeProgOptimizationScope opts
+                        -> do { cpJScript (fpathToStr fpExec) (rts ++ map fpathToStr [fpM])
+                              ; mkHtml fpHtml [fpathToStr fpExec]
+                              }
+%%]]
+                        | otherwise
+                        -> do { cpJScript (fpathToStr fpExec) (map fpathToStr [fpM])
+                              ; mkHtml fpHtml $ rts ++ map fpathToStr ([ fpO m fp | m <- othModNmL, let (_,_,_,fp) = crBaseInfo m cr ] ++ [fpExec])
                               }
                         where rts = map (Cfg.mkInstalledRts opts Cfg.mkJScriptLibFilename Cfg.INST_LIB (Cfg.installVariant opts)) Cfg.libnamesRts
 %%[[8
@@ -80,7 +89,17 @@ cpCompileJScript how othModNmL modNm
                       _ -> return ()
                   }
               )
-       }                 
+       }
+  where mkHtml fpHtml jsL
+          = lift $ putPPFPath fpHtml (ppHtml) 1000
+          where scr x = "<script type=\"text/javascript\" src=\"" >|< x >|< "\"></script>"
+                ppHtml
+                  = "<html><head><title>" >|< modNm >|< "</title></head>"
+                    >-< "<body>"
+                    >-< vlist (map scr jsL)
+                    >-< "</body>"
+                    >-< "</html>"
+
 %%]
 
 

@@ -144,8 +144,8 @@ data EHCOpts
       ,  ehcOptOptimizationScope
                               ::  OptimizationScope          -- optimisation scope
       ,  ehcOptDumpCoreStages ::  Bool              -- dump intermediate Core transformation stages
-      ,  ehcOptTarget         ::  Target            -- code generation target
-      ,  ehcOptTargetFlavor   ::  TargetFlavor      -- code generation target flavor
+      ,  ehcOptMbTarget       ::  MaybeOk Target            -- code generation target
+      ,  ehcOptMbTargetFlavor ::  MaybeOk TargetFlavor      -- code generation target flavor
 %%]]
 %%[[(8 codegen tycore)
       ,  ehcOptUseTyCore      ::  Maybe [TyCoreOpt] -- use TyCore instead of Core (temporary option until Core is obsolete)
@@ -268,8 +268,8 @@ emptyEHCOpts
       ,  ehcOptOptimizations    =   optimizeRequiresClosure $ Map.findWithDefault Set.empty OptimizationLevel_Normal optimizationLevelMp
       ,  ehcOptOptimizationLevel=   OptimizationLevel_Normal
       ,  ehcOptOptimizationScope=   OptimizationScope_PerModule
-      ,  ehcOptTarget           =   defaultTarget
-      ,  ehcOptTargetFlavor     =   defaultTargetFlavor
+      ,  ehcOptMbTarget         =   JustOk defaultTarget
+      ,  ehcOptMbTargetFlavor   =   JustOk defaultTargetFlavor
 %%]]
 %%[[(8 codegen tycore)
       ,  ehcOptUseTyCore        =   Nothing
@@ -352,6 +352,18 @@ emptyEHCOpts
       ,  ehcOptCfgInstallVariant=   Nothing
 %%]]
       }
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Derived accessors
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 export(ehcOptTarget,ehcOptTargetFlavor)
+ehcOptTarget :: EHCOpts -> Target
+ehcOptTarget = maybeOk (\s -> panic ("ehcOptTarget: " ++ s)) id  . ehcOptMbTarget
+
+ehcOptTargetFlavor :: EHCOpts -> TargetFlavor
+ehcOptTargetFlavor = maybeOk (\s -> panic ("ehcOptTargetFlavor: " ++ s)) id . ehcOptMbTargetFlavor
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -1,0 +1,239 @@
+%% ----------------------------------------------------------------------------
+%% required packages
+%% ----------------------------------------------------------------------------
+
+\RequirePackage{calc}
+\RequirePackage{graphicx}
+\RequirePackage{tikz}
+
+\RequirePackage{hyperref} %% should be included last
+
+%% ----------------------------------------------------------------------------
+%% options
+%% ----------------------------------------------------------------------------
+
+\newif\iflang@dutch
+\lang@dutchfalse
+\newif\ifsection@pages
+\section@pagestrue
+\newif\ifhelvet
+\helvetfalse
+\DeclareOptionBeamer{dutch}{\lang@dutchtrue}
+\DeclareOptionBeamer{english}{\lang@dutchfalse}
+\DeclareOptionBeamer{sectionpages}{\section@pagestrue}
+\DeclareOptionBeamer{nosectionpages}{\section@pagesfalse}
+\DeclareOptionBeamer{helvet}{\helvettrue}
+\ProcessOptionsBeamer
+
+%% ----------------------------------------------------------------------------
+%% colors
+%% ----------------------------------------------------------------------------
+
+% Official CS colors
+\definecolor{uuxsilver}{rgb} {0.5,0.5,0.5}
+\definecolor{uuxorange}{cmyk}{0,0.25,0.9,0}
+\definecolor{uuxgreen} {cmyk}{1,0,0.75,0}
+\definecolor{uuxred}   {cmyk}{0.2,1,0.9,0.1}
+
+% Corporate colors
+\definecolor{uuyyellow}{cmyk}{0,0.115,0.94,0.15}
+\definecolor{uuyred}   {cmyk}{0,0.91,0.76,0.06}
+
+% Extra corporate colors
+\definecolor{uuyorange}{cmyk}{0,0.3,0.9,0}
+\definecolor{uuyred}   {cmyk}{0.2,1,0.9,0.1}
+\definecolor{uuygreen} {cmyk}{0.9,0.15,0.7,0}
+\definecolor{uuyblue}  {cmyk}{0.9,0.55,0,0}
+\definecolor{uuypurple}{cmyk}{0.7,1,0.2,0.05}
+
+%
+
+%% ----------------------------------------------------------------------------
+%% outer theme
+%% ----------------------------------------------------------------------------
+
+% dimensions: 128mm * 96mm
+
+\setbeamercolor{background canvas}{fg=black,bg=uuxsilver!20!white}
+\setbeamercolor{structure}{fg=uuxred}
+
+\newcommand{\backgroundpicture}{uueduc}
+\newcommand{\includebackgroundpicture}{%
+  \if!\backgroundpicture!
+    \relax
+  \else
+    \includegraphics[width=12.8cm]{\backgroundpicture}%
+  \fi}
+
+\newcommand{\frontmatter}{%
+  \setbeamertemplate{background}{%
+    \begin{tikzpicture}{0mm}{0mm}%
+      \clip (0,0) rectangle (12.8,9.6);%
+      \fill [uuxorange] (0,0) rectangle (12.8,9.6);%    
+      \fill [uuxsilver] (45,10.5) circle (43.75cm);%
+      \fill [uuxred] (12.8,-23) circle (32.3cm);%
+      \begin{scope}%
+        \clip (12.8,-23) circle (32.3cm);%
+        \clip (45,10.5) circle (43.75cm);%
+        \fill [uuxsilver!10!white] (45,10.5) circle (43.75cm);%
+        \draw [opacity=0.2] (6.9,4.8) node%
+          {\includebackgroundpicture};%
+      \end{scope}%
+      \draw (2.9,7.2) node {\includegraphics[height=1.1cm]{uulogo}};%
+      \draw (9.8,7.35) node {\parbox[b]{5cm}{\scriptsize\cs@logo}};%
+    \end{tikzpicture}}%
+  \setbeamertemplate{navigation symbols}{}}
+
+\newcommand{\mainmatter}{%
+  \setbeamertemplate{background}{%
+    \begin{tikzpicture}{0mm}{0mm}%
+      \clip (0,0) rectangle (12.8,9.6);%
+      \fill [uuxsilver!50!white] (0,0) rectangle (12.8,9.6);%
+        \draw [opacity=0.2] (-3.0,4.8) node%
+          {\includebackgroundpicture};%
+      \fill [uuxsilver!10!white] (30,6.5) circle (28.9cm);%
+      \draw (2.8,0.6) node {\includegraphics[height=0.8cm]{uulogo}};%
+      \draw (10.3,0.7) node {\parbox[b]{4cm}{\tiny\cs@logo}};%
+      \draw (0.5,0.25) node {\tiny\insertframenumber};%
+    \end{tikzpicture}}%
+  \setbeamertemplate{navigation symbols}{%
+    \insertslidenavigationsymbol%
+    \insertframenavigationsymbol%
+    \insertsubsectionnavigationsymbol%
+    \insertsectionnavigationsymbol%
+    \insertdocnavigationsymbol%
+    \insertbackfindforwardnavigationsymbol%
+    \hspace{0.35cm}}}
+
+\mainmatter
+
+\setbeamersize{text margin left=2cm}
+\setbeamersize{text margin right=.5cm}
+
+\newcommand{\cs@englishlogo}{%
+  \raggedleft %
+  \sffamily%
+  \textcolor{uuxred}{\textbf{[}}%%
+  Faculty of \textbf{Science}\\%
+  \textcolor{uuxred}{\textbf{Information and Computing Sciences}}%%
+  \textcolor{uuxred}{\textbf{]}}}%
+\newcommand{\cs@dutchlogo}{%
+  \raggedleft%
+  \sffamily%
+  \textcolor{uuxred}{\textbf{[}}%%
+  Faculteit \textbf{B\`etawetenschappen}\\%
+  \textcolor{uuxred}{\textbf{Informatica}}%
+  \textcolor{uuxred}{\textbf{]}}}%
+\newcommand{\cs@logo}{%
+  \renewcommand{\sfdefault}{cmss}
+  \iflang@dutch\cs@dutchlogo\else\cs@englishlogo\fi}%
+
+\setbeamertemplate{head}{}
+\setbeamertemplate{foot}{}
+\setbeamertemplate{navigation symbols}{}
+
+\ifhelvet
+  \renewcommand{\sfdefault}{phv}
+\else
+  \renewcommand{\sfdefault}{cmss}
+\fi
+
+\renewcommand{\ttdefault}{cmtt}
+
+\renewcommand{\emph}[1]{\textcolor{uuxred}{#1}}
+
+\usefonttheme[onlymath]{serif}
+
+%% ----------------------------------------------------------------------------
+%% inner theme
+
+\setlength{\parskip}{0.25cm}
+
+\setbeamerfont{title}{series=\bfseries,size=\Large}
+
+\setbeamertemplate{title page}{%
+  \vspace{2.5cm}%
+  \begin{center}%
+    {\usebeamerfont{title}\textcolor{uuxred}{\inserttitle}}%
+    \ifx\insertsubtitle\@empty%
+    \else%
+      \par{\usebeamerfont{subtitle}\textcolor{uuxred}{\insertsubtitle}}%
+    \fi%
+    \par\large\insertauthor%
+    \par\footnotesize\insertinstitute%
+    \par\small\insertdate%
+    \vfill%
+  \end{center}}
+
+\newcommand{\section@number}{}%
+
+\setbeamercolor{frametitle}{fg=uuxred}
+\setbeamerfont{frametitle}{series=\bfseries}
+\setbeamertemplate{frametitle}{%
+  \vspace{0.25cm}%
+  \hspace{-1.5cm}%
+  \usebeamerfont{frametitle}\usebeamercolor{frametitle}\insertframetitle%
+  \normalfont\normalsize\hfill\section@number}
+
+\newcommand{\section@page}{%
+  \hspace{-1cm}%
+  \parbox{11.3cm}{%
+    \begin{center}%
+      \usebeamerfont{frametitle}%
+      \usebeamercolor[fg]{frametitle}%
+      \thesection.\ \,\insertsection%
+    \end{center}}}
+
+\newcommand{\section@pagestar}{%
+  \hspace{-1cm}%
+  \parbox{11.3cm}{%
+    \begin{center}%
+      \usebeamerfont{frametitle}%
+      \usebeamercolor[fg]{frametitle}%
+      \insertsection%
+    \end{center}}}
+
+\newcommand{\sectionheader}{\S\thesection}
+\newcommand{\subsectionheader}{\sectionheader.\thesubsection}
+
+\ifsection@pages
+
+  \AtBeginSection%
+    [\begin{frame}%
+       \section@pagestar%
+     \end{frame}%   
+     \let\section@number\relax]%
+    {\begin{frame}%
+       \section@page%
+     \end{frame}%
+     \let\section@number\sectionheader}
+  
+  \newcommand{\subsection@page}{%
+    \hspace{-1cm}%
+    \parbox{11.3cm}{%
+      \begin{center}%
+        \usebeamerfont{frametitle}%
+        \usebeamercolor[fg]{frametitle}%
+        \thesection.\thesubsection\ \,\insertsubsection%
+      \end{center}}}
+  
+  \newcommand{\subsection@pagestar}{%
+    \hspace{-1cm}%
+    \parbox{11.3cm}{%
+      \begin{center}%
+        \usebeamerfont{frametitle}%
+        \usebeamercolor[fg]{frametitle}%
+        \insertsubsection%
+      \end{center}}}
+  
+  \AtBeginSubsection%
+    [\begin{frame}%
+       \subsection@pagestar%
+     \end{frame}%
+     \let\section@number\relax]
+    {\begin{frame}%
+       \subsection@page%
+     \end{frame}%
+     \let\section@number\subsectionheader}
+
+\fi
