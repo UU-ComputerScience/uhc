@@ -16,6 +16,8 @@ An EHC compile run maintains info for one compilation invocation
 %%]
 %%[99 import(EH.Util.FPath)
 %%]
+%%[99 import({%{EH}Base.PackageDatabase})
+%%]
 
 %%[8 import({%{EH}EHC.Common})
 %%]
@@ -352,13 +354,18 @@ crModCanCompile modNm cr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(99 codegen) export(crPartitionIntoPkgAndOthers)
-crPartitionIntoPkgAndOthers :: EHCompileRun -> [HsName] -> ([(PkgKey,String)],[HsName])
+-- | split module names in those part of a package, and others
+crPartitionIntoPkgAndOthers :: EHCompileRun -> [HsName] -> ([PkgModulePartition],[HsName])
 crPartitionIntoPkgAndOthers cr modNmL
-  = (nub $ concat ps,concat ms)
+  = ( [ (p,d,m)
+      | ((p,d),m) <- Map.toList $ Map.unionsWith (++) $ map Map.fromList ps
+      ] -- nub $ concat ps
+    , concat ms
+    )
   where (ps,ms) = unzip $ map loc modNmL
         loc m = case filelocKind $ ecuFileLocation ecu of
-                  FileLocKind_Dir	  -> ([]     ,[m])	
-                  FileLocKind_Pkg p d -> ([(p,d)],[] )
+                  FileLocKind_Dir	  -> ([]         ,[m])	
+                  FileLocKind_Pkg p d -> ([((p,d),[m])],[] )
               where (ecu,_,_,_) = crBaseInfo m cr
 %%]
 

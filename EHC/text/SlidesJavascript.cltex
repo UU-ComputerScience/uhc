@@ -1,0 +1,77 @@
+%%[interpreter
+\begin{frame}
+\frametitle{Interpreter: function}
+
+%%@Blog.js.interpreter.interface.Fun wrap=safecode
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Interpreter: application}
+
+%%@Blog.js.interpreter.interface.App wrap=safecode
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Interpreter: evaluation}
+
+%%@Blog.js.interpreter.interface.ev wrap=safecode
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Interpreter: application}
+
+%%@Blog.js.interpreter.impl.App.construct wrap=safecode
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Interpreter: evaluation}
+
+First attempt:
+%%@Blog.js.interpreter.impl.ev.incorrect1 wrap=safecode
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Interpreter: application}
+
+%%@Blog.js.interpreter.impl.App.proto wrap=safecode
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Interpreter: evaluation}
+
+Second attempt:
+%%@Blog.js.interpreter.impl.ev.correct1 wrap=safecode
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Interpreter: function}
+
+%%@Blog.js.interpreter.impl.Fun.construct wrap=safecode
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Interpreter: function}
+
+%%@Blog.js.interpreter.impl.Fun.proto wrap=safecode
+
+\end{frame}
+
+
+%%]
+

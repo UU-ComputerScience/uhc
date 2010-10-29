@@ -48,7 +48,7 @@
 \documentclass{article}
 %%]
 
-%%[18
+%%[66
 \documentclass[ignorenonframetext]{beamer}
 %%]
 
@@ -138,6 +138,21 @@
 
 %include lhs2TeX.fmt
 %include forText.fmt
+%%]
+
+%%[67
+%if asSlides
+%let slides = True
+%else
+%let dictaat = True
+%endif
+
+%include IdentColors.fmt
+%%]
+
+%%[65
+%% assume presence of IdentColors.fmt
+%include Javascript.fmt
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -377,16 +392,15 @@
 %%]
 
 %%[18
-%\usetheme{Darmstadt}
 \usetheme[sidebar=true, style=fancy, showpagenr=true]{uu}
-%\usefonttheme{serif}
 \setbeamertemplate{blocks}[rounded][shadow=true]
-%\setbeamertemplate{blocks}[rounded]
 %%]
 
-%%[18
+%%[67
+\usetheme{uucs}
+\usepackage{mathpazo}
+\usepackage{uucorporatecolors}
 %%]
-\usepackage[headheight=12pt,footheight=12pt]{beamerthemeboxes}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% PGF, TikZ
@@ -1079,6 +1093,12 @@ version
 %%[64
 \title{@@@UHC@ blog}
 \author{Atze Dijkstra}
+%%]
+
+%%[65
+\title{Javascript? Haskellscript!}
+\author{Atze Dijkstra}
+\date{\today}
 %%]
 
 
@@ -3511,6 +3531,22 @@ We thank both (anonymous) reviewers for their extremely valuable and helpful com
 \section{Near future work}
 
 %%@SlidesStatus.futureUHCWork201009
+
+%%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Slides for Javascript backend
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[65
+%%@Slides.titlepage
+
+%\section{Current status}
+
+%%@SlidesJavascript.interpreter
+
+%\section{Near future work}
 
 %%]
 

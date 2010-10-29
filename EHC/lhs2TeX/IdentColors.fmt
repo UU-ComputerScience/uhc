@@ -1,0 +1,310 @@
+%%if slides
+\newcommand{\varid}[1]{{\textcolor{black}{\mathit{#1}}}}
+\newcommand{\con}[1]{\textcolor{blue}{\mathit{#1}}}
+\newcommand{\tycon}[1]{\con{#1}}
+\newcommand{\cl}[1]{\textcolor{uu2fuchsia}{\mathit{#1}}}
+\newcommand{\class}[1]{\cl{#1}}
+\newcommand{\ty}[1]{\textcolor{red}{\mathit{#1}}}
+\newcommand{\tyvar}[1]{\ty{#1}}
+\newcommand{\blankline}{\vspace{\baselineskip}\par}
+\newcommand{\dsl}[1]{\textcolor{uuxgreen}{#1}}
+\newcommand{\dslid}[1]{\mathit{{\textcolor{uuxgreen}{#1}}}}
+%%endif
+%if dictaat
+\newcommand{\varid}[1]{{{\mathit{#1}}}}
+\newcommand{\tycon}[1]{\con{#1}}
+\newcommand{\cl}[1]{{\mathit{#1}}}
+\newcommand{\class}[1]{\cl{#1}}
+\newcommand{\ty}[1]{{\mathit{#1}}}
+\newcommand{\tyvar}[1]{\ty{#1}}
+\newcommand{\blankline}{\vspace{\baselineskip}\par}
+\newcommand{\dsl}[1]{#1}
+\newcommand{\dslid}[1]{\mathit{{#1}}}
+%endif
+
+%format ->         = "\ty{\to} "
+%format -->        = "\to "
+%format ==>         = "\ty{\Rightarrow }"
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Basic Types
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%format Bool       = "\ty{Bool}"
+%format True       = "\con{True}"
+%format False      = "\con{False}"
+
+%format (List (a)) = "\ty{" [ a ] "}"
+%format (Pars (a)) = "\ty{" ( a ) "}"
+%format Cons       = "\con{Cons}"
+%format Nil        = "\con{Nil}"
+%format (CP (a) (b)) = "\ty{(" a"," b ")}"
+
+%format Empty         = "\ty{()}"
+%format Empty_        = "\con{()}"
+
+%format Int        = "\ty{Int}"
+%format Integer    = "\ty{Integer}"
+%format Char       = "\ty{Char}"
+%format String     = "\ty{String}"
+
+%format Maybe      = "\ty{Maybe}"
+%format Just       = "\con{Just}"
+%format Nothing    = "\con{Nothing}"
+
+%format Either     = "\ty{Either}"
+%format Left       = "\con{Left}"
+%format Right      = "\con{Right}"
+
+%format IO         = "\ty{IO}"
+%format FilePath   = "\ty{FilePath}"
+
+%format a = "\tyvar{a}"
+%format b = "\tyvar{b}"
+%format c = "\tyvar{c}"
+%format d = "\tyvar{d}"
+%format m = "\tyvar{m}"
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Classes
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%format Eq         = "\class{Eq}"
+%format Ord        = "\class{Ord}"
+%format Num        = "\class{Num}"
+%format Read       = "\class{Read}"
+%format Show       = "\class{Show}"
+%format Functor    = "\class{Functor}"
+%format Monad      = "\class{Monad}"
+%format Integral   = "\class{Integral}"
+
+%format Enum     = "\cl{Enum}"
+%format Ix       = "\cl{Ix}"
+%format Text     = "\cl{Text}"
+%format Monad    = "\cl{Monad}"
+%format IO       = "\ty{IO}"
+%format IO_       = "\con{IO}"
+
+%format Fork     = "\con{Fork}"
+%format GLeaf    = "\con{GLeaf}"
+%format GNode    = "\con{GNode}"
+%format Just     = "\con{Just}"
+%format Leaf     = "\con{Leaf}"
+%format Leaf'    = "\con{Leaf^\prime}"
+%format Leaf''   = "\con{Leaf^{\prime\prime}}"
+%format Leaf'''  = "\con{Leaf^{\prime\prime\prime}}"
+%format Left     = "\con{Left}"
+%format Cons     = "\con{Cons}"
+%format Node     = "\con{Node}"
+%format Node'    = "\con{Node^\prime}"
+%format Node''   = "\con{Node^{\prime\prime}}"
+%format Node'''  = "\con{Node^{\prime\prime\prime}}"
+%format Nothing  = "\con{Nothing}"
+
+%format Pair      = "\ty{Pair}"
+%format Pair_     = "\con{Pair}"
+
+%format RoseLeaf  = "\con{RoseLeaf}"
+%format RoseNode  = "\con{RoseNode}"
+%format Rat       = "\con{Rat}"
+%format Rational  = "\ty{Rational}"
+
+%format BinTree  = "\ty{BinTree}"
+
+%format Complex   = "\ty{Complex}"
+%format Comp      = "\con{Comp}"
+
+%format Fork_    = "\ty{Fork}"
+%format GTree    = "\ty{GTree}"
+%format Float    = "\ty{Float}"
+%format Listt    = "\ty{List}"
+%format Maybe    = "\ty{Maybe}"
+%format Ratio    = "\ty{Ratio}"
+%format Poly     = "\ty{Poly}"
+%format Poly_    = "\con{Poly}"
+%format Term     = "\ty{Term}"
+%format Term_    = "\con{Term}"
+
+%format Ordering = "\ty{Ordering}"
+%format LT = "\con{LT}"
+%format EQ = "\con{EQ}"
+%format GT = "\con{GT}"
+
+%format Expr = "\ty{Expr}"
+%format Env  = "\ty{Env}"
+%format Con  = "\con{Con}"
+%format Var  = "\con{Var}"
+%format Prop = "\ty{Prop}"
+%format Vari = "\con{Vari}"
+%format Not  = "\con{Not}"
+%format Stat = "\ty{Stat}"
+%format Assign = "\con{Assign}"
+%format If     = "\con{If}"
+%format While  = "\con{While}"
+%format Repeat = "\con{Repeat}"
+%format Compound = "\con{Compound}"
+
+%format RoseTree = "\ty{RoseTree}"
+%format Tree     = "\ty{Tree}"
+%format Tree'    = "\ty{Tree^\prime}"
+%format Tree''   = "\ty{Tree^{\prime\prime}}"
+%format Tree'''  = "\ty{Tree^{\prime\prime\prime}}"
+
+%format Huff   = "\ty{Huff}"
+%format Weight = "\ty{Weight}"
+%format Bit    = "\ty{Bit}"
+%format Zero   = "\con{Zero}"
+%format One    = "\con{One}"
+
+%format Commanding = "\class{Commanding}"
+%format Paint      = "\class{Paint}"
+%format Reactive   = "\class{Reactive}"
+%format Textual    = "\class{Textual}"
+
+%format Point      = "\ty{Point}"
+%format Attr       = "\ty{Attr}"
+%format Ball       = "\ty{Ball}"
+%format Button     = "\ty{Button}"
+%format CButton    = "\ty{CButton}"
+%format CControl   = "\ty{CControl}"
+%format CFrame     = "\ty{CFrame}"
+%format Control    = "\ty{Control}"
+%format CWindow    = "\ty{CWindow}"
+%format DC         = "\ty{DC}"
+%format Event      = "\ty{Event}"
+%format FilePath   = "\ty{FilePath}"
+%format Frame      = "\ty{Frame}"
+%format Object     = "\ty{Object}"
+%format Panel      = "\ty{Panel}"
+%format Point_     = "\tycon{Point}"
+%format Prop       = "\ty{Prop}"
+%format Rect       = "\ty{Rect}"
+%format StaticText = "\ty{StaticText}"
+%format String     = "\ty{String}"
+%format Var        = "\ty{Var}"
+%format Window     = "\ty{Window}"
+%format \   = "\uplambda"
+%format tau = "\tau"
+%format :~  = "\mathbin{:\sim}"
+%format ~=  = "\simeq"
+%format ... = "\ldots"
+%format as     = "\text{\textbf{as}}"
+%format hiding = "\text{\textbf{hiding}}"
+
+%format attr_1
+%format attr_n
+%format v_1
+%format v_n
+
+%format Commanding = "\class{Commanding}"
+%format Form       = "\class{Form}"
+%format Labeled    = "\class{Labeled}"
+
+%format Paint      = "\class{Paint}"
+%format Reactive   = "\class{Reactive}"
+
+%format Textual    = "\class{Textual}"
+%format Valued     = "\class{Valued}"
+%format Widget     = "\class{Widget}"
+%format Idiomatic  = "\class{Idiomatic}"
+%format Applicative = "\class{Applicative}"
+%format Alternative = "\class{Alternative}"
+
+%format Attr       = "\ty{Attr}"
+%format Ball       = "\ty{Ball}"
+%format Button     = "\ty{Button}"
+%format CButton    = "\ty{CButton}"
+%format CControl   = "\ty{CControl}"
+%format CFrame     = "\ty{CFrame}"
+%format Control    = "\ty{Control}"
+%format CWindow    = "\ty{CWindow}"
+%format DC         = "\ty{DC}"
+%format Event      = "\ty{Event}"
+%format FilePath   = "\ty{FilePath}"
+%format Frame      = "\ty{Frame}"
+%format Graph      = "\ty{Graph}"
+%format Graph_     = "\tycon{Graph}"
+%format Label      = "\ty{Label}"
+%format Layout     = "\ty{Layout}"
+%format Object     = "\ty{Object}"
+%format Ordering_  = "\tycon{Ordering_}"
+%format Point_     = "\tycon{Point}"
+%format Prop_      = "\tycon{Prop_}"
+%format Rect       = "\tycon{Rect}"
+%format Set_       = "\tycon{Set}"
+%format Var        = "\tycon{Var}"
+%format World      = "\tycon{World}"
+%format $$         = $
+
+%format Goal  = "\ty{Goal}"
+%format Trace  = "\ty{Trace}"
+%format Rule  = "\ty{Rule}"
+%format Rule_ = "\tycon{Rule}"
+%format Ident = "\ty{Ident}"
+%format Fun   = "\tycon{Fun}"
+%format Rules = "\ty{Rules}"
+%format Bdg   = "\ty{Bdg}"
+%format Bdgs  = "\ty{Bdgs}"
+%format Taggable = "\class{Taggable}"
+
+%format p_1
+%format p_2
+%format v_1
+%format v_2
+%format xs_1
+%format xs_2
+%format e_1
+%format e_2
+%format $$  = $
+
+%format ->> = "\mathrel{\quad\textcolor{magenta}{\mathbf{\leadsto}}\quad}"
+%format ... = "\cdots"
+%format ??? = "\textcolor{uuxred}{\textbf{???}}"
+
+%format Fork_    = "\con{Fork}"
+%format GLeaf    = "\con{GLeaf}"
+%format GNode    = "\con{GNode}"
+%format Leaf     = "\con{Leaf}"
+%format Leaf'    = "\con{Leaf^\prime}"
+%format Leaf''   = "\con{Leaf^{\prime\prime}}"
+%format Leaf'''  = "\con{Leaf^{\prime\prime\prime}}"
+%format Node     = "\con{Node}"
+%format Node'    = "\con{Node^\prime}"
+%format Node''   = "\con{Node^{\prime\prime}}"
+%format Node'''  = "\con{Node^{\prime\prime\prime}}"
+%format RoseLeaf = "\con{RoseLeaf}"
+%format RoseNode = "\con{RoseNode}"
+%format True     = "\con{True}"
+
+%format Noord    = "\con{Noord}"
+%format Oost     = "\con{Oost}"
+%format Zuid     = "\con{Zuid}"
+%format West     = "\con{West}"
+
+
+%format Array    = "\ty{Array}"
+%format BinTree  = "\ty{BinTree}"
+%format Bool     = "\ty{Bool}"
+%format Char     = "\ty{Char}"
+%format Either   = "\ty{Either}"
+%format Fork     = "\ty{Fork}"
+%format GTree    = "\ty{GTree}"
+%format Int      = "\ty{Int}"
+%format Maybe    = "\ty{Maybe}"
+%format Pair     = "\ty{Pair}"
+%format RoseTree = "\ty{RoseTree}"
+%format Tree     = "\ty{Tree}"
+%format Tree_    = "\con{Tree}"
+%format Tree'    = "\ty{Tree^\prime}"
+%format Tree''   = "\ty{Tree^{\prime\prime}}"
+%format Tree'''  = "\ty{Tree^{\prime\prime\prime}}"
+
+%format f_ = "\ty{f}" 
+
+
+%format :+: = "\mathbin{\con{:\!\!+\!\!:}}"
+%format :*: = "\mathbin{\con{:\!\!*\!\!:}}"
+%format :-: = "\mathbin{\con{:\!\!-\!\!:}}"
+%format :/: = "\mathbin{\con{:\!\!/\!\!:}}"
+%format :/\: = "\mathbin{\con{:\!\!\wedge\!\!:}}"
+%format :\/: = "\mathbin{\con{:\!\!\vee\!\!:}}"
+%format :->: = "\mathbin{\con{:\Rightarrow:}}"

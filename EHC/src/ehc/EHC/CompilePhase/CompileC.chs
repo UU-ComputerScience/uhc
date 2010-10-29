@@ -44,10 +44,10 @@ gccDefs opts builds
 %%]
 
 %%[(99 codegen)
-gccInclDirs :: EHCOpts -> [(PkgKey,String)] -> [String]
+gccInclDirs :: EHCOpts -> [PkgModulePartition] -> [String]
 gccInclDirs opts pkgKeyDirL
   =            [ mki kind dir | FileLoc kind dir <- ehcOptImportFileLocPath opts, not (null dir) ]
-  ++ catMaybes [ mkp p        | p                <- pkgKeyDirL                                   ]
+  ++ catMaybes [ mkp p        | p                <- map tup123to12 pkgKeyDirL                                   ]
   where mki (FileLocKind_Dir    ) d = d
         mki (FileLocKind_Pkg _ _) d = Cfg.mkPkgIncludeDir $ filePathMkPrefix d
         mki  FileLocKind_PkgDb    d = Cfg.mkPkgIncludeDir $ filePathMkPrefix d
@@ -78,7 +78,7 @@ cpCompileWithGCC how othModNmL modNm
                                  ,
 %%[[99
                                       map (mkl2 Cfg.INST_LIB_PKG2)
-                                          (if ehcOptWholeProgOptimizationScope opts then [] else pkgKeyDirL)
+                                          (if ehcOptWholeProgOptimizationScope opts then [] else map tup123to12 pkgKeyDirL)
                                    ++
 %%]]
                                       map (mkl Cfg.INST_LIB)
@@ -115,7 +115,7 @@ cpCompileWithGCC how othModNmL modNm
                  othModNmL2 = othModNmL
 %%][99
                  (pkgKeyDirL,othModNmL2) = crPartitionIntoPkgAndOthers cr othModNmL
-                 pkgKeyL = map fst pkgKeyDirL
+                 pkgKeyL = map tup123to1 pkgKeyDirL
 %%]]
          ;  when (targetIsC (ehcOptTarget opts))
                  (do { let compileC
@@ -154,7 +154,7 @@ cpCompileWithGCC how othModNmL modNm
 %%]
 
 %%[99 export(cpPreprocessWithCPP)
-cpPreprocessWithCPP :: [(PkgKey,String)] -> HsName -> EHCompilePhase ()
+cpPreprocessWithCPP :: [PkgModulePartition] -> HsName -> EHCompilePhase ()
 cpPreprocessWithCPP pkgKeyDirL modNm 
   = do { cr <- get
        ; let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr

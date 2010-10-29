@@ -20,6 +20,7 @@ TEXT_PRIV_VARIANTS			+= flops06-ruler-paper flops06-ruler \
 								slides-status slides-uhcstatus \
 								slides-ehcstruct slides-ehcstruct-ufmg slides-hs09-uhcarch slides-uhcarch \
 								slides-uhcinternals \
+								slides-javascript \
 								gbm \
 								uniqueness slides-uniqueness \
 								icfp07-chr-locinst icfp07-chr-locinst-blind cc08-chr-locinst \
@@ -35,6 +36,7 @@ TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 								SharedTypeLang SharedFIOpts \
 								TopicRuler TopicExplImpl TopicGRIN TopicRec TopicKinds TopicDataTy TopicImpred TopicHM TopicExtRec TopicGADT TopicReflection TopicPartialTySig \
 								SlidesIntro Slides SlidesPartTySig SlidesExplImpl SlidesImpred SlidesRuler SlidesShuffle SlidesGRIN SlidesStatus SlidesEHCStructure SlidesUHCStructure SlidesUHCInternals \
+								SlidesJavascript \
 								CodeFragsExplImpl \
 								ToolDocShuffle ToolDocRuler ToolDocEHC ToolDocText2Text \
 								InternalDocEhcTechnical InternalDocEhcStructure InternalDocBuildSystem InternalDocEhcLibrary InternalDocJazy \
@@ -64,7 +66,7 @@ TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 # GENERIC STYLES TO BE SHARED BY VARIOUS PRODUCTS
 # 1	: base (share)
 # 9	: slides explimpl: base (share)
-# 18: slides: base (share)
+# 18: slides: base (share), older UU style
 # 26: acm paper: base (share)
 # 30: book: base (share)
 # 32: llncs paper: base (share) - not yet available
@@ -72,6 +74,8 @@ TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 # 39: documentation using simplified latex/...: base (share)
 # 54: poster: base (share)
 # 56: article: base (share)
+# 66: slides: base (share)
+# 67: slides: base (share), newer UU style
 
 # ALL PRODUCTS
 # 2	: ehc book (previously phd)
@@ -125,6 +129,7 @@ TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 # 62: slides "UHC Internals" (AFP2010)
 # 63: slides UHC status
 # 64: doc: blog
+# 65: slides "Javascript? Haskellscript!"
 # 77: scratch (article format)
 
 TEXT_SHUFFLE_ORDER	+= \
@@ -136,7 +141,6 @@ TEXT_SHUFFLE_ORDER	+= \
 		1 < 8, \
 		1 < 10, \
 		1 < 11, \
-		1 < 18, \
 		1 < 19, \
 		1 < 20, \
 		1 < 22, \
@@ -146,6 +150,9 @@ TEXT_SHUFFLE_ORDER	+= \
 		1 < 37, \
 		1 < 54, \
 		1 < 56, \
+		1 < 66, \
+		66 < 18, \
+		66 < 67, \
 		35, \
 		9 < 15, \
 		9 < 16, \
@@ -178,12 +185,13 @@ TEXT_SHUFFLE_ORDER	+= \
 		39 < 49, \
 		39 < 50, \
 		39 < 52, \
+		39 < 60, \
+		39 < 61, \
 		39 < 64, \
 		54 < 13, \
 		54 < 27, \
 		54 < 31, \
 		54 < 55, \
 		56 < 57, \
-		39 < 60, \
-		39 < 61
+		67 < 65
 		

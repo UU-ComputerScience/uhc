@@ -420,17 +420,17 @@ ehcCmdLineOpts
 %%[[1
          oTarget        _ o =  o
 %%][(8 codegen)
-         oTarget        s o =  o { ehcOptTarget            = target
+         oTarget        s o =  o { ehcOptMbTarget          = mbtarget
 %%[[20
-                                 , ehcOptOptimizationScope = if targetDoesHPTAnalysis target
+                                 , ehcOptOptimizationScope = if isJustOk mbtarget && targetDoesHPTAnalysis (fromJustOk mbtarget)
                                                              then max oscope OptimizationScope_WholeGrin
                                                              else oscope
 %%]]
                                  }
-                            where target = Map.findWithDefault defaultTarget s supportedTargetMp
+                            where mbtarget = maybe (NotOk s) JustOk $ Map.lookup s supportedTargetMp
                                   oscope = ehcOptOptimizationScope o
-         oTargetFlavor  s o =  o { ehcOptTargetFlavor  = Map.findWithDefault defaultTargetFlavor  s allTargetFlavorMp }
-         oOptimizations   o =  o { ehcOptImmQuit       = Just ImmediateQuitOption_Meta_Optimizations       }
+         oTargetFlavor  s o =  o { ehcOptMbTargetFlavor  = maybe (NotOk s) JustOk $ Map.lookup s allTargetFlavorMp }
+         oOptimizations   o =  o { ehcOptImmQuit         = Just ImmediateQuitOption_Meta_Optimizations       }
 %%]]
 %%[[1
          oTargets        o =  o { ehcOptImmQuit       = Just ImmediateQuitOption_Meta_Targets       }
@@ -443,13 +443,13 @@ ehcCmdLineOpts
                                 Just "eh"    -> o { ehcOptEmitEH           = True   }
 %%[[(8 codegen)
                                 Just "-"     -> o -- { ehcOptEmitCore         = False  }
-                                Just "core"  -> o { ehcOptTarget           = Target_None_Core_None
+                                Just "core"  -> o { ehcOptMbTarget         = JustOk Target_None_Core_None
                                                   }
-                                Just "tycore"-> o { ehcOptTarget           = Target_None_TyCore_None
+                                Just "tycore"-> o { ehcOptMbTarget         = JustOk Target_None_TyCore_None
                                                   }
 %%]]
 %%[[(8888 codegen java)
-                                Just "java"  -> o { ehcOptTarget           = Target_Interpreter_Core_Java   }
+                                Just "java"  -> o { ehcOptMbTarget         = JustOk Target_Interpreter_Core_Java   }
 %%]]
 %%[[(8 codegen grin)
                                 Just "grin"  -> o -- { ehcOptEmitGrin         = True   }
@@ -457,7 +457,7 @@ ehcCmdLineOpts
                                                   -- , ehcOptWholeProgHPTAnalysis = False
                                                   -- }
                                 Just m | m `elem` ["bexe","bexec"]
-                                             -> o { ehcOptTarget           = Target_Interpreter_Grin_C
+                                             -> o { ehcOptMbTarget         = JustOk Target_Interpreter_Grin_C
                                                   }
 
                                 Just "c"     -> o -- { ehcOptEmitC            = True
@@ -468,7 +468,7 @@ ehcCmdLineOpts
                                                   -- }
 
                                 Just m | m `elem` ["exe","exec"]
-                                             -> o { ehcOptTarget           = Target_FullProgAnal_Grin_C
+                                             -> o { ehcOptMbTarget         = JustOk Target_FullProgAnal_Grin_C
                                                   }
 
                                 Just "llvm"  -> o -- { ehcOptEmitLLVM         = True
@@ -478,11 +478,11 @@ ehcCmdLineOpts
                                                   -- , ehcOptErrAboutBytecode = False
                                                   -- }
                                 Just m | m `elem` ["lexe", "lexec"]
-                                             -> o { ehcOptTarget           = Target_FullProgAnal_Grin_LLVM
+                                             -> o { ehcOptMbTarget         = JustOk Target_FullProgAnal_Grin_LLVM
                                                   }                   
 %%]]
 %%[[(8 codegen clr)
-                                Just "clr"   -> o { ehcOptTarget           = Target_FullProgAnal_Grin_CLR   }
+                                Just "clr"   -> o { ehcOptMbTarget         = JustOk Target_FullProgAnal_Grin_CLR   }
 %%]]
 %%[[(99 hmtyinfer)
                                 Just "dt"    -> o { ehcOptEmitDerivTree    = DerivTreeWay_Final   }

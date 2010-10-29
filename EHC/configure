@@ -1367,7 +1367,6 @@ Optional Features:
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
   --enable-java           include java code generation
-  --enable-jscript        include JavaScript code generation
   --enable-llvm           include llvm code generation
   --enable-clr            include clr code generation
   --enable-tycore         include TyCore typed intermediate language
@@ -2366,14 +2365,9 @@ echo "$as_me: error:
 
 fi
 
-### enable options: jscript (JavaScript)
-# Check whether --enable-jscript was given.
-if test "${enable_jscript+set}" = set; then
-  enableval=$enable_jscript; enableJScript=yes
-else
-  enableJScript=no
-fi
-
+### enable options: jscript (JavaScript), default is yes
+# AC_ARG_ENABLE(jscript, AS_HELP_STRING([--enable-jscript],[include JavaScript code generation]), [enableJScript=yes], [enableJScript=no])
+enableJScript="yes"
 ENABLE_JSCRIPT=$enableJScript
 
 

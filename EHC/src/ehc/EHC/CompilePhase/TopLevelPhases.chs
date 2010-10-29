@@ -549,7 +549,7 @@ Post module import common phases: Parse + Module analysis + HS common
 cpEhcHaskellModuleAfterImport
   :: Bool -> EHCOpts -> HSState
 %%[[99
-     -> [(PkgKey,String)]
+     -> [PkgModulePartition]
 %%]]
      -> HsName -> EHCompilePhase ()
 cpEhcHaskellModuleAfterImport
@@ -636,7 +636,7 @@ Get import information from module source text.
 cpEhcHaskellImport
   :: HSState
 %%[[99
-     -> [(PkgKey,String)]
+     -> [PkgModulePartition]
 %%]]
      -> HsName -> EHCompilePhase HsName
 cpEhcHaskellImport
@@ -697,7 +697,7 @@ Parse a Haskell module
 cpEhcHaskellParse
   :: Bool -> Bool
 %%[[99
-     -> [(PkgKey,String)]
+     -> [PkgModulePartition]
 %%]]
      -> HsName -> EHCompilePhase ()
 cpEhcHaskellParse
