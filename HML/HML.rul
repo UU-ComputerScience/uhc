@@ -322,7 +322,7 @@ update (q, Right (a, p))
                Nothing -> error "Update failed. Could not apply substitution"
                Just ax -> D.trace (   "** Var:" ++ pp a
                                    ++ "\n** Q1 :" ++ pp q1
-                                   ++ "\n** Q2 :" ++ pp q2) ax
+                                    ++ "\n** Q2 :" ++ pp q2) ax
     in  (q0 ++ q1 ++ q2', [(a,p)])
 update (q, Left (Scheme_Simple var phi2))
   = let (q0, (q1,q2)) = id *** (`splitOn` var) $ split (q, ftv phi2)
@@ -349,8 +349,8 @@ splitOn (x@(TyIndex_Group v1 _):xs) v2
                in (x:a, b)
   
 -- | Extending a Prefix with a Scheme
-extend :: (Prefix, Scheme, Int) -> ((Prefix, Env), Int)
-extend (q, scheme@(Scheme_Simple var phi), frs)
+extend :: (Prefix, Scheme, Int) -> Bool -> ((Prefix, Env), Int)
+extend (q, scheme@(Scheme_Simple var phi), frs) ren
  = let p = nf phi
    in case isUnQualTy p of
         True  -> ((q, [(var, p)]), frs)
@@ -367,15 +367,18 @@ extend (q, scheme@(Scheme_Simple var phi), frs)
                       -- (Just ph2')   = appAll (M.fromAscList env) ph2
                       -- pre           = q ++ [TyIndex_Group v (promote p) | (v, p) <- zipWith (\a (Scheme_Simple _ x)->(a, x)) varsc schemes ]
                   -- in ((pre, M.fromAscList [(var, ph2')]), frs')
-        _     -> let (ph2, frs') = renameVars frs phi
-                 in D.trace ("@" ++ pp var ++ " == " ++ pp phi ++ " -- " ++ pp (promote ph2)) ((q++[TyIndex_Group var (promote ph2)], empty), frs')
+        _     -> let (ph2, frs', subs) = if ren 
+                                            then renameVars frs phi
+                                            else (phi, frs,[])
+                 in D.trace ("@" ++ pp var ++ " == " ++ pp phi ++ " -- " ++ sche phi ++ " -- " ++ pp (promote ph2) ++ " @ " ++ pp subs) ((q++[TyIndex_Group var (promote ph2)], subs), frs')
 
-renameVars :: Int -> TyScheme -> (TyScheme, Int)
+renameVars :: Int -> TyScheme -> (TyScheme, Int, Env)
 renameVars frs ty 
- = (fc ty, frs')
+ = (fc ty, frs', env)
   where
     fc (TyScheme_Quant (Scheme_Simple a b) c) = TyScheme_Quant (Scheme_Simple (ren a) (fc b)) (fc c)
-    fc (TyScheme_SystemF exp) = let (Just a) = appAll env exp
+    fc (TyScheme_SystemF exp) = let -- (Just a) = appAll env exp
+                                     a = fullRename env' exp
                                 in  TyScheme_SystemF a
     fc TyScheme_Bottom        = TyScheme_Bottom
     fc (TyScheme_Sugar a b)   = TyScheme_Sugar (map fi a) (fc b)
@@ -391,6 +394,23 @@ renameVars frs ty
     env        = zipWith (\a b->(a, mkVar b)) vc nvc
     env'       = zipWith (\a b->(a, b)) vc nvc
     ren x      = maybe x id $ lookup x env'
+    
+-- | Fully rename a TyExpr's variables. ALL variables, not just those that are bound
+fullRename ::  [(HsName, HsName)] -> TyExpr -> TyExpr
+fullRename env = rename
+ where 
+   rename :: TyExpr -> TyExpr
+   rename (TyExpr_App      f a) = TyExpr_App (rename f) (rename a)
+   rename (TyExpr_AppTop     a) = TyExpr_AppTop (rename a)
+   rename (TyExpr_Parens     a) = TyExpr_Parens (rename a)
+   rename (TyExpr_Ann      a t) = TyExpr_Ann a (rename t)
+   rename (TyExpr_Var        a) = TyExpr_Var $ ren a
+   rename (TyExpr_VarWild    a) = TyExpr_Var $ ren a
+   rename (TyExpr_Quant  q v t) = TyExpr_Quant q (ren v) (rename t)
+   rename (TyExpr_Forall q v t) = TyExpr_Forall q (map ren v) (rename t)
+   rename e = e
+   
+   ren a = maybe a id $ lookup a env
    
 -- | Collects all the schemes for TyScheme_Quant
 sweep :: TyScheme -> ([Scheme], TyScheme)
@@ -405,8 +425,13 @@ contains pref name = msum $ map (\(TyIndex_Group nm b) -> guard (nm == name) >> 
 
 -- | Drop a quantification from a TyQuantifiedScheme
 dropQuant :: TyQuantifiedScheme -> TyScheme
-dropQuant (TyQuantifiedScheme_Quant _ t) = t
+dropQuant (TyQuantifiedScheme_Quant b t) = desugar $ TyScheme_Sugar [b] t
 dropQuant TyQuantifiedScheme_Bottom      = TyScheme_Bottom
+
+-- | Split a quantifier of a TyScheme
+splitQuant :: TyScheme -> (Prefix, TyScheme)
+splitQuant ty = let TyScheme_Sugar q t = sugar ty
+                in (q, t)
 
 -- | Drop a TyScheme to a TyExpr
 dropScheme :: TyScheme -> TyExpr
@@ -1356,9 +1381,9 @@ datasem Expr monad IO
        loc.debug2 = D.trace ("[App] arg  -- " ++ concatMap sche arg.res  ++ " # " ++ pp arg.res) arg.res
        loc.debug3 = D.trace ("A1: " ++ show loc.a1 ++ ", A2: " ++ show loc.a2 ++ ", B: " ++ show loc.b) arg.res
        
-       (loc.temp1, loc.frt1) = extend (arg.nxe, Scheme_Simple loc.a1 (fromJust $ appAll arg.sub (head func.res)), arg.frs)
-       (loc.temp2, loc.frt2) = extend (fst loc.temp1, Scheme_Simple loc.a2 (head arg.res), loc.frt1)
-       (loc.temp3, loc.frt3) = extend (fst loc.temp2, Scheme_Simple loc.b  (TyScheme_Bottom), loc.frt2)
+       (loc.temp1, loc.frt1) = extend (arg.nxe, Scheme_Simple loc.a1 (fromJust $ appAll arg.sub (head func.res)), arg.frs) True
+       (loc.temp2, loc.frt2) = extend (fst loc.temp1, Scheme_Simple loc.a2 (head arg.res), loc.frt1) True
+       (loc.temp3, loc.frt3) = extend (fst loc.temp2, Scheme_Simple loc.b  (TyScheme_Bottom), loc.frt2) True
        
        (loc.q2', loc.e2') = (fst loc.temp3, (snd loc.temp1) `munion` (snd loc.temp2) `munion` (snd loc.temp3))
        
@@ -1378,10 +1403,10 @@ datasem Expr monad IO
        (loc.q4, loc.q5) = curry split loc.q3 (domain lhs.pre)
     
        lhs.res = let b = TyExpr_Var loc.b
-                 in case appAll loc.e3 b of
+                 in case appAll (loc.e3 `munion` loc.e2') b of
                       Just v  -> return $ desugar $ TyScheme_Sugar loc.q5 (TyScheme_SystemF v)
                       Nothing -> error "App failed, cannot apply substitution"
-       loc.temp_sub = func.sub `munion` arg.sub `munion` loc.e3
+       loc.temp_sub = func.sub `munion` arg.sub `munion` loc.e3 -- added union
        lhs.sub = loc.temp_sub
        lhs.nxe = loc.q4
        lhs.frs = let d1 = D.trace ("^^Unify pre: " ++ pp u.pre)
@@ -1450,7 +1475,7 @@ datasem Expr monad IO
                               []  -> error "Inference of Expressions failed in Lam, no type infered for body"
                               [x] -> x
                               _   -> error "Too many options, I only need one"
-       ((loc.q3', loc.e3'), loc.frs') = extend (loc.q3, (Scheme_Simple loc.b loc.phi1), body.frs)
+       ((loc.q3', loc.e3'), loc.frs') = extend (loc.q3, (Scheme_Simple loc.b loc.phi1), body.frs) False
        
        lhs.res = let (Just b')    = appAll loc.e3' (TyExpr_Var loc.b)
                      (Just a')    = appAll body.sub loc.exp_a -- (TyExpr_Var loc.a)
@@ -1591,10 +1616,14 @@ unifyScheme = sem unifyScheme : UnifyScheme monad IO
                           internal bot_check
                             clause first_bottom
                                 match True = loc.b1
-                                lhs.ty     = lhs.ty2
+                                (loc.q, loc.tyx) = splitQuant lhs.ty2
+                                lhs.ty     = lhs.ty2 -- loc.tyx
+                                lhs.pre    = lhs.pre -- munion loc.q lhs.pre
                             clause second_bottom
                                 match True = loc.b2
-                                lhs.ty     = lhs.ty1
+                                (loc.q, loc.tyx) = splitQuant lhs.ty1
+                                lhs.ty     = lhs.ty1 -- loc.tyx
+                                lhs.pre    = lhs.pre -- munion loc.q lhs.pre
                             clause norm
                                 match False = loc.b1 || loc.b2
                                 match TyScheme.Sugar@exp1 = sugar lhs.ty1
@@ -1604,7 +1633,8 @@ unifyScheme = sem unifyScheme : UnifyScheme monad IO
                                 
                                 child u : Unify = unify
                                 
-                                u.pre  = loc.q ++ exp1.prefix ++ exp2.prefix
+                                u.pre  = let q = loc.q ++ exp1.prefix ++ exp2.prefix
+                                         in D.trace (";;; Q: " ++ pp q) q
                                 u.exp1 = dropScheme exp1.tyExpr
                                 u.exp2 = dropScheme exp2.tyExpr
                                 u.frs  = lhs.frs
@@ -1799,8 +1829,10 @@ unify = sem unify : Unify monad IO
                                    
                                    s.pre = loc.q
                                    s.frs = lhs.frs
-                                   s.ty1 = dropQuant loc.phi1
-                                   s.ty2 = dropQuant loc.phi2
+                                   s.ty1 = let ty = dropQuant loc.phi1
+                                           in D.trace (";;; ty2 = " ++ pp ty ++" -- " ++ pp loc.phi1) ty
+                                   s.ty2 = let ty = dropQuant loc.phi2
+                                           in D.trace (";;; ty2 = " ++ pp ty) ty
                                    
                                    invoke unifyScheme of s
                                    
@@ -1814,10 +1846,14 @@ unify = sem unify : Unify monad IO
                                    lhs.frs = s.frs
                                    lhs.pre = loc.q3
                                    lhs.sub = let x = loc.e3 `munion` loc.e2 `munion` loc.e1
+                                                 d0 = D.trace ("++ q3 [" ++ pp var2.nm ++ "]= " ++ pp loc.q3)
+                                                 dx = D.trace ("++ q2 = " ++ pp loc.q2)
+                                                 di = D.trace ("++ q1 = " ++ pp loc.q2)
+                                                 dj = D.trace ("++ ty = " ++ pp loc.phi)
                                                  d1 = D.trace ("++ e3 = " ++ pp loc.e3)
                                                  d2 = D.trace ("++ e2 = " ++ pp loc.e2)
                                                  d3 = D.trace ("++ e1 = " ++ pp loc.e1)
-                                             in d1 $ d2 $ d3 $ D.trace ("++ unifyScheme + unify done: " ++ pp x) x
+                                             in di $ dj $ dx $ d0 $ d1 $ d2 $ d3 $ D.trace ("++ unifyScheme + unify done: " ++ pp x) x
                      clause cons
                        match TyExpr.Con@var1 = lhs.exp1
                        match TyExpr.Con@var2 = lhs.exp2
