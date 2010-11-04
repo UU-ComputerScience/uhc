@@ -415,4 +415,10 @@ text-variant-blog:
 	  TEXT_SHUFFLE_VARIANT=64 \
 	  text-variant-dflt-doc
 
+text-variant-slides-javascript:
+	$(MAKE) \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--set=yesBeamer --unset=asArticle --set=asSlides --unset=useHyperref --unset=refToPDF" \
+	  TEXT_SHUFFLE_VARIANT=65 \
+	  text-variant-dflt-once
+
 

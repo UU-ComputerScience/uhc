@@ -1456,6 +1456,33 @@ genNmMap mk xs m
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Variation of Maybe
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) export(MaybeOk(..),isJustOk,isNotOk,maybeOk,fromJustOk,fromNotOk)
+data MaybeOk a
+  = JustOk  a
+  | NotOk   String
+  deriving (Eq,Ord,Show)
+
+isJustOk (JustOk _) = True
+isJustOk _          = False
+
+fromJustOk (JustOk x) = x
+fromJustOk _          = panic "fromJustOk"
+
+isNotOk (NotOk _) = True
+isNotOk _         = False
+
+fromNotOk (NotOk x) = x
+fromNotOk _         = panic "fromNotOk"
+
+maybeOk :: (String -> x) -> (a -> x) -> MaybeOk a -> x
+maybeOk _ j (JustOk x) = j x
+maybeOk n _ (NotOk  x) = n x
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Known primitives, encoding semantics of particular primitives in a FFI decl, propagated to backend
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

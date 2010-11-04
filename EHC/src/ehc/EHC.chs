@@ -96,6 +96,16 @@ main
 %%]]
                  oo@(o,n,errs)  = getOpt Permute ehcCmdLineOpts args
                  opts2          = foldl (flip ($)) opts1 o
+%%[[(8 codegen)
+         ;  case opts2 of
+              o | isNotOk (ehcOptMbTarget       o) -> err $ "non existent target `"        ++ fromNotOk (ehcOptMbTarget       o) ++ "'"
+                | isNotOk (ehcOptMbTargetFlavor o) -> err $ "non existent target flavor `" ++ fromNotOk (ehcOptMbTargetFlavor o) ++ "'"
+                where err x
+                        = do { hPutStrLn stderr ("option error: " ++ x)
+                             ; exitFailure
+                             }
+              _ -> return ()
+%%]]
 %%[[1
          ;  let opts3 = opts2
 %%][99
@@ -356,7 +366,7 @@ doCompilePrepare fnL@(fn:_) opts
                         | d <- nub $ ehcOptPkgdirLocPath opts ++ [Cfg.mkInstallPkgdirUser opts, Cfg.mkInstallPkgdirSystem opts]
                         ]
                     )
-       ; let (pkgDb2,pkgErrs) = pkgDbSelectBySearchFilter (pkgSearchFilter Just PackageSearchFilter_ExposePkg (map fst $ pkgExposedPackages pkgDb1)
+       ; let (pkgDb2,pkgErrs) = pkgDbSelectBySearchFilter (pkgSearchFilter Just PackageSearchFilter_ExposePkg (map tup123to1 $ pkgExposedPackages pkgDb1)
                                                            ++ ehcOptPackageSearchFilter opts
                                                           ) pkgDb1
              pkgDb3 = pkgDbFreeze pkgDb2

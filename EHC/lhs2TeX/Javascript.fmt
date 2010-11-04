@@ -1,0 +1,19 @@
+%% keywords
+%format function  	= "\text{\textbf{function}}"
+%format var     	= "\text{\textbf{var}}"
+%format if	     	= "\text{\textbf{if}}"
+%format this     	= "\text{\textbf{this}}"
+%format return     	= "\text{\textbf{return}}"
+%format typeof     	= "\text{\textbf{typeof}}"
+%format while     	= "\text{\textbf{while}}"
+%format else     	= "\text{\textbf{else}}"
+
+%% DSL types/constructors
+%format Fun 		= "\con{Fun}"
+%format App 		= "\con{App}"
+%format AppLT 		= "\con{AppLT}"
+
+%% DSL identifiers
+%format ev 			= "\dsl{ev}"
+%format applyN 		= "\dsl{applyN}"
+%format eOrV 		= "\dsl{eOrV}"

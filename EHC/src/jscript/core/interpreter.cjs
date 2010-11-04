@@ -22,27 +22,37 @@ function _e_( x ) {
 	trace( "> _e_", x ) ;
 %%][100
 %%]]
-	while ( x && x.__eOrV__ !== undefined ) {
-		if ( typeof x.__eOrV__ == 'function' ) {
+	if ( x !== undefined && x.__eOrV__ !== undefined ) {
+		var x_ = x ;
+		do {
+			if ( typeof x.__eOrV__ == 'function' ) {
 %%[[8
-			trace( ">> _e_()", typeof x + "/" + typeof x.__eOrV__ + ":" + x ) ;
+				trace( ">> _e_()", typeof x + "/" + typeof x.__eOrV__ + ":" + x ) ;
 %%][100
 %%]]
-			x = x.__eOrV__() ;
+				var xx = x.__eOrV__() ;
+				x.__eOrV__ = xx ;
+				x = xx ;
 %%[[8
-			trace( "<< _e_()", typeof x + "/" + typeof x.__eOrV__ + ":" + x ) ;
+				trace( "<< _e_()", typeof x + "/" + typeof x.__eOrV__ + ":" + x ) ;
 %%][100
 %%]]
-		} else {
+			} else {
 %%[[8
-			trace( ">> _e_", typeof x + "/" + typeof x.__eOrV__ + ":" + x ) ;
+				trace( ">> _e_", typeof x + "/" + typeof x.__eOrV__ + ":" + x ) ;
 %%][100
 %%]]
-			x = x.__eOrV__ ;
+				x = x.__eOrV__ ;
 %%[[8
-			trace( "<< _e_", typeof x + "/" + typeof x.__eOrV__ + ":" + x ) ;
+				trace( "<< _e_", typeof x + "/" + typeof x.__eOrV__ + ":" + x ) ;
 %%][100
 %%]]
+			}
+		} while ( x !== undefined && x.__eOrV__ !== undefined ) ;
+		while ( x_.__eOrV__ !== undefined ) {
+			var x_next = x_.__eOrV__ ;
+			x_.__eOrV__ = x ;
+			x_ = x_next ;
 		}
 	}
 %%[[8
@@ -132,9 +142,7 @@ function _A_( fun, args ) {
 		trace("> _A_.__eOrV__", fun + "(|args#" + args.length + "=" + args + "|)") ;
 %%][100
 %%]]
-		var x = _e_( fun.__aN__( args ) ) ;
-		// var x = ( fun.__aN__( args ) ) ;
-		this.__eOrV__ = x ;
+		var x = fun.__aN__( args ) ;
 %%[[8
 		trace("< _A_.__eOrV__", fun + "(|args#" + args.length + "=" + args + "|)") ;
 		trace("<   ->", this + " -> " + x) ;

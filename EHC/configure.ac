@@ -128,8 +128,9 @@ then
   AC_SUBST(JAR_CMD,$jarCmd)
 fi
 
-### enable options: jscript (JavaScript)
-AC_ARG_ENABLE(jscript, AS_HELP_STRING([--enable-jscript],[include JavaScript code generation]), [enableJScript=yes], [enableJScript=no])
+### enable options: jscript (JavaScript), default is yes
+# AC_ARG_ENABLE(jscript, AS_HELP_STRING([--enable-jscript],[include JavaScript code generation]), [enableJScript=yes], [enableJScript=no])
+enableJScript="yes"
 AC_SUBST(ENABLE_JSCRIPT,$enableJScript)
 
 ### enable options: llvm
