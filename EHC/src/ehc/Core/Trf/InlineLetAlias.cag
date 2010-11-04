@@ -286,6 +286,10 @@ SEM CExpr
 
 %%[(90 codegen)
 SEM CBindAspect
+  | FFE         loc         .   bindsNoTrfNmS
+                                            =   @expr.fvS
+%%]
+SEM CBindAspect
   | FFE         loc         .   (replNm,bindsNoTrfNmS)
                                             =   case Map.lookup @expNm @lhs.nmMp of
                                                     Just e | isJust mbNm
@@ -293,8 +297,6 @@ SEM CBindAspect
                                                       where mbNm = cexprMbVar e
                                                     _ -> (@expNm,Set.singleton @expNm)
                 lhs         .   cTrf        =   CBindAspect_FFE @callconv @expEnt @replNm @ty
-
-%%]
 
 %%[(9 codegen)
 ATTR CExpr           [ | | bindNmMp     USE {`Map.union`} {Map.empty}: NmMp ]

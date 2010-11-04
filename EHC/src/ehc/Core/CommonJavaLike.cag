@@ -58,7 +58,11 @@ SEM CAlt
   | Alt         loc         .   mbLamNm         =   Nothing
 
 SEM CBindAspect
-  | Bind Val    expr        .   mbLamNm         =   Just (@varnm,@lhs.nm)
+  | Bind Val
+%%[[90
+    FFE
+%%]]
+                expr        .   mbLamNm         =   Just (@varnm,@lhs.nm)
 
 SEM CPatFld
   | Fld         offset      .   mbLamNm         =   Nothing

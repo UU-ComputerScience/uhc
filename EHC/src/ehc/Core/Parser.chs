@@ -157,18 +157,19 @@ pCBind :: CParser CBind
 pCBind
   = (  (pDollNm P.<+> pCMetasOpt) <* pEQUAL)
     <**> (   (\e (n,m)        -> CBind_Bind n [CBindAspect_Bind m e]) <$> pCExpr
-         <|> (\(c,_) s i t (n,m)  -> CBind_Bind n [CBindAspect_Bind m $ CExpr_FFI c s (mkEnt c i) t])
+         <|> (\(c,_) s i t (n,m)  -> CBind_Bind n [CBindAspect_Bind m $ CExpr_FFI c s (mkImpEnt c i) t])
              <$ pFOREIGN <* pOCURLY <*> pFFIWay <* pCOMMA <*> pS <* pCOMMA <*> pS <* pCOMMA <*> pTy <* pCCURLY
 %%[[90
-         <|> (\(c,_) e en t (n,m) -> CBind_Bind n [CBindAspect_FFE c (mkEnt c e) en t])
-             <$ pKeyTk "foreignexport" <* pOCURLY <*> pFFIWay <* pCOMMA <*> pS <* pCOMMA <*> pDollNm <* pCOMMA <*> pTy <* pCCURLY
+         <|> (\(c,_) e en t (n,m) -> CBind_Bind n [CBindAspect_FFE c (mkEnt ForeignDirection_Export c e) en t])
+             <$ pKeyTk "foreignexport" <* pOCURLY <*> pFFIWay <* pCOMMA <*> pS <* pCOMMA <*> pCExpr {- pDollNm -} <* pCOMMA <*> pTy <* pCCURLY
 %%]]
          )
   where pS = tokMkStr <$> pStringTk
 %%[[8
-        mkEnt _ e = e
+        mkImpEnt c e = e
 %%][90
-        mkEnt c e = fst $ parseForeignEnt c Nothing e
+        mkEnt d c e = fst $ parseForeignEnt d c Nothing e
+        mkImpEnt c e = mkEnt ForeignDirection_Import c e
 %%]]
 
 pCAlt :: CParser CAlt

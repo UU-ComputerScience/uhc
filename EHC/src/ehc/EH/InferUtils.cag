@@ -116,7 +116,11 @@ SEM Decl
 
 %%[(91 hmtyinfer codegen)
 SEM Decl
-  | Instance    loc         .   rceEnv      =   (emptyRCEEnv @lhs.opts) { rceValGam = @lhs.valGam, rceDataGam = @lhs.dataGam, rceTyVarMp = @lhs.finTyVarMp }
+  | Instance
+%%[[98
+    FFE
+%%]]
+                loc         .   rceEnv      =   (emptyRCEEnv @lhs.opts) { rceValGam = @lhs.valGam, rceDataGam = @lhs.dataGam, rceTyVarMp = @lhs.finTyVarMp }
 %%]
 
 TyCore variant/clone:

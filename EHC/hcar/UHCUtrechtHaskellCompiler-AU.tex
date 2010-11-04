@@ -1,109 +1,61 @@
 \begin{hcarentry}[section,updated]{UHC, Utrecht Haskell Compiler}
-\report{Atze Dijkstra}%11/09
+\report{Atze Dijkstra}%05/10
 \status{active development}
-\participants{Atze Dijkstra,
- Jeroen Fokker,
- Doaitse Swierstra,
- Arie Middelkoop,
- Luc\'ilia Camar\~ao de Figueiredo,
- Carlos Camar\~ao de Figueiredo,
- Andres L\"oh, Jos\'e Pedro Magalh\~aes,
- Vincent van Oostrum, Clemens Grabmayer, Jan Rochel,
- Tom Lokhorst, Jeroen Leeuwestein, Atze van der Ploeg, Paul van der Ende, Calin Juravle, Levin Fritz}
+\participants{many others%Jeroen Fokker,
+% Doaitse Swierstra,
+% Arie Middelkoop,
+% Luc\'ilia Camar\~{a}o de Figueiredo,
+% Carlos Camar\~{a}o de Figueiredo,
+% Andres L\"oh, Jos\'e Pedro Magalh\~{a}es,
+% Vincent van Oostrum, Clemens Grabmayer, Jan Rochel,
+% Tom Lokhorst, Jeroen Leeuwestein, Atze van der Ploeg, Paul van der Ende, Calin Juravle, Levin Fritz
+}
 \label{uhc}
 \label{ehc}
 \makeheader
 
-\paragraph{UHC, what is new?}
+\paragraph{What is new?}
 UHC is the Utrecht Haskell Compiler, supporting almost all Haskell98 features and most of Haskell2010, plus
 experimental extensions.
-After the first release of UHC in spring 2009 we have been working on the next release, which we expect to have available this summer.
-Although UHC did start its life as a compiler for research and experimentation,
-much of the recent work has focussed on improving and stabilizing UHC for actual use.
-The highlights of the next release will be:
-\begin{itemize}
-\item Support for building libraries with Cabal.
-\item A base library sufficient for Haskell98.
-\item Support for most of the Haskell2010 language features.
-\item A new garbage collector, replacing the Boehm GC we have been using until recently.
-\item More stable implementation of both compiler and runtime, with many bugfixes.
-\end{itemize}
-All of the above is already available for download from the UHC svn repository.
+Recently version 1.1.0 was released, featuring generic deriving \cref{sec:genericDeriving},
+a new configurable garbage collector, initial support for building with UHC via cabal, and many bug fixes.
 
-\paragraph{UHC, what do we currently do?}
+We plan the next release to offer a Javascript backend.
+Furthermore we hope to add optimizations to eliminate some of the obvious inefficiencies.
+As part of this work the intent is also to better integrate the work done on whole program analysis.
+
+\paragraph{UHC Blog}
+Recently a UHC blog has been started.
+The intent is to scribble about the internals of UHC and issues arising out of the implementation.
+
+\paragraph{What do we currently do and/or has recently been completed?}
 As part of the UHC project, the following (student) projects and other activities are underway (in arbitrary order):
 \begin{itemize}
-\item Jan Rochel: ``Realising Optimal Sharing'', based on work by Vincent van Oostrum and Clemens Grabmayer.
-\item Tom Lokhorst: type based static analyses.
+\item Jeroen Bransen (PhD): ``Incremental Global Analysis'' (starting up).
+\item Jan Rochel (PhD): ``Realising Optimal Sharing'', based on work by Vincent van Oostrum and Clemens Grabmayer.
+\item Arie Middelkoop (PhD): type system formalization and automatic generation from type rules.
+\item Tom Lokhorst: type based static analyses (recently completed, available with proper configuration).
 \item Jeroen Leeuwestein: incrementalization of whole program analysis.
-\item Atze van der Ploeg: lazy closures.
-\item Paul van der Ende: garbage collection \& LLVM.
-\item Arie Middelkoop (\& Luc\'ilia Camar\~ao de Figueiredo): type system formalization and automatic generation from type rules.
+\item Atze van der Ploeg: lazy closures (recently completed).
+\item Paul van der Ende: garbage collection \& LLVM (recently completed, available with proper configuration).
 \item Jeroen Fokker: GRIN backend, whole program analysis.
-\item C\u alin Juravle: base libraries.
-\item Levin Fritz: base libraries for Java backend.
-\item Andres L\"oh: Cabal support.
-\item Jos\'e Pedro Magalh\~aes: generic deriving.
+\item C\u alin Juravle: base libraries (completed upto Haskell98, integrated).
+\item Levin Fritz: base libraries for Java backend (completed, integrated).
+\item Andres L\"oh: Cabal support (completed initial support, integrated).
+\item Jos\'e Pedro Magalh\~{a}es: generic deriving (\cref{sec:genericDeriving}, completed, integrated, presented at Haskell Symposium).
 \item Doaitse Swierstra: parser combinator library.
-\item Atze Dijkstra: overall architecture, type system, bytecode interpreter backend, garbage collector.
+\item Atze Dijkstra: overall architecture, type system, bytecode interpreter + java + javascript backend, garbage collector.
 \end{itemize}
-
-Some of the projects are highlighted directly below.
-
-\paragraph{Type based static analysis (Tom Lokhorst)}
-We are working on various static optimization transformations on top
-of the recently introduced typed core intermediate language. A
-particular focus is optimizing code based on the results of a type
-based strictness analysis \cite{Holdermans:2010}. We are currently
-investigating several approaches to optimizing higher order functions
-that are polymorphic in their strictness properties.
-
-
-\paragraph{Lazy closures (Atze van der Ploeg)}
-We are investigating cheaper ways to construct closures by re-using
-information already present in frames (incarnation records). In this
-scheme a frame may be used by a closure after the frame's function has
-ended so we put frames on the heap instead of the stack. If a frame's
-function has ended the frame may contain more information than is
-necessary for the closures that use it, the garbage collector needs to
-be aware of this so that we do not save to much.
-
-
-\paragraph{Garbage collection \& LLVM (Paul van der Ende)}
-We want to extend the LLVM backend of UHC with accurate garbage
-collection. The LLVM compiler is known to do various aggressive
-transformations that might break static stack descriptors. We will
-exploit the existing shadow-stack functionality of the LLVM framework
-to connect it with the garbage collection library.
-
-\paragraph{Generic deriving (Jos\'e Pedro Magalh\~aes)}
-Recently we wanted to extend the \textbf{deriving} support in UHC to allow 
-deriving for other common type classes (such as \textit{Functor} and 
-\textit{Typeable}, for example). However, instead of hard-wiring particular 
-classes in the compiler, we decided to allow the user to specify how instances 
-should be derived for any type class, using simple generic programming 
-techniques. Currently we are working on implementing this new feature and 
-providing \textbf{deriving} support for a number of useful classes.
 
 \paragraph{Background}
 
 UHC actually is a series of compilers of which the last is UHC, plus
-infrastructure for facilitating experimentation and extension:
-
-\begin{itemize}
-\item
-  The implementation of UHC is organized as a series of
-  increasingly complex steps, and (independent of these steps) a set of aspects,
-  thus addressing the inherent complexity of a compiler.
-  Executable compilers can be generated from combinations of the above.
-\item
-  The description of the compiler uses code fragments which are
-  retrieved from the source code of the compilers, thus
-  keeping description and source code synchronized.
-\item
-  Most of the compiler is described by UUAG, the Utrecht University Attribute Grammar system~\cref{uuag},
-  thus providing a more flexible means of tree programming.
-\end{itemize}
+infrastructure for facilitating experimentation and extension.
+The distinguishing features for dealing with the complexity of the compiler and for experimentation are
+(1) its stepwise organisation as a series of increasingly more complex standalone compilers,
+the use of DSL and tools for its (2) aspectwise organisation (called Shuffle) and
+(3) tree-oriented programming (Attribute Grammars, by way of the
+Utrecht University Attribute Grammar (UUAG) system~\cref{uuag}.
 
 For more information, see the references provided.
 
@@ -111,6 +63,9 @@ For more information, see the references provided.
 \begin{compactitem}
 \item UHC Homepage:
 \url{http://www.cs.uu.nl/wiki/UHC/WebHome}
+
+\item UHC Blog:
+\url{http://utrechthaskellcompiler.wordpress.com}
 
 \item Attribute grammar system:
 \url{http://www.cs.uu.nl/wiki/HUT/AttributeGrammarSystem}
@@ -123,20 +78,5 @@ For more information, see the references provided.
 
 \item Ruler:
 \url{http://www.cs.uu.nl/wiki/Ehc/Ruler}
-
-%% @inproceedings{Holdermans:2010,
-%% author = {Holdermans, Stefan and Hage, Jurriaan},
-%% title = {Making "stricterness" more relevant},
-%% booktitle = {PEPM '10: Proceedings of the 2010 ACM SIGPLAN workshop
-%% on Partial evaluation and program manipulation},
-%% year = {2010},
-%% isbn = {978-1-60558-727-1},
-%% pages = {121--130},
-%% location = {Madrid, Spain},
-%% doi = {http://doi.acm.org/10.1145/1706356.1706379},
-%% publisher = {ACM},
-%% address = {New York, NY, USA},
-%% }
-
 \end{compactitem}
 \end{hcarentry}

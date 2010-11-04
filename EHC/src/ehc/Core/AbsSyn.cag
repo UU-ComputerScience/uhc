@@ -229,7 +229,8 @@ DATA CBindAspect
   | FFE         -- nm              : {HsName}
                 callconv        : {FFIWay}
                 expEnt          : {ForeignEnt}
-                expNm           : {HsName}
+                -- expNm           : {HsName}
+                expr            : CExpr
                 ty              : {Ty}
 %%]]
 

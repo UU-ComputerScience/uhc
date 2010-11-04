@@ -90,7 +90,11 @@ SEM CModule
   | Mod         expr        .   propDown    =   Prop_None
 
 SEM CBindAspect
-  | Bind Val    loc         .   propDown    =   Prop_None
+  | Bind Val
+%%[[90
+    FFE
+%%]]
+                loc         .   propDown    =   Prop_None
 
 SEM CPatFld
   | Fld         loc         .   propDown    =   Prop_None
@@ -99,7 +103,7 @@ SEM CPatFld
 %%[(8 codegen)
 SEM CExprAnn
   | Ty          loc         .   prop        =   Prop_HasTy @ty
-  | * - Ty		loc			.	prop		=	Prop_None
+  | * - Ty      loc         .   prop        =   Prop_None
 
 %%]
 

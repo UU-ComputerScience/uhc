@@ -92,7 +92,7 @@ SEM Declaration
 SEM Declaration
     | ForeignExport
         loc             .   exportrefname
-                                        =   mkHNmExport @name
+                                        =   hsnUniqify HsNameUniqifier_FFE @name
 %%]
 
 %%[91

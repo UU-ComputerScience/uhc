@@ -141,6 +141,7 @@ SEM TextStyle
 
 SEM GroupType
   | Verbatim        lhs         .   out         =   out "pre"
+  | Center          lhs         .   out         =   out "center"
   -- | Document     lhs         .   out         =   out "document"
   -- | Tabular          lhs         .   out         =   out "tabular"
 

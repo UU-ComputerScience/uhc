@@ -19,7 +19,7 @@
 %%[8 import(qualified Data.Set as Set)
 %%]
 
-%%[90 import({%{EH}Foreign.Parser})
+%%[90 import({%{EH}Foreign.Parser},{%{EH}Foreign})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -136,7 +136,7 @@ pDecl           =    mkEH Decl_Val        <$>  pPatExprBase  <*   pEQUAL   <*> p
                         -> mkEH Decl_FFI conv saf 
                              (
 %%[[90
-                               (\i -> fst $ parseForeignEnt conv Nothing i)
+                               (\i -> fst $ parseForeignEnt ForeignDirection_Import conv Nothing i)
 %%]]
                                (if null imp then show nm else imp))
                              nm sig

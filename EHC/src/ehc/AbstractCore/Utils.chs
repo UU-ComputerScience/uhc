@@ -178,7 +178,7 @@ acoreStrictSatCaseMetaTy :: (Eq bcat, AbstractCore e m b basp bcat mbind t p pr 
 acoreStrictSatCaseMetaTy env mbNm meta e []
   = rceCaseCont env			-- TBD: should be error message "scrutinizing datatype without constructors"
 acoreStrictSatCaseMetaTy env mbNm meta e [alt] -- [CAlt_Alt (CPat_Con (CTag tyNm _ _ _ _) CPatRest_Empty [CPatFld_Fld _ _ pnm _]) ae]
-  | isJust mbPatCon && length flds == 1 && dgiIsNewtype dgi
+  | isJust mbPatCon && length flds == 1 && not (ctagIsRec tg) && dgiIsNewtype dgi
   = acoreLet cat
       ( [ acoreBind1CatMetaTy cat pnm meta (acoreTyErr "TBD: mkExprStrictSatCaseMeta.1") e ]
         ++ maybe [] (\(n,ty) -> [ acoreBind1CatMetaTy cat n meta ty e ]) mbNm

@@ -39,6 +39,15 @@ SEM CExpr
                 loc         .   mbPrimNeedEval	:   {Maybe PrimitiveNeedsEval}
 %%]
 
+%%[(90 codegen)
+SEM CBindAspect
+  | FFE         loc         .   argTyLresTy     =   tyArrowArgsRes @ty
+                            .   argTyL          =   fst @loc.argTyLresTy
+                            .   resTy           =   snd @loc.argTyLresTy
+                            .   foreignEntInfo  =   foreignEntExtract @expEnt
+                            .   expEntNm        =   forextractEnt @foreignEntInfo 
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Is CExpr a FFI? If so propagate info to top of app spine
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

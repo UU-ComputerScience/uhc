@@ -433,7 +433,7 @@ instance PP Belowness where
 %%% Tags (of data)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs export(CTag(..),ctagTag,ctagChar,ctagInt,emptyCTag)
+%%[8 hs export(CTag(..),ctagIsRec,ctagTag,ctagChar,ctagInt,emptyCTag)
 data CTag
   = CTagRec
   | CTag
@@ -444,6 +444,10 @@ data CTag
       , ctagMaxArity 	:: !Int
       }
   deriving (Show,Eq,Ord)
+
+ctagIsRec :: CTag -> Bool
+ctagIsRec CTagRec = True
+ctagIsRec t       = False
 
 ctagTag :: CTag -> Int
 ctagTag CTagRec = 0

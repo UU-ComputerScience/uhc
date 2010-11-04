@@ -85,7 +85,7 @@ mkHNmSpecial :: HSNM x => x -> HsName
 mkHNmSpecial = mkHNmPrefix hsnStrSpecialPrefix
 %%]
 
-%%[90 export(mkHNmExport)
+%%[9090 export(mkHNmExport)
 mkHNmExport :: HSNM x => x -> HsName
 mkHNmExport = mkHNmPrefix (hsnStrHiddenPrefix ++ "export_")
 %%]

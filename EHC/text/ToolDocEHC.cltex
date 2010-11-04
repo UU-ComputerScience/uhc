@@ -138,6 +138,23 @@ hence no documentation is currently available.
 \glabel{Haskell2010Compatibility}
 %%@ToolDocEHC.haskell2010Compatibility
 
+\section{Backend specifics}
+\glabel{BackendSpecifics}
+
+\subsection{Foreign function interface (FFI)}
+\label{ffi}
+\subsubsection{Primitives}
+%%@ToolDocEHC.ffi.primitives
+
+\subsubsection{@bc@ and @C@ backend}
+%%@ToolDocEHC.ffi.C.bc
+
+\subsubsection{@jscript@}
+%%@ToolDocEHC.ffi.jscript
+
+
+\subsection{Limitations}
+
 \section{Language implementation status}
 \glabel{LanguageImplementationStatus}
 % %%@ToolDocEHC.languageStatus
@@ -160,12 +177,6 @@ hence no documentation is currently available.
  %%@ToolDocEHC.otherDifferences
  
 An older overview can be found on older pages on the \eref{FirstRelease}{first release} and \eref{LanguageFeatures}{language features}.
-
-
-
-\subsection{Foreign function interface (FFI)}
-\label{ffi}
-%%@ToolDocEHC.ffi
 
 \subsection{Included packages}
 %%@ToolDocEHC.includedPackages
@@ -1286,16 +1297,16 @@ Literate source format & NN \\
 
 %%]
 
-%%[ffi doclatex
+%%[ffi.primitives doclatex
 A limited form of FFI is allowed, only to define primitives. A special calling convention @prim@ is used to indicate such primitives.
 The calling convention follows the necessary calling convention for the backend for which code is generated. For example, the @Prelude@ contains:
 
-\paragraph{Primitives}
 \begin{pre}
 foreign import prim primAddInt       :: Int -> Int -> Int
 \end{pre}
+%%]
 
-\paragraph{C based backends}
+%%[ffi.C.bc doclatex
 The @bc@ or @C@ based target uses the @ccall@ calling convention; the @jazy@ target uses @jazy@.
 To ensure the use of C calling convention use @ccall@, but support depends on the target. For example, for target @bc@ the @Prelude@ defines:
 
@@ -1305,19 +1316,23 @@ foreign import ccall "sinf"  primSinFloat   :: Float -> Float
 
 The @Foreign.XX@ library modules are available.
 Calling conventions @dynamic@, @wrapper@, @export@ as well as wrapping as finalizers is not yet supported.
+%%]
 
-\paragraph{Javascript}
+%%[ffi.jscript doclatex
 The @jscript@ calling convention for the @jscript@ (Javascript) backend allows import entities to specify a little bit of OO like notation and array access.
-The subsequent is taken from the \href{http://utrechthaskellcompiler.wordpress.com/}{UHC blog}:
+The subsequent is taken from the \href{http://utrechthaskellcompiler.wordpress.com/2010/10/29/a-haskell-ffi-calling-convention-for-javascript/}{UHC blog}:
 
 %%@Blog.entry20101027.javascript.FFI
 
 For reference, import entities follow the following grammar:
+
 \begin{pre}
-<ent> ::= (<arg> | <ident>)
-<arg> ::= '%' <argnr>
+<ent>  ::= (<arg> | ident) <post>*
+<arg>  ::= '%' <argnr>
+<post> ::= '()' | '.' ident | '[' <arg> ']'
 \end{pre}
 
+where @ident@ is a Haskell like lowercase/uppercase identifier, and where parenthesis only may appear at the end.
 %%]
 
 %%[includedPackages doclatex

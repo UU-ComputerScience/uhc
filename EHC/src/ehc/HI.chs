@@ -48,7 +48,7 @@
 %%[20 hs import(Data.Typeable(Typeable), Data.Generics(Data), {%{EH}Base.Serialize})
 %%]
 
-%%[9999 hs import({%{EH}Base.ForceEval})
+%%[20 hs import(qualified {%{EH}Config} as Cfg)
 %%]
 
 %%[(9999 codegen grin) hs import({%{EH}GrinCode.Trf.ForceEval})
@@ -80,45 +80,46 @@ instance Show Visible where
 %%[20 hs export(HIInfo(..))
 data HIInfo
   = HIInfo
-      { hiiValidity             :: !HIValidity								-- a valid HI info?
-      , hiiOrigin               :: !HIOrigin								-- where did the HI come from
-      , hiiSrcSig               :: !String									-- compiler source signature (md5)
-      , hiiTargetFlavor         :: !TargetFlavor							-- for which flavor the hi is generated
-      , hiiCompiler             :: !String									-- compiler version info
-      , hiiCompileFlags         :: !String									-- flags
-      , hiiHasMain              :: !Bool									-- has file a main?
-      , hiiModuleNm             :: !HsName									-- module name
-      , hiiSrcTimeStamp         :: !String									-- timestamp of compiler source
-      , hiiSrcVersionMajor      :: !String									-- major (etc) version numbers
+      { hiiValidity             :: !HIValidity                              -- a valid HI info?
+      , hiiOrigin               :: !HIOrigin                                -- where did the HI come from
+      , hiiSrcSig               :: !String                                  -- compiler source signature (md5)
+      , hiiTarget               :: !Target                                  -- for which backend the hi is generated
+      , hiiTargetFlavor         :: !TargetFlavor                            -- for which flavor the hi is generated
+      , hiiCompiler             :: !String                                  -- compiler version info
+      , hiiCompileFlags         :: !String                                  -- flags
+      , hiiHasMain              :: !Bool                                    -- has file a main?
+      , hiiModuleNm             :: !HsName                                  -- module name
+      , hiiSrcTimeStamp         :: !String                                  -- timestamp of compiler source
+      , hiiSrcVersionMajor      :: !String                                  -- major (etc) version numbers
       , hiiSrcVersionMinor      :: !String
       , hiiSrcVersionMinorMinor :: !String
-      , hiiSrcVersionSvn        :: !String									-- svn version
+      , hiiSrcVersionSvn        :: !String                                  -- svn version
 
-      , hiiExps                 :: !ModEntRel								-- exported stuff
-      , hiiHiddenExps           :: !ModEntRel								-- exported, but hidden otherwise (instances, optimized code variants, ...)
-      , hiiFixityGam            :: !FixityGam								-- fixity of identifiers
-      -- , hiiIdDefAssocL          :: !(AssocL IdOcc IdOcc) -- IdDefOccGam		-- name mappings
-      -- , hiiIdDefHIIdGam         :: !(Gam IdOcc IdOcc) -- IdDefOccGam		-- name mappings
-      , hiiHIDeclImpModL        :: ![HsName]								-- declared imports
-      , hiiHIUsedImpModL        :: ![HsName]								-- used imports, usually indirectly via renaming
+      , hiiExps                 :: !ModEntRel                               -- exported stuff
+      , hiiHiddenExps           :: !ModEntRel                               -- exported, but hidden otherwise (instances, optimized code variants, ...)
+      , hiiFixityGam            :: !FixityGam                               -- fixity of identifiers
+      -- , hiiIdDefAssocL          :: !(AssocL IdOcc IdOcc) -- IdDefOccGam      -- name mappings
+      -- , hiiIdDefHIIdGam         :: !(Gam IdOcc IdOcc) -- IdDefOccGam     -- name mappings
+      , hiiHIDeclImpModL        :: ![HsName]                                -- declared imports
+      , hiiHIUsedImpModL        :: ![HsName]                                -- used imports, usually indirectly via renaming
 %%[[(20 hmtyinfer)
-      , hiiValGam               :: !ValGam									-- value identifier environment
-      , hiiTyGam                :: !TyGam									-- type identifier env
-      , hiiTyKiGam              :: !TyKiGam									-- type/tyvar kind env
-      , hiiPolGam               :: !PolGam									-- polarity env
-      , hiiDataGam              :: !DataGam									-- datatype info env
-      , hiiClGam                :: !Pr.ClGam								-- class env
-      , hiiClDfGam              :: !ClassDefaultGam							-- class defaults env
-      , hiiCHRStore             :: !ScopedPredStore							-- rule database
+      , hiiValGam               :: !ValGam                                  -- value identifier environment
+      , hiiTyGam                :: !TyGam                                   -- type identifier env
+      , hiiTyKiGam              :: !TyKiGam                                 -- type/tyvar kind env
+      , hiiPolGam               :: !PolGam                                  -- polarity env
+      , hiiDataGam              :: !DataGam                                 -- datatype info env
+      , hiiClGam                :: !Pr.ClGam                                -- class env
+      , hiiClDfGam              :: !ClassDefaultGam                         -- class defaults env
+      , hiiCHRStore             :: !ScopedPredStore                         -- rule database
 %%]]
 %%[[(20 codegen)
-      , hiiLamMp                :: !LamMp									-- codegen info for identifiers
+      , hiiLamMp                :: !LamMp                                   -- codegen info for identifiers
 %%]]
 %%[[(20 codegen grin)
-      , hiiGrInlMp              :: !GrInlMp									-- grin inlineable code
+      , hiiGrInlMp              :: !GrInlMp                                 -- grin inlineable code
 %%]]
 %%[[99
-      , hiiImpHIMp              :: !ImpHIMp									-- cache of HIInfo's of imported modules, filtered for visibility
+      , hiiImpHIMp              :: !ImpHIMp                                 -- cache of HIInfo's of imported modules, filtered for visibility
 %%]]
       }
 %%[[20
@@ -130,7 +131,7 @@ data HIInfo
 emptyHIInfo :: HIInfo
 emptyHIInfo 
   = HIInfo HIValidity_Absent HIOrigin_FromFile
-           "" defaultTargetFlavor "" "" False hsnUnknown "" "" "" "" ""
+           "" defaultTarget defaultTargetFlavor "" "" False hsnUnknown "" "" "" "" ""
            Rel.empty Rel.empty emptyGam -- emptyGam
            [] []
            -- emptyHiSettings
@@ -169,16 +170,16 @@ instance Show HIInfo where
   show _ = "HIInfo"
 
 instance PP HIInfo where
-  pp i = "HIInfo" >#< (   "ModNm  =" >|< pp      	(hiiModuleNm  	  i)
-                      >-< "DeclImp=" >|< ppCommas 	(hiiHIDeclImpModL i)
-                      >-< "UsedImp=" >|< ppCommas 	(hiiHIUsedImpModL i)
-                      >-< "Exps="    >|< pp       	(hiiExps          i)
-                      >-< "Exps(H)=" >|< pp       	(hiiHiddenExps    i)
-                      >-< "ValGam =" >|< pp       	(hiiValGam 	      i)
-                      >-< "TyGam  =" >|< pp       	(hiiTyGam 	      i)
-                      -- >-< "IdGam  =" >|< pp       	(hiiIdDefHIIdGam  i)
+  pp i = "HIInfo" >#< (   "ModNm  =" >|< pp         (hiiModuleNm      i)
+                      >-< "DeclImp=" >|< ppCommas   (hiiHIDeclImpModL i)
+                      >-< "UsedImp=" >|< ppCommas   (hiiHIUsedImpModL i)
+                      >-< "Exps="    >|< pp         (hiiExps          i)
+                      >-< "Exps(H)=" >|< pp         (hiiHiddenExps    i)
+                      >-< "ValGam =" >|< pp         (hiiValGam        i)
+                      >-< "TyGam  =" >|< pp         (hiiTyGam         i)
+                      -- >-< "IdGam  =" >|< pp          (hiiIdDefHIIdGam  i)
 %%[[99
-                      >-< "Cached =" >|< ppAssocLV 	(assocLMapElt pp $ Map.toList $ hiiImpHIMp    i)
+                      >-< "Cached =" >|< ppAssocLV  (assocLMapElt pp $ Map.toList $ hiiImpHIMp    i)
 %%]]
                       )
 %%]
@@ -196,23 +197,23 @@ type ImpHIMp = Map.Map HsName HIInfo
 -- | combine HI info for a single module, as extracted from the cached hiiImpHIMp of the module importing these combined modules
 hiiUnion :: HIInfo -> HIInfo -> HIInfo
 hiiUnion m1 m2
-  = m1 { hiiFixityGam			= hiiFixityGam 		m1 `gamUnion` 		hiiFixityGam 	m2
-       -- , hiiIdDefHIIdGam        = hiiIdDefHIIdGam 	m1 `gamUnion`		hiiIdDefHIIdGam m2
+  = m1 { hiiFixityGam           = hiiFixityGam      m1 `gamUnion`       hiiFixityGam    m2
+       -- , hiiIdDefHIIdGam        = hiiIdDefHIIdGam    m1 `gamUnion`       hiiIdDefHIIdGam m2
 %%[[(99 hmtyinfer)
-       , hiiValGam              = hiiValGam 		m1 `gamUnion` 		hiiValGam 		m2
-       , hiiTyGam               = hiiTyGam 			m1 `gamUnion` 		hiiTyGam 		m2
-       , hiiTyKiGam             = hiiTyKiGam 		m1 `gamUnion` 		hiiTyKiGam 		m2
-       , hiiPolGam              = hiiPolGam 		m1 `gamUnion` 		hiiPolGam 		m2
-       , hiiDataGam             = hiiDataGam 		m1 `gamUnion` 		hiiDataGam 		m2
-       , hiiClGam               = hiiClGam 			m1 `gamUnion` 		hiiClGam 		m2
-       , hiiClDfGam             = hiiClDfGam 		m1 `gamUnion` 		hiiClDfGam 		m2
-       , hiiCHRStore            = hiiCHRStore 		m1 `chrStoreUnion`	hiiCHRStore	 	m2
+       , hiiValGam              = hiiValGam         m1 `gamUnion`       hiiValGam       m2
+       , hiiTyGam               = hiiTyGam          m1 `gamUnion`       hiiTyGam        m2
+       , hiiTyKiGam             = hiiTyKiGam        m1 `gamUnion`       hiiTyKiGam      m2
+       , hiiPolGam              = hiiPolGam         m1 `gamUnion`       hiiPolGam       m2
+       , hiiDataGam             = hiiDataGam        m1 `gamUnion`       hiiDataGam      m2
+       , hiiClGam               = hiiClGam          m1 `gamUnion`       hiiClGam        m2
+       , hiiClDfGam             = hiiClDfGam        m1 `gamUnion`       hiiClDfGam      m2
+       , hiiCHRStore            = hiiCHRStore       m1 `chrStoreUnion`  hiiCHRStore     m2
 %%]]
 %%[[(99 codegen)
-       , hiiLamMp               = hiiLamMp 			m1 `Map.union` 		hiiLamMp 		m2
+       , hiiLamMp               = hiiLamMp          m1 `Map.union`      hiiLamMp        m2
 %%]]
 %%[[(99 codegen grin)
-       , hiiGrInlMp             = hiiGrInlMp 		m1 `Map.union` 		hiiGrInlMp 		m2
+       , hiiGrInlMp             = hiiGrInlMp        m1 `Map.union`      hiiGrInlMp      m2
 %%]]
        }
 %%]
@@ -222,23 +223,23 @@ hiiUnion m1 m2
 hiiRestrictToFilterMp :: ModEntRelFilterMp -> HIInfo -> HIInfo
 hiiRestrictToFilterMp mfm hii
   = hii
-      { hiiFixityGam			= fg expVT $ hiiFixityGam 		hii
+      { hiiFixityGam            = fg expVT $ hiiFixityGam       hii
       -- , hiiIdDefHIIdGam         = fg (\o -> exp (ioccKind o) (ioccNm o))
       --                                      $ hiiIdDefHIIdGam    hii
 %%[[(99 hmtyinfer)
-      , hiiValGam              	= fg expV  $ hiiValGam 			hii
-      , hiiTyGam               	= fg expT  $ hiiTyGam 			hii
-      , hiiTyKiGam             	= fg expT' $ hiiTyKiGam 		hii
-      , hiiPolGam              	= fg expT  $ hiiPolGam 			hii
-      , hiiDataGam             	= fg expT  $ hiiDataGam 		hii
-      , hiiClGam               	= fg expC  $ hiiClGam 			hii
-      , hiiClDfGam             	= fg expC  $ hiiClDfGam 		hii
+      , hiiValGam               = fg expV  $ hiiValGam          hii
+      , hiiTyGam                = fg expT  $ hiiTyGam           hii
+      , hiiTyKiGam              = fg expT' $ hiiTyKiGam         hii
+      , hiiPolGam               = fg expT  $ hiiPolGam          hii
+      , hiiDataGam              = fg expT  $ hiiDataGam         hii
+      , hiiClGam                = fg expC  $ hiiClGam           hii
+      , hiiClDfGam              = fg expC  $ hiiClDfGam         hii
 %%]]
 %%[[(99 codegen)
-      , hiiLamMp               	= fm expV  $ hiiLamMp 			hii
+      , hiiLamMp                = fm expV  $ hiiLamMp           hii
 %%]]
 %%[[(99 codegen grin)
-      , hiiGrInlMp             	= fm expV  $ hiiGrInlMp 		hii
+      , hiiGrInlMp              = fm expV  $ hiiGrInlMp         hii
 %%]]
       }
   where exp k  = (`Set.member` Map.findWithDefault Set.empty k mfm)
@@ -323,27 +324,18 @@ hiiIdDefOccGamFromHIIdGam = gamMap (\(k,v) -> (k,mkIdDefOcc v IdAsp_Any nmLevOut
 
 %%[20 hs export(HIOrigin(..))
 data HIOrigin
-  = HIOrigin_FromFile								-- from .hi file
-  | HIOrigin_FromImportedBy HsNameS					-- reconstructed from modules which imported this hi
+  = HIOrigin_FromFile                               -- from .hi file
+  | HIOrigin_FromImportedBy HsNameS                 -- reconstructed from modules which imported this hi
   deriving (Eq,Show,Typeable,Data)
 %%]
 
 %%[20 hs export(HIValidity(..))
 data HIValidity
-  = HIValidity_Ok				-- ok
-  | HIValidity_Inconsistent		-- inconsistent with compiler
-  | HIValidity_Absent			-- not available
+  = HIValidity_Ok               -- ok
+  | HIValidity_WrongMagic       -- wrong magic number
+  | HIValidity_Inconsistent     -- inconsistent with compiler
+  | HIValidity_Absent           -- not available
   deriving (Eq,Enum,Show,Typeable,Data)
-%%]
-
-%%[2020 hs export(hiiPostCheckValidity)
-hiiPostCheckValidity :: EHCOpts -> HIInfo -> HIInfo
-hiiPostCheckValidity opts i
-  = i { hiiIsValid
-          =    hiiIsValid i
-            -- && optsDiscrRecompileRepr opts == hiiCompileFlags  i
-            && ehcOptTargetFlavor    opts == hiiTargetFlavor i
-      }
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -368,101 +360,111 @@ instance Serialize HIValidity where
 %%[20 hs export(sgetHIInfo)
 sgetHIInfo :: EHCOpts -> SGet HIInfo
 sgetHIInfo opts = do
-  { hi_sig  <- sget
-  ; hi_ts   <- sget
-  ; hi_tv   <- sget
-  ; hi_fl   <- sget
-  ; hi_comp <- sget
-  ; if (    hi_sig == verSig version
-         && hi_ts  == verTimestamp version
-         && hi_tv  == ehcOptTargetFlavor opts
-       )
+  { hi_magic <- sequence $ replicate (length Cfg.magicNumberHI) sgetWord8
+  ; if hi_magic == Cfg.magicNumberHI
+    then do { hi_sig   <- sget
+            ; hi_ts    <- sget
+            ; hi_t     <- sget
+            ; hi_tv    <- sget
+            ; hi_fl    <- sget
+            ; hi_comp  <- sget
+            ; if (    hi_sig == verSig version
+                   && hi_ts  == verTimestamp version
+                   && hi_t   == ehcOptTarget       opts
+                   && hi_tv  == ehcOptTargetFlavor opts
+                 )
 %%[[99
-       || not (ehcOptHiValidityCheck opts)
+                 || not (ehcOptHiValidityCheck opts)
 %%]]
-    then do { hi_nm     <- sget
-            ; hi_hm     <- sget
-            ; hi_m      <- sget
-            ; hi_mm     <- sget
-            ; hi_mmm    <- sget
-            ; hi_svn    <- sget
-            ; e         <- sget
-            ; he        <- sget
-            ; fg        <- sget
-            -- ; idg       <- sget
-            ; impd      <- sget
-            ; impu      <- sget
+              then do { hi_nm     <- sget
+                      ; hi_hm     <- sget
+                      ; hi_m      <- sget
+                      ; hi_mm     <- sget
+                      ; hi_mmm    <- sget
+                      ; hi_svn    <- sget
+                      ; e         <- sget
+                      ; he        <- sget
+                      ; fg        <- sget
+                      -- ; idg       <- sget
+                      ; impd      <- sget
+                      ; impu      <- sget
 %%[[(20 hmtyinfer)
-            ; vg        <- sget
-            ; tg        <- sget
-            ; tkg       <- sget
-            ; pg        <- sget
-            ; dg        <- sget
-            ; cg        <- sget
-            ; cdg       <- sget
-            ; cs        <- sget
+                      ; vg        <- sget
+                      ; tg        <- sget
+                      ; tkg       <- sget
+                      ; pg        <- sget
+                      ; dg        <- sget
+                      ; cg        <- sget
+                      ; cdg       <- sget
+                      ; cs        <- sget
 %%]]
 %%[[(20 codegen)
-            ; am        <- sget
+                      ; am        <- sget
 %%]]
 %%[[(20 codegen grin)
-            ; im        <- sget
+                      ; im        <- sget
 %%]]
 %%[[99
-            ; him       <- sget
+                      ; him       <- sget
 %%]]
-            ; return 
-                (emptyHIInfo
-                  { hiiValidity             = HIValidity_Ok
-                  , hiiSrcSig               = hi_sig
-                  , hiiCompiler             = hi_comp
-                  , hiiCompileFlags         = hi_fl
-                  , hiiTargetFlavor         = hi_tv
-                  , hiiHasMain              = hi_hm
-                  , hiiSrcTimeStamp         = hi_ts
-                  , hiiModuleNm             = hi_nm
-                  , hiiSrcVersionMajor      = hi_m
-                  , hiiSrcVersionMinor      = hi_mm
-                  , hiiSrcVersionMinorMinor = hi_mmm
-                  , hiiSrcVersionSvn        = hi_svn
-                  , hiiExps                 = e
-                  , hiiHiddenExps           = he
-                  , hiiFixityGam            = fg
-                  -- , hiiIdDefHIIdGam         = {- tr "HIInfo.Binary.get idGam" (pp $ lookup (IdOcc (mkHNm "Prelude.putStrLn") IdOcc_Val) idg) $ -}
-                  --                             mentrelToIdDefOccGam hi_nm e -- idg
-                  , hiiHIDeclImpModL        = impd
-                  , hiiHIUsedImpModL        = impu
+                      ; return 
+                          (emptyHIInfo
+                            { hiiValidity             = HIValidity_Ok
+                            , hiiSrcSig               = hi_sig
+                            , hiiCompiler             = hi_comp
+                            , hiiCompileFlags         = hi_fl
+                            , hiiTarget               = hi_t
+                            , hiiTargetFlavor         = hi_tv
+                            , hiiHasMain              = hi_hm
+                            , hiiSrcTimeStamp         = hi_ts
+                            , hiiModuleNm             = hi_nm
+                            , hiiSrcVersionMajor      = hi_m
+                            , hiiSrcVersionMinor      = hi_mm
+                            , hiiSrcVersionMinorMinor = hi_mmm
+                            , hiiSrcVersionSvn        = hi_svn
+                            , hiiExps                 = e
+                            , hiiHiddenExps           = he
+                            , hiiFixityGam            = fg
+                            -- , hiiIdDefHIIdGam         = {- tr "HIInfo.Binary.get idGam" (pp $ lookup (IdOcc (mkHNm "Prelude.putStrLn") IdOcc_Val) idg) $ -}
+                            --                             mentrelToIdDefOccGam hi_nm e -- idg
+                            , hiiHIDeclImpModL        = impd
+                            , hiiHIUsedImpModL        = impu
 %%[[(20 hmtyinfer)
-                  , hiiValGam               = vg
-                  , hiiTyGam                = tg
-                  , hiiTyKiGam              = tkg
-                  , hiiPolGam               = pg
-                  , hiiDataGam              = dg
-                  , hiiClGam                = cg
-                  , hiiClDfGam              = cdg
-                  , hiiCHRStore             = cs
+                            , hiiValGam               = vg
+                            , hiiTyGam                = tg
+                            , hiiTyKiGam              = tkg
+                            , hiiPolGam               = pg
+                            , hiiDataGam              = dg
+                            , hiiClGam                = cg
+                            , hiiClDfGam              = cdg
+                            , hiiCHRStore             = cs
 %%]]
 %%[[(20 codegen)
-                  , hiiLamMp                = am
+                            , hiiLamMp                = am
 %%]]
 %%[[(20 codegen grin)
-                  , hiiGrInlMp              = im
+                            , hiiGrInlMp              = im
 %%]]
 %%[[99
-                  , hiiImpHIMp              = him
+                            , hiiImpHIMp              = him
 %%]]
-                  })
+                            })
+                      }
+              else return $
+                     emptyHIInfo
+                       { hiiValidity             = HIValidity_Inconsistent
+                       , hiiSrcSig               = hi_sig
+                       , hiiSrcTimeStamp         = hi_ts
+                       , hiiCompileFlags         = hi_fl
+                       , hiiCompiler             = hi_comp
+                       , hiiTarget               = hi_t
+                       , hiiTargetFlavor         = hi_tv
+                       }
             }
-    else do { return
-                (emptyHIInfo
-                  { hiiValidity             = HIValidity_Inconsistent
-                  , hiiSrcSig               = hi_sig
-                  , hiiSrcTimeStamp         = hi_ts
-                  , hiiCompileFlags         = hi_fl
-                  , hiiCompiler             = hi_comp
-                  , hiiTargetFlavor         = hi_tv
-                  })
-            }
+    else return $
+           emptyHIInfo
+             { hiiValidity             = HIValidity_WrongMagic
+             }
   }
 %%]
 
@@ -470,6 +472,7 @@ sgetHIInfo opts = do
 instance Serialize HIInfo where
   sput       (HIInfo
                   { hiiSrcSig               = hi_sig
+                  , hiiTarget               = hi_t
                   , hiiTargetFlavor         = hi_tv
                   , hiiCompiler             = hi_comp
                   , hiiCompileFlags         = hi_fl
@@ -506,8 +509,10 @@ instance Serialize HIInfo where
                   , hiiImpHIMp              = him
 %%]]
                   })
-              =    sput hi_sig
+              =    mapM sputWord8 Cfg.magicNumberHI
+                >> sput hi_sig
                 >> sput hi_ts
+                >> sput hi_t
                 >> sput hi_tv
                 >> sput hi_fl
                 >> sput hi_comp
