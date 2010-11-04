@@ -44,6 +44,9 @@ module Foreign.C.Types
           -- 'Prelude.Eq', 'Prelude.Ord', 'Prelude.Num', 'Prelude.Read',
           -- 'Prelude.Show', 'Prelude.Enum', 'Typeable' and 'Storable'.
         , CClock,   CTime
+#ifdef __UHC__
+        , CUSeconds
+#endif
 
           -- ** Floating types
           -- | These types are are represented as @newtype@s of
@@ -255,6 +258,9 @@ ARITHMETIC_TYPE(CClock,tyConCClock,"CClock",HTYPE_CLOCK_T)
 -- >  posixSecondsToUTCTime (realToFrac :: POSIXTime)
 --
 ARITHMETIC_TYPE(CTime,tyConCTime,"CTime",HTYPE_TIME_T)
+#ifdef __UHC__
+ARITHMETIC_TYPE(CUSeconds,tyConCUSeconds,"CUSeconds",HTYPE_USECONDS_T)
+#endif
 
 -- FIXME: Implement and provide instances for Eq and Storable
 -- | Haskell type representing the C @FILE@ type.
