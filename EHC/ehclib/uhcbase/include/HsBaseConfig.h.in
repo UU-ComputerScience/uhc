@@ -53,6 +53,12 @@
 #define HTYPE_TIME_T 			Word32
 #endif
 
+#if SIZEOF_USECONDS_T == 8
+#define HTYPE_USECONDS_T 		Word64
+#else
+#define HTYPE_USECONDS_T 		Word32
+#endif
+
 #if SIZEOF_SIZE_T == 8
 #define HTYPE_SIZE_T 			Word64
 #else
