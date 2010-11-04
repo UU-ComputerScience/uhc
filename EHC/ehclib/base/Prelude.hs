@@ -26,7 +26,7 @@ module Prelude
   , module UHC.Show
   , module UHC.Read
   , module UHC.Run
-#if ( defined(__UHC_TARGET_C__) || defined(__UHC_TARGET_JSCRIPT__) )
+#if ( defined(__UHC_TARGET_C__) || defined(__UHC_TARGET_JSCRIPT__) || defined (__UHC_TARGET_LLVM__) )
   , module UHC.OldIO
 #else
   , module System.IO
@@ -69,13 +69,13 @@ import UHC.Show
 import UHC.Read
 import UHC.IOBase
   ( IOError, ioError, userError, catch, unsafePerformIO
-#if defined(__UHC_TARGET_C__) && !defined(__UHC_TARGET_JSCRIPT__)
+#if (defined(__UHC_TARGET_C__) || defined (__UHC_TARGET_LLVM__)) && !defined(__UHC_TARGET_JSCRIPT__)
   , FilePath
 #endif
   )
 import UHC.Run
 
-#if ( defined(__UHC_TARGET_C__) || defined(__UHC_TARGET_JSCRIPT__) )
+#if ( defined(__UHC_TARGET_C__) || defined(__UHC_TARGET_JSCRIPT__) || defined (__UHC_TARGET_LLVM__) )
 import UHC.OldIO
 #else
 import System.IO

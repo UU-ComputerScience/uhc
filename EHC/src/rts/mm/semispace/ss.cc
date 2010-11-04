@@ -84,6 +84,22 @@ void mm_plan_SS_Init( MM_Plan* plan ) {
 	plan->mutator = &mm_mutator ;
 #endif
 
+#ifdef __UHC_TARGET_LLVM__
+	mm_mutator = mm_ssmutator_llvm ;
+	mm_mutator.init
+		( &mm_mutator
+		, &plss->memMgt
+		, &plss->ssAllocator
+		, &plss->residentAllocator
+		, &plss->gbmTrace
+		, &plss->gbmModule
+%%[[90
+		, &mm_weakPtr					// init later
+		, &plss->weakPtrFinalizeQue		// init later
+%%]]
+		) ;
+	plan->mutator = &mm_mutator ;
+#endif
 
 
 
@@ -124,6 +140,23 @@ void mm_plan_SS_Init( MM_Plan* plan ) {
 %%]]
 #endif
 
+#ifdef __UHC_TARGET_LLVM__
+%%[[8
+	MM_FlexArray* traceSupplies = mm_flexArray_New( &plss->memMgt, NULL, sizeof(MM_TraceSupply), 3, 3 ) ;
+%%][99
+	MM_FlexArray* traceSupplies = mm_flexArray_New( &plss->memMgt, NULL, sizeof(MM_TraceSupply), 3, 3 ) ;
+%%]]
+	// IF_GB_TR_ON(3,{printf("mm_plan_SS_Init B\n");}) ;
+	// the order of these supplies matters, because they are run in this order, the last must be the one queueing
+	MM_TraceSupply* globalsTraceSupply  = (MM_TraceSupply*)mm_flexArray_At( traceSupplies, 0 ) ;
+	MM_TraceSupply* stackTraceSupply    = (MM_TraceSupply*)mm_flexArray_At( traceSupplies, 1 ) ;
+%%[[8
+	MM_TraceSupply* queTraceSupply    = (MM_TraceSupply*)mm_flexArray_At( traceSupplies, 2 ) ;
+%%][99
+//	MM_TraceSupply* finQueTraceSupply = (MM_TraceSupply*)mm_flexArray_At( traceSupplies, 2 ) ;
+	MM_TraceSupply* queTraceSupply    = (MM_TraceSupply*)mm_flexArray_At( traceSupplies, 2 ) ;
+%%]]
+#endif
 
 
 
@@ -159,6 +192,21 @@ void mm_plan_SS_Init( MM_Plan* plan ) {
 
 #endif
 
+#ifdef __UHC_TARGET_LLVM__
+
+	*globalsTraceSupply = mm_traceSupplyGlobals_llvm ;
+	globalsTraceSupply->init( globalsTraceSupply, &plss->memMgt, plan->mutator ) ;
+
+	*stackTraceSupply = mm_traceSupplyStack_llvm ;
+	stackTraceSupply->init( stackTraceSupply, &plss->memMgt, plan->mutator ) ;
+
+%%[[99
+//	*finQueTraceSupply = mm_traceSupply_WeakPtrFinalizeQue ;
+//	finQueTraceSupply->init( finQueTraceSupply, &plss->memMgt, plan->mutator ) ;
+%%]]
+
+#endif
+
 	*queTraceSupply = mm_traceSupply_Buffer ; // mm_traceSupply_Bump ; // mm_traceSupply_Buffer ;
 	queTraceSupply->init( queTraceSupply, &plss->memMgt, plan->mutator ) ;
 	plss->queTraceSupply = queTraceSupply ;
@@ -176,6 +224,11 @@ void mm_plan_SS_Init( MM_Plan* plan ) {
 
 #ifdef __UHC_TARGET_C__
 	plss->gbmTrace = mm_trace_C ;
+	plss->gbmTrace.init( &plss->gbmTrace, plss->queTraceSupply, &plss->ssAllocator, &plss->collector ) ;
+#endif
+
+#ifdef __UHC_TARGET_LLVM__
+	plss->gbmTrace = mm_trace_llvm ;
 	plss->gbmTrace.init( &plss->gbmTrace, plss->queTraceSupply, &plss->ssAllocator, &plss->collector ) ;
 #endif
 
@@ -239,7 +292,15 @@ Bool mm_plan_SS_DoGC( MM_Plan* plan, Bool isPreemptiveGC /*isSpaceFull*/, Word g
 		// total as used previously
 		Word prevTotalSz = plss->ssAllocator.getTotalSize( &plss->ssAllocator ) ;
 		// collect, which also switches spaces
+
+        Word beforeUsedSz = plss->ssAllocator.getUsedSize( &plss->ssAllocator ) ;
 		plss->collector.collect( &plss->collector, gcInfo ) ;
+        Word afterUsedSz = plss->ssAllocator.getUsedSize( &plss->ssAllocator ) ;
+
+        //if(beforeUsedSz != afterUsedSz) {
+            //fprintf(stderr, "#### TOTAL MEM: %i | USED MEM BEFORE GC: %i AFTER GC: %i \n", prevTotalSz, beforeUsedSz, afterUsedSz);
+        // }
+
 		// total as used now
 		if ( ! isPreemptiveGC ) {
 			Word curUsedSz = plss->ssAllocator.getUsedSize( &plss->ssAllocator ) ;

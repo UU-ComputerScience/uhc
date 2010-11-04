@@ -15,6 +15,13 @@ PRIM void primPatternMatchFailure()
     exit(1);
 }
 
+PRIM void primPatternMatchFailureDebug(Word x)
+{
+    printf("Pattern match failure, no match found for tag: %d \n", x);
+    exit(1);
+}
+
+
 PRIM Word primOrd(Word x)
 {
 	return x;	

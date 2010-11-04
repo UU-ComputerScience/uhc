@@ -45,6 +45,7 @@ cpCompileWithLLVM modNm
                             = map (\lib -> "-l " ++ lib)
                               $  map (mkl Cfg.INST_LIB) Cfg.libnamesRts
                               ++ map (\l -> Cfg.mkInstallFilePrefix opts Cfg.INST_LIB_SHARED variant "" ++ Cfg.mkCLibFilename "" l) (Cfg.libnamesGcc opts)
+                              ++ map ("-l" ++) Cfg.libnamesGccEhcExtraExternalLibs
                             where mkl how l = Cfg.mkCLibFilename (Cfg.mkInstallFilePrefix opts how variant "") l
               inputOpts     = [ fpathToStr fpLL ]
               outputOpts    = ["-o " ++ fpathToStr fpExec]

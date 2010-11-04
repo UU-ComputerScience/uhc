@@ -1,0 +1,5 @@
+#!/bin/bash
+
+../../install/8/bin/ehc -p- -tllvm --gen-cmt=yes --gen-debug=yes --dump-grin-stages=yes $1
+
+

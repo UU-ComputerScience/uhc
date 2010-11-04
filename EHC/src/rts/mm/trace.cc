@@ -25,6 +25,7 @@ void mm_trace_TraceObjects( MM_Trace* trace, Word* objs, Word nrObjs ) {
 		*objs = mm_Trace_TraceObject( trace, *objs ) ;
 	}
 }
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

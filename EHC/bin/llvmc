@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # Compiler driver for generating LLVM Binaries
 # 
@@ -14,12 +14,12 @@ shift
 
 # Program to optimize .bc files
 #
-LLVM_OPT="$1 -std-compile-opts -dce -globalsmodref-aa -internalize -ipsccp"
+LLVM_OPT="$1 -std-compile-opts -dce -globalsmodref-aa -ipsccp"
 shift
 
 # Binary to compile .bc files to .s files
 #
-LLC="$1 -mtriple=i386-apple-darwin9.8.0"
+LLC="$1 -mtriple=`uname -m`-`uname -s`-`uname -p`"
 shift
 
 # Native linker
@@ -56,6 +56,6 @@ INPUT_BASE=${OUTPUT%.*}
 
 $LLVM_AS -f -o $INPUT_BASE.bc $INPUT_LL   && \
 $LLVM_OPT -f -o ${INPUT_BASE}_opt.bc $INPUT_BASE.bc && \
-$LLC -f -o $OUTPUT_BASE.s ${INPUT_BASE}_opt.bc && \
-$NATIVE_LD -o $OUTPUT $OUTPUT_BASE.s $LIBS && \
+$LLC -o $OUTPUT_BASE.s ${INPUT_BASE}_opt.bc && \
+$NATIVE_LD -g -o $OUTPUT $OUTPUT_BASE.s $LIBS && \
 $STRIP $OUTPUT

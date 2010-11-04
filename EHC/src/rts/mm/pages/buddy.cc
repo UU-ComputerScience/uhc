@@ -171,6 +171,7 @@ void mm_pages_Buddy_NewBuddyGroup( MM_Pages_Buddy_Data* pgs, MM_Pages_LogSize sz
 	// allocate new group
 	MM_FlexArray_Inx grpNew = mm_flexArray_AllocSlot( &pgs->buddyGroups ) ;
 	Word grpNewMallocSz = (nrNewPages + 2) << MM_Pages_MinSize_Log ;
+	
 	Ptr grpNewMalloced = sys_malloc_Sys.malloc( grpNewMallocSz ) ;
 	MM_BuddyGroup* buddyGrpNew = (MM_BuddyGroup*)mm_flexArray_At( &pgs->buddyGroups, grpNew ) ;
 	mm_pages_Buddy_FillGroupWithMem( buddyGrpNew, grpNewMalloced, grpNewMallocSz ) ;
@@ -193,7 +194,12 @@ void mm_pages_Buddy_NewBuddyGroup( MM_Pages_Buddy_Data* pgs, MM_Pages_LogSize sz
 	}
 	
 	// alloc new extlData
+
+    //printf("aft: %016llx fst: %016llx log: %i \n", extlAfterLastPage, extlFirstPage, MM_Pages_Buddy_PagesExtlLogDiff);
 	Word newExtlDataSize = (extlAfterLastPage - extlFirstPage) >> MM_Pages_Buddy_PagesExtlLogDiff ;
+	//printf("malloc size_t: %lu \n", newExtlDataSize);
+
+
 	MM_BuddyPage_ExtlData* newExtlData = (MM_BuddyPage_ExtlData*)sys_malloc_Sys.malloc( newExtlDataSize ) ;
 	// IF_GB_TR_ON(3,{printf("mm_pages_Buddy_NewBuddyGroup newExtlData=%x newExtlDataSize=%x\n", newExtlData, newExtlDataSize);}) ;
 	

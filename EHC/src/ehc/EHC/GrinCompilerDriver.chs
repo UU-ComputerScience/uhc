@@ -257,7 +257,7 @@ initialState opts (Right (fp,grmod)) = (initState opts) {gcsPath=fp, gcsGrin=grm
 initState opts
   = GRINCompileState { gcsGrin       = GrModule_Mod hsnUnknown [] [] Map.empty
                      , gcsSilly      = SilModule_SilModule [] [] []
-                     , gcsLLVM       = LLVMModule_LLVMModule [] [] [] [] []
+                     , gcsLLVM       = LLVMModule_LLVMModule [] [] [] [] [] []
 %%]
 %%[(8 codegen clr)
                      , gcsCil        = undefined
