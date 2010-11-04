@@ -220,17 +220,25 @@ cpDecodeHIInfo modNm
        ; when (ehcOptVerbosity opts > VerboseALot)
               (do { lift $ putPPLn (pp hiinfo)
                   })
+%%[[99
+       ; let canCompile = crModCanCompile modNm cr
+%%]]
        ; case HI.hiiValidity hiinfo of
 %%[[99
+           HI.HIValidity_WrongMagic | not canCompile
+             -> cpSetLimitErrsWhen 1 "Read HI"
+                  [rngLift emptyRange Err_WrongMagic
+                     (show modNm)
+                     (fpathToStr fpH)
+                  ]
            HI.HIValidity_Inconsistent | not canCompile
              -> cpSetLimitErrsWhen 1 "Read HI (of previous compile) of module"
                   [rngLift emptyRange Err_InconsistentHI
                      (show modNm)
                      (fpathToStr fpH)
-                     [Cfg.verTimestamp Cfg.version, Cfg.installVariant opts]
-                     [HI.hiiSrcTimeStamp hiinfo   , HI.hiiCompiler hiinfo  ]
+                     [Cfg.verTimestamp Cfg.version, Cfg.installVariant opts, show $ ehcOptTarget opts  , show $ ehcOptTargetFlavor opts  ]
+                     [HI.hiiSrcTimeStamp hiinfo   , HI.hiiCompiler hiinfo  , show $ HI.hiiTarget hiinfo, show $ HI.hiiTargetFlavor hiinfo]
                   ]
-             where canCompile = crModCanCompile modNm cr
 %%]]
            _ -> cpUpdCU modNm (ecuStorePrevHIInfo {- $ HI.hiiPostCheckValidity opts -} hiinfo)
        }

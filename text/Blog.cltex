@@ -4,7 +4,7 @@
 
 %%[entry20101027.javascript.FFI doclatex
 % \section{A Haskell FFI calling convention for Javascript}
-Haskell's Foreign Function Interface (FFI) predefined calling conventions do not match well with Javascript's object oriented features. In particular selecting a field of an object using dot notation (like \verb|o.f|) and using an object as an array using brackets (like \verb|o[i]|) do not have a natural counterpart in Haskell or the default calling conventions supported by the FFI interface. So, this entry gives some example of how Javascript is accessed in UHC via its @jscript@ calling convention:
+Haskell's Foreign Function Interface (FFI) predefined calling conventions do not match well with Javascript's object oriented features. In particular selecting a field of an object using dot notation (like \verb|o.f|) and using an object as an array using brackets (like \verb|o[i]|) do not have a natural counterpart in Haskell or the default calling conventions supported by the FFI interface. So, here are some examples of how Javascript is accessed in UHC via its @jscript@ calling convention:
 
 \begin{pre}
 data Document
@@ -45,6 +45,49 @@ Actually, the usual Hello would have worked as well because it is implemented as
 \begin{pre}
 main = putStr "Hi there!"
 \end{pre}
+
+To show the usefulness of array like access as part of we do a bit of rudimentary DOM programming:
+
+\begin{pre}
+foreign import jscript "%1.getElementsByName()" documentGetElementsByName :: Document -> JSString -> IO (NodeList Node)
+
+data NodeList x
+
+foreign import jscript "%1.length" nodeListLength :: NodeList Node -> Int
+foreign import jscript "%1[%2]"    nodeListItem   :: NodeList Node -> Int -> IO Node
+
+data Node
+
+foreign import jscript "%1.innerHTML" elementInnerHTML :: Node -> JSString
+foreign import jscript "%1.tagName"   elementTagName   :: Node -> JSString
+\end{pre}
+
+A @NodeList@ is not an array, but behaves like an array: we can ask for its length and retrieve an element by index. It is not an array itself, so modelling it as such in Haskell would be incorrect. However, by allowing import entities to use Javascript array notation we circumvent this limitation and the Javascript array interface can still be used easily.
+
+Finally, this minimal interface to DOM can be used to retrieve and print info about an element in an html document:
+
+\begin{pre}
+main = do d <- document
+          nl <- documentGetElementsByName d (stringToJSString "myHeader")
+          print (nodeListLength nl)
+          n <- nodeListItem nl 0
+          print $ jsStringToString $ elementTagName n
+          print $ jsStringToString $ elementInnerHTML n
+\end{pre}
+
+Given the presence of
+
+\begin{pre}
+<h1 name="myHeader">Head says hello!</h1>
+\end{pre}
+
+with the name @"myHeader"@ in the document where the program is run, it will produce the following as part of the document:
+
+\begin{pre}
+1 "H1" "Head says hello!"
+\end{pre}
+
+
 
 %%]
 

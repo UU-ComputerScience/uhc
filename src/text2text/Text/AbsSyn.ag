@@ -92,6 +92,7 @@ DATA LabelType
 
 DATA GroupType
   | Verbatim
+  | Center
 
 DATA TextStyle
   | Bold

@@ -522,6 +522,13 @@ SEM Err
 %%[[99
                                                         @range
 %%]]
+  | WrongMagic          lhs     .  pp   =   ppMsgErr    (".hi file has wrong magic number")
+                                                        (    "module              :" >#< @modNm
+                                                         >-< "file                :" >#< @file
+                                                        )
+%%[[99
+                                                        @range
+%%]]
 %%]
 
 

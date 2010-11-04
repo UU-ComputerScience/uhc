@@ -15,7 +15,7 @@
 ATTR AllBind [ isGlobal: Bool | | ]
 
 SEM CExpr
-  | Let         loc	       	.   isGlobal    =   @lhs.lev == cLevModule
+  | Let         loc         .   isGlobal    =   @lhs.lev == cLevModule
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -46,7 +46,7 @@ SEM CExpr
   | * - TupUpd TupIns TupDel Ann
                 loc         .   isTopTup    =   True
 
-  | *			loc			.	isTopApp	:	Bool
+  | *           loc         .   isTopApp    :   Bool
 
 SEM MbCExpr
   | Just        just        .   isTopApp    =   True
@@ -57,7 +57,11 @@ SEM CModule
                             .   isTopTup    =   True
 
 SEM CBindAspect
-  | Bind Val    expr        .   isTopApp    =   True
+  | Bind Val
+%%[[90
+    FFE
+%%]]
+                expr        .   isTopApp    =   True
                             .   isTopTup    =   True
 
 SEM CPatFld
@@ -80,43 +84,46 @@ SEM CExpr
   | Lam         loc         .   whatBelow       =   ExprIsLam
   | Var         loc         .   whatBelow       =   ExprIsVar @nm
   | Int         loc         .   whatBelow       =   ExprIsInt @int
-  | App			loc			.	whatBelow		=	maybe (ExprIsApp 1) (\a -> ExprIsApp $ a + 1) $ whatExprMbApp @func.whatBelow
+  | App         loc         .   whatBelow       =   maybe (ExprIsApp 1) (\a -> ExprIsApp $ a + 1) $ whatExprMbApp @func.whatBelow
   | * - Lam App Var Int Ann CaseAltFail
                 loc         .   whatBelow       =   ExprIsOther
 
 SEM CExpr
-  | App			loc			.   isTopApp'       =   isNothing $ whatExprMbApp @lhs.whatAbove
+  | App         loc         .   isTopApp'       =   isNothing $ whatExprMbApp @lhs.whatAbove
 %%]
 
 %%[(8 codegen)
 ATTR CExpr [ whatAbove: WhatExpr | | ]
 
 SEM CExpr
-  | Lam			loc			.	whatAbove		=	ExprIsLam
-  | App			loc			.	whatAbove		=	maybe (ExprIsApp 1) (\a -> ExprIsApp $ a + 1) $ whatExprMbApp @lhs.whatAbove
+  | Lam         loc         .   whatAbove       =   ExprIsLam
+  | App         loc         .   whatAbove       =   maybe (ExprIsApp 1) (\a -> ExprIsApp $ a + 1) $ whatExprMbApp @lhs.whatAbove
   | * - Lam App Ann
-  				loc			.	whatAbove		=	ExprIsOther
+                loc         .   whatAbove       =   ExprIsOther
 
 SEM CExpr
-  | Let			loc			.   isTopLet        =   @lhs.whatAbove == ExprIsBind
+  | Let         loc         .   isTopLet        =   @lhs.whatAbove == ExprIsBind
 
 SEM CBindAspect
-  | Bind Val	loc			.	whatAbove		=	ExprIsBind
+  | Bind Val    loc         .   whatAbove       =   ExprIsBind
+%%[[90
+  | FFE         loc         .   whatAbove       =   ExprIsLam		-- the construction of a lambda is special for backend, to assume we are already in a lam
+%%]]
 
 SEM CPatFld
-  | Fld 		loc			.	whatAbove		=	ExprIsOther
+  | Fld         loc         .   whatAbove       =   ExprIsOther
 
 SEM CAlt
-  | Alt			loc			.	whatAbove		=	ExprIsOther
+  | Alt         loc         .   whatAbove       =   ExprIsOther
 
 SEM CModule
-  | Mod			loc			.	whatAbove		=	ExprIsOther
+  | Mod         loc         .   whatAbove       =   ExprIsOther
 
 SEM MbCExpr
-  | Just		loc			.	whatAbove		=	ExprIsOther
+  | Just        loc         .   whatAbove       =   ExprIsOther
 
 SEM *
-  | *			loc			.	whatAbove		:	WhatExpr
+  | *           loc         .   whatAbove       :   WhatExpr
 %%]
 
 
@@ -132,14 +139,18 @@ SEM CModule
                             .   isLamBody   =   False
 
 SEM CBindAspect
-  | Bind Val    expr        .   isStrict    =   @lhs.isStrict || @expr.whatBelow == ExprIsLam
+  | Bind Val
+%%[[90
+    FFE
+%%]]
+                expr        .   isStrict    =   @lhs.isStrict || @expr.whatBelow == ExprIsLam
 
 SEM CPatFld
   | Fld         offset      .   isStrict    =   True
                             .   isLamBody   =   False
 
 SEM CExpr
-  | Let			binds		.	isStrict	=	@isGlobal || @categ == CBindings_Strict
+  | Let         binds       .   isStrict    =   @isGlobal || @categ == CBindings_Strict
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -165,6 +176,7 @@ SEM CExpr
 %%]
 
 SEM CBindAspect
-  | Bind Val    expr        .   evalCtx         =   if @expr.whatBelow == ExprIsLam
+  | Bind Val FFE
+                expr        .   evalCtx         =   if @expr.whatBelow == ExprIsLam
                                                     then EvalCtx_Eval
                                                     else @lhs.evalCtx

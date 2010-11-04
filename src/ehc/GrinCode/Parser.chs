@@ -73,9 +73,9 @@ pExpr           =    (\v -> GrExpr_Unit v GrType_None)
 %%[[8
                 <|>  GrExpr_FFI     <$  pKey "ffi"          <*> pId
 %%][90
-                <|>  (\(conv,_) ent -> GrExpr_FFI conv (fst $ parseForeignEnt conv Nothing ent))
+                <|>  (\(conv,_) ent -> GrExpr_FFI conv (fst $ parseForeignEnt ForeignDirection_Import conv Nothing ent))
 %%][99
-                <|>  (\(conv,_) ent annot -> GrExpr_FFI conv (fst $ parseForeignEnt conv Nothing ent) annot)
+                <|>  (\(conv,_) ent annot -> GrExpr_FFI conv (fst $ parseForeignEnt ForeignDirection_Import conv Nothing ent) annot)
 %%]]
 %%[[90
                                     <$  pKey "ffi"

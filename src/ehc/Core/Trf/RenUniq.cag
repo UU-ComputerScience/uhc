@@ -36,7 +36,7 @@ PRAGMA strictcase
 %%[(8 codegen) hs export(RenUniqOpts(..),emptyRenUniqOpts)
 data RenUniqOpts
   = RenUniqOpts
-      { renuniqOptResetOnlyInLam	:: Bool				-- restart numbering in lambda only, throwing away all name modifiers previously added
+      { renuniqOptResetOnlyInLam    :: Bool             -- restart numbering in lambda only, throwing away all name modifiers previously added
       }
 
 emptyRenUniqOpts :: RenUniqOpts
@@ -158,8 +158,8 @@ ATTR CodeAGItf [ | | cTrf: CModule ]
 %%[(8 codegen) hs
 type NmMp = Map.Map HsName HsName
 type ARenMp
-  = ( NmMp			-- forward map, from old -> new
-    , NmMp			-- backward map, from new -> old
+  = ( NmMp          -- forward map, from old -> new
+    , NmMp          -- backward map, from new -> old
     )
 
 emptyARenMp :: ARenMp
@@ -278,7 +278,11 @@ SEM CAlt
                 loc         .   aRenMp      =   @expr.accumARenMp
 
 SEM CBindAspect
-  | Bind Val    expr        .   accumARenMp =   @lhs.aRenMp
+  | Bind Val
+%%[[90
+    FFE
+%%]]
+                expr        .   accumARenMp =   @lhs.aRenMp
                 loc         .   aRenMp      =   @expr.accumARenMp
 
 SEM CModule

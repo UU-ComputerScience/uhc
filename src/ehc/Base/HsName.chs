@@ -74,6 +74,10 @@ data HsNameUniqifier
 %%[[(8 jscript)
   | HsNameUniqifier_JSSwitchResult		-- var for result of switch
 %%]]
+%%[[(90 codegen)
+  | HsNameUniqifier_FFE					-- name of value to be ff exported
+  | HsNameUniqifier_FFECoerced			-- name of possibly coerced value to be ff exported
+%%]]
   deriving (Eq,Ord,Enum)
 
 -- | The show of a HsNameUniqifier is found back in the pretty printed code, current convention is 3 uppercase letters, as a balance between size and clarity of meaning
@@ -101,6 +105,10 @@ instance Show HsNameUniqifier where
 %%]]
 %%[[(8 jscript)
   show HsNameUniqifier_JSSwitchResult		= "JSW"
+%%]]
+%%[[(90 codegen)
+  show HsNameUniqifier_FFE					= "FFE"
+  show HsNameUniqifier_FFECoerced			= "FFC"
 %%]]
 %%]
 

@@ -192,7 +192,7 @@ SEM CBindAspect
  | Meta         lhs         .   pp          =   "::_M" >#< ppACBaspKeyS @aspectKeyS >#< @cmetas.pp
  | Val          lhs         .   pp          =   "=" >#< ppACBaspKeyS @aspectKeyS >#< @expr.pp
 %%[[90
-  | FFE         lhs         .   pp          =   "=" >#< ("foreignexport" >#< ppCurlysCommasBlock [pp (show @callconv),"\"" >|< @expEnt >|< "\"",ppCNm @expNm,ppTyWithCfg' CfgPP_Plain @ty])
+  | FFE         lhs         .   pp          =   "=" >#< ("foreignexport" >#< ppCurlysCommasBlock [pp (show @callconv),"\"" >|< @expEnt >|< "\"",@expr.pp {- ppCNm @expNm -},ppTyWithCfg' CfgPP_Plain @ty])
 %%]]
 
 SEM CBindAspectL CBindL CPatFldL CAltL CBindAnnL

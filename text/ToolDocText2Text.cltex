@@ -249,7 +249,7 @@ The following options can be used:
 %%]
 
 %%[textstyle doclatex
-\subsubsection{Verbatim}
+\subsubsection{Grouping: verbatim, center, ...}
 Two equivalent environments for verbatim text can be used:
 
 \begin{itemize}
@@ -259,6 +259,8 @@ Two equivalent environments for verbatim text can be used:
 
 Inlined verbatim is done by \verb+\verb|X|+.
 Example: \verb|\verb+Some text+| renders as: \verb+Some text+.
+
+Other allowed grouping environments are: @center@.
 
 \subsubsection{Fonts}
 

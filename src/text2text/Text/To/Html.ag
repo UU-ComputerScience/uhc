@@ -244,6 +244,8 @@ SEM TextStyle
 SEM GroupType
   | Verbatim        loc         .   out         =   out "pre"
                     lhs         .   outL        =   [@out] -- [out "blockquote", @out]
+  | Center          loc         .   out         =   out "blockquote"
+                    lhs         .   outL        =   [@out]
 
 SEM ItemizeStyle
   | Bullet          lhs         .   out         =   out "ul"

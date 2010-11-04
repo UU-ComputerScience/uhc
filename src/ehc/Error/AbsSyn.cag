@@ -226,6 +226,8 @@ DATA Err
                         file       : String
                         expected   : {[String]}
                         inHI       : {[String]}
+  | WrongMagic          modNm      : String
+                        file       : String
 %%]
 
 

@@ -91,6 +91,7 @@ grouptypeMp
   = Map.fromList
       [ ("verbatim" , GroupType_Verbatim        )
       , ("pre"      , GroupType_Verbatim        )
+      , ("center"   , GroupType_Center          )
       -- , ("document" , GroupType_Document        )
       -- , ("tabular"  , GroupType_Tabular         )
       ]

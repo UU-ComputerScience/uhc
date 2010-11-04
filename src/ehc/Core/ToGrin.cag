@@ -85,18 +85,18 @@ ATTR AllCodeNT - AllMeta [ | gUniq: UID | ]
 ATTR CodeAGItf [ gUniq: UID | | ]
 
 SEM CExpr
-  | Var         loc			.	lUniq		:	UNIQUEREF gUniq
+  | Var         loc         .   lUniq       :   UNIQUEREF gUniq
   | TupIns TupUpd TupDel
-                loc			.	lUniq		:	UNIQUEREF gUniq
-  | Case        loc			.	lUniq		:	UNIQUEREF gUniq
-  | App         loc			.	lUniq		:	UNIQUEREF gUniq
-                loc			.	lUniq2		:	UNIQUEREF gUniq
-  | FFI			loc			.	lUniq		:	UNIQUEREF gUniq
+                loc         .   lUniq       :   UNIQUEREF gUniq
+  | Case        loc         .   lUniq       :   UNIQUEREF gUniq
+  | App         loc         .   lUniq       :   UNIQUEREF gUniq
+                loc         .   lUniq2      :   UNIQUEREF gUniq
+  | FFI         loc         .   lUniq       :   UNIQUEREF gUniq
 
 
 SEM CPat
-  | Con         loc			.	lUniq		:	UNIQUEREF gUniq
-  | Int Char    loc			.	lUniq		:	UNIQUEREF gUniq
+  | Con         loc         .   lUniq       :   UNIQUEREF gUniq
+  | Int Char    loc         .   lUniq       :   UNIQUEREF gUniq
 %%]
 
 SEM CBindAspect
@@ -500,7 +500,11 @@ SEM CModule
   | Mod         expr        .   doBox       =   True
 
 SEM CBindAspect
-  | Bind Val    expr        .   doBox       =   True
+  | Bind Val
+%%[[90
+    FFE
+%%]]
+                expr        .   doBox       =   True
 
 SEM CPatFld
   | Fld         offset      .   doBox       =   True
@@ -742,7 +746,7 @@ ATTR CExpr [ | | grLetBody: GrExpr ]
 SEM CExpr
   | Let         lhs         .   grLetBody   =   @body.grLetBody
   | * - Let Ann CaseAltFail
-  				lhs         .   grLetBody   =   @grExpr
+                lhs         .   grLetBody   =   @grExpr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -755,7 +759,7 @@ ATTR CExpr [ | | grLamArgL: {[HsName]}  grLamBody: GrExpr  ]
 SEM CExpr
   | Lam         lhs         .   grLamArgL   =   @arg : @body.grLamArgL
   | * - Lam Ann CaseAltFail
-  				lhs         .   grLamArgL   =   []
+                lhs         .   grLamArgL   =   []
                 lhs         .   grLamBody   =   @grExpr
 
 %%]

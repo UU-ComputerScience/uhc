@@ -743,45 +743,43 @@ ATTR
 SEM Decl
   | Val         lhs         .   cbindL          =   [acoreBind1Cat CBindings_Plain @patExpr.topNm @expr.cexpr] ++ @patExpr.cbindL -- cbindInPatFlatten @patExpr.cbindInPatL
   | TySig       lhs         .   cbindL          =   []
-  | FFI         lhs         .   ffiCBindL       =   if True -- ehcOptPriv @lhs.opts
-                                                    then let (argTyL,resTy) = tyArrowArgsRes @ty_sig_expanded
-                                                             argLen = length argTyL
-                                                             (_,u1,u2) = mkNewLevUID2 @lUniqFFI
-                                                             (nmRes:nmEvalRes:nmArgL) = take (argLen + 2) (map (mkHNm) (iterate uidNext u1))
-                                                             nmArgPatL = map (hsnUniqify HsNameUniqifier_FFIArg) nmArgL
-                                                             (resTyAdapted,argTyLExtra,nmArgLExtra,wrapRes)
-                                                                =
+  | FFI         lhs         .   ffiCBindL       =   let (argTyL,resTy) = tyArrowArgsRes @ty_sig_expanded
+                                                        argLen = length argTyL
+                                                        (_,u1,u2) = mkNewLevUID2 @lUniqFFI
+                                                        (nmRes:nmEvalRes:nmArgL) = take (argLen + 2) (map mkHNm (iterate uidNext u1))
+                                                        nmArgPatL = map (hsnUniqify HsNameUniqifier_FFIArg) nmArgL
+                                                        (resTyAdapted,argTyLExtra,nmArgLExtra,wrapRes)
+                                                           =
 %%[[98
-                                                                    case ffiMbIORes @lhs.opts resTy of
-                                                                      Just iores
-                                                                        -> (iores,a,n,w)
-                                                                        where (a,n,w) = ffiCoreIOAdapt @lhs.opts u2 iores
-                                                                      _ ->
+                                                               case ffiMbIORes @lhs.opts resTy of
+                                                                 Just iores
+                                                                   -> (iores,a,n,w)
+                                                                   where (a,n,w) = ffiCoreIOAdapt @lhs.opts u2 iores
+                                                                 _ ->
 %%]]
-                                                                           (resTy,[],[],id)
+                                                                      (resTy,[],[],id)
 %%[[8
-                                                             primArgNeedsEvalL
-                                                                             =   take argLen $ repeat True
-                                                             primResNeedsEval
-                                                                             =   False
+                                                        primArgNeedsEvalL
+                                                                        =   take argLen $ repeat True
+                                                        primResNeedsEval
+                                                                        =   False
 %%][96
-                                                             mbPrimNeedEval  =   lookupPrimNeedsEval $ forextractEnt $ foreignEntExtract @impEnt
-                                                             primArgNeedsEvalL
-                                                                             =   take argLen $ maybe (repeat True) (\p -> primArgNeedEval p ++ repeat True) mbPrimNeedEval
-                                                             primResNeedsEval
-                                                                             =   maybe False primResNeedEval mbPrimNeedEval
+                                                        mbPrimNeedEval  =   lookupPrimNeedsEval $ forextractEnt $ foreignEntExtract @impEnt
+                                                        primArgNeedsEvalL
+                                                                        =   take argLen $ maybe (repeat True) (\p -> primArgNeedEval p ++ repeat True) mbPrimNeedEval
+                                                        primResNeedsEval
+                                                                        =   maybe False primResNeedEval mbPrimNeedEval
 %%]]
-                                                             ffi = acoreLam (nmArgL ++ nmArgLExtra)
-                                                                   $ ffiCoreEvalAdapt
-                                                                       ( zip3 nmArgL nmArgPatL primArgNeedsEvalL )
-                                                                       ( nmEvalRes
-                                                                       , wrapRes
-                                                                         $ acoreApp (CExpr_FFI @callconv @safety @impEnt $ argTyL `mkArrow` resTyAdapted)
-                                                                         $ map acoreVar nmArgPatL
-                                                                       , primResNeedsEval
-                                                                       )
-                                                         in  [acoreBind1 @nm ffi]
-                                                    else [] -- [acoreBind1Asp1 @nm (CBindAspect_FFI @callconv @safety @impEnt @ty_sig_expanded)]
+                                                        ffi = acoreLam (nmArgL ++ nmArgLExtra)
+                                                              $ ffiCoreEvalAdapt
+                                                                  ( zip3 nmArgL nmArgPatL primArgNeedsEvalL )
+                                                                  ( nmEvalRes
+                                                                  , wrapRes
+                                                                    $ acoreApp (CExpr_FFI @callconv @safety @impEnt $ argTyL `mkArrow` resTyAdapted)
+                                                                    $ map acoreVar nmArgPatL
+                                                                  , primResNeedsEval
+                                                                  )
+                                                    in  [acoreBind1 @nm ffi]
                 loc         .   lUniqFFI        :   UNIQUEREF gUniq
 %%]
 
@@ -791,10 +789,34 @@ SEM Decl
 %%]
 
 %%[(90 codegen)
-  | FFE         loc         .   nmCoerced       =   mkHNmPrefix "coerced_" @nm
-                lhs         .   cbindL          =   [acoreBind1Cat CBindings_Plain @nmCoerced @expr.cexpr]
-                            .   ffeCBindL       =   [acoreBind1Asp1 @nm (CBindAspect_FFE @callconv @expEnt @nmCoerced @ty_sig_expanded)]
+SEM Decl
+  | FFE         loc         .   nmCoerced       =   hsnUniqify HsNameUniqifier_FFECoerced @nm
+                            .   (ffeCExpr,ffeTy)=   let (argTyL,resTy) = tyArrowArgsRes @ty_sig_expanded
+                                                        argLen = length argTyL
+                                                        (nmRes:nmEvalRes:nmIOEvalRes:nmArgL) = map mkHNm $ mkNewLevUIDL (argLen+3) @lUniqFFE
+                                                        (resTyAdapted,argLExtra,wrapRes)
+                                                           =
+%%[[98
+                                                               case ffiMbIORes @lhs.opts resTy of
+                                                                 Just iores
+                                                                   -> ( iores
+                                                                      , [acoreTup []]       -- (), unit, the world
+                                                                      , \e -> acoreExprSatSelCase @rceEnv (Just nmIOEvalRes) e CTagRec nmIOEvalRes 1 Nothing
+                                                                      )
+                                                                 _ ->
+%%]]
+                                                                      (resTy,[],id)
+                                                    in  ( acoreLam nmArgL
+                                                          $ acoreLet1Strict nmEvalRes 
+                                                              (wrapRes $ acoreApp @expr.cexpr $ map acoreVar nmArgL ++ argLExtra)
+                                                              (acoreVar nmEvalRes)
+                                                        , argTyL `mkArrow` resTyAdapted
+                                                        )
+                loc         .   lUniqFFE        :   UNIQUEREF gUniq
+                lhs         .   ffeCBindL       =   [acoreBind1Asp1 @nm (CBindAspect_FFE @callconv @expEnt @ffeCExpr @ffeTy)]
 %%]
+                lhs         .   cbindL          =   [acoreBind1Cat CBindings_Plain @nmCoerced @ffeCExpr]
+                            .   ffeCBindL       =   [acoreBind1Asp1 @nm (CBindAspect_FFE @callconv @expEnt @nmCoerced @ffeTy)]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Let bindings + front bindings + body separately

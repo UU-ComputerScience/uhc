@@ -27,4 +27,4 @@ executable text2text
     , Text.To.Html
   extensions: TypeSynonymInstances, MultiParamTypeClasses, Rank2Types, FlexibleContexts, ImpredicativeTypes
   hs-source-dirs: @TOP_ABS@/build/text2text
-
+  Ghc-Options: -fglasgow-exts

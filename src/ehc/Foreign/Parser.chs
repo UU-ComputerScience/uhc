@@ -41,11 +41,11 @@ foreign import ccall unsafe "string.h" memcpy  :: Ptr a -> Ptr a -> CSize -> IO 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[90 hs export(parseForeignEnt)
-parseForeignEnt :: FFIWay -> Maybe String -> String -> (ForeignEnt,ErrL)
-parseForeignEnt way dfltNm s
+parseForeignEnt :: ForeignDirection -> FFIWay -> Maybe String -> String -> (ForeignEnt,ErrL)
+parseForeignEnt dir way dfltNm s
   = (res,errs)
   where tokens     = scan foreignEntScanOpts (initPos s) s
-        (res,msgs) = parseToResMsgs (pForeignEnt way dfltNm) tokens
+        (res,msgs) = parseToResMsgs (pForeignEnt dir way dfltNm) tokens
         errs       = map (rngLift emptyRange mkPPErr) msgs
 %%]
 
@@ -60,16 +60,16 @@ to a corresponding abstract syntax.
 type ForeignParser        ep    =    PlainParser Token ep
 %%]
 
-%%[90 export(pForeignEnt)
-pForeignEnt :: FFIWay -> Maybe String -> ForeignParser ForeignEnt
-pForeignEnt way dfltNm
-  = case way of
-      FFIWay_CCall   -> ForeignEnt_CCall        <$> pCCall       dfltNm
-      FFIWay_Prim    -> ForeignEnt_PrimCall     <$> pPrimCall    dfltNm
+%%[90
+pForeignEnt :: ForeignDirection -> FFIWay -> Maybe String -> ForeignParser ForeignEnt
+pForeignEnt dir way dfltNm
+  = case (dir,way) of
+      (_                      ,FFIWay_CCall  ) -> ForeignEnt_CCall        <$> pCCall       dfltNm
+      (_                      ,FFIWay_Prim   ) -> ForeignEnt_PrimCall     <$> pPrimCall    dfltNm
 %%[[(90 jscript)
-      FFIWay_JScript -> ForeignEnt_JScriptCall  <$> pJScriptCall dfltNm
+      (ForeignDirection_Import,FFIWay_JScript) -> ForeignEnt_JScriptCall  <$> pJScriptCall dfltNm
 %%]]
-      _              -> ForeignEnt_PlainCall    <$> pPlainCall   dfltNm
+      _                                        -> ForeignEnt_PlainCall    <$> pPlainCall   dfltNm
 
 pCCall :: Maybe String -> ForeignParser CCall
 pCCall dfltNm

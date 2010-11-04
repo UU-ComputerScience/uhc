@@ -272,6 +272,7 @@ SEM TextStyle
 
 SEM GroupType
   | Verbatim        lhs         .   out         =   out "verbatim"
+  | Center          lhs         .   out         =   out "blockquote"
 
 SEM ItemizeStyle
   | Bullet          lhs         .   out         =   out "   * "
