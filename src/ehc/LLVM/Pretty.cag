@@ -46,17 +46,21 @@ ATTR LLVMFunctionDecls
      
 ATTR LLVMFunctionDecl
      [ | | prettyCall : {[LLVMVar] -> PP_Doc}
-           prettySig  : {PP_Doc} ]
+           prettySig  : {PP_Doc} 
+           prettyGC   : {PP_Doc} ]
           
      
 SEM LLVMModule
   | LLVMModule  lhs.pretty = ppPrependList ";" @comments
                              >-< ""
+                             >-< ppNamedTyList @namedTys
+                             >-< ""
                              >-< vlist (
                                  map (\(dst,src) ->
-                                       ppAssignment dst ("internal constant" >#< show src)
+                                       ppAssignment dst ("constant" >#< show src)
                                      ) @constants
                                  )
+                             >-< ""
                              >-< ppGlobalList @globals
                              >-< ""
                              >-< ppPrependList "declare" @fwdDecls.prettySigs
@@ -71,6 +75,7 @@ SEM LLVMFunctions
 SEM LLVMFunction
   | Func        lhs.pretty = "define" >#< show @linkage >#< @funcDecl.prettySig
                              >#< "nounwind"
+                             >#< @funcDecl.prettyGC
                              >-< "{"
                              >-< indent 4 @body.pretty
                              >-< "}"
@@ -84,12 +89,15 @@ SEM LLVMFunctionDecls
   
 SEM LLVMFunctionDecl
   | LLVMFunctionDecl    lhs.prettySig  = case @varargs of
-                                            VarArgs   -> ppVarargsFunctionSignature @name @returnType @params   
+                                            VarArgs   -> ppVarargsFunctionSignature @name @returnType @params 
                                             FixedArgs -> ppFunctionSignature @name @returnType @params
                         lhs.prettyCall = case @varargs of
                                             VarArgs   -> ppVarargsFunctionCall @name @returnType @params
                                             FixedArgs -> ppFunctionSignature @name @returnType
-                             
+                        lhs.prettyGC   = case @gcname of
+                                            Just name -> "gc" >#< '"' >|< name >|< '"'
+                                            Nothing   -> empty
+
 SEM LLVMStatement
   | Assignment  lhs.pretty = ppAssignment @dest @source.pretty
   | Branch      lhs.pretty = ppBranch @target
@@ -122,10 +130,20 @@ SEM LLVMExpression
 --------------------------------------------------------------------------------
 -- Print functions
 --------------------------------------------------------------------------------
+
+ppNamedTy :: LLVMVar -> PP_Doc
+ppNamedTy var =
+      getName var >#< "= type" 
+                 >#< show (getType var)
+
+ppNamedTyList :: [LLVMVar] -> PP_Doc
+ppNamedTyList = 
+  vlist.(map ppNamedTy)
+
 ppGlobal :: LLVMVar -> PP_Doc
-ppGlobal var =
-  getName var >#< "= internal global" 
-              >#< show (pLower $ getType var) >#< "zeroinitializer"
+ppGlobal var            =
+      getName var >#< "= internal global" 
+                  >#< show (pLower $ getType var) >#< "zeroinitializer"
 
 ppGlobalList :: [LLVMVar] -> PP_Doc
 ppGlobalList = 

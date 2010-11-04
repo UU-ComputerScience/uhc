@@ -151,6 +151,11 @@ extern char** rtsArgV ;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
+#ifdef __UHC_TARGET_LLVM__
+extern void main_llvm_Init1();
+extern void main_llvm_Exit();
+#endif
+
 #ifdef __UHC_TARGET_C__
 extern int main_Sil_Init1(int argc, char** argv) ;
 extern int main_Sil_Run(int argc, char** argv, int (*sillymainfunction)() );

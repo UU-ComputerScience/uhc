@@ -60,3 +60,53 @@ void mm_exit() {
 	mm_exit_plan() ;	
 }
 %%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% External interface for linking with non C backends
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+
+Ptr mm_itf_alloc_ext( size_t sz, Word gcInfo ) {
+    // mm_itf_gc();    
+    Ptr p = mm_itf_alloc( sz, gcInfo ); 
+    //printf("mm_itf_alloc_ext mem: %i at: %016llx \n", sz, p);
+    return p;
+}
+
+Ptr mm_itf_allocResident_ext( size_t sz ) {
+    return mm_itf_allocResident( sz );
+}
+
+
+void mm_itf_deallocResident_ext( Ptr p ) {
+    mm_itf_deallocResident( p );
+}
+
+
+void mm_itf_registerGCRoot_ext( WPtr p ) {
+    mm_itf_registerGCRoot( p );
+}
+
+
+void mm_itf_registerGCRoots_ext( WPtr p, Word n ) {
+    printf("registerGCRoots: %016llx  nr: %i \n", p, n);
+    mm_itf_registerGCRoots( p, n );
+}
+
+
+Bool mm_itf_gc_ext( ) {
+    return mm_itf_gc();
+}
+
+%%]
+
+
+
+
+
+
+
+
+

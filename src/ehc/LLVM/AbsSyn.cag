@@ -16,6 +16,7 @@
 -}
 DATA LLVMModule
   |  LLVMModule  comments   : {[String]}
+                 namedTys   : {[LLVMVar]}
                  constants  : {[(LLVMVar,LLVMVar)]}
                  globals    : {[LLVMVar]} 
                  fwdDecls   : LLVMFunctionDecls
@@ -45,12 +46,14 @@ TYPE LLVMFunctions  = [LLVMFunction]
     * returnType: Type of the returned value
     * varargs:    ParameterListType indicating if this function uses varargs
     * params:     Signature of the parameters 
+    * gcname:     Optional Garbage collector name specified by a compiler plugin
 -}
 DATA LLVMFunctionDecl
   | LLVMFunctionDecl  name       : {String}
                       returnType : {LLVMType} 
                       varargs    : {LLVMParameterListType}
                       params     : {[LLVMVar]}
+                      gcname     : {Maybe String}
 
 TYPE LLVMFunctionDecls = [LLVMFunctionDecl]
 %%]

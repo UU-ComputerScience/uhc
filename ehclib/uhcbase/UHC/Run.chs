@@ -24,7 +24,7 @@ import System.IO (hPutStrLn)
 %%]
 
 %%[99
-#if defined(__UHC_TARGET_C__) || defined(__UHC_TARGET_JSCRIPT__)
+#if defined(__UHC_TARGET_C__) || defined(__UHC_TARGET_JSCRIPT__) || defined (__UHC_TARGET_LLVM__)
 
 -- Wrapper around 'main', invoked as 'ehcRunMain main'
 ehcRunMain :: IO a -> IO a
