@@ -76,8 +76,6 @@ typedef struct MM_Trace {
 
 %%[8
 extern void mm_trace_TraceObjects( MM_Trace* trace, Word* objs, Word nrObjs ) ;
-
-extern void mm_trace_TraceObjects2( MM_Trace* trace, Word* objs, Word nrObjs ) ;
 %%]
 
 %%[8
