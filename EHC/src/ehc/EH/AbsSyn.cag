@@ -667,18 +667,20 @@ SET NTPrf
 %%[1
 DATA TyIndex
   | Group       varnm   : {HsName}
-                bounds  : TyQuantifiedScheme
+                bounds  : TyScheme
     
-DATA TyQuantifiedScheme
-  | Quant       tyIndex  : TyIndex
-                tyScheme : TyScheme
-  | Bottom
+-- DATA TyQuantifiedScheme
+  -- | Quant       tyIndex  : TyIndex
+                -- tyScheme : TyScheme
+  -- | Bottom
+
    
 DATA TyScheme
   | Quant       subst   : Scheme
                 tyExpr  : TyScheme
   | SystemF     tyExpr  : TyExpr
   | Bottom
+  -- | These are just used internally. Will be removed in the end
   | Sugar       prefix  : Prefix
                 tyExpr  : TyScheme
   | Forall      tyQuant : {[HsName]}
@@ -703,11 +705,14 @@ DATA TyPoly
   | SystemF     tyExpr  : TyExpr
 
 -- TYPE TyExprs   = [TyExpr]
+{
+type TyQuantifiedScheme = TyScheme
+}
 TYPE Prefix    = [TyIndex]
 TYPE TySchemes = [TyScheme]
 TYPE KeyVal    = ({HsName}, TyScheme)
 TYPE Env       = [KeyVal]
 
 SET AllHML 
-    = TyIndex TyQuantifiedScheme TyScheme Scheme TyMono TyPoly TyExprs Prefix TySchemes Env KeyVal
+    = TyScheme Scheme TyMono TyPoly TyExprs Prefix TySchemes Env KeyVal TyIndex -- TyQuantifiedScheme
 %%]

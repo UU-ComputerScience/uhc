@@ -718,9 +718,9 @@ SEM HMLItf
 SEM TyIndex
   | Group       lhs     .   pp          = "(" >|< @varnm >|< " >= " >|< @bounds.pp >|< ")"
 
-SEM TyQuantifiedScheme
-  | Quant       lhs     .   pp          = "forall (" >|< @tyIndex.pp >|< ")." >#< @tyScheme.pp
-  | Bottom      lhs     .   pp          = pp "_|_"
+-- SEM TyQuantifiedScheme
+  -- | Quant       lhs     .   pp          = "forall (" >|< @tyIndex.pp >|< ")." >#< @tyScheme.pp
+  -- | Bottom      lhs     .   pp          = pp "_|_"
   
 SEM Env
   | Cons        lhs     .   pp          = @hd.pp >|< "" >-< @tl.pp
