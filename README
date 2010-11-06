@@ -9,7 +9,11 @@ about UHC is:
 
 	http://www.cs.uu.nl/wiki/UHC/WebHome
 
-Here instructions for getting started and downloading can be found.
+Here the elaborate instructions for getting started and downloading can be found. The short version for installing uhc is:
+
+	./configure
+	make
+	make install
 
 More detailed information currently still labeled with EHC can be found
 here:

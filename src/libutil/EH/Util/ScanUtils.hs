@@ -114,6 +114,7 @@ data ScanOpts
         ,   scoPragmasTxt       ::  !(Set.Set String)       -- identifiers which are pragmas
         ,   scoCommandsTxt      ::  !(Set.Set String)       -- identifiers which are commands
         ,   scoKeywordsOps      ::  !(Set.Set String)       -- operators which are keywords
+        ,   scoKeywExtraChars   ::  !(Set.Set Char)         -- extra chars to be used by identifiers
         ,   scoSpecChars        ::  !(Set.Set Char)         -- 1 char keywords
         ,   scoOpChars          ::  !(Set.Set Char)         -- chars used for operators
         ,   scoSpecPairs        ::  !(Set.Set String)       -- pairs of chars which form keywords
@@ -136,6 +137,7 @@ defaultScanOpts
         ,   scoPragmasTxt       =   Set.empty
         ,   scoCommandsTxt      =   Set.empty
         ,   scoKeywordsOps      =   Set.empty
+        ,   scoKeywExtraChars   =   Set.empty
         ,   scoSpecChars        =   Set.empty
         ,   scoOpChars          =   Set.empty
         ,   scoSpecPairs        =   Set.empty

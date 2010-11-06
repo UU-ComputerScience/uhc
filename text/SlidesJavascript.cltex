@@ -1,5 +1,16 @@
 %%[interpreter
 \begin{frame}
+\frametitle{Content}
+
+\begin{itemize}
+\item Using Javascript functionally
+\item Laziness implemented in Javascript
+\end{itemize}
+
+\end{frame}
+
+
+\begin{frame}
 \frametitle{Interpreter: function}
 
 %%@Blog.js.interpreter.interface.Fun wrap=safecode

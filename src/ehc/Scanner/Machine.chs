@@ -61,6 +61,7 @@ scan opts pos input
    -- locatein :: Ord a => [a] -> a -> Bool
    -- locatein es = isJust . btLocateIn compare (tab2tree (sort es))
    iskw     = (`Set.member` scoKeywordsTxt opts)
+   iskwextra= (`Set.member` scoKeywExtraChars opts)
    isop     = (`Set.member` scoKeywordsOps opts)
    isSymbol = (`Set.member` scoSpecChars opts)
    isOpsym  = (`Set.member` scoOpChars opts)
@@ -69,8 +70,8 @@ scan opts pos input
    isPragma = (`Set.member` scoPragmasTxt opts) . map toUpper
 %%]]
 
-   isIdStart c = isLower    c || c == '_'
-   isIdChar  c = isAlphaNum c || c == '\'' || c == '_'
+   isIdStart c = isLower    c || c == '_' || iskwextra c
+   isIdChar  c = isAlphaNum c || c == '\'' || c == '_' || iskwextra c
    isQIdChar c = isIdChar   c || c == '.'
 
    allowQual   = scoAllowQualified opts

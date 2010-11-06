@@ -410,14 +410,19 @@ tyScanOpts
 %%]
 
 %%[90
-foreignEntScanOpts :: ScanOpts
-foreignEntScanOpts
+foreignEntScanOpts :: FFIWay -> ScanOpts
+foreignEntScanOpts way
   =  defaultScanOpts
         {   scoKeywordsTxt      =   Set.fromList [ "dynamic", "wrapper", "h", "static" ]
         ,   scoSpecChars        =   Set.fromList ".&%[]()"
         ,   scoDollarIdent      =   False
-        , 	scoAllowQualified	=	False
+        ,   scoKeywExtraChars   =   Set.fromList wayKeywExtraChars
+        ,   scoAllowQualified   =   False
         }
+  where (wayKeywExtraChars)
+          = case way of
+              FFIWay_JScript -> ("$")
+              _              -> ("" )
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
