@@ -44,7 +44,7 @@ foreign import ccall unsafe "string.h" memcpy  :: Ptr a -> Ptr a -> CSize -> IO 
 parseForeignEnt :: ForeignDirection -> FFIWay -> Maybe String -> String -> (ForeignEnt,ErrL)
 parseForeignEnt dir way dfltNm s
   = (res,errs)
-  where tokens     = scan foreignEntScanOpts (initPos s) s
+  where tokens     = scan (foreignEntScanOpts way) (initPos s) s
         (res,msgs) = parseToResMsgs (pForeignEnt dir way dfltNm) tokens
         errs       = map (rngLift emptyRange mkPPErr) msgs
 %%]
