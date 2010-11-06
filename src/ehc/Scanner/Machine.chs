@@ -66,6 +66,7 @@ scan opts pos input
    isSymbol = (`Set.member` scoSpecChars opts)
    isOpsym  = (`Set.member` scoOpChars opts)
    isPairSym= (`Set.member` scoSpecPairs opts)
+   isStringDelim = (`elem` scoStringDelims opts)
 %%[[99
    isPragma = (`Set.member` scoPragmasTxt opts) . map toUpper
 %%]]
@@ -118,6 +119,27 @@ scan opts pos input
              where dflt = (q,s)
 %%]
 
+%%[5
+   scanString :: Char -> Pos -> String -> (String,Pos,String)
+   scanString d p []            = ("",p,[])
+   scanString d p ('\\':'&':xs) = scanString d (advc 2 p) xs
+   {-
+   scanString d p ('\'':xs)     = let (str,p',r) = scanString d (advc 1 p) xs
+                                  in  ('\'': str,p',r)
+   -}
+   scanString d p ( c  :xs) | isStringDelim c && c /= d
+                                = let (str,p',r) = scanString d (advc 1 p) xs
+                                  in  (c:str,p',r)
+   scanString d p ('\\':x:xs) | isSpace x
+                                = let (white,rest) = span isSpace xs
+                                  in  case rest of
+                                        ('\\':rest') -> scanString d (advc 1 $ foldl adv (advc 2 p) white) rest'
+                                        _            -> ("",advc 2 p,xs)
+   scanString d p xs = let (ch,cw,cr) = getchar d xs
+                           (str,p',r) = scanString d (advc cw p) cr
+                       in  maybe ("",p,xs) (\c -> (c:str,p',r)) ch
+%%]
+
 %%[99
    scanLitText p ('\\':'b':'e':'g':'i':'n':'{':'c':'o':'d':'e':'}':s)
      | posIs1stColumn p
@@ -150,9 +172,10 @@ scan opts pos input
    doScan p ('#':'-':'}':s) = reserved "#-}" p : doScan (advc 3 p) s
 %%]]
    doScan p ('{':'-':s)  = scanNestedComment doScan (advc 2 p) s
-   doScan p ('"':ss)
-     = let (s,p',rest) = scanString (advc 1 p) ss
-       in if null rest || head rest /= '"'
+   doScan p (d:ss)
+     | isStringDelim d
+     = let (s,p',rest) = scanString d (advc 1 p) ss
+       in if null rest || head rest /= d
              then errToken "Unterminated string literal" p : doScan p' rest
              else valueToken TkString s p : doScan (advc 1 p') (tail rest)
 %%]
@@ -286,33 +309,39 @@ scanNestedComment cont pos inp = nest cont pos inp
        nest _ _ []          = [ errToken "Unterminated nested comment" pos]
 
 
-scanString :: Pos -> String -> (String,Pos,String)
-scanString p []            = ("",p,[])
-scanString p ('\\':'&':xs) = scanString (advc 2 p) xs
-scanString p ('\'':xs)     = let (str,p',r) = scanString (advc 1 p) xs
-                             in  ('\'': str,p',r)
-scanString p ('\\':x:xs) | isSpace x
-                           = let (white,rest) = span isSpace xs
-                             in  case rest of
-                                   ('\\':rest') -> scanString (advc 1 $ foldl adv (advc 2 p) white) rest'
-                                   _            -> ("",advc 2 p,xs)
-scanString p xs = let (ch,cw,cr) = getchar xs
-                      (str,p',r) = scanString (advc cw p) cr
-                  in  maybe ("",p,xs) (\c -> (c:str,p',r)) ch
+{-
+scanString :: Char -> Pos -> String -> (String,Pos,String)
+scanString d p []            = ("",p,[])
+scanString d p ('\\':'&':xs) = scanString d (advc 2 p) xs
+-- scanString d p ('\'':xs)     = let (str,p',r) = scanString d (advc 1 p) xs
+--                                in  ('\'': str,p',r)
+scanString d p ( c  :xs) | isStringDelim c && c /= d
+                             = let (str,p',r) = scanString d (advc 1 p) xs
+                               in  (c:str,p',r)
+scanString d p ('\\':x:xs) | isSpace x
+                             = let (white,rest) = span isSpace xs
+                               in  case rest of
+                                     ('\\':rest') -> scanString d (advc 1 $ foldl adv (advc 2 p) white) rest'
+                                     _            -> ("",advc 2 p,xs)
+scanString d p xs = let (ch,cw,cr) = getchar d xs
+                        (str,p',r) = scanString d (advc cw p) cr
+                    in  maybe ("",p,xs) (\c -> (c:str,p',r)) ch
+-}
 
 scanChar :: [Char] -> (Maybe Char,Int,[Char])
 scanChar ('"' :xs) = (Just '"',1,xs)
-scanChar xs        = getchar xs
+scanChar xs        = getchar '\'' xs
 
-getchar :: [Char] -> (Maybe Char,Int,[Char])
-getchar []          = (Nothing,0,[])
-getchar s@('\n':_ ) = (Nothing,0,s )
-getchar s@('\t':_ ) = (Nothing,0,s)
-getchar s@('\'':_ ) = (Nothing,0,s)
-getchar s@('\"':_ ) = (Nothing,0,s)
-getchar   ('\\':xs) = let (c,l,r) = getEscChar xs
-                      in (c,l+1,r)
-getchar (x:xs)      = (Just x,1,xs)
+getchar :: Char -> [Char] -> (Maybe Char,Int,[Char])
+getchar d []          = (Nothing,0,[])
+getchar d s@('\n':_ ) = (Nothing,0,s )
+getchar d s@('\t':_ ) = (Nothing,0,s)
+-- getchar d s@('\'':_ ) = (Nothing,0,s)
+getchar d s@( c  :_ ) | c == d
+                      = (Nothing,0,s)
+getchar d   ('\\':xs) = let (c,l,r) = getEscChar xs
+                        in (c,l+1,r)
+getchar d (x:xs)      = (Just x,1,xs)
 %%]
 
 %%[99

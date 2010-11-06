@@ -42,7 +42,7 @@ ppForeignExpr nm e
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[90
-ATTR ForeignExprAGItf ForeignExpr [ entNm: String | | ]
+ATTR ForeignExprAGItf AllForeignExpr [ entNm: String | | ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -72,12 +72,21 @@ SEM CCall
   | Empty       lhs     .   pp      =   empty
 
 SEM ForeignExpr
+  | Call		lhs		.	pp		=	@expr.pp >|< ppParens empty
+  | CallArgs	lhs		.	pp		=	@expr.pp >|< ppParensCommas @args.ppL
   | Ent			lhs		.	pp		=	pp @lhs.entNm
   | EntNm		lhs		.	pp		=	pp @nm
   | Arg			lhs		.	pp		=	"%" >|< @nr
+  | AllArg		lhs		.	pp		=	pp "%*"
   | Sel			lhs		.	pp		=	@expr.pp >|< "." >|< @sel.pp
   | Inx			lhs		.	pp		=	@expr.pp >|< "[" >|< @inx.pp >|< "]"
   | Ptr			lhs		.	pp		=	"&" >|< @expr.pp
   | Empty		lhs		.	pp		=	empty
+  | Str  		lhs		.	pp		=	pp $ show @str
 %%]
 
+%%[90
+SEM ForeignExprs [ | | ppL: {[PP_Doc]} ]
+  | Nil			lhs		.	ppL		=	[]
+  | Cons		lhs		.	ppL		=	@hd.pp : @tl.ppL
+%%]

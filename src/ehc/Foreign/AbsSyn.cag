@@ -96,6 +96,8 @@ DATA PlainCall
 %%[90
 DATA ForeignExpr
   | Call			expr			: ForeignExpr		-- actual call, pasting in remaining arguments
+  | CallArgs		expr			: ForeignExpr		-- actual call, explicit use of arguments
+  					args			: ForeignExprs
   | Ptr				expr			: ForeignExpr		-- as pointer, or as value, not calling anything
   | Sel				expr			: ForeignExpr		-- select
   					sel				: ForeignExpr
@@ -104,7 +106,13 @@ DATA ForeignExpr
   | Ent													-- the named entity in the FFI spec
   | EntNm			nm				: String			-- explicitly named entity, overriding Ent
   | Arg				nr				: Int				-- an explicitly named arg, which will then not be passed as remaining arg
+  | AllArg												-- all (remaining) args
   | Empty												-- nothing
+  | Str  			str				: String			-- string constant
+
+TYPE ForeignExprs	=	[ForeignExpr]
+
+SET AllForeignExpr	=	ForeignExpr ForeignExprs
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

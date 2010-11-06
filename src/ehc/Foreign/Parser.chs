@@ -164,12 +164,19 @@ pForeignExpr
         pPre  = pList (pPtr)
         pPost = pList (pSel <|> pInx <|> pCall)
         pExpB = pArg <|> pEnt
-        pArg  = (ForeignExpr_Arg . tokMkInt) <$ pPERCENT <*> pInteger10Tk
+        pArg  -- = (ForeignExpr_Arg . tokMkInt) <$ pPERCENT <*> pInteger10Tk
+              = pPERCENT
+                <**> (   const ForeignExpr_AllArg               <$  pSTAR
+                     <|> (\i _ -> ForeignExpr_Arg (tokMkInt i)) <$> pInteger10Tk
+                     )
+              <|> pStr
         pEnt  = ForeignExpr_EntNm <$> pForeignVar
+        pStr  = (ForeignExpr_Str . tokMkStr) <$> pStringTk
         pPtr  = ForeignExpr_Ptr <$ pAMPERSAND
         pInx  = (flip ForeignExpr_Inx) <$ pOBRACK <*> pExp <* pCBRACK
         pSel  = (flip ForeignExpr_Sel) <$ pDOT <*> pEnt
-        pCall = ForeignExpr_Call <$ pOPAREN <* pCPAREN
+        pCall =   flip ForeignExpr_CallArgs <$ pOPAREN <*> pListSep pCOMMA pArg <* pCPAREN
+              -- <|>      ForeignExpr_Call     <$ pOPAREN <*  pCPAREN
         mk    = \pre e post -> foldr ($) e $ pre ++ reverse post
 %%]
 
