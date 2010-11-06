@@ -962,12 +962,12 @@ foreign import prim "primModInt"  primModInteger     :: Integer -> Integer -> In
 foreign import prim "primQuotRemInt" primQuotRemInteger       :: Integer -> Integer -> (Integer,Integer)
 foreign import prim "primDivModInt"  primDivModInteger        :: Integer -> Integer -> (Integer,Integer)
 -}
-foreign import jscript "%1.add()"				primAddInteger 				:: Integer -> Integer -> Integer
-foreign import jscript "%1.subtract()" 			primSubInteger 				:: Integer -> Integer -> Integer
-foreign import jscript "%1.multiply()" 			primMulInteger 				:: Integer -> Integer -> Integer
-foreign import jscript "%1.negate()" 			primNegInteger 				:: Integer -> Integer
-foreign import jscript "%1.divide()" 			primQuotInteger 			:: Integer -> Integer -> Integer
-foreign import jscript "%1.remainder()" 		primRemInteger 				:: Integer -> Integer -> Integer
+foreign import jscript "%1.add(%*)"				primAddInteger 				:: Integer -> Integer -> Integer
+foreign import jscript "%1.subtract(%*)" 		primSubInteger 				:: Integer -> Integer -> Integer
+foreign import jscript "%1.multiply(%*)" 		primMulInteger 				:: Integer -> Integer -> Integer
+foreign import jscript "%1.negate(%*)" 			primNegInteger 				:: Integer -> Integer
+foreign import jscript "%1.divide(%*)" 			primQuotInteger 			:: Integer -> Integer -> Integer
+foreign import jscript "%1.remainder(%*)" 		primRemInteger 				:: Integer -> Integer -> Integer
 #else
 foreign import prim primAddInteger  :: Integer -> Integer -> Integer
 foreign import prim primSubInteger  :: Integer -> Integer -> Integer

@@ -116,6 +116,7 @@ data ScanOpts
         ,   scoKeywordsOps      ::  !(Set.Set String)       -- operators which are keywords
         ,   scoKeywExtraChars   ::  !(Set.Set Char)         -- extra chars to be used by identifiers
         ,   scoSpecChars        ::  !(Set.Set Char)         -- 1 char keywords
+        ,   scoStringDelims     ::  !String                 -- allowed delimiter for string
         ,   scoOpChars          ::  !(Set.Set Char)         -- chars used for operators
         ,   scoSpecPairs        ::  !(Set.Set String)       -- pairs of chars which form keywords
         ,   scoDollarIdent      ::  !Bool                   -- allow $ encoded identifiers
@@ -139,6 +140,7 @@ defaultScanOpts
         ,   scoKeywordsOps      =   Set.empty
         ,   scoKeywExtraChars   =   Set.empty
         ,   scoSpecChars        =   Set.empty
+        ,   scoStringDelims     =   "\""
         ,   scoOpChars          =   Set.empty
         ,   scoSpecPairs        =   Set.empty
         ,   scoDollarIdent      =   False

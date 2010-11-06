@@ -12,7 +12,7 @@
 
 %%[90 hs export(ForeignEnt(..), CCall(..), PlainCall(..), PrimCall(..), JScriptCall(..)) 
 %%]
-%%[90 hs export(ForeignExpr(..)) 
+%%[90 hs export(ForeignExpr(..),ForeignExprs) 
 %%]
 %%[90 hs export(ForeignExprAGItf(..), ForeignAGItf(..)) 
 %%]
@@ -50,54 +50,73 @@ DERIVING AllForeign ForeignExpr
 -- | evaluation of a ForeignExpr has arguments, known by index [1..], and a foreign entity
 
 data IE e
-  = IE { ieArgs			:: [e]
-  	   }
+  = IE { ieArgs         :: [e]
+       }
 
 data OE e
-  = OE { oeE			:: e
-  	   , oeUsed			:: Set.Set Int
-  	   }
+  = OE { oeEL           :: [e]
+       , oeUsed         :: Set.Set Int
+       }
+
+mkOE :: e -> Set.Set Int -> OE e
+mkOE e s = OE [e] s
+
+oeE :: OE e -> e
+oeE = head . oeEL
 
 foreignexprEval
-  ::   							-- the (partial) algebra for constructing an e
-        ( e	-> e -> e			-- select
-        , e	-> e -> e			-- index
-        , e -> [e] -> e			-- call
-        , e -> e				-- as var/ptr
-        , String -> e			-- name
+  ::                            -- the (partial) algebra for constructing an e
+        ( e -> e -> e           -- select
+        , e -> e -> e           -- index
+        , e -> [e] -> e         -- call
+        , e -> e                -- as var/ptr
+        , String -> e           -- name
+        , String -> e           -- string
         )
      -> ForeignExpr
-     -> e						-- ent
-     -> [e]						-- args
+     -> e                       -- ent
+     -> [e]                     -- args
      -> e
 foreignexprEval
-     (mkSel,mkInx,mkCall,mkPtr,mkNm)
+     (mkSel,mkInx,mkCall,mkPtr,mkNm,mkStr)
      fexpr ent args
   = oeE oe
   where argl = zip [1..] args
         env  = Map.fromList argl
         oe   = ev fexpr (IE [a | (i,a) <- argl, not $ i `Set.member` oeUsed oe])
         ev (ForeignExpr_Ent    ) ie =   let
-                                        in  OE ent
+                                        in  mkOE ent
                                                ( Set.empty )
         ev (ForeignExpr_EntNm n) ie =   let
-                                        in  OE ( mkNm n )
+                                        in  mkOE ( mkNm n )
+                                               ( Set.empty )
+        ev (ForeignExpr_Str   s) ie =   let
+                                        in  mkOE ( mkStr s )
                                                ( Set.empty )
         ev (ForeignExpr_Arg a  ) ie =   let
-                                        in  OE ( Map.findWithDefault (panic "foreignexprEval.Arg") a env )
+                                        in  mkOE ( Map.findWithDefault (panic "foreignexprEval.Arg") a env )
                                                ( Set.singleton a )
+        ev (ForeignExpr_AllArg ) ie =   let
+                                        in  OE ( ieArgs ie )
+                                               ( Set.empty )
         ev (ForeignExpr_Sel e s) ie =   let eo = ev e ie
                                             so = ev s ie
-                                        in  OE ( mkSel (oeE eo) (oeE so) )
+                                        in  mkOE ( mkSel (oeE eo) (oeE so) )
                                                ( oeUsed eo `Set.union` oeUsed so )
         ev (ForeignExpr_Inx e i) ie =   let eo = ev e ie
                                             io = ev i ie
-                                        in  OE ( mkInx (oeE eo) (oeE io) )
+                                        in  mkOE ( mkInx (oeE eo) (oeE io) )
                                                ( oeUsed eo `Set.union` oeUsed io )
         ev (ForeignExpr_Ptr e  ) ie =   let eo = ev e ie
-                                        in  eo {oeE = mkPtr $ oeE eo}
+                                        in  eo {oeEL = [mkPtr $ oeE eo]}
         ev (ForeignExpr_Call e ) ie =   let eo = ev e ie
-                                        in  eo {oeE = mkCall (oeE eo) (ieArgs ie)}
+                                        in  eo {oeEL = [mkCall (oeE eo) (ieArgs ie)]}
+        ev (ForeignExpr_CallArgs f a)
+                                 ie =   let fo = ev  f ie
+                                            ao = evs a ie
+                                        in  mkOE ( mkCall (oeE fo) (concatMap oeEL ao) )
+                                               ( Set.unions $ oeUsed fo : map oeUsed ao )
+        evs feL                  ie =   map (\e -> ev e ie) feL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -117,34 +136,40 @@ data ForeignDirection
 
 %%[90 hs
 instance Serialize ForeignExpr where
-  sput (ForeignExpr_Ent    ) = sputWord8 0
-  sput (ForeignExpr_EntNm a) = sputWord8 1 >> sput a
-  sput (ForeignExpr_Arg a  ) = sputWord8 2 >> sput a
-  sput (ForeignExpr_Sel a b) = sputWord8 3 >> sput a >> sput b
-  sput (ForeignExpr_Inx a b) = sputWord8 4 >> sput a >> sput b
-  sput (ForeignExpr_Ptr a  ) = sputWord8 5 >> sput a
-  sput (ForeignExpr_Call a ) = sputWord8 6 >> sput a
+  sput (ForeignExpr_Ent         ) = sputWord8 0
+  sput (ForeignExpr_EntNm    a  ) = sputWord8 1 >> sput a
+  sput (ForeignExpr_Arg      a  ) = sputWord8 2 >> sput a
+  sput (ForeignExpr_Sel      a b) = sputWord8 3 >> sput a >> sput b
+  sput (ForeignExpr_Inx      a b) = sputWord8 4 >> sput a >> sput b
+  sput (ForeignExpr_Ptr      a  ) = sputWord8 5 >> sput a
+  sput (ForeignExpr_Call     a  ) = sputWord8 6 >> sput a
+  sput (ForeignExpr_CallArgs a b) = sputWord8 7 >> sput a >> sput b
+  sput (ForeignExpr_AllArg      ) = sputWord8 8
+  sput (ForeignExpr_Str      a  ) = sputWord8 9 >> sput a
   sget = do
     t <- sgetWord8
     case t of
         0 -> return ForeignExpr_Ent
-        1 -> liftM  ForeignExpr_EntNm		sget
-        2 -> liftM  ForeignExpr_Arg 		sget
+        1 -> liftM  ForeignExpr_EntNm       sget
+        2 -> liftM  ForeignExpr_Arg         sget
         3 -> liftM2 ForeignExpr_Sel         sget sget
         4 -> liftM2 ForeignExpr_Inx         sget sget
         5 -> liftM  ForeignExpr_Ptr         sget
         6 -> liftM  ForeignExpr_Call        sget
+        7 -> liftM2 ForeignExpr_CallArgs    sget sget
+        8 -> return ForeignExpr_AllArg
+        9 -> liftM  ForeignExpr_Str         sget
 
 instance Serialize ForeignEnt where
-  sput (ForeignEnt_CCall     	a) = sputWord8 0 >> sput a
-  sput (ForeignEnt_PlainCall 	a) = sputWord8 1 >> sput a
-  sput (ForeignEnt_PrimCall  	a) = sputWord8 2 >> sput a
+  sput (ForeignEnt_CCall        a) = sputWord8 0 >> sput a
+  sput (ForeignEnt_PlainCall    a) = sputWord8 1 >> sput a
+  sput (ForeignEnt_PrimCall     a) = sputWord8 2 >> sput a
   sput (ForeignEnt_JScriptCall  a) = sputWord8 3 >> sput a
   sget = do t <- sgetWord8
             case t of
-              0 -> liftM ForeignEnt_CCall     	sget
-              1 -> liftM ForeignEnt_PlainCall 	sget
-              2 -> liftM ForeignEnt_PrimCall  	sget
+              0 -> liftM ForeignEnt_CCall       sget
+              1 -> liftM ForeignEnt_PlainCall   sget
+              2 -> liftM ForeignEnt_PrimCall    sget
               3 -> liftM ForeignEnt_JScriptCall sget
 
 instance Serialize CCall where

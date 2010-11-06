@@ -608,7 +608,7 @@ ffiJScriptMkCall
 %%[[8
         mk = J.Expr_Call
 %%][90
-        mk = foreignexprEval (J.Expr_Sel,J.Expr_ArrInx,J.Expr_Call,id,jsVar) (forextractForeignExpr ent)
+        mk = foreignexprEval (J.Expr_Sel,J.Expr_ArrInx,J.Expr_Call,id,jsVar,J.Expr_Str) (forextractForeignExpr ent)
 %%]]
         mkcall (f,as)
 %%[[90
