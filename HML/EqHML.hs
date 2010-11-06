@@ -3,10 +3,10 @@ module EqHML where
 import EH8.EH
 import EH8.Base.HsName
 
-instance Eq TyQuantifiedScheme where
- TyQuantifiedScheme_Bottom      == TyQuantifiedScheme_Bottom      = True
- TyQuantifiedScheme_Quant a1 b1 == TyQuantifiedScheme_Quant a2 b2 = a1 == a2 && b1 == b2
- _                              == _                              = False
+-- instance Eq TyQuantifiedScheme where
+ -- TyQuantifiedScheme_Bottom      == TyQuantifiedScheme_Bottom      = True
+ -- TyQuantifiedScheme_Quant a1 b1 == TyQuantifiedScheme_Quant a2 b2 = a1 == a2 && b1 == b2
+ -- _                              == _                              = False
   
 instance Eq Scheme where
  Scheme_Simple a1 b1 == Scheme_Simple a2 b2 = a1 == a2 && b1 == b2

@@ -52,8 +52,8 @@ split ([], _)      = ([], [])
 split ((p@(TyIndex_Group var phi):q), vars) 
  = case var `elem` vars of
      True  -> let fvars = case phi of
-                            TyQuantifiedScheme_Quant _ phi' -> ftv phi'
-                            _                               -> []
+                            TyScheme_Quant _ phi' -> ftv phi'
+                            _                     -> []
                   (q1, q2) = split (q, (var `delete` vars) ++ fvars)
               in (p:q1, q2)
      False -> let (q1, q2) = split (q, vars)
@@ -198,9 +198,9 @@ instance Util TyExpr where
     isUnQualTy (TyExpr_AppTop a) = isUnQualTy a
     isUnQualTy _                 = True 
     
-instance Apply TyQuantifiedScheme where
-    app m (TyQuantifiedScheme_Quant i s) = TyQuantifiedScheme_Quant i <$> app m s
-    app _ TyQuantifiedScheme_Bottom      = return TyQuantifiedScheme_Bottom
+-- instance Apply TyQuantifiedScheme where
+    -- app m (TyQuantifiedScheme_Quant i s) = TyQuantifiedScheme_Quant i <$> app m s
+    -- app _ TyQuantifiedScheme_Bottom      = return TyQuantifiedScheme_Bottom
   
 instance Apply TyScheme where
     app tp@(x1,x2) = mask
@@ -256,10 +256,10 @@ instance Util TyScheme where
     isUnQualTy (TyScheme_SystemF a) = isUnQualTy a
     isUnQualTy _                    = False  
 
-instance Util TyQuantifiedScheme where
-  ftv  (TyQuantifiedScheme_Quant a b) = (nub $ ftv b) \\ (ftv a)
-  ftv  _                              = []
-  vars (TyQuantifiedScheme_Quant a b) = nub $ (vars b) ++ (vars a)
+-- instance Util TyQuantifiedScheme where
+  -- ftv  (TyQuantifiedScheme_Quant a b) = (nub $ ftv b) \\ (ftv a)
+  -- ftv  _                              = []
+  -- vars (TyQuantifiedScheme_Quant a b) = nub $ (vars b) ++ (vars a)
   
 instance Util TyIndex where
   ftv  (TyIndex_Group nm a) = (nub $ ftv a) \\ [nm]
@@ -386,8 +386,8 @@ renameVars frs ty
    
     fi (TyIndex_Group a d) 
        = let d' = case d of
-                   TyQuantifiedScheme_Quant b c -> TyQuantifiedScheme_Quant (fi b) (fc c)
-                   TyQuantifiedScheme_Bottom    -> TyQuantifiedScheme_Bottom
+                   TyScheme_Quant (Scheme_Simple a b) c -> TyScheme_Quant (Scheme_Simple (ren a) (fc b)) (fc c)
+                   TyScheme_Bottom    -> TyScheme_Bottom
          in TyIndex_Group (ren a) d'
     vc         = vars ty
     (nvc,frs') = freshM frs (length vc)
@@ -425,8 +425,9 @@ contains pref name = msum $ map (\(TyIndex_Group nm b) -> guard (nm == name) >> 
 
 -- | Drop a quantification from a TyQuantifiedScheme
 dropQuant :: TyQuantifiedScheme -> TyScheme
-dropQuant (TyQuantifiedScheme_Quant b t) = desugar $ TyScheme_Sugar [b] t
-dropQuant TyQuantifiedScheme_Bottom      = TyScheme_Bottom
+dropQuant = id
+-- dropQuant (TyScheme_Quant b t) = desugar $ TyScheme_Sugar [b] t
+-- dropQuant TyScheme_Bottom      = TyScheme_Bottom
 
 -- | Split a quantifier of a TyScheme
 splitQuant :: TyScheme -> (Prefix, TyScheme)
@@ -456,19 +457,21 @@ getBindLHs = concatMap getBindLH
 --   This greatly influences the types. Might need to be reconsidered and checked 
 --   to see if we can simplify the types generates
 promote :: TyScheme -> TyQuantifiedScheme
-promote TyScheme_Bottom                            = TyQuantifiedScheme_Bottom
-promote (TyScheme_Quant (Scheme_Simple nm ty) ty') = TyQuantifiedScheme_Quant (TyIndex_Group nm (promote ty)) ty'
-promote phi@(TyScheme_SystemF x)                   
-  = let (vars, p) = mk x -- ftv phi -- replace by bounds variables
-    in compact vars (TyScheme_SystemF p)
-   where mk (TyExpr_Quant _ a b) 
-              = let (b', y) = mk b 
-                in (a:b', y)
-         mk x = ([], x)
-   
-         compact (x:xs) p = TyQuantifiedScheme_Quant (TyIndex_Group x (compact xs p)) p
-         compact []     p = TyQuantifiedScheme_Bottom
+promote TyScheme_Bottom                            = TyScheme_Bottom
+promote (TyScheme_Quant (Scheme_Simple nm ty) ty') = TyScheme_Quant (Scheme_Simple nm (promote ty)) ty'
+promote (TyScheme_SystemF x)                   
+  = embedF x
 promote (TyScheme_Sugar{})                         = error "TyScheme_Sugar cannot be promoted. It's purely syntaxtical sugar. Please call desugar before that"
+
+-- | Represent a SystemF type as a flexible type, This is not implemented for higher rank types yet
+embedF :: TyExpr -> TyScheme
+embedF = embed id
+ where embed :: (TyScheme -> TyScheme) -> TyExpr -> TyScheme
+       embed val (TyExpr_Quant  _ a t) = let e = TyScheme_Quant (Scheme_Simple a TyScheme_Bottom)
+                                         in  embed (val . e) t
+       embed val (TyExpr_Forall _ v t) = let e = foldl' (.) id [ TyScheme_Quant (Scheme_Simple a TyScheme_Bottom) | a <- v ] 
+                                         in  embed (val . e) t
+       embed val e                     = val (TyScheme_SystemF e)
 
 -- | Generate a fresh variable and increase the counter
 fresh :: Int -> (HsName, Int)
@@ -530,14 +533,16 @@ sugar x = x
 -- | Convert a Quantified Scheme to a TyScheme such that
 --   toScheme . fromScheme == id
 toScheme :: TyQuantifiedScheme -> TyScheme
-toScheme TyQuantifiedScheme_Bottom                             = TyScheme_Bottom
-toScheme (TyQuantifiedScheme_Quant (TyIndex_Group nm bound) t) = TyScheme_Quant (Scheme_Simple nm (toScheme bound)) t
+toScheme = id
+-- toScheme TyQuantifiedScheme_Bottom                             = TyScheme_Bottom
+-- toScheme (TyQuantifiedScheme_Quant (TyIndex_Group nm bound) t) = TyScheme_Quant (Scheme_Simple nm (toScheme bound)) t
 
 -- | Convert a TyScheme to a Quantified Scheme such that
 --   toScheme . fromScheme == id
 fromScheme :: TyScheme -> TyQuantifiedScheme
-fromScheme TyScheme_Bottom                         = TyQuantifiedScheme_Bottom
-fromScheme (TyScheme_Quant (Scheme_Simple nm b) t) = TyQuantifiedScheme_Quant (TyIndex_Group nm (fromScheme b)) t
+fromScheme = id
+-- fromScheme TyScheme_Bottom                         = TyQuantifiedScheme_Bottom
+-- fromScheme (TyScheme_Quant (Scheme_Simple nm b) t) = TyQuantifiedScheme_Quant (TyIndex_Group nm (fromScheme b)) t
 
 -- | Fully quantify a type based on the type variable it contains.
 --   e.g. List a becomes forall (a>=_|_). List a
@@ -731,14 +736,15 @@ data TyIndex
     varnm   :: HsName
     bounds  :: TyQuantifiedScheme
     
--- Quantified type scheme
-data TyQuantifiedScheme
-  con Quant
-    tyIndex  :: TyIndex
-    tyScheme :: TyScheme
-  con Bottom
+-- -- Quantified type scheme
+-- data TyQuantifiedScheme
+  -- con Quant
+    -- tyIndex  :: TyIndex
+    -- tyScheme :: TyScheme
+  -- con Bottom
    
 {
+type TyQuantifiedScheme = TyScheme
 sche :: TyScheme -> String
 sche (TyScheme_Quant{})   = "Quant"
 sche (TyScheme_SystemF{}) = "SystemF"
@@ -766,6 +772,7 @@ data TyScheme
   con SystemF
     tyExpr   :: TyExpr
   con Bottom
+  -- These next two are just used internally
   con Sugar
      prefix  :: Prefix
      tyExpr  :: TyScheme
@@ -1138,7 +1145,7 @@ datasem PatExpr monad IO
     lhs.res    = [loc.exp_a]
     lhs.env    = Gamma $ minsert loc.nm loc.exp_a (unGam lhs.env)
     lhs.sub    = []
-    lhs.nxe    = (TyIndex_Group loc.a TyQuantifiedScheme_Bottom):lhs.pre
+    lhs.nxe    = (TyIndex_Group loc.a TyScheme_Bottom):lhs.pre
     lhs.frs    = loc.frs1
   clause VarAs
     lhs.var_nm = loc.nm 
@@ -1404,7 +1411,7 @@ datasem Expr monad IO
     
        lhs.res = let b = TyExpr_Var loc.b
                  in case appAll (loc.e3 `munion` loc.e2') b of
-                      Just v  -> return $ desugar $ TyScheme_Sugar loc.q5 (TyScheme_SystemF v)
+                      Just v  -> return $ nf $ desugar $ TyScheme_Sugar loc.q5 (TyScheme_SystemF v)
                       Nothing -> error "App failed, cannot apply substitution"
        loc.temp_sub = func.sub `munion` arg.sub `munion` loc.e3 -- added union
        lhs.sub = loc.temp_sub
