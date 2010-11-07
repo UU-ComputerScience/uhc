@@ -303,7 +303,11 @@ instance Domain TyScheme where
   codomain = nub . ftv 
   
 instance Domain TyIndex where
-  domain   (TyIndex_Group a _) = return a
+  domain   (TyIndex_Group a b) = a : binds b
+    where binds :: TyScheme -> [HsName]
+          binds (TyScheme_Forall a _) = a
+          binds (TyScheme_Quant a b ) = domain a ++ binds b
+          binds                     _ = []
   codomain (TyIndex_Group _ a) = ftv a
   
 -- instance Domain Env where
@@ -462,11 +466,14 @@ promote (TyScheme_Quant (Scheme_Simple nm ty) ty') = TyScheme_Quant (Scheme_Simp
 promote (TyScheme_SystemF x)                   
   = embedF x
 promote (TyScheme_Sugar{})                         = error "TyScheme_Sugar cannot be promoted. It's purely syntaxtical sugar. Please call desugar before that"
+promote (TyScheme_Forall a x) 
+  = TyScheme_Forall a (promote x)
 
 -- | Represent a SystemF type as a flexible type, This is not implemented for higher rank types yet
 embedF :: TyExpr -> TyScheme
 embedF = embed id
  where embed :: (TyScheme -> TyScheme) -> TyExpr -> TyScheme
+       embed val (TyExpr_Parens     s) = embed val s
        embed val (TyExpr_Quant  _ a t) = let e = TyScheme_Quant (Scheme_Simple a TyScheme_Bottom)
                                          in  embed (val . e) t
        embed val (TyExpr_Forall _ v t) = let e = foldl' (.) id [ TyScheme_Quant (Scheme_Simple a TyScheme_Bottom) | a <- v ] 
@@ -581,6 +588,13 @@ alpha_rename ty
 isBottom :: TyScheme -> Bool
 isBottom TyScheme_Bottom = True
 isBottom _               = False
+   
+unfold :: TyScheme ->TyScheme
+unfold (TyScheme_Forall a b) 
+ = let e = [ TyScheme_Quant (Scheme_Simple x TyScheme_Bottom) | x <- a ]
+   in foldr ($) b e
+unfold x 
+ = x
    
 instance Simplify TyScheme where           
     -- | Simplify a type scheme for presentation, dropping trivial quantifications
@@ -1407,16 +1421,17 @@ datasem Expr monad IO
        
        loc.q3 = u.pre
        loc.e3 = D.trace ("unify done: " ++ pp u.sub) u.sub
-       (loc.q4, loc.q5) = curry split loc.q3 (domain lhs.pre)
+       (loc.q4, loc.q5) = curry split loc.q3 (loc.a2: loc.b:domain lhs.pre)
     
        lhs.res = let b = TyExpr_Var loc.b
                  in case appAll (loc.e3 `munion` loc.e2') b of
-                      Just v  -> return $ nf $ desugar $ TyScheme_Sugar loc.q5 (TyScheme_SystemF v)
+                      Just v  -> let e = return $ unfold $ simplify $ desugar $ TyScheme_Sugar loc.q5 (TyScheme_SystemF v)
+                                 in D.trace ("^^Type: " ++ pp e) e
                       Nothing -> error "App failed, cannot apply substitution"
        loc.temp_sub = func.sub `munion` arg.sub `munion` loc.e3 -- added union
        lhs.sub = loc.temp_sub
        lhs.nxe = loc.q4
-       lhs.frs = let d1 = D.trace ("^^Unify pre: " ++ pp u.pre)
+       lhs.frs = let d1 = D.trace ("^^Unify pre: " ++ pp loc.q3)
                      d2 = D.trace ("^^NXE: " ++ pp loc.q4)
                      d3 = D.trace ("^^Sub: " ++ pp loc.temp_sub)
                  in d1 $ d2 $ d3 u.frs
@@ -1614,7 +1629,7 @@ unifyScheme = sem unifyScheme : UnifyScheme monad IO
                   clause Main_unifyScheme
                     loc.nfTy = isNf lhs.ty1
                     loc.nfTs = isNf lhs.ty2
-                    loc.nf   = loc.nfTy && loc.nfTs
+                    loc.nf   = True -- loc.nfTy && loc.nfTs
                     internal nf_check
                         loc.b1 = isBottom lhs.ty1
                         loc.b2 = isBottom lhs.ty2
@@ -1624,17 +1639,17 @@ unifyScheme = sem unifyScheme : UnifyScheme monad IO
                             clause first_bottom
                                 match True = loc.b1
                                 (loc.q, loc.tyx) = splitQuant lhs.ty2
-                                lhs.ty     = lhs.ty2 -- loc.tyx
+                                lhs.ty     = nf lhs.ty2 -- loc.tyx
                                 lhs.pre    = lhs.pre -- munion loc.q lhs.pre
                             clause second_bottom
                                 match True = loc.b2
                                 (loc.q, loc.tyx) = splitQuant lhs.ty1
-                                lhs.ty     = lhs.ty1 -- loc.tyx
+                                lhs.ty     = nf lhs.ty1 -- loc.tyx
                                 lhs.pre    = lhs.pre -- munion loc.q lhs.pre
                             clause norm
                                 match False = loc.b1 || loc.b2
-                                match TyScheme.Sugar@exp1 = sugar lhs.ty1
-                                match TyScheme.Sugar@exp2 = sugar lhs.ty2
+                                match TyScheme.Sugar@exp1 = sugar $ nf lhs.ty1
+                                match TyScheme.Sugar@exp2 = sugar $ nf lhs.ty2
                                 
                                 loc.q = lhs.pre
                                 
@@ -1698,7 +1713,7 @@ subsume = sem subsume : Subsume monad IO
                       loc.q1 = u.pre
                       loc.e1 = u.sub
                       
-                      (loc.q3, loc.q4) = split (loc.q1, domain loc.qq2)
+                      (loc.q3, loc.q4) = split (loc.q1, domain loc.q)
                       loc.e2 = let x = nub (domain loc.q4)
                                in D.trace (   "Removing domain: " ++ pp x 
                                            ++ "\n\t&&> " ++ pp loc.e1
@@ -1720,6 +1735,10 @@ subsume = sem subsume : Subsume monad IO
                       match True                  = loc.nf
                       match (loc.fo, TyScheme.Bottom@l)     = ((), sugar lhs.ty)
                       lhs.sub = D.trace "Wild subsume" (const empty loc.fo)
+                      -- lhs.pre = let new = case lhs.exp of
+                                            -- TyExpr_Var a -> [TyIndex_Group a TyScheme_Bottom]
+                                            -- _           -> []
+                                -- in lhs.pre `munion` new
                       
                     clause f_subsume
                       match (loc.bla, False) = ((), loc.nf)

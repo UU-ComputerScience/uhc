@@ -4,8 +4,8 @@
        
 -- main = test
 
--- data List a = Cons a (List a)
-        -- | Nil
+data List a = Cons a (List a)
+        | Nil
             
 -- data Bool = True | False
          
@@ -21,7 +21,12 @@ foreign import ccall "Prelude" id :: a -> a
 -- app = map (id id) (Cons 1 Nil)
      
 -- f $ x = f x
-main = map id
+main = \(f :: forall a. a -> Int) -> Cons (f 0) (Cons (f 'a') Nil)
+-- main = (.)
+-- main = ($)
+-- main = map (id id)
+-- main = id id
+-- main f = Cons (f 0) (Cons (f 'a') Nil)
 -- test = map (id id)
 -- foo = id id
 -- id x = x    
