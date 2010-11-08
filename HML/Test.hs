@@ -16,13 +16,13 @@ foreign import ccall "Prelude" id :: a -> a
 -- foreign import ccall "Prelude" (.) :: forall a b c.(b -> c) -> (a -> b) -> a -> c         
 -- foreign import ccall "Prelude" ($) :: forall a b.(a -> b) -> a -> b        
 
--- (f . g) x = f (g x)
+(f . g) x = f (g x)
 
 -- app = map (id id) (Cons 1 Nil)
      
 -- f $ x = f x
-main = \(f :: forall a. a -> Int) -> Cons (f 0) (Cons (f 'a') Nil)
--- main = (.)
+-- main = \(f :: forall a. a -> Int) -> Cons (f 0) (Cons (f 'a') Nil)
+main = (.)
 -- main = ($)
 -- main = map (id id)
 -- main = id id

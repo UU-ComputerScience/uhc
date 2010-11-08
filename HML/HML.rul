@@ -1421,7 +1421,7 @@ datasem Expr monad IO
        
        loc.q3 = u.pre
        loc.e3 = D.trace ("unify done: " ++ pp u.sub) u.sub
-       (loc.q4, loc.q5) = curry split loc.q3 (loc.a2: loc.b:domain lhs.pre)
+       (loc.q4, loc.q5) = curry split loc.q3 (domain lhs.pre)
     
        lhs.res = let b = TyExpr_Var loc.b
                  in case appAll (loc.e3 `munion` loc.e2') b of
