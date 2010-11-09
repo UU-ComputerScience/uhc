@@ -118,11 +118,23 @@ createMask (nm, ty) = mask
                       do b' <- mask b
                          return $ TyExpr_Ann a b'
                     TyExpr_Quant a b c ->
-                      do c' <- mask c
-                         return $ TyExpr_Quant a b c'
+                      case b == nm of
+                        False -> do c' <- mask c
+                                    return $ TyExpr_Quant a b c'
+                        True  -> do let b'       = incr b
+                                        (Just e) = app (b, mkVar b') c
+                                    e' <- mask e
+                                    return $ TyExpr_Quant a b' e'
                     var@(TyExpr_Var{}) ->
                       do rep var
                     x -> rep x
+                    
+       incr :: HsName -> HsName
+       incr var = let str = show var
+                  in mkName $ 
+                        case span (/='!') str of
+                         (v,    []) -> v ++ "!1"
+                         (v, (_:c)) -> v ++ ('!':show (read c + 1))
        
 class Eq a => Normal a where
   nf :: a -> a
@@ -1954,7 +1966,13 @@ unify = sem unify : Unify monad IO
                                
                                (loc.q2, loc.e2) = case D.trace "--> subsume end" $ appAll s.sub loc.expr of
                                                     Nothing -> error "Application failed in unify"
-                                                    Just a  -> let sub = (loc.varnm, TyScheme_SystemF $ mkTop a) 
+                                                    Just a  -> let a'  = case isUnQualTy a of
+                                                                           False -> a
+                                                                           True  -> let x  = (nf (desugar (TyScheme_Sugar s.pre (TyScheme_SystemF a))))
+                                                                                    in case isUnQualTy x of
+                                                                                        False -> a
+                                                                                        True  -> x
+                                                                   sub = (loc.varnm, TyScheme_SystemF $ mkTop a') 
                                                                in D.trace ("!!! " ++ pp sub) $ update (s.pre, Right sub)
                                
                                lhs.pre = loc.q2

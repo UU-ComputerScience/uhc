@@ -21,8 +21,11 @@ foreign import ccall "Prelude" id :: a -> a
 -- app = map (id id) (Cons 1 Nil)
      
 -- f $ x = f x
--- main = \(f :: forall a. a -> Int) -> Cons (f 0) (Cons (f 'a') Nil)
 main = (.)
+-- main = \(f :: forall a. a -> Int) -> Cons (f 0) (Cons (f 'a') Nil)
+-- app = \(f :: forall a. a -> Int) -> Cons (f 0) (Cons (f 'a') Nil)
+-- fun x = 1
+-- main = app id
 -- main = ($)
 -- main = map (id id)
 -- main = id id
