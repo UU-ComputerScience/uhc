@@ -82,8 +82,14 @@ applyEnv sub env
     
 -- | Push any quantified type in the environment instead of being prefixed to the type
 explode :: Prefix -> TyScheme -> (Prefix, TyScheme)
-explode p t = case sugar t of
-               TyScheme_Sugar q t' -> (p `munion` q, t')
+explode p t | isB t
+   = case sugar t of
+       TyScheme_Sugar q t' -> (p `munion` q, t')
+       x                   -> (p           , x )
+  where isB t = case nf t of
+                 TyScheme_Bottom -> True
+                 _               -> False
+explode p t = (p, t)
     
 instance Apply HsName where
    app (s, v) nm | s == nm   = case ftv v of
@@ -1423,7 +1429,8 @@ datasem Expr monad IO
        
        invoke infer of func
        
-       (loc.func_nxe, loc.func_res) = explode func.nxe (head func.res)
+       (loc.func_nx, loc.func_res) = explode [] (head func.res)
+       loc.func_nxe = func.nxe `munion` loc.func_nx
        
        arg.exp = loc.arg
        arg.frs = func.frs
@@ -1433,7 +1440,8 @@ datasem Expr monad IO
        
        invoke infer of arg
        
-       (loc.arg_nxe, loc.arg_res) = explode arg.nxe (head arg.res)
+       (loc.arg_nx, loc.arg_res) = explode [] (head arg.res)
+       loc.arg_nxe = arg.nxe `munion` loc.arg_nx
        
        loc.debug1 = D.trace ("[App] func -- " ++ sche loc.func_res ++ " # " ++ pp loc.func_res) loc.func_res
        loc.debug2 = D.trace ("[App] arg  -- " ++ sche loc.arg_res  ++ " # " ++ pp loc.arg_res ) loc.arg_res
@@ -1458,7 +1466,9 @@ datasem Expr monad IO
        
        loc.q3 = u.pre
        loc.e3 = D.trace ("unify done: " ++ pp u.sub) u.sub
-       (loc.q4, loc.q5) = curry split loc.q3 (domain lhs.pre)
+       
+       (loc.q4', loc.q5) = curry split loc.q3 (domain lhs.pre)
+       loc.q4 = loc.func_nx `munion` loc.arg_nx `munion` loc.q4'
     
        lhs.res = let b = TyExpr_Var loc.b
                  in case appAll (loc.e3 `munion` loc.e2') b of
@@ -1535,7 +1545,10 @@ datasem Expr monad IO
                               []  -> error "Inference of Expressions failed in Lam, no type infered for body"
                               [x] -> x
                               _   -> error "Too many options, I only need one"
-       ((loc.q3', loc.e3'), loc.frs') = extend (loc.q3, (Scheme_Simple loc.b loc.phi1), body.frs) False
+                              
+       (loc.q3_, loc.phi1') = explode loc.q3 loc.phi1
+       
+       ((loc.q3', loc.e3'), loc.frs') = extend (loc.q3_, (Scheme_Simple loc.b loc.phi1'), body.frs) False
        
        lhs.res = let (Just b')    = appAll loc.e3' (TyExpr_Var loc.b)
                      (Just a')    = appAll body.sub loc.exp_a -- (TyExpr_Var loc.a)
@@ -1930,7 +1943,7 @@ unify = sem unify : Unify monad IO
                             lhs.sub     = empty
                           clause failed1
                             match False = loc.eq
-                            lhs.sub = error $ "Constructor mismatch, expected '" ++ show var1.nm ++ "' but got '" ++ show var2.nm ++ "'"
+                            lhs.sub = error $ "Type mismatch, expected '" ++ show var1.nm ++ "' but got '" ++ show var2.nm ++ "'"
                      clause apptype
                        match TyExpr.App@app1 = lhs.exp1
                        match TyExpr.App@app2 = lhs.exp2
