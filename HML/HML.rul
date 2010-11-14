@@ -1741,7 +1741,7 @@ subsume = sem subsume : Subsume monad IO
                     clause s_subsume
                       match True                  = True -- loc.nf
                       match TyExpr.Forall@exp     = mkForall lhs.exp -- $ mkQuant lhs.exp
-                      match TyScheme.Sugar@scheme = sugar lhs.ty
+                      match TyScheme.Sugar@scheme = sugar $ nf lhs.ty
                       
                       loc.q  = lhs.pre
                       loc.q2 = scheme.prefix
