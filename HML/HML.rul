@@ -74,6 +74,27 @@ apply sub env
         set  = foldl' (.) id lst
     in Left (Gamma $ set $ unGam env)
     
+applyEnv :: Env -> Env -> Env
+applyEnv sub env
+ = map (fapp sub) env
+  where fapp :: Env -> Sub -> Sub
+        fapp s (v, b) = (fromJust $ appAll s v, fromJust $ appAll s b)
+    
+-- | Push any quantified type in the environment instead of being prefixed to the type
+explode :: Prefix -> TyScheme -> (Prefix, TyScheme)
+explode p t = case sugar t of
+               TyScheme_Sugar q t' -> (p `munion` q, t')
+    
+instance Apply HsName where
+   app (s, v) nm | s == nm   = case ftv v of
+                                 [x] -> return x
+                                 _   -> return nm
+                 | otherwise = return nm
+                 
+instance Util HsName where
+   ftv  = return
+   vars = return
+    
 instance Apply Gamma where
    app s   gam = case apply [s] gam of
                   Left e  -> Just e
@@ -1402,20 +1423,24 @@ datasem Expr monad IO
        
        invoke infer of func
        
+       (loc.func_nxe, loc.func_res) = explode func.nxe (head func.res)
+       
        arg.exp = loc.arg
        arg.frs = func.frs
-       arg.pre = func.nxe
+       arg.pre = loc.func_nxe
        arg.env = let (Just e) = appAll func.sub lhs.env
                  in e
        
        invoke infer of arg
        
-       loc.debug1 = D.trace ("[App] func -- " ++ concatMap sche func.res ++ " # " ++ pp func.res) func.res
-       loc.debug2 = D.trace ("[App] arg  -- " ++ concatMap sche arg.res  ++ " # " ++ pp arg.res) arg.res
-       loc.debug3 = D.trace ("A1: " ++ show loc.a1 ++ ", A2: " ++ show loc.a2 ++ ", B: " ++ show loc.b) arg.res
+       (loc.arg_nxe, loc.arg_res) = explode arg.nxe (head arg.res)
        
-       (loc.temp1, loc.frt1) = extend (arg.nxe, Scheme_Simple loc.a1 (fromJust $ appAll arg.sub (head func.res)), arg.frs) True
-       (loc.temp2, loc.frt2) = extend (fst loc.temp1, Scheme_Simple loc.a2 (head arg.res), loc.frt1) True
+       loc.debug1 = D.trace ("[App] func -- " ++ sche loc.func_res ++ " # " ++ pp loc.func_res) loc.func_res
+       loc.debug2 = D.trace ("[App] arg  -- " ++ sche loc.arg_res  ++ " # " ++ pp loc.arg_res ) loc.arg_res
+       loc.debug3 = D.trace ("A1: " ++ show loc.a1 ++ ", A2: " ++ show loc.a2 ++ ", B: " ++ show loc.b) loc.arg_res
+       
+       (loc.temp1, loc.frt1) = extend (loc.arg_nxe, Scheme_Simple loc.a1 (fromJust $ appAll arg.sub loc.func_res), arg.frs) True
+       (loc.temp2, loc.frt2) = extend (fst loc.temp1, Scheme_Simple loc.a2 (loc.arg_res), loc.frt1) True
        (loc.temp3, loc.frt3) = extend (fst loc.temp2, Scheme_Simple loc.b  (TyScheme_Bottom), loc.frt2) True
        
        (loc.q2', loc.e2') = (fst loc.temp3, (snd loc.temp1) `munion` (snd loc.temp2) `munion` (snd loc.temp3))
@@ -1440,7 +1465,8 @@ datasem Expr monad IO
                       Just v  -> let e = return $ unfold $ simplify $ desugar $ TyScheme_Sugar loc.q5 (TyScheme_SystemF v)
                                  in D.trace ("^^Type: " ++ pp e) e
                       Nothing -> error "App failed, cannot apply substitution"
-       loc.temp_sub = func.sub `munion` arg.sub `munion` loc.e3 -- added union
+       loc.temp_sub = let subs = applyEnv loc.e2' (func.sub `munion` arg.sub)
+                      in subs `munion` loc.e3 -- added union
        lhs.sub = loc.temp_sub
        lhs.nxe = loc.q4
        lhs.frs = let d1 = D.trace ("^^Unify pre: " ++ pp loc.q3)
@@ -1966,13 +1992,7 @@ unify = sem unify : Unify monad IO
                                
                                (loc.q2, loc.e2) = case D.trace "--> subsume end" $ appAll s.sub loc.expr of
                                                     Nothing -> error "Application failed in unify"
-                                                    Just a  -> let a'  = case isUnQualTy a of
-                                                                           False -> a
-                                                                           True  -> let x  = (nf (desugar (TyScheme_Sugar s.pre (TyScheme_SystemF a))))
-                                                                                    in case isUnQualTy x of
-                                                                                        False -> a
-                                                                                        True  -> x
-                                                                   sub = (loc.varnm, TyScheme_SystemF $ mkTop a') 
+                                                    Just a  -> let sub = (loc.varnm, TyScheme_SystemF $ mkTop a) 
                                                                in D.trace ("!!! " ++ pp sub) $ update (s.pre, Right sub)
                                
                                lhs.pre = loc.q2
