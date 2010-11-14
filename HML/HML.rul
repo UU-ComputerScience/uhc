@@ -1739,7 +1739,7 @@ subsume = sem subsume : Subsume monad IO
                 loc.nf   = loc.nfTy && loc.nfTs
                 internal nf_check
                     clause s_subsume
-                      match True                  = loc.nf
+                      match True                  = True -- loc.nf
                       match TyExpr.Forall@exp     = mkForall lhs.exp -- $ mkQuant lhs.exp
                       match TyScheme.Sugar@scheme = sugar lhs.ty
                       

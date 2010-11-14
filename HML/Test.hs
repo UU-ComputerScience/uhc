@@ -12,11 +12,13 @@ data List a = Cons a (List a)
 -- foreign import ccall "Prelude" (+) :: Int -> Int -> Int
 foreign import ccall "Prelude" map :: forall a b.(a -> b) -> List a -> List b
 foreign import ccall "Prelude" id :: a -> a
+foreign import ccall "Prelude" foldr :: forall a b. (a -> b -> b) -> b -> List a -> b
+foreign import ccall "Prelude" zipWith :: forall a b c. (a -> b -> c) -> List a -> List b -> List c
 -- foreign import ccall "Prelude" imap :: List a -> List a
 -- foreign import ccall "Prelude" (.) :: forall a b c.(b -> c) -> (a -> b) -> a -> c         
 -- foreign import ccall "Prelude" ($) :: forall a b.(a -> b) -> a -> b        
 
--- (f . g) x = f (g x)
+(f . g) x = f (g x)
 
 -- app = map (id id) (Cons 1 Nil)
      
@@ -35,7 +37,8 @@ foreign import ccall "Prelude" id :: a -> a
 -- id x = x    
 -- intList = Cons 1 Nil
 -- mList = Cons id Nil
-main = map map    
+-- main = map map    
+main = \t -> foldr map . zipWith map t Nil
 -- test = imap intList
 
 -- id (x::forall a. a->a) = x
