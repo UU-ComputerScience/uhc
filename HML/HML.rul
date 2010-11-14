@@ -634,6 +634,31 @@ unfold (TyScheme_Forall a b)
    in foldr ($) b e
 unfold x 
  = x
+ 
+-- | converts a TyScheme to a SystemF type
+ftype :: TyScheme -> TyExpr
+ftype = ft . nf . desugar
+ where ft :: TyScheme -> TyExpr
+       ft (TyScheme_SystemF a) = a
+       ft TyScheme_Bottom      = TyExpr_Quant tyQu_Forall (mkName "a") (TyExpr_Var (mkName "a"))
+       ft (TyScheme_Quant (Scheme_Simple a TyScheme_Bottom) phi) 
+            = TyExpr_Quant tyQu_Forall a (ft phi)
+       ft (TyScheme_Quant (Scheme_Simple a q) phi)
+            = let (TyScheme_Sugar q' p) = sugar q 
+                  (Just phi') = app (a, p) phi
+              in ft $ desugar (TyScheme_Sugar q' phi')
+              
+-- | converts a TyScheme to a partial TyScheme by not removing quantifiers bound to Bottom
+ptype :: TyScheme -> TyScheme
+ptype = ft . desugar
+ where ft :: TyScheme -> TyScheme
+       ft x@(TyScheme_Quant (Scheme_Simple _ TyScheme_Bottom) _) = x
+       ft (TyScheme_Quant (Scheme_Simple a q) phi)
+            = let (TyScheme_Sugar q' p) = sugar q 
+                  (Just phi') = app (a, p) phi
+              in ft $ desugar (TyScheme_Sugar q' phi')
+       ft x = x
+       
    
 instance Simplify TyScheme where           
     -- | Simplify a type scheme for presentation, dropping trivial quantifications
@@ -1429,8 +1454,8 @@ datasem Expr monad IO
        
        invoke infer of func
        
-       (loc.func_nx, loc.func_res) = explode [] (head func.res)
-       loc.func_nxe = func.nxe `munion` loc.func_nx
+       (loc.func_nxe, loc.func_res) = explode func.nxe (head func.res)
+       -- loc.func_nxe = func.nxe `munion` loc.func_nx
        
        arg.exp = loc.arg
        arg.frs = func.frs
@@ -1440,8 +1465,8 @@ datasem Expr monad IO
        
        invoke infer of arg
        
-       (loc.arg_nx, loc.arg_res) = explode [] (head arg.res)
-       loc.arg_nxe = arg.nxe `munion` loc.arg_nx
+       (loc.arg_nxe, loc.arg_res) = explode arg.nxe (head arg.res)
+       -- loc.arg_nxe = arg.nxe `munion` loc.arg_nx
        
        loc.debug1 = D.trace ("[App] func -- " ++ sche loc.func_res ++ " # " ++ pp loc.func_res) loc.func_res
        loc.debug2 = D.trace ("[App] arg  -- " ++ sche loc.arg_res  ++ " # " ++ pp loc.arg_res ) loc.arg_res
@@ -1467,12 +1492,12 @@ datasem Expr monad IO
        loc.q3 = u.pre
        loc.e3 = D.trace ("unify done: " ++ pp u.sub) u.sub
        
-       (loc.q4', loc.q5) = curry split loc.q3 (domain lhs.pre)
-       loc.q4 = loc.func_nx `munion` loc.arg_nx `munion` loc.q4'
+       (loc.q4, loc.q5) = curry split loc.q3 (domain lhs.pre)
+       -- loc.q4 = loc.func_nx `munion` loc.arg_nx `munion` loc.q4'
     
        lhs.res = let b = TyExpr_Var loc.b
                  in case appAll (loc.e3 `munion` loc.e2') b of
-                      Just v  -> let e = return $ unfold $ simplify $ desugar $ TyScheme_Sugar loc.q5 (TyScheme_SystemF v)
+                      Just v  -> let e = return $ ptype $ desugar $ TyScheme_Sugar loc.q5 (TyScheme_SystemF v)
                                  in D.trace ("^^Type: " ++ pp e) e
                       Nothing -> error "App failed, cannot apply substitution"
        loc.temp_sub = let subs = applyEnv loc.e2' (func.sub `munion` arg.sub)
@@ -1553,7 +1578,7 @@ datasem Expr monad IO
        lhs.res = let (Just b')    = appAll loc.e3' (TyExpr_Var loc.b)
                      (Just a')    = appAll body.sub loc.exp_a -- (TyExpr_Var loc.a)
                      arrow = mkArrow a' b'
-                 in return $ desugar $ TyScheme_Sugar loc.q3' (TyScheme_SystemF arrow)
+                 in return $ ptype $ desugar $ TyScheme_Sugar loc.q3' (TyScheme_SystemF arrow)
        lhs.sub = body.sub
        lhs.nxe = loc.q2
        lhs.frs = loc.frs'
@@ -1724,7 +1749,7 @@ unifyScheme = sem unifyScheme : UnifyScheme monad IO
                                 lhs.sub = loc.e3
                                 lhs.ty  = let (Just ty)  = appAll loc.e3 exp1.tyExpr
                                               ret = TyScheme_Sugar loc.q5 ty
-                                          in desugar ret
+                                          in ptype $ desugar ret
                         clause f_subsume
                           match False                 = loc.nf
                           lhs.ty = error "unifyScheme failure, ty1 or ty2 is not in normal form"
@@ -1734,14 +1759,15 @@ subsume = sem subsume : Subsume monad IO
                default? pre = last
                default? frs = last
                clause Main_subsume
+                loc.ty   = nf lhs.ty
                 loc.nfTy = isNf lhs.exp
-                loc.nfTs = isNf lhs.ty
+                loc.nfTs = isNf loc.ty
                 loc.nf   = loc.nfTy && loc.nfTs
                 internal nf_check
                     clause s_subsume
-                      match True                  = True -- loc.nf
+                      match True                  = loc.nf
                       match TyExpr.Forall@exp     = mkForall lhs.exp -- $ mkQuant lhs.exp
-                      match TyScheme.Sugar@scheme = sugar $ nf lhs.ty
+                      match TyScheme.Sugar@scheme = sugar loc.ty
                       
                       loc.q  = lhs.pre
                       loc.q2 = scheme.prefix
@@ -2138,7 +2164,7 @@ unify = sem unify : Unify monad IO
                      clause mismatch
                        lhs.sub = error $   "Could not match expected type '" 
                                         ++ pp (clean lhs.exp1) ++ "' with inferred type '" 
-                                        ++ pp (clean lhs.exp2) -- ++ "' under Prefix: " 
+                                        ++ pp (clean lhs.exp2) ++ "'" -- under Prefix: " 
                                         -- ++ pp lhs.pre
                  clause f_unify
                    match (loc.bla, False) = ((), loc.nf)

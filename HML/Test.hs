@@ -9,7 +9,7 @@ data List a = Cons a (List a)
             
 -- data Bool = True | False
          
--- foreign import ccall "Prelude" (+) :: Int -> Int -> Int
+foreign import ccall "Prelude" (+) :: Int -> Int -> Int
 foreign import ccall "Prelude" map :: forall a b.(a -> b) -> List a -> List b
 foreign import ccall "Prelude" id :: a -> a
 foreign import ccall "Prelude" foldr :: forall a b. (a -> b -> b) -> b -> List a -> b
@@ -19,11 +19,14 @@ foreign import ccall "Prelude" zipWith :: forall a b c. (a -> b -> c) -> List a 
 -- foreign import ccall "Prelude" ($) :: forall a b.(a -> b) -> a -> b        
 
 (f . g) x = f (g x)
+-- id x = x    
 
 -- app = map (id id) (Cons 1 Nil)
      
 -- f $ x = f x
+-- main = ((+1). id)
 -- main = (.)
+-- main = (m . n)
 -- main = \(f :: forall a. a -> Int) -> Cons (f 0) (Cons (f 'a') Nil)
 -- app = \(f :: forall a. a -> Int) -> Cons (f 0) (Cons (f 'a') Nil)
 -- fun x = 1
@@ -34,11 +37,12 @@ foreign import ccall "Prelude" zipWith :: forall a b c. (a -> b -> c) -> List a 
 -- main f = Cons (f 0) (Cons (f 'a') Nil)
 -- test = map (id id)
 -- foo = id id
--- id x = x    
 -- intList = Cons 1 Nil
 -- mList = Cons id Nil
 -- main = map map    
-main = \t -> foldr map . zipWith map t Nil
+main = foldr map . \t -> zipWith map t Nil
+-- m = foldr map
+-- n =  \t -> zipWith map t Nil
 -- test = imap intList
 
 -- id (x::forall a. a->a) = x
