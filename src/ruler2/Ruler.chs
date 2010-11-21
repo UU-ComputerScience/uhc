@@ -96,9 +96,9 @@ instance CompileUnit RCompileUnit Nm String RCompileUnitState where
 instance FPathError Err
 
 instance CompileRunError Err SPos where
-  crePPErrL                 = ppErrPPL
-  creMkNotFoundErrL p fp sp = [Err_FileNotFound p fp sp]
-  creAreFatal               = errLIsFatal
+  crePPErrL                      = ppErrPPL
+  creMkNotFoundErrL p fp sp sufs = [Err_FileNotFound p fp sp]
+  creAreFatal                    = errLIsFatal
 
 instance CompileRunStateInfo RCompileRunStateInfo Nm SPos where
   crsiImportPosOfCUKey n i = Map.findWithDefault emptySPos n (crsiImpPosMp i)

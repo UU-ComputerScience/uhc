@@ -343,9 +343,9 @@ instance CompileUnit EHCompileUnit HsName FileLoc EHCompileUnitState where
 instance FPathError Err
 
 instance CompileRunError Err () where
-  crePPErrL                 = ppErrL
-  creMkNotFoundErrL _ fp sp = [rngLift emptyRange Err_FileNotFound fp sp]
-  creAreFatal               = errLIsFatal
+  crePPErrL                      = ppErrL
+  creMkNotFoundErrL _ fp sp sufs = [rngLift emptyRange Err_FileNotFound fp sp sufs]
+  creAreFatal                    = errLIsFatal
 
 instance CompileModName HsName where
   mkCMNm = hsnFromString

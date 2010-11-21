@@ -228,6 +228,7 @@ data ChDest
 
 data ChWrap
   = ChWrapCode
+  | ChWrapHsBox
   | ChWrapBoxCode 			(Maybe String)
   | ChWrapBeamerBlockCode 	String
   | ChWrapTT

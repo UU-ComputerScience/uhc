@@ -9,11 +9,11 @@ Haskell's Foreign Function Interface (FFI) predefined calling conventions do not
 \begin{pre}
 data Document
 foreign import jscript "document"   document      :: IO Document
-foreign import jscript "%1.write()" documentWrite :: Document -> JSString -> IO ()
+foreign import jscript "%1.write(%*)" documentWrite :: Document -> JSString -> IO ()
 foreign import jscript alert :: JSString -> IO ()
 \end{pre}
 
-From within a browser the document representation can be accessed via the global variable \verb@document@, the foreign entity \verb|"document"| translates to a reference to this variable. The type of the document is defined as an opaque type, it can thus only manipulated via Javascript. Writing a string to the document is done by invoking the method @write@ on a document. The foreign entity \verb|"%1.write()"| specifies that from all arguments the first one is used as the receiver of the method @write@. The parenthesis \verb|()| specify that a call has to be made, passing all arguments except those referred to explicitly by means of \verb|%<nr>|, where \verb@<nr> >= 1@ refers to argument @<nr>@. If an entity is omitted as in @alert@ it defaults to \verb|"<functionname>()"| where \verb|<functionname>| is the name of the foreign function being defined.
+From within a browser the document representation can be accessed via the global variable \verb@document@, the foreign entity \verb|"document"| translates to a reference to this variable. The type of the document is defined as an opaque type, it can thus only manipulated via Javascript. Writing a string to the document is done by invoking the method @write@ on a document. The foreign entity \verb|"%1.write(%*)"| specifies that from all arguments the first one is used as the receiver of the method @write@. The parenthesis \verb|()| specify that a call has to be made, where \verb|%*| means passing all arguments except those referred to explicitly by means of \verb|%<nr>|, where \verb@<nr> >= 1@ refers to argument @<nr>@. If an entity is omitted as in @alert@ it defaults to \verb|"<functionname>(%*)"| where \verb|<functionname>| is the name of the foreign function being defined.
 
 Function @documentWrite@ does not accept a @String@ but a @JSString@ instead, defined to be the platform dependent representation of Strings, converted to and from @String@ with corresponding conversion functions.
 
@@ -49,7 +49,7 @@ main = putStr "Hi there!"
 To show the usefulness of array like access as part of we do a bit of rudimentary DOM programming:
 
 \begin{pre}
-foreign import jscript "%1.getElementsByName()" documentGetElementsByName :: Document -> JSString -> IO (NodeList Node)
+foreign import jscript "%1.getElementsByName(%*)" documentGetElementsByName :: Document -> JSString -> IO (NodeList Node)
 
 data NodeList x
 
@@ -116,7 +116,7 @@ Fun.prototype = {
 The main difference between strict and lazy functional languages is that the delay of a an actual computation must be represented explicitly, usually this is done by remembering the not yet applied function and its arguments (a closure, thunk). Here a Javascript apply object is used, in two variations, one for undersaturated function applications still lacking a known number of arguments (@AppLT@), and one for the applications of which we do not know under-, over-, or exactly right saturation (@App@):
 
 \begin{pre}
-%%[[js.interpreter.interface.App
+%%[[js.interpreter.interface.AppLT
 AppLT.prototype = {
     applyN : function ( args ) ...
     needsNrArgs : function() ...
@@ -124,7 +124,9 @@ AppLT.prototype = {
 
 function AppLT( fun, args ) { ...
 }
+%%]]
 
+%%[[js.interpreter.interface.App
 App.prototype = {
     applyN : function ( args ) ...
 }
@@ -182,8 +184,7 @@ App.prototype = {
             eOrV : function() {
                 return fun.applyN( args ) ;
             } } ;
-    } 
-}
+    } }
 %%]]
 \end{pre}
 

@@ -147,6 +147,7 @@
 %let dictaat = True
 %endif
 
+%% %include polycode.fmt
 %include IdentColors.fmt
 %%]
 
@@ -400,6 +401,7 @@
 \usetheme{uucs}
 \usepackage{mathpazo}
 \usepackage{uucorporatecolors}
+% \usepackage{boxedcode}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1098,7 +1100,7 @@ version
 %%[65
 \title{Javascript? Haskellscript!}
 \author{Atze Dijkstra}
-\date{\today}
+\date{Nov 2010}
 %%]
 
 

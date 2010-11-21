@@ -102,13 +102,13 @@ class CompileUnit u n l s | u -> n l s where
 
 class FPathError e => CompileRunError e p | e -> p where
   crePPErrL         :: [e] -> PP_Doc
-  creMkNotFoundErrL :: p -> String -> [String] -> [e]
+  creMkNotFoundErrL :: p -> String -> [String] -> [FileSuffix] -> [e]
   creAreFatal       :: [e] -> Bool
   
   -- defaults
-  crePPErrL         _     = empty
-  creMkNotFoundErrL _ _ _ = []
-  creAreFatal       _     = True
+  crePPErrL         _       = empty
+  creMkNotFoundErrL _ _ _ _ = []
+  creAreFatal       _       = True
 
 class CompileRunStateInfo i n p where
   crsiImportPosOfCUKey :: n -> i -> p
@@ -276,12 +276,13 @@ cpFindFilesForFPathInLocations getfp putres stopAtFirst suffs locs mbModNm mbFp
        ; if cusIsUnk cus
           then do { let fp = maybe (mkFPath $ panicJust ("cpFindFileForFPath") $ mbModNm) id mbFp
                         modNm = maybe (mkCMNm $ fpathBase $ fp) id mbModNm
+                        suffs' = map fst suffs
                   ; fpsFound <- lift (searchLocationsForReadableFiles (\l f -> getfp l modNm f)
-                                                                      stopAtFirst locs (map fst suffs) fp
+                                                                      stopAtFirst locs suffs' fp
                                      )
                   ; case fpsFound of
                       []
-                        -> do { cpSetErrs (creMkNotFoundErrL (crsiImportPosOfCUKey modNm (crStateInfo cr)) (fpathToStr fp) (map show locs))
+                        -> do { cpSetErrs (creMkNotFoundErrL (crsiImportPosOfCUKey modNm (crStateInfo cr)) (fpathToStr fp) (map show locs) suffs')
                               ; return []
                               }
                       ((_,_,e@(_:_)):_)

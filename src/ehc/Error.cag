@@ -21,6 +21,8 @@
 
 %%[(8 codegen) hs import ({%{EH}Base.Target}(FFIWay)) export(module {%{EH}Base.Target})
 %%]
+%%[8 hs import (EH.Util.FPath)
+%%]
 
 %%[(9999 codegen) hs import({%{EH}Core})
 %%]

@@ -257,7 +257,9 @@
 %format $$  = $
 
 %format ->> = "\mathrel{\quad\textcolor{magenta}{\mathbf{\leadsto}}\quad}"
-%format ... = "\cdots"
+% %format ... = "\cdots"
+%format ... = "\ldots"
+%format ._. = "\ldots"
 %format ??? = "\textcolor{uuxred}{\textbf{???}}"
 
 %format Fork_    = "\con{Fork}"

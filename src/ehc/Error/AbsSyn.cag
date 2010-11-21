@@ -132,6 +132,7 @@ DATA Err
 DATA Err
   | FileNotFound        fileName   : {String}
                         locations  : {[String]}
+                        suffixes   : {[FileSuffix]}
   | AmbiguousExport     name       : {HsName}
 %%[[8
                         entities   : {[PP_Doc]}
