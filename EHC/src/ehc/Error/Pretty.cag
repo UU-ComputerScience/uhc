@@ -15,6 +15,8 @@
 
 %%[8 hs import(EH.Util.ParseErrPrettyPrint hiding (ppErr)) export(mkPPErr)
 %%]
+%%[8 hs import (EH.Util.FPath)
+%%]
 
 %%[(9 codegen) hs import({%{EH}Core},{%{EH}Core.Pretty})
 %%]
@@ -300,6 +302,7 @@ SEM Err
   | FileNotFound        lhs     .  pp   =   ppMsgErr    "File not found"
                                                         (    "file name         :" >#< @fileName
                                                          >-< "searched locations:" >#< vlist (map (text.show) @locations)
+                                                         -- >-< "attempted suffixes:" >#< ppCommas' (map pp $ catMaybes @suffixes)
                                                         )
 %%[[99
                                                         @range

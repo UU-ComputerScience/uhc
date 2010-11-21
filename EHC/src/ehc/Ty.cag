@@ -982,6 +982,9 @@ tyLHdAndTl      :: [Ty] -> (Ty,TyL)
 tyMbArrowArgRes   :: Ty -> Maybe (Ty,Ty)
 tyMbArrowArgRes t
   =  case tyUnAnn t of
+%%[[7
+       Ty_Quant _ _ _ t   -> tyMbArrowArgRes t
+%%]]
        Ty_App a1 r
          -> case tyUnAnn a1 of
               Ty_App a2 a

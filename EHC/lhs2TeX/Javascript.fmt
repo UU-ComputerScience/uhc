@@ -1,4 +1,5 @@
 %% keywords
+%format throw	  	= "\text{\textbf{throw}}"
 %format function  	= "\text{\textbf{function}}"
 %format var     	= "\text{\textbf{var}}"
 %format if	     	= "\text{\textbf{if}}"
@@ -16,4 +17,10 @@
 %% DSL identifiers
 %format ev 			= "\dsl{ev}"
 %format applyN 		= "\dsl{applyN}"
+%format app1 		= "\con{app1}"
+%format app2 		= "\con{app2}"
+%format app3 		= "\con{app3}"
+%format app4 		= "\con{app4}"
 %format eOrV 		= "\dsl{eOrV}"
+%format ind 		= "\dsl{ind}"
+%format indset 		= "\dsl{indset}"

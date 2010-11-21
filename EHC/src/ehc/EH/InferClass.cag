@@ -136,7 +136,7 @@ derivGetDataTyInfo clNm tyNm tyGam tyKiGam dataGam
 mkDerivPredFromKi :: UID -> Int -> Ty -> Ty -> Ty -> Maybe (Ty,UID)
 mkDerivPredFromKi uniq derivArity predTyCon ki tv
   = case tyArrowArgsRes ki of
-      (as,Ty_Con n) | n == hsnKindStar				-- ???? is this restriction indeed necessary?
+      (as,_) -- (as,Ty_Con n) | n == hsnKindStar				-- ???? is this restriction indeed necessary?
         -> Just (mkTyPr $ Pred_Class $ predTyCon `mk1App` mkApp (tv : map mkTyVar u1s),u')
         where (u',u1) = mkNewLevUID uniq
               u1s = mkNewUIDL arity u1

@@ -81,6 +81,8 @@
 % various keywords
 %format letrec 	= "\mathbf{letrec}"
 %format ffi 	= "\mathbf{ffi}"
+%format foreign = "\mathbf{foreign}"
+%format export  = "\mathbf{export}"
 
 %format restr		= "\backslash "
 
@@ -434,6 +436,7 @@
 %format redOn			= "\color{red}"
 %format blueOn			= "\color{blue}"
 %format blackOn			= "\color{black}"
+%format greyOn			= "\color{lightgray}"
 %format red(x)			= "{\color{red}" x "}"
 
 %format name1

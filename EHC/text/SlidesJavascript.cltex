@@ -1,87 +1,631 @@
 %%[interpreter
+%% undo some global defs
+%format d = "d"
+%format IO = "IO"
+%format String = "String"
+%format ->         = "{\to} "
+
+
 \begin{frame}
-\frametitle{Content}
+\frametitle{The problem}
 
 \begin{itemize}
-\item Using Javascript functionally
-\item Laziness implemented in Javascript
+\item How can {\color{uured} laziness} be expressed in Javascript? \\
+Example:
+%%[[wrap=safecode
+take 3 (map (+1) [2 ..])
+%%]]
+
+\item How can {\color{uured} existing Javascript libraries} be used? \\
+Example:
+%%[[wrap=safecode
+main = do  alert "Ola"
+           ._.
+%%]]
 \end{itemize}
 
 \end{frame}
 
 
 \begin{frame}
-\frametitle{Interpreter: function}
+\frametitle{Content}
+
+\begin{itemize}
+\item Non-lazy functional programming in Javascript
+\item Implementing laziness in Javascript
+\item Haskell as a typed scripting frontend for Javascript
+\end{itemize}
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Simply functional, Javascript style}
+
+Javascript already provides functions as parameters
+\begin{itemize}
+\item {\color{red} Haskell} |map|
+%%[[wrap=safecode
+map f []      =  []
+map f (x:xs)  =  f x : map f xs
+%%]]
+\item {\color{red} Javascript} |map|
+%%[[wrap=safecode
+map = function(f,l) {
+    if ( isNil(l) ) {
+        return nil() ;
+    } else {
+        return cons( f(head(l)), map(f,tail(l)) ) ;
+    } }
+%%]]
+\end{itemize}
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Simply functional, Javascript style}
+
+List implementation
+\begin{itemize}
+\item {\color{red} Haskell} list
+%%[[wrap=safecode
+data List a = Nil | Cons a (List a)
+%%]]
+\item {\color{red} Javascript} list, array with tag \& fields
+%%[[wrap=safecode
+cons   =  function(h,t)  { return [1,h,t]    ; }
+nil    =  function()     { return [0]        ; }
+isNil  =  function(l)    { return l[0] == 0  ; }
+head   =  function(l)    { return l[1]       ; }
+tail   =  function(l)    { return l[2]       ; }
+a2l    =  -- from array to list
+l2a    =  -- from list to array
+%%]]
+\end{itemize}
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Simply functional, Javascript style}
+
+List use
+\begin{itemize}
+\item {\color{red} Haskell}
+%%[[wrap=safecode
+take 3 (map (10*) [1,2,3,4])
+%%]]
+\item {\color{red} Javascript}
+%%[[wrap=safecode
+take  ( 3, map  ( function(i){return 10*i;}
+                , a2l( [1,2,3,4] )
+      )         )
+%%]]
+\item Output
+%%[[wrap=safecode
+[10,20,30]
+%%]]
+\end{itemize}
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Javascript style: no laziness}
+
+Javascript evaluates arguments before passing
+\begin{itemize}
+\item {\color{red} Haskell} infinite list |[n ..]|
+%%[[wrap=safecode
+from n = n : from (n+1)
+._. ^^ take 3 (from 2)
+%%]]
+\item {\color{red} Javascript} infinite list
+%%[[wrap=safecode
+from = function(n) {
+    return cons( n, from( n+1 ) ) ;
+}
+._. ^^ take( 3, from( 2 ) )
+%%]]
+\item |from| does not return: {\color{red} eager} instead of lazy
+\end{itemize}
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Javascript style: no partial application}
+
+Manual currying
+\begin{itemize}
+\item {\color{red} Haskell} partial application
+%%[[wrap=safecode
+._. ^^ map (10*) ._.
+%%]]
+\item {\color{red} Javascript} partial application
+%%[[wrap=safecode
+._. ^^ map  ( function(i){return 10*i;}, ._.
+%%]]
+\item Function argument only can be a function, not a partial application
+\item Every partial application must be encoded as a function
+\end{itemize}
+
+Need to encode Haskell functions explicitly in Javascript
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Javascript style: no laziness}
+
+Eager (call by value) vs. lazy (call by need)
+\begin{itemize}
+\item {\color{red} Haskell}
+\begin{itemize}
+\item Values are computed {\color{red} on demand}
+%%[[wrap=safecode
+._. ^^ take 3 (from 2)
+%%]]
+\item |take| asks for 3 list elements, |from| only computes 3.
+\end{itemize}
+\item {\color{red} Javascript}
+\begin{itemize}
+\item Values are computed {\color{red} immediately}
+%%[[wrap=safecode
+._. ^^ take( 3, from( 2 ) )
+%%]]
+\item |from| computes all elements before |take| asks 3.
+\end{itemize}
+\end{itemize}
+
+Need to encode laziness \& applications in Javascript
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Javascript encoding: functions}
+
+Encoding of functions
 
 %%@Blog.js.interpreter.interface.Fun wrap=safecode
+\begin{itemize}
+\item Application of function to arguments, directly computing the result
+\item Function `knows' how many arguments are required, so partial applications can be constructed when not enough arguments are given
+\end{itemize}
 
 \end{frame}
 
 
 \begin{frame}
-\frametitle{Interpreter: application}
+\frametitle{Javascript encoding: partial application}
+
+Encoding of partial application
+
+%%@Blog.js.interpreter.interface.AppLT wrap=safecode
+\begin{itemize}
+\item Partial application still lacks arguments
+\item Constructed from function or other partial application + arguments
+\end{itemize}
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Javascript encoding: application}
+
+Encoding of general application
 
 %%@Blog.js.interpreter.interface.App wrap=safecode
+\begin{itemize}
+\item No knowledge about number of missing arguments
+\item Constructed from function or other application + arguments
+\end{itemize}
 
 \end{frame}
 
 
 \begin{frame}
-\frametitle{Interpreter: evaluation}
+\frametitle{Javascript encoding: evaluation}
+
+Encoding of evaluation when value is demanded
 
 %%@Blog.js.interpreter.interface.ev wrap=safecode
 
+\begin{itemize}
+\item Introduction of lazy values by |Fun|, |AppLT|, and |App|
+\item Elimination of lazy values by |ev|, interpreting |Fun|, |AppLT|, and |App| to yield a Javascript value
+\end{itemize}
+
 \end{frame}
 
 
 \begin{frame}
-\frametitle{Interpreter: application}
+\frametitle{Javascript implementation: application}
+
+General application remembers the function + arguments
 
 %%@Blog.js.interpreter.impl.App.construct wrap=safecode
 
+\begin{itemize}
+\item Uses a Javascript function (closure) to remember and compute the application
+\item |eOrV|: either the computation or the result
+\item Update of |eOrV| avoids recomputation when evaluated by |ev| a 2nd time
+\end{itemize}
+
+
 \end{frame}
 
 
 \begin{frame}
-\frametitle{Interpreter: evaluation}
+\frametitle{Javascript implementation: application}
 
-First attempt:
+Applying more arguments % (first attempt)
+
+%%[[wrap=safecode
+App.prototype = {
+    applyN : function ( args ) {
+        var fun = ev(this) ;
+        return fun.applyN( args ) ;
+    } }
+%%]]
+
+\begin{itemize}
+\item Must first compute the value of the application before more arguments can be applied
+% \item (What can go wrong?)
+\end{itemize}
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Javascript implementation: evaluation}
+
+Evaluation % (first attempt)
+
 %%@Blog.js.interpreter.impl.ev.incorrect1 wrap=safecode
 
-\end{frame}
-
-
-\begin{frame}
-\frametitle{Interpreter: application}
-
-%%@Blog.js.interpreter.impl.App.proto wrap=safecode
+\begin{itemize}
+\item Ask a value whether it is still unevaluated using Javascript |typeof|
+% \item (What can go wrong?)
+\end{itemize}
 
 \end{frame}
 
 
 \begin{frame}
-\frametitle{Interpreter: evaluation}
+\frametitle{Javascript implementation: function}
 
-Second attempt:
-%%@Blog.js.interpreter.impl.ev.correct1 wrap=safecode
-
-\end{frame}
-
-
-\begin{frame}
-\frametitle{Interpreter: function}
+Function just wraps around Javascript function
 
 %%@Blog.js.interpreter.impl.Fun.construct wrap=safecode
 
+\begin{itemize}
+\item Invariant: Javascript function |fun| must return evaluated result (WHNF)
+\item Later this causes problems!
+\end{itemize}
+
 \end{frame}
 
 
 \begin{frame}
-\frametitle{Interpreter: function}
+\frametitle{Javascript implementation: function}
+
+Function application % (first attempt)
+%%[[wrap=safecode
+Fun.prototype = {
+    applyN : function ( args ) {
+        if ( args.length < this.needs ) {
+            return new AppLT( this, args ) ;
+        } else if ( args.length == this.needs ) {
+            return this.fun.apply( null, args ) ;
+        } else {
+            var  fun = this.fun.apply
+                   ( null, args.slice( 0, this.needs ) ) ;
+            return fun.applyN( args.slice( this.needs ) ) ;
+        } } }
+%%]]
+\begin{itemize}
+\item Dispatch on saturation: `not enough', `exactly enough', or `too many' arguments
+% \item (What can go wrong?)
+\end{itemize}
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Usage}
+
+\begin{itemize}
+\item {\color{red} Haskell} |map|
+%%[[wrap=safecode
+map f []      =  []
+map f (x:xs)  =  f x : map f xs
+%%]]
+\item {\color{red} Javascript} |map| using laziness wrappers
+%%[[wrap=safecode
+map = new Fun( greyOn^ function(f,l) {
+    l = ev(l) ;
+    greyOn^ if ( isNil(l) ) {
+        greyOn^ return nil() ;
+    greyOn^ } else {
+        greyOn^ return cons( blackOn^ app1( f, greyOn^ head(l)), blackOn^ app2( map, f, greyOn^ tail(l)) ) ;
+    greyOn^ } } blackOn^ )
+
+app1 = function(f,a    ) = new App(f, [a    ]) ;
+app2 = function(f,a,b  ) = new App(f, [a,b  ]) ;
+%%]]
+\end{itemize}
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Usage}
+
+\begin{itemize}
+\item {\color{red} Haskell} |map| usage
+%%[[wrap=safecode
+take 3 (map (10*) [1,2,3,4])
+%%]]
+\item {\color{red} Javascript} |map| usage with laziness wrappers
+%%[[wrap=safecode
+mul = new Fun( function(x,y) {return x*y;} )
+
+app2  ( take, greyOn^ 3, blackOn app2  ( map  , app1( mul, 10 )
+                                              greyOn^ , a2l( [1,2,3,4] )
+      greyOn^ )                        greyOn^ )
+%%]]
+\end{itemize}
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Usage}
+
+Infinite lists return a continuation for a list instead of the list itself
+\begin{itemize}
+\item {\color{red} Haskell} infinite list |[n ..]|
+%%[[wrap=safecode
+from n = n : from (n+1)
+._. ^^ take 3 (from 2)
+%%]]
+\item {\color{red} Javascript} infinite list
+%%[[wrap=safecode
+from = new Fun( greyOn^ function(n) {
+    n = ev(n) ;
+    greyOn^ return cons( n, blackOn^ app1( from, greyOn^ n+1 ) ) ;
+greyOn^ }
+._. ^^ app2( take, 3, app1( from, 2 ) )
+%%]]
+\end{itemize}
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Javascript implementation: tail recursion}
+
+What is wrong with Javascript functions returning evaluated results?
+
+\begin{itemize}
+\item {\color{red} Haskell} loop equivalent using tail recursion
+%%[[wrap=safecode
+foldl             :: (x -> y -> x) -> x -> [y] -> x
+foldl f z []      = z
+foldl f z (x:xs)  = foldl f (f z x) xs
+%%]]
+\item {\color{red} Javascript}
+%%[[wrap=safecode
+foldl = new Fun( function(f,z,l) {
+    l = ev(l) ;
+    if ( !isNil(l) ) {
+        return ev( app3( foldl, f, app2( f, z, head(l) ), tail(l) ) ) ;
+    } ... })
+%%]]
+\item |foldl| itself recurses, {\color{red} overflowing the Javascript stack}
+\end{itemize}
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Javascript implementation: tail recursion}
+
+\begin{itemize}
+\item Tail recursion cannot be done by a Javascript function itself
+\item Must be done outside, when evaluated by |ev|
+%%[[wrap=safecode
+function ev( x ) {
+    while ( x && x.eOrV ) {
+        if ( typeof x.eOrV == "function" )  x = x.eOrV()  ;
+        else                                x = x.eOrV    ;
+    }
+    return x ;
+}
+%%]]
+\item Continue with evaluation until nothing to be evaluated
+ \begin{itemize}
+ \item |eOrV()| or |eOrV| yield intermediate result, not endresult
+ \item |applyN| must be aware of this as well
+ \item Chain of |x.eOrV| must be fully updated to prevent recomputation
+ \end{itemize}
+\end{itemize}
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Javascript implementation: mutual recursiveness}
+
+Reference to values before they are available
+
+\begin{itemize}
+\item {\color{red} Haskell} mutual recursive lists
+%%[[wrap=safecode
+f x =  let  l1 = x  : l2
+            l2 = 3  : l1
+       in   l2
+%%]]
+\item {\color{red} Javascript}
+%%[[wrap=safecode
+greyOn^ f = new Fun(function(x) {
+  var l2 = ind()         ;  var l1 = ind()         ;
+  indset(l2,cons(3,l1))  ;  indset(l1,cons(x,l2))  ;
+  greyOn^ return l2; });
+%%]]
+\item Indirection placeholders
+%%[[wrap=safecode
+function ind()        { return new App(undefined,[])  ; }
+function indset(i,x)  { i.eOrV = x                    ; }
+%%]]
+\end{itemize}
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Combining Haskell \& Javascript}
+
+\begin{itemize}
+\item Manual use of |App| etc is errorprone
+\item Useful as backend of Utrecht Haskell Compiler (UHC)
+\item Mixing Haskell \& Javascript worlds via foreign function interface
+\item Example import (use of Javascript in Haskell):
+
+%%[[wrap=safecode
+data JSString	-- opaque
+
+stringToJSString :: String    ->  JSString
+jsStringToString :: JSString  ->  String
+
+foreign import jscript alert :: JSString -> IO ()
+
+main = do alert (stringToJSString "Ola")
+%%]]
+\end{itemize}
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Combining Haskell \& Javascript}
+
+\begin{itemize}
+\item Example export (use of Haskell in Javascript):
+
+%%[[wrap=safecode
+myAlert :: JSString -> IO ()
+myAlert s = alert s
+
+foreign export jscript "hsAlert" myAlert :: JSString -> IO ()
+%%]]
+
+\item Available as |hsAlert| in Javascript
+
+%%[[wrap=safecode
+var hsAlert = function(s) { 
+   return ev(new App($Alert.$myAlert,[s])) ;
+}
+%%]]
+
+\item Used in html context
+
+%%[[wrap=verbatim
+<a name="html" onClick="hsAlert('Click!')">
+  Click
+</a><br />
+%%]]
+
+\end{itemize}
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Combining Haskell \& Javascript}
+
+Accessing DOM inside a browser
+\begin{itemize}
+\item Writing to browser document
+
+%%[[wrap=safecode
+data Document
+
+foreign import jscript "document"      document     
+  :: IO Document
+
+foreign import jscript "%1.write(%*)"  documentWrite
+  :: Document -> JSString -> IO ()
+%%]]
+
+\item Usage
+
+%%[[wrap=safecode
+main = do
+  d <- document
+  documentWrite d (stringToJSString "Ola")
+%%]]
+
+\end{itemize}
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Performance: Interpreter vs. Javascript + Chrome}
+
+\begin{tabular}{l||rrr}
+\textbf{nofib test}	& \textbf{bc} & \textbf{jscript} & \textbf{jscript/bc} \\ \hline
+bernouilli      & 1002  & 9378  & 9.4 \\
+digits-of-e1    & 1735  & 8523  & 4.9 \\
+digits-of-e2    & 641   & 2432  & 3.8 \\
+queens          & 3186  & 13089 & 4.1 \\
+primes          & 805   & 2984  & 3.7 \\
+rfib-int        & 1310  & 6111  & 4.7 \\
+rfib-integer    & 6594  & 30016 & 4.6 \\
+rfib-double     & 7870  & 34506 & 4.4 \\
+tak             & 5547  & 23363 & 4.2 \\
+wheel-sieve1    & 1755  & 5858  & 3.3 \\
+wheel-sieve2    & 729   & 2721  & 3.7 \\ \hline
+                &       &       & 4.6 \\
+\end{tabular}
+
+Times in ms, no multiple samples
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Summary}
+
+Javascript? Haskellscript!
+
+\begin{itemize}
+\item Laziness + import/export + compiler \\ == \\ Haskell web scripting
+\item Part of Utrecht Haskell Compiler
+\item Opportunity for use of Javascript world in typesafe manner
+ \begin{itemize}
+ \item Web libraries: jQuery, Google libraries
+ \item ...
+ \end{itemize}
+\end{itemize}
+
+UHC: \verb|http://www.cs.uu.nl/wiki/UHC| \\
+Blog: \verb|http://utrechthaskellcompiler.wordpress.com/|
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Javascript implementation: function}
 
 %%@Blog.js.interpreter.impl.Fun.proto wrap=safecode
 
 \end{frame}
+
 
 
 %%]

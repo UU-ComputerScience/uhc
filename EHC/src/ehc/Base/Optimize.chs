@@ -127,7 +127,7 @@ optimizationLevelMp
         , [  ]
         )
       , ( OptimizationLevel_Full
-        , [ Optimize_StrictnessAnalysis ]
+        , [] -- [ Optimize_StrictnessAnalysis ]
         )
       ]
 %%]
