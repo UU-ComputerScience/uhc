@@ -1,4 +1,4 @@
-module Main where
+module TypeChecker where
 
 import System.Console.GetOpt
 import qualified EH.Util.FastSeq as Seq

@@ -21,6 +21,10 @@ class Pretty a where
 -- instance Pretty a => Show a where
    -- show = pp
 
+instance Pretty a => Pretty (Maybe a) where
+   pp Nothing  = ""
+   pp (Just a) = pp a
+   
 instance (Pretty a, Pretty b) => Pretty (M.Map a b) where
    pp = pp . M.toList
    
