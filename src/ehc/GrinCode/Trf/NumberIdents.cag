@@ -1,4 +1,7 @@
 TODO SPECIAL we need to do something smart with this
+NOTE Dit is een per-module-variant van NumberIdents, die binnen elke module
+uniek nummert en de namen qualified laat. Waarschijnlijk ga ik het anders doen,
+maar we bewaren deze optie voorlopgi.
 
 %%[doesWhat doclatex
 
@@ -18,7 +21,7 @@ The parameters of a function are numbered consecutively after that.
 %include afp.fmt
 %%]
 
-%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.NumberIdents}  export(numberIdents)
+%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.NumberIdents}
 %%]
 
 %%[(8 codegen grin) hs import(Data.Array.IArray, qualified Data.Set as Set, qualified Data.Map as Map, Data.Maybe)
@@ -27,7 +30,9 @@ The parameters of a function are numbered consecutively after that.
 %%]
 %%[(8 codegen grin) hs import({%{EH}GrinCode.Common}, {%{EH}Config})
 %%]
-%%[(8 codegen grin) hs import(Debug.Trace, EH.Util.Utils (panicJust))
+%%[(8 codegen grin) hs import(Debug.Trace)
+%%]
+%%[(8 codegen grin) hs import(Data.Typeable(Typeable), Data.Generics(Data), {%{EH}Base.Serialize}, Control.Monad (ap))
 %%]
 
 %%[(8 codegen grin) ag import({GrinCode/AbsSyn})
@@ -38,12 +43,49 @@ The parameters of a function are numbered consecutively after that.
 WRAPPER GrAGItf
 %%]
 
-%%[(8 codegen grin) hs
-numberIdents :: Map.Map HsName Int -> GrModule -> GrModule
-numberIdents varMap code
-  = let inh = Inh_GrAGItf { lookupNr_Inh_GrAGItf = lookupNr varMap }
+%%[(8 codegen grin) hs export(InfoNumberIdents, numberIdents, renumberInfoNumberIdents)
+
+data InfoNumberIdents = InfoNumberIdents
+  { infoVarMap  :: NameMapping
+  , infoBindMap :: NameMapping
+  } deriving (Show, Data, Typeable)
+
+renumberInfoNumberIdents :: (Int -> Int) -> InfoNumberIdents -> InfoNumberIdents
+renumberInfoNumberIdents f inf = InfoNumberIdents
+  { infoVarMap  = Map.map (modNr f) $ infoVarMap  inf
+  , infoBindMap = Map.map (modNr f) $ infoBindMap inf
+  }
+
+instance Serialize InfoNumberIdents where
+  sput inf = sput (infoVarMap inf) >> sput (infoBindMap inf)
+  sget     = return InfoNumberIdents `ap` sget `ap` sget
+
+
+-- Wil: hernummerde VarMap+BindMap, een offset (om lokale nummers te laten
+-- passen in de ModOffsets van deze module) en een GrModule. Levert een nieuwe
+-- GrModule en VarMap+BindMap op, samen met het kleinste ongeuitgedeelde nummer > first.
+numberIdents :: Int -> [InfoNumberIdents] -> GrModule -> (GrModule, InfoNumberIdents, Int)
+numberIdents first imps code
+  = let inh = Inh_GrAGItf
+          { startVarMaps_Inh_GrAGItf  = map infoVarMap imps
+          , startBindMaps_Inh_GrAGItf = map infoBindMap imps
+          , firstNumber_Inh_GrAGItf   = first
+          }
         syn = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf code)) inh
-    in  grTrf_Syn_GrAGItf syn
+        inf = InfoNumberIdents
+          { infoVarMap  = finalVarMap_Syn_GrAGItf syn
+          , infoBindMap = finalBindMap_Syn_GrAGItf syn
+          }
+        next = nextNumber_Syn_GrAGItf syn
+    in  (grTrf_Syn_GrAGItf syn, inf, next)
+
+
+-- Construct a HNmNr -- , qualified with the qualifier from the original name.
+hsnQNr :: Int -> (HsName -> OrigName) -> HsName -> HsName
+hsnQNr i orig nm = qual $ HNmNr i (orig nm)
+  where qual = id -- maybe id hsnSetQual $ hsnQualifier nm
+
+
 %%]
 
 
@@ -52,42 +94,36 @@ Haskell datatype NameMapping and utility functions for it
 
 %%[(8 codegen grin) hs
 type NameMapping = Map.Map HsName HsName
-type Numbering   = (HsName -> OrigName) -> HsName -> HsName
-
-lookupNr :: Map.Map HsName Int -> Numbering
-lookupNr mp orig nm = HNmNr nr (orig nm)
-  where nr = panicJust ("NumberIdents.lookupNr: " ++ show nm ++ " not found in " ++ show mp)
-             $ Map.lookup nm mp
 
 findNewVar fm e  = Map.findWithDefault (trace ("NumberIdents.findNewVar: " ++ show e ++ " not found in " ++ show fm) e) e fm
 
 
 -- numbers the non-wildcard variables in xs, counting from left-to-right (because that is needed when numbering argument lists)
 
-addList :: Numbering -> [HsName] -> (NameMapping, [HsName])
-addList num xs = foldl addName (Map.empty, []) xs
+addList :: Int -> [HsName] -> (NameMapping, [HsName], Int)
+addList u xs = foldl addName (Map.empty, [], u) xs
     where
-    addName (mapping, names) e | e == wildcardNm  = (mapping, names++[wildcardNr]) -- TODO moet dit?
-                               | otherwise        = let newname = num OrigLocal e
-                                                    in (Map.insert e newname mapping, names++[newname])
+    addName (mapping, names, u) e | e == wildcardNm  = (mapping, names++[wildcardNr] , u  )
+                                  | otherwise        = let newname = hsnQNr u OrigLocal e
+                                                       in (Map.insert e newname mapping, names++[newname], u+1)
                                               
 %%]
 
 %%[(8 codegen grin)
 ATTR GrAGItf [ | | grTrf: GrModule  ]
 ATTR AllNT   [ | | grTrf: SELF      ]
+ATTR GrAGItf [ firstNumber: Int | | nextNumber: Int ]
 ATTR AllNT   [ | unique: Int | ]
 
 SEM GrAGItf
-  | AGItf  module  . unique       =  6   -- 0,1,2,3,4,5 are reserved for wildcard, main, mainexcept, eval, evalexcept, evalarg
+  | AGItf  module  . unique       =  @lhs.firstNumber -- 0,1,2,3,4,5 are reserved for wildcard, main, mainexcept, eval, evalexcept, evalarg
+           lhs.nextNumber         =  @module.unique
                    
 %%]
 
 
 
 %%[(8 codegen grin)
-
-ATTR AllNT GrAGItf  [ lookupNr : Numbering | | ]
 
 ATTR AllBind  [ 
               | 
@@ -106,13 +142,19 @@ ATTR AllGlobal
      AllExpr  [ varMap : NameMapping
                 bindMap: NameMapping  | | ]
 
+ATTR GrAGItf GrModule
+  [ startVarMaps  : {[NameMapping]}
+    startBindMaps : {[NameMapping]}
+  |
+  | finalVarMap   : {NameMapping}
+    finalBindMap  : {NameMapping}
+  ]
 
 SEM GrModule
-  | Mod       loc     . bindMap  =  Map.insert hsnMainFullProg mainNr @bindL.genBindMap
-              globalL . bindMap  =  @loc.bindMap
-              bindL   . bindMap  =  @loc.bindMap
-              globalL . varMap   =  @globalL.genVarMap
-              bindL   . varMap   =  @globalL.genVarMap
+  | Mod       loc. bindMap      = Map.insert hsnMainFullProg mainNr $ Map.unions (@loc.finalBindMap : @lhs.startBindMaps)
+              loc.finalBindMap  = @bindL.genBindMap
+              loc.varMap        = Map.unions (@loc.finalVarMap : @lhs.startVarMaps)
+              loc.finalVarMap   = @globalL.genVarMap
 
 %%]
 
@@ -126,15 +168,16 @@ SEM GrVar
 
 SEM GrGlobal
   | Global     loc   .  newName  : HsName
-               loc   .  newName  = @lhs.lookupNr OrigGlobal @nm
+               loc   .  newName  = hsnQNr @lhs.unique OrigGlobal @nm
                lhs   .  genVarMap  = Map.singleton @nm @newName
+               lhs   .  unique   = @lhs.unique + 1
 
 SEM GrPatAlt
-  | Node       (lhs.genVarMap, loc.newNames)  = addList @lhs.lookupNr @fldL
+  | Node       (lhs.genVarMap, loc.newNames, lhs.unique) = addList @lhs.unique @fldL
   			   loc  .  newNames                   :  {[HsName]}
 
 SEM GrPatLam
-  | VarNode    (loc.genVarMap, loc.newNames) = addList @lhs.lookupNr @fldL.names
+  | VarNode    (loc.genVarMap, loc.newNames, lhs.unique) = addList @lhs.unique @fldL.names
   			   loc  .  newNames                   :  {[HsName]}
   			   loc  .  genVarMap                  :  {NameMapping}
 
@@ -147,14 +190,16 @@ SEM GrPatLam
     EnumAnnot
     OpaqueAnnot
     PtrAnnot   lhs.genVarMap    = Map.singleton @nm @newName
+               lhs.unique       = @lhs.unique + 1
                loc  .  newName  : HsName
-               loc  .  newName  = @lhs.lookupNr OrigLocal @nm
+               loc  .  newName  = hsnQNr @lhs.unique OrigLocal @nm
                
 
 SEM GrExpr
   | Catch      handler  .  varMap   = Map.insert @arg @newName @lhs.varMap
+               handler  .  unique   = @body.unique + 1
                loc      .  newName  : HsName
-               loc      .  newName  = @lhs.lookupNr OrigLocal @arg
+               loc      .  newName  = hsnQNr @body.unique OrigLocal @arg
 
   | Seq        body     .  varMap   = @lhs.varMap `Map.union` @pat.genVarMap
 
@@ -165,16 +210,18 @@ SEM GrAlt
 
 
 SEM GrBind
-  | Bind  lhs.genBindMap =  Map.singleton @nm (@lhs.lookupNr OrigFunc @nm)
+  | Bind  lhs.genBindMap =  Map.singleton @nm (hsnQNr @lhs.unique OrigFunc @nm)
                               
           ( loc.parameterMap
           , loc.newNames
-          )                         =  addList @lhs.lookupNr @argNmL
+          , expr.unique
+          )                         =  addList (@lhs.unique + 2) @argNmL    -- arguments must be numbered left-to-right (addList indeed does so)
           
           expr  .  varMap           =  @lhs.varMap `Map.union` @loc.parameterMap
           
           loc   .  parameterMap     :  {NameMapping}
           loc   .  newNames         :  {[HsName]}
+          lhs   .  unique           =  @expr.unique
 
 %%]
 
