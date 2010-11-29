@@ -305,7 +305,7 @@ forceLookup mp a
   = panicJust ("SolveEqs.forceLookup: no entry for " ++ show a)
     $ Map.lookup a mp
 
-solveEquations :: String -> Int -> [Int] -> Equations -> Limitations -> VarMap -> ParamMap -> PartialHptMap Int -> (Int,HptMap)
+solveEquations :: String -> Int -> [Int] -> Equations -> Limitations -> VarMap -> ParamMap -> HptMap -> (Int,HptMap)
 solveEquations modNm lenEnv multiplyUsed eqs lims varMp parMp hptStart =
     runST (
     do { 
@@ -319,7 +319,7 @@ solveEquations modNm lenEnv multiplyUsed eqs lims varMp parMp hptStart =
 
        -- create array
        ; env     <- newArray_ (0, lenEnv-1)
-       ; mapM_ (\(i, v) -> writeArray env i (True, False, v)) (Map.toList hptStart)
+       ; mapM_ (\(i, v) -> writeArray env i (True, False, v)) (assocs hptStart)
        -- ; shared  <- newArray (0, lenEnv-1) False
 
        -- ; trace (show multiplyUsed) $ return ()

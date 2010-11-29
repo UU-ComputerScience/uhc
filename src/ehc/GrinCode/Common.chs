@@ -19,7 +19,7 @@
 %% Special names                  %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin) export(wildcardNm, wildcardNr, mainNr, getNr, throwTag, hsnMainFullProg, conName, evaluateNr, evaluateArgNr)
+%%[(8 codegen grin) export(wildcardNm, wildcardNr, mainNr, getNr, modNr, throwTag, hsnMainFullProg, conName, evaluateNr, evaluateArgNr, firstNonSpecialNr)
 
 wildcardNm = hsnFromString "_"
 wildcardNr = HNmNr 0 (OrigLocal wildcardNm)
@@ -28,6 +28,11 @@ getNr :: HsName -> Int
 getNr (HNmNr i _)      = i
 getNr (HsName_Pos i)   = error $ "getNr tried on HNPos " ++ show i
 getNr a                = error $ "getNr tried on " ++ show a
+
+modNr :: (Int -> Int) -> HsName -> HsName
+modNr f (HNmNr i o)    = HNmNr (f i) o
+modNr _ (HsName_Pos i) = error $ "modNr tried on HNPos " ++ show i
+modNr _ a              = error $ "modNr tried on " ++ show a
 
 throwTag      =  GrTag_Fun (hsnFromString "rethrow")
 
@@ -41,6 +46,9 @@ mainNr     = HNmNr 1 (OrigFunc hsnMainFullProg)
 
 evaluateNr    = HNmNr 3 (OrigFunc (hsnFromString "evaluate"))
 evaluateArgNr = HNmNr 5 (OrigNone)
+
+firstNonSpecialNr :: Variable
+firstNonSpecialNr = 6
 
 %%]
 
@@ -63,46 +71,41 @@ tagArity t                    _        = error ("tagArity " ++ show t)
 %% Abstract interpretation domain %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin) export(AbstractNodesG(..), AbstractValueG(..), AbstractCallG, AbstractCallListG, mapAbstractNodes, mapAbstractValue)
-%%]
-%%[(8 codegen grin) export(Variable, AbstractNodes, AbstractValue, AbstractCall, AbstractCallList)
+%%[(8 codegen grin) export(Variable, AbstractNodes(..), mapAbstractNodes, AbstractValue(..), mapAbstractValue, AbstractCall, AbstractCallList)
 %%]
 
 %%[(8 codegen grin).AbstractValue
 
 type Variable = Int
 
-type AbstractNodes = AbstractNodesG Variable
-data AbstractNodesG var
-  = Nodes (Map.Map GrTag [Set.Set var])
+
+data AbstractNodes
+  = Nodes (Map.Map GrTag [Set.Set Variable])
     deriving (Eq, Ord, Data, Typeable)
 
-instance (Ord var, Binary var) => Binary (AbstractNodesG var) where
+instance Binary AbstractNodes where
   put (Nodes m) = put m
   get = liftM Nodes get
 
--- 'fmap' on AbstractNodesG; cannot be an instance of Functor because of the
--- Ord constraints.
-mapAbstractNodes :: (Ord a, Ord b) => (a -> b) -> AbstractNodesG a -> AbstractNodesG b
+mapAbstractNodes :: (Variable -> Variable) -> AbstractNodes -> AbstractNodes
 mapAbstractNodes f (Nodes m) = Nodes (Map.map (map (Set.map f)) m)
 
-type AbstractValue = AbstractValueG Variable
-data AbstractValueG var
+data AbstractValue
   = AbsBottom
   | AbsBasic
   | AbsImposs
   | AbsTags  (Set.Set GrTag)
-  | AbsNodes (AbstractNodesG var)
+  | AbsNodes AbstractNodes
   -- We allow for three different representation of pointers. They can't be mixed. The choice is made in SolveEqs.
-  | AbsPtr   (AbstractNodesG var)                                             -- this is a direct representation
-  | AbsPtr0  (AbstractNodesG var) (Set.Set var)                          -- the variables that stored this value for the first time is recorded
-  | AbsPtr1  (AbstractNodesG var) (Set.Set var)                          -- the values of those variables are not joined anymore in the AbstractNodes, so all variables in the list should be queried when doing absFetch
-  | AbsPtr2  (AbstractNodesG var) (Set.Set var) (Set.Set var)       -- this representation still doesn't work
-  | AbsUnion (Map.Map GrTag  (AbstractValueG var) )
+  | AbsPtr   AbstractNodes                                             -- this is a direct representation
+  | AbsPtr0  AbstractNodes (Set.Set Variable)                          -- the variables that stored this value for the first time is recorded
+  | AbsPtr1  AbstractNodes (Set.Set Variable)                          -- the values of those variables are not joined anymore in the AbstractNodes, so all variables in the list should be queried when doing absFetch
+  | AbsPtr2  AbstractNodes (Set.Set Variable) (Set.Set Variable)       -- this representation still doesn't work
+  | AbsUnion (Map.Map GrTag  AbstractValue )
   | AbsError String
     deriving (Eq, Ord, Data, Typeable)
 
-instance (Ord var, Binary var) => Binary (AbstractValueG var) where
+instance Binary AbstractValue where
   put absV = case absV of
     AbsBottom           -> do putWord8  0
     AbsBasic            -> do putWord8  1
@@ -130,9 +133,7 @@ instance (Ord var, Binary var) => Binary (AbstractValueG var) where
       9  -> liftM AbsUnion get
       10 -> liftM AbsError get
 
--- 'fmap' on AbstractValuesG; cannot be an instance of Functor because of the
--- Ord constraints.
-mapAbstractValue :: (Ord a, Ord b) => (a -> b) -> AbstractValueG a -> AbstractValueG b
+mapAbstractValue :: (Variable -> Variable) -> AbstractValue -> AbstractValue
 mapAbstractValue f absV = case absV of
     AbsBottom           -> AbsBottom
     AbsBasic            -> AbsBasic
@@ -148,20 +149,16 @@ mapAbstractValue f absV = case absV of
   where mAV  = mapAbstractValue f
         mANs = mapAbstractNodes f
 
+type AbstractCall
+  = (Variable, [Maybe Variable])
+  
+type AbstractCallList
+  = [AbstractCall]
 
-type AbstractCall = AbstractCallG Variable
-type AbstractCallG var
-  = (var, [Maybe var])
-
-type AbstractCallList = AbstractCallListG Variable
-type AbstractCallListG var
-  = [AbstractCallG var]
-
-
-instance (Show var, Ord var) => Show (AbstractNodesG var) where
+instance Show AbstractNodes where
   show (Nodes ns) = show (Map.assocs ns)
 
-instance (Show var, Ord var) => Show (AbstractValueG var) where
+instance Show AbstractValue where
     show av = case av of
                   AbsBottom   -> "BOT"
                   AbsImposs   -> "IMP"
@@ -181,11 +178,11 @@ limitIntersect Nothing  b        = b
 limitIntersect a        _        = a
 
 
-instance Ord var => Monoid (AbstractNodesG var) where
+instance Monoid AbstractNodes where
    mempty = Nodes Map.empty
    mappend (Nodes an) (Nodes bn) = Nodes (Map.unionWith (zipWith Set.union) an bn)
 
-instance (Show var, Ord var) => Monoid (AbstractValueG var) where
+instance Monoid AbstractValue where
     mempty                                  =  AbsBottom
     mappend  a                 AbsBottom    =  a
     mappend    AbsBottom    b               =  b
@@ -255,24 +252,23 @@ instance Ord GrTag where
 %% Abstract interpretation constraints     %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin) export(Equation, EquationG(..), Equations, EquationsG, Limitation, LimitationG, Limitations, LimitationsG, limitIntersect)
+%%[(8 codegen grin) export(Equation(..), mapEquation, Equations, Limitation, mapLimitation, Limitations, limitIntersect)
 
-type Equation = EquationG Variable
-data EquationG var
-  = IsBasic               var
-  | IsImpossible          var
-  | IsTags                var  [GrTag]
-  | IsPointer             var  GrTag [Maybe var]
-  | IsConstruction        var  GrTag [Maybe var]       (Maybe var)
-  | IsUpdate              var  var
-  | IsEqual               var  var
-  | IsSelection           var  var Int GrTag
-  | IsEnumeration         var  var
-  | IsEvaluation          var  var                     var
-  | IsApplication         var  [var]                   var
+data Equation
+  = IsBasic               Variable
+  | IsImpossible          Variable
+  | IsTags                Variable  [GrTag]
+  | IsPointer             Variable  GrTag [Maybe Variable]
+  | IsConstruction        Variable  GrTag [Maybe Variable]       (Maybe Variable)
+  | IsUpdate              Variable  Variable
+  | IsEqual               Variable  Variable
+  | IsSelection           Variable  Variable Int GrTag
+  | IsEnumeration         Variable  Variable
+  | IsEvaluation          Variable  Variable                     Variable
+  | IsApplication         Variable  [Variable]                   Variable
     deriving (Show, Eq, Data, Typeable)
 
-instance Binary var => Binary (EquationG var) where
+instance Binary Equation where
   put eq = case eq of
     IsBasic        v              ->  do putWord8  0; put v
     IsImpossible   v              ->  do putWord8  1; put v
@@ -300,29 +296,29 @@ instance Binary var => Binary (EquationG var) where
       9  -> liftM3 IsEvaluation get get get
       10 -> liftM3 IsApplication  get get get
 
-instance Functor EquationG where
-  fmap f eq = case eq of
-    IsBasic        v              ->  IsBasic (f v)
-    IsImpossible   v              ->  IsImpossible (f v)
-    IsTags         v  gs          ->  IsTags (f v) gs
-    IsPointer      v  g   mvs     ->  IsPointer (f v) g (fmap (fmap f) mvs)
-    IsConstruction v  g   mvs mv  ->  IsConstruction (f v) g (fmap (fmap f) mvs) (fmap f mv)
-    IsUpdate       v1 v2          ->  IsUpdate (f v1) (f v2)
-    IsEqual        v1 v2          ->  IsEqual (f v1) (f v2)
-    IsSelection    v1 v2  i   g   ->  IsSelection (f v1) (f v2) i g
-    IsEnumeration  v1 v2          ->  IsEnumeration (f v1) (f v2)
-    IsEvaluation   v1 v2  v3      ->  IsEvaluation (f v1) (f v2) (f v3)
-    IsApplication  v1 vs  v2      ->  IsApplication (f v1) (fmap f vs) (f v2)
+mapEquation :: (Variable -> Variable) -> Equation -> Equation
+mapEquation f eq = case eq of
+  IsBasic        v              ->  IsBasic (f v)
+  IsImpossible   v              ->  IsImpossible (f v)
+  IsTags         v  gs          ->  IsTags (f v) gs
+  IsPointer      v  g   mvs     ->  IsPointer (f v) g (fmap (fmap f) mvs)
+  IsConstruction v  g   mvs mv  ->  IsConstruction (f v) g (fmap (fmap f) mvs) (fmap f mv)
+  IsUpdate       v1 v2          ->  IsUpdate (f v1) (f v2)
+  IsEqual        v1 v2          ->  IsEqual (f v1) (f v2)
+  IsSelection    v1 v2  i   g   ->  IsSelection (f v1) (f v2) i g
+  IsEnumeration  v1 v2          ->  IsEnumeration (f v1) (f v2)
+  IsEvaluation   v1 v2  v3      ->  IsEvaluation (f v1) (f v2) (f v3)
+  IsApplication  v1 vs  v2      ->  IsApplication (f v1) (fmap f vs) (f v2)
 
-type Limitation = LimitationG Variable
-type LimitationG var
-  = (var, [GrTag])
 
-type Equations    = [Equation]
-type Limitations  = [Limitation]
+type Limitation
+  = (Variable, [GrTag])
 
-type EquationsG   var = [EquationG var]
-type LimitationsG var = [LimitationG var]
+mapLimitation :: (Variable -> Variable) -> Limitation -> Limitation
+mapLimitation f (v,t) = (f v,t)
+
+type Equations     = [Equation]
+type Limitations   = [Limitation]
 
 %%]
 
@@ -330,12 +326,9 @@ type LimitationsG var = [LimitationG var]
 %% Abstract interpretation result          %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin) export(HptMap, PartialHptMap, getBaseEnvList, getEnvVar, absFetch, addEnvElems, getEnvSize, getTags, getNodes, isBottom, showHptMap, isPAppTag, isFinalTag, isApplyTag, filterTaggedNodes, getApplyNodeVars)
+%%[(8 codegen grin) export(HptMap, getBaseEnvList, getEnvVar, absFetch, addEnvElems, getEnvSize, getTags, getNodes, isBottom, showHptMap, isPAppTag, isFinalTag, isApplyTag, filterTaggedNodes, getApplyNodeVars)
 
 type HptMap  = Array Int AbstractValue
-
-type PartialHptMap var = Map.Map var (AbstractValueG var)
-
 
 showHptElem :: (Int,AbstractValue) -> String
 showHptElem (n,v) = show n ++ ": " ++ show v
@@ -352,7 +345,7 @@ getEnvVar ae i  | snd (bounds ae) >= i = (ae ! i)
                 | otherwise            = trace ("variable "++ show i ++ " not found") AbsBottom   -- AbsError $ "variable "++ show i ++ " not found"
                          
 
-limit :: (Show var, Ord var) => Maybe (Set.Set GrTag) -> AbstractValueG var -> AbstractValueG var
+limit :: Maybe (Set.Set GrTag) -> AbstractValue -> AbstractValue
 limit Nothing v = v
 limit (Just tset) (AbsNodes (Nodes ns)) = AbsNodes (Nodes (Map.fromList (filter (validTag tset) (Map.toList ns))))
 limit _ v = error ("limit applied to non-Node " ++ show v)
@@ -426,7 +419,7 @@ isApplyTag (GrTag_App _)     = True
 isApplyTag _                 = False
 
 
-filterTaggedNodes :: (GrTag->Bool) -> AbstractValueG var -> AbstractValueG var
+filterTaggedNodes :: (GrTag->Bool) -> AbstractValue -> AbstractValue
 filterTaggedNodes p (AbsNodes (Nodes nodes)) = let newNodes = Map.filterWithKey (const . p) nodes
                                                in AbsNodes (Nodes newNodes)
 filterTaggedNodes p av               = av
@@ -436,3 +429,4 @@ getApplyNodeVars (AbsNodes (Nodes nodes)) = [ getNr nm  | (GrTag_App nm) <- Map.
 getApplyNodeVars _                = []
 
 %%]
+
