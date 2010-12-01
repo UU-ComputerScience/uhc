@@ -997,7 +997,7 @@ subsume = sem subsume : Subsume monad IO
                 loc.ty   = nf lhs.ty
                 loc.nfTy = isNf lhs.exp
                 loc.nfTs = isNf loc.ty
-                loc.nf   = trace "Subsume NF check" $ loc.nfTy && loc.nfTs
+                loc.nf   = trace "Subsume NF check" (loc.nfTy && loc.nfTs)
                 internal nf_check
                     clause s_subsume
                       match True                  = loc.nf

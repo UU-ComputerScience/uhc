@@ -1,0 +1,393 @@
+data TyQu
+  con TyForall
+    
+data TyExpr
+  con Con
+    nm        :: HsName
+  con App
+    func      :: TyExpr
+    arg       :: TyExpr
+  con AppTop
+    tyExpr    :: TyExpr
+  con Parens
+    tyExpr    :: TyExpr
+  con Ann
+    ann       :: TyExprAnn
+    tyExpr    :: TyExpr
+  con Wild
+  con Mono
+  con Var
+    nm        :: HsName
+  con VarWild
+    mm        :: HsName
+  con Quant
+    qu        :: TyQu
+    tyVar     :: HsName
+    tyExpr    :: TyExpr
+  con Forall
+    qu        :: TyQu
+    tyVar     :: [HsName]
+    tyExpr    :: TyExpr    
+  con Row
+    rowTyExpr :: RowTyExpr
+    
+data TyVar
+  con Var
+    nm      :: HsName
+    
+type TyVars : [TyVar]
+    
+-- Type Index (a1 >= TyQuantifiedScheme)
+data TyIndex
+  con Group
+    varnm   :: HsName
+    bounds  :: TyQuantifiedScheme
+    
+-- -- Quantified type scheme
+-- data TyQuantifiedScheme
+  -- con Quant
+    -- tyIndex  :: TyIndex
+    -- tyScheme :: TyScheme
+  -- con Bottom
+   
+-- Type Schemes
+data TyScheme
+  con Quant
+    subst    :: Scheme
+    tyExpr   :: TyScheme
+  con SystemF
+    tyExpr   :: TyExpr
+  con Bottom
+  -- These next two are just used internally
+  con Sugar
+     prefix  :: Prefix
+     tyExpr  :: TyScheme
+  con Forall
+     tyQuant :: [HsName]
+     tyExpr  :: TyScheme
+
+-- A simple tybound e.f. (a >= phi)
+data Scheme
+  con Simple
+    varnm  :: HsName
+    bounds :: TyScheme
+  
+-- Mono type
+data TyMono 
+  con Var 
+    nm      :: HsName
+  con App
+    func    :: TyMono
+    arg     :: TyMono
+  con Con
+    nm      :: HsName
+  con AppTop
+    tyMono  :: TyMono
+    
+-- Unqualified typed
+data TyPoly
+  con Var 
+    nm      :: HsName
+  con App
+    func    :: TyPoly
+    arg     :: TyPoly
+  con Con
+    nm      :: HsName
+  con SystemF
+    tyExpr  :: TyExpr
+    
+data DataFieldExpr
+  con Upd
+    dataFieldExpr  :  DataFieldExpr
+    nm             :: HsName
+    expr           :  Expr
+  con Con
+    nm             :: HsName
+  con Expr
+    expr           :  Expr
+   
+data DataFieldPatExpr
+  con Ext
+    dataFieldPatExpr  :: DataFieldPatExpr
+    nm                :: HsName
+    patExpr           :: PatExpr
+  con Con
+    nm                :: HsName
+    
+data RecExpr
+  con Empty
+  con Ext
+    recExpr     :  RecExpr
+    mbNm        :: (Maybe HsName)
+    expr        :  Expr
+  con Upd
+    recExpr     :  RecExpr
+    mbNm        :: HsName
+    expr        :  Expr
+  con Expr
+    expr        :  Expr
+    
+data RecPatExpr
+  con Empty
+  con Ext
+    recPatExpr  :  RecPatExpr
+    mbNm        :: (Maybe HsName)
+    patExpr     :: PatExpr
+  con Expr
+    patExpr     :: PatExpr
+    
+data RowTyExpr
+  con Empty
+  con Ext
+    rowTyExpr       :: RowTyExpr
+    mbNm            :: (Maybe HsName)
+    tyExpr          :: TyExpr
+    
+data KiExpr
+  con Con
+    nm       :: HsName
+  con Var
+    nm       :: HsName
+  con App
+    func     :: KiExpr
+    arg      :: KiExpr
+  con AppTop
+    kiExpr   :: KiExpr
+  con Parens
+    kiExpr   :: KiExpr
+  con Ann
+    ann      :: KiExprAnn
+    kiExpr   :: KiExpr
+    
+data Expr
+  con IConst
+    int           :: Int
+  con CConst
+    char          :: Char
+  con Con
+    nm            :: HsName
+  con Var
+    nm            :: HsName
+  con App
+    func          :  Expr
+    arg           :  Expr
+  con Let
+    isStrict      :: Bool
+    decls         :  Decls
+    body          :  Expr
+  con Lam
+    arg           :: PatExpr
+    body          :  Expr
+  con AppTop
+    expr          :  Expr
+  con Parens
+    expr          :  Expr
+  con TypeAs
+    tyExpr        :: TyExpr
+    expr          :  Expr
+  con Ann
+    ann           :: ExprAnn
+    expr          :  Expr
+  con AppImpred
+    func          :  Expr
+    arg           :  Expr
+  con SConst 
+    str           :: String
+  con Case
+    expr          :  Expr
+    alts          :: CaseAlts
+    mbCaseIds     :: (Maybe UIDS)
+    caseFailS     :: UIDS
+    isTupOfArg    :: Bool
+  con DataFields
+    dataFieldExpr :: DataFieldExpr
+  con Rec
+    recExpr       :: RecExpr
+  con Sel
+    expr          :  Expr
+    lbl           :: HsName
+  con Undefined
+  con CaseAltFail 
+    caseId        :: UID
+    
+data PatExpr
+  con IConst
+    int              :: Int
+  con CConst
+    char             :: Char
+  con Con
+    nm               :: HsName
+  con Var
+    nm               :: HsName
+  con VarAs
+    nm               :: HsName
+    patExpr          :: PatExpr
+  con App
+    func             :: PatExpr
+    arg              :: PatExpr
+  con AppTop
+    patExpr          :: PatExpr
+  con Parens
+    patExpr          :: PatExpr
+  con Ann
+    ann              :: PatExprAnn
+    patExpr          :: PatExpr
+  con TypeAs
+    tyExpr           :: TyExpr
+    patExpr          :: PatExpr
+  con SConst
+    str              :: String
+  con Rec
+    recPatExpr       :: RecPatExpr
+  con DataFields
+    dataFieldPatExpr :: DataFieldPatExpr
+  con Irrefutable
+    patExpr          :: PatExpr
+    
+data CaseAlt
+  con Pat
+    patExpr   :: PatExpr
+    expr      :  Expr
+
+type CaseAlts : [CaseAlt]
+    
+data DataConstr
+  con Constr
+    conNm      :: HsName
+    fields     :  DataFields
+    
+type DataConstrs : [DataConstr]
+
+data DataField
+  con Field
+    mbLabels     :: (Maybe [HsName])
+    tyExpr       :: TyExpr
+    
+type DataFields : [DataField]
+   
+data ExprAnn
+  con Empty
+  
+data TyExprAnn
+  con Empty
+
+data PatExprAnn
+  con Empty
+  
+data KiExprAnn
+  con Empty
+  
+data Decl
+  con TySig
+    nm         :: HsName
+    tyExpr     :: TyExpr
+  con Val
+    patExpr    :: PatExpr
+    expr       :  Expr
+  con Data
+    isNewType  :: Bool
+    tyNm       :: HsName
+    tyVars     :: TyVars
+    constrs    :: DataConstrs
+  con KiSig
+    nm         :: HsName
+    kiExpr     :: KiExpr
+  con FFI
+    callconv   :: FFIWay
+    safety     :: String
+    impEnt     :: String
+    nm         :: HsName
+    tyExpr     :: TyExpr
+  
+type TyExprs : [TyExpr]
+type Decls   : [Decl]
+  
+itf Unify
+  visit unify
+    inh pre  :: Prefix
+    inh exp1 :: TyExpr
+    inh exp2 :: TyExpr
+    inh frs  :: Int
+    syn pre  :: Prefix
+    syn sub  :: Env
+    syn frs  :: Int
+
+itf Subsume
+  visit subsume
+    inh pre  :: Prefix
+    inh exp  :: TyScheme
+    inh ty   :: TyScheme
+    inh frs  :: Int
+    syn pre  :: Prefix
+    syn sub  :: Env
+    syn frs  :: Int
+
+itf UnifyScheme
+  visit unifyScheme
+    inh pre  :: Prefix
+    inh ty1  :: TyScheme
+    inh ty2  :: TyScheme
+    inh frs  :: Int
+    syn pre  :: Prefix
+    syn sub  :: Env
+    syn ty   :: TyScheme
+    syn frs  :: Int
+
+{
+unifyScheme = sem unifyScheme : UnifyScheme monad IO
+                visit unifyScheme
+                  default? pre = last
+                  default? frs = last
+                  default? sub = const empty
+                  clause Main_unifyScheme
+                    loc.nfTy = isNf lhs.ty1
+                    loc.nfTs = isNf lhs.ty2
+                    loc.nf   = True -- loc.nfTy && loc.nfTs
+                    internal nf_check
+                        loc.b1 = isBottom lhs.ty1
+                        loc.b2 = isBottom lhs.ty2
+                        clause s_subsume
+                          match True       = loc.nf
+                          internal bot_check
+                            clause first_bottom
+                                match True = loc.b1
+                                (loc.q, loc.tyx) = splitQuant lhs.ty2
+                                lhs.ty     = nf lhs.ty2 -- loc.tyx
+                                lhs.pre    = lhs.pre -- munion loc.q lhs.pre
+                            clause second_bottom
+                                match True = loc.b2
+                                (loc.q, loc.tyx) = splitQuant lhs.ty1
+                                lhs.ty     = nf lhs.ty1 -- loc.tyx
+                                lhs.pre    = lhs.pre -- munion loc.q lhs.pre
+                            clause norm
+                                match False = loc.b1 || loc.b2
+                                match TyScheme.Sugar@exp1 = sugar $ nf lhs.ty1
+                                match TyScheme.Sugar@exp2 = sugar $ nf lhs.ty2
+                                
+                                loc.q = lhs.pre
+                                
+                                child u : Unify = unify
+                                
+                                u.pre  = let q = loc.q ++ exp1.prefix ++ exp2.prefix
+                                         in trace (";;; Q: " ++ pp q) q
+                                u.exp1 = dropScheme exp1.tyExpr
+                                u.exp2 = dropScheme exp2.tyExpr
+                                u.frs  = lhs.frs
+                                
+                                invoke unify of u
+                                
+                                loc.q3 = u.pre
+                                loc.e3 = u.sub
+                                
+                                (loc.q4, loc.q5) = split (loc.q3, domain loc.q)
+                                
+                                lhs.frs = u.frs
+                                lhs.pre = loc.q4
+                                lhs.sub = loc.e3
+                                lhs.ty  = let (Just ty)  = appAll loc.e3 exp1.tyExpr
+                                              ret = TyScheme_Sugar loc.q5 ty
+                                          in ptype $ desugar ret
+                        clause f_subsume
+                          match False                 = loc.nf
+                          lhs.ty = error "unifyScheme failure, ty1 or ty2 is not in normal form"
+}
