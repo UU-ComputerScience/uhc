@@ -1,4 +1,3 @@
-%file 1 "./Proposal.lhs"
 \documentclass[11pt,twoside,a4paper]{article}
 \usepackage{mathptmx}
 \usepackage{marvosym}
@@ -7,129 +6,21 @@
 \usepackage{parskip}
 \usepackage{fancyvrb,url}
 \usepackage{amsmath}
-%file 269 "/Users/doaitse/.cabal/share/lhs2tex-1.16/lhs2TeX.fmt"
-%% ODER: format ==         = "\mathrel{==}"
-%file 271 "/Users/doaitse/.cabal/share/lhs2tex-1.16/lhs2TeX.fmt"
-%% ODER: format /=         = "\neq "
-%file 11 "/Users/doaitse/.cabal/share/lhs2tex-1.16/lhs2TeX.sty"
-%
-%file 13 "/Users/doaitse/.cabal/share/lhs2tex-1.16/lhs2TeX.sty"
-%
-\makeatletter
-\@ifundefined{lhs2tex.lhs2tex.sty.read}%
-  {\@namedef{lhs2tex.lhs2tex.sty.read}{}%
-   \newcommand\SkipToFmtEnd{}%
-   \newcommand\EndFmtInput{}%
-   \long\def\SkipToFmtEnd#1\EndFmtInput{}%
-  }\SkipToFmtEnd
-
-\newcommand\ReadOnlyOnce[1]{\@ifundefined{#1}{\@namedef{#1}{}}\SkipToFmtEnd}
-%file 32 "/Users/doaitse/.cabal/share/lhs2tex-1.16/lhs2TeX.sty"
-\usepackage{amstext}
-\usepackage{amssymb}
-\usepackage{stmaryrd}
-%file 40 "/Users/doaitse/.cabal/share/lhs2tex-1.16/lhs2TeX.sty"
-\DeclareFontFamily{OT1}{cmtex}{}
-\DeclareFontShape{OT1}{cmtex}{m}{n}
-  {<5><6><7><8>cmtex8
-   <9>cmtex9
-   <10><10.95><12><14.4><17.28><20.74><24.88>cmtex10}{}
-\DeclareFontShape{OT1}{cmtex}{m}{it}
-  {<-> ssub * cmtt/m/it}{}
-\newcommand{\texfamily}{\fontfamily{cmtex}\selectfont}
-%file 51 "/Users/doaitse/.cabal/share/lhs2tex-1.16/lhs2TeX.sty"
-\DeclareFontShape{OT1}{cmtt}{bx}{n}
-  {<5><6><7><8>cmtt8
-   <9>cmbtt9
-   <10><10.95><12><14.4><17.28><20.74><24.88>cmbtt10}{}
-\DeclareFontShape{OT1}{cmtex}{bx}{n}
-  {<-> ssub * cmtt/bx/n}{}
-\newcommand{\tex}[1]{\text{\texfamily#1}}	% NEU
-%file 60 "/Users/doaitse/.cabal/share/lhs2tex-1.16/lhs2TeX.sty"
-
-\newcommand{\Sp}{\hskip.33334em\relax}
-%file 69 "/Users/doaitse/.cabal/share/lhs2tex-1.16/lhs2TeX.sty"
-
-%file 74 "/Users/doaitse/.cabal/share/lhs2tex-1.16/lhs2TeX.sty"
-
-%file 80 "/Users/doaitse/.cabal/share/lhs2tex-1.16/lhs2TeX.sty"
-\newcommand{\Conid}[1]{\mathit{#1}}
-\newcommand{\Varid}[1]{\mathit{#1}}
-\newcommand{\anonymous}{\kern0.06em \vbox{\hrule\@width.5em}}
-%file 84 "/Users/doaitse/.cabal/share/lhs2tex-1.16/lhs2TeX.sty"
-\newcommand{\plus}{\mathbin{+\!\!\!+}}
-\newcommand{\bind}{\mathbin{>\!\!\!>\mkern-6.7mu=}}
-\newcommand{\rbind}{\mathbin{=\mkern-6.7mu<\!\!\!<}}% suggested by Neil Mitchell
-\newcommand{\sequ}{\mathbin{>\!\!\!>}}
-%file 89 "/Users/doaitse/.cabal/share/lhs2tex-1.16/lhs2TeX.sty"
-\renewcommand{\leq}{\leqslant}
-\renewcommand{\geq}{\geqslant}
-%file 94 "/Users/doaitse/.cabal/share/lhs2tex-1.16/lhs2TeX.sty"
-\usepackage{polytable}
-
-%mathindent has to be defined
-\@ifundefined{mathindent}%
-  {\newdimen\mathindent\mathindent\leftmargini}%
-  {}%
-
-\def\resethooks{%
-  \global\let\SaveRestoreHook\empty
-  \global\let\ColumnHook\empty}
-\newcommand*{\savecolumns}[1][default]%
-  {\g@addto@macro\SaveRestoreHook{\savecolumns[#1]}}
-\newcommand*{\restorecolumns}[1][default]%
-  {\g@addto@macro\SaveRestoreHook{\restorecolumns[#1]}}
-\newcommand*{\aligncolumn}[2]%
-  {\g@addto@macro\ColumnHook{\column{#1}{#2}}}
-
-\resethooks
-
-%file 116 "/Users/doaitse/.cabal/share/lhs2tex-1.16/lhs2TeX.sty"
-\newcommand{\onelinecommentchars}{\quad-{}- }
-%file 118 "/Users/doaitse/.cabal/share/lhs2tex-1.16/lhs2TeX.sty"
-\newcommand{\commentbeginchars}{\enskip\{-}
-\newcommand{\commentendchars}{-\}\enskip}
-
-\newcommand{\visiblecomments}{%
-  \let\onelinecomment=\onelinecommentchars
-  \let\commentbegin=\commentbeginchars
-  \let\commentend=\commentendchars}
-
-\newcommand{\invisiblecomments}{%
-  \let\onelinecomment=\empty
-  \let\commentbegin=\empty
-  \let\commentend=\empty}
-
-\visiblecomments
-
-\newlength{\blanklineskip}
-\setlength{\blanklineskip}{0.66084ex}
-
-\newcommand{\hsindent}[1]{\quad}% default is fixed indentation
-\let\hspre\empty
-\let\hspost\empty
-%file 140 "/Users/doaitse/.cabal/share/lhs2tex-1.16/lhs2TeX.sty"
-\newcommand{\NB}{\textbf{NB}}
-\newcommand{\Todo}[1]{$\langle$\textbf{To do:}~#1$\rangle$}
-
-\EndFmtInput
-\makeatother
-%
-%file 10 "./Proposal.lhs"
+%include lhs2TeX.fmt 
 \begin{document}
 \title{Language Independent Dependently Typed Core}
  \author{Tamar Christina\\
  Dept. Information and Computing Science,\\
  Utrecht University,\\
  Research Proposal (Pre-Draft) \\
- \texttt{T.Christina@students.uu.nl}}
+ \texttt{T.Christina@@students.uu.nl}}
  \date{\today}
  \maketitle
 
 \section{Motivation}
 Every year fortunes are spent in testing programs for correctness,  on creating the tests themselves and on the manpower to run these tests. Projects are routinely late because of programming errors, which in computer science  are referred to as {\em Bugs}. They not only indicate a program crash; any behavior of a program of function which is not specified or conforming to a predetermined specification may lead to unexpected and even dangerous results. These errors cost more the later they are found in the development lifecycle\cite{code}, in fact an error that costs \EUR{1000},- to correct during the programming phase may easily cost \EUR{5000},- when uncovered during the testing phase.  Once caught when the software has gone in production they can end up costing up to 25x times the amount it would have to fix early on, and sometimes the costs are even so high that correction is no longer possible.
 
-It doesn't help that programs are becoming more and more complex and that the time allotted to develop them is becoming shorter. This creates an increasingly large pressure to getting things right the first time. This is where {\em type systems} come in:  a type system provides a means of determining the absence of certain kind of programming errors by statically verifying properties of the program (usually done by a compiler). The compiler rejects ill-typed programs, instead letting them pass and becoming part of actual running code.  A type system enforces a contract between a caller and its arguments. An simple example of this is when a programmer writes an expression like \ensuremath{\mathrm{1}\mathbin{/}\text{\tt \char34 hello\char34}}. A compiler should reject such a program, stating the fact that \ensuremath{\text{\tt \char34 hello\char34}} is not a number, and since the division operator / requires two numbers this program is cannot be meaningfull.
+It doesn't help that programs are becoming more and more complex and that the time allotted to develop them is becoming shorter. This creates an increasingly large pressure to getting things right the first time. This is where {\em type systems} come in:  a type system provides a means of determining the absence of certain kind of programming errors by statically verifying properties of the program (usually done by a compiler). The compiler rejects ill-typed programs, instead letting them pass and becoming part of actual running code.  A type system enforces a contract between a caller and its arguments. An simple example of this is when a programmer writes an expression like |1 / "hello"|. A compiler should reject such a program, stating the fact that |"hello"| is not a number, and since the division operator / requires two numbers this program is cannot be meaningfull.
 
 A characterization of a type system is: \begin{quote}
 "A {\em Type System} is a tractable syntactic method for proving the absence of certain program behaviors by classifying phrases according to the kinds of values they compute"\cite{pierce}
@@ -157,7 +48,7 @@ An actual, promising development is de coming to life of {\em dependently typed}
 matrix\_multiply : matrix_{(k,m)} \times matrix_{(m,n)} \rightarrow matrix_{(k,n)}
 \end{equation}
 
-It says that the inputs should be matrices, one of size \ensuremath{(\Varid{k},\Varid{m})} and the other \ensuremath{(\Varid{m},\Varid{n})} and that the output of invoking the function on two valid arguments will be a matrix of size \ensuremath{(\Varid{k},\Varid{n})}.  Not only is it checked that both arguments are matrices (types), but also that the sizes match (based on {\em run time} values). In order to define such a function one needs to be able to provide sufficient evidence to the type system so it can verify the stated runtime properties.
+It says that the inputs should be matrices, one of size |(k,m)| and the other |(m, n)| and that the output of invoking the function on two valid arguments will be a matrix of size |(k,n)|.  Not only is it checked that both arguments are matrices (types), but also that the sizes match (based on {\em run time} values). In order to define such a function one needs to be able to provide sufficient evidence to the type system so it can verify the stated runtime properties.
 
 This flexibility allows us to find a much wider class of errors, without even having to run (i.e. to test) the program: far fewer tests should be written to test the program because we already have a proof of correctness. Furthermore the proof is exhaustive, something which is hard to achieve using testing.
 
@@ -234,16 +125,16 @@ Because the same syntax is used for both terms and types, the $:_1$ is used to i
 
 As the function above demonstrates the types of an argument are also part of the function itself. Which means that when applying the function one of the arguments should be a type argument. An example is id $<$Int$>$ $<$3$>$.
 
-Even though TyCore is strict it can still express laziness. This is done by having explicit notation for laziness which is denoted using \{\}. For instance $<$\{Int\}$>$ means a lazy sequence. In order to force a lazy computation the notation $\\ensuremath{\lambda }$ is used. E.g. $\\ensuremath{\Varid{x}\lambda }$ forces the computation of x.
+Even though TyCore is strict it can still express laziness. This is done by having explicit notation for laziness which is denoted using \{\}. For instance $<$\{Int\}$>$ means a lazy sequence. In order to force a lazy computation the notation $\|\|$ is used. E.g. $\|x\|$ forces the computation of x.
 
 The most obvious and simplest optimization that can be done is {\em arity raising}. This in effect is just combining multiple arguments from a function into one longer sequence. This is not always possible and should be done with care.
 
-The second optimization is strictness optimization. This is a rather tricky bit, and the more expressive the core language the more difficult this becomes. As mentioned before one important thing is to  pass as many values values strictly as possible. This saves memory and time. One might wonder why we don't  pass all argument strictly. The reason for that is that Haskell (and a few other languages) is a lazy language. Passing all arguments as strict would change the semantics of the language and produce erroneous results. To illustrate this consider the function const. Const takes two values and just returns the $1^{st}$ value and discards the second one. In a lazy language \ensuremath{\Varid{const}\;\mathrm{1}\;(\mathrm{2}\mathbin{/}\mathrm{0})} would succeed returning \ensuremath{\mathrm{1}}. But if we were to pass every argument strictly then before const is even called we would get a division by \ensuremath{\mathrm{0}} exception due to the evaluation of the second argument.
+The second optimization is strictness optimization. This is a rather tricky bit, and the more expressive the core language the more difficult this becomes. As mentioned before one important thing is to  pass as many values values strictly as possible. This saves memory and time. One might wonder why we don't  pass all argument strictly. The reason for that is that Haskell (and a few other languages) is a lazy language. Passing all arguments as strict would change the semantics of the language and produce erroneous results. To illustrate this consider the function const. Const takes two values and just returns the $1^{st}$ value and discards the second one. In a lazy language |const 1 (2/0)| would succeed returning |1|. But if we were to pass every argument strictly then before const is even called we would get a division by |0| exception due to the evaluation of the second argument.
 
 In order to achieve strictness optimization every argument is annotated with an annotation indicating whether it's strict or not. An argument is strict in a function if it is inspected inside the body of the function.  In most functional languages functions are first class citizens, which means we can pass functions as arguments to functions and receive functions as a result of a computation.
 
-If we were to look at the function map :: \ensuremath{(\Varid{a}\to \Varid{b})\to ([\mskip1.5mu \Varid{a}\mskip1.5mu]\to [\mskip1.5mu \Varid{b}\mskip1.5mu])}, which maps a function from \ensuremath{\Varid{a}} to \ensuremath{\Varid{b}} on every element of a list of \ensuremath{\Varid{a}}'s returning a list of \ensuremath{\Varid{b}}'s. Determining whether the arguments of the function passed to \ensuremath{\Varid{map}} is strict or lazy depends on the function that is passed to map. For instance passing \ensuremath{(\mathbin{+}\mathrm{1})} to 
-\ensuremath{\Varid{map}} implies  that \ensuremath{\Varid{a}} is strict, while if we pass \ensuremath{\Varid{const}\;\mathrm{1}} then \ensuremath{\Varid{a}} is lazy.
+If we were to look at the function map :: | (a -> b) -> ([a] ->[b])|, which maps a function from |a| to |b| on every element of a list of |a|'s returning a list of |b|'s. Determining whether the arguments of the function passed to |map| is strict or lazy depends on the function that is passed to map. For instance passing |(+1)| to 
+|map| implies  that |a| is strict, while if we pass |const 1| then |a| is lazy.
 
 \subsection{A Supercompiler for Core Haskell}
 This paper by Neil Mitchell and Colin Runciman \cite{super} introduces the concept of super-compilation on a Haskell core language. The concept of super-compilation entails evaluating the program as much as possible at the time of compilation. The idea being that after doing this the resulting residual program would be more efficient and execute faster because it has less work to do compared to the starting program.
@@ -253,17 +144,17 @@ It attacks the problem on 3 fronts:
 \begin{description}
 \item[Deforestation]{ During a long chain of computations, especially with lists, intermediate values are produced and consumed at ever link in the chain as it calculates the results. This is an obvious source of inefficiency as memory has to be reserved, written to and read from for each of these intermediate lists. The idea of deforestation is to change the program in such a way that no intermediate lists are created or needed.
 
-This would speed up computation such as \ensuremath{\Varid{print}\mathbin{\circ}\Varid{length}\mathbin{\circ}\Varid{words}\rbind \Varid{getContents}} where without this optimization first the content is read in and put in a list, then this lists is split up into lists of lists, then the length is calculated by traversing this list again and finally we can print the length.
+This would speed up computation such as |print . length . words =<< getContents| where without this optimization first the content is read in and put in a list, then this lists is split up into lists of lists, then the length is calculated by traversing this list again and finally we can print the length.
 }
-\item[Argument passing]{ Functions are first class citizens in functional programming languages. This offers a great amount of flexibility and abstraction but also introduces a source of inefficiency. Consider the function \ensuremath{\Varid{dropWhile}} that expects as a first argument a function which acts as a predicate and determines whether to stop dropping values from the list. 
+\item[Argument passing]{ Functions are first class citizens in functional programming languages. This offers a great amount of flexibility and abstraction but also introduces a source of inefficiency. Consider the function |dropWhile| that expects as a first argument a function which acts as a predicate and determines whether to stop dropping values from the list. 
 This function is written recursively; in each iteration it calls itself passing the same function as an argument. Having to continually pass this argument along is a pretty expensive thing.
 }
 \item[Thunks]{ In lazy languages computations are performed as needed. This enabled the ability to defer computing something to a later time. In order to do this there needs to be a way to express and store suspended computations. Such suspended computations are called {\em thunks}. When a thunk is forced its value is computed and the thunk is then updated with this value. Creating a thunk is not a cheap operation, it costs time and resources. If we think back to deforestation and argument passing it now becomes clear that having to create intermediate lists or repeatedly passing the same argument around is quite expensive.  This is handled in this paper by creating specialized functions which have been partially applied to some of its arguments.}
 \end{description}
 
-The main contributions of this paper are a reasonable stopping criteria for the unfolding of definitions and a strategy for evaluation. They focus all their optimization strategies on only \ensuremath{\mathbf{case}}-expressions and \ensuremath{\mathbf{let}} bindings.
+The main contributions of this paper are a reasonable stopping criteria for the unfolding of definitions and a strategy for evaluation. They focus all their optimization strategies on only |case|-expressions and |let| bindings.
 
-They go about by it defining a \ensuremath{\Varid{split}} function that given an expression returns the expression with \ensuremath{\Varid{holes}} and a list of child expressions which were in the place of these holes. They then try to optimize the child expressions and finally the parent expression as a whole, having filled in the holes with optimised expressions.
+They go about by it defining a |split| function that given an expression returns the expression with |holes| and a list of child expressions which were in the place of these holes. They then try to optimize the child expressions and finally the parent expression as a whole, having filled in the holes with optimised expressions.
 
 It has been shown  that in a dependently typed core language it is both feasible and practical to formulate the  optimization needs.  However it stops short of defining a complete formal syntax and semantics for such a language. It proves what can be done, but just scratches the surface on the possibilities.
 
