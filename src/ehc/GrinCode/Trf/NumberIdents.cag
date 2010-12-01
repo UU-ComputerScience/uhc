@@ -28,9 +28,9 @@ The parameters of a function are numbered consecutively after that.
 %%]
 %%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{EH}GrinCode})
 %%]
-%%[(8 codegen grin) hs import({%{EH}GrinCode.Common}, {%{EH}Config})
+%%[(8 codegen grin) hs import({%{EH}GrinCode.Common}, {%{EH}GrinCode.CommonCrossModule}, {%{EH}Config})
 %%]
-%%[(8 codegen grin) hs import(Debug.Trace)
+%%[(8 codegen grin) hs import(Debug.Trace, EH.Util.Utils(panicJust))
 %%]
 %%[(8 codegen grin) hs import(Data.Typeable(Typeable), Data.Generics(Data), {%{EH}Base.Serialize}, Control.Monad (ap))
 %%]
@@ -43,38 +43,44 @@ The parameters of a function are numbered consecutively after that.
 WRAPPER GrAGItf
 %%]
 
-%%[(8 codegen grin) hs export(InfoNumberIdents, numberIdents, renumberInfoNumberIdents)
+%%[(8 codegen grin) hs export(InfoNumberIdents, numberIdents)
 
 data InfoNumberIdents = InfoNumberIdents
-  { infoVarMap  :: NameMapping
-  , infoBindMap :: NameMapping
+  { infoModOffsets :: ModOffsets
+  , infoVarMap     :: NameMapping
+  , infoBindMap    :: NameMapping
   } deriving (Show, Data, Typeable)
 
-renumberInfoNumberIdents :: (Int -> Int) -> InfoNumberIdents -> InfoNumberIdents
-renumberInfoNumberIdents f inf = InfoNumberIdents
-  { infoVarMap  = Map.map (modNr f) $ infoVarMap  inf
-  , infoBindMap = Map.map (modNr f) $ infoBindMap inf
+renumberInfoNumberIdents :: ModOffsets -> InfoNumberIdents -> InfoNumberIdents
+renumberInfoNumberIdents newMO inf = InfoNumberIdents
+  { infoModOffsets = newMO
+  , infoVarMap     = Map.map f $ infoVarMap  inf
+  , infoBindMap    = Map.map f $ infoBindMap inf
   }
+  where f = modNr $ panicJust "NumberIdents.renumberInfoNumberIdents" $ moRenumber (infoModOffsets inf) newMO
 
 instance Serialize InfoNumberIdents where
-  sput inf = sput (infoVarMap inf) >> sput (infoBindMap inf)
-  sget     = return InfoNumberIdents `ap` sget `ap` sget
+  sput inf = sput (infoModOffsets inf) >> sput (infoVarMap inf) >> sput (infoBindMap inf)
+  sget     = return InfoNumberIdents `ap` sget `ap` sget `ap` sget
 
 
--- Wil: hernummerde VarMap+BindMap, een offset (om lokale nummers te laten
--- passen in de ModOffsets van deze module) en een GrModule. Levert een nieuwe
--- GrModule en VarMap+BindMap op, samen met het kleinste ongeuitgedeelde nummer > first.
-numberIdents :: Int -> [InfoNumberIdents] -> GrModule -> (GrModule, InfoNumberIdents, Int)
-numberIdents first imps code
-  = let inh = Inh_GrAGItf
-          { startVarMaps_Inh_GrAGItf  = map infoVarMap imps
-          , startBindMaps_Inh_GrAGItf = map infoBindMap imps
-          , firstNumber_Inh_GrAGItf   = first
+-- Wil: VarMap+BindMap, een ModOffsets om die maps te hernummeren en om lokale
+-- nummers bij de correcte offset te laten beginnen, en een GrModule. Levert een
+-- nieuwe GrModule en VarMap+BindMap op, samen met het kleinste ongeuitgedeelde
+-- nummer > first.
+numberIdents :: ModOffsets -> [InfoNumberIdents] -> GrModule -> (GrModule, InfoNumberIdents, Int)
+numberIdents newMO imps code
+  = let infos = map (renumberInfoNumberIdents newMO) imps
+        inh = Inh_GrAGItf
+          { startVarMaps_Inh_GrAGItf  = map infoVarMap  infos
+          , startBindMaps_Inh_GrAGItf = map infoBindMap infos
+          , firstNumber_Inh_GrAGItf   = moNextOffset newMO
           }
         syn = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf code)) inh
         inf = InfoNumberIdents
-          { infoVarMap  = finalVarMap_Syn_GrAGItf syn
-          , infoBindMap = finalBindMap_Syn_GrAGItf syn
+          { infoModOffsets = newMO
+          , infoVarMap     = finalVarMap_Syn_GrAGItf  syn
+          , infoBindMap    = finalBindMap_Syn_GrAGItf syn
           }
         next = nextNumber_Syn_GrAGItf syn
     in  (grTrf_Syn_GrAGItf syn, inf, next)

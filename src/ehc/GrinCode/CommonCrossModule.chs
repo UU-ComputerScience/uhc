@@ -11,23 +11,56 @@
 %%]
 %%[(8 codegen grin) hs import(EH.Util.Utils (panicJust))
 %%]
+%%[(8 codegen grin) hs import(Data.Typeable(Typeable), Data.Generics(Data), Data.Binary, {%{EH}Base.Serialize}, Control.Monad (ap))
+%%]
 
-%%[(8 codegen grin) export(ModEntry(..), ModOffsets, moEntries, moEmpty, moAddEntry, moMerge, moLookupMod, moLookupVar, moRenumber)
+%%[(8 codegen grin) export(ModEntry(..), ModOffsets, moEntries, moNextOffset, moEmpty, moNewEntry, moAddEntry, moMerge, moLookupMod, moLookupVar, moRenumber)
 
 data ModEntry = ModEntry
   { moModName :: !HsName
   , moLength  :: !Int
   , moOffset  :: !Int
-  } deriving (Show, Eq)
+  } deriving (Show, Eq, Data, Typeable)
 
 newtype ModOffsets = ModOffsets [ModEntry]
-  deriving (Show, Eq)
+  deriving (Show, Eq, Data, Typeable)
+
+instance Serialize ModOffsets where
+  sget = sgetPlain
+  sput = sputPlain
+--   sget = return ModOffsets `ap` sget
+--   sput = sput . moEntries
+
+instance Binary ModOffsets where
+  get = return ModOffsets `ap` get
+  put = put . moEntries
+
+-- instance Serialize ModEntry where
+--   sget   = return ModEntry `ap` sget `ap` sget `ap` sget
+--   sput e = sput (moModName e) >> sput (moLength e) >> sput (moOffset e)
+
+instance Binary ModEntry where
+  get   = return ModEntry `ap` get `ap` get `ap` get
+  put e = put (moModName e) >> put (moLength e) >> put (moOffset e)
 
 moEntries :: ModOffsets -> [ModEntry]
 moEntries (ModOffsets os) = os
 
 moEmpty :: ModOffsets
 moEmpty = ModOffsets []
+
+-- | Returns the first unused number, which is the offset a newly added entry
+--   would get.
+moNextOffset :: ModOffsets -> Int
+moNextOffset = (\m -> moOffset m + moLength m) . last . moEntries
+
+moNewEntry :: ModOffsets -> HsName -> Int -> Maybe ModOffsets
+moNewEntry mo nm len = moAddEntry mo entry
+  where entry = ModEntry
+                  { moModName = nm
+                  , moLength  = len
+                  , moOffset  = 0
+                  }
 
 moAddEntry :: ModOffsets -> ModEntry -> Maybe ModOffsets
 moAddEntry mo (ModEntry { moModName = nm, moLength = len })

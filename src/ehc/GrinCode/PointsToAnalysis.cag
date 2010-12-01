@@ -18,60 +18,34 @@ WRAPPER GrAGItf
 %%]
 %%[(8 codegen grin) hs module {%{EH}GrinCode.PointsToAnalysis}
 %%]
-%%[(8 codegen grin) hs import(qualified Data.Map as Map, qualified Data.Set as Set, Data.Maybe, Data.List(transpose, union), Data.Monoid, Data.Array(assocs))
+%%[(8 codegen grin) hs import(qualified Data.Map as Map, qualified Data.Set as Set, Data.Maybe, Data.List(transpose, union), Data.Monoid, qualified Data.Array as Array)
 %%]
 %%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}GrinCode})
 %%]
-%%[(8 codegen grin) hs import({%{EH}GrinCode.Common}, {%{EH}GrinCode.SolveEqs})
+%%[(8 codegen grin) hs import({%{EH}GrinCode.Common}, {%{EH}GrinCode.CommonCrossModule}, {%{EH}GrinCode.SolveEqs})
+%%]
+%%[(8 codegen grin) hs import({%{EH}GrinCode.Trf.NumberIdents})
 %%]
 %%[(8 codegen grin) hs import(Debug.Trace, EH.Util.Utils (panicJust))
 %%]
 %%[(8 codegen grin) hs import(Data.Typeable(Typeable), Data.Generics(Data), {%{EH}Base.Binary}, {%{EH}Base.Serialize}, Control.Monad (ap))
 %%]
 
+%%[(8 codegen grin) hs export(heapPointsToAnalysis, InfoPointsToAnalysis, PartialHptResult)
 
-%%[(8 codegen grin) hs export(heapPointsToAnalysis, PartialHptResult, FinalHptResult(..), VarMap, ModOffsets, lookupMod, lookupVar, renumber)
+data InfoPointsToAnalysis = InfoPointsToAnalysis
+  { infoTagMap :: TagMap
+  , infoNumberIdents :: InfoNumberIdents
+  }
 
--- data InfoPointsToAnalysis = InfoPointsToAnalysis
---   { infoTagMap :: TagMap
---   }
-
-data PartialHptResult = PartialHptResult
-  { partialEquations   :: EquationsG    HsName
-  , partialLimitations :: LimitationsG  HsName
-  , partialParamMap    :: ParamMap      HsName
-  , partialTagMap      :: TagMap
-  , partialHptMap      :: PartialHptMap HsName
-  } deriving (Show, Data, Typeable)
-
-{-
 data PartialHptResult = PartialHptResult
   { partialEquations   :: Equations
   , partialLimitations :: Limitations
-  , partialParamMap    :: ParamMap       Int
   , partialModOffsets  :: ModOffsets
-  , partialVarMap      :: VarMap
+  -- , partialTagMap      :: TagMap
+  -- , partialVarMap      :: VarMap
   , partialHptMap      :: HptMap
   } deriving (Show, Data, Typeable)
--}
-
-type ModOffsets = [(Int, Int, HsName)]  -- (offset, length, modname)
-
-lookupMod :: HsName -> ModOffsets -> Maybe (Int, Int)
-lookupMod _  [] = Nothing
-lookupMod lu ((i,l,nm):xs) | lu == nm  = Just (i,l)
-                           | otherwise = lookupMod lu xs
-
-lookupVar :: Int -> ModOffsets -> Maybe (Int, Int, HsName)
-lookupVar _ [] = Nothing
-lookupVar lu (r@(i,l,nm):xs) | lu >= i && lu < i + l = Just r
-                             | otherwise             = lookupVar lu xs
-
-renumber :: ModOffsets -> ModOffsets -> (Int -> Int)
-renumber from to i = panicJust "PointsToAnalysis.renumber" $ do
-  (ooff, _, mod) <- lookupVar i from
-  (noff, _)      <- lookupMod mod to
-  return $ i + noff - ooff
 
 
 {-
@@ -140,7 +114,7 @@ partialEquations =
   , IsEqual 4 2  -- IsEqual "C.g" "C.f"
   , IsEqual 1 3  -- IsEqual "A.n" "C.x"
   ]
-partialParamMap =
+partialParamMap =  -- niet nodig als we weer nummeren zoals vroeger (arg(x) = fun + c + x)
   { 0 -> [1]  -- "A.succ" -> [ "A.n" ]
   , 2 -> [3]  -- "C.f"    -> [ "C.x" ]
   }
@@ -150,10 +124,11 @@ instance Binary PartialHptResult where
   put res = do
     put $ partialEquations   res
     put $ partialLimitations res
-    put $ partialParamMap    res
-    put $ partialTagMap      res
+    put $ partialModOffsets  res
+    -- put $ partialTagMap      res
+    -- put $ partialVarMap      res
     put $ partialHptMap      res
-  get = return PartialHptResult `ap` get `ap` get `ap` get `ap` get `ap` get
+  get = return PartialHptResult `ap` get `ap` get `ap` get `ap` get -- `ap` get -- `ap` get
 
 instance Serialize PartialHptResult where
   sput = sputPlain
@@ -163,28 +138,46 @@ type ParamMap var = Map.Map var [var]
 
 mergePHR :: PartialHptResult -> PartialHptResult -> PartialHptResult
 mergePHR p1 p2 = PartialHptResult
-  { partialEquations   = union (partialEquations p1) (partialEquations p2)
-  , partialLimitations = union (partialLimitations p1) (partialLimitations p2)
-  , partialParamMap    = Map.union (partialParamMap p1) (partialParamMap p2)
-  , partialTagMap      = Map.union (partialTagMap p1) (partialTagMap p2)
-  , partialHptMap      = Map.unionWith mappend (partialHptMap p1) (partialHptMap p2)
+  { partialEquations   = merge union (map . mapEquation) partialEquations
+  , partialLimitations = merge union (map . mapLimitation) partialLimitations
+  , partialModOffsets  = newOffsets
+  -- , partialTagMap      = Map.union (partialTagMap p1) (partialTagMap p2)
+  -- , partialVarMap      = merge Map.union (Map.map) partialVarMap
+  , partialHptMap      = merge (arrayZipWith mappend) (renumberArray newLen) partialHptMap -- ?
   }
+  where merge combine mapOver extract = combine (renum p1) (renum p2)
+          where renum x = panicJust "PointsToAnalysis.mergePHR.renum" (moRenumber (partialModOffsets x) newOffsets) `mapOver` extract x
+        newLen  = moNextOffset newOffsets -- let (x,l,_) = last newOffsets in x + l
+        newOffsets = panicJust "PointsToAnalysis.mergePHR.newOffsets" (partialModOffsets p1 `moMerge` partialModOffsets p2)
+
+
+-- arrayZipWith :: Array 
+arrayZipWith f a1 a2 = Array.accum f a1 (Array.assocs a2)
+
+renumberArray :: Int -> (Int -> Int) -> HptMap -> HptMap
+renumberArray newLen f ar = empty Array.// map ren (Array.assocs ar)
+  where empty = Array.listArray (0, newLen - 1) (repeat AbsBottom)
+        ren (i,v) = (f i, mapAbstractValue f v)
+
 
 instance Monoid PartialHptResult where
   mempty = PartialHptResult
     { partialEquations   = []
     , partialLimitations = []
-    , partialParamMap    = Map.empty
-    , partialTagMap      = Map.empty
-    , partialHptMap      = Map.empty
+    , partialModOffsets  = moEmpty
+    -- , partialTagMap      = Map.empty
+    -- , partialVarMap      = Map.empty
+    , partialHptMap      = emptyHptMap
     }
   mappend = mergePHR
 
+emptyHptMap :: HptMap
+emptyHptMap = Array.listArray (0,0) [AbsBottom]
 
-data FinalHptResult = FinalHptResult
-  { finalHptMap :: HptMap
-  , finalVarMap :: VarMap
-  } deriving (Show, Data, Typeable)
+-- data FinalHptResult = FinalHptResult
+--   { finalHptMap :: HptMap
+--   -- , finalVarMap :: VarMap
+--   } deriving (Show, Data, Typeable)
 
 -- instance Serialize FinalHptResult where
 --   sput res = do
@@ -194,89 +187,70 @@ data FinalHptResult = FinalHptResult
 
 type TagMap = Map.Map HsName [GrTag]
 
-type VarMap   = Map.Map HsName  Int
-type NameMap  = Map.Map Int     HsName
+-- type VarMap   = Map.Map HsName  Int
+-- type NameMap  = Map.Map Int     HsName
+-- 
+-- mkNameMap :: VarMap -> NameMap
+-- mkNameMap = Map.fromList . map swap . Map.toList
+--   where swap (a,b) = (b,a)
+-- 
+-- forceLookup :: (Ord a, Show a) => Map.Map a b -> a -> b
+-- forceLookup mp a
+--   = panicJust ("PointsToAnalysis.forceLookup: no entry for " ++ show a)
+--     $ Map.lookup a mp
 
-mkVarMap :: PartialHptMap HsName -> (Int, VarMap)
-mkVarMap = Map.mapAccum num 0
-  where num i _ = (succ i, i)
-
-mkNameMap :: VarMap -> NameMap
-mkNameMap = Map.fromList . map swap . Map.toList
-  where swap (a,b) = (b,a)
-
-convertHptMap :: (Show a, Ord a, Ord b) =>
-                  Map.Map a b -> PartialHptMap a -> PartialHptMap b
-convertHptMap mp = Map.map (mapAbstractValue conv) . Map.mapKeys conv
-  where conv = forceLookup mp
-
-convertEquations :: (Show a, Ord a) =>
-                    Map.Map a b -> EquationsG a -> EquationsG b
-convertEquations mp = fmap (fmap conv)
-  where conv = forceLookup mp
-
-convertParamMap :: (Show a, Ord a, Ord b) =>
-                    Map.Map a b -> ParamMap a -> ParamMap b
-convertParamMap mp = Map.map (map conv) . Map.mapKeys conv
-  where conv = forceLookup mp
-
-forceLookup :: (Ord a, Show a) => Map.Map a b -> a -> b
-forceLookup mp a
-  = panicJust ("PointsToAnalysis.forceLookup: no entry for " ++ show a)
-    $ Map.lookup a mp
+grModName :: GrModule -> HsName
+grModName (GrModule_Mod nm _ _ _) = nm
 
 {-
 Main module entry point:
 -}
 
-heapPointsToAnalysis :: String -> [PartialHptResult] -> GrModule -> (Int, PartialHptResult, FinalHptResult)
-heapPointsToAnalysis modNm imps grmod
-  = let -- combine imported stuff
-        infoImps = mconcat imps
+heapPointsToAnalysis :: String -> [InfoPointsToAnalysis] -> [PartialHptResult] -> GrModule -> (Int, InfoPointsToAnalysis, PartialHptResult, GrModule)
+heapPointsToAnalysis modNmStr allImps directImps grinNamed
+  = let
+        modNm = grModName grinNamed
+
+        importPartial = mconcat directImps
+        offsets       = partialModOffsets importPartial
+
+        -- number grin code
+        (grinNumbered, newNIInfo, nextNINr) = numberIdents offsets (map infoNumberIdents allImps) grinNamed
+
+        startPartial = importPartial `mappend` PartialHptResult
+                         { partialEquations   = equations_Syn_GrAGItf syn
+                         , partialLimitations = limitations_Syn_GrAGItf syn
+                         , partialModOffsets  = panicJust "PointsToAnalysis.heapPointsToAnalysis.startPartial" $
+                                                  moNewEntry moEmpty modNm (nextNINr - moNextOffset offsets)
+                         , partialHptMap      = emptyHptMap
+                         }
         
-        -- traverse the tree
+        -- collect stuff
         inh = Inh_GrAGItf
-          { startParamMap_Inh_GrAGItf = partialParamMap infoImps
-          , startTagMap_Inh_GrAGItf   = partialTagMap   infoImps
+          { startTagMap_Inh_GrAGItf   = mconcat $ map infoTagMap $ allImps
           }
-        syn = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod)) inh
-        
+        syn = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grinNumbered)) inh
+
         -- get synthesized attributes
-        allVars     = allVars_Syn_GrAGItf syn
-        info        = PartialHptResult
-          { partialEquations   = equations_Syn_GrAGItf syn
-          , partialLimitations = limitations_Syn_GrAGItf syn
-          , partialParamMap    = finalParamMap_Syn_GrAGItf syn
-          , partialTagMap      = finalTagMap_Syn_GrAGItf syn
-          , partialHptMap      = Map.fromList $ map (\v -> (v, AbsBottom)) $ Set.toList allVars
-          }
-
-        allInfo     = info `mappend` infoImps
-        
-        (len, varMap) = mkVarMap (partialHptMap allInfo)
-        equations     = convertEquations varMap (partialEquations allInfo)
-        hptMapStart   = convertHptMap varMap    (partialHptMap allInfo)
-        -- hptArray      = array (0, len - 1) (Map.toList hptMapStart)
-
+        -- equations   = equations_Syn_GrAGItf syn
         -- limitations = limitations_Syn_GrAGItf syn
-        -- lenEnv      = maxVar_Syn_GrAGItf syn + 1
-        -- useCountMap = Map.filter (>1) (useCountMap_Syn_GrAGItf syn)
-        -- multiplyUsed = map fst (Map.toList useCountMap)
-        multiplyUsed    = []  -- TODO
-        limitations     = []  -- TODO
-        parMap          = convertParamMap varMap (partialParamMap allInfo)
-
-        -- now solve the equations
-        (iters, hptMapSolved) = solveEquations modNm len multiplyUsed equations limitations varMap parMap hptMapStart
-        hptMapSolvedP = convertHptMap (mkNameMap varMap) $ Map.fromList $ assocs hptMapSolved
-
-        infoFinal       = info { partialHptMap = hptMapSolvedP }
-        final           = FinalHptResult
-          { finalHptMap = hptMapSolved
-          , finalVarMap = varMap
-          }
+        lenEnv      = maxVar_Syn_GrAGItf syn + 1
+        useCountMap = Map.filter (>1) (useCountMap_Syn_GrAGItf syn)
+        multiplyUsed = map fst (Map.toList useCountMap)
         
-    in  (iters, infoFinal, final)
+        -- solve the equations
+        (iters, hptMapSolved) = solveEquations modNmStr lenEnv multiplyUsed
+                                  (partialEquations   startPartial)
+                                  (partialLimitations startPartial)
+                                  (partialHptMap      startPartial)
+
+        infoFinal = InfoPointsToAnalysis
+                      { infoTagMap = finalTagMap_Syn_GrAGItf syn
+                      , infoNumberIdents = newNIInfo
+                      }
+        endPartial = startPartial { partialHptMap = hptMapSolved }
+        
+    in  (iters, infoFinal, endPartial, grinNumbered)
 
 
 -- partialHPTAnalysis :: String -> [PartialHptResult] -> GrModule -> (Int, PartialHptResult)
@@ -295,17 +269,17 @@ The overall goal is to collect equations that express
 what constraints variables satisfy.
 -}
 
-ATTR GrAGItf GrModule AllDef AllGrExpr [ | | equations   USE {++} {[]} : {EquationsG HsName}
-                                             limitations USE {++} {[]} : {LimitationsG HsName}
+ATTR GrAGItf GrModule AllDef AllGrExpr [ | | equations   USE {++} {[]} : {Equations}
+                                             limitations USE {++} {[]} : {Limitations}
                                        ]
 
 
 {
-mapUnionWithPlus :: Map.Map HsName Int -> Map.Map HsName Int -> Map.Map HsName Int
+mapUnionWithPlus :: Map.Map Int Int -> Map.Map Int Int -> Map.Map Int Int
 mapUnionWithPlus = Map.unionWith (+)
 }
 
-ATTR GrAGItf GrModule AllDef AllExpr   [ | | useCountMap USE {`mapUnionWithPlus`} {Map.empty} : {Map.Map HsName Int} ]
+ATTR GrAGItf GrModule AllDef AllExpr   [ | | useCountMap USE {`mapUnionWithPlus`} {Map.empty} : {Map.Map Int Int} ]
 
 ATTR GrExpr [ | | isEval : {Bool} ]
 
@@ -314,10 +288,10 @@ SEM GrExpr
    | *-Eval lhs.isEval = False
 
 SEM GrVal
-  | Var      lhs.useCountMap = Map.singleton @nm 1
+  | Var      lhs.useCountMap = Map.singleton (getNr @nm) 1
   
 SEM GrExpr
-  | Eval     lhs.useCountMap = Map.singleton @nm 1
+  | Eval     lhs.useCountMap = Map.singleton (getNr @nm) 1
   | Seq      lhs.useCountMap = if @expr.isEval
                                then Map.unionWith const @expr.useCountMap @body.useCountMap
                                else Map.unionWith (+)   @expr.useCountMap @body.useCountMap
@@ -328,19 +302,19 @@ ATTR AllGrPat
      AllBind
      AllGlobal
      GrModule
-     GrAGItf   [ | | allVars USE {`Set.union`} {Set.empty} : {Set.Set HsName} ]
+     GrAGItf   [ | | maxVar USE {`max`} {0} : Int ]
 
 SEM GrVar
-  | Var    lhs . allVars =  Set.singleton @nm
+  | Var    lhs . maxVar  =  getNr @nm
 
 SEM GrPatAlt
-  | Node   lhs . allVars =  Set.fromList @fldL
+  | Node   lhs . maxVar  =  maximum (0 : map getNr @fldL)
   
 SEM GrGlobal
-  | Global lhs . allVars =  Set.singleton @nm
+  | Global  lhs . maxVar  =  getNr @nm
 
 SEM GrBind
-  | Bind   lhs . allVars =  @expr.allVars `Set.union` Set.fromList (@nm : @loc.exceptVar : @argNmL)
+  | Bind   lhs . maxVar  =  maximum (@expr.maxVar : (getNr @nm + 1) : map getNr @argNmL)
 
 SEM GrPatLam
   | Var
@@ -351,21 +325,15 @@ SEM GrPatLam
     BasicAnnot
     EnumAnnot
     OpaqueAnnot
-    PtrAnnot     lhs . allVars = Set.singleton @nm
+    PtrAnnot     lhs . maxVar  =  getNr @nm
 
-
-ATTR GrAGItf [ startParamMap : {ParamMap HsName} | | finalParamMap : {ParamMap HsName} ]
 
 SEM GrAGItf
   | AGItf  lhs.equations = [ IsEqual x y
-                           | (funnm, args) <- @module.allCalls
-                           , let parnms = panicJust "PointsToAnalysis.GrAGItf.equations"
-                                          $ Map.lookup funnm @loc.finalParamMap
-                           , (x, Just y) <- zip parnms args
+                           | (funnr, args) <- @module.allCalls
+                           , (x, Just y) <- zip [funnr + 2 ..] args
                            ]
                            ++  @module.equations
-
-           loc.finalParamMap = Map.union @module.paramMap @lhs.startParamMap
 %%]
 
 %%[(8 codegen grin)
@@ -381,14 +349,14 @@ ATTR AllGrVal AllGrTag  [ | | self : SELF ]
 %%[(8 codegen grin) hs
 -- A grin value is either a single variable or a complete node denotation (with known tag)
 data NodeInfo a 
-  =  InVar   HsName 
+  =  InVar   Variable 
   |  InNode  GrTag [a]
-  |  InBasic HsName
-  |  InEnum  HsName [GrTag]
-  |  InPtr   HsName
+  |  InBasic Variable
+  |  InEnum  Variable [GrTag]
+  |  InPtr   Variable
   deriving Show
   
-fromInVar :: NodeInfo a -> HsName
+fromInVar :: NodeInfo a -> Variable
 fromInVar (InVar v)  = v
 fromInVar _          = error "HPT: Apply arguments should all be variables"  
 
@@ -406,20 +374,20 @@ SEM GrModule
                bindL.tagsMap    = @loc.tagsMap
 
 
-ATTR GrVal             [ | | valInfo : { NodeInfo (Maybe HsName) }  var   : { Maybe HsName } ]
-ATTR GrValL            [ | | valsInfo: {[NodeInfo (Maybe HsName)]}  vars  : {[Maybe HsName]} ]
-ATTR GrPatAlt GrPatLam [ | | patInfo : { NodeInfo        HsName  }  tag   : { Maybe GrTag}     ]
-ATTR GrVar             [ | | tag     : GrTag                          var   : { HsName }       ]
-ATTR GrVarL            [ | | headTag : GrTag                          vars  : {[HsName]}       ]
+ATTR GrVal             [ | | valInfo : { NodeInfo (Maybe Variable) }  var   : { Maybe Variable } ]
+ATTR GrValL            [ | | valsInfo: {[NodeInfo (Maybe Variable)]}  vars  : {[Maybe Variable]} ]
+ATTR GrPatAlt GrPatLam [ | | patInfo : { NodeInfo        Variable  }  tag   : { Maybe GrTag}     ]
+ATTR GrVar             [ | | tag     : GrTag                          var   : { Variable }       ]
+ATTR GrVarL            [ | | headTag : GrTag                          vars  : {[Variable]}       ]
 
 SEM GrVal
   | Tag        lhs.valInfo  =  InNode  @tag.self []
-  | Var        lhs.valInfo  =  InVar   @nm
+  | Var        lhs.valInfo  =  InVar   (getNr @nm)
   | Node       lhs.valInfo  =  InNode  @tag.self @fldL.vars
-  | BasicNode  lhs.valInfo  =  InNode  @tag.self [Just @nm]
-  | EnumNode   lhs.valInfo  =  InEnum  @nm []
-  | OpaqueNode lhs.valInfo  =  InNode  GrTag_Unboxed [Just @nm]
-  | PtrNode    lhs.valInfo  =  InPtr   @nm
+  | BasicNode  lhs.valInfo  =  InNode  @tag.self [Just(getNr @nm)]
+  | EnumNode   lhs.valInfo  =  InEnum  (getNr @nm) []
+  | OpaqueNode lhs.valInfo  =  InNode  GrTag_Unboxed [Just(getNr @nm)]
+  | PtrNode    lhs.valInfo  =  InPtr   (getNr @nm)
   | Empty
     LitInt
     LitStr
@@ -435,7 +403,7 @@ SEM GrValL
   | Nil       lhs.valsInfo  =  []
 
 SEM GrVal
-  | Var      lhs.var  =  Just @nm
+  | Var      lhs.var  =  Just (getNr @nm)
   | * - Var  lhs.var  =  Nothing
 
 SEM GrValL
@@ -446,7 +414,7 @@ SEM GrPatAlt
   | LitInt     lhs.patInfo  =  error "HPT: patInfo: literal"
   | Tag        lhs.patInfo  =  InNode @tag.self []
                lhs.tag      =  Just @tag.self
-  | Node       lhs.patInfo  =  InNode @tag.self @fldL
+  | Node       lhs.patInfo  =  InNode @tag.self (map getNr @fldL)
                lhs.tag      =  Just @tag.self
   | Otherwise  lhs.patInfo  =  error "HPT: patInfo: Otherwise"
 %%[[10
@@ -455,21 +423,21 @@ SEM GrPatAlt
   | * - Tag Node lhs.tag =  Nothing
 
 SEM GrPatLam
-  | Empty      lhs.patInfo  =  InVar wildcardNm
-  | Var        lhs.patInfo  =  InVar @nm
+  | Empty      lhs.patInfo  =  InVar (getNr wildcardNr)
+  | Var        lhs.patInfo  =  InVar (getNr @nm)
   | VarNode    lhs.patInfo  =  InNode (@fldL.headTag) (tail @fldL.vars)
                lhs.tag      =  Just @fldL.headTag
   | BasicNode
-    BasicAnnot lhs.patInfo  =  InBasic @nm
+    BasicAnnot lhs.patInfo  =  InBasic (getNr @nm)
   | OpaqueNode
-    OpaqueAnnot lhs.patInfo =  InBasic @nm
-  | EnumNode    lhs.patInfo =  InEnum @nm []   -- any tag is possible
-  | EnumAnnot   lhs.patInfo =  InEnum @nm (Map.findWithDefault (error ("PointsToAnalysis: EnumAnnot " ++ show @tycon ++ " not found")) @tycon @lhs.tagsMap)
-  | PtrNode     lhs.patInfo =  InPtr  @nm
-  | PtrAnnot    lhs.patInfo =  maybe (InPtr  @nm) 
+    OpaqueAnnot lhs.patInfo =  InBasic (getNr @nm)
+  | EnumNode    lhs.patInfo =  InEnum (getNr @nm) []   -- any tag is possible
+  | EnumAnnot   lhs.patInfo =  InEnum (getNr @nm) (Map.findWithDefault (error ("PointsToAnalysis: EnumAnnot " ++ show @tycon ++ " not found")) @tycon @lhs.tagsMap)
+  | PtrNode     lhs.patInfo =  InPtr  (getNr @nm)
+  | PtrAnnot    lhs.patInfo =  maybe (InPtr  (getNr @nm)) 
                                      -- only show the error, don't stop (debugging)
                                      -- (error "PointsToAnalysis: cant analyze FFI returning pointer") 
-                                     (trace ("PointsToAnalysis: can't analyze FFI returning pointer: " ++ show @tycon ++ "/" ++ show @nm) $ const $ InPtr @nm)
+                                     (trace ("PointsToAnalysis: can't analyze FFI returning pointer: " ++ show @tycon ++ "/" ++ show @nm) $ const $ InPtr (getNr @nm))
                                      (Map.lookup @tycon @lhs.tagsMap)
   | * - VarNode lhs.tag     =  Nothing
 
@@ -484,8 +452,8 @@ SEM GrVarL
 SEM GrVar
   | KnownTag     lhs.tag   =  @tag.self
   | * - KnownTag lhs.tag   =  error "GrVar tag"
-  | Var          lhs.var   =  @nm
-  | Ignore       lhs.var   =  wildcardNm -- TODO Was 0. Is dit een goede vervanging?
+  | Var          lhs.var   =  getNr @nm
+  | Ignore       lhs.var   =  0
   | KnownTag     lhs.var   =  error "var taken from KnownTag"
 
 %%]
@@ -511,10 +479,10 @@ Target information is either:
 - nothing (in the body of a Case and a Catch)
 -}
 
-ATTR AllGrExpr [ targetInfo: {NodeInfo HsName} | | ]
+ATTR AllGrExpr [ targetInfo: {NodeInfo Variable} | | ]
 
 SEM GrBind
-  | Bind  expr     . targetInfo  = InVar @nm
+  | Bind  expr     . targetInfo  = InVar (getNr @nm)
 
 SEM GrExpr
   | Seq    expr    . targetInfo  = @pat.patInfo
@@ -522,7 +490,7 @@ SEM GrExpr
 
 
 -- The value of the scrutinee is passed down to all alternatives
-ATTR AllAlt [ valInfo: {NodeInfo (Maybe HsName)} | | ]
+ATTR AllAlt [ valInfo: {NodeInfo (Maybe Variable)} | | ]
 
 
 %%]
@@ -558,7 +526,7 @@ SEM GrExpr
                                  (InPtr   tvar      ,  InNode stag snms  )  -> [ IsPointer tvar stag snms ]
 
                                  
-  | UpdateUnit loc.equations2 =  [ IsEqual @nm  (fromJust @val.var) ]
+  | UpdateUnit loc.equations2 =  [ IsEqual (getNr @nm)  (fromJust @val.var) ]
   | Unit       lhs.equations  =  @loc.equations1
   | UpdateUnit lhs.equations  =  @loc.equations2 ++ @loc.equations1
 
@@ -566,20 +534,20 @@ SEM GrExpr
 %%]
 %%[(8 codegen grin).unitaux hs
 
-buildSelectEquations :: HsName -> GrTag -> [HsName] -> EquationsG HsName
+buildSelectEquations :: Variable -> GrTag -> [Variable] -> Equations
 buildSelectEquations svar ttag tnms
   = [ IsSelection tvar svar i ttag
     | (tvar,i) <- zip tnms [0..]
-    , tvar /= wildcardNm
+    , tvar /= getNr wildcardNr
     ]
 
-buildUnifyEquations :: [Maybe HsName] -> [HsName] -> EquationsG HsName
+buildUnifyEquations :: [Maybe Variable] -> [Variable] -> Equations
 buildUnifyEquations snms tnms
   = [ case mbSvar of
        Nothing    -> IsBasic tvar
        Just svar  -> IsEqual tvar svar
     | (tvar,mbSvar) <- zip tnms snms
-    , tvar /= wildcardNm
+    , tvar /= getNr wildcardNr
     ]
 
 %%]
@@ -595,9 +563,9 @@ An equation is generated, which states that the targetvariable is known to be as
 -}
 
 {
-tagFun :: GrTag -> Maybe HsName
-tagFun (GrTag_Fun nm)  =  Just nm     -- track overwrite results of Fun
-tagFun (GrTag_App nm)  =  Just nm     -- also track overwrite results of App
+tagFun :: GrTag -> Maybe Int
+tagFun (GrTag_Fun nm)  =  Just (getNr nm)     -- track overwrite results of Fun
+tagFun (GrTag_App nm)  =  Just (getNr nm)     -- also track overwrite results of App
 tagFun _               =  Nothing
     
 }
@@ -614,7 +582,8 @@ A global definition is similar to a Store expression
 
 SEM GrGlobal
   | Global lhs . equations   =  case @val.valInfo of
-                                  InNode stag snms  -> [ IsPointer @nm stag snms ] ++ maybe [] (\n->[IsUpdate @nm n]) (tagFun stag)
+                                  InNode stag snms  -> let tvar = getNr @nm
+                                                       in  [ IsPointer tvar stag snms ] ++ maybe [] (\n->[IsUpdate tvar n]) (tagFun stag)
                                   _                 -> error "HPT: source of Global should be a node"
 %%]
 
@@ -626,7 +595,7 @@ SEM GrGlobal
 ATTR AllAlt [ | | tags USE {++} {[]} : {[GrTag]} ]
 
 
-ATTR GrExpr [ | | makeLimited : {GrTag->LimitationsG HsName} ]
+ATTR GrExpr [ | | makeLimited : {GrTag->Limitations} ]
 
 
 SEM GrExpr
@@ -674,11 +643,11 @@ SEM GrAlt
 %%[(8 codegen grin).fetch
 SEM GrExpr
   | FetchNode    lhs . equations =  case @lhs.targetInfo of
-                                      InVar tvar  -> [ IsEvaluation tvar @nm tvar ]   -- TODO: third parameter is not sensible when exceptions are really used
+                                      InVar tvar  -> [ IsEvaluation tvar (getNr @nm) tvar ]   -- TODO: third parameter is not sensible when exceptions are really used
                                       _           -> error "HPT: FetchNode target should be a variable"
-  | FetchUpdate  lhs . equations =  [ IsEqual @dst @src ]
+  | FetchUpdate  lhs . equations =  [ IsEqual (getNr @dst) (getNr @src) ]
   | FetchField   lhs . equations =  case @lhs.targetInfo of
-                                      InVar tvar  ->  [ IsSelection tvar @nm @offset (fromJust @mbTag) ]
+                                      InVar tvar  ->  [ IsSelection tvar (getNr @nm) @offset (fromJust @mbTag) ]
                                       _           -> error "HPT: FetchField target should be a variable"
   
 %%]
@@ -695,10 +664,10 @@ If the target is a single variable, it is required to have the same value as the
 If the target is a node denotation, a select-equation is generated for each variable in the node.
 -}
 SEM GrExpr
-  | Call  loc  .  exceptions  =  hsnUniqify HsNameUniqifier_Exception @nm : @lhs.exceptions
+  | Call  loc  .  exceptions  =  getNr @nm + 1 : @lhs.exceptions
           lhs  .  equations   =  case @lhs.targetInfo of
-                                   InVar  tvar       -> [ IsEqual tvar @nm ]
-                                   InNode ttag tnms  -> buildSelectEquations @nm ttag tnms
+                                   InVar  tvar       -> [ IsEqual tvar (getNr @nm) ]
+                                   InNode ttag tnms  -> buildSelectEquations (getNr @nm) ttag tnms
                                    InEnum tvar ttags -> [ IsTags tvar ttags ]
                                    InBasic tvar      -> [ IsBasic tvar ]
                                    InPtr  tvar       -> [ IsPointer tvar GrTag_Hole []  ]
@@ -733,7 +702,7 @@ A single equation is generated, associating the targetvariable with the evaluati
 -}
 SEM GrExpr
   | Eval  lhs . equations = case @lhs.targetInfo of
-                              InVar tvar         -> [ IsEvaluation tvar @nm @lhs.exceptVar ]
+                              InVar tvar         -> [ IsEvaluation tvar (getNr @nm) @lhs.exceptVar ]
                               InBasic tvar       -> [ IsBasic tvar ]
                               InEnum  tvar ttags -> [ IsTags tvar ttags ]
                               InPtr tvar         -> [ IsPointer tvar GrTag_Hole []  ]
@@ -748,7 +717,7 @@ SEM GrExpr
 %%[(8 codegen grin).apply
 SEM GrExpr
   | App  lhs . equations = case @lhs.targetInfo of
-                             InVar tvar -> [ IsApplication tvar (@nm : map fromInVar @argL.valsInfo) @lhs.exceptVar ]
+                             InVar tvar -> [ IsApplication tvar (getNr @nm : map fromInVar @argL.valsInfo) @lhs.exceptVar ]
                              _          -> error "HPT: Apply target should be a variable"
 %%]
 
@@ -758,7 +727,7 @@ SEM GrExpr
 %%%%%%%%%%%%%%%%%%
 %%[(8 codegen grin).throw
 SEM GrExpr
-  | Throw  loc     .  exceptions =  @nm : @lhs.exceptions
+  | Throw  loc     .  exceptions =  getNr @nm : @lhs.exceptions
            lhs     .  equations  =  case @lhs.targetInfo of
                                       InVar tvar  -> []
                                       _           -> []
@@ -768,17 +737,17 @@ SEM GrExpr
            handler . exceptions  =  @lhs.exceptions
            lhs     . exceptions  =  @handler.exceptions
            loc     . exceptEqs   =  [ IsEqual @handlerVar e | e <- @body.exceptions ]
-                   . handlerVar  =  @arg
+                   . handlerVar  =  getNr @arg
 
 SEM GrExpr
   | Catch  lhs   .  equations   =   @loc.exceptEqs ++ @body.equations ++ @handler.equations
 
 -- Exceptions not caught in the same binding, and support for exceptions which can only found while analysing (eval calls)
-ATTR AllGrExpr [ exceptVar: HsName | exceptions: {[HsName]} | ]
+ATTR AllGrExpr [ exceptVar: Variable | exceptions: {[Variable]} | ]
 
 SEM GrBind
   | Bind  expr    . exceptions  =  []
-          loc     . exceptVar   =  hsnUniqify HsNameUniqifier_Exception @nm
+          loc     . exceptVar   =  getNr @nm + 1
           loc     . exceptEqs   =  [ IsEqual @exceptVar e | e <- @expr.exceptions ]
           lhs     . equations   =  @loc.exceptEqs ++ @expr.equations
 %%]
@@ -789,23 +758,19 @@ SEM GrBind
 %%%%%%%%%%%%%
 
 %%[(8 codegen grin)
--- Collect all Fun, PApp and App nodes, all function parameters, and all Calls
+-- Collect all Fun, PApp and App nodes, and all Calls
 
-ATTR AllGrVal AllGrExpr AllDef GrModule [ | | allCalls USE {++} {[]} : {AbstractCallListG HsName} ]
-ATTR GrTag                              [ | | mbFPAnr                : {Maybe HsName}        ]
-ATTR AllBind GrModule [ | | paramMap USE {`Map.union`} {Map.empty} : {ParamMap HsName} ]
+ATTR AllGrVal AllGrExpr AllDef GrModule [ | | allCalls USE {++} {[]} : {AbstractCallList} ]
+ATTR GrTag                              [ | | mbFPAnr                : {Maybe Int}        ]
 
-
-SEM GrBind
-  | Bind    lhs.paramMap    = Map.singleton @nm @argNmL
 
 SEM GrVal
   |  Node   lhs . allCalls  =  maybe [] (\n->[(n, @fldL.vars)]) @tag.mbFPAnr
 
 SEM GrExpr
-  | Call    lhs . allCalls  =  [ (@nm, @argL.vars) ]
+  | Call    lhs . allCalls  =  [ (getNr @nm, @argL.vars) ]
 
 SEM GrTag
-  |     Fun PApp App   lhs . mbFPAnr = Just @nm
+  |     Fun PApp App   lhs . mbFPAnr = Just (getNr @nm)
   | * - Fun PApp App   lhs . mbFPAnr = Nothing
 %%]
