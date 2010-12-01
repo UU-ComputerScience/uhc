@@ -1053,11 +1053,14 @@ subsume = sem subsume : Subsume monad IO
                                             -- TyExpr_Var a -> [TyIndex_Group a TyScheme_Bottom]
                                             -- _           -> []
                                 -- in lhs.pre `munion` new
-                      
+                     
                     clause f_subsume
                       match (loc.bla, False) = ((), loc.nf)
-                      lhs.sub = const (error $ "Subsume failure, the given type is not in normal form.") loc.bla
-
+                      match True = const(error $ "Subsume failure, the given type is not in normal form.") loc.bla
+                      lhs.sub = []
+                    clause non_match
+                      match True = error "No clauses matched in subsume"
+                      lhs.sub = []
 unify = sem unify : Unify monad IO    
           visit unify
              default? pre = last
@@ -1264,7 +1267,7 @@ unify = sem unify : Unify monad IO
                                s.ty  = let c = dropQuant loc.phi'
                                        in trace ("Ty: " ++ sche c ++ " - " ++ pp c) c
                                
-                               invoke subsume of s
+                               invoke subsume of s 
                                
                                (loc.q2, loc.e2) = case trace "--> subsume end" $ appAll s.sub loc.expr of
                                                     Nothing -> error "Application failed in unify"

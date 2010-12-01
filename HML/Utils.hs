@@ -650,6 +650,7 @@ sugar (TyScheme_Quant (Scheme_Simple nm b) t)
 -- sugar (TyScheme_SystemF a) = case mkQuantified a of
                                -- y@(TyScheme_SystemF {}) -> TyScheme_Sugar [] y
                                -- x                       -> sugar x
+sugar y@(TyScheme_SystemF{}) = TyScheme_Sugar [] y
 sugar x = x
 
 -- | Convert a Quantified Scheme to a TyScheme such that
