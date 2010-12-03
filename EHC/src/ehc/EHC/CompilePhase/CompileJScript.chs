@@ -94,9 +94,10 @@ cpCompileJScript how othModNmL modNm
           = lift $ putPPFPath fpHtml (ppHtml) 1000
           where scr x = "<script type=\"text/javascript\" src=\"" >|< x >|< "\"></script>"
                 ppHtml
-                  = "<html><head><title>" >|< modNm >|< "</title></head>"
-                    >-< "<body>"
+                  = "<!DOCTYPE html><html><head><title>" >|< modNm >|< "</title>"
                     >-< vlist (map scr jsL)
+                    >-< "</head>"
+                    >-< "<body>"
                     >-< "</body>"
                     >-< "</html>"
 
