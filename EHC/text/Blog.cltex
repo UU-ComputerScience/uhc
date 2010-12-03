@@ -2,6 +2,15 @@
 %%@Blog.entry20101027.javascript.FFI
 %%]
 
+%%[entry20101204.Brazil.intersection doclatex
+% \section{The intersection between rank-1 and rank-2}
+Recently I spent some time in Brazil with Lucilia and Carlos Camarao de Figueiredo, and in particular the master thesis of Elton Cardoso, supervised by Lucilia and Carlos, about a system for interesection types in a style similar to higher ranked types is interesting. The main idea is that the complexity of type inference can be reduced by limiting its use to introduction via explicit annotations only.
+
+Intersection types are usually ignored in practical settings, intersection types are considered to have low additional value in relation to the difficulty of type inference and runtime implementation cost. However, in the design space between rank-1 and rank-2 types they fill a potential useful niche because
+
+Eltons implementation can be found on \href{https://github.com/emcardoso/CTi}{github}, but be aware that it still is work in progress. His \href{}{thesis} is also available. Although it is written in Portuguese, much of the used vocabulary is technical, and recognizable because of its English origin.  The presentation of type system of course is completely independent from the used language.
+%%]
+
 %%[entry20101027.javascript.FFI doclatex
 % \section{A Haskell FFI calling convention for Javascript}
 Haskell's Foreign Function Interface (FFI) predefined calling conventions do not match well with Javascript's object oriented features. In particular selecting a field of an object using dot notation (like \verb|o.f|) and using an object as an array using brackets (like \verb|o[i]|) do not have a natural counterpart in Haskell or the default calling conventions supported by the FFI interface. So, here are some examples of how Javascript is accessed in UHC via its @jscript@ calling convention:

@@ -134,14 +134,14 @@ SEM CodeAGItf
   | AGItf       module      .   nmMp        =   Map.empty
 
 SEM CExpr
-  | Let         loc         .   allowTrf    =   @categ /= CBindings_Strict
-                                                && @categ /= CBindings_FFI
+  | Let         loc         .   allowTrf    =   @categ /= CBindCateg_Strict
+                                                && @categ /= CBindCateg_FFI
 %%[[90
-                                                && @categ /= CBindings_FFE
+                                                && @categ /= CBindCateg_FFE
 %%]]
-                            .   allowStrTrf =   @categ /= CBindings_FFI
+                            .   allowStrTrf =   @categ /= CBindCateg_FFI
 %%[[90
-                                                && @categ /= CBindings_FFE
+                                                && @categ /= CBindCateg_FFE
 %%]]
                             .   nmMpNew     =   Map.foldWithKey
                                                   (\n r m

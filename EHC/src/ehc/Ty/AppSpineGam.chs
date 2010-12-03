@@ -14,6 +14,8 @@
 %%]
 %%[(9 codegen hmtyinfer) import({%{EH}AbstractCore},{%{EH}Core.Subst})
 %%]
+%%[(8 codegen hmtyinfer) hs import(EH.Util.Utils)
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Vertebrae info
@@ -94,7 +96,7 @@ prodAppSpineVertebraeInfoL
 
 %%[(8 codegen hmtyinfer) export(asFOUpdCoe)
 dfltFOUpdCoe :: AppSpineFOUpdCoe
-dfltFOUpdCoe _ x = last x
+dfltFOUpdCoe _ x = last' (panic "Ty.AppSpineGam.dfltFOUpdCoe") x
 
 asFOUpdCoe :: AppSpineVertebraeInfo -> AppSpineFOUpdCoe
 asFOUpdCoe = maybe dfltFOUpdCoe id . asMbFOUpdCoe

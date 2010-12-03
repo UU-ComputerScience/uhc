@@ -79,7 +79,11 @@ SEM Decl
                 lhs             .   gathDeclDataGam =   if ehcCfgClassViaRec @lhs.opts
                                                         then emptyGam
                                                         else let dgi = mkDGIPlain @dataDictNm Ty_Any [@dataDictNm] (@dataDictNm `Map.singleton` dti)
-                                                                 dti = emptyDataTagInfo {dtiCTag = @dataDictTag, dtiConNm = @dataDictNm}
+                                                                 dti = emptyDataTagInfo
+                                                                         { dtiCTag = @dataDictTag
+                                                                         , dtiConNm = @dataDictNm
+                                                                         , dtiConFldAnnL = replicate (length @clsAllFldL) emptyDataConFldAnnInfo
+                                                                         }
                                                              in  gamSingleton @dataDictNm dgi
                                 .   gathDataGam     =   @lhs.gathDataGam
 %%]
@@ -131,7 +135,9 @@ derivGetDataTyInfo clNm tyNm tyGam tyKiGam dataGam
                                 (tkgi,errs2) = tyKiGamLookupByNameErr    tyNm                   tyKiGam                 -- lookup for kind signature
                             in  (tgi, tkgi, dgi, firstNotEmpty [errs1,errs2,errs3])
         (ctkgi,errs4)     =                    tyKiGamLookupByNameErr    (hsnClass2Kind clNm) 	tyKiGam               	-- lookup for class kind signature
+%%]
 
+%%[(91 hmtyinfer) hs
 -- | make pred from kind and tvar
 mkDerivPredFromKi :: UID -> Int -> Ty -> Ty -> Ty -> Maybe (Ty,UID)
 mkDerivPredFromKi uniq derivArity predTyCon ki tv
@@ -141,8 +147,11 @@ mkDerivPredFromKi uniq derivArity predTyCon ki tv
         where (u',u1) = mkNewLevUID uniq
               u1s = mkNewUIDL arity u1
               arity = length as - derivArity
-      _ -> Nothing
+      -- _ -> Nothing
 
+%%]
+
+%%[(91 hmtyinfer) hs
 -- | make context from the kinds of the datatype args and the actual datatype args
 mkDerivPredContext :: UID -> Int -> Ty -> [Ty] -> [Ty] -> Maybe ([Ty],UID)
 mkDerivPredContext uniq derivArity predTyCon dataTyKiL dataTyArgL
@@ -186,7 +195,7 @@ SEM Decl
                                                                                 = tyArrowArgsRes @prTyFix       						-- decoding of pred
                                                                   (predTyCon,dataTyL)
                                                                                 = tyAppFunArgs predTy 
-                                                                  dataTy        = last dataTyL                           				-- data ty for which we derive (only 1)
+                                                                  dataTy        = last' (panic "InferClass.Decl.Instance.{metaPrTyVarMp,..}.dataTyL") dataTyL                           				-- data ty for which we derive (only 1)
                                                                   (dataTyCon,dataTyArgs)
                                                                                 = tyAppFunArgs dataTy                         			-- extract tycon + args
                                                                   tyNm          = tyConNm dataTyCon

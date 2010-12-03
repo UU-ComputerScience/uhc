@@ -8,22 +8,11 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Binding global?
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8 codegen)
-ATTR AllBind [ isGlobal: Bool | | ]
-
-SEM CExpr
-  | Let         loc         .   isGlobal    =   @lhs.lev == cLevModule
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Let context
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen)
-ATTR AllBind [ letBindingsCateg: CBindingsCateg | | ]
+ATTR AllBind [ letBindingsCateg: CBindCateg | | ]
 
 SEM CExpr
   | Let         loc         .   letBindingsCateg    =   @categ
@@ -150,7 +139,7 @@ SEM CPatFld
                             .   isLamBody   =   False
 
 SEM CExpr
-  | Let         binds       .   isStrict    =   @isGlobal || @categ == CBindings_Strict
+  | Let         binds       .   isStrict    =   @isGlobal || @categ == CBindCateg_Strict
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -170,7 +159,7 @@ SEM CPatFld
 
 
 SEM CExpr
-  | Let         loc         .   evalCtx         =   if @categ == CBindings_Strict
+  | Let         loc         .   evalCtx         =   if @categ == CBindCateg_Strict
                                                     then EvalCtx_Eval
                                                     else EvalCtx_None
 %%]

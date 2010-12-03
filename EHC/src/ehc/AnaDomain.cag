@@ -18,6 +18,8 @@ Analysis domains
 %%]
 %%[(8 codegen) hs import(Control.Monad.State hiding (join), Control.Applicative)
 %%]
+%%[(8 codegen) hs import(EH.Util.Utils)
+%%]
 
 %%[(8 codegen) hs export(QualAGItf(..), TyAGItf(..), CoeAGItf(..)) 
 %%]
@@ -45,6 +47,31 @@ DERIVING *
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Additional types
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs export(RQuant(..))
+-- | quantifier for RelevTy_Fun
+data RQuant
+  = RQuant_Forall		-- the usual universal instantiation
+  | RQuant_Rec			-- quantified for mutual recursive use, instantiates differently
+  | RQuant_None			-- not quantified
+  deriving
+    ( Eq, Ord, Enum
+%%[[20
+    , Typeable, Data
+%%]]
+    )
+%%]
+
+%%[(8 codegen) hs
+instance Show RQuant where
+  show RQuant_Forall 	= "A"
+  show RQuant_Rec 		= "R"
+  show RQuant_None    	= ""
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Derived types, functions, ...
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -68,6 +95,15 @@ RelevCoe_CastTy ll (RelevTy_Ana lr)
 l                     <.> RelevCoe_Comp rl rr = (l <.> rl) `RelevCoe_Comp` rr
 RelevCoe_Comp   ll lr <.> r                   = ll `RelevCoe_Comp` (lr <.> r)
 l                     <.> r                   = RelevCoe_Comp l r
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Extraction
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs export(relevtyAnaEval)
+relevtyAnaEval (RelevTy_Ana e) = e
+relevtyAnaEval _               = panic "AnaDomain.relevtyAnaEval"
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -283,12 +319,12 @@ instance AnaLattice RelevTy where
   leBB  (RelevTy_Ana a11) (RelevTy_Ana a21) = do { AMSOut l h c True <- leBB a11 a21
                                                  ; return $ amsoMkOk (RelevTy_Ana l) (RelevTy_Ana h) c
                                                  }
-  leBB  (RelevTy_Fun _ _ a1 r1) (RelevTy_Fun _ _ a2 r2)
+  leBB  (RelevTy_Fun _ _ _ a1 r1) (RelevTy_Fun _ _ _ a2 r2)
                                             = do { r_amso <- leBB r1 r2
                                                  ; a_amso <- mapM (uncurry leBB) (zip a2 a1)
-                                                 ; return $ amsoMk (RelevTy_Fun  [] [] (map amsoHi  a_amso) (amsoLo  r_amso))
-                                                                   (RelevTy_Fun  [] [] (map amsoLo  a_amso) (amsoHi  r_amso))
-                                                                   (RelevCoe_Fun       (map amsoCoe a_amso) (amsoCoe r_amso))
+                                                 ; return $ amsoMk (RelevTy_Fun  RQuant_None [] [] (map amsoHi  a_amso) (amsoLo  r_amso))
+                                                                   (RelevTy_Fun  RQuant_None [] [] (map amsoLo  a_amso) (amsoHi  r_amso))
+                                                                   (RelevCoe_Fun                   (map amsoCoe a_amso) (amsoCoe r_amso))
                                                                    (and $ amsoIsOk r_amso : map amsoIsOk a_amso)
                                                  }
   -- others lead to a constraint between t1 and function result, with a coercion between t1 and whole function t2
@@ -346,7 +382,7 @@ freshFromAnn u s
 %%[(8 codegen) hs export(anaMkBotFun)
 -- | construct 'worst case' assuming function signature, where we assume function assumes nothing and we cannot assume anything about result, except for the result being bottom (i.e. strict)
 anaMkBotFun :: Int -> RelevTy
-anaMkBotFun arity = RelevTy_Fun [] [] (replicate arity top) bot
+anaMkBotFun arity = RelevTy_Fun RQuant_None [] [] (replicate arity top) bot
 %%]
 
 %%[(8 codegen) hs export(relevCoeUnCompose)
@@ -481,6 +517,10 @@ amsLookupEval i s = do { i <- amsLookup i s ; rvmiMbEval i }
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(20 codegen) hs
+instance Serialize RQuant where
+  sput = sputEnum8
+  sget = sgetEnum8
+
 instance Serialize RelevQual where
   sput (RelevQual_SubEval a b        ) = sputWord8 0 >> sput a >> sput b
   -- sput (RelevQual_Alt     a b c d e f) = sputWord8 1 >> sput a >> sput b >> sput c >> sput d >> sput e >> sput f
@@ -491,15 +531,15 @@ instance Serialize RelevQual where
             -- 1 -> liftM6 RelevQual_Alt             sget sget sget sget sget sget
 
 instance Serialize RelevTy where
-  sput (RelevTy_Ana   a      ) = sputWord8 0 >> sput a
-  sput (RelevTy_Fun   a b c d) = sputWord8 1 >> sput a >> sput b >> sput c >> sput d
-  sput (RelevTy_None         ) = sputWord8 2
-  sput (RelevTy_Err   a      ) = sputWord8 3 >> sput a
+  sput (RelevTy_Ana   a        ) = sputWord8 0 >> sput a
+  sput (RelevTy_Fun   a b c d e) = sputWord8 1 >> sput a >> sput b >> sput c >> sput d >> sput e
+  sput (RelevTy_None           ) = sputWord8 2
+  sput (RelevTy_Err   a        ) = sputWord8 3 >> sput a
   sget
     = do t <- sgetWord8
          case t of
             0 -> liftM  RelevTy_Ana         sget
-            1 -> liftM4 RelevTy_Fun         sget sget sget sget
+            1 -> liftM5 RelevTy_Fun         sget sget sget sget sget
             2 -> return RelevTy_None
             3 -> liftM  RelevTy_Err         sget
 

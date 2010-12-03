@@ -69,7 +69,7 @@ Chain starts with a strict binding, and only is relevant for nested bindings.
 ATTR CExpr AllBind [ | isStrictChain: Bool | ]
 
 SEM CExpr
-  | Let         loc         .   isStrictChain   =   @categ == CBindings_Strict
+  | Let         loc         .   isStrictChain   =   @categ == CBindCateg_Strict
                             .   isFirstInChain  =   @isStrictChain && not @lhs.isStrictChain
                             .   isLaterInChain  =   @isStrictChain &&     @lhs.isStrictChain
                 binds       .   isStrictChain   =   @isStrictChain
@@ -141,7 +141,7 @@ SEM CBind
   | Bind        lhs         .   binds
                                                 =   case @bindAspects.aspLiftL of
                                                       [(flatBinds,flatExpr)] | not @bindAspects.hasNonPlainBinds
-                                                        -> flatBinds `Seq.union` Seq.singleton (acoreBind1Cat CBindings_Strict @nm flatExpr)
+                                                        -> flatBinds `Seq.union` Seq.singleton (acoreBind1Cat CBindCateg_Strict @nm flatExpr)
                                                       _ -> Seq.singleton @cTrf
 %%]
 

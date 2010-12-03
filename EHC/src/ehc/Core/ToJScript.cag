@@ -405,7 +405,7 @@ SEM CExpr
                                                              offof n = cvarOffset $ panicJust "ToJScript.CExpr.Let.js offset" $ Map.lookup n @cvarMpNew
                                                              initbinds
                                                                    = case @categ of
-                                                                       CBindings_Rec
+                                                                       CBindCateg_Rec
                                                                          ->             Seq.fromList [ J.Stat_VarDecl o $ Just $ jsCall nmInd [] | (o,_,_) <- binds ]
                                                                             `Seq.union` Seq.fromList [ J.Stat_Expr $ jsCall nmIndSet [jsVar o, e] | (o,_,e) <- binds ]
                                                                        _ -> Seq.fromList [ J.Stat_VarDecl o (Just e) | (o,_,e) <- binds ]

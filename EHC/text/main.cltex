@@ -1100,7 +1100,7 @@ version
 %%[65
 \title{Javascript? Haskellscript!}
 \author{Atze Dijkstra}
-\date{Nov 2010}
+\date{Dec 2010}
 %%]
 
 
@@ -3547,6 +3547,10 @@ We thank both (anonymous) reviewers for their extremely valuable and helpful com
 %\section{Current status}
 
 %%@SlidesJavascript.interpreter
+
+%%@SlidesJavascript.relatedWork
+
+%%@SlidesJavascript.summary
 
 %\section{Near future work}
 

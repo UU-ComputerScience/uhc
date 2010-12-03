@@ -16,9 +16,6 @@
 %%[1 export(Assoc,AssocL)
 %%]
 
-%%[1111.exp.hdAndTl export(hdAndTl, hdAndTl')
-%%]
-
 %%[1 import(EH.Util.Pretty, Data.List) export(ppListSepFill, ppSpaced, ppCon, ppCmt)
 %%]
 
@@ -68,9 +65,6 @@
 %%]
 
 %%[7 export(uidHNm, uidQualHNm)
-%%]
-
-%%[8888 -(1.exp.hdAndTl 1.Misc.hdAndTl) import (EH.Util.Utils hiding (tr,trp)) export(module EH.Util.Utils)
 %%]
 
 %%[8 import (EH.Util.FPath,IO,Char,Data.Maybe,Numeric)
@@ -558,7 +552,7 @@ assocLElts = map snd
 
 %%[1 export(assocLGroupSort)
 assocLGroupSort :: Ord k => AssocL k v -> AssocL k [v]
-assocLGroupSort = map (foldr (\(k,v) (_,vs) -> (k,v:vs)) (undefined,[])) . groupSortOn fst
+assocLGroupSort = map (foldr (\(k,v) (_,vs) -> (k,v:vs)) (panic "Base.Common.assocLGroupSort" ,[])) . groupSortOn fst
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

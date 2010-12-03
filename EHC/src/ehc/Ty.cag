@@ -1380,7 +1380,7 @@ tyRowOffsetOrder off = sortOn (off . snd)
 tyExtsOffset :: HsName -> AssocL HsName a -> (Int,Presence)
 tyExtsOffset lbl exts
   = find 0 lbl exts
-  where find o l (e:es) = case (l,undefined) `rowExtCmp` e of
+  where find o l (e:es) = case (l,panic "Ty.tyExtsOffset") `rowExtCmp` e of
                             GT -> find (o+1) l es
                             EQ -> (o,Present)
                             LT -> (o,Absent)

@@ -31,12 +31,19 @@ WRAPPER TyAGItf
 %%[(8 codegen) hs export(relevtyInst)
 relevtyInst :: UID -> RelevTy -> (RelevTy,RelevQualS)
 relevtyInst uniq ty
-  = (repl_Syn_TyAGItf t, qualS_Syn_TyAGItf t)
+  = (ty', extraQualS `Set.union` qualS_Syn_TyAGItf t)
   where t = wrap_TyAGItf
               (sem_TyAGItf (TyAGItf_AGItf ty))
               (Inh_TyAGItf
-                 { gUniq_Inh_TyAGItf 		= uniq
+                 { gUniq_Inh_TyAGItf        = uniq
                  })
+        ty' = repl_Syn_TyAGItf t
+        extraQualS
+          = case ty of
+              RelevTy_Fun RQuant_Rec _ _ a r
+                -> amsGathQual ams
+                where (amso,ams) = amsLE emptyVarMp (RelevTy_Fun RQuant_None [] [] a r) ty'
+              _ -> Set.empty
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -48,7 +55,7 @@ ATTR AllNT [ | gUniq: UID | ]
 ATTR TyAGItf QualAGItf CoeAGItf [ gUniq: UID | | ]
 
 SEM RelevTy
-  | Fun             loc			.	lUniq     	: UNIQUEREF gUniq
+  | Fun             loc         .   lUniq       : UNIQUEREF gUniq
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -57,17 +64,32 @@ SEM RelevTy
 
 %%[(8 codegen)
 SEM RelevTy
-  | Fun				loc			.	freshTvL	=	mkNewLevUIDL (length @quants) @lUniq
+  | Fun             loc         .   freshTvL    =   mkNewLevUIDL (length @quants) @lUniq
 %%]
 
 %%[(8 codegen)
 ATTR AllNT [ freshMp: {Map.Map UID UID} | | ]
 
 SEM TyAGItf QualAGItf CoeAGItf
-  | AGItf			loc			.	freshMp		=	Map.empty
+  | AGItf           loc         .   freshMp     =   Map.empty
 
 SEM RelevTy
-  | Fun				loc			.	freshMp		=	Map.union (Map.fromList $ zip @quants @freshTvL) @lhs.freshMp
+  | Fun             loc         .   freshMp     =   Map.union (Map.fromList $ zip @quants @freshTvL) @lhs.freshMp
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Per domain constraint generation for recursive quantification
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8888 codegen) hs
+type GenQualMp = Map.Map UID (UID -> RelevQualS)
+%%]
+
+%%[(8888 codegen)
+ATTR AllNT [ | | genQualMp USE {`Map.union`} {Map.empty} : GenQualMp ]
+
+SEM AnaEval
+  | Var             lhs         .   genQualMp   =   Map.singleton 
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -81,7 +103,7 @@ ATTR TyAGItf [ | | repl: RelevTy ]
 
 %%[(8 codegen)
 SEM RelevTy
-  | Fun				lhs			.	repl		=	RelevTy_Fun [] [] @args.repl @res.repl
+  | Fun             lhs         .   repl        =   RelevTy_Fun RQuant_None [] [] @args.repl @res.repl
 %%]
 
 %%[(8 codegen)
@@ -95,6 +117,6 @@ ATTR AllNT TyAGItf [ | | qualS USE {`Set.union`} {Set.empty} : RelevQualS ]
 
 %%[(8 codegen)
 SEM RelevTy
-  | Fun				lhs			.	qualS		=	Set.unions [ Set.fromList @quals.repl, @args.qualS, @res.qualS ]
+  | Fun             lhs         .   qualS       =   Set.unions [ Set.fromList @quals.repl, @args.qualS, @res.qualS ]
 %%]
 

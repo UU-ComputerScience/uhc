@@ -50,12 +50,12 @@ SEM CExpr
   | Let         loc         .   maxBindLev  =   fvsLev @lhs.cvarIntroMp cLevModule @binds.fvS
                 (loc.strLev,binds.cvarIntroMp)
                                             =   case @categ of
-                                                    CBindings_Strict -> (const @lhs.lev,@lhs.cvarIntroMp)
-                                                    CBindings_Rec   -> ( const @maxBindLev
-                                                                       , Map.map (\cvi -> cvi {cviLev = @maxBindLev}) @binds.cvarIntroExprMp
-                                                                           `Map.union` @lhs.cvarIntroMp
-                                                                       )
-                                                    _               -> (id,@lhs.cvarIntroMp)
+                                                    CBindCateg_Strict -> (const @lhs.lev,@lhs.cvarIntroMp)
+                                                    CBindCateg_Rec    -> ( const @maxBindLev
+                                                                         , Map.map (\cvi -> cvi {cviLev = @maxBindLev}) @binds.cvarIntroExprMp
+                                                                             `Map.union` @lhs.cvarIntroMp
+                                                                         )
+                                                    _                 -> (id,@lhs.cvarIntroMp)
                 body        .   cvarIntroMp =   Map.map (\cvi -> cvi {cviLev = @strLev $ cviLev cvi}) @binds.cvarIntroExprMp `Map.union` @lhs.cvarIntroMp
 
 SEM CAlt

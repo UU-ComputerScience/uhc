@@ -19,7 +19,7 @@
 %%[(8 codegen) hs import(Debug.Trace)
 %%]
 
-%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonCtxtPred},{Core/CommonBindNm})
+%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonLevLet},{Core/CommonCtxtPred},{Core/CommonBindNm})
 WRAPPER CodeAGItf
 %%]
 
@@ -42,12 +42,6 @@ cmodTrfFindNullaries cmod
 %%[(8 codegen)
 ATTR CodeAGItf [ | | cTrf: CModule ]
 ATTR AllCodeNT [ | | cTrf: SELF    ]
-%%]
-
-
-%%[(8 codegen)
-SEM CExpr
-  | Let         binds . lev  =  @lhs.lev + 1
 %%]
 
 %%[(8 codegen)

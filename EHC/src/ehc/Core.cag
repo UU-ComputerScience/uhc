@@ -135,21 +135,21 @@ cmetasMapVal f (b,v) = (b,f v)
 %%% Binding category, per group of bindings
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs export(CBindingsCateg(..))
-data CBindingsCateg
-  = CBindings_Rec				-- mutually recursive
-  | CBindings_Strict			-- strictly evaluated
-  | CBindings_Plain				-- plain
-  | CBindings_FFI				-- imported function
+%%[(8 codegen) hs export(CBindCateg(..))
+data CBindCateg
+  = CBindCateg_Rec				-- mutually recursive
+  | CBindCateg_Strict			-- strictly evaluated
+  | CBindCateg_Plain				-- plain
+  | CBindCateg_FFI				-- imported function
 %%[[90
-  | CBindings_FFE				-- exported function (not implemented yet)
+  | CBindCateg_FFE				-- exported function (not implemented yet)
 %%]]
   deriving (Show,Eq,Enum)
 %%]
 
 %%[(20 codegen) hs
-deriving instance Typeable CBindingsCateg
-deriving instance Data CBindingsCateg
+deriving instance Typeable CBindCateg
+deriving instance Data CBindCateg
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -449,7 +449,7 @@ cModMerge mL
 %%[(20 codegen) hs export(CDbBindLetInfo, CDbBindLetInfo'2)
 -- | the binding info required for let bind
 type CDbBindLetInfo'' f cat bind = (cat,f bind)
-type CDbBindLetInfo'  f          = CDbBindLetInfo'' f  CBindingsCateg CBind
+type CDbBindLetInfo'  f          = CDbBindLetInfo'' f  CBindCateg CBind
 type CDbBindLetInfo'2   cat bind = CDbBindLetInfo'' [] cat            bind
 type CDbBindLetInfo              = CDbBindLetInfo'  []
 %%]
@@ -669,7 +669,7 @@ instance Serialize CPatFld where
          case t of
             0 -> liftM4 CPatFld_Fld         sget sget sget sget
 
-instance Serialize CBindingsCateg where
+instance Serialize CBindCateg where
   sput = sputEnum8
   sget = sgetEnum8
 
@@ -683,7 +683,7 @@ instance Serialize CMetaBind where
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen) hs
-instance AbstractCore CExpr CMetaVal CBind CBindAspect CBindingsCateg CMetaBind Ty CPat CPatRest CPatFld CAlt where
+instance AbstractCore CExpr CMetaVal CBind CBindAspect CBindCateg CMetaBind Ty CPat CPatRest CPatFld CAlt where
   -- expr
   acoreApp1       f a      				= CExpr_App f a
   acoreLam1Ty a _ e 				    = CExpr_Lam a e
@@ -747,9 +747,9 @@ instance AbstractCore CExpr CMetaVal CBind CBindAspect CBindingsCateg CMetaBind 
 %%]]
   
   -- bindcateg
-  acoreBindcategRec 					= CBindings_Rec
-  acoreBindcategStrict 					= CBindings_Strict
-  acoreBindcategPlain					= CBindings_Plain
+  acoreBindcategRec 					= CBindCateg_Rec
+  acoreBindcategStrict 					= CBindCateg_Strict
+  acoreBindcategPlain					= CBindCateg_Plain
 
   -- inspecting
   acoreExprMbLet (CExpr_Let c b e)      = Just (c,b,e)
@@ -761,11 +761,11 @@ instance AbstractCore CExpr CMetaVal CBind CBindAspect CBindingsCateg CMetaBind 
   acoreExprMbInt (CExpr_Int i)          = Just (tyInt,toInteger i)
   acoreExprMbInt _                      = Nothing
 
-  acoreBindcategMbRec CBindings_Rec     = Just CBindings_Rec
+  acoreBindcategMbRec CBindCateg_Rec    = Just CBindCateg_Rec
   acoreBindcategMbRec _                 = Nothing
 
-  acoreBindcategMbStrict CBindings_Strict  = Just CBindings_Strict
-  acoreBindcategMbStrict _                 = Nothing
+  acoreBindcategMbStrict CBindCateg_Strict  = Just CBindCateg_Strict
+  acoreBindcategMbStrict _                  = Nothing
 
   acorePatMbCon (CPat_Con tg r fs)		= Just (tg,r,fs)
   acorePatMbCon _                 		= Nothing

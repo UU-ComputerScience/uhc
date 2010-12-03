@@ -92,16 +92,16 @@ SEM CBindAspect
 %%[(8 codegen)
 SEM CExpr
   | Let         loc         .   (remUseMp,cTrf)
-                                            =   if @categ == CBindings_Rec
+                                            =   if @categ == CBindCateg_Rec
                                                 then  let  h = Map.filterWithKey (\k e -> k `Map.member` @binds.bindMp) @binds.useMp
                                                            o = scc . Map.toList $ h
                                                            mk c ns b = acoreLet c [ acoreBind1Metas n m e | n <- ns, (e,m) <- maybeToList (Map.lookup n @binds.bindMp) ] b
                                                            t = foldr (\bs b
                                                                          -> case bs of
                                                                                [n] | n `elem` Map.findWithDefault [] n h
-                                                                                                -> mk CBindings_Rec bs b
-                                                                                   | otherwise  -> mk CBindings_Plain bs b
-                                                                               _                -> mk CBindings_Rec bs b
+                                                                                                -> mk CBindCateg_Rec bs b
+                                                                                   | otherwise  -> mk CBindCateg_Plain bs b
+                                                                               _                -> mk CBindCateg_Rec bs b
                                                                      )
                                                                      @body.cTrf o
                                                       in   (@binds.useMp `Map.difference` h,t)

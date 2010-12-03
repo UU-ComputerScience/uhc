@@ -827,7 +827,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
 %%]]
 {- -- when ext rec deletes are implemented
                                      | n2 == hsnRowEmpty && null fuUpdL && not (null fuDelL) && null e2
-                                     ->  let coe = Coe_Map (\e -> acoreLet CBindings_Plain [CBind_Bind rn e] (fuMkCExpr globOpts u4 fuDelL r))
+                                     ->  let coe = Coe_Map (\e -> acoreLet CBindCateg_Plain [CBind_Bind rn e] (fuMkCExpr globOpts u4 fuDelL r))
                                          in  fo  {  foLRCoe = lrcoeLSingleton coe
                                                  ,  foPredOccL = prDelL ++ foPredOccL fo
                                                  ,  foGathCnstrMp = gathPredLToProveCnstrMp prDelL `cnstrMpUnion` foGathCnstrMp fo
@@ -940,10 +940,11 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
             fTySyn fi updTy t1 t2
               = case filter (not . foHasErrs) tries of
                   (fo:_) -> fo
-                  _      -> case (drop limit rt1, drop limit rt2) of
-                              (((t,tr):_),_         ) -> err (trfiAdd (tybetaredextraTracePPL tr) fi2) [rngLift range Err_TyBetaRedLimit (fiAppVarMp fi2 t1) (fiAppVarMp fi2 t) limit]
-                              (_         ,((t,tr):_)) -> err (trfiAdd (tybetaredextraTracePPL tr) fi2) [rngLift range Err_TyBetaRedLimit (fiAppVarMp fi2 t2) (fiAppVarMp fi2 t) limit]
-                              _                       -> last tries
+                  _      -> case (drop limit rt1, drop limit rt2, tries) of
+                              (((t,tr):_),_         ,_       ) -> err (trfiAdd (tybetaredextraTracePPL tr) fi2) [rngLift range Err_TyBetaRedLimit (fiAppVarMp fi2 t1) (fiAppVarMp fi2 t) limit]
+                              (_         ,((t,tr):_),_       ) -> err (trfiAdd (tybetaredextraTracePPL tr) fi2) [rngLift range Err_TyBetaRedLimit (fiAppVarMp fi2 t2) (fiAppVarMp fi2 t) limit]
+                              (_         ,_         ,ts@(_:_)) -> last ts
+                              (_         ,_         ,_       ) -> errClash fi2 t1 t2
               where fi2   = trfi "fTySyn" ("t1:" >#< ppTyWithFI fi t1 >-< "t2:" >#< ppTyWithFI fi t2) fi
                     limit = ehcOptTyBetaRedCutOffAt globOpts
                     rt1   = tyBetaRedAndInit fi2 betaRedTyLookup t1

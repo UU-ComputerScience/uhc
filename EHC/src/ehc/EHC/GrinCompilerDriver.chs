@@ -260,7 +260,7 @@ initState opts
                      , gcsLLVM       = LLVMModule_LLVMModule [] [] [] [] [] []
 %%]
 %%[(8 codegen clr)
-                     , gcsCil        = undefined
+                     , gcsCil        = panic "GrinCompilerDriver.initState.gcsCil"
 %%]
 %%[(8 codegen grin) -1.doCompileGrin
                      , gcsHptMap     = listArray (1,0) []

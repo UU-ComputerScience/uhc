@@ -302,6 +302,16 @@ SEM Decl
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Nr of fields per label
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(7 hmtyinfer)
+SEM DataField
+  | Field       loc         .   nrFieldsForLabel    =   maybe 1 length @mbLabels
+                loc         .   nrFieldsForLabel    :   Int
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Type+label of data fields
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -323,11 +333,12 @@ SEM DataField
 ATTR AllDataField [ | | fldAnnL USE {++} {[]}: {[DataConFldAnnInfo]} ]
 
 SEM DataField
-  | Field       lhs         .   fldAnnL             =   [ DataConFldAnnInfo
+  | Field       lhs         .   fldAnnL             =   replicate @nrFieldsForLabel
+  														  ( DataConFldAnnInfo
 %%[[(8 codegen)
-                                                            (maybe Strictness_NonStrict id @tyExpr.mbStrictness)
+                                                              (maybe Strictness_NonStrict id @tyExpr.mbStrictness)
 %%]]
-                                                        ]
+                                                          )
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -364,7 +375,7 @@ SEM DataField
 ATTR AllDataField [ | | kiL USE {++} {[]}: TyL ]
 
 SEM DataField
-  | Field       lhs         .   kiL                 =   replicate (maybe 1 length @mbLabels) @tyExpr.ki
+  | Field       lhs         .   kiL                 =   replicate @nrFieldsForLabel @tyExpr.ki
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

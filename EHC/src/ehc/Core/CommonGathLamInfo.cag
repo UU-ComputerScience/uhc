@@ -1,0 +1,51 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Common AG for Core LamInfo gathering & propagation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[doesWhat doclatex
+Gathering.
+
+Hook(s):
+\begin{itemize}
+\item \verb|CodeAGItf.AGItf.howMergeLamInfo|, how to merge lam info
+\item \verb|CodeAGItf.AGItf.howUnionGathLamInfo|, how to union gathered lam info into inherited lam info
+\end{itemize}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Gathering LamInfo
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR
+  CModule CExpr
+  CodeAGItf
+    [ | | gathLamMp: LamMp ]
+
+SEM CExpr
+  | Let         lhs         .   gathLamMp =   @binds.bindLamMp `Map.union` @body.gathLamMp
+  | * - Let Ann CaseAltFail
+  				lhs         .   gathLamMp =   Map.empty
+%%]
+
+%%[(8 codegen)
+ATTR AllBind [ | | bindLamMp USE {`Map.union`} {Map.empty}: LamMp ]
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Combining LamInfo for local (per module) use
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+SEM CodeAGItf
+  | AGItf       loc         .   gathLamMp   =   lamMpMergeInto @howMergeLamInfo const @module.gathLamMp @lhs.lamMp -- lamMpUpdateWith @lhs.lamMp @module.gathLamMp
+                module      .   lamMp       =   @howUnionGathLamInfo @lhs.lamMp
+%%]
+
+

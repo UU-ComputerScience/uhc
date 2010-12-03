@@ -76,7 +76,7 @@ fuReorder opts nL fuL
                      ->  let  mkOff n lbl o
                                 =  let smaller l = rowLabCmp l lbl == LT
                                        off = length (filter smaller dels) - length (filter smaller exts)
-                                   in  acoreBind1Cat CBindings_Plain n (acoreBuiltinAddInt opts o off)
+                                   in  acoreBind1Cat CBindCateg_Plain n (acoreBuiltinAddInt opts o off)
                               no = acoreVar n
                          in   case f of
                                  CExpr_TupIns _ t l o e -> ((l,(\r -> CExpr_TupIns r t l no e,Nothing)) : fuL,(mkOff n l o):offL,l:exts,dels  )
@@ -95,8 +95,8 @@ fuMkCExpr :: EHCOpts -> UID -> FieldUpdateL CExpr -> CExpr -> CExpr
 fuMkCExpr opts u fuL r
   =  let  (n:nL) = map (uidHNm . uidChild) . mkNewUIDL (length fuL + 1) $ u
           (oL,fuL') = fuReorder opts nL fuL
-          bL = acoreBind1Cat CBindings_Plain n r : oL
-     in   acoreLet CBindings_Strict bL $ foldl (\r (_,(f,_)) -> f r) (acoreVar n) $ fuL'
+          bL = acoreBind1Cat CBindCateg_Plain n r : oL
+     in   acoreLet CBindCateg_Strict bL $ foldl (\r (_,(f,_)) -> f r) (acoreVar n) $ fuL'
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -233,7 +233,7 @@ patBindLOffset
            ->  let  offNm = hsnUniqify HsNameUniqifier_FieldOffset $ rpatNmNm pn
                in   case o of
                       CExpr_Int _  -> (b,[])
-                      _            -> (RPatFld_Fld l (acoreVar offNm) n p,[acoreBind1Cat CBindings_Plain offNm o])
+                      _            -> (RPatFld_Fld l (acoreVar offNm) n p,[acoreBind1Cat CBindCateg_Plain offNm o])
        )
 %%]
 

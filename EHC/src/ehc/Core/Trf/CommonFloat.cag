@@ -57,7 +57,7 @@ SEM CExpr
 
 %%[(8 codegen)
 SEM CBindAspect
-  | Bind        loc         .  isClosurableBind =   (  @lhs.letBindingsCateg /= CBindings_Strict
+  | Bind        loc         .  isClosurableBind =   (  @lhs.letBindingsCateg /= CBindCateg_Strict
                                                     && @expr.isClosurableExpr
                                                     )
                                                     

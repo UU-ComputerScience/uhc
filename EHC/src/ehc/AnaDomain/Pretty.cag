@@ -100,7 +100,7 @@ SEM RelevTy
   | None        lhs         .   pp          =   pp "#"
   | Err         lhs         .   pp          =   "#:" >#< @str
   | Ana         lhs         .   pp          =   @eval.pp
-  | Fun         lhs         .   pp          =   (if null @quantNmL then empty else "forall" >#< ppSpaces @quantNmL >#< ". ")
+  | Fun         lhs         .   pp          =   (if null @quantNmL then empty else "forall" >|< ppParens (show @quant) >#< ppSpaces @quantNmL >#< ". ")
                                                 >|< (if null @quals.ppL then empty else ppParensCommas' @quals.ppL >#< "=> ")
                                                 >|< ppParensCommas @args.ppL >#< "->" >#< ppParens @res.pp
 

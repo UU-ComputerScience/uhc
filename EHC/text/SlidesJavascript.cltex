@@ -44,12 +44,12 @@ main = do  alert "Ola"
 
 Javascript already provides functions as parameters
 \begin{itemize}
-\item {\color{red} Haskell} |map|
+\item {\color{uured} Haskell} |map|
 %%[[wrap=safecode
 map f []      =  []
 map f (x:xs)  =  f x : map f xs
 %%]]
-\item {\color{red} Javascript} |map|
+\item {\color{uured} Javascript} |map|
 %%[[wrap=safecode
 map = function(f,l) {
     if ( isNil(l) ) {
@@ -68,11 +68,11 @@ map = function(f,l) {
 
 List implementation
 \begin{itemize}
-\item {\color{red} Haskell} list
+\item {\color{uured} Haskell} list
 %%[[wrap=safecode
 data List a = Nil | Cons a (List a)
 %%]]
-\item {\color{red} Javascript} list, array with tag \& fields
+\item {\color{uured} Javascript} list, array with tag \& fields
 %%[[wrap=safecode
 cons   =  function(h,t)  { return [1,h,t]    ; }
 nil    =  function()     { return [0]        ; }
@@ -92,11 +92,11 @@ l2a    =  -- from list to array
 
 List use
 \begin{itemize}
-\item {\color{red} Haskell}
+\item {\color{uured} Haskell}
 %%[[wrap=safecode
 take 3 (map (10*) [1,2,3,4])
 %%]]
-\item {\color{red} Javascript}
+\item {\color{uured} Javascript}
 %%[[wrap=safecode
 take  ( 3, map  ( function(i){return 10*i;}
                 , a2l( [1,2,3,4] )
@@ -116,19 +116,19 @@ take  ( 3, map  ( function(i){return 10*i;}
 
 Javascript evaluates arguments before passing
 \begin{itemize}
-\item {\color{red} Haskell} infinite list |[n ..]|
+\item {\color{uured} Haskell} infinite list |[n ..]|
 %%[[wrap=safecode
 from n = n : from (n+1)
 ._. ^^ take 3 (from 2)
 %%]]
-\item {\color{red} Javascript} infinite list
+\item {\color{uured} Javascript} infinite list
 %%[[wrap=safecode
 from = function(n) {
     return cons( n, from( n+1 ) ) ;
 }
 ._. ^^ take( 3, from( 2 ) )
 %%]]
-\item |from| does not return: {\color{red} eager} instead of lazy
+\item |from| does not return: {\color{uured} eager} instead of lazy
 \end{itemize}
 
 \end{frame}
@@ -139,11 +139,11 @@ from = function(n) {
 
 Manual currying
 \begin{itemize}
-\item {\color{red} Haskell} partial application
+\item {\color{uured} Haskell} partial application
 %%[[wrap=safecode
 ._. ^^ map (10*) ._.
 %%]]
-\item {\color{red} Javascript} partial application
+\item {\color{uured} Javascript} partial application
 %%[[wrap=safecode
 ._. ^^ map  ( function(i){return 10*i;}, ._.
 %%]]
@@ -161,17 +161,17 @@ Need to encode Haskell functions explicitly in Javascript
 
 Eager (call by value) vs. lazy (call by need)
 \begin{itemize}
-\item {\color{red} Haskell}
+\item {\color{uured} Haskell}
 \begin{itemize}
-\item Values are computed {\color{red} on demand}
+\item Values are computed {\color{uured} on demand}
 %%[[wrap=safecode
 ._. ^^ take 3 (from 2)
 %%]]
 \item |take| asks for 3 list elements, |from| only computes 3.
 \end{itemize}
-\item {\color{red} Javascript}
+\item {\color{uured} Javascript}
 \begin{itemize}
-\item Values are computed {\color{red} immediately}
+\item Values are computed {\color{uured} immediately}
 %%[[wrap=safecode
 ._. ^^ take( 3, from( 2 ) )
 %%]]
@@ -249,7 +249,7 @@ General application remembers the function + arguments
 %%@Blog.js.interpreter.impl.App.construct wrap=safecode
 
 \begin{itemize}
-\item Uses a Javascript function (closure) to remember and compute the application
+\item The {\color{uured} trick}: Javascript function (closure) to remember and compute the application
 \item |eOrV|: either the computation or the result
 \item Update of |eOrV| avoids recomputation when evaluated by |ev| a 2nd time
 \end{itemize}
@@ -338,12 +338,12 @@ Fun.prototype = {
 \frametitle{Usage}
 
 \begin{itemize}
-\item {\color{red} Haskell} |map|
+\item {\color{uured} Haskell} |map|
 %%[[wrap=safecode
 map f []      =  []
 map f (x:xs)  =  f x : map f xs
 %%]]
-\item {\color{red} Javascript} |map| using laziness wrappers
+\item {\color{uured} Javascript} |map| using laziness wrappers
 %%[[wrap=safecode
 map = new Fun( greyOn^ function(f,l) {
     l = ev(l) ;
@@ -365,11 +365,11 @@ app2 = function(f,a,b  ) = new App(f, [a,b  ]) ;
 \frametitle{Usage}
 
 \begin{itemize}
-\item {\color{red} Haskell} |map| usage
+\item {\color{uured} Haskell} |map| usage
 %%[[wrap=safecode
 take 3 (map (10*) [1,2,3,4])
 %%]]
-\item {\color{red} Javascript} |map| usage with laziness wrappers
+\item {\color{uured} Javascript} |map| usage with laziness wrappers
 %%[[wrap=safecode
 mul = new Fun( function(x,y) {return x*y;} )
 
@@ -385,14 +385,14 @@ app2  ( take, greyOn^ 3, blackOn app2  ( map  , app1( mul, 10 )
 \begin{frame}
 \frametitle{Usage}
 
-Infinite lists return a continuation for a list instead of the list itself
+Infinite list returns a continuation for a list instead of the list itself
 \begin{itemize}
-\item {\color{red} Haskell} infinite list |[n ..]|
+\item {\color{uured} Haskell} infinite list |[n ..]|
 %%[[wrap=safecode
 from n = n : from (n+1)
 ._. ^^ take 3 (from 2)
 %%]]
-\item {\color{red} Javascript} infinite list
+\item {\color{uured} Javascript} infinite list
 %%[[wrap=safecode
 from = new Fun( greyOn^ function(n) {
     n = ev(n) ;
@@ -411,13 +411,13 @@ greyOn^ }
 What is wrong with Javascript functions returning evaluated results?
 
 \begin{itemize}
-\item {\color{red} Haskell} loop equivalent using tail recursion
+\item {\color{uured} Haskell} loop equivalent using tail recursion
 %%[[wrap=safecode
 foldl             :: (x -> y -> x) -> x -> [y] -> x
 foldl f z []      = z
 foldl f z (x:xs)  = foldl f (f z x) xs
 %%]]
-\item {\color{red} Javascript}
+\item {\color{uured} Javascript}
 %%[[wrap=safecode
 foldl = new Fun( function(f,z,l) {
     l = ev(l) ;
@@ -425,7 +425,7 @@ foldl = new Fun( function(f,z,l) {
         return ev( app3( foldl, f, app2( f, z, head(l) ), tail(l) ) ) ;
     } ... })
 %%]]
-\item |foldl| itself recurses, {\color{red} overflowing the Javascript stack}
+\item |foldl| itself recurses, {\color{uured} overflowing the Javascript stack}
 \end{itemize}
 
 \end{frame}
@@ -463,13 +463,13 @@ function ev( x ) {
 Reference to values before they are available
 
 \begin{itemize}
-\item {\color{red} Haskell} mutual recursive lists
+\item {\color{uured} Haskell} mutual recursive lists
 %%[[wrap=safecode
 f x =  let  l1 = x  : l2
             l2 = 3  : l1
        in   l2
 %%]]
-\item {\color{red} Javascript}
+\item {\color{uured} Javascript}
 %%[[wrap=safecode
 greyOn^ f = new Fun(function(x) {
   var l2 = ind()         ;  var l1 = ind()         ;
@@ -520,7 +520,8 @@ main = do alert (stringToJSString "Ola")
 myAlert :: JSString -> IO ()
 myAlert s = alert s
 
-foreign export jscript "hsAlert" myAlert :: JSString -> IO ()
+foreign export jscript  "hsAlert"
+                        myAlert :: JSString -> IO ()
 %%]]
 
 \item Available as |hsAlert| in Javascript
@@ -596,8 +597,33 @@ wheel-sieve2    & 729   & 2721  & 3.7 \\ \hline
 Times in ms, no multiple samples
 
 \end{frame}
+%%]
 
+%%[relatedWork
+\begin{frame}
+\frametitle{Related work}
 
+\begin{itemize}
+\item Clean to SAPL, \verb|http://www.nlda-tw.nl/janmartin/sapljs/|
+ \begin{itemize}
+ \item Hidden inside |iTasks| framework
+ \item Tail recursion problematic
+ \end{itemize}
+\item GhcJS, \verb|http://github.com/sviperll/ghcjs|
+ \begin{itemize}
+ \item Problematic foreign function interface (only C call)
+ \item Separate branch of GHC
+ \end{itemize}
+\item Javascript backend for YHC
+ \begin{itemize}
+ \item Not supported anymore
+ \end{itemize}
+\end{itemize}
+
+\end{frame}
+%%]
+
+%%[summary
 \begin{frame}
 \frametitle{Summary}
 

@@ -43,7 +43,7 @@ Currently the following is maintained:
 %%% Calling convention info for lambda expressions/CAFs: known function arity
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs export(StackTraceInfo(..),LamInfo(..),emptyLamInfo,emptyLamInfo')
+%%[(8 codegen) hs export(StackTraceInfo(..))
 data StackTraceInfo
   = StackTraceInfo_None
   | StackTraceInfo_HasStackTraceEquiv	HsName		-- has a stack traced equivalent
@@ -51,16 +51,23 @@ data StackTraceInfo
 %%[[20
   deriving (Data,Typeable)
 %%]]
+%%]
 
+%%[(8 codegen) hs export(LamInfoBindAsp(..))
 -- | per aspect info
 data LamInfoBindAsp
-  = LamInfoBindAsp_RelevTy		!RelevTy			-- relevance typing
+  = LamInfoBindAsp_RelevTy
+      { libindaspRelevTy 		:: !RelevTy			-- relevance typing
+      }
+  -- | LamInfoBindAsp_StrictTy		!RelevTy			-- and its strict incarnation
 %%[[20
   deriving (Data,Typeable)
 %%]]
 
 type LamInfoBindAspMp = Map.Map ACoreBindAspectKeyS LamInfoBindAsp
+%%]
 
+%%[(8 codegen) hs export(LamInfo(..),emptyLamInfo,emptyLamInfo')
 -- | per lambda implementation info
 data LamInfo
   = LamInfo
@@ -120,7 +127,15 @@ lamMpMergeInto2 mergeL2RInfo mergeL2RMp newMp prevMp
               emptyLamInfo
               newMp prevMp
 
-%%[(8 codegen) hs export(lamMpLookupLam,lamMpLookupCaf)
+%%[(8 codegen) hs export(lamMpLookupAsp,lamMpLookupAsp2,lamMpLookupLam,lamMpLookupCaf)
+lamMpLookupAsp :: HsName -> ACoreBindAspectKeyS -> LamMp -> Maybe LamInfoBindAsp
+lamMpLookupAsp n a m
+  = do li <- Map.lookup n m
+       Map.lookup a (laminfoBindAspMp li)
+
+lamMpLookupAsp2 :: ACoreBindRef -> LamMp -> Maybe LamInfoBindAsp
+lamMpLookupAsp2 (ACoreBindRef n (Just a)) m = lamMpLookupAsp n a m
+
 lamMpLookupLam :: HsName -> LamMp -> Maybe Int
 lamMpLookupLam n m
   = case Map.lookup n m of
@@ -207,10 +222,12 @@ instance Serialize GrinByteCodeLamInfo where
   sget = liftM  GrinByteCodeLamInfo sget
 
 instance Serialize LamInfoBindAsp where
-  sput (LamInfoBindAsp_RelevTy a) = sputWord8 0 >> sput a
+  sput (LamInfoBindAsp_RelevTy  a) = sputWord8 0 >> sput a
+  -- sput (LamInfoBindAsp_StrictTy a) = sputWord8 1 >> sput a
   sget = do
     t <- sgetWord8
     case t of
-      0 -> liftM  LamInfoBindAsp_RelevTy sget
+      0 -> liftM  LamInfoBindAsp_RelevTy  sget
+      -- 1 -> liftM  LamInfoBindAsp_StrictTy sget
 %%]
 

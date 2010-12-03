@@ -17,7 +17,7 @@
 %%[(8 codegen) hs import({%{EH}AbstractCore})
 %%]
 
-%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonBindNm})
+%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonLevLet},{Core/CommonBindNm})
 WRAPPER CodeAGItf
 %%]
 
@@ -335,7 +335,6 @@ SEM CPatRest
   | Var         lhs         .   nmL         =   [@nm]
 
 SEM CExpr
-  | Let         binds       .   lev         =   @lhs.lev + 1
   | Lam         body        .   lev         =   if @body.isLamBody then @lhs.lev + 1 else @lhs.lev
 
 SEM CAlt

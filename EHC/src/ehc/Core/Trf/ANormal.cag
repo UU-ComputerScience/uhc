@@ -141,7 +141,7 @@ SEM CPatFld
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen) hs
-type LevBindSq = Seq.FastSeq (Int,(CBindingsCateg,CBindL))
+type LevBindSq = Seq.FastSeq (Int,(CBindCateg,CBindL))
 
 levBindSplit :: Int -> LevBindSq -> (LevBindSq,LevBindSq)
 levBindSplit lev b
@@ -163,11 +163,11 @@ SEM CExpr
                                             =   let ((hl,_):_) = @binds.bindL
                                                     b1  = @binds.levBindSq
                                                     b2  = Seq.singleton (@strLev hl,(@categ,assocLElts @binds.bindL))
-                                                    b12 = Seq.singleton (@maxBindLev,(CBindings_Rec,concat $ List.map (\(_,(_,b)) -> b) $ Seq.toList $ (b1 Seq.:++: b2)))
+                                                    b12 = Seq.singleton (@maxBindLev,(CBindCateg_Rec,concat $ List.map (\(_,(_,b)) -> b) $ Seq.toList $ (b1 Seq.:++: b2)))
                                                     b3  = @body.levBindSq
                                                     b   = case @categ of 
-                                                            CBindings_Rec -> b12 Seq.:++: b3
-                                                            _             -> b1  Seq.:++: b2 Seq.:++: b3
+                                                            CBindCateg_Rec -> b12 Seq.:++: b3
+                                                            _              -> b1  Seq.:++: b2 Seq.:++: b3
                                                 in  (b,Seq.empty)
                 lhs         .   levBindSq   =   @remBindSq Seq.:++: @levBindSq
   | Lam         loc         .   (hereBindSq,remBindSq)
@@ -307,7 +307,7 @@ SEM CExpr
 mkTrf :: Bool -> Int -> Int -> HsName -> CExpr -> (CExpr,LevBindSq)
 mkTrf cond outerLev hereLev n e
   =  if cond
-     then (acoreVar n,Seq.singleton (hereLev,(CBindings_Plain,[acoreBind1 n e])))
+     then (acoreVar n,Seq.singleton (hereLev,(CBindCateg_Plain,[acoreBind1 n e])))
      else (e,Seq.empty)
 %%]
 
@@ -345,7 +345,7 @@ SEM CExpr
                                                           . acoreLam1 @arg
                                                           . mkLetTrf @hereBindSq
                                                 in  if cexprIsLam @body.cTrf && not (List.null (Seq.toList @hereBindSq))
-                                                    then mkTLB (CExpr_Let CBindings_Plain [acoreBind1Cat CBindings_Plain @trNm2 @body.cTrf] (acoreVar @trNm2))
+                                                    then mkTLB (CExpr_Let CBindCateg_Plain [acoreBind1Cat CBindCateg_Plain @trNm2 @body.cTrf] (acoreVar @trNm2))
                                                     else mkTLB @body.cTrf
   | Let         (lhs.cTrf,loc.levBindSq)    =   mkTrf @trfIsOk @lhs.lev @levOf @trNm $ mkLetTrf @hereBindSq @body.cTrf
 %%]

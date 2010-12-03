@@ -1,0 +1,258 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Use strictness info injected by strictness analysis to optimize
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[doesWhat doclatex
+Exploit strictness analysis results.
+
+Specific transformations:
+\begin{itemize}
+\item Split definitions into worker/wrapper.
+\item Eagerly evaluate when allowed.
+\item Avoid evaluation when not necessary.
+\end{itemize}
+
+20101127: under construction, currently just a placeholder.
+%%]
+
+%%[(8 codegen) hs module {%{EH}Core.Trf.OptimizeStrictness} import(Data.Maybe,{%{EH}Base.Common},{%{EH}Opts},{%{EH}Core},{%{EH}Ty})
+%%]
+
+%%[(8 codegen) hs import({%{EH}AbstractCore})
+%%]
+
+%%[(8 codegen) hs import(qualified Data.Map as Map,qualified Data.Set as Set, Data.List, Data.Maybe)
+%%]
+%%[(8 codegen) hs import(EH.Util.Utils)
+%%]
+
+%%[(8 codegen) hs import({%{EH}LamInfo})
+%%]
+
+%%[(8 codegen) hs import({%{EH}Base.Debug},{%{EH}Base.Builtin})
+%%]
+
+%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonLamInfo},{Core/CommonGathLamInfo},{Core/CommonBindNm},{Core/CommonPred})
+WRAPPER CodeAGItf
+%%]
+
+%%[(99 codegen)
+PRAGMA nocycle novisit
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell itf
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs export(cmodTrfOptimizeStrictness)
+cmodTrfOptimizeStrictness
+  :: EHCOpts
+     -> LamMp
+     -> CModule
+     -> ( CModule
+        , LamMp
+        )
+cmodTrfOptimizeStrictness
+     opts
+     lamMp
+     cmod
+  =  let  t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf cmod))
+                             (Inh_CodeAGItf
+                               { opts_Inh_CodeAGItf = opts
+                               , lamMp_Inh_CodeAGItf = lamMp
+                               })
+     in   ( cTrf_Syn_CodeAGItf t
+          , gathLamMp_Syn_CodeAGItf t
+          )
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Options
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AllCodeNT CodeAGItf [ opts: EHCOpts | | ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Transformation/replica
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AllCodeNT [ | | cTrf: SELF ]
+ATTR CodeAGItf [ | | cTrf: CModule ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Gathering LamInfo, providing hook for Core/CommonLamInfo
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+SEM CodeAGItf
+  | AGItf       loc         .   howUnionGathLamInfo
+                                                =   Map.union @gathLamMp
+%%]
+
+%%[(8 codegen)
+SEM CodeAGItf
+  | AGItf       loc         .   howMergeLamInfo =   (\(LamInfo {laminfoBindAspMp=m}) i -> i {laminfoBindAspMp = m `Map.union` laminfoBindAspMp i})
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Newly bound LamInfo
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin)
+SEM CBind
+  | Bind        lhs         .   bindLamMp       =   case @mbStrictArgsRes of
+                                                      Just (t,_,_) -> Map.singleton @nm (emptyLamInfo {laminfoBindAspMp = Map.fromList l})
+                                                                   where l = [(acbaspkeyStrict, LamInfoBindAsp_RelevTy t)]
+                                                      _            -> Map.empty
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Evaluation context
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR CExpr MbCExpr AllAlt [ anaEvalCtxt: AnaEval | | ]
+
+SEM CBindAspect
+  | * - Bind    loc         .   anaEvalCtxt     =   top
+
+SEM CModule
+  | *           loc         .   anaEvalCtxt     =   top
+
+SEM CPatFld
+  | *           loc         .   anaEvalCtxt     =   bot
+
+SEM *
+  | *			loc			.	anaEvalCtxt		: 	AnaEval
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Worker/wrapper: get the strictness info at the right place for lambda defs
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AllBindAspect [ | | gathStrictTyL USE {++} {[]}: {[RelevTy]} ]
+
+SEM CBindAspect
+  | RelevTy     loc         .   gathStrictTyL   =   if @aspectKeyS == acbaspkeyStrict
+                                                    then [@relevTy]
+                                                    else []
+%%]
+
+%%[(8 codegen)
+ATTR AllBindAspect [ mbStrictArgsRes: {Maybe (RelevTy,[AnaEval],AnaEval)} | | ]
+
+SEM CBind
+  | Bind        loc         .   mbStrictArgsRes =   case @bindAspects.gathStrictTyL of
+                                                      [t@(RelevTy_Fun _ _ _ a r)]
+                                                        -> Just (t, map relevtyAnaEval a, relevtyAnaEval r)
+                                                      _ -> Nothing
+%%]
+
+%%[(8 codegen)
+SEM CBindAspect
+  | Bind        loc         .   doWorkerWrapper =   isJust @lhs.mbStrictArgsRes
+%%]
+
+%%[(8 codegen)
+ATTR CExpr [ lamArgAnaEvalL: {[AnaEval]} | | ]
+
+SEM CBindAspect
+  | Bind        (expr.lamArgAnaEvalL,expr.anaEvalCtxt)
+                                                =   maybe ([],top) tup123to23 @lhs.mbStrictArgsRes
+  | * - Bind    loc         .   lamArgAnaEvalL  =   []
+
+SEM CModule CPatFld MbCExpr CAlt
+  | *           loc         .   lamArgAnaEvalL  =   []
+
+SEM CExpr
+  | Lam         (loc.argAnaEval,body.lamArgAnaEvalL)
+                                                =   hdAndTl' top @lhs.lamArgAnaEvalL
+  | * - Lam Ann loc         .   lamArgAnaEvalL  =   []
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Worker/wrapper: the wrapper & worker
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AllBindAspect [ | | cTrfBindAspectL USE {++} {[]} : {[CBindAspect]} ]
+
+SEM CBindAspect
+  | Bind        loc         .   wrapper         =   case (@expr.mbLam,@lhs.mbStrictArgsRes) of
+                                                      (Just as, Just (_,evs,_))
+                                                        -> [ CBindAspect_Val acbaspkeyNone
+                                                           $ acoreLam wrapperArgs
+                                                           $ (\b -> foldr ($) b bodyWrappers)
+                                                           $ acoreApp (CExpr_Var (ACoreBindRef @lhs.nm (Just acbaspkeyStrict)))
+                                                           $ map acoreVar workerArgs
+                                                           ]
+                                                        where (wrapperArgs,workerArgs,bodyWrappers) = unzip3 $ zipWith mk as evs
+                                                              mk a AnaEval_WHNF = (a, a', acoreLet1Strict a' (acoreVar a))
+                                                                 where a' = hsnUniqify HsNameUniqifier_Evaluated a
+                                                              mk a _            = (a, a , id                             )
+                                                      _ -> []
+                            .   worker          =   if @doWorkerWrapper then [CBindAspect_Val acbaspkeyStrict @expr.cTrf] else []
+                            .   oldbinding      =   if @doWorkerWrapper then [] else [@cTrf]
+                lhs         .   cTrfBindAspectL =   @worker ++ @wrapper ++ @oldbinding
+%%[[90
+  | FFE         lhs         .   cTrfBindAspectL =   [@cTrf]
+%%]]
+  | * - Bind
+%%[[90
+        FFE
+%%]]
+                lhs         .   cTrfBindAspectL =   []
+%%]
+
+%%[(8 codegen)
+SEM CBind
+  | Bind        lhs         .   cTrf            =   CBind_Bind @nm @bindAspects.cTrfBindAspectL
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Worker/wrapper: use of worker directly, the variable
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+SEM CExpr
+  | Var         loc         .   strictRef       =   acbrefAspAnd acbaspkeyStrict @ref
+                            .   mbStrict        =   case fmap libindaspRelevTy $ lamMpLookupAsp2 @strictRef @lhs.lamMp of
+                                                      Just (t@(RelevTy_Fun _ _ _ a r))
+                                                        -> Just (t, map relevtyAnaEval a, relevtyAnaEval r)
+                                                      _ -> Nothing
+%%]
+
+%%[(8 codegen)
+SEM CExpr
+  | Var         lhs         .   cTrf            =   CExpr_Var $ maybe @ref (const @strictRef) @mbStrict
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Worker/wrapper: use of worker directly, the application
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR CExpr [ | | appArgAnaEvalL: {[AnaEval]} ]
+ATTR CExpr [ | | appResAnaEval :   AnaEval   ]
+
+SEM CExpr
+  | Var         (lhs.appArgAnaEvalL,lhs.appResAnaEval)
+                                                =   maybe ([],top) tup123to23 @mbStrict
+  | App         (arg.anaEvalCtxt,lhs.appArgAnaEvalL)
+                                                =   hdAndTl' top @func.appArgAnaEvalL
+  | * - Var App Ann
+                lhs         .   appArgAnaEvalL  =   []
+                            .   appResAnaEval   =   top
+%%]
+
+

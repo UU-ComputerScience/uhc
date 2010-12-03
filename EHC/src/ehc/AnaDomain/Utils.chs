@@ -40,6 +40,7 @@ data RelevTyQuantHow
   | RelevTyQuantHow_RemoveAmbig			-- constraints over vars not in type are removed
   | RelevTyQuantHow_VarDefaultToTop		-- vars left over, and in type, are defaulted to top
   | RelevTyQuantHow_Quant				-- quant
+  | RelevTyQuantHow_Rec					-- for recursive use
   deriving Eq
 %%]
 
@@ -53,8 +54,13 @@ relevtyQuant
         )
 relevtyQuant how m qs t
   = case funTy of
-      t'@(RelevTy_Fun _ _ as r)
-         -> ( RelevTy_Fun quantOver qs4 as' r'
+      t'@(RelevTy_Fun _ _ _ as r) | RelevTyQuantHow_Rec `elem` how
+         -> ( RelevTy_Fun RQuant_Rec (ftv t') [] as r
+            , emptyVarMp
+            , Set.empty
+            )
+      t'@(RelevTy_Fun _ _ _ as r)
+         -> ( RelevTy_Fun RQuant_Forall quantOver qs4 as' r'
             , solveVarMp
             , qs3rem
             )
@@ -80,8 +86,8 @@ relevtyQuant how m qs t
             , Set.empty
             )
   where funTy = case m |=> t of
-                  t'@(RelevTy_Fun _ _ _ _) -> t'
-                  t'                       -> RelevTy_Fun [] [] [] t'
+                  t'@(RelevTy_Fun _ _ _ _ _) -> t'
+                  t'                         -> RelevTy_Fun RQuant_None [] [] [] t'
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

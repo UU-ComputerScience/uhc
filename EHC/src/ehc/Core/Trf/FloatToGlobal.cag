@@ -42,7 +42,7 @@ The following invariants are and must be maintained:
 %%[(8 codegen) hs import(Debug.Trace)
 %%]
 
-%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/Trf/CommonFv},{Core/CommonLev},{Core/CommonPred},{Core/CommonCtxtPred},{Core/CommonBindNm},{Core/Trf/CommonFloat})
+%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/Trf/CommonFv},{Core/CommonLev},{Core/CommonLevLet},{Core/CommonPred},{Core/CommonCtxtPred},{Core/CommonBindNm},{Core/Trf/CommonFloat})
 WRAPPER CodeAGItf
 %%]
 
@@ -60,16 +60,6 @@ cmodTrfFloatToGlobal cmod
   =  let  t = wrap_CodeAGItf  (sem_CodeAGItf (CodeAGItf_AGItf cmod))
                               (Inh_CodeAGItf)
      in   cTrf_Syn_CodeAGItf t
-%%]
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Level
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8 codegen)
-SEM CExpr
-  | Let         binds . lev  =  @lhs.lev + 1
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -174,10 +164,10 @@ SEM CBindAspect
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen)
-ATTR AllCodeNT [ | | cFloatedBindGrps USE {`Seq.union`} {Seq.empty}: {Seq.FastSeq (CBindingsCateg,Seq.FastSeq CBind)} ]
+ATTR AllCodeNT [ | | cFloatedBindGrps USE {`Seq.union`} {Seq.empty}: {Seq.FastSeq (CBindCateg,Seq.FastSeq CBind)} ]
 
 SEM CExpr
-  | Let         lhs . cFloatedBindGrps  =   if @lhs.lev == cLevModule
+  | Let         lhs . cFloatedBindGrps  =   if @isGlobal
                                             then Seq.empty
                                             else @loc.bindingGroupsToFloat
 %%]
@@ -190,11 +180,11 @@ SEM CExpr
 SEM CExpr
   | Let         loc.( bindingsToKeep
                     , bindingsToFloat
-                    )                   =   if @lhs.lev == cLevModule
+                    )                   =   if @isGlobal
                                             then  ( @binds.cLargeCAFBinds `Seq.union` @binds.cSmallCAFBinds `Seq.union` @binds.cLamBinds
                                                   , Seq.empty
                                                   )
-                                            else if @categ == CBindings_Strict 
+                                            else if @categ == CBindCateg_Strict 
                                             then  ( @binds.cLargeCAFBinds `Seq.union` @binds.cSmallCAFBinds
                                                   , @binds.cLamBinds
                                                   )
@@ -205,16 +195,16 @@ SEM CExpr
 
 SEM CExpr
   | Let         loc.bindingGroupsToCertainlyInsert
-                                        =   if @lhs.lev == cLevModule
+                                        =   if @isGlobal
                                             then -- merge inner floating binds if a recursive group; by definition no strict defs are floated, plain defs safely can be recursive
                                                  case @categ of
-                                                   CBindings_Rec -> Seq.singleton (@categ, (flatten $ Seq.map snd @binds.cFloatedBindGrps) `Seq.union` @loc.bindingsToKeep)
-                                                   _             -> @binds.cFloatedBindGrps `Seq.union` Seq.singleton (@categ, @loc.bindingsToKeep)
+                                                   CBindCateg_Rec -> Seq.singleton (@categ, (flatten $ Seq.map snd @binds.cFloatedBindGrps) `Seq.union` @loc.bindingsToKeep)
+                                                   _              -> @binds.cFloatedBindGrps `Seq.union` Seq.singleton (@categ, @loc.bindingsToKeep)
                                             else Seq.singleton (@categ, @loc.bindingsToKeep)
 
 SEM CExpr
   | Let         loc.bindingGroupsToPossiblyFloat
-                                        =   if @lhs.lev == cLevModule
+                                        =   if @isGlobal
                                             then Seq.empty
                                             else (Seq.singleton (@categ, @loc.bindingsToFloat) `Seq.union` @binds.cFloatedBindGrps `Seq.union` @body.cFloatedBindGrps)
 
