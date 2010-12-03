@@ -86,7 +86,7 @@ SEM CodeAGItf
 SEM CExpr
   | Let         loc         .   fvSCafMp    =   (let  start varS = fvsClosure @binds.bindVarS Set.empty varS @lhs.fvSCafMp @binds.fvSMp
                                                  in   case @categ of
-                                                        CBindings_Rec
+                                                        CBindCateg_Rec
                                                           ->  fvsTransClosure lm m
                                                           where (m,lm)  = start (@lhs.varS `Set.union` @binds.bindVarS)
                                                         _ ->  m
@@ -134,7 +134,7 @@ SEM CBindAspect
                             .   cTrfVar     =   acoreBind1Metas @lhs.nm @bindMeta.cTrf
                                                 $ acoreApp (acoreVar @nmLam)
                                                 $ map (\(n,cvi) -> (fvVarRepl @lhs.argMp n)) @argOldL
-                            .   cTrfLam     =   acoreBind1Cat CBindings_Plain @nmLam
+                            .   cTrfLam     =   acoreBind1Cat CBindCateg_Plain @nmLam
                                                 $ acoreLam [(n) | (n,cvi) <- @argNewL] @expr.cTrf
                 lhs         .   (varBindSq,lamBindSq)
                                             =   if null @argNewL
@@ -148,7 +148,7 @@ SEM CBindAspect
 
 SEM CExpr
   | Var         lhs         .   cTrf        =   fvVarRepl @lhs.argMp @nm
-  | Let         lhs         .   cTrf        =   acoreLet CBindings_Plain (Seq.toList @binds.lamBindSq)
+  | Let         lhs         .   cTrf        =   acoreLet CBindCateg_Plain (Seq.toList @binds.lamBindSq)
                                                 $ acoreLet @categ (Seq.toList @binds.varBindSq)
                                                 $ @body.cTrf
 %%]

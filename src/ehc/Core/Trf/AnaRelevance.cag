@@ -31,6 +31,9 @@ Analyse Core, using relevance analysis, to relate properties (like relevance) of
 %%[(8 codegen) hs import({%{EH}Gam},{%{EH}Gam.DataGam})
 %%]
 
+%%[(8 codegen) hs import({%{EH}LamInfo})
+%%]
+
 %%[(8 codegen) hs import({%{EH}AnaDomain.Trf.Instantiate})
 %%]
 
@@ -38,7 +41,7 @@ Analyse Core, using relevance analysis, to relate properties (like relevance) of
 %%[(8 codegen) hs import({%{EH}Base.Debug},EH.Util.Pretty,{%{EH}AnaDomain.Pretty})
 %%]
 
-%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonFFI},{Core/CommonBindNm},{Core/Trf/CommonStructureInfo},{Core/CommonCtxtPred},{Core/Trf/CommonFv})
+%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonFFI},{Core/CommonBindNm},{Core/Trf/CommonStructureInfo},{Core/CommonCtxtPred},{Core/Trf/CommonFv},{Core/CommonLamInfo},{Core/CommonGathLamInfo})
 WRAPPER CodeAGItf
 %%]
 
@@ -52,14 +55,27 @@ PRAGMA strictcase
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen) hs export(cmodTrfAnaRelevance)
-cmodTrfAnaRelevance :: EHCOpts -> DataGam -> CModule -> CModule
-cmodTrfAnaRelevance opts dataGam cmod
+cmodTrfAnaRelevance
+  :: EHCOpts
+     -> DataGam
+     -> LamMp
+     -> CModule
+     -> ( CModule
+        , LamMp
+        )
+cmodTrfAnaRelevance
+     opts dataGam
+     lamMp
+     cmod
   =  let  t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf cmod))
                              (Inh_CodeAGItf
                                { opts_Inh_CodeAGItf = opts
                                , dataGam_Inh_CodeAGItf = dataGam
+                               , lamMp_Inh_CodeAGItf = lamMp
                                })
-     in   cTrf_Syn_CodeAGItf t
+     in   ( cTrf_Syn_CodeAGItf t
+          , gathLamMp_Syn_CodeAGItf t
+          )
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -85,9 +101,36 @@ data WhatToRelevInfer
 ATTR AllCodeNT [ whatTo: {[WhatToRelevInfer]} | | ]
 
 SEM CodeAGItf
-  | AGItf       loc         .   whatTo          =   [ WhatToRelevInfer_Quant
-                                                    , WhatToRelevInfer_InstToBot
-                                                    ]
+  | AGItf       loc         .   whatTo          =   [ WhatToRelevInfer_Quant ]
+                                                    ++ (if ehcOptPriv @lhs.opts then [] else [ WhatToRelevInfer_InstToBot ])
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Gathering LamInfo, providing hook for Core/CommonLamInfo
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+SEM CodeAGItf
+  | AGItf       loc         .	howUnionGathLamInfo
+  												=	id
+%%]
+
+%%[(8 codegen)
+SEM CodeAGItf
+  | AGItf       loc         .   howMergeLamInfo	=   (\(LamInfo {laminfoBindAspMp=m}) i -> i {laminfoBindAspMp = m `Map.union` laminfoBindAspMp i})
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Newly bound LamInfo
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin)
+SEM CBindAspect
+  | Bind        loc         .   doBindStrict    =   WhatToRelevInfer_InstToBot `elem` @lhs.whatTo
+                lhs         .   bindLamMp       =   let l = [ (acbaspkeyDefaultRelevTy, LamInfoBindAsp_RelevTy @bindTy) ]
+                                                            -- ++ (if @doBindStrict then [(acbaspkeyStrict, LamInfoBindAsp_RelevTy @strictTy2)] else [])
+                                                    in  Map.singleton @lhs.nm (emptyLamInfo {laminfoBindAspMp = Map.fromList l})
+                loc         .   doBindStrict    :   Bool
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -120,6 +163,10 @@ SEM *
 
 %%[(8 codegen) hs
 type REnv    = Gam HsName RelevTy
+
+-- | lookup in REnv first, then global LamMp
+renvLookup :: HsName -> REnv -> LamMp -> Maybe RelevTy
+renvLookup n renv lammp = gamLookup n renv <|> (fmap libindaspRelevTy $ lamMpLookupAsp n acbaspkeyDefaultRelevTy lammp)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -149,7 +196,7 @@ SEM CBindAspect
   | Bind        expr        .   env             =   gamAddGam @exprEnv @lhs.env
 
 SEM CExpr
-  | Var         loc         .   mbEnvTy         =   fmap (relevtyInst @lUniq) (gamLookup @nm @lhs.env)
+  | Var         loc         .   mbEnvTy         =   fmap (relevtyInst @lUniq) (renvLookup @nm @lhs.env @lhs.lamMp)
                             .   (envTy,envQualS)=   maybe (top, Set.empty) id @mbEnvTy
                 loc         .   envTy           :   RelevTy
                 loc         .   envQualS        :   RelevQualS
@@ -159,14 +206,14 @@ SEM CExpr
 
 SEM CAlt
   | Alt         loc         .   mbCTagEnv       =   do { ct <- @pat.mbCTag
-                                                       ; (argTyL,_) <- relevTyArgsFromCTag True ct Nothing (length @pat.nmL) @lhs.dataGam @lUniq
-                                                       ; return (gamFromAssocL $ zip @pat.nmL argTyL, argTyL)
+                                                       ; (argTyL,_) <- relevTyArgsFromCTag True ct Nothing (length @pat.fldNmL) @lhs.dataGam @lUniq
+                                                       ; return (gamFromAssocL $ zip @pat.fldNmL argTyL, argTyL)
                                                        }
-                loc         .   patFldGivenTyL  =   maybe (map freshLazy $ mkNewLevUIDL (length @pat.nmL) @lUniq3)
+                loc         .   patFldGivenTyL  =   maybe (map freshLazy $ mkNewLevUIDL (length @pat.fldNmL) @lUniq3)
                                                           snd @mbCTagEnv
-                            .   patFldUsedTyL   =   map fresh $ mkNewLevUIDL (length @pat.nmL) @lUniq2
-                            .   patEnv          =   gamFromAssocL $ zip @pat.nmL @patFldUsedTyL
-                                                    -- maybe (gamFromAssocL $ zip @pat.nmL @patFldUsedTyL)
+                            .   patFldUsedTyL   =   map fresh $ mkNewLevUIDL (length @pat.fldNmL) @lUniq2
+                            .   patEnv          =   gamFromAssocL $ zip @pat.fldNmL @patFldUsedTyL
+                                                    -- maybe (gamFromAssocL $ zip @pat.fldNmL @patFldUsedTyL)
                                                     --       id @mbCTagEnv
                 pat         .   patFldTyL       =   zip @patFldGivenTyL @patFldUsedTyL
                 expr        .   env             =   gamAddGam @patEnv @lhs.env
@@ -180,7 +227,7 @@ SEM CAlt
 ATTR CPat CPatFldL CPatFld [ | patFldTyL: {[(RelevTy,RelevTy)]} | ]
 
 SEM CPatFld
-  | Fld         (loc.patFldTy,lhs.patFldTyL)    =   hdAndTl @lhs.patFldTyL
+  | Fld         (loc.patFldTy,lhs.patFldTyL)    =   hdAndTl' (panic $ "patFldTyL: " ++ show @fldNm) @lhs.patFldTyL
                 loc         .   fldCoe          =   let (tgiven,tused) = @patFldTy
                                                     in  RelevCoe_CastTy tgiven tused
 
@@ -193,9 +240,7 @@ ATTR AllBind  [ | | gathRecEnv USE {`gamUnion`} {emptyGam}: REnv ]
 
 SEM CBindAspect
   | Bind        lhs         .   gathEnv         =   gamSingleton @lhs.nm @quantTy
-                            .   gathRecEnv      =   gamSingleton @lhs.nm @ty
-
-
+                            .   gathRecEnv      =   gamSingleton @lhs.nm $ tup123to1 $ relevtyQuant [RelevTyQuantHow_Rec] emptyVarMp Set.empty @ty
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -214,8 +259,8 @@ SEM CBindAspect
 SEM CExpr
   | App         arg         .   knTy            =   @argTy
                 func        .   knTy            =   case @lhs.knTy of
-                                                      RelevTy_Fun v q as r -> RelevTy_Fun v  q  (fresh @lUniq : as) r
-                                                      t                    -> RelevTy_Fun [] [] [fresh @lUniq     ] t
+                                                      RelevTy_Fun q v qs as r -> RelevTy_Fun q           v  qs (fresh @lUniq : as) r
+                                                      t                       -> RelevTy_Fun RQuant_None [] [] [fresh @lUniq     ] t
                 loc         .   lUniq           :   UNIQUEREF gUniq
   | Case        expr        .   knTy            =   @lhs.knTy -- freshStrict @lUniq2
                 loc         .   lUniq2          :   UNIQUEREF gUniq
@@ -237,11 +282,6 @@ SEM CAltL
   | Cons        hd          .   knTy            =   @altKnDwTy
 %%]
 
-%%[(97 codegen)
-%%]
-SEM CPat
-  | BoolExpr    cexpr       .   knTy            =   bot
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Analysis
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -253,7 +293,7 @@ SEM CExpr
                 loc         .   litTy           :   RelevTy
   | Var         loc         .   (amso,ams)      =   let mk envTy knTy
                                                           = case (envTy,knTy) of
-                                                              (RelevTy_Ana ana,t@(RelevTy_Fun _ _ a r@(RelevTy_Ana rAna)))
+                                                              (RelevTy_Ana ana,t@(RelevTy_Fun _ _ _ a r@(RelevTy_Ana rAna)))
                                                                 -> ( amso' {amsoCoe = RelevCoe_Eval ana rAna <.> RelevCoe_CastTy envTy envTy' <.> amsoCoe amso'}
                                                                    , ams'  {amsGathQual = Set.insert (RelevQual_SubEval ana rAna) $ amsGathQual ams'}
                                                                    )
@@ -274,7 +314,7 @@ SEM CExpr
                 loc         .   lUniq3          :   UNIQUEREF gUniq
   | Tup         loc         .   (tupTy,tupQualS)=   let r = fresh @lUniq2
                                                         arity = whatExprAppArity @lhs.whatAbove
-                                                    in  maybe (RelevTy_Err "CExpr.Tup.tupTy", Set.empty) (\(a,qs) -> (RelevTy_Fun [] [] a r, qs))
+                                                    in  maybe (RelevTy_Err "CExpr.Tup.tupTy", Set.empty) (\(a,qs) -> (RelevTy_Fun RQuant_None [] [] a r, qs))
                                                         $ relevTyArgsFromCTag False @tag (Just r) arity @lhs.dataGam @lUniq
                             .   (amso,ams)      =   amsLE @lhs.rvarMp @tupTy @lhs.knTy
                 loc         .   tupTy           :   RelevTy
@@ -282,17 +322,17 @@ SEM CExpr
                 loc         .   lUniq2          :   UNIQUEREF gUniq
   | FFI         loc         .   (ffiTy,ffiQualS)=   let (r@(RelevTy_Ana re) ,qr) = (fresh @lUniq, [])       -- TBD: deal with @primResNeedsEval
                                                         (as,qa) = relevTyArgs (const fresh) (\(RelevTy_Ana x) (RelevTy_Ana y) -> [RelevQual_SubEval x y]) @lUniq2 (take (length @argTyL) @primArgNeedsEvalL) r
-                                                    in  (RelevTy_Fun [] [] as r, Set.fromList $ qr ++ qa)
+                                                    in  (RelevTy_Fun RQuant_None [] [] as r, Set.fromList $ qr ++ qa)
                             .   (amso,ams)      =   amsLE @lhs.rvarMp @ffiTy @lhs.knTy
                 loc         .   ffiTy           :   RelevTy
                 loc         .   lUniq           :   UNIQUEREF gUniq
                 loc         .   lUniq2          :   UNIQUEREF gUniq
   | App         loc         .   funTy           =   case @func.ty of
-                                                      t@(RelevTy_Fun _ _ (_:_) _) -> t
-                                                      _                           -> anaMkBotFun 1
+                                                      t@(RelevTy_Fun _ _ _ (_:_) _) -> t
+                                                      _                             -> anaMkBotFun 1
                             .   (argTy,resTy,resFunTy)
                                                 =   case @funTy of
-                                                      RelevTy_Fun v q (a:as) r -> (a,r,RelevTy_Fun v q as r)
+                                                      RelevTy_Fun q v qs (a:as) r -> (a,r,RelevTy_Fun q v qs as r)
                 loc         .   funTy           :   RelevTy
                 loc         .   argTy           :   RelevTy
 %%]
@@ -302,18 +342,18 @@ SEM CExpr
   | FFI         loc         .   ffiTy           =   let (ur:ua) = mkNewLevUIDL (1 + length @argTyL) @lUniq
                                                         lOrS l u | l         = freshLazy u
                                                                  | otherwise = freshStrict u
-                                                    in  RelevTy_Fun [] [] [lOrS (not e) u | (e,u) <- zip @primArgNeedsEvalL ua] (lOrS @primResNeedsEval ur)
+                                                    in  RelevTy_Fun RQuant_None [] [] [lOrS (not e) u | (e,u) <- zip @primArgNeedsEvalL ua] (lOrS @primResNeedsEval ur)
 
 %%[(8 codegen)
 SEM CAltL
   | Cons        loc         .   (amsoDw,amsDw)  =   amsLE @lhs.rvarMp @altKnDwTy @lhs.knTy     -- both are guaranteed vars, so this enforces a Qual
                             .   rvarMpDw        =   amsLocalVarMp @amsDw `varmpPlus` @lhs.rvarMp
-                            -- .   (amsoUp,amsUp)  =   amsLE @rvarMpDw @altKnUpTy @lhs.knTy        -- which only now we match with above
-                            -- .   rvarMpUp        =   amsLocalVarMp @amsUp `varmpPlus` @rvarMpDw
                             .   rvarMpUp        =   @rvarMpDw
-                            -- .   aQualS          =   Set.map (\q -> RelevQual_Alt q @lhs.altId @altNr @lhs.altNrMax @hd.mbCTag @lhs.altMbScrutTy) $ amsGathQual @amsDw
 
 %%]
+                            -- .   (amsoUp,amsUp)  =   amsLE @rvarMpDw @altKnUpTy @lhs.knTy        -- which only now we match with above
+                            -- .   rvarMpUp        =   amsLocalVarMp @amsUp `varmpPlus` @rvarMpDw
+                            -- .   aQualS          =   Set.map (\q -> RelevQual_Alt q @lhs.altId @altNr @lhs.altNrMax @hd.mbCTag @lhs.altMbScrutTy) $ amsGathQual @amsDw
 SEM CAltL
   | Cons        loc         .   (amsoDw,amsDw)  =   amsLE @lhs.rvarMp @altKnDwTy @altKnUpTy     -- both are guaranteed vars, so this enforces a Qual
                             .   rvarMpDw        =   amsLocalVarMp @amsDw `varmpPlus` @lhs.rvarMp
@@ -355,7 +395,7 @@ ATTR AllBind [ | | altMbScrutTy USE {<|>} {Nothing} : MbRelevTy ]
 
 SEM CBindAspect
   | Bind        lhs         .   altMbScrutTy    =   do v <- @expr.mbVar
-                                                       gamLookup v @lhs.env
+                                                       renvLookup v @lhs.env Map.empty -- @lhs.lamMp
 
 SEM CAlt CBindAspect CModule MbCExpr CPatFld
   | *           loc         .   altMbScrutTy    =   Nothing
@@ -484,26 +524,19 @@ SEM CodeAGItf
 SEM CBindAspect
   | Bind        loc         .   finalRVarMp     =   {- @extraBindRVarMp `varmpPlus` -} @lhs.finalRVarMp
 
--- SEM CExpr
---   | Let         loc         .   finalRVarMp     =   @binds.extraBindRVarMp `varmpPlus` @lhs.finalRVarMp
-
 SEM CAltL
   | Cons        loc         .   hdFinalRVarMp   =   @altSolveVarMp -- `varmpPlus` @lhs.finalRVarMp
                 hd          .   finalRVarMp     =   @hdFinalRVarMp
+
 %%]
-
-%%[(8888 codegen)
-ATTR AllBind [ forQuantRVarMp: RVarMp | | ]
-
 SEM CExpr
-  | Let         binds       .   forQuantRVarMp  =   @lhs.finalRVarMp
-%%]
+  | Let			binds		.	finalRVarMp		=	@bindsSolveVarMp
 
 %%[(8 codegen)
 ATTR AllBind [ | | extraBindRVarMp USE {`varmpPlus`} {emptyVarMp}: RVarMp ]
 
 SEM CBindAspect
-  | Bind        loc         .   extraBindRVarMp =   if WhatToRelevInfer_InstToBot `elem` @lhs.whatTo then @strictVarMp else emptyVarMp
+  | Bind        loc         .   extraBindRVarMp =   if @doBindStrict then @strictVarMp else emptyVarMp
                                                     -- @strictVarMp
 %%]
 
@@ -521,13 +554,7 @@ SEM CExpr
   | Int Char    lhs         .   qualS           =   amsGathQual @ams
   | Case        lhs         .   qualS           =   Set.unions [@expr.qualS, @altQualSIntersect] -- @alts.qualS]       -- skip @dflt
 %%]
-  | App         lhs         .   qualS           =   Set.unions [amsGathQual @ams, @func.qualS, @arg.qualS]
-
-%%[(8 codegen)
-%%]
-SEM CAltL
-  | Cons        lhs         .   qualS           =   Set.unions [@aQualS, {- amsGathQual @amsUp, -} @hd.qualS, @tl.qualS]
-
+  | Let			lhs			.	qualS			=	Set.union @bindsQualSOuter @body.qualS
 
 %%[(8 codegen)
 SEM CBindAspect
@@ -545,6 +572,14 @@ SEM CAltL
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Constraint solving, AST driven
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[doesWhat.Case.altQual
+Case (and let) expressions only can contribute to the outside constraint solving if it is certain that the constraints will arise.
+For case expressions this is only the case if a constraint arises in all alternatives, for a let only when the let is strict.
+Solving then needs to be done for the conditionally arising constraints.
+
+20101130: TBD for let expressions.
+%%]
 
 %%[(8 codegen)
 SEM CExpr
@@ -579,7 +614,31 @@ ATTR CAltL [ altSolveLVarMp: {[RVarMp]} | | ]
 
 SEM CAltL
   | Cons        (loc.altSolveVarMp,tl.altSolveLVarMp)
-                                                =   hdAndTl @lhs.altSolveLVarMp
+                                                =   hdAndTl' (panic "altSolveLVarMp") @lhs.altSolveLVarMp
+%%]
+
+%%[(8 codegen)
+SEM CExpr
+  | Let         loc         .   bindsCanParticpateInOuterSolving
+                                                =   @categ == CBindCateg_Strict
+                            .   bindsQualSSubs  =   Set.map (@binds.rvarMp |=>) @binds.qualS
+                            .   bindsQualSOuter =   if @bindsCanParticpateInOuterSolving then @bindsQualSSubs else Set.empty
+                            .   bindsQualSSolv1 =   if @bindsCanParticpateInOuterSolving
+                                                    then (Set.empty, emptyVarMp)
+                                                    else let (q,m) = assSolve @lhs.boundRelevTyVarS @bindsQualSSubs
+                                                         in  (Set.map (m |=>) q, m)
+
+                loc         .   bindsCanParticpateInOuterSolving
+                                                :   Bool
+%%]
+
+%%[(8 codegen)
+SEM CExpr
+  | Let         loc         .   bindsQualSSolv2 =   let (q,m) = @bindsQualSSolv1
+                                                        m2 = m `varmpPlus` @lhs.finalRVarMp
+                                                        (q',m3) = assSolve Set.empty (Set.map (m2 |=>) q)
+                                                    in  (Set.map (m3 |=>) q', m3 `varmpPlus` m2)
+                            .   bindsSolveVarMp =   snd @bindsQualSSolv2
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -617,11 +676,11 @@ SEM CBindAspect
                                                                   r' = fresh r
                                                                   as' = map fresh as
                                                                   exprEnv = gamFromAssocL (zip nmL as')
-                                                                  ty = RelevTy_Fun [] [] as' r'
+                                                                  ty = RelevTy_Fun RQuant_None [] [] as' r'
                                                           _ | isStrict  -> (bTy, bTy, emptyGam, Set.empty, strictConstrain)
                                                             | otherwise -> (bTy, bTy, emptyGam, Set.empty, noConstrain)
                                                                                -- (bTy, eTy, emptyGam, Just $ RelevCoe_Cast $ RelevCoe_Eval eAna bAna)
-                                                            where isStrict = @lhs.letBindingsCateg == CBindings_Strict
+                                                            where isStrict = @lhs.letBindingsCateg == CBindCateg_Strict
                                                                   (_,u1,u2) = mkNewLevUID2 @lUniq
                                                                   eTy@(RelevTy_Ana eAna) = fresh u1
                                                                   bTy@(RelevTy_Ana bAna) = fresh u2
@@ -630,7 +689,7 @@ SEM CBindAspect
                             .   rvarMpExpr      =   amsLocalVarMp @amsBind `varmpPlus` @expr.rvarMp
                             .   (quantTy,quantVarMp,quantRemQualS)
                                                 =   case @ty of
-                                                      t@(RelevTy_Fun _ _ _ _)
+                                                      t@(RelevTy_Fun _ _ _ _ _)
                                                         -> relevtyQuant ([RelevTyQuantHow_Solve] ++ how)
                                                                         @rvarMpExpr @expr.qualS t
                                                         where how | WhatToRelevInfer_Quant `elem` @lhs.whatTo = [RelevTyQuantHow_RemoveAmbig,RelevTyQuantHow_Quant]
@@ -640,39 +699,41 @@ SEM CBindAspect
                             .   bindTy          =   @lhs.forQuantRVarMp |=> @quantTy
                             .   (strictTy,strictVarMp)
                                                 =   case @bindTy of
-                                                      t@(RelevTy_Fun _ qs a r@(RelevTy_Ana (AnaEval_Var rv)))
+                                                      t@(RelevTy_Fun _ _ qs a r@(RelevTy_Ana (AnaEval_Var rv)))
                                                         -> (sty, smp2 `varmpPlus` smpAssume2 `varmpPlus` smp1 `varmpPlus` smpAssume1)
                                                         where smpAssume1 = rvarmpEvalUnit rv bot
-                                                              (RelevTy_Fun vs' qs' a' r',smp1,rem1)
+                                                              (RelevTy_Fun _ vs' qs' a' r',smp1,rem1)
                                                                 = relevtyQuant [RelevTyQuantHow_Solve,RelevTyQuantHow_RemoveAmbig,RelevTyQuantHow_Quant]
-                                                                               smpAssume1 (Set.fromList qs `Set.union` @quantRemQualS) (RelevTy_Fun [] [] a (smpAssume1 |=> r))
+                                                                               smpAssume1 (Set.fromList qs `Set.union` @quantRemQualS) (RelevTy_Fun RQuant_None [] [] a (smpAssume1 |=> r))
                                                               smpAssume2 = varmpUnions [ rvarmpEvalUnit v top | v <- vs' ]
                                                               (sty,smp2,_)
                                                                 = relevtyQuant [RelevTyQuantHow_Solve,RelevTyQuantHow_RemoveAmbig,RelevTyQuantHow_Quant]
-                                                                               smpAssume2 (Set.fromList qs' `Set.union` rem1) (RelevTy_Fun [] [] (smpAssume2 |=> a') r')
+                                                                               smpAssume2 (Set.fromList qs' `Set.union` rem1) (RelevTy_Fun RQuant_None [] [] (smpAssume2 |=> a') r')
                                                       t -> (m |=> t, m)
                                                         where (q,m) = assSolve Set.empty (Set.map (@lhs.forQuantRVarMp |=>) @quantRemQualS)
                             .   debugTy1        =   case @rvarMpExpr |=> @ty of
-                                                      RelevTy_Fun _ _ a r
-                                                        -> RelevTy_Fun v q a r
+                                                      RelevTy_Fun _ _ _ a r
+                                                        -> RelevTy_Fun RQuant_None v q a r
                                                         where q = @rvarMpExpr |=> Set.toList @expr.qualS
                                                               v = Set.toList $ Set.unions [ftvSet q, ftvSet a, ftvSet r]
                                                       t -> t
                             .   debugTy2        =   case @lhs.finalRVarMp |=> @ty of
-                                                      RelevTy_Fun _ _ a r
-                                                        -> RelevTy_Fun [] q a r
+                                                      RelevTy_Fun _ _ _ a r
+                                                        -> RelevTy_Fun RQuant_None [] q a r
                                                         where q = @lhs.finalRVarMp |=> Set.toList @expr.qualS
                                                       t -> t
+                            .	strictTy2		=	@lhs.finalRVarMp |=> @strictTy
                             .   tyAspectL       =   [ CBindAspect_RelevTy acbaspkeyDefault @bindTy
                                                     -- , CBindAspect_RelevTy acbaspkeyStrict  @strictTy
                                                     -- , CBindAspect_RelevTy acbaspkeyDebug @debugTy2
                                                     ]
-                                                    ++ (if WhatToRelevInfer_InstToBot `elem` @lhs.whatTo
-                                                        then [CBindAspect_RelevTy acbaspkeyStrict $ @lhs.finalRVarMp |=> @strictTy]
+                                                    ++ (if @doBindStrict
+                                                        then [CBindAspect_RelevTy acbaspkeyStrict @strictTy2]
                                                         else []
                                                        )
                 loc         .   ty              :   RelevTy
                 loc         .   strictTy        :   RelevTy
+                loc         .   strictTy2       :   RelevTy
                 loc         .   exprKnTy        :   RelevTy
                 loc         .   quantVarMp   	:   RVarMp
                 loc         .   strictVarMp   	:   RVarMp
@@ -736,7 +797,6 @@ SEM CExpr
                 lhs         .   cTrf            =   -- @dbg $
                                                     @cTrf
   | Lam         lhs         .   cTrf            =   CExpr_Lam @arg $ annCoe @hereBodyCoe @body.cTrf
-  -- | Let         lhs         .   cTrf            =   CExpr_Let @categ @binds.cTrf $ annCoe @hereBodyCoe @body.cTrf
   | App         lhs         .   cTrf            =   let a = -- dbgApp @lhs.opts @argTy @funTy @func.ty $
                                                             annCoe @hereArgCoe @arg.cTrf
                                                         app = CExpr_App (annCoe @hereFunCoe @func.cTrf) a

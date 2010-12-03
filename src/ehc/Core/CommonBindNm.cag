@@ -20,7 +20,20 @@ SEM CBind
 %%[(8 codegen)
 SEM CExpr
   | Var         loc         .   nm              =   acbrefNm @ref
+                            .   nmAsp           =   mkHNm @ref
                 loc         .   nm              :   HsName
+                loc         .   nmAsp           :   HsName
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Field names
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR CPat CPatFldL CPatFld [ | | fldNmL USE {++} {[]}: {[HsName]} ]
+
+SEM CPatFld
+  | Fld         lhs         .   fldNmL         	=   [@fldNm]
 %%]
 
 

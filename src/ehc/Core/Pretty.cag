@@ -146,13 +146,13 @@ SEM CExpr
                                                     fun  = ppParens @appFunPP
                                                 in  ppDef fun (vlist args)
   | Let         loc         .   ppCateg     =   case @categ of
-                                                  CBindings_Rec     -> pp " rec"
-                                                  CBindings_Strict  -> pp " !"
-                                                  CBindings_FFI     -> pp " foreign"
+                                                  CBindCateg_Rec     -> pp " rec"
+                                                  CBindCateg_Strict  -> pp " !"
+                                                  CBindCateg_FFI     -> pp " foreign"
 %%[[90
-                                                  CBindings_FFE     -> pp " foreignexport"
+                                                  CBindCateg_FFE     -> pp " foreignexport"
 %%]]
-                                                  _                 -> empty
+                                                  _                  -> empty
                             .   pp          =   ppDef ("let" >|< @ppCateg) (ppCurlysSemisBlock @binds.ppL) >#< "in" >-< @body.pp
   | Lam         loc         .   pp          =   ppDef ("\\" >|< ppSpaces @lamArgPPL >#< "->") (@lamBodyPP)
   | Case        loc         .   pp          =   "case" >#< @expr.pp >#< "of"

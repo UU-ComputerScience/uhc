@@ -63,8 +63,6 @@ cpTransformCore modNm
                              , trfcoreUniq          = crsiNextUID crsi
 %%[[20
                              , trfcoreExpNmOffMp    = crsiExpNmOffMp modNm crsi
-%%]]
-%%[[99
                              , trfcoreInhLamMp      = Core2GrSem.lamMp_Inh_CodeAGItf $ crsiCoreInh crsi
 %%]]
                              }
@@ -81,7 +79,7 @@ cpTransformCore modNm
          -- put back result: unique counter
        ; cpSetUID (trfcoreUniq trfcoreOut)
 
-%%[[99
+%%[[20
          -- put back result: call info map (lambda arity, ...)
        ; let hii   = ecuHIInfo ecu
              lamMp = HI.hiiLamMp hii
@@ -90,7 +88,8 @@ cpTransformCore modNm
                (hii { HI.hiiLamMp = trfcoreGathLamMp trfcoreOut `Map.union` lamMp
                     })
            )
-       
+%%]]   
+%%[[99
          -- put back result: additional hidden exports, it should be in a cpFlowXX variant
        ; cpUpdHiddenExports modNm $ zip (Set.toList $ trfcoreExtraExports trfcoreOut) (repeat IdOcc_Val)
 %%]]

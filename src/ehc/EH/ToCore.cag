@@ -46,7 +46,7 @@ ATTR AGItf [ | | cmodule: CModule ]
 
 SEM AGItf
   | AGItf       lhs         .   cmodule     =   let b = if @insertMainUse then acoreVar hsnMain else @expr.letCBody
-                                                    d = if @insertMainDef then acoreLet CBindings_Plain [acoreBind1Cat CBindings_Plain hsnMain @expr.letCBody] else id
+                                                    d = if @insertMainDef then acoreLet CBindCateg_Plain [acoreBind1Cat CBindCateg_Plain hsnMain @expr.letCBody] else id
                                                 in  CModule_Mod @lhs.moduleNm
                                                         (
 %%[[9
@@ -70,7 +70,7 @@ SEM AGItf
 
 %%[(9 codegen)
 SEM AGItf
-  | AGItf       loc         .   extraCBindL :=  [(CBindings_Rec,@chrScopeMainBindL)]
+  | AGItf       loc         .   extraCBindL :=  [(CBindCateg_Rec,@chrScopeMainBindL)]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -111,11 +111,11 @@ ATTR Expr [ | | cexpr: CExpr ]
 
 SEM Expr
   | Ann         loc         .   cexpr       =   @expr.cexpr
-  | Let         loc         .   frontCBindL =   [(if True {- ehcOptPriv @lhs.opts -} then CBindings_Plain else CBindings_FFI,@decls.ffiCBindL)]
+  | Let         loc         .   frontCBindL =   [(if True {- ehcOptPriv @lhs.opts -} then CBindCateg_Plain else CBindCateg_FFI,@decls.ffiCBindL)]
 %%[[90
-                            .   backCBindL  =   [(CBindings_FFE,@decls.ffeCBindL)]
+                            .   backCBindL  =   [(CBindCateg_FFE,@decls.ffeCBindL)]
 %%]]
-                            .   howToBind   =   if @isStrict then CBindings_Strict else CBindings_Rec
+                            .   howToBind   =   if @isStrict then CBindCateg_Strict else CBindCateg_Rec
                             .   letCBindL   =   [( @howToBind
                                                  , @cDataBindL
 %%[[92
@@ -139,8 +139,8 @@ SEM Expr
                                                         then let ns = [ acbrefNm ref | (CExpr_Var ref) <- fuL2ExprL (reverse @expr.fuCExprL) ]
                                                              in  (ns,[],@alts.raltL')
                                                         else let n = uidHNm @lUniq2
-                                                             in  ([n],[acoreBind1Cat CBindings_Plain n @expr.cexpr],@alts.raltL)
-                                                in  acoreLet CBindings_Plain bs (rceMatch @rceEnv ns as)
+                                                             in  ([n],[acoreBind1Cat CBindCateg_Plain n @expr.cexpr],@alts.raltL)
+                                                in  acoreLet CBindCateg_Plain bs (rceMatch @rceEnv ns as)
   | AppTop      loc         .   cexprtop    =   @expr.cexpr
   | Rec         loc         .   cexprtop    =   @rcexpr
   | Parens TypeAs
@@ -199,7 +199,7 @@ mkWeaveExpr opts uniq finTyVarMp csubst postmk expr lCoeL rCoeL
 %%[(9 codegen)
 SEM Expr
   | Let         loc         .   letCBindOtherL
-                                            :=  [ (CBindings_Rec,@chrScopeBindL) ]
+                                            :=  [ (CBindCateg_Rec,@chrScopeBindL) ]
   | App AppImpred
 %%[[12
     AppImpl
@@ -334,13 +334,13 @@ SEM Expr
                                                                    | (f,i) <- Map.toList $ dtiFldMp dti, let o = dfiOffset i
                                                                    ]
                                                 in  if dgiIsNewtype @dgi
-                                                    then acoreLet CBindings_Plain @dataFieldExpr.dfeCBindL
+                                                    then acoreLet CBindCateg_Plain @dataFieldExpr.dfeCBindL
                                                          $ head $ fuL2ExprL $ fuMap (\_ f -> (f emptyDataTagInfo 0,0)) $ @dataFieldExpr.fuCExprL
                                                     else case @dataFieldExpr.mbConNm of
                                                            Just conNm
-                                                             -> acoreLet CBindings_Plain @dataFieldExpr.dfeCBindL
+                                                             -> acoreLet CBindCateg_Plain @dataFieldExpr.dfeCBindL
                                                                   (mkTup (dgiDtiOfCon conNm @dgi) (const $ acoreBuiltinUndefined @lhs.opts) @dataFieldExpr.dfeCExpr @dataFieldExpr.fuCExprL)
-                                                           _ -> acoreLet CBindings_Plain (err ++  @dataFieldExpr.dfeCBindL)
+                                                           _ -> acoreLet CBindCateg_Plain (err ++  @dataFieldExpr.dfeCBindL)
                                                                   (acoreSatSelsCases (rceUpdEnv (acoreVar en) @rceEnv) (Just $ mkHNm @lUniq) @dataFieldExpr.dfeCExpr alts)
                                                              where alts = [ ( dtiCTag dti
                                                                             , [ (f,{-f,-}dfiOffset i) | (f,i) <- Map.toList $ dtiFldMp dti ]
@@ -349,7 +349,7 @@ SEM Expr
                                                                             )
                                                                           | dti <- @dtiInFldL
                                                                           ]
-                                                                   err = [acoreBind1Cat CBindings_Plain en (acoreBuiltinError @lhs.opts ("has no field update '" ++ show @fldL ++ "'"))]
+                                                                   err = [acoreBind1Cat CBindCateg_Plain en (acoreBuiltinError @lhs.opts ("has no field update '" ++ show @fldL ++ "'"))]
                                                                    en = mkHNm "_upd_error"
                             .   cexpr       =   @dfexpr
 %%]
@@ -366,7 +366,7 @@ SEM DataFieldExpr
   | Upd         loc         .   fldExprNm   =   mkHNm @lUniq
                 lhs         .   fuCExprL    =   let mke dti o = CExpr_TupIns @dataFieldExpr.dfeCExpr (dtiCTag dti) @nm (acoreInt o) (acoreVar @fldExprNm)
                                                 in  (@nm,(mke,Nothing)) : @dataFieldExpr.fuCExprL
-                            .   dfeCBindL   =   acoreBind1Cat CBindings_Plain @fldExprNm @expr.cexpr : @dataFieldExpr.dfeCBindL
+                            .   dfeCBindL   =   acoreBind1Cat CBindCateg_Plain @fldExprNm @expr.cexpr : @dataFieldExpr.dfeCBindL
   | Con         lhs         .   dfeCExpr    =   CExpr_Tup (dtiCTag @dti)
                             .   fuCExprL    =   []
                             .   dfeCBindL   =   []
@@ -408,8 +408,8 @@ SEM DataConstr
   | Constr      lhs         .   cbindL      =   let len = length @fields.fldTyL
                                                     nms = map (\i -> hsnFromString ("x" ++ show i)) [1..len]
                                                 in  if @lhs.isNewtype
-                                                    then [ acoreBind1Cat CBindings_Plain @conNm (acoreVar $ ehcOptBuiltin @lhs.opts ehbnId) ]
-                                                    else [ acoreBind1Cat CBindings_Plain @conNm
+                                                    then [ acoreBind1Cat CBindCateg_Plain @conNm (acoreVar $ ehcOptBuiltin @lhs.opts ehbnId) ]
+                                                    else [ acoreBind1Cat CBindCateg_Plain @conNm
                                                              (acoreLam nms
                                                                (acoreApp (CExpr_Tup @ctag)
                                                                  (map acoreVar nms)))
@@ -424,13 +424,13 @@ SEM Decl
   | Data        loc         .   fldSelCBindL=   let (xn1:xn2:_) = hsnLclSupply
                                                     tgSels f i = [ (t,[(f,{-f,-}o)],Nothing,acoreVar f) | (t,o) <- Map.toList $ dficInTagMp i ]
                                                 in  if @isNewtype
-                                                    then [ [ acoreBind1Cat CBindings_Plain f (acoreVar $ ehcOptBuiltin @lhs.opts ehbnId)
+                                                    then [ [ acoreBind1Cat CBindCateg_Plain f (acoreVar $ ehcOptBuiltin @lhs.opts ehbnId)
                                                            | (f,i) <- Map.toList $ dgiFldInConstrMp @dgi
                                                          ] ]
-                                                    else [ [ acoreBind1Cat CBindings_Plain f
+                                                    else [ [ acoreBind1Cat CBindCateg_Plain f
                                                                (acoreLam [xn1]
                                                                  (acoreSatSelsCases (rceUpdEnv (acoreVar en) @rceEnv) (Just xn2) (acoreVar xn1) (tgSels f i)))
-                                                           , acoreBind1Cat CBindings_Plain en (acoreBuiltinError @lhs.opts ("has no field selection '" ++ show f ++ "'"))
+                                                           , acoreBind1Cat CBindCateg_Plain en (acoreBuiltinError @lhs.opts ("has no field selection '" ++ show f ++ "'"))
                                                            ]
                                                          | (f,i) <- Map.toList $ dgiFldInConstrMp @dgi
                                                          , let en = hsnUniqifyStr HsNameUniqifier_New "datafield_sel_error" f -- hsnSuffix f "_datafield_sel_error"
@@ -741,7 +741,7 @@ ATTR
 
 %%[(8 codegen)
 SEM Decl
-  | Val         lhs         .   cbindL          =   [acoreBind1Cat CBindings_Plain @patExpr.topNm @expr.cexpr] ++ @patExpr.cbindL -- cbindInPatFlatten @patExpr.cbindInPatL
+  | Val         lhs         .   cbindL          =   [acoreBind1Cat CBindCateg_Plain @patExpr.topNm @expr.cexpr] ++ @patExpr.cbindL -- cbindInPatFlatten @patExpr.cbindInPatL
   | TySig       lhs         .   cbindL          =   []
   | FFI         lhs         .   ffiCBindL       =   let (argTyL,resTy) = tyArrowArgsRes @ty_sig_expanded
                                                         argLen = length argTyL
@@ -785,7 +785,7 @@ SEM Decl
 
 %%[(9 codegen)
 SEM Decl
-  | Val         lhs         .   cbindL          :=  [acoreBind1Cat CBindings_Plain @patExpr.topNm $ acoreLetMerge True CBindings_Rec @chrScopeValBindL @expr.cexpr] ++ @patExpr.cbindL -- cbindInPatFlatten @patExpr.cbindInPatL    -- '
+  | Val         lhs         .   cbindL          :=  [acoreBind1Cat CBindCateg_Plain @patExpr.topNm $ acoreLetMerge True CBindCateg_Rec @chrScopeValBindL @expr.cexpr] ++ @patExpr.cbindL -- cbindInPatFlatten @patExpr.cbindInPatL    -- '
 %%]
 
 %%[(90 codegen)
@@ -815,7 +815,7 @@ SEM Decl
                 loc         .   lUniqFFE        :   UNIQUEREF gUniq
                 lhs         .   ffeCBindL       =   [acoreBind1Asp1 @nm (CBindAspect_FFE @callconv @expEnt @ffeCExpr @ffeTy)]
 %%]
-                lhs         .   cbindL          =   [acoreBind1Cat CBindings_Plain @nmCoerced @ffeCExpr]
+                lhs         .   cbindL          =   [acoreBind1Cat CBindCateg_Plain @nmCoerced @ffeCExpr]
                             .   ffeCBindL       =   [acoreBind1Asp1 @nm (CBindAspect_FFE @callconv @expEnt @nmCoerced @ffeTy)]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -828,14 +828,14 @@ Merging is done to group all mutual recursive stuff together, in particular inst
 Reordering and splitting up in smaller groups is then done later by a Core transformation.
 
 %%[(8 codegen) hs
-mkLetCBodyBindL :: Bool -> CBindingsCateg -> [(CBindingsCateg,CBindL)] -> [(CBindingsCateg,CBindL)] -> [(CBindingsCateg,CBindL)] -> CExpr -> ([(CBindingsCateg,CBindL)],CExpr)
+mkLetCBodyBindL :: Bool -> CBindCateg -> [(CBindCateg,CBindL)] -> [(CBindCateg,CBindL)] -> [(CBindCateg,CBindL)] -> CExpr -> ([(CBindCateg,CBindL)],CExpr)
 mkLetCBodyBindL isStrict howToBind locBindL locOthBindL bodyBindL body
   = if isStrict
     then (locOthBindL,foldr (\(c,b) e -> acoreLet c b e) body (merge $ locBindL ++ bodyBindL))
     else (merge $ locOthBindL ++ locBindL ++ bodyBindL, body)
   where merge (cb1@(c1,b1) : tl)
           = case merge tl of
-              (c2,b2) : tl' | c1 == c2 && c1 == CBindings_Rec
+              (c2,b2) : tl' | c1 == c2 && c1 == CBindCateg_Rec
                   -> (c1,b1++b2) : tl'
               tl' -> cb1 : tl'
         merge [] = []
@@ -849,7 +849,7 @@ ATTR
 %%[[90
         , backCBindL
 %%]]
-            : {[(CBindingsCateg,CBindL)]}
+            : {[(CBindCateg,CBindL)]}
           letCBody: CExpr
     ]
 
@@ -890,12 +890,12 @@ SEM Decl
                                                              then (\f -> acoreApp1 f vx)
                                                              else id
                                                      dDflt
-                                                       = [acoreBind1Cat CBindings_Plain nDflt (acoreLam1 nD d)] 
+                                                       = [acoreBind1Cat CBindCateg_Plain nDflt (acoreLam1 nD d)] 
                                                        where nDflt = clgiDfltDictNm @clgi2
                                                              d = acoreApp (CExpr_Tup @dictTag) (replicate (length $ snd $ tyRecExts $ @clsTyRec) (acoreBuiltinUndefined @lhs.opts))
                                                              nD = hsnUniqify HsNameUniqifier_SelfDict nDflt
                                                 in   (maybe dDflt (const []) @mbDefaultInstNm)
-                                                     ++ [ acoreBind1Cat CBindings_Plain n $ acoreLam1 x $ mkApp $ mkSel n
+                                                     ++ [ acoreBind1Cat CBindCateg_Plain n $ acoreLam1 x $ mkApp $ mkSel n
                                                         | (n,_) <- @clsFldL
                                                         ]
 %%]
@@ -1290,7 +1290,7 @@ mkInstanceDerivingFldBind opts rceEnv dataGam uniq derivDataDGI derivHdDataTy di
         
         mkf :: DerivClsFld -> CBind
         mkf dcf
-         = acoreBind1Cat CBindings_Plain (dcfNm dcf)
+         = acoreBind1Cat CBindCateg_Plain (dcfNm dcf)
              (if fArity == 0
               then acoreLam (dcfInitialArgL dcf)
                    $ dcfNoArgSubsCExpr dcf rceEnv
@@ -1477,7 +1477,7 @@ rpatBindL2CBindL :: RCEEnv -> [CBindInPat] -> HsName -> CTag -> MbCPatRest -> As
 rpatBindL2CBindL env subBinds parNm ct rest pbL 
   = concat
     $  map  (\(RPatFld_Fld l o _ p,mbOff)
-                -> let  b n = [CBindInPat (acoreBind1Cat CBindings_Plain n (mkc n mbOff)) subBinds]
+                -> let  b n = [CBindInPat (acoreBind1Cat CBindCateg_Plain n (mkc n mbOff)) subBinds]
                         pn  = parNm
                         pn' = hsnUniqifyEval pn
                         mkc n (Just o) = mkCExprSatSelCase env (Just pn') (acoreVar pn) ct n l o rest
@@ -1494,7 +1494,7 @@ rpatBindL2CBindL :: RCEEnv -> Bool -> HsName -> CTag -> MbCPatRest -> AssocL RPa
 rpatBindL2CBindL env hasSub parNm ct rest pbL 
   = concat
     $  map  (\(RPatFld_Fld l o _ p,mbOff)
-                -> let  b n = [acoreBind1Cat CBindings_Plain n (mkc n mbOff)]
+                -> let  b n = [acoreBind1Cat CBindCateg_Plain n (mkc n mbOff)]
                         pn  = parNm
                         pn' = hsnUniqifyEval pn
                         -- mkc n (Just o) = mkCExprSatSelCase env (Just pn') (acoreVar pn) ct n l o rest

@@ -68,6 +68,8 @@ data HsNameUniqifier
   | HsNameUniqifier_GrinUpdated			-- Grin: updated value
   | HsNameUniqifier_FFIArg				-- arg evaluated for FFI
   | HsNameUniqifier_LacksLabel			-- label used in lacking predicates
+  | HsNameUniqifier_BindAspect			-- binding aspect
+  | HsNameUniqifier_Strict				-- strict variant of binding
 %%[[92
   | HsNameUniqifier_GenericClass		-- a name introduced by generics
 %%]]
@@ -100,6 +102,8 @@ instance Show HsNameUniqifier where
   show HsNameUniqifier_GrinUpdated			= "UPD"
   show HsNameUniqifier_FFIArg				= "FFI"
   show HsNameUniqifier_LacksLabel			= "LBL"
+  show HsNameUniqifier_BindAspect			= "ASP"
+  show HsNameUniqifier_Strict			    = "STR"
 %%[[91
   show HsNameUniqifier_GenericClass			= "GEN"
 %%]]
@@ -161,6 +165,38 @@ instance HsNameUniqueable UID where
 %%[7
 uniqifierMpAdd :: HsNameUniqifier -> HsNameUnique -> HsNameUniqifierMp -> HsNameUniqifierMp
 uniqifierMpAdd ufier u m = Map.unionWith (++) (Map.singleton ufier [u]) m
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Uniqification
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[7 export(hsnUniqify,hsnUniqifyUID,hsnUniqifyStr,hsnUniqifyInt,hsnUniqifyEval)
+hsnUniqify' :: HsNameUniqifier -> HsNameUnique -> HsName -> HsName
+hsnUniqify' ufier u
+  = mk
+  where mk n@(HsName_Modf {hsnUniqifiers=us}) = n {hsnUniqifiers = uniqifierMpAdd ufier u us}
+        mk n                                 = mk (HsName_Modf [] n Map.empty)
+
+-- | Uniqify with just a name suffix
+hsnUniqify :: HsNameUniqifier -> HsName -> HsName
+hsnUniqify ufier = hsnUniqify' ufier HsNameUnique_None
+
+-- | Uniqify with a name suffix + extra Int uniq info
+hsnUniqifyInt :: HsNameUniqifier -> Int -> HsName -> HsName
+hsnUniqifyInt ufier u = hsnUniqify' ufier (HsNameUnique_Int u)
+
+-- | Uniqify with a name suffix + extra UID uniq info
+hsnUniqifyUID :: HsNameUniqifier -> UID -> HsName -> HsName
+hsnUniqifyUID ufier u = hsnUniqify' ufier (HsNameUnique_UID u)
+
+-- | Uniqify with a name suffix + extra String uniq info
+hsnUniqifyStr :: HsNameUniqifier -> String -> HsName -> HsName
+hsnUniqifyStr ufier u = hsnUniqify' ufier (HsNameUnique_String u)
+
+-- | Uniqify for use as evaluated name
+hsnUniqifyEval :: HsName -> HsName
+hsnUniqifyEval = hsnUniqify HsNameUniqifier_Evaluated
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -421,38 +457,6 @@ instance FPATH HsName where
 %%[10
 hsnConcat                           ::  HsName -> HsName -> HsName
 hsnConcat       h1    h2            =   hsnFromString (show h1 ++ show h2)
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Uniqification
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[7 export(hsnUniqify,hsnUniqifyUID,hsnUniqifyStr,hsnUniqifyInt,hsnUniqifyEval)
-hsnUniqify' :: HsNameUniqifier -> HsNameUnique -> HsName -> HsName
-hsnUniqify' ufier u
-  = mk
-  where mk n@(HsName_Modf {hsnUniqifiers=us}) = n {hsnUniqifiers = uniqifierMpAdd ufier u us}
-        mk n                                 = mk (HsName_Modf [] n Map.empty)
-
--- | Uniqify with just a name suffix
-hsnUniqify :: HsNameUniqifier -> HsName -> HsName
-hsnUniqify ufier = hsnUniqify' ufier HsNameUnique_None
-
--- | Uniqify with a name suffix + extra Int uniq info
-hsnUniqifyInt :: HsNameUniqifier -> Int -> HsName -> HsName
-hsnUniqifyInt ufier u = hsnUniqify' ufier (HsNameUnique_Int u)
-
--- | Uniqify with a name suffix + extra UID uniq info
-hsnUniqifyUID :: HsNameUniqifier -> UID -> HsName -> HsName
-hsnUniqifyUID ufier u = hsnUniqify' ufier (HsNameUnique_UID u)
-
--- | Uniqify with a name suffix + extra String uniq info
-hsnUniqifyStr :: HsNameUniqifier -> String -> HsName -> HsName
-hsnUniqifyStr ufier u = hsnUniqify' ufier (HsNameUnique_String u)
-
--- | Uniqify for use as evaluated name
-hsnUniqifyEval :: HsName -> HsName
-hsnUniqifyEval = hsnUniqify HsNameUniqifier_Evaluated
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

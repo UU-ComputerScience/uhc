@@ -1,0 +1,124 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Reorder bindings so that they are defined before use (except of course mutually recursive ones)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[doesWhat doclatex
+Reordering of bindings such that a use of an identifier is guaranteed to occur only after its definition,
+except for mutually recursive bindings.
+This invariant is required for strictness analysis, for the same reasons it is required for type analysis:
+analysis of a function is done before it is used.
+In principle the order of definitions is maintained by the various transformations, that is, the original binding analysis at
+the frontend should be enough.
+However, when Core level linking is done, this invariant is no longer maintained, nor is it easy to do this.
+As a consequence this has to be done separately.
+
+Assumptions:
+\begin{itemize}
+\item Lambda lifting is done.
+\item Reordering is only necessary for toplevel definitions.
+\item To be done before multiple aspects are available.
+\end{itemize}
+%%]
+
+%%[(8 codegen) hs module {%{EH}Core.Trf.LetDefBeforeUse} import(Data.Maybe,{%{EH}Base.Common},{%{EH}Core},{%{EH}Ty}) export(cmodTrfLetDefBeforeUse)
+%%]
+
+%%[(8 codegen) hs import({%{EH}AbstractCore})
+%%]
+
+%%[(8 codegen) hs import(qualified Data.Map as Map,qualified Data.Set as Set)
+%%]
+
+%%[(8 codegen) hs import({%{EH}Base.Debug},{%{EH}Base.Builtin})
+%%]
+
+%%[(8 codegen) hs import(EH.Util.Utils(scc))
+%%]
+
+%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonBindNm},{Core/CommonLev},{Core/CommonLevLet},{Core/Trf/CommonFv})
+WRAPPER CodeAGItf
+%%]
+
+%%[(99 codegen)
+PRAGMA strictcase
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell itf
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs
+cmodTrfLetDefBeforeUse :: CModule -> CModule
+cmodTrfLetDefBeforeUse cmod
+  =  let  t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf cmod)) Inh_CodeAGItf
+     in   cTrf_Syn_CodeAGItf t
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Transformation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AllCodeNT [ | | cTrf: SELF ]
+ATTR CodeAGItf [ | | cTrf: CModule ]
+%%]
+
+%%[(8 codegen)
+SEM CModule
+  | Mod         loc         .   sccDefs     =   map (catMaybes . map (\n -> Map.lookup n @expr.defMp))
+                                                $ scc [ (n, Set.toList $ defFvS d) | (n,d) <- Map.toList @expr.defMp ]
+                            .   cTrf        =   let mk ds@(_:_:_) e = acoreLetRec              (map defCore ds) e
+                                                    mk    [d]     e = acoreLet    (defCateg d) [defCore d]      e
+                                                in  CModule_Mod
+                                                      @moduleNm
+                                                      (foldr mk @expr.letBody @sccDefs)
+                                                      @ctagsMp
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Definitions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs
+-- | A definition just administers the code (required for transformation) and what it uses (to reorder).
+data Def
+  = Def
+      { defCateg        :: CBindCateg       -- the category of the binding
+      , defCore         :: CBind            -- the actual code
+      , defFvS          :: FvS              -- its used (free) vars
+      }
+
+emptyDef :: Def
+emptyDef = Def CBindCateg_Rec (CBind_Bind hsnUnknown []) Set.empty
+
+type DefMp = Map.Map HsName Def
+
+defMpComb :: DefMp -> DefMp -> DefMp
+defMpComb = Map.unionWith (\d1 d2 -> d1 {defFvS = defFvS d1 `Set.union` defFvS d2})
+%%]
+
+%%[(8 codegen)
+ATTR AllExpr AllBind [ | | defMp USE {`defMpComb`} {Map.empty} : DefMp ]
+
+SEM CBind
+  | Bind        lhs         .   defMp       =   Map.singleton @nm (emptyDef {defCore = @cTrf, defFvS = @bindAspects.fvS})
+
+SEM CExpr
+  | Let         lhs         .   defMp       =   if @isGlobal
+                                                then Map.map (\d -> d {defCateg = @categ}) @binds.defMp `defMpComb` @body.defMp
+                                                else Map.empty
+  | * - Let Ann lhs         .   defMp       =   Map.empty
+%%]
+
+%%[(8 codegen)
+ATTR CExpr [ | | letBody : CExpr ]
+
+SEM CExpr
+  | Let         lhs         .   letBody     =   @body.letBody
+  | * - Let     lhs         .   letBody     =   @cTrf
+%%]

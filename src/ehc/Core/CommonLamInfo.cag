@@ -7,51 +7,24 @@
 %%% Common AG for Core LamInfo gathering & propagation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Gathering LamInfo
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%[doesWhat doclatex
+Distributing.
 
-%%[(8 codegen)
-ATTR
-  CModule CExpr
-%%[[20
-  CodeAGItf
-%%]]
-    [ | | gathLamMp: LamMp ]
-
-SEM CExpr
-  | Let         lhs         .   gathLamMp =   @binds.bindLamMp `Map.union` @body.gathLamMp
-  | * - Let Ann CaseAltFail
-  				lhs         .   gathLamMp =   Map.empty
+Hook(s):
+\begin{itemize}
+\end{itemize}
 %%]
 
-%%[(8 codegen)
-ATTR AllBind [ | | bindLamMp USE {`Map.union`} {Map.empty}: LamMp ]
-
-%%]
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Distributing LamInfo
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen)
 ATTR
   AllCodeNT
-%%[[20
   CodeAGItf
-%%]]
     [ lamMp: LamMp | | ]
 %%]
-
-%%[(8 codegen).CodeAGItf.lamMp
-SEM CodeAGItf
-  | AGItf       module      .   lamMp       =   @module.gathLamMp
-%%]
-
-%%[(20 codegen) -8.CodeAGItf.lamMp
-SEM CodeAGItf
-  | AGItf       loc         .   gathLamMp   =   lamMpMergeInto ((\(LamInfo {laminfoStackTrace=t}) i -> i {laminfoStackTrace=t})) const @module.gathLamMp @lhs.lamMp -- lamMpUpdateWith @lhs.lamMp @module.gathLamMp
-                module      .   lamMp       =   @gathLamMp `Map.union` @lhs.lamMp
-%%]
-SEM CodeAGItf
-  | AGItf       loc         .   gathLamMp   =   lamMpUpdateWith @lhs.lamMp @module.gathLamMp
-                module      .   lamMp       =   @gathLamMp `Map.union` @lhs.lamMp
 
 %%[(8 codegen)
 SEM CExpr

@@ -5,6 +5,9 @@
 %%[1 module {%{EH}Base.Builtin} import({%{EH}Base.HsName}, Data.Maybe)
 %%]
 
+%%[1 import(EH.Util.Utils)
+%%]
+
 %%[1 export(hsnWild, hsnArrow, strProd, hsnProd, hsnProdArity, hsnUnknown, hsnIsArrow, hsnIsProd, hsnInt, hsnChar)
 %%]
 
@@ -290,7 +293,7 @@ mkRV' :: HsName -> HsName -> HsName
 mkRV' _ = id
 
 mkRV :: String -> HsName
-mkRV = mkRV' undefined . hsnFromString
+mkRV = mkRV' (panic "Builtin.mkRV") . hsnFromString
 
 %%[[92
 mkGenerRV :: String -> HsName

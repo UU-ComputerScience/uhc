@@ -119,7 +119,8 @@ DATA RelevTy
   				-- put others here
 
   -- function structure
-  | Fun			quants			: {[UID]}
+  | Fun			quant			: {RQuant}
+  				quants			: {[UID]}
   				quals			: RelevQualL
   				args			: RelevTyL
   				res				: RelevTy

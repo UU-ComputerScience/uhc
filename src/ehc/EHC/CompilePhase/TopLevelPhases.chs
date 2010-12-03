@@ -355,7 +355,7 @@ cpEhcModuleCompile1 targHSState modNm
               (lift $ putStrLn ("State: in: " ++ show (ecuState ecu) ++ ", to: " ++ show targHSState))
 %%]]
 %%[[8
-       ; case (ecuState ecu,undefined) of
+       ; case (ecuState ecu,panic "CompilePhase.TopLevelPhases.cpEhcModuleCompile1") of
 %%][20
        ; case (ecuState ecu,targHSState) of
 %%]]

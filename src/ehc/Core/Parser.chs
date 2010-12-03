@@ -91,17 +91,17 @@ pCExpr
   =   (\f as -> acoreApp f (map fst as))
                      <$> pCExprSel <*> pList pCExprSelMeta
   <|> acoreLam       <$  pLAM <*> pList1 (pDollNm) <* pRARROW <*> pCExpr
-  <|> CExpr_Let      <$  pLET <*> pMaybe CBindings_Plain id pCBindingsCateg <* pOCURLY <*> pListSep pSEMI pCBind <* pCCURLY <* pIN <*> pCExpr
+  <|> CExpr_Let      <$  pLET <*> pMaybe CBindCateg_Plain id pCBindCateg <* pOCURLY <*> pListSep pSEMI pCBind <* pCCURLY <* pIN <*> pCExpr
   <|> CExpr_Case <$ pCASE <*> pCExpr <* pOF
       <* pOCURLY <*> pListSep pSEMI pCAlt <* pCCURLY
       <* pOCURLY <*  pDEFAULT <*> {- pMb -} pCExpr <* pCCURLY
-  where pCBindingsCateg
-          =   CBindings_Rec    <$ pKeyTk "rec"
-          <|> CBindings_FFI    <$ pFOREIGN
+  where pCBindCateg
+          =   CBindCateg_Rec    <$ pKeyTk "rec"
+          <|> CBindCateg_FFI    <$ pFOREIGN
 %%[[90
-          <|> CBindings_FFE    <$ pKeyTk "foreignexport"
+          <|> CBindCateg_FFE    <$ pKeyTk "foreignexport"
 %%]]
-          <|> CBindings_Strict <$ pBANG
+          <|> CBindCateg_Strict <$ pBANG
 
 
 pTrack          ::   CParser Track

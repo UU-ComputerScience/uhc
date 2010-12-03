@@ -9,9 +9,6 @@
 
 %%[(8 codegen grin) hs module {%{EH}Core.ToGrin} export(Inh_CodeAGItf(..),Syn_CodeAGItf(..),wrap_CodeAGItf,sem_CodeAGItf)
 %%]
-%%[(8 codegen grin).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonPred},{Core/CommonCtxtPred},{Core/CommonBindNm},{Core/CommonFFI},{Core/CommonLamInfo},{Core/Trf/CommonFv})
-WRAPPER CodeAGItf
-%%]
 %%[(8 codegen grin) hs import(Char, Data.Maybe, Data.List, qualified Data.Set as Set, qualified Data.Map as Map)
 %%]
 %%[(8 codegen grin) hs import(EH.Util.Utils, EH.Util.Pretty)
@@ -33,10 +30,12 @@ WRAPPER CodeAGItf
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Haskell itf
+%%% Wrapper
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-none, directly exports wrap_CodeAGItf,sem_CodeAGItf
+%%[(8 codegen grin).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonLevLet},{Core/CommonPred},{Core/CommonCtxtPred},{Core/CommonBindNm},{Core/CommonFFI},{Core/CommonLamInfo},{Core/CommonGathLamInfo},{Core/Trf/CommonFv})
+WRAPPER CodeAGItf
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Fake AG dependencies to avoid INDUCED cycles
@@ -77,6 +76,21 @@ ATTR AllCodeNT CodeAGItf [ dataGam: DataGam | | ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Gathering LamInfo, providing hook for Core/CommonLamInfo
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+SEM CodeAGItf
+  | AGItf       loc         .	howUnionGathLamInfo
+  												=	Map.union @gathLamMp
+%%]
+
+%%[(8 codegen)
+SEM CodeAGItf
+  | AGItf       loc         .   howMergeLamInfo	=   (\(LamInfo {laminfoArity=a}) i -> i {laminfoArity=a})
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Unique
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -99,43 +113,6 @@ SEM CPat
   | Int Char    loc         .   lUniq       :   UNIQUEREF gUniq
 %%]
 
-SEM CBindAspect
- %%[[(8 codegen grin)
-  | FFI         (lhs.gUniq,loc.lUniq)       =   mkNewLevUID   @lhs.gUniq
- %%][98
-  | FFI         (lhs.gUniq,loc.lUniq,loc.lUniq2)
-                                            =   mkNewLevUID2  @lhs.gUniq
- %%]]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Level, let also one level higher
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8 codegen grin)
-SEM CExpr
-  | Let         binds       .   lev         =   @lhs.lev + 1
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Context: evaluation context (to replace isStrict)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-not used yet as it seems not to be equivalent to isStrict. Cannot find out why...
-
-%%[(8 codegen)
-%%]
-SEM CExpr
-  | Let         binds       .   evalCtx     =   if @isGlobal
-                                                then EvalCtx_Eval
-                                                else if @categ == CBindings_Strict
-                                                    then EvalCtx_Eval
-                                                    else EvalCtx_None
-
-SEM CBindAspect
-  | Bind        expr        .   evalCtx     =   if not (null @expr.grLamArgL)
-                                                then EvalCtx_Eval
-                                                else @lhs.evalCtx
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Newly bound LamInfo
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -149,26 +126,27 @@ SEM CBindAspect
                                             =   Map.singleton @lhs.nm
                                                               (emptyLamInfo {laminfoArity = length @expr.grLamArgL})
 %%]
-  | FFI         lhs         .   bindLamMp
-                                            =   Map.singleton @lhs.nm
-                                                              (emptyLamInfo {laminfoArity = length @argTyL + length @argTyLExtra})
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Variables which are passed as parameter
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen grin)
-ATTR AllCodeNT [ | | asArgNmS USE {`Set.union`} {Set.empty}: FvS ]
-
 SEM CExpr
   | Var         loc         .   mbLam       =   case lamMpLookupLam @nm @lhs.lamMp of
                                                     j@(Just arity) | @lhs.isTopApp
                                                         -> j
                                                     _   -> Nothing
-                lhs         .   asArgNmS    =   maybe Set.empty (const (Set.singleton @nm)) @mbLam
   | App         loc         .   mbLam       =   lamMpLookupLam @grAppFun @lhs.lamMp
                             .   appArity    =   length @grAppArgL
-                lhs         .   asArgNmS    =   @func.asArgNmS
+%%]
+
+%%[(8888 codegen grin)
+ATTR AllCodeNT [ | | asArgNmS USE {`Set.union`} {Set.empty}: FvS ]
+
+SEM CExpr
+  | Var         lhs         .   asArgNmS    =   maybe Set.empty (const (Set.singleton @nm)) @mbLam
+  | App         lhs         .   asArgNmS    =   @func.asArgNmS
                                                     `Set.union`  maybe @arg.asArgNmS Set.singleton @arg.mbVar
                                                     `Set.union`  (case @mbLam of
                                                                     Just a | @lhs.isTopApp && @appArity < a
@@ -339,14 +317,14 @@ SEM CExpr
   | Let         (loc.grExpr,lhs.grBindL)    =   if @isGlobal
                                                 then  (emptyGrExpr
                                                       ,case @categ of
-                                                         CBindings_Rec ->  [GrBind_Rec @binds.grBindL] ++ @body.grBindL
-                                                         _             ->              @binds.grBindL  ++ @body.grBindL
+                                                         CBindCateg_Rec ->  [GrBind_Rec @binds.grBindL] ++ @body.grBindL
+                                                         _              ->              @binds.grBindL  ++ @body.grBindL
                                                       )
                                                 else  (case @categ of
-                                                         CBindings_Rec ->  mkHoles @binds.grBindL
-                                                                           $ mkVarBindWithUpdates @binds.grBindL
-                                                                           $ @body.grExpr
-                                                         _             ->  mkVarBinds @binds.grBindL @body.grExpr 
+                                                         CBindCateg_Rec ->  mkHoles @binds.grBindL
+                                                                            $ mkVarBindWithUpdates @binds.grBindL
+                                                                            $ @body.grExpr
+                                                         _              ->  mkVarBinds @binds.grBindL @body.grExpr 
                                                       ,[]
                                                       )
   | Case        loc         .   grExpr      =   let  w1 = @alts.grWrapCase
@@ -468,7 +446,7 @@ ATTR CExpr   [ | | grVal: GrVal ]
 
 SEM CExpr
   | Tup         loc         .   grVal       =   ctag (mkGrRecNode []) (\_ l t a ma -> mkGrConNode (mkGrTagAnn a ma) t l []) @tag
-  | Var         loc         .   grVal       =   maybe (GrVal_Var @nm) (\a -> mkNdPApp @nm a []) @mbLam
+  | Var         loc         .   grVal       =   maybe (GrVal_Var @nmAsp) (\a -> mkNdPApp @nmAsp a []) @mbLam
   | Int         loc         .   grVal       =   (if @lhs.doBox then mkGrBox hsnInt  else id)  (GrVal_LitInt @int)
   | Char        loc         .   grVal       =   (if @lhs.doBox then mkGrBox hsnChar else id)  (GrVal_LitInt (ord @char))
   | String      loc         .   grVal       =   (if @lhs.doBox then mkGrBox (ehcOptBuiltin @lhs.opts ehbnPackedString) else id)  (GrVal_LitStr @str)
@@ -518,121 +496,43 @@ SEM CAlt
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen grin)
+SEM CBindAspect
+  | Bind        loc         .   aspectKeyS  =   acbaspkeyNone
+                            .   isApply0    =   @bindMeta.isApply0
+                            .   grBindMeta  =   @bindMeta.grBindAnn
+  | Val         loc         .   isApply0    =   False               -- TBD: must take care of proper dealing with this meta stuff
+                            .   grBindMeta  =   GrBindAnnNormal
+%%]
+
+%%[(8 codegen grin)
+SEM CBindAspect
+  | Bind Val    loc         .   nmAsp       =   hsnUniqifyACoreBindAspectKeyS @aspectKeyS @lhs.nm
+%%]
+
+%%[(8 codegen grin)
 ATTR AllBind [ | | grBindL   USE {++} {[]}: GrBindL 
                    grGlobalL USE {++} {[]}: GrGlobalL 
              ]
 
 SEM CBindAspect
-  | Bind        (lhs.grBindL, lhs.grGlobalL)=   if   @bindMeta.isApply0
+  | Bind Val    (lhs.grBindL, lhs.grGlobalL)=   if   @isApply0
                                                 then let nm2 = case @expr.whatBelow of
                                                                  ExprIsVar n -> n
                                                                  _           -> error "ToGrin: RHS of Apply0-bind is not a variable"
-                                                     in  ( [], [GrGlobal_Global @lhs.nm (GrVal_Node (GrTag_Fun nm2) [])] )
-                                                else ( [GrBind_Bind @lhs.nm @bindMeta.grBindAnn @expr.grLamArgL @expr.grLamBody], [] )
+                                                     in  ( []
+                                                         , [GrGlobal_Global @nmAsp (GrVal_Node (GrTag_Fun nm2) [])]
+                                                         )
+                                                else     ( [GrBind_Bind @nmAsp @grBindMeta @expr.grLamArgL @expr.grLamBody]
+                                                         , []
+                                                         )
 
-%%]
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% FFI binding: IO, requires introduction behavior of EHC.Prelude.ioFromPrim:
-%%% extra state param, extra state return (tupled with actual return value)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(9898 codegen grin)
-SEM CBindAspect
-  | FFI         loc         .   mbIORes     =   ffiMbIORes @lhs.opts @resTy
-                            .   resIsIO     =   isJust @mbIORes
-%%]
-
-%%[(8888 codegen grin)
-SEM CBindAspect
-  | FFI         loc         .   resTyAdapted:   Ty
-                loc         .   argTyLExtra :   {[Ty]}
-                loc         .   nmArgLExtra :   {[HsName]}
-                loc         .   wrapRes     :   {GrExpr -> GrExpr}
-%%]
-
-%%[(8888 codegen grin).ioAdaption
-SEM CBindAspect
-  | FFI         loc         .   resTyAdapted=   @resTy
-                            .   argTyLExtra =   []
-                            .   nmArgLExtra =   []
-                            .   wrapRes     =   id
-%%]
-
-%%[(9898 codegen grin) -8.ioAdaption
-SEM CBindAspect
-  | FFI         loc         .   (resTyAdapted,argTyLExtra,nmArgLExtra,wrapRes)
-                                            =   case @mbIORes of
-                                                  Just iores
-                                                    -> (iores,a,n,w)
-                                                    where (a,n,w) = ffiGrinIOAdapt @lhs.opts @lUniq2 @lhs.modNm iores
-                                                  _ -> (@resTy,[],[],id)
-                                                  
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% FFI binding: evaluation need
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-The default is to evaluate arguments, and assume the primitive returns an evaluated result.
-These defaults are overridden by a table in BuiltinPrims, used here.
-See also CommonFFI.
-
-%%[(9696 codegen grin) hs
-evalArg :: Bool -> HsName -> GrExpr
-evalArg need nm = if need then GrExpr_Eval nm else GrExpr_Unit (GrVal_Var nm) GrType_None
-
-evalRes :: Bool -> HsName -> GrExpr -> GrExpr
-evalRes need nm e = if need then GrExpr_Seq e (GrPatLam_Var nm) (GrExpr_Eval nm) else e
-%%]
-
-%%[(8888 codegen grin).evalRes
-SEM CBindAspect
-  | FFI         loc         .   evalRes     =   id
-%%]
-
-%%[(9999 codegen grin).evalRes -8.evalRes
-SEM CBindAspect
-  | FFI         loc         .   evalRes     =   evalRes @primResNeedsEval @nmEvalRes
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% FFI binding: plain stuff
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8888 codegen grin)
-SEM CBindAspect
-  | FFI         loc         .   (nmRes,nmEvalRes,nmArgL,nmArgPatL)
-                                            =   let  (nmRes:nmEvalRes:nmArgL) = take (length @argTyL + 2) (map (uidQualHNm @lhs.modNm) (iterate uidNext @lUniq))
-                                                     nmArgPatL = map (hsnUniqify HsNameUniqifier_FFIArg) nmArgL
-                                                in   (nmRes,nmEvalRes,nmArgL,nmArgPatL)
-                lhs         .   grBindL     =   [GrBind_Bind @lhs.nm GrBindAnnNormal (@nmArgL ++ @nmArgLExtra)
-                                                   (ffiGrinEvalAdapt
-                                                      ( zip3 @nmArgL
-                                                             (zipWith (ffiGrinMkArgUnpack @lhs.opts @lhs.dataGam) @nmArgPatL @argTyL)
-                                                             @primArgNeedsEvalL
-                                                      )
-                                                      ( @nmEvalRes
-                                                      , @wrapRes
-                                                        $ ffiGrinMkResPack @lhs.opts @lhs.dataGam @nmRes @resTyAdapted
-%%[[8
-                                                            (GrExpr_FFI @impEnt
-%%][90
-                                                            (GrExpr_FFI @callconv @impEnt
-%%]]
-%%[[99
-                                                                        (GrFFIAnnot_IsResEval (not @primResNeedsEval))
-%%]]
-                                                                        (map GrVal_Var @nmArgPatL
-                                                            )           )
-                                                      , @primResNeedsEval
-                                                      )
-                                                   )
-                                                ]
-%%]
-
-%%[(9090 codegen grin)
+%%[(90 codegen grin)
 SEM CBindAspect
   | FFE         lhs         .   grBindL     =   []  -- not implemented yet
 %%]
@@ -789,18 +689,18 @@ SEM CExpr
 ATTR AllMetaVal [ | | grBindAnn : {GrBindAnn}  ]
 
 SEM CMetaVal
-  | Val          lhs          .   grBindAnn   =  GrBindAnnNormal
+  | Val          lhs        .   grBindAnn   =  GrBindAnnNormal
 %%[[9
-  | Dict         lhs          .   grBindAnn   =  GrBindAnnNormal
-  | DictClass    lhs          .   grBindAnn   =  GrBindAnnClass @tracks
-  | DictInstance lhs          .   grBindAnn   =  GrBindAnnInstance @tracks
-  | Track        lhs          .   grBindAnn   =  GrBindAnnNormal
+  | Dict         lhs        .   grBindAnn   =  GrBindAnnNormal
+  | DictClass    lhs        .   grBindAnn   =  GrBindAnnClass @tracks
+  | DictInstance lhs        .   grBindAnn   =  GrBindAnnInstance @tracks
+  | Track        lhs        .   grBindAnn   =  GrBindAnnNormal
 %%]]
 
 ATTR AllMetaBind [ | | isApply0 : Bool ]
 
 SEM CMetaBind
-  | Apply0       lhs . isApply0  =  True
-  | * - Apply0   lhs . isApply0  =  False
+  | Apply0       lhs 		. 	isApply0  	=  True
+  | * - Apply0   lhs 		. 	isApply0  	=  False
 
 %%]

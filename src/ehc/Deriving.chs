@@ -154,7 +154,7 @@ mkDerivClsMp fe valGam dataGam
                 nononzeroargs
                 (Just $
                   \_ dtiSubs nrOfAlts self _ [argFrom]
-                     -> let (dti,_) = last dtiSubs
+                     -> let (dti,_) = last' (panic "Deriving.Enum.enumFrom.dtiSubs") dtiSubs
                         in  acoreBuiltinApp opts ehbnClassEnumFldEnumFromTo [self,acoreVar argFrom,CExpr_Tup (dtiCTag dti)]
                 )
                 undef undef
@@ -169,7 +169,7 @@ mkDerivClsMp fe valGam dataGam
                 (Just $
                   \_ dtiSubs nrOfAlts self _ [argFrom,argThen]
                      -> let (dti1,_) = head dtiSubs
-                            (dti2,_) = last dtiSubs
+                            (dti2,_) = last' (panic "Deriving.Enum.enumFromThen.dtiSubs") dtiSubs
                         in  acoreBuiltinApp opts ehbnClassEnumFldEnumFromThenTo
                               [ self
                               , acoreVar argFrom
@@ -340,7 +340,7 @@ mkDerivClsMp fe valGam dataGam
                                     nms seed = take (nSub+1) $ hsnLclSupplyWith $ mkHNmHidden seed
                                     remNmL  = nms "v"
                                     nmL = zip4 (nms "uv") (rNm:remNmL) (nms "u") remNmL
-                                    nmLRemFinal = last remNmL
+                                    nmLRemFinal = last' (panic "Deriving.nmLRemFinal") remNmL
                                     mkLamTup     x res rem cont = acoreLam1 x $ acoreMatchTuple env [res,rem] cont (acoreVar x)
                                     mkLamStr str x res rem cont = mkLamTup x res rem $ acoreMatchString env str cont nil (acoreVar res)
                                     mkConcatMapTup lam prio rem subCall = acoreApp (acoreVar $ fn ehbnPrelConcatMap) [lam,acoreApp subCall [prio,acoreVar rem]]

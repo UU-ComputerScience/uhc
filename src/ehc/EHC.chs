@@ -313,7 +313,7 @@ doCompileRun filename opts
                                                (putStrLn (disp (HSSem.pp_Syn_AGItf wrRes) 1000 ""))
                                         ; return (HSSem.eh_Syn_AGItf wrRes)
                                         }
-                                else return undefined
+                                else return (panic "EHC.doCompileRun")
                               }
                       else do { let steps = parseOffside (EHPrs.pAGItf) tokens
                               ; (resd,_) <- evalStepsIO show steps

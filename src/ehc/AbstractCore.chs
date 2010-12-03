@@ -244,14 +244,16 @@ acoreMetaLiftDict = fmap2Tuple acoreMetavalDfltDict
 -- | A ACoreBindAspectKeyS formed out of multiple ACoreBindAspectKey identifies a particular binding aspect
 data ACoreBindAspectKey
   = ACoreBindAspectKey_Default				-- identifies the default binding, if omitted in a reference this aspect is the one chosen.
+  | ACoreBindAspectKey_RelevTy				-- the relevance ty
   | ACoreBindAspectKey_Strict				-- the as strict as possible variant
   | ACoreBindAspectKey_Debug				-- internal debugging only
   deriving (Eq,Ord,Enum)
 
 instance Show ACoreBindAspectKey where
-  show ACoreBindAspectKey_Default 		= "default"
-  show ACoreBindAspectKey_Strict 		= "strict"
-  show ACoreBindAspectKey_Debug 		= "debug"
+  show ACoreBindAspectKey_Default 		= "dft"
+  show ACoreBindAspectKey_Strict 		= "str"
+  show ACoreBindAspectKey_RelevTy 		= "rty"
+  show ACoreBindAspectKey_Debug 		= "dbg"
 
 instance PP ACoreBindAspectKey where
   pp = pp . show
@@ -263,11 +265,21 @@ acbaspkeyMk :: [ACoreBindAspectKey] -> ACoreBindAspectKeyS
 acbaspkeyMk = Set.fromList
 %%]
 
-%%[(8 codegen) hs export(acbaspkeyDefault,acbaspkeyStrict,acbaspkeyDebug)
+%%[(8 codegen) hs export(acbaspkeyNone,acbaspkeyDefault,acbaspkeyDefaultRelevTy,acbaspkeyStrict,acbaspkeyDebug)
+-- | predefined: 
+acbaspkeyNone :: ACoreBindAspectKeyS
+acbaspkeyNone = acbaspkeyMk
+  [  ]
+
 -- | predefined: 
 acbaspkeyDefault :: ACoreBindAspectKeyS
 acbaspkeyDefault = acbaspkeyMk
   [ ACoreBindAspectKey_Default ]
+
+-- | predefined: 
+acbaspkeyDefaultRelevTy :: ACoreBindAspectKeyS
+acbaspkeyDefaultRelevTy = acbaspkeyMk
+  [ ACoreBindAspectKey_Default, ACoreBindAspectKey_RelevTy ]
 
 -- | predefined: 
 acbaspkeyStrict :: ACoreBindAspectKeyS
@@ -285,6 +297,15 @@ ppACBaspKeyS :: ACoreBindAspectKeyS -> PP_Doc
 ppACBaspKeyS = ppCurlysCommas . Set.toList
 %%]
 
+%%[(8 codegen) hs export(hsnUniqifyACoreBindAspectKeyS)
+-- | uniqify with ACoreBindAspectKeyS, omitting the default
+hsnUniqifyACoreBindAspectKeyS :: ACoreBindAspectKeyS -> HsName -> HsName
+hsnUniqifyACoreBindAspectKeyS as n
+  = foldr mk n $ Set.toList as
+  where mk ACoreBindAspectKey_Strict = hsnUniqify    HsNameUniqifier_Strict
+        mk a                         = hsnUniqifyStr HsNameUniqifier_BindAspect (show a)
+%%]
+
 %%[(20 codegen) hs
 deriving instance Typeable ACoreBindAspectKey
 deriving instance Data ACoreBindAspectKey
@@ -294,7 +315,7 @@ deriving instance Data ACoreBindAspectKey
 %%% A reference to an aspected value, i.e. a particular aspect of a binding
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) export(ACoreBindRef(..), acbrefAspKey)
+%%[(8 codegen) export(ACoreBindRef(..))
 -- | reference to binding aspect: name + aspect keys
 data ACoreBindRef
   = ACoreBindRef
@@ -303,19 +324,28 @@ data ACoreBindRef
       }
   deriving (Eq,Ord)
 
-acbrefAspKey :: ACoreBindRef -> ACoreBindAspectKeyS
-acbrefAspKey = maybe acbaspkeyDefault id . acbrefMbAspKey
-{-# INLINE acbrefAspKey #-}
+instance HSNM ACoreBindRef where
+  mkHNm (ACoreBindRef n ma) = maybe n (\a -> hsnUniqifyACoreBindAspectKeyS a n) ma
 
 instance Show ACoreBindRef where
-  show (ACoreBindRef n a) = show n ++ "." ++ show a
+  show = show . mkHNm
+%%]
 
+%%[(8 codegen) hs
+acbrefAspKey :: ACoreBindRef -> ACoreBindAspectKeyS
+acbrefAspKey = maybe acbaspkeyNone id . acbrefMbAspKey
+{-# INLINE acbrefAspKey #-}
+%%]
+
+%%[(8 codegen) hs export(acbrefAspAnd)
+-- | narrow down aspects by adding more to ref; assume extra aspects non empty
+acbrefAspAnd :: ACoreBindAspectKeyS -> ACoreBindRef -> ACoreBindRef
+acbrefAspAnd a r = r {acbrefMbAspKey = Just $ a `Set.union` acbrefAspKey r }
 %%]
 
 %%[(8 codegen) hs export(ppACoreBindRef)
 ppACoreBindRef :: (HsName -> PP_Doc) -> ACoreBindRef -> PP_Doc
-ppACoreBindRef ppN (ACoreBindRef n (Just a)) = ppN n >|< (if a == acbaspkeyDefault then empty else "." >|< ppACBaspKeyS a)
-ppACoreBindRef ppN (ACoreBindRef n _       ) = ppN n
+ppACoreBindRef ppN r = ppN (acbrefNm r) >|< (maybe empty (ppCurlysCommas . Set.toList) $ acbrefMbAspKey r)
 
 instance PP ACoreBindRef where
   pp = ppACoreBindRef pp

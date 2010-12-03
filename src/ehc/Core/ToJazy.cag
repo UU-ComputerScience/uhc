@@ -547,7 +547,7 @@ SEM CExpr
                                                              offof n = cvarOffset $ panicJust "ToJazy.CExpr.Let.ji offset" $ Map.lookup n @cvarMpNew
                                                              initbinds
                                                                    = case @categ of
-                                                                       CBindings_Rec
+                                                                       CBindCateg_Rec
                                                                          ->    [ jiNew nmInd [] ## J.Instr_Store jtyInd o | (o,_,_) <- binds ]
                                                                             ## [ jiSetInd (j $ J.Instr_Load jtyInd o) e | (o,_,e) <- binds ]
                                                                        _ -> j  [ e ## J.Instr_Store t o | (o,t,e) <- binds ]

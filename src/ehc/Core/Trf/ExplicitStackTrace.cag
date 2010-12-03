@@ -31,7 +31,7 @@ However, ideally, this trf should be placed before that, but this currently brea
 %%[(99 codegen) hs import(Data.Maybe, qualified Data.Map as Map)
 %%]
 
-%%[(99 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonCtxtPred},{Core/CommonBindNm},{Core/CommonLamInfo})
+%%[(99 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonLevLet},{Core/CommonCtxtPred},{Core/CommonBindNm},{Core/CommonLamInfo},{Core/CommonGathLamInfo})
 WRAPPER CodeAGItf
 %%]
 
@@ -67,12 +67,18 @@ ATTR AllCodeNT CodeAGItf [ opts: EHCOpts | | ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Level, let also one level higher
+%%% Gathering LamInfo, providing hook for Core/CommonLamInfo
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(99 codegen grin)
-SEM CExpr
-  | Let         binds       .   lev         =   @lhs.lev + 1
+%%[(99 codegen)
+SEM CodeAGItf
+  | AGItf       loc         .	howUnionGathLamInfo
+  												=	Map.union @gathLamMp
+%%]
+
+%%[(99 codegen)
+SEM CodeAGItf
+  | AGItf       loc         .   howMergeLamInfo =   (\(LamInfo {laminfoStackTrace=t}) i -> i {laminfoStackTrace=t})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -165,7 +171,7 @@ SEM CBindAspect
   | Bind        (loc.bindCTrfL,loc.mbInStackTraceCtxt,loc.newLamMp)
                                             =   case @mbStackTrace of
                                                   StackTraceInfo_HasStackTraceEquiv dbNm | @isTraceCandidate
-                                                    -> ( [ acoreBind1Cat CBindings_Plain dbNm (acoreLam1 @nmStackTrace @expr.cTrf) 
+                                                    -> ( [ acoreBind1Cat CBindCateg_Plain dbNm (acoreLam1 @nmStackTrace @expr.cTrf) 
                                                          , acoreBind1Metas @lhs.nm @bindMeta.cTrf 
                                                            $ acoreLam   @expr.traceCandidateLamArgs
                                                            $ acoreApp   (acoreVar dbNm)

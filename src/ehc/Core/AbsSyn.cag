@@ -66,7 +66,7 @@ DATA CExpr
   | Tup         tag             : {CTag}
 
   -- let bindings
-  | Let         categ           : {CBindingsCateg}
+  | Let         categ           : {CBindCateg}
                 binds           : CBindL
                 body            : CExpr
 
@@ -212,20 +212,8 @@ DATA CBindAspect
   | Val		    aspectKeyS		: {ACoreBindAspectKeyS}
   				expr 			: CExpr
   
-  -- FFI binding
-  {-
-  | FFI         callconv        : {FFIWay}
-                safety          : {String}
-%%[[8
-                impEnt          : {String}
-%%][90
-                impEnt          : {ForeignEnt}
-%%]]
-                -- nm              : {HsName}
-                ty              : {Ty}
-  -}
 %%[[90
-  -- FFE binding (not yet further implemented)
+  -- FFE binding (not yet implemented for all backends)
   | FFE         -- nm              : {HsName}
                 callconv        : {FFIWay}
                 expEnt          : {ForeignEnt}

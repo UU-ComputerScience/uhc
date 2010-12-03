@@ -61,9 +61,9 @@ tycore2core opts mod
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen tycore) hs
-type BindCore = [(Maybe CBindingsCateg,CBindL)]
+type BindCore = [(Maybe CBindCateg,CBindL)]
 
-mkLet :: CBindingsCateg -> BindCore -> CExpr -> CExpr
+mkLet :: CBindCateg -> BindCore -> CExpr -> CExpr
 mkLet dfltCateg bs e = foldr (\(c,b) e -> acoreLetMerge True (maybe dfltCateg id c) b e) e bs
 %%]
 
@@ -150,7 +150,7 @@ SEM ExprSeq1 FldBind MbExpr ValBind Alt Pat
 ATTR Module AGItf [ | | core: CModule ]
 
 SEM Module
-  | Mod         lhs         .   core                =   CModule_Mod @moduleNm (mkLet CBindings_Rec @vbinds.core (acoreBuiltinUndefined @lhs.opts)) []
+  | Mod         lhs         .   core                =   CModule_Mod @moduleNm (mkLet CBindCateg_Rec @vbinds.core (acoreBuiltinUndefined @lhs.opts)) []
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -164,12 +164,12 @@ ATTR Expr [ | | core: CExpr ]
 %%[(8 codegen tycore)
 SEM Expr
   | Let         loc         .   ccateg              =   case @categ of
-                                                          ValBindCateg_Rec    -> CBindings_Rec    
-                                                          ValBindCateg_Strict -> CBindings_Strict 
-                                                          ValBindCateg_Plain  -> CBindings_Plain  
-                                                          ValBindCateg_FFI    -> CBindings_FFI    
+                                                          ValBindCateg_Rec    -> CBindCateg_Rec    
+                                                          ValBindCateg_Strict -> CBindCateg_Strict 
+                                                          ValBindCateg_Plain  -> CBindCateg_Plain  
+                                                          ValBindCateg_FFI    -> CBindCateg_FFI    
 %%[[90
-                                                          ValBindCateg_FFE    -> CBindings_FFE    
+                                                          ValBindCateg_FFE    -> CBindCateg_FFE    
 %%]]
                             .   core                =   mkLet @ccateg @vbinds.core @body.core
   | App         loc         .   core                =   maybe id (flip acoreApp) @arg.mbAppArg @func.core
@@ -215,8 +215,8 @@ ATTR AllValBind [ | | core USE {++} {[]}: BindCore ]
 SEM ValBind
   | Val         loc         .   core                =   if @mlev == 0
                                                         then if isJust @l0.mbFFI
-                                                             then [(Just CBindings_FFI,[fromJust @l0.mbFFI @nm])]
-                                                             else [(Nothing,[acoreBind1Cat CBindings_Plain @nm @l0.core])]
+                                                             then [(Just CBindCateg_FFI,[fromJust @l0.mbFFI @nm])]
+                                                             else [(Nothing,[acoreBind1Cat CBindCateg_Plain @nm @l0.core])]
                                                         else []
 %%]
 

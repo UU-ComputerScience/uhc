@@ -12,6 +12,10 @@ either through direct calls, or through deferred (F) or partially applied (P) or
 
 %%[(8 codegen grin) ag import({GrinCode/AbsSyn})
 %%]
+%%[(8 codegen grin) hs import(EH.Util.Utils)
+%%]
+
+-- Debugging only
 %%[(8 codegen grin) hs import(Debug.Trace)
 %%]
 
@@ -125,7 +129,7 @@ Bindings that appear not to be life are removed in the transformed program.
 %%[(8 codegen grin)
 SEM GrModule
   | Mod  loc  .  usageL  = Map.toAscList (Map.map Set.toList (Map.union @globalL.usage @bindL.usage))
-              .  biggest = fst (last @loc.usageL)
+              .  biggest = fst (last' (panic "DropUnreachableBindings.GrModule.Mod.usageL") @loc.usageL)
               .  graph   = array (0, @loc.biggest) @loc.usageL
          lhs  .  grTrf   = -- trace ("environment: " ++ show @loc.bothEnv ++ "usageList: " ++ show @loc.usageL) ++ " lifelist: " ++ show @loc.lifeList) $
                            GrModule_Mod @moduleNm @globalL.grTrf @bindL.grTrf @tagsMp

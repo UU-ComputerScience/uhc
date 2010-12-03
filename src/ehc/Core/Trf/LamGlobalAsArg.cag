@@ -135,7 +135,7 @@ SEM CodeAGItf
 SEM CExpr
   | Let         loc         .   lamFvSMp    =   (let  start varS = fvsClosure @binds.bindLamS @lhs.lamS varS @lhs.lamFvSMp @binds.fvSMp
                                                  in   case @categ of
-                                                        CBindings_Rec
+                                                        CBindCateg_Rec
                                                           ->  fvsTransClosure lm m
                                                           where (m,lm)  = start (@lhs.varS `Set.union` @binds.bindVarS)
                                                         _ ->  m
@@ -240,7 +240,7 @@ ATTR CodeAGItf [ | | cTrf: CModule ]
 
 SEM CBindAspect
   | Bind        loc         .   (argNewL,argMpNew,bindLamArgMp)
-                                            =   if {- @isLiftable && @lhs.lev /= cLevModule -} isJust @expr.mbLam
+                                            =   if {- @isLiftable && not @isGlobal -} isJust @expr.mbLam
                                                 then  let  argLevL = fvLAsArg @lhs.introCVarIntroMp $ panicJust "LamGlobalAsArg.CBind.Bind.argLevL" $ Map.lookup @lhs.nm $ @lhs.lamFvSMp
                                                            (argOL,argNL,argONMp) = fvLArgRepl @lhs.gUniq $ argLevL
                                                       in   (argNL, argONMp, @lhs.nm `Map.singleton` argOL)
@@ -251,7 +251,7 @@ SEM CBindAspect
 %%[(8 codegen)
 SEM CBindAspect
 %%[[8
-  | Bind        lhs         .   cTrf        =   acoreBindasp1Cat CBindings_Plain @lhs.nm $ acoreLam (assocLKeys @argNewL) @expr.cTrf
+  | Bind        lhs         .   cTrf        =   acoreBindasp1Cat CBindCateg_Plain @lhs.nm $ acoreLam (assocLKeys @argNewL) @expr.cTrf
 %%][9
   | Bind        lhs         .   cTrf        =   --trace ("use of global: " ++ show @lhs.nm ++ " uses " ++ show @bindLamArgMp ++ "\n"
                                                 --      ++ (if @bindMeta.isInstance then ("instance " ++ show @lhs.nm ++ " finds " ++ show @expr.bindLamArgMp ++ "\n") else "")
@@ -300,7 +300,13 @@ ATTR AllExprOnly [ mbCtxCount:{Maybe Int} isDictClass:{Bool} | | ]
 SEM CModule
   | Mod  expr.mbCtxCount = Nothing
          expr.isDictClass = False
-  
+
+%%[[90
+SEM CBindAspect
+  | FFE  expr.mbCtxCount = Nothing
+         expr.isDictClass = False
+%%]]
+
 SEM CAlt
   | Alt  expr.mbCtxCount = Nothing
          expr.isDictClass = False

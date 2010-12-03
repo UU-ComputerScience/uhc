@@ -407,7 +407,7 @@ SEM PredSeq
 ATTR Ty [ | | orig: Ty ]
 SEM Ty
   | Var Con      loc.orig = @loc.repl
-  | * - Var Con  loc.orig = undefined
+  | * - Var Con  loc.orig = panic "Ty.Trf.Subst.Ty.*-{Var,Con}.orig"
 
 SEM Pred
   | Eq

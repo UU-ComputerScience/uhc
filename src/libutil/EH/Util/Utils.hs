@@ -33,7 +33,7 @@ hdAndTl' _ (a:as) = (a,as)
 hdAndTl' n []     = (n,[])
 
 hdAndTl :: [a] -> (a,[a])
-hdAndTl = hdAndTl' undefined
+hdAndTl = hdAndTl' (panic "hdAndTl")
 
 maybeNull :: r -> ([a] -> r) -> [a] -> r
 maybeNull n f l = if null l then n else f l
@@ -56,6 +56,10 @@ initlast as
   where il acc [a]    = Just (reverse acc,a)
         il acc (a:as) = il (a:acc) as
         il _   _      = Nothing
+
+-- | variation on last which returns empty value instead of
+last' :: a -> [a] -> a
+last' e = maybe e snd . initlast
 
 initlast2 :: [a] -> Maybe ([a],a,a)
 initlast2 as
@@ -101,7 +105,9 @@ spanOnRest p xs@(x:xs')
 -------------------------------------------------------------------------
 
 tup123to1  (a,_,_) = a			-- aka fst3
+tup123to2  (_,a,_) = a			-- aka snd3
 tup123to12 (a,b,_) = (a,b)
+tup123to23 (_,a,b) = (a,b)
 tup12to123 c (a,b) = (a,b,c)
 
 -------------------------------------------------------------------------
