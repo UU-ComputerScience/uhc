@@ -159,7 +159,10 @@ scan opts pos input
    doScan p (c:s)        | isSpace c = let (sp,next) = span isSpace s
                                        in  doScan (foldl adv p (c:sp)) next
 
-   doScan p ('-':'-':s)  = doScan p (dropWhile (/= '\n') s)
+   doScan p "--"  = []
+   doScan p ('-':'-':s@(c:_))
+     | c == '-' || not (isOpsym c)
+       = doScan p (dropWhile (/= '\n') s)
 %%[[99
 {-
 -}
