@@ -1016,7 +1016,7 @@ subsume = sem subsume : Subsume monad IO
                                 in trace ("subsume -- " ++ pp q) q
                       u.pre  = loc.qq2
                       u.exp1 = case appAll (zipWith (\a b->(a, mkSkolem b)) loc.dom loc.c) exp.tyExpr of
-                                 Just a  -> trace ("un1: " ++ sche a) (const (dropScheme a) scheme.prefix)
+                                 Just a  -> trace ("un1: " ++ pp exp.tyExpr ++ " => " ++ pp a) (const (dropScheme a) scheme.prefix)
                                  Nothing -> error "Subsume failure, substitution failed"
                       u.exp2 = let f = dropScheme scheme.tyExpr
                                in trace ("un2: " ++ con f) (const f exp.tyExpr)
@@ -1061,6 +1061,7 @@ subsume = sem subsume : Subsume monad IO
                     clause non_match
                       match True = error "No clauses matched in subsume"
                       lhs.sub = []
+                      
 unify = sem unify : Unify monad IO    
           visit unify
              default? pre = last

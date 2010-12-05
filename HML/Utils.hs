@@ -571,7 +571,7 @@ promote (TyScheme_Forall a x)                      i
 embedF :: TyExpr -> Int -> TyScheme
 embedF e = uncurry ($) . second (TyScheme_SystemF . fst) . embed False e
  where embed :: Bool -> TyExpr -> Int -> (TyScheme -> TyScheme, (TyExpr, Int))
-       embed b (TyExpr_Parens     s) i = if b 
+       embed b (TyExpr_Parens     s) i = if b && not (isUnQualTy s)
                                           then let (f1, (e, i')) = embed False s i
                                                    (var, ires)   = freshT "t" i'
                                                    f2            = TyScheme_Quant (Scheme_Simple var (f1 $ TyScheme_SystemF e))
