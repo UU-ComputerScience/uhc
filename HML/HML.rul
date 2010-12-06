@@ -655,7 +655,7 @@ datasem Expr monad IO
         -- lhs.res = maybe (error "Variable not found in lookup") (:[]) $ M.lookup loc.nm lhs.env
         (lhs.res, loc.frs)
              = case lookup loc.nm (unGam lhs.env) of
-                Just a  -> ([promote a lhs.frs], lhs.frs) -- Is this the proper way to get mutual recursion working?
+                Just a  -> ([a], lhs.frs) -- Is this the proper way to get mutual recursion working?
                 Nothing -> error $ "Variable '" ++ show loc.nm ++ "' not in scope"
                 -- Nothing -> (return . TyScheme_SystemF . TyExpr_Var *** id) (fresh lhs.frs)
         lhs.sub = empty
@@ -913,7 +913,7 @@ itf Unify
 itf Subsume
   visit subsume
     inh pre  :: Prefix
-    inh exp  :: TyScheme
+    inh exp  :: TyExpr
     inh ty   :: TyScheme
     inh frs  :: Int
     syn pre  :: Prefix
@@ -997,11 +997,11 @@ subsume = sem subsume : Subsume monad IO
                 loc.ty   = nf lhs.ty
                 loc.nfTy = isNf lhs.exp
                 loc.nfTs = isNf loc.ty
-                loc.nf   = trace "Subsume NF check" (loc.nfTy && loc.nfTs)
+                loc.nf   = loc.nfTy && loc.nfTs
                 internal nf_check
                     clause s_subsume
                       match True                  = loc.nf
-                      match TyScheme.Sugar@exp    = sugar lhs.exp -- $ mkQuant lhs.exp
+                      match TyExpr.Forall@exp     = mkForall lhs.exp -- $ mkQuant lhs.exp
                       match TyScheme.Sugar@scheme = sugar loc.ty
                       
                       loc.q  = lhs.pre
@@ -1009,14 +1009,12 @@ subsume = sem subsume : Subsume monad IO
                       
                       child u : Unify = unify
                       
-                      loc.dom = nub $ domain exp.prefix
-                      
-                      (loc.c, loc.frs1) = trace ("subsume - init " ++ pp (const scheme.prefix exp.tyExpr) ++ " ++ " ++ pp exp.prefix) $ freshM lhs.frs (length $ loc.dom)
+                      (loc.c, loc.frs1) = trace ("subsume - init " ++ pp (const scheme.prefix exp.tyExpr)) $ freshM lhs.frs (length exp.tyVar)
                       loc.qq2 = let q = loc.q ++ loc.q2
                                 in trace ("subsume -- " ++ pp q) q
                       u.pre  = loc.qq2
-                      u.exp1 = case appAll (zipWith (\a b->(a, mkSkolem b)) loc.dom loc.c) exp.tyExpr of
-                                 Just a  -> trace ("un1: " ++ pp exp.tyExpr ++ " => " ++ pp a) (const (dropScheme a) scheme.prefix)
+                      u.exp1 = case appAll (zipWith (\a b->(a, mkSkolem b)) exp.tyVar loc.c) exp.tyExpr of
+                                 Just a  -> trace ("un1: " ++ con a) (const a scheme.prefix)
                                  Nothing -> error "Subsume failure, substitution failed"
                       u.exp2 = let f = dropScheme scheme.tyExpr
                                in trace ("un2: " ++ con f) (const f exp.tyExpr)
@@ -1053,15 +1051,11 @@ subsume = sem subsume : Subsume monad IO
                                             -- TyExpr_Var a -> [TyIndex_Group a TyScheme_Bottom]
                                             -- _           -> []
                                 -- in lhs.pre `munion` new
-                     
+                      
                     clause f_subsume
                       match (loc.bla, False) = ((), loc.nf)
-                      match True = const(error $ "Subsume failure, the given type is not in normal form.") loc.bla
-                      lhs.sub = []
-                    clause non_match
-                      match True = error "No clauses matched in subsume"
-                      lhs.sub = []
-                      
+                      lhs.sub = const (error $ "Subsume failure, the given type is not in normal form.") loc.bla
+
 unify = sem unify : Unify monad IO    
           visit unify
              default? pre = last
@@ -1258,17 +1252,17 @@ unify = sem unify : Unify monad IO
                                match False = occursCheck loc.varnm loc.q (TyScheme_SystemF loc.expr)
                                loc.phi' = fromJust loc.phi
                                
-                               loc.p = TyScheme_SystemF loc.expr
+                               loc.p = loc.expr
                                
                                child s : Subsume = subsume
                                
                                s.pre = loc.q
                                s.exp = loc.p
-                               s.frs = trace ("Left: " ++ sche loc.p ++ " - " ++ pp loc.p) lhs.frs
+                               s.frs = trace ("Left: " ++ con loc.p ++ " - " ++ pp loc.p) lhs.frs
                                s.ty  = let c = dropQuant loc.phi'
                                        in trace ("Ty: " ++ sche c ++ " - " ++ pp c) c
                                
-                               invoke subsume of s 
+                               invoke subsume of s
                                
                                (loc.q2, loc.e2) = case trace "--> subsume end" $ appAll s.sub loc.expr of
                                                     Nothing -> error "Application failed in unify"
@@ -1301,13 +1295,13 @@ unify = sem unify : Unify monad IO
                                match False = occursCheck loc.varnm loc.q (TyScheme_SystemF loc.expr)
                                loc.phi' = fromJust loc.phi
                                
-                               loc.p = TyScheme_SystemF loc.expr
+                               loc.p = loc.expr
                                
                                child s : Subsume = subsume
                                
                                s.pre = loc.q
                                s.exp = loc.p
-                               s.frs = trace ("Right: " ++ sche loc.p ++ " - " ++ pp loc.p) lhs.frs
+                               s.frs = trace ("Right: " ++ con loc.p ++ " - " ++ pp loc.p) lhs.frs
                                s.ty  = let c = dropQuant loc.phi'
                                        in trace ("Ty: " ++ sche c ++ " - " ++ pp c) c
                                

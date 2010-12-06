@@ -26,11 +26,8 @@ trace = D.trace
 
 -- | Create a HsName from a string.
 mkName :: String -> HsName
-mkName = mkHNmBase -- id
+mkName = mkHNmBase
 
--- type Prefix  = [TyIndex]
--- type HsName  = String
--- type Env     = M.Map HsName TyScheme
 type Sub     = (HsName, TyScheme)
 type ErrorMessage = String
 newtype Gamma = Gamma { unGam :: Env }
@@ -38,13 +35,6 @@ newtype Gamma = Gamma { unGam :: Env }
 -- | Remove entries from a Env based on their key
 remove :: Env -> [HsName] -> Env
 remove env entries = foldl (.) id (map rm entries) env
-
--- | Filter a prefix based on the bounds and not the variable
-elide :: Prefix -> TyQuantifiedScheme -> Prefix
-elide []     _     = []
-elide (x:xs) bound = case x of 
-                       TyIndex_Group _ b | b == bound -> elide xs bound
-                       _ -> x : elide xs bound
 
 -- | Split domains
 split :: (Prefix, [HsName]) -> (Prefix, Prefix)
@@ -62,6 +52,7 @@ split ((p@(TyIndex_Group var phi):q), vars)
           
 -- | Helper functions to make the convertion from map to list easier          
 mapMaybe = \v -> map (id *** \a -> (maybe a id (v a)))
+mapFunc  = map . second
 empty = []
 rm :: Eq k => k -> [(k, v)] -> [(k, v)]
 rm _ [] = []
@@ -69,17 +60,17 @@ rm k1 (x@(k,v):xs) | k1 == k   = rm k1 xs
                        | otherwise = x : rm k1 xs
 
 -- | Apply a set of substitution to an environment
-apply :: Env -> Gamma -> Either Gamma [ErrorMessage]
+apply :: Env -> Gamma -> Gamma
 apply sub env 
-  = let lst  = map (mapMaybe . app) sub
+  = let lst  = map (mapFunc . app) sub
         set  = foldl' (.) id lst
-    in Left (Gamma $ set $ unGam env)
+    in Gamma $ set $ unGam env
     
 applyEnv :: Env -> Env -> Env
 applyEnv sub env
  = map (fapp sub) env
   where fapp :: Env -> Sub -> Sub
-        fapp s (v, b) = (fromJust $ appAll s v, fromJust $ appAll s b)
+        fapp s (v, b) = (appAll s v, appAll s b)
     
 -- | Push any quantified type in the environment instead of being prefixed to the type
 explode :: Prefix -> TyScheme -> (Prefix, TyScheme)
@@ -87,41 +78,35 @@ explode p t | isB t
    = case sugar t of
        TyScheme_Sugar q t' -> (p `munion` q, t')
        x                   -> (p           , x )
-  where isB t = case nf t of
-                 TyScheme_Bottom -> True
-                 _               -> False
+  where isB = isBottom . nf
 explode p t = (p, t)
     
 instance Apply HsName where
    app (s, v) nm | s == nm   = case ftv v of
-                                 [x] -> return x
-                                 _   -> return nm
-                 | otherwise = return nm
+                                 [x] -> x
+                                 _   -> nm
+                 | otherwise =  nm
                  
 instance Util HsName where
    ftv  = return
    vars = return
     
 instance Apply Gamma where
-   app s   gam = case apply [s] gam of
-                  Left e  -> Just e
-                  Right _ -> Nothing
-   appAll e gam = case apply e gam of
-                   Left e  -> Just e
-                   Right _ -> Nothing
+   app s    gam = apply [s] gam
+   appAll e gam = apply  e  gam
                    
 instance Util Gamma where
     ftv  _ = []
     vars _ = []
     
 -- | Apply a substitution
-createMask :: Sub -> (TyExpr -> Maybe TyExpr)
+createMask :: Sub -> TyExpr -> TyExpr
 createMask (nm, ty) = mask
- where rep :: TyExpr -> Maybe TyExpr
+ where rep :: TyExpr -> TyExpr
        rep val = case isTyVar val nm of
-                   False -> return val
+                   False -> val
                    True  -> let ty' = strip ty
-                            in return $ mkParens ty'
+                            in  mkParens ty'
                    
        strip :: TyScheme -> TyExpr
        strip (TyScheme_SystemF  a) = a
@@ -130,31 +115,29 @@ createMask (nm, ty) = mask
        strip (TyScheme_Forall _ a) = strip a
        strip TyScheme_Bottom       = error "A value of Bottom cannot be stripped."
                    
-       mask :: TyExpr -> Maybe TyExpr
+       mask :: TyExpr -> TyExpr
        mask val = case val of
                     TyExpr_App a b -> 
-                      do a' <- mask a
-                         b' <- mask b
-                         return $ TyExpr_App a' b'
+                      let a' = mask a
+                          b' = mask b
+                      in TyExpr_App a' b'
                     TyExpr_AppTop a ->
-                      do a' <- mask a
-                         return $ TyExpr_AppTop a'
+                      let a' = mask a
+                      in TyExpr_AppTop a'
                     TyExpr_Parens a ->
-                      do a' <- mask a
-                         return $ TyExpr_Parens a'
+                      let a' = mask a
+                      in TyExpr_Parens a'
                     TyExpr_Ann a b ->
-                      do b' <- mask b
-                         return $ TyExpr_Ann a b'
+                      let b' = mask b
+                      in TyExpr_Ann a b'
                     TyExpr_Quant a b c ->
                       case b == nm of
-                        False -> do c' <- mask c
-                                    return $ TyExpr_Quant a b c'
-                        True  -> do let b'       = incr b
-                                        (Just e) = app (b, mkVar b') c
-                                    e' <- mask e
-                                    return $ TyExpr_Quant a b' e'
-                    var@(TyExpr_Var{}) ->
-                      do rep var
+                        False -> let c' = mask c
+                                 in TyExpr_Quant a b c'
+                        True  -> let b' = incr b
+                                     e  = app (b, mkVar b') c
+                                     e' = mask e
+                                 in TyExpr_Quant a b' e'
                     x -> rep x
                     
        incr :: HsName -> HsName
@@ -170,12 +153,12 @@ class Eq a => Normal a where
   isNf x = nf x == x
   
 class Util a => Apply a where
-  app    :: Sub -> a -> Maybe a
-  appAll :: Env -> a -> Maybe a
-  appAll env a = foldl (>=>) return (map app env) a
+  app    :: Sub -> a -> a
+  appAll :: Env -> a -> a
+  appAll env = foldl' (.) id (map app env)
   
 instance Apply a => Apply [a] where
-  app s = return . catMaybes . map (app s)
+  app s = map (app s)
   
 class Util a where
   ftv  :: a -> [HsName]
@@ -209,7 +192,7 @@ instance Apply TyExpr where
     app = createMask
     
 instance Apply TyIndex where
-    app s (TyIndex_Group nm a) = TyIndex_Group nm <$> app s a
+    app s (TyIndex_Group nm a) = TyIndex_Group nm (app s a)
   
 instance Util TyExpr where
     ftv (TyExpr_App     a b) = ftv a ++ ftv b
@@ -237,36 +220,29 @@ instance Util TyExpr where
     isUnQualTy (TyExpr_Parens a) = isUnQualTy a
     isUnQualTy (TyExpr_AppTop a) = isUnQualTy a
     isUnQualTy _                 = True 
-    
--- instance Apply TyQuantifiedScheme where
-    -- app m (TyQuantifiedScheme_Quant i s) = TyQuantifiedScheme_Quant i <$> app m s
-    -- app _ TyQuantifiedScheme_Bottom      = return TyQuantifiedScheme_Bottom
   
 instance Apply TyScheme where
     app tp@(x1,x2) = mask
          where          
-           mask :: TyScheme -> Maybe TyScheme
+           mask :: TyScheme -> TyScheme
            mask val = case val of
                         TyScheme_Quant a b -> 
-                          do b' <- app tp b
-                             return $ TyScheme_Quant a b'
+                          let b' = app tp b
+                          in TyScheme_Quant a b'
                         TyScheme_SystemF a ->
-                          do a' <- app tp a
-                             return $ TyScheme_SystemF a'
+                          let a' = app tp a
+                          in TyScheme_SystemF a'
                         TyScheme_Forall a b -> -- This will only work top level
-                          do b' <- app tp b
-                             return $ TyScheme_Forall (sort $ replace (x1,head $ ftv x2) a) b'
-                        _                  -> return val
+                          let b' = app tp b
+                          in TyScheme_Forall (sort $ replace (x1,head $ ftv x2) a) b'
+                        _                  -> val
                         
 -- | Replace every occurence of a value in a list with another value. Preserving ordering
 replace :: Eq a => (a,a) -> [a] -> [a]
 replace   (_,_) [] = []
 replace p@(a,b) (x:xs) |  a == x   = b:replace p xs
                        | otherwise = x:replace p xs
-                        
--- munion a b = let f = map (uncurry minsert)
-                 -- xs = f a ++ f b
-             -- in foldl' (.) id xs []
+
 munion = (++)
 
 minsert k v []  = [(k,v)]
@@ -295,11 +271,6 @@ instance Util TyScheme where
     
     isUnQualTy (TyScheme_SystemF a) = isUnQualTy a
     isUnQualTy _                    = False  
-
--- instance Util TyQuantifiedScheme where
-  -- ftv  (TyQuantifiedScheme_Quant a b) = (nub $ ftv b) \\ (ftv a)
-  -- ftv  _                              = []
-  -- vars (TyQuantifiedScheme_Quant a b) = nub $ (vars b) ++ (vars a)
   
 instance Util TyIndex where
   ftv  (TyIndex_Group nm a) = (nub $ ftv a) \\ [nm]
@@ -315,7 +286,7 @@ instance Normal TyScheme where
        | isTyVar (nf phi2) a    = nf phi1
        | isUnQualTy (nf phi1)   = let x = app (a, p) phi2
                                       p = nf phi1
-                                  in maybe (error "Substitution failed in Normal for UnQualTy") nf x
+                                  in nf x
        | otherwise              = TyScheme_Quant (Scheme_Simple a (nf phi1)) (nf phi2)
   nf a = a 
 
@@ -350,17 +321,6 @@ instance Domain TyIndex where
           binds                     _ = []
   codomain (TyIndex_Group _ a) = ftv a
   
-isIn :: HsName -> TyIndex -> Bool
-c `isIn` (TyIndex_Group a b) = c `elem` (a : binds b)
-    where binds :: TyScheme -> [HsName]
-          binds (TyScheme_Forall a _) = a
-          binds (TyScheme_Quant a b ) = domain a ++ codomain a++ binds b
-          binds                     _ = []
-  
--- instance Domain Env where
-  -- domain   = M.keys
-  -- codomain = concatMap ftv . M.Elems
-  
 instance Domain Scheme where
   domain   (Scheme_Simple a _) = [a]
   codomain (Scheme_Simple _ a) = nub $ vars a
@@ -368,22 +328,17 @@ instance Domain Scheme where
 -- | Updating a prefix
 update :: (Prefix, Either Scheme Sub) -> (Prefix, Env)
 update (q, Right (a, p))
-  = let (q0, (q1,q2)) = id *** (`splitOn` a) $ split (q, ftv p)
-        q2' = case app (a,p) (safeTail q2) of
-               Nothing -> error "Update failed. Could not apply substitution"
-               Just ax -> trace (   "** Var:" ++ pp a
-                                   ++ "\n** Q1 :" ++ pp q1
-                                    ++ "\n** Q2 :" ++ pp q2) ax
-    in  (q0 ++ q1 ++ q2', [(a,p)])
+  = let (q0, (q1,q2)) = second (`splitOn` a) $ split (q, ftv p)
+        q2'           = app (a,p) (safeTail q2)
+    in (q0 ++ q1 ++ q2', [(a,p)])
+    
 update (q, Left (Scheme_Simple var phi2))
-  = let (q0, (q1,q2)) = id *** (`splitOn` var) $ split (q, ftv phi2)
+  = let (q0, (q1,q2)) = second (`splitOn` var) $ split (q, ftv phi2)
         p   = nf phi2       
-        q2' = case app (var,p) (safeTail q2) of
-               Nothing -> error "Update failed. Could not apply substitution"
-               Just ax -> ax
+        q2' = app (var,p) (safeTail q2)
     in case isUnQualTy p of
          True  -> (q0 ++ q1 ++ q2', [(var, p)])
-         False -> (q0 ++ q1 ++ (TyIndex_Group var (promote phi2 (-9)):(safeTail q2)) ,empty)
+         False -> (q0 ++ q1 ++ (TyIndex_Group var (promote phi2):(safeTail q2)) ,empty)
         
 safeTail :: [a] -> [a]
 safeTail []     = []
@@ -398,35 +353,6 @@ splitOn (x@(TyIndex_Group v1 _):xs) v2
       True  -> ([],x:xs)
       False -> let (a,b) = splitOn xs v2
                in (x:a, b)
--- splitOn (x:xs) v2
-  -- = let d' = pullup x v2
-        -- d = D.trace ("|| " ++ show (map pp d')) d'
-    -- in case d of
-        -- (x:x':_) -> ([x],x':xs)
-        -- _        -> let (a,b) = splitOn xs v2
-                    -- in  (a,x:b)
-               
--- | Pullup a type that's deeply embedded in a index
-pullup :: TyIndex -> HsName -> [TyIndex]
-pullup x@(TyIndex_Group v1 r) v2 
-  | v1 == v2  = [x]
-  | otherwise = let (a, b) = findIn r v2
-                    b'     = case b of
-                               Just (Scheme_Simple q r) -> [TyIndex_Group q r]
-                               _                        -> []
-                in case b' of
-                     [] -> []
-                     br ->  TyIndex_Group v1 a : br
- where findIn :: TyScheme -> HsName -> (TyScheme, Maybe Scheme)
-       findIn (TyScheme_Quant s@(Scheme_Simple a b) c) nm
-         = case a == nm of
-             True  -> (c, Just s)
-             False -> let (c', s') = findIn c nm
-                          (b', r)  = findIn b nm
-                      in case r of
-                          Nothing -> (TyScheme_Quant s c', s')
-                          Just _  -> (TyScheme_Quant (Scheme_Simple a b') c, r)
-       findIn a _ = (a, Nothing)
   
 -- | Extending a Prefix with a Scheme
 extend :: (Prefix, Scheme, Int) -> Bool -> ((Prefix, Env), Int)
@@ -434,31 +360,17 @@ extend (q, scheme@(Scheme_Simple var phi), frs) ren
  = let p = nf phi
    in case isUnQualTy p of
         True  -> ((q, [(var, p)]), frs)
-        -- TyScheme_Quant s t   -> case s of
-                                 -- Scheme_Simple v t' 
-                                   -- -> let s' = Scheme_Simple var t'
-                                          -- (Just tx) = app (v, mkVar var) t
-                                          -- ty = TyScheme_Quant s' tx
-                                      -- in ((q++[TyIndex_Group var (promote ty)], empty), frs)
-        -- _  -> case sweep p of
-               -- (schemes, ph2) | not (null schemes) ->
-                  -- let (varsc, frs') = freshM frs (length schemes)
-                      -- env           = zipWith (\a b-> (a, mkVar b)) (domain schemes) varsc
-                      -- (Just ph2')   = appAll (M.fromAscList env) ph2
-                      -- pre           = q ++ [TyIndex_Group v (promote p) | (v, p) <- zipWith (\a (Scheme_Simple _ x)->(a, x)) varsc schemes ]
-                  -- in ((pre, M.fromAscList [(var, ph2')]), frs')
         _     -> let (ph2, frs', subs) = if ren 
                                             then renameVars frs phi
                                             else (phi, frs,[])
-                 in trace ("@" ++ pp var ++ " == " ++ pp phi ++ " -- " ++ sche phi ++ " -- " ++ pp (promote ph2 frs') ++ " @ " ++ pp subs) ((q++[TyIndex_Group var (promote ph2 frs')], subs), frs')
+                 in ((q++[TyIndex_Group var (promote ph2)], subs), frs')
 
 renameVars :: Int -> TyScheme -> (TyScheme, Int, Env)
 renameVars frs ty 
  = (fc ty, frs', env)
   where
     fc (TyScheme_Quant (Scheme_Simple a b) c) = TyScheme_Quant (Scheme_Simple (ren a) (fc b)) (fc c)
-    fc (TyScheme_SystemF exp) = let -- (Just a) = appAll env exp
-                                     a = fullRename env' exp
+    fc (TyScheme_SystemF exp) = let a = fullRename env' exp
                                 in  TyScheme_SystemF a
     fc TyScheme_Bottom        = TyScheme_Bottom
     fc (TyScheme_Sugar a b)   = TyScheme_Sugar (map fi a) (fc b)
@@ -491,34 +403,14 @@ fullRename env = rename
    rename e = e
    
    ren a = maybe a id $ lookup a env
-   
--- | Collects all the schemes for TyScheme_Quant
-sweep :: TyScheme -> ([Scheme], TyScheme)
-sweep (TyScheme_Quant a p) 
-  = let (s,r) = sweep p
-    in  (a:s, r)
-sweep x = ([], x)
         
 -- | Checks a prefix to see if it has a binding for a variable and select it
 contains :: Prefix -> HsName -> Maybe TyQuantifiedScheme
 contains pref name = msum $ map (\(TyIndex_Group nm b) -> guard (nm == name) >> return b) pref
--- contains pref name = let old = (msum $ map (\(TyIndex_Group nm b) -> guard (nm == name) >> return b) pref) :: Maybe TyQuantifiedScheme
-                         -- new = msum $ map spine pref
-                     -- in trace ("-- Name: " ++ pp name) $ 
-                        -- trace ("-- Old: "  ++ pp old ) $ 
-                        -- trace ("-- New: "  ++ pp new ) new
--- contains pref name = msum $ map spine pref
- where spine x = let y = pullup x name
-                 in case y of
-                     (_:(TyIndex_Group _ x):_) -> Just x
-                     [TyIndex_Group _ b] -> Just b
-                     _       -> Nothing
 
 -- | Drop a quantification from a TyQuantifiedScheme
 dropQuant :: TyQuantifiedScheme -> TyScheme
 dropQuant = id
--- dropQuant (TyScheme_Quant b t) = desugar $ TyScheme_Sugar [b] t
--- dropQuant TyScheme_Bottom      = TyScheme_Bottom
 
 -- | Split a quantifier of a TyScheme
 splitQuant :: TyScheme -> (Prefix, TyScheme)
@@ -547,46 +439,25 @@ getBindLHs = concatMap getBindLH
 -- | Promote/Convert a Type Scheme to a quantified type scheme. 
 --   This greatly influences the types. Might need to be reconsidered and checked 
 --   to see if we can simplify the types generates
-promote :: TyScheme -> Int -> TyQuantifiedScheme
-promote TyScheme_Bottom                            _ = TyScheme_Bottom
-promote (TyScheme_Quant (Scheme_Simple nm ty) ty') i = TyScheme_Quant (Scheme_Simple nm (promote ty i)) ty'
-promote (TyScheme_SystemF x)                       i
-  = embedF x i
-promote (TyScheme_Sugar{})                         _ = error "TyScheme_Sugar cannot be promoted. It's purely syntaxtical sugar. Please call desugar before that"
-promote (TyScheme_Forall a x)                      i 
-  = TyScheme_Forall a (promote x i)
+promote :: TyScheme -> TyQuantifiedScheme
+promote TyScheme_Bottom                            = TyScheme_Bottom
+promote (TyScheme_Quant (Scheme_Simple nm ty) ty') = TyScheme_Quant (Scheme_Simple nm (promote ty)) ty'
+promote (TyScheme_SystemF x)                       
+  = embedF x
+promote (TyScheme_Sugar{})                         = error "TyScheme_Sugar cannot be promoted. It's purely syntaxtical sugar. Please call desugar before that"
+promote (TyScheme_Forall a x)                       
+  = TyScheme_Forall a (promote x)
 
 -- -- | Represent a SystemF type as a flexible type, This is not implemented for higher rank types yet
--- embedF :: TyExpr -> TyScheme
--- embedF = embed id
- -- where embed :: (TyScheme -> TyScheme) -> TyExpr -> TyScheme
-       -- embed val (TyExpr_Parens     s) = embed val s
-       -- embed val (TyExpr_Quant  _ a t) = let e = TyScheme_Quant (Scheme_Simple a TyScheme_Bottom)
-                                         -- in  embed (val . e) t
-       -- embed val (TyExpr_Forall _ v t) = let e = foldl' (.) id [ TyScheme_Quant (Scheme_Simple a TyScheme_Bottom) | a <- v ] 
-                                         -- in  embed (val . e) t
-       -- embed val e                     = val (TyScheme_SystemF e)
-
--- | Represent a SystemF type as a flexible type, This is not implemented for higher rank types yet
-embedF :: TyExpr -> Int -> TyScheme
-embedF e = uncurry ($) . second (TyScheme_SystemF . fst) . embed False e
- where embed :: Bool -> TyExpr -> Int -> (TyScheme -> TyScheme, (TyExpr, Int))
-       embed b (TyExpr_Parens     s) i = if b && not (isUnQualTy s)
-                                          then let (f1, (e, i')) = embed False s i
-                                                   (var, ires)   = freshT "t" i'
-                                                   f2            = TyScheme_Quant (Scheme_Simple var (f1 $ TyScheme_SystemF e))
-                                               in (f2, (TyExpr_Var var, ires))
-                                          else second (first TyExpr_Parens) (embed b s i)
-       embed b (TyExpr_Quant  _ a t) i = let e = TyScheme_Quant (Scheme_Simple a TyScheme_Bottom)
-                                         in  first (e.) $ embed b t i
-       embed b (TyExpr_Forall _ v t) i = let e = foldl' (.) id [ TyScheme_Quant (Scheme_Simple a TyScheme_Bottom) | a <- v ] 
-                                         in  first (e.) $ embed b t i
-       embed b (TyExpr_AppTop     x) i = let (f, (e, i')) = embed b x i
-                                         in  (f, (TyExpr_AppTop e, i'))
-       embed _ (TyExpr_App      f x) i = let (f1, (e1, i1)) = embed True f i
-                                             (f2, (e2, i2)) = embed True x i1
-                                         in  (f2 . f1, (TyExpr_App e1 e2, i2))
-       embed _ e                     i = (id, (e, i))
+embedF :: TyExpr -> TyScheme
+embedF = embed id
+ where embed :: (TyScheme -> TyScheme) -> TyExpr -> TyScheme
+       embed val (TyExpr_Parens     s) = embed val s
+       embed val (TyExpr_Quant  _ a t) = let e = TyScheme_Quant (Scheme_Simple a TyScheme_Bottom)
+                                         in  embed (val . e) t
+       embed val (TyExpr_Forall _ v t) = let e = foldl' (.) id [ TyScheme_Quant (Scheme_Simple a TyScheme_Bottom) | a <- v ] 
+                                         in  embed (val . e) t
+       embed val e                     = val (TyScheme_SystemF e)
 
 simple    = TyExpr_Quant tyQu_Forall (mkName "a") $ TyExpr_Quant tyQu_Forall (mkName "b") ((TyExpr_Var $ mkName "a") `mkArrow` (TyExpr_Var $ mkName "b"))
 difficult = TyExpr_Quant tyQu_Forall (mkName "a") $ TyExpr_Quant tyQu_Forall (mkName "b") ((TyExpr_Parens $ TyExpr_Quant tyQu_Forall (mkName "c") $ (TyExpr_Var $ mkName "c") `mkArrow` TyExpr_Con (mkName "Int")) `mkArrow` ((TyExpr_Var $ mkName "a") `mkArrow` (TyExpr_Var $ mkName "b")))
@@ -610,16 +481,6 @@ freshM s c = fresh' c ([], s)
 --   e.g given type a and b returns the type a -> b or (-> b) a rather
 mkArrow :: TyExpr -> TyExpr -> TyExpr
 mkArrow a b =  TyExpr_AppTop $ TyExpr_App (TyExpr_App (TyExpr_Con $ mkName "->") a) b
-
--- | The same as mkArrow except it allows a TyScheme as first argument and resulting type
-mkArrowL :: TyScheme -> TyExpr -> TyScheme
-mkArrowL a b = 
-  case a of
-    TyScheme_Quant  c d -> TyScheme_Quant c (mkArrowL d b)
-    TyScheme_SystemF  d -> TyScheme_SystemF (d `mkArrow` b)
-    TyScheme_Bottom     -> TyScheme_Bottom
-    TyScheme_Sugar  p d -> TyScheme_Sugar p (mkArrowL d b)
-    TyScheme_Forall q d -> TyScheme_Forall q (d `mkArrowL` b)
 
 mkVar :: HsName -> TyScheme
 mkVar = TyScheme_SystemF . TyExpr_Var
@@ -647,9 +508,6 @@ sugar (TyScheme_Quant (Scheme_Simple nm b) t)
              case sugar t of
               TyScheme_Sugar q t -> TyScheme_Sugar (q':q) t
               x                  -> TyScheme_Sugar [q']   t
--- sugar (TyScheme_SystemF a) = case mkQuantified a of
-                               -- y@(TyScheme_SystemF {}) -> TyScheme_Sugar [] y
-                               -- x                       -> sugar x
 sugar y@(TyScheme_SystemF{}) = TyScheme_Sugar [] y
 sugar x = x
 
@@ -657,15 +515,11 @@ sugar x = x
 --   toScheme . fromScheme == id
 toScheme :: TyQuantifiedScheme -> TyScheme
 toScheme = id
--- toScheme TyQuantifiedScheme_Bottom                             = TyScheme_Bottom
--- toScheme (TyQuantifiedScheme_Quant (TyIndex_Group nm bound) t) = TyScheme_Quant (Scheme_Simple nm (toScheme bound)) t
 
 -- | Convert a TyScheme to a Quantified Scheme such that
 --   toScheme . fromScheme == id
 fromScheme :: TyScheme -> TyQuantifiedScheme
 fromScheme = id
--- fromScheme TyScheme_Bottom                         = TyQuantifiedScheme_Bottom
--- fromScheme (TyScheme_Quant (Scheme_Simple nm b) t) = TyQuantifiedScheme_Quant (TyIndex_Group nm (fromScheme b)) t
 
 -- | Fully quantify a type based on the type variable it contains.
 --   e.g. List a becomes forall (a>=_|_). List a
@@ -698,19 +552,12 @@ alpha_rename ty
                      GT -> GT
                      EQ -> a `compare` b
        env   = zip fvars nvars
-   in  maybe ty id $ appAll env ty
+   in appAll env ty
      
 -- | Check to see if a tyScheme is _|_    
 isBottom :: TyScheme -> Bool
 isBottom TyScheme_Bottom = True
 isBottom _               = False
-   
-unfold :: TyScheme ->TyScheme
-unfold (TyScheme_Forall a b) 
- = let e = [ TyScheme_Quant (Scheme_Simple x TyScheme_Bottom) | x <- a ]
-   in foldr ($) b e
-unfold x 
- = x
  
 -- | converts a TyScheme to a SystemF type
 ftype :: TyScheme -> TyExpr
@@ -722,7 +569,7 @@ ftype = ft . nf . desugar
             = TyExpr_Quant tyQu_Forall a (ft phi)
        ft (TyScheme_Quant (Scheme_Simple a q) phi)
             = let (TyScheme_Sugar q' p) = sugar q 
-                  (Just phi') = app (a, p) phi
+                  phi'                  = app (a, p) phi
               in ft $ desugar (TyScheme_Sugar q' phi')
               
 -- | converts a TyScheme to a partial TyScheme by not removing quantifiers bound to Bottom
@@ -732,7 +579,7 @@ ptype = ft . desugar
        ft x@(TyScheme_Quant (Scheme_Simple _ TyScheme_Bottom) _) = x
        ft (TyScheme_Quant (Scheme_Simple a q) phi)
             = let (TyScheme_Sugar q' p) = sugar q 
-                  (Just phi') = app (a, p) phi
+                  phi'                  = app (a, p) phi
               in ft $ desugar (TyScheme_Sugar q' phi')
        ft x = x
        
@@ -741,34 +588,8 @@ instance Simplify TyScheme where
     -- | Simplify a type scheme for presentation, dropping trivial quantifications
     --   e.g. (a>=_|_) to a, and expanding types.
     --   simplify :: TyScheme -> TyScheme
-    simplify exp = let (v, e) = simpl' empty exp
-                   in case appAll e v of
-                       Just a  -> a
-                       Nothing -> v
-      where simpl' env s@(TyScheme_Quant scheme ty) 
-              = case scheme of
-                 Scheme_Simple a TyScheme_Bottom -> let (next, e2) = simpl' env ty
-                                                    in case next of
-                                                         TyScheme_Forall x ty' -> case a `elem` ftv ty' of
-                                                                                    True  -> (TyScheme_Forall (nub $ a:x) ty', e2)
-                                                                                    False -> (TyScheme_Forall x ty', e2)
-                                                         z                     -> case a `elem` ftv z of
-                                                                                    True  -> (TyScheme_Forall [a] z, e2)
-                                                                                    False -> (TyScheme_Forall []  z, e2)
-                 Scheme_Simple a bounds          -> let (newb, e1) = simpl' env bounds
-                                                        env' = (a, newb): e1
-                                                    in  case appAll env' ty of
-                                                          Nothing -> (s, env')
-                                                          Just x  -> let (next, e3) = simpl' env' x
-                                                                         newv = nub $ ftv next
-                                                                     in case next of
-                                                                          TyScheme_Forall x' ty' -> (TyScheme_Forall (nub $ newv++x') ty', e3)
-                                                                          z                      -> (TyScheme_Forall newv z, e3)
-            simpl' env s@(TyScheme_Sugar{})   = simpl' env (desugar s)
-            simpl' env (TyScheme_SystemF exp) = (TyScheme_SystemF (simplify exp), env)
-            simpl' env scheme                 = (scheme, env)
-    
-    clean = alpha_rename . simplify
+    simplify = TyScheme_SystemF . ftype
+    clean    = alpha_rename . simplify
     
 instance Simplify TyExpr where
     -- | Simplify a type expression for presentation. This version just drops superflous parenthesis
@@ -795,7 +616,6 @@ instance Simplify TyExpr where
 noArr :: TyExpr -> Bool
 noArr (TyExpr_Con a)    = not $ pp a == "->"
 noArr (TyExpr_App a b)  = noArr a && noArr b
--- noArr (TyExpr_AppTop a) = noArr a
 noArr (TyExpr_Parens a) = noArr a
 noArr _                 = True
             
@@ -806,7 +626,7 @@ isVar _               = False
 
 mkQuant :: TyExpr -> TyExpr
 mkQuant x@(TyExpr_Quant{}) = x
-mkQuant x                 = 
+mkQuant x                  = 
   let vars = ftv x
       f    = TyExpr_Quant tyQu_Forall
       c    = map f vars
@@ -837,28 +657,7 @@ occursCheck a q phi
                              []     -> (r1, [], [])
         fvs           = ftv (TyScheme_Sugar q2 phi)
     in case null q1 of
-         True  -> let d1 = trace ("++Var: " ++ pp a)
-                      d2 = trace ("++Pre: " ++ pp q)
-                      d3 = trace ("++Split: " ++ pp (q `splitOn` a))
-                  in d1 $ d2 $ d3 $ error "Cannot occurs check. The split does not return a value" 
-         False -> let d1 = trace ("++Var: " ++ pp a)
-                      d2 = trace ("++Pre: " ++ pp q ++ "\n++Q0 = " ++ pp q0 ++ "\n++Q1 = " ++ pp q1 ++ "\n++Q2 = " ++ pp q2)
-                      d3 = trace ("++Phi: " ++ pp phi ++ "\n++Ftv: " ++ pp (ftv phi) ++ "\n\n")
-                  in a `elem` fvs
+         True  -> error "Cannot occurs check. The split does not return a value" 
+         False -> a `elem` fvs
                   
 type TyQuantifiedScheme = TyScheme
-sche :: TyScheme -> String
-sche (TyScheme_Quant{})   = "Quant"
-sche (TyScheme_SystemF{}) = "SystemF"
-sche (TyScheme_Bottom{})  = "Bottom"
-sche (TyScheme_Sugar{})   = "Sugar"
-sche (TyScheme_Forall{})  = "Forall"
-
-con :: TyExpr -> String
-con (TyExpr_Con a)    = "Con " ++ show a
-con (TyExpr_Var a)    = "Var " ++ show a
-con (TyExpr_App a b)  = con a ++ "; " ++ con b
-con (TyExpr_AppTop a) = "AppTop (" ++ con a ++ ")"
-con (TyExpr_Parens a) = "(" ++ con a ++ ")"
-con (TyExpr_Quant _ _ a) = "Quant: " ++ con a
-con _                 = "unmapped"

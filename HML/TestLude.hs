@@ -21,12 +21,10 @@ foreign import ccall "Prelude" (&&)    :: Bool -> Bool -> Bool
 foreign import ccall "Prelude" (++)    :: List a -> List a -> List a
 foreign import ccall "Prelude" all     :: (a -> Bool) -> List a -> Bool
 foreign import ccall "Prelude" and     :: List Bool -> Bool 
-foreign import ccall "Prelude" id      :: a -> a
-foreign import ccall "Prelude" app     :: (forall a. a -> Int) -> List Int
 
--- (f . g) x = f (g x)
--- id x = x    
--- f $ x = f x
--- const a b = a
+(f . g) x = f (g x)
+id x = x    
+f $ x = f x
+const a b = a
 
--- app = \(f :: forall a. a -> Int) -> Cons (f 0) (Cons (f 'a') Nil)
+app = \(f :: forall a. a -> Int) -> Cons (f 0) (Cons (f 'a') Nil)
