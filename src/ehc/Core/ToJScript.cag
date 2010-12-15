@@ -24,7 +24,7 @@
 %%[(8 jscript) hs import(qualified {%{EH}JScript} as J)
 %%]
 
-%%[(90 jscript) hs import({%{EH}Foreign.Extract})
+%%[(8 jscript) hs import({%{EH}Foreign.Extract})
 %%]
 
 -- debug
@@ -350,7 +350,7 @@ jsNewTup = J.Expr_Arr
 --   20101012 AD, note: internally generated datatypes not yet have correct meta info, so fill up names as needed, as temporary hack
 jsDataFldNames :: DataGam -> CTag -> [HsName]
 jsDataFldNames dataGam ctag
-  = zipWith (\o mbn -> maybe o hsnQualified mbn) hsnLclSupply $ nms ++ fill
+  = zipWith (\o mbn -> maybe o (hsnSafeJavaLike . hsnQualified) mbn) hsnLclSupply $ nms ++ fill
   where nms  = maybe [] (\(_,dti) -> map fst $ dtiFldTyL dti) $ dataGamTagLookup ctag dataGam
         fill = repeat Nothing
 
@@ -386,18 +386,16 @@ SEM CExpr
                                                     then let (f:as) = reverse @jsArgFunL
                                                          in  case @func.appFunKind of
                                                                AppFunKind_Tag tag -> jsNewTupOrData @lhs.dataGam @lhs.pkgNm @lhs.topClassNm tag as
-                                                               AppFunKind_FFI     -> @func.resPackWrap $ @func.mkFFI f as
+                                                               AppFunKind_FFI     -> @func.resPackWrap $ @func.mkFFI {-f-} as
                                                                _                  -> jsApp f as
                                                     else J.Expr_Str "*** ERR APP ***"
   | FFI         loc         .   (mkArgsJS,mkResJS,mkFFI)
                                                 =   ffiJScriptMkCall
-%%[[90
                                                         @foreignEntInfo
-%%]]
-                                                        @lhs.opts False @impEntNm @argMbConL @resMbCon
-                            .   js              =   let ent = jsVar $ mkHNm @impEntNm
-                                                        ffi = @mkFFI ent []
-                                                    in  if null @argMbConL then @mkResJS ffi else ent
+                                                        @lhs.opts False @argMbConL @resMbCon
+                            .   js              =   if null @argMbConL
+                                                    then (@mkResJS $ @mkFFI [])
+                                                    else (jsVar $ mkHNm $ forextractEnt @foreignEntInfo)
   | Let         loc         .   (jbindsLet,jstatsLet,js)
                                                 =   if @isGlobal
                                                     then ( @binds.jbinds, Seq.empty, @body.js )
@@ -468,12 +466,13 @@ SEM CExpr
 %%]
 
 %%[(8 jscript)
-ATTR CExpr [ | | mkFFI : {J.Expr -> [J.Expr] -> J.Expr} ]
+-- | Construction of the actual call given parameters. Already provided with the FFI function. The use of 'head' is arbitrary, because unused.
+ATTR CExpr [ | | mkFFI : {[J.Expr] -> J.Expr} ]
 
 SEM CExpr
-  | App         lhs         .   mkFFI           =   if @isTopApp' then const else @func.mkFFI
+  | App         lhs         .   mkFFI           =   if @isTopApp' then head else @func.mkFFI
   | * - FFI App Ann
-                lhs         .   mkFFI           =   const
+                lhs         .   mkFFI           =   head
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -569,30 +568,43 @@ SEM CExpr
 %%[(8 jscript) hs
 -- | construct the ffi call
 ffiJScriptMkCall
-  :: 
-%%[[90
-     ForeignExtraction 
-     -> 
-%%]]
-        EHCOpts
+  :: ForeignExtraction 
+     -> EHCOpts
      -> Bool                        -- do eval of args
-     -> String                      -- name of ffi entity
      -> [Maybe HsName]              -- list of (possibly) type constructor names of arguments
      -> Maybe HsName                -- and result
      -> ( [J.Expr -> J.Expr]        -- additional unwrapping for each argument
         ,  J.Expr -> J.Expr         -- and result
-        ,  J.Expr -> [J.Expr] -> J.Expr                 -- and primitive call itself
+        , [J.Expr] -> J.Expr        -- and primitive call itself
         )
 ffiJScriptMkCall
 %%[[90
      ent
 %%]]
   = javalikeMkFFICall
-      ( const tyDefault,\_ _ -> bx,\_ -> bx
-      -- , \_ _ _ f as -> mkcall $ mkfargs f as 
-      , \_ _ _ -> mk
+      ( const tyDefault
+      , \_ _ -> bx
+      , \_ -> bx
+      , \_ _ impExtract
+%%[[8
+          -> jsVar $ mkHNm $ forextractEnt impExtract
+%%][90
+          -> case impExtract of
+               ForeignExtraction_Plain {forextractEnt = impEntNm}
+                 -> jsVar $ mkHNm impEntNm
+               ForeignExtraction_Wrapper
+                 -> panic "ffiJScriptMkCall.mkPrimFun: wrapper not implemented"
+               ForeignExtraction_Dynamic
+                 -> panic "ffiJScriptMkCall.mkPrimFun: dynamic not implemented"
+%%]]
+      , \_ _ -> mk
+      , panic "ffiJScriptMkCall: wrapper not implemented"
+      , panic "ffiJScriptMkCall: dynamic not implemented"
       , jsEvl, tyDefault
       )
+%%[[90
+      ent
+%%]]
   where bx = (id,tyDefault)
         mkfargs f as
 %%[[90

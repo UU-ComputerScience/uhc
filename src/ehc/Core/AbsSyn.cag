@@ -108,6 +108,14 @@ DATA CExpr
                 impEnt          : {ForeignEnt}
 %%]]
                 ty              : {Ty}
+
+%%[[9090
+  -- FFE binding (not yet implemented for all backends)
+  | FFE         callconv        : {FFIWay}
+                expEnt          : {ForeignEnt}
+                expr            : CExpr
+                ty              : {Ty}
+%%]]
 %%]
 
 %%[(9 codegen)
@@ -214,10 +222,8 @@ DATA CBindAspect
   
 %%[[90
   -- FFE binding (not yet implemented for all backends)
-  | FFE         -- nm              : {HsName}
-                callconv        : {FFIWay}
+  | FFE         callconv        : {FFIWay}
                 expEnt          : {ForeignEnt}
-                -- expNm           : {HsName}
                 expr            : CExpr
                 ty              : {Ty}
 %%]]

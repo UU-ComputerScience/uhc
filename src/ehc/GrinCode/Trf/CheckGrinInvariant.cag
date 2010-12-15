@@ -15,7 +15,7 @@ This is not a transformation, just an extra check whether SetGrinInvariant worke
 %%]
 %%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}Base.Builtin},{%{EH}GrinCode.Common}, {%{EH}GrinCode})
 %%]
-%%[(90 codegen grin) hs import({%{EH}Foreign.Extract})
+%%[(8 codegen grin) hs import({%{EH}Foreign.Extract})
 %%]
 %%[(8 codegen grin)
 WRAPPER GrAGItf

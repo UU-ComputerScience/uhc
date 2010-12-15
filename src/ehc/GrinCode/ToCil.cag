@@ -37,7 +37,7 @@ thunks.
 %%]
 %%[(8 codegen clr) hs import({%{EH}Cil.Common}, {%{EH}Cil.TyTag})
 %%]
-%%[(90 codegen clr) hs import({%{EH}Foreign.Extract})
+%%[(8 codegen clr) hs import({%{EH}Foreign.Extract})
 %%]
 
 %%[(8 codegen clr)

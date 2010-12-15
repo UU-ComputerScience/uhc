@@ -413,6 +413,11 @@ SEM TyExpr
   | Var         lhs         .   errSq        =  rngLift @range mkNestErr' @pp [foErrSq @loc.foPol]
 %%]
 
+%%[90
+SEM Decl
+  | FFI			lhs         .   errSq        =  rngLift @range mkNestErr' @pp [foErrSq @foFFI]
+%%]
+
 %%[50
 SEM DataConstr
   | Constr      lhs         .   errSq       :=  rngLift @range mkNestErr' @pp [@fields.errSq, @eqs.errSq, foErrSq @fo_]

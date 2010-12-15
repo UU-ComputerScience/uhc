@@ -32,7 +32,6 @@ DATA CCall
                     nm              : String
   | Dynamic
   | Wrapper
-  | Empty
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -50,25 +49,8 @@ DATA PrimCall
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[90
-{-
 DATA JScriptCall
-  | Id              asPointer       : Bool
-
-					-- argument which acts as receiver object (if any), starting at 1, e.g. for arg 1:
-					-- "%1.g", f x y ~> to x.g(y)
-  					mbThisArgNr		: {Maybe Int}
-                    nm              : String
-                    
-                    -- args which is used as index, e.g. for arg 1:
-                    -- "g[%1]"    , f x y ~> g[x](y)
-                    -- "&%1.g[%2]", f x y ~> x.g[y]
-  					mbIndexArgNr	: {Maybe Int}
-  					-- mbForeignExpr	: {Maybe ForeignExpr}
--}
-DATA JScriptCall
-  | Id              -- asPointer       : Bool
-
-					-- argument which acts as receiver object (if any), starting at 1, e.g. for arg 1:
+  | Id              -- argument which acts as receiver object (if any), starting at 1, e.g. for arg 1:
 					-- "%1.g", f x y ~> to x.g(y)
   					-- mbThisArgNr		: {Maybe Int}
                     nm              : String
@@ -78,6 +60,8 @@ DATA JScriptCall
                     -- "&%1.g[%2]", f x y ~> x.g[y]
   					-- mbIndexArgNr	: {Maybe Int}
   					mbForeignExpr	: {Maybe ForeignExpr}
+  | Dynamic
+  | Wrapper
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

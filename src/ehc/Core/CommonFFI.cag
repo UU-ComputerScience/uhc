@@ -12,10 +12,9 @@ SEM CExpr
                             .   argTyL          =   fst @loc.argTyLresTy
                             .   resTy           =   snd @loc.argTyLresTy
 %%[[8
-                            .   impEntNm        =   @impEnt
+                            .   foreignEntInfo  =   @impEnt
 %%][90
                             .   foreignEntInfo  =   foreignEntExtract @impEnt
-                            .   impEntNm        =   forextractEnt @foreignEntInfo 
 %%]]
 %%[[8
                 loc         .   primArgNeedsEvalL
@@ -23,7 +22,7 @@ SEM CExpr
                             .   primResNeedsEval
                                                 =   False
 %%][96
-                loc         .   mbPrimNeedEval  =   lookupPrimNeedsEval @impEntNm
+                loc         .   mbPrimNeedEval  =   maybe Nothing lookupPrimNeedsEval $ forextractMbEnt @foreignEntInfo
                             .   primArgNeedsEvalL
                                                 =   maybe (repeat True) (\p -> primArgNeedEval p ++ repeat True) @mbPrimNeedEval
                             .   primResNeedsEval

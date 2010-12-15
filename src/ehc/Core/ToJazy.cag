@@ -21,7 +21,7 @@
 %%[(8 jazy) hs import(qualified {%{EH}JVMClass} as J)
 %%]
 
-%%[(90 codegen jazy) hs import({%{EH}Foreign.Extract})
+%%[(8 codegen jazy) hs import({%{EH}Foreign.Extract})
 %%]
 
 -- debug
@@ -534,12 +534,14 @@ SEM CExpr
                                                     then let (f:as) = reverse @jiArgFunL
                                                          in  case @func.appFunKind of
                                                                AppFunKind_Tag tag -> jiNewTupOrData @lhs.pkgNm @lhs.topClassNm tag as
-                                                               AppFunKind_FFI     -> @func.resPackWrap $ @func.mkFFI f as
+                                                               AppFunKind_FFI     -> @func.resPackWrap $ @func.mkFFI as
                                                                _                  -> jiApp f as
                                                     else emptyJI
   | FFI			loc			.	(mkArgsJI,mkResJI,mkFFI)
-                                                =   ffiJazyMkCall @lhs.opts False @impEntNm @argMbConL @resMbCon
-                            .   ji              =   let ffi = @mkFFI (panic "ToJazy.CExpr.FFI.mkFFI") []
+                                                =   ffiJazyMkCall
+                                                      @foreignEntInfo
+                                                      @lhs.opts False @argMbConL @resMbCon
+                            .   ji              =   let ffi = @mkFFI {-(panic "ToJazy.CExpr.FFI.mkFFI")-} []
                                                     in  if null @argMbConL then @mkResJI ffi else ffi
   | Let         loc         .   (jbindsLet,ji)  =   if @isGlobal
                                                     then ( @binds.jbinds, @body.ji )
@@ -602,12 +604,12 @@ SEM CExpr
 %%]
 
 %%[(8 jazy)
-ATTR CExpr [ | | mkFFI : {J.JInstr -> [J.JInstr] -> J.JInstr} ]
+ATTR CExpr [ | | mkFFI : {[J.JInstr] -> J.JInstr} ]
 
 SEM CExpr
   | App         lhs			.	mkFFI     		=   @func.mkFFI
   | * - FFI App Ann
-                lhs         .   mkFFI  			=   \f _ -> f
+                lhs         .   mkFFI  			=   head
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -881,20 +883,33 @@ SEM CModule
 %%[(8 jazy) hs
 -- | construct the ffi call
 ffiJazyMkCall
-  :: EHCOpts
+  :: ForeignExtraction 
+     -> EHCOpts
      -> Bool						-- do eval of args
-     -> String                      -- name of ffi entity
      -> [Maybe HsName]              -- list of (possibly) type constructor names of arguments
      -> Maybe HsName                -- and result
      -> ( [J.JInstr -> J.JInstr]	-- additional unwrapping for each argument
         ,  J.JInstr -> J.JInstr		-- and result
-        ,  J.JInstr -> [J.JInstr] -> J.JInstr					-- and primitive call itself
+        , [J.JInstr] -> J.JInstr					-- and primitive call itself
         )
 ffiJazyMkCall
   = javalikeMkFFICall
       ( biJazyBasicTy,basicTyJUnbox,basicTyJBox
-      , \argsTy resTy impEntNm _ as
-          -> as ## J.Instr_Invoke J.InvokeMode_Static (J.Const_Method nmPrim impEntNm argsTy (Just resTy))
+      , \argsTy resTy impExtract
+%%[[8
+          -> j $ J.Instr_Invoke J.InvokeMode_Static (J.Const_Method nmPrim (forextractEnt impExtract) argsTy (Just resTy))
+%%][90
+          -> case impExtract of
+               ForeignExtraction_Plain {forextractEnt = impEntNm}
+                 -> j $ J.Instr_Invoke J.InvokeMode_Static (J.Const_Method nmPrim impEntNm argsTy (Just resTy))
+               ForeignExtraction_Wrapper
+                 -> panic "ffiJazyMkCall.mkPrimFun: wrapper not implemented"
+               ForeignExtraction_Dynamic
+                 -> panic "ffiJazyMkCall.mkPrimFun: dynamic not implemented"
+%%]]
+      , \argsTy resTy f as -> as ## f
+      , panic "ffiJazyMkCall: wrapper not implemented"
+      , panic "ffiJazyMkCall: dynamic not implemented"
       , jiEvl, tyDefault
       )
 %%]
@@ -909,8 +924,6 @@ SEM CBindAspect
                                                         else dflt
                 lhs         .   subClasses      =   if @isThrowOutMain then Seq.empty else @subClasses
 %%]
-  | FFI         loc         .   classNm         =   hsnJavaLikeVarCls @lhs.pkgNm @lhs.topClassNm (mkHNmBase @impEntNm)
-                            .   (globClasses,ji)=   ffiJazyMk @lhs.opts @classNm @lhs.nm {- or: @varnm -} @impEntNm @argMbConL @resMbCon
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Generation: toplevel

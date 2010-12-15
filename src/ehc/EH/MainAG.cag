@@ -67,7 +67,9 @@
 %%]
 %%[(8 codegen tycore hmtyinfer) hs import({%{EH}Ty.Utils2})
 %%]
-%%[(96 codegen) hs import({%{EH}BuiltinPrims},{%{EH}Foreign},{%{EH}Foreign.Extract})
+%%[(8 codegen) hs import({%{EH}Foreign.Extract})
+%%]
+%%[(90 codegen) hs import({%{EH}BuiltinPrims},{%{EH}Foreign})
 %%]
 
 %%[(9 hmtyinfer) hs import(Control.Monad.State)

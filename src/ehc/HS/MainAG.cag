@@ -450,3 +450,18 @@ SEM Module
         loc             .   generDerivMp=   Map.empty
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Foreign entities
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+SEM Declaration
+    | ForeignImport
+%%[[8
+        loc         .   ent         =   maybe (show @name) id @importname
+%%][90
+        loc         .   nmForParse 	=	maybe "" id @importname
+                    . 	(ent,entErrs)
+                                    =   parseForeignEnt ForeignDirection_Import @callconvention (Just $ show @name) @nmForParse
+%%]]
+%%]

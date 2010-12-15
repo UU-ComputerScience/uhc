@@ -511,18 +511,16 @@ SEM DataFieldExpr
                 dataFieldExpr
                             .   knTy                =   @knDataTy
                             .   tyVarMp             =   foVarMp @fo_ |=> @lhs.tyVarMp
-                loc         .   ty                  =   @expr.tyVarMp |=> @knDataTy
+                loc         .   ty                  =   @knDataTy
                 loc         .   lUniq               :   UNIQUEREF gUniq
   | Con         loc         .   (gTy,nmErrs)        =   valGamLookupTy (hsnUn @nm) @lhs.valGam
                             .   fo_                 =   let [u] = mkNewTyVarL 1 @lUniq
-                                                            t = @lhs.tyVarMp |=> @lhs.knTy
-                                                            fo = fitsIn @lhs.fiOpts @fe @lUniq2 @lhs.tyVarMp (@gTy) ([t] `mkArrow` u)
-                                                        in  fo {foTy = foVarMp fo |=> t}
-                            .   ty                  =   foTy @fo_
+                                                        in  fitsIn @lhs.fiOpts @fe @lUniq2 @lhs.tyVarMp (@gTy) ([@lhs.knTy] `mkArrow` u)
+                            .   ty                  =   @lhs.knTy
                 lhs         .   tyVarMp             =   foVarMp @fo_ |=> @lhs.tyVarMp
                 loc         .   lUniq               :   UNIQUEREF gUniq
                 loc         .   lUniq2              :   UNIQUEREF gUniq
-  | Expr        loc         .   ty                  =   @lhs.tyVarMp |=> @lhs.knTy
+  | Expr        loc         .   ty                  =   @lhs.knTy
 %%]
                                                             fo = fitsIn @lhs.fiOpts @fe @lUniq2 @lhs.tyVarMp ([t] `mkArrow` u) (@lhs.tyVarMp |=> @gTy)
 

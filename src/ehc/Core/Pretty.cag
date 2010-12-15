@@ -187,10 +187,10 @@ SEM CBind
                                                 in  ppDef (ppCNm @nm) (p @bindAspects.ppL)
 
 SEM CBindAspect
- | Bind         lhs         .   pp          =   @bindMeta.pp >-< "=" >#< @expr.pp
- | RelevTy      lhs         .   pp          =   "::_R" >#< ppACBaspKeyS @aspectKeyS >#< @tyPP -- pp @relevTy
- | Meta         lhs         .   pp          =   "::_M" >#< ppACBaspKeyS @aspectKeyS >#< @cmetas.pp
- | Val          lhs         .   pp          =   "=" >#< ppACBaspKeyS @aspectKeyS >#< @expr.pp
+  | Bind        lhs         .   pp          =   @bindMeta.pp >-< "=" >#< @expr.pp
+  | RelevTy     lhs         .   pp          =   "::_R" >#< ppACBaspKeyS @aspectKeyS >#< @tyPP -- pp @relevTy
+  | Meta        lhs         .   pp          =   "::_M" >#< ppACBaspKeyS @aspectKeyS >#< @cmetas.pp
+  | Val         lhs         .   pp          =   "=" >#< ppACBaspKeyS @aspectKeyS >#< @expr.pp
 %%[[90
   | FFE         lhs         .   pp          =   "=" >#< ("foreignexport" >#< ppCurlysCommasBlock [pp (show @callconv),"\"" >|< @expEnt >|< "\"",@expr.pp {- ppCNm @expNm -},ppTyWithCfg' CfgPP_Plain @ty])
 %%]]

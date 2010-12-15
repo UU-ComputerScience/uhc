@@ -111,32 +111,6 @@ SEM CExpr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% CMetaVal context
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8888 codegen)
-ATTR CExpr AllAlt [ cmeta: CMetaVal | | ]
-
-SEM CExpr
-  | App         arg         .   cmeta       =   CMetaVal_Val -- @argMeta.self
-  | Lam         body        .   cmeta       =   CMetaVal_Val
-
-SEM CBindAspect
-  | Bind        expr        .   cmeta       =   cmetasVal @bindMeta.self
-  | Val
-%%[[90
-    FFE
-%%]]
-                expr        .   cmeta       =   CMetaVal_Val	-- TBD
-
-SEM CModule
-  | Mod         expr        .   cmeta       =   CMetaVal_Val
-
-SEM CPatFld
-  | Fld         offset      .   cmeta       =   CMetaVal_Val
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Gathering let's
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
