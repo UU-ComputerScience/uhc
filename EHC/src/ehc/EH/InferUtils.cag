@@ -114,9 +114,12 @@ SEM Decl
   | Data        loc         .   rceEnv      =   (emptyRCEEnv @lhs.opts) { rceValGam = @lhs.valGam, rceDataGam = @lhs.dataGam, rceTyVarMp = @lhs.finTyVarMp }
 %%]
 
-%%[(91 hmtyinfer codegen)
+%%[(8 hmtyinfer codegen)
 SEM Decl
-  | Instance
+  | FFI
+%%[[91
+    Instance
+%%]]
 %%[[98
     FFE
 %%]]

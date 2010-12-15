@@ -538,6 +538,27 @@ SEM Decl
                 lhs         .   gathTySigGam        =   @nm `gamSingleton` ValGamInfo @ty_sig_
 %%]
 
+%%[(8 hmtyinfer)
+SEM Decl
+  | FFI         
+%%[[8
+  				loc         .   foreignEntInfo      =   @impEnt
+%%][90
+  				loc         .   foreignEntInfo      =   foreignEntExtract @impEnt
+                            .   knTy                =   let v      = mkTyVar @lUniq
+                                                            funptr = mk1ConApp (ehcOptBuiltin @lhs.opts ehbnFunPtr)
+                                                            io     = mk1ConApp (ehcOptBuiltin @lhs.opts ehbnIO)
+                                                        in  case @foreignEntInfo of
+                                                              ForeignExtraction_Wrapper ->        v `mk1Arrow` io (funptr v)
+                                                              ForeignExtraction_Dynamic -> funptr v `mk1Arrow`            v
+                                                              _                         -> Ty_Any
+                            .   foFFI               =   fitsIn strongFIOpts @fe @lUniq2 emptyVarMp @ty_sig_ @knTy
+                loc         .   lUniq               :   UNIQUEREF gUniq
+                loc         .   lUniq2              :   UNIQUEREF gUniq
+%%]]
+                loc         .   foreignEntInfo      :   ForeignExtraction
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Kind signatures
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

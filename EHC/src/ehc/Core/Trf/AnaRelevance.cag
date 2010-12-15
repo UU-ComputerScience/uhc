@@ -22,7 +22,9 @@ Analyse Core, using relevance analysis, to relate properties (like relevance) of
 %%[(8 codegen) hs import(EH.Util.Utils)
 %%]
 
-%%[(90 codegen) hs import({%{EH}BuiltinPrims},{%{EH}Foreign},{%{EH}Foreign.Extract})
+%%[(8 codegen) hs import({%{EH}Foreign.Extract})
+%%]
+%%[(90 codegen) hs import({%{EH}BuiltinPrims},{%{EH}Foreign})
 %%]
 
 %%[(8 codegen) hs import({%{EH}AbstractCore},{%{EH}AnaDomain},{%{EH}AnaDomain.Utils})

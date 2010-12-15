@@ -55,6 +55,8 @@ ATTR ForeignAGItf ForeignExprAGItf AllForeign ForeignExpr [ | | pp: PP_Doc ]
 SEM JScriptCall
   -- | Id          lhs     .   pp      =   maybe empty (\i -> "%" >|< i >|< ".") @mbThisArgNr >|< pp @nm >|< maybe empty (\i -> "[%" >|< i >|< "]") @mbIndexArgNr
   | Id          lhs     .   pp      =   maybe (pp @nm) (ppForeignExpr @nm) @mbForeignExpr
+  | Wrapper     lhs     .   pp      =   pp "wrapper"
+  | Dynamic     lhs     .   pp      =   pp "dynamic"
 
 SEM PrimCall
   | Id          lhs     .   pp      =   pp @nm >#< maybe empty pp @mbKnownPrim
@@ -69,7 +71,6 @@ SEM CCall
                                         >#< @nm
   | Wrapper     lhs     .   pp      =   pp "wrapper"
   | Dynamic     lhs     .   pp      =   pp "dynamic"
-  | Empty       lhs     .   pp      =   empty
 
 SEM ForeignExpr
   | Call		lhs		.	pp		=	@expr.pp >|< ppParens empty

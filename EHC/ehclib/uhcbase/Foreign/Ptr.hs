@@ -1,6 +1,5 @@
 {-# LANGUAGE NoImplicitPrelude, CPP #-}
 {-# OPTIONS_GHC -XNoImplicitPrelude #-}
-{-# EXCLUDE_IF_TARGET jscript #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Foreign.Ptr
@@ -21,25 +20,28 @@ module Foreign.Ptr (
 
     -- * Data pointers
 
+#if ! defined(__UHC_TARGET_JSCRIPT__)
     Ptr,      -- data Ptr a
     nullPtr,      -- :: Ptr a
     castPtr,      -- :: Ptr a -> Ptr b
     plusPtr,      -- :: Ptr a -> Int -> Ptr b
     alignPtr,     -- :: Ptr a -> Int -> Ptr a
     minusPtr,     -- :: Ptr a -> Ptr b -> Int
-
+#endif
     -- * Function pointers
 
     FunPtr,      -- data FunPtr a
+#if ! defined(__UHC_TARGET_JSCRIPT__)
     nullFunPtr,      -- :: FunPtr a
     castFunPtr,      -- :: FunPtr a -> FunPtr b
     castFunPtrToPtr, -- :: FunPtr a -> Ptr b
     castPtrToFunPtr, -- :: Ptr a -> FunPtr b
+#endif
 
     freeHaskellFunPtr, -- :: FunPtr a -> IO ()
     -- Free the function pointer created by foreign export dynamic.
 
-#ifndef __NHC__
+#if ! ( defined(__UHC_TARGET_JSCRIPT__) || defined(__NHC__) )
     -- * Integral types with lossless conversion to and from pointers
     IntPtr,
     ptrToIntPtr,
@@ -51,6 +53,7 @@ module Foreign.Ptr (
  ) where
 
 #ifdef __GLASGOW_HASKELL__
+
 import GHC.Ptr
 import GHC.IOBase
 import GHC.Base
@@ -63,6 +66,14 @@ import GHC.Word         ( Word(..) )
 
 import Data.Int
 import Data.Word
+
+#elif __UHC__
+
+import Control.Monad    ( liftM )
+#if ! defined(__UHC_TARGET_JSCRIPT__)
+import Foreign.C.Types
+#endif
+
 #else
 import Control.Monad    ( liftM )
 import Foreign.C.Types
@@ -70,7 +81,10 @@ import Foreign.C.Types
 
 import Data.Bits
 import Data.Typeable
+
+#if ! defined(__UHC_TARGET_JSCRIPT__)
 import Foreign.Storable ( Storable(..) )
+#endif
 
 #ifdef __NHC__
 import NHC.FFI
@@ -97,10 +111,12 @@ import Hugs.Ptr
 import UHC.Ptr
 import UHC.IOBase
 import UHC.Base
+#if ! defined(__UHC_TARGET_JSCRIPT__)
 import UHC.Read
 import UHC.Real
 import UHC.Show
 import UHC.Enum
+#endif
 #endif
 
 #ifdef __GLASGOW_HASKELL__
@@ -145,13 +161,16 @@ intPtrToPtr (IntPtr (I# i#)) = Ptr (int2Addr# i#)
 
 # else /* !__GLASGOW_HASKELL__ */
 
+#if ! defined(__UHC_TARGET_JSCRIPT__)
 INTEGRAL_TYPE(WordPtr,tyConWordPtr,"WordPtr",CUIntPtr)
 INTEGRAL_TYPE(IntPtr,tyConIntPtr,"IntPtr",CIntPtr)
+#endif
 
 {-# CFILES cbits/PrelIOUtils.c #-}
 
 #  ifdef __UHC__
 
+#if ! defined(__UHC_TARGET_JSCRIPT__)
 foreign import prim "primUnsafeId"
     ptrToWordPtr :: Ptr a -> WordPtr
 
@@ -163,6 +182,7 @@ foreign import prim "primUnsafeId"
 
 foreign import prim "primUnsafeId"
     intPtrToPtr :: IntPtr -> Ptr a
+#endif
 
 #  else /* !__UHC__ */
 

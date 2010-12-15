@@ -181,13 +181,6 @@ SEM Declaration
 %%]
 %%[(8 codegen)
     | ForeignImport
-%%[[8
-        loc         .   ent         =   maybe (show @name) id @importname
-%%][90
-        loc         .   nmForParse 	=	maybe "" id @importname
-                    . 	(ent,entErrs)
-                                    =   parseForeignEnt ForeignDirection_Import @callconvention (Just $ show @name) @nmForParse
-%%]]
         loc         .   eh          =   rngLift @range EH.Decl_FFI @callconvention (maybe "safe" id @safety) @ent @refname @type.eh
         lhs         .   eh          =   [@eh]
 %%]

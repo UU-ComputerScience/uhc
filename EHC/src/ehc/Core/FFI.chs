@@ -16,29 +16,17 @@
 %%]
 %%[(8 codegen) hs import({%{EH}AbstractCore})
 %%]
-%%[(8 codegen) hs import({%{EH}Core})
+%%[(8 codegen) hs import({%{EH}Core},{%{EH}Core.Utils})
 %%]
 %%[(8 codegen) hs import({%{EH}GrinCode})
 %%]
-%%[(8888 codegen) hs import({%{EH}AbstractCore.Utils} hiding (rceMatch)) export(module {%{EH}AbstractCore.Utils})
+%%[(8 codegen) hs import({%{EH}Foreign.Extract})
 %%]
-
-%%[(8888 codegen) import({%{EH}Core.Subst})
-%%]
-%%[(8888 codegen) import({%{EH}VarMp},{%{EH}Substitutable})
-%%]
-%%[(8888 codegen) import(Data.List,qualified Data.Set as Set,Data.List,qualified Data.Map as Map,EH.Util.Utils)
+%%[(90 codegen) hs import({%{EH}BuiltinPrims})
 %%]
 
 -- debug
 %%[(8888 codegen) import({%{EH}Base.Debug},EH.Util.Pretty)
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Env to support Reordering of Case Expression (RCE)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8 codegen)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -313,7 +301,7 @@ ffiIOAdapt
                             _           -> id
 %%]
 
-%%[(98 codegen grin) export(ffiGrinIOAdapt)
+%%[(9898 codegen grin) export(ffiGrinIOAdapt)
 -- | adapt type etc for IO ffi call, specialized for Grin
 ffiGrinIOAdapt
   :: EHCOpts
@@ -400,4 +388,100 @@ ffiCoreEvalAdapt
       (\(n,i,ev) e -> (if ev then acoreLet1Strict                  else acoreLet1Plain) i (acoreVar n) e)
       (\(n,e,ev)   ->  if ev then acoreLet1Strict n e (acoreVar n) else e             )
 
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Construct FFI/FFE code + type, specific for Core
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) export(ffiCoreMk)
+-- | Construct Core code for FFI
+ffiCoreMk
+  :: EHCOpts
+     -> ( Ty -> CExpr			-- make FFI call
+        )
+     -> UID
+     -> RCEEnv
+     -> ForeignExtraction		-- the ffi info
+     -> Ty						-- original type signature of FFI
+     -> CExpr
+ffiCoreMk
+     opts
+     (mkFFI)
+     uniq rceEnv
+     foreignEntInfo
+     tyFFI
+  = acoreLam (nmArgL ++ nmArgLExtra)
+    $ ffiCoreEvalAdapt
+        ( zip3 nmArgL nmArgPatL primArgNeedsEvalL )
+        ( nmEvalRes
+        , wrapRes
+          $ acoreApp (mkFFI $ argTyL `mkArrow` resTyAdapted)
+          $ map acoreVar nmArgPatL
+        , primResNeedsEval
+        )
+  where (argTyL,resTy) = tyArrowArgsRes tyFFI
+        argLen = length argTyL
+        (_,u1,u2) = mkNewLevUID2 uniq
+        (nmRes:nmEvalRes:nmArgL) = take (argLen + 2) (map mkHNm (iterate uidNext u1))
+        nmArgPatL = map (hsnUniqify HsNameUniqifier_FFIArg) nmArgL
+        (resTyAdapted,argTyLExtra,nmArgLExtra,wrapRes)
+           =
+%%[[98
+               case ffiMbIORes opts resTy of
+                 Just iores
+                   -> (iores,a,n,w)
+                   where (a,n,w) = ffiCoreIOAdapt opts u2 iores
+                 _ ->
+%%]]
+                      (resTy,[],[],id)
+%%[[8
+        primArgNeedsEvalL
+                        =   take argLen $ repeat True
+        primResNeedsEval
+                        =   False
+%%][96
+        mbPrimNeedEval  =   maybe Nothing lookupPrimNeedsEval $ forextractMbEnt foreignEntInfo
+        primArgNeedsEvalL
+                        =   take argLen $ maybe (repeat True) (\p -> primArgNeedEval p ++ repeat True) mbPrimNeedEval
+        primResNeedsEval
+                        =   maybe False primResNeedEval mbPrimNeedEval
+%%]]
+%%]
+
+%%[(90 codegen) export(ffeCoreMk)
+-- | Construct Core code for FFE
+ffeCoreMk
+  :: EHCOpts
+     -> UID
+     -> RCEEnv
+     -> Ty						-- original type signature of FFE
+     -> ( CExpr -> CExpr		-- ffe wrapper
+        , Ty					-- corresponding type
+        )
+ffeCoreMk
+     opts uniq rceEnv
+     tyFFE
+  = ( \e ->
+          acoreLam nmArgL
+          $ acoreLet1Strict nmEvalRes 
+              (wrapRes $ acoreApp e $ map acoreVar nmArgL ++ argLExtra)
+              (acoreVar nmEvalRes)
+	, argTyL `mkArrow` resTyAdapted
+	)
+  where (argTyL,resTy) = tyArrowArgsRes tyFFE
+        argLen = length argTyL
+        (nmRes:nmEvalRes:nmIOEvalRes:nmArgL) = map mkHNm $ mkNewLevUIDL (argLen+3) uniq
+        (resTyAdapted,argLExtra,wrapRes)
+           =
+%%[[98
+               case ffiMbIORes opts resTy of
+                 Just iores
+                   -> ( iores
+                      , [acoreTup []]       -- (), unit, the world
+                      , \e -> acoreExprSatSelCase rceEnv (Just nmIOEvalRes) e CTagRec nmIOEvalRes 1 Nothing
+                      )
+                 _ ->
+%%]]
+                      (resTy,[],id)
 %%]

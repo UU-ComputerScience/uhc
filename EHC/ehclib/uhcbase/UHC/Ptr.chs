@@ -21,28 +21,40 @@
 
 -- #hide
 module UHC.Ptr
-  ( Addr
-  , nullAddr
+  ( 
+    Addr,
+#if ! defined(__UHC_TARGET_JSCRIPT__)
+    nullAddr,
+#endif
 
-  , Ptr
-  , nullPtr, castPtr, plusPtr, alignPtr, minusPtr
+    Ptr,
+#if ! defined(__UHC_TARGET_JSCRIPT__)
+    nullPtr, castPtr, plusPtr, alignPtr, minusPtr,
+#endif
+
+    FunPtr,
+#if ! defined(__UHC_TARGET_JSCRIPT__)
+    nullFunPtr, castFunPtr, castPtrToFunPtr, castFunPtrToPtr,
+#endif
   
-  , FunPtr
-  , nullFunPtr, castFunPtr, castPtrToFunPtr, castFunPtrToPtr
-  
-  , freeHaskellFunPtr	-- for now
+    freeHaskellFunPtr	-- for now
   )
   where
 
 import UHC.Base
 import UHC.Types
+
+#if ! defined(__UHC_TARGET_JSCRIPT__)
 import UHC.Prims
 import UHC.Show          ( showHex )
 
 #include "MachDeps.h"
+#endif
 
 ------------------------------------------------------------------------
 -- Address
+
+#if ! defined(__UHC_TARGET_JSCRIPT__)
 
 #if __UHC_TARGET_JAZY__
 foreign import prim "primAddWord" primAddAddr :: Addr -> Int  -> Addr
@@ -72,10 +84,14 @@ addrToInteger a = primWord32ToInteger (primAddrToWord a)
 
 foreign import prim "primNullAddr" nullAddr :: Addr
 
+#endif
+
 ------------------------------------------------------------------------
 -- Data pointers.
 
 newtype Ptr a		= Ptr Addr
+
+#if ! defined(__UHC_TARGET_JSCRIPT__)
 
 -- ^ A value of type @'Ptr' a@ represents a pointer to an object, or an
 -- array of objects, which may be marshalled to or from Haskell values
@@ -117,10 +133,14 @@ alignPtr addr@(Ptr a) i
 minusPtr :: forall a b . Ptr a -> Ptr b -> Int
 minusPtr (Ptr a1) (Ptr a2) = a1 `primSubAddr` a2
 
+#endif
+
 ------------------------------------------------------------------------
 -- Function pointers for the default calling convention.
 
 newtype FunPtr a		= FunPtr Addr
+
+#if ! defined(__UHC_TARGET_JSCRIPT__)
 
 -- ^ A value of type @'FunPtr' a@ is a pointer to a function callable
 -- from foreign code.  The type @a@ will normally be a /foreign type/,
@@ -212,6 +232,8 @@ instance Show (Ptr a) where
 
 instance Show (FunPtr a) where
    showsPrec p = showsPrec p . castFunPtrToPtr
+
+#endif
 %%]
 
 %%[99

@@ -22,7 +22,7 @@
 %%[(20 codegen grin) hs import({%{EH}Ty(tyRowCanonOrder)},{%{EH}HI})
 %%]
 
-%%[(90 codegen grin) hs import({%{EH}Foreign.Extract})
+%%[(8 codegen grin) hs import({%{EH}Foreign.Extract})
 %%]
 
 %%[(8 codegen grin) ag import({GrinCode/Trf/CommonFreeVar},{GrinCode/CommonForGen})

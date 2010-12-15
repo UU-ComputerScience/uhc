@@ -27,7 +27,7 @@ Transforms a Grin program to a Silly program.
 %%[(8 codegen grin) hs import({%{EH}GrinCode.Common} hiding (Variable(..)), {%{EH}Config}, {%{EH}Silly})
 %%]
 
-%%[(90 codegen grin) hs import({%{EH}Foreign.Extract})
+%%[(8 codegen grin) hs import({%{EH}Foreign.Extract})
 %%]
 
 %%[(8 codegen grin)

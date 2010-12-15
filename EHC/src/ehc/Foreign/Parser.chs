@@ -73,32 +73,10 @@ pForeignEnt dir way dfltNm
 
 pCCall :: Maybe String -> ForeignParser CCall
 pCCall dfltNm
-  =
-{- this def would be nice, but is ambiguous:
-      CCall_Id
-        <$> pMaybe False (const True) pSTATIC
-        <*> pMaybe Nothing (\v -> Just (v ++ ".h")) (pForeignVar <* pDOT <* pH)
-        <*> pMaybe False (const True) pAMPERSAND
-        <*> pMaybe nm id pForeignVar
--}
-{-
-      pMaybe False (const True) pSTATIC
-      <**> (   pForeignVar
-               <**> (   (pDOT <* pH)
-                        <**> (   (\nm _ incl st -> CCall_Id st (Just (incl ++ ".h")) True  nm) <$> pPtrForeignVar
-                             <|> (\nm _ incl st -> CCall_Id st (Just (incl ++ ".h")) False nm) <$> pForeignVar
-                             )
-                    <|> pSucceed (\nm st -> CCall_Id st Nothing False nm)
-                    )
-           <|> (\nm st -> CCall_Id st Nothing True nm) <$> pPtrForeignVar
-           <|> pSucceed (\st -> CCall_Id st Nothing False nm)
-           )
--}
-      (True <$ pSTATIC) <**> pAfterStatic
+  =   (True <$ pSTATIC) <**> pAfterStatic
   <|> ($ False) <$> pAfterStatic
   <|> CCall_Dynamic <$ pDYNAMIC
   <|> CCall_Wrapper <$ pWRAPPER
-  -- <|> pSucceed CCall_Empty
   where nm = maybe "" id dfltNm
         pPtrForeignVar
           = pAMPERSAND
@@ -132,27 +110,10 @@ pPrimCall dfltNm
 
 pJScriptCall :: Maybe String -> ForeignParser JScriptCall
 pJScriptCall dfltNm
-{-
--}
-  = JScriptCall_Id nm <$> pMb pForeignExpr
+  =   JScriptCall_Id nm <$> pMb pForeignExpr
+  <|> JScriptCall_Dynamic <$ pDYNAMIC
+  <|> JScriptCall_Wrapper <$ pWRAPPER
   where nm = maybe "" id dfltNm
-{-
-  = mk <$> pAsPtr <*> pThisArgNr <*> pMb pForeignVar <*> pIndexArgNr
-  where nm = maybe "" id dfltNm
-        pThisArgNr  = pMb (tokMkInt <$ pPERCENT <*> pInteger10Tk <* pDOT)
-        pIndexArgNr = pMb (tokMkInt <$ pOBRACK <* pPERCENT <*> pInteger10Tk <* pCBRACK)
-        pAsPtr      = pMaybe False (const True) pAMPERSAND
-        mk p t@Nothing Nothing  i@Nothing = JScriptCall_Id p t nm i
-        mk p t         Nothing  i         = JScriptCall_Id p t "" i
-        mk p t         (Just n) i         = JScriptCall_Id p t n  i
--}
-{-
-pJScriptCall2 :: Maybe String -> ForeignParser JScriptCall
-pJScriptCall2 dfltNm
-  =   Left  <$> pMaybe nm id pForeignVar
-  <|> RIght <$> pForeignExpr
-  where nm = maybe "" id dfltNm
--}
 
 pForeignVar :: ForeignParser String
 pForeignVar = tokGetVal <$> (pVARID <|> pCONID)
@@ -164,8 +125,7 @@ pForeignExpr
         pPre  = pList (pPtr)
         pPost = pList (pSel <|> pInx <|> pCall)
         pExpB = pArg <|> pEnt
-        pArg  -- = (ForeignExpr_Arg . tokMkInt) <$ pPERCENT <*> pInteger10Tk
-              = pPERCENT
+        pArg  = pPERCENT
                 <**> (   const ForeignExpr_AllArg               <$  pSTAR
                      <|> (\i _ -> ForeignExpr_Arg (tokMkInt i)) <$> pInteger10Tk
                      )
@@ -175,66 +135,7 @@ pForeignExpr
         pPtr  = ForeignExpr_Ptr <$ pAMPERSAND
         pInx  = (flip ForeignExpr_Inx) <$ pOBRACK <*> pExp <* pCBRACK
         pSel  = (flip ForeignExpr_Sel) <$ pDOT <*> pEnt
-        pCall =   flip ForeignExpr_CallArgs <$ pOPAREN <*> pListSep pCOMMA pArg <* pCPAREN
-              -- <|>      ForeignExpr_Call     <$ pOPAREN <*  pCPAREN
+        pCall = flip ForeignExpr_CallArgs <$ pOPAREN <*> pListSep pCOMMA pArg <* pCPAREN
         mk    = \pre e post -> foldr ($) e $ pre ++ reverse post
 %%]
 
-pCCall :: Maybe String -> ForeignParser CCall
-pCCall dfltNm
-  =   CCall_Id
-        <$> pMaybe False (const True) pSTATIC
-        <*> pMaybe Nothing (\v -> Just (v ++ ".h")) (pForeignVar <* pDOT <* pH)
-        <*> pMaybe False (const True) pAMPERSAND
-        <*> pForeignVar
-  <|> CCall_Dynamic <$ pDYNAMIC
-  <|> CCall_Wrapper <$ pWRAPPER
-  <|> pSucceed CCall_Empty
-
-
-pCCall :: Maybe String -> ForeignParser CCall
-pCCall dfltNm
-  =
-{- this def would be nice, but is ambiguous:
-      CCall_Id
-        <$> pMaybe False (const True) pSTATIC
-        <*> pMaybe Nothing (\v -> Just (v ++ ".h")) (pForeignVar <* pDOT <* pH)
-        <*> pMaybe False (const True) pAMPERSAND
-        <*> pMaybe nm id pForeignVar
--}
-{-
-      pMaybe False (const True) pSTATIC
-      <**> (   pForeignVar
-               <**> (   (pDOT <* pH)
-                        <**> (   (\nm _ incl st -> CCall_Id st (Just (incl ++ ".h")) True  nm) <$> pPtrForeignVar
-                             <|> (\nm _ incl st -> CCall_Id st (Just (incl ++ ".h")) False nm) <$> pForeignVar
-                             )
-                    <|> pSucceed (\nm st -> CCall_Id st Nothing False nm)
-                    )
-           <|> (\nm st -> CCall_Id st Nothing True nm) <$> pPtrForeignVar
-           <|> pSucceed (\st -> CCall_Id st Nothing False nm)
-           )
--}
-      pSTATIC
-      <**> (
-           <|>
-           )
-  <|> CCall_Dynamic <$ pDYNAMIC
-  <|> CCall_Wrapper <$ pWRAPPER
-  <|> pSucceed CCall_Empty
-  where nm = maybe "" id dfltNm
-        pPtrForeignVar
-          = pAMPERSAND
-            <**> (   const <$> pForeignVar
-                 <|> pSucceed (const nm)
-                 )
-        pAfterStatic
-          = pForeignVar
-              <**> (   (pDOT <* pH)
-                       <**> (   (\nm _ incl st -> CCall_Id st (Just (incl ++ ".h")) True  nm) <$> pPtrForeignVar
-                            <|> (\nm _ incl st -> CCall_Id st (Just (incl ++ ".h")) False nm) <$> pForeignVar
-                            )
-                   <|> pSucceed (\nm st -> CCall_Id st Nothing False nm)
-                   )
-          <|> (\nm st -> CCall_Id st Nothing True nm) <$> pPtrForeignVar
-          <|> pSucceed (\st -> CCall_Id st Nothing False nm)

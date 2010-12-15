@@ -16,7 +16,10 @@ Extract various info out of the FFI declaration:
 \end{itemize}
 %%]
 
-%%[90 hs module {%{EH}Foreign.Extract} import({%{EH}Base.Common},{%{EH}Foreign}) 
+%%[8 hs module {%{EH}Foreign.Extract} import({%{EH}Base.Common}) 
+%%]
+
+%%[90 hs import({%{EH}Foreign}) 
 %%]
 
 %%[90 hs import(Data.Maybe) 
@@ -26,10 +29,20 @@ Extract various info out of the FFI declaration:
 WRAPPER ForeignAGItf
 %%]
 
-%%[90 hs export(ForeignExtraction(..))
+%%[8.ForeignExtraction hs export(ForeignExtraction,forextractEnt,forextractMbEnt)
+type ForeignExtraction = String
+
+forextractEnt :: ForeignExtraction -> String
+forextractEnt = id
+
+forextractMbEnt :: ForeignExtraction -> Maybe String
+forextractMbEnt = Just . forextractEnt
+%%]
+
+%%[90 -8.ForeignExtraction hs export(ForeignExtraction(..),forextractMbEnt)
 -- | all relevant info for all calling conventions is gathered in one place, for backends to choose from
 data ForeignExtraction
-  = ForeignExtraction
+  = ForeignExtraction_Plain
       { forextractIncludes      :: ![String]            -- ccall: include files
       , forextractEnt           :: !String              -- all: name of function/...
       , forextractMbKnownPrim   :: !(Maybe KnownPrim)   -- prim: known semantics
@@ -37,10 +50,16 @@ data ForeignExtraction
       , forextractMbIndexArgNr  :: !(Maybe Int)         -- jscript: combination with indexing an array
       , forextractOptIsStatic   :: !Bool                -- ccall: static
       , forextractOptIsPtr      :: !Bool                -- ccall: pointer
-      , forextractForeignExpr	:: !ForeignExpr			-- the AST for building the FFI call in terms of the target language (20101020 AD: soon replaces flags above)
+      , forextractForeignExpr   :: !ForeignExpr         -- the AST for building the FFI call in terms of the target language (20101020 AD: soon replaces flags above)
       }
+  | ForeignExtraction_Wrapper
+  | ForeignExtraction_Dynamic
 
-emptyForeignExtraction = ForeignExtraction [] "??" Nothing Nothing Nothing False False (ForeignExpr_Call ForeignExpr_Ent)
+emptyForeignExtraction = ForeignExtraction_Plain [] "??" Nothing Nothing Nothing False False (ForeignExpr_Call ForeignExpr_Ent)
+
+forextractMbEnt :: ForeignExtraction -> Maybe String
+forextractMbEnt (ForeignExtraction_Plain{forextractEnt=e})  = Just e
+forextractMbEnt _                                           = Nothing
 %%]
 
 %%[90 hs export(foreignEntExtract)
@@ -62,15 +81,10 @@ ATTR ForeignAGItf AllForeign [ | | extr: ForeignExtraction ]
 SEM JScriptCall
   | Id          lhs     .   extr    =   emptyForeignExtraction
                                             { forextractEnt             = @nm
-                                            {-
-                                            , forextractOptIsPtr        = @asPointer
-                                            , forextractMbThisArgNr     = @mbThisArgNr
-                                            , forextractMbIndexArgNr	= @mbIndexArgNr
-                                            -}
-                                            {-
-                                            -}
-                                            , forextractForeignExpr		= maybe (forextractForeignExpr emptyForeignExtraction) id @mbForeignExpr
+                                            , forextractForeignExpr     = maybe (forextractForeignExpr emptyForeignExtraction) id @mbForeignExpr
                                             }
+  | Wrapper     lhs     .   extr    =   ForeignExtraction_Wrapper
+  | Dynamic     lhs     .   extr    =   ForeignExtraction_Dynamic
 
 SEM PrimCall
   | Id          lhs     .   extr    =   emptyForeignExtraction
@@ -90,6 +104,7 @@ SEM CCall
                                             , forextractOptIsStatic     = @isStatic
                                             , forextractOptIsPtr        = @asPointer
                                             }
-  | * - Id      lhs     .   extr    =   emptyForeignExtraction
+  | Wrapper     lhs     .   extr    =   ForeignExtraction_Wrapper
+  | Dynamic     lhs     .   extr    =   ForeignExtraction_Dynamic
 %%]
 

@@ -21,6 +21,9 @@ Various Java like code generation utility snippets.
 %%[(8 jazy || jscript) hs import({%{EH}Opts.Base},{%{EH}Base.HsName},{%{EH}Base.Common},{%{EH}Base.BasicAnnot})
 %%]
 
+%%[(8 jazy || jscript) hs import({%{EH}Foreign.Extract})
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Environment info for code variables (CVar)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -172,23 +175,27 @@ javalikeMkFFICall
   ::    ( BuiltinInfo -> basicinfo          			-- extract machine specific info of builtin info
         , Bool -> basicinfo -> (e->e, ty)   			-- unbox
         ,         basicinfo -> (e->e, ty)   			-- box
-        , [ty] -> ty -> String -> e -> [e] -> e			-- make prim call
+        , [ty] -> ty -> ForeignExtraction -> e			-- make prim function
+        , [ty] -> ty -> e -> [e] -> e					-- make prim call
+        , Int -> e -> e									-- make wrapper 
+        , Int -> e -> e									-- make dynamic 
         , e->e											-- evaluate
         , ty											-- default ty
         )
+     -> ForeignExtraction					-- the extracted entity info
      -> EHCOpts
      -> Bool                        		-- do eval of args
-     -> String                      		-- name of ffi entity
      -> [Maybe HsName]              		-- list of (possibly) type constructor names of arguments
      -> Maybe HsName                		-- and result
      -> ( [e -> e]    						-- additional unwrapping for each argument
         ,  e -> e     						-- and result
-        ,  e -> [e] -> e                 	-- and primitive call constructor
+        , [e] -> e                 			-- and primitive call constructor
         )
 javalikeMkFFICall
-     (getInfo,unbox,box,mkPrim,jiEvl,jtyObj)
+     (getInfo,unbox,box,mkPrimFun,mkPrim,mkWrap,mkDyn,jiEvl,jtyObj)
+     impExtract
      opts doArgEval
-     impEntNm argMbConL resMbCon
+     argMbConL resMbCon
   = (mkArgsE,mkResE,primE)
   where lkupBuiltin = \n -> Map.lookup n m
           where m = builtinKnownBoxedTyMp opts
@@ -207,7 +214,19 @@ javalikeMkFFICall
                 = unzip $ map mkunbox argMbConL
         (mkResE,resTy)
                 = mkbox resMbCon
-        primE   = mkPrim argsTy resTy impEntNm
+    	ffi     = mkPrimFun argsTy resTy impExtract
+%%[[8
+        primE   = mkPrim argsTy resTy ffi
+%%][90
+        -- 20101207 TBD: wrap/dyna
+        primE   = case impExtract of
+                    ForeignExtraction_Plain {forextractEnt = impEntNm}
+                      -> mkPrim argsTy resTy ffi
+                    ForeignExtraction_Wrapper
+                      -> \(a:_) -> mkWrap 1 a
+                    ForeignExtraction_Dynamic
+                      -> \(a:_) -> mkDyn  1 a
+%%]]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -227,8 +246,18 @@ type JBinds' ty e fld = Seq.Seq (JBind' ty e fld)
 %%]
 
 %%[(8 jazy || jscript) hs export(jBind')
-jBind' :: (ty,HsName->HsName,HsName -> fld) -> HsName -> HsName -> e -> JBinds' ty e fld
-jBind' (tyDefault,mkFldNm,mkFld) nmOrig nm e
+jBind'
+  :: ( ty					-- default type of binding
+     , HsName -> HsName		-- make field name
+     , HsName -> fld		-- make field
+     )
+     -> HsName				-- original name
+     -> HsName				-- name
+     -> e					-- bound expr
+     -> JBinds' ty e fld
+jBind'
+     (tyDefault,mkFldNm,mkFld)
+     nmOrig nm e
   = Seq.singleton
       $ JBind nmOrig
               nm'
