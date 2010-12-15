@@ -22,7 +22,7 @@ import EqHML
 import EH.Util.Pretty hiding (pp, empty)
 import qualified Debug.Trace as D
 
-trace = D.trace
+trace = const id -- D.trace
 
 -- | Create a HsName from a string.
 mkName :: String -> HsName
