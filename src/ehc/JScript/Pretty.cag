@@ -15,12 +15,25 @@ WRAPPER AGItf
 %%]
 
 %%[(8 jscript) hs export(ppJScriptModule)
-ppJScriptModule :: JScriptModule -> PP_Doc
+ppJScriptModule
+  :: JScriptModule
+     -> ( PP_Doc
+%%[[20
+        , PP_Doc
+%%]]
+        )
 ppJScriptModule ent
-  =  let  t =  wrap_AGItf
+  = ( pp_Syn_AGItf t
+%%[[8
+    >-<
+%%][20
+    ,   
+%%]]
+        ppMain_Syn_AGItf t
+    )
+  where t = wrap_AGItf
                  (sem_AGItf (AGItf_AGItf ent))
                  Inh_AGItf
-     in   pp_Syn_AGItf t
 %%]
 
 instance Show JScriptModule where
@@ -39,7 +52,7 @@ ppStat x = x >|< ";"
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% JScript entity
+%%% JScript pretty printing
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 jscript)
@@ -111,5 +124,19 @@ SEM NmExpr
 SEM MbExpr [ | | ppMb: {Maybe PP_Doc} ]
   | Just		lhs		.	ppMb	=	Just @just.pp
   | Nothing		lhs		.	ppMb	=	Nothing
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% JScript pretty printing for top level body (i.e. is main)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 jscript)
+ATTR
+  AGItf JScriptModule
+    [ | | ppMain: PP_Doc ]
+
+SEM JScriptModule
+  | Mod			lhs		.	ppMain	=	vlist @main.ppL
+
 %%]
 

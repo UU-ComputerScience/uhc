@@ -288,11 +288,11 @@ SEM CExpr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 jscript)
-ATTR CExpr [ | | jsBody: {J.Expr} ]
+ATTR CExpr [ | | jsLamBody: {J.Expr} ]
 
 SEM CExpr
-  | Lam         loc         .   jsBody      =   @body.jsBody
-  | * - Lam Ann lhs         .   jsBody      =   @js
+  | Lam         loc         .   jsLamBody   =   @body.jsLamBody
+  | * - Lam Ann lhs         .   jsLamBody   =   @js
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -363,12 +363,12 @@ jsNewTupOrData dataGam _ _ ctag as
       CTagRec        -> jsNewTup as
 
 -- | body
-jsBody :: (J.Expr -> J.Stat) -> Seq.Seq JBind -> Seq.Seq J.Stat -> J.Expr -> [J.Stat]
+jsBody :: (J.Expr -> J.Stat) -> Seq.Seq JBind -> Seq.Seq J.Stat -> Maybe J.Expr -> [J.Stat]
 jsBody mkRet binds stats lastExpr
   = Seq.toList $
                 Seq.map (\(JBind _ n _ e _) -> J.jsVarDecl n e) binds
     `Seq.union` stats
-    `Seq.union` Seq.fromList [mkRet lastExpr]
+    `Seq.union` Seq.fromList (map mkRet $ maybeToList lastExpr)
 %%]
 
 %%[(8 jscript)
@@ -396,9 +396,9 @@ SEM CExpr
                             .   js              =   if null @argMbConL
                                                     then (@mkResJS $ @mkFFI [])
                                                     else (jsVar $ mkHNm $ forextractEnt @foreignEntInfo)
-  | Let         loc         .   (jbindsLet,jstatsLet,js)
+  | Let         loc         .   (jbindsLet,jstatsLet)
                                                 =   if @isGlobal
-                                                    then ( @binds.jbinds, Seq.empty, @body.js )
+                                                    then ( @binds.jbinds, Seq.empty )
                                                     else let binds = [ ((offof n),t,e) | JBind n _ t e _ <- Seq.toList @binds.jbinds ]
                                                              offof n = cvarOffset $ panicJust "ToJScript.CExpr.Let.js offset" $ Map.lookup n @cvarMpNew
                                                              initbinds
@@ -407,7 +407,8 @@ SEM CExpr
                                                                          ->             Seq.fromList [ J.Stat_VarDecl o $ Just $ jsCall nmInd [] | (o,_,_) <- binds ]
                                                                             `Seq.union` Seq.fromList [ J.Stat_Expr $ jsCall nmIndSet [jsVar o, e] | (o,_,e) <- binds ]
                                                                        _ -> Seq.fromList [ J.Stat_VarDecl o (Just e) | (o,_,e) <- binds ]
-                                                         in  ( Seq.empty, initbinds, @body.js )
+                                                         in  ( Seq.empty, initbinds )
+                            .   js              =   @body.js
   | Case        loc         .   (jstatsCase,js)
                                                 =   let alts = case @alts.altsJsL of
                                                                  [(_,stats,e)]
@@ -531,12 +532,13 @@ SEM CExpr
 
 %%[(8 jscript)
 SEM CModule
-  | Mod         loc         .   jmodStats       =   jsBody J.Stat_Expr @expr.jbinds @expr.jstats
-                                                    $ jsEvl
+  | Mod         loc         .   jmodStats       =   jsBody J.Stat_Expr @expr.jbinds @expr.jstats Nothing
+                            .   jmodStatsMain   =   [ J.Stat_Expr $ jsEvl $
 %%[[99
-                                                    $ (\m -> jsApp m [J.Expr_Arr []])
+                                                      (\m -> jsApp m [J.Expr_Arr []]) $
 %%]]
                                                       @expr.js
+                                                    ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -551,7 +553,7 @@ SEM CExpr
                                                              t1 x = if ehcOptGenTrace @lhs.opts
                                                                     then Seq.unions [ jsTr (n ">" @lamNm) $ m $ [s " <- "] ++ intersperse (s ", ") (map p as)
                                                                                     , x
-                                                                                    , Seq.singleton $ J.Stat_VarDecl v (Just @body.jsBody)
+                                                                                    , Seq.singleton $ J.Stat_VarDecl v (Just @body.jsLamBody)
                                                                                     , jsTr (n "<" @lamNm) $ m [s " -> ", s v]
                                                                                     ]
                                                                     else x
@@ -560,8 +562,8 @@ SEM CExpr
                                                                         s' x = pp (show $ show x)
                                                                         p x = pp x
                                                                         n p x = p ++ show x
-                                                             b = if ehcOptGenTrace @lhs.opts then jsVar v else @body.jsBody
-                                                         in  jsFun @origLamNm as $ jsBody J.Stat_Ret @body.jbinds (t1 @body.jstats) b
+                                                             b = if ehcOptGenTrace @lhs.opts then jsVar v else @body.jsLamBody
+                                                         in  jsFun @origLamNm as $ jsBody J.Stat_Ret @body.jbinds (t1 @body.jstats) (Just b)
                                                     else J.Expr_Str "*** ERR LAM ***"
 %%]
 
@@ -633,7 +635,7 @@ ffiJScriptMkCall
 SEM CBindAspect
   | Bind        loc         .   js              =   let str  = if @lhs.evalCtx == EvalCtx_Eval then jsEvl else id
                                                         dflt = @expr.js
-                                                        caf  = jsApp (jsFun @lhs.nm [] $ jsBody J.Stat_Ret @expr.jbinds @expr.jstats dflt) []
+                                                        caf  = jsApp (jsFun @lhs.nm [] $ jsBody J.Stat_Ret @expr.jbinds @expr.jstats (Just dflt)) []
                                                     in  if @lhs.isGlobal
                                                         then if @isCAF
                                                              then caf
@@ -643,7 +645,7 @@ SEM CBindAspect
                                                              else str caf
 %%[[90
   | FFE         loc         .   js              =   J.Expr_Fun Nothing @jsArgL
-                                                    $ J.Stat_Block $ jsBody J.Stat_Ret @expr.jbinds @expr.jstats @expr.jsBody
+                                                    $ J.Stat_Block $ jsBody J.Stat_Ret @expr.jbinds @expr.jstats (Just @expr.jsLamBody)
 %%]]
 %%]
 
@@ -657,7 +659,7 @@ ATTR CodeAGItf CModule [ | | js: {J.JScriptModule} ]
 
 %%[(8 jscript)
 SEM CModule
- | Mod          lhs         .   js              =   J.JScriptModule_Mod $ @jsModTraceStats ++ @jsModInitStats ++ @jmodStats
+ | Mod          lhs         .   js              =   J.JScriptModule_Mod (@jsModTraceStats ++ @jsModInitStats ++ @jmodStats) @jmodStatsMain
 %%[[8
                 loc         .   jsModInitStats  =   []
 %%][20
