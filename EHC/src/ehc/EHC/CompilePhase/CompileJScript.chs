@@ -65,7 +65,12 @@ cpCompileJScript how othModNmL modNm
                          (do { lift $ putStrLn $ "fpO   : " ++ fpathToStr fpM
                              ; lift $ putStrLn $ "fpExec: " ++ fpathToStr fpExec
                              })
+%%[[8
                   ; let ppMod = ppJScriptModule (fromJust mbJs)
+%%][20
+                  ; let ppMod = vlist $ [p] ++ (if ecuIsMainMod ecu then [pmain] else [])
+                              where (p,pmain) = ppJScriptModule (fromJust mbJs)
+%%]]
                   ; lift $ putPPFPath fpM ("//" >#< modNm >-< ppMod) 1000
                   ; case how of
                       FinalCompile_Exec
