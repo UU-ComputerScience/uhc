@@ -28,3 +28,8 @@ f $ x = f x
 const a b = a
 
 app = \(f :: forall a. a -> Int) -> Cons (f 0) (Cons (f 'a') Nil)
+
+foo = (1, 'a', 2)
+
+tmap f Nil         = Nil
+tmap f (Cons x xs) = Cons (f x) (tmap f xs)

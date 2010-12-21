@@ -22,7 +22,6 @@ import EqHML
 import Utils
 
 import EH.Util.Pretty hiding (pp, empty)
-import qualified Debug.Trace as D
 }
     
 data TyQu
@@ -334,6 +333,17 @@ itf Expr
     syn res :: Maybe TyScheme
     syn frs :: Int
     
+itf RecExpr
+  visit infer
+    inh pre :: Prefix
+    inh env :: Gamma
+    inh frs :: Int
+    inh ast :: RecExpr
+    syn pre :: Prefix
+    syn sub :: Env
+    syn res :: Maybe RowTyExpr
+    syn frs :: Int  
+    
 itf DataConstrs
   visit findTypes
     inh ast :: DataConstrs
@@ -612,8 +622,8 @@ datasem Expr monad IO
        (loc.q4, loc.q5) = curry split loc.q3 (domain lhs.pre)
     
        lhs.res = let b = TyExpr_Var loc.b
-                     e = appAll (loc.e3 `munion` loc.e2') b of
-                 in return $ ptype $ desugar $ TyScheme_Sugar loc.q5 (TyScheme_SystemF v)
+                     e = appAll (loc.e3 `munion` loc.e2') b
+                 in return $ ptype $ desugar $ TyScheme_Sugar loc.q5 (TyScheme_SystemF e)
        loc.temp_sub = let subs = applyEnv loc.e2' (func.sub `munion` arg.sub)
                       in subs `munion` loc.e3 -- added union
        lhs.sub = loc.temp_sub
@@ -663,7 +673,7 @@ datasem Expr monad IO
        loc.env_full = arg.sub `munion` body.sub
        
        loc.tau = let x = appAll loc.env_full loc.exp_a
-                 in if isUnQualTy x' || not (isVar loc.arg)
+                 in if isUnQualTy x || not (isVar loc.arg)
                        then x
                        else error "The resulting type is not a Tau type"
                        
@@ -705,7 +715,7 @@ datasem Expr monad IO
        lhs.frs = expr.frs
     clause TypeAs
        expr.env = lhs.env
-       expr.exp = loc.tyExpr
+       expr.exp = loc.expr
     clause Ann
        expr.pre = lhs.pre
        expr.env = lhs.env
@@ -728,6 +738,25 @@ datasem Expr monad IO
     clause CaseAltFail
     clause DataFields
     clause Rec
+       child recExpr : RecExpr
+    
+       recExpr.pre = lhs.pre
+       recExpr.env = lhs.env
+       recExpr.frs = lhs.frs
+       recExpr.ast = loc.recExpr
+       
+       loc.res = let e = recExpr.res
+                 in case e of
+                      Nothing -> error "Type inference failed in tuple"
+                      Just ty -> TyExpr_AppTop $
+                                    TyExpr_App
+                                       (TyExpr_Con (mkName "_Rec"))
+                                       (TyExpr_Row ty)
+       
+       lhs.res = return $ TyScheme_SystemF loc.res
+       lhs.sub = recExpr.sub
+       lhs.pre = recExpr.pre
+       lhs.frs = recExpr.frs
     clause SConst
     clause Sel
        expr.env = lhs.env
@@ -736,6 +765,43 @@ datasem Expr monad IO
        (loc.a, loc.frs1) = fresh lhs.frs
        lhs.res = return $ TyScheme_SystemF $ TyExpr_Var loc.a
        lhs.frs = loc.frs1
+       
+datasem RecExpr monad IO
+    default? sub = const empty
+    default? pre = last
+    default? frs = last
+    default? res = const Nothing
+    clause Ext
+       recExpr.pre = lhs.pre
+       recExpr.env = lhs.env
+       recExpr.frs = lhs.frs
+       
+       expr.exp = loc.expr
+       expr.pre = recExpr.pre
+       expr.env = lhs.env
+       expr.frs = recExpr.frs
+       
+       loc.res = let e = recExpr.res
+                     t = expr.res
+                 in case (e, t) of
+                      (Nothing, _) -> error $ "Cannot infer the type of tuple element '" ++ pp loc.mbNm ++ "'"
+                      (_, Nothing) -> error $ "Cannot infer the type of the expression '" ++ pp loc.expr ++ "'"
+                      (Just rty,Just ty) -> RowTyExpr_Ext rty loc.mbNm (ftype ty)
+       lhs.sub = recExpr.sub `munion` expr.sub
+       lhs.res = return loc.res
+       lhs.frs = expr.frs
+       lhs.pre = expr.pre
+    clause Empty
+       lhs.res = return RowTyExpr_Empty
+    clause Upd
+       expr.env = lhs.env
+       expr.exp = loc.expr
+       recExpr.env = lhs.env
+       
+       lhs.res = Nothing
+    clause Expr
+       expr.env = lhs.env
+       expr.exp = loc.expr
        
 itf Unify
   visit unify
@@ -1072,7 +1138,7 @@ unify = sem unify : Unify monad IO
                                s.frs = lhs.frs
                                s.ty  = dropQuant loc.phi'
                                
-                               (loc.q2, loc.e2) = let a   = appAll s.sub loc.expr of
+                               (loc.q2, loc.e2) = let a   = appAll s.sub loc.expr
                                                       sub = (loc.varnm, TyScheme_SystemF $ mkTop a) 
                                                   in update (s.pre, Right sub)
                                
@@ -1128,7 +1194,7 @@ typeCheck exp = do
                            , frs_Inh_Expr = 1
                            }
   syn <- invoke_Expr_infer dnt_Expr inh
-  let res = res_Syn_Expr syn
+  let res = maybe [] return $ res_Syn_Expr syn
       sub = sub_Syn_Expr syn
       pre = pre_Syn_Expr syn
       frs = frs_Syn_Expr syn

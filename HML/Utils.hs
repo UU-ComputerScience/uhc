@@ -657,7 +657,7 @@ occursCheck a q phi
                              []     -> (r1, [], [])
         fvs           = ftv (TyScheme_Sugar q2 phi)
     in case null q1 of
-         True  -> error "Cannot occurs check. The split does not return a value" 
+         True  -> error "Cannot perform occurance check. The split does not return a value" 
          False -> a `elem` fvs
                   
 type TyQuantifiedScheme = TyScheme
