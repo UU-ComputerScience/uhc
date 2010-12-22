@@ -391,7 +391,7 @@ itf Decl
 itf PatExpr
   visit vars
     inh ast    :: PatExpr
-    syn var_nm :: HsName
+    syn var_nm :: [HsName]
   visit infer
     inh pre :: Prefix
     inh env :: Gamma
@@ -400,14 +400,122 @@ itf PatExpr
     syn pre :: Prefix
     syn env :: Gamma -- A PatExpr might want to expand the Gamma, so we need to again return it.
     syn sub :: Env
-    syn res :: Maybe TyScheme
+    syn res :: TyScheme
     syn frs :: Int
+    
+{
+data CaseType = CaseType { caseLHS :: TyScheme
+                         , body    :: TyScheme
+                         }
+}
+    
+itf CaseAlts
+  visit infer
+    inh exp :: TyScheme
+    inh ast :: CaseAlts
+    inh env :: Gamma
+    inh pre :: Prefix
+    inh frs :: Int
+    syn pre :: Prefix
+    syn sub :: Env
+    syn res :: CaseType
+    syn frs :: Int 
+    
+itf CaseAlt
+  visit infer
+    inh exp :: TyScheme
+    inh ast :: CaseAlt
+    inh env :: Gamma
+    inh pre :: Prefix
+    inh frs :: Int
+    syn pre :: Prefix
+    syn frs :: Int
+    syn sub :: Env
+    syn res :: CaseType
+    
+datasem CaseAlt monad IO
+  clause Pat
+    child patExpr : PatExpr
+    
+    patExpr.ast = loc.patExpr
+    patExpr.pre = lhs.pre
+    patExpr.env = lhs.env
+    patExpr.exp = loc.patExpr
+    patExpr.frs = lhs.frs
+    
+    loc.exp = appAll patExpr.sub loc.expr
+    
+    expr.exp = loc.exp
+    expr.pre = patExpr.pre
+    expr.env = patExpr.env
+    expr.frs = patExpr.frs
+    
+    child s : UnifyScheme = unifyScheme
+    
+    s.pre = expr.pre
+    s.ty1 = patExpr.res
+    s.ty2 = loc.exp
+    s.frs = expr.frs
+    
+    lhs.pre = s.pre
+    lhs.frs = s.frs
+    lhs.sub = s.sub
+    lhs.res = CaseType s.ty expr.res
+    
+datasem CaseAlts monad IO
+  clause Cons
+    hd.exp = lhs.exp
+    hd.env = lhs.env
+    hd.pre = lhs.pre
+    hd.frs = lhs.frs
+    
+    tl.exp = lhs.exp
+    tl.env = lhs.env
+    tl.pre = hd.pre
+    tl.frs = hd.frs
+    
+    loc.exists_tl = isJust tl.res
+    loc.exists_hd = isJust hd.res
+    
+    loc.sub = tl.sub `munion` hd.sub
+    lhs.pre = tl.pre
+    
+    loc.ty_tl = tl.res
+    loc.ty_hd = hd.res
+    
+    child s1 : UnifyScheme = unifyScheme
+    
+    s1.pre = tl.pre
+    s1.ty1 = caseLHS loc.ty_hd
+    s1.ty2 = caseLHS loc.ty_tl
+    s1.frs = tl.frs
+    
+    child s2 : UnifyScheme = unifyScheme
+    
+    s2.pre = s1.pre
+    s2.ty1 = body loc.ty_hd
+    s2.ty2 = body loc.ty_tl
+    s2.frs = s1.frs
+    
+    match TyScheme.Sugar@sug = sugar s1.ty ---fake the dependency to get it to run
+    
+    lhs.frs = s2.frs
+    lhs.res = s2.ty
+    lhs.sub = loc.sub `munion` s2.sub
+    lhs.pre = s2.pre
+  clause Nil
+    (loc.a, loc.frs1) = fresh lhs.frs
+    loc.exp_a  = TyScheme_SystemF $ TyExpr_Var loc.a
+    lhs.res    = return loc.exp_a
+    lhs.pre    = (TyIndex_Group loc.a TyScheme_Bottom):lhs.pre
+    lhs.frs    = loc.frs1
+    lhs.sub = empty
     
 datasem DataFields monad IO
   clause Cons
     lhs.ty = hd.ty : tl.ty
   clause Nil
-    lhs.ty = []
+    lhs.ty = empty
     
 datasem DataField monad IO
   clause Field
@@ -426,32 +534,70 @@ datasem DataConstrs monad IO
     lhs.ty = []
     
 datasem PatExpr monad IO
-    default? res = const Nothing
-    default? sub = const []
-    default? pre = last
-    default? frs = last
-    default? env = last
+  default? res = const (error "This PatExpr does not have a type")
+  default? sub = const empty
+  default? pre = last
+  default? frs = last
+  default? env = last
+  default? var_nm = const empty
   clause IConst
-    lhs.var_nm = error "IConst not a var"
+     lhs.res = TyScheme_SystemF $ TyExpr_Con $ mkName "Int"
   clause CConst
-    lhs.var_nm = error "CConst not a var"
+     lhs.res = TyScheme_SystemF $ TyExpr_Con $ mkName "Char"
   clause Con
-    lhs.var_nm = error "Constructors not supported"
+     -- lhs.var_nm = error "Constructors not supported"
+     lhs.res = maybe (error "Constructor not found in lookup") id $ lookup loc.nm (unGam lhs.env)
   clause Var
-    lhs.var_nm = loc.nm 
+    lhs.var_nm = return loc.nm
     
     (loc.a, loc.frs1) = fresh lhs.frs
     loc.exp_a  = TyScheme_SystemF $ TyExpr_Var loc.a
-    lhs.res    = return loc.exp_a
+    lhs.res    = loc.exp_a
     lhs.env    = Gamma $ minsert loc.nm loc.exp_a (unGam lhs.env)
     lhs.pre    = (TyIndex_Group loc.a TyScheme_Bottom):lhs.pre
     lhs.frs    = loc.frs1
   clause VarAs
-    lhs.var_nm = loc.nm
+    lhs.var_nm = return loc.nm
   clause App
-    lhs.var_nm = error "App not a var"
+    child func : PatExpr
+    func.ast = loc.func
+    
+    func.exp = loc.func
+    func.env = lhs.env
+    func.frs = lhs.frs
+    func.pre = lhs.pre
+    
+    child arg : PatExpr
+    arg.ast = loc.arg
+    
+    arg.exp = loc.arg
+    arg.env = func.env
+    arg.frs = func.frs
+    arg.pre = func.pre
+
+    lhs.var_nm = func.var_nm `munion` arg.var_nm
+    
+    lhs.res = undefined -- func.res `munion` arg.res -- this needs to perform unification
+    lhs.sub = arg.sub
+    lhs.pre = arg.pre
+    lhs.env = arg.env
+    lhs.frs = arg.frs
   clause AppTop
-    lhs.var_nm = error "AppTop not a var"
+    child patExpr : PatExpr
+    patExpr.ast = loc.patExpr
+    
+    patExpr.exp = loc.patExpr
+    patExpr.env = lhs.env
+    patExpr.frs = lhs.frs
+    patExpr.pre = lhs.pre
+
+    lhs.var_nm = patExpr.var_nm
+    
+    lhs.res = patExpr.res
+    lhs.sub = patExpr.sub
+    lhs.pre = patExpr.pre
+    lhs.env = patExpr.env
+    lhs.frs = patExpr.frs
   clause Parens
     child patExpr : PatExpr
     patExpr.ast = loc.patExpr
@@ -494,7 +640,7 @@ datasem PatExpr monad IO
     lhs.var_nm = patExpr.var_nm
     
     loc.ans = TyScheme_SystemF (TyExpr_Parens loc.tyExpr)
-    lhs.res = return loc.ans
+    lhs.res = loc.ans
     lhs.env = Gamma $ minsert patExpr.var_nm loc.ans (unGam lhs.env)
   clause SConst
     lhs.var_nm = error "SConst not a var"
@@ -734,7 +880,22 @@ datasem Expr monad IO
        func.exp = loc.func
     clause Case
        expr.env = lhs.env
+       expr.pre = lhs.pre
+       expr.frs = lhs.frs
        expr.exp = loc.expr
+       
+       child alts : CaseAlts
+       
+       alts.ast = loc.alts
+       alts.exp = expr.res
+       alts.env = lhs.env
+       alts.frs = expr.frs
+       alts.pre = expr.pre
+       
+       lhs.res = body alts.res
+       lhs.sub = alts.sub
+       lhs.pre = alts.pre
+       lhs.frs = alts.frs
     clause CaseAltFail
     clause DataFields
     clause Rec
@@ -832,8 +993,8 @@ itf UnifyScheme
     syn pre  :: Prefix
     syn sub  :: Env
     syn ty   :: TyScheme
-    syn frs  :: Int
-
+    syn frs  :: Int    
+    
 {
 unifyScheme = sem unifyScheme : UnifyScheme monad IO
                 visit unifyScheme
