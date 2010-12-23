@@ -19,9 +19,7 @@ module UHC.MVar
   , tryTakeMVar, takeMVar
   , tryPutMVar, putMVar
   
-  , isEmptyMVar
-  
-  , withMVar
+  , isEmptyMVar, withMVar, sameMVar
   
   , addMVarFinalizer
   )
@@ -146,9 +144,9 @@ addMVarFinalizer (MVar m) finalizer = do
 %%]
 
 %%[99
-%%]
 sameMVar :: MVar a -> MVar a -> Bool
 sameMVar (MVar v1) (MVar v2) = sameMutVar v1 v2
 
 instance Eq (MVar a) where
    (==) = sameMVar
+%%]

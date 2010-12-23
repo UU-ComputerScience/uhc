@@ -264,6 +264,24 @@ primMinExpDouble         = function() { return -1021 ; }
 %%]
 
 %%[8
+_MutVar_id_ = 0 ;
+_MutVar_.prototype = {
+	// identity, a global variable for all MutVar's, used for checking identity equality because this is not offered by javascript
+	_id_ : 0
+}
+function _MutVar_(a) {
+	this._val_ = a ;
+	this._id_ = ++_MutVar_id_ ;
+	// this should be the _id_ of the proto, but I do something wrong:
+	// this._id_ = ++this.prototype._id_ ;
+}
+primNewMutVar 	= function(a,s) 	{return [s,new _MutVar_(a)];}
+primReadMutVar 	= function(m,s) 	{return [s,m._val_];}
+primWriteMutVar = function(m,a,s) 	{m._val_ = a; return s;}
+primSameMutVar 	= function(m1,m2) 	{return PrimMkBool(m1._id_ === m2._id_);}
+%%]
+
+%%[8
 primHPutChar = function(h,c) {
  switch(c) {
   case 10 :
