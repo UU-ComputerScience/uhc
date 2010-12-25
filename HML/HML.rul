@@ -450,17 +450,19 @@ datasem CaseAlt monad IO
     expr.env = patExpr.env
     expr.frs = patExpr.frs
     
+    loc.ety = maybe (error $ "Type inference of the expression '" ++ pp loc.exp ++ "' has failed") id expr.res
+    
     child s : UnifyScheme = unifyScheme
     
     s.pre = expr.pre
     s.ty1 = patExpr.res
-    s.ty2 = loc.exp
+    s.ty2 = lhs.exp
     s.frs = expr.frs
     
     lhs.pre = s.pre
     lhs.frs = s.frs
     lhs.sub = s.sub
-    lhs.res = CaseType s.ty expr.res
+    lhs.res = CaseType s.ty loc.ety
     
 datasem CaseAlts monad IO
   clause Cons
@@ -473,13 +475,7 @@ datasem CaseAlts monad IO
     tl.env = lhs.env
     tl.pre = hd.pre
     tl.frs = hd.frs
-    
-    loc.exists_tl = isJust tl.res
-    loc.exists_hd = isJust hd.res
-    
-    loc.sub = tl.sub `munion` hd.sub
-    lhs.pre = tl.pre
-    
+        
     loc.ty_tl = tl.res
     loc.ty_hd = hd.res
     
@@ -497,19 +493,19 @@ datasem CaseAlts monad IO
     s2.ty2 = body loc.ty_tl
     s2.frs = s1.frs
     
-    match TyScheme.Sugar@sug = sugar s1.ty ---fake the dependency to get it to run
-    
     lhs.frs = s2.frs
-    lhs.res = s2.ty
-    lhs.sub = loc.sub `munion` s2.sub
+    lhs.res = CaseType s1.ty s2.ty
+    lhs.sub = tl.sub `munion` hd.sub `munion` s2.sub
     lhs.pre = s2.pre
   clause Nil
     (loc.a, loc.frs1) = fresh lhs.frs
     loc.exp_a  = TyScheme_SystemF $ TyExpr_Var loc.a
-    lhs.res    = return loc.exp_a
-    lhs.pre    = (TyIndex_Group loc.a TyScheme_Bottom):lhs.pre
-    lhs.frs    = loc.frs1
-    lhs.sub = empty
+    (loc.b, loc.frs2) = fresh loc.frs1
+    loc.exp_b  = TyScheme_SystemF $ TyExpr_Var loc.b
+    lhs.res    = CaseType loc.exp_a loc.exp_b
+    lhs.pre    = (TyIndex_Group loc.a TyScheme_Bottom):(TyIndex_Group loc.b TyScheme_Bottom):lhs.pre
+    lhs.frs    = loc.frs2
+    lhs.sub    = empty
     
 datasem DataFields monad IO
   clause Cons
@@ -641,7 +637,7 @@ datasem PatExpr monad IO
     
     loc.ans = TyScheme_SystemF (TyExpr_Parens loc.tyExpr)
     lhs.res = loc.ans
-    lhs.env = Gamma $ minsert patExpr.var_nm loc.ans (unGam lhs.env)
+    lhs.env = Gamma $ foldl (.) id (zipWith minsert patExpr.var_nm (repeat loc.ans)) (unGam lhs.env)
   clause SConst
     lhs.var_nm = error "SConst not a var"
   clause Rec
@@ -804,9 +800,7 @@ datasem Expr monad IO
         arg.frs = lhs.frs
     
        loc.frs           = arg.frs
-       (TyScheme_SystemF loc.exp_a) = case arg.res of -- error reporting on local variables is off
-                                        Just x  -> x
-                                        Nothing -> error "No type infered from PatExpr in Lam"
+       (TyScheme_SystemF loc.exp_a) = arg.res
        (loc.b, loc.frs2) = fresh loc.frs
        loc.q'            = arg.pre
        loc.env'          = arg.env
@@ -887,12 +881,12 @@ datasem Expr monad IO
        child alts : CaseAlts
        
        alts.ast = loc.alts
-       alts.exp = expr.res
+       alts.exp = maybe (error $ "Type inference of expression '" ++ pp loc.expr ++ "' failed in Case") id expr.res
        alts.env = lhs.env
        alts.frs = expr.frs
        alts.pre = expr.pre
        
-       lhs.res = body alts.res
+       lhs.res = return $ body alts.res
        lhs.sub = alts.sub
        lhs.pre = alts.pre
        lhs.frs = alts.frs

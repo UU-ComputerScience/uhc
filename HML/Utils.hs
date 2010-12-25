@@ -170,6 +170,9 @@ class Util a where
   isUnQualTy :: a -> Bool
   isUnQualTy = const False
   
+instance Util Expr where
+instance Apply Expr where
+  
 -- | Conditionally add Parenthesis around expressions that contain any kind of Application.
 --   They are most likely higher order, and if they weren't meant to be, the simplifier would take care of it
 mkParens :: TyExpr -> TyExpr
