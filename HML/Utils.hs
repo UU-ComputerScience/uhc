@@ -22,7 +22,7 @@ import EqHML
 import EH.Util.Pretty hiding (pp, empty)
 import qualified Debug.Trace as D
 
-trace = const id -- D.trace
+trace = D.trace
 
 -- | Create a HsName from a string.
 mkName :: String -> HsName
@@ -35,6 +35,11 @@ newtype Gamma = Gamma { unGam :: Env }
 -- | Remove entries from a Env based on their key
 remove :: Env -> [HsName] -> Env
 remove env entries = foldl (.) id (map rm entries) env
+
+-- | add to the first environment things from the second env not in the first
+pick :: Env -> Env -> Env
+pick e1 e2 = let e2' = remove e2 (domain e1)
+             in e1 `munion` e2'
 
 -- | Split domains
 split :: (Prefix, [HsName]) -> (Prefix, Prefix)
@@ -90,6 +95,15 @@ instance Apply HsName where
 instance Util HsName where
    ftv  = return
    vars = return
+   
+instance Apply RowTyExpr where
+    app tx@(nm, ty) = mask
+      where mask :: RowTyExpr -> RowTyExpr
+            mask (RowTyExpr_Ext r t n) = 
+              let r' = mask r
+                  n' = app tx n
+              in RowTyExpr_Ext r' t n'
+            mask e = e
     
 instance Apply Gamma where
    app s    gam = apply [s] gam
@@ -138,6 +152,9 @@ createMask (nm, ty) = mask
                                      e  = app (b, mkVar b') c
                                      e' = mask e
                                  in TyExpr_Quant a b' e'
+                    TyExpr_Row a ->
+                      let a' = app (nm, ty) a
+                      in TyExpr_Row a'
                     x -> rep x
                     
        incr :: HsName -> HsName
@@ -170,8 +187,83 @@ class Util a where
   isUnQualTy :: a -> Bool
   isUnQualTy = const False
   
-instance Util Expr where
-instance Apply Expr where
+-- instance Util Expr where
+  -- ftv  _ = []
+  -- vars _ = []
+  
+  -- isTyVar (Expr_Var nm) hsnm = hsnm == nm
+  -- isTyVar _             _    = False
+
+-- instance Apply Expr where
+  -- app (nm, ty) = mask
+   -- where rep :: Expr -> Expr
+         -- rep val = case isTyVar val nm of
+                     -- False -> val
+                     -- True  -> let ty' = strip ty
+                              -- in mkParens ty'
+                   
+         -- mask :: Expr -> Expr
+         -- mask val = case val of
+                      -- Expr_App a b -> 
+                        -- let a' = mask a
+                            -- b' = mask b
+                        -- in Expr_App a' b'
+                      -- Expr_AppTop a ->
+                        -- let a' = mask a
+                        -- in Expr_AppTop a'
+                      -- Expr_Parens a ->
+                        -- let a' = mask a
+                        -- in Expr_Parens a'
+                      -- Expr_Ann a b ->
+                        -- let b' = mask b
+                        -- in Expr_Ann a b'
+                      -- Expr_Let b d e ->
+                        -- let e' = mask e
+                        -- in Expr_Let b d e'
+                      -- Expr_Lam p e ->
+                        -- let e' = mask e
+                        -- in Expr_Lam p e'
+                      -- Expr_TypeAs t e ->
+                        -- let e' = mask e
+                        -- in Expr_TypeAs t e'
+                      -- Expr_Ann a e ->
+                        -- let e' = mask e
+                        -- in Expr_Ann a e'
+                      -- Expr_AppImpred a b ->
+                        -- let a' = mask a
+                            -- b' = mask b
+                        -- in Expr_AppImpred a' b'
+                      -- Expr_Case e a b c d ->
+                        -- let e' = mask e
+                        -- in Expr_Case e' a b c d
+                      -- Expr_Rec e ->
+                        -- let e' = mask e
+                        -- in Expr_Rec e'
+                      -- Expr_Sel e l ->
+                        -- let e' = mask e
+                        -- in Expr_Sel e' l
+                      -- x -> rep x
+  
+-- instance Util RecExpr where
+  -- ftv  _ = []
+  -- vars _ = []
+  
+-- instance Apply RecExpr where
+  -- app s = mask
+    -- where mask :: RecExpr -> RecExpr
+          -- mask val = case val of 
+                       -- RecExpr_Empty -> RecExpr_Empty
+                       -- RecExpr_Ext a b c ->
+                         -- let a' = mask a
+                             -- c'  = app s c
+                         -- in RecExpr_Ext a' b c'
+                       -- RecExpr_Upd a b c ->
+                         -- let a' = mask a
+                             -- c'  = app s c
+                         -- in RecExpr_Upd a' b c'
+                       -- RecExpr_Expr e ->
+                         -- let e' = app s e
+                         -- in RecExpr_Expr e'
   
 -- | Conditionally add Parenthesis around expressions that contain any kind of Application.
 --   They are most likely higher order, and if they weren't meant to be, the simplifier would take care of it
@@ -198,23 +290,27 @@ instance Apply TyIndex where
     app s (TyIndex_Group nm a) = TyIndex_Group nm (app s a)
   
 instance Util TyExpr where
-    ftv (TyExpr_App     a b) = ftv a ++ ftv b
-    ftv (TyExpr_AppTop    a) = ftv a
-    ftv (TyExpr_Parens    a) = ftv a
-    ftv (TyExpr_Ann     _ a) = ftv a
-    ftv (TyExpr_Var       a) = [a]
-    ftv (TyExpr_VarWild   a) = [a]
-    ftv (TyExpr_Quant _ a b) = (nub $ ftv b) \\ [a]
-    ftv                    _ = []
+    ftv (TyExpr_App      a b) = nub $ ftv a ++ ftv b
+    ftv (TyExpr_AppTop     a) = ftv a
+    ftv (TyExpr_Parens     a) = ftv a
+    ftv (TyExpr_Ann      _ a) = ftv a
+    ftv (TyExpr_Var        a) = [a]
+    ftv (TyExpr_VarWild    a) = [a]
+    ftv (TyExpr_Quant  _ a b) = (nub $ ftv b) \\ [a]
+    ftv (TyExpr_Forall _ a t) = (nub $ ftv t) \\ a
+    ftv (TyExpr_Row        r) = ftv r
+    ftv                     _ = []
     
-    vars (TyExpr_App     a b) = vars a ++ vars b
-    vars (TyExpr_AppTop    a) = vars a
-    vars (TyExpr_Parens    a) = vars a
-    vars (TyExpr_Ann     _ a) = vars a
-    vars (TyExpr_Var       a) = [a]
-    vars (TyExpr_VarWild   a) = [a]
-    vars (TyExpr_Quant _ a b) = (nub $ vars b)
-    vars                    _ = []
+    vars (TyExpr_App      a b) = vars a ++ vars b
+    vars (TyExpr_AppTop     a) = vars a
+    vars (TyExpr_Parens     a) = vars a
+    vars (TyExpr_Ann      _ a) = vars a
+    vars (TyExpr_Var        a) = [a]
+    vars (TyExpr_VarWild    a) = [a]
+    vars (TyExpr_Quant  _ a b) = (nub $ vars b)
+    vars (TyExpr_Forall _ a t) = (nub $ ftv t)
+    vars (TyExpr_Row        r) = vars r
+    vars                     _ = []
 
     isTyVar (TyExpr_Var nm) hsnm = hsnm == nm
     isTyVar _ _                  = False
@@ -223,6 +319,12 @@ instance Util TyExpr where
     isUnQualTy (TyExpr_Parens a) = isUnQualTy a
     isUnQualTy (TyExpr_AppTop a) = isUnQualTy a
     isUnQualTy _                 = True 
+  
+instance Util RowTyExpr where
+    ftv (RowTyExpr_Empty    ) = []
+    ftv (RowTyExpr_Ext a _ b) = nub $ ftv a ++ ftv b
+    
+    vars = ftv
   
 instance Apply TyScheme where
     app tp@(x1,x2) = mask
@@ -664,3 +766,19 @@ occursCheck a q phi
          False -> a `elem` fvs
                   
 type TyQuantifiedScheme = TyScheme
+sche :: TyScheme -> String
+sche (TyScheme_Quant{})   = "Quant"
+sche (TyScheme_SystemF{}) = "SystemF"
+sche (TyScheme_Bottom{})  = "Bottom"
+sche (TyScheme_Sugar{})   = "Sugar"
+sche (TyScheme_Forall{})  = "Forall"
+
+con :: TyExpr -> String
+con (TyExpr_Con a)    = "Con " ++ show a
+con (TyExpr_Var a)    = "Var " ++ show a
+con (TyExpr_App a b)  = con a ++ "; " ++ con b
+con (TyExpr_AppTop a) = "AppTop (" ++ con a ++ ")"
+con (TyExpr_Parens a) = "(" ++ con a ++ ")"
+con (TyExpr_Quant _ _ a) = "Quant: " ++ con a
+con (TyExpr_Row _ )   = "Row"
+con _                 = "unmapped"

@@ -387,7 +387,21 @@ itf Decl
     syn env :: Gamma -- These declarations can update the gamma in a non-local way, so we have to return the new one
     syn sub :: Env
     syn frs :: Int
-    
+
+itf RecPatExpr
+  visit vars
+    inh ast    :: RecPatExpr
+    syn var_nm :: [HsName]
+  visit infer
+    inh pre :: Prefix
+    inh env :: Gamma
+    inh frs :: Int
+    syn pre :: Prefix
+    syn sub :: Env
+    syn env :: Gamma -- A RecPatExpr is still a pattern and so can extend the gamma
+    syn res :: Maybe RowTyExpr
+    syn frs :: Int      
+ 
 itf PatExpr
   visit vars
     inh ast    :: PatExpr
@@ -407,6 +421,9 @@ itf PatExpr
 data CaseType = CaseType { caseLHS :: TyScheme
                          , body    :: TyScheme
                          }
+                         
+instance Pretty CaseType where
+    pp (CaseType a b) = pp a ++ " -> " ++ pp b
 }
     
 itf CaseAlts
@@ -443,26 +460,30 @@ datasem CaseAlt monad IO
     patExpr.exp = loc.patExpr
     patExpr.frs = lhs.frs
     
-    loc.exp = appAll patExpr.sub loc.expr
-    
-    expr.exp = loc.exp
+    expr.exp = loc.expr
     expr.pre = patExpr.pre
     expr.env = patExpr.env
     expr.frs = patExpr.frs
     
-    loc.ety = maybe (error $ "Type inference of the expression '" ++ pp loc.exp ++ "' has failed") id expr.res
+    loc.pat = appAll expr.sub patExpr.res
+    
+    loc.ety = maybe (error $ "Type inference of the expression '" ++ pp loc.expr ++ "' has failed") id expr.res
+    (loc.q1, loc.q2) = split(patExpr.pre, domain patExpr.res \\ domain expr.pre)
+    loc.pre = expr.pre `munion` loc.q1
+    loc.exp = trace (pp loc.ety ++ " - " ++ pp loc.pat ++ " - " ++ pp lhs.exp ++ " ++ " ++ pp loc.pre) $  appAll patExpr.sub loc.ety
     
     child s : UnifyScheme = unifyScheme
     
-    s.pre = expr.pre
-    s.ty1 = patExpr.res
+    s.pre = loc.pre
+    s.ty1 = loc.pat
     s.ty2 = lhs.exp
     s.frs = expr.frs
     
     lhs.pre = s.pre
     lhs.frs = s.frs
-    lhs.sub = s.sub
-    lhs.res = CaseType s.ty loc.ety
+    lhs.sub = s.sub -- `remove` (domain patExpr.res \\ domain expr.sub) -- `munion` expr.sub
+    lhs.res = let e = CaseType (appAll expr.sub s.ty) loc.exp
+              in trace ("case finished: " ++ pp e ++ " {" ++ pp expr.sub ++ " == " ++ pp s.sub ++ "}") e
     
 datasem CaseAlts monad IO
   clause Cons
@@ -473,11 +494,11 @@ datasem CaseAlts monad IO
     
     tl.exp = lhs.exp
     tl.env = lhs.env
-    tl.pre = hd.pre
+    tl.pre = lhs.pre `munion` hd.pre
     tl.frs = hd.frs
         
-    loc.ty_tl = tl.res
-    loc.ty_hd = hd.res
+    loc.ty_tl = trace ("CaseAlts tl: " ++ pp tl.res ++ " ** " ++ pp tl.sub) tl.res
+    loc.ty_hd = trace ("CaseAlts hd: " ++ pp hd.res ++ " ** " ++ pp hd.sub) hd.res
     
     child s1 : UnifyScheme = unifyScheme
     
@@ -493,10 +514,13 @@ datasem CaseAlts monad IO
     s2.ty2 = body loc.ty_tl
     s2.frs = s1.frs
     
+    loc.subs = tl.sub `pick` hd.sub
+    
     lhs.frs = s2.frs
-    lhs.res = CaseType s1.ty s2.ty
-    lhs.sub = tl.sub `munion` hd.sub `munion` s2.sub
-    lhs.pre = s2.pre
+    lhs.res = let e = CaseType s1.ty s2.ty
+              in trace ("CaseAlts res: " ++ pp e) e
+    lhs.sub = loc.subs -- tl.sub `munion` hd.sub `munion` s2.sub `munion` s1.sub
+    lhs.pre = s2.pre    
   clause Nil
     (loc.a, loc.frs1) = fresh lhs.frs
     loc.exp_a  = TyScheme_SystemF $ TyExpr_Var loc.a
@@ -528,6 +552,56 @@ datasem DataConstrs monad IO
     lhs.ty = hd.ty : tl.ty
   clause Nil
     lhs.ty = []
+    
+datasem RecPatExpr monad IO
+  default? var_nm = const empty
+  default? sub = const empty
+  default? pre = last
+  default? frs = last
+  default? res = const Nothing
+  default? env = last
+  clause Empty
+    lhs.res = return RowTyExpr_Empty
+  clause Expr
+    child patExpr : PatExpr
+    patExpr.ast = loc.patExpr
+
+    patExpr.env = lhs.env
+    patExpr.exp = loc.patExpr
+    patExpr.frs = lhs.frs
+    patExpr.pre = lhs.pre
+    
+    lhs.var_nm = patExpr.var_nm
+    lhs.env    = patExpr.env
+    lhs.sub    = patExpr.sub
+    lhs.frs    = patExpr.frs
+    lhs.pre    = patExpr.pre
+  clause Ext
+    child patExpr : PatExpr
+    patExpr.ast = loc.patExpr
+    
+    lhs.var_nm = recPatExpr.var_nm ++ patExpr.var_nm
+    
+    recPatExpr.pre = lhs.pre
+    recPatExpr.env = lhs.env
+    recPatExpr.frs = lhs.frs
+    
+    patExpr.exp = loc.patExpr
+    patExpr.pre = recPatExpr.pre
+    patExpr.env = recPatExpr.env
+    patExpr.frs = recPatExpr.frs
+    
+    loc.res = let e = recPatExpr.res
+                  t = return patExpr.res
+              in case (e, t) of
+                   (Nothing, _) -> error $ "Cannot infer the type of tuple element '" ++ pp loc.mbNm ++ "'"
+                   (_, Nothing) -> error $ "Cannot infer the type of the expression '" ++ pp loc.patExpr ++ "'"
+                   (Just rty,Just ty) -> RowTyExpr_Ext rty loc.mbNm (ftype ty)
+    lhs.sub = recPatExpr.sub `munion` patExpr.sub
+    lhs.res = return loc.res
+    lhs.frs = patExpr.frs
+    lhs.pre = patExpr.pre
+    lhs.env = patExpr.env
     
 datasem PatExpr monad IO
   default? res = const (error "This PatExpr does not have a type")
@@ -641,7 +715,28 @@ datasem PatExpr monad IO
   clause SConst
     lhs.var_nm = error "SConst not a var"
   clause Rec
-    lhs.var_nm = error "Rec not a var"
+    child recPatExpr : RecPatExpr
+    recPatExpr.ast = loc.recPatExpr
+    
+    lhs.var_nm = recPatExpr.var_nm
+    
+    recPatExpr.pre = lhs.pre
+    recPatExpr.env = lhs.env
+    recPatExpr.frs = lhs.frs
+    
+    loc.res = let e = recPatExpr.res
+              in case e of
+                   Nothing -> error "Type inference failed in tuple"
+                   Just ty -> TyExpr_AppTop $
+                                 TyExpr_App
+                                    (TyExpr_Con (mkName "_Rec"))
+                                    (TyExpr_Row ty)
+    
+    lhs.res = TyScheme_SystemF loc.res
+    lhs.sub = recPatExpr.sub
+    lhs.pre = recPatExpr.pre
+    lhs.frs = recPatExpr.frs
+    lhs.env = recPatExpr.env
   clause DataFields
     lhs.var_nm = error "DataFields not a var"
   clause Irrefutable 
@@ -884,10 +979,10 @@ datasem Expr monad IO
        alts.exp = maybe (error $ "Type inference of expression '" ++ pp loc.expr ++ "' failed in Case") id expr.res
        alts.env = lhs.env
        alts.frs = expr.frs
-       alts.pre = expr.pre
+       alts.pre = trace ("Case Expr - " ++ pp loc.expr ++ ":" ++ pp expr.res) expr.pre
        
        lhs.res = return $ body alts.res
-       lhs.sub = alts.sub
+       lhs.sub = trace ("Case alts: " ++ pp alts.sub) alts.sub
        lhs.pre = alts.pre
        lhs.frs = alts.frs
     clause CaseAltFail
@@ -989,7 +1084,56 @@ itf UnifyScheme
     syn ty   :: TyScheme
     syn frs  :: Int    
     
+itf RowTyExpr
+  visit unifyRows
+    inh pre :: Prefix
+    inh ty1 :: RowTyExpr
+    inh ty2 :: RowTyExpr
+    inh frs :: Int
+    syn pre :: Prefix
+    syn res :: RowTyExpr
+    syn frs :: Int
+    syn sub :: Env
+    
 {
+unifyRows = sem unifyRows : RowTyExpr monad IO
+              visit unifyRows
+                default? frs = last
+                default? pre = last
+                default? sub = const empty
+                clause empty
+                    match RowTyExpr.Empty@e1 = lhs.ty1
+                    match RowTyExpr.Empty@e2 = lhs.ty2
+                    
+                    lhs.res = RowTyExpr_Empty
+                clause ext
+                    match RowTyExpr.Ext@ext1 = lhs.ty1
+                    match RowTyExpr.Ext@ext2 = lhs.ty2
+                    
+                    child u : UnifyScheme = unifyScheme
+                    
+                    u.pre = lhs.pre
+                    u.frs = lhs.frs
+                    u.ty1 = trace ("%1: " ++ pp ext1.tyExpr) $ TyScheme_SystemF ext1.tyExpr
+                    u.ty2 = trace ("%2: " ++ pp ext2.tyExpr) $ TyScheme_SystemF ext2.tyExpr
+                    
+                    child row : RowTyExpr = unifyRows
+                    
+                    row.pre = u.pre
+                    -- row.env = lhs.env
+                    row.frs = u.frs
+                    row.ty1 = ext1.rowTyExpr
+                    row.ty2 = ext2.rowTyExpr
+                    
+                    -- loc.ty = ftype $ appAll u.sub u.ty
+                    
+                    lhs.pre = row.pre
+                    lhs.frs = row.frs
+                    lhs.sub = row.sub `pick` u.sub
+                    lhs.res = RowTyExpr_Ext row.res ext1.mbNm (ftype u.ty)
+                clause mismatch
+                    lhs.res = error $ "mismatch between rows '" ++ pp lhs.ty1 ++ "' and '" ++ pp lhs.ty2 ++ "'"
+
 unifyScheme = sem unifyScheme : UnifyScheme monad IO
                 visit unifyScheme
                   default? pre = last
@@ -1017,8 +1161,10 @@ unifyScheme = sem unifyScheme : UnifyScheme monad IO
                             child u : Unify = unify
                                 
                             u.pre  = loc.q ++ exp1.prefix ++ exp2.prefix
-                            u.exp1 = dropScheme exp1.tyExpr
-                            u.exp2 = dropScheme exp2.tyExpr
+                            u.exp1 = let x = dropScheme exp1.tyExpr
+                                     in trace ("U1: " ++ pp x ++ " = " ++ con x) x
+                            u.exp2 = let x = dropScheme exp2.tyExpr
+                                     in trace ("U2: " ++ pp x ++ " = " ++ con x) x
                             u.frs  = lhs.frs
                                 
                             loc.q3 = u.pre
@@ -1332,6 +1478,20 @@ unify = sem unify : Unify monad IO
                           clause failed
                             match (loc.bla, True) = ((), loc.check)
                             lhs.sub = const (error "Subsume failure, A skolem constant has leaked outside") loc.bla
+                     clause rowmatch
+                       match TyExpr.Row@row1 = lhs.exp1
+                       match TyExpr.Row@row2 = lhs.exp2
+                       
+                       child rows : RowTyExpr = unifyRows
+                       
+                       rows.pre = lhs.pre
+                       rows.ty1 = row1.rowTyExpr
+                       rows.ty2 = row2.rowTyExpr
+                       rows.frs = lhs.frs
+                       
+                       lhs.pre  = trace ("Ty: " ++ pp rows.res ++ " = " ++ pp row1.rowTyExpr ++ " = " ++ pp row2.rowTyExpr ++ " ** " ++ pp rows.sub) rows.pre
+                       lhs.sub  = rows.sub
+                       lhs.frs  = rows.frs
                      clause mismatch
                        lhs.sub = error $   "Could not match expected type '" 
                                         ++ pp (clean lhs.exp1) ++ "' with inferred type '" 

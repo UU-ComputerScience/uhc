@@ -87,6 +87,13 @@ instance Pretty TyExpr where
   pp (TyExpr_Var a)        = pp a
   pp (TyExpr_VarWild a)    = pp a
   pp (TyExpr_Quant a b c)  = pp a ++ " " ++ pp b ++ ". " ++ pp c
+  pp (TyExpr_Forall q a t) = pp q ++ " " ++ (unwords $ map pp a) ++ ". " ++ pp t
+  pp (TyExpr_Row t)        = "(" ++ pp t ++ ")"
+  
+instance Pretty RowTyExpr where
+  pp (RowTyExpr_Empty) = ""
+  pp (RowTyExpr_Ext t n ty) = let x = pp t
+                              in (if null x then x else x ++ ", ") ++ pp ty
   
 instance Pretty ExprAnn where
   pp ExprAnn_Empty = ""
@@ -138,3 +145,12 @@ instance Pretty Expr where
   pp (Expr_Ann ann expr ) = "[ann] " ++ pp expr
   pp (Expr_TypeAs ty e  ) = pp e ++ " :: " ++ pp ty
   pp (Expr_AppImpred f a) = pp f ++ " " ++ pp a
+  pp (Expr_Rec a        ) = "(" ++ pp a ++ ")"
+  
+instance Pretty RecExpr where
+  pp (RecExpr_Empty     ) = ""
+  pp (RecExpr_Expr     e) = pp e
+  pp (RecExpr_Upd t n ty) = let x = pp t
+                            in (if null x then x else x ++ ", ") ++ pp ty
+  pp (RecExpr_Ext t n ty) = let x = pp t
+                            in (if null x then x else x ++ ", ") ++ pp ty
