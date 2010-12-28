@@ -76,6 +76,10 @@ applyEnv sub env
  = map (fapp sub) env
   where fapp :: Env -> Sub -> Sub
         fapp s (v, b) = (appAll s v, appAll s b)
+        
+-- | performs the same operation as explode but returns a TyExpr instead of a TyScheme
+explode' :: Prefix -> TyScheme -> (Prefix, TyExpr)
+explode' pre sche = second ftype (explode pre sche)
     
 -- | Push any quantified type in the environment instead of being prefixed to the type
 explode :: Prefix -> TyScheme -> (Prefix, TyScheme)
@@ -112,6 +116,9 @@ instance Apply Gamma where
 instance Util Gamma where
     ftv  _ = []
     vars _ = []
+    
+instance Pretty Gamma where
+    pp (Gamma a) = "Gamma: " ++ pp a
     
 -- | Apply a substitution
 createMask :: Sub -> TyExpr -> TyExpr

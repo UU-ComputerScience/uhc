@@ -34,11 +34,11 @@ foo = (1, 'a', 2)
 -- tmap f Nil         = Nil
 -- tmap f (Cons x xs) = Cons (f x) (tmap f xs)
 
-g (True ,x) = id
-g (False,x) = (+x)
+-- g (True ,x) = id x
+-- g (False,x) = (+x)
 
-q True  x = id
+q True  x = id x
 q False x = (+x)
 
-f True = False
-f x    = x && True
+-- f True = False
+-- f x    = x && True

@@ -479,10 +479,13 @@ datasem CaseAlt monad IO
     s.ty2 = lhs.exp
     s.frs = expr.frs
     
-    lhs.pre = s.pre
+    (loc.q3, loc.t1) = explode s.pre  (appAll expr.sub s.ty)
+    (loc.q4, loc.t2) = explode loc.q3 loc.exp
+    
+    lhs.pre = loc.q4
     lhs.frs = s.frs
     lhs.sub = s.sub -- `remove` (domain patExpr.res \\ domain expr.sub) -- `munion` expr.sub
-    lhs.res = let e = CaseType (appAll expr.sub s.ty) loc.exp
+    lhs.res = let e = CaseType loc.t1 loc.t2
               in trace ("case finished: " ++ pp e ++ " {" ++ pp expr.sub ++ " == " ++ pp s.sub ++ "}") e
     
 datasem CaseAlts monad IO
@@ -621,7 +624,7 @@ datasem PatExpr monad IO
     lhs.var_nm = return loc.nm
     
     (loc.a, loc.frs1) = fresh lhs.frs
-    loc.exp_a  = TyScheme_SystemF $ TyExpr_Var loc.a
+    loc.exp_a  = mkVar loc.a
     lhs.res    = loc.exp_a
     lhs.env    = Gamma $ minsert loc.nm loc.exp_a (unGam lhs.env)
     lhs.pre    = (TyIndex_Group loc.a TyScheme_Bottom):lhs.pre
@@ -644,14 +647,43 @@ datasem PatExpr monad IO
     arg.env = func.env
     arg.frs = func.frs
     arg.pre = func.pre
-
-    lhs.var_nm = func.var_nm `munion` arg.var_nm
     
-    lhs.res = undefined -- func.res `munion` arg.res -- this needs to perform unification
-    lhs.sub = arg.sub
-    lhs.pre = arg.pre
+    (loc.q1   , loc.func1) = explode arg.pre func.res
+    (loc.q2   , loc.arg1 ) = explode loc.q1 arg.res
+
+    (loc.a1   , loc.frs1 ) = fresh arg.frs
+    (loc.a2   , loc.frs2 ) = fresh loc.frs1
+    (loc.b    , loc.frs3 ) = fresh loc.frs2
+                         
+    (loc.temp1, loc.frt1 ) = extend (loc.q2, Scheme_Simple loc.a1 (appAll arg.sub loc.func1), loc.frs3) True
+    (loc.temp2, loc.frt2 ) = extend (fst loc.temp1, Scheme_Simple loc.a2 (loc.arg1), loc.frt1) True
+    (loc.temp3, loc.frt3 ) = extend (fst loc.temp2, Scheme_Simple loc.b  (TyScheme_Bottom), loc.frt2) True
+                         
+    (loc.q2'  , loc.e2'  ) = (fst loc.temp3, (snd loc.temp1) `munion` (snd loc.temp2) `munion` (snd loc.temp3))
+    
+    child u : Unify = unify
+    u.pre  = loc.q2'
+    
+    u.exp1 = appAll loc.e2' (TyExpr_Var loc.a1)
+    u.exp2 = (appAll loc.e2' (TyExpr_Var loc.a2)) `mkArrow` (TyExpr_Var loc.b)
+    u.frs  = loc.frt3
+    
+    loc.q3 = u.pre
+    loc.e3 = u.sub
+    
+    (loc.q4, loc.q5) = curry split loc.q3 (domain lhs.pre)
+    
+    lhs.res = let b = TyExpr_Var loc.b
+                  e = appAll (loc.e3 `munion` loc.e2') b
+              in desugar $ TyScheme_Sugar loc.q5 (TyScheme_SystemF e)
+    loc.temp_sub = let subs = applyEnv loc.e2' (func.sub `munion` arg.sub)
+                   in subs `munion` loc.e3 -- added union
+    lhs.sub = loc.temp_sub
     lhs.env = arg.env
-    lhs.frs = arg.frs
+    lhs.pre = loc.q4
+    lhs.frs = u.frs
+    
+    lhs.var_nm = func.var_nm `munion` arg.var_nm
   clause AppTop
     child patExpr : PatExpr
     patExpr.ast = loc.patExpr
@@ -1031,16 +1063,17 @@ datasem RecExpr monad IO
        expr.env = lhs.env
        expr.frs = recExpr.frs
        
-       loc.res = let e = recExpr.res
+       (loc.q1, loc.res)
+               = let e = recExpr.res
                      t = expr.res
                  in case (e, t) of
                       (Nothing, _) -> error $ "Cannot infer the type of tuple element '" ++ pp loc.mbNm ++ "'"
                       (_, Nothing) -> error $ "Cannot infer the type of the expression '" ++ pp loc.expr ++ "'"
-                      (Just rty,Just ty) -> RowTyExpr_Ext rty loc.mbNm (ftype ty)
+                      (Just rty,Just ty) -> second (\ty'->RowTyExpr_Ext rty loc.mbNm ty') (explode' expr.pre ty)
        lhs.sub = recExpr.sub `munion` expr.sub
        lhs.res = return loc.res
        lhs.frs = expr.frs
-       lhs.pre = expr.pre
+       lhs.pre = loc.q1
     clause Empty
        lhs.res = return RowTyExpr_Empty
     clause Upd
@@ -1110,12 +1143,15 @@ unifyRows = sem unifyRows : RowTyExpr monad IO
                     match RowTyExpr.Ext@ext1 = lhs.ty1
                     match RowTyExpr.Ext@ext2 = lhs.ty2
                     
+                    loc.ext1 = embedF ext1.tyExpr
+                    loc.ext2 = embedF ext2.tyExpr
+                    
                     child u : UnifyScheme = unifyScheme
                     
                     u.pre = lhs.pre
                     u.frs = lhs.frs
-                    u.ty1 = trace ("%1: " ++ pp ext1.tyExpr) $ TyScheme_SystemF ext1.tyExpr
-                    u.ty2 = trace ("%2: " ++ pp ext2.tyExpr) $ TyScheme_SystemF ext2.tyExpr
+                    u.ty1 = trace ("%1: " ++ pp loc.ext1) $ loc.ext1
+                    u.ty2 = trace ("%2: " ++ pp loc.ext2) $ loc.ext2
                     
                     child row : RowTyExpr = unifyRows
                     
@@ -1127,10 +1163,12 @@ unifyRows = sem unifyRows : RowTyExpr monad IO
                     
                     -- loc.ty = ftype $ appAll u.sub u.ty
                     
-                    lhs.pre = row.pre
+                    (loc.q, loc.ty) = explode' row.pre u.ty
+                    
+                    lhs.pre = loc.q
                     lhs.frs = row.frs
                     lhs.sub = row.sub `pick` u.sub
-                    lhs.res = RowTyExpr_Ext row.res ext1.mbNm (ftype u.ty)
+                    lhs.res = RowTyExpr_Ext row.res ext1.mbNm loc.ty
                 clause mismatch
                     lhs.res = error $ "mismatch between rows '" ++ pp lhs.ty1 ++ "' and '" ++ pp lhs.ty2 ++ "'"
 
