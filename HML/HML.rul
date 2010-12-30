@@ -19,7 +19,9 @@ import EH8.Base.HsName
 import EH8.Ty(tyQu_Forall)
 
 import EqHML
-import Utils
+-- import Utils
+-- import UtilsInterop
+import UtilsWorking
 
 import EH.Util.Pretty hiding (pp, empty)
 }

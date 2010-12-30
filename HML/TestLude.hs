@@ -31,14 +31,14 @@ app = \(f :: forall a. a -> Int) -> Cons (f 0) (Cons (f 'a') Nil)
 
 foo = (1, 'a', 2)
 
--- tmap f Nil         = Nil
--- tmap f (Cons x xs) = Cons (f x) (tmap f xs)
+tmap f Nil         = Nil
+tmap f (Cons x xs) = Cons (f x) (tmap f xs)
 
 -- g (True ,x) = id x
 -- g (False,x) = (+x)
 
-q True  x = id x
-q False x = (+x)
+-- q True  x = id x
+-- q False x = (+x)
 
 -- f True = False
 -- f x    = x && True

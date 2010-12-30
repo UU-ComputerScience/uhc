@@ -59,6 +59,7 @@ split ((p@(TyIndex_Group var phi):q), vars)
 mapMaybe = \v -> map (id *** \a -> (maybe a id (v a)))
 mapFunc  = map . second
 empty = []
+
 rm :: Eq k => k -> [(k, v)] -> [(k, v)]
 rm _ [] = []
 rm k1 (x@(k,v):xs) | k1 == k   = rm k1 xs
@@ -179,7 +180,7 @@ class Eq a => Normal a where
 class Util a => Apply a where
   app    :: Sub -> a -> a
   appAll :: Env -> a -> a
-  appAll env = foldl' (.) id (map app env)
+  appAll env = foldl' (flip (.)) id (map app env)
   
 instance Apply a => Apply [a] where
   app s = map (app s)
