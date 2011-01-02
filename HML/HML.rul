@@ -19,9 +19,9 @@ import EH8.Base.HsName
 import EH8.Ty(tyQu_Forall)
 
 import EqHML
--- import Utils
+import Utils
 -- import UtilsInterop
-import UtilsWorking
+-- import UtilsWorking
 
 import EH.Util.Pretty hiding (pp, empty)
 }
@@ -481,8 +481,8 @@ datasem CaseAlt monad IO
     s.ty2 = lhs.exp
     s.frs = expr.frs
     
-    (loc.q3, loc.t1) = explode s.pre  (appAll expr.sub s.ty)
-    (loc.q4, loc.t2) = explode loc.q3 loc.exp
+    (loc.q3, loc.t1) = deep_explode s.pre  (appAll expr.sub s.ty)
+    (loc.q4, loc.t2) = deep_explode loc.q3 loc.exp
     
     lhs.pre = loc.q4
     lhs.frs = s.frs
@@ -515,8 +515,8 @@ datasem CaseAlts monad IO
     child s2 : UnifyScheme = unifyScheme
     
     s2.pre = s1.pre
-    s2.ty1 = body loc.ty_hd
-    s2.ty2 = body loc.ty_tl
+    s2.ty1 = appAll s1.sub $ body loc.ty_hd
+    s2.ty2 = appAll s1.sub $ body loc.ty_tl
     s2.frs = s1.frs
     
     loc.subs = tl.sub `pick` hd.sub
@@ -596,16 +596,18 @@ datasem RecPatExpr monad IO
     patExpr.env = recPatExpr.env
     patExpr.frs = recPatExpr.frs
     
-    loc.res = let e = recPatExpr.res
+    (loc.q1, loc.res)
+            = let e = recPatExpr.res
                   t = return patExpr.res
               in case (e, t) of
                    (Nothing, _) -> error $ "Cannot infer the type of tuple element '" ++ pp loc.mbNm ++ "'"
                    (_, Nothing) -> error $ "Cannot infer the type of the expression '" ++ pp loc.patExpr ++ "'"
-                   (Just rty,Just ty) -> RowTyExpr_Ext rty loc.mbNm (ftype ty)
+                   (Just rty,Just ty) -> second (\ty'->RowTyExpr_Ext rty loc.mbNm ty') (deep_explode' patExpr.pre ty) 
+                   
     lhs.sub = recPatExpr.sub `munion` patExpr.sub
     lhs.res = return loc.res
     lhs.frs = patExpr.frs
-    lhs.pre = patExpr.pre
+    lhs.pre = loc.q1
     lhs.env = patExpr.env
     
 datasem PatExpr monad IO
@@ -650,8 +652,8 @@ datasem PatExpr monad IO
     arg.frs = func.frs
     arg.pre = func.pre
     
-    (loc.q1   , loc.func1) = explode arg.pre func.res
-    (loc.q2   , loc.arg1 ) = explode loc.q1 arg.res
+    (loc.q1   , loc.func1) = deep_explode arg.pre func.res
+    (loc.q2   , loc.arg1 ) = deep_explode loc.q1 arg.res
 
     (loc.a1   , loc.frs1 ) = fresh arg.frs
     (loc.a2   , loc.frs2 ) = fresh loc.frs1
@@ -1071,7 +1073,7 @@ datasem RecExpr monad IO
                  in case (e, t) of
                       (Nothing, _) -> error $ "Cannot infer the type of tuple element '" ++ pp loc.mbNm ++ "'"
                       (_, Nothing) -> error $ "Cannot infer the type of the expression '" ++ pp loc.expr ++ "'"
-                      (Just rty,Just ty) -> second (\ty'->RowTyExpr_Ext rty loc.mbNm ty') (explode' expr.pre ty)
+                      (Just rty,Just ty) -> second (\ty'->RowTyExpr_Ext rty loc.mbNm ty') (deep_explode' expr.pre ty)
        lhs.sub = recExpr.sub `munion` expr.sub
        lhs.res = return loc.res
        lhs.frs = expr.frs

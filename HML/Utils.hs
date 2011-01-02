@@ -81,6 +81,7 @@ applyEnv sub env
 -- | performs the same operation as explode but returns a TyExpr instead of a TyScheme
 explode' :: Prefix -> TyScheme -> (Prefix, TyExpr)
 explode' pre sche = second ftype (explode pre sche)
+
     
 -- | Push any quantified type in the environment instead of being prefixed to the type
 explode :: Prefix -> TyScheme -> (Prefix, TyScheme)
@@ -91,6 +92,18 @@ explode p t | isB t
   where isB = isBottom . nf
 explode p t = (p, t)
     
+-- | performs the same operation as explode but returns a TyExpr instead of a TyScheme
+deep_explode' :: Prefix -> TyScheme -> (Prefix, TyExpr)
+deep_explode' pre sche = second ftype (deep_explode pre sche)
+    
+-- | A less restrictive version of explode', this is used in case expressions where we want to always
+--   split the Quantifications off the TySchemes
+deep_explode :: Prefix -> TyScheme -> (Prefix, TyScheme)
+deep_explode p t
+   = case sugar t of
+       TyScheme_Sugar q t' -> (p `munion` q, t')
+       x                   -> (p           , x )
+       
 instance Apply HsName where
    app (s, v) nm | s == nm   = case ftv v of
                                  [x] -> x
