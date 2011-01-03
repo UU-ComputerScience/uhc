@@ -470,8 +470,8 @@ datasem CaseAlt monad IO
     loc.pat = appAll expr.sub patExpr.res
     
     loc.ety = maybe (error $ "Type inference of the expression '" ++ pp loc.expr ++ "' has failed") id expr.res
-    (loc.q1, loc.q2) = split(patExpr.pre, domain patExpr.res \\ domain expr.pre)
-    loc.pre = expr.pre `munion` loc.q1
+    -- (loc.q1, loc.q2) = split(patExpr.pre, domain patExpr.res \\ domain expr.pre)
+    loc.pre = expr.pre -- `munion` loc.q1
     loc.exp = trace (pp loc.ety ++ " - " ++ pp loc.pat ++ " - " ++ pp lhs.exp ++ " ++ " ++ pp loc.pre) $  appAll patExpr.sub loc.ety
     
     child s : UnifyScheme = unifyScheme
@@ -484,7 +484,7 @@ datasem CaseAlt monad IO
     (loc.q3, loc.t1) = deep_explode s.pre  (appAll expr.sub s.ty)
     (loc.q4, loc.t2) = deep_explode loc.q3 loc.exp
     
-    lhs.pre = loc.q4
+    lhs.pre = trace ("Prefix: " ++ pp loc.q4) loc.q4
     lhs.frs = s.frs
     lhs.sub = s.sub -- `remove` (domain patExpr.res \\ domain expr.sub) -- `munion` expr.sub
     lhs.res = let e = CaseType loc.t1 loc.t2
@@ -493,13 +493,13 @@ datasem CaseAlt monad IO
 datasem CaseAlts monad IO
   clause Cons
     hd.exp = lhs.exp
-    hd.env = lhs.env
+    hd.env = lhs.env    
     hd.pre = lhs.pre
     hd.frs = lhs.frs
     
     tl.exp = lhs.exp
     tl.env = lhs.env
-    tl.pre = lhs.pre `munion` hd.pre
+    tl.pre = let e = hd.pre `merge` lhs.pre in trace ("TL in: " ++ pp e) e
     tl.frs = hd.frs
         
     loc.ty_tl = trace ("CaseAlts tl: " ++ pp tl.res ++ " ** " ++ pp tl.sub) tl.res
@@ -507,25 +507,27 @@ datasem CaseAlts monad IO
     
     child s1 : UnifyScheme = unifyScheme
     
-    s1.pre = tl.pre
+    s1.pre = trace ("TL out/S1 in:" ++ pp tl.pre) tl.pre
     s1.ty1 = caseLHS loc.ty_hd
     s1.ty2 = caseLHS loc.ty_tl
     s1.frs = tl.frs
     
     child s2 : UnifyScheme = unifyScheme
     
-    s2.pre = s1.pre
+    s2.pre = trace ("S1 out/S2 in:" ++ pp s1.pre) s1.pre
     s2.ty1 = appAll s1.sub $ body loc.ty_hd
     s2.ty2 = appAll s1.sub $ body loc.ty_tl
     s2.frs = s1.frs
     
+    loc.ep = s2.sub `pick` s1.sub
     loc.subs = tl.sub `pick` hd.sub
     
     lhs.frs = s2.frs
     lhs.res = let e = CaseType s1.ty s2.ty
               in trace ("CaseAlts res: " ++ pp e) e
-    lhs.sub = loc.subs -- tl.sub `munion` hd.sub `munion` s2.sub `munion` s1.sub
-    lhs.pre = s2.pre    
+    lhs.sub = let f1 = trace ("@S1:   " ++ pp s1.sub) $ trace ("@S2:   " ++ pp s2.sub) 
+              in  f1 $ loc.subs -- tl.sub `munion` hd.sub `munion` s2.sub `munion` s1.sub
+    lhs.pre = trace ("S2 out/ret:" ++ pp tl.pre) tl.pre 
   clause Nil
     (loc.a, loc.frs1) = fresh lhs.frs
     loc.exp_a  = TyScheme_SystemF $ TyExpr_Var loc.a
@@ -1017,7 +1019,7 @@ datasem Expr monad IO
        alts.frs = expr.frs
        alts.pre = trace ("Case Expr - " ++ pp loc.expr ++ ":" ++ pp expr.res) expr.pre
        
-       lhs.res = return $ body alts.res
+       lhs.res = return $ let e = ptype $ appAll alts.sub $ body alts.res in trace ("Case done:" ++ pp e) e
        lhs.sub = trace ("Case alts: " ++ pp alts.sub) alts.sub
        lhs.pre = alts.pre
        lhs.frs = alts.frs

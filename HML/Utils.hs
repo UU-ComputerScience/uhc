@@ -11,6 +11,7 @@ import Control.Arrow hiding (app)
 import Control.Applicative((<$>), (<|>))
 
 import Data.List
+import Data.Function(on)
 import Data.Maybe hiding (mapMaybe)
 
 import EH8.EH
@@ -33,13 +34,20 @@ type ErrorMessage = String
 newtype Gamma = Gamma { unGam :: Env }
 
 -- | Remove entries from a Env based on their key
-remove :: Env -> [HsName] -> Env
+remove :: Eq a => [(a, v)] -> [a] -> [(a, v)] -- Env -> [HsName] -> Env
 remove env entries = foldl (.) id (map rm entries) env
 
 -- | add to the first environment things from the second env not in the first
-pick :: Env -> Env -> Env
+-- pick :: Env -> Env -> Env
+pick :: Domain v => [(HsName, v)] -> [(HsName, v)] -> [(HsName, v)]
 pick e1 e2 = let e2' = remove e2 (domain e1)
              in e1 `munion` e2'
+             
+-- | add to the first Prefix things from the second Pref not in the first
+merge :: Prefix -> Prefix -> Prefix
+merge pre efx = foldl' push pre (reverse efx)
+ where push :: Prefix -> TyIndex -> Prefix
+       push p t = if t `elem` p then p else t:p
 
 -- | Split domains
 split :: (Prefix, [HsName]) -> (Prefix, Prefix)
@@ -207,84 +215,6 @@ class Util a where
   
   isUnQualTy :: a -> Bool
   isUnQualTy = const False
-  
--- instance Util Expr where
-  -- ftv  _ = []
-  -- vars _ = []
-  
-  -- isTyVar (Expr_Var nm) hsnm = hsnm == nm
-  -- isTyVar _             _    = False
-
--- instance Apply Expr where
-  -- app (nm, ty) = mask
-   -- where rep :: Expr -> Expr
-         -- rep val = case isTyVar val nm of
-                     -- False -> val
-                     -- True  -> let ty' = strip ty
-                              -- in mkParens ty'
-                   
-         -- mask :: Expr -> Expr
-         -- mask val = case val of
-                      -- Expr_App a b -> 
-                        -- let a' = mask a
-                            -- b' = mask b
-                        -- in Expr_App a' b'
-                      -- Expr_AppTop a ->
-                        -- let a' = mask a
-                        -- in Expr_AppTop a'
-                      -- Expr_Parens a ->
-                        -- let a' = mask a
-                        -- in Expr_Parens a'
-                      -- Expr_Ann a b ->
-                        -- let b' = mask b
-                        -- in Expr_Ann a b'
-                      -- Expr_Let b d e ->
-                        -- let e' = mask e
-                        -- in Expr_Let b d e'
-                      -- Expr_Lam p e ->
-                        -- let e' = mask e
-                        -- in Expr_Lam p e'
-                      -- Expr_TypeAs t e ->
-                        -- let e' = mask e
-                        -- in Expr_TypeAs t e'
-                      -- Expr_Ann a e ->
-                        -- let e' = mask e
-                        -- in Expr_Ann a e'
-                      -- Expr_AppImpred a b ->
-                        -- let a' = mask a
-                            -- b' = mask b
-                        -- in Expr_AppImpred a' b'
-                      -- Expr_Case e a b c d ->
-                        -- let e' = mask e
-                        -- in Expr_Case e' a b c d
-                      -- Expr_Rec e ->
-                        -- let e' = mask e
-                        -- in Expr_Rec e'
-                      -- Expr_Sel e l ->
-                        -- let e' = mask e
-                        -- in Expr_Sel e' l
-                      -- x -> rep x
-  
--- instance Util RecExpr where
-  -- ftv  _ = []
-  -- vars _ = []
-  
--- instance Apply RecExpr where
-  -- app s = mask
-    -- where mask :: RecExpr -> RecExpr
-          -- mask val = case val of 
-                       -- RecExpr_Empty -> RecExpr_Empty
-                       -- RecExpr_Ext a b c ->
-                         -- let a' = mask a
-                             -- c'  = app s c
-                         -- in RecExpr_Ext a' b c'
-                       -- RecExpr_Upd a b c ->
-                         -- let a' = mask a
-                             -- c'  = app s c
-                         -- in RecExpr_Upd a' b c'
-                       -- RecExpr_Expr e ->
-                         -- let e' = app s e
-                         -- in RecExpr_Expr e'
   
 -- | Conditionally add Parenthesis around expressions that contain any kind of Application.
 --   They are most likely higher order, and if they weren't meant to be, the simplifier would take care of it
@@ -513,6 +443,14 @@ renameVars frs ty
     env'       = zipWith (\a b->(a, b)) vc nvc
     ren x      = maybe x id $ lookup x env'
     
+-- | rename based on fullRename instead of app which avoids capturing values.
+forceRename :: TyExpr -> TyExpr
+forceRename exp = fullRename env exp
+ where
+    vcs = nub $ vars exp
+    num = (map (mkName . (:[])) ['a'..'z']) ++ liftM2 (\b a -> mkName $ a : show b) [1..] ['a'..'z']
+    env = zip vcs num
+    
 -- | Fully rename a TyExpr's variables. ALL variables, not just those that are bound
 fullRename ::  [(HsName, HsName)] -> TyExpr -> TyExpr
 fullRename env = rename
@@ -673,7 +611,7 @@ alpha_rename :: TyScheme -> TyScheme
 alpha_rename ty 
  = let nvars = map (TyScheme_SystemF . TyExpr_Var . mkName) $ (map (:[]) ['a'..'z']) ++ liftM2 (\b a -> a : show b) [1..] ['a'..'z']
        fvars = sortBy lexord $ nub $ vars ty
-       lexord a b = case length (pp a) `compare` length (pp b) of
+       lexord a b = case (compare `on` length . pp) a b of
                      LT -> LT
                      GT -> GT
                      EQ -> a `compare` b
@@ -702,7 +640,7 @@ ftype = ft . nf . desugar
 ptype :: TyScheme -> TyScheme
 ptype = ft . desugar
  where ft :: TyScheme -> TyScheme
-       ft x@(TyScheme_Quant (Scheme_Simple _ TyScheme_Bottom) _) = x
+       ft (TyScheme_Quant y@(Scheme_Simple _ TyScheme_Bottom) x) = TyScheme_Quant y (ft x)
        ft (TyScheme_Quant (Scheme_Simple a q) phi)
             = let (TyScheme_Sugar q' p) = sugar q 
                   phi'                  = app (a, p) phi
@@ -715,7 +653,7 @@ instance Simplify TyScheme where
     --   e.g. (a>=_|_) to a, and expanding types.
     --   simplify :: TyScheme -> TyScheme
     simplify = TyScheme_SystemF . ftype
-    clean    = alpha_rename . simplify
+    clean    = (\(TyScheme_SystemF a)-> TyScheme_SystemF $ forceRename a) . simplify
     
 instance Simplify TyExpr where
     -- | Simplify a type expression for presentation. This version just drops superflous parenthesis
@@ -736,7 +674,7 @@ instance Simplify TyExpr where
             simpl f       (TyExpr_Quant a b c) = TyExpr_Quant a b (simpl f c)   
             simpl _ a                          = a
             
-    clean = (\(TyScheme_SystemF a)->a) . alpha_rename . simplify . TyScheme_SystemF
+    clean = (\(TyScheme_SystemF a)->a) . clean . TyScheme_SystemF
 
 -- | Checks if the expression contains an arrow. False will be returned if it does. This is needed for pretty printing in UHC
 noArr :: TyExpr -> Bool
