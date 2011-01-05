@@ -1,8 +1,3 @@
-TODO SPECIAL we need to do something smart with this
-NOTE Dit is een per-module-variant van NumberIdents, die binnen elke module
-uniek nummert en de namen qualified laat. Waarschijnlijk ga ik het anders doen,
-maar we bewaren deze optie voorlopgi.
-
 %%[doesWhat doclatex
 
 Each HsName in the program is numbered.
@@ -43,7 +38,7 @@ The parameters of a function are numbered consecutively after that.
 WRAPPER GrAGItf
 %%]
 
-%%[(8 codegen grin) hs export(InfoNumberIdents, numberIdents)
+%%[(8 codegen grin) hs export(InfoNumberIdents, numberIdents, infoModOffsets)
 
 data InfoNumberIdents = InfoNumberIdents
   { infoModOffsets :: ModOffsets
@@ -64,26 +59,30 @@ instance Serialize InfoNumberIdents where
   sget     = return InfoNumberIdents `ap` sget `ap` sget `ap` sget
 
 
+grModName :: GrModule -> HsName
+grModName (GrModule_Mod nm _ _ _) = nm
+
 -- Wil: VarMap+BindMap, een ModOffsets om die maps te hernummeren en om lokale
 -- nummers bij de correcte offset te laten beginnen, en een GrModule. Levert een
 -- nieuwe GrModule en VarMap+BindMap op, samen met het kleinste ongeuitgedeelde
 -- nummer > first.
-numberIdents :: ModOffsets -> [InfoNumberIdents] -> GrModule -> (GrModule, InfoNumberIdents, Int)
+numberIdents :: ModOffsets -> [InfoNumberIdents] -> GrModule -> (GrModule, InfoNumberIdents)
 numberIdents newMO imps code
-  = let infos = map (renumberInfoNumberIdents newMO) imps
+  = let modNm = grModName code
+        infos = map (renumberInfoNumberIdents newMO) imps
         inh = Inh_GrAGItf
           { startVarMaps_Inh_GrAGItf  = map infoVarMap  infos
           , startBindMaps_Inh_GrAGItf = map infoBindMap infos
           , firstNumber_Inh_GrAGItf   = moNextOffset newMO
           }
         syn = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf code)) inh
+        next = nextNumber_Syn_GrAGItf syn
         inf = InfoNumberIdents
-          { infoModOffsets = newMO
+          { infoModOffsets = panicJust "NumberIdents.numberIdents.inf" $ moNewEntry newMO modNm (next - moNextOffset newMO)
           , infoVarMap     = finalVarMap_Syn_GrAGItf  syn
           , infoBindMap    = finalBindMap_Syn_GrAGItf syn
           }
-        next = nextNumber_Syn_GrAGItf syn
-    in  (grTrf_Syn_GrAGItf syn, inf, next)
+    in  (grTrf_Syn_GrAGItf syn, inf)
 
 
 -- Construct a HNmNr -- , qualified with the qualifier from the original name.

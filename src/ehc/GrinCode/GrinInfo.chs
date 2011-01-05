@@ -18,7 +18,7 @@ up to the transformations themselves.
 -- Import incremental transformations.
 %%[(9 codegen grin) hs import({%{EH}GrinCode.Trf.MergeInstance})
 %%]
-%%[(8 codegen grin) hs import({%{EH}GrinCode.Trf.MemberSelect}, {%{EH}GrinCode.Trf.SimpleNullary}, {%{EH}GrinCode.Trf.EvalStored}, {%{EH}GrinCode.Trf.CleanupPass}, {%{EH}GrinCode.Trf.SpecConst}, {%{EH}GrinCode.Trf.CheckGrinInvariant}, {%{EH}GrinCode.PointsToAnalysis})
+%%[(8 codegen grin) hs import({%{EH}GrinCode.Trf.MemberSelect}, {%{EH}GrinCode.Trf.SimpleNullary}, {%{EH}GrinCode.Trf.EvalStored}, {%{EH}GrinCode.Trf.CleanupPass}, {%{EH}GrinCode.Trf.SpecConst}, {%{EH}GrinCode.Trf.CheckGrinInvariant}, {%{EH}GrinCode.Trf.NumberIdents}, {%{EH}GrinCode.PointsToAnalysis})
 %%]
 %%[20 hs import(Data.Typeable(Typeable), Data.Generics(Data), {%{EH}Base.Serialize}, Control.Monad (ap))
 %%]
@@ -38,9 +38,10 @@ data GrinInfo = GrinInfo
 %%[[9
   , grMbMergeInstance         :: Maybe InfoMergeInstance
 %%]]
+  , grMbNumberIdents          :: Maybe InfoNumberIdents
+  , grMbPointsToAnalysis      :: Maybe InfoPointsToAnalysis
+  -- TODO PartialHptResult should go elsewhere, because it is not a full GRIN thing (only needed from directly imported modules)
   , grMbPartialHpt            :: Maybe PartialHptResult
-  -- TODO FinalHptResult should go elsewhere, because it should not be stored in a HI file.
-  , grMbFinalHpt              :: Maybe FinalHptResult
   } deriving (Show
 %%[[20
       , Data, Typeable
@@ -59,9 +60,36 @@ instance Serialize GrinInfo where
     sput ( grMbSpecConstSpec        gr ) >>
     sput ( grMbCheckInvariantSpec   gr ) >>
     sput ( grMbMergeInstance        gr ) >>
+    sput ( grMbNumberIdents         gr ) >>
+    sput ( grMbPointsToAnalysis     gr ) >>
     sput ( grMbPartialHpt           gr )
-  sget = return GrinInfo `ap` sget `ap` sget `ap` sget `ap` sget `ap` sget `ap`
-          sget `ap` sget `ap` sget `ap` sget `ap` sget `ap` return Nothing
+  sget = do
+    iMemberSelect        <- sget
+    iMemberSelectSpec    <- sget
+    iSimpleNullary       <- sget
+    iSimpleNullarySpec   <- sget
+    iEvalStoredSpec      <- sget
+    iCleanupPass         <- sget
+    iSpecConstSpec       <- sget
+    iCheckInvariantSpec  <- sget
+    iMergeInstance       <- sget
+    iNumberIdents        <- sget
+    iPointsToAnalysis    <- sget
+    iPartialHpt          <- sget
+    return $ GrinInfo
+      { grMbMemberSelect        = iMemberSelect
+      , grMbMemberSelectSpec    = iMemberSelectSpec
+      , grMbSimpleNullary       = iSimpleNullary
+      , grMbSimpleNullarySpec   = iSimpleNullarySpec
+      , grMbEvalStoredSpec      = iEvalStoredSpec
+      , grMbCleanupPass         = iCleanupPass
+      , grMbSpecConstSpec       = iSpecConstSpec
+      , grMbCheckInvariantSpec  = iCheckInvariantSpec
+      , grMbMergeInstance       = iMergeInstance
+      , grMbNumberIdents        = iNumberIdents
+      , grMbPointsToAnalysis    = iPointsToAnalysis
+      , grMbPartialHpt          = iPartialHpt
+      }
 %%]]
 
 emptyGrinInfo :: GrinInfo
@@ -77,8 +105,9 @@ emptyGrinInfo = GrinInfo
 %%[[9
   , grMbMergeInstance         = Nothing
 %%]]
+  , grMbNumberIdents          = Nothing
+  , grMbPointsToAnalysis      = Nothing
   , grMbPartialHpt            = Nothing
-  , grMbFinalHpt              = Nothing
   }
 
 %%]
@@ -87,7 +116,7 @@ emptyGrinInfo = GrinInfo
 %%[(9 codegen grin) hs export(grinInfoMergeInstance)
 %%]
 
-%%[(8 codegen grin) hs export(GrinInfoPart(..),grinInfoMemberSelect,grinInfoMemberSelectSpec,grinInfoSimpleNullary,grinInfoSimpleNullarySpec,grinInfoEvalStoredSpec,grinInfoCleanupPass,grinInfoSpecConstSpec,grinInfoCheckInvariantSpec,grinInfoPartialHpt,grinInfoFinalHpt)
+%%[(8 codegen grin) hs export(GrinInfoPart(..),grinInfoMemberSelect,grinInfoMemberSelectSpec,grinInfoSimpleNullary,grinInfoSimpleNullarySpec,grinInfoEvalStoredSpec,grinInfoCleanupPass,grinInfoSpecConstSpec,grinInfoCheckInvariantSpec,grinInfoNumberIdents,grinInfoPointsToAnalysis,grinInfoPartialHpt)
 
 type GrinInfoUpd i = i -> GrinInfo -> GrinInfo
 
@@ -126,8 +155,11 @@ grinInfoSpecConstSpec = grinInfoSpec grMbSpecConstSpec (\x sem -> sem { grMbSpec
 
 grinInfoCheckInvariantSpec = grinInfoSpec grMbCheckInvariantSpec (\x sem -> sem { grMbCheckInvariantSpec = x })
 
+grinInfoNumberIdents = GrinInfoPart grMbNumberIdents (\x sem -> sem { grMbNumberIdents = Just x })
+
+grinInfoPointsToAnalysis = GrinInfoPart grMbPointsToAnalysis (\x sem -> sem { grMbPointsToAnalysis = Just x })
+
 grinInfoPartialHpt = GrinInfoPart grMbPartialHpt (\x sem -> sem { grMbPartialHpt = Just x })
-grinInfoFinalHpt = GrinInfoPart grMbFinalHpt (\x sem -> sem { grMbFinalHpt = Just x })
 
 %%]
 

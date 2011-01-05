@@ -191,7 +191,7 @@ doCompileGrin input opts
 --          ; checkCode             checkGrinInvariant "CheckGrinInvariant"
 
          
-         ; transformCodeNumber                      "NumberIdents"     ; caWriteGrin "-129-numbered"
+         -- ; transformCodeNumber                      "NumberIdents"     ; caWriteGrin "-129-numbered"
          -- ; caHeapPointsTo                                              ; caWriteHptMap "-130-hpt"
          ; transformCodeChgHpt   (inlineEA False)   "InlineEA" 
          ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-131-evalinlined"
@@ -257,11 +257,10 @@ doCompileGrin input opts
 initialState opts (Left fn)
   = (initState opts) {gcsPath=mkTopLevelFPath "grin" fn}
 initialState opts (Right (fp,grmod,grsem))
-  = (initState opts) {gcsPath=fp, gcsGrin=grmod, gcsHptMap=hptMap, gcsVarMap=varMap}
-  where fin = panicJust "GrinCompilerDriver.initialState"
-              $ grinInfoGet grinInfoFinalHpt grsem
-        hptMap = finalHptMap fin
-        varMap = finalVarMap fin
+  = (initState opts) {gcsPath=fp, gcsGrin=grmod, gcsHptMap=hpt}
+  where hpt = partialHptMap
+              $ panicJust "GrinCompilerDriver.initialState"
+              $ grinInfoGet grinInfoPartialHpt grsem
 
 initState opts
   = GRINCompileState { gcsGrin       = undefined
@@ -273,7 +272,6 @@ initState opts
 %%]
 %%[(8 codegen grin) -1.doCompileGrin
                      , gcsHptMap     = undefined
-                     , gcsVarMap     = undefined
                      , gcsPath       = emptyFPath
                      , gcsOpts       = opts
                      }
@@ -430,7 +428,6 @@ data GRINCompileState = GRINCompileState
     , gcsCil       :: Assembly
 %%]]
     , gcsHptMap    :: HptMap
-    , gcsVarMap    :: VarMap
     , gcsPath      :: FPath
     , gcsOpts      :: EHCOpts
     }
@@ -442,7 +439,6 @@ gcsUpdateLLVM   x s = s { gcsLLVM   = x }
 gcsUpdateCil    x s = s { gcsCil    = x }
 %%]]
 gcsUpdateHptMap x s = s { gcsHptMap = x }
-gcsUpdateVarMap x s = s { gcsVarMap = x }
 
 gcsGetCodeHpt
   = do{ code   <- gets gcsGrin
@@ -489,14 +485,13 @@ transformCodeInline message
        ; modify (gcsUpdateGrin code)
        }
 
-transformCodeNumber :: String -> CompileAction ()
-transformCodeNumber message
-  = do { putMsg VerboseALot message Nothing
-       ; grin   <- gets gcsGrin
-       ; varMap <- gets gcsVarMap
-       ; let code = numberIdents varMap grin
-       ; modify (gcsUpdateVarMap undefined . gcsUpdateGrin code)
-       }
+-- transformCodeNumber :: String -> CompileAction ()
+-- transformCodeNumber message =
+  -- = do { putMsg VerboseALot message Nothing
+  --      ; grin   <- gets gcsGrin
+  --      ; let code = numberIdents varMap grin
+  --      ; modify (gcsUpdateVarMap undefined . gcsUpdateGrin code)
+  --      }
 
 transformCodeUseHpt :: ((GrModule,HptMap)->GrModule) -> String -> CompileAction ()
 transformCodeUseHpt process message 

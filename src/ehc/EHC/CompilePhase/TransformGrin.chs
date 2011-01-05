@@ -8,7 +8,7 @@ Grin transformation
 %%]
 
 -- general imports
-%%[8 import(qualified Data.Map as Map, qualified Data.Set as Set)
+%%[8 import(qualified Data.Map as Map, qualified Data.Set as Set, Data.Monoid (mconcat))
 %%]
 
 %%[8 import({%{EH}EHC.Common})
@@ -21,7 +21,8 @@ Grin transformation
 -- Language syntax: Grin
 %%[(8 codegen grin) import(qualified {%{EH}GrinCode} as Grin)
 %%]
-%%[(8 codegen grin) import({%{EH}GrinCode.GrinInfo})
+-- Grin cross-module information
+%%[(8 codegen grin) import({%{EH}GrinCode.GrinInfo}, {%{EH}GrinCode.CommonCrossModule})
 %%]
 -- Language syntax: Grin bytecode
 %%[(8 codegen grin) import(qualified {%{EH}GrinByteCode} as Bytecode(tagAllowsUnboxedLife))
@@ -85,7 +86,7 @@ Grin transformation
 %%]
 %%[(8 codegen grin) import({%{EH}GrinCode.Trf.CopyPropagation(copyPropagation)})
 %%]
-%%[(8 codegen grin) import({%{EH}GrinCode.Trf.NumberIdents(numberIdents)})
+%%[(8 codegen grin) import({%{EH}GrinCode.Trf.NumberIdents(numberIdents, infoModOffsets)})
 %%]
 
 
@@ -133,8 +134,8 @@ cpFullGrinInfoOp modNm inf op m
        ; imps <- allImports modNm
        ; let (ecu,_,_,fp) = crBaseInfo modNm cr
        ; cpMsg' modNm VerboseALot "Full GRIN optim" (Just m) fp -- TODO maybe a strange msg for non-transformations
-       ; let grin = fromJust $ ecuMbGrin ecu
-       ; let sem  = fromJust $ ecuMbGrinSem ecu
+       ; let grin = panicJust "cpFullGrinInfoOp.grin" $ ecuMbGrin ecu
+       ; let sem  = panicJust "cpFullGrinInfoOp.sem"  $ ecuMbGrinSem ecu
        ; let (res, nws) = op (map (impSem inf cr) imps) grin
        ; let sem' = grinInfoUpd inf nws sem
        ; cpUpdCU modNm (ecuStoreGrinSem sem')
@@ -143,7 +144,7 @@ cpFullGrinInfoOp modNm inf op m
   where
     impSem inf cr nm =
       let (ecu,_,_,_) = crBaseInfo nm cr
-      in  fromJust (ecuMbGrinSem ecu >>= grinInfoGet inf)
+      in  panicJust "cpFullGrinInfoOp.impSem" $ (ecuMbGrinSem ecu >>= grinInfoGet inf)
 
 -- Transformations are specific operations that store their result in the
 -- compiler state.
@@ -155,26 +156,50 @@ cpFullGrinInfoTrf modNm inf trf m
        }
 
 
+cpNumberIdents :: HsName -> EHCompilePhase ()
+cpNumberIdents modNm
+  = do { cr <- get
+       ; let (ecu,_,_,fp) = crBaseInfo modNm cr
+       ; let imps         = ecuImpNmL ecu -- only direct imports
+       ; let offsets      = panicJust "cpNumberIdents.offsets" $ moConcat $ map (sem cr) imps
+       ; cpFullGrinInfoTrf modNm grinInfoNumberIdents (numberIdents offsets) "Numbering identifiers"
+       }
+  where
+    sem cr nm =
+      let (ecu,_,_,_) = crBaseInfo nm cr
+      in  panicJust "cpNumberIdents.sem" $ (ecuMbGrinSem ecu >>= grinInfoGet grinInfoPartialHpt >>= return . partialModOffsets)
+
+
 -- TODO Refactor these functions (this is almost a duplicate of cpFullGrinInfoOp)
 cpPartialHptAnalysis modNm
   = do { cr <- get
        ; let (ecu,_,_,fp) = crBaseInfo modNm cr
        ; cpMsg' modNm VerboseALot "Partial HPT Analysis" Nothing fp
        ; let imps         = ecuImpNmL ecu -- only direct imports
-       ; let grin         = fromJust $ ecuMbGrin ecu
-       ; let sem          = fromJust $ ecuMbGrinSem ecu
-       ; let (iters, partial, final) = heapPointsToAnalysis (fpathBase fp) (map (impSem cr) imps) grin
-       ; let sem' = (if ecuIsMainMod ecu
-                     then grinInfoUpd grinInfoFinalHpt final
-                     else id)
-                    $ grinInfoUpd grinInfoPartialHpt partial sem
+       ; allImps         <- allImports modNm
+       ; let grin         = panicJust "TransformGrin.cpPartialHptAnalysis.grin" $ ecuMbGrin ecu
+       ; let sem          = panicJust "TransformGrin.cpPartialHptAnalysis.sem"  $ ecuMbGrinSem ecu
+       ; let offsets      = infoModOffsets $ panicJust "TransformGrin.cpPartialHptAnalysis.offsets" $ grinInfoGet grinInfoNumberIdents sem
+       ; let (iters, info, partial)
+              = heapPointsToAnalysis
+                (fpathBase fp)
+                offsets
+                (mconcat $ map (impSem cr) imps)
+                (map (allImpSem cr) allImps)
+                grin
+       ; let sem' = grinInfoUpd grinInfoPartialHpt partial
+                    . grinInfoUpd grinInfoPointsToAnalysis info
+                    $ sem
        ; cpUpdCU modNm (ecuStoreGrinSem sem')
        ; cpMsg' modNm VerboseALot ("  done in " ++ show iters ++ " iteration(s)") Nothing fp
        }
   where
+    allImpSem cr nm =
+      let (ecu,_,_,_) = crBaseInfo nm cr
+      in  panicJust "cpPartialHptAnalysis.allImpSem" $ (ecuMbGrinSem ecu >>= grinInfoGet grinInfoPointsToAnalysis)
     impSem cr nm =
       let (ecu,_,_,_) = crBaseInfo nm cr
-      in  fromJust (ecuMbGrinSem ecu >>= grinInfoGet grinInfoPartialHpt)
+      in  panicJust "cpPartialHptAnalysis.impSem" $ (ecuMbGrinSem ecu >>= grinInfoGet grinInfoPartialHpt)
 
 %%]
 
@@ -256,7 +281,8 @@ cpTransformGrin modNm
 
 
 grPerModuleFullProg :: HsName -> [(EHCompilePhase (), String)]
-grPerModuleFullProg modNm = trafos1 ++ invariant 0 ++ grSpecialize modNm ++ [dropUnreach] ++ invariant 1 ++ [(cpPartialHptAnalysis modNm, "Partial HPT")]
+grPerModuleFullProg modNm = trafos1 ++ invariant 0 ++ grSpecialize modNm ++ [dropUnreach] ++ invariant 1
+                            ++ [(cpNumberIdents modNm, "NumberIdents"), (cpPartialHptAnalysis modNm, "PartialHpt")]
   where
     trafos1 =
       [ dropUnreach

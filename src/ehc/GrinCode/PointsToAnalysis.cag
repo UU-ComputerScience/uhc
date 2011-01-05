@@ -24,19 +24,16 @@ WRAPPER GrAGItf
 %%]
 %%[(8 codegen grin) hs import({%{EH}GrinCode.Common}, {%{EH}GrinCode.CommonCrossModule}, {%{EH}GrinCode.SolveEqs})
 %%]
-%%[(8 codegen grin) hs import({%{EH}GrinCode.Trf.NumberIdents})
-%%]
 %%[(8 codegen grin) hs import(Debug.Trace, EH.Util.Utils (panicJust))
 %%]
 %%[(8 codegen grin) hs import(Data.Typeable(Typeable), Data.Generics(Data), {%{EH}Base.Binary}, {%{EH}Base.Serialize}, Control.Monad (ap))
 %%]
 
-%%[(8 codegen grin) hs export(heapPointsToAnalysis, InfoPointsToAnalysis, PartialHptResult)
+%%[(8 codegen grin) hs export(heapPointsToAnalysis, InfoPointsToAnalysis, PartialHptResult(..))
 
 data InfoPointsToAnalysis = InfoPointsToAnalysis
   { infoTagMap :: TagMap
-  , infoNumberIdents :: InfoNumberIdents
-  }
+  } deriving (Show, Data, Typeable)
 
 data PartialHptResult = PartialHptResult
   { partialEquations   :: Equations
@@ -120,6 +117,10 @@ partialParamMap =  -- niet nodig als we weer nummeren zoals vroeger (arg(x) = fu
   }
 -}
 
+instance Serialize InfoPointsToAnalysis where
+    sput inf = sput $ infoTagMap inf
+    sget     = return InfoPointsToAnalysis `ap` sget
+
 instance Binary PartialHptResult where
   put res = do
     put $ partialEquations   res
@@ -138,18 +139,16 @@ type ParamMap var = Map.Map var [var]
 
 mergePHR :: PartialHptResult -> PartialHptResult -> PartialHptResult
 mergePHR p1 p2 = PartialHptResult
-  { partialEquations   = merge union (map . mapEquation) partialEquations
-  , partialLimitations = merge union (map . mapLimitation) partialLimitations
+  { partialEquations   = merge "eqs" union (map . mapEquation) partialEquations
+  , partialLimitations = merge "lims" union (map . mapLimitation) partialLimitations
   , partialModOffsets  = newOffsets
-  -- , partialTagMap      = Map.union (partialTagMap p1) (partialTagMap p2)
-  -- , partialVarMap      = merge Map.union (Map.map) partialVarMap
-  , partialHptMap      = merge (arrayZipWith mappend) (renumberArray newLen) partialHptMap -- ?
+  , partialHptMap      = merge "hpt" (arrayZipWith mappend) (renumberArray newLen) partialHptMap -- ?
   }
-  where merge combine mapOver extract = combine (renum p1) (renum p2)
-          where renum x = panicJust "PointsToAnalysis.mergePHR.renum" (moRenumber (partialModOffsets x) newOffsets) `mapOver` extract x
-        newLen  = moNextOffset newOffsets -- let (x,l,_) = last newOffsets in x + l
+  where merge msg combine mapOver extract = combine (renum p1) (renum p2)
+          where renum x = let f = panicJust ("PointsToAnalysis.mergePHR.renum (" ++ msg ++ ")") (moRenumber (partialModOffsets x) newOffsets)
+                          in  f `mapOver` extract x
+        newLen  = moNextOffset newOffsets
         newOffsets = panicJust "PointsToAnalysis.mergePHR.newOffsets" (partialModOffsets p1 `moMerge` partialModOffsets p2)
-
 
 -- arrayZipWith :: Array 
 arrayZipWith f a1 a2 = Array.accum f a1 (Array.assocs a2)
@@ -199,58 +198,43 @@ type TagMap = Map.Map HsName [GrTag]
 --   = panicJust ("PointsToAnalysis.forceLookup: no entry for " ++ show a)
 --     $ Map.lookup a mp
 
-grModName :: GrModule -> HsName
-grModName (GrModule_Mod nm _ _ _) = nm
-
 {-
 Main module entry point:
 -}
 
-heapPointsToAnalysis :: String -> [InfoPointsToAnalysis] -> [PartialHptResult] -> GrModule -> (Int, InfoPointsToAnalysis, PartialHptResult, GrModule)
-heapPointsToAnalysis modNmStr allImps directImps grinNamed
+heapPointsToAnalysis :: String -> ModOffsets -> PartialHptResult -> [InfoPointsToAnalysis] -> GrModule -> (Int, InfoPointsToAnalysis, PartialHptResult)
+heapPointsToAnalysis fname offsets importPartial allImps grin
   = let
-        modNm = grModName grinNamed
-
-        importPartial = mconcat directImps
-        offsets       = partialModOffsets importPartial
-
-        -- number grin code
-        (grinNumbered, newNIInfo, nextNINr) = numberIdents offsets (map infoNumberIdents allImps) grinNamed
-
-        startPartial = importPartial `mappend` PartialHptResult
-                         { partialEquations   = equations_Syn_GrAGItf syn
-                         , partialLimitations = limitations_Syn_GrAGItf syn
-                         , partialModOffsets  = panicJust "PointsToAnalysis.heapPointsToAnalysis.startPartial" $
-                                                  moNewEntry moEmpty modNm (nextNINr - moNextOffset offsets)
-                         , partialHptMap      = emptyHptMap
-                         }
-        
         -- collect stuff
         inh = Inh_GrAGItf
           { startTagMap_Inh_GrAGItf   = mconcat $ map infoTagMap $ allImps
           }
-        syn = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grinNumbered)) inh
+        syn = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grin)) inh
 
+        startPartial = importPartial `mappend` PartialHptResult
+                         { partialEquations   = equations_Syn_GrAGItf syn
+                         , partialLimitations = limitations_Syn_GrAGItf syn
+                         , partialModOffsets  = offsets
+                         , partialHptMap      = emptyHptMap
+                         }
+        
         -- get synthesized attributes
         -- equations   = equations_Syn_GrAGItf syn
         -- limitations = limitations_Syn_GrAGItf syn
-        lenEnv      = maxVar_Syn_GrAGItf syn + 1
+        lenEnv      = moNextOffset offsets  --  maxVar_Syn_GrAGItf syn + 1
         useCountMap = Map.filter (>1) (useCountMap_Syn_GrAGItf syn)
         multiplyUsed = map fst (Map.toList useCountMap)
         
         -- solve the equations
-        (iters, hptMapSolved) = solveEquations modNmStr lenEnv multiplyUsed
+        (iters, hptMapSolved) = solveEquations fname lenEnv multiplyUsed
                                   (partialEquations   startPartial)
                                   (partialLimitations startPartial)
                                   (partialHptMap      startPartial)
 
-        infoFinal = InfoPointsToAnalysis
-                      { infoTagMap = finalTagMap_Syn_GrAGItf syn
-                      , infoNumberIdents = newNIInfo
-                      }
+        infoFinal = InfoPointsToAnalysis (finalTagMap_Syn_GrAGItf syn)
         endPartial = startPartial { partialHptMap = hptMapSolved }
         
-    in  (iters, infoFinal, endPartial, grinNumbered)
+    in  (iters, infoFinal, endPartial)
 
 
 -- partialHPTAnalysis :: String -> [PartialHptResult] -> GrModule -> (Int, PartialHptResult)
