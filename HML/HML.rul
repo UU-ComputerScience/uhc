@@ -499,7 +499,7 @@ datasem CaseAlts monad IO
     
     tl.exp = lhs.exp
     tl.env = lhs.env
-    tl.pre = let e = hd.pre `merge` lhs.pre in trace ("TL in: " ++ pp e) e
+    tl.pre = let e = hd.pre `merge` lhs.pre in trace ("TL in: " ++ pp hd.pre) e
     tl.frs = hd.frs
         
     loc.ty_tl = trace ("CaseAlts tl: " ++ pp tl.res ++ " ** " ++ pp tl.sub) tl.res
@@ -598,17 +598,17 @@ datasem RecPatExpr monad IO
     patExpr.env = recPatExpr.env
     patExpr.frs = recPatExpr.frs
     
-    (loc.q1, loc.res)
+    (loc.q1, loc.res, loc.frs)
             = let e = recPatExpr.res
-                  t = return patExpr.res
-              in case (e, t) of
-                   (Nothing, _) -> error $ "Cannot infer the type of tuple element '" ++ pp loc.mbNm ++ "'"
-                   (_, Nothing) -> error $ "Cannot infer the type of the expression '" ++ pp loc.patExpr ++ "'"
-                   (Just rty,Just ty) -> second (\ty'->RowTyExpr_Ext rty loc.mbNm ty') (deep_explode' patExpr.pre ty) 
+                  (ty, frs, _) = renameVars patExpr.frs patExpr.res
+              in case e of
+                   Nothing  -> error $ "Cannot infer the type of tuple element '" ++ pp loc.mbNm ++ "'"
+                   Just rty -> let (x,y) = second (\ty'->RowTyExpr_Ext rty loc.mbNm ty') (deep_explode' patExpr.pre ty) 
+                               in (x,y, frs)
                    
     lhs.sub = recPatExpr.sub `munion` patExpr.sub
     lhs.res = return loc.res
-    lhs.frs = patExpr.frs
+    lhs.frs = loc.frs
     lhs.pre = loc.q1
     lhs.env = patExpr.env
     
@@ -1019,9 +1019,12 @@ datasem Expr monad IO
        alts.frs = expr.frs
        alts.pre = trace ("Case Expr - " ++ pp loc.expr ++ ":" ++ pp expr.res) expr.pre
        
-       lhs.res = return $ let e = ptype $ appAll alts.sub $ body alts.res in trace ("Case done:" ++ pp e) e
+       (loc.q1, loc.q2) = split (alts.pre, domain lhs.pre)
+       (loc.q3, loc.ex) = explode' loc.q2 (appAll alts.sub $ body alts.res)
+       
+       lhs.res = return $ ptype $ desugar $ TyScheme_Sugar loc.q3 (TyScheme_SystemF loc.ex)
        lhs.sub = trace ("Case alts: " ++ pp alts.sub) alts.sub
-       lhs.pre = alts.pre
+       lhs.pre = loc.q1
        lhs.frs = alts.frs
     clause CaseAltFail
     clause DataFields
@@ -1069,16 +1072,27 @@ datasem RecExpr monad IO
        expr.env = lhs.env
        expr.frs = recExpr.frs
        
-       (loc.q1, loc.res)
+       -- (loc.q1, loc.res)
+               -- = let e = recExpr.res
+                     -- t = expr.res
+                 -- in case (e, t) of
+                      -- (Nothing, _) -> error $ "Cannot infer the type of tuple element '" ++ pp loc.mbNm ++ "'"
+                      -- (_, Nothing) -> error $ "Cannot infer the type of the expression '" ++ pp loc.expr ++ "'"
+                      -- (Just rty,Just ty) -> second (\ty'->RowTyExpr_Ext rty loc.mbNm ty') (deep_explode' expr.pre ty)
+                      
+       (loc.q1, loc.res, loc.frs)
                = let e = recExpr.res
                      t = expr.res
                  in case (e, t) of
                       (Nothing, _) -> error $ "Cannot infer the type of tuple element '" ++ pp loc.mbNm ++ "'"
                       (_, Nothing) -> error $ "Cannot infer the type of the expression '" ++ pp loc.expr ++ "'"
-                      (Just rty,Just ty) -> second (\ty'->RowTyExpr_Ext rty loc.mbNm ty') (deep_explode' expr.pre ty)
+                      (Just rty,Just ty) -> let (tyr, frs, _) = renameVars expr.frs ty
+                                                (x,y) = second (\ty'->RowTyExpr_Ext rty loc.mbNm ty') (deep_explode' expr.pre tyr)
+                                            in (x,y,frs)
+                      
        lhs.sub = recExpr.sub `munion` expr.sub
        lhs.res = return loc.res
-       lhs.frs = expr.frs
+       lhs.frs = loc.frs
        lhs.pre = loc.q1
     clause Empty
        lhs.res = return RowTyExpr_Empty
