@@ -1,11 +1,7 @@
 %%[(8 codegen grin) module {%{EH}GrinCode.CommonCrossModule}
 %%]
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Cross-module numbering                  %%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8 codegen grin) import( {%{EH}GrinCode.Common}, {%{EH}Base.HsName} )
+%%[(8 codegen grin) import( {%{EH}GrinCode}, {%{EH}GrinCode.Common}, {%{EH}Base.HsName} )
 %%]
 %%[(8 codegen grin) import( Data.List(sortBy, find, sort, group), Data.Ord(comparing), Control.Monad(foldM) )
 %%]
@@ -13,6 +9,12 @@
 %%]
 %%[(8 codegen grin) hs import(Data.Typeable(Typeable), Data.Generics(Data), Data.Binary, {%{EH}Base.Serialize}, Control.Monad (ap))
 %%]
+%%[(20 codegen grin) import( {%{EH}GrinCode.Trf.RenumberIdents(renumberIdents)} )
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Cross-module numbering                  %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen grin) export(ModEntry(..), ModOffsets, moEntries, moNextOffset, moEmpty, moNewEntry, moAddEntry, moMerge, moConcat, moLookupMod, moLookupVar, moRenumber)
 
@@ -140,5 +142,17 @@ moCheck args mo =
 moCheck _ mo = mo
 %%]]
 
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Merging with renumbering                %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(20 codegen grin) hs export(grModMergeRenumber)
+grModMergeRenumber :: ModOffsets -> [(GrModule, ModOffsets)] -> GrModule
+grModMergeRenumber oTo = grModMerge . map renum
+  where renum (mod, oFrom) =
+          let f = panicJust "grModMergeRenumber" $ moRenumber oFrom oTo
+          in  renumberIdents f mod
 %%]
 

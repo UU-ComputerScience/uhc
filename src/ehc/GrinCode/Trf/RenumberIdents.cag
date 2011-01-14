@@ -1,0 +1,166 @@
+%%[doesWhat doclatex
+
+Renumbers all identifiers in the code, given a function from Int to Int. It is
+a simplified version of NumberIdents: it transforms the code in the same
+places, but it doesn't involve the complexities of handing out unique numbers.
+
+%%]
+
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.RenumberIdents}
+%%]
+
+%%[(8 codegen grin) hs import(Data.Array.IArray, qualified Data.Set as Set, qualified Data.Map as Map, Data.Maybe)
+%%]
+%%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{EH}GrinCode})
+%%]
+%%[(8 codegen grin) hs import(EH.Util.Utils (panicJust))
+%%]
+%%[(8 codegen grin) hs import({%{EH}GrinCode.Common})
+%%]
+
+%%[(8 codegen grin) ag import({GrinCode/AbsSyn})
+%%]
+
+
+%%[(8 codegen grin).wrapper
+WRAPPER GrAGItf
+%%]
+
+%%[(8 codegen grin) hs export(renumberIdents)
+
+renumberIdents :: (Int -> Int) -> GrModule -> GrModule
+renumberIdents renum code
+  = let rename   = modNr renum
+        inh      = Inh_GrAGItf rename
+        syn      = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf code)) inh
+    in  grTrf_Syn_GrAGItf syn
+
+%%]
+
+
+%%[(8 codegen grin)
+ATTR GrAGItf [ | | grTrf: GrModule  ]
+ATTR AllNT   [ | | grTrf: SELF      ]
+ATTR GrAGItf AllNT [ rename: {HsName -> HsName} | | ]
+
+%%]
+
+
+
+%%[(8 codegen grin)
+
+ATTR GrVarL GrVar  [ | | names USE {++} {[]} : {[HsName]} ]
+SEM GrVar
+  | Var  lhs. names = [ @nm ]
+
+
+SEM GrGlobal
+  | Global     loc   .  newName  : HsName
+               loc   .  newName  = @lhs.rename @nm
+
+SEM GrPatAlt
+  | Node       loc  .   newNames = map @lhs.rename @fldL
+  			   -- loc  .   newNames :  {[HsName]}
+
+SEM GrPatLam
+  | VarNode    loc  .  newNames  = map @lhs.rename @fldL.names
+  			   -- loc  .  newNames  :  {[HsName]}
+
+  | Var
+    BasicNode
+    EnumNode
+    OpaqueNode
+    PtrNode
+    BasicAnnot
+    EnumAnnot
+    OpaqueAnnot
+    PtrAnnot   loc  .  newName  : HsName
+               loc  .  newName  = @lhs.rename @nm
+               
+
+SEM GrExpr
+  | Catch      loc      .  newName  : HsName
+               loc      .  newName  = @lhs.rename @arg
+
+
+SEM GrBind
+  | Bind  loc   .  newNames         = map @lhs.rename @argNmL
+          -- loc   .  newNames         :  {[HsName]}
+          loc   .  newName          =  @lhs.rename @nm
+
+%%]
+
+
+
+
+replacing every identifier with a number
+
+%%[(8 codegen grin)
+SEM GrGlobal
+  | Global      lhs  .  grTrf  =  GrGlobal_Global @newName @val.grTrf
+
+SEM GrPatAlt
+  | Node        lhs  .  grTrf  =  GrPatAlt_Node @tag.grTrf @newNames
+  
+SEM GrPatLam
+  | Var         lhs  .  grTrf  =  GrPatLam_Var  @newName
+  -- | VarNode     lhs  .  grTrf  =  GrPatLam_VarNode @fldL.grTrf
+  | BasicNode   lhs  .  grTrf  =  GrPatLam_BasicNode @annot @newName
+  | EnumNode    lhs  .  grTrf  =  GrPatLam_EnumNode @newName
+  | OpaqueNode  lhs  .  grTrf  =  GrPatLam_OpaqueNode @newName
+  | PtrNode     lhs  .  grTrf  =  GrPatLam_PtrNode @newName
+  | BasicAnnot  lhs  .  grTrf  =  GrPatLam_BasicAnnot @annot @newName
+  | EnumAnnot   lhs  .  grTrf  =  GrPatLam_EnumAnnot @tycon @newName
+  | OpaqueAnnot lhs  .  grTrf  =  GrPatLam_OpaqueAnnot @newName
+  | PtrAnnot    lhs  .  grTrf  =  GrPatLam_PtrAnnot @tycon @newName
+
+SEM GrBind
+  | Bind        lhs  .  grTrf  =  GrBind_Bind (@lhs.rename @nm) @annot @newNames @expr.grTrf
+
+SEM GrVal
+  | Var         lhs  .  grTrf  =  GrVal_Var                  (@lhs.rename @nm)
+  | BasicNode   lhs  .  grTrf  =  GrVal_BasicNode @tag.grTrf (@lhs.rename @nm)
+  | EnumNode    lhs  .  grTrf  =  GrVal_EnumNode             (@lhs.rename @nm)
+  | OpaqueNode  lhs  .  grTrf  =  GrVal_OpaqueNode           (@lhs.rename @nm)
+  | PtrNode     lhs  .  grTrf  =  GrVal_PtrNode              (@lhs.rename @nm)
+
+SEM GrVar
+  | Var         lhs  .  grTrf  =  GrVar_Var (@lhs.rename @nm)
+
+SEM GrExpr
+  | App
+    Eval
+    FetchNode
+    FetchField
+    Throw
+    UpdateUnit  loc  .  newName  =  @lhs.rename @nm
+  | Call        loc  .  newName  =  @lhs.rename @nm
+  | App         lhs  .  grTrf    =  GrExpr_App        @newName @argL.grTrf
+  | Eval        lhs  .  grTrf    =  GrExpr_Eval       @newName
+  | Call        lhs  .  grTrf    =  GrExpr_Call       @newName @argL.grTrf
+  | FetchNode   lhs  .  grTrf    =  GrExpr_FetchNode  @newName
+  | FetchField  lhs  .  grTrf    =  GrExpr_FetchField @newName @offset @mbTag
+  | UpdateUnit  lhs  .  grTrf    =  GrExpr_UpdateUnit @newName @val.grTrf
+  | FetchUpdate lhs  .  grTrf    =  GrExpr_FetchUpdate (@lhs.rename @src) (@lhs.rename @dst)
+  | Throw       lhs  .  grTrf    =  GrExpr_Throw      @newName
+  | Catch       lhs  .  grTrf    =  GrExpr_Catch      @body.grTrf @newName @handler.grTrf
+%%[[8
+  | FFI         lhs  .  grTrf    =  GrExpr_FFI  @nm @argL.grTrf
+%%][94
+  | FFI         lhs  .  grTrf    =  GrExpr_FFI  @callconv @impEnt @argL.grTrf
+%%][99
+  | FFI         lhs  .  grTrf    =  GrExpr_FFI  @callconv @impEnt @ffiAnnot @argL.grTrf
+%%]]
+
+SEM GrTag
+  | Con         lhs  .  grTrf    =  GrTag_Con @grtgAnn @int @nm
+  | Fun         lhs  .  grTrf    =  GrTag_Fun               (@lhs.rename @nm)
+  | PApp        lhs  .  grTrf    =  GrTag_PApp @needs       (@lhs.rename @nm)
+  | App         lhs  .  grTrf    =  GrTag_App               (@lhs.rename @nm)
+
+%%]

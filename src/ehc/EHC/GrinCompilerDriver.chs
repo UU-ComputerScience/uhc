@@ -31,6 +31,8 @@
 %%]
 %%[(8 codegen grin) import({%{EH}GrinCode.Trf.BuildAppBindings(buildAppBindings)})
 %%]
+%%[(8 codegen grin) import({%{EH}GrinCode.Trf.BuildMainBinding(buildMainBinding)})
+%%]
 %%[(8 codegen grin) import({%{EH}GrinCode.Trf.GlobalConstants(globalConstants)})
 %%]
 %%[(8 codegen grin) import({%{EH}GrinCode.Trf.Inline(grInline)})
@@ -149,7 +151,7 @@ doCompileGrin input opts
         do 
          { options <- gets gcsOpts
          ; when (either (const True) (const False) input) caParseGrin  ; caWriteGrin "-110-parsed"
-         ; transformCode         (dropUnreachableBindings False) 
+         ; transformCode         (dropUnreachableBindings True) 
                                              "DropUnreachableBindings" ; caWriteGrin "-111-reachable"
 -- %%[[9                                             
 -- 		 ; transformCode         mergeInstance      "MergeInstance"    ; caWriteGrin "-112-instanceMerged"
@@ -164,6 +166,8 @@ doCompileGrin input opts
 --          ; transformCode         constInt           "ConstInt"         ; caWriteGrin "-116-constint"
 -- %%]]
 --          ; transformCode         buildAppBindings   "BuildAppBindings" ; caWriteGrin "-117-appsbound"
+         ; transformCode         buildMainBinding
+                                             "BuildMainBinding" ; caWriteGrin "-117-mainFullProg"
 --          ; transformCode         globalConstants    "GlobalConstants"  ; caWriteGrin "-118-globconst"
 --          ; transformCodeInline                      "Inline" 
 --          ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-119-inlined"

@@ -1,0 +1,39 @@
+%%[doesWhat doclatex
+
+Adds a program entry binding that calls the actual main function.
+
+%%]
+
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.BuildMainBinding} import(qualified Data.Map as Map, qualified Data.Set as Set)
+%%]
+
+%%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}Base.Builtin},{%{EH}GrinCode.Common}, {%{EH}GrinCode}) export(buildMainBinding)
+
+buildMainBinding :: GrModule -> GrModule
+buildMainBinding (GrModule_Mod modNm globalL bindL tagsMp)
+  = GrModule_Mod modNm globalL (mainFullProg ++ bindL) tagsMp
+
+                                      
+%%[[8
+mainFullProg = []
+%%][99
+mainFullProg = let worldNode = GrVal_Node GrTag_Hole []   
+                   worldName = hsnFromString "world"
+                   ioName    = hsnFromString "theio"
+               in  [ GrBind_Bind hsnMainFullProg 
+                                 GrBindAnnNormal [] (GrExpr_Seq  (GrExpr_Store worldNode)
+                                                                 (GrPatLam_Var worldName)
+                                                                 (GrExpr_Seq (GrExpr_Eval hsnMain)
+                                                                             (GrPatLam_Var ioName)
+                                                                             (GrExpr_App ioName [GrVal_Var worldName])
+                                                                 )
+                                                    )
+                   ]
+%%]]
+                                      
+%%]

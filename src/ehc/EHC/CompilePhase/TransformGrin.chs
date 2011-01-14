@@ -163,11 +163,16 @@ cpNumberIdents modNm
        ; let imps         = ecuImpNmL ecu -- only direct imports
        ; let offsets      = panicJust "cpNumberIdents.offsets" $ moConcat $ map (sem cr) imps
        ; cpFullGrinInfoTrf modNm grinInfoNumberIdents (numberIdents offsets) "Numbering identifiers"
+       ; cr' <- get
+       ; let (ecu',_,_,_) = crBaseInfo modNm cr'
+       ; let nsem = panicJust "cpNumberIdents.nsem" $ ecuMbGrinSem ecu'
+       ; let noffsets = infoModOffsets $ panicJust "cpNumberIdents.noffsets" $ grinInfoGet grinInfoNumberIdents nsem
+       ; cpUpdCU modNm (ecuStoreGrinModOffsets noffsets)
        }
   where
     sem cr nm =
       let (ecu,_,_,_) = crBaseInfo nm cr
-      in  panicJust "cpNumberIdents.sem" $ (ecuMbGrinSem ecu >>= grinInfoGet grinInfoPartialHpt >>= return . partialModOffsets)
+      in  panicJust "cpNumberIdents.sem" $ ecuMbGrinModOffsets ecu
 
 
 -- TODO Refactor these functions (this is almost a duplicate of cpFullGrinInfoOp)
@@ -179,7 +184,7 @@ cpPartialHptAnalysis modNm
        ; allImps         <- allImports modNm
        ; let grin         = panicJust "TransformGrin.cpPartialHptAnalysis.grin" $ ecuMbGrin ecu
        ; let sem          = panicJust "TransformGrin.cpPartialHptAnalysis.sem"  $ ecuMbGrinSem ecu
-       ; let offsets      = infoModOffsets $ panicJust "TransformGrin.cpPartialHptAnalysis.offsets" $ grinInfoGet grinInfoNumberIdents sem
+       ; let offsets      = panicJust "TransformGrin.cpPartialHptAnalysis.offsets" $ ecuMbGrinModOffsets ecu
        ; let (iters, info, partial)
               = heapPointsToAnalysis
                 (fpathBase fp)

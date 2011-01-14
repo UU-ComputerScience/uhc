@@ -25,6 +25,8 @@ An EHC compile unit maintains info for one unit of compilation, a Haskell (HS) m
 %%]
 %%[(8 codegen grin) import(qualified {%{EH}GrinCode.GrinInfo} as GrinSem)
 %%]
+%%[(20 codegen grin) import({%{EH}GrinCode.CommonCrossModule (ModOffsets)})
+%%]
 %%[(8 jazy) hs import(qualified {%{EH}JVMClass} as Jvm)
 %%]
 -- Language semantics: HS, EH
@@ -141,6 +143,9 @@ data EHCompileUnit
       , ecuMbBytecode        :: !(Maybe Bytecode.Module)
       , ecuMbBytecodeSem     :: !(Maybe PP_Doc)
 %%]]
+%%[[(20 grin)
+      , ecuMbGrinModOffsets  :: !(Maybe ModOffsets)
+%%]]
 %%[[(8 jazy)
       , ecuMbJVMClassL       :: !(Maybe (HsName,[Jvm.Class]))
 %%]]
@@ -223,6 +228,9 @@ emptyECU
       , ecuMbGrinSem         = Nothing
       , ecuMbBytecode        = Nothing
       , ecuMbBytecodeSem     = Nothing
+%%]]
+%%[[(20 grin)
+      , ecuMbGrinModOffsets  = Nothing
 %%]]
 %%[[(8 jazy)
       , ecuMbJVMClassL       = Nothing
@@ -422,6 +430,11 @@ ecuStoreBytecode x ecu | forceEval x `seq` True = ecu { ecuMbBytecode = Just x }
 
 ecuStoreBytecodeSem :: EcuUpdater PP_Doc
 ecuStoreBytecodeSem x ecu = ecu { ecuMbBytecodeSem = Just x }
+%%]
+
+%%[(20 grin) export(ecuStoreGrinModOffsets)
+ecuStoreGrinModOffsets :: EcuUpdater ModOffsets
+ecuStoreGrinModOffsets x ecu = ecu { ecuMbGrinModOffsets = Just x }
 %%]
 
 %%[20 export(ecuStoreHSDeclImpL,ecuSetNeedsCompile,ecuStoreHIUsedImpL,ecuStoreHIInfoTime,ecuStoreHSTime,ecuStoreHSSemMod,ecuStoreHIDeclImpL,ecuStoreMod,ecuSetIsTopMod,ecuSetHasMain,ecuStoreOptim,ecuStoreHIInfo,ecuStorePrevHIInfo)

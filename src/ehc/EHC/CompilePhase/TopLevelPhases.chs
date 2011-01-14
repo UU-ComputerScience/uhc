@@ -69,7 +69,7 @@ level 2..6 : with prefix 'cpEhc'
 %%[(8 codegen) import(qualified {%{EH}TyCore.Full2} as C)
 %%]
 -- Language syntax: Grin
-%%[(20 codegen grin) import(qualified {%{EH}GrinCode} as Grin(grModMerge))
+%%[(20 codegen grin) import(qualified {%{EH}GrinCode.CommonCrossModule} as Grin(grModMergeRenumber))
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -178,10 +178,12 @@ cpEhcFullProgPostModulePhases opts modNmL (impModNmL,mainModNm)
            ])
   where mergeIntoOneBigGrin
           = do { cr <- get
-               ; cpUpdCU mainModNm (ecuStoreGrin (Grin.grModMerge [ panicJust "cpEhcFullProgPostModulePhases.mergeIntoOneBigGrin" $ ecuMbGrin $ crCU m cr
-                                                                  | m <- modNmL
-                                                                  ]
-                                   )             )
+               ; let mTo = panicJust "cpEhcFullProgPostModulePhases.mTo" $ ecuMbGrinModOffsets $ crCU mainModNm cr
+               ; cpUpdCU mainModNm (ecuStoreGrin (Grin.grModMergeRenumber mTo
+                   [ ( panicJust "cpEhcFullProgPostModulePhases.mbGrin" $ ecuMbGrin $ crCU m cr
+                     , panicJust "cpEhcFullProgPostModulePhases.mbGrinModOffsets" $ ecuMbGrinModOffsets $ crCU m cr
+                     ) | m <- modNmL
+                   ] ))
                }
 
 %%]
