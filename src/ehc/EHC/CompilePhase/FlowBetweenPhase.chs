@@ -255,6 +255,7 @@ cpFlowHISem modNm
                                               })
 %%[[(20 codegen grin)
                      ; cpUpdCU modNm $ ecuStoreGrinSem $ HI.hiiGrinInfo hiInfo
+                     ; cpUpdCU modNm $ ecuStoreGrinModOffsets $ HI.hiiGrinModOffsets hiInfo
 %%]]
                      })
          }
@@ -294,11 +295,13 @@ cpFlowGrinSem :: HsName -> EHCompilePhase ()
 cpFlowGrinSem modNm
   =  do  {  cr <- get
          ;  let  (ecu,crsi,opts,_) = crBaseInfo modNm cr
-                 grinSem  = panicJust "cpFlowGrinSem.grinSem" $ ecuMbGrinSem ecu
+                 grinI    = panicJust "cpFlowGrinSem.grinI"  $ ecuMbGrinSem ecu
+                 grinMO   = panicJust "cpFlowGrinSem.grinMO" $ ecuMbGrinModOffsets ecu
                  hii      = ecuHIInfo ecu
                  hii'     = hii
 %%[[(20 codegen grin)
-                              { HI.hiiGrinInfo      = grinSem
+                              { HI.hiiGrinInfo       = grinI
+                              , HI.hiiGrinModOffsets = grinMO
                               }
 %%]]
          ;  when (isJust (ecuMbGrinSem ecu))

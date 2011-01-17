@@ -71,6 +71,8 @@ cpCleanupGrin :: HsName -> EHCompilePhase ()
 cpCleanupGrin modNm
   = cpUpdCU modNm
       (\e -> e { ecuMbGrin            = Nothing
+               , ecuMbGrinInfo        = Nothing
+               , ecuMbGrinModOffsets  = Nothing
                }
       )
 
