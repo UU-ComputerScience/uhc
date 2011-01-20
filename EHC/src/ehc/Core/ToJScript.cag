@@ -280,7 +280,7 @@ ATTR CExpr [ | | jsArgFunL: {[J.Expr]} ]
 
 SEM CExpr
   | App         loc         .   jsArgFunL   =   @argUnpackWrap @arg.js : @func.jsArgFunL
-  | * - App     lhs         .   jsArgFunL   =   [@js]
+  | * - App Ann lhs         .   jsArgFunL   =   [@js]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
