@@ -1,4 +1,4 @@
-\documentclass[11pt, twoside, titlepage, openright, a4paper]{book}
+\documentclass[twoside, titlepage, openright, a4paper]{book}
 \usepackage{fancyvrb,url}
 \usepackage[english]{babel}
 \usepackage[usenames]{color}
@@ -15,9 +15,11 @@
 \usepackage{hyperref}
 \usepackage{bookman}
 \usepackage{makeidx}
-\usepackage[xindy, toc]{glossaries}	
+\usepackage[xindy, toc]{glossaries}
+\usepackage{sectsty}
 
 \newcommand{\HRule}{\rule{\linewidth}{0.5mm}}
+\allsectionsfont{\usefont{T1}{cmr}{b}{n}\selectfont}
 
 \makeindex
 \makeglossaries
@@ -25,15 +27,32 @@
 \begin{document}
 \input{./titlepage}
 
-\newpage
 \input{./abstract}
-\newpage
-\newpage
+
 \input{./acknowledgments}
 \newpage
-\newpage
+\thispagestyle{headings}
+\mbox{}
 
 \tableofcontents
+
+\input{./Introduction}
+
+\input{./Background}
+
+\input{./UHC}
+
+\input{./EssentialHaskell}
+
+\input{./AttributeGrammar}
+
+\input{./HML}
+
+\input{./Implementation}
+
+\input{./SemiHaskell}
+
+\input{./Conclusions}
 
 \printglossaries
 \printindex
