@@ -1,7 +1,220 @@
 \chapter{Essential Haskell}
-
+The abstract language used by the Utrecht Haskell Compiler (UHC) to represent desugared Haskell is called Essential Haskell or EH for short. EH at it's core resembles $\lambda-calculus$ but with added \textbf{Let} bindings. EH represents a Haskell file but with all the syntactical sugar of the HS file removed, leaving only a core set of basic operations that need to be supported.
 \section{Syntax}
+UHC Consists of different smaller compilers (often referred to as Variants). For this thesis the variant we will be using is called Variant 8. In terms of \emph{Haskell98} all the needed constructs are there except for \emph{type classes}. This variant is simple enough to be implemented in the alloted time, but complete enough that we can implement a large subset of Haskell functionality using it. Including higher-rank functions.
+
+\subsection{Datatypes}
+ The most important constructs of EH8 are given below in terms of \emph{Ruler-Core} datatypes.
+
+\subsubsection{Type expression}
+
+\begin{code}
+data TyQu
+  con TyForall
+    
+data TyExpr
+  con Con
+    nm        :: HsName
+  con App
+    func      :: TyExpr
+    arg       :: TyExpr
+  con AppTop
+    tyExpr    :: TyExpr
+  con Parens
+    tyExpr    :: TyExpr
+  con Ann
+    ann       :: TyExprAnn
+    tyExpr    :: TyExpr
+  con Wild
+  con Mono
+  con Var
+    nm        :: HsName
+  con VarWild
+    mm        :: HsName
+  con Quant
+    qu        :: TyQu
+    tyVar     :: HsName
+    tyExpr    :: TyExpr
+  con Forall
+    qu        :: TyQu
+    tyVar     :: [HsName]
+    tyExpr    :: TyExpr    
+  con Row
+    rowTyExpr :: RowTyExpr
+    
+data TyVar
+  con Var
+    nm      :: HsName
+    
+type TyVars : [TyVar]
+\end{code}
+
+Most of these are pretty standard with the exception of \emph{Row} and \emph{AppTop}. The \emph{Row} constructor is used to represent the type of a Tuple, this will be explained later in Chapter ??. 
+The \emph{AppTop} constructor is used purely for pretty printing purposes, in particular when pretty printing Constructor applications. The $(\rightarrow)$ constructor is not treated specially in this version of EH, which means $\alpha \rightarrow \beta$ is encoded as $((\rightarrow \alpha) \beta)$. The \emph{App} found under an \emph{AppTop} is pretty printed differently to show the expected type above.
+
+The \emph{Forall} constructor is not part of the defined abstract syntax of the defined EH8 but is there to facilitate pattern matching. It's syntactical sugar turning expressions such as $\forall a. \forall b. a \rightarrow b$ into $\forall a b. a \rightarrow b$. This makes it easier to in one pattern matching get all the variables the bounded variables.
+
+\subsubsection{Expressions \& Patterns \& Declarations}
+
+\begin{code}
+data Expr
+  con IConst
+    int           :: Int
+  con CConst
+    char          :: Char
+  con Con
+    nm            :: HsName
+  con Var
+    nm            :: HsName
+  con App
+    func          :  Expr
+    arg           :  Expr
+  con Let
+    isStrict      :: Bool
+    decls         :  Decls
+    body          :  Expr
+  con Lam
+    arg           :: PatExpr
+    body          :  Expr
+  con AppTop
+    expr          :  Expr
+  con Parens
+    expr          :  Expr
+  con TypeAs
+    tyExpr        :: TyExpr
+    expr          :  Expr
+  con Ann
+    ann           :: ExprAnn
+    expr          :  Expr
+  con AppImpred
+    func          :  Expr
+    arg           :  Expr
+  con SConst 
+    str           :: String
+  con Case
+    expr          :  Expr
+    alts          :: CaseAlts
+    mbCaseIds     :: (Maybe UIDS)
+    caseFailS     :: UIDS
+    isTupOfArg    :: Bool
+  con DataFields
+    dataFieldExpr :: DataFieldExpr
+  con Rec
+    recExpr       :: RecExpr
+  con Sel
+    expr          :  Expr
+    lbl           :: HsName
+  con Undefined
+  con CaseAltFail 
+    caseId        :: UID
+    
+data PatExpr
+  con IConst
+    int              :: Int
+  con CConst
+    char             :: Char
+  con Con
+    nm               :: HsName
+  con Var
+    nm               :: HsName
+  con VarAs
+    nm               :: HsName
+    patExpr          :: PatExpr
+  con App
+    func             :: PatExpr
+    arg              :: PatExpr
+  con AppTop
+    patExpr          :: PatExpr
+  con Parens
+    patExpr          :: PatExpr
+  con Ann
+    ann              :: PatExprAnn
+    patExpr          :: PatExpr
+  con TypeAs
+    tyExpr           :: TyExpr
+    patExpr          :: PatExpr
+  con SConst
+    str              :: String
+  con Rec
+    recPatExpr       :: RecPatExpr
+  con DataFields
+    dataFieldPatExpr :: DataFieldPatExpr
+  con Irrefutable
+    patExpr          :: PatExpr
+
+data DataConstr
+  con Constr
+    conNm      :: HsName
+    fields     :  DataFields
+    
+type DataConstrs : [DataConstr]
+
+data DataField
+  con Field
+    mbLabels     :: (Maybe [HsName])
+    tyExpr       :: TyExpr
+    
+type DataFields : [DataField]
+
+data Decl
+  con TySig
+    nm         :: HsName
+    tyExpr     :: TyExpr
+  con Val
+    patExpr    :: PatExpr
+    expr       :  Expr
+  con Data
+    isNewType  :: Bool
+    tyNm       :: HsName
+    tyVars     :: TyVars
+    constrs    :: DataConstrs
+  con KiSig
+    nm         :: HsName
+    kiExpr     :: KiExpr
+  con FFI
+    callconv   :: FFIWay
+    safety     :: String
+    impEnt     :: String
+    nm         :: HsName
+    tyExpr     :: TyExpr
+  
+type TyExprs : [TyExpr]
+type Decls   : [Decl]
+\end{code}
+
+The attentive reader would notice that we have defined datatypes but have not defined any structures for \emph{case} statements. This was done intentionally as \emph{case} statements are an extension of the base algorithm, which will be covered in chapter ??. This version of EH also only has build-in support for the \emph{Int} and \emph{Char} datatypes.
 
 \section{Ordering}
+Whenever a Haskell file is desugared into a EH file, some reordering is done. In the EH file function,data declarations and type synonyms are always displayed before any function or other entities that uses them. Or alternatively, for every entity (where entity can be anything that refers to another type/function) a node is created and a dependency graph is made, which is then \emph{Topologically sorted}, that is, for every pair of edge \emph{uv} (\emph{u} is used in \emph{v}) \emph{u} comes before \emph{v}. It's worth noting that datatype and type synonym declarations are always put at the top of the file, before the function declarations.
 
+The first obvious question is, what if functions or datatypes have a cyclic dependency. E.g. mutually recursion:
+
+\begin{code}
+data Foo = Foo Bar
+data Bar = Bar Foo | NoBar
+
+foo = bar
+bar = foo
+\end{code}
+
+Aside from the fact that the functions foo and bar never terminate, they should however typecheck perfectly fine. For datatypes nothing special needs to be done to make EH support mutual recursion. When processing datatypes we just always add information about the data \emph{Type} before processing the constructors. For binding processing we do the same. The EH syntax for \emph{Let} allows us to bind multiple \emph{Decl} at once. This means, that We will have one \emph{Let} binding both \emph{foo} and \emph{bar} at the same time.
+
+Any Haskell after desugared to EH is turned into one big \emph{Let} statement terminating in either 0 or \emph{main} depending on if an actual main function is defined in the module.
+
+Figure ?? which does not define a main is desugered into:
+
+\begin{code}
+let main = 0
+in let data Bar  = Bar Foo | NoBar
+       data Foo  = Foo Bar
+   in let foo = bar
+          bar = foo
+      in 0
+\end{code}
+
+in this case, since \emph{main} is not dependent on anything it is the top level declaration, in every other cases where main is defined it will be put somewhere inside the dependency graph and the top level \emph{Let} will terminate \emph{in} main.
 \section{Semantics}
+
+This ordering that EH brings to a Haskell module is quite handy, especially for Attribute Grammar code. Attribute Grammar compilers do computations on attributes defined on the nodes of a tree. A Haskell file desugared into an EH file is now a Top-down tree, where the only case that needs some special handling is mutual recursion. 
+
+This makes certain tasks a lot easier, for instance when looking up a value in the environment, if we can't find it, then it's really not defined. there's no need to look any further. If we can't type check a specific node, it also means we don't have to bother trying any of it's children, since they depend on the node that failed type checking.

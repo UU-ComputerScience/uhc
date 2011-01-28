@@ -3,7 +3,6 @@
 \usepackage[english]{babel}
 \usepackage[usenames]{color}
 \usepackage{hyperref}
-\usepackage{pxfonts}
 \usepackage{listings}
 \usepackage{color}
 \usepackage{textcomp}
@@ -13,13 +12,15 @@
 \usepackage{amssymb}
 \usepackage{latexsym}
 \usepackage{hyperref}
-\usepackage{bookman}
+%\usepackage{bookman}
 \usepackage{makeidx}
 \usepackage[xindy, toc]{glossaries}
 \usepackage{sectsty}
 
+\input{./Listings}
+
 \newcommand{\HRule}{\rule{\linewidth}{0.5mm}}
-\allsectionsfont{\usefont{T1}{cmr}{b}{n}\selectfont}
+%\setlength{\parindent}{20pt} 
 
 \makeindex
 \makeglossaries
@@ -42,9 +43,9 @@
 
 \input{./UHC}
 
-\input{./EssentialHaskell}
-
 \input{./AttributeGrammar}
+
+\input{./EssentialHaskell}
 
 \input{./HML}
 

@@ -92,30 +92,6 @@ data Scheme
   con Simple
     varnm  :: HsName
     bounds :: TyScheme
-  
--- Mono type
-data TyMono 
-  con Var 
-    nm      :: HsName
-  con App
-    func    :: TyMono
-    arg     :: TyMono
-  con Con
-    nm      :: HsName
-  con AppTop
-    tyMono  :: TyMono
-    
--- Unqualified typed
-data TyPoly
-  con Var 
-    nm      :: HsName
-  con App
-    func    :: TyPoly
-    arg     :: TyPoly
-  con Con
-    nm      :: HsName
-  con SystemF
-    tyExpr  :: TyExpr
     
 data DataFieldExpr
   con Upd
@@ -499,7 +475,7 @@ datasem CaseAlts monad IO
     
     tl.exp = lhs.exp
     tl.env = lhs.env
-    tl.pre = let e = hd.pre `merge` lhs.pre in trace ("TL in: " ++ pp hd.pre) e
+    tl.pre = let e = hd.pre `merge` lhs.pre in trace ("TL in: " ++ pp e) e
     tl.frs = hd.frs
         
     loc.ty_tl = trace ("CaseAlts tl: " ++ pp tl.res ++ " ** " ++ pp tl.sub) tl.res
@@ -598,17 +574,17 @@ datasem RecPatExpr monad IO
     patExpr.env = recPatExpr.env
     patExpr.frs = recPatExpr.frs
     
-    (loc.q1, loc.res, loc.frs)
+    (loc.q1, loc.res)
             = let e = recPatExpr.res
-                  (ty, frs, _) = renameVars patExpr.frs patExpr.res
-              in case e of
-                   Nothing  -> error $ "Cannot infer the type of tuple element '" ++ pp loc.mbNm ++ "'"
-                   Just rty -> let (x,y) = second (\ty'->RowTyExpr_Ext rty loc.mbNm ty') (deep_explode' patExpr.pre ty) 
-                               in (x,y, frs)
+                  t = return patExpr.res
+              in case (e, t) of
+                   (Nothing, _) -> error $ "Cannot infer the type of tuple element '" ++ pp loc.mbNm ++ "'"
+                   (_, Nothing) -> error $ "Cannot infer the type of the expression '" ++ pp loc.patExpr ++ "'"
+                   (Just rty,Just ty) -> second (\ty'->RowTyExpr_Ext rty loc.mbNm ty') (deep_explode' patExpr.pre ty) 
                    
     lhs.sub = recPatExpr.sub `munion` patExpr.sub
     lhs.res = return loc.res
-    lhs.frs = loc.frs
+    lhs.frs = patExpr.frs
     lhs.pre = loc.q1
     lhs.env = patExpr.env
     
@@ -744,10 +720,12 @@ datasem PatExpr monad IO
     patExpr.env = lhs.env
     patExpr.exp = loc.patExpr
     patExpr.pre = lhs.pre
+    patExpr.frs = lhs.frs
     
     lhs.var_nm = patExpr.var_nm
     
-    loc.ans = TyScheme_SystemF (TyExpr_Parens loc.tyExpr)
+    loc.ans' = TyScheme_SystemF (TyExpr_Parens loc.tyExpr)
+    (loc.ans, lhs.frs, _) = renameVars patExpr.frs loc.ans'
     lhs.res = loc.ans
     lhs.env = Gamma $ foldl (.) id (zipWith minsert patExpr.var_nm (repeat loc.ans)) (unGam lhs.env)
   clause SConst
@@ -799,17 +777,20 @@ datasem Decl monad IO
                    Just x  -> Gamma $ foldr (\a->minsert loc.nm a) (unGam adjusted) [x] -- update the Gamma
     lhs.frs = expr.frs
   clause TySig
-    lhs.env = Gamma $ minsert loc.nm (TyScheme_SystemF loc.tyExpr) (unGam lhs.env)  -- update the Gamma
+    (loc.ty, lhs.frs, _) = renameVars lhs.frs (TyScheme_SystemF loc.tyExpr)
+    lhs.env = Gamma $ minsert loc.nm loc.ty (unGam lhs.env)  -- update the Gamma
   clause Data
      child constrs : DataConstrs
      constrs.ast = loc.constrs
-     constrs.nm = let vars = map (\(TyVar_Var x) -> TyExpr_Var x) loc.tyVars
-                  in  foldl TyExpr_App (TyExpr_Con loc.tyNm) vars
+     loc.nm = let vars = map (\(TyVar_Var x) -> TyExpr_Var x) loc.tyVars
+              in  foldl TyExpr_App (TyExpr_Con loc.tyNm) vars
+     (TyScheme_SystemF constrs.nm, lhs.frs, loc.sub) = renameVars lhs.frs (TyScheme_SystemF loc.nm)
      
-     lhs.env = Gamma $ (foldr (.) id . map (\(k,v)->minsert k (mkQuantified v))) constrs.ty (unGam lhs.env) -- update the Gamma
+     lhs.env = Gamma $ (foldr (.) id . map (\(k,v)->minsert k (mkQuantified $ appAll loc.sub v))) constrs.ty (unGam lhs.env) -- update the Gamma
   clause FFI
-     loc.vars = nub $ ftv loc.tyExpr
-     loc.exp = let tyExpr = simplify loc.tyExpr
+     (TyScheme_SystemF loc.tyExprRen, lhs.frs, _) = renameVars lhs.frs (TyScheme_SystemF loc.tyExpr)
+     loc.vars = nub $ ftv loc.tyExprRen
+     loc.exp = let tyExpr = simplify loc.tyExprRen
                in case null loc.vars of
                    True  -> tyExpr
                    False -> foldl (.) id (map (TyExpr_Quant tyQu_Forall) loc.vars) tyExpr
@@ -1019,12 +1000,9 @@ datasem Expr monad IO
        alts.frs = expr.frs
        alts.pre = trace ("Case Expr - " ++ pp loc.expr ++ ":" ++ pp expr.res) expr.pre
        
-       (loc.q1, loc.q2) = split (alts.pre, domain lhs.pre)
-       (loc.q3, loc.ex) = explode' loc.q2 (appAll alts.sub $ body alts.res)
-       
-       lhs.res = return $ ptype $ desugar $ TyScheme_Sugar loc.q3 (TyScheme_SystemF loc.ex)
+       lhs.res = return $ let e = ptype $ appAll alts.sub $ body alts.res in trace ("Case done:" ++ pp e) e
        lhs.sub = trace ("Case alts: " ++ pp alts.sub) alts.sub
-       lhs.pre = loc.q1
+       lhs.pre = alts.pre
        lhs.frs = alts.frs
     clause CaseAltFail
     clause DataFields
@@ -1072,27 +1050,16 @@ datasem RecExpr monad IO
        expr.env = lhs.env
        expr.frs = recExpr.frs
        
-       -- (loc.q1, loc.res)
-               -- = let e = recExpr.res
-                     -- t = expr.res
-                 -- in case (e, t) of
-                      -- (Nothing, _) -> error $ "Cannot infer the type of tuple element '" ++ pp loc.mbNm ++ "'"
-                      -- (_, Nothing) -> error $ "Cannot infer the type of the expression '" ++ pp loc.expr ++ "'"
-                      -- (Just rty,Just ty) -> second (\ty'->RowTyExpr_Ext rty loc.mbNm ty') (deep_explode' expr.pre ty)
-                      
-       (loc.q1, loc.res, loc.frs)
+       (loc.q1, loc.res)
                = let e = recExpr.res
                      t = expr.res
                  in case (e, t) of
                       (Nothing, _) -> error $ "Cannot infer the type of tuple element '" ++ pp loc.mbNm ++ "'"
                       (_, Nothing) -> error $ "Cannot infer the type of the expression '" ++ pp loc.expr ++ "'"
-                      (Just rty,Just ty) -> let (tyr, frs, _) = renameVars expr.frs ty
-                                                (x,y) = second (\ty'->RowTyExpr_Ext rty loc.mbNm ty') (deep_explode' expr.pre tyr)
-                                            in (x,y,frs)
-                      
+                      (Just rty,Just ty) -> second (\ty'->RowTyExpr_Ext rty loc.mbNm ty') (deep_explode' expr.pre ty)
        lhs.sub = recExpr.sub `munion` expr.sub
        lhs.res = return loc.res
-       lhs.frs = loc.frs
+       lhs.frs = expr.frs
        lhs.pre = loc.q1
     clause Empty
        lhs.res = return RowTyExpr_Empty
