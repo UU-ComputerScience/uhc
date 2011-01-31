@@ -445,10 +445,10 @@ datasem CaseAlt monad IO
     
     loc.pat = appAll expr.sub patExpr.res
     
-    loc.ety = maybe (error $ "Type inference of the expression '" ++ pp loc.expr ++ "' has failed") id expr.res
+    loc.ety = trace ("Expr: " ++ pp loc.expr) $ maybe (error $ "Type inference of the expression '" ++ pp loc.expr ++ "' has failed") id expr.res
     -- (loc.q1, loc.q2) = split(patExpr.pre, domain patExpr.res \\ domain expr.pre)
     loc.pre = expr.pre -- `munion` loc.q1
-    loc.exp = trace (pp loc.ety ++ " - " ++ pp loc.pat ++ " - " ++ pp lhs.exp ++ " ++ " ++ pp loc.pre) $  appAll patExpr.sub loc.ety
+    loc.exp = let e = appAll patExpr.sub loc.ety in trace (pp loc.ety ++ " - " ++ pp loc.pat ++ " - " ++ pp lhs.exp ++ " ++ " ++ pp loc.pre ++ " && " ++ pp e) $  e
     
     child s : UnifyScheme = unifyScheme
     
@@ -457,11 +457,11 @@ datasem CaseAlt monad IO
     s.ty2 = lhs.exp
     s.frs = expr.frs
     
-    (loc.q3, loc.t1) = deep_explode s.pre  (appAll expr.sub s.ty)
-    (loc.q4, loc.t2) = deep_explode loc.q3 loc.exp
+    (loc.q3, loc.frs,  loc.t1) = let e = (appAll expr.sub s.ty) in trace ("Deep1: " ++ pp s.pre ++ " ^^ " ++ pp e) $ deep_explode s.pre s.frs e
+    (loc.q4, loc.frs1, loc.t2) = trace ("Deep2: " ++ pp loc.q3 ++ " ^^ " ++ pp loc.exp) $ deep_explode loc.q3 loc.frs loc.exp
     
     lhs.pre = trace ("Prefix: " ++ pp loc.q4) loc.q4
-    lhs.frs = s.frs
+    lhs.frs = loc.frs1
     lhs.sub = s.sub -- `remove` (domain patExpr.res \\ domain expr.sub) -- `munion` expr.sub
     lhs.res = let e = CaseType loc.t1 loc.t2
               in trace ("case finished: " ++ pp e ++ " {" ++ pp expr.sub ++ " == " ++ pp s.sub ++ "}") e
@@ -473,15 +473,17 @@ datasem CaseAlts monad IO
     hd.pre = lhs.pre
     hd.frs = lhs.frs
     
-    tl.exp = lhs.exp
+    tl.exp = appAll hd.sub lhs.exp
     tl.env = lhs.env
-    tl.pre = let e = hd.pre `merge` lhs.pre in trace ("TL in: " ++ pp e) e
+    tl.pre = let e = hd.pre in trace ("TL in: " ++ pp e) e -- `merge` lhs.pre in trace ("TL in: " ++ pp e) e
     tl.frs = hd.frs
         
     loc.ty_tl = trace ("CaseAlts tl: " ++ pp tl.res ++ " ** " ++ pp tl.sub) tl.res
     loc.ty_hd = trace ("CaseAlts hd: " ++ pp hd.res ++ " ** " ++ pp hd.sub) hd.res
     
     child s1 : UnifyScheme = unifyScheme
+    
+    -- (loc.q1, loc.q2) = split (tl.pre, domain hd.sub) -- correctly scope output
     
     s1.pre = trace ("TL out/S1 in:" ++ pp tl.pre) tl.pre
     s1.ty1 = caseLHS loc.ty_hd
@@ -503,7 +505,10 @@ datasem CaseAlts monad IO
               in trace ("CaseAlts res: " ++ pp e) e
     lhs.sub = let f1 = trace ("@S1:   " ++ pp s1.sub) $ trace ("@S2:   " ++ pp s2.sub) 
               in  f1 $ loc.subs -- tl.sub `munion` hd.sub `munion` s2.sub `munion` s1.sub
-    lhs.pre = trace ("S2 out/ret:" ++ pp tl.pre) tl.pre 
+    (loc.q3, loc.q4) = split (tl.pre, domain loc.subs)
+    -- lhs.pre = trace ("S2 out/ret:" ++ pp loc.q4) tl.pre `munion` loc.q4
+    -- lhs.pre = trace ("S2 out/ret:" ++ pp s2.pre) s2.pre 
+    lhs.pre = trace ("S2 out/ret:" ++ pp s2.pre) s2.pre 
   clause Nil
     (loc.a, loc.frs1) = fresh lhs.frs
     loc.exp_a  = TyScheme_SystemF $ TyExpr_Var loc.a
@@ -574,17 +579,17 @@ datasem RecPatExpr monad IO
     patExpr.env = recPatExpr.env
     patExpr.frs = recPatExpr.frs
     
-    (loc.q1, loc.res)
+    (loc.q1, loc.frs, loc.res)
             = let e = recPatExpr.res
                   t = return patExpr.res
               in case (e, t) of
                    (Nothing, _) -> error $ "Cannot infer the type of tuple element '" ++ pp loc.mbNm ++ "'"
                    (_, Nothing) -> error $ "Cannot infer the type of the expression '" ++ pp loc.patExpr ++ "'"
-                   (Just rty,Just ty) -> second (\ty'->RowTyExpr_Ext rty loc.mbNm ty') (deep_explode' patExpr.pre ty) 
+                   (Just rty,Just ty) -> third (\ty'->RowTyExpr_Ext rty loc.mbNm ty') (deep_explode' patExpr.pre patExpr.frs ty) 
                    
     lhs.sub = recPatExpr.sub `munion` patExpr.sub
     lhs.res = return loc.res
-    lhs.frs = patExpr.frs
+    lhs.frs = loc.frs
     lhs.pre = loc.q1
     lhs.env = patExpr.env
     
@@ -630,10 +635,10 @@ datasem PatExpr monad IO
     arg.frs = func.frs
     arg.pre = func.pre
     
-    (loc.q1   , loc.func1) = deep_explode arg.pre func.res
-    (loc.q2   , loc.arg1 ) = deep_explode loc.q1 arg.res
+    (loc.q1   , loc.frx , loc.func1) = deep_explode arg.pre arg.frs func.res
+    (loc.q2   , loc.frx1, loc.arg1 ) = deep_explode loc.q1 loc.frx arg.res
 
-    (loc.a1   , loc.frs1 ) = fresh arg.frs
+    (loc.a1   , loc.frs1 ) = fresh loc.frx1
     (loc.a2   , loc.frs2 ) = fresh loc.frs1
     (loc.b    , loc.frs3 ) = fresh loc.frs2
                          
@@ -747,10 +752,12 @@ datasem PatExpr monad IO
                                  TyExpr_App
                                     (TyExpr_Con (mkName "_Rec"))
                                     (TyExpr_Row ty)
-    
+                                    
+    (loc.q1, loc.q2) = split (recPatExpr.pre, domain lhs.pre)
+    -- lhs.res = ptype $ desugar $ TyScheme_Sugar loc.q2  $ TyScheme_SystemF loc.res
     lhs.res = TyScheme_SystemF loc.res
     lhs.sub = recPatExpr.sub
-    lhs.pre = recPatExpr.pre
+    lhs.pre = recPatExpr.pre -- loc.q1
     lhs.frs = recPatExpr.frs
     lhs.env = recPatExpr.env
   clause DataFields
@@ -1000,9 +1007,11 @@ datasem Expr monad IO
        alts.frs = expr.frs
        alts.pre = trace ("Case Expr - " ++ pp loc.expr ++ ":" ++ pp expr.res) expr.pre
        
-       lhs.res = return $ let e = ptype $ appAll alts.sub $ body alts.res in trace ("Case done:" ++ pp e) e
+       (loc.q1, loc.q2) = split (alts.pre, domain lhs.pre)
+       
+       lhs.res = return $ let e = ptype $ desugar $ TyScheme_Sugar loc.q2 $ appAll alts.sub $ body alts.res in trace ("Case done:" ++ pp e) e
        lhs.sub = trace ("Case alts: " ++ pp alts.sub) alts.sub
-       lhs.pre = alts.pre
+       lhs.pre = loc.q1
        lhs.frs = alts.frs
     clause CaseAltFail
     clause DataFields
@@ -1022,9 +1031,11 @@ datasem Expr monad IO
                                        (TyExpr_Con (mkName "_Rec"))
                                        (TyExpr_Row ty)
        
+       (loc.q1, loc.q2) = split (recExpr.pre, domain lhs.pre)
+       -- lhs.res = return $ ptype $ desugar $ TyScheme_Sugar loc.q2 $ TyScheme_SystemF loc.res
        lhs.res = return $ TyScheme_SystemF loc.res
        lhs.sub = recExpr.sub
-       lhs.pre = recExpr.pre
+       lhs.pre = recExpr.pre -- loc.q1
        lhs.frs = recExpr.frs
     clause SConst
     clause Sel
@@ -1050,16 +1061,16 @@ datasem RecExpr monad IO
        expr.env = lhs.env
        expr.frs = recExpr.frs
        
-       (loc.q1, loc.res)
+       (loc.q1, loc.frs, loc.res)
                = let e = recExpr.res
                      t = expr.res
                  in case (e, t) of
                       (Nothing, _) -> error $ "Cannot infer the type of tuple element '" ++ pp loc.mbNm ++ "'"
                       (_, Nothing) -> error $ "Cannot infer the type of the expression '" ++ pp loc.expr ++ "'"
-                      (Just rty,Just ty) -> second (\ty'->RowTyExpr_Ext rty loc.mbNm ty') (deep_explode' expr.pre ty)
+                      (Just rty,Just ty) -> third (\ty'->RowTyExpr_Ext rty loc.mbNm ty') (deep_explode' expr.pre expr.frs ty)
        lhs.sub = recExpr.sub `munion` expr.sub
        lhs.res = return loc.res
-       lhs.frs = expr.frs
+       lhs.frs = loc.frs
        lhs.pre = loc.q1
     clause Empty
        lhs.res = return RowTyExpr_Empty
@@ -1151,10 +1162,12 @@ unifyRows = sem unifyRows : RowTyExpr monad IO
                     -- loc.ty = ftype $ appAll u.sub u.ty
                     
                     (loc.q, loc.ty) = explode' row.pre u.ty
+                    loc.sub = row.sub `pick` u.sub
+                    (loc.q1, loc.q2) = split (loc.q, domain loc.sub)
                     
-                    lhs.pre = loc.q
+                    lhs.pre = loc.q2
                     lhs.frs = row.frs
-                    lhs.sub = row.sub `pick` u.sub
+                    lhs.sub = loc.sub
                     lhs.res = RowTyExpr_Ext row.res ext1.mbNm loc.ty
                 clause mismatch
                     lhs.res = error $ "mismatch between rows '" ++ pp lhs.ty1 ++ "' and '" ++ pp lhs.ty2 ++ "'"
@@ -1514,7 +1527,7 @@ unify = sem unify : Unify monad IO
                        rows.ty2 = row2.rowTyExpr
                        rows.frs = lhs.frs
                        
-                       lhs.pre  = trace ("Ty: " ++ pp rows.res ++ " = " ++ pp row1.rowTyExpr ++ " = " ++ pp row2.rowTyExpr ++ " ** " ++ pp rows.sub) rows.pre
+                       lhs.pre  = trace ("Ty: " ++ pp rows.res ++ " = " ++ pp row1.rowTyExpr ++ " = " ++ pp row2.rowTyExpr ++ " ** " ++ pp rows.sub ++ " -- " ++ pp rows.pre) rows.pre
                        lhs.sub  = rows.sub
                        lhs.frs  = rows.frs
                      clause mismatch

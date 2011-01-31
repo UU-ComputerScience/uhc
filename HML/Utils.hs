@@ -90,6 +90,8 @@ applyEnv sub env
 explode' :: Prefix -> TyScheme -> (Prefix, TyExpr)
 explode' pre sche = second ftype (explode pre sche)
 
+third :: (c -> d) -> (a,b,c) -> (a,b,d)
+third f (a,b,c) = (a, b, f c)
     
 -- | Push any quantified type in the environment instead of being prefixed to the type
 explode :: Prefix -> TyScheme -> (Prefix, TyScheme)
@@ -101,16 +103,17 @@ explode p t | isB t
 explode p t = (p, t)
     
 -- | performs the same operation as explode but returns a TyExpr instead of a TyScheme
-deep_explode' :: Prefix -> TyScheme -> (Prefix, TyExpr)
-deep_explode' pre sche = second ftype (deep_explode pre sche)
+deep_explode' :: Prefix -> Int -> TyScheme -> (Prefix, Int, TyExpr)
+deep_explode' pre frs sche = third ftype (deep_explode pre frs sche)
     
 -- | A less restrictive version of explode', this is used in case expressions where we want to always
 --   split the Quantifications off the TySchemes
-deep_explode :: Prefix -> TyScheme -> (Prefix, TyScheme)
-deep_explode p t
+deep_explode :: Prefix -> Int -> TyScheme -> (Prefix, Int, TyScheme)
+deep_explode p i ty
    = case sugar t of
-       TyScheme_Sugar q t' -> (p `munion` q, t')
-       x                   -> (p           , x )
+       TyScheme_Sugar q t' -> (appAll s $ p `munion` q, i', t')
+       x                   -> (appAll s p             , i', x )
+     where (t, i', s) = (ty, i, []) -- renameVars i ty
        
 instance Apply HsName where
    app (s, v) nm | s == nm   = case ftv v of
@@ -238,7 +241,7 @@ instance Apply TyExpr where
     app = createMask
     
 instance Apply TyIndex where
-    app s (TyIndex_Group nm a) = TyIndex_Group nm (app s a)
+    app s (TyIndex_Group nm a) = TyIndex_Group (app s nm) (app s a)
   
 instance Util TyExpr where
     ftv (TyExpr_App      a b) = nub $ ftv a ++ ftv b
@@ -258,8 +261,8 @@ instance Util TyExpr where
     vars (TyExpr_Ann      _ a) = vars a
     vars (TyExpr_Var        a) = [a]
     vars (TyExpr_VarWild    a) = [a]
-    vars (TyExpr_Quant  _ a b) = (nub $ vars b)
-    vars (TyExpr_Forall _ a t) = (nub $ ftv t)
+    vars (TyExpr_Quant  _ a b) = nub (a : vars b)
+    vars (TyExpr_Forall _ a t) = nub (a ++ ftv t)
     vars (TyExpr_Row        r) = vars r
     vars                     _ = []
 
@@ -416,7 +419,7 @@ extend (q, scheme@(Scheme_Simple var phi), frs) ren
  = let p = nf phi
    in case isUnQualTy p of
         True  -> ((q, [(var, p)]), frs)
-        _     -> let (ph2, frs', subs) = if False 
+        _     -> let (ph2, frs', subs) = if ren 
                                             then renameVars frs phi
                                             else (phi, frs,[])
                  in ((q++[TyIndex_Group var (promote ph2)], subs), frs')
@@ -464,7 +467,12 @@ fullRename env = rename
    rename (TyExpr_VarWild    a) = TyExpr_Var $ ren a
    rename (TyExpr_Quant  q v t) = TyExpr_Quant q (ren v) (rename t)
    rename (TyExpr_Forall q v t) = TyExpr_Forall q (map ren v) (rename t)
+   rename (TyExpr_Row        a) = TyExpr_Row (fullRenameRow a)
    rename e = e
+   
+   fullRenameRow :: RowTyExpr -> RowTyExpr
+   fullRenameRow RowTyExpr_Empty       = RowTyExpr_Empty
+   fullRenameRow (RowTyExpr_Ext a b c) = RowTyExpr_Ext (fullRenameRow a) b (rename c)
    
    ren a = maybe a id $ lookup a env
         
@@ -671,7 +679,7 @@ instance Simplify TyExpr where
                                                  in TyExpr_App (simpl e1 a) (simpl e2 b)
             simpl f       (TyExpr_AppTop    a) = TyExpr_AppTop    (simpl f a)
             simpl f       (TyExpr_Ann     a b) = TyExpr_Ann a     (simpl f b)
-            simpl f       (TyExpr_Quant a b c) = TyExpr_Quant a b (simpl f c)   
+            simpl f       (TyExpr_Quant a b c) = TyExpr_Quant a b (simpl f c)
             simpl _ a                          = a
             
     clean = (\(TyScheme_SystemF a)->a) . clean . TyScheme_SystemF
@@ -721,7 +729,10 @@ occursCheck a q phi
                              []     -> (r1, [], [])
         fvs           = ftv (TyScheme_Sugar q2 phi)
     in case null q1 of
-         True  -> error "Cannot perform occurance check. The split does not return a value" 
+         True  -> let f1 = trace ("a:" ++ pp a)
+                      f2 = trace ("q:" ++ pp q)
+                      f3 = trace ("phi: " ++ pp phi)
+                  in f1 $ f2 $ f2 $ error "Cannot perform occurance check. The split does not return a value" 
          False -> a `elem` fvs
                   
 type TyQuantifiedScheme = TyScheme

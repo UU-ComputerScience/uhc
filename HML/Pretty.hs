@@ -130,6 +130,7 @@ instance Pretty PatExpr where
   pp (PatExpr_Parens a   ) = "(" ++ pp a ++ ")"
   pp (PatExpr_Ann ann expr)= "[ann] " ++ pp expr
   pp (PatExpr_TypeAs ty e) = pp e ++ " :: " ++ pp ty
+  pp _                     = "[Unknown Pattern]"
   
 instance Pretty Expr where
   pp (Expr_IConst a     ) = showSignedInt 0 a ""
