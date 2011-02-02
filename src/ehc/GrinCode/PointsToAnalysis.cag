@@ -184,6 +184,7 @@ emptyHptMap = Array.listArray (0,0) [AbsBottom]
 --     sput $ finalVarMap res
 --   sget = return FinalHptResult `ap` sget `ap` sget
 
+-- maps types to corresponding constructor tags
 type TagMap = Map.Map HsName [GrTag]
 
 -- type VarMap   = Map.Map HsName  Int
@@ -354,7 +355,7 @@ ATTR GrModule GrAGItf [ startTagMap : {TagMap} | | finalTagMap : {TagMap} ]
 
 SEM GrModule
   | Mod        loc.tagsMap      = Map.union @tagsMp @lhs.startTagMap
-               lhs.finalTagMap  = @loc.tagsMap
+               lhs.finalTagMap  = @tagsMp
                bindL.tagsMap    = @loc.tagsMap
 
 
