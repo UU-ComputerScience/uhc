@@ -433,17 +433,19 @@ datasem CaseAlt monad IO
     child patExpr : PatExpr
     
     patExpr.ast = loc.patExpr
-    patExpr.pre = lhs.pre
+    patExpr.pre = trace ("Pat: " ++ pp lhs.pre) lhs.pre
     patExpr.env = lhs.env
     patExpr.exp = loc.patExpr
     patExpr.frs = lhs.frs
     
-    expr.exp = loc.expr
-    expr.pre = patExpr.pre
-    expr.env = patExpr.env
-    expr.frs = patExpr.frs
+    (loc.q, loc.frc, loc.ty) = deep_explode patExpr.pre patExpr.frs patExpr.res
     
-    loc.pat = appAll expr.sub patExpr.res
+    expr.exp = loc.expr
+    expr.pre = loc.q
+    expr.env = patExpr.env
+    expr.frs = loc.frc
+    
+    loc.pat = appAll expr.sub loc.ty
     
     loc.ety = trace ("Expr: " ++ pp loc.expr) $ maybe (error $ "Type inference of the expression '" ++ pp loc.expr ++ "' has failed") id expr.res
     -- (loc.q1, loc.q2) = split(patExpr.pre, domain patExpr.res \\ domain expr.pre)
@@ -486,19 +488,19 @@ datasem CaseAlts monad IO
     -- (loc.q1, loc.q2) = split (tl.pre, domain hd.sub) -- correctly scope output
     
     s1.pre = trace ("TL out/S1 in:" ++ pp tl.pre) tl.pre
-    s1.ty1 = caseLHS loc.ty_hd
-    s1.ty2 = caseLHS loc.ty_tl
+    s1.ty1 = appAll tl.sub $ caseLHS loc.ty_hd
+    s1.ty2 = appAll hd.sub $ caseLHS loc.ty_tl
     s1.frs = tl.frs
     
     child s2 : UnifyScheme = unifyScheme
     
-    s2.pre = trace ("S1 out/S2 in:" ++ pp s1.pre) s1.pre
+    loc.ep = s2.sub `pick` s1.sub
+    loc.subs = tl.sub `pick` hd.sub
+    
+    s2.pre = trace ("S1 out/S2 in:" ++ pp s1.pre ++ "@Subs: " ++ pp loc.subs) s1.pre
     s2.ty1 = appAll s1.sub $ body loc.ty_hd
     s2.ty2 = appAll s1.sub $ body loc.ty_tl
     s2.frs = s1.frs
-    
-    loc.ep = s2.sub `pick` s1.sub
-    loc.subs = tl.sub `pick` hd.sub
     
     lhs.frs = s2.frs
     lhs.res = let e = CaseType s1.ty s2.ty
@@ -754,10 +756,11 @@ datasem PatExpr monad IO
                                     (TyExpr_Row ty)
                                     
     (loc.q1, loc.q2) = split (recPatExpr.pre, domain lhs.pre)
-    -- lhs.res = ptype $ desugar $ TyScheme_Sugar loc.q2  $ TyScheme_SystemF loc.res
-    lhs.res = TyScheme_SystemF loc.res
+    lhs.res = ptype $ desugar $ TyScheme_Sugar loc.q2  $ TyScheme_SystemF loc.res
+    -- lhs.res = TyScheme_SystemF loc.res
     lhs.sub = recPatExpr.sub
-    lhs.pre = recPatExpr.pre -- loc.q1
+    lhs.pre = loc.q1
+    -- lhs.pre = recPatExpr.pre
     lhs.frs = recPatExpr.frs
     lhs.env = recPatExpr.env
   clause DataFields
@@ -1001,11 +1004,14 @@ datasem Expr monad IO
        
        child alts : CaseAlts
        
+       loc.etype = maybe (error $ "Type inference of expression '" ++ pp loc.expr ++ "' failed in Case") id expr.res
+       (loc.q, loc.frs, loc.type) = deep_explode expr.pre expr.frs loc.etype
+       
        alts.ast = loc.alts
-       alts.exp = maybe (error $ "Type inference of expression '" ++ pp loc.expr ++ "' failed in Case") id expr.res
+       alts.exp = loc.type
        alts.env = lhs.env
-       alts.frs = expr.frs
-       alts.pre = trace ("Case Expr - " ++ pp loc.expr ++ ":" ++ pp expr.res) expr.pre
+       alts.frs = loc.frs
+       alts.pre = trace ("Case Expr - " ++ pp loc.expr ++ ":" ++ pp loc.type ++ "% " ++ pp loc.q) loc.q
        
        (loc.q1, loc.q2) = split (alts.pre, domain lhs.pre)
        
@@ -1032,10 +1038,11 @@ datasem Expr monad IO
                                        (TyExpr_Row ty)
        
        (loc.q1, loc.q2) = split (recExpr.pre, domain lhs.pre)
-       -- lhs.res = return $ ptype $ desugar $ TyScheme_Sugar loc.q2 $ TyScheme_SystemF loc.res
-       lhs.res = return $ TyScheme_SystemF loc.res
+       lhs.res = return $ ptype $ desugar $ TyScheme_Sugar loc.q2 $ TyScheme_SystemF loc.res
+       -- lhs.res = return $ TyScheme_SystemF loc.res
        lhs.sub = recExpr.sub
-       lhs.pre = recExpr.pre -- loc.q1
+       lhs.pre = loc.q1
+       -- lhs.pre = recExpr.pre
        lhs.frs = recExpr.frs
     clause SConst
     clause Sel

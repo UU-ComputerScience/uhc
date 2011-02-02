@@ -112,8 +112,9 @@ deep_explode :: Prefix -> Int -> TyScheme -> (Prefix, Int, TyScheme)
 deep_explode p i ty
    = case sugar t of
        TyScheme_Sugar q t' -> (appAll s $ p `munion` q, i', t')
-       x                   -> (appAll s p             , i', x )
-     where (t, i', s) = (ty, i, []) -- renameVars i ty
+       x                   -> (p                      , i, ty )
+     -- where (t, i', s) = renameVars i ty
+     where (t, i', s) = (ty, i, [])
        
 instance Apply HsName where
    app (s, v) nm | s == nm   = case ftv v of
