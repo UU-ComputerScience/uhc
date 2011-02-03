@@ -447,26 +447,26 @@ datasem CaseAlt monad IO
     
     loc.pat = appAll expr.sub loc.ty
     
-    loc.ety = trace ("Expr: " ++ pp loc.expr) $ maybe (error $ "Type inference of the expression '" ++ pp loc.expr ++ "' has failed") id expr.res
+    loc.ety = trace ("Expr: " ++ pp loc.expr ++ ":" ++ pp expr.res ++ "\nPatExpr: " ++ pp loc.patExpr ++ ":" ++ pp patExpr.res ++ "(" ++ pp loc.ty ++ ")") $ maybe (error $ "Type inference of the expression '" ++ pp loc.expr ++ "' has failed") id expr.res
     -- (loc.q1, loc.q2) = split(patExpr.pre, domain patExpr.res \\ domain expr.pre)
     loc.pre = expr.pre -- `munion` loc.q1
-    loc.exp = let e = appAll patExpr.sub loc.ety in trace (pp loc.ety ++ " - " ++ pp loc.pat ++ " - " ++ pp lhs.exp ++ " ++ " ++ pp loc.pre ++ " && " ++ pp e) $  e
+    -- loc.exp = let e = appAll patExpr.sub loc.ety in trace (pp loc.ety ++ " - " ++ pp loc.pat ++ " - " ++ pp lhs.exp ++ " ++ " ++ pp loc.pre ++ " && " ++ pp e) $  e
     
-    child s : UnifyScheme = unifyScheme
+    -- child s : UnifyScheme = unifyScheme
     
-    s.pre = loc.pre
-    s.ty1 = loc.pat
-    s.ty2 = lhs.exp
-    s.frs = expr.frs
+    -- s.pre = loc.pre
+    -- s.ty1 = loc.pat
+    -- s.ty2 = lhs.exp
+    -- s.frs = expr.frs
     
-    (loc.q3, loc.frs,  loc.t1) = let e = (appAll expr.sub s.ty) in trace ("Deep1: " ++ pp s.pre ++ " ^^ " ++ pp e) $ deep_explode s.pre s.frs e
-    (loc.q4, loc.frs1, loc.t2) = trace ("Deep2: " ++ pp loc.q3 ++ " ^^ " ++ pp loc.exp) $ deep_explode loc.q3 loc.frs loc.exp
+    -- (loc.q3, loc.frs,  loc.t1) = let e = (appAll expr.sub s.ty) in trace ("Deep1: " ++ pp s.pre ++ " ^^ " ++ pp e) $ deep_explode s.pre s.frs e
+    (loc.q4, loc.frs1, loc.t2) = trace ("Deep2: " ++ pp loc.pre ++ " ^^ " ++ pp loc.ety) $ deep_explode loc.pre expr.frs loc.ety
     
     lhs.pre = trace ("Prefix: " ++ pp loc.q4) loc.q4
     lhs.frs = loc.frs1
-    lhs.sub = s.sub -- `remove` (domain patExpr.res \\ domain expr.sub) -- `munion` expr.sub
-    lhs.res = let e = CaseType loc.t1 loc.t2
-              in trace ("case finished: " ++ pp e ++ " {" ++ pp expr.sub ++ " == " ++ pp s.sub ++ "}") e
+    lhs.sub = expr.sub -- s.sub -- `remove` (domain patExpr.res \\ domain expr.sub) -- `munion` expr.sub
+    lhs.res = let e = CaseType loc.pat loc.t2
+              in trace ("case finished: " ++ pp e ++ " {" ++ pp expr.sub ++ "}") e
     
 datasem CaseAlts monad IO
   clause Cons
@@ -587,7 +587,8 @@ datasem RecPatExpr monad IO
               in case (e, t) of
                    (Nothing, _) -> error $ "Cannot infer the type of tuple element '" ++ pp loc.mbNm ++ "'"
                    (_, Nothing) -> error $ "Cannot infer the type of the expression '" ++ pp loc.patExpr ++ "'"
-                   (Just rty,Just ty) -> third (\ty'->RowTyExpr_Ext rty loc.mbNm ty') (deep_explode' patExpr.pre patExpr.frs ty) 
+                   (Just rty,Just ty) -> let (typ, frs, _) = renameBound patExpr.frs ty 
+                                         in third (\ty'->RowTyExpr_Ext rty loc.mbNm ty') (deep_explode' patExpr.pre frs typ) 
                    
     lhs.sub = recPatExpr.sub `munion` patExpr.sub
     lhs.res = return loc.res
@@ -608,7 +609,8 @@ datasem PatExpr monad IO
      lhs.res = TyScheme_SystemF $ TyExpr_Con $ mkName "Char"
   clause Con
      -- lhs.var_nm = error "Constructors not supported"
-     lhs.res = maybe (error "Constructor not found in lookup") id $ lookup loc.nm (unGam lhs.env)
+     loc.res = maybe (error "Constructor not found in lookup") id $ lookup loc.nm (unGam lhs.env)
+     (lhs.res, lhs.frs, _) = trace ("Con: Renaming " ++ pp loc.nm) $ renameBound lhs.frs loc.res
   clause Var
     lhs.var_nm = return loc.nm
     
@@ -731,10 +733,22 @@ datasem PatExpr monad IO
     
     lhs.var_nm = patExpr.var_nm
     
-    loc.ans' = TyScheme_SystemF (TyExpr_Parens loc.tyExpr)
-    (loc.ans, lhs.frs, _) = renameVars patExpr.frs loc.ans'
-    lhs.res = loc.ans
-    lhs.env = Gamma $ foldl (.) id (zipWith minsert patExpr.var_nm (repeat loc.ans)) (unGam lhs.env)
+    loc.env      = unGam lhs.env
+    loc.inferred = patExpr.res
+    loc.vars     = nub $ ftv loc.tyExpr
+    loc.declared = let tyExpr = simplify loc.tyExpr
+                   in case null loc.vars of
+                       True  -> tyExpr
+                       False -> foldl (.) id (map (TyExpr_Quant tyQu_Forall) loc.vars) tyExpr
+    
+    child s : Subsume = subsume
+    s.pre = trace ("Checking '" ++ pp loc.inferred ++ "' against '" ++ pp loc.declared ++ "'") lhs.pre
+    s.ty  = loc.inferred
+    s.exp = loc.declared
+    s.frs = lhs.frs
+    
+    lhs.frs = s.frs -- we don't really need the frs, but we're faking the dependency to insure that it's executed
+    lhs.env = Gamma $ foldl (.) id (zipWith minsert patExpr.var_nm (repeat $ TyScheme_SystemF loc.declared)) loc.env
   clause SConst
     lhs.var_nm = error "SConst not a var"
   clause Rec
@@ -787,8 +801,23 @@ datasem Decl monad IO
                    Just x  -> Gamma $ foldr (\a->minsert loc.nm a) (unGam adjusted) [x] -- update the Gamma
     lhs.frs = expr.frs
   clause TySig
-    (loc.ty, lhs.frs, _) = renameVars lhs.frs (TyScheme_SystemF loc.tyExpr)
-    lhs.env = Gamma $ minsert loc.nm loc.ty (unGam lhs.env)  -- update the Gamma
+    -- (loc.ty, loc.frs, _) = renameVars lhs.frs (mkQuantified loc.tyExpr)
+    loc.env      = unGam lhs.env
+    loc.inferred = maybe (error $ "Type signature given without let binding '" ++ pp loc.nm ++ "'") id (lookup loc.nm loc.env)
+    loc.vars     = nub $ ftv loc.tyExpr
+    loc.declared = let tyExpr = simplify loc.tyExpr
+                   in case null loc.vars of
+                       True  -> tyExpr
+                       False -> foldl (.) id (map (TyExpr_Quant tyQu_Forall) loc.vars) tyExpr
+    
+    child s : Subsume = subsume
+    s.pre = trace ("Checking '" ++ pp loc.inferred ++ "' against '" ++ pp loc.declared ++ "'") lhs.pre
+    s.ty  = loc.inferred
+    s.exp = loc.declared
+    s.frs = lhs.frs
+    
+    lhs.frs = s.frs -- we don't really need the frs, but we're faking the dependency to insure that it's executed
+    lhs.env = Gamma $ minsert loc.nm (embedF loc.declared) loc.env  -- update the Gamma
   clause Data
      child constrs : DataConstrs
      constrs.ast = loc.constrs
@@ -844,7 +873,9 @@ datasem Expr monad IO
     clause CConst
        lhs.res = return $ TyScheme_SystemF $ TyExpr_Con $ mkName "Char"
     clause Con
-       lhs.res = maybe (error "Constructor not found in lookup") return $ lookup loc.nm (unGam lhs.env)
+       loc.res = maybe (error "Constructor not found in lookup") id $ lookup loc.nm (unGam lhs.env)
+       (loc.res2, lhs.frs, _) = trace ("Con: Renaming " ++ pp loc.nm) $ renameBound lhs.frs loc.res
+       lhs.res = return loc.res2
     clause App
        loc.frs            = lhs.frs
        (loc.a1, loc.frs1) = fresh loc.frs
@@ -980,6 +1011,25 @@ datasem Expr monad IO
     clause TypeAs
        expr.env = lhs.env
        expr.exp = loc.expr
+       expr.pre = lhs.pre
+       expr.frs = lhs.frs
+       
+       loc.env      = unGam lhs.env
+       loc.inferred = maybe (error $ "Could not infer the type of '" ++ pp loc.expr ++ "'" ) id expr.res
+       loc.vars     = nub $ ftv loc.tyExpr
+       loc.declared = let tyExpr = simplify loc.tyExpr
+                      in case null loc.vars of
+                          True  -> tyExpr
+                          False -> foldl (.) id (map (TyExpr_Quant tyQu_Forall) loc.vars) tyExpr
+        
+       child s : Subsume = subsume
+       s.pre = trace ("Checking '" ++ pp loc.inferred ++ "' against '" ++ pp loc.declared ++ "'") lhs.pre
+       s.ty  = loc.inferred
+       s.exp = loc.declared
+       s.frs = lhs.frs
+        
+       lhs.frs = s.frs -- we don't really need the frs, but we're faking the dependency to insure that it's executed
+       lhs.res = return $ TyScheme_SystemF loc.declared
     clause Ann
        expr.pre = lhs.pre
        expr.env = lhs.env
@@ -1005,20 +1055,26 @@ datasem Expr monad IO
        child alts : CaseAlts
        
        loc.etype = maybe (error $ "Type inference of expression '" ++ pp loc.expr ++ "' failed in Case") id expr.res
-       (loc.q, loc.frs, loc.type) = deep_explode expr.pre expr.frs loc.etype
+       -- (loc.q, loc.frs, loc.type) = deep_explode expr.pre expr.frs loc.etype
        
        alts.ast = loc.alts
-       alts.exp = loc.type
+       alts.exp = loc.etype
        alts.env = lhs.env
-       alts.frs = loc.frs
-       alts.pre = trace ("Case Expr - " ++ pp loc.expr ++ ":" ++ pp loc.type ++ "% " ++ pp loc.q) loc.q
+       alts.frs = expr.frs
+       alts.pre = trace ("Case Expr - " ++ pp loc.expr ++ ":" ++ pp loc.etype ++ "% " ++ pp expr.pre) expr.pre
        
-       (loc.q1, loc.q2) = split (alts.pre, domain lhs.pre)
+       child s : UnifyScheme = unifyScheme
+       s.pre = alts.pre
+       s.ty1 = loc.etype
+       s.ty2 = caseLHS alts.res
+       s.frs = expr.frs
+       
+       (loc.q1, loc.q2) = split (s.pre, domain lhs.pre)
        
        lhs.res = return $ let e = ptype $ desugar $ TyScheme_Sugar loc.q2 $ appAll alts.sub $ body alts.res in trace ("Case done:" ++ pp e) e
-       lhs.sub = trace ("Case alts: " ++ pp alts.sub) alts.sub
+       lhs.sub = trace ("Case alts: " ++ pp alts.sub) $ s.sub `pick` alts.sub
        lhs.pre = loc.q1
-       lhs.frs = alts.frs
+       lhs.frs = s.frs
     clause CaseAltFail
     clause DataFields
     clause Rec
@@ -1074,7 +1130,8 @@ datasem RecExpr monad IO
                  in case (e, t) of
                       (Nothing, _) -> error $ "Cannot infer the type of tuple element '" ++ pp loc.mbNm ++ "'"
                       (_, Nothing) -> error $ "Cannot infer the type of the expression '" ++ pp loc.expr ++ "'"
-                      (Just rty,Just ty) -> third (\ty'->RowTyExpr_Ext rty loc.mbNm ty') (deep_explode' expr.pre expr.frs ty)
+                      (Just rty,Just ty) -> let (typ, frs, _) = renameBound expr.frs ty 
+                                            in third (\ty'->RowTyExpr_Ext rty loc.mbNm ty') (deep_explode' expr.pre frs typ)
        lhs.sub = recExpr.sub `munion` expr.sub
        lhs.res = return loc.res
        lhs.frs = loc.frs
@@ -1120,7 +1177,7 @@ itf UnifyScheme
     syn pre  :: Prefix
     syn sub  :: Env
     syn ty   :: TyScheme
-    syn frs  :: Int    
+    syn frs  :: Int         
     
 itf RowTyExpr
   visit unifyRows

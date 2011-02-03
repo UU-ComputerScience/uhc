@@ -113,7 +113,7 @@ deep_explode p i ty
    = case sugar t of
        TyScheme_Sugar q t' -> (appAll s $ p `munion` q, i', t')
        x                   -> (p                      , i, ty )
-     -- where (t, i', s) = renameVars i ty
+     -- where (t, i', s) = renameBound i ty
      where (t, i', s) = (ty, i, [])
        
 instance Apply HsName where
@@ -447,6 +447,28 @@ renameVars frs ty
     env'       = zipWith (\a b->(a, b)) vc nvc
     ren x      = maybe x id $ lookup x env'
     
+renameBound :: Int -> TyScheme -> (TyScheme, Int, Env)
+renameBound frs ty 
+ = (fc ty, frs', env)
+  where
+    fc (TyScheme_Quant (Scheme_Simple a b) c) = TyScheme_Quant (Scheme_Simple (ren a) (fc b)) (fc c)
+    fc (TyScheme_SystemF exp) = let a = fullRename env' exp
+                                in  TyScheme_SystemF a
+    fc TyScheme_Bottom        = TyScheme_Bottom
+    fc (TyScheme_Sugar a b)   = TyScheme_Sugar (map fi a) (fc b)
+    fc (TyScheme_Forall a b)  = TyScheme_Forall (map ren a) (fc b)
+   
+    fi (TyIndex_Group a d) 
+       = let d' = case d of
+                   TyScheme_Quant (Scheme_Simple a b) c -> TyScheme_Quant (Scheme_Simple (ren a) (fc b)) (fc c)
+                   TyScheme_Bottom    -> TyScheme_Bottom
+         in TyIndex_Group (ren a) d'
+    vc         = (nub $vars ty) \\ (nub $ ftv ty)
+    (nvc,frs') = freshM frs (length vc)
+    env        = zipWith (\a b->(a, mkVar b)) vc nvc
+    env'       = zipWith (\a b->(a, b)) vc nvc
+    ren x      = maybe x id $ lookup x env'
+    
 -- | rename based on fullRename instead of app which avoids capturing values.
 forceRename :: TyExpr -> TyExpr
 forceRename exp = fullRename env exp
@@ -733,7 +755,7 @@ occursCheck a q phi
          True  -> let f1 = trace ("a:" ++ pp a)
                       f2 = trace ("q:" ++ pp q)
                       f3 = trace ("phi: " ++ pp phi)
-                  in f1 $ f2 $ f2 $ error "Cannot perform occurance check. The split does not return a value" 
+                  in f1 $ f2 $ f3 $ error "Cannot perform occurance check. The split does not return a value" 
          False -> a `elem` fvs
                   
 type TyQuantifiedScheme = TyScheme
