@@ -503,7 +503,7 @@ datasem CaseAlts monad IO
     s2.frs = s1.frs
     
     lhs.frs = s2.frs
-    lhs.res = let e = CaseType s1.ty s2.ty
+    lhs.res = let e = CaseType (appAll s2.sub s1.ty) s2.ty
               in trace ("CaseAlts res: " ++ pp e) e
     lhs.sub = let f1 = trace ("@S1:   " ++ pp s1.sub) $ trace ("@S2:   " ++ pp s2.sub) 
               in  f1 $ loc.subs -- tl.sub `munion` hd.sub `munion` s2.sub `munion` s1.sub
@@ -622,6 +622,19 @@ datasem PatExpr monad IO
     lhs.frs    = loc.frs1
   clause VarAs
     lhs.var_nm = return loc.nm
+    
+    child patExpr : PatExpr
+    patExpr.ast = loc.patExpr
+    
+    patExpr.exp = loc.patExpr
+    patExpr.env = lhs.env
+    patExpr.frs = lhs.frs
+    patExpr.pre = lhs.pre
+    
+    lhs.pre = patExpr.pre
+    lhs.frs = patExpr.frs
+    lhs.env = Gamma $ minsert loc.nm patExpr.res (unGam patExpr.env)
+    lhs.res = patExpr.res
   clause App
     child func : PatExpr
     func.ast = loc.func
@@ -733,22 +746,16 @@ datasem PatExpr monad IO
     
     lhs.var_nm = patExpr.var_nm
     
-    loc.env      = unGam lhs.env
-    loc.inferred = patExpr.res
-    loc.vars     = nub $ ftv loc.tyExpr
-    loc.declared = let tyExpr = simplify loc.tyExpr
-                   in case null loc.vars of
-                       True  -> tyExpr
-                       False -> foldl (.) id (map (TyExpr_Quant tyQu_Forall) loc.vars) tyExpr
-    
-    child s : Subsume = subsume
-    s.pre = trace ("Checking '" ++ pp loc.inferred ++ "' against '" ++ pp loc.declared ++ "'") lhs.pre
-    s.ty  = loc.inferred
-    s.exp = loc.declared
-    s.frs = lhs.frs
-    
-    lhs.frs = s.frs -- we don't really need the frs, but we're faking the dependency to insure that it's executed
-    lhs.env = Gamma $ foldl (.) id (zipWith minsert patExpr.var_nm (repeat $ TyScheme_SystemF loc.declared)) loc.env
+    child t : TypeAs = typeAs
+    t.env = patExpr.env
+    t.pre = patExpr.pre
+    t.frs = patExpr.frs
+    t.ty  = patExpr.res
+    t.exp = loc.tyExpr    
+
+    lhs.frs = t.frs
+    lhs.env = Gamma $ foldl (.) id (zipWith minsert patExpr.var_nm (repeat $ TyScheme_SystemF t.ty)) (unGam t.env)
+    lhs.res = embedF $ TyExpr_Parens t.ty -- segfault
   clause SConst
     lhs.var_nm = error "SConst not a var"
   clause Rec
@@ -991,7 +998,8 @@ datasem Expr monad IO
         arg.frs = lhs.frs
     
        loc.frs           = arg.frs
-       (TyScheme_SystemF loc.exp_a) = arg.res
+       -- (TyScheme_SystemF loc.exp_a) = arg.res
+       loc.exp_a = ftype arg.res
        (loc.b, loc.frs2) = fresh loc.frs
        loc.q'            = arg.pre
        loc.env'          = arg.env
@@ -1050,22 +1058,15 @@ datasem Expr monad IO
        expr.pre = lhs.pre
        expr.frs = lhs.frs
        
-       loc.env      = unGam lhs.env
-       loc.inferred = maybe (error $ "Could not infer the type of '" ++ pp loc.expr ++ "'" ) id expr.res
-       loc.vars     = nub $ ftv loc.tyExpr
-       loc.declared = let tyExpr = simplify loc.tyExpr
-                      in case null loc.vars of
-                          True  -> tyExpr
-                          False -> foldl (.) id (map (TyExpr_Quant tyQu_Forall) loc.vars) tyExpr
-        
-       child s : Subsume = subsume
-       s.pre = trace ("Checking '" ++ pp loc.inferred ++ "' against '" ++ pp loc.declared ++ "'") lhs.pre
-       s.ty  = loc.inferred
-       s.exp = loc.declared
-       s.frs = lhs.frs
-        
-       lhs.frs = s.frs -- we don't really need the frs, but we're faking the dependency to insure that it's executed
-       lhs.res = return $ TyScheme_SystemF loc.declared
+       child t : TypeAs = typeAs
+       t.env = lhs.env
+       t.pre = expr.pre
+       t.frs = expr.frs
+       t.ty  = maybe (error $ "Type inference of expression '" ++ pp loc.expr ++ "' failed in Case") id expr.res
+       t.exp = loc.tyExpr   
+       
+       lhs.frs = t.frs -- we don't really need the frs, but we're faking the dependency to insure that it's executed
+       lhs.res = trace ("Returning: " ++ pp t.ty) $ return $ TyScheme_SystemF t.ty
     clause Ann
        expr.pre = lhs.pre
        expr.env = lhs.env
@@ -1112,6 +1113,9 @@ datasem Expr monad IO
        lhs.pre = loc.q1
        lhs.frs = s.frs
     clause CaseAltFail
+       (loc.a, lhs.frs) = fresh lhs.frs
+       loc.vari = mkQuantified $ TyExpr_Var loc.a
+       lhs.res  = return loc.vari
     clause DataFields
     clause Rec
        child recExpr : RecExpr
@@ -1225,8 +1229,42 @@ itf RowTyExpr
     syn res :: RowTyExpr
     syn frs :: Int
     syn sub :: Env
-    
+ 
+itf TypeAs
+  visit typeAs
+    inh pre :: Prefix
+    inh env :: Gamma
+    inh ty  :: TyScheme
+    inh exp :: TyExpr
+    inh frs :: Int
+    syn pre :: Prefix
+    syn frs :: Int
+    syn env :: Gamma
+    syn ty  :: TyExpr -- res cauzes issues
 {
+typeAs = sem typeAs : TypeAs monad IO
+           visit typeAs
+             default? frs = last
+             default? pre = last
+             default? env = last
+             clause variable
+                match TyScheme.SystemF@ty = lhs.ty
+                match TyExpr.Var@vari     = ty.tyExpr
+                lhs.ty = trace "TypeAs Variable match. Returning wild" $ mkQuant lhs.exp
+             clause other
+                loc.inferred = lhs.ty
+                loc.declared = mkQuant lhs.exp
+                
+                child s : Subsume = subsume
+                s.pre = trace ("Checking '" ++ pp loc.inferred ++ "' against '" ++ pp loc.declared ++ "'") lhs.pre
+                s.ty  = loc.inferred
+                s.exp = loc.declared
+                s.frs = lhs.frs
+                
+                lhs.frs = s.frs -- we don't really need the frs, but we're faking the dependency to insure that it's executed
+                lhs.ty = loc.declared
+               
+
 unifyRows = sem unifyRows : RowTyExpr monad IO
               visit unifyRows
                 default? frs = last
@@ -1365,7 +1403,7 @@ subsume = sem subsume : Subsume monad IO
                     
                     clause wild_subsume
                       match True                  = loc.nf
-                      match (loc.fo, TyScheme.Bottom@l)     = ((), sugar lhs.ty)
+                      match (loc.fo, TyScheme.Bottom@l)     = ((), sugar loc.ty)
                       lhs.sub = empty
                       
                     clause f_subsume

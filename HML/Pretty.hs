@@ -147,6 +147,7 @@ instance Pretty Expr where
   pp (Expr_TypeAs ty e  ) = pp e ++ " :: " ++ pp ty
   pp (Expr_AppImpred f a) = pp f ++ " " ++ pp a
   pp (Expr_Rec a        ) = "(" ++ pp a ++ ")"
+  pp _                    = "[Unknown Expression]"
   
 instance Pretty RecExpr where
   pp (RecExpr_Empty     ) = ""

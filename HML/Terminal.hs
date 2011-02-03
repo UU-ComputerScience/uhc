@@ -31,6 +31,8 @@ interpreter_loop
        str <- getLine
        case str of
         ":q" -> return ()
+        ":"  -> return ()
+        ""   -> return ()
         _    -> do writeBuff str
                    performCheck name
 
