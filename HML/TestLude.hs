@@ -23,6 +23,7 @@ data Bool = True | False
 -- foreign import ccall "Prelude" and     :: List Bool -> Bool 
 
 -- (f . g) x = f (g x)
+id :: a -> a
 id x = x    
 -- f $ x = f x
 -- const a b = a
@@ -30,7 +31,7 @@ id x = x
 -- app = \(f :: forall a. a -> Int) -> Cons (f 0) (Cons (f 'a') Nil)
 
 -- foo :: a -> (Int, a, Int)
-foo x = (1, x, 2)
+foo = (1, 'C', 2)
 
 -- tmap f Nil         = Nil
 -- tmap f (Cons x xs) = Cons (f x) (tmap f xs)
@@ -39,11 +40,11 @@ foo x = (1, x, 2)
 -- g (False,x) = (+x)
 
 -- filter :: (a -> Bool) -> List a -> List a
-otherwise = True
-filter _pred Nil        = Nil
-filter pred (Cons x xs) 
-  | pred x    = Cons x (filter pred xs)
-  | otherwise = filter pred xs
+-- otherwise = True
+-- filter _pred Nil        = Nil
+-- filter pred (Cons x xs) 
+  -- | pred x    = Cons x (filter pred xs)
+  -- | otherwise = filter pred xs
 
 -- q True  x = id x
 -- q False x = (+x)
