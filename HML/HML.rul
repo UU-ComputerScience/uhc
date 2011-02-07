@@ -610,7 +610,8 @@ datasem PatExpr monad IO
   clause Con
      -- lhs.var_nm = error "Constructors not supported"
      loc.res = maybe (error "Constructor not found in lookup") id $ lookup loc.nm (unGam lhs.env)
-     (lhs.res, lhs.frs, _) = trace ("Con: Renaming " ++ pp loc.nm) $ renameBound lhs.frs loc.res
+     (lhs.res, lhs.frs, _) = let e = renameBound lhs.frs loc.res
+                             in trace ("Con: Renaming " ++ pp loc.nm ++ " to " ++ (\(a,_,_) -> pp a) e) e
   clause Var
     lhs.var_nm = return loc.nm
     
@@ -680,9 +681,10 @@ datasem PatExpr monad IO
     lhs.res = let b = TyExpr_Var loc.b
                   e = appAll (loc.e3 `munion` loc.e2') b
               in desugar $ TyScheme_Sugar loc.q5 (TyScheme_SystemF e)
-    loc.temp_sub = let subs = applyEnv loc.e2' (func.sub `munion` arg.sub)
+    loc.temp_sub = let subs = func.sub `munion` arg.sub -- applyEnv loc.e2' (func.sub `munion` arg.sub)
                    in subs `munion` loc.e3 -- added union
-    lhs.sub = loc.temp_sub
+    lhs.sub = let e = loc.temp_sub
+              in trace ("PatExpr:[App]:[Sub][Out]: " ++ pp e) e
     lhs.env = arg.env
     lhs.pre = loc.q4
     lhs.frs = u.frs
@@ -917,7 +919,8 @@ datasem Expr monad IO
        lhs.res = return $ TyScheme_SystemF $ TyExpr_Con $ mkName "Char"
     clause Con
        loc.res = maybe (error "Constructor not found in lookup") id $ lookup loc.nm (unGam lhs.env)
-       (loc.res2, lhs.frs, _) = trace ("Con: Renaming " ++ pp loc.nm) $ renameBound lhs.frs loc.res
+       (loc.res2, lhs.frs, _) = let e = renameBound lhs.frs loc.res
+                                in trace ("Con: Renaming " ++ pp loc.nm ++ " to " ++ (\(a,_,_) -> pp a) e) e
        lhs.res = return loc.res2
     clause App
        loc.frs            = lhs.frs
@@ -932,7 +935,8 @@ datasem Expr monad IO
        
        match True = isJust func.res
        
-       (loc.func_pre, loc.func_res) = explode func.pre (fromJust func.res)
+       (loc.func_pre, loc.func_res) = let e = explode func.pre (fromJust func.res)
+                                      in trace ("App:[Func]    " ++ pp e) e
        
        arg.exp = loc.arg
        arg.frs = func.frs
@@ -941,30 +945,32 @@ datasem Expr monad IO
        
        match True = isJust arg.res
        
-       (loc.arg_pre, loc.arg_res) = explode arg.pre (fromJust arg.res)
+       (loc.arg_pre, loc.arg_res) = let e = explode arg.pre (fromJust arg.res)
+                                    in trace ("App:[Arg]     " ++ pp e) e
        
-       (loc.temp1, loc.frt1) = extend (loc.arg_pre, Scheme_Simple loc.a1 (appAll arg.sub loc.func_res), arg.frs) True
-       (loc.temp2, loc.frt2) = extend (fst loc.temp1, Scheme_Simple loc.a2 (loc.arg_res), loc.frt1) True
-       (loc.temp3, loc.frt3) = extend (fst loc.temp2, Scheme_Simple loc.b  (TyScheme_Bottom), loc.frt2) True
+       (loc.temp1, loc.frt1) = trace ("Extend[1] " ++ pp loc.arg_pre) $ extend (loc.arg_pre, Scheme_Simple loc.a1 (appAll arg.sub loc.func_res), arg.frs) True
+       (loc.temp2, loc.frt2) = trace ("Extend[2] " ++ pp (fst loc.temp1)) $ extend (fst loc.temp1, Scheme_Simple loc.a2 (loc.arg_res), loc.frt1) True
+       (loc.temp3, loc.frt3) = trace ("Extend[3] " ++ pp (fst loc.temp2)) $ extend (fst loc.temp2, Scheme_Simple loc.b  (TyScheme_Bottom), loc.frt2) True
        
-       (loc.q2', loc.e2') = (fst loc.temp3, (snd loc.temp1) `munion` (snd loc.temp2) `munion` (snd loc.temp3))
+       (loc.q2', loc.e2') = (fst loc.temp3, (snd loc.temp1) `munion` (snd loc.temp2) `munion` (snd loc.temp3) `munion` func.sub)
        
        child u : Unify = unify
-       u.pre  = loc.q2'
+       u.pre  = trace ("App:[Pre-in]  " ++ pp loc.q2') loc.q2'
        
        u.exp1 = appAll loc.e2' (TyExpr_Var loc.a1)
        u.exp2 = (appAll loc.e2' (TyExpr_Var loc.a2)) `mkArrow` (TyExpr_Var loc.b)
        u.frs  = loc.frt3
        
-       loc.q3 = u.pre
-       loc.e3 = u.sub
+       loc.q3 = trace ("App:[Pre-out] " ++ pp u.pre) u.pre
+       loc.e3 = trace ("App:[Env]     " ++ pp u.sub) u.sub
        
        (loc.q4, loc.q5) = curry split loc.q3 (domain lhs.pre)
     
        lhs.res = let b = TyExpr_Var loc.b
                      e = appAll (loc.e3 `munion` loc.e2') b
-                 in return $ ptype $ desugar $ TyScheme_Sugar loc.q5 (TyScheme_SystemF e)
-       loc.temp_sub = let subs = applyEnv loc.e2' (func.sub `munion` arg.sub)
+                     f = return $ ptype $ desugar $ TyScheme_Sugar loc.q5 (TyScheme_SystemF e)
+                 in trace ("App:[Res]     " ++ pp f ++ "\n\t" ++ pp loc.q4 ++ "\n\t" ++ pp loc.temp_sub) f
+       loc.temp_sub = let subs = func.sub `munion` arg.sub -- applyEnv loc.e2' (func.sub `munion` arg.sub)
                       in subs `munion` loc.e3 -- added union
        lhs.sub = loc.temp_sub
        lhs.pre = loc.q4
@@ -997,12 +1003,14 @@ datasem Expr monad IO
         arg.exp = loc.arg
         arg.frs = lhs.frs
     
-       loc.frs           = arg.frs
+       (loc.q', loc.frs, loc.exp_a)    = deep_explode' arg.pre arg.frs arg.res
        -- (TyScheme_SystemF loc.exp_a) = arg.res
-       loc.exp_a = ftype arg.res
-       (loc.b, loc.frs2) = fresh loc.frs
-       loc.q'            = arg.pre
-       loc.env'          = arg.env
+       -- loc.exp_a = let e = ftype arg.res
+                   -- in trace ("Arg: " ++ pp e ++ "\n\t" ++ pp arg.env) e
+       (loc.b, loc.frs2) = let e = fresh loc.frs
+                           in trace ("Lam:[Arg]: " ++ pp loc.exp_a ++ "\n\t" ++ pp loc.env') e
+       -- loc.q'            = arg.pre
+       loc.env'          = appAll arg.sub arg.env -- update the bindings with what's occured in the patexpr.
        
        body.frs = loc.frs2
        body.env = loc.env'
@@ -1019,7 +1027,7 @@ datasem Expr monad IO
        (loc.q2,  loc.q3)  = curry split body.pre (domain lhs.pre)
        loc.phi1           = case body.res of
                               Nothing -> error "Inference of Expressions failed in Lam, no type infered for body"
-                              Just x  -> x
+                              Just x  -> trace ("Body: " ++ pp x ++ "\n\t" ++ pp body.pre ++ "\n\t" ++ pp loc.env_full) x
                               
        (loc.q3_, loc.phi1') = explode loc.q3 loc.phi1
        
@@ -1395,7 +1403,7 @@ subsume = sem subsume : Subsume monad IO
                         clause succeeded
                           match False  = loc.check
                           lhs.pre = loc.q3
-                          lhs.sub = loc.e2
+                          lhs.sub = trace ("Instantiation Env: " ++ pp loc.e2 ++ "\nFull Env: " ++ pp loc.e1) loc.e2
                           lhs.frs = u.frs
                         clause failed
                           match (loc.bla, True) = ((), loc.check)
@@ -1418,7 +1426,8 @@ unify = sem unify : Unify monad IO
              clause Main_unify
                loc.nfTy1 = isNf lhs.exp1
                loc.nfTy2 = isNf lhs.exp2
-               loc.nf    = loc.nfTy1 && loc.nfTy2
+               loc.nf    = let e = loc.nfTy1 && loc.nfTy2
+                           in trace ("\tUnify:[1]: " ++ pp lhs.exp1 ++ "\n\tUnify:[2]: " ++ pp lhs.exp2) e
                internal nf_check
                  clause s_unify
                    match True  = loc.nf
@@ -1481,17 +1490,18 @@ unify = sem unify : Unify monad IO
                        
                        internal case_check
                          clause eq_vars
-                           match True = var1.nm == var2.nm
+                           match True = trace "In Variable check" $ var1.nm == var2.nm
                            lhs.sub = empty
                          clause rest_vars
                            loc.q  = lhs.pre
                            loc.p1 = loc.q `contains` var1.nm
                            loc.p2 = loc.q `contains` var2.nm
                            internal var_check
-                             loc.isJust    = isJust loc.p1 && isJust loc.p2
+                             loc.isJust    = let e =  isJust loc.p1 && isJust loc.p2
+                                             in trace ("Var check: " ++ show e) e 
                              clause pure_var
                                match False = loc.isJust
-                               lhs.sub = empty 
+                               lhs.sub = error $ "Variable check failed. A binding for variable '" ++ pp var1.nm ++ "' or '" ++ pp var2.nm ++ "' was not found in prefix " ++ pp loc.q -- empty 
                              clause ty_var
                                match True  = loc.isJust
                                loc.phi1 = fromJust loc.p1
@@ -1522,7 +1532,8 @@ unify = sem unify : Unify monad IO
                                    
                                    lhs.frs = s.frs
                                    lhs.pre = loc.q3
-                                   lhs.sub = loc.e3 `munion` loc.e2 `munion` loc.e1
+                                   lhs.sub = let e = loc.e3 `munion` loc.e2 `munion` loc.e1
+                                             in trace ("Unify:[Sub[Vars]] " ++ pp e) e
                      clause cons
                        match TyExpr.Con@var1 = lhs.exp1
                        match TyExpr.Con@var2 = lhs.exp2

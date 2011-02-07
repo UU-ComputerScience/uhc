@@ -420,8 +420,8 @@ extend (q, scheme@(Scheme_Simple var phi), frs) ren
  = let p = nf phi
    in case isUnQualTy p of
         True  -> ((q, [(var, p)]), frs)
-        _     -> let (ph2, frs', subs) = if ren 
-                                            then renameVars frs phi
+        _     -> let (ph2, frs', subs) = if False 
+                                            then renameBound frs phi
                                             else (phi, frs,[])
                  in ((q++[TyIndex_Group var (promote ph2)], subs), frs')
 
