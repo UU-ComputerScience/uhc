@@ -22,7 +22,7 @@ foreign import ccall "Prelude" (&&)    :: Bool -> Bool -> Bool
 -- foreign import ccall "Prelude" all     :: (a -> Bool) -> List a -> Bool
 -- foreign import ccall "Prelude" and     :: List Bool -> Bool 
 
--- -- (f . g) x = f (g x)
+-- (f . g) x = f (g x)
 -- id :: a -> a
 id x = x    
 -- f $ x = f x
@@ -52,5 +52,5 @@ id x = x
 -- f True = False
 -- f x    = x && True
 
-Nil         ++ ys = ys
-(Cons x xs) ++ ys = Cons x (xs ++ ys)
+-- Nil         ++ ys = ys
+-- (Cons x xs) ++ ys = Cons x (xs ++ ys)

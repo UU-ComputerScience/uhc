@@ -610,8 +610,9 @@ datasem PatExpr monad IO
   clause Con
      -- lhs.var_nm = error "Constructors not supported"
      loc.res = maybe (error "Constructor not found in lookup") id $ lookup loc.nm (unGam lhs.env)
-     (lhs.res, lhs.frs, _) = let e = renameBound lhs.frs loc.res
-                             in trace ("Con: Renaming " ++ pp loc.nm ++ " to " ++ (\(a,_,_) -> pp a) e) e
+     (lhs.res, lhs.frs, lhs.pre) = let (e,i,_) = renameBound lhs.frs loc.res
+                                       (q, i', e') = deep_explode lhs.pre i e
+                                   in trace ("Con: Renaming " ++ pp loc.nm ++ " to " ++ pp e) (e', i', q)
   clause Var
     lhs.var_nm = return loc.nm
     
@@ -637,57 +638,59 @@ datasem PatExpr monad IO
     lhs.env = Gamma $ minsert loc.nm patExpr.res (unGam patExpr.env)
     lhs.res = patExpr.res
   clause App
+    loc.frs            = lhs.frs
+    (loc.a1, loc.frs1) = fresh loc.frs
+    (loc.a2, loc.frs2) = fresh loc.frs1
+    (loc.b , loc.frs3) = fresh loc.frs2
+    
     child func : PatExpr
     func.ast = loc.func
-    
     func.exp = loc.func
-    func.env = lhs.env
-    func.frs = lhs.frs
+    func.frs = loc.frs3
     func.pre = lhs.pre
+    func.env = lhs.env
+    
+    (loc.func_pre, loc.func_res) = let e = explode func.pre func.res
+                                   in trace ("PatExpr:[App]:[Func]    " ++ pp e) e
     
     child arg : PatExpr
     arg.ast = loc.arg
-    
     arg.exp = loc.arg
-    arg.env = func.env
     arg.frs = func.frs
-    arg.pre = func.pre
+    arg.pre = loc.func_pre
+    arg.env = appAll func.sub func.env
     
-    (loc.q1   , loc.frx , loc.func1) = deep_explode arg.pre arg.frs func.res
-    (loc.q2   , loc.frx1, loc.arg1 ) = deep_explode loc.q1 loc.frx arg.res
-
-    (loc.a1   , loc.frs1 ) = fresh loc.frx1
-    (loc.a2   , loc.frs2 ) = fresh loc.frs1
-    (loc.b    , loc.frs3 ) = fresh loc.frs2
-                         
-    (loc.temp1, loc.frt1 ) = extend (loc.q2, Scheme_Simple loc.a1 (appAll arg.sub loc.func1), loc.frs3) True
-    (loc.temp2, loc.frt2 ) = extend (fst loc.temp1, Scheme_Simple loc.a2 (loc.arg1), loc.frt1) True
-    (loc.temp3, loc.frt3 ) = extend (fst loc.temp2, Scheme_Simple loc.b  (TyScheme_Bottom), loc.frt2) True
-                         
-    (loc.q2'  , loc.e2'  ) = (fst loc.temp3, (snd loc.temp1) `munion` (snd loc.temp2) `munion` (snd loc.temp3))
+    (loc.arg_pre, loc.arg_res) = let e = explode arg.pre arg.res
+                                 in trace ("PatExpr:[App]:[Arg]     " ++ pp e) e
+    
+    (loc.temp1, loc.frt1) = trace ("Extend[1] " ++ pp loc.arg_pre) $ extend (loc.arg_pre, Scheme_Simple loc.a1 (appAll arg.sub loc.func_res), arg.frs) True
+    (loc.temp2, loc.frt2) = trace ("Extend[2] " ++ pp (fst loc.temp1)) $ extend (fst loc.temp1, Scheme_Simple loc.a2 (loc.arg_res), loc.frt1) True
+    (loc.temp3, loc.frt3) = trace ("Extend[3] " ++ pp (fst loc.temp2)) $ extend (fst loc.temp2, Scheme_Simple loc.b  (TyScheme_Bottom), loc.frt2) True
+    
+    (loc.q2', loc.e2') = (fst loc.temp3, (snd loc.temp1) `munion` (snd loc.temp2) `munion` (snd loc.temp3) `munion` func.sub)
     
     child u : Unify = unify
-    u.pre  = loc.q2'
+    u.pre  = trace ("PatExpr:[App]:[Pre-in]  " ++ pp loc.q2') loc.q2'
     
     u.exp1 = appAll loc.e2' (TyExpr_Var loc.a1)
     u.exp2 = (appAll loc.e2' (TyExpr_Var loc.a2)) `mkArrow` (TyExpr_Var loc.b)
     u.frs  = loc.frt3
     
-    loc.q3 = u.pre
-    loc.e3 = u.sub
+    loc.q3 = trace ("PatExpr:[App]:[Pre-out] " ++ pp u.pre) u.pre
+    loc.e3 = trace ("PatExpr:[App]:[Env]     " ++ pp u.sub) u.sub
     
     (loc.q4, loc.q5) = curry split loc.q3 (domain lhs.pre)
     
     lhs.res = let b = TyExpr_Var loc.b
                   e = appAll (loc.e3 `munion` loc.e2') b
-              in desugar $ TyScheme_Sugar loc.q5 (TyScheme_SystemF e)
+                  f = ptype $ desugar $ TyScheme_Sugar loc.q5 (TyScheme_SystemF e)
+              in trace ("PatExpr:[App]:[Res]     " ++ pp f ++ "\n\t" ++ pp loc.q4 ++ "\n\t" ++ pp loc.temp_sub) (ptype $ (TyScheme_SystemF e))
     loc.temp_sub = let subs = func.sub `munion` arg.sub -- applyEnv loc.e2' (func.sub `munion` arg.sub)
                    in subs `munion` loc.e3 -- added union
-    lhs.sub = let e = loc.temp_sub
-              in trace ("PatExpr:[App]:[Sub][Out]: " ++ pp e) e
-    lhs.env = arg.env
-    lhs.pre = loc.q4
+    lhs.sub = loc.temp_sub
+    lhs.pre = loc.q3 -- loc.q4
     lhs.frs = u.frs
+    lhs.env = arg.env
     
     lhs.var_nm = func.var_nm `munion` arg.var_nm
   clause AppTop
@@ -757,7 +760,7 @@ datasem PatExpr monad IO
 
     lhs.frs = t.frs
     lhs.env = Gamma $ foldl (.) id (zipWith minsert patExpr.var_nm (repeat $ TyScheme_SystemF t.ty)) (unGam t.env)
-    lhs.res = embedF $ TyExpr_Parens t.ty -- segfault
+    lhs.res = TyScheme_SystemF $ TyExpr_Parens t.ty -- segfault
   clause SConst
     lhs.var_nm = error "SConst not a var"
   clause Rec
@@ -779,11 +782,12 @@ datasem PatExpr monad IO
                                     (TyExpr_Row ty)
                                     
     (loc.q1, loc.q2) = split (recPatExpr.pre, domain lhs.pre)
-    lhs.res = ptype $ desugar $ TyScheme_Sugar loc.q2  $ TyScheme_SystemF loc.res
+    -- lhs.res = ptype $ desugar $ TyScheme_Sugar loc.q2  $ TyScheme_SystemF loc.res
+    lhs.res = ptype $ TyScheme_SystemF loc.res
     -- lhs.res = TyScheme_SystemF loc.res
     lhs.sub = recPatExpr.sub
-    lhs.pre = loc.q1
-    -- lhs.pre = recPatExpr.pre
+    -- lhs.pre = loc.q1
+    lhs.pre = recPatExpr.pre
     lhs.frs = recPatExpr.frs
     lhs.env = recPatExpr.env
   clause DataFields
@@ -827,11 +831,11 @@ datasem Decl monad IO
          s.frs = lhs.frs
         
          lhs.frs = s.frs -- we don't really need the frs, but we're faking the dependency to insure that it's executed
-         lhs.env = Gamma $ minsert loc.nm loc.declared loc.env
+         lhs.env = scope lhs.env (Gamma $ minsert loc.nm loc.declared loc.env)
        clause isNot_inferred 
          match True = loc.isNotDeclared
          lhs.frs = expr.frs
-         lhs.env = loc.gam
+         lhs.env = scope lhs.env (loc.gam)
   clause TySig
     -- (loc.ty, loc.frs, _) = renameVars lhs.frs (mkQuantified loc.tyExpr)
     loc.env      = unGam lhs.env
@@ -1074,7 +1078,7 @@ datasem Expr monad IO
        t.exp = loc.tyExpr   
        
        lhs.frs = t.frs -- we don't really need the frs, but we're faking the dependency to insure that it's executed
-       lhs.res = trace ("Returning: " ++ pp t.ty) $ return $ TyScheme_SystemF t.ty
+       lhs.res = trace ("Returning: " ++ pp t.ty) $ return $ TyScheme_SystemF $ TyExpr_Parens t.ty
     clause Ann
        expr.pre = lhs.pre
        expr.env = lhs.env

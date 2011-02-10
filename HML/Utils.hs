@@ -92,6 +92,13 @@ explode' pre sche = second ftype (explode pre sche)
 
 third :: (c -> d) -> (a,b,c) -> (a,b,d)
 third f (a,b,c) = (a, b, f c)
+
+-- | Scope a Gamma to contain only what was mentioned by the first gamma
+scope :: Gamma -> Gamma -> Gamma
+scope (Gamma from) (Gamma to) 
+  = let lst = map fst from
+        to' = filter ((`elem` lst) .fst) to
+    in Gamma to'
     
 -- | Push any quantified type in the environment instead of being prefixed to the type
 explode :: Prefix -> TyScheme -> (Prefix, TyScheme)
@@ -109,12 +116,10 @@ deep_explode' pre frs sche = third ftype (deep_explode pre frs sche)
 -- | A less restrictive version of explode', this is used in case expressions where we want to always
 --   split the Quantifications off the TySchemes
 deep_explode :: Prefix -> Int -> TyScheme -> (Prefix, Int, TyScheme)
-deep_explode p i ty
+deep_explode p i t
    = case sugar t of
-       TyScheme_Sugar q t' -> (appAll s $ p `munion` q, i', t')
-       x                   -> (p                      , i, ty )
-     -- where (t, i', s) = renameBound i ty
-     where (t, i', s) = (ty, i, [])
+       TyScheme_Sugar q t' -> (p `munion` q, i, t')
+       x                   -> (p           , i, t )
        
 instance Apply HsName where
    app (s, v) nm | s == nm   = case ftv v of
