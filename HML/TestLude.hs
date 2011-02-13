@@ -24,7 +24,7 @@ foreign import ccall "Prelude" (&&)    :: Bool -> Bool -> Bool
 
 -- (f . g) x = f (g x)
 -- id :: a -> a
-id x = x    
+-- id x = x    
 -- f $ x = f x
 -- const a b = a
 
@@ -39,12 +39,13 @@ id x = x
 -- g (True ,x) = id x
 -- g (False,x) = (+x)
 
--- filter :: (a -> Bool) -> List a -> List a
--- otherwise = True
--- filter _pred Nil        = Nil
--- filter pred (Cons x xs) 
-  -- | pred x    = Cons x (filter pred xs)
-  -- | otherwise = filter pred xs
+otherwise = True
+
+filter :: (a -> Bool) -> List a -> List a
+filter _pred Nil        = Nil
+filter pred (Cons x xs) 
+  | pred x    = Cons x (filter pred xs)
+  | otherwise = filter pred xs
 
 -- q True  x = id x
 -- q False x = (+x)
@@ -52,5 +53,5 @@ id x = x
 -- f True = False
 -- f x    = x && True
 
--- Nil         ++ ys = ys
--- (Cons x xs) ++ ys = Cons x (xs ++ ys)
+Nil         ++ ys = ys
+(Cons x xs) ++ ys = Cons x (xs ++ ys)

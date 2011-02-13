@@ -1,6 +1,7 @@
 {-# LANGUAGE BangPatterns          #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeSynonymInstances  #-}
+{-# LANGUAGE FlexibleInstances     #-}
 module Utils where
 
 import Control.Monad.Error
@@ -75,10 +76,11 @@ rm k1 (x@(k,v):xs) | k1 == k   = rm k1 xs
 
 -- | Apply a set of substitution to an environment
 apply :: Env -> Gamma -> Gamma
-apply sub env 
-  = let lst  = map (mapFunc . app) sub
-        set  = foldl' (.) id lst
-    in Gamma $ set $ unGam env
+apply sub env = Gamma $ map ((second . Utils.appAll) sub) (unGam env)
+    
+subT = [(mkName "a11", TyScheme_SystemF $ (TyExpr_Var $ mkName "a13") `mkArrow` (TyExpr_Var $ mkName "a23")), (mkName "a23", TyScheme_SystemF (TyExpr_Con $ mkName "Bool"))]
+lstT = Gamma [(mkName "foo", TyScheme_SystemF $ TyExpr_Con $ mkName "String"), (mkName "Bar", TyScheme_SystemF $ TyExpr_Var  $ mkName "a11")]
+sgh  = (mkName "Bar", TyScheme_SystemF $ TyExpr_Var  $ mkName "a11")
     
 applyEnv :: Env -> Env -> Env
 applyEnv sub env

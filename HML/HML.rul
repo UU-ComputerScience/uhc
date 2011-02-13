@@ -349,9 +349,11 @@ itf Decls
     inh ast :: Decls
     inh pre :: Prefix
     inh env :: Gamma
+    inh sig :: Gamma -- A collection of type signatures
     inh frs :: Int
     syn pre :: Prefix
     syn env :: Gamma
+    syn sig :: Gamma
     syn sub :: Env
     syn frs :: Int
     
@@ -360,9 +362,11 @@ itf Decl
     inh ast :: Decl
     inh pre :: Prefix
     inh env :: Gamma
+    inh sig :: Gamma -- A collection of type signatures
     inh frs :: Int
     syn pre :: Prefix
     syn env :: Gamma -- These declarations can update the gamma in a non-local way, so we have to return the new one
+    syn sig :: Gamma -- A collection of type signature, if at the end this is not empty then we have a sig without a let
     syn sub :: Env
     syn frs :: Int
 
@@ -438,16 +442,16 @@ datasem CaseAlt monad IO
     patExpr.exp = loc.patExpr
     patExpr.frs = lhs.frs
     
-    (loc.q, loc.frc, loc.ty) = deep_explode patExpr.pre patExpr.frs patExpr.res
+    -- (loc.q, loc.frc, loc.ty) = deep_explode patExpr.pre patExpr.frs patExpr.res
     
     expr.exp = loc.expr
-    expr.pre = loc.q
+    expr.pre = patExpr.pre
     expr.env = patExpr.env
-    expr.frs = loc.frc
+    expr.frs = patExpr.frs
     
-    loc.pat = appAll expr.sub loc.ty
+    loc.pat = appAll expr.sub patExpr.res
     
-    loc.ety = trace ("Expr: " ++ pp loc.expr ++ ":" ++ pp expr.res ++ "\nPatExpr: " ++ pp loc.patExpr ++ ":" ++ pp patExpr.res ++ "(" ++ pp loc.ty ++ ")") $ maybe (error $ "Type inference of the expression '" ++ pp loc.expr ++ "' has failed") id expr.res
+    loc.ety = trace ("Expr: " ++ pp loc.expr ++ ":" ++ pp expr.res ++ "\nPatExpr: " ++ pp loc.patExpr ++ ":" ++ pp patExpr.res) $ maybe (error $ "Type inference of the expression '" ++ pp loc.expr ++ "' has failed") id expr.res
     -- (loc.q1, loc.q2) = split(patExpr.pre, domain patExpr.res \\ domain expr.pre)
     loc.pre = expr.pre -- `munion` loc.q1
     -- loc.exp = let e = appAll patExpr.sub loc.ety in trace (pp loc.ety ++ " - " ++ pp loc.pat ++ " - " ++ pp lhs.exp ++ " ++ " ++ pp loc.pre ++ " && " ++ pp e) $  e
@@ -609,7 +613,7 @@ datasem PatExpr monad IO
      lhs.res = TyScheme_SystemF $ TyExpr_Con $ mkName "Char"
   clause Con
      -- lhs.var_nm = error "Constructors not supported"
-     loc.res = maybe (error "Constructor not found in lookup") id $ lookup loc.nm (unGam lhs.env)
+     loc.res = maybe (error $ "Constructor '" ++ pp loc.nm ++ "' not found in lookup") id $ lookup loc.nm (unGam lhs.env)
      (lhs.res, lhs.frs, lhs.pre) = let (e,i,_) = renameBound lhs.frs loc.res
                                        (q, i', e') = deep_explode lhs.pre i e
                                    in trace ("Con: Renaming " ++ pp loc.nm ++ " to " ++ pp e) (e', i', q)
@@ -760,7 +764,9 @@ datasem PatExpr monad IO
 
     lhs.frs = t.frs
     lhs.env = Gamma $ foldl (.) id (zipWith minsert patExpr.var_nm (repeat $ TyScheme_SystemF t.ty)) (unGam t.env)
-    lhs.res = TyScheme_SystemF $ TyExpr_Parens t.ty -- segfault
+    lhs.res = TyScheme_SystemF $ TyExpr_Parens t.ty -- segfault @#$&^@#^%$
+    lhs.sub = patExpr.sub `munion` t.sub
+    lhs.pre = t.pre
   clause SConst
     lhs.var_nm = error "SConst not a var"
   clause Rec
@@ -799,6 +805,8 @@ datasem Decl monad IO
   default? sub = const []
   default? pre = last
   default? frs = last
+  default? sig = last
+  default? env = last
   clause Val
     match PatExpr.Var@loc = loc.patExpr
     
@@ -807,9 +815,9 @@ datasem Decl monad IO
     expr.exp = loc.expr
     expr.frs = lhs.frs
     
-    loc.env      = unGam lhs.env
-    loc.declared = fromJust (lookup loc.nm loc.env)
-    loc.isNotDeclared = isBottom $ nf loc.declared
+    loc.env           = unGam lhs.env
+    loc.declared      = lookup loc.nm (unGam lhs.sig)
+    loc.isNotDeclared = isJust loc.declared
     
     lhs.pre = expr.pre
     (loc.inferred, loc.gam) = let adjusted = apply expr.sub lhs.env
@@ -821,19 +829,20 @@ datasem Decl monad IO
     -- hasn't been done. and also we *can't* infer it here. So we defer this action.
     internal is_inferred
        clause already_inferred1
-         match False = loc.isNotDeclared
-         loc.dcl = ftype loc.declared
+         match True = loc.isNotDeclared
+         loc.declared' = fromJust loc.declared
+         loc.dcl = ftype loc.declared'
         
          child s : Subsume = subsume
          s.pre = trace ("Checking '" ++ pp loc.inferred ++ "' against '" ++ (pp $ clean loc.dcl) ++ "' in bind '" ++  pp loc.nm ++ "'") lhs.pre
          s.ty  = loc.inferred
          s.exp = loc.dcl
-         s.frs = lhs.frs
+         s.frs = expr.frs
         
          lhs.frs = s.frs -- we don't really need the frs, but we're faking the dependency to insure that it's executed
-         lhs.env = scope lhs.env (Gamma $ minsert loc.nm loc.declared loc.env)
+         lhs.env = scope lhs.env (Gamma $ minsert loc.nm loc.declared' loc.env)
        clause isNot_inferred 
-         match True = loc.isNotDeclared
+         match False = loc.isNotDeclared
          lhs.frs = expr.frs
          lhs.env = scope lhs.env (loc.gam)
   clause TySig
@@ -848,7 +857,6 @@ datasem Decl monad IO
                        False -> foldl (.) id (map (TyExpr_Quant tyQu_Forall) loc.vars) tyExpr
 
     (loc.dcl, loc.frs, _) = renameBound lhs.frs (embedF loc.declared) 
-    lhs.env = Gamma $ minsert loc.nm loc.dcl loc.env  -- update the Gamma
     -- the let bindings are preprocessed. So is the nf of the inferred type for a binding is _|_ the inferrence
     -- hasn't been done. and also we *can't* infer it here. So we defer this action.
     loc.isNotInferred = isBottom $ nf loc.inferred
@@ -863,9 +871,11 @@ datasem Decl monad IO
          s.frs = loc.frs
         
          lhs.frs = s.frs -- we don't really need the frs, but we're faking the dependency to insure that it's executed
+         lhs.env = Gamma $ minsert loc.nm loc.dcl loc.env  -- update the Gamma
        clause not_inferred
          match True = loc.isNotInferred
          lhs.frs = loc.frs
+         lhs.sig = Gamma $ minsert loc.nm loc.dcl (unGam lhs.sig)  -- update the Sig list
        
   clause Data
      child constrs : DataConstrs
@@ -889,21 +899,25 @@ datasem Decl monad IO
 datasem Decls monad IO
   default? sub = const empty
   default? env = last
+  default? sig = last
   default? pre = last
   default? frs = last
   clause Cons
     hd.pre     = lhs.pre
     hd.env     = lhs.env
     hd.frs     = lhs.frs
+    hd.sig     = lhs.sig
     
     tl.env     = hd.env
     tl.pre     = hd.pre
     tl.frs     = hd.frs
+    tl.sig     = hd.sig
     
     lhs.pre       = tl.pre
     lhs.sub       = hd.sub `munion` tl.sub
     lhs.frs       = tl.frs
     lhs.env       = tl.env
+    lhs.sig       = tl.sig
   clause Nil
        
 datasem Expr monad IO
@@ -922,7 +936,7 @@ datasem Expr monad IO
     clause CConst
        lhs.res = return $ TyScheme_SystemF $ TyExpr_Con $ mkName "Char"
     clause Con
-       loc.res = maybe (error "Constructor not found in lookup") id $ lookup loc.nm (unGam lhs.env)
+       loc.res = maybe (error $ "Constructor '" ++ pp loc.nm ++ "' not found in lookup") id $ lookup loc.nm (unGam lhs.env)
        (loc.res2, lhs.frs, _) = let e = renameBound lhs.frs loc.res
                                 in trace ("Con: Renaming " ++ pp loc.nm ++ " to " ++ (\(a,_,_) -> pp a) e) e
        lhs.res = return loc.res2
@@ -989,9 +1003,10 @@ datasem Expr monad IO
         decls.pre = lhs.pre
         decls.env = loc.env
         decls.frs = loc.frs
+        decls.sig = Gamma empty
 
         body.pre = decls.pre
-        body.env = decls.env
+        body.env = decls.env -- make sure bindings don't leak out, only top level bindings are allowed
         body.exp = loc.body
         body.frs = decls.frs
 
@@ -999,6 +1014,7 @@ datasem Expr monad IO
         lhs.res = body.res
         lhs.sub = decls.sub `munion` body.sub
         lhs.frs = body.frs
+        -- Add check for empty Sig
     clause Lam
         child arg : PatExpr
         arg.ast = loc.arg
@@ -1079,6 +1095,9 @@ datasem Expr monad IO
        
        lhs.frs = t.frs -- we don't really need the frs, but we're faking the dependency to insure that it's executed
        lhs.res = trace ("Returning: " ++ pp t.ty) $ return $ TyScheme_SystemF $ TyExpr_Parens t.ty
+       lhs.sub = let e = expr.sub `munion` t.sub
+                 in  trace ("TypeAs:[Sub] " ++ pp e ) e
+       lhs.pre = t.pre
     clause Ann
        expr.pre = lhs.pre
        expr.env = lhs.env
@@ -1108,7 +1127,7 @@ datasem Expr monad IO
        
        alts.ast = loc.alts
        alts.exp = loc.etype
-       alts.env = lhs.env
+       alts.env = let e = appAll expr.sub lhs.env in trace (pp e) e
        alts.frs = expr.frs
        alts.pre = trace ("Case Expr - " ++ pp loc.expr ++ ":" ++ pp loc.etype ++ "% " ++ pp expr.pre) expr.pre
        
@@ -1116,12 +1135,12 @@ datasem Expr monad IO
        s.pre = alts.pre
        s.ty1 = loc.etype
        s.ty2 = caseLHS alts.res
-       s.frs = expr.frs
+       s.frs = alts.frs
        
        (loc.q1, loc.q2) = split (s.pre, domain lhs.pre)
        
        lhs.res = return $ let e = ptype $ desugar $ TyScheme_Sugar loc.q2 $ appAll alts.sub $ body alts.res in trace ("Case done:" ++ pp e) e
-       lhs.sub = trace ("Case alts: " ++ pp alts.sub) $ s.sub `pick` alts.sub
+       lhs.sub = trace ("Case alts: " ++ pp alts.sub) $ s.sub `pick` alts.sub `pick` expr.sub
        lhs.pre = loc.q1
        lhs.frs = s.frs
     clause CaseAltFail
@@ -1157,9 +1176,8 @@ datasem Expr monad IO
        expr.env = lhs.env
        expr.exp = loc.expr
     clause Undefined
-       (loc.a, loc.frs1) = fresh lhs.frs
-       lhs.res = return $ TyScheme_SystemF $ TyExpr_Var loc.a
-       lhs.frs = loc.frs1
+       (loc.a, lhs.frs) = fresh lhs.frs
+       lhs.res = return $ mkQuantified $ TyExpr_Var loc.a
        
 datasem RecExpr monad IO
     default? sub = const empty
@@ -1252,6 +1270,7 @@ itf TypeAs
     syn pre :: Prefix
     syn frs :: Int
     syn env :: Gamma
+    syn sub :: Env
     syn ty  :: TyExpr -- res cauzes issues
 {
 typeAs = sem typeAs : TypeAs monad IO
@@ -1259,10 +1278,16 @@ typeAs = sem typeAs : TypeAs monad IO
              default? frs = last
              default? pre = last
              default? env = last
+             default? sub = const empty
              clause variable
-                match TyScheme.SystemF@ty = lhs.ty
-                match TyExpr.Var@vari     = ty.tyExpr
-                lhs.ty = trace "TypeAs Variable match. Returning wild" $ mkQuant lhs.exp
+                (loc.pre, lhs.frs, loc.ty) = deep_explode lhs.pre lhs.frs lhs.ty
+                match TyScheme.SystemF@ty  = loc.ty
+                match TyExpr.Var@vari      = ty.tyExpr
+                lhs.ty  = trace ("TypeAs Variable match. Returning wild: " ++ pp loc.sub) $ mkQuant lhs.exp
+                -- lhs.ty  = trace "TypeAs Variable match. Returning wild" $ lhs.ty -- mkQuant lhs.exp
+                loc.sub = [(vari.nm, mkQuantified lhs.exp)]
+                lhs.sub = loc.sub
+                lhs.env = appAll loc.sub lhs.env
              clause other
                 loc.inferred = lhs.ty
                 loc.declared = mkQuant lhs.exp
@@ -1274,7 +1299,10 @@ typeAs = sem typeAs : TypeAs monad IO
                 s.frs = lhs.frs
                 
                 lhs.frs = s.frs -- we don't really need the frs, but we're faking the dependency to insure that it's executed
-                lhs.ty = loc.declared
+                lhs.ty  = loc.declared
+                lhs.sub = s.sub
+                lhs.pre = s.pre
+                lhs.env = appAll s.sub lhs.env
                
 
 unifyRows = sem unifyRows : RowTyExpr monad IO
