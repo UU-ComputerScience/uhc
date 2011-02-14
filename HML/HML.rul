@@ -442,8 +442,6 @@ datasem CaseAlt monad IO
     patExpr.exp = loc.patExpr
     patExpr.frs = lhs.frs
     
-    -- (loc.q, loc.frc, loc.ty) = deep_explode patExpr.pre patExpr.frs patExpr.res
-    
     expr.exp = loc.expr
     expr.pre = patExpr.pre
     expr.env = patExpr.env
@@ -464,10 +462,10 @@ datasem CaseAlt monad IO
     -- s.frs = expr.frs
     
     -- (loc.q3, loc.frs,  loc.t1) = let e = (appAll expr.sub s.ty) in trace ("Deep1: " ++ pp s.pre ++ " ^^ " ++ pp e) $ deep_explode s.pre s.frs e
-    (loc.q4, loc.frs1, loc.t2) = trace ("Deep2: " ++ pp loc.pre ++ " ^^ " ++ pp loc.ety) $ deep_explode loc.pre expr.frs loc.ety
+    (loc.q4, loc.t2) = trace ("Deep2: " ++ pp loc.pre ++ " ^^ " ++ pp loc.ety) $ deep_explode loc.pre loc.ety
     
     lhs.pre = trace ("Prefix: " ++ pp loc.q4) loc.q4
-    lhs.frs = loc.frs1
+    lhs.frs = expr.frs
     lhs.sub = expr.sub -- s.sub -- `remove` (domain patExpr.res \\ domain expr.sub) -- `munion` expr.sub
     lhs.res = let e = CaseType loc.pat loc.t2
               in trace ("case finished: " ++ pp e ++ " {" ++ pp expr.sub ++ "}") e
@@ -592,7 +590,8 @@ datasem RecPatExpr monad IO
                    (Nothing, _) -> error $ "Cannot infer the type of tuple element '" ++ pp loc.mbNm ++ "'"
                    (_, Nothing) -> error $ "Cannot infer the type of the expression '" ++ pp loc.patExpr ++ "'"
                    (Just rty,Just ty) -> let (typ, frs, _) = renameBound patExpr.frs ty 
-                                         in third (\ty'->RowTyExpr_Ext rty loc.mbNm ty') (deep_explode' patExpr.pre frs typ) 
+                                             (q, e)        = second (\ty'->RowTyExpr_Ext rty loc.mbNm ty') (deep_explode' patExpr.pre typ) 
+                                         in (q, frs, e)
                    
     lhs.sub = recPatExpr.sub `munion` patExpr.sub
     lhs.res = return loc.res
@@ -612,11 +611,10 @@ datasem PatExpr monad IO
   clause CConst
      lhs.res = TyScheme_SystemF $ TyExpr_Con $ mkName "Char"
   clause Con
-     -- lhs.var_nm = error "Constructors not supported"
      loc.res = maybe (error $ "Constructor '" ++ pp loc.nm ++ "' not found in lookup") id $ lookup loc.nm (unGam lhs.env)
      (lhs.res, lhs.frs, lhs.pre) = let (e,i,_) = renameBound lhs.frs loc.res
-                                       (q, i', e') = deep_explode lhs.pre i e
-                                   in trace ("Con: Renaming " ++ pp loc.nm ++ " to " ++ pp e) (e', i', q)
+                                       (q, e') = deep_explode lhs.pre e
+                                   in trace ("Con: Renaming " ++ pp loc.nm ++ " to " ++ pp e) (e', i, q)
   clause Var
     lhs.var_nm = return loc.nm
     
@@ -694,7 +692,12 @@ datasem PatExpr monad IO
     lhs.sub = loc.temp_sub
     lhs.pre = loc.q3 -- loc.q4
     lhs.frs = u.frs
-    lhs.env = arg.env
+    
+    loc.sub = let x = nub (domain loc.q3)
+              in loc.temp_sub `remove` x
+              
+    lhs.env = let e = appAll loc.sub arg.env
+              in trace ("Renaming: " ++ pp arg.env ++ "\n\tUsing: " ++ pp loc.sub ++ "\n\tto " ++ pp e ) e 
     
     lhs.var_nm = func.var_nm `munion` arg.var_nm
   clause AppTop
@@ -820,10 +823,9 @@ datasem Decl monad IO
     loc.isNotDeclared = isJust loc.declared
     
     lhs.pre = expr.pre
-    (loc.inferred, loc.gam) = let adjusted = apply expr.sub lhs.env
-                              in case expr.res of
-                                   Nothing -> error  $ "Inference failed datasem Decl clause Val. No result"
-                                   Just x  -> (x, Gamma $ minsert loc.nm x (unGam adjusted)) -- update the Gamma
+    (loc.inferred, loc.gam) = case expr.res of
+                                 Nothing -> error  $ "Inference failed datasem Decl clause Val. No result"
+                                 Just x  -> (x, Gamma $ minsert loc.nm x loc.env) -- update the Gamma
                    
     -- the let bindings are preprocessed. So is the nf of the inferred type for a binding is _|_ the inferrence
     -- hasn't been done. and also we *can't* infer it here. So we defer this action.
@@ -953,17 +955,18 @@ datasem Expr monad IO
        
        match True = isJust func.res
        
-       (loc.func_pre, loc.func_res) = let e = explode func.pre (fromJust func.res)
+       (loc.func_pre, loc.func_res) = let e = deep_explode func.pre (fromJust func.res)
                                       in trace ("App:[Func]    " ++ pp e) e
        
        arg.exp = loc.arg
        arg.frs = func.frs
        arg.pre = loc.func_pre
+       
        arg.env = appAll func.sub lhs.env
        
        match True = isJust arg.res
        
-       (loc.arg_pre, loc.arg_res) = let e = explode arg.pre (fromJust arg.res)
+       (loc.arg_pre, loc.arg_res) = let e = deep_explode arg.pre (fromJust arg.res)
                                     in trace ("App:[Arg]     " ++ pp e) e
        
        (loc.temp1, loc.frt1) = trace ("Extend[1] " ++ pp loc.arg_pre) $ extend (loc.arg_pre, Scheme_Simple loc.a1 (appAll arg.sub loc.func_res), arg.frs) True
@@ -998,7 +1001,7 @@ datasem Expr monad IO
         (loc.frs, loc.binds)  = let nms         = getBindLHs loc.decls
                                     (vars, frs) = freshM lhs.frs (length nms)
                                 in (frs, zipWith (\a b->(a, mkQVar b)) nms vars)
-        loc.env   = Gamma $ foldr (.) id (map (\(k,v)->minsert k v) loc.binds) (unGam lhs.env) -- temporaty update the environment. this will later be updated
+        loc.env   = Gamma $ foldr (.) id (map (\(k,v)->minsertUnique k v) loc.binds) (unGam lhs.env) -- temporaty update the environment. this will later be updated
         
         decls.pre = lhs.pre
         decls.env = loc.env
@@ -1022,19 +1025,20 @@ datasem Expr monad IO
         arg.pre = lhs.pre
         arg.exp = loc.arg
         arg.frs = lhs.frs
-    
-       (loc.q', loc.frs, loc.exp_a)    = deep_explode' arg.pre arg.frs arg.res
+   
+       loc.exp_a = ftype arg.res
+       
        -- (TyScheme_SystemF loc.exp_a) = arg.res
        -- loc.exp_a = let e = ftype arg.res
                    -- in trace ("Arg: " ++ pp e ++ "\n\t" ++ pp arg.env) e
-       (loc.b, loc.frs2) = let e = fresh loc.frs
+       (loc.b, loc.frs2) = let e = fresh arg.frs
                            in trace ("Lam:[Arg]: " ++ pp loc.exp_a ++ "\n\t" ++ pp loc.env') e
        -- loc.q'            = arg.pre
        loc.env'          = appAll arg.sub arg.env -- update the bindings with what's occured in the patexpr.
        
        body.frs = loc.frs2
        body.env = loc.env'
-       body.pre = loc.q'
+       body.pre = arg.pre
        body.exp = loc.body
        
        loc.env_full = arg.sub `munion` body.sub
@@ -1044,10 +1048,11 @@ datasem Expr monad IO
                        then x
                        else error "The resulting type is not a Tau type"
                        
+       loc.phi1 = case body.res of
+                     Nothing -> error "Inference of Expressions failed in Lam, no type infered for body"
+                     Just x  -> trace ("Body: " ++ pp x ++ "\n\t" ++ pp body.pre ++ "\n\t" ++ pp loc.env_full) x
+
        (loc.q2,  loc.q3)  = curry split body.pre (domain lhs.pre)
-       loc.phi1           = case body.res of
-                              Nothing -> error "Inference of Expressions failed in Lam, no type infered for body"
-                              Just x  -> trace ("Body: " ++ pp x ++ "\n\t" ++ pp body.pre ++ "\n\t" ++ pp loc.env_full) x
                               
        (loc.q3_, loc.phi1') = explode loc.q3 loc.phi1
        
@@ -1056,7 +1061,8 @@ datasem Expr monad IO
        lhs.res = let b'    = appAll loc.e3' (TyExpr_Var loc.b)
                      a'    = appAll body.sub loc.exp_a -- (TyExpr_Var loc.a)
                      arrow = a' `mkArrow` b'
-                 in return $ ptype $ desugar $ TyScheme_Sugar loc.q3' (TyScheme_SystemF arrow)
+                     e = ptype $ desugar $ TyScheme_Sugar loc.q3' (TyScheme_SystemF arrow)
+                 in trace ("Body:[Res] " ++ pp e) $ return e
        lhs.sub = body.sub
        lhs.pre = loc.q2
        lhs.frs = loc.frs'
@@ -1201,7 +1207,9 @@ datasem RecExpr monad IO
                       (Nothing, _) -> error $ "Cannot infer the type of tuple element '" ++ pp loc.mbNm ++ "'"
                       (_, Nothing) -> error $ "Cannot infer the type of the expression '" ++ pp loc.expr ++ "'"
                       (Just rty,Just ty) -> let (typ, frs, _) = renameBound expr.frs ty 
-                                            in third (\ty'->RowTyExpr_Ext rty loc.mbNm ty') (deep_explode' expr.pre frs typ)
+                                                (q,   e     ) = second (\ty'->RowTyExpr_Ext rty loc.mbNm ty') (deep_explode' expr.pre typ)
+                                            in (q, frs, e)
+                                            
        lhs.sub = recExpr.sub `munion` expr.sub
        lhs.res = return loc.res
        lhs.frs = loc.frs
@@ -1280,7 +1288,7 @@ typeAs = sem typeAs : TypeAs monad IO
              default? env = last
              default? sub = const empty
              clause variable
-                (loc.pre, lhs.frs, loc.ty) = deep_explode lhs.pre lhs.frs lhs.ty
+                (loc.pre, loc.ty) = deep_explode lhs.pre lhs.ty
                 match TyScheme.SystemF@ty  = loc.ty
                 match TyExpr.Var@vari      = ty.tyExpr
                 lhs.ty  = trace ("TypeAs Variable match. Returning wild: " ++ pp loc.sub) $ mkQuant lhs.exp

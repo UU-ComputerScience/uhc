@@ -24,6 +24,7 @@ import EqHML
 import EH.Util.Pretty hiding (pp, empty)
 import qualified Debug.Trace as D
 
+-- trace = flip const 
 trace = D.trace
 
 -- | Create a HsName from a string.
@@ -112,16 +113,16 @@ explode p t | isB t
 explode p t = (p, t)
     
 -- | performs the same operation as explode but returns a TyExpr instead of a TyScheme
-deep_explode' :: Prefix -> Int -> TyScheme -> (Prefix, Int, TyExpr)
-deep_explode' pre frs sche = third ftype (deep_explode pre frs sche)
+deep_explode' :: Prefix -> TyScheme -> (Prefix, TyExpr)
+deep_explode' pre = second ftype . deep_explode pre
     
 -- | A less restrictive version of explode', this is used in case expressions where we want to always
 --   split the Quantifications off the TySchemes
-deep_explode :: Prefix -> Int -> TyScheme -> (Prefix, Int, TyScheme)
-deep_explode p i t
+deep_explode :: Prefix -> TyScheme -> (Prefix, TyScheme)
+deep_explode p t
    = case sugar t of
-       TyScheme_Sugar q t' -> (p `munion` q, i, t')
-       x                   -> (p           , i, t )
+       TyScheme_Sugar q t' -> (p `munion` q, t')
+       x                   -> (p           , t )
        
 instance Apply HsName where
    app (s, v) nm | s == nm   = case ftv v of
@@ -315,6 +316,10 @@ munion = (++)
 minsert k v []  = [(k,v)]
 minsert k v (x@(k',v'):xs) | k == k'   = (k, v):xs
                            | otherwise = x : minsert k v xs
+                           
+minsertUnique k v []  = [(k,v)]
+minsertUnique k v (x@(k',v'):xs) | k == k'   = error $ "Redefinition of value '" ++ pp k ++ "' in the environment."
+                                 | otherwise = x : minsertUnique k v xs
 
 instance Util TyScheme where
     ftv TyScheme_Bottom       = []

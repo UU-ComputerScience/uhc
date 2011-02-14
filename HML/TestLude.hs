@@ -1,5 +1,7 @@
 module TestLude where
 
+infixr 1 $
+
 data List a = Cons a (List a)
         | Nil
 data Bool = True | False
@@ -18,34 +20,55 @@ foreign import ccall "Prelude" (+)     :: Int -> Int -> Int
 -- foreign import ccall "Prelude" snd     :: Tuple2 a b -> b
 -- foreign import ccall "Prelude" (!!)    :: List a -> Int -> a
 foreign import ccall "Prelude" (&&)    :: Bool -> Bool -> Bool
+-- foreign import ccall "Prelude" not     :: Bool -> Bool
 -- foreign import ccall "Prelude" (++)    :: List a -> List a -> List a
+-- foreign import ccall "Prelude" filter  :: (a -> Bool) -> List a -> List a
 -- foreign import ccall "Prelude" all     :: (a -> Bool) -> List a -> Bool
 -- foreign import ccall "Prelude" and     :: List Bool -> Bool 
+
+foreign import ccall "Prelude" (<)     :: a -> a -> Bool
+
+-- foreign import ccall "Prelude" (>=)    :: a -> a -> Bool
+
+-- ($) :: (a -> b) -> a -> b
+f $ x = f x
+
+-- (>=) :: a -> a -> Bool
+-- a >= b = not $ a < b
+
+-- not :: Bool -> Bool
+-- not True = False
+-- not False = True
+
+-- (++) :: List a -> List a -> List a
+-- Nil         ++ ys = ys
+-- (Cons x xs) ++ ys = Cons x $ xs ++ ys
 
 -- (f . g) x = f (g x)
 -- id :: a -> a
 -- id x = x    
--- f $ x = f x
+f $ x = f x -- This needs a fix...
 -- const a b = a
 
 -- app = \(f :: forall a. a -> Int) -> Cons (f 0) (Cons (f 'a') Nil)
 
 -- foo :: a -> (Int, a, Int)
+-- foo :: (Int, a, Int)
 -- foo = (1, 'C', 2)
 
--- tmap f Nil         = Nil
--- tmap f (Cons x xs) = Cons (f x) (tmap f xs)
+-- map f Nil         = Nil
+-- map f (Cons x xs) = Cons (f x) (map f xs)
 
 -- g (True ,x) = id x
 -- g (False,x) = (+x)
 
-otherwise = True
+-- otherwise = True
 
-filter :: (a -> Bool) -> List a -> List a
-filter _pred Nil        = Nil
-filter pred (Cons x xs) 
-  | pred x    = Cons x (filter pred xs)
-  | otherwise = filter pred xs
+-- filter :: (a -> Bool) -> List a -> List a
+-- filter _pred Nil        = Nil
+-- filter pred (Cons x xs) 
+  -- | pred x    = Cons x (filter pred xs)
+  -- | otherwise = filter pred xs
 
 -- q True  x = id x
 -- q False x = (+x)
@@ -53,5 +76,6 @@ filter pred (Cons x xs)
 -- f True = False
 -- f x    = x && True
 
-Nil         ++ ys = ys
-(Cons x xs) ++ ys = Cons x (xs ++ ys)
+-- qsort :: List a -> List a
+-- qsort Nil         = Nil
+-- qsort (Cons x xs) = qsort (filter (< x) xs) ++ (Cons x Nil) ++ qsort (filter (>= x) xs)
