@@ -83,11 +83,12 @@ subT = [(mkName "a11", TyScheme_SystemF $ (TyExpr_Var $ mkName "a13") `mkArrow` 
 lstT = Gamma [(mkName "foo", TyScheme_SystemF $ TyExpr_Con $ mkName "String"), (mkName "Bar", TyScheme_SystemF $ TyExpr_Var  $ mkName "a11")]
 sgh  = (mkName "Bar", TyScheme_SystemF $ TyExpr_Var  $ mkName "a11")
     
+-- | Apply both sides of the env
 applyEnv :: Env -> Env -> Env
 applyEnv sub env
  = map (fapp sub) env
   where fapp :: Env -> Sub -> Sub
-        fapp s (v, b) = (appAll s v, appAll s b)
+        fapp s (v, b) = (v, appAll s b)
         
 -- | performs the same operation as explode but returns a TyExpr instead of a TyScheme
 explode' :: Prefix -> TyScheme -> (Prefix, TyExpr)
@@ -316,10 +317,12 @@ munion = (++)
 minsert k v []  = [(k,v)]
 minsert k v (x@(k',v'):xs) | k == k'   = (k, v):xs
                            | otherwise = x : minsert k v xs
-                           
-minsertUnique k v []  = [(k,v)]
-minsertUnique k v (x@(k',v'):xs) | k == k'   = error $ "Redefinition of value '" ++ pp k ++ "' in the environment."
-                                 | otherwise = x : minsertUnique k v xs
+
+minsertUnique :: Eq k => k -> v -> [(k, v)] -> [(k, v)]
+minsertUnique = minsert                           
+-- minsertUnique k v []  = [(k,v)]
+-- minsertUnique k v (x@(k',v'):xs) | k == k'   = error $ "Redefinition of value '" ++ pp k ++ "' in the environment."
+                                 -- | otherwise = x : minsertUnique k v xs
 
 instance Util TyScheme where
     ftv TyScheme_Bottom       = []
@@ -418,7 +421,7 @@ safeTail (x:xs) = xs
         
 -- | Split a prefix based on a variable
 splitOn :: Prefix -> HsName -> (Prefix, Prefix)
-splitOn [] _ 
+splitOn [] x -- failsave, even though we should never get this far.
   = ([], [])
 splitOn (x@(TyIndex_Group v1 _):xs) v2
   = case v1 == v2 of
@@ -636,6 +639,13 @@ mkQuantified exp
     in  if null vars
            then TyScheme_SystemF exp
            else foldl' (.) id vars (TyScheme_SystemF exp)
+
+addQuantifiers :: TyScheme -> TyScheme
+addQuantifiers exp
+  = let vars = [TyScheme_Quant (Scheme_Simple x TyScheme_Bottom) | x <- nub (ftv exp)]
+    in  if null vars
+           then exp
+           else foldl' (.) id vars exp
            
 class Simplify a where
   simplify :: a -> a
@@ -681,14 +691,15 @@ ftype = ft . nf . desugar
               
 -- | converts a TyScheme to a partial TyScheme by not removing quantifiers bound to Bottom
 ptype :: TyScheme -> TyScheme
-ptype = ft . desugar
- where ft :: TyScheme -> TyScheme
-       ft (TyScheme_Quant y@(Scheme_Simple _ TyScheme_Bottom) x) = TyScheme_Quant y (ft x)
-       ft (TyScheme_Quant (Scheme_Simple a q) phi)
-            = let (TyScheme_Sugar q' p) = sugar q 
-                  phi'                  = app (a, p) phi
-              in ft $ desugar (TyScheme_Sugar q' phi')
-       ft x = x
+ptype = id
+-- ptype = ft . desugar
+ -- where ft :: TyScheme -> TyScheme
+       -- ft (TyScheme_Quant y@(Scheme_Simple _ TyScheme_Bottom) x) = TyScheme_Quant y (ft x)
+       -- ft (TyScheme_Quant (Scheme_Simple a q) phi)
+            -- = let (TyScheme_Sugar q' p) = sugar q 
+                  -- phi'                  = app (a, p) phi
+              -- in ft $ desugar (TyScheme_Sugar q' phi')
+       -- ft x = x
        
    
 instance Simplify TyScheme where           

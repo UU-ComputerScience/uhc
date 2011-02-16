@@ -452,17 +452,7 @@ datasem CaseAlt monad IO
     loc.ety = trace ("Expr: " ++ pp loc.expr ++ ":" ++ pp expr.res ++ "\nPatExpr: " ++ pp loc.patExpr ++ ":" ++ pp patExpr.res) $ maybe (error $ "Type inference of the expression '" ++ pp loc.expr ++ "' has failed") id expr.res
     -- (loc.q1, loc.q2) = split(patExpr.pre, domain patExpr.res \\ domain expr.pre)
     loc.pre = expr.pre -- `munion` loc.q1
-    -- loc.exp = let e = appAll patExpr.sub loc.ety in trace (pp loc.ety ++ " - " ++ pp loc.pat ++ " - " ++ pp lhs.exp ++ " ++ " ++ pp loc.pre ++ " && " ++ pp e) $  e
-    
-    -- child s : UnifyScheme = unifyScheme
-    
-    -- s.pre = loc.pre
-    -- s.ty1 = loc.pat
-    -- s.ty2 = lhs.exp
-    -- s.frs = expr.frs
-    
-    -- (loc.q3, loc.frs,  loc.t1) = let e = (appAll expr.sub s.ty) in trace ("Deep1: " ++ pp s.pre ++ " ^^ " ++ pp e) $ deep_explode s.pre s.frs e
-    (loc.q4, loc.t2) = trace ("Deep2: " ++ pp loc.pre ++ " ^^ " ++ pp loc.ety) $ deep_explode loc.pre loc.ety
+   (loc.q4, loc.t2) = trace ("Deep2: " ++ pp loc.pre ++ " ^^ " ++ pp loc.ety) $ deep_explode loc.pre loc.ety
     
     lhs.pre = trace ("Prefix: " ++ pp loc.q4) loc.q4
     lhs.frs = expr.frs
@@ -487,8 +477,6 @@ datasem CaseAlts monad IO
     
     child s1 : UnifyScheme = unifyScheme
     
-    -- (loc.q1, loc.q2) = split (tl.pre, domain hd.sub) -- correctly scope output
-    
     s1.pre = trace ("TL out/S1 in:" ++ pp tl.pre) tl.pre
     s1.ty1 = appAll tl.sub $ caseLHS loc.ty_hd
     s1.ty2 = appAll hd.sub $ caseLHS loc.ty_tl
@@ -508,10 +496,9 @@ datasem CaseAlts monad IO
     lhs.res = let e = CaseType (appAll s2.sub s1.ty) s2.ty
               in trace ("CaseAlts res: " ++ pp e) e
     lhs.sub = let f1 = trace ("@S1:   " ++ pp s1.sub) $ trace ("@S2:   " ++ pp s2.sub) 
-              in  f1 $ loc.subs -- tl.sub `munion` hd.sub `munion` s2.sub `munion` s1.sub
+              in  f1 $ loc.subs `pick` loc.ep -- tl.sub `munion` hd.sub `munion` s2.sub `munion` s1.sub
     (loc.q3, loc.q4) = split (tl.pre, domain loc.subs)
-    -- lhs.pre = trace ("S2 out/ret:" ++ pp loc.q4) tl.pre `munion` loc.q4
-    -- lhs.pre = trace ("S2 out/ret:" ++ pp s2.pre) s2.pre 
+    
     lhs.pre = trace ("S2 out/ret:" ++ pp s2.pre) s2.pre 
   clause Nil
     (loc.a, loc.frs1) = fresh lhs.frs
@@ -652,7 +639,7 @@ datasem PatExpr monad IO
     func.pre = lhs.pre
     func.env = lhs.env
     
-    (loc.func_pre, loc.func_res) = let e = explode func.pre func.res
+    (loc.func_pre, loc.func_res) = let e = deep_explode func.pre func.res
                                    in trace ("PatExpr:[App]:[Func]    " ++ pp e) e
     
     child arg : PatExpr
@@ -662,7 +649,7 @@ datasem PatExpr monad IO
     arg.pre = loc.func_pre
     arg.env = appAll func.sub func.env
     
-    (loc.arg_pre, loc.arg_res) = let e = explode arg.pre arg.res
+    (loc.arg_pre, loc.arg_res) = let e = deep_explode arg.pre arg.res
                                  in trace ("PatExpr:[App]:[Arg]     " ++ pp e) e
     
     (loc.temp1, loc.frt1) = trace ("Extend[1] " ++ pp loc.arg_pre) $ extend (loc.arg_pre, Scheme_Simple loc.a1 (appAll arg.sub loc.func_res), arg.frs) True
@@ -819,13 +806,32 @@ datasem Decl monad IO
     expr.frs = lhs.frs
     
     loc.env           = unGam lhs.env
+    loc.ty            = fromJust $ lookup loc.nm (unGam lhs.env)
     loc.declared      = lookup loc.nm (unGam lhs.sig)
     loc.isNotDeclared = isJust loc.declared
     
-    lhs.pre = expr.pre
     (loc.inferred, loc.gam) = case expr.res of
                                  Nothing -> error  $ "Inference failed datasem Decl clause Val. No result"
-                                 Just x  -> (x, Gamma $ minsert loc.nm x loc.env) -- update the Gamma
+                                 Just x  -> trace ("** " ++ pp loc.nm ++ ": " ++ pp x ++ "\ntSubs: " ++ pp expr.sub) (x, Gamma $ minsert loc.nm x loc.env) -- update the Gamma
+    
+    (loc.q1, loc.irTy) = deep_explode expr.pre $ addQuantifiers $ appAll expr.sub loc.ty
+    
+    child u : UnifyScheme = unifyScheme
+    u.pre = loc.q1
+    u.ty1 = loc.irTy
+    u.ty2 = loc.inferred
+    u.frs = expr.frs
+    
+    lhs.pre = expr.pre
+    
+    loc.sub = expr.sub `pick` u.sub
+    
+    -- only send up the substitutions that we need
+    loc.e1 = let x = nub (domain lhs.pre)       -- find the subtitutions we still might need
+                 d = applyEnv loc.sub loc.sub -- resolve any chained subtitutions
+             in trace (pp x ++ " <!--!> " ++ pp d) $ filter ((`elem` x).fst) d       -- return only the substitutions needed
+             
+    lhs.sub = loc.e1
                    
     -- the let bindings are preprocessed. So is the nf of the inferred type for a binding is _|_ the inferrence
     -- hasn't been done. and also we *can't* infer it here. So we defer this action.
@@ -839,13 +845,13 @@ datasem Decl monad IO
          s.pre = trace ("Checking '" ++ pp loc.inferred ++ "' against '" ++ (pp $ clean loc.dcl) ++ "' in bind '" ++  pp loc.nm ++ "'") lhs.pre
          s.ty  = loc.inferred
          s.exp = loc.dcl
-         s.frs = expr.frs
+         s.frs = u.frs
         
          lhs.frs = s.frs -- we don't really need the frs, but we're faking the dependency to insure that it's executed
          lhs.env = scope lhs.env (Gamma $ minsert loc.nm loc.declared' loc.env)
        clause isNot_inferred 
          match False = loc.isNotDeclared
-         lhs.frs = expr.frs
+         lhs.frs = u.frs
          lhs.env = scope lhs.env (loc.gam)
   clause TySig
     -- (loc.ty, loc.frs, _) = renameVars lhs.frs (mkQuantified loc.tyExpr)
@@ -955,21 +961,26 @@ datasem Expr monad IO
        
        match True = isJust func.res
        
-       (loc.func_pre, loc.func_res) = let e = deep_explode func.pre (fromJust func.res)
-                                      in trace ("App:[Func]    " ++ pp e) e
+       -- (loc.func_pre, loc.func_res) = let e = deep_explode func.pre (fromJust func.res)
+                                      -- in trace ("App:[Func]    " ++ pp e) e
+       loc.func_res = let e = fromJust func.res
+                      in trace ("App:[Func]    " ++ pp e) e
        
        arg.exp = loc.arg
        arg.frs = func.frs
-       arg.pre = loc.func_pre
+       arg.pre = func.pre
        
        arg.env = appAll func.sub lhs.env
        
        match True = isJust arg.res
        
-       (loc.arg_pre, loc.arg_res) = let e = deep_explode arg.pre (fromJust arg.res)
-                                    in trace ("App:[Arg]     " ++ pp e) e
+       -- These break higher-rank functions, They need to be pushed in the Env as is.
+       -- (loc.arg_pre, loc.arg_res) = let e = deep_explode arg.pre (fromJust arg.res)
+                                    -- in trace ("App:[Arg]     " ++ pp e) e
+       loc.arg_res = let e = fromJust arg.res
+                     in trace ("App:[Arg]     " ++ pp e) e
        
-       (loc.temp1, loc.frt1) = trace ("Extend[1] " ++ pp loc.arg_pre) $ extend (loc.arg_pre, Scheme_Simple loc.a1 (appAll arg.sub loc.func_res), arg.frs) True
+       (loc.temp1, loc.frt1) = trace ("Extend[1] " ++ pp arg.pre) $ extend (arg.pre, Scheme_Simple loc.a1 (appAll arg.sub loc.func_res), arg.frs) True
        (loc.temp2, loc.frt2) = trace ("Extend[2] " ++ pp (fst loc.temp1)) $ extend (fst loc.temp1, Scheme_Simple loc.a2 (loc.arg_res), loc.frt1) True
        (loc.temp3, loc.frt3) = trace ("Extend[3] " ++ pp (fst loc.temp2)) $ extend (fst loc.temp2, Scheme_Simple loc.b  (TyScheme_Bottom), loc.frt2) True
        
@@ -1054,7 +1065,7 @@ datasem Expr monad IO
 
        (loc.q2,  loc.q3)  = curry split body.pre (domain lhs.pre)
                               
-       (loc.q3_, loc.phi1') = explode loc.q3 loc.phi1
+       (loc.q3_, loc.phi1') = deep_explode loc.q3 loc.phi1
        
        ((loc.q3', loc.e3'), loc.frs') = extend (loc.q3_, (Scheme_Simple loc.b loc.phi1'), body.frs) False
        
@@ -1333,19 +1344,16 @@ unifyRows = sem unifyRows : RowTyExpr monad IO
                     child u : UnifyScheme = unifyScheme
                     
                     u.pre = lhs.pre
-                    u.frs = lhs.frs
+                    u.frs = lhs.frs 
                     u.ty1 = trace ("%1: " ++ pp loc.ext1) $ loc.ext1
                     u.ty2 = trace ("%2: " ++ pp loc.ext2) $ loc.ext2
                     
                     child row : RowTyExpr = unifyRows
                     
                     row.pre = u.pre
-                    -- row.env = lhs.env
                     row.frs = u.frs
-                    row.ty1 = ext1.rowTyExpr
-                    row.ty2 = ext2.rowTyExpr
-                    
-                    -- loc.ty = ftype $ appAll u.sub u.ty
+                    row.ty1 = appAll u.sub ext1.rowTyExpr
+                    row.ty2 = appAll u.sub ext2.rowTyExpr    
                     
                     (loc.q, loc.ty) = explode' row.pre u.ty
                     loc.sub = row.sub `pick` u.sub
@@ -1479,8 +1487,8 @@ unify = sem unify : Unify monad IO
                        
                        u.pre  = lhs.pre
                        u.frs  = lhs.frs
-                       u.exp2 = lhs.exp2
                        u.exp1 = app.tyExpr
+                       u.exp2 = lhs.exp2
                        
                        lhs.frs = u.frs
                        lhs.pre = u.pre
@@ -1505,8 +1513,8 @@ unify = sem unify : Unify monad IO
                        
                        u.pre  = lhs.pre
                        u.frs  = lhs.frs
-                       u.exp2 = lhs.exp2
                        u.exp1 = app.tyExpr
+                       u.exp2 = lhs.exp2
                        
                        lhs.frs = u.frs
                        lhs.pre = u.pre
@@ -1617,10 +1625,11 @@ unify = sem unify : Unify monad IO
                            -- | code duplication, bah, the graph reordering is screwed up
                            loc.q   = lhs.pre
                            loc.phi = loc.q `contains` loc.varnm
+                           loc.occurs = occursCheck loc.varnm loc.q (TyScheme_SystemF loc.expr)
                            
                            internal occurs_check
                              clause valid
-                               match False = occursCheck loc.varnm loc.q (TyScheme_SystemF loc.expr)
+                               match False = loc.occurs
                                loc.phi' = fromJust loc.phi
                                
                                loc.p = loc.expr
@@ -1641,8 +1650,8 @@ unify = sem unify : Unify monad IO
                                lhs.sub = loc.ret
                                lhs.frs = s.frs  
                              clause invalid
-                               match True = isJust loc.phi
-                               lhs.sub = empty
+                               match True = loc.occurs
+                               lhs.sub = error $ "Occurs check: cannot construct the infinite type: " ++ pp loc.varnm ++ " = " ++ pp loc.expr
                                
                          clause rightvar
                            match TyExpr.Var@var2 = lhs.exp2
@@ -1651,10 +1660,11 @@ unify = sem unify : Unify monad IO
                            -- | code duplication, bah, the graph reordering is screwed up
                            loc.q = lhs.pre
                            loc.phi = loc.q `contains` loc.varnm
+                           loc.occurs = occursCheck loc.varnm loc.q (TyScheme_SystemF loc.expr)
                            
                            internal occurs_check
                              clause valid2
-                               match False = occursCheck loc.varnm loc.q (TyScheme_SystemF loc.expr)
+                               match False = loc.occurs
                                loc.phi' = fromJust loc.phi
                                
                                loc.p = loc.expr
@@ -1675,8 +1685,8 @@ unify = sem unify : Unify monad IO
                                lhs.sub = loc.ret
                                lhs.frs = s.frs  
                              clause invalid2
-                               match True = isJust loc.phi
-                               lhs.sub = empty
+                               match True = loc.occurs
+                               lhs.sub = error $ "Occurs check: cannot construct the infinite type: " ++ pp loc.varnm ++ " = " ++ pp loc.expr
                                
                      clause quant
                        match TyExpr.Quant@var1 = lhs.exp1
