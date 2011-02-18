@@ -338,7 +338,7 @@ grPerModuleFullProg modNm = trafos1 ++ invariant 0 ++ grSpecialize modNm ++ [dro
     
 
 -- grSpecialize :: [(Grin.GrModule -> Grin.GrModule, String)]
-grSpecialize modNm = concatMap (grSpecialize' modNm) [0] -- [0..5]
+grSpecialize modNm = concatMap (grSpecialize' modNm) [0..5]
 grSpecialize' modNm pass =
     [ full grEvalStored                      "eval stored"    grinInfoEvalStoredSpec
     , once applyUnited                       "apply united"
