@@ -24,8 +24,8 @@ import EqHML
 import EH.Util.Pretty hiding (pp, empty)
 import qualified Debug.Trace as D
 
--- trace = flip const 
-trace = D.trace
+trace = flip const 
+-- trace = D.trace
 
 -- | Create a HsName from a string.
 mkName :: String -> HsName
