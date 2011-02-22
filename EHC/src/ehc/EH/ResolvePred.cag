@@ -46,8 +46,8 @@ SEM Expr
 %%[(9 hmtyinfer)
 SEM Expr
   | AppTop Rec Let
-                loc         .   imSubsTy            =   foVarMp @foKnRes |=> @imTy
-  | Lam         loc         .   imSubsTy            =   foVarMp @fo_fitF_ |=> @imTy
+                loc         .   imSubsTy            =   foVarMp @foKnRes `varUpd` @imTy
+  | Lam         loc         .   imSubsTy            =   foVarMp @fo_fitF_ `varUpd` @imTy
 %%]
 
 %%[(9 hmtyinfer)
@@ -62,7 +62,7 @@ SEM Expr
 
 %%[(12 hmtyinfer)
 SEM Expr
-  | LamImpl     loc         .   knPr                =   tyPred $ (@body.tyVarMp |=>) $ @knArgImpl
+  | LamImpl     loc         .   knPr                =   tyPred $ (@body.tyVarMp `varUpd`) $ @knArgImpl
                             .   knPrUid             =   mkPrIdCHR @lUniq
                             .   knPrL               =   [mkPredOcc @knPr @knPrUid @predScope]
 %%]
@@ -112,7 +112,7 @@ SEM Expr
 SEM Expr
   | AppTop Rec Lam Let
                 loc         .   impls2KnHd          =   tyImpls @imSubsTy
-                            .   impls2KnTl          =   @lhs.finTyVarMp |=> @knImplsTl
+                            .   impls2KnTl          =   @lhs.finTyVarMp `varUpd` @knImplsTl
                             .   poiLKnTl            =   implsPrIds @impls2KnTl
                             .   poiL                =   implsPrIds @impls2KnHd ++ @poiLKnTl
 %%]

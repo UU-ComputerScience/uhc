@@ -512,6 +512,8 @@ instance Ord k => VarLookup (VarMp' k v) k v where
                                                      lkup l (_:ms) = lkup (l-1) ms
   varlookup              k vm@(VarMp vmlev _ ) = varlookupWithMetaLev vmlev k vm
   
+
+instance Ord k => VarLookupCmb (VarMp' k v) k v where
   -- combine by taking the lowest level, adapting the lists with maps accordingly
   (VarMp l1 ms1) |+> (VarMp l2 ms2)
     = case compare l1 l2 of

@@ -4,7 +4,7 @@
 
 Derived from work by Gerrit vd Geest.
 
-%%[(9 hmtyinfer) module {%{EH}Pred.Evidence} import({%{EH}CHR},{%{EH}Pred.CHR})
+%%[(9 hmtyinfer) module {%{EH}Pred.Evidence} import({%{EH}CHR},{%{EH}Pred.CHR},{%{EH}Substitutable})
 %%]
 
 %%[(9 hmtyinfer) import({%{EH}Base.Common})
@@ -69,7 +69,7 @@ instance (PP info, PP p) => PP (Evidence p info) where
   pp (Evid_Unresolved p   ) = "Ev: unresolved:" >#< p
 %%]
 
-%%[(9 hmtyinfer)
+%%[(9999 hmtyinfer)
 instance CHRSubstitutable p v s => CHRSubstitutable (Evidence p info) v s where
   chrFtv            (Evid_Unresolved  p     )    = chrFtv p
   chrFtv            (Evid_Proof       p _ es)    = Set.unions $ chrFtv p : map chrFtv es
@@ -79,6 +79,20 @@ instance CHRSubstitutable p v s => CHRSubstitutable (Evidence p info) v s where
   chrAppSubst s     (Evid_Proof       p i es)    = Evid_Proof      (chrAppSubst s p) i (map (chrAppSubst s) es)
   chrAppSubst s     (Evid_Recurse     p     )    = Evid_Recurse    (chrAppSubst s p)  
   chrAppSubst s     (Evid_Ambig       p  ess)    = Evid_Ambig      (chrAppSubst s p) (assocLMapElt (map (chrAppSubst s)) ess)
+%%]
+
+%%[(9 hmtyinfer)
+instance VarExtractable p v => VarExtractable (Evidence p info) v where
+  varFreeSet            (Evid_Unresolved  p     )    = varFreeSet p
+  varFreeSet            (Evid_Proof       p _ es)    = Set.unions $ varFreeSet p : map varFreeSet es
+  varFreeSet            (Evid_Recurse     p     )    = varFreeSet p
+  varFreeSet            (Evid_Ambig       p  ess)    = Set.unions $ varFreeSet p : map (Set.unions . map varFreeSet . snd) ess
+
+instance VarUpdatable p s => VarUpdatable (Evidence p info) s where
+  varUpd s     (Evid_Unresolved  p     )    = Evid_Unresolved (varUpd s p)
+  varUpd s     (Evid_Proof       p i es)    = Evid_Proof      (varUpd s p) i (map (varUpd s) es)
+  varUpd s     (Evid_Recurse     p     )    = Evid_Recurse    (varUpd s p)  
+  varUpd s     (Evid_Ambig       p  ess)    = Evid_Ambig      (varUpd s p) (assocLMapElt (map (varUpd s)) ess)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

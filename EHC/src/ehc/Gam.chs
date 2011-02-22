@@ -114,7 +114,7 @@ gamDoTyWithVarMp (get,set) f gamVarMp thr gam
            = gamMapThr
                (\(n,gi) (thr,c)
                    -> let t = get gi
-                          (t',c',thr') = f n (gamVarMp |==> t) c thr
+                          (t',c',thr') = f n (gamVarMp `varUpdCyc` t) c thr
                           (tg,cg)      = case (tyUnAnn t,tyUnAnn t') of
                                            (Ty_Var v1 _  ,Ty_Var v2 _) | v1 == v2
                                              -> dflt
@@ -204,33 +204,27 @@ idQualGamReplacement g k n = maybe n id $ gamLookup (IdOcc n k) g
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(2 hmtyinfer || hmtyast).Substitutable.Gam
-instance (Eq k,Eq tk,Substitutable vv k subst) => Substitutable (Gam tk vv) k subst where
-  s |=>  (Gam ll)    =   Gam (map (assocLMapElt (s |=>)) ll)
+instance (Eq tk,VarUpdatable vv subst) => VarUpdatable (Gam tk vv) subst where
+  s `varUpd`  (Gam ll)    =   Gam (map (assocLMapElt (s `varUpd`)) ll)
 %%[[4
-  s |==> (Gam ll)    =   (Gam ll',varmpUnions $ map (varmpUnions . assocLElts) m)
-                     where (ll',m) = unzip $ map (assocLMapUnzip . assocLMapElt (s |==>)) ll
+  s `varUpdCyc` (Gam ll)    =   (Gam ll',varmpUnions $ map (varmpUnions . assocLElts) m)
+                     where (ll',m) = unzip $ map (assocLMapUnzip . assocLMapElt (s `varUpdCyc`)) ll
 %%]]
-  ftvSet (Gam ll)    =   Set.unions . map ftvSet . map snd . concat $ ll
+
+instance (Eq k,Eq tk,VarExtractable vv k) => VarExtractable (Gam tk vv) k where
+  varFreeSet (Gam ll)    =   Set.unions . map varFreeSet . map snd . concat $ ll
 %%]
 
 %%[(9 hmtyinfer || hmtyast).Substitutable.SGam -2.Substitutable.Gam
-instance (Ord tk,Ord k,Substitutable vv k subst) => Substitutable (SGam tk vv) k subst where
-  s |=>  g    =   gamMapElts (s |=>) g
+instance (Ord tk,VarUpdatable vv subst) => VarUpdatable (SGam tk vv) subst where
+  s `varUpd`  g    =   gamMapElts (s `varUpd`) g
 %%[[4
-  s |==> g    =   (g',varmpUnions $ gamElts gm)
-              where (g',gm) = sgamUnzip $ gamMapElts (s |==>) g
+  s `varUpdCyc` g    =   (g',varmpUnions $ gamElts gm)
+              where (g',gm) = sgamUnzip $ gamMapElts (s `varUpdCyc`) g
 %%]]
-  ftvSet g    =   Set.unions $ map ftvSet $ gamElts g
-%%]
 
-%%[(9999 hmtyinfer || hmtyast).Substitutable.SGam -(9.Substitutable.SGam 2.Substitutable.Gam)
-instance (Ord tk,Ord k,Substitutable vv k subst) => Substitutable (SGam tk vv) k subst where
-  s |=>  g    =   gamMapElts (s |=>) g
-%%[[4
-  s |==> g    =   (g',varmpUnions $ gamElts gm)
-              where (g',gm) = sgamUnzip $ gamMapElts (s |==>) g
-%%]]
-  ftvSet g    =   Set.unions $ map ftvSet $ gamElts g
+instance (Ord tk,Ord k,VarExtractable vv k) => VarExtractable (SGam tk vv) k where
+  varFreeSet g    =   Set.unions $ map varFreeSet $ gamElts g
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

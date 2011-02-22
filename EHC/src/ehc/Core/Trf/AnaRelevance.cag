@@ -412,15 +412,15 @@ ATTR CExpr CAlt [ | | coe: RelevCoe ]
 
 SEM CExpr
   | Var Int Char Tup FFI
-                lhs         .   coe             =   @lhs.finalRVarMp |=> amsoCoe @amso
+                lhs         .   coe             =   @lhs.finalRVarMp `varUpd` amsoCoe @amso
   | App         lhs         .   coe             =   if @lhs.isTopApp
-                                                    then @lhs.finalRVarMp |=> @resCoe
+                                                    then @lhs.finalRVarMp `varUpd` @resCoe
                                                     else RelevCoe_Id
   | * - Var Int Char Tup FFI App Let
                 lhs         .   coe             =   RelevCoe_Id
 
 SEM CExpr
-  | App         loc         .   hereArgCoe      =   @arg.coe <.> (@lhs.finalRVarMp |=> @argCoe)
+  | App         loc         .   hereArgCoe      =   @arg.coe <.> (@lhs.finalRVarMp `varUpd` @argCoe)
                             .   hereFunCoe      =   case @func.whatBelow of
                                                       ExprIsApp _ -> RelevCoe_Id
                                                       _           -> @func.coe
@@ -429,14 +429,14 @@ SEM CExpr
                                                       _         -> @body.coe
 
 SEM CBindAspect
-  | Bind        loc         .   hereBindCoe     =   @expr.coe <.> maybe RelevCoe_Id (@finalRVarMp |=>) @mbBindCoe
+  | Bind        loc         .   hereBindCoe     =   @expr.coe <.> maybe RelevCoe_Id (@finalRVarMp `varUpd`) @mbBindCoe
 
 SEM CAltL
-  | Cons        loc         .   hereAltCoe      =   @hd.coe <.> (@hdFinalRVarMp |=> amsoCoe @amsoDw)
+  | Cons        loc         .   hereAltCoe      =   @hd.coe <.> (@hdFinalRVarMp `varUpd` amsoCoe @amsoDw)
 
 SEM CPatFld
-  | Fld         loc         .   hereOffCoe      =   @lhs.finalRVarMp |=> @offset.coe
-                            .   hereFldCoe      =   @lhs.finalRVarMp |=> @fldCoe
+  | Fld         loc         .   hereOffCoe      =   @lhs.finalRVarMp `varUpd` @offset.coe
+                            .   hereFldCoe      =   @lhs.finalRVarMp `varUpd` @fldCoe
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -585,9 +585,9 @@ Solving then needs to be done for the conditionally arising constraints.
 
 %%[(8 codegen)
 SEM CExpr
-  | Case        loc         .   altQualSLSubs   =   map (Set.map (@alts.rvarMp |=>)) @alts.altQualSL
+  | Case        loc         .   altQualSLSubs   =   map (Set.map (@alts.rvarMp `varUpd`)) @alts.altQualSL
                             .   altQualSLSolv1  =   let bnd = @lhs.boundRelevTyVarS
-                                                        s q = (Set.map (m |=>) q', m)
+                                                        s q = (Set.map (m `varUpd`) q', m)
                                                             where (q',m) = assSolve bnd q
                                                     in  map s @altQualSLSubs
                             .   altQualSLSolv   =   map fst @altQualSLSolv1
@@ -602,9 +602,9 @@ SEM CExpr
 
 %%[(8 codegen)
 SEM CExpr
-  | Case        loc         .   altQualSLSolv2  =   let s (q,m) = (Set.map (m3 |=>) q', m4)
+  | Case        loc         .   altQualSLSolv2  =   let s (q,m) = (Set.map (m3 `varUpd`) q', m4)
                                                                 where m2 = m `varmpPlus` @lhs.finalRVarMp
-                                                                      (q',m3) = assSolve Set.empty (Set.map (m2 |=>) q)
+                                                                      (q',m3) = assSolve Set.empty (Set.map (m2 `varUpd`) q)
                                                                       m4 = m3 `varmpPlus` m2
                                                     in  map s @altQualSLSolv1
                             .   altSolveLVarMp  =   map snd @altQualSLSolv2
@@ -623,12 +623,12 @@ SEM CAltL
 SEM CExpr
   | Let         loc         .   bindsCanParticpateInOuterSolving
                                                 =   @categ == CBindCateg_Strict
-                            .   bindsQualSSubs  =   Set.map (@binds.rvarMp |=>) @binds.qualS
+                            .   bindsQualSSubs  =   Set.map (@binds.rvarMp `varUpd`) @binds.qualS
                             .   bindsQualSOuter =   if @bindsCanParticpateInOuterSolving then @bindsQualSSubs else Set.empty
                             .   bindsQualSSolv1 =   if @bindsCanParticpateInOuterSolving
                                                     then (Set.empty, emptyVarMp)
                                                     else let (q,m) = assSolve @lhs.boundRelevTyVarS @bindsQualSSubs
-                                                         in  (Set.map (m |=>) q, m)
+                                                         in  (Set.map (m `varUpd`) q, m)
 
                 loc         .   bindsCanParticpateInOuterSolving
                                                 :   Bool
@@ -638,8 +638,8 @@ SEM CExpr
 SEM CExpr
   | Let         loc         .   bindsQualSSolv2 =   let (q,m) = @bindsQualSSolv1
                                                         m2 = m `varmpPlus` @lhs.finalRVarMp
-                                                        (q',m3) = assSolve Set.empty (Set.map (m2 |=>) q)
-                                                    in  (Set.map (m3 |=>) q', m3 `varmpPlus` m2)
+                                                        (q',m3) = assSolve Set.empty (Set.map (m2 `varUpd`) q)
+                                                    in  (Set.map (m3 `varUpd`) q', m3 `varmpPlus` m2)
                             .   bindsSolveVarMp =   snd @bindsQualSSolv2
 %%]
 
@@ -673,7 +673,7 @@ SEM CBindAspect
                                                           where (amso,ams) = amsLE m t knTy
                                                     in  case @expr.mbLam of
                                                           Just nmL
-                                                            -> (ty, r', exprEnv, ftvSet ty, noConstrain)
+                                                            -> (ty, r', exprEnv, varFreeSet ty, noConstrain)
                                                             where us@(r:as) = mkNewLevUIDL (1 + length nmL) @lUniq
                                                                   r' = fresh r
                                                                   as' = map fresh as
@@ -696,9 +696,9 @@ SEM CBindAspect
                                                                         @rvarMpExpr @expr.qualS t
                                                         where how | WhatToRelevInfer_Quant `elem` @lhs.whatTo = [RelevTyQuantHow_RemoveAmbig,RelevTyQuantHow_Quant]
                                                                   | otherwise                                 = []
-                                                      t -> (m |=> t, m, q)
-                                                        where (q,m) = assSolve @lhs.boundRelevTyVarS (Set.map (@rvarMpExpr |=>) @expr.qualS)
-                            .   bindTy          =   @lhs.forQuantRVarMp |=> @quantTy
+                                                      t -> (m `varUpd` t, m, q)
+                                                        where (q,m) = assSolve @lhs.boundRelevTyVarS (Set.map (@rvarMpExpr `varUpd`) @expr.qualS)
+                            .   bindTy          =   @lhs.forQuantRVarMp `varUpd` @quantTy
                             .   (strictTy,strictVarMp)
                                                 =   case @bindTy of
                                                       t@(RelevTy_Fun _ _ qs a r@(RelevTy_Ana (AnaEval_Var rv)))
@@ -706,25 +706,25 @@ SEM CBindAspect
                                                         where smpAssume1 = rvarmpEvalUnit rv bot
                                                               (RelevTy_Fun _ vs' qs' a' r',smp1,rem1)
                                                                 = relevtyQuant [RelevTyQuantHow_Solve,RelevTyQuantHow_RemoveAmbig,RelevTyQuantHow_Quant]
-                                                                               smpAssume1 (Set.fromList qs `Set.union` @quantRemQualS) (RelevTy_Fun RQuant_None [] [] a (smpAssume1 |=> r))
+                                                                               smpAssume1 (Set.fromList qs `Set.union` @quantRemQualS) (RelevTy_Fun RQuant_None [] [] a (smpAssume1 `varUpd` r))
                                                               smpAssume2 = varmpUnions [ rvarmpEvalUnit v top | v <- vs' ]
                                                               (sty,smp2,_)
                                                                 = relevtyQuant [RelevTyQuantHow_Solve,RelevTyQuantHow_RemoveAmbig,RelevTyQuantHow_Quant]
-                                                                               smpAssume2 (Set.fromList qs' `Set.union` rem1) (RelevTy_Fun RQuant_None [] [] (smpAssume2 |=> a') r')
-                                                      t -> (m |=> t, m)
-                                                        where (q,m) = assSolve Set.empty (Set.map (@lhs.forQuantRVarMp |=>) @quantRemQualS)
-                            .   debugTy1        =   case @rvarMpExpr |=> @ty of
+                                                                               smpAssume2 (Set.fromList qs' `Set.union` rem1) (RelevTy_Fun RQuant_None [] [] (smpAssume2 `varUpd` a') r')
+                                                      t -> (m `varUpd` t, m)
+                                                        where (q,m) = assSolve Set.empty (Set.map (@lhs.forQuantRVarMp `varUpd`) @quantRemQualS)
+                            .   debugTy1        =   case @rvarMpExpr `varUpd` @ty of
                                                       RelevTy_Fun _ _ _ a r
                                                         -> RelevTy_Fun RQuant_None v q a r
-                                                        where q = @rvarMpExpr |=> Set.toList @expr.qualS
-                                                              v = Set.toList $ Set.unions [ftvSet q, ftvSet a, ftvSet r]
+                                                        where q = @rvarMpExpr `varUpd` Set.toList @expr.qualS
+                                                              v = Set.toList $ Set.unions [varFreeSet q, varFreeSet a, varFreeSet r]
                                                       t -> t
-                            .   debugTy2        =   case @lhs.finalRVarMp |=> @ty of
+                            .   debugTy2        =   case @lhs.finalRVarMp `varUpd` @ty of
                                                       RelevTy_Fun _ _ _ a r
                                                         -> RelevTy_Fun RQuant_None [] q a r
-                                                        where q = @lhs.finalRVarMp |=> Set.toList @expr.qualS
+                                                        where q = @lhs.finalRVarMp `varUpd` Set.toList @expr.qualS
                                                       t -> t
-                            .	strictTy2		=	@lhs.finalRVarMp |=> @strictTy
+                            .	strictTy2		=	@lhs.finalRVarMp `varUpd` @strictTy
                             .   tyAspectL       =   [ CBindAspect_RelevTy acbaspkeyDefault @bindTy
                                                     -- , CBindAspect_RelevTy acbaspkeyStrict  @strictTy
                                                     -- , CBindAspect_RelevTy acbaspkeyDebug @debugTy2

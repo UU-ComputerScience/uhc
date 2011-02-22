@@ -76,7 +76,7 @@ SEM Ty
                                             =   if @lhs.allowFresh @tv
                                                 then  case varmpTyLookup @tv @lhs.tvVarMp of
                                                         Just t   -> (t,@lhs.tvVarMp)
-                                                        Nothing  -> (t,(@tv `varmpTyUnit` t) |=> @lhs.tvVarMp)
+                                                        Nothing  -> (t,(@tv `varmpTyUnit` t) `varUpd` @lhs.tvVarMp)
                                                                  where t = Ty_Var @lUniq @categ.repl
                                                 else  (@repl,@lhs.tvVarMp)
 %%]
@@ -90,7 +90,7 @@ SEM Ty
                                             =   if @lhs.allowFresh @tv
                                                 then  case varmpTyLookup @tv @lhs.tvVarMp of
                                                         Just t   -> (t,@lhs.tvVarMp)
-                                                        Nothing  -> (t,(@tv `varmpTyUnit` t) |=> @lhs.tvVarMp)
+                                                        Nothing  -> (t,(@tv `varmpTyUnit` t) `varUpd` @lhs.tvVarMp)
                                                                  where t = Ty_Var @lUniq @categ.repl
                                                 else  (@repl,@lhs.tvVarMp)
 

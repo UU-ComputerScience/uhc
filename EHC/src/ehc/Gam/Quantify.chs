@@ -49,7 +49,7 @@ valGamQuantify tyKiGam tvKiVarMp gamVarMp globTvS
 valGamQuantifyWithVarMp :: TyKiGam -> VarMp -> VarMp -> TyVarIdS -> ValGam -> (ValGam,VarMp,VarMp)
 valGamQuantifyWithVarMp tyKiGam tvKiVarMp gamVarMp globTvS gam
   = valGamDoWithVarMp
-      (\_ (t,tyCycMp) m cycMp -> (valTyQuantify (tvarKi tyKiGam tvKiVarMp gamVarMp) (`Set.member` globTvS) t,m,tyCycMp |=> cycMp))
+      (\_ (t,tyCycMp) m cycMp -> (valTyQuantify (tvarKi tyKiGam tvKiVarMp gamVarMp) (`Set.member` globTvS) t,m,tyCycMp `varUpd` cycMp))
       gamVarMp emptyVarMp gam
 %%]
 
@@ -70,7 +70,7 @@ valGamQuantifyWithVarMp doQuant tyKiGam tvKiVarMp gamVarMp globTvS prL valGam
   where quant nm (t,tyCycVarMp) newVarMp (cycVarMp,tmpoGam)
           = ( ty
             , newVarMp
-            , (tyCycVarMp |=> cycVarMp
+            , (tyCycVarMp `varUpd` cycVarMp
               , gamAdd nm (tmpo {tmpoTy = ty}) tmpoGam
             ) )
           where tmpo           = tyMergePreds prL t
@@ -79,7 +79,7 @@ valGamQuantifyWithVarMp doQuant tyKiGam tvKiVarMp gamVarMp globTvS prL valGam
 %%]
                 newVarMp'   = newVarMp -- tmpoImplsVarMp tmpo `varmpPlus` m
                 tmpoGam'    = gamAdd nm (tmpo {tmpoTy = ty}) tmpoGam
-                cycVarMp'   = tyCycVarMp |=> cycVarMp
+                cycVarMp'   = tyCycVarMp `varUpd` cycVarMp
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% For TyKiGam
@@ -95,7 +95,7 @@ tyKiGamQuantify globTvS
 tyKiGamQuantifyWithVarMp :: {- TyKiGam -> VarMp -> -} VarMp -> TyVarIdS -> TyKiGam -> (TyKiGam,VarMp,VarMp)
 tyKiGamQuantifyWithVarMp {- tyKiGam tvKiVarMp -} gamVarMp globTvS gam
   = tyKiGamDoWithVarMp
-      (\_ (t,tyCycMp) m cycMp -> (tyKiQuantify {- (tvarKi tyKiGam tvKiVarMp gamVarMp) -} (`Set.member` globTvS) t,m,tyCycMp |=> cycMp))
+      (\_ (t,tyCycMp) m cycMp -> (tyKiQuantify {- (tvarKi tyKiGam tvKiVarMp gamVarMp) -} (`Set.member` globTvS) t,m,tyCycMp `varUpd` cycMp))
       gamVarMp emptyVarMp gam
 %%]
 
@@ -106,7 +106,7 @@ tyKiGamQuantifyWithVarMp {- tyKiGam tvKiVarMp -} gamVarMp globTvS gam
 %%[(17 hmtyinfer || hmtyast) export( quantifyPolGam)
 quantifyPolGam :: PolGam -> PolGam
 quantifyPolGam gam
-  = let fvs = ftv gam
+  = let fvs = varFree gam
         notElemFtvs tv = not $ elem tv fvs
      in mapPolGam (tyQuantify notElemFtvs) gam
 %%]

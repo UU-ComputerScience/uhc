@@ -58,7 +58,7 @@ SEM Ty
                                                 then  case @tyL.replExpose of
                                                         []      ->  (@replTv,@lhs.cnstr)
                                                         (r:_)   ->  let  (r',c) = @tv `varmpTyRevUnit` r
-                                                                    in   (r',c |=> @tyL.cnstr)
+                                                                    in   (r',c `varUpd` @tyL.cnstr)
                                                 else  (Ty_Both @tv @tyL.replExpose,@tyL.cnstr)
                             .   repl        =   if @tv `elem` @lhs.elimTvL then @replTv else @repl
 

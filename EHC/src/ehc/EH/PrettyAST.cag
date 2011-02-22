@@ -34,7 +34,7 @@ mkInfo1 = (,)
 
 %%[(9 hmtyinfer) hs
 ppImpls2 :: VarMp -> Impls -> PP_Doc
-ppImpls2 c t = (pp $ c |=> t) >#< ppParens (pp t)
+ppImpls2 c t = (pp $ c `varUpd` t) >#< ppParens (pp t)
 %%]
 
 %%[1
@@ -171,7 +171,7 @@ SEM Expr
 %%][4
   | Var         loc     .  info_1   :=  [ mkInfo1 "knTy" (ppTyS @lhs.tyVarMp @lhs.knTy)
                                         , mkInfo1 "ty_g_" (ppTyS @lhs.tyVarMp @ty_g_)
-                                        , mkInfo1 "ty" (ppTyS (foVarMp @fo_ |=> @lhs.tyVarMp) @ty)
+                                        , mkInfo1 "ty" (ppTyS (foVarMp @fo_ `varUpd` @lhs.tyVarMp) @ty)
                                         -- , mkInfo1 "lhs.tyVarMp" (ppVarMpV @lhs.tyVarMp)
 %%]]
                                         ]
@@ -255,8 +255,10 @@ SEM Expr
                                         ]
   | Let         loc     .  info_2   :=  [ mkInfo1 "decls.gathTySigGam" (pp @decls.gathTySigGam)
                                         , mkInfo1 "valGam_l_" (pp (gamTop @decls.patValGam))
-                                        , mkInfo1 "valGam_l_+decls.tyVarMp" (pp (@tyVarMpDeclsL0 |=> gamTop @decls.patValGam))
+%%[[4
+                                        , mkInfo1 "valGam_l_+decls.tyVarMp" (pp (@tyVarMpDeclsL0 `varUpd` gamTop @decls.patValGam))
                                         -- , mkInfo1 "decls.tyVarMp" (ppVarMpV @tyVarMpDeclsL0)
+%%]]
                                         ]
 
 SEM PatExpr
@@ -284,9 +286,9 @@ SEM TyExpr
 
 %%[(3 hmtyinfer)
 SEM Expr
-  | Let         loc     .  info_3   :=  [ -- mkInfo1 "valGam_l_ (+ decls.tyVarMp)" (ppGam $ @tyVarMpDeclsL0 |=> @valGam_l_)
+  | Let         loc     .  info_3   :=  [ -- mkInfo1 "valGam_l_ (+ decls.tyVarMp)" (ppGam $ @tyVarMpDeclsL0 `varUpd` @valGam_l_)
                                         ]
-  | TypeAs      loc     .  info_3   :=  [ mkInfo1 "knTy+lhs.tyVarMp" (ppTy (@lhs.tyVarMp |=> @lhs.knTy))
+  | TypeAs      loc     .  info_3   :=  [ mkInfo1 "knTy+lhs.tyVarMp" (ppTy (@lhs.tyVarMp `varUpd` @lhs.knTy))
                                         , mkInfo1 "lhs.tyVarMp" (ppVarMpV @lhs.tyVarMp)
                                         , mkInfo1 "foVarMp fo" (pp (foVarMp @fo_))
                                         , mkInfo1 "ty_q_" (ppTy @ty_q_)
@@ -341,7 +343,7 @@ SEM PatExpr
                                         , mkInfo1 "lhs.fiOpts" (pp @lhs.fiOpts)
                                         ]
   | Con         loc     .  info_4   :=  [ mkInfo1 "ty_g_" (ppTy @ty_g_)
-                                        , mkInfo1 "tvarv1_" (ppTyS (@tyVarMp_p_ |=> @lhs.patTyVarMp) @tvarv1_)
+                                        , mkInfo1 "tvarv1_" (ppTyS (@tyVarMp_p_ `varUpd` @lhs.patTyVarMp) @tvarv1_)
                                         ]
 %%]
 
@@ -371,7 +373,7 @@ SEM Expr
                                         ]
   | Lam         loc     .  info_4_2 :=  [ mkInfo1 "valGam_l_" (ppGam @valGam_l_)
                                         , mkInfo1 "lArgElimValGam" (ppGam @lArgElimValGam)
-                                        , mkInfo1 "knTy+lhs.imprTyVarMp" (ppTy (@lhs.imprTyVarMp |=> @lhs.knTy))
+                                        , mkInfo1 "knTy+lhs.imprTyVarMp" (ppTy (@lhs.imprTyVarMp `varUpd` @lhs.knTy))
                                         , mkInfo1 "lhs.imprTyVarMp" (ppVarMpV @lhs.imprTyVarMp)
                                         , mkInfo1 "arg.tyVarMp" (ppVarMpV @arg.tyVarMp)
                                         , mkInfo1 "body.imprTyVarMp" (ppVarMpV @body.imprTyVarMp)
@@ -441,7 +443,7 @@ SEM Decl
 SEM Expr
   | Case        loc     .  info_5   :=  [ mkInfo1 "lhs.fiOpts" (pp @lhs.fiOpts)
                                         , mkInfo1 "altsFiOpts" (pp @altsFiOpts)
-                                        , mkInfo1 "knTy" (ppTy (@lhs.tyVarMp |=> @lhs.knTy))
+                                        , mkInfo1 "knTy" (ppTy (@lhs.tyVarMp `varUpd` @lhs.knTy))
                                         ]
 
 SEM PatExpr
@@ -452,7 +454,7 @@ SEM PatExpr
 
 SEM CaseAlt
   | Pat         loc     .  info_5   :=  [ mkInfo1 "patExpr.valGam" (ppGam $ gamTop @patExpr.valGam)
-                                        , mkInfo1 "patExpr.valGam + subst" (ppGam $ (@patExpr.patTyVarMp |=>) $ gamTop @patExpr.valGam)
+                                        , mkInfo1 "patExpr.valGam + subst" (ppGam $ (@patExpr.patTyVarMp `varUpd`) $ gamTop @patExpr.valGam)
                                         ]
 
 SEM CaseAlts
@@ -607,11 +609,11 @@ SEM PatExpr
 
 SEM RecExpr
   | Empty       loc     .  info_7   :=  [ mkInfo1 "lhs.knTy" (ppTyS @lhs.tyVarMp @lhs.knTy)
-                                        , mkInfo1 "ty" (ppTyS (foVarMp @fo_ |=> @lhs.tyVarMp) @ty)
+                                        , mkInfo1 "ty" (ppTyS (foVarMp @fo_ `varUpd` @lhs.tyVarMp) @ty)
                                         ]
   | Ext         loc     .  info_7   :=  [ mkInfo1 "knRecTy" (pp @knRecTy)
                                         , mkInfo1 "lhs.knTy" (ppTyS @lhs.tyVarMp @lhs.knTy)
-                                        , mkInfo1 "foTy foKnRec" (ppTyS (foVarMp @foKnRec |=> @lhs.tyVarMp) (foTy @foKnRec))
+                                        , mkInfo1 "foTy foKnRec" (ppTyS (foVarMp @foKnRec `varUpd` @lhs.tyVarMp) (foTy @foKnRec))
                                         , mkInfo1 "foVarMp @foKnRec" (ppVarMpV $ foVarMp @foKnRec)
                                         , mkInfo1 "recExpr.ty" (ppTyS @expr.tyVarMp @recExpr.ty)
                                         , mkInfo1 "ty" (ppTyS @expr.tyVarMp @ty)
@@ -619,7 +621,7 @@ SEM RecExpr
                                         ]
   | Upd         loc     .  info_7   :=  [ mkInfo1 "knRecTy" (pp @knRecTy)
                                         , mkInfo1 "lhs.knTy" (ppTyS @lhs.tyVarMp @lhs.knTy)
-                                        , mkInfo1 "foTy foKnRec" (ppTyS (foVarMp @foKnRec |=> @lhs.tyVarMp) (foTy @foKnRec))
+                                        , mkInfo1 "foTy foKnRec" (ppTyS (foVarMp @foKnRec `varUpd` @lhs.tyVarMp) (foTy @foKnRec))
                                         , mkInfo1 "recExpr.ty" (ppTyS @expr.tyVarMp @recExpr.ty)
                                         , mkInfo1 "ty" (ppTyS @expr.tyVarMp @ty)
                                         , mkInfo1 "finRecTy" (ppTyS @lhs.finTyVarMp @recExpr.ty)
@@ -841,7 +843,7 @@ SEM Expr
                                         , mkInfo1 "chrSolve2RedTrees" (ppBracketsCommasV $ map ppAssocLV $ @chrSolve2RedTrees)
                                         ]
   | Lam         loc     .  info_9   :=  [ mkInfo1 "imTy" (pp @imTy)
-                                        , mkInfo1 "imTy+subst" (pp (@body.tyVarMp |=> @imTy))
+                                        , mkInfo1 "imTy+subst" (pp (@body.tyVarMp `varUpd` @imTy))
                                         , mkInfo1 "knImpls" (pp @knImpls)
                                         , mkInfo1 "knImplsTl" (ppImpls2 @lhs.finTyVarMp @knImplsTl)
                                         , mkInfo1 "knPrL" (ppBracketsCommas @knPrL)
@@ -883,11 +885,11 @@ SEM PrExpr
 
 %%[(10 hmtyinfer)
 SEM Expr
-  | Sel         loc     .  info_10  :=  [ mkInfo1 "hereCnstrMp+subs" (ppAssocLV $ assocLMapElt ppBracketsCommas $ Map.toList $ @expr.tyVarMp `chrAppSubst` @hereCnstrMp)
+  | Sel         loc     .  info_10  :=  [ mkInfo1 "hereCnstrMp+subs" (ppAssocLV $ assocLMapElt ppBracketsCommas $ Map.toList $ @expr.tyVarMp `varUpd` @hereCnstrMp)
                                         ]
 
 SEM RecExpr
-  | Ext         loc     .  info_10  :=  [ mkInfo1 "hereCnstrMp+subs" (ppAssocLV $ assocLMapElt ppBracketsCommas $ Map.toList $ @expr.tyVarMp `chrAppSubst` @hereCnstrMp)
+  | Ext         loc     .  info_10  :=  [ mkInfo1 "hereCnstrMp+subs" (ppAssocLV $ assocLMapElt ppBracketsCommas $ Map.toList $ @expr.tyVarMp `varUpd` @hereCnstrMp)
                                         ]
 %%]
 
@@ -897,7 +899,7 @@ SEM TyExpr
                 loc     .  info_17  =   []
 
 SEM RecExpr
-  | Ext         loc     .  info_11  :=  [ -- mkInfo1 "foTy foKnRec (betared)" (pp (tyBetaRedFull (emptyFI {fiEnv = @fe}) (foVarMp @foKnRec |=> @lhs.tyVarMp) $ foTy @foKnRec))
+  | Ext         loc     .  info_11  :=  [ -- mkInfo1 "foTy foKnRec (betared)" (pp (tyBetaRedFull (emptyFI {fiEnv = @fe}) (foVarMp @foKnRec `varUpd` @lhs.tyVarMp) $ foTy @foKnRec))
                                         ]
 %%]
 

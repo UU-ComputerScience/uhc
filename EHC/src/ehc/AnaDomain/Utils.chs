@@ -55,7 +55,7 @@ relevtyQuant
 relevtyQuant how m qs t
   = case funTy of
       t'@(RelevTy_Fun _ _ _ as r) | RelevTyQuantHow_Rec `elem` how
-         -> ( RelevTy_Fun RQuant_Rec (ftv t') [] as r
+         -> ( RelevTy_Fun RQuant_Rec (varFree t') [] as r
             , emptyVarMp
             , Set.empty
             )
@@ -64,20 +64,20 @@ relevtyQuant how m qs t
             , solveVarMp
             , qs3rem
             )
-         where ftvT = ftvSet t'
+         where ftvT = varFreeSet t'
                (qs2,solveVarMp)
                    | RelevTyQuantHow_Solve `elem` how = assSolve ftvT qsm
                    | otherwise                        = (qsm, emptyVarMp)
-                   where qsm = Set.map (m |=>) qs
-               as' = solveVarMp |=> as
-               r'  = solveVarMp |=> r
-               ftvT' = ftvSet as' `Set.union` ftvSet r'
+                   where qsm = Set.map (varUpd m) qs
+               as' = solveVarMp `varUpd` as
+               r'  = solveVarMp `varUpd` r
+               ftvT' = varFreeSet as' `Set.union` varFreeSet r'
                (qs3,qs3rem)
                    | RelevTyQuantHow_RemoveAmbig `elem` how = relevQualRemoveAmbig ftvT' qsm
                    | otherwise                              = (qsm, Set.empty)
-                   where qsm = Set.map (solveVarMp |=>) qs2
+                   where qsm = Set.map (varUpd solveVarMp) qs2
                qs4 = Set.toList qs3
-               ftvTQ = ftvT' `Set.union` ftvSet qs4
+               ftvTQ = ftvT' `Set.union` varFreeSet qs4
                quantOver
                    | RelevTyQuantHow_Quant `elem` how = Set.toList ftvTQ
                    | otherwise                        = []
@@ -85,7 +85,7 @@ relevtyQuant how m qs t
             , emptyVarMp
             , Set.empty
             )
-  where funTy = case m |=> t of
+  where funTy = case m `varUpd` t of
                   t'@(RelevTy_Fun _ _ _ _ _) -> t'
                   t'                         -> RelevTy_Fun RQuant_None [] [] [] t'
 %%]
@@ -100,7 +100,7 @@ relevQualRemoveAmbig :: UIDS -> RelevQualS -> (RelevQualS,RelevQualS)
 relevQualRemoveAmbig bound qualS
   = Set.partition ok qualS
   where -- ok (RelevQual_Alt _ _ _ _ _ _) = False
-        ok q                           = ftvSet q `Set.isSubsetOf` bound
+        ok q                           = varFreeSet q `Set.isSubsetOf` bound
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -108,21 +108,34 @@ relevQualRemoveAmbig bound qualS
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen) hs
-instance Substitutable RelevTy UID RVarMp where
-  (|=>) = relevtyAppVarLookup
-  ftvSet = relevTyFtv
+instance VarUpdatable RelevTy RVarMp where
+  varUpd = relevtyAppVarLookup
+
+instance VarExtractable RelevTy UID where
+  varFreeSet = relevTyFtv
 %%]
 
 %%[(8 codegen) hs
-instance Substitutable RelevQual UID RVarMp where
-  (|=>) = relevqualAppVarLookup
-  ftvSet = relevQualFtv
+instance VarUpdatable RelevQual RVarMp where
+  varUpd = relevqualAppVarLookup
+
+instance VarExtractable RelevQual UID where
+  varFreeSet = relevQualFtv
 %%]
 
 %%[(8 codegen) hs
-instance Substitutable RelevCoe UID RVarMp where
-  (|=>) = relevcoeAppVarLookup
-  ftvSet = relevCoeFtv
+instance VarUpdatable RelevCoe RVarMp where
+  varUpd = relevcoeAppVarLookup
+
+instance VarExtractable RelevCoe UID where
+  varFreeSet = relevCoeFtv
+%%]
+
+%%[(8888 codegen) hs
+instance Substitutable RelevTy UID RVarMp
+instance Substitutable RelevTyL UID RVarMp
+instance Substitutable RelevQual UID RVarMp
+instance Substitutable RelevCoe UID RVarMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -196,7 +209,7 @@ assSolve bound qualS
                 check_pos = wlPos < wlSize
                 
         -- split into those which cannot be further solved, and the rest
-        splitRedSlv1 m = Set.partition (\i -> ftvSet (qual m i) `Set.isSubsetOf` bound)
+        splitRedSlv1 m = Set.partition (\i -> varFreeSet (qual m i) `Set.isSubsetOf` bound)
 
         -- solve combination of all quals related to single AnaEval var
         solveN v is ass@(ASS {assWl=wl, assQm=qualM})
@@ -218,14 +231,14 @@ assSolve bound qualS
         
         -- update qualM
         updQualWl slvS s wl qm is = (qm', wl')
-          where qm' = foldr (\i m -> Map.update (\q -> Just $ s |=> q) i m) qm is
+          where qm' = foldr (\i m -> Map.update (\q -> Just $ s `varUpd` q) i m) qm is
                 wl' = wlAddL qm' is wl
 
         -- update ass when something is solved
         updAss wl qm s slv ass = Just (ass {assWl=wl, assQm=qm, assVm= s `varmpPlus` assVm ass, assSolved = Set.union slv $ assSolved ass})
         
         -- worklist: initial + remainder; TBD: variable-less quals need to be checked for being tautology
-        wlAdd  m q  wl = foldr (add q) wl (ftv (qual m q))
+        wlAdd  m q  wl = foldr (add q) wl (varFree (qual m q))
                        where add q v wl = Map.alter (Just . maybe (Set.singleton q) (Set.insert q)) v wl
         wlAddL m qs wl = foldr (wlAdd m) wl qs
 

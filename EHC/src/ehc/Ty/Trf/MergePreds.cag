@@ -137,7 +137,7 @@ SEM Ty
 %%[(9 hmtyinfer || hmtyast) hs
 prLLArrowSplit :: TyVarIdS -> [[PredOcc]] -> ([PredOcc],[[PredOcc]])
 prLLArrowSplit frTvS prLL
-  =  let  (h,r) = partition (all (`Set.member` frTvS) . ftv) . concat $ prLL
+  =  let  (h,r) = partition (all (`Set.member` frTvS) . varFree) . concat $ prLL
      in   (h,[r])
 %%]
 

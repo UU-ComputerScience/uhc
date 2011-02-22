@@ -117,7 +117,7 @@ mkGenerRepresentableTypeSynTyProj
                                                  = case (initlast remTvarArgL, initlast args) of
                                                      (Just (_,tv), Just (firstargs,lastarg)) | maybe False (tv==) $ tyMbVar lastarg
                                                        -> ([ mkC ehbnGenerDataRec1, mkApp (fun : firstargs) ], Proj_Rec1 [t] remArity)
-                                                     (_, Just (firstargs,lastarg)) | not $ Set.null $ ftvSet lastarg
+                                                     (_, Just (firstargs,lastarg)) | not $ Set.null $ varFreeSet lastarg
                                                        -> ( [ mkC ehbnGenerDataComp1, fmapTy, lastarg' ]
                                                           , Proj_Comp1 [t] fmapTy lastproj
                                                           )
@@ -181,7 +181,7 @@ SEM Expr
                                                             ]
                                                           )
                                                         | ((origtnm,tvs,ki),cs,sc,remArity) <- @decls.generDataInfoL
-                                                        , let -- ki' = tyArrowArgsRes $ @bodyTyKiVarMp1 |=> ki
+                                                        , let -- ki' = tyArrowArgsRes $ @bodyTyKiVarMp1 `varUpd` ki
                                                               tnm = hsnNm2GenerDatatype origtnm
                                                         ]
 

@@ -8,7 +8,7 @@ Assumptions (to be documented further)
 - The key [Trie.TrieKey Key] used to lookup a constraint in a CHR should be distinguishing enough to be used for the prevention
   of the application of a propagation rule for a 2nd time.
 
-%%[(9 hmtyinfer || hmtyast) module {%{EH}CHR.Solve} import({%{EH}CHR},{%{EH}CHR.Constraint},{%{EH}CHR.Key})
+%%[(9 hmtyinfer || hmtyast) module {%{EH}CHR.Solve} import({%{EH}CHR},{%{EH}CHR.Constraint},{%{EH}CHR.Key},{%{EH}Substitutable})
 %%]
 
 %%[(9 hmtyinfer || hmtyast) import({%{EH}Base.Common},{%{EH}Base.Trie} as Trie)
@@ -369,7 +369,8 @@ chrSolveStateTrace = stTrace
 %%[(9 hmtyinfer || hmtyast) export(chrSolve,chrSolve')
 chrSolve
   :: ( CHRMatchable env p s, CHRCheckable env g s
-     , CHRSubstitutable s tvar s, CHRSubstitutable g tvar s, CHRSubstitutable i tvar s, CHRSubstitutable p tvar s
+     -- , CHRSubstitutable s tvar s, CHRSubstitutable g tvar s, CHRSubstitutable i tvar s, CHRSubstitutable p tvar s
+     , VarUpdatable s s, VarUpdatable g s, VarUpdatable i s, VarUpdatable p s
      , CHREmptySubstitution s
      , Ord (Constraint p i)
      , PP g, PP i, PP p -- for debugging
@@ -380,7 +381,8 @@ chrSolve env chrStore cnstrs
 
 chrSolve'
   :: ( CHRMatchable env p s, CHRCheckable env g s
-     , CHRSubstitutable s tvar s, CHRSubstitutable g tvar s, CHRSubstitutable i tvar s, CHRSubstitutable p tvar s
+     -- , CHRSubstitutable s tvar s, CHRSubstitutable g tvar s, CHRSubstitutable i tvar s, CHRSubstitutable p tvar s
+     , VarUpdatable s s, VarUpdatable g s, VarUpdatable i s, VarUpdatable p s
      , CHREmptySubstitution s
      , Ord (Constraint p i)
      , PP g, PP i, PP p -- for debugging
@@ -393,7 +395,8 @@ chrSolve' env chrStore cnstrs
 %%[(9 hmtyinfer || hmtyast) export(chrSolve'')
 chrSolve''
   :: ( CHRMatchable env p s, CHRCheckable env g s
-     , CHRSubstitutable s tvar s, CHRSubstitutable g tvar s, CHRSubstitutable i tvar s, CHRSubstitutable p tvar s
+     -- , CHRSubstitutable s tvar s, CHRSubstitutable g tvar s, CHRSubstitutable i tvar s, CHRSubstitutable p tvar s
+     , VarUpdatable s s, VarUpdatable g s, VarUpdatable i s, VarUpdatable p s
      , CHREmptySubstitution s
      , Ord (Constraint p i)
      , PP g, PP i, PP p -- for debugging
@@ -445,14 +448,14 @@ chrSolve'' env chrStore cnstrs prevState
                         where (tlMatchY,tlMatchN) = partition (\(r@(_,(ks,_)),_) -> not (any (`elem` keysSimp) ks || isUsedByPropPart (wlUsedIn wl') r)) tlMatch
                               (keysSimp,keysProp) = splitAt simpSz keys
                               usedIn              = Map.singleton (Set.fromList keysProp) (Set.singleton chrId)
-                              (bTodo,bDone)       = splitDone $ map (chrAppSubst subst) b
+                              (bTodo,bDone)       = splitDone $ map (varUpd subst) b
                               bTodo'              = wlCnstrToIns wl bTodo
                               wl' = wlDeleteByKeyAndInsert' histCount keysSimp bTodo'
                                     $ wl { wlUsedIn  = usedIn `wlUsedInUnion` wlUsedIn wl
                                          , wlScanned = []
                                          , wlQueue   = wlQueue wl ++ wlScanned wl
                                          }
-                              chr'= subst `chrAppSubst` chr
+                              chr'= subst `varUpd` chr
                               st' = st { stWorkList       = wl'
 %%[[9
                                        , stTrace          = SolveStep chr' subst (assocLElts bTodo') bDone : {- SolveDbg (ppwork >-< ppdbg) : -} stTrace st
@@ -487,7 +490,7 @@ chrSolve'' env chrStore cnstrs prevState
                       st' = stmatch { stWorkList = wl', stTrace = SolveDbg (ppdbg) : {- -} stTrace stmatch }
           where (matches,lastQuery,ppdbg,stats) = workMatches st
 %%[[9
-                stmatch = addStats stats [("(a) workHd", ppTrieKey workHdKey), ("(b) matches", ppBracketsCommasV [ s `chrAppSubst` storedChr schr | ((schr,_),s) <- matches ])]
+                stmatch = addStats stats [("(a) workHd", ppTrieKey workHdKey), ("(b) matches", ppBracketsCommasV [ s `varUpd` storedChr schr | ((schr,_),s) <- matches ])]
 %%][100
                 stmatch =
 %%]]
@@ -560,7 +563,7 @@ chrSolve'' env chrStore cnstrs prevState
                         checks (StoredCHR {storedChr = CHR {chrGuard = gd}})
                           = map chk gd
                           where chk g subst = chrCheck env subst g
-                        cmb (Just s) next = fmap (`chrAppSubst` s) $ next s
+                        cmb (Just s) next = fmap (`varUpd` s) $ next s
                         cmb _        _    = Nothing
         isUsedByPropPart wlUsedIn (chr,(keys,_))
           = fnd $ drop (storedSimpSz chr) keys

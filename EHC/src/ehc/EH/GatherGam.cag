@@ -10,7 +10,7 @@ SEM Expr
   | * - Let     lhs         .   gathValGam          =   emptyGam
 
 SEM AGItf
-  | AGItf       lhs         .   gathValGam          =   @finTyVarMp |=> @expr.gathValGam
+  | AGItf       lhs         .   gathValGam          =   @finTyVarMp `varUpd` @expr.gathValGam
 %%]
 
 %%[(20 hmtyinfer)

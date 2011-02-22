@@ -90,7 +90,7 @@ SEM Decl
                                                             )
                lhs          .   gathCnstrMp         =   Map.empty
 %%[[9
-               loc          .   toProveGathCnstrMp  =   @tyVarMpDeclsL0 `chrAppSubst` @decls.gathCnstrMp
+               loc          .   toProveGathCnstrMp  =   @tyVarMpDeclsL0 `varUpd` @decls.gathCnstrMp
 %%][(91 codegen)
                loc          .   (toProveGathCnstrMp,derivAltsPrOcc,derivExtraPrOcc,derivDCL)
                                                     =   case @instVariant of
@@ -99,14 +99,14 @@ SEM Decl
 %%[[92
                                                               && not (dgiIsRec @derivDataDGI)
 %%]]
-                                                              -> ( gathPredLToProveCnstrMp $ foVarMp foDt |=> concat (extraPrOcc : altsPrOcc)
+                                                              -> ( gathPredLToProveCnstrMp $ foVarMp foDt `varUpd` concat (extraPrOcc : altsPrOcc)
                                                                  , altsPrOcc, extraPrOcc
                                                                  , fromJust derivDCL
                                                                  )
 %%[[92
                                                             | not $ null @generForFitsInL
-                                                              -> ( cnstrMpUnions [ {- gathPredLToProveCnstrMp $ foVarMp foDt |=> concat (altsPrOcc)
-                                                                                 , -} @tyVarMpDeclsL0 `chrAppSubst` @generCnstrMp
+                                                              -> ( cnstrMpUnions [ {- gathPredLToProveCnstrMp $ foVarMp foDt `varUpd` concat (altsPrOcc)
+                                                                                 , -} @tyVarMpDeclsL0 `varUpd` @generCnstrMp
                                                                                  ]
                                                                  , [], []
                                                                  , emptyDerivCls
@@ -129,7 +129,7 @@ SEM Decl
                                                                        where cxl = maybe [] dclExtraCtxt derivDCL
                                                                   foDt = fitsIn unifyFIOpts @fe @lUniq_95_fitsIn_dataTy emptyVarMp dataTy @derivHdDataTy
                                                                   derivDCL = Map.lookup @instClsNm @derivMp
-                                                          _ -> (@tyVarMpDeclsL0 {- 1 -} `chrAppSubst` @decls.gathCnstrMp,[],[],emptyDerivCls)
+                                                          _ -> (@tyVarMpDeclsL0 {- 1 -} `varUpd` @decls.gathCnstrMp,[],[],emptyDerivCls)
                 loc         .   lUniq_95_altsPrOcc  :   UNIQUEREF gUniq
                 loc         .   lUniq_95_extraPrOcc :   UNIQUEREF gUniq
                 loc         .   lUniq_95_fitsIn_dataTy
@@ -190,10 +190,10 @@ simplify' simplifyHow chrStore clDfGam heur partitionUnresolved2AmbigAndOthers t
                   ; let (pr,mp)
                           = Map.foldWithKey (\p c (cm,m)
                                                -> let (p',m') = canon s p
-                                                  in  (Map.insertWith (++) p' c cm, m' |=> m)
+                                                  in  (Map.insertWith (++) p' c cm, m' `varUpd` m)
                                             )
                                             (Map.empty,emptyVarMp :: VarMp) (simpToProveHereCnstrMp s) 
-                  ; put (s {simpToProveHereCnstrMp = pr, simpVarMp = mp |=> simpVarMp s})
+                  ; put (s {simpToProveHereCnstrMp = pr, simpVarMp = mp `varUpd` simpVarMp s})
                   })
 
        -- adapt env to inhibit bindings for variables freely occurring in predicates, these are fixed (apart from improving substitutions, when resolving defaulting)
@@ -217,11 +217,12 @@ simplify' simplifyHow chrStore clDfGam heur partitionUnresolved2AmbigAndOthers t
        ; when ( -- Debug.tr "chrSolveAmbigPrOccL" (ppCommas (simpRemOccL s) >-< ppCommas chrSolveAmbigPrOccL >-< ppCommas chrSolveAssumablePrOccL) $
                 not (null chrSolveAmbigPrOccL))
               (do { let (dfltPrOccL,dfltTyVarMp) = foldr cmb ([],emptyVarMp) chrSolveAmbigPrOccL
-                          where cmb (o,_) r@(os,m) = maybe r (\m' -> (o:os,m' |=> m)) $ clDfGamLookupDefault (origEnv {fiVarMp = m |=> fiVarMp (simpEnv s)}) (cpoPr o) clDfGam
+                          where cmb :: (CHRPredOcc,x) -> ([CHRPredOcc],VarMp) -> ([CHRPredOcc],VarMp)
+                                cmb (o,_) r@(os,m) = maybe r (\m' -> (o:os,m' `varUpd` m)) $ clDfGamLookupDefault (origEnv {fiVarMp = m `varUpd` fiVarMp (simpEnv s)}) (cpoPr o) clDfGam
                   ; when ( -- Debug.tr "dfltPrOccL" (ppCommas (simpRemOccL s) >-< ppCommas dfltPrOccL >-< dfltTyVarMp) $
                            not (null dfltPrOccL))
                          -- when a match is found, apply the substitution and kick off proving again
-                         (do { modify (\s -> s {simpToProveHereCnstrMp = dfltTyVarMp `chrAppSubst` simpToProveHereCnstrMp s})
+                         (do { modify (\s -> s {simpToProveHereCnstrMp = dfltTyVarMp `varUpd` simpToProveHereCnstrMp s})
                              ; (cannotResCnstrMp,chrSolveAssumablePrOccL) <- fullSimp u1 toProveHereCnstrMpPrev prevSimplifyRes
                              ; modify (\s -> s {simpCannotCnstrMp = cannotResCnstrMp, simpRemOccL = chrSolveAssumablePrOccL})
                              })
@@ -396,7 +397,7 @@ simplify simplifyHow env chrStore clDfGam heur partitionUnresolved2AmbigAndOther
 %%]
 
 %%[(9 hmtyinfer) hs
-fixedFtv mp = ftvSet $ map cnstrPred $ Map.keys mp
+fixedFtv mp = varFreeSet $ map cnstrPred $ Map.keys mp
 
 debugInfo chrSimplifyResult
   = (s,rg,chrSolveStateDoneConstraints s,chrSolveStateTrace s,redAlts,redTrees,simpresRemPredL chrSimplifyResult)
@@ -410,7 +411,7 @@ debugInfo chrSimplifyResult
 %%[(9 hmtyinfer)
 SEM AGItf
   | AGItf       loc         .   chrProveFIIn        =   @chrFIIn {fiVarMp = @expr.tyVarMp}
-                            .   toProveCnstrMp      =   @expr.tyVarMp `chrAppSubst` @expr.gathCnstrMp
+                            .   toProveCnstrMp      =   @expr.tyVarMp `varUpd` @expr.gathCnstrMp
                             .   toProveHereCnstrMp  =   @toProveCnstrMp
                             .   (_,chrSolveMainRemCnstrMp,_,chrSolveSimpTyVarMp,chrSolveMainErrs,chrSimplifyResult,_
 %%[[(9 codegen)
@@ -430,7 +431,7 @@ SEM AGItf
 %%[(9 hmtyinfer)
 SEM Expr
   | Let         loc         .   chrProveFIIn        =   @chrFIIn {fiVarMp = @tyVarMpDeclsL0}
-                            .   toProveCnstrMp      =   @tyVarMpDeclsL0 {- 1 -} `chrAppSubst` @decls.gathCnstrMp
+                            .   toProveCnstrMp      =   @tyVarMpDeclsL0 {- 1 -} `varUpd` @decls.gathCnstrMp
                             .   (toProveHereCnstrMp,toProveElsewhereCnstrMp)
                                                     =   let (here,there) = Map.partitionWithKey (\k _ -> isLetProveCandidate @noLetQuantTyVarIdS $ cnstrPred k) @toProveCnstrMp
                                                         in  (here, predOccCnstrMpLiftScope @predScope there)
@@ -548,7 +549,7 @@ SEM Expr
                                                                                  )
                                                                                | ((po,ipos),u') <- zip impls $ mkNewLevUIDL (length impls) u
                                                                                , let ups = mkNewLevUIDL (length ipos) u'
-                                                                                     pr  = poPr po -- @bodyVarMp2 |=> poPr po
+                                                                                     pr  = poPr po -- @bodyVarMp2 `varUpd` poPr po
                                                                                ]
                                                                     impls = tmpoImplsPrvReq tmpo
                                                             tmpos = gamToAssocL @tqoGam

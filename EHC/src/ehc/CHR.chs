@@ -74,7 +74,7 @@ instance Keyable cnstr => Keyable (CHR cnstr guard subst) where
 %%% CHRSubstitutable
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(9 hmtyinfer || hmtyast) export(CHRSubstitutable(..))
+%%[(9999 hmtyinfer || hmtyast) export(CHRSubstitutable(..))
 class Ord var => CHRSubstitutable x var subst | x -> var, x -> subst where
   chrFtv       :: x -> Set.Set var
   chrAppSubst  :: subst -> x -> x
@@ -82,6 +82,16 @@ class Ord var => CHRSubstitutable x var subst | x -> var, x -> subst where
 %%]
 
 %%[(9 hmtyinfer || hmtyast)
+instance (VarExtractable c v,VarExtractable g v) => VarExtractable (CHR c g s) v where
+  varFreeSet          (CHR {chrHead=h, chrGuard=g, chrBody=b})
+    = Set.unions $ concat [map varFreeSet h, map varFreeSet g, map varFreeSet b]
+
+instance (VarUpdatable c s,VarUpdatable g s) => VarUpdatable (CHR c g s) s where
+  varUpd s r@(CHR {chrHead=h, chrGuard=g, chrBody=b})
+    = r {chrHead = map (varUpd s) h, chrGuard = map (varUpd s) g, chrBody = map (varUpd s) b}
+%%]
+
+%%[(9999 hmtyinfer || hmtyast)
 instance (CHRSubstitutable c v s,CHRSubstitutable g v s) => CHRSubstitutable (CHR c g s) v s where
   chrFtv          (CHR {chrHead=h, chrGuard=g, chrBody=b})
     = Set.unions $ concat [map chrFtv h, map chrFtv g, map chrFtv b]

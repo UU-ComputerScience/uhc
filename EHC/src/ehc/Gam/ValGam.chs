@@ -135,12 +135,14 @@ valGamRestrictKiVarMp g = varmpIncMetaLev $ assocTyLToVarMp [ (v,kiStar) | vgi <
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(2 hmtyinfer || hmtyast).Substitutable.inst.ValGamInfo
-instance Substitutable ValGamInfo TyVarId VarMp where
-  s |=>  vgi         =   vgi { vgiTy = s |=> vgiTy vgi }
+instance VarUpdatable ValGamInfo VarMp where
+  s `varUpd`  vgi         =   vgi { vgiTy = s `varUpd` vgiTy vgi }
 %%[[4
-  s |==> vgi         =   substLift vgiTy (\i x -> i {vgiTy = x}) (|==>) s vgi
+  s `varUpdCyc` vgi         =   substLift vgiTy (\i x -> i {vgiTy = x}) varUpdCyc s vgi
 %%]]
-  ftvSet vgi         =   ftvSet (vgiTy vgi)
+
+instance VarExtractable ValGamInfo TyVarId where
+  varFreeSet vgi         =   varFreeSet (vgiTy vgi)
 %%]
 
 %%[(1 hmtyinfer || hmtyast).PP.ValGamInfo

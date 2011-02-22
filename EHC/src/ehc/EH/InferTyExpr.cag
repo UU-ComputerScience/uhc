@@ -301,11 +301,11 @@ SEM TyExpr
                             .   fo_                 =   fitsIn weakFIOpts defaultFIEnv @lUniq2 @arg.kiVarMp @func.ki @knFunKi
                             .   fKi                 =   foTy @fo_
                             .   ki                  =   @knResKi
-                lhs         .   kiVarMp             =   foVarMp @fo_ |=> @arg.kiVarMp
+                lhs         .   kiVarMp             =   foVarMp @fo_ `varUpd` @arg.kiVarMp
                 loc         .   lUniq               :   UNIQUEREF gUniq
                 loc         .   lUniq2              :   UNIQUEREF gUniq
 %%]
-                            .   fo_                 =   fitsIn weakFIOpts defaultFIEnv @lUniq2 @arg.kiVarMp (@arg.kiVarMp |=> @func.ki) @knFunKi
+                            .   fo_                 =   fitsIn weakFIOpts defaultFIEnv @lUniq2 @arg.kiVarMp (@arg.kiVarMp `varUpd` @func.ki) @knFunKi
 
 %%[(6 hmtyinfer)
 SEM TyExprs
@@ -327,7 +327,7 @@ SEM TyExpr
 SEM RowTyExpr
   | Ext         loc         .   fo_                 =   fitsIn weakFIOpts defaultFIEnv @lUniq @tyExpr.kiVarMp @tyExpr.ki kiStar
                             .   ki                  =   foTy @fo_
-                lhs         .   kiVarMp             =   foVarMp @fo_ |=> @tyExpr.kiVarMp
+                lhs         .   kiVarMp             =   foVarMp @fo_ `varUpd` @tyExpr.kiVarMp
                 loc         .   lUniq               :   UNIQUEREF gUniq
 %%]
 
@@ -345,7 +345,7 @@ SEM TyExpr
 SEM RowTyExpr
   | Var         loc         .   fo_                 =   fitsIn weakFIOpts defaultFIEnv @lUniq2 @lhs.kiVarMp (tkgiKi @tkgi_) kiRow
                             .   ki                  =   foTy @fo_
-                lhs         .   kiVarMp             =   foVarMp @fo_ |=> @lhs.kiVarMp
+                lhs         .   kiVarMp             =   foVarMp @fo_ `varUpd` @lhs.kiVarMp
                 loc         .   lUniq2              :   UNIQUEREF gUniq
 %%]
 
@@ -353,7 +353,7 @@ SEM RowTyExpr
 SEM TyExpr
   | Lam         loc         .   ki                  =   [tkgiKi @tkgi_] `mkArrow` @tyExpr.ki
 %%]
-  | Lam         loc         .   ki                  =   [@tyExpr.kiVarMp |=> tkgiKi @tkgi_] `mkArrow` @tyExpr.ki
+  | Lam         loc         .   ki                  =   [@tyExpr.kiVarMp `varUpd` tkgiKi @tkgi_] `mkArrow` @tyExpr.ki
 
 %%[(9 hmtyinfer)
 ATTR PrExpr [ | | ki: Ty ]
@@ -363,7 +363,7 @@ SEM PrExpr
   | Class       loc         .   (tkgi_,clKiNmErrs)  =   tyKiGamLookupByNameErr (hsnClass2Kind @nm) @lhs.tyKiGam
                             .   fo_                 =   fitsIn weakFIOpts defaultFIEnv @lUniq @tyExprs.kiVarMp
                                                           (@tyExprs.kiL `mkArrow` kiStar) (tkgiKi @tkgi_)
-                lhs         .   kiVarMp             =   foVarMp @fo_ |=> @tyExprs.kiVarMp
+                lhs         .   kiVarMp             =   foVarMp @fo_ `varUpd` @tyExprs.kiVarMp
                 loc         .   lUniq               :   UNIQUEREF gUniq
 %%]
 
@@ -540,7 +540,7 @@ SEM Decl
                 lhs         .   patTyGam            =   gamAdd @tyNm @typeTgi @lhs.patTyGam
                 loc         .   foTy_               =   fitsIn  weakFIOpts defaultFIEnv @lUniq2 @lhs.tyTyVarMp
                                                                 @tyExpr.ty (tgiTy @typeTgi)
-                lhs         .   tyTyVarMp           =   foVarMp @foTy_ |=> @lhs.tyTyVarMp
+                lhs         .   tyTyVarMp           =   foVarMp @foTy_ `varUpd` @lhs.tyTyVarMp
                 loc         .   lUniq               :   UNIQUEREF gUniq
                 loc         .   lUniq2              :   UNIQUEREF gUniq
 %%]
@@ -559,6 +559,6 @@ SEM Decl
                 lhs         .   patTyKiGam          =   tyKiGamNameSingleton @tyNm @typeTkgi `gamUnion` @lhs.patTyKiGam
                 loc         .   foKi_               =   fitsIn  strongFIOpts defaultFIEnv @lUniq2 @tyExpr.kiVarMp
                                                                 @tyExpr.ki (tkgiKi @typeTkgi)
-                lhs         .   kiVarMp             =   foVarMp @foKi_ |=> @tyExpr.kiVarMp
+                lhs         .   kiVarMp             =   foVarMp @foKi_ `varUpd` @tyExpr.kiVarMp
 %%]
 

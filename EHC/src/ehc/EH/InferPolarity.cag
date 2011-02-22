@@ -343,7 +343,7 @@ SEM TyExpr
   | Con Var     loc         .   polFromEnv          =   pgiPol @pgi_
                             .   foPol               =   fitsIn weakFIOpts defaultFIEnv @lUniq_17_fitsIn_pol @lhs.polVarMp @polFromEnv @lhs.knPolCtx
                 lhs         .   pol                 =   foTy @foPol
-                            .   polVarMp            =   foVarMp @foPol |=> @lhs.polVarMp
+                            .   polVarMp            =   foVarMp @foPol `varUpd` @lhs.polVarMp
                 loc         .   lUniq_17_fitsIn_pol :   UNIQUEREF gUniq
 %%]
 
@@ -357,7 +357,7 @@ SEM TyExpr
                             .   foPol               =   fitsIn weakFIOpts defaultFIEnv @lUniq_17_fitsIn_pol @lhs.polVarMp ([@polArgVar] `mkArrow` @polResVar) @lhs.knPolCtx
                 tyExpr      .   knPolCtx            =   @polResVar
                             .   polGam              =   gamAdd @tyVar (mkPGI @polArgVar) @lhs.polGam
-                            .   polVarMp            =   foVarMp @foPol |=> @lhs.polVarMp
+                            .   polVarMp            =   foVarMp @foPol `varUpd` @lhs.polVarMp
                 lhs         .   pol                 =   [@polArgVar] `mkArrow` @tyExpr.pol
                 loc         .   lUniq_17_polArg     :   UNIQUEREF gUniq
                 loc         .   lUniq_17_polRes     :   UNIQUEREF gUniq
@@ -438,7 +438,7 @@ SEM Decl
 -- inferencing
 SEM Decl
   | Type        loc         .   foPol               =   fitsIn weakFIOpts defaultFIEnv @lUniq_17_fitsIn_pol @tyExpr.polVarMp @tyExpr.pol @polSig
-                lhs         .   polVarMp            =   foVarMp @foPol |=> @tyExpr.polVarMp
+                lhs         .   polVarMp            =   foVarMp @foPol `varUpd` @tyExpr.polVarMp
                 loc         .   lUniq_17_fitsIn_pol :   UNIQUEREF gUniq
 %%]
 
@@ -499,15 +499,15 @@ SEM Expr
   | Let         decls       .   patPolGam           =   gamPushNew @lhs.polGam
                             .   polGam              =   @decls.patPolGam
                 loc         .   (polGam_l,_)        =   gamPop @decls.patPolGam
-                (loc.lSubsPolGam1, loc.polVarMpCyc) =   @decls.polVarMp |==> @polGam_l
+                (loc.lSubsPolGam1, loc.polVarMpCyc) =   @decls.polVarMp `varUpdCyc` @polGam_l
                 (loc.polOkCyc, loc.polErrCyc)       =   partition
                                                             (\(v,p) -> let v' = mkPolVar v
-                                                                           p' = varmpDel [v] @decls.polVarMp |=> p
+                                                                           p' = varmpDel [v] @decls.polVarMp `varUpd` p
                                                                        in  mkPolNegate v' == p'
                                                             )
                                                             (varmpToAssocTyL @polVarMpCyc)
                 loc         .   polInvVarMp         =   assocTyLToVarMp [(v, polInvariant) | (v,_) <- @polOkCyc ]
-                            .   lSubsPolGam2        =   @polInvVarMp |=> @lSubsPolGam1
+                            .   lSubsPolGam2        =   @polInvVarMp `varUpd` @lSubsPolGam1
                             .   cycVarMp            =   assocTyLToVarMp @polErrCyc
                             .   cycErrSq            =   Seq.fromList $ rngLift @range varmpOccurErr @decls.polVarMp @cycVarMp
       

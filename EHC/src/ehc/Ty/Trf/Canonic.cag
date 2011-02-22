@@ -142,11 +142,11 @@ predCanonic' :: TyCanonicOpts -> Pred -> (Pred,VarMp)
 %%[[16
 predCanonic' opts (Pred_Eq t1 t2)
   = ( Pred_Eq (tmpoTy $ tyMergePreds [] t1') (tmpoTy $ tyMergePreds [] t2')
-    , m2 |=> m1
+    , m2 `varUpd` m1
     )
     where
       (t1',m1) = tyCanonic' opts t1
-      (t2',m2) = tyCanonic' opts t2 -- (m1 |=> t2)
+      (t2',m2) = tyCanonic' opts t2 -- (m1 `varUpd` t2)
 %%]]
 predCanonic' opts pr
   = case tyCanonicMb' opts $ Ty_Pred pr of
@@ -221,13 +221,13 @@ SEM TyAGItf
 
 %%[(9 hmtyinfer)
 SEM Impls
-  | Tail            lhs     .   varMp           =   varmpImplsUnit @iv Impls_Nil |=> @lhs.varMp
+  | Tail            lhs     .   varMp           =   varmpImplsUnit @iv Impls_Nil `varUpd` @lhs.varMp
 %%]
 
 %%[(11 hmtyinfer)
 SEM Ty
-  | App             lhs     .   varMp           =	@replVarMp |=> @arg.varMp
-  | Con             lhs     .   varMp           =	@replVarMp |=> @lhs.varMp
+  | App             lhs     .   varMp           =	@replVarMp `varUpd` @arg.varMp
+  | Con             lhs     .   varMp           =	@replVarMp `varUpd` @lhs.varMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
