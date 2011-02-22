@@ -43,13 +43,13 @@ SEM AGItf
 
 %%[(8 codegen) hs
 ctyLookup :: VarMp -> TyKiGam -> HsName -> ValGam -> C.Ty
-ctyLookup tyVarMp tkg nm g = C.tyToTyCore fitsInForToTyCore (tyKiGamLookupKi tkg) $ (tyVarMp |=>) $ fst $ valGamLookupTy nm g
+ctyLookup tyVarMp tkg nm g = C.tyToTyCore fitsInForToTyCore (tyKiGamLookupKi tkg) $ (tyVarMp `varUpd`) $ fst $ valGamLookupTy nm g
 
 ctyFromTy :: TyKiGam -> VarMp -> Ty -> C.Ty
-ctyFromTy tkg m t = C.tyToTyCore fitsInForToTyCore (tyKiGamLookupKi tkg) (m |=> t)
+ctyFromTy tkg m t = C.tyToTyCore fitsInForToTyCore (tyKiGamLookupKi tkg) (m `varUpd` t)
 
 ctyBareFromTy :: VarMp -> Ty -> C.Ty
-ctyBareFromTy m t = C.tyToTyCoreBare (m |=> t)
+ctyBareFromTy m t = C.tyToTyCoreBare (m `varUpd` t)
 %%]
 
 %%[(8 codegen) hs
@@ -132,7 +132,7 @@ SEM PatExpr
 SEM Decl
   | Val         loc         .   cty         =   ctyLookup @lhs.finTyVarMp @lhs.finTyKiGam @patExpr.topNm @lhs.finValGam
                             .   ctyBind     =   if @lhs.isStrict then @cty else C.mkTyThunk @cty
-  | Data        loc         .   cki         =   C.tyToTyCoreKi $ @lhs.finKiVarMp |=> tkgiKi @dataTkgi -- $ tkgiKi $ fst $ tyKiGamLookupByNameErr @tyNm @lhs.finTyKiGam
+  | Data        loc         .   cki         =   C.tyToTyCoreKi $ @lhs.finKiVarMp `varUpd` tkgiKi @dataTkgi -- $ tkgiKi $ fst $ tyKiGamLookupByNameErr @tyNm @lhs.finTyKiGam
 %%]
 
 %%[(8 codegen)
@@ -905,7 +905,7 @@ SEM Expr
                                                         , dtiConTy    = conTy
                                                         , dtiFldMp    = fldMp
                                                         , dtiCTag     = ctag
-                                                        }) -> let ty = C.tyToTyCore fitsInForToTyCore (tyKiGamLookupKi @lhs.finTyKiGam) $ @lhs.finTyVarMp |=> conTy
+                                                        }) -> let ty = C.tyToTyCore fitsInForToTyCore (tyKiGamLookupKi @lhs.finTyKiGam) $ @lhs.finTyVarMp `varUpd` conTy
                                                               in  mkDataValBindL @lhs.opts ctag conNm isNewtype ty
                                                     )
                                                     @decls.gathDeclDataGam
@@ -922,7 +922,7 @@ SEM Decl
                                                         then snd (snd (tyRecExts2 @dataAltTy !! 0) !! 0)
                                                         else @dataAltTy
                                                 in  C.tyToTyCore fitsInForToTyCore (tyKiGamLookupKi @lhs.finTyKiGam)
-                                                    $ ((assocTyLToVarMp $ zipWith (\t n -> (tyVar t, semCon n)) @tyVars.tyL @tyVars.nmL) |=>)
+                                                    $ ((assocTyLToVarMp $ zipWith (\t n -> (tyVar t, semCon n)) @tyVars.tyL @tyVars.nmL) `varUpd`)
                                                     $ t
                 lhs         .   tyBindL     =   let nms = @tyVars.nmL
                                                     (mk,_) = C.tcMergeLamTySeq1AndArgNms @cki nms
@@ -1112,7 +1112,7 @@ SEM DataFieldPatExpr
 
 SEM RecPatExpr
 %%]
-  | Ext         loc         .   offset      =   Expr_Int (tyRecOffset @nm (@lhs.finTyVarMp |=> @recPatExpr.ty))
+  | Ext         loc         .   offset      =   Expr_Int (tyRecOffset @nm (@lhs.finTyVarMp `varUpd` @recPatExpr.ty))
 
 %%[(1010 codegen)
 SEM RecPatExpr

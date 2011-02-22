@@ -36,7 +36,7 @@ PRAGMA nostrictcase
 
 %%[(3 hmtyinfer || hmtyast).tyQuantify hs
 tyQuantify :: TvIsBound -> Ty -> Ty
-tyQuantify tvIsBound ty = mkTyQu (filter (not.tvIsBound) (ftv ty)) ty
+tyQuantify tvIsBound ty = mkTyQu (filter (not.tvIsBound) (varFree ty)) ty
 %%]
 
 %%[(3 hmtyinfer || hmtyast).valTyQuantify hs export(valTyQuantify)
@@ -353,7 +353,7 @@ tvNotBound mlev tvIsBound = Set.filter (\tv -> not (tvIsBound mlev tv))
 tvarsToQuantL1 :: TyVarIdsToBind -> TvLevIsBound -> (TyVarIdsToBind,TyVarIdS,TvLevIsBound)
 tvarsToQuantL1 boundablesL tvIsBound
   = (boundablesL1L,boundablesL1S,tvBoundAddS 1 boundablesL1S tvIsBound)
-  where boundablesL1S = tvNotBound 1 tvIsBound $ Set.unions [ ftvSet l1 | (_,l1) <- boundablesL ]
+  where boundablesL1S = tvNotBound 1 tvIsBound $ Set.unions [ varFreeSet l1 | (_,l1) <- boundablesL ]
         boundablesL1L = [ (v,kiStar) | v <- Set.toList boundablesL1S ]
 %%]
 
@@ -451,7 +451,7 @@ SEM Ty
 %%]
 SEM Ty
   | App Var     loc         .   (qBndTvs,qBndExTvs,qBndL1Tvs,tvIsBound)
-                                                        :=  tvarsToQuant @lhs.opts @isQuLoc @lhs.fxTvM (tvMayQuFx @hereQu @lhs.fxTvM @isQuFxLoc) @lhs.tvIsBound (@qHereTvS `Set.union` ftvSet @candPrL)
+                                                        :=  tvarsToQuant @lhs.opts @isQuLoc @lhs.fxTvM (tvMayQuFx @hereQu @lhs.fxTvM @isQuFxLoc) @lhs.tvIsBound (@qHereTvS `Set.union` varFreeSet @candPrL)
 
 %%[(9 hmtyinfer || hmtyast)
 SEM Ty

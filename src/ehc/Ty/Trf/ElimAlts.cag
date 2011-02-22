@@ -35,7 +35,7 @@ tyElimAltsCleanup :: VarMp -> VarMp -> VarMp
 tyElimAltsCleanup gVarMp newVarMp
   =  let  c2 = varmpDelAlphaRename newVarMp
           c3 = varmpKeys c2 `varmpDel` varmpFilterAlphaRename gVarMp
-     in   c2 |=> c3
+     in   c2 `varUpd` c3
 
 %%]
 tyElimForgetAlts :: Ty -> (Ty,Set.Set TyVarId)
@@ -145,7 +145,7 @@ fitAlts elimFits fio u gVarMp startTy tL
                           ->  let  (u',u1) = mkNewLevUID u2
                                    fo = elimFits fio u1 gVarMp (foTy fo2) t1
                                    rfo = if null (foErrL fo) && null (foErrL fo2)
-                                         then (fo {foVarMp = foVarMp fo |=> foVarMp fo2},u')
+                                         then (fo {foVarMp = foVarMp fo `varUpd` foVarMp fo2},u')
                                          else (emptyFO {foErrL = if null (foErrL fo) then foErrL fo2 else foErrL fo},u)
                               in   rfo
                       )
@@ -154,9 +154,9 @@ fitAlts elimFits fio u gVarMp startTy tL
 %%]
                               in   tr "XX" (pp (foTy fo2) >-< pp (fioMode fio) >-< pp t1 >-< pp (foTy fo) >-< ppVarMpV (foVarMp fo) >-< ppErrL (foErrL fo)) rfo
                               in   tr "XX" (pp t2 >#< fioMode fio >#< pp t1 >-< "res=" >#< pp t >-< "cnstr=" >#< ppVarMpV c >-< ppErrL e)
-                                     (if null e && null e2 then (t,c |=> c2,[],u') else (Ty_Any,emptyVarMp,if null e then e2 else e,u)
+                                     (if null e && null e2 then (t,c `varUpd` c2,[],u') else (Ty_Any,emptyVarMp,if null e then e2 else e,u)
                                      )
-                              in   if null e && null e2 then (t,c |=> c2,[],u') else (Ty_Any,emptyVarMp,if null e then e2 else e,u)
+                              in   if null e && null e2 then (t,c `varUpd` c2,[],u') else (Ty_Any,emptyVarMp,if null e then e2 else e,u)
 
 %%[4_2.Alts
 SEM Ty
@@ -167,14 +167,14 @@ SEM Ty
                                                             then  (mkTyVar @tv,@tv `varmpTyUnit` mkTyVar @tv,[])
                                                             else  let  foh = fitAlts @lhs.fitsIn @lhs.fio @lUniq @lhs.globVarMp Ty_Any (@tyL.hardTyL)
                                                                   in   if null (foErrL foh)
-                                                                       then  let  fos = fitAlts @lhs.fitsIn @lhs.fio @lUniq2 (foVarMp foh |=> @lhs.globVarMp) (foTy foh) (foVarMp foh |=> @tyL.softTyL)
+                                                                       then  let  fos = fitAlts @lhs.fitsIn @lhs.fio @lUniq2 (foVarMp foh `varUpd` @lhs.globVarMp) (foTy foh) (foVarMp foh `varUpd` @tyL.softTyL)
                                                                                   eat = if null (foErrL fos) then foTy fos else foTy foh
-                                                                                  fo = tyElimAlts @lhs.fitsIn @lhs.fio @lhs.globTvL @lUniq3 (foVarMp foh |=> @lhs.globVarMp) eat
+                                                                                  fo = tyElimAlts @lhs.fitsIn @lhs.fio @lhs.globTvL @lUniq3 (foVarMp foh `varUpd` @lhs.globVarMp) eat
                                                                                   eaVarMp = @tv `varmpTyUnit` foTy fo
                                                                                   (foOtherL,_)
-                                                                                     = fitsInLWith (\_ _ -> emptyFO) @lhs.fitsIn fio @lUniq4 (@lhs.tyVarMp |=> @lhs.globVarMp) @tyL.otherTyL (repeat eat)
+                                                                                     = fitsInLWith (\_ _ -> emptyFO) @lhs.fitsIn fio @lUniq4 (@lhs.tyVarMp `varUpd` @lhs.globVarMp) @tyL.otherTyL (repeat eat)
                                                                                      where fio = @lhs.fio {fioMode = if fioMode @lhs.fio == FitMeet then FitSubLR else FitSubRL} 
-                                                                             in   (foTy fo,eaVarMp |=> foVarMp fo,if null (foErrL fo) then concat (map foErrL foOtherL) else foErrL fo)
+                                                                             in   (foTy fo,eaVarMp `varUpd` foVarMp fo,if null (foErrL fo) then concat (map foErrL foOtherL) else foErrL fo)
                                                                        else  (mkTyVar @tv
                                                                              ,@tv `varmpTyUnit` Ty_Any
                                                                              ,[Err_InconsistentAlts @lhs.selfRepl @tv @tyL.hardTyL (fioMode @lhs.fio)]
@@ -182,7 +182,7 @@ SEM Ty
                                                     Just t
                                                         ->  (t,emptyVarMp,[])
                                                     _   ->  (@self,emptyVarMp,[])
-  | Quant           lhs     .   repl        =   mkTyQu @qu.self ([@tv] `intersect` ftv @ty.repl) @ty.repl
+  | Quant           lhs     .   repl        =   mkTyQu @qu.self ([@tv] `intersect` varFree @ty.repl) @ty.repl
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

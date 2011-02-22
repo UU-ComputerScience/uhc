@@ -203,12 +203,14 @@ initTyGam
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(2 hmtyinfer || hmtyast).Substitutable.inst.TyGamInfo
-instance Substitutable TyGamInfo TyVarId VarMp where
-  s |=>  tgi         =   tgi { tgiTy = s |=> tgiTy tgi }
+instance VarUpdatable TyGamInfo VarMp where
+  s `varUpd`  tgi         =   tgi { tgiTy = s `varUpd` tgiTy tgi }
 %%[[4
-  s |==> tgi         =   substLift tgiTy (\i x -> i {tgiTy = x}) (|==>) s tgi
+  s `varUpdCyc` tgi         =   substLift tgiTy (\i x -> i {tgiTy = x}) varUpdCyc s tgi
 %%]]
-  ftvSet tgi         =   ftvSet (tgiTy tgi)
+
+instance VarExtractable TyGamInfo TyVarId where
+  varFreeSet tgi         =   varFreeSet (tgiTy tgi)
 %%]
 
 %%[(1 hmtyinfer || hmtyast).PP.TyGamInfo

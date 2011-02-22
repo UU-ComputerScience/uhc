@@ -57,10 +57,10 @@ WRAPPER TyAGItf
 %%[(3 hmtyinfer || hmtyast).tyInst hs export(tyInst)
 tyInst' :: (TyVarId -> Ty) -> UID -> Ty -> Ty
 tyInst' mkFreshTy uniq ty
-  = s |=> ty'
+  = s `varUpd` ty'
   where  i u (Ty_Quant v t)  =  let  (u',v') = mkNewUID u
                                      (s,t') = i u' t
-                                in   ((v `varmpTyUnit` (mkFreshTy v')) |=> s,t')
+                                in   ((v `varmpTyUnit` (mkFreshTy v')) `varUpd` s,t')
          i _ t               =  (emptyVarMp,t)
          (s,ty')             =  i uniq ty
 
@@ -103,11 +103,11 @@ tyInst1Exists uniq ty = fst (tyInst uniq True instCoExist ty)
 
 tyInst :: UID -> Bool -> HowToInst -> Ty -> (Ty,TyVarIdL)
 tyInst uniq onlyExists howToInst ty
-  = (s |=> ty',tvl)
+  = (s `varUpd` ty',tvl)
   where  i u mbQ (Ty_Quant q v t) | not (tyquIsForall q && onlyExists) && maybe True (==q) mbQ
                              =  let  (u',v')        = mkNewUID u
                                      (s,t',tvl')    = i u' (Just q) t
-                                in   ((v `varmpTyUnit` (howToInst q v')) |=> s,t',v':tvl')
+                                in   ((v `varmpTyUnit` (howToInst q v')) `varUpd` s,t',v':tvl')
          i _ _ t             =  (emptyVarMp,t,[])
          (s,ty',tvl)         =  i uniq Nothing ty
 
@@ -252,7 +252,7 @@ SEM Ty
 
 %%[(6 hmtyinfer || hmtyast)
 SEM Ty
-  | Quant           loc         .   l1Subst     =   varmpDecMetaLev @lhs.replSubst |=> @l1
+  | Quant           loc         .   l1Subst     =   varmpDecMetaLev @lhs.replSubst `varUpd` @l1
                                 .   instTo      :=  InstTo_Qu @qu.repl @tv @tvNew @l1Subst
 %%]
 

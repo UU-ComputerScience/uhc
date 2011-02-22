@@ -124,7 +124,7 @@ tyBetaRed1 fi lkup tyOrFunAndArgs
   where -- lambda expression: take body and substitute arguments
         eval (lam@(Ty_Lam fa b), args, _)
           | lamLen <= argLen
-              = mkres (mkApp (subst |=> lamBody : drop lamLen args))
+              = mkres (mkApp (subst `varUpd` lamBody : drop lamLen args))
           | otherwise
               = Nothing
           where (lamArgs,lamBody) = tyLamArgsRes lam
@@ -208,6 +208,6 @@ tyBetaRedFull :: FIIn -> VarMp -> Ty -> Ty
 tyBetaRedFull fi varmp ty
   = maybe ty fst $ sub ty
   where fi' = fi {fiVarMp = varmp}
-        sub = \t -> tyBetaRedFullMb fi' betaRedTyLookup sub $ varmp |=> t
+        sub = \t -> tyBetaRedFullMb fi' betaRedTyLookup sub $ varmp `varUpd` t
 %%]
 

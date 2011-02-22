@@ -110,10 +110,12 @@ initPolGam
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(17 hmtyinfer || hmtyast).Substitutable.inst.PolGamInfo
-instance Substitutable PolGamInfo TyVarId VarMp where
-  s |=> pgi  = pgi { pgiPol = s |=> pgiPol pgi }
-  s |==> pgi = substLift pgiPol (\i x -> i {pgiPol = x}) (|==>) s pgi
-  ftvSet pgi = ftvSet (pgiPol pgi)
+instance VarUpdatable PolGamInfo VarMp where
+  s `varUpd` pgi  = pgi { pgiPol = s `varUpd` pgiPol pgi }
+  s `varUpdCyc` pgi = substLift pgiPol (\i x -> i {pgiPol = x}) varUpdCyc s pgi
+
+instance VarExtractable PolGamInfo TyVarId where
+  varFreeSet pgi = varFreeSet (pgiPol pgi)
 %%]
 
 %%[(17 hmtyinfer || hmtyast)

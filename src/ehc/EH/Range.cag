@@ -95,7 +95,7 @@ ATTR NTPrf [ rangeMp: RangeMp | | ]
 
 SEM AGItf
   | AGItf       loc         .   rangeMp             =   Map.unionsWith (++)
-                                                        $ map (\(c,r) -> Map.singleton (@expr.tyVarMp |=> c) r)
+                                                        $ map (\(c,r) -> Map.singleton (@expr.tyVarMp `varUpd` c) r)
                                                         $ Map.toList
                                                         $ @expr.gathRangeMp
                                                           `Map.union` cnstrMpToRangeMp @expr.gathCnstrMp

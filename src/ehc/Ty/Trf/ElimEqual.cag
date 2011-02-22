@@ -47,6 +47,6 @@ SEM TyAGItf
   | AGItf           ty      .   tyVarMp     =   emptyVarMp
 
 SEM Ty
-  | Equal           ty      .   tyVarMp     =   (@tv `varmpTyUnit` mkTyVar @tv) |=> @lhs.tyVarMp
+  | Equal           ty      .   tyVarMp     =   (@tv `varmpTyUnit` mkTyVar @tv) `varUpd` @lhs.tyVarMp
 %%]
 

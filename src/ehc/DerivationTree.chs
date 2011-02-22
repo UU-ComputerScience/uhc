@@ -162,10 +162,10 @@ dtVarMpL vm
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(99 hmtyinfer) hs export(dtEltTy,dtEltTy')
-dtEltTy' :: (Substitutable x TyVarId VarMp) => (x -> TvCatMp) -> (x -> res) -> VarMp -> VarMp -> x -> (res,VarMp)
+dtEltTy' :: (VarUpdatable x VarMp) => (x -> TvCatMp) -> (x -> res) -> VarMp -> VarMp -> x -> (res,VarMp)
 dtEltTy' ftvmp mkres m dm t
-  = (mkres (dm' |=> t'), dm')
-  where t'  = m |=> t
+  = (mkres (dm' `varUpd` t'), dm')
+  where t'  = m `varUpd` t
         dm' = dtVmExtend (ftvmp t') dm
 
 dtEltTy :: VarMp -> VarMp -> Ty -> (PP_Doc,VarMp)
@@ -183,7 +183,7 @@ dtEltFoVarMp dm fo = ppVarMp ppCurlysCommas' (foVarMp fo)
 
 dtEltVarMp :: VarMp -> VarMp -> VarMp -> (PP_Doc,VarMp)
 dtEltVarMp m dm vm
-  = (ppAssocL' ppBracketsCommas' ":->" [ (ppTyDt $ dm' |=> varmpinfoMkVar tv i,ppVarMpInfoDt i) | (tv,i) <- varmpToAssocL vm'], dm')
+  = (ppAssocL' ppBracketsCommas' ":->" [ (ppTyDt $ dm' `varUpd` varmpinfoMkVar tv i,ppVarMpInfoDt i) | (tv,i) <- varmpToAssocL vm'], dm')
   where (vm',dm')
            = varmpMapThr (\_ tv i dm
                             -> let (i',dm2) = dtEltTy' varmpinfoFtvMp id m dm i
@@ -208,7 +208,7 @@ dtChooseDT opts finalVM inferVM = if ehcOptEmitDerivTree opts == DerivTreeWay_Fi
 %%[(99 hmtyinfer) hs export(dtVmExtend)
 dtVmExtend :: TvCatMp -> VarMp -> VarMp
 dtVmExtend fvm dm
-  = dmn |=> dm
+  = dmn `varUpd` dm
   where sz  = varmpSize dm
         dmn = varmpUnions
               $ zipWith (\(v,i) inx

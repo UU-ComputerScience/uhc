@@ -83,7 +83,7 @@ For debug/trace:
 
 %%[(4 hmtyinfer)
 fiAppVarMp :: FIIn -> Ty -> Ty
-fiAppVarMp fi x = fiVarMpLoc fi |=> fiVarMp fi |=> x
+fiAppVarMp fi x = fiVarMpLoc fi `varUpd` (fiVarMp fi `varUpd` x)
 %%]
 
 %%[(9 hmtyinfer)
@@ -143,7 +143,7 @@ fiAppSpineLookup fi n gappSpineGam
         -> mbasi
   where upd pgi asi
           | foHasErrs fo = asi
-          | otherwise    = asi {asgiVertebraeL = zipWith asUpdateByPolarity (tyArrowArgs $ tyCanonic emptyFI $ foVarMp fo |=> foTy fo) (asgiVertebraeL asi)}
+          | otherwise    = asi {asgiVertebraeL = zipWith asUpdateByPolarity (tyArrowArgs $ tyCanonic emptyFI $ foVarMp fo `varUpd` foTy fo) (asgiVertebraeL asi)}
           where pol = pgiPol pgi
                 (polargs,polres) = tyArrowArgsRes pol
                 (_,u1,u2) = mkNewLevUID2 uidStart
@@ -173,7 +173,8 @@ fitsIn ty1 ty2
 
 %%[fitsInBind.2
             bind tv t                               = (res t) {foVarMp = tv `varmpTyUnit` t}
-            occurBind v t       | v `elem` ftv t    = err [Err_UnifyOccurs ty1 ty2 v t]
+            occurBind v t       | v `elem` varFree t
+                                                    = err [Err_UnifyOccurs ty1 ty2 v t]
                                 | otherwise         = bind v t
 %%]
 
@@ -192,10 +193,10 @@ fitsIn ty1 ty2
                            [ffo,afo,rfo]
                  where  ffo  =   f tf1 tf2
                         fs   =   foVarMp ffo
-                        afo  =   f (fs |=> ta1) (fs |=> ta2)
+                        afo  =   f (fs `varUpd` ta1) (fs `varUpd` ta2)
                         as   =   foVarMp afo
-                        rt   =   mkComp (as |=> foTy ffo) (foTy afo)
-                        rfo  =   emptyFO {foTy = rt, foVarMp = as |=> fs}
+                        rt   =   mkComp (as `varUpd` foTy ffo) (foTy afo)
+                        rfo  =   emptyFO {foTy = rt, foVarMp = as `varUpd` fs}
 %%]
 
 %%[fitsInApp.1
@@ -337,8 +338,8 @@ fitsInFI fi ty1 ty2
                                                   (subs,dm4) = foldl (\(subs,dm) (fo,fmt) -> let (sub,dm') = foMkDT fo Nothing fmt m dm in (sub:subs,dm')) ([],dm3) subfos
                                                   (t3  ,dm5) = dtEltTy (dtChooseDT opts m mfo) dm4 (foTy fo)
                                                   (mbnd,dm6) = maybe (dtEltVarMp (dtChooseDT opts m mfo) dm5 mbind) (\x -> (x,emptyVarMp)) mbTop
-                                                  mfi        = fiVarMpLoc fi |=> fiVarMp fi
-                                                  mfo        = foVarMp fo |=> fiVarMp fi
+                                                  mfi        = fiVarMpLoc fi `varUpd` fiVarMp fi
+                                                  mfo        = foVarMp fo `varUpd` fiVarMp fi
                                                   opts       = feEHCOpts $ fiEnv fi
                                                   fiopts     = fiFIOpts fi
 %%][100
@@ -400,7 +401,7 @@ fitsInFI fi ty1 ty2
             unquant fi t hide howToInst
                 = ( fi { fiUniq = u
 %%[[6
-                       , fiVarMpLoc = instToL1VarMp instto |=> fiVarMpLoc fi
+                       , fiVarMpLoc = instToL1VarMp instto `varUpd` fiVarMpLoc fi
 %%]]
                        }
                   , uqt,back,instto
@@ -442,7 +443,7 @@ fitsInFI fi ty1 ty2
 %%]
 
 %%[(4 hmtyinfer).fitsIn.FOUtils
-            foUpdVarMp  c fo = fo {foVarMp = c |=> foVarMp fo}
+            foUpdVarMp  c fo = fo {foVarMp = c `varUpd` foVarMp fo}
             fifo       fi fo = fo { foVarMp    = fiVarMpLoc fi, foUniq = fiUniq fi, foTrace = fiTrace fi
 %%[[7
                                   , foDontBind = fioDontBind (fiFIOpts fi)
@@ -468,7 +469,7 @@ fitsInFI fi ty1 ty2
 
 %%[(4 hmtyinfer).fitsIn.foCmb
             foCmbAppTy   ffo afo  = afo {foTy = Ty_App (foTy ffo) (foTy afo)}
-            foCmbVarMp   ffo afo  = afo -- {foVarMp = foVarMp afo |=> foVarMp ffo}
+            foCmbVarMp   ffo afo  = afo -- {foVarMp = foVarMp afo `varUpd` foVarMp ffo}
             foCmbCoCon   ffo afo  = afo {foMbAppSpineInfo = fmap asgiShift1SpinePos $ foMbAppSpineInfo ffo}
 %%]
 
@@ -691,7 +692,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                        foUpdRecCoe tr1 r1 r2 e1 e12 e2 fo
                          =  let  rn = uidHNm u1
                                  predScope = fePredScope (fiEnv fi)
-                                 -- tr1s = foVarMp fo |=> tr1
+                                 -- tr1s = foVarMp fo `varUpd` tr1
                                  fi3 = fofi fo fi2
                                  tr1s = uncurry mkTyRow $ tyRowExtsUnAnn $ tyRowExtsWithLkup (fiLookupTyVarCyc fi3) tr1
                                  (u',u2,u3,u4) = mkNewLevUID3 (foUniq fo)
@@ -1354,7 +1355,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                        -- the work
                        (u',u1)          = mkNewLevUID (fiUniq fi)
                        mbfp             = fVarPred1 fP (fi {fiUniq = u'}) tpr2
-                       mkPrTy pr2 fo    = [Ty_Pred ({- foVarMp fo |=> -} pr2)] `mkArrow` foTy fo
+                       mkPrTy pr2 fo    = [Ty_Pred ({- foVarMp fo `varUpd` -} pr2)] `mkArrow` foTy fo
                        fSub fi updTy pr2v pr2 tr2
                             =  let  pr2n  = poiHNm pr2v
                                     (fi3,cnstrMp)
@@ -1577,7 +1578,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                                   (Just _,Nothing) | hasSubCoerce
                                     -> errCoerce
                                   _ -> asFOUpdCoe as globOpts [ffo, asFO as ffo $ foCmbApp ffo afo]
-                              where errCoerce = err fi4 [rngLift range Err_NoCoerceDerivation (foVarMp afo |=> foTy ffo) (foVarMp afo |=> foTy afo)]
+                              where errCoerce = err fi4 [rngLift range Err_NoCoerceDerivation (foVarMp afo `varUpd` foTy ffo) (foVarMp afo `varUpd` foTy afo)]
 %%[[(8 tycore)
                                     hasSubCoerce = not $ C.lrcoeIsId $ foLRTCoe afo
 %%][8
@@ -1688,7 +1689,7 @@ fitPredIntoPred fi pr1 pr2
         f (Pred_Lacks ty1@(Ty_Var rv1 _)    (Label_Var lv1))
           (Pred_Lacks ty2                l2@(Label_Lab lb2))
           | fiAllowTyVarBind fi ty1
-          = Just (Pred_Lacks ty2 l2, (rv1 `varmpTyUnit` ty2) |=> (lv1 `varmpLabelUnit` l2))
+          = Just (Pred_Lacks ty2 l2, (rv1 `varmpTyUnit` ty2) `varUpd` (lv1 `varmpLabelUnit` l2))
         f (Pred_Lacks ty1                              (Label_Var lv1))
           (Pred_Lacks ty2                           l2@(Label_Lab lb2))
           | tyIsEmptyRow ty1 && tyIsEmptyRow ty2
@@ -1709,8 +1710,8 @@ fitPredIntoPred fi pr1 pr2
               = Just (ps, v1 `varmpPredSeqUnit` ps)
             fPreds (PredSeq_Cons pr1 ps1) (PredSeq_Cons pr2 ps2)
               = do (pr', s1) <- f pr1 pr2
-                   (ps', s2) <- fPreds (s1 |=> ps1) (s1 |=> ps2)
-                   return (PredSeq_Cons pr' ps', s2 |=> s1)
+                   (ps', s2) <- fPreds (s1 `varUpd` ps1) (s1 `varUpd` ps2)
+                   return (PredSeq_Cons pr' ps', s2 `varUpd` s1)
             fPreds PredSeq_Nil PredSeq_Nil
               = Just (PredSeq_Nil, emptyVarMp)
             fPreds _ _
@@ -1731,14 +1732,14 @@ fitPredIntoPred fi pr1 pr2
             foR = fitsIn fiOptsR (fiEnv fi) u2 varMp2In trA trB
 
             varMp1In = fiVarMp fi
-            varMp2In = varMp1Out |=> fiVarMp fi
+            varMp2In = varMp1Out `varUpd` fiVarMp fi
 
             varMp1Out = foVarMp foL
             varMp2Out = foVarMp foR
-            varMpOut  = varMp2Out |=> varMp1Out
+            varMpOut  = varMp2Out `varUpd` varMp1Out
 
-            tlOut = varMpOut |=> foTy foL
-            trOut = varMpOut |=> foTy foR
+            tlOut = varMpOut `varUpd` foTy foL
+            trOut = varMpOut `varUpd` foTy foR
 %%]]
         f pr1                   pr2
           = if foHasErrs fo

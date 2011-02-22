@@ -31,10 +31,10 @@ For debug/trace:
 
 %%[(4 hmtyinfer) export(ppTyWithFI,ppTyWithFIFO)
 ppTyWithFI :: FIIn -> Ty -> PP_Doc
-ppTyWithFI fi t =  ppTyS (fiVarMpLoc fi |=> fiVarMp fi) t
+ppTyWithFI fi t =  ppTyS (fiVarMpLoc fi `varUpd` fiVarMp fi) t
 
 ppTyWithFIFO :: FIIn -> FIOut -> Ty -> PP_Doc
-ppTyWithFIFO fi fo t    =  ppTyS (foVarMp fo |=> fiVarMp fi) t
+ppTyWithFIFO fi fo t    =  ppTyS (foVarMp fo `varUpd` fiVarMp fi) t
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

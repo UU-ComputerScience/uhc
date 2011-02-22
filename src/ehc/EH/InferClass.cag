@@ -205,8 +205,8 @@ SEM Decl
                                                                   derivTyArgs
                                                                     | dgiIsRec dgi = assocLElts $ snd $ tyRecExts dataTy
                                                                     | otherwise    = dataTyArgs
-                                                                  dataTyKi      = @decls.kiVarMp |=> tkgiKi tkgi
-                                                                  classTyKi     = @decls.kiVarMp |=> tkgiKi ctkgi
+                                                                  dataTyKi      = @decls.kiVarMp `varUpd` tkgiKi tkgi
+                                                                  classTyKi     = @decls.kiVarMp `varUpd` tkgiKi ctkgi
 %%[[91
                                                                   -- no higher kind deriving
                                                                   derivArity    = (0::Int)
@@ -247,10 +247,10 @@ SEM Decl
                                 .   supPrTyL        =   let  t      =  clgiRuleTy @clgi
                                                              st     =  mkNewTyVarL (tyArrowArity $ tyQuant t) @lUniq4 `mkArrow` @hdPrTyFix
                                                              fo     =  fitsIn predFIOpts @fe2 @lUniq3 emptyVarMp t st
-                                                        in   tyArrowArgs $ foVarMp fo |=> foTy fo
+                                                        in   tyArrowArgs $ foVarMp fo `varUpd` foTy fo
                                 .   supClsFldL      =   tyPrLToSupNmL @supPrTyL
                                 .   ctxtPrFixL      =   map tyPred @ctxtPrTyFixL
-                                .   recTy           =   (@fixPrTyVarMp |=>) $ tyQuantifyRank [2..] $ tyArrowRes @tyPrExpr.evTy
+                                .   recTy           =   (@fixPrTyVarMp `varUpd`) $ tyQuantifyRank [2..] $ tyArrowRes @tyPrExpr.evTy
                                 .   recTyExts       =   snd $ tyRecExts @recTy
                                 .   dataDictNm      =   hsnClass2Dict @instClsNm -- only used when `not ehcCfgClassViaRec'
                                 .   dataDictTag     =   mkClassCTag @dataDictNm (length @recTyExts) -- only used when `not ehcCfgClassViaRec'
@@ -268,7 +268,7 @@ SEM Decl
                                 .   dictNm          =   maybe (poiHNm @instId) id @mbNmElim
                 loc             .   foPr            =   fitPredToEvid @lUniq emptyVarMp @prExpr.ty @lhs.clGam
                 expr            .   knTy            =   foTy @foPr
-                                .   tyVarMp         =   foVarMp @foPr |=> @lhs.tyVarMp
+                                .   tyVarMp         =   foVarMp @foPr `varUpd` @lhs.tyVarMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -305,9 +305,9 @@ SEM PrExpr
 ATTR TyExpr PrExpr [ | | evTy: Ty ]
 
 SEM PrExpr
-  | Class       lhs             .   evTy            =   let  fo = fitsIn  (predFIOpts {fioDontBind = ftvSet @ty}) @fe2 @lUniq3 emptyVarMp
+  | Class       lhs             .   evTy            =   let  fo = fitsIn  (predFIOpts {fioDontBind = varFreeSet @ty}) @fe2 @lUniq3 emptyVarMp
                                                                           (clgiPrToEvidTy @clgi) ([@ty] `mkArrow` mkNewTyVar @lUniq2)
-                                                        in   snd $ tyArrowArgRes $ foVarMp fo |=> foTy fo
+                                                        in   snd $ tyArrowArgRes $ foVarMp fo `varUpd` foTy fo
                 loc         	.   lUniq2	 		:   UNIQUEREF gUniq
                 loc         	.   lUniq3		  	:   UNIQUEREF gUniq
   | Arrow       lhs             .   evTy            =   [@arg.evTy] `mkArrow` @res.evTy

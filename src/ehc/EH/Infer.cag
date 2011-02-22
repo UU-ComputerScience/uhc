@@ -30,18 +30,18 @@ SEM Expr
 -- 20080212, AD: incompatible because of addition of marked lines, for lexically scoped type variables
 %%[(5 hmtyinfer).Let
 SEM Expr
-  | Let         -- (loc.lSubsValGam_,loc.cycTyVarMp_l) =   @decls.tyVarMp |==> @valGam_l_
+  | Let         -- (loc.lSubsValGam_,loc.cycTyVarMp_l) =   @decls.tyVarMp `varUpdCyc` @valGam_l_
 %%[[5
-                (loc.gSubsValGam_,loc.cycTyVarMp_g) =   @tyVarMpDeclsL0 |==> @valGam_g_
-                loc         .   gTyTvS              =   ftvSet @gSubsValGam_
-                                                        `Set.union` ftvSet (@tyVarMpDeclsL0 |=> @lhs.tyGam)      -- 20080212 incompatibility with ruler version
+                (loc.gSubsValGam_,loc.cycTyVarMp_g) =   @tyVarMpDeclsL0 `varUpdCyc` @valGam_g_
+                loc         .   gTyTvS              =   varFreeSet @gSubsValGam_
+                                                        `Set.union` varFreeSet (@tyVarMpDeclsL0 `varUpd` @lhs.tyGam)      -- 20080212 incompatibility with ruler version
 %%][99
                 loc         .   gTyTvS              =   @valTyUpdFreeTvarS `Set.union` @tyTyUpdFreeTvarS
                             .   gSubsValGam_        =   @valGam_g_
 %%]]
                 			.	noLetQuantTyVarIdS	=	setSubst @tyVarMpDeclsL0 @decls.noLetQuantTyVarIdS `Set.union` @gTyTvS
                             .   (quValGam_qu_,cycTyVarMp_l)
-                                                    =   let (g,cycMp) = @tyVarMpDeclsQuant |==> @valGam_l_
+                                                    =   let (g,cycMp) = @tyVarMpDeclsQuant `varUpdCyc` @valGam_l_
 %%[[5
                                                         in  (valGamQuantify @noLetQuantTyVarIdS g,cycMp)
 %%][6
@@ -66,24 +66,28 @@ SEM Expr
 SEM Expr
   | Let         loc         .   valQuTyKiGam		=	gamUnions [@finTyKiGam,@decls.intlTyKiGam]
 %%]
-                decls       .   tyVarMp             :=  valGamRestrictKiVarMp @valGam_l_ |=> @decls.patTyVarMp
+                decls       .   tyVarMp             :=  valGamRestrictKiVarMp @valGam_l_ `varUpd` @decls.patTyVarMp
 
 %%[(8 hmtyinfer)
 SEM Expr
   | Let         loc         .   (gathTySigGam_l_,exTyVarMp1)
                                                     :=  (valGamInst1Exists {- WithVarMp @lhs.tyVarMp -} @lUniq @decls.gathTySigGam,emptyVarMp)
-                decls       .   patTyVarMp          :=  @exTyVarMp1 |=> @lhs.tyVarMp
+                            .	exTyVarMp1b			=	(@exTyVarMp1 :: VarMp) `varUpd` @lhs.tyVarMp
+                decls       .   patTyVarMp          :=  @exTyVarMp1b
                 loc         .   (quValGam_qu_,quTyVarMp, cycTyVarMp_l)
                                                     :=  valGamQuantifyWithVarMp @valQuTyKiGam @quTvKiVarMp @tyVarMpDeclsQuant @noLetQuantTyVarIdS @valGam_l_
-                            .   bodyVarMp1          =   @quTyVarMp |=> @tyVarMpDeclsL0
+                            .   bodyVarMp1          =   @quTyVarMp `varUpd` @tyVarMpDeclsL0
                             .   (quValGam_ex_,exTyVarMp2)
-                                                    :=  (valGamInst1Exists {- WithVarMp @bodyVarMp1 -} @lUniq2 (@quTyVarMp |=> @quValGam_qu_), emptyVarMp)
-                            .   bodyVarMp2          =   @exTyVarMp2 |=> @bodyVarMp1
-                            .   quValGam_ex_subst   :=  @bodyVarMp2 |=> @quValGam_ex_
+                                                    :=  (valGamInst1Exists {- WithVarMp @bodyVarMp1 -} @lUniq2 (@quTyVarMp `varUpd` @quValGam_qu_), emptyVarMp)
+                            .   bodyVarMp2          =   (@exTyVarMp2 :: VarMp) `varUpd` @bodyVarMp1
+                            .   quValGam_ex_subst   :=  @bodyVarMp2 `varUpd` @quValGam_ex_
                 body        .   tyVarMp             =   @bodyVarMp2
+                
+                loc			.	exTyVarMp1			:	VarMp
+                loc			.	exTyVarMp1b			:	VarMp
 %%]
                                                     :=  valGamInst1ExistsWithVarMp @bodyVarMp1 @lUniq2 @quValGam_qu_
-                                                    :=  (valGamInst1Exists {- WithVarMp @bodyVarMp1 -} @lUniq2 (@quTyVarMp |=> @quValGam_qu_), emptyVarMp)
+                                                    :=  (valGamInst1Exists {- WithVarMp @bodyVarMp1 -} @lUniq2 (@quTyVarMp `varUpd` @quValGam_qu_), emptyVarMp)
 
 %%[(9 hmtyinfer) hs
 -- | split a list of predicates into non-ambiguous & ambiguous, using quantifications results tqoGam,
@@ -96,7 +100,7 @@ doPredAmbigSplit get tqoGam prOccL
 
 %%[(9 hmtyinfer)
 SEM Expr
-  | Let         decls       .   patTyVarMp          :=  @forExprTyVarMp |=> @exTyVarMp1 |=> @lhs.tyVarMp
+  | Let         decls       .   patTyVarMp          :=  @forExprTyVarMp `varUpd` @exTyVarMp1b
                 loc         .   doValGamQuantify	=	\doQuant tyVarMp prOccL -> valGamQuantifyWithVarMp doQuant @valQuTyKiGam @quTvKiVarMp tyVarMp @noLetQuantTyVarIdS prOccL @valGam_l_
                             .   doPredAmbigSplitForSimplify
                                                     =   \chrPrOccL
@@ -108,7 +112,7 @@ SEM Expr
                                                               in  (map snd amb, map snd namb)
                             .   (quValGam_qu_,quTyVarMp, (cycTyVarMp_l,tqoGam))
                                                     :=  @doValGamQuantify True @tyVarMpDeclsQuant @toQuantOverPrOccL
-                            .   tmpoTyVarMp         =   foldr (\tmpo c -> tmpoImplsVarMp tmpo |=> c) emptyVarMp (gamElts @tqoGam)
+                            .   tmpoTyVarMp         =   foldr (\tmpo c -> tmpoImplsVarMp tmpo `varUpd` c) emptyVarMp (gamElts @tqoGam)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -122,14 +126,14 @@ SEM Expr
 
 %%[(6 hmtyinfer)
 SEM Expr
-  | Let         loc         .   tyVarMpDeclsL0      :=  {- varmpIncMetaLev @quTvKiVarMp |=> -} varmpSelectMetaLev [0] @decls.tyVarMp
+  | Let         loc         .   tyVarMpDeclsL0      :=  {- varmpIncMetaLev @quTvKiVarMp `varUpd` -} varmpSelectMetaLev [0] @decls.tyVarMp
 %%]
 
 %%[(9 hmtyinfer)
 SEM Decl
   | Instance    loc         .   tyVarMpDeclsL0      =   varmpSelectMetaLev [0] $
 %%[[92
-                                                        foVarMp @foGenerDeriv |=>
+                                                        foVarMp @foGenerDeriv `varUpd`
 %%]]
                                                         @decls.tyVarMp
 %%]
@@ -146,12 +150,12 @@ SEM Expr
 
 %%[(6 hmtyinfer)
 SEM Expr
-  | Let         loc         .   tyVarMpDeclsL01     :=  varmpIncMetaLev @quTvKiVarMp |=> @tyVarMpDeclsL0
+  | Let         loc         .   tyVarMpDeclsL01     :=  varmpIncMetaLev @quTvKiVarMp `varUpd` @tyVarMpDeclsL0
 %%]
 
 %%[(9 hmtyinfer)
 SEM Expr
-  | Let         loc         .   tyVarMpDeclsQuant   :=  @chrSolve1SimpTyVarMp |=> @tyVarMpDeclsL01
+  | Let         loc         .   tyVarMpDeclsQuant   :=  @chrSolve1SimpTyVarMp `varUpd` @tyVarMpDeclsL01
 %%]
 
 %%[(9 hmtyinfer)
@@ -363,11 +367,11 @@ SEM Expr
                             .   tyKiGam             =   gamPushGam @tyKiGam_l_ @lhs.tyKiGam
                             .   kiVarMp             =   @decls.patKiVarMp
                 loc         .   (lSubsTyKiGam,cycTyKiVarMp_l)
-                                                    =   @decls.kiVarMp |==> @tyKiGam_l_
+                                                    =   @decls.kiVarMp `varUpdCyc` @tyKiGam_l_
 %%[[6
                             .   (gSubsTyKiGam,cycTyKiVarMp_g)
-                                                    =   @decls.kiVarMp |==> @tyKiGam_g_
-                            .   gKiTvS              =   ftvSet @gSubsTyKiGam
+                                                    =   @decls.kiVarMp `varUpdCyc` @tyKiGam_g_
+                            .   gKiTvS              =   varFreeSet @gSubsTyKiGam
 %%][99
                             .   gSubsTyKiGam        =   @tyKiGam_g_
                             .   gKiTvS              =   @tyKiUpdFreeTvarS
@@ -388,7 +392,7 @@ SEM Decl
   | TySig       tyExpr      .   tyGam               =   gamPushNew @lhs.tyGam
                             .   tyKiGam             =   gamPushNew @lhs.tyKiGam
                 loc         .   fo_                 =   fitsIn weakFIOpts defaultFIEnv @lUniq2 @tyExpr.kiVarMp @tyExpr.ki kiStar
-                lhs         .   kiVarMp             =   foVarMp @fo_ |=> @tyExpr.kiVarMp
+                lhs         .   kiVarMp             =   foVarMp @fo_ `varUpd` @tyExpr.kiVarMp
                 loc         .   lUniq2              :   UNIQUEREF gUniq
 %%]
 
@@ -402,22 +406,22 @@ SEM Expr
 SEM Expr
   | Let         loc         .   (lQuTyKiGam_qu,quTyKiVarMp, cycTyKiVarMp_l)
                                                     :=  tyKiGamQuantifyWithVarMp @decls.kiVarMp @gKiTvS @tyKiGam_l_
-                            .   bodyTyKiVarMp1      =   @quTyKiVarMp |=> @decls.kiVarMp
+                            .   bodyTyKiVarMp1      =   @quTyKiVarMp `varUpd` @decls.kiVarMp
                             .   (lQuTyKiGam_ex,exTyKiVarMp2)
                                                     :=  tyKiGamInst1ExistsWithVarMp @bodyTyKiVarMp1 @lUniq3 @lQuTyKiGam_qu
-                            .   bodyTyKiVarMp2      =   @exTyKiVarMp2 |=> @bodyTyKiVarMp1
-                            .   lQuTyKiGam_ex_subst :=  @bodyTyKiVarMp2 |=> @lQuTyKiGam_ex_extra
+                            .   bodyTyKiVarMp2      =   @exTyKiVarMp2 `varUpd` @bodyTyKiVarMp1
+                            .   lQuTyKiGam_ex_subst :=  @bodyTyKiVarMp2 `varUpd` @lQuTyKiGam_ex_extra
                 body        .   kiVarMp             =   @bodyTyKiVarMp2
 %%]
                                                     :=  tyKiGamInst1ExistsWithVarMp @bodyTyKiVarMp1 @lUniq3 @lQuTyKiGam_qu
-                                                    :=  (tyKiGamInst1Exists {- WithVarMp @bodyTyKiVarMp1 -} @lUniq3 (@bodyTyKiVarMp1 |=> @lQuTyKiGam_qu), emptyVarMp)
+                                                    :=  (tyKiGamInst1Exists {- WithVarMp @bodyTyKiVarMp1 -} @lUniq3 (@bodyTyKiVarMp1 `varUpd` @lQuTyKiGam_qu), emptyVarMp)
 
 %%[(11 hmtyinfer)
 ATTR AllDecl [ | tyTyVarMp: VarMp | ]
 
 SEM Expr
   | Let         decls       .   tyTyVarMp           =   emptyVarMp
-                loc         .   lQuTyGam            :=  @decls.tyTyVarMp |=> @tyGam_l_extra
+                loc         .   lQuTyGam            :=  @decls.tyTyVarMp `varUpd` @tyGam_l_extra
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -507,9 +511,9 @@ SEM Decl
 
 %%[(6 hmtyinfer)
 SEM Decl
-  | TySig       loc         .   gTyTvS              =   ftvSet . map (tgiTy.snd) . gamToAssocL $ @lhs.tyGam
+  | TySig       loc         .   gTyTvS              =   varFreeSet . map (tgiTy.snd) . gamToAssocL $ @lhs.tyGam
                             .   ty_sig_             :=  let fv  = Map.keysSet @tyExpr.tyVarWildMp `Set.union` @gTyTvS
-                                                            t   = varmpIncMetaLev @lhs.finKiVarMp |=> @tyExpr.ty
+                                                            t   = varmpIncMetaLev @lhs.finKiVarMp `varUpd` @tyExpr.ty
                                                             tkg = gamUnion @lhs.finTyKiGam @tyExpr.intlTyKiGam
                                                             t2k = tvarKi tkg @lhs.finKiVarMp emptyVarMp
                                                         in  tyQuantifyOuter t2k (`Set.member` fv) t
@@ -526,7 +530,7 @@ SEM Decl
 %%[[90
     FFE
 %%]]
-                loc         .   ty_sig_             =   let t   = varmpIncMetaLev @lhs.finKiVarMp |=> @tyExpr.ty
+                loc         .   ty_sig_             =   let t   = varmpIncMetaLev @lhs.finKiVarMp `varUpd` @tyExpr.ty
                                                             tkg = gamUnion @lhs.finTyKiGam @tyExpr.intlTyKiGam
                                                             t2k = tvarKi tkg @lhs.finKiVarMp emptyVarMp
                                                         in  tyQuantifyOuter t2k (const False) t

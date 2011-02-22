@@ -577,17 +577,17 @@ SEM Expr
 
 %%[(2 hmtyinfer)
 SEM Expr
-  | Let         loc     .   extraPP     :=  ppCmt (ppGam (@lhs.finTyVarMp |=> (gamTop @decls.patValGam)))
+  | Let         loc     .   extraPP     :=  ppCmt (ppGam (@lhs.finTyVarMp `varUpd` (gamTop @decls.patValGam)))
 %%]
 
 %%[(3 hmtyinfer)
 SEM Expr
-  | Let         loc     .   extraPP     :=  ppCmt (ppGam $ @lhs.finTyVarMp |=> @finValGamDecls)
+  | Let         loc     .   extraPP     :=  ppCmt (ppGam $ @lhs.finTyVarMp `varUpd` @finValGamDecls)
 %%]
 
 %%[(6 hmtyinfer)
 SEM Expr
-  | Let         loc     .   extraPP     :=  ppCmt (ppGam $ fst $ gamPartition (\k _ -> tyKiKeyIsName k) @lQuTyKiGam_ex_subst) >-< ppCmt (ppGam $ @lhs.finTyVarMp |=> @finValGamDecls)
+  | Let         loc     .   extraPP     :=  ppCmt (ppGam $ fst $ gamPartition (\k _ -> tyKiKeyIsName k) @lQuTyKiGam_ex_subst) >-< ppCmt (ppGam $ @lhs.finTyVarMp `varUpd` @finValGamDecls)
 %%]
 
 %%[(9 hmtyinfer)
@@ -595,7 +595,7 @@ SEM Expr
   | Let         loc     .   extraPP     :=  if ehcOptVerbosity @lhs.opts > VerboseNormal
                                             then ppCmt (    ppGam (fst $ gamPartition (\k _ -> tyKiKeyIsName k) @lQuTyKiGam_ex_subst)
                                                        >-<  ppGam @lQuTyGam
-                                                       >-<  ppGam (@lhs.finTyVarMp |=> @finValGamDecls)
+                                                       >-<  ppGam (@lhs.finTyVarMp `varUpd` @finValGamDecls)
                                                        >-<  ppGam @lClGamNoDups
 %%[[17
                                                        >-<  ppGam @loc.finGathPolGam_extra

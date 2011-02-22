@@ -33,9 +33,9 @@ SEM AGItf
 
 SEM Expr
   | Let         loc         .   gathTvKiVarMp1      =   varmpMapTyVarKey @tyVarMpDeclsL0 (varmpDecMetaLev @decls.tyVarMp) -- @decls.gathTvKiVarMp -- (varmpDecMetaLev @decls.gathTvKiVarMp)
-                            .   quTvKiVarMp         =   @gathTvKiVarMp1 |=> @lhs.tvKiVarMp
+                            .   quTvKiVarMp         =   @gathTvKiVarMp1 `varUpd` @lhs.tvKiVarMp
                             .   gathTvKiVarMp2      =   varmpFilterTy (\v _ -> v `Set.member` @noLetQuantTyVarIdS) @gathTvKiVarMp1
-                body        .   tvKiVarMp           =   @gathTvKiVarMp2 |=> @lhs.tvKiVarMp
+                body        .   tvKiVarMp           =   @gathTvKiVarMp2 `varUpd` @lhs.tvKiVarMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

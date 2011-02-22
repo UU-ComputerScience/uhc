@@ -389,7 +389,7 @@ SEM Expr
                                                     -- in   mkCExprSelCase @rceEnv (Just n1) @expr.cexpr CTagRec n2 @lbl @offset Nothing
                                                     in   acoreSelCase @rceEnv (Just n1) @expr.cexpr CTagRec n2 {- @lbl -} @offset Nothing
 %%]
-  | Sel         loc         .   offset          =   acoreInt (tyRecOffset @lbl (@lhs.finTyVarMp |=> @expr.ty))
+  | Sel         loc         .   offset          =   acoreInt (tyRecOffset @lbl (@lhs.finTyVarMp `varUpd` @expr.ty))
 
 %%[(10 codegen)
 SEM Expr
@@ -643,7 +643,7 @@ SEM RecPatExpr
   | Ext         loc         .   ioffset     =   tyRecOffsetWithLkup (varmpTyLookupCyc2 @lhs.finTyVarMp) @nm @recPatExpr.ty
                             .   offset      =   acoreInt @ioffset :: CExpr
 %%]
-  | Ext         loc         .   offset      =   acoreInt (tyRecOffset @nm (@lhs.finTyVarMp |=> @recPatExpr.ty))
+  | Ext         loc         .   offset      =   acoreInt (tyRecOffset @nm (@lhs.finTyVarMp `varUpd` @recPatExpr.ty))
 
 %%[(10 codegen)
 SEM RecPatExpr
@@ -1316,7 +1316,7 @@ mkDataGenerBinds
                 
                 -- match predicate to get the record type describing fields of dictionary
                 evFO  = fitPredToEvid' u1 emptyVarMp (Ty_Pred pr) (Left clgi)
-                recTy = foVarMp evFO |=> foTy evFO
+                recTy = foVarMp evFO `varUpd` foTy evFO
                 
                 -- the bindings for datatypes acting as labels
                 binds = case instKind of

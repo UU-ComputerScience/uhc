@@ -33,11 +33,11 @@ valGamElimAlts opts env globTvL uniq gVarMp g
             =  gamMapThr
                   (\(n,vgi) (c,eg,u)
                   	->  let  (u',u1) = mkNewLevUID u
-                  	         fo = tyElimAlts (mkFitsInWrap' env) opts globTvL u1 (c |=> gVarMp) (c |=> vgiTy vgi)
+                  	         fo = tyElimAlts (mkFitsInWrap' env) opts globTvL u1 (c `varUpd` gVarMp) (c `varUpd` vgiTy vgi)
                   	         cg = varmpFilterTyAltsMappedBy gVarMp (foVarMp fo)
-                  	    in   ((n,vgi {vgiTy = foTy fo}),(foVarMp fo |=> c |=> cg,gamAdd n (foErrL fo) eg,u'))
+                  	    in   ((n,vgi {vgiTy = foTy fo}),(foVarMp fo `varUpd` c `varUpd` cg,gamAdd n (foErrL fo) eg,u'))
                   )
-                  (emptyVarMp,emptyGam,uniq) (gVarMp |=> g)
+                  (emptyVarMp,emptyGam,uniq) (gVarMp `varUpd` g)
      in   (g',tyElimAltsCleanup gVarMp c,eg)
 %%]
 

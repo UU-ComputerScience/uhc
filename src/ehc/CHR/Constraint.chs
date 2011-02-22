@@ -2,7 +2,7 @@
 %%% Constraint Handling Rules: Constraint language
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(9 hmtyinfer || hmtyast) module {%{EH}CHR.Constraint} import({%{EH}Base.Common},{%{EH}Ty},{%{EH}CHR},{%{EH}CHR.Key},{%{EH}Base.Trie})
+%%[(9 hmtyinfer || hmtyast) module {%{EH}CHR.Constraint} import({%{EH}Base.Common},{%{EH}Ty},{%{EH}CHR},{%{EH}CHR.Key},{%{EH}Base.Trie},{%{EH}Substitutable})
 %%]
 
 %%[(9 hmtyinfer || hmtyast) import(EH.Util.Pretty)
@@ -56,7 +56,9 @@ instance (CHRMatchable env p s) => CHRMatchable env (Constraint p info) s where
          ; (_,p2,_) <- reducablePart c2
          ; chrMatchTo env s p1 p2
          }
+%%]
 
+%%[(9999 hmtyinfer || hmtyast)
 instance (CHRSubstitutable p v s,CHRSubstitutable info v s) => CHRSubstitutable (Constraint p info) v s where
   chrFtv c
     = case reducablePart c of
@@ -66,6 +68,19 @@ instance (CHRSubstitutable p v s,CHRSubstitutable info v s) => CHRSubstitutable 
   chrAppSubst s      (Prove     p     ) = Prove      (chrAppSubst s p)
   chrAppSubst s      (Assume    p     ) = Assume     (chrAppSubst s p)
   chrAppSubst s      (Reduction p i ps) = Reduction  (chrAppSubst s p) (chrAppSubst s i) (map (chrAppSubst s) ps)
+%%]
+
+%%[(9 hmtyinfer || hmtyast)
+instance (VarExtractable p v,VarExtractable info v) => VarExtractable (Constraint p info) v where
+  varFreeSet c
+    = case reducablePart c of
+        Just (_,p,_) -> varFreeSet p
+        _            -> Set.empty
+
+instance (VarUpdatable p s,VarUpdatable info s) => VarUpdatable (Constraint p info) s where
+  varUpd s      (Prove     p     ) = Prove      (varUpd s p)
+  varUpd s      (Assume    p     ) = Assume     (varUpd s p)
+  varUpd s      (Reduction p i ps) = Reduction  (varUpd s p) (varUpd s i) (map (varUpd s) ps)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

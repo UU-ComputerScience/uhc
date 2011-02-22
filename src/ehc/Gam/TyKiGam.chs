@@ -146,9 +146,9 @@ Defaults to * (kiStar).
 tvarKi :: TyKiGam -> VarMp -> VarMp -> TyVarId -> Ty
 tvarKi tyKiGam tvKiVarMp _ tv
   = case tyKiGamLookup tv' tyKiGam of
-      Just tkgi -> tvKiVarMp |=> tkgiKi tkgi
-      _         -> tvKiVarMp |=> tv'
-  where tv' = {- tyVarMp |=> -} mkTyVar tv
+      Just tkgi -> tvKiVarMp `varUpd` tkgiKi tkgi
+      _         -> tvKiVarMp `varUpd` tv'
+  where tv' = {- tyVarMp `varUpd` -} mkTyVar tv
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -212,10 +212,12 @@ initTyKiGam
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(6 hmtyinfer || hmtyast).Substitutable.inst.TyKiGamInfo
-instance Substitutable TyKiGamInfo TyVarId VarMp where
-  s |=>  tkgi         =   tkgi { tkgiKi = s |=> tkgiKi tkgi }
-  s |==> tkgi         =   substLift tkgiKi (\i x -> i {tkgiKi = x}) (|==>) s tkgi
-  ftvSet tkgi         =   ftvSet (tkgiKi tkgi)
+instance VarUpdatable TyKiGamInfo VarMp where
+  s `varUpd`  tkgi         =   tkgi { tkgiKi = s `varUpd` tkgiKi tkgi }
+  s `varUpdCyc` tkgi         =   substLift tkgiKi (\i x -> i {tkgiKi = x}) varUpdCyc s tkgi
+
+instance VarExtractable TyKiGamInfo TyVarId where
+  varFreeSet tkgi         =   varFreeSet (tkgiKi tkgi)
 %%]
 
 %%[(6 hmtyinfer || hmtyast)

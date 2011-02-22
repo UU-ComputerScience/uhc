@@ -60,7 +60,7 @@ SEM PatExpr
                             .   knTyShape           =   [@loc.tvarv1_] `mkArrow` @loc.tvarv2_
                             .   fo_fitP_            =   fitsIn instFIOpts @fe @lUniq2 emptyVarMp @ty_g_ @loc.knTyShape
                             .   tyVarMp_p_          =   foVarMp @fo_fitP_
-                            .   patFunTy            :=  @tyVarMp_p_ |=> foTy @fo_fitP_
+                            .   patFunTy            :=  @tyVarMp_p_ `varUpd` foTy @fo_fitP_
                 loc         .   lUniq2              :   UNIQUEREF gUniq
 %%]
 
@@ -157,7 +157,7 @@ SEM PatExpr
   | SConst      loc         .   fo_                 =   fitsIn @lhs.fiOpts @fe @lUniq @lhs.patTyVarMp @lhs.knTy @constTy
                 lhs         .   patFunTy            =   Ty_Any
                 loc         .   ty                  =   @constTy
-                lhs         .   patTyVarMp          =   foVarMp @fo_ |=> @lhs.patTyVarMp
+                lhs         .   patTyVarMp          =   foVarMp @fo_ `varUpd` @lhs.patTyVarMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -198,14 +198,14 @@ SEM PatExpr
                             .   ty                  :=  tyInst1Exists @lUniq2 (foTy @fo_)
                 loc         .   lUniq2              :   UNIQUEREF gUniq
                 loc         .   lUniq_4_fo          :   UNIQUEREF gUniq
-  | Var         lhs         .   patTyVarMp          =   foVarMp @fo_ |=> @lhs.patTyVarMp
-  | VarAs       patExpr     .   patTyVarMp          =   foVarMp @fo_ |=> @lhs.patTyVarMp
+  | Var         lhs         .   patTyVarMp          =   foVarMp @fo_ `varUpd` @lhs.patTyVarMp
+  | VarAs       patExpr     .   patTyVarMp          =   foVarMp @fo_ `varUpd` @lhs.patTyVarMp
 %%]
 
 %%[(6 hmtyinfer)
 SEM PatExpr
-  | Var         lhs         .   patTyVarMp          :=  tyRestrictKiVarMp [@ty] |=> foVarMp @fo_ |=> @lhs.patTyVarMp
-  | VarAs       patExpr     .   patTyVarMp          :=  tyRestrictKiVarMp [@ty] |=> foVarMp @fo_ |=> @lhs.patTyVarMp
+  | Var         lhs         .   patTyVarMp          :=  tyRestrictKiVarMp [@ty] `varUpd` foVarMp @fo_ `varUpd` @lhs.patTyVarMp
+  | VarAs       patExpr     .   patTyVarMp          :=  tyRestrictKiVarMp [@ty] `varUpd` foVarMp @fo_ `varUpd` @lhs.patTyVarMp
 %%]
 
 %%[(9 hmtyinfer).Var
@@ -221,7 +221,7 @@ SEM PatExpr
   | TypeAs      loc         .   ty_q_               =   @tyExpr.ty
                             .   fo_                 =   fitsIn @lhs.fiOpts @fe @lUniq_4_fo @lhs.patTyVarMp @lhs.knTy @ty_q_
                 loc         .   lUniq_4_fo          :   UNIQUEREF gUniq
-                patExpr     .   patTyVarMp          =   foVarMp @fo_ |=> @lhs.patTyVarMp
+                patExpr     .   patTyVarMp          =   foVarMp @fo_ `varUpd` @lhs.patTyVarMp
                             .   knTy                =   foTy @fo_
 %%]
 
@@ -230,7 +230,7 @@ SEM PatExpr
 SEM PatExpr
   | AppTop      loc         .   fo_fitR_            =   @lhs.knTy `fitsIn` @knPatTy
                             .   ty                  =   foTy @fo_fitR_
-                patExpr     .   patTyVarMp          =   foVarMp @fo_fitR_ |=> @lhs.patTyVarMp
+                patExpr     .   patTyVarMp          =   foVarMp @fo_fitR_ `varUpd` @lhs.patTyVarMp
   | Con         loc         .   ty                  =   Ty_Any
 %%]
 
@@ -245,10 +245,10 @@ SEM PatExpr
 %%[(5 hmtyinfer).Rest
 SEM PatExpr
   | AppTop      loc         .   fo_fitR_            :=  fitsIn @lhs.fiOpts @fe @lUniq @lhs.patTyVarMp @lhs.knTy @knPatTy
-  | Con         loc         .   fo_fitR_            :=  fitsIn @lhs.fiOpts @fe @lUniq3 (@tyVarMp_p_ |=> @lhs.patTyVarMp) @lhs.knTy @tvarv1_
+  | Con         loc         .   fo_fitR_            :=  fitsIn @lhs.fiOpts @fe @lUniq3 (@tyVarMp_p_ `varUpd` @lhs.patTyVarMp) @lhs.knTy @tvarv1_
                             .   ty_r_               =   foTy @fo_fitR_
                             .   ty                  :=  @ty_r_
-                lhs         .   patTyVarMp          =   foVarMp @fo_fitR_ |=> @tyVarMp_p_ |=> @lhs.patTyVarMp
+                lhs         .   patTyVarMp          =   foVarMp @fo_fitR_ `varUpd` @tyVarMp_p_ `varUpd` @lhs.patTyVarMp
                 loc         .   lUniq3              :   UNIQUEREF gUniq
 %%]
 
@@ -261,7 +261,7 @@ SEM PatExpr
                                                             @eqTy
                                                             ([@knExprTy,@lhs.knTy] `mkArrow` (semCon $ ehcOptBuiltin @lhs.opts ehbnDataBool))
                 expr        .   knTy                =   @knExprTy
-                            .   tyVarMp             =   foVarMp @fo_ |=> @lhs.tyVarMp
+                            .   tyVarMp             =   foVarMp @fo_ `varUpd` @lhs.tyVarMp
                 loc         .   lUniq_97_fitsIn_ty  :   UNIQUEREF gUniq
 %%]
 
@@ -275,7 +275,7 @@ SEM DataFieldPatExpr
                             .   knFldTy             =   mkNewTyVar @lUniq
                             .   fo_                 =   fitsIn @lhs.fiOpts @fe @lUniq2 @lhs.patTyVarMp @gTy ([@lhs.knTy] `mkArrow` @knFldTy)
                 dataFieldPatExpr
-                            .   patTyVarMp          =   foVarMp @fo_ |=> @lhs.patTyVarMp
+                            .   patTyVarMp          =   foVarMp @fo_ `varUpd` @lhs.patTyVarMp
                 patExpr     .   knTy                =   @knFldTy
                 loc         .   ty                  =   @dataFieldPatExpr.ty
                 loc         .   lUniq               :   UNIQUEREF gUniq
@@ -285,7 +285,7 @@ SEM DataFieldPatExpr
                             .   knTyShape           =   [@lhs.knTy] `mkArrow` @loc.tyvar
                             .   fo_                 =   fitsIn @lhs.fiOpts @fe @lUniq2 @lhs.patTyVarMp @gTy @loc.knTyShape
                             .   ty                  =   @lhs.knTy
-                lhs         .   patTyVarMp          =   foVarMp @fo_ |=> @lhs.patTyVarMp
+                lhs         .   patTyVarMp          =   foVarMp @fo_ `varUpd` @lhs.patTyVarMp
                 loc         .   lUniq               :   UNIQUEREF gUniq
                 loc         .   lUniq2              :   UNIQUEREF gUniq
 %%]
@@ -306,7 +306,7 @@ SEM DataFieldPatExpr
 SEM RecPatExpr
   | Empty       loc         .   fo_                 =   fitsIn (@lhs.fiOpts) @fe @lUniq @lhs.patTyVarMp @lhs.knTy tyRecEmpty
                             .   ty                  =   foTy @fo_
-                lhs         .   patTyVarMp          =   foVarMp @fo_ |=> @lhs.patTyVarMp
+                lhs         .   patTyVarMp          =   foVarMp @fo_ `varUpd` @lhs.patTyVarMp
                 loc         .   lUniq               :   UNIQUEREF gUniq
   | Ext         loc         .   (rowTy,patTy)       =   let  [r,e] = mkNewTyVarL 2 @lUniq
                                                         in   (r,e)
@@ -315,7 +315,7 @@ SEM RecPatExpr
                             .   fo_                 =   fitsIn (@lhs.fiOpts) @fe @lUniq2 @lhs.patTyVarMp @lhs.knTy @recTy
                             .   ty                  =   foTy @fo_
                 recPatExpr  .   knTy                =   @extTy
-                            .   patTyVarMp          =   foVarMp @fo_ |=> @lhs.patTyVarMp
+                            .   patTyVarMp          =   foVarMp @fo_ `varUpd` @lhs.patTyVarMp
                 patExpr     .   knTy                =   @patTy
                 loc         .   lUniq               :   UNIQUEREF gUniq
                 loc         .   lUniq2              :   UNIQUEREF gUniq

@@ -55,7 +55,7 @@ SEM Decl
   | Data        loc         .   inconsistFldErrs    =   let  ft = gamToOnlyDups @constrs.fldSelGam
                                                              wrong tl = foHasErrs fo
                                                                       where fo = fitsInFold opts @fe uidStart @lhs.finTyVarMp $ map (tyArrowRes . vgiTy) $ tl
-                                                                            (tlvars,tl') = unzip [ (ftvSet t', t') | t <- tl, let t' = tyArrowRes (vgiTy t) ]
+                                                                            (tlvars,tl') = unzip [ (varFreeSet t', t') | t <- tl, let t' = tyArrowRes (vgiTy t) ]
                                                                             opts = unifyFIOpts { fioDontBind = Set.unions tlvars }
                                                              nms = [ f | (f,tl) <- ft, wrong tl ]
                                                         in   if null nms then [] else [rngLift @range Err_InconsistentIntros "data field" nms]
@@ -151,7 +151,7 @@ SEM Decl
                 loc         .   predNotPrfErrs      =   mkPrvErr @lhs.rangeMp @range @cannotProveCnstrMp
 %%]]
   | InstanceIntro
-                loc         .   predErrs            =   if Set.null (ftvSet @prExpr.ty) then [] else [rngLift @range Err_TyHasFreeTVars @prExpr.ty]
+                loc         .   predErrs            =   if Set.null (varFreeSet @prExpr.ty) then [] else [rngLift @range Err_TyHasFreeTVars @prExpr.ty]
 
 SEM PrExpr
   | Class       loc         .   nmErrs              =   if ehcOptHsChecksInEH @lhs.opts
@@ -174,7 +174,7 @@ SEM Expr
 %%][99
                                                                     (map (mkRangedPred @lhs.rangeMp . poPr) amb)
 %%]]
-                                                                    (mkg @quValGam_ex_subst) (mkg $ @tyVarMpDeclsL0 |=> @valGam_l_)
+                                                                    (mkg @quValGam_ex_subst) (mkg $ @tyVarMpDeclsL0 `varUpd` @valGam_l_)
                                                                  ]
 %%]
 

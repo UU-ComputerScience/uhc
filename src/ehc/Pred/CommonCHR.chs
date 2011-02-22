@@ -76,7 +76,7 @@ instance Show RedHowAnnotation where
 
 %%[(9 hmtyinfer)
 instance PP RedHowAnnotation where
-  pp (RedHow_ByInstance   s p sc)       =    "inst"   >#< {- ppParens (vm >#< "|=>") >#< -} ppParensCommas [pp p, pp s, pp sc]
+  pp (RedHow_ByInstance   s p sc)       =    "inst"   >#< {- ppParens (vm >#< "`varUpd`") >#< -} ppParensCommas [pp p, pp s, pp sc]
   pp (RedHow_BySuperClass s _ _ )       =    "super"  >#< s
   pp (RedHow_ProveObl     i   sc)       =    "prove"  >#< i >#< sc
   pp (RedHow_Assumption   vun sc)       =    "assume" >#< ppParensCommas [pp vun, pp sc]
