@@ -24,8 +24,8 @@ import EqHML
 import EH.Util.Pretty hiding (pp, empty)
 import qualified Debug.Trace as D
 
-trace = flip const 
--- trace = D.trace
+-- trace = flip const 
+trace = D.trace
 
 -- | Create a HsName from a string.
 mkName :: String -> HsName
@@ -232,7 +232,7 @@ class Util a where
 -- | Conditionally add Parenthesis around expressions that contain any kind of Application.
 --   They are most likely higher order, and if they weren't meant to be, the simplifier would take care of it
 mkParens :: TyExpr -> TyExpr
-mkParens x@(TyExpr_App{}) = TyExpr_Parens x
+mkParens x@(TyExpr_App{}) | not (noArr x) = TyExpr_Parens x
 mkParens x                = x
 
 -- | Wraps a AppTop around the right places
@@ -418,6 +418,14 @@ update (q, Left (Scheme_Simple var phi2))
 safeTail :: [a] -> [a]
 safeTail []     = []
 safeTail (x:xs) = xs
+        
+-- | Apply an update to a fully quantified type removing what's needed along the way
+applyUpdate :: Env -> TyScheme -> TyScheme
+applyUpdate []     t = t
+applyUpdate (x:xs) t = let (TyScheme_Sugar q t') = sugar t
+                           (p,               e') = update (q, Right x)
+                           new'                  = appAll e' t'
+                       in applyUpdate xs (desugar $ TyScheme_Sugar p new')
         
 -- | Split a prefix based on a variable
 splitOn :: Prefix -> HsName -> (Prefix, Prefix)
@@ -678,7 +686,7 @@ isBottom _               = False
  
 -- | converts a TyScheme to a SystemF type
 ftype :: TyScheme -> TyExpr
-ftype = ft . nf . desugar
+ftype = ft . desugar -- no nf please
  where ft :: TyScheme -> TyExpr
        ft (TyScheme_SystemF a) = a
        ft TyScheme_Bottom      = TyExpr_Quant tyQu_Forall (mkName "a") (TyExpr_Var (mkName "a"))
@@ -712,24 +720,26 @@ instance Simplify TyScheme where
 instance Simplify TyExpr where
     -- | Simplify a type expression for presentation. This version just drops superflous parenthesis
     --   simplify :: TyExpr -> TyExpr and wrap things in an AppTop for pretty printing
-    simplify = simpl False
-      where simpl :: Bool -> TyExpr -> TyExpr
-            simpl True  p@(TyExpr_Parens    a) = let x  = noArr a
-                                                     p' = TyExpr_Parens (simpl x a)
-                                                 in if x then p' else TyExpr_AppTop p'
-            simpl False p@(TyExpr_Parens    a) = let x  = noArr a
-                                                     a' = simpl True a
-                                                 in if x then a' else TyExpr_AppTop a'
-            simpl _       (TyExpr_App     a b) = let e1 = noArr a
-                                                     e2 = noArr b
-                                                 in TyExpr_App (simpl e1 a) (simpl e2 b)
-            simpl f       (TyExpr_AppTop    a) = TyExpr_AppTop    (simpl f a)
-            simpl f       (TyExpr_Ann     a b) = TyExpr_Ann a     (simpl f b)
-            simpl f       (TyExpr_Quant a b c) = TyExpr_Quant a b (simpl f c)
-            simpl _ a                          = a
+    simplify = simpl
+      where simpl :: TyExpr -> TyExpr
+            simpl (TyExpr_Parens    a) = let a' = simpl a
+                                         in if toClean a
+                                               then a'
+                                               else TyExpr_Parens a'
+            simpl (TyExpr_App     a b) = TyExpr_App (simpl a) (simpl b)
+            simpl (TyExpr_AppTop    a) = TyExpr_AppTop    (simpl a)
+            simpl (TyExpr_Ann     a b) = TyExpr_Ann a     (simpl b)
+            simpl (TyExpr_Quant a b c) = TyExpr_Quant a b (simpl c)
+            simpl a                    = a
             
     clean = (\(TyScheme_SystemF a)->a) . clean . TyScheme_SystemF
 
+toClean :: TyExpr -> Bool
+toClean (TyExpr_Parens _) = True
+toClean (TyExpr_AppTop a) = toClean a
+toClean (TyExpr_App  a b) = noArr a || (not $ toClean b)
+toClean _                 = False
+    
 -- | Checks if the expression contains an arrow. False will be returned if it does. This is needed for pretty printing in UHC
 noArr :: TyExpr -> Bool
 noArr (TyExpr_Con a)    = not $ pp a == "->"

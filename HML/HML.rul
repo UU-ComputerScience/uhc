@@ -810,26 +810,30 @@ datasem Decl monad IO
     loc.declared      = lookup loc.nm (unGam lhs.sig)
     loc.isNotDeclared = isJust loc.declared
     
-    (loc.inferred, loc.gam) = case expr.res of
-                                 Nothing -> error  $ "Inference failed datasem Decl clause Val. No result"
-                                 Just x  -> trace ("** " ++ pp loc.nm ++ ": " ++ pp x ++ "\ntSubs: " ++ pp expr.sub) (x, Gamma $ minsert loc.nm x loc.env) -- update the Gamma
-    
+    loc.inferred' = case expr.res of
+                      Nothing -> error  $ "Inference failed datasem Decl clause Val. No result"
+                      Just x  -> trace ("** " ++ pp loc.nm ++ ": " ++ pp x ++ "\ntSubs: " ++ pp expr.sub) x -- update the Gamma
+     
     (loc.q1, loc.irTy) = deep_explode expr.pre $ addQuantifiers $ appAll expr.sub loc.ty
     
     child u : UnifyScheme = unifyScheme
     u.pre = loc.q1
-    u.ty1 = loc.irTy
-    u.ty2 = loc.inferred
+    u.ty1 = loc.inferred'
+    u.ty2 = loc.irTy
     u.frs = expr.frs
     
+    loc.inferred = let e = applyUpdate u.sub loc.inferred'
+                   in trace ("!! Updating: " ++ pp loc.inferred' ++ "\n\tTo: " ++ pp e ++ "\n\tUsing: " ++ pp u.sub) e
     lhs.pre = expr.pre
     
     loc.sub = expr.sub `pick` u.sub
+    loc.gam = Gamma $ minsert loc.nm loc.inferred loc.env
     
+    -- TODO: Find out if this is really needed
     -- only send up the substitutions that we need
     loc.e1 = let x = nub (domain lhs.pre)       -- find the subtitutions we still might need
                  d = applyEnv loc.sub loc.sub -- resolve any chained subtitutions
-             in trace (pp x ++ " <!--!> " ++ pp d) $ filter ((`elem` x).fst) d       -- return only the substitutions needed
+             in filter ((`elem` x).fst) d       -- return only the substitutions needed 
              
     lhs.sub = loc.e1
                    
@@ -961,26 +965,26 @@ datasem Expr monad IO
        
        match True = isJust func.res
        
-       -- (loc.func_pre, loc.func_res) = let e = deep_explode func.pre (fromJust func.res)
-                                      -- in trace ("App:[Func]    " ++ pp e) e
-       loc.func_res = let e = fromJust func.res
-                      in trace ("App:[Func]    " ++ pp e) e
+       (loc.func_pre, loc.func_res) = let e = explode func.pre (fromJust func.res)
+                                      in trace ("App:[Func]    " ++ pp e) e
+       -- loc.func_res = let e = fromJust func.res
+                      -- in trace ("App:[Func]    " ++ pp e) e
        
        arg.exp = loc.arg
        arg.frs = func.frs
-       arg.pre = func.pre
+       arg.pre = loc.func_pre
        
        arg.env = appAll func.sub lhs.env
        
        match True = isJust arg.res
        
        -- These break higher-rank functions, They need to be pushed in the Env as is.
-       -- (loc.arg_pre, loc.arg_res) = let e = deep_explode arg.pre (fromJust arg.res)
-                                    -- in trace ("App:[Arg]     " ++ pp e) e
-       loc.arg_res = let e = fromJust arg.res
-                     in trace ("App:[Arg]     " ++ pp e) e
+       (loc.arg_pre, loc.arg_res) = let e = explode arg.pre (fromJust arg.res)
+                                    in trace ("App:[Arg]     " ++ pp e) e
+       -- loc.arg_res = let e = fromJust arg.res
+                     -- in trace ("App:[Arg]     " ++ pp e) e
        
-       (loc.temp1, loc.frt1) = trace ("Extend[1] " ++ pp arg.pre) $ extend (arg.pre, Scheme_Simple loc.a1 (appAll arg.sub loc.func_res), arg.frs) True
+       (loc.temp1, loc.frt1) = trace ("Extend[1] " ++ pp arg.pre) $ extend (loc.arg_pre, Scheme_Simple loc.a1 (appAll arg.sub loc.func_res), arg.frs) True
        (loc.temp2, loc.frt2) = trace ("Extend[2] " ++ pp (fst loc.temp1)) $ extend (fst loc.temp1, Scheme_Simple loc.a2 (loc.arg_res), loc.frt1) True
        (loc.temp3, loc.frt3) = trace ("Extend[3] " ++ pp (fst loc.temp2)) $ extend (fst loc.temp2, Scheme_Simple loc.b  (TyScheme_Bottom), loc.frt2) True
        
@@ -1208,7 +1212,7 @@ datasem RecExpr monad IO
        
        expr.exp = loc.expr
        expr.pre = recExpr.pre
-       expr.env = lhs.env
+       expr.env = appAll recExpr.sub lhs.env -- update bindings for e.g. \f -> f 1, f 'a')
        expr.frs = recExpr.frs
        
        (loc.q1, loc.frs, loc.res)
@@ -1291,6 +1295,7 @@ itf TypeAs
     syn env :: Gamma
     syn sub :: Env
     syn ty  :: TyExpr -- res cauzes issues
+    
 {
 typeAs = sem typeAs : TypeAs monad IO
            visit typeAs
@@ -1416,7 +1421,7 @@ subsume = sem subsume : Subsume monad IO
                default? pre = last
                default? frs = last
                clause Main_subsume
-                loc.ty   = nf lhs.ty
+                loc.ty   = lhs.ty -- nf lhs.ty
                 loc.nfTy = isNf lhs.exp
                 loc.nfTs = isNf loc.ty
                 loc.nf   = loc.nfTy && loc.nfTs
@@ -1433,9 +1438,14 @@ subsume = sem subsume : Subsume monad IO
                       
                       (loc.c, loc.frs1) = freshM lhs.frs (length exp.tyVar)
                       loc.qq2 = loc.q ++ loc.q2
+                      
+                      loc.p1 = appAll (zipWith (\a b->(a, mkSkolem b)) exp.tyVar loc.c) exp.tyExpr
+                      loc.p2 = dropScheme scheme.tyExpr
+                      
                       u.pre  = loc.qq2
-                      u.exp1 = appAll (zipWith (\a b->(a, mkSkolem b)) exp.tyVar loc.c) exp.tyExpr
-                      u.exp2 = dropScheme scheme.tyExpr
+                      
+                      u.exp1 = loc.p2
+                      u.exp2 = loc.p1
                       u.frs  = loc.frs1
                       
                       loc.q1 = u.pre

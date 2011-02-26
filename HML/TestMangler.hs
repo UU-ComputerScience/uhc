@@ -43,7 +43,8 @@ runTests (width, (hd, pl)) exec notify
       execute counter hd pl pl
       succeeded <- readIORef counter
       putStrLn $ "Testing completed."
-      execute counter hd pl [(0,[Echo $ "SUCCEEDED: " ++ show succeeded ++ "\t FAILED: " ++ show (count - succeeded) ++ "\tTOTAL: " ++ show count])]
+      let percent = (fromIntegral succeeded) / (fromIntegral count) * 100
+      execute counter hd pl [(0,[Echo $ "SUCCEEDED: " ++ show succeeded ++ "   FAILED: " ++ show (count - succeeded) ++ "   TOTAL: " ++ show count ++ "   SUCCESS RATE: " ++ show percent])]
    where execute :: Counter -> Env Header -> Env [Payload] -> Env [Payload] -> IO ()
          execute counter henv penv []          = return ()
          execute counter henv penv ((i, x):xs) = mapM_ (run i) x >> execute counter henv penv xs
