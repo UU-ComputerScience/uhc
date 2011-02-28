@@ -58,8 +58,6 @@ foreign import ccall "Prelude" snd :: forall a b. Tup2 a b -> b
 foreign import ccall "Prelude" runST    :: forall a. (forall s. ST s a) -> a
 foreign import ccall "Prelude" newRef   :: forall a s. a -> ST s (Ref s a)
 foreign import ccall "Prelude" returnST :: forall a s. a -> ST s a
-
-foreign import ccall "Prelude" inc     :: Int -> Int
 -- < 1
 
 -- > 2

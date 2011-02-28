@@ -904,7 +904,7 @@ datasem Decl monad IO
                in case null loc.vars of
                    True  -> tyExpr
                    False -> foldl (.) id (map (TyExpr_Quant tyQu_Forall) loc.vars) tyExpr
-     lhs.env = Gamma $ minsert loc.nm (TyScheme_SystemF loc.exp) (unGam lhs.env) -- update the Gamma
+     lhs.env = Gamma $ minsert loc.nm (embedF loc.exp) (unGam lhs.env) -- update the Gamma
   clause KiSig
      lhs.env = lhs.env
     
@@ -1309,16 +1309,16 @@ typeAs = sem typeAs : TypeAs monad IO
                 match TyExpr.Var@vari      = ty.tyExpr
                 lhs.ty  = trace ("TypeAs Variable match. Returning wild: " ++ pp loc.sub) $ mkQuant lhs.exp
                 -- lhs.ty  = trace "TypeAs Variable match. Returning wild" $ lhs.ty -- mkQuant lhs.exp
-                loc.sub = [(vari.nm, mkQuantified lhs.exp)]
-                lhs.sub = loc.sub
-                lhs.env = appAll loc.sub lhs.env
+                loc.sub = (vari.nm, mkQuantified lhs.exp)
+                (lhs.pre, lhs.sub) = update (lhs.pre, Right loc.sub)
+                lhs.env = app loc.sub lhs.env
              clause other
                 loc.inferred = lhs.ty
                 loc.declared = mkQuant lhs.exp
                 
                 child s : Subsume = subsume
                 s.pre = trace ("Checking '" ++ pp loc.inferred ++ "' against '" ++ pp loc.declared ++ "'") lhs.pre
-                s.ty  = loc.inferred
+                s.ty  = let e = loc.inferred in trace ("Inferred Scheme: " ++ sche e) e
                 s.exp = loc.declared
                 s.frs = lhs.frs
                 
@@ -1326,7 +1326,7 @@ typeAs = sem typeAs : TypeAs monad IO
                 lhs.ty  = loc.declared
                 lhs.sub = s.sub
                 lhs.pre = s.pre
-                lhs.env = appAll s.sub lhs.env
+                lhs.env = trace "TypeAs done" $ appAll s.sub lhs.env
                
 
 unifyRows = sem unifyRows : RowTyExpr monad IO
@@ -1436,7 +1436,7 @@ subsume = sem subsume : Subsume monad IO
                       
                       child u : Unify = unify
                       
-                      (loc.c, loc.frs1) = freshM lhs.frs (length exp.tyVar)
+                      (loc.c, loc.frs1) = freshS lhs.frs (length exp.tyVar)
                       loc.qq2 = loc.q ++ loc.q2
                       
                       loc.p1 = appAll (zipWith (\a b->(a, mkSkolem b)) exp.tyVar loc.c) exp.tyExpr

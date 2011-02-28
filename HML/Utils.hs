@@ -79,10 +79,6 @@ rm k1 (x@(k,v):xs) | k1 == k   = rm k1 xs
 apply :: Env -> Gamma -> Gamma
 apply sub env = Gamma $ map ((second . Utils.appAll) sub) (unGam env)
     
-subT = [(mkName "a11", TyScheme_SystemF $ (TyExpr_Var $ mkName "a13") `mkArrow` (TyExpr_Var $ mkName "a23")), (mkName "a23", TyScheme_SystemF (TyExpr_Con $ mkName "Bool"))]
-lstT = Gamma [(mkName "foo", TyScheme_SystemF $ TyExpr_Con $ mkName "String"), (mkName "Bar", TyScheme_SystemF $ TyExpr_Var  $ mkName "a11")]
-sgh  = (mkName "Bar", TyScheme_SystemF $ TyExpr_Var  $ mkName "a11")
-    
 -- | Apply both sides of the env
 applyEnv :: Env -> Env -> Env
 applyEnv sub env
@@ -593,6 +589,13 @@ freshM :: Int -> Int -> ([HsName], Int)
 freshM s c = fresh' c ([], s)
  where fresh' 0 d     = d
        fresh' c (l,s) = let (n, i) = fresh s
+                        in fresh' (c-1) (n:l, i)
+                        
+-- | Generate a list of fresh skolem variables and a new counter
+freshS :: Int -> Int -> ([HsName], Int)
+freshS s c = fresh' c ([], s)
+ where fresh' 0 d     = d
+       fresh' c (l,s) = let (n, i) = freshT "s" s
                         in fresh' (c-1) (n:l, i)
 
 -- | Creates an arrow between two types.
