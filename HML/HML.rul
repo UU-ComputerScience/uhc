@@ -1065,7 +1065,7 @@ datasem Expr monad IO
                        
        loc.phi1 = case body.res of
                      Nothing -> error "Inference of Expressions failed in Lam, no type infered for body"
-                     Just x  -> trace ("Body: " ++ pp x ++ "\n\t" ++ pp body.pre ++ "\n\t" ++ pp loc.env_full) x
+                     Just x  -> trace ("Body: " ++ pp x ++ "\n\t" ++ pp body.pre ++ " (" ++ pp (domain lhs.pre) ++ ") \n\t" ++ pp loc.env_full) x
 
        (loc.q2,  loc.q3)  = curry split body.pre (domain lhs.pre)
                               
@@ -1439,13 +1439,13 @@ subsume = sem subsume : Subsume monad IO
                       (loc.c, loc.frs1) = freshS lhs.frs (length exp.tyVar)
                       loc.qq2 = loc.q ++ loc.q2
                       
-                      loc.p1 = appAll (zipWith (\a b->(a, mkSkolem b)) exp.tyVar loc.c) exp.tyExpr
-                      loc.p2 = dropScheme scheme.tyExpr
+                      loc.p1 = dropScheme scheme.tyExpr
+                      loc.p2 = appAll (zipWith (\a b->(a, mkSkolem b)) exp.tyVar loc.c) exp.tyExpr
                       
                       u.pre  = loc.qq2
                       
-                      u.exp1 = loc.p2
-                      u.exp2 = loc.p1
+                      u.exp1 = loc.p1
+                      u.exp2 = loc.p2
                       u.frs  = loc.frs1
                       
                       loc.q1 = u.pre
@@ -1454,8 +1454,8 @@ subsume = sem subsume : Subsume monad IO
                       (loc.q3, loc.q4) = split (loc.q1, domain loc.q)
                       loc.e2 = let x = nub (domain loc.q4)
                                in loc.e1 `remove` x
-                      
-                      loc.check =  any (flip elem (codomain loc.e2 ++ codomain loc.q3)) loc.c
+                      loc.codom = nub $ skolems loc.e2 ++ skolems loc.q3
+                      loc.check = any (`elem` loc.codom) loc.c
                       
                       internal skol_check
                         clause succeeded
@@ -1465,7 +1465,7 @@ subsume = sem subsume : Subsume monad IO
                           lhs.frs = u.frs
                         clause failed
                           match (loc.bla, True) = ((), loc.check)
-                          lhs.sub = const (error "Subsume failure, a skolem variable has leaked to the env.") loc.bla
+                          lhs.sub = const (error $ "Subsume failure, Could not instatiate because doing so would leak the skolems " ++ pp loc.codom ++ " into the environment.") loc.bla
                     
                     clause wild_subsume
                       match True                  = loc.nf
@@ -1590,7 +1590,7 @@ unify = sem unify : Unify monad IO
                                    
                                    lhs.frs = s.frs
                                    lhs.pre = loc.q3
-                                   lhs.sub = let e = loc.e3 `munion` loc.e2 `munion` loc.e1
+                                   lhs.sub = let e = loc.e3 `munion'` loc.e2 `munion'` loc.e1
                                              in trace ("Unify:[Sub[Vars]] " ++ pp e) e
                      clause cons
                        match TyExpr.Con@var1 = lhs.exp1
@@ -1624,7 +1624,7 @@ unify = sem unify : Unify monad IO
                        ua.exp2 = appAll uf.sub app2.arg
                        
                        lhs.pre = ua.pre
-                       lhs.sub = uf.sub `munion` ua.sub
+                       lhs.sub = ua.sub `munion` uf.sub
                        
                      clause vartype   
                        internal varchoice
@@ -1657,7 +1657,7 @@ unify = sem unify : Unify monad IO
                                
                                lhs.pre = loc.q2
                                loc.ret = loc.e2 `munion` s.sub
-                               lhs.sub = loc.ret
+                               lhs.sub = trace ("Unify:[LeftSub[Vars]] " ++ pp loc.ret) loc.ret
                                lhs.frs = s.frs  
                              clause invalid
                                match True = loc.occurs
@@ -1692,7 +1692,7 @@ unify = sem unify : Unify monad IO
                                
                                lhs.pre = loc.q2
                                loc.ret = loc.e2 `munion` s.sub
-                               lhs.sub = loc.ret
+                               lhs.sub = trace ("Unify:[RightSub[Vars]] " ++ pp loc.ret) loc.ret
                                lhs.frs = s.frs  
                              clause invalid2
                                match True = loc.occurs

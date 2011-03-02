@@ -1,7 +1,7 @@
-{-# LANGUAGE BangPatterns          #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE TypeSynonymInstances  #-}
-{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE BangPatterns              #-}
+{-# LANGUAGE MultiParamTypeClasses     #-}
+{-# LANGUAGE TypeSynonymInstances      #-}
+{-# LANGUAGE FlexibleInstances         #-}
 module Utils where
 
 import Control.Monad.Error
@@ -308,7 +308,14 @@ replace   (_,_) [] = []
 replace p@(a,b) (x:xs) |  a == x   = b:replace p xs
                        | otherwise = x:replace p xs
 
-munion = (++)
+munion  = (++)
+
+munion' x []          = x
+munion' x ((y,y'):ys) = munion' (add x y y') ys
+  where add []           a  b  = [(a, b)]
+        add (x@(a,b):xs) a' b' = if any (`elem` vars b')  (vars a)
+                                    then (a',b'):x:xs
+                                    else x : add xs a' b'                      
 
 minsert k v []  = [(k,v)]
 minsert k v (x@(k',v'):xs) | k == k'   = (k, v):xs
@@ -367,22 +374,56 @@ instance Normal TyExpr where
 class Domain a where
   domain   :: a -> [HsName]
   codomain :: a -> [HsName]
+  skolems  :: a -> [HsName] 
+  skolems  _ = [] -- useless default value
   
 instance Domain a => Domain [a] where
   domain   = concatMap domain
   codomain = concatMap codomain
+  skolems  = concatMap skolems
   
 instance (Domain a, Domain b) => Domain (a, b) where
   domain   = domain . fst
   codomain = codomain . snd
+  skolems  = skolems . snd
   
 instance Domain HsName where
   domain   = return
   codomain = return
+  skolems x = if "s" `isPrefixOf` pp x
+                 then [x]
+                 else []
   
 instance Domain TyScheme where
   domain   = nub . ftv
   codomain = nub . ftv 
+  skolems  = nub . skol
+    where skol TyScheme_Bottom       = []
+          skol (TyScheme_SystemF  a) = skolems a
+          skol (TyScheme_Quant  a b) = nub $ skolems a ++ skol b
+          skol (TyScheme_Sugar  a b) = nub $ skolems a ++ skol b
+          skol (TyScheme_Forall a b) = skol b
+  
+instance Domain TyExpr where
+  domain   = nub . ftv
+  codomain = nub . ftv 
+  skolems  = nub . skol
+    where  skol (TyExpr_App      a b) = skol a ++ skol b
+           skol (TyExpr_AppTop     a) = skol a
+           skol (TyExpr_Parens     a) = skol a
+           skol (TyExpr_Ann      _ a) = skol a
+           skol (TyExpr_Quant  _ a b) = nub (skolems a ++ skol b)
+           skol (TyExpr_Forall _ a t) = nub (skolems a ++ skol t)
+           skol (TyExpr_Row        r) = skolems r
+           skol (TyExpr_Con        a) = skolems a
+           skol                     _ = []
+           
+instance Domain RowTyExpr where
+  domain   = nub . ftv
+  codomain = nub . ftv 
+  skolems  = nub . skol
+    where  skol (RowTyExpr_Empty    ) = []
+           skol (RowTyExpr_Ext a _ b) = nub $ skolems a ++ skolems b
   
 instance Domain TyIndex where
   domain   (TyIndex_Group a b) = a : binds b
@@ -391,6 +432,7 @@ instance Domain TyIndex where
           binds (TyScheme_Quant a b ) = domain a ++ binds b
           binds                     _ = []
   codomain (TyIndex_Group _ a) = ftv a
+  skolems  (TyIndex_Group _ a) = nub (skolems a)
   
 instance Domain Scheme where
   domain   (Scheme_Simple a _) = [a]
@@ -689,7 +731,7 @@ isBottom _               = False
  
 -- | converts a TyScheme to a SystemF type
 ftype :: TyScheme -> TyExpr
-ftype = ft . desugar -- no nf please
+ftype = ft . nf . desugar
  where ft :: TyScheme -> TyExpr
        ft (TyScheme_SystemF a) = a
        ft TyScheme_Bottom      = TyExpr_Quant tyQu_Forall (mkName "a") (TyExpr_Var (mkName "a"))

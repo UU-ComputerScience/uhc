@@ -13,13 +13,16 @@ data Ref s a = Ref s a
 data Tup2 a b = Tup2 a b
 
 foreign import ccall "Prelude" (+)     :: Int -> Int -> Int
+foreign import ccall "Prelude" (-)     :: Int -> Int -> Int
 
 -- builtin functions
 foreign import ccall "Prelude" ($) :: forall a b. (a -> b) -> a -> b
 foreign import ccall "Prelude" iff :: forall a. Bool -> a -> a -> a
  
 -- standard functions
-foreign import ccall "Prelude" id        :: forall a. a -> a
+-- foreign import ccall "Prelude" id        :: forall a. a -> a
+-- id :: a -> a
+id x = x
 foreign import ccall "Prelude" apply     :: forall a b. (a -> b) -> a -> b
 foreign import ccall "Prelude" const     :: forall a b. a -> b -> a
 foreign import ccall "Prelude" choose    :: forall a. a -> a -> a
@@ -64,8 +67,16 @@ foreign import ccall "Prelude" zipWith :: forall a b c. (a -> b -> c) -> List a 
 foreign import ccall "Prelude" zip     :: List a -> List b -> List (Tup2 a b)
 foreign import ccall "Prelude" (!!)    :: List a -> Int -> a
 foreign import ccall "Prelude" (&&)    :: Bool -> Bool -> Bool
+foreign import ccall "Prelude" (==)    :: a -> a -> Bool
 foreign import ccall "Prelude" not     :: Bool -> Bool
 foreign import ccall "Prelude" (++)    :: List a -> List a -> List a
 foreign import ccall "Prelude" filter  :: (a -> Bool) -> List a -> List a
 foreign import ccall "Prelude" all     :: (a -> Bool) -> List a -> Bool
 foreign import ccall "Prelude" and     :: List Bool -> Bool 
+
+-- foldr k z = go
+          -- where
+            -- go Nil     = z
+            -- go (Cons y ys) = y `k` go ys
+-- fix f = f (fix f)
+-- apply f v t = if t == 0 then v else apply f (f v) (t - 1)
