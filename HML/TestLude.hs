@@ -79,4 +79,4 @@ foreign import ccall "Prelude" and     :: List Bool -> Bool
             -- go Nil     = z
             -- go (Cons y ys) = y `k` go ys
 -- fix f = f (fix f)
--- apply f v t = if t == 0 then v else apply f (f v) (t - 1)
+-- apply' f v t = if t == 0 then v else apply' f (f v) (t - 1)

@@ -818,8 +818,8 @@ datasem Decl monad IO
     
     child u : UnifyScheme = unifyScheme
     u.pre = loc.q1
-    u.ty1 = loc.inferred'
-    u.ty2 = loc.irTy
+    u.ty2 = loc.inferred'
+    u.ty1 = loc.irTy
     u.frs = expr.frs
     
     loc.inferred = let e = applyUpdate u.sub loc.inferred'
@@ -1624,7 +1624,7 @@ unify = sem unify : Unify monad IO
                        ua.exp2 = appAll uf.sub app2.arg
                        
                        lhs.pre = ua.pre
-                       lhs.sub = ua.sub `munion` uf.sub
+                       lhs.sub = uf.sub `munion` ua.sub
                        
                      clause vartype   
                        internal varchoice
