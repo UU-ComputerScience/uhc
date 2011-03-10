@@ -1455,7 +1455,7 @@ subsume = sem subsume : Subsume monad IO
                       loc.e2 = let x = nub (domain loc.q4)
                                in loc.e1 `remove` x
                       loc.codom = nub $ skolems loc.e2 ++ skolems loc.q3
-                      loc.check = any (`elem` loc.codom) loc.c
+                      loc.check = False --  any (`elem` loc.codom) loc.c --re-enable for skolem check
                       
                       internal skol_check
                         clause succeeded

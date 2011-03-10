@@ -291,9 +291,11 @@ instance Apply TyScheme where
          where          
            mask :: TyScheme -> TyScheme
            mask val = case val of
-                        TyScheme_Quant a b -> 
+                        TyScheme_Quant a@(Scheme_Simple x ts) b -> 
                           let b' = app tp b
-                          in TyScheme_Quant a b'
+                          in if x == x1 
+                                then val 
+                                else TyScheme_Quant a b'
                         TyScheme_SystemF a ->
                           let a' = app tp a
                           in TyScheme_SystemF a'

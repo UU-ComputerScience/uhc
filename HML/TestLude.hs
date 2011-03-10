@@ -20,9 +20,9 @@ foreign import ccall "Prelude" ($) :: forall a b. (a -> b) -> a -> b
 foreign import ccall "Prelude" iff :: forall a. Bool -> a -> a -> a
  
 -- standard functions
--- foreign import ccall "Prelude" id        :: forall a. a -> a
+foreign import ccall "Prelude" id        :: forall a. a -> a
 -- id :: a -> a
-id x = x
+-- id x = x
 foreign import ccall "Prelude" apply     :: forall a b. (a -> b) -> a -> b
 foreign import ccall "Prelude" const     :: forall a b. a -> b -> a
 foreign import ccall "Prelude" choose    :: forall a. a -> a -> a
@@ -73,6 +73,8 @@ foreign import ccall "Prelude" (++)    :: List a -> List a -> List a
 foreign import ccall "Prelude" filter  :: (a -> Bool) -> List a -> List a
 foreign import ccall "Prelude" all     :: (a -> Bool) -> List a -> Bool
 foreign import ccall "Prelude" and     :: List Bool -> Bool 
+
+poly = \(f::forall a.a->a) -> (f 1, f True)
 
 -- foldr k z = go
           -- where
