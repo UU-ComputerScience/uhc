@@ -13,13 +13,10 @@
 %%[1 import({%{EH}Base.UID}) export(module {%{EH}Base.UID})
 %%]
 
-%%[1 export(Assoc,AssocL)
+%%[1 import({%{EH}Base.AssocL}) export(module {%{EH}Base.AssocL})
 %%]
 
-%%[1 import(EH.Util.Pretty, Data.List) export(ppListSepFill, ppSpaced, ppCon, ppCmt)
-%%]
-
-%%[1 export(assocLElts,assocLKeys)
+%%[1 import(EH.Util.Pretty, Data.List) export(ppSpaced, ppCon, ppCmt)
 %%]
 
 %%[1 export(ParNeed(..), ParNeedL, parNeedApp)
@@ -29,9 +26,6 @@
 %%]
 
 %%[1 export(Range(..),emptyRange,builtinRange,mkRange1,mkRange2)
-%%]
-
-%%[1 export(assocLMapElt,assocLMapKey)
 %%]
 
 %%[1 export(NmLev,nmLevAbsent, nmLevBuiltin, nmLevOutside, nmLevModule)
@@ -86,9 +80,6 @@
 %%]
 
 %%[(8 codegen) import({%{EH}Base.Strictness}) export(module {%{EH}Base.Strictness})
-%%]
-
-%%[20 export(ppCurlysAssocL)
 %%]
 
 %%[20 import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
@@ -282,12 +273,6 @@ ppCmt p = "{-" >#< p >#< "-}"
 ppSpaced :: PP a => [a] -> PP_Doc
 ppSpaced = ppListSep "" "" " "
 
-ppListSepFill :: (PP s, PP c, PP o, PP a) => o -> c -> s -> [a] -> PP_Doc
-ppListSepFill o c s pps
-  = l pps
-  where l []      = o >|< c
-        l [p]     = o >|< pp p >|< c
-        l (p:ps)  = fill ((o >|< pp p) : map (s >|<) ps) >|< c
 %%]
 
 %%[7 export(ppFld,mkPPAppFun,mkPPAppFun')
@@ -493,66 +478,6 @@ type CTagsMp = AssocL HsName (AssocL HsName CTag)
 
 emptyCTagsMp :: CTagsMp
 emptyCTagsMp = []
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% AssocL
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[1.AssocL
-type Assoc k v = (k,v)
-type AssocL k v = [Assoc k v]
-%%]
-
-%%[1.ppAssocL export(ppAssocL)
-ppAssocL :: (PP k, PP v) => AssocL k v -> PP_Doc
-ppAssocL al = ppListSepFill "[ " " ]" ", " (map (\(k,v) -> pp k >|< ":" >|< pp v) al)
-%%]
-
-%%[8.ppAssocL -1.ppAssocL export(ppAssocL,ppAssocL',ppAssocLV)
-ppAssocL' :: (PP k, PP v, PP s) => ([PP_Doc] -> PP_Doc) -> s -> AssocL k v -> PP_Doc
-ppAssocL' ppL sep al = ppL (map (\(k,v) -> pp k >|< sep >#< pp v) al)
-
-ppAssocL :: (PP k, PP v) => AssocL k v -> PP_Doc
-ppAssocL = ppAssocL' (ppBlock "[" "]" ",") ":"
-
-ppAssocLV :: (PP k, PP v) => AssocL k v -> PP_Doc
-ppAssocLV = ppAssocL' vlist ":"
-%%]
-
-%%[20
--- intended for parsing
-ppCurlysAssocL :: (k -> PP_Doc) -> (v -> PP_Doc) -> AssocL k v -> PP_Doc
-ppCurlysAssocL pk pv = ppCurlysCommasBlock . map (\(k,v) -> pk k >#< "=" >#< pv v)
-%%]
-
-%%[1
-assocLMap :: (k -> v -> (k',v')) -> AssocL k v -> AssocL k' v'
-assocLMap f = map (uncurry f)
-
-assocLMapElt :: (v -> v') -> AssocL k v -> AssocL k v'
-assocLMapElt f = assocLMap (\k v -> (k,f v))
-
-assocLMapKey :: (k -> k') -> AssocL k v -> AssocL k' v
-assocLMapKey f = assocLMap (\k v -> (f k,v))
-%%]
-
-%%[4 export(assocLMapUnzip)
-assocLMapUnzip :: AssocL k (v1,v2) -> (AssocL k v1,AssocL k v2)
-assocLMapUnzip l = unzip [ ((k,v1),(k,v2)) | (k,(v1,v2)) <- l ]
-%%]
-
-%%[1
-assocLKeys :: AssocL k v -> [k]
-assocLKeys = map fst
-
-assocLElts :: AssocL k v -> [v]
-assocLElts = map snd
-%%]
-
-%%[1 export(assocLGroupSort)
-assocLGroupSort :: Ord k => AssocL k v -> AssocL k [v]
-assocLGroupSort = map (foldr (\(k,v) (_,vs) -> (k,v:vs)) (panic "Base.Common.assocLGroupSort" ,[])) . groupSortOn fst
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -34,12 +34,15 @@ hdAndTl' n []     = (n,[])
 
 hdAndTl :: [a] -> (a,[a])
 hdAndTl = hdAndTl' (panic "hdAndTl")
+{-# INLINE hdAndTl  #-}
 
 maybeNull :: r -> ([a] -> r) -> [a] -> r
 maybeNull n f l = if null l then n else f l
+{-# INLINE maybeNull  #-}
 
 maybeHd :: r -> (a -> r) -> [a] -> r
 maybeHd n f = maybeNull n (f . head)
+{-# INLINE maybeHd  #-}
 
 wordsBy :: (a -> Bool) -> [a] -> [[a]]
 wordsBy p l
@@ -110,12 +113,19 @@ tup123to12 (a,b,_) = (a,b)
 tup123to23 (_,a,b) = (a,b)
 tup12to123 c (a,b) = (a,b,c)
 
+{-# INLINE tup123to1  #-}
+{-# INLINE tup123to2  #-}
+{-# INLINE tup123to12 #-}
+{-# INLINE tup123to23 #-}
+{-# INLINE tup12to123 #-}
+
 -------------------------------------------------------------------------
 -- String
 -------------------------------------------------------------------------
 
 strWhite :: Int -> String
 strWhite sz = replicate sz ' '
+{-# INLINE strWhite #-}
 
 strPad :: String -> Int -> String
 strPad s sz = s ++ strWhite (sz - length s)
@@ -162,6 +172,7 @@ isSortedByOn cmp sel l
 
 sortOn :: Ord b => (a -> b) -> [a] -> [a]
 sortOn = sortByOn compare
+{-# INLINE sortOn #-}
 
 sortByOn :: (b -> b -> Ordering) -> (a -> b) -> [a] -> [a]
 sortByOn cmp sel = sortBy (\e1 e2 -> sel e1 `cmp` sel e2)
@@ -203,6 +214,7 @@ orderingLexic = foldr1 (\o1 o2 -> if o1 == EQ then o2 else o1)
 
 panicJust :: String -> Maybe a -> a
 panicJust m = maybe (panic m) id
+{-# INLINE panicJust #-}
 
 infixr 0  $?
 
@@ -236,3 +248,18 @@ maybeOr n fa fb ma mb
 scc :: Ord n => [(n,[n])] -> [[n]]
 scc = map Graph.flattenSCC . Graph.stronglyConnComp . map (\(n,ns) -> (n, n, ns))
 
+-------------------------------------------------------------------------
+-- Map
+-------------------------------------------------------------------------
+
+-- | double lookup, with transformer for 2nd map
+mapLookup2' :: (Ord k1, Ord k2) => (v1 -> Map.Map k2 v2) -> k1 -> k2 -> Map.Map k1 v1 -> Maybe (Map.Map k2 v2, v2)
+mapLookup2' f k1 k2 m1
+  = do m2 <- Map.lookup k1 m1
+       let m2' = f m2
+       fmap ((,) m2') $ Map.lookup k2 m2'
+
+-- | double lookup
+mapLookup2 :: (Ord k1, Ord k2) => k1 -> k2 -> Map.Map k1 (Map.Map k2 v2) -> Maybe v2
+mapLookup2 k1 k2 m1 = fmap snd $ mapLookup2' id k1 k2 m1
+{-# INLINE mapLookup2 #-}

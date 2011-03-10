@@ -13,7 +13,7 @@ Analyse Core, using relevance analysis, to relate properties (like relevance) of
 %%% Type based simplifications
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs module {%{EH}Core.Trf.AnaRelevance} import({%{EH}Ty},{%{EH}Base.Common},{%{EH}Gam},{%{EH}Opts},{%{EH}Core},{%{EH}VarMp},{%{EH}Substitutable})
+%%[(8 codegen) hs module {%{EH}Core.Trf.AnaRelevance} import({%{EH}Ty},{%{EH}Base.Common},{%{EH}Gam},{%{EH}Opts},{%{EH}Base.Optimize},{%{EH}Core},{%{EH}VarMp},{%{EH}Substitutable})
 %%]
 
 %%[(8 codegen) hs import(Data.Maybe, qualified Data.Map as Map, qualified Data.Set as Set, Control.Applicative)
@@ -103,8 +103,10 @@ data WhatToRelevInfer
 ATTR AllCodeNT [ whatTo: {[WhatToRelevInfer]} | | ]
 
 SEM CodeAGItf
-  | AGItf       loc         .   whatTo          =   [ WhatToRelevInfer_Quant ]
-                                                    ++ (if ehcOptPriv @lhs.opts then [] else [ WhatToRelevInfer_InstToBot ])
+  | AGItf       loc         .   whatTo          =   case optimizeOptionStictnessAnalysisQuant (ehcOptOptimizeOptionMp @lhs.opts) of
+                                                      OptimizeOptionValue_StrictnessAnalysis_NoQuant          -> [                                                    ]
+                                                      OptimizeOptionValue_StrictnessAnalysis_QuantInstantiate -> [ WhatToRelevInfer_Quant, WhatToRelevInfer_InstToBot ]
+                                                      _ {- OptimizeOptionValue_StrictnessAnalysis_Quant -}    -> [ WhatToRelevInfer_Quant                             ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

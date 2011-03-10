@@ -139,6 +139,8 @@ data EHCOpts
 %%]]
 %%[[(8 codegen)
       ,  ehcOptOptimizations  ::  OptimizeS         -- individual optimizations to be done, derived from level + scope
+      ,  ehcOptOptimizeOptionMp
+                              ::  OptimizeOptionMp  -- optimization specific configuration
       ,  ehcOptOptimizationLevel
                               ::  OptimizationLevel          -- optimisation level
       ,  ehcOptOptimizationScope
@@ -266,6 +268,7 @@ emptyEHCOpts
 %%[[(8 codegen)
       ,  ehcOptDumpCoreStages   =   False
       ,  ehcOptOptimizations    =   optimizeRequiresClosure $ Map.findWithDefault Set.empty OptimizationLevel_Normal optimizationLevelMp
+      ,  ehcOptOptimizeOptionMp =   Map.empty
       ,  ehcOptOptimizationLevel=   OptimizationLevel_Normal
       ,  ehcOptOptimizationScope=   OptimizationScope_PerModule
       ,  ehcOptMbTarget         =   JustOk defaultTarget

@@ -130,8 +130,7 @@ lamMpMergeInto2 mergeL2RInfo mergeL2RMp newMp prevMp
 %%[(8 codegen) hs export(lamMpLookupAsp,lamMpLookupAsp2,lamMpLookupLam,lamMpLookupCaf)
 lamMpLookupAsp :: HsName -> ACoreBindAspectKeyS -> LamMp -> Maybe LamInfoBindAsp
 lamMpLookupAsp n a m
-  = do li <- Map.lookup n m
-       Map.lookup a (laminfoBindAspMp li)
+  = fmap snd $ mapLookup2' laminfoBindAspMp n a m
 
 lamMpLookupAsp2 :: ACoreBindRef -> LamMp -> Maybe LamInfoBindAsp
 lamMpLookupAsp2 (ACoreBindRef n (Just a)) m = lamMpLookupAsp n a m

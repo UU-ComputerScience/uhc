@@ -221,7 +221,8 @@ instance VarExtractable VarUIDHsName TyVarId where
   varFreeSet          (VarUIDHs_Var i)  = Set.singleton i
   varFreeSet          _                 = Set.empty
 
-instance VarUpdatable VarUIDHsName VarMp where
+-- instance VarUpdatable VarUIDHsName VarMp where
+instance VarLookup m ImplsVarId VarMpInfo => VarUpdatable VarUIDHsName m where
   varUpd s a                   = maybe a id $ varmpAssNmLookupAssNmCyc a s
 %%]
 
