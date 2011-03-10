@@ -61,7 +61,7 @@ EHC_HS_UTIL_SRC_CHS						:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
 													$(addprefix Cil/,Common TyTag) \
 													$(addprefix Opts/,Base) \
 													$(addprefix Pred/,ToCHR CHR Evidence EvidenceToCore EvidenceToTyCore Heuristics CommonCHR RedGraph) \
-													$(addprefix Base/,UID Parser Parser2 Pragma Binary Serialize Strictness GenC GenJavaLike Hashable Target BasicAnnot Common Builtin Builtin2 HsName Debug Trie CfgPP LaTeX HtmlCommon Bits FileSearchLocation PackageDatabase ParseUtils Optimize) \
+													$(addprefix Base/,AssocL UID Parser Parser2 Pragma Binary Serialize Strictness GenC GenJavaLike Hashable Target BasicAnnot Common Builtin Builtin2 HsName Debug Trie CfgPP LaTeX HtmlCommon Bits FileSearchLocation PackageDatabase ParseUtils Optimize) \
 													$(addprefix Scanner/,Common Machine Scanner Token TokenParser) \
 													$(addsuffix /Parser,Ty EH HS Foreign Core GrinCode) \
 													$(addprefix Ty/,FIEnv FIEnv2 FitsInCommon FitsInCommon2 FitsIn Utils1 Utils2 AppSpineGam Trf/BetaReduce) \

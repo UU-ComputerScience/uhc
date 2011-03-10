@@ -121,14 +121,16 @@ instance VarExtractable Ty TyVarId where
 %%]
 
 %%[(10 hmtyinfer || hmtyast)
-instance VarUpdatable Label VarMp where
+-- instance VarUpdatable Label VarMp where
+instance VarLookup m ImplsVarId VarMpInfo => VarUpdatable Label m where
   s `varUpd` lb          = maybe lb id $ varmpLabelLookupLabelCyc lb s
 
 instance VarExtractable Label TyVarId where
   varFree (Label_Var v) = [v]
   varFree _             = []
 
-instance VarUpdatable LabelOffset VarMp where
+-- instance VarUpdatable LabelOffset VarMp where
+instance VarLookup m UID VarMpInfo => VarUpdatable LabelOffset m where
   s `varUpd` o@(LabelOffset_Var v) = maybe o id $ varmpOffsetLookup v s
   s `varUpd` o                     = o
 
@@ -193,7 +195,8 @@ instance VarUpdatable Pred VarMp where
 instance VarExtractable Pred TyVarId where
   varFreeSet p  =  varFreeSet (Ty_Pred p)
 
-instance VarUpdatable PredScope VarMp where
+-- instance VarUpdatable PredScope VarMp where
+instance VarLookup m ImplsVarId VarMpInfo => VarUpdatable PredScope m where
   s `varUpd`  sc                   = maybe sc id $ varmpScopeLookupScopeCyc sc s
 
 instance VarExtractable PredScope TyVarId where

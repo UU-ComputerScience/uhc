@@ -35,7 +35,7 @@ packages.
 %%]
 %%[99 import(System.Environment, System.Directory, Control.Monad)
 %%]
-%%[99 import(IO,EH.Util.FPath)
+%%[99 import(IO,EH.Util.FPath,EH.Util.Utils)
 %%]
 
 -- debug
@@ -60,8 +60,7 @@ pkgMpUnion
 -- TBD: fix this: error/warning, etc
 pkgMpLookup :: PkgKey -> PackageMp -> Maybe PackageInfo
 pkgMpLookup (k1,k2) m1
-  = do m2 <- Map.lookup k1 m1
-       fmap head $ Map.lookup k2 m2
+  = fmap head $ mapLookup2 k1 k2 m1
 
 pkgMpDifference :: PackageMp -> PackageMp -> PackageMp
 pkgMpDifference mp mpDiff

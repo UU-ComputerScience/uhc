@@ -26,6 +26,7 @@ module EH.Util.Pretty
   , ppBrackets
   , ppBracketsCommas, ppBracketsCommas', ppBracketsCommasV
   , ppHorizontally, ppVertically
+  , ppListSepFill
   
   , ppPacked, ppParens, ppCurly, ppVBar
   
@@ -178,6 +179,13 @@ ppVertically = vlist
 
 ppHorizontally :: [PP_Doc] -> PP_Doc
 ppHorizontally = hlist
+
+ppListSepFill :: (PP s, PP c, PP o, PP a) => o -> c -> s -> [a] -> PP_Doc
+ppListSepFill o c s pps
+  = l pps
+  where l []      = o >|< c
+        l [p]     = o >|< pp p >|< c
+        l (p:ps)  = fill ((o >|< pp p) : map (s >|<) ps) >|< c
 
 -------------------------------------------------------------------------
 -- Printing open/close pairs

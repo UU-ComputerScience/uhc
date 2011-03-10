@@ -16,7 +16,7 @@
 %%[1 import(EH.Util.Utils)
 %%]
 
-%%[1 import(Data.Maybe,qualified Data.Map as Map)
+%%[1 import(Data.Maybe,qualified Data.Map as Map,Data.Char)
 %%]
 
 %%[4 import(EH.Util.Pretty)
@@ -28,7 +28,7 @@
 %%[7 import(qualified Data.Set as Set)
 %%]
 
-%%[8 import(Data.List,Data.Char,{%{EH}Base.Builtin})
+%%[8 import(Data.List,{%{EH}Base.Builtin})
 %%]
 
 %%[8 import(EH.Util.FPath)
@@ -524,15 +524,6 @@ ehcCmdLineOpts
                                         Just (',':cscope:_)
                                           | isJust mbO -> (fromJust mbO o, True)
                                           where mbO = mbLevelScope Nothing (Just cscope)
-                                        {-
-                                        Just olevel@(clevel:',':cscope:_)
-                                          | isDigit clevel && isDigit cscope && l >= 0 && l < maxlev && s >= 0 && s < maxscp
-                                            -> ( o { ehcOptOptimizationLevel = toEnum l, ehcOptOptimizationScope = toEnum s }
-                                               , True
-                                               )
-                                          where l = read [clevel] :: Int
-                                                s = read [cscope] :: Int
-                                        -}
                                         Just olevel@(clevel:_)
                                           | isDigit clevel && l >= 0 && l < (maxscp * maxlev)
                                             -> ( o { ehcOptOptimizationLevel = toEnum lev, ehcOptOptimizationScope = toEnum sc }
@@ -543,14 +534,23 @@ ehcCmdLineOpts
                                         Just optname@(_:_)
                                           -> case break (== '=') optname of
                                                (nm, yesno)
-                                                 -> (o {ehcOptOptimizations = os}, False)
-                                                 where os = -- lookup name, and attempt to extract boolean of assumedly '=' prefixed string
-                                                            case (Map.lookup nm allOptimizeMp, optBooleanTake $ drop 1 yesno) of
-                                                              (Just opt, Just (b,_))
-                                                                | b         -> Set.insert opt $ ehcOptOptimizations o
-                                                                | otherwise -> Set.delete opt $ ehcOptOptimizations o
-                                                              (Just opt, _) -> Set.insert opt $ ehcOptOptimizations o
-                                                              _             ->                  ehcOptOptimizations o
+                                                 -> ( o { ehcOptOptimizations = os
+                                                        , ehcOptOptimizeOptionMp = osmp `Map.union` ehcOptOptimizeOptionMp o
+                                                        }
+                                                    , False
+                                                    )
+                                                 where set True  opt = Set.insert opt $ ehcOptOptimizations o
+                                                       set False opt = Set.delete opt $ ehcOptOptimizations o
+                                                       (os,osmp)
+                                                          = -- lookup name, and attempt to extract boolean of assumedly '=' prefixed string, or if not a boolean try to extract specific config whilst also assuming True for the boolean
+                                                            case (Map.lookup nm allOptimizeMp, optArgTake optArgAllAllow $ drop 1 yesno) of
+                                                              (Just opt, Just (OptArg_Bool b,_ ))   -> (set b     opt           , Map.empty)
+                                                              (Just opt, Just (OptArg_Int  i,_ ))   -> (set True  opt           , optimizeOptionMpSingleton opt optopt v)
+                                                                                                    where (optopt,optdflt) = allOptimizeOptionMpAnyOption opt
+                                                                                                          v = maybe optdflt (\(_,(lo,_)) -> toEnum $ fromEnum lo + i)
+                                                                                                              $ mapLookup2 opt optopt allOptimizeOptionMp
+                                                              (Just opt, _                      )   -> (set True  opt           , Map.empty)
+                                                              _                                     -> (ehcOptOptimizations o   , Map.empty)
                                         Nothing
                                           -> (o { ehcOptOptimizationLevel      = OptimizationLevel_Much       }, True)
                                         _ -> (o, False)
@@ -558,8 +558,6 @@ ehcCmdLineOpts
                                     | otherwise = ehcOptOptimizations o'
                                  maxlev = fromEnum (maxBound :: OptimizationLevel) + 1
                                  maxscp = fromEnum (maxBound :: OptimizationScope) + 1
-                                 {-
-                                 -}
                                  mbLevelScope ml ms
                                    | isJust l && isJust s = Just (\o -> o { ehcOptOptimizationLevel = toEnum (fromJust l), ehcOptOptimizationScope = toEnum (fromJust s) })
                                    | otherwise            = Nothing
@@ -570,17 +568,6 @@ ehcCmdLineOpts
                                            | otherwise        = Nothing
                                            where x = (maybe (fromEnum $ dflt o) (\c -> read [c]) m) :: Int
 %%]]
-%%]]
-%%[[9
-{-
-         oCHRScoped    s o =  o { ehcCfgCHRScoped       =
-                                    case s of
-                                      "0" -> CHRScopedInstOnly
-                                      "1" -> CHRScopedMutualSuper
-                                      "2" -> CHRScopedAll
-                                      _   -> CHRScopedAll
-                                }
--}
 %%]]
 %%[[20
          oNoRecomp              o   = o { ehcOptCheckRecompile              = False    }
@@ -644,18 +631,51 @@ optInt tr s o
 %%]
 
 %%[1
+-- | What kind of optional args are allowed
+data OptArgAllow
+  = OptArgAllow_Bool
+  | OptArgAllow_Int
+  deriving (Eq,Enum,Bounded)
+
+optArgAllAllow :: [OptArgAllow]
+optArgAllAllow = [minBound .. maxBound]
+%%]
+
+%%[1
+-- | An optional arg, universal type for all occurring variants
+data OptArg
+  = OptArg_Bool		Bool
+  | OptArg_Int		Int
+%%]
+
+%%[1
+optArgTake :: [OptArgAllow] -> String -> Maybe (OptArg,String)
+optArgTake allow s
+  = case s of
+      ('-':r)           -> Just (OptArg_Bool False,r)
+      ('n':'o':r)       -> Just (OptArg_Bool False,r)
+      ('n':r)       	-> Just (OptArg_Bool False,r)
+      ('o':'f':'f':r)   -> Just (OptArg_Bool False,r)
+      ('0':r) | noInt   -> Just (OptArg_Bool False,r)
+      ('+':r)           -> Just (OptArg_Bool True ,r)
+      ('y':'e':'s':r)   -> Just (OptArg_Bool True ,r)
+      ('y':r)   		-> Just (OptArg_Bool True ,r)
+      ('o':'n':r)       -> Just (OptArg_Bool True ,r)
+      ('1':r) | noInt   -> Just (OptArg_Bool True ,r)
+      ( c :_) | yesInt && isDigit c
+      					-> Just (OptArg_Int (read d) ,r)
+      					where (d,r) = span isDigit s
+      _                 -> Nothing
+  where yesInt = OptArgAllow_Int `elem` allow
+        noInt  = not yesInt
+%%]
+
+%%[1
 optBooleanTake :: String -> Maybe (Bool,String)
 optBooleanTake s
-  = case s of
-      ('-':r)           -> Just (False,r)
-      ('n':'o':r)       -> Just (False,r)
-      ('o':'f':'f':r)   -> Just (False,r)
-      ('0':r)           -> Just (False,r)
-      ('+':r)           -> Just (True ,r)
-      ('y':'e':'s':r)   -> Just (True ,r)
-      ('o':'n':r)       -> Just (True ,r)
-      ('1':r)           -> Just (True ,r)
-      _                 -> Nothing
+  = case optArgTake [OptArgAllow_Bool] s of
+      Just (OptArg_Bool b, r)   -> Just (b,r)
+      _                         -> Nothing
 
 optBoolean :: (EHCOpts -> Bool -> EHCOpts) -> Maybe String -> EHCOpts -> EHCOpts
 optBoolean tr ms o
@@ -664,7 +684,7 @@ optBoolean tr ms o
      _      -> o
 
 %%[[1
-boolArgStr = "0|1|no|yes|off|on|-|+"
+boolArgStr = "0|1|n[o]|y[es]|off|on|-|+"
 %%][100
 boolArgStr = "Bool"
 %%]]
