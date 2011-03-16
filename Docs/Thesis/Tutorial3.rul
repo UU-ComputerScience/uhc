@@ -1,0 +1,110 @@
+{
+{-# LANGUAGE BangPatterns          #-}
+module Tutorial3 where
+
+import Control.Monad.Error
+import Data.Maybe
+
+type Env = [(String, Int)]
+}
+
+data Expr
+  con Num
+    val     :: Int
+  con Expr
+    exp1    :  Expr
+    op      :: Operator
+    exp2    :  Expr
+  con Var
+    nm      :: String
+  con Let
+    nm      :: String
+    exp     :  Expr
+    body    :  Expr
+    
+data Operator
+  con Plus
+  con Minus
+  con Multiply
+  con Divide
+  
+  
+itf Expr
+  visit eval 
+    inh ast :: Expr
+    inh env :: Env
+    syn v   :: Int
+    syn env :: Env
+    
+type Exprs : [Expr]
+
+itf Exprs
+  visit eval 
+    inh ast :: Exprs
+    inh env :: Env
+    syn v   :: [Int]
+    syn env :: Env
+    
+datasem Exprs
+   default? env = last
+   clause Cons
+     lhs.v = hd.v : tl.v
+   clause Nil
+     lhs.v = []
+    
+datasem Expr    
+   default? env = last
+   clause Num
+     lhs.v = loc.val
+   clause Expr              
+     internal opcheck
+       clause Plus
+         match Operator.Plus@loc = loc.op
+         lhs.v = exp1.v + exp2.v
+       clause Minus
+         match Operator.Minus@loc = loc.op
+         lhs.v = exp1.v - exp2.v
+       clause Multiply
+         match Operator.Multiply@loc = loc.op
+         lhs.v = exp1.v * exp2.v
+       clause Divide
+         match Operator.Divide@loc = loc.op
+         lhs.v = exp1.v `div` exp2.v
+   clause Var
+     loc.val = lookup loc.nm lhs.env
+     lhs.v   = fromMaybe (error $ "variable " ++ loc.nm ++ " not defined") loc.val
+   clause Let
+     loc.env  = (loc.nm, exp.v): lhs.env
+     body.env = loc.env
+     lhs.v    = body.v
+              
+{        
+test :: [Expr] -> IO [Int]
+test exps = do
+  let inh = Inh_Exprs_eval { ast_Inh_Exprs = exps, env_Inh_Exprs = [] }
+  syn <- invoke_Exprs_eval dnt_Exprs inh
+  let x = v_Syn_Exprs syn
+  return x
+
+main :: IO ()
+main = do let exp = Expr_Let "x" 
+                             (Expr_Expr (Expr_Num 1) 
+                                        Operator_Plus 
+                                        (Expr_Num 1)
+                             )
+                             (Expr_Expr (Expr_Num 1) 
+                                       Operator_Plus 
+                                       (Expr_Expr (Expr_Var "x") 
+                                                  Operator_Multiply 
+                                                  (Expr_Num 3)
+                                       )
+                             )
+          let yexp = Expr_Let "y"
+                              (Expr_Expr (Expr_Num 2) 
+                                        Operator_Minus
+                                        (Expr_Num 1)
+                              )
+                              (Expr_Var "y")
+          x <- test [yexp, exp]
+          putStrLn $ show x
+}

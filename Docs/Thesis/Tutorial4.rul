@@ -1,0 +1,276 @@
+{
+{-# LANGUAGE BangPatterns          #-}
+module Tutorial4 where
+
+import Control.Monad.Error
+import Control.Arrow
+import Data.Maybe
+
+type Env = [(String, Int)]
+type Pair a = (a,a)
+}
+
+data Expr
+  con Num
+    val     :: Int
+  con Expr
+    exp1    :  Expr
+    op      :: Operator
+    exp2    :  Expr
+  con Var
+    nm      :: String
+  con Let
+    nm      :: String
+    exp     :  Expr
+    body    :  Expr
+    
+data Operator
+  con Plus
+  con Minus
+  con Multiply
+  con Divide
+  
+itf OperatorEq
+  visit compare
+    inh op1 :: Operator
+    inh op2 :: Operator
+    syn eq  :: Maybe Operator
+    
+{
+eqOp = sem eqOp : OperatorEq monad IO
+         visit compare
+           default? eq = const False
+           clause Plus
+             match Operator.Plus@loc = lhs.op1
+             match Operator.Plus@loc = lhs.op2
+             
+             lhs.eq = return Operator_Plus
+           clause Minus
+             match Operator.Minus@loc = lhs.op1
+             match Operator.Minus@loc = lhs.op2
+             
+             lhs.eq = return Operator_Minus
+           clause Multiply
+             match Operator.Multiply@loc = lhs.op1
+             match Operator.Multiply@loc = lhs.op2
+             
+             lhs.eq = return Operator_Multiply
+           clause Divide
+             match Operator.Divide@loc = lhs.op1
+             match Operator.Divide@loc = lhs.op2
+             
+             lhs.eq = return Operator_Divide
+}
+  
+itf Expr
+  visit eval 
+    inh ast :: Expr
+    inh env :: Env
+    syn v   :: Int
+    syn env :: Env
+    
+type Exprs : [Expr]
+
+itf Exprs
+  visit eval 
+    inh ast :: Exprs
+    inh env :: Env
+    syn v   :: [Int]
+    syn env :: Env
+    
+datasem Exprs
+   default? env = last
+   clause Cons
+     lhs.v = hd.v : tl.v
+   clause Nil
+     lhs.v = []
+     
+itf Compare
+  visit compare
+    inh exp1 :: Expr
+    inh exp2 :: Expr
+    inh env  :: Pair Env
+    syn env  :: Pair Env
+    syn exp  :: Maybe Expr
+    
+datasem Expr    
+   default? env = last
+   clause Num
+     lhs.v = loc.val
+   clause Expr              
+     internal opcheck
+       clause Plus
+         match Operator.Plus@loc = loc.op
+         lhs.v = exp1.v + exp2.v
+       clause Minus
+         match Operator.Minus@loc = loc.op
+         lhs.v = exp1.v - exp2.v
+       clause Multiply
+         match Operator.Multiply@loc = loc.op
+         lhs.v = exp1.v * exp2.v
+       clause Divide
+         match Operator.Divide@loc = loc.op
+         lhs.v = exp1.v `div` exp2.v
+   clause Var
+     loc.val = lookup loc.nm lhs.env
+     lhs.v   = fromMaybe (error $ "variable " ++ loc.nm ++ " not defined") loc.val
+   clause Let
+     loc.env  = (loc.nm, exp.v): lhs.env
+     body.env = loc.env
+     lhs.v    = body.v
+              
+{
+eq = sem eq : Compare monad IO
+       visit compare
+         default? env = last
+         default? exp = const Nothing
+         clause Num
+           match Expr.Num@e1 = lhs.exp1
+           match Expr.Num@e2 = lhs.exp2
+           
+           loc.eq  = e1.val == e2.val
+           lhs.exp = guard loc.eq >> return (Expr_Num e1.val)
+         clause Expr
+           match Expr.Expr@l = lhs.exp1
+           match Expr.Expr@r = lhs.exp2
+           
+           child left : Compare = eq
+           left.exp1 = l.exp1
+           left.exp2 = r.exp1
+           
+           child op : OperatorEq = eqOp
+           op.op1 = l.op
+           op.op2 = r.op
+           
+           child right : Compare = eq
+           right.exp1 = l.exp2
+           right.exp2 = r.exp2
+           
+           lhs.exp = liftM3 Expr_Expr left.exp op.eq right.exp
+         clause LetLeft
+           match Expr.Let@loc  = lhs.exp1
+           
+           child exp : Expr
+           exp.ast = loc.exp
+           exp.env = fst lhs.env
+           
+           child e : Compare = eq
+           e.env  = first ((loc.nm, exp.v):) lhs.env
+           e.exp1 = loc.body
+           e.exp2 = lhs.exp2
+           
+           lhs.env = e.env
+           lhs.exp = e.exp
+         clause LetRight
+           match Expr.Let@loc  = lhs.exp2
+           
+           child exp : Expr
+           exp.ast = loc.exp
+           exp.env = snd lhs.env
+           
+           child e : Compare = eq
+           e.env  = second ((loc.nm, exp.v):) lhs.env
+           e.exp1 = lhs.exp1
+           e.exp2 = loc.body
+           
+           lhs.env = e.env
+           lhs.exp = e.exp
+         clause Var
+           match Expr.Var@var1 = lhs.exp1
+           match Expr.Var@var2 = lhs.exp2
+           
+           loc.v1  = lookup var1.nm $ fst lhs.env
+           loc.v2  = lookup var2.nm $ snd lhs.env
+           loc.eq  = liftM2 (==) loc.v1 loc.v2
+           lhs.exp = loc.eq >>= guard >> fmap Expr_Num loc.v1
+         clause VarLeft
+           match Expr.Var@vari = lhs.exp1
+           
+           child exp : Expr
+           exp.ast = lhs.exp2
+           exp.env = snd lhs.env
+           
+           loc.v1  = lookup vari.nm $ fst lhs.env
+           loc.v2  = Just exp.v
+           loc.eq  = liftM2 (==) loc.v1 loc.v2
+           lhs.exp = loc.eq >>= guard >> fmap Expr_Num loc.v1
+           lhs.env = second (const exp.env) lhs.env -- required or type error
+           -- Tutorial4.hs:4438:128:
+                -- Couldn't match expected type `[(String, Int)]'
+                            -- with actual type `(Env, Env)'
+                -- Expected type: Env
+                  -- Actual type: Pair Env
+                -- In the expression: lhsIenv
+                -- In the first argument of `dflt_env_4', namely `[expSenv, lhsIenv]'
+            -- Failed, modules loaded: none.
+         clause VarRight
+           match Expr.Var@vari  = lhs.exp2
+           
+           child exp : Expr
+           exp.ast = lhs.exp1
+           exp.env = fst lhs.env
+           
+           loc.v1  = lookup vari.nm $ snd lhs.env
+           loc.v2  = Just exp.v
+           loc.eq  = liftM2 (==) loc.v1 loc.v2
+           lhs.exp = loc.eq >>= guard >> fmap Expr_Num loc.v1
+           lhs.env = first (const exp.env) lhs.env
+         clause rest
+        
+test :: Expr -> Expr -> IO (Maybe Expr)
+test exp1 exp2 = do
+  let inh = Inh_Compare_compare
+                          { exp1_Inh_Compare = exp1
+                           , exp2_Inh_Compare = exp2
+                           , env_Inh_Compare  = ([],[])
+                           }
+  syn <- invoke_Compare_compare eq inh
+  let x = exp_Syn_Compare syn
+  return x
+
+instance Show Expr where
+    show (Expr_Num      a) = show a
+    show (Expr_Var      a) = show a
+    show (Expr_Let  x v b) = "Let " ++ x ++ " = " ++ show v ++" in " ++ show b
+    show (Expr_Expr l o r) = "(" ++ show l ++ ") " ++ show o ++ " (" ++ show r ++ ")"
+    
+instance Show Operator where
+    show Operator_Plus     = "+"
+    show Operator_Minus    = "-"
+    show Operator_Multiply = "*"
+    show Operator_Divide   = "/"
+  
+main :: IO ()
+main = do let exp = Expr_Let "x" 
+                             (Expr_Expr (Expr_Num 1) 
+                                        Operator_Plus 
+                                        (Expr_Num 1)
+                             )
+                             (Expr_Expr (Expr_Num 1) 
+                                       Operator_Plus 
+                                       (Expr_Expr (Expr_Var "x") 
+                                                  Operator_Multiply 
+                                                  (Expr_Num 3)
+                                       )
+                             )
+          let zexp = Expr_Let "z" 
+                             (Expr_Expr (Expr_Num 2) 
+                                        Operator_Plus 
+                                        (Expr_Num 1)
+                             )
+                             (Expr_Expr (Expr_Num 1) 
+                                       Operator_Plus 
+                                       (Expr_Expr (Expr_Num 2) 
+                                                  Operator_Multiply 
+                                                  (Expr_Var "z")
+                                       )
+                             )
+          let yexp = Expr_Let "y"
+                              (Expr_Expr (Expr_Num 2) 
+                                        Operator_Minus
+                                        (Expr_Num 1)
+                              )
+                              (Expr_Var "y")
+          x <- test exp zexp
+          putStrLn $ show x
+}

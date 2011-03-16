@@ -1,7 +1,125 @@
+%include lhs2TeX.fmt
+%include polycode.fmt
+
 \chapter{Attribute Grammars}
-general introductions to AGs
+\emph{Context Free Grammars} cannot describe the complete syntax of programming languages\cite{knuth1}, particularly specifying any context-sensitive conditions. Specifying that the same value for \emph{n} be enforced in the string $a^nb^nc^n$ cannot be tested by using context free grammars\cite{ken}.
+
+Attribute grammars be used to specify both syntax and semantics of a language. Developed in 1968 by Donald E. Knuth attribute grammars were created as a way to define \emph{meaning} to context free languages. An example of assigning meaning to a grammar would be defining the evaluation of expressions defined by the following \emph{CFG} expressed as \emph{BNF}:
+
+\begin{figure}[H]
+\begin{grammar}
+      [(colon){$\rightarrow$}]
+      [(semicolon)$|$]
+      [(comma){}]
+      [(period){\\}]
+      [(quote){\begin{bf}}{\end{bf}}]
+      [(nonterminal){$\langle$}{$\rangle$}]
+<Expr>:<number>; <Expr>, <operator>, <Expr>.
+<number>:<digit>;<digit>,<number>.
+<digit>:"0";"1";"2";"3";"4";"5";"6";"7";"8";"9".
+<relational operator>:"$*$";"$/$";"$-$";"$+$".
+\end{grammar}
+\caption{BNF definition for Expressions}
+\label{grammar:bnf:expr}
+\end{figure}
+
+The \emph{Terminals} in this case are the \emph{operators} $+,-,*,/$ and the \emph{digits} $0\ldots 9$. The \emph{nonterminals} are the \emph{Expr, number} symbols. This grammar specifies that an expression is either a \textbf{number} or an \textbf{Expr} followed by an \textbf{operator} and then another \textbf{Expr}. For every sentence that can be produced by this grammar a parse tree can be assigned. For instance for the expression "2 + (3 * 5) / (6 - 1)" produces the parse tree in figure \ref{fig.example1.parsetree}. To define meaning for the expression it's natural to do this on a step by step basis corresponding with the structure of the parse tree. Which means starting from the leaves and working up the tree. The meaning of the tree is made up by the meaning of the parts of the tree. This can be done by assigning \emph{attributes} to the tree.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[>=stealth']
+\node (r0) [draw, circle] {+};
+\node (r1) [below left=1cm of r0, draw, circle] {2}
+  edge[<-] (r0.south);
+\node (r2) [below right=1cm of r0, draw, circle] {/}
+  edge[<-] (r0.south);
+\node (s0) [below left=1.4cm of r2, draw, circle] {*}
+  edge[<-] (r2.south);
+\node (s1) [below left=1cm of s0, draw, circle] {3}
+  edge[<-] (s0.south);
+\node (s2) [below right=1cm of s0, draw, circle] {5}
+  edge[<-] (s0.south);
+\node (f0) [below right=1.5cm of r2, draw, circle] {-}
+  edge[<-] (r2.south);
+\node (f1) [below left=1cm of f0, draw, circle] {6}
+  edge[<-] (f0.south);
+\node (f2) [below right=1cm of f0, draw, circle] {1}
+  edge[<-] (f0.south);
+\end{tikzpicture}
+\caption{Parse tree example for "2 + (3 * 5) / (6 - 1)"}
+\label{fig.example1.parsetree}
+\end{figure}
+
+AG's are additions to CFGs to propagate some semantic information along through parse trees. As with the majority of trees used in computer science, ASTs are created with the \emph{root} at the top and the \emph{leaves} at the bottom. There are two kinds of \emph{attributes} defined by knuth\cite{knuth1}:
+\begin{description}
+\item[\textbf{synthesized}] This attribute is only dependent on \emph{descendants} of the nonterminal. They are passed bottom-up through the tree.
+\item[\textbf{inherited}] This attribute is defined in terms of the \emph{ancestors} of the nonterminal. They are passed top-down through the tree.
+\end{description}
+
+An attribute can be both a \emph{synthesized} and an \emph{inherited} attribute.
+A semantic can be defined for figure \ref{fig.example1.parsetree} by assigning a \emph{value} synthesized attribute of type \textbf{Int} to the nonterminals \emph{number} and \emph{Expr}. The evaluation rules are quite simple:
+
+\begin{figure}[H]
+\begin{grammar}
+      [(colon){$\rightarrow$}]
+      [(semicolon)$|$]
+      [(comma){}]
+      [(period){\\}]
+      [(quote){\begin{bf}}{\end{bf}}]
+      [(nonterminal){$\langle$}{$\rangle$}]
+value(<$Expr^*$>):value(<$Expr_1$>) * value(<$Expr_2$>). 
+value(<$Expr^/$>):value(<$Expr_1$>) / value(<$Expr_2$>). 
+value(<$Expr^+$>):value(<$Expr_1$>) + value(<$Expr_2$>). 
+value(<$Expr^-$>):value(<$Expr_1$>) - value(<$Expr_2$>). 
+value(<Expr>):value(<number>).
+value(<number>):<number>.
+\end{grammar}
+\caption{attribute definition for Expressions}
+\label{semantics:bnf:expr}
+\end{figure}
+
+The subscripts are used to disambiguate between the different expression types and the superscripts are used to distinguish between the different cases of the \emph{operator} in an expression. Figure \ref{fig.example2.decoratedtree} shows a tree decorated with the synthesized attribute \emph{v} (short for value) and the intermediate values of \emph{v}.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[>=stealth']
+\node (r0) [draw, circle] {+};
+\node (ri0) [draw, rectangle, right=0.1cm of r0, gray] {v=5};
+\node (r1) [below left=1.7cm of r0, draw, circle] {2}
+  edge[<-] (r0.south);
+\node (ri1) [draw, rectangle, right=0.1cm of r1, gray] {v=2};
+\node (r2) [below right=1.7cm of r0, draw, circle] {/}
+  edge[<-] (r0.south);
+\node (ri2) [draw, rectangle, right=0.1cm of r2, gray] {v=3};
+\node (s0) [below left=2.1cm of r2, draw, circle] {*}
+  edge[<-] (r2.south);
+\node (ri3) [draw, rectangle, right=0.1cm of s0, gray] {v=15};
+\node (s1) [below left=1.0cm of s0, draw, circle] {3}
+  edge[<-] (s0.south);
+\node (ri4) [draw, rectangle, right=0.1cm of s1, gray] {v=3};
+\node (s2) [below right=1.0cm of s0, draw, circle] {5}
+  edge[<-] (s0.south);
+\node (ri5) [draw, rectangle, right=0.1cm of s2, gray] {v=5};
+\node (f0) [below right=2.2cm of r2, draw, circle] {-}
+  edge[<-] (r2.south);
+\node (ri6) [draw, rectangle, right=0.1cm of f0, gray] {v=5};
+\node (f1) [below left=1.0cm of f0, draw, circle] {6}
+  edge[<-] (f0.south);
+\node (ri7) [draw, rectangle, right=0.1cm of f1, gray] {v=6};
+\node (f2) [below right=1.0cm of f0, draw, circle] {1}
+  edge[<-] (f0.south);
+\node (ri8) [draw, rectangle, right=0.1cm of f2, gray] {v=1};
+\end{tikzpicture}
+\caption{decorated tree example for "2 + (3 * 5) / (6 - 1)"}
+\label{fig.example2.decoratedtree}
+\end{figure}
+
+Attribute grammars are akin to \emph{catamorphisms} except without the need to define the algebra and explicit traversals of the tree.
+
 \section{Utrecht University Attribute Grammar Compiler (UUAGC)}
- general introduction to UUAGC
+UUAGC (Utrecht University Attribute Grammar Compiler) is a preprocessor which parses Attribute Grammars in a custom language.
+It defined ways to define the syntaxes for the AST types, attributes for the terminals and nonterminals and the semantic functions. It is used in the Utrecht Haskell Compiler to do most of the work.
+
 \subsection{Limits of UUAGC}
 The \emph{UUAGC} system has a limitation in that it can't perform case distinctions over multiple \emph{abstract syntax trees} at the same time\cite{visitag}. For most applications this is not an issue, since in most cases there is only one \emph{AST} that needs to be traversed at a time. 
 
@@ -98,7 +216,7 @@ data Expr
 \label{data:example}
 \end{figure}
 
-Instead of an $=$ or $|$ like in Haskell, an explicit \textbf{con} keyword is used to indicate the \emph{name} of the constructor. Every element of the constructor must be explicitly named. Indentation is also important since indentation separates constructors, in general \textbf{con} should be deeper indented then \textbf{data} and the members of a constructor should be indented further than the \textbf{con}.
+Instead of an $=$ or \textbar like in Haskell, an explicit \textbf{con} keyword is used to indicate the \emph{name} of the constructor. Every element of the constructor must be explicitly named. Indentation is also important since indentation separates constructors, in general \textbf{con} should be deeper indented then \textbf{data} and the members of a constructor should be indented further than the \textbf{con}.
 
 Only types of kind $:: \star$ are allowed by ruler-core which means you can only have monomorphic types. As with UUAGC the constructors generated will be in the form of \emph{TypeName\_ConstructorName}. To put this concretely figure \ref{data:example} exposed the constructor functions \textbf{Expr\_Int} and \textbf{Expr\_Plus}.
 \subsubsection{Special types}

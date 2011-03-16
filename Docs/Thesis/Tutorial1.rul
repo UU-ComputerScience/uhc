@@ -1,0 +1,58 @@
+{
+{-# LANGUAGE BangPatterns          #-}
+module Tutorial1 where
+
+import Control.Monad.Error
+}
+
+data Expr
+  con Num
+    val     :: Int
+  con Expr
+    exp1    :  Expr
+    op      :: Operator
+    exp2    :  Expr
+    
+data Operator
+  con Plus
+  con Minus
+  con Multiply
+  con Divide
+  
+  
+itf Expr
+  visit eval 
+    inh ast :: Expr
+    syn v   :: Int
+    
+datasem Expr
+   clause Num
+     lhs.v = loc.val
+   clause Expr
+     internal opcheck
+       clause Plus
+         match Operator.Plus@loc = loc.op
+         lhs.v = exp1.v + exp2.v
+       clause Minus
+         match Operator.Minus@loc = loc.op
+         lhs.v = exp1.v - exp2.v
+       clause Multiply
+         match Operator.Multiply@loc = loc.op
+         lhs.v = exp1.v * exp2.v
+       clause Divide
+         match Operator.Divide@loc = loc.op
+         lhs.v = exp1.v `div` exp2.v
+         
+{
+test :: Expr -> IO Int
+test exp = do
+  let inh = Inh_Expr_eval { ast_Inh_Expr = exp }
+  syn <- invoke_Expr_eval dnt_Expr inh
+  let x = v_Syn_Expr syn
+  return x
+
+main :: IO ()
+main = do let exp = Expr_Expr (Expr_Num 1) Operator_Plus (Expr_Expr (Expr_Num 2) Operator_Multiply (Expr_Num 3))
+          x <- test exp
+          putStrLn $ show x
+}
