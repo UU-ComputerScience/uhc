@@ -30,65 +30,91 @@ For debug/trace:
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(4 hmtyinfer) export(ppTyWithFI,ppTyWithFIFO)
+%%[[4
 ppTyWithFI :: FIIn -> Ty -> PP_Doc
-ppTyWithFI fi t =  ppTyS (fiVarMpLoc fi `varUpd` fiVarMp fi) t
+%%][8
+ppTyWithFI :: (VarLookupCmb VarMp gm, VarUpdatable Ty gm) => FIIn' gm -> Ty -> PP_Doc
+%%]]
+ppTyWithFI fi t =  ppTyS (fiVarMpLoc fi |+> fiVarMp fi) t
 
+%%[[4
 ppTyWithFIFO :: FIIn -> FIOut -> Ty -> PP_Doc
-ppTyWithFIFO fi fo t    =  ppTyS (foVarMp fo `varUpd` fiVarMp fi) t
+%%][8
+ppTyWithFIFO :: (VarLookupCmb VarMp gm, VarUpdatable Ty gm) => FIIn' gm -> FIOut -> Ty -> PP_Doc
+%%]]
+ppTyWithFIFO fi fo t    =  ppTyS (foVarMp fo |+> fiVarMp fi) t
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Interface to configuration/input
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(4 hmtyinfer).FIIn export(FIIn(..))
-data FIIn   =  FIIn     {  fiFIOpts          ::  !FIOpts				-- options to fitsIn
-                        ,  fiUniq            ::  !UID					-- unique thread
-                        ,  fiVarMp           ::  !VarMp					-- global (type) var bindings
-                        ,  fiVarMpLoc        ::  !VarMp					-- locally introduced (type) var bindings
-                        ,  fiExpLTvS         ::  !(Set.Set TyVarId)		-- lhs ty vars for which expansion (via VarMp) is inhibited (already done once)
-                        ,  fiExpRTvS         ::  !(Set.Set TyVarId)		-- and rhs
-                        ,  fiRank            ::  !Int					-- rank
-                        ,  fiMbInstRank      ::  !(Maybe Int)			-- rank where possible deep instantation did start
+%%[(4 hmtyinfer).FIIn export(FIIn'(..),FIIn)
+data FIIn' globvm
+  = FIIn
+      { fiFIOpts          ::  !FIOpts				-- options to fitsIn
+      , fiUniq            ::  !UID					-- unique thread
+      , fiVarMp           ::  !globvm				-- global (type) var bindings
+      , fiVarMpLoc        ::  !VarMp					-- locally introduced (type) var bindings
+      , fiExpLTvS         ::  !(Set.Set TyVarId)		-- lhs ty vars for which expansion (via VarMp) is inhibited (already done once)
+      , fiExpRTvS         ::  !(Set.Set TyVarId)		-- and rhs
+      , fiRank            ::  !Int					-- rank
+      , fiMbInstRank      ::  !(Maybe Int)			-- rank where possible deep instantation did start
 %%[[8
-                        ,  fiEnv             ::  !FIEnv					-- environment (Gam's,...)
+      , fiEnv             ::  !FIEnv				-- environment (Gam's,...)
 %%]]
-                        ,  fiTrace           ::  [PP_Doc]       -- ???? 20080110, must be strict otherwise ghc 6.8.1 generates crashing program ????
-                        }
+      , fiTrace           ::  [PP_Doc]       		-- ???? 20080110, must be strict otherwise ghc 6.8.1 generates crashing program ????
+      }
+
+type FIIn = FIIn' VarMp
 %%]
 
-%%[(4 hmtyinfer).FIn.emptyFI export(emptyFI)
-emptyFI     =  FIIn     {  fiFIOpts          =   strongFIOpts
-                        ,  fiUniq            =   uidStart
-                        ,  fiVarMp           =   emptyVarMp
-                        ,  fiVarMpLoc        =   emptyVarMp
-                        ,  fiExpLTvS         =   Set.empty
-                        ,  fiExpRTvS         =   Set.empty
-                        ,  fiRank            =   1
-                        ,  fiMbInstRank      =   Nothing
+%%[(4 hmtyinfer).FIn.emptyFI export(emptyFI',emptyFI)
+emptyFI' :: gm -> FIIn' gm
+emptyFI' m
+  = FIIn
+      { fiFIOpts          =   strongFIOpts
+      , fiUniq            =   uidStart
+      , fiVarMp           =   m
+      , fiVarMpLoc        =   emptyVarMp
+      , fiExpLTvS         =   Set.empty
+      , fiExpRTvS         =   Set.empty
+      , fiRank            =   1
+      , fiMbInstRank      =   Nothing
 %%[[8
-                        ,  fiEnv             =   emptyFE
+      , fiEnv             =   emptyFE
 %%]]
-                        ,  fiTrace           =   []
-                        }
+      , fiTrace           =   []
+      }
+
+-- emptyFI :: forall gm . FIIn' gm
+emptyFI = emptyFI' emptyVarMp
 %%]
 
 %%[(4 hmtyinfer) export(fiLookupVar',fiLookupTyVarCyc)
 -- lookup a tvar subsequently in 2 VarMps
-fiLookupVar' :: (v -> VarMp -> Maybe x) -> v -> VarMp -> VarMp -> Maybe x
-fiLookupVar' lkup v m1 m2
-  = case lkup v m1 of
-      Nothing -> lkup v m2
+fiLookupVar' :: (v -> m1 -> Maybe x) -> (v -> m2 -> Maybe x) -> v -> m1 -> m2 -> Maybe x
+fiLookupVar' lkup1 lkup2 v m1 m2
+  = case lkup1 v m1 of
+      Nothing -> lkup2 v m2
       j       -> j
 
 -- lookup a tvar in the VarMps of a FIIn
+%%[[4
 fiLookupTyVarCyc :: FIIn -> TyVarId -> Maybe Ty
-fiLookupTyVarCyc  fi v  =  fiLookupVar' varmpTyLookupCyc v (fiVarMpLoc fi) (fiVarMp fi)
+%%][8
+fiLookupTyVarCyc :: VarLookup gm TyVarId VarMpInfo => FIIn' gm -> TyVarId -> Maybe Ty
+%%]]
+fiLookupTyVarCyc  fi v  =  fiLookupVar' varmpTyLookupCyc varmpTyLookupCyc v (fiVarMpLoc fi) (fiVarMp fi)
 %%]
 
 %%[(4 hmtyinfer) export(fiLookupReplaceTyCyc)
 -- lookup a possible tvar in the VarMps of a FIIn, the result being the replacement if any
+%%[[4
 fiLookupReplaceTyCyc :: FIIn -> Ty -> Ty
+%%][8
+fiLookupReplaceTyCyc :: VarLookup gm TyVarId VarMpInfo => FIIn' gm -> Ty -> Ty
+%%]]
 fiLookupReplaceTyCyc  fi t  =  maybe t (maybe t id . fiLookupTyVarCyc fi) $ tyMbVar t
 %%]
 
@@ -98,7 +124,7 @@ fiLookupReplaceTyCyc  fi t  =  maybe t (maybe t id . fiLookupTyVarCyc fi) $ tyMb
 
 %%[(4 hmtyinfer) export(fiAllowTyVarBind)
 -- Pre: is a tyvar
-fiAllowTyVarBind :: FIIn -> Ty -> Bool
+fiAllowTyVarBind :: FIIn' gm -> Ty -> Bool
 fiAllowTyVarBind fi (Ty_Var v f)   =  f `elem` fioBindCategs (fiFIOpts fi) -- f == TyVarCateg_Plain
 %%[[9
                                       && not (v `Set.member` fioDontBind (fiFIOpts fi))
@@ -111,13 +137,13 @@ fiAllowTyVarBind fi _              =  False
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(4 hmtyinfer) export(fiInitInstRank,fiRankEqInstRank,fiUpdRankByPolarity)
-fiInitInstRank :: FIIn -> FIIn
+fiInitInstRank :: FIIn' gm -> FIIn' gm
 fiInitInstRank fi = maybe (fi {fiMbInstRank = Just (fiRank fi)}) (const fi) (fiMbInstRank fi)
 
-fiRankEqInstRank :: FIIn -> Bool
+fiRankEqInstRank :: FIIn' gm -> Bool
 fiRankEqInstRank fi = maybe True (== fiRank fi) (fiMbInstRank fi)
 
-fiUpdRankByPolarity :: Polarity -> FIIn -> FIIn
+fiUpdRankByPolarity :: Polarity -> FIIn' gm -> FIIn' gm
 fiUpdRankByPolarity pol fi = if polIsContravariant pol then fi {fiRank = fiRank fi + 1} else fi
 %%]
 
@@ -126,13 +152,13 @@ fiUpdRankByPolarity pol fi = if polIsContravariant pol then fi {fiRank = fiRank 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(4 hmtyinfer) export(fiPlusVarMp,fiSetVarMp,fiBindTyVar)
-fiPlusVarMp :: VarMp -> FIIn -> FIIn
+fiPlusVarMp :: VarMp -> FIIn' gm -> FIIn' gm
 fiPlusVarMp c fi = fi {fiVarMpLoc = c |+> fiVarMpLoc fi}
 
-fiSetVarMp :: VarMp -> FIIn -> FIIn
+fiSetVarMp :: VarMp -> FIIn' gm -> FIIn' gm
 fiSetVarMp  c fi = fi {fiVarMpLoc = c}
 
-fiBindTyVar :: TyVarId -> Ty -> FIIn -> FIIn
+fiBindTyVar :: TyVarId -> Ty -> FIIn' gm -> FIIn' gm
 fiBindTyVar v t = fiPlusVarMp (v `varmpTyUnit` t)
 %%]
 

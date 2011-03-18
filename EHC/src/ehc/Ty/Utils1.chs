@@ -16,7 +16,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(2 hmtyinfer || hmtyast) hs export(ppTyS)
-ppTyS :: VarMp -> Ty -> PP_Doc
+ppTyS :: VarUpdatable Ty m => m -> Ty -> PP_Doc
 ppTyS = ppS ppTy
 %%]
 

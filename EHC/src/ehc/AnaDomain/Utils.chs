@@ -56,7 +56,7 @@ relevtyQuant how m qs t
   = case funTy of
       t'@(RelevTy_Fun _ _ _ as r) | RelevTyQuantHow_Rec `elem` how
          -> ( RelevTy_Fun RQuant_Rec (varFree t') [] as r
-            , emptyVarMp
+            , emptyRVarMp
             , Set.empty
             )
       t'@(RelevTy_Fun _ _ _ as r)
@@ -67,7 +67,7 @@ relevtyQuant how m qs t
          where ftvT = varFreeSet t'
                (qs2,solveVarMp)
                    | RelevTyQuantHow_Solve `elem` how = assSolve ftvT qsm
-                   | otherwise                        = (qsm, emptyVarMp)
+                   | otherwise                        = (qsm, emptyRVarMp)
                    where qsm = Set.map (varUpd m) qs
                as' = solveVarMp `varUpd` as
                r'  = solveVarMp `varUpd` r
@@ -82,7 +82,7 @@ relevtyQuant how m qs t
                    | RelevTyQuantHow_Quant `elem` how = Set.toList ftvTQ
                    | otherwise                        = []
       t' -> ( t'
-            , emptyVarMp
+            , emptyRVarMp
             , Set.empty
             )
   where funTy = case m `varUpd` t of
@@ -177,12 +177,12 @@ data ASS
 
 assSolve :: UIDS -> RelevQualS -> (RelevQualS,RVarMp)
 assSolve bound qualS
-  = -- maybe (qualS, emptyVarMp)
+  = -- maybe (qualS, emptyRVarMp)
           (\ass -> ( Set.map (qual $ assQm ass) $ (Set.unions $ Map.elems (assWl ass)) `Set.difference` assSolved ass
                    , assVm ass
           )        )
     -- $ tr "assSolve" (pp (show bound))
-    $ solve (ASS wlInit Map.empty initQualM emptyVarMp False Set.empty Set.empty (Map.size wlInit) 0)
+    $ solve (ASS wlInit Map.empty initQualM emptyRVarMp False Set.empty Set.empty (Map.size wlInit) 0)
   where -- solver
         solve ass@(ASS {assWl=wl, assQm=qualM, assWlPos=wlPos, assWlSize=wlSize})
           | check_pos {- _vUnbound -} && isJust mbN
@@ -216,7 +216,7 @@ assSolve bound qualS
           = do (q,s,slv,_) <- solveQN1 (l) v (r)
                let (qualM2,isNw) = qmAddL q qualM
                    slvS          = Set.fromList slv
-                   touchedBySubs = (Set.fold (\v is -> is `Set.union` Map.findWithDefault Set.empty v wl) Set.empty $ Set.delete v $ varmpKeysSet s) `Set.difference` assSolved ass
+                   touchedBySubs = (Set.fold (\v is -> is `Set.union` Map.findWithDefault Set.empty v wl) Set.empty $ Set.delete v $ rvarmpKeysSet s) `Set.difference` assSolved ass
                    (qualM3,wl') = updQualWl slvS s wl qualM2 $ Set.toList $ Set.unions [isNw, is, touchedBySubs] `Set.difference` slvS -- filter (\i -> Set.notMember i slvS) $ isNw ++ isL
                updAss wl' qualM3 s slvS ass
           where isL = Set.toList is
@@ -235,7 +235,7 @@ assSolve bound qualS
                 wl' = wlAddL qm' is wl
 
         -- update ass when something is solved
-        updAss wl qm s slv ass = Just (ass {assWl=wl, assQm=qm, assVm= s `varmpPlus` assVm ass, assSolved = Set.union slv $ assSolved ass})
+        updAss wl qm s slv ass = Just (ass {assWl=wl, assQm=qm, assVm= s |+> assVm ass, assSolved = Set.union slv $ assSolved ass})
         
         -- worklist: initial + remainder; TBD: variable-less quals need to be checked for being tautology
         wlAdd  m q  wl = foldr (add q) wl (varFree (qual m q))
@@ -286,7 +286,7 @@ assSolve bound qualS
                                  )
                        where bind | varIsFree                  = bindAnaEval var (AnaEval_Var v  )
                                   | not $ v `Set.member` bound = bindAnaEval v   (AnaEval_Var var)
-                                  | otherwise                  = emptyVarMp
+                                  | otherwise                  = emptyRVarMp
                 where mbV l = [ (fromJust mbv,i) | (i,a) <- l, let mbv = isVar a, isJust mbv ]
                       l = mbV als
                       r = mbV ars
@@ -298,7 +298,7 @@ assSolve bound qualS
                 | not (null l)
                 -> case l of
                      (i:_)
-                       -> return ( [], emptyVarMp, [i]
+                       -> return ( [], emptyRVarMp, [i]
                                  , "reflexivity"
                                  )
                 where l = [ i | (i,a) <- als, maybe False (==var) (isVar a) ]
@@ -313,7 +313,7 @@ assSolve bound qualS
               ([], (_:_))
                 | varIsFree
                 -> do (mt,ams1) <- r1 ams0 meet arsq
-                      return ( [], bindAnaEval var mt `varmpPlus` amsLocalVarMp ams1, slv ars
+                      return ( [], bindAnaEval var mt |+> amsLocalVarMp ams1, slv ars
                              , "right meet"
                              )
               -}
@@ -321,11 +321,11 @@ assSolve bound qualS
               -- a free var not right constrained anymore, is just forgotten, which is pessimistic because we cannot infer 'more info', i.e. down in the lattice
               ((_:_), [])
                 | varIsFree
-                -> return ( [], emptyVarMp, slv als, "left forget" )
+                -> return ( [], emptyRVarMp, slv als, "left forget" )
               -}
               {-
                 -> do (jn,ams1) <- r1 ams0 join alsq
-                      return ( [], bindAnaEval var jn `varmpPlus` amsLocalVarMp ams1, slv als
+                      return ( [], bindAnaEval var jn |+> amsLocalVarMp ams1, slv als
                              , "left join"
                              )
               -}
@@ -349,14 +349,14 @@ assSolve bound qualS
               -- top at right is non-information, throw it away
               (_, (_:_))
                 | not (null t)
-                -> return ( [], emptyVarMp, slv t
+                -> return ( [], emptyRVarMp, slv t
                           , "right top"
                           )
                 where (t,_) = partition (\(_,a) -> isTop a) ars
               -- bot at left is non-information, throw it away
               ((_:_), _)
                 | not (null b)
-                -> return ( [], emptyVarMp, slv b
+                -> return ( [], emptyRVarMp, slv b
                           , "left bot"
                           )
                 where (b,_) = partition (\(_,a) -> isBot a) als
@@ -377,7 +377,7 @@ assSolve bound qualS
                     fst $ qmAddL (Set.toList qualS) Map.empty
 
         -- bind, with simple occur check
-        bindAnaEval v1 a2@(AnaEval_Var v2) | v1 == v2 = emptyVarMp
+        bindAnaEval v1 a2@(AnaEval_Var v2) | v1 == v2 = emptyRVarMp
         bindAnaEval v1 a2                             = rvarmpEvalUnit v1 a2
 %%]
 

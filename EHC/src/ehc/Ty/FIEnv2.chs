@@ -40,12 +40,4 @@ defaultFIEnv
         }
 %%]
 
-%%[(4444 hmtyinfer) export(defaultFIIn)
-defaultFIIn
-  =   emptyFI
-%%[[8
-        { fiEnv  = defaultFIEnv
-        }
-%%]]
-%%]
 

@@ -420,15 +420,27 @@ rvmiMbEval (RVMIEval x) = Just x
 -- rvmiMbEval _            = Nothing
 %%]
 
-%%[(8 codegen) hs export(RVarMp)
-type RVarMp  = VarMp' UID RVarMpInfo
+%%[(8 codegen) hs export(RVarMp, emptyRVarMp)
+type RVarMp  = VarMpStk' UID RVarMpInfo
+
+emptyRVarMp :: RVarMp
+emptyRVarMp = emptyVarMpStk
 %%]
 
 %%[(8 codegen) hs export(rvarmpEvalUnit)
 rvarmpEvalUnit :: UID -> AnaEval -> RVarMp
 -- poor mens occurcheck...
--- rvarmpEvalUnit v (AnaEval_Var v2) | v == v2  = emptyVarMp
-rvarmpEvalUnit v i                           = mkVarMp (Map.fromList [(v,RVMIEval i)])
+-- rvarmpEvalUnit v (AnaEval_Var v2) | v == v2  = emptyRVarMp
+rvarmpEvalUnit v i                           = varmpstkUnit v (RVMIEval i)  -- [mkVarMp (Map.fromList [(v,RVMIEval i)])]
+%%]
+
+%%[(8 codegen) hs export(rvarmpKeysSet, rvarmpUnions)
+-- | renaming
+rvarmpKeysSet :: RVarMp -> Set.Set UID
+rvarmpKeysSet = varmpstkKeysSet
+
+rvarmpUnions :: [RVarMp] -> RVarMp
+rvarmpUnions = varmpstkUnions
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -448,11 +460,11 @@ data AnaMatchState
 type AMS    a = State AnaMatchState a
 
 emptyAnaMatchState :: AnaMatchState
-emptyAnaMatchState = AnaMatchState Set.empty emptyVarMp emptyVarMp Set.empty
+emptyAnaMatchState = AnaMatchState Set.empty emptyRVarMp emptyRVarMp Set.empty
 
 instance Show AnaMatchState where
   show x = "AMS " ++ s (amsOuterVarMp x) ++ s (amsLocalVarMp x)
-    where s m = show (assocLMapElt rvmiMbEval $ varmpToAssocL m)
+    where s m = show (assocLMapElt rvmiMbEval $ varmpstkToAssocL m)
 %%]
 
 %%[(8 codegen) hs export(AMSOut(..),emptyAMSOut,amsoMkOk)
@@ -483,7 +495,7 @@ instance Show a => Show (AMSOut a) where
 
 %%[(8 codegen) hs
 amsBind :: (x -> RVarMp) -> x -> AnaMatchState -> AnaMatchState
-amsBind b a s = s {amsLocalVarMp = b a `varmpPlus` amsLocalVarMp s}
+amsBind b a s = s {amsLocalVarMp = b a |+> amsLocalVarMp s}
 
 amsQual :: RelevQual -> AnaMatchState -> AnaMatchState
 amsQual q s = s {amsGathQual = Set.insert q (amsGathQual s)}

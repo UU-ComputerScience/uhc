@@ -58,18 +58,6 @@ instance (CHRMatchable env p s) => CHRMatchable env (Constraint p info) s where
          }
 %%]
 
-%%[(9999 hmtyinfer || hmtyast)
-instance (CHRSubstitutable p v s,CHRSubstitutable info v s) => CHRSubstitutable (Constraint p info) v s where
-  chrFtv c
-    = case reducablePart c of
-        Just (_,p,_) -> chrFtv p
-        _            -> Set.empty
-
-  chrAppSubst s      (Prove     p     ) = Prove      (chrAppSubst s p)
-  chrAppSubst s      (Assume    p     ) = Assume     (chrAppSubst s p)
-  chrAppSubst s      (Reduction p i ps) = Reduction  (chrAppSubst s p) (chrAppSubst s i) (map (chrAppSubst s) ps)
-%%]
-
 %%[(9 hmtyinfer || hmtyast)
 instance (VarExtractable p v,VarExtractable info v) => VarExtractable (Constraint p info) v where
   varFreeSet c

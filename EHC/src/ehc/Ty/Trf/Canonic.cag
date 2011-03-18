@@ -155,7 +155,10 @@ predCanonic' opts pr
 %%]
 
 %%[(9 hmtyinfer) hs export(tyCanonic)
-tyCanonic :: FIIn -> Ty -> Ty
+tyCanonic
+  :: (VarLookup gm TyVarId VarMpInfo, VarLookupCmb VarMp gm)
+     => FIIn' gm -> Ty
+     -> Ty
 tyCanonic fi
   = fst . tyCanonic' opts
   where opts = emptyTyCanonicOpts
@@ -165,7 +168,10 @@ tyCanonic fi
 %%]
 
 %%[(9 hmtyinfer) hs export(tyCanonicFFI)
-tyCanonicFFI :: FIIn -> Ty -> Ty
+tyCanonicFFI
+  :: (VarLookup gm TyVarId VarMpInfo, VarLookupCmb VarMp gm)
+     => FIIn' gm -> Ty
+     -> Ty
 tyCanonicFFI fi
   = fst . tyCanonic' opts
   where opts = emptyTyCanonicOpts
@@ -185,7 +191,10 @@ tyCanonicFFI fi
 %%]
 
 %%[(9 hmtyinfer) hs export(predCanonic)
-predCanonic :: FIIn -> Pred -> (Pred,VarMp)
+predCanonic
+  :: (VarLookup gm TyVarId VarMpInfo, VarLookupCmb VarMp gm)
+     => FIIn' gm -> Pred
+     -> (Pred,VarMp)
 predCanonic fi
   = predCanonic' opts
   where opts = emptyTyCanonicOpts
@@ -195,7 +204,7 @@ predCanonic fi
 %%]
 
 %%[(11 hmtyinfer) hs
-canonLkupTy :: TyBetaRedLkup
+canonLkupTy :: TyBetaRedLkup gm
 canonLkupTy = betaRedTyLookup
 %%]
 

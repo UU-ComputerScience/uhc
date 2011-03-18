@@ -201,11 +201,11 @@ hasAlts _                = True
 This should not depend on emptyVarMp, but abstract away from it. Perhaps use chrEmptySubst
 
 %%[(9 hmtyinfer)
-cmpSpecificness :: FIIn -> Pred -> Pred -> PartialOrdering
+cmpSpecificness :: CHRMatchable (FIIn' gm) Pred VarMp => FIIn' gm -> Pred -> Pred -> PartialOrdering
 cmpSpecificness env p q = 
-  case  chrMatchTo env emptyVarMp p q of 
+  case  chrMatchTo env (emptyVarMp :: VarMp) p q of 
     Nothing  -> P_GT
-    Just _   -> case  chrMatchTo env emptyVarMp q p of
+    Just _   -> case  chrMatchTo env (emptyVarMp :: VarMp) q p of
                   Nothing  -> P_LT
                   Just _   -> P_EQ
 %%]
@@ -215,7 +215,7 @@ cmpSpecificness env p q =
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(9 hmtyinfer) export(heurHaskell98)
-anncmpHaskell98 :: FIIn -> RedHowAnnotation -> RedHowAnnotation -> PartialOrdering
+anncmpHaskell98 :: CHRMatchable (FIIn' gm) Pred VarMp => FIIn' gm -> RedHowAnnotation -> RedHowAnnotation -> PartialOrdering
 anncmpHaskell98 env ann1 ann2
   = case (ann1,ann2) of
       (RedHow_ByInstance _ p   s, RedHow_ByInstance _ q   t)  ->  case pscpCmpByLen s t of
@@ -232,7 +232,7 @@ anncmpHaskell98 env ann1 ann2
       (RedHow_ProveObl       _ _, _                        )  ->  P_GT
 --      (_                        , RedHow_ProveObl       _ _)  ->  P_LT
 
-heurHaskell98 :: FIIn -> Heuristic p RedHowAnnotation
+heurHaskell98 :: CHRMatchable (FIIn' gm) Pred VarMp => FIIn' gm -> Heuristic p RedHowAnnotation
 heurHaskell98 env = toHeuristic $ binChoice (anncmpHaskell98 env)
 %%]
 
@@ -241,7 +241,7 @@ heurHaskell98 env = toHeuristic $ binChoice (anncmpHaskell98 env)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(9 hmtyinfer) export(heurGHC)
-anncmpGHCBinSolve :: FIIn -> RedHowAnnotation -> RedHowAnnotation -> PartialOrdering
+anncmpGHCBinSolve :: FIIn' gm -> RedHowAnnotation -> RedHowAnnotation -> PartialOrdering
 anncmpGHCBinSolve env ann1 ann2
   = case (ann1,ann2) of
       (RedHow_Assumption     _ _, _                        )  ->  P_GT
@@ -255,7 +255,7 @@ anncmpGHCBinSolve env ann1 ann2
       (RedHow_ProveObl       _ _, _                        )  ->  P_GT
 --      (_                        , RedHow_ProveObl       _ _)  ->  P_LT
 
-ghcSolve :: Eq p => FIIn -> SHeuristic p RedHowAnnotation
+ghcSolve :: Eq p => FIIn' gm -> SHeuristic p RedHowAnnotation
 ghcSolve env = binChoice (anncmpGHCBinSolve env)
 
 ghcLocalReduce :: a -> [RedHowAnnotation] -> [RedHowAnnotation]
@@ -266,7 +266,7 @@ ghcLocalReduce _  reds =  let  p (RedHow_BySuperClass _ _ _)  = True
 ghcReduce :: Eq p => SHeuristic p RedHowAnnotation
 ghcReduce = localChoice ghcLocalReduce
 
-heurGHC :: Eq p => FIIn -> Heuristic p RedHowAnnotation
+heurGHC :: Eq p => FIIn' gm -> Heuristic p RedHowAnnotation
 heurGHC env
   = toHeuristic
     $ heurTry (ghcSolve env)
@@ -301,7 +301,7 @@ cmpEqReds r1                            r2                              = panic 
 %%]
 
 %%[(9 hmtyinfer)
-anncmpEHCScoped :: Bool -> FIIn -> HeurRed CHRPredOcc RedHowAnnotation -> HeurRed CHRPredOcc RedHowAnnotation -> PartialOrdering
+anncmpEHCScoped :: CHRMatchable (FIIn' gm) Pred VarMp => Bool -> FIIn' gm -> HeurRed CHRPredOcc RedHowAnnotation -> HeurRed CHRPredOcc RedHowAnnotation -> PartialOrdering
 anncmpEHCScoped preferInst env ann1 ann2
   = case (ann1,ann2) of
       (HeurRed (RedHow_Assumption     _ _) _    , _                                        )              ->  P_GT
@@ -347,7 +347,7 @@ ehcOnlySuperReduce _  reds = take 1 $ filter ehcAllowForGeneralization reds
 %%]
 
 %%[(9 hmtyinfer) export(heurScopedEHC)
-heurScopedEHC :: FIIn -> Heuristic CHRPredOcc RedHowAnnotation
+heurScopedEHC :: CHRMatchable (FIIn' gm) Pred VarMp => FIIn' gm -> Heuristic CHRPredOcc RedHowAnnotation
 heurScopedEHC env
   = toHeuristic
     $ ifthenelseSHeuristic isEqHeuristic
@@ -381,7 +381,7 @@ ifthenelseSHeuristic g t e alts
 Previous heuristic did not behave ghc alike in that instances were eagerly used, also when it still would lead to unresolved predicates.
 These would then end up in the context of a function, the early decision inhibiting the use of other instances at a later moment:
 
-heurScopedEHC :: FIIn -> Heuristic CHRPredOcc RedHowAnnotation
+heurScopedEHC :: FIIn' gm -> Heuristic CHRPredOcc RedHowAnnotation
 heurScopedEHC env
   = toHeuristic
     $ ifthenelseSHeuristic isEqHeuristic

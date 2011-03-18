@@ -243,8 +243,8 @@ ATTR AllBind -- AllPatFld AllPat
 ATTR AllBind  [ | | gathRecEnv USE {`gamUnion`} {emptyGam}: REnv ]
 
 SEM CBindAspect
-  | Bind        lhs         .   gathEnv         =   gamSingleton @lhs.nm @quantTy
-                            .   gathRecEnv      =   gamSingleton @lhs.nm $ tup123to1 $ relevtyQuant [RelevTyQuantHow_Rec] emptyVarMp Set.empty @ty
+  | Bind        loc         .   gathEnv         =   gamSingleton @lhs.nm @quantTy
+                            .   gathRecEnv      =   gamSingleton @lhs.nm $ tup123to1 $ relevtyQuant [RelevTyQuantHow_Rec] emptyRVarMp Set.empty @ty
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -351,18 +351,18 @@ SEM CExpr
 %%[(8 codegen)
 SEM CAltL
   | Cons        loc         .   (amsoDw,amsDw)  =   amsLE @lhs.rvarMp @altKnDwTy @lhs.knTy     -- both are guaranteed vars, so this enforces a Qual
-                            .   rvarMpDw        =   amsLocalVarMp @amsDw `varmpPlus` @lhs.rvarMp
+                            .   rvarMpDw        =   amsLocalVarMp @amsDw |+> @lhs.rvarMp
                             .   rvarMpUp        =   @rvarMpDw
 
 %%]
                             -- .   (amsoUp,amsUp)  =   amsLE @rvarMpDw @altKnUpTy @lhs.knTy        -- which only now we match with above
-                            -- .   rvarMpUp        =   amsLocalVarMp @amsUp `varmpPlus` @rvarMpDw
+                            -- .   rvarMpUp        =   amsLocalVarMp @amsUp |+> @rvarMpDw
                             -- .   aQualS          =   Set.map (\q -> RelevQual_Alt q @lhs.altId @altNr @lhs.altNrMax @hd.mbCTag @lhs.altMbScrutTy) $ amsGathQual @amsDw
 SEM CAltL
   | Cons        loc         .   (amsoDw,amsDw)  =   amsLE @lhs.rvarMp @altKnDwTy @altKnUpTy     -- both are guaranteed vars, so this enforces a Qual
-                            .   rvarMpDw        =   amsLocalVarMp @amsDw `varmpPlus` @lhs.rvarMp
+                            .   rvarMpDw        =   amsLocalVarMp @amsDw |+> @lhs.rvarMp
                             .   (amsoUp,amsUp)  =   amsLE @rvarMpDw @altKnUpTy @lhs.knTy        -- which only now we match with above
-                            .   rvarMpUp        =   amsLocalVarMp @amsUp `varmpPlus` @rvarMpDw
+                            .   rvarMpUp        =   amsLocalVarMp @amsUp |+> @rvarMpDw
                             .   aQualS          =   Set.map (\q -> RelevQual_Alt q @lhs.altId @altNr @lhs.altNrMax @hd.mbCTag @lhs.altMbScrutTy) $ amsGathQual @amsDw
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -489,24 +489,25 @@ SEM CAltL
 ATTR AllNT [ | rvarMp: RVarMp | ]
 
 SEM CodeAGItf
-  | AGItf       loc         .   rvarMp          =   emptyVarMp
+  | AGItf       loc         .   rvarMp          =   emptyRVarMp
 
 SEM CBindAspect
-  | Bind        lhs         .   rvarMp          =   @quantVarMp `varmpPlus` @rvarMpExpr
+  | Bind        lhs         .   rvarMp          =   @quantVarMp |+> @rvarMpExpr
 %%]
 
 %%[(8 codegen)
 SEM CExpr
   | Var Int Char Tup FFI
-                lhs         .   rvarMp          =   amsLocalVarMp @ams `varmpPlus` @lhs.rvarMp
+                lhs         .   rvarMp          =   amsLocalVarMp @ams |+> @lhs.rvarMp
   | Case        lhs         .   rvarMp          =   @alts.rvarMp        -- skip @dflt
-  | Let         body        .   rvarMp          =   @binds.extraBindRVarMp `varmpPlus` @binds.rvarMp
+  | Let         body        .   rvarMp          =   @binds.extraBindRVarMp |+> @binds.rvarMp
 %%]
 
 %%[(8 codegen)
 SEM CAltL
   | Cons        hd          .   rvarMp          =   @rvarMpUp
 %%]
+  				tl			.	rvarMp			=	@lhs.rvarMp
 
 %%[(8 codegen)
 ATTR AllBind [ forQuantRVarMp: RVarMp | | ]
@@ -526,10 +527,10 @@ SEM CodeAGItf
   | AGItf       module      .   finalRVarMp     =   @module.rvarMp
 
 SEM CBindAspect
-  | Bind        loc         .   finalRVarMp     =   {- @extraBindRVarMp `varmpPlus` -} @lhs.finalRVarMp
+  | Bind        loc         .   finalRVarMp     =   {- @extraBindRVarMp |+> -} @lhs.finalRVarMp
 
 SEM CAltL
-  | Cons        loc         .   hdFinalRVarMp   =   @altSolveVarMp -- `varmpPlus` @lhs.finalRVarMp
+  | Cons        loc         .   hdFinalRVarMp   =   @altSolveVarMp -- |+> @lhs.finalRVarMp
                 hd          .   finalRVarMp     =   @hdFinalRVarMp
 
 %%]
@@ -537,10 +538,10 @@ SEM CExpr
   | Let			binds		.	finalRVarMp		=	@bindsSolveVarMp
 
 %%[(8 codegen)
-ATTR AllBind [ | | extraBindRVarMp USE {`varmpPlus`} {emptyVarMp}: RVarMp ]
+ATTR AllBind [ | | extraBindRVarMp USE {|+>} {emptyRVarMp}: RVarMp ]
 
 SEM CBindAspect
-  | Bind        loc         .   extraBindRVarMp =   if @doBindStrict then @strictVarMp else emptyVarMp
+  | Bind        loc         .   extraBindRVarMp =   if @doBindStrict then @strictVarMp else emptyRVarMp
                                                     -- @strictVarMp
 %%]
 
@@ -605,9 +606,9 @@ SEM CExpr
 %%[(8 codegen)
 SEM CExpr
   | Case        loc         .   altQualSLSolv2  =   let s (q,m) = (Set.map (m3 `varUpd`) q', m4)
-                                                                where m2 = m `varmpPlus` @lhs.finalRVarMp
+                                                                where m2 = m |+> @lhs.finalRVarMp
                                                                       (q',m3) = assSolve Set.empty (Set.map (m2 `varUpd`) q)
-                                                                      m4 = m3 `varmpPlus` m2
+                                                                      m4 = m3 |+> m2
                                                     in  map s @altQualSLSolv1
                             .   altSolveLVarMp  =   map snd @altQualSLSolv2
                 loc         .   altSolveLVarMp  :   {[RVarMp]}
@@ -628,7 +629,7 @@ SEM CExpr
                             .   bindsQualSSubs  =   Set.map (@binds.rvarMp `varUpd`) @binds.qualS
                             .   bindsQualSOuter =   if @bindsCanParticpateInOuterSolving then @bindsQualSSubs else Set.empty
                             .   bindsQualSSolv1 =   if @bindsCanParticpateInOuterSolving
-                                                    then (Set.empty, emptyVarMp)
+                                                    then (Set.empty, emptyRVarMp)
                                                     else let (q,m) = assSolve @lhs.boundRelevTyVarS @bindsQualSSubs
                                                          in  (Set.map (m `varUpd`) q, m)
 
@@ -639,9 +640,9 @@ SEM CExpr
 %%[(8 codegen)
 SEM CExpr
   | Let         loc         .   bindsQualSSolv2 =   let (q,m) = @bindsQualSSolv1
-                                                        m2 = m `varmpPlus` @lhs.finalRVarMp
+                                                        m2 = m |+> @lhs.finalRVarMp
                                                         (q',m3) = assSolve Set.empty (Set.map (m2 `varUpd`) q)
-                                                    in  (Set.map (m3 `varUpd`) q', m3 `varmpPlus` m2)
+                                                    in  (Set.map (m3 `varUpd`) q', m3 |+> m2)
                             .   bindsSolveVarMp =   snd @bindsQualSSolv2
 %%]
 
@@ -690,7 +691,7 @@ SEM CBindAspect
                                                                   bTy@(RelevTy_Ana bAna) = fresh u2
                             .   (amsBind,mbBindCoe)
                                                 =   @bindConstrain @expr.rvarMp @exprKnTy @lhs.knTy
-                            .   rvarMpExpr      =   amsLocalVarMp @amsBind `varmpPlus` @expr.rvarMp
+                            .   rvarMpExpr      =   amsLocalVarMp @amsBind |+> @expr.rvarMp
                             .   (quantTy,quantVarMp,quantRemQualS)
                                                 =   case @ty of
                                                       t@(RelevTy_Fun _ _ _ _ _)
@@ -704,12 +705,12 @@ SEM CBindAspect
                             .   (strictTy,strictVarMp)
                                                 =   case @bindTy of
                                                       t@(RelevTy_Fun _ _ qs a r@(RelevTy_Ana (AnaEval_Var rv)))
-                                                        -> (sty, smp2 `varmpPlus` smpAssume2 `varmpPlus` smp1 `varmpPlus` smpAssume1)
+                                                        -> (sty, smp2 |+> smpAssume2 |+> smp1 |+> smpAssume1)
                                                         where smpAssume1 = rvarmpEvalUnit rv bot
                                                               (RelevTy_Fun _ vs' qs' a' r',smp1,rem1)
                                                                 = relevtyQuant [RelevTyQuantHow_Solve,RelevTyQuantHow_RemoveAmbig,RelevTyQuantHow_Quant]
                                                                                smpAssume1 (Set.fromList qs `Set.union` @quantRemQualS) (RelevTy_Fun RQuant_None [] [] a (smpAssume1 `varUpd` r))
-                                                              smpAssume2 = varmpUnions [ rvarmpEvalUnit v top | v <- vs' ]
+                                                              smpAssume2 = rvarmpUnions [ rvarmpEvalUnit v top | v <- vs' ]
                                                               (sty,smp2,_)
                                                                 = relevtyQuant [RelevTyQuantHow_Solve,RelevTyQuantHow_RemoveAmbig,RelevTyQuantHow_Quant]
                                                                                smpAssume2 (Set.fromList qs' `Set.union` rem1) (RelevTy_Fun RQuant_None [] [] (smpAssume2 `varUpd` a') r')
@@ -766,6 +767,7 @@ ATTR AllBindAspect [ | | valAspectL USE {++} {[]}: {[CBindAspect]} ]
 %%[(8 codegen) hs
 dbg opts t1 t2 amso ams = CExpr_Ann (CExprAnn_Debug $ showPP $ "?:" >#< t1 >#< "<=" >#< t2 >-< "ams:" >#< ams >-< "amso:" >#< amso)
 dbgApp opts a f f2 = CExpr_Ann (CExprAnn_Debug $ showPP $ "argTy:" >#< a >#< "funTy:" >#< f >#< "func.ty:" >#< f2)
+dbgBind opts m env = CExpr_Ann (CExprAnn_Debug $ showPP $ "env:" >#< (m `varUpd` env))
 dbgCase opts bnd as asslv asinter = CExpr_Ann (CExprAnn_Debug $ showPP $ "bnd:" >#< pp1 bnd >-< "altQualSL:" >#< ppl as >-< "altQualSLSlv:" >#< ppl asslv >-< "altQualSLInt:" >#< pp1 asinter)
   where pp1 s = ppParensCommas $ Set.toList s
         ppl l = ppCurlysCommasBlock (map pp1 l)
@@ -791,7 +793,9 @@ ATTR AllCodeNT [ | | cTrf: SELF ]
 ATTR CodeAGItf [ | | cTrf: CModule ]
 
 SEM CBindAspect
-  | Bind        lhs         .   cTrf            =   CBindAspect_Bind @bindMeta.cTrf $ annCoe @hereBindCoe @expr.cTrf
+  | Bind        lhs         .   cTrf            =   CBindAspect_Bind @bindMeta.cTrf $ 
+                                                    dbgBind @lhs.opts @lhs.finalRVarMp @gathEnv $
+                                                    annCoe @hereBindCoe @expr.cTrf
 
 SEM CBind
   | Bind        loc         .   cTrf            =   CBind_Bind @nm (@bindAspects.tyAspectL ++ @bindAspects.valAspectL ++ @bindAspects.cTrf)

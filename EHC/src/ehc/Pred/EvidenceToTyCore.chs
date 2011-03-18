@@ -106,7 +106,7 @@ predScopeToValBindMapUnion = Map.unionWith (++)
 %%]
 
 %%[(9 codegen tycore) export(evidMpToCore,EvidKeyToExprMap)
-evidMpToCore :: FIIn -> InfoToEvidenceMap CHRPredOcc RedHowAnnotation -> (EvidKeyToExprMap,[OverlapEvid])
+evidMpToCore :: FIIn' gm -> InfoToEvidenceMap CHRPredOcc RedHowAnnotation -> (EvidKeyToExprMap,[OverlapEvid])
 evidMpToCore env evidMp
   = ( Map.map (\r -> (tcrExpr r,tcrUsed r,tcrScope r)) $ tcsMp
       $ foldr mke (ToCoreState Map.empty Map.empty Map.empty (fiUniq env))

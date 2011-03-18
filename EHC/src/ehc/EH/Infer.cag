@@ -537,7 +537,7 @@ SEM Decl
 %%[[8
                             .   ty_sig_expanded     =   @ty_sig_
 %%][11
-                            .   ty_sig_expanded     =   tyCanonicFFI (emptyFI {fiEnv = @fe}) @ty_sig_
+                            .   ty_sig_expanded     =   tyCanonicFFI (emptyFI {fiEnv = @fe} :: FIIn) @ty_sig_
 %%]]
                 lhs         .   gathTySigGam        =   @nm `gamSingleton` ValGamInfo @ty_sig_
 %%]
@@ -556,7 +556,7 @@ SEM Decl
                                                               ForeignExtraction_Wrapper ->        v `mk1Arrow` io (funptr v)
                                                               ForeignExtraction_Dynamic -> funptr v `mk1Arrow`            v
                                                               _                         -> Ty_Any
-                            .   foFFI               =   fitsIn strongFIOpts @fe @lUniq2 emptyVarMp @ty_sig_ @knTy
+                            .   foFFI               =   fitsIn strongFIOpts @fe @lUniq2 (emptyVarMp :: VarMp) @ty_sig_ @knTy
                 loc         .   lUniq               :   UNIQUEREF gUniq
                 loc         .   lUniq2              :   UNIQUEREF gUniq
 %%]]
