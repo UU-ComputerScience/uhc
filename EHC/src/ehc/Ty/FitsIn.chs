@@ -366,7 +366,9 @@ fitsInFI fi ty1 ty2
             -- derivation tree
 %%[[4
             dtfo _ _ _ _ _ _ fo     =  fo
-%%][99
+%%][9999
+            
+            -- following goes wrong because foMkDT must refer to same gm as FIIn' gm, which means FIOut must be parameterized as well
             dtfo rlNm fi t1 t2 subfos mbind fo
                                     =  fo {foMkDT = mk}
                                     where mk mbTop fmt m dm1 = ( dtRule False fmt ("m." ++ rlNm) (reverse subs) (dtJdgMatch opts fiopts t1' t2' t3 mbnd), dm5 )
@@ -1747,7 +1749,6 @@ fitsInFold opts env uniq varmp tyl
 %%[(9 hmtyinfer) export(fitPredIntoPred)
 fitPredIntoPred
   :: ( VarLookup gm LabelVarId VarMpInfo
-     -- , VarLookup gm Ty VarMpInfo
      , VarLookupCmb VarMp gm
      )
      => FIIn' gm -> Pred -> Pred

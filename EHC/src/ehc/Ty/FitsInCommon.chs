@@ -113,6 +113,7 @@ data FIOut
 %%[[99
        -- top binding -> format (for DT) -> final inference VarMp -> threaded pretty print tyvar VarMp
        --   -> (rule, threaded ...)
+       -- ,  foMkDT            :: forall gm . (VarUpdatable Ty gm) => Maybe PP_Doc -> String -> gm -> VarMp -> (PP_Doc,VarMp)
        ,  foMkDT            :: Maybe PP_Doc -> String -> VarMp -> VarMp -> (PP_Doc,VarMp)
 %%][100
 %%]]
@@ -155,7 +156,7 @@ emptyFO
        ,  foEqVarMp         =   emptyVarMp
 %%]]
 %%[[99
-       ,  foMkDT            =   \_ _ m dm -> (empty,dm)
+       ,  foMkDT            =   \_ _ _ dm -> (empty,dm)
 %%][100
 %%]]
        }
