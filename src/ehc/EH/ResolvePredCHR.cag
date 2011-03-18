@@ -127,7 +127,7 @@ SEM Decl
                                                                          | (cx,u) <- zip cxl (mkNewUIDL (length cxl) @lUniq_95_extraPrOcc)
                                                                          ]
                                                                        where cxl = maybe [] dclExtraCtxt derivDCL
-                                                                  foDt = fitsIn unifyFIOpts @fe @lUniq_95_fitsIn_dataTy emptyVarMp dataTy @derivHdDataTy
+                                                                  foDt = fitsIn unifyFIOpts @fe @lUniq_95_fitsIn_dataTy (emptyVarMp :: VarMp) dataTy @derivHdDataTy
                                                                   derivDCL = Map.lookup @instClsNm @derivMp
                                                           _ -> (@tyVarMpDeclsL0 {- 1 -} `varUpd` @decls.gathCnstrMp,[],[],emptyDerivCls)
                 loc         .   lUniq_95_altsPrOcc  :   UNIQUEREF gUniq
@@ -165,7 +165,7 @@ data SimplifyState
       }
 
 emptySimplifyState :: SimplifyState
-emptySimplifyState = SimplifyState Map.empty Map.empty Map.empty [] Map.empty emptyVarMp Map.empty emptyFI emptySimplifyResult []
+emptySimplifyState = SimplifyState Map.empty Map.empty Map.empty [] Map.empty emptyVarMp Map.empty (emptyFI :: FIIn) emptySimplifyResult []
 
 simplify'
   :: [SimplifyHow]

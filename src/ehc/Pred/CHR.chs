@@ -87,94 +87,7 @@ instance PP Guard where
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% CHR instances: CHRSubstitutable
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(9999 hmtyinfer)
-instance CHRSubstitutable CHRPredOcc TyVarId VarMp where
-  chrFtv        x = varFreeSet x
-  chrAppSubst s x = s `varUpd` x
-
-instance CHRSubstitutable PredScope TyVarId VarMp where
-  chrFtv        x = varFreeSet x
-  chrAppSubst s x = s `varUpd` x
-
-instance CHRSubstitutable CHRPredOccCnstrMp TyVarId VarMp where
-  chrFtv        x = Set.unions [ chrFtv k | k <- Map.keys x ]
-  chrAppSubst s x = Map.mapKeysWith (++) (chrAppSubst s) x
-
-instance CHRSubstitutable VarMp TyVarId VarMp where
-  chrFtv        x = Set.empty
-  chrAppSubst s x = s `varUpd` x
-
-instance CHRSubstitutable Guard TyVarId VarMp where
-  chrFtv        (HasStrictCommonScope   p1 p2 p3) = Set.unions $ map varFreeSet [p1,p2,p3]
-  chrFtv        (IsStrictParentScope    p1 p2 p3) = Set.unions $ map varFreeSet [p1,p2,p3]
-  chrFtv        (IsVisibleInScope       p1 p2   ) = Set.unions $ map varFreeSet [p1,p2]
-  chrFtv        (NotEqualScope          p1 p2   ) = Set.unions $ map varFreeSet [p1,p2]
-  chrFtv        (EqualScope             p1 p2   ) = Set.unions $ map varFreeSet [p1,p2]
-%%[[10
-  chrFtv        (NonEmptyRowLacksLabel  r o t l ) = Set.unions [varFreeSet r,varFreeSet o,varFreeSet t,varFreeSet l]
-%%]]
-%%[[16
-  chrFtv        (IsCtxNilReduction t1 t2)         = Set.unions [varFreeSet t1, varFreeSet t2]
-  chrFtv        (EqsByCongruence t1 t2 ps)        = Set.unions [varFreeSet t1, varFreeSet t2, varFreeSet ps]
-  chrFtv        (EqualModuloUnification t1 t2)    = Set.unions [varFreeSet t1, varFreeSet t2]
-%%]]
-
-  chrAppSubst s (HasStrictCommonScope   p1 p2 p3) = HasStrictCommonScope   (s `varUpd` p1) (s `varUpd` p2) (s `varUpd` p3)
-  chrAppSubst s (IsStrictParentScope    p1 p2 p3) = IsStrictParentScope    (s `varUpd` p1) (s `varUpd` p2) (s `varUpd` p3)
-  chrAppSubst s (IsVisibleInScope       p1 p2   ) = IsVisibleInScope       (s `varUpd` p1) (s `varUpd` p2)
-  chrAppSubst s (NotEqualScope          p1 p2   ) = NotEqualScope          (s `varUpd` p1) (s `varUpd` p2)
-  chrAppSubst s (EqualScope             p1 p2   ) = EqualScope             (s `varUpd` p1) (s `varUpd` p2)
-%%[[10
-  chrAppSubst s (NonEmptyRowLacksLabel  r o t l ) = NonEmptyRowLacksLabel  (s `varUpd` r)  (s `varUpd` o)  (s `varUpd` t)  (s `varUpd` l)
-%%]]
-%%[[16
-  chrAppSubst s (IsCtxNilReduction t1 t2)         = IsCtxNilReduction (s `varUpd` t1) (s `varUpd` t2)
-  chrAppSubst s (EqsByCongruence t1 t2 ps)        = EqsByCongruence (s `varUpd` t1) (s `varUpd` t2) (s `varUpd` ps)
-  chrAppSubst s (UnequalTy t1 t2)                 = UnequalTy (s `varUpd` t1) (s `varUpd` t2)
-  chrAppSubst s (EqualModuloUnification t1 t2)    = EqualModuloUnification (s `varUpd` t1) (s `varUpd` t2)
-%%]]
-%%]
-
-%%[(9999 hmtyinfer)
-instance CHRSubstitutable VarUIDHsName TyVarId VarMp where
-  chrFtv          (VarUIDHs_Var i)  = Set.singleton i
-  chrFtv          _                 = Set.empty
-  chrAppSubst s a                   = maybe a id $ varmpAssNmLookupAssNmCyc a s
-%%]
-
-%%[(9999 hmtyinfer)
-instance CHRSubstitutable RedHowAnnotation TyVarId VarMp where
-  chrFtv        (RedHow_Assumption   vun sc)  = Set.unions [chrFtv vun,chrFtv sc]
-%%[[10
-  chrFtv        (RedHow_ByLabel      l o sc)  = Set.unions [chrFtv l,chrFtv o,chrFtv sc]
-%%]]
-  chrFtv        _                             = Set.empty
-
-  chrAppSubst s (RedHow_Assumption   vun sc)  = RedHow_Assumption (chrAppSubst s vun) (chrAppSubst s sc)
-%%[[10
-  chrAppSubst s (RedHow_ByLabel      l o sc)  = RedHow_ByLabel (chrAppSubst s l) (chrAppSubst s o) (chrAppSubst s sc)
-%%]]
-%%[[16
-  chrAppSubst s (RedHow_ByEqTyReduction  ty1 ty2) = RedHow_ByEqTyReduction (s `varUpd` ty1) (s `varUpd` ty2)
-%%]]
-  chrAppSubst _ x                             = x
-%%]
-
-%%[(1010 hmtyinfer)
-instance CHRSubstitutable Label TyVarId VarMp where
-  chrFtv        x = varFreeSet x
-  chrAppSubst s x = s `varUpd` x
-
-instance CHRSubstitutable LabelOffset TyVarId VarMp where
-  chrFtv        x = varFreeSet x
-  chrAppSubst s x = s `varUpd` x
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% CHR instances: VarExtractable, CHRSubstitutable
+%%% CHR instances: VarExtractable, VarUpdatable
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(9 hmtyinfer)
@@ -263,7 +176,7 @@ instance CHREmptySubstitution VarMp where
 instance CHRCheckable FIIn Guard VarMp where
   chrCheck env subst x
     = chk x
-    where subst' = subst `varUpd` fiVarMp env
+    where subst' = subst |+> fiVarMp env
           chk (HasStrictCommonScope (PredScope_Var vDst) sc1 sc2)
             = do { let sc1' = varUpd subst' sc1
                        sc2' = varUpd subst' sc2
@@ -372,7 +285,7 @@ instance CHRCheckable FIIn Guard VarMp where
 %%[(9 hmtyinfer)
 instance CHRMatchable FIIn Pred VarMp where
   chrMatchTo fi subst pr1 pr2
-    = do { (_,subst') <- fitPredIntoPred (fi {fiVarMp = subst `varUpd` fiVarMp fi}) pr1 pr2
+    = do { (_,subst') <- fitPredIntoPred (fi {fiVarMp = subst |+> fiVarMp fi}) pr1 pr2
          ; return subst'
          }
 %%]
@@ -398,7 +311,7 @@ instance CHRMatchable FIIn CHRPredOcc VarMp where
   chrMatchTo fi subst po1 po2
     = do { subst1 <- chrMatchTo fi subst (cpoPr po1) (cpoPr po2)
          ; subst2 <- chrMatchTo fi subst (cpoCxt po1) (cpoCxt po2)
-         ; return $ subst2 `varUpd` subst1
+         ; return $ subst2 |+> subst1
          }
 %%]
 

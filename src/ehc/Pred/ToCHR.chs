@@ -417,7 +417,6 @@ patchUnresolvedWithAssumption env unres redGraph evidMp
 chrSimplifySolveToRedGraph
   :: ( Ord p, Ord i
      , CHRMatchable FIIn p s, CHRCheckable FIIn g s
-     -- , CHRSubstitutable s tvar s, CHRSubstitutable g tvar s, CHRSubstitutable i tvar s, CHRSubstitutable p tvar s
      , VarUpdatable s s, VarUpdatable g s, VarUpdatable i s, VarUpdatable p s
      , CHREmptySubstitution s
      , PP g, PP i, PP p -- for debugging

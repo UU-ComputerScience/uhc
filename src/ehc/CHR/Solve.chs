@@ -369,24 +369,38 @@ chrSolveStateTrace = stTrace
 %%[(9 hmtyinfer || hmtyast) export(chrSolve,chrSolve')
 chrSolve
   :: ( CHRMatchable env p s, CHRCheckable env g s
-     -- , CHRSubstitutable s tvar s, CHRSubstitutable g tvar s, CHRSubstitutable i tvar s, CHRSubstitutable p tvar s
+     -- , VarUpdatable s s, VarUpdatable g s, VarUpdatable i s, VarUpdatable p s
      , VarUpdatable s s, VarUpdatable g s, VarUpdatable i s, VarUpdatable p s
      , CHREmptySubstitution s
      , Ord (Constraint p i)
+%%[[9
      , PP g, PP i, PP p -- for debugging
-     ) => env -> CHRStore p i g s -> [Constraint p i] -> [Constraint p i]
+%%][100
+%%]]
+     )
+     => env
+     -> CHRStore p i g s
+     -> [Constraint p i]
+     -> [Constraint p i]
 chrSolve env chrStore cnstrs
   = work ++ done
   where (work,done,_) = chrSolve' env chrStore cnstrs
 
 chrSolve'
   :: ( CHRMatchable env p s, CHRCheckable env g s
-     -- , CHRSubstitutable s tvar s, CHRSubstitutable g tvar s, CHRSubstitutable i tvar s, CHRSubstitutable p tvar s
+     -- , VarUpdatable s s, VarUpdatable g s, VarUpdatable i s, VarUpdatable p s
      , VarUpdatable s s, VarUpdatable g s, VarUpdatable i s, VarUpdatable p s
      , CHREmptySubstitution s
      , Ord (Constraint p i)
+%%[[9
      , PP g, PP i, PP p -- for debugging
-     ) => env -> CHRStore p i g s -> [Constraint p i] -> ([Constraint p i],[Constraint p i],SolveTrace p i g s)
+%%][100
+%%]]
+     )
+     => env
+     -> CHRStore p i g s
+     -> [Constraint p i]
+     -> ([Constraint p i],[Constraint p i],SolveTrace p i g s)
 chrSolve' env chrStore cnstrs
   = (wlToList (stWorkList finalState), stDoneCnstrs finalState, stTrace finalState)
   where finalState = chrSolve'' env chrStore cnstrs emptySolveState
@@ -394,13 +408,22 @@ chrSolve' env chrStore cnstrs
 
 %%[(9 hmtyinfer || hmtyast) export(chrSolve'')
 chrSolve''
-  :: ( CHRMatchable env p s, CHRCheckable env g s
-     -- , CHRSubstitutable s tvar s, CHRSubstitutable g tvar s, CHRSubstitutable i tvar s, CHRSubstitutable p tvar s
+  :: -- forall env p i g s .
+     ( CHRMatchable env p s, CHRCheckable env g s
+     -- , VarUpdatable s s, VarUpdatable g s, VarUpdatable i s, VarUpdatable p s
      , VarUpdatable s s, VarUpdatable g s, VarUpdatable i s, VarUpdatable p s
      , CHREmptySubstitution s
      , Ord (Constraint p i)
+%%[[9
      , PP g, PP i, PP p -- for debugging
-     ) => env -> CHRStore p i g s -> [Constraint p i] -> SolveState p i g s -> SolveState p i g s
+%%][100
+%%]]
+     )
+     => env
+     -> CHRStore p i g s
+     -> [Constraint p i]
+     -> SolveState p i g s
+     -> SolveState p i g s
 chrSolve'' env chrStore cnstrs prevState
   = postState {stMatchCache = Map.empty}
   where postState
@@ -422,7 +445,8 @@ chrSolve'' env chrStore cnstrs prevState
 %%][100
                 -> expandMatch stmatch matches
 %%]]
-                where expandMatch st@(SolveState {stWorkList = wl, stHistoryCount = histCount})
+                where -- expandMatch :: SolveState p i g s -> [((StoredCHR p i g s, ([WorkKey], [Work p i])), s)] -> SolveState p i g s
+                      expandMatch st@(SolveState {stWorkList = wl, stHistoryCount = histCount})
                                   ( ( ( schr@(StoredCHR {storedIdent = chrId, storedChr = chr@(CHR {chrBody = b, chrSimpSz = simpSz})})
                                       , (keys,works)
                                       )
@@ -455,7 +479,6 @@ chrSolve'' env chrStore cnstrs prevState
                                          , wlScanned = []
                                          , wlQueue   = wlQueue wl ++ wlScanned wl
                                          }
-                              chr'= subst `varUpd` chr
                               st' = st { stWorkList       = wl'
 %%[[9
                                        , stTrace          = SolveStep chr' subst (assocLElts bTodo') bDone : {- SolveDbg (ppwork >-< ppdbg) : -} stTrace st
@@ -466,6 +489,7 @@ chrSolve'' env chrStore cnstrs prevState
                                        , stHistoryCount   = histCount + 1
                                        }
 %%[[9
+                              chr'= subst `varUpd` chr
                               ppwork = "workkey" >#< ppTrieKey workHdKey >#< ":" >#< (ppBracketsCommas (map (ppTrieKey . fst) workTl) >-< ppBracketsCommas (map (ppTrieKey . fst) $ wlScanned wl))
                                          >-< "workkeys" >#< ppBracketsCommas (map ppTrieKey keys)
                                          >-< "worktrie" >#< wlTrie wl

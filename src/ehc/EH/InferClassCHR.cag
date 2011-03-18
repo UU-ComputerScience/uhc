@@ -190,7 +190,7 @@ SEM AGItf
 
 %%[(9 hmtyinfer)
 SEM Decl
-  | Instance    loc         .   chrFIIn             =   emptyFI {fiEnv = @fe}
+  | Instance    loc         .   chrFIIn             =   emptyFI {fiEnv = @fe} :: FIIn
 %%]
 
 %%[(9 hmtyinfer)
@@ -198,7 +198,7 @@ ATTR Expr [ | | chrFIIn: FIIn ]
 
 SEM Expr
   | Let         loc         .   chrFIIn             =   @body.chrFIIn
-  | * - Let     loc         .   chrFIIn             =   emptyFI {fiEnv = @fe}
+  | * - Let     loc         .   chrFIIn             =   emptyFI {fiEnv = @fe} :: FIIn
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

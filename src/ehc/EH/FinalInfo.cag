@@ -79,7 +79,7 @@ SEM Expr
 %%[[8
                             .   finalTyExpanded     =   @finalTy
 %%][11
-                            .   finalTyExpanded     =   tyCanonicFFI (emptyFI {fiEnv = @fe}) @finalTy
+                            .   finalTyExpanded     =   tyCanonicFFI (emptyFI {fiEnv = @fe} :: FIIn) @finalTy
 %%]]
 %%]
 

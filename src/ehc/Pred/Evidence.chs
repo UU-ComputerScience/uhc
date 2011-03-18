@@ -69,18 +69,6 @@ instance (PP info, PP p) => PP (Evidence p info) where
   pp (Evid_Unresolved p   ) = "Ev: unresolved:" >#< p
 %%]
 
-%%[(9999 hmtyinfer)
-instance CHRSubstitutable p v s => CHRSubstitutable (Evidence p info) v s where
-  chrFtv            (Evid_Unresolved  p     )    = chrFtv p
-  chrFtv            (Evid_Proof       p _ es)    = Set.unions $ chrFtv p : map chrFtv es
-  chrFtv            (Evid_Recurse     p     )    = chrFtv p
-  chrFtv            (Evid_Ambig       p  ess)    = Set.unions $ chrFtv p : map (Set.unions . map chrFtv . snd) ess
-  chrAppSubst s     (Evid_Unresolved  p     )    = Evid_Unresolved (chrAppSubst s p)
-  chrAppSubst s     (Evid_Proof       p i es)    = Evid_Proof      (chrAppSubst s p) i (map (chrAppSubst s) es)
-  chrAppSubst s     (Evid_Recurse     p     )    = Evid_Recurse    (chrAppSubst s p)  
-  chrAppSubst s     (Evid_Ambig       p  ess)    = Evid_Ambig      (chrAppSubst s p) (assocLMapElt (map (chrAppSubst s)) ess)
-%%]
-
 %%[(9 hmtyinfer)
 instance VarExtractable p v => VarExtractable (Evidence p info) v where
   varFreeSet            (Evid_Unresolved  p     )    = varFreeSet p

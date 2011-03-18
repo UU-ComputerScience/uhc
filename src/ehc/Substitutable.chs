@@ -173,12 +173,14 @@ instance VarExtractable VarMp TyVarId where
 %%]
 
 %%[(6 hmtyinfer || hmtyast).SubstitutableVarMp -4.SubstitutableVarMp
-instance Ord k => VarUpdatable (VarMp' k v) (VarMp' k v) where
-  varUpd                                =   varmpPlus
+instance VarLookupCmb m (VarMp' k v) => VarUpdatable (VarMp' k v) m where
+  varUpd                                =   (|+>)
 
 instance VarExtractable VarMp TyVarId where
   varFreeSet               (VarMp _ sl)    =   Set.unions $ map (varFreeSet . Map.elems) sl
 %%]
+instance Ord k => VarUpdatable (VarMp' k v) (VarMp' k v) where
+  varUpd                                =   varmpPlus
 
 %%[(7 hmtyinfer || hmtyast)
 instance VarUpdatable vv subst => VarUpdatable (HsName,vv) subst where
@@ -366,7 +368,7 @@ varmpForward m1 m2
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(2 hmtyinfer || hmtyast) hs export(ppS)
-ppS :: VarUpdatable x VarMp => (x -> PP_Doc) -> VarMp -> x -> PP_Doc
+ppS :: VarUpdatable x m => (x -> PP_Doc) -> m -> x -> PP_Doc
 ppS pp c x = (pp $ c `varUpd` x) >#< ppParens (pp x)
 %%]
 

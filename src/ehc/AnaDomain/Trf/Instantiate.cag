@@ -42,7 +42,7 @@ relevtyInst uniq ty
           = case ty of
               RelevTy_Fun RQuant_Rec _ _ a r
                 -> amsGathQual ams
-                where (amso,ams) = amsLE emptyVarMp (RelevTy_Fun RQuant_None [] [] a r) ty'
+                where (amso,ams) = amsLE emptyRVarMp (RelevTy_Fun RQuant_None [] [] a r) ty'
               _ -> Set.empty
 %%]
 

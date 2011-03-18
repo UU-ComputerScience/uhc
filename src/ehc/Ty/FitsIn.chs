@@ -82,39 +82,43 @@ For debug/trace:
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(4 hmtyinfer)
+%%[[4
 fiAppVarMp :: FIIn -> Ty -> Ty
+%%][8
+fiAppVarMp :: VarUpdatable Ty gm => FIIn' gm -> Ty -> Ty
+%%]]
 fiAppVarMp fi x = fiVarMpLoc fi `varUpd` (fiVarMp fi `varUpd` x)
 %%]
 
 %%[(9 hmtyinfer)
-instance Show FIIn where
+instance Show (FIIn' gm) where
   show _ = "FIIn"
 
-instance PP FIIn where
+instance PP (FIIn' gm) where
   pp fi = "FIIn:" >#< pp (fiEnv fi)
 %%]
 
 %%[(4 hmtyinfer).fiUpdOpts
-fiUpdOpts :: (FIOpts -> FIOpts) -> FIIn -> FIIn
+fiUpdOpts :: (FIOpts -> FIOpts) -> FIIn' gm -> FIIn' gm
 fiUpdOpts upd fi = fi {fiFIOpts = upd (fiFIOpts fi)}
 %%]
 
 %%[(4 hmtyinfer)
-fiInhibitVarExpandL :: TyVarId -> FIIn -> FIIn
+fiInhibitVarExpandL :: TyVarId -> FIIn' gm -> FIIn' gm
 fiInhibitVarExpandL v fi = fi {fiExpLTvS = v `Set.insert` fiExpLTvS fi}
 
-fiVarIsExpandedL :: TyVarId -> FIIn -> Bool
+fiVarIsExpandedL :: TyVarId -> FIIn' gm -> Bool
 fiVarIsExpandedL v fi = v `Set.member` fiExpLTvS fi
 
-fiInhibitVarExpandR :: TyVarId -> FIIn -> FIIn
+fiInhibitVarExpandR :: TyVarId -> FIIn' gm -> FIIn' gm
 fiInhibitVarExpandR v fi = fi {fiExpRTvS = v `Set.insert` fiExpRTvS fi}
 
-fiVarIsExpandedR :: TyVarId -> FIIn -> Bool
+fiVarIsExpandedR :: TyVarId -> FIIn' gm -> Bool
 fiVarIsExpandedR v fi = v `Set.member` fiExpRTvS fi
 %%]
 
 %%[(4 hmtyinfer)
-fiSwapCoCo :: FIIn -> FIIn
+fiSwapCoCo :: FIIn' gm -> FIIn' gm
 fiSwapCoCo fi = fi {fiExpLTvS = fiExpRTvS fi, fiExpRTvS = fiExpLTvS fi}
 %%]
 
@@ -129,10 +133,16 @@ In case of failure, the worst is assumed and all is invariant.
 TBD: failure should not happen, the encoding of polarity is too strict by not matching Invariant <= Covariant, thus failing.
 
 %%[(4 hmtyinfer)
-fiAppSpineLookup :: FIIn -> HsName -> AppSpineGam -> Maybe AppSpineInfo
 %%[[4
+fiAppSpineLookup :: FIIn' gm -> HsName -> AppSpineGam -> Maybe AppSpineInfo
 fiAppSpineLookup fi n gappSpineGam = asGamLookup n $ feAppSpineGam $ fiEnv fi
 %%][17
+fiAppSpineLookup
+  :: forall gm .
+     ( VarLookupCmb VarMp gm
+     , VarLookup gm TyVarId VarMpInfo
+     )
+     => FIIn' gm -> HsName -> AppSpineGam -> Maybe AppSpineInfo
 fiAppSpineLookup fi n gappSpineGam
   = case (asGamLookup n $ feAppSpineGam $ fiEnv fi,polGamLookup n (fePolGam $ fiEnv fi)) of
       (Just asi, Just pgi)
@@ -143,11 +153,11 @@ fiAppSpineLookup fi n gappSpineGam
         -> mbasi
   where upd pgi asi
           | foHasErrs fo = asi
-          | otherwise    = asi {asgiVertebraeL = zipWith asUpdateByPolarity (tyArrowArgs $ tyCanonic emptyFI $ foVarMp fo `varUpd` foTy fo) (asgiVertebraeL asi)}
+          | otherwise    = asi {asgiVertebraeL = zipWith asUpdateByPolarity (tyArrowArgs $ tyCanonic (emptyFI :: FIIn) $ foVarMp fo `varUpd` foTy fo) (asgiVertebraeL asi)}
           where pol = pgiPol pgi
                 (polargs,polres) = tyArrowArgsRes pol
                 (_,u1,u2) = mkNewLevUID2 uidStart
-                fo = fitsIn weakFIOpts emptyFE u1 emptyVarMp pol (map mkPolVar (mkNewUIDL (length polargs) u2) `mkArrow` polCovariant)
+                fo = fitsIn weakFIOpts emptyFE u1 (emptyVarMp :: VarMp) pol (map mkPolVar (mkNewUIDL (length polargs) u2) `mkArrow` polCovariant)
 %%]]
 %%]
 
@@ -276,10 +286,21 @@ fitsIn ty1 ty2
 manyFO :: [FIOut] -> FIOut
 manyFO = foldr1 (\fo1 fo2 -> if foHasErrs fo1 then fo1 else fo2)
 
-fitsIn :: FIOpts -> FIEnv -> UID -> VarMp -> Ty -> Ty -> FIOut
+fitsIn
+  :: forall gm .
+     {- ( VarUpdatable Ty gm
+     , VarLookupCmb VarMp gm
+     , VarLookupCmb gm gm
+     )
+     => -} 
+     ( VarLookup gm TyVarId VarMpInfo
+     , VarLookupCmb VarMp gm
+     )
+     => FIOpts -> FIEnv -> UID -> gm -> Ty -> Ty
+     -> FIOut
 fitsIn opts env uniq varmp
   =  fitsInFI
-       (emptyFI
+       ((emptyFI
           { fiUniq = uniq
           , fiFIOpts = opts
           , fiVarMp = varmp
@@ -287,11 +308,27 @@ fitsIn opts env uniq varmp
           , fiEnv = env
 %%]]
           }
+        ) :: FIIn' gm
        )
 %%]
 
 %%[(4 hmtyinfer).fitsInFI
+%%[[4
 fitsInFI :: FIIn -> Ty -> Ty -> FIOut
+%%][8
+fitsInFI
+  :: forall gm .
+     {- ( VarUpdatable Ty gm
+     , VarLookupCmb VarMp gm
+     , VarLookupCmb gm gm
+     )
+     => -} 
+     ( VarLookup gm TyVarId VarMpInfo
+     , VarLookupCmb VarMp gm
+     )
+     => FIIn' gm -> Ty -> Ty
+     -> FIOut
+%%]]
 fitsInFI fi ty1 ty2
   =  foRes {foTrace = reverse $ foTrace foRes}
   where
@@ -338,8 +375,8 @@ fitsInFI fi ty1 ty2
                                                   (subs,dm4) = foldl (\(subs,dm) (fo,fmt) -> let (sub,dm') = foMkDT fo Nothing fmt m dm in (sub:subs,dm')) ([],dm3) subfos
                                                   (t3  ,dm5) = dtEltTy (dtChooseDT opts m mfo) dm4 (foTy fo)
                                                   (mbnd,dm6) = maybe (dtEltVarMp (dtChooseDT opts m mfo) dm5 mbind) (\x -> (x,emptyVarMp)) mbTop
-                                                  mfi        = fiVarMpLoc fi `varUpd` fiVarMp fi
-                                                  mfo        = foVarMp fo `varUpd` fiVarMp fi
+                                                  mfi        = fiVarMpLoc fi |+> fiVarMp fi
+                                                  mfo        = foVarMp fo |+> fiVarMp fi
                                                   opts       = feEHCOpts $ fiEnv fi
                                                   fiopts     = fiFIOpts fi
 %%][100
@@ -347,8 +384,12 @@ fitsInFI fi ty1 ty2
 %%]]
 
             -- results
-            res' fi tv t            =  (\fo -> trfo "res" (ppTyWithFI fi tv >|< ", spine" >#< (tyConNm t) >|< ":" >#< pp (foAppSpineInfo fo) {- >-< "polgam:" >#< ppGam (fePolGam $ fiEnv fi) -}) fo)
-                                       $ (fifo fi emptyFO) {foTy = tv, foMbAppSpineInfo = fiAppSpineLookup fi (tyConNm t) appSpineGam}
+            res' fi tv t            =  updtr $ (fifo fi emptyFO) {foTy = tv, foMbAppSpineInfo = fiAppSpineLookup fi (tyConNm t) appSpineGam}
+%%[[4
+                                    where updtr fo = trfo "res" (ppTyWithFI fi tv >|< ", spine" >#< (tyConNm t) >|< ":" >#< pp (foAppSpineInfo fo) {- >-< "polgam:" >#< ppGam (fePolGam $ fiEnv fi) -}) fo
+%%][100
+                                    where updtr    = id
+%%]]
             res  fi    t            =  res' fi t t
 
             -- errors
@@ -366,16 +407,18 @@ fitsInFI fi ty1 ty2
 %%]
 
 %%[(9 hmtyinfer).fitsIn.lookupImplsVar
-            lookupImplsVarCyc fi v  =  fiLookupVar' varmpImplsLookupCyc v (fiVarMpLoc fi) (fiVarMp fi)
+            lookupImplsVarCyc fi v  =  fiLookupVar' varmpImplsLookupCyc varmpImplsLookupCyc v (fiVarMpLoc fi) (fiVarMp fi)
 %%]
 %%[(10 hmtyinfer).fitsIn.lookupLabelVarCyc
-            lookupLabelCyc    fi v  =  fiLookupVar' varmpLabelLookupLabelCyc v (fiVarMpLoc fi) (fiVarMp fi)
+            lookupLabelCyc    fi v  =  fiLookupVar' varmpLabelLookupLabelCyc varmpLabelLookupLabelCyc v (fiVarMpLoc fi) (fiVarMp fi)
 %%]
-            tyVarIsBound tv fi      =  isJust $ lookupTyVar fi tv
 
 %%[(4 hmtyinfer).fitsIn.bind
             bind fi isLBind tv t    =  dtfo "bind" fi tv' t [] (tv `varmpTyUnit` t)
+%%[[4
                                        $ trfo "bind" ("tv:" >#< tv >-< "ty:" >#< ppTyWithFI fi t)
+%%][100
+%%]]
                                        $ res' (fiBindTyVar tv t fi2) tv' t
                                     where tv' = mkTyVar tv
 %%[[4
@@ -401,7 +444,7 @@ fitsInFI fi ty1 ty2
             unquant fi t hide howToInst
                 = ( fi { fiUniq = u
 %%[[6
-                       , fiVarMpLoc = instToL1VarMp instto `varUpd` fiVarMpLoc fi
+                       , fiVarMpLoc = instToL1VarMp instto |+> fiVarMpLoc fi
 %%]]
                        }
                   , uqt,back,instto
@@ -443,7 +486,7 @@ fitsInFI fi ty1 ty2
 %%]
 
 %%[(4 hmtyinfer).fitsIn.FOUtils
-            foUpdVarMp  c fo = fo {foVarMp = c `varUpd` foVarMp fo}
+            foUpdVarMp  c fo = fo {foVarMp = c |+> foVarMp fo}
             fifo       fi fo = fo { foVarMp    = fiVarMpLoc fi, foUniq = fiUniq fi, foTrace = fiTrace fi
 %%[[7
                                   , foDontBind = fioDontBind (fiFIOpts fi)
@@ -946,8 +989,12 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                               (_         ,((t,tr):_),_       ) -> err (trfiAdd (tybetaredextraTracePPL tr) fi2) [rngLift range Err_TyBetaRedLimit (fiAppVarMp fi2 t2) (fiAppVarMp fi2 t) limit]
                               (_         ,_         ,ts@(_:_)) -> last ts
                               (_         ,_         ,_       ) -> errClash fi2 t1 t2
-              where fi2   = trfi "fTySyn" ("t1:" >#< ppTyWithFI fi t1 >-< "t2:" >#< ppTyWithFI fi t2) fi
-                    limit = ehcOptTyBetaRedCutOffAt globOpts
+              where limit = ehcOptTyBetaRedCutOffAt globOpts
+%%[[11
+                    fi2   = trfi "fTySyn" ("t1:" >#< ppTyWithFI fi t1 >-< "t2:" >#< ppTyWithFI fi t2) fi
+%%][100
+                    fi2   = fi
+%%]]
                     rt1   = tyBetaRedAndInit fi2 betaRedTyLookup t1
                     rt2   = tyBetaRedAndInit fi2 betaRedTyLookup t2
                     tries = take (limit+1) $ try fi2 (rt1) (rt2)
@@ -992,12 +1039,16 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
 %%]]
                 where mbTy1   = fiLookupTyVarCyc fi v1
                       t1'     = fromJust mbTy1
+%%[[4
                       fi2     = trfi "fVar L"
                                      ("t1:" >#< ppTyWithFI fi t1 >-< "t2:" >#< ppTyWithFI fi t2
 %%[[9999
                                             >-< "fioDontBind:" >#< show (fioDontBind (fiFIOpts fi)) >-< "fioBindNoSet:" >#< show (fioBindNoSet mbvs) >-< "fioBindIsYes:" >#< show (fioBindIsYes mbvs)
 %%]]
                                      ) fi
+%%][100
+                      fi2     = fi
+%%]]
 %%[[9
                       mbvs    = fioBindLVars (fiFIOpts fi)
 %%]]
@@ -1010,16 +1061,21 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
 %%]]
                 where mbTy2   = fiLookupTyVarCyc fi v2
                       t2'     = fromJust mbTy2
+%%[[4
                       fi2     = trfi "fVar R"
                                      ("t1:" >#< ppTyWithFI fi t1 >-< "t2:" >#< ppTyWithFI fi t2
 %%[[9999
                                             >-< "fioDontBind:" >#< show (fioDontBind (fiFIOpts fi)) >-< "fioBindNoSet:" >#< show (fioBindNoSet mbvs) >-< "fioBindIsYes:" >#< show (fioBindIsYes mbvs)
 %%]]
                                      ) fi
+%%][100
+                      fi2     = fi
+%%]]
 %%[[9
                       mbvs    = fioBindRVars (fiFIOpts fi)
 %%]]
             fVar' f fi updTy t1                    t2                = fAnn f fi2 updTy t1 t2
+%%[[4
                 where fi2     = trfi "fVar Dflt"
                                      ("t1:" >#< ppTyWithFI fi t1 >-< "t2:" >#< ppTyWithFI fi t2
 %%[[9999
@@ -1034,6 +1090,9 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                                             >-< "tyIsA       (R):" >#< tyIsA t2
 %%]]
                                      ) fi
+%%][100
+                where fi2     = fi
+%%]]
 
             fVar f fi        t1                    t2                = fVar' f fi id t1 t2
 %%]
@@ -1092,12 +1151,20 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
             fAnn f fi updTy t1@(Ty_Var _ _) t2                = case tyAnnDecomposeMk t2 of
                                                                     (t2@(Ty_Var _ _), (_:_), mk2)
                                                                       -> fVar' f fi2 (updTy . mk2) t1 t2
+%%[[4
                                                                       where fi2 = trfi "fAnn L" ("t1:" >#< ppTyWithFI fi t1 >-< "t2:" >#< ppTyWithFI fi t2) fi
+%%][100
+                                                                      where fi2 = fi
+%%]]
                                                                     _ -> f fi updTy t1 t2
             fAnn f fi updTy t1              t2@(Ty_Var _ _)   = case tyAnnDecomposeMk t1 of
                                                                     (t1@(Ty_Var _ _), (_:_), mk1)
                                                                       -> fVar' f fi2 (updTy . mk1) t1 t2
+%%[[4
                                                                       where fi2 = trfi "fAnn R" ("t1:" >#< ppTyWithFI fi t1 >-< "t2:" >#< ppTyWithFI fi t2) fi
+%%][100
+                                                                      where fi2 = fi
+%%]]
                                                                     _ -> f fi updTy t1 t2
             fAnn f fi updTy t1              t2                = f fi updTy t1 t2
 %%]
@@ -1549,12 +1616,19 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                            t2@(Ty_App tf2 ta2)
                 = manyFO [ ffo, afo
                          , dtfo "app" fi t1 t2 [(ffo,"l"),(afo,"r")] emptyVarMp
+%%[[4
                            $ trfo "comp" ("ty:" >#< ppTyWithFIFO fi rfo (foTy rfo))
+%%][100
+%%]]
                            $ foUpdTy (updTy $ foTy rfo) rfo
                          ]
                 where  -- decompose
                        -- the work
+%%[[4
                        fi2    = trfi "decomp" ("t1:" >#< ppTyWithFI fi t1 >-< "t2:" >#< ppTyWithFI fi t2) fi
+%%][100
+                       fi2    = fi
+%%]]
                        ffo    = fVar' fTySyn fi2 id tf1 tf2
                        spine  = asgiSpine $ foAppSpineInfo ffo
 %%[[4
@@ -1564,7 +1638,11 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                        (as,_) = hdAndTl' unknownAppSpineVertebraeInfo spine
 %%]]
                        pol    = asPolarity as
+%%[[4
                        fi3    = trfi "spine" ("f tf1 tf2:" >#< ppTyWithFI fi2 (foTy ffo) >-< "spine:" >#< ppCommas spine) fi2
+%%][100
+                       fi3    = fi2
+%%]]
                        fi4    = -- (\x -> Debug.tr "fBase.fi4" ((pp $ show $ fioDontBind $ fiFIOpts fi) >-< (pp $ show $ foDontBind ffo) >-< (pp $ show $ fioDontBind $ fiFIOpts x) ) x) $
                                 -- (fofi ffo $ fiUpdRankByPolarity pol $ fiSwapCoCo fi3) {fiFIOpts = asFIO as $ fioSwapPolarity pol $ fiFIOpts fi}
                                 (fofi ffo $ fiUpdRankByPolarity pol $ fiSwapCoCo (fi3 {fiFIOpts = asFIO as $ fioSwapPolarity pol $ fiFIOpts fi}))
@@ -1667,7 +1745,13 @@ fitsInFold opts env uniq varmp tyl
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(9 hmtyinfer) export(fitPredIntoPred)
-fitPredIntoPred :: FIIn -> Pred -> Pred -> Maybe (Pred,VarMp)
+fitPredIntoPred
+  :: ( VarLookup gm LabelVarId VarMpInfo
+     -- , VarLookup gm Ty VarMpInfo
+     , VarLookupCmb VarMp gm
+     )
+     => FIIn' gm -> Pred -> Pred
+     -> Maybe (Pred,VarMp)
 fitPredIntoPred fi pr1 pr2
   = f pr1 pr2
   where f (Pred_Var pv1)        pr2@(Pred_Var pv2) | pv1 == pv2     = Just (pr2,emptyVarMp)
@@ -1711,7 +1795,7 @@ fitPredIntoPred fi pr1 pr2
             fPreds (PredSeq_Cons pr1 ps1) (PredSeq_Cons pr2 ps2)
               = do (pr', s1) <- f pr1 pr2
                    (ps', s2) <- fPreds (s1 `varUpd` ps1) (s1 `varUpd` ps2)
-                   return (PredSeq_Cons pr' ps', s2 `varUpd` s1)
+                   return (PredSeq_Cons pr' ps', s2 |+> s1)
             fPreds PredSeq_Nil PredSeq_Nil
               = Just (PredSeq_Nil, emptyVarMp)
             fPreds _ _
@@ -1732,11 +1816,11 @@ fitPredIntoPred fi pr1 pr2
             foR = fitsIn fiOptsR (fiEnv fi) u2 varMp2In trA trB
 
             varMp1In = fiVarMp fi
-            varMp2In = varMp1Out `varUpd` fiVarMp fi
+            varMp2In = varMp1Out |+> fiVarMp fi
 
             varMp1Out = foVarMp foL
             varMp2Out = foVarMp foR
-            varMpOut  = varMp2Out `varUpd` varMp1Out
+            varMpOut  = varMp2Out |+> varMp1Out
 
             tlOut = varMpOut `varUpd` foTy foL
             trOut = varMpOut `varUpd` foTy foR
@@ -1819,7 +1903,7 @@ mkFitsInWrap env
 -- fitsInForToTyCore :: C.KiFitsIn
 fitsInForToTyCore uniq t1 t2
   = foLInstToL fo
-  where fo = fitsIn (strongFIOpts {fioExpandEqTyVar=True}) emptyFE uniq emptyVarMp t1 t2
+  where fo = fitsIn (strongFIOpts {fioExpandEqTyVar=True}) emptyFE uniq (emptyVarMp :: VarMp) t1 t2
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

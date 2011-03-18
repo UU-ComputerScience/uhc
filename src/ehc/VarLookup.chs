@@ -48,6 +48,24 @@ varlookupMap get k m
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Utils: fixed lookup
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(6 hmtyinfer || hmtyast) export(VarLookupFix, varlookupFix)
+type VarLookupFix k v = k -> Maybe v
+
+-- | fix looking up to be for a certain var mapping
+varlookupFix :: VarLookup m k v => m -> VarLookupFix k v
+varlookupFix m = \k -> varlookup k m
+%%]
+
+%%[(6 hmtyinfer || hmtyast) export(varlookupFixDel)
+-- | simulate deletion
+varlookupFixDel :: Ord k => [k] -> VarLookupFix k v -> VarLookupFix k v
+varlookupFixDel ks f = \k -> if k `elem` ks then Nothing else f k
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% VarLookupCmb
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -63,16 +81,27 @@ infixr 7 |+>
 %%]
 
 %%[(6 hmtyinfer || hmtyast) export(VarLookupCmb(..))
-class VarLookupCmb m k v | m -> k v where
-  (|+>) :: m -> m -> m
+class VarLookupCmb m1 m2 where
+  (|+>) :: m1 -> m2 -> m2
 %%]
 
 %%[(6 hmtyinfer || hmtyast)
-instance (VarLookupCmb m1 k v,VarLookupCmb m2 k v) => VarLookupCmb (m1,m2) k v where
-  (m1,m2) |+> (n1,n2)
-    = (m1 |+> n1, m2 |+> n2)
+instance VarLookupCmb m1 m2 => VarLookupCmb m1 [m2] where
+  m1 |+> (m2:m2s) = (m1 |+> m2) : m2s
 
-instance VarLookupCmb m k v => VarLookupCmb [m] k v where
-  (|+>) = zipWith (|+>)
+instance (VarLookupCmb m1 m1, VarLookupCmb m1 m2) => VarLookupCmb [m1] [m2] where
+  m1 |+> (m2:m2s) = (foldr1 (|+>) m1 |+> m2) : m2s
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Utils: fixed combine
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(6 hmtyinfer || hmtyast) export(VarLookupCmbFix, varlookupcmbFix)
+type VarLookupCmbFix m1 m2 = m1 -> m2 -> m2
+
+-- | fix combining up to be for a certain var mapping
+varlookupcmbFix :: VarLookupCmb m1 m2 => VarLookupCmbFix m1 m2
+varlookupcmbFix m1 m2 = m1 |+> m2
 %%]
 

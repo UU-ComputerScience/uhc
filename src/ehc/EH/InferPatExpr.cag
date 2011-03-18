@@ -58,7 +58,7 @@ SEM PatExpr
   | Con         loc         .   (ty_g_,nmErrs)      =   valGamLookupTy (hsnUn @nm) @lhs.valGam
                             .   (tvarv1_,tvarv2_)   =   let  [a,r] = mkNewTyVarL 2 @lUniq in (a,r)
                             .   knTyShape           =   [@loc.tvarv1_] `mkArrow` @loc.tvarv2_
-                            .   fo_fitP_            =   fitsIn instFIOpts @fe @lUniq2 emptyVarMp @ty_g_ @loc.knTyShape
+                            .   fo_fitP_            =   fitsIn instFIOpts @fe @lUniq2 (emptyVarMp :: VarMp) @ty_g_ @loc.knTyShape
                             .   tyVarMp_p_          =   foVarMp @fo_fitP_
                             .   patFunTy            :=  @tyVarMp_p_ `varUpd` foTy @fo_fitP_
                 loc         .   lUniq2              :   UNIQUEREF gUniq

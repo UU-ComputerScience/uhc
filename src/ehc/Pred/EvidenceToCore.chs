@@ -11,7 +11,7 @@
 %%[(9 codegen) import({%{EH}Base.Common})
 %%]
 
-%%[(9 codegen hmtyinfer) import({%{EH}Ty.FitsInCommon2}(FIEnv(..),FIIn(..)),{%{EH}Core},{%{EH}Ty},{%{EH}Core.Utils},{%{EH}Core.Subst})
+%%[(9 codegen hmtyinfer) import({%{EH}Ty.FitsInCommon2},{%{EH}Core},{%{EH}Ty},{%{EH}Core.Utils},{%{EH}Core.Subst})
 %%]
 
 %%[(9 codegen) hs import({%{EH}AbstractCore})
@@ -106,7 +106,7 @@ predScopeToCBindMapUnion = Map.unionWith (++)
 %%]
 
 %%[(9 codegen) export(evidMpToCore,EvidKeyToCExprMap)
-evidMpToCore :: FIIn -> InfoToEvidenceMap CHRPredOcc RedHowAnnotation -> (EvidKeyToCExprMap,[OverlapEvid])
+evidMpToCore :: FIIn' gm -> InfoToEvidenceMap CHRPredOcc RedHowAnnotation -> (EvidKeyToCExprMap,[OverlapEvid])
 evidMpToCore env evidMp
   = ( Map.map (\r -> (tcrCExpr r,tcrUsed r,tcrScope r)) $ tcsMp
       $ foldr mke (ToCoreState Map.empty Map.empty Map.empty (fiUniq env))

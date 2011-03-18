@@ -171,7 +171,7 @@ SEM Decl
                 loc         	.   lUniq		  	:   UNIQUEREF gUniq
   | Instance    tyPrExpr        .   tyGam           =   gamPushNew @lhs.tyGam
                 loc             .   (prTyFix,fixPrTyVarMp,unfixPrTyVarMp,metaPrTyVarMp)
-                                                    =   tyFixTyVars @lUniq_9_prTyFix $ tyQuantifyRank [2..] $ tyCanonic emptyFI @tyPrExpr.ty
+                                                    =   tyFixTyVars @lUniq_9_prTyFix $ tyQuantifyRank [2..] $ tyCanonic (emptyFI :: FIIn)  @tyPrExpr.ty
 %%[[9
                                 .   (ctxtPrTyFixL,hdPrTyFix)
                                                     =   tyArrowArgsRes @prTyFix
@@ -246,7 +246,7 @@ SEM Decl
                                 .   clgi            =   maybe emptyCLGI id (gamLookup @instClsNm @lhs.clGam)
                                 .   supPrTyL        =   let  t      =  clgiRuleTy @clgi
                                                              st     =  mkNewTyVarL (tyArrowArity $ tyQuant t) @lUniq4 `mkArrow` @hdPrTyFix
-                                                             fo     =  fitsIn predFIOpts @fe2 @lUniq3 emptyVarMp t st
+                                                             fo     =  fitsIn predFIOpts @fe2 @lUniq3 (emptyVarMp :: VarMp) t st
                                                         in   tyArrowArgs $ foVarMp fo `varUpd` foTy fo
                                 .   supClsFldL      =   tyPrLToSupNmL @supPrTyL
                                 .   ctxtPrFixL      =   map tyPred @ctxtPrTyFixL
@@ -305,7 +305,7 @@ SEM PrExpr
 ATTR TyExpr PrExpr [ | | evTy: Ty ]
 
 SEM PrExpr
-  | Class       lhs             .   evTy            =   let  fo = fitsIn  (predFIOpts {fioDontBind = varFreeSet @ty}) @fe2 @lUniq3 emptyVarMp
+  | Class       lhs             .   evTy            =   let  fo = fitsIn  (predFIOpts {fioDontBind = varFreeSet @ty}) @fe2 @lUniq3 (emptyVarMp :: VarMp)
                                                                           (clgiPrToEvidTy @clgi) ([@ty] `mkArrow` mkNewTyVar @lUniq2)
                                                         in   snd $ tyArrowArgRes $ foVarMp fo `varUpd` foTy fo
                 loc         	.   lUniq2	 		:   UNIQUEREF gUniq
