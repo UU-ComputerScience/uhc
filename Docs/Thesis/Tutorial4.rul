@@ -27,8 +27,6 @@ data Expr
 data Operator
   con Plus
   con Minus
-  con Multiply
-  con Divide
   
 itf OperatorEq
   visit compare
@@ -50,16 +48,7 @@ eqOp = sem eqOp : OperatorEq monad IO
              match Operator.Minus@loc = lhs.op2
              
              lhs.eq = return Operator_Minus
-           clause Multiply
-             match Operator.Multiply@loc = lhs.op1
-             match Operator.Multiply@loc = lhs.op2
-             
-             lhs.eq = return Operator_Multiply
-           clause Divide
-             match Operator.Divide@loc = lhs.op1
-             match Operator.Divide@loc = lhs.op2
-             
-             lhs.eq = return Operator_Divide
+           clause other
 }
   
 itf Expr
@@ -105,12 +94,6 @@ datasem Expr
        clause Minus
          match Operator.Minus@loc = loc.op
          lhs.v = exp1.v - exp2.v
-       clause Multiply
-         match Operator.Multiply@loc = loc.op
-         lhs.v = exp1.v * exp2.v
-       clause Divide
-         match Operator.Divide@loc = loc.op
-         lhs.v = exp1.v `div` exp2.v
    clause Var
      loc.val = lookup loc.nm lhs.env
      lhs.v   = fromMaybe (error $ "variable " ++ loc.nm ++ " not defined") loc.val
@@ -194,15 +177,7 @@ eq = sem eq : Compare monad IO
            loc.v2  = Just exp.v
            loc.eq  = liftM2 (==) loc.v1 loc.v2
            lhs.exp = loc.eq >>= guard >> fmap Expr_Num loc.v1
-           lhs.env = second (const exp.env) lhs.env -- required or type error
-           -- Tutorial4.hs:4438:128:
-                -- Couldn't match expected type `[(String, Int)]'
-                            -- with actual type `(Env, Env)'
-                -- Expected type: Env
-                  -- Actual type: Pair Env
-                -- In the expression: lhsIenv
-                -- In the first argument of `dflt_env_4', namely `[expSenv, lhsIenv]'
-            -- Failed, modules loaded: none.
+           lhs.env = second (const exp.env) lhs.env
          clause VarRight
            match Expr.Var@vari  = lhs.exp2
            
@@ -237,8 +212,6 @@ instance Show Expr where
 instance Show Operator where
     show Operator_Plus     = "+"
     show Operator_Minus    = "-"
-    show Operator_Multiply = "*"
-    show Operator_Divide   = "/"
   
 main :: IO ()
 main = do let exp = Expr_Let "x" 
@@ -249,7 +222,7 @@ main = do let exp = Expr_Let "x"
                              (Expr_Expr (Expr_Num 1) 
                                        Operator_Plus 
                                        (Expr_Expr (Expr_Var "x") 
-                                                  Operator_Multiply 
+                                                  Operator_Minus
                                                   (Expr_Num 3)
                                        )
                              )
@@ -261,7 +234,7 @@ main = do let exp = Expr_Let "x"
                              (Expr_Expr (Expr_Num 1) 
                                        Operator_Plus 
                                        (Expr_Expr (Expr_Num 2) 
-                                                  Operator_Multiply 
+                                                  Operator_Minus 
                                                   (Expr_Var "z")
                                        )
                              )

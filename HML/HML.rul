@@ -33,15 +33,15 @@ data TyExpr
   con Con
     nm        :: HsName
   con App
-    func      :: TyExpr
-    arg       :: TyExpr
+    func      :  TyExpr
+    arg       :  TyExpr
   con AppTop
-    tyExpr    :: TyExpr
+    tyExpr    :  TyExpr
   con Parens
-    tyExpr    :: TyExpr
+    tyExpr    :  TyExpr
   con Ann
     ann       :: TyExprAnn
-    tyExpr    :: TyExpr
+    tyExpr    :  TyExpr
   con Wild
   con Mono
   con Var
@@ -51,13 +51,13 @@ data TyExpr
   con Quant
     qu        :: TyQu
     tyVar     :: HsName
-    tyExpr    :: TyExpr
+    tyExpr    :  TyExpr
   con Forall
     qu        :: TyQu
     tyVar     :: [HsName]
-    tyExpr    :: TyExpr    
+    tyExpr    :  TyExpr    
   con Row
-    rowTyExpr :: RowTyExpr
+    rowTyExpr :  RowTyExpr
     
 data TyVar
   con Var
@@ -74,24 +74,24 @@ data TyIndex
 -- Type Schemes
 data TyScheme
   con Quant
-    subst    :: Scheme
-    tyExpr   :: TyScheme
+    subst    :  Scheme
+    tyExpr   :  TyScheme
   con SystemF
-    tyExpr   :: TyExpr
+    tyExpr   :  TyExpr
   con Bottom
   -- These next two are just used internally
   con Sugar
      prefix  :: Prefix
-     tyExpr  :: TyScheme
+     tyExpr  :  TyScheme
   con Forall
      tyQuant :: [HsName]
-     tyExpr  :: TyScheme
+     tyExpr  :  TyScheme
 
 -- A simple tybound e.f. (a >= phi)
 data Scheme
   con Simple
     varnm  :: HsName
-    bounds :: TyScheme
+    bounds :  TyScheme
     
 data DataFieldExpr
   con Upd
@@ -105,9 +105,9 @@ data DataFieldExpr
    
 data DataFieldPatExpr
   con Ext
-    dataFieldPatExpr  :: DataFieldPatExpr
+    dataFieldPatExpr  :  DataFieldPatExpr
     nm                :: HsName
-    patExpr           :: PatExpr
+    patExpr           :  PatExpr
   con Con
     nm                :: HsName
     
@@ -129,16 +129,16 @@ data RecPatExpr
   con Ext
     recPatExpr  :  RecPatExpr
     mbNm        :: (Maybe HsName)
-    patExpr     :: PatExpr
+    patExpr     :  PatExpr
   con Expr
-    patExpr     :: PatExpr
+    patExpr     :  PatExpr
     
 data RowTyExpr
   con Empty
   con Ext
-    rowTyExpr       :: RowTyExpr
+    rowTyExpr       :  RowTyExpr
     mbNm            :: (Maybe HsName)
-    tyExpr          :: TyExpr
+    tyExpr          :  TyExpr
     
 data KiExpr
   con Con
@@ -146,15 +146,15 @@ data KiExpr
   con Var
     nm       :: HsName
   con App
-    func     :: KiExpr
-    arg      :: KiExpr
+    func     :  KiExpr
+    arg      :  KiExpr
   con AppTop
-    kiExpr   :: KiExpr
+    kiExpr   :  KiExpr
   con Parens
-    kiExpr   :: KiExpr
+    kiExpr   :  KiExpr
   con Ann
     ann      :: KiExprAnn
-    kiExpr   :: KiExpr
+    kiExpr   :  KiExpr
     
 data Expr
   con IConst
@@ -173,7 +173,7 @@ data Expr
     decls         :  Decls
     body          :  Expr
   con Lam
-    arg           :: PatExpr
+    arg           :  PatExpr
     body          :  Expr
   con AppTop
     expr          :  Expr
@@ -192,14 +192,14 @@ data Expr
     str           :: String
   con Case
     expr          :  Expr
-    alts          :: CaseAlts
+    alts          :  CaseAlts
     mbCaseIds     :: (Maybe UIDS)
     caseFailS     :: UIDS
     isTupOfArg    :: Bool
   con DataFields
     dataFieldExpr :: DataFieldExpr
   con Rec
-    recExpr       :: RecExpr
+    recExpr       :  RecExpr
   con Sel
     expr          :  Expr
     lbl           :: HsName
@@ -218,32 +218,32 @@ data PatExpr
     nm               :: HsName
   con VarAs
     nm               :: HsName
-    patExpr          :: PatExpr
+    patExpr          :  PatExpr
   con App
-    func             :: PatExpr
-    arg              :: PatExpr
+    func             :  PatExpr
+    arg              :  PatExpr
   con AppTop
-    patExpr          :: PatExpr
+    patExpr          :  PatExpr
   con Parens
-    patExpr          :: PatExpr
+    patExpr          :  PatExpr
   con Ann
     ann              :: PatExprAnn
-    patExpr          :: PatExpr
+    patExpr          :  PatExpr
   con TypeAs
     tyExpr           :: TyExpr
-    patExpr          :: PatExpr
+    patExpr          :  PatExpr
   con SConst
     str              :: String
   con Rec
-    recPatExpr       :: RecPatExpr
+    recPatExpr       :  RecPatExpr
   con DataFields
-    dataFieldPatExpr :: DataFieldPatExpr
+    dataFieldPatExpr ::  DataFieldPatExpr
   con Irrefutable
-    patExpr          :: PatExpr
+    patExpr          :  PatExpr
     
 data CaseAlt
   con Pat
-    patExpr   :: PatExpr
+    patExpr   :  PatExpr
     expr      :  Expr
 
 type CaseAlts : [CaseAlt]
@@ -279,13 +279,13 @@ data Decl
     nm         :: HsName
     tyExpr     :: TyExpr
   con Val
-    patExpr    :: PatExpr
+    patExpr    :  PatExpr
     expr       :  Expr
   con Data
     isNewType  :: Bool
     tyNm       :: HsName
     tyVars     :: TyVars
-    constrs    :: DataConstrs
+    constrs    :  DataConstrs
   con KiSig
     nm         :: HsName
     kiExpr     :: KiExpr
@@ -434,9 +434,6 @@ itf CaseAlt
     
 datasem CaseAlt monad IO
   clause Pat
-    child patExpr : PatExpr
-    
-    patExpr.ast = loc.patExpr
     patExpr.pre = trace ("Pat: " ++ pp lhs.pre) lhs.pre
     patExpr.env = lhs.env
     patExpr.exp = loc.patExpr
@@ -450,13 +447,12 @@ datasem CaseAlt monad IO
     loc.pat = appAll expr.sub patExpr.res
     
     loc.ety = trace ("Expr: " ++ pp loc.expr ++ ":" ++ pp expr.res ++ "\nPatExpr: " ++ pp loc.patExpr ++ ":" ++ pp patExpr.res) $ maybe (error $ "Type inference of the expression '" ++ pp loc.expr ++ "' has failed") id expr.res
-    -- (loc.q1, loc.q2) = split(patExpr.pre, domain patExpr.res \\ domain expr.pre)
-    loc.pre = expr.pre -- `munion` loc.q1
+    loc.pre = expr.pre
    (loc.q4, loc.t2) = trace ("Deep2: " ++ pp loc.pre ++ " ^^ " ++ pp loc.ety) $ deep_explode loc.pre loc.ety
     
     lhs.pre = trace ("Prefix: " ++ pp loc.q4) loc.q4
     lhs.frs = expr.frs
-    lhs.sub = expr.sub -- s.sub -- `remove` (domain patExpr.res \\ domain expr.sub) -- `munion` expr.sub
+    lhs.sub = expr.sub
     lhs.res = let e = CaseType loc.pat loc.t2
               in trace ("case finished: " ++ pp e ++ " {" ++ pp expr.sub ++ "}") e
     
@@ -469,7 +465,7 @@ datasem CaseAlts monad IO
     
     tl.exp = appAll hd.sub lhs.exp
     tl.env = lhs.env
-    tl.pre = let e = hd.pre in trace ("TL in: " ++ pp e) e -- `merge` lhs.pre in trace ("TL in: " ++ pp e) e
+    tl.pre = let e = hd.pre in trace ("TL in: " ++ pp e) e
     tl.frs = hd.frs
         
     loc.ty_tl = trace ("CaseAlts tl: " ++ pp tl.res ++ " ** " ++ pp tl.sub) tl.res
@@ -542,9 +538,6 @@ datasem RecPatExpr monad IO
   clause Empty
     lhs.res = return RowTyExpr_Empty
   clause Expr
-    child patExpr : PatExpr
-    patExpr.ast = loc.patExpr
-
     patExpr.env = lhs.env
     patExpr.exp = loc.patExpr
     patExpr.frs = lhs.frs
@@ -556,9 +549,6 @@ datasem RecPatExpr monad IO
     lhs.frs    = patExpr.frs
     lhs.pre    = patExpr.pre
   clause Ext
-    child patExpr : PatExpr
-    patExpr.ast = loc.patExpr
-    
     lhs.var_nm = recPatExpr.var_nm ++ patExpr.var_nm
     
     recPatExpr.pre = lhs.pre
@@ -614,9 +604,6 @@ datasem PatExpr monad IO
   clause VarAs
     lhs.var_nm = return loc.nm
     
-    child patExpr : PatExpr
-    patExpr.ast = loc.patExpr
-    
     patExpr.exp = loc.patExpr
     patExpr.env = lhs.env
     patExpr.frs = lhs.frs
@@ -632,8 +619,6 @@ datasem PatExpr monad IO
     (loc.a2, loc.frs2) = fresh loc.frs1
     (loc.b , loc.frs3) = fresh loc.frs2
     
-    child func : PatExpr
-    func.ast = loc.func
     func.exp = loc.func
     func.frs = loc.frs3
     func.pre = lhs.pre
@@ -642,8 +627,6 @@ datasem PatExpr monad IO
     (loc.func_pre, loc.func_res) = let e = deep_explode func.pre func.res
                                    in trace ("PatExpr:[App]:[Func]    " ++ pp e) e
     
-    child arg : PatExpr
-    arg.ast = loc.arg
     arg.exp = loc.arg
     arg.frs = func.frs
     arg.pre = loc.func_pre
@@ -652,9 +635,9 @@ datasem PatExpr monad IO
     (loc.arg_pre, loc.arg_res) = let e = deep_explode arg.pre arg.res
                                  in trace ("PatExpr:[App]:[Arg]     " ++ pp e) e
     
-    (loc.temp1, loc.frt1) = trace ("Extend[1] " ++ pp loc.arg_pre) $ extend (loc.arg_pre, Scheme_Simple loc.a1 (appAll arg.sub loc.func_res), arg.frs) True
-    (loc.temp2, loc.frt2) = trace ("Extend[2] " ++ pp (fst loc.temp1)) $ extend (fst loc.temp1, Scheme_Simple loc.a2 (loc.arg_res), loc.frt1) True
-    (loc.temp3, loc.frt3) = trace ("Extend[3] " ++ pp (fst loc.temp2)) $ extend (fst loc.temp2, Scheme_Simple loc.b  (TyScheme_Bottom), loc.frt2) True
+    loc.temp1 = trace ("Extend[1] " ++ pp loc.arg_pre) $ extend (loc.arg_pre, Scheme_Simple loc.a1 (appAll arg.sub loc.func_res))
+    loc.temp2 = trace ("Extend[2] " ++ pp (fst loc.temp1)) $ extend (fst loc.temp1, Scheme_Simple loc.a2 (loc.arg_res)) 
+    loc.temp3 = trace ("Extend[3] " ++ pp (fst loc.temp2)) $ extend (fst loc.temp2, Scheme_Simple loc.b  (TyScheme_Bottom))
     
     (loc.q2', loc.e2') = (fst loc.temp3, (snd loc.temp1) `munion` (snd loc.temp2) `munion` (snd loc.temp3) `munion` func.sub)
     
@@ -663,34 +646,32 @@ datasem PatExpr monad IO
     
     u.exp1 = appAll loc.e2' (TyExpr_Var loc.a1)
     u.exp2 = (appAll loc.e2' (TyExpr_Var loc.a2)) `mkArrow` (TyExpr_Var loc.b)
-    u.frs  = loc.frt3
+    u.frs  = arg.frs
     
     loc.q3 = trace ("PatExpr:[App]:[Pre-out] " ++ pp u.pre) u.pre
     loc.e3 = trace ("PatExpr:[App]:[Env]     " ++ pp u.sub) u.sub
     
+    lhs.frs = u.frs
+    
+    loc.sub = let x = nub (domain loc.q3)
+              in loc.temp_sub `remove` x
+              
     (loc.q4, loc.q5) = curry split loc.q3 (domain lhs.pre)
     
     lhs.res = let b = TyExpr_Var loc.b
                   e = appAll (loc.e3 `munion` loc.e2') b
                   f = ptype $ desugar $ TyScheme_Sugar loc.q5 (TyScheme_SystemF e)
               in trace ("PatExpr:[App]:[Res]     " ++ pp f ++ "\n\t" ++ pp loc.q4 ++ "\n\t" ++ pp loc.temp_sub) (ptype $ (TyScheme_SystemF e))
-    loc.temp_sub = let subs = func.sub `munion` arg.sub -- applyEnv loc.e2' (func.sub `munion` arg.sub)
-                   in subs `munion` loc.e3 -- added union
+    loc.temp_sub = let subs = func.sub `munion` arg.sub
+                   in subs `munion` loc.e3
     lhs.sub = loc.temp_sub
-    lhs.pre = loc.q3 -- loc.q4
-    lhs.frs = u.frs
-    
-    loc.sub = let x = nub (domain loc.q3)
-              in loc.temp_sub `remove` x
+    lhs.pre = loc.q3
               
     lhs.env = let e = appAll loc.sub arg.env
               in trace ("Renaming: " ++ pp arg.env ++ "\n\tUsing: " ++ pp loc.sub ++ "\n\tto " ++ pp e ) e 
     
     lhs.var_nm = func.var_nm `munion` arg.var_nm
   clause AppTop
-    child patExpr : PatExpr
-    patExpr.ast = loc.patExpr
-    
     patExpr.exp = loc.patExpr
     patExpr.env = lhs.env
     patExpr.frs = lhs.frs
@@ -704,9 +685,6 @@ datasem PatExpr monad IO
     lhs.env = patExpr.env
     lhs.frs = patExpr.frs
   clause Parens
-    child patExpr : PatExpr
-    patExpr.ast = loc.patExpr
-    
     patExpr.exp = loc.patExpr
     patExpr.env = lhs.env
     patExpr.frs = lhs.frs
@@ -720,9 +698,6 @@ datasem PatExpr monad IO
     lhs.env = patExpr.env
     lhs.frs = patExpr.frs
   clause Ann
-    child patExpr : PatExpr
-    patExpr.ast = loc.patExpr
-    
     patExpr.exp = loc.patExpr
     patExpr.env = lhs.env
     patExpr.frs = lhs.frs
@@ -736,8 +711,6 @@ datasem PatExpr monad IO
     lhs.pre = patExpr.pre
     lhs.frs = patExpr.frs
   clause TypeAs
-    child patExpr : PatExpr
-    patExpr.ast = loc.patExpr
     patExpr.env = lhs.env
     patExpr.exp = loc.patExpr
     patExpr.pre = lhs.pre
@@ -760,9 +733,6 @@ datasem PatExpr monad IO
   clause SConst
     lhs.var_nm = error "SConst not a var"
   clause Rec
-    child recPatExpr : RecPatExpr
-    recPatExpr.ast = loc.recPatExpr
-    
     lhs.var_nm = recPatExpr.var_nm
     
     recPatExpr.pre = lhs.pre
@@ -778,18 +748,16 @@ datasem PatExpr monad IO
                                     (TyExpr_Row ty)
                                     
     (loc.q1, loc.q2) = split (recPatExpr.pre, domain lhs.pre)
-    -- lhs.res = ptype $ desugar $ TyScheme_Sugar loc.q2  $ TyScheme_SystemF loc.res
     lhs.res = ptype $ TyScheme_SystemF loc.res
-    -- lhs.res = TyScheme_SystemF loc.res
     lhs.sub = recPatExpr.sub
-    -- lhs.pre = loc.q1
     lhs.pre = recPatExpr.pre
     lhs.frs = recPatExpr.frs
     lhs.env = recPatExpr.env
   clause DataFields
     lhs.var_nm = error "DataFields not a var"
   clause Irrefutable 
-    lhs.var_nm = error "Irrefutable not a var"
+    patExpr.exp  = loc.patExpr
+    lhs.var_nm   = error "Irrefutable not a var"
     
 datasem Decl monad IO
   default? sub = const []
@@ -798,6 +766,7 @@ datasem Decl monad IO
   default? sig = last
   default? env = last
   clause Val
+    patExpr.exp           = loc.patExpr
     match PatExpr.Var@loc = loc.patExpr
     
     expr.pre = lhs.pre
@@ -806,7 +775,7 @@ datasem Decl monad IO
     expr.frs = lhs.frs
     
     loc.env           = unGam lhs.env
-    loc.ty            = fromJust $ lookup loc.nm (unGam lhs.env)
+    (loc.qty, loc.ty) = explode [] $ fromJust $ lookup loc.nm (unGam lhs.env)
     loc.declared      = lookup loc.nm (unGam lhs.sig)
     loc.isNotDeclared = isJust loc.declared
     
@@ -814,10 +783,10 @@ datasem Decl monad IO
                       Nothing -> error  $ "Inference failed datasem Decl clause Val. No result"
                       Just x  -> trace ("** " ++ pp loc.nm ++ ": " ++ pp x ++ "\ntSubs: " ++ pp expr.sub) x -- update the Gamma
      
-    (loc.q1, loc.irTy) = deep_explode expr.pre $ addQuantifiers $ appAll expr.sub loc.ty
+    (loc.q1, loc.irTy) = deep_explode expr.pre $ addQuantifiers (domain loc.qty) $ appAll expr.sub loc.ty
     
     child u : UnifyScheme = unifyScheme
-    u.pre = loc.q1
+    u.pre = loc.qty `munion` loc.q1
     u.ty2 = loc.inferred'
     u.ty1 = loc.irTy
     u.frs = expr.frs
@@ -858,7 +827,6 @@ datasem Decl monad IO
          lhs.frs = u.frs
          lhs.env = scope lhs.env (loc.gam)
   clause TySig
-    -- (loc.ty, loc.frs, _) = renameVars lhs.frs (mkQuantified loc.tyExpr)
     loc.env      = unGam lhs.env
     loc.inferred = maybe (error $ "Type signature given without let binding '" ++ pp loc.nm ++ "'") id (lookup loc.nm loc.env)
 
@@ -890,8 +858,6 @@ datasem Decl monad IO
          lhs.sig = Gamma $ minsert loc.nm loc.dcl (unGam lhs.sig)  -- update the Sig list
        
   clause Data
-     child constrs : DataConstrs
-     constrs.ast = loc.constrs
      loc.nm = let vars = map (\(TyVar_Var x) -> TyExpr_Var x) loc.tyVars
               in  foldl TyExpr_App (TyExpr_Con loc.tyNm) vars
      (TyScheme_SystemF constrs.nm, lhs.frs, loc.sub) = renameVars lhs.frs (TyScheme_SystemF loc.nm)
@@ -965,28 +931,24 @@ datasem Expr monad IO
        
        match True = isJust func.res
        
-       (loc.func_pre, loc.func_res) = let e = explode func.pre (fromJust func.res)
-                                      in trace ("App:[Func]    " ++ pp e) e
-       -- loc.func_res = let e = fromJust func.res
-                      -- in trace ("App:[Func]    " ++ pp e) e
+       loc.func_res = let e = fromJust func.res
+                      in trace ("App:[Func]    " ++ pp e) e
        
        arg.exp = loc.arg
        arg.frs = func.frs
-       arg.pre = loc.func_pre
+       arg.pre = func.pre
        
        arg.env = appAll func.sub lhs.env
        
        match True = isJust arg.res
        
        -- These break higher-rank functions, They need to be pushed in the Env as is.
-       (loc.arg_pre, loc.arg_res) = let e = explode arg.pre (fromJust arg.res)
-                                    in trace ("App:[Arg]     " ++ pp e) e
-       -- loc.arg_res = let e = fromJust arg.res
-                     -- in trace ("App:[Arg]     " ++ pp e) e
+       loc.arg_res = let e = fromJust arg.res
+                     in trace ("App:[Arg]     " ++ pp e) e
        
-       (loc.temp1, loc.frt1) = trace ("Extend[1] " ++ pp arg.pre) $ extend (loc.arg_pre, Scheme_Simple loc.a1 (appAll arg.sub loc.func_res), arg.frs) True
-       (loc.temp2, loc.frt2) = trace ("Extend[2] " ++ pp (fst loc.temp1)) $ extend (fst loc.temp1, Scheme_Simple loc.a2 (loc.arg_res), loc.frt1) True
-       (loc.temp3, loc.frt3) = trace ("Extend[3] " ++ pp (fst loc.temp2)) $ extend (fst loc.temp2, Scheme_Simple loc.b  (TyScheme_Bottom), loc.frt2) True
+       loc.temp1 = trace ("Extend[1] " ++ pp arg.pre) $ extend (arg.pre, Scheme_Simple loc.a1 (appAll arg.sub loc.func_res))
+       loc.temp2 = trace ("Extend[2] " ++ pp (fst loc.temp1)) $ extend (fst loc.temp1, Scheme_Simple loc.a2 (loc.arg_res))
+       loc.temp3 = trace ("Extend[3] " ++ pp (fst loc.temp2)) $ extend (fst loc.temp2, Scheme_Simple loc.b  (TyScheme_Bottom))
        
        (loc.q2', loc.e2') = (fst loc.temp3, (snd loc.temp1) `munion` (snd loc.temp2) `munion` (snd loc.temp3) `munion` func.sub)
        
@@ -995,7 +957,7 @@ datasem Expr monad IO
        
        u.exp1 = appAll loc.e2' (TyExpr_Var loc.a1)
        u.exp2 = (appAll loc.e2' (TyExpr_Var loc.a2)) `mkArrow` (TyExpr_Var loc.b)
-       u.frs  = loc.frt3
+       u.frs  = arg.frs
        
        loc.q3 = trace ("App:[Pre-out] " ++ pp u.pre) u.pre
        loc.e3 = trace ("App:[Env]     " ++ pp u.sub) u.sub
@@ -1034,8 +996,6 @@ datasem Expr monad IO
         lhs.frs = body.frs
         -- Add check for empty Sig
     clause Lam
-        child arg : PatExpr
-        arg.ast = loc.arg
         arg.env = lhs.env
         arg.pre = lhs.pre
         arg.exp = loc.arg
@@ -1043,12 +1003,9 @@ datasem Expr monad IO
    
        loc.exp_a = ftype arg.res
        
-       -- (TyScheme_SystemF loc.exp_a) = arg.res
-       -- loc.exp_a = let e = ftype arg.res
-                   -- in trace ("Arg: " ++ pp e ++ "\n\t" ++ pp arg.env) e
        (loc.b, loc.frs2) = let e = fresh arg.frs
                            in trace ("Lam:[Arg]: " ++ pp loc.exp_a ++ "\n\t" ++ pp loc.env') e
-       -- loc.q'            = arg.pre
+       
        loc.env'          = appAll arg.sub arg.env -- update the bindings with what's occured in the patexpr.
        
        body.frs = loc.frs2
@@ -1067,11 +1024,11 @@ datasem Expr monad IO
                      Nothing -> error "Inference of Expressions failed in Lam, no type infered for body"
                      Just x  -> trace ("Body: " ++ pp x ++ "\n\t" ++ pp body.pre ++ " (" ++ pp (domain lhs.pre) ++ ") \n\t" ++ pp loc.env_full) x
 
-       (loc.q2,  loc.q3)  = curry split body.pre (domain lhs.pre)
                               
-       (loc.q3_, loc.phi1') = deep_explode loc.q3 loc.phi1
+       (loc.pre, loc.phi1') = deep_explode body.pre loc.phi1
        
-       ((loc.q3', loc.e3'), loc.frs') = extend (loc.q3_, (Scheme_Simple loc.b loc.phi1'), body.frs) False
+       (loc.q2,  loc.q3)  = curry split loc.pre (domain lhs.pre `reachedBy` loc.env_full)
+       (loc.q3', loc.e3') = extend (loc.q3, (Scheme_Simple loc.b loc.phi1'))
        
        lhs.res = let b'    = appAll loc.e3' (TyExpr_Var loc.b)
                      a'    = appAll body.sub loc.exp_a -- (TyExpr_Var loc.a)
@@ -1080,7 +1037,7 @@ datasem Expr monad IO
                  in trace ("Body:[Res] " ++ pp e) $ return e
        lhs.sub = body.sub
        lhs.pre = loc.q2
-       lhs.frs = loc.frs'
+       lhs.frs = body.frs
     clause AppTop
        expr.pre = lhs.pre
        expr.env = lhs.env
@@ -1141,12 +1098,8 @@ datasem Expr monad IO
        expr.frs = lhs.frs
        expr.exp = loc.expr
        
-       child alts : CaseAlts
-       
        loc.etype = maybe (error $ "Type inference of expression '" ++ pp loc.expr ++ "' failed in Case") id expr.res
-       -- (loc.q, loc.frs, loc.type) = deep_explode expr.pre expr.frs loc.etype
        
-       alts.ast = loc.alts
        alts.exp = loc.etype
        alts.env = let e = appAll expr.sub lhs.env in trace (pp e) e
        alts.frs = expr.frs
@@ -1170,12 +1123,9 @@ datasem Expr monad IO
        lhs.res  = return loc.vari
     clause DataFields
     clause Rec
-       child recExpr : RecExpr
-    
        recExpr.pre = lhs.pre
        recExpr.env = lhs.env
        recExpr.frs = lhs.frs
-       recExpr.ast = loc.recExpr
        
        loc.res = let e = recExpr.res
                  in case e of
@@ -1187,10 +1137,8 @@ datasem Expr monad IO
        
        (loc.q1, loc.q2) = split (recExpr.pre, domain lhs.pre)
        lhs.res = return $ ptype $ desugar $ TyScheme_Sugar loc.q2 $ TyScheme_SystemF loc.res
-       -- lhs.res = return $ TyScheme_SystemF loc.res
        lhs.sub = recExpr.sub
        lhs.pre = loc.q1
-       -- lhs.pre = recExpr.pre
        lhs.frs = recExpr.frs
     clause SConst
     clause Sel
@@ -1308,7 +1256,6 @@ typeAs = sem typeAs : TypeAs monad IO
                 match TyScheme.SystemF@ty  = loc.ty
                 match TyExpr.Var@vari      = ty.tyExpr
                 lhs.ty  = trace ("TypeAs Variable match. Returning wild: " ++ pp loc.sub) $ mkQuant lhs.exp
-                -- lhs.ty  = trace "TypeAs Variable match. Returning wild" $ lhs.ty -- mkQuant lhs.exp
                 loc.sub = (vari.nm, mkQuantified lhs.exp)
                 (lhs.pre, lhs.sub) = update (lhs.pre, Right loc.sub)
                 lhs.env = app loc.sub lhs.env
@@ -1421,15 +1368,14 @@ subsume = sem subsume : Subsume monad IO
                default? pre = last
                default? frs = last
                clause Main_subsume
-                loc.ty   = lhs.ty -- nf lhs.ty
                 loc.nfTy = isNf lhs.exp
-                loc.nfTs = isNf loc.ty
+                loc.nfTs = isNf lhs.ty
                 loc.nf   = loc.nfTy && loc.nfTs
                 internal nf_check
                     clause s_subsume
                       match True                  = loc.nf
                       match TyExpr.Forall@exp     = mkForall lhs.exp
-                      match TyScheme.Sugar@scheme = sugar loc.ty
+                      match TyScheme.Sugar@scheme = sugar lhs.ty
                       
                       loc.q  = lhs.pre
                       loc.q2 = scheme.prefix
@@ -1469,7 +1415,7 @@ subsume = sem subsume : Subsume monad IO
                     
                     clause wild_subsume
                       match True                  = loc.nf
-                      match (loc.fo, TyScheme.Bottom@l)     = ((), sugar loc.ty)
+                      match (loc.fo, TyScheme.Bottom@l)     = ((), sugar lhs.ty)
                       lhs.sub = empty
                       
                     clause f_subsume

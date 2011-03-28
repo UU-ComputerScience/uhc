@@ -25,8 +25,6 @@ data Expr
 data Operator
   con Plus
   con Minus
-  con Multiply
-  con Divide
   
   
 itf Expr
@@ -64,12 +62,6 @@ datasem Expr
        clause Minus
          match Operator.Minus@loc = loc.op
          lhs.v = exp1.v - exp2.v
-       clause Multiply
-         match Operator.Multiply@loc = loc.op
-         lhs.v = exp1.v * exp2.v
-       clause Divide
-         match Operator.Divide@loc = loc.op
-         lhs.v = exp1.v `div` exp2.v
    clause Var
      loc.val = lookup loc.nm lhs.env
      lhs.v   = fromMaybe (error $ "variable " ++ loc.nm ++ " not defined") loc.val
@@ -95,7 +87,7 @@ main = do let exp = Expr_Let "x"
                              (Expr_Expr (Expr_Num 1) 
                                        Operator_Plus 
                                        (Expr_Expr (Expr_Var "x") 
-                                                  Operator_Multiply 
+                                                  Operator_Minus
                                                   (Expr_Num 3)
                                        )
                              )

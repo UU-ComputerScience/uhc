@@ -24,8 +24,8 @@ import EqHML
 import EH.Util.Pretty hiding (pp, empty)
 import qualified Debug.Trace as D
 
--- trace = flip const 
-trace = D.trace
+trace = flip const 
+-- trace = D.trace
 
 -- | Create a HsName from a string.
 mkName :: String -> HsName
@@ -38,6 +38,13 @@ newtype Gamma = Gamma { unGam :: Env }
 -- | Remove entries from a Env based on their key
 remove :: Eq a => [(a, v)] -> [a] -> [(a, v)] -- Env -> [HsName] -> Env
 remove env entries = foldl (.) id (map rm entries) env
+
+-- escalation fix for lam
+reachedBy :: [HsName] -> Env -> [HsName]
+reachedBy dom []     = dom
+reachedBy dom (x:xs) = if (`elem` dom) `any` domain x 
+                          then codomain x ++ reachedBy (dom ++ filter (`elem` dom) (domain x)) xs
+                          else reachedBy dom xs
 
 -- | add to the first environment things from the second env not in the first
 -- pick :: Env -> Env -> Env
@@ -57,9 +64,9 @@ split (a ,[])      = ([], a)
 split ([], _)      = ([], [])
 split ((p@(TyIndex_Group var phi):q), vars) 
  = case var `elem` vars of
-     True  -> let fvars = case phi of
-                            TyScheme_Quant _ phi' -> ftv phi'
-                            _                     -> []
+     True  -> let fvars = ftv phi -- case phi of
+                            -- TyScheme_Quant _ phi' -> ftv phi'
+                            -- _                     -> []
                   (q1, q2) = split (q, (var `delete` vars) ++ fvars)
               in (p:q1, q2)
      False -> let (q1, q2) = split (q, vars)
@@ -478,15 +485,13 @@ splitOn (x@(TyIndex_Group v1 _):xs) v2
                in (x:a, b)
   
 -- | Extending a Prefix with a Scheme
-extend :: (Prefix, Scheme, Int) -> Bool -> ((Prefix, Env), Int)
-extend (q, scheme@(Scheme_Simple var phi), frs) ren
- = let p = nf phi
+extend :: (Prefix, Scheme) -> (Prefix, Env)
+extend (q', scheme@(Scheme_Simple var ty))
+ = let (q, phi) = explode q' ty 
+       p = nf phi
    in case isUnQualTy p of
-        True  -> ((q, [(var, p)]), frs)
-        _     -> let (ph2, frs', subs) = if False 
-                                            then renameBound frs phi
-                                            else (phi, frs,[])
-                 in ((q++[TyIndex_Group var (promote ph2)], subs), frs')
+        True  -> (q, [(var, p)])
+        _     -> (q++[TyIndex_Group var (promote phi)], [])
 
 renameVars :: Int -> TyScheme -> (TyScheme, Int, Env)
 renameVars frs ty 
@@ -695,9 +700,9 @@ mkQuantified exp
            then TyScheme_SystemF exp
            else foldl' (.) id vars (TyScheme_SystemF exp)
 
-addQuantifiers :: TyScheme -> TyScheme
-addQuantifiers exp
-  = let vars = [TyScheme_Quant (Scheme_Simple x TyScheme_Bottom) | x <- nub (ftv exp)]
+addQuantifiers :: [HsName] -> TyScheme -> TyScheme
+addQuantifiers exists exp
+  = let vars = [TyScheme_Quant (Scheme_Simple x TyScheme_Bottom) | x <- nub (ftv exp \\ exists)]
     in  if null vars
            then exp
            else foldl' (.) id vars exp

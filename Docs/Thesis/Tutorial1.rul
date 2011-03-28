@@ -16,8 +16,6 @@ data Expr
 data Operator
   con Plus
   con Minus
-  con Multiply
-  con Divide
   
   
 itf Expr
@@ -36,12 +34,6 @@ datasem Expr
        clause Minus
          match Operator.Minus@loc = loc.op
          lhs.v = exp1.v - exp2.v
-       clause Multiply
-         match Operator.Multiply@loc = loc.op
-         lhs.v = exp1.v * exp2.v
-       clause Divide
-         match Operator.Divide@loc = loc.op
-         lhs.v = exp1.v `div` exp2.v
          
 {
 test :: Expr -> IO Int
@@ -52,7 +44,7 @@ test exp = do
   return x
 
 main :: IO ()
-main = do let exp = Expr_Expr (Expr_Num 1) Operator_Plus (Expr_Expr (Expr_Num 2) Operator_Multiply (Expr_Num 3))
+main = do let exp = Expr_Expr (Expr_Num 1) Operator_Plus (Expr_Expr (Expr_Num 2) Operator_Minus (Expr_Num 3))
           x <- test exp
           putStrLn $ show x
 }

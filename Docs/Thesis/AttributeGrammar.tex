@@ -1,10 +1,7 @@
-%include lhs2TeX.fmt
-%include polycode.fmt
-
 \chapter{Attribute Grammars}
-\emph{Context Free Grammars} cannot describe the complete syntax of programming languages\cite{knuth1}, particularly specifying any context-sensitive conditions. Specifying that the same value for \emph{n} be enforced in the string $a^nb^nc^n$ cannot be tested by using context free grammars\cite{ken}.
+\emph{Context Free Grammars} cannot describe the complete syntax of programming languages\cite{knuth1}, particularly specifying any context-sensitive condition. For instance the condition that the same value for \emph{n} be enforced in the string $a^nb^nc^n$ cannot be tested by using context free grammars\cite{ken}.
 
-Attribute grammars be used to specify both syntax and semantics of a language. Developed in 1968 by Donald E. Knuth attribute grammars were created as a way to define \emph{meaning} to context free languages. An example of assigning meaning to a grammar would be defining the evaluation of expressions defined by the following \emph{CFG} expressed as \emph{BNF}:
+Developed in 1968 by Donald E. Knuth attribute grammars were created as a way to define \emph{meaning} to context free languages. An example of assigning meaning to a grammar would be defining the evaluation of expressions defined by the following \emph{CFG} expressed as \emph{BNF}:
 
 \begin{figure}[H]
 \begin{grammar}
@@ -17,13 +14,13 @@ Attribute grammars be used to specify both syntax and semantics of a language. D
 <Expr>:<number>; <Expr>, <operator>, <Expr>.
 <number>:<digit>;<digit>,<number>.
 <digit>:"0";"1";"2";"3";"4";"5";"6";"7";"8";"9".
-<relational operator>:"$*$";"$/$";"$-$";"$+$".
+<relational operator>:"$-$";"$+$".
 \end{grammar}
 \caption{BNF definition for Expressions}
 \label{grammar:bnf:expr}
 \end{figure}
 
-The \emph{Terminals} in this case are the \emph{operators} $+,-,*,/$ and the \emph{digits} $0\ldots 9$. The \emph{nonterminals} are the \emph{Expr, number} symbols. This grammar specifies that an expression is either a \textbf{number} or an \textbf{Expr} followed by an \textbf{operator} and then another \textbf{Expr}. For every sentence that can be produced by this grammar a parse tree can be assigned. For instance for the expression "2 + (3 * 5) / (6 - 1)" produces the parse tree in figure \ref{fig.example1.parsetree}. To define meaning for the expression it's natural to do this on a step by step basis corresponding with the structure of the parse tree. Which means starting from the leaves and working up the tree. The meaning of the tree is made up by the meaning of the parts of the tree. This can be done by assigning \emph{attributes} to the tree.
+The \emph{Terminals} in this case are the \emph{operators} $+,-$ and the \emph{digits} $0\ldots 9$. The \emph{nonterminals} are the \emph{Expr, number} symbols. This grammar specifies that an expression is either a \textbf{number} or an \textbf{Expr} followed by an \textbf{operator} and then another \textbf{Expr}. For every sentence that can be produced by this grammar a parse tree can be assigned. For instance the expression "2 + (3 - 5) + (6 - 1)" produces the parse tree in figure \ref{fig.example1.parsetree}. To define meaning to the expression it is natural to do so on a step by step basis corresponding with the structure of the parse tree. Which means starting from the leaves and working up the tree. This can be done by assigning \emph{attributes} to the tree.
 
 \begin{figure}[H]
 \centering
@@ -31,9 +28,9 @@ The \emph{Terminals} in this case are the \emph{operators} $+,-,*,/$ and the \em
 \node (r0) [draw, circle] {+};
 \node (r1) [below left=1cm of r0, draw, circle] {2}
   edge[<-] (r0.south);
-\node (r2) [below right=1cm of r0, draw, circle] {/}
+\node (r2) [below right=1cm of r0, draw, circle] {+}
   edge[<-] (r0.south);
-\node (s0) [below left=1.4cm of r2, draw, circle] {*}
+\node (s0) [below left=1.4cm of r2, draw, circle] {-}
   edge[<-] (r2.south);
 \node (s1) [below left=1cm of s0, draw, circle] {3}
   edge[<-] (s0.south);
@@ -46,18 +43,18 @@ The \emph{Terminals} in this case are the \emph{operators} $+,-,*,/$ and the \em
 \node (f2) [below right=1cm of f0, draw, circle] {1}
   edge[<-] (f0.south);
 \end{tikzpicture}
-\caption{Parse tree example for "2 + (3 * 5) / (6 - 1)"}
+\caption{Parse tree example for "2 + (3 - 5) + (6 - 1)"}
 \label{fig.example1.parsetree}
 \end{figure}
 
-AG's are additions to CFGs to propagate some semantic information along through parse trees. As with the majority of trees used in computer science, ASTs are created with the \emph{root} at the top and the \emph{leaves} at the bottom. There are two kinds of \emph{attributes} defined by knuth\cite{knuth1}:
+AG's are additions to CFGs that can propagate some semantic information along through parse trees. As with the majority of trees used in computer science, ASTs are created with the \emph{root} at the top and the \emph{leaves} at the bottom. With this in mind there are two kinds of \emph{attributes} defined by knuth\cite{knuth1}:
 \begin{description}
-\item[\textbf{synthesized}] This attribute is only dependent on \emph{descendants} of the nonterminal. They are passed bottom-up through the tree.
-\item[\textbf{inherited}] This attribute is defined in terms of the \emph{ancestors} of the nonterminal. They are passed top-down through the tree.
+\item[\textbf{synthesized}] An attribute that is only dependent on \emph{descendants} of the nonterminal. They are passed bottom-up through the tree.
+\item[\textbf{inherited}] An attribute that is defined in terms of the \emph{ancestors} of the nonterminal. They are passed top-down through the tree.
 \end{description}
 
-An attribute can be both a \emph{synthesized} and an \emph{inherited} attribute.
-A semantic can be defined for figure \ref{fig.example1.parsetree} by assigning a \emph{value} synthesized attribute of type \textbf{Int} to the nonterminals \emph{number} and \emph{Expr}. The evaluation rules are quite simple:
+A specific attribute can be both a \emph{synthesized} and an \emph{inherited} attribute.
+Semantics can be defined for the tree figure \ref{fig.example1.parsetree} by assigning a \emph{value} synthesized attribute of type \textbf{Int} to the nonterminals \emph{number} and \emph{Expr}. The evaluation rules are quite simple:
 
 \begin{figure}[H]
 \begin{grammar}
@@ -66,9 +63,7 @@ A semantic can be defined for figure \ref{fig.example1.parsetree} by assigning a
       [(comma){}]
       [(period){\\}]
       [(quote){\begin{bf}}{\end{bf}}]
-      [(nonterminal){$\langle$}{$\rangle$}]
-value(<$Expr^*$>):value(<$Expr_1$>) * value(<$Expr_2$>). 
-value(<$Expr^/$>):value(<$Expr_1$>) / value(<$Expr_2$>). 
+      [(nonterminal){$\langle$}{$\rangle$}] 
 value(<$Expr^+$>):value(<$Expr_1$>) + value(<$Expr_2$>). 
 value(<$Expr^-$>):value(<$Expr_1$>) - value(<$Expr_2$>). 
 value(<Expr>):value(<number>).
@@ -87,11 +82,11 @@ The subscripts are used to disambiguate between the different expression types a
 \node (ri0) [draw, rectangle, right=0.1cm of r0, gray] {v=5};
 \node (r1) [below left=1.7cm of r0, draw, circle] {2}
   edge[<-] (r0.south);
-\node (ri1) [draw, rectangle, right=0.1cm of r1, gray] {v=2};
-\node (r2) [below right=1.7cm of r0, draw, circle] {/}
+\node (ri1) [draw, rectangle, right=0.1cm of r1, gray] {v=3};
+\node (r2) [below right=1.7cm of r0, draw, circle] {+}
   edge[<-] (r0.south);
-\node (ri2) [draw, rectangle, right=0.1cm of r2, gray] {v=3};
-\node (s0) [below left=2.1cm of r2, draw, circle] {*}
+\node (ri2) [draw, rectangle, right=0.1cm of r2, gray] {v=-2};
+\node (s0) [below left=2.1cm of r2, draw, circle] {-}
   edge[<-] (r2.south);
 \node (ri3) [draw, rectangle, right=0.1cm of s0, gray] {v=15};
 \node (s1) [below left=1.0cm of s0, draw, circle] {3}
@@ -110,7 +105,7 @@ The subscripts are used to disambiguate between the different expression types a
   edge[<-] (f0.south);
 \node (ri8) [draw, rectangle, right=0.1cm of f2, gray] {v=1};
 \end{tikzpicture}
-\caption{decorated tree example for "2 + (3 * 5) / (6 - 1)"}
+\caption{decorated tree example for "2 + (3 - 5) + (6 - 1)"}
 \label{fig.example2.decoratedtree}
 \end{figure}
 
@@ -118,12 +113,12 @@ Attribute grammars are akin to \emph{catamorphisms} except without the need to d
 
 \section{Utrecht University Attribute Grammar Compiler (UUAGC)}
 UUAGC (Utrecht University Attribute Grammar Compiler) is a preprocessor which parses Attribute Grammars in a custom language.
-It defined ways to define the syntaxes for the AST types, attributes for the terminals and nonterminals and the semantic functions. It is used in the Utrecht Haskell Compiler to do most of the work.
+It defines ways to specify an AST, attributes for the terminals and nonterminals and the semantic functions. It is used in the Utrecht Haskell Compiler to do most of the work.
 
 \subsection{Limits of UUAGC}
 The \emph{UUAGC} system has a limitation in that it can't perform case distinctions over multiple \emph{abstract syntax trees} at the same time\cite{visitag}. For most applications this is not an issue, since in most cases there is only one \emph{AST} that needs to be traversed at a time. 
 
-Unification is the act of trying to find structural equivalence between two types and is a critical part of type checking. In other words, given two types \emph{$t_{1}$} and \emph{$t_{2}$} unification attempts to find a list of substitutions that allows the instantiation type \emph{$t_{1}$} to type \emph{$t_{2}$}. In order for this to be done it needs to be possible to traverse both \emph{$t_{1}$} and \emph{$t_{2}$} while comparing the types at every node.
+Unification is the act of trying to find structural equivalence between two types and is a critical part of type checking. In other words, given two types \emph{$t_{1}$} and \emph{$t_{2}$} unification attempts to find a list of substitutions that allows the instantiation of type \emph{$t_{1}$} to type \emph{$t_{2}$}. For this to be accomplished it needs to be possible to traverse both \emph{$t_{1}$} and \emph{$t_{2}$} concurrently while comparing the types at every node.
 
 %\begin{figure}[!h]
 %\begin{center}
@@ -155,16 +150,439 @@ Unification is the act of trying to find structural equivalence between two type
 %\label{unify-simple}
 %\end{figure}
 
-For example when unifying the type \emph{$a \rightarrow b$} with \emph{$Int \rightarrow Int$} both trees are traversed concurrently, comparing the nodes and ultimately terminating with the substitution list [(a,Int), (b, Int)]. Aside from this, the ability to be able to traverse \emph{AST}s that were just produced is also required. The reason being that the structure of the \emph{type} being produced is not known a priori. During type inference we gradually gain more information on the type that needs to be produced. This generally presents a problem for AGs\cite{ruler-front} because the synthesis and evaluation phases are two separate passes.
+For instance when unifying the type \emph{$a \rightarrow b$} with \emph{$Int \rightarrow Int$} both trees are traversed concurrently, comparing the nodes and ultimately terminating with the substitution list [(a,Int), (b, Int)]. Aside from this, the ability to be able to traverse \emph{AST}s that were just produced is also required. The reason being that the structure of the \emph{type} being produced is not known a priori. During type inference we gradually gain more information on the type that needs to be produced. This generally presents a problem for AGs\cite{ruler-front} because the synthesis and evaluation phases are two separate passes.
 
 \section{Ruler-Core}
-Ruler-core addresses these restrictions in AG by introducing a model based on \emph{visit}\cite{visits} functions. The resulting language is more flexible while still retaining the core semantics of reasoning over decorated trees with attribute.
+Ruler-core addresses these restrictions in AG by introducing a model based on \emph{visit}\cite{visits} functions. The resulting language is more flexible while still retaining the core semantics of reasoning over decorated trees with attributes. The simplest description of ruler-core would be:\emph{a language to manipulate visit sequences.}
 
 \begin{quotation}
-A \emph{visit function}\cite{visitag} is a (partial) function that takes several inputs (\emph{inherited attributes}) and produces several output values (\emph{synthesized attributes}) and optionally a \emph{tail} function which delegates work into other child visits.
+A \emph{visit function}\cite{visitag} is a (partial) function that takes several inputs (\emph{inherited attributes}) and produces several output values (\emph{synthesized attributes}).
 \end{quotation}
 
-As with traditional AGs \emph{synthesized} attributes are passed top-down in the tree while \emph{inherited} attributes are passed bottom-up. An attribute can be both \emph{synthesized} and \emph{inherited}.
+As with traditional AGs \emph{inherited} attributes are passed top-down in the tree while \emph{synthesized} attributes are passed bottom-up. An attribute can be both \emph{synthesized} and \emph{inherited}.
+
+Everything that can be expressed in uuagc can be expressed in ruler-core, but the inverse is not true. One of the simplest things doable in ruler-core is the evaluation of a single AST. In order to write an evaluator for the expression type in figure \ref{grammar:bnf:expr} we first need to define the \emph{datatypes} and \emph{interfaces}.
+
+\begin{figure}[H]
+\begin{minipage}[t]{0.4\linewidth}
+\begin{code}
+data Expr
+  con Num
+    val     :: Int
+  con Expr
+    exp1    :  Expr
+    op      :: Operator
+    exp2    :  Expr
+\end{code}
+\end{minipage}
+\begin{minipage}[t]{0.6\linewidth}
+\begin{code}
+data Operator
+  con Plus
+  con Minus
+
+itf Expr
+  visit eval
+    inh ast :: Expr -- input
+    syn v   :: Int  -- output
+\end{code}
+\end{minipage}
+\caption{Evaluating expressions in ruler-core: datatypes}
+\label{example:tutorial1:datatypes}
+\end{figure}
+
+\subsubsection{Data types}
+Ruler-core data types resemble Haskell's record syntax with some notable exceptions.
+
+Instead of an $=$ or \textbar \space like in Haskell, an explicit \textbf{con} keyword is used to indicate the \emph{name} of the constructor. Every element of the constructor must be explicitly named. Indentation is also important since indentation separates constructors, in general \textbf{con} should be deeper indented then \textbf{data} and the members of a constructor should be indented further than the \textbf{con}. 
+
+As can be seen in figure \ref{example:tutorial1:datatypes} there are two different way of declaring a type of constructor argument. Using $:$ indicates that we are declaring a type that is a \emph{nonterminal} and $::$ indicates a \emph{terminal}. The reason for this distinction is that for \emph{nonterminal} some extra machinery is defined, it is important however to know that for every nonterminal ruler-core enforces that at least one of the declared visits have an \emph{inherited} attribute name \emph{ast} with the type of the datatype we're defining a semantic function for (more on this later).
+
+Only types of kind $:: \star$ are allowed by ruler-core which means you can only have monomorphic types. As with UUAGC the constructors generated will be in the form of \emph{TypeName\_ConstructorName}. To put this concretely figure \ref{example:tutorial1:datatypes} exposes the constructor functions \textbf{Expr\_Num} and \textbf{Expr\_Expr} for the type \emph{Expr}.
+
+\subsection{Interfaces}
+\emph{Interfaces} are analogous to the interface definitions in other languages, except instead of declaring function prototypes/signatures we declare visits and their attributes. Interfaces declare \emph{Non-Terminal}s which can be named the same as their corresponding \emph{data types}. For those familiar with uuagc, a \textbf{ATTR} declaration in uuagc would equal an interface declaration with one visit and all the attributes declared in the \textbf{ATTR} would be part of this one visit. The ability to explicitly declare these visits and interfaces is where ruler-core's true abilities come in.
+
+\begin{figure}[h!]
+\begin{code}
+itf <name>
+  {visit <name>
+    {attributes}
+  }
+\end{code}
+\caption{Ruler-core interface declaration syntax}
+\label{itf:syntax}
+\end{figure}
+
+As many visits as needed can be declared inside an interface. Every visit is a new \emph{co-routine} and will be scheduled to run at the most beneficial time. % Outside of visits we can also declare attributes. These attributes are thus not explicitly assigned to a visit. They will be automatically assigned to the earliest visit possible.
+
+\subsection{Visits}
+As mentioned previously visits are co-routines (functions) that can be invokes to perform a computation, the synthesis of attributes are done in these sequential passes. The preprocessor schedules as many visits as possible at the same time. Visits consist of different clauses. If a visit only has one clause, it does not have to be declared. 
+
+Visits like all functions have arguments, or in this case attributes. The \emph{inh} keyword indicates an \emph{inherited} attribute (input value) whereas the \emph{syn} indicates a \emph{synthesized} attribute (output value). The order of these attributes are unimportant.
+
+After declaring the datatypes and interfaces the actual semantic function can be declared to evaluate the expressions:
+
+\begin{figure}[H]
+\begin{code}
+datasem Expr
+   clause Num
+     lhs.v = loc.val -- output
+   clause Expr
+     internal opcheck
+       clause Plus
+         match Operator.Plus@loc = loc.op
+         lhs.v = exp1.v + exp2.v -- output
+       clause Minus
+         match Operator.Minus@loc = loc.op
+         lhs.v = exp1.v - exp2.v -- output
+\end{code}
+\caption{Evaluating expressions in ruler-core: datasem}
+\label{example:tutorial1:datasem}
+\end{figure}
+
+Figure \ref{example:tutorial1:datasem} has various elements that can be best explained in isolation. Keep this figure in mind when reading.
+
+\subsection{Semantic functions}
+\label{semantics}
+Semantic functions are used to define semantics for a declared interface. Within semantic functions it is possible to \emph{invoke} any other coroutine(s) that might be needed. Although there is an implicit \textbf{invoke} keyword it is rarely needed to explicitly \emph{invoke} a visit within a clause. When enough attributes are defined for a visit it is implicitly invoked.
+
+Within a semantic function it is possible to have any number of semantic rules. Clauses provide a way to do scoping. A clause inherits all the attributes of its parent clauses in the same visit. If a visit has only one clause it doesn't have to be explicitly declared. 
+
+There are two ways of defining a semantic function: using the \textbf{datasem} and a \textbf{sem} keyword. The example in figure \ref{example:tutorial1:datasem} uses the former.
+
+\subsubsection{Datasem}
+Defining semantics for a \emph{data type} and \emph{nonterminal} defined in ruler-core can be done with a shorthand: \textbf{datasem}. As the name suggests \textbf{datasem} stands for \emph{datatype semantics}. Again those familiar with uuagc can compare defining a \textbf{datasem} in ruler-core with a \textbf{SEM} declaration in uuagc.
+
+\begin{figure}[!h]
+\begin{code}
+datasem <nonterminal> [monad <type>]
+    {clause <name>
+        ...
+    }
+\end{code}
+\caption{Syntax definition of a sem function}
+\label{datasem:syntax}
+\end{figure}
+
+Key here is that defining a \textbf{datasem} is a shorthand for defining a \textbf{sem} (more on this later). The \emph{monad} type does now need to be specified, however if a type was specified for any \textbf{sem} which is used by or used in this \textbf{datasem} then to disambiguate you need to define the type in this declaration as well.
+
+The \emph{clauses} in a \textbf{datasem} should coincide with the constructors of the data type. The preprocessor enforces that there is a clause for every declared constructor. Every clause declaration implicitly adds a \textbf{match} statement for every clause. This is the reason why there is a required attribute \emph{ast} for ever nonterminal. This is the attribute on which matches are tried out on in the main clauses of a \textbf{datasem}. A \textbf{match} is essentially an assertion, if failed nothing else for that clause is tried out and backtracking takes place.
+
+In a datasem, in every clause, when there is a nonterminal in the definition of that constructor, there will be an implicit child declared for that field. It is for this reason that in figure \ref{example:tutorial1:datasem} we have to refer to the operator terminal via the local child (loc.op) and the \emph{exp1} and \emph{exp2} nonterminals directly. When enough attributes are filled in for the child elements an implicit invoke takes place. In the case of \emph{Expr} there was only one inherited attribute: ast, but since ast is filled in automatically by ruler-core the invoke is implicitly performed. Which is why the synthesized attributes can be accessed without any further action. 
+
+\subsection{Bindings}
+\label{bindings}
+In Haskell the \textbf{Let} binding is used when introducing new variable bindings in a sequential computation. In ruler-core the keyword \emph{let} is not used when assigning values to bindings, however since bindings in ruler-core are translated to \emph{let} declarations by the preprocessor the same behaviors are expected from them. This means that binding to a \emph{pattern} on the \emph{left hand side} is valid. e.g. \[ (\alpha, \beta) = \ldots \] is allowed. This allows the definition multiple attributes at the same time.
+
+While it is possible to read any attribute as many times as needed, assignment of values to a visits attributes are only allowed once per visit. The compiler will generate an error if it finds code that tries to redefine an attribute (there is no shadowing).
+
+The notation for referencing patterns, expressions and variables is \emph{k}.\emph{x} where \emph{k} is the name of child name and \emph{x} the attribute to be referenced. There are two build in reserved children:
+
+\paragraph{lhs}
+The \emph{lhs} child is used to access the \emph{inherited} attributes and to assign values to the \emph{synthesized} attributes. Which one is intended is derived from the context in which they're used: When used at the \emph{left hand side} of an expression they're treated as \emph{synthesized} attributes but when used in the \emph{right hand side} of an bind they refer to the \emph{inherited} values.
+ 
+\paragraph{loc}
+The \emph{loc} child is used in a way that is analogous to local variables in other languages. You can define as many of these as needed. The scope of the \emph{loc} is only the clause/visit that it's declared in and it's children.
+
+
+\subsection{Clauses}
+Clauses at their simplest can be seen as a way of defining alternatives. When a assertion in clause can't be applied it backtracks out of the clause and the next one is tried out. Clauses are tried out in sequential order.
+A visit can contain multiple clauses, corresponding to the different ways to interpret the \emph{inherited} attributes of the visit.
+
+If no clause can be executed in a visit, the system backtracks to the parent visit and clause. This behavior goes all the way up to the root. In order to be able to generate proper errors it is recommended to always make the collection of clauses for a visit total. The easiest way to do this is to make a \emph{catch-all} clause at the end.
+
+\subsection{Matches}
+Matches are akin to case expressions, like case expressions they force evaluation and attempt to pattern match on the constructor. For any data type defined in ruler-core itself and the \emph{Bool} type a \textbf{match} can be done.
+
+\begin{figure}[h!]
+\begin{code}
+match TypeName.ConstructorName@child  = <expression>
+\end{code}
+\caption{Match syntax definition}
+\label{match:syntax}
+\end{figure}
+
+If the \emph{match} succeeds the \emph{named} attributes defined for the elements of the Constructor are added as attributes of the specified \emph{child}. Of the two reserved children \textbf{lhs} and \textbf{loc} only \textbf{lhs} is not allowed as a child name here\footnote{note that the childname "var" is also reserved, but in the case of var you will get an actual syntax error}. On the other hand if the \emph{match} fails the entire clause is aborted and backtracking is performed.
+There is one notable exception to this syntax, \emph{build in} types such as \emph{Bool} which have no children have an alternative syntax:
+
+\begin{figure}[h!]
+\begin{code}
+match True = <expression>
+\end{code}
+\caption{Example match on Bools}
+\label{match:bool}
+\end{figure}
+
+As figure \ref{match:bool} illustrates on certain types the rules are relaxed, particularly the Bool type. Note that because there is no build in support for the \emph{Maybe} type often in this thesis this will be supported by first match on True = isJust \emph{expr} and then a subsequent call to the \emph{fromJust} function.
+
+\subsection{Internal}
+Sometimes it is necessary to make a decision inside a clause to branch. For instance on a value that was just synthesized. this is achieved by using the \emph{internal} keyword. This keyword provides a means of scoping and branching at the same time. Internals contain a list of \emph{clauses} which will be tried out in order one at a time. Attributes that were declared before the \emph{internal} statement are all in scope inside an internal block. 
+
+\begin{figure}[h!]
+\begin{code}
+internal <name>
+  {clause}
+  {clause}
+  ...
+\end{code}
+\caption{Internal syntax definition}
+\label{internal:syntax}
+\end{figure}
+
+Unfortunately once branched the execution flow never returns back to the parent clause in question. Any code below the internal is floated upward.
+
+\subsection{Invoking semantic functions}
+To complete this example we also need be able to call semantic functions from Haskell:
+
+\begin{figure}[H]
+\begin{code}
+eval :: Expr -> IO Int
+eval exp = do
+  let inh = Inh_Expr_eval { ast_Inh_Expr = exp }
+  syn <- invoke_Expr_eval dnt_Expr inh
+  let x = v_Syn_Expr syn
+  return x
+\end{code}
+\caption{calling wrappers from within haskell}
+\end{figure}
+
+The first line (the let) defines the \emph{inherited} attributes expected for the visit we want to call. In this case, we want to call the "eval" visit which specified that we have one \emph{inherited} attribute called \emph{ast}. For every visit there is a record for the \emph{inherited} and \emph{synthesized} attributes. The record name is build up as \textbf{X\_I\_v} where \textbf{X} equals "Inh" or "Syn", \textbf{I} is the interface name and \textbf{v} the visit name.
+
+The labels of the fields inside these record are made up of \textbf{attr\_X\_I} where \textbf{attr} is the attribute name, \textbf{X} either "Inh" or "Syn" indicating the attribute type and \textbf{I} the interface name.
+
+The second line invokes the \textbf{eval} routine with the given \emph{inherited} attributes and returns the \emph{synthesized} attribute records. The syntax for invoking a visit is \textbf{invoke\_I\_v \emph{wrapper inhs}}. The \textbf{I} indicates the interface name, the \textbf{v} the visit name just as before. \textbf{inhs} stands for the record containing the inherited attributes and finally \textbf{wrapper} stands for the wrapper function to call. For every \textbf{datasem} ruler-core defines a wrapper \textbf{dnt\_I} and for every \textbf{sem} function we already had to explicitly give a name for the function (more on this later).
+
+Now lets scale up the example and add variables to expressions. To do this we need to introduce two extra constructors to \emph{Expr} corresponding to introduction and elimination:
+
+\begin{code}
+  con Var
+    nm      :: String
+  con Let
+    nm      :: String
+    exp     :  Expr
+    body    :  Expr
+\end{code}
+
+In order to be able to evaluate variables we need to pass an \emph{environment} down through the tree to collect all variables. We do this by modifying the \emph{interface} of \emph{Expr}. The new \emph{interface} definition is:
+
+\begin{code}
+itf Expr
+  visit eval 
+    inh ast :: Expr
+    inh env :: Env
+    syn v   :: Int
+    syn env :: Env
+\end{code}
+
+A new attribute \emph{env} is added which is both a \emph{synthesized} and \emph{inherited} attribute. Strictly speaking the \emph{env} could only be an \emph{inherited} attribute, however both are needed if you want to have access to variables introduced in the left branch in Expr in the right branch.
+
+Now that the type and interface have been extended the next step is to extend the datatype semantics to support the new clauses.
+
+\begin{code}
+   clause Var
+     loc.val = lookup loc.nm lhs.env
+     lhs.v   = fromMaybe (error ...) loc.val
+   clause Let
+     loc.env  = (loc.nm, exp.v): lhs.env
+     body.env = loc.env
+     lhs.v    = body.v
+\end{code}
+
+This showcases that \emph{lhs} is used both for synthesized and inherited attributes as mentioned before. Which is intended is determined by the way it's used (see section \ref{bindings}).
+
+Sometimes we need to traverse special types like Lists. The next example shows how list support is provided in ruler-core by adding the ability to evaluate a list of expressions.
+
+\subsection{Special types}
+At the time of writing ruler-core only supports \emph{List}s in this category, but could be easily extended to support any product type like \emph{Maybe} and \emph{Map}.
+
+\subsubsection{Lists}
+Lists are declared using the \textbf{type} keyword. The syntax should be very familiar for a Haskell programmer: \[ \textbf{type} \hspace{5pt} \emph{name} : [\emph{type}] \]
+
+Declaring the list type \emph{Expr} would look like:
+
+\begin{figure}[H]
+\begin{code}
+type Exprs : [Expr]
+\end{code}
+\caption{Exprs declaration using a list type}
+\label{type:exprs}
+\end{figure}
+
+Figure \ref{type:exprs} declares the \emph{Non-Terminal} Exprs. This definition could be seen as the data declaration in figure \ref{type:lists}. It introduces the two type constructors \emph{Nil} and \emph{Cons} along with the attributes shown.
+
+\begin{figure}[H]
+\begin{code}
+data Exprs
+  con Nil
+  con Cons
+    hd : Expr
+    tl : Exprs
+\end{code}
+\caption{Syntactically equivalent definition of the Exprs type}
+\label{type:lists}
+\end{figure}
+
+Next to creating the syntactic information, ruler-core also generates some \emph{Interface} declarations for every list type. 
+
+The interface declared for the \emph{Exprs} example in figure \ref{type:lists} would be equivalent to:
+
+\begin{figure}[h!]
+\begin{code}
+itf Exprs
+  visit exprs_visit
+    inh ast :: Exprs
+\end{code}
+\caption{Ruler-core interface declaration syntax}
+\label{itf:exprs}
+\end{figure}
+
+Again a special \emph{inherited} attribute \textbf{ast} is declared on which \emph{matches} will be performed in clauses. In actuality this interface itself is not useful, instead the preprocessor enforces that at least one of the visits declared for the \emph{non-terminal} Exprs contain an inherited attribute \emph{ast}. If this is not the case an error will be generated.
+
+With figure \ref{type:lists} and \ref{itf:exprs} in mind we can declare the real interface to our \emph{Exprs} type along with the corresponding datasem.
+
+\begin{figure}
+\begin{minipage}[t]{0.4\linewidth}
+\begin{code}
+itf Exprs
+  visit eval 
+    inh ast :: Exprs
+    inh env :: Env
+    syn v   :: [Int]
+    syn env :: Env
+\end{code}
+\end{minipage}
+\begin{minipage}[t]{0.6\linewidth}
+\begin{code}
+datasem Exprs
+   clause Cons
+     hd.env  = lhs.env
+     tl.env  = lhs.env
+     lhs.v   = hd.v : tl.v
+     lhs.env = lhs.env
+   clause Nil
+     lhs.env = lhs.env
+     lhs.v   = []
+\end{code}
+\end{minipage}
+\end{figure}
+
+We spend a lot of time just copying over the \emph{env} attribute without actually doing anything with it. The larger the program gets the more problematic this becomes. For that ruler-core has a special mechanism:
+
+\subsection{Default rules}
+Default rules are a way of specifying default values for attributes that will be used in case an explicit values isn't given for the attribute in question. This is particularly useful for when it is required to do nothing for some clauses.
+When using a \emph{default} rule all the visits of all the children of the current interface become active, which means every \emph{inherited} attribute must be filled in.
+These rules are for both \emph{inherited} and \emph{synthesized} attributes. In case an attribute is both then the rule applies to both types as well. There are two kinds of \emph{default} rules:
+\begin{description}
+\item[\textbf{default}] { The \textbf{default} keyword gives an error when none of the children of an attribute for which the rule is defined for return a result for that attribute. }
+\item[\textbf{default?}] { The other keyword \textbf{default?} however returns the empty list instead of an exception when no child has the \emph{synthesized} attribute in mention. For \emph{inherited} attributes the value \emph{lhs.attribute} is also added to the list. }
+\end{description}
+
+The values are collected in such a way that they are added to the list in order of occurrence. Meaning the \emph{head} of the list contains the value at the root and the \emph{tail} of the list contains the last value visited. 
+
+\begin{figure}[h!]
+\[
+\textbf{default[\textit{?}]} \hspace{5pt} \emph{attribute} = \emph{function}
+\]
+\caption{Syntax for default expressions}
+\label{default:syntax}
+\end{figure}
+
+There is a slight caveat to the default values, they look at the attribute names and not the types. If a child defines an attribute for which we have a \emph{default} but where the \emph{type} of this attribute is different then the type of the other element of the list, then a type error will be generated by the Haskell compiler since Haskell lists are heterogeneous.
+
+Using default rules we can simplify the definition of the Exprs datasem:
+
+\begin{code}
+datasem Exprs
+   default? env = last
+   clause Cons
+     lhs.v = hd.v : tl.v
+   clause Nil
+     lhs.v = []
+\end{code}
+
+\subsection{Multiple tree traversals}
+The previous examples are all doable with uuagc and so with standard attribute grammar, the following example isn't. To show how to traverse multiple trees at the same time, and the higher-orderedness of ruler-core the following example deals with how to compare two trees for equality.
+
+The interesting points of this example are:
+\begin{itemize}
+\item Traverse two AST at a time and compare while evaluating the tree
+\item While synthesizing the tree, if the tree turns out to be equal return at the same time a new tree with the value at the given node.
+\end{itemize}
+
+The easiest one to start with is the \emph{Operator} terminal, we first need to define a interface that allows us to compare two operators:
+
+\begin{figure}[H]
+\begin{minipage}[t]{0.3\linewidth}
+\begin{code}
+data Operator
+  con Plus
+  con Minus
+\end{code}
+\end{minipage}
+\begin{minipage}[t]{0.7\linewidth}
+\begin{code}
+itf OperatorEq
+  visit compare
+    inh op1 :: Operator
+    inh op2 :: Operator
+    syn eq  :: Maybe Operator
+\end{code}
+\end{minipage}
+\caption{Interface to compare two operators}
+\end{figure}
+
+The interface \emph{OperatorEq} declares one visit "compare" and within this visit 3 attributes. The two inherited attributes are the inputs (the two operators to compare) and the synthesized attribute \emph{eq} is the result. The same result pattern will be followed in the rest of the example, if the inputs are equal we return one of the inputs, if not Nothing is returned.
+
+Earlier in section \ref{semantics} it was explained that there are two types of semantic functions. \emph{data type semantic} functions were explained in that section, and now we need to explain the other method. The semantic function to compare two Operators is:
+
+\begin{code}
+{
+eqOp = sem eqOp : OperatorEq monad IO
+         visit compare
+           default? eq = const False
+           clause Plus
+             match Operator.Plus@loc = lhs.op1
+             match Operator.Plus@loc = lhs.op2
+             
+             lhs.eq = return Operator_Plus
+           clause Minus
+             match Operator.Minus@loc = lhs.op1
+             match Operator.Minus@loc = lhs.op2
+
+             lhs.eq = return Operator_Minus
+           clause other
+}
+\end{code}
+
+\subsubsection{Sem}
+\begin{figure}[!h]
+\begin{code}
+<name> = sem <internal_name> : <Interface> [monad <type>]
+          {visit <name>
+             {clause <name>
+                ...
+             }
+          }
+\end{code}
+\caption{Syntax definition of a sem function}
+\label{sem:syntax}
+\end{figure}
+
+This version allows the declaration of a semantic function for an arbitrary interface. The different components of figure \ref{sem:syntax} can decomposed as:
+
+%\begin{figure}[ht!]
+\begin{description}
+\item[\textbf{\textit{name}}] This is the name of a semantic function. It is also the name of the Haskell function that will ultimately be generated for this semantic function. The same naming rules apply as for normal Haskell functions.
+\item[\textbf{\textit{internal\_name}}] The internal name is only used internally and is not of real importance for anything done in this thesis.
+\item[\textbf{\textit{Interface}}] Interface should be the previously defined interface for which we are defining a semantic function. Every \emph{synthesized} attribute of the \emph{interface} must be filled in the semantic function.
+\item[\textbf{monad \textit{type}}] { This part is optional. Because backtracking is done by backtracking, the monad to be used while backtracking can be specified here. This also forces the type from a completely polymorphic type to a more concrete type. The \textit{type} specified should be an instance of \emph{Monad} and \emph{MonadError} due to backtracking of match failures being done by catching errors.}
+\item[\textbf{visit \textit{name}}] The name of the visit for which a semantic function is being defined. At least one visit out of the interface should be implemented. Every visit isn't required to be implemented, but every \emph{synthesized} attributes should be addressed.
+\item[\textbf{clause \textit{name}}] \textit{name} should be a unique name inside the semantic function as they are used to differentiate the clauses from each other.
+\end{description}
+%\end{figure}
+
+Note that a \textbf{sem} function does not enforce any kind of condition on visits specified. There is however one important layout rule: every \emph{visit} must be indented at least as deeply as preceding \textbf{sem} function. If this is not the case a parse error will be generated.
 
 \subsection{Syntax}
 Ruler-core like its ancestor UUAGC is implemented as a preprocessor for the language Haskell. From a .rul file pure Haskell code callable from any other Haskell code is generated. How every bit of the ruler code is translated to Haskell is outside the scope of this thesis but those interested can find it in detail in the paper by Arie Middelkoop\cite{visitag}.
@@ -188,240 +606,62 @@ import Control.Monad.Error
 
 The location and indentation of the braces do not matter, the code between the braces is copied verbatim to the generated Haskell file. For aesthetic reasons the \emph{curly} braces are usually placed at the beginning of the lines and also on a line of their own. 
 
-\subsubsection{Bindings}
-In Haskell the \textbf{Let} binding is used when introducing new variable bindings in a sequential computation. In ruler-core the keyword \emph{let} is not used when assigning values to bindings, however since bindings in ruler-core are translated to \emph{let} declarations by the preprocessor the same behaviors are expected from them. This means that binding to a \emph{pattern} on the \emph{left hand side} is valid. e.g. \[ (\alpha, \beta) = \ldots \] is allowed. This allows the definition multiple attributes at the same time.
+The next part will show how to compare two expressions, and also show the ability to declare explicit children in a clause. As always we start by defining the interface:
 
-While it is possible read any attribute as many times as needed, assignment of values to a visit's attributes are only allowed once per visit. The compiler will generate an error if it finds code that tries to redefine an attribute (there is no shadowing).
-
-The notation for referencing patterns, expressions and variables is \emph{k}.\emph{x} where \emph{k} is the name of child name and \emph{x} the attribute to be referenced. There are two build in reserved children:
-
-\paragraph{lhs}
-The \emph{lhs} child is used to access the \emph{inherited} attributes and to assign values to the \emph{synthesized} attributes. Which one is intended is derived from the context in which they're used: When used at the \emph{left hand side} of an expression they're treated as \emph{synthesized} attributes but when used in the \emph{right hand side} of an bind they refer to the \emph{inherited} values.
- 
-\paragraph{loc}
-The \emph{loc} child is used in a way that is analogous to local variables in other languages. You can define as many of these as needed. The scope of the \emph{loc} is only the clause/visit that it's declared in and it's children.
-\subsubsection{Data types}
-Ruler-core data types resemble Haskell's record syntax with some notable exceptions:
-
-\begin{figure}[h!]
 \begin{code}
-data Expr
-  con Int
-    x :: Int
-  con Plus
-    l :: Expr
-    r :: Expr
+itf Compare
+  visit compare
+    inh exp1 :: Expr
+    inh exp2 :: Expr
+    inh env  :: Pair Env
+    syn env  :: Pair Env
+    syn exp  :: Maybe Expr
 \end{code}
-\caption{Example data declaration in ruler-core}
-\label{data:example}
-\end{figure}
 
-Instead of an $=$ or \textbar like in Haskell, an explicit \textbf{con} keyword is used to indicate the \emph{name} of the constructor. Every element of the constructor must be explicitly named. Indentation is also important since indentation separates constructors, in general \textbf{con} should be deeper indented then \textbf{data} and the members of a constructor should be indented further than the \textbf{con}.
-
-Only types of kind $:: \star$ are allowed by ruler-core which means you can only have monomorphic types. As with UUAGC the constructors generated will be in the form of \emph{TypeName\_ConstructorName}. To put this concretely figure \ref{data:example} exposed the constructor functions \textbf{Expr\_Int} and \textbf{Expr\_Plus}.
-\subsubsection{Special types}
-The $::$ in Figure \ref{data:example} denotes \emph{Terminals}. There are some build in special types which represent \emph{Non-Terminals}. At the time of writing ruler-core only supports \emph{List}s in this category, but could be easily extended to support any product type like \emph{Maybe} and \emph{Map}.
-
-\subsubsection{Lists}
-Lists are declared using the \textbf{type} keyword. The syntax should be very familiar for a Haskell programmer: \[ \textbf{type} \hspace{5pt} \emph{name} : [\emph{type}] \]
-
-Using the \emph{Expr} type as an example, declaring the list type \emph{Exprs} would be:
-
-\begin{figure}[h!]
-\begin{code}
-type Exprs : [Expr]
-\end{code}
-\caption{Example List type declaration}
-\label{type:exprs}
-\end{figure}
-
-Figure \ref{type:exprs} declares the \emph{Non-Terminal} Exprs. This definition is could be seen as the data declaration in figure \ref{type:lists}. It introduces for the type two constructors \emph{Nil} and \emph{Cons} along with the attributes shown.
-
-\begin{figure}[h!]
-\begin{code}
-data Exprs
-  con Nil
-  con Cons
-    hd :: Expr
-    tl :  Exprs
-\end{code}
-\caption{Syntactically equivalent definition of the Exprs type}
-\label{type:lists}
-\end{figure}
-
-Next to creating the syntactic information, ruler-core also generates some \emph{Interface} declarations for every list type. 
-
-\subsection{Interfaces}
-\emph{Interfaces} are analogous to the interface definitions in other languages, except instead of declaring function prototypes/signatures we declare visits and their attributes. Interfaces declare \emph{Non-Terminal}s which can be the same name as their corresponding \emph{data types}.
-
-\begin{figure}[h!]
-\begin{code}
-itf <name>
-  {attributes}
-  {visit <name>
-    {attributes}
-  }
-\end{code}
-\caption{Ruler-core interface declaration syntax}
-\label{itf:syntax}
-\end{figure}
-
-As many visits as needed can be declared inside an interface. Every visit is a new \emph{co-routine} and will be scheduled to run at the most beneficial time. Outside of visits we can also declare attributes. These attributes are thus not explicitly assigned to a visit. They will be automatically assigned to the earliest visit possible.
-
-The interface declared for the \emph{Exprs} example in figure \ref{type:lists} would be equivalent to:
-
-\begin{figure}[h!]
-\begin{code}
-itf Exprs
-  visit exprs_visit
-    inh ast :: Exprs
-\end{code}
-\caption{Ruler-core interface declaration syntax}
-\label{itf:exprs}
-\end{figure}
-
-A special \emph{inherited} attribute \textbf{ast} is declared on which \emph{matches} will be performed in clauses. In actuality this interface itself is not useful, instead the preprocessor enforces that at least one of the visits declared for the \emph{non-terminal} Exprs contain an inherited attribute \emph{ast}. If this is not the case an error will be generated.
-\subsection{Visits}
-Visits are co-routines that can be invokes to perform a computation, the synthesis of attributes are done in these sequential passes. The preprocessor schedules as many visits as possible at the same time. Visits consist of different clauses. If a visit only has one clause, it does not have to be declared. 
-\subsection{Clauses}
-Clauses at their simplest can be seen as case alternatives. When a clause can't be applied it backtracks and the next one is tried out. Clauses are tried out in sequential order.
-A visit can contain multiple clauses, corresponding to the different ways to interpret the \emph{inherited} attributes of the visit.
-If no clause can be executed in a visit, the system backtracks to the parent visit and clause. This behavior goes all the way up to the root. In order to be able to generate proper errors it is recommended to always make the collection of clauses for a visit total. The easiest way to do this is to make a \emph{catch-all} clause at the end.
 \subsection{Children}
-One of the benefits of ruler-core over traditional AG systems such as UUAGC is the ability to synthesize new trees during attribute evaluation. To accomplish this ruler-core allows one to declare new child \emph{non-terminals}.
+One of the benefits of ruler-core over traditional AG systems such as UUAGC is the ability to synthesize new trees during attribute evaluation. To accomplish this ruler-core allows one to declare new child \emph{non-terminals}. However for space constrains only a piece of the semantics for the \emph{Compare} interface will be handled here. To see the full source please consult the Appendix.
+
+\begin{code}
+eq = sem eq : Compare monad IO
+       visit compare
+         default? env = last
+         default? exp = const Nothing
+         clause Num
+           match Expr.Num@e1 = lhs.exp1
+           match Expr.Num@e2 = lhs.exp2
+           
+           loc.eq  = e1.val == e2.val
+           lhs.exp = guard loc.eq >> return (Expr_Num e1.val)
+         clause Expr
+           match Expr.Expr@l = lhs.exp1
+           match Expr.Expr@r = lhs.exp2
+           
+           child left : Compare = eq
+           left.exp1 = l.exp1
+           left.exp2 = r.exp1
+           
+           child op : OperatorEq = eqOp
+           op.op1 = l.op
+           op.op2 = r.op
+           
+           child right : Compare = eq
+           right.exp1 = l.exp2
+           right.exp2 = r.exp2
+           
+           lhs.exp = liftM3 Expr_Expr left.exp op.eq right.exp
+\end{code}
+
+Because we are not in a datasem, there is no real distinction between terminals and nonterminals. There are no explicit children. If we want to invoke a routine we have to explicitly declare it.
 
 \begin{figure}[h!]
 \[
-\textbf{child} \hspace{5pt} \emph{name} : Interface \hspace{5pt} [= visit]
+\textbf{child} \hspace{5pt} \emph{name} : Interface \hspace{5pt} [= sem_name]
 \]
 \caption{child declaration syntax}
 \end{figure}
 
-This declares a new \textbf{child} \emph{name} belonging to the nonterminal (Interface) and defined by the specified visit\cite{visitag}. By default the co-routine to execute is \emph{id} unless otherwise specified by explicitly stating a different on. 
+This declares a new \textbf{child} \emph{name} belonging to the nonterminal (Interface) and defined by the specified visit\cite{visitag}. By default the co-routine to execute is \emph{id} unless otherwise specified by explicitly stating a different on. When invoking a child of nonterminal for which we defined a datasem, the \emph{sem\_name} doesn't have to be defined.
 
-In any semantic function, all \emph{nonterminals} have an implicit child declared using the label specified in the constructors of the data type definitions. In figure \ref{child:test} \emph{e1} has an implicitly declared child with the same name, while \emph{e2} requires an explicitly declared child if it needs to traverse it as well.
-
-\begin{figure}[!h]
-\begin{code}
-data Test
-  con Foo
-   e1 :  Exprs
-   e2 :: Exprs
-\end{code}
-\caption{Example data type where a datasem would have an implicit child}
-\label{child:test}
-\end{figure}
-\subsection{Semantic functions}
-Semantic functions are used to define semantics for a declared interface. Within semantic functions it is possible to \emph{invoke} any other coroutine(s) that might be needed. Although there is an implicit \textbf{invoke} keyword it is rarely needed to explicitly \emph{invoke} a visit within a clause. When enough attributes are defined for a visit it is implicitly invoked.
-
-Within semantic functions it's possible to have any number of semantic rules. Clauses provide a way to do scoping. A clause inherits all the attributes of its parent clauses in the same visit. If a visit has only one clause it doesn't have to be explicitly declared. 
-
-There are two ways of defining a semantic function, both of which are covered below. If any of these functions use Haskell functions then they need to be escaped into Haskell mode using \emph{curly} braces \{ \}.
-\subsubsection{Sem}
-\begin{figure}[!h]
-\begin{code}
-<name> = sem <internal_name> : <Interface> [monad <type>]
-          {visit <name>
-             {clause <name>
-                ...
-             }
-          }
-\end{code}
-\caption{Syntax definition of a sem function}
-\label{sem:syntax}
-\end{figure}
-
-The first version allows the declaration of a semantic function for an arbitrary interface. The different components of figure \ref{sem:syntax} can decomposed as:
-
-%\begin{figure}[ht!]
-\begin{description}
-\item[\textbf{\textit{name}}] This is the name of a semantic function. It is also the name of the Haskell function that will ultimately be generated for this semantic function. The same naming rules apply as for normal Haskell functions.
-\item[\textbf{\textit{internal\_name}}] The internal name is only used internally and is not of real importance for anything done in this thesis.
-\item[\textbf{\textit{Interface}}] Interface should be the previously defined interface for which we are defining a semantic function. Every \emph{synthesized} attribute of the \emph{interface} must be filled in the semantic function.
-\item[\textbf{monad \textit{type}}] { This part is optional. Because backtracking is done by backtracking, the monad to be used while backtracking can be specified here. This also forces the type from a completely polymorphic type to a more concrete type. The \textit{type} specified should be an instance of \emph{Monad} and \emph{MonadError} due to backtracking of match failures being done by catching errors.}
-\item[\textbf{visit \textit{name}}] The name of the visit for which a semantic function is being defined. At least one visit out of the interface should be implemented. Every visit isn't required to be implemented, but every \emph{synthesized} attributes should be addressed.
-\item[\textbf{clause \textit{name}}] \textit{name} should be a unique name inside the semantic function as they are used to differentiate the clauses from each other.
-\end{description}
-%\end{figure}
-
-Note that a \textbf{sem} function does not enforce any kind of condition on visits specified. There is however one important layout rule: every \emph{visit} must be indented at least as deeply as preceding \textbf{sem} function. If this is not the case a parse error will be generated.
-\subsubsection{Datasem}
-Defining semantics for a \emph{data type} and \emph{nonterminal} defined in ruler-core can be done with a shorthand: \textbf{datasem}. The syntax of a \textbf{datasem} is very much like that of a normal \textbf{sem} declaration.
-
-\begin{figure}[!h]
-\begin{code}
-datasem <nonterminal> [monad <type>]
-    {clause <name>
-        ...
-    }
-\end{code}
-\caption{Syntax definition of a sem function}
-\label{datasem:syntax}
-\end{figure}
-
-Key here is that defining a \textbf{datasem} is a shorthand for defining a a \textbf{sem}. The \emph{monad} type does now need to be specified, however a type was specified for a \textbf{sem} which is used by or used in this \textbf{datasem} then to disambiguate you need to define the type in this declaration as well.
-
-The \emph{clauses} in a \textbf{datasem} should coincide with the constructors of the data type. The preprocessor enforces that there is a clause for every declared constructor. Every clause declaration implicitly adds a \textbf{match} statement for every clause.
-
-\subsection{Matches}
-Matches are akin to case expressions, like case expressions they force evaluation and attempt to pattern match on the constructor. For any data type defined in ruler-core itself and the \emph{Bool} type a \textbf{match} can be done.
-
-\begin{figure}[h!]
-\begin{code}
-match TypeName.ConstructorName@child  = <expression>
-\end{code}
-\caption{Match syntax definition}
-\label{match:syntax}
-\end{figure}
-
-If the \emph{match} succeeds the \emph{named} attributes defined for the elements of the Constructor are added as attributes of the specified \emph{child}. Of the two reserved children \textbf{lhs} and \textbf{loc} only \textbf{lhs} is not allowed as a child name here. On the other hand if the \emph{match} fails the entire clause is aborted and backtracking is performed.
-There is one notable exception to this syntax, \emph{build in} types such as \emph{Bool} which have no children have an alternative syntax:
-
-\begin{figure}[h!]
-\begin{code}
-match True = <expression>
-\end{code}
-\caption{Example match on Bools}
-\label{match:bool}
-\end{figure}
-
-As figure \ref{match:bool} illustrates on certain types the rules are relaxed, particularly the Bool type. Note that because there is no build in support for the \emph{Maybe} type often in this thesis this will be supported by first match on True = isJust \emph{expr} and then a subsequent call to the \emph{fromJust} function.
-\subsection{Internal}
-Sometimes it is necessary to make a decision inside a clause to branch. For instance on a value that was just synthesized. this is achieved by using the \emph{internal} keyword. This keyword provides a means of scoping and branching at the same time. Internals contain a list of \emph{clauses} which will be tried out in order one at a time. Attributes that were declared before the \emph{internal} statement are all in scope inside an internal block. 
-
-\begin{figure}[h!]
-\begin{code}
-internal <name>
-  {clause}
-  {clause}
-  ...
-\end{code}
-\caption{Internal syntax definition}
-\label{internal:syntax}
-\end{figure}
-
-Unfortunately once branched the execution flow never returns back to the parent clause in question. Any code below the internal is floated upward.
-
-\subsection{Default rules}
-Default rules are a way of specifying default values for \emph{synthesized} attributes that will be used in case an explicit values isn't given for the attribute in question. This is particularly useful for when it is required to do nothing for some clauses.
-When using a \emph{default} rule all the visits of all the children of the current interface become active, which means every \emph{inherited} attribute must be filled in.
-These rules are for both \emph{inherited} and \emph{synthesized} attributes. In case an attribute is both then the rule applies to both types as well. There are two kinds of \emph{default} rules:
-\begin{description}
-\item[\textbf{default}] { The \textbf{default} keyword gives an error when none of the children of an attribute for which the rule is defined for return a result for that attribute. }
-\item[\textbf{default?}] { The other keyword \textbf{default?} however returns the empty list instead of an exception when no child has the \emph{synthesized} attribute in mention. For \emph{inherited} attributes the value \emph{lhs.attribute} is also added to the list. }
-\end{description}
-
-The values are collected in such a way that they are added to the list in order of occurrence. Meaning the \emph{head} of the list contains the value at the root and the \emph{tail} of the list contains the last value visited. For an attribute that is both \emph{synthesized} and \emph{inherited} and no child specifies this attribute, this would be the \emph{inherited} value.
-
-\begin{figure}[h!]
-\[
-\textbf{default\textit{[?]}} \hspace{5pt} \emph{attribute} = \emph{function}
-\]
-\caption{Syntax for default expressions}
-\label{default:syntax}
-\end{figure}
-
-There is a slight caveat to the default values, they look at the attribute names and not the types. If a child defines an attribute for which we have a \emph{default} and where the \emph{type} of this attribute is different then the type of the other element of the list, then a type error will be generated by the Haskell compiler since Haskell lists are heterogeneous.
 \subsection{Ordering}
 The order of statements are largely irrelevant, however \textbf{match} statements will always be executed before any other statement declared beneath them. They're treated as assertions. However statements and assignments can be in any order, when they're scheduled they're scheduled based on their dependencies. Which is why
 
@@ -431,48 +671,3 @@ loc.e = m.l
 \end{code}
 
 is perfectly value. Because of the dependence of \emph{l.e} on \emph{loc.e}, \emph{loc.e} will be floated above \emph{l.e}. Because of this dependency resolving any cycles inside the dependency graph would cause an error from the preprocessor.
-
-\subsection{Example}
-A small example of a ruler-core program which adds the elements of the Expr tree together is:
-
-\begin{figure}[h!]
-\begin{minipage}[t]{0.3\linewidth}
-\begin{code}
-data Expr
-  con Int
-    x :: Int
-  con Plus
-    l :: Expr
-    r :: Expr
-    
-itf Eval
-  visit eval
-    inh e :: Expr
-    syn val :: Int
-\end{code} 
-\end{minipage}
-\begin{minipage}[t]{0.7\linewidth}
-\begin{code}
-{
-eval = sem eval : Eval monad IO
-         visit eval
-           clause int
-             match Expr.Int@loc = lhs.e
-             lhs.val = loc.x
-
-           clause plus
-             match Expr.Plus@m = lhs.e
-
-             child l : Eval = eval
-             child r : Eval = eval
-
-             l.e = m.l
-             r.e = m.r
-
-             lhs.val = l.val + r.val
-}
-\end{code}
-\end{minipage}
-\caption{Example ruler-core program}
-\label{example:expr}
-\end{figure}

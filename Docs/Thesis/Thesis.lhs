@@ -52,7 +52,7 @@
 
 %include AttributeGrammar.tex
 
-%include EssentialHaskell.tex
+%% include EssentialHaskell.tex
 
 %include HML.tex
 

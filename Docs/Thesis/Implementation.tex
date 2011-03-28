@@ -1,7 +1,274 @@
 \chapter{Implementation}
+This chapter details the implementation of the typesystem in \emph{ruler-core}. Due to the amount of code tt will be a tutorial style chapter which introduces the pieces in small bits.
 \section{Types}
-\section{Utility Functions}
+The implementation of the types can be easily derived from those in figure \ref{types}. To simplify some phases of the implementation the type scheme $\varphi$ and the SystemF $\sigma$ are extended to support the sugared syntaxes at the end of section \ref{sec:Types}:
+
+\begin{figure}
+\begin{minipage}[t]{0.5\linewidth}
+\begin{code}
+  con Sugar
+     prefix  :: Prefix
+     tyExpr  :: TyScheme
+\end{code}
+\end{minipage}
+\begin{minipage}[t]{0.5\linewidth}
+\begin{code}
+  con Forall
+    qu        :: TyQu
+    tyVar     :: [HsName]
+    tyExpr    :: TyExpr 
+\end{code} 
+\end{minipage}
+\caption{Addition to the $\varphi$ and $\sigma$ types.}
+\label{abs:fig:types}
+\end{figure}
+
+Along with these two helper functions \emph{sugar} and \emph{desugar} are defined. The implementation of these two functions isn't that interesting however they do hold the property that \emph{desugar . desugar == id}. These two types facilitate the aggregation of quantified values. For instance $\forall \alpha . \forall \beta. \alpha \rightarrow \beta$ can be represented as $\forall \alpha \beta . \alpha \rightarrow \beta$. Doing this minimizes the amount of code needed in the algorithm implementations, by making it easier to in one pattern matching get all the variables the bounded variables.
+\subsection{Type Expressions}
+The full syntax of the datatype $\sigma$ is:
+
+\begin{figure}
+\begin{minipage}[t]{0.5\linewidth}
+\begin{code}
+data TyQu
+  con TyForall
+    
+data TyExpr
+  con Con
+    nm        :: HsName
+  con App
+    func      :  TyExpr
+    arg       :  TyExpr
+  con AppTop
+    tyExpr    :  TyExpr
+  con Parens
+    tyExpr    :  TyExpr
+  con Ann
+    ann       :: TyExprAnn
+    tyExpr    :  TyExpr
+  con Wild
+\end{code}
+\end{minipage}
+\begin{minipage}[t]{0.5\linewidth}
+\begin{code}
+  con Mono
+  con Var
+    nm        :: HsName
+  con VarWild
+    mm        :: HsName
+  con Quant
+    qu        :: TyQu
+    tyVar     :: HsName
+    tyExpr    :  TyExpr
+  con Forall
+    qu        :: TyQu
+    tyVar     :: [HsName]
+    tyExpr    :  TyExpr    
+  con Row
+    rowTyExpr :  RowTyExpr
+\end{code}
+\end{minipage}
+\caption{Datatype description of $\sigma$.}
+\label{abs:fig:tyexpr}
+\end{figure}
+
+Most of these are pretty standard with the exception of \emph{Row} and \emph{AppTop}. The \emph{Row} constructor is used to represent the type of a Tuple, this will be explained later in Chapter \ref{cap:Extensions}. 
+The \emph{AppTop} constructor is used purely for pretty printing purposes, in particular when pretty printing Constructor applications. The $(\rightarrow)$ constructor is not treated specially in this version of EH, which means $\alpha \rightarrow \beta$ is encoded as $((\rightarrow \alpha) \beta)$. The \emph{App} found under an \emph{AppTop} is pretty printed differently to show the expected type above.
+
 \section{Inference}
+Like any ruler core program, the first step is to define the datatypes needed and the interfaces. Since type inferencing is done on expressions, we first have to introduce the expression data type:
+
+\begin{figure}
+\begin{minipage}[t]{0.5\linewidth}
+\begin{code}
+data Expr
+  con IConst
+    int           :: Int
+  con CConst
+    char          :: Char
+  con Con
+    nm            :: HsName
+  con Var
+    nm            :: HsName
+  con App
+    func          :  Expr
+    arg           :  Expr
+  con Let
+    isStrict      :: Bool
+    decls         :  Decls
+    body          :  Expr
+  con Lam
+    arg           :  PatExpr
+    body          :  Expr
+  con AppTop
+    expr          :  Expr
+  con Parens
+    expr          :  Expr
+  con TypeAs
+    tyExpr        :: TyExpr
+    expr          :  Expr
+  con DataFields
+    dataFieldExpr :: DataFieldExpr
+\end{code}
+\end{minipage}
+\begin{minipage}[t]{0.5\linewidth}
+\begin{code}
+itf Expr
+  visit infer
+    inh pre :: Prefix
+    inh env :: Gamma
+    inh ast :: Expr
+    inh exp :: Expr
+    inh frs :: Int
+    syn pre :: Prefix
+    syn sub :: Env
+    syn res :: Maybe TyScheme
+    syn frs :: Int
+\end{code}
+\end{minipage}
+\caption{Datatype and interface description of the expression type.}
+\label{abs:fig:tyexpr}
+\end{figure}
+
+The attentive reader would notice that we have defined datatypes but have not defined any structures for \emph{case} statements. This was done intentionally as \emph{case} statements are an extension of the base algorithm, which will be covered in chapter \ref{cap:Extensions}. This version of EH also only has build-in support for the \emph{Int} and \emph{Char} datatypes.
+
+The interface is quite simple, in the \emph{infer} visit we declare the inherited attributes for the Gamma $\Gamma$, the Prefix $Q$ and expression to infer. The \emph{frs} attribute is used in almost every visit to generate fresh variables, if this value is not passed in a certain visit, the results could be disastrous (type clashes). It has the benefit that it makes every variable unique, which makes it easier to track down problems. With the exception of inferring types for variables, every case in the semantics of $\emph{Expr}$ every type returned should be fully generalized.
+
+Before continuing a small explanation of how EH is constructed is in order:
+
+\subsection{Ordering}
+Whenever a Haskell file is desugared into a EH file, some reordering is done. In the EH file function,data declarations and type synonyms are always displayed before any function or other entities that uses them. Or alternatively, for every entity (where entity can be anything that refers to another type/function) a node is created and a dependency graph is made, which is then \emph{Topologically sorted}, that is, for every pair of edge \emph{uv} (\emph{u} is used in \emph{v}) \emph{u} comes before \emph{v}. It's worth noting that datatype and type synonym declarations are always put at the top of the file, before the function declarations.
+
+The first obvious question is, what if functions or datatypes have a cyclic dependency. E.g. mutually recursion:
+
+\begin{code}
+data Foo = Foo Bar
+data Bar = Bar Foo | NoBar
+
+foo = bar
+bar = foo
+\end{code}
+
+Aside from the fact that the functions foo and bar never terminate, they should however typecheck perfectly fine. For datatypes nothing special needs to be done to make EH support mutual recursion. When processing datatypes we just always add information about the data \emph{Type} before processing the constructors. For binding processing we do the same. The EH syntax for \emph{Let} allows us to bind multiple \emph{Decl} at once. This means, that We will have one \emph{Let} binding both \emph{foo} and \emph{bar} at the same time.
+
+Any Haskell after desugared to EH is turned into one big \emph{Let} statement terminating in either 0 or \emph{main} depending on if an actual main function is defined in the module.
+
+Figure ?? which does not define a main is desugered into:
+
+\begin{code}
+let main = 0
+in let data Bar  = Bar Foo | NoBar
+       data Foo  = Foo Bar
+   in let foo = bar
+          bar = foo
+      in 0
+\end{code}
+
+in this case, since \emph{main} is not dependent on anything it is the top level declaration, in every other cases where main is defined it will be put somewhere inside the dependency graph and the top level \emph{Let} will terminate \emph{in} main.
+\subsection{Semantics}
+
+This ordering that EH brings to a Haskell module is quite handy, especially for Attribute Grammar code. Attribute Grammar compilers do computations on attributes defined on the nodes of a tree. A Haskell file desugared into an EH file is now a Top-down tree, where the only case that needs some special handling is mutual recursion. 
+
+This makes certain tasks a lot easier, for instance when looking up a value in the environment, if we can't find it, then it's really not defined. there's no need to look any further. If we can't type check a specific node, it also means we don't have to bother trying any of it's children, since they depend on the node that failed type checking.
+
+\subsection{defining the data semantics}
+With the explanation of EH out of the way we can incrementally define the data semantics for inference.
+
+\paragraph{header and variables}
+Starting out, we can define the case for variable and constants:
+\begin{code}
+datasem Expr monad IO
+    default? sub = const empty
+    default? pre = last
+    default? frs = last
+    default? res = const Nothing
+    clause Var
+        lhs.res
+             = case lookup loc.nm (unGam lhs.env) of
+                Just a  -> return a
+                Nothing -> error $ "Variable '" ++ show loc.nm ++ "' not in scope"
+    clause IConst
+       lhs.res = return $ TyScheme_SystemF $ TyExpr_Con $ mkName "Int"
+    clause CConst
+       lhs.res = return $ TyScheme_SystemF $ TyExpr_Con $ mkName "Char"
+\end{code}
+
+The rules for the default rules are quite simple:
+\begin{description}
+\item[\textbf{sub}] If no substitutions are defined then just return an empty list
+\item[\textbf{pre}] If the prefix isn't changed, just return the last value seen
+\item[\textbf{frs}] If no new variables were introduces, just return the last value (which should also be the highest value)
+\item[\textbf{res}] If no type is infered, return Nothing
+\end{description}
+
+In the case of infering the type of a variable, the only thing to do is just lookup the variable in the $\Gamma$. If the value is not found then the variable is undefined and an error is returned. Error reporting is admittedly crude in the type system, but it gives addiquate feedback.
+
+For the Integer (\emph{IConst}) and the Char (\emph{CConst}) cases, just return the \emph{Int} and \emph{Char} constructors respectively.
+
+\paragraph{Constructors}
+For any other constructor the name of the constructor is looked up. But as mentioned in section \ref{renaming} constructors are $\alpha-$renamed.
+
+\begin{code}
+    clause Con
+       loc.res = maybe (error $ "Constructor '" ++ pp loc.nm ++ "' not found") id (lookup loc.nm (unGam lhs.env))
+       (loc.res2, lhs.frs, _) = renameBound lhs.frs loc.res
+       lhs.res = return loc.res2
+\end{code}
+
+\paragraph{Applications}
+Typing two expressions is the first part where the code gets a bit complex:
+
+\begin{code}
+    clause App
+       (loc.a1, loc.frs1) = fresh lhs.frs
+       (loc.a2, loc.frs2) = fresh loc.frs1
+       (loc.b , loc.frs3) = fresh loc.frs2
+       
+       func.exp = loc.func
+       func.frs = loc.frs3
+       func.pre = lhs.pre
+       func.env = lhs.env
+       
+       match True = isJust func.res
+       loc.func_res = fromJust func.res
+       
+       arg.exp = loc.arg
+       arg.frs = func.frs
+       arg.pre = func.pre
+       
+       arg.env = appAll func.sub lhs.env
+       
+       match True = isJust arg.res
+       loc.arg_res = fromJust arg.res
+       
+       loc.temp1 = extend (arg.pre, Scheme_Simple loc.a1 (appAll arg.sub loc.func_res))
+       loc.temp2 = extend (fst loc.temp1, Scheme_Simple loc.a2 (loc.arg_res))
+       loc.temp3 = extend (fst loc.temp2, Scheme_Simple loc.b  (TyScheme_Bottom))
+       
+       (loc.q2', loc.e2') = (fst loc.temp3
+                            ,(snd loc.temp1) `munion` (snd loc.temp2) `munion` (snd loc.temp3) `munion` func.sub)
+       
+       child u : Unify = unify
+       u.pre  = loc.q2'
+       
+       u.exp1 = appAll loc.e2' (TyExpr_Var loc.a1)
+       u.exp2 = (appAll loc.e2' (TyExpr_Var loc.a2)) `mkArrow` (TyExpr_Var loc.b)
+       u.frs  = arg.frs
+       
+       loc.q3 = u.pre
+       loc.e3 = u.sub
+       
+       (loc.q4, loc.q5) = curry split loc.q3 (domain lhs.pre)
+    
+       lhs.res = let b = TyExpr_Var loc.b
+                     e = appAll (loc.e3 `munion` loc.e2') b
+                 in return $ ptype $ desugar $ TyScheme_Sugar loc.q5 (TyScheme_SystemF e)
+       lhs.sub = let subs = func.sub `munion` arg.sub
+                 in subs `munion` loc.e3
+       lhs.pre = loc.q4
+       lhs.frs = u.frs
+\end{code}
+
 \section{Unification}
 \section{Instantiation}
 \section{Error handling} 
