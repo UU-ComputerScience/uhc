@@ -3,7 +3,7 @@ This chapter details the implementation of the typesystem in \emph{ruler-core}. 
 \section{Types}
 The implementation of the types can be easily derived from those in figure \ref{types}. To simplify some phases of the implementation the type scheme $\varphi$ and the SystemF $\sigma$ are extended to support the sugared syntaxes at the end of section \ref{sec:Types}:
 
-\begin{figure}
+\begin{figure}[H]
 \begin{minipage}[t]{0.5\linewidth}
 \begin{code}
   con Sugar
@@ -27,7 +27,7 @@ Along with these two helper functions \emph{sugar} and \emph{desugar} are define
 \subsection{Type Expressions}
 The full syntax of the datatype $\sigma$ is:
 
-\begin{figure}
+\begin{figure}[H]
 \begin{minipage}[t]{0.5\linewidth}
 \begin{code}
 data TyQu
@@ -78,7 +78,7 @@ The \emph{AppTop} constructor is used purely for pretty printing purposes, in pa
 \section{Inference}
 Like any ruler core program, the first step is to define the datatypes needed and the interfaces. Since type inferencing is done on expressions, we first have to introduce the expression data type:
 
-\begin{figure}
+\begin{figure}[H]
 \begin{minipage}[t]{0.5\linewidth}
 \begin{code}
 data Expr
@@ -102,6 +102,10 @@ data Expr
     body          :  Expr
   con AppTop
     expr          :  Expr
+\end{code}
+\end{minipage}
+\begin{minipage}[t]{0.5\linewidth}
+\begin{code}
   con Parens
     expr          :  Expr
   con TypeAs
@@ -109,10 +113,7 @@ data Expr
     expr          :  Expr
   con DataFields
     dataFieldExpr :: DataFieldExpr
-\end{code}
-\end{minipage}
-\begin{minipage}[t]{0.5\linewidth}
-\begin{code}
+
 itf Expr
   visit infer
     inh pre :: Prefix
@@ -220,34 +221,44 @@ Typing two expressions is the first part where the code gets a bit complex:
 
 \begin{code}
     clause App
-       (loc.a1, loc.frs1) = fresh lhs.frs
+       loc.frs            = lhs.frs
+       (loc.a1, loc.frs1) = fresh loc.frs
        (loc.a2, loc.frs2) = fresh loc.frs1
        (loc.b , loc.frs3) = fresh loc.frs2
-       
-       func.exp = loc.func
+\end{code}
+We first start off by declaring three fresh variabels $\alpha_1, \alpha_2$ and $\beta$.
+
+\begin{code}
        func.frs = loc.frs3
        func.pre = lhs.pre
        func.env = lhs.env
        
-       match True = isJust func.res
+       match True = isJust func.res       
        loc.func_res = fromJust func.res
-       
-       arg.exp = loc.arg
+\end{code}
+Then the type of the function is inferred. If the inference is successful we can proceed beyond this point.
+
+\begin{code}       
        arg.frs = func.frs
        arg.pre = func.pre
        
        arg.env = appAll func.sub lhs.env
-       
-       match True = isJust arg.res
+    
+       match True = isJust arg.res   
        loc.arg_res = fromJust arg.res
+\end{code}
+The environment $\Gamma$ is then updated by applying the substitutions returned as the result of inferring the type of the function to the input environment. This is an important step, it updated local bindings within the environment with information which might have been discovered when inferring the type of the function. Remember that variabled can be shared, for instance f is shared in both the function and the argument in the application: $\\f \rightarrow (\\x \rightarrow f x) (\\x \rightarrow f x)$. After doing this we can then infer the type of the argument.
        
+\begin{code}
        loc.temp1 = extend (arg.pre, Scheme_Simple loc.a1 (appAll arg.sub loc.func_res))
        loc.temp2 = extend (fst loc.temp1, Scheme_Simple loc.a2 (loc.arg_res))
        loc.temp3 = extend (fst loc.temp2, Scheme_Simple loc.b  (TyScheme_Bottom))
        
-       (loc.q2', loc.e2') = (fst loc.temp3
-                            ,(snd loc.temp1) `munion` (snd loc.temp2) `munion` (snd loc.temp3) `munion` func.sub)
-       
+       (loc.q2', loc.e2') = (fst loc.temp3, (snd loc.temp1) `munion` (snd loc.temp2) `munion` (snd loc.temp3) `munion` func.sub)
+\end{code}
+Because the inference of the argument might have given more type information about the function as well we update the type of the function by applying the substitution from the inference phase of the argument to it. The environment is then extended by adding three no binding $\brack (\beta \geq \bot)$, $(\alpha_2 \geq arg.res)$ $\rbrack$
+
+\begin{code}
        child u : Unify = unify
        u.pre  = loc.q2'
        
@@ -257,18 +268,536 @@ Typing two expressions is the first part where the code gets a bit complex:
        
        loc.q3 = u.pre
        loc.e3 = u.sub
-       
+\end{code}
+$\alpha_1$ and $\alpha_2$ represent the function and argument respectfully and $\beta$ would be the return type which we want to know. That's why we unify the function type $\alpha_1$ with the type $\alpha_2 \rightarrow \beta$ which is the shape that $\alpha_1$ should have. If unification is successful then $\beta$ should contain the result of the application $\alpha_1 \hspace{5pt} \alpha_2$.
+
+
+\begin{code}       
        (loc.q4, loc.q5) = curry split loc.q3 (domain lhs.pre)
     
        lhs.res = let b = TyExpr_Var loc.b
                      e = appAll (loc.e3 `munion` loc.e2') b
-                 in return $ ptype $ desugar $ TyScheme_Sugar loc.q5 (TyScheme_SystemF e)
-       lhs.sub = let subs = func.sub `munion` arg.sub
-                 in subs `munion` loc.e3
+                 in return $ desugar $ TyScheme_Sugar loc.q5 (TyScheme_SystemF e)
+       loc.temp_sub = let subs = func.sub `munion` arg.sub 
+                      in subs `munion` loc.e3
+       lhs.sub = loc.temp_sub
        lhs.pre = loc.q4
        lhs.frs = u.frs
 \end{code}
+Such unification succeed then as stated before $\beta$ is the resulting type we're after. Before we can return it we need to quantify it and this is done by again generalizing based on the initial prefix.
+
+\paragraph{Let binding}
+Type checking a Let binding is very straight forward because of how EH is structured.
+
+\begin{code}
+        (loc.frs, loc.binds)  = let nms         = getBindLHs loc.decls
+                                    (vars, frs) = freshM lhs.frs (length nms)
+                                in (frs, zipWith (\a b->(a, mkQVar b)) nms vars)
+        loc.env   = Gamma (foldr (.) id (map (uncurry minsert) loc.binds) (unGam lhs.env))
+\end{code}
+In order to support mutual recursive functions the bindings are preprocessed. When functions are dependent on each other they are placed in the same Let. They can't just be sequentially typed without a temporary value being present in the environment for the other functions. This is why a new polymorphic type is added to the $\Gamma$ for every binding.
+
+\begin{code}
+        decls.pre = lhs.pre
+        decls.env = loc.env
+        decls.frs = loc.frs
+        decls.sig = Gamma empty
+\end{code}
+We can then typecheck every binding in the Let sequentially.
+
+\begin{code}
+        body.pre = decls.pre
+        body.env = decls.env 
+        body.frs = decls.frs
+
+        lhs.pre = body.pre
+        lhs.res = body.res
+        lhs.sub = decls.sub `munion` body.sub
+        lhs.frs = body.frs
+\end{code}
+And then the body can be typechecked.
+
+\paragraph{Lambda abstraction}
+Typechecking a $\lambda-abstraction$ requires that we be able to typecheck pattern expressions. But for brevity's sake pattern expression inference won't be covered in-depth. Essentially inference for pattern expressions work the same way as for normal expressions, since patterns are a subset of the constructs of the expression type. There is one major and important difference however: Types in pattern expressions are always quantified in the prefix environment and types in the expression inference are always fully quantified in the type itself. The reason for this is that the results of a pattern expressions are never directly used as a result.
+
+\begin{code}
+    clause Lam
+        arg.env = lhs.env
+        arg.pre = lhs.pre
+        arg.frs = lhs.frs
+   
+       loc.exp_a = ftype arg.res
+       (loc.b, loc.frs2) = fresh arg.frs
+\end{code}
+The type of the argument to the lambda has to be inferred before anything else. This argument can contain patterns which are returned inside the $\Gamma$ environment of the pattern expression. Pattern expressions have the only interfaces that also return a $\Gamma$ for this exact reason. Lastly a fresh variable $\beta$ is also generated.
+       
+\begin{code}
+       loc.env'          = appAll arg.sub arg.env
+       
+       body.frs = loc.frs2
+       body.env = loc.env'
+       body.pre = arg.pre
+       
+       loc.env_full = arg.sub `munion` body.sub
+\end{code}
+After inferring the type of the argument and updating the environment we can then infer the type of the body. The substitution environments of the two are then added together.     
+
+\begin{code}
+       loc.tau = let x = appAll loc.env_full loc.exp_a
+                 in if isUnQualTy x || not (isVar loc.arg)
+                       then x
+                       else error "The resulting type is not a Tau type"
+                       
+       loc.phi1 = case  case (loc.tau `seq` body.res) of
+                     Nothing -> error "Inference of Expressions failed in Lam, no type inferred for body"
+                     Just x  -> x
+\end{code}
+After inferring the type of the body we gain some extra information on the argument of the abstraction. We then have to check if the argument when applied to the full environment is still a suitable type. In this case suitable is defined as being an unquantified type or the original argument was a pattern.
+
+\begin{code}
+       (loc.pre, loc.phi1') = deep_explode body.pre loc.phi1
+       (loc.q2,  loc.q3)  = curry split loc.pre (domain lhs.pre `reachedBy` loc.env_full)
+       (loc.q3', loc.e3') = extend (loc.q3, (Scheme_Simple loc.b loc.phi1'))
+       
+       lhs.res = let b'    = appAll loc.e3' (TyExpr_Var loc.b)
+                     a'    = appAll body.sub loc.exp_a
+                     arrow = a' `mkArrow` b'
+                 in desugar (TyScheme_Sugar loc.q3' (TyScheme_SystemF arrow))
+       lhs.sub = body.sub
+       lhs.pre = loc.q2
+       lhs.frs = body.frs
+\end{code}
+We separate the prefix from the rest of the type from the type of the body. We the generalize, but this time some extra work is needed to assure than when a type is present in the result of a call to inference and the resulting prefix, that it's qualified in the prefix instead of the type. This is important for types of expressions such as $\\f \rightarrow (\\x \rightarrow f \hspace{5pt} x) \hspace{5pt} (\\x \rightarrow f \hspace{5pt} x)$. The type can then be constructed.
 
 \section{Unification}
+Unification is the core part of this thesis. Unification is the first routine which requires traversing of two trees at the same time. The interface for unification is quite easy:
+
+\begin{code}
+itf Unify
+  visit unify
+    inh pre  :: Prefix
+    inh exp1 :: TyExpr
+    inh exp2 :: TyExpr
+    inh frs  :: Int
+    syn pre  :: Prefix
+    syn sub  :: Env
+    syn frs  :: Int
+\end{code}
+
+The goal of the visit is to unify the type \emph{exp1} with the type \emph{exp2} under the prefix \emph{pre}. The result of a unification call, if successful is a substitution environment \emph{sub} and the prefix under which the two type are unified.
+
+\begin{code}
+unify = sem unify : Unify monad IO    
+          visit unify
+             default? pre = last
+             default? frs = last
+             default? sub = const (error "Generic Unify failure")
+             clause Main_unify
+               loc.nfTy1 = isNf lhs.exp1
+               loc.nfTy2 = isNf lhs.exp2
+               loc.nf    = loc.nfTy1 && loc.nfTy2
+               internal nf_check
+                 clause s_unify
+                   match True  = loc.nf
+\end{code}
+For unification there is again a check to see if both types are in Normal form. Note that even though we have promoted all SystemF types to flexible types, part of the systemF types are now embedded inside the flexible type(e.g. applications, constructors etc). For the substitutions however instead of providing an empty list for the default there is not an error message for a fairly generic error, however this should never be printed. The unify visit is total.
+
+\begin{code}
+                   internal ty_check
+                     clause LeftTop
+                       match TyExpr.AppTop@app = lhs.exp1
+                       
+                       child u : Unify = unify
+                       
+                       u.pre  = lhs.pre
+                       u.frs  = lhs.frs
+                       u.exp1 = app.tyExpr
+                       u.exp2 = lhs.exp2
+                       
+                       lhs.frs = u.frs
+                       lhs.pre = u.pre
+                       lhs.sub = u.sub
+\end{code}
+The clause \emph{LeftTop} and \emph{RightTop} are there just to strip away the \emph{AppTop} constructor from types, which is used just for pretty printing. After stripping the constructor the new expression is used to further unification. Though only \emph{LeftTop} is given \emph{RightTop} is the same, only ranging over the \emph{lhs.exp1} attribute.
+
+\begin{code}
+                     clause LeftParens
+                       match TyExpr.Parens@app = lhs.exp1
+                       
+                       child u : Unify = unify
+                       
+                       u.pre  = lhs.pre
+                       u.frs  = lhs.frs
+                       u.exp1 = app.tyExpr
+                       u.exp2 = lhs.exp2
+                       
+                       lhs.frs = u.frs
+                       lhs.pre = u.pre
+                       lhs.sub = u.sub
+\end{code}
+The actual physical parenthesis are also not needed. After parsing the order of the type in the AST already denotes the intended meaning of the parentheses. They are retained for pretty printing but are otherwise unneeded. Clause \emph{LeftParens} and \emph{RightParens} are there to strip them.
+
+\begin{code}
+                     clause vars
+                       match TyExpr.Var@var1 = lhs.exp1
+                       match TyExpr.Var@var2 = lhs.exp2
+                       
+                       internal case_check
+                         clause eq_vars
+                           match True = var1.nm == var2.nm
+                           lhs.sub = empty
+\end{code}
+When both expressions are variables we have a number of choices. The first of which is when the variables in both expression are the same. In which case unification for them succeeded due to the fact that they're already equal. A empty substitution is then returned.
+
+\begin{code}
+                         clause rest_vars
+                           loc.q  = lhs.pre
+                           loc.p1 = loc.q `contains` var1.nm
+                           loc.p2 = loc.q `contains` var2.nm
+                           internal var_check
+                             loc.isJust    = isJust loc.p1 && isJust loc.p2
+                             clause pure_var
+                               match False = loc.isJust
+                               lhs.sub = error ("Variable check failed. A binding for variable '" ++ pp var1.nm ++ "' or '" ++ pp var2.nm ++ "' was not found in prefix " ++ pp loc.q)
+\end{code}
+When the variables are not the same we first have to check whether both variables are bound by the environment (the Prefix). If they are not we cannot proceed with unification because information on the bounds of the variables are missing. We handle this case by generating an error and printing the variables and the prefix in question.
+
+\begin{code} 
+                             clause ty_var
+                               match True  = loc.isJust
+                               loc.phi1 = fromJust loc.p1
+                               loc.phi2 = fromJust loc.p2
+                               loc.exists = let v1 = occursCheck var1.nm loc.q (toScheme loc.phi2)
+                                                v2 = occursCheck var2.nm loc.q (toScheme loc.phi1)
+                                            in v1 || v2
+                               internal dom_check
+                                 clause s_dom_check
+                                   match True  = loc.exists
+                                   lhs.sub = error "Domain check failed in Unify"
+\end{code}
+In case both of the variables are bound, we extract their bounds from the prefix and bind them to the local attributes \emph{phi1} and \emph{phi2}. The next step is to check that neither bounds contain any reference to the other variable, in other words: $var1 \notin domain(loc.phi1) \cap var2 \notin domain(loc.phi2)$. If this assertion is untrue we again generate an error message. This is called rather aptly the "occurs check".
+
+\begin{code}
+                                 clause f_dom_check
+                                   match False = loc.exists
+                                   
+                                   child s : UnifyScheme = unifyScheme
+                                   
+                                   s.pre = loc.q
+                                   s.frs = lhs.frs
+                                   s.ty1 = dropQuant loc.phi1
+                                   s.ty2 = dropQuant loc.phi2
+                                   
+                                   loc.q1  = s.pre
+                                   loc.e1  = s.sub
+                                   loc.phi = s.ty
+\end{code}
+After extracting both type schemes a call to UnifyScheme is made in order to get the resulting unified type of those two type schemes. \emph{dropQuant} in the call about is actually defined as the identity function. It's purpose shows to illustrate that there is a conversion or coercion from a quantified type scheme $\hat{\varphi}$ to a normal type scheme $\varphi$ going on. Because a quantified type scheme is just a type synonym in this implementation the function is defined as id. Finally the result of the child s is bound to more sensible names.
+
+\begin{code}                            
+                                   (loc.q2, loc.e2) = update (loc.q1, Right (var1.nm, TyScheme_SystemF (TyExpr_Var var2.nm)))
+                                   (loc.q3, loc.e3) = update (loc.q2, Left (Scheme_Simple var2.nm loc.phi)) 
+                                   
+                                   lhs.frs = s.frs
+                                   lhs.pre = loc.q3
+                                   lhs.sub = loc.e3 `munion'` loc.e2 `munion'` loc.e1
+\end{code}
+Next we update the new prefixes with the new information. We start by updating the prefix returned from the call to UnifyScheme with the substitution $\lbrack var1 := var2 \rbrack$. This is done because the two variables are now equal, so the reference to one of them can be removed. Since we are trying to find out what \emph{var1} is we can safely write that \emph{var1} is now \emph{var2}. In the second call we then update \emph{var2} with the new bound $(var_2 \geq loc.phi)$. This updates the value of \emph{var2} to the result of the Unification of the two type schemes. Lastly all the substitutions gathered are combined and returned.
+
+\begin{code}
+                     clause cons
+                       match TyExpr.Con@var1 = lhs.exp1
+                       match TyExpr.Con@var2 = lhs.exp2
+                       
+                       loc.eq = var1.nm == var2.nm
+                       
+                       internal con_check
+                          clause succeeded1
+                            match True  = loc.eq
+                            lhs.sub     = empty
+                          clause failed1
+                            match False = loc.eq
+                            lhs.sub = error ("Type mismatch, expected '" ++ show var1.nm ++ "' but got '" ++ show var2.nm ++ "'")
+\end{code}
+The constructor case is pretty straight forward, when both expressions are constructors look at is the name of the constructors match. If not throw an error, if they match then return with an empty substitution.
+
+\begin{code}
+                     clause apptype
+                       match TyExpr.App@app1 = lhs.exp1
+                       match TyExpr.App@app2 = lhs.exp2
+                       
+                       child uf : Unify = unify
+                       
+                       uf.frs  = lhs.frs
+                       uf.pre  = lhs.pre
+                       uf.exp1 = app1.func
+                       uf.exp2 = app2.func
+                       
+                       child ua : Unify = unify
+                       
+                       ua.frs  = uf.frs
+                       ua.pre  = uf.pre
+                       ua.exp1 = appAll uf.sub app1.arg
+                       ua.exp2 = appAll uf.sub app2.arg
+                       
+                       lhs.pre = ua.pre
+                       lhs.sub = uf.sub `munion` ua.sub
+\end{code}
+Applications are also pretty easy. If both types are an Application then we need to make two calls to Unify. If unifying the expressions $f_1 \hspace{5pt} e_1$ and $f_2 \hspace{5pt} e_2$ We first have to unify $f_1$ and $f_2$. In case this succeeds we then apply the substitutions found by this unification to the types $e_1$ and $e_2$ to propagate any new information found by the first application. The resulting types are then unified. 
+
+\begin{code}
+                     clause vartype   
+                       internal varchoice
+                         clause leftvar
+                           match TyExpr.Var@var1 = lhs.exp1
+                           loc.expr  = lhs.exp2
+                           loc.varnm = var1.nm
+
+                           loc.q   = lhs.pre
+                           loc.phi = loc.q `contains` loc.varnm
+                           loc.occurs = occursCheck loc.varnm loc.q (TyScheme_SystemF loc.expr)
+\end{code}
+This next case deals with when only one of the expressions is a variable and the other an arbitrary expression (but not a variable). The case for if when the first expression s a variable is handled here, but there is a similar clause for when the second expression is a variable. 
+As with the case of when both expressions were variables we first lookup the binding to the variable in the prefix and afterward check if the domain of that type contains any reference to the variable itself (infinite type check).
+                           
+\begin{code}
+                           internal occurs_check
+                             clause valid
+                               match False = loc.occurs
+                               loc.phi' = fromJust loc.phi
+                               
+                               loc.p = loc.expr
+                               
+                               child s : Subsume = subsume
+                               
+                               s.pre = loc.q
+                               s.exp = loc.p
+                               s.frs = lhs.frs
+                               s.ty  = dropQuant loc.phi'
+                               
+                               (loc.q2, loc.e2) = let a   = appAll s.sub loc.expr
+                                                      sub = (loc.varnm, TyScheme_SystemF (mkTop a))
+                                                  in update (s.pre, Right sub)
+\end{code}
+In case the occurs check succeeds we try to instantiate the SystemF expression with the type scheme in the bounds. This is the same clause that handles the type checking of higher-rank types. If instantiation succeeds we get a list of substitutions indicating how to instantiate the SystemF expression \emph{loc.expr}.
+We then update the value of the variable we were unifying with the expression with the substitution replacing that variable with the instantiated expression.
+
+\begin{code}
+                               lhs.pre = loc.q2
+                               loc.ret = loc.e2 `munion` s.sub
+                               lhs.sub = loc.ret
+                               lhs.frs = s.frs  
+                             clause invalid
+                               match True = loc.occurs
+                               lhs.sub = error ("Occurs check: cannot construct the infinite type: " ++ pp loc.varnm ++ " = " ++ pp loc.expr)
+\end{code}
+The updated prefix and complete substitution list in then returned. In case the occurs check failed we generate a error message indicating there was a problem with an infinite type.
+
+\begin{code}
+                     clause quant
+                       match TyExpr.Quant@var1 = lhs.exp1
+                       match TyExpr.Quant@var2 = lhs.exp2
+                       
+                       child u : Unify = unify
+                       
+                       (loc.c, loc.frs1) = fresh lhs.frs
+                       loc.varc = mkSkolem loc.c
+                       u.frs  = loc.frs1
+                       u.pre  = lhs.pre
+                       u.exp1 = app (var1.tyVar, loc.varc) var1.tyExpr
+                       u.exp2 = app (var2.tyVar, loc.varc) var2.tyExpr
+                       
+                       loc.q1 = u.pre
+                       loc.e1 = u.sub
+\end{code}
+If the goal was to unify two quantified SystemF expressions (should not occur naturally to the call to unify since quantified systemF expressions are promoted to type schemes) we replace the quantifier of both types with the same skolem variable. The idea is to check if both types have the same structure. Since they're equally quantified, if they have the same structure than they're the same type.
+A skolem variable is a type that only unifies with itself and other variables. It is sometimes also referred to as a \emph{Rigid} type\footnote{Those familiar with GHC will recognize this. Although GHC >=7.0 also refer to them as skolem variables}. In this implementation a special constructor (names starting with a lowercase "s") is used to implement skolem variables.
+\begin{code}                       
+                       loc.check = loc.c `elem` (codomain loc.e1 ++ codomain loc.q1)
+                       internal skol_check
+                          clause succeeded
+                            match False  = loc.check
+                            lhs.pre = loc.q1
+                            lhs.sub = loc.e1
+                            lhs.frs = u.frs
+                          clause failed
+                            match (loc.bla, True) = ((), loc.check)
+                            lhs.sub = const (error "Subsume failure, A skolem constant has leaked outside") loc.bla
+\end{code}
+At the end we have to check if the skolem variable used has been leaked out of the environment by checking the codomain of the returned substitution and prefix,
+
+\begin{code}
+                     clause mismatch
+                       lhs.sub = error (  "Could not match expected type '" 
+                                        ++ pp (clean lhs.exp1) ++ "' with inferred type '" 
+                                        ++ pp (clean lhs.exp2) ++ "'" )
+                 clause f_unify
+                   match (loc.bla, False) = ((), loc.nf)
+                   lhs.sub = const (error "Unify failure, one or both of the TyExpr are not in normal form.") loc.bla
+\end{code}
+
 \section{Instantiation}
-\section{Error handling} 
+Another major part of the algorithm is instantiation. The instantiation (referred to as subsume) tries to find if the type scheme \emph{lhs.ty} can be modified to the system f type \emph{lhs.exp}. Instantiation is critical to the support of higher rank types.
+
+The interface to subsume is:
+\begin{code}
+itf Subsume
+  visit subsume
+    inh pre  :: Prefix
+    inh exp  :: TyExpr
+    inh ty   :: TyScheme
+    inh frs  :: Int
+    syn pre  :: Prefix
+    syn sub  :: Env
+    syn frs  :: Int
+\end{code}
+The only important inputs are the Prefix, TyExpr and TyScheme to use during instantiation. The result is a list of substitutions (Env) which when applied to the type scheme (ty) instantiated the type to (exp) under the resulting prefix (pre).
+
+
+\begin{code}
+subsume = sem subsume : Subsume monad IO 
+             visit subsume
+               default? pre = last
+               default? frs = last
+               clause Main_subsume
+                loc.nfTy = isNf lhs.exp
+                loc.nfTs = isNf lhs.ty
+                loc.nf   = loc.nfTy && loc.nfTs
+                internal nf_check
+                    clause s_subsume
+                      match True                  = loc.nf
+                      match TyExpr.Forall@exp     = mkForall lhs.exp
+                      match TyScheme.Sugar@scheme = sugar lhs.ty
+\end{code}
+In the first part of subsume we check if both types are in normal form. This version of subsume also handles types not in normal form correctly, but the checks serve as a sanity check for the rest of the code, to make sure we do not generate any type that is too complicated or incorrectly nested e.g. violates the semantics of type schemes.
+The calls to \emph{mkForall} and \emph{sugar} ensure that we can bind every \emph{outer-quantifiers} in one call instead of one by one removing them in AG code.
+
+\begin{code}
+                      loc.q  = lhs.pre
+                      loc.q2 = scheme.prefix
+                      
+                      (loc.c, loc.frs1) = freshS lhs.frs (length exp.tyVar)
+                      loc.qq2 = loc.q ++ loc.q2
+                      
+                      loc.p1 = dropScheme scheme.tyExpr
+                      loc.p2 = appAll (zipWith (\a b->(a, mkSkolem b)) exp.tyVar loc.c) exp.tyExpr
+\end{code}
+Since the goal is to instantiate the type scheme (\emph{scheme}) type to the SystemF type (\emph{exp}) we have to add the type scheme bounds of that type together with the prefix (\emph{loc.qq2}). 
+The binding of attribute \emph{p1} has call to \emph{dropScheme} doesn't do anything but ensure that the type is a SystemF type wrapped inside a type scheme (e.g. that the scheme.tyExpr type is not $\bot$ or any other TyScheme value). \emph{p2} has an interesting construct but it essentially does skolemization. It replaces every bound type variables in the type to a skolem variable.
+
+\begin{code}
+                      child u : Unify = unify
+                      u.pre  = loc.qq2
+                      
+                      u.exp1 = loc.p1
+                      u.exp2 = loc.p2
+                      u.frs  = loc.frs1
+                      
+                      loc.q1 = u.pre
+                      loc.e1 = u.sub
+\end{code}
+After preparing the two new input functions, the new unify co-routine is declared and invoked.
+
+\begin{code}
+                      
+                      (loc.q3, loc.q4) = split (loc.q1, domain loc.q)
+                      loc.e2 = let x = domain loc.q4
+                               in loc.e1 `remove` x
+                      loc.codom = nub (skolems loc.e2 ++ skolems loc.q3)
+                      loc.check = any (`elem` loc.codom) loc.c
+\end{code}
+The resulting prefix \emph{loc.q1} is generalized based on the original prefix. \emph{loc.q3} thus contains the updated values (if any) of the prefixes we originally had whereas \emph{loc.q4} contains any prefixes which don't have any direct effect on the instantiation. Using this prefix we can then apply scoping to the list of substitutions received from the unification call.
+The local attribute \emph{codom} contains every skolem variable in the substitution environment and the prefix returned from unify. \emph{check} then checks to see if any of these skolem variables are variables that were defined by this instantiation. In other words those two attributes are there to prevent any skolem variables to leak from instantiation.
+
+\begin{code}
+                      internal skol_check
+                        clause succeeded
+                          match False  = loc.check
+                          lhs.pre = loc.q3
+                          lhs.sub = loc.e2
+                          lhs.frs = u.frs
+                        clause failed
+                          match (loc.bla, True) = ((), loc.check)
+                          lhs.sub = const (error ("Subsume failure, Could not instatiate because doing so would leak the skolems " ++ pp loc.codom ++ " into the environment.")) loc.bla
+\end{code}
+If not skolems are leaked just returned the prefix and substitution, otherwise give an appropriate error message. The match statement looks a bit weird, but because statements are reordered based on dependencies the local attribute \emph{bla} is defined in the match to insure that the match executes before the error message.
+
+\begin{code}
+                    clause wild_subsume
+                      match True                        = loc.nf
+                      match (loc.fo, TyScheme.Bottom@l) = ((), sugar lhs.ty)
+                      lhs.sub = empty
+                      
+                    clause f_subsume
+                      match (loc.bla, False) = ((), loc.nf)
+                      lhs.sub = const (error "Subsume failure, the given type is not in normal form.") loc.bla
+\end{code}
+The last two clauses are for when we want to instantiate a type with a $\bot$ and for when the type was not in normal form. In the former we just immediately return with an empty substitution list (nothing needs to be done, the types are already "equal") and in the latter we just give an error.
+
+\section{Unify Scheme} 
+On occasion we need to unify two type schemes with each other, the interface is defined as:
+
+\begin{code}
+itf UnifyScheme
+  visit unifyScheme
+    inh pre  :: Prefix
+    inh ty1  :: TyScheme
+    inh ty2  :: TyScheme
+    inh frs  :: Int
+    syn pre  :: Prefix
+    syn sub  :: Env
+    syn ty   :: TyScheme
+    syn frs  :: Int 
+\end{code}
+
+Where there are two TySchemes as input and the unified TyScheme is returned. The implementation is quite simple:
+
+\begin{code}
+unifyScheme = sem unifyScheme : UnifyScheme monad IO
+                visit unifyScheme
+                  default? pre = last
+                  default? frs = last
+                  default? sub = const empty
+                  clause Main_unifyScheme
+                      loc.b1 = isBottom lhs.ty1
+                      loc.b2 = isBottom lhs.ty2
+                      internal bot_check
+                        clause first_bottom
+                            match True = loc.b1
+                            lhs.ty     = lhs.ty2
+                        clause second_bottom
+                            match True = loc.b2
+                            lhs.ty     = lhs.ty1
+\end{code}
+When unifying two schemes, if any one of them if a $\bot$ then we can immediately return since anything unifies with $\bot$. 
+
+\begin{code}
+                        clause norm
+                            match False = loc.b1 || loc.b2
+                            match TyScheme.Sugar@exp1 = sugar lhs.ty1
+                            match TyScheme.Sugar@exp2 = sugar lhs.ty2
+                                
+                            child u : Unify = unify
+                                
+                            u.pre  = lhs.pre ++ exp1.prefix ++ exp2.prefix
+                            u.exp1 = dropScheme exp1.tyExpr
+                            u.exp2 = dropScheme exp2.tyExpr
+                            u.frs  = lhs.frs
+                                
+                            loc.q3 = u.pre
+                            loc.e3 = u.sub
+\end{code}
+If both typeschemes are not a $\bot$ then the prefixes of both type schemes are removed and combined with the input prefix and passed along to a call to Unify.
+
+\begin{code}
+                                
+                            (loc.q4, loc.q5) = split (loc.q3, domain lhs.pre)
+                                
+                            lhs.frs = u.frs
+                            lhs.pre = loc.q4
+                            lhs.sub = loc.e3
+                            lhs.ty  = let ty  = appAll loc.e3 exp1.tyExpr
+                                          ret = TyScheme_Sugar loc.q5 ty
+                                      in desugar ret
+\end{code}
+After the call to unify we again generalize by splitting the prefix returned from the call to unify. However next to returning the substitutions needed to unify the two types, we also return the result of the unification of the two types, by first applying the substitution to type we were unifying with and then fully quantify it by adding the prefix \emph{loc.q5} to the result. Note that $ftv(lhs.ty)=\emptyset$.
