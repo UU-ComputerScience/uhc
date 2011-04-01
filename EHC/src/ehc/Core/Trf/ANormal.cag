@@ -78,7 +78,7 @@ cmodTrfANormal modNm uniq cmod
   =  let  t = wrap_CodeAGItf  (sem_CodeAGItf (CodeAGItf_AGItf cmod))
                               (Inh_CodeAGItf
                                  { gUniq_Inh_CodeAGItf = uniq
-%%[[20
+%%[[50
                                  , modNm_Inh_CodeAGItf = modNm
 %%]]
                                  })
@@ -89,7 +89,7 @@ cmodTrfANormal modNm uniq cmod
 %%% Module name, required for unique global names
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(20 codegen)
+%%[(50 codegen)
 ATTR AllCodeNT CodeAGItf [ modNm: HsName | | ]
 %%]
 
@@ -261,12 +261,12 @@ SEM CAlt
 SEM CExpr
   | App Lam Case TupDel TupIns TupUpd Let
                 loc         .   trNm        =   
-%%[[20
+%%[[50
                                                 hsnQualUniqify @lhs.modNm $
 %%]]
                                                 uidHNm @lUniq
   | Lam         loc         .   trNm2       =   
-%%[[20
+%%[[50
                                                 hsnQualUniqify @lhs.modNm $
 %%]]
                                                 uidHNm @lUniq2

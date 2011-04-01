@@ -26,7 +26,7 @@
 %%[(3 hmtyinfer) import({%{EH}Ty.Trf.Quantify})
 %%]
 
-%%[(20 hmtyinfer) import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
+%%[(50 hmtyinfer) import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
 %%]
 
 %%[9999 import({%{EH}Base.ForceEval})
@@ -47,7 +47,7 @@ data ValGamInfo
 type ValGam = Gam HsName ValGamInfo
 %%]
 
-%%[(20 hmtyinfer)
+%%[(50 hmtyinfer)
 deriving instance Typeable ValGamInfo
 deriving instance Data ValGamInfo
 %%]
@@ -158,7 +158,7 @@ instance ForceEval ValGamInfo where
 %%]]
 %%]
 
-%%[(20 hmtyinfer || hmtyast)
+%%[(50 hmtyinfer || hmtyast)
 instance Serialize ValGamInfo where
   sput (ValGamInfo a) = sput a
   sget = liftM ValGamInfo sget

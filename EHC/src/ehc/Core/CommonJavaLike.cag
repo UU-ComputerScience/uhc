@@ -25,7 +25,7 @@ SEM CModule
                             .   pkgNm           =   @moduleNm
 %%[[8
                             .   moduleClassNm   =   @moduleNm
-%%][20
+%%][50
                             .   moduleClassNm   =   hsnSetQual @moduleNm $ hsnQualified @moduleNm
 %%]]
 

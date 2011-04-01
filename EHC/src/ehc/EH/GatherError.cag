@@ -386,17 +386,17 @@ SEM PatExpr
                                                                               ]
 %%]
 
-%%[(16 hmtyinfer)
+%%[(41 hmtyinfer)
 SEM DataConstr
   | Constr      lhs         .   errSq       :=  rngLift @range mkNestErr' @pp [ @fields.errSq, @eqs.errSq, foErrSq @fo_
                                                                               , Seq.fromList @loc.occErrL, @loc.undefVarsErrSq
                                                                               ]
 %%]
 
-%%[16
+%%[41
 SEM DataConstrEq
   | Eq          lhs         .   errSq       =   rngLift @range mkNestErr' @pp [ @tyVar.errSq, @tyExpr.errSq
-%%[[(16 hmtyinfer)
+%%[[(41 hmtyinfer)
                                                                               , foErrSq @loc.fo_, foErrSq @loc.foRhsTy
 %%]]
                                                                               ]
@@ -418,7 +418,7 @@ SEM Decl
   | FFI			lhs         .   errSq        =  rngLift @range mkNestErr' @pp [foErrSq @foFFI]
 %%]
 
-%%[50
+%%[40
 SEM DataConstr
   | Constr      lhs         .   errSq       :=  rngLift @range mkNestErr' @pp [@fields.errSq, @eqs.errSq, foErrSq @fo_]
 %%]

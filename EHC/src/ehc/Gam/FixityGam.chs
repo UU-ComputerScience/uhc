@@ -26,7 +26,7 @@
 %%[(3 hmtyinfer) import({%{EH}Ty.Trf.Quantify})
 %%]
 
-%%[20 import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
+%%[50 import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
 %%]
 
 %%[9999 import({%{EH}Base.ForceEval})
@@ -44,7 +44,7 @@ defaultFixityGamInfo = FixityGamInfo fixityMaxPrio Fixity_Infixl
 type FixityGam = Gam HsName FixityGamInfo
 %%]
 
-%%[20
+%%[50
 deriving instance Typeable FixityGamInfo
 deriving instance Data FixityGamInfo
 
@@ -79,7 +79,7 @@ instance ForceEval FixityGamInfo
 %%]]
 %%]
 
-%%[20
+%%[50
 instance Serialize FixityGamInfo where
   sput (FixityGamInfo a b) = sput a >> sput b
   sget = liftM2 FixityGamInfo sget sget

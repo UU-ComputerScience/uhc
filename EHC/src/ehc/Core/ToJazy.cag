@@ -127,7 +127,7 @@ nmToTuple   = "toTuple"
 hsnJazyVar ::  HsName -> HsName -> HsName -> HsName
 %%[[8
 hsnJazyVar = hsnJavaLikeVar (id, id, id)
-%%][20
+%%][50
 hsnJazyVar = hsnJavaLikeVar (hsnQualified, hsnPrefix "_", id)
 %%]]
 %%]
@@ -869,11 +869,11 @@ SEM CModule
 %%[[8
                                                            @expr.subClasses
                                                          , @otherClasses
-%%][20
+%%][50
 %%]]
                                                          ])
                             .   globClasses     =   Seq.unions [ Seq.singleton @topLevelCls
-%%[[20
+%%[[50
                                                                , @expr.subClasses
                                                                , @otherClasses
 %%]]
@@ -946,7 +946,7 @@ SEM CModule
 SEM CBindAspect
 %%[[8
   | Bind        loc         .   isThrowOutMain  =   False
-%%][20
+%%][50
   | Bind        loc         .   isThrowOutMain  =   @lhs.isGlobal && @lhs.nm == hsnMain
 %%]]
 %%]

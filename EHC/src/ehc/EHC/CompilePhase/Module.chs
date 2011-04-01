@@ -4,38 +4,38 @@
 
 Module analysis
 
-%%[20 module {%{EH}EHC.CompilePhase.Module}
+%%[50 module {%{EH}EHC.CompilePhase.Module}
 %%]
 
 -- general imports
-%%[20 import(qualified Data.Map as Map)
+%%[50 import(qualified Data.Map as Map)
 %%]
-%%[20 import(qualified EH.Util.Rel as Rel)
-%%]
-
-%%[20 import({%{EH}EHC.Common})
-%%]
-%%[20 import({%{EH}EHC.CompileUnit})
-%%]
-%%[20 import({%{EH}EHC.CompileRun})
+%%[50 import(qualified EH.Util.Rel as Rel)
 %%]
 
-%%[20 import({%{EH}Module})
+%%[50 import({%{EH}EHC.Common})
 %%]
-%%[20 import(qualified {%{EH}HS.ModImpExp} as HSSemMod)
+%%[50 import({%{EH}EHC.CompileUnit})
+%%]
+%%[50 import({%{EH}EHC.CompileRun})
+%%]
+
+%%[50 import({%{EH}Module})
+%%]
+%%[50 import(qualified {%{EH}HS.ModImpExp} as HSSemMod)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Module analysis
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20 export(cpCheckMods')
+%%[50 export(cpCheckMods')
 cpCheckMods' :: [Mod] -> EHCompilePhase ()
 cpCheckMods' modL
   = do { cr <- get
        ; let crsi   = crStateInfo cr
              (mm,e) = modMpCombine modL (crsiModMp crsi)
-%%[[20
+%%[[50
        ; when (ehcOptVerbosity (crsiOpts crsi) >= VerboseDebug)
               (lift $ putWidthPPLn 120 (pp (head modL) >-< ppModMp mm)) -- debug
 %%][99
@@ -45,7 +45,7 @@ cpCheckMods' modL
        }
 %%]
 
-%%[20 export(cpCheckMods)
+%%[50 export(cpCheckMods)
 cpCheckMods :: [HsName] -> EHCompilePhase ()
 cpCheckMods modNmL
   = do { cr <- get
@@ -59,7 +59,7 @@ cpCheckMods modNmL
 %%% Get info for module analysis
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20 export(GetMeta(..),allGetMeta)
+%%[50 export(GetMeta(..),allGetMeta)
 data GetMeta
   = GetMeta_HS
   | GetMeta_HI
@@ -72,7 +72,7 @@ allGetMeta = [GetMeta_HS, GetMeta_HI, GetMeta_Core, GetMeta_Grin, GetMeta_Dir]
 
 %%]
 
-%%[20 export(cpGetHsImports,cpGetHsMod,cpGetMetaInfo)
+%%[50 export(cpGetHsImports,cpGetHsMod,cpGetMetaInfo)
 cpGetHsImports :: HsName -> EHCompilePhase HsName
 cpGetHsImports modNm
   =  do  {  cr <- get
@@ -109,7 +109,7 @@ cpGetMetaInfo gm modNm
          {-
          ;  when (GetMeta_HI `elem` gm)
                  (tm opts ecu ecuStoreHITime
-%%[[20
+%%[[50
                                               (fpathSetSuff "hi"        fp     )
 %%][99
                                               (mkInOrOutputFPathFor (InputFrom_Loc $ ecuFileLocation ecu) opts modNm fp "hi")
@@ -118,21 +118,21 @@ cpGetMetaInfo gm modNm
          -}
          ;  when (GetMeta_HI `elem` gm)
                  (tm opts ecu ecuStoreHIInfoTime
-%%[[20
+%%[[50
                                               (fpathSetSuff "hi"        fp     )
 %%][99
                                               (mkInOrOutputFPathFor (InputFrom_Loc $ ecuFileLocation ecu) opts modNm fp "hi")
 %%]]
                  )
-%%[[(20 codegen)
+%%[[(50 codegen)
          ;  when (GetMeta_Grin `elem` gm)
                  (tm opts ecu ecuStoreGrinTime      (fpathSetSuff "grin"      fp     ))
 %%]]
-%%[[(20 codegen)
+%%[[(50 codegen)
          ;  when (GetMeta_Core `elem` gm)
                  (tm opts ecu ecuStoreCoreTime      (fpathSetSuff "core"      fp     ))
 %%]]
-%%[[20
+%%[[50
          ;  when (GetMeta_Dir `elem` gm)
                  (wr opts ecu ecuStoreDirIsWritable (                         fp     ))
 %%]]
@@ -151,7 +151,7 @@ cpGetMetaInfo gm modNm
                           ; cpUpdCU modNm $ store t
                           })
                }
-%%[[20
+%%[[50
         wr opts ecu store fp
           = do { pm <- lift $ getPermissions (maybe "." id $ fpathMbDir fp)
                -- ; lift $ putStrLn (fpathToStr fp ++ " writ " ++ show (writable pm))
@@ -164,7 +164,7 @@ cpGetMetaInfo gm modNm
 %%% Create dummy module info for .eh's
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20 export(cpGetDummyCheckEhMod)
+%%[50 export(cpGetDummyCheckEhMod)
 cpGetDummyCheckEhMod :: HsName -> EHCompilePhase ()
 cpGetDummyCheckEhMod modNm
   = do { cr <- get
@@ -180,7 +180,7 @@ cpGetDummyCheckEhMod modNm
 %%% Update module offset info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(20 codegen grin) export(cpUpdateModOffMp)
+%%[(50 codegen grin) export(cpUpdateModOffMp)
 cpUpdateModOffMp :: [HsName] -> EHCompilePhase ()
 cpUpdateModOffMp modNmL
   = do { cr <- get

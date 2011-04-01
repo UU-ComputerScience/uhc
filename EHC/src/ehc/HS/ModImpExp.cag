@@ -8,16 +8,16 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-%%[20 hs module {%{EH}HS.ModImpExp} import({%{EH}Base.Builtin},{%{EH}Base.Common}, {%{EH}Opts}, {%{EH}HS}, {%{EH}Gam.Full}, {%{EH}NameAspect})
+%%[50 hs module {%{EH}HS.ModImpExp} import({%{EH}Base.Builtin},{%{EH}Base.Common}, {%{EH}Opts}, {%{EH}HS}, {%{EH}Gam.Full}, {%{EH}NameAspect})
 %%]
 
-%%[20 hs export(Inh_AGItf(..),Syn_AGItf(..),sem_AGItf,wrap_AGItf)
+%%[50 hs export(Inh_AGItf(..),Syn_AGItf(..),sem_AGItf,wrap_AGItf)
 %%]
 
-%%[20 hs import(qualified Data.Set as Set,qualified Data.Map as Map,Data.Maybe)
+%%[50 hs import(qualified Data.Set as Set,qualified Data.Map as Map,Data.Maybe)
 %%]
 
-%%[20 hs import(qualified EH.Util.Rel as Rel,{%{EH}Module})
+%%[50 hs import(qualified EH.Util.Rel as Rel,{%{EH}Module})
 %%]
 
 %%[(99 codegen) hs import ({%{EH}Base.Target})
@@ -45,7 +45,7 @@ PRAGMA novisit nocycle
 %%% Options
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20
+%%[50
 ATTR AGItf AllModuleDeclaration AllExpression [ opts: EHCOpts | | ]
 %%]
 
@@ -53,7 +53,7 @@ ATTR AGItf AllModuleDeclaration AllExpression [ opts: EHCOpts | | ]
 %%% Top level instance names, to be propagated to next phase -- a hack :-(
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20
+%%[50
 ATTR AllNT [ | topInstanceNmL: {[HsName]} | ]
 
 SEM Declaration
@@ -74,7 +74,7 @@ SEM Deriving
                                         =   @instancename : @lhs.topInstanceNmL
 %%]
 
-%%[20
+%%[50
 SEM Declaration
     | Class Instance InstanceUseImplicitly
         loc             .   mbPrevInstancename
@@ -92,13 +92,13 @@ SEM Deriving
 %%% Does 'main' exists? -- also a hack :-(
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20
+%%[50
 ATTR
   AGItf AllTopLevel AllDeclarationPlain AllFunctionBinding LeftHandSide Pattern Patterns
     [ | | mainValExists USE {||} {False}: Bool ]
 %%]
 
-%%[20
+%%[50
 SEM LeftHandSide
     | Function
         loc             .   mainValExists

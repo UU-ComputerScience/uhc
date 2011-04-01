@@ -100,13 +100,13 @@
 %%[(11 hmtyinfer) hs import({%{EH}Ty.Trf.BetaReduce}(tyBetaRedFull))
 %%]
 
-%%[(16 hmtyinfer) hs import({%{EH}Ty.Trf.Subst})
+%%[(41 hmtyinfer) hs import({%{EH}Ty.Trf.Subst})
 %%]
 
-%%[20 hs import({%{EH}Module},{%{EH}Ty.UsedNames})
+%%[50 hs import({%{EH}Module},{%{EH}Ty.UsedNames})
 %%]
 
-%%[(50 hmtyinfer) hs import({%{EH}Ty.Trf.ElimEqual},{%{EH}Gam.Utils})
+%%[(40 hmtyinfer) hs import({%{EH}Ty.Trf.ElimEqual},{%{EH}Gam.Utils})
 %%]
 
 %%[90 hs import({%{EH}Foreign},{%{EH}Foreign.Pretty})
@@ -199,7 +199,7 @@ WRAPPER AGItf
 %%[(17 hmtyinfer) ag import({EH/InferPolarity})
 %%]
 
-%%[20 ag import({EH/UsedNames})
+%%[50 ag import({EH/UsedNames})
 %%]
 
 %%[92 ag import({EH/GatherMisc})
@@ -232,13 +232,13 @@ ATTR AllNT AGItf [ opts: EHCOpts | | ]
 %%[8
 ATTR
   AGItf
-%%[[20
+%%[[50
   AllNT
 %%]]
     [ moduleNm: HsName | | ]
 %%]
 
-%%[20
+%%[50
 ATTR AGItf [ idQualGam: IdQualGam | | ]
 %%]
 
@@ -250,7 +250,7 @@ ATTR NTPrf AGItf [ fixityGam: FixityGam | | ]
 %%% Is toplevel mod?
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20
+%%[50
 ATTR AGItf [ isMainMod: Bool | | ]
 %%]
 

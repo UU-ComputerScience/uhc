@@ -91,10 +91,10 @@ pAGItf opts
 %%]]
 %%]
 
-%%[20 export(pAGItfImport)
+%%[50 export(pAGItfImport)
 pAGItfImport :: EHCOpts -> HSParser AGItf
 pAGItfImport opts
-%%[[20
+%%[[50
   =   AGItf_AGItf <$> pModule opts pBodyImport
 %%][99
   =   AGItf_AGItf <$> pModule opts (\opts _ -> pBodyImport opts)
@@ -156,7 +156,7 @@ pModule opts pBody
 %%[[1
   =          (\      b   -> Module_Module emptyRange   Nothing                           b) <$> pBody opts
          <|> (\t m   b   -> Module_Module (mkRange1 t) (Just $ tokMkQName $ m)           b) <$> pMODULE <*> modid <* pWHERE <*> pBody opts
-%%][20
+%%][50
   =          (\      b   -> Module_Module emptyRange   Nothing                   Nothing b) <$> pBody opts
          <|> (\t m e b   -> Module_Module (mkRange1 t) (Just $ tokMkQName $ m)   e       b) <$> pMODULE <*> modid <*> pMaybeExports <* pWHERE <*> pBody opts
 %%][99
@@ -172,7 +172,7 @@ pModule opts pBody
 %%% Export, import
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20
+%%[50
 pImportExport :: (Range -> Name -> ie,Range -> Name -> MaybeNames -> ie,Range -> Name -> ie) -> HSParser ie
 pImportExport (sem_Var,sem_tOrC,sem_tOrC_complete)
   =   mkRngNm sem_Var <$> qvar
@@ -186,7 +186,7 @@ pImportExport (sem_Var,sem_tOrC,sem_tOrC_complete)
   <?> "pImportExport"
 %%]
 
-%%[20
+%%[50
 pExport :: HSParser Export
 pExport
   =   (\t m -> Export_Module (mkRange1 t) (tokMkQName m)) <$> pMODULE <*> modid
@@ -200,7 +200,7 @@ pMaybeExports
   <?> "pMaybeExports"
 %%]
 
-%%[20
+%%[50
 pImport :: HSParser Import
 pImport
   =   pImportExport (Import_Variable,Import_TypeOrClass,Import_TypeOrClassComplete)
@@ -240,7 +240,7 @@ pDeclarations1' pD
 %%% Body
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20
+%%[50
 pBodyImport :: EHCOpts -> HSParser Body
 pBodyImport opts
   =   (\d -> Body_Body emptyRange d []) <$> pDeclarations' pImportDeclaration
@@ -258,7 +258,7 @@ pBody' opts addDecl
 %%[[1
   =   Body_Body emptyRange <$> pDeclarations1' (addDecl pTopDeclaration)
   <|> pSucceed (Body_Body emptyRange [])
-%%][20
+%%][50
   =   (\ids -> let (i,d) = foldr cmbid ([],[]) ids in Body_Body emptyRange i d)
       <$> pDeclarations' (   (\d -> ([],[d])) <$> (addDecl pTopDeclaration)
                          <|> (\i -> ([i],[])) <$> pImportDeclaration
@@ -266,7 +266,7 @@ pBody' opts addDecl
 %%]]
   <?> "pBody"
   where 
-%%[[20
+%%[[50
         cmbid ([i],_) (is,ds) = (i:is,ds)
         cmbid (_,[d]) (_ ,ds) = ([],d:ds)
 %%]]
@@ -921,7 +921,7 @@ pBody' opts addDecl
           <|> tyvar <**>  (    (\s v -> mkRngNm ContextItem_RowLacksLabel v (tokMkQName s))
                                <$ pLAM <*> pSelector
 %%]
-%%[50
+%%[40
                           <|>  (flip ContextItem_Equal)
                                <$ pKey "=" <*> pType
 %%]
@@ -1563,13 +1563,13 @@ pOptSEMISeparator = pMb (pSeparator <|> () <$ pSEMI)
 modid :: HSParser Token
 modid
   =   pCONID
-%%[[20
+%%[[50
   <|> pQCONID
 %%]]
   <?> "modid"
 %%]
 
-%%[20
+%%[50
 qcnames :: HSParser [Token] 
 qcnames
   =   pListSep pCOMMA qcname
@@ -1652,7 +1652,7 @@ qconop
 qconid :: HSParser Token    -- Qualified or unqualifiedb
 qconid
   =   conid
-%%[[20
+%%[[50
   <|> pQCONID
 %%]]
   <?> "qconid"
@@ -1676,7 +1676,7 @@ conid
 qconsym :: HSParser Token   -- Qualified or unqualified
 qconsym
   =   consym
-%%[[20
+%%[[50
   <|> pQCONSYM
 %%]]
   <?> "qconsym"
@@ -1775,7 +1775,7 @@ special_id_no_callconv :: HSParser Token
 special_id_no_callconv
   =   pLABEL   
   <|> pEXPORT
-%%[[20
+%%[[50
   <|> pAS      
   <|> pQUALIFIED   
   <|> pHIDING
@@ -1826,7 +1826,7 @@ varid
 qvarid :: HSParser Token
 qvarid
   =   varid
-%%[[20
+%%[[50
   <|> pQVARID
 %%]]
   <?> "qvarid"
@@ -1861,7 +1861,7 @@ varsym
   <?> "varsym"
 %%]
 
-%%[20
+%%[50
 -- | Qualified operator, e.g.: X.+, only base
 qvarsym_base :: HSParser Token
 qvarsym_base
@@ -1874,7 +1874,7 @@ qvarsym_base
 qvarsym_no_minus :: HSParser Token
 qvarsym_no_minus
   =   varsym_no_minus
-%%[[20
+%%[[50
   <|> qvarsym_base
 %%]]
   <?> "qvarsym_no_minus"
@@ -1885,7 +1885,7 @@ qvarsym_no_minus
 qvarsym_for_inparens :: HSParser Token
 qvarsym_for_inparens
   =   varsym
-%%[[20
+%%[[50
   <|> qvarsym_base
 %%]]
   <?> "qvarsym_for_inparens"
@@ -1992,7 +1992,7 @@ tyconsym
 qtyconsym :: HSParser Token
 qtyconsym
   =   tyconsym
-%%[[20
+%%[[50
   <|> pQCONSYM
 %%]]
   <?> "qtyconsym"
@@ -2014,7 +2014,7 @@ tyconid
 qtyconid :: HSParser Token 
 qtyconid
   =   tyconid
-%%[[20
+%%[[50
   <|> pQCONID
 %%]]
   <?> "qtyconid"

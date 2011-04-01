@@ -13,7 +13,7 @@
 %%[(8 codegen) hs import({%{EH}Base.HsName})
 %%]
 
-%%[(20 codegen) hs import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
+%%[(50 codegen) hs import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
 %%]
 
 %%[(8 codegen) hs export(Strictness(..))
@@ -34,7 +34,7 @@ instance Show Strictness where
 %%% Instances: Typeable, Data
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(20 codegen)
+%%[(50 codegen)
 deriving instance Typeable Strictness
 deriving instance Data Strictness
 %%]
@@ -43,7 +43,7 @@ deriving instance Data Strictness
 %%% Instances: Binary, Serialize
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(20 codegen)
+%%[(50 codegen)
 instance Serialize Strictness where
   sput (Strictness_Strict           )   = sputWord8 0
   sput (Strictness_NonStrict        )   = sputWord8 1

@@ -49,7 +49,7 @@ instance Show EnumValToken where
   TkConidUnboxed     -> "upper case identifier (unboxed)" 
   TkConOpUnboxed     -> "con operator (unboxed)"            
 %%]]
-%%[[20
+%%[[50
   TkQOp              -> "qualified operator"  
   TkQVarid           -> "lower case qualified identifier" 
   TkQConid           -> "upper case qualified identifier" 

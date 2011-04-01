@@ -13,10 +13,10 @@
 %%[8 import({%{EH}Base.ParseUtils}) export(module {%{EH}Base.ParseUtils})
 %%]
 
-%%[20 import(qualified Data.Set as Set,qualified EH.Util.Rel as Rel)
+%%[50 import(qualified Data.Set as Set,qualified EH.Util.Rel as Rel)
 %%]
 
-%%[(2020 hmtyinfer) import(qualified {%{EH}Pred} as Pr)
+%%[(5020 hmtyinfer) import(qualified {%{EH}Pred} as Pr)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -37,7 +37,7 @@ pInt = tokMkInt <$> pInteger10Tk
 
 %%]
 
-%%[20 export(pUIDHI)
+%%[50 export(pUIDHI)
 pUIDHI :: P UID
 pUIDHI = pKeyTk "uid" *> pUID
 %%]
@@ -57,13 +57,13 @@ pBool = True <$ pKeyTk "True" <|> False <$ pKeyTk "False"
 %%]
 
 -- counterpart of ppPredOccId'
-%%[20 export(pPredOccId)
+%%[50 export(pPredOccId)
 pPredOccId :: P PredOccId
 pPredOccId
   = mkPrId <$> pUIDHI
 %%]
 
-%%[20 export(pIdOcc,pIdOccKind)
+%%[50 export(pIdOcc,pIdOccKind)
 -- counterpart of PP IdOccKind instance
 pIdOccKind :: P IdOccKind
 pIdOccKind
@@ -81,7 +81,7 @@ pIdOcc :: P IdOcc
 pIdOcc = IdOcc <$ pOCURLY <*> pDollNm <* pCOMMA <*> pIdOccKind <* pCCURLY
 %%]
 
-%%[20 export(pAssocL)
+%%[50 export(pAssocL)
 pAssocL :: P a -> P b -> P (AssocL a b)
 pAssocL pA pB = pOCURLY *> pListSep pCOMMA ((,) <$> pA <* pEQUAL <*> pB) <* pCCURLY
 %%]
@@ -90,7 +90,7 @@ pAssocL pA pB = pOCURLY *> pListSep pCOMMA ((,) <$> pA <* pEQUAL <*> pB) <* pCCU
 %%% Parser abstractions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20 export(pCurlySemiBlock,pCurlys,pSemiBlock,pCurlyCommaBlock)
+%%[50 export(pCurlySemiBlock,pCurlys,pSemiBlock,pCurlyCommaBlock)
 pSemiBlock :: P p -> P [p]
 pSemiBlock p = pListSep pSEMI p
 

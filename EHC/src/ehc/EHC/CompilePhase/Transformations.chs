@@ -37,7 +37,7 @@ Interface/wrapper to various transformations for Core, TyCore, etc.
 %%]
 
 -- HI syntax and semantics
-%%[20 import(qualified {%{EH}HI} as HI)
+%%[50 import(qualified {%{EH}HI} as HI)
 %%]
 
 -- Core semantics
@@ -61,7 +61,7 @@ cpTransformCore modNm
               trfcoreIn  = emptyTrfCore
                              { trfcoreCore          = panicJust "cpTransformCore" mbCore
                              , trfcoreUniq          = crsiNextUID crsi
-%%[[20
+%%[[50
                              , trfcoreExpNmOffMp    = crsiExpNmOffMp modNm crsi
                              , trfcoreInhLamMp      = Core2GrSem.lamMp_Inh_CodeAGItf $ crsiCoreInh crsi
 %%]]
@@ -79,7 +79,7 @@ cpTransformCore modNm
          -- put back result: unique counter
        ; cpSetUID (trfcoreUniq trfcoreOut)
 
-%%[[20
+%%[[50
          -- put back result: call info map (lambda arity, ...)
        ; let hii   = ecuHIInfo ecu
              lamMp = HI.hiiLamMp hii
@@ -109,7 +109,7 @@ cpTransformTyCore modNm
               trftycoreIn = emptyTrfTyCore
                               { trftycoreTyCore        = panicJust "cpTransformTyCore" mbTyCore
                               , trftycoreUniq          = crsiNextUID crsi
-%%[[20
+%%[[50
                               , trftycoreExpNmOffMp    = crsiExpNmOffMp modNm crsi
 %%]]
 %%[[99

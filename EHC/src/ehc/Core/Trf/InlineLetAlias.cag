@@ -97,7 +97,7 @@ cmodTrfInlineLetAlias cmod
      in   cTrf_Syn_CodeAGItf t
 %%]
 
-%%[(20 codegen) -8.cmodTrfInlineLetAlias hs
+%%[(50 codegen) -8.cmodTrfInlineLetAlias hs
 cmodTrfInlineLetAlias :: HsNameS -> CModule -> CModule
 cmodTrfInlineLetAlias globNmS cmod
   =  let  t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf cmod))
@@ -109,7 +109,7 @@ cmodTrfInlineLetAlias globNmS cmod
 %%% Globally used vars
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(20 codegen)
+%%[(50 codegen)
 ATTR CodeAGItf AllExprOnly CModule AllBind [ noTrfNmS: HsNameS | | ]
 
 SEM CAlt
@@ -210,7 +210,7 @@ SEM CBindAspect
   | Bind        lhs         .   (bindNmMp,bindL)
                                             =   case @expr.mbRepl of
                                                   Just r | @lhs.nm /= hsnMain
-%%[[20
+%%[[50
                                                            && not (@lhs.nm `Set.member` @lhs.noTrfNmS)
 %%]]
                                                     -> (@lhs.nm `Map.singleton` r,[(@lhs.nm,acoreBind1Asp1 @lhs.nm @cTrf)])

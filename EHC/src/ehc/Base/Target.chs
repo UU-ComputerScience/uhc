@@ -9,7 +9,7 @@
 %%]
 %%[(8 codegen) import(EH.Util.Pretty,EH.Util.Utils)
 %%]
-%%[(20 codegen) import({%{EH}Base.Binary}, {%{EH}Base.Serialize})
+%%[(50 codegen) import({%{EH}Base.Binary}, {%{EH}Base.Serialize})
 %%]
 
 %%[doesWhat doclatex
@@ -434,7 +434,7 @@ allFFIWays = nub $ concatMap targiAllowedFFI $ Map.elems allTargetInfoMp
 %%% Instances: Typeable, Data
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(20 codegen)
+%%[(50 codegen)
 deriving instance Typeable Target
 deriving instance Data Target
 
@@ -449,7 +449,7 @@ deriving instance Data TargetFlavor
 %%% Instances: Binary, Serialize
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(20 codegen)
+%%[(50 codegen)
 instance Binary Target where
   put = putEnum8
   get = getEnum8

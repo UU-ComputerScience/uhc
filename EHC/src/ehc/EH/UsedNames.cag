@@ -30,7 +30,7 @@ It is unclear whether later stages (i.e. Core transformations) introduce name us
 %%% The gathering, already partitioned per category
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20 hs
+%%[50 hs
 gathMentrelFilterMpFromSimplifyResult :: HsName -> SimplifyResult p RedHowAnnotation g m -> ModEntRelFilterMp
 gathMentrelFilterMpFromSimplifyResult moduleNm simpRes
   = mentrelFilterMpUnions
@@ -39,11 +39,11 @@ gathMentrelFilterMpFromSimplifyResult moduleNm simpRes
       ]
 %%]
 
-%%[20
+%%[50
 ATTR AllNT AGItf [ | | gathMentrelFilterMp USE {`mentrelFilterMpUnion`} {Map.empty}: ModEntRelFilterMp ]
 %%]
 
-%%[20
+%%[50
 SEM AGItf
   | AGItf       loc         .   gathMentrelFilterMp =   mentrelFilterMpUnions 
                                                           [ @expr.gathMentrelFilterMp
@@ -51,7 +51,7 @@ SEM AGItf
                                                           ]
 %%]
 
-%%[20
+%%[50
 SEM DataFieldPatExpr
   | Con         loc         .   gathMentrelFilterMp =   mentrelFilterMpSingleton [@lhs.moduleNm] IdOcc_Val (hsnUn @nm)
                                                         `mentrelFilterMpUnion`

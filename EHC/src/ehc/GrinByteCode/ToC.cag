@@ -26,7 +26,7 @@ gbmod2C opts m
     in  pp_Syn_AGItf t
 %%]
 
-%%[(20 codegen grin) -8.gbmod2C hs export(gbmod2C)
+%%[(50 codegen grin) -8.gbmod2C hs export(gbmod2C)
 gbmod2C :: EHCOpts -> LookupGrinByteCodeLamInfo -> Module -> (GenC,GenC,FunctionInfoExportMp)
 gbmod2C opts lkupGrinByteCodeLamInfo m
   = let t = wrap_AGItf (sem_AGItf (AGItf_AGItf m))
@@ -58,26 +58,26 @@ ATTR AGItf Module AllInstr [ opts: EHCOpts | | ]
 type LookupFunctionInfoInx     = HsName -> Maybe Int
 %%]
 
-%%[(20 codegen grin) hs
+%%[(50 codegen grin) hs
 type LookupGrinByteCodeLamInfo = HsName -> Maybe GrinByteCodeLamInfo
 %%]
 
 %%[(8 codegen grin)
 ATTR AllInstr     [ lkupLookupFunctionInfoInx: LookupFunctionInfoInx     | | ]
-%%[[20
+%%[[50
 ATTR AGItf Module [ lkupGrinByteCodeLamInfo: LookupGrinByteCodeLamInfo | | ]
 %%]]
 
 SEM Module
   | Mod         loc         .   lkupLookupFunctionInfoInx
                                             =   \n -> fmap gblaminfoFuninfoKey
-%%[[20
+%%[[50
                                                       $ maybe (@lhs.lkupGrinByteCodeLamInfo n) Just
 %%]]
                                                       $ Map.lookup n @functionInfoExportMp
 %%]
 
-%%[(20 codegen grin)
+%%[(50 codegen grin)
 ATTR AllInstr     [ impNmMp: {Map.Map HsName Int}     | | ]
 
 SEM Module
@@ -461,7 +461,7 @@ SEM Instr
                                                                    where (a,b,c) = (x,y,z) -- maybe (x,y,z) (\s -> stringConstMpAdd s @lhs.stringConstMp @bytePoolMp1) ms
 %%[[8
                                                                          d = noInx
-%%][20
+%%][50
                                                                          d = Map.findWithDefault noInx (panicJust ("ToC.Instr.Call: " ++ show nm) $ hsnQualifier nm) @lhs.impNmMp
 %%]]
                                                                          e = maybe noInx id $ @lhs.lkupLookupFunctionInfoInx nm
@@ -565,7 +565,7 @@ SEM Module
                                             =   emptyBPEBasedMp
 %%]
 
-%%[(20 codegen grin)
+%%[(50 codegen grin)
 ATTR Module AGItf [ | | functionInfoExportMp: FunctionInfoExportMp ]
 %%]
 
@@ -673,7 +673,7 @@ ppTbl' tp nm tbl = [nl, gencStatic $ tp >#< nm >|< "[] ="] ++ ppArr' tbl
 ATTR AllNT AGItf [ | | pp USE {>-<} {empty}: GenC ]
 %%]
 
-%%[(20 codegen grin)
+%%[(50 codegen grin)
 ATTR Module AGItf [ | | ppMain: GenC ]
 %%]
 
@@ -704,7 +704,7 @@ SEM Module
                             .   ppNmCallInfoTbl         =   @ppNm "callinfos"
                             .   ppNmBytePool            =   @ppNm "bytePool"
                             .   ppNmFunctionInfoTbl     =   @ppNm "functionInfos"
-%%[[20
+%%[[50
                             .   strNmImpTbl             =   "impMods"
                             .   strNmExpNode            =   "expNode"
                             .   strNmExpNodeSz          =   @strNmExpNode ++ "_size"
@@ -716,7 +716,7 @@ SEM Module
 
 %%[[8
                 lhs         .   pp          
-%%][20
+%%][50
                 lhs         .   (pp,ppMain)
 %%]]
                                             =   -- 20091002, the below expr is growing too large, need to reorg someday
@@ -805,7 +805,7 @@ SEM Module
                                                                        >-< ppFun ("void" >#< @ppNmInitF >|<
 %%[[8
                                                                                   "()"
-%%][20
+%%][50
                                                                                   "(GB_ModEntry* modTbl, Word modTblInx)"
 %%]]
                                                                                  )
@@ -820,7 +820,7 @@ SEM Module
                                                                          , @ppNmFunctionInfoTbl, genc (Map.size $ snd @instrs.functionInfoMp)
                                                                          , @ppNmBytePool
                                                                          , genc $ maybe 0 id @mbLinkChainCodeLoc
-%%[[20
+%%[[50
                                                                          , @ppImpModTbl, genc (length @impModNmL)
                                                                          , gencAddrOf @ppNmExpNode
                                                                          , @ppNmExpNodeSz, @ppNmExpNodeOffs
@@ -842,7 +842,7 @@ SEM Module
 %%[[8
                                                                                   ++ [ @ppNmInitF >|< "()" >#< ";" ]
                                                                                   ++ [ "gb_SetModTable" >|< ppParensCommas [@ppNmModEntriesTbl,genc (1::Int)] >#< ";" ]
-%%][20
+%%][50
                                                                                   ++ [ "GB_MkExpNodeIn(" >#< mkPre m >|< @strNmExpNode >|< ", " >|< mkPre m >|< @strNmExpNodeSz >|< " ) ;"
                                                                                      | (_,m) <- @allImpModNmL
                                                                                      ]
@@ -855,7 +855,7 @@ SEM Module
                                                                                      , genc "return main_GB_Exit( argc, argv) ;"
                                                                                      ]
                                                                                  )
-%%[[20
+%%[[50
                                                     expnd   = ppLine $ gencVarDecl "GB_NodePtr" @ppNmExpNode
                                                                        >-< (gencStatic $ "int" >#< @ppNmExpNodeOffs >|< "[] =")
                                                                        >-< ppArr [ eiEntryNr e >#< ppCmtC @lhs.opts (eiNm e) | e <- @expEntryL ]
@@ -871,7 +871,7 @@ SEM Module
                                                                 ( [ ppCurlysCommasBlock [ gencStr @moduleNm, gencAddrOf @ppNmByteCodeModule, @ppNmFunctionInfoTbl ] ]
                                                                   ++ [ppCurlysCommasBlock (replicate 3 gencNULL)]
                                                                 )
-%%][20
+%%][50
                                                     impmods = ppTbl "GB_ImpModEntry" @ppImpModTbl
                                                                 ( [ ppCurlysCommasBlock [ gencStr (show n), genc "0" >#< ppCmtC @lhs.opts "filled during linking" ]
                                                                   | (n,_) <- @impModNmL
@@ -906,7 +906,7 @@ SEM Module
                                                       ++ consts
                                                       ++ cafGlEntryIndices
                                                       ++ glEntries
-%%[[20
+%%[[50
                                                       ++ [ expnd
                                                          , impmods
                                                          ]
@@ -916,11 +916,11 @@ SEM Module
                                                          , mods
                                                          , maincaf
                                                          , mainf
-%%][20
+%%][50
 %%]]
                                                          ]
 %%[[8
-%%][20
+%%][50
                                                     , vlist
                                                       $  [ maincaf ]
                                                       ++ externs

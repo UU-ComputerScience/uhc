@@ -135,7 +135,7 @@ SEM CAlt
 %%% Module name used to uniqify globally over all modules
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(20 codegen)
+%%[(50 codegen)
 ATTR AllExpr [ moduleNm: HsName | | ]
 
 SEM CModule
@@ -171,7 +171,7 @@ emptyARenMp = (Map.empty, Map.empty)
 mkUniqGlob :: NmMp -> HsName -> HsName -> Maybe Int -> (HsName,NmMp)
 mkUniqGlob mb q n mbU
   = (
-%%[[20
+%%[[50
       (if hsnIsQual n
        then id
        else hsnSetQual q
@@ -203,7 +203,7 @@ mkUniqLoc mb q n mbU
 %%[[8
 aRenAdd :: RenUniqOpts -> Bool -> [HsName] -> [Int] -> ARenMp -> ARenMp
 aRenAdd ropts isGlob nL uL mfb@(mf,mb)
-%%][20
+%%][50
 aRenAdd :: RenUniqOpts -> Bool -> HsName -> [HsName] -> [Int] -> ARenMp -> ARenMp
 aRenAdd ropts isGlob q nL uL mfb@(mf,mb)
 %%]]
@@ -211,7 +211,7 @@ aRenAdd ropts isGlob q nL uL mfb@(mf,mb)
   where mkNm mb n u 
 %%[[8
           | doChng     = mkUniq mb hsnUnknown n (Just u)
-%%][20
+%%][50
           | doChng && isUnqualifiedGlob
                        = mkUniq mb q n Nothing
           | doChng     = mkUniq mb q n (Just u)
@@ -219,7 +219,7 @@ aRenAdd ropts isGlob q nL uL mfb@(mf,mb)
           | otherwise  = (n,mb)
           where doChng
                    = isChangeable
-%%[[20
+%%[[50
                      || isUnqualifiedGlob
                 isUnqualifiedGlob = isGlob && not onlyLam && isNothing (hsnQualifier n) && n /= hsnMain
 %%]]
@@ -240,7 +240,7 @@ ATTR CExpr [ | accumARenMp: ARenMp | ]
 SEM CExpr
   | Let         loc         .   isGlobal    =   @lhs.lev == cLevModule
                             .   addToARenMp =   \m -> aRenAdd @lhs.ropts @isGlobal
-%%[[20
+%%[[50
                                                               @lhs.moduleNm
 %%]]
                                                               @binds.nmL @lIniq m
@@ -252,7 +252,7 @@ SEM CExpr
                                                 else @addToARenMp @lhs.aRenMp
                 lhs         .   accumARenMp =   @body.accumARenMp
   | Lam         body        .   accumARenMp =   aRenAdd @lhs.ropts False
-%%[[20
+%%[[50
                                                         @lhs.moduleNm
 %%]]
                                                         [@arg] @lIniq @lhs.aRenMp
@@ -271,7 +271,7 @@ SEM CExpr
 
 SEM CAlt
   | Alt         expr        .   accumARenMp =   aRenAdd @lhs.ropts False
-%%[[20
+%%[[50
                                                         @lhs.moduleNm
 %%]]
                                                         @pat.nmL @lIniq @lhs.aRenMp

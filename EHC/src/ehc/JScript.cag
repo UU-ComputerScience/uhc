@@ -35,7 +35,7 @@
 jsVarDecl :: HsName -> Expr -> Stat
 %%[[8
 jsVarDecl n e = Stat_VarDecl n (Just e)
-%%][20
+%%][50
 jsVarDecl n e
   = case hsnQualifier n of
       Just _ -> Stat_Assign (Expr_Var n) e

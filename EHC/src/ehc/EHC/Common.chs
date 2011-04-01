@@ -22,7 +22,7 @@ Used by all compiler driver code
 %%[8 import({%{EH}Gam.Full}) export(module {%{EH}Gam.Full})
 %%]
 
-%%[20 import(System.Time, System.Directory) export(module System.Time, module System.Directory)
+%%[50 import(System.Time, System.Directory) export(module System.Time, module System.Directory)
 %%]
 
 %%[1
@@ -39,7 +39,7 @@ The state HS compilation can be in
 data HSState
   = HSStart                 -- starting from .hs
   | HSAllSem                -- done all semantics for .hs
-%%[[20
+%%[[50
   | HSOnlyImports           -- done imports from .hs
   | HIStart                 -- starting from .hi
   | HIAllSem                -- done all semantics for .hi
@@ -54,7 +54,7 @@ data HSState
 
 Is a state working on literal haskell input?
 
-%%[20 export(hsstateIsLiteral)
+%%[50 export(hsstateIsLiteral)
 hsstateIsLiteral :: HSState -> Bool
 %%[[99
 hsstateIsLiteral LHSStart       = True
@@ -63,7 +63,7 @@ hsstateIsLiteral LHSOnlyImports = True
 hsstateIsLiteral _              = False
 %%]
 
-%%[20 export(hsstateShowLit)
+%%[50 export(hsstateShowLit)
 hsstateShowLit :: HSState -> String
 %%[[99
 hsstateShowLit LHSStart       = "Literal"
@@ -74,7 +74,7 @@ hsstateShowLit _              = ""
 
 The next thing to do for HSState.
 
-%%[20 export(hsstateNext)
+%%[50 export(hsstateNext)
 hsstateNext :: HSState -> HSState
 hsstateNext HSStart       = HSOnlyImports
 hsstateNext HIStart       = HIOnlyImports

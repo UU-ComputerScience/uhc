@@ -6,14 +6,14 @@
 %%]
 %%[8 import({%{EH}Opts})
 %%]
-%%[20 import(Data.Word, Data.Char)
+%%[50 import(Data.Word, Data.Char)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Magic number of .hi files
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20 export(magicNumberHI)
+%%[50 export(magicNumberHI)
 magicNumberHI :: [Word8]
 magicNumberHI = map (fromInteger . toInteger . fromEnum) "UHI1"
 %%]

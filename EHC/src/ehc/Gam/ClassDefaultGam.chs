@@ -21,7 +21,7 @@ Currently only the first one is used.
 %%[(9 hmtyinfer || hmtyast) import(Data.Maybe)
 %%]
 
-%%[(20 hmtyinfer || hmtyast) import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
+%%[(50 hmtyinfer || hmtyast) import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -33,7 +33,7 @@ data ClassDefaultGamInfo
   = ClassDefaultGamInfo
       { cldiDefaultTypes	:: [Ty]
       }
-%%[[20
+%%[[50
       deriving (Data,Typeable)
 %%]]
 %%]
@@ -69,7 +69,7 @@ clDfGamLookupDefault fi pr clDfGam
 %%% Instances
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(20 hmtyinfer || hmtyast)
+%%[(50 hmtyinfer || hmtyast)
 instance Serialize ClassDefaultGamInfo where
   sput (ClassDefaultGamInfo a) = sput a
   sget = liftM ClassDefaultGamInfo sget

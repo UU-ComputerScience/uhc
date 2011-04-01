@@ -65,7 +65,7 @@ cvarGlob ty clNm nm safeVarNm
   = CVarInfo_Global ty clNm' (show safeVarNm)
 %%[[8
   where clNm' = clNm
-%%][20
+%%][50
   where clNm' = maybe clNm (\m -> hsnSetQual m $ hsnQualified m) $ hsnQualifier nm
 %%]]
 %%]

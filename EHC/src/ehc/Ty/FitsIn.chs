@@ -457,7 +457,7 @@ fitsInFI fi ty1 ty2
                                                     else  id
 %%]
 
-%%[(16 hmtyinfer).fitsIn.eqProofAssume
+%%[(41 hmtyinfer).fitsIn.eqProofAssume
             eqAssume p fi t1 t2 isRec isSum
               = out { foGathCnstrMp = foGathCnstrMp out `Map.union` mp }
               where
@@ -469,7 +469,7 @@ fitsInFI fi ty1 ty2
                 out = fRow fi' t1 t2 isRec isSum
 %%]
 
-%%[(16 hmtyinfer).fitsIn.eqProofObligation
+%%[(41 hmtyinfer).fitsIn.eqProofObligation
             eqProofObligation tRes fi tL tR
                 = (res fi tRes) { foGathCnstrMp = mp }
                 where
@@ -479,7 +479,7 @@ fitsInFI fi ty1 ty2
                   uid   = fiUniq fi
 %%]
 
-%%[(16 hmtyinfer).fitsIn.isSkVar
+%%[(41 hmtyinfer).fitsIn.isSkVar
             -- is skolemnized tyvar?
             isSkVar = isSkVar' . show
             
@@ -622,7 +622,7 @@ A counterpart type to enforce deep quantifier instantiation.
 %%]
 
 GADT: when encountering a product with eq-constraints on the outset, remove them and bring them in scope as assume constraints
-%%[(16 hmtyinfer).fitsIn.fRow.StripPreds
+%%[(41 hmtyinfer).fitsIn.fRow.StripPreds
             fRow fi (Ty_Ext t1 _ (Ty_Pred p)) t2 isRec isSum = eqAssume p fi t1 t2 isRec isSum
             fRow fi t1 (Ty_Ext t2 _ (Ty_Pred p)) isRec isSum = eqAssume p fi t1 t2 isRec isSum
 %%]
@@ -1677,7 +1677,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
 FitsIn type clashes
 
 GADT: type clash between fixed type variable and some other type results in a equality proof constraint
-%%[(16 hmtyinfer).fitsIn.EqProve
+%%[(41 hmtyinfer).fitsIn.EqProve
             fBase fi updTy t1@(Ty_Var v1 TyVarCateg_Fixed) t2 | fioFitVarFailureToProveObl (fiFIOpts fi)  = eqProofObligation t2 fi t1 t2
             fBase fi updTy t1 t2@(Ty_Var v2 TyVarCateg_Fixed) | fioFitVarFailureToProveObl (fiFIOpts fi)  = eqProofObligation t2 fi t2 t1
             fBase fi updTy t1@(Ty_Con cstr) t2 | isSkVar cstr && fioFitVarFailureToProveObl (fiFIOpts fi) = eqProofObligation t2 fi t1 t2
@@ -1802,7 +1802,7 @@ fitPredIntoPred fi pr1 pr2
             fPreds _ _
               = Nothing
 %%]]
-%%[[16
+%%[[41
         f (Pred_Eq tlA trA) (Pred_Eq tlB trB)
           = if foHasErrs foL || foHasErrs foR
             then Nothing

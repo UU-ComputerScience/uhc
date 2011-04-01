@@ -23,7 +23,7 @@
 %%[(6 hmtyinfer || hmtyast) import({%{EH}VarMp},{%{EH}Substitutable})
 %%]
 
-%%[(20 hmtyinfer) import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
+%%[(50 hmtyinfer) import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
 %%]
 
 %%[9999 import({%{EH}Base.ForceEval})
@@ -51,7 +51,7 @@ emptyTKGI
 type TyKiGam = Gam TyKiKey TyKiGamInfo
 %%]
 
-%%[(20 hmtyinfer || hmtyast)
+%%[(50 hmtyinfer || hmtyast)
 deriving instance Typeable TyKiGamInfo
 deriving instance Data TyKiGamInfo
 %%]
@@ -233,7 +233,7 @@ instance ForceEval TyKiGamInfo where
 %%]]
 %%]
 
-%%[(20 hmtyinfer || hmtyast)
+%%[(50 hmtyinfer || hmtyast)
 instance Serialize TyKiGamInfo where
   sput (TyKiGamInfo a) = sput a
   sget = liftM TyKiGamInfo sget

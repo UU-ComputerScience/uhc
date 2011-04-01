@@ -63,10 +63,10 @@
 %%[15 hs export(FuncDep(..), FuncDeps)
 %%]
 
-%%[16 hs export(DataConstrEq(..), DataConstrEqs)
+%%[41 hs export(DataConstrEq(..), DataConstrEqs)
 %%]
 
-%%[50 hs export(DataConstrEq(..), DataConstrEqs)
+%%[40 hs export(DataConstrEq(..), DataConstrEqs)
 %%]
 
 %%[90 hs import({%{EH}Foreign})

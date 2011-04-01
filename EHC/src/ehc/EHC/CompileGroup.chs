@@ -6,18 +6,18 @@ An EHC compile group maintains info for a group of simultaneously compiled units
 This is not yet finished!!!!!!!!!!!!!!!!!!!!
 Only a placeholder ...
 
-%%[20 module {%{EH}EHC.CompileGroup}
+%%[50 module {%{EH}EHC.CompileGroup}
 %%]
 
 -- general imports
-%%[20 import({%{EH}EHC.Common})
+%%[50 import({%{EH}EHC.Common})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Compilation group
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20 export(EHCompileGroup(..),emptyECG)
+%%[50 export(EHCompileGroup(..),emptyECG)
 data EHCompileGroup
   = EHCompileGroup
       { ecgNm                :: HsName
@@ -32,7 +32,7 @@ emptyECG
       }
 %%]
 
-%%[20
+%%[50
 %%]
 crCompileCG :: Maybe HSState -> [HsName] -> EHCompileRun -> IO EHCompileRun
 crCompileCG targHSState modNmL cr

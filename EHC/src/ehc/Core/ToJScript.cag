@@ -96,7 +96,7 @@ nmSwitchRes = mkHNm "_sw"
 hsnJScriptVar :: Bool -> HsName -> HsName -> HsName -> HsName
 %%[[8
 hsnJScriptVar isGlobal = hsnJavaLikeVar (id, id, id)
-%%][20
+%%][50
 hsnJScriptVar isGlobal = hsnJavaLikeVar (if isGlobal then id else hsnQualified, hsnPrefix "$", ('$':))
 %%]]
 %%]
@@ -121,7 +121,7 @@ SEM CPatFld
 %%% Extract all module names of globally introduced identifers
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(20 jscript)
+%%[(50 jscript)
 ATTR CExpr AllBind [ | | usedModNmS USE {`Set.union`} {Set.empty} : {FvS} ]
 
 SEM CBindAspect
@@ -662,7 +662,7 @@ SEM CModule
  | Mod          lhs         .   js              =   J.JScriptModule_Mod (@jsModTraceStats ++ @jsModInitStats ++ @jmodStats) @jmodStatsMain
 %%[[8
                 loc         .   jsModInitStats  =   []
-%%][20
+%%][50
                 loc         .   jsModInitStats  =   let prefixes = nub . catMaybes . map hsnQualifier
                                                         mk  n = J.Expr_If (jsVar n) (jsVar n) (J.Expr_Obj [])
                                                         mkd n e | isJust q  = jsAssign n e

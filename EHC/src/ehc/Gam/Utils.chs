@@ -13,13 +13,13 @@
 %%[(4_2 hmtyinfer) import({%{EH}Ty.Trf.ElimAlts})
 %%]
 
-%%[20 import(qualified Data.Map as Map, qualified Data.Set as Set)
+%%[50 import(qualified Data.Map as Map, qualified Data.Set as Set)
 %%]
 
-%%[20 import({%{EH}Ty.UsedNames},{%{EH}Module},{%{EH}Gam.ValGam})
+%%[50 import({%{EH}Ty.UsedNames},{%{EH}Module},{%{EH}Gam.ValGam})
 %%]
 
-%%[(50 hmtyinfer) import({%{EH}Ty.Trf.ElimEqual})
+%%[(40 hmtyinfer) import({%{EH}Ty.Trf.ElimEqual})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -45,7 +45,7 @@ valGamElimAlts opts env globTvL uniq gVarMp g
 %%% Equal elim
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(50 hmtyinfer).valGamElimEqual export(valGamElimEqual)
+%%[(40 hmtyinfer).valGamElimEqual export(valGamElimEqual)
 valGamElimEqual :: ValGam -> ValGam
 valGamElimEqual g
   =  let  (g',_)
@@ -62,7 +62,7 @@ valGamElimEqual g
 %%% Get used identifiers from types of values
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20 export(mentrelFilterMpExtendViaValGam)
+%%[50 export(mentrelFilterMpExtendViaValGam)
 -- | Lookup indirectly used identifiers, type constants from types of value bindings.
 mentrelFilterMpExtendViaValGam :: HsName -> ValGam -> ModEntRelFilterMp -> ModEntRelFilterMp
 mentrelFilterMpExtendViaValGam moduleNm valGam mentrelFilterMp

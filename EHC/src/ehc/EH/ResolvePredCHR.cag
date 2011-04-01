@@ -42,7 +42,7 @@ SEM RecPatExpr
                 lhs         .   gathCnstrMp         =   cnstrMpUnions [@hereCnstrMp, @recPatExpr.gathCnstrMp, @patExpr.gathCnstrMp]
 %%]
 
-%%[(16 hmtyinfer)
+%%[(41 hmtyinfer)
 SEM PatExpr
   | Con         loc         .   hereCnstrMp         =   foGathCnstrMp @fo_fitP_
                 lhs         .   gathCnstrMp         =   @loc.hereCnstrMp

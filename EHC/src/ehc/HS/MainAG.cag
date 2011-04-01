@@ -38,7 +38,7 @@
 %%[9 hs import({%{EH}Pred})
 %%]
 
-%%[20 hs import(qualified EH.Util.Rel as Rel,{%{EH}Module})
+%%[50 hs import(qualified EH.Util.Rel as Rel,{%{EH}Module})
 %%]
 
 %%[90 hs import({%{EH}Foreign},{%{EH}Foreign.Parser})
@@ -80,11 +80,11 @@ ATTR AGItf AllNT [ opts: EHCOpts | | ]
 %%% Tying together gam's, combining with imported info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20
+%%[50
 ATTR AGItf Module Body [ modEntToOrig: ModEntRngMp | | gathIdGam: IdDefOccGam ]
 %%]
 
-%%[20
+%%[50
 SEM Body
     | Body
         lhs             .   gathIdGam   =   {- idDefOccGamStrip 
@@ -308,12 +308,12 @@ SEM Constructor
 %%% Is toplevel mod? Is main mod?
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20
+%%[50
 ATTR AllModule AGItf [ isTopMod : Bool | | ]
 ATTR AllModule       [ isMainMod: Bool | | ]
 %%]
 
-%%[20
+%%[50
 SEM AGItf
     | AGItf
         loc         .   isMainMod   =   @module.mainValExists
@@ -377,7 +377,7 @@ SEM Alternative
 %%% Top level instance names, propagated from prev phase -- a hack :-(
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20 hs
+%%[50 hs
 extrTopInstanceNm :: [HsName] -> (Maybe HsName,[HsName])
 extrTopInstanceNm nms
   = case nms of
@@ -385,7 +385,7 @@ extrTopInstanceNm nms
       _     -> (Nothing,[])
 %%]
 
-%%[20
+%%[50
 ATTR AllNT [ | topInstanceNmL: {[HsName]} | ]
 ATTR AGItf [ topInstanceNmL: {[HsName]} | | ]
 

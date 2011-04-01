@@ -44,7 +44,7 @@ Currently (20090821) only empty implicits \verb@Impls_Tail@ are replaced by
 %%[(11 hmtyinfer) hs import({%{EH}Opts},{%{EH}Ty.Trf.BetaReduce})
 %%]
 
-%%[(16 hmtyinfer) hs import({%{EH}Ty.Trf.MergePreds})
+%%[(41 hmtyinfer) hs import({%{EH}Ty.Trf.MergePreds})
 %%]
 
 %%[(90 hmtyinfer) hs import(EH.Util.Utils)
@@ -139,7 +139,7 @@ predCanonic' opts pr
 
 %%[(11 hmtyinfer) -9.predCanonicPrime hs export(predCanonic')
 predCanonic' :: TyCanonicOpts -> Pred -> (Pred,VarMp)
-%%[[16
+%%[[41
 predCanonic' opts (Pred_Eq t1 t2)
   = ( Pred_Eq (tmpoTy $ tyMergePreds [] t1') (tmpoTy $ tyMergePreds [] t2')
     , m2 `varUpd` m1

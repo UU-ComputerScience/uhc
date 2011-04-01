@@ -67,14 +67,14 @@ cpCompileJScript how othModNmL modNm
                              })
 %%[[8
                   ; let ppMod = ppJScriptModule (fromJust mbJs)
-%%][20
+%%][50
                   ; let ppMod = vlist $ [p] ++ (if ecuIsMainMod ecu then [pmain] else [])
                               where (p,pmain) = ppJScriptModule (fromJust mbJs)
 %%]]
                   ; lift $ putPPFPath fpM ("//" >#< modNm >-< ppMod) 1000
                   ; case how of
                       FinalCompile_Exec
-%%[[20
+%%[[50
                         | ehcOptWholeProgOptimizationScope opts
                         -> do { cpJScript (fpathToStr fpExec) (rts ++ map fpathToStr [fpM])
                               ; mkHtml fpHtml [fpathToStr fpExec]
@@ -87,7 +87,7 @@ cpCompileJScript how othModNmL modNm
                         where rts = map (Cfg.mkInstalledRts opts Cfg.mkJScriptLibFilename Cfg.INST_LIB (Cfg.installVariant opts)) Cfg.libnamesRts
 %%[[8
                               oth = []
-%%][20
+%%][50
                               oth | ehcOptWholeProgOptimizationScope opts = []
                                   | otherwise                             = [ fpO m fp | m <- othModNmL, let (_,_,_,fp) = crBaseInfo m cr ]
 %%]]

@@ -31,13 +31,13 @@ DATA Module
 %%[[99
         fileheaderpragmas        : Pragmas
 %%]]
-%%[[20
+%%[[50
         exports                  : MaybeExports
 %%]]
         body                     : Body
 %%]
 
-%%[20
+%%[50
 TYPE Exports                     = [ Export ]
 
 TYPE MaybeExports                = MAYBE Exports
@@ -66,14 +66,14 @@ DATA Body
     | Body
         range                    : Range
 %%]
-%%[20
+%%[50
         importdeclarations       : ImportDeclarations
 %%]
 %%[1
         declarations             : Declarations
 %%]
 
-%%[20
+%%[50
 TYPE ImportDeclarations          = [ ImportDeclaration ]
 
 DATA ImportDeclaration
@@ -123,7 +123,7 @@ SET AllTopLevel
 
 SET AllModule
   = AllTopLevel
-%%[[20
+%%[[50
     AllImportDeclaration Import Imports
     AllImportSpecification
     Export Exports MaybeExports

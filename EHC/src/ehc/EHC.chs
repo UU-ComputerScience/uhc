@@ -49,7 +49,7 @@
 %%]
 %%[8 import({%{EH}EHC.CompilePhase.TopLevelPhases})
 %%]
-%%[20 import({%{EH}EHC.CompilePhase.Module})
+%%[50 import({%{EH}EHC.CompilePhase.Module})
 %%]
 
 -- general imports
@@ -59,7 +59,7 @@
 %%]
 
 -- module
-%%[20 import({%{EH}Module}(modBuiltin))
+%%[50 import({%{EH}Module}(modBuiltin))
 %%]
 
 -- packages
@@ -247,7 +247,7 @@ mkFileSuffMpHs opts
     , ( Just "lhs" , ECUSHaskell LHSStart )
 %%]]
     , ( Just "eh"  , ECUSEh EHStart )
-%%[[20
+%%[[50
     , ( Just "hi"  , ECUSHaskell HIStart )
 %%]]
 %%[[(8 grin)
@@ -406,7 +406,7 @@ doCompilePrepare fnL@(fn:_) opts
 %%[[(8 codegen)
                                 , crsiCoreInh    =   initialCore2GrSem opts3
 %%]]
-%%[[20
+%%[[50
                                 -- , crsiHIInh      =   initialHISem opts3
                                 , crsiHSModInh   =   initialHSSemMod opts3
 %%]]
@@ -418,13 +418,13 @@ doCompilePrepare fnL@(fn:_) opts
 %%[[(8 codegen)
                                                        (initialCore2GrSem opts3)
 %%]]
-%%[[20
+%%[[50
                                                        Nothing
                                                        -- (initialHISem opts3)
                                                        (initialHSSemMod opts3)
                                                        Map.empty Map.empty defaultOptim
 %%]]
-%%[[(20 codegen)
+%%[[(50 codegen)
                                                        Map.empty
 %%]]
 %%[[99
@@ -452,12 +452,12 @@ doCompileRun fnL@(fn:_) opts
                               ; when (isJust mbFoundFp)
                                      (cpEhcModuleCompile1 nm)
                               }
-%%][20
+%%][50
                        imp :: Maybe FPath -> Maybe (HsName,(FPath,FileLoc)) -> HsName -> EHCompilePhase (HsName,Maybe (HsName,(FPath,FileLoc)))
                        imp mbFp mbPrev nm
                          = do { let isTopModule = isJust mbFp
                                     fileSuffMpHs' = (if isTopModule then fileSuffMpHsNoSuff else []) ++ fileSuffMpHs
-%%[[20
+%%[[50
                               ; fpsFound <- cpFindFilesForFPath False fileSuffMpHs' searchPath (Just nm) mbFp
 %%][99
                               ; let searchPath' = adaptedSearchPath mbPrev
@@ -502,7 +502,7 @@ doCompileRun fnL@(fn:_) opts
 %%[[8
                  ; _ <- runStateT (cpSeq [ comp (Just fp) topModNm
                                          ]) initialState
-%%][20
+%%][50
                  ; _ <- runStateT (do { topModNmL' <- zipWithM (\fp topModNm -> imp (Just fp) Nothing topModNm) fpL topModNmL
                                       ; cpImportGatherFromMods (imp Nothing) (map fst topModNmL')
                                       ; cpCheckMods' [modBuiltin]

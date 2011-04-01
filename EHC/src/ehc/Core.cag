@@ -40,11 +40,11 @@ Datatype LamInfo holds the implementation info to be exported from a module.
 %%[(8 codegen) hs import({%{EH}LamInfo},{%{EH}Ty})
 %%]
 
-%%[(20 codegen) hs import(Data.Array)
+%%[(50 codegen) hs import(Data.Array)
 %%]
-%%[(20 codegen) hs import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
+%%[(50 codegen) hs import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
 %%]
-%%[(20 codegen) hs import(Data.Typeable(Typeable), Data.Generics(Data))
+%%[(50 codegen) hs import(Data.Typeable(Typeable), Data.Generics(Data))
 %%]
 
 %%[(90 codegen) hs import({%{EH}Foreign}) export(module {%{EH}Foreign})
@@ -56,12 +56,12 @@ Datatype LamInfo holds the implementation info to be exported from a module.
 %%[(8 codegen) ag import({Core/AbsSyn})
 DERIVING *
   : Show, Eq
-%%[[20
+%%[[50
   , Typeable, Data
 %%]]
 %%]
 
-%%[(20 codegen) ag
+%%[(50 codegen) ag
 DERIVING CMetaBind
   : Enum
 %%]
@@ -147,7 +147,7 @@ data CBindCateg
   deriving (Show,Eq,Enum)
 %%]
 
-%%[(20 codegen) hs
+%%[(50 codegen) hs
 deriving instance Typeable CBindCateg
 deriving instance Data CBindCateg
 %%]
@@ -185,7 +185,7 @@ cbindNm (CBind_Bind      n _) = n
 -- cbindNm (CBind_FFI _ _ _ n _  ) = n
 %%]
 
-%%[(20 codegen) hs export(cbindAspectMbExpr,cbindExprs)
+%%[(50 codegen) hs export(cbindAspectMbExpr,cbindExprs)
 -- | extract expr for aspect, relevant for later use/analysis/...
 cbindAspectMbExpr :: CBindAspect -> Maybe CExpr
 cbindAspectMbExpr (CBindAspect_Bind _ e) = Just e
@@ -350,7 +350,7 @@ cLevModule = 0
 cLevExtern = 0
 %%]
 
-%%[(20 codegen) hs export(cLevIntern)
+%%[(50 codegen) hs export(cLevIntern)
 cLevIntern :: Int
 cLevIntern = 1
 %%]
@@ -412,13 +412,13 @@ fvsLev lm lDflt fvs = foldr (\n l -> fvLev n lm `max` l) lDflt $ Set.toList $ fv
 %%% Name to offset (in a record)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(20 codegen) hs export(HsName2OffsetMp,HsName2OffsetMpMp)
+%%[(50 codegen) hs export(HsName2OffsetMp,HsName2OffsetMpMp)
 type HsNameOffset      = Int
 type HsName2OffsetMp   = Map.Map HsName HsNameOffset
 type HsName2OffsetMpMp = Map.Map HsName (Int,HsName2OffsetMp)
 %%]
 
-%%[(20 codegen) hs export(offMpKeysSorted,offMpMpKeysSet)
+%%[(50 codegen) hs export(offMpKeysSorted,offMpMpKeysSet)
 -- | Module names, sorted on import order, which is included as 0-based offset (used as index in import entry table)
 offMpKeysSorted :: HsName2OffsetMpMp -> AssocL HsName Int
 offMpKeysSorted m = sortOn snd [ (n,o) | (n,(o,_)) <- Map.toList m ]
@@ -431,7 +431,7 @@ offMpMpKeysSet m = Set.unions [ Map.keysSet m' | (_,m') <- Map.elems m ]
 %%% Module merge
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(20 codegen) hs export(cModMerge)
+%%[(50 codegen) hs export(cModMerge)
 -- | merge by concatenation
 cModMerge :: [CModule] -> CModule
 cModMerge mL
@@ -446,7 +446,7 @@ cModMerge mL
 %%% Map/Database representation of a module
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(20 codegen) hs export(CDbBindLetInfo, CDbBindLetInfo'2)
+%%[(50 codegen) hs export(CDbBindLetInfo, CDbBindLetInfo'2)
 -- | the binding info required for let bind
 type CDbBindLetInfo'' f cat bind = (cat,f bind)
 type CDbBindLetInfo'  f          = CDbBindLetInfo'' f  CBindCateg CBind
@@ -454,7 +454,7 @@ type CDbBindLetInfo'2   cat bind = CDbBindLetInfo'' [] cat            bind
 type CDbBindLetInfo              = CDbBindLetInfo'  []
 %%]
 
-%%[(20 codegen) hs export(CDbBindArray, CDbBindRef, CDbModuleBindMp)
+%%[(50 codegen) hs export(CDbBindArray, CDbBindRef, CDbModuleBindMp)
 -- | actual bindings stored in separate array to allow for sharing
 type CDbBindArray = Array Int (CDbBindLetInfo' (Array Int))
 
@@ -465,7 +465,7 @@ type CDbBindRef = (Int,Int)
 type CDbModuleBindMp = Map.Map HsName CDbBindRef
 %%]
 
-%%[(20 codegen) hs export(CModuleDatabase(..), emptyCModuleDatabase)
+%%[(50 codegen) hs export(CModuleDatabase(..), emptyCModuleDatabase)
 -- | the full module represented in a map/database like format (20101004 AD: to be made into persistent db soon)
 data CModuleDatabase
   = CModuleDatabase
@@ -480,7 +480,7 @@ emptyCModuleDatabase :: CModuleDatabase
 emptyCModuleDatabase = CModuleDatabase hsnUnknown (array (1,0) []) Map.empty (acoreInt 0) emptyCTagsMp
 %%]
 
-%%[(20 codegen) hs export(cmoddbLookup)
+%%[(50 codegen) hs export(cmoddbLookup)
 cmoddbLookup :: HsName -> CModuleDatabase -> Maybe CDbBindRef
 cmoddbLookup n db = Map.lookup n $ cmoddbBindMp db
 %%]
@@ -489,7 +489,7 @@ cmoddbLookup n db = Map.lookup n $ cmoddbBindMp db
 %%% Instances: Binary, Serialize, ForceEval
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(20 codegen) hs
+%%[(50 codegen) hs
 instance Serialize LamInfo where
   sput (LamInfo a b c d) = sput a >> sput b >> sput c >> sput d
   sget = liftM4 LamInfo  sget sget sget sget
@@ -506,7 +506,7 @@ instance Serialize StackTraceInfo where
            2 -> liftM  StackTraceInfo_IsStackTraceEquiv  sget
 %%]
 
-%%[(20 codegen grin) hs
+%%[(50 codegen grin) hs
 instance Serialize CModule where
   sput (CModule_Mod   a b c   ) = sputWord8 0 >> sput a >> sput b >> sput c
   sget

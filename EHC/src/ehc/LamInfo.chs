@@ -34,9 +34,9 @@ Currently the following is maintained:
 %%[(8 codegen) hs import(qualified Data.Map as Map,qualified Data.Set as Set)
 %%]
 
-%%[(20 codegen) import(Control.Monad, {%{EH}Base.Serialize})
+%%[(50 codegen) import(Control.Monad, {%{EH}Base.Serialize})
 %%]
-%%[(20 codegen) import(Data.Typeable(Typeable,Typeable2), Data.Generics(Data))
+%%[(50 codegen) import(Data.Typeable(Typeable,Typeable2), Data.Generics(Data))
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -48,7 +48,7 @@ data StackTraceInfo
   = StackTraceInfo_None
   | StackTraceInfo_HasStackTraceEquiv	HsName		-- has a stack traced equivalent
   | StackTraceInfo_IsStackTraceEquiv	HsName		-- is a stack traced equivalent
-%%[[20
+%%[[50
   deriving (Data,Typeable)
 %%]]
 %%]
@@ -60,7 +60,7 @@ data LamInfoBindAsp
       { libindaspRelevTy 		:: !RelevTy			-- relevance typing
       }
   -- | LamInfoBindAsp_StrictTy		!RelevTy			-- and its strict incarnation
-%%[[20
+%%[[50
   deriving (Data,Typeable)
 %%]]
 
@@ -76,7 +76,7 @@ data LamInfo
       , laminfoGrinByteCode			:: Maybe GrinByteCodeLamInfo	-- GB specific info
       , laminfoBindAspMp			:: !LamInfoBindAspMp			-- info organized per/keyed on aspect
       }
-%%[[20
+%%[[50
   deriving (Data,Typeable)
 %%]]
 
@@ -91,7 +91,7 @@ emptyLamInfo = LamInfo 0 StackTraceInfo_None Nothing Map.empty
 
 %%]
 
-%%[(20 codegen) hs export(laminfo1stArgIsStackTrace)
+%%[(50 codegen) hs export(laminfo1stArgIsStackTrace)
 laminfo1stArgIsStackTrace :: LamInfo -> Bool
 laminfo1stArgIsStackTrace (LamInfo {laminfoStackTrace=StackTraceInfo_IsStackTraceEquiv _}) = True
 laminfo1stArgIsStackTrace _                                                                = False
@@ -202,7 +202,7 @@ data GrinByteCodeLamInfo
       }
   deriving
      ( Show
-%%[[20
+%%[[50
      , Typeable, Data
 %%]]
      )
@@ -215,7 +215,7 @@ emptyGrinByteCodeLamInfo = GrinByteCodeLamInfo (-1)
 %%% Instances: ForceEval, Serializable
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(20 codegen grin) hs
+%%[(50 codegen grin) hs
 instance Serialize GrinByteCodeLamInfo where
   sput (GrinByteCodeLamInfo a) = sput a
   sget = liftM  GrinByteCodeLamInfo sget

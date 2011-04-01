@@ -13,7 +13,7 @@ SEM AGItf
   | AGItf       loc         .   tyKiGam             =   initTyKiGam
 %%]
 
-%%[(20 hmtyinfer) -6.initTyKiGam
+%%[(50 hmtyinfer) -6.initTyKiGam
 ATTR AGItf [ tyKiGam: TyKiGam | | ]
 
 SEM AGItf
@@ -35,7 +35,7 @@ SEM AGItf
   | AGItf       loc         .   polGam              =   initPolGam
 %%]
 
-%%[(20 hmtyinfer) -17.initPolGam
+%%[(50 hmtyinfer) -17.initPolGam
 ATTR AGItf [ polGam: PolGam | | ]
 
 SEM AGItf
@@ -51,7 +51,7 @@ SEM AGItf
   | AGItf       loc         .   kiGam               =   initKiGam       -- fake dependency for uuagc --cycle
 %%]
 
-%%[(20 hmtyinfer) -6.initKiGam
+%%[(50 hmtyinfer) -6.initKiGam
 ATTR AGItf [ kiGam: KiGam | | ]
 
 SEM AGItf
@@ -62,7 +62,7 @@ SEM AGItf
 %%% Init of tyGam
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(20 hmtyinfer)
+%%[(50 hmtyinfer)
 ATTR AGItf [ tyGam: TyGam | | ]
 %%]
 
@@ -70,7 +70,7 @@ ATTR AGItf [ tyGam: TyGam | | ]
 SEM AGItf
 %%[[1
   | AGItf       loc         .   tyGam               =   initTyGam
-%%][20
+%%][50
   | AGItf       loc         .   tyGam               =   @lhs.tyGam
 %%]]
 %%]
@@ -103,7 +103,7 @@ SEM AGItf
   | AGItf       loc         .   clGam               =   initClGam
 %%]
 
-%%[(20 hmtyinfer) -9.initClGam
+%%[(50 hmtyinfer) -9.initClGam
 ATTR AGItf [ clGam: ClGam | | ]
 
 SEM AGItf
@@ -119,7 +119,7 @@ SEM AGItf
   | AGItf       loc         .   clDfGam             =   @expr.gathClDfGam
 %%]
 
-%%[(20 hmtyinfer) -9.initClDfGam
+%%[(50 hmtyinfer) -9.initClDfGam
 ATTR AGItf [ clDfGam: ClassDefaultGam | | ]
 
 SEM AGItf
@@ -135,7 +135,7 @@ SEM AGItf
   | AGItf       expr        .   valGam              =   emptyGam
 %%]
 
-%%[(20 hmtyinfer) -1.initValGam
+%%[(50 hmtyinfer) -1.initValGam
 ATTR AGItf [ valGam: ValGam | | ]
 
 SEM AGItf

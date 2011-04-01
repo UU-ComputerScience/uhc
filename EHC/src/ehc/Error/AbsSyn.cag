@@ -194,7 +194,7 @@ DATA Err
                         limit      : {Int}
 %%]
 
-%%[20
+%%[50
 DATA Err
   | MayOnlyHaveNrMain   nrAllowed  : Int		-- 0 or 1, depending on option ehcOptDoLinking
                         prevModNmL : {[HsName]}	-- possible previous modules in which main was defined

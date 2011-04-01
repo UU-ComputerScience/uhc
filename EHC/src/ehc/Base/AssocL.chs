@@ -40,7 +40,7 @@ ppAssocLV :: (PP k, PP v) => AssocL k v -> PP_Doc
 ppAssocLV = ppAssocL' vlist ":"
 %%]
 
-%%[20 export(ppCurlysAssocL)
+%%[50 export(ppCurlysAssocL)
 -- intended for parsing
 ppCurlysAssocL :: (k -> PP_Doc) -> (v -> PP_Doc) -> AssocL k v -> PP_Doc
 ppCurlysAssocL pk pv = ppCurlysCommasBlock . map (\(k,v) -> pk k >#< "=" >#< pv v)

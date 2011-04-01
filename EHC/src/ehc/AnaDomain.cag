@@ -26,15 +26,15 @@ Analysis domains
 %%[(8 codegen) hs export(AnaEval(..), AnaEvalL, RelevTy(..), RelevTyL, MbRelevTy, RelevQual(..), RelevQualL, RelevCoe(..), RelevCoeL) 
 %%]
 
-%%[(20 codegen grin) hs import(Control.Monad hiding(join), {%{EH}Base.Serialize}, {%{EH}Base.Binary}(liftM6))
+%%[(50 codegen grin) hs import(Control.Monad hiding(join), {%{EH}Base.Serialize}, {%{EH}Base.Binary}(liftM6))
 %%]
-%%[(20 codegen grin) hs import(Data.Typeable(Typeable), Data.Generics(Data))
+%%[(50 codegen grin) hs import(Data.Typeable(Typeable), Data.Generics(Data))
 %%]
 
 %%[(8 codegen) ag import({AnaDomain/AbsSyn})
 DERIVING *
   : Show
-%%[[20
+%%[[50
   , Typeable, Data
 %%]]
 
@@ -58,7 +58,7 @@ data RQuant
   | RQuant_None			-- not quantified
   deriving
     ( Eq, Ord, Enum
-%%[[20
+%%[[50
     , Typeable, Data
 %%]]
     )
@@ -528,7 +528,7 @@ amsLookupEval i s = do { i <- amsLookup i s ; rvmiMbEval i }
 %%% Instances: Binary, Serialize
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(20 codegen) hs
+%%[(50 codegen) hs
 instance Serialize RQuant where
   sput = sputEnum8
   sget = sgetEnum8

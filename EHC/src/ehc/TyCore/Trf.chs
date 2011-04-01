@@ -24,7 +24,7 @@
 %%[(8 codegen tycore) import({%{EH}TyCore})
 %%]
 
-%%[(20 codegen tycore) import({%{EH}TyCore.Base})
+%%[(50 codegen tycore) import({%{EH}TyCore.Base})
 %%]
 
 -- TyCore transformations
@@ -66,7 +66,7 @@ data TrfTyCore
       { trftycoreTyCore       	:: !Module
       , trftycoreTyCoreStages  	:: [(String,Module)]
       , trftycoreUniq         	:: !UID
-%%[[20
+%%[[50
       , trftycoreExpNmOffMp     :: !HsName2OffsetMp
 %%]]
 %%[[99
@@ -78,7 +78,7 @@ data TrfTyCore
 
 emptyTrfTyCore :: TrfTyCore
 emptyTrfTyCore = TrfTyCore emptyModule [] uidStart
-%%[[20
+%%[[50
                        Map.empty
 %%]]
 %%[[99

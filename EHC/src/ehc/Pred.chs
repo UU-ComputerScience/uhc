@@ -31,7 +31,7 @@
 %%[(15 hmtyinfer) export(ClsFuncDep(..))
 %%]
 
-%%[(20 hmtyinfer) import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
+%%[(50 hmtyinfer) import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
 %%]
 
 %%[(9999 hmtyinfer) import({%{EH}Base.ForceEval})
@@ -83,7 +83,7 @@ emptyCLGI
 %%% Instances
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20
+%%[50
 deriving instance Typeable ClGamInfo
 deriving instance Data ClGamInfo
 %%]
@@ -108,14 +108,14 @@ instance ForceEval ClGamInfo where
 %%]]
 %%]
 
-%%[(20 hmtyinfer)
+%%[(50 hmtyinfer)
 instance Serialize ClGamInfo where
-%%[[20
+%%[[50
   sput (ClGamInfo a b c d) = sput a >> sput b >> sput c >> sput d
 %%][92
   sput (ClGamInfo a b c d e) = sput a >> sput b >> sput c >> sput d >> sput e
 %%]]
-%%[[20
+%%[[50
   sget = liftM4 ClGamInfo sget sget sget sget
 %%][92
   sget = liftM5 ClGamInfo sget sget sget sget sget

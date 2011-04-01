@@ -7,55 +7,55 @@
 %%% Haskell importable interface to HI/AbsSyn
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20 hs module {%{EH}HI} import({%{EH}Base.Common},{%{EH}Opts},{%{EH}Base.Builtin},{%{EH}NameAspect})
+%%[50 hs module {%{EH}HI} import({%{EH}Base.Common},{%{EH}Opts},{%{EH}Base.Builtin},{%{EH}NameAspect})
 %%]
 
-%%[(20 hmtyinfer || hmtyast) hs import ({%{EH}Gam.Full},{%{EH}Gam.ClassDefaultGam})
+%%[(50 hmtyinfer || hmtyast) hs import ({%{EH}Gam.Full},{%{EH}Gam.ClassDefaultGam})
 %%]
 
-%%[(20 hmtyinfer || hmtyast) hs import({%{EH}Ty})
+%%[(50 hmtyinfer || hmtyast) hs import({%{EH}Ty})
 %%]
 
-%%[(20 codegen) hs import({%{EH}Base.Target})
+%%[(50 codegen) hs import({%{EH}Base.Target})
 %%]
-%%[(20 codegen) hs import({%{EH}Core}, {%{EH}LamInfo})
+%%[(50 codegen) hs import({%{EH}Core}, {%{EH}LamInfo})
 %%]
-%%[(20 codegen tycore) hs import(qualified {%{EH}TyCore} as C)
-%%]
-
-%%[(20 codegen grin) hs import({%{EH}GrinCode})
-%%]
-%%[(20 codegen grin) hs import({%{EH}GrinByteCode})
+%%[(50 codegen tycore) hs import(qualified {%{EH}TyCore} as C)
 %%]
 
-%%[20 hs import({%{EH}Config},{%{EH}Module})
+%%[(50 codegen grin) hs import({%{EH}GrinCode})
+%%]
+%%[(50 codegen grin) hs import({%{EH}GrinByteCode})
 %%]
 
-%%[(20 hmtyinfer) hs import({%{EH}Pred.ToCHR},{%{EH}CHR.Solve},qualified {%{EH}Pred} as Pr)
+%%[50 hs import({%{EH}Config},{%{EH}Module})
 %%]
 
-%%[20 hs import(qualified Data.Set as Set,qualified Data.Map as Map,qualified EH.Util.Rel as Rel,qualified EH.Util.FastSeq as Seq,EH.Util.Utils)
+%%[(50 hmtyinfer) hs import({%{EH}Pred.ToCHR},{%{EH}CHR.Solve},qualified {%{EH}Pred} as Pr)
 %%]
 
-%%[2020 hs export(AGItf(..),Module(..),Binding(..),Bindings)
+%%[50 hs import(qualified Data.Set as Set,qualified Data.Map as Map,qualified EH.Util.Rel as Rel,qualified EH.Util.FastSeq as Seq,EH.Util.Utils)
 %%]
 
-%%[20 hs export(Visible(..))
+%%[5020 hs export(AGItf(..),Module(..),Binding(..),Bindings)
 %%]
 
-%%[20 hs import(Control.Monad, {%{EH}Base.Binary})
-%%]
-%%[20 hs import(Data.Typeable(Typeable), Data.Generics(Data), {%{EH}Base.Serialize})
+%%[50 hs export(Visible(..))
 %%]
 
-%%[20 hs import(qualified {%{EH}Config} as Cfg)
+%%[50 hs import(Control.Monad, {%{EH}Base.Binary})
+%%]
+%%[50 hs import(Data.Typeable(Typeable), Data.Generics(Data), {%{EH}Base.Serialize})
+%%]
+
+%%[50 hs import(qualified {%{EH}Config} as Cfg)
 %%]
 
 %%[(9999 codegen grin) hs import({%{EH}GrinCode.Trf.ForceEval})
 %%]
 
 -- for debug
-%%[20 hs import({%{EH}Base.Debug},EH.Util.Pretty)
+%%[50 hs import({%{EH}Base.Debug},EH.Util.Pretty)
 %%]
 
 
@@ -63,7 +63,7 @@
 %%% Additional defs
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20 hs
+%%[50 hs
 data Visible
   = VisibleNo | VisibleYes
   deriving Eq
@@ -77,7 +77,7 @@ instance Show Visible where
 %%% HI info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20 hs export(HIInfo(..))
+%%[50 hs export(HIInfo(..))
 data HIInfo
   = HIInfo
       { hiiValidity             :: !HIValidity                              -- a valid HI info?
@@ -102,7 +102,7 @@ data HIInfo
       -- , hiiIdDefHIIdGam         :: !(Gam IdOcc IdOcc) -- IdDefOccGam     -- name mappings
       , hiiHIDeclImpModL        :: ![HsName]                                -- declared imports
       , hiiHIUsedImpModL        :: ![HsName]                                -- used imports, usually indirectly via renaming
-%%[[(20 hmtyinfer)
+%%[[(50 hmtyinfer)
       , hiiValGam               :: !ValGam                                  -- value identifier environment
       , hiiTyGam                :: !TyGam                                   -- type identifier env
       , hiiTyKiGam              :: !TyKiGam                                 -- type/tyvar kind env
@@ -112,22 +112,22 @@ data HIInfo
       , hiiClDfGam              :: !ClassDefaultGam                         -- class defaults env
       , hiiCHRStore             :: !ScopedPredStore                         -- rule database
 %%]]
-%%[[(20 codegen)
+%%[[(50 codegen)
       , hiiLamMp                :: !LamMp                                   -- codegen info for identifiers
 %%]]
-%%[[(20 codegen grin)
+%%[[(50 codegen grin)
       , hiiGrInlMp              :: !GrInlMp                                 -- grin inlineable code
 %%]]
 %%[[99
       , hiiImpHIMp              :: !ImpHIMp                                 -- cache of HIInfo's of imported modules, filtered for visibility
 %%]]
       }
-%%[[20
+%%[[50
   deriving (Typeable, Data)
 %%]]
 %%]
 
-%%[20 hs export(emptyHIInfo)
+%%[50 hs export(emptyHIInfo)
 emptyHIInfo :: HIInfo
 emptyHIInfo 
   = HIInfo HIValidity_Absent HIOrigin_FromFile
@@ -135,13 +135,13 @@ emptyHIInfo
            Rel.empty Rel.empty emptyGam -- emptyGam
            [] []
            -- emptyHiSettings
-%%[[(20 hmtyinfer)
+%%[[(50 hmtyinfer)
            emptyGam emptyGam emptyGam emptyGam emptyGam emptyGam emptyGam emptyCHRStore
 %%]]
-%%[[(20 codegen)
+%%[[(50 codegen)
            Map.empty
 %%]]
-%%[[(20 codegen grin)
+%%[[(50 codegen grin)
            Map.empty
 %%]]
 %%[[99
@@ -149,23 +149,23 @@ emptyHIInfo
 %%]]
 %%]
 
-%%[20 hs export(hiiIsEmpty)
+%%[50 hs export(hiiIsEmpty)
 -- | not empty if ok
 hiiIsEmpty :: HIInfo -> Bool
 hiiIsEmpty hii = hiiValidity hii /= HIValidity_Ok
 %%]
 
-%%[20 hs export(hiiIdDefOccGam)
+%%[50 hs export(hiiIdDefOccGam)
 hiiIdDefOccGam :: HIInfo -> IdDefOccGam
 hiiIdDefOccGam hii = hiiIdDefOccGamFromHIIdGam $ mentrelToIdDefOccGam (hiiModuleNm hii) (hiiExps hii)
 %%]
 
-%%[2020 hs export(hiiCHRStore)
+%%[5020 hs export(hiiCHRStore)
 hiiCHRStore :: HIInfo -> ScopedPredStore
 hiiCHRStore = hiiScopedPredStoreFromList . hiiCHRStoreL
 %%]
 
-%%[20 hs
+%%[50 hs
 instance Show HIInfo where
   show _ = "HIInfo"
 
@@ -292,7 +292,7 @@ hiiIncludeCacheOfImport imp mfm hii
 %%% Reconstruction
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20 export(mentrelToIdDefOccGam)
+%%[50 export(mentrelToIdDefOccGam)
 mentrelToIdDefOccGam :: HsName -> ModEntRel -> Gam IdOcc IdOcc -- IdDefOccGam
 mentrelToIdDefOccGam modNm r
   = gamFromAssocL
@@ -310,7 +310,7 @@ mentrelToIdDefOccGam modNm r
 %%% Conversions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20 hs export(hiiIdDefOccGamToHIIdGam,hiiIdDefOccGamFromHIIdGam)
+%%[50 hs export(hiiIdDefOccGamToHIIdGam,hiiIdDefOccGamFromHIIdGam)
 hiiIdDefOccGamToHIIdGam :: IdDefOccGam -> Gam IdOcc IdOcc
 hiiIdDefOccGamToHIIdGam = gamMap (\(k,v) -> (k,doccOcc v))
 
@@ -322,14 +322,14 @@ hiiIdDefOccGamFromHIIdGam = gamMap (\(k,v) -> (k,mkIdDefOcc v IdAsp_Any nmLevOut
 %%% Validity, origin of HI file
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20 hs export(HIOrigin(..))
+%%[50 hs export(HIOrigin(..))
 data HIOrigin
   = HIOrigin_FromFile                               -- from .hi file
   | HIOrigin_FromImportedBy HsNameS                 -- reconstructed from modules which imported this hi
   deriving (Eq,Show,Typeable,Data)
 %%]
 
-%%[20 hs export(HIValidity(..))
+%%[50 hs export(HIValidity(..))
 data HIValidity
   = HIValidity_Ok               -- ok
   | HIValidity_WrongMagic       -- wrong magic number
@@ -342,7 +342,7 @@ data HIValidity
 %%% Gam flattening
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20 hs
+%%[50 hs
 gamFlatten :: Ord k => Gam k v -> Gam k v
 gamFlatten = id -- gamFromAssocL . gamToAssocL
 %%]
@@ -351,13 +351,13 @@ gamFlatten = id -- gamFromAssocL . gamToAssocL
 %%% Instances: Binary, Serialize
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20 hs
+%%[50 hs
 instance Serialize HIValidity where
   sput = sputEnum8
   sget = sgetEnum8
 %%]
 
-%%[20 hs export(sgetHIInfo)
+%%[50 hs export(sgetHIInfo)
 sgetHIInfo :: EHCOpts -> SGet HIInfo
 sgetHIInfo opts = do
   { hi_magic <- sequence $ replicate (length Cfg.magicNumberHI) sgetWord8
@@ -388,7 +388,7 @@ sgetHIInfo opts = do
                       -- ; idg       <- sget
                       ; impd      <- sget
                       ; impu      <- sget
-%%[[(20 hmtyinfer)
+%%[[(50 hmtyinfer)
                       ; vg        <- sget
                       ; tg        <- sget
                       ; tkg       <- sget
@@ -398,10 +398,10 @@ sgetHIInfo opts = do
                       ; cdg       <- sget
                       ; cs        <- sget
 %%]]
-%%[[(20 codegen)
+%%[[(50 codegen)
                       ; am        <- sget
 %%]]
-%%[[(20 codegen grin)
+%%[[(50 codegen grin)
                       ; im        <- sget
 %%]]
 %%[[99
@@ -429,7 +429,7 @@ sgetHIInfo opts = do
                             --                             mentrelToIdDefOccGam hi_nm e -- idg
                             , hiiHIDeclImpModL        = impd
                             , hiiHIUsedImpModL        = impu
-%%[[(20 hmtyinfer)
+%%[[(50 hmtyinfer)
                             , hiiValGam               = vg
                             , hiiTyGam                = tg
                             , hiiTyKiGam              = tkg
@@ -439,10 +439,10 @@ sgetHIInfo opts = do
                             , hiiClDfGam              = cdg
                             , hiiCHRStore             = cs
 %%]]
-%%[[(20 codegen)
+%%[[(50 codegen)
                             , hiiLamMp                = am
 %%]]
-%%[[(20 codegen grin)
+%%[[(50 codegen grin)
                             , hiiGrInlMp              = im
 %%]]
 %%[[99
@@ -468,7 +468,7 @@ sgetHIInfo opts = do
   }
 %%]
 
-%%[20 hs
+%%[50 hs
 instance Serialize HIInfo where
   sput       (HIInfo
                   { hiiSrcSig               = hi_sig
@@ -489,7 +489,7 @@ instance Serialize HIInfo where
                   -- , hiiIdDefHIIdGam         = idg
                   , hiiHIDeclImpModL        = impd
                   , hiiHIUsedImpModL        = impu
-%%[[(20 hmtyinfer)
+%%[[(50 hmtyinfer)
                   , hiiValGam               = vg
                   , hiiTyGam                = tg
                   , hiiTyKiGam              = tkg
@@ -499,10 +499,10 @@ instance Serialize HIInfo where
                   , hiiClDfGam              = cdg
                   , hiiCHRStore             = cs
 %%]]
-%%[[(20 codegen)
+%%[[(50 codegen)
                   , hiiLamMp                = am
 %%]]
-%%[[(20 codegen grin)
+%%[[(50 codegen grin)
                   , hiiGrInlMp              = im
 %%]]
 %%[[99
@@ -528,7 +528,7 @@ instance Serialize HIInfo where
                 -- >> sput idg
                 >> sput impd
                 >> sput impu
-%%[[(20 hmtyinfer)
+%%[[(50 hmtyinfer)
                 >> sput (gamFlatten vg)
                 >> sput (gamFlatten tg)
                 >> sput (gamFlatten tkg)
@@ -538,10 +538,10 @@ instance Serialize HIInfo where
                 >> sput (gamFlatten cdg)
                 >> sput cs
 %%]]
-%%[[(20 codegen)
+%%[[(50 codegen)
                 >> sput am
 %%]]
-%%[[(20 codegen grin)
+%%[[(50 codegen grin)
                 >> sput im
 %%]]
 %%[[99

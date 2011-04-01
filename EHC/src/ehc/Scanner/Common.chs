@@ -74,7 +74,7 @@ ehScanOpts opts
 %%[11
                     ++ tokKeywStrsEH11
 %%]
-%%[20
+%%[50
                     ++ tokKeywStrsEH12
 %%]
 %%[90
@@ -187,7 +187,7 @@ hsScanOpts opts
 %%[[11
                     ++ tokKeywStrsHS11
 %%]]
-%%[[20
+%%[[50
                     ++ tokKeywStrsHS12
 %%]]
 %%[[90
@@ -267,7 +267,7 @@ coreScanOpts opts
 %%[[9
                                         , "DICT", "DICTCLASS", "DICTINSTANCE", "DICTOVERLOADED"
 %%]]
-%%[[20
+%%[[50
                                         , "Integer" 
 %%]]
 %%[[90
@@ -300,7 +300,7 @@ tycoreScanOpts
 %%[[9
                                         , "DICT", "DICTCLASS", "DICTINSTANCE", "DICTOVERLOADED"
 %%]]
-%%[[20
+%%[[50
                                         , "Integer" 
 %%]]
 %%[[90
@@ -380,12 +380,12 @@ hiScanOpts opts
 %%[[13
                                         , "redhowlambda"
 %%]]
-%%[[20
+%%[[50
                                         , "visibleno", "visibleyes"
                                         , "importmodules"
 %%]]
                                         ]
-%%[[20
+%%[[50
                                         ++ tokKeywStrsHI6
 %%]]
                                     )
@@ -523,7 +523,7 @@ pStringTk, pCharTk,
   pVaridUnboxedTk, pConidUnboxedTk,
   pVarsymUnboxedTk, pConsymUnboxedTk,
 %%]
-%%[20
+%%[50
   pQVaridTk, pQConidTk,
   pQVarsymTk, pQConsymTk,
 %%]
@@ -555,7 +555,7 @@ pConidUnboxedTk      =   pHsCostValToken' 7 TkConidUnboxed     "<Identifier#>"
 pConsymUnboxedTk     =   pHsCostValToken' 7 TkConOpUnboxed     "<conoperator#>"
 pVarsymUnboxedTk     =   pHsCostValToken' 7 TkOpUnboxed        "<operator#>" 
 %%]
-%%[20
+%%[50
 pQVaridTk     =   pHsCostValToken' 7 TkQVarid     "<identifier>" 
 pQConidTk     =   pHsCostValToken' 7 TkQConid     "<Identifier>" 
 pQConsymTk    =   pHsCostValToken' 7 TkQConOp     "<conoperator>"
@@ -586,7 +586,7 @@ pVARIDUNBOXED    = pVaridUnboxedTk
 pVARSYMUNBOXED   = pVarsymUnboxedTk
 %%]
 
-%%[20
+%%[50
 pQCONID, pQCONSYM, pQVARID, pQVARSYM :: IsParser p Token => p Token
 
 pQCONID          = pQConidTk
@@ -873,7 +873,7 @@ tokOpStrsEH10  = [] -- [ show hsnDynVar ]
 tokOpStrsHS10  = [  ]
 %%]
 
-%%[50
+%%[40
 %%]
 
 %%[11
@@ -892,7 +892,7 @@ tokOpStrsEH11   = [  ]
 tokOpStrsHS11   = [  ]
 %%]
 
-%%[20
+%%[50
 pQUALIFIED      ,
     pQUESTQUEST ,
     pAS         ,
@@ -901,7 +901,7 @@ pQUALIFIED      ,
   :: IsParser p Token => p Token
 %%]
 
-%%[20
+%%[50
 pQUALIFIED       = pKeyTk "qualified"
 pAS              = pKeyTk "as"
 pHIDING          = pKeyTk "hiding"

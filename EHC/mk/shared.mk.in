@@ -13,6 +13,11 @@ MK_SHARED_MKF								:= $(MK_PREFIX)shared.mk
 
 ###########################################################################################
 # EHC variants.
+#
+# Pivotal points:
+# - 30 (TBD) switch to Core representation of types (Ty)
+# - 50 module system is introduced, influencing global logistics
+#
 # 90-99 are reserved for very Haskell specific functionality (like deriving)
 # 100 is Haskell
 # 101 is used (temporary hopefully) for debugging performance problems
@@ -33,10 +38,13 @@ MK_SHARED_MKF								:= $(MK_PREFIX)shared.mk
 # 13: + higher order predicates (dict trafo's) (partially done)
 # 14: + existentially quantified class predicates (TBD)
 # 15: + functional dependencies (TBD)
-# 16: + GADT (TBD)
+# 16: + 
 # 17: + Polarity inference (co/contravariance)
-# 18: + Unboxed types
-# 20: + module system
+# 18: + Unboxed types (to become obsolete, no unboxed types)
+# 20: + 
+# 30: + Switch to use of Core to represent Ty, for dependent types
+# 31: + GADT (TBD)
+# 50: + module system
 # 90: + full FFI (foreign function interface) (TBD)
 # 91: + deriving construct
 # 92: + generics (for deriving)
@@ -49,7 +57,8 @@ MK_SHARED_MKF								:= $(MK_PREFIX)shared.mk
 # 102: - removal of necessary stuff (i.e. error messages) to play with AG dependencies, mem usage
 # 103: 99 + Holgers debugger work
 
-# 50: + GADT experiment
+# 40: + GADT experiment
+# 41: + GADT by Arie Middelkoop
 # 4_2: + 2 pass type inference, quantifier propagation experiment
 # 8_2: + A bit prettier output for intermediate languages, in order to include
 #        in doc/llvm.pdf. This version is temporary until a framework to output
@@ -66,7 +75,7 @@ EHC_PREL_VARIANTS				:= $(EHC_PREL_VARIANT) $(EHC_UHC_VARIANT) $(EHC_UHC_INSTALL
 EHC_GMP_VARIANTS				:= $(EHC_PREL_VARIANTS) 97 98 $(EHC_OTHER_CODE_VARIANTS)
 EHC_LTM_VARIANTS				:= $(EHC_GMP_VARIANTS)
 EHC_PUB_NOCODE_VARIANTS			:= 1 2 3 4 5 6 7
-EHC_PUB_NOPREL_VARIANTS			:= 8 9 10 11 12 13 14 15 17 20 90 91 92 96 97 98
+EHC_PUB_NOPREL_VARIANTS			:= 8 9 10 11 12 13 14 15 17 18 19 20 30 31 50 90 91 92 96 97 98
 EHC_PUB_CODE_VARIANTS			:= $(EHC_PUB_NOPREL_VARIANTS) $(EHC_PREL_VARIANTS)
 EHC_PUB_VARIANTS				:= $(EHC_PUB_NOCODE_VARIANTS) $(EHC_PUB_CODE_VARIANTS)
 EHC_OTHER_NOCODE_VARIANTS		:= 
@@ -420,16 +429,16 @@ GHC_PKG_NAME_PREFIX						:=
 
 # order to shuffle (see ehc/src/files1.mk for a complete list)
 # 4_99: interim for stuff from 4, needed for 4_2, because of ruler generated material uptil 4_2
-EHC_SHUFFLE_ORDER	:= 1 < 2 < 3 < 4 < 4_99 < 5 < 6 < 7 < 8 < 9 < 10 < 11 < 12 < 13 < 14 < 15 < 17 < 18 < 20 < 90 < 91 < 92 < 96 < 97 < 98 < $(EHC_PREL_VARIANT) < $(EHC_UHC_VARIANT) < $(EHC_UHC_INSTALL_VARIANT), \
+EHC_SHUFFLE_ORDER	:= 1 < 2 < 3 < 4 < 4_99 < 5 < 6 < 7 < 8 < 9 < 10 < 11 < 12 < 13 < 14 < 15 < 17 < 18 < 19 < 20 < 30 < 31 < 50 < 90 < 91 < 92 < 96 < 97 < 98 < $(EHC_PREL_VARIANT) < $(EHC_UHC_VARIANT) < $(EHC_UHC_INSTALL_VARIANT), \
 						$(EHC_UHC_VARIANT) < 102, \
 						$(EHC_PREL_VARIANT) < 103, \
 						6 < 6_4, \
-						15 < 16
+						15 < 41
 
 #						4_99 < 4_2, \
 #						7 < 7_2, \
 #						8 < 8_2
-#						10 < 50, \
+#						10 < 40, \
 
 ###########################################################################################
 # Shell script generation: shell alias to executable with config options

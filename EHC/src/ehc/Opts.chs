@@ -42,7 +42,7 @@
 %%[(8 codegen) import({%{EH}Base.Optimize}) export(Optimize(..), OptimizationLevel(..))
 %%]
 
-%%[50 import({%{EH}Ty.Trf.Instantiate})
+%%[40 import({%{EH}Ty.Trf.Instantiate})
 %%]
 
 %%[8 import({%{EH}Base.FileSearchLocation}) export(module {%{EH}Base.FileSearchLocation})
@@ -118,14 +118,14 @@ tycoreOptMp
 
 Some are there for (temporary) backwards compatibility.
 
-%%[(20 codegen) export(ehcOptWholeProgOptimizationScope)
+%%[(50 codegen) export(ehcOptWholeProgOptimizationScope)
 -- do something with whole program
 ehcOptWholeProgOptimizationScope :: EHCOpts -> Bool
 ehcOptWholeProgOptimizationScope opts
   = ehcOptOptimizationScope opts >= OptimizationScope_WholeGrin
 %%]
 
-%%[(20 codegen) export(ehcOptEarlyModMerge)
+%%[(50 codegen) export(ehcOptEarlyModMerge)
 -- compatibility option
 ehcOptEarlyModMerge :: EHCOpts -> Bool
 ehcOptEarlyModMerge opts
@@ -137,7 +137,7 @@ ehcOptEarlyModMerge opts
 ehcOptWholeProgHPTAnalysis :: EHCOpts -> Bool
 ehcOptWholeProgHPTAnalysis opts
   =  targetDoesHPTAnalysis (ehcOptTarget opts)
-%%[[20
+%%[[50
   || ehcOptWholeProgOptimizationScope opts
 %%]]
 %%]
@@ -299,22 +299,22 @@ ehcCmdLineOpts
 %%[[9
      -- ,  Option ""   ["chr-scoped"]       (ReqArg  oCHRScoped "0|1|2")         "scoped CHR gen: 0=inst, 1=super, 2=all (default=2)"
 %%]]
-%%[[20
+%%[[50
      ,  Option ""   ["no-recomp"]        (NoArg oNoRecomp)                    "turn off recompilation check (force recompile)"
 %%]]
 %%[[99
      ,  Option ""   ["no-prelude"]       (NoArg oNoPrelude)                   "do not assume presence of Prelude"
      ,  Option ""   ["no-hi-check"]      (NoArg oNoHiCheck)                   "no check on .hi files not matching the compiler version"
 %%]]
-%%[[20
+%%[[50
      ,  Option "c"  ["compile-only"]     (NoArg oCompileOnly)                 "compile only, do not link"
 %%]]
-%%[[20
+%%[[50
      ,  Option ""   ["debug-stopat-hi-error"]
                                          (boolArg oStopAtHIError)             "debug: stop at .hi parse error (default=off)"
 %%][100
 %%]]
-%%[[(20 codegen)
+%%[[(50 codegen)
      ,  Option ""   ["debug-stopat-core-error"]
                                          (boolArg oStopAtCoreError)           "debug: stop at .core parse error (default=off)"
 %%][100
@@ -421,7 +421,7 @@ ehcCmdLineOpts
          oTarget        _ o =  o
 %%][(8 codegen)
          oTarget        s o =  o { ehcOptMbTarget          = mbtarget
-%%[[20
+%%[[50
                                  , ehcOptOptimizationScope = if isJustOk mbtarget && targetDoesHPTAnalysis (fromJustOk mbtarget)
                                                              then max oscope OptimizationScope_WholeGrin
                                                              else oscope
@@ -569,7 +569,7 @@ ehcCmdLineOpts
                                            where x = (maybe (fromEnum $ dflt o) (\c -> read [c]) m) :: Int
 %%]]
 %%]]
-%%[[20
+%%[[50
          oNoRecomp              o   = o { ehcOptCheckRecompile              = False    }
          oCompileOnly           o   = o { ehcOptDoLinking                   = False    }
 %%]]
@@ -710,11 +710,11 @@ optDumpGrinStages    o b = o { ehcOptDumpGrinStages = b {-, ehcOptEmitGrin = b -
 -- optEarlyModMerge     o b = o { ehcOptEarlyModMerge  = b }
 %%]
 
-%%[(20 codegen)
+%%[(50 codegen)
 oStopAtCoreError     o b = o { ehcDebugStopAtCoreError     = b }
 %%]
 
-%%[20
+%%[50
 oStopAtHIError       o b = o { ehcDebugStopAtHIError       = b }
 %%]
 
@@ -722,13 +722,13 @@ oStopAtHIError       o b = o { ehcDebugStopAtHIError       = b }
 %%% Discrimination options for recompile, represent as string, difference means recompile
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20 export(optsDiscrRecompileRepr)
+%%[50 export(optsDiscrRecompileRepr)
 optsDiscrRecompileRepr :: EHCOpts -> String
 optsDiscrRecompileRepr opts
   = concat
     $ intersperse " "
     $ [ show (ehcOptAspects opts)
-%%[[(20 codegen)
+%%[[(50 codegen)
       , o "clsrec"          (ehcCfgClassViaRec      opts)
       -- , o "exec"            (ehcOptEmitExecC        opts)
       -- , o "bexec"           (ehcOptEmitExecBytecode opts)
@@ -765,11 +765,11 @@ data FIOpts =  FIOpts   {  fioLeaveRInst     ::  !Bool                ,  fioBind
                         ,  fioPredAsTy       ::  !Bool                ,  fioAllowRPredElim       ::  !Bool
                         ,  fioBindLVars      ::  !FIOBind             ,  fioBindRVars            ::  !FIOBind
 %%]]
-%%[[16
+%%[[41
                         ,  fioFitFailureToProveObl    :: !Bool
                         ,  fioFitVarFailureToProveObl :: !Bool
 %%]]
-%%[[50
+%%[[40
                         ,  fioAllowEqOpen    ::  !Bool                ,  fioInstCoConst          ::  !HowToInst
 %%]]
                         }
@@ -807,11 +807,11 @@ strongFIOpts =  FIOpts  {  fioLeaveRInst     =   False               ,  fioBindR
                         ,  fioPredAsTy       =   False               ,  fioAllowRPredElim       =   True
                         ,  fioBindLVars      =   FIOBindYes          ,  fioBindRVars            =   FIOBindYes
 %%]]
-%%[[16
+%%[[41
                         ,  fioFitFailureToProveObl    = False
                         ,  fioFitVarFailureToProveObl = False
 %%]]
-%%[[50
+%%[[40
                         ,  fioAllowEqOpen    =   False               ,  fioInstCoConst          =   instCoConst
 %%]]
                         }

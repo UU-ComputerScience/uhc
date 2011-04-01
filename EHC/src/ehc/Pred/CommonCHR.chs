@@ -23,7 +23,7 @@ This file exists to avoid module circularities.
 %%[(9 hmtyinfer) import({%{EH}VarMp})
 %%]
 
-%%[(20 hmtyinfer) import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
+%%[(50 hmtyinfer) import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
 %%]
 
 %%[(9999 hmtyinfer) import({%{EH}Base.ForceEval})
@@ -46,7 +46,7 @@ data RedHowAnnotation
 %%[[13
   |  RedHow_Lambda        !UID !PredScope
 %%]]
-%%[[16
+%%[[41
   |  RedHow_ByEqSymmetry
   |  RedHow_ByEqTrans
   |  RedHow_ByEqCongr
@@ -57,7 +57,7 @@ data RedHowAnnotation
 %%]]
   deriving
     ( Eq, Ord
-%%[[20
+%%[[50
     , Typeable, Data
 %%]]
     )
@@ -87,7 +87,7 @@ instance PP RedHowAnnotation where
 %%[[13
   pp (RedHow_Lambda       i   sc)       =    "lambda" >#< i >#< sc
 %%]]
-%%[[16
+%%[[41
   pp (RedHow_ByEqSymmetry) = pp "eqsym"
   pp (RedHow_ByEqTrans   ) = pp "eqtrans"
   pp (RedHow_ByEqCongr   ) = pp "eqcongr"
@@ -109,7 +109,7 @@ data ByScopeRedHow
   | ByScopeRedHow_Other (AlwaysEq String)		-- other reason
   deriving
     ( Eq, Ord
-%%[[20
+%%[[50
     , Typeable, Data
 %%]]
     )
@@ -197,7 +197,7 @@ predOccCnstrMpLiftScope sc
 %%% Instances: Binary, ForceEval, Serialize
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(20 hmtyinfer)
+%%[(50 hmtyinfer)
 instance Serialize ByScopeRedHow where
   sput (ByScopeRedHow_Prove          ) = sputWord8 0
   sput (ByScopeRedHow_Assume         ) = sputWord8 1
@@ -217,7 +217,7 @@ instance Serialize RedHowAnnotation where
   sput (RedHow_ByScope          a      ) = sputWord8 4  >> sput a
   sput (RedHow_ByLabel          a b c  ) = sputWord8 5  >> sput a >> sput b >> sput c
   sput (RedHow_Lambda           a b    ) = sputWord8 6  >> sput a >> sput b
-%%[[16
+%%[[41
   sput (RedHow_ByEqSymmetry          ) = sputWord8 7
   sput (RedHow_ByEqTrans             ) = sputWord8 8
   sput (RedHow_ByEqCongr             ) = sputWord8 9
@@ -235,7 +235,7 @@ instance Serialize RedHowAnnotation where
               4  -> liftM  RedHow_ByScope          sget 
               5  -> liftM3 RedHow_ByLabel          sget sget sget
               6  -> liftM2 RedHow_Lambda           sget sget 
-%%[[16
+%%[[41
               7  -> return RedHow_ByEqSymmetry     
               8  -> return RedHow_ByEqTrans        
               9  -> return RedHow_ByEqCongr        

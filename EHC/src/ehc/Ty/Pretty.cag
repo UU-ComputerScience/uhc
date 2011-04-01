@@ -159,7 +159,7 @@ instance PP ImplsProveOcc where
   pp o = ipoId o >|< "/" >|< ipoScope o
 %%]
 
-%%[(16 hmtyinfer || hmtyast) hs
+%%[(41 hmtyinfer || hmtyast) hs
 instance PP PredSeq where
   pp (PredSeq_Cons hd tl) = pp hd >#< ":" >#< pp tl
   pp (PredSeq_Nil       ) = pp "[]"
@@ -276,7 +276,7 @@ cfgPPTyPred
 %%]
 
 For HI (Haskell Interface) files
-%%[(20 hmtyinfer || hmtyast) hs
+%%[(50 hmtyinfer || hmtyast) hs
 cfgPPTyExtraForHI :: CfgPPTy -> CfgPPTy
 cfgPPTyExtraForHI c
   = c { cfgPPTyPPVarDflt    = \cfg pre tv -> cfgPPTyPPVar cfg cfg tv 0
@@ -636,12 +636,12 @@ SEM Ty
                                                        (cfgppAside @lhs.cfg ("\\" >|< @tnPP) ("->" >#< @ty.pp))
 %%]
 
-%%[(16 hmtyinfer || hmtyast)
+%%[(41 hmtyinfer || hmtyast)
 SEM Pred
   | Eq              lhs     .   pp      =   ppParNeed @parNeed @lhs.parNeed (@tyL.pp >#< "=" >#< @tyR.pp)
 %%]
 
-%%[(50 hmtyinfer || hmtyast)
+%%[(40 hmtyinfer || hmtyast)
 SEM Ty
   | Equal           loc     .   pp      =   ppParens (maybe (cfgPPTyPPVarDflt @lhs.cfg @lhs.cfg "e" @tv) id (tnLookupPP @tv @lhs.tnMap) >|< "=" >|< @ty.pp)
 %%]
@@ -817,7 +817,7 @@ SEM Ty
   | Lam         loc     .   parNeed             =   ParNotNeeded
 %%]
 
-%%[(50 hmtyinfer || hmtyast)
+%%[(40 hmtyinfer || hmtyast)
 SEM Ty
   | Equal       loc     .   parNeed             =   ParNotNeeded
 %%]

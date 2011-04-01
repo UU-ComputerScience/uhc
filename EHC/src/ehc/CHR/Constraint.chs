@@ -11,12 +11,12 @@
 %%[(9 hmtyinfer || hmtyast) import(qualified Data.Set as Set,qualified Data.Map as Map)
 %%]
 
-%%[(20 hmtyinfer || hmtyast) import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
+%%[(50 hmtyinfer || hmtyast) import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
 %%]
-%%[(20 hmtyinfer || hmtyast) import(Data.Typeable(Typeable,Typeable2), Data.Generics(Data))
+%%[(50 hmtyinfer || hmtyast) import(Data.Typeable(Typeable,Typeable2), Data.Generics(Data))
 %%]
 
-%%[(20 hmtyinfer || hmtyast) import({%{EH}Opts.Base})
+%%[(50 hmtyinfer || hmtyast) import({%{EH}Opts.Base})
 %%]
 
 %%[(9999 hmtyinfer || hmtyast) import({%{EH}Base.ForceEval})
@@ -34,7 +34,7 @@ data Constraint p info
   deriving (Eq, Ord, Show)
 %%]
 
-%%[(20 hmtyinfer || hmtyast)
+%%[(50 hmtyinfer || hmtyast)
 deriving instance Typeable2 Constraint
 deriving instance (Data x, Data y) => Data (Constraint x y)
 %%]
@@ -138,7 +138,7 @@ instance (ForceEval p, ForceEval info) => ForceEval (Constraint p info) where
 %%]]
 %%]
 
-%%[(20 hmtyinfer || hmtyast)
+%%[(50 hmtyinfer || hmtyast)
 instance (Serialize p, Serialize i) => Serialize (Constraint p i) where
   sput (Prove     a    ) = sputWord8 0 >> sput a
   sput (Assume    a    ) = sputWord8 1 >> sput a

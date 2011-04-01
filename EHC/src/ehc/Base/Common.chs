@@ -82,7 +82,7 @@
 %%[(8 codegen) import({%{EH}Base.Strictness}) export(module {%{EH}Base.Strictness})
 %%]
 
-%%[20 import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
+%%[50 import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
 %%]
 
 %%[99 import({%{EH}Base.Hashable})
@@ -663,7 +663,7 @@ isEmptyRange  _                = False
 
 20100209 AD: The lax equality/compare goes badly with serialization. TBD: fix this...
 
-%%[20
+%%[50
 instance Eq Range where
   _ == _ = True				-- a Range is ballast, not a criterium to decide equality for
 
@@ -1204,7 +1204,7 @@ metaLevSo  = metaLevKi  + 1
 %%% Instances: Typeable, Data
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20
+%%[50
 deriving instance Typeable VarUIDHsName
 deriving instance Data VarUIDHsName
 
@@ -1243,7 +1243,7 @@ uidHNm = mkHNm -- hsnFromString . show
 %%[7
 uidQualHNm :: HsName -> UID -> HsName
 uidQualHNm modnm uid = 
-%%[[20                  
+%%[[50                  
                         hsnPrefixQual modnm $
 %%]]
                         uidHNm uid
@@ -1258,7 +1258,7 @@ instance HSNM UID where
 %%% Instances: Binary, Serialize
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20
+%%[50
 instance Serialize VarUIDHsName where
   sput (VarUIDHs_Name a b) = sputWord8 0 >> sput a >> sput b
   sput (VarUIDHs_UID  a  ) = sputWord8 1 >> sput a
@@ -1451,7 +1451,7 @@ data KnownPrim
   deriving (Show,Eq,Enum,Bounded)
 %%]
 
-%%[(20 codegen)
+%%[(50 codegen)
 deriving instance Data KnownPrim
 deriving instance Typeable KnownPrim
 %%]

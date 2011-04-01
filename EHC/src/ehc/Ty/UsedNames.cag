@@ -12,23 +12,23 @@ Extract the used names, of type constants.
 These are used for constructing cached hi files filtered for the names actually used.
 %%]
 
-%%[(20 hmtyinfer || hmtyast) hs module {%{EH}Ty.UsedNames} import(Data.List,{%{EH}Base.Common},{%{EH}Ty})
+%%[(50 hmtyinfer || hmtyast) hs module {%{EH}Ty.UsedNames} import(Data.List,{%{EH}Base.Common},{%{EH}Ty})
 %%]
 
-%%[(20 hmtyinfer || hmtyast) hs import(qualified Data.Set as Set)
+%%[(50 hmtyinfer || hmtyast) hs import(qualified Data.Set as Set)
 %%]
-%%[(20 hmtyinfer || hmtyast) hs import(qualified Data.Map as Map)
-%%]
-
-%%[(20 hmtyinfer || hmtyast) hs import({%{EH}Module})
+%%[(50 hmtyinfer || hmtyast) hs import(qualified Data.Map as Map)
 %%]
 
-%%[(20 hmtyinfer || hmtyast).WRAPPER ag import({Ty/AbsSyn})
+%%[(50 hmtyinfer || hmtyast) hs import({%{EH}Module})
+%%]
+
+%%[(50 hmtyinfer || hmtyast).WRAPPER ag import({Ty/AbsSyn})
 WRAPPER
   TyAGItf
 %%]
 
-%%[(20 hmtyinfer || hmtyast).tyUsedNames hs export(tyUsedNames)
+%%[(50 hmtyinfer || hmtyast).tyUsedNames hs export(tyUsedNames)
 tyUsedNames :: HsName -> Ty -> ModEntRelFilterMp
 tyUsedNames moduleNm ty
   = mentrelFilterMp_Syn_TyAGItf t
@@ -43,7 +43,7 @@ tyUsedNames moduleNm ty
 %%% Global info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(20 hmtyinfer || hmtyast)
+%%[(50 hmtyinfer || hmtyast)
 ATTR TyAGItf AllTy [ moduleNm: HsName | | ]
 %%]
 
@@ -51,7 +51,7 @@ ATTR TyAGItf AllTy [ moduleNm: HsName | | ]
 %%% Extract names
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(20 hmtyinfer || hmtyast).TyUsedNames
+%%[(50 hmtyinfer || hmtyast).TyUsedNames
 ATTR TyAGItf AllTy [ | | mentrelFilterMp USE {`mentrelFilterMpUnion`} {Map.empty}: ModEntRelFilterMp ]
 
 SEM Ty

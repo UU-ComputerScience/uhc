@@ -30,7 +30,7 @@
 %%[(7 hmtyinfer) import({%{EH}Ty.Trf.Quantify})
 %%]
 
-%%[(20 hmtyinfer) import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
+%%[(50 hmtyinfer) import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
 %%]
 
 -- debug
@@ -142,7 +142,7 @@ data DataGamInfo
   = DataGamInfo
       { dgiTyNm      		:: !HsName				-- type name (duplicate of key of gamma leading to this info)
       , dgiDataTy 			:: !Ty					-- the type sum of product
-%%[[20
+%%[[50
       , dgiConstrNmL 		:: ![HsName]			-- all constructor names
 %%]]
       , dgiConstrTagMp 		:: !DataConstrTagMp		-- per constructor info
@@ -201,7 +201,7 @@ mkDGI tyNm dty cNmL m nt
   = DataGamInfo
       tyNm
       dty
-%%[[20
+%%[[50
       cNmL
 %%]]
       m
@@ -239,7 +239,7 @@ emptyDataGamInfo = mkDGIPlain hsnUnknown Ty_Any [] Map.empty
 emptyDGI = emptyDataGamInfo
 %%]
 
-%%[(20 hmtyinfer) export(dgiConstrTagAssocL)
+%%[(50 hmtyinfer) export(dgiConstrTagAssocL)
 dgiConstrTagAssocL :: DataGamInfo -> AssocL HsName DataTagInfo
 dgiConstrTagAssocL dgi = [ (cn,panicJust "dgiConstrTagAssocL" $ Map.lookup cn $ dgiConstrTagMp dgi) | cn <- dgiConstrNmL dgi ]
 %%]
@@ -320,7 +320,7 @@ dgiIsEnumable dgi = dgiMaxConstrArity dgi == 0
 %%% Instances
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(20 hmtyinfer)
+%%[(50 hmtyinfer)
 deriving instance Typeable DataFldInfo
 deriving instance Data DataFldInfo
 
@@ -357,7 +357,7 @@ instance Serialize DataGamInfoVariant where
       2 -> return DataGamInfoVariant_Rec
 %%]
 
-%%[(20 hmtyinfer)
+%%[(50 hmtyinfer)
 instance Serialize DataFldInfo where
   sput (DataFldInfo a) = sput a
   sget = liftM DataFldInfo sget
@@ -367,7 +367,7 @@ instance Serialize DataConFldAnnInfo where
   sget = liftM DataConFldAnnInfo sget
 
 instance Serialize DataTagInfo where
-%%[[20
+%%[[50
   sput (DataTagInfo a b c d e f) = sput a >> sput b >> sput c >> sput d >> sput e >> sput f
   sget = liftM6 DataTagInfo sget sget sget sget sget sget
 %%][91
@@ -380,7 +380,7 @@ instance Serialize DataFldInConstr where
   sget = liftM DataFldInConstr sget
 
 instance Serialize DataGamInfo where
-%%[[20
+%%[[50
   sput (DataGamInfo a b c d e f g) = sput a >> sput b >> sput c >> sput d >> sput e >> sput f >> sput g
   sget = liftM7 DataGamInfo sget sget sget sget sget sget sget
 %%][92

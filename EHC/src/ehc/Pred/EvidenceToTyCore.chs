@@ -171,7 +171,7 @@ evidMpToCore env evidMp
 %%[[13
         ann (RedHow_Lambda  i sc) [body]       = ( [(mkHNm i,C.tyErr ("evidMpToCore.RedHow_Lambda: " ++ show i))] `acoreLamTy` tcrExpr body, sc )
 %%]]
-%%[[16
+%%[[41
         ignore (_, (Evid_Proof _ red  _))
           | red `elem` [RedHow_ByEqSymmetry, RedHow_ByEqTrans, RedHow_ByEqCongr, RedHow_ByPredSeqUnpack, RedHow_ByEqFromAssume, RedHow_ByEqIdentity]
           = True
