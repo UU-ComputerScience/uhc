@@ -14,9 +14,9 @@
 %%[(8 codegen) import(Data.List, Data.Maybe, qualified Data.Map as Map, qualified Data.Set as Set, Control.Applicative((<|>),(<$>)))
 %%]
 
-%%[(20 codegen grin) hs import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
+%%[(50 codegen grin) hs import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
 %%]
-%%[(20 codegen grin) hs import(Data.Typeable(Typeable), Data.Generics(Data))
+%%[(50 codegen grin) hs import(Data.Typeable(Typeable), Data.Generics(Data))
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -306,7 +306,7 @@ hsnUniqifyACoreBindAspectKeyS as n
         mk a                         = hsnUniqifyStr HsNameUniqifier_BindAspect (show a)
 %%]
 
-%%[(20 codegen) hs
+%%[(50 codegen) hs
 deriving instance Typeable ACoreBindAspectKey
 deriving instance Data ACoreBindAspectKey
 %%]
@@ -351,7 +351,7 @@ instance PP ACoreBindRef where
   pp = ppACoreBindRef pp
 %%]
 
-%%[(20 codegen) hs
+%%[(50 codegen) hs
 deriving instance Typeable ACoreBindRef
 deriving instance Data ACoreBindRef
 %%]
@@ -1125,7 +1125,7 @@ cafailHasId (CaseAltFailReason_Absence   ) = (False,uidUnused)
 cafailHasId (CaseAltFailReason_Continue i) = (True ,i)
 %%]
 
-%%[(20 codegen) hs
+%%[(50 codegen) hs
 deriving instance Typeable CaseAltFailReason
 deriving instance Data CaseAltFailReason
 %%]
@@ -1173,19 +1173,19 @@ whatExprAppArity _             = 0
 %%% Instances: Binary, Serialize, ForceEval
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(20 codegen) hs
+%%[(50 codegen) hs
 instance Serialize ACoreBindAspectKey where
   sput = sputEnum8
   sget = sgetEnum8
 %%]
 
-%%[(20 codegen) hs
+%%[(50 codegen) hs
 instance Serialize ACoreBindRef where
   sput (ACoreBindRef a b) = sput a >> sput b
   sget = liftM2 ACoreBindRef sget sget
 %%]
 
-%%[(20 codegen) hs
+%%[(50 codegen) hs
 instance Serialize CaseAltFailReason where
   sput (CaseAltFailReason_Continue a) = sputWord8 0 >> sput a
   sput (CaseAltFailReason_Absence   ) = sputWord8 1

@@ -107,7 +107,7 @@ data FIOut
 %%[[(10 codegen tycore)
        ,  foRowTCoeL        :: !(AssocL HsName C.Coe)	-- 
 %%]]
-%%[[50
+%%[[40
        ,  foEqVarMp         :: !VarMp
 %%]]
 %%[[99
@@ -152,7 +152,7 @@ emptyFO
 %%[[(10 codegen tycore)
        ,  foRowTCoeL        =   []
 %%]]
-%%[[50
+%%[[40
        ,  foEqVarMp         =   emptyVarMp
 %%]]
 %%[[99

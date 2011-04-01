@@ -11,7 +11,7 @@
 %%]
 %%[(8 codegen) import(EH.Util.Pretty,EH.Util.Utils)
 %%]
-%%[(20 codegen) import({%{EH}Base.Binary}, {%{EH}Base.Serialize} )
+%%[(50 codegen) import({%{EH}Base.Binary}, {%{EH}Base.Serialize} )
 %%]
 
 %%[doesWhat doclatex
@@ -157,7 +157,7 @@ data OptimizationLevel
 -- | Scope of optimizations, increasingly more global
 data OptimizationScope
   = OptimizationScope_PerModule			-- per module
-%%[[20
+%%[[50
   | OptimizationScope_WholeGrin			-- whole program, starting with GRIN
   | OptimizationScope_WholeCore			-- whole program, starting with Core
 %%]]
@@ -237,12 +237,12 @@ optimizationLevelMp
 %%% Instances: Binary, Serialize
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(2020 codegen)
+%%[(5020 codegen)
 deriving instance Typeable Optimize
 deriving instance Data Optimize
 %%]
 
-%%[(2020 codegen)
+%%[(5020 codegen)
 instance Binary Optimize where
   put = putEnum8
   get = getEnum8

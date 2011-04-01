@@ -31,11 +31,11 @@ with TKK_Partial. Only at insertion time the proper search structure is setup.
 %%[9 import(EH.Util.Pretty hiding (empty))
 %%]
 
-%%[20 import(Data.Typeable(Typeable,Typeable1), Data.Generics(Data))
+%%[50 import(Data.Typeable(Typeable,Typeable1), Data.Generics(Data))
 %%]
-%%[20 hs import(Control.Monad)
+%%[50 hs import(Control.Monad)
 %%]
-%%[20 hs import({%{EH}Base.Serialize})
+%%[50 hs import({%{EH}Base.Serialize})
 %%]
 
 %%[9999 import({%{EH}Base.ForceEval})
@@ -65,7 +65,7 @@ mkTrieKeys :: [k] -> [TrieKey k]
 mkTrieKeys = Prelude.map (TK_One TKK_Normal)
 %%]
 
-%%[20
+%%[50
 deriving instance Typeable TrieKeyKind
 deriving instance Data TrieKeyKind
 
@@ -132,7 +132,7 @@ data Trie k v
       , triePartSubs    :: SubTrie k v              -- partial search continuation
       , trieSubs        :: SubTrie k v              -- normal search continuation
       }
-%%[[20
+%%[[50
  deriving (Typeable, Data)
 %%]]
 
@@ -384,7 +384,7 @@ delete keys = deleteByKey $ mkTrieKeys keys
 %%% Instances: Serialize, ForceEval
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20
+%%[50
 instance Serialize k => Serialize (TrieKey k) where
   sput (TK_One a b) = sput a >> sput b
   sget = liftM2 TK_One sget sget

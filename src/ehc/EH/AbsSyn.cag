@@ -471,7 +471,7 @@ DATA DataConstr
 %%][7
                     fields          : DataFields
 %%]]
-%%[[16
+%%[[41
                     eqs             : DataConstrEqs
 %%]]
 %%]
@@ -488,7 +488,7 @@ DATA DataField
 TYPE DataFields     = [DataField]
 %%]
 
-%%[16.Data
+%%[41.Data
 DATA DataConstrEq
   | Eq              tyVar           : TyVar
                     tyExpr          : TyExpr
@@ -496,7 +496,7 @@ DATA DataConstrEq
 TYPE DataConstrEqs  = [DataConstrEq]
 %%]
 
-%%[50.Data
+%%[40.Data
 DATA DataConstrEq
   | Eq              tyVar           : TyVar
                     tyExpr          : TyExpr
@@ -512,7 +512,7 @@ SET AllDataConstr   = DataConstr DataConstrs
 SET AllDataField    = DataField DataFields
 %%]
 
-%%[16
+%%[41
 SET AllDataConstrEq = DataConstrEq DataConstrEqs
 %%]
 
@@ -522,12 +522,12 @@ SET AllData
 %%[[7
       AllDataField
 %%]]
-%%[[16
+%%[[41
       AllDataConstrEq
 %%]]
 %%]
 
-%%[50.SetsData -7.SetsData
+%%[40.SetsData -7.SetsData
 SET AllDataConstrEq = DataConstrEq DataConstrEqs
 SET AllDataField    = DataField DataFields
 SET AllData         = AllDataField AllDataConstr AllDataConstrEq

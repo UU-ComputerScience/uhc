@@ -135,7 +135,7 @@ initScopedPredStore
 %%[[13
       ++ [ instForall, predArrow, predSeq1, predSeq2 ]
 %%]]
-%%[[16
+%%[[41
       -- comment out predSeq1 and predSeq2 above because they conflict with the unpack rules!
       ++ [ {-rlEqScope,-} rlEqTrans, rlEqSym, rlEqCongr, rlUnpackCons , {- rlCtxToNil, -} rlEqSymPrv, rlEqTransPrv, rlEqCongrPrv, rlUnpackConsPrv, rlUnpackNilPrv, rlPrvByAssume, rlPrvByIdentity ]
 %%]]
@@ -181,7 +181,7 @@ initScopedPredStore
         predSeq2     = [Prove $ mkCHRPredOcc (Pred_Preds PredSeq_Nil) sc1]
                          <==> []
 %%]]
-%%[[16
+%%[[41
         eqT1T2s1 = mkCHRPredOcc (Pred_Eq ty1 ty2) sc1
         eqT1T2s2 = mkCHRPredOcc (Pred_Eq ty1 ty2) sc2
         eqT2T1s1 = mkCHRPredOcc (Pred_Eq ty2 ty1) sc1

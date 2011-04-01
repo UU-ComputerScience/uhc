@@ -94,7 +94,7 @@ cpTransformGrin modNm
 %%]]
 %%[[8                              
                          inline = mk [inl]
-%%][20                                
+%%][50                                
                          inline = [ ( do { cr <- get
                                          ; let (ecu,crsi,_,_) = crBaseInfo modNm cr
                                                expNmOffMp     = crsiExpNmOffMp modNm crsi

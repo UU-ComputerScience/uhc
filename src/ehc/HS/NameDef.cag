@@ -6,7 +6,7 @@
 %%% Module name
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20
+%%[50
 ATTR
   AGItf AllModuleDeclaration AllFunctionBinding TypeLeftHandSide LeftHandSide AllFieldDeclaration AllConstructor
   AllExpression AllPattern AllTypePattern AllRowRecordPatternBinding
@@ -23,7 +23,7 @@ SEM Body
         loc             .   refmainname	=   hsnMain
 %%]
 
-%%[20 -8.Body.refname
+%%[50 -8.Body.refname
 SEM Body
     | Body
         loc             .   refmainname	=   hsnSetLevQual @lhs.nmLev @lhs.moduleNm hsnMain
@@ -62,7 +62,7 @@ SEM Declaration
     | Instance InstanceUseImplicitly
         loc             .   classrefname=   @name
 
-%%[20 -1.Declaration.refname
+%%[50 -1.Declaration.refname
 SEM Declaration
     | Fixity
         loc             .   oprefnames  =   map (hsnSetLevQual @lhs.nmLev @lhs.moduleNm) @operators
@@ -72,7 +72,7 @@ SEM Declaration
         loc             .   refnames    =   map (hsnSetLevQual @lhs.nmLev @lhs.moduleNm) @names
     | Data Newtype
         loc             .   typerefname =   hsnSetLevQual @lhs.nmLev @lhs.moduleNm @typelefthandside.name
-%%[[(20 codegen)
+%%[[(50 codegen)
     | ForeignImport
         loc             .   refname     =   hsnSetLevQual @lhs.nmLev @lhs.moduleNm @name
 %%]]
@@ -118,7 +118,7 @@ SEM LeftHandSide
 
 %%]
 
-%%[20 -1.LeftHandSide.refname
+%%[50 -1.LeftHandSide.refname
 SEM LeftHandSide
     | Function
         loc             .   refname     =   hsnSetLevQual @lhs.nmLevFun @lhs.moduleNm @name
@@ -139,7 +139,7 @@ SEM TypePattern
 %%]]
 %%]
 
-%%[20 -1.Pattern.refname
+%%[50 -1.Pattern.refname
 SEM Pattern
     | Variable As
         loc             .   refname     =   hsnSetLevQual @lhs.nmLev @lhs.moduleNm @name
@@ -166,7 +166,7 @@ SEM Constructor
 %%]
 %%]
 
-%%[20 -5.Constructor.refname
+%%[50 -5.Constructor.refname
 SEM Constructor
     | Constructor Record
         loc             .   conrefname  =   hsnSetLevQual @lhs.nmLev @lhs.moduleNm @constructor
@@ -198,7 +198,7 @@ SEM FieldDeclaration
         loc             .   fldrefnames =   @names
 %%]
 
-%%[20 -7.FieldDeclaration.refname
+%%[50 -7.FieldDeclaration.refname
 SEM FieldDeclaration
     | FieldDeclaration
         loc             .   fldrefnames =   map (hsnSetLevQual @lhs.nmLev @lhs.moduleNm) @names
@@ -217,7 +217,7 @@ SEM RecordPatternBinding
         loc             .   refname     =   @name
 %%]
 
-%%[20 -7.RecordPatternBinding.refname
+%%[50 -7.RecordPatternBinding.refname
 SEM RecordPatternBinding
     | Pun
         loc             .   refname     =   hsnSetLevQual @lhs.nmLev @lhs.moduleNm @name

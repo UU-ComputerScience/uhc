@@ -446,7 +446,7 @@ SEM Err
 %%]]
 %%]
 
-%%[20
+%%[50
 SEM Err
   | MayOnlyHaveNrMain   lhs     .  pp   =   ppMsgErr    "Number of definitions for 'main' exceeds limit"
                                                         (                                         "limit                :" >#< @nrAllowed

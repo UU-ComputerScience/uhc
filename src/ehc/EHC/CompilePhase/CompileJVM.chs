@@ -136,7 +136,7 @@ cpCompileJazyJVM how othModNmL modNm
               mbClsL          = ecuMbJVMClassL ecu
 %%[[8
               fpCl c          = mkOutputFPath opts c (fpathSetBase (show c) fp) "class"     -- TBD: correct names
-%%][20
+%%][50
               fpCl c          = mkOutputFPath opts c (maybe mFp (\d -> fpathPrependDir d mFp) (fpathMbDir fp)) "class"
                               where mFp = mkFPath c
 %%]]

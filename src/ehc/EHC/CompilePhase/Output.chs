@@ -28,7 +28,7 @@ Output generation, on stdout or file
 %%]
 
 -- HI syntax and semantics
-%%[20 import(qualified {%{EH}HI} as HI)
+%%[50 import(qualified {%{EH}HI} as HI)
 %%]
 
 -- Core output
@@ -45,14 +45,14 @@ Output generation, on stdout or file
 %%]
 
 -- serialization
-%%[20 import(qualified {%{EH}Base.Binary} as Bin, {%{EH}Base.Serialize})
+%%[50 import(qualified {%{EH}Base.Binary} as Bin, {%{EH}Base.Serialize})
 %%]
 -- for debugging only
-%%[20 import({%{EH}Gam})
+%%[50 import({%{EH}Gam})
 %%]
 
 -- module admin
-%%[20 import({%{EH}Module})
+%%[50 import({%{EH}Module})
 %%]
 
 -- gam related utils
@@ -73,7 +73,7 @@ cpOutputTyCoreModule binary nmsuff suff modNm tyMod
                  fnC    = fpathToStr fpC
 %%[[8
          ;  lift $ putPPFPath fpC (ppModule opts tyMod) 100
-%%][20
+%%][50
          ;  lift (if binary
                   then do { fpathEnsureExists fpC		-- should be in FPath equivalent of putSerializeFile
                           ; putSerializeFile fnC tyMod
@@ -104,7 +104,7 @@ cpOutputCoreModule binary nmsuff suff modNm cMod
                  fnC    = fpathToStr fpC
 %%[[8
          ;  lift $ putPPFPath fpC (ppCModule opts cMod) 100
-%%][20
+%%][50
          ;  lift (if binary
                   then do { fpathEnsureExists fpC		-- should be in FPath equivalent of putSerializeFile
                           ; putSerializeFile fnC cMod
@@ -154,7 +154,7 @@ cpOutputGrin binary suff modNm
          ; cpMsg modNm VerboseALot "Emit Grin"
 %%[[8
          ; lift $ putPPFPath fpG (ppGrModule grin) 1000 --TODO ? getal
-%%][20
+%%][50
          ; lift (if binary
                  then do { fpathEnsureExists fpG
                          ; putSerializeFile fnG grin
@@ -181,7 +181,7 @@ cpOutputByteCodeC suff modNm
          }
 %%]
 
-%%[20 export(cpOutputHI)
+%%[50 export(cpOutputHI)
 cpOutputHI :: String -> HsName -> EHCompilePhase ()
 cpOutputHI suff modNm
   =  do  {  cr <- get
@@ -204,7 +204,7 @@ cpOutputHI suff modNm
                                , HI.hiiCompileFlags         = optsDiscrRecompileRepr opts
                                , HI.hiiCompiler             = Cfg.installVariant opts
                                }
-%%[[20
+%%[[50
                  hii3   = hii2
 %%][9999
                  ehInh  = crsiEHInh crsi

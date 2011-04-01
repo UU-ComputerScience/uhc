@@ -2,7 +2,7 @@
 %%% Serialization
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20
+%%[50
 %%]
 {-# LANGUAGE ScopedTypeVariables, FlexibleInstances, UndecidableInstances, OverlappingInstances #-}
 
@@ -72,22 +72,22 @@ instance Serialize Foo where
 
 %%]
 
-%%[20 module {%{EH}Base.Serialize}
+%%[50 module {%{EH}Base.Serialize}
 %%]
 
-%%[20 import(qualified {%{EH}Base.Binary} as Bn)
+%%[50 import(qualified {%{EH}Base.Binary} as Bn)
 %%]
-%%[20 import(qualified Data.ByteString.Lazy as L, IO, System.IO(openBinaryFile))
-%%]
-
-%%[20 import(EH.Util.Utils)
+%%[50 import(qualified Data.ByteString.Lazy as L, IO, System.IO(openBinaryFile))
 %%]
 
-%%[20 import(Data.Typeable)
+%%[50 import(EH.Util.Utils)
 %%]
-%%[20 import(qualified Data.Map as Map, qualified Data.Set as Set, Data.Maybe, Data.Word, Data.Array)
+
+%%[50 import(Data.Typeable)
 %%]
-%%[20 import(Control.Monad, qualified Control.Monad.State as St, Control.Monad.Trans)
+%%[50 import(qualified Data.Map as Map, qualified Data.Set as Set, Data.Maybe, Data.Word, Data.Array)
+%%]
+%%[50 import(Control.Monad, qualified Control.Monad.State as St, Control.Monad.Trans)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -99,7 +99,7 @@ make this work a double mapping is maintained, keyed by the type
 descriptor string of a type (obtained via Typeable) and keyed by the Int
 reference to it.
 
-%%[20
+%%[50
 data SCmd
   = SCmd_Unshared
   | SCmd_ShareDef   | SCmd_ShareRef			-- 
@@ -136,7 +136,7 @@ scmdFrom SCmd_ShareRef8  = SCmd_ShareRef
 scmdFrom c               = c
 %%]
 
-%%[20 export(SPut)
+%%[50 export(SPut)
 data SerPutMp = forall x . (Typeable x, Ord x) => SerPutMp (Map.Map x Int)
 
 data SPutS
@@ -152,7 +152,7 @@ type SPut = St.State SPutS ()
 
 %%]  
 
-%%[20 export(SGet)
+%%[50 export(SGet)
 data SerGetMp = forall x . (Typeable x, Ord x) => SerGetMp (Map.Map Int x)
 
 data SGetS
@@ -163,7 +163,7 @@ data SGetS
 type SGet x = St.StateT SGetS Bn.Get x
 %%]
 
-%%[20 export(Serialize(..))
+%%[50 export(Serialize(..))
 class Serialize x where
   sput :: x -> SPut
   sget :: SGet x
@@ -181,7 +181,7 @@ instance Bn.Binary x => Serialize x where
   sget = sgetPlain
 
 
-%%[20
+%%[50
 liftP :: Bn.Put -> SPut
 liftP p
   = do { s <- St.get
@@ -194,7 +194,7 @@ liftG g = lift g
 %%]
 
 
-%%[20 export(sputPlain,sgetPlain)
+%%[50 export(sputPlain,sgetPlain)
 sputPlain :: (Bn.Binary x,Serialize x) => x -> SPut
 sputPlain x = liftP (Bn.put x)
 {-# INLINE sputPlain #-}
@@ -205,7 +205,7 @@ sgetPlain = lift Bn.get
 
 %%]
 
-%%[20 export(sputUnshared,sputShared)
+%%[50 export(sputUnshared,sputShared)
 sputUnshared :: (Bn.Binary x,Serialize x) => x -> SPut
 sputUnshared x
   = do { s <- St.get
@@ -252,7 +252,7 @@ sputShared x
           where i = sputsInx s
 %%]
 
-%%[20 export(sgetShared)
+%%[50 export(sgetShared)
 getRef :: SCmd -> Bn.Get Int
 getRef c
   = case scmdToNrBits c of
@@ -301,7 +301,7 @@ sgetShared
 %%% Low level
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20 export(sputWord8,sgetWord8)
+%%[50 export(sputWord8,sgetWord8)
 sputWord8            :: Word8 -> SPut
 sputWord8 x          = liftP (Bn.putWord8 x)
 {-# INLINE sputWord8 #-}
@@ -312,7 +312,7 @@ sgetWord8 = liftG Bn.getWord8
 
 %%]
 
-%%[20 export(sputWord16,sgetWord16)
+%%[50 export(sputWord16,sgetWord16)
 sputWord16           :: Word16 -> SPut
 sputWord16 x         = liftP (Bn.putWord16be x)
 {-# INLINE sputWord16 #-}
@@ -323,7 +323,7 @@ sgetWord16 = liftG Bn.getWord16be
 
 %%]
 
-%%[20 export(sputEnum8, sgetEnum8)
+%%[50 export(sputEnum8, sgetEnum8)
 sputEnum8 :: Enum x => x -> SPut
 sputEnum8 x = liftP (Bn.putEnum8 x)
 {-# INLINE sputEnum8 #-}
@@ -338,7 +338,7 @@ sgetEnum8 = liftG Bn.getEnum8
 %%% Default instances, copied & modified from Binary
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20
+%%[50
 instance Serialize () where
   sput _ = return ()
   sget   = return ()
@@ -402,7 +402,7 @@ instance (Ord k, Serialize k, Serialize e) => Serialize (Map.Map k e) where
 %%% The actual IO
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20 export(runSPut,runSGet)
+%%[50 export(runSPut,runSGet)
 runSPut :: SPut -> Bn.Put
 runSPut x = sputsPut $ snd $ St.runState x emptySPutS
  
@@ -411,7 +411,7 @@ runSGet x = St.evalStateT x (SGetS Map.empty)
 
 %%]
 
-%%[20 export(serialize,unserialize)
+%%[50 export(serialize,unserialize)
 serialize :: Serialize x => x -> Bn.Put
 serialize x = runSPut (sput x)
  
@@ -420,7 +420,7 @@ unserialize = runSGet sget
 
 %%]
 
-%%[20 export(putSPutFile,getSGetFile)
+%%[50 export(putSPutFile,getSGetFile)
 -- | SPut to FilePath
 putSPutFile :: FilePath -> SPut -> IO ()
 putSPutFile fn x
@@ -439,7 +439,7 @@ getSGetFile fn x
        }
 %%]
 
-%%[20 export(putSerializeFile,getSerializeFile)
+%%[50 export(putSerializeFile,getSerializeFile)
 -- | Serialize to FilePath
 putSerializeFile :: Serialize a => FilePath -> a -> IO ()
 putSerializeFile fn x

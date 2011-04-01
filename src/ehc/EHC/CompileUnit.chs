@@ -35,16 +35,16 @@ An EHC compile unit maintains info for one unit of compilation, a Haskell (HS) m
 %%]
 
 -- HI Syntax and semantics, HS module semantics
-%%[20 import(qualified {%{EH}HI} as HI)
+%%[50 import(qualified {%{EH}HI} as HI)
 %%]
-%%[20 import(qualified {%{EH}HS.ModImpExp} as HSSemMod)
+%%[50 import(qualified {%{EH}HS.ModImpExp} as HSSemMod)
 %%]
 -- module admin
-%%[20 import({%{EH}Module})
+%%[50 import({%{EH}Module})
 %%]
 
 -- timestamps
-%%[20 import(System.Time, System.Directory)
+%%[50 import(System.Time, System.Directory)
 %%]
 
 -- Force evaluation for IO
@@ -71,10 +71,10 @@ Intermodule optimisation info.
 Currently only for Grin meant to be compiled to GrinByteCode.
 Absence of this info should not prevent correct compilation.
 
-%%[20 export(Optim(..),defaultOptim)
+%%[50 export(Optim(..),defaultOptim)
 data Optim
   = Optim
-%%[[(20 grin)
+%%[[(50 grin)
       { optimGrInlMp          :: Grin.GrInlMp        -- inlining map, from name to GrExpr (grin expressions)
       }
 %%]]
@@ -82,7 +82,7 @@ data Optim
 defaultOptim :: Optim
 defaultOptim
   = Optim
-%%[[(20 grin)
+%%[[(50 grin)
       Map.empty
 %%]]
 %%]
@@ -149,7 +149,7 @@ data EHCompileUnit
       , ecuMbJScript         :: !(Maybe JS.JScriptModule)
 %%]]
       , ecuState             :: !EHCompileUnitState
-%%[[20
+%%[[50
       , ecuHSDeclImpNmL      :: ![HsName]							-- imported modules as declared in src .hs
       , ecuHIDeclImpNmL      :: ![HsName]							-- imported modules as declared, either in .hs or .hi
       , ecuHIUsedImpNmL      :: ![HsName]							-- imported modules as actually used
@@ -194,7 +194,7 @@ ecuFilePath ecu
 %%]]
 %%]
 
-%%[20 export(ecuIsMainMod)
+%%[50 export(ecuIsMainMod)
 ecuIsMainMod :: EHCompileUnit -> Bool
 ecuIsMainMod e = ecuIsTopMod e && ecuHasMain e
 %%]
@@ -246,7 +246,7 @@ emptyECU
       , ecuMbJScript         = Nothing
 %%]]
       , ecuState             = ECUSUnknown
-%%[[20
+%%[[50
       , ecuHSDeclImpNmL      = []
       , ecuHIDeclImpNmL      = []
       , ecuHIUsedImpNmL      = []
@@ -255,10 +255,10 @@ emptyECU
       , ecuNeedsCompile      = True
       , ecuMbHSTime          = Nothing
       , ecuMbHIInfoTime      = Nothing
-%%[[(20 codegen)
+%%[[(50 codegen)
       , ecuMbCoreTime        = Nothing
 %%]]
-%%[[(20 codegen grin)
+%%[[(50 codegen grin)
       , ecuMbGrinTime        = Nothing
 %%]]
       , ecuMbHSSemMod        = Nothing
@@ -282,7 +282,7 @@ emptyECU
 %%]
       , ecuMbEHSem2          = Nothing
 
-%%[20 export(ecuImpNmL)
+%%[50 export(ecuImpNmL)
 ecuImpNmL :: EHCompileUnit -> [HsName]
 ecuImpNmL ecu = (nub $ ecuHSDeclImpNmL ecu ++ ecuHIDeclImpNmL ecu ++ ecuHIUsedImpNmL ecu) \\ [ecuModNm ecu]
 %%]
@@ -300,7 +300,7 @@ instance CompileUnitState EHCompileUnitState where
 %%[8.cusIsImpKnown
   cusIsImpKnown _ = True
 %%]
-%%[20 -8.cusIsImpKnown
+%%[50 -8.cusIsImpKnown
   cusIsImpKnown s = case s of
                       ECUSHaskell HSOnlyImports  -> True
                       ECUSHaskell HIOnlyImports  -> True
@@ -331,7 +331,7 @@ instance CompileUnit EHCompileUnit HsName FileLoc EHCompileUnitState where
   cuUpdKey   nm u   = u {ecuModNm = nm}
 %%[[8
   cuImports         = const []
-%%][20
+%%][50
   cuImports         = ecuImpNmL
 %%]]
 %%[[99
@@ -356,7 +356,7 @@ instance Show EHCompileUnit where
 instance PP EHCompileUnit where
   pp ecu
     = ecuModNm ecu >|<
-%%[[20
+%%[[50
       ":" >#< ppCommas (ecuImpNmL ecu) >|<
 %%]]
       "," >#< show (ecuState ecu)
@@ -446,7 +446,7 @@ ecuStoreBytecodeSem :: EcuUpdater PP_Doc
 ecuStoreBytecodeSem x ecu = ecu { ecuMbBytecodeSem = Just x }
 %%]
 
-%%[20 export(ecuStoreHSDeclImpL,ecuSetNeedsCompile,ecuStoreHIUsedImpL,ecuStoreHIInfoTime,ecuStoreHSTime,ecuStoreHSSemMod,ecuStoreHIDeclImpL,ecuStoreMod,ecuSetIsTopMod,ecuSetHasMain,ecuStoreOptim,ecuStoreHIInfo,ecuStorePrevHIInfo)
+%%[50 export(ecuStoreHSDeclImpL,ecuSetNeedsCompile,ecuStoreHIUsedImpL,ecuStoreHIInfoTime,ecuStoreHSTime,ecuStoreHSSemMod,ecuStoreHIDeclImpL,ecuStoreMod,ecuSetIsTopMod,ecuSetHasMain,ecuStoreOptim,ecuStoreHIInfo,ecuStorePrevHIInfo)
 ecuStoreHSTime :: EcuUpdater ClockTime
 ecuStoreHSTime x ecu = ecu { ecuMbHSTime = Just x }
 
@@ -502,17 +502,17 @@ ecuStoreHIInfo x ecu | forceEval x `seq` True = ecu { ecuHIInfo = x }
 %%]]
 %%]
 
-%%[(20 codegen) export(ecuStoreCoreTime)
+%%[(50 codegen) export(ecuStoreCoreTime)
 ecuStoreCoreTime :: EcuUpdater ClockTime
 ecuStoreCoreTime x ecu = ecu { ecuMbCoreTime = Just x }
 %%]
 
-%%[(20 codegen grin) export(ecuStoreGrinTime)
+%%[(50 codegen grin) export(ecuStoreGrinTime)
 ecuStoreGrinTime :: EcuUpdater ClockTime
 ecuStoreGrinTime x ecu = ecu { ecuMbGrinTime = Just x }
 %%]
 
-%%[20 export(ecuStoreDirIsWritable)
+%%[50 export(ecuStoreDirIsWritable)
 ecuStoreDirIsWritable :: EcuUpdater Bool
 ecuStoreDirIsWritable x ecu = ecu { ecuDirIsWritable = x }
 %%]
@@ -546,12 +546,12 @@ ecuStoreCppFilePath x ecu = ecu { ecuMbCppFilePath = Just x }
 %%% Predicates on EHCompileUnit
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20 haddock
+%%[50 haddock
 Is HS newer?
 If no HS exists False is returned.
 %%]
 
-%%[20 export(ecuIsHSNewerThanHI)
+%%[50 export(ecuIsHSNewerThanHI)
 ecuIsHSNewerThanHI :: EHCompileUnit -> Bool
 ecuIsHSNewerThanHI ecu
   = case (ecuMbHSTime ecu,ecuMbHIInfoTime ecu) of
@@ -560,7 +560,7 @@ ecuIsHSNewerThanHI ecu
       _                   -> True
 %%]
 
-%%[2020 export(ecuIsValidHI)
+%%[5020 export(ecuIsValidHI)
 ecuIsValidHI :: EHCompileUnit -> Bool
 ecuIsValidHI ecu
   = case ecuMbPrevHISem ecu of
@@ -568,7 +568,7 @@ ecuIsValidHI ecu
       _      -> False
 %%]
 
-%%[20 export(ecuIsValidHIInfo)
+%%[50 export(ecuIsValidHIInfo)
 ecuIsValidHIInfo :: EHCompileUnit -> Bool
 ecuIsValidHIInfo ecu
   = case ecuMbPrevHIInfo ecu of
@@ -576,13 +576,13 @@ ecuIsValidHIInfo ecu
       _      -> False
 %%]
 
-%%[20 haddock
+%%[50 haddock
 Can HI be used instead of HS?
 This is purely based on HI being of the right version and HS not newer.
 The need for recompilation considers dependencies on imports as well.
 %%]
 
-%%[20 export(ecuCanUseHIInsteadOfHS)
+%%[50 export(ecuCanUseHIInsteadOfHS)
 ecuCanUseHIInsteadOfHS :: EHCompileUnit -> Bool
 ecuCanUseHIInsteadOfHS ecu
   = ecuIsValidHIInfo ecu && not (ecuIsHSNewerThanHI ecu)

@@ -23,7 +23,7 @@
 %%[(6 hmtyinfer || hmtyast) import({%{EH}VarMp},{%{EH}Substitutable})
 %%]
 
-%%[(20 hmtyinfer || hmtyast) import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
+%%[(50 hmtyinfer || hmtyast) import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
 %%]
 
 %%[9999 import({%{EH}Base.ForceEval})
@@ -50,7 +50,7 @@ mapPolGam f
   = fst . gamMapThr (\(nm, PolGamInfo ty) thr -> ((nm, PolGamInfo $ f ty), thr)) ()
 %%]
 
-%%[(20 hmtyinfer || hmtyast)
+%%[(50 hmtyinfer || hmtyast)
 deriving instance Typeable PolGamInfo
 deriving instance Data PolGamInfo
 %%]
@@ -131,7 +131,7 @@ instance ForceEval PolGamInfo where
 %%]]
 %%]
 
-%%[(20 hmtyinfer)
+%%[(50 hmtyinfer)
 instance Serialize PolGamInfo where
   sput (PolGamInfo a) = sput a
   sget = liftM PolGamInfo sget

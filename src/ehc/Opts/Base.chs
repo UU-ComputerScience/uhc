@@ -186,11 +186,11 @@ data EHCOpts
       ,  ehcOptTyBetaRedCutOffAt                    -- cut off for type lambda expansion
                               ::  Int
 %%]]
-%%[[(20 codegen)
+%%[[(50 codegen)
       ,  ehcDebugStopAtCoreError
                               ::  Bool              -- stop when Core parse error occurs (otherwise errors are ignored, repaired .core is used)
 %%]]
-%%[[20
+%%[[50
       ,  ehcOptCheckRecompile ::  Bool
       ,  ehcDebugStopAtHIError::  Bool              -- stop when HI parse error occurs (otherwise it is ignored, .hi thrown away)
       ,  ehcOptDoLinking      ::  Bool              -- do link, if False compile only
@@ -317,10 +317,10 @@ emptyEHCOpts
       ,  ehcOptTyBetaRedCutOffAt
                                 =   10
 %%]]
-%%[[(20 codegen)
+%%[[(50 codegen)
       ,  ehcDebugStopAtCoreError=   False
 %%]]
-%%[[20
+%%[[50
       ,  ehcOptCheckRecompile   =   True
       ,  ehcDebugStopAtHIError  =   False
       ,  ehcOptDoLinking        =   True

@@ -212,7 +212,7 @@ DATA PredSeq
   | Nil
 %%]
 
-%%[(16 hmtyinfer || hmtyast)
+%%[(41 hmtyinfer || hmtyast)
 DATA Pred
   | Eq          tyL : Ty
                 tyR : Ty
@@ -344,7 +344,7 @@ DATA TyExpField
   | Field       ty              : Ty
 %%]
 
-%%[(50 hmtyinfer || hmtyast).Ty
+%%[(40 hmtyinfer || hmtyast).Ty
 DATA Ty
   | Equal       tv              : {TyVarId}
                 ty              : Ty

@@ -40,7 +40,7 @@ HsNameUniqifier to guarantee such an invariant.
 %%[10 export(hsnConcat)
 %%]
 
-%%[20 import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
+%%[50 import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -500,7 +500,7 @@ hsnMapQualified f qn
 -}
 %%]
 
-%%[20 export(hsnQualifier,hsnSetQual,hsnIsQual,hsnMapQual,hsnSetLevQual)
+%%[50 export(hsnQualifier,hsnSetQual,hsnIsQual,hsnMapQual,hsnSetLevQual)
 -- qualifier (i.e. module name) of name
 hsnQualifier :: HsName -> Maybe HsName
 hsnQualifier = fst . hsnSplitQualify
@@ -554,7 +554,7 @@ hsnStripUniqifiers n                     = n
 %%% Make globally unique by prefixing with module name (if not already done so)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20 export(hsnQualUniqify)
+%%[50 export(hsnQualUniqify)
 hsnQualUniqify :: HsName -> HsName -> HsName
 hsnQualUniqify modNm n
   = if hsnIsQual n
@@ -623,7 +623,7 @@ instance Position HsName where
 %%% Instances: Typeable, Data
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20
+%%[50
 deriving instance Typeable HsNameUniqifier
 deriving instance Data HsNameUniqifier
 
@@ -647,7 +647,7 @@ deriving instance Data IdOcc
 %%% Instances: Binary, Serialize
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20
+%%[50
 instance Binary HsNameUniqifier where
   put = putEnum8
   get = getEnum8
@@ -733,7 +733,7 @@ data IdOccKind
   | IdOcc_Dflt
 %%]]
   | IdOcc_Any
-%%[[20
+%%[[50
   | IdOcc_Data
 %%]]
   deriving (Eq,Ord,Enum)
@@ -754,7 +754,7 @@ instance Show IdOccKind where
   show IdOcc_Dflt     = "Default"
 %%]]
   show IdOcc_Any      = "Any"
-%%[[20
+%%[[50
   show IdOcc_Data     = "Data"
 %%]]
 %%]
@@ -815,7 +815,7 @@ hsnJavaLikeVar
 hsnJavaLikeVar (preadapt, postprefix, updqual) pkg mod v
 %%[[8
   = hsnSafeJavaLike v
-%%][20
+%%][50
   = postprefix $ hsnSafeJavaLike $ handleUpper $ qual $ preadapt v
   where handleUpper v
           = case hsnBaseUnpack v of
@@ -834,7 +834,7 @@ hsnJavaLikeVarCls :: HsName -> HsName -> HsName -> HsName
 hsnJavaLikeVarCls pkg mod v
 %%[[8
   = hsnSuffix mod ("-" ++ show v)
-%%][20
+%%][50
   = hsnSetQual pkg v
 %%]]
 %%]
@@ -845,7 +845,7 @@ hsnJavaLikeVarToFld :: HsName -> HsName
 hsnJavaLikeVarToFld v
 %%[[8
   = v
-%%][20
+%%][50
   = hsnQualified v
 %%]]
 %%]
@@ -933,7 +933,7 @@ data Track
   
 %%]
 
-%%[(20 codegen grin) hs
+%%[(50 codegen grin) hs
 
 instance Serialize Track where
   sput (TrackNone             ) = sputWord8 0

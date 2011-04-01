@@ -27,23 +27,23 @@ CompilePhase building blocks: parsers
 %%[8 import(qualified {%{EH}HS} as HS, qualified {%{EH}HS.Parser} as HSPrs)
 %%]
 -- HI parser
-%%[20 import(qualified {%{EH}HI} as HI)
+%%[50 import(qualified {%{EH}HI} as HI)
 %%]
 -- Core parser
-%%[(20 codegen) import(qualified {%{EH}Core} as Core, qualified {%{EH}Core.Parser} as CorePrs)
+%%[(50 codegen) import(qualified {%{EH}Core} as Core, qualified {%{EH}Core.Parser} as CorePrs)
 %%]
 -- TyCore parser
-%%[(20 codegen tycore) import(qualified {%{EH}TyCore} as C)
+%%[(50 codegen tycore) import(qualified {%{EH}TyCore} as C)
 %%]
 -- Grin parser
 %%[(8 codegen grin) import(qualified {%{EH}GrinCode} as Grin, qualified {%{EH}GrinCode.Parser} as GrinParser)
 %%]
 
 -- serialization
-%%[20 import(qualified {%{EH}Base.Binary} as Bin, {%{EH}Base.Serialize})
+%%[50 import(qualified {%{EH}Base.Binary} as Bin, {%{EH}Base.Serialize})
 %%]
 -- config
-%%[20 import(qualified {%{EH}Config} as Cfg)
+%%[50 import(qualified {%{EH}Config} as Cfg)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -131,7 +131,7 @@ cpParseHs litmode modNm
        }
 %%]
 
-%%[20 export(cpParseOffsideStopAtErr)
+%%[50 export(cpParseOffsideStopAtErr)
 cpParseOffsideStopAtErr :: HSPrs.HSParser a -> ScanUtils.ScanOpts -> EcuUpdater a -> HsName -> EHCompilePhase ()
 cpParseOffsideStopAtErr parser scanOpts store modNm
  = do { cr <- get
@@ -142,7 +142,7 @@ cpParseOffsideStopAtErr parser scanOpts store modNm
       }
 %%]
 
-%%[20.cpParseHsImport export(cpParseHsImport)
+%%[50.cpParseHsImport export(cpParseHsImport)
 cpParseHsImport :: HsName -> EHCompilePhase ()
 cpParseHsImport modNm
   = do { cr <- get
@@ -151,7 +151,7 @@ cpParseHsImport modNm
        }
 %%]
 
-%%[99 -20.cpParseHsImport export(cpParseHsImport)
+%%[99 -50.cpParseHsImport export(cpParseHsImport)
 cpParseHsImport :: Bool -> HsName -> EHCompilePhase ()
 cpParseHsImport litmode modNm
   = do { cr <- get
@@ -160,7 +160,7 @@ cpParseHsImport litmode modNm
        }
 %%]
 
-%%[(20 codegen) export(cpParseCore)
+%%[(50 codegen) export(cpParseCore)
 cpParseCore :: HsName -> EHCompilePhase ()
 cpParseCore modNm
   = do { cr <- get
@@ -174,12 +174,12 @@ cpParseCore modNm
        }
 %%]
 
-%%[2020 export(cpParseHI)
+%%[5020 export(cpParseHI)
 cpParseHI :: HsName -> EHCompilePhase ()
 cpParseHI modNm
   = do { cr <- get
        ; let  (ecu,_,opts,fp) = crBaseInfo modNm cr
-%%[[20
+%%[[50
               fpH     = fpathSetSuff "hi" fp
 %%][99
               -- if outputdir is specified, use that location to possibly read hi from.
@@ -198,12 +198,12 @@ cpParseHI modNm
 %%% Compile actions: Binary reading
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20 export(cpDecodeHIInfo)
+%%[50 export(cpDecodeHIInfo)
 cpDecodeHIInfo :: HsName -> EHCompilePhase ()
 cpDecodeHIInfo modNm
   = do { cr <- get
        ; let  (ecu,_,opts,fp) = crBaseInfo modNm cr
-%%[[20
+%%[[50
               fpH     = fpathSetSuff "hi" fp
 %%][99
               -- if outputdir is specified, use that location to possibly read hi from.
@@ -244,7 +244,7 @@ cpDecodeHIInfo modNm
        }
 %%]
 
-%%[20
+%%[50
 -- | Decode from serialized file and store result in the compileunit for the module modNm
 cpDecode :: Serialize x => String -> EcuUpdater x -> HsName -> EHCompilePhase ()
 cpDecode suff store modNm
@@ -257,12 +257,12 @@ cpDecode suff store modNm
        }
 %%]
 
-%%[20 export(cpDecodeGrin)
+%%[50 export(cpDecodeGrin)
 cpDecodeGrin :: HsName -> EHCompilePhase ()
 cpDecodeGrin = cpDecode "grin" ecuStoreGrin
 %%]
 
-%%[20 export(cpDecodeCore)
+%%[50 export(cpDecodeCore)
 cpDecodeCore :: HsName -> EHCompilePhase ()
 cpDecodeCore = cpDecode "core" ecuStoreCore
 %%]
@@ -271,7 +271,7 @@ cpDecodeCore = cpDecode "core" ecuStoreCore
 %%% Compile actions: on top of parsing
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20 export(cpGetPrevHI)
+%%[50 export(cpGetPrevHI)
 cpGetPrevHI :: HsName -> EHCompilePhase ()
 cpGetPrevHI modNm
   = do { cr <- get
@@ -283,7 +283,7 @@ cpGetPrevHI modNm
        }
 %%]
 
-%%[(20 codegen) export(cpGetPrevCore)
+%%[(50 codegen) export(cpGetPrevCore)
 cpGetPrevCore :: HsName -> EHCompilePhase ()
 cpGetPrevCore modNm
   = do { cr <- get
@@ -294,7 +294,7 @@ cpGetPrevCore modNm
        }
 %%]
 
-%%[(20 codegen) export(cpGetPrevGrin)
+%%[(50 codegen) export(cpGetPrevGrin)
 cpGetPrevGrin :: HsName -> EHCompilePhase ()
 cpGetPrevGrin modNm
   = do { cr <- get

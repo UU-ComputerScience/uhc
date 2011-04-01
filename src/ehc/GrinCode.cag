@@ -43,9 +43,9 @@
 %%[(10 codegen grin) hs export(mkGrPatRecSplit,mkGrPatConSplit)
 %%]
 
-%%[(20 codegen grin) hs import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
+%%[(50 codegen grin) hs import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
 %%]
-%%[(20 codegen grin) hs import(Data.Typeable(Typeable), Data.Generics(Data))
+%%[(50 codegen grin) hs import(Data.Typeable(Typeable), Data.Generics(Data))
 %%]
 
 %%[(90 codegen grin) hs import({%{EH}Foreign},{%{EH}Base.Target}) export(FFIWay(..),module {%{EH}Foreign})
@@ -57,12 +57,12 @@
 %%[(8 codegen grin) ag import({GrinCode/AbsSyn})
 DERIVING * - GrTag
   : Show, Eq
-%%[[20
+%%[[50
   , Typeable, Data
 %%]]
 DERIVING GrTag
   : Show
-%%[[20
+%%[[50
   , Typeable, Data
 %%]]
 %%]
@@ -116,7 +116,7 @@ mkGrTagAnn = GrTagAnn
 emptyGrTagAnn = mkGrTagAnn 0 0
 %%]
 
-%%[(20 codegen grin) hs
+%%[(50 codegen grin) hs
 deriving instance Typeable GrTagAnn
 deriving instance Data GrTagAnn
 %%]
@@ -151,7 +151,7 @@ data GrBindAnn
 
 %%]
 
-%%[(20 codegen grin) hs
+%%[(50 codegen grin) hs
 deriving instance Typeable GrBindAnn
 deriving instance Data GrBindAnn
 %%]
@@ -177,7 +177,7 @@ data GrAltAnn
 
 %%]
 
-%%[(20 codegen grin) hs
+%%[(50 codegen grin) hs
 deriving instance Typeable GrAltAnn
 deriving instance Data GrAltAnn
 %%]
@@ -287,7 +287,7 @@ data GrInl
   | GrInl_CAF
       { inlGrExpr   :: !GrExpr
       }
-%%[[20
+%%[[50
   deriving (Typeable, Data)
 %%]]
 
@@ -347,7 +347,7 @@ mkGrPatRecSplit :: HsName -> GrSplitL -> GrPatAlt
 mkGrPatRecSplit  = GrPatAlt_NodeSplit GrTag_Rec
 %%]
 
-%%[(20 codegen grin) hs export(grModMerge)
+%%[(50 codegen grin) hs export(grModMerge)
 grModMerge :: [GrModule] -> GrModule
 grModMerge mL
   = foldr1 cmb mL
@@ -395,11 +395,11 @@ willUseForNodeField n m = maybe False (WillUseFor_NodeField `Set.member`) $ Map.
 %%% Instances: Binary, Serialize
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(20 codegen grin) hs
+%%[(50 codegen grin) hs
 -- instance Serialize GrInl
 %%]
 
-%%[(20 codegen grin) hs
+%%[(50 codegen grin) hs
 instance Serialize GrInl where
   sput (GrInl_Call a b) = sputWord8  0 >> sput a >> sput b
   sput (GrInl_CAF  a  ) = sputWord8  1 >> sput a
@@ -418,7 +418,7 @@ instance Serialize GrExpr where
   sput (GrExpr_FetchField  a b c  ) = sputWord8 6  >> sput a >> sput b >> sput c
   sput (GrExpr_Store       a      ) = sputWord8 7  >> sput a
   sput (GrExpr_Call        a b    ) = sputWord8 8  >> sput a >> sput b
-%%[[20
+%%[[50
   sput (GrExpr_FFI         a b    ) = sputWord8 9  >> sput a >> sput b
 %%][90
   sput (GrExpr_FFI         a b c  ) = sputWord8 9  >> sput a >> sput b >> sput c
@@ -439,7 +439,7 @@ instance Serialize GrExpr where
               6  -> liftM3 GrExpr_FetchField   sget sget sget
               7  -> liftM  GrExpr_Store        sget
               8  -> liftM2 GrExpr_Call         sget sget
-%%[[20
+%%[[50
               9  -> liftM2 GrExpr_FFI          sget sget
 %%][90
               9  -> liftM3 GrExpr_FFI          sget sget sget
@@ -618,7 +618,7 @@ instance Serialize GrFFIAnnot where
               0  -> liftM GrFFIAnnot_IsResEval sget
 %%]
 
-%%[(20 codegen grin) hs
+%%[(50 codegen grin) hs
 instance Serialize GrBindAnn where
   sput (GrBindAnnNormal           ) = sputWord8 0
   sput (GrBindAnnClass       a    ) = sputWord8 1 >> sput a

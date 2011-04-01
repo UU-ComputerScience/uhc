@@ -6,7 +6,7 @@
 %%% Import
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20
+%%[50
 ATTR Import [ | | modEntSpec: ModEntSpec ]
 
 SEM Import
@@ -20,7 +20,7 @@ SEM Import
         lhs             .   modEntSpec  =   ModEntSpec @name @range (Just ModEntSubAll)
 %%]
 
-%%[20
+%%[50
 ATTR Imports AllImportSpecification [ | | modEntSpecL: {[ModEntSpec]} ]
 
 SEM Imports
@@ -34,7 +34,7 @@ SEM MaybeImportSpecification
         lhs             .   modEntSpecL =   []
 %%]
 
-%%[20
+%%[50
 ATTR AllImportSpecification [ | | isHiding: Bool ]
 
 SEM ImportSpecification
@@ -46,7 +46,7 @@ SEM MaybeImportSpecification
         lhs             .   isHiding    =   True
 %%]
 
-%%[20
+%%[50
 ATTR AllImportDeclaration Body [ | | modImpL USE {++} {[]}: {[ModImp]} ]
 
 SEM ImportDeclaration
@@ -57,13 +57,13 @@ SEM ImportDeclaration
         lhs             .   modImpL     =   []
 %%]
 
-%%[20.Module.modImpL
+%%[50.Module.modImpL
 SEM Module
     | Module
         loc             .   modImpL     =   @body.modImpL
 %%]
 
-%%[99 -20.Module.modImpL
+%%[99 -50.Module.modImpL
 SEM Module
     | Module
         loc             .   modImpL     =   if hsnModPrelude `elem` map mimpSource @body.modImpL
@@ -79,7 +79,7 @@ SEM Module
 %%% Imports for module dpd anal only
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20
+%%[50
 ATTR AGItf Module [ | | modImpNmL: {[HsName]} ]
 
 SEM Module
@@ -91,7 +91,7 @@ SEM Module
 %%% Real module name
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20
+%%[50
 ATTR AGItf Module [ | | realModuleNm: HsName ]
 
 SEM Module
@@ -103,7 +103,7 @@ SEM Module
 %%% Export
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20
+%%[50
 ATTR Export [ | | modExp: ModExp ]
 
 SEM Export
@@ -119,7 +119,7 @@ SEM Export
         lhs             .   modExp      =   ModExpMod @name
 %%]
 
-%%[20
+%%[50
 ATTR Exports [ | | modExpL: {[ModExp]} ]
 
 SEM Exports
@@ -130,7 +130,7 @@ SEM Exports
 %%]
 
 
-%%[20
+%%[50
 ATTR MaybeExports [ | | modExpsMb: {Maybe [ModExp]} ]
 
 SEM MaybeExports
@@ -148,7 +148,7 @@ The visible and hidden exports for an instance.
 Visible as a value only when explicitly given a name, but this is returned as a hidden export.
 Visible as an instance only when used as such implicitly.
 
-%%[20 hs
+%%[50 hs
 mkInstDefsRel :: Bool -> HsName -> Maybe HsName -> IdOcc -> IdOcc -> (ModEntRel,ModEntRel)
 mkInstDefsRel useimplicitly instancename maybeinstancename idOccDef idOccDefVal
   = ( (if useimplicitly then i else Rel.empty)
@@ -160,7 +160,7 @@ mkInstDefsRel useimplicitly instancename maybeinstancename idOccDef idOccDefVal
         i = Rel.singleton instancename (ModEnt IdOcc_Inst idOccDef Set.empty emptyRange)
 %%]
 
-%%[20
+%%[50
 ATTR
   Declaration Declarations Body
 %%[[91
@@ -223,7 +223,7 @@ SEM Deriving
 %%% Module
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20
+%%[50
 ATTR Module AGItf [ | | mod: Mod ]
 
 SEM Module

@@ -24,10 +24,10 @@ This should be in Base.Parser, but because of module circularities in an additio
 %%[8 import({%{EH}Base.FileSearchLocation})
 %%]
 
-%%[20 import({%{EH}Module})
+%%[50 import({%{EH}Module})
 %%]
 
-%%[20 import(qualified Data.Set as Set,qualified EH.Util.Rel as Rel)
+%%[50 import(qualified Data.Set as Set,qualified EH.Util.Rel as Rel)
 %%]
 
 %%[99 import(Data.Version)
@@ -56,7 +56,7 @@ parsePkgKey
 %%% Parsing
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20 export(pModEntRel)
+%%[50 export(pModEntRel)
 pModEnt :: P ModEnt
 pModEnt
   = (\kind occ owns -> ModEnt kind occ owns emptyRange)

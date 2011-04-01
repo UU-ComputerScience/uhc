@@ -15,7 +15,7 @@
 ATTR NTPrf [ chrStore: ScopedPredStore | | ]
 %%]
 
-%%[(20 hmtyinfer)
+%%[(50 hmtyinfer)
 ATTR AGItf [ chrStore: ScopedPredStore | | gathChrStore: ScopedPredStore ]
 %%]
 
@@ -24,7 +24,7 @@ SEM AGItf
   | AGItf       loc         .   initChrStore        =   initScopedPredStore
 %%]
 
-%%[(20 hmtyinfer) -9.initChrStore
+%%[(50 hmtyinfer) -9.initChrStore
 SEM AGItf
   | AGItf       loc         .   initChrStore        =   @lhs.chrStore
 %%]
@@ -94,7 +94,7 @@ SEM Expr
 %%]]
 %%]
 
-%%[(16 hmtyinfer)
+%%[(41 hmtyinfer)
 -- Each branch in a case expr has it's own predicate scope
 ATTR CaseAlts [ predScopeCounter : Int | | ]
 

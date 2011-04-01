@@ -948,7 +948,7 @@ SEM Decl
                                         ]
 %%]
 
-%%[16
+%%[41
 SEM DataConstrEq
   | Eq          lhs     .  ppAST    =   ppNest ["DataConstrEq","Eq"] [] [@tyVar.ppAST,@tyExpr.ppAST]
 
@@ -960,7 +960,7 @@ SEM DataConstr
   | Constr      loc     .  ppAST    :=  ppNestInfo @lhs.opts  ["DataConstr","Constr"] [ppNm @conNm] [@fields.ppAST,@eqs.ppAST] (@info_6 ++ @info_16)
 %%]
 
-%%[(16 hmtyinfer)
+%%[(41 hmtyinfer)
 SEM DataConstr
   | Constr      loc     .  info_16  :=  [ -- mkInfo1 "eqs.eqTyVarMp" (pp @eqs.eqTyVarMp)
                                         ]
@@ -984,7 +984,7 @@ SEM TyExpr
                                         ]
 %%]
 
-%%[50
+%%[40
 SEM DataConstrEq
   | Eq          lhs     .  ppAST    =   ppNest ["DataConstrEq","Eq"] [] [@tyVar.ppAST,@tyExpr.ppAST]
 

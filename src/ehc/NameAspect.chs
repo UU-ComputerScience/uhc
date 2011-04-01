@@ -200,7 +200,7 @@ data IdDefOcc
       , doccAsp     :: !IdAspect
       , doccLev     :: !NmLev
       , doccRange   :: !Range
-%%[[20
+%%[[50
       , doccNmAlts  :: !(Maybe [HsName])
 %%]]
       }
@@ -215,7 +215,7 @@ mkIdDefOcc :: IdOcc -> IdAspect -> NmLev -> Range -> IdDefOcc
 mkIdDefOcc o a l r = IdDefOcc o a l r
 %%]
 
-%%[20 -1.mkIdDefOcc hs
+%%[50 -1.mkIdDefOcc hs
 mkIdDefOcc :: IdOcc -> IdAspect -> NmLev -> Range -> IdDefOcc
 mkIdDefOcc o a l r = IdDefOcc o a l r Nothing
 %%]
@@ -223,12 +223,12 @@ mkIdDefOcc o a l r = IdDefOcc o a l r Nothing
 %%[1
 instance PP IdDefOcc where
   pp o = doccOcc o >|< "/" >|< doccAsp o >|< "/" >|< doccLev o
-%%[[20
+%%[[50
          >|< maybe empty (\ns -> "/" >|< ppBracketsCommas ns) (doccNmAlts o)
 %%]
 %%]
 
-%%[20 hs export(doccStrip)
+%%[50 hs export(doccStrip)
 -- | Strip positional info
 doccStrip :: IdDefOcc -> IdDefOcc
 doccStrip o = o {doccRange = emptyRange}

@@ -21,14 +21,14 @@ ATTR AllNT AGItf [ | | ppWrap USE {.} {const empty} : {PP_Doc -> PP_Doc} ]
 SEM Body
     | Body
         lhs         .   pp          =  
-%%[[20
+%%[[50
                                         @importdeclarations.pp >-< 
 %%]]
                                         @declarations.pp >-< @ppExtra
         loc         .   ppExtra     =   empty
 %%]
 
-%%[20
+%%[50
 SEM AGItf
 	| AGItf
 		lhs			.	pp			=	@ppExtra >-< @module.pp
@@ -799,7 +799,7 @@ SEM Derivings
 %%% Extra info for pp
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20
+%%[50
 %%]
 SEM AGItf
 	| AGItf

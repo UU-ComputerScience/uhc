@@ -2,25 +2,25 @@
 %%% Additional stuff for use of Binary
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20 hs module {%{EH}Base.Binary}
+%%[50 hs module {%{EH}Base.Binary}
 %%]
 
-%%[20 import(EH.Util.Binary) export (module EH.Util.Binary)
+%%[50 import(EH.Util.Binary) export (module EH.Util.Binary)
 %%]
-%%[20 import(Data.Typeable(Typeable,Typeable1), Data.Generics.Aliases) export(module Data.Typeable)
+%%[50 import(Data.Typeable(Typeable,Typeable1), Data.Generics.Aliases) export(module Data.Typeable)
 %%]
-%%[2020 import(Data.Generics(Data, constrIndex, toConstr, gmapQ, indexConstr, dataTypeOf, fromConstrM))
+%%[5020 import(Data.Generics(Data, constrIndex, toConstr, gmapQ, indexConstr, dataTypeOf, fromConstrM))
 %%]
-%%[20 import(Data.Generics(Data)) export(module Data.Generics)
+%%[50 import(Data.Generics(Data)) export(module Data.Generics)
 %%]
-%%[20 import(Data.Word, Data.Array, Control.Monad)
+%%[50 import(Data.Word, Data.Array, Control.Monad)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Enum
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20 export(putEnum, getEnum)
+%%[50 export(putEnum, getEnum)
 putEnum :: Enum x => x -> Put
 putEnum x = put (fromEnum x)
 
@@ -30,7 +30,7 @@ getEnum = do n <- get
 
 %%]
 
-%%[20 export(putEnum8, getEnum8)
+%%[50 export(putEnum8, getEnum8)
 putEnum8 :: Enum x => x -> Put
 putEnum8 x = putWord8 (fromIntegral $ fromEnum x)
 
@@ -44,7 +44,7 @@ getEnum8 = do n <- getWord8
 %%% List abstraction
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20 export(putList, getList)
+%%[50 export(putList, getList)
 putList :: (Binary a, Binary b) => (x -> Bool) -> (x -> (a,b)) -> x -> Put
 putList isNil getCons x | isNil x   = putWord8 0
                         | otherwise = let (a,b) = getCons x in putWord8 1 >> put a >> put b
@@ -61,7 +61,7 @@ getList nil cons
 %%% Utils
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20 export(liftM6,liftM7,liftM8)
+%%[50 export(liftM6,liftM7,liftM8)
 liftM6  :: (Monad m) => (a1 -> a2 -> a3 -> a4 -> a5 -> a6 -> r)
            -> m a1 -> m a2 -> m a3 -> m a4 -> m a5 -> m a6 -> m r
 liftM6 f m1 m2 m3 m4 m5 m6
@@ -88,13 +88,13 @@ liftM8 f m1 m2 m3 m4 m5 m6 m7 m8
 %%% Generic put & get
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20
+%%[50
 %%]
 instance (Data a, Typeable a) => Binary a where
   put = gput
   get = gget
 
-%%[20
+%%[50
 %%]
 -- | Generic put.
 gput :: Data a => a -> Put
@@ -179,7 +179,7 @@ gget = general
 %%% Instances: Binary
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20
+%%[50
 %%]
 instance Enum a => Binary a where
   put e = put (fromEnum e)

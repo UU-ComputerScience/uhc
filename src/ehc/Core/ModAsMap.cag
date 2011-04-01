@@ -7,19 +7,19 @@
 %%% Free variables
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(20 codegen) hs module {%{EH}Core.ModAsMap} 
+%%[(50 codegen) hs module {%{EH}Core.ModAsMap} 
 %%]
 
-%%[(20 codegen) hs import(qualified Data.Set as Set,qualified Data.Map as Map, Data.Array)
+%%[(50 codegen) hs import(qualified Data.Set as Set,qualified Data.Map as Map, Data.Array)
 %%]
 
-%%[(20 codegen) hs import(qualified EH.Util.FastSeq as Seq)
+%%[(50 codegen) hs import(qualified EH.Util.FastSeq as Seq)
 %%]
 
-%%[(20 codegen) hs import({%{EH}Base.Common},{%{EH}Core},{%{EH}Ty})
+%%[(50 codegen) hs import({%{EH}Base.Common},{%{EH}Core},{%{EH}Ty})
 %%]
 
-%%[(20 codegen).WRAPPER ag import({Core/AbsSyn})
+%%[(50 codegen).WRAPPER ag import({Core/AbsSyn})
 WRAPPER CodeAGItf
 %%]
 
@@ -27,7 +27,7 @@ WRAPPER CodeAGItf
 %%% Haskell itf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(20 codegen) hs export(cexprModAsDatabase)
+%%[(50 codegen) hs export(cexprModAsDatabase)
 cexprModAsDatabase :: CModule -> CModuleDatabase
 cexprModAsDatabase m
   = db_Syn_CodeAGItf t
@@ -38,7 +38,7 @@ cexprModAsDatabase m
 %%% Database/Map
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(20 codegen)
+%%[(50 codegen)
 ATTR CodeAGItf CModule [ | | db: CModuleDatabase ]
 
 SEM CModule
@@ -64,7 +64,7 @@ SEM CModule
 %%% Bindings, Expr, and other pieces of info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(20 codegen)
+%%[(50 codegen)
 ATTR AllNT [ | | copy: SELF ]
 ATTR CExpr [ | | bindSq: {Seq.Seq CDbBindLetInfo}
                  expr  : CExpr

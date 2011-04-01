@@ -78,7 +78,7 @@
 %%[9 export(idDefOccGamPartitionByKind)
 %%]
 
-%%[20 export(idDefOccGamByKind)
+%%[50 export(idDefOccGamByKind)
 %%]
 
 %%[9999 import({%{EH}Base.ForceEval})
@@ -163,12 +163,12 @@ idDefOccGamPartitionByKind ks
   = partition (\(IdOcc n k',_) -> k' `elem` ks) . gamToAssocDupL
 %%]
 
-%%[20
+%%[50
 idDefOccGamByKind :: IdOccKind -> IdDefOccGam -> AssocL HsName IdDefOcc
 idDefOccGamByKind k g = [ (n,head i) | (IdOcc n _,i) <- fst (idDefOccGamPartitionByKind [k] g) ]
 %%]
 
-%%[20 export(idDefOccGamStrip)
+%%[50 export(idDefOccGamStrip)
 -- | Strip references to original source file location
 idDefOccGamStrip :: IdDefOccGam -> IdDefOccGam
 idDefOccGamStrip g = gamMap (\(k,v) -> (k,doccStrip v)) g
@@ -187,11 +187,11 @@ type IdDefAspAsc = AssocL IdOcc [IdDefAsp]
 %%% Identifier unqualified to qualified gam
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20 export(IdQualGam)
+%%[50 export(IdQualGam)
 type IdQualGam = Gam IdOcc HsName
 %%]
 
-%%[20 export(idGam2QualGam,idQualGamReplacement)
+%%[50 export(idGam2QualGam,idQualGamReplacement)
 idGam2QualGam :: IdDefOccGam -> IdQualGam
 idGam2QualGam = gamMap (\(iocc,docc) -> (iocc {ioccNm = hsnQualified $ ioccNm iocc},ioccNm $ doccOcc $ docc))
 

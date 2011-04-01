@@ -17,7 +17,7 @@
 %%[7 export(mkNewLevUIDL,mkInfNewLevUIDL)
 %%]
 
-%%[20 import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
+%%[50 import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
 %%]
 
 %%[99 import({%{EH}Base.Hashable})
@@ -153,7 +153,7 @@ nextUnique = mkNewLevUID
 %%% Instances: Typeable, Data
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20
+%%[50
 deriving instance Typeable UID
 deriving instance Data UID
 %%]
@@ -171,9 +171,9 @@ instance Hashable UID where
 %%% Instances: Binary, Serialize, ForceEval
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20
+%%[50
 instance Binary UID where
-%%[[20
+%%[[50
   put (UID a) = put a
   get = liftM UID get
 %%][99

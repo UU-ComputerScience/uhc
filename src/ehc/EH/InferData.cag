@@ -82,7 +82,7 @@ SEM AGItf
   | AGItf       expr        .   dataGam             =   @expr.gathDataGam
 %%]
 
-%%[(20 hmtyinfer) -7.initDataGam
+%%[(50 hmtyinfer) -7.initDataGam
 ATTR AGItf [ dataGam: DataGam | | ]
 
 SEM AGItf
@@ -201,7 +201,7 @@ SEM DataConstr
                             .   dataConProdTy1      =   @loc.dataConProdTy2
 %%]
 
-%%[(16 hmtyinfer).dataConXTy -7.dataConXTy
+%%[(41 hmtyinfer).dataConXTy -7.dataConXTy
 SEM DataConstr
   | Constr
       (loc.dataConTy1, loc.cycVarMp) = @loc.eqsVarMp `tyAppVarLookup2_RhsOfEqOnly` @loc.dataConTy2
@@ -213,7 +213,7 @@ SEM DataConstr
                                          @loc.eqsVarMp @loc.cycVarMp
 %%]
 
-%%[(16 hmtyinfer) hs
+%%[(41 hmtyinfer) hs
 -- assumption: Ty is a product
 -- this function is supposed to be applied to the RHS of the unquantified type of the deconstructor function, which
 -- is a product of the field types of the constructor. The equality constraints are encoded by adding them to the
@@ -460,7 +460,7 @@ SEM Expr
 
 Kind of LHS of the DataConstrEq should match the kind of the RHS.
 
-%%[(16 hmtyinfer)
+%%[(41 hmtyinfer)
 SEM DataConstrEq
   | Eq          loc         .   fo_                 =   fitsIn weakFIOpts defaultFIEnv @lUniq @tyExpr.kiVarMp @tyVar.ki @tyExpr.ki
                 lhs         .   kiVarMp             =   foVarMp @loc.fo_ `varUpd` @tyExpr.kiVarMp
@@ -480,7 +480,7 @@ Construct a substitution from the additional equations. This subsitution is appl
 the actual type of the constructor, i.e. the additional equations do not show up in the type of a constructor. The equations are required
 to be non-cyclic, and in case one equation is multiply defined, the right hand sides have to be equal modulo unification.
 
-%%[(16 hmtyinfer)
+%%[(41 hmtyinfer)
 SEM AllDataConstrEq [ | eqVarMp : {VarMp} | ]
 
 SEM DataConstr
@@ -518,7 +518,7 @@ SEM DataFieldPatExpr
 %%]
 
 Check that LHS of equations is a tyvar in scope
-%%[(16 hmtyinfer)
+%%[(41 hmtyinfer)
 ATTR AllDataConstrEq TyVar [ | | tyvarNms USE {`Set.union`} {Set.empty} : {Set HsName} ]
 SEM TyVar
   | Var  lhs.tyvarNms = Set.singleton @nm

@@ -14,7 +14,7 @@
 %%[(8 codegen) hs import(qualified {%{EH}Config} as Cfg, {%{EH}Base.Bits})
 %%]
 
-%%[(20 codegen) hs import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
+%%[(50 codegen) hs import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -38,7 +38,7 @@ data BasicSize
   deriving (Eq,Ord,Enum)
 %%]
 
-%%[(20 codegen) hs
+%%[(50 codegen) hs
 deriving instance Typeable BasicSize
 deriving instance Data BasicSize
 %%]
@@ -298,7 +298,7 @@ data BasicTy
   deriving (Eq,Ord,Enum)
 %%]
 
-%%[(20 codegen) hs
+%%[(50 codegen) hs
 deriving instance Typeable BasicTy
 deriving instance Data BasicTy
 %%]
@@ -361,7 +361,7 @@ basicAnnotWord :: BasicAnnot
 basicAnnotWord = BasicAnnot_Size basicSizeWord BasicTy_Word BasicAnnotTagging_None False
 %%]
 
-%%[(20 codegen) hs
+%%[(50 codegen) hs
 deriving instance Typeable BasicAnnotTagging
 deriving instance Data BasicAnnotTagging
 
@@ -406,7 +406,7 @@ instance PP BasicAnnot where
 %%% Instances: Binary
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(20 codegen) hs
+%%[(50 codegen) hs
 instance Serialize BasicAnnot where
   sput (BasicAnnot_Size          a b c d) = sputWord8 0 >> sput a >> sput b >> sput c >> sput d
   sput (BasicAnnot_Dflt                 ) = sputWord8 1

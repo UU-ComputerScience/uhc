@@ -423,11 +423,11 @@ pDataConstr     =    mkEH DataConstr_Constr
 pDataConstr     =    (\c f -> mkEH DataConstr_Constr c Nothing f)
 %%]]
                      <$> pCon <*> (pDataFields <|> pCurly pDataLabFields)
-%%[[16
+%%[[41
                      <*> pList (mkEH DataConstrEq_Eq <$ pComma <*> pTyVar <* pKey "=" <*> pTyExpr)
 %%]]
 %%]
-%%[50.DataConstr
+%%[40.DataConstr
                      <*> pList (mkEH DataConstrEq_Eq <$ pComma <*> pTyVar <* pKey "=" <*> pTyExpr)
 %%]
 %%[5.DataConstr2
@@ -539,7 +539,7 @@ pPrExprBase     =    pPrExprClass
                 <|>  pVar <**>  (    (\s v -> mkEH PrExpr_Lacks (mkEH RowTyExpr_Var v) s)
                                      <$ pKey "\\" <*> pSel
 %%]
-%%[50
+%%[40
 %%]
                                 <|>  (flip (mkEH PrExpr_Equal))
                                      <$ pKey "=" <*> pTyExpr

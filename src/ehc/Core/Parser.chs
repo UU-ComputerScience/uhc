@@ -15,7 +15,7 @@
 %%[(8 codegen) hs import({%{EH}AbstractCore})
 %%]
 
-%%[(20 codegen) export(pCModule,pCExpr)
+%%[(50 codegen) export(pCModule,pCExpr)
 %%]
 
 %%[(90 codegen) import({%{EH}Foreign.Parser})
@@ -25,7 +25,7 @@
 %%% Parser
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(20 codegen)
+%%[(50 codegen)
 type CParser       hp     =    PlainParser Token hp
 
 pCModule :: CParser CModule

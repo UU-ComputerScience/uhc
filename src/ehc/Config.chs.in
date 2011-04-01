@@ -17,7 +17,7 @@
 %%[8 import({%{EH}EHC.Environment})
 %%]
 
-%%[20 import(qualified {%{EH}SourceCodeSig} as Sig)
+%%[50 import(qualified {%{EH}SourceCodeSig} as Sig)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -36,7 +36,7 @@ data Version
       , verFull             :: !String
       , verAsNumber         :: !String
       , verProg             :: !String
-%%[[20
+%%[[50
       , verTimestamp        :: !String
       , verSig              :: !String
 %%]
@@ -56,7 +56,7 @@ version
       , verFull             = "@EH_VERSION_FULL@"
       , verAsNumber         = "@EH_VERSION_ASNUMBER@"
       , verProg             = "@EHC_EXEC_NAME@"
-%%[[20
+%%[[50
       , verTimestamp        = Sig.timestamp
       , verSig              = Sig.sig
 %%]

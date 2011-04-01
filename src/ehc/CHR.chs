@@ -17,7 +17,7 @@ to avoid explosion of search space during resolution.
 %%[(9 hmtyinfer || hmtyast) import({%{EH}CHR.Key}) export(module {%{EH}CHR.Key})
 %%]
 
-%%[(20 hmtyinfer || hmtyast) import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
+%%[(50 hmtyinfer || hmtyast) import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
 %%]
 
 %%[(9999 hmtyinfer || hmtyast) import({%{EH}Base.ForceEval})
@@ -35,7 +35,7 @@ data CHR cnstr guard subst
       , chrGuard        :: ![guard] 		-- subst -> Maybe subst
       , chrBody         :: ![cnstr]
       }
-%%[[20
+%%[[50
   deriving (Typeable, Data)
 %%]]
 
@@ -145,7 +145,7 @@ instance (ForceEval c, ForceEval g) => ForceEval (CHR c g s) where
 %%]]
 %%]
 
-%%[(20 hmtyinfer || hmtyast)
+%%[(50 hmtyinfer || hmtyast)
 instance (Serialize c,Serialize g,Serialize s) => Serialize (CHR c g s) where
   sput (CHR a b c d) = sput a >> sput b >> sput c >> sput d
   sget = liftM4 CHR sget sget sget sget

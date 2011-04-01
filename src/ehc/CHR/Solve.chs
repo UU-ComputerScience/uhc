@@ -20,11 +20,11 @@ Assumptions (to be documented further)
 %%[(9 hmtyinfer || hmtyast) import(EH.Util.Pretty as Pretty)
 %%]
 
-%%[20 import(Data.Typeable(Typeable,Typeable1), Data.Generics(Data))
+%%[50 import(Data.Typeable(Typeable,Typeable1), Data.Generics(Data))
 %%]
-%%[(20 hmtyinfer || hmtyast) import({%{EH}Base.Serialize})
+%%[(50 hmtyinfer || hmtyast) import({%{EH}Base.Serialize})
 %%]
-%%[(20 hmtyinfer || hmtyast) import( Control.Monad)
+%%[(50 hmtyinfer || hmtyast) import( Control.Monad)
 %%]
 
 %%[(9999 hmtyinfer || hmtyast) import({%{EH}Base.ForceEval})
@@ -51,7 +51,7 @@ data StoredCHR p i g s
       , storedKeys      :: ![Maybe CHRKey]               	-- keys of all constraints; at storedKeyedInx: Nothing
       , storedIdent     :: !UsedByKey                    	-- the identification of a CHR, used for propagation rules (see remark at begin)
       }
-%%[[20
+%%[[50
   deriving (Typeable, Data)
 %%]]
 
@@ -62,7 +62,7 @@ newtype CHRStore pred info guard subst
   = CHRStore
       { chrstoreTrie    :: Trie.Trie Key [StoredCHR pred info guard subst]
       }
-%%[[20
+%%[[50
   deriving (Typeable, Data)
 %%]]
 
@@ -601,7 +601,7 @@ chrSolve'' env chrStore cnstrs prevState
 %%% Instance: ForceEval, Serialize
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(20 hmtyinfer)
+%%[(50 hmtyinfer)
 instance (Serialize p, Serialize i, Serialize g, Serialize s) => Serialize (CHRStore p i g s) where
   sput (CHRStore a) = sput a
   sget = liftM CHRStore sget

@@ -25,11 +25,11 @@
 %%[(8 codegen) import(Data.List,Data.Maybe,qualified Data.Set as Set,Data.List,qualified Data.Map as Map,EH.Util.Utils)
 %%]
 
-%%[(20 codegen) import(Control.Monad.State, Data.Array)
+%%[(50 codegen) import(Control.Monad.State, Data.Array)
 %%]
-%%[(20 codegen) import(qualified EH.Util.FastSeq as Seq)
+%%[(50 codegen) import(qualified EH.Util.FastSeq as Seq)
 %%]
-%%[(20 codegen) import({%{EH}Core.FvS}, {%{EH}Core.ModAsMap})
+%%[(50 codegen) import({%{EH}Core.FvS}, {%{EH}Core.ModAsMap})
 %%]
 
 -- debug
@@ -243,7 +243,7 @@ patBindLOffset
 
 cModMergeByPullingIn is independent of AST, so should be placed in shared module when used for (say) GRIN
 
-%%[(20 codegen) hs export(cModMergeByPullingIn)
+%%[(50 codegen) hs export(cModMergeByPullingIn)
 data PullState cat bind
   = PullState
       { pullstBinds     :: Seq.Seq (CDbBindLetInfo'2 cat bind)  -- pulled in bindings
@@ -303,7 +303,7 @@ cModMergeByPullingIn
             _ -> return ()
 %%]
 
-%%[(20 codegen) hs export(cModMerge2)
+%%[(50 codegen) hs export(cModMerge2)
 -- | merge by pulling
 cModMerge2 :: ([CModule],CModule) -> CModule
 cModMerge2 (mimpL,mmain)

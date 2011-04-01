@@ -62,7 +62,7 @@ A multiple level VarMp knows its own absolute metalevel, which is the default to
 %%[8 import(EH.Util.Utils)
 %%]
 
-%%[20 import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
+%%[50 import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
 %%]
 
 %%[9090 export(varmpMapTy)
@@ -83,7 +83,7 @@ data VarMp' k v
       , varmpMpL 		:: [Map.Map k v]		-- for each level a map, starting at the base meta level
       }
   deriving ( Eq, Ord
-%%[[20
+%%[[50
            , Typeable, Data
 %%]]
            )
@@ -281,7 +281,7 @@ data VarMpInfo
 %%]]
   deriving
     ( Eq, Ord, Show
-%%[[20
+%%[[50
     , Typeable, Data
 %%]]
     )
@@ -713,7 +713,7 @@ instance PP VarMpInfo where
 %%% Instances: Binary, Serialize
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20
+%%[50
 instance Serialize VarMpInfo where
   sput (VMITy      a) = sputWord8 0  >> sput a
   sput (VMIImpls   a) = sputWord8 1  >> sput a

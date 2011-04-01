@@ -11,7 +11,7 @@ Translation to another AST
 %%[8 import(qualified Data.Map as Map, qualified Data.Set as Set, qualified EH.Util.FastSeq as Seq)
 %%]
 
-%%[(20 codegen) import({%{EH}Base.Optimize})
+%%[(50 codegen) import({%{EH}Base.Optimize})
 %%]
 
 %%[8 import({%{EH}EHC.Common})
@@ -62,10 +62,10 @@ Translation to another AST
 %%]
 
 -- HI AST
-%%[(20 codegen grin) import(qualified {%{EH}HI} as HI)
+%%[(50 codegen grin) import(qualified {%{EH}HI} as HI)
 %%]
 -- LamInfo
-%%[(20 codegen grin) import({%{EH}LamInfo})
+%%[(50 codegen grin) import({%{EH}LamInfo})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -221,13 +221,13 @@ cpTranslateGrin2Bytecode :: HsName -> EHCompilePhase ()
 cpTranslateGrin2Bytecode modNm
   =  do { cr <- get
         ; let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
-%%[[20
+%%[[50
         ; when (ehcOptVerbosity opts >= VerboseDebug)
                (lift $ putStrLn ("crsiModOffMp: " ++ show (crsiModOffMp crsi)))
 %%]]
         ; let  mbGrin = ecuMbGrin ecu
                grin   = panicJust "cpTranslateGrin2Bytecode1" mbGrin
-%%[[20
+%%[[50
                isWholeProg = ehcOptOptimizationScope opts >= OptimizationScope_WholeGrin
                expNmOffMp | ecuIsMainMod ecu = Map.empty
                           | otherwise        = crsiExpNmOffMp modNm crsi
@@ -239,7 +239,7 @@ cpTranslateGrin2Bytecode modNm
 %%]]
                (bc,errs)
                       = grinMod2ByteCodeMod opts
-%%[[20
+%%[[50
                           (Core2GrSem.lamMp_Inh_CodeAGItf $ crsiCoreInh crsi) -- (HI.hiiLamMp $ ecuHIInfo ecu)
                           (if ecuIsMainMod ecu then [ m | (m,_) <- sortOn snd $ Map.toList $ Map.map fst modOffMp ] else [])
                           -- (ecuImpNmL ecu)
@@ -250,7 +250,7 @@ cpTranslateGrin2Bytecode modNm
                           expNmOffMp
 %%]]
                           $ grin
-%%[[20
+%%[[50
         ; when (ehcOptVerbosity opts >= VerboseDebug)
                (lift $ putStrLn ("expNmOffMp: " ++ show expNmOffMp))
 %%]]
@@ -284,7 +284,7 @@ cpTranslateByteCode modNm
                mbBytecode = ecuMbBytecode ecu
 %%[[8
                grinbcPP = gbmod2C opts $ panicJust "cpTranslateByteCode1" mbBytecode
-%%][20
+%%][50
                coreInh  = crsiCoreInh crsi
                (grinbcPP,functionInfoExportMp)
                         = ( vlist ([ppMod] ++ (if ecuIsMainMod ecu then [ppMain] else []))
@@ -301,7 +301,7 @@ cpTranslateByteCode modNm
         ; when (ehcOptEmitBytecode opts && isJust mbBytecode)
                (do { cpUpdCU modNm
                       ( ecuStoreBytecodeSem grinbcPP
-%%[[20
+%%[[50
                       . ( let hii = ecuHIInfo ecu
                           in  ecuStoreHIInfo
                                 (hii { HI.hiiLamMp = lamMpMergeFrom laminfoGrinByteCode (\gbi i -> i {laminfoGrinByteCode=gbi}) const emptyLamInfo' functionInfoExportMp $ HI.hiiLamMp hii

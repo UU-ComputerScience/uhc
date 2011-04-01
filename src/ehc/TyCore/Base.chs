@@ -388,7 +388,7 @@ cLevModule = 0
 cLevExtern = 0
 %%]
 
-%%[(20 codegen tycore) hs export(cLevIntern)
+%%[(50 codegen tycore) hs export(cLevIntern)
 cLevIntern :: Int
 cLevIntern = 1
 %%]
@@ -480,13 +480,13 @@ lamMpFilterCaf = Map.filter (==0)
 %%% Name to offset (in a record)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(20 codegen tycore) hs export(HsName2OffsetMp,HsName2OffsetMpMp)
+%%[(50 codegen tycore) hs export(HsName2OffsetMp,HsName2OffsetMpMp)
 type HsNameOffset      = Int
 type HsName2OffsetMp   = Map.Map HsName HsNameOffset
 type HsName2OffsetMpMp = Map.Map HsName (Int,HsName2OffsetMp)
 %%]
 
-%%[(20 codegen tycore) hs export(offMpMpKeysSet)
+%%[(50 codegen tycore) hs export(offMpMpKeysSet)
 offMpMpKeysSet :: HsName2OffsetMpMp -> HsNameS
 offMpMpKeysSet m = Set.unions [ Map.keysSet m' | (_,m') <- Map.elems m ]
 %%]

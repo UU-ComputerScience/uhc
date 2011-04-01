@@ -25,10 +25,10 @@ Derived from work by Gerrit vd Geest.
 %%[(10 hmtyinfer) import({%{EH}Base.Builtin})
 %%]
 
-%%[(16 hmtyinfer) import({%{EH}Ty.Trf.MergePreds}, {%{EH}Ty.FitsInCommon}, {%{EH}Opts}, Debug.Trace)
+%%[(41 hmtyinfer) import({%{EH}Ty.Trf.MergePreds}, {%{EH}Ty.FitsInCommon}, {%{EH}Opts}, Debug.Trace)
 %%]
 
-%%[(20 hmtyinfer) import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
+%%[(50 hmtyinfer) import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
 %%]
 
 %%[(9999 hmtyinfer) import({%{EH}Base.ForceEval},{%{EH}Ty.Trf.ForceEval})
@@ -48,13 +48,13 @@ data Guard
 %%[[10
   | NonEmptyRowLacksLabel   Ty LabelOffset Ty Label                         -- non empty row does not have label?, yielding its position + rest
 %%]]
-%%[[16
+%%[[41
   | IsCtxNilReduction       Ty Ty
   | EqsByCongruence         Ty Ty PredSeq
   | UnequalTy               Ty Ty
   | EqualModuloUnification  Ty Ty
 %%]]
-%%[[20
+%%[[50
   deriving (Typeable, Data)
 %%]]
 %%]
@@ -69,7 +69,7 @@ ppGuard (EqualScope             sc1 sc2    ) = sc1 >#< "==" >#< sc2
 %%[[10
 ppGuard (NonEmptyRowLacksLabel  r o t l    ) = ppParens (t >#< "==" >#< ppParens (r >#< "| ...")) >#< "\\" >#< l >|< "@" >|< o
 %%]]
-%%[[16
+%%[[41
 ppGuard (IsCtxNilReduction t1 t2           ) = t1 >#< "~>" >#< t2
 ppGuard (EqsByCongruence t1 t2 ps          ) = t1 >#< "~~" >#< t2 >#< "~>" >#< ps
 ppGuard (UnequalTy t1 t2                   ) = t1 >#< "/=" >#< t2
@@ -106,7 +106,7 @@ instance VarExtractable Guard TyVarId where
 %%[[10
   varFreeSet        (NonEmptyRowLacksLabel  r o t l ) = Set.unions [varFreeSet r,varFreeSet o,varFreeSet t,varFreeSet l]
 %%]]
-%%[[16
+%%[[41
   varFreeSet        (IsCtxNilReduction t1 t2)         = Set.unions [varFreeSet t1, varFreeSet t2]
   varFreeSet        (EqsByCongruence t1 t2 ps)        = Set.unions [varFreeSet t1, varFreeSet t2, varFreeSet ps]
   varFreeSet        (EqualModuloUnification t1 t2)    = Set.unions [varFreeSet t1, varFreeSet t2]
@@ -121,7 +121,7 @@ instance VarUpdatable Guard VarMp where
 %%[[10
   varUpd s (NonEmptyRowLacksLabel  r o t l ) = NonEmptyRowLacksLabel  (s `varUpd` r)  (s `varUpd` o)  (s `varUpd` t)  (s `varUpd` l)
 %%]]
-%%[[16
+%%[[41
   varUpd s (IsCtxNilReduction t1 t2)         = IsCtxNilReduction (s `varUpd` t1) (s `varUpd` t2)
   varUpd s (EqsByCongruence t1 t2 ps)        = EqsByCongruence (s `varUpd` t1) (s `varUpd` t2) (s `varUpd` ps)
   varUpd s (UnequalTy t1 t2)                 = UnequalTy (s `varUpd` t1) (s `varUpd` t2)
@@ -152,7 +152,7 @@ instance VarUpdatable RedHowAnnotation VarMp where
 %%[[10
   varUpd s (RedHow_ByLabel      l o sc)  = RedHow_ByLabel (varUpd s l) (varUpd s o) (varUpd s sc)
 %%]]
-%%[[16
+%%[[41
   varUpd s (RedHow_ByEqTyReduction  ty1 ty2) = RedHow_ByEqTyReduction (s `varUpd` ty1) (s `varUpd` ty2)
 %%]]
   varUpd _ x                             = x
@@ -216,7 +216,7 @@ instance CHRCheckable FIIn Guard VarMp where
                   (offset,presence) = tyExtsOffset lab' $ tyRowCanonOrder exts
                   (Label_Lab lab') = varUpd subst' lab
 %%]]
-%%[[16
+%%[[41
           chk (IsCtxNilReduction t1 t2)
             = if foHasErrs fo || tStart == tRes
               then Nothing
@@ -389,7 +389,7 @@ isLetProveFailure glob x
 %%% Instances: Binary, Serialize
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(20 hmtyinfer)
+%%[(50 hmtyinfer)
 instance Serialize Guard where
   sput (HasStrictCommonScope     a b c  ) = sputWord8 0  >> sput a >> sput b >> sput c
   sput (IsVisibleInScope         a b    ) = sputWord8 1  >> sput a >> sput b
@@ -397,7 +397,7 @@ instance Serialize Guard where
   sput (EqualScope               a b    ) = sputWord8 3  >> sput a >> sput b
   sput (IsStrictParentScope      a b c  ) = sputWord8 4  >> sput a >> sput b >> sput c
   sput (NonEmptyRowLacksLabel    a b c d) = sputWord8 5  >> sput a >> sput b >> sput c >> sput d
-%%[[16
+%%[[41
   sput (IsCtxNilReduction        a b    ) = sputWord8 6  >> sput a >> sput b
   sput (EqsByCongruence          a b c  ) = sputWord8 7  >> sput a >> sput b >> sput c
   sput (UnequalTy                a b    ) = sputWord8 8  >> sput a >> sput b
@@ -411,7 +411,7 @@ instance Serialize Guard where
               3  -> liftM2 EqualScope               sget sget
               4  -> liftM3 IsStrictParentScope      sget sget sget
               5  -> liftM4 NonEmptyRowLacksLabel    sget sget sget sget
-%%[[16
+%%[[41
               6  -> liftM2 IsCtxNilReduction        sget sget
               7  -> liftM3 EqsByCongruence          sget sget sget
               8  -> liftM2 UnequalTy                sget sget

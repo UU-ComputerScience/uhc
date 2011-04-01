@@ -18,7 +18,7 @@ WRAPPER AGItf
 ppJScriptModule
   :: JScriptModule
      -> ( PP_Doc
-%%[[20
+%%[[50
         , PP_Doc
 %%]]
         )
@@ -26,7 +26,7 @@ ppJScriptModule ent
   = ( pp_Syn_AGItf t
 %%[[8
     >-<
-%%][20
+%%][50
     ,   
 %%]]
         ppMain_Syn_AGItf t

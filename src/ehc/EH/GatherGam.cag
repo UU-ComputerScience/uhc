@@ -2,7 +2,7 @@
 %%% Gathering of environments (Gam), to be used in other modules
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(20 hmtyinfer)
+%%[(50 hmtyinfer)
 ATTR AGItf Expr [ | | gathValGam: ValGam ]
 
 SEM Expr
@@ -13,7 +13,7 @@ SEM AGItf
   | AGItf       lhs         .   gathValGam          =   @finTyVarMp `varUpd` @expr.gathValGam
 %%]
 
-%%[(20 hmtyinfer)
+%%[(50 hmtyinfer)
 ATTR AGItf Expr [ | | gathTyGam: TyGam ]
 
 SEM Expr
@@ -21,7 +21,7 @@ SEM Expr
   | * - Let     lhs         .   gathTyGam           =   emptyGam
 %%]
 
-%%[(20 hmtyinfer)
+%%[(50 hmtyinfer)
 ATTR AGItf Expr [ | | gathTyKiGam: TyKiGam ]
 
 SEM Expr
@@ -29,7 +29,7 @@ SEM Expr
   | * - Let     lhs         .   gathTyKiGam         =   emptyGam
 %%]
 
-%%[(20 hmtyinfer)
+%%[(50 hmtyinfer)
 ATTR AGItf Expr [ | | gathKiGam: KiGam ]
 
 SEM Expr
@@ -37,7 +37,7 @@ SEM Expr
   | * - Let     lhs         .   gathKiGam           =   emptyGam
 %%]
 
-%%[(20 hmtyinfer)
+%%[(50 hmtyinfer)
 ATTR AGItf Expr [ | | gathClGam: ClGam ]
 
 SEM Expr
@@ -48,7 +48,7 @@ SEM Expr
 %%[(9 hmtyinfer)
 ATTR
   Expr
-%%[[20
+%%[[50
   AGItf
 %%]]
     [ | | gathClDfGam: ClassDefaultGam ]
@@ -58,7 +58,7 @@ SEM Expr
   | * - Let     lhs         .   gathClDfGam         =   emptyGam
 %%]
 
-%%[(20 hmtyinfer)
+%%[(50 hmtyinfer)
 ATTR AGItf Expr [ | | gathPolGam: PolGam ]
 
 SEM Expr

@@ -7,14 +7,14 @@
 %%% Haskell importable interface to eliminate 'Equal' types
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[50 hs module {%{EH}Ty.Trf.ElimEqual} import({%{EH}Base.Common},{%{EH}Ty},{%{EH}VarMp},{%{EH}Substitutable}) export(tyElimEqual)
+%%[40 hs module {%{EH}Ty.Trf.ElimEqual} import({%{EH}Base.Common},{%{EH}Ty},{%{EH}VarMp},{%{EH}Substitutable}) export(tyElimEqual)
 %%]
 
-%%[50.WRAPPER ag import({Ty/AbsSyn})
+%%[40.WRAPPER ag import({Ty/AbsSyn})
 WRAPPER TyAGItf
 %%]
 
-%%[50 hs
+%%[40 hs
 tyElimEqual :: Ty -> (Ty,VarMp)
 tyElimEqual ty
   =  let  t =  wrap_TyAGItf
@@ -27,7 +27,7 @@ tyElimEqual ty
 %%% Replacement
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[50
+%%[40
 ATTR AllTyAndFlds [ | | repl: SELF ]
 ATTR TyAGItf  [ | | repl: Ty ]
 
@@ -39,7 +39,7 @@ SEM Ty
 %%% Replacement for tvars in form of VarMp
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[50
+%%[40
 ATTR AllTyAndFlds [ | tyVarMp: VarMp | ]
 ATTR TyAGItf  [ | | tyVarMp: VarMp ]
 

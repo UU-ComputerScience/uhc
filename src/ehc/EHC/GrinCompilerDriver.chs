@@ -469,7 +469,7 @@ transformCodeInline message
        ; grin <- gets gcsGrin
 %%[[8
        ; let code = grInline False grin
-%%][20
+%%][50
        ; let (code,_) = grInline False Set.empty Map.empty grin 
 %%]]
        ; modify (gcsUpdateGrin code)

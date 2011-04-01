@@ -100,7 +100,7 @@ scan opts pos input
                                   in  (c:str,w+1,s')
 %%]
 
-%%[20
+%%[50
    scanQualified :: String -> ([String],String)
    scanQualified s
      = qual [] s
@@ -224,7 +224,7 @@ scan opts pos input
 %%[5
      | isIdStart c || isUpper c
          =
-%%[[20
+%%[[50
            let (qualPrefix,qualTail) = scanQualified cs
            in  if null qualPrefix || not allowQual
                then
@@ -242,13 +242,13 @@ scan opts pos input
                                           else let n = mknm name
                                                in  valueToken (mktok $ varKind n) n p
                     in  tok : doScan p'' s''
-%%[[20
+%%[[50
                else case doScan (advc (length qualPrefix + sum (map length qualPrefix)) p) qualTail of
                       (tok@(ValToken tp val _):toks)
                          -> ValToken (tokTpQual tp) (qualPrefix ++ val) p : toks
                       ts -> ts
 %%]]
-%%[[2020
+%%[[5020
                else case doScan (advc (length qualPrefix) p) qualTail of
                       (tok@(ValToken tp [val] _):toks)
                          -> ValToken (tokTpQual tp) [qualPrefix ++ val] p : toks

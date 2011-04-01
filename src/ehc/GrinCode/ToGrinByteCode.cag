@@ -19,7 +19,7 @@
 %%[(8 codegen grin) hs import(qualified {%{EH}GrinByteCode} as GB,{%{EH}Core},{%{EH}GrinCode},{%{EH}LamInfo})
 %%]
 
-%%[(20 codegen grin) hs import({%{EH}Ty(tyRowCanonOrder)},{%{EH}HI})
+%%[(50 codegen grin) hs import({%{EH}Ty(tyRowCanonOrder)},{%{EH}HI})
 %%]
 
 %%[(8 codegen grin) hs import({%{EH}Foreign.Extract})
@@ -46,7 +46,7 @@ grinMod2ByteCodeMod opts gmod
      in   (gbMod_Syn_GrAGItf t, errs_Syn_GrAGItf t)
 %%]
 
-%%[(20 codegen grin) -8.grinMod2ByteCodeMod hs export(grinMod2ByteCodeMod)
+%%[(50 codegen grin) -8.grinMod2ByteCodeMod hs export(grinMod2ByteCodeMod)
 grinMod2ByteCodeMod :: EHCOpts -> LamMp -> [HsName] -> {- [HsName] -> -} HsName2OffsetMpMp -> HsName2OffsetMp -> GrModule -> (GB.Module,[Err])
 grinMod2ByteCodeMod opts lamMp allImpNmL {- impNmL -} impNmOffMpMp expNmOffMp gmod
   =  let  t = wrap_GrAGItf  (sem_GrAGItf (GrAGItf_AGItf gmod))
@@ -106,7 +106,7 @@ PRAGMA nocycle
 %%[(8 codegen grin)
 ATTR AllBind AllGrExpr GrModule GrAGItf
   [ opts: EHCOpts
-%%[[20
+%%[[50
     lamMp: LamMp
 %%]]
   | |
@@ -117,7 +117,7 @@ ATTR AllBind AllGrExpr GrModule GrAGItf
 %%]
 ATTR AllNTNoMod [ modNmConstInx: Int | | ]
 
-%%[(20 codegen grin)
+%%[(50 codegen grin)
 ATTR GrAGItf GrModule
   [ expNmOffMp: HsName2OffsetMp
     allImpNmL: {[HsName]}
@@ -130,7 +130,7 @@ ATTR GrAGItf GrModule
 %%% Module name map to field nr in node with imported modules
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(20 codegen grin)
+%%[(50 codegen grin)
 ATTR GrAGItf GrModule AllBind AllGrExpr [ impNmOffMpMp: HsName2OffsetMpMp | | ]
 %%]
 
@@ -502,7 +502,7 @@ SEM GrAlt
 SEM GrExpr
   | *           loc         .   nmEnv           =   GB.NmEnv
                                                       { GB.neVAGam = @lhs.vaGam
-%%[[20
+%%[[50
                                                       , GB.neImpNmMp = @lhs.impNmOffMpMp
                                                       , GB.neLamMp   = @lhs.lamMp
 %%]]
@@ -511,7 +511,7 @@ SEM GrExpr
 SEM GrBind
   | Bind        loc         .   nmEnv           =   GB.NmEnv
                                                       { GB.neVAGam = @lhs.vaGam
-%%[[20
+%%[[50
                                                       , GB.neImpNmMp = @lhs.impNmOffMpMp
                                                       , GB.neLamMp   = @lhs.lamMp
 %%]]
@@ -520,7 +520,7 @@ SEM GrBind
 SEM GrModule
   | Mod         loc         .   nmEnv           =   GB.NmEnv
                                                       { GB.neVAGam = @vaGam
-%%[[20
+%%[[50
                                                       , GB.neImpNmMp = @lhs.impNmOffMpMp
                                                       , GB.neLamMp   = @lhs.lamMp
 %%]]
@@ -536,7 +536,7 @@ ATTR GrAGItf GrModule [ | | errs: {[Err]} ]
 
 SEM GrModule
   | Mod         loc         .   errs            =   let undefNms = (Map.keysSet @bindL.gathFviMp `Set.difference` Map.keysSet @vaGam)
-%%[[20
+%%[[50
                                                                      `Set.difference` offMpMpKeysSet @lhs.impNmOffMpMp
 %%]]
                                                     in  if Set.null undefNms
@@ -859,7 +859,7 @@ SEM GrModule
   | Mod         loc         .   (entryNmMp,entryL,isCafL)
                                                 =   let entryL = zipWith (\i e -> e {GB.eiEntryNr = i}) [0..] $ Seq.toList @bindL.entryNms
                                                         mpMod = Map.fromList [ (GB.eiNm e, e) | e <- entryL ]
-%%[[20
+%%[[50
                                                         mpReExp = Map.fromList $ zip [ n | n <- Map.keys @lhs.expNmOffMp, not (n `Map.member` mpMod) ] [Map.size mpMod ..]
 %%]]
                                                     in  ( mpMod, entryL
@@ -892,7 +892,7 @@ ATTR GrAGItf GrModule [ | | gbMod: {GB.Module} ]
 
 SEM GrModule
   | Mod         lhs         .   gbMod           =   GB.Module_Mod @moduleNmAlpha
-%%[[20
+%%[[50
                                                       [ (n,hsnShowAlphanumeric n) | n <- @lhs.allImpNmL ]
                                                       (offMpKeysSorted @lhs.impNmOffMpMp)
                                                       [ m | (n,_) <- sortOn snd $ Map.toList @lhs.expNmOffMp
@@ -924,7 +924,7 @@ SEM GrBind
                                                        [ GB.funstart (GB.FunctionInfo (show @nm) @nm (GB.gbstMaxStkDepth @expr.gbState)
 %%[[8
                                                                                       []
-%%][20
+%%][50
                                                                                       (maybe [] (\i -> if laminfo1stArgIsStackTrace i then [GB.FunctionInfoFlag_1stArgIsStackTrace] else [])
                                                                                        $ Map.lookup @nm @lhs.lamMp)
 %%]]

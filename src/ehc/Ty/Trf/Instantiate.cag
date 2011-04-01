@@ -31,7 +31,7 @@
 %%[(6_4 hmtyinfer || hmtyast) hs export(instCoExist)
 %%]
 
-%%[(50 hmtyinfer || hmtyast) hs export(HowToInst,instCoFixed)
+%%[(40 hmtyinfer || hmtyast) hs export(HowToInst,instCoFixed)
 %%]
 
 %%[doesWhat
@@ -139,7 +139,7 @@ instCoExist :: HowToInst
 instCoExist  q v = if tyquIsForall q then Ty_Var v TyVarCateg_Plain else Ty_Var v TyVarCateg_Exist
 %%]
 
-%%[(50 hmtyinfer || hmtyast) hs
+%%[(40 hmtyinfer || hmtyast) hs
 instCoFixed :: HowToInst
 instCoFixed  q v = if tyquIsForall q then Ty_Var v TyVarCateg_Plain else Ty_Var v TyVarCateg_Fixed
 %%]
@@ -265,7 +265,7 @@ SEM Ty
   | Var             lhs         .   repl        =   maybe @repl id (varmpTyLookup @tv @lhs.replSubst)
 %%]
 
-%%[(50 hmtyinfer || hmtyast)
+%%[(40 hmtyinfer || hmtyast)
 SEM Ty
   | Equal           lhs         .   repl        =   maybe @repl (\t -> Ty_Equal (tyVar t) @ty.repl) (varmpTyLookup @tv @lhs.replSubst)
 %%]

@@ -65,7 +65,7 @@ hsnProdArity    n | isJust ms       = case fromJust ms of
 hsnIsWild :: HsName -> Bool
 %%[[1
 hsnIsWild x = x == hsnWild
-%%][20
+%%][50
 hsnIsWild x = hsnQualified x == hsnWild
 %%]]
 %%]
@@ -106,7 +106,7 @@ hsnUn                               ::  HsName -> HsName
 hsnUn           nm                  =   hsnFromString (strUn ++ show nm)
 %%]
 
-%%[20 -3.hsnUn
+%%[50 -3.hsnUn
 hsnUn                               ::  HsName -> HsName
 hsnUn           nm                  =   strUn `hsnPrefix` nm
 %%]
@@ -117,7 +117,7 @@ hsnIsUn                             =   maybe False (isPrefixOf strUn) . hsnMbBa
 -- hsnIsUn         (HsName_Base s)     =   isPrefixOf strUn $ hsnHNmFldToString s
 %%]
 
-%%[2020 -3.hsnIsUn
+%%[5020 -3.hsnIsUn
 hsnIsUn                             ::  HsName -> Bool
 hsnIsUn         hsn
   = case hsnInitLast hsn of
@@ -131,7 +131,7 @@ hsnUnUn         n                   =   maybe n (\(s,mk) -> mk $ drop (length st
 -- hsnUnUn         (HsName_Base s)     =   hsnFromString $ drop (length strUn) $ hsnHNmFldToString s
 %%]
 
-%%[2020 -3.hsnUnUn
+%%[5020 -3.hsnUnUn
 hsnUnUn                             ::  HsName -> HsName
 hsnUnUn         hsn
   = case hsnInitLast hsn of
@@ -144,7 +144,7 @@ hsnFldUpd                           ::  HsName -> HsName
 hsnFldUpd       nm                  =   hsnFromString (strFldUpd ++ show nm)
 %%]
 
-%%[20 -7.hsnFldUpd export(hsnFldUpd)
+%%[50 -7.hsnFldUpd export(hsnFldUpd)
 hsnFldUpd                           ::  HsName -> HsName
 hsnFldUpd       nm                  =   strFldUpd `hsnPrefix` nm
 %%]
@@ -197,7 +197,7 @@ hsnIsConstructorName n | isJust ms = case fromJust ms of
                                    where ms = mbHNm n
 hsnIsConstructorName (HsName_Pos n)= False
 %%]
-%%[20
+%%[50
 hsnIsConstructorName n             = hsnIsConstructorName (snd $ hsnInitLast n)
 %%]
 
@@ -672,7 +672,7 @@ TBD: Needs cleaning up, correct partitioning in variants
 %%% Fixed modules + names
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20 export(hsnModBuiltin)
+%%[50 export(hsnModBuiltin)
 hsnModBuiltin                       =   mkHNm "#Builtin"
 %%]
 
@@ -808,7 +808,7 @@ data EHBuiltinNames
 %%[[11
       , ehbnPrelString                  :: HsName
 %%]]
-%%[[20
+%%[[50
 %%]]
 %%[[90
       , ehbnFunPtr                      :: HsName
@@ -958,7 +958,7 @@ mkEHBuiltinNames f
 %%[[11
       , ehbnPrelString                  = f IdOcc_Type      hsnPrelString
 %%]]
-%%[[20
+%%[[50
 %%]]
 %%[[90
       , ehbnFunPtr                      = f IdOcc_Type      hsnFunPtr

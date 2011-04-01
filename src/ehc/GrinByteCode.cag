@@ -26,12 +26,12 @@
 %%[(8 codegen grin) ag import({GrinByteCode/AbsSyn})
 %%]
 
-%%[(20 codegen grin) hs import({%{EH}Core(HsName2OffsetMpMp)},{%{EH}LamInfo})
+%%[(50 codegen grin) hs import({%{EH}Core(HsName2OffsetMpMp)},{%{EH}LamInfo})
 %%]
 
-%%[20 hs import(Control.Monad)
+%%[50 hs import(Control.Monad)
 %%]
-%%[20 hs import(Data.Typeable(Typeable), Data.Generics(Data), {%{EH}Base.Serialize})
+%%[50 hs import(Data.Typeable(Typeable), Data.Generics(Data), {%{EH}Base.Serialize})
 %%]
 
 %%[(9999 codegen grin) hs import({%{EH}Base.ForceEval})
@@ -360,7 +360,7 @@ emptyFunctionInfo :: FunctionInfo
 emptyFunctionInfo = FunctionInfo "" hsnUnknown 1 []
 %%]
 
-%%[(20 codegen grin) hs export(FunctionInfoExportMp)
+%%[(50 codegen grin) hs export(FunctionInfoExportMp)
 type FunctionInfoExportMp = Map.Map HsName GrinByteCodeLamInfo			-- to index into table of FunctionInfos, to be included in HIInfo
 %%]
 
@@ -491,7 +491,7 @@ data LinkChainKind
   | LinkChainKind_CallInfo			-- ref to callinfo
   | LinkChainKind_StringConst		-- ref to C string start address
   | LinkChainKind_FunctionInfo		-- ref to function info
-%%[[20
+%%[[50
   | LinkChainKind_ImpEntry			-- ref to imported code entrypoint
 %%]]
   deriving (Eq,Ord,Enum,Show)
@@ -603,7 +603,7 @@ linkChainOffsets = linkChainEntry LinkChainKind_Offsets
 linkChainGCInfo :: LabelId -> Int -> LinkChainEntry
 linkChainGCInfo = linkChainEntry LinkChainKind_GCInfo
 
-%%[(20 codegen grin) hs export(linkChainImpEntry)
+%%[(50 codegen grin) hs export(linkChainImpEntry)
 linkChainImpEntry :: LabelId -> Int -> LinkChainEntry
 linkChainImpEntry = linkChainEntry LinkChainKind_ImpEntry
 %%]
@@ -690,7 +690,7 @@ data ValAccess
   | Val_NodeFldLocal    { vaStackDepth :: !StackDepth, vaAnnot :: !ValAccessAnnot }		-- field 0 of node on the stack
   | Val_Int             Integer
   | Val_GlobEntry       { vaEntryInx :: !Int }
-%%[[20
+%%[[50
   | Val_ImpEntry        { vaModOff, vaEntryOff :: !Int }
 %%]]
   deriving Show
@@ -708,7 +708,7 @@ vaHasAnnot (Val_NodeFldLocal _ _) = True
 vaHasAnnot _                      = False
 %%]
 
-%%[(20 codegen grin) hs export(ImpNmMp)
+%%[(50 codegen grin) hs export(ImpNmMp)
 type ImpNmMp = Map.Map HsName Int
 %%]
 
@@ -716,7 +716,7 @@ type ImpNmMp = Map.Map HsName Int
 data NmEnv
   = NmEnv
       { neVAGam     :: ValAccessGam
-%%[[20
+%%[[50
       , neImpNmMp   :: HsName2OffsetMpMp
       , neLamMp     :: LamMp
 %%]]
@@ -728,7 +728,7 @@ nmEnvLookup :: HsName -> NmEnv -> Maybe ValAccess
 nmEnvLookup nm env = Map.lookup nm $ neVAGam env
 %%]
 
-%%[(20 codegen grin) -8.nmEnvLookup hs export(nmEnvLookup)
+%%[(50 codegen grin) -8.nmEnvLookup hs export(nmEnvLookup)
 nmEnvLookup :: HsName -> NmEnv -> Maybe ValAccess
 nmEnvLookup nm env
   = case Map.lookup nm $ neVAGam env of
@@ -892,7 +892,7 @@ nmLd' ldcxt env stState gbState nm
                   , gbState2
                   )
                where (gbState2,codeLbl) = newLabelId gbState
-%%[[20
+%%[[50
              Val_ImpEntry mo eo
                -> ( ( mva
                     , loadWithPre0From [instrann' AnnIdUse nm $ ldg InsOp_LocB_Reg (linkChainImpEntry codeLbl mo)]

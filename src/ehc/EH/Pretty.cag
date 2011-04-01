@@ -484,16 +484,16 @@ SEM DataConstr
                                         >|<  @extraPP
                         .   extraPP =   empty
 %%]
-%%[16
+%%[41
 SEM DataConstr
   | Constr      loc     .   extraPP :=  hlist . map ("," >#<) $ @eqs.ppL
 %%]
-%%[50
+%%[40
 SEM DataConstr
   | Constr      loc     .   extraPP :=  hlist . map ("," >#<) $ @eqs.ppL
 %%]
 
-%%[16
+%%[41
 ATTR DataConstrEqs [ | | ppL: {[PP_Doc]} ]
 
 SEM DataConstrEq
@@ -503,7 +503,7 @@ SEM DataConstrEqs
   | Nil         lhs     .   ppL     =   []
   | Cons        lhs     .   ppL     =   @hd.pp : @tl.ppL
 %%]
-%%[50
+%%[40
 ATTR DataConstrEqs [ | | ppL: {[PP_Doc]} ]
 
 SEM DataConstrEq
@@ -614,7 +614,7 @@ SEM Expr
 SEM AGItf
   | AGItf       loc     .   extraPP     :=  ppVarMpV @expr.tyVarMp
 
-%%[(20 hmtyinfer)
+%%[(50 hmtyinfer)
 SEM AGItf
   | AGItf       loc     .   extraPP     :=  if ehcOptVerbosity @lhs.opts > VerboseNormal
                                             then ppCmt (ppGam @lhs.valGam)

@@ -96,7 +96,7 @@ defaultOpts :: SubstOpts
 defaultOpts = SubstOpts
 %%]
 
-%%[(16 hmtyinfer || hmtyast).substOpts -4.substOpts hs
+%%[(41 hmtyinfer || hmtyast).substOpts -4.substOpts hs
 data SubstOpts
   = SubstOpts
       { onlySubstRHSOfEq :: Bool
@@ -106,7 +106,7 @@ defaultOpts :: SubstOpts
 defaultOpts = SubstOpts { onlySubstRHSOfEq = False }
 %%]
 
-%%[(16 hmtyinfer || hmtyast) hs export (tyAppVarLookup2_RhsOfEqOnly)
+%%[(41 hmtyinfer || hmtyast) hs export (tyAppVarLookup2_RhsOfEqOnly)
 tyAppVarLookup2_RhsOfEqOnly :: VarMp -> Ty -> (Ty, VarMp)
 tyAppVarLookup2_RhsOfEqOnly varmp ty
   = tyAppVarLookup' (SubstOpts { onlySubstRHSOfEq = True }) varmp Map.empty ty
@@ -399,7 +399,7 @@ SEM PredSeq
                                                 else (@repl,emptyVarMp)
 %%]
 
-%%[(16 hmtyinfer || hmtyast)
+%%[(41 hmtyinfer || hmtyast)
 
 -- if "onlySubstRHSOfEq" is True, then tyL is either a Var or a Con and the orig attribute is used and defined.
 -- The orig attribute is not used if "onlySubstRHSOfEq" is False. This setting is almost always False.

@@ -75,7 +75,7 @@ data TrfCore
       , trfcoreUniq         	:: !UID
       , trfcoreInhLamMp         :: LamMp        -- from context, possibly overridden from gathered one
       , trfcoreGathLamMp        :: !LamMp       -- gathered anew
-%%[[20
+%%[[50
       , trfcoreExpNmOffMp       :: !HsName2OffsetMp
 %%]]
 %%[[99
@@ -86,7 +86,7 @@ data TrfCore
 emptyTrfCore :: TrfCore
 emptyTrfCore = TrfCore emptyCModule [] uidStart
                        Map.empty Map.empty
-%%[[20
+%%[[50
                        Map.empty
 %%]]
 %%[[99
@@ -215,7 +215,7 @@ trfCore opts dataGam modNm trfcore
         t_let_defbefuse = liftTrf  "let-defbefuse"      $ cmodTrfLetDefBeforeUse
         t_let_flatstr   = liftTrf  "let-flatstr"        $ cmodTrfLetFlattenStrict
         t_inl_letali    = liftTrf  "inl-letali"         $ cmodTrfInlineLetAlias
-%%[[20
+%%[[50
                                                               (Map.keysSet $ trfcoreExpNmOffMp trfcore)
 %%]]
         t_elim_trivapp  = liftTrf  "elim-trivapp"       $ cmodTrfElimTrivApp opts

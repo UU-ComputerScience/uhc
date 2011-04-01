@@ -21,7 +21,7 @@ SEM Body
         loc         .   errSq       =   Seq.unions [Seq.fromList @errDupIntro, Seq.fromList @errReorder, @declarations.errSq]
 %%]
 
-%%[20 -1.Module
+%%[50 -1.Module
 SEM Module
     | Module
         lhs         .   errSq       =   Seq.firstNotEmpty [Seq.fromList @errUndef,Seq.fromList @errModName,@body.errSq]

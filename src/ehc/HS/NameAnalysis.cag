@@ -38,7 +38,7 @@ clGam2IdDefOccGam = gamMap (\(n,_) -> mkBuiltinIdDefOcc n IdOcc_Class)
 data IdIsDef
   = IdIsDef             { idIsDefLev :: NmLev }
   | IdIsNotDef
-%%[[20
+%%[[50
   | IdIsInWrongModule   IdOcc
 %%]]
   deriving (Show)
@@ -50,7 +50,7 @@ idIsDef _           = False
 instance PP IdIsDef where
   pp (IdIsDef _)            = pp "Def'd"
   pp IdIsNotDef             = pp "Undef'd"
-%%[[20
+%%[[50
   pp (IdIsInWrongModule o)  = "Wrong" >#< o
 %%]]
 %%]
@@ -420,7 +420,7 @@ The basic idea is to combine:
 Each defined identifier from idGam may introduce its unqualified version, depending whether an unqualified name is indeed in scope and comes from the right module.
 
 
-%%[20 -1.initIdGam
+%%[50 -1.initIdGam
 ATTR AGItf Module Body [ modInScope: ModEntDomMp | | ]
 
 SEM Body
@@ -622,7 +622,7 @@ mkUseOccGam _ idGam names@(fstName:_) kind asp rng
                 idUseOccGam = gamSingleton idOccUse (IdUseOcc idOccUse asp rng (doccForUse mbDef))
 %%]
 
-%%[20 -1.mkUseOccGam hs
+%%[50 -1.mkUseOccGam hs
 mkUseOccGam :: EHCOpts -> IdDefOccGam -> [HsName] -> IdOccKind -> IdAspect -> Range -> (HsName,[HsName],IdUseOccGam,[Err])
 mkUseOccGam _ _ [] _ _ _
   = (hsnUnknown,[],emptyGam,[])
@@ -632,7 +632,7 @@ mkUseOccGam opts idGam names kind asp rng
         mkUse idGam name kind asp rng
           = (nmOfDef,idUseOccGam,errs)
           where idOccUse    = IdOcc name kind
-%%[[20
+%%[[50
                 mbDef       = gamLookup idOccUse idGam
 %%][99
                 mbDef       = case gamLookup idOccUse idGam of
@@ -1131,7 +1131,7 @@ SEM Body
                                         =   splitIdUseOccGam @lhs.nmLev @idUseOccGamMain
 %%]
 
-%%[20
+%%[50
 SEM Body
     | Body
         loc             .   idDpdMp     =   idToOccL2DpdMp [@idOccDefMain] ((IdOcc @mainrefname IdOcc_Val,undefined) : @idUseHereOccL)
@@ -1156,7 +1156,7 @@ SEM Deriving
 %%% Existence of main
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20
+%%[50
 ATTR AllTopLevel AGItf [ | | mainValExists: Bool ]
 %%]
 
@@ -1226,7 +1226,7 @@ SEM Body
         loc             .   sccOrder    =   idDpdMp2SccOrder (@idDefOccGamMain `gamUnion` @declarations.idDefOccGam) @declarations.idDpdMp
 %%]
 
-%%[20.Body.sccOrder -8.Body.sccOrder
+%%[50.Body.sccOrder -8.Body.sccOrder
 SEM Body
     | Body
         loc             .   sccOrder    =   idDpdMp2SccOrder (@idDefOccGamMain `gamUnion` @declarations.idDefOccGam) @idDpdMp
@@ -1409,7 +1409,7 @@ SEM Body
                                             in  mkIdOccSccEH @range False (g `gamUnion` @declarations.idDefOccGam) (Just @sccOrder)
 %%]
 
-%%[20 -8.Body.mkSccLet
+%%[50 -8.Body.mkSccLet
 SEM Body
     | Body
         loc             .   (mkSccLet,_,errReorder)
@@ -1466,7 +1466,7 @@ SEM Statement
 %%% Mapping of module names via 'as'
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20
+%%[50
 ATTR AllImportDeclaration [ | | modAsMp USE {`Map.union`} {Map.empty}: {Map.Map HsName HsName} ]
 
 SEM ImportDeclaration
@@ -1482,11 +1482,11 @@ SEM ImportDeclaration
 %%% influencing whether a defined name has to be defined before (as part of class)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20 hs
+%%[50 hs
 type PatchEhNmInInstance = HsName -> HsName
 %%]
 
-%%[20
+%%[50
 ATTR AllNT [ patchEhNmInInstance: PatchEhNmInInstance | | ]
 
 SEM AGItf

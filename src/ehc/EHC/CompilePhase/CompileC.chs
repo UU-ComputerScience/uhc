@@ -86,7 +86,7 @@ cpCompileWithGCC how othModNmL modNm
                                    ++ map (\l -> Cfg.mkInstallFilePrefix opts Cfg.INST_LIB_SHARED variant "" ++ Cfg.mkCLibFilename "" l) (Cfg.libnamesGcc opts)
                                    ++ map ("-l" ++) Cfg.libnamesGccEhcExtraExternalLibs
                                  , 
-%%[[20
+%%[[50
                                    if   ehcOptWholeProgOptimizationScope opts
                                    then [ ]
                                    else 

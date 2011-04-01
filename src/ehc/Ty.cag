@@ -96,7 +96,7 @@ acoreBuiltinUndefined
 %%[(13 hmtyinfer || hmtyast) hs export(PredSeq(..))
 %%]
 
-%%[(20 hmtyinfer || hmtyast) hs import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
+%%[(50 hmtyinfer || hmtyast) hs import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
 %%]
 
 %%[(1 hmtyinfer || hmtyast).TyAST ag import({Ty/AbsSyn})
@@ -108,7 +108,7 @@ acoreBuiltinUndefined
 %%[1 ag
 DERIVING *
   : Show, Eq, Ord
-%%[[20
+%%[[50
   , Typeable, Data
 %%]]
 
@@ -341,7 +341,7 @@ data LabelOffset
   | LabelOffset_Var !UID
   deriving
     ( Eq, Ord
-%%[[20
+%%[[50
     , Typeable, Data
 %%]]
     )
@@ -367,7 +367,7 @@ initPredScope :: PredScope
 initPredScope = PredScope_Lev rllEmpty
 %%]
 
-%%[(20 hmtyinfer || hmtyast) hs
+%%[(50 hmtyinfer || hmtyast) hs
 deriving instance Typeable PredScope
 deriving instance Data PredScope
 %%]
@@ -472,7 +472,7 @@ mkImplsProveOcc :: UID -> PredScope -> ImplsProveOcc
 mkImplsProveOcc = ImplsProveOcc
 %%]
 
-%%[(20 hmtyinfer || hmtyast) hs
+%%[(50 hmtyinfer || hmtyast) hs
 deriving instance Typeable ImplsProveOcc
 deriving instance Data ImplsProveOcc
 %%]
@@ -529,7 +529,7 @@ data CHRPredOccCxt
 
 %%]
 
-%%[(20 hmtyinfer || hmtyast) hs
+%%[(50 hmtyinfer || hmtyast) hs
 deriving instance Typeable CHRPredOccCxt
 deriving instance Data CHRPredOccCxt
 %%]
@@ -569,7 +569,7 @@ cpo2PredOcc i o
       (cpoScope o)
 %%]
 
-%%[(20 hmtyinfer || hmtyast) hs
+%%[(50 hmtyinfer || hmtyast) hs
 deriving instance Typeable CHRPredOcc
 deriving instance Data CHRPredOcc
 %%]
@@ -1447,7 +1447,7 @@ predTy p
 %%[(10 hmtyinfer || hmtyast) hs
        Pred_Lacks    t _  -> t
 %%]
-%%[(16 hmtyinfer || hmtyast) hs
+%%[(41 hmtyinfer || hmtyast) hs
        Pred_Eq t _ -> t  -- does it matter if we return the left or the right type?
 %%]
 
@@ -1584,7 +1584,7 @@ instance Show TyKiKey where
 %%]]
 %%]
 
-%%[(20 hmtyinfer || hmtyast) hs
+%%[(50 hmtyinfer || hmtyast) hs
 deriving instance Typeable TyKiKey
 deriving instance Data TyKiKey
 %%]
@@ -1948,21 +1948,21 @@ instToL1AssocL l = [ (v,(tyquMetaLev q,k)) | (InstTo_Qu q _ v k) <- l ]
 %%% Instances: Binary
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20 hs
+%%[50 hs
 instance Serialize TyKiKey where
   sput (TyKiKey_Name  a) = sputWord8 0 >> sput a
-%%[[(20 hmtyinfer || hmtyast)
+%%[[(50 hmtyinfer || hmtyast)
   sput (TyKiKey_TyVar a) = sputWord8 1 >> sput a
 %%]]
   sget = do t <- sgetWord8
             case t of
               0 -> liftM TyKiKey_Name  sget
-%%[[(20 hmtyinfer || hmtyast)
+%%[[(50 hmtyinfer || hmtyast)
               1 -> liftM TyKiKey_TyVar sget
 %%]]
 %%]
 
-%%[(20 hmtyinfer || hmtyast) hs
+%%[(50 hmtyinfer || hmtyast) hs
 instance Binary ImplsProveOcc where
   put (ImplsProveOcc a b) = put a >> put b
   get = liftM2 ImplsProveOcc get get
@@ -2005,7 +2005,7 @@ instance Serialize LabelOffset where
 
 %%]
 
-%%[(20 hmtyinfer || hmtyast) hs
+%%[(50 hmtyinfer || hmtyast) hs
 instance Serialize Ty where
   sput (Ty_Con   a      ) = sputWord8 0  >> sput a
   sput (Ty_App   a b    ) = sputWord8 1  >> sput a >> sput b
@@ -2065,7 +2065,7 @@ instance Serialize Pred where
   sput (Pred_Pred   a  ) = sputWord8 1 >> sput a
   sput (Pred_Lacks  a b) = sputWord8 2 >> sput a >> sput b
   sput (Pred_Arrow  a b) = sputWord8 3 >> sput a >> sput b
-%%[[16
+%%[[41
   sput (Pred_Eq     a b) = sputWord8 4 >> sput a >> sput b
 %%]]
   sput (Pred_Var    a  ) = sputWord8 5 >> sput a
@@ -2076,7 +2076,7 @@ instance Serialize Pred where
               1 -> liftM  Pred_Pred    sget
               2 -> liftM2 Pred_Lacks   sget sget
               3 -> liftM2 Pred_Arrow   sget sget
-%%[[16
+%%[[41
               4 -> liftM2 Pred_Eq      sget sget
 %%]]
               5 -> liftM  Pred_Var     sget
@@ -2107,13 +2107,13 @@ instance Binary PredSeq where
 -}
 
 instance Serialize CHRPredOcc where
-%%[[20
+%%[[50
   sput (CHRPredOcc a b  ) = sput a >> sput b
 %%][99
   -- Range info is stripped on the fly
   sput (CHRPredOcc a b _) = sput a >> sput b
 %%]]
-%%[[20
+%%[[50
   sget = liftM2 CHRPredOcc sget sget
 %%][99
   -- Range info is stripped on the fly
@@ -2123,7 +2123,7 @@ instance Serialize CHRPredOcc where
 instance Serialize Impls where
   sput (Impls_Nil             ) = sputWord8 0
   sput (Impls_Tail a b        ) = sputWord8 1  >> sput a >> sput b
-%%[[20
+%%[[50
   sput (Impls_Cons a b c d e  ) = sputWord8 2  >> sput a >> sput b >> sput c >> sput d >> sput e
 %%][99
   sput (Impls_Cons a b c d e f) = sputWord8 2  >> sput a >> sput b >> sput c >> sput d >> sput e >> sput f
@@ -2133,7 +2133,7 @@ instance Serialize Impls where
               0  -> return Impls_Nil
               1  -> liftM2 Impls_Tail  sget sget
               2  ->
-%%[[20
+%%[[50
                     liftM5 Impls_Cons  sget sget sget sget sget
 %%][99
                     liftM6 Impls_Cons  sget sget sget sget sget sget

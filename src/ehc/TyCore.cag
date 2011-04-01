@@ -41,7 +41,7 @@
 %%]
 %%[(8 codegen tycore) hs export(MetaVal(..), MetaBind(..), Metas, MbMetaVal, MbMetas) 
 %%]
-%%[(20 codegen tycore grin) hs import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
+%%[(50 codegen tycore grin) hs import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
 %%]
 
 %%[(90 codegen tycore ) hs import({%{EH}Foreign}) export(module {%{EH}Foreign})
@@ -444,7 +444,7 @@ exprMbConst _                 = Nothing
 %%% Instances: Binary, Serialize, ForceEval
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(20 codegen tycore grin) hs
+%%[(50 codegen tycore grin) hs
 -- Note: This instance is completely useless.
 -- Should it ever be needed, it will have to be implemented correctly!
 instance Serialize Module where

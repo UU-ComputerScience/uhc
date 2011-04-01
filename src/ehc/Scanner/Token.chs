@@ -50,7 +50,7 @@ data EnumValToken
   | TkOpUnboxed
   | TkConOpUnboxed
 %%]]
-%%[[20
+%%[[50
   | TkQVarid			-- qualified variants
   | TkQConid
   | TkQOp
@@ -100,7 +100,7 @@ tokTpIsId
 %%[[18
   			   ,TkVaridUnboxed,TkConidUnboxed,TkOpUnboxed,TkConOpUnboxed
 %%]]
-%%[[20
+%%[[50
   			   ,TkQVarid,TkQConid,TkQOp,TkQConOp
 %%]]
   			   ]
@@ -115,7 +115,7 @@ tokTpUnboxed TkConOp = TkConOpUnboxed
 tokTpUnboxed t       = t
 %%]
 
-%%[20 export(tokTpQual)
+%%[50 export(tokTpQual)
 -- | Qualified equivalents of token kinds representing unqualified tokens
 tokTpQual :: EnumValToken -> EnumValToken
 tokTpQual TkVarid = TkQVarid

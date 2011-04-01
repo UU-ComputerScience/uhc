@@ -66,7 +66,7 @@ SEM PatExpr
 
 GADT: deconstructor signature will be a function with a product (with possibly equality constraints) as value.
       match with this additional information such that the equality constraints will be stripped off by the fitsIn function.
-%%[(16 hmtyinfer).patFunTy
+%%[(41 hmtyinfer).patFunTy
 SEM PatExpr
   | Con
       loc.knTyShape := [@loc.tvarv1_] `mkArrow` (hsnRec `mkConApp` [@loc.tvarv2_])
@@ -292,7 +292,7 @@ SEM DataFieldPatExpr
 
 GADT: deconstructor signature will be a function with a product (with possibly equality constraints) as value.
       match with this additional information such that the equality constraints will be stripped off by the fitsIn function.
-%%[(16 hmtyinfer)
+%%[(41 hmtyinfer)
 SEM DataFieldPatExpr
   | Con
       loc.knTyShape := [@lhs.knTy] `mkArrow` (hsnRec `mkConApp` [@loc.tyvar])

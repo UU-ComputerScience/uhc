@@ -279,7 +279,7 @@ heurGHC env
 
 %%[(9 hmtyinfer)
 cmpEqReds :: RedHowAnnotation -> RedHowAnnotation -> PartialOrdering
-%%[[16
+%%[[41
 cmpEqReds RedHow_ByEqIdentity           _                               = P_GT
 cmpEqReds _                             RedHow_ByEqIdentity             = P_LT
 cmpEqReds RedHow_ByPredSeqUnpack        _                               = P_GT
@@ -362,7 +362,7 @@ heurScopedEHC env
 -}
         $ contextBinChoice (anncmpEHCScoped True  env)
   where
-%%[[16
+%%[[41
     isEqHeuristic (CHRPredOcc (Pred_Eq _ _) _) = True
 %%]]
     isEqHeuristic _                            = False

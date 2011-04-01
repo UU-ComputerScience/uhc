@@ -23,7 +23,7 @@ An EHC compile run maintains info for one compilation invocation
 %%]
 %%[8 import({%{EH}EHC.CompileUnit})
 %%]
-%%[20 import({%{EH}EHC.CompileGroup})
+%%[50 import({%{EH}EHC.CompileGroup})
 %%]
 -- Language syntax: Core
 %%[(8 codegen) import( qualified {%{EH}Core} as Core)
@@ -39,12 +39,12 @@ An EHC compile run maintains info for one compilation invocation
 %%]
 
 -- HI Syntax and semantics, HS module semantics
-%%[20 import(qualified {%{EH}HI} as HI)
+%%[50 import(qualified {%{EH}HI} as HI)
 %%]
-%%[20 import(qualified {%{EH}HS.ModImpExp} as HSSemMod)
+%%[50 import(qualified {%{EH}HS.ModImpExp} as HSSemMod)
 %%]
 -- module admin
-%%[20 import({%{EH}Module})
+%%[50 import({%{EH}Module})
 %%]
 
 -- Misc
@@ -66,7 +66,7 @@ data EHCompileRunStateInfo
 %%[[(8 codegen)
       , crsiCoreInh     :: !Core2GrSem.Inh_CodeAGItf            -- current inh attrs for Core2Grin sem
 %%]]
-%%[[20
+%%[[50
       , crsiMbMainNm    :: !(Maybe HsName)                      -- name of main module, if any
       -- , crsiHIInh       :: !HISem.Inh_AGItf                     -- current inh attrs for HI sem
       , crsiHSModInh    :: !HSSemMod.Inh_AGItf                  -- current inh attrs for HS module analysis sem
@@ -74,7 +74,7 @@ data EHCompileRunStateInfo
       , crsiGrpMp       :: (Map.Map HsName EHCompileGroup)      -- not yet used, for mut rec modules
       , crsiOptim       :: !Optim                               -- inter module optimisation info
 %%]]
-%%[[(20 codegen)
+%%[[(50 codegen)
       , crsiModOffMp    :: !Core.HsName2OffsetMpMp              -- mapping of all modules + exp entries to offsets in module + exp tables
 %%]]
 %%[[99
@@ -95,7 +95,7 @@ emptyEHCompileRunStateInfo
 %%[[(8 codegen)
       , crsiCoreInh     =   panic "emptyEHCompileRunStateInfo.crsiCoreInh"
 %%]]
-%%[[20
+%%[[50
       , crsiMbMainNm    =   Nothing
       -- , crsiHIInh       =   panic "emptyEHCompileRunStateInfo.crsiHIInh"
       , crsiHSModInh    =   panic "emptyEHCompileRunStateInfo.crsiHSModInh"
@@ -103,7 +103,7 @@ emptyEHCompileRunStateInfo
       , crsiGrpMp       =   Map.empty
       , crsiOptim       =   defaultOptim                    
 %%]]
-%%[[(20 codegen)
+%%[[(50 codegen)
       , crsiModOffMp    =   Map.empty       
 %%]]
 %%[[99
@@ -112,12 +112,12 @@ emptyEHCompileRunStateInfo
       }
 %%]
 
-%%[(20 codegen) export(crsiExpNmOffMp)
+%%[(50 codegen) export(crsiExpNmOffMp)
 crsiExpNmOffMp :: HsName -> EHCompileRunStateInfo -> Core.HsName2OffsetMp
 crsiExpNmOffMp modNm crsi = mmiNmOffMp $ panicJust "crsiExpNmOffMp" $ Map.lookup modNm $ crsiModMp crsi
 %%]
 
-%%[20
+%%[50
 instance Show EHCompileRunStateInfo where
   show _ = "EHCompileRunStateInfo"
 
@@ -306,7 +306,7 @@ cpStopAt atPhase
 %%% Partition imports into newer + older
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20
+%%[50
 crPartitionNewerOlderImports :: HsName -> EHCompileRun -> ([EHCompileUnit],[EHCompileUnit])
 crPartitionNewerOlderImports modNm cr
   = partition isNewer $ map (flip crCU cr) $ ecuImpNmL ecu
@@ -321,7 +321,7 @@ crPartitionNewerOlderImports modNm cr
 %%% Module needs recompilation?
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20 export(crModNeedsCompile)
+%%[50 export(crModNeedsCompile)
 crModNeedsCompile :: HsName -> EHCompileRun -> Bool
 crModNeedsCompile modNm cr
   = ecuIsMainMod ecu -- ecuIsTopMod ecu
@@ -342,7 +342,7 @@ crModNeedsCompile modNm cr
 %%% Compilation can actually be done?
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20 export(crModCanCompile)
+%%[50 export(crModCanCompile)
 crModCanCompile :: HsName -> EHCompileRun -> Bool
 crModCanCompile modNm cr
   = isJust (ecuMbHSTime ecu) && ecuDirIsWritable ecu
@@ -373,7 +373,7 @@ crPartitionIntoPkgAndOthers cr modNmL
 %%% Set 'main'-ness of module, checking whethere there are not too many modules having a main
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20 export(crSetAndCheckMain)
+%%[50 export(crSetAndCheckMain)
 crSetAndCheckMain :: HsName -> EHCompilePhase ()
 crSetAndCheckMain modNm
   = do { cr <- get
