@@ -19,7 +19,7 @@ poly = \f->(f 1, f 'a')
 is impossible, even though the expressiveness of SystemF does allow a type to be given to this function, with some extra notational help. In HML as stated before, the only annotations needed would be on the function parameter that needs a polymorphic type:
 
 \begin{code}
-poly = \(f::forall a. a -> Int) -> (f 1, f 'a')
+poly = \(f::forall a. a -> a) -> (f 1, f 'a')
 \end{code}
 
 Functions and data structures can be used freely without any further explicit annotation.
@@ -36,7 +36,7 @@ Consider the following example from the paper\cite{FPH}:
 The following expression type checks just fine under HML
  \begin{code}
 let ids = single id
-in  (map f ids, append (single inc) ids)
+in  (map poly ids, append (single inc) ids)
 \end{code}
 
 But would require \textit{ids} to be two incomparable System F types at the same time, namely List (Int $\rightarrow$ Int) and List ($\forall\alpha$. $\alpha$ $\rightarrow$ List $\alpha$). This is where \textit{flexible} types come in, the type of ids can now be described as $\forall(\beta\geq \forall\alpha \rightarrow \alpha).$ List $\beta$, which can be interpreted as "any $\beta$ that is an instance of $\forall\alpha \rightarrow \alpha$ the type List $\beta$ is valid". This can be considered as the most "principle" or general type of that expression. The flexible type of ids can then be instantiated to both of the required types. 
@@ -384,5 +384,5 @@ dom   &\tau& = \{\beta, \alpha\}\\
 codom &\tau& = \{\}
 \end{eqnarray*}
 \subsection{Renaming}
-\label{renaming}
+
 The HML does not really have support for case expressions and tuples. In those two situation you would want on every lookup of a type constructor to return a fresh type. e.g. the type of $(\lbrack \rbrack, \lbrack \rbrack)$ should is $\forall \alpha \beta . (\lbrack \alpha \rbrack, \lbrack \beta \rbrack)$. Because of this, on every lookup of a constructor we rename every bound variable.

@@ -1,20 +1,26 @@
 \chapter{Introduction}
-The Utrecht Haskell Compiler (UHC\cite{UHC}) implements most of it is type checking code using Attribute Grammars, more specifically using the tool \textbf{uuagc}\cite{uuagc}. However two important parts are not written using Attribute Grammars: unification and context reduction, this is due to the limitations of attribute grammar systems. With the development of \textbf{ruler-front}\cite{ruler-front} it is now possible to implement a higher-rank polymorphic type inferencing algorithm using only Attribute Grammars. The big question that we aim to provide an answer to is 
+The Utrecht Haskell Compiler (UHC\cite{UHC}) implements most of it is type checking code using \ag, more specifically using the tool \textbf{uuagc}\cite{uuagc}. However two important parts are not written using \ag: unification and context reduction, this is due to the limitations of current attribute grammar systems. With the development of \textbf{ruler-front}\cite{ruler-front} it is possible to implement a higher-rank polymorphic type inferencing algorithm using only \ag. The issue to be addressed by this thesis is:
 
 \begin{quotation}
-\emph{Can a higher-rank polymorphic type inferencing algorithm be implemented using only Attribute Grammars and if so can it be done in such a way that it would be simpler to understand and correspond closer to typing rules}.
+"Can a higher-rank polymorphic type inferencing algorithm be implemented using only Attribute Grammars and if so can it be done in such a way that it would be simpler to understand and correspond closer to written specifications."
 \end{quotation}
 
-The primary focus of this thesis is on the tools and not the type system itself.
+Consequently this implies that primary focus of this thesis is on the tools and not the type system itself.
 
 \section{Motivation}
-Type systems for languages such as Haskell are generally hard to prove correct and implement. Most of the literature use typing rules to describe the type system. Unfortunately these typing rules for a type system (including syntax directed typing rules) do not give you an idea on how to implement the associated inference algorithms needed, because these typing rules usually contain a large amount of non-determinism and implicit assumptions that need to be taken into account.
-Once implemented it is also much harder to prove the correctness of the algorithm. The implementation usually does not resemble the original typing rules. This unfortunately means we can no longer use the original proofs that were made for the typing rules to prove the inference algorithm correct.
+Type systems for languages such as Haskell are generally hard to prove correct and implement. Most of the literature use typing rules to describe the type system. Unfortunately these typing rules for a type system (including syntax directed typing rules) do not give you an idea on how to implement the associated inference algorithms. These typing rules usually contain a large amount of non-determinism and implicit assumptions that need to be taken into account.
+Once implemented it is also much harder to prove the correctness of the algorithm. The implementation usually does not resemble the original typing rules. This unfortunately means that the original proofs that were made for the typing rules correct cannot be used to prove the inference algorithm.
 
-We expect by implementing the UHC type system in the new \textbf{ruler-front} system that it would be
+The benefits of implementing the UHC type system in the new \textbf{ruler-core} system would be
 
 \begin{enumerate}
-\item Easier to understand because we can use the machinery provided by Attribute Grammars to hide most of the implementation details such as tree traversals and threading of values around the tree.
-\item Easier to prove by having the implementation coincide to the typing rules for the system by using the expressiveness of \textbf{ruler-front}.
-\item Easier to generate documentation for, by virtue of having a simpler implementation.
+\item An easier to understand type system since the machinery provided by \ags can be used to hide most of the implementation details such as tree traversals and threading of attributes around the tree.
+\item Easier to prove by having the implementation coincide to the typing rules for the system by using the expressiveness of \textbf{ruler-core}.
+\item Easier to generate documentation for due to having a simpler implementation.
 \end{enumerate}
+
+The contributions made by this thesis are:
+\begin{itemize}
+\item An implementation of a type system in \ags using \rcore
+\item An implementation and specification for the HML type system for EH8
+\end{itemize}
