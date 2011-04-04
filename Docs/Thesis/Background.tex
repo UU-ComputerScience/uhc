@@ -108,14 +108,14 @@ The following example does not type check in standard Hindley-Milner:
 f push = (push 3, push "hello")
 \end{code}
 
-because it requires the type of the variable \textit{push} to be able to accept arguments of both \textit{String} and \textit{Int}. This is a typical example of a higher-rank function. 
+because it requires the type of the argument \textit{push} to be able to accept arguments of both \textit{String} and \textit{Int}. This is a typical example of a higher-rank function. 
 
 This system allows two distinct forms of first class polymorphism which can be illustrated by a more involved example from the paper\cite{FPH}:
 
 \begin{eqnarray*}
-(\$)  &::& forall a. b (a\rightarrow b) \rightarrow a \rightarrow b\\
-runST &::& forall r. (forall s. ST s r) \rightarrow r\\
-foo   &::& forall s. Int \rightarrow ST s Int
+(\$)  &::& \forall a. b (a\rightarrow b) \rightarrow a \rightarrow b\\
+runST &::& \forall r. (\forall s. ST s r) \rightarrow r\\
+foo   &::& \forall s. Int \rightarrow ST s Int
 \end{eqnarray*}
 
 Every type variable is explicitly bound by an outward universal quantification $\forall$ (forall) as per SystemF (recall that FPH uses SystemF types). These types are called a rank-1 type. With higher rank types it is meant types that are of rank $>$ 1.

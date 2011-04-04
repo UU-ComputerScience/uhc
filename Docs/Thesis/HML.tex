@@ -245,9 +245,9 @@ The specification for \emph{nf} is defined as:
 \begin{eqnarray*}
 nf(\sigma) & = & \sigma \\
 nf(\bot) & = & \bot \\
-nf(\forall(\alpha \geq \varphi_1).\varphi_2) & = & nf(\varphi_2) \hspace{40pt} iff \hspace{5pt} \alpha \in ftv (\varphi_2) \\
-nf(\forall(\alpha \geq \varphi_1).\varphi_2) & = & nf(\varphi_1) \hspace{40pt} iff \hspace{5pt} nf (\varphi_2) = \alpha \\
-nf(\forall(\alpha \geq \varphi_1).\varphi_2) & = & nf(\lbrack \alpha := \rho \rbrack\varphi_2) \hspace{10pt} nf(\varphi_1)=\rho \\
+nf(\forall(\alpha \geq \varphi_1).\varphi_2) & = & nf(\varphi_2) \hspace{40pt} \textrm{ iff} \hspace{5pt} \alpha \in ftv (\varphi_2) \\
+nf(\forall(\alpha \geq \varphi_1).\varphi_2) & = & nf(\varphi_1) \hspace{40pt} \textrm{ iff} \hspace{5pt} nf (\varphi_2) = \alpha \\
+nf(\forall(\alpha \geq \varphi_1).\varphi_2) & = & nf(\lbrack \alpha := \rho \rbrack\varphi_2) \hspace{10pt} \textrm{iff } nf(\varphi_1)=\rho \\
 nf(\forall(\alpha \geq \varphi_1).\varphi_2) & = & \forall(\alpha \geq nf(\varphi_1)).nf(\varphi_2)
 \end{eqnarray*}
 \caption{Normal Form}
@@ -256,9 +256,9 @@ nf(\forall(\alpha \geq \varphi_1).\varphi_2) & = & \forall(\alpha \geq nf(\varph
 This definition of normal form uses \emph{ftv} which means \emph{free type variables}. Most of the cases for finding the ftv of a type are the standard definitions found in literature, with one exception:
 
 \begin{eqnarray*}
-ftv(\forall(\alpha \geq \varphi_1).\varphi_2)\\
-  \hspace{15pt} & = & ftv(\varphi_1)\cup ftv(\varphi_2) \hspace{5pt} iff \hspace{5pt} \alpha \in ftv(\varphi_2) \\
-  \hspace{15pt} & = & ftv(\varphi_2) \hspace{30pt} otherwise
+\lefteqn{ftv(\forall(\alpha \geq \varphi_1).\varphi_2) }\\
+  & = & ftv(\varphi_1)\cup ftv(\varphi_2) \hspace{5pt} \textrm{iff} \hspace{5pt} \alpha \in ftv(\varphi_2) \\
+  & = & ftv(\varphi_2) \hspace{50pt} \textrm{otherwise}
 \end{eqnarray*}
 
 Which means that if bounds of a type scheme is not used then its free variables have no impact on the free variables of the type.
@@ -267,19 +267,21 @@ There are a couple of utilities functions which are used often, in this section 
 \subsection{Split}
 The split function is one of the simplest functions. As the name suggests it is used to split a prefix $Q$ into two based on a list of domains.
 
-\begin{eqnarray*}
-split :: (Q, \overline{\alpha}) \rightarrow (Q,Q) \\
-split(\emptyset, \overline{\alpha}) = \\
-\hspace{15pt} return (\emptyset, \emptyset) \\
+\begin{figure}[H]
+\begin{tabular}[t]{l}
+split :: $(Q, \overline{\alpha}) \rightarrow (Q,Q)$\\
+split $(\emptyset, \overline{\alpha})$ = \\
+\hspace{15pt} return $(\emptyset, \emptyset)$ \\
 \\
-split((Q,\alpha \geq \hat{\varphi}),\overline{\alpha}) = \hspace{15pt} with \hspace{5pt} \alpha \in \overline{\alpha} \\
-\hspace{15pt} &let & (Q_1, Q_2) = split(Q,((\overline{\alpha} - \alpha)\cup ftv(\varphi))) \\
-              &return & ((Q_1, \alpha \geq \hat{\varphi}), Q_2) \\
+split $((Q,\alpha \geq \hat{\varphi}),\overline{\alpha})$ = \hspace{15pt} with \hspace{5pt} $\alpha \in \overline{\alpha}$ \\
+\hspace{15pt} let $(Q_1, Q_2)$ = split $(Q,((\overline{\alpha} - \alpha)\cup ftv(\varphi)))$ \\
+\hspace{15pt} return $((Q_1, \alpha \geq \hat{\varphi}), Q_2)$ \\
 \\
-split((Q,\alpha \geq \hat{\varphi}),\overline{\alpha}) = \hspace{15pt} with \hspace{5pt} \alpha \notin \overline{\alpha} \\
-\hspace{15pt} &let & (Q_1, Q_2) = split(Q,\overline{\alpha}) \\
-              &return & (Q_1, (Q_2, \alpha \geq \hat{\varphi})) \\
-\end{eqnarray*}
+split $((Q,\alpha \geq \hat{\varphi}),\overline{\alpha})$ = \hspace{15pt} with \hspace{5pt} $\alpha \notin \overline{\alpha}$ \\
+\hspace{15pt} let $(Q_1, Q_2)$ = split $(Q,\overline{\alpha})$ \\
+\hspace{15pt} return $(Q_1, (Q_2, \alpha \geq \hat{\varphi}))$ \\
+\end{tabular}
+\end{figure}
 The notation of $(Q,x)$ means extending $Q$ by adding $x$ to the end while $(Q_1, Q_2)$ is just the tupling of two prefixes.
 
 The function itself is quite simple and works based on the assumption that the domain of the prefix contains no duplicates. The function also maintains within each individual prefixes it produces the invariant on the ordering. The split function is generally used as an instrument to do \emph{generalization}.
@@ -289,7 +291,7 @@ The update function is used to update an existing binding in a prefix. There are
 The first way to update a prefix is with a new scheme:
 
 \begin{eqnarray*}
-update(Q, \alpha \geq \varphi_2) \\
+\lefteqn{update(Q, \alpha \geq \varphi_2) =} \\
 \hspace{10pt} &let & (Q_0, (Q_1, \alpha \geq \hat{\varphi_1}, Q_2)) = split(Q, ftv(\varphi_2)) \\
               &if & (nf(\varphi_2)= \rho) \\
               &\hspace{5pt}& \hspace{10pt} then \hspace{5pt} return ((Q_0, Q_1, \lbrack \alpha := \rho \rbrack Q_2), \lbrack \alpha := \rho \rbrack) \\
@@ -316,19 +318,19 @@ update(Q, \alpha \geq \varphi_2) \\
 The second way to update a prefix is with a substitution. This update always removes the entry from the prefix:
 
 \begin{eqnarray*}
-update(Q, \alpha := \sigma) \\
-\hspace{10pt} &let & (Q_0, (Q_1, \alpha \geq \varphi, Q_2)) = split(Q, ftv(\sigma)) \\
-              &return& ((Q_0, Q_1, \lbrack \alpha := \sigma \rbrack Q_2), \lbrack \alpha := \sigma \rbrack)
+\lefteqn{update(Q, \alpha := \sigma) =} \\
+ & & \textrm{let } (Q_0, (Q_1, \alpha \geq \varphi, Q_2)) = split(Q, ftv(\sigma)) \\
+ & & \textrm{return } ((Q_0, Q_1, \lbrack \alpha := \sigma \rbrack Q_2), \lbrack \alpha := \sigma \rbrack)
 \end{eqnarray*}
 \subsection{Extend}
 The last way to modify a prefix is by extending it with a new entry. This is done with the help of the extend function:
 
 \begin{eqnarray*}
-extend(Q,\alpha \geq \varphi) = \\
-\hspace{10pt} let (Q^{'}, \varphi^{'}) = explode Q \varphi \\
-\hspace{10pt} if &(nf&(\varphi^{'}) = \rho) \\
-                 &then& \hspace{5pt} return (Q^{1}, \lbrack \alpha := \rho \rbrack) \\
-                 &else& \hspace{5pt} return ((Q^{'}, \alpha \geq \varphi^{'}),\lbrack \rbrack)
+\lefteqn{extend(Q,\alpha \geq \varphi) = } \\
+\hspace{10pt} &let& (Q^{'}, \varphi^{'}) = \textrm{explode } Q \textrm{ } \varphi \\
+              &if&  (nf(\varphi^{'}) = \rho) \\
+              & & \textrm{     then return} (Q^{1}, \lbrack \alpha := \rho \rbrack) \\
+              & & \textrm{     else return} ((Q^{'}, \alpha \geq \varphi^{'}),\lbrack \rbrack)
 \end{eqnarray*}
 
 Like before the normal form checks are here to prevent simple types to enter the environment. However there is another type that shouldn't enter the environment here: \emph{types who's normal form is $\bot$ should not enter the prefix}. 
@@ -338,22 +340,20 @@ Concretely this means that extending the prefix with e.g. $\beta \geq (\forall(\
 The definition of the \emph{explode} function is quite simple:
 
 \begin{eqnarray*}
-explode :: Q \rightarrow \varphi \rightarrow (Q, \varphi) \\
-explode Q \phi = \\
-\hspace{10pt} if &(nf&(\varphi) = \bot) \\
-                 &then& \hspace{5pt} let (\forall Q_1 . \varphi_1) = \phi \\
-                 &\hspace{5pt}& \hspace{5pt} return (Q Q_1, \varphi_1) \\
-                 &else& \hspace{5pt} return (Q, \varphi)
+\lefteqn{\textrm{explode Q $\phi$}} = \\
+& & \textrm{if} (nf(\varphi) = \bot) \\
+& & \quad \textrm{then let } (\forall Q_1 . \varphi_1) = \phi \\
+& & \quad \textrm{     return } (Q Q_1, \varphi_1) \\
+& & \quad \textrm{else return } (Q, \varphi)
 \end{eqnarray*}
 
-In this definition the syntactic sugar for quantified type schemes is used. Refer to section\ref{syntax} for more details.
+This function has the type $explode :: Q \rightarrow \varphi \rightarrow (Q, \varphi)$. The function works by using the syntactic sugar for quantified type schemes (refer to section\ref{syntax} for more details).
 \section{Modifications}
 This section details some modifications made to the standard HML algorithm that should be explained on their own.
 \subsection{Promotion}
 In the original algorithm for unification, the semantically equivalent types for \emph{id} aren't treated the same:
 \begin{eqnarray*}
-\forall a. a \rightarrow a \\
-and \\
+\forall a. a \rightarrow a \textrm{ and }
 (\forall a \geq \bot). a \rightarrow a
 \end{eqnarray*}
 
@@ -364,8 +364,9 @@ embedF :: TyExpr -> TyScheme
 embedF = embed id
  where embed :: (TyScheme -> TyScheme) -> TyExpr -> TyScheme
        embed val (TyExpr_Parens     s) = embed val s
-       embed val (TyExpr_Quant  _ a t) = let e = TyScheme_Quant (Scheme_Simple a TyScheme_Bottom)
-                                         in  embed (val . e) t
+       embed val (TyExpr_Quant  _ a t) = 
+         let e = TyScheme_Quant (Scheme_Simple a TyScheme_Bottom)
+         in  embed (val . e) t
        embed val e                     = val (TyScheme_SystemF e)
 \end{code}
 

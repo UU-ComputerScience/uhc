@@ -1,8 +1,9 @@
 \chapter{Extensions}
 \label{cap:Extensions}
 Up until now the type checker can only type single one sentence expressions. We can't actually type check a full function because of the fact that there is no support for case statements. This means that type checking an entire Haskell module is also out of the question. This chapter outlines the steps taken to implement type checking of entire modules.
+
 \section{Tuples}
-Because of the way functions are desugared in EH to case expressions we need support for tuples. UHC implements tuples quite differently then GHC. UHC implements them as a recursive datatype. The reason for this is that it makes it easier to implement extensible records.
+Because of the way functions are desugared in EH, support for tuples need to  be added before case expressions can be evaluated. UHC implements tuples quite differently then GHC, namely as a recursive datatype. The reason for this is that it makes it easier to implement extensible records.
 
 Inside the \emph{Expr} datatype there is this definition:
 \begin{code}
@@ -46,7 +47,7 @@ itf RecExpr
 \label{record}
 \caption{Definition of a record along with the interface}
 \end{figure}
-Figure \ref{record} also shows the interface defined for typechecking tuples. The result is a \emph{RowTyExpr}. In the case of the \emph{Upd} constructor we're going to ignore that since we don't support records.
+Figure \ref{record} also shows the interface defined for typechecking tuples. The result is a \emph{RowTyExpr}. The \emph{Upd} constructor since there is no support for records in this version.
 
 \paragraph{extending the datasem Expr}
 Extending the Expr datatype is quite straight forward, the only code needed is
@@ -71,47 +72,47 @@ Extending the Expr datatype is quite straight forward, the only code needed is
        lhs.pre = loc.q1
        lhs.frs = recExpr.frs
 \end{code}
-The type of the tuple is inferred and wrapped as a call to a special constructor "\_Rec" and then generalized. This is all that's needed in \emph{Expr}
+The type of the tuple is inferred and wrapped as a call to a special constructor "\_Rec" and then generalized. This is all that is needed in \emph{Expr}
 
 \paragraph{Implementing RecExpr}
 The code relevant to the implementation of a \emph{RecExpr} is:
 
 \begin{code}
-       recExpr.pre = lhs.pre
-       recExpr.env = lhs.env
-       recExpr.frs = lhs.frs
-       
-       expr.pre = recExpr.pre
-       expr.env = appAll recExpr.sub lhs.env -- update bindings for e.g. \f -> f 1, f 'a')
-       expr.frs = recExpr.frs
+   recExpr.pre = lhs.pre
+   recExpr.env = lhs.env
+   recExpr.frs = lhs.frs
+   
+   expr.pre = recExpr.pre
+   expr.env = appAll recExpr.sub lhs.env
+   expr.frs = recExpr.frs
 \end{code}
-We first type check the recursive part of the \emph{RecExpr} and apply the resulting substitutions to the $\Gamma$ to update the shared values again. This is important in expressions such as $\\f \rightarrow (f 1, f 'a')$. With the new expression and prefix we can then infer the type of the expression at the current position of the tuple.
+The recursive part of the \emph{RecExpr} needs to be inferred first. After that the resulting substitutions are applied to the $\Gamma$ to update the shared values. This is important in expressions such as $\\f \rightarrow (f 1, f 'a')$. With the new expression and prefix the type of the expression at the current position of the tuple can be inferred.
 
 \begin{code}    
-       (loc.q1, loc.frs, loc.res)
-               = let e = recExpr.res
-                     t = expr.res
-                 in case (e, t) of
-                      (Nothing, _) -> error $ "Cannot infer the type of tuple element '" ++ pp loc.mbNm ++ "'"
-                      (_, Nothing) -> error $ "Cannot infer the type of the expression '" ++ pp loc.expr ++ "'"
-                      (Just rty,Just ty) -> let (typ, frs, _) = renameBound expr.frs ty 
-                                                (q,   e     ) = second (\ty'->RowTyExpr_Ext rty loc.mbNm ty') (deep_explode' expr.pre typ)
-                                            in (q, frs, e)
+   (loc.q1, loc.frs, loc.res)
+     = let e = recExpr.res
+           t = expr.res
+       in case (e, t) of
+            (Nothing, _) -> error $ "Cannot infer the type of tuple element '" ++ pp loc.mbNm ++ "'"
+            (_, Nothing) -> error $ "Cannot infer the type of the expression '" ++ pp loc.expr ++ "'"
+            (Just rty,Just ty) -> let (typ, frs, _) = renameBound expr.frs ty 
+                                      (q,   e     ) = second (\ty'->RowTyExpr_Ext rty loc.mbNm ty') (deep_explode' expr.pre typ)
+                                  in (q, frs, e)
 \end{code}
-\emph{rty} represents the type of the recursive RecExpr and the \emph{ty} is the type of the current expression. If both are not Nothing then the current type is renamed and it's quantifiers are removed and moved to the prefix. Generalization in the \emph{Expr} datasem will fully quantify them again. We do this because the type of $(id, id)$ should be $\forall a. b. (a \rightarrow a, b \rightarrow b)$ and not $(\forall a. a \rightarrow a, \forall a. a \rightarrow a)$.
+\emph{rty} represents the type of the recursive RecExpr and the \emph{ty} is the type of the current expression. If both are not Nothing then the current type is renamed and it's quantifiers are removed and moved to the prefix. Generalization in the \emph{Expr} datasem will fully quantify them again. This is done because the type of $(id, id)$ should be $\forall a. b. (a \rightarrow a, b \rightarrow b)$ and not $(\forall a. a \rightarrow a, \forall a. a \rightarrow a)$.
 
 \begin{code}                              
-       lhs.sub = recExpr.sub `munion` expr.sub
-       lhs.res = return loc.res
-       lhs.frs = loc.frs
-       lhs.pre = loc.q1
-    clause Empty
-       lhs.res = return RowTyExpr_Empty
+      lhs.sub = recExpr.sub `munion` expr.sub
+      lhs.res = return loc.res
+      lhs.frs = loc.frs
+      lhs.pre = loc.q1
+   clause Empty
+      lhs.res = return RowTyExpr_Empty
 \end{code}
-The resulting type is then simple returned along with the substitutions and the new prefix. 
+The resulting type is then simply returned along with the substitutions and the new prefix. 
 
 \section{Case expressions}
-UHC desugars a function with multiple binding into a single binding with a case expression inside. This is done in two ways
+UHC desugars a function with multiple binding into a single let with a case expression inside. This is done in two ways
 \paragraph{Single argument functions}
 Consider the function \emph{f} defined as:
 \begin{code}
@@ -124,9 +125,10 @@ let f = \x1 -> case x1 of
                  True -> False
                  x -> (&& x True)
 \end{code}
+This also shows that infix applications are made into the normal application style.
 
 \paragraph{multiple argument functions}
-However multiple argument functions are desugared somewhat differently, consider the function \emph{q}:
+Multiple argument functions are desugared somewhat differently, consider the function \emph{q}:
 \begin{code}
 q True  x = id x
 q False x = (+x)
@@ -138,7 +140,7 @@ let q = \x1 x2 -> case (x1,x2) of
                     (False,x) -> \$x_0_3_0 -> (+ $x_0_3_0 x)
 \end{code}
 
-In the abstract syntax of EH there's a flag to indicate of there are multiple arguments as well. Adding support for tuples means adding a definition for the \emph{Case} clause in the datasem of the \emph{Expr} type. The datatype definition for the constructor \emph{Case} in \emph{Expr} is:
+In the abstract syntax of EH there is a flag to indicate of there are multiple arguments. Adding support for tuples means adding a definition for the \emph{Case} clause in the datasem of the \emph{Expr} type. The datatype definition for the constructor \emph{Case} in \emph{Expr} is:
 \begin{code}
   con Case
     expr          :  Expr
@@ -148,41 +150,41 @@ In the abstract syntax of EH there's a flag to indicate of there are multiple ar
     isTupOfArg    :: Bool
 \end{code}
 
-With this definition in hand we can extend the datasem of \emph{Expr}:
+With this definition the datasem of \emph{Expr} can be expanded with:
 
 \begin{code}
-    clause Case
-       expr.env = lhs.env
-       expr.pre = lhs.pre
-       expr.frs = lhs.frs
-       
-       loc.etype = maybe (error $ "Type inference of expression '" ++ pp loc.expr ++ "' failed in Case") id expr.res
+   clause Case
+      expr.env = lhs.env
+      expr.pre = lhs.pre
+      expr.frs = lhs.frs
+      
+      loc.etype = maybe (error $ "Type inference of expression '" ++ pp loc.expr ++ "' failed in Case") id expr.res
 \end{code}
-We start off by first inferring the type of the scrutinee. This is usually returned just completely polymorphic types. 
+It starts of by inferring the type of the scrutinee. This is usually returns a completely polymorphic types since the scrutinee is usually a variable (or a tuple thereof). 
 
 \begin{code}
-       alts.exp = loc.etype
-       alts.env = appAll expr.sub lhs.env
-       alts.frs = expr.frs
-       alts.pre = expr.pre
-       
-       child s : UnifyScheme = unifyScheme
-       s.pre = alts.pre
-       s.ty1 = loc.etype
-       s.ty2 = caseLHS alts.res
-       s.frs = alts.frs
+   alts.exp = loc.etype
+   alts.env = appAll expr.sub lhs.env
+   alts.frs = expr.frs
+   alts.pre = expr.pre
+   
+   child s : UnifyScheme = unifyScheme
+   s.pre = alts.pre
+   s.ty1 = loc.etype
+   s.ty2 = caseLHS alts.res
+   s.frs = alts.frs
 \end{code}
-Afterwards we infer the types of the case alternatives. The result of which is a record which contains the inferred type for the left hand side of the case alternatives (unified together) and the type representing of the right hand side of the case alternatives. The type of the scrutinee is then unified with that of the left-hand sides of the case alternatives.
+After the type of the scrutinee the types of the case alternatives are inferred. The result of which is a record which contains the inferred type for the left hand side of the case alternatives (unified together) and the type representing of the right hand side of the case alternatives. The type of the scrutinee is then unified with that of the left-hand sides of the case alternatives.
 
 \begin{code}       
-       (loc.q1, loc.q2) = split (s.pre, domain lhs.pre)
-       
-       lhs.res = return $ desugar $ TyScheme_Sugar loc.q2 $ appAll alts.sub $ body alts.res
-       lhs.sub = s.sub `pick` alts.sub `pick` expr.sub
-       lhs.pre = loc.q1
-       lhs.frs = s.frs
+   (loc.q1, loc.q2) = split (s.pre, domain lhs.pre)
+   
+   lhs.res = return $ desugar $ TyScheme_Sugar loc.q2 $ appAll alts.sub $ body alts.res
+   lhs.sub = s.sub `pick` alts.sub `pick` expr.sub
+   lhs.pre = loc.q1
+   lhs.frs = s.frs
 \end{code}
-As is the custom, at the end we generalize and return the fully quantified type, which consists of the applications gathered during substitution to the type of the right-hand side of the case expressions (to insure that they have all been applied). 
+At the end generalization is done and the fully quantified type is returned, which consists of the substitutions gathered during inference applied to the type of the right-hand side of the case expressions (to insure that all substitutions they have all been applied). 
 
 The interface for \emph{CaseAlts} is defined as:
 \begin{code}
@@ -198,7 +200,7 @@ itf CaseAlts
     syn frs :: Int 
 \end{code}
 
-The full implementation won't be covered here, but those interested can look it up in the source code.
+The full implementation will not be covered here, but those interested can look it up in the source code.
 
 \subsection{typing rules expression}
 Inferring the type of case expressions comes down two the following typing rules which are self explanatory:
@@ -221,17 +223,17 @@ Typing fixpoint recursive functions is a simple yet needed extension. What this 
 fix f = f (fix f)
 \end{code} 
 
-would be typed as $\forall \alpha \beta. (\alpha \rightarrow \beta) \rightarrow \beta$ without this support. This is because after giving a temporary type for \emph{fix} based on what was known about \emph{f} at the application site, and later learning more about the value of \emph{f}, the type of \emph{fix} is never updated.
+Would be typed as $\forall \alpha \beta. (\alpha \rightarrow \beta) \rightarrow \beta$ without this support. This is because after giving a temporary type for \emph{fix} based on what was known about \emph{f} at the application site, and later learning more about the value of \emph{f}, the type of \emph{fix} is never updated.
 
 Type checking is essentially building up a list of constraints and then solving these constraints. In this case the constraints are the substitutions that are being build every time extra information about a type becomes available.
-This means that we have all the needed bits of information to reconstruct the type we think we should have, and the type we're inferred. In order to provide support for letrec three things need to be done:
+This means that all the needed bits of information are available to reconstruct the type there should be, and the type that was inferred. In order to provide support for letrec three things need to be done:
 
 \begin{itemize}
-\item Apply the substitutions (constraints) gathered during inference to the original type of the binding. Remember that functions are preprocessed and given a polymorphic type variable as a type. This gives us the type we think we should have.
+\item Apply the substitutions (constraints) gathered during inference to the original type of the binding. Remember that functions are preprocessed and given a polymorphic type variable as a type. This gives the type that should be available logically from the constraints.
 \item Solve the constraints. This is done by unifying the type returned from the inference of the expression and with the type reconstructed in step 1. This fills in any missing information between the types.
 \item Apply the substitutions gained from the unification to the inferred type. This then results in the final and correct type for the expression.
 \end{itemize}
-Since Haskell doesn't have a special keyword for \emph{letrec} the same code is also called for normal functions. In the case of normal (non fixpoint recursive) functions the reconstructed type would be the same as the type that was inferred. Unify would just return an empty substitution.
+Since Haskell does not have a special keyword for \emph{letrec} the same code is also called for normal functions. In the case of normal (non fixpoint recursive) functions the reconstructed type would be the same as the type that was inferred. Unify would just return an empty substitution.
 
 \section{Type annotations}
-Type annotations are nothing special. If the type that's being annotated with a new type has the type of a polymorphic variable then that type is just replaced in the $\Gamma$ with the annotated type. Since there is no bidirectional typing giving a type signature for a function is not really supported. The support for annotation is just enough to allow annotation on variables.
+Type annotations are nothing special. If the type that is being annotated with a new type has the type of a polymorphic variable then that type is just replaced in the $\Gamma$ with the annotated type. Since there is no bidirectional typing giving a type signature for a function is not really supported. The support for annotation is just enough to allow annotation on variables.

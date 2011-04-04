@@ -1,9 +1,8 @@
 \chapter{Conclusions}
 \section{Ruler-Core}
-Ruler-core was more than adequate for the purpose of this Thesis. It provides enough flexibility to be able to implement the algorithms in a clean and understandable manner. The ability to specify default rules is most certainly helpful in that it helps in reducing the amount of boilerplate code needed.
+\Rcore was more than adequate for the purpose of this Thesis. It provides enough flexibility to be able to implement the algorithms in a clean and understandable manner. The ability to specify default rules is most certainly helpful in that it helps in reducing the amount of boilerplate code needed.
 
-It can be described as a tool to manipulate visit sequences. Visit sequences are essentially functions with inputs and outputs.
-Ruler-core introduces the ability to traverse and inspect multiple trees at the same time while producing one or more results. 
+\Rcore can be described as a tool to manipulate visit sequences. Visit sequences are essentially functions with inputs and outputs. \Rcore also introduces the ability to traverse and inspect multiple trees at the same time while producing one or more results. 
 
 One problematic area that is sure to continue coming up when scaling this implementation is the inability to return to the call site after an internal.
 This causes a large chunk of code duplication and lowers the maintainability of the code. Perhaps future work for ruler-core could solve this problem. One possibility is to have a special node in the graph in which you do allow cycles to occur, which can only be created by an internal statement.
@@ -15,12 +14,12 @@ let ids = single id
 in (map poly ids, append (single inc) ids)
 \end{code}
 is not possible in GHC and this already shows part of the power of HML. HML also handled co- and contra-variant instantiation better than GHC. But the one major downside of HML is that the types are presented somewhat more complicated to the end user. 
-By implementing typechecking for case expressions and a large subset of EH8 we have shown that it is possible to use this type system for more than just lambda-calculus. 
+By implementing type checking for case expressions and a large subset of EH8 we have shown that it is possible to use this type system for more than just lambda-calculus. 
 \section{Future Work}
 The implementation is far from finished. Only a small fraction of EH is type able with this implementation. Currently the only place patterns are supported are in lambda abstractions. This is the easiest to fix.
 
 Applying a function to itself also does not quite work as expected. For example typing $(.)(.)$ returns an incorrect type. Some renaming is needed but just renaming bound variables will result in other expressions breaking. The problem needs to be examined and a proper solution developed.
  
-Currently there is no support for type classes and GADTs. Implementing Type classes should provide for an interesting experience since the typeclasses can be encoded in the bounds of the prefixes instead of passes as an extra argument to functions, which makes for a direct correlation between the classes and the types.
+Currently there is no support for type classes and GADTs. Implementing Type classes should provide for an interesting experience since the type classes can be encoded in the bounds of the prefixes instead of passes as an extra argument to functions, which makes for a direct correlation between the classes and the types.
 \section{Conclusion}
 In this thesis we explored the possibility of implementing a type system completely in Attribute Grammar using the tool ruler-core. Some utility functions were implemented as normal Haskell code just for the convenience of it. A very powerful type inferencing system called HML was implemented and extended to support EH. The end result is a relatively complicated type system which corresponds closely to the written specification. The flexibility of ruler-core makes it possible to scale up the implementation while maintaining a clear and concise code base.
