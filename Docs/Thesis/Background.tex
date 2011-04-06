@@ -149,8 +149,8 @@ The burden on the programmer can also be eased by allowing partial type annotati
 FPH allows impredicative instantiations in a controlled fashion. When a binding is ambiguous (as in, can be instantiated to two or more incomparable types) this causes a problem because we do not know which type to use. The idea presented in FPH is to explicitly mark the types of bindings that can lead to such ambiguity with \textit{boxes}. The allowed types are FPH arr:
 
 \begin{quotation}
-$\tau'$ ::= $\alpha$ $|$  $\tau'_1 \rightarrow \tau'_2$ $|$ T $\tau'$ $|$ $\framebox[0.45cm][l]{o}$ \\
-\indent $o$ $\hspace{1pt}$ ::= $\forall \alpha.o$ $|$ $\alpha$ $|$ $o \rightarrow o$ $|$ T $o$
+$\tau'$ ::= $\alpha$ $||$  $\tau'_1 \rightarrow \tau'_2$ $||$ T $\tau'$ $||$ $\framebox[0.45cm][l]{o}$ \\
+\indent $o$ $\hspace{1pt}$ ::= $\forall \alpha.o$ $||$ $\alpha$ $||$ $o \rightarrow o$ $||$ T $o$
 \end{quotation}
 
 FPH allows quantifications (and so polymorphic types) but only inside \emph{boxes} $\Box$ and governs their use with a set of 3 \textit{Ideas}\cite{FPH}:

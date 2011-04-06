@@ -51,11 +51,11 @@ HML introduces various types, most of which are an extensions of Hindley-Milner 
 \begin{figure}[H]
 \begin{eqnarray*}
 \sigma & ::= & c \\ 
-       & | & \sigma_1 \hspace{5pt} \sigma_2 \\
-       & | & (\sigma) \\ 
-       & | & \alpha \\ 
-       & | & \forall \alpha . \sigma \\
-       & | & \omega
+       & || & \sigma_1 \hspace{5pt} \sigma_2 \\
+       & || & (\sigma) \\ 
+       & || & \alpha \\ 
+       & || & \forall \alpha . \sigma \\
+       & || & \omega
 \end{eqnarray*}
 \caption{Type expressions}
 \label{types}
@@ -65,7 +65,7 @@ The $\sigma$ type are the basic SystemF types. Function applications are express
 
 \begin{eqnarray*}
 \omega & ::= & \emptyset \\
-       & | & \omega , \sigma
+       & || & \omega , \sigma
 \end{eqnarray*}
 
 In SystemF a \emph{type scheme} is represented as $\forall \alpha$ but HML introduces a new definition for \emph{type schemes}:
@@ -73,8 +73,8 @@ In SystemF a \emph{type scheme} is represented as $\forall \alpha$ but HML intro
 \begin{figure}[H]
 \begin{eqnarray*}
 \varphi & ::= & \forall (\alpha \geq \varphi_1). \varphi_2 \\
-        & | & \sigma \\
-        & | & \bot
+        & || & \sigma \\
+        & || & \bot
 \end{eqnarray*}
 \caption{Type Schemes}
 \label{type-schemes}
@@ -88,7 +88,7 @@ The dual of this is a scheme with a \emph{non-trivial bounds}. This type is call
 \begin{figure}[H]
 \begin{eqnarray*}
 \hat{\varphi} & ::= & \forall (\alpha \geq \hat{\varphi_1}). \varphi_2 \hspace{5pt} with \hspace{5pt} \alpha \in ftv(\varphi_2) \\
-              & | & \bot
+              & || & \bot
 \end{eqnarray*}
 \caption{Quantified Schemes}
 \label{quantified-schemes}
@@ -110,11 +110,12 @@ The prefix cannot contain any trivial bounds, which is why the \emph{Quantified 
 The next two types are the \emph{monomorphic} $\tau$ and the \emph{unqualified types} $\rho$. The \emph{monomorphic} type $\tau$ is the same type as in hindley milner, and the \emph{unqualified} $\rho$ type is just a type without any outer quantifiers. 
 
 \begin{eqnarray*}
-\tau ::= \alpha | (\tau) | c | \tau_1 \hspace{5pt} \tau_2 \\
-\rho ::= \alpha | (\rho) | c | \rho_1 \hspace{5pt} \rho_2
+\tau ::= \alpha || (\tau) || c || \tau_1 \hspace{5pt} \tau_2 \\
+\rho ::= \alpha || (\rho) || c || \rho_1 \hspace{5pt} \rho_2
 \end{eqnarray*}
 
 Aside from these types there are some syntactical sugar used in the paper and the rest of this chapter:
+\label{syntax}
 
 \begin{eqnarray*}
 \forall \alpha & ::= & (\forall \alpha \geq \bot) \\
@@ -187,8 +188,8 @@ The semantics of a type scheme $\varphi$ written as $\br{\varphi}$  is defined b
 \begin{figure}[H]
 \begin{eqnarray*}
 \br{\bot} & = & \br{\forall\alpha . \alpha} \\
-\br{\sigma} & = & \{ \sigma^{'} | \sigma \sqsubseteq_F \sigma^{'} \} \\
-\br{\forall(\alpha \geq \varphi_1).\varphi_2} & = & \{ \sigma^{'} | \sigma_1  \in \br{\varphi_1}, \sigma_2 \in \br{\varphi_2}, \\ 
+\br{\sigma} & = & \{ \sigma^{'} || \sigma \sqsubseteq_F \sigma^{'} \} \\
+\br{\forall(\alpha \geq \varphi_1).\varphi_2} & = & \{ \sigma^{'} || \sigma_1  \in \br{\varphi_1}, \sigma_2 \in \br{\varphi_2}, \\ 
    &\overline{\beta}& \# ftv(\forall(\alpha \geq \varphi_1).\varphi_2), \\
    &\varphi^{'} & \in \br{\forall\overline{\beta}.\lbrack \alpha := \sigma_1 \rbrack\sigma_2}  \} 
 \end{eqnarray*}
@@ -201,7 +202,7 @@ The semantics of the prefix $Q$ written as $\br{Q}$  is defined as the set of Sy
 
 \begin{eqnarray*}
 \br{\emptyset} & = & \{\lbrack\rbrack\} \\
-\br{Q, \alpha, \hat{\varphi}} & = & \{ \theta \textopenbullet \lbrack \alpha := \sigma \rbrack \hspace{5pt} | \hspace{5pt} \sigma \in \br{\hat{\varphi}}, \theta \in \br{Q} \}
+\br{Q, \alpha, \hat{\varphi}} & = & \{ \theta \textopenbullet \lbrack \alpha := \sigma \rbrack \hspace{5pt} || \hspace{5pt} \sigma \in \br{\hat{\varphi}}, \theta \in \br{Q} \}
 \end{eqnarray*}
 \subsection{Substitutions}
 The substitution environment $\Gamma$ is defined as a list of tuples. Concretely $\Gamma = [(HsName,\varphi)]$. Substitutions are defined as a \emph{type class} in normal Haskell code. The class declaration is
@@ -347,7 +348,7 @@ The definition of the \emph{explode} function is quite simple:
 & & \quad \textrm{else return } (Q, \varphi)
 \end{eqnarray*}
 
-This function has the type $explode :: Q \rightarrow \varphi \rightarrow (Q, \varphi)$. The function works by using the syntactic sugar for quantified type schemes (refer to section\ref{syntax} for more details).
+This function has the type $explode :: Q \rightarrow \varphi \rightarrow (Q, \varphi)$. The function works by using the syntactic sugar for quantified type schemes (refer to section \ref{syntax} for more details).
 \section{Modifications}
 This section details some modifications made to the standard HML algorithm that should be explained on their own.
 \subsection{Promotion}
@@ -385,5 +386,6 @@ dom   &\tau& = \{\beta, \alpha\}\\
 codom &\tau& = \{\}
 \end{eqnarray*}
 \subsection{Renaming}
+\label{renaming}
 
 The HML does not really have support for case expressions and tuples. In those two situation you would want on every lookup of a type constructor to return a fresh type. e.g. the type of $(\lbrack \rbrack, \lbrack \rbrack)$ should is $\forall \alpha \beta . (\lbrack \alpha \rbrack, \lbrack \beta \rbrack)$. Because of this, on every lookup of a constructor we rename every bound variable.

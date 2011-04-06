@@ -7,6 +7,7 @@
 \usepackage[english]{babel}
 \usepackage[usenames]{color}
 \usepackage{hyperref}
+\usepackage{listings}
 \usepackage{color}
 \usepackage{textcomp}
 \usepackage{parskip}
@@ -15,22 +16,29 @@
 \usepackage{amssymb}
 \usepackage{latexsym}
 \usepackage{hyperref}
-%\usepackage{bookman}
 \usepackage{makeidx}
 \usepackage[xindy, toc]{glossaries}
 \usepackage{sectsty}
 \usepackage[shell, miktex, pdf]{dottex}
 \usepackage{pgf}
 \usepackage{tikz}
+\usepackage{savesym}
+\savesymbol{geq}
+\savesymbol{leq}
+\usepackage{mathabx}
+\restoresymbol{TXT}{leq}
+\restoresymbol{TXT}{geq}
+
 \usepackage{bnf, float}
 \usetikzlibrary{arrows,positioning}
 \restylefloat{figure}
 
-\newcommand{\HRule}{\rule{\linewidth}{0.5mm}}
 %\setlength{\parindent}{20pt} 
 
 \makeindex
 \makeglossaries
+
+%include Shorthands.tex
 
 \begin{document}
 \input{./titlepage}
@@ -66,6 +74,8 @@
 \printindex
 
 \appendix
+
+%include A-Compare.tex
 
 %include citations.tex
 \end{document}

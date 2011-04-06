@@ -3,22 +3,7 @@
 
 Developed in 1968 by Donald E. Knuth \ags were created as a way to define \emph{meaning} to context free languages. An example of assigning meaning to a grammar would be defining the evaluation of expressions defined by the following \emph{CFG} expressed as \emph{BNF}:
 
-\begin{figure}[H]
-\begin{grammar}
-      [(colon){$\rightarrow$}]
-      [(semicolon)$|$]
-      [(comma){}]
-      [(period){\\}]
-      [(quote){\begin{bf}}{\end{bf}}]
-      [(nonterminal){$\langle$}{$\rangle$}]
-<Expr>:<number>; <Expr>, <operator>, <Expr>.
-<number>:<digit>;<digit>,<number>.
-<digit>:"0";"1";"2";"3";"4";"5";"6";"7";"8";"9".
-<relational operator>:"$-$";"$+$".
-\end{grammar}
-\caption{BNF definition for Expressions}
-\label{grammar:bnf:expr}
-\end{figure}
+\input{./BNF-Expr}
 
 The \emph{terminals} in this case are the \emph{operators} $+,-$ and the \emph{digits} $0\ldots 9$. The \emph{nonterminals} are the \emph{Expr} and \emph{number} symbols. The grammar specifies that an expression is either a \textbf{number} or an \textbf{Expr} followed by an \textbf{operator} and then another \textbf{Expr}. For every sentence that can be produced by this grammar a parse tree can be assigned. For instance the expression "2 + (3 - 5) + (6 - 1)" produces the parse tree in figure \ref{fig.example1.parsetree}. Meaning is defined for the expression on a step by step basis corresponding with the structure of the parse tree, starting from the leaves and working up the tree. This is done by assigning \emph{attributes} to the tree.
 
@@ -58,7 +43,7 @@ An attribute can be both \emph{synthesized} and \emph{inherited}. Semantics can 
 \begin{figure}[H]
 \begin{grammar}
       [(colon){$\rightarrow$}]
-      [(semicolon)$|$]
+      [(semicolon)$||$]
       [(comma){}]
       [(period){\\}]
       [(quote){\begin{bf}}{\end{bf}}]

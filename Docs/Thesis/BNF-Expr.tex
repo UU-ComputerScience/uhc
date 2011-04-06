@@ -1,0 +1,16 @@
+\begin{figure}[H]
+\begin{grammar}
+      [(colon){$\rightarrow$}]
+      [(semicolon)$|$]
+      [(comma){}]
+      [(period){\\}]
+      [(quote){\begin{bf}}{\end{bf}}]
+      [(nonterminal){$\langle$}{$\rangle$}]
+<Expr>:<number>; <Expr>, <operator>, <Expr>.
+<number>:<digit>;<digit>,<number>.
+<digit>:"0";"1";"2";"3";"4";"5";"6";"7";"8";"9".
+<relational operator>:"$-$";"$+$".
+\end{grammar}
+\caption{BNF definition for Expressions}
+\label{grammar:bnf:expr}
+\end{figure}
