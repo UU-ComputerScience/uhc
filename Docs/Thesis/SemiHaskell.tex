@@ -34,14 +34,14 @@ data RecExpr
 \begin{code}
 itf RecExpr
   visit infer
-    inh pre :: Prefix
-    inh env :: Gamma
-    inh frs :: Int
-    inh ast :: RecExpr
-    syn pre :: Prefix
-    syn sub :: Env
-    syn res :: Maybe RowTyExpr
-    syn frs :: Int 
+    inh pre  :: Prefix
+    inh env  :: Gamma
+    inh frs  :: Int
+    inh ast  :: RecExpr
+    syn pre  :: Prefix
+    syn sub  :: Env
+    syn res  :: Maybe RowTyExpr
+    syn frs  :: Int 
 \end{code}
 \end{minipage}
 \label{record}
@@ -54,25 +54,25 @@ Extending the Expr datatype is quite straight forward, the only code needed is
 
 \begin{code}
 clause Rec
-   recExpr.pre = lhs.pre
-   recExpr.env = lhs.env
-   recExpr.frs = lhs.frs
+   recExpr.pre  = lhs.pre
+   recExpr.env  = lhs.env
+   recExpr.frs  = lhs.frs
    
-   loc.res = let e = recExpr.res
-             in case e of
-                  Nothing -> error "Type inference failed in tuple"
-                  Just ty -> TyExpr_AppTop $
-                                TyExpr_App
-                                   (TyExpr_Con (mkName "_Rec"))
-                                   (TyExpr_Row ty)
+   loc.res =  let e = recExpr.res
+              in case e of
+                   Nothing  ->  error "Type inference failed in tuple"
+                   Just ty  ->  TyExpr_AppTop $
+                                   TyExpr_App
+                                      (TyExpr_Con (mkName "_Rec"))
+                                      (TyExpr_Row ty)
    
    (loc.q1, loc.q2) = split (recExpr.pre, domain lhs.pre)
-   lhs.res = return $ desugar 
-                    $ TyScheme_Sugar loc.q2 
-                    $ TyScheme_SystemF loc.res
-   lhs.sub = recExpr.sub
-   lhs.pre = loc.q1
-   lhs.frs = recExpr.frs
+   lhs.res = return  $ desugar 
+                     $ TyScheme_Sugar loc.q2 
+                     $ TyScheme_SystemF loc.res
+   lhs.sub  = recExpr.sub
+   lhs.pre  = loc.q1
+   lhs.frs  = recExpr.frs
 \end{code}
 The type of the tuple is inferred and wrapped as a call to a special constructor "\_Rec" and then generalized. This is all that is needed in \emph{Expr}
 
@@ -80,38 +80,38 @@ The type of the tuple is inferred and wrapped as a call to a special constructor
 The code relevant to the implementation of a \emph{RecExpr} is:
 
 \begin{code}
-   recExpr.pre = lhs.pre
-   recExpr.env = lhs.env
-   recExpr.frs = lhs.frs
+   recExpr.pre  = lhs.pre
+   recExpr.env  = lhs.env
+   recExpr.frs  = lhs.frs
    
-   expr.pre = recExpr.pre
-   expr.env = appAll recExpr.sub lhs.env
-   expr.frs = recExpr.frs
+   expr.pre  = recExpr.pre
+   expr.env  = appAll recExpr.sub lhs.env
+   expr.frs  = recExpr.frs
 \end{code}
-The recursive part of the \emph{RecExpr} needs to be inferred first. After that the resulting substitutions are applied to the $\Gamma$ to update the shared values. This is important in expressions such as $\\f \rightarrow (f 1, f 'a')$. With the new expression and prefix the type of the expression at the current position of the tuple can be inferred.
+The recursive part of the \emph{RecExpr} needs to be inferred first. After that the resulting substitutions are applied to the $\Gamma$ to update the shared values. This is important in expressions such as |\f -> (f 1, f 'a')|. With the new expression and prefix the type of the expression at the current position of the tuple can be inferred.
 
 \begin{code}    
    (loc.q1, loc.frs, loc.res)
-     = let e = recExpr.res
-           t = expr.res
-       in case (e, t) of
-            (Nothing, _) -> error $ "infer of tuple element '" ++ pp loc.mbNm ++ "' failed"
-            (_, Nothing) -> error $ "infer of the expression '" ++ pp loc.expr ++ "' failed"
-            (Just rty,Just ty) -> 
-               let (typ, frs, _) = renameBound expr.frs ty 
-                   (q,   e     ) = second (\ty'->RowTyExpr_Ext rty loc.mbNm ty') 
-                                          (deep_explode' expr.pre typ)
-               in (q, frs, e)
+     =  let  e  = recExpr.res
+             t  = expr.res
+        in case (e, t) of
+             (Nothing, _) -> error ... -- tuple element infer failed
+             (_, Nothing) -> error ... -- expr infer failed
+             (Just rty,Just ty) -> 
+                let  (typ, frs,  _)  = renameBound expr.frs ty 
+                     (q,   e      )  = second  (RowTyExpr_Ext rty loc.mbNm) 
+                                               (deep_explode' expr.pre typ)
+                in (q, frs, e)
 \end{code}
-\emph{rty} represents the type of the recursive RecExpr and the \emph{ty} is the type of the current expression. If both are not Nothing then the current type is renamed and it's quantifiers are removed and moved to the prefix. Generalization in the \emph{Expr} datasem will fully quantify them again. This is done because the type of $(id, id)$ should be $\forall a. b. (a \rightarrow a, b \rightarrow b)$ and not $(\forall a. a \rightarrow a, \forall a. a \rightarrow a)$.
+\emph{rty} represents the type of the recursive RecExpr and the \emph{ty} is the type of the current expression. If both are not Nothing then the current type is renamed and its quantifiers are removed and moved to the prefix. Generalization in the \emph{Expr} datasem will fully quantify them again. This is done because the type of |(id, id)| should be |forall a. b. (a -> a, b -> b)| and not |(forall a. a -> a, forall a. a -> a)|.
 
 \begin{code}                              
-      lhs.sub = recExpr.sub `munion` expr.sub
-      lhs.res = return loc.res
-      lhs.frs = loc.frs
-      lhs.pre = loc.q1
+      lhs.sub  = recExpr.sub `munion` expr.sub
+      lhs.res  = return loc.res
+      lhs.frs  = loc.frs
+      lhs.pre  = loc.q1
    clause Empty
-      lhs.res = return RowTyExpr_Empty
+      lhs.res  = return RowTyExpr_Empty
 \end{code}
 The resulting type is then simply returned along with the substitutions and the new prefix. 
 
@@ -120,8 +120,8 @@ UHC desugars a function with multiple binding into a single let with a case expr
 \paragraph{Single argument functions}
 Consider the function \emph{f} defined as:
 \begin{code}
-f True = False
-f x    = x && True
+f True  = False
+f x     = x && True
 \end{code}
 This is desuged by UHC into:
 \begin{code}
@@ -158,53 +158,54 @@ With this definition the datasem of \emph{Expr} can be expanded with:
 
 \begin{code}
    clause Case
-      expr.env = lhs.env
-      expr.pre = lhs.pre
-      expr.frs = lhs.frs
+      expr.env  = lhs.env
+      expr.pre  = lhs.pre
+      expr.frs  = lhs.frs
       
-      loc.etype = maybe (error $ "case infer of '" ++ pp loc.expr ++ "' failed") id expr.res
+      -- check if infer of expression succeeded
+      loc.etype = maybe (error ...) id expr.res
 \end{code}
 It starts of by inferring the type of the scrutinee. This is usually returns a completely polymorphic types since the scrutinee is usually a variable (or a tuple thereof). 
 
 \begin{code}
-   alts.exp = loc.etype
-   alts.env = appAll expr.sub lhs.env
-   alts.frs = expr.frs
-   alts.pre = expr.pre
+   alts.exp  = loc.etype
+   alts.env  = appAll expr.sub lhs.env
+   alts.frs  = expr.frs
+   alts.pre  = expr.pre
    
    child s : UnifyScheme = unifyScheme
-   s.pre = alts.pre
-   s.ty1 = loc.etype
-   s.ty2 = caseLHS alts.res
-   s.frs = alts.frs
+   s.pre  = alts.pre
+   s.ty1  = loc.etype
+   s.ty2  = caseLHS alts.res
+   s.frs  = alts.frs
 \end{code}
 After the type of the scrutinee the types of the case alternatives are inferred. The result of which is a record which contains the inferred type for the left hand side of the case alternatives (unified together) and the type representing of the right hand side of the case alternatives. The type of the scrutinee is then unified with that of the left-hand sides of the case alternatives.
 
 \begin{code}       
    (loc.q1, loc.q2) = split (s.pre, domain lhs.pre)
    
-   lhs.res = return $ desugar 
-                    $ TyScheme_Sugar loc.q2 
-                    $ appAll alts.sub 
-                    $ body alts.res
-   lhs.sub = s.sub `pick` alts.sub `pick` expr.sub
-   lhs.pre = loc.q1
-   lhs.frs = s.frs
+   lhs.res = return  $ desugar 
+                     $ TyScheme_Sugar loc.q2 
+                     $ appAll alts.sub 
+                     $ body alts.res
+   lhs.sub  = s.sub `pick` alts.sub `pick` expr.sub
+   lhs.pre  = loc.q1
+   lhs.frs  = s.frs
 \end{code}
-At the end generalization is done and the fully quantified type is returned, which consists of the substitutions gathered during inference applied to the type of the right-hand side of the case expressions (to insure that all substitutions they have all been applied). 
+At the end generalization is done and the fully quantified type is returned, which consists of the substitutions gathered during inference applied to the type of the right-hand side of the case expressions (to insure that all substitutions they have all been applied). The |pick| function add to the first environment anything new from the second environment. In essense it is the same as |nub . concat|.
 
 The interface for \emph{CaseAlts} is defined as:
 \begin{code}
 itf CaseAlts
   visit infer
-    inh ast :: CaseAlts
-    inh env :: Gamma
-    inh pre :: Prefix
-    inh frs :: Int
-    syn pre :: Prefix
-    syn sub :: Env
-    syn res :: CaseType
-    syn frs :: Int 
+    inh ast  :: CaseAlts
+    inh env  :: Gamma
+    inh pre  :: Prefix
+    inh frs  :: Int
+    syn pre  :: Prefix
+    syn sub  :: Env
+    syn res  :: CaseType
+    syn frs  :: Int 
 \end{code}
 
 The full implementation will not be covered here, but those interested can look it up in the source code.

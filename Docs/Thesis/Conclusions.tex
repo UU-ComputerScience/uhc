@@ -18,7 +18,7 @@ By implementing type checking for case expressions and a large subset of EH8 we 
 \section{Future Work}
 The implementation is far from finished. Only a small fraction of EH is type able with this implementation. Currently the only place patterns are supported are in lambda abstractions. This is the easiest to fix.
 
-Applying a function to itself also does not quite work as expected. For example typing $(.)(.)$ returns an incorrect type. Some renaming is needed but just renaming bound variables will result in other expressions breaking. The problem needs to be examined and a proper solution developed.
+Applying a function to itself also does not quite work as expected. For example typing |((.) .)| returns an incorrect type. Some renaming is needed but just renaming bound variables will result in other expressions breaking. The problem needs to be examined and a proper solution developed.
  
 Currently there is no support for type classes and GADTs. Implementing Type classes should provide for an interesting experience since the type classes can be encoded in the bounds of the prefixes instead of passes as an extra argument to functions, which makes for a direct correlation between the classes and the types.
 \section{Conclusion}

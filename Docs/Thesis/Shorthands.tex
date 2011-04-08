@@ -16,11 +16,13 @@
 %format inh             = "\mathbf{inh}"
 %format syn             = "\mathbf{syn}"
 %format sem             = "\mathbf{sem}"
-%format datasem         = "\mathbf{sem}"
+%format datasem         = "\mathbf{datasem}"
+%format internal        = "\mathbf{internal}"
 %format itf             = "\mathbf{itf}"
 %format tail            = "\mathbf{tail}"
 %format clause          = "\mathbf{clause}"
 %format default         = "\mathbf{default}"
+%format visit           = "\mathbf{visit}"
 %format child           = "\mathbf{child}"
 %format match           = "\mathbf{match}"
 %format forall (xs) (q) = "\mathbf{forall}\;" xs ".\;" q
@@ -32,9 +34,69 @@
 %format none            = "\mathbf{none}"
 %format strict          = "\mathbf{strict}"
 
-%format .               = "."
+%% Rules for subscript variables
+%format e1'             = "e_{1'}"
+%format e2'             = "e_{2'}"
+%format e1              = "e_1"
+%format e2              = "e_2"
+%format e3              = "e_3"
+%format e4              = "e_4"
+%format e5              = "e_5"
+%format e6              = "e_6"
+%format e7              = "e_7"
+%format a1              = "\alpha_1"
+%format a2              = "\alpha_2"
+%format frs6            = "frs_6"
+%format p1              = "p_1"
+%format p2              = "p_2"
+%format b1              = "b_1"
+%format b2              = "b_2"
+%format b               = "\beta"
+%format temp1           = "temp_1"
+%format temp2           = "temp_2"
+%format temp3           = "temp_3"
+%format q1'             = "q_{1'}"
+%format q2'             = "q_{2'}"
+%format q1              = "q_1"
+%format q2              = "q_2"
+%format q3              = "q_3"
+%format q4              = "q_4"
+%format q5              = "q_5"
+%format q6              = "q_6"
+%format frs1            = "frs_1"
+%format frs2            = "frs_2"
+%format frs3            = "frs_3"
+%format frs4            = "frs_4"
+%format frs5            = "frs_5"
+%format exp_a           = "exp_a"
+%format exp1            = "exp_1"
+%format exp2            = "exp_2"
+%format op1             = "op_1"
+%format op2             = "op_2"
+%format ty1             = "ty_1"
+%format ty2             = "ty_2"
+%format nfTy1           = "nfTy_1"
+%format nfTy2           = "nfTy_2"
+%format var1            = "var_1"
+%format var2            = "var_2"
+%format v1              = "v_1"
+%format v2              = "v_2"
+%format phi1            = "phi_1"
+%format phi2            = "phi_2"
+%format app1            = "app_1"
+%format app2            = "app_2"
+
+%format `remove`        = "-"
+%format _|_             = "\bot"
+%format >=              = "\geq"
+%format .               = "\mbox{.}"
 %format `munion`        = "\cup "
-%format sub             = "sub"
+%format `munion'`       = "\underline{\cup} "
+%format `minsert`       = "\cup "
+%format ++       = "\cup "
+%format `contains`      = "\in "
+%format forall          = "\forall"
+%format elems           = "`elem`"
 
 %format alpha           = "\alpha"
 %format beta            = "\beta"
@@ -42,9 +104,35 @@
 %format (attr f a)      = f "." a
 %format (lhsattr a)     = lhs "." a
 %format (locattr a)     = loc "." a
-%format (sub (k) (x))   = "{" k "}_{" x "}"
+%%format (sub (k) (x))   = "{" k "}_{" x "}"
 %format (tau (x))       = "\tau_{" x "}"
 %format (In (k) (x))    = k "I" x
 %format (Out (k) (x))   = k "O" x
 %format (InLhs (x))     = "lhsI" x
 %format (OutLhs (x))    = "lhsO" x
+
+%format bot = "\bot"
+%format Gamma = "Gamma "
+
+%format (vec (x))           = "\overline{" x "}"
+%format (subst (a) (b) (c)) = [ a := b ] c
+%format (con (x))           = con (x)
+%format (dom (x))           = dom (x)
+%format theta               = "\theta "
+%format rho                 = "\rho"
+%format phi                 = "\varphi"
+%format phi_1               = "\varphi_1"
+%format rho_1
+%format rho_2
+%format theta_1
+%format theta_2
+%format Q_1
+%format Q_2
+%format Q_3
+%format _assume             = "\text{assume}"
+%format _let                = "\text{let}"
+%format _if                 = "\text{if}"
+%format _then               = "\text{then}"
+%format _else               = "\text{else}"
+%format _failIf             = "\text{fail if}"
+%format _return             = "\text{return}"

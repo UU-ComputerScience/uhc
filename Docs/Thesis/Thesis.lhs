@@ -2,6 +2,9 @@
 
 %include lhs2TeX.fmt
 %include polycode.fmt
+%include forall.fmt
+%include greek.fmt
+%include spacing.fmt
 
 \usepackage{fancyvrb,url}
 \usepackage[english]{babel}

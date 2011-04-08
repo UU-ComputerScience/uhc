@@ -28,9 +28,9 @@ Consider the following example from the paper\cite{FPH}:
 
 \begin{quotation}
 \textit{inc} $\hspace{16.5pt}$ :: Int $\rightarrow$ Int\\
-\indent \textit{single} $\hspace{3pt}$ :: $\forall\alpha$. $\alpha$ $\rightarrow$ List $\alpha$\\
-\indent \textit{append} :: $\forall\alpha$. List $\alpha$ $\rightarrow$ List $\alpha$ $\rightarrow$ List $\alpha$\\
-\indent \textit{map} $\hspace{10.2pt}$ :: $\forall\alpha\beta$. ($\alpha$ $\rightarrow$ $\beta$) $\rightarrow$ List $\alpha$ $\rightarrow$ List $\beta$ 
+\indent \textit{single} $\hspace{3pt}$  :: $\forall\alpha$. $\alpha$ $\rightarrow$ List $\alpha$\\
+\indent \textit{append}  :: $\forall\alpha$. List $\alpha$ $\rightarrow$ List $\alpha$ $\rightarrow$ List $\alpha$\\
+\indent \textit{map} $\hspace{10.2pt}$  :: $\forall\alpha\beta$. ($\alpha$ $\rightarrow$ $\beta$) $\rightarrow$ List $\alpha$ $\rightarrow$ List $\beta$ 
 \end{quotation}
 
 The following expression type checks just fine under HML
@@ -41,7 +41,7 @@ in  (map poly ids, append (single inc) ids)
 
 But would require \textit{ids} to be two incomparable System F types at the same time, namely List (Int $\rightarrow$ Int) and List ($\forall\alpha$. $\alpha$ $\rightarrow$ List $\alpha$). This is where \textit{flexible} types come in, the type of ids can now be described as $\forall(\beta\geq \forall\alpha \rightarrow \alpha).$ List $\beta$, which can be interpreted as "any $\beta$ that is an instance of $\forall\alpha \rightarrow \alpha$ the type List $\beta$ is valid". This can be considered as the most "principle" or general type of that expression. The flexible type of ids can then be instantiated to both of the required types. 
 
-These \textit{flexible} types are the key HML, but flexible types are only allowed on \textit{Let}-bindings (see f) and values of a flexible type cannot be passed as arguments.
+These \textit{flexible} types are the key HML, but flexible types are only allowed on \textit{Let}-bindings (see |poly|) and values of a flexible type cannot be passed as arguments.
 
 The algorithms and typing rules in the paper were of course designed for a simple lambda-calculus language. To be usable they need to be scaled up to one that works on the specific variant of EH in use, as such the types will reflect this.
 \section{Types}
@@ -110,8 +110,8 @@ The prefix cannot contain any trivial bounds, which is why the \emph{Quantified 
 The next two types are the \emph{monomorphic} $\tau$ and the \emph{unqualified types} $\rho$. The \emph{monomorphic} type $\tau$ is the same type as in hindley milner, and the \emph{unqualified} $\rho$ type is just a type without any outer quantifiers. 
 
 \begin{eqnarray*}
-\tau ::= \alpha || (\tau) || c || \tau_1 \hspace{5pt} \tau_2 \\
-\rho ::= \alpha || (\rho) || c || \rho_1 \hspace{5pt} \rho_2
+\tau  ::= \alpha \hspace{3pt} || \hspace{3pt} (\tau) \hspace{3pt} || \hspace{3pt} c \hspace{3pt} || \hspace{3pt} \tau_1 \hspace{5pt} \tau_2 \\
+\rho  ::= \alpha \hspace{3pt} || \hspace{3pt} (\rho) \hspace{3pt} || \hspace{3pt} c \hspace{3pt} || \hspace{3pt} \rho_1 \hspace{5pt} \rho_2
 \end{eqnarray*}
 
 Aside from these types there are some syntactical sugar used in the paper and the rest of this chapter:
@@ -190,8 +190,8 @@ The semantics of a type scheme $\varphi$ written as $\br{\varphi}$  is defined b
 \br{\bot} & = & \br{\forall\alpha . \alpha} \\
 \br{\sigma} & = & \{ \sigma^{'} || \sigma \sqsubseteq_F \sigma^{'} \} \\
 \br{\forall(\alpha \geq \varphi_1).\varphi_2} & = & \{ \sigma^{'} || \sigma_1  \in \br{\varphi_1}, \sigma_2 \in \br{\varphi_2}, \\ 
-   &\overline{\beta}& \# ftv(\forall(\alpha \geq \varphi_1).\varphi_2), \\
-   &\varphi^{'} & \in \br{\forall\overline{\beta}.\lbrack \alpha := \sigma_1 \rbrack\sigma_2}  \} 
+   &\mbox{   }& \mbox{   } \overline{\beta} \# ftv(\forall(\alpha \geq \varphi_1).\varphi_2), \\
+   &\mbox{   }& \mbox{   } \varphi^{'} \in \br{\forall\overline{\beta}.\lbrack \alpha := \sigma_1 \rbrack\sigma_2}  \} 
 \end{eqnarray*}
 \caption{Semantics of a type scheme}
 \end{figure}
@@ -341,10 +341,10 @@ Concretely this means that extending the prefix with e.g. $\beta \geq (\forall(\
 The definition of the \emph{explode} function is quite simple:
 
 \begin{eqnarray*}
-\lefteqn{\textrm{explode Q $\phi$}} = \\
+\lefteqn{\textrm{explode Q $\varphi$}} = \\
 & & \textrm{if} (nf(\varphi) = \bot) \\
-& & \quad \textrm{then let } (\forall Q_1 . \varphi_1) = \phi \\
-& & \quad \textrm{     return } (Q Q_1, \varphi_1) \\
+& & \quad \textrm{then let } (\forall Q_1 . \varphi_1) = \varphi \\
+& & \quad \quad \quad \textrm{     return } (Q Q_1, \varphi_1) \\
 & & \quad \textrm{else return } (Q, \varphi)
 \end{eqnarray*}
 
@@ -363,12 +363,12 @@ They do however result in the same SystemF type. This occurs because we want to 
 \begin{code}
 embedF :: TyExpr -> TyScheme
 embedF = embed id
- where embed :: (TyScheme -> TyScheme) -> TyExpr -> TyScheme
-       embed val (TyExpr_Parens     s) = embed val s
-       embed val (TyExpr_Quant  _ a t) = 
-         let e = TyScheme_Quant (Scheme_Simple a TyScheme_Bottom)
-         in  embed (val . e) t
-       embed val e                     = val (TyScheme_SystemF e)
+  where  embed :: (TyScheme -> TyScheme) -> TyExpr -> TyScheme
+         embed val (TyExpr_Parens     s) = embed val s
+         embed val (TyExpr_Quant  _ a t) = 
+           let e = TyScheme_Quant (Scheme_Simple a TyScheme_Bottom)
+           in  embed (val . e) t
+         embed val e                     = val (TyScheme_SystemF e)
 \end{code}
 
 The reason we don't promote higher-rank quantifier is that it would require a change of the definition of a type scheme. Unfortunately at the moment of discovery time constraints prohibited this.

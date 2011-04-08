@@ -167,8 +167,8 @@ data Operator
 
 itf Expr
   visit eval
-    inh ast :: Expr -- input
-    syn v   :: Int  -- output
+    inh ast  :: Expr -- input
+    syn v    :: Int  -- output
 \end{code}
 \end{minipage}
 \caption{Evaluating expressions in ruler-core: datatypes}
@@ -203,7 +203,7 @@ As many visits as needed can be declared inside an interface. Every visit is a n
 \subsection{Visits}
 Visits are co-routines (functions) that can be invoked to perform a computation, the synthesis of attributes are done in these sequential passes. Visits consist of different clauses. If a visit only has one clause, it does not have to be declared. 
 
-Visits like all functions have arguments, or in this case attributes. The \emph{inh} keyword indicates an \emph{inherited} attribute (input value) whereas the \emph{syn} indicates a \emph{synthesized} attribute (output value). The order of declaration of the attributes are not important.
+Visits like all functions have arguments, or in this case attributes. The \emph{inh} keyword indicates an \emph{inherited} attribute (input value) whereas \emph{syn} indicates a \emph{synthesized} attribute (output value). The order of declaration of the attributes are not important.
 
 After declaring the datatypes and interfaces, the actual semantic function can be declared to evaluate the expressions:
 
@@ -253,7 +253,7 @@ Defining a \textbf{datasem} is a shorthand for defining a \textbf{sem} (more on 
 
 The \emph{clauses} in a \textbf{datasem} should coincide with the constructors of the data type. The preprocessor enforces that there is a clause for every declared constructor. Every clause declaration implicitly adds a \textbf{match} statement for every clause. This is the reason why there is a required attribute \emph{ast} for ever nonterminal. This is the attribute on which matches are tried out on in the main clauses of a \textbf{datasem}. A \textbf{match} is essentially an assertion, if failed nothing else for that clause is tried out and backtracking takes place.
 
-For every \textbf{datasem}, in every clause where there is a nonterminal in the definition of that clause, there will be an implicit child declared for that field. It is for this reason that in figure \ref{example:tutorial1:datasem} it is refered to the operator terminal via the local child (loc.op) and the \emph{exp1} and \emph{exp2} nonterminals directly. In the case of \emph{Expr} there was only one \emph{inherited} attribute: ast, but since ast is filled in automatically by \rcore the invoke is implicitly performed. Which is why the synthesized attributes can be accessed without any further action. 
+For every \textbf{datasem}, in every clause where there is a nonterminal in the definition of that clause, there will be an implicit child declared for that field. It is for this reason that in figure \ref{example:tutorial1:datasem} it is refered to the operator terminal via the local child (loc.op) and the \emph{|exp1|} and \emph{|exp2|} nonterminals directly. In the case of \emph{Expr} there was only one \emph{inherited} attribute: ast, but since ast is filled in automatically by \rcore the invoke is implicitly performed. Which is why the synthesized attributes can be accessed without any further action. 
 
 \subsection{Bindings}
 \label{bindings}
@@ -297,7 +297,7 @@ match True = <expression>
 \label{match:bool}
 \end{figure}
 
-Figure \ref{match:bool} shows that on certain types the rules are relaxed, particularly the Bool type. Note that because there is no build in support for the \emph{Maybe} type, often in this thesis this will be supported by first match on True = isJust \emph{expr} and then a subsequent call the \emph{fromJust} function.
+Figure \ref{match:bool} shows that on certain types the rules are relaxed, particularly the Bool type. Note that because there is no build in support for the \emph{Maybe} type, often in this thesis this will be supported by first match on |True = isJust expr| and then a subsequent call the |fromJust| function.
 
 \subsection{Internal}
 Sometimes it is necessary to make a decision inside a clause to branch. For example on a value that was just synthesized. This is achieved by using the \emph{internal} keyword. The \emph{internal} keyword provides a means of scoping and branching at the same time. Internals contain a list of \emph{clauses} which will be tried out in order one at a time. Attributes that were declared before the \emph{internal} statement are all in scope inside an internal block. 
@@ -352,10 +352,10 @@ In order to be able to evaluate variables an \emph{environment} needs to be pass
 \begin{code}
 itf Expr
   visit eval 
-    inh ast :: Expr
-    inh env :: Env
-    syn v   :: Int
-    syn env :: Env
+    inh ast  :: Expr
+    inh env  :: Env
+    syn v    :: Int
+    syn env  :: Env
 \end{code}
 
 A new attribute \emph{env} is added which is both a \emph{synthesized} and \emph{inherited} attribute. Strictly speaking the \emph{env} could only be an \emph{inherited} attribute, however both are needed if you want to have access to variables introduced in the left branch in Expr in the right branch.
@@ -364,20 +364,20 @@ Now that the type and interface have been extended the next step is to extend th
 
 \begin{code}
    clause Var
-     loc.val = lookup loc.nm lhs.env
-     lhs.v   = fromMaybe (error ...) loc.val
+     loc.val  = lookup loc.nm lhs.env
+     lhs.v    = fromMaybe (error ...) loc.val
    clause Let
-     loc.env  = (loc.nm, exp.v): lhs.env
-     body.env = loc.env
-     lhs.v    = body.v
+     loc.env   = (loc.nm, exp.v): lhs.env
+     body.env  = loc.env
+     lhs.v     = body.v
 \end{code}
 
-The code for \emph{Var} and \emph{Let} show that \emph{lhs} is used both for synthesized and inherited attributes. Which is intended is determined by the way it is used (see section \ref{bindings}).
+The code for |Var| and |Let| show that |lhs| is used both for synthesized and inherited attributes. Which is intended is determined by the way it is used (see section \ref{bindings}).
 
 Sometimes special types such as Lists are needed. The next example shows how list support is provided in \rcore by adding the ability to evaluate a list of expressions.
 
 \subsection{Special types}
-At the time of writing \rcore only supports \emph{List}s in this category, but could be easily extended to support any product type like \emph{Maybe} and \emph{Map}.
+At the time of writing \rcore only supports \emph{List}s in this category, but could be easily extended to support any product type like |Maybe| and |Map|.
 
 \subsubsection{Lists}
 Lists are declared using the \textbf{type} keyword. The syntax should be very familiar for a Haskell programmer: \[ \textbf{type} \hspace{5pt} \emph{name} : [\emph{type}] \]
@@ -399,8 +399,8 @@ Figure \ref{type:exprs} declares the \emph{Non-Terminal} Exprs. This definition 
 data Exprs
   con Nil
   con Cons
-    hd : Expr
-    tl : Exprs
+    hd  : Expr
+    tl  : Exprs
 \end{code}
 \caption{Syntactically equivalent definition of the Exprs type}
 \label{type:lists}
@@ -429,23 +429,23 @@ With figure \ref{type:lists} and \ref{itf:exprs} in mind the real interface to o
 \begin{code}
 itf Exprs
   visit eval 
-    inh ast :: Exprs
-    inh env :: Env
-    syn v   :: [Int]
-    syn env :: Env
+    inh ast  :: Exprs
+    inh env  :: Env
+    syn v    :: [Int]
+    syn env  :: Env
 \end{code}
 \end{minipage}
 \begin{minipage}[t]{0.6\linewidth}
 \begin{code}
 datasem Exprs
    clause Cons
-     hd.env  = lhs.env
-     tl.env  = lhs.env
-     lhs.v   = hd.v : tl.v
-     lhs.env = lhs.env
+     hd.env   = lhs.env
+     tl.env   = lhs.env
+     lhs.v    = hd.v : tl.v
+     lhs.env  = lhs.env
    clause Nil
-     lhs.env = lhs.env
-     lhs.v   = []
+     lhs.env  = lhs.env
+     lhs.v    = []
 \end{code}
 \end{minipage}
 \end{figure}
@@ -473,7 +473,7 @@ The values are collected in such a way that they are added to the list in order 
 
 The default rules look at the attribute names and not the types. If a child defines an attribute for which there is a \emph{default} rule defined but where the \emph{type} of this attribute is different then the type of the other element of the list, then a type error will be generated by the Haskell compiler since Haskell lists are heterogeneous.
 
-Using default rules we can simplify the definition of the Exprs datasem:
+Using default rules we can simplify the definition of the Exprs |datasem|:
 
 \begin{code}
 datasem Exprs
@@ -507,9 +507,9 @@ data Operator
 \begin{code}
 itf OperatorEq
   visit compare
-    inh op1 :: Operator
-    inh op2 :: Operator
-    syn eq  :: Maybe Operator
+    inh op1  :: Operator
+    inh op2  :: Operator
+    syn eq   :: Maybe Operator
 \end{code}
 \end{minipage}
 \caption{Interface to compare two operators}
@@ -594,11 +594,11 @@ The next part will show how to compare two expressions, and the declaration of  
 \begin{code}
 itf Compare
   visit compare
-    inh exp1 :: Expr
-    inh exp2 :: Expr
-    inh env  :: Pair Env
-    syn env  :: Pair Env
-    syn exp  :: Maybe Expr
+    inh exp1  :: Expr
+    inh exp2  :: Expr
+    inh env   :: Pair Env
+    syn env   :: Pair Env
+    syn exp   :: Maybe Expr
 \end{code}
 
 \subsection{Children}
@@ -638,7 +638,7 @@ Contrary to a \textbf{datasem} there is no real distinction between terminals an
 
 \begin{figure}[h!]
 \[
-\textbf{child} \hspace{5pt} \emph{name} : Interface \hspace{5pt} [= sem_name]
+\textbf{child} \hspace{5pt} \emph{name} : Interface \hspace{5pt} [= sem\_name]
 \]
 \caption{child declaration syntax}
 \end{figure}
