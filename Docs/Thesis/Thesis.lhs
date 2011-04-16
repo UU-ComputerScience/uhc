@@ -17,6 +17,7 @@
 \usepackage{graphicx}
 \usepackage{bussproofs}
 \usepackage{amssymb}
+\usepackage{amsmath}
 \usepackage{latexsym}
 \usepackage{hyperref}
 \usepackage{makeidx}
@@ -79,6 +80,8 @@
 \appendix
 
 %include A-Compare.tex
+
+%include A-Formal.tex
 
 %include citations.tex
 \end{document}

@@ -1,0 +1,157 @@
+\chapter{Specification of algorithms}
+\label{appendix:formal}
+
+\invisiblecomments
+
+\begin{figure}[h!]
+
+< subsume :: (Q, phi, sigma) -> (Q, theta)
+<   -- where |phi| and |sigma| are in normal form
+< -- 
+< subsume (Q, bot, rho) =
+<   _return (Q, [])
+< -- 
+< subsume (Q, forall Q_2 . rho_1, forall (vec alpha) . rho_2) =
+<   _assume (dom Q) # (dom Q_2) ^^ -- and |vec c| are fresh constants
+<   _let (Q_1, theta_1)  =  unify (Q ^ Q_2, subst (vec alpha) (vec c) rho_1, rho_2)
+<   _let (Q_3, Q_4)      =  split (Q_1, dom Q)
+<   _let theta_2         =  theta_1 - dom Q_4
+<   _failIf (c _in (con theta_2 cup (con Q_3))
+<   _return (Q_3, theta_2)
+
+\caption{Subsume specification}
+\label{specs:subsume}
+\end{figure}
+
+\begin{figure}[h!]
+
+< unifyScheme :: (Q, phi_1, phi_2) -> (Q, theta, phi)
+<   -- where |phi_1| and |phi_2| are in normal form
+< --
+< unifyScheme (Q, bot, phi) or unifyScheme (Q, phi, bot)
+<   _return (Q, [], phi)
+< --
+< unifyScheme (Q, forall Q_1 . rho_1, forall Q_2 . rho_2)
+<   _assume the domains of Q, Q_1 and Q_2 are disjoint
+<   _let (Q_3  , theta_3)  =  unify(Q ^ Q_1 ^ Q_2, rho_1, rho_2)
+<   _let (Q_4  , Q_5)      =  split(Q_3, dom Q)
+<   _return (Q_4, theta_3, forall Q_5 . theta_3 rho_1)
+
+\caption{UnifyScheme specification}
+\label{specs:unifyScheme}
+\end{figure}
+
+
+\begin{figure}[h!]
+
+< unifyRows :: (Q, omega_1, omega_2) -> (Q, theta, omega)
+< --
+< unifyRows (Q, bot, bot)
+<    _return (Q, [], bot)
+< --
+< unifyRows (Q, (omega_1; sigma_1), (omega_2; sigma_2))
+<   _let (Q_1, theta_1, phi)       =  unifyScheme (Q, sigma_1, sigma_2)
+<   _let (Q_2, theta_2, omega_3)   =  unifyRows (Q_1, theta_1 ^ sigma_1, theta_1 ^ sigma_2)
+<   _let (forall Q_3 . phi_2)      =  phi
+<   _let theta_3                   =  theta_1 dot theta_2
+<   _let (Q_4, Q_5)                =  split (Q_2 ^ Q_3, dom theta_3)
+<   _return (Q_5, theta_2, omega_3 ; ftype phi)
+
+\caption{UnifyRows (Tuples) specification}
+\label{specs:unifyRows}
+\end{figure}
+
+
+\begin{figure}[h!]
+
+< unify :: (Q, sigma_1, sigma_2) -> (Q, theta)
+<   -- where |sigma_1| and |sigma_1| are in normal form
+< --
+< unify(Q, alpha, alpha)
+<   _return (Q, [])
+< --
+< unify(Q, (sigma_1), sigma_2) or unify(Q, sigma_1, (sigma_2))
+<   _return unify(Q, sigma_1, sigma_2)
+< --
+< unify(Q, c, c)
+<   _return (Q, [])
+< --
+< unify(Q, f_1 ^^ e_1, f_2 ^^ e_2)
+<   _let (Q_1, theta_1)  =  unify(Q, f_1, f_2)
+<   _let (Q_2, theta_2)  =  unify(Q_1, theta_1 ^ e_1, theta_1 ^ e_2)
+<   _return (Q_2, theta_2 dot theta_1)
+< --
+< unify(Q, omega_1, omega_2)
+<   _let (Q_1, theta, omega) = unifyRows (Q , omega_1, omega_2)
+<   _return (Q_1, theta)
+< --
+< unify(Q, alpha, sigma) or
+< unify(Q, sigma, alpha) -- with |(a >= (hat phi)) _in Q|
+<   _failIf (alpha _in (dom(Q/sigma)()   (`occurs` check)
+<   _let (Q_1, theta_1)  =  subsume(Q, hat phi, sigma)
+<   _let (Q_2, theta_2)  =  update(Q_1, a := theta_1 ^ sigma)
+<   _return (Q_2, theta_2 dot theta_1)
+< --
+< unify(Q, a1, a2) -- with |(a1 >= (hat phi_1)) _in Q wedge (a2 >= (hat phi_2))  _in Q|
+<   _failIf (a1 _in (dom(Q/(hat sigma_2)))) vee (a2 _in (dom(Q/(hat sigma_1))))
+<   _let (Q_1, theta_1, phi)  =  unifySCheme(Q, hat phi_1, hat phi_2)
+<   _let (Q_2, theta_2)       =  update(Q_1, a1 := a2)
+<   _let (Q_3, theta_3)       =  update(Q_2, a2 >= phi)
+<   _return (Q_3, theta_3 dot theta_2 dot theta_1)
+< --
+< unify(Q, forall alpha . sigma_1, forall beta . sigma_2) = 
+<   -- assume |c| is a fresh (skolem) constant
+<   _let (Q_1, theta_1) = unify(Q, lbrack alpha := c rbrack sigma_1, lbrack beta := c rbrack sigma_2)
+<   _failIf (c _in (con(theta_1) cup (con(Q_1)))
+<   _return (Q_1, theta_1)
+
+\caption{Unify specification}
+\label{specs:unify}
+\end{figure}
+
+\begin{figure}[h!]
+
+< infer :: (Q, Gam, e) -> (Q, theta, phi)
+< --
+< infer(Q, Gam, alpha) =
+<   _return (Q, [], Gam(alpha))
+< --
+< infer(Q, Gam, c) =
+<   _return (Q, [], alphaconv (Gam(c)))
+< --
+< infer(Q, Gam, Let (vec (x = e_1)) in e_2) =
+<   -- where |vec alpha| are fresh variables and |vec alpha # vec (x = e_1)|
+<   _let Gam_1                  =  (Gam, x : forall (beta >= bot) . beta) -- foreach |beta _in (vec alpha)|
+<   -- foreach  |alpha _in (vec x)| do
+<   _let (Q_1, theta_1, phi_1)  =  infer(Q, Gam_1, e_1)
+<   _let (forall Q_2 . phi_2)   =  Gam_1(alpha)
+<   _let (Q_3, theta_2)         =  unify(Q_2 ^ Q_1,  phi_1, theta_1 ^ alpha)
+<   _let (Q_4, theta_3, phi_3)  =  infer(Q_3, [alpha := theta_2 ^ phi_1]Gam_1, e_1)
+<   _return (Q_4, theta_1 dot theta_2 dot theta_3, phi_3)
+< --
+< infer(Q, Gam, \x.e) =
+<   -- assume |beta| us fresh and |sigma| is closed
+<   _let(Q_1, theta_1, alpha, Gam_1)  =  infer(Q, Gam, x)
+<   _let Gam_1                        =  theta_1 ^ Gam_1
+<   _let (Q_2, theta_2, phi_1)        =  infer(Q_1, Gam_1, e)
+<   _let alpha'                       =  ftype alpha
+<   _failIf _not ((theta_1 dot theta_2) ^ alpha' = tau) for some tau
+<   _let (forall Q' . phi')           =  phi_1
+<   _let (Q_3, Q_4)                   =  split(Q_2 ^ Q', dom Q `reachedBy` (theta_1 dot theta_2))
+<   _let (Q_4', theta_3')             =  extend(Q_3, beta >= phi')
+<   _return (Q_3, theta_2, forall Q_4' . theta_2 ^ alpha' -> theta_3' beta)
+< --
+< infer(Q, Gam, e_1 ^ e_2) =
+< -- assume |a1, a2, b| are fresh
+<   _let (Q_1, phi_1, theta_1)  =  infer(Q, Gam, e_1)
+<   _let (Q_2, phi_2, theta_2)  =  infer(Q_1, theta_1 ^ Gam, e2)
+<   _let (Q_2', theta_2')       =  extend(Q_2, a1 >= theta_2 ^ phi_1, a_2 >= phi_2, b >= bot)
+<   _let (Q_3, theta_3)         =  unify(Q_2', theta_2' ^ a1, theta_2' ^ a2 -> b)
+<   _let (Q_4, Q_5)             =  split(Q_3, dom Q)
+<   _return (Q_4, theta_3 dot theta_2 dot theta_1, forall Q_5 . theta_3 b)
+
+\caption{Expr inferrence}
+\label{specs:infer}
+\end{figure}
+
+\visiblecomments

@@ -7,14 +7,15 @@
 One problematic area that is sure to continue coming up when scaling this implementation is the inability to return to the call site after an internal.
 This causes a large chunk of code duplication and lowers the maintainability of the code. Perhaps future work for ruler-core could solve this problem. One possibility is to have a special node in the graph in which you do allow cycles to occur, which can only be created by an internal statement.
 \section{HML}
-Flexible types make HML a really interesting type system. However it deviates from what most Haskell programmers are used to. It certainly adds flexibility but with it comes complexity. 
+Flexible types make the HML type system a really interesting type system. However it deviates from what most Haskell programmers are used to. It certainly adds flexibility, but with this flexibility comes extra complexity. 
 An expression such as:
 \begin{code}
 let ids = single id 
 in (map poly ids, append (single inc) ids)
 \end{code}
-is not possible in GHC and this already shows part of the power of HML. HML also handled co- and contra-variant instantiation better than GHC. But the one major downside of HML is that the types are presented somewhat more complicated to the end user. 
-By implementing type checking for case expressions and a large subset of EH8 we have shown that it is possible to use this type system for more than just lambda-calculus. 
+is not possible with GHC. This already shows part of the power of the HML type system. HML also handled co- and contra-variant instantiation better than GHC. But the one major downside of the HML type system is that the types are presented in a somewhat more complicated form to the end user. 
+By implementing type checking for case expressions and a large subset of EH8, we have shown that it is possible to use this type system for more than just lambda-calculus. 
+ 
 \section{Future Work}
 The implementation is far from finished. Only a small fraction of EH is type able with this implementation. Currently the only place patterns are supported are in lambda abstractions. This is the easiest to fix.
 

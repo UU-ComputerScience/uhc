@@ -1,7 +1,8 @@
 \chapter{Implementation}
-This chapter details the implementation of the type system HML in \rcore. Due to the amount of code it will be a tutorial style chapter which introduces the new pieces in small increments.
+\label{Implementation}
+This chapter details the implementation of the type system HML in \rcore. Due to the amount of code it will be a tutorial style chapter which introduces the new pieces in small increments. The full specification for the algorithms are given for comparisons reason in appendix \ref{appendix:formal}.
 \section{Types}
-The implementation of the types can be easily derived from those in figure \ref{types}. To simplify some phases of the implementation the type scheme $\varphi$ and the SystemF $\sigma$ are extended to support the sugared syntaxes at the end of section \ref{sec:Types}:
+The implementation of the HML types can be easily derived from those in figure \ref{types}. The type scheme $\varphi$ and the SystemF $\sigma$ are extended to support the sugared syntaxes at the end of section \ref{sec:Types}. This is done to simplify some phases of the implementation.
 
 \begin{figure}[H]
 \begin{minipage}[t]{0.4\linewidth}
@@ -23,9 +24,9 @@ The implementation of the types can be easily derived from those in figure \ref{
 \label{abs:fig:types}
 \end{figure}
 
-Along with these, two helper functions \emph{sugar} and \emph{desugar} are defined. The implementation of these two functions isn't that interesting however they do hold the property that \emph{desugar . desugar == id}. These two types facilitate the aggregation of quantified values. For instance $\forall \alpha . \forall \beta. \alpha \rightarrow \beta$ can be represented as $\forall \alpha \beta . \alpha \rightarrow \beta$. Doing this minimizes the amount of code needed in the implementation, by making it easier to in one pattern matching get all the bounded variables.
+Along with these, two helper functions \emph{sugar} and \emph{desugar} are defined. The implementation of these two functions is not that interesting, however they do hold the property that \emph{desugar . desugar == id}. These two types facilitate the aggregation of quantified values. For instance $\forall \alpha . \forall \beta. \alpha \rightarrow \beta$ can be represented as $\forall \alpha \beta . \alpha \rightarrow \beta$. Doing this minimizes the amount of code needed in the implementation, because it makes it easier to in one pattern matching get all the bounded variables.
 \subsection{Type Expressions}
-The full syntax of the datatype $\sigma$ is:
+The full syntax of the datatype $\sigma$ (SystemF type) is:
 
 \begin{figure}[H]
 \begin{minipage}[t]{0.4\linewidth}
@@ -73,10 +74,10 @@ data TyExpr
 \end{figure}
 
 Most of these are pretty standard with the exception of \emph{Row} and \emph{AppTop}. The \emph{Row} constructor is used to represent the type of a Tuple, this will be explained later in Chapter \ref{cap:Extensions}. 
-The \emph{AppTop} constructor is used purely for pretty printing purposes, in particular when pretty printing Constructor applications. The |(->)| constructor is not treated specially in this version of EH, which means |alpha -> beta| is encoded as |((-> alpha) beta)|. The \emph{App} found under an \emph{AppTop} is pretty printed differently to show the expected type above.
+The \emph{AppTop} constructor is used purely for pretty printing purposes, in particular when pretty printing Constructor applications. The |(->)| constructor is not treated specially in this version of EH, which means |alpha -> beta| is encoded as |((-> alpha) beta)|. The \emph{App} found under an \emph{AppTop} is pretty printed differently to show the expected type |alpha -> beta|.
 
 \section{Inference}
-Like any ruler core program, the first step is to define the datatypes needed and the interfaces. Since type inferencing is done on expressions, we first have to introduce the expression data type:
+Like any ruler core program, the first step is to define the datatypes and interfaces needed. Since type inferencing is done on expressions, we first have to introduce the expression datatype:
 
 \begin{figure}[H]
 \begin{minipage}[t]{0.4\linewidth}
@@ -131,13 +132,13 @@ itf Expr
 \label{abs:fig:expr}
 \end{figure}
 
-Although datatypes are defined in figure \ref{abs:fig:expr}, there isn't any declarations for \emph{case} statements. This was done intentionally as \emph{case} statements are an extension of the base implementation, which will be covered in chapter \ref{cap:Extensions}. This version of EH also only has build-in support for the \emph{Int} and \emph{Char} datatypes.
+Although datatypes are defined in figure \ref{abs:fig:expr}, there are no declarations for \emph{case} statements. This was done intentionally as \emph{case} statements are an extension of the base implementation, which will be covered in chapter \ref{cap:Extensions}. This version of EH also only has build-in support for the \emph{Int} and \emph{Char} primitive types.
 
-The interface is quite simple, in the \emph{infer} visit the inherited attributes are declared. These consist of a Gamma $\Gamma$, the Prefix $Q$ and expression to infer. The \emph{frs} attribute is used in almost every visit to generate fresh variables, if this value is not passed in visit the results could lead to type clashes. Generating fresh variables in such a manner has the benefit that it makes every variable unique, which in turn makes it easier to track down problems. With the exception of type inference for variables, every case in the semantics of $\emph{Expr}$ should return types that are fully quantified. In other words, types which have no free variables.
+The interface is rather simple, in the \emph{infer} visit the inherited attributes are declared. These consist of a Gamma $\Gamma$, the Prefix $Q$ and expression to infer. The \emph{frs} attribute is used in almost every visit to generate fresh variables. If this value is not passed in a visit then it could trigger a type clash. Generating fresh variables in such a manner has the benefit that it makes every free variable unique, which in turn makes it easier to track down problems. With the exception of type inference for variables, every case in the semantics of $\emph{Expr}$ should return types that are fully quantified. In other words, types which have no free variables. Variables are never directly returned to the user. They are always used as part of a bigger expression. The expression using the variable is responsible to generalizing the type of the variable and thus returning a quantified type.
 
 Before continuing a small explanation of how EH is constructed is needed:
 \subsection{Ordering}
-Whenever a Haskell file is desugared into EH, some reordering is done. In the EH representation function,data declarations and type synonyms are always displayed before any function or other entities that uses them. Or alternatively, for every entity (where entity can be anything that refers to another type/function) a node is created and a dependency graph is made, which is then \emph{Topologically sorted}, that is, for every pair of edge \emph{uv} (\emph{u} is used in \emph{v}) \emph{u} comes before \emph{v}. It's worth noting that datatype and type synonym declarations are always put at the top of the file, before the function declarations.
+Whenever a Haskell file is desugared into EH, some reordering is done. In EH function,data declarations and type synonyms are always displayed before any function or other entities that uses them. Or alternatively, for every entity (where entity can be anything that refers to another type/function) a node is created and a dependency graph is made, which is then \emph{Topologically sorted}, that is, for every pair of edge \emph{uv} (\emph{u} is used in \emph{v}) \emph{u} comes before \emph{v}. It is worth noting that datatype and type synonym declarations are always put at the top of the file, before the function declarations.
 
 Mutual recursion like the ones below are handled a bit differently. But they still need to be supported non the less.
 
@@ -153,11 +154,11 @@ bar = foo
 \label{fig:mutrecurse}
 \end{figure}
 
-The functions foo and bar never terminate, but they should however type check perfectly fine. For datatypes nothing special needs to be done to make EH support mutual recursion. When processing datatypes the declarations are parsed and constructor functions created. The desugaring to EH already does the sanity checking of making sure all types exist. The same is done for functions and type synonyms. The EH syntax for \emph{Let} allows the binding of multiple \emph{Decl} at once. For the example this means that there will be one \emph{Let} binding with both \emph{foo} and \emph{bar} at the same time.
+The functions |foo| and |bar| never terminate, but they should however type check. For datatypes nothing special needs to be done to make EH support mutual recursion. When processing datatypes the declarations are parsed and constructor functions created. The desugaring to EH already does the sanity checking of making sure all types exist. The same is done for functions and type synonyms. The EH syntax for \emph{Let} allows the binding of multiple \emph{Decl} at once. For the example this means that there will be one \emph{Let} binding with both \emph{foo} and \emph{bar} at the same time.
 
-Any Haskell module after being desugared to EH is turned into one big \emph{Let} statement terminating in either 0 or \emph{main} depending on if an actual main function is defined in the module.
+Any Haskell module after being desugared to EH is turned into one big \emph{Let} statement, terminating in either 0 or \emph{main} depending on if an actual main function is defined in the module.
 
-Figure \ref{fig:mutrecurse} which does not define a main is desugered into:
+Figure \ref{fig:mutrecurse}, which does not define a main is desugered into:
 
 \begin{code}
 let main = 0
@@ -168,12 +169,12 @@ in let data Bar  = Bar Foo | NoBar
       in 0
 \end{code}
 
-Since \emph{main} is not dependent on anything it is the top level declaration, in every other cases where main is defined it will be put somewhere inside the dependency graph and the top level \emph{Let} will terminate \emph{in} main.
+Since \emph{main} is the top-level declaration since it is not dependent on anything, in every other cases where main is defined it will be put somewhere inside the dependency graph. In such cases the top level \emph{Let} will terminate \emph{in} main.
 \subsection{Semantics}
 
 The ordering that EH brings to a Haskell module is quite handy, especially for \ag code. \ag compilers do computations on attributes defined on the nodes of a tree. A Haskell file desugared into an EH file is now a Top-down tree, where the only case that needs some special handling is mutual recursion. 
 
-This makes certain tasks easier, for instance when looking up a value in the environment, if it cannot be found at the position it is used, then it is really not defined. there's no need to look any further. If a specific node can't be type checled then it also means there is no reason to try any of its children, since they depend on the node that failed type checking.
+This makes certain tasks easier. An example is when looking up a value in the environment if the value cannot be found at the position it is used, then it is really not defined. There is no need to look any further. If a specific element cannot be type checked then it also means there is no reason to try any of its siblings, since they depend on the element that failed type checking.
 
 \subsection{defining the data semantics}
 With the explanation of EH the data semantics for inference can be incrementally defined.
@@ -199,18 +200,18 @@ datasem Expr monad IO
 
 The definitions of the default rules are simply:
 \begin{description}
-\item[\textbf{sub}] If no substitutions are defined then just return an empty list
-\item[\textbf{pre}] If the prefix is not changed, just return the last value seen
-\item[\textbf{frs}] If no new variables were introduced, just return the last value (which should also be the highest value)
+\item[\textbf{sub}] If no substitutions are defined, then return an empty list
+\item[\textbf{pre}] If the prefix is not changed, then return the last value seen
+\item[\textbf{frs}] If no new variables were introduced, then return the last value (which should also be the highest value)
 \item[\textbf{res}] If no type is inferred, return Nothing
 \end{description}
 
-In the case of inferring the type of a variable, the only thing that needs to be done is lookup the variable in the $\Gamma$. If the value is not found then the variable is undefined and an error is returned. Error reporting is admittedly crude in the implementation, but it gives adequate feedback.
+When inferring the type of a variable, the only thing that needs to be done is looking up the variable in the $\Gamma$. If the value is not found then the variable is undefined and an error is returned. Error reporting is admittedly crude in the implementation, but it gives adequate feedback.
 
-For the Integer (\emph{IConst}) and the Char (\emph{CConst}) clauses, the \emph{Int} and \emph{Char} constructors respectively are returned.
+For the Integer (\emph{IConst}) clause the \emph{Int} type is returned and for the Char (\emph{CConst}) clause the type \emph{Char}.
 
 \paragraph{Constructors}
-For any other constructor the name of the constructor is looked up. But as mentioned in section \ref{renaming} constructors are $\alpha-$renamed.
+For any other constructor the name of the constructor is looked up. But as mentioned in section \ref{renaming} the types of constructors are $\alpha-$renamed.
 
 \begin{code}
 clause Con
@@ -239,7 +240,7 @@ func.env = lhs.env
 match True    = isJust func.res       
 loc.func_res  = fromJust func.res
 \end{code}
-The type of the \emph{function} then is inferred. If the inference is successful the it proceeds to the next step.
+The type of the \emph{function} then is inferred. If the inference is successful  it then proceeds to the next step.
 
 \begin{code}       
 arg.frs = func.frs
@@ -264,7 +265,7 @@ loc.temp3 = extend (fst loc.temp2
    = (fst loc.temp3
      ,(snd loc.temp1) `munion` (snd loc.temp2) `munion` (snd loc.temp3) `munion` func.sub)
 \end{code}
-Because the inference of the argument might have given more type information about the function as well the type of the function is updated by applying the substitution from the inference phase of the argument to it. The environment is then extended by adding three new bindings \ba{(\beta \geq \bot), (\alpha_2 \geq arg.res), (\alpha_1 \geq (appAll arg.sub func.res))}
+The type of the function is updated by applying the substitution from the inference phase of the argument to it. This is because the inference of the argument might have given more type information about the function as well. The environment is then extended by adding three new bindings \ba{(\beta \geq \bot), (\alpha_2 \geq arg.res), (\alpha_1 \geq (appAll arg.sub func.res))}
 
 \begin{code}
 child u : Unify = unify
@@ -278,7 +279,7 @@ u.frs   = arg.frs
 loc.q3  = u.pre
 loc.e3  = u.sub
 \end{code}
-$\alpha_1$ and $\alpha_2$ represent the function and argument respectfully and $\beta$ would be the return type which is to be discovered. To find out what $\beta$ is function type $\alpha_1$ is unified with the type $\alpha_2 \rightarrow \beta$ which is the shape that $\alpha_1$ should have. If unification is successful then $\beta$ should contain the result of the application $\alpha_1 \hspace{5pt} \alpha_2$.
+$\alpha_1$ and $\alpha_2$ represent the function and argument types respectively. $\beta$ is the return type which is to be discovered. To find out what $\beta$ is, the function type $\alpha_1$ is unified with the type $\alpha_2 \rightarrow \beta$, which is the shape that $\alpha_1$ needs to have. If unification is successful then $\beta$ will contain the result of the application $\alpha_1 \hspace{5pt} \alpha_2$.
 
 
 \begin{code}       
@@ -294,7 +295,7 @@ lhs.sub = loc.temp_sub
 lhs.pre = loc.q4
 lhs.frs = u.frs
 \end{code}
-Should unification succeed then $\beta$ is the resulting type, however before it can be returned it needs to be fully quantified. This is done by generalizing based on the initial prefix. Generalization is done using the \emph{split} function. The final prefix is split in two based on the domain of the initial prefix. The first prefix contains the already existing prefixes that were updated, whereas the second prefix would contain only new entries.
+Should unification succeed then $\beta$ is the result type. Before it can be returned it needs to be fully quantified. This is done by generalizing based on the initial prefix. Generalization is done using the \emph{split} function. The final prefix is split in two based on the domain of the initial prefix. The first prefix contains the already existing prefixes that were updated, whereas the second prefix would contain only new entries (prefixes for local types introduced in the application).
 
 \paragraph{Let binding}
 Type checking a Let binding is very straight forward because of how EH is structured.
@@ -306,7 +307,7 @@ Type checking a Let binding is very straight forward because of how EH is struct
 loc.env   =  let binds = map (uncurry minsert) loc.binds 
              in Gamma (foldr (.) id binds (unGam lhs.env))
 \end{code}
-The bindings are preprocessed in order to support mutual recursive functions. When functions are dependent on each other they are placed in the same Let. They cannot just be sequentially typed without a temporary value being present in the environment for the other functions. This is why a new polymorphic type is added to the $\Gamma$ for every binding. The function \emph{freshM} generates a list of fresh variables and the function \emph{mkQVar} generates quantified variables.
+The bindings are preprocessed in order to support mutual recursive functions. When functions are dependent on each other they are placed in the same Let. They cannot just be sequentially typed without a temporary value being present in the environment for the all sibling functions. This is why a new polymorphic type is added to the $\Gamma$ for every binding. The function \emph{freshM} generates a list of fresh variables and the function \emph{mkQVar} generates quantified variables.
 
 \begin{code}
 decls.pre  = lhs.pre
@@ -329,7 +330,7 @@ lhs.frs   = body.frs
 After every declaration in the let is processed then the body can be typechecked.
 
 \paragraph{Lambda abstraction}
-Typechecking a $\lambda-abstraction$ requires that is possible to typecheck pattern expressions. However for brevity's sake pattern expression inference will not be covered in-depth. Essentially inference for pattern expressions work the same way as for normal expressions, since patterns are a subset of the constructs of the expression data type. There is one major and important difference however: Types in pattern expressions are always quantified in the prefix environment/attribute and types in the expression inference are always fully quantified in the type itself. The reason for this is that the results of a pattern expressions are never directly used as a result.
+Typechecking a $\lambda-abstraction$ requires that is possible to typecheck pattern expressions. However for brevity's sake pattern expression inference will not be covered in-depth. Essentially inference for pattern expressions work the same way as for normal expressions, since patterns are a subset of the constructs of the expression data type. There is one major and important difference however: Types in pattern expressions are always quantified in the prefix environment/attribute whereas types in the expression inference are always fully quantified in the type itself. The reason for this is that the results of a pattern expressions are never directly used as a result, and as a result it is much easier to use them when they are quantified in the prefix. Variables can also be shared, if they were to be returned fully quantified then all of the variables would be distinct instead of being them same.
 
 \begin{code}
 clause Lam
@@ -340,7 +341,7 @@ clause Lam
     loc.exp_a  = ftype arg.res
     (loc.b, loc.frs2) = fresh arg.frs
 \end{code}
-The type of the argument to the lambda has to be inferred before anything else. This argument can contain patterns, which are returned inside the $\Gamma$ environment of the pattern expression. For this exact reason pattern expressions have the only interface that also return a $\Gamma$. Lastly a fresh variable $\beta$ is also generated.
+The type of the argument to the lambda has to be inferred before anything else. This argument can contain patterns, which are returned inside the $\Gamma$ environment of the pattern expression. Pattern expressions can introduce new variables into scope, which is why pattern expressions have the only interface that also return a $\Gamma$. Lastly a fresh variable $\beta$ is also generated.
        
 \begin{code}
 loc.env'  = appAll arg.sub arg.env
@@ -363,7 +364,7 @@ loc.phi1 = case (loc.tau `seq` body.res) of
              Nothing  -> error "Inference of Expressions failed in Lam"
              Just x   -> x
 \end{code}
-After inferring the type of the body some extra information is gained on the argument of the abstraction. The next step is to check if the argument when applied to the full environment is still a suitable type. In this case suitable is defined as being an unquantified type or the original argument is a pattern.
+After inferring the type of the body some extra information is gained on the argument of the abstraction. The next step is to check if the argument when applied to the full substitution environment is still of suitable type. In this case suitable is defined as being an unquantified type or the original must hav been a pattern expression.
 
 \begin{code}
 (loc.pre, loc.phi1')  = deep_explode body.pre loc.phi1
@@ -379,10 +380,12 @@ lhs.sub  = body.sub
 lhs.pre  = loc.q2
 lhs.frs  = body.frs
 \end{code}
-The prefix is then separated from the rest of the type from inferred for the body of the expression. This time during generalization some extra work is needed to assure than when a type is present in both the result of a call to inference and the resulting prefix, that it is qualified in the prefix instead of the type (reachedBy). This is important for expressions such as |\f -> (\x -> f x) (\x -> f x)|. After this the final type for the abstraction can be constructed.
+The prefix is then separated from the rest of the type inferred for the body of the expression. |deep_explode| is a more aggressive form of the |explode| function, in that it removes the quantifications always, and not just when the normal form of the type is a |bot|. The original specification does not have this step and because of this produces very complex type schemes. Adding this step does not reduce the flexibility of the type schemes but does increase the readability of the result type. 
+During generalization some extra work is needed to assure than when a type is present in both the result of a call to inference and the resulting prefix, that it is qualified in the prefix instead of the type.
+The reachedBy function just returnes the first input argument containing the |dom Q| and the codomain of every substitution whose domain intersects with the domain of Q or the codomain with the codomain of another substitution which does. This is important for expressions such as |\f -> (\x -> f x) (\x -> f x)|. The original specification does not have this step, and because of this incorrectly type checks this function. The original specifcation is a little too eager when it comes to generalizations. After this the final type for the abstraction can be constructed.
 
 \section{Unification}
-Unification is the core part of this thesis. Unification is the first routine which requires traversing of two trees at the same time. The interface for unification is quite easy:
+Unification is the core part of this thesis. Unification is the first routine which requires traversing of two trees at the same time. The interface for unification is defined as:
 
 \begin{code}
 itf Unify
@@ -396,7 +399,7 @@ itf Unify
     syn frs   :: Int
 \end{code}
 
-The goal of the visit is to unify the type \emph{exp1} with the type \emph{exp2} under the prefix \emph{pre}. The result of a unification call, if successful is a substitution environment \emph{sub} and the prefix under which the two type are unified.
+The goal of the visit is to unify the type \emph{exp1} with the type \emph{exp2} under the prefix \emph{pre}. The result of a unification, if successful, is a substitution environment \emph{sub} and the prefix under which the two type are unified.
 
 \begin{code}
 unify = sem unify : Unify monad IO    
@@ -412,7 +415,7 @@ unify = sem unify : Unify monad IO
                  clause s_unify
                    match True  = loc.nf
 \end{code}
-Before types can be unified there is a check to see if both types are in Normal form. Even though all SystemF types have been promoted to flexible types, part of the systemF types are still embedded inside the flexible type(e.g. applications, constructors etc). This is why the inherited attributes are all still SystemF types. As the default results for substitutions instead of providing an empty list there is an error message with a fairly generic error, however this should never be printed because the unify visit is total.
+Before types can be unified there is a check to see if both types are in Normal form. Even though all SystemF types have been promoted to flexible types, part of the systemF types are still embedded inside the flexible type(e.g. applications, constructors etc). This is why the inherited attributes are all still SystemF types. Instead of providing an empty list as the default result of substitutions there is an error message with a fairly generic error. If the implementation is correct then this should never be printed.
 
 \begin{code}
 internal ty_check
@@ -459,7 +462,7 @@ clause vars
       match True = var1.nm == var2.nm
       lhs.sub = empty
 \end{code}
-When both expressions are variables there are a number of choices. The first of which is when the variables in both expression are the same. In which case unification for them succeeds due to the fact that the types are already equal. A empty substitution is therefore returned.
+When both expressions are variables there are a number of choices. The first of which is when the variables in both expression are the same. In that case unification for them succeeds due to the fact that the types are already equal. A empty substitution is therefore returned.
 
 \begin{code}
 clause rest_vars
@@ -472,7 +475,7 @@ clause rest_vars
       match False = loc.isJust
       lhs.sub = error ... -- Binding not found
 \end{code}
-When the variables are not the same, then a check if both variables are bound by the environment(the Prefix) if performed. If they are not in the prefix then unification cannot proceed because information on the bounds of the variables are missing. This case is handled by generating an error and printing the variables and the prefix in question.
+When the variables are not the same, then a check to see if both variables are bound by the environment(the Prefix) is performed. If they are not in the prefix then unification cannot proceed because information on the bounds of the variables are missing. This case is handled by generating an error and printing the variables and the prefix in question.
 
 \begin{code} 
 clause ty_var
@@ -488,6 +491,7 @@ clause ty_var
       lhs.sub     = error "Domain check failed in Unify"
 \end{code}
 In case both of the variables are bound in the prefix, their bounds are extracted and then bounded to the local attributes \emph{|phi1|} and \emph{|phi2|}. The next step is to check that neither bounds contain any reference to the other variable, in other words: |var1 \notin domain(loc.phi1) \cap var2 \notin domain(loc.phi2)|. If this assertion is untrue then an error message is generated. This process is called rather aptly the "occurs check".
+This "occurs check" is usually written as |(dom (Q/phi))|. It is meant to return the \emph{useful} domain of |Q| with respect to |phi|\cite{HML}. As an example |(dom ((gamma >= bot, beta >= forall delta . delta -> gamma)/(forall alpha . alpha -> beta)) )| is |{beta, gamma}| even though |gamma _notin ftv(forall alpha . alpha -> beta)|. 
 
 \begin{code}
 clause f_dom_check
@@ -504,7 +508,7 @@ clause f_dom_check
   loc.e1   = s.sub
   loc.phi  = s.ty
 \end{code}
-After extracting both type schemes a call to UnifyScheme is made in order to get the resulting unified type of those two type schemes. \emph{dropQuant} in the call above is actually defined as the identity function. Its purpose is to illustrate that there is a conversion or coercion from a quantified type scheme $\hat{\varphi}$ to a normal type scheme $\varphi$ going on. Because a quantified type scheme is just a type synonym in this implementation the function is defined as id. Finally the result of the child \emph{s} is bound to more sensible names.
+After extracting both type schemes a call to UnifyScheme is made in order to get the resulting unified type of those two type schemes. \emph{dropQuant} in the call above is actually defined as the identity function. Its purpose is to illustrate that there is a conversion or coercion from a quantified type scheme $\hat{\varphi}$ to a normal type scheme $\varphi$ going on. Because a quantified type scheme is just a type synonym in this implementation the function is defined as |id|. Finally the result of the child \emph{s} is bound to more sensible names.
 
 \begin{code}                            
 (loc.q2, loc.e2)
@@ -517,7 +521,7 @@ lhs.frs = s.frs
 lhs.pre = loc.q3
 lhs.sub = loc.e3 `munion'` loc.e2 `munion'` loc.e1
 \end{code}
-Next the new prefixes are updated with the new information. It starts by updating the prefix returned from the call to UnifyScheme with the substitution \ba{|var1 := var2|}. This is done because the two variables are now equal, so the reference to one of them can be removed. Since we are trying to find out what \emph{|var1|} is we can safely write that \emph{|var1|} is now \emph{|var2|}. \emph{|var2|} is then updated with the new bound |(var_2 \geq loc.phi)|. This updates the value of \emph{|var2|} to the result of the Unification of the two type schemes. Lastly all the substitutions gathered are combined with the operator |`munion'`| which isntead of simple concatination inserts the substitutions in order in a palce where the envariant is still maintined. After the substitutions are combined they combined versions are then returned.
+The new prefix is updated with the new information. It starts by updating the prefix returned from the call to UnifyScheme with the substitution \ba{|var1 := var2|}. This is done because the two variables are now equal, so the reference to one of them can be removed. Since we are trying to find out what \emph{|var1|} is, we can safely write that \emph{|var1|} is now \emph{|var2|}. \emph{|var2|} is then updated with the new bound |(var_2 \geq loc.phi)|. This updates the value of \emph{|var2|} to the result of the Unification of the two type schemes. Lastly all the substitutions gathered are combined with the operator |`munion'`| which inserts the substitutions in a place where the invariant is still maintained. After the substitutions are combined they are then returned.
 
 \begin{code}
 clause cons
@@ -558,7 +562,7 @@ clause apptype
   lhs.pre  = ua.pre
   lhs.sub  = uf.sub `munion` ua.sub
 \end{code}
-Applications are also easy: If both types are an Application then to calls to Unify needs to be made. For example when unifying the expressions $f_1 \hspace{5pt} e_1$ and $f_2 \hspace{5pt} e_2$, then first $f_1$ and $f_2$ have to be unified. In case this succeeds then the substitutions found by this unification is applied to the types $e_1$ and $e_2$ to propagate any new information found. 
+Applications are also easy: If both types are an Application then two calls to Unify needs to be made. For example when unifying the expressions $f_1 \hspace{5pt} e_1$ and $f_2 \hspace{5pt} e_2$, then first $f_1$ and $f_2$ have to be unified. In case this succeeds then the substitutions found by this unification is applied to the types $e_1$ and $e_2$ to propagate any new information found. The resulting types are then unified together to produce the final result.
 
 \begin{code}
 clause vartype   
@@ -574,7 +578,7 @@ clause vartype
                                 (TyScheme_SystemF loc.expr)
 \end{code}
 This next case deals with when only one of the expressions is a variable and the other an arbitrary expression (but not a variable). What to do when the first expression (lhs.exp1) is a variable is handled here, but there is a similar clause for when the second expression (lhs.exp2) is a variable. 
-As with the case of when both expressions were variables, First the binding to the variable is looked up in the prefix. Afterwards there is a check to see if the domain of that type contains any reference to the variable itself (infinite type check).
+First the binding to the variable is looked up in the prefix. Afterwards there is a check to see if the domain of that type contains any reference to the variable itself (infinite type check).
                            
 \begin{code}
 internal occurs_check
@@ -596,7 +600,7 @@ internal occurs_check
                                      ,TyScheme_SystemF (mkTop a))
                         in update (s.pre, Right sub)
 \end{code}
-In case the occurs check succeeds we try to instantiate the SystemF expression with the type scheme in the bounds. This is the same clause that handles the type checking of higher-rank types. If instantiation succeeds then a list of substitutions indicating how to instantiate the SystemF expression (\emph{loc.expr}) is returned.
+In case the occurs check succeeds, try to instantiate the SystemF expression with the type scheme in the bounds. This is the same clause that handles the type checking of higher-rank types. If instantiation succeeds then a list of substitutions indicating how to instantiate the SystemF expression (\emph{loc.expr}) is returned.
 The value of the variable that is being unified with the expression is updated using the substitutions, replacing that variable with the instantiated expression.
 
 \begin{code}
@@ -608,7 +612,7 @@ clause invalid
   match True  = loc.occurs
   lhs.sub     = error ... -- infinite type error
 \end{code}
-The updated prefix and complete substitution list in then returned. In case the occurs check fails, then error message indicating there was a problem with an infinite type is generated.
+The updated prefix and complete substitution list is then returned. In case the occurs check fails, then an error message indicating there was a problem with an infinite type is generated.
 
 \begin{code}
 clause quant
@@ -627,7 +631,7 @@ clause quant
   loc.q1  = u.pre
   loc.e1  = u.sub
 \end{code}
-If the goal was to unify two quantified SystemF expressions (should not occur naturally to the call to unify since quantified systemF expressions are promoted to type schemes) the quantifier of both types are replaced with the same skolem variable. The idea is to check if both types have the same structure. Since they are equally quantified, if they have the same structure than they are the same type.
+If the goal was to unify two quantified SystemF expressions (should not occur naturally in the call to unify since quantified systemF expressions are promoted to type schemes, but can occur when unifying function annotations with the infered type.) the quantifier of both types are replaced with the same skolem variable. The idea is to check if both types have the same structure. Since they are equally quantified, if they have the same structure than they are the same type.
 A skolem variable is a type that only unifies with itself and other normal variables. It is sometimes also referred to as a \emph{Rigid} type\footnote{Those familiar with GHC will recognize this. Although GHC $\geq$ 7.0 also refer to them as skolem variables}. In this implementation a special constructor (names starting with a lowercase "s") is used to implement skolem variables.
 \begin{code}                       
 loc.check = loc.c `elem` (codomain loc.e1 ++ codomain loc.q1)
@@ -652,7 +656,7 @@ clause f_unify
 \end{code}
 
 \section{Instantiation}
-Another major part of the type system is instantiation. Instantiation (referred to as subsume) tries to find if the type scheme \emph{lhs.ty} can be modified into the systemF type \emph{lhs.exp}. Instantiation is critical to the support of higher rank types.
+Another major part of the type system is instantiation. Instantiation (referred to as subsume) tries to find if the type scheme \emph{lhs.ty} can be modified into the systemF type \emph{lhs.exp}. Instantiation is critical to the support of higher-rank types.
 
 The interface to subsume is:
 \begin{code}
@@ -684,8 +688,8 @@ subsume = sem subsume : Subsume monad IO
                       match TyExpr.Forall@exp      = mkForall lhs.exp
                       match TyScheme.Sugar@scheme  = sugar lhs.ty
 \end{code}
-In order for instantiation to be performed, both type have to be in normal form. This version of subsume also handles types not in normal form correctly, but the checks serve as a sanity check for the rest of the code, to make sure no type is  generated that is too complicated or incorrectly nested. For example a type that violates the semantics of type schemes.
-The calls to \emph{mkForall} and \emph{sugar} allows the binding of every \emph{outer-quantifiers} in one call instead of one by one removing them in AG code.
+In order for instantiation to be performed, both type have to be in normal form. This version of subsume also handles types not in normal form correctly, but the checks serve as a sanity check for the rest of the code, to make sure no type is  generated that is too complicated or incorrectly nested. For example a type that violates the semantics of type schemes would be instantiated incorrectly if this check is not present, but a type which is not in normal form but does not violate the semantics would be instantiated correctly.
+The calls to \emph{mkForall} and \emph{sugar} allows the binding of every \emph{outer-quantifiers} in one call instead of one by one removing them recursively in AG code.
 
 \begin{code}
 loc.q   = lhs.pre
@@ -699,7 +703,7 @@ loc.p1  = dropScheme scheme.tyExpr
 loc.p2  =  let skol = (zipWith (\a b->(a, mkSkolem b)) exp.tyVar loc.c)
            in  appAll skol exp.tyExpr
 \end{code}
-Since the goal is to instantiate the type scheme (\emph{scheme}) to the SystemF type (\emph{exp}), the type scheme bounds of that type is added to the prefix resulting in the value (\emph{|loc.qq2|}). 
+Since the goal is to instantiate the type scheme (\emph{scheme}) to the SystemF type (\emph{exp}), the type scheme bounds of that type are added to the prefix resulting in the value (\emph{|loc.qq2|}). 
 The binding of attribute \emph{|p1|} has a call to \emph{dropScheme} which does not do anything but ensure that the type is a SystemF type wrapped inside a type scheme (e.g. that the scheme.tyExpr type is not $\bot$ or any other TyScheme value). \emph{|p2|} has an interesting construct but it essentially does skolemization. It replaces every bound type variables in the type to a skolem variable.
 
 \begin{code}
@@ -713,7 +717,8 @@ u.frs   = loc.frs1
 loc.q1  = u.pre
 loc.e1  = u.sub
 \end{code}
-After preparing the two new input functions, the new unify co-routine is declared and invoked. The original specifications for |subsume| incorrectly switches the order of |p1| and |p2|. This is a critical error in that it switches the type that is to be instantiated with the type it should be instantiated with. The effect of this is that |generalization| generated incorrect types or incorrectly quantified types such as |(alpha >= \bot). Bool|.
+After preparing the two new input functions, the new unify co-routine is declared and invoked. The original specifications for |subsume| incorrectly switches the order of |p1| and |p2|. This is a critical error in that it switches the type that is to be instantiated with the type it should be instantiated with. The effect of this is that |generalization| generates incorrect types or incorrectly quantified types such as |(alpha >= \bot). Bool|.
+This ultimately results in information loss and an error depending on the complexity of the expression.
 
 \begin{code}   
 (loc.q3, loc.q4) = split (loc.q1, domain loc.q)
@@ -722,8 +727,8 @@ loc.e2 =  let x = domain loc.q4
 loc.codom  = nub (skolems loc.e2 ++ skolems loc.q3)
 loc.check  = any (elems loc.codom) loc.c
 \end{code}
-The resulting prefix \emph{|loc.q1|} is generalized based on the original prefix. \emph{|loc.q3|} contains the updated values (if any) of the prefix that was  originally given to the visit, whereas \emph{|loc.q4|} contains any prefixes which do not have any direct effect on the instantiation. Using this prefix we can then apply scoping to the list of substitutions received from the unification call.
-The local attribute \emph{codom} contains every skolem variable in the substitution environment and the prefix returned from unify. \emph{check} then checks to see if any of these skolem variables are variables that were defined by this instantiation. In other words those two attributes are there to prevent any skolem variables to leak from instantiation.
+The resulting prefix \emph{|loc.q1|} is generalized based on the original prefix. \emph{|loc.q3|} contains the updated values (if any) of the prefix that was originally given to the visit, whereas \emph{|loc.q4|} contains any prefixes which do not have any direct effect on the instantiation. Using this prefix we can then apply scoping to the list of substitutions received from the unification call. This way the only substitutions returned are those that have a direct effect on the instantiation of the input type.
+The local attribute \emph{codom} contains every skolem variable in the substitution environment and the prefix returned from unify. \emph{check} then checks to see if any of these skolem variables are variables that were defined by the current instantiation call. These two attributes are there to prevent any skolem variables from leaking from instantiation.
 
 \begin{code}
 internal skol_check
@@ -736,7 +741,7 @@ internal skol_check
     match (loc.bla, True) = ((), loc.check)
     lhs.sub = const (error ...) loc.bla -- skolem leak error
 \end{code}
-If no skolems are leaked then just returned the prefix and substitution, otherwise give an appropriate error message. The match statement looks a bit weird, but because statements are reordered based on dependencies the local attribute \emph{bla} is defined in the match to insure that the match executes before the error message.
+If no skolems are leaked then just return the prefix and substitution, otherwise give an appropriate error message. Statements are reordered based on dependencies, the local attribute \emph{bla} is defined in the match to insure that the match executes before the error message.
 
 \begin{code}
 clause wild_subsume
@@ -748,10 +753,10 @@ clause f_subsume
   match (loc.bla, False) = ((), loc.nf)
   lhs.sub = const (error ...) loc.bla -- skolem form error
 \end{code}
-The last two clauses are for when the type is instantiated with a $\bot$ and for when the type was not in normal form. In the former we just immediately return with an empty substitution list (nothing needs to be done, the types are already "equal") and in the latter an error is given. The specification of \cite{HML} does not have the $\bot$ case. This results in the inability to typecheck expressions such as |id id| where the type of id is a type scheme |(alpha >= \bot). alpha -> alpha|. This is beleived to be an oversight on the part of the author due to the fact that the author's test cases two type schemes are rar
+The last two clauses are for when the type is instantiated with a $\bot$ and for when the type was not in normal form. In the former we just immediately return with an empty substitution list (nothing needs to be done, the types are already "equal") and in the latter an error is given. The specification of \cite{HML} does not have the $\bot$ case. This results in the inability to typecheck expressions such as |id id| where the type of id is a type scheme |(alpha >= \bot). alpha -> alpha|. This is beleived to be an oversight on the part of the author.
 
 \section{Unify Scheme} 
-On occasion two type schemes need to be unified with each other, the interface is defined as:
+On occasion two type schemes need to be unified with each other, the interface to do this is defined as:
 
 \begin{code}
 itf UnifyScheme
@@ -766,7 +771,7 @@ itf UnifyScheme
     syn frs  :: Int 
 \end{code}
 
-There are two TySchemes as input and the unified TyScheme is returned. The implementation is quite simple:
+There are two TySchemes as input and the unified TyScheme is returned. The implementation is simple:
 
 \begin{code}
 unifyScheme = sem unifyScheme : UnifyScheme monad IO
@@ -785,7 +790,7 @@ unifyScheme = sem unifyScheme : UnifyScheme monad IO
                             match True  = loc.b2
                             lhs.ty      = lhs.ty1
 \end{code}
-When unifying two schemes, if any one of them if a $\bot$ then an empty substitution can immediately be returned since anything unifies with $\bot$. 
+When unifying two schemes, if either of them is a $\bot$ then an empty substitution can immediately be returned since anything unifies with $\bot$. 
 
 \begin{code}
 clause norm
@@ -815,4 +820,4 @@ lhs.ty   =  let  ty   = appAll loc.e3 exp1.tyExpr
                  ret  = TyScheme_Sugar loc.q5 ty
             in desugar ret
 \end{code}
-After the call to unify then generalization can be done by splitting the prefix returned from the call to unify (\emph{u}). However next to returning the substitutions needed to unify the two types, the result of the unification of the two types is also returned. This is done by first applying the substitution to type we were unifying with and then fully quantify it by adding the prefix \emph{|loc.q5|} to the result. Note that $ftv(lhs.ty)=\emptyset$.
+Generalization can be done after the call to unify by splitting the prefix returned from unify (\emph{u}). Besides returning the substitutions needed to unify the two type scheme, the result of the unification of the two type schemes is also returned. This is done by first applying the substitution to type we were unifying with and then fully quantify it by adding the prefix \emph{|loc.q5|} to the result. Note that $ftv(lhs.ty)=\emptyset$.

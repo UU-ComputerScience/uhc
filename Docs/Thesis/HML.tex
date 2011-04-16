@@ -1,28 +1,28 @@
 \chapter{HML}
 \label{HML}
 \section{Introduction}
-The majority of type inference systems today are an extension of Hindler-Milner\cite{HM}. HML\cite{HML} by Daan Leijen is no different in this regard. It extends Hindley-Milner to add support for first class polymorphism. HML is itself an simplification and at the same time a restriction of MLF\cite{MLF} while retaining the expressiveness of MLF. HML in contrast to MLF only uses so called \emph{flexible types}, which make the system easier to used compared to MLF.
+The majority of type inference systems today are an extension of the  Hindler-Milner (HM)\cite{HM} type system. The HML\cite{HML} type system by Daan Leijen is no different in this regard. It extends the Hindley-Milner type system to add support for first class polymorphism. The HML type system is itself an simplification and at the same time a restricted version of MLF\cite{MLF} while retaining the expressiveness of MLF. The MLF type system is another type system for functional languages which provides impredicative higher-rank polyorphism. However it has a more stringent annotation requirement and more complex type representations then the HML type system. The HML type system in contrast to the MLF type system only uses so called \emph{flexible types} (See section\ref{sec:Types}), which make the system easier to used compared to the  MLF type system.
 
-The only annotation needed in HML on function parameters with a polymorphic type(Another version $HML^F$ allows annotations of Let bindings). Because of this conservative annotation requirement and because HML is an extension of HM any program that is well typed in Hindley-Milner is well typed in HML.
+In the HML type system annotations are only needed on function parameters with a polymorphic type(Another version $HML^F$ allows annotations of Let bindings). Because of this conservative annotation requirement and because HML is an extension of HM any program that is well typed in the Hindley-Milner type system is well typed in the HML type system.
 
-The typing rules are thus very similar to those of Hindley-Milner where every expression can and is assigned a \emph{most} general type. This is true even with higher rank functions. Furthermore HML is an impredicative type system which is very robust with respect to program transformations. In particular a Let binding can always be inlined or a shared expression abstracted into a Let. Whenever \emph{$e_1$ $e_2$} is well typed then so are \emph{apply $e_1$ $e_2$} and \emph{revapply $e_2$ $e_1$}. In general this means that HML is insensitive to the order of applications, which is a property that is not true of every type system.
+The typing rules are thus very similar to those of the Hindley-Milner type system, where every expression can and is assigned a \emph{most} general type. This is true even with higher rank functions. Furthermore the HML type system is an impredicative type system which is very robust with respect to program transformations. It also has some interesting properties, in particular a Let binding can always be inlined or a shared expression abstracted into a Let. Whenever \emph{$e_1$ $e_2$} is well typed then so are \emph{apply $e_1$ $e_2$} and \emph{revapply $e_2$ $e_1$}. In general this means that HML is insensitive to the order of applications, which is a property that is not true of every type system.
 
-HML is however not robust towards $\eta-expansion$ since all polymorphic (higher rank) arguments need to be annotated.
+The HML type system is not robust towards $\eta-expansion$ since all polymorphic (higher rank) arguments need to be annotated.
 
 \section{Overview}
-The idea is to have the expressiveness of SystemF while having the ease of use of Hindler-Milner. Type inferencing in SystemF is generally undecidable, for instance inferring the type of:
+The idea is to have the expressiveness of the SystemF type system while having the ease of use of the Hindler-Milner type system. Type inferencing in the SystemF type system is undecidable, for instance inferring the type of:
 
 \begin{code}
 poly = \f->(f 1, f 'a')
 \end{code}
 
-is impossible, even though the expressiveness of SystemF does allow a type to be given to this function, with some extra notational help. In HML as stated before, the only annotations needed would be on the function parameter that needs a polymorphic type:
+is impossible. Even though the expressiveness of the SystemF type system does allow a type to be given to this function, it cannot be automatically inferred. Some additional notational help is required from the programmer. As mentioned ealier, in the HML type system the only annotations needed would be on the function parameter that needs a polymorphic type:
 
 \begin{code}
 poly = \(f::forall a. a -> a) -> (f 1, f 'a')
 \end{code}
 
-Functions and data structures can be used freely without any further explicit annotation.
+Functions and data structures can be used freely without any further annotation.
 
 Consider the following example from the paper\cite{FPH}:
 
@@ -33,17 +33,17 @@ Consider the following example from the paper\cite{FPH}:
 \indent \textit{map} $\hspace{10.2pt}$  :: $\forall\alpha\beta$. ($\alpha$ $\rightarrow$ $\beta$) $\rightarrow$ List $\alpha$ $\rightarrow$ List $\beta$ 
 \end{quotation}
 
-The following expression type checks just fine under HML
+The following expression type checks just fine in the HML type system:
  \begin{code}
 let ids = single id
 in  (map poly ids, append (single inc) ids)
 \end{code}
 
-But would require \textit{ids} to be two incomparable System F types at the same time, namely List (Int $\rightarrow$ Int) and List ($\forall\alpha$. $\alpha$ $\rightarrow$ List $\alpha$). This is where \textit{flexible} types come in, the type of ids can now be described as $\forall(\beta\geq \forall\alpha \rightarrow \alpha).$ List $\beta$, which can be interpreted as "any $\beta$ that is an instance of $\forall\alpha \rightarrow \alpha$ the type List $\beta$ is valid". This can be considered as the most "principle" or general type of that expression. The flexible type of ids can then be instantiated to both of the required types. 
+But would require \textit{ids} to be two incomparable SystemF types at the same time, namely List (Int $\rightarrow$ Int) and List ($\forall\alpha$. $\alpha$ $\rightarrow$ List $\alpha$). This is where \textit{flexible} types come in, the type of ids can now be described as $\forall(\beta\geq \forall\alpha \rightarrow \alpha).$ List $\beta$, which can be interpreted as "any $\beta$ that is an instance of $\forall\alpha \rightarrow \alpha$ the type List $\beta$ is valid". This can be considered as the most "principle" or general type of that expression. The flexible type of ids can then be instantiated to both of the required types. 
 
 These \textit{flexible} types are the key HML, but flexible types are only allowed on \textit{Let}-bindings (see |poly|) and values of a flexible type cannot be passed as arguments.
 
-The algorithms and typing rules in the paper were of course designed for a simple lambda-calculus language. To be usable they need to be scaled up to one that works on the specific variant of EH in use, as such the types will reflect this.
+The algorithms and typing rules in the paper were designed for a simple lambda-calculus language. To be usable they need to be scaled up to one that works on the specific variant of EH in use. As such, the types and terms reflect this requirement.
 \section{Types}
 \label{sec:Types}
 HML introduces various types, most of which are an extensions of Hindley-Milner types. 
@@ -61,14 +61,15 @@ HML introduces various types, most of which are an extensions of Hindley-Milner 
 \label{types}
 \end{figure}
 
-The $\sigma$ type are the basic SystemF types. Function applications are expressed by applying the arrow constructor ($\rightarrow$) to it's arguments. The $\omega$ type is the \emph{Row} type which is the type of a Tuple:
+The $\sigma$ types are the basic SystemF types. Function applications are expressed by applying the arrow constructor ($\rightarrow$) to its arguments. The $\omega$ type is the \emph{Row} type which is the type of a Tuple:
 
 \begin{eqnarray*}
-\omega & ::= & \emptyset \\
-       & || & \omega , \sigma
+\omega & ::= & \bot \\
+       & || & \sigma ; \omega
 \end{eqnarray*}
 
-In SystemF a \emph{type scheme} is represented as $\forall \alpha$ but HML introduces a new definition for \emph{type schemes}:
+The type $\omega$ is either nothing ($\bot$) or a type followed by a new tuple.
+In the SystemF type system, a \emph{type scheme} is represented as $\forall \alpha$. The HML type system introduces a new definition for \emph{type schemes}:
 
 \begin{figure}[H]
 \begin{eqnarray*}
@@ -81,7 +82,7 @@ In SystemF a \emph{type scheme} is represented as $\forall \alpha$ but HML intro
 \end{figure}
 
 Lambda bound values always have a $\sigma$ type since \emph{flexible types} cannot be passed as arguments, however \emph{Let} bound values can have a \emph{flexible type} $\varphi$.
-A \emph{type scheme} $\varphi$ is either a \emph{SystemF} type $\sigma$, the polymorphic $\bot$ value or the quantified type $\forall (\alpha \geq \varphi_1). \varphi_2$. A $\varphi$ with a quantified bounds can be instantiated to any instance of it's bounds. Since $\bot$ can be instantiated to anything the bounds $(\alpha \geq \bot)$ is called the unconstrained bounds. This bound is also equivalent to the \emph{SystemF} type $\forall \varphi$. The bounds of a \emph{type scheme} can be anything, even types that cannot be instantiated to anything else. An example of such a type is $(\alpha \geq Int).\alpha$, $Int$ cannot be instantiated to anything. Such types are called \emph{trivially quantified} or more specifically such types have a \emph{trivial bounds}.
+A \emph{type scheme} $\varphi$ is either a \emph{SystemF} type $\sigma$, the polymorphic $\bot$ value or the quantified type $\forall (\alpha \geq \varphi_1). \varphi_2$. A $\varphi$ with a quantified bounds can be instantiated to any instance of it's bounds. Since $\bot$ can be instantiated to anything, the bounds $(\alpha \geq \bot)$ is called the unconstrained bounds. This bounds is also equivalent to the \emph{SystemF} type $\forall \varphi$. The bounds of a \emph{type scheme} can be anything, even types that cannot be instantiated to anything else. An example of such a type is $(\alpha \geq Int).\alpha$, $Int$ cannot be instantiated to anything. Such types are called \emph{trivially quantified} or more specifically such types have a \emph{trivial bounds}.
 
 The dual of this is a scheme with a \emph{non-trivial bounds}. This type is called the \emph{quantified scheme} $\hat{\varphi}$:
 
@@ -94,8 +95,8 @@ The dual of this is a scheme with a \emph{non-trivial bounds}. This type is call
 \label{quantified-schemes}
 \end{figure}
 
-Even though quantified schemes are presented here as a type, they are regarded in this implementation as a type synonym to normal type schemes. The reason is that quantified schemes are just a restriction on a normal type scheme. This is safe to do by adding an extra condition to every function that can extend the prefix: \emph{Any function that extends the prefix must not allow a trivial bound to be added}.
-HML defines an extra environment called a \emph{Prefix} which holds the quantified bounds of types:
+Even though quantified schemes are presented as a type, they are regarded in this implementation as a type synonym to normal type schemes. The reason is that quantified schemes are just a restriction on a normal type scheme. Treating them the same is safe to do by adding an extra condition to every function that can extend the prefix: \emph{Any function that extends the prefix must not allow a trivial bound to be added}.
+The HML type system defines an extra environment called a \emph{Prefix} which holds the quantified bounds of types:
 
 \begin{figure}[H]
 \begin{eqnarray*}
@@ -107,14 +108,14 @@ Q ::= \alpha_1\geq\hat{\varphi}_1,\ldots,\alpha_n\geq\hat{\varphi}_n
 
 The prefix cannot contain any trivial bounds, which is why the \emph{Quantified schemes} type $\hat{\varphi}$ is used inside the Prefix $Q$. The domain of the prefix (dom $Q$ = ${\alpha_1 \ldots \alpha_n}$) and the domain of the substitution environment are disjoint. In other words, a type variable is either bound by the prefix or has been substituted away. A type scheme ca either be quantified by itself or quantified by the prefix environment, when any conflicts arise quantifying in the prefix takes precedence.
 
-The next two types are the \emph{monomorphic} $\tau$ and the \emph{unqualified types} $\rho$. The \emph{monomorphic} type $\tau$ is the same type as in hindley milner, and the \emph{unqualified} $\rho$ type is just a type without any outer quantifiers. 
+The next two types are the \emph{monomorphic} $\tau$ type and the \emph{unqualified type} $\rho$. The \emph{monomorphic} type $\tau$ is the same type as in the Hindley-Milner type system, and the \emph{unqualified} $\rho$ type is represents types without any quantifiers. 
 
 \begin{eqnarray*}
 \tau  ::= \alpha \hspace{3pt} || \hspace{3pt} (\tau) \hspace{3pt} || \hspace{3pt} c \hspace{3pt} || \hspace{3pt} \tau_1 \hspace{5pt} \tau_2 \\
 \rho  ::= \alpha \hspace{3pt} || \hspace{3pt} (\rho) \hspace{3pt} || \hspace{3pt} c \hspace{3pt} || \hspace{3pt} \rho_1 \hspace{5pt} \rho_2
 \end{eqnarray*}
 
-Aside from these types there are some syntactical sugar used in the paper and the rest of this chapter:
+Aside from these types there are some syntactic sugar used in the paper and the rest of this chapter:
 \label{syntax}
 
 \begin{eqnarray*}
@@ -122,8 +123,10 @@ Aside from these types there are some syntactical sugar used in the paper and th
 Q.\varphi & ::= & \forall(\alpha_1 \geq \hat{\varphi}_1). \ldots \forall(\alpha_n \geq \hat{\varphi}_n . \varphi
 \end{eqnarray*}
 
+This example shows how a Prefix $Q$ is desugared (interpreted) when used as the bounds of a type scheme.
+ 
 \section{Typing rules}
-The type rules in HML are almost the same as the ones in Hindley-Milner, except that in the presence of \textit{flexible} types the Instantiation rule is slightly different and every rule now gets an explicit \textit{Prefix}. The prefix $Q$ contains the bounds over the \emph{free} variables in $\Gamma$, e, $\varphi$.
+The typing rules in the HML type system are almost the same as the ones in the Hindley-Milner type system, except that in the presence of \textit{flexible types} the \emph{Instantiation} rule is slightly different. Every rule also has an explicit \textit{Prefix} environment. The prefix $Q$ contains the bounds over the \emph{free} variables in $\Gamma$, e, $\varphi$.
 
 \begin{prooftree}
 		\AxiomC{$x : \varphi \in \Gamma$}
@@ -147,7 +150,7 @@ The instantiation rule states that we can always use a instance of a type under 
 		\UnaryInfC{$Q,\Gamma \vdash e : \forall(\alpha \geq \hat{\varphi}_1) . \varphi_2$}
 \end{prooftree}
 
-The generalization rule generalizes a type by moving it's bounds out from the prefix $Q$ into the type $\varphi$.
+The generalization rule generalizes a type by moving its bounds out from the prefix $Q$ into the type $\varphi$.
 
 \begin{prooftree}
 		\AxiomC{$Q,\Gamma \vdash e_1 : \sigma_2 \rightarrow \sigma \quad Q,\Gamma \vdash e_2 : \sigma_2$}
@@ -155,7 +158,7 @@ The generalization rule generalizes a type by moving it's bounds out from the pr
 		\UnaryInfC{$Q,\Gamma \vdash e_1 \hspace{3pt} e_2 : \sigma$}
 \end{prooftree}
 
-The application rule is the standard application rule over types. It requires that the type of $e_2$ be equal to the type of the argument of $e_1$. Note that this ranges over type and not type schemes.
+The application rule is the standard application rule over types. It requires that the type of $e_2$ be equal to the type of the argument of $e_1$. Note that this ranges over normal SystemF type and not type schemes. Type schemes can still be typed using this rule as a type scheme can be present in the bounds of the types $e_1$ and $e_2$ (See \emph{Fun} rule).
 
 \begin{prooftree}
 		\AxiomC{$Q,\Gamma \vdash e_1 : \varphi_1 \quad Q,(\Gamma, x : \varphi_1) \vdash e_2 : \varphi_2$}
@@ -163,7 +166,7 @@ The application rule is the standard application rule over types. It requires th
 		\UnaryInfC{$Q,\Gamma \vdash \textbf{Let} \hspace{3pt} x = e_1 \hspace{3pt} \textbf{in} \hspace{3pt} e_2 : \varphi_2$}
 \end{prooftree}
 
-The Let rule is pretty straight forward, given an expression $e_1$ with type $\varphi_1$ and a variable $x$ which in the environment $\Gamma$ has the same type $\varphi_1$ and an expression $e_2$ with type $\varphi_2$ we can create a let binding \textbf{Let} x = $e_1$ \textbf{in} $e_2$.
+The Let rule is rather straight forward, given an expression $e_1$ with type $\varphi_1$ and a variable $x$ which in the environment $\Gamma$ has the same type $\varphi_1$ and an expression $e_2$ with type $\varphi_2$ we can create a let binding \textbf{Let} x = $e_1$ \textbf{in} $e_2$.
 
 \begin{prooftree}
 		\AxiomC{$Q, (\Gamma, x : \tau) \vdash e : \sigma$}
@@ -179,12 +182,13 @@ The Fun rule restricts the type of the parameter to a monomorphic type $\tau$ in
 		\UnaryInfC{$Q, \Gamma \vdash \lambda(x :: \sigma_1). e : \sigma_1 \rightarrow \sigma_2$}
 \end{prooftree}
 
-The Function Annotation rule is used to provide a mechanism to explicitly annotate abstraction variables with a (possibly) polymorphic type. Like annotation of the \textit{push} example above with the needed higher-rank type.
+The Function Annotation rule provides a mechanism to explicitly annotate abstraction variables with a (possibly) polymorphic type. Like the annotation of the \textit{poly} example above with the needed higher-rank type.
 
-In particular the \textit{FUN} rule for lambda expressions restrict the type of the parameters to be a mono type $\tau$ since any scheme on the mono type is in the Prefix $Q$, this is the secrete behind HML.
+In particular the \textit{FUN} rule for lambda expressions restrict the type of the parameters to be a mono type $\tau$ since any scheme on the mono type is in the Prefix $Q$. Doing so makes it that the types hidden in the Prefix cannot be directly compared to other types. Instead they have to be instantiated as a means of comparison, as oppose to being unified. This is the secret behind the HML type system.  
+
 \section{Semantics}
 \subsection{Type scheme}
-The semantics of a type scheme $\varphi$ written as $\br{\varphi}$  is defined by the literature as:
+The semantics of a type scheme ($\br{\varphi}$) is defined by the literature\cite{HML} as:
 \begin{figure}[H]
 \begin{eqnarray*}
 \br{\bot} & = & \br{\forall\alpha . \alpha} \\
@@ -196,7 +200,16 @@ The semantics of a type scheme $\varphi$ written as $\br{\varphi}$  is defined b
 \caption{Semantics of a type scheme}
 \end{figure}
 
-This definition makes it clear that in the type $\forall(\alpha \geq (\forall \beta \geq \bot). \beta \rightarrow ). \alpha \rightarrow \beta$ the $3^{rd}$ $\beta$ is actually unbound. By following this semantic we can always convert a \emph{type scheme} $\varphi$ to a \emph{SystemF} type $\sigma$. It is however important not to do this before type checking is finished or you will lose the flexibility that type schemes offer.
+This definition clarifies that in the type $\forall(\alpha \geq (\forall \beta \geq \bot). \beta \rightarrow ). \alpha \rightarrow \beta$ the $3^{rd}$ $\beta$ is actually unbound. By following this semantic a \emph{type scheme} $\varphi$ can always be converted to a \emph{SystemF} type $\sigma$. It is however important not to do this before type checking is finished or you will lose the flexibility that type schemes offer.
+
+The function |ftype| converts any type scheme to a SystemF type while preserving the semantics.
+
+< ftype(phi) = _ft(_nf(phi))
+<    _where  _ft(sigma)                                  =  sigma
+<            _ft(bot)                                    =  bot
+<            _ft(forall (alpha >= bot) . phi)            =  forall alpha . _ft(phi)
+<            _ft(forall (alpha >= forall Q . rho). phi)  =  _ft(forall Q . lbrack alpha := rho rbrack phi)           
+
 \subsection{Prefix}
 The semantics of the prefix $Q$ written as $\br{Q}$  is defined as the set of SystemF substitutions that can be attained by the domain of the prefix:
 
@@ -220,16 +233,17 @@ instance Apply a => Apply [a] where
 \label{utils:apply}
 \caption{Substitutions}
 \end{figure}
-The only function that needs to be defined is \emph{app} which is application of a substitution. Substitution on an entire environment is given for free by the default definition of \emph{appAll}. 
+
+The only function that needs to be defined is \emph{app}, which is the application of a substitution. Substitution on an entire environment is given for free by the default definition of \emph{appAll}. 
 The substitutions on types is implemented as your standard capture avoiding substitution.
 \subsection{Invariants}
-For the prefix environment $Q$ and for all substitution mappings $\theta$ there are some restrictions on the ordering of their elements:
+For the prefix environment $Q$ and all substitution list $\theta$ there are some restrictions on the ordering of their elements:
 \begin{description}
-\item[\textbf{$Q$}] The elements in the prefix should always maintain the order of which they were added. Elements are added at the end of the list and are updated in place. This is important for efficiency reasons since we know that a particular variable cannot occur in the prefix before the point of it's binding. Functions such as Split and Update rely on this.
-\item[\textbf{$\theta$}] New elements should always be added in a spot that insures that applying a substitution to a list is a linear operation. To put it differently, elements are inserted at the last position in the list where the co-domain of a substitution and the domain of the preceding elements are disjoint.
+\item[\textbf{$Q$}] The elements in the prefix should always maintain the order of which they were added. Elements are added at the end of the list and are updated in-place. This is important for efficiency reasons since it is known that a particular variable cannot occur in the prefix before the point of its binding. Functions such as Split and Update rely on this.
+\item[\textbf{$\theta$}] New elements should always be added in a spot that insures that applying a substitution to a list is a linear operation. To put it differently, elements are inserted at the last position in the list where the co-domain of the substitution and the domain of the preceding elements are disjoint.
 \end{description}
 \section{Normal form}
-Sometimes during type inferencing it is desirable to bring types into \emph{normal form} in order to make it easier to compare them. It is not a requirement but it simplifies the types and throws away trivial and/or useless quantifications.
+During type inferencing it is desirable to bring types into \emph{normal form} in order to make it easier to compare them. It is not a requirement but it simplifies the types and throws away trivial and/or useless quantifications.
 
 Normal form is implemented as another type class:
 
@@ -243,122 +257,123 @@ class Eq a => Normal a where
 The specification for \emph{nf} is defined as:
 
 \begin{figure}[H]
-\begin{eqnarray*}
-nf(\sigma) & = & \sigma \\
-nf(\bot) & = & \bot \\
-nf(\forall(\alpha \geq \varphi_1).\varphi_2) & = & nf(\varphi_2) \hspace{40pt} \textrm{ iff} \hspace{5pt} \alpha \in ftv (\varphi_2) \\
-nf(\forall(\alpha \geq \varphi_1).\varphi_2) & = & nf(\varphi_1) \hspace{40pt} \textrm{ iff} \hspace{5pt} nf (\varphi_2) = \alpha \\
-nf(\forall(\alpha \geq \varphi_1).\varphi_2) & = & nf(\lbrack \alpha := \rho \rbrack\varphi_2) \hspace{10pt} \textrm{iff } nf(\varphi_1)=\rho \\
-nf(\forall(\alpha \geq \varphi_1).\varphi_2) & = & \forall(\alpha \geq nf(\varphi_1)).nf(\varphi_2)
-\end{eqnarray*}
+
+< _nf(sigma)                          =  sigma
+< _nf(bot)                            =  bot
+< _nf(forall(alpha >= phi_1). phi_2)  =  _nf(phi_2)                                 _iff  alpha _in ftv (phi_2)
+< _nf(forall(alpha >= phi_1). phi_2)  =  _nf(phi_1)                                 _iff  _nf (phi_2)  =  alpha 
+< _nf(forall(alpha >= phi_1). phi_2)  =  _nf(lbrack alpha := rho rbrack phi_2)      _iff  _nf(phi_1)   =  rho
+< _nf(forall(alpha >= phi_1). phi_2)  =  forall(alpha >= _nf(phi_1)). _nf(phi_2)
+
 \caption{Normal Form}
 \end{figure}
 
-This definition of normal form uses \emph{ftv} which means \emph{free type variables}. Most of the cases for finding the ftv of a type are the standard definitions found in literature, with one exception:
+This definition of normal form uses \emph{ftv} which means \emph{free type variables}. Most of the cases for finding the ftv of a type are the standard definitions found in literature. The one exception is for type schemes:
 
-\begin{eqnarray*}
-\lefteqn{ftv(\forall(\alpha \geq \varphi_1).\varphi_2) }\\
-  & = & ftv(\varphi_1)\cup ftv(\varphi_2) \hspace{5pt} \textrm{iff} \hspace{5pt} \alpha \in ftv(\varphi_2) \\
-  & = & ftv(\varphi_2) \hspace{50pt} \textrm{otherwise}
-\end{eqnarray*}
+< _ftv(forall(alpha >= phi_1). phi_2)
+<    =  _ftv(phi_1) cup _ftv(phi_2)  _iff alpha _in _ftv(phi_2)
+<    =  _ftv(phi_2)                  _otherwise
 
-Which means that if bounds of a type scheme is not used then its free variables have no impact on the free variables of the type.
+
+If bounds of a type scheme is not used, then its free variables have no impact on the free variables of the type.
 \section{Utility functions}
 There are a couple of utilities functions which are used often, in this section their specification and implementation are discussed.
 \subsection{Split}
-The split function is one of the simplest functions. As the name suggests it is used to split a prefix $Q$ into two based on a list of domains.
+The split function is one of the simplest functions. As the name suggests, it is used to split a prefix $Q$ into two based on a list of domains.
 
 \begin{figure}[H]
-\begin{tabular}[t]{l}
-split :: $(Q, \overline{\alpha}) \rightarrow (Q,Q)$\\
-split $(\emptyset, \overline{\alpha})$ = \\
-\hspace{15pt} return $(\emptyset, \emptyset)$ \\
-\\
-split $((Q,\alpha \geq \hat{\varphi}),\overline{\alpha})$ = \hspace{15pt} with \hspace{5pt} $\alpha \in \overline{\alpha}$ \\
-\hspace{15pt} let $(Q_1, Q_2)$ = split $(Q,((\overline{\alpha} - \alpha)\cup ftv(\varphi)))$ \\
-\hspace{15pt} return $((Q_1, \alpha \geq \hat{\varphi}), Q_2)$ \\
-\\
-split $((Q,\alpha \geq \hat{\varphi}),\overline{\alpha})$ = \hspace{15pt} with \hspace{5pt} $\alpha \notin \overline{\alpha}$ \\
-\hspace{15pt} let $(Q_1, Q_2)$ = split $(Q,\overline{\alpha})$ \\
-\hspace{15pt} return $(Q_1, (Q_2, \alpha \geq \hat{\varphi}))$ \\
-\end{tabular}
+
+< split :: (Q, vec alpha) -> (Q,Q)
+< split (empty, vec alpha) = 
+<    _return (empty, empty)
+< ^^^
+< split ((Q,alpha >= hat phi), vec alpha)  =  with alpha _in (vec alpha)
+<    _let (Q_1, Q_2) = split (Q,(((vec alpha) - alpha) cup ftv(phi)))
+<    _return ((Q_1, alpha >= (hat phi)), Q_2)
+< ^^^
+< split ((Q,alpha >= (hat phi)), (vec alpha))  =  with alpha _notin (vec alpha)
+<    _let (Q_1, Q_2) = split (Q, vec alpha)
+<    _return (Q_1, (Q_2, alpha >= (hat phi)))
+
 \end{figure}
 The notation of $(Q,x)$ means extending $Q$ by adding $x$ to the end while $(Q_1, Q_2)$ is just the tupling of two prefixes.
 
-The function itself is quite simple and works based on the assumption that the domain of the prefix contains no duplicates. The function also maintains within each individual prefixes it produces the invariant on the ordering. The split function is generally used as an instrument to do \emph{generalization}.
+The function itself is quite simple and works based on the assumption that the domain of the prefix contains no duplicates. The function also maintains the invariant on the ordering within each individual prefixes it produces. The split function is usually used as an way to do \emph{generalization}.
+
 \subsection{Update}
-The update function is used to update an existing binding in a prefix. There are two ways to update a prefix, but they both return a tuple consisting of a new prefix and a substitution list. Both these functions have an implicit requirement that the bound to be updated must exists.
+The update function is used to update an existing binding in a prefix. There are two ways to update a prefix. Both return a tuple consisting of a new prefix and a substitution list. These functions have an implicit requirement that the bound to be updated must already exist within the prefix.
 \subsubsection{Update based with new bound}
 The first way to update a prefix is with a new scheme:
 
-\begin{eqnarray*}
-\lefteqn{update(Q, \alpha \geq \varphi_2) =} \\
-\hspace{10pt} &let & (Q_0, (Q_1, \alpha \geq \hat{\varphi_1}, Q_2)) = split(Q, ftv(\varphi_2)) \\
-              &if & (nf(\varphi_2)= \rho) \\
-              &\hspace{5pt}& \hspace{10pt} then \hspace{5pt} return ((Q_0, Q_1, \lbrack \alpha := \rho \rbrack Q_2), \lbrack \alpha := \rho \rbrack) \\
-              &\hspace{5pt}& \hspace{10pt} else \hspace{5pt} return ((Q_0, Q_1, \alpha \geq \varphi_2, Q_2), \lbrack \rbrack)
-\end{eqnarray*}
+
+< update(Q, alpha >= phi_2) =
+<    _let (Q_0, (Q_1, alpha >= (hat phi_1), Q_2)) = split(Q, ftv(phi_2))
+<               _if(nf(phi_2)= rho)
+<                   _then  _return ((Q_0, Q_1, lbrack alpha := rho rbrack Q_2), lbrack alpha := rho rbrack)
+<                   _else  _return ((Q_0, Q_1, alpha >= phi_2, Q_2), lbrack rbrack)
+
+The steps performed by this function can decomposed as:
 
 \begin{enumerate}
 \item{ Split the prefix into two parts ($Q_0, Q_{0'})$ based on the free variables of the new scheme. This is done for two reasons:  
 		\begin{itemize}
-		\item As a crude check to prevent infinity types. If the ftv of $\varphi_2$ contains $\alpha$ the second operation would fail.
-		\item Reinforce the invariant. The prefixes that won't be updated are older and so should be in the front of the list.
+		\item As a crude check to prevent infinity types. If the |ftv| of $\varphi_2$ contains $\alpha$ the second operation would fail.
+		\item Reinforce the invariant. The prefixes that will not be updated are older and are positioned in the front of the list.
 		\end{itemize}
      }
-\item Split $Q_{0'}$ in place into 3 parts. $Q_1$ contains the schems before the current binding to $\alpha$ and $Q_3$ which is contains the schemes after the binding to $\alpha$.
-\item{ The check to see if the normal form of the new scheme $\varphi_2$ is an unqualified types serves to prevent that a simple bound enter the prefix:
-		\begin{itemize}
-		\item If it is a simple type, we return the a substitution to the type instead of adding it to the prefix, and the substitution is applied to $Q_2$ because that's the only prefix that can contain any reference to $\alpha$ due to the ordering of the prefixes.
-		\item If the type is not a simple type then it is added inplace in the prefix and no substitution is returned.
-		\end{itemize}
+\item Split $Q_{0'}$ in place into 3 parts. $Q_1$ contains the schemes before the current binding to $\alpha$. $Q_3$ contains the schemes after the binding to $\alpha$.
+\item{ To prevent that a simple bound enter the prefix a check is performed to see if the normal form of the new scheme $\varphi_2$ is an unqualified type. If it is a simple type, we return the a substitution to the type instead of adding it to the prefix, and the substitution is applied to $Q_2$ because due to the ordering of the prefixes it is the only prefix that can contain any reference to $\alpha$.
+However if the type is not a simple type then it is added in-place in the prefix and no substitution is returned.
      }
-\item In the return statements, the tupling is an implicit concatenation. 
+\item In the return statements, the tupling statement is intended to be an implicit concatenation if the elements. 
 \end{enumerate}
 \subsubsection{Update based on substitution}
 The second way to update a prefix is with a substitution. This update always removes the entry from the prefix:
 
-\begin{eqnarray*}
-\lefteqn{update(Q, \alpha := \sigma) =} \\
- & & \textrm{let } (Q_0, (Q_1, \alpha \geq \varphi, Q_2)) = split(Q, ftv(\sigma)) \\
- & & \textrm{return } ((Q_0, Q_1, \lbrack \alpha := \sigma \rbrack Q_2), \lbrack \alpha := \sigma \rbrack)
-\end{eqnarray*}
+< update(Q, alpha := sigma) =
+<    _let (Q_0, (Q_1, alpha >= varphi, Q_2)) = split(Q, ftv(sigma))
+<    _return ((Q_0, Q_1, lbrack alpha := sigma rbrack Q_2), lbrack alpha := sigma rbrack)
+
 \subsection{Extend}
 The last way to modify a prefix is by extending it with a new entry. This is done with the help of the extend function:
 
-\begin{eqnarray*}
-\lefteqn{extend(Q,\alpha \geq \varphi) = } \\
-\hspace{10pt} &let& (Q^{'}, \varphi^{'}) = \textrm{explode } Q \textrm{ } \varphi \\
-              &if&  (nf(\varphi^{'}) = \rho) \\
-              & & \textrm{     then return} (Q^{1}, \lbrack \alpha := \rho \rbrack) \\
-              & & \textrm{     else return} ((Q^{'}, \alpha \geq \varphi^{'}),\lbrack \rbrack)
-\end{eqnarray*}
+< extend(Q, alpha >= phi) = 
+<    _let (Q', phi') = explode Q phi
+<            _if  (_nf(phi') = rho)
+<                 _then _return (Q', lbrack alpha := rho rbrack)
+<                 _else _return ((Q', alpha >= phi'),lbrack rbrack)
 
-Like before the normal form checks are here to prevent simple types to enter the environment. However there is another type that shouldn't enter the environment here: \emph{types who's normal form is $\bot$ should not enter the prefix}. 
+Like before, the normal form checks are here to prevent simple types to enter the environment. However there is another type that shouldn't enter the environment here: \emph{types who's normal form is $\bot$ should not enter the prefix}. 
 
 Concretely this means that extending the prefix with e.g. $\beta \geq (\forall(\alpha \geq \bot).\alpha)$ should just return the substitution $\beta := \alpha$. The reason for this is to prevent information loss when types are shared, this will be covered in more detail in the implementation of Applications.
 
 The definition of the \emph{explode} function is quite simple:
 
-\begin{eqnarray*}
-\lefteqn{\textrm{explode Q $\varphi$}} = \\
-& & \textrm{if} (nf(\varphi) = \bot) \\
-& & \quad \textrm{then let } (\forall Q_1 . \varphi_1) = \varphi \\
-& & \quad \quad \quad \textrm{     return } (Q Q_1, \varphi_1) \\
-& & \quad \textrm{else return } (Q, \varphi)
-\end{eqnarray*}
+< explode :: Q -> phi -> (Q, phi)
+< explode Q phi =
+<    _if  (_nf(phi) = bot)
+<         _then  _let(forall Q_1 . phi_1) = phi
+<                _return (Q Q_1, phi_1)
+<         _else _return (Q, phi)
 
-This function has the type $explode :: Q \rightarrow \varphi \rightarrow (Q, \varphi)$. The function works by using the syntactic sugar for quantified type schemes (refer to section \ref{syntax} for more details).
+The function works by using the syntactic sugar for quantified type schemes (refer to section \ref{syntax} for more details). If the normal form of the type scheme |phi| is $\bot$ then the type scheme and its prefix are returned separately. The function is a more restrictive form of to the following typing rule:
+
+\begin{prooftree}
+		\AxiomC{$Q,\Gamma \vdash e : \forall Q_1 . \sigma$}
+	\LeftLabel{Explode:\quad}
+		\UnaryInfC{$Q Q_1,\Gamma \vdash e : \sigma$}
+\end{prooftree}
+
 \section{Modifications}
 This section details some modifications made to the standard HML algorithm that should be explained on their own.
 \subsection{Promotion}
-In the original algorithm for unification, the semantically equivalent types for \emph{id} aren't treated the same:
+In the original algorithm for unification, the following semantically equivalent types for \emph{id} are not treated the same:
 \begin{eqnarray*}
 \forall a. a \rightarrow a \textrm{ and }
 (\forall a \geq \bot). a \rightarrow a
 \end{eqnarray*}
 
-They do however result in the same SystemF type. This occurs because we want to retain some link back to types that a normal Haskell programmer is used to. But for the implementation of unification, there's really no reason why we can't remove SystemF types as inputs and only accept flexible types. For that reason with the exception of higher-rank quantifiers, all types are promoted to flexible types.
+They do however result in the same SystemF type. This occurs because we want to retain some link back to types that a normal Haskell programmer is used to. But for the implementation of unification there is really no reason why the SystemF type schemes cannot be removed as inputs and only flexible types accepted. All types, with the exception of the inner quantifiers for higher-rank types are promoted to flexible types. The |forall b.| in |forall a. (forall b. b -> b) -> a -> a| is such a type. The promoted type is |(a >= bot). (forall b. b -> b) -> a -> a|.
 
 \begin{code}
 embedF :: TyExpr -> TyScheme
@@ -371,21 +386,22 @@ embedF = embed id
          embed val e                     = val (TyScheme_SystemF e)
 \end{code}
 
-The reason we don't promote higher-rank quantifier is that it would require a change of the definition of a type scheme. Unfortunately at the moment of discovery time constraints prohibited this.
+The reason higher-rank quantifiers inside types are not promoted is that it would require a change of the definition of a type scheme. Unfortunately at the moment of discovery time constraints prohibited this.
 \subsubsection{Domain}
 Because of types being promoted, we end up with types that are a bit more complex in the prefix. Types as 
 \begin{equation}
 \tau = \beta \geq ((\forall a \geq \bot). a \rightarrow a)
 \end{equation}
 
-are now quite common. When we generalize it is common to do so based on the domain of the initial(input) prefix. By promoting types we introduce new type variables that need to be taken in account, if not we might accidentally disregard a \emph{scheme bound} without noticing.
+are now quite common. When we generalize it is common to do so based on the domain of the initial(input) prefix. By promoting types we introduce new type variables that need to be taken in account, if not we might accidentally disregard a \emph{scheme bound} without noticing. 
 
 For that reason the range of the domain needs to be redefined:
 \begin{eqnarray*}
 dom   &\tau& = \{\beta, \alpha\}\\
 codom &\tau& = \{\}
 \end{eqnarray*}
+
 \subsection{Renaming}
 \label{renaming}
 
-The HML does not really have support for case expressions and tuples. In those two situation you would want on every lookup of a type constructor to return a fresh type. e.g. the type of $(\lbrack \rbrack, \lbrack \rbrack)$ should is $\forall \alpha \beta . (\lbrack \alpha \rbrack, \lbrack \beta \rbrack)$. Because of this, on every lookup of a constructor we rename every bound variable.
+The type HML system does not have support for case expressions and tuples. In those two situation you would want on every lookup of a type constructor to return a fresh type. e.g. the type of $(\lbrack \rbrack, \lbrack \rbrack)$ should is $\forall \alpha \beta . (\lbrack \alpha \rbrack, \lbrack \beta \rbrack)$. Because of this, on every lookup of a constructor we rename every bound variable. In applications, either the function or the argument needs to be alpha renamed when being added to the prefix. This is because when unifying the type of "id id" the type of both id's are the same. Without the renaming we might end up reasoning about the same type variable accidentally.

@@ -1,9 +1,9 @@
 \chapter{Extensions}
 \label{cap:Extensions}
-Up until now the type checker can only type single one sentence expressions. We can't actually type check a full function because of the fact that there is no support for case statements. This means that type checking an entire Haskell module is also out of the question. This chapter outlines the steps taken to implement type checking of entire modules.
+Up until now the type checker can only type one sentence expressions. It cannot actually type check a full function because of the fact that there is no support for case statements. This means that type checking an entire Haskell module is also out of the question. This chapter outlines the steps taken to implement type checking of entire modules.
 
 \section{Tuples}
-Because of the way functions are desugared in EH, support for tuples need to  be added before case expressions can be evaluated. UHC implements tuples quite differently then GHC, namely as a recursive datatype. The reason for this is that it makes it easier to implement extensible records.
+Because of the way functions are desugared in EH, support for tuples need to be added before case expressions can be evaluated. UHC implements tuples quite differently then GHC, namely as a recursive datatype. The reason for this is that it makes it easier to implement extensible records.
 
 Inside the \emph{Expr} datatype there is this definition:
 \begin{code}
@@ -47,10 +47,10 @@ itf RecExpr
 \label{record}
 \caption{Definition of a record along with the interface}
 \end{figure}
-Figure \ref{record} also shows the interface defined for typechecking tuples. The result is a \emph{RowTyExpr}. The \emph{Upd} constructor since there is no support for records in this version.
+Figure \ref{record} also shows the interface defined for type checking tuples. The result is a \emph{RowTyExpr}, which is the type of a tuple. The \emph{Upd} constructor since there is no support for records in this version.
 
 \paragraph{extending the datasem Expr}
-Extending the Expr datatype is quite straight forward, the only code needed is
+Extending the Expr datatype is straight forward, the only code needed is
 
 \begin{code}
 clause Rec
@@ -88,7 +88,7 @@ The code relevant to the implementation of a \emph{RecExpr} is:
    expr.env  = appAll recExpr.sub lhs.env
    expr.frs  = recExpr.frs
 \end{code}
-The recursive part of the \emph{RecExpr} needs to be inferred first. After that the resulting substitutions are applied to the $\Gamma$ to update the shared values. This is important in expressions such as |\f -> (f 1, f 'a')|. With the new expression and prefix the type of the expression at the current position of the tuple can be inferred.
+The recursive part of the \emph{RecExpr} needs to be inferred first. After that the resulting substitutions are applied to the $\Gamma$ to update the shared values. This is important in expressions such as |\f -> (f 1, f 'a')| where |f| is shared between elements in the tuple. With the recursive part type checked and the new prefix, the type of the expression at the current position of the tuple can be inferred.
 
 \begin{code}    
    (loc.q1, loc.frs, loc.res)
@@ -103,7 +103,20 @@ The recursive part of the \emph{RecExpr} needs to be inferred first. After that 
                                                (deep_explode' expr.pre typ)
                 in (q, frs, e)
 \end{code}
-\emph{rty} represents the type of the recursive RecExpr and the \emph{ty} is the type of the current expression. If both are not Nothing then the current type is renamed and its quantifiers are removed and moved to the prefix. Generalization in the \emph{Expr} datasem will fully quantify them again. This is done because the type of |(id, id)| should be |forall a. b. (a -> a, b -> b)| and not |(forall a. a -> a, forall a. a -> a)|.
+\emph{rty} represents the type of the recursive RecExpr and the \emph{ty} is the type of the current expression. If both are not Nothing then the current type is renamed and its quantifiers are removed and moved to the prefix. Generalization in the \emph{Expr} datasem will fully quantify them again. This is done because the type of |(id, id)| should be |forall a. b. (a -> a, b -> b)| and not |(forall a. a -> a, forall a. a -> a)|. Another possibility to handle this is to generate two new fresh variables and extend the environment with the these new variables instead:
+
+\begin{code}
+                let  (typ, frs,  _)  = renameBound expr.frs ty 
+                     (a1 , frs1   )  = fresh frs
+                     (a2 , frs2   )  = fresh frs1
+                     (q,   e      )  = let (Q_1, theta_1) = extend (expr.pre, a1 >= TyScheme_SystemF rty)
+                                           (Q_2, theta_2) = extend (Q_1, a2 >= TyScheme_SystemF typ)
+
+                                       in second  (RowTyExpr_Ext (theta_1 ^ a1) loc.mbNm) 
+                                                  (deep_explode' Q_2 (theta_2 ^ a2))
+                in (q, frs, e)
+\end{code}
+The first approach was chosen because it generates types that the average Haskell is used to and because there is no benefit to using type schemes as the type of tuples.
 
 \begin{code}                              
       lhs.sub  = recExpr.sub `munion` expr.sub
@@ -165,7 +178,7 @@ With this definition the datasem of \emph{Expr} can be expanded with:
       -- check if infer of expression succeeded
       loc.etype = maybe (error ...) id expr.res
 \end{code}
-It starts of by inferring the type of the scrutinee. This is usually returns a completely polymorphic types since the scrutinee is usually a variable (or a tuple thereof). 
+The type of the scrutinee is first inferred. This is usually returns a completely polymorphic types since the scrutinee is usually a variable (or a tuple thereof). 
 
 \begin{code}
    alts.exp  = loc.etype
@@ -179,7 +192,8 @@ It starts of by inferring the type of the scrutinee. This is usually returns a c
    s.ty2  = caseLHS alts.res
    s.frs  = alts.frs
 \end{code}
-After the type of the scrutinee the types of the case alternatives are inferred. The result of which is a record which contains the inferred type for the left hand side of the case alternatives (unified together) and the type representing of the right hand side of the case alternatives. The type of the scrutinee is then unified with that of the left-hand sides of the case alternatives.
+
+The types of the case alternatives are inferred next. The result of which is a record which contains the inferred type for all the left hand sides of the case alternatives (unified together) and the type of all the right hand sides of the case alternatives (unified together). The type of the scrutinee is then unified with that of the left-hand sides of the case alternatives.
 
 \begin{code}       
    (loc.q1, loc.q2) = split (s.pre, domain lhs.pre)
@@ -192,7 +206,7 @@ After the type of the scrutinee the types of the case alternatives are inferred.
    lhs.pre  = loc.q1
    lhs.frs  = s.frs
 \end{code}
-At the end generalization is done and the fully quantified type is returned, which consists of the substitutions gathered during inference applied to the type of the right-hand side of the case expressions (to insure that all substitutions they have all been applied). The |pick| function add to the first environment anything new from the second environment. In essense it is the same as |nub . concat|.
+At the end generalization is done and the fully quantified type is returned. This type consists of the substitutions gathered during inference applied to the type of the right-hand side of the case expressions (to insure that all substitutions they have all been applied). The |pick| function adds to the first environment anything new from the second environment. In essense it is the same as |nub . concat|.
 
 The interface for \emph{CaseAlts} is defined as:
 \begin{code}
@@ -241,7 +255,8 @@ This means that all the needed bits of information are available to reconstruct 
 \item Solve the constraints. This is done by unifying the type returned from the inference of the expression and with the type reconstructed in step 1. This fills in any missing information between the types.
 \item Apply the substitutions gained from the unification to the inferred type. This then results in the final and correct type for the expression.
 \end{itemize}
+
 Since Haskell does not have a special keyword for \emph{letrec} the same code is also called for normal functions. In the case of normal (non fixpoint recursive) functions the reconstructed type would be the same as the type that was inferred. Unify would just return an empty substitution.
 
 \section{Type annotations}
-Type annotations are nothing special. If the type that is being annotated with a new type has the type of a polymorphic variable then that type is just replaced in the $\Gamma$ with the annotated type. Since there is no bidirectional typing giving a type signature for a function is not really supported. The support for annotation is just enough to allow annotation on variables.
+Type annotations are nothing special. If the type that is being annotated with a new type has the type of a polymorphic variable then that type is just replaced in the $\Gamma$ with the annotated type. Since there is no bidirectional typing giving a type signature for a function is not supported. The support for annotation is just enough to allow annotation on variables.
