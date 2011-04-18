@@ -630,13 +630,14 @@ The abstract language used by the Utrecht Haskell Compiler (UHC) to represent de
 
 \chapter{Attribute Grammars}
 \label{AG}
-\emph{Context Free Grammars}(CFG) cannot describe the complete syntax of programming languages\cite{knuth1}, particularly specifying any context-sensitive condition is impossible. For example the condition that the same value for \emph{n} be enforced in the string $a^nb^nc^n$ cannot be tested by using context free grammars\cite{ken}.
+\emph{Context Free Grammars}(CFG) can only describe the syntax of programming languages\cite{knuth1}. They cannot specify any context-sensitive conditions. In practice we are interested in more then the well-formedness of a grammar. For example the condition that the same value for \emph{n} be enforced in the string $a^nb^nc^n$ cannot be described by using context free grammars\cite{ken}.
 
-Developed in 1968 by Donald E. Knuth \ags were created as a way to define \emph{meaning} to context free languages. An example of assigning meaning to a grammar is defining the evaluation of expressions. The expression grammar is defined by the following \emph{CFG} expressed as \emph{BNF}:
+In 1968 by Donald E. Knuth~\cite{knuth1} introduced \ags as a way to define the \emph{meaning} to context free languages. A typical is the defining the value of an expression. The expression grammar is defined by the following \emph{CFG} expressed as \emph{BNF}:
 
 \input{./BNF-Expr}
 
-The \emph{terminals} in this case are the \emph{operators} $+,-$ and the \emph{digits} $0\ldots 9$. The \emph{nonterminals} are the \emph{Expr} and \emph{number} symbols. The grammar specifies that an expression is either a \textbf{number} or an \textbf{Expr} followed by an \textbf{operator} and then another \textbf{Expr}. For every sentence that can be produced by this grammar a parse tree can be assigned. For instance the expression "2 + (3 - 5) + (6 - 1)" produces the parse tree in figure \ref{fig.example1.parsetree}. Meaning is defined for the expression on a step by step basis corresponding with the structure of the parse tree, starting from the leaves and working up the tree. By assigning \emph{attributes} to the tree elements during traversals, meaning can be incrementally defined to the parse tree. See figure \ref{fig.example1.parsetree}
+A symbol is either a terminal or a nonterminal. A terminal is typically a single character or a single token. A nonterminal represents a sequence of symbols, and can be seen as a classification of these symbols.
+The \emph{terminals} in this case are the \emph{operators} $+,-$ and the \emph{digits} $0\ldots 9$. The \emph{nonterminals} are the \emph{Expr} and \emph{number} symbols. The grammar specifies that an expression is either a \emph{number} or an \emph{Expr} followed by an \emph{operator} and then another \emph{Expr}. For every sentence that can be produced by this grammar a parse tree can be assigned. For instance, the expression "2 + (3 - 5) + (6 - 1)" produces the parse tree in figure \ref{fig.example1.parsetree}. We define the value of an expression as a composition of the values of its sub expressions, See figure \ref{fig.example1.parsetree}
 
 \begin{figure}[H]
 \centering
@@ -663,13 +664,13 @@ The \emph{terminals} in this case are the \emph{operators} $+,-$ and the \emph{d
 \label{fig.example1.parsetree}
 \end{figure}
 
-AG's are additions to CFGs that propagate semantic information along through parse trees. As with the majority of trees used in computer science, ASTs are created with the \emph{root} at the top and the \emph{leaves} at the bottom. With this in mind there are two kinds of \emph{attributes} defined by knuth\cite{knuth1}:
+AG's are additions to CFGs that propagate semantic information along through parse trees. Nodes in the AST correspond to either a production or a nonterminal in the grammar. With this in mind there are two kinds of \emph{attributes} defined by knuth\cite{knuth1}:
 \begin{description}
-\item[\textbf{synthesized}] An attribute that is only dependent on \emph{descendants} of the nonterminal. They are passed bottom-up through the tree.
+\item[\textbf{synthesized}] An attribute that is defined in terms of attributes of the \emph{descendants} of the AST node. They are passed bottom-up through the tree.
 \item[\textbf{inherited}] An attribute that is defined in terms of the \emph{ancestors} of the nonterminal. They are passed top-down through the tree.
 \end{description}
 
-An attribute can be both \emph{synthesized} and \emph{inherited}. Semantics can be defined for the tree in figure \ref{fig.example1.parsetree} by assigning a synthesized attribute named \emph{value} of type \textbf{Int} to the nonterminals \emph{number} and \emph{Expr}. The evaluation rules are:
+An attribute can be both \emph{synthesized} and \emph{inherited}. These are however different attributes which share the same name. Semantics can be defined for the tree in figure \ref{fig.example1.parsetree} by assigning a synthesized attribute named \emph{value} of type \textbf{Int} to the nonterminals \emph{number} and \emph{Expr}. The evaluation rules are:
 
 \begin{figure}[H]
 \begin{grammar}
@@ -679,10 +680,10 @@ An attribute can be both \emph{synthesized} and \emph{inherited}. Semantics can 
       [(period){\\}]
       [(quote){\begin{bf}}{\end{bf}}]
       [(nonterminal){$\langle$}{$\rangle$}] 
-value(<$Expr^+$>):value(<$Expr_1$>) + value(<$Expr_2$>). 
-value(<$Expr^-$>):value(<$Expr_1$>) - value(<$Expr_2$>). 
-value(<Expr>):value(<number>).
-value(<number>):<number>.
+value(<$Expr^+$>) : value(<$Expr_1$>) + value(<$Expr_2$>). 
+value(<$Expr^-$>) : value(<$Expr_1$>) - value(<$Expr_2$>). 
+value(<Expr>) \hspace{5pt} : value(<number>).
+value(<number>): <number>.
 \end{grammar}
 \caption{attribute definition for Expressions}
 \label{semantics:bnf:expr}

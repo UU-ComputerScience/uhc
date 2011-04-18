@@ -12,11 +12,11 @@
 <   _return (Q, [])
 < -- 
 < subsume (Q, forall Q_2 . rho_1, forall (vec alpha) . rho_2) =
-<   _assume (dom Q) # (dom Q_2) ^^ -- and |vec c| are fresh constants
+<   _assume (dom Q) # (dom Q_2) ^^ -- and |vec c| are fresh _constants
 <   _let (Q_1, theta_1)  =  unify (Q ^ Q_2, subst (vec alpha) (vec c) rho_1, rho_2)
 <   _let (Q_3, Q_4)      =  split (Q_1, dom Q)
 <   _let theta_2         =  theta_1 - dom Q_4
-<   _failIf (c _in (con theta_2 cup (con Q_3))
+<   _failIf (c _in (_con theta_2 cup (_con Q_3))
 <   _return (Q_3, theta_2)
 
 \caption{Subsume specification}
@@ -100,9 +100,9 @@
 <   _return (Q_3, theta_3 dot theta_2 dot theta_1)
 < --
 < unify(Q, forall alpha . sigma_1, forall beta . sigma_2) = 
-<   -- assume |c| is a fresh (skolem) constant
+<   -- assume |c| is a fresh (skolem) _constant
 <   _let (Q_1, theta_1) = unify(Q, lbrack alpha := c rbrack sigma_1, lbrack beta := c rbrack sigma_2)
-<   _failIf (c _in (con(theta_1) cup (con(Q_1)))
+<   _failIf (c _in (_con(theta_1) cup (_con(Q_1)))
 <   _return (Q_1, theta_1)
 
 \caption{Unify specification}
@@ -117,7 +117,7 @@
 <   _return (Q, [], Gam(alpha))
 < --
 < infer(Q, Gam, c) =
-<   _return (Q, [], alphaconv (Gam(c)))
+<   _return (Q, [], alpha_conv (Gam(c)))
 < --
 < infer(Q, Gam, Let (vec (x = e_1)) in e_2) =
 <   -- where |vec alpha| are fresh variables and |vec alpha # vec (x = e_1)|
