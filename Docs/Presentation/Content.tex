@@ -1,0 +1,259 @@
+\section{Introduction}
+
+%\frame
+%{
+%  \frametitle{Features of the Beamer Class}
+%
+%  \begin{itemize}
+%  \item<1-> Normal LaTeX class.
+%  \item<2-> Easy overlays.
+%  \item<3-> No external programs needed.      
+%  \end{itemize}
+%}
+
+% \begin{frame}[fragile]
+% 	\frametitle{By example}
+% 
+% 	\begin{block}<+->{Consider the recursive function last:}
+% 		\begin{lstlisting}
+% 		last :: [a] -> a
+% 		last []     = error "Last"
+% 		last (x:[]) = x
+% 		last (x:xs) = last xs
+% 		\end{lstlisting}
+% 	\end{block}
+% 	
+% 	Runtime two checks for the Cons (:) constructor are done.
+% \end{frame}
+
+\subsection{Type Systems}
+\frame{
+	\frametitle{Type inferencing}
+
+	\begin{quotation}
+    "Type inference refers to the ability to deduce automatically the type of an expression in a programming language."
+    \end{quotation}
+    
+    \only<2->{For example the \emph{identity} function |\x->x : alpha -> alpha|}
+}
+
+\frame{
+	\frametitle{Hindley-Milner}
+    
+	\begin{itemize}
+	\item<1-> Damas-Milner
+	\item<2-> Principle type
+	\item<3-> Decidable inferencing
+	\end{itemize}
+}
+
+\frame{
+	\frametitle{Higher-rank types}
+    
+	\begin{itemize}
+	\item<1-> Haskell '98 types are rank-1
+	\item<2-> |a -> b -> a|
+   \item<3-> |forall a b. a -> b -> a|
+   \item<4-> |forall a. a -> (forall b. b -> a)|
+   \item<5-> |forall b. (forall a. a -> a) -> b -> b|
+	\end{itemize}
+
+	\only<6->{Refers to the the number of |forall|s nested to the left of a |(->)|}
+}
+
+\frame{
+	\frametitle{Higher-rank types}
+    
+	\begin{code}
+	poly = \f -> (f 1, f 'c')
+	\end{code}
+	
+	cannot be expressed without Higher-Rank types.
+}
+
+\frame{
+	\frametitle{SystemF}
+   Provides typing support for higher-rank functions
+
+	\begin{block}<+->{Terms}
+		\begin{itemize}
+		\item Type abstraction ($\Lambda X. t$)
+		\item Type application (t [T])
+		\end{itemize}
+	\end{block}
+
+	\begin{block}<+->{Types}
+		\begin{itemize}
+		\item Type variables (X)
+		\item Universal types (|forall X. T|)
+		\end{itemize}
+	\end{block}
+}
+
+\frame{
+	\frametitle{SystemF}
+   Typing of the |id| function
+	\begin{itemize}
+	\item<1-> $id = \lambda x. x$
+	\item<2-> $id = \Lambda X. \lambda x : X -> x : X$
+	\item<3-> Typing |id 3|
+	\item<4-> id [Int] = [X$\rightarrow$Int]($\lambda x:X. x$)
+	\end{itemize}
+}
+
+\frame{
+	\frametitle{SystemF}
+	\begin{itemize}
+	\item<1->|poly = \f -> (f 1, f 'c')| is now typeable
+	\item<2->Undecidable
+	\item<3->Requires annotation
+	\item<4->|poly = \(f :: forall a -> Int) -> (f 1, f 'c')|
+	\end{itemize}
+}
+
+\frame{
+	\frametitle{The problem}
+   
+	Type systems are specified using typing rules
+   \only<2->{
+		\begin{prooftree}
+			\AxiomC{$x : \sigma \in \Gamma$}
+		\LeftLabel{Var:\quad}
+			\UnaryInfC{$\Gamma\vdash x : \sigma$}
+		\end{prooftree}
+	}
+   \only<2->{However..}
+}
+
+\frame{
+	\frametitle{The problem}
+   
+	Disconnect between typing rules and implementation
+   \begin{itemize}
+	\item<1-> Nondeterministic
+	\item<2-> Implicit assumptions
+	\item<3-> Implementation does not resemble typing rules
+	\item<4-> Complexity explodes with size of AST
+	\item<5-> A lot of it due to language used
+	\end{itemize}
+}
+
+\frame{
+	\frametitle{Goal}
+    
+	Implement type system using attribute grammars
+	\begin{itemize}
+	\item<1-> Easier to understand
+	\item<2-> Easier to prove correct
+	\item<3-> Easier to document and scale
+	\end{itemize}
+}
+
+\frame{
+	\frametitle{Contributions}
+
+	\begin{itemize}
+	\item<1-> Implementation using attribute grammars
+	\item<2-> Implementation \& specification for the HML type system for EH
+	\end{itemize}
+}
+
+\section{Attribute Grammars}
+
+\frame{
+	\frametitle{Context Free Grammars}
+
+	\begin{itemize}
+	\item<1-> Can only describe syntax
+	\item<2-> Cannot specify any context-sensitive conditions
+   \item<2-> $a^nb^nc^n$
+	\item<3-> A way to define semantics/meaning
+	\end{itemize}
+}
+
+\frame{
+	\frametitle{Context Free Grammars}
+
+	\input{./BNF-Expr}
+}
+
+\frame{
+	\frametitle{Parse Trees}
+
+	\begin{figure}[H]
+	\centering
+	\begin{tikzpicture}[>=stealth']
+	\node (r0) [draw, circle] {+};
+	\node (r1) [below left=1cm of r0, draw, circle] {2}
+	  edge[<-] (r0.south);
+	\node (r2) [below right=1cm of r0, draw, circle] {+}
+	  edge[<-] (r0.south);
+	\node (s0) [below left=1.4cm of r2, draw, circle] {-}
+	  edge[<-] (r2.south);
+	\node (s1) [below left=1cm of s0, draw, circle] {3}
+	  edge[<-] (s0.south);
+	\node (s2) [below right=1cm of s0, draw, circle] {5}
+	  edge[<-] (s0.south);
+	\node (f0) [below right=1.5cm of r2, draw, circle] {-}
+	  edge[<-] (r2.south);
+	\node (f1) [below left=1cm of f0, draw, circle] {6}
+	  edge[<-] (f0.south);
+	\node (f2) [below right=1cm of f0, draw, circle] {1}
+	  edge[<-] (f0.south);
+	\end{tikzpicture}
+	\caption{Parse tree example for "2 + (3 - 5) + (6 - 1)"}
+	\label{fig.example1.parsetree}
+	\end{figure}
+
+	\begin{itemize}
+	\item<1-> AG's are additions to CFG
+	\item<2-> Nodes are a production or a non-terminal
+	\end{itemize}
+}
+
+\frame{
+	\frametitle{}
+
+}
+
+\subsection{Introduction}
+
+\subsection{UUAGC}
+
+\subsection{Ruler-Core}
+
+\section{HML}
+
+\subsection{Introduction}
+
+\subsection{Types}
+
+\subsection{Invariants}
+
+\subsection{Semantics}
+
+\subsection{Utility functions}
+
+\subsection{Normal Form}
+
+\section{Implementation}
+
+\subsection{Inferencing}
+
+\subsection{Unification}
+
+%\section{Additions}
+%
+%\subsection{Tuples}
+%
+%\subsection{Case expressions}
+
+\section{Result}
+
+\section{Problems and Future work}
+
+\subsection{HML}
+
+\subsection{Ruler-Core}
+
+\section{Conclusion}
