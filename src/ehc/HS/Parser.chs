@@ -78,6 +78,7 @@ pApp p          =    mkApp <$> pList1 p
 
 %%[1 export(HSParser,HSParser')
 type HSParser         ep    =    LayoutParser Token ep
+type HSParser2        ep    =    LayoutParser2 Token ep
 type HSParser'        ep    =    PlainParser Token ep
 %%]
 
@@ -150,7 +151,7 @@ pDeclarationPragma
 %%[[1
 pModule :: EHCOpts -> (EHCOpts -> HSParser Body) -> HSParser Module
 %%][99
-pModule :: EHCOpts -> (EHCOpts -> (HSParser Declaration -> HSParser Declaration) -> HSParser Body) -> HSParser Module
+pModule :: EHCOpts -> (EHCOpts -> (HSParser2 Declaration) -> HSParser Body) -> HSParser Module
 %%]]
 pModule opts pBody
 %%[[1
@@ -253,7 +254,7 @@ pBody opts = pBody' opts id
 %%]
 
 %%[1
-pBody' :: EHCOpts -> (HSParser Declaration -> HSParser Declaration) -> HSParser Body
+pBody' :: EHCOpts -> (HSParser2 Declaration) -> HSParser Body
 pBody' opts addDecl
 %%[[1
   =   Body_Body emptyRange <$> pDeclarations1' (addDecl pTopDeclaration)
