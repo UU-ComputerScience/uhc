@@ -24,8 +24,10 @@ import EqHML
 import EH.Util.Pretty hiding (pp, empty)
 import qualified Debug.Trace as D
 
+-- | Flip these comments to enable 
 trace = flip const 
 -- trace = D.trace
+
 -- | Create a HsName from a string.
 mkName :: String -> HsName
 mkName = mkHNmBase
@@ -39,6 +41,11 @@ remove :: Eq a => [(a, v)] -> [a] -> [(a, v)] -- Env -> [HsName] -> Env
 remove env entries = foldl (.) id (map rm entries) env
 
 -- escalation fix for lam
+-- Consider this a buchi diagram, where
+-- the first list is the starting points
+-- the environment is the state trasitions.
+-- This function basically marks all the places we can reach
+-- from these starting points.
 reachedBy :: [HsName] -> Env -> [HsName]
 reachedBy dom []     = dom
 reachedBy dom (x:xs) = if (`elem` dom) `any` domain x 
@@ -51,21 +58,19 @@ pick :: Domain v => [(HsName, v)] -> [(HsName, v)] -> [(HsName, v)]
 pick e1 e2 = let e2' = remove e2 (domain e1)
              in e1 `munion` e2'
              
--- | add to the first Prefix things from the second Pref not in the first
+-- | add to the first Prefix things from the second Pref, which are not in the first
 merge :: Prefix -> Prefix -> Prefix
 merge pre efx = foldl' push pre (reverse efx)
  where push :: Prefix -> TyIndex -> Prefix
        push p t = if t `elem` p then p else t:p
 
--- | Split domains
+-- | Split domains  according to the specification
 split :: (Prefix, [HsName]) -> (Prefix, Prefix)
 split (a ,[])      = ([], a)
 split ([], _)      = ([], [])
 split ((p@(TyIndex_Group var phi):q), vars) 
  = case var `elem` vars of
-     True  -> let fvars = ftv phi -- case phi of
-                            -- TyScheme_Quant _ phi' -> ftv phi'
-                            -- _                     -> []
+     True  -> let fvars = ftv phi
                   (q1, q2) = split (q, (var `delete` vars) ++ fvars)
               in (p:q1, q2)
      False -> let (q1, q2) = split (q, vars)
@@ -76,10 +81,11 @@ mapMaybe = \v -> map (id *** \a -> (maybe a id (v a)))
 mapFunc  = map . second
 empty = []
 
+-- | A version of `delete` which removes ALL occurences, not just the first one
 rm :: Eq k => k -> [(k, v)] -> [(k, v)]
 rm _ [] = []
 rm k1 (x@(k,v):xs) | k1 == k   = rm k1 xs
-                       | otherwise = x : rm k1 xs
+                   | otherwise = x : rm k1 xs
 
 -- | Apply a set of substitution to an environment
 apply :: Env -> Gamma -> Gamma
@@ -96,6 +102,7 @@ applyEnv sub env
 explode' :: Prefix -> TyScheme -> (Prefix, TyExpr)
 explode' pre sche = second ftype (explode pre sche)
 
+-- | Apply a function to the third parameter of a tuple.
 third :: (c -> d) -> (a,b,c) -> (a,b,d)
 third f (a,b,c) = (a, b, f c)
 
@@ -158,6 +165,8 @@ instance Pretty Gamma where
     pp (Gamma a) = "Gamma: " ++ pp a
     
 -- | Apply a substitution
+--   Implemented as you standard capture avoidant
+--   substitution.
 createMask :: Sub -> TyExpr -> TyExpr
 createMask (nm, ty) = mask
  where rep :: TyExpr -> TyExpr
@@ -316,8 +325,12 @@ replace   (_,_) [] = []
 replace p@(a,b) (x:xs) |  a == x   = b:replace p xs
                        | otherwise = x:replace p xs
 
+-- | Fancier name for concatinations. These are used to make switching datastructures easier
 munion  = (++)
 
+-- | This concat preserves the semantics of substitutions. It's explained more in the thesis.
+--   But the short version is, just insert an element in a place where applying the entire
+--   substitution is still a linear operation.
 munion' x []          = x
 munion' x ((y,y'):ys) = munion' (add x y y') ys
   where add []           a  b  = [(a, b)]
@@ -325,15 +338,11 @@ munion' x ((y,y'):ys) = munion' (add x y y') ys
                                     then (a',b'):x:xs
                                     else x : add xs a' b'                      
 
+-- | Insert a value in a list if it's not already there, If it is already there
+--   then just update the value in place.
 minsert k v []  = [(k,v)]
 minsert k v (x@(k',v'):xs) | k == k'   = (k, v):xs
                            | otherwise = x : minsert k v xs
-
-minsertUnique :: Eq k => k -> v -> [(k, v)] -> [(k, v)]
-minsertUnique = minsert                           
--- minsertUnique k v []  = [(k,v)]
--- minsertUnique k v (x@(k',v'):xs) | k == k'   = error $ "Redefinition of value '" ++ pp k ++ "' in the environment."
-                                 -- | otherwise = x : minsertUnique k v xs
 
 instance Util TyScheme where
     ftv TyScheme_Bottom       = []
@@ -442,11 +451,16 @@ instance Domain TyIndex where
   codomain (TyIndex_Group _ a) = ftv a
   skolems  (TyIndex_Group _ a) = nub (skolems a)
   
+-- | Take the simple prefix of a domain. Used in instantiations.
+prefixDom :: Prefix -> [HsName]
+prefixDom ((TyIndex_Group a _):xs) = a : prefixDom xs
+prefixDom []                       = []
+  
 instance Domain Scheme where
   domain   (Scheme_Simple a _) = [a]
   codomain (Scheme_Simple _ a) = nub $ vars a
   
--- | Updating a prefix
+-- | Updating a prefix, described in the thesis
 update :: (Prefix, Either Scheme Sub) -> (Prefix, Env)
 update (q, Right (a, p))
   = let (q0, (q1,q2)) = second (`splitOn` a) $ split (q, ftv p)
@@ -492,6 +506,7 @@ extend (q', scheme@(Scheme_Simple var ty))
         True  -> (q, [(var, p)])
         _     -> (q++[TyIndex_Group var (promote phi)], [])
 
+-- | Rename all variables, regardless if they're bound or not.
 renameVars :: Int -> TyScheme -> (TyScheme, Int, Env)
 renameVars frs ty 
  = (fc ty, frs', env)
@@ -513,7 +528,8 @@ renameVars frs ty
     env        = zipWith (\a b->(a, mkVar b)) vc nvc
     env'       = zipWith (\a b->(a, b)) vc nvc
     ren x      = maybe x id $ lookup x env'
-    
+   
+-- |  rename only bound variables   
 renameBound :: Int -> TyScheme -> (TyScheme, Int, Env)
 renameBound frs ty 
  = (fc ty, frs', env)

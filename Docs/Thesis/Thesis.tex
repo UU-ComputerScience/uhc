@@ -349,6 +349,7 @@
 \newcommand{\rcore}{\emph{ruler-core }}
 \newcommand{\Rcore}{\emph{Ruler-core }}
 
+%%format default?        = "\mathbf{default?}"
 
 %% Rules for subscript variables
 
@@ -373,19 +374,19 @@
 \tableofcontents
 
 \chapter{Introduction}
-The Utrecht Haskell Compiler (UHC\cite{UHC}) implements most of it is type checking code using \ags (ag), in particular the Utrecht University Attribute Grammar Compiler \textbf{uuagc}\cite{uuagc}. However, not all of the implementation is written using ag. Most notably unification and context reduction are implemented as normal Haskell code. The reason for this is that the ag system is limited to describing tree walks over a single tree. The newly developed \rcore system lifts these limitations by providing much more granular control over visit sequences which are not restricted to tree walks (more on this in Chapter \ref{AG}). With the development of \textbf{ruler-core}\cite{ruler-front} it is possible to implement a type inference algorithm for a type system supporting higher-ranked polymorphisms using \ags. The issue to be addressed by this thesis is:
+The Utrecht Haskell Compiler (UHC\cite{UHC}) implements most of it is type checking code using \ags (ag), in particular the Utrecht University Attribute Grammar Compiler \textbf{uuagc}\cite{uuagc}. However, not all of the implementation is written using ag. Notably unification and context reduction are implemented as normal Haskell code. The reason for this is that \ag systems are limited to describing tree walks over a single tree. The newly developed \rcore system lifts these limitations by providing much more granular control over visit sequences which are not restricted to tree walks (more on this in Chapter \ref{AG}). With the development of \textbf{ruler-core}\cite{ruler-front} it is possible to implement a type inference algorithm for a type system supporting higher-ranked polymorphisms using \ags. The issue addressed by this thesis is:
 
 \begin{quotation}
 "Can a type inferencing algorithm which supports higher-rank polymorphisms be implemented using Attribute Grammars, and If so can it be done in such a way that it would be simpler to understand and correspond closer to the declarative specifications."
 \end{quotation}
 
-In this thesis we therefore investigate the use of \rcore, using the HML type system  for higher-ranked polymorphism as a case study. Our goal is to find out how suitable \rcore is for such descriptions.Type systems variations are not explored, although our work brings flaws in published algorithms for HML to light.
+In this thesis we investigate the use of \rcore, using the HML type system for higher-ranked polymorphism as a case study. Our goal is to find out how suitable \rcore is for such descriptions. Type systems variations are not explored, although our work brings flaws in published algorithms for HML to light.
 
 \section{Motivation}
 Type systems for expansive languages such as Haskell are hard to prove correct and implement. Most of the literature use typing rules to describe the type system. Unfortunately these typing rules (including syntax directed typing rules) do not give an idea on how to implement the associated inference algorithms. These typing rules usually contain a large amount of non-determinism and implicit assumptions that need to be taken into account.
 Once implemented it is also much harder to prove the correctness of the algorithm. The implementation usually does not resemble the original typing rules. This unfortunately means that the original proofs that were made for the typing rules correct cannot be used to prove the inference algorithm.
 
-The benefits of implementing the UHC type system in the new \rcore system would be
+The benefits of implementing a type system in the new \rcore system would be
 
 \begin{enumerate}
 \item Easier to understand the implementation since the machinery provided by \ags can be used to hide most of the details such as tree traversals and threading of attributes around the tree.
@@ -405,9 +406,9 @@ A type system which supports polymorphic functions is the Hindley-Milner\cite{HM
 
 The Hindley-Milner type system works on the basis of \textit{principle types}. Each well-typed term has a unique "best" type such that all other types possible for the term can be constructed from, that type is known as the \textit{principle type}. 
 
-For example the principle type of the \textit{identity} function $\lambda x.x$ mentioned before is $a \rightarrow a$.
+For example the principle type of the \textit{identity} function $\lambda x.x$  is $a \rightarrow a$.
 
-The Damas-Milner inference algorithm works by collecting type constrains (or substitutions) from how the terms are used in an expression and subsequently solving these constraints by means of unification. If this is not possible then the term is considered to be \textit{ill-typed}, else it is considered \textit{well-typed}.
+The Damas-Milner inference algorithm works by collecting type constrains (or substitutions) from how the terms are used in an expression and subsequently solving these constraints by means of unification. If this is not possible then the term is considered to be \textit{ill-typed}, otherwise it is considered \textit{well-typed}.
 
 Consider the following (admittedly simple) example where the type of \ensuremath{\Varid{bar}} is to be inferred:
 \begin{hscode}\SaveRestoreHook
@@ -419,7 +420,7 @@ Consider the following (admittedly simple) example where the type of \ensuremath
 \ColumnHook
 \end{hscode}\resethooks
 
-The first step to infer the type with the Damas-Milner inference system is to annotate \ensuremath{\Varid{bar}} with fresh type variables 
+The first step to infer the type with the Damas-Milner inference algorithm is to annotate \ensuremath{\Varid{bar}} with fresh type variables 
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
@@ -427,7 +428,7 @@ The first step to infer the type with the Damas-Milner inference system is to an
 \ColumnHook
 \end{hscode}\resethooks
 
-With the extra type information it can be determined that the type of bar has the form $X \rightarrow Y \rightarrow Z$. However it is still not known what \ensuremath{\Conid{X}}, \ensuremath{\Conid{Y}} and \ensuremath{\Conid{Z}} are. In order to find these out the body of \ensuremath{\Varid{bar}} is examined for more information and a constraint set is constructed.
+With the extra type information it can be determined that the type of \ensuremath{\Varid{bar}} has the form $X \rightarrow Y \rightarrow Z$. However it is still not known what \ensuremath{\Conid{X}}, \ensuremath{\Conid{Y}} and \ensuremath{\Conid{Z}} are. In order to find these out the body of \ensuremath{\Varid{bar}} is examined for more information and a constraint set is constructed.
 
 \ensuremath{\Varid{x}} is passed as an argument to \ensuremath{\Varid{foo}}, which suggests that \ensuremath{\Varid{x}} has to be of type String, the constraint \ba{x\rightarrow String} is added to the constraint set.
 
@@ -435,21 +436,22 @@ The next observation is that the addition operator \ensuremath{\mathbin{+}} is u
 
 Using the constraints {\ba{X\rightarrow String, Y\rightarrow Int, Z\rightarrow Int}} the type for \ensuremath{\Varid{bar}} can be constructed: \ensuremath{\Conid{String}\to \Conid{Int}\to \Conid{Int}}.
 
-In the case of functions with polymorphic types the resulting type will still contain variables, for which the constraint set had no bindings to concrete types. In these cases, the type of the fresh variables are perceived to be polymorphic variables in the type of the term.
+In the case of functions with polymorphic types the resulting type will still contain variables, for which the constraint set had no bindings to concrete types. In these cases, the type of the fresh variables are perceived to be polymorphic type variables in the resulting type of the term.
 
 \section{SystemF}
+\label{SystemF}
 SystemF or otherwise known as the polymorphic lambda calculus is an extension of the simply typed lambda calculus. Lambda calculus or $\lambda-calculus$  is a formal definition system for functions, applications and abstraction. SystemF extends $\lambda-calculus$ by providing support for a few new terms:
 
 \begin{description}
 \item[Terms]{
 	\begin{minipage}[t]{\linewidth}
 		\begin{itemize}
-			\item Type abstraction ($\Lambda x.t$)
+			\item Type abstraction ($\Lambda X.t$)
 			\item Type application (t [T])
 		\end{itemize}
 	\end{minipage}
 }
-\item[Values] Type abstraction are also values along with normal variable abstractions ($\Lambda X.t$ as opposed to the simply typed lambda calculus in which only abstractions were values).
+\item[Values] Type abstraction are also values, along with normal variable abstractions ($\Lambda X.t$ as opposed to the simply typed lambda calculus in which only abstractions were values).
 \item[Types]{ 
 	\begin{minipage}[t]{\linewidth}
 		\begin{itemize}
@@ -458,14 +460,14 @@ SystemF or otherwise known as the polymorphic lambda calculus is an extension of
 		\end{itemize}
 	\end{minipage}
 }
-\item[Environment] SystemF also specifies an environment for the mapping between type variable and their binding.
+\item[Environment] SystemF also requires an environment for the mapping between type variable and their binding.
 \end{description}
 
 These addition together with their typing rules allows one to do type reconstruction on polymorphic expressions. They allow the abstraction of types out of terms and subsequently fill them in later, for example:
 \begin{quotation}
 id = $\Lambda X.\lambda x:X. x$
 \end{quotation}
-which states that the type of id is $X \rightarrow X$ where X is the type variable bound by the newly introduced type abstraction. 
+which states that the type of id is $\forall X. X \rightarrow X$ where X is the type variable bound by the newly introduced type abstraction. 
 
 If we were to construct the type for "id 3" (assuming the type of 3 is Int) we would get:
 
@@ -473,11 +475,11 @@ If we were to construct the type for "id 3" (assuming the type of 3 is Int) we w
 id [Int] = [X$\rightarrow$Int]($\lambda x:X. x$)
 \end{quotation}
 
-The function \emph{id} is applied to the type Int, which means the value of the type \emph{X} is Int. This can be accomplished by using a substitution \ba{X\rightarrow Int}. Applying the substitution gives that the type of \ensuremath{\Varid{id}} when applied to an Int is $Int \rightarrow Int$.
+The function \emph{id} is applied to the type \ensuremath{\Conid{Int}}, which means the value of the type \emph{X} is \ensuremath{\Conid{Int}}. This can be accomplished by using a substitution \ba{X\rightarrow Int}. Applying the substitution gives that the type of \ensuremath{\Varid{id}} when applied to an Int is $Int \rightarrow Int$.
 
 Universally quantified types (forall) are used to indicate the dependency that the type of the result actually depends on the type passed to the function as an argument. For instance the type of the \textit{id} function above is $\forall X. X\rightarrow X$.
 
-SystemF introduces and formalizes parametric polymorphism by adding mechanisms to reason about type variables. Unfortunately SystemF's type inferencing while very powerful is undecidable, which is to say, it does not always terminate in finite amount of time. To combat this programmer annotation is required.
+The SystemF type system introduces and formalizes parametric polymorphism by adding mechanisms to reason about type variables. Unfortunately SystemF's type inferencing while very powerful is undecidable, which is to say, it does not always terminate in a finite amount of time. To combat this programmer annotation is required.
 
 \section{Related Research}
 There have been multiple attempts in the past to simplify the implementations of type systems, these include but are not limited to:
@@ -488,13 +490,13 @@ There have been multiple attempts in the past to simplify the implementations of
 \item Using Domain Specific Languages like the Ruler\cite{Ruler} system used in UHC mixed with \ags
 \end{itemize}
 
-The current UHC implementation is the only(\cite{UHC}) project that uses \ags, but the implementation of \ags used is not flexible enough to describe the entire type inference algorithm.
+The current UHC implementation is the only(\cite{UHC}) project that uses \ags, but the implementation of \ags used is not flexible enough to describe the entire type system.
 
-The current \textbf{uuagc} provides a mechanism to define attributes for every node in the AST, which is to be traversed and the attributes subsequently filled in. These attributes are used to calculate the resulting values without having to worry about the order of the tree walks or the tree walks themselves(More on this in Chapter \ref{AG}).
+The current \ag tool \textbf{uuagc} provides a mechanism to define attributes for every node in the AST, which is to be traversed and the attributes subsequently filled in. These attributes are used to calculate the resulting values without having to worry about the order of the tree walks or the tree walks themselves(More on this in Chapter \ref{AG}).
 
-\Rcore inherits this flexibility, but extends it with a way to reason about a specific visit (or tree walk) and makes it possible to take decisions based on information gathered so far. These additions are needed in order to implement a type system completely using \ags.
+\Rcore inherits this flexibility, but extends it with a way to reason about a specific visit (or tree walk) and makes it possible to take decisions based on information gathered so far (for instance doing a tree walk on a newly produced tree). These additions are needed in order to implement a type system using \ags.
 
-Since the aim is to implement type system which supports higher-rank polymorphisms, three type systems were chosen as a basis for inspiration and guidance:
+The aim is to implement type system which supports higher-rank polymorphisms. To that end the following three type systems were chosen as a basis for inspiration and guidance:
 
 \begin{enumerate}
 \item Flexible Types (HML): Robust type inference for first-class polymorphism - \textit{Daan Leijen}
@@ -503,10 +505,10 @@ Since the aim is to implement type system which supports higher-rank polymorphis
 \end{enumerate}
 
 These are all extensions of the popular Hindley-Milner type system, which itself can be described as a restrictive version of the SystemF type system.
-The type system chosen as the basis for this thesis is called "HML" and will be explained later in chapter \ref{HML}. However two more type systems were evaluated, and they are briefly covered below for the sake of completeness:
+The type system chosen as the basis for this thesis is called \emph{HML} and will be explained later in chapter \ref{HML}. However two more type systems were evaluated, and they are briefly covered below for the sake of completeness:
 
 \subsection{FPH\cite{FPH}}
-This type system is an extension of the Dama-Milner type inference algorithm to provide first class polymorphism for Haskell. It relies on SystemF types and (see above) and does so while maintaining decidability. 
+This type system uses an extension of the Dama-Milner type inference algorithm to provide first class polymorphism for Haskell. It relies on SystemF types and (see section \ref{SystemF}) and does so while maintaining decidability. 
 
 The following example does not type check in the standard Hindley-Milner type system:
 \begin{hscode}\SaveRestoreHook
@@ -528,9 +530,18 @@ foo   &::& \forall s. Int \rightarrow ST s Int
 
 Every type variable is explicitly bound by an outward universal quantification $\forall$ (forall) as per SystemF (recall that FPH uses SystemF types). These types are called rank-1 types. With higher rank types it is meant types that are of rank $>$ 1.
 The \textit{runST} example above has a rank-2 argument which can be seen by the universal quantification inside the parenthesis.
+The rank of a function type is determined by the number of inner \ensuremath{\forall}s nested on the left side of a \ensuremath{(\to )} that cannot be merged with a previous one.
+Haskell '98 types are rank-1, the first 3 types below are all rank-1 types while the last one is rank-2.
+\begin{itemize}
+\item \ensuremath{\Varid{a}\to \beta\to \Varid{a}}
+\item \ensuremath{\forall\;\Varid{a}\;\beta\mbox{.}\Varid{a}\to \beta\to \Varid{a}}
+\item \ensuremath{\forall\;\Varid{a}\mbox{.}\Varid{a}\to (\forall\;\beta\mbox{.}\beta\to \Varid{a})}
+\item \ensuremath{\forall\;\beta\mbox{.}(\forall\;\Varid{a}\mbox{.}\Varid{a}\to \Varid{a})\to \beta\to \beta}
+\end{itemize}
+
 In order for \textit{...(runST \$ foo 4)...} to type check this type system needs to allow for two things:
 \begin{enumerate}
-\item That functions can have higher-rank types and thus able to take a polymorphic type argument
+\item That functions can have higher-rank types and thus are able to take a polymorphic type argument
 \item That type arguments can be instantiated to a quantified polymorphic type. This is referred to in the literature as \textit{impredicativity}.
 \end{enumerate}
 
@@ -538,13 +549,13 @@ In order for \textit{...(runST \$ foo 4)...} to type check this type system need
 \item[Impredicativity] Allows a polymorphic function to be instantiated with a polytype (polymorphic type). 
 \end{description}
 
-FPH requires little help from the programmer in the form of annotations. It only requires type annotations on \textit{let}-bindings or $\lambda$-abstractions. Function calls may require a lot of impredicative instantiations but they never require an explicit type annotation.
+FPH requires little help from the programmer in the form of annotations. It only requires type annotations on \textit{let}-bindings or $\lambda$-abstractions. Function calls may require a lot of impredicative instantiations but they never require any explicit type annotation.
 
 The type system distinguishes between Damas-Milner types (types permitting up to rank-1 types) and \textit{rich} types (higher rank types).
 
 For instance $Int \rightarrow Int$ and $\forall a. a \rightarrow a$ are Damas-Milner types, but $\forall b.(\forall a. a \rightarrow a) \rightarrow b$ is a \textit{rich} type.
 
-FPH's inference algorithm as mentioned before is an extension of the Damas-Milner inference algorithm, but due to allowing higher-rank polymorphism and impredicativity, the ability to type an expression with a single best fitting type (principle type) is lost. This brings with it some added complications in that the algorithm can no longer determine one single type and use it throughout the program wherever the function is in scope.
+FPH's inference algorithm as mentioned is an extension of the Damas-Milner inference algorithm. However due to allowing higher-rank polymorphism and impredicativity, the ability to type an expression with a single best fitting type (principle type) is lost. This brings with it some added complications in that the algorithm can no longer determine one single type and use it throughout the program wherever the function is in scope.
 
 This is where the programmer is required to help the type system by providing annotations, for example the earlier defined function \emph{f}
 \begin{quotation}
@@ -554,14 +565,14 @@ would pose a problem, since there is no \emph{best} type that describes \emph{f}
 If the programmer annotates the function \emph{f} with the type $(\forall a. a \rightarrow a) \rightarrow (Int, String)$ then there would no longer be any ambiguity and the type system can check against the provided type.
 The burden on the programmer can also be eased by allowing partial type annotations, this would only require the programmer to annotate \emph{f} with $(\forall a. a \rightarrow Int) \rightarrow ...$ since the argument \emph{push} was the cause of the ambiguity. Another method is to allow annotations on abstractions. Again only the variable \emph{push} would have to be annotated.
 
-FPH allows impredicative instantiations in a controlled fashion. When a binding is ambiguous (as in, can be instantiated to two or more incomparable types) this causes a problem because we do not know which type to use. The idea presented in FPH is to explicitly mark the types of bindings that can lead to such ambiguity with \textit{boxes}. The allowed types in FPH are:
+Impredicative instantiations allowed in a controlled fashion. When a binding is ambiguous (as in, can be instantiated to two or more incomparable types) this causes a problem because we do not know which type to use. The idea presented in the FPH type system is to explicitly mark the types of bindings that can lead to such ambiguity with \textit{boxes}. The allowed types in FPH are:
 
 \begin{quotation}
 $\tau'$ ::= $\alpha$ $|$  $\tau'_1 \rightarrow \tau'_2$ $|$ T $\tau'$ $|$ $\framebox[0.45cm][l]{o}$ \\
 \indent $o$ $\hspace{1pt}$ ::= $\forall \alpha.o$ $|$ $\alpha$ $|$ $o \rightarrow o$ $|$ T $o$
 \end{quotation}
 
-FPH allows quantifications (and so polymorphic types) but only inside \emph{boxes} $\Box$ and governs their use with a set of 3 central \textit{Ideas}\cite{FPH}.
+The FPH type system allows quantifications (and so polymorphic types) but only inside \emph{boxes} $\Box$ and governs their use with a set of 3 central \textit{Ideas}\cite{FPH}.
 
 First when a polymorphic function is instantiated with boxy monotype (monomorphic type), this indicates places in the type where "guessing" is required to fill in a type in order to type check.
 Secondly when comparing types, discard all boxes. There is no need to annotate function applications since even though one of the argument may emit a boxy type, it can be compared with an unboxed type by removing the box.
@@ -572,13 +583,13 @@ These are the three central ideas that are used to modify the original Hindley-M
 \subsection{Practical type inference for arbitrary-rank types\cite{boring}}
 This approach is a restricted version of a type system for arbitrary rank types from Odersky \& Laufer\cite{odesky} and uses elements from the work of Pierce \& Turner\cite{pierce}. The first is about annotating terms and functions with \textit{type schemes}, which are the usual type annotations we know today in Haskell ($\forall a.$). This enables annotation of arguments with a higher-rank type. The latter describes a mechanism for \textit{bidirectional typing} which allows types of parameters of anonymous functions (lambdas) and \textit{local synthesis of type arguments} and finds the principle (best) type of polymorphic applications when one exists.
 
-The FPH type system tries to limit the amount of annotation needed in order to type a higher-rank program. Particularly because the original Odersky \& Laufer\cite{odesky} requires a lot of programmer annotation.
+The type system tries to limit the amount of annotation needed in order to type a higher-rank program. Particularly because the original Odersky \& Laufer\cite{odesky} requires a lot of programmer annotation.
 
 By combining the two approaches it is possible to annotate just one clauses of a function and have the type information propagated along so that you do not have to explicitly annotate every argument in every clause.
 
 Because this system is a conservative extension of the Hindley-Milner type system it means that any program type able in the Hindley-Milner type system is still type able without any additional annotation. Annotation is only needed on higher-rank types.
 
-FPH also uses the idea of \textit{subsumption} to compare types and see if one is an instance (or more polymorphic version) of the other type. 
+The type system also uses the idea of \textit{subsumption} to compare types and see if one is an instance (or more polymorphic version) of the other type. 
 
 \begin{eqnarray*}
 g  &::& ((\forall\beta.[\beta] \rightarrow [\beta]) \rightarrow Int) \rightarrow Int \\
@@ -601,12 +612,12 @@ $\forall\alpha\beta.\alpha\rightarrow\beta\rightarrow\beta\leq\forall\alpha.\alp
 
 Such directly incomparable types arise from the use of \textit{eager generalization}, which is the generalization of every lambda body in the abstraction so that the $\forall$'s in the resulting type appear as far right as possible in the type.
 
-In terms of the types, the only difference between the FPH and Hindley-Milner type system is the intermediate type $\rho$. This type provides annotations to allow arbitrary ranked types.
+In terms of the types, the only difference between the FPH and Hindley-Milner type system is the intermediate type $\rho$. This type requires annotations to allow arbitrary ranked types.
 
-The Hindley-Milner typing rules have also been slightly modified to handle this , but the FPH type system is not impredicative.
+The Hindley-Milner typing rules have also been slightly modified to handle all these modifications, but the resulting type system is not impredicative.
 
 \chapter{Utrecht Haskell Compiler}
-The HML type inference system in this thesis is implemented using parts of the Utrecht Haskell compiler. The UHC compiler is a collection of different smaller  compilers. Its modularity makes it perfect for experimentation.
+The HML type system in this thesis is implemented using parts of the Utrecht Haskell compiler. The UHC compiler is a collection of different smaller  compilers. Its modularity makes it perfect for experimentation.
 \section{Design}
 The UHC pipeline looks like:
 \begin{figure}[H]
@@ -626,7 +637,7 @@ UHC as indicated before is a series of smaller compilers. These different versio
 In terms of \emph{Haskell98} all the needed constructs are there except for \emph{type classes}. This variant is simple enough to be implemented in the alloted time, but complete enough that we can implement a large subset of Haskell functionality using it. Including higher-rank functions.
 
 \subsection{EH}
-The abstract language used by the Utrecht Haskell Compiler (UHC) to represent desugared Haskell is called Essential Haskell or EH for short. EH at its core resembles $\lambda-calculus$ but with added \textbf{Let} bindings. EH denotes a Haskell file but with all the syntactical sugar of the HS file removed, leaving only a core set of basic operations that need to be supported.
+The abstract language used by the Utrecht Haskell Compiler (UHC) to represent desugared Haskell is called Essential Haskell or EH for short. EH at its core resembles $\lambda-calculus$ but with added \textbf{Let} bindings. EH denotes a Haskell file but with all the syntactical sugar of the HS file removed, leaving only a core set of basic operations that need to be supported. EH will be further explored in chapter \ref{Implementation}.
 
 \chapter{Attribute Grammars}
 \label{AG}
@@ -689,7 +700,7 @@ value(<number>): <number>.
 \label{semantics:bnf:expr}
 \end{figure}
 
-Subscripts are used to disambiguate between the different expression types and  superscripts are used to distinguish between the different cases of the \emph{operator} in an expression. Figure \ref{fig.example2.decoratedtree} shows a tree decorated with the synthesized attribute \emph{v} (short for value) along with intermediate values of \emph{v}.
+Subscripts disambiguate between the different expression types and superscripts  distinguish between the different cases of the \emph{operator} in an expression. Figure \ref{fig.example2.decoratedtree} shows a tree decorated with the synthesized attribute \emph{v} (short for value) along with intermediate values of \emph{v}.
 
 \begin{figure}[H]
 \centering
@@ -729,12 +740,16 @@ Subscripts are used to disambiguate between the different expression types and  
 
 \section{Utrecht University Attribute Grammar Compiler (UUAGC)}
 UUAGC (Utrecht University Attribute Grammar Compiler) is a preprocessor which parses Attribute Grammars in a custom language.
-It defines ways to specify an AST, attributes for the terminals and nonterminals and the semantic functions. It is used in the Utrecht Haskell Compiler to do most of the work.
+The grammar, attributes for nonterminals and rules for attributes per production can be specified in attribute grammar source code. The preprocessor translates the attribute grammar code to datatype declarations, folds and semantic functions, which are functions that assign meaning to the specified grammar. In the UHC Type checker, the UUAGC system is used to do most of the work, with the exception of unification.
 
 \subsection{Limits of UUAGC}
-The \emph{UUAGC} system it limited in that it cannot perform case distinctions over multiple \emph{abstract syntax trees} at the same time\cite{visitag}. For most applications this is not an issue, since in most cases there is only one \emph{AST} that needs to be traversed at a time. 
+The \emph{UUAGC} system is limited in that it cannot perform case distinctions over multiple \emph{abstract syntax trees} at the same time\cite{visitag}. For most applications this is not an issue, since in most cases there is only one \emph{AST} that needs to be traversed at a time. 
 
-Unification is the act of trying to find structural \& semantic equivalence between two types. It is a critical part of type checking. Given two types \emph{$t_{1}$} and \emph{$t_{2}$}, unification attempts to find a list of substitutions that allows the instantiation of type \emph{$t_{1}$} to type \emph{$t_{2}$}. For this to be accomplished it needs to be possible to traverse both \emph{$t_{1}$} and \emph{$t_{2}$} concurrently; while comparing the types at every node.
+In an attribute grammar, we express a function between inherited and synthesized attributes. The productions form the cases of this function, and we give rules for each case. Thus, we distinguish cases based on the production. For some example, we wish to also distinguish cases based on attribute values. This we cannot express with conventional attribute grammars.
+
+With higher-order AGs, it is possible to define a grammar for the call-tree of such a function. A higher-order attribute can then inspect the attribute's values and dispatch to a suitable production. However, this is a rather primitive mechanism to express case distinctions.
+
+Unification is one such example where we need to distinguish cases based on attribute values. Unification is the act of trying to find structural \& semantic equivalence between two types. It is a critical part of type checking. Given two types \emph{$t_{1}$} and \emph{$t_{2}$}, unification attempts to find a list of substitutions that allows the instantiation of type \emph{$t_{1}$} to type \emph{$t_{2}$}. For this to be accomplished it needs to be possible to traverse both \emph{$t_{1}$} and \emph{$t_{2}$} concurrently; while comparing the types at every node.
 
 %\begin{figure}[!h]
 %\begin{center}
@@ -772,7 +787,7 @@ When unifying the type \emph{$a \rightarrow b$} with \emph{$Int \rightarrow Int$
 \Rcore addresses these restrictions in AG by introducing a model based on \emph{visit}\cite{visits} functions. The resulting language is more flexible while still retaining the core semantics of reasoning over decorated trees with attributes. The simplest description of ruler-core would be:\emph{a language to manipulate visit sequences.}
 
 \begin{quotation}
-A \emph{visit function}\cite{visitag} is a (partial) function that takes several inputs (\emph{inherited attributes}) and produces several output values (\emph{synthesized attributes}).
+A \emph{visit function}\cite{visitag} is a (partial) function that takes several inputs (\emph{inherited attributes}) and produces several output values (\emph{synthesized attributes}) and a continuation for the next visit.
 \end{quotation}
 
 As with traditional AGs \emph{inherited}, attributes are passed top-down in the tree while \emph{synthesized} attributes are passed bottom-up. An attribute can be both \emph{synthesized} and \emph{inherited}.
@@ -791,14 +806,14 @@ Everything that can be expressed in uuagc can be expressed in ruler-core, but th
 \>[B]{}\mathbf{data}\;\Conid{Expr}{}\<[E]%
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{}\Varid{con}(\Conid{Num})\;{}\<[E]%
+\>[3]{}\mathbf{con}\;\Conid{Num}\;{}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}\Varid{val}{}\<[13]%
 \>[13]{}\mathbin{::}\Conid{Int}{}\<[E]%
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{}\Varid{con}(\Conid{Expr})\;{}\<[E]%
+\>[3]{}\mathbf{con}\;\Conid{Expr}\;{}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}exp_1{}\<[13]%
@@ -827,10 +842,10 @@ Everything that can be expressed in uuagc can be expressed in ruler-core, but th
 \>[B]{}\mathbf{data}\;\Conid{Operator}{}\<[E]%
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{}\Varid{con}(\Conid{Plus}){}\<[E]%
+\>[3]{}\mathbf{con}\;\Conid{Plus}{}\<[E]%
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{}\Varid{con}(\Conid{Minus}){}\<[E]%
+\>[3]{}\mathbf{con}\;\Conid{Minus}{}\<[E]%
 \\[\blanklineskip]%
 \>[B]{}\mathbf{itf}\;\Conid{Expr}\;{}\<[E]%
 \\
@@ -862,7 +877,7 @@ Figure \ref{example:tutorial1:datatypes} illustrates two different ways of decla
 Only types of kind $:: \star$ are allowed by \rcore, which means only monomorphic types are accepted. As is the case with UUAGC, the constructors generated will be in the form of \emph{TypeName\_ConstructorName}. To put this concretely figure \ref{example:tutorial1:datatypes} exposes for the type \emph{Expr} the constructor functions \textbf{Expr\_Num} and \textbf{Expr\_Expr}.
 
 \subsection{Interfaces}
-\emph{Interfaces} are analogous to the interface definitions in other languages, except instead of declaring function prototypes/signatures we declare visits and their attributes. Interfaces declare \emph{Non-Terminal}s which can be named the same as their corresponding \emph{data types}. For those familiar with uuagc, a \textbf{ATTR} declaration in uuagc would equal an interface declaration with one visit and all the attributes declared in the \textbf{ATTR} would be part of this one visit. The ability to explicitly declare these visits and interfaces is where ruler-core's true abilities come in.
+\emph{Interfaces} are analogous to the interface definitions in other languages, except instead of declaring function prototypes/signatures we declare visits and their attributes. Interfaces declare \emph{nonterminal}s which can be named the same as their corresponding \emph{data types}. For those familiar with uuagc, a \textbf{ATTR} declaration in uuagc would equal an interface declaration with one visit and all the attributes declared in the \textbf{ATTR} would be part of this one visit. The ability to explicitly declare these visits and interfaces is where ruler-core's true abilities come in.
 
 \begin{figure}[h!]
 \begin{hscode}\SaveRestoreHook
@@ -886,12 +901,18 @@ Only types of kind $:: \star$ are allowed by \rcore, which means only monomorphi
 \label{itf:syntax}
 \end{figure}
 
-As many visits as needed can be declared inside an interface. Every visit is a new \emph{co-routine} and will be scheduled to run by ruler-core. Visits are usually executed as soon as possible and as many visits as possible are executed at the same time. % Outside of visits we can also declare attributes. These attributes are thus not explicitly assigned to a visit. They will be automatically assigned to the earliest visit possible.
+Multiple visits can be defined for an interface. The order of appearance of visits is relevant. Every visit is a new \emph{co-routine} and will be scheduled to run by \rcore. The order of appearance of visits is relevant. Attributes that belong to an earlier visit are computed before attributes of a later visit. Visits are usually executed as soon as possible and as many visits as possible are executed at the same time. % Outside of visits we can also declare attributes. These attributes are thus not explicitly assigned to a visit. They will be automatically assigned to the earliest visit possible.
 
-\subsection{Visits}
-Visits are co-routines (functions) that can be invoked to perform a computation, the synthesis of attributes are done in these sequential passes. Visits consist of different clauses. If a visit only has one clause, it does not have to be declared. 
+\subsection{Semantics}
+We define the rules of a production per visit. A rule may only be applied in the same visit or a later visit than it is declared in. Also, visits introduce a scope.
+Rules in \rcore are either an assertion (like a match statement), an assignment (assignment to attributes) or a statement (default rules, invocations, child declarations, etc..)
 
-Visits like all functions have arguments, or in this case attributes. The \emph{inh} keyword indicates an \emph{inherited} attribute (input value), whereas \emph{syn} indicates a \emph{synthesized} attribute (output value). The order of declaration of the attributes is not important.
+There are two kind of visits, one being the visits declared inside an interface and the other the visits declared in a semantic function. These are separate concepts. The visits of an interface declares what we want to compute and those of a semantic function declares how we want to compute these values.
+
+Furthermore, a semantic visit is divided in one or more clauses. Each clause provides an alternative set of rules for the that visit of the production. During evaluation, clauses are tried in the order of appearance. Special match rules specify conditions for backtracking.
+In ruler-core, productions themselves are actually also clauses.
+
+Interface visits like all functions have arguments, or in this case attributes. The \emph{inh} keyword indicates an \emph{inherited} attribute (input value), whereas \emph{syn} indicates a \emph{synthesized} attribute (output value). The order of declaration of the attributes is not important.
 
 After declaring the datatypes and interfaces; the actual semantic function can be declared to evaluate the expressions:
 
@@ -940,18 +961,18 @@ After declaring the datatypes and interfaces; the actual semantic function can b
 \label{example:tutorial1:datasem}
 \end{figure}
 
-Figure \ref{example:tutorial1:datasem} has various elements that can be best explained in isolation. Keep this figure in mind when reading.
+The elements that are part of figure \ref{example:tutorial1:datasem} will be explained in the coming sections:
 
 \subsection{Semantic functions}
 \label{semantics}
-Semantic functions are used to define semantics for interfaces. Within a semantic function it is possible to \emph{invoke} any other coroutine(s) that might be needed. Although there is an implicit \textbf{invoke} keyword, it is rarely needed to explicitly \emph{invoke} a visit. When all attributes are defined for a visit it is implicitly invoked.
+A semantic function is a function that defines a semantic for a interface. % Within a semantic function it is possible to \emph{invoke} any other coroutine(s) that might be needed. Although there is an implicit \textbf{invoke} keyword, it is rarely needed to explicitly \emph{invoke} a visit. When all attributes are defined for a visit it is implicitly invoked.
 
-Within a semantic function it is possible to have any number of semantic rules. Clauses provide a way to do scoping inside these semantic functions. A clause inherits all the attributes of its parent clauses in the same visit. If a visit has only one clause it doesn't have to be explicitly declared. 
+The contents of a semantic function is formed by rules. Rules are given per production, per visit and per clause. Rules exists in several form. Clauses provide a way to do scoping inside semantic functions. A clause inherits all the attributes of its parent clauses in the same visit. If a visit has only one clause it does not have to be explicitly declared. 
 
 There are two ways of defining a semantic function: using the \textbf{datasem} and a \textbf{sem} keyword. The example in figure \ref{example:tutorial1:datasem} uses the former.
 
 \subsubsection{Datasem}
-Defining semantics for a \emph{data type} and \emph{nonterminal}(interface) defined in \rcore can be done with a shorthand: \textbf{datasem}. As the name suggests \textbf{datasem} stands for \emph{datatype semantics}. Those familiar with uuagc can compare defining a \textbf{datasem} in \rcore with a \textbf{SEM} declaration in uuagc.
+Defining semantics for a \emph{data type} and \emph{nonterminal}(interface) defined in \rcore can be done with a shorthand: \textbf{datasem}. As the name suggests \textbf{datasem} stands for \emph{datatype semantics}. % Those familiar with uuagc can compare defining a \textbf{datasem} in \rcore with a \textbf{SEM} declaration in uuagc.
 
 \begin{figure}[!h]
 \begin{hscode}\SaveRestoreHook
@@ -976,7 +997,7 @@ Defining semantics for a \emph{data type} and \emph{nonterminal}(interface) defi
 \label{datasem:syntax}
 \end{figure}
 
-Defining a \textbf{datasem} is a shorthand for defining a \textbf{sem} (more on this later). The \emph{monad} type does not need to be specified, however if a type was specified for any semantic function which is used by, or used in this \textbf{datasem} then to disambiguate you need to define the type in this declaration as well.
+Defining a \textbf{datasem} is a shorthand for defining a \textbf{sem} (more on this later). The \emph{monad} type is optional and will be ignored for now. %, however if a type was specified for any semantic function which is used by, or used in this \textbf{datasem} then to disambiguate you need to define the type in this declaration as well.
 
 The \emph{clauses} in a \textbf{datasem} should coincide with the constructors of the data type. The preprocessor enforces that there is a clause for every declared constructor. Every clause declaration implicitly adds a \textbf{match} statement for every clause. This is the reason why there is a required attribute \emph{ast} for ever nonterminal. This is the attribute on which matches are tried out on in the main clauses of a \textbf{datasem}. A \textbf{match} is essentially an assertion, if failed nothing else for that clause is tried out and backtracking takes place.
 
@@ -987,7 +1008,7 @@ Because of all these properties, a \textbf{datasem} only provides the ability to
 \label{bindings}
 In Haskell the \emph{Let} binding is used when introducing new variables in a sequential computation. In \rcore the keyword \textbf{let} is not used when assigning values to bindings, however since bindings in \rcore are translated to \textbf{let} declarations by the preprocessor the same behaviors is to expected. This means that binding to a \emph{pattern} on the \emph{left hand side} is valid. e.g. \[ (\alpha, \beta) = \ldots \] is allowed. This allows the definition multiple attributes at the same time.
 
-While it is possible to read any attribute as many times as needed, assignment of values to a visits attributes are only allowed once per visit. The compiler will generate an error if it finds code that tries to redefine an attribute (there is no shadowing).
+An attribute may only be defined once. The compiler will generate an error if it finds code that tries to redefine an attribute (there is no shadowing).
 
 The notation for referencing patterns, expressions and variables is \emph{k}.\emph{x} where \emph{k} is the name of child name and \emph{x} the attribute to be referenced. There are two build in reserved children:
 
@@ -995,7 +1016,7 @@ The notation for referencing patterns, expressions and variables is \emph{k}.\em
 The \emph{lhs} child is used to access the \emph{inherited} attributes and to assign values to the \emph{synthesized} attributes. Which one is intended is derived from the context in which they are used: When used at the \emph{left hand side} of an expression they are treated as \emph{synthesized} attributes, but when used in the \emph{right hand side} of a binding they refer to the \emph{inherited} values.
  
 \paragraph{loc}
-The \emph{loc} child is used in a way that is analogous to local variables in other languages. You can define as many of these as needed. The scope of the \emph{loc} is only the clause/visit that it is declared in and the its children.
+The \emph{loc} child is used in a way that is analogous to local variables in other languages. As many \emph{loc} attributes as needed can be defined. The scope of the \emph{loc} is only the clause/visit that it is declared in and the its children.
 
 \subsection{Clauses}
 Clauses are a way of defining alternatives. When an assertion in clause fails  it backtracks out of the clause and the next one is tried out. Clauses are tried out in sequential order. A visit can contain multiple clauses, corresponding to the different ways to interpret the \emph{inherited} attributes of the visit.
@@ -1035,7 +1056,7 @@ There are exceptions to this syntax, \emph{build in} types such as \emph{Bool} w
 Figure \ref{match:bool} shows that on certain types the rules are relaxed, particularly the Bool type. Note that because there is no build in support for the \emph{Maybe} type, often in this thesis this will be supported by first match on \ensuremath{\Conid{True}\mathrel{=}\Varid{isJust}\;\Varid{expr}} and then a subsequent call the \ensuremath{\Varid{fromJust}} function.
 
 \subsection{Internal}
-Sometimes it is necessary to make a decision inside a clause to branch. For example on a value that was just synthesized. This is achieved by using the \emph{internal} keyword. The \emph{internal} keyword provides a means of scoping and branching at the same time. Internals contain a list of \emph{clauses} which will be tried out in order one at a time. Attributes that were declared before the \emph{internal} statement are all in scope inside an internal block. 
+Sometimes it is necessary to branch on a value that was just synthesized. This is achieved by using the \emph{internal} keyword. The \emph{internal} keyword provides a means of scoping and branching at the same time. Internals contain a list of \emph{clauses} which will be tried out in order one at a time. Attributes that were declared before the \emph{internal} statement are all in scope inside an internal block. 
 
 \begin{figure}[h!]
 \begin{hscode}\SaveRestoreHook
@@ -1058,9 +1079,10 @@ Sometimes it is necessary to make a decision inside a clause to branch. For exam
 \label{internal:syntax}
 \end{figure}
 
-Unfortunately once branched the execution flow never returns back to the parent clause in question. Any code below the internal is floated upward if possible. Referencing a attribute defined in an internal from a parent clause is invalid.
+A clause may have at most one internal visit, although an internal visit may have clauses with again an internal visit.  Any code below the internal is floated upward if possible. Referencing a attribute defined in an internal from a parent clause is invalid.
 
 \subsection{Invoking semantic functions}
+\label{calling:sem}
 To complete this example we also need be able to call semantic functions from Haskell:
 
 \begin{figure}[H]
@@ -1088,7 +1110,7 @@ To complete this example we also need be able to call semantic functions from Ha
 \caption{calling wrappers from within haskell}
 \end{figure}
 
-The first line (the let) defines the \emph{inherited} attributes expected for the visit that is to be called. In this case the "eval" visit, which specified that there is one \emph{inherited} attribute called \emph{ast}. For every visit there is a record for the \emph{inherited} and \emph{synthesized} attributes. The record name is build up as \textbf{X\_I\_v} where \textbf{X} equals "Inh" or "Syn", \textbf{I} is the interface name and \textbf{v} the visit name.
+The first line (the let) defines the \emph{inherited} attributes expected for the visit that is to be called. In this case the \emph{eval} visit, which specified that there is one \emph{inherited} attribute called \emph{ast}. For every visit there is a record for the \emph{inherited} and \emph{synthesized} attributes. The record name is build up as \textbf{X\_I\_v} where \textbf{X} equals "Inh" or "Syn", \textbf{I} is the interface name and \textbf{v} the visit name.
 
 The labels of the fields inside these record are made up of \textbf{attr\_X\_I} where \textbf{attr} is the attribute name, \textbf{X} either "Inh" or "Syn" indicating the attribute type and \textbf{I} the interface name.
 
@@ -1103,13 +1125,13 @@ The expression example can be scaled up by adding variables to the expressions. 
 \column{13}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{16}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[3]{}\Varid{con}(\Conid{Var})\;{}\<[E]%
+\>[3]{}\mathbf{con}\;\Conid{Var}\;{}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}\Varid{nm}{}\<[13]%
 \>[13]{}\mathbin{::}\Conid{String}{}\<[E]%
 \\
-\>[3]{}\Varid{con}(\Conid{Let})\;{}\<[E]%
+\>[3]{}\mathbf{con}\;\Conid{Let}\;{}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}\Varid{nm}{}\<[13]%
@@ -1158,9 +1180,9 @@ In order to be able to evaluate variables an \emph{environment} needs to be pass
 \ColumnHook
 \end{hscode}\resethooks
 
-A new attribute \emph{env} is added which is both a \emph{synthesized} and \emph{inherited} attribute. Strictly speaking the \emph{env} can only be an \emph{inherited} attribute, however both are needed to allow access to variables introduced in the left branch in Expr in the right branch.
+A new attribute \emph{env} is added which is both a \emph{synthesized} and \emph{inherited} attribute. Strictly speaking the \emph{env} can only be an \emph{inherited} attribute, however we allow access to variables introduced in the left branch in Expr in the right branch. In other words we allow the definition of variable in the left branch to be used in the right branch, which is why \emph{env} has to be synthesized as well.
 
-Now that the type and interface have been extended the next step is to extend the datatype semantics to support the new clauses.
+Now that the type and interface have been updated, the next step is to extend the datatype semantics to support the new clauses.
 
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
@@ -1230,10 +1252,10 @@ Figure \ref{type:exprs} declares the \emph{nonterminal} Exprs. This definition i
 \>[B]{}\mathbf{data}\;\Conid{Exprs}{}\<[E]%
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{}\Varid{con}(\Conid{Nil}){}\<[E]%
+\>[3]{}\mathbf{con}\;\Conid{Nil}{}\<[E]%
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{}\Varid{con}(\Conid{Cons})\;{}\<[E]%
+\>[3]{}\mathbf{con}\;\Conid{Cons}\;{}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}\Varid{hd}{}\<[9]%
@@ -1349,16 +1371,16 @@ With figure \ref{type:lists} and \ref{itf:exprs} in mind the real interface to o
 \end{minipage}
 \end{figure}
 
-A lot of time is spent just copying over the \emph{env} attribute without actually doing anything with it. The larger the program gets the more problematic this becomes. For that \rcore has a special mechanism:
+A lot of time is spent just copying over the \emph{env} attribute without actually doing anything with it. The larger the program gets the more problematic this becomes. For that \rcore has a mechanism called default rules.
 
 \subsection{Default rules}
 Default rules are a way of specifying default values for attributes that will be used in case explicit values are not given for the attributes in question. This is particularly useful for when it is required to do nothing in some clauses.
-When using a \emph{default} rule, all the visits of all the children of the current interface become active. This means every \emph{inherited} attribute must be filled in.
+When using a \emph{default} rule, all the visits of all the children of the current production/node become active. This means every \emph{inherited} attribute must be filled in.
 These rules are for both \emph{inherited} and \emph{synthesized} attributes. In case an attribute is both then the rule applies to both. 
 
-The values are collected in such a way that they are added to the list in order of occurrence. Meaning the \emph{head} of the list contains the value at the root and the \emph{tail} of the list contains the last value visited. There are two kinds of \emph{default} rules:
+Default rules collect values of attributes with the same name as the name for which the rule was declared. The values are collected in order of appearance. The \emph{head} of the list contains the value of the \emph{lhs} attribute (if it exists) and the \emph{tail} of the list contains the value of the last child. There are two kinds of \emph{default} rules:
 \begin{description}
-\item[\textbf{default}] { The \textbf{default} keyword gives an error when none of the children of an attribute for which the rule is defined for return a result. }
+\item[\textbf{default}] { The \textbf{default} keyword generates a static error when none of the children of an attribute for which the rule is defined for return a result. }
 \item[\textbf{default?}] { The \textbf{default?} returns the empty list instead of an exception when no child has the \emph{synthesized} attribute in mention. For \emph{inherited} attributes, the initial value \emph{lhs.attribute} is also added to the list. }
 \end{description}
 
@@ -1370,7 +1392,7 @@ The values are collected in such a way that they are added to the list in order 
 \label{default:syntax}
 \end{figure}
 
-The default rules look at the attribute names and not the types. If a child defines an attribute for which there is a \emph{default} rule defined but where the \emph{type} of this attribute is different then the type of the other element of the list, then a type error will be generated by the Haskell compiler since Haskell lists are heterogeneous.
+The default rules look at the attribute names and not the types. If a child defines an attribute for which there is a \emph{default} rule defined but where the \emph{type} of this attribute is different then the type of the other element of the list, then a type error will be generated by the Haskell compiler since Haskell lists are homogeneous.
 
 Using default rules we can simplify the definition of the Exprs \ensuremath{\mathbf{datasem}}:
 
@@ -1399,10 +1421,10 @@ Using default rules we can simplify the definition of the Exprs \ensuremath{\mat
 \end{hscode}\resethooks
 
 \subsection{Multiple tree traversals}
-The previous examples are all possible with uuagc and so with standard attribute grammar, whereas the following example is not. To show how to traverse multiple trees at the same time, and the higher-orderedness of \rcore the following example deals with how to compare two trees for equality.
+The previous examples are all possible with standard attribute grammar, whereas the following example is not. To show how to traverse multiple trees at the same time, and the higher-orderedness of \rcore the following example deals with how to compare two trees for equality.
 
 The interesting points of this example are being able to traverse two AST at a time, and compare them while evaluating the tree at the same time.
-If the trees turns out to be equal return, then return a new tree with the value at the given node.
+If the trees turns out to be equal, then return a new tree with the value of the evaluated node.
 
 The easiest one to start with is the \emph{Operator} terminal. An interface that allows the comparison of two operators needs to be defined:
 
@@ -1415,10 +1437,10 @@ The easiest one to start with is the \emph{Operator} terminal. An interface that
 \>[B]{}\mathbf{data}\;\Conid{Operator}{}\<[E]%
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{}\Varid{con}(\Conid{Plus}){}\<[E]%
+\>[3]{}\mathbf{con}\;\Conid{Plus}{}\<[E]%
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{}\Varid{con}(\Conid{Minus}){}\<[E]%
+\>[3]{}\mathbf{con}\;\Conid{Minus}{}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
 \end{minipage}
@@ -1533,7 +1555,7 @@ Earlier in section \ref{semantics} it was explained that there are two types of 
 \label{sem:syntax}
 \end{figure}
 
-This method of declaring semantic functions allows the declaration of a semantic function for an arbitrary interface. The different components of figure \ref{sem:syntax} are decomposed as:
+With \textbf{sem} we can define a semantic function for an arbitrary interface. The different components of figure \ref{sem:syntax} are decomposed as:
 
 %\begin{figure}[ht!]
 \begin{description}
@@ -1546,10 +1568,11 @@ This method of declaring semantic functions allows the declaration of a semantic
 \end{description}
 %\end{figure}
 
-A \textbf{sem} function does not enforce any kind of condition on visits specified. There is however one important layout rule: every \emph{visit} must be indented at least as deeply as preceding \textbf{sem} keyword. If this is not the case a parse error will be generated.
+Rules can be given for the entire sem-block, or scoped per visit or per clause.
+A \textbf{sem} function has one important layout rule: every \emph{visit} must be indented at least as deeply as preceding \textbf{sem} keyword. If this is not the case a parse error will be generated.
 
 \subsection{Syntax}
-\Rcore like its ancestor \emph{UUAGC} is implemented as a preprocessor for the language Haskell. From a .rul file pure Haskell code, which is callable from any other Haskell function is generated. How every bit of the ruler code is translated to Haskell is outside the scope of this thesis, but those interested can find it in detail in the paper by Arie Middelkoop\cite{visitag}.
+\Rcore like its ancestor \emph{UUAGC} is implemented as a preprocessor for the language Haskell. From a .rul file pure Haskell code is generated. This code can be used from other Haskell functions as described in Section\cite{calling:sem}. How ruler code is translated to Haskell is outside the scope of this thesis. Details can be found in Middelkoop, et al.~\cite{visitag}.
 
 Though it provides various syntactical elements, one of the most important to remember is that the right hand side of an equal sign ($=$) contains Haskell code, which means it is possible to call any Haskell function including library functions from the RHS. 
 
@@ -1613,7 +1636,7 @@ The next part will show how to compare two expressions and declare  explicit chi
 Comparing and evaluating two trees at once require two Environment. One per tree. The \ensuremath{\Conid{Pair}} type is just an alias for a 2-tuple of the same type. (e.g  (Env, Env))
 
 \subsection{Children}
-One of the benefits of \rcore over traditional AG systems such as \emph{UUAGC} is the ability to synthesize new trees during attribute evaluation. To accomplish this \rcore allows the declaration of new child \emph{non-terminals}. Due to space constrains only a piece of the semantics for the \emph{Compare} interface will be shown. To see the full source please consult the Appendix \ref{appendix:compare}.
+One of the benefits of \rcore over traditional AG systems such as \emph{UUAGC} is the ability to construct new trees during attribute evaluation. To accomplish this \rcore allows the declaration of new child \emph{non-terminals}. Due to space constrains only a piece of the semantics for the \emph{Compare} interface will be shown. To see the full source please consult the Appendix \ref{appendix:compare}.
 
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
@@ -1699,10 +1722,10 @@ Contrary to a \textbf{datasem} there is no real distinction between terminals an
 \caption{child declaration syntax}
 \end{figure}
 
-This declares a new \textbf{child} \emph{name} belonging to the nonterminal (Interface) defined by the specified visit\cite{visitag}. By default the co-routine to execute is \emph{id} unless otherwise specified. When invoking a child of a nonterminal for which we defined a datasem the \emph{sem\_name} doesn't have to be defined.
+This declares a new \textbf{child} \emph{name} belonging to the nonterminal (Interface) defined by the specified visit\cite{visitag}. By default the co-routine to execute is \emph{id} unless otherwise specified. When invoking a child of a nonterminal for which we defined a datasem the \emph{sem\_name} does not have to be defined.
 
 \subsection{Ordering}
-The order of statements are largely irrelevant, however \textbf{match} statements will always be executed before any other statement declared beneath them. They are also treated as assertions. Statements and assignments can be in any order, when they are scheduled they will be ordered based on their dependencies. Which is why
+Match statements are guaranteed to be executed in the visit that they are defined in. Rules are ordered automatically, and match statements are prioritized over any other rules. They are also treated as assertions. Statements and assignments can be in any order, when they are scheduled they will be ordered based on their dependencies. Which is why
 
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
@@ -1720,11 +1743,11 @@ is perfectly valid. Because of the dependence of \emph{l.e} on \emph{loc.e}, \em
 \chapter{HML}
 \label{HML}
 \section{Introduction}
-The majority of type inference systems today are an extension of the  Hindler-Milner (HM)\cite{HM} type system. The HML\cite{HML} type system by Daan Leijen is no different in this regard. It extends the Hindley-Milner type system to add support for first class polymorphism. The HML type system is itself an simplification and at the same time a restricted version of MLF\cite{MLF} while retaining the expressiveness of MLF. The MLF type system is another type system for functional languages which provides impredicative higher-rank polyorphism. However it has a more stringent annotation requirement and more complex type representations then the HML type system. The HML type system in contrast to the MLF type system only uses so called \emph{flexible types} (See section\ref{sec:Types}), which make the system easier to used compared to the  MLF type system.
+The majority of type inference systems today are an extension of the  Hindler-Milner (HM)\cite{HM} type system. The HML\cite{HML} type system by Daan Leijen is no different in this regard. It extends the Hindley-Milner type system to add support for first class polymorphism. The HML type system is itself an simplification and at the same time a restricted version of the MLF\cite{MLF} type system while retaining the expressiveness of MLF. The MLF type system is another type system for functional languages which provides impredicative higher-rank polyorphism. It has a more stringent annotation requirement and more complex type representations then the HML type system. The HML type system in contrast to the MLF type system only uses so called \emph{flexible types} (See section\ref{sec:Types}), which make the system easier to used compared to the  MLF type system.
 
-In the HML type system annotations are only needed on function parameters with a polymorphic type(Another version $HML^F$ allows annotations of Let bindings). Because of this conservative annotation requirement and because HML is an extension of HM any program that is well typed in the Hindley-Milner type system is well typed in the HML type system.
+In the HML type system annotations are only needed on function parameters with a polymorphic type(Another version $\textrm{HML}^F$ allows annotations of Let bindings). Because of this conservative annotation requirement and because HML is an extension of HM any program that is well typed in the Hindley-Milner type system is well typed in the HML type system.
 
-The typing rules are thus very similar to those of the Hindley-Milner type system, where every expression can and is assigned a \emph{most} general type. This is true even with higher rank functions. Furthermore the HML type system is an impredicative type system which is very robust with respect to program transformations. It also has some interesting properties, in particular a Let binding can always be inlined or a shared expression abstracted into a Let. Whenever \emph{$e_1$ $e_2$} is well typed then so are \emph{apply $e_1$ $e_2$} and \emph{revapply $e_2$ $e_1$}. In general this means that HML is insensitive to the order of applications, which is a property that is not true of every type system.
+The typing rules are thus very similar to those of the Hindley-Milner type system, where every expression can and is assigned a \emph{most} general type. This is true even with higher rank functions(given, not inferred). Furthermore the HML type system is an impredicative type system which is very robust with respect to program transformations. It also has some interesting properties, in particular a Let binding can always be inlined or a shared expression abstracted into a Let. Whenever \emph{$e_1$ $e_2$} is well typed then so are \emph{apply $e_1$ $e_2$} and \emph{revapply $e_2$ $e_1$}. In general this means that HML is insensitive to the order of applications, which is a property that is not true of every type system.
 
 The HML type system is not robust towards $\eta-expansion$ since all polymorphic (higher rank) arguments need to be annotated.
 
@@ -1770,7 +1793,7 @@ The following expression type checks just fine in the HML type system:
 \ColumnHook
 \end{hscode}\resethooks
 
-But would require \textit{ids} to be two incomparable SystemF types at the same time, namely List (Int $\rightarrow$ Int) and List ($\forall\alpha$. $\alpha$ $\rightarrow$ List $\alpha$). This is where \textit{flexible} types come in, the type of ids can now be described as $\forall(\beta\geq \forall\alpha \rightarrow \alpha).$ List $\beta$, which can be interpreted as "any $\beta$ that is an instance of $\forall\alpha \rightarrow \alpha$ the type List $\beta$ is valid". This can be considered as the most "principle" or general type of that expression. The flexible type of ids can then be instantiated to both of the required types. 
+But would require \textit{ids} to be two incomparable SystemF types at the same time, namely List (Int $\rightarrow$ Int) and List ($\forall\alpha$. $\alpha$ $\rightarrow$ $\alpha$). This is where \textit{flexible} types come in, the type of ids can now be described as $\forall(\beta\geq \forall\alpha \rightarrow \alpha).$ List $\beta$, which can be interpreted as "any $\beta$ that is an instance of $\forall\alpha \rightarrow \alpha$ the type List $\beta$ is valid". This can be considered as the most "principle" or general type of that expression. The flexible type of ids can then be instantiated to both of the required types. 
 
 These \textit{flexible} types are the key HML, but flexible types are only allowed on \textit{Let}-bindings (see \ensuremath{\Varid{poly}}) and values of a flexible type cannot be passed as arguments.
 
@@ -1792,7 +1815,7 @@ HML introduces various types, most of which are an extensions of Hindley-Milner 
 \label{types}
 \end{figure}
 
-The $\sigma$ types are the basic SystemF types. Function applications are expressed by applying the arrow constructor ($\rightarrow$) to its arguments. The $\omega$ type is the \emph{Row} type which is the type of a Tuple:
+The $\sigma$ types are the basic SystemF types. Function applications are expressed by applying the arrow constructor ($\rightarrow$) to its arguments. The $\omega$ type is the \emph{Row} type, which is the type of a Tuple:
 
 \begin{eqnarray*}
 \omega & ::= & \bot \\
@@ -1813,9 +1836,9 @@ In the SystemF type system, a \emph{type scheme} is represented as $\forall \alp
 \end{figure}
 
 Lambda bound values always have a $\sigma$ type since \emph{flexible types} cannot be passed as arguments, however \emph{Let} bound values can have a \emph{flexible type} $\varphi$.
-A \emph{type scheme} $\varphi$ is either a \emph{SystemF} type $\sigma$, the polymorphic $\bot$ value or the quantified type $\forall (\alpha \geq \varphi_1). \varphi_2$. A $\varphi$ with a quantified bounds can be instantiated to any instance of it's bounds. Since $\bot$ can be instantiated to anything, the bounds $(\alpha \geq \bot)$ is called the unconstrained bounds. This bounds is also equivalent to the \emph{SystemF} type $\forall \varphi$. The bounds of a \emph{type scheme} can be anything, even types that cannot be instantiated to anything else. An example of such a type is $(\alpha \geq Int).\alpha$, $Int$ cannot be instantiated to anything. Such types are called \emph{trivially quantified} or more specifically such types have a \emph{trivial bounds}.
+A \emph{type scheme} $\varphi$ is either a \emph{SystemF} type $\sigma$, the polymorphic $\bot$ value or the quantified type $\forall (\alpha \geq \varphi_1). \varphi_2$. A $\varphi$ with a quantified bounds can be instantiated to any instance of its bounds. Since $\bot$ can be instantiated to anything, the bounds $(\alpha \geq \bot)$ is called the unconstrained bounds. This bounds is also equivalent to the \emph{SystemF} type $\forall \alpha$. The bounds of a \emph{type scheme} can be anything, even types that cannot be instantiated to anything else. An example of such a type is $(\alpha \geq Int).\alpha$, $Int$ cannot be instantiated to anything. Such types are called \emph{trivially quantified} or more specifically such types have a \emph{trivial bounds}.
 
-The dual of this is a scheme with a \emph{non-trivial bounds}. This type is called the \emph{quantified scheme} $\hat{\varphi}$:
+The dual of this is are type schemes with a \emph{non-trivial bounds}. These types are called the \emph{quantified schemes} $\hat{\varphi}$:
 
 \begin{figure}[H]
 \begin{eqnarray*}
@@ -1826,7 +1849,7 @@ The dual of this is a scheme with a \emph{non-trivial bounds}. This type is call
 \label{quantified-schemes}
 \end{figure}
 
-Even though quantified schemes are presented as a type, they are regarded in this implementation as a type synonym to normal type schemes. The reason is that quantified schemes are just a restriction on a normal type scheme. Treating them the same is safe to do by adding an extra condition to every function that can extend the prefix: \emph{Any function that extends the prefix must not allow a trivial bound to be added}.
+Even though quantified schemes are presented as a type, they are regarded in this implementation as a type synonym to normal type schemes. The reason is that quantified schemes are just a restriction on normal type schemes. Treating them the same is safe to do by adding an extra condition to every function that can extend the prefix: \emph{Any function that extends the prefix must not allow a trivial bound to be added}.
 The HML type system defines an extra environment called a \emph{Prefix} which holds the quantified bounds of types:
 
 \begin{figure}[H]
@@ -1837,7 +1860,7 @@ Q ::= \alpha_1\geq\hat{\varphi}_1,\ldots,\alpha_n\geq\hat{\varphi}_n
 \label{Prefix}
 \end{figure}
 
-The prefix cannot contain any trivial bounds, which is why the \emph{Quantified schemes} type $\hat{\varphi}$ is used inside the Prefix $Q$. The domain of the prefix (dom $Q$ = ${\alpha_1 \ldots \alpha_n}$) and the domain of the substitution environment are disjoint. In other words, a type variable is either bound by the prefix or has been substituted away. A type scheme ca either be quantified by itself or quantified by the prefix environment, when any conflicts arise quantifying in the prefix takes precedence.
+The prefix cannot contain any trivial bounds, which is why the \emph{Quantified schemes} type $\hat{\varphi}$ is used to define the Prefix $Q$. The domain of the prefix (dom $Q$ = ${\alpha_1 \ldots \alpha_n}$) and the domain of the substitution environment are disjoint. In other words, a type variable is either bound by the prefix or has been substituted away. A type scheme can either be quantified by itself or quantified by the prefix environment, when any conflicts arise quantifying in the prefix takes precedence.
 
 The next two types are the \emph{monomorphic} $\tau$ type and the \emph{unqualified type} $\rho$. The \emph{monomorphic} type $\tau$ is the same type as in the Hindley-Milner type system, and the \emph{unqualified} $\rho$ type is represents types without any quantifiers. 
 
@@ -1889,7 +1912,7 @@ The generalization rule generalizes a type by moving its bounds out from the pre
 		\UnaryInfC{$Q,\Gamma \vdash e_1 \hspace{3pt} e_2 : \sigma$}
 \end{prooftree}
 
-The application rule is the standard application rule over types. It requires that the type of $e_2$ be equal to the type of the argument of $e_1$. Note that this ranges over normal SystemF type and not type schemes. Type schemes can still be typed using this rule as a type scheme can be present in the bounds of the types $e_1$ and $e_2$ (See \emph{Fun} rule).
+The application rule is the standard application rule over types. It requires that the type of $e_2$ be equal to the type of the argument of $e_1$. Note that this ranges over normal SystemF type and not type schemes. Type schemes can still be typed using this rule, because a type scheme can be present in the bounds of the types $e_1$ and $e_2$ (See \emph{Fun} rule).
 
 \begin{prooftree}
 		\AxiomC{$Q,\Gamma \vdash e_1 : \varphi_1 \quad Q,(\Gamma, x : \varphi_1) \vdash e_2 : \varphi_2$}
@@ -1913,9 +1936,9 @@ The Fun rule restricts the type of the parameter to a monomorphic type $\tau$ in
 		\UnaryInfC{$Q, \Gamma \vdash \lambda(x :: \sigma_1). e : \sigma_1 \rightarrow \sigma_2$}
 \end{prooftree}
 
-The Function Annotation rule provides a mechanism to explicitly annotate abstraction variables with a (possibly) polymorphic type. Like the annotation of the \textit{poly} example above with the needed higher-rank type.
+The Function Annotation rule provides a mechanism to explicitly annotate abstraction variables with a (possibly) polymorphic type. Like the annotation of the \textit{poly} example above with a higher-rank type.
 
-In particular the \textit{FUN} rule for lambda expressions restrict the type of the parameters to be a mono type $\tau$ since any scheme on the mono type is in the Prefix $Q$. Doing so makes it that the types hidden in the Prefix cannot be directly compared to other types. Instead they have to be instantiated as a means of comparison, as oppose to being unified. This is the secret behind the HML type system.  
+In particular the \textit{FUN} rule for lambda expressions restrict the type of the parameters to be a mono type $\tau$. Since any bounds (possible containing a type scheme) on the mono type is in the Prefix $Q$. This makes it that the types hidden in the Prefix cannot be directly compared to other types. Instead they have to be instantiated as a means of comparison, as oppose to being unified. This is the secret behind the HML type system.  
 
 \section{Semantics}
 \subsection{Type scheme}
@@ -2179,32 +2202,32 @@ The first way to update a prefix is with a new scheme:
 \>[3]{}\Varid{update}\;(\Conid{Q},\alpha\geq\varphi_2)\mathrel{=}{}\<[E]%
 \\
 \>[3]{}\hsindent{3}{}\<[6]%
-\>[6]{}\text{let}\;(\Conid{Q\char95 0},(\Conid{Q}_{\mathrm{1}},\alpha\geq\hat{\varphi_1},\Conid{Q}_{\mathrm{2}}))\mathrel{=}\Varid{split}\;(\Conid{Q},\Varid{ftv}\;(\varphi_2)){}\<[E]%
+\>[6]{}\text{let}\;(\Conid{Q}_{\mathrm{0}},(\Conid{Q}_{\mathrm{1}},\alpha\geq\hat{\varphi_1},\Conid{Q}_{\mathrm{2}}))\mathrel{=}\Varid{split}\;(\Conid{Q},\Varid{ftv}\;(\varphi_2)){}\<[E]%
 \\
 \>[6]{}\hsindent{11}{}\<[17]%
 \>[17]{}\text{if}\;(\Varid{nf}\;(\varphi_2)\mathrel{=}\rho)\;{}\<[E]%
 \\
 \>[17]{}\hsindent{4}{}\<[21]%
 \>[21]{}\text{then}\;{}\<[28]%
-\>[28]{}\text{return}\;((\Conid{Q\char95 0},\Conid{Q}_{\mathrm{1}},\lbrack\;\alpha\mathbin{:=}\rho\;\rbrack\;\Conid{Q}_{\mathrm{2}}),\lbrack\;\alpha\mathbin{:=}\rho\;\rbrack)\;{}\<[E]%
+\>[28]{}\text{return}\;((\Conid{Q}_{\mathrm{0}},\Conid{Q}_{\mathrm{1}},\lbrack\;\alpha\mathbin{:=}\rho\;\rbrack\;\Conid{Q}_{\mathrm{2}}),\lbrack\;\alpha\mathbin{:=}\rho\;\rbrack)\;{}\<[E]%
 \\
 \>[17]{}\hsindent{4}{}\<[21]%
 \>[21]{}\text{else}\;{}\<[28]%
-\>[28]{}\text{return}\;((\Conid{Q\char95 0},\Conid{Q}_{\mathrm{1}},\alpha\geq\varphi_2,\Conid{Q}_{\mathrm{2}}),\lbrack\;\rbrack){}\<[E]%
+\>[28]{}\text{return}\;((\Conid{Q}_{\mathrm{0}},\Conid{Q}_{\mathrm{1}},\alpha\geq\varphi_2,\Conid{Q}_{\mathrm{2}}),\lbrack\;\rbrack){}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
 The steps performed by this function can decomposed as:
 
 \begin{enumerate}
-\item{ Split the prefix into two parts ($Q_0, Q_{0'})$ based on the free variables of the new scheme. This is done for two reasons:  
+\item{ Split the prefix into two parts \ensuremath{(\Conid{Q}_{\mathrm{0}},Q^{}_{0})} based on the free variables of the new scheme. This is done for two reasons:  
 		\begin{itemize}
 		\item As a crude check to prevent infinity types. If the \ensuremath{\Varid{ftv}} of $\varphi_2$ contains $\alpha$ the second operation would fail.
 		\item Reinforce the invariant. The prefixes that will not be updated are older and are positioned in the front of the list.
 		\end{itemize}
      }
-\item Split $Q_{0'}$ in place into 3 parts. $Q_1$ contains the schemes before the current binding to $\alpha$. $Q_3$ contains the schemes after the binding to $\alpha$.
-\item{ To prevent that a simple bound enter the prefix a check is performed to see if the normal form of the new scheme $\varphi_2$ is an unqualified type. If it is a simple type, we return the a substitution to the type instead of adding it to the prefix, and the substitution is applied to $Q_2$ because due to the ordering of the prefixes it is the only prefix that can contain any reference to $\alpha$.
-However if the type is not a simple type then it is added in-place in the prefix and no substitution is returned.
+\item Split \ensuremath{Q^{}_{0}} in place into 3 parts. $Q_1$ contains the schemes before the current binding to $\alpha$. $Q_3$ contains the schemes after the binding to $\alpha$.
+\item{ To prevent that a trivial bound enter the prefix a check is performed to see if the normal form of the new scheme $\varphi_2$ is an unqualified type. If it is a simple type, we return the a substitution to the type instead of adding it to the prefix, and the substitution is applied to $Q_2$ because due to the ordering of the prefixes it is the only prefix that can contain any reference to $\alpha$.
+However if the type is not a trivial type then it is added in-place in the prefix and no substitution is returned.
      }
 \item In the return statements, the tupling statement is intended to be an implicit concatenation if the elements. 
 \end{enumerate}
@@ -2218,10 +2241,10 @@ The second way to update a prefix is with a substitution. This update always rem
 \>[3]{}\Varid{update}\;(\Conid{Q},\alpha\mathbin{:=}\sigma)\mathrel{=}{}\<[E]%
 \\
 \>[3]{}\hsindent{3}{}\<[6]%
-\>[6]{}\text{let}\;(\Conid{Q\char95 0},(\Conid{Q}_{\mathrm{1}},\alpha\geq\Varid{varphi},\Conid{Q}_{\mathrm{2}}))\mathrel{=}\Varid{split}\;(\Conid{Q},\Varid{ftv}\;(\sigma)){}\<[E]%
+\>[6]{}\text{let}\;(\Conid{Q}_{\mathrm{0}},(\Conid{Q}_{\mathrm{1}},\alpha\geq\Varid{varphi},\Conid{Q}_{\mathrm{2}}))\mathrel{=}\Varid{split}\;(\Conid{Q},\Varid{ftv}\;(\sigma)){}\<[E]%
 \\
 \>[3]{}\hsindent{3}{}\<[6]%
-\>[6]{}\text{return}\;((\Conid{Q\char95 0},\Conid{Q}_{\mathrm{1}},\lbrack\;\alpha\mathbin{:=}\sigma\;\rbrack\;\Conid{Q}_{\mathrm{2}}),\lbrack\;\alpha\mathbin{:=}\sigma\;\rbrack){}\<[E]%
+\>[6]{}\text{return}\;((\Conid{Q}_{\mathrm{0}},\Conid{Q}_{\mathrm{1}},\lbrack\;\alpha\mathbin{:=}\sigma\;\rbrack\;\Conid{Q}_{\mathrm{2}}),\lbrack\;\alpha\mathbin{:=}\sigma\;\rbrack){}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
 \subsection{Extend}
@@ -2247,7 +2270,7 @@ The last way to modify a prefix is by extending it with a new entry. This is don
 \>[19]{}\text{else}\;\text{return}\;((Q^{},\alpha\geq\varphi^{}),\lbrack\;\rbrack){}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
-Like before, the normal form checks are here to prevent simple types to enter the environment. However there is another type that shouldn't enter the environment here: \emph{types who's normal form is $\bot$ should not enter the prefix}. 
+Like before, the normal form checks are here to prevent simple types to enter the environment. However there is another type that should not enter the environment here: \emph{types whose normal form is $\bot$ should not enter the prefix}. 
 
 Concretely this means that extending the prefix with e.g. $\beta \geq (\forall(\alpha \geq \bot).\alpha)$ should just return the substitution $\beta := \alpha$. The reason for this is to prevent information loss when types are shared, this will be covered in more detail in the implementation of Applications.
 
@@ -2292,7 +2315,7 @@ In the original algorithm for unification, the following semantically equivalent
 (\forall a \geq \bot). a \rightarrow a
 \end{eqnarray*}
 
-They do however result in the same SystemF type. This occurs because we want to retain some link back to types that a normal Haskell programmer is used to. But for the implementation of unification there is really no reason why the SystemF type schemes cannot be removed as inputs and only flexible types accepted. All types, with the exception of the inner quantifiers for higher-rank types are promoted to flexible types. The \ensuremath{\forall\;\beta\mbox{.}} in \ensuremath{\forall\;\Varid{a}\mbox{.}(\forall\;\beta\mbox{.}\beta\to \beta)\to \Varid{a}\to \Varid{a}} is such a type. The promoted type is \ensuremath{(\Varid{a}\geq\bot)\mbox{.}(\forall\;\beta\mbox{.}\beta\to \beta)\to \Varid{a}\to \Varid{a}}.
+They do however result in the same SystemF type. This occurs because we want to retain some link back to types that a normal Haskell programmer is used to. But for the implementation of unification there is really no reason why the SystemF type schemes cannot be removed as inputs and only flexible types accepted. All types, with the exception of the inner quantifiers for higher-rank types are promoted to flexible types. The \ensuremath{\forall\;\beta\mbox{.}} in \ensuremath{\forall\;\Varid{a}\mbox{.}(\forall\;\beta\mbox{.}\beta\to \beta)\to \Varid{a}\to \Varid{a}} is such a type. The promoted version of this type is \ensuremath{(\Varid{a}\geq\bot)\mbox{.}(\forall\;\beta\mbox{.}\beta\to \beta)\to \Varid{a}\to \Varid{a}}.
 
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
@@ -2301,7 +2324,7 @@ They do however result in the same SystemF type. This occurs because we want to 
 \column{12}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{16}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{35}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{39}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{41}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{42}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
 \>[B]{}\Varid{embedF}\mathbin{::}\Conid{TyExpr}\to \Conid{TyScheme}{}\<[E]%
@@ -2312,11 +2335,11 @@ They do however result in the same SystemF type. This occurs because we want to 
 \>[3]{}\mathbf{where}\;{}\<[10]%
 \>[10]{}\Varid{embed}\mathbin{::}(\Conid{TyScheme}\to \Conid{TyScheme})\to \Conid{TyExpr}\to \Conid{TyScheme}{}\<[E]%
 \\
-\>[10]{}\Varid{embed}\;\Varid{val}\;(\Conid{TyExpr\char95 Parens}\;{}\<[39]%
-\>[39]{}\Varid{s})\mathrel{=}\Varid{embed}\;\Varid{val}\;\Varid{s}{}\<[E]%
+\>[10]{}\Varid{embed}\;\Varid{val}\;(\Conid{TyExpr\char95 Parens}\;{}\<[41]%
+\>[41]{}\Varid{s})\mathrel{=}\Varid{embed}\;\Varid{val}\;\Varid{s}{}\<[E]%
 \\
 \>[10]{}\Varid{embed}\;\Varid{val}\;(\Conid{TyExpr\char95 Quant}\;{}\<[35]%
-\>[35]{}\cdot _{}\;\Varid{a}\;\Varid{t})\mathrel{=}{}\<[E]%
+\>[35]{}\textrm{\_}\;\Varid{a}\;\Varid{t})\mathrel{=}{}\<[E]%
 \\
 \>[10]{}\hsindent{2}{}\<[12]%
 \>[12]{}\mathbf{let}\;\Varid{e}\mathrel{=}\Conid{TyScheme\char95 Quant}\;(\Conid{Scheme\char95 Simple}\;\Varid{a}\;\Conid{TyScheme\char95 Bottom}){}\<[E]%
@@ -2348,11 +2371,11 @@ codom &\tau& = \{\}
 \subsection{Renaming}
 \label{renaming}
 
-The type HML system does not have support for case expressions and tuples. In those two situation you would want on every lookup of a type constructor to return a fresh type. e.g. the type of $(\lbrack \rbrack, \lbrack \rbrack)$ should is $\forall \alpha \beta . (\lbrack \alpha \rbrack, \lbrack \beta \rbrack)$. Because of this, on every lookup of a constructor we rename every bound variable. In applications, either the function or the argument needs to be alpha renamed when being added to the prefix. This is because when unifying the type of "id id" the type of both id's are the same. Without the renaming we might end up reasoning about the same type variable accidentally.
+The type HML system does not have support for case expressions and tuples. In those two situation you would want on every lookup of a type constructor to return a fresh type. e.g. the type of $(\lbrack \rbrack, \lbrack \rbrack)$ is $\forall \alpha \beta . (\lbrack \alpha \rbrack, \lbrack \beta \rbrack)$. Because of this, on every lookup of a constructor we rename every bound variable. In applications, either the function or the argument needs to be alpha renamed when being added to the prefix. This is because when unifying the type of expressions such as \ensuremath{\Varid{id}\;\Varid{id}} the type of both \ensuremath{\Varid{id}}s are the same. Without the renaming we might end up reasoning about the same type variable accidentally.
 
 \chapter{Implementation}
 \label{Implementation}
-This chapter details the implementation of the type system HML in \rcore. Due to the amount of code it will be a tutorial style chapter which introduces the new pieces in small increments. The full specification for the algorithms are given for comparisons reason in appendix \ref{appendix:formal}.
+This chapter details the implementation of the type system HML using \rcore. Due to the amount of code it will be a tutorial style chapter which introduces the new pieces in small increments. The full specification for the algorithms are given for comparisons reason in appendix \ref{appendix:formal}.
 \section{Types}
 The implementation of the HML types can be easily derived from those in figure \ref{types}. The type scheme $\varphi$ and the SystemF $\sigma$ are extended to support the sugared syntaxes at the end of section \ref{sec:Types}. This is done to simplify some phases of the implementation.
 
@@ -2364,7 +2387,7 @@ The implementation of the HML types can be easily derived from those in figure \
 \column{6}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{14}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[3]{}\Varid{con}(\Conid{Sugar})\;{}\<[E]%
+\>[3]{}\mathbf{con}\;\Conid{Sugar}\;{}\<[E]%
 \\
 \>[3]{}\hsindent{3}{}\<[6]%
 \>[6]{}\Varid{prefix}{}\<[14]%
@@ -2383,7 +2406,7 @@ The implementation of the HML types can be easily derived from those in figure \
 \column{5}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{15}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[3]{}\Varid{con}(\Conid{Forall})\;{}\<[E]%
+\>[3]{}\mathbf{con}\;\Conid{Forall}\;{}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}\Varid{qu}{}\<[15]%
@@ -2419,19 +2442,19 @@ The full syntax of the datatype $\sigma$ (SystemF type) is:
 \>[B]{}\mathbf{data}\;\Conid{TyQu}{}\<[E]%
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{}\Varid{con}(\Conid{TyForall}){}\<[E]%
+\>[3]{}\mathbf{con}\;\Conid{TyForall}{}\<[E]%
 \\[\blanklineskip]%
 \>[B]{}\mathbf{data}\;\Conid{TyExpr}{}\<[E]%
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{}\Varid{con}(\Conid{Con})\;{}\<[E]%
+\>[3]{}\mathbf{con}\;\Conid{Con}\;{}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}\Varid{nm}{}\<[16]%
 \>[16]{}\mathbin{::}\Conid{HsName}{}\<[E]%
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{}\Varid{con}(\Conid{App})\;{}\<[E]%
+\>[3]{}\mathbf{con}\;\Conid{App}\;{}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}\Varid{func}{}\<[16]%
@@ -2444,7 +2467,7 @@ The full syntax of the datatype $\sigma$ (SystemF type) is:
 \>[19]{}\Conid{TyExpr}{}\<[E]%
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{}\Varid{con}(\Conid{AppTop})\;{}\<[E]%
+\>[3]{}\mathbf{con}\;\Conid{AppTop}\;{}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}\Varid{tyExpr}{}\<[16]%
@@ -2452,7 +2475,7 @@ The full syntax of the datatype $\sigma$ (SystemF type) is:
 \>[19]{}\Conid{TyExpr}{}\<[E]%
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{}\Varid{con}(\Conid{Parens})\;{}\<[E]%
+\>[3]{}\mathbf{con}\;\Conid{Parens}\;{}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}\Varid{tyExpr}{}\<[16]%
@@ -2460,7 +2483,7 @@ The full syntax of the datatype $\sigma$ (SystemF type) is:
 \>[19]{}\Conid{TyExpr}{}\<[E]%
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{}\Varid{con}(\Conid{Ann})\;{}\<[E]%
+\>[3]{}\mathbf{con}\;\Conid{Ann}\;{}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}\Varid{ann}{}\<[16]%
@@ -2472,7 +2495,7 @@ The full syntax of the datatype $\sigma$ (SystemF type) is:
 \>[19]{}\Conid{TyExpr}{}\<[E]%
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{}\Varid{con}(\Conid{Wild}){}\<[E]%
+\>[3]{}\mathbf{con}\;\Conid{Wild}{}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
 \end{minipage}
@@ -2484,21 +2507,21 @@ The full syntax of the datatype $\sigma$ (SystemF type) is:
 \column{16}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{19}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[3]{}\Varid{con}(\Conid{Mono}){}\<[E]%
+\>[3]{}\mathbf{con}\;\Conid{Mono}{}\<[E]%
 \\
-\>[3]{}\Varid{con}(\Conid{Var})\;{}\<[E]%
+\>[3]{}\mathbf{con}\;\Conid{Var}\;{}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}\Varid{nm}{}\<[16]%
 \>[16]{}\mathbin{::}\Conid{HsName}{}\<[E]%
 \\
-\>[3]{}\Varid{con}(\Conid{VarWild})\;{}\<[E]%
+\>[3]{}\mathbf{con}\;\Conid{VarWild}\;{}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}\Varid{mm}{}\<[16]%
 \>[16]{}\mathbin{::}\Conid{HsName}{}\<[E]%
 \\
-\>[3]{}\Varid{con}(\Conid{Quant})\;{}\<[E]%
+\>[3]{}\mathbf{con}\;\Conid{Quant}\;{}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}\Varid{qu}{}\<[16]%
@@ -2513,7 +2536,7 @@ The full syntax of the datatype $\sigma$ (SystemF type) is:
 \>[16]{}\mathbin{:}{}\<[19]%
 \>[19]{}\Conid{TyExpr}{}\<[E]%
 \\
-\>[3]{}\Varid{con}(\Conid{Forall})\;{}\<[E]%
+\>[3]{}\mathbf{con}\;\Conid{Forall}\;{}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}\Varid{qu}{}\<[16]%
@@ -2528,7 +2551,7 @@ The full syntax of the datatype $\sigma$ (SystemF type) is:
 \>[16]{}\mathbin{:}{}\<[19]%
 \>[19]{}\Conid{TyExpr}{}\<[E]%
 \\
-\>[3]{}\Varid{con}(\Conid{Row})\;{}\<[E]%
+\>[3]{}\mathbf{con}\;\Conid{Row}\;{}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}\Varid{rowTyExpr}{}\<[16]%
@@ -2545,7 +2568,7 @@ Most of these are pretty standard with the exception of \emph{Row} and \emph{App
 The \emph{AppTop} constructor is used purely for pretty printing purposes, in particular when pretty printing Constructor applications. The \ensuremath{(\to )} constructor is not treated specially in this version of EH, which means \ensuremath{\alpha\to \beta} is encoded as \ensuremath{((\to \alpha)\;\beta)}. The \emph{App} found under an \emph{AppTop} is pretty printed differently to show the expected type \ensuremath{\alpha\to \beta}.
 
 \section{Inference}
-Like any ruler core program, the first step is to define the datatypes and interfaces needed. Since type inferencing is done on expressions, we first have to introduce the expression datatype:
+Like any \rcore program, the first step is to define the datatypes and interfaces needed. Since type inferencing is done on expressions, we first have to introduce the expression datatype:
 
 \begin{figure}[H]
 \begin{minipage}[t]{0.4\linewidth}
@@ -2559,35 +2582,35 @@ Like any ruler core program, the first step is to define the datatypes and inter
 \>[B]{}\mathbf{data}\;\Conid{Expr}{}\<[E]%
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{}\Varid{con}(\Conid{IConst})\;{}\<[E]%
+\>[3]{}\mathbf{con}\;\Conid{IConst}\;{}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}\Varid{int}{}\<[20]%
 \>[20]{}\mathbin{::}\Conid{Int}{}\<[E]%
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{}\Varid{con}(\Conid{CConst})\;{}\<[E]%
+\>[3]{}\mathbf{con}\;\Conid{CConst}\;{}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}\Varid{char}{}\<[20]%
 \>[20]{}\mathbin{::}\Conid{Char}{}\<[E]%
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{}\Varid{con}(\Conid{Con})\;{}\<[E]%
+\>[3]{}\mathbf{con}\;\Conid{Con}\;{}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}\Varid{nm}{}\<[20]%
 \>[20]{}\mathbin{::}\Conid{HsName}{}\<[E]%
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{}\Varid{con}(\Conid{Var})\;{}\<[E]%
+\>[3]{}\mathbf{con}\;\Conid{Var}\;{}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}\Varid{nm}{}\<[20]%
 \>[20]{}\mathbin{::}\Conid{HsName}{}\<[E]%
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{}\Varid{con}(\Conid{App})\;{}\<[E]%
+\>[3]{}\mathbf{con}\;\Conid{App}\;{}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}\Varid{func}{}\<[20]%
@@ -2600,7 +2623,7 @@ Like any ruler core program, the first step is to define the datatypes and inter
 \>[23]{}\Conid{Expr}{}\<[E]%
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{}\Varid{con}(\Conid{Let})\;{}\<[E]%
+\>[3]{}\mathbf{con}\;\Conid{Let}\;{}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}\Varid{isStrict}{}\<[20]%
@@ -2617,7 +2640,7 @@ Like any ruler core program, the first step is to define the datatypes and inter
 \>[23]{}\Conid{Expr}{}\<[E]%
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{}\Varid{con}(\Conid{Lam})\;{}\<[E]%
+\>[3]{}\mathbf{con}\;\Conid{Lam}\;{}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}\Varid{arg}{}\<[20]%
@@ -2630,7 +2653,7 @@ Like any ruler core program, the first step is to define the datatypes and inter
 \>[23]{}\Conid{Expr}{}\<[E]%
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{}\Varid{con}(\Conid{AppTop})\;{}\<[E]%
+\>[3]{}\mathbf{con}\;\Conid{AppTop}\;{}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}\Varid{expr}{}\<[20]%
@@ -2648,14 +2671,14 @@ Like any ruler core program, the first step is to define the datatypes and inter
 \column{20}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{23}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[3]{}\Varid{con}(\Conid{Parens})\;{}\<[E]%
+\>[3]{}\mathbf{con}\;\Conid{Parens}\;{}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}\Varid{expr}{}\<[20]%
 \>[20]{}\mathbin{:}{}\<[23]%
 \>[23]{}\Conid{Expr}{}\<[E]%
 \\
-\>[3]{}\Varid{con}(\Conid{TypeAs})\;{}\<[E]%
+\>[3]{}\mathbf{con}\;\Conid{TypeAs}\;{}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}\Varid{tyExpr}{}\<[20]%
@@ -2666,7 +2689,7 @@ Like any ruler core program, the first step is to define the datatypes and inter
 \>[20]{}\mathbin{:}{}\<[23]%
 \>[23]{}\Conid{Expr}{}\<[E]%
 \\
-\>[3]{}\Varid{con}(\Conid{DataFields})\;{}\<[E]%
+\>[3]{}\mathbf{con}\;\Conid{DataFields}\;{}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}\Varid{dataFieldExpr}{}\<[20]%
@@ -2719,13 +2742,13 @@ Like any ruler core program, the first step is to define the datatypes and inter
 \label{abs:fig:expr}
 \end{figure}
 
-Although datatypes are defined in figure \ref{abs:fig:expr}, there are no declarations for \emph{case} statements. This was done intentionally as \emph{case} statements are an extension of the base implementation, which will be covered in chapter \ref{cap:Extensions}. This version of EH also only has build-in support for the \emph{Int} and \emph{Char} primitive types.
+Although datatypes are defined in figure \ref{abs:fig:expr}, there are no declarations for \emph{case} statements. This was done intentionally as \emph{case} statements are an extension of the base implementation, which will be covered in chapter \ref{cap:Extensions}. This version of EH only has build-in support for the \emph{Int} and \emph{Char} primitive types.
 
 The interface is rather simple, in the \emph{infer} visit the inherited attributes are declared. These consist of a Gamma $\Gamma$, the Prefix $Q$ and expression to infer. The \emph{frs} attribute is used in almost every visit to generate fresh variables. If this value is not passed in a visit then it could trigger a type clash. Generating fresh variables in such a manner has the benefit that it makes every free variable unique, which in turn makes it easier to track down problems. With the exception of type inference for variables, every case in the semantics of $\emph{Expr}$ should return types that are fully quantified. In other words, types which have no free variables. Variables are never directly returned to the user. They are always used as part of a bigger expression. The expression using the variable is responsible to generalizing the type of the variable and thus returning a quantified type.
 
 Before continuing a small explanation of how EH is constructed is needed:
 \subsection{Ordering}
-Whenever a Haskell file is desugared into EH, some reordering is done. In EH function,data declarations and type synonyms are always displayed before any function or other entities that uses them. Or alternatively, for every entity (where entity can be anything that refers to another type/function) a node is created and a dependency graph is made, which is then \emph{Topologically sorted}, that is, for every pair of edge \emph{uv} (\emph{u} is used in \emph{v}) \emph{u} comes before \emph{v}. It is worth noting that datatype and type synonym declarations are always put at the top of the file, before the function declarations.
+Whenever a Haskell file is desugared into EH, some reordering is done. In EH function, data declarations and type synonyms are always displayed before any function or other entities that uses them. Or alternatively, for every entity (where entity can be anything that refers to another type/function) a node is created and a dependency graph is made, which is then \emph{Topologically sorted}, that is, for every pair of edge \emph{uv} (\emph{u} is used in \emph{v}) \emph{u} comes before \emph{v}. It is worth noting that datatype and type synonym declarations are always put at the top of the file, before the function declarations.
 
 Mutual recursion like the ones below are handled a bit differently. But they still need to be supported non the less.
 
@@ -2746,7 +2769,7 @@ Mutual recursion like the ones below are handled a bit differently. But they sti
 \label{fig:mutrecurse}
 \end{figure}
 
-The functions \ensuremath{\Varid{foo}} and \ensuremath{\Varid{bar}} never terminate, but they should however type check. For datatypes nothing special needs to be done to make EH support mutual recursion. When processing datatypes the declarations are parsed and constructor functions created. The desugaring to EH already does the sanity checking of making sure all types exist. The same is done for functions and type synonyms. The EH syntax for \emph{Let} allows the binding of multiple \emph{Decl} at once. For the example this means that there will be one \emph{Let} binding with both \emph{foo} and \emph{bar} at the same time.
+The functions \ensuremath{\Varid{foo}} and \ensuremath{\Varid{bar}} never terminate, but they should however type check. For datatypes nothing special needs to be done to make EH support mutual recursion. When processing datatypes, the declarations are parsed and constructor functions created. The desugaring to EH already does the sanity checking of making sure all types exist. The same is done for functions and type synonyms. The EH syntax for \emph{Let} allows the binding of multiple \emph{Decl} at once. For the example this means that there will be one \emph{Let} binding with both \emph{foo} and \emph{bar} at the same time.
 
 Any Haskell module after being desugared to EH is turned into one big \emph{Let} statement, terminating in either 0 or \emph{main} depending on if an actual main function is defined in the module.
 
@@ -2780,7 +2803,7 @@ Figure \ref{fig:mutrecurse}, which does not define a main is desugered into:
 \ColumnHook
 \end{hscode}\resethooks
 
-Since \emph{main} is the top-level declaration since it is not dependent on anything, in every other cases where main is defined it will be put somewhere inside the dependency graph. In such cases the top level \emph{Let} will terminate \emph{in} main.
+The function \emph{main} is the top-level declaration since it is not dependent on anything, in every other cases where main is defined it will be put somewhere inside the dependency graph. In such cases the top level \emph{Let} will terminate \emph{in} main.
 \subsection{Semantics}
 
 The ordering that EH brings to a Haskell module is quite handy, especially for \ag code. \ag compilers do computations on attributes defined on the nodes of a tree. A Haskell file desugared into an EH file is now a Top-down tree, where the only case that needs some special handling is mutual recursion. 
@@ -2804,7 +2827,7 @@ The case for variable and constants can be easily defined as:
 \>[B]{}\mathbf{datasem}\;\Conid{Expr}\;\Varid{monad}\;\Conid{IO}{}\<[E]%
 \\
 \>[B]{}\hsindent{5}{}\<[5]%
-\>[5]{}\mathbf{default}\mathbin{?}\Varid{sub}\mathrel{=}\Varid{const}\;\emptyset{}\<[E]%
+\>[5]{}\mathbf{default}\mathbin{?}\Varid{sub}\mathrel{=}\Varid{const}\;[\mskip1.5mu \mskip1.5mu]{}\<[E]%
 \\
 \>[B]{}\hsindent{5}{}\<[5]%
 \>[5]{}\mathbf{default}\mathbin{?}\Varid{pre}\mathrel{=}\Varid{last}{}\<[E]%
@@ -2829,7 +2852,7 @@ The case for variable and constants can be easily defined as:
 \>[20]{}\to \Varid{return}\;\Varid{a}{}\<[E]%
 \\
 \>[11]{}\hsindent{1}{}\<[12]%
-\>[12]{}\Conid{Nothing}\to \Varid{error}\;(\text{\tt \char34 Variable~'\char34}\cup \Varid{show}\;\mathbf{loc}\mbox{.}\Varid{nm}\cup \text{\tt \char34 '~not~found\char34}){}\<[E]%
+\>[12]{}\Conid{Nothing}\to \Varid{error}\;(\text{\tt \char34 Variable~'\char34}\;++\;\Varid{show}\;\mathbf{loc}\mbox{.}\Varid{nm}\;++\;\text{\tt \char34 '~not~found\char34}){}\<[E]%
 \\
 \>[B]{}\hsindent{5}{}\<[5]%
 \>[5]{}\mathbf{clause}\;\Conid{IConst}\;{}\<[E]%
@@ -3033,7 +3056,7 @@ $\alpha_1$ and $\alpha_2$ represent the function and argument types respectively
 \>[17]{}\Varid{ret}{}\<[22]%
 \>[22]{}\mathrel{=}\Conid{TyScheme\char95 Sugar}\;\mathbf{loc}\mbox{.}q_5\;(\Conid{TyScheme\char95 SystemF}\;\Varid{e}){}\<[E]%
 \\
-\>[12]{}\mathbf{in}\;\Varid{return}\mathbin{\$}\Varid{desugar}\;\Varid{ret}{}\<[E]%
+\>[12]{}\mathbf{in}\;\Varid{return}\;(\Varid{desugar}\;\Varid{ret}){}\<[E]%
 \\
 \>[B]{}\mathbf{loc}\mbox{.}\Varid{temp\char95 sub}\mathrel{=}{}\<[17]%
 \>[17]{}\mathbf{let}\;\Varid{subs}\mathrel{=}\Varid{func}\mbox{.}\Varid{sub}\cup \Varid{arg}\mbox{.}\Varid{sub}{}\<[E]%
@@ -3097,7 +3120,7 @@ The bindings are preprocessed in order to support mutual recursive functions. Wh
 \>[12]{}\mathrel{=}\mathbf{loc}\mbox{.}\Varid{frs}{}\<[E]%
 \\
 \>[B]{}\Varid{decls}\mbox{.}\mathbf{sig}{}\<[12]%
-\>[12]{}\mathrel{=}Gamma \;\emptyset{}\<[E]%
+\>[12]{}\mathrel{=}Gamma \;[\mskip1.5mu \mskip1.5mu]{}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
 After this preprocessing step all the declarations can now be handled sequentially with no problem.
@@ -3131,7 +3154,7 @@ After this preprocessing step all the declarations can now be handled sequential
 After every declaration in the let is processed then the body can be typechecked.
 
 \paragraph{Lambda abstraction}
-Typechecking a $\lambda-abstraction$ requires that is possible to typecheck pattern expressions. However for brevity's sake pattern expression inference will not be covered in-depth. Essentially inference for pattern expressions work the same way as for normal expressions, since patterns are a subset of the constructs of the expression data type. There is one major and important difference however: Types in pattern expressions are always quantified in the prefix environment/attribute whereas types in the expression inference are always fully quantified in the type itself. The reason for this is that the results of a pattern expressions are never directly used as a result, and as a result it is much easier to use them when they are quantified in the prefix. Variables can also be shared, if they were to be returned fully quantified then all of the variables would be distinct instead of being them same.
+Type checking a $\lambda-abstraction$ requires that is possible to type check pattern expressions. However for brevity's sake pattern expression inference will not be covered in-depth. Essentially inference for pattern expressions work the same way as for normal expressions, since patterns are a subset of the constructs of the expression data type. There is one major and important difference however: Types in pattern expressions are always quantified in the prefix environment/attribute whereas types in the expression inference are always fully quantified in the type itself. The reason for this is that the results of a pattern expressions are never directly used as a result, and as a result it is much easier to use them when they are quantified in the prefix. Variables can also be shared, if they were to be returned fully quantified then all of the variables would be distinct instead of being them same.
 
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
@@ -3223,7 +3246,7 @@ After inferring the type of the body some extra information is gained on the arg
 \column{24}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{26}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[B]{}(\mathbf{loc}\mbox{.}\Varid{pre},\mathbf{loc}\mbox{.}\Varid{phi1'}){}\<[23]%
+\>[B]{}(\mathbf{loc}\mbox{.}\Varid{pre},\mathbf{loc}\mbox{.}\varphi^{}_{1}){}\<[23]%
 \>[23]{}\mathrel{=}\Varid{deep\char95 explode}\;\Varid{body}\mbox{.}\Varid{pre}\;\mathbf{loc}\mbox{.}phi_1{}\<[E]%
 \\
 \>[B]{}(\mathbf{loc}\mbox{.}q_2,{}\<[11]%
@@ -3233,8 +3256,8 @@ After inferring the type of the body some extra information is gained on the arg
 \\
 \>[26]{}\mathbf{in}\;\Varid{curry}\;\Varid{split}\;\mathbf{loc}\mbox{.}\Varid{pre}\;\Varid{range}{}\<[E]%
 \\
-\>[B]{}(\mathbf{loc}\mbox{.}\Varid{q3'},\mathbf{loc}\mbox{.}\Varid{e3'}){}\<[23]%
-\>[23]{}\mathrel{=}\Varid{extend}\;(\mathbf{loc}\mbox{.}q_3,(\Conid{Scheme\char95 Simple}\;\mathbf{loc}\mbox{.}\beta\;\mathbf{loc}\mbox{.}\Varid{phi1'})){}\<[E]%
+\>[B]{}(\mathbf{loc}\mbox{.}q^{}_{3},\mathbf{loc}\mbox{.}\Varid{e3'}){}\<[23]%
+\>[23]{}\mathrel{=}\Varid{extend}\;(\mathbf{loc}\mbox{.}q_3,(\Conid{Scheme\char95 Simple}\;\mathbf{loc}\mbox{.}\beta\;\mathbf{loc}\mbox{.}\varphi^{}_{1})){}\<[E]%
 \\[\blanklineskip]%
 \>[B]{}\mathbf{lhs}\mbox{.}\Varid{res}\mathrel{=}{}\<[12]%
 \>[12]{}\mathbf{let}\;{}\<[17]%
@@ -3247,7 +3270,7 @@ After inferring the type of the body some extra information is gained on the arg
 \>[17]{}\Varid{arrow}{}\<[24]%
 \>[24]{}\mathrel{=}\Varid{a'}\mathbin{`\Varid{mkArrow}`}\Varid{b'}{}\<[E]%
 \\
-\>[12]{}\mathbf{in}\;\Varid{desugar}\;(\Conid{TyScheme\char95 Sugar}\;\mathbf{loc}\mbox{.}\Varid{q3'}\;(\Conid{TyScheme\char95 SystemF}\;\Varid{arrow})){}\<[E]%
+\>[12]{}\mathbf{in}\;\Varid{desugar}\;(\Conid{TyScheme\char95 Sugar}\;\mathbf{loc}\mbox{.}q^{}_{3}\;(\Conid{TyScheme\char95 SystemF}\;\Varid{arrow})){}\<[E]%
 \\
 \>[B]{}\mathbf{lhs}\mbox{.}\Varid{sub}{}\<[10]%
 \>[10]{}\mathrel{=}\Varid{body}\mbox{.}\Varid{sub}{}\<[E]%
@@ -3261,7 +3284,7 @@ After inferring the type of the body some extra information is gained on the arg
 \end{hscode}\resethooks
 The prefix is then separated from the rest of the type inferred for the body of the expression. \ensuremath{\Varid{deep\char95 explode}} is a more aggressive form of the \ensuremath{\Varid{explode}} function, in that it removes the quantifications always, and not just when the normal form of the type is a \ensuremath{\bot}. The original specification does not have this step and because of this produces very complex type schemes. Adding this step does not reduce the flexibility of the type schemes but does increase the readability of the result type. 
 During generalization some extra work is needed to assure than when a type is present in both the result of a call to inference and the resulting prefix, that it is qualified in the prefix instead of the type.
-The reachedBy function just returnes the first input argument containing the \ensuremath{\Varid{dom}(\Conid{Q})} and the codomain of every substitution whose domain intersects with the domain of Q or the codomain with the codomain of another substitution which does. This is important for expressions such as \ensuremath{\lambda \Varid{f}\to (\lambda \Varid{x}\to \Varid{f}\;\Varid{x})\;(\lambda \Varid{x}\to \Varid{f}\;\Varid{x})}. The original specification does not have this step, and because of this incorrectly type checks this function. The original specifcation is a little too eager when it comes to generalizations. After this the final type for the abstraction can be constructed.
+The \ensuremath{\Varid{reachedBy}} function just returns the first input argument containing the \ensuremath{\Varid{dom}(\Conid{Q})} and the \ensuremath{\Varid{codomain}} of every substitution whose domain intersects with the domain of \ensuremath{\Conid{Q}} or the \ensuremath{\Varid{codomain}} with the \ensuremath{\Varid{codomain}} of another substitution which does. This is important for expressions such as \ensuremath{\lambda \Varid{f}\to (\lambda \Varid{x}\to \Varid{f}\;\Varid{x})\;(\lambda \Varid{x}\to \Varid{f}\;\Varid{x})}. The original specification does not have this step, and because of this incorrectly type checks this function. The original specification is a little too eager when it comes to generalizations. After this the final type for the abstraction can be constructed.
 
 \section{Unification}
 Unification is the core part of this thesis. Unification is the first routine which requires traversing of two trees at the same time. The interface for unification is defined as:
@@ -3307,7 +3330,7 @@ Unification is the core part of this thesis. Unification is the first routine wh
 \ColumnHook
 \end{hscode}\resethooks
 
-The goal of the visit is to unify the type \emph{exp1} with the type \emph{exp2} under the prefix \emph{pre}. The result of a unification, if successful, is a substitution environment \emph{sub} and the prefix under which the two type are unified.
+The goal of the visit is to unify the type \ensuremath{exp_1} with the type \ensuremath{exp_2} under the prefix \emph{pre}. The result of a unification, if successful, is a substitution environment \emph{sub} and the prefix under which the two type are unified.
 
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
@@ -3363,7 +3386,7 @@ The goal of the visit is to unify the type \emph{exp1} with the type \emph{exp2}
 \>[32]{}\mathrel{=}\mathbf{loc}\mbox{.}\Varid{nf}{}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
-Before types can be unified there is a check to see if both types are in Normal form. Even though all SystemF types have been promoted to flexible types, part of the systemF types are still embedded inside the flexible type(e.g. applications, constructors etc). This is why the inherited attributes are all still SystemF types. Instead of providing an empty list as the default result of substitutions there is an error message with a fairly generic error. If the implementation is correct then this should never be printed.
+Before types can be unified there is a check to see if both types are in Normal form. Even though all SystemF types have been promoted to flexible types, part of the systemF types are still embedded inside the flexible type(e.g. applications, constructors etc). This is why the inherited attributes are all still SystemF types. There is instead of providing an empty list as the default result of substitutions an error message with a fairly generic error. If the implementation is correct then this should never be printed.
 
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
@@ -3411,7 +3434,7 @@ Before types can be unified there is a check to see if both types are in Normal 
 \>[14]{}\mathrel{=}\Varid{u}\mbox{.}\Varid{sub}{}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
-The clause \emph{LeftTop} and \emph{RightTop} are there just to strip away the \emph{AppTop} constructor from types. The \emph{AppTop} constructor is only used for pretty printing. After stripping the constructor the new expression is used to further unification. Though only \emph{LeftTop} is given \emph{RightTop} is the same, only ranging over the \emph{\ensuremath{\mathbf{lhs}\mbox{.}exp_2}} attribute.
+The clause \emph{LeftTop} and \emph{RightTop} are there just to strip away the \emph{AppTop} constructor from types. The \emph{AppTop} constructor is only used for pretty printing. After stripping the constructor the new expression is used to further unification. Though only \emph{LeftTop} is given \emph{RightTop} is the same, only ranging over the \ensuremath{\mathbf{lhs}\mbox{.}exp_2} attribute.
 
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
@@ -3481,7 +3504,7 @@ The actual physical parenthesis are also not needed. After parsing the order of 
 \>[7]{}\mathbf{match}\;\Conid{True}\mathrel{=}var_1\mbox{.}\Varid{nm}\equiv var_2\mbox{.}\Varid{nm}{}\<[E]%
 \\
 \>[5]{}\hsindent{2}{}\<[7]%
-\>[7]{}\mathbf{lhs}\mbox{.}\Varid{sub}\mathrel{=}\emptyset{}\<[E]%
+\>[7]{}\mathbf{lhs}\mbox{.}\Varid{sub}\mathrel{=}[\mskip1.5mu \mskip1.5mu]{}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
 When both expressions are variables there are a number of choices. The first of which is when the variables in both expression are the same. In that case unification for them succeeds due to the fact that the types are already equal. A empty substitution is therefore returned.
@@ -3574,7 +3597,7 @@ When the variables are not the same, then a check to see if both variables are b
 \>[19]{}\mathrel{=}\Varid{error}\;\text{\tt \char34 Domain~check~failed~in~Unify\char34}{}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
-In case both of the variables are bound in the prefix, their bounds are extracted and then bounded to the local attributes \emph{\ensuremath{phi_1}} and \emph{\ensuremath{phi_2}}. The next step is to check that neither bounds contain any reference to the other variable, in other words: \ensuremath{var_1\lambda \Varid{notin}\;\Varid{domain}\;(\mathbf{loc}\mbox{.}phi_1)\lambda \Varid{cap}\;var_2\lambda \Varid{notin}\;\Varid{domain}\;(\mathbf{loc}\mbox{.}phi_2)}. If this assertion is untrue then an error message is generated. This process is called rather aptly the "occurs check".
+In case both of the variables are bound in the prefix, their bounds are extracted and then bounded to the local attributes \emph{\ensuremath{phi_1}} and \emph{\ensuremath{phi_2}}. The next step is to check that neither bounds contain any reference to the other variable, in other words: \ensuremath{var_1\;\notin \;\Varid{domain}\;(\mathbf{loc}\mbox{.}phi_1)\lambda \cap \;var_2\;\notin \;\Varid{domain}\;(\mathbf{loc}\mbox{.}phi_2)}. If this assertion is untrue then an error message is generated. This process is called rather aptly the "occurs check".
 This "occurs check" is usually written as \ensuremath{\Varid{dom}(\Conid{Q}\mathbin{/}\varphi)}. It is meant to return the \emph{useful} domain of \ensuremath{\Conid{Q}} with respect to \ensuremath{\varphi}\cite{HML}. As an example \ensuremath{\Varid{dom}((\gamma\geq\bot,\beta\geq\forall\;\delta\mbox{.}\delta\to \gamma)\mathbin{/}(\forall\;\alpha\mbox{.}\alpha\to \beta))} is \ensuremath{\{\mskip1.5mu \beta,\gamma\mskip1.5mu\}} even though \ensuremath{\gamma\;\notin \;\Varid{ftv}\;(\forall\;\alpha\mbox{.}\alpha\to \beta)}. 
 
 \begin{hscode}\SaveRestoreHook
@@ -3646,7 +3669,7 @@ After extracting both type schemes a call to UnifyScheme is made in order to get
 \>[B]{}\mathbf{lhs}\mbox{.}\Varid{sub}\mathrel{=}\mathbf{loc}\mbox{.}e_3\underline{\cup} \mathbf{loc}\mbox{.}e_2\underline{\cup} \mathbf{loc}\mbox{.}e_1{}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
-The new prefix is updated with the new information. It starts by updating the prefix returned from the call to UnifyScheme with the substitution \ba{\ensuremath{var_1\mathbin{:=}var_2}}. This is done because the two variables are now equal, so the reference to one of them can be removed. Since we are trying to find out what \emph{\ensuremath{var_1}} is, we can safely write that \emph{\ensuremath{var_1}} is now \emph{\ensuremath{var_2}}. \emph{\ensuremath{var_2}} is then updated with the new bound \ensuremath{(\Varid{var\char95 2}\lambda \Varid{geq}\;\mathbf{loc}\mbox{.}\varphi)}. This updates the value of \emph{\ensuremath{var_2}} to the result of the Unification of the two type schemes. Lastly all the substitutions gathered are combined with the operator \ensuremath{\underline{\cup} } which inserts the substitutions in a place where the invariant is still maintained. After the substitutions are combined they are then returned.
+The new prefix is updated with the new information. It starts by updating the prefix returned from the call to UnifyScheme with the substitution \ba{\ensuremath{var_1\mathbin{:=}var_2}}. This is done because the two variables are now equal, so the reference to one of them can be removed. Since we are trying to find out what \emph{\ensuremath{var_1}} is, we can safely write that \emph{\ensuremath{var_1}} is now \emph{\ensuremath{var_2}}. \emph{\ensuremath{var_2}} is then updated with the new bound \ensuremath{(var_2\geq\mathbf{loc}\mbox{.}\varphi)}. This updates the value of \emph{\ensuremath{var_2}} to the result of the Unification of the two type schemes. Lastly all the substitutions gathered are combined with the operator \ensuremath{\underline{\cup} } which inserts the substitutions in a place where the invariant is still maintained. After the substitutions are combined they are then returned.
 
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
@@ -3678,7 +3701,7 @@ The new prefix is updated with the new information. It starts by updating the pr
 \\
 \>[6]{}\hsindent{2}{}\<[8]%
 \>[8]{}\mathbf{lhs}\mbox{.}\Varid{sub}{}\<[20]%
-\>[20]{}\mathrel{=}\emptyset{}\<[E]%
+\>[20]{}\mathrel{=}[\mskip1.5mu \mskip1.5mu]{}\<[E]%
 \\
 \>[3]{}\hsindent{3}{}\<[6]%
 \>[6]{}\mathbf{clause}\;\Varid{failed1}\;{}\<[E]%
@@ -3795,7 +3818,7 @@ Applications are also easy: If both types are an Application then two calls to U
 \>[33]{}(\Conid{TyScheme\char95 SystemF}\;\mathbf{loc}\mbox{.}\Varid{expr}){}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
-This next case deals with when only one of the expressions is a variable and the other an arbitrary expression (but not a variable). What to do when the first expression (lhs.exp1) is a variable is handled here, but there is a similar clause for when the second expression (lhs.exp2) is a variable. 
+This next case deals with when only one of the expressions is a variable and the other an arbitrary expression (but not a variable). What to do when the first expression \ensuremath{(\mathbf{lhs}\mbox{.}exp_1)} is a variable is handled here, but there is a similar clause for when the second expression \ensuremath{(\mathbf{lhs}\mbox{.}exp_2)} is a variable. 
 First the binding to the variable is looked up in the prefix. Afterwards there is a check to see if the domain of that type contains any reference to the variable itself (infinite type check).
                            
 \begin{hscode}\SaveRestoreHook
@@ -3937,7 +3960,7 @@ The updated prefix and complete substitution list is then returned. In case the 
 \>[11]{}\mathrel{=}\Varid{u}\mbox{.}\Varid{sub}{}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
-If the goal was to unify two quantified SystemF expressions (should not occur naturally in the call to unify since quantified systemF expressions are promoted to type schemes, but can occur when unifying function annotations with the infered type.) the quantifier of both types are replaced with the same skolem variable. The idea is to check if both types have the same structure. Since they are equally quantified, if they have the same structure than they are the same type.
+If the goal was to unify two quantified SystemF expressions (should not occur naturally in the call to unify since quantified systemF expressions are promoted to type schemes, but can occur when unifying function annotations with the inferred type.) the quantifier of both types are replaced with the same skolem variable. The idea is to check if both types have the same structure. Since they are equally quantified, if they have the same structure than they are the same type.
 A skolem variable is a type that only unifies with itself and other normal variables. It is sometimes also referred to as a \emph{Rigid} type\footnote{Those familiar with GHC will recognize this. Although GHC $\geq$ 7.0 also refer to them as skolem variables}. In this implementation a special constructor (names starting with a lowercase "s") is used to implement skolem variables.
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
@@ -4003,7 +4026,7 @@ At the end a check is performed to see if the skolem variable used has leaked ou
 \end{hscode}\resethooks
 
 \section{Instantiation}
-Another major part of the type system is instantiation. Instantiation (referred to as subsume) tries to find if the type scheme \emph{lhs.ty} can be modified into the systemF type \emph{lhs.exp}. Instantiation is critical to the support of higher-rank types.
+Another major part of the type system is instantiation. Instantiation (referred to as subsume) tries to find if the type scheme \emph{lhs.ty} can be modified into the SystemF type \emph{lhs.exp}. Instantiation is critical to the support of higher-rank types.
 
 The interface to subsume is:
 \begin{hscode}\SaveRestoreHook
@@ -4056,8 +4079,13 @@ The only important inputs are the Prefix, TyExpr and TyScheme to use during inst
 \column{17}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{21}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{23}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{27}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{52}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{27}{@{}>{\hspre}c<{\hspost}@{}}%
+\column{27E}{@{}l@{}}%
+\column{30}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{33}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{52}{@{}>{\hspre}c<{\hspost}@{}}%
+\column{52E}{@{}l@{}}%
+\column{55}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
 \>[B]{}\Varid{subsume}\mathrel{=}\mathbf{sem}\;\Varid{subsume}\mathbin{:}\Conid{Subsume}\;\Varid{monad}\;\Conid{IO}{}\<[E]%
 \\
@@ -4065,25 +4093,37 @@ The only important inputs are the Prefix, TyExpr and TyScheme to use during inst
 \>[14]{}\mathbf{visit}\;\Varid{subsume}{}\<[E]%
 \\
 \>[14]{}\hsindent{2}{}\<[16]%
-\>[16]{}\mathbf{default}\mathbin{?}\Varid{pre}\mathrel{=}\Varid{last}{}\<[E]%
+\>[16]{}\mathbf{default}\mathbin{?}\Varid{pre}{}\<[30]%
+\>[30]{}\mathrel{=}{}\<[33]%
+\>[33]{}\Varid{last}{}\<[E]%
 \\
 \>[14]{}\hsindent{2}{}\<[16]%
-\>[16]{}\mathbf{default}\mathbin{?}\Varid{frs}\mathrel{=}\Varid{last}{}\<[E]%
+\>[16]{}\mathbf{default}\mathbin{?}\Varid{frs}{}\<[30]%
+\>[30]{}\mathrel{=}{}\<[33]%
+\>[33]{}\Varid{last}{}\<[E]%
 \\
 \>[14]{}\hsindent{2}{}\<[16]%
 \>[16]{}\mathbf{clause}\;\Conid{Main\char95 subsume}\;{}\<[E]%
 \\
 \>[16]{}\hsindent{1}{}\<[17]%
+\>[17]{}\mathbf{loc}\mbox{.}\Varid{ty}{}\<[27]%
+\>[27]{}\mathrel{=}{}\<[27E]%
+\>[30]{}\Varid{nf}\;\mathbf{lhs}\mbox{.}\Varid{ty}{}\<[E]%
+\\
+\>[16]{}\hsindent{1}{}\<[17]%
 \>[17]{}\mathbf{loc}\mbox{.}\Varid{nfTy}{}\<[27]%
-\>[27]{}\mathrel{=}\Varid{isNf}\;\mathbf{lhs}\mbox{.}\Varid{exp}{}\<[E]%
+\>[27]{}\mathrel{=}{}\<[27E]%
+\>[30]{}\Varid{isNf}\;\mathbf{lhs}\mbox{.}\Varid{exp}{}\<[E]%
 \\
 \>[16]{}\hsindent{1}{}\<[17]%
 \>[17]{}\mathbf{loc}\mbox{.}\Varid{nfTs}{}\<[27]%
-\>[27]{}\mathrel{=}\Varid{isNf}\;\mathbf{lhs}\mbox{.}\Varid{ty}{}\<[E]%
+\>[27]{}\mathrel{=}{}\<[27E]%
+\>[30]{}\Varid{isNf}\;\mathbf{loc}\mbox{.}\Varid{ty}{}\<[E]%
 \\
 \>[16]{}\hsindent{1}{}\<[17]%
 \>[17]{}\mathbf{loc}\mbox{.}\Varid{nf}{}\<[27]%
-\>[27]{}\mathrel{=}\mathbf{loc}\mbox{.}\Varid{nfTy}\mathrel{\wedge}\mathbf{loc}\mbox{.}\Varid{nfTs}{}\<[E]%
+\>[27]{}\mathrel{=}{}\<[27E]%
+\>[30]{}\mathbf{loc}\mbox{.}\Varid{nfTy}\mathrel{\wedge}\mathbf{loc}\mbox{.}\Varid{nfTs}{}\<[E]%
 \\
 \>[16]{}\hsindent{1}{}\<[17]%
 \>[17]{}\mathbf{internal}\;\Varid{nf\char95 check}\;{}\<[E]%
@@ -4093,18 +4133,21 @@ The only important inputs are the Prefix, TyExpr and TyScheme to use during inst
 \\
 \>[21]{}\hsindent{2}{}\<[23]%
 \>[23]{}\mathbf{match}\;\Conid{True}{}\<[52]%
-\>[52]{}\mathrel{=}\mathbf{loc}\mbox{.}\Varid{nf}{}\<[E]%
+\>[52]{}\mathrel{=}{}\<[52E]%
+\>[55]{}\mathbf{loc}\mbox{.}\Varid{nf}{}\<[E]%
 \\
 \>[21]{}\hsindent{2}{}\<[23]%
 \>[23]{}\mathbf{match}\;\Conid{\Conid{TyExpr}.Forall}\mathord{@}\Varid{exp}{}\<[52]%
-\>[52]{}\mathrel{=}\Varid{mkForall}\;\mathbf{lhs}\mbox{.}\Varid{exp}{}\<[E]%
+\>[52]{}\mathrel{=}{}\<[52E]%
+\>[55]{}\Varid{mkForall}\;\mathbf{lhs}\mbox{.}\Varid{exp}{}\<[E]%
 \\
 \>[21]{}\hsindent{2}{}\<[23]%
 \>[23]{}\mathbf{match}\;\Conid{\Conid{TyScheme}.Sugar}\mathord{@}\Varid{scheme}{}\<[52]%
-\>[52]{}\mathrel{=}\Varid{sugar}\;\mathbf{lhs}\mbox{.}\Varid{ty}{}\<[E]%
+\>[52]{}\mathrel{=}{}\<[52E]%
+\>[55]{}\Varid{sugar}\;\mathbf{loc}\mbox{.}\Varid{ty}{}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
-In order for instantiation to be performed, both type have to be in normal form. This version of subsume also handles types not in normal form correctly, but the checks serve as a sanity check for the rest of the code, to make sure no type is  generated that is too complicated or incorrectly nested. For example a type that violates the semantics of type schemes would be instantiated incorrectly if this check is not present, but a type which is not in normal form but does not violate the semantics would be instantiated correctly.
+In order for instantiation to be performed, both type have to be in normal form. If this is not the case, they are converted into normal form. Because of the promotion of SystemF types, sometimes types that are valid but not in normal form are passed to this function. This conversion reduces the amount of steps needed to instantiate the type. This version of subsume also handles types not in normal form correctly, but the checks serve as a sanity check for the rest of the code, to make sure no type is  generated that is too complicated or incorrectly nested. For example a type that violates the semantics of type schemes would be instantiated incorrectly if this check is not present, but a type which is not in normal form but does not violate the semantics would be instantiated correctly.
 The calls to \emph{mkForall} and \emph{sugar} allows the binding of every \emph{outer-quantifiers} in one call instead of one by one removing them recursively in AG code.
 
 \begin{hscode}\SaveRestoreHook
@@ -4123,7 +4166,7 @@ The calls to \emph{mkForall} and \emph{sugar} allows the binding of every \emph{
 \\
 \>[B]{}(\mathbf{loc}\mbox{.}\Varid{c},\mathbf{loc}\mbox{.}frs_1)\mathrel{=}\Varid{freshS}\;\mathbf{lhs}\mbox{.}\Varid{frs}\;(\Varid{length}\;\Varid{exp}\mbox{.}\Varid{tyVar}){}\<[E]%
 \\
-\>[B]{}\mathbf{loc}\mbox{.}\Varid{qq2}\mathrel{=}\mathbf{loc}\mbox{.}\Varid{q}\cup \mathbf{loc}\mbox{.}q_2{}\<[E]%
+\>[B]{}\mathbf{loc}\mbox{.}qq_2\mathrel{=}\mathbf{loc}\mbox{.}\Varid{q}\cup \mathbf{loc}\mbox{.}q_2{}\<[E]%
 \\[\blanklineskip]%
 \>[B]{}\mathbf{loc}\mbox{.}p_1{}\<[9]%
 \>[9]{}\mathrel{=}\Varid{dropScheme}\;\Varid{scheme}\mbox{.}\Varid{tyExpr}{}\<[E]%
@@ -4136,7 +4179,7 @@ The calls to \emph{mkForall} and \emph{sugar} allows the binding of every \emph{
 \>[16]{}\Varid{appAll}\;\Varid{skol}\;\Varid{exp}\mbox{.}\Varid{tyExpr}{}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
-Since the goal is to instantiate the type scheme (\emph{scheme}) to the SystemF type (\emph{exp}), the type scheme bounds of that type are added to the prefix resulting in the value (\emph{\ensuremath{\mathbf{loc}\mbox{.}\Varid{qq2}}}). 
+Since the goal is to instantiate the type scheme (\emph{scheme}) to the SystemF type (\emph{exp}), the type scheme bounds of that type are added to the prefix resulting in the value (\ensuremath{\mathbf{loc}\mbox{.}qq_2}). 
 The binding of attribute \emph{\ensuremath{p_1}} has a call to \emph{dropScheme} which does not do anything but ensure that the type is a SystemF type wrapped inside a type scheme (e.g. that the scheme.tyExpr type is not $\bot$ or any other TyScheme value). \emph{\ensuremath{p_2}} has an interesting construct but it essentially does skolemization. It replaces every bound type variables in the type to a skolem variable.
 
 \begin{hscode}\SaveRestoreHook
@@ -4147,7 +4190,7 @@ The binding of attribute \emph{\ensuremath{p_1}} has a call to \emph{dropScheme}
 \>[B]{}\mathbf{child}\;\Varid{u}\mathbin{:}\Conid{Unify}\mathrel{=}\Varid{unify}{}\<[E]%
 \\
 \>[B]{}\Varid{u}\mbox{.}\Varid{pre}{}\<[8]%
-\>[8]{}\mathrel{=}\mathbf{loc}\mbox{.}\Varid{qq2}{}\<[E]%
+\>[8]{}\mathrel{=}\mathbf{loc}\mbox{.}qq_2{}\<[E]%
 \\[\blanklineskip]%
 \>[B]{}\Varid{u}\mbox{.}exp_1{}\<[9]%
 \>[9]{}\mathrel{=}\mathbf{loc}\mbox{.}p_1{}\<[E]%
@@ -4165,13 +4208,16 @@ The binding of attribute \emph{\ensuremath{p_1}} has a call to \emph{dropScheme}
 \>[9]{}\mathrel{=}\Varid{u}\mbox{.}\Varid{sub}{}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
-After preparing the two new input functions, the new unify co-routine is declared and invoked. The original specifications for \ensuremath{\Varid{subsume}} incorrectly switches the order of \ensuremath{p_1} and \ensuremath{p_2}. This is a critical error in that it switches the type that is to be instantiated with the type it should be instantiated with. The effect of this is that \ensuremath{\Varid{generalization}} generates incorrect types or incorrectly quantified types such as \ensuremath{(\alpha\geq\lambda \bot)\mbox{.}\Conid{Bool}}.
+After preparing the two new input functions, the new unify co-routine is declared and invoked. The original specifications for \ensuremath{\Varid{subsume}} incorrectly switches the order of \ensuremath{p_1} and \ensuremath{p_2}. This is a critical error in that it switches the type that is to be instantiated with the type it should be instantiated with. The effect of this is that \ensuremath{\Varid{generalization}} generates incorrect types or incorrectly quantified types such as \ensuremath{(\alpha\geq\bot)\mbox{.}\Conid{Bool}}.
 This ultimately results in information loss and an error depending on the complexity of the expression.
 
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{11}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{12}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{13}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{17}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{24}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
 \>[B]{}(\mathbf{loc}\mbox{.}q_3,\mathbf{loc}\mbox{.}q_4)\mathrel{=}\Varid{split}\;(\mathbf{loc}\mbox{.}q_1,\Varid{domain}\;\mathbf{loc}\mbox{.}\Varid{q}){}\<[E]%
 \\
@@ -4180,15 +4226,23 @@ This ultimately results in information loss and an error depending on the comple
 \\
 \>[11]{}\mathbf{in}\;\mathbf{loc}\mbox{.}e_1-\Varid{x}{}\<[E]%
 \\
-\>[B]{}\mathbf{loc}\mbox{.}\Varid{codom}{}\<[12]%
-\>[12]{}\mathrel{=}\Varid{nub}\;(\Varid{skolems}\;\mathbf{loc}\mbox{.}e_2\cup \Varid{skolems}\;\mathbf{loc}\mbox{.}q_3){}\<[E]%
+\>[B]{}\mathbf{loc}\mbox{.}\Varid{codom}\mathrel{=}\mathbf{let}\;\Varid{except}\mathrel{=}\Varid{nub}\;(\Varid{domain}\;\mathbf{loc}\mbox{.}\Varid{q}\mathbin{\char92 \char92 }\Varid{prefixDom}\;\mathbf{loc}\mbox{.}\Varid{q}){}\<[E]%
+\\
+\>[B]{}\hsindent{17}{}\<[17]%
+\>[17]{}\Varid{skols}{}\<[24]%
+\>[24]{}\mathrel{=}\Varid{filter}\;((\in \Varid{except})\mbox{.}\Varid{fst})\;\mathbf{loc}\mbox{.}e_1{}\<[E]%
+\\
+\>[B]{}\hsindent{13}{}\<[13]%
+\>[13]{}\mathbf{in}\;{}\<[17]%
+\>[17]{}(\Varid{nub}\;(\Varid{skolems}\;\mathbf{loc}\mbox{.}e_2\cup \Varid{skolems}\;\mathbf{loc}\mbox{.}q_3))\mathbin{\char92 \char92 }\Varid{skolems}\;\Varid{skols}{}\<[E]%
 \\
 \>[B]{}\mathbf{loc}\mbox{.}\Varid{check}{}\<[12]%
 \>[12]{}\mathrel{=}\Varid{any}\;(`elem`\;\mathbf{loc}\mbox{.}\Varid{codom})\;\mathbf{loc}\mbox{.}\Varid{c}{}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
 The resulting prefix \emph{\ensuremath{\mathbf{loc}\mbox{.}q_1}} is generalized based on the original prefix. \emph{\ensuremath{\mathbf{loc}\mbox{.}q_3}} contains the updated values (if any) of the prefix that was originally given to the visit, whereas \emph{\ensuremath{\mathbf{loc}\mbox{.}q_4}} contains any prefixes which do not have any direct effect on the instantiation. Using this prefix we can then apply scoping to the list of substitutions received from the unification call. This way the only substitutions returned are those that have a direct effect on the instantiation of the input type.
-The local attribute \emph{codom} contains every skolem variable in the substitution environment and the prefix returned from unify. \emph{check} then checks to see if any of these skolem variables are variables that were defined by the current instantiation call. These two attributes are there to prevent any skolem variables from leaking from instantiation.
+The local attribute \emph{codom} contains every skolem variable in the substitution environment and the prefix returned from unify. The broader definition of the domain of prefixes cause a problem here. This broader definition mistakenly exports substitutions that shouldn't be exported. This is corrected by using the \ensuremath{\Varid{prefixDom}} function, which defines the domain of a prefix to be just the \ensuremath{\Varid{variables}} to the left size of the first \ensuremath{\geq}, \ensuremath{\Varid{dom}(\alpha\geq(\beta\geq\bot))\mathrel{=}\{\mskip1.5mu \alpha\mskip1.5mu\}}. With this definition a list of \ensuremath{\Varid{exceptions}} are generated. Which are a list of variables that should not be checked for a leak. Even if they do contain a skolem variable, they are never used beyond this point. And if they do not contain a skolem variable they most likely will be used. Which is why we cannot simply remove them from \ensuremath{\mathbf{loc}\mbox{.}e_2}.
+The \emph{check} attributes contains the result of the check to see if any of these skolem variables are variables that were defined by the current instantiation call. These two attributes are there to prevent any skolem variables from leaking from instantiation.
 
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
@@ -4242,7 +4296,7 @@ If no skolems are leaked then just return the prefix and substitution, otherwise
 \>[37]{}\mathrel{=}\mathbf{loc}\mbox{.}\Varid{nf}{}\<[E]%
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{}\mathbf{match}\;(\mathbf{loc}\mbox{.}\Varid{fo},\Conid{\Conid{TyScheme}.Bottom}\mathord{@}\Varid{l})\mathrel{=}((),\Varid{sugar}\;\mathbf{lhs}\mbox{.}\Varid{ty}){}\<[E]%
+\>[3]{}\mathbf{match}\;(\mathbf{loc}\mbox{.}\Varid{fo},\Conid{\Conid{TyScheme}.Bottom}\mathord{@}\Varid{l})\mathrel{=}((),\Varid{sugar}\;\mathbf{loc}\mbox{.}\Varid{ty}){}\<[E]%
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
 \>[3]{}\mathbf{lhs}\mbox{.}\Varid{sub}\mathrel{=}\emptyset{}\<[E]%
@@ -4256,7 +4310,7 @@ If no skolems are leaked then just return the prefix and substitution, otherwise
 \>[3]{}\mathbf{lhs}\mbox{.}\Varid{sub}\mathrel{=}\Varid{const}\;(\Varid{error}\mathbin{...})\;\mathbf{loc}\mbox{.}\Varid{bla}\mbox{\onelinecomment  skolem form error}{}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
-The last two clauses are for when the type is instantiated with a $\bot$ and for when the type was not in normal form. In the former we just immediately return with an empty substitution list (nothing needs to be done, the types are already "equal") and in the latter an error is given. The specification of \cite{HML} does not have the $\bot$ case. This results in the inability to typecheck expressions such as \ensuremath{\Varid{id}\;\Varid{id}} where the type of id is a type scheme \ensuremath{(\alpha\geq\lambda \bot)\mbox{.}\alpha\to \alpha}. This is beleived to be an oversight on the part of the author.
+The last two clauses are for when the type is instantiated with a $\bot$ and for when the type was not in normal form. In the former we just immediately return with an empty substitution list (nothing needs to be done, the types are already "equal") and in the latter an error is given. The specification of \cite{HML} does not have the $\bot$ case. This results in the inability to type check expressions such as \ensuremath{\Varid{id}\;\Varid{id}} where the type of id is a type scheme \ensuremath{(\alpha\geq\lambda \bot)\mbox{.}\alpha\to \alpha}. This is believed to be an oversight on the part of the author.
 
 \section{Unify Scheme} 
 On occasion two type schemes need to be unified with each other, the interface to do this is defined as:
@@ -4465,7 +4519,7 @@ Inside the \emph{Expr} datatype there is this definition:
 \column{19E}{@{}l@{}}%
 \column{22}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[3]{}\Varid{con}(\Conid{Rec})\;{}\<[E]%
+\>[3]{}\mathbf{con}\;\Conid{Rec}\;{}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}\Varid{recExpr}{}\<[19]%
@@ -4488,10 +4542,10 @@ This particular constructor represents a tuple expression. \emph{RecExpr} is def
 \>[B]{}\mathbf{data}\;\Conid{RecExpr}{}\<[E]%
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{}\Varid{con}(\Conid{Empty}){}\<[E]%
+\>[3]{}\mathbf{con}\;\Conid{Empty}{}\<[E]%
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{}\Varid{con}(\Conid{Ext})\;{}\<[E]%
+\>[3]{}\mathbf{con}\;\Conid{Ext}\;{}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}\Varid{recExpr}{}\<[17]%
@@ -4508,7 +4562,7 @@ This particular constructor represents a tuple expression. \emph{RecExpr} is def
 \>[20]{}\Conid{Expr}{}\<[E]%
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{}\Varid{con}(\Conid{Upd})\;{}\<[E]%
+\>[3]{}\mathbf{con}\;\Conid{Upd}\;{}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}\Varid{recExpr}{}\<[17]%
@@ -4525,7 +4579,7 @@ This particular constructor represents a tuple expression. \emph{RecExpr} is def
 \>[20]{}\Conid{Expr}{}\<[E]%
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{}\Varid{con}(\Conid{Expr})\;{}\<[E]%
+\>[3]{}\mathbf{con}\;\Conid{Expr}\;{}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}\Varid{expr}{}\<[17]%
@@ -4583,7 +4637,7 @@ This particular constructor represents a tuple expression. \emph{RecExpr} is def
 \label{record}
 \caption{Definition of a record along with the interface}
 \end{figure}
-Figure \ref{record} also shows the interface defined for type checking tuples. The result is a \emph{RowTyExpr}, which is the type of a tuple. The \emph{Upd} constructor since there is no support for records in this version.
+Figure \ref{record} also shows the interface defined for type checking tuples. The result is a \emph{RowTyExpr}, which is the type of a tuple. The \emph{Upd} constructor is ignored since there is no support for records in this version.
 
 \paragraph{extending the datasem Expr}
 Extending the Expr datatype is straight forward, the only code needed is
@@ -4668,7 +4722,7 @@ Extending the Expr datatype is straight forward, the only code needed is
 The type of the tuple is inferred and wrapped as a call to a special constructor "\_Rec" and then generalized. This is all that is needed in \emph{Expr}
 
 \paragraph{Implementing RecExpr}
-The code relevant to the implementation of a \emph{RecExpr} is:
+The code relevant to the implementation of type inference for a \emph{RecExpr} is:
 
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
@@ -4676,21 +4730,39 @@ The code relevant to the implementation of a \emph{RecExpr} is:
 \column{14}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{17}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\mathbf{datasem}\;\Conid{RecExpr}\;\Varid{monad}\;\Conid{IO}{}\<[E]%
+\\
+\>[B]{}\mathbf{default}\mathbin{?}\Varid{sub}\mathrel{=}\Varid{const}\;\emptyset{}\<[E]%
+\\
+\>[B]{}\mathbf{default}\mathbin{?}\Varid{pre}\mathrel{=}\Varid{last}{}\<[E]%
+\\
+\>[B]{}\mathbf{default}\mathbin{?}\Varid{frs}\mathrel{=}\Varid{last}{}\<[E]%
+\\
+\>[B]{}\mathbf{default}\mathbin{?}\Varid{res}\mathrel{=}\Varid{const}\;\Conid{Nothing}{}\<[E]%
+\\
+\>[B]{}\mathbf{clause}\;\Conid{Ext}\;{}\<[E]%
+\\
+\>[B]{}\hsindent{4}{}\<[4]%
 \>[4]{}\Varid{recExpr}\mbox{.}\Varid{pre}{}\<[17]%
 \>[17]{}\mathrel{=}\mathbf{lhs}\mbox{.}\Varid{pre}{}\<[E]%
 \\
+\>[B]{}\hsindent{4}{}\<[4]%
 \>[4]{}\Varid{recExpr}\mbox{.}\Varid{env}{}\<[17]%
 \>[17]{}\mathrel{=}\mathbf{lhs}\mbox{.}\Varid{env}{}\<[E]%
 \\
+\>[B]{}\hsindent{4}{}\<[4]%
 \>[4]{}\Varid{recExpr}\mbox{.}\Varid{frs}{}\<[17]%
 \>[17]{}\mathrel{=}\mathbf{lhs}\mbox{.}\Varid{frs}{}\<[E]%
 \\[\blanklineskip]%
+\>[B]{}\hsindent{4}{}\<[4]%
 \>[4]{}\Varid{expr}\mbox{.}\Varid{pre}{}\<[14]%
 \>[14]{}\mathrel{=}\Varid{recExpr}\mbox{.}\Varid{pre}{}\<[E]%
 \\
+\>[B]{}\hsindent{4}{}\<[4]%
 \>[4]{}\Varid{expr}\mbox{.}\Varid{env}{}\<[14]%
 \>[14]{}\mathrel{=}\Varid{appAll}\;\Varid{recExpr}\mbox{.}\Varid{sub}\;\mathbf{lhs}\mbox{.}\Varid{env}{}\<[E]%
 \\
+\>[B]{}\hsindent{4}{}\<[4]%
 \>[4]{}\Varid{expr}\mbox{.}\Varid{frs}{}\<[14]%
 \>[14]{}\mathrel{=}\Varid{recExpr}\mbox{.}\Varid{frs}{}\<[E]%
 \ColumnHook
@@ -4708,10 +4780,10 @@ The recursive part of the \emph{RecExpr} needs to be inferred first. After that 
 \column{22}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{28}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{34}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{35}{@{}>{\hspre}c<{\hspost}@{}}%
-\column{35E}{@{}l@{}}%
-\column{38}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{48}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{37}{@{}>{\hspre}c<{\hspost}@{}}%
+\column{37E}{@{}l@{}}%
+\column{40}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{50}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
 \>[4]{}(\mathbf{loc}\mbox{.}q_1,\mathbf{loc}\mbox{.}\Varid{frs},\mathbf{loc}\mbox{.}\Varid{res}){}\<[E]%
 \\
@@ -4727,10 +4799,10 @@ The recursive part of the \emph{RecExpr} needs to be inferred first. After that 
 \>[9]{}\mathbf{in}\;\mathbf{case}\;(\Varid{e},\Varid{t})\;\mathbf{of}{}\<[E]%
 \\
 \>[9]{}\hsindent{5}{}\<[14]%
-\>[14]{}(\Conid{Nothing},\cdot _{})\to \Varid{error}\mathbin{...}\mbox{\onelinecomment  tuple element infer failed}{}\<[E]%
+\>[14]{}(\Conid{Nothing},\textrm{\_})\to \Varid{error}\mathbin{...}\mbox{\onelinecomment  tuple element infer failed}{}\<[E]%
 \\
 \>[9]{}\hsindent{5}{}\<[14]%
-\>[14]{}(\cdot _{},\Conid{Nothing})\to \Varid{error}\mathbin{...}\mbox{\onelinecomment  expr infer failed}{}\<[E]%
+\>[14]{}(\textrm{\_},\Conid{Nothing})\to \Varid{error}\mathbin{...}\mbox{\onelinecomment  expr infer failed}{}\<[E]%
 \\
 \>[9]{}\hsindent{5}{}\<[14]%
 \>[14]{}(\Conid{Just}\;\Varid{rty},\Conid{Just}\;\Varid{ty})\to {}\<[E]%
@@ -4738,16 +4810,16 @@ The recursive part of the \emph{RecExpr} needs to be inferred first. After that 
 \>[14]{}\hsindent{3}{}\<[17]%
 \>[17]{}\mathbf{let}\;{}\<[22]%
 \>[22]{}(\Varid{typ},\Varid{frs},{}\<[34]%
-\>[34]{}\cdot _{}){}\<[38]%
-\>[38]{}\mathrel{=}\Varid{renameBound}\;\Varid{expr}\mbox{.}\Varid{frs}\;\Varid{ty}{}\<[E]%
+\>[34]{}\textrm{\_}){}\<[40]%
+\>[40]{}\mathrel{=}\Varid{renameBound}\;\Varid{expr}\mbox{.}\Varid{frs}\;\Varid{ty}{}\<[E]%
 \\
 \>[22]{}(\Varid{q},{}\<[28]%
-\>[28]{}\Varid{e}{}\<[35]%
-\>[35]{}){}\<[35E]%
-\>[38]{}\mathrel{=}\Varid{second}\;{}\<[48]%
-\>[48]{}(\Conid{RowTyExpr\char95 Ext}\;\Varid{rty}\;\mathbf{loc}\mbox{.}\Varid{mbNm})\;{}\<[E]%
+\>[28]{}\Varid{e}{}\<[37]%
+\>[37]{}){}\<[37E]%
+\>[40]{}\mathrel{=}\Varid{second}\;{}\<[50]%
+\>[50]{}(\Conid{RowTyExpr\char95 Ext}\;\Varid{rty}\;\mathbf{loc}\mbox{.}\Varid{mbNm})\;{}\<[E]%
 \\
-\>[48]{}(\Varid{deep\char95 explode'}\;\Varid{expr}\mbox{.}\Varid{pre}\;\Varid{typ}){}\<[E]%
+\>[50]{}(\Varid{deep\char95 explode'}\;\Varid{expr}\mbox{.}\Varid{pre}\;\Varid{typ}){}\<[E]%
 \\
 \>[14]{}\hsindent{3}{}\<[17]%
 \>[17]{}\mathbf{in}\;(\Varid{q},\Varid{frs},\Varid{e}){}\<[E]%
@@ -4760,36 +4832,34 @@ The recursive part of the \emph{RecExpr} needs to be inferred first. After that 
 \column{17}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{22}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{28}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{34}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{35}{@{}>{\hspre}c<{\hspost}@{}}%
-\column{35E}{@{}l@{}}%
-\column{38}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{36}{@{}>{\hspre}c<{\hspost}@{}}%
+\column{36E}{@{}l@{}}%
+\column{39}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{40}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{44}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{51}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
 \>[17]{}\mathbf{let}\;{}\<[22]%
-\>[22]{}(\Varid{typ},\Varid{frs},{}\<[34]%
-\>[34]{}\cdot _{}){}\<[38]%
-\>[38]{}\mathrel{=}\Varid{renameBound}\;\Varid{expr}\mbox{.}\Varid{frs}\;\Varid{ty}{}\<[E]%
+\>[22]{}(\Varid{typ},\Varid{frs},\textrm{\_}){}\<[39]%
+\>[39]{}\mathrel{=}\Varid{renameBound}\;\Varid{expr}\mbox{.}\Varid{frs}\;\Varid{ty}{}\<[E]%
 \\
-\>[22]{}(\alpha_1,frs_1{}\<[35]%
-\>[35]{}){}\<[35E]%
-\>[38]{}\mathrel{=}\Varid{fresh}\;\Varid{frs}{}\<[E]%
+\>[22]{}(\alpha_1,frs_1{}\<[36]%
+\>[36]{}){}\<[36E]%
+\>[39]{}\mathrel{=}\Varid{fresh}\;\Varid{frs}{}\<[E]%
 \\
-\>[22]{}(\alpha_2,frs_2{}\<[35]%
-\>[35]{}){}\<[35E]%
-\>[38]{}\mathrel{=}\Varid{fresh}\;frs_1{}\<[E]%
+\>[22]{}(\alpha_2,frs_2{}\<[36]%
+\>[36]{}){}\<[36E]%
+\>[39]{}\mathrel{=}\Varid{fresh}\;frs_1{}\<[E]%
 \\
 \>[22]{}(\Varid{q},{}\<[28]%
-\>[28]{}\Varid{e}{}\<[35]%
-\>[35]{}){}\<[35E]%
-\>[38]{}\mathrel{=}\mathbf{let}\;(\Conid{Q}_{\mathrm{1}},\theta_{\mathrm{1}})\mathrel{=}\Varid{extend}\;(\Varid{expr}\mbox{.}\Varid{pre},\alpha_1\geq\Conid{TyScheme\char95 SystemF}\;\Varid{rty}){}\<[E]%
+\>[28]{}\Varid{e}{}\<[36]%
+\>[36]{}){}\<[36E]%
+\>[39]{}\mathrel{=}\mathbf{let}\;(\Conid{Q}_{\mathrm{1}},\theta_{\mathrm{1}})\mathrel{=}\Varid{extend}\;(\Varid{expr}\mbox{.}\Varid{pre},\alpha_1\geq\Conid{TyScheme\char95 SystemF}\;\Varid{rty}){}\<[E]%
 \\
-\>[38]{}\hsindent{6}{}\<[44]%
+\>[39]{}\hsindent{5}{}\<[44]%
 \>[44]{}(\Conid{Q}_{\mathrm{2}},\theta_{\mathrm{2}})\mathrel{=}\Varid{extend}\;(\Conid{Q}_{\mathrm{1}},\alpha_2\geq\Conid{TyScheme\char95 SystemF}\;\Varid{typ}){}\<[E]%
 \\[\blanklineskip]%
-\>[38]{}\hsindent{2}{}\<[40]%
+\>[39]{}\hsindent{1}{}\<[40]%
 \>[40]{}\mathbf{in}\;\Varid{second}\;{}\<[51]%
 \>[51]{}(\Conid{RowTyExpr\char95 Ext}\;(\theta_{\mathrm{1}} \alpha_1)\;\mathbf{loc}\mbox{.}\Varid{mbNm})\;{}\<[E]%
 \\
@@ -4881,11 +4951,11 @@ which is desugared into:
 \>[21]{}(\Conid{True},\Varid{x})\to \Varid{id}\;\Varid{x}{}\<[E]%
 \\
 \>[B]{}\hsindent{21}{}\<[21]%
-\>[21]{}(\Conid{False},\Varid{x})\to \mathbin{\char92 \$}\Varid{x\char95 0\char95 3\char95 0}\to (\mathbin{+}\mathbin{\$}\Varid{x\char95 0\char95 3\char95 0}\;\Varid{x}){}\<[E]%
+\>[21]{}(\Conid{False},\Varid{x})\to \lambda \Varid{x\char95 0\char95 3\char95 0}\to (\mathbin{+}\Varid{x\char95 0\char95 3\char95 0}\;\Varid{x}){}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
 
-In the abstract syntax of EH there is a flag to indicate of there are multiple arguments. Adding support for tuples means adding a definition for the \emph{Case} clause in the datasem of the \emph{Expr} type. The datatype definition for the constructor \emph{Case} in \emph{Expr} is:
+In the abstract syntax of EH there is a flag to indicate if there are multiple arguments. Adding support for tuples means adding a definition for the \emph{Case} clause in the datasem of the \emph{Expr} type. The datatype definition for the constructor \emph{Case} in \emph{Expr} is:
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{3}{@{}>{\hspre}l<{\hspost}@{}}%
@@ -4893,7 +4963,7 @@ In the abstract syntax of EH there is a flag to indicate of there are multiple a
 \column{19}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{22}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[3]{}\Varid{con}(\Conid{Case})\;{}\<[E]%
+\>[3]{}\mathbf{con}\;\Conid{Case}\;{}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}\Varid{expr}{}\<[19]%
@@ -5013,7 +5083,7 @@ The types of the case alternatives are inferred next. The result of which is a r
 \>[13]{}\mathrel{=}\Varid{s}\mbox{.}\Varid{frs}{}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
-At the end generalization is done and the fully quantified type is returned. This type consists of the substitutions gathered during inference applied to the type of the right-hand side of the case expressions (to insure that all substitutions they have all been applied). The \ensuremath{\Varid{pick}} function adds to the first environment anything new from the second environment. In essense it is the same as \ensuremath{\Varid{nub}\mbox{.}\Varid{concat}}.
+At the end generalization is done and the fully quantified type is returned. This type consists of the substitutions gathered during inference applied to the type of the right-hand side of the case expressions (to insure that all substitutions they have all been applied). The \ensuremath{\Varid{pick}} function adds to the first environment anything new from the second environment. In essence it is the same as \ensuremath{\Varid{nub}\mbox{.}\Varid{concat}}.
 
 The interface for \emph{CaseAlts} is defined as:
 \begin{hscode}\SaveRestoreHook
@@ -5061,6 +5131,37 @@ The interface for \emph{CaseAlts} is defined as:
 \ColumnHook
 \end{hscode}\resethooks
 
+The datatype \ensuremath{\Conid{CaseType}} is defined as 
+
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{10}{@{}>{\hspre}c<{\hspost}@{}}%
+\column{10E}{@{}l@{}}%
+\column{13}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{22}{@{}>{\hspre}c<{\hspost}@{}}%
+\column{22E}{@{}l@{}}%
+\column{26}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\mathbf{data}\;\Conid{CaseType}\mathrel{=}\Conid{CaseType}{}\<[E]%
+\\
+\>[B]{}\hsindent{10}{}\<[10]%
+\>[10]{}\{\mskip1.5mu {}\<[10E]%
+\>[13]{}\Varid{caseLHS}{}\<[22]%
+\>[22]{}\mathbin{::}{}\<[22E]%
+\>[26]{}\Conid{TyScheme}{}\<[E]%
+\\
+\>[B]{}\hsindent{10}{}\<[10]%
+\>[10]{},{}\<[10E]%
+\>[13]{}\Varid{body}{}\<[22]%
+\>[22]{}\mathbin{::}{}\<[22E]%
+\>[26]{}\Conid{TyScheme}{}\<[E]%
+\\
+\>[B]{}\hsindent{10}{}\<[10]%
+\>[10]{}\mskip1.5mu\}{}\<[10E]%
+\ColumnHook
+\end{hscode}\resethooks
+
+and returns the type inferred at both sides of a case alternative.
 The full implementation will not be covered here, but those interested can look it up in the source code.
 
 \subsection{typing rules expression}
@@ -5087,7 +5188,7 @@ Typing fixpoint recursive functions is a simple yet needed extension. What this 
 \ColumnHook
 \end{hscode}\resethooks
 
-Would be typed as $\forall \alpha \beta. (\alpha \rightarrow \beta) \rightarrow \beta$ without this support. This is because after giving a temporary type for \emph{fix} based on what was known about \emph{f} at the application site, and later learning more about the value of \emph{f}, the type of \emph{fix} is never updated.
+Would be typed as $\forall \alpha \beta. (\alpha \rightarrow \beta) \rightarrow \beta$ without this support. This is because after giving a temporary type for \emph{fix} based on what was known about \emph{f} at the application site, when we later learn more about the value of \emph{f} the type of \emph{fix} is never updated.
 
 Type checking is essentially building up a list of constraints and then solving these constraints. In this case the constraints are the substitutions that are being build every time extra information about a type becomes available.
 This means that all the needed bits of information are available to reconstruct the type there should be, and the type that was inferred. In order to provide support for letrec three things need to be done:
@@ -5185,14 +5286,14 @@ In this thesis we explored the possibility of implementing a type system complet
 \>[B]{}\mathbf{data}\;\Conid{Expr}{}\<[E]%
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{}\Varid{con}(\Conid{Num})\;{}\<[E]%
+\>[3]{}\mathbf{con}\;\Conid{Num}\;{}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}\Varid{val}{}\<[13]%
 \>[13]{}\mathbin{::}\Conid{Int}{}\<[E]%
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{}\Varid{con}(\Conid{Expr})\;{}\<[E]%
+\>[3]{}\mathbf{con}\;\Conid{Expr}\;{}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}exp_1{}\<[13]%
@@ -5209,14 +5310,14 @@ In this thesis we explored the possibility of implementing a type system complet
 \>[16]{}\Conid{Expr}{}\<[E]%
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{}\Varid{con}(\Conid{Var})\;{}\<[E]%
+\>[3]{}\mathbf{con}\;\Conid{Var}\;{}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}\Varid{nm}{}\<[13]%
 \>[13]{}\mathbin{::}\Conid{String}{}\<[E]%
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{}\Varid{con}(\Conid{Let})\;{}\<[E]%
+\>[3]{}\mathbf{con}\;\Conid{Let}\;{}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}\Varid{nm}{}\<[13]%
@@ -5235,10 +5336,10 @@ In this thesis we explored the possibility of implementing a type system complet
 \>[B]{}\mathbf{data}\;\Conid{Operator}{}\<[E]%
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{}\Varid{con}(\Conid{Plus}){}\<[E]%
+\>[3]{}\mathbf{con}\;\Conid{Plus}{}\<[E]%
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{}\Varid{con}(\Conid{Minus}){}\<[E]%
+\>[3]{}\mathbf{con}\;\Conid{Minus}{}\<[E]%
 \\[\blanklineskip]%
 \>[B]{}\mathbf{itf}\;\Conid{OperatorEq}\;{}\<[E]%
 \\
@@ -5738,7 +5839,7 @@ In this thesis we explored the possibility of implementing a type system complet
 \>[3]{}\Varid{subsume}\mathbin{::}(\Conid{Q},\varphi,\sigma)\to (\Conid{Q},\theta){}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\mbox{\onelinecomment  where \ensuremath{\varphi} and \ensuremath{\sigma} are in normal form}{}\<[E]%
+\>[5]{}\mbox{\onelinecomment  where \ensuremath{\sigma} is in normal form and \ensuremath{\varphi} is converted to normal form.}{}\<[E]%
 \\
 \>[3]{}\mbox{\onelinecomment  }{}\<[E]%
 \\
@@ -5752,7 +5853,7 @@ In this thesis we explored the possibility of implementing a type system complet
 \>[3]{}\Varid{subsume}\;(\Conid{Q},\forall\;\Conid{Q}_{\mathrm{2}}\mbox{.}\rho_{\mathrm{1}},\forall\;\overline{\alpha}\mbox{.}\rho_{\mathrm{2}})\mathrel{=}{}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\text{assume}\;\Varid{dom}(\Conid{Q})\mathbin{\#}\Varid{dom}(\Conid{Q}_{\mathrm{2}})\;\mbox{\onelinecomment  and \ensuremath{\overline{\Varid{c}}} are fresh constants}{}\<[E]%
+\>[5]{}\text{assume}\;\Varid{dom}(\Conid{Q})\mathbin{\#}\Varid{dom}(\Conid{Q}_{\mathrm{2}})\;\mbox{\onelinecomment  and \ensuremath{\overline{\Varid{c}}} are fresh xconstants}{}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}\text{let}\;(\Conid{Q}_{\mathrm{1}},\theta_{\mathrm{1}}){}\<[26]%
@@ -5770,7 +5871,7 @@ In this thesis we explored the possibility of implementing a type system complet
 \>[29]{}\theta_{\mathrm{1}}\mathbin{-}\Varid{dom}(\Conid{Q}_{\mathrm{4}}){}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\text{fail if}\;(\Varid{c}\;\in \;\Varid{con}(\theta_{\mathrm{2}})\;\cup \;\Varid{con}(\Conid{Q}_{\mathrm{3}}){}\<[E]%
+\>[5]{}\text{fail if}\;(\Varid{c}\;\in \;\mathbf{con}(\theta_{\mathrm{2}})\;\cup \;\mathbf{con}(\Conid{Q}_{\mathrm{3}}){}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}\text{return}\;(\Conid{Q}_{\mathrm{3}},\theta_{\mathrm{2}}){}\<[E]%
@@ -6006,13 +6107,13 @@ In this thesis we explored the possibility of implementing a type system complet
 \>[3]{}\Varid{unify}\;(\Conid{Q},\forall\;\alpha\mbox{.}\sigma_1,\forall\;\beta\mbox{.}\sigma_2)\mathrel{=}{}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\mbox{\onelinecomment  assume \ensuremath{\Varid{c}} is a fresh (skolem) constant}{}\<[E]%
+\>[5]{}\mbox{\onelinecomment  assume \ensuremath{\Varid{c}} is a fresh (skolem) xconstant}{}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}\text{let}\;(\Conid{Q}_{\mathrm{1}},\theta_{\mathrm{1}})\mathrel{=}\Varid{unify}\;(\Conid{Q},\lbrack\;\alpha\mathbin{:=}\Varid{c}\;\rbrack\;\sigma_1,\lbrack\;\beta\mathbin{:=}\Varid{c}\;\rbrack\;\sigma_2){}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\text{fail if}\;(\Varid{c}\;\in \;\Varid{con}(\theta_{\mathrm{1}})\;\cup \;\Varid{con}(\Conid{Q}_{\mathrm{1}}){}\<[E]%
+\>[5]{}\text{fail if}\;(\Varid{c}\;\in \;\mathbf{con}(\theta_{\mathrm{1}})\;\cup \;\mathbf{con}(\Conid{Q}_{\mathrm{1}}){}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}\text{return}\;(\Conid{Q}_{\mathrm{1}},\theta_{\mathrm{1}}){}\<[E]%
@@ -6049,7 +6150,7 @@ In this thesis we explored the possibility of implementing a type system complet
 \>[3]{}\Varid{infer}\;(\Conid{Q},\Gamma,\Varid{c})\mathrel{=}{}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\text{return}\;(\Conid{Q},[\mskip1.5mu \mskip1.5mu],\underset{\alpha}{\rightarrow}\;(\Gamma\;(\Varid{c}))){}\<[E]%
+\>[5]{}\text{return}\;(\Conid{Q},[\mskip1.5mu \mskip1.5mu],\Varid{alphaxconv}\;(\Gamma\;(\Varid{c}))){}\<[E]%
 \\
 \>[3]{}\mbox{\onelinecomment }{}\<[E]%
 \\

@@ -1,0 +1,209 @@
+{
+{-# LANGUAGE BangPatterns          #-}
+module HM where
+
+import Control.Monad.Error
+import Control.Arrow(first)
+
+import  {-# SOURCE #-} PrettyUtil (Name, fresh, Pretty, pp)
+
+import Data.Maybe(fromMaybe, fromJust, isJust)
+import Data.List(foldl', sortBy, nub)
+import Data.Function(on)
+
+type Sub   = (Name, TyExpr)
+type Env   = [Sub]
+type Gamma = [(Name, TyExpr)]
+
+mkArrow :: TyExpr -> TyExpr -> TyExpr
+mkArrow a b =  TyExpr_App (TyExpr_App (TyExpr_Con "->") a) b
+
+class Apply a where
+  app    :: Sub -> a -> a
+  appAll :: Env -> a -> a
+  appAll env = foldl' (flip (.)) id (map app env)
+  
+instance Apply a => Apply [a] where
+  app s = map (app s)
+  
+instance Apply TyExpr where
+  app (s, ty) (TyExpr_Var   nm) | s == nm = mkParen ty
+  app sub     (TyExpr_App  a b) = TyExpr_App   (mkParen $ app sub a) (app sub b)
+  app sub     (TyExpr_Paren  a) = TyExpr_Paren (app sub a)
+  app _       tyExpr            = tyExpr
+  
+mkParen :: TyExpr -> TyExpr
+mkParen x@(TyExpr_App{}) = TyExpr_Paren x
+mkParen x                = x
+  
+alpha_rename :: TyExpr -> TyExpr
+alpha_rename ty 
+ = let nvars = map TyExpr_Var $ (map (:[]) ['a'..'z']) ++ liftM2 (\b a -> a : show b) [1..] ['a'..'z']
+       fvars = sortBy lexord $ ftv ty
+       lexord a b = case (compare `on` length) a b of
+                     LT -> LT
+                     GT -> GT
+                     EQ -> a `compare` b
+       env   = zip fvars nvars
+   in appAll env ty
+   
+ftv :: TyExpr -> [Name]
+ftv (TyExpr_Var   n) = [n]
+ftv (TyExpr_App a b) = nub $ ftv a ++ ftv b
+ftv (TyExpr_Paren a) = nub $ ftv a
+ftv _                = []
+}
+
+data Expr 
+    con IConst
+       int    :: Int
+    con Var   
+       nm     :: Name
+    con Con   
+       nm     :: Name
+    con Lam   
+       arg    :: Name
+       body   : Expr
+    con App   
+       func   : Expr
+       arg    : Expr
+    con Let   
+       nm     :: Name
+       bind   : Expr
+       body   : Expr
+    con Paren
+       tyExpr : Expr
+       
+data TyExpr
+    con Var
+        nm     :: Name
+    con Con
+        nm     :: Name
+    con App
+        func   : TyExpr
+        arg    : TyExpr
+    con Paren
+        tyExpr : TyExpr
+        
+itf Expr
+  visit infer
+    inh ast :: Expr
+    inh env :: Gamma
+    inh frs :: Int
+    syn frs :: Int
+    syn sub :: Env
+    syn ty  :: TyExpr
+    
+itf Unify
+  visit unify
+    inh exp1 :: TyExpr
+    inh exp2 :: TyExpr
+    inh frs  :: Int
+    syn sub  :: Env
+    syn frs  :: Int
+
+    
+datasem Expr monad IO
+    default? frs = last
+    default? sub = last
+    default? env = last
+    clause IConst
+      lhs.ty  = TyExpr_Con "Int"
+      lhs.sub = []
+    clause Var
+      lhs.ty  = fromMaybe (error $ "Variable '" ++ loc.nm ++ "' not found") (lookup loc.nm lhs.env)
+      lhs.sub = []
+    clause Con
+      lhs.ty  = TyExpr_Con loc.nm
+      lhs.sub = []
+    clause Paren
+      lhs.ty = tyExpr.ty
+    clause Lam
+      (loc.a, loc.frs) = first TyExpr_Var (fresh lhs.frs)
+      body.env = (loc.arg, loc.a):lhs.env
+      body.frs = loc.frs
+      
+      lhs.ty = (appAll body.sub loc.a) `mkArrow` body.ty
+    clause App
+      (loc.b, loc.frs) = first TyExpr_Var (fresh lhs.frs)
+      
+      func.frs = loc.frs
+      arg.frs = func.frs
+      
+      child u : Unify = unify
+      u.frs  = arg.frs
+      u.exp1 = func.ty
+      u.exp2 = arg.ty `mkArrow` loc.b
+      
+      lhs.ty  = appAll u.sub loc.b
+      lhs.sub = func.sub ++ arg.sub ++ u.sub
+      lhs.frs = u.frs
+    clause Let
+      body.env = (loc.nm, bind.ty):lhs.env
+      lhs.ty   = body.ty
+      
+{
+unify = sem unify : Unify monad IO
+          visit unify
+            default? frs = last
+            default? sub = const []
+            clause LeftParen
+              match TyExpr.Paren@exp1 = lhs.exp1
+              
+              child u : Unify = unify
+              
+              u.exp1 = exp1.tyExpr
+              u.exp2 = lhs.exp2
+            clause RightParen
+              match TyExpr.Paren@exp2 = lhs.exp2
+              
+              child u : Unify = unify
+              
+              u.exp1 = lhs.exp1
+              u.exp2 = exp2.tyExpr
+            clause constructor
+              match TyExpr.Con@exp1 = lhs.exp1
+              match TyExpr.Con@exp2 = lhs.exp2
+              
+              lhs.sub = case exp1.nm == exp1.nm of
+                          True  -> []
+                          False -> error $ "Constructor mismatched: " ++ exp1.nm ++ " ==> " ++ exp2.nm
+            clause app
+              match TyExpr.App@app1 = lhs.exp1
+              match TyExpr.App@app2 = lhs.exp2  
+              
+              child u1 : Unify = unify
+              
+              u1.exp1 = app1.func
+              u1.exp2 = app2.func
+              
+              child u2 : Unify = unify
+              
+              u2.exp1 = appAll u1.sub app1.arg
+              u2.exp2 = appAll u1.sub app2.arg
+              
+              lhs.sub = u1.sub ++ u2.sub
+            clause vars
+              match TyExpr.Var@var1 = lhs.exp1
+              match TyExpr.Var@var2 = lhs.exp2 
+              match True = var1.nm == var2.nm
+            clause leftvar
+              match TyExpr.Var@var1 = lhs.exp1
+              lhs.sub = [(var1.nm, lhs.exp2)]
+            clause rightvar
+              match TyExpr.Var@var1 = lhs.exp2
+              lhs.sub = [(var1.nm, lhs.exp1)]
+            clause rest
+              lhs.sub = error "mismatch in unify."
+
+typeCheck :: Expr -> IO TyExpr
+typeCheck exp = do
+  let inh = Inh_Expr_infer
+              { ast_Inh_Expr = exp
+              , env_Inh_Expr = []
+              , frs_Inh_Expr = 0
+              }
+  syn <- invoke_Expr_infer dnt_Expr inh
+  let x = ty_Syn_Expr syn
+  return $ alpha_rename x
+}

@@ -47,7 +47,7 @@ itf RecExpr
 \label{record}
 \caption{Definition of a record along with the interface}
 \end{figure}
-Figure \ref{record} also shows the interface defined for type checking tuples. The result is a \emph{RowTyExpr}, which is the type of a tuple. The \emph{Upd} constructor since there is no support for records in this version.
+Figure \ref{record} also shows the interface defined for type checking tuples. The result is a \emph{RowTyExpr}, which is the type of a tuple. The \emph{Upd} constructor is ignored since there is no support for records in this version.
 
 \paragraph{extending the datasem Expr}
 Extending the Expr datatype is straight forward, the only code needed is
@@ -77,9 +77,15 @@ clause Rec
 The type of the tuple is inferred and wrapped as a call to a special constructor "\_Rec" and then generalized. This is all that is needed in \emph{Expr}
 
 \paragraph{Implementing RecExpr}
-The code relevant to the implementation of a \emph{RecExpr} is:
+The code relevant to the implementation of type inference for a \emph{RecExpr} is:
 
 \begin{code}
+datasem RecExpr monad IO
+ default? sub = const empty
+ default? pre = last
+ default? frs = last
+ default? res = const Nothing
+ clause Ext
    recExpr.pre  = lhs.pre
    recExpr.env  = lhs.env
    recExpr.frs  = lhs.frs
@@ -95,21 +101,21 @@ The recursive part of the \emph{RecExpr} needs to be inferred first. After that 
      =  let  e  = recExpr.res
              t  = expr.res
         in case (e, t) of
-             (Nothing, _) -> error ... -- tuple element infer failed
-             (_, Nothing) -> error ... -- expr infer failed
+             (Nothing, u_s) -> error ... -- tuple element infer failed
+             (u_s, Nothing) -> error ... -- expr infer failed
              (Just rty,Just ty) -> 
-                let  (typ, frs,  _)  = renameBound expr.frs ty 
-                     (q,   e      )  = second  (RowTyExpr_Ext rty loc.mbNm) 
-                                               (deep_explode' expr.pre typ)
+                let  (typ, frs,  u_s)  = renameBound expr.frs ty 
+                     (q,   e        )  = second  (RowTyExpr_Ext rty loc.mbNm) 
+                                                 (deep_explode' expr.pre typ)
                 in (q, frs, e)
 \end{code}
 \emph{rty} represents the type of the recursive RecExpr and the \emph{ty} is the type of the current expression. If both are not Nothing then the current type is renamed and its quantifiers are removed and moved to the prefix. Generalization in the \emph{Expr} datasem will fully quantify them again. This is done because the type of |(id, id)| should be |forall a. b. (a -> a, b -> b)| and not |(forall a. a -> a, forall a. a -> a)|. Another possibility to handle this is to generate two new fresh variables and extend the environment with the these new variables instead:
 
 \begin{code}
-                let  (typ, frs,  _)  = renameBound expr.frs ty 
-                     (a1 , frs1   )  = fresh frs
-                     (a2 , frs2   )  = fresh frs1
-                     (q,   e      )  = let (Q_1, theta_1) = extend (expr.pre, a1 >= TyScheme_SystemF rty)
+                let  (typ, frs, u_s)  = renameBound expr.frs ty 
+                     (a1 , frs1    )  = fresh frs
+                     (a2 , frs2    )  = fresh frs1
+                     (q,   e       )  = let (Q_1, theta_1) = extend (expr.pre, a1 >= TyScheme_SystemF rty)
                                            (Q_2, theta_2) = extend (Q_1, a2 >= TyScheme_SystemF typ)
 
                                        in second  (RowTyExpr_Ext (theta_1 ^ a1) loc.mbNm) 
@@ -154,10 +160,10 @@ which is desugared into:
 \begin{code}
 let q = \x1 x2 -> case (x1,x2) of
                     (True,x) -> id x
-                    (False,x) -> \$x_0_3_0 -> (+ $x_0_3_0 x)
+                    (False,x) -> \x_0_3_0 -> (+ x_0_3_0 x)
 \end{code}
 
-In the abstract syntax of EH there is a flag to indicate of there are multiple arguments. Adding support for tuples means adding a definition for the \emph{Case} clause in the datasem of the \emph{Expr} type. The datatype definition for the constructor \emph{Case} in \emph{Expr} is:
+In the abstract syntax of EH there is a flag to indicate if there are multiple arguments. Adding support for tuples means adding a definition for the \emph{Case} clause in the datasem of the \emph{Expr} type. The datatype definition for the constructor \emph{Case} in \emph{Expr} is:
 \begin{code}
   con Case
     expr          :  Expr
@@ -206,7 +212,7 @@ The types of the case alternatives are inferred next. The result of which is a r
    lhs.pre  = loc.q1
    lhs.frs  = s.frs
 \end{code}
-At the end generalization is done and the fully quantified type is returned. This type consists of the substitutions gathered during inference applied to the type of the right-hand side of the case expressions (to insure that all substitutions they have all been applied). The |pick| function adds to the first environment anything new from the second environment. In essense it is the same as |nub . concat|.
+At the end generalization is done and the fully quantified type is returned. This type consists of the substitutions gathered during inference applied to the type of the right-hand side of the case expressions (to insure that all substitutions they have all been applied). The |pick| function adds to the first environment anything new from the second environment. In essence it is the same as |nub . concat|.
 
 The interface for \emph{CaseAlts} is defined as:
 \begin{code}
@@ -222,6 +228,16 @@ itf CaseAlts
     syn frs  :: Int 
 \end{code}
 
+The datatype |CaseType| is defined as 
+
+\begin{code}
+data CaseType = CaseType  
+         {  caseLHS  ::  TyScheme
+         ,  body     ::  TyScheme
+         }
+\end{code}
+
+and returns the type inferred at both sides of a case alternative.
 The full implementation will not be covered here, but those interested can look it up in the source code.
 
 \subsection{typing rules expression}
@@ -245,7 +261,7 @@ Typing fixpoint recursive functions is a simple yet needed extension. What this 
 fix f = f (fix f)
 \end{code} 
 
-Would be typed as $\forall \alpha \beta. (\alpha \rightarrow \beta) \rightarrow \beta$ without this support. This is because after giving a temporary type for \emph{fix} based on what was known about \emph{f} at the application site, and later learning more about the value of \emph{f}, the type of \emph{fix} is never updated.
+Would be typed as $\forall \alpha \beta. (\alpha \rightarrow \beta) \rightarrow \beta$ without this support. This is because after giving a temporary type for \emph{fix} based on what was known about \emph{f} at the application site, when we later learn more about the value of \emph{f} the type of \emph{fix} is never updated.
 
 Type checking is essentially building up a list of constraints and then solving these constraints. In this case the constraints are the substitutions that are being build every time extra information about a type becomes available.
 This means that all the needed bits of information are available to reconstruct the type there should be, and the type that was inferred. In order to provide support for letrec three things need to be done:

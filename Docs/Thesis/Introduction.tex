@@ -1,17 +1,17 @@
 \chapter{Introduction}
-The Utrecht Haskell Compiler (UHC\cite{UHC}) implements most of it is type checking code using \ags (ag), in particular the Utrecht University Attribute Grammar Compiler \textbf{uuagc}\cite{uuagc}. However, not all of the implementation is written using ag. Most notably unification and context reduction are implemented as normal Haskell code. The reason for this is that the ag system is limited to describing tree walks over a single tree. The newly developed \rcore system lifts these limitations by providing much more granular control over visit sequences which are not restricted to tree walks (more on this in Chapter \ref{AG}). With the development of \textbf{ruler-core}\cite{ruler-front} it is possible to implement a type inference algorithm for a type system supporting higher-ranked polymorphisms using \ags. The issue to be addressed by this thesis is:
+The Utrecht Haskell Compiler (UHC\cite{UHC}) implements most of it is type checking code using \ags (ag), in particular the Utrecht University Attribute Grammar Compiler \textbf{uuagc}\cite{uuagc}. However, not all of the implementation is written using ag. Notably unification and context reduction are implemented as normal Haskell code. The reason for this is that \ag systems are limited to describing tree walks over a single tree. The newly developed \rcore system lifts these limitations by providing much more granular control over visit sequences which are not restricted to tree walks (more on this in Chapter \ref{AG}). With the development of \textbf{ruler-core}\cite{ruler-front} it is possible to implement a type inference algorithm for a type system supporting higher-ranked polymorphisms using \ags. The issue addressed by this thesis is:
 
 \begin{quotation}
 "Can a type inferencing algorithm which supports higher-rank polymorphisms be implemented using Attribute Grammars, and If so can it be done in such a way that it would be simpler to understand and correspond closer to the declarative specifications."
 \end{quotation}
 
-In this thesis we therefore investigate the use of \rcore, using the HML type system  for higher-ranked polymorphism as a case study. Our goal is to find out how suitable \rcore is for such descriptions.Type systems variations are not explored, although our work brings flaws in published algorithms for HML to light.
+In this thesis we investigate the use of \rcore, using the HML type system for higher-ranked polymorphism as a case study. Our goal is to find out how suitable \rcore is for such descriptions. Type systems variations are not explored, although our work brings flaws in published algorithms for HML to light.
 
 \section{Motivation}
 Type systems for expansive languages such as Haskell are hard to prove correct and implement. Most of the literature use typing rules to describe the type system. Unfortunately these typing rules (including syntax directed typing rules) do not give an idea on how to implement the associated inference algorithms. These typing rules usually contain a large amount of non-determinism and implicit assumptions that need to be taken into account.
 Once implemented it is also much harder to prove the correctness of the algorithm. The implementation usually does not resemble the original typing rules. This unfortunately means that the original proofs that were made for the typing rules correct cannot be used to prove the inference algorithm.
 
-The benefits of implementing the UHC type system in the new \rcore system would be
+The benefits of implementing a type system in the new \rcore system would be
 
 \begin{enumerate}
 \item Easier to understand the implementation since the machinery provided by \ags can be used to hide most of the details such as tree traversals and threading of attributes around the tree.

@@ -4,9 +4,9 @@ A type system which supports polymorphic functions is the Hindley-Milner\cite{HM
 
 The Hindley-Milner type system works on the basis of \textit{principle types}. Each well-typed term has a unique "best" type such that all other types possible for the term can be constructed from, that type is known as the \textit{principle type}. 
 
-For example the principle type of the \textit{identity} function $\lambda x.x$ mentioned before is $a \rightarrow a$.
+For example the principle type of the \textit{identity} function $\lambda x.x$  is $a \rightarrow a$.
 
-The Damas-Milner inference algorithm works by collecting type constrains (or substitutions) from how the terms are used in an expression and subsequently solving these constraints by means of unification. If this is not possible then the term is considered to be \textit{ill-typed}, else it is considered \textit{well-typed}.
+The Damas-Milner inference algorithm works by collecting type constrains (or substitutions) from how the terms are used in an expression and subsequently solving these constraints by means of unification. If this is not possible then the term is considered to be \textit{ill-typed}, otherwise it is considered \textit{well-typed}.
 
 Consider the following (admittedly simple) example where the type of |bar| is to be inferred:
 \begin{code}
@@ -14,12 +14,12 @@ foo :: String -> Int
 bar x y = foo x + y
 \end{code}
 
-The first step to infer the type with the Damas-Milner inference system is to annotate |bar| with fresh type variables 
+The first step to infer the type with the Damas-Milner inference algorithm is to annotate |bar| with fresh type variables 
 \begin{code}
 bar x::X y::Y = foo x + y :: Z
 \end{code}
 
-With the extra type information it can be determined that the type of bar has the form $X \rightarrow Y \rightarrow Z$. However it is still not known what |X|, |Y| and |Z| are. In order to find these out the body of |bar| is examined for more information and a constraint set is constructed.
+With the extra type information it can be determined that the type of |bar| has the form $X \rightarrow Y \rightarrow Z$. However it is still not known what |X|, |Y| and |Z| are. In order to find these out the body of |bar| is examined for more information and a constraint set is constructed.
 
 |x| is passed as an argument to |foo|, which suggests that |x| has to be of type String, the constraint \ba{x\rightarrow String} is added to the constraint set.
 
@@ -27,21 +27,22 @@ The next observation is that the addition operator |+| is used to add the result
 
 Using the constraints {\ba{X\rightarrow String, Y\rightarrow Int, Z\rightarrow Int}} the type for |bar| can be constructed: |String -> Int -> Int|.
 
-In the case of functions with polymorphic types the resulting type will still contain variables, for which the constraint set had no bindings to concrete types. In these cases, the type of the fresh variables are perceived to be polymorphic variables in the type of the term.
+In the case of functions with polymorphic types the resulting type will still contain variables, for which the constraint set had no bindings to concrete types. In these cases, the type of the fresh variables are perceived to be polymorphic type variables in the resulting type of the term.
 
 \section{SystemF}
+\label{SystemF}
 SystemF or otherwise known as the polymorphic lambda calculus is an extension of the simply typed lambda calculus. Lambda calculus or $\lambda-calculus$  is a formal definition system for functions, applications and abstraction. SystemF extends $\lambda-calculus$ by providing support for a few new terms:
 
 \begin{description}
 \item[Terms]{
 	\begin{minipage}[t]{\linewidth}
 		\begin{itemize}
-			\item Type abstraction ($\Lambda x.t$)
+			\item Type abstraction ($\Lambda X.t$)
 			\item Type application (t [T])
 		\end{itemize}
 	\end{minipage}
 }
-\item[Values] Type abstraction are also values along with normal variable abstractions ($\Lambda X.t$ as opposed to the simply typed lambda calculus in which only abstractions were values).
+\item[Values] Type abstraction are also values, along with normal variable abstractions ($\Lambda X.t$ as opposed to the simply typed lambda calculus in which only abstractions were values).
 \item[Types]{ 
 	\begin{minipage}[t]{\linewidth}
 		\begin{itemize}
@@ -50,14 +51,14 @@ SystemF or otherwise known as the polymorphic lambda calculus is an extension of
 		\end{itemize}
 	\end{minipage}
 }
-\item[Environment] SystemF also specifies an environment for the mapping between type variable and their binding.
+\item[Environment] SystemF also requires an environment for the mapping between type variable and their binding.
 \end{description}
 
 These addition together with their typing rules allows one to do type reconstruction on polymorphic expressions. They allow the abstraction of types out of terms and subsequently fill them in later, for example:
 \begin{quotation}
 id = $\Lambda X.\lambda x:X. x$
 \end{quotation}
-which states that the type of id is $X \rightarrow X$ where X is the type variable bound by the newly introduced type abstraction. 
+which states that the type of id is $\forall X. X \rightarrow X$ where X is the type variable bound by the newly introduced type abstraction. 
 
 If we were to construct the type for "id 3" (assuming the type of 3 is Int) we would get:
 
@@ -65,11 +66,11 @@ If we were to construct the type for "id 3" (assuming the type of 3 is Int) we w
 id [Int] = [X$\rightarrow$Int]($\lambda x:X. x$)
 \end{quotation}
 
-The function \emph{id} is applied to the type Int, which means the value of the type \emph{X} is Int. This can be accomplished by using a substitution \ba{X\rightarrow Int}. Applying the substitution gives that the type of |id| when applied to an Int is $Int \rightarrow Int$.
+The function \emph{id} is applied to the type |Int|, which means the value of the type \emph{X} is |Int|. This can be accomplished by using a substitution \ba{X\rightarrow Int}. Applying the substitution gives that the type of |id| when applied to an Int is $Int \rightarrow Int$.
 
 Universally quantified types (forall) are used to indicate the dependency that the type of the result actually depends on the type passed to the function as an argument. For instance the type of the \textit{id} function above is $\forall X. X\rightarrow X$.
 
-SystemF introduces and formalizes parametric polymorphism by adding mechanisms to reason about type variables. Unfortunately SystemF's type inferencing while very powerful is undecidable, which is to say, it does not always terminate in finite amount of time. To combat this programmer annotation is required.
+The SystemF type system introduces and formalizes parametric polymorphism by adding mechanisms to reason about type variables. Unfortunately SystemF's type inferencing while very powerful is undecidable, which is to say, it does not always terminate in a finite amount of time. To combat this programmer annotation is required.
 
 \section{Related Research}
 There have been multiple attempts in the past to simplify the implementations of type systems, these include but are not limited to:
@@ -80,13 +81,13 @@ There have been multiple attempts in the past to simplify the implementations of
 \item Using Domain Specific Languages like the Ruler\cite{Ruler} system used in UHC mixed with \ags
 \end{itemize}
 
-The current UHC implementation is the only(\cite{UHC}) project that uses \ags, but the implementation of \ags used is not flexible enough to describe the entire type inference algorithm.
+The current UHC implementation is the only(\cite{UHC}) project that uses \ags, but the implementation of \ags used is not flexible enough to describe the entire type system.
 
-The current \textbf{uuagc} provides a mechanism to define attributes for every node in the AST, which is to be traversed and the attributes subsequently filled in. These attributes are used to calculate the resulting values without having to worry about the order of the tree walks or the tree walks themselves(More on this in Chapter \ref{AG}).
+The current \ag tool \textbf{uuagc} provides a mechanism to define attributes for every node in the AST, which is to be traversed and the attributes subsequently filled in. These attributes are used to calculate the resulting values without having to worry about the order of the tree walks or the tree walks themselves(More on this in Chapter \ref{AG}).
 
-\Rcore inherits this flexibility, but extends it with a way to reason about a specific visit (or tree walk) and makes it possible to take decisions based on information gathered so far. These additions are needed in order to implement a type system completely using \ags.
+\Rcore inherits this flexibility, but extends it with a way to reason about a specific visit (or tree walk) and makes it possible to take decisions based on information gathered so far (for instance doing a tree walk on a newly produced tree). These additions are needed in order to implement a type system using \ags.
 
-Since the aim is to implement type system which supports higher-rank polymorphisms, three type systems were chosen as a basis for inspiration and guidance:
+The aim is to implement type system which supports higher-rank polymorphisms. To that end the following three type systems were chosen as a basis for inspiration and guidance:
 
 \begin{enumerate}
 \item Flexible Types (HML): Robust type inference for first-class polymorphism - \textit{Daan Leijen}
@@ -95,10 +96,10 @@ Since the aim is to implement type system which supports higher-rank polymorphis
 \end{enumerate}
 
 These are all extensions of the popular Hindley-Milner type system, which itself can be described as a restrictive version of the SystemF type system.
-The type system chosen as the basis for this thesis is called "HML" and will be explained later in chapter \ref{HML}. However two more type systems were evaluated, and they are briefly covered below for the sake of completeness:
+The type system chosen as the basis for this thesis is called \emph{HML} and will be explained later in chapter \ref{HML}. However two more type systems were evaluated, and they are briefly covered below for the sake of completeness:
 
 \subsection{FPH\cite{FPH}}
-This type system is an extension of the Dama-Milner type inference algorithm to provide first class polymorphism for Haskell. It relies on SystemF types and (see above) and does so while maintaining decidability. 
+This type system uses an extension of the Dama-Milner type inference algorithm to provide first class polymorphism for Haskell. It relies on SystemF types and (see section \ref{SystemF}) and does so while maintaining decidability. 
 
 The following example does not type check in the standard Hindley-Milner type system:
 \begin{code}
@@ -117,9 +118,18 @@ foo   &::& \forall s. Int \rightarrow ST s Int
 
 Every type variable is explicitly bound by an outward universal quantification $\forall$ (forall) as per SystemF (recall that FPH uses SystemF types). These types are called rank-1 types. With higher rank types it is meant types that are of rank $>$ 1.
 The \textit{runST} example above has a rank-2 argument which can be seen by the universal quantification inside the parenthesis.
+The rank of a function type is determined by the number of inner |forall|s nested on the left side of a |(->)| that cannot be merged with a previous one.
+Haskell '98 types are rank-1, the first 3 types below are all rank-1 types while the last one is rank-2.
+\begin{itemize}
+\item |a -> b -> a|
+\item |forall a b. a -> b -> a|
+\item |forall a. a -> (forall b. b -> a)|
+\item |forall b. (forall a. a -> a) -> b -> b|
+\end{itemize}
+
 In order for \textit{...(runST \$ foo 4)...} to type check this type system needs to allow for two things:
 \begin{enumerate}
-\item That functions can have higher-rank types and thus able to take a polymorphic type argument
+\item That functions can have higher-rank types and thus are able to take a polymorphic type argument
 \item That type arguments can be instantiated to a quantified polymorphic type. This is referred to in the literature as \textit{impredicativity}.
 \end{enumerate}
 
@@ -127,13 +137,13 @@ In order for \textit{...(runST \$ foo 4)...} to type check this type system need
 \item[Impredicativity] Allows a polymorphic function to be instantiated with a polytype (polymorphic type). 
 \end{description}
 
-FPH requires little help from the programmer in the form of annotations. It only requires type annotations on \textit{let}-bindings or $\lambda$-abstractions. Function calls may require a lot of impredicative instantiations but they never require an explicit type annotation.
+FPH requires little help from the programmer in the form of annotations. It only requires type annotations on \textit{let}-bindings or $\lambda$-abstractions. Function calls may require a lot of impredicative instantiations but they never require any explicit type annotation.
 
 The type system distinguishes between Damas-Milner types (types permitting up to rank-1 types) and \textit{rich} types (higher rank types).
 
 For instance $Int \rightarrow Int$ and $\forall a. a \rightarrow a$ are Damas-Milner types, but $\forall b.(\forall a. a \rightarrow a) \rightarrow b$ is a \textit{rich} type.
 
-FPH's inference algorithm as mentioned before is an extension of the Damas-Milner inference algorithm, but due to allowing higher-rank polymorphism and impredicativity, the ability to type an expression with a single best fitting type (principle type) is lost. This brings with it some added complications in that the algorithm can no longer determine one single type and use it throughout the program wherever the function is in scope.
+FPH's inference algorithm as mentioned is an extension of the Damas-Milner inference algorithm. However due to allowing higher-rank polymorphism and impredicativity, the ability to type an expression with a single best fitting type (principle type) is lost. This brings with it some added complications in that the algorithm can no longer determine one single type and use it throughout the program wherever the function is in scope.
 
 This is where the programmer is required to help the type system by providing annotations, for example the earlier defined function \emph{f}
 \begin{quotation}
@@ -143,14 +153,14 @@ would pose a problem, since there is no \emph{best} type that describes \emph{f}
 If the programmer annotates the function \emph{f} with the type $(\forall a. a \rightarrow a) \rightarrow (Int, String)$ then there would no longer be any ambiguity and the type system can check against the provided type.
 The burden on the programmer can also be eased by allowing partial type annotations, this would only require the programmer to annotate \emph{f} with $(\forall a. a \rightarrow Int) \rightarrow ...$ since the argument \emph{push} was the cause of the ambiguity. Another method is to allow annotations on abstractions. Again only the variable \emph{push} would have to be annotated.
 
-FPH allows impredicative instantiations in a controlled fashion. When a binding is ambiguous (as in, can be instantiated to two or more incomparable types) this causes a problem because we do not know which type to use. The idea presented in FPH is to explicitly mark the types of bindings that can lead to such ambiguity with \textit{boxes}. The allowed types in FPH are:
+Impredicative instantiations allowed in a controlled fashion. When a binding is ambiguous (as in, can be instantiated to two or more incomparable types) this causes a problem because we do not know which type to use. The idea presented in the FPH type system is to explicitly mark the types of bindings that can lead to such ambiguity with \textit{boxes}. The allowed types in FPH are:
 
 \begin{quotation}
 $\tau'$ ::= $\alpha$ $||$  $\tau'_1 \rightarrow \tau'_2$ $||$ T $\tau'$ $||$ $\framebox[0.45cm][l]{o}$ \\
 \indent $o$ $\hspace{1pt}$ ::= $\forall \alpha.o$ $||$ $\alpha$ $||$ $o \rightarrow o$ $||$ T $o$
 \end{quotation}
 
-FPH allows quantifications (and so polymorphic types) but only inside \emph{boxes} $\Box$ and governs their use with a set of 3 central \textit{Ideas}\cite{FPH}.
+The FPH type system allows quantifications (and so polymorphic types) but only inside \emph{boxes} $\Box$ and governs their use with a set of 3 central \textit{Ideas}\cite{FPH}.
 
 First when a polymorphic function is instantiated with boxy monotype (monomorphic type), this indicates places in the type where "guessing" is required to fill in a type in order to type check.
 Secondly when comparing types, discard all boxes. There is no need to annotate function applications since even though one of the argument may emit a boxy type, it can be compared with an unboxed type by removing the box.
@@ -161,13 +171,13 @@ These are the three central ideas that are used to modify the original Hindley-M
 \subsection{Practical type inference for arbitrary-rank types\cite{boring}}
 This approach is a restricted version of a type system for arbitrary rank types from Odersky \& Laufer\cite{odesky} and uses elements from the work of Pierce \& Turner\cite{pierce}. The first is about annotating terms and functions with \textit{type schemes}, which are the usual type annotations we know today in Haskell ($\forall a.$). This enables annotation of arguments with a higher-rank type. The latter describes a mechanism for \textit{bidirectional typing} which allows types of parameters of anonymous functions (lambdas) and \textit{local synthesis of type arguments} and finds the principle (best) type of polymorphic applications when one exists.
 
-The FPH type system tries to limit the amount of annotation needed in order to type a higher-rank program. Particularly because the original Odersky \& Laufer\cite{odesky} requires a lot of programmer annotation.
+The type system tries to limit the amount of annotation needed in order to type a higher-rank program. Particularly because the original Odersky \& Laufer\cite{odesky} requires a lot of programmer annotation.
 
 By combining the two approaches it is possible to annotate just one clauses of a function and have the type information propagated along so that you do not have to explicitly annotate every argument in every clause.
 
 Because this system is a conservative extension of the Hindley-Milner type system it means that any program type able in the Hindley-Milner type system is still type able without any additional annotation. Annotation is only needed on higher-rank types.
 
-FPH also uses the idea of \textit{subsumption} to compare types and see if one is an instance (or more polymorphic version) of the other type. 
+The type system also uses the idea of \textit{subsumption} to compare types and see if one is an instance (or more polymorphic version) of the other type. 
 
 \begin{eqnarray*}
 g  &::& ((\forall\beta.[\beta] \rightarrow [\beta]) \rightarrow Int) \rightarrow Int \\
@@ -190,6 +200,6 @@ $\forall\alpha\beta.\alpha\rightarrow\beta\rightarrow\beta\leq\forall\alpha.\alp
 
 Such directly incomparable types arise from the use of \textit{eager generalization}, which is the generalization of every lambda body in the abstraction so that the $\forall$'s in the resulting type appear as far right as possible in the type.
 
-In terms of the types, the only difference between the FPH and Hindley-Milner type system is the intermediate type $\rho$. This type provides annotations to allow arbitrary ranked types.
+In terms of the types, the only difference between the FPH and Hindley-Milner type system is the intermediate type $\rho$. This type requires annotations to allow arbitrary ranked types.
 
-The Hindley-Milner typing rules have also been slightly modified to handle this , but the FPH type system is not impredicative.
+The Hindley-Milner typing rules have also been slightly modified to handle all these modifications, but the resulting type system is not impredicative.

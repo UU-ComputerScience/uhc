@@ -27,89 +27,9 @@
 % \end{frame}
 
 \subsection{Type Systems}
-\frame{
-	\frametitle{Type inferencing}
 
-	\begin{quotation}
-    "Type inference refers to the ability to deduce automatically the type of an expression in a programming language."
-    \end{quotation}
-    
-    \only<2->{For example the \emph{identity} function |\x->x : alpha -> alpha|}
-}
 
-\frame{
-	\frametitle{Hindley-Milner}
-    
-	\begin{itemize}
-	\item<1-> Damas-Milner
-	\item<2-> Principle type
-	\item<3-> Decidable inferencing
-	\end{itemize}
-}
 
-\frame{
-	\frametitle{Higher-rank types}
-    
-	\begin{itemize}
-	\item<1-> Haskell '98 types are rank-1
-	\item<2-> |a -> b -> a|
-   \item<3-> |forall a b. a -> b -> a|
-   \item<4-> |forall a. a -> (forall b. b -> a)|
-   \item<5-> |forall b. (forall a. a -> a) -> b -> b|
-	\end{itemize}
-
-	\only<6->{Refers to the the number of |forall|s nested to the left of a |(->)|}
-}
-
-\frame{
-	\frametitle{Higher-rank types}
-    
-	\begin{code}
-	poly = \f -> (f 1, f 'c')
-	\end{code}
-	
-	cannot be expressed without Higher-Rank types.
-}
-
-\frame{
-	\frametitle{SystemF}
-   Provides typing support for higher-rank functions
-
-	\begin{block}<+->{Terms}
-		\begin{itemize}
-		\item Type abstraction ($\Lambda X. t$)
-		\item Type application (t [T])
-		\end{itemize}
-	\end{block}
-
-	\begin{block}<+->{Types}
-		\begin{itemize}
-		\item Type variables (X)
-		\item Universal types (|forall X. T|)
-		\end{itemize}
-	\end{block}
-}
-
-\frame{
-	\frametitle{SystemF}
-   Typing of the |id| function
-	\begin{itemize}
-	\item<1-> $id = \lambda x. x$
-	\item<2-> $id = \Lambda X. \lambda x : X -> x : X$
-	\item<3-> Typing |id 3|
-	\item<4-> id [Int] = [X$\rightarrow$Int]($\lambda x:X. x$)
-	\end{itemize}
-}
-
-\frame{
-	\frametitle{SystemF}
-	\begin{itemize}
-	\item<1->|poly = \f -> (f 1, f 'c')| is now typeable
-	\item<2->Undecidable
-	\item<3->Requires annotation
-	\item<4->|poly = \(f :: forall a -> Int) -> (f 1, f 'c')|
-	\end{itemize}
-}
 
 \frame{
 	\frametitle{The problem}
@@ -164,10 +84,10 @@
 	\frametitle{Context Free Grammars}
 
 	\begin{itemize}
-	\item<1-> Can only describe syntax
-	\item<2-> Cannot specify any context-sensitive conditions
-   \item<2-> $a^nb^nc^n$
-	\item<3-> A way to define semantics/meaning
+     \item<1-> Can only describe syntax
+     \item<2-> Cannot specify any context-sensitive conditions
+     \item<2-> $a^nb^nc^n$
+     \item<3-> A way to define semantics/meaning
 	\end{itemize}
 }
 
@@ -215,38 +135,6 @@
 	\frametitle{}
 
 }
-
-\subsection{Introduction}
-
-\subsection{UUAGC}
-
-\subsection{Ruler-Core}
-
-\section{HML}
-
-\subsection{Introduction}
-
-\subsection{Types}
-
-\subsection{Invariants}
-
-\subsection{Semantics}
-
-\subsection{Utility functions}
-
-\subsection{Normal Form}
-
-\section{Implementation}
-
-\subsection{Inferencing}
-
-\subsection{Unification}
-
-%\section{Additions}
-%
-%\subsection{Tuples}
-%
-%\subsection{Case expressions}
 
 \section{Result}
 

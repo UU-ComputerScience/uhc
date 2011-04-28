@@ -956,7 +956,7 @@ datasem Expr monad IO
         (loc.frs, loc.binds)  = let nms         = getBindLHs loc.decls
                                     (vars, frs) = freshM lhs.frs (length nms)
                                 in (frs, zipWith (\a b->(a, mkQVar b)) nms vars)
-        loc.env   = Gamma $ foldr (.) id (map (\(k,v)->minsertUnique k v) loc.binds) (unGam lhs.env) -- temporaty update the environment. this will later be updated
+        loc.env   = Gamma $ foldr (.) id (map (\(k,v)->minsert k v) loc.binds) (unGam lhs.env) -- temporaty update the environment. this will later be updated
         
         decls.pre = lhs.pre
         decls.env = loc.env
@@ -1329,7 +1329,7 @@ subsume = sem subsume : Subsume monad IO
                default? pre = last
                default? frs = last
                clause Main_subsume
-                loc.ty   = lhs.ty -- nf lhs.ty
+                loc.ty   = nf lhs.ty
                 loc.nfTy = isNf lhs.exp
                 loc.nfTs = isNf loc.ty
                 loc.nf   = loc.nfTy && loc.nfTs
@@ -1360,10 +1360,12 @@ subsume = sem subsume : Subsume monad IO
                       loc.e1 = u.sub
                       
                       (loc.q3, loc.q4) = split (loc.q1, domain loc.q)
-                      loc.e2 = let x = nub (domain loc.q4)
+                      loc.e2 = let x  = nub (domain loc.q4)
                                in loc.e1 `remove` x
-                      loc.codom = nub $ skolems loc.e2 ++ skolems loc.q3
-                      loc.check = False --  any (`elem` loc.codom) loc.c --re-enable for skolem check
+                      loc.codom = let except = nub (domain loc.q \\ prefixDom loc.q)
+                                      skols  = filter ((`elem` except).fst) loc.e1
+                                  in  (nub $ skolems loc.e2 ++ skolems loc.q3) \\ skolems skols
+                      loc.check = any (`elem` loc.codom) loc.c --re-enable for skolem check
                       
                       internal skol_check
                         clause succeeded
@@ -1557,7 +1559,7 @@ unify = sem unify : Unify monad IO
                                s.pre = loc.q
                                s.exp = loc.p
                                s.frs = lhs.frs
-                               s.ty  = dropQuant loc.phi'
+                               s.ty  = toScheme loc.phi'
                                
                                (loc.q2, loc.e2) = let a   = appAll s.sub loc.expr
                                                       sub = (loc.varnm, TyScheme_SystemF $ mkTop a) 

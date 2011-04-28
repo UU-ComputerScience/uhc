@@ -1,11 +1,11 @@
 \chapter{HML}
 \label{HML}
 \section{Introduction}
-The majority of type inference systems today are an extension of the  Hindler-Milner (HM)\cite{HM} type system. The HML\cite{HML} type system by Daan Leijen is no different in this regard. It extends the Hindley-Milner type system to add support for first class polymorphism. The HML type system is itself an simplification and at the same time a restricted version of MLF\cite{MLF} while retaining the expressiveness of MLF. The MLF type system is another type system for functional languages which provides impredicative higher-rank polyorphism. However it has a more stringent annotation requirement and more complex type representations then the HML type system. The HML type system in contrast to the MLF type system only uses so called \emph{flexible types} (See section\ref{sec:Types}), which make the system easier to used compared to the  MLF type system.
+The majority of type inference systems today are an extension of the  Hindler-Milner (HM)\cite{HM} type system. The HML\cite{HML} type system by Daan Leijen is no different in this regard. It extends the Hindley-Milner type system to add support for first class polymorphism. The HML type system is itself an simplification and at the same time a restricted version of the MLF\cite{MLF} type system while retaining the expressiveness of MLF. The MLF type system is another type system for functional languages which provides impredicative higher-rank polyorphism. It has a more stringent annotation requirement and more complex type representations then the HML type system. The HML type system in contrast to the MLF type system only uses so called \emph{flexible types} (See section\ref{sec:Types}), which make the system easier to used compared to the  MLF type system.
 
-In the HML type system annotations are only needed on function parameters with a polymorphic type(Another version $HML^F$ allows annotations of Let bindings). Because of this conservative annotation requirement and because HML is an extension of HM any program that is well typed in the Hindley-Milner type system is well typed in the HML type system.
+In the HML type system annotations are only needed on function parameters with a polymorphic type(Another version $\textrm{HML}^F$ allows annotations of Let bindings). Because of this conservative annotation requirement and because HML is an extension of HM any program that is well typed in the Hindley-Milner type system is well typed in the HML type system.
 
-The typing rules are thus very similar to those of the Hindley-Milner type system, where every expression can and is assigned a \emph{most} general type. This is true even with higher rank functions. Furthermore the HML type system is an impredicative type system which is very robust with respect to program transformations. It also has some interesting properties, in particular a Let binding can always be inlined or a shared expression abstracted into a Let. Whenever \emph{$e_1$ $e_2$} is well typed then so are \emph{apply $e_1$ $e_2$} and \emph{revapply $e_2$ $e_1$}. In general this means that HML is insensitive to the order of applications, which is a property that is not true of every type system.
+The typing rules are thus very similar to those of the Hindley-Milner type system, where every expression can and is assigned a \emph{most} general type. This is true even with higher rank functions(given, not inferred). Furthermore the HML type system is an impredicative type system which is very robust with respect to program transformations. It also has some interesting properties, in particular a Let binding can always be inlined or a shared expression abstracted into a Let. Whenever \emph{$e_1$ $e_2$} is well typed then so are \emph{apply $e_1$ $e_2$} and \emph{revapply $e_2$ $e_1$}. In general this means that HML is insensitive to the order of applications, which is a property that is not true of every type system.
 
 The HML type system is not robust towards $\eta-expansion$ since all polymorphic (higher rank) arguments need to be annotated.
 
@@ -39,7 +39,7 @@ let ids = single id
 in  (map poly ids, append (single inc) ids)
 \end{code}
 
-But would require \textit{ids} to be two incomparable SystemF types at the same time, namely List (Int $\rightarrow$ Int) and List ($\forall\alpha$. $\alpha$ $\rightarrow$ List $\alpha$). This is where \textit{flexible} types come in, the type of ids can now be described as $\forall(\beta\geq \forall\alpha \rightarrow \alpha).$ List $\beta$, which can be interpreted as "any $\beta$ that is an instance of $\forall\alpha \rightarrow \alpha$ the type List $\beta$ is valid". This can be considered as the most "principle" or general type of that expression. The flexible type of ids can then be instantiated to both of the required types. 
+But would require \textit{ids} to be two incomparable SystemF types at the same time, namely List (Int $\rightarrow$ Int) and List ($\forall\alpha$. $\alpha$ $\rightarrow$ $\alpha$). This is where \textit{flexible} types come in, the type of ids can now be described as $\forall(\beta\geq \forall\alpha \rightarrow \alpha).$ List $\beta$, which can be interpreted as "any $\beta$ that is an instance of $\forall\alpha \rightarrow \alpha$ the type List $\beta$ is valid". This can be considered as the most "principle" or general type of that expression. The flexible type of ids can then be instantiated to both of the required types. 
 
 These \textit{flexible} types are the key HML, but flexible types are only allowed on \textit{Let}-bindings (see |poly|) and values of a flexible type cannot be passed as arguments.
 
@@ -61,7 +61,7 @@ HML introduces various types, most of which are an extensions of Hindley-Milner 
 \label{types}
 \end{figure}
 
-The $\sigma$ types are the basic SystemF types. Function applications are expressed by applying the arrow constructor ($\rightarrow$) to its arguments. The $\omega$ type is the \emph{Row} type which is the type of a Tuple:
+The $\sigma$ types are the basic SystemF types. Function applications are expressed by applying the arrow constructor ($\rightarrow$) to its arguments. The $\omega$ type is the \emph{Row} type, which is the type of a Tuple:
 
 \begin{eqnarray*}
 \omega & ::= & \bot \\
@@ -82,9 +82,9 @@ In the SystemF type system, a \emph{type scheme} is represented as $\forall \alp
 \end{figure}
 
 Lambda bound values always have a $\sigma$ type since \emph{flexible types} cannot be passed as arguments, however \emph{Let} bound values can have a \emph{flexible type} $\varphi$.
-A \emph{type scheme} $\varphi$ is either a \emph{SystemF} type $\sigma$, the polymorphic $\bot$ value or the quantified type $\forall (\alpha \geq \varphi_1). \varphi_2$. A $\varphi$ with a quantified bounds can be instantiated to any instance of it's bounds. Since $\bot$ can be instantiated to anything, the bounds $(\alpha \geq \bot)$ is called the unconstrained bounds. This bounds is also equivalent to the \emph{SystemF} type $\forall \varphi$. The bounds of a \emph{type scheme} can be anything, even types that cannot be instantiated to anything else. An example of such a type is $(\alpha \geq Int).\alpha$, $Int$ cannot be instantiated to anything. Such types are called \emph{trivially quantified} or more specifically such types have a \emph{trivial bounds}.
+A \emph{type scheme} $\varphi$ is either a \emph{SystemF} type $\sigma$, the polymorphic $\bot$ value or the quantified type $\forall (\alpha \geq \varphi_1). \varphi_2$. A $\varphi$ with a quantified bounds can be instantiated to any instance of its bounds. Since $\bot$ can be instantiated to anything, the bounds $(\alpha \geq \bot)$ is called the unconstrained bounds. This bounds is also equivalent to the \emph{SystemF} type $\forall \alpha$. The bounds of a \emph{type scheme} can be anything, even types that cannot be instantiated to anything else. An example of such a type is $(\alpha \geq Int).\alpha$, $Int$ cannot be instantiated to anything. Such types are called \emph{trivially quantified} or more specifically such types have a \emph{trivial bounds}.
 
-The dual of this is a scheme with a \emph{non-trivial bounds}. This type is called the \emph{quantified scheme} $\hat{\varphi}$:
+The dual of this is are type schemes with a \emph{non-trivial bounds}. These types are called the \emph{quantified schemes} $\hat{\varphi}$:
 
 \begin{figure}[H]
 \begin{eqnarray*}
@@ -95,7 +95,7 @@ The dual of this is a scheme with a \emph{non-trivial bounds}. This type is call
 \label{quantified-schemes}
 \end{figure}
 
-Even though quantified schemes are presented as a type, they are regarded in this implementation as a type synonym to normal type schemes. The reason is that quantified schemes are just a restriction on a normal type scheme. Treating them the same is safe to do by adding an extra condition to every function that can extend the prefix: \emph{Any function that extends the prefix must not allow a trivial bound to be added}.
+Even though quantified schemes are presented as a type, they are regarded in this implementation as a type synonym to normal type schemes. The reason is that quantified schemes are just a restriction on normal type schemes. Treating them the same is safe to do by adding an extra condition to every function that can extend the prefix: \emph{Any function that extends the prefix must not allow a trivial bound to be added}.
 The HML type system defines an extra environment called a \emph{Prefix} which holds the quantified bounds of types:
 
 \begin{figure}[H]
@@ -106,7 +106,7 @@ Q ::= \alpha_1\geq\hat{\varphi}_1,\ldots,\alpha_n\geq\hat{\varphi}_n
 \label{Prefix}
 \end{figure}
 
-The prefix cannot contain any trivial bounds, which is why the \emph{Quantified schemes} type $\hat{\varphi}$ is used inside the Prefix $Q$. The domain of the prefix (dom $Q$ = ${\alpha_1 \ldots \alpha_n}$) and the domain of the substitution environment are disjoint. In other words, a type variable is either bound by the prefix or has been substituted away. A type scheme ca either be quantified by itself or quantified by the prefix environment, when any conflicts arise quantifying in the prefix takes precedence.
+The prefix cannot contain any trivial bounds, which is why the \emph{Quantified schemes} type $\hat{\varphi}$ is used to define the Prefix $Q$. The domain of the prefix (dom $Q$ = ${\alpha_1 \ldots \alpha_n}$) and the domain of the substitution environment are disjoint. In other words, a type variable is either bound by the prefix or has been substituted away. A type scheme can either be quantified by itself or quantified by the prefix environment, when any conflicts arise quantifying in the prefix takes precedence.
 
 The next two types are the \emph{monomorphic} $\tau$ type and the \emph{unqualified type} $\rho$. The \emph{monomorphic} type $\tau$ is the same type as in the Hindley-Milner type system, and the \emph{unqualified} $\rho$ type is represents types without any quantifiers. 
 
@@ -158,7 +158,7 @@ The generalization rule generalizes a type by moving its bounds out from the pre
 		\UnaryInfC{$Q,\Gamma \vdash e_1 \hspace{3pt} e_2 : \sigma$}
 \end{prooftree}
 
-The application rule is the standard application rule over types. It requires that the type of $e_2$ be equal to the type of the argument of $e_1$. Note that this ranges over normal SystemF type and not type schemes. Type schemes can still be typed using this rule as a type scheme can be present in the bounds of the types $e_1$ and $e_2$ (See \emph{Fun} rule).
+The application rule is the standard application rule over types. It requires that the type of $e_2$ be equal to the type of the argument of $e_1$. Note that this ranges over normal SystemF type and not type schemes. Type schemes can still be typed using this rule, because a type scheme can be present in the bounds of the types $e_1$ and $e_2$ (See \emph{Fun} rule).
 
 \begin{prooftree}
 		\AxiomC{$Q,\Gamma \vdash e_1 : \varphi_1 \quad Q,(\Gamma, x : \varphi_1) \vdash e_2 : \varphi_2$}
@@ -182,9 +182,9 @@ The Fun rule restricts the type of the parameter to a monomorphic type $\tau$ in
 		\UnaryInfC{$Q, \Gamma \vdash \lambda(x :: \sigma_1). e : \sigma_1 \rightarrow \sigma_2$}
 \end{prooftree}
 
-The Function Annotation rule provides a mechanism to explicitly annotate abstraction variables with a (possibly) polymorphic type. Like the annotation of the \textit{poly} example above with the needed higher-rank type.
+The Function Annotation rule provides a mechanism to explicitly annotate abstraction variables with a (possibly) polymorphic type. Like the annotation of the \textit{poly} example above with a higher-rank type.
 
-In particular the \textit{FUN} rule for lambda expressions restrict the type of the parameters to be a mono type $\tau$ since any scheme on the mono type is in the Prefix $Q$. Doing so makes it that the types hidden in the Prefix cannot be directly compared to other types. Instead they have to be instantiated as a means of comparison, as oppose to being unified. This is the secret behind the HML type system.  
+In particular the \textit{FUN} rule for lambda expressions restrict the type of the parameters to be a mono type $\tau$. Since any bounds (possible containing a type scheme) on the mono type is in the Prefix $Q$. This makes it that the types hidden in the Prefix cannot be directly compared to other types. Instead they have to be instantiated as a means of comparison, as oppose to being unified. This is the secret behind the HML type system.  
 
 \section{Semantics}
 \subsection{Type scheme}
@@ -315,15 +315,15 @@ The first way to update a prefix is with a new scheme:
 The steps performed by this function can decomposed as:
 
 \begin{enumerate}
-\item{ Split the prefix into two parts ($Q_0, Q_{0'})$ based on the free variables of the new scheme. This is done for two reasons:  
+\item{ Split the prefix into two parts |(Q_0, Q_0')| based on the free variables of the new scheme. This is done for two reasons:  
 		\begin{itemize}
 		\item As a crude check to prevent infinity types. If the |ftv| of $\varphi_2$ contains $\alpha$ the second operation would fail.
 		\item Reinforce the invariant. The prefixes that will not be updated are older and are positioned in the front of the list.
 		\end{itemize}
      }
-\item Split $Q_{0'}$ in place into 3 parts. $Q_1$ contains the schemes before the current binding to $\alpha$. $Q_3$ contains the schemes after the binding to $\alpha$.
-\item{ To prevent that a simple bound enter the prefix a check is performed to see if the normal form of the new scheme $\varphi_2$ is an unqualified type. If it is a simple type, we return the a substitution to the type instead of adding it to the prefix, and the substitution is applied to $Q_2$ because due to the ordering of the prefixes it is the only prefix that can contain any reference to $\alpha$.
-However if the type is not a simple type then it is added in-place in the prefix and no substitution is returned.
+\item Split |Q_0'| in place into 3 parts. $Q_1$ contains the schemes before the current binding to $\alpha$. $Q_3$ contains the schemes after the binding to $\alpha$.
+\item{ To prevent that a trivial bound enter the prefix a check is performed to see if the normal form of the new scheme $\varphi_2$ is an unqualified type. If it is a simple type, we return the a substitution to the type instead of adding it to the prefix, and the substitution is applied to $Q_2$ because due to the ordering of the prefixes it is the only prefix that can contain any reference to $\alpha$.
+However if the type is not a trivial type then it is added in-place in the prefix and no substitution is returned.
      }
 \item In the return statements, the tupling statement is intended to be an implicit concatenation if the elements. 
 \end{enumerate}
@@ -343,7 +343,7 @@ The last way to modify a prefix is by extending it with a new entry. This is don
 <                 _then _return (Q', lbrack alpha := rho rbrack)
 <                 _else _return ((Q', alpha >= phi'),lbrack rbrack)
 
-Like before, the normal form checks are here to prevent simple types to enter the environment. However there is another type that shouldn't enter the environment here: \emph{types who's normal form is $\bot$ should not enter the prefix}. 
+Like before, the normal form checks are here to prevent simple types to enter the environment. However there is another type that should not enter the environment here: \emph{types whose normal form is $\bot$ should not enter the prefix}. 
 
 Concretely this means that extending the prefix with e.g. $\beta \geq (\forall(\alpha \geq \bot).\alpha)$ should just return the substitution $\beta := \alpha$. The reason for this is to prevent information loss when types are shared, this will be covered in more detail in the implementation of Applications.
 
@@ -373,14 +373,14 @@ In the original algorithm for unification, the following semantically equivalent
 (\forall a \geq \bot). a \rightarrow a
 \end{eqnarray*}
 
-They do however result in the same SystemF type. This occurs because we want to retain some link back to types that a normal Haskell programmer is used to. But for the implementation of unification there is really no reason why the SystemF type schemes cannot be removed as inputs and only flexible types accepted. All types, with the exception of the inner quantifiers for higher-rank types are promoted to flexible types. The |forall b.| in |forall a. (forall b. b -> b) -> a -> a| is such a type. The promoted type is |(a >= bot). (forall b. b -> b) -> a -> a|.
+They do however result in the same SystemF type. This occurs because we want to retain some link back to types that a normal Haskell programmer is used to. But for the implementation of unification there is really no reason why the SystemF type schemes cannot be removed as inputs and only flexible types accepted. All types, with the exception of the inner quantifiers for higher-rank types are promoted to flexible types. The |forall b.| in |forall a. (forall b. b -> b) -> a -> a| is such a type. The promoted version of this type is |(a >= bot). (forall b. b -> b) -> a -> a|.
 
 \begin{code}
 embedF :: TyExpr -> TyScheme
 embedF = embed id
   where  embed :: (TyScheme -> TyScheme) -> TyExpr -> TyScheme
-         embed val (TyExpr_Parens     s) = embed val s
-         embed val (TyExpr_Quant  _ a t) = 
+         embed val (TyExpr_Parens       s) = embed val s
+         embed val (TyExpr_Quant  u_s a t) = 
            let e = TyScheme_Quant (Scheme_Simple a TyScheme_Bottom)
            in  embed (val . e) t
          embed val e                     = val (TyScheme_SystemF e)
@@ -404,4 +404,4 @@ codom &\tau& = \{\}
 \subsection{Renaming}
 \label{renaming}
 
-The type HML system does not have support for case expressions and tuples. In those two situation you would want on every lookup of a type constructor to return a fresh type. e.g. the type of $(\lbrack \rbrack, \lbrack \rbrack)$ should is $\forall \alpha \beta . (\lbrack \alpha \rbrack, \lbrack \beta \rbrack)$. Because of this, on every lookup of a constructor we rename every bound variable. In applications, either the function or the argument needs to be alpha renamed when being added to the prefix. This is because when unifying the type of "id id" the type of both id's are the same. Without the renaming we might end up reasoning about the same type variable accidentally.
+The type HML system does not have support for case expressions and tuples. In those two situation you would want on every lookup of a type constructor to return a fresh type. e.g. the type of $(\lbrack \rbrack, \lbrack \rbrack)$ is $\forall \alpha \beta . (\lbrack \alpha \rbrack, \lbrack \beta \rbrack)$. Because of this, on every lookup of a constructor we rename every bound variable. In applications, either the function or the argument needs to be alpha renamed when being added to the prefix. This is because when unifying the type of expressions such as |id id| the type of both |id|s are the same. Without the renaming we might end up reasoning about the same type variable accidentally.

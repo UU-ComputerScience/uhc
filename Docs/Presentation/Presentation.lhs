@@ -5,7 +5,7 @@
 \usepackage{beamerthemeAntibes}
 \usecolortheme{lily}
 
-\title{Type systems with first class polymorphisms using Attribute Grammars}
+\title{Type systems using next generation Attribute Grammars}
 \subtitle{Master thesis defense}
 \author[Tamar]{Tamar Christina \\ \small{T.Christina@@students.uu.nl}}
 \institute{University of Utrecht}
@@ -62,6 +62,7 @@
 	\end{frame}
 }
 
-%include Content.tex
+%%include Content.tex
+%include Tutorial.tex
 
 \end{document}

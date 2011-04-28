@@ -208,12 +208,14 @@ Multiple visits can be defined for an interface. The order of appearance of visi
 
 \subsection{Semantics}
 We define the rules of a production per visit. A rule may only be applied in the same visit or a later visit than it is declared in. Also, visits introduce a scope.
-Rules in ruler core are either an assertion (like a match statement), an assignment (assignment to attributes) or a statement (default rules, invocations, child declarations, etc..)
+Rules in \rcore are either an assertion (like a match statement), an assignment (assignment to attributes) or a statement (default rules, invocations, child declarations, etc..)
 
-Furthermore, a visit is divided in one or more clauses. Each clause provides an alternative set of rules for the that visit of the production. During evaluation, clauses are tried in the order of appearance. Special match rules specify conditions for backtracking.
+There are two kind of visits, one being the visits declared inside an interface and the other the visits declared in a semantic function. These are separate concepts. The visits of an interface declares what we want to compute and those of a semantic function declares how we want to compute these values.
+
+Furthermore, a semantic visit is divided in one or more clauses. Each clause provides an alternative set of rules for the that visit of the production. During evaluation, clauses are tried in the order of appearance. Special match rules specify conditions for backtracking.
 In ruler-core, productions themselves are actually also clauses.
 
-Visits like all functions have arguments, or in this case attributes. The \emph{inh} keyword indicates an \emph{inherited} attribute (input value), whereas \emph{syn} indicates a \emph{synthesized} attribute (output value). The order of declaration of the attributes is not important.
+Interface visits like all functions have arguments, or in this case attributes. The \emph{inh} keyword indicates an \emph{inherited} attribute (input value), whereas \emph{syn} indicates a \emph{synthesized} attribute (output value). The order of declaration of the attributes is not important.
 
 After declaring the datatypes and interfaces; the actual semantic function can be declared to evaluate the expressions:
 
@@ -249,14 +251,14 @@ There are two ways of defining a semantic function: using the \textbf{datasem} a
 Defining semantics for a \emph{data type} and \emph{nonterminal}(interface) defined in \rcore can be done with a shorthand: \textbf{datasem}. As the name suggests \textbf{datasem} stands for \emph{datatype semantics}. % Those familiar with uuagc can compare defining a \textbf{datasem} in \rcore with a \textbf{SEM} declaration in uuagc.
 
 \begin{figure}[!h]
-\begin{code}
+
+\caption{Syntax definition of a sem function}
+\label{datasem:syntax}\begin{code}
 datasem <nonterminal> [monad <type>]
     {clause <name>
         ...
     }
 \end{code}
-\caption{Syntax definition of a sem function}
-\label{datasem:syntax}
 \end{figure}
 
 Defining a \textbf{datasem} is a shorthand for defining a \textbf{sem} (more on this later). The \emph{monad} type is optional and will be ignored for now. %, however if a type was specified for any semantic function which is used by, or used in this \textbf{datasem} then to disambiguate you need to define the type in this declaration as well.
@@ -560,7 +562,7 @@ eqOp = sem eqOp : OperatorEq monad IO
 \label{sem:syntax}
 \end{figure}
 
-With \textb{sem} we can define a semantic function for an arbitrary interface. The different components of figure \ref{sem:syntax} are decomposed as:
+With \textbf{sem} we can define a semantic function for an arbitrary interface. The different components of figure \ref{sem:syntax} are decomposed as:
 
 %\begin{figure}[ht!]
 \begin{description}
