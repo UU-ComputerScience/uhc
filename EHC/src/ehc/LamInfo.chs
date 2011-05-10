@@ -168,7 +168,7 @@ lamMpMergeFrom
      -> Map.Map HsName z					-- arbitrary map holding info to merge
      -> LamMp -> LamMp
 lamMpMergeFrom get set merge empty m lm
-  = Map.foldWithKey (\n z lm -> Map.alter (Just . upd z) n lm)
+  = Map.foldrWithKey (\n z lm -> Map.alter (Just . upd z) n lm)
                     lm m
   where upd z (Just i) = set (Just (merge z $ maybe emptyExtra id $ get i)) i    
         upd z Nothing  = set (Just (merge z         emptyExtra           )) empty

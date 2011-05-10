@@ -11,6 +11,9 @@ Assumptions (to be documented further)
 %%[(9 hmtyinfer || hmtyast) module {%{EH}CHR.Solve} import({%{EH}CHR},{%{EH}CHR.Constraint},{%{EH}CHR.Key},{%{EH}Substitutable})
 %%]
 
+%%[(9 hmtyinfer || hmtyast) import({%{EH}VarLookup})
+%%]
+
 %%[(9 hmtyinfer || hmtyast) import({%{EH}Base.Common},{%{EH}Base.Trie} as Trie)
 %%]
 
@@ -370,6 +373,7 @@ chrSolveStateTrace = stTrace
 chrSolve
   :: ( CHRMatchable env p s, CHRCheckable env g s
      -- , VarUpdatable s s, VarUpdatable g s, VarUpdatable i s, VarUpdatable p s
+     , VarLookupCmb s s
      , VarUpdatable s s, VarUpdatable g s, VarUpdatable i s, VarUpdatable p s
      , CHREmptySubstitution s
      , Ord (Constraint p i)
@@ -389,6 +393,7 @@ chrSolve env chrStore cnstrs
 chrSolve'
   :: ( CHRMatchable env p s, CHRCheckable env g s
      -- , VarUpdatable s s, VarUpdatable g s, VarUpdatable i s, VarUpdatable p s
+     , VarLookupCmb s s
      , VarUpdatable s s, VarUpdatable g s, VarUpdatable i s, VarUpdatable p s
      , CHREmptySubstitution s
      , Ord (Constraint p i)
@@ -411,6 +416,7 @@ chrSolve''
   :: -- forall env p i g s .
      ( CHRMatchable env p s, CHRCheckable env g s
      -- , VarUpdatable s s, VarUpdatable g s, VarUpdatable i s, VarUpdatable p s
+     , VarLookupCmb s s
      , VarUpdatable s s, VarUpdatable g s, VarUpdatable i s, VarUpdatable p s
      , CHREmptySubstitution s
      , Ord (Constraint p i)
@@ -562,10 +568,9 @@ chrSolve'' env chrStore cnstrs prevState
 %%][100
 %%]]
                 -- util functions
-                candidate (StoredCHR {storedIdent = (ck,_), storedKeys = ks, storedChr = chr@(CHR {chrSimpSz = simpSz})})
-                  = (cand lkup sks ++ cand (\h k -> lkup h k) pks, (ck,queriedWorkS))
-                  where (sks,pks)     = splitAt simpSz ks
-                        lkup how k    = partition (\(_,w) -> workTime w < lastQueryTm) $ lookupResultToList $ lookupPartialByKey' (,) how k wlTrie
+                candidate (StoredCHR {storedIdent = (ck,_), storedKeys = ks, storedChr = chr})
+                  = (cand lkup ks, (ck,queriedWorkS))
+                  where lkup how k    = partition (\(_,w) -> workTime w < lastQueryTm) $ lookupResultToList $ lookupPartialByKey' (,) how k wlTrie
                                       where lastQueryTm = lqLookupW k lastQueryW
                         cand lkup     = map (maybe (lkup TrieLookup_Normal workHdKey) (lkup TrieLookup_StopAtPartial))
                         lastQueryW    = lqLookupC ck lastQuery
@@ -587,7 +592,7 @@ chrSolve'' env chrStore cnstrs prevState
                         checks (StoredCHR {storedChr = CHR {chrGuard = gd}})
                           = map chk gd
                           where chk g subst = chrCheck env subst g
-                        cmb (Just s) next = fmap (`varUpd` s) $ next s
+                        cmb (Just s) next = fmap (|+> s) $ next s
                         cmb _        _    = Nothing
         isUsedByPropPart wlUsedIn (chr,(keys,_))
           = fnd $ drop (storedSimpSz chr) keys
@@ -609,19 +614,5 @@ instance (Serialize p, Serialize i, Serialize g, Serialize s) => Serialize (CHRS
 instance (Serialize p, Serialize i, Serialize g, Serialize s) => Serialize (StoredCHR p i g s) where
   sput (StoredCHR a b c d) = sput a >> sput b >> sput c >> sput d
   sget = liftM4 StoredCHR sget sget sget sget
-%%]
-
-%%[(9999 hmtyinfer || hmtyast)
-instance ForceEval (CHR (Constraint p i) g s) => ForceEval (StoredCHR p i g s) where
-  forceEval x@(StoredCHR c i ks id) | forceEval c `seq` forceEval ks `seq` forceEval id `seq` True = x
-%%[[102
-  fevCount (StoredCHR c i ks id) = cm1 "StoredCHR" `cmUnion` fevCount c `cmUnion` fevCount i `cmUnion` fevCount ks `cmUnion` fevCount id
-%%]]
-
-instance ForceEval (StoredCHR p i g s) => ForceEval (CHRStore p i g s) where
-  forceEval x@(CHRStore t) | forceEval t `seq` True = x
-%%[[102
-  fevCount (CHRStore t) = cm1 "CHRStore" `cmUnion` fevCount t
-%%]]
 %%]
 

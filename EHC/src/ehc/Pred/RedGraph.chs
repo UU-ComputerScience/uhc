@@ -65,7 +65,7 @@ mkRedGraphFromReductions cs = addToRedGraphFromReductions cs emptyRedGraph
 
 %%[(9 hmtyinfer) export(addToRedGraphFromAssumes,mkRedGraphFromAssumes)
 addToRedGraphFromAssumes :: Ord p => ConstraintToInfoMap p info -> RedGraph p info -> RedGraph p info
-addToRedGraphFromAssumes cm g = Map.foldWithKey addAssumption g cm
+addToRedGraphFromAssumes cm g = Map.foldrWithKey addAssumption g cm
 
 mkRedGraphFromAssumes :: Ord p => ConstraintToInfoMap p info -> RedGraph p info
 mkRedGraphFromAssumes cm = addToRedGraphFromAssumes cm emptyRedGraph
@@ -99,11 +99,13 @@ addAssumption _            _   = id
 
 %%[(9 hmtyinfer) export(addReduction)
 addReduction :: Ord p => Constraint p info -> RedGraph p info -> RedGraph p info
-addReduction (Reduction p i [q])  =  insertEdge (Red_Pred p, Red_Pred q  , i)
-addReduction (Reduction p i ps)   =  let  andNd  = Red_And ps
-                                          edges  = map (\q -> (andNd, Red_Pred q, i)) ps
-                                     in   insertEdges ((Red_Pred p, andNd, i) : edges)
-addReduction _                    =  id
+addReduction (Reduction {cnstrPred=p, cnstrInfo=i, cnstrFromPreds=[q]})
+                                    =  insertEdge (Red_Pred p, Red_Pred q  , i)
+addReduction (Reduction {cnstrPred=p, cnstrInfo=i, cnstrFromPreds=ps})
+                                    =  let  andNd  = Red_And ps
+                                            edges  = map (\q -> (andNd, Red_Pred q, i)) ps
+                                       in   insertEdges ((Red_Pred p, andNd, i) : edges)
+addReduction _                      =  id
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

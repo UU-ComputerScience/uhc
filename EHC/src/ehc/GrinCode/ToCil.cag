@@ -328,7 +328,7 @@ SEM GrBind
           expr.hasNext    = False
           loc.params      = map (Param Object . hsnShowAlphanumeric) @argNmL
           loc.cilCode     = localsInit @loc.locals : @expr.cilCode ++ [ret]
-          loc.locals      = Map.foldWithKey (\nm pt xs -> Local pt nm : xs) [] @expr.locals
+          loc.locals      = Map.foldrWithKey (\nm pt xs -> Local pt nm : xs) [] @expr.locals
           loc.funArities  = Map.singleton @nm (length @argNmL)
 
 SEM GrExpr

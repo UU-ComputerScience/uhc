@@ -1,0 +1,69 @@
+% UHCUtrechtHaskellCompiler-AU.tex
+\begin{hcarentry}[section,updated]{UHC, Utrecht Haskell Compiler}
+\label{uhc}
+\label{ehc}
+\report{Atze Dijkstra}%11/10
+\status{active development}
+\participants{many others%Jeroen Fokker,
+% Doaitse Swierstra,
+% Arie Middelkoop,
+% Luc\'ilia Camar\~{a}o de Figueiredo,
+% Carlos Camar\~{a}o de Figueiredo,
+% Andres L\"oh, Jos\'e~Pedro Magalh\~{a}es,
+% Vincent van Oostrum, Clemens Grabmayer, Jan Rochel,
+% Tom Lokhorst, Jeroen Leeuwestein, Atze van der Ploeg, Paul van der Ende, Calin Juravle, Levin Fritz
+}
+\makeheader
+
+\paragraph{What is new?}
+UHC is the Utrecht Haskell Compiler, supporting almost all Haskell98 features and most of Haskell2010, plus
+experimental extensions.
+Since the last release a Javascript backend has been implemented.
+We plan to make a next release autumn this year.
+
+\paragraph{What do we currently do and/or has recently been completed?}
+As part of the UHC project, the following (student) projects and other activities are underway (in arbitrary order):
+\begin{itemize}
+\item Jeroen Bransen (PhD): ``Incremental Global Analysis''.
+\item Jan Rochel (PhD): ``Realising Optimal Sharing'', based on work by Vincent van Oostrum and Clemens Grabmayer.
+\item Arie Middelkoop (PhD, to be defended soon): type system formalization and automatic generation from type rules, in particular the Attribute Grammar variants Ruler-Core for supporting more complex type system implementations.
+\item Tamar Christina: an implementation of HML using Ruler-Core.
+\item Jeroen Leeuwestein: incrementalization of whole program analysis.
+\item Jeroen Fokker: GRIN backend, whole program analysis.
+\item Doaitse Swierstra: parser combinator library.
+\item Atze Dijkstra: overall architecture, type system, bytecode interpreter + java + javascript backend, garbage collector.
+\end{itemize}
+
+\paragraph{Background}
+
+UHC actually is a series of compilers of which the last is UHC, plus
+infrastructure for facilitating experimentation and extension.
+The distinguishing features for dealing with the complexity of the compiler and for experimentation are
+(1) its stepwise organisation as a series of increasingly more complex standalone compilers,
+the use of DSL and tools for its (2) aspectwise organisation (called Shuffle) and
+(3) tree-oriented programming (Attribute Grammars, by way of the
+Utrecht University Attribute Grammar (UUAG) system~\cref{uuag}.
+%
+%For more information, see the references provided.
+
+\FurtherReading
+\begin{compactitem}
+\item UHC Homepage:
+\url{http://www.cs.uu.nl/wiki/UHC/WebHome}
+
+\item UHC Blog:
+\url{http://utrechthaskellcompiler.wordpress.com}
+
+\item Attribute grammar system:
+\url{http://www.cs.uu.nl/wiki/HUT/AttributeGrammarSystem}
+
+\item Parser combinators:
+\url{http://www.cs.uu.nl/wiki/HUT/ParserCombinators}
+
+\item Shuffle:
+\url{http://www.cs.uu.nl/wiki/Ehc/Shuffle}
+
+\item Ruler:
+\url{http://www.cs.uu.nl/wiki/Ehc/Ruler}
+\end{compactitem}
+\end{hcarentry}

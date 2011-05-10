@@ -200,9 +200,9 @@ gamAtDirMp vi g = gamToMap $ gamMapWithKey (\n _ -> maybe [] atDirs . gamLookup 
 -- split attr dir map into sets of syn/inh attrs
 atDirMpSynInh :: Map.Map Nm [AtDir] -> (Set.Set Nm,Set.Set Nm)
 atDirMpSynInh m
-  = Map.foldWithKey (\n d (s,i) -> (if AtSyn `elem` d then Set.insert n s else s
-                                   ,if AtInh `elem` d then Set.insert n i else i))
-                    (Set.empty,Set.empty) m
+  = Map.foldrWithKey (\n d (s,i) -> (if AtSyn `elem` d then Set.insert n s else s
+                                    ,if AtInh `elem` d then Set.insert n i else i))
+                     (Set.empty,Set.empty) m
 
 -- union of all judge attr defs in a set (of names with a specific direction)
 jaGamUseInS :: JAGam e -> Set.Set Nm -> Set.Set Nm

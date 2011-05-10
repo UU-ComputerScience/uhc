@@ -154,9 +154,9 @@ data SimplifyState
   = SimplifyState
       { simpToProveHereCnstrMp			:: !CHRPredOccCnstrMp								-- new constraints to prove
       , simpAllCnstrMp					:: !CHRPredOccCnstrMp								-- all constraints to prove, including previous
-      , simpRemCnstrMp					:: !CHRPredOccCnstrMp								-- remaining to be proven, as Assume's
-      , simpRemOccL						:: ![(CHRPredOcc,PredScope)]						-- same, but only occurrences (as list), no associated info
-      , simpCannotCnstrMp				:: !CHRPredOccCnstrMp								-- cannot be proven
+      , simpRemCnstrTraceMp				:: !CHRPredOccCnstrTraceMp							-- remaining to be proven, as Assume's
+      , simpRemOccL						:: ![CHRIntermediateUntilAssume]					-- same, but only occurrences (as list), with original trace mp split up per pred
+      , simpCannotCnstrTraceMp			:: !CHRPredOccCnstrTraceMp							-- cannot be proven
       , simpVarMp						:: !VarMp											-- additional substitution
       , simpEvidMp						:: !CHRPredOccEvidMp								-- map from constraint/pred occurrence to evidence
       , simpEnv							:: !FIIn
@@ -172,7 +172,7 @@ simplify'
      -> ScopedPredStore																		-- available CHR rules
      -> ClassDefaultGam																		-- environment/gam for defaulting
      -> Heuristic CHRPredOcc RedHowAnnotation												-- graph reduction heuristic
-     -> ([(CHRPredOcc,PredScope)] -> ([(CHRPredOcc,PredScope)],[(CHRPredOcc,PredScope)]))	-- partition into ambiguous predicates (and others), for defaulting
+     -> ([CHRIntermediateUntilAssume] -> ([CHRIntermediateUntilAssume],[CHRIntermediateUntilAssume]))	-- partition into ambiguous predicates (and others), for defaulting
      -> CHRPredOccCnstrMp																	-- constraints already proven a previous call
      -> State SimplifyState ()
 simplify' simplifyHow chrStore clDfGam heur partitionUnresolved2AmbigAndOthers toProveHereCnstrMpPrev
@@ -188,7 +188,7 @@ simplify' simplifyHow chrStore clDfGam heur partitionUnresolved2AmbigAndOthers t
        ; when (SimplifyHow_Canonicalize `elem` simplifyHow)
               (do { s <- get
                   ; let (pr,mp)
-                          = Map.foldWithKey (\p c (cm,m)
+                          = Map.foldrWithKey (\p c (cm,m)
                                                -> let (p',m') = canon s p
                                                   in  (Map.insertWith (++) p' c cm, m' `varUpd` m)
                                             )
@@ -207,8 +207,8 @@ simplify' simplifyHow chrStore clDfGam heur partitionUnresolved2AmbigAndOthers t
        ; let prevSimplifyRes = simpRes s
        
        -- 1st simplification run
-       ; (cannotResCnstrMp,chrSolveAssumablePrOccL) <- fullSimp u1 toProveHereCnstrMpPrev prevSimplifyRes
-       ; modify (\s -> s {simpCannotCnstrMp = cannotResCnstrMp, simpRemOccL = chrSolveAssumablePrOccL})
+       ; (cannotResCnstrTraceMp,chrSolveAssumablePrOccL) <- fullSimp u1 toProveHereCnstrMpPrev prevSimplifyRes
+       ; modify (\s -> s {simpCannotCnstrTraceMp = cannotResCnstrTraceMp, simpRemOccL = chrSolveAssumablePrOccL})
        
        -- defaulting is done here very crudely, find defaulting candidates, apply the improving substitution, and restart. TBD: this is a hack, do this better, probably when improving subst are done right.
        ; s <- get
@@ -223,8 +223,8 @@ simplify' simplifyHow chrStore clDfGam heur partitionUnresolved2AmbigAndOthers t
                            not (null dfltPrOccL))
                          -- when a match is found, apply the substitution and kick off proving again
                          (do { modify (\s -> s {simpToProveHereCnstrMp = dfltTyVarMp `varUpd` simpToProveHereCnstrMp s})
-                             ; (cannotResCnstrMp,chrSolveAssumablePrOccL) <- fullSimp u1 toProveHereCnstrMpPrev prevSimplifyRes
-                             ; modify (\s -> s {simpCannotCnstrMp = cannotResCnstrMp, simpRemOccL = chrSolveAssumablePrOccL})
+                             ; (cannotResCnstrTraceMp,chrSolveAssumablePrOccL) <- fullSimp u1 toProveHereCnstrMpPrev prevSimplifyRes
+                             ; modify (\s -> s {simpCannotCnstrTraceMp = cannotResCnstrTraceMp, simpRemOccL = chrSolveAssumablePrOccL})
                              })
                   })
        
@@ -252,9 +252,9 @@ simplify' simplifyHow chrStore clDfGam heur partitionUnresolved2AmbigAndOthers t
                  ; s <- get
                  ; let (chrSolveRemCnstrMp,chrSolveEvidMp)
                          = patchUnresolvedWithAssumption ((simpEnv s) {fiUniq = u3}) (simpRemOccL s) (simpresRedGraph chrSimplifyResult) (simpEvidMp s)
-                 ; modify (\s -> s {simpRemCnstrMp = chrSolveRemCnstrMp, simpEvidMp = chrSolveEvidMp})
+                 ; modify (\s -> s {simpRemCnstrTraceMp = cnstrTraceMpLiftTrace chrSolveRemCnstrMp, simpEvidMp = chrSolveEvidMp})
                  }
-         else modify (\s -> s {simpRemCnstrMp = Map.empty, simpRemOccL = []})
+         else modify (\s -> s {simpRemCnstrTraceMp = Map.empty, simpRemOccL = []})
 
        ; return ()
        }
@@ -266,15 +266,18 @@ simplify' simplifyHow chrStore clDfGam heur partitionUnresolved2AmbigAndOthers t
         basicSimpRedGraph chrSolveAllCnstrMp
           = do { s <- get
                ; let -- RedGraph to Evidence
-                     ((chrSolveRemCnstrMp,chrSolveEvidMp,errs),chrSimplifyResult2)
+                     ((chrSolveRemCnstrTraceMp,chrSolveEvidMp,errs),chrSimplifyResult2)
                        = chrSimplifyRedGraphToEvidence heur chrSolveAllCnstrMp (simpRes s)
         
                      -- split unresolved into those who can be resolved by assuming them (via qualified types) and the others
-                     (chrSolveAssumablePrOccL,cannotResCnstrMp)
-                       = partitionUnresolved2AssumableAndOthers chrSolveRemCnstrMp
+                     (chrSolveAssumablePrOccL,cannotResCnstrTraceMp)
+                       = partitionUnresolved2AssumableAndOthers chrSolveRemCnstrTraceMp
+                     -- TBD: propagation of unresolved traces for error reporting
+                     -- cannotResCnstrMp   = cnstrTraceMpElimTrace cannotResCnstrTraceMp
+                     -- chrSolveRemCnstrMp = cnstrTraceMpElimTrace chrSolveRemCnstrTraceMp
         
-               ; put (s {simpRemCnstrMp = chrSolveRemCnstrMp, simpEvidMp = chrSolveEvidMp, simpErrs = errs, simpRes = chrSimplifyResult2})
-               ; return (cannotResCnstrMp,chrSolveAssumablePrOccL)
+               ; put (s {simpRemCnstrTraceMp = chrSolveRemCnstrTraceMp, simpEvidMp = chrSolveEvidMp, simpErrs = errs, simpRes = chrSimplifyResult2})
+               ; return (cannotResCnstrTraceMp,chrSolveAssumablePrOccL)
                }
 
         -- full simplification
@@ -298,13 +301,13 @@ simplify
      -> ScopedPredStore																		-- available CHR rules
      -> ClassDefaultGam																		-- environment/gam for defaulting
      -> Heuristic CHRPredOcc RedHowAnnotation												-- graph reduction heuristic
-     -> ([(CHRPredOcc,PredScope)] -> ([(CHRPredOcc,PredScope)],[(CHRPredOcc,PredScope)]))	-- partition into ambiguous predicates (and others), for defaulting
+     -> ([CHRIntermediateUntilAssume] -> ([CHRIntermediateUntilAssume],[CHRIntermediateUntilAssume]))	-- partition into ambiguous predicates (and others), for defaulting
      -> CHRPredOccCnstrMp																	-- constraints already proven a previous call
      -> CHRPredOccCnstrMp																	-- constraints to prove
      -> SimplifyResult CHRPredOcc RedHowAnnotation Guard VarMp								-- simplification work done at a previous call
      -> ( CHRPredOccCnstrMp																	-- canonicalized to be proven constraints
-        , CHRPredOccCnstrMp																	-- remaining to be proven, as Assume's
-        , CHRPredOccCnstrMp																	-- cannot be proven
+        , CHRPredOccCnstrTraceMp															-- remaining to be proven, as Assume's
+        , CHRPredOccCnstrTraceMp															-- cannot be proven
         , VarMp																				-- additional substitution found during proving & simplification
         , [Err]																				-- errors
         , SimplifyResult CHRPredOcc RedHowAnnotation Guard VarMp							-- simplification work, for a next call
@@ -330,7 +333,7 @@ simplify simplifyHow env chrStore clDfGam heur partitionUnresolved2AmbigAndOther
       ) $
     -}
     ( toProveHereCnstrMpCanon
-    , chrSolveRemCnstrMp3, cannotResCnstrMp1
+    , chrSolveRemCnstrMp3, cannotResCnstrTraceMp
     , canonVarMp
     , firstNotEmpty
         [ chrSolveErrs2
@@ -357,12 +360,12 @@ simplify simplifyHow env chrStore clDfGam heur partitionUnresolved2AmbigAndOther
         env'                        =   simpEnv s
         chrSimplifyResult4          =   simpRes s
         chrSolveAssumablePrOccL3    =   simpRemOccL s
-        chrSolveRemCnstrMp3         =   simpRemCnstrMp s
+        chrSolveRemCnstrMp3         =   simpRemCnstrTraceMp s
         chrSolveEvidMp2             =   simpEvidMp s
         chrSolveErrs2               =   simpErrs s
         toProveHereCnstrMpCanon     =   simpToProveHereCnstrMp s
         canonVarMp                  =   simpVarMp s
-        cannotResCnstrMp1           =   simpCannotCnstrMp s
+        cannotResCnstrTraceMp       =   simpCannotCnstrTraceMp s
   
         -- some unique seeds
         (_,u1,u2,u3) = mkNewLevUID3 $ fiUniq env
@@ -527,7 +530,7 @@ Construct the list of predicates over which must be generalised from the ones fa
 SEM Expr
   | Let         loc         --  predicate occurrences over which we quantify
                             .   toQuantOverPrOccL   =   [ rngLift @range mkPredOccRng (cpoPr o) (mkPrIdCHR $ vunmId i) sc
-                                                        | (Assume o,[RedHow_Assumption i sc])
+                                                        | (Assume o,[(RedHow_Assumption i sc, _)])
                                                             <- Map.toList $ @chrSolve1RemCnstrMp `Map.difference` @cannotProveCnstrMp
                                                         ]
 %%]

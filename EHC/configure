@@ -696,7 +696,6 @@ libtoolStaticCmd
 EHC_BUILD_SUFFIX
 GCC_EHC_OPTIONS
 CPP_EHC_OPTIONS
-GHC_EHC_OPTIONS
 SHUFFLE_EHC_OPTIONS
 UUAGC_OPTIONS
 UUAGC_EHC_AST_OPTIONS
@@ -706,6 +705,8 @@ TOPLEVEL_SYSTEM_ABSPATH_PREFIX
 ghcCmd
 GHC_CMD
 GHC_VERSION
+GHC_EHC_OPTIONS
+GHC_GEN_OPTIONS
 GHC_CMD1
 ghcPkgCmd
 hsc2hsCmd
@@ -1384,9 +1385,6 @@ Optional Packages:
   --with-cpp-ehc-options=<cpp preprocessor options for ehc's cpp invocation>
                           Additional options to pass to GCC when compiling
                           with EHC.
-  --with-ghc-ehc-options=<haskell compiler options for compiling ehc>
-                          Additional options to pass to GHC when compiling
-                          EHC.
   --with-shuffle-ehc-options=<shuffle options for compiling ehc>
                           Additional options to pass to SHUFFLE when compiling
                           EHC.
@@ -1407,6 +1405,9 @@ Optional Packages:
   --with-hc=<haskell compiler>
                           Use a command different from 'ghc' to compile with
                           GHC.
+  --with-ghc-ehc-options=<haskell compiler options for compiling ehc>
+                          Additional options to pass to GHC when compiling
+                          EHC.
   --with-haddock=<haddock>
                           Use a command different from 'haddock' to generate
                           doc.
@@ -2734,16 +2735,6 @@ esac
 CPP_EHC_OPTIONS="$cppEhcOptions"
 
 
-### 'with' option for ghc options
-
-# Check whether --with-ghc-ehc-options was given.
-if test "${with_ghc_ehc_options+set}" = set; then
-  withval=$with_ghc_ehc_options;  ghcEhcOptions="$withval"
-fi
-
-GHC_EHC_OPTIONS="$ghcEhcOptions"
-
-
 ### 'with' option for shuffle options
 
 # Check whether --with-shuffle-ehc-options was given.
@@ -2883,6 +2874,28 @@ fi
 GHC_CMD=$ghcCmd
 
 GHC_VERSION=$ghcVersion
+
+
+### 'with' option for ghc options
+
+# Check whether --with-ghc-ehc-options was given.
+if test "${with_ghc_ehc_options+set}" = set; then
+  withval=$with_ghc_ehc_options;  ghcEhcOptions="$withval"
+fi
+
+
+### some options *must* be passed to ghc >= 7.xx, but *may not* be passed to earlier ones
+case $ghcVersion in
+  6*)
+    ;;
+  *)
+    ghcGenOptions="$ghcGenOptions -rtsopts"
+    ;;
+esac
+
+GHC_EHC_OPTIONS="$ghcEhcOptions"
+
+GHC_GEN_OPTIONS="$ghcGenOptions"
 
 
 case $HostPlatform in
@@ -32263,7 +32276,6 @@ libtoolStaticCmd!$libtoolStaticCmd$ac_delim
 EHC_BUILD_SUFFIX!$EHC_BUILD_SUFFIX$ac_delim
 GCC_EHC_OPTIONS!$GCC_EHC_OPTIONS$ac_delim
 CPP_EHC_OPTIONS!$CPP_EHC_OPTIONS$ac_delim
-GHC_EHC_OPTIONS!$GHC_EHC_OPTIONS$ac_delim
 SHUFFLE_EHC_OPTIONS!$SHUFFLE_EHC_OPTIONS$ac_delim
 UUAGC_OPTIONS!$UUAGC_OPTIONS$ac_delim
 UUAGC_EHC_AST_OPTIONS!$UUAGC_EHC_AST_OPTIONS$ac_delim
@@ -32273,12 +32285,13 @@ TOPLEVEL_SYSTEM_ABSPATH_PREFIX!$TOPLEVEL_SYSTEM_ABSPATH_PREFIX$ac_delim
 ghcCmd!$ghcCmd$ac_delim
 GHC_CMD!$GHC_CMD$ac_delim
 GHC_VERSION!$GHC_VERSION$ac_delim
+GHC_EHC_OPTIONS!$GHC_EHC_OPTIONS$ac_delim
+GHC_GEN_OPTIONS!$GHC_GEN_OPTIONS$ac_delim
 GHC_CMD1!$GHC_CMD1$ac_delim
 ghcPkgCmd!$ghcPkgCmd$ac_delim
 hsc2hsCmd!$hsc2hsCmd$ac_delim
 HSC2HS_CMD!$HSC2HS_CMD$ac_delim
 haddockCmd!$haddockCmd$ac_delim
-HADDOCK_CMD!$HADDOCK_CMD$ac_delim
 _ACEOF
 
   if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 97; then
@@ -32320,6 +32333,7 @@ _ACEOF
 ac_delim='%!_!# '
 for ac_last_try in false false false false false :; do
   cat >conf$$subs.sed <<_ACEOF
+HADDOCK_CMD!$HADDOCK_CMD$ac_delim
 HADDOCK_VERSION!$HADDOCK_VERSION$ac_delim
 OPT_GHC_STANDARD_PACKAGES!$OPT_GHC_STANDARD_PACKAGES$ac_delim
 CABAL_BASE_LIB_DEPENDS!$CABAL_BASE_LIB_DEPENDS$ac_delim
@@ -32392,7 +32406,7 @@ LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 70; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 71; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5

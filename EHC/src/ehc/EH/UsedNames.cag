@@ -35,7 +35,7 @@ gathMentrelFilterMpFromSimplifyResult :: HsName -> SimplifyResult p RedHowAnnota
 gathMentrelFilterMpFromSimplifyResult moduleNm simpRes
   = mentrelFilterMpUnions
       [ mentrelFilterMpSingleton [moduleNm] IdOcc_Val nm
-      | (Reduction _ (RedHow_ByInstance nm _ _) _) <- chrSolveStateDoneConstraints $ simpresSolveState simpRes
+      | (Reduction {cnstrInfo=RedHow_ByInstance nm _ _}) <- chrSolveStateDoneConstraints $ simpresSolveState simpRes
       ]
 %%]
 
