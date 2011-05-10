@@ -61,7 +61,7 @@ lgamFilterMapEltAccumWithKey
           -> acc -> LGam k v -> (LGam k' v',acc)
 lgamFilterMapEltAccumWithKey p fyes fno a g
   = (g {lgMap = m'},a')
-  where (m',a') = Map.foldWithKey
+  where (m',a') = Map.foldrWithKey
                     (\k es ma@(m,a)
                       -> foldr (\e (m,a)
                                  -> if p k e

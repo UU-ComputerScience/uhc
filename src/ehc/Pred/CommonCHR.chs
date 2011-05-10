@@ -99,6 +99,18 @@ instance PP RedHowAnnotation where
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Common types
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(9 hmtyinfer) export(CHRConstraint,CHRIntermediateUntilAssume)
+-- | Constraint specialized to scoped predicates with reduction info
+type CHRConstraint    = Constraint CHRPredOcc RedHowAnnotation
+
+-- | intermediate structure for holding constraint and related info until it can safely be assumed
+type CHRIntermediateUntilAssume = (CHRPredOcc,(PredScope,CHRPredOccCnstrTraceMp))
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Reduction info: specifically, how scope reduction was done, (1) for comparison (2) for debugging
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -137,39 +149,48 @@ instance PP ByScopeRedHow where
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(9 hmtyinfer).mkConstraintFuncs export(mkProveConstraint,mkAssumeConstraint,mkAssumeConstraint')
-mkProveConstraint :: Pred -> UID -> PredScope -> (Constraint CHRPredOcc RedHowAnnotation,RedHowAnnotation)
+mkProveConstraint :: Pred -> UID -> PredScope -> (CHRConstraint,RedHowAnnotation)
 mkProveConstraint pr i sc =  (Prove (mkCHRPredOcc pr sc),RedHow_ProveObl i sc)
 
-mkAssumeConstraint'' :: Pred -> VarUIDHsName -> PredScope -> (Constraint CHRPredOcc RedHowAnnotation,RedHowAnnotation)
+mkAssumeConstraint'' :: Pred -> VarUIDHsName -> PredScope -> (CHRConstraint,RedHowAnnotation)
 mkAssumeConstraint'' pr vun sc =  (Assume (mkCHRPredOcc pr sc),RedHow_Assumption vun sc)
 
-mkAssumeConstraint' :: Pred -> UID -> HsName -> PredScope -> (Constraint CHRPredOcc RedHowAnnotation,RedHowAnnotation)
+mkAssumeConstraint' :: Pred -> UID -> HsName -> PredScope -> (CHRConstraint,RedHowAnnotation)
 mkAssumeConstraint' pr i n sc =  mkAssumeConstraint'' pr (VarUIDHs_Name i n) sc
 
-mkAssumeConstraint :: Pred -> UID -> PredScope -> (Constraint CHRPredOcc RedHowAnnotation,RedHowAnnotation)
+mkAssumeConstraint :: Pred -> UID -> PredScope -> (CHRConstraint,RedHowAnnotation)
 mkAssumeConstraint pr i sc =  mkAssumeConstraint'' pr (VarUIDHs_UID i) sc
 %%]
 
 %%[(99 hmtyinfer) -9.mkConstraintFuncs export(mkProveConstraint,mkAssumeConstraint,mkAssumeConstraint')
-mkProveConstraint :: Range -> Pred -> UID -> PredScope -> (Constraint CHRPredOcc RedHowAnnotation,RedHowAnnotation)
+mkProveConstraint :: Range -> Pred -> UID -> PredScope -> (CHRConstraint,RedHowAnnotation)
 mkProveConstraint r pr i sc =  (Prove (mkCHRPredOccRng r pr sc),RedHow_ProveObl i sc)
 
-mkAssumeConstraint'' :: Range -> Pred -> VarUIDHsName -> PredScope -> (Constraint CHRPredOcc RedHowAnnotation,RedHowAnnotation)
+mkAssumeConstraint'' :: Range -> Pred -> VarUIDHsName -> PredScope -> (CHRConstraint,RedHowAnnotation)
 mkAssumeConstraint'' r pr vun sc =  (Assume (mkCHRPredOccRng r pr sc),RedHow_Assumption vun sc)
 
-mkAssumeConstraint' :: Range -> Pred -> UID -> HsName -> PredScope -> (Constraint CHRPredOcc RedHowAnnotation,RedHowAnnotation)
+mkAssumeConstraint' :: Range -> Pred -> UID -> HsName -> PredScope -> (CHRConstraint,RedHowAnnotation)
 mkAssumeConstraint' r pr i n sc =  mkAssumeConstraint'' r pr (VarUIDHs_Name i n) sc
 
-mkAssumeConstraint :: Range -> Pred -> UID -> PredScope -> (Constraint CHRPredOcc RedHowAnnotation,RedHowAnnotation)
+mkAssumeConstraint :: Range -> Pred -> UID -> PredScope -> (CHRConstraint,RedHowAnnotation)
 mkAssumeConstraint r pr i sc =  mkAssumeConstraint'' r pr (VarUIDHs_UID i) sc
+%%]
+
+%%[(9 hmtyinfer) export(patchToAssumeConstraint)
+patchToAssumeConstraint :: UID -> PredScope -> (PredScope -> RedHowAnnotation -> x -> x) -> (CHRConstraint,x) -> (CHRConstraint,x)
+patchToAssumeConstraint i sc set (c,x)
+  = (Assume (pr {cpoCxt = cx {cpocxScope = sc}}), set sc (RedHow_Assumption (VarUIDHs_UID i) sc) x)
+  where pr = cnstrPred c
+        cx = cpoCxt pr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Constraint to info map for CHRPredOcc
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(9 hmtyinfer) export(CHRPredOccCnstrMp)
-type CHRPredOccCnstrMp = ConstraintToInfoMap CHRPredOcc RedHowAnnotation
+%%[(9 hmtyinfer) export(CHRPredOccCnstrTraceMp,CHRPredOccCnstrMp)
+type CHRPredOccCnstrTraceMp = ConstraintToInfoTraceMp CHRPredOcc RedHowAnnotation
+type CHRPredOccCnstrMp      = ConstraintToInfoMap     CHRPredOcc RedHowAnnotation
 %%]
 
 %%[(9 hmtyinfer) export(gathPredLToProveCnstrMp,gathPredLToAssumeCnstrMp)

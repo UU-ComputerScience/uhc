@@ -245,12 +245,6 @@ esac
 
 AC_SUBST(CPP_EHC_OPTIONS, "$cppEhcOptions")
 
-### 'with' option for ghc options
-AC_ARG_WITH(ghc-ehc-options,
-[AS_HELP_STRING([--with-ghc-ehc-options=<haskell compiler options for compiling ehc>],[Additional options to pass to GHC when compiling EHC.])],
-[ ghcEhcOptions="$withval" ],)
-AC_SUBST(GHC_EHC_OPTIONS, "$ghcEhcOptions")
-
 ### 'with' option for shuffle options
 AC_ARG_WITH(shuffle-ehc-options,
 [AS_HELP_STRING([--with-shuffle-ehc-options=<shuffle options for compiling ehc>],[Additional options to pass to SHUFFLE when compiling EHC.])],
@@ -322,6 +316,23 @@ else
 fi
 AC_SUBST(GHC_CMD,$ghcCmd)
 AC_SUBST(GHC_VERSION, $ghcVersion)
+
+### 'with' option for ghc options
+AC_ARG_WITH(ghc-ehc-options,
+[AS_HELP_STRING([--with-ghc-ehc-options=<haskell compiler options for compiling ehc>],[Additional options to pass to GHC when compiling EHC.])],
+[ ghcEhcOptions="$withval" ],)
+
+### some options *must* be passed to ghc >= 7.xx, but *may not* be passed to earlier ones
+case $ghcVersion in
+  6*)
+    ;;
+  *)
+    ghcGenOptions="$ghcGenOptions -rtsopts"
+    ;;
+esac
+
+AC_SUBST(GHC_EHC_OPTIONS, "$ghcEhcOptions")
+AC_SUBST(GHC_GEN_OPTIONS, "$ghcGenOptions")
 
 case $HostPlatform in
   i*86-*-mingw* | i*86-*-cygwin* )

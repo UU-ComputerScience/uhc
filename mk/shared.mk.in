@@ -36,16 +36,16 @@ MK_SHARED_MKF								:= $(MK_PREFIX)shared.mk
 # 11: + type synonyms
 # 12: + explicit passing of implicit parameters (partially done)
 # 13: + higher order predicates (dict trafo's) (partially done)
-# 14: + existentially quantified class predicates (TBD)
-# 15: + functional dependencies (TBD)
+# 14: + (TBD) existentially quantified class predicates
+# 15: + (TBD) functional dependencies
 # 16: + 
 # 17: + Polarity inference (co/contravariance)
-# 18: + Unboxed types (to become obsolete, no unboxed types)
+# 18: + Unboxed types (partially done, to become obsolete)
 # 20: + 
-# 30: + Switch to use of Core to represent Ty, for dependent types
-# 31: + GADT (TBD)
+# 30: + (TBD) Switch to use of Core to represent Ty, catering for dependent types
+# 31: + (TBD) GADT
 # 50: + module system
-# 90: + full FFI (foreign function interface) (TBD)
+# 90: + (partially done at variant 8) full FFI (foreign function interface)
 # 91: + deriving construct
 # 92: + generics (for deriving)
 # 96: + exception handling
@@ -355,9 +355,10 @@ FUN_EHC_GCC_LD_OPTS							= -L$(call FUN_INSTALLABS_VARIANT_LIB_SHARED_PREFIX,$(
 ###########################################################################################
 
 # GHC options
-GHC_OPTS								:= -fglasgow-exts $(OPT_GHC_STANDARD_PACKAGES) -package uulib
+GHC_OPTS_GENERAL						:= @GHC_GEN_OPTIONS@
+GHC_OPTS_WHEN_EHC						:= $(GHC_OPTS_GENERAL) @GHC_EHC_OPTIONS@
+GHC_OPTS								:= -fglasgow-exts $(OPT_GHC_STANDARD_PACKAGES) -package uulib $(GHC_OPTS_GENERAL)
 GHC_OPTS_OPTIM							:= -O2
-GHC_OPTS_WHEN_EHC						:= @GHC_EHC_OPTIONS@
 
 # HADDOCK options
 HADDOCK_OPTS							:= 
@@ -523,7 +524,7 @@ GEN_CABAL_SETUP		= @(echo "import Distribution.Simple" ; echo "main = defaultMai
 # compile cabal setup
 # $1: src
 # $2: exec
-GHC_CABAL			= $(GHC) -package Cabal -o $(2) $(1)  ; $(STRIP_CMD) $(2)
+GHC_CABAL			= $(GHC) $(GHC_OPTS_GENERAL) -package Cabal -o $(2) $(1)  ; $(STRIP_CMD) $(2)
 
 ###########################################################################################
 # Filter out empty files

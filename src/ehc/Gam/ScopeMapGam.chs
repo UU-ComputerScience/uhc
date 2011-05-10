@@ -139,7 +139,7 @@ sgamFilterMapEltAccumWithKey
           -> acc -> SGam k v -> (SGam k' v',acc)
 sgamFilterMapEltAccumWithKey p fyes fno a g
   = (g {sgMap = m'},a')
-  where (m',a') = Map.foldWithKey
+  where (m',a') = Map.foldrWithKey
                     (\k es ma@(m,a)
                       -> foldr (\e (m,a)
                                  -> if p k e

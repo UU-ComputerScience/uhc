@@ -118,14 +118,14 @@ mkRangedPred rm pr = (pr,Map.findWithDefault [] pr rm)
 %%]
 
 %%[(9 hmtyinfer).mkPrvErr hs
-mkPrvErr :: CHRPredOccCnstrMp -> [Err]
+mkPrvErr :: CHRPredOccCnstrTraceMp -> [Err]
 mkPrvErr m
   = if Map.null m
     then []
     else [Err_NotProvenPreds $ map (cpoPr . cnstrPred) $ Map.keys m]
 %%]
 %%[(99 hmtyinfer) -9.mkPrvErr hs
-mkPrvErr :: RangeMp -> Range -> CHRPredOccCnstrMp -> [Err]
+mkPrvErr :: RangeMp -> Range -> CHRPredOccCnstrTraceMp -> [Err]
 mkPrvErr rm r m
   = if Map.null m
     then []

@@ -19,6 +19,22 @@ type Heuristic p info = [info] -> HeurAlts p info -> [(info, Evidence p info)]
 type SHeuristic p info = HeurAlts p info -> Evidence p info
 %%]
 
+%%[(9999 hmtyinfer) export(Traced(..),TracedTrace(..))
+data TracedTrace p info
+  = TracedTrace_Ok
+      { ttraceRedFrom	:: 
+      }
+  | TracedTrace_Ok
+      { ttraceRedFrom	:: 
+      }
+
+data Traced p info res
+  = Traced
+      { tracedTrace		:: TracedTrace p info
+      , tracedResult	:: res
+      }
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Alternatives: Each alternative for reducing a predicate is
 %%% represented in the datatype HeurAlts, because Haskell is lazy this

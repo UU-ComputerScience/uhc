@@ -111,6 +111,9 @@ emptyVarMp = mkVarMp Map.empty
 
 varmpIsEmpty :: VarMp' k v -> Bool
 varmpIsEmpty (VarMp {varmpMpL=l}) = all Map.null l
+
+instance VarLookupBase (VarMp' k v) k v where
+  varlookupEmpty = emptyVarMp
 %%]
 
 %%[4.varmpFilter export(varmpFilter)
@@ -350,7 +353,7 @@ varmpMapThr f thr (VarMp l ms)
   = (VarMp l ms',thr')
   where (ms',thr') = foldMlev thr ms
         foldMp mlev thr fm
-          = Map.foldWithKey
+          = Map.foldrWithKey
               (\v i (fm,thr)
                  -> let  (i',thr') = f mlev v i thr
                     in   (Map.insert v i' fm,thr')

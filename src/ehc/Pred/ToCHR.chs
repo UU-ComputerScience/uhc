@@ -37,7 +37,7 @@ type PredStore  p g s info = CHRStore p info g s
 type PredStoreL p g s info = [CHR (Constraint p info) g s]
 type ScopedPredStore  = PredStore  CHRPredOcc Guard VarMp RedHowAnnotation
 type ScopedPredStoreL = PredStoreL CHRPredOcc Guard VarMp RedHowAnnotation
-type ScopedPredCHR    = CHR (Constraint CHRPredOcc RedHowAnnotation) Guard VarMp
+type ScopedPredCHR    = CHR CHRConstraint Guard VarMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -143,25 +143,25 @@ initScopedPredStore
         p1s2         = mkCHRPredOcc pr1 sc2
         p1s3         = mkCHRPredOcc pr1 sc3
         scopeProve   = [Prove p1s1, Prove p1s2] 
-                         ==> [Reduction p1s2 (RedHow_ByScope (ByScopeRedHow_Other $ AlwaysEq "prv")) [p1s3]]
+                         ==> [mkReduction p1s2 (RedHow_ByScope (ByScopeRedHow_Other $ AlwaysEq "prv")) [p1s3]]
                           |> [IsStrictParentScope sc3 sc1 sc2]
 {-
         scopeAssum1  = [Prove p1s1, Assume p1s2] 
-                         ==> [Reduction p1s1 (RedHow_Assumption sc2) []]
+                         ==> [mkReduction p1s1 (RedHow_Assumption sc2) []]
                           |> [EqualScope sc1 sc2]
 -}
         scopeAssum2  = [Prove p1s1, Assume p1s2] 
-                         ==> [Reduction p1s1 (RedHow_ByScope ByScopeRedHow_Assume) [p1s2]]
+                         ==> [mkReduction p1s1 (RedHow_ByScope ByScopeRedHow_Assume) [p1s2]]
                           |> [NotEqualScope sc1 sc2,IsVisibleInScope sc2 sc1]
 %%[[10
         l1s1         = mkCHRPredOcc (Pred_Lacks ty1 lab1) sc1
         l2s1         = mkCHRPredOcc (Pred_Lacks ty2 lab1) sc1
         l3s1         = mkCHRPredOcc (Pred_Lacks tyRowEmpty lab1) sc1
         labelProve1  = [Prove l1s1]
-                         ==> [Prove l2s1, Reduction l1s1 (RedHow_ByLabel lab1 off1 sc1) [l2s1]]
+                         ==> [Prove l2s1, mkReduction l1s1 (RedHow_ByLabel lab1 off1 sc1) [l2s1]]
                           |> [NonEmptyRowLacksLabel ty2 off1 ty1 lab1]
         labelProve2  = [Prove l3s1]
-                         ==> [Reduction l3s1 (RedHow_ByLabel lab1 (LabelOffset_Off 0) sc1) []]
+                         ==> [mkReduction l3s1 (RedHow_ByLabel lab1 (LabelOffset_Off 0) sc1) []]
 %%]]
 %%[[13
         f1s1         = mkCHRPredOcc (tyPred $ mkTyQu tyQu_Forall [(pr1v,kiStar)] $ mkTyPr pr1) sc1	-- TBD
@@ -172,7 +172,7 @@ initScopedPredStore
         a2s1         = mkCHRPredOcc pr1 sc1
         a3s1         = mkCHRPredOcc (Pred_Preds pa1) sc1
         predArrow    = [Assume a1s1, Prove a2s1]
-                         ==> [Prove a3s1, Reduction a2s1 (RedHow_ByInstance hsnUnknown pr1 sc1) [a1s1,a3s1]]
+                         ==> [Prove a3s1, mkReduction a2s1 (RedHow_ByInstance hsnUnknown pr1 sc1) [a1s1,a3s1]]
         s1s1         = mkCHRPredOcc (Pred_Preds (PredSeq_Cons pr1 pa1)) sc1
         s2s1         = mkCHRPredOcc pr1 sc1
         s3s1         = mkCHRPredOcc (Pred_Preds pa1) sc1
@@ -199,14 +199,14 @@ initScopedPredStore
         rlEqCongr    = [Assume eqT1T2s1] ==> [Assume psPreds1] |> [EqsByCongruence ty1 ty2 pa1]                -- congruence
         rlUnpackCons = [Assume psConss1] ==> [Assume psHeads1, Assume psPreds1]                                -- unpack a list of assumptions
         
-        -- rlCtxToNil      = [Prove eqT1T2s1] ==> [Prove eqT1T3s1, Reduction eqT1T2s1 (RedHow_ByEqTyReduction ty2 ty3) [eqT1T3s1]] |> [IsCtxNilReduction ty2 ty3]
-        rlEqSymPrv      = [Prove eqT1T2s1] ==> [Prove eqT2T1s1, Reduction eqT1T2s1 RedHow_ByEqSymmetry [eqT2T1s1]] |> [UnequalTy ty1 ty2]
-        rlEqTransPrv    = [Prove eqT1T2s1, Assume eqT2T3s2] ==> [Prove eqT1T3s1, Reduction eqT1T2s1 RedHow_ByEqTrans [eqT1T3s1]] |> [IsVisibleInScope sc2 sc1, UnequalTy ty2 ty3]
-        rlEqCongrPrv    = [Prove eqT1T2s1] ==> [Prove psPreds1, Reduction eqT1T2s1 RedHow_ByEqCongr [psPreds1]] |> [EqsByCongruence ty1 ty2 pa1]
-        rlUnpackConsPrv = [Prove psConss1] ==> [Prove psHeads1, Prove psPreds1, Reduction psConss1 RedHow_ByPredSeqUnpack [psHeads1, psPreds1]]
-        rlUnpackNilPrv  = [Prove psNils1]  ==> [Reduction psNils1 RedHow_ByPredSeqUnpack []]
-        rlPrvByAssume   = [Prove eqT1T2s1, Assume eqT1T2s2] ==> [Reduction eqT1T2s1 RedHow_ByEqFromAssume []] |> [IsVisibleInScope sc2 sc1]  -- dirty hack: generated assumptions by chr are not added to the graph, so made a reduction instead
-        rlPrvByIdentity = [Prove eqT1T2s1] ==> [Reduction eqT1T2s1 RedHow_ByEqIdentity []] |> [EqualModuloUnification ty1 ty2]
+        -- rlCtxToNil      = [Prove eqT1T2s1] ==> [Prove eqT1T3s1, mkReduction eqT1T2s1 (RedHow_ByEqTyReduction ty2 ty3) [eqT1T3s1]] |> [IsCtxNilReduction ty2 ty3]
+        rlEqSymPrv      = [Prove eqT1T2s1] ==> [Prove eqT2T1s1, mkReduction eqT1T2s1 RedHow_ByEqSymmetry [eqT2T1s1]] |> [UnequalTy ty1 ty2]
+        rlEqTransPrv    = [Prove eqT1T2s1, Assume eqT2T3s2] ==> [Prove eqT1T3s1, mkReduction eqT1T2s1 RedHow_ByEqTrans [eqT1T3s1]] |> [IsVisibleInScope sc2 sc1, UnequalTy ty2 ty3]
+        rlEqCongrPrv    = [Prove eqT1T2s1] ==> [Prove psPreds1, mkReduction eqT1T2s1 RedHow_ByEqCongr [psPreds1]] |> [EqsByCongruence ty1 ty2 pa1]
+        rlUnpackConsPrv = [Prove psConss1] ==> [Prove psHeads1, Prove psPreds1, mkReduction psConss1 RedHow_ByPredSeqUnpack [psHeads1, psPreds1]]
+        rlUnpackNilPrv  = [Prove psNils1]  ==> [mkReduction psNils1 RedHow_ByPredSeqUnpack []]
+        rlPrvByAssume   = [Prove eqT1T2s1, Assume eqT1T2s2] ==> [mkReduction eqT1T2s1 RedHow_ByEqFromAssume []] |> [IsVisibleInScope sc2 sc1]  -- dirty hack: generated assumptions by chr are not added to the graph, so made a reduction instead
+        rlPrvByIdentity = [Prove eqT1T2s1] ==> [mkReduction eqT1T2s1 RedHow_ByEqIdentity []] |> [EqualModuloUnification ty1 ty2]
         
 %%]]
         -- inclSc       = ehcCfgCHRInclScope $ feEHCOpts $ fiEnv env
@@ -251,12 +251,12 @@ mkClassSimplChrs env rules (context, head, infos)
                 super3     = mkCHRPredOcc super sc3
                 superRule  = [Prove head1, Prove p] ==> reds'
                 scopeRule1 = [Prove head1, Prove super2] 
-                               ==> [Prove head3, Reduction head1 (RedHow_ByScope (ByScopeRedHow_Other $ AlwaysEq "sup1")) [head3]]
+                               ==> [Prove head3, mkReduction head1 (RedHow_ByScope (ByScopeRedHow_Other $ AlwaysEq "sup1")) [head3]]
                                  |> [HasStrictCommonScope sc3 sc1 sc2]
                 scopeRule2 = [Prove head2, Prove super1] 
-                               ==> [Prove super3, Reduction super1 (RedHow_ByScope (ByScopeRedHow_Other $ AlwaysEq "sup2")) [super3]]
+                               ==> [Prove super3, mkReduction super1 (RedHow_ByScope (ByScopeRedHow_Other $ AlwaysEq "sup2")) [super3]]
                                  |> [HasStrictCommonScope sc3 sc1 sc2]
-                reds'      = Reduction p info [par] : reds
+                reds'      = mkReduction p info [par] : reds
                 rules      = mapTrans (Set.insert p done) reds' p (predecessors graph pr)
 
         opts          = feEHCOpts $ fiEnv env
@@ -271,7 +271,7 @@ mkAssumeChrs :: CHRClassDecl Pred RedHowAnnotation -> Maybe MkRes1
 mkAssumeChrs ([]     ,  _  , _    ) = Nothing
 mkAssumeChrs (context, head, infos) =
   let prThis = mkCHRPredOcc head sc1
-      super prSuper info = [Assume prSuper, Reduction prSuper info [prThis]]
+      super prSuper info = [Assume prSuper, mkReduction prSuper info [prThis]]
       prSuper = map (\c -> mkCHRPredOcc c sc1) context
   in  Just ( chrStoreSingletonElem $ [Assume prThis] ==> concat (zipWith super prSuper infos)
            , (prSuper,prThis)
@@ -286,7 +286,7 @@ mkInstanceChr :: CHRScopedInstanceDecl Pred RedHowAnnotation PredScope -> MkRes1
 mkInstanceChr (context, hd, i, s)
   = ( chrStoreSingletonElem
       $ [Prove constraint]
-          ==> Reduction constraint i body : map Prove body
+          ==> mkReduction constraint i body : map Prove body
             |> [s `IsVisibleInScope` sc1]
     , (body,constraint)
     )
@@ -335,15 +335,32 @@ mkEvidence
   :: ( Ord p, Ord i
      , PP i, PP p -- for debugging
      ) => Heuristic p i -> ConstraintToInfoMap p i -> RedGraph p i
-          -> ( ConstraintToInfoMap p i,InfoToEvidenceMap p i
-             , [Err]
-             , [(HeurAlts p i, [(i, Evidence p i)])]		-- debug info
+          -> ( -- ConstraintToInfoMap p i						-- remaining constraints
+               ConstraintToInfoTraceMp p i						-- remaining constraints
+             , InfoToEvidenceMap p i							-- mapping to evidence
+             , [Err]											-- errors
+             , [(HeurAlts p i, [(i, Evidence p i)])]        	-- debug info
              )
 mkEvidence heur cnstrMp redGraph
-  = ( {- (cnstrMp `Map.intersection` remCnstrMp) `Map.union` -} remCnstrMp, evidMp
+  = ( {- (cnstrMp `Map.intersection` remCnstrMp) `Map.union` -}
+      cnstrTraceMpFromList remCnstrMp
+    , evidMp
     , err
-    , dbg -- redAlts, redTrees									-- debug info
+    , dbg -- redAlts, redTrees                                  -- debug info
     )
+  where (remCnstrMp,evidMp,err,dbg)
+          = foldl (\(cm,em,err,dbg) c -> let (cm',em',err',dbg') = mk c in (cm' ++ cm, evidMpUnion em' em, err' ++ err, dbg' ++ dbg))
+                  ([],Map.empty,[],[])
+            $ Map.toList cnstrMp
+        mk (Prove p, infos)
+          = (remCnstrMp,evidMp,[],[(redAlts,redTrees)])
+          where redAlts    = redAlternatives redGraph p
+                redTrees   = heur infos redAlts
+                evidMp     = foldr (uncurry evidMpInsert) Map.empty redTrees
+                remCnstrMp = [ (Prove (utraceRedFrom u),(i,u)) | (i,t) <- redTrees, u <- evidUnresolved t ]
+        mk (c, infos)
+          = ([ (c,(i,UnresolvedTrace_None)) | i <- infos],Map.empty,[],[])
+%%]
   where (remCnstrMp,evidMp,err,dbg)
           = foldl (\(cm,em,err,dbg) c -> let (cm',em',err',dbg') = mk c in (cnstrMpUnion cm' cm, evidMpUnion em' em, err' ++ err, dbg' ++ dbg))
                   (Map.empty,Map.empty,[],[])
@@ -354,11 +371,10 @@ mkEvidence heur cnstrMp redGraph
                 redTrees   = heur infos redAlts
                 evidMp     = foldr (uncurry evidMpInsert) Map.empty redTrees
                 remCnstrMp = cnstrMpFromList
-                             $ concatMap (\(i,t) -> zip (map Prove (evidUnresolved t)) (repeat i))
+                             $ concatMap (\(i,t) -> zip (map Prove (map utraceRedFrom $ evidUnresolved t)) (repeat i))
                              $ redTrees
         mk (c, infos)
           = (cnstrMpFromList $ zip (repeat c) infos,Map.empty,[],[])
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Split unresolved's into those which can be assumed via qualification, and the rest
@@ -369,7 +385,7 @@ This can be done for those predicates of which evidence can be passed as a funct
 and for which no ambiguity exists.
 
 %%[(9 hmtyinfer) export(partitionUnresolved2AssumableAndOthers)
-partitionUnresolved2AssumableAndOthers :: CHRPredOccCnstrMp -> ([(CHRPredOcc,PredScope)],CHRPredOccCnstrMp)
+partitionUnresolved2AssumableAndOthers :: CHRPredOccCnstrTraceMp -> ([CHRIntermediateUntilAssume],CHRPredOccCnstrTraceMp)
 partitionUnresolved2AssumableAndOthers unresCnstrMp
   = (unres,cannotResCnstrMp)
   where (unresCnstrMp',cannotResCnstrMp)
@@ -377,20 +393,22 @@ partitionUnresolved2AssumableAndOthers unresCnstrMp
                       where -- if p only ranges over non-fixed tvars, we potentially can assume them (if not found ambiguous later)
                             canAssume (Prove p) _ = Map.null $ Map.filter (tvCatIsFixed . tvinfoCateg) $ tyFtvMp $ predTy $ cpoPr p
                             canAssume _         _ = True
-        unres         = [ (p,sc) | (Prove p,sc) <- shareUnresolvedAssumptionsByScope (Map.keys unresCnstrMp') ]
+        unres         = [ (p,x) | (Prove p,x) <- shareUnresolvedAssumptionsByScope (unresCnstrMp') ]
 %%]
 
-Find assume's wich have a common scope prefix, then share these.
-Assumption: we will never share outer scopes because we only get passed inner scopes, because these will be abstracted over in bindings of a let expression.
-
 %%[(9 hmtyinfer)
-shareUnresolvedAssumptionsByScope :: [Constraint CHRPredOcc info] -> AssocL (Constraint CHRPredOcc info) PredScope
+-- | Group unresolved constraints, reducing the various scopes to the outermost scope.
+--   Find assume's wich have a common scope prefix, then share these.
+--   Assumption: we will never share outer scopes because we only get passed inner scopes, because these will be abstracted over in bindings of a let expression.
+shareUnresolvedAssumptionsByScope :: CHRPredOccCnstrTraceMp -> [(CHRConstraint,(PredScope,CHRPredOccCnstrTraceMp))]
 shareUnresolvedAssumptionsByScope unres
   = [ ( c
-      , foldr1 (\s1 s2 -> panicJust "shareUnresolvedAssumptionsByScope" $ pscpCommon s1 s2)
-               [ cpoScope $ cnstrPred c | c <- cs ]
+      , ( foldr1 (\s1 s2 -> panicJust "shareUnresolvedAssumptionsByScope" $ pscpCommon s1 s2)
+                 [ cpoScope $ cnstrPred c | (c,_) <- cs ]
+        , Map.fromList cs
+        )
       )
-    | cs@(c:_) <- groupSortOn (cpoPr . cnstrPred) unres
+    | cs@((c,_):_) <- groupSortOn (cpoPr . cnstrPred . fst) $ Map.toList unres
     ]
 %%]
 
@@ -399,13 +417,13 @@ shareUnresolvedAssumptionsByScope unres
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(9 hmtyinfer) export(patchUnresolvedWithAssumption)
-patchUnresolvedWithAssumption :: FIIn -> [(CHRPredOcc,PredScope)] -> CHRRedGraph -> CHRPredOccEvidMp -> (CHRPredOccCnstrMp,CHRPredOccEvidMp)
+patchUnresolvedWithAssumption :: FIIn -> [CHRIntermediateUntilAssume] -> CHRRedGraph -> CHRPredOccEvidMp -> (CHRPredOccCnstrMp,CHRPredOccEvidMp)
 patchUnresolvedWithAssumption env unres redGraph evidMp
   = ( cnstrMpFromList assumeCnstrs
     , evidMpSubst (\p -> Map.lookup p assumeSubstMp) evidMp
     )
   where us = mkNewLevUIDL (length unres) $ fiUniq env
-        assumeCnstrs  = [ rngLift emptyRange mkAssumeConstraint (cpoPr p) u sc | ((p,sc),u) <- zip unres us ]
+        assumeCnstrs  = [ rngLift emptyRange mkAssumeConstraint (cpoPr p) u sc | ((p,(sc,_)),u) <- zip unres us ]
         assumeSubstMp = Map.fromList [ (p,Evid_Proof p info []) | (Assume p,info) <- assumeCnstrs ]
 %%]
 
@@ -417,6 +435,7 @@ patchUnresolvedWithAssumption env unres redGraph evidMp
 chrSimplifySolveToRedGraph
   :: ( Ord p, Ord i
      , CHRMatchable FIIn p s, CHRCheckable FIIn g s
+     , VarLookupCmb s s
      , VarUpdatable s s, VarUpdatable g s, VarUpdatable i s, VarUpdatable p s
      , CHREmptySubstitution s
      , PP g, PP i, PP p -- for debugging
@@ -452,7 +471,7 @@ chrSimplifyRedGraphToEvidence
      , PP g, PP i, PP p -- for debugging
      ) => Heuristic p i -> ConstraintToInfoMap p i
           -> SimplifyResult p i g s
-          -> ( ( ConstraintToInfoMap p i, InfoToEvidenceMap p i, [Err] )
+          -> ( ( ConstraintToInfoTraceMp p i, InfoToEvidenceMap p i, [Err] )
              , SimplifyResult p i g s
              )
 chrSimplifyRedGraphToEvidence heur cnstrInfoMpAll simpRes
