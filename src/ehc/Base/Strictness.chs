@@ -44,14 +44,21 @@ deriving instance Data Strictness
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(50 codegen)
-instance Serialize Strictness where
-  sput (Strictness_Strict           )   = sputWord8 0
-  sput (Strictness_NonStrict        )   = sputWord8 1
-  sput (Strictness_Var          nm  )   = sputWord8 2 >> sput nm
-  sget = do t <- sgetWord8
+instance Binary Strictness where
+  put (Strictness_Strict           )   = putWord8 0
+  put (Strictness_NonStrict        )   = putWord8 1
+  put (Strictness_Var          nm  )   = putWord8 2 >> put nm
+  get = do  t <- getWord8
             case t of
               0 -> return Strictness_Strict
               1 -> return Strictness_NonStrict
-              2 -> liftM  Strictness_Var sget
+              2 -> liftM  Strictness_Var get
+
+instance Serialize Strictness where
+  sput = sputShared
+  sget = sgetShared
+  sputNested = sputPlain
+  sgetNested = sgetPlain
+
 %%]
 

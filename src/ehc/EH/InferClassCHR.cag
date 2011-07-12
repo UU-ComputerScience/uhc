@@ -219,7 +219,7 @@ SEM Decl
                                                             -}
                                                         in  ( {- cx -- -} map tyPred @ctxtPrTyL
                                                             , {- hd -- -} tyPred     @hdPrTy
-                                                            , zipWith (\p n -> RedHow_BySuperClass n (off n) @dictTag) {- cx -} @ctxtPrTyL @supClsFldL
+                                                            , zipWith (\p n -> RedHow_BySuperClass n (off n) @dictTag) {- cx -} @ctxtPrTyL @supClsFldNmL
                                                             )
                 loc         .   lUniq_9_prTyMeta    :   UNIQUEREF gUniq
                 lhs         .   chrClassDeclSq      =   Seq.singleton @chrClassDecl

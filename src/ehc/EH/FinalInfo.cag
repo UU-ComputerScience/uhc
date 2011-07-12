@@ -14,7 +14,7 @@ This info is used for TyCore generation and pretty printing.
 %%[(2 hmtyinfer).finValGam
 ATTR
   AllDecl
-%%[[92
+%%[[8
   AllExpr AllPatExpr AllCase
 %%]]
     [ finValGam: ValGam | | ]
@@ -26,7 +26,7 @@ SEM Expr
 %%[[2
                 decls       .   finValGam           =   @finValGamDecls
 %%][92
-				loc			.	finValGam			=	(if @lhs.isFirstLet then gamUnion @gathValGam else id) @lhs.finValGam
+                loc         .   finValGam           =   (if @lhs.isFirstLet then gamUnion @gathValGam else id) @lhs.finValGam
 %%]]
 
 SEM AGItf
@@ -35,15 +35,20 @@ SEM AGItf
                                                         @chrSolveSimpTyVarMp `varUpd`
 %%]]
                                                         @expr.tyVarMp
-%%[[92
+%%[[8
+                            .   finValGam           =   emptyGam
+%%][50
                             .   finValGam           =   @expr.gathValGam `gamUnion` @lhs.valGam
 %%]]
 %%]
 
 %%[(2 hmtyinfer)
 SEM Decl
-  | TySig       loc         .   finalTy             =   vgiTy $ fromJust
-                                                        $ valGamLookup @nm $ @lhs.finValGam
+  | TySig       loc         .   finalTy             =   vgiTy $ panicJust "EH.Infer.Decl.TySig" $ valGamLookup @nm            $ @lhs.finValGam
+  | Val         loc         .   finalTy             =           maybe Ty_Any vgiTy              $ valGamLookup @patExpr.topNm $ @lhs.finValGam
+%%[[9
+  | Instance    loc         .   finalTy             =           maybe Ty_Any vgiTy              $ valGamLookup @dictNm        $ @lhs.finValGam
+%%]]
 %%]
 
 %%[(3 hmtyinfer).finValGam
@@ -54,6 +59,15 @@ SEM Expr
 %%[(4 hmtyinfer).finValGam
 SEM Expr
   | Let         loc         .   finValGamDecls      :=  @quValGam_ex_
+%%]
+
+%%[(8 hmtyinfer)
+SEM PatExpr
+  | Var VarAs AppTop Rec DataFields Con IConst CConst SConst Irrefutable App
+%%[[97
+    Expr
+%%]]
+                loc         .   finalTy        		=   maybe Ty_Any vgiTy $ valGamLookup (rpatNmNm @cpNm) @lhs.finValGam
 %%]
 
 %%[(8 hmtyinfer).finValGam
@@ -70,22 +84,61 @@ SEM PatExpr
 %%[[7
     Rec
 %%]]
-  				loc         .   finKnPatTy          =   @lhs.finTyVarMp `varUpd` @knPatTy
+                loc         .   finKnPatTy          =   @lhs.finTyVarMp `varUpd` @knPatTy
 %%]
 
 %%[(8 hmtyinfer)
 SEM Expr
-  | AppTop		loc			.	finalTy				=	@lhs.finTyVarMp `varUpd` @ty
-%%[[8
-                            .   finalTyExpanded     =   @finalTy
-%%][11
-                            .   finalTyExpanded     =   tyCanonicFFI (emptyFI {fiEnv = @fe} :: FIIn) @finalTy
-%%]]
+  | AppTop      loc         .   finalTy             =   @lhs.finTyVarMp `varUpd` @ty
 %%]
 
 %%[(9 hmtyinfer)
 SEM Expr
   | Let         loc         .   finTyVarMp          =   @tmpoTyVarMp `varUpd` @lhs.finTyVarMp
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Final type, but also expanded w.r.t. type synonyms, except for IO
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 hmtyinfer)
+SEM Expr
+%%[[8
+  | AppTop      loc         .   finalTyExpanded     =   @finalTy
+%%][11
+  | AppTop      loc         .   finalTyExpanded     =   tyCanonicFFI (emptyFI {fiEnv = @fe} :: FIIn) @finalTy
+%%]]
+%%]
+
+%%[(8 hmtyinfer)
+SEM PatExpr
+  | Var VarAs AppTop Rec DataFields Con IConst CConst SConst Irrefutable App
+%%[[97
+    Expr
+%%]]
+%%[[8
+                loc         .   finalTyExpanded     =   @finalTy
+%%][11
+                loc         .   finalTyExpanded     =   tyCanonicFFI (emptyFI {fiEnv = @fe} :: FIIn) @finalTy
+%%]]
+%%]
+
+%%[(8 hmtyinfer)
+SEM Decl
+%%[[8
+  | Val         loc         .   finalTyExpanded     =   @finalTy
+%%][11
+  | Val         loc         .   finalTyExpanded     =   tyCanonicFFI (emptyFI {fiEnv = @fe} :: FIIn) @finalTy
+%%]]
+  | FFI
+%%[[90
+    FFE
+%%]]
+%%[[8
+                loc         .   finalTyExpanded     =   @ty_sig_
+%%][11
+                loc         .   finalTyExpanded     =   tyCanonicFFI (emptyFI {fiEnv = @fe} :: FIIn) @ty_sig_
+%%]]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

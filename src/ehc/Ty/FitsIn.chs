@@ -1861,8 +1861,8 @@ fitPredToEvid' u varmp prTy gg
                  Ty_Pred p@(Pred_Class _)
                     ->  case gg of
                           Left clgi -> fClgi u clgi prTy
-                          Right g   -> maybe err (\clgi -> fClgi u clgi prTy) $ gamLookup (predMatchNm p) g
-                                    where err = emptyFO {foErrL = [rngLift emptyRange mkErr_NamesNotIntrod "class" [tyPredMatchNm prTy]]}
+                          Right g   -> maybe err (\clgi -> fClgi u clgi prTy) $ gamLookup (fst $ predMatchNmArgs p) g
+                                    where err = emptyFO {foErrL = [rngLift emptyRange mkErr_NamesNotIntrod "class" [fst $ tyPredMatchNmArgs prTy]]}
                     where fClgi u clgi prTy
                             = fo {foTy = snd (tyArrowArgRes (foTy fo))}
                             where (u',u1,u2) = mkNewLevUID2 u

@@ -24,13 +24,22 @@ Currently the following is maintained:
 
 %%[(8 codegen) module {%{EH}LamInfo} import({%{EH}Base.Common})
 %%]
+
+-- Core, Ty
 %%[(8 codegen) import({%{EH}AbstractCore})
 %%]
+%%[(8 codegen) import({%{EH}Ty})
+%%]
+%%[(8 codegen) import({%{EH}Core})
+%%]
+
+-- Analyses
 %%[(8 codegen) import({%{EH}AnaDomain})
 %%]
 %%[(8 codegen) import(EH.Util.Utils)
 %%]
 
+-- Haskell stuff
 %%[(8 codegen) hs import(qualified Data.Map as Map,qualified Data.Set as Set)
 %%]
 
@@ -58,6 +67,12 @@ data StackTraceInfo
 data LamInfoBindAsp
   = LamInfoBindAsp_RelevTy
       { libindaspRelevTy 		:: !RelevTy			-- relevance typing
+      }
+  | LamInfoBindAsp_Ty
+      { libindaspTy 			:: !Ty				-- plain good old type
+      }
+  | LamInfoBindAsp_Core
+      { libindaspCore			:: !CExpr			-- actual Core, should go paired with Ty (?? maybe pair them directly)
       }
   -- | LamInfoBindAsp_StrictTy		!RelevTy			-- and its strict incarnation
 %%[[50
@@ -103,10 +118,18 @@ laminfo1stArgIsStackTrace _                                                     
 
 20100822 AD: Note: lamMpMergeInto and lamMpMergeFrom probably can be combined, but currently subtly differ in the flow of info.
 
-%%[(8 codegen) hs export(LamMp,lamMpMergeInto)
+%%[(8 codegen) hs export(LamMp)
 type LamMp    = Map.Map HsName LamInfo
+%%]
 
--- propagate from new (left) to prev (right)
+%%[(8 codegen) hs export(lamMpUnionBindAspMp)
+-- union, including the aspect map, but arbitrary for the info itself
+lamMpUnionBindAspMp :: LamMp -> LamMp -> LamMp
+lamMpUnionBindAspMp = Map.unionWith (\i1 i2 -> i1 {laminfoBindAspMp = laminfoBindAspMp i1 `Map.union` laminfoBindAspMp i2})
+%%]
+
+%%[(8 codegen) hs export(lamMpMergeInto)
+-- propagate from new (left) to prev (right), adding new entries if necessary, combining with mergeL2RInfo, finally combining/choosing maps with mergeL2RMp
 lamMpMergeInto :: (LamInfo -> LamInfo -> LamInfo) -> (LamMp -> LamMp -> LamMp) -> LamMp -> LamMp -> LamMp
 lamMpMergeInto mergeL2RInfo mergeL2RMp newMp prevMp
   = mergeL2RMp newMpMerge prevMp
@@ -222,11 +245,28 @@ instance Serialize GrinByteCodeLamInfo where
 
 instance Serialize LamInfoBindAsp where
   sput (LamInfoBindAsp_RelevTy  a) = sputWord8 0 >> sput a
-  -- sput (LamInfoBindAsp_StrictTy a) = sputWord8 1 >> sput a
+  sput (LamInfoBindAsp_Ty 		a) = sputWord8 1 >> sput a
+  sput (LamInfoBindAsp_Core 	a) = sputWord8 2 >> sput a
   sget = do
     t <- sgetWord8
     case t of
-      0 -> liftM  LamInfoBindAsp_RelevTy  sget
-      -- 1 -> liftM  LamInfoBindAsp_StrictTy sget
+      0 -> liftM  LamInfoBindAsp_RelevTy  	sget
+      1 -> liftM  LamInfoBindAsp_Ty 		sget
+      2 -> liftM  LamInfoBindAsp_Core 		sget
+
+instance Serialize LamInfo where
+  sput (LamInfo a b c d) = sput a >> sput b >> sput c >> sput d
+  sget = liftM4 LamInfo  sget sget sget sget
+
+instance Serialize StackTraceInfo where
+  sput (StackTraceInfo_None                ) = sputWord8 0
+  sput (StackTraceInfo_HasStackTraceEquiv a) = sputWord8 1 >> sput a
+  sput (StackTraceInfo_IsStackTraceEquiv  a) = sputWord8 2 >> sput a
+  sget
+    = do t <- sgetWord8
+         case t of
+           0 -> return StackTraceInfo_None
+           1 -> liftM  StackTraceInfo_HasStackTraceEquiv sget
+           2 -> liftM  StackTraceInfo_IsStackTraceEquiv  sget
 %%]
 

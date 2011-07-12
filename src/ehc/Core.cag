@@ -37,7 +37,7 @@ Datatype LamInfo holds the implementation info to be exported from a module.
 %%[(8 codegen) hs import(qualified Data.Map as Map,qualified Data.Set as Set)
 %%]
 
-%%[(8 codegen) hs import({%{EH}LamInfo},{%{EH}Ty})
+%%[(8 codegen) hs import({%{EH}Ty})
 %%]
 
 %%[(50 codegen) hs import(Data.Array)
@@ -489,23 +489,6 @@ cmoddbLookup n db = Map.lookup n $ cmoddbBindMp db
 %%% Instances: Binary, Serialize, ForceEval
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(50 codegen) hs
-instance Serialize LamInfo where
-  sput (LamInfo a b c d) = sput a >> sput b >> sput c >> sput d
-  sget = liftM4 LamInfo  sget sget sget sget
-
-instance Serialize StackTraceInfo where
-  sput (StackTraceInfo_None                ) = sputWord8 0
-  sput (StackTraceInfo_HasStackTraceEquiv a) = sputWord8 1 >> sput a
-  sput (StackTraceInfo_IsStackTraceEquiv  a) = sputWord8 2 >> sput a
-  sget
-    = do t <- sgetWord8
-         case t of
-           0 -> return StackTraceInfo_None
-           1 -> liftM  StackTraceInfo_HasStackTraceEquiv sget
-           2 -> liftM  StackTraceInfo_IsStackTraceEquiv  sget
-%%]
-
 %%[(50 codegen grin) hs
 instance Serialize CModule where
   sput (CModule_Mod   a b c   ) = sputWord8 0 >> sput a >> sput b >> sput c
@@ -608,6 +591,7 @@ instance Serialize CBindAspect where
   sput (CBindAspect_RelevTy a b      ) = sputWord8 3 >> sput a >> sput b
   sput (CBindAspect_Meta    a b      ) = sputWord8 4 >> sput a >> sput b
   sput (CBindAspect_Val     a b      ) = sputWord8 5 >> sput a >> sput b
+  sput (CBindAspect_Ty      a b      ) = sputWord8 6 >> sput a >> sput b
   sget
     = do t <- sgetWord8
          case t of
@@ -619,6 +603,7 @@ instance Serialize CBindAspect where
             3 -> liftM2 CBindAspect_RelevTy       sget sget
             4 -> liftM2 CBindAspect_Meta          sget sget
             5 -> liftM2 CBindAspect_Val           sget sget
+            6 -> liftM2 CBindAspect_Ty            sget sget
 
 instance Serialize CBind where
   sput (CBind_Bind a b      ) = sputWord8 0 >> sput a >> sput b
@@ -688,8 +673,12 @@ instance AbstractCore CExpr CMetaVal CBind CBindAspect CBindCateg CMetaBind Ty C
   acoreApp1       f a      				= CExpr_App f a
   acoreLam1Ty a _ e 				    = CExpr_Lam a e
   acoreTagTupTy   tg _ es 				= acoreApp (CExpr_Tup tg) es
-  acoreBindasp1CatLevMetasTy _ _ _ m _ e= CBindAspect_Bind m e
+  acoreBindaspVal1CatLevMetasTy _ _ _ m _ e
+  										= CBindAspect_Bind m e
+  acoreBindaspValTy1CatLev _ _ _ t		= CBindAspect_Ty acbaspkeyDefaultTy t
   acoreBind1Asp n as					= CBind_Bind n as
+  acoreBind1CatLevMetasTy bcat n mlev mb t e
+  										= acoreBind1Asp n [acoreBindaspValTy1CatLev bcat n mlev t, acoreBindaspVal1CatLevMetasTy bcat n mlev mb t e]
   acoreLetBase							= CExpr_Let
   acoreCaseDflt	e as d					= CExpr_Case e as (maybe (acoreVar hsnUnknown) id d)
   acoreVar n							= CExpr_Var (ACoreBindRef n Nothing) 
@@ -738,6 +727,7 @@ instance AbstractCore CExpr CMetaVal CBind CBindAspect CBindCateg CMetaBind Ty C
 %%]]
   acoreMetabindDflt      				= CMetaBind_Plain
   acoreTyErr           _ 				= Ty_Any
+  acoreTyNone            				= Ty_Any
   acoreTyChar 							= tyChar
   acoreTyInt 							= tyInt
 %%[[8

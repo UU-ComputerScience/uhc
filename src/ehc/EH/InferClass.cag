@@ -50,7 +50,7 @@ SEM Decl
                                                                   , clgiGenerDerivableL = @generDerivs
 %%]]
                                                                   }
-                                .   clsNm           =   tyPredMatchNm @hdPrTy
+                                .   (clsNm,clsArgTyL)=   tyPredMatchNmArgs @hdPrTy
                 lhs             .   patClGam1       =   gamAdd @clsNm @clgi1 @lhs.patClGam1
                 tyPrExpr        .   tyGam           =   gamPushNew @lhs.tyGam
                                 .   clGam           =   @lhs.patClGam2
@@ -60,21 +60,24 @@ SEM Decl
                                 .   lSigGam         =   @decls.gathTySigGam
                                 .   clsTySigGam     =   valGamMapTy (\t -> [@hdPrTy] `mkArrow` t) @lSigGam
                                 .   clsTySigDictGam =   if ehcCfgInstFldHaveSelf @lhs.opts then @clsTySigGam else @lSigGam
-                                .   supClsFldL      =   tyPrLToSupNmL @ctxtPrTyL
+                                .   supClsFldNmL    =   tyPrLToSupNmL @ctxtPrTyL
                                 .   clsFldL         =   assocLMapElt vgiTy (gamToAssocL @clsTySigDictGam)
-                                .   clsAllFldL      =   @clsFldL ++ zip @supClsFldL (repeat Ty_Any)
+                                .   clsAllFldL      =   @clsFldL ++ zip @supClsFldNmL (repeat Ty_Any)
                                 .   clsTyRec        =   mkTyRec @clsAllFldL
                                 .   dataDictNm      =   hsnClass2Dict @clsNm                                -- only used when `not ehcCfgClassViaRec'
                                 .   dataDictTag     =   mkClassCTag @dataDictNm (length @clsAllFldL)        -- only used when `not ehcCfgClassViaRec'
+                                .   dataDictTy      =   mkConApp @dataDictNm @clsArgTyL
                                 .   dictTag         =   if ehcCfgClassViaRec @lhs.opts then CTagRec else @dataDictTag
                                 .   clgi2           =   @clgi1 { clgiPrToEvidTy     = tyQuantifyClosed $ [@hdPrTy] `mkArrow` @clsTyRec
                                                                , clgiRuleTy         = tyQuantifyClosed @tyPrExpr.ty
                                                                , clgiDictTag        = @dictTag
-                                                               -- , clgiSupClsFldNmL   = @supClsFldL
+                                                               -- , clgiSupClsFldNmL   = @supClsFldNmL
                                                                }
+                            	.	vgi				=	ValGamInfo (assocLElts @clsAllFldL `mkArrow` @dataDictTy)
                 lhs             .   patTyGam        =   @lhs.patTyGam
                                 .   gathTySigGam    =   valGamMapTy tyQuantifyClosed @clsTySigGam
                                 .   patClGam2       =   gamAdd @clsNm @clgi2 @lhs.patClGam2
+                                .	patValGam		=	gamAdd @dataDictNm @vgi @lhs.patValGam
                 decls           .   gathDataGam     =   emptyGam
                 lhs             .   gathDeclDataGam =   if ehcCfgClassViaRec @lhs.opts
                                                         then emptyGam
@@ -238,7 +241,8 @@ SEM Decl
                                                                )
                                                             where (cx,hd) = tyArrowArgsRes @prTyFix
 %%]]
-                                .   instClsNm       =   tyPredMatchNm @hdPrTyFix
+                                .   (instClsNm,instArgTyL)
+                                                    =   tyPredMatchNmArgs @hdPrTyFix
                                 .   (dictNm,inclForElim)
                                                     =   maybe (poiHNm @instId,True) id @mbNmElim
                                 .   (dictBuildNm,dictSelfNm)
@@ -248,23 +252,25 @@ SEM Decl
                                                              st     =  mkNewTyVarL (tyArrowArity $ tyQuant t) @lUniq4 `mkArrow` @hdPrTyFix
                                                              fo     =  fitsIn predFIOpts @fe2 @lUniq3 (emptyVarMp :: VarMp) t st
                                                         in   tyArrowArgs $ foVarMp fo `varUpd` foTy fo
-                                .   supClsFldL      =   tyPrLToSupNmL @supPrTyL
+                                .   supClsFldNmL      =   tyPrLToSupNmL @supPrTyL
                                 .   ctxtPrFixL      =   map tyPred @ctxtPrTyFixL
                                 .   recTy           =   (@fixPrTyVarMp `varUpd`) $ tyQuantifyRank [2..] $ tyArrowRes @tyPrExpr.evTy
                                 .   recTyExts       =   snd $ tyRecExts @recTy
                                 .   dataDictNm      =   hsnClass2Dict @instClsNm -- only used when `not ehcCfgClassViaRec'
                                 .   dataDictTag     =   mkClassCTag @dataDictNm (length @recTyExts) -- only used when `not ehcCfgClassViaRec'
+                                .   dataDictTy      =   mkConApp @dataDictNm @instArgTyL
                                 .   dictTag         =   if ehcCfgClassViaRec @lhs.opts then CTagRec else @dataDictTag
+                            	.	vgi				=	ValGamInfo (replicate (length @ctxtPrFixL) Ty_Any `mkArrow` @dataDictTy)	-- args TBD
                                 .   tySigGam        =   assocLToGam $ assocLMapElt ValGamInfo @recTyExts
                 decls           .   patValGam       =   gamPushNew @lhs.patValGam
                 lhs             .   patTyGam        =   @lhs.patTyGam
                                 .   gathTySigGam    =   maybe emptyGam (\(n,_) -> n `gamSingleton` ValGamInfo (tyQuantifyClosed @tyPrExpr.evTy)) @mbNmElim
-                                .   patValGam       =   @lhs.patValGam
+                                .   patValGam       =   gamAdd @dictNm @vgi @lhs.patValGam
                 loc         	.   lUniq3		  	:   UNIQUEREF gUniq
                 loc         	.   lUniq4		  	:   UNIQUEREF gUniq
                 loc         	.   lUniq_9_prTyFix :   UNIQUEREF gUniq
   | InstanceIntro
-                loc             .   instClsNm       =   tyPredMatchNm @prExpr.ty
+                loc             .   (instClsNm,_)   =   tyPredMatchNmArgs @prExpr.ty
                                 .   dictNm          =   maybe (poiHNm @instId) id @mbNmElim
                 loc             .   foPr            =   fitPredToEvid @lUniq emptyVarMp @prExpr.ty @lhs.clGam
                 expr            .   knTy            =   foTy @foPr

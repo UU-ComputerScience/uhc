@@ -368,7 +368,7 @@ SEM Err
 %%[[9
                                                         (    "preds:" >#< vlist @preds
 %%][99
-                                                        (    "preds:" >#< (ppAssocLV $ assocLMapElt vlist @preds)
+                                                        (    "preds:" >#< (ppAssocLV [ (pp p, t >-< vlist r) | ((p,r),t) <- @preds ] )
 %%]]
                                                         )
 %%[[99

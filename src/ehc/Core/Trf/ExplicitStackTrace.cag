@@ -172,7 +172,7 @@ SEM CBindAspect
                                             =   case @mbStackTrace of
                                                   StackTraceInfo_HasStackTraceEquiv dbNm | @isTraceCandidate
                                                     -> ( [ acoreBind1Cat CBindCateg_Plain dbNm (acoreLam1 @nmStackTrace @expr.cTrf) 
-                                                         , acoreBind1Metas @lhs.nm @bindMeta.cTrf 
+                                                         , acoreBind1MetasTy @lhs.nm @bindMeta.cTrf Ty_Any
                                                            $ acoreLam   @expr.traceCandidateLamArgs
                                                            $ acoreApp   (acoreVar dbNm)
                                                                         ( acoreVar (ehcOptBuiltin @lhs.opts ehbnDataListAltNil)
