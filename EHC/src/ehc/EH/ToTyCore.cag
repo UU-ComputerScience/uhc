@@ -339,7 +339,7 @@ SEM Decl
                             .   moutExpr    =   C.tyMatchBind @ctyExprKnTy @ctyExprTy
                             .   tcSubstLamSpine
                                             =   C.moutCSubst @moutExpr
-  | FFI         loc         .   ctyExprTy   =   C.tyToTyCore fitsInForToTyCore (tyKiGamLookupKi @lhs.finTyKiGam) @ty_sig_expanded
+  | FFI         loc         .   ctyExprTy   =   C.tyToTyCore fitsInForToTyCore (tyKiGamLookupKi @lhs.finTyKiGam) @finalTyExpanded
 %%]
 
 %%[(8 codegen)
@@ -1284,7 +1284,7 @@ SEM Decl
 %%[(99994 codegen)
   | FFE         loc         .   nmCoerced       =   mkHNmPrefix "coerced_" @nm
                 lhs         .   valBindL        =   [C.mkValBind1 @nmCoerced @expr.tcexpr]
-                            .   ffeValBindL     =   [ValBind_FFE @nm @callconv @expEnt @nmCoerced @ty_sig_expanded]
+                            .   ffeValBindL     =   [ValBind_FFE @nm @callconv @expEnt @nmCoerced @finalTyExpanded]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1504,11 +1504,11 @@ SEM Decl
                                                                                    ]
                                                                                    
                                                              superNewVars        = map Expr_Var @chrSuperProveNmL
-                                                             superNameMapping    = zip3 @supClsFldL
+                                                             superNameMapping    = zip3 @supClsFldNmL
                                                                                         (repeat CMetaVal_Dict)
                                                                                         superNewVars
 
-                                                             superNameMapping2   = zip @supClsFldL
+                                                             superNameMapping2   = zip @supClsFldNmL
                                                                                        @chrSuperProveNmL
                                                              superPairs          = map getBindLeftAndRightVar @chrScopeSuperBindL
                                                              
@@ -1549,7 +1549,7 @@ SEM Decl
                                                      mkDefaultD defaultBindings
                                                        = let selfNm    = @dictSelfNm
                                                        
-                                                             lookupMeta n = if n `elem` @supClsFldL then CMetaVal_Dict else CMetaVal_Val
+                                                             lookupMeta n = if n `elem` @supClsFldNmL then CMetaVal_Dict else CMetaVal_Val
                                                        
                                                              defaultBindingPairs = [ (nm,v)
                                                                                    |  ValBind_Bind nm _ v <- defaultBindings

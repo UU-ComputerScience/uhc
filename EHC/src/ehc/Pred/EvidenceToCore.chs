@@ -113,7 +113,12 @@ evidMpToCore env evidMp
       $ evidMp'
     , concat ambigs
     )
-  where (evidMp',ambigs) = dbg "evidMpToCore.mk1.evidMp'" $ unzip [ ((i,ev3),as) | (i,ev) <- filter (not.ignore) (Map.toList evidMp), let (ev2,as) = splitAmbig ev ; ev3 = strip ev2 ]
+  where (evidMp',ambigs)
+                      = dbg "evidMpToCore.mk1.evidMp'" $
+                        unzip [ ((i,ev3),as)
+                              | (i,ev) <- Map.toList evidMp, not (ignore ev)
+                              , let (ev2,as) = splitAmbig ev ; ev3 = strip ev2
+                              ]
         mke (RedHow_ProveObl i _,ev) st = fst $ mk1 st (Just i) ev
         mk1 st mbevk ev@(Evid_Proof p info evs)
                       = dbg "evidMpToCore.mk1.a" $
@@ -181,10 +186,10 @@ evidMpToCore env evidMp
         ann (RedHow_Lambda  i sc) [body]       = ( [mkHNm i] `acoreLam` tcrCExpr body, sc )
 %%]]
 %%[[41
-        ignore (_, (Evid_Proof _ red  _))
+        ignore (Evid_Proof _ red  _)
           | red `elem` [RedHow_ByEqSymmetry, RedHow_ByEqTrans, RedHow_ByEqCongr, RedHow_ByPredSeqUnpack, RedHow_ByEqFromAssume, RedHow_ByEqIdentity]
           = True
-        ignore (_, (Evid_Proof _ (RedHow_ByEqTyReduction _ _) _))
+        ignore (Evid_Proof _ (RedHow_ByEqTyReduction _ _) _)
           = True
 %%]]
         ignore _ = False
@@ -192,10 +197,12 @@ evidMpToCore env evidMp
         strip (Evid_Proof _ (RedHow_ByScope _) [ev]) = strip ev
         strip (Evid_Proof p i                  evs ) = Evid_Proof p i (map strip evs)
         strip ev                                     = ev
+
         splitAmbig  (Evid_Proof p i es            )  = let (es',as) = splitAmbigs es in (Evid_Proof p i es',as)
         splitAmbig  (Evid_Ambig p   ess@((i,es):_))  = let (es',_ ) = splitAmbigs es in (Evid_Proof p i es',[OverlapEvid p (map fst ess)])
         splitAmbig  ev                               = (ev,[])
         splitAmbigs es                               = let (es',as) = unzip $ map splitAmbig es in (es',concat as)
+
         dbg m = id -- Debug.tr m empty
 %%]
                           Just r -> trp "XX" ("ev" >#< ev >#< insk >#< "k" >#< k >#< v >#< "r" >#< tcrCExpr r >#< tcrCExpr (vr r)) $ (        mkk r                  st,vr r)
@@ -213,12 +220,12 @@ evidKeyCoreMpToBinds m
                -> let deepestScope = subevdId . maximumBy (\evd1 evd2 -> subevdScope evd1 `pscpCmpByLen` subevdScope evd2) . Set.toList
                   in  Map.singleton (deepestScope uses) [b]
             )
-      $ [ (acoreBind1Meta (mkHNm i) CMetaVal_Dict e,u)
+      $ [ (acoreBind1MetaTy (mkHNm i) CMetaVal_Dict Ty_Any e,u)
         | (i,(e,u,_ )) <- dbg "evidKeyCoreMpToBinds.dependentOnAssumes"   $! Map.toList dependentOnAssumes   
         ]
     , dbg "evidKeyCoreMpToBinds.res2"
       $! Map.fromListWith (++)
-      $ [ (sc,[acoreBind1Meta (mkHNm i) CMetaVal_Dict e]) 
+      $ [ (sc,[acoreBind1MetaTy (mkHNm i) CMetaVal_Dict Ty_Any e]) 
         | (i,(e,_,sc)) <- dbg "evidKeyCoreMpToBinds.independentOfAssumes" $! Map.toList independentOfAssumes 
         ]
     )
@@ -262,7 +269,7 @@ evidKeyCoreMpToBinds2 m
           = Map.partition (\(_,uses,_) -> Set.null uses) m
         (dependentOn1Assume, dependentOnNAssumes)
           = Map.partition (\(_,uses,_) -> Set.size uses == 1) m
-        mkd i e           = acoreBind1Meta (mkHNm i) CMetaVal_Dict e
+        mkd i e           = acoreBind1MetaTy (mkHNm i) CMetaVal_Dict Ty_Any e
         deepestScope sc u = maximumBy pscpCmpByLen $ sc : (map subevdScope $ Set.toList u)
 %%]
 

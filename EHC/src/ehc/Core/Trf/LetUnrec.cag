@@ -95,7 +95,7 @@ SEM CExpr
                                             =   if @categ == CBindCateg_Rec
                                                 then  let  h = Map.filterWithKey (\k e -> k `Map.member` @binds.bindMp) @binds.useMp
                                                            o = scc . Map.toList $ h
-                                                           mk c ns b = acoreLet c [ acoreBind1Metas n m e | n <- ns, (e,m) <- maybeToList (Map.lookup n @binds.bindMp) ] b
+                                                           mk c ns b = acoreLet c [ acoreBind1MetasTy n m Ty_Any e | n <- ns, (e,m) <- maybeToList (Map.lookup n @binds.bindMp) ] b
                                                            t = foldr (\bs b
                                                                          -> case bs of
                                                                                [n] | n `elem` Map.findWithDefault [] n h

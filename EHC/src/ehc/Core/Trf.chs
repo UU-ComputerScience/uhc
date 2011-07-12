@@ -42,6 +42,8 @@
 %%]
 %%[(8 codegen) import({%{EH}Core.Trf.OptimizeStrictness})
 %%]
+%%[(8 codegen) import({%{EH}Core.Trf.EraseExtractTysigCore})
+%%]
 %%[(9 codegen) import({%{EH}Core.Trf.FixDictFields})
 %%]
 %%[(99 codegen) import({%{EH}Core.Trf.ExplicitStackTrace})
@@ -113,6 +115,9 @@ trfCore opts dataGam modNm trfcore
 
                  -- removal of unnecessary constructs: eta expansions
                ; t_eta_red
+
+                 -- erase type signatures, extract the core + ty combi at this stage
+               ; t_erase_ty
 
                  -- make names unique
                ; t_ren_uniq emptyRenUniqOpts
@@ -209,6 +214,8 @@ trfCore opts dataGam modNm trfcore
 
         t_initial       = liftTrf  "initial"            $ id
         t_eta_red       = liftTrf  "eta-red"            $ cmodTrfEtaRed
+        t_erase_ty      = liftTrf2 "erase-ty" lamMpPropagate
+                                                        $ \s -> cmodTrfEraseExtractTysigCore opts
         t_ann_simpl     = liftTrf  "ann-simpl"          $ cmodTrfAnnBasedSimplify opts
         t_ren_uniq    o = liftTrf  "ren-uniq"           $ cmodTrfRenUniq o
         t_let_unrec     = liftTrf  "let-unrec"          $ cmodTrfLetUnrec

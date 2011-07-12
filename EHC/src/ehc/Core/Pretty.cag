@@ -188,6 +188,7 @@ SEM CBind
 
 SEM CBindAspect
   | Bind        lhs         .   pp          =   @bindMeta.pp >-< "=" >#< @expr.pp
+  | Ty     		lhs         .   pp          =   "::" >#< ppACBaspKeyS @aspectKeyS >#< @tyPP -- pp @relevTy
   | RelevTy     lhs         .   pp          =   "::_R" >#< ppACBaspKeyS @aspectKeyS >#< @tyPP -- pp @relevTy
   | Meta        lhs         .   pp          =   "::_M" >#< ppACBaspKeyS @aspectKeyS >#< @cmetas.pp
   | Val         lhs         .   pp          =   "=" >#< ppACBaspKeyS @aspectKeyS >#< @expr.pp
@@ -288,6 +289,7 @@ ATTR AllBindAspect [ | | gathVarPPMp USE {`Map.union`} {Map.empty}: VarPPMp ]
 
 SEM CBindAspect
   | RelevTy		(loc.tyPP,lhs.gathVarPPMp)	=	ppRelevTy Map.empty @relevTy		-- circular when given desired @lhs.varPPMp
+  | Ty			loc			.	tyPP		=	ppTy @ty
 
 SEM CBind
   | Bind        bindAspects	.	varPPMp		=	Map.union @bindAspects.gathVarPPMp @lhs.varPPMp

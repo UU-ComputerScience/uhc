@@ -251,12 +251,12 @@ SEM CBindAspect
 %%[(8 codegen)
 SEM CBindAspect
 %%[[8
-  | Bind        lhs         .   cTrf        =   acoreBindasp1Cat CBindCateg_Plain @lhs.nm $ acoreLam (assocLKeys @argNewL) @expr.cTrf
+  | Bind        lhs         .   cTrf        =   acoreBindaspVal1Cat CBindCateg_Plain @lhs.nm $ acoreLam (assocLKeys @argNewL) @expr.cTrf
 %%][9
   | Bind        lhs         .   cTrf        =   --trace ("use of global: " ++ show @lhs.nm ++ " uses " ++ show @bindLamArgMp ++ "\n"
                                                 --      ++ (if @bindMeta.isInstance then ("instance " ++ show @lhs.nm ++ " finds " ++ show @expr.bindLamArgMp ++ "\n") else "")
                                                 --      ) $
-                                                (acoreBindasp1Metas @lhs.nm @bindMeta.cTrf $ acoreLam [(n) | (n,cvi) <- @argNewL] @expr.cTrf)
+                                                (acoreBindaspVal1Metas @lhs.nm @bindMeta.cTrf $ acoreLam [(n) | (n,cvi) <- @argNewL] @expr.cTrf)
                 bindMeta    . bindLamArgMp  =  @expr.bindLamArgMp
 %%]]
 %%]

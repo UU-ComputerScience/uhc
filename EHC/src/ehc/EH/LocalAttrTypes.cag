@@ -217,7 +217,7 @@ SEM *
 		loc.resTy  						: Ty
 		loc.rowTy 						: Ty
 		loc.sigKi 						: Ty
-		loc.supClsFldL 					: {[HsName]}
+		loc.supClsFldNmL 					: {[HsName]}
 		loc.tgi_ 						: TyGamInfo
 		loc.tkgi 						: TyKiGamInfo
 		loc.tkgi_ 						: TyKiGamInfo

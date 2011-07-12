@@ -590,10 +590,13 @@ instance AbstractCore Expr MetaVal ValBind ValBind ValBindCateg MetaBind Ty Pat 
   acoreApp1           			    	= mkExprApp1
   acoreLam1Ty         				    = mkExprLam1
   acoreTagTupTy   tg t es 				= mkExprTuple' tg t es
-  acoreBindasp1CatLevMetasTy cat n l m t e
+  acoreBindaspVal1CatLevMetasTy cat n l m t e
   										= mkValBind1LevMetas doMkSeq n l m t e
                                         where doMkSeq = cat /= ValBindCateg_Strict
+  acoreBindaspValTy1CatLev _ _ _ t		= panic "TyCore.Base.acoreBindaspValTy1CatLev"
   acoreBind1Asp n [a]					= a
+  acoreBind1CatLevMetasTy bcat n mlev mb t e
+  										= acoreBind1Asp n [acoreBindaspVal1CatLevMetasTy bcat n mlev mb t e]
   acoreLetBase							= Expr_Let
   acoreCaseDflt	e as d					= Expr_Case e as d
   acoreVar								= Expr_Var
@@ -639,6 +642,7 @@ instance AbstractCore Expr MetaVal ValBind ValBind ValBindCateg MetaBind Ty Pat 
   acoreMetabindDflt      				= MetaBind_Plain
   acoreTyErr           s 				= tyErr s
   acoreTyChar 							= tyChar
+  acoreTyNone            				= tyErr "TyCore.Base.acoreTyNone"
   acoreTyInt 							= tyInt
   acoreTyString o 						= tycString o
 

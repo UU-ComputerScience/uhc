@@ -13,7 +13,7 @@ Gathering.
 Hook(s):
 \begin{itemize}
 \item \verb|CodeAGItf.AGItf.howMergeLamInfo|, how to merge lam info
-\item \verb|CodeAGItf.AGItf.howUnionGathLamInfo|, how to union gathered lam info into inherited lam info
+\item \verb|CodeAGItf.AGItf.howUnionGathLamInfo|, how to preprocess inherited lam info for further use down the AST, e.g. by union gathered lam info
 \end{itemize}
 %%]
 
@@ -34,7 +34,7 @@ SEM CExpr
 %%]
 
 %%[(8 codegen)
-ATTR AllBind [ | | bindLamMp USE {`Map.union`} {Map.empty}: LamMp ]
+ATTR AllBind [ | | bindLamMp USE {`lamMpUnionBindAspMp`} {Map.empty}: LamMp ]
 
 %%]
 

@@ -534,11 +534,6 @@ SEM Decl
                                                             tkg = gamUnion @lhs.finTyKiGam @tyExpr.intlTyKiGam
                                                             t2k = tvarKi tkg @lhs.finKiVarMp emptyVarMp
                                                         in  tyQuantifyOuter t2k (const False) t
-%%[[8
-                            .   ty_sig_expanded     =   @ty_sig_
-%%][11
-                            .   ty_sig_expanded     =   tyCanonicFFI (emptyFI {fiEnv = @fe} :: FIIn) @ty_sig_
-%%]]
                 lhs         .   gathTySigGam        =   @nm `gamSingleton` ValGamInfo @ty_sig_
 %%]
 

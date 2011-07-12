@@ -220,6 +220,10 @@ DATA CBindAspect
   | Val		    aspectKeyS		: {ACoreBindAspectKeyS}
   				expr 			: CExpr
   
+  -- a (keyed) Ty, of the binding, (1) either the default for Bind, or (2, not yet used) for a Val with the same aspectKeyS
+  | Ty		    aspectKeyS		: {ACoreBindAspectKeyS}
+  				ty 			 	: {Ty}
+  
 %%[[90
   -- FFE binding (not yet implemented for all backends)
   | FFE         callconv        : {FFIWay}

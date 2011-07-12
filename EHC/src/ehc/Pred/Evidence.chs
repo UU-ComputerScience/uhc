@@ -91,12 +91,12 @@ instance VarUpdatable p s => VarUpdatable (Evidence p info) s where
 evidUnresolved :: Eq p => Evidence p info -> [UnresolvedTrace p info] -- [p]
 evidUnresolved (Evid_Unresolved p)  = [UnresolvedTrace_Fail p]
 evidUnresolved (Evid_Proof p i ps)
-               | null us   = []
-               | otherwise = [UnresolvedTrace_Red p i us]
+               | null us            = []
+               | otherwise          = [UnresolvedTrace_Red p i us]
                where us = {- nub $ -} concatMap evidUnresolved ps
 evidUnresolved (Evid_Ambig p  pss)
-               | null us   = []
-               | otherwise = [UnresolvedTrace_Overlap p us]
+               | null us            = []
+               | otherwise          = [UnresolvedTrace_Overlap p us]
                where us = {- nub $ concatMap -} map (concatMap evidUnresolved . snd) pss
 evidUnresolved _                    = []
 %%]

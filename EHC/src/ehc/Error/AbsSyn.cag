@@ -163,7 +163,7 @@ DATA Err
 %%[[9
   | NotProvenPreds      preds      : {[Pred]}
 %%][99
-  | NotProvenPreds      preds      : {[(Pred,[Range])]}
+  | NotProvenPreds      preds      : {[((Pred,[Range]),PP_Doc)]}
 %%]]
 %%[[9
   | AmbigPreds          preds      : {[Pred]}

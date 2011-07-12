@@ -2,7 +2,7 @@
 \begin{hcarentry}[section,updated]{UHC, Utrecht Haskell Compiler}
 \label{uhc}
 \label{ehc}
-\report{Atze Dijkstra}%11/10
+\report{Atze Dijkstra}%05/11
 \status{active development}
 \participants{many others%Jeroen Fokker,
 % Doaitse Swierstra,
@@ -18,32 +18,18 @@
 \paragraph{What is new?}
 UHC is the Utrecht Haskell Compiler, supporting almost all Haskell98 features and most of Haskell2010, plus
 experimental extensions.
-Recently version 1.1.0 was released, featuring generic deriving \cref{sec:genericDeriving},
-a new configurable garbage collector, initial support for building with UHC via cabal, and many bug fixes.
-
-We plan the next release to offer a Javascript backend.
-Furthermore we hope to add optimizations to eliminate some of the obvious inefficiencies.
-As part of this work the intent is also to better integrate the work done on whole program analysis.
-
-\paragraph{UHC Blog}
-Recently a UHC blog has been started.
-The intent is to scribble about the internals of UHC and issues arising out of the implementation.
+Since the last release a Javascript backend has been implemented.
+We plan to make a next release autumn this year.
 
 \paragraph{What do we currently do and/or has recently been completed?}
 As part of the UHC project, the following (student) projects and other activities are underway (in arbitrary order):
 \begin{itemize}
-\item Jeroen Bransen (PhD): ``Incremental Global Analysis'' (starting up).
+\item Jeroen Bransen (PhD): ``Incremental Global Analysis''.
 \item Jan Rochel (PhD): ``Realising Optimal Sharing'', based on work by Vincent van Oostrum and Clemens Grabmayer.
-\item Arie Middelkoop (PhD): type system formalization and automatic generation from type rules.
-\item Tom Lokhorst: type based static analyses (recently completed, available with proper configuration).
+\item Arie Middelkoop (PhD, to be defended soon): type system formalization and automatic generation from type rules, in particular the Attribute Grammar variants Ruler-Core for supporting more complex type system implementations.
+\item Tamar Christina: an implementation of HML using Ruler-Core.
 \item Jeroen Leeuwestein: incrementalization of whole program analysis.
-\item Atze van der Ploeg: lazy closures (recently completed).
-\item Paul van der Ende: garbage collection \& LLVM (recently completed, available with proper configuration).
 \item Jeroen Fokker: GRIN backend, whole program analysis.
-\item C\u{a}lin Juravle: base libraries (completed upto Haskell98, integrated).
-\item Levin Fritz: base libraries for Java backend (completed, integrated).
-\item Andres L\"oh: Cabal support (completed initial support, integrated).
-\item Jos\'e~Pedro Magalh\~{a}es: generic deriving (\cref{sec:genericDeriving}, completed, integrated, presented at Haskell Symposium).
 \item Doaitse Swierstra: parser combinator library.
 \item Atze Dijkstra: overall architecture, type system, bytecode interpreter + java + javascript backend, garbage collector.
 \end{itemize}

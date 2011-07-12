@@ -592,7 +592,7 @@ acoreRPatBindL2BindL :: (Eq bcat, AbstractCore e m b basp bcat mbind t p pr pf a
 acoreRPatBindL2BindL env hasSub parNm ct rest pbL 
   = concat
     $  map  (\(RPatFld_Fld l o _ p,mbOff)
-                -> let  b n = [acoreBind1CatTy acoreBindcategPlain n acoreTyInt (mkc n mbOff)]
+                -> let  b n = [acoreBind1CatTy acoreBindcategPlain n (rcpTy p) (mkc n mbOff)]
                         pn  = parNm
                         pn' = hsnUniqifyEval pn
                         mkc n (Just o) = acoreExprSatSelCaseTy env (Just (pn',ty pn')) (acoreVar pn) ct n {- l -} o rest

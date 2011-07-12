@@ -1,0 +1,105 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Fully lazy code
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs module {%{EH}Core.Trf.EraseExtractTysigCore} import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Opts},{%{EH}Core},{%{EH}Ty}) export(cmodTrfEraseExtractTysigCore)
+%%]
+
+%%[(8 codegen) hs import({%{EH}AbstractCore})
+%%]
+%%[(8 codegen) hs import({%{EH}LamInfo})
+%%]
+
+%%[(8 codegen) hs import(Data.Maybe, qualified Data.Map as Map)
+%%]
+
+%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonBindNm},{Core/CommonLamInfo},{Core/CommonGathLamInfo})
+WRAPPER CodeAGItf
+%%]
+
+%%[(99 codegen)
+PRAGMA strictcase
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell itf
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs
+cmodTrfEraseExtractTysigCore
+  :: EHCOpts
+     -> CModule
+     -> ( CModule
+        , LamMp
+        )
+cmodTrfEraseExtractTysigCore opts cmod
+  = ( cTrf_Syn_CodeAGItf t
+    , gathLamMp_Syn_CodeAGItf t
+    )
+  where t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf cmod))
+                           (Inh_CodeAGItf
+                             { opts_Inh_CodeAGItf = opts
+                             , lamMp_Inh_CodeAGItf = Map.empty
+                             })
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Global info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AllCodeNT CodeAGItf [ opts: EHCOpts | | ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Gathering LamInfo, providing hook for Core/CommonLamInfo
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+SEM CodeAGItf
+  | AGItf       loc         .	howUnionGathLamInfo
+  												=	id
+%%]
+
+%%[(8 codegen)
+SEM CodeAGItf
+  | AGItf       loc         .   howMergeLamInfo	=   (\(LamInfo {laminfoBindAspMp=m}) i -> i {laminfoBindAspMp = m `Map.union` laminfoBindAspMp i})
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Newly bound LamInfo
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin)
+SEM CBindAspect
+  | Ty          loc         .   bindLamL        =   [ (@aspectKeyS, LamInfoBindAsp_Ty @ty) ]
+  | Bind        loc         .   bindLamL        =   [] -- [ (acbaspkeyDefaultCore, LamInfoBindAsp_Core @expr.cTrf) ]
+  | Ty Bind     lhs         .   bindLamMp       =   Map.singleton @lhs.nm (emptyLamInfo {laminfoBindAspMp = Map.fromList @bindLamL})
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Transformation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AllCodeNT [ | | cTrf: SELF ]
+ATTR CodeAGItf [ | | cTrf: CModule ]
+
+%%]
+
+%%[(8 codegen)
+ATTR AllBindAspect [ | | cBindTrf USE {++} {[]}: {[CBindAspect]} ]
+
+SEM CBindAspect
+  | * - Ty    	lhs         .   cBindTrf        =   [@cTrf]
+
+SEM CBind
+  | Bind		loc			.	cTrf			=	CBind_Bind @nm @bindAspects.cBindTrf
+
+%%]
+

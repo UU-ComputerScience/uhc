@@ -69,7 +69,7 @@ acoreBuiltinUndefined
 %%[(8 hmtyinfer || hmtyast) hs export(tyRecOffset) 
 %%]
 
-%%[(9 hmtyinfer || hmtyast) hs export(Pred(..),predNm,predTy,tyPredNm,tyPredMatchNm,predMatchNm,tyPred,tyLImplsPreds,tyArrowImplsRes,tyArrowImplsArgRes,mkTyImpls,mkTyPr,tyPrArrowArgsRes)
+%%[(9 hmtyinfer || hmtyast) hs export(Pred(..),predNm,predTy,tyPredNm,tyPredMatchNmArgs,predMatchNmArgs,tyPred,tyLImplsPreds,tyArrowImplsRes,tyArrowImplsArgRes,mkTyImpls,mkTyPr,tyPrArrowArgsRes)
 %%]
 
 %%[(9 hmtyinfer || hmtyast) hs export(tyArrowArity,tyQuant)
@@ -1423,18 +1423,18 @@ tyPrArrowArgsRes tp = let (tl,t) = tyArrowArgsRes tp in (map tyPred tl, tyPred t
 %%]
 
 %%[(9 hmtyinfer || hmtyast) hs
-tyPredMatchNm :: Ty -> HsName
-tyPredMatchNm = predMatchNm . tyPred
+tyPredMatchNmArgs :: Ty -> (HsName,[Ty])
+tyPredMatchNmArgs = predMatchNmArgs . tyPred
 
-predMatchNm :: Pred -> HsName
-predMatchNm p
+predMatchNmArgs :: Pred -> (HsName,[Ty])
+predMatchNmArgs p
   =  case p of
-       Pred_Class t    -> tyAppFunConNm t
-       Pred_Pred  t    -> predMatchNm $ snd $ tyPrArrowArgsRes t
+       Pred_Class t    -> (tyAppFunConNm t, tyAppArgs t)
+       Pred_Pred  t    -> predMatchNmArgs $ snd $ tyPrArrowArgsRes t
 %%]
 %%[(10 hmtyinfer || hmtyast) hs
-       Pred_Lacks _ (Label_Lab l)  -> hsnUniqify HsNameUniqifier_LacksLabel l
-       Pred_Lacks _ _              -> mkHNm "_LabVar_"      -- necessary? only used by CHR's
+       Pred_Lacks _ (Label_Lab l)  -> (hsnUniqify HsNameUniqifier_LacksLabel l, [])
+       Pred_Lacks _ _              -> (mkHNm "_LabVar_", [])      -- necessary? only used by CHR's
 %%]
 
 %%[(9 hmtyinfer || hmtyast) hs
