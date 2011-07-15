@@ -7,7 +7,7 @@
 %%% Fully lazy code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs module {%{EH}Core.Trf.LetUnrec} import(Data.Maybe,qualified Data.Map as Map,{%{EH}Base.Common},{%{EH}Core},{%{EH}Ty}) export(cmodTrfLetUnrec)
+%%[(8 codegen) hs module {%{EH}Core.Trf.LetUnrec} import({%{EH}Base.Common},{%{EH}Core},{%{EH}Ty}) export(cmodTrfLetUnrec)
 %%]
 
 %%[(8 codegen) hs import({%{EH}AbstractCore})
@@ -16,7 +16,10 @@
 %%[(8 codegen) hs import({%{EH}Base.Debug},EH.Util.Utils(scc))
 %%]
 
-%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonBindNm})
+%%[(8 codegen) hs import(Data.Maybe,qualified Data.Map as Map, qualified Data.Set as Set)
+%%]
+
+%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonBindNm},{Core/Trf/CommonFv})
 WRAPPER CodeAGItf
 %%]
 
@@ -64,6 +67,12 @@ SEM CodeAGItf
 SEM CExpr
   | Var         lhs         .   useMp       =   Map.fromList (zip @lhs.inNmL (repeat [@nm]))
   | Let         lhs         .   useMp       =   @remUseMp `useMpComb` @body.useMp
+{-
+  | Lam			lhs			.	useMp		=	Map.delete @arg @body.useMp
+
+SEM CAlt
+  | Alt			lhs			.	useMp		=	foldr Map.delete @expr.useMp @pat.nmL
+-}
 
 SEM CBindAspect
   | Bind        expr        .   inNmL       =   @lhs.nm : @lhs.inNmL

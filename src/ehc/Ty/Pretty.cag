@@ -455,6 +455,7 @@ SEM Ty
                             .   pp      =   if @isSpineRoot then @ppNice else @ppDflt
   | Any             loc     .   pp      =   pp hsnUnknown
   | Ann             loc     .   pp      =   @ann.pp >#< @ty.pp
+  | Dbg             loc     .   pp      =   "DBG<<<" >#< @info >#< ">>>"
 %%]
 
 %%[(8 hmtyinfer || hmtyast)

@@ -743,7 +743,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                                  (u',u2,u3,u4) = mkNewLevUID3 (foUniq fo)
 %%[[(10 codegen)
                                  r = acoreVar rn
-                                 mkLSel n u = acoreSelCase (emptyRCEEnv globOpts) (Just $ hsnUniqifyEval rn) r CTagRec n {-n-} (acoreNmHole u) Nothing
+                                 mkLSel n u = acoreSelCaseTy (emptyRCEEnv globOpts) (Just (hsnUniqifyEval rn,Ty_Any)) r CTagRec n {-n-} (acoreNmHole u) Nothing
 %%]]
 %%[[(10 codegen tycore)
                                  tr = acoreVar rn

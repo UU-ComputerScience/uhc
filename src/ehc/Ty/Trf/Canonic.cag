@@ -21,8 +21,9 @@ Canonicalization is done at
 \item rows, where fields may be in arbitrary order.
 \item types where type synonym expansion may occur, because 2 comparands may be differently partially expanded.
 \item (FFI only) types which are newtypes because at the value level the type level wrappers (and corresponding constructors) are erased.
-This is only done when FFI types are propagated to Core.
+\item predicates, translated to their witness equivalent, i.e. dictionaries for class predicates; others (like lack predicate for extensible records are ignored).
 \end{itemize}
+This is only done when types are propagated to Core.
 
 Tricky implementation point: After type synonym expansion, the
 replacement probably is structurally different and must be canonicalized
@@ -235,8 +236,8 @@ SEM Impls
 
 %%[(11 hmtyinfer)
 SEM Ty
-  | App             lhs     .   varMp           =	@replVarMp `varUpd` @arg.varMp
-  | Con             lhs     .   varMp           =	@replVarMp `varUpd` @lhs.varMp
+  | App             lhs     .   varMp           =   @replVarMp `varUpd` @arg.varMp
+  | Con             lhs     .   varMp           =   @replVarMp `varUpd` @lhs.varMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -262,7 +263,7 @@ SEM Pred
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Has replaced
+%%% Has replacement been done?
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(11 hmtyinfer)
@@ -271,7 +272,7 @@ ATTR TyAGItf AllTyAndFlds [ | | isReplaced USE {||} {False}: Bool ]
 SEM Ty
   | App             loc     .   isReplaced      =   isJust @mbReplNoImplNil || isJust @mbRepl
   | Con Ext         loc     .   isReplaced      =   isJust @mbRepl
-  | Ann				loc		.	isReplaced		=	True
+  | Ann             loc     .   isReplaced      =   True
 
 SEM Ty
   | App             lhs     .   isReplaced      =   @isReplaced || @func.isReplaced || @arg.isReplaced
@@ -279,17 +280,32 @@ SEM Ty
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Predicate removal replacement, preds are not supposed to be in the type. Has to be looked into later!!!!!!!!!!!!!!
+%%% Predicate removal replacement of implicits, the explicit ones are replaced by their witness equivalent
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(9 hmtyinfer)
+%%[(9999 hmtyinfer)
+-- The replacement for a predicate in {! p !} -> t by its witness type w: w -> t
 SEM Ty
-  | App             loc     .   mbReplNoImplNil =   case @func.mbPredL of
-                                                      Nothing | @func.isPred
-                                                        -> Just @arg.repl
-                                                      Just [] | @func.isPred
-                                                        -> Just @arg.repl
-                                                      _ -> Nothing
+  | App             loc     .   mbReplPred      =   if @isArrowRoot && @func.isPred
+                                                    then Just (tyPred2DataTy $ head @func.appArgReplL)
+                                                    else Nothing
+%%]
+
+%%[(9999 hmtyinfer)
+-- If implicits, remove them, otherwise reconstruct the App
+SEM Ty
+  | App             loc     .   mbReplNoImplNil =   @mbReplPred
+%%]
+
+%%[(9 hmtyinfer)
+-- If implicits, remove them, otherwise reconstruct the App
+SEM Ty
+  | App             loc     .   mbReplNoImplNil =   let r = {- tyPred2DataTy -} @arg.repl
+                                                    in  case @func.mbPredL of
+                                                          Nothing | @func.isPred -> Just r
+                                                          Just [] | @func.isPred -> Just r
+                                                          _ -- | isJust @mbReplPred -> fmap (`mk1Arrow` r) @mbReplPred
+                                                            | otherwise          -> Nothing
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -319,6 +335,20 @@ SEM Ty
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Replacement, auxiliary attrs
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+List of arguments of App
+
+%%[(9 hmtyinfer)
+ATTR Ty [ | | appArgReplL: {[Ty]} ]
+
+SEM Ty
+  | App             loc     .   appArgReplL     =   @arg.repl : @func.appArgReplL
+  | * - App Ann     lhs     .   appArgReplL     =   []
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Replacement
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -331,7 +361,7 @@ ATTR TyAGItf  [ | | repl: Ty ]
 SEM Ty
   | App             loc     .   replNoImplNil   =   maybe @repl id @mbReplNoImplNil
                     lhs     .   repl            =   @replNoImplNil
-  | Ann             lhs     .   repl			= 	@ty.repl
+  | Ann             lhs     .   repl            =   @ty.repl
 %%]
 
 %%[(10 hmtyinfer)

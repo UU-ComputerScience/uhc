@@ -139,13 +139,13 @@ mkGenerRepresentableTypeSynTyProj
 
 mkGenerRepresentableTypeSynonymKi :: TyKiGam -> HsName -> Ty
 mkGenerRepresentableTypeSynonymKi tyKiGam tyNm
-  = maybe Ty_Any (addStar . tkgiKi) $ tyKiGamLookupByName tyNm tyKiGam
+  = maybe (acoreTyErr $ "Generics.mkGenerRepresentableTypeSynonymKi: " ++ show tyNm) (addStar . tkgiKi) $ tyKiGamLookupByName tyNm tyKiGam
   where addStar ki = mkArrow (as ++ [kiStar]) r
                    where (as,r) = tyArrowArgsRes ki
 
 -- TBD: sort out additional pol param at end, just like for kinds
 mkGenerRepresentableTypeSynonymPol :: PolGam -> HsName -> Ty
-mkGenerRepresentableTypeSynonymPol polGam tyNm = maybe Ty_Any pgiPol $ polGamLookup tyNm polGam
+mkGenerRepresentableTypeSynonymPol polGam tyNm = maybe (acoreTyErr $ "Generics.mkGenerRepresentableTypeSynonymPol: " ++ show tyNm) pgiPol $ polGamLookup tyNm polGam
 %%]
 
 %%[(92 hmtyinfer)
@@ -163,6 +163,7 @@ SEM Decl
                                                               , fromJust @mbGenerInfo
                                                               )]
                                                         else []
+
 SEM Expr
   | Let         loc         -- names for introduced datatypes
                             .   (generDataAllTyOrigNmL,generDataTyAndConNmLL)
@@ -189,11 +190,11 @@ SEM Expr
                             .   generDataGam        =   gamFromAssocL [ (n, mkDGIPlain n (Ty_Con n) [] Map.empty )
                                                                       | n <- @generDataTyAndConNmL
                                                                       ]
-                            .   generTyGam          =   gamFromAssocL [ (n, mkTGIData (Ty_Con n) Ty_Any             )
+                            .   generTyGam          =   gamFromAssocL [ (n, mkTGIData (Ty_Con n) (acoreTyErr $ "Generics.Expr.Let.TyGam.DataTyAndCon: " ++ show n))
                                                                       | n <- @generDataTyAndConNmL
                                                                       ]
                                                         `gamUnion`
-                                                        gamFromAssocL [ ( tnm, mkTGIData syn Ty_Any )
+                                                        gamFromAssocL [ ( tnm, mkTGIData syn (acoreTyErr $ "Generics.Expr.Let.TyGam.TySyn: " ++ show tnm))
                                                                       | (_,_,_,ts) <- @generTySynProjL
                                                                       , (tnm,syn,_,_) <- ts
                                                                       ]

@@ -158,8 +158,8 @@ projFrom
      opts rceEnv
      (Proj sum)
   = acoreLam [argNm]
-    $ acoreSatSelsCases
-        rceEnv (Just $ hsnUniqifyEval argNm) (acoreVar argNm)
+    $ acoreSatSelsCasesTy
+        rceEnv (Just (hsnUniqifyEval argNm,acoreTyErr "Generics.projFrom.argNm")) (acoreVar argNm)
         [ (tg, nmLForCase nL, Nothing, fst $ mkExp proj nL)
         | proj <- projSumAlts sum
         , let con = projCon proj
@@ -221,7 +221,7 @@ projTo
         mkExp proj nL@(~(n:nL')) scrutL@(~(scrut:scrutL'))
           = case proj of
               -- product
-              Proj_Prod l r     -> ( \e -> acoreSatSelsCases rceEnv (Just $ hsnUniqifyEval scrut) (acoreVar scrut)
+              Proj_Prod l r     -> ( \e -> acoreSatSelsCasesTy rceEnv (Just (hsnUniqifyEval scrut,acoreTyErr "Generics.projTo.Prod.scrut")) (acoreVar scrut)
                                              [ (prodTg ehbnGenerDataProdAltProd,nmLForCase [sl,sr],Nothing,l' $ r' e) ]
                                    , (scrut, nr, ssr)
                                    )
@@ -235,7 +235,7 @@ projTo
               Proj_M1_S1 _      -> wrap ehbnGenerDataMeta1  ehbnGenerDataMeta1AltM1
 
               -- sum
-              Proj_Sum   l r    -> ( \e -> acoreSatSelsCases rceEnv (Just $ hsnUniqifyEval scrut) (acoreVar scrut)
+              Proj_Sum   l r    -> ( \e -> acoreSatSelsCasesTy rceEnv (Just (hsnUniqifyEval scrut,acoreTyErr "Generics.projTo.Sum.scrut")) (acoreVar scrut)
                                              [ (sumTg ehbnGenerDataSumAltLeft ,nmLForCase [sl],Nothing,l' e)
                                              , (sumTg ehbnGenerDataSumAltRight,nmLForCase [sr],Nothing,r' e)
                                              ]
@@ -263,7 +263,7 @@ projTo
                 var              = mkC scrut [n] nL' scrutL' id
                 unit             = mkC scrut []  nL  scrutL' id
                 mkC s nL nL' sL' mke ty con
-                                 = ( \e -> acoreSatSelsCases rceEnv (Just $ hsnUniqifyEval s) (acoreVar s)
+                                 = ( \e -> acoreSatSelsCasesTy rceEnv (Just (hsnUniqifyEval s,acoreTyErr "Generics.projTo.mkC.s")) (acoreVar s)
                                              [ (tgOf ty con,nmLForCase nL,Nothing,mke e) ]
                                    , (s, nL', sL')
                                    )

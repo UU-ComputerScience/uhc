@@ -403,11 +403,6 @@ SEM Expr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(7 hmtyinfer)
-%%]
-SEM DataFieldExpr
-  | Con         loc         .   finConTy            =   @lhs.finTyVarMp `varUpd` @ty
-
-%%[(7 hmtyinfer)
 ATTR DataFieldExpr [ | | mbConNm: {Maybe HsName} ]
 
 SEM DataFieldExpr

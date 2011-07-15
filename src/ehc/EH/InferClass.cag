@@ -50,7 +50,8 @@ SEM Decl
                                                                   , clgiGenerDerivableL = @generDerivs
 %%]]
                                                                   }
-                                .   (clsNm,clsArgTyL)=   tyPredMatchNmArgs @hdPrTy
+                                .   (clsNm,clsArgTyL)
+                                                    =   tyPredMatchNmArgs @hdPrTy
                 lhs             .   patClGam1       =   gamAdd @clsNm @clgi1 @lhs.patClGam1
                 tyPrExpr        .   tyGam           =   gamPushNew @lhs.tyGam
                                 .   clGam           =   @lhs.patClGam2
@@ -252,7 +253,7 @@ SEM Decl
                                                              st     =  mkNewTyVarL (tyArrowArity $ tyQuant t) @lUniq4 `mkArrow` @hdPrTyFix
                                                              fo     =  fitsIn predFIOpts @fe2 @lUniq3 (emptyVarMp :: VarMp) t st
                                                         in   tyArrowArgs $ foVarMp fo `varUpd` foTy fo
-                                .   supClsFldNmL      =   tyPrLToSupNmL @supPrTyL
+                                .   supClsFldNmL    =   tyPrLToSupNmL @supPrTyL
                                 .   ctxtPrFixL      =   map tyPred @ctxtPrTyFixL
                                 .   recTy           =   (@fixPrTyVarMp `varUpd`) $ tyQuantifyRank [2..] $ tyArrowRes @tyPrExpr.evTy
                                 .   recTyExts       =   snd $ tyRecExts @recTy
@@ -260,7 +261,10 @@ SEM Decl
                                 .   dataDictTag     =   mkClassCTag @dataDictNm (length @recTyExts) -- only used when `not ehcCfgClassViaRec'
                                 .   dataDictTy      =   mkConApp @dataDictNm @instArgTyL
                                 .   dictTag         =   if ehcCfgClassViaRec @lhs.opts then CTagRec else @dataDictTag
-                            	.	vgi				=	ValGamInfo (replicate (length @ctxtPrFixL) Ty_Any `mkArrow` @dataDictTy)	-- args TBD
+                                .   vgi             =   ValGamInfo ((case @instVariant of
+                                                                       InstDefault -> [@dataDictTy]
+                                                                       _           -> map pred2DataTy @ctxtPrFixL
+                                                                     ) `mkArrow` @dataDictTy)
                                 .   tySigGam        =   assocLToGam $ assocLMapElt ValGamInfo @recTyExts
                 decls           .   patValGam       =   gamPushNew @lhs.patValGam
                 lhs             .   patTyGam        =   @lhs.patTyGam
