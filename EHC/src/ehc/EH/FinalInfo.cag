@@ -22,7 +22,18 @@ ATTR
 ATTR AllNT [ finTyVarMp: VarMp | | ]
 
 SEM Expr
+%%[[2
   | Let         loc         .   finValGamDecls      =   gamTop @decls.patValGam
+%%][3
+  | Let         loc         .   finValGamDecls      :=  @quValGam_
+%%][4
+  | Let         loc         .   finValGamDecls      :=  @quValGam_ex_
+%%][8
+  | Let         loc         .   finValGamDecls      :=  @quValGam_ex_subst
+%%]]
+
+SEM Expr
+  | Let
 %%[[2
                 decls       .   finValGam           =   @finValGamDecls
 %%][92
@@ -51,16 +62,6 @@ SEM Decl
 %%]]
 %%]
 
-%%[(3 hmtyinfer).finValGam
-SEM Expr
-  | Let         loc         .   finValGamDecls      :=  @quValGam_
-%%]
-
-%%[(4 hmtyinfer).finValGam
-SEM Expr
-  | Let         loc         .   finValGamDecls      :=  @quValGam_ex_
-%%]
-
 %%[(8 hmtyinfer)
 SEM PatExpr
   | Var VarAs AppTop Rec DataFields Con IConst CConst SConst Irrefutable App
@@ -68,11 +69,6 @@ SEM PatExpr
     Expr
 %%]]
                 loc         .   finalTy        		=   maybe Ty_Any vgiTy $ valGamLookup (rpatNmNm @cpNm) @lhs.finValGam
-%%]
-
-%%[(8 hmtyinfer).finValGam
-SEM Expr
-  | Let         loc         .   finValGamDecls      :=  @quValGam_ex_subst
 %%]
 
 %%[(5 hmtyinfer)
@@ -90,6 +86,12 @@ SEM PatExpr
 %%[(8 hmtyinfer)
 SEM Expr
   | AppTop      loc         .   finalTy             =   @lhs.finTyVarMp `varUpd` @ty
+  | Case		loc			.	finalTyExpr			=	@lhs.finTyVarMp `varUpd` @expr.ty
+%%]
+
+%%[(8 hmtyinfer)
+SEM DataFieldExpr
+  | Upd         loc         .   finalTyExpr			=	@lhs.finTyVarMp `varUpd` @expr.ty
 %%]
 
 %%[(9 hmtyinfer)
@@ -105,8 +107,19 @@ SEM Expr
 SEM Expr
 %%[[8
   | AppTop      loc         .   finalTyExpanded     =   @finalTy
+  | Case        loc         .   finalTyExprExpanded =   @finalTyExpr
 %%][11
   | AppTop      loc         .   finalTyExpanded     =   tyCanonicFFI (emptyFI {fiEnv = @fe} :: FIIn) @finalTy
+  | Case        loc         .   finalTyExprExpanded =   tyCanonicFFI (emptyFI {fiEnv = @fe} :: FIIn) @finalTyExpr
+%%]]
+%%]
+
+%%[(8 hmtyinfer)
+SEM DataFieldExpr
+%%[[8
+  | Upd         loc         .   finalTyExprExpanded =   @finalTyExpr
+%%][11
+  | Upd         loc         .   finalTyExprExpanded =   tyCanonicFFI (emptyFI {fiEnv = @fe} :: FIIn) @finalTyExpr
 %%]]
 %%]
 

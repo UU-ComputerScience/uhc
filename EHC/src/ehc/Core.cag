@@ -726,7 +726,7 @@ instance AbstractCore CExpr CMetaVal CBind CBindAspect CBindCateg CMetaBind Ty C
   acoreMetavalDfltDict   				= CMetaVal_Dict
 %%]]
   acoreMetabindDflt      				= CMetaBind_Plain
-  acoreTyErr           _ 				= Ty_Any
+  acoreTyErr             				= Ty_Dbg
   acoreTyNone            				= Ty_Any
   acoreTyChar 							= tyChar
   acoreTyInt 							= tyInt

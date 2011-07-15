@@ -61,7 +61,7 @@ The translation to core yields:
 - a set of bindings which do not depend on assumptions.
 
 %%[(9 codegen) export(EvidKeyToCBindMap,PredScopeToCBindMap)
-type EvidKeyToCExprMap = Map.Map UID (CExpr,Set.Set SubEvid,PredScope)
+type EvidKeyToCExprMap = Map.Map UID (CExpr,Ty,Set.Set SubEvid,PredScope)
 type EvidKeyToCBindMap = Map.Map UID [CBind]
 type PredScopeToCBindMap = Map.Map PredScope [CBind]
 
@@ -76,6 +76,7 @@ data ToCoreState p info
 data ToCoreRes
   = ToCoreRes
       { tcrCExpr    :: !CExpr
+      , tcrTy       :: !Ty
       , tcrUsed     :: !(Set.Set SubEvid)
       , tcrScope    :: !PredScope
       }
@@ -86,7 +87,7 @@ instance Show ToCoreRes where
   show _ = "ToCoreRes"
 
 instance PP ToCoreRes where
-  pp r = "TCR" >#< tcrCExpr r
+  pp r = "TCR" >#< tcrCExpr r >#< "::" >#< tcrTy r
 %%]
 
 %%[(9 codegen) export(OverlapEvid(..))
@@ -108,7 +109,7 @@ predScopeToCBindMapUnion = Map.unionWith (++)
 %%[(9 codegen) export(evidMpToCore,EvidKeyToCExprMap)
 evidMpToCore :: FIIn' gm -> InfoToEvidenceMap CHRPredOcc RedHowAnnotation -> (EvidKeyToCExprMap,[OverlapEvid])
 evidMpToCore env evidMp
-  = ( Map.map (\r -> (tcrCExpr r,tcrUsed r,tcrScope r)) $ tcsMp
+  = ( Map.map (\r -> (tcrCExpr r,tcrTy r,tcrUsed r,tcrScope r)) $ tcsMp
       $ foldr mke (ToCoreState Map.empty Map.empty Map.empty (fiUniq env))
       $ evidMp'
     , concat ambigs
@@ -123,7 +124,7 @@ evidMpToCore env evidMp
         mk1 st mbevk ev@(Evid_Proof p info evs)
                       = dbg "evidMpToCore.mk1.a" $
                         ins (insk || isJust mbevk)
-                            evk evnm ev c sc
+                            evk evnm ev c (pred2DataTy $ cpoPr p) sc
                             (Set.unions (uses : map tcrUsed rs))
                             (st' {tcsUniq=u'})
                       where (st'@(ToCoreState {tcsUniq=u}),rs) = mkn (st {tcsPrMp = Map.insert p evnm $ tcsPrMp st}) evs
@@ -139,25 +140,25 @@ evidMpToCore env evidMp
                             choosen n = maybe n mkHNm mbevk
         mk1 st@(ToCoreState {tcsUniq=u}) mbevk ev@(Evid_Recurse p)
                       = ins True
-                            u2 (mkHNm u2) ev (mknm recnm) (cpoScope p)
+                            u2 (mkHNm u2) ev (mknm recnm) (pred2DataTy $ cpoPr p) (cpoScope p)
                             Set.empty
                             (st {tcsUniq=u1})
                       where (u1,u2) = mkNewUID u
                             recnm = panicJust "evidMpToCore.Evid_Recurse" $ Map.lookup p $ tcsPrMp st
-        mk1 st _    _ = dbg "evidMpToCore.mk1.b" $ (st,ToCoreRes (acoreBuiltinUndefined $ feEHCOpts $ fiEnv env) Set.empty initPredScope)
+        mk1 st _   ev = dbg "evidMpToCore.mk1.b" $ (st,ToCoreRes (acoreBuiltinUndefined $ feEHCOpts $ fiEnv env) (pred2DataTy $ cpoPr $ evidPred ev) Set.empty initPredScope)
         mkn st        = dbg "evidMpToCore.mkn" $ foldr (\ev (st,rs) -> let (st',r) = mk1 st Nothing ev in (st',r:rs)) (st,[])
         mkv x         = mknm $ mkHNm x
         mknm          = acoreVar
-        ins insk k evnm ev c sc uses st
+        ins insk k evnm ev c ty sc uses st
                       = {- trp "XX" ((ppAssocLV $ Map.toList $ tcsMp st') >-< (ppAssocLV $ Map.toList $ tcsEvMp st')) $ -} res
                       where res@(st',_)
                               = case Map.lookup ev $ tcsEvMp st of
                                   Just r -> (        mkk r                     st,vr r)
-                                  _      -> (mkc r $ mkk (ToCoreRes c uses sc) st,   r)
+                                  _      -> (mkc r $ mkk (ToCoreRes c ty uses sc) st,   r)
                             mkk r st = if insk then st {tcsMp = Map.insert k r $ tcsMp st} else st
                             mkc v st = st {tcsEvMp = Map.insert ev v $ tcsEvMp st}
                             v = mknm evnm
-                            r = ToCoreRes (vc c v) uses sc
+                            r = ToCoreRes (vc c v) ty uses sc
                             vr r = case acoreExprMbVar $ tcrCExpr r of
                                      Just _ -> r
                                      _      -> r {tcrCExpr = v}
@@ -166,9 +167,9 @@ evidMpToCore env evidMp
                                         _      -> c'
         ann (RedHow_Assumption   vun sc) _     = ( mknm $ vunmNm vun, sc )
         ann (RedHow_ByInstance   n _   sc) ctxt= ( acoreApp (mknm n) (map (\c -> (tcrCExpr c)) ctxt), maximumBy pscpCmpByLen $ sc : map tcrScope ctxt )
-        ann (RedHow_BySuperClass n o t ) [sub] = let res = acoreSatSelsCaseMeta
+        ann (RedHow_BySuperClass n o t ) [sub] = let res = acoreSatSelsCaseMetaTy
                                                              (emptyRCEEnv $ feEHCOpts $ fiEnv env)
-                                                             (Just $ hsnUniqifyEval n) 
+                                                             (Just (hsnUniqifyEval n,Ty_Any))
                                                              CMetaVal_Dict 
                                                              (tcrCExpr sub) 
                                                              t
@@ -220,18 +221,18 @@ evidKeyCoreMpToBinds m
                -> let deepestScope = subevdId . maximumBy (\evd1 evd2 -> subevdScope evd1 `pscpCmpByLen` subevdScope evd2) . Set.toList
                   in  Map.singleton (deepestScope uses) [b]
             )
-      $ [ (acoreBind1MetaTy (mkHNm i) CMetaVal_Dict Ty_Any e,u)
-        | (i,(e,u,_ )) <- dbg "evidKeyCoreMpToBinds.dependentOnAssumes"   $! Map.toList dependentOnAssumes   
+      $ [ (acoreBind1MetaTy (mkHNm i) CMetaVal_Dict t e,u)
+        | (i,(e,t,u,_ )) <- dbg "evidKeyCoreMpToBinds.dependentOnAssumes"   $! Map.toList dependentOnAssumes   
         ]
     , dbg "evidKeyCoreMpToBinds.res2"
       $! Map.fromListWith (++)
-      $ [ (sc,[acoreBind1MetaTy (mkHNm i) CMetaVal_Dict Ty_Any e]) 
-        | (i,(e,_,sc)) <- dbg "evidKeyCoreMpToBinds.independentOfAssumes" $! Map.toList independentOfAssumes 
+      $ [ (sc,[acoreBind1MetaTy (mkHNm i) CMetaVal_Dict t e]) 
+        | (i,(e,t,_,sc)) <- dbg "evidKeyCoreMpToBinds.independentOfAssumes" $! Map.toList independentOfAssumes 
         ]
     )
   where (independentOfAssumes, dependentOnAssumes)
           = dbg "evidKeyCoreMpToBinds.partition"
-            $! Map.partition (\(_,uses,_) -> Set.null uses)
+            $! Map.partition (\(_,_,uses,_) -> Set.null uses)
             $ dbg "evidKeyCoreMpToBinds.m"
             $! m
         dbg m = id -- Debug.tr m (pp m)
@@ -253,23 +254,23 @@ type EvidCBindL = [CBind]
 
 evidKeyCoreMpToBinds2 :: EvidKeyToCExprMap -> (EvidCBindL,EvidKeyToCBindMap,PredScopeToCBindMap)
 evidKeyCoreMpToBinds2 m
-  = (   [ mkd i e
-        | (i,(e,_,_)) <- Map.toList independentOfAssumes
+  = (   [ mkd i e t
+        | (i,(e,t,_,_)) <- Map.toList independentOfAssumes
         ]
     , Map.unionsWith (++)
-      $ [ Map.singleton (subevdId $ head $ Set.toList u) [mkd i e]
-        | (i,(e,u,_)) <- Map.toList dependentOn1Assume
+      $ [ Map.singleton (subevdId $ head $ Set.toList u) [mkd i e t]
+        | (i,(e,t,u,_)) <- Map.toList dependentOn1Assume
         ]
     , Map.unionsWith (++)
-      $ [ Map.singleton (deepestScope sc u) [mkd i e]
-        | (i,(e,u,sc)) <- Map.toList dependentOnNAssumes
+      $ [ Map.singleton (deepestScope sc u) [mkd i e t]
+        | (i,(e,t,u,sc)) <- Map.toList dependentOnNAssumes
         ]
     )
   where (independentOfAssumes, dependentOnAssumes)
-          = Map.partition (\(_,uses,_) -> Set.null uses) m
+          = Map.partition (\(_,_,uses,_) -> Set.null uses) m
         (dependentOn1Assume, dependentOnNAssumes)
-          = Map.partition (\(_,uses,_) -> Set.size uses == 1) m
-        mkd i e           = acoreBind1MetaTy (mkHNm i) CMetaVal_Dict Ty_Any e
+          = Map.partition (\(_,_,uses,_) -> Set.size uses == 1) m
+        mkd i e t         = acoreBind1MetaTy (mkHNm i) CMetaVal_Dict t e
         deepestScope sc u = maximumBy pscpCmpByLen $ sc : (map subevdScope $ Set.toList u)
 %%]
 

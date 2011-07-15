@@ -821,7 +821,7 @@ SEM Expr
                                         , mkInfo1 "chrSolve2RemCnstrMp" (ppAssocLV $ assocLMapElt ppBracketsCommas $ Map.toList @chrSolve2RemCnstrMp)
                                         , mkInfo1 "chrSolve1EvidMp" (ppAssocLV $ Map.toList @chrSolve1EvidMp)
 %%[[(9 codegen)
-                                        , mkInfo1 "chrSolve1EvidCoreMp" (ppAssocLV $ assocLMapElt (\(c,s,sc) -> c >-< (ppBracketsCommas $ Set.toList s) >-< sc) $ Map.toList @chrSolve1EvidCoreMp)
+                                        , mkInfo1 "chrSolve1EvidCoreMp" (ppAssocLV $ assocLMapElt (\(c,t,s,sc) -> c >#< "::" >#< t >-< (ppBracketsCommas $ Set.toList s) >-< sc) $ Map.toList @chrSolve1EvidCoreMp)
                                         , mkInfo1 "chrSolve1EvidBindMp" (ppAssocLV $ assocLMapElt ppCBindL $ Map.toList @chrSolve1EvidBindMp)
                                         , mkInfo1 "chrSolve1ScopeBindMp" (ppAssocLV $ assocLMapElt ppCBindL $ Map.toList @chrSolve1ScopeBindMp)
                                         , mkInfo1 "chrSolve2EvidBindMp" (ppAssocLV $ assocLMapElt ppCBindL $ Map.toList @chrSolve2EvidBindMp)

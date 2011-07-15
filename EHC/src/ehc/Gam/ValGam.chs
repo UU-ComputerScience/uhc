@@ -69,6 +69,12 @@ valGamLookupTy n g
        Just vgi   ->  (vgiTy vgi,[])
 %%]
 
+%%[(8 hmtyinfer || hmtyast) export(valGamLookupTyDefault)
+-- | lookup Ty in ValGam, defaulting to Ty_Any
+valGamLookupTyDefault :: HsName -> ValGam -> Ty
+valGamLookupTyDefault n g = maybe (Ty_Dbg $ "valGamLookupTyDefault: " ++ show n) vgiTy $ valGamLookup n g
+%%]
+
 %%[4.valGamLookup -1.valGamLookup export(valGamLookup)
 valGamLookup :: HsName -> ValGam -> Maybe ValGamInfo
 valGamLookup nm g
