@@ -2,12 +2,8 @@
 -- Evaluation of AspectExpr, given a set of AspectRef
 -------------------------------------------------------------------------
 
+MODULE {AspectExprEval} {aspexpIsAccepted}
 {
-module AspectExprEval
-  ( aspexpIsAccepted
-  )
-  where
-
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 import AspectExpr

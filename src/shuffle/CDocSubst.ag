@@ -2,12 +2,8 @@
 -- Substitution on CDoc
 -------------------------------------------------------------------------
 
+MODULE {CDocSubst} {cdocSubst}
 {
-module CDocSubst
-  ( cdocSubst
-  )
-  where
-
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 import CDoc

@@ -2,13 +2,8 @@
 -- Inlining files on CDoc
 -------------------------------------------------------------------------
 
+MODULE {CDocInline} {cdocInlineCDocIO, InlineCDocSt, InlineCDocIO}
 {
-module CDocInline
-  ( cdocInlineCDocIO
-  , InlineCDocSt, InlineCDocIO
-  )
-  where
-
 import qualified Data.Map as Map
 import Network.URI
 import System( system, ExitCode(..) )

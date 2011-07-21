@@ -184,7 +184,7 @@ defaultOpts
       , optDepBaseDir     		=  error "optDepBaseDir not set"
       , optDepTerm        		=  Map.empty
       , optDepIgn         		=  Set.empty
-      , optAGModHeader    		=  False
+      , optAGModHeader    		=  True
       }
 
 optsHasNoVariantRefOrder :: Opts -> Bool
