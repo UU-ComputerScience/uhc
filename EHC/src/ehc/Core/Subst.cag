@@ -21,7 +21,7 @@ WRAPPER CExpr
 %%]
 
 %%[(9 codegen)
-PRAGMA novisit
+--PRAGMA novisit
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -160,7 +160,7 @@ SEM CExpr
     Hole HoleLet CoeArg ImplsApp ImplsLam
 %%]]
                 inst        .   repl'       :   CExpr
-                inst        .   repl'       =   @replv
+                inst        .   repl'       =   if @lhs.doDeepSubst && @isRepl then @replv else CExpr_CoeArg
 %%]
 
 %%[(8 codegen)
