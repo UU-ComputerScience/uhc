@@ -113,7 +113,7 @@ tyAppVarLookup2_RhsOfEqOnly varmp ty
 %%]
 
 %%[(4 hmtyinfer || hmtyast)
-PRAGMA novisit
+-- PRAGMA novisit
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -201,37 +201,53 @@ tvRepl3 tv tvuse mk repl replv replho cycmpho
 %%% Replacement
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+-- Put in dummy value for higher order child if the child is not needed to avoid infinite trees
 %%[(4 hmtyinfer || hmtyast)
 SEM Ty
   | Var             inst    .   repl'       :   Ty
                     (loc.replv,loc.isRepl)  =   maybe (@repl,False) (\t -> (t,True)) $ vmiMbTy $? @lhs.lkup 0 @tv
-                    inst    .   repl'       =   @replv
+		    loc     .   needRepl    =   case @tvUse of
+		    	    		    	   TVFree -> @isRepl
+						   _      -> False
+                    inst    .   repl'       =   if @needRepl then @replv else Ty_Any
 %%]
 
 %%[(9 hmtyinfer || hmtyast)
 SEM Impls
   | Tail            inst    .   repl'       :   Impls
                     (loc.replv,loc.isRepl)  =   maybe (@repl,False) (\t -> (t,True)) $ vmiMbImpls $? @lhs.lkup 0 @iv
-                    inst    .   repl'       =   @replv
+		    loc     .   needRepl    =   case @tvUse of
+		    	    		           TVFree -> @isRepl
+						   _      -> False
+                    inst    .   repl'       =   if @needRepl then @replv else Impls_Nil
 
 SEM Pred
   | Var             inst    .   repl'       :   Pred
                     (loc.replv,loc.isRepl)  =   maybe (@repl,False) (\t -> (t,True)) $ vmiMbPred $? @lhs.lkup 0 @pv
-                    inst    .   repl'       =   @replv
+		    loc     .   needRepl    =   case @tvUse of
+		    	    		           TVFree -> @isRepl
+						   _      -> False
+                    inst    .   repl'       =   if @needRepl then @replv else Pred_Preds PredSeq_Nil
 %%]
 
 %%[(10 hmtyinfer || hmtyast)
 SEM Label
   | Var             inst    .   repl'       :   Label
                     (loc.replv,loc.isRepl)  =   maybe (@repl,False) (\t -> (t,True)) $ vmiMbLabel $? @lhs.lkup 0 @lv
-                    inst    .   repl'       =   @replv
+		    loc     .   needRepl    =   case @tvUse of
+		    	    		           TVFree -> @isRepl
+						   _      -> False
+                    inst    .   repl'       =   if @needRepl then @replv else Label_Lab (HsName_Base "")
 %%]
 
 %%[(13 hmtyinfer || hmtyast)
 SEM PredSeq
   | Var             inst    .   repl'       :   PredSeq
                     (loc.replv,loc.isRepl)  =   maybe (@repl,False) (\t -> (t,True)) $ vmiMbPredSeq $? @lhs.lkup 0 @av
-                    inst    .   repl'       =   @replv
+		    loc     .   needRepl    =   case @tvUse of
+		    	    		           TVFree -> @isRepl
+						   _      -> False
+                    inst    .   repl'       =   if @needRepl then @replv else PredSeq_Nil
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

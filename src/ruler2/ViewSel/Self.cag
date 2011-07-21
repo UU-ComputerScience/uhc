@@ -26,10 +26,10 @@ wrapViewSelsT vs
     in  wrap_AGViewSelsItf r1
             (Inh_AGViewSelsItf)
 
-viewSelsSelfT :: T_ViewSels -> ViewSels
+viewSelsSelfT :: ViewSels -> ViewSels
 viewSelsSelfT vs
   = self_Syn_AGViewSelsItf r
-  where r = wrapViewSelsT vs
+  where r = wrapViewSelsT (sem_ViewSels vs)
 
 wrapRlSelT :: T_RlSel -> Syn_AGRlSelItf
 wrapRlSelT  vs
@@ -37,10 +37,10 @@ wrapRlSelT  vs
     in  wrap_AGRlSelItf r1
             (Inh_AGRlSelItf)
 
-rlSelSelfT :: T_RlSel -> RlSel
+rlSelSelfT :: RlSel -> RlSel
 rlSelSelfT vs
   = self_Syn_AGRlSelItf r
-  where r = wrapRlSelT vs
+  where r = wrapRlSelT (sem_RlSel vs)
 
 %%]
 

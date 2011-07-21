@@ -72,7 +72,7 @@ ATTR TyAGItf QualAGItf CoeAGItf AllNT [ rvarMp: RVarMp | | ]
 SEM AnaEval
   | Var             inst    .   repl'       :   AnaEval
                     (loc.replv,loc.isRepl)  =   maybe (@repl,False) (\t -> (t,True)) $ rvmiMbEval $? @lhs.rvarLookup @av
-                    inst    .   repl'       =   @replv
+                    inst    .   repl'       =   if @isRepl then @replv else AnaEval_WHNF
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
