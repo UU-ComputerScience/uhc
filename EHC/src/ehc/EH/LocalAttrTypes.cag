@@ -11,7 +11,7 @@ SEM *
 		loc.generDataTyAndConNmL		: {[HsName]}
 		loc.generForFitsInL				: {[GenerForFitsIn]}
 		-- loc.doPredAmbigSplit			: {forall x . (x -> PredOcc) -> TQOGam -> [x] -> ([x],[x])}
-		loc.doPredAmbigSplitForSimplify	: {[(CHRPredOcc,PredScope)] -> ([(CHRPredOcc,PredScope)],[(CHRPredOcc,PredScope)])}
+		-- loc.doPredAmbigSplitForSimplify	: {[(CHRPredOcc,PredScope)] -> ([(CHRPredOcc,PredScope)],[(CHRPredOcc,PredScope)])}
 		loc.generInstInfoL				: {[GenerDataInstInfo]}
 		loc.generInstDeclL				: {[CHRScopedInstanceDecl Pred RedHowAnnotation PredScope]}
 		loc.gathTvKiVarMp2				: {VarMp}
@@ -29,8 +29,8 @@ SEM *
 		loc.arity  						: Int
 		loc.arityErrs  					: ErrL
 		loc.chrSolve1RemPrOccL 			: {[CHRPredOcc]}
-		loc.cannotProveCnstrMp 			: CHRPredOccCnstrMp
-		loc.cannotRes1CnstrMp  			: CHRPredOccCnstrMp
+		-- loc.cannotProveCnstrMp 			: CHRPredOccCnstrMp
+		-- loc.cannotRes1CnstrMp  			: CHRPredOccCnstrMp
 		loc.chrFIIn  					: FIIn
 		loc.chrProveFIIn  				: FIIn
 		loc.chrSimplifyResult1 			: {SimplifyResult CHRPredOcc RedHowAnnotation Guard VarMp}
@@ -40,7 +40,7 @@ SEM *
 		loc.chrSolve1EvidCoreMp 		: EvidKeyToCExprMap
 		loc.chrSolve1EvidCoreMpTC 		: {E2C.EvidKeyToExprMap}
 		loc.chrSolve1EvidMp 			: CHRPredOccEvidMp
-		loc.chrSolve1RemCnstrMp 		: CHRPredOccCnstrMp
+		-- loc.chrSolve1RemCnstrMp 		: CHRPredOccCnstrMp
 		loc.chrSolve1ScopeBindMp 		: PredScopeToCBindMap
 		loc.chrSolve1ScopeBindMpTC 		: {E2C.PredScopeToValBindMap}
 		loc.clgi  						: ClGamInfo
@@ -145,8 +145,8 @@ SEM *
 		loc.hasTySig  					: Bool
 		loc.hasTySig_  					: Bool
 		loc.hdPrTy 						: Ty
-		loc.hdPrTyFix 					: Ty 
-		loc.hereCnstrMp  				: CHRPredOccCnstrMp
+		loc.hdPrTyFix 					: Ty
+		-- loc.hereCnstrMp  				: CHRPredOccCnstrMp
 		loc.implsTl  					: Impls
 		loc.implsVarId  				: UID
 		loc.imPrvOcc  					: ImplsProveOcc
@@ -222,9 +222,9 @@ SEM *
 		loc.tkgi 						: TyKiGamInfo
 		loc.tkgi_ 						: TyKiGamInfo
 		loc.topNm  						: HsName
-		loc.toProveElsewhereCnstrMp		: CHRPredOccCnstrMp
-		loc.toProveHereCnstrMp 			: CHRPredOccCnstrMp
-		loc.toProveHereCnstrMpCanon 	: CHRPredOccCnstrMp
+		-- loc.toProveElsewhereCnstrMp		: CHRPredOccCnstrMp
+		-- loc.toProveHereCnstrMp 			: CHRPredOccCnstrMp
+		-- loc.toProveHereCnstrMpCanon 	: CHRPredOccCnstrMp
 		loc.tqoGam  					: TQOGam
 		loc.tv   						: UID
 		loc.tvarv  						: Ty
