@@ -556,7 +556,8 @@ linkChainResolvedInfoEncoding
                              in  (toInteger sz `shiftL` b3 .|. eInd, (sz+1, i : inds))
               where info' = toInteger info
                     off'  = toInteger off
-  where k e  = toInteger $ fromEnum e
+  where k :: Enum a => a -> Integer
+  	k e  = toInteger $ fromEnum e
         b1 = Cfg.sizeofWordInBits `div` 2
         b3 = 2
         b2 = b3 + 4

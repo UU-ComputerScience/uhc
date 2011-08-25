@@ -558,7 +558,9 @@ SEM CExpr
                                                                                     ]
                                                                     else x
                                                                   where m l = hlist $ intersperse (pp "+") l
+								  	s :: Show a => a -> PP_Doc
                                                                         s x = pp (show x)
+									s' :: Show a => a -> PP_Doc
                                                                         s' x = pp (show $ show x)
                                                                         p x = pp x
                                                                         n p x = p ++ show x
