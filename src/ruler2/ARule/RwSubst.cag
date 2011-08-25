@@ -375,12 +375,15 @@ exprMatch opts ecGam e1 e2
           where ml = mt l1 l2
                 mr = mt r1 r2
                 m  = bnd' ml . res' (mk (mtExpr ml) (mtExpr mr)) $ mr
+        bnd' :: MtOut e' -> MtOut e -> MtOut e
         bnd' mn  m = m {mtFmGam = mtFmGam mn `fmGamUnion` mtFmGam m}
         bnd  n e m = bnd' (emptyEMtOut {mtFmGam = fmSingleton n FmAll e}) m
         bndc n e m = bnd' (emptyCMtOut {mtFmGam = fmSingleton n FmCnstr (Expr_WrapCnstr e)}) m
+        res' :: e -> MtOut e' -> MtOut e
         res'   e m = m {mtExpr = e}
         res    e   = res' e emptyEMtOut
         resc   e   = res' e emptyEMtOut
+        err' :: MtOut e -> MtOut e
         err'     m = m {mtMatches = False}
         err        = err' emptyEMtOut
         errc       = err' emptyCMtOut
