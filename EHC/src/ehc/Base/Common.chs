@@ -61,7 +61,7 @@
 %%[7 export(uidHNm, uidQualHNm)
 %%]
 
-%%[8 import (EH.Util.FPath,IO,Char,Data.Maybe,Numeric)
+%%[8 import (EH.Util.FPath,System.IO,System.Environment,System.Exit,Data.Char,Data.Maybe,Numeric)
 %%]
 
 %%[8 export(putCompileMsg)
@@ -70,7 +70,7 @@
 %%[8 import (qualified Data.Map as Map) export(showPP,ppPair,ppFM)
 %%]
 
-%%[8 hs export(ctag,ppCTag,ppCTagInt) 
+%%[8 hs export(ctag,ppCTag,ppCTagInt)
 %%]
 
 %%[9 export(ppListV)
@@ -118,7 +118,7 @@ ppHsnNonAlpha scanOpts
         p n = let name = show n
               in  {- if name `elem`  scoKeywordsTxt scanOpts
                    then pp ('$' : '_' : name)
-                   else -} 
+                   else -}
                         let s = foldr (\c r -> if c `Set.member` escapeeChars then '$':c:r else c:r) [] name
                          in  pp ('$':s)
 %%]
@@ -194,10 +194,10 @@ class SemApp a where
   semVar            =   semRngVar    emptyRange
   semCon            =   semRngCon    emptyRange
   semParens         =   semRngParens emptyRange
-  semRngApp    _    =   semApp   
+  semRngApp    _    =   semApp
   semRngAppTop _    =   semAppTop
-  semRngVar    _    =   semVar   
-  semRngCon    _    =   semCon   
+  semRngVar    _    =   semVar
+  semRngCon    _    =   semCon
   semRngParens _    =   semParens
   -- defaults
   mkApp             =   mkRngApp emptyRange
@@ -501,7 +501,7 @@ threadMap f c = foldr (\a (bs, c) -> let (b, c') = f a c in (b:bs, c')) ([], c)
 
 %%[7_2
 groupAllBy :: Ord b => (a -> b) -> [a] -> [[a]]
-groupAllBy f = Map.elems . foldr (\v -> Map.insertWith (++) (f v) [v]) Map.empty 
+groupAllBy f = Map.elems . foldr (\v -> Map.insertWith (++) (f v) [v]) Map.empty
 %%]
 
 %%[7_2
@@ -637,7 +637,7 @@ mkRange2 p1 p2 = Range_Range (mkPos p1) (mkPos p2)
 %%[1
 show2Pos :: Pos -> Pos -> String
 show2Pos p1 p2
-  | p1 /= p2 && p2 /= noPos  = if line p1 == line p2 
+  | p1 /= p2 && p2 /= noPos  = if line p1 == line p2
                                then mk (show (line p1))                          (Just $ show (column p1) ++ "-" ++ show (column p2))
                                else mk (show (line p1) ++ "-" ++ show (line p2)) Nothing
   | otherwise                =      mk (show (line p1))                          (Just $ show (column p1))
@@ -1242,8 +1242,8 @@ uidHNm = mkHNm -- hsnFromString . show
 
 %%[7
 uidQualHNm :: HsName -> UID -> HsName
-uidQualHNm modnm uid = 
-%%[[50                  
+uidQualHNm modnm uid =
+%%[[50
                         hsnPrefixQual modnm $
 %%]]
                         uidHNm uid
@@ -1411,7 +1411,7 @@ maybeOk n _ (NotOk  x) = n x
 
 %%[(8 codegen) export(KnownPrim(..))
 data KnownPrim
-  = 
+  =
     -- platform Int
     KnownPrim_AddI
   | KnownPrim_SubI
@@ -1422,22 +1422,22 @@ data KnownPrim
   | KnownPrim_AddF
   | KnownPrim_SubF
   | KnownPrim_MulF
-  
+
     -- platform Double
   | KnownPrim_AddD
   | KnownPrim_SubD
   | KnownPrim_MulD
-  
+
     -- 8 bit
   | KnownPrim_Add8			-- add: 1 byte / 8 bit, etc etc
   | KnownPrim_Sub8
   | KnownPrim_Mul8
-  
+
     -- 16 bit
   | KnownPrim_Add16
   | KnownPrim_Sub16
   | KnownPrim_Mul16
-  
+
     -- 32 bit
   | KnownPrim_Add32
   | KnownPrim_Sub32

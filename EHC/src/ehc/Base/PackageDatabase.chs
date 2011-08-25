@@ -35,7 +35,7 @@ packages.
 %%]
 %%[99 import(System.Environment, System.Directory, Control.Monad)
 %%]
-%%[99 import(IO,EH.Util.FPath,EH.Util.Utils)
+%%[99 import(System.IO,System.Exit,System.Environment,EH.Util.FPath,EH.Util.Utils)
 %%]
 
 -- debug
@@ -175,7 +175,7 @@ pkgMpFromDirFile opts pkgkey order pkgfp
                            let i = foldr ($) pkgInfo (pkgCfgParse cfg)
                            i `seq` hClose h
                            return $ pkgMpSingleton pkgkey i
-                   else return $ pkgMpSingleton pkgkey pkgInfo 
+                   else return $ pkgMpSingleton pkgkey pkgInfo
                  -- ; print pm
                  ; return pm
                  }

@@ -77,7 +77,7 @@ instance Serialize Foo where
 
 %%[50 import(qualified {%{EH}Base.Binary} as Bn)
 %%]
-%%[50 import(qualified Data.ByteString.Lazy as L, IO, System.IO(openBinaryFile))
+%%[50 import(qualified Data.ByteString.Lazy as L, System.IO, System.IO(openBinaryFile))
 %%]
 
 %%[50 import(EH.Util.Utils)
@@ -102,7 +102,7 @@ reference to it.
 %%[50
 data SCmd
   = SCmd_Unshared
-  | SCmd_ShareDef   | SCmd_ShareRef			-- 
+  | SCmd_ShareDef   | SCmd_ShareRef			--
   | SCmd_ShareDef16 | SCmd_ShareRef16
   | SCmd_ShareDef8  | SCmd_ShareRef8
   deriving (Enum)
@@ -150,7 +150,7 @@ emptySPutS = SPutS 0 Map.empty (return ())
 
 type SPut = St.State SPutS ()
 
-%%]  
+%%]
 
 %%[50 export(SGet)
 data SerGetMp = forall x . (Typeable x, Ord x) => SerGetMp (Map.Map Int x)
@@ -167,10 +167,10 @@ type SGet x = St.StateT SGetS Bn.Get x
 class Serialize x where
   sput :: x -> SPut
   sget :: SGet x
-  
+
   sputNested :: x -> SPut
   sgetNested :: SGet x
-    
+
   -- default just falls back on Binary, invoked by sputShared/sgetShared
   sputNested = panic "not implemented (must be done by instance): Serialize.sputNested"
   sgetNested = panic "not implemented (must be done by instance): Serialize.sgetNested"
@@ -405,7 +405,7 @@ instance (Ord k, Serialize k, Serialize e) => Serialize (Map.Map k e) where
 %%[50 export(runSPut,runSGet)
 runSPut :: SPut -> Bn.Put
 runSPut x = sputsPut $ snd $ St.runState x emptySPutS
- 
+
 runSGet :: SGet x -> Bn.Get x
 runSGet x = St.evalStateT x (SGetS Map.empty)
 
@@ -414,7 +414,7 @@ runSGet x = St.evalStateT x (SGetS Map.empty)
 %%[50 export(serialize,unserialize)
 serialize :: Serialize x => x -> Bn.Put
 serialize x = runSPut (sput x)
- 
+
 unserialize :: Serialize x => Bn.Get x
 unserialize = runSGet sget
 

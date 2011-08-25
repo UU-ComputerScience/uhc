@@ -17,7 +17,7 @@ module Helium.CodeGeneration.CoreUtils
 
 import Lvm.Core.Core as Core
 import Lvm.Common.Id
-import Char
+import Data.Char
 import Lvm.Common.Byte as Byte(bytesFromString)
 
 infixl `app_`

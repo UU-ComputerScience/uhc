@@ -5,7 +5,7 @@
 %%[1 hs module(Main)
 %%]
 
-%%[1 hs import (System, IO, Control.Monad.State, qualified Data.Map as Map)
+%%[1 hs import (System.IO, System.Environment, System.Exit, Control.Monad.State, qualified Data.Map as Map)
 %%]
 
 %%[1 hs import (System.Console.GetOpt, EH.Util.Pretty, EH.Util.Utils( panicJust ))

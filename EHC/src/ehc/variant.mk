@@ -95,10 +95,9 @@ EHC_CFG_IS_A_VARIANT					:= $(filter $(EHC_VARIANT),$(EHC_VARIANTS))
 ###########################################################################################
 
 # assumed packages, useful only for prelude variants; order matters.
-# EHC_PACKAGES_ALL						:= uhcbase base array filepath old-locale old-time unix directory random haskell98
+# EHC_PACKAGES_ALL						:= uhcbase base array filepath old-locale old-time unix directory random
 EHC_PACKAGES_ASSUMED					:= uhcbase base array \
-											$(if $(EHC_CFG_USE_UNIX_AND_C),filepath old-locale old-time unix directory random,) \
-											haskell98
+											$(if $(EHC_CFG_USE_UNIX_AND_C),filepath old-locale old-time unix directory random,)
 
 ###########################################################################################
 # installation locations for ehc building time

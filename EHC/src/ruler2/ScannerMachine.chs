@@ -4,10 +4,10 @@
 %%[1 hs export(scan)
 %%]
 
-%%[1 hs import (Char(isLower, isUpper, isSpace, isAlphaNum, isDigit, chr, ord))
+%%[1 hs import (Data.Char(isLower, isUpper, isSpace, isAlphaNum, isDigit, chr, ord))
 %%]
 
-%%[1 hs import (List(sort), Maybe(isJust))
+%%[1 hs import (Data.List(sort), Data.Maybe(isJust))
 %%]
 
 %%[1 hs import (qualified Data.Set as Set)
@@ -120,14 +120,14 @@ scan opts pos input
                                    let (name,p1,rest) = scanIdent (advc 2 p) s
                                        ident = c:name
                                        tokens | null rest ||
-                                                head rest /= '`' = errToken "Unterminated infix identifier" p 
+                                                head rest /= '`' = errToken "Unterminated infix identifier" p
                                                                  : doScan p1 rest
-                                              | iskw ident       = errToken ("Keyword used as infix identifier: " ++ ident) p 
+                                              | iskw ident       = errToken ("Keyword used as infix identifier: " ++ ident) p
                                                                  : doScan (advc 1 p1) (tail rest)
-                                              | otherwise        = valueToken TkOp ident p 
+                                              | otherwise        = valueToken TkOp ident p
                                                                  : doScan (advc 1 p1) (tail rest)
                                    in tokens
-                          | otherwise = errToken ("Unexpected character in infix identifier: " ++ show c) p 
+                          | otherwise = errToken ("Unexpected character in infix identifier: " ++ show c) p
                                       : doScan (adv p c) s
                   in res
    -}
@@ -176,9 +176,9 @@ err lc 1 = error ("in scanner bad name definition" ++ maybeshow (lc))
 err lc fn 2
    = error ("in scanner not a valid name in file inclusion" ++ maybeshow (lc))
 -}
-lexNest :: (Pos -> String -> [Token]) 
-        -> Pos 
-        -> String 
+lexNest :: (Pos -> String -> [Token])
+        -> Pos
+        -> String
         -> [Token]
 lexNest cont pos inp = lexNest' cont pos inp
  where lexNest' c p ('-':'}':s) = c (advc 2 p) s

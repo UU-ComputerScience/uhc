@@ -4,7 +4,7 @@ where
 }
 {
 import Lvm.Common.PPrint as PPrint
-import Char
+import Data.Char
 import List (intersperse)
 import Top.Types (isTupleConstructor)
 import Helium.Syntax.UHA

@@ -30,7 +30,7 @@ import Helium.StaticAnalysis.Messages.TypeErrors
 import Helium.StaticAnalysis.Directives.TS_Messages
 import Helium.ModuleSystem.ImportEnvironment hiding (setTypeSynonyms)
 import Helium.StaticAnalysis.Inferencers.ExpressionTypeInferencer (expressionTypeInferencer)
-import Char (isAlphaNum)
+import Data.Char (isAlphaNum)
 import Helium.Utils.Utils (internalError)
 import qualified Helium.Syntax.UHA_Pretty as PP
 import qualified Data.Map as M

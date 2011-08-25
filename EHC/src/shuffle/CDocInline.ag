@@ -6,11 +6,11 @@ MODULE {CDocInline} {cdocInlineCDocIO, InlineCDocSt, InlineCDocIO}
 {
 import qualified Data.Map as Map
 import Network.URI
-import System( system, ExitCode(..) )
+import System.Process
+import System.Exit
 -- import System.Posix.Temp( mkstemp )
 import System.Directory( removeFile )
-import IO
-import Common
+import System.IO
 import CDoc
 import CDocCommon
 }
@@ -93,4 +93,4 @@ SEM CDoc
                                                                          _           -> return (m,Map.insert @lhs.cpos (Err_Exec @lhs.cpos cmd (show exitCode)) e)
                                                                      }
                                                              _ -> return dflt
-                                                       
+

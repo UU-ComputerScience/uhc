@@ -1,21 +1,21 @@
 module EH.Util.ScanUtils
   ( ScanOpts(..), defaultScanOpts
-  
+
   , isNoPos, posIs1stColumn
-  
+
   , InFilePos(..), infpStart, infpNone
   , infpAdvCol, infpAdvLine, infpAdv1Line, infpAdvStr
-  
+
   , genTokVal, genTokTp, genTokMap
-  
+
   , isLF, isStr, isStrQuote
   , isWhite, isBlack
   , isVarStart, isVarRest
-  
+
   )
   where
 
-import IO
+import System.IO
 import Data.Char
 import Data.List
 import qualified Data.Set as Set

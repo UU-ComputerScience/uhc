@@ -1,9 +1,9 @@
 imports
 {
 import Network.URI
-import IO
-import Monad
-import Array
+import System.IO
+import Control.Monad
+import Data.Array
 import Data.List
 import qualified Data.Map as Map
 import Common
@@ -412,7 +412,7 @@ SEM Line
   | AsIs Named  lhs         .   mkCDoc      =   const @mbCDoc
   | Groups      lhs         .   mkCDoc      =   \sel -> let mkCDocSortL = sortOnVariantRefOrderMp' (variantOfferAllLE_4 (@lhs.opts {optGenReqm=sel})) @groups.mkCDocL
                                                         in  maybe Nothing (\(_,((_,valid),mk)) -> if valid then mk sel else Nothing)
-                                                            $ initlast mkCDocSortL 
+                                                            $ initlast mkCDocSortL
 
 SEM Group
   | Group       loc         .   mkCDoc      =   \sel -> case @chOptions.chDest of
@@ -638,9 +638,9 @@ haddockize d
 
 {
 linePragma :: String -> Opts -> String -> Int -> CDoc -> CDoc
-linePragma pragcmt opts filename n c 
-  = if not (optLinePragmas opts) || cdIsEmpty c 
-    then c 
+linePragma pragcmt opts filename n c
+  = if not (optLinePragmas opts) || cdIsEmpty c
+    then c
     else CDoc_Ver (CDoc_Str ("{-" ++ pragcmt ++ " LINE "++show (n+1)++" \"" ++ filename ++ "\" " ++ pragcmt ++ "-}")) c
 
 hsLinePragma

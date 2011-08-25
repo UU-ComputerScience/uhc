@@ -15,7 +15,7 @@ import Helium.Syntax.UHA_Utils
 import Helium.Syntax.UHA_Range
 import Helium.StaticAnalysis.Messages.Messages
 import List        (intersperse, sort, partition, isSuffixOf, isPrefixOf)
-import Maybe       (fromJust)
+import Data.Maybe       (fromJust)
 import Helium.Utils.Utils       (commaList, internalError, minInt, maxInt)
 import Top.Types
 

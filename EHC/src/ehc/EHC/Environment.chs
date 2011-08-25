@@ -16,7 +16,7 @@ Currently:
 -- general imports
 %%[8 import(System.Environment, System.Directory)
 %%]
-%%[8 import(IO,EH.Util.FPath)
+%%[8 import(System.IO,EH.Util.FPath)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

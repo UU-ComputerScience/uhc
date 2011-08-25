@@ -28,7 +28,7 @@ import Data.Maybe
 import Data.Char
 import System
 import System.Console.GetOpt
-import IO
+import System.IO
 
 import EH.Util.FPath
 

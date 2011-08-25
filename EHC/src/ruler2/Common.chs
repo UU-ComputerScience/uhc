@@ -44,7 +44,7 @@
 %%[1 hs export (nmFunMkUniq, nmIsOver, FmKind(..), fmAS2Fm, ScKind(..), ScDeriv(..))
 %%]
 
-%%[1 hs import (Data.Maybe, Data.Char, IO, EH.Util.Pretty)
+%%[1 hs import (Data.Maybe, Data.Char, System.IO, EH.Util.Pretty)
 %%]
 
 %%[1 hs import (Scanner( SPos, emptySPos ), EH.Util.FPath)

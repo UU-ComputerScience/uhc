@@ -31,7 +31,7 @@ module Common
   )
   where
 
-import IO
+import System.IO
 import Data.List
 import qualified Data.Map as Map
 

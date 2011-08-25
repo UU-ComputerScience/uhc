@@ -10,7 +10,7 @@
 %%[1 module Main
 %%]
 
-%%[1 import(System.Console.GetOpt, System)
+%%[1 import(System.Console.GetOpt, System.IO, System.Exit, System.Process, System.Environment)
 %%]
 %%[1.fastseq import(qualified EH.Util.FastSeq as Seq)
 %%]
@@ -181,7 +181,7 @@ handleImmQuitOption immq opts
 %%][100
 %%]]
               }
-        where 
+        where
       ImmediateQuitOption_Version
         -> putStrLn (Cfg.verInfo Cfg.version)
       ImmediateQuitOption_Meta_Variant

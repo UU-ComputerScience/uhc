@@ -10,10 +10,10 @@
 
 module Helium.Interpreter.Main where
 
-import Char
+import Data.Char
 import List(isPrefixOf, isSuffixOf)
 import Monad(when)
-import IO(stdout, hFlush)
+import System.IO(stdout, hFlush)
 import System(system, getEnv, getArgs, exitWith, ExitCode(..))  
 import Helium.Utils.OSSpecific(slash)
 import Directory

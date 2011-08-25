@@ -4,7 +4,7 @@
 %%]
 %%[(8 codegen grin) module {%{EH}GrinCode.Common}
 %%]
-%%[(8 codegen grin) import( qualified Data.Map as Map, qualified Data.Set as Set, Data.Array, Data.Monoid, Char(isDigit) )
+%%[(8 codegen grin) import( qualified Data.Map as Map, qualified Data.Set as Set, Data.Array, Data.Monoid, Data.Char(isDigit) )
 %%]
 %%[(8 codegen grin) import( {%{EH}Base.Common}, {%{EH}Base.Builtin} )
 %%]
@@ -91,7 +91,7 @@ data AbstractValue
 
 type AbstractCall
   = (Variable, [Maybe Variable])
-  
+
 type AbstractCallList
   = [AbstractCall]
 
@@ -172,7 +172,7 @@ conInt (GrTag_Con _ i _ ) = i
 instance Ord GrTag where
   compare t1 t2 = let x = conNumber t1
                       y = conNumber t2
-                  in  case compare x y of 
+                  in  case compare x y of
                         EQ -> if  x == 0 || x==3 || x==4
                               then -- Rec/Unboxed/Hole
                                    EQ
@@ -236,11 +236,11 @@ showHptMap ae
 
 getBaseEnvList :: HptMap -> [(Int,AbstractValue)]
 getBaseEnvList ae = assocs ae
-     
+
 getEnvVar :: HptMap -> Int -> AbstractValue
 getEnvVar ae i  | snd (bounds ae) >= i = (ae ! i)
                 | otherwise            = trace ("variable "++ show i ++ " not found") AbsBottom   -- AbsError $ "variable "++ show i ++ " not found"
-                         
+
 
 limit :: Maybe (Set.Set GrTag) -> AbstractValue -> AbstractValue
 limit Nothing v = v
@@ -293,7 +293,7 @@ isBottom av = case av of
 addEnvElems :: HptMap -> [AbstractValue] -> HptMap
 addEnvElems e vs
   =  let (low, high) = bounds e
-         extra = length vs 
+         extra = length vs
          e2    = listArray (low, high+extra) (elems e ++ vs)
      in e2
 

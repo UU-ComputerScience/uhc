@@ -5,7 +5,7 @@
 imports
 {
 import Common
-import IO
+import System.IO
 import qualified Data.Map as Map
 }
 

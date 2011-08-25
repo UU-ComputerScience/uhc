@@ -10,7 +10,7 @@ An EHC compile run maintains info for one compilation invocation
 -- general imports
 %%[8 import(qualified Data.Map as Map,qualified Data.Set as Set)
 %%]
-%%[8 import(System, System.Cmd(rawSystem))
+%%[8 import(System.IO, System.Exit, System.Environment, System.Process, System.Cmd(rawSystem))
 %%]
 %%[99 import(System.Directory)
 %%]
@@ -101,13 +101,13 @@ emptyEHCompileRunStateInfo
       , crsiHSModInh    =   panic "emptyEHCompileRunStateInfo.crsiHSModInh"
       , crsiModMp       =   Map.empty
       , crsiGrpMp       =   Map.empty
-      , crsiOptim       =   defaultOptim                    
+      , crsiOptim       =   defaultOptim
 %%]]
 %%[[(50 codegen)
-      , crsiModOffMp    =   Map.empty       
+      , crsiModOffMp    =   Map.empty
 %%]]
 %%[[99
-      , crsiFilesToRm   =   []                  
+      , crsiFilesToRm   =   []
 %%]]
       }
 %%]
@@ -274,7 +274,7 @@ cpSystem cmd
            _           -> cpSetFail
        }
 %%]
-           _           -> do { lift $ putStrLn ("cpSystem ERR: " ++ show exitCode) 
+           _           -> do { lift $ putStrLn ("cpSystem ERR: " ++ show exitCode)
                              ; cpSetFail
                              }
 
@@ -313,7 +313,7 @@ crPartitionNewerOlderImports modNm cr
   where ecu = crCU modNm cr
         t   = panicJust "crPartitionNewerOlderImports1" $ ecuMbHIInfoTime ecu
         isNewer ecu'
-            = t' `diffClockTimes` t > noTimeDiff 
+            = t' `diffClockTimes` t > noTimeDiff
             where t' = panicJust "crPartitionNewerOlderImports2" $ ecuMbHIInfoTime ecu'
 %%]
 
@@ -364,7 +364,7 @@ crPartitionIntoPkgAndOthers cr modNmL
     )
   where (ps,ms) = unzip $ map loc modNmL
         loc m = case filelocKind $ ecuFileLocation ecu of
-                  FileLocKind_Dir	  -> ([]         ,[m])	
+                  FileLocKind_Dir	  -> ([]         ,[m])
                   FileLocKind_Pkg p d -> ([((p,d),[m])],[] )
               where (ecu,_,_,_) = crBaseInfo m cr
 %%]

@@ -9,7 +9,7 @@
 
 %%[(8 codegen grin) hs module {%{EH}Core.ToGrin} export(Inh_CodeAGItf(..),Syn_CodeAGItf(..),wrap_CodeAGItf,sem_CodeAGItf)
 %%]
-%%[(8 codegen grin) hs import(Char, Data.Maybe, Data.List, qualified Data.Set as Set, qualified Data.Map as Map)
+%%[(8 codegen grin) hs import(Data.Char, Data.Maybe, Data.List, qualified Data.Set as Set, qualified Data.Map as Map)
 %%]
 %%[(8 codegen grin) hs import(EH.Util.Utils, EH.Util.Pretty)
 %%]
@@ -190,7 +190,7 @@ primNmList2GrTagMap = Map.fromList . map (\tn -> (tn, [tr tn]))
 
 cTagsMp2GrTagMap :: CTagsMp -> Map.Map HsName [GrTag]
 cTagsMp2GrTagMap = Map.fromList . map (\(tn,ts) -> (tn, tr ts))
-             where  tr = map (\(_,(CTag _ nm i a ma)) -> GrTag_Con (mkGrTagAnn a ma) i nm) 
+             where  tr = map (\(_,(CTag _ nm i a ma)) -> GrTag_Con (mkGrTagAnn a ma) i nm)
 
 %%]
 
@@ -281,7 +281,7 @@ unboxArgL modNm uniq tyNm vL
 
 %%[(8 codegen grin) hs
 
-mkHole    (GrBind_Bind nm _ _ _)    rest  = GrExpr_Seq (GrExpr_Store (GrVal_Node GrTag_Hole [])) 
+mkHole    (GrBind_Bind nm _ _ _)    rest  = GrExpr_Seq (GrExpr_Store (GrVal_Node GrTag_Hole []))
                                                        (GrPatLam_Var nm)
                                                        rest
 
@@ -289,10 +289,10 @@ mkVarBind (GrBind_Bind nm _ _ body) rest  = GrExpr_Seq body (GrPatLam_Var nm) re
 
 mkVarBindWithUpdate
           (GrBind_Bind nm _ _ body) rest  = let nm2 = hsnUniqify HsNameUniqifier_GrinUpdated nm
-                                            in  GrExpr_Seq body 
+                                            in  GrExpr_Seq body
                                                            (GrPatLam_Var nm2)
                                                            (GrExpr_Seq (GrExpr_FetchUpdate nm2 nm)
-                                                                       GrPatLam_Empty 
+                                                                       GrPatLam_Empty
                                                                        rest
                                                            )
 
@@ -309,8 +309,8 @@ mkVarBinds            bindL rest  = foldr mkVarBind           rest bindL
 
 %%[(8 codegen grin)
 ATTR CExpr   [ | | grExpr: GrExpr ]
-ATTR CExpr   [ | | grBindL   USE {++} {[]}: GrBindL 
-                   grGlobalL USE {++} {[]}: GrGlobalL 
+ATTR CExpr   [ | | grBindL   USE {++} {[]}: GrBindL
+                   grGlobalL USE {++} {[]}: GrGlobalL
              ]
 
 SEM CExpr
@@ -324,7 +324,7 @@ SEM CExpr
                                                          CBindCateg_Rec ->  mkHoles @binds.grBindL
                                                                             $ mkVarBindWithUpdates @binds.grBindL
                                                                             $ @body.grExpr
-                                                         _              ->  mkVarBinds @binds.grBindL @body.grExpr 
+                                                         _              ->  mkVarBinds @binds.grBindL @body.grExpr
                                                       ,[]
                                                       )
   | Case        loc         .   grExpr      =   let  w1 = @alts.grWrapCase
@@ -420,10 +420,10 @@ SEM CExpr
   | * - Let Case App Var Tup Int Char Ann FFI CaseAltFail
 %%[[9
     HoleLet
-%%]]                                      
+%%]]
 %%[[10
     TupIns TupUpd TupDel
-%%]]                                      
+%%]]
                 loc         .   grExpr      =   GrExpr_Unit @grVal GrType_None
 %%]
 
@@ -510,8 +510,8 @@ SEM CBindAspect
 %%]
 
 %%[(8 codegen grin)
-ATTR AllBind [ | | grBindL   USE {++} {[]}: GrBindL 
-                   grGlobalL USE {++} {[]}: GrGlobalL 
+ATTR AllBind [ | | grBindL   USE {++} {[]}: GrBindL
+                   grGlobalL USE {++} {[]}: GrGlobalL
              ]
 
 SEM CBindAspect
@@ -575,7 +575,7 @@ SEM CPat
                                                      ->  let  (oL,mkSL) = unzip @binds.grTupFldL
                                                               (oL',wrO) = unboxArgL @lhs.modNm @lUniq hsnInt oL
                                                          in   (ctag mkGrPatRecSplit (\_ l t a ma -> mkGrPatConSplit (mkGrTagAnn a ma) t l) @tag r . zipWith ($) mkSL $ oL',wrO)
-%%]]                                                         
+%%]]
 
 %%]
 
@@ -629,10 +629,10 @@ SEM CExpr
   | TupDel      loc         .   grTupFldL   =   (@offset.grVal,GrVal_Empty   ,\o _ -> GrAdapt_Del o  ) : @expr.grTupFldL
 %%]
   | *
-%%[[10  
+%%[[10
        - TupIns TupUpd TupDel Ann
                 loc         .   grTupFldL   =   []
-%%]]                            
+%%]]
                 loc         .   grTupRec    =   @grVal
 %%]
 

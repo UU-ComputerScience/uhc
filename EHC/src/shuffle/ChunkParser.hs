@@ -8,7 +8,7 @@ module ChunkParser
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 import Data.List
-import IO
+import System.IO
 
 import UU.Parsing
 -- import UU.Parsing.CharParser
