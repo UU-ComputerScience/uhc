@@ -123,7 +123,7 @@ then
           ;;
     *)
           ;;
-  esac  
+  esac
   AC_SUBST(JAVAC_CMD,$javacCmd)
   AC_SUBST(JAR_CMD,$jarCmd)
 fi
@@ -161,7 +161,7 @@ case $HostPlatform in
         ;;
   *)
         ;;
-esac  
+esac
 AC_SUBST(RANLIB_CMD,$ranlibCmd)
 
 ### ar
@@ -176,7 +176,7 @@ case $HostPlatform in
         ;;
   *)
         ;;
-esac  
+esac
 AC_SUBST(AR_CMD,$arCmd)
 
 ### cat
@@ -191,7 +191,7 @@ case $HostPlatform in
         ;;
   *)
         ;;
-esac  
+esac
 AC_SUBST(CAT_CMD,$catCmd)
 
 ### libtool
@@ -220,7 +220,7 @@ case $HostPlatform in
         ;;
   *)
         ;;
-esac  
+esac
 
 AC_SUBST(GCC_EHC_OPTIONS, "$gccEhcOptions")
 
@@ -241,7 +241,7 @@ case $HostPlatform in
         ;;
   *)
         ;;
-esac  
+esac
 
 AC_SUBST(CPP_EHC_OPTIONS, "$cppEhcOptions")
 
@@ -291,7 +291,7 @@ case $HostPlatform in
         ;;
   *)
         ;;
-esac             
+esac
 
 AC_SUBST(TOPLEVEL_SYSTEM_ABSPATH_PREFIX, "$toplevelSystemAbsolutePathPrefix")
 
@@ -299,7 +299,7 @@ AC_SUBST(TOPLEVEL_SYSTEM_ABSPATH_PREFIX, "$toplevelSystemAbsolutePathPrefix")
 AC_ARG_WITH(ghc,
 [AS_HELP_STRING([--with-hc=<haskell compiler>],[Use a command different from 'ghc' to compile with GHC.])],
 [ ghcCmd="$withval" ],
-[ 
+[
   if test "$GHC" = ""; then
     AC_PATH_PROG(ghcCmd,ghc)
   else
@@ -392,7 +392,7 @@ fi
 AC_ARG_WITH(haddock,
 [AS_HELP_STRING([--with-haddock=<haddock>],[Use a command different from 'haddock' to generate doc.])],
 [ haddockCmd="$withval" ],
-[ 
+[
   if test "$HADDOCK" = ""; then
     AC_PATH_PROG(haddockCmd,haddock)
   else
@@ -411,7 +411,7 @@ AC_SUBST(HADDOCK_CMD,$haddockCmd)
 AC_SUBST(HADDOCK_VERSION, $haddockVersion)
 
 # GHC version dependencies: packages passed as option, cabal packages
-cabal_base_lib_depends="base haskell98 mtl fgl directory old-time"
+cabal_base_lib_depends="base mtl fgl directory old-time"
 if test x$enableClr = "xyes"
 then
   cabal_base_lib_depends="$cabal_base_lib_depends language-cil"
@@ -449,7 +449,7 @@ AC_SUBST(CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES,"$optCabalAllowUndecidableInstanc
 AC_ARG_WITH(uuagc,
 [AS_HELP_STRING([--with-uuagc=<uu ag compiler>],[Use a command different from 'uuagc' to compile with UUAGC.])],
 [ uuagcCmd="$withval" ],
-[ 
+[
   if test "$UUAGC" = ""; then
     AC_PATH_PROG(uuagcCmd,uuagc)
   else
@@ -470,7 +470,7 @@ AC_SUBST(UUAGC_CMD,$uuagcCmd)
 AC_ARG_WITH(gcc,
 [AS_HELP_STRING([--with-gcc=<gcc compiler>],[Use a command different from 'gcc' to compile with GCC.])],
 [ gccCmd="$withval" ],
-[ 
+[
   if test "$GCC" = ""; then
     AC_PATH_PROG(gccCmd,gcc)
   else
@@ -500,7 +500,7 @@ case $HostPlatform in
         ;;
   *)
         ;;
-esac  
+esac
 
 AC_SUBST(GCC_CMD,$gccCmd)
 
@@ -516,7 +516,7 @@ fclose(fp);
 [eval `cat conftest.cc`],
 [cc_major_version=no],
 )
-  
+
 AC_MSG_CHECKING([Version of $CC])
 if test "$cc_major_version" = "no"; then
   AC_MSG_RESULT([no])
@@ -540,7 +540,7 @@ AC_SUBST(CC_STD_FLAG,$cc_std_flag)
 AC_ARG_WITH(cpp,
 [AS_HELP_STRING([--with-cpp=<cpp preprocessor>],[Use a command different from 'cpp' to compile with CPP.])],
 [ cppCmd="$withval" ],
-[ 
+[
   if test "$CPP" = ""; then
     AC_PATH_PROG(cppCmd,cpp)
   else
@@ -574,18 +574,18 @@ case $HostPlatform in
         ;;
   *)
         ;;
-esac  
+esac
 
 AC_SUBST(CPP_CMD,$cppCmd)
 
 
 if test x$enableLlvm = xyes
 then
-  # LLVM Assembler 
+  # LLVM Assembler
   AC_ARG_WITH(llvm-as,
   [AS_HELP_STRING([--with-llvm-as=<LLVM Assembler>],[Path to the LLVM Assembler])],
   [ llvmAs="$withval" ],
-  [ 
+  [
     if test "x$LLVM_AS" = "x"; then
       if test x$enableLlvm = xyes
       then
@@ -597,8 +597,8 @@ then
   ]
   )
   AC_SUBST(LLVM_AS_CMD,$llvmAs)
-  
-  # LLVM Optimizer 
+
+  # LLVM Optimizer
   AC_ARG_WITH(opt,
   [AS_HELP_STRING([--with-llvm-opt=<LLVM bitcode optimizer>],[Path to the LLVM bitcode optimizer])],
   [ llvmOpt="$withval" ],
@@ -614,7 +614,7 @@ then
   ]
   )
   AC_SUBST(LLVM_OPT_CMD,$llvmOpt)
-  
+
   # LLVM Compiler
   AC_ARG_WITH(llc,
   [AS_HELP_STRING([--with-llc=<LLVM Compiler>],[Path to the LLVM Compiler])],
@@ -631,7 +631,7 @@ then
   ]
   )
   AC_SUBST(LLVM_LLC_CMD,$llvmLlc)
-  
+
   if test -x $llvmLlc -a -x $llvmAs -a -x $llvmOpt
   then
     llvmExists=yes
@@ -673,7 +673,7 @@ AC_CHECK_FUNCS([ftruncate getclock getrusage gettimeofday lstat readdir_r _chsiz
 
 AC_CHECK_FUNCS([ftime gmtime_r localtime_r])
 
-AC_CHECK_FUNCS([lchown]) 
+AC_CHECK_FUNCS([lchown])
 
 dnl ** check if it is safe to include both <time.h> and <sys/time.h>
 AC_HEADER_TIME
@@ -1135,7 +1135,7 @@ echo "  build suffix                  : $ehcBuildSuffix"
 
 echo "Required:"
 echo "  uuagc is available?           : $uuagcExists"
-if test "x$uuagcExists" = "xyes" ;then 
+if test "x$uuagcExists" = "xyes" ;then
 echo "    version                     : $uuagcVersion"
 echo "    command for uuagc           : $uuagcCmd"
 else
@@ -1143,7 +1143,7 @@ echo "    **** ERROR **** : uuagc must be installed, use (1) cabal+hackage, or (
 fi
 
 echo "  ghc is available?             : $ghcExists"
-if test "x$ghcExists" = "xyes" ;then 
+if test "x$ghcExists" = "xyes" ;then
 echo "    version                     : $ghcVersion"
 echo "    command for ghc             : $ghcCmd"
 echo "    command for ghc raw         : $ghcCmd1"
@@ -1181,7 +1181,7 @@ echo "    **** ERROR **** : ghc must be installed, see http://www.haskell.org/gh
 fi
 
 echo "  gcc is available?             : $gccExists"
-if test "x$gccExists" = "xyes" ;then 
+if test "x$gccExists" = "xyes" ;then
 echo "    version                     : $gccVersion"
 echo "    command for gcc             : $gccCmd"
 echo "    command for cpp             : $cppCmd"
@@ -1192,7 +1192,7 @@ fi
 if test x$enableJava = xyes
 then
   echo "  javac is available?           : $javacExists"
-  if test "x$javacExists" = "xyes" ;then 
+  if test "x$javacExists" = "xyes" ;then
   echo "    command for javac           : $javacCmd"
   fi
 fi
@@ -1230,7 +1230,7 @@ fi
 
 echo "Optional:"
 echo "  haddock is available?         : $haddockExists"
-if test "x$haddockExists" = "xyes" ;then 
+if test "x$haddockExists" = "xyes" ;then
 echo "    version                     : $haddockVersion"
 echo "    command for haddock         : $haddockCmd"
 fi

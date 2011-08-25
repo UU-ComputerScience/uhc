@@ -11,7 +11,7 @@
 module Helium.Syntax.UHA_Utils where
 
 import Lvm.Common.Id(Id, idFromString, stringFromId)
-import Char
+import Data.Char
 import Top.Types(isTupleConstructor)
 import Helium.Syntax.UHA_Range(noRange, getNameRange)
 import Helium.Syntax.UHA(Name(..), ImportDeclaration(..), Pattern(..))

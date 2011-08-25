@@ -8,8 +8,9 @@ import qualified Data.Set as Set
 import qualified Data.Map as Map
 import Data.Map(Map)
 import Data.Set(Set)
-import System
-import IO
+import System.Exit
+import System.Environment
+import System.IO
 import System.Console.GetOpt
 import EH.Util.ParseUtils
 import EH.Util.DependencyGraph
@@ -213,7 +214,7 @@ genDepsMakefile deps opts
     stripExt n
       | '.' `elem` n = reverse $ tail $ dropWhile (/= '.') $ reverse n
       | otherwise    = n
-    
+
     toUnder c
       | isAlphaNum c = c
       | otherwise    = '_'

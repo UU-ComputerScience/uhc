@@ -12,7 +12,7 @@ Note: everything is exported.
 %%[1 module {%{EH}Scanner.Common}
 %%]
 
-%%[1 import(IO, UU.Parsing, UU.Parsing.Offside, UU.Scanner.Position, UU.Scanner.GenToken, UU.Scanner.GenTokenParser, EH.Util.ScanUtils(), {%{EH}Base.Builtin}, {%{EH}Base.Common})
+%%[1 import(System.IO, UU.Parsing, UU.Parsing.Offside, UU.Scanner.Position, UU.Scanner.GenToken, UU.Scanner.GenTokenParser, EH.Util.ScanUtils(), {%{EH}Base.Builtin}, {%{EH}Base.Common})
 %%]
 
 %%[1 import({%{EH}Opts.Base})
@@ -197,7 +197,7 @@ hsScanOpts opts
 %%]
 %%[99
         ,   scoPragmasTxt      =
-                (Set.fromList $ 
+                (Set.fromList $
                        tokPragmaStrsHS99
                 )
 %%]
@@ -205,7 +205,7 @@ hsScanOpts opts
         ,   scoKeywordsOps      =
                 scoKeywordsOps ehScanOpts'
                 `Set.union`
-                (Set.fromList $ 
+                (Set.fromList $
                        tokOpStrsHS1
 %%[[2
                     ++ tokOpStrsHS2
@@ -268,10 +268,10 @@ coreScanOpts opts
                                         , "DICT", "DICTCLASS", "DICTINSTANCE", "DICTOVERLOADED"
 %%]]
 %%[[50
-                                        , "Integer" 
+                                        , "Integer"
 %%]]
 %%[[90
-                                        , "foreignexport" 
+                                        , "foreignexport"
 %%]]
                                         ])
                                     `Set.union` scoKeywordsTxt tyScanOpts
@@ -301,10 +301,10 @@ tycoreScanOpts
                                         , "DICT", "DICTCLASS", "DICTINSTANCE", "DICTOVERLOADED"
 %%]]
 %%[[50
-                                        , "Integer" 
+                                        , "Integer"
 %%]]
 %%[[90
-                                        , "foreignexport" 
+                                        , "foreignexport"
 %%]]
                                         ])
         ,   scoKeywordsOps      =   Set.fromList [ "->", "=", ":", "::", "|", "\\" ]
@@ -438,7 +438,7 @@ scanHandle opts fn fh
                          (Set.toList $ scoKeywordsOps opts)
                          (Set.toList $ scoSpecChars opts)
                          (Set.toList $ scoOpChars opts)
-                         (initPos fn) 
+                         (initPos fn)
                   $ txt
         }
 %%]
@@ -533,33 +533,33 @@ pStringTk, pCharTk,
   pTextnmTk, pTextlnTk, pIntegerTk, pVarsymTk, pConsymTk
     :: IsParser p Token => p Token
 
-pStringTk     =   pHsCostValToken' 7 TkString    ""        
-pCharTk       =   pHsCostValToken' 7 TkChar      "\NUL"    
-pInteger8Tk   =   pHsCostValToken' 7 TkInteger8  "0"       
-pInteger10Tk  =   pHsCostValToken' 7 TkInteger10 "0"       
+pStringTk     =   pHsCostValToken' 7 TkString    ""
+pCharTk       =   pHsCostValToken' 7 TkChar      "\NUL"
+pInteger8Tk   =   pHsCostValToken' 7 TkInteger8  "0"
+pInteger10Tk  =   pHsCostValToken' 7 TkInteger10 "0"
 pInteger16Tk  =   pHsCostValToken' 7 TkInteger16 "0"
 pFractionTk   =   pHsCostValToken' 7 TkFraction  "0.0"
-pVaridTk      =   pHsCostValToken' 7 TkVarid     "<identifier>" 
-pVaridTk'     =   pHsCostValToken' 6 TkVarid     "<identifier>" 
-pConidTk      =   pHsCostValToken' 7 TkConid     "<Identifier>" 
-pConidTk'     =   pHsCostValToken' 6 TkConid     "<Identifier>" 
+pVaridTk      =   pHsCostValToken' 7 TkVarid     "<identifier>"
+pVaridTk'     =   pHsCostValToken' 6 TkVarid     "<identifier>"
+pConidTk      =   pHsCostValToken' 7 TkConid     "<Identifier>"
+pConidTk'     =   pHsCostValToken' 6 TkConid     "<Identifier>"
 pConsymTk     =   pHsCostValToken' 7 TkConOp     "<conoperator>"
-pVarsymTk     =   pHsCostValToken' 7 TkOp        "<operator>" 
-pTextnmTk     =   pHsCostValToken' 7 TkTextnm    "<name>"       
-pTextlnTk     =   pHsCostValToken' 7 TkTextln    "<line>"     
+pVarsymTk     =   pHsCostValToken' 7 TkOp        "<operator>"
+pTextnmTk     =   pHsCostValToken' 7 TkTextnm    "<name>"
+pTextlnTk     =   pHsCostValToken' 7 TkTextln    "<line>"
 pIntegerTk    =   pInteger10Tk
 %%]
 %%[18
-pVaridUnboxedTk      =   pHsCostValToken' 7 TkVaridUnboxed     "<identifier#>" 
-pConidUnboxedTk      =   pHsCostValToken' 7 TkConidUnboxed     "<Identifier#>" 
+pVaridUnboxedTk      =   pHsCostValToken' 7 TkVaridUnboxed     "<identifier#>"
+pConidUnboxedTk      =   pHsCostValToken' 7 TkConidUnboxed     "<Identifier#>"
 pConsymUnboxedTk     =   pHsCostValToken' 7 TkConOpUnboxed     "<conoperator#>"
-pVarsymUnboxedTk     =   pHsCostValToken' 7 TkOpUnboxed        "<operator#>" 
+pVarsymUnboxedTk     =   pHsCostValToken' 7 TkOpUnboxed        "<operator#>"
 %%]
 %%[50
-pQVaridTk     =   pHsCostValToken' 7 TkQVarid     "<identifier>" 
-pQConidTk     =   pHsCostValToken' 7 TkQConid     "<Identifier>" 
+pQVaridTk     =   pHsCostValToken' 7 TkQVarid     "<identifier>"
+pQConidTk     =   pHsCostValToken' 7 TkQConid     "<Identifier>"
 pQConsymTk    =   pHsCostValToken' 7 TkQConOp     "<conoperator>"
-pQVarsymTk    =   pHsCostValToken' 7 TkQOp        "<operator>" 
+pQVarsymTk    =   pHsCostValToken' 7 TkQOp        "<operator>"
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -651,7 +651,7 @@ pMODULE        ,
     pLET       ,
     pLAM       ,
     pUNDERSCORE,
-    pIN        
+    pIN
   :: IsParser p Token => p Token
 %%]
 
@@ -715,7 +715,7 @@ tokOpStrsHS3   = [  ]
 %%[4
 pFORALL       ,
     pEXISTS   ,
-    pTILDE    
+    pTILDE
   :: IsParser p Token => p Token
 %%]
 
@@ -740,7 +740,7 @@ pLARROW        ,
     pIF        ,
     pTHEN      ,
     pELSE      ,
-    pDOTDOT    
+    pDOTDOT
   :: IsParser p Token => p Token
 %%]
 
@@ -764,7 +764,7 @@ tokOpStrsHS5   = [ "<-", "..", ":" ]
 
 %%[6
 pFFORALL      ,
-    pEEXISTS  
+    pEEXISTS
   :: IsParser p Token => p Token
 %%]
 
@@ -848,7 +848,7 @@ pDARROW         ,
     pCLASS      ,
     pINSTANCE   ,
     pDEFAULT    ,
-    pDO         
+    pDO
   :: IsParser p Token => p Token
 %%]
 
@@ -897,7 +897,7 @@ pQUALIFIED      ,
     pQUESTQUEST ,
     pAS         ,
     pHIDING     ,
-    pNUMBER     
+    pNUMBER
   :: IsParser p Token => p Token
 %%]
 
@@ -913,7 +913,7 @@ tokKeywStrsHS12 = [ "qualified", "as", "hiding" ]
 %%]
 
 %%[91
-pDERIVING   
+pDERIVING
   :: IsParser p Token => p Token
 
 pDERIVING        = pKeyTk "deriving"
@@ -1006,7 +1006,7 @@ pPROC            = pKeyTk "proc"
 %%[1
 %%]
 instance Position (Maybe Token) where
-  line    =  maybe (-1)  (line.position) 
+  line    =  maybe (-1)  (line.position)
   column  =  maybe (-1)  (column.position)
   file    =  maybe ""    (file.position)
 

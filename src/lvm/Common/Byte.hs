@@ -27,7 +27,7 @@ module Lvm.Common.Byte( Byte
            , stringFromByteList, bytesFromByteList
            ) where
 
-import IO       ( IOMode(..) )
+import System.IO       ( IOMode(..) )
 import Lvm.Common.Special  ( openBinary, writeBinaryChar, readBinary, closeBinary )
 import Lvm.Common.Standard ( strict, foldlStrict )
 import System   ( exitWith, ExitCode(..))

@@ -1,4 +1,4 @@
-module EH.Util.FPath 
+module EH.Util.FPath
   ( FPath(..), fpathSuff
   , FPATH(..)
   , FPathError -- (..)
@@ -10,7 +10,7 @@ module EH.Util.FPath
   , fpathSetBase, fpathSetSuff, fpathSetDir
   , fpathUpdBase
   , fpathRemoveSuff, fpathRemoveDir
-  
+
   , fpathIsAbsolute
 
   , fpathAppendDir, fpathUnAppendDir
@@ -19,25 +19,24 @@ module EH.Util.FPath
   , mkTopLevelFPath
 
   , fpathDirSep, fpathDirSepChar
-  
+
   , fpathOpenOrStdin, openFPath
-  
+
   , SearchPath
   , FileSuffixes, FileSuffix
   , mkInitSearchPath, searchPathFromFPath, searchPathFromFPaths
   , searchPathFromString
   , searchFPathFromLoc
   , searchLocationsForReadableFiles, searchPathForReadableFiles, searchPathForReadableFile
-  
+
   , fpathEnsureExists
-  
+
   , filePathMkPrefix, filePathUnPrefix
   , filePathCoalesceSeparator
   , filePathMkAbsolute, filePathUnAbsolute
   )
 where
 
-import IO
 import Data.Maybe
 import Data.List
 import Control.Monad
@@ -331,7 +330,7 @@ searchLocationsForReadableFiles getfp stopAtFirst locs suffs fp
                  else return []
                }
         tryToOpenWithSuffs suffs (loc,fp,x)
-          = fmap (map (tup12to123 x)) $ 
+          = fmap (map (tup12to123 x)) $
             case suffs of
               [] -> tryToOpen loc Nothing fp
               _  -> select stopAtFirst

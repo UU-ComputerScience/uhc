@@ -13,18 +13,18 @@ module EH.Util.CompileRun
   , CompileRunError(..)
   , CompileModName(..)
   , CompileRunStateInfo(..)
-  
+
   , CompileParticipation(..)
-  
+
   , FileLocatable(..)
-  
+
   , mkEmptyCompileRun
 
   , crCU, crMbCU
   , ppCR
-  
+
   , cpUpdStateInfo, cpUpdSI
-  
+
   , cpUpdCU, cpUpdCUWithKey
   , cpSetFail, cpSetStop, cpSetStopSeq, cpSetStopAllSeq
   , cpSetOk, cpSetErrs, cpSetLimitErrs, cpSetLimitErrsWhen, cpSetInfos, cpSetCompileOrder
@@ -36,16 +36,16 @@ module EH.Util.CompileRun
   , cpFindFilesForFPathInLocations, cpFindFilesForFPath, cpFindFileForFPath
   , cpImportGather, cpImportGatherFromMods
   , cpPP, cpPPMsg
-  
+
   , forgetM
   )
   where
 
-import Maybe
+import Data.Maybe
 import System.Exit
 import Control.Monad
 import Control.Monad.State
-import IO
+import System.IO
 import qualified Data.Map as Map
 import EH.Util.Pretty
 import EH.Util.Utils
@@ -96,7 +96,7 @@ class CompileUnit u n l s | u -> n l s where
   cuUpdState    	:: s -> u -> u
   cuImports     	:: u -> [n]
   cuParticipation 	:: u -> [CompileParticipation]
-  
+
   -- defaults
   cuParticipation _	=  []
 
@@ -104,7 +104,7 @@ class FPathError e => CompileRunError e p | e -> p where
   crePPErrL         :: [e] -> PP_Doc
   creMkNotFoundErrL :: p -> String -> [String] -> [FileSuffix] -> [e]
   creAreFatal       :: [e] -> Bool
-  
+
   -- defaults
   crePPErrL         _       = empty
   creMkNotFoundErrL _ _ _ _ = []
@@ -195,11 +195,11 @@ cpPP m
       ; cr <- get
       ; lift (hPutPPLn stderr (ppCR cr))
       ; lift (hFlush stderr)
-      ; return () 
+      ; return ()
       }
 
 cpPPMsg :: (PP m) => m -> CompilePhase n u i e ()
-cpPPMsg m 
+cpPPMsg m
  = do { lift (hPutPPLn stdout (pp m))
       ; return ()
       }

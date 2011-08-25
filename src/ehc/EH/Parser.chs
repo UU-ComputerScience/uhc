@@ -7,7 +7,7 @@
 %%% Main
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 module {%{EH}EH.Parser} import(IO, UU.Parsing, UU.Parsing.Offside, EH.Util.ParseUtils, UU.Scanner.GenToken, {%{EH}Base.Builtin},{%{EH}Base.Common}, {%{EH}Scanner.Common}, {%{EH}EH})
+%%[1 module {%{EH}EH.Parser} import(System.IO, UU.Parsing, UU.Parsing.Offside, EH.Util.ParseUtils, UU.Scanner.GenToken, {%{EH}Base.Builtin},{%{EH}Base.Common}, {%{EH}Scanner.Common}, {%{EH}EH})
 %%]
 
 %%[1 export(pAGItf)
@@ -107,7 +107,7 @@ pVar            =    hsnFromString <$> pVarid
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1.pAGItf
-pAGItf          =    AGItf_AGItf <$> pExpr    
+pAGItf          =    AGItf_AGItf <$> pExpr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -133,7 +133,7 @@ pDecl           =    mkEH Decl_Val        <$>  pPatExprBase  <*   pEQUAL   <*> p
 %%]
 %%[8.pDecl
                 <|>  (\(conv,_) saf imp nm sig
-                        -> mkEH Decl_FFI conv saf 
+                        -> mkEH Decl_FFI conv saf
                              (
 %%[[90
                                (\i -> fst $ parseForeignEnt ForeignDirection_Import conv Nothing i)
@@ -483,7 +483,7 @@ pParenRow singleAsIs o c sep mbUpd (semEmpty,semVar,semExt,semRow,semParens) pSe
                                                 <|>  pSucceed (mkR [])
                                           else  semRow <$> pFldsOrExt
                        mkR fs        =    semRow (mkE semEmpty fs )
-                       mkE ext fs    =    foldl (\r f -> case f of 
+                       mkE ext fs    =    foldl (\r f -> case f of
                                                             FldSel l e -> semExt r (Just l) e
                                                             FldNoSel e -> semExt r Nothing e
                                                             FldUpd l e -> semUpd r l e

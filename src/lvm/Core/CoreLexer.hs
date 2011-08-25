@@ -14,7 +14,7 @@ module Lvm.Core.CoreLexer( Token, Lexeme(..), Pos
                 , layout, addLayout
                 ) where
 
-import Char
+import Data.Char
 import Lvm.Common.Standard( foldlStrict )
 import Lvm.Common.Id      ( Id, idFromString )
 

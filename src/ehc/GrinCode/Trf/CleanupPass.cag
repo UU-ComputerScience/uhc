@@ -8,9 +8,9 @@ do not delay constructorfunctions: instead of F/Con, use C/Con;
 
 %%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.CleanupPass} export(cleanupPass)
 %%]
-%%[(8 codegen grin) hs import(qualified Data.Set as Set,qualified Data.Map as Map, {%{EH}Base.Builtin}(hsnIsConstructorName), Maybe(fromJust))
+%%[(8 codegen grin) hs import(qualified Data.Set as Set,qualified Data.Map as Map, {%{EH}Base.Builtin}(hsnIsConstructorName), Data.Maybe(fromJust))
 %%]
-%%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}GrinCode.Common}, {%{EH}GrinCode}) 
+%%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}GrinCode.Common}, {%{EH}GrinCode})
 %%]
 %%[(8 codegen grin) ag import({GrinCode/AbsSyn})
 %%]
@@ -20,7 +20,7 @@ WRAPPER GrAGItf
 
 %%[(8 codegen grin) hs
 cleanupPass :: GrModule -> GrModule
-cleanupPass grmod 
+cleanupPass grmod
    = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
                           (Inh_GrAGItf)
      in grTrf_Syn_GrAGItf t
@@ -50,7 +50,7 @@ SEM GrModule
 -- do the translations
 SEM GrTag
   | Fun  lhs . grTrf = dontDelayConstructors @lhs.tagMap @nm
-  | PApp lhs . grTrf = if   @needs==0 
+  | PApp lhs . grTrf = if   @needs==0
                        then dontDelayConstructors @lhs.tagMap @nm
                        else @loc.grTrf
 %%]

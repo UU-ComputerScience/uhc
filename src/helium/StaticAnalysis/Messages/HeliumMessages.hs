@@ -18,7 +18,7 @@ import qualified Helium.Utils.OneLiner as OneLiner
 import List                (intersperse, zipWith4)
 import Helium.StaticAnalysis.Miscellaneous.TypesToAlignedDocs  (qualifiedTypesToAlignedDocs)
 import Helium.Syntax.UHA_Range           (isImportRange, showRanges)
-import Char                (isSpace)
+import Data.Char                (isSpace)
 
 ----------------------------------------------------------
 -- message parameters

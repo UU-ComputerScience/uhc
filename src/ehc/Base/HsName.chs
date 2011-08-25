@@ -31,7 +31,7 @@ HsNameUniqifier to guarantee such an invariant.
 %%[8 import(qualified Data.Set as Set,Data.Maybe, Data.Char, Numeric)
 %%]
 
-%%[8 import(EH.Util.FPath,Char,qualified Data.Map as Map)
+%%[8 import(EH.Util.FPath,Data.Char,qualified Data.Map as Map)
 %%]
 
 %%[8 export(OrigName(..))
@@ -900,7 +900,7 @@ data RPatNm
   deriving Eq
 
 instance Ord RPatNm where
-  x `compare` y = rpatNmNm x `cmpHsNameOnNm` rpatNmNm y  
+  x `compare` y = rpatNmNm x `cmpHsNameOnNm` rpatNmNm y
 
 instance Show RPatNm where
   show pnm = show (rpatNmNm pnm)
@@ -930,7 +930,7 @@ data Track
   | TrackSelect Int Track
   | TrackVarApply HsName [Track]
   deriving (Eq, Ord, Show)
-  
+
 %%]
 
 %%[(50 codegen grin) hs

@@ -22,7 +22,7 @@ module Lvm.Common.Standard( trace, warning, assert
                ) where
 
 import List       (isPrefixOf)
-import IO
+import System.IO
 import System     (getEnv)
 import Lvm.Common.Special    (doesFileExist,unsafeCoerce,unsafePerformIO)
 

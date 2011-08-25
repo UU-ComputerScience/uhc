@@ -6,9 +6,9 @@ module EH.Util.Pretty
   ( -- module UU.Pretty
     -- module EH.Util.Chitil.Pretty
     module EH.Util.PrettySimple
-  
+
   , PP_DocL
-  
+
   , ppListSep, ppListSepV, ppListSepVV
   , ppBlock, ppBlock'
   , ppCommas, ppCommas'
@@ -27,11 +27,11 @@ module EH.Util.Pretty
   , ppBracketsCommas, ppBracketsCommas', ppBracketsCommasV
   , ppHorizontally, ppVertically
   , ppListSepFill
-  
+
   , ppPacked, ppParens, ppCurly, ppVBar
-  
+
   , ppDots, ppMb, ppUnless, ppWhen
-  
+
   , hPutWidthPPLn, putWidthPPLn
   , hPutPPLn, putPPLn
   , hPutPPFile, putPPFile
@@ -43,7 +43,7 @@ module EH.Util.Pretty
 -- import EH.Util.Chitil.Pretty
 import EH.Util.PrettySimple
 import EH.Util.FPath
-import IO
+import System.IO
 import Data.List
 
 -------------------------------------------------------------------------
@@ -252,7 +252,7 @@ putPPLn = hPutPPLn stdout
 hPutPPFile :: Handle -> PP_Doc -> Int -> IO ()
 hPutPPFile h pp wid
   = hPutLn h wid pp
-    
+
 
 putPPFPath :: FPath -> PP_Doc -> Int -> IO ()
 putPPFPath fp pp wid

@@ -10,7 +10,7 @@ module EH.Util.Binary
   , hGetBinary
   , getBinaryFile
   , getBinaryFPath
-  
+
   , hPutBinary
   , putBinaryFile
   , putBinaryFPath
@@ -21,8 +21,7 @@ import qualified Data.ByteString.Lazy as L
 import Data.Binary
 import Data.Binary.Put(runPut,putWord16be)
 import Data.Binary.Get(runGet,getWord16be)
-import IO
-import System.IO(openBinaryFile)
+import System.IO
 import Control.Monad
 
 import EH.Util.FPath
@@ -35,7 +34,7 @@ import EH.Util.FPath
 hGetBinary :: Binary a => Handle -> IO a
 hGetBinary h
   = liftM decode (L.hGetContents h)
-    
+
 -- | Decode from FilePath
 getBinaryFile :: Binary a => FilePath -> IO a
 getBinaryFile fn
@@ -58,7 +57,7 @@ getBinaryFPath fp
 hPutBinary :: Binary a => Handle -> a -> IO ()
 hPutBinary h pt
   = L.hPut h (encode pt)
-    
+
 -- | Encode to FilePath
 putBinaryFile :: Binary a => FilePath -> a -> IO ()
 putBinaryFile fn pt

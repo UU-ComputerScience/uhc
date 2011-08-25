@@ -13,7 +13,7 @@ The machinery is configured with |ScanOpts|, so it can be used for all parsers e
 A |ScanOpts| specifies sets of keywords, variations on identifier parsing, etc etc.
 %%]
 
-%%[5 module {%{EH}Scanner.Machine} import(Data.Char,Data.List,Data.Maybe,IO,UU.Scanner.Position,EH.Util.Utils,EH.Util.ScanUtils,{%{EH}Scanner.Token})
+%%[5 module {%{EH}Scanner.Machine} import(Data.Char,Data.List,Data.Maybe,System.IO,UU.Scanner.Position,EH.Util.Utils,EH.Util.ScanUtils,{%{EH}Scanner.Token})
 %%]
 
 %%[5 import(qualified Data.Set as Set)
@@ -37,15 +37,15 @@ A |ScanOpts| specifies sets of keywords, variations on identifier parsing, etc e
 scanHandle :: ScanOpts -> FilePath -> Handle -> IO [Token]
 scanHandle opts fn fh
   = do  {  txt <- hGetContents fh
-        ;  return (scan opts (initPos fn) txt) 
+        ;  return (scan opts (initPos fn) txt)
         }
 %%]
 
 %%[5 export(scanFile,scan)
 scanFile :: ScanOpts -> FilePath -> IO [Token]
-scanFile opts fn = 
+scanFile opts fn =
         do txt <- readFile fn
-           return (scan opts (initPos fn) txt) 
+           return (scan opts (initPos fn) txt)
 
 scan :: ScanOpts -> Pos -> String -> [Token]
 scan opts pos input
@@ -301,9 +301,9 @@ varKind (c  :s) | isUpper c = TkConid
 varKind []                  = TkVarid
 
 scanNestedComment
-        :: (Pos -> String -> [Token]) 
-        -> Pos 
-        -> String 
+        :: (Pos -> String -> [Token])
+        -> Pos
+        -> String
         -> [Token]
 scanNestedComment cont pos inp = nest cont pos inp
  where nest c p ('-':'}':s) = c (advc 2 p) s

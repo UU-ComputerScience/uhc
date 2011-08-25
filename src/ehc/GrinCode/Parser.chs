@@ -7,7 +7,7 @@
 %%% GRI parser
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin) module {%{EH}GrinCode.Parser} import(IO, UU.Parsing, qualified Data.Map as Map, EH.Util.ParseUtils(PlainParser), EH.Util.ScanUtils, {%{EH}Base.Common}, {%{EH}Scanner.Scanner}, {%{EH}GrinCode}, {%{EH}Base.Parser} hiding (pInt))
+%%[(8 codegen grin) module {%{EH}GrinCode.Parser} import(System.IO, UU.Parsing, qualified Data.Map as Map, EH.Util.ParseUtils(PlainParser), EH.Util.ScanUtils, {%{EH}Base.Common}, {%{EH}Scanner.Scanner}, {%{EH}GrinCode}, {%{EH}Base.Parser} hiding (pInt))
 %%]
 
 %%[(8 codegen grin) export(pModule,pExprSeq)
@@ -59,7 +59,7 @@ pExprSeq        =    pChainr ((\p e1 e2 -> GrExpr_Seq e1 p e2) <$ pSemi <* pKey 
 pExpr           ::   GRIParser GrExpr
 pExpr           =    (\v -> GrExpr_Unit v GrType_None)
                                     <$  pKey "unit"         <*> pVal
-                <|>  GrExpr_UpdateUnit <$  pKey "updateunit"<*> pGrNm <*> pVal    
+                <|>  GrExpr_UpdateUnit <$  pKey "updateunit"<*> pGrNm <*> pVal
                 <|>  GrExpr_Store   <$  pKey "store"        <*> pVal
                 <|>  GrExpr_Eval    <$  pKey "eval"         <*> pGrNm
                 <|>  GrExpr_FetchNode
@@ -100,9 +100,9 @@ pVal            =    pSVal
                 <|>  GrVal_Tag      <$> pTag
                 <|>  pParens
                         (    GrVal_Node <$> pTag <*> pSValL
-%%[[10                        
+%%[[10
                         <|>  GrVal_NodeAdapt <$> pGrNm <* pKey "|" <*> pList1Sep pComma pAdapt
-%%]]                        
+%%]]
                         <|>  GrVal_VarNode <$> ( (:) <$> (GrVal_Var <$> pGrNm) <*> pSValL )
                         <|>  GrVal_BasicNode  <$  pKey "basicnode"  <*> pTag <*> pGrNm
                         <|>  GrVal_EnumNode   <$  pKey "enumnode"   <*> pGrNm
@@ -180,10 +180,10 @@ pPatAlt         =    GrPatAlt_LitInt    <$> pInt
                 <|>  pParens
                         (    pTag
                              <**>  (pGrNm
-                                    <**>  (    
-%%[[10                                    
-                                               (\sL r t -> GrPatAlt_NodeSplit t r sL) <$ pKey "|" <*> pList1Sep pComma pSplit <|>  
-%%]]                                          
+                                    <**>  (
+%%[[10
+                                               (\sL r t -> GrPatAlt_NodeSplit t r sL) <$ pKey "|" <*> pList1Sep pComma pSplit <|>
+%%]]
                                                (\nL n t -> GrPatAlt_Node t (n:nL)) <$> pGrNmL
                                           )
                                    <|> pSucceed (flip GrPatAlt_Node [])

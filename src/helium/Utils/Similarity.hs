@@ -15,7 +15,7 @@
 
 module Helium.Utils.Similarity(similar) where
 
-import Char
+import Data.Char
 import Helium.Utils.Utils(internalError)
 
 similar :: String -> String -> Bool

@@ -7,7 +7,7 @@
 %%% Haskell importable interface to Ty pretty print
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(1 hmtyinfer || hmtyast) hs module {%{EH}Ty.Pretty} import(EH.Util.Utils,EH.Util.Pretty,{%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Ty}) 
+%%[(1 hmtyinfer || hmtyast) hs module {%{EH}Ty.Pretty} import(EH.Util.Utils,EH.Util.Pretty,{%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Ty})
 %%]
 
 %%[(2 hmtyinfer || hmtyast) hs import (qualified Data.Set as Set)
@@ -16,13 +16,13 @@
 %%[(3 hmtyinfer || hmtyast) hs import(qualified Data.Map as Map)
 %%]
 
-%%[(3 hmtyinfer || hmtyast) hs import(Char)
+%%[(3 hmtyinfer || hmtyast) hs import(Data.Char)
 %%]
 
 %%[(7_2 hmtyinfer || hmtyast) hs import(qualified Data.Set as Set, Data.Set(Set), qualified Data.Map as Map, Data.Map(Map))
 %%]
 
-%%[(8 hmtyinfer || hmtyast) hs import({%{EH}Scanner.Common(hiScanOpts)},{%{EH}Base.CfgPP}) 
+%%[(8 hmtyinfer || hmtyast) hs import({%{EH}Scanner.Common(hiScanOpts)},{%{EH}Base.CfgPP})
 %%]
 
 %%[(9 hmtyinfer || hmtyast) hs export(ppTyPr)
@@ -413,7 +413,7 @@ SEM LabelAGItf
 
 %%[(3 hmtyinfer || hmtyast)
 SEM Ty
-  | Quant 
+  | Quant
 %%[[11
     Lam
 %%]]
@@ -503,7 +503,7 @@ SEM Ty
 %%[(4 hmtyinfer || hmtyast)
 SEM Ty
   | Quant           loc     .   ppQu 	:=	@qu.pp
-  
+
 %%]
 
 %%[(6 hmtyinfer || hmtyast)

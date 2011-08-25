@@ -10,7 +10,7 @@ Used by all compiler driver code
 -- general imports
 %%[1 import(Data.List, Data.Char, Data.Maybe) export(module Data.Maybe, module Data.List, module Data.Char)
 %%]
-%%[1 import(Control.Monad.State, IO, System) export(module IO, module Control.Monad.State)
+%%[1 import(Control.Monad.State, System.IO) export(module System.IO, module Control.Monad.State)
 %%]
 %%[1 import(EH.Util.CompileRun, EH.Util.Pretty, EH.Util.FPath, EH.Util.Utils) export(module EH.Util.CompileRun, module EH.Util.Pretty, module EH.Util.FPath, module EH.Util.Utils)
 %%]
@@ -176,7 +176,7 @@ mkInOrOutputFPathDirFor inoutputfor opts modNm fp suffix
   where (fp',d) = case inoutputfor of
                     OutputFor_Module   -> f ehcOptOutputDir
                     OutputFor_Pkg      -> f ehcOptOutputDir -- ehcOptOutputPkgLibDir
-                    InputFrom_Loc l 
+                    InputFrom_Loc l
                       | filelocIsPkg l -> f (const Nothing)
                       | otherwise      -> f ehcOptOutputDir
         f g     = case g opts of

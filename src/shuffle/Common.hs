@@ -53,7 +53,7 @@ import qualified Data.Set as Set
 import Data.Map(Map)
 import Data.Set(Set)
 import Network.URI
-import IO
+import System.IO
 import System.Directory
 import System.Console.GetOpt
 import EH.Util.Pretty

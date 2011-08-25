@@ -57,7 +57,7 @@ module Lvm.Common.PPrint
         , displayS, displayIO
         ) where
 
-import IO      (Handle,hPutStr,hPutChar,stdout)
+import System.IO      (Handle,hPutStr,hPutChar,stdout)
 
 infixr 5 </>,<//>,<$>,<$$>
 infixr 6 <>,<+>

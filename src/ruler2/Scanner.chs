@@ -22,7 +22,7 @@
 %%[1 hs export (offsideScanHandle)
 %%]
 
-%%[1 hs import (IO)
+%%[1 hs import (System.IO)
 %%]
 
 %%[1 hs import (ScannerMachine)
@@ -71,13 +71,13 @@ emptySPos = ("",noPos)
 scanHandle :: ScanOpts -> FilePath -> Handle -> IO [Token]
 scanHandle opts fn fh
   = do  {  txt <- hGetContents fh
-        ;  return (scan opts (initPos fn) txt) 
+        ;  return (scan opts (initPos fn) txt)
         }
 
 scanFile :: ScanOpts -> FilePath -> IO [Token]
-scanFile opts fn = 
+scanFile opts fn =
         do txt <- readFile fn
-           return (scan opts (initPos fn) txt) 
+           return (scan opts (initPos fn) txt)
 
 offsideScanHandle :: ScanOpts -> FilePath -> Handle -> IO (OffsideInput [Token] Token (Maybe Token))
 offsideScanHandle opts fn fh

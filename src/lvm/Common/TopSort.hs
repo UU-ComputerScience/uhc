@@ -34,8 +34,8 @@ module Lvm.Common.TopSort( topSort ) where
         ) where
 -}
 
-import Array
-import List
+import Data.Array
+import Data.List
 import Lvm.Common.Special( ST,STArray, runST, newSTArray, readSTArray, writeSTArray)
 
 type Vertex  = Int

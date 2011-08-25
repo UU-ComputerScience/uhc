@@ -10,7 +10,7 @@
 %%[1 hs export (bldDtInfo, bldScInfo, bldRsInfo)
 %%]
 
-%%[1 hs import (Maybe, qualified Data.Set as Set, qualified Data.Map as Map, Data.List, EH.Util.Nm, EH.Util.Utils)
+%%[1 hs import (Data.Maybe, qualified Data.Set as Set, qualified Data.Map as Map, Data.List, EH.Util.Nm, EH.Util.Utils)
 %%]
 
 %%[1 hs import (KeywParser( propsSynInhMp ), Opts, Err, Common, Expr.Utils, ARule.Utils( exprSubst ), ViewSel.Utils)
@@ -423,7 +423,7 @@ rlGamUpdVws cxRs opts vwDpdGr extNmS dtInvGam scGam rsGam rlGam rsInfo rlInfo
                          (pregBldDflt,postgBldDflt) = bldDfltForJds nVw scGam (pregBld,postgBld)
                          pregBldFull  = pregBld  `reGamUnionShadow` pregBldDflt
                          postgBldFull = postgBld `reGamUnionShadow` postgBldDflt
-                         
+
                          -- rule info
                          (scInfo,vwScInfo) = maybe (emptyScInfo,emptyVwScInfo) id $ scVwGamLookup (rsScNm rsInfo) nVw scGam
 
@@ -467,7 +467,7 @@ rlGamUpdVws cxRs opts vwDpdGr extNmS dtInvGam scGam rsGam rlGam rsInfo rlInfo
                                  -- [mkTr (ppBracketsCommas [rsScNm rsInfo,rlNm rlInfo,nVw]) (ppBracketsCommas $ Set.toList $ vwSel)]
                          errsVw = errFirst [errPost,errDups,errUndefs,errChkBldL,errBldL] ++ errTr
                          errsOther = errVwNotSel
-                         
+
                          -- next build state
                          br' = br {brPreGam = preg', brPostGam = postg', brJdBldL = rlJdBldL, brRlChGam = prevVwRlChs'}
 

@@ -14,7 +14,7 @@
 %%[3 import(Data.List) export(hsnUn, hsnIsUn, hsnUnUn)
 %%]
 
-%%[8 import(Char(isUpper))
+%%[8 import(Data.Char(isUpper))
 %%]
 
 %%[91 export(hsnDataOrderingAltEQ, hsnDataOrderingAltLT, hsnDataOrderingAltGT)
@@ -1072,8 +1072,8 @@ mkEHBuiltinNames f
 %%]]
 %%[[99
       , ehbnClassIx                     = f IdOcc_Class     hsnClassIx
-      , ehbnClassIxFldRange             = f IdOcc_Val       hsnClassIxFldRange  
-      , ehbnClassIxFldIndex             = f IdOcc_Val       hsnClassIxFldIndex  
+      , ehbnClassIxFldRange             = f IdOcc_Val       hsnClassIxFldRange
+      , ehbnClassIxFldIndex             = f IdOcc_Val       hsnClassIxFldIndex
       , ehbnClassIxFldInRange           = f IdOcc_Val       hsnClassIxFldInRange
       , ehbnClassRead                   = f IdOcc_Class     hsnClassRead
       , ehbnClassReadFldRead            = f IdOcc_Val       hsnClassReadFldRead
