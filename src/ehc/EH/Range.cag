@@ -11,8 +11,9 @@ SEM AllNT
 ATTR AllNT [ | | range USE {`rangeUnion`} {emptyRange} : Range ]
 
 SEM Decl
-  | GenerRep    loc         .   range               =   @hsrange
-  | * - GenerRep
+  | GenerRep FusionConv FusionDecl
+         		loc         .   range               =   @hsrange
+  | * - GenerRep FusionConv FusionDecl
                 loc         .   range               =   rangeUnions [@hsrange, @first__.range, @last__.range]
 
 SEM TyExpr

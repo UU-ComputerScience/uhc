@@ -339,7 +339,7 @@ ATTR Pattern [ | | isVar: Bool ]
 SEM Pattern
     | Variable
         lhs         .   isVar       =   True
-    | * - Variable As Parenthesized Wildcard Annotate
+    | * - Variable As Parenthesized Annotate
 %%[[4
           Typed
 %%]]

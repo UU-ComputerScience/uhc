@@ -117,11 +117,11 @@ SEM Decl
 %%[(8 hmtyinfer codegen)
 SEM Decl
   | FFI
+%%[[90
+    FFE
+%%]]
 %%[[91
     Instance
-%%]]
-%%[[98
-    FFE
 %%]]
                 loc         .   rceEnv      =   (emptyRCEEnv @lhs.opts) { rceValGam = @lhs.valGam, rceDataGam = @lhs.dataGam, rceTyVarMp = @lhs.finTyVarMp }
 %%]

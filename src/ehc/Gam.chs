@@ -178,7 +178,9 @@ idDefOccGamStrip g = gamMap (\(k,v) -> (k,doccStrip v)) g
 %%% Identifier definition additional aspect gam
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 export(IdDefAspGam,IdDefAspAsc)
+not used
+
+%%[1111 export(IdDefAspGam,IdDefAspAsc)
 type IdDefAspGam = Gam    IdOcc  IdDefAsp
 type IdDefAspAsc = AssocL IdOcc [IdDefAsp]
 %%]

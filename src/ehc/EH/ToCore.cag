@@ -757,6 +757,12 @@ SEM Decl
                 lhs         .   ffeCBindL       =   [acoreBind1Asp1 @nm (CBindAspect_FFE @callconv @expEnt @ffeCExpr @ffeTy)]
 %%]
 
+%%[(93 codegen)
+SEM Decl
+  | FusionDecl  lhs      	.  cbindL           =  	[]
+  | FusionConv 	lhs        	.  cbindL           =  	[]
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Let bindings + front bindings + body separately
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

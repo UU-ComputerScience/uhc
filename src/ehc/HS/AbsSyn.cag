@@ -160,6 +160,16 @@ DATA Declaration                                  {- *** -}
         fixity                   : Fixity
         priority                 : {Maybe Int}
         operators                : Names
+%%[[93
+    | FusionDeclaration
+        range                    : Range
+        fusename                 : Name
+        -- with                     : Name
+    | FusionConversion
+        range                    : Range
+        absname                  : Name
+        conname                  : Name
+%%]]
     | Empty
         range                    : Range
 %%]

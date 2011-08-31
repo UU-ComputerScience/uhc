@@ -23,7 +23,7 @@ XXX
 -- module related
 %%[50 import({%{EH}Module})
 %%]
-%%[99 import({%{EH}EHC.CompilePhase.Module(cpUpdHiddenExports)})
+%%[92 import({%{EH}EHC.CompilePhase.Module(cpUpdHiddenExports)})
 %%]
 
 -- EH semantics

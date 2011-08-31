@@ -251,6 +251,12 @@ SEM Declaration
       ForeignExport
 %%]]
         loc             .   idDefOccGam =   mkDefOccGam @lhs.nmLev @range (IdAsp_Val_Foreign @eh) @idOccDefs
+%%[[93
+    | FusionDeclaration
+        loc             .   idDefOccGam =   mkDefOccGam @lhs.nmLev @range (IdAsp_Val_Fusion @eh) @idOccDefs
+    | FusionConversion
+        loc             .   idDefOccGam =   mkDefOccGam @lhs.nmLev @range (IdAsp_Fusion_Conv @eh) @idOccDefs
+%%]]
 %%]
 
 %%[1
@@ -265,7 +271,7 @@ SEM FunctionBinding
 %%]]
                                                              @lUniq)
                                               @idOccDefs
-		loc				.	lUniq		:	UNIQUEREF gUniq
+        loc             .   lUniq       :   UNIQUEREF gUniq
 %%]
 
 %%[1
@@ -360,7 +366,7 @@ ATTR
 SEM Declaration
     | TypeSignature
         loc             .   idTySigDefOccGam
-        								=   mkDefOccGam' @lhs.nmLev @range (\o -> IdAsp_Val_Var) @idOccDefs
+                                        =   mkDefOccGam' @lhs.nmLev @range (\o -> IdAsp_Val_Var) @idOccDefs
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -525,7 +531,7 @@ SEM Declaration
 %%]]
 %%[[9
     | Class
-        -- simpletype		.	idGam		=	@lhs.idGam		-- avoid cycles
+        -- simpletype       .   idGam       =   @lhs.idGam      -- avoid cycles
         loc             .   idGam       =   gamAddGam @idDefOccGamType @lhs.idGam
                         .   idDefOccGamInstForClass
                                         =   fst $ gamPartition (\_ d -> case doccAsp d of {IdAsp_Inst_Def _ n | n == @classrefname -> True ; _ -> False}) $ @lhs.idGam
@@ -921,20 +927,30 @@ SEM Declaration
                                         =   mkUseOccGam @lhs.opts @lhs.idGam [hsnPrelId] IdOcc_Val IdAsp_Val_Var @range
 %%]
 
-%%[92
-SEM Declaration
-    | Data Newtype
-		loc				.	(_,_,idUseOccGamClass,errIdUseClass)
-                                        =   mkUseOccGam @lhs.opts @lhs.idGam
-                                                        (if ehcOptGenGenerics @lhs.opts then builtinGenerClassNmL else [])
-                                                        IdOcc_Class IdAsp_Class_Class @range
-%%]
-
 %%[90
 SEM Declaration
     | ForeignExport
         loc             .   (refname,_,idUseOccGamExport,errIdUse)
                                         =   mkUseOccGam @lhs.opts @lhs.idGam [@name] IdOcc_Val IdAsp_Val_Var @range
+%%]
+
+%%[92
+SEM Declaration
+    | Data Newtype
+        loc             .   (_,_,idUseOccGamClass,errIdUseClass)
+                                        =   mkUseOccGam @lhs.opts @lhs.idGam
+                                                        (if ehcOptGenGenerics @lhs.opts then builtinGenerClassNmL else [])
+                                                        IdOcc_Class IdAsp_Class_Class @range
+%%]
+
+%%[93
+SEM Declaration
+    | FusionDeclaration
+        loc             .   (reffusename,_,idUseOccGamFusion,errIdUse)
+                                        =   mkUseOccGam @lhs.opts @lhs.idGam [@fusename] IdOcc_Val IdAsp_Val_Var @range
+    | FusionConversion
+        loc             .   (_,refnames,idUseOccGamFusion,errIdUse)
+                                        =   mkUseOccGam @lhs.opts @lhs.idGam [@conname,@absname] IdOcc_Fusion IdAsp_Val_Var @range
 %%]
 
 %%[99
@@ -1122,6 +1138,13 @@ SEM Declaration
                         .   idDpdMp     =   idToOccL2DpdMp [@idOccDef] @idUseHereOccL
         lhs             .   undefOccGam =   gamUnions [@undefOccGam,@type.undefOccGam]
 %%]]
+%%[[93
+    | FusionDeclaration FusionConversion
+        loc             .   (idUseOccGam,idUseHereOccL,_,undefOccGam)
+                                        =   splitIdUseOccGam @lhs.nmLev @idUseOccGamFusion
+                        .   idDpdMp     =   idToOccL2DpdMp [@idOccDef] @idUseHereOccL
+        lhs             .   undefOccGam =   @undefOccGam
+%%]]
 %%]
 
 %%[8
@@ -1293,6 +1316,12 @@ mkIdDefEH def
       IdAsp_Inst_Def decl _
         -> [decl]
       IdAsp_Dflt_Def decl ignore | not ignore
+        -> [decl]
+%%]]
+%%[[93
+      IdAsp_Val_Fusion decl
+        -> [decl]
+      IdAsp_Fusion_Conv decl
         -> [decl]
 %%]]
       _ -> []
@@ -1507,15 +1536,15 @@ SEM Declaration
 
 SEM FunctionBinding
     | FunctionBinding
-    	righthandside	.	patchEhNmInInstance
+        righthandside   .   patchEhNmInInstance
                                         =   id
 
 SEM LeftHandSide
     | Function
-    	patterns		.	patchEhNmInInstance
+        patterns        .   patchEhNmInInstance
                                         =   id
     | Infix
-    	loc				.	patchEhNmInInstance
+        loc             .   patchEhNmInInstance
                                         =   id
 %%]
 

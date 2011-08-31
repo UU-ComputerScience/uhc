@@ -294,6 +294,10 @@ pBody' opts addDecl
 %%[[11
           <|> pDeclarationType
 %%]]
+%%[[93
+          <|> pDeclarationFusion
+          <|> pDeclarationConversion 
+%%]]
           <?> "pDeclaration"
 %%]
 
@@ -577,6 +581,23 @@ pBody' opts addDecl
         pDeclarationType
           =   (Declaration_Type . mkRange1) <$> pTYPE <*> pTypeLeftHandSide <* pEQUAL <*> pType
 %%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Fusion parsers
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[93
+
+        pDeclarationFusion :: HSParser Declaration
+        pDeclarationFusion
+          = (Declaration_FusionDeclaration . mkRange1) <$> pFUSE <*> (tokMkQName <$> qvar) -- <* pWITH <*> (tokMkQName <$> qvar)
+
+        pDeclarationConversion :: HSParser Declaration
+        pDeclarationConversion
+          = (Declaration_FusionConversion . mkRange1) <$> pCONVERT <*> (tokMkQName <$> qvar) <* pCOMMA <*> (tokMkQName <$> qvar)
+%%]
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Kind

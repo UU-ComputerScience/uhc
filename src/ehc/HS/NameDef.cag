@@ -334,6 +334,13 @@ SEM Declaration
         loc             .   idOccDef    =   IdOcc @exportrefname IdOcc_Val
                         .   idOccDefs   =   [@idOccDef]
 %%]
+%%[93
+    | FusionDeclaration FusionConversion
+        loc             .   idOccDef    =   IdOcc (mkHNm @lUniq) IdOcc_Fusion
+                        .   idOccDefs   =   [@idOccDef]
+		loc				.	lUniq		:	UNIQUEREF gUniq
+%%]
+
 
 %%[1
 SEM FunctionBinding
