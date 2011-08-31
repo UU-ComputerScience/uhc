@@ -65,10 +65,11 @@ ehcOptUpdateWithPragmas pragmas opts
   = foldr (\p om@(o,modf) -> maybe om (\o -> (o,True)) $ upd p o) (opts,False) (Set.toList pragmas)
   where upd pragma opts
           = case pragma of
-              Pragma_NoGenericDeriving -> Just $ opts { ehcOptGenGenerics = False }
-              Pragma_GenericDeriving   -> Just $ opts { ehcOptGenGenerics = True  }
-              Pragma_ExtensibleRecords -> Just $ opts { ehcOptExtensibleRecords = True  }
-              _                        -> Nothing
+              Pragma_NoGenericDeriving  -> Just $ opts { ehcOptGenGenerics 			= False }
+              Pragma_GenericDeriving    -> Just $ opts { ehcOptGenGenerics 			= True  }
+              Pragma_ExtensibleRecords  -> Just $ opts { ehcOptExtensibleRecords 	= True  }
+              Pragma_Fusion             -> Just $ opts { ehcOptFusion 				= True  }
+              _                         -> Nothing
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -644,8 +645,8 @@ optArgAllAllow = [minBound .. maxBound]
 %%[1
 -- | An optional arg, universal type for all occurring variants
 data OptArg
-  = OptArg_Bool		Bool
-  | OptArg_Int		Int
+  = OptArg_Bool     Bool
+  | OptArg_Int      Int
 %%]
 
 %%[1
@@ -654,17 +655,17 @@ optArgTake allow s
   = case s of
       ('-':r)           -> Just (OptArg_Bool False,r)
       ('n':'o':r)       -> Just (OptArg_Bool False,r)
-      ('n':r)       	-> Just (OptArg_Bool False,r)
+      ('n':r)           -> Just (OptArg_Bool False,r)
       ('o':'f':'f':r)   -> Just (OptArg_Bool False,r)
       ('0':r) | noInt   -> Just (OptArg_Bool False,r)
       ('+':r)           -> Just (OptArg_Bool True ,r)
       ('y':'e':'s':r)   -> Just (OptArg_Bool True ,r)
-      ('y':r)   		-> Just (OptArg_Bool True ,r)
+      ('y':r)           -> Just (OptArg_Bool True ,r)
       ('o':'n':r)       -> Just (OptArg_Bool True ,r)
       ('1':r) | noInt   -> Just (OptArg_Bool True ,r)
       ( c :_) | yesInt && isDigit c
-      					-> Just (OptArg_Int (read d) ,r)
-      					where (d,r) = span isDigit s
+                        -> Just (OptArg_Int (read d) ,r)
+                        where (d,r) = span isDigit s
       _                 -> Nothing
   where yesInt = OptArgAllow_Int `elem` allow
         noInt  = not yesInt

@@ -25,6 +25,8 @@ Internal representation of pragmas.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[99 export(Pragma(..))
+-- | Data type representing pragmas.
+--   The names of the constructors must begin with "Pragma_", the string used in the map allSimplePragmaMp.
 data Pragma
   = Pragma_NoImplicitPrelude                -- no implicit prelude
   | Pragma_CPP                              -- preprocess with cpp
@@ -36,6 +38,7 @@ data Pragma
   | Pragma_NoGenericDeriving                -- turn off generic deriving
   | Pragma_GenericDeriving                  -- turn on generic deriving (default)
   | Pragma_ExtensibleRecords                -- turn on extensible records
+  | Pragma_Fusion               			-- turn on fusion syntax
 %%[[(99 codegen)
   | Pragma_ExcludeIfTarget
       { pragmaExcludeTargets   		:: [Target]
@@ -46,6 +49,7 @@ data Pragma
 %%]
 
 %%[99 export(allSimplePragmaMp,showAllSimplePragmas',showAllSimplePragmas)
+-- | All pragmas not requiring further arguments, these are accepted as LANGUAGE pragma when included in this map.
 allSimplePragmaMp :: Map.Map String Pragma
 allSimplePragmaMp
   = Map.fromList ts
@@ -57,6 +61,7 @@ allSimplePragmaMp
                   , Pragma_GenericDeriving
                   , Pragma_NoGenericDeriving
                   , Pragma_ExtensibleRecords
+                  , Pragma_Fusion
                   ]
             ]
         prefixLen = length "Pragma_"
@@ -95,6 +100,7 @@ instance Serialize Pragma where
 %%[[(99 codegen)
   sput (Pragma_ExcludeIfTarget a        ) = sputWord8 6 >> sput a
 %%]]
+  sput (Pragma_Fusion        			) = sputWord8 7
   sget = do t <- sgetWord8
             case t of
               0 -> return Pragma_NoImplicitPrelude
@@ -106,6 +112,7 @@ instance Serialize Pragma where
 %%[[(99 codegen)
               6 -> liftM  Pragma_ExcludeIfTarget        sget
 %%]]
+              7 -> return Pragma_Fusion
 
 %%]
 

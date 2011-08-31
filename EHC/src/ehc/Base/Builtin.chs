@@ -680,9 +680,11 @@ hsnModBuiltin                       =   mkHNm "#Builtin"
 %%% Fixed modules behind Prelude
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[99 export(hsnIsInPrelude)
+%%[92
 hsnUHC                              =   hsnFromString "UHC"
+%%]
 
+%%[99 export(hsnIsInPrelude)
 hsnIsInPrelude :: HsName -> Bool
 hsnIsInPrelude n
   = case hsnInitLast n of

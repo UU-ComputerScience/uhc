@@ -232,6 +232,12 @@ SEM Declaration
                                                    ]
 %%]
 
+%%[93
+SEM Declaration
+	| FusionDeclaration FusionConversion
+		loc			.	errSq		=	Seq.fromList @errIdUse
+%%]
+
 %%[91
 SEM Deriving
     | Deriving

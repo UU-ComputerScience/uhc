@@ -736,6 +736,9 @@ data IdOccKind
 %%[[50
   | IdOcc_Data
 %%]]
+%%[[93
+  | IdOcc_Fusion
+%%]]
   deriving (Eq,Ord,Enum)
 %%]
 
@@ -756,6 +759,9 @@ instance Show IdOccKind where
   show IdOcc_Any      = "Any"
 %%[[50
   show IdOcc_Data     = "Data"
+%%]]
+%%[[93
+  show IdOcc_Fusion   = "Fusion"
 %%]]
 %%]
 

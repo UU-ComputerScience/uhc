@@ -78,10 +78,13 @@ ehScanOpts opts
                     ++ tokKeywStrsEH12
 %%]
 %%[90
-                    ++ tokKeywStrsEH94
+                    ++ tokKeywStrsEH90
 %%]
 %%[91
-                    ++ tokKeywStrsEH95
+                    ++ tokKeywStrsEH91
+%%]
+%%[93
+                    ++ (if ehcOptFusion opts then tokKeywStrsEH93 else [])
 %%]
 %%[1
         ,   scoKeywordsOps      =
@@ -191,7 +194,10 @@ hsScanOpts opts
                     ++ tokKeywStrsHS12
 %%]]
 %%[[90
-                    ++ tokKeywStrsHS94
+                    ++ tokKeywStrsHS90
+%%]]
+%%[[93
+                    ++ (if ehcOptFusion opts then tokKeywStrsHS93 else [])
 %%]]
                 )
 %%]
@@ -918,7 +924,7 @@ pDERIVING
 
 pDERIVING        = pKeyTk "deriving"
 
-tokKeywStrsEH95 = [ "deriving" ]
+tokKeywStrsEH91 = [ "deriving" ]
 %%]
 
 %%[90
@@ -939,8 +945,22 @@ pSTATIC          = pKeyTk "static" -- not a HS keyword, but only for foreign fun
 pH               = pKeyTk "h" -- not a HS keyword, but only for foreign function entity
 pAMPERSAND       = pKeyTk "&" -- not a HS keyword, but only for foreign function entity
 
-tokKeywStrsEH94  = [  ]
-tokKeywStrsHS94  = [ "unsafe", "threadsafe", "dynamic" ]
+tokKeywStrsEH90  = [  ]
+tokKeywStrsHS90  = [ "unsafe", "threadsafe", "dynamic" ]
+%%]
+
+%%[93
+pFUSE         ,
+    -- pWITH     ,
+    pCONVERT
+  :: IsParser p Token => p Token
+
+pFUSE    = pKeyTk "fuse"
+-- pWITH    = pKeyTk "with"
+pCONVERT = pKeyTk "convert"    
+
+tokKeywStrsEH93  = [  ]
+tokKeywStrsHS93  = [ "fuse", "convert" ]
 %%]
 
 %%[99

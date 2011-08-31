@@ -20,7 +20,7 @@
 
 Not used
 
-%%[1 hs export(IdEH(..))
+%%[1111 hs export(IdEH(..))
 data IdEH
   = IdEH_Val_Pat       	{iehDecl   ::  EH.Decl                         }
   | IdEH_Val_Fun       	{iehPatL   :: [EH.PatExpr], iehBody :: EH.Expr, iehUniq :: !UID}
@@ -46,7 +46,7 @@ data IdEH
 %%% Aspects
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-Absence of strictness is essential, as some declarations are harmlessly cyclic,
+Absence of strictness is sometimes essential, as some declarations are harmlessly cyclic,
 e.g. Data in:
   class Data a where
     gfoldl :: (forall d. Data d => d) -> a
@@ -54,36 +54,40 @@ e.g. Data in:
 %%[1 hs export(IdAspect(..))
 data IdAspect
   = IdAsp_Val_Var
-  | IdAsp_Val_Pat       {iaspDecl   ::  EH.Decl                         }
-  | IdAsp_Val_Fun       {iaspPatL   :: [EH.PatExpr], iaspBody :: EH.Expr, iaspUniq :: !UID}
-  | IdAsp_Val_Sig       {iaspDecl   ::  EH.Decl                         }
+  | IdAsp_Val_Pat       	{iaspDecl   ::  EH.Decl                         }
+  | IdAsp_Val_Fun       	{iaspPatL   :: [EH.PatExpr], iaspBody :: EH.Expr, iaspUniq :: !UID}
+  | IdAsp_Val_Sig       	{iaspDecl   ::  EH.Decl                         }
   | IdAsp_Val_Fix
   | IdAsp_Val_Con
 %%[[5
-  | IdAsp_Val_Fld       {iaspDataNm :: !HsName, iaspConNm :: !HsName    }
+  | IdAsp_Val_Fld       	{iaspDataNm :: !HsName, iaspConNm :: !HsName    }
+%%]]
+%%[[93
+  | IdAsp_Val_Fusion	  	{iaspDecl   ::  EH.Decl                         }
+  | IdAsp_Fusion_Conv  		{iaspDecl   ::  EH.Decl                         }
 %%]]
   | IdAsp_Type_Con
 %%[[3
   | IdAsp_Type_Var
 %%]]
 %%[[5
-  | IdAsp_Type_Def      {iaspDecl   ::  EH.Decl                         }
+  | IdAsp_Type_Def      	{iaspDecl   ::  EH.Decl                         }
 %%]]
 %%[[6
-  | IdAsp_Type_Sig      {iaspDecl   :: !EH.Decl                         }
+  | IdAsp_Type_Sig      	{iaspDecl   :: !EH.Decl                         }
   | IdAsp_Kind_Con
   | IdAsp_Kind_Var
 %%]]
 %%[[8
-  | IdAsp_Val_Foreign   {iaspDecl   :: !EH.Decl                         }
+  | IdAsp_Val_Foreign   	{iaspDecl   :: !EH.Decl                         }
 %%]]
 %%[[9
   | IdAsp_Class_Class
-  | IdAsp_Class_Def     {iaspDecl   ::  EH.Decl, iaspDeclInst ::  EH.Decl}
+  | IdAsp_Class_Def     	{iaspDecl   ::  EH.Decl, iaspDeclInst ::  EH.Decl}
   | IdAsp_Inst_Inst
-  | IdAsp_Inst_Def      {iaspDecl   ::  EH.Decl, iaspClassNm  :: !HsName}
-  | IdAsp_Dflt_Def      -- for now defaults without explicit class name are ignored
-                        {iaspDecl   :: !EH.Decl, iaspIgnore   :: !Bool  }
+  | IdAsp_Inst_Def      	{iaspDecl   ::  EH.Decl, iaspClassNm  :: !HsName}
+  | IdAsp_Dflt_Def     		-- for now defaults without explicit class name are ignored
+                       	 	{iaspDecl   :: !EH.Decl, iaspIgnore   :: !Bool  }
 %%]]
   | IdAsp_Any
 %%]
@@ -164,6 +168,10 @@ instance PP IdAspect where
 %%[[5
   pp (IdAsp_Val_Fld _ _  )  = pp "data field"
 %%]]
+%%[[93
+  pp (IdAsp_Val_Fusion  _)  = pp "fuse"
+  pp (IdAsp_Fusion_Conv _)  = pp "convert"
+%%]]
   pp  IdAsp_Type_Con        = pp "type constructor"
 %%[[3
   pp  IdAsp_Type_Var        = pp "type variable"
@@ -240,7 +248,7 @@ doccStrip o = o {doccRange = emptyRange}
 
 not used
 
-%%[1 hs export(IdDefAsp(..))
+%%[1111 hs export(IdDefAsp(..))
 data IdDefAsp
   = IdDefAsp
       { daspOcc     :: !IdOcc
@@ -248,7 +256,7 @@ data IdDefAsp
       }
 %%]
 
-%%[1 hs export(mkIdDefAsp)
+%%[1111 hs export(mkIdDefAsp)
 mkIdDefAsp :: IdOcc -> IdEH -> IdDefAsp
 mkIdDefAsp o a = IdDefAsp o a
 %%]

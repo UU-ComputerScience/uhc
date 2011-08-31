@@ -106,6 +106,12 @@ SEM Declaration
     | Type
         loc         .   pp          =   "type" >#< @typelefthandside.pp >#< "=" >#< @type.pp
 %%]
+%%[93
+    | FusionDeclaration
+        loc         .   pp          =   "fuse" >#< @fusename
+    | FusionConversion
+        loc         .   pp          =   "convert" >#< ppCommas [@conname, @absname]
+%%]
 %%[99
     | Pragma
         loc         .   pp          =   "{-#" >#< @pragma.pp >#< "#-}"

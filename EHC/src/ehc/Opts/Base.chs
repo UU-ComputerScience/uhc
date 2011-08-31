@@ -198,6 +198,9 @@ data EHCOpts
 %%[[92
       ,  ehcOptGenGenerics    ::  Bool              -- generate for use of generics
 %%]]
+%%[[93
+      ,  ehcOptFusion   	  ::  Bool				-- allow fusion syntax, the optimization itself is triggered by optimize flags
+%%]]
 %%[[(99 hmtyinfer)
       ,  ehcOptEmitDerivTree  ::  DerivTreeWay      -- show derivation tree on stdout
       ,  ehcOptEmitDerivTreePaperSize
@@ -327,6 +330,11 @@ emptyEHCOpts
 %%]]
 %%[[92
       ,  ehcOptGenGenerics      =   True
+%%]]
+%%[[93
+      ,  ehcOptFusion			=   True
+%%][99
+      ,  ehcOptFusion			=   False
 %%]]
 %%[[(99 hmtyinfer)
       ,  ehcOptEmitDerivTree    =   DerivTreeWay_None

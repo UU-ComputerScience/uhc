@@ -546,7 +546,11 @@ SEM Decl
   				loc         .   foreignEntInfo      =   foreignEntExtract @impEnt
                             .   knTy                =   let v      = mkTyVar @lUniq
                                                             funptr = mk1ConApp (ehcOptBuiltin @lhs.opts ehbnFunPtr)
+%%[[90
+                                                            io     = id
+%%][98
                                                             io     = mk1ConApp (ehcOptBuiltin @lhs.opts ehbnIO)
+%%]]
                                                         in  case @foreignEntInfo of
                                                               ForeignExtraction_Wrapper ->        v `mk1Arrow` io (funptr v)
                                                               ForeignExtraction_Dynamic -> funptr v `mk1Arrow`            v

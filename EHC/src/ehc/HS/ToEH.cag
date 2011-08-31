@@ -173,6 +173,14 @@ SEM Declaration
     | Data Newtype
         loc         .   ehGener     =   rngLift @range EH.Decl_GenerRep @generMaxRemArity @typerefname @constructors.conrefnames @constructors.conAndFldrefnames
 %%]]
+%%[[93
+    | FusionDeclaration
+        loc         .   eh          =   rngLift @range EH.Decl_FusionDecl @reffusename
+    | FusionConversion
+        loc         .   eh          =   rngLift @range EH.Decl_FusionConv (@refnames !! 0) (@refnames !! 1)
+    | FusionDeclaration FusionConversion
+        lhs         .   eh          =   [@eh]
+%%]]
 %%]
 %%[6
     | KindSignature

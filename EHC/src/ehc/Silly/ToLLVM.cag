@@ -618,7 +618,7 @@ SEM SilModule
 --------------------------------------------------------------------------------
 -- Pass type mapping of locals to statements
 --------------------------------------------------------------------------------
-ATTR Function Statements Statement Alternatives Alternative
+ATTR Function Statements Statement Alternatives Alternative	-- 20110831 AD, why not Functions as well, because of warning....
      [ | localPtrsSet : {Data.Set.Set String } | ]
                           
 SEM Function

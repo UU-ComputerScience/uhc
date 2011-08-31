@@ -96,6 +96,14 @@ DATA Decl
   					recFldNmL		: {[(HsName,[HsName])]}		-- record constructors + field names
 %%]
 
+%%[93
+DATA Decl
+  | FusionDecl      fuseNm          : {HsName}
+                    -- with         : {HsName}
+  | FusionConv      conNm           : {HsName}
+                    absNm           : {HsName}
+%%]
+
 %%[1010.Decl
 DATA Decl
   | DynTySig        nm              : {HsName}
