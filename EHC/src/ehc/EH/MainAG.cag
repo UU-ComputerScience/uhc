@@ -69,6 +69,8 @@
 %%]
 %%[(8 codegen) hs import({%{EH}Foreign.Extract})
 %%]
+%%[(8 codegen) hs import({%{EH}LamInfo})
+%%]
 %%[(90 codegen) hs import({%{EH}BuiltinPrims},{%{EH}Foreign})
 %%]
 
@@ -189,6 +191,8 @@ WRAPPER AGItf
 %%]
 %%[(8 codegen tycore) ag import({EH/ToTyCore})
 %%]
+%%[8 ag import({EH/GatherMisc})
+%%]
 
 %%[(9 hmtyinfer) ag import({EH/ResolvePred},{EH/InferClass},{EH/InferClassCHR},{EH/ResolvePredCHR},{EH/InferDefault})
 %%]
@@ -200,9 +204,6 @@ WRAPPER AGItf
 %%]
 
 %%[50 ag import({EH/UsedNames})
-%%]
-
-%%[92 ag import({EH/GatherMisc})
 %%]
 
 %%[92 ag import({EH/Generics})

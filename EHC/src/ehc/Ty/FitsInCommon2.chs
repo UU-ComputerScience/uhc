@@ -52,18 +52,18 @@ ppTyWithFIFO fi fo t    =  ppTyS (foVarMp fo |+> fiVarMp fi) t
 %%[(4 hmtyinfer).FIIn export(FIIn'(..),FIIn)
 data FIIn' globvm
   = FIIn
-      { fiFIOpts          ::  !FIOpts				-- options to fitsIn
-      , fiUniq            ::  !UID					-- unique thread
-      , fiVarMp           ::  !globvm				-- global (type) var bindings
-      , fiVarMpLoc        ::  !VarMp					-- locally introduced (type) var bindings
-      , fiExpLTvS         ::  !(Set.Set TyVarId)		-- lhs ty vars for which expansion (via VarMp) is inhibited (already done once)
-      , fiExpRTvS         ::  !(Set.Set TyVarId)		-- and rhs
-      , fiRank            ::  !Int					-- rank
-      , fiMbInstRank      ::  !(Maybe Int)			-- rank where possible deep instantation did start
+      { fiFIOpts          ::  !FIOpts               -- options to fitsIn
+      , fiUniq            ::  !UID                  -- unique thread
+      , fiVarMp           ::  !globvm               -- global (type) var bindings
+      , fiVarMpLoc        ::  !VarMp                    -- locally introduced (type) var bindings
+      , fiExpLTvS         ::  !(Set.Set TyVarId)        -- lhs ty vars for which expansion (via VarMp) is inhibited (already done once)
+      , fiExpRTvS         ::  !(Set.Set TyVarId)        -- and rhs
+      , fiRank            ::  !Int                  -- rank
+      , fiMbInstRank      ::  !(Maybe Int)          -- rank where possible deep instantation did start
+      , fiTrace           ::  [PP_Doc]              -- ???? 20080110, must be strict otherwise ghc 6.8.1 generates crashing program ????
 %%[[8
-      , fiEnv             ::  !FIEnv				-- environment (Gam's,...)
+      , fiEnv             ::  !FIEnv                -- environment (Gam's,...)
 %%]]
-      , fiTrace           ::  [PP_Doc]       		-- ???? 20080110, must be strict otherwise ghc 6.8.1 generates crashing program ????
       }
 
 type FIIn = FIIn' VarMp
@@ -81,10 +81,10 @@ emptyFI' m
       , fiExpRTvS         =   Set.empty
       , fiRank            =   1
       , fiMbInstRank      =   Nothing
+      , fiTrace           =   []
 %%[[8
       , fiEnv             =   emptyFE
 %%]]
-      , fiTrace           =   []
       }
 
 -- emptyFI :: forall gm . FIIn' gm

@@ -52,6 +52,10 @@ XXX
 %%[9999 import({%{EH}Base.ForceEval})
 %%]
 
+-- Misc info: LamInfo/LamMp
+%%[(8 codegen) hs import({%{EH}LamInfo})
+%%]
+
 -- for debug
 %%[50 hs import({%{EH}Base.Debug},EH.Util.Pretty)
 %%]
@@ -145,6 +149,9 @@ cpFlowEHSem1 modNm
                  dfg      = prepFlow $! EHSem.gathClDfGam_Syn_AGItf    ehSem
                  cs       = prepFlow $! EHSem.gathChrStore_Syn_AGItf   ehSem
 %%]]
+%%[[(50 hmtyinfer)
+                 lm       = prepFlow $! EHSem.gathLamMp_Syn_AGItf      ehSem
+%%]]
 %%[[50
                  mmi      = panicJust "cpFlowEHSem1.crsiModMp" $ Map.lookup modNm $ crsiModMp crsi
                  hii      = ecuHIInfo ecu
@@ -176,15 +183,18 @@ cpFlowEHSem1 modNm
                               , HI.hiiClGam         = clg
                               , HI.hiiClDfGam       = dfg
                               , HI.hiiCHRStore      = {- HI.hiiScopedPredStoreToList -} cs
+                              -- , HI.hiiLamMp         = lm
 %%]]
                               }
 %%]]
 %%[[(8 codegen)
                  coreInh' = coreInh
 %%[[8
-                              { Core2GrSem.dataGam_Inh_CodeAGItf = EHSem.gathDataGam_Syn_AGItf    ehSem
+                              { Core2GrSem.dataGam_Inh_CodeAGItf = EHSem.gathDataGam_Syn_AGItf ehSem
+                              , Core2GrSem.lamMp_Inh_CodeAGItf   = EHSem.gathLamMp_Syn_AGItf   ehSem
 %%][50
-                              { Core2GrSem.dataGam_Inh_CodeAGItf = EHSem.dataGam_Inh_AGItf        ehInh'
+                              { Core2GrSem.dataGam_Inh_CodeAGItf = EHSem.dataGam_Inh_AGItf     ehInh'
+                              , Core2GrSem.lamMp_Inh_CodeAGItf   = lm `lamMpUnionBindAspMp` Core2GrSem.lamMp_Inh_CodeAGItf coreInh		-- assumption: no duplicates, otherwise merging as done later has to be done
 %%]]
                               }
 %%]]
@@ -206,19 +216,6 @@ cpFlowEHSem1 modNm
                                      . ecuStoreUsedNames mentrelFilterMp
 %%]]
                                      )
-%%]]
-%%[[102
-                     ; when (ehcOptVerbosity opts >= VerboseDebug)
-                            (do { lift $ putStrLn $ fevShow "gathDataGam" dg
-                                ; lift $ putStrLn $ fevShow "gathValGam" vg
-                                ; lift $ putStrLn $ fevShow "gathTyGam" tg
-                                ; lift $ putStrLn $ fevShow "gathTyKiGam" tkg
-                                ; lift $ putStrLn $ fevShow "gathPolGam" pg
-                                ; lift $ putStrLn $ fevShow "gathKiGam" kg
-                                ; lift $ putStrLn $ fevShow "gathClGam" clg
-                                ; lift $ putStrLn $ fevShow "gathChrStore" cs
-                                ; lift $ putStrLn $ fevShow "cmodule" $ EHSem.cmodule_Syn_AGItf   ehSem
-                                })
 %%]]
 %%[[92
                      -- put back additional hidden exports
@@ -258,7 +255,7 @@ cpFlowHISem modNm
 %%[[(50 codegen)
                  coreInh  = crsiCoreInh crsi
                  coreInh' = coreInh
-                              { Core2GrSem.lamMp_Inh_CodeAGItf   = (HI.hiiLamMp hiInfo) `Map.union` Core2GrSem.lamMp_Inh_CodeAGItf coreInh
+                              { Core2GrSem.lamMp_Inh_CodeAGItf   = (HI.hiiLamMp hiInfo) `lamMpUnionBindAspMp` Core2GrSem.lamMp_Inh_CodeAGItf coreInh
                               }
 %%]]
                  optim    = crsiOptim crsi
@@ -294,7 +291,7 @@ cpFlowCoreSem modNm
                  hii      = ecuHIInfo ecu
                  am       = prepFlow $! Core2GrSem.gathLamMp_Syn_CodeAGItf coreSem
                  coreInh' = coreInh
-                              { Core2GrSem.lamMp_Inh_CodeAGItf   = am `Map.union` Core2GrSem.lamMp_Inh_CodeAGItf coreInh
+                              { Core2GrSem.lamMp_Inh_CodeAGItf   = am `lamMpUnionBindAspMp` Core2GrSem.lamMp_Inh_CodeAGItf coreInh	-- assumption: old info can be overridden, otherwise merge should be done here
                               }
                  hii'     = hii
 %%[[(50 codegen grin)
@@ -323,7 +320,7 @@ cpFlowHILamMp modNm
               hii      = ecuHIInfo ecu
 
          -- put back result: call info map (lambda arity, ...), overwriting previous entries
-       ; cpUpdSI (\crsi -> crsi {crsiCoreInh = coreInh {Core2GrSem.lamMp_Inh_CodeAGItf = HI.hiiLamMp hii `Map.union` Core2GrSem.lamMp_Inh_CodeAGItf coreInh}})
+       ; cpUpdSI (\crsi -> crsi {crsiCoreInh = coreInh {Core2GrSem.lamMp_Inh_CodeAGItf = HI.hiiLamMp hii `lamMpUnionBindAspMp` Core2GrSem.lamMp_Inh_CodeAGItf coreInh}})
        }
 %%]
 

@@ -254,6 +254,9 @@ data ACoreBindAspectKey
   | ACoreBindAspectKey_Strict				-- the as strict as possible variant
   | ACoreBindAspectKey_Debug				-- internal debugging only
   | ACoreBindAspectKey_Core					-- core
+%%[[93
+  | ACoreBindAspectKey_FusionRole			-- fusion role
+%%]]
   deriving (Eq,Ord,Enum)
 
 instance Show ACoreBindAspectKey where
@@ -263,6 +266,9 @@ instance Show ACoreBindAspectKey where
   show ACoreBindAspectKey_RelevTy 		= "rty"
   show ACoreBindAspectKey_Debug 		= "dbg"
   show ACoreBindAspectKey_Core 			= "core"
+%%[[93
+  show ACoreBindAspectKey_FusionRole	= "fusionrole"
+%%]]
 
 instance PP ACoreBindAspectKey where
   pp = pp . show
@@ -309,6 +315,13 @@ acbaspkeyStrict = acbaspkeyMk
 acbaspkeyDebug :: ACoreBindAspectKeyS
 acbaspkeyDebug = acbaspkeyMk
   [ ACoreBindAspectKey_Debug ]
+%%]
+
+%%[(93 codegen) hs export(acbaspkeyFusionRole)
+-- | predefined: 
+acbaspkeyFusionRole :: ACoreBindAspectKeyS
+acbaspkeyFusionRole = acbaspkeyMk
+  [ ACoreBindAspectKey_FusionRole ]
 %%]
 
 %%[(8 codegen) hs export(ppACBaspKeyS)

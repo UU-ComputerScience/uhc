@@ -31,6 +31,11 @@ Output generation, on stdout or file
 %%[50 import(qualified {%{EH}HI} as HI)
 %%]
 
+-- Core semantics
+-- TBD: this depends on grin gen, but should also be available for Core, so in a CoreXXXSem
+%%[(8 codegen grin) import(qualified {%{EH}Core.ToGrin} as Core2GrSem)
+%%]
+
 -- Core output
 %%[(8 codegen) import({%{EH}Core},{%{EH}Core.Pretty})
 %%]
@@ -100,16 +105,18 @@ cpOutputCoreModule :: Bool -> String -> String -> HsName -> CModule -> EHCompile
 cpOutputCoreModule binary nmsuff suff modNm cMod
   =  do  {  cr <- get
          ;  let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
-                 fpC = mkOutputFPath opts modNm fp (suff ++ nmsuff) -- for now nmsuff after suff, but should be inside name
-                 fnC    = fpathToStr fpC
+                 fpC     = mkOutputFPath opts modNm fp (suff ++ nmsuff) -- for now nmsuff after suff, but should be inside name
+                 fnC     = fpathToStr fpC
+                 coreInh = crsiCoreInh crsi
+                 lm      = Core2GrSem.lamMp_Inh_CodeAGItf coreInh
 %%[[8
-         ;  lift $ putPPFPath fpC (ppCModule opts cMod) 100
+         ;  lift $ putPPFPath fpC (ppCModule opts lm cMod) 100
 %%][50
          ;  lift (if binary
                   then do { fpathEnsureExists fpC		-- should be in FPath equivalent of putSerializeFile
                           ; putSerializeFile fnC cMod
                           }
-                  else putPPFPath fpC (ppCModule opts cMod) 100
+                  else putPPFPath fpC (ppCModule opts lm cMod) 100
                  )
 %%]]
          }

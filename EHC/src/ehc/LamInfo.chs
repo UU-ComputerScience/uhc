@@ -39,6 +39,10 @@ Currently the following is maintained:
 %%[(8 codegen) import(EH.Util.Utils)
 %%]
 
+-- PP
+%%[(8 codegen) import(EH.Util.Pretty,{%{EH}AnaDomain.Pretty},{%{EH}Ty.Pretty})
+%%]
+
 -- Haskell stuff
 %%[(8 codegen) hs import(qualified Data.Map as Map,qualified Data.Set as Set)
 %%]
@@ -57,29 +61,64 @@ data StackTraceInfo
   = StackTraceInfo_None
   | StackTraceInfo_HasStackTraceEquiv	HsName		-- has a stack traced equivalent
   | StackTraceInfo_IsStackTraceEquiv	HsName		-- is a stack traced equivalent
+  deriving ( Show
 %%[[50
-  deriving (Data,Typeable)
+           , Data, Typeable
 %%]]
+           )
+%%]
+
+%%[(93 codegen) hs export(FusionRole(..))
+-- | The role a value takes in fusion
+data FusionRole
+  = FusionRole_Fuse			-- fuse this, i.e. inline, turned on by 'fuse f' for f
+  | FusionRole_BuildLeft	-- role of g in 'convert g,h'
+  | FusionRole_BuildRight	-- role of h in 'convert g,h'
+  deriving ( Enum, Show
+           , Data,Typeable
+           )
+%%]
+
+%%[(93 codegen)
+instance PP FusionRole where
+  pp r = pp $ drop l $ show r
+       where l = length "FusionRole_"
 %%]
 
 %%[(8 codegen) hs export(LamInfoBindAsp(..))
 -- | per aspect info
 data LamInfoBindAsp
-  = LamInfoBindAsp_RelevTy
-      { libindaspRelevTy 		:: !RelevTy			-- relevance typing
+  = LamInfoBindAsp_RelevTy							-- relevance typing
+      { libindaspRelevTy 		:: !RelevTy
       }
-  | LamInfoBindAsp_Ty
-      { libindaspTy 			:: !Ty				-- plain good old type
+  | LamInfoBindAsp_Ty								-- plain good old type
+      { libindaspTy 			:: !Ty
       }
-  | LamInfoBindAsp_Core
-      { libindaspCore			:: !CExpr			-- actual Core, should go paired with Ty (?? maybe pair them directly)
+  | LamInfoBindAsp_Core								-- actual Core, should go paired with Ty (?? maybe pair them directly)
+      { libindaspCore			:: !CExpr
       }
-  -- | LamInfoBindAsp_StrictTy		!RelevTy			-- and its strict incarnation
-%%[[50
-  deriving (Data,Typeable)
+%%[[93
+  | LamInfoBindAsp_FusionRole						-- role in fusion
+      { libindaspFusionRole 	:: !FusionRole
+      }
 %%]]
+  deriving ( Show
+%%[[50
+           , Data, Typeable
+%%]]
+           )
 
 type LamInfoBindAspMp = Map.Map ACoreBindAspectKeyS LamInfoBindAsp
+%%]
+
+%%[(8 codegen)
+instance PP LamInfoBindAsp where
+  pp (LamInfoBindAsp_RelevTy 	t) = "RTy"  >#< pp t
+  pp (LamInfoBindAsp_Ty      	t) = "Ty"   >#< pp t
+  pp (LamInfoBindAsp_Core      	c) = pp "Core" -- >#< pp c -- Core.Pretty uses LamInfo, so module cycle...
+%%[[93
+  pp (LamInfoBindAsp_FusionRole	r) = "Fuse" >#< pp r
+%%]]
 %%]
 
 %%[(8 codegen) hs export(LamInfo(..),emptyLamInfo,emptyLamInfo')
@@ -91,19 +130,22 @@ data LamInfo
       , laminfoGrinByteCode			:: Maybe GrinByteCodeLamInfo	-- GB specific info
       , laminfoBindAspMp			:: !LamInfoBindAspMp			-- info organized per/keyed on aspect
       }
+  deriving ( Show
 %%[[50
-  deriving (Data,Typeable)
+           , Data, Typeable
 %%]]
-
-instance Show LamInfo where
-  show (LamInfo ar _ bc _) = "LamInfo: arity=" ++ show ar ++ " bc=" ++ show bc
+           )
 
 emptyLamInfo' :: LamInfo
 emptyLamInfo' = LamInfo 0 StackTraceInfo_None (Just emptyGrinByteCodeLamInfo) Map.empty
 
 emptyLamInfo :: LamInfo
 emptyLamInfo = LamInfo 0 StackTraceInfo_None Nothing Map.empty
+%%]
 
+%%[(8 codegen)
+instance PP LamInfo where
+  pp (LamInfo ar _ bc m) = ppAssocL $ assocLMapKey ppACBaspKeyS $ Map.toList m
 %%]
 
 %%[(50 codegen) hs export(laminfo1stArgIsStackTrace)
@@ -243,16 +285,28 @@ instance Serialize GrinByteCodeLamInfo where
   sput (GrinByteCodeLamInfo a) = sput a
   sget = liftM  GrinByteCodeLamInfo sget
 
+%%[[93
+instance Serialize FusionRole where
+  sput = sputEnum8
+  sget = sgetEnum8
+%%]]
+
 instance Serialize LamInfoBindAsp where
-  sput (LamInfoBindAsp_RelevTy  a) = sputWord8 0 >> sput a
-  sput (LamInfoBindAsp_Ty 		a) = sputWord8 1 >> sput a
-  sput (LamInfoBindAsp_Core 	a) = sputWord8 2 >> sput a
+  sput (LamInfoBindAsp_RelevTy  	a) = sputWord8 0 >> sput a
+  sput (LamInfoBindAsp_Ty 			a) = sputWord8 1 >> sput a
+  sput (LamInfoBindAsp_Core 		a) = sputWord8 2 >> sput a
+%%[[93
+  sput (LamInfoBindAsp_FusionRole 	a) = sputWord8 3 >> sput a
+%%]]
   sget = do
     t <- sgetWord8
     case t of
       0 -> liftM  LamInfoBindAsp_RelevTy  	sget
       1 -> liftM  LamInfoBindAsp_Ty 		sget
       2 -> liftM  LamInfoBindAsp_Core 		sget
+%%[[93
+      3 -> liftM  LamInfoBindAsp_FusionRole sget
+%%]]
 
 instance Serialize LamInfo where
   sput (LamInfo a b c d) = sput a >> sput b >> sput c >> sput d

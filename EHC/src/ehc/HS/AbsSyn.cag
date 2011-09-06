@@ -161,10 +161,13 @@ DATA Declaration                                  {- *** -}
         priority                 : {Maybe Int}
         operators                : Names
 %%[[93
+    -- A fusion declaration 'fuse f' triggers fusion behavior (inlining, elimination of build/unbuild pairs) for the body of 'f'
     | FusionDeclaration
         range                    : Range
         fusename                 : Name
         -- with                     : Name
+    -- A fusion conversion declaration 'convert g,h' marks this combi to be a build/unbuild pair, to be eliminated by fusion (of 'f' above).
+    -- Checked type constraint: g :: a->b, h :: b->a, i.e. they should be eachothers inverse.
     | FusionConversion
         range                    : Range
         absname                  : Name

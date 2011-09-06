@@ -950,7 +950,7 @@ SEM Declaration
                                         =   mkUseOccGam @lhs.opts @lhs.idGam [@fusename] IdOcc_Val IdAsp_Val_Var @range
     | FusionConversion
         loc             .   (_,refnames,idUseOccGamFusion,errIdUse)
-                                        =   mkUseOccGam @lhs.opts @lhs.idGam [@conname,@absname] IdOcc_Fusion IdAsp_Val_Var @range
+                                        =   mkUseOccGam @lhs.opts @lhs.idGam [@conname,@absname] IdOcc_Val IdAsp_Val_Var @range
 %%]
 
 %%[99

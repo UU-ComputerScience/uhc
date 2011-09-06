@@ -12,6 +12,8 @@
 
 %%[(8 codegen) hs import({%{EH}AnaDomain.Pretty})
 %%]
+%%[(8 codegen) hs import({%{EH}LamInfo})
+%%]
 
 %%[(8 codegen) hs import(qualified Data.Map as Map,qualified Data.Set as Set,{%{EH}Ty.Pretty})
 %%]
@@ -28,9 +30,12 @@ WRAPPER
 %%]
 
 %%[(8 codegen) hs
-ppCModule :: EHCOpts -> CModule -> PP_Doc
-ppCModule opts cmod
-  =  let  t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf cmod)) Inh_CodeAGItf
+ppCModule :: EHCOpts -> LamMp -> CModule -> PP_Doc
+ppCModule opts lamMp cmod
+  =  let  t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf cmod))
+                             (Inh_CodeAGItf
+                               { lamMp_Inh_CodeAGItf = lamMp
+                               })
      in   (pp_Syn_CodeAGItf t)
 
 ppCExpr :: CExpr -> PP_Doc
@@ -38,6 +43,7 @@ ppCExpr ce
   =  let  t = wrap_CExpr (sem_CExpr ce)
                          (Inh_CExpr
                             { varPPMp_Inh_CExpr = Map.empty
+                            , lamMp_Inh_CExpr = Map.empty
                             })
      in   (pp_Syn_CExpr t)
 
@@ -71,9 +77,9 @@ ppHole i = "<" >|< pp i >|< ">"
 ppOptCMetas :: CMetas -> PP_Doc
 ppOptCMetas x
   =  let  t = wrap_CMetas (sem_CMetas x)
-                          (Inh_CMetas)
-                             -- { varMp_Inh_CMetas = Map.empty
-                             -- })
+                          (Inh_CMetas
+                             { lamMp_Inh_CMetas = Map.empty
+                             })
      in   (pp_Syn_CMetas t)
 %%]
 
@@ -119,6 +125,14 @@ ppTag t = ppCTag' CfgPP_Core t
 ppCurlyList :: (a -> PP_Doc) -> [a] -> PP_Doc
 ppCurlyList pL xs = ppListSep "{ " " }" ", " $ map pL xs
 
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Context
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR CodeAGItf AllCodeNT [ lamMp: LamMp | | ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -184,7 +198,7 @@ SEM CExpr
 SEM CBind
  | Bind         lhs         .   pp          =   let p [a] = a
                                                     p as  = ppCurlysSemisBlock as
-                                                in  ppDef (ppCNm @nm) (p @bindAspects.ppL)
+                                                in  ppDef (ppCNm @nm) (p $ @bindAspects.ppL ++ (maybe [] (\x -> [pp x]) $ Map.lookup @nm @lhs.lamMp))
 
 SEM CBindAspect
   | Bind        lhs         .   pp          =   @bindMeta.pp >-< "=" >#< @expr.pp
