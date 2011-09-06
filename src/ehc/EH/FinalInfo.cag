@@ -55,11 +55,17 @@ SEM AGItf
 
 %%[(2 hmtyinfer)
 SEM Decl
-  | TySig       loc         .   finalTy             =   vgiTy $ panicJust "EH.Infer.Decl.TySig" $ valGamLookup @nm            $ @lhs.finValGam
-  | Val         loc         .   finalTy             =           maybe Ty_Any vgiTy              $ valGamLookup @patExpr.topNm $ @lhs.finValGam
+  | TySig       loc         .   finalTy             =   vgiTy $ panicJust "EH.Infer.Decl.TySig" $ valGamLookup @nm            @lhs.finValGam
+  | Val         loc         .   finalTy             =           maybe Ty_Any vgiTy              $ valGamLookup @patExpr.topNm @lhs.finValGam
 %%[[9
-  | Instance    loc         .   finalTy             =           maybe Ty_Any vgiTy              $ valGamLookup @dictNm        $ @lhs.finValGam
+  | Instance    loc         .   finalTy             =           maybe Ty_Any vgiTy              $ valGamLookup @dictNm        @lhs.finValGam
 %%]]
+%%]
+
+%%[(93 hmtyinfer)
+SEM Decl
+  | FusionConv  loc         .   finConTy            =   vgiTy $ panicJust ("EH.Infer.Decl.FusionConv: " ++ show @conNm) $ valGamLookup @conNm @lhs.finValGam
+                            .   finAbsTy            =   vgiTy $ panicJust ("EH.Infer.Decl.FusionConv: " ++ show @absNm) $ valGamLookup @absNm @lhs.finValGam
 %%]
 
 %%[(8 hmtyinfer)

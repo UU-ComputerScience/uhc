@@ -28,9 +28,9 @@ ATTR
     [ | | gathLamMp: LamMp ]
 
 SEM CExpr
-  | Let         lhs         .   gathLamMp =   @binds.bindLamMp `Map.union` @body.gathLamMp
+  | Let         lhs         .   gathLamMp 	=   @binds.bindLamMp `Map.union` @body.gathLamMp
   | * - Let Ann CaseAltFail
-  				lhs         .   gathLamMp =   Map.empty
+  				lhs         .   gathLamMp 	=   Map.empty
 %%]
 
 %%[(8 codegen)

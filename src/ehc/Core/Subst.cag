@@ -78,6 +78,14 @@ instance CSubstitutable CExpr CMetaVal CBind CBindAspect Ty CExpr where
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Dummy value to stop higher order AG subst
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs
+cStopSubst = CExpr_String "Core.Subst.cStopSubst: may not happen"
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Deepness/shallowness of subst
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -160,7 +168,7 @@ SEM CExpr
     Hole HoleLet CoeArg ImplsApp ImplsLam
 %%]]
                 inst        .   repl'       :   CExpr
-                inst        .   repl'       =   if @lhs.doDeepSubst && @isRepl then @replv else CExpr_CoeArg
+                inst        .   repl'       =   if @lhs.doDeepSubst && @isRepl then @replv else cStopSubst
 %%]
 
 %%[(8 codegen)

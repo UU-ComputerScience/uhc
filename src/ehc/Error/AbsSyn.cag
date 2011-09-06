@@ -13,7 +13,7 @@
 
 %%[99
 DATA Err
-  | *               	range      : Range
+  | *                   range      : Range
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -170,7 +170,7 @@ DATA Err
 %%][99
   | AmbigPreds          preds      : {[(Pred,[Range])]}
 %%]]
-                        inQBinds   : {AssocL HsName PP_Doc}	-- quantified
+                        inQBinds   : {AssocL HsName PP_Doc} -- quantified
                         inBinds    : {AssocL HsName PP_Doc} -- unquantified
   | OverlapPreds        overl      : {AssocL Pred [PP_Doc]}
   | TyHasFreeTVars      ty         : {Ty}
@@ -196,8 +196,8 @@ DATA Err
 
 %%[50
 DATA Err
-  | MayOnlyHaveNrMain   nrAllowed  : Int		-- 0 or 1, depending on option ehcOptDoLinking
-                        prevModNmL : {[HsName]}	-- possible previous modules in which main was defined
+  | MayOnlyHaveNrMain   nrAllowed  : Int        -- 0 or 1, depending on option ehcOptDoLinking
+                        prevModNmL : {[HsName]} -- possible previous modules in which main was defined
                         modNm      : HsName
   | MayNotHaveMain      modNm      : HsName
   | MustHaveMain
@@ -219,6 +219,12 @@ DATA Err
   | NoDerivForData      ty         : Ty
                         clNm       : HsName
                         reason     : String
+%%]
+
+%%[(93 hmtyinfer || hmtyast)
+DATA Err
+  | FusionBuildInverse  ty1        : {Ty}
+                        ty2        : {Ty}
 %%]
 
 %%[99

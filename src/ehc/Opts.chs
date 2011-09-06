@@ -48,6 +48,9 @@
 %%[8 import({%{EH}Base.FileSearchLocation}) export(module {%{EH}Base.FileSearchLocation})
 %%]
 
+%%[(93 hmtyinfer) import({%{EH}Error})
+%%]
+
 %%[99 import(qualified {%{EH}ConfigInstall} as Cfg)
 %%]
 
@@ -773,6 +776,9 @@ data FIOpts =  FIOpts   {  fioLeaveRInst     ::  !Bool                ,  fioBind
 %%[[40
                         ,  fioAllowEqOpen    ::  !Bool                ,  fioInstCoConst          ::  !HowToInst
 %%]]
+%%[[(93 hmtyinfer)
+      					,  fiMbMkErrClash    ::  Maybe (Ty -> Ty -> Err) -- alternate error construction for type clash
+%%]]
                         }
 %%]
 
@@ -814,6 +820,9 @@ strongFIOpts =  FIOpts  {  fioLeaveRInst     =   False               ,  fioBindR
 %%]]
 %%[[40
                         ,  fioAllowEqOpen    =   False               ,  fioInstCoConst          =   instCoConst
+%%]]
+%%[[(93 hmtyinfer)
+      					,  fiMbMkErrClash    =   Nothing
 %%]]
                         }
 %%]

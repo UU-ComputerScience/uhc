@@ -514,6 +514,17 @@ SEM Err
 %%]]
 %%]
 
+%%[(93 hmtyinfer || hmtyast)
+SEM Err
+  | FusionBuildInverse  lhs     .  pp   =   ppMsgErr    ("Fusion build/unbuild pair are not each others type level inverse")
+                                                        (    "type 1        :" >#< @ty1
+                                                         >-< "type 2 inverse:" >#< @ty2
+                                                        )
+%%[[99
+                                                        @range
+%%]]
+%%]
+
 %%[99
 SEM Err
   | InconsistentHI      lhs     .  pp   =   ppMsgErr    (".hi file cannot be used with this compiler")

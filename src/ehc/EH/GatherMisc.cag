@@ -16,3 +16,26 @@ SEM Decl
   | Class       lhs         .   gathHiddenExports   =   Seq.fromList [ (dflt,IdOcc_Val) | (_,dflt) <- @generDerivs ]
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Gathering LamInfo relevant to any subsequent code generation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AGItf Expr AllDecl [ | | gathLamMp USE {`lamMpUnionBindAspMp`} {Map.empty}: LamMp ]
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Gathering Fusion related LamInfo (probably better in separate file)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(93 codegen)
+SEM Decl
+  | FusionDecl  lhs         .   gathLamMp           =   Map.singleton
+                                                            @fuseNm
+                                                            (emptyLamInfo {laminfoBindAspMp = Map.singleton acbaspkeyFusionRole (LamInfoBindAsp_FusionRole FusionRole_Fuse)})
+  | FusionConv  lhs         .   gathLamMp           =   Map.fromList
+                                                            [ ( @conNm, emptyLamInfo {laminfoBindAspMp = Map.singleton acbaspkeyFusionRole (LamInfoBindAsp_FusionRole FusionRole_BuildLeft)} )
+                                                            , ( @absNm, emptyLamInfo {laminfoBindAspMp = Map.singleton acbaspkeyFusionRole (LamInfoBindAsp_FusionRole FusionRole_BuildRight)} )
+                                                            ]
+%%]

@@ -83,12 +83,12 @@ SEM Expr
 
 %%[(4 hmtyinfer)
 SEM Expr
-  | Let  		loc			.	occCycTyErrs		=	rngLift @range varmpOccurErr @tyVarMpDeclsL0 $ @cycTyVarMp_l {- `varmpUnion` @cycTyVarMp_g -}
+  | Let         loc         .   occCycTyErrs        =   rngLift @range varmpOccurErr @tyVarMpDeclsL0 $ @cycTyVarMp_l {- `varmpUnion` @cycTyVarMp_g -}
 %%]
 
 %%[(5 hmtyinfer).Expr.TypeAs.cycVarMp
 SEM Expr
-  | TypeAs		loc			.	occCycTyErrs		=	rngLift @range varmpOccurErr @lhs.tyVarMp @cycVarMp
+  | TypeAs      loc         .   occCycTyErrs        =   rngLift @range varmpOccurErr @lhs.tyVarMp @cycVarMp
 %%]
 
 %%[(99 hmtyinfer) -5.Expr.TypeAs.cycVarMp
@@ -96,7 +96,7 @@ SEM Expr
 
 %%[(6 hmtyinfer)
 SEM Expr
-  | Let  		loc			.	occCycTyKiErrs		=	rngLift @range varmpOccurErr @decls.kiVarMp $ @cycTyKiVarMp_l {- `varmpUnion` @cycTyKiVarMp_g -}
+  | Let         loc         .   occCycTyKiErrs      =   rngLift @range varmpOccurErr @decls.kiVarMp $ @cycTyKiVarMp_l {- `varmpUnion` @cycTyKiVarMp_g -}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -220,3 +220,15 @@ SEM Decl
                                                                   -> mke "has >1 constructors, of which >0 with fields"
                                                               _ -> []
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Fusion
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(93 hmtyinfer)
+SEM Decl
+  | FusionConv          loc .   foBuildInverse      =   let opts = unifyFIOpts { fiMbMkErrClash = Just $ rngLift @range Err_FusionBuildInverse }
+                                                        in  fitsIn opts @fe @lUniq_buildInverse @lhs.finTyVarMp @finConTy (tyArrowInverse @finAbsTy)
+                        loc .   lUniq_buildInverse  :   UNIQUEREF gUniq
+%%]
+

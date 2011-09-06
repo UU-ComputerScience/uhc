@@ -397,7 +397,13 @@ fitsInFI fi ty1 ty2
             -- errors
             err  fi e               =  trfo "err" (ppErrL e)
                                        $ emptyFO {foUniq = fioUniq (fiFIOpts fi), foErrL = e, foTrace = fiTrace fi}
-            errClash fiErr t1 t2    =  err fiErr [rngLift range Err_UnifyClash (fiAppVarMp fiErr ty1) (fiAppVarMp fiErr ty2) (fioMode (fiFIOpts fi)) (fiAppVarMp fiErr t1) (fiAppVarMp fiErr t2) (fioMode (fiFIOpts fiErr))]
+%%[[4
+            errClash fiErr t1 t2    =  dflt
+%%][93
+            errClash fiErr t1 t2    =  maybe dflt (\mk -> err fiErr [mk ty1 ty2]) $ fiMbMkErrClash $ fiFIOpts fiErr
+%%]]
+                                    where dflt = err fiErr [rngLift range Err_UnifyClash (fiAppVarMp fiErr ty1) (fiAppVarMp fiErr ty2) (fioMode (fiFIOpts fi)) (fiAppVarMp fiErr t1) (fiAppVarMp fiErr t2) (fioMode (fiFIOpts fiErr))]
+
 
             -- binding
             occurBind fi isLBind v t=  bind fi isLBind v t

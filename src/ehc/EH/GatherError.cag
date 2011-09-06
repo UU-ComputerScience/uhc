@@ -418,6 +418,11 @@ SEM Decl
   | FFI			lhs         .   errSq        =  rngLift @range mkNestErr' @pp [foErrSq @foFFI]
 %%]
 
+%%[(93 hmtyinfer)
+SEM Decl
+  | FusionConv	lhs         .   errSq        =  rngLift @range mkNestErr' @pp [foErrSq @foBuildInverse]
+%%]
+
 %%[40
 SEM DataConstr
   | Constr      lhs         .   errSq       :=  rngLift @range mkNestErr' @pp [@fields.errSq, @eqs.errSq, foErrSq @fo_]
