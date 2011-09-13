@@ -47,7 +47,8 @@
 
 // #ifdef __UHC_TARGET_BC__
 // For now, switch off Boehm GC, turn on own GC
-#undef USE_BOEHM_GC
+// 20110913: turned off in ./configure
+// #undef USE_BOEHM_GC
 #define USE_EHC_MM				1
 
 // internal MM admin uses structs with functions, which will be bypassed (for speed) with MM_BYPASS_PLAN on
