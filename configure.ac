@@ -902,8 +902,8 @@ AC_SUBST(GMP_ABI,$gmpABI)
 
 ### general configuration
 
-# Use Boehm's GC
-AC_DEFINE([USE_BOEHM_GC],[1],[Use Boehm's garbage collector])
+# Use Boehm's GC, turned off, if ever turned on again, please inspect dependencies on this and following GC related flags
+AC_DEFINE([USE_BOEHM_GC],[0],[Use Boehm's garbage collector])
 
 # BGC needs additional flags sometimes
 case $HostPlatform in
@@ -916,7 +916,9 @@ case $HostPlatform in
         ;;
 esac
 
-AC_SUBST(EXTLIBS_BGC_OPTS,$extlibsOptionsBGC)
+# remove comment if BGC is to be included, all is configured to use the builtin GC, named MM
+# AC_SUBST(EXTLIBS_BGC_OPTS,$extlibsOptionsBGC)
+AC_SUBST(GCLIB,mm)
 
 # which MP library
 AC_ARG_WITH(mplib,

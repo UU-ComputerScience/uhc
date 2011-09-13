@@ -112,6 +112,10 @@ EHC_CFG_TARGET_IS_llvm					:= $(filter llvm,$(EHC_VARIANT_TARGET))
 # which MP lib
 EHC_CFG_MPLIB							:= @MPLIB@
 
+# which GC lib
+# NOTE: this is globally turned off, but for reasons of consistency/symmetry still here
+EHC_CFG_GCLIB							:= @GCLIB@
+
 # whether LTM sources should be included in rts
 ifeq (@MPLIB@,ltm)
 EHC_CFG_USE_LTM							:= $(filter $(EHC_VARIANT),$(EHC_LTM_VARIANTS))

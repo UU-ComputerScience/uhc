@@ -67,7 +67,9 @@ include $(SRC_PREFIX)ehc/files1.mk
 -include $(SRC_EXPERIMENTS_PREFIX)subst/files.mk
 
 include extlibs/files.mk
+ifeq ($(EHC_CFG_GMPLIB),gmp)
 include $(EXTLIBS_PREFIX)bgc/files.mk
+endif
 ifeq ($(EHC_CFG_MPLIB),gmp)
 include $(EXTLIBS_PREFIX)gmp/files.mk
 endif
@@ -307,10 +309,11 @@ clean:
 	$(MAKE) ruler-clean
 	$(MAKE) shuffle-clean
 	$(MAKE) libutil-clean
-	@echo "NOTE: all but external libraries (gmp, ...) is cleaned. Use 'make clean-extlibs' for cleaning those."
+
+#	@echo "NOTE: all but external libraries (gmp, ...) is cleaned. Use 'make clean-extlibs' for cleaning those."
 
 clean-extlibs:
-	$(MAKE) bgc-clean
+	#$(MAKE) bgc-clean
 	#$(MAKE) gmp-clean
 
 ###########################################################################################

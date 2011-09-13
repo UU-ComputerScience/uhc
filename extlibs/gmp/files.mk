@@ -1,3 +1,5 @@
+# 20110913 NOTE: dependency on this lib has been removed, latest version used was 4.2.1
+
 # location of GMP's src
 SRC_EXTLIBS_GMP_PREFIX					:= $(TOP_PREFIX)extlibs/gmp/
 SRCABS_EXTLIBS_GMP_PREFIX				:= $(TOPABS2_PREFIX)extlibs/gmp/
@@ -14,11 +16,11 @@ EXTLIBS_GMP_NAME						:= $(shell echo $(EXTLIBS_GMP_ARCHIVE) | sed -n -e 's/.*\(
 EXTLIBS_GMP_INSTALL_FLAG				:= $(call FUN_INSTALLABS_FLAG_PREFIX,$(EHC_VARIANT_ASPECTS))$(EXTLIBS_GMP_PKG_NAME)
 
 # options for C compiler
-EHC_GCC_LD_OPTS							+= -l$(EXTLIBS_GMP_PKG_NAME)
+#EHC_GCC_LD_OPTS							+= -l$(EXTLIBS_GMP_PKG_NAME)
 
 # dependencies for rts
 #EHC_RTS_INSTALLFORBLD_DPDS_EXTLIBS		+= $(if $(findstring $(EHC_VARIANT),$(EHC_GMP_VARIANTS)),$(EXTLIBS_GMP_INSTALLFORBLD_FLAG),)
-EHC_RTS_INSTALL_DPDS_EXTLIBS			+= $(if $(EHC_CFG_USE_GMP),$(EXTLIBS_GMP_INSTALL_FLAG),)
+#EHC_RTS_INSTALL_DPDS_EXTLIBS			+= $(if $(EHC_CFG_USE_GMP),$(EXTLIBS_GMP_INSTALL_FLAG),)
 
 # building location
 BLDABS_EXTLIBS_GMP_PREFIX				:= $(BLDABS_PREFIX)gmp/
