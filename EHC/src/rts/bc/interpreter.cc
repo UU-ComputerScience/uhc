@@ -120,7 +120,7 @@ int gb_ThrownException_NrOfEvalWrappers ;
 
 %%[8
 #if TRACE || DUMP_INTERNALS
-GB_Ptr gb_allocated_lowest_ptr = (GB_Ptr)(-1) , gb_allocated_highest_ptr = (GB_Ptr)(0) ;
+GB_Ptr gb_allocated_lowest_ptr = (GB_Ptr)(-1L) , gb_allocated_highest_ptr = (GB_Ptr)(0) ;
 
 GB_Ptr gb_HeapAlloc_Bytes_Traced( GB_Word nBytes )
 {
