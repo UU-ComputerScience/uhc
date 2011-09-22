@@ -27,19 +27,23 @@ import Text.Parser.Common
 
 data Plugin
   = Plugin
-      { plgParseTextItems 	:: Maybe (T2TPr (Seq.Seq TextItem))		-- parse text items
-      , plgScanOptsMp 		:: ScanOptsMp							-- scanner configuration
-      , plgScanInitState	:: ScState								-- initial scanning state
-      , plgToOutDoc			:: Maybe (Opts -> AGItf -> OutDoc)		-- generate output for format
+      { plgHasParserTextItems 	:: Bool									-- has a parser (Maybe cannot be used because parser type cannot be type parameter in recent GHC versions (>=7))
+      , plgParseTextItems 		:: Maybe (T2TPr (Seq.Seq TextItem))		-- parse text items
+      , plgParseTextItems2 		:: T2TPr ( (Seq.Seq TextItem))		-- parse text items
+      , plgScanOptsMp 			:: ScanOptsMp							-- scanner configuration
+      , plgScanInitState		:: ScState								-- initial scanning state
+      , plgToOutDoc				:: Maybe (Opts -> AGItf -> OutDoc)		-- generate output for format
       }
 
 defaultPlugin :: Plugin
 defaultPlugin
   = Plugin
-      { plgParseTextItems 	= Nothing
-      , plgScanOptsMp 		= Map.empty
-      , plgScanInitState	= defaultScState
-      , plgToOutDoc			= Nothing
+      { plgHasParserTextItems 	= False
+      , plgParseTextItems 		= Nothing
+      , plgParseTextItems2 		= pSucceed Seq.empty
+      , plgScanOptsMp 			= Map.empty
+      , plgScanInitState		= defaultScState
+      , plgToOutDoc				= Nothing
       }
 
 type PluginMp = Map.Map TextType Plugin
