@@ -86,7 +86,8 @@ pluginMp
   = Map.fromList
       [ ( TextType_DocLaTeX
         , defaultPlugin
-            { plgParseTextItems 	= Just P_DocLaTeX.pItf
+            { plgHasParserTextItems = True
+            , plgParseTextItems2 	= P_DocLaTeX.pItf
             , plgScanOptsMp 		= P_DocLaTeX.doclatexScanOptsMp
             , plgScanInitState		= defaultScState { scstateType = ScTpContent TextType_DocLaTeX }
             , plgToOutDoc			= Just O_DocLaTeX.textToOutDoc
