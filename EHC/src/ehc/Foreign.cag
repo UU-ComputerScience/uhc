@@ -149,7 +149,7 @@ instance Serialize ForeignExpr where
   sput (ForeignExpr_CallArgs a b) = sputWord8 7 >> sput a >> sput b
   sput (ForeignExpr_AllArg      ) = sputWord8 8
   sput (ForeignExpr_Str      a  ) = sputWord8 9 >> sput a
-  sput (ForeignExpr_AllArg      ) = sputWord8 10
+  sput (ForeignExpr_NArg        ) = sputWord8 10
   sget = do
     t <- sgetWord8
     case t of
