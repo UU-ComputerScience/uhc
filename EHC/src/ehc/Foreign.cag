@@ -99,6 +99,9 @@ foreignexprEval
         ev (ForeignExpr_AllArg ) ie =   let
                                         in  OE ( ieArgs ie )
                                                ( Set.empty )
+        ev (ForeignExpr_NArg   ) ie =   let
+                                        in  OE ( ieArgs ie ) -- TODO: Double-check this implementation
+                                               ( Set.empty )
         ev (ForeignExpr_Sel e s) ie =   let eo = ev e ie
                                             so = ev s ie
                                         in  mkOE ( mkSel (oeE eo) (oeE so) )
@@ -132,7 +135,7 @@ data ForeignDirection
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Instances
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[90 hs
 instance Serialize ForeignExpr where
@@ -146,19 +149,22 @@ instance Serialize ForeignExpr where
   sput (ForeignExpr_CallArgs a b) = sputWord8 7 >> sput a >> sput b
   sput (ForeignExpr_AllArg      ) = sputWord8 8
   sput (ForeignExpr_Str      a  ) = sputWord8 9 >> sput a
+  sput (ForeignExpr_AllArg      ) = sputWord8 10
   sget = do
     t <- sgetWord8
     case t of
-        0 -> return ForeignExpr_Ent
-        1 -> liftM  ForeignExpr_EntNm       sget
-        2 -> liftM  ForeignExpr_Arg         sget
-        3 -> liftM2 ForeignExpr_Sel         sget sget
-        4 -> liftM2 ForeignExpr_Inx         sget sget
-        5 -> liftM  ForeignExpr_Ptr         sget
-        6 -> liftM  ForeignExpr_Call        sget
-        7 -> liftM2 ForeignExpr_CallArgs    sget sget
-        8 -> return ForeignExpr_AllArg
-        9 -> liftM  ForeignExpr_Str         sget
+        0  -> return ForeignExpr_Ent
+        1  -> liftM  ForeignExpr_EntNm       sget
+        2  -> liftM  ForeignExpr_Arg         sget
+        3  -> liftM2 ForeignExpr_Sel         sget sget
+        4  -> liftM2 ForeignExpr_Inx         sget sget
+        5  -> liftM  ForeignExpr_Ptr         sget
+        6  -> liftM  ForeignExpr_Call        sget
+        7  -> liftM2 ForeignExpr_CallArgs    sget sget
+        8  -> return ForeignExpr_AllArg
+        9  -> liftM  ForeignExpr_Str         sget
+        10 -> return ForeignExpr_NArg
+
 
 instance Serialize ForeignEnt where
   sput (ForeignEnt_CCall        a) = sputWord8 0 >> sput a
