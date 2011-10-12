@@ -558,9 +558,9 @@ SEM CExpr
                                                                                     ]
                                                                     else x
                                                                   where m l = hlist $ intersperse (pp "+") l
-								  	s :: Show a => a -> PP_Doc
+                                                                        s :: Show a => a -> PP_Doc
                                                                         s x = pp (show x)
-									s' :: Show a => a -> PP_Doc
+                                                                        s' :: Show a => a -> PP_Doc
                                                                         s' x = pp (show $ show x)
                                                                         p x = pp x
                                                                         n p x = p ++ show x
@@ -572,7 +572,7 @@ SEM CExpr
 %%[(8 jscript) hs
 -- | construct the ffi call
 ffiJScriptMkCall
-  :: ForeignExtraction 
+  :: ForeignExtraction
      -> EHCOpts
      -> Bool                        -- do eval of args
      -> [Maybe HsName]              -- list of (possibly) type constructor names of arguments
@@ -618,7 +618,7 @@ ffiJScriptMkCall
 %%[[90
           where mbArgThis@(~(Just nr)) = forextractMbThisArgNr ent
                 this = as !! inx
-                inx = nr-1 
+                inx = nr-1
                 as' = take inx as ++ drop nr as
 %%]]
 %%[[8
@@ -678,8 +678,3 @@ SEM CModule
                 loc         .   jsModTraceStats =   []
 %%]]
 %%]
-
-
-
-
-
