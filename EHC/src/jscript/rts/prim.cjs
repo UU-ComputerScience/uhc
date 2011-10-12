@@ -77,13 +77,13 @@ primCmpInteger = function(x,y) {var c=x.compareTo(y) ; return ( (c>0) ? PrimData
 primQuotRemInteger = function(x,y) {var q = nbi() ; var r = nbi() ; x.divRemTo(y,q,r) ; return [q,r] ;}
 
 primDivInteger = function(  v1,  v2 ) {
-	var r = v1.divide(v2) ;
-	if ( r.signum() < 0 )
-		return r.subtract( BigInteger.ONE ) ;
-	return r ;
+  var r = v1.divide(v2) ;
+  if ( r.signum() < 0 )
+    return r.subtract( BigInteger.ONE ) ;
+  return r ;
 }
 primModInteger = function(  v1,  v2 ) {
-	return ( v2.signum() < 0 ? v1.mod(v2.negate()).add(v2) : v1.mod(v2) ) ;
+  return ( v2.signum() < 0 ? v1.mod(v2.negate()).add(v2) : v1.mod(v2) ) ;
 }
 primDivModInteger = function(x,y) {return [primDivInteger (x,y), primModInteger(x,y)] ;}
 
@@ -151,14 +151,14 @@ primPackedStringTail = function(x) { return x.slice(1) ; }
 // primPackedStringToInteger = function(x) { return parseInt(x) ; }
 primPackedStringToInteger = function(x) { return new BigInteger(x,10) ; }
 primStringToPackedString = function(l) {
-	var pos = 0 ;
-	var a = new Array() ;
-	while (l._tag_ != PrimDataList_Nil._tag_) {
-		a[pos] = _e_(l._1) ;
-		++pos ;
-		l = _e_(l._2) ;
-	}
-	return String.fromCharCode.apply(null,a) ;
+  var pos = 0 ;
+  var a = new Array() ;
+  while (l._tag_ != PrimDataList_Nil._tag_) {
+    a[pos] = _e_(l._1) ;
+    ++pos ;
+    l = _e_(l._2) ;
+  }
+  return String.fromCharCode.apply(null,a) ;
 }
 %%]
 
@@ -166,11 +166,11 @@ Array
 
 %%[8
 primNewArray = function(len,x) {
-	var a = new Array() ;
-	for (var i = 0 ; i < len ; i++ ) {
-		a[i] = x ;
-	}
-	return a ;
+  var a = new Array() ;
+  for (var i = 0 ; i < len ; i++ ) {
+    a[i] = x ;
+  }
+  return a ;
 }
 primIndexArray = function(a,i) { return a[i] ; }
 primWriteArray = function(a,i,x) { a[i] = x ; return [] ; }
@@ -203,48 +203,48 @@ primShowFloatToPackedString = primShowDoubleToPackedString ;
 %%[8
 // decode a double for a radix b, into (non fractional) Integer and exponent
 function decodeFloat(d,b,logb) {
-	var sign = 1 ;
-	if ( d < 0 ) {
-		sign = -1 ;
-		d = -d ;
-	}
-	if ( d == 0 ) {
-		return [primIntToInteger(d),0] ;
-	}
-	var m = Math.floor(d) ;
-	var r = d - m ;
-	var e = 0 ;
-	if ( r > 0 ) {
-		// scale up until no fractional part remains
-		var d2 = d ;
-		do {
-			d = d * b ;
-			e = e - logb ;
-			m = Math.floor(d) ;
-			r = d - m ;
-		} while ( r > 0 ) ;
-		// d = primIntToInteger(sign * d2).shiftLeft(logb).add( primIntToInteger(sign * r * b) ) ;
-		d = primIntToInteger(d) ;
-	} else {
-		// scale down until a fractional part arises
-		var d2, e2 ;
-		do {
-			d2 = d ;
-			e2 = e ;
-			d = d / b ;
-			e = e + logb ;
-			m = Math.floor(d) ;
-			r = d - m ;
-		} while ( r == 0 )
-		d = primIntToInteger(d2) ;
-		e = e2 ;
-	}
-	var shift = 53 - d.bitLength() ;
-	if ( shift ) {
-		d = d.shiftLeft(shift) ;
-		e = e - shift ;
-	}
-	return [sign < 0 ? d.negate() : d, e] ;
+  var sign = 1 ;
+  if ( d < 0 ) {
+    sign = -1 ;
+    d = -d ;
+  }
+  if ( d == 0 ) {
+    return [primIntToInteger(d),0] ;
+  }
+  var m = Math.floor(d) ;
+  var r = d - m ;
+  var e = 0 ;
+  if ( r > 0 ) {
+    // scale up until no fractional part remains
+    var d2 = d ;
+    do {
+      d = d * b ;
+      e = e - logb ;
+      m = Math.floor(d) ;
+      r = d - m ;
+    } while ( r > 0 ) ;
+    // d = primIntToInteger(sign * d2).shiftLeft(logb).add( primIntToInteger(sign * r * b) ) ;
+    d = primIntToInteger(d) ;
+  } else {
+    // scale down until a fractional part arises
+    var d2, e2 ;
+    do {
+      d2 = d ;
+      e2 = e ;
+      d = d / b ;
+      e = e + logb ;
+      m = Math.floor(d) ;
+      r = d - m ;
+    } while ( r == 0 )
+    d = primIntToInteger(d2) ;
+    e = e2 ;
+  }
+  var shift = 53 - d.bitLength() ;
+  if ( shift ) {
+    d = d.shiftLeft(shift) ;
+    e = e - shift ;
+  }
+  return [sign < 0 ? d.negate() : d, e] ;
 }
 
 primDecodeDouble        = function(d) { var x = decodeFloat(d,2,1) ; return x ; }
@@ -266,19 +266,19 @@ primMinExpDouble         = function() { return -1021 ; }
 %%[8
 _MutVar_id_ = 0 ;
 _MutVar_.prototype = {
-	// identity, a global variable for all MutVar's, used for checking identity equality because this is not offered by javascript
-	_id_ : 0
+  // identity, a global variable for all MutVar's, used for checking identity equality because this is not offered by javascript
+  _id_ : 0
 }
 function _MutVar_(a) {
-	this._val_ = a ;
-	this._id_ = ++_MutVar_id_ ;
-	// this should be the _id_ of the proto, but I do something wrong:
-	// this._id_ = ++this.prototype._id_ ;
+  this._val_ = a ;
+  this._id_ = ++_MutVar_id_ ;
+  // this should be the _id_ of the proto, but I do something wrong:
+  // this._id_ = ++this.prototype._id_ ;
 }
-primNewMutVar 	= function(a,s) 	{return [s,new _MutVar_(a)];}
-primReadMutVar 	= function(m,s) 	{return [s,m._val_];}
-primWriteMutVar = function(m,a,s) 	{m._val_ = a; return s;}
-primSameMutVar 	= function(m1,m2) 	{return PrimMkBool(m1._id_ === m2._id_);}
+primNewMutVar   = function(a,s)   {return [s,new _MutVar_(a)];}
+primReadMutVar   = function(m,s)   {return [s,m._val_];}
+primWriteMutVar = function(m,a,s)   {m._val_ = a; return s;}
+primSameMutVar   = function(m1,m2)   {return PrimMkBool(m1._id_ === m2._id_);}
 %%]
 
 %%[8
@@ -295,3 +295,49 @@ primHPutChar = function(h,c) {
 }
 %%]
 
+
+%%[8
+// Primitive functions for dealing with JS objects
+
+// primMkCtor :: String -> ()
+function primMkCtor(nm) {
+  if (typeof(document[nm]) !== 'function') {
+    document[nm] = new Function();
+  }
+}
+
+// primMkAnonObj :: JSPtr c
+primMkAnonObj = function() { return {} }
+
+// primMkObj :: String -> JSPtr c
+primMkObj     = function(nm) { primMkCtor(nm); return new document[nm]; }
+
+// primGetAttr :: String -> JSPtr c -> a
+primGetAttr   = function(attr, obj) { return obj[attr]; }
+
+// primSetAttr :: String -> a -> JSPtr c -> JSPtr c
+primSetAttr   = function(attr, val, obj) { obj[attr] = val; return obj; }
+
+// primModAttr :: String -> (a -> b) -> JSPtr c -> JSPtr c
+primModAttr   = function (attr, f, obj) {
+  primSetAttr(attr, _e_(new _A_(f, [primGetAttr(attr, obj)])), obj);
+  return obj;
+}
+
+// primGetProtoAttr :: String -> String -> a
+primGetProtoAttr = function (attr, cls) {
+  mkCtor(cls);
+  return document[cls].prototype[attr];
+}
+
+// primSetProtoAttr :: String -> a -> String -> ()
+primSetProtoAttr = function (attr, val, cls) {
+  mkCtor(cls);
+  document[cls].prototype[attr] = val;
+}
+
+// primModProtoAttr :: String -> (a -> b) -> String -> ()
+primModProtoAttr = function (attr, f, cls) {
+  primSetProtoAttr(attr, _e_(new _A_(f, [primGetProtoAttr(attr, cls)])), cls);
+}
+%%]
