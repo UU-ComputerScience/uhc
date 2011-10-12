@@ -97,7 +97,9 @@ hsnJScriptVar :: Bool -> HsName -> HsName -> HsName -> HsName
 %%[[8
 hsnJScriptVar isGlobal = hsnJavaLikeVar (id, id, id)
 %%][50
-hsnJScriptVar isGlobal = hsnJavaLikeVar (if isGlobal then id else hsnQualified, hsnPrefix "$", ('$':))
+hsnJScriptVar isGlobal = hsnJavaLikeVar (hsn, hsnPrefix "$", ('$':))
+  where hsn | isGlobal  = id
+            | otherwise = hsnQualified
 %%]]
 %%]
 
