@@ -300,7 +300,7 @@ primHPutChar = function(h,c) {
 // Primitive functions for dealing with JS objects
 
 // primMkCtor :: String -> ()
-function primMkCtor(nm) {
+primMkCtor = function(nm) {
   if (typeof(document[nm]) !== 'function') {
     document[nm] = new Function();
   }
@@ -325,19 +325,19 @@ primModAttr   = function (attr, f, obj) {
 }
 
 // primGetProtoAttr :: String -> String -> a
-primGetProtoAttr = function (attr, cls) {
-  mkCtor(cls);
+primGetProtoAttr = function(attr, cls) {
+  primMkCtor(cls);
   return document[cls].prototype[attr];
 }
 
 // primSetProtoAttr :: String -> a -> String -> ()
-primSetProtoAttr = function (attr, val, cls) {
-  mkCtor(cls);
+primSetProtoAttr = function(attr, val, cls) {
+  primMkCtor(cls);
   document[cls].prototype[attr] = val;
 }
 
 // primModProtoAttr :: String -> (a -> b) -> String -> ()
-primModProtoAttr = function (attr, f, cls) {
+primModProtoAttr = function(attr, f, cls) {
   primSetProtoAttr(attr, _e_(new _A_(f, [primGetProtoAttr(attr, cls)])), cls);
 }
 %%]
