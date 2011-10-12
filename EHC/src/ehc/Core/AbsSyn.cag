@@ -132,7 +132,7 @@ DATA CExpr
 %%]
 
 %%[(8 codegen)
-TYPE MbCExpr	= MAYBE CExpr
+TYPE MbCExpr  = MAYBE CExpr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -140,26 +140,26 @@ TYPE MbCExpr	= MAYBE CExpr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen)
-TYPE CMetas 	= (CMetaBind,CMetaVal)
+TYPE CMetas   = (CMetaBind,CMetaVal)
 
 DATA CMetaBind
-  | Plain		-- by default a binding is Plain
+  | Plain    -- by default a binding is Plain
   | Function0   -- special case of Plain, indicating it is a nullary function on top level (that is, the RHS is the computational part for a CAF)
   | Function1   -- special case of Plain, indicating it is a non-nullary function on top level (that is, the RHS is a lambda)
-  | Apply0	    -- special case of Plain, indicating it is an apply of a Function0 (intended to implement lazy behaviour for a CAF)
+  | Apply0      -- special case of Plain, indicating it is an apply of a Function0 (intended to implement lazy behaviour for a CAF)
 
 DATA CMetaVal
   | Val
 %%[[9
   | Dict
-  | DictClass     tracks:  {[Track]}
-  | DictInstance  tracks:  {[Track]}
-  | Track         track:  {Track}
+  | DictClass     tracks : {[Track]}
+  | DictInstance  tracks : {[Track]}
+  | Track         track  : {Track}
 %%]]
 
-SET AllMetaVal	= CMetaVal CMetas
+SET AllMetaVal  = CMetaVal CMetas
 SET AllMetaBind = CMetaBind CMetas
-SET AllMeta		= CMetaVal CMetaBind CMetas
+SET AllMeta     = CMetaVal CMetaBind CMetas
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -176,22 +176,22 @@ DATA CExpr
 %%[(8 codegen)
 -- | ann for CExpr
 DATA CExprAnn
-  | Ty			ty				: {Ty}
-  | Coe			coe				: {RelevCoe}
-  | Debug		info			: {String}
+  | Ty       ty         : {Ty}
+  | Coe      coe        : {RelevCoe}
+  | Debug    info       : {String}
 
 -- | ann for name intro
 DATA CBindAnn
-  | Coe			coe				: {RelevCoe}
+  | Coe      coe        : {RelevCoe}
 %%]
 
 %%[(8 codegen)
-TYPE CBindAnnL	= [CBindAnn]
+TYPE CBindAnnL  = [CBindAnn]
 %%]
 
 %%[(8 codegen)
-SET AllExprAnn	= CExprAnn
-SET AllBindAnn	= CBindAnn CBindAnnL
+SET AllExprAnn  = CExprAnn
+SET AllBindAnn  = CBindAnn CBindAnnL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -207,23 +207,23 @@ DATA CBindAspect
   -- default: binding used when (1) no specialized version is available, (2) the one passed higher order
   | Bind        bindMeta        : CMetas
                 expr            : CExpr
-  
+
   -- a (keyed) CMetas
-  | Meta		aspectKeyS		: {ACoreBindAspectKeyS}
-  				cmetas			: CMetas
-  
+  | Meta        aspectKeyS      : {ACoreBindAspectKeyS}
+                cmetas          : CMetas
+
   -- a (keyed) RelevTy
-  | RelevTy		aspectKeyS		: {ACoreBindAspectKeyS}
-  				relevTy			: {RelevTy}
-  
+  | RelevTy     aspectKeyS      : {ACoreBindAspectKeyS}
+                relevTy         : {RelevTy}
+
   -- a (keyed) CExpr
-  | Val		    aspectKeyS		: {ACoreBindAspectKeyS}
-  				expr 			: CExpr
-  
+  | Val         aspectKeyS      : {ACoreBindAspectKeyS}
+                expr            : CExpr
+
   -- a (keyed) Ty, of the binding, (1) either the default for Bind, or (2, not yet used) for a Val with the same aspectKeyS
-  | Ty		    aspectKeyS		: {ACoreBindAspectKeyS}
-  				ty 			 	: {Ty}
-  
+  | Ty          aspectKeyS      : {ACoreBindAspectKeyS}
+                ty              : {Ty}
+
 %%[[90
   -- FFE binding (not yet implemented for all backends)
   | FFE         callconv        : {FFIWay}
@@ -232,14 +232,14 @@ DATA CBindAspect
                 ty              : {Ty}
 %%]]
 
-TYPE CBindL     	=   [CBind]
-TYPE CBindAspectL	=	[CBindAspect]
+TYPE CBindL        =  [CBind]
+TYPE CBindAspectL  =  [CBindAspect]
 %%]
 
 %%[(8 codegen)
 SET AllBindAspect   =   CBindAspect CBindAspectL
-SET AllBindOnly 	=   CBind CBindL
-SET AllBind     	=   AllBindOnly AllBindAspect
+SET AllBindOnly     =   CBind CBindL
+SET AllBind         =   AllBindOnly AllBindAspect
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -249,50 +249,50 @@ SET AllBind     	=   AllBindOnly AllBindAspect
 -- overriding
 %%[(8889 codegen)
 DATA CBind
-  | Bind        nm              : {HsName}
-                bindAspects     : CBindAspectL
+  | Bind     nm           : {HsName}
+             bindAspects  : CBindAspectL
 
 DATA CExpr
-  | Var         nm              : {HsName}			-- reference to the Val of a CBindAspect
-  				aspectKeyS		: {ACoreBindAspectKeyS}
+  | Var      nm           : {HsName}      -- reference to the Val of a CBindAspect
+             aspectKeyS   : {ACoreBindAspectKeyS}
 %%]
 
 -- new
 %%[(8889 codegen)
 DATA CBindAspect
   -- the classical binding to a CExpr; transitional
-  | Bind		bindMeta        : CMetas
-                expr            : CExpr
-  
-  -- + FFI/FFE stuff
-  
-  -- binding to a runtime related value, keyed
-  | Val			aspectKeyS		: {ACoreBindAspectKeyS}
-  				encoding		: CValTy
-  				expr            : CExpr
-  
-  -- non-runtime binding info/annotation, keyed
-  | Meta		aspectKeyS		: {ACoreBindAspectKeyS}
-  				meta            : CMetas
+  | Bind     bindMeta     : CMetas
+             expr         : CExpr
 
-TYPE CBindAspectL	=	[CBindAspect]
+  -- + FFI/FFE stuff
+
+  -- binding to a runtime related value, keyed
+  | Val      aspectKeyS   : {ACoreBindAspectKeyS}
+             encoding     : CValTy
+             expr         : CExpr
+
+  -- non-runtime binding info/annotation, keyed
+  | Meta     aspectKeyS   : {ACoreBindAspectKeyS}
+             meta         : CMetas
+
+TYPE CBindAspectL  =  [CBindAspect]
 
 DATA CValTy
-  | Unknown											-- type yet to be determined, only for transition to this encoding
-  | Boxed		props			: {CValTyPropS}		-- boxed
-  				mbVal			: MbCValTy			-- perhaps we know more about the contents
-  | Fun			args			: CValTyLL			-- known calling convention, specifying arg/res arity/grouping, boxedness/evaluation
-  				res				: CValTyL
-  | Basic		basicannot		: {BasicAnnot}		-- unboxed (and evaluated), with additional annotation about its basic size & type
-  
-TYPE MbCValTy		=	MAYBE CValTy
-TYPE CValTyL		=	[CValTy ]
-TYPE CValTyLL		=	[CValTyL]
+  | Unknown                      -- type yet to be determined, only for transition to this encoding
+  | Boxed    props        : {CValTyPropS}    -- boxed
+             mbVal        : MbCValTy      -- perhaps we know more about the contents
+  | Fun      args         : CValTyLL      -- known calling convention, specifying arg/res arity/grouping, boxedness/evaluation
+             res          : CValTyL
+  | Basic    basicannot   : {BasicAnnot}    -- unboxed (and evaluated), with additional annotation about its basic size & type
+
+TYPE MbCValTy    =  MAYBE CValTy
+TYPE CValTyL     =  [CValTy ]
+TYPE CValTyLL    =  [CValTyL]
 
 DATA CValTyProp
   | Evaluated
 
-TYPE CValTyPropS	=	SET CValTyProp
+TYPE CValTyPropS  =  SET CValTyProp
 
 %%]
 
@@ -327,7 +327,7 @@ DATA CPatFld
   | Fld         lbl             : {HsName}
                 offset          : CExpr
                 fldNm           : {HsName}
-                fldAnns			: CBindAnnL
+                fldAnns         : CBindAnnL
 
 TYPE CPatFldL   =   [CPatFld]
 %%]
