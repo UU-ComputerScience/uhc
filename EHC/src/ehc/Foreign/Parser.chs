@@ -128,7 +128,6 @@ pForeignExpr
         pArg  = pPERCENT
                 <**> (   const ForeignExpr_AllArg               <$  pSTAR
                      <|> (\i _ -> ForeignExpr_Arg (tokMkInt i)) <$> pInteger10Tk
-                     <|> const ForeignExpr_NArg                 <$  (pOBRACK *> pSTAR <* pCBRACK)
                      )
               <|> pStr
         pEnt  = ForeignExpr_EntNm <$> pForeignVar

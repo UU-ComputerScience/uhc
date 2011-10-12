@@ -79,7 +79,6 @@ SEM ForeignExpr
   | EntNm     lhs    .  pp    =  pp @nm
   | Arg       lhs    .  pp    =  "%" >|< @nr
   | AllArg    lhs    .  pp    =  pp "%*"
-  | NArg      lhs    .  pp    =  pp "%[*]"
   | Sel       lhs    .  pp    =  @expr.pp >|< "." >|< @sel.pp
   | Inx       lhs    .  pp    =  @expr.pp >|< "[" >|< @inx.pp >|< "]"
   | Ptr       lhs    .  pp    =  "&" >|< @expr.pp

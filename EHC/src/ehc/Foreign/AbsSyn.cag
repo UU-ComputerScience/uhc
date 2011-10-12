@@ -91,7 +91,6 @@ DATA ForeignExpr
   | EntNm           nm              : String         -- explicitly named entity, overriding Ent
   | Arg             nr              : Int            -- an explicitly named arg, which will then not be passed as remaining arg
   | AllArg                                           -- all (remaining) args
-  | NArg                                             -- an arbitrary number of remaining arguments
   | Empty                                            -- nothing
   | Str             str             : String         -- string constant
 
