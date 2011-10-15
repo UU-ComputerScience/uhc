@@ -301,8 +301,8 @@ primHPutChar = function(h,c) {
 
 // primMkCtor :: String -> ()
 primMkCtor = function(nm) {
-  if (typeof(document[nm]) !== 'function') {
-    document[nm] = new Function();
+  if (typeof(window[nm]) !== 'function') {
+    window[nm] = new Function();
   }
 }
 
@@ -310,7 +310,7 @@ primMkCtor = function(nm) {
 primMkAnonObj = function() { return {} }
 
 // primMkObj :: String -> JSPtr c
-primMkObj     = function(nm) { primMkCtor(nm); return new document[nm]; }
+primMkObj     = function(nm) { primMkCtor(nm); return new window[nm]; }
 
 // primGetAttr :: String -> JSPtr c -> a
 primGetAttr   = function(attr, obj) { return obj[attr]; }
@@ -327,13 +327,13 @@ primModAttr   = function (attr, f, obj) {
 // primGetProtoAttr :: String -> String -> a
 primGetProtoAttr = function(attr, cls) {
   primMkCtor(cls);
-  return document[cls].prototype[attr];
+  return window[cls].prototype[attr];
 }
 
 // primSetProtoAttr :: String -> a -> String -> ()
 primSetProtoAttr = function(attr, val, cls) {
   primMkCtor(cls);
-  document[cls].prototype[attr] = val;
+  window[cls].prototype[attr] = val;
 }
 
 // primModProtoAttr :: String -> (a -> b) -> String -> ()
