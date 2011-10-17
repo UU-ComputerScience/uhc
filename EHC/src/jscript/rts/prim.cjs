@@ -302,7 +302,7 @@ primHPutChar = function(h,c) {
 // primMkCtor :: String -> ()
 primMkCtor = function(nm) {
   if (typeof(window[nm]) !== 'function') {
-    window[nm] = new Function();
+    primSetCtor(nm, new Function());
   }
 }
 
@@ -310,7 +310,13 @@ primMkCtor = function(nm) {
 primMkAnonObj = function() { return {} }
 
 // primMkObj :: String -> JSPtr c
-primMkObj     = function(nm) { primMkCtor(nm); return new window[nm]; }
+primMkObj     = function(nm) { primMkCtor(nm); return primGetCtor(nm); }
+
+// primGetCtor :: String -> IO (JSFunPtr c)
+primGetCtor   = function(nm) { return window[nm]; }
+
+// primSetCtor :: String -> JSFunPtr c -> IO ()
+primSetCtor   = function(nm, fn) { window[nm] = fn; }
 
 // primGetAttr :: String -> JSPtr c -> a
 primGetAttr   = function(attr, obj) { return obj[attr]; }
