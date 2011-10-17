@@ -310,10 +310,10 @@ primMkCtor = function(nm) {
 primMkAnonObj = function() { return {} }
 
 // primMkObj :: String -> JSPtr c
-primMkObj     = function(nm) { primMkCtor(nm); return primGetCtor(nm); }
+primMkObj     = function(nm) { return new primGetCtor(nm); }
 
 // primGetCtor :: String -> IO (JSFunPtr c)
-primGetCtor   = function(nm) { return window[nm]; }
+primGetCtor   = function(nm) { primMkCtor(nm); return window[nm]; }
 
 // primSetCtor :: String -> JSFunPtr c -> IO ()
 primSetCtor   = function(nm, fn) { window[nm] = fn; }
