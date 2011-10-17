@@ -299,11 +299,12 @@ primHPutChar = function(h,c) {
 %%[8
 // Primitive functions for dealing with JS objects
 
-// primMkCtor :: String -> ()
+// primMkCtor :: String -> IO (JSFunPtr c)
 primMkCtor = function(nm) {
   if (typeof(window[nm]) !== 'function') {
     primSetCtor(nm, new Function());
   }
+  return window[nm];
 }
 
 // primMkAnonObj :: JSPtr c
@@ -312,8 +313,8 @@ primMkAnonObj = function() { return {} }
 // primMkObj :: String -> JSPtr c
 primMkObj     = function(nm) { return new primGetCtor(nm); }
 
-// primGetCtor :: String -> IO (JSFunPtr c)
-primGetCtor   = function(nm) { primMkCtor(nm); return window[nm]; }
+// Alias to primMkCtor
+primGetCtor   = primMkCtor;
 
 // primSetCtor :: String -> JSFunPtr c -> IO ()
 primSetCtor   = function(nm, fn) { window[nm] = fn; }
