@@ -307,38 +307,38 @@ primMkCtor = function(nm) {
   return window[nm];
 }
 
-// primMkAnonObj :: JSPtr c
+// primMkAnonObj :: IO (JSPtr c)
 primMkAnonObj = function() { return {} }
 
-// primMkObj :: String -> JSPtr c
+// primMkObj :: JSString -> IO (JSPtr c)
 primMkObj     = function(nm) { return new primGetCtor(nm); }
 
 // Alias to primMkCtor
 primGetCtor   = primMkCtor;
 
-// primSetCtor :: String -> JSFunPtr c -> IO ()
+// primSetCtor :: JSString -> JSFunPtr c -> IO ()
 primSetCtor   = function(nm, fn) { window[nm] = fn; }
 
-// primGetAttr :: String -> JSPtr c -> a
+// primGetAttr :: JSString -> JSPtr c -> a
 primGetAttr   = function(attr, obj) { return obj[attr]; }
 
-// primSetAttr :: String -> a -> JSPtr c -> IO (JSPtr c)
+// primSetAttr :: JSString -> a -> JSPtr c -> IO (JSPtr c)
 primSetAttr   = function(attr, val, obj) { obj[attr] = val; return obj; }
 
-// primPureSetAttr :: String -> a -> JSPtr c -> JSPtr c
+// primPureSetAttr :: JSString -> a -> JSPtr c -> JSPtr c
 primPureSetAttr = function(attr, val, obj) {
   var clone = primClone(obj);
   primSetAttr(attr, val, clone);
   return clone;
 }
 
-// primModAttr :: String -> (a -> b) -> JSPtr c -> IO (JSPtr c)
+// primModAttr :: JSString -> (a -> b) -> JSPtr c -> IO (JSPtr c)
 primModAttr   = function (attr, f, obj) {
   primSetAttr(attr, _e_(new _A_(f, [primGetAttr(attr, obj)])), obj);
   return obj;
 }
 
-// primPureModAttr :: String -> (a -> b) -> JSPtr c -> JSPtr c
+// primPureModAttr :: JSString -> (a -> b) -> JSPtr c -> JSPtr c
 primPureModAttr   = function (attr, f, obj) {
   var clone = primClone(obj);
   primModAttr(attr, f, clone);
@@ -346,19 +346,19 @@ primPureModAttr   = function (attr, f, obj) {
 }
 
 
-// primGetProtoAttr :: String -> String -> a
+// primGetProtoAttr :: JSString -> JSString -> IO a
 primGetProtoAttr = function(attr, cls) {
   primMkCtor(cls);
   return window[cls].prototype[attr];
 }
 
-// primSetProtoAttr :: String -> a -> String -> ()
+// primSetProtoAttr :: JSString -> a -> JSString -> IO ()
 primSetProtoAttr = function(attr, val, cls) {
   primMkCtor(cls);
   window[cls].prototype[attr] = val;
 }
 
-// primModProtoAttr :: String -> (a -> b) -> String -> ()
+// primModProtoAttr :: JSString -> (a -> b) -> JSString -> IO ()
 primModProtoAttr = function(attr, f, cls) {
   primSetProtoAttr(attr, _e_(new _A_(f, [primGetProtoAttr(attr, cls)])), cls);
 }
