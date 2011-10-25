@@ -322,14 +322,29 @@ primSetCtor   = function(nm, fn) { window[nm] = fn; }
 // primGetAttr :: String -> JSPtr c -> a
 primGetAttr   = function(attr, obj) { return obj[attr]; }
 
-// primSetAttr :: String -> a -> JSPtr c -> JSPtr c
+// primSetAttr :: String -> a -> JSPtr c -> IO (JSPtr c)
 primSetAttr   = function(attr, val, obj) { obj[attr] = val; return obj; }
 
-// primModAttr :: String -> (a -> b) -> JSPtr c -> JSPtr c
+// primPureSetAttr :: String -> a -> JSPtr c -> JSPtr c
+primPureSetAttr = function(attr, val, obj) {
+  var clone = primClone(obj);
+  clone[attr] = val;
+  return clone;
+}
+
+// primModAttr :: String -> (a -> b) -> JSPtr c -> IO (JSPtr c)
 primModAttr   = function (attr, f, obj) {
   primSetAttr(attr, _e_(new _A_(f, [primGetAttr(attr, obj)])), obj);
   return obj;
 }
+
+// primPureModAttr :: String -> (a -> b) -> JSPtr c -> JSPtr c
+primPureModAttr   = function (attr, f, obj) {
+  var clone = primClone(obj);
+  primSetAttr(attr, _e_(new _A_(f, [primGetAttr(attr, clone)])), clone);
+  return clone;
+}
+
 
 // primGetProtoAttr :: String -> String -> a
 primGetProtoAttr = function(attr, cls) {
