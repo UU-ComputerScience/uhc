@@ -348,3 +348,94 @@ primModProtoAttr = function(attr, f, cls) {
   primSetProtoAttr(attr, _e_(new _A_(f, [primGetProtoAttr(attr, cls)])), cls);
 }
 %%]
+
+
+%%[8
+// Object cloning facilities
+
+// Clones a JS object
+// primClone :: JSPtr a -> JSPtr a
+primClone = function(obj) {
+  return primClone_({}, obj);
+}
+
+// all bits below are based on/copied from jQuery
+primClone_ = function(target, original) {
+  var name, src, copy, copyIsArray, clone;
+
+  // Extend the base object
+  for ( name in original ) {
+    src = target[ name ];
+    copy = original[ name ];
+
+    // Prevent never-ending loop
+    if ( target === copy ) {
+      continue;
+    }
+
+    // Recurse if we're merging plain objects or arrays
+    if ( copy && ( isPlainObject(copy) || (copyIsArray = isArray(copy)) ) ) {
+      if ( copyIsArray ) {
+        copyIsArray = false;
+        clone = src && isArray(src) ? src : [];
+
+      } else {
+        clone = src && isPlainObject(src) ? src : {};
+      }
+
+      // Never move original objects, clone them
+      target[ name ] = primClone( clone, copy );
+
+    // Don't bring in undefined values
+    } else if ( copy !== undefined ) {
+      target[ name ] = copy;
+    }
+  }
+
+  // Return the modified object
+  return target;
+};
+
+type = function( obj ) {
+  return obj == null ? String( obj ) : "object";
+};
+
+isArray = Array.isArray || function( obj ) {
+  return type(obj) === "array";
+};
+
+isWindow = function( obj ) {
+  return obj && typeof obj === "object" && "setInterval" in obj;
+};
+
+isPlainObject = function( obj ) {
+  // Must be an Object.
+  // Because of IE, we also have to check the presence of the constructor property.
+  // Make sure that DOM nodes and window objects don't pass through, as well
+  if ( !obj || type(obj) !== "object" || obj.nodeType || isWindow( obj ) ) {
+    return false;
+  }
+
+  try {
+    // Not own constructor property must be Object
+    if ( obj.constructor &&
+      !hasOwn.call(obj, "constructor") &&
+      !hasOwn.call(obj.constructor.prototype, "isPrototypeOf") ) {
+      return false;
+    }
+  } catch ( e ) {
+    // IE8,9 Will throw exceptions on certain host objects #9897
+    return false;
+  }
+
+  // Own properties are enumerated firstly, so to speed up,
+  // if last one is own, then all properties are own.
+
+  var key;
+  for ( key in obj ) {}
+
+  return key === undefined || hasOwn.call( obj, key );
+}
+
+%%]
+
