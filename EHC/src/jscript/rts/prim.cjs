@@ -328,7 +328,7 @@ primSetAttr   = function(attr, val, obj) { obj[attr] = val; return obj; }
 // primPureSetAttr :: String -> a -> JSPtr c -> JSPtr c
 primPureSetAttr = function(attr, val, obj) {
   var clone = primClone(obj);
-  clone[attr] = val;
+  primSetAttr(attr, val, clone);
   return clone;
 }
 
@@ -341,7 +341,7 @@ primModAttr   = function (attr, f, obj) {
 // primPureModAttr :: String -> (a -> b) -> JSPtr c -> JSPtr c
 primPureModAttr   = function (attr, f, obj) {
   var clone = primClone(obj);
-  primSetAttr(attr, _e_(new _A_(f, [primGetAttr(attr, clone)])), clone);
+  primModAttr(attr, f, clone);
   return clone;
 }
 
