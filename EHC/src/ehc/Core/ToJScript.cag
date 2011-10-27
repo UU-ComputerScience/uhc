@@ -681,7 +681,7 @@ ffeJScriptMkCall
 -- The question is: where is the expression in the FFE CBindsAspect defined?
         mkObj _ = J.Expr_Fun Nothing jsArgL
                 $ J.Stat_Block $ jsBody J.Stat_Ret jbinds jstats' mjsLamBody
-        jstats' = Seq.fromList $ fmap toPlain $ Seq.toList jstats
+        jstats' = Seq.map toPlain jstats
         toPlain (J.Stat_VarDecl nm (Just (J.Expr_Call fun args))) = J.Stat_VarDecl nm (Just (J.Expr_Call (J.Expr_Var (HsName_Base "primToPlainObj")) [J.Expr_Call fun args]))
         toPlain stat                                              = stat
         --J.Expr_Str nm -- TODO: Make a function as below. jstats needs to be different though; instead of evaluating the datastructure, it should do a primToPlainObj.
