@@ -70,6 +70,7 @@ foreignexprEval
         , e -> e -> e           -- index
         , e -> [e] -> e         -- call
         , e -> e                -- as var/ptr
+        , String -> e           -- object
         , String -> e           -- name
         , String -> e           -- string
         )
@@ -78,7 +79,7 @@ foreignexprEval
      -> [e]                     -- args
      -> e
 foreignexprEval
-     (mkSel,mkInx,mkCall,mkPtr,mkNm,mkStr)
+     (mkSel,mkInx,mkCall,mkPtr,mkObj,mkNm,mkStr)
      fexpr ent args
   = oeE oe
   where argl = zip [1..] args
@@ -118,7 +119,7 @@ foreignexprEval
                                                ( Set.unions $ oeUsed fo : map oeUsed ao )
         ev (ForeignExpr_ObjData    s)
                                  ie =   let
-                                        in  mkOE ( mkStr s ) -- TODO: Do we want mkStr? Maybe we want a custom function for this?
+                                        in  mkOE ( mkObj s    )
                                                  ( Set.empty )
         evs feL                  ie =   map (\e -> ev e ie) feL
 %%]

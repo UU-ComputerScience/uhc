@@ -74,12 +74,12 @@ cvarGlob ty clNm nm safeVarNm
 %%[(8 jazy || jscript) hs export(cvarToRef)
 -- | generate ref 
 cvarToRef
-  :: ( ty -> e                  		-- make for 'this',
-     , ty -> varref -> e        		-- local,
-     , ty -> HsName -> String -> e		-- global,
-     , ty -> e -> HsName -> String -> e	-- data field,
-     ,       e -> e -> e				-- tuple field
-     , tupfldref -> e					-- offset
+  :: ( ty -> e                      -- make for 'this',
+     , ty -> varref -> e            -- local,
+     , ty -> HsName -> String -> e    -- global,
+     , ty -> e -> HsName -> String -> e  -- data field,
+     ,       e -> e -> e        -- tuple field
+     , tupfldref -> e          -- offset
      )
      -> CVarMp' ty varref tupfldref -> CVarInfo' ty varref tupfldref -> e
 cvarToRef
@@ -112,7 +112,7 @@ cvarToRef
 %%[(8 jazy || jscript) hs export(javalikeArgsPack)
 -- pack > 5 args into tuple, otherwise normal
 javalikeArgsPack
-  :: Int								-- limit after which arguments are passed via array
+  :: Int                -- limit after which arguments are passed via array
      -> (ty,ty,[e]->e,Int->String)
      -> [e]
      -> (String,ty,[e])
@@ -127,14 +127,14 @@ javalikeArgsPack limit (tyTup,tyObj,mkTup,mkAppNm) args
 -- unpack > 5 args from tuple, otherwise normal
 javalikeArgsUnpack
   :: Enum fldref
-     => Int								-- limit after which arguments are passed via array
-     -> ( ty							-- tuple type
-        , ty							-- object/default type
-        , ty							-- int type
-        , [HsName] -> [ref]				-- 
-        , Int -> e						-- make int
-        , Int -> [ref] -> [ref]			-- make <= 5 argument references
-        , Int          -> [ref]			-- make >  5 argument reference
+     => Int                -- limit after which arguments are passed via array
+     -> ( ty              -- tuple type
+        , ty              -- object/default type
+        , ty              -- int type
+        , [HsName] -> [ref]        -- 
+        , Int -> e            -- make int
+        , Int -> [ref] -> [ref]      -- make <= 5 argument references
+        , Int          -> [ref]      -- make >  5 argument reference
         )
      -> [HsName]
      -> ( [(ref,ty)]
@@ -172,24 +172,24 @@ data Scrutinee
 %%[(8 jazy || jscript) hs export(javalikeMkFFICall)
 -- | construct the ffi call
 javalikeMkFFICall
-  ::    ( BuiltinInfo -> basicinfo          			-- extract machine specific info of builtin info
-        , Bool -> basicinfo -> (e->e, ty)   			-- unbox
-        ,         basicinfo -> (e->e, ty)   			-- box
-        , [ty] -> ty -> ForeignExtraction -> e			-- make prim function
-        , [ty] -> ty -> e -> [e] -> e					-- make prim call
-        , Int -> e -> e									-- make wrapper 
-        , Int -> e -> e									-- make dynamic 
-        , e->e											-- evaluate
-        , ty											-- default ty
+  ::    ( BuiltinInfo -> basicinfo             -- extract machine specific info of builtin info
+        , Bool -> basicinfo -> (e -> e, ty)    -- unbox
+        ,         basicinfo -> (e -> e, ty)    -- box
+        , [ty] -> ty -> ForeignExtraction -> e -- make prim function
+        , [ty] -> ty -> e -> [e] -> e          -- make prim call
+        , Int -> e -> e                        -- make wrapper
+        , Int -> e -> e                        -- make dynamic
+        , e -> e                               -- evaluate
+        , ty                                   -- default ty
         )
-     -> ForeignExtraction					-- the extracted entity info
+     -> ForeignExtraction                      -- the extracted entity info
      -> EHCOpts
-     -> Bool                        		-- do eval of args
-     -> [Maybe HsName]              		-- list of (possibly) type constructor names of arguments
-     -> Maybe HsName                		-- and result
-     -> ( [e -> e]    						-- additional unwrapping for each argument
-        ,  e -> e     						-- and result
-        , [e] -> e                 			-- and primitive call constructor
+     -> Bool                                   -- do eval of args
+     -> [Maybe HsName]                         -- list of (possibly) type constructor names of arguments
+     -> Maybe HsName                           -- and result
+     -> ( [e -> e]                             -- additional unwrapping for each argument
+        ,  e -> e                              -- and result
+        , [e] -> e                             -- and primitive call constructor
         )
 javalikeMkFFICall
      (getInfo,unbox,box,mkPrimFun,mkPrim,mkWrap,mkDyn,jiEvl,jtyObj)
@@ -214,7 +214,7 @@ javalikeMkFFICall
                 = unzip $ map mkunbox argMbConL
         (mkResE,resTy)
                 = mkbox resMbCon
-    	ffi     = mkPrimFun argsTy resTy impExtract
+        ffi     = mkPrimFun argsTy resTy impExtract
 %%[[8
         primE   = mkPrim argsTy resTy ffi
 %%][90
@@ -247,13 +247,13 @@ type JBinds' ty e fld = Seq.Seq (JBind' ty e fld)
 
 %%[(8 jazy || jscript) hs export(jBind')
 jBind'
-  :: ( ty					-- default type of binding
-     , HsName -> HsName		-- make field name
-     , HsName -> fld		-- make field
+  :: ( ty          -- default type of binding
+     , HsName -> HsName    -- make field name
+     , HsName -> fld    -- make field
      )
-     -> HsName				-- original name
-     -> HsName				-- name
-     -> e					-- bound expr
+     -> HsName        -- original name
+     -> HsName        -- name
+     -> e          -- bound expr
      -> JBinds' ty e fld
 jBind'
      (tyDefault,mkFldNm,mkFld)

@@ -612,7 +612,7 @@ ffiJScriptMkCall
       ent
 %%]]
   where bx = (id,tyDefault)
-        mkfargs f as
+        mkfargs f as -- TODO: Is this redundant?
 %%[[90
           | isJust mbArgThis = (J.Expr_Sel this f, as')
 %%]]
@@ -626,14 +626,73 @@ ffiJScriptMkCall
 %%[[8
         mk = J.Expr_Call
 %%][90
-        mk = foreignexprEval (J.Expr_Sel,J.Expr_ArrInx,J.Expr_Call,id,jsVar,J.Expr_Str) (forextractForeignExpr ent)
+        mk = foreignexprEval (J.Expr_Sel,J.Expr_ArrInx,J.Expr_Call,id,jsVar,jsVar,J.Expr_Str) (forextractForeignExpr ent)
 %%]]
-        mkcall (f,as)
+        mkcall (f,as) -- TODO: Is this redundant?
 %%[[90
           | forextractOptIsPtr ent = f
 %%]]
           | otherwise              = J.Expr_Call f as
 %%]
+
+
+
+-- TODO: First goal: generate regular export code for non-objects, and something distinctly different for objects.
+-- TODO: Second goal: look up datatype information in the tree so we can start generating objects.
+%%[(90 jscript) hs
+-- | construct the ffe call
+ffeJScriptMkCall
+  :: ForeignExtraction
+  -> EHCOpts
+  -> [HsName]
+  -> Seq.Seq JBind
+  -> Seq.Seq J.Stat
+  -> Maybe J.Expr
+  -> ( [J.Expr -> J.Expr]        -- additional unwrapping for each argument
+     ,  J.Expr -> J.Expr         -- and result
+     , [J.Expr] -> J.Expr        -- and primitive call itself
+     )
+ffeJScriptMkCall
+  ent opts jsArgL jbinds jstats mjsLamBody
+  = javalikeMkFFICall
+      ( const tyDefault
+      , \_ _ -> bx
+      , \_ -> bx
+      , \_ _ impExtract
+          -> case impExtract of
+               ForeignExtraction_Plain {forextractEnt = impEntNm}
+                 -> jsVar $ mkHNm impEntNm
+               ForeignExtraction_Wrapper
+                 -> panic "ffeJScriptMkCall.mkPrimFun: wrapper not implemented"
+               ForeignExtraction_Dynamic
+                 -> panic "ffeJScriptMkCall.mkPrimFun: dynamic not implemented"
+      , \_ _ -> mk
+      , panic "ffeJScriptMkCall: wrapper not implemented"
+      , panic "ffeJScriptMkCall: dynamic not implemented"
+      , jsEvl, tyDefault
+      )
+      ent opts False [] Nothing
+  where bx = (id, tyDefault)
+-- Notes:
+-- jbinds defines the var binds in the function definition: function($__,$__63)
+-- jstats defines the var binds in the function body: var $__64 = ....
+-- mjsLamBody essentially provides the return keyword
+--
+-- The question is: where is the expression in the FFE CBindsAspect defined?
+        mkObj _ = J.Expr_Fun Nothing jsArgL
+                $ J.Stat_Block $ jsBody J.Stat_Ret jbinds jstats' mjsLamBody
+        jstats' = Seq.fromList $ fmap toPlain $ Seq.toList jstats
+        toPlain (J.Stat_VarDecl nm (Just (J.Expr_Call fun args))) = J.Stat_VarDecl nm (Just (J.Expr_Call (J.Expr_Var (HsName_Base "primToPlainObj")) [J.Expr_Call fun args]))
+        toPlain stat                                              = stat
+        --J.Expr_Str nm -- TODO: Make a function as below. jstats needs to be different though; instead of evaluating the datastructure, it should do a primToPlainObj.
+        -- TODO: Can I just unwrap jstats and map a primToPlainObj over it?
+        mkVar _ = J.Expr_Fun Nothing jsArgL
+                $ J.Stat_Block $ jsBody J.Stat_Ret jbinds jstats mjsLamBody
+        pc = panic "ffeJScriptMkCall.foreignexprEval: not all foreign expressions are supported in foreign exports"
+        mk = foreignexprEval (pc, pc, J.Expr_Call, pc, mkObj, mkVar, pc) (forextractForeignExpr ent)
+%%]
+
+
 
 %%[(8 jscript)
 SEM CBindAspect
@@ -648,10 +707,20 @@ SEM CBindAspect
                                                              then str dflt
                                                              else str caf
 %%[[90
-  | FFE         loc         .   js              =   J.Expr_Fun Nothing @jsArgL
-                                                    $ J.Stat_Block $ jsBody J.Stat_Ret @expr.jbinds @expr.jstats (Just @expr.jsLamBody)
+  {- | FFE         loc         .   js              =   J.Expr_Fun Nothing @jsArgL-}
+                                                    {- $ J.Stat_Block $ jsBody J.Stat_Ret @expr.jbinds @expr.jstats (Just @expr.jsLamBody)-}
+  | FFE         loc         .   (mkArgsJS,mkResJS,mkFFI)
+                                                =   ffeJScriptMkCall
+                                                        @foreignEntInfo
+                                                        @lhs.opts
+                                                        @jsArgL
+                                                        @expr.jbinds
+                                                        @expr.jstats
+                                                        (Just @expr.jsLamBody)
+                loc         .   js              =   @mkResJS $ @mkFFI []
 %%]]
 %%]
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Generation: toplevel
