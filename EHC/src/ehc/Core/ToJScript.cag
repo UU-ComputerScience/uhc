@@ -430,7 +430,7 @@ SEM CExpr
   | CaseAltFail loc         .   js              =   @errorExpr.js
   | Ann         loc         .   js              =   @expr.js
   | * - Var Int Char String App Tup Let CaseAltFail Lam FFI Case Ann
-                loc         .   js              =   J.Expr_Str "*** TODO ***"
+                loc         .   js              =   J.Expr_Str "*** TODO: CExpr | loc.js ***"
 %%]
 
 %%[(8 jscript)

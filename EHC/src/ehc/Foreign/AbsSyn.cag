@@ -93,6 +93,7 @@ DATA ForeignExpr
   | AllArg                                           -- all (remaining) args
   | Empty                                            -- nothing
   | Str             str             : String         -- string constant
+  | ObjData         nm              : String         -- data export for JS objects
 
 TYPE ForeignExprs  =  [ForeignExpr]
 

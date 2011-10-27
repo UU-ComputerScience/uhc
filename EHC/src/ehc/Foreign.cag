@@ -86,27 +86,27 @@ foreignexprEval
         oe   = ev fexpr (IE [a | (i,a) <- argl, not $ i `Set.member` oeUsed oe])
         ev (ForeignExpr_Ent    ) ie =   let
                                         in  mkOE ent
-                                               ( Set.empty )
+                                                 ( Set.empty )
         ev (ForeignExpr_EntNm n) ie =   let
                                         in  mkOE ( mkNm n )
-                                               ( Set.empty )
+                                                 ( Set.empty )
         ev (ForeignExpr_Str   s) ie =   let
                                         in  mkOE ( mkStr s )
-                                               ( Set.empty )
+                                                 ( Set.empty )
         ev (ForeignExpr_Arg a  ) ie =   let
                                         in  mkOE ( Map.findWithDefault (panic "foreignexprEval.Arg") a env )
-                                               ( Set.singleton a )
+                                                 ( Set.singleton a )
         ev (ForeignExpr_AllArg ) ie =   let
                                         in  OE ( ieArgs ie )
                                                ( Set.empty )
         ev (ForeignExpr_Sel e s) ie =   let eo = ev e ie
                                             so = ev s ie
                                         in  mkOE ( mkSel (oeE eo) (oeE so) )
-                                               ( oeUsed eo `Set.union` oeUsed so )
+                                                 ( oeUsed eo `Set.union` oeUsed so )
         ev (ForeignExpr_Inx e i) ie =   let eo = ev e ie
                                             io = ev i ie
                                         in  mkOE ( mkInx (oeE eo) (oeE io) )
-                                               ( oeUsed eo `Set.union` oeUsed io )
+                                                 ( oeUsed eo `Set.union` oeUsed io )
         ev (ForeignExpr_Ptr e  ) ie =   let eo = ev e ie
                                         in  eo {oeEL = [mkPtr $ oeE eo]}
         ev (ForeignExpr_Call e ) ie =   let eo = ev e ie
@@ -116,6 +116,10 @@ foreignexprEval
                                             ao = evs a ie
                                         in  mkOE ( mkCall (oeE fo) (concatMap oeEL ao) )
                                                ( Set.unions $ oeUsed fo : map oeUsed ao )
+        ev (ForeignExpr_ObjData    s)
+                                 ie =   let
+                                        in  mkOE ( mkStr s ) -- TODO: Do we want mkStr? Maybe we want a custom function for this?
+                                                 ( Set.empty )
         evs feL                  ie =   map (\e -> ev e ie) feL
 %%]
 
@@ -137,15 +141,16 @@ data ForeignDirection
 %%[90 hs
 instance Serialize ForeignExpr where
   sput (ForeignExpr_Ent         ) = sputWord8 0
-  sput (ForeignExpr_EntNm    a  ) = sputWord8 1 >> sput a
-  sput (ForeignExpr_Arg      a  ) = sputWord8 2 >> sput a
-  sput (ForeignExpr_Sel      a b) = sputWord8 3 >> sput a >> sput b
-  sput (ForeignExpr_Inx      a b) = sputWord8 4 >> sput a >> sput b
-  sput (ForeignExpr_Ptr      a  ) = sputWord8 5 >> sput a
-  sput (ForeignExpr_Call     a  ) = sputWord8 6 >> sput a
-  sput (ForeignExpr_CallArgs a b) = sputWord8 7 >> sput a >> sput b
+  sput (ForeignExpr_EntNm    a  ) = sputWord8 1  >> sput a
+  sput (ForeignExpr_Arg      a  ) = sputWord8 2  >> sput a
+  sput (ForeignExpr_Sel      a b) = sputWord8 3  >> sput a >> sput b
+  sput (ForeignExpr_Inx      a b) = sputWord8 4  >> sput a >> sput b
+  sput (ForeignExpr_Ptr      a  ) = sputWord8 5  >> sput a
+  sput (ForeignExpr_Call     a  ) = sputWord8 6  >> sput a
+  sput (ForeignExpr_CallArgs a b) = sputWord8 7  >> sput a >> sput b
   sput (ForeignExpr_AllArg      ) = sputWord8 8
-  sput (ForeignExpr_Str      a  ) = sputWord8 9 >> sput a
+  sput (ForeignExpr_Str      a  ) = sputWord8 9  >> sput a
+  sput (ForeignExpr_ObjData  a  ) = sputWord8 10 >> sput a
   sget = do
     t <- sgetWord8
     case t of
@@ -158,7 +163,7 @@ instance Serialize ForeignExpr where
         6  -> liftM  ForeignExpr_Call        sget
         7  -> liftM2 ForeignExpr_CallArgs    sget sget
         8  -> return ForeignExpr_AllArg
-        9  -> liftM  ForeignExpr_Str         sget
+        10 -> liftM  ForeignExpr_ObjData     sget
 
 
 instance Serialize ForeignEnt where

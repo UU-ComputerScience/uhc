@@ -67,7 +67,9 @@ pForeignEnt dir way dfltNm
       (_                      ,FFIWay_CCall  ) -> ForeignEnt_CCall        <$> pCCall       dfltNm
       (_                      ,FFIWay_Prim   ) -> ForeignEnt_PrimCall     <$> pPrimCall    dfltNm
 %%[[(90 jscript)
-      (ForeignDirection_Import,FFIWay_JScript) -> ForeignEnt_JScriptCall  <$> pJScriptCall dfltNm
+      {- (ForeignDirection_Import,FFIWay_JScript) -> ForeignEnt_JScriptCall  <$> pJScriptCall dfltNm-}
+      -- TODO: Verify that we really want to use the JScript calling convention for both imports and exports
+      (_                      ,FFIWay_JScript) -> ForeignEnt_JScriptCall  <$> pJScriptCall dfltNm
 %%]]
       _                                        -> ForeignEnt_PlainCall    <$> pPlainCall   dfltNm
 
@@ -122,14 +124,15 @@ pForeignExpr :: ForeignParser ForeignExpr
 pForeignExpr
   = pExp
   where pExp  = mk <$> pPre <*> pExpB <*> pPost
-        pPre  = pList (pPtr)
+        pPre  = pList pPtr
         pPost = pList (pSel <|> pInx <|> pCall)
-        pExpB = pArg <|> pEnt
+        pExpB = pObj <|> pArg <|> pEnt
         pArg  = pPERCENT
                 <**> (   const ForeignExpr_AllArg               <$  pSTAR
                      <|> (\i _ -> ForeignExpr_Arg (tokMkInt i)) <$> pInteger10Tk
                      )
               <|> pStr
+        pObj  = ForeignExpr_ObjData <$> (pOCURLY *> pForeignVar <* pCCURLY)
         pEnt  = ForeignExpr_EntNm <$> pForeignVar
         pStr  = (ForeignExpr_Str . tokMkStr) <$> pStringTk
         pPtr  = ForeignExpr_Ptr <$ pAMPERSAND
