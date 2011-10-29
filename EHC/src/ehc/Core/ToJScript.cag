@@ -679,9 +679,8 @@ ffeJScriptMkCall
 -- mjsLamBody essentially provides the return keyword
 --
 -- The question is: where is the expression in the FFE CBindsAspect defined?
-        mkObj _ = mkBdy jstats'
-          where jstats' = Seq.map toPlain jstats
-                toPlain (J.Stat_VarDecl nm (Just c@(J.Expr_Call {}))) = J.Stat_VarDecl nm (Just (jsCall "primToPlainObj" [c]))
+        mkObj _ = mkBdy $ Seq.map toPlain jstats
+          where toPlain (J.Stat_VarDecl nm (Just c@(J.Expr_Call {}))) = J.Stat_VarDecl nm (Just (jsCall "primToPlainObj" [c]))
                 toPlain stat                                          = stat
         mkVar _ = mkBdy jstats
         mkBdy ss = J.Expr_Fun Nothing jsArgL
