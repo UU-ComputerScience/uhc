@@ -686,7 +686,7 @@ ffeJScriptMkCall
         mkBdy ss = J.Expr_Fun Nothing jsArgL
                  $ J.Stat_Block $ jsBody J.Stat_Ret jbinds ss mjsLamBody
         pc = panic "ffeJScriptMkCall.foreignexprEval: not all foreign expressions are supported in foreign exports"
-        mk = foreignexprEval (pc, pc, J.Expr_Call, pc, mkObj, mkVar, pc) (forextractForeignExpr ent)
+        mk = foreignexprEval (pc, pc, pc, pc, mkObj, mkVar, pc) (forextractForeignExpr ent)
 %%]
 
 
