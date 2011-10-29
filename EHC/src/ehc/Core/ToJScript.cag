@@ -676,7 +676,7 @@ ffeJScriptMkCall
 -- jstats defines the var binds in the function body: var $__64 = ....
 -- mjsLamBody essentially provides the return keyword
 -- TODO: Make sure it's a datatype, not some primitive thing. Done?
--- TODO: We shouldn't panic, because then code is still generated. How can this be done in a nicer way? Can we typecheck this somehow at this stage?
+-- TODO: We shouldn't panic, because then code is still generated. How can we create nicer error messages?
         mkObj _ = case ty of
                     (Ty_Con _) -> mkBdy $ Seq.map toPlain jstats
                     _          -> panic "Only datatype expression can be exported as a JavaScript object"
