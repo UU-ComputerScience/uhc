@@ -677,8 +677,6 @@ ffeJScriptMkCall
 -- jbinds defines the var binds in the function definition: function($__,$__63)
 -- jstats defines the var binds in the function body: var $__64 = ....
 -- mjsLamBody essentially provides the return keyword
---
--- The question is: where is the expression in the FFE CBindsAspect defined?
         mkObj _ = mkBdy $ Seq.map toPlain jstats
           where toPlain (J.Stat_VarDecl nm (Just c@(J.Expr_Call {}))) = J.Stat_VarDecl nm (Just (jsCall "primToPlainObj" [c]))
                 toPlain stat                                          = stat
@@ -704,8 +702,6 @@ SEM CBindAspect
                                                              then str dflt
                                                              else str caf
 %%[[90
-  {- | FFE         loc         .   js              =   J.Expr_Fun Nothing @jsArgL-}
-                                                    {- $ J.Stat_Block $ jsBody J.Stat_Ret @expr.jbinds @expr.jstats (Just @expr.jsLamBody)-}
   | FFE         loc         .   (mkArgsJS,mkResJS,mkFFI)
                                                 =   ffeJScriptMkCall
                                                         @foreignEntInfo
