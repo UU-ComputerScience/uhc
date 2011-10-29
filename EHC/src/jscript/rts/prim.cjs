@@ -371,11 +371,28 @@ primModProtoAttr = function(attr, f, cls) {
 // Clones a JS object
 // primClone :: JSPtr a -> JSPtr a
 primClone = function(obj) {
-  return primClone_({}, obj);
+  var alg = function(target, name, copy) {
+    target[ name ] = copy;
+  };
+
+  return foldObj(alg, {}, obj);
 }
 
-// all bits below are based on/copied from jQuery
-primClone_ = function(target, original) {
+primToPlainObj = function ( obj ) {
+  var alg = function(target, name, copy) {
+    if (name != "_tag_") {
+      target[ name ] = copy;
+      if ( type(target [ name ]) === "object" && target [ name ]["__eOrV__"] !== undefined ) {
+        target[name] = _e_(target[name]);
+      }
+    }
+  };
+
+  return foldObj(alg, {}, obj);
+}
+
+// foldObj has been heavily inspired by jQuery's extend function
+foldObj = function(alg, target, original) {
   var name, src, copy, copyIsArray, clone;
 
   // Extend the base object
@@ -399,11 +416,11 @@ primClone_ = function(target, original) {
       }
 
       // Never move original objects, clone them
-      target[ name ] = primClone( clone, copy );
+      target[ name ] = foldObj(alg, clone, copy );
 
     // Don't bring in undefined values
     } else if ( copy !== undefined ) {
-      target[ name ] = copy;
+      alg(target, name, copy);
     }
   }
 
@@ -452,48 +469,5 @@ isPlainObject = function( obj ) {
   return key === undefined || hasOwn.call( obj, key );
 }
 
-
-primToPlainObj = function ( obj ) {
-  return primToPlainObj_({}, obj);
-}
-
-primToPlainObj_ = function ( target, original ) {
-  var name, src, copy, copyIsArray, clone;
-
-  // Extend the base object
-  for ( name in original ) {
-    src = target[ name ];
-    copy = original[ name ];
-
-    // Prevent never-ending loop
-    if ( target === copy ) {
-      continue;
-    }
-
-    // Recurse if we're merging plain objects or arrays
-    if ( copy && ( isPlainObject(copy) || (copyIsArray = isArray(copy)) ) ) {
-      if ( copyIsArray ) {
-        copyIsArray = false;
-        clone = src && isArray(src) ? src : [];
-
-      } else {
-        clone = src && isPlainObject(src) ? src : {};
-      }
-
-      // Never move original objects, clone them
-      target[ name ] = primClone( clone, copy );
-
-    // Don't bring in undefined values
-    } else if ( copy !== undefined && name != "_tag_") {
-      target[ name ] = copy;
-      if ( type(target [ name ]) === "object" && target [ name ]["__eOrV__"] !== undefined ) {
-        target[name] = _e_(target[name]);
-      }
-    }
-  }
-
-  // Return the modified object
-  return target;
-}
 %%]
 
