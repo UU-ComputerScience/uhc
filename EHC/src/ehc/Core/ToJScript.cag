@@ -626,7 +626,8 @@ ffiJScriptMkCall
 %%[[8
         mk = J.Expr_Call
 %%][90
-        mk = foreignexprEval (J.Expr_Sel,J.Expr_ArrInx,J.Expr_Call,id,jsVar,jsVar,J.Expr_Str) (forextractForeignExpr ent)
+        mkObj = flip jsCall []
+        mk = foreignexprEval (J.Expr_Sel,J.Expr_ArrInx,J.Expr_Call,id,mkObj,jsVar,J.Expr_Str) (forextractForeignExpr ent)
 %%]]
         mkcall (f,as) -- TODO: Is this redundant?
 %%[[90
