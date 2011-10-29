@@ -2150,7 +2150,8 @@ primClone = function(obj) {
   return foldObj(cloneAlg, {}, obj);
 }
 
-
+// Converts a UHC JS datatype object to a plain JS object
+// primToPlainObj :: JSPtr a -> JSPtr b
 primToPlainObj = function ( obj ) {
   var toPlainAlg = function(name, target, copy) {
     if (name != "_tag_") {
