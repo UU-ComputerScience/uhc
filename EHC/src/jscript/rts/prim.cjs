@@ -2154,9 +2154,10 @@ primClone = function(obj) {
 primToPlainObj = function ( obj ) {
   var toPlainAlg = function(name, target, copy) {
     if (name != "_tag_") {
-      target[ name ] = copy;
-      if ( type(target [ name ]) === "object" && target [ name ]["__eOrV__"] !== undefined ) {
-        target[name] = _e_(target[name]);
+      if ( type(copy) === "object" && copy["__eOrV__"] !== undefined ) {
+        target[name] = _e_(copy);
+      } else {
+        target[name] = copy;
       }
     }
   };
