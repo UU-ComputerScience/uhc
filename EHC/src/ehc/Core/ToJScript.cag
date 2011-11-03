@@ -633,7 +633,9 @@ ffiJScriptMkCall
 %%][90
         mkObj = flip jsCall []
         mk = foreignexprEval (J.Expr_Sel,J.Expr_ArrInx,J.Expr_Call,id,mkObj,jsVar,J.Expr_Str) (forextractForeignExpr ent)
-        mkWrap n e = J.Expr_Fun Nothing as (J.Stat_Block [J.Stat_Ret $ jsApp e (map jsVar as)])
+        -- TODO: Infer the number of arguments from the type
+        -- TODO: What's that second argument to apply? (The thing we hardcode as [e] now)
+        mkWrap n e = J.Expr_Fun Nothing as (J.Stat_Block [J.Stat_Ret $ jsEvl $ jsApp e $ (map jsVar as) ++ [e]])
           where as = map (\x -> mkHNm $ "vr" ++ show x) [1..n]
 %%]]
         mkcall (f,as) -- TODO: Is this redundant?
