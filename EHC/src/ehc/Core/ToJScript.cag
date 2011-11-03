@@ -393,6 +393,7 @@ SEM CExpr
                                                     else J.Expr_Str "*** ERR APP ***"
   | FFI         loc         .   (mkArgsJS,mkResJS,mkFFI)
                                                 =   ffiJScriptMkCall
+                                                        @ty
                                                         @foreignEntInfo
                                                         @lhs.opts False @argMbConL @resMbCon
                             .   js              =   if null @argMbConL
@@ -574,18 +575,23 @@ SEM CExpr
 %%[(8 jscript) hs
 -- | construct the ffi call
 ffiJScriptMkCall
-  :: ForeignExtraction
-     -> EHCOpts
-     -> Bool                        -- do eval of args
-     -> [Maybe HsName]              -- list of (possibly) type constructor names of arguments
-     -> Maybe HsName                -- and result
-     -> ( [J.Expr -> J.Expr]        -- additional unwrapping for each argument
-        ,  J.Expr -> J.Expr         -- and result
-        , [J.Expr] -> J.Expr        -- and primitive call itself
-        )
-ffiJScriptMkCall
+  ::  Ty                          -- type of the imported function
+  ->  ForeignExtraction
+  ->  EHCOpts
+  ->  Bool                        -- do eval of args
+  ->  [Maybe HsName]              -- list of (possibly) type constructor names of arguments
+  ->  Maybe HsName                -- and result
+  ->  ( [J.Expr -> J.Expr]        -- additional unwrapping for each argument
+      ,  J.Expr -> J.Expr         -- and result
+      , [J.Expr] -> J.Expr        -- and primitive call itself
+      )
+ffiJScriptMkCall ty
 %%[[90
      ent
+     opts
+     evl
+     ns
+     nm
 %%]]
   = javalikeMkFFICall
       ( const tyDefault
@@ -609,14 +615,24 @@ ffiJScriptMkCall
       , panic "ffiJScriptMkCall: dynamic not implemented."
 %%][90
       , mkWrap
-      , \n e -> panic $ "ffiJScriptMkCall: dynamic not implemented. n: " ++ show n
+      , panic "ffiJScriptMkCall: dynamic not implemented."
 %%]]
       , jsEvl, tyDefault
       )
 %%[[90
       ent
+      opts
+      evl
+      ns
+      nm
 %%]]
-  where bx = (id,tyDefault)
+  where -- TODO : This cntTyArgs stuff is ugly. Doesn't UHC have something for this already?
+        cntTyArgs (Ty_App fn _) = cntTyArgs' fn
+        cntTyArgs _ = panic "shouldn't happen"
+        cntTyArgs' (Ty_App t@(Ty_App {}) arg) = 1 + cntTyArgs' t + cntTyArgs' arg
+        cntTyArgs' (Ty_App _ (Ty_App t@(Ty_App {}) arg)) = 1 + cntTyArgs' t + cntTyArgs' arg
+        cntTyArgs' _ = 0
+        bx = (id,tyDefault)
         mkfargs f as -- TODO: Is this redundant?
 %%[[90
           | isJust mbArgThis = (J.Expr_Sel this f, as')
@@ -634,9 +650,9 @@ ffiJScriptMkCall
         mkObj = flip jsCall []
         mk = foreignexprEval (J.Expr_Sel,J.Expr_ArrInx,J.Expr_Call,id,mkObj,jsVar,J.Expr_Str) (forextractForeignExpr ent)
         -- TODO: Infer the number of arguments from the type
-        -- TODO: What's that second argument to apply? (The thing we hardcode as [e] now)
-        mkWrap n e = J.Expr_Fun Nothing as (J.Stat_Block [J.Stat_Ret $ jsEvl $ jsApp e $ (map jsVar as) ++ [e]])
-          where as = map (\x -> mkHNm $ "vr" ++ show x) [1..n]
+        -- TODO: What's that second argument to apply? (The thing we hardcode as undefined now)
+        mkWrap n e = J.Expr_Fun Nothing as (J.Stat_Block [J.Stat_Ret $ jsEvl $ jsApp e $ (map jsVar as) ++ [jsVar "undefined"]])
+          where as = map (\x -> mkHNm $ "vr" ++ show x) [1..(cntTyArgs ty)] -- TODO
 %%]]
         mkcall (f,as) -- TODO: Is this redundant?
 %%[[90
@@ -687,7 +703,7 @@ ffeJScriptMkCall
 -- mjsLamBody essentially provides the return keyword
 -- TODO: Make sure it's a datatype, not some primitive thing. Done?
 -- TODO: We shouldn't panic, because then code is still generated. How can we create nicer error messages?
-        mkObj _ = case ty of
+        mkObj _ = case ty of -- TODO: Bah, this should be done during type checking!
                     (Ty_Con _) -> mkBdy $ Seq.map toPlain jstats
                     _          -> panic "Only datatype expression can be exported as a JavaScript object"
           where toPlain (J.Stat_VarDecl nm (Just c@(J.Expr_Call {}))) = J.Stat_VarDecl nm (Just (jsCall "primToPlainObj" [c]))
