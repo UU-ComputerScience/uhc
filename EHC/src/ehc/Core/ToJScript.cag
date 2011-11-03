@@ -604,8 +604,13 @@ ffiJScriptMkCall
                  -> panic "ffiJScriptMkCall.mkPrimFun: dynamic not implemented"
 %%]]
       , \_ _ -> mk
-      , panic "ffiJScriptMkCall: wrapper not implemented"
-      , panic "ffiJScriptMkCall: dynamic not implemented"
+%%[[8
+      , panic "ffiJScriptMkCall: wrapper not implemented."
+      , panic "ffiJScriptMkCall: dynamic not implemented."
+%%][90
+      , mkWrap
+      , \n e -> panic $ "ffiJScriptMkCall: dynamic not implemented. n: " ++ show n
+%%]]
       , jsEvl, tyDefault
       )
 %%[[90
@@ -628,6 +633,8 @@ ffiJScriptMkCall
 %%][90
         mkObj = flip jsCall []
         mk = foreignexprEval (J.Expr_Sel,J.Expr_ArrInx,J.Expr_Call,id,mkObj,jsVar,J.Expr_Str) (forextractForeignExpr ent)
+        mkWrap n e = J.Expr_Fun Nothing as (J.Stat_Block [J.Stat_Ret $ jsApp e (map jsVar as)])
+          where as = map (\x -> mkHNm $ "vr" ++ show x) [1..n]
 %%]]
         mkcall (f,as) -- TODO: Is this redundant?
 %%[[90
