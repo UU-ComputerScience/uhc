@@ -148,6 +148,7 @@ data Opts
       , optDepMainVar    		:: String
       , optDepDpdsVar    		:: String
       , optDepOrigDpdsVar 		:: String
+      , optDepDerivDpdsVar 		:: String
       , optDepBaseDir     		:: String
       , optDepTerm        		:: Map String [String]
       , optDepIgn         		:: Set String
@@ -181,6 +182,7 @@ defaultOpts
       , optDepMainVar    		=  error "optDepMainVar not set"
       , optDepDpdsVar    		=  error "optDepDpdsVar not set"
       , optDepOrigDpdsVar 		=  error "optDepOrigDpdsVar not set"
+      , optDepDerivDpdsVar 		=  error "optDepDerivDpdsVar not set"
       , optDepBaseDir     		=  error "optDepBaseDir not set"
       , optDepTerm        		=  Map.empty
       , optDepIgn         		=  Set.empty
