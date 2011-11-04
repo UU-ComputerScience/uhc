@@ -653,12 +653,16 @@ ffiJScriptMkCall ty
         mk = foreignexprEval (J.Expr_Sel,J.Expr_ArrInx,J.Expr_Call,id,mkObj,jsVar,J.Expr_Str) (forextractForeignExpr ent)
         -- TODO: Infer the number of arguments from the type
         -- TODO: What's that second argument to apply? (The thing we hardcode as undefined now)
-        mkWrap n e = J.Expr_Fun Nothing as (J.Stat_Block [J.Stat_Ret $ jsEvl $ jsApp e $ (map jsVar as) ++ [jsVar "undefined"]])
-          where as = map (\x -> mkHNm $ "vr" ++ show x) [1..(cntWrapTyArgs ty)]
+        mkWrap n e = J.Expr_Fun Nothing as (J.Stat_Block [bdy])
+          where as   = mkArgs (cntWrapTyArgs ty)
+                bdy  = J.Stat_Ret $ jsEvl $ jsApp e $ (map jsVar as) ++ [jsVar "undefined"]
 
+        -- TODO: This doesn't generate the right code just yet
         mkDyn n e = jsFun (mkHNm "dynedFn") (map mkHNm as) [J.Stat_Ret bdy]
-          where as = map (\x -> mkHNm $ "vr" ++ show x) [1..(cntDynTyArgs ty)]
-                bdy = J.Expr_Call e (map (jsEvl . J.Expr_Var . mkHNm) as)
+          where as   = mkArgs (cntDynTyArgs ty)
+                bdy  = J.Expr_Call e (map (jsEvl . J.Expr_Var . mkHNm) as)
+
+        mkArgs n = map (\x -> mkHNm $ "vr" ++ show x) [1..n]
 %%]]
         mkcall (f,as) -- TODO: Is this redundant?
 %%[[90
