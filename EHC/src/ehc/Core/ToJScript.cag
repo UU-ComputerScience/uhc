@@ -657,10 +657,7 @@ ffiJScriptMkCall ty
           where as   = mkArgs (cntWrapTyArgs ty)
                 bdy  = J.Stat_Ret $ jsEvl $ jsApp e $ (map jsVar as) ++ [jsVar "undefined"]
 
-        -- TODO: This doesn't generate the right code just yet
-        mkDyn n e = jsFun (mkHNm "dynedFn") (map mkHNm as) [J.Stat_Ret bdy]
-          where as   = mkArgs (cntDynTyArgs ty)
-                bdy  = J.Expr_Call e (map (jsEvl . J.Expr_Var . mkHNm) as)
+        mkDyn n (e:es) = jsEvl $ J.Expr_Call e (map jsEvl es)
 
         mkArgs n = map (\x -> mkHNm $ "vr" ++ show x) [1..n]
 %%]]
@@ -739,6 +736,7 @@ SEM CBindAspect
                                                         else if Seq.null @expr.jstats -- not @isCAF
                                                              then str dflt
                                                              else str caf
+
 %%[[90
   | FFE         loc         .   (mkArgsJS,mkResJS,mkFFI)
                                                 =   ffeJScriptMkCall
