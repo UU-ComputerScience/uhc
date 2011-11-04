@@ -615,7 +615,7 @@ ffiJScriptMkCall ty
       , panic "ffiJScriptMkCall: dynamic not implemented."
 %%][90
       , mkWrap
-      , panic "ffiJScriptMkCall: dynamic not implemented."
+      , mkDyn
 %%]]
       , jsEvl, tyDefault
       )
@@ -627,8 +627,10 @@ ffiJScriptMkCall ty
       nm
 %%]]
   where -- TODO : This cntTyArgs stuff is ugly. Doesn't UHC have something for this already?
-        cntTyArgs (Ty_App fn _) = cntTyArgs' fn
-        cntTyArgs _ = panic "shouldn't happen"
+        cntWrapTyArgs (Ty_App fn _) = cntTyArgs' fn
+        cntWrapTyArgs _ = panic "shouldn't happen"
+        cntDynTyArgs (Ty_App _ arg) = cntTyArgs' arg
+        cntDynTyArgs _ = panic "shouldn't happen"
         cntTyArgs' (Ty_App t@(Ty_App {}) arg) = 1 + cntTyArgs' t + cntTyArgs' arg
         cntTyArgs' (Ty_App _ (Ty_App t@(Ty_App {}) arg)) = 1 + cntTyArgs' t + cntTyArgs' arg
         cntTyArgs' _ = 0
@@ -652,7 +654,11 @@ ffiJScriptMkCall ty
         -- TODO: Infer the number of arguments from the type
         -- TODO: What's that second argument to apply? (The thing we hardcode as undefined now)
         mkWrap n e = J.Expr_Fun Nothing as (J.Stat_Block [J.Stat_Ret $ jsEvl $ jsApp e $ (map jsVar as) ++ [jsVar "undefined"]])
-          where as = map (\x -> mkHNm $ "vr" ++ show x) [1..(cntTyArgs ty)] -- TODO
+          where as = map (\x -> mkHNm $ "vr" ++ show x) [1..(cntWrapTyArgs ty)]
+
+        mkDyn n e = jsFun (mkHNm "dynedFn") (map mkHNm as) [J.Stat_Ret bdy]
+          where as = map (\x -> mkHNm $ "vr" ++ show x) [1..(cntDynTyArgs ty)]
+                bdy = J.Expr_Call e (map (jsEvl . J.Expr_Var . mkHNm) as)
 %%]]
         mkcall (f,as) -- TODO: Is this redundant?
 %%[[90
