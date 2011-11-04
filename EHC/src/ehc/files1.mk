@@ -149,6 +149,7 @@ $(EHC_MK_AG_S_DEP_MK) : $(SRC_EHC_PREFIX)files-ag-s.dep $(SHUFFLE) $(EHC_ALL_SRC
 	  --depmainvar=EHC_AG_S_MAIN_SRC_CAG \
 	  --depdpdsvar=EHC_AG_S_DPDS_SRC_CAG \
 	  --deporigdpdsvar=EHC_AG_S_ODPDS_SRC_CAG \
+	  --depderivdpdsvar=EHC_AG_S_DDPDS_DERIV_AG \
 	  --depbase=$(SRC_EHC_PREFIX) \
 	  --depterm="EHRulerRules>" \
 	  --depign="EHRulerRules EHRulerRules.cag" \
@@ -163,6 +164,7 @@ $(EHC_MK_AG_D_DEP_MK) : $(SRC_EHC_PREFIX)files-ag-d.dep $(SHUFFLE) $(EHC_ALL_SRC
 	  --depmainvar=EHC_AG_D_MAIN_SRC_CAG \
 	  --depdpdsvar=EHC_AG_D_DPDS_SRC_CAG \
 	  --deporigdpdsvar=EHC_AG_D_ODPDS_SRC_CAG \
+	  --depderivdpdsvar=EHC_AG_D_DDPDS_DERIV_AG \
 	  --depbase=$(SRC_EHC_PREFIX) \
 	  --depterm="EHRulerRules>" \
 	  --depign="EHRulerRules EHRulerRules.cag" \
@@ -286,8 +288,10 @@ EHC_ALL_LIB_FROMAG_HS					:= $(EHC_AG_ALL_MAIN_DRV_HS)
 
 # lib installed ag
 INS_EHC_LIB_ALL_AG_NAMES				:= HS/AbsSyn EH/AbsSyn Ty/AbsSyn GrinCode/AbsSyn GrinByteCode/AbsSyn LLVM/AbsSyn Silly/AbsSyn
-INS_EHC_LIB_ALL_AG						:= $(patsubst %,$(INSTALLFORBLD_EHC_LIB_AG_PREFIX)%.ag,$(INS_EHC_LIB_ALL_AG_NAMES))
-INSABS_EHC_LIB_ALL_AG					:= $(patsubst %,$(INSTALLFORBLDABS_EHC_LIB_AG_PREFIX)%.ag,$(INS_EHC_LIB_ALL_AG_NAMES))
+INS_EHC_LIB_ALL_AG						:= $(patsubst $(EHC_BLD_LIB_HS_VARIANT_PREFIX)%,$(INSTALL_VARIANT_LIB_AG_PREFIX)%,$(EHC_AG_D_DDPDS_DERIV_AG))
+INSABS_EHC_LIB_ALL_AG					:= $(patsubst $(EHC_BLD_LIB_HS_VARIANT_PREFIX)%,$(INSTALLABS_VARIANT_LIB_AG_PREFIX)%,$(EHC_AG_D_DDPDS_DERIV_AG))
+#INS_EHC_LIB_ALL_AG						:= $(patsubst %,$(INSTALL_VARIANT_LIB_AG_PREFIX)%.ag,$(INS_EHC_LIB_ALL_AG_NAMES))
+#INSABS_EHC_LIB_ALL_AG					:= $(patsubst %,$(INSTALLABS_VARIANT_LIB_AG_PREFIX)%.ag,$(INS_EHC_LIB_ALL_AG_NAMES))
 
 # all dependents for a variant to kick of building
 EHC_ALL_DPDS_NO_MAIN					:= $(EHC_ALL_LIB_FROMHS_HS) $(EHC_ALL_LIB_FROMAG_HS) $(EHC_HS_UTIL_DRV_C)
@@ -347,7 +351,7 @@ $(LIB_EHC_INS_FLAG): $(LIB_EHC_CABAL_DRV) $(LIB_EHC_SETUP2) $(INSABS_EHC_LIB_ALL
 	$(LIB_EHC_SETUP) install && \
 	echo $@ > $@
 
-$(INSABS_EHC_LIB_ALL_AG): $(INSTALLFORBLDABS_EHC_LIB_AG_PREFIX)%: $(EHC_BLD_LIB_HS_VARIANT_PREFIX)%
+$(INSABS_EHC_LIB_ALL_AG): $(INSTALLABS_VARIANT_LIB_AG_PREFIX)%: $(EHC_BLD_LIB_HS_VARIANT_PREFIX)%
 	mkdir -p $(@D)
 	cp $< $@
 

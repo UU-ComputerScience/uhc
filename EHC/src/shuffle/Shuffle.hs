@@ -176,38 +176,51 @@ genDepsMakefile deps opts
        putStrLn ""
        putStrLn mkOrigDepList
        putStrLn ""
+       putStrLn mkDerivDepList
+       putStrLn ""
        putStrLn mkDepList
        putStrLn ""
        putStrLn mkMainList
   where
+    -- from options
     namePrefix = optDepNamePrefix opts
     srcPrefix = optDepSrcVar opts
     dstPrefix = optDepDstVar opts
     depListVar = optDepDpdsVar opts
     mainListVar = optDepMainVar opts
     origListVar = optDepOrigDpdsVar opts
+    derivListVar = optDepDerivDpdsVar opts
+    
+    -- shared suffixes
+    suffMainSrcCag = "_MAIN_SRC_CAG"
+    suffDpdsSrcCag = "_DPDS_SRC_CAG"
+    suffDpdsOrigCag = "_DPDS_ORIG_CAG"
+    suffDpdsDerivAg = "_DPDS_DERIV_AG"
 
+    -- making dependency
     mkDep (file, deps)
       = let name = encode file
             fileWithoutExt = stripExt file
             deps' = map stripExt deps
             ignSet = optDepIgn opts
          in unlines
-             [ name ++ "_MAIN_SRC_AG := $(patsubst %,$(" ++ srcPrefix ++ ")%.cag," ++ fileWithoutExt ++ ")"
-             , name ++ "_DPDS_SRC_AG := $(patsubst %,$(" ++ srcPrefix ++ ")%.cag," ++ unwords deps' ++ ")"
-             , name ++ "_DPDS_ORIG   := $(patsubst %,$(" ++ srcPrefix ++ ")%.cag," ++ unwords (filter (not . flip Set.member ignSet . stripDir) deps') ++ ")"
-             , name ++ "_DPDS_DERIV  := $(patsubst %,$(" ++ dstPrefix ++ ")%.ag," ++ unwords deps' ++ ")"
-             , "$(patsubst $(" ++ srcPrefix ++ ")%.cag,$(" ++ dstPrefix ++ ")%.hs,$(" ++ name ++ "_MAIN_SRC_AG)) : $(" ++ name ++ "_DPDS_DERIV)"
+             [ name ++ suffMainSrcCag ++ "    := $(patsubst %,$(" ++ srcPrefix ++ ")%.cag," ++ fileWithoutExt ++ ")"
+             , name ++ suffDpdsSrcCag ++ "    := $(patsubst %,$(" ++ srcPrefix ++ ")%.cag," ++ unwords deps' ++ ")"
+             , name ++ suffDpdsOrigCag ++ "   := $(patsubst %,$(" ++ srcPrefix ++ ")%.cag," ++ unwords (filter (not . flip Set.member ignSet . stripDir) deps') ++ ")"
+             , name ++ suffDpdsDerivAg ++ "   := $(patsubst %,$(" ++ dstPrefix ++ ")%.ag," ++ unwords deps' ++ ")"
+             , "$(patsubst $(" ++ srcPrefix ++ ")%.cag,$(" ++ dstPrefix ++ ")%.hs,$(" ++ name ++ suffMainSrcCag ++ ")) : $(" ++ name ++ suffDpdsDerivAg ++ ")"
              ]
 
-    mkOrigDepList
-      = origListVar ++ " := $(sort " ++ unwords (map ((\n -> "$(" ++ n ++ "_DPDS_ORIG)") . encode . fst) deps) ++ ")"
+    -- making lists
+    mkL doSort var suff deps
+      = var ++ " := " ++ s (unwords (map ((\n -> "$(" ++ n ++ suff ++ ")") . encode . fst) deps))
+      where s x | doSort    = "$(sort " ++ x ++ ")"
+                | otherwise = x
 
-    mkDepList
-      = depListVar ++ " := $(sort " ++ unwords (map ((\n -> "$(" ++ n ++ "_DPDS_SRC_AG)") . encode . fst) deps) ++ ")"
-
-    mkMainList
-      = mainListVar ++ " := " ++ unwords (map ((\n -> "$(" ++ n ++ "_MAIN_SRC_AG)") . encode . fst) deps)
+    mkDerivDepList = mkL True  derivListVar suffDpdsDerivAg deps
+    mkOrigDepList  = mkL True  origListVar  suffDpdsOrigCag deps
+    mkDepList      = mkL True  depListVar   suffDpdsSrcCag  deps
+    mkMainList     = mkL False mainListVar  suffMainSrcCag  deps
 
     encode n = namePrefix ++ map (toUnder . toUpper) (stripExt n)
 
@@ -272,6 +285,8 @@ cmdLineOpts
           "Varname for the list of dependencies"
      ,  Option ""   ["deporigdpdsvar"]  (OptArg oDepOrigDpdsVar "<name>")
           "Varname for the list of original dependencies"
+     ,  Option ""   ["depderivdpdsvar"]  (OptArg oDepDerivDpdsVar "<name>")
+          "Varname for the list of derived dependencies"
      ,  Option ""   ["depbase"]         (OptArg oDepBaseDir "<dir>")
           "Root directory for the dependency generation"
      ,  Option ""   ["depign"]          (OptArg oDepIgn "(<file> )*")
@@ -315,6 +330,7 @@ cmdLineOpts
          oDepMainVar    ms o = o { optDepMainVar = maybe "FILES" id ms }
          oDepDpdsVar    ms o = o { optDepDpdsVar = maybe "DPDS" id ms }
          oDepOrigDpdsVar ms o = o { optDepOrigDpdsVar = maybe "ORIG_DPDS" id ms }
+         oDepDerivDpdsVar ms o = o { optDepDerivDpdsVar = maybe "DERIV_DPDS" id ms }
          oDepBaseDir ms o = o { optDepBaseDir = maybe "./" id ms }
          oDepTerm ms o = o { optDepTerm = maybe Map.empty (Map.fromList . parseDeps) ms }
          oDepIgn ms o = o { optDepIgn = maybe Set.empty (Set.fromList . words) ms }
