@@ -629,8 +629,6 @@ ffiJScriptMkCall ty
   where -- TODO : This cntTyArgs stuff is ugly. Doesn't UHC have something for this already?
         cntWrapTyArgs (Ty_App fn _) = cntTyArgs' fn
         cntWrapTyArgs _ = panic "shouldn't happen"
-        cntDynTyArgs (Ty_App _ arg) = cntTyArgs' arg
-        cntDynTyArgs _ = panic "shouldn't happen"
         cntTyArgs' (Ty_App t@(Ty_App {}) arg) = 1 + cntTyArgs' t + cntTyArgs' arg
         cntTyArgs' (Ty_App _ (Ty_App t@(Ty_App {}) arg)) = 1 + cntTyArgs' t + cntTyArgs' arg
         cntTyArgs' _ = 0
