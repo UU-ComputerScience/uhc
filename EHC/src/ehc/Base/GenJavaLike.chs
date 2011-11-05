@@ -178,7 +178,7 @@ javalikeMkFFICall
         , [ty] -> ty -> ForeignExtraction -> e -- make prim function
         , [ty] -> ty -> e -> [e] -> e          -- make prim call
         , Int -> e -> e                        -- make wrapper
-        , Int -> [e] -> e                        -- make dynamic
+        , Int -> [e] -> e                      -- make dynamic
         , e -> e                               -- evaluate
         , ty                                   -- default ty
         )
@@ -218,14 +218,12 @@ javalikeMkFFICall
 %%[[8
         primE   = mkPrim argsTy resTy ffi
 %%][90
-        -- 20101207 TBD: wrap/dyna
         primE   = case impExtract of
                     ForeignExtraction_Plain {forextractEnt = impEntNm}
                       -> mkPrim argsTy resTy ffi
                     ForeignExtraction_Wrapper
                       -> \(a:_) -> mkWrap 1 a
                     ForeignExtraction_Dynamic
-                      {- -> \(a:_) -> mkDyn  1 a-}
                       -> \as -> mkDyn (length as) as
 %%]]
 %%]
