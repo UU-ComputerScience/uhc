@@ -641,11 +641,18 @@ ffiJScriptMkCall ty
 %%][90
         mkObj = flip jsCall []
         mk = foreignexprEval (J.Expr_Sel,J.Expr_ArrInx,J.Expr_Call,id,mkObj,jsVar,J.Expr_Str) (forextractForeignExpr ent)
-        -- TODO: Infer the number of arguments from the type
-        -- TODO: What's that second argument to apply? (The thing we hardcode as undefined now)
-        mkWrap n e = J.Expr_Fun Nothing as (J.Stat_Block [bdy])
+        -- TODO: What's that second argument to jsApp? (The thing we hardcode as undefined now)
+        mkWrap n (e:es) = J.Expr_Fun Nothing as (J.Stat_Block [bdy])
           where as   = mkArgs (cntWrapTyArgs ty)
-                bdy  = J.Stat_Ret $ jsEvl $ jsApp e $ (map jsVar as) ++ [jsVar "undefined"]
+                -- TODO: Apparently we only need this hardcoded "$__2" when the
+                -- callback is in IO (or possible any monad). Why? Also, we of
+                -- course want to get rid of hardcoding...
+                -- Perhaps we need to apply some monadic function in case of a
+                -- monad? bind? How do we determine this? Do we always have to
+                -- generate a bind, since we're in IO anyway? Do we just want
+                -- to require callbacks to be in IO and hardcode this last
+                -- parameter? If so, we do need to modify the typechecker
+                bdy  = J.Stat_Ret $ jsEvl $ jsApp e $ (map jsVar as) ++ [jsVar "$__2"]
 
         mkDyn n (e:es) = jsEvl $ J.Expr_Call e (map jsEvl es)
 

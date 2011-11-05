@@ -177,7 +177,7 @@ javalikeMkFFICall
         ,         basicinfo -> (e -> e, ty)    -- box
         , [ty] -> ty -> ForeignExtraction -> e -- make prim function
         , [ty] -> ty -> e -> [e] -> e          -- make prim call
-        , Int -> e -> e                        -- make wrapper
+        , Int -> [e] -> e                      -- make wrapper
         , Int -> [e] -> e                      -- make dynamic
         , e -> e                               -- evaluate
         , ty                                   -- default ty
@@ -222,7 +222,7 @@ javalikeMkFFICall
                     ForeignExtraction_Plain {forextractEnt = impEntNm}
                       -> mkPrim argsTy resTy ffi
                     ForeignExtraction_Wrapper
-                      -> \(a:_) -> mkWrap 1 a
+                      -> \as -> mkWrap (length as) as
                     ForeignExtraction_Dynamic
                       -> \as -> mkDyn (length as) as
 %%]]
