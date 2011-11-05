@@ -588,10 +588,6 @@ ffiJScriptMkCall
 ffiJScriptMkCall ty
 %%[[90
      ent
-     opts
-     evl
-     ns
-     nm
 %%]]
   = javalikeMkFFICall
       ( const tyDefault
@@ -621,10 +617,6 @@ ffiJScriptMkCall ty
       )
 %%[[90
       ent
-      opts
-      evl
-      ns
-      nm
 %%]]
   where -- TODO : This cntTyArgs stuff is ugly. Doesn't UHC have something for this already?
         cntWrapTyArgs (Ty_App fn _) = cntTyArgs' fn
