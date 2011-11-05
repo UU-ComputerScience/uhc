@@ -619,11 +619,11 @@ ffiJScriptMkCall ty
       ent
 %%]]
   where -- TODO : This cntTyArgs stuff is ugly. Doesn't UHC have something for this already?
-        cntWrapTyArgs (Ty_App fn _) = cntTyArgs' fn
+        cntWrapTyArgs (Ty_App fn _) = cntTyArgs fn
         cntWrapTyArgs _ = panic "shouldn't happen"
-        cntTyArgs' (Ty_App t@(Ty_App {}) arg) = 1 + cntTyArgs' t + cntTyArgs' arg
-        cntTyArgs' (Ty_App _ (Ty_App t@(Ty_App {}) arg)) = 1 + cntTyArgs' t + cntTyArgs' arg
-        cntTyArgs' _ = 0
+        cntTyArgs (Ty_App t@(Ty_App {}) arg) = 1 + cntTyArgs t + cntTyArgs arg
+        cntTyArgs (Ty_App _ (Ty_App t@(Ty_App {}) arg)) = 1 + cntTyArgs t + cntTyArgs arg
+        cntTyArgs _ = 0
         bx = (id,tyDefault)
         mkfargs f as -- TODO: Is this redundant?
 %%[[90
