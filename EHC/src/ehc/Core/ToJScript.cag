@@ -619,11 +619,7 @@ ffiJScriptMkCall ty
       ent
 %%]]
   where -- TODO : This cntTyArgs stuff is ugly. Doesn't UHC have something for this already?
-        cntWrapTyArgs (Ty_App fn _) = cntTyArgs fn
-        cntWrapTyArgs _ = panic "shouldn't happen"
-        cntTyArgs (Ty_App t@(Ty_App {}) arg) = 1 + cntTyArgs t + cntTyArgs arg
-        cntTyArgs (Ty_App _ (Ty_App t@(Ty_App {}) arg)) = 1 + cntTyArgs t + cntTyArgs arg
-        cntTyArgs _ = 0
+        cntWrapTyArgs (Ty_App fn _) = tyNumArgs fn
         bx = (id,tyDefault)
         mkfargs f as -- TODO: Is this redundant?
 %%[[90
@@ -641,28 +637,41 @@ ffiJScriptMkCall ty
 %%][90
         mkObj = flip jsCall []
         mk = foreignexprEval (J.Expr_Sel,J.Expr_ArrInx,J.Expr_Call,id,mkObj,jsVar,J.Expr_Str) (forextractForeignExpr ent)
-        -- TODO: What's that second argument to jsApp? (The thing we hardcode as undefined now)
         mkWrap n (e:es) = J.Expr_Fun Nothing as (J.Stat_Block [bdy])
-          where as   = mkArgs (cntWrapTyArgs ty)
-                -- TODO: Apparently we only need this hardcoded "$__2" when the
-                -- callback is in IO (or possible any monad). Why? Also, we of
-                -- course want to get rid of hardcoding...
-                -- Perhaps we need to apply some monadic function in case of a
-                -- monad? bind? How do we determine this? Do we always have to
-                -- generate a bind, since we're in IO anyway? Do we just want
-                -- to require callbacks to be in IO and hardcode this last
-                -- parameter? If so, we do need to modify the typechecker
-                bdy  = J.Stat_Ret $ jsEvl $ jsApp e $ (map jsVar as) ++ [jsVar "$__2"]
+          where as = map (mkHNm . ('v':) . show) [1..(tyNumArgs $ ft ty)]
+                -- TODO: Do not hardcode the $__2.
+                ft (Ty_App fn _) = fn
+                ft _ = panic "Should not happen: expecting type in the form of: `ft -> IO (FunPtr ft)`"
+                bdy  = J.Stat_Ret $ jsEvl $ jsApp e $ (map jsVar as) ++ vars
+                vars | tyIsMonadic (ft ty) = [jsVar "$__2"]
+                     | otherwise           = []
 
         mkDyn n (e:es) = jsEvl $ J.Expr_Call e (map jsEvl es)
-
-        mkArgs n = map (\x -> mkHNm $ "vr" ++ show x) [1..n]
 %%]]
         mkcall (f,as) -- TODO: Is this redundant?
 %%[[90
           | forextractOptIsPtr ent = f
 %%]]
           | otherwise              = J.Expr_Call f as
+%%]
+
+%%[(8 jscript) hs
+tyConIsArr :: Ty -> Bool
+tyConIsArr (Ty_Con n)  = n == hsnArrow
+tyConIsArr _           = False
+
+tyConIsTy :: Ty -> Bool
+tyConIsTy t@(Ty_Con {})  = not (tyConIsArr t)
+tyConIsTy _              = False
+
+tyIsMonadic :: Ty -> Bool
+tyIsMonadic (Ty_App _ (Ty_App _ (Ty_App f _)))  = tyConIsTy f
+tyIsMonadic _                                   = False
+
+tyNumArgs :: Ty -> Int
+tyNumArgs (Ty_App t@(Ty_App {}) arg)             = 1 + tyNumArgs t + tyNumArgs arg
+tyNumArgs (Ty_App _ (Ty_App t@(Ty_App {}) arg))  = 1 + tyNumArgs t + tyNumArgs arg
+tyNumArgs _                                      = 0
 %%]
 
 
