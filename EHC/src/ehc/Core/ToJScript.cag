@@ -618,9 +618,7 @@ ffiJScriptMkCall ty
 %%[[90
       ent
 %%]]
-  where -- TODO : This cntTyArgs stuff is ugly. Doesn't UHC have something for this already?
-        cntWrapTyArgs (Ty_App fn _) = tyNumArgs fn
-        bx = (id,tyDefault)
+  where bx = (id,tyDefault)
         mkfargs f as -- TODO: Is this redundant?
 %%[[90
           | isJust mbArgThis = (J.Expr_Sel this f, as')
@@ -637,7 +635,7 @@ ffiJScriptMkCall ty
 %%][90
         mkObj = flip jsCall []
         mk = foreignexprEval (J.Expr_Sel,J.Expr_ArrInx,J.Expr_Call,id,mkObj,jsVar,J.Expr_Str) (forextractForeignExpr ent)
-        mkWrap n (e:es) = J.Expr_Fun Nothing as (J.Stat_Block [bdy])
+        mkWrap n (e:_) = J.Expr_Fun Nothing as (J.Stat_Block [bdy])
           where as = map (mkHNm . ('v':) . show) [1..(tyNumArgs $ ft ty)]
                 -- TODO: Do not hardcode the $__2.
                 ft (Ty_App fn _) = fn
