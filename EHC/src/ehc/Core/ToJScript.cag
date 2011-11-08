@@ -633,18 +633,22 @@ ffiJScriptMkCall ty
 %%[[8
         mk = J.Expr_Call
 %%][90
-        mkObj = flip jsCall []
+        -- TODO: How do I get access to all JS function arguments?
+        -- TODO: Modify the parser: we don't need anything else besides {}
+        mkObj str = jsCall "primToPlainObj" [jsVar "$__3"]
         mk = foreignexprEval (J.Expr_Sel,J.Expr_ArrInx,J.Expr_Call,id,mkObj,jsVar,J.Expr_Str) (forextractForeignExpr ent)
         mkWrap n (e:_) = J.Expr_Fun Nothing as (J.Stat_Block [bdy])
           where as = map (mkHNm . ('v':) . show) [1..(tyNumArgs $ ft ty)]
-                -- TODO: Do not hardcode the $__2.
                 ft (Ty_App fn _) = fn
                 ft _ = panic "Should not happen: expecting type in the form of: `ft -> IO (FunPtr ft)`"
-                bdy  = J.Stat_Ret $ jsEvl $ jsApp e $ (map jsVar as) ++ vars
-                vars | tyIsMonadic (ft ty) = [jsVar "$__2"]
+                rn   = mkHNm "res"
+                bdy  = J.Stat_Block [
+                            J.Stat_VarDecl rn $ Just $ jsEvl $ jsApp e $ (map jsVar as) ++ vars
+                         ,  J.Stat_Ret $ J.Expr_ArrInx (J.Expr_Var rn) (J.Expr_Int 1)]
+                vars | tyIsMonadic (ft ty) = [J.Expr_Arr []]
                      | otherwise           = []
 
-        mkDyn n (e:es) = jsEvl $ J.Expr_Call e (map jsEvl es)
+        mkDyn n (e:es) = J.Expr_Call e es
 %%]]
         mkcall (f,as) -- TODO: Is this redundant?
 %%[[90

@@ -2179,7 +2179,6 @@ foldObj = function (alg, target, original ) {
       if ( copyIsArray ) {
         copyIsArray = false;
         clone = src && isArray(src) ? src : [];
-
       } else {
         clone = src && isPlainObject(src) ? src : {};
       }
