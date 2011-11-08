@@ -2155,11 +2155,7 @@ primClone = function(obj) {
 primToPlainObj = function ( obj ) {
   var toPlainAlg = function(name, target, copy) {
     if (name != "_tag_") {
-      if ( type(copy) === "object" && copy["__eOrV__"] !== undefined ) {
-        target[name] = _e_(copy);
-      } else {
-        target[name] = copy;
-      }
+      target[name] = _e_(copy);
     }
   };
   return foldObj(toPlainAlg, {}, obj);
