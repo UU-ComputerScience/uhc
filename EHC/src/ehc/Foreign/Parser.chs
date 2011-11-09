@@ -132,7 +132,7 @@ pForeignExpr
                      <|> (\i _ -> ForeignExpr_Arg (tokMkInt i)) <$> pInteger10Tk
                      )
               <|> pStr
-        pObj  = ForeignExpr_ObjData <$> (pOCURLY *> pForeignVar <* pCCURLY)
+        pObj  = ForeignExpr_ObjData <$ pOCURLY <* pCCURLY
         pEnt  = ForeignExpr_EntNm <$> pForeignVar
         pStr  = (ForeignExpr_Str . tokMkStr) <$> pStringTk
         pPtr  = ForeignExpr_Ptr <$ pAMPERSAND

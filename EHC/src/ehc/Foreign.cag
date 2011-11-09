@@ -70,7 +70,7 @@ foreignexprEval
         , e -> e -> e           -- index
         , e -> [e] -> e         -- call
         , e -> e                -- as var/ptr
-        , String -> e           -- object
+        , e                     -- object
         , String -> e           -- name
         , String -> e           -- string
         )
@@ -117,9 +117,8 @@ foreignexprEval
                                             ao = evs a ie
                                         in  mkOE ( mkCall (oeE fo) (concatMap oeEL ao) )
                                                ( Set.unions $ oeUsed fo : map oeUsed ao )
-        ev (ForeignExpr_ObjData    s)
-                                 ie =   let
-                                        in  mkOE ( mkObj s    )
+        ev (ForeignExpr_ObjData) ie =   let
+                                        in  mkOE ( mkObj     )
                                                  ( Set.empty )
         evs feL                  ie =   map (\e -> ev e ie) feL
 %%]
@@ -151,7 +150,7 @@ instance Serialize ForeignExpr where
   sput (ForeignExpr_CallArgs a b) = sputWord8 7  >> sput a >> sput b
   sput (ForeignExpr_AllArg      ) = sputWord8 8
   sput (ForeignExpr_Str      a  ) = sputWord8 9  >> sput a
-  sput (ForeignExpr_ObjData  a  ) = sputWord8 10 >> sput a
+  sput (ForeignExpr_ObjData     ) = sputWord8 10
   sget = do
     t <- sgetWord8
     case t of
@@ -164,7 +163,7 @@ instance Serialize ForeignExpr where
         6  -> liftM  ForeignExpr_Call        sget
         7  -> liftM2 ForeignExpr_CallArgs    sget sget
         8  -> return ForeignExpr_AllArg
-        10 -> liftM  ForeignExpr_ObjData     sget
+        10 -> return ForeignExpr_ObjData
 
 
 instance Serialize ForeignEnt where

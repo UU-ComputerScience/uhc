@@ -635,7 +635,7 @@ ffiJScriptMkCall ty
 %%][90
         -- TODO: How do I get access to all JS function arguments?
         -- TODO: Modify the parser: we don't need anything else besides {}
-        mkObj str = jsCall "primToPlainObj" [jsVar "$__3"]
+        mkObj = jsCall "primToPlainObj" [jsVar "$__3"]
         mk = foreignexprEval (J.Expr_Sel,J.Expr_ArrInx,J.Expr_Call,id,mkObj,jsVar,J.Expr_Str) (forextractForeignExpr ent)
         mkWrap n (e:_) = J.Expr_Fun Nothing as (J.Stat_Block [bdy])
           where as = map (mkHNm . ('v':) . show) [1..(tyNumArgs $ ft ty)]
@@ -678,6 +678,7 @@ tyNumArgs _                                      = 0
 
 
 %%[(90 jscript) hs
+-- TODO: Get rid of this; revert back to the old export
 -- | construct the ffe call
 ffeJScriptMkCall
   :: ForeignExtraction
@@ -717,9 +718,9 @@ ffeJScriptMkCall
 -- jstats defines the var binds in the function body: var $__64 = ....
 -- mjsLamBody essentially provides the return keyword
 -- TODO: Make sure it's a datatype, not some primitive thing. Done?
-        mkObj _ = case ty of -- TODO: Bah, this should be done during type checking!
-                    (Ty_Con _) -> mkBdy $ Seq.map toPlain jstats
-                    _          -> panic "Only datatype expression can be exported as a JavaScript object"
+        mkObj = case ty of -- TODO: Bah, this should be done during type checking!
+                  (Ty_Con _) -> mkBdy $ Seq.map toPlain jstats
+                  _          -> panic "Only datatype expression can be exported as a JavaScript object"
           where toPlain (J.Stat_VarDecl nm (Just c@(J.Expr_Call {}))) = J.Stat_VarDecl nm (Just (jsCall "primToPlainObj" [c]))
                 toPlain stat                                          = stat
         mkVar _ = mkBdy jstats
