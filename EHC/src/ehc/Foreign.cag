@@ -118,7 +118,7 @@ foreignexprEval
                                         in  mkOE ( mkCall (oeE fo) (concatMap oeEL ao) )
                                                ( Set.unions $ oeUsed fo : map oeUsed ao )
         ev (ForeignExpr_ObjData) ie =   let
-                                        in  mkOE ( mkObj (ieArgs ie)    )
+                                        in  mkOE ( mkObj (ieArgs ie) )
                                                  ( Set.empty )
         evs feL                  ie =   map (\e -> ev e ie) feL
 %%]

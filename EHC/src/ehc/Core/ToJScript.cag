@@ -591,7 +591,6 @@ ffiJScriptMkCall ty
 %%[[90
      ent
 %%]]
-  opts eval mns mn
   = javalikeMkFFICall
       ( const tyDefault
       , \_ _ -> bx
@@ -616,7 +615,6 @@ ffiJScriptMkCall ty
 %%[[90
       ent
 %%]]
-      opts eval mns mn
   where bx = (id,tyDefault)
         mkfargs f as -- TODO: Is this redundant?
 %%[[90
@@ -635,16 +633,12 @@ ffiJScriptMkCall ty
         mkObj as = jsCall "primToPlainObj" as
         mk = foreignexprEval (J.Expr_Sel,J.Expr_ArrInx,J.Expr_Call,id,mkObj,jsVar,J.Expr_Str) (forextractForeignExpr ent)
         -- TODO: Reuse some of the foreign export code for this? It's more or less generating the same code...
+        -- TODO: Document that we require callback functions to be in IO
         mkWrap n (e:_) = J.Expr_Fun Nothing as (J.Stat_Block bdy)
-          where as = map (mkHNm . ('v':) . show) [1..(tyNumArgs $ ft ty)]
-                -- TODO: We require `ft` to be in IO as well. Document this.
-                ft (Ty_App fn _) = fn
-                ft _ = panic "Should not happen: expecting type in the form of: `ft -> IO (FunPtr ft)`"
+          where as = map (mkHNm . ('v':) . show) [1..(tyNumArgs ty - 1)]
                 rn   = mkHNm "res"
                 bdy  = [ J.jsVarDecl rn $ jsEvl $ jsApp e $ (map jsVar as) ++ [J.Expr_Arr []]
                        , J.Stat_Ret $ J.Expr_ArrInx (jsVar rn) (jsIntConst 1) ]
-                {- vars | tyIsMonadic (ft ty) = [J.Expr_Arr []]-}
-                     {- | otherwise           = []-}
 
         mkDyn _ (e:es) = J.Expr_Call e es
 %%]]
@@ -656,19 +650,6 @@ ffiJScriptMkCall ty
 %%]
 
 %%[(8 jscript) hs
--- TODO: Re-enable at some point?
-{- tyConIsArr :: Ty -> Bool-}
-{- tyConIsArr (Ty_Con n)  = n == hsnArrow-}
-{- tyConIsArr _           = False-}
-
-{- tyConIsTy :: Ty -> Bool-}
-{- tyConIsTy t@(Ty_Con {})  = not (tyConIsArr t)-}
-{- tyConIsTy _              = False-}
-
-{- tyIsMonadic :: Ty -> Bool-}
-{- tyIsMonadic (Ty_App _ (Ty_App _ (Ty_App f _)))  = tyConIsTy f-}
-{- tyIsMonadic _                                   = False-}
-
 tyNumArgs :: Ty -> Int
 tyNumArgs (Ty_App t@(Ty_App {}) arg)             = 1 + tyNumArgs t + tyNumArgs arg
 tyNumArgs (Ty_App _ (Ty_App t@(Ty_App {}) arg))  = 1 + tyNumArgs t + tyNumArgs arg
