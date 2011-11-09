@@ -396,7 +396,7 @@ SEM CExpr
                                                         @ty
                                                         @foreignEntInfo
                                                         @lhs.opts False @argMbConL @resMbCon
-                            .   js              =   if null @argMbConL
+                            .   js              = if null @argMbConL
                                                     then (@mkResJS $ @mkFFI [])
                                                     else (jsVar $ mkHNm $ forextractEnt @foreignEntInfo)
   | Let         loc         .   (jbindsLet,jstatsLet)
@@ -576,7 +576,9 @@ SEM CExpr
 -- | construct the ffi call
 ffiJScriptMkCall
   ::  Ty                          -- type of the imported function
+%%[[90
   ->  ForeignExtraction
+%%]]
   ->  EHCOpts
   ->  Bool                        -- do eval of args
   ->  [Maybe HsName]              -- list of (possibly) type constructor names of arguments
@@ -589,6 +591,7 @@ ffiJScriptMkCall ty
 %%[[90
      ent
 %%]]
+  opts eval mns mn
   = javalikeMkFFICall
       ( const tyDefault
       , \_ _ -> bx
@@ -606,18 +609,14 @@ ffiJScriptMkCall ty
                  -> panic "ffiJScriptMkCall.mkPrimFun: dynamic not implemented"
 %%]]
       , \_ _ -> mk
-%%[[8
-      , panic "ffiJScriptMkCall: wrapper not implemented."
-      , panic "ffiJScriptMkCall: dynamic not implemented."
-%%][90
       , mkWrap
       , mkDyn
-%%]]
       , jsEvl, tyDefault
       )
 %%[[90
       ent
 %%]]
+      opts eval mns mn
   where bx = (id,tyDefault)
         mkfargs f as -- TODO: Is this redundant?
 %%[[90
@@ -633,22 +632,21 @@ ffiJScriptMkCall ty
 %%[[8
         mk = J.Expr_Call
 %%][90
-        -- TODO: How do I get access to all JS function arguments?
-        -- TODO: Modify the parser: we don't need anything else besides {}
-        mkObj = jsCall "primToPlainObj" [jsVar "$__3"]
+        mkObj as = jsCall "primToPlainObj" as
         mk = foreignexprEval (J.Expr_Sel,J.Expr_ArrInx,J.Expr_Call,id,mkObj,jsVar,J.Expr_Str) (forextractForeignExpr ent)
-        mkWrap n (e:_) = J.Expr_Fun Nothing as (J.Stat_Block [bdy])
+        -- TODO: Reuse some of the foreign export code for this? It's more or less generating the same code...
+        mkWrap n (e:_) = J.Expr_Fun Nothing as (J.Stat_Block bdy)
           where as = map (mkHNm . ('v':) . show) [1..(tyNumArgs $ ft ty)]
+                -- TODO: We require `ft` to be in IO as well. Document this.
                 ft (Ty_App fn _) = fn
                 ft _ = panic "Should not happen: expecting type in the form of: `ft -> IO (FunPtr ft)`"
                 rn   = mkHNm "res"
-                bdy  = J.Stat_Block [
-                            J.Stat_VarDecl rn $ Just $ jsEvl $ jsApp e $ (map jsVar as) ++ vars
-                         ,  J.Stat_Ret $ J.Expr_ArrInx (J.Expr_Var rn) (J.Expr_Int 1)]
-                vars | tyIsMonadic (ft ty) = [J.Expr_Arr []]
-                     | otherwise           = []
+                bdy  = [ J.jsVarDecl rn $ jsEvl $ jsApp e $ (map jsVar as) ++ [J.Expr_Arr []]
+                       , J.Stat_Ret $ J.Expr_ArrInx (jsVar rn) (jsIntConst 1) ]
+                {- vars | tyIsMonadic (ft ty) = [J.Expr_Arr []]-}
+                     {- | otherwise           = []-}
 
-        mkDyn n (e:es) = J.Expr_Call e es
+        mkDyn _ (e:es) = J.Expr_Call e es
 %%]]
         mkcall (f,as) -- TODO: Is this redundant?
 %%[[90
@@ -658,17 +656,18 @@ ffiJScriptMkCall ty
 %%]
 
 %%[(8 jscript) hs
-tyConIsArr :: Ty -> Bool
-tyConIsArr (Ty_Con n)  = n == hsnArrow
-tyConIsArr _           = False
+-- TODO: Re-enable at some point?
+{- tyConIsArr :: Ty -> Bool-}
+{- tyConIsArr (Ty_Con n)  = n == hsnArrow-}
+{- tyConIsArr _           = False-}
 
-tyConIsTy :: Ty -> Bool
-tyConIsTy t@(Ty_Con {})  = not (tyConIsArr t)
-tyConIsTy _              = False
+{- tyConIsTy :: Ty -> Bool-}
+{- tyConIsTy t@(Ty_Con {})  = not (tyConIsArr t)-}
+{- tyConIsTy _              = False-}
 
-tyIsMonadic :: Ty -> Bool
-tyIsMonadic (Ty_App _ (Ty_App _ (Ty_App f _)))  = tyConIsTy f
-tyIsMonadic _                                   = False
+{- tyIsMonadic :: Ty -> Bool-}
+{- tyIsMonadic (Ty_App _ (Ty_App _ (Ty_App f _)))  = tyConIsTy f-}
+{- tyIsMonadic _                                   = False-}
 
 tyNumArgs :: Ty -> Int
 tyNumArgs (Ty_App t@(Ty_App {}) arg)             = 1 + tyNumArgs t + tyNumArgs arg

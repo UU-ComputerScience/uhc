@@ -70,7 +70,7 @@ foreignexprEval
         , e -> e -> e           -- index
         , e -> [e] -> e         -- call
         , e -> e                -- as var/ptr
-        , e                     -- object
+        , [e] -> e              -- object
         , String -> e           -- name
         , String -> e           -- string
         )
@@ -118,7 +118,7 @@ foreignexprEval
                                         in  mkOE ( mkCall (oeE fo) (concatMap oeEL ao) )
                                                ( Set.unions $ oeUsed fo : map oeUsed ao )
         ev (ForeignExpr_ObjData) ie =   let
-                                        in  mkOE ( mkObj     )
+                                        in  mkOE ( mkObj (ieArgs ie)    )
                                                  ( Set.empty )
         evs feL                  ie =   map (\e -> ev e ie) feL
 %%]
