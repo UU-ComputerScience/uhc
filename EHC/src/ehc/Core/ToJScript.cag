@@ -634,8 +634,8 @@ ffiJScriptMkCall ty
         mk = foreignexprEval (J.Expr_Sel,J.Expr_ArrInx,J.Expr_Call,id,mkObj,jsVar,J.Expr_Str) (forextractForeignExpr ent)
         -- TODO: Reuse some of the foreign export code for this? It's more or less generating the same code...
         -- TODO: Document that we require callback functions to be in IO
-        mkWrap n (e:_) = J.Expr_Fun Nothing as (J.Stat_Block bdy)
-          where as = map (mkHNm . ('v':) . show) [1..(tyNumArgs ty - 1)]
+        mkWrap n (e:_) = mkWrapFn as bdy
+          where as   = map (mkHNm . ('v':) . show) [1..(tyNumArgs ty - 1)]
                 rn   = mkHNm "res"
                 bdy  = [ J.jsVarDecl rn $ jsEvl $ jsApp e $ (map jsVar as) ++ [J.Expr_Arr []]
                        , J.Stat_Ret $ J.Expr_ArrInx (jsVar rn) (jsIntConst 1) ]
@@ -649,11 +649,14 @@ ffiJScriptMkCall ty
           | otherwise              = J.Expr_Call f as
 %%]
 
-%%[(8 jscript) hs
+%%[(90 jscript) hs
 tyNumArgs :: Ty -> Int
 tyNumArgs (Ty_App t@(Ty_App {}) arg)             = 1 + tyNumArgs t + tyNumArgs arg
 tyNumArgs (Ty_App _ (Ty_App t@(Ty_App {}) arg))  = 1 + tyNumArgs t + tyNumArgs arg
 tyNumArgs _                                      = 0
+
+mkWrapFn :: [HsName] -> [J.Stat] -> J.Expr
+mkWrapFn as bdy = J.Expr_Fun Nothing as $ J.Stat_Block bdy
 %%]
 
 
@@ -671,8 +674,8 @@ SEM CBindAspect
                                                              else str caf
 
 %%[[90
-  | FFE         loc         .   js              =   J.Expr_Fun Nothing @jsArgL
-                                                    $ J.Stat_Block $ jsBody J.Stat_Ret @expr.jbinds @expr.jstats (Just @expr.jsLamBody)
+  | FFE         loc         .   js              = mkWrapFn @jsArgL
+                                                    $ jsBody J.Stat_Ret @expr.jbinds @expr.jstats (Just @expr.jsLamBody)
 %%]]
 %%]
 
