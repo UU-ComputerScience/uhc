@@ -67,9 +67,7 @@ pForeignEnt dir way dfltNm
       (_                      ,FFIWay_CCall  ) -> ForeignEnt_CCall        <$> pCCall       dfltNm
       (_                      ,FFIWay_Prim   ) -> ForeignEnt_PrimCall     <$> pPrimCall    dfltNm
 %%[[(90 jscript)
-      {- (ForeignDirection_Import,FFIWay_JScript) -> ForeignEnt_JScriptCall  <$> pJScriptCall dfltNm-}
-      -- TODO: Verify that we really want to use the JScript calling convention for both imports and exports
-      (_                      ,FFIWay_JScript) -> ForeignEnt_JScriptCall  <$> pJScriptCall dfltNm
+      (ForeignDirection_Import,FFIWay_JScript) -> ForeignEnt_JScriptCall  <$> pJScriptCall dfltNm
 %%]]
       _                                        -> ForeignEnt_PlainCall    <$> pPlainCall   dfltNm
 

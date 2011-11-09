@@ -677,61 +677,6 @@ tyNumArgs _                                      = 0
 %%]
 
 
-%%[(90 jscript) hs
--- TODO: Get rid of this; revert back to the old export
--- | construct the ffe call
-ffeJScriptMkCall
-  :: ForeignExtraction
-  -> EHCOpts
-  -> Ty
-  -> [HsName]
-  -> Seq.Seq JBind
-  -> Seq.Seq J.Stat
-  -> Maybe J.Expr
-  -> ( [J.Expr -> J.Expr]        -- additional unwrapping for each argument
-     ,  J.Expr -> J.Expr         -- and result
-     , [J.Expr] -> J.Expr        -- and primitive call itself
-     )
-ffeJScriptMkCall
-  ent opts ty jsArgL jbinds jstats mjsLamBody
-  = javalikeMkFFICall
-      ( const tyDefault
-      , \_ _ -> bx
-      , \_ -> bx
-      , \_ _ impExtract
-          -> case impExtract of
-               ForeignExtraction_Plain {forextractEnt = impEntNm}
-                 -> jsVar $ mkHNm impEntNm
-               ForeignExtraction_Wrapper
-                 -> panic "ffeJScriptMkCall.mkPrimFun: wrapper not implemented"
-               ForeignExtraction_Dynamic
-                 -> panic "ffeJScriptMkCall.mkPrimFun: dynamic not implemented"
-      , \_ _ -> mk
-      , panic "ffeJScriptMkCall: wrapper not implemented"
-      , panic "ffeJScriptMkCall: dynamic not implemented"
-      , jsEvl, tyDefault
-      )
-      ent opts False [] Nothing
-  where bx = (id, tyDefault)
--- Notes:
--- jbinds defines the var binds in the function definition: function($__,$__63)
--- jstats defines the var binds in the function body: var $__64 = ....
--- mjsLamBody essentially provides the return keyword
--- TODO: Make sure it's a datatype, not some primitive thing. Done?
-        mkObj = case ty of -- TODO: Bah, this should be done during type checking!
-                  (Ty_Con _) -> mkBdy $ Seq.map toPlain jstats
-                  _          -> panic "Only datatype expression can be exported as a JavaScript object"
-          where toPlain (J.Stat_VarDecl nm (Just c@(J.Expr_Call {}))) = J.Stat_VarDecl nm (Just (jsCall "primToPlainObj" [c]))
-                toPlain stat                                          = stat
-        mkVar _ = mkBdy jstats
-        mkBdy ss = J.Expr_Fun Nothing jsArgL
-                 $ J.Stat_Block $ jsBody J.Stat_Ret jbinds ss mjsLamBody
-        pc = panic "ffeJScriptMkCall.foreignexprEval: not all foreign expressions are supported in foreign exports"
-        mk = foreignexprEval (pc, pc, pc, pc, mkObj, mkVar, pc) (forextractForeignExpr ent)
-%%]
-
-
-
 %%[(8 jscript)
 SEM CBindAspect
   | Bind        loc         .   js              =   let str  = if @lhs.evalCtx == EvalCtx_Eval then jsEvl else id
@@ -746,16 +691,8 @@ SEM CBindAspect
                                                              else str caf
 
 %%[[90
-  | FFE         loc         .   (mkArgsJS,mkResJS,mkFFI)
-                                                =   ffeJScriptMkCall
-                                                        @foreignEntInfo
-                                                        @lhs.opts
-                                                        @ty
-                                                        @jsArgL
-                                                        @expr.jbinds
-                                                        @expr.jstats
-                                                        (Just @expr.jsLamBody)
-                loc         .   js              =   @mkResJS $ @mkFFI []
+  | FFE         loc         .   js              =   J.Expr_Fun Nothing @jsArgL
+                                                    $ J.Stat_Block $ jsBody J.Stat_Ret @expr.jbinds @expr.jstats (Just @expr.jsLamBody)
 %%]]
 %%]
 
