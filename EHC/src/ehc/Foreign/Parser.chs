@@ -121,10 +121,10 @@ pForeignVar = tokGetVal <$> (pVARID <|> pCONID)
 pForeignExpr :: ForeignParser ForeignExpr
 pForeignExpr
   = pExp
-  where pExp  = mk <$> pPre <*> pExpB <*> pPost
+  where pExp  = pObj <|> mk <$> pPre <*> pExpB <*> pPost
         pPre  = pList pPtr
         pPost = pList (pSel <|> pInx <|> pCall)
-        pExpB = pObj <|> pArg <|> pEnt
+        pExpB = pArg <|> pEnt
         pArg  = pPERCENT
                 <**> (   const ForeignExpr_AllArg               <$  pSTAR
                      <|> (\i _ -> ForeignExpr_Arg (tokMkInt i)) <$> pInteger10Tk
