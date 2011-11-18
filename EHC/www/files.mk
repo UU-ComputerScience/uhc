@@ -19,4 +19,3 @@ WWW_DIST_FILES			:= $(WWW_ALL_SRC)
 # make rules
 $(WWW_DOC_FILES): $(WWW_SRC_PREFIX)%: $(DOC_PREFIX)%
 	cp $< $@
-

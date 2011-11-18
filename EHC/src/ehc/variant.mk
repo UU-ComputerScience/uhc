@@ -109,15 +109,27 @@ INSTALLFORBLD_EHC_LIB_PREFIX			:= $(INSTALLFORBLD_PREFIX)lib/$(LIB_EHC_PKG_NAME)
 INSTALLFORBLDABS_EHC_LIB_PREFIX			:= $(INSTALLFORBLDABS2_PREFIX)lib/$(LIB_EHC_PKG_NAME)-$(EH_VERSION_SHORT)/
 INSTALLFORBLD_EHC_LIB_AG_PREFIX			:= $(INSTALLFORBLD_EHC_LIB_PREFIX)ag/
 INSTALLFORBLDABS_EHC_LIB_AG_PREFIX		:= $(INSTALLFORBLDABS2_EHC_LIB_PREFIX)ag/
+
 ###########################################################################################
 # installation locations for ehc running time
 ###########################################################################################
 
 # expanded to current variant
 INSTALL_VARIANT_PREFIX					:= $(call FUN_INSTALL_VARIANT_PREFIX,$(EHC_VARIANT))
+INSTALLABS_VARIANT_PREFIX				:= $(call FUN_INSTALLABS_VARIANT_PREFIX,$(EHC_VARIANT))
 INSTALL_VARIANT_LIB_PREFIX				:= $(call FUN_INSTALL_VARIANT_LIB_PREFIX,$(EHC_VARIANT))
+INSTALLABS_VARIANT_LIB_PREFIX			:= $(call FUN_INSTALLABS_VARIANT_LIB_PREFIX,$(EHC_VARIANT))
 #INSTALL_VARIANT_LIB_TARGET_PREFIX		:= $(call FUN_INSTALL_VARIANT_LIB_TARGET_PREFIX,$(EHC_VARIANT),$(EHC_VARIANT_TARGET))
 #INSTALL_VARIANT_PKGLIB_TARGET_PREFIX	:= $(call FUN_INSTALL_VARIANT_PKGLIB_TARGET_PREFIX,$(EHC_VARIANT),$(EHC_VARIANT_TARGET))
+
+###########################################################################################
+# installation locations for ehc after building time, for ehc (compiler) library access,
+# in particular AG files of AG data types, to be included when writing AG semantics.
+# The corresponding HS file for the data type is already in the library/package.
+###########################################################################################
+
+INSTALL_VARIANT_LIB_AG_PREFIX			:= $(INSTALL_VARIANT_LIB_PREFIX)ag/
+INSTALLABS_VARIANT_LIB_AG_PREFIX		:= $(INSTALLABS_VARIANT_LIB_PREFIX)ag/
 
 ###########################################################################################
 # further derived info

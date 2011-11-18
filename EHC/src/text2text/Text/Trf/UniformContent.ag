@@ -108,13 +108,25 @@ SEM TextItem
                                                 =   if @cxHasSameTextType
                                                     then (Seq.empty,Seq.empty)
                                                     else case Map.lookup @texttype @lhs.pluginMp of
+                                                           Just plg | plgHasParserTextItems plg
+                                                             -> (res,Seq.fromList $ map (Err_Out . out . show) $ err)
+                                                             where toks = scan (plgScanOptsMp plg) (plgScanInitState plg) (infpAdv1Line @pos) (Seq.toList @text.scInput)
+                                                                   (res,err) = parseToResMsgs (plgParseTextItems2 plg) toks -- (tr "XX" (show $ take 100 toks) toks)
+                                                           _ -> (Seq.singleton (TextItem_NonSpace ("no uniformification for " ++ show @texttype)),Seq.singleton (Err_NoPlugin @texttype))
+  | * - T2T         loc         .   trfTextItems=   Seq.singleton @trf
+
+{-
+  | T2T             loc         .   (trfTextItems,errs)
+                                                =   if @cxHasSameTextType
+                                                    then (Seq.empty,Seq.empty)
+                                                    else case Map.lookup @texttype @lhs.pluginMp of
                                                            Just plg | isJust mbParse
                                                              -> (res,Seq.fromList $ map (Err_Out . out . show) $ err)
                                                              where toks = scan (plgScanOptsMp plg) (plgScanInitState plg) (infpAdv1Line @pos) (Seq.toList @text.scInput)
                                                                    (res,err) = parseToResMsgs (fromJust mbParse) toks -- (tr "XX" (show $ take 100 toks) toks)
                                                                    mbParse = plgParseTextItems plg
                                                            _ -> (Seq.singleton (TextItem_NonSpace ("no uniformification for " ++ show @texttype)),Seq.singleton (Err_NoPlugin @texttype))
-  | * - T2T         loc         .   trfTextItems=   Seq.singleton @trf
+-}
 
 -------------------------------------------------------------------------
 -- Replacement, as Text

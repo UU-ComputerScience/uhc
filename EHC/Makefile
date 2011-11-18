@@ -391,11 +391,11 @@ release-prepare:
 FUN_PREFIX2DIR			= $(patsubst %/,%,$(1))
 
 tst:
-	@echo $(EHC_VARIANT_TARGET)
-	@echo $(EHC_CFG_USE_UNIX_AND_C)
+	@echo $(INSABS_EHC_LIB_ALL_AG)
+	@echo $(EHC_AG_D_DDPDS_DERIV_AG)
 
 tstv:
-	$(MAKE) EHC_VARIANT=100 tst
+	$(MAKE) INCLUDE_DERIVED_MK=yes EHC_VARIANT=100 tst
 
 ###########################################################################################
 # Target: obsolete or to become so

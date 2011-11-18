@@ -165,6 +165,7 @@ specCharsAmpersand          =   "&"
 specCharsOther              =   "=,"
 
 keywsInBeginEnd				=	[ "tabular", "document" ]
+keywsInBeginEndGroupType	=	Map.keys grouptypeMp
 
 doclatexScanOpts :: ScanOpts
 doclatexScanOpts
@@ -254,7 +255,7 @@ pTextItemsArg       ::  T2TPr TextItems
 pTextItemsArg       =   pTextItemsP pTextItemArg
 
 pTextItemsArgNKeyws ::  T2TPr TextItems
-pTextItemsArgNKeyws =   pTextFirstAndItemsP pTextItemArg (pTextItemSpecs keywsInBeginEnd)
+pTextItemsArgNKeyws =   pTextFirstAndItemsP pTextItemArg (pTextItemSpecs $ keywsInBeginEnd ++ keywsInBeginEndGroupType)
 
 pTextItemsTbl       ::  T2TPr TextItems
 pTextItemsTbl       =   (:) <$> pTextItemTbl1 <*> pTextItemsP pTextItemTbl2 `opt` []
@@ -428,12 +429,6 @@ pGraphicsInlineOption
 pGraphicsInlineOption
                     =   pAnyFromMap pKey graphicsinlineoptionMp <* pKey "=" <*> pTextItemsP pTextItemOption
 
-
--- keywords
-{-
-pKeywsInBeginEnd	::  T2TPr TextItem
-pKeywsInBeginEnd	= 	pTextItemSpecs keywsInBeginEnd
--}
 
 -- cmds
 pCmd0Arg            ::  T2TPr TextItem
