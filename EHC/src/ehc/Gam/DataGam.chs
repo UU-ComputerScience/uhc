@@ -354,7 +354,9 @@ instance Serialize DataGamInfoVariant where
     case t of
       0 -> return DataGamInfoVariant_Plain
       1 -> liftM  DataGamInfoVariant_Newtype sget
+%%[[92
       2 -> return DataGamInfoVariant_Rec
+%%]]
 %%]
 
 %%[(50 hmtyinfer)
