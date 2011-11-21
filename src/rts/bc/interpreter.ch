@@ -9,10 +9,27 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
+// top of stack
 #define GB_TOS					(*sp)
 #define GB_SetTOS(x)			{*sp = Cast(GB_Word,x);}
-#define GB_Push(v)				{*(--sp) = (Cast(GB_Word,v)) ; }
 
+// pushing
+#define GB_ShftPush(v)			{*(--sp) = (Cast(GB_Word,v)) ; }
+#define GB_TyPushShft(ty,v)		{ty* sp_ = (ty*)sp; sp_--; *sp_ = Cast(ty,v); sp = (GB_Word*)sp_;}		/* avoid predecrement */
+#define GB_PushShft(v)			GB_TyPushShft(GB_Word,v)
+#define GB_Push(v)				GB_ShftPush(v)
+
+// pushing multiple values
+#define GB_PushFromTo(plo,phi)	/* push memory area on stack */ 				\
+								MemCopyBackward(phi,plo,sp) ;
+
+#define GB_PushNodeArgs(nd,hdr,phi,plo)	/* push args of `fun + args' node fields */ 				\
+								phi = Cast(GB_Ptr,&((nd)->content.fields[GB_NH_NrFlds(hdr)])) ;	\
+								plo = Cast(GB_Ptr,&((nd)->content.fields[1])) ;								\
+								IF_GB_TR_ON(3,printf("GB_PushNodeArgs:MemCopyBackward plo %p phi %p sp %p\n",plo,phi,sp);) ;			\
+								GB_PushFromTo(plo,phi) ;
+
+// popping
 #define GB_Popn(n)				(sp+=(n))
 #define GB_Pop					(sp++)
 #define GB_PopCastIn(ty,v)		{(v) = Cast(ty,*GB_Pop) ;}
@@ -40,9 +57,15 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
+// Reg access
+
+// reg relative using the type to influence the offset multiplication
 #define GB_RegRelCast(ty,r,o)		(Cast(ty*,r)+(o))
+// reg relative using the type of r to (implicitly) influence the offset multiplication
 #define GB_RegRel(r,o)				((r)+(o))
+// byte relative, content size determined by ty
 #define GB_RegByteRelCastx(ty,r,o)	GB_DerefCast(ty,GB_RegRelCast(GB_Byte,r,o))
+// same, but arithmetic determined by r
 #define GB_RegRelx(r,o)				GB_Deref(GB_RegRel(r,o))
 
 #define GB_RegByteRel(ty,r,o)		Cast(ty*,((Cast(GB_BytePtr,r))+(o)))
@@ -50,15 +73,39 @@
 %%]
 
 %%[8
-#define GB_SPRel(o)					GB_RegRel(sp,o)
-#define GB_SPRelx(o)				GB_Deref(GB_SPRel(o))
+// Reg setting
+#define GB_SetReg(r,x)				{r = Cast(GB_Word,x);}
+#define GB_SetRegRel(r,o,v)			{ *GB_RegRel(r,o) = v ; }
+#define GB_SetRegByteRel(ty,r,o,v)	{ *GB_RegByteRel(ty,r,o) = v ; }
 %%]
 
 %%[8
+// SP relative
+#define GB_SPRel(o)					GB_RegRel(sp,o)
+#define GB_SPRelx(o)				GB_Deref(GB_SPRel(o))
+
+#define GB_SPByteRel(ty,o)			GB_RegByteRel(ty,sp,o)
+#define GB_SPByteRelx(o)			GB_Deref(GB_SPByteRel(GB_Word,o))
+
+#define GB_SetSPRel(o,v)			GB_SetRegRel(sp,o,v)
+#define GB_SetSPByteRel(o,v)		GB_SetRegRel(sp,o,v)
+
+// TOS relative
+#define GB_SetTOSRel(o,x)			{ *GB_SPRel(o) = (x); }
+#define GB_SetTOSByteRel(o,x)		{ *Cast(GB_Ptr,GB_SPByteRel(GB_Word,o)) = (x); }
+#define GB_TOSCastedIn(ty,v)		{(v) = Cast(ty,GB_TOS) ;}
+
+#define GB_PopnUpdTOS(n,x)			{sp += (n) ; GB_SetTOS(x) ; }
+%%]
+
+%%[8
+// PC
 #define GB_PCRel(o)					GB_RegRel(pc,o)
 
-#define GB_SetRegRel(r,o,v)			{ *GB_RegRel(r,o) = v ; }
-#define GB_SetRegByteRel(ty,r,o,v)	{ *GB_RegByteRel(ty,r,o) = v ; }
+%%]
+
+%%[8
+// Call result
 #define GB_SetCallCResult(tys,tyv,r,o,v)	{ *GB_RegByteRel(tys,r,o) = *Cast(tyv*,Cast(void*,&v)) ; }
 %%]
 
@@ -556,6 +603,8 @@ Split into 2 groups:
 extern GB_Byte gb_code_Eval[] ;
 
 extern void gb_push( GB_Word x ) ;
+extern void gb_evalTos() ;
+extern void gb_applyTos() ;
 extern GB_Word gb_eval( GB_Word x ) ;
 
 #if GB_COUNT_STEPS
@@ -601,6 +650,135 @@ extern GB_NodePtr gb_chan_stderr ;
 
 %%[98
 extern void gb_chan_initstd() ;
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% The actual Virtual Machine instruction implementations,
+%%% for use directly by compiler and by the interpreter
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Naming convention:
+- VM: publicly available
+- VMI: if available then for interpreter only, the VM variant then uses the VMI variant via wrapper function.
+
+Moving data.
+
+Note: for now (20111114) the 64 bits variants are not always correctly taking a proper sized value when run on a 32 bit platform,
+so these are assumed not to be used, instead the user of these macros should take care of properly pushing multiple 32 bit word values in another way.
+
+%%[8
+// push various bitsized values, most efficient variant
+#define GB_VM_Push8(x)				GB_Push(x)
+#define GB_VM_Push16(x)				GB_Push(x)
+#define GB_VM_Push32(x)				GB_Push(x)
+#if USE_64_BITS
+#define GB_VM_Push64(x)				GB_Push(x)
+#else
+#define GB_VM_Push64(x)				GB_TyPushShft(int64_t,x)
+#endif
+
+// push various bitsized ints, most efficient variant
+#define GB_VM_PushInt8(x)			GB_VM_Push8(GB_Int2GBInt(x))
+#define GB_VM_PushInt16(x)			GB_VM_Push16(GB_Int2GBInt(x))
+#define GB_VM_PushInt32(x)			GB_VM_Push32(GB_Int2GBInt(x))
+#define GB_VM_PushInt64(x)			GB_VM_Push64(GB_Int2GBInt(x))
+
+// push various bitsized values relative from TOS
+#define GB_VM_PushTos8(x)			GB_PushShft(GB_SPByteRelx(x))
+#define GB_VM_PushTos16(x)			GB_PushShft(GB_SPByteRelx(x))
+#define GB_VM_PushTos32(x)			GB_PushShft(GB_SPByteRelx(x))
+#if USE_64_BITS
+#define GB_VM_PushTos64(x)			GB_PushShft(GB_SPByteRelx(x))
+#else
+#define GB_VM_PushTos64(x)			GB_TyPushShft(int64_t,GB_SPByteRelx(x))
+#endif
+
+// push various bitsized values relative from TOS, dereferenced
+#define GB_VM_PushTosX8(x)			GB_PushShft(GB_RegByteRelx( GB_TOS, x ))
+#define GB_VM_PushTosX16(x)			GB_PushShft(GB_RegByteRelx( GB_TOS, x ))
+#define GB_VM_PushTosX32(x)			GB_PushShft(GB_RegByteRelx( GB_TOS, x ))
+#if USE_64_BITS
+#define GB_VM_PushTosX64(x)			GB_PushShft(GB_RegByteRelx( GB_TOS, x ))
+#else
+#define GB_VM_PushTosX64(x)			GB_TyPushShft(int64_t,GB_RegByteRelx( GB_TOS, x ))
+#endif
+
+// push various bitsized values relative from RR, dereferenced
+#define GB_VM_PushRrX8(x)			GB_PushShft(GB_RegByteRelx( rr, x ))
+#define GB_VM_PushRrX16(x)			GB_PushShft(GB_RegByteRelx( rr, x ))
+#define GB_VM_PushRrX32(x)			GB_PushShft(GB_RegByteRelx( rr, x ))
+#if USE_64_BITS
+#define GB_VM_PushRrX64(x)			GB_PushShft(GB_RegByteRelx( rr, x ))
+#else
+#define GB_VM_PushRrX64(x)			GB_TyPushShft(int64_t,GB_RegByteRelx( rr, x ))
+#endif
+
+// load various bitsized values into RR, relative from TOS
+#define GB_VM_LdRrTos8(x)			GB_SetReg( rr, GB_SPByteRelx(x))
+#define GB_VM_LdRrTos16(x)			GB_SetReg( rr, GB_SPByteRelx(x))
+#define GB_VM_LdRrTos32(x)			GB_SetReg( rr, GB_SPByteRelx(x))
+#if USE_64_BITS
+#define GB_VM_LdRrTos64(x)			GB_SetReg( rr, GB_SPByteRelx(x))
+#else
+#define GB_VM_LdRrTos64(x)			GB_SetReg( rr, GB_SPByteRelx(x))
+#endif
+
+// load global, TOS & RR variant
+#define GB_VM_PushGlbl(x)			{x = *Cast(GB_Word*,x) ; GB_Push( x ) ;}
+#define GB_VM_LdRrGlbl(x)			{rr = *Cast(GB_Word*,x) ;}
+
+// load node tag
+#define GB_VM_PushNdTg()			GB_PushShft(GB_Int2GBInt(GB_NH_Fld_Tag(((GB_NodePtr)GB_TOS)->header)))
+%%]
+
+Control.
+
+%%[8
+// call bytecode implementation of function, starting at bytecode address x
+extern void gb_VM_CallFunBc(GB_Word x);
+#define GB_VM_CallFunBc(x)			gb_VM_CallFunBc(x)
+
+// exception: reset internal admin
+
+// case
+#define GB_VM_CaseBegin()			{GB_Word tg_;GB_PopIn(tg_);switch(tg_){
+#define GB_VM_CaseEnd()				}}
+#define GB_VM_CaseArm(i)			case i:
+%%]
+
+Allocation, storage, heap
+
+%%[8
+// allocate node, fill with values from the stack, leave ptr to node on TOS
+extern void gb_VM_AllocStoreTos(Word nBytes, Word gcInfo);
+#define GB_VM_AllocStoreTos(i)		{GB_Word s_;GB_PopIn(s_);gb_VM_AllocStoreTos(s_,i);}
+
+// fetch content of node, leaving it on the stack
+extern void gb_VM_FetchTos(GB_Word n);
+#define GB_VM_FetchTos()			gb_VM_FetchTos(GB_TOS)
+
+extern void gb_VM_FetchUpdateTos(Word nOld, Word nNew) ;
+#define GB_VM_FetchUpdateTos()		{GB_Word o_, n_; GB_PopIn(n_);GB_PopIn(o_);gb_VM_FetchUpdateTos(o_,n_);}
+%%]
+
+Evaluation, apply, ...
+
+%%[8
+// eval TOS to WHNF
+#define GB_VM_EvalTos()				gb_evalTos()
+
+// apply TOS to args further on the stack
+#define GB_VM_ApplyTos()			gb_applyTos()
+%%]
+
+Conversion
+
+%%[8
+// conversion between GB and non-GB representations of int and word
+#define GB_VM_TagInt2WordTos()		GB_SetTOS( GB_Int2GBInt( GB_TOS ) )
+#define GB_VM_UntagWord2IntTos()	GB_SetTOS( GB_GBInt2Int( GB_TOS ) )
+#define GB_VM_TagWord2WordTos()		GB_SetTOS( GB_TagWord2Word( GB_TOS ) )
+#define GB_VM_UntagWord2WordTos()	GB_SetTOS( GB_UntagWord2Word( GB_TOS ) )
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
