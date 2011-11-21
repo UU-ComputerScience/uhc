@@ -102,6 +102,7 @@ typedef CallInfo* CallInfoPtr ;
 %%[[96
 #define CallInfo_Kind_IntlCCall			16			// internal C call which must look like foreign function call (for exception handling)
 %%]]
+#define CallInfo_Kind_ApplyTopWrap  	17			// top level apply wrapper
 %%]
 
 Flags
