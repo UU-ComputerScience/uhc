@@ -181,7 +181,7 @@ test-expect test-regress: test-lists
 	          platformDpd="`grep platform: $${t}`" ; \
 	          targetExclude="`grep exclude-if-$(EHC_VARIANT_TARGET) $${t}`" ; \
 	          platformMsg="" ; \
-	          if test "x$${targetExclude}" == "x" ; \
+	          if test "x$${targetExclude}" = "x" ; \
 	          then \
                 if test "x$${platformDpd}" != "x" ; \
                 then \
