@@ -152,9 +152,9 @@ DATA CMetaVal
   | Val
 %%[[9
   | Dict
-  | DictClass     tracks:  {[Track]}
-  | DictInstance  tracks:  {[Track]}
-  | Track         track:  {Track}
+  | DictClass     tracks : {[Track]}
+  | DictInstance  tracks : {[Track]}
+  | Track         track  : {Track}
 %%]]
 
 SET AllMetaVal	= CMetaVal CMetas
@@ -207,7 +207,7 @@ DATA CBindAspect
   -- default: binding used when (1) no specialized version is available, (2) the one passed higher order
   | Bind        bindMeta        : CMetas
                 expr            : CExpr
-  
+
   -- a (keyed) CMetas
   | Meta		aspectKeyS		: {ACoreBindAspectKeyS}
   				cmetas			: CMetas
@@ -265,7 +265,7 @@ DATA CBindAspect
                 expr            : CExpr
   
   -- + FFI/FFE stuff
-  
+
   -- binding to a runtime related value, keyed
   | Val			aspectKeyS		: {ACoreBindAspectKeyS}
   				encoding		: CValTy

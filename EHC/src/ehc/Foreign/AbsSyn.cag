@@ -54,7 +54,7 @@ DATA JScriptCall
 					-- "%1.g", f x y ~> to x.g(y)
   					-- mbThisArgNr		: {Maybe Int}
                     nm              : String
-                    
+
                     -- args which is used as index, e.g. for arg 1:
                     -- "g[%1]"    , f x y ~> g[x](y)
                     -- "&%1.g[%2]", f x y ~> x.g[y]
@@ -93,6 +93,7 @@ DATA ForeignExpr
   | AllArg												-- all (remaining) args
   | Empty												-- nothing
   | Str  			str				: String			-- string constant
+  | ObjData                                             -- data export for JS objects
 
 TYPE ForeignExprs	=	[ForeignExpr]
 

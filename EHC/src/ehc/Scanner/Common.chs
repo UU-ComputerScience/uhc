@@ -419,7 +419,7 @@ tyScanOpts
 foreignEntScanOpts :: FFIWay -> ScanOpts
 foreignEntScanOpts way
   =  o {   scoKeywordsTxt      =   Set.fromList [ "dynamic", "wrapper", "h", "static" ]
-       ,   scoSpecChars        =   Set.fromList ".&%[]()*"
+       ,   scoSpecChars        =   Set.fromList ".&%[]()*{}"
        ,   scoDollarIdent      =   False
        ,   scoKeywExtraChars   =   Set.fromList wayKeywExtraChars
        ,   scoAllowQualified   =   False

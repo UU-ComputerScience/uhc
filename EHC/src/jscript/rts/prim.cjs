@@ -295,3 +295,169 @@ primHPutChar = function(h,c) {
 }
 %%]
 
+%%[8
+// Primitive functions for dealing with JS objects
+
+// primMkCtor :: String -> IO (JSFunPtr c)
+primMkCtor = function(nm) {
+  if (typeof(window[nm]) !== 'function') {
+    primSetCtor(nm, new Function());
+  }
+  return window[nm];
+}
+
+// primMkAnonObj :: IO (JSPtr c)
+primMkAnonObj = function() { return {} }
+
+// primMkObj :: JSString -> IO (JSPtr c)
+primMkObj     = function(nm) { return new primGetCtor(nm); }
+
+// Alias to primMkCtor
+primGetCtor   = primMkCtor;
+
+// primSetCtor :: JSString -> JSFunPtr c -> IO ()
+primSetCtor   = function(nm, fn) { window[nm] = fn; }
+
+// primGetAttr :: JSString -> JSPtr c -> a
+primGetAttr   = function(attr, obj) { return obj[attr]; }
+
+// primSetAttr :: JSString -> a -> JSPtr c -> IO (JSPtr c)
+primSetAttr   = function(attr, val, obj) { obj[attr] = val; return obj; }
+
+// primPureSetAttr :: JSString -> a -> JSPtr c -> JSPtr c
+primPureSetAttr = function(attr, val, obj) {
+  var clone = primClone(obj);
+  primSetAttr(attr, val, clone);
+  return clone;
+}
+
+// primModAttr :: JSString -> (a -> b) -> JSPtr c -> IO (JSPtr c)
+primModAttr   = function (attr, f, obj) {
+  primSetAttr(attr, _e_(new _A_(f, [primGetAttr(attr, obj)])), obj);
+  return obj;
+}
+
+// primPureModAttr :: JSString -> (a -> b) -> JSPtr c -> JSPtr c
+primPureModAttr   = function (attr, f, obj) {
+  var clone = primClone(obj);
+  primModAttr(attr, f, clone);
+  return clone;
+}
+
+
+// primGetProtoAttr :: JSString -> JSString -> IO a
+primGetProtoAttr = function(attr, cls) {
+  primMkCtor(cls);
+  return window[cls].prototype[attr];
+}
+
+// primSetProtoAttr :: JSString -> a -> JSString -> IO ()
+primSetProtoAttr = function(attr, val, cls) {
+  primMkCtor(cls);
+  window[cls].prototype[attr] = val;
+}
+
+// primModProtoAttr :: JSString -> (a -> b) -> JSString -> IO ()
+primModProtoAttr = function(attr, f, cls) {
+  primSetProtoAttr(attr, _e_(new _A_(f, [primGetProtoAttr(attr, cls)])), cls);
+}
+
+// Object cloning facilities
+
+// Clones a JS object
+// primClone :: JSPtr a -> JSPtr a
+primClone = function(obj) {
+  var cloneAlg = function(name, target, copy) {
+    target[ name ] = copy;
+  };
+  return foldObj(cloneAlg, {}, obj);
+}
+
+// Converts a UHC JS datatype object to a plain JS object
+// primToPlainObj :: JSPtr a -> JSPtr b
+primToPlainObj = function ( obj ) {
+  var toPlainAlg = function(name, target, copy) {
+    if (name != "_tag_") {
+      target[name] = _e_(copy);
+    }
+  };
+  return foldObj(toPlainAlg, {}, obj);
+};
+
+foldObj = function (alg, target, original ) {
+  var name, src, copy, copyIsArray, clone;
+
+  // Extend the base object
+  for ( name in original ) {
+    src = target[ name ];
+    copy = original[ name ];
+
+    // Prevent never-ending loop
+    if ( target === copy ) {
+      continue;
+    }
+
+    // Recurse if we're merging plain objects or arrays
+    if ( copy && ( isPlainObject(copy) || (copyIsArray = isArray(copy)) ) ) {
+      if ( copyIsArray ) {
+        copyIsArray = false;
+        clone = src && isArray(src) ? src : [];
+      } else {
+        clone = src && isPlainObject(src) ? src : {};
+      }
+
+      // Never move original objects, clone them
+      target[ name ] = foldObj(alg, clone, copy );
+
+    // Don't bring in undefined values
+    } else if ( copy !== undefined ) {
+      alg(name, target, copy);
+    }
+  }
+
+  // Return the modified object
+  return target;
+};
+
+type = function( obj ) {
+  return obj == null ? String( obj ) : "object";
+};
+
+isArray = Array.isArray || function( obj ) {
+  return type(obj) === "array";
+};
+
+isWindow = function( obj ) {
+  return obj && typeof obj === "object" && "setInterval" in obj;
+};
+
+isPlainObject = function( obj ) {
+  // Must be an Object.
+  // Because of IE, we also have to check the presence of the constructor property.
+  // Make sure that DOM nodes and window objects don't pass through, as well
+  if ( !obj || type(obj) !== "object" || obj.nodeType || isWindow( obj ) ) {
+    return false;
+  }
+
+  try {
+    // Not own constructor property must be Object
+    if ( obj.constructor &&
+      !hasOwn.call(obj, "constructor") &&
+      !hasOwn.call(obj.constructor.prototype, "isPrototypeOf") ) {
+      return false;
+    }
+  } catch ( e ) {
+    // IE8,9 Will throw exceptions on certain host objects #9897
+    return false;
+  }
+
+  // Own properties are enumerated firstly, so to speed up,
+  // if last one is own, then all properties are own.
+
+  var key;
+  for ( key in obj ) {}
+
+  return key === undefined || hasOwn.call( obj, key );
+}
+
+%%]
