@@ -84,6 +84,7 @@ SEM ForeignExpr
   | Ptr			lhs		.	pp		=	"&" >|< @expr.pp
   | Empty		lhs		.	pp		=	empty
   | Str  		lhs		.	pp		=	pp $ show @str
+  | ObjData     lhs     .   pp      =   pp "{}"
 %%]
 
 %%[90

@@ -97,7 +97,9 @@ hsnJScriptVar :: Bool -> HsName -> HsName -> HsName -> HsName
 %%[[8
 hsnJScriptVar isGlobal = hsnJavaLikeVar (id, id, id)
 %%][50
-hsnJScriptVar isGlobal = hsnJavaLikeVar (if isGlobal then id else hsnQualified, hsnPrefix "$", ('$':))
+hsnJScriptVar isGlobal = hsnJavaLikeVar (hsn, hsnPrefix "$", ('$':))
+  where hsn | isGlobal  = id
+            | otherwise = hsnQualified
 %%]]
 %%]
 
@@ -391,6 +393,7 @@ SEM CExpr
                                                     else J.Expr_Str "*** ERR APP ***"
   | FFI         loc         .   (mkArgsJS,mkResJS,mkFFI)
                                                 =   ffiJScriptMkCall
+                                                        @ty
                                                         @foreignEntInfo
                                                         @lhs.opts False @argMbConL @resMbCon
                             .   js              =   if null @argMbConL
@@ -428,7 +431,7 @@ SEM CExpr
   | CaseAltFail loc         .   js              =   @errorExpr.js
   | Ann         loc         .   js              =   @expr.js
   | * - Var Int Char String App Tup Let CaseAltFail Lam FFI Case Ann
-                loc         .   js              =   J.Expr_Str "*** TODO ***"
+                loc         .   js              =   J.Expr_Str "*** TODO: CExpr | loc.js ***"
 %%]
 
 %%[(8 jscript)
@@ -558,9 +561,9 @@ SEM CExpr
                                                                                     ]
                                                                     else x
                                                                   where m l = hlist $ intersperse (pp "+") l
-								  	s :: Show a => a -> PP_Doc
+                                                                        s :: Show a => a -> PP_Doc
                                                                         s x = pp (show x)
-									s' :: Show a => a -> PP_Doc
+                                                                        s' :: Show a => a -> PP_Doc
                                                                         s' x = pp (show $ show x)
                                                                         p x = pp x
                                                                         n p x = p ++ show x
@@ -572,16 +575,19 @@ SEM CExpr
 %%[(8 jscript) hs
 -- | construct the ffi call
 ffiJScriptMkCall
-  :: ForeignExtraction 
-     -> EHCOpts
-     -> Bool                        -- do eval of args
-     -> [Maybe HsName]              -- list of (possibly) type constructor names of arguments
-     -> Maybe HsName                -- and result
-     -> ( [J.Expr -> J.Expr]        -- additional unwrapping for each argument
-        ,  J.Expr -> J.Expr         -- and result
-        , [J.Expr] -> J.Expr        -- and primitive call itself
-        )
-ffiJScriptMkCall
+  ::  Ty                          -- type of the imported function
+%%[[90
+  ->  ForeignExtraction
+%%]]
+  ->  EHCOpts
+  ->  Bool                        -- do eval of args
+  ->  [Maybe HsName]              -- list of (possibly) type constructor names of arguments
+  ->  Maybe HsName                -- and result
+  ->  ( [J.Expr -> J.Expr]        -- additional unwrapping for each argument
+      ,  J.Expr -> J.Expr         -- and result
+      , [J.Expr] -> J.Expr        -- and primitive call itself
+      )
+ffiJScriptMkCall ty
 %%[[90
      ent
 %%]]
@@ -610,7 +616,7 @@ ffiJScriptMkCall
       ent
 %%]]
   where bx = (id,tyDefault)
-        mkfargs f as
+        mkfargs f as -- TODO: Is this redundant?
 %%[[90
           | isJust mbArgThis = (J.Expr_Sel this f, as')
 %%]]
@@ -618,13 +624,23 @@ ffiJScriptMkCall
 %%[[90
           where mbArgThis@(~(Just nr)) = forextractMbThisArgNr ent
                 this = as !! inx
-                inx = nr-1 
+                inx = nr-1
                 as' = take inx as ++ drop nr as
 %%]]
 %%[[8
         mk = J.Expr_Call
 %%][90
-        mk = foreignexprEval (J.Expr_Sel,J.Expr_ArrInx,J.Expr_Call,id,jsVar,J.Expr_Str) (forextractForeignExpr ent)
+        mkObj as = jsCall "primToPlainObj" as
+        mk = foreignexprEval (J.Expr_Sel,J.Expr_ArrInx,J.Expr_Call,id,mkObj,jsVar,J.Expr_Str) (forextractForeignExpr ent)
+        -- TODO: Reuse some of the foreign export code for this? It's more or less generating the same code...
+        -- TODO: Document that we require callback functions to be in IO
+        mkWrap n (e:_) = mkWrapFn as bdy
+          where as   = map (mkHNm . ('v':) . show) [1..(tyNumArgs ty - 1)]
+                rn   = mkHNm "res"
+                bdy  = [ J.jsVarDecl rn $ jsEvl $ jsApp e $ (map jsVar as) ++ [J.Expr_Arr []]
+                       , J.Stat_Ret $ J.Expr_ArrInx (jsVar rn) (jsIntConst 1) ]
+
+        mkDyn _ (e:es) = J.Expr_Call e es
 %%]]
         mkcall (f,as)
 %%[[90
@@ -632,6 +648,17 @@ ffiJScriptMkCall
 %%]]
           | otherwise              = J.Expr_Call f as
 %%]
+
+%%[(90 jscript) hs
+tyNumArgs :: Ty -> Int
+tyNumArgs (Ty_App t@(Ty_App {}) arg)             = 1 + tyNumArgs t + tyNumArgs arg
+tyNumArgs (Ty_App _ (Ty_App t@(Ty_App {}) arg))  = 1 + tyNumArgs t + tyNumArgs arg
+tyNumArgs _                                      = 0
+
+mkWrapFn :: [HsName] -> [J.Stat] -> J.Expr
+mkWrapFn as bdy = J.Expr_Fun Nothing as $ J.Stat_Block bdy
+%%]
+
 
 %%[(8 jscript)
 SEM CBindAspect
@@ -646,8 +673,8 @@ SEM CBindAspect
                                                              then str dflt
                                                              else str caf
 %%[[90
-  | FFE         loc         .   js              =   J.Expr_Fun Nothing @jsArgL
-                                                    $ J.Stat_Block $ jsBody J.Stat_Ret @expr.jbinds @expr.jstats (Just @expr.jsLamBody)
+  | FFE         loc         .   js              = mkWrapFn @jsArgL
+                                                    $ jsBody J.Stat_Ret @expr.jbinds @expr.jstats (Just @expr.jsLamBody)
 %%]]
 %%]
 
@@ -678,8 +705,3 @@ SEM CModule
                 loc         .   jsModTraceStats =   []
 %%]]
 %%]
-
-
-
-
-
