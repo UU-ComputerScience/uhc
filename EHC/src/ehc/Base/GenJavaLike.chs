@@ -218,6 +218,7 @@ javalikeMkFFICall
 %%[[8
         primE   = mkPrim argsTy resTy ffi
 %%][90
+        -- 20101207 TBD: wrap/dyna, 20111124 JS fixed
         primE   = case impExtract of
                     ForeignExtraction_Plain {forextractEnt = impEntNm}
                       -> mkPrim argsTy resTy ffi
