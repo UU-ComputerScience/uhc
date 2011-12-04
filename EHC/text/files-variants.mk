@@ -21,6 +21,7 @@ TEXT_PRIV_VARIANTS			+= flops06-ruler-paper flops06-ruler \
 								slides-ehcstruct slides-ehcstruct-ufmg slides-hs09-uhcarch slides-uhcarch \
 								slides-uhcinternals \
 								slides-javascript \
+								improving-uhc-js \
 								gbm \
 								uniqueness slides-uniqueness \
 								icfp07-chr-locinst icfp07-chr-locinst-blind cc08-chr-locinst \
@@ -37,6 +38,7 @@ TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 								TopicRuler TopicExplImpl TopicGRIN TopicRec TopicKinds TopicDataTy TopicImpred TopicHM TopicExtRec TopicGADT TopicReflection TopicPartialTySig \
 								SlidesIntro Slides SlidesPartTySig SlidesExplImpl SlidesImpred SlidesRuler SlidesShuffle SlidesGRIN SlidesStatus SlidesEHCStructure SlidesUHCStructure SlidesUHCInternals \
 								SlidesJavascript \
+								TopicImprovingUHCJS \
 								CodeFragsExplImpl \
 								ToolDocShuffle ToolDocRuler ToolDocEHC ToolDocText2Text \
 								InternalDocEhcTechnical InternalDocEhcStructure InternalDocBuildSystem InternalDocEhcLibrary InternalDocJazy \
@@ -130,6 +132,7 @@ TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 # 63: slides UHC status
 # 64: doc: blog
 # 65: slides "Javascript? Haskellscript!"
+# 68: doc: Improving the UHC JavaScript Backend
 # 77: scratch (article format)
 
 TEXT_SHUFFLE_ORDER	+= \
@@ -188,6 +191,7 @@ TEXT_SHUFFLE_ORDER	+= \
 		39 < 60, \
 		39 < 61, \
 		39 < 64, \
+		39 < 68, \
 		54 < 13, \
 		54 < 27, \
 		54 < 31, \
