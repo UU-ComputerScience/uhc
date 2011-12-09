@@ -1420,6 +1420,7 @@ mkIdOccSccEH r isStrict g moss
               [ collapse [ splitOff $ idOcc2Defs g $ l | l <- ll ]
               | ll <- maybe [gamKeys g] id moss
               ]
+        collapse :: [[a]] -> [[a]]
         collapse = foldr (zipWith (:)) (repeat [])
 %%]
 
