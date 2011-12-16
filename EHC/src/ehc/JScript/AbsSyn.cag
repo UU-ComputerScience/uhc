@@ -77,7 +77,7 @@ DATA Expr
   | True
   | False
   | Undefined
-  | Inline		str				: {String}				-- for debuggin
+  | Inline		str				: {String}				-- for debugging
 
 
 TYPE NmExpr		= (HsName,Expr)

@@ -608,8 +608,8 @@ ffiJScriptMkCall ty
                  -> panic "ffiJScriptMkCall.mkPrimFun: dynamic not implemented"
 %%]]
       , \_ _ -> mk
-      , panic "ffiJScriptMkCall: wrapper not implemented"
-      , panic "ffiJScriptMkCall: dynamic not implemented"
+      , mkWrap
+      , mkDyn
       , jsEvl, tyDefault
       )
 %%[[90

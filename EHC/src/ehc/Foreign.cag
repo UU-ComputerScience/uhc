@@ -141,13 +141,13 @@ data ForeignDirection
 %%[90 hs
 instance Serialize ForeignExpr where
   sput (ForeignExpr_Ent         ) = sputWord8 0
-  sput (ForeignExpr_EntNm    a  ) = sputWord8 1 >> sput a
-  sput (ForeignExpr_Arg      a  ) = sputWord8 2 >> sput a
-  sput (ForeignExpr_Sel      a b) = sputWord8 3 >> sput a >> sput b
-  sput (ForeignExpr_Inx      a b) = sputWord8 4 >> sput a >> sput b
-  sput (ForeignExpr_Ptr      a  ) = sputWord8 5 >> sput a
-  sput (ForeignExpr_Call     a  ) = sputWord8 6 >> sput a
-  sput (ForeignExpr_CallArgs a b) = sputWord8 7 >> sput a >> sput b
+  sput (ForeignExpr_EntNm    a  ) = sputWord8 1  >> sput a
+  sput (ForeignExpr_Arg      a  ) = sputWord8 2  >> sput a
+  sput (ForeignExpr_Sel      a b) = sputWord8 3  >> sput a >> sput b
+  sput (ForeignExpr_Inx      a b) = sputWord8 4  >> sput a >> sput b
+  sput (ForeignExpr_Ptr      a  ) = sputWord8 5  >> sput a
+  sput (ForeignExpr_Call     a  ) = sputWord8 6  >> sput a
+  sput (ForeignExpr_CallArgs a b) = sputWord8 7  >> sput a >> sput b
   sput (ForeignExpr_AllArg      ) = sputWord8 8
   sput (ForeignExpr_Str      a  ) = sputWord8 9  >> sput a
   sput (ForeignExpr_ObjData     ) = sputWord8 10
