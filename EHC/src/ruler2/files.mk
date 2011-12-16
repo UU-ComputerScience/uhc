@@ -52,11 +52,29 @@ RULER2_AG_ALL_ODPDS_SRC_AG                              := $(sort $(RULER2_AG_D_
 # Regenerate derived makefile
 $(RULER2_BLD_PREFIX)files-ag-s-dep.mk : $(SRC_PREFIX)ruler2/files-ag-s.dep $(SHUFFLE) $(RULER2_AG_ALL_ODPDS_SRC_AG) $(RULER2_AG_ALL_MAIN_SRC_AG)
 	mkdir -p $(RULER2_BLD_PREFIX)
-	$(SHUFFLE) $(SRC_RULER2_PREFIX)files-ag-s.dep --dep --depnameprefix=RULER2_ --depsrcvar=SRC_RULER2_PREFIX --depdstvar=RULER2_BLD_PREFIX --depmainvar=RULER2_AG_S_MAIN_SRC_AG --depdpdsvar=RULER2_AG_S_DPDS_SRC_AG --deporigdpdsvar=RULER2_AG_S_ODPDS_SRC_AG --depbase=$(SRC_RULER2_PREFIX) > $(RULER2_BLD_PREFIX)files-ag-s-dep.mk
+	$(SHUFFLE) $(SRC_RULER2_PREFIX)files-ag-s.dep --dep \
+		--depnameprefix=RULER2_ \
+		--depsrcvar=SRC_RULER2_PREFIX \
+		--depdstvar=RULER2_BLD_PREFIX \
+		--depmainvar=RULER2_AG_S_MAIN_SRC_AG \
+		--depdpdsvar=RULER2_AG_S_DPDS_SRC_AG \
+		--deporigdpdsvar=RULER2_AG_S_ODPDS_SRC_AG \
+		--depderivdpdsvar=RULER2_AG_S_DDPDS_DERIV_AG \
+		--depbase=$(SRC_RULER2_PREFIX) \
+		> $(RULER2_BLD_PREFIX)files-ag-s-dep.mk
 
 $(RULER2_BLD_PREFIX)files-ag-d-dep.mk : $(SRC_PREFIX)ruler2/files-ag-d.dep $(SHUFFLE) $(RULER2_AG_ALL_ODPDS_SRC_AG) $(RULER2_AG_ALL_MAIN_SRC_AG)
 	mkdir -p $(RULER2_BLD_PREFIX)
-	$(SHUFFLE) $(SRC_RULER2_PREFIX)files-ag-d.dep --dep --depnameprefix=RULER2_ --depsrcvar=SRC_RULER2_PREFIX --depdstvar=RULER2_BLD_PREFIX --depmainvar=RULER2_AG_D_MAIN_SRC_AG --depdpdsvar=RULER2_AG_D_DPDS_SRC_AG --deporigdpdsvar=RULER2_AG_D_ODPDS_SRC_AG --depbase=$(SRC_RULER2_PREFIX) > $(RULER2_BLD_PREFIX)files-ag-d-dep.mk
+	$(SHUFFLE) $(SRC_RULER2_PREFIX)files-ag-d.dep --dep \
+		--depnameprefix=RULER2_ \
+		--depsrcvar=SRC_RULER2_PREFIX \
+		--depdstvar=RULER2_BLD_PREFIX \
+		--depmainvar=RULER2_AG_D_MAIN_SRC_AG \
+		--depdpdsvar=RULER2_AG_D_DPDS_SRC_AG \
+		--deporigdpdsvar=RULER2_AG_D_ODPDS_SRC_AG \
+		--depderivdpdsvar=RULER2_AG_D_DDPDS_DERIV_AG \
+		--depbase=$(SRC_RULER2_PREFIX) \
+		> $(RULER2_BLD_PREFIX)files-ag-d-dep.mk
 
 # all src
 RULER2_ALL_SRC							:= $(RULER2_AG_ALL_MAIN_SRC_AG) $(RULER2_AG_ALL_DPDS_SRC_AG) $(RULER2_HS_MAIN_SRC_HS) \
