@@ -17,7 +17,7 @@ var nodeCounter = 0 ;
 
 %%[(8 jscript)
 function evaluatable(x) {
-  return x !== undefined && x !== null && x.__eOrV__ !== undefined
+  return x !== undefined && x !== null && x.__eOrV__ !== undefined;
 }
 %%]
 
@@ -40,7 +40,11 @@ function _e_( x ) {
         x.__eOrV__ = xx ;
         x = xx ;
 %%[[8
-        trace( "<< _e_()", typeof x + "/" + typeof x.__eOrV__ + ":" + x ) ;
+        if (evaluatable(x)) {
+          trace( "<< _e_()", typeof x + "/" + typeof x.__eOrV__ + ":" + x ) ;
+        } else {
+          trace( "<< _e_()", typeof x + ":" + x ) ;
+        }
 %%][100
 %%]]
       } else {
@@ -50,7 +54,11 @@ function _e_( x ) {
 %%]]
         x = x.__eOrV__ ;
 %%[[8
-        trace( "<< _e_", typeof x + "/" + typeof x.__eOrV__ + ":" + x ) ;
+        if (evaluatable(x)) {
+          trace( "<< _e_()", typeof x + "/" + typeof x.__eOrV__ + ":" + x ) ;
+        } else {
+          trace( "<< _e_()", typeof x + ":" + x ) ;
+        }
 %%][100
 %%]]
       }
