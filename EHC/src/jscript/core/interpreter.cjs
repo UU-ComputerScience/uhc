@@ -22,7 +22,7 @@ function _e_( x ) {
   trace( "> _e_", x ) ;
 %%][100
 %%]]
-  if ( x !== undefined && x.__eOrV__ !== undefined ) {
+  if ( x !== undefined && x !== null && x.__eOrV__ !== undefined ) {
     var x_ = x ;
     do {
       if ( typeof x.__eOrV__ == 'function' ) {
