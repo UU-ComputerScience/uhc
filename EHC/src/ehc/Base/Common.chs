@@ -825,7 +825,7 @@ hsnLclSupply = hsnLclSupplyWith (hsnFromString "")
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 export(strHex)
-strHex :: Integral a => Int -> a -> String
+strHex :: (Show a, Integral a) => Int -> a -> String
 strHex prec x
   = replicate (prec - length h) '0' ++ h
   where h = showHex x []
