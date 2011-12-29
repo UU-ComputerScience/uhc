@@ -1104,7 +1104,7 @@ version
 %%]
 
 %%[68
-\title{Improving the UHC JavaSciprt backend}
+\title{Improving the UHC JavaScript backend}
 \author{Jurri\"en Stutterheim}
 \date{November 14, 2011}
 %%]
@@ -3086,27 +3086,9 @@ To be done ...
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[68
-
-%format a_1
-%format a_i
-%format a_j
-%format a_n
-
-%format MANY   = "\!^{*}"
-
 \newcommand{\allargs}{\texttt{\%*} }
 \newcommand{\uhcjscript}{\textit{uhc-jscript} }
 \newcommand{\js}{JavaScript }
-
-\newenvironment{jscode}
-{\par\begin{list}{}{
-\setlength{\listparindent}{0pt}% needed for AMS classes
-\raggedright
-\setlength{\itemsep}{0pt}
-\setlength{\parsep}{0pt}
-\normalfont\ttfamily}%
- \item[]}
-{\end{list}}
 
 \section{Introduction}
 
@@ -3115,22 +3097,22 @@ To be done ...
 \section{The \uhcjscript library}
 \label{uhc-jscript}
 
-%%@TopicImprovingUHCJS.uhcJscriptLib
+TopicImprovingUHCJS.uhcJscriptLib
 
 \section{Supporting \textit{dynamic} and \textit{wrapper} imports}
 \label{ffi}
 
-%%@TopicImprovingUHCJS.supportingDynamicWrapper
+TopicImprovingUHCJS.supportingDynamicWrapper
 
 \section{Creating and handling objects}
 \label{object-rts}
 
-%%@TopicImprovingUHCJS.creatingHandlingObjects
+TopicImprovingUHCJS.creatingHandlingObjects
 
 \section{Future work and conclusion}
 \label{conclusion}
 
-%%@TopicImprovingUHCJS.futureWorkConclusion
+TopicImprovingUHCJS.futureWorkConclusion
 
 %%]
 

@@ -84,13 +84,13 @@ blog\cite{uhc-blog}.
 
 The backend provides three ways of dealing with JavaScript:
 
-\begin{itemize}
+\begin{Itemize}
   \item Write Haskell code which will be compiled to JavaScript
   \item Export this Haskell code via the foreign function interface (FFI) to
         give it a known name in the generated \js code
   \item import existing \js code via de FFI, so that it can be used in writing
         your Haskell code
-\end{itemize}
+\end{Itemize}
 
 Since the first way does not require any further action from the programmer,
 aside from writing Haskell code and compiling it with the UHC \js backend, we
@@ -101,19 +101,17 @@ Exporting existing Haskell functions to a \js function with a known name is the
 second-simplest form of \js interaction. Suppose we have a simple Haskell
 function for adding two numbers:
 
-%%[[wrap=safecode
+\begin{code}
 myAdd :: Int -> Int -> Int
 myAdd x y = x + y
-%%]]
+\end{code}
 
 If we were to compile this piece of code to JavaScript, it would generate a
 UHC RTS representation of the function, similar to the following:
 
-%%[[wrap=safecode
 \begin{jscode}
 new \_F\_("myAdd", function(n,m) \{...\});
 \end{jscode}
-%%]]
 
 This function object would be available with a name similar to
 \texttt{\$my\_mod.\$myAdd}. We are now faced with two problems. Existing \js
@@ -127,10 +125,10 @@ function is applied to them and the result is evaluated before it is returned.
 This is exactly what the FFI export interface (refered to as FFE from now on)
 allows you to do:
 
-%%[[wrap=safecode
+\begin{code}
 foreign export jscript "myAdd"
   myAdd :: Int -> Int -> Int
-%%]]
+\end{code}
 
 This export declaration tells the compiler to use the |jscript| calling
 convention and generate a function called |myAdd|, which wraps around the
@@ -261,7 +259,7 @@ configure} append the \texttt{--uhc} flag. Finally, build the package by
 issuing the following command:
 
 \begin{jscode}
-  cabal build --uhc-option="-tjscript"
+cabal build --uhc-option="-tjscript"
 \end{jscode}
 
 Note that HTML files will not be available when doing this.
@@ -816,11 +814,11 @@ Constraints on the imports and exports need to be formalised and the foreign
 types should be typechecked according to the foreign expressions. Some example
 constraints that could be typechecked:
 
-\begin{itemize}
+\begin{Itemize}
   \item Only datatype values may be exported as objects, not functions or
         primitive types.
   \item Only wrapped functions may be exported in objects.
-\end{itemize}
+\end{Itemize}
 
 The first item could be realised by supporting type constraints in the foreign
 import. This is already allowed by the type system, but the RTS does not
