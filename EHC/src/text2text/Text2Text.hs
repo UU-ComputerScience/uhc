@@ -26,7 +26,8 @@ import qualified Data.Set as Set
 import qualified Data.Map as Map
 import Data.Maybe
 import Data.Char
-import System
+import System.Environment
+import System.Exit
 import System.Console.GetOpt
 import System.IO
 
