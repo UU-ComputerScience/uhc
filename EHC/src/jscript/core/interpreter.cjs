@@ -55,7 +55,7 @@ function _e_( x ) {
 %%]]
       }
     } while (evaluatable(x)) ;
-    while (evaluatable(x)) {
+    while (evaluatable(x_)) {
       var x_next = x_.__eOrV__ ;
       x_.__eOrV__ = x ;
       x_ = x_next ;
