@@ -15,6 +15,12 @@ var nodeCounter = 0 ;
 %%[(100 jscript) -8.debugStuff
 %%]
 
+%%[(8 jscript)
+function evaluatable(x) {
+  return x !== undefined && x !== null && x.__eOrV__ !== undefined
+}
+%%]
+
 // interface to eval
 %%[(8 jscript)
 function _e_( x ) {
@@ -22,7 +28,7 @@ function _e_( x ) {
   trace( "> _e_", x ) ;
 %%][100
 %%]]
-  if ( x !== undefined && x !== null && x.__eOrV__ !== undefined ) {
+  if (evaluatable(x)) {
     var x_ = x ;
     do {
       if ( typeof x.__eOrV__ == 'function' ) {
@@ -48,8 +54,8 @@ function _e_( x ) {
 %%][100
 %%]]
       }
-    } while ( x !== undefined && x.__eOrV__ !== undefined ) ;
-    while ( x_.__eOrV__ !== undefined ) {
+    } while (evaluatable(x)) ;
+    while (evaluatable(x)) {
       var x_next = x_.__eOrV__ ;
       x_.__eOrV__ = x ;
       x_ = x_next ;
