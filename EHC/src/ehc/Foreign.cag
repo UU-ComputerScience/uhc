@@ -163,6 +163,7 @@ instance Serialize ForeignExpr where
         6  -> liftM  ForeignExpr_Call        sget
         7  -> liftM2 ForeignExpr_CallArgs    sget sget
         8  -> return ForeignExpr_AllArg
+        9  -> liftM  ForeignExpr_Str         sget
         10 -> return ForeignExpr_ObjData
 
 
