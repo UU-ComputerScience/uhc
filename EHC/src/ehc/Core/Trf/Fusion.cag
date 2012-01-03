@@ -1,0 +1,119 @@
+%%[93 hs module {%{EH}Core.Trf.Fusion} import (Debug.Trace,{%{EH}Ty},{%{EH}Base.Common},{%{EH}LamInfo},{%{EH}Core},{%{EH}AbstractCore}, qualified Data.Map as Map)
+%%]
+
+%%[93 ag import ({Core/AbsSyn})
+
+{
+cmodTrfFusion :: LamMp -> CModule -> CModule
+cmodTrfFusion lamMp cmod = 
+     let t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf cmod)) (Inh_CodeAGItf {fuseMp_Inh_CodeAGItf = Map.empty, lamMp_Inh_CodeAGItf = lamMp})
+     in {-trace (show lamMp) $-} trf_Syn_CodeAGItf t
+}
+
+------------------------------------------------------------------------------
+-- Pass fused function names and bodies down the expressions
+------------------------------------------------------------------------------
+
+WRAPPER CodeAGItf 
+
+{
+type FuseMp = Map.Map HsName CExpr
+}
+
+ATTR CodeAGItf AllCodeNT [lamMp : LamMp   | | ] -- passed in, contains which functions have which fusion roles
+ATTR CodeAGItf AllCodeNT [fuseMp : FuseMp | | ] -- starts blank, this will contain the transformed code (circular dependecy) for the functions that need to be inlined for fusion 
+
+
+SEM CExpr
+        | Let body.fuseMp  = @binds.gathFuseMp `Map.union` @lhs.fuseMp -- gather the functions from let bindings that need to be fused, and add them to the parent's fusion map, and push this down the tree
+
+
+ATTR CBindL [ || gathFuseMp USE {`Map.union`} {Map.empty} : FuseMp ] -- combine all the maps for all the elements of a CBind list
+
+ATTR CBind [ || gathFuseMp : FuseMp ]
+
+SEM CBind 
+  | Bind loc.gathFuseMp = case Map.lookup @nm @lhs.lamMp of -- look up a binding too see if it has a fusion role
+                                Nothing      -> Map.empty
+                                Just lamInfo -> case Map.lookup acbaspkeyFusionRole (laminfoBindAspMp lamInfo) of 
+                                                        Just (LamInfoBindAsp_FusionRole FusionRole_Fuse) -> Map.singleton @nm $ head @bindAspects.gathExpr -- hold the name + expression 
+                                                        _                                                -> Map.empty
+
+ATTR CBindAspectL [ || gathExpr USE {++} {[]} : {[CExpr]} ] -- this should just be always be a singleton list, but probably not the safest way...
+
+ATTR CBindAspectL [ || traceInfo USE {++} {[]} : {String} ]
+
+ATTR CBindAspect [ || traceInfo : {String} ]
+
+SEM CBindAspect
+        | * - Bind FFE lhs.traceInfo = show @aspectKeyS ++ ", "
+        | Bind lhs.traceInfo = ""
+        | FFE lhs.traceInfo = ""
+
+ATTR CBindAspect [ || gathExpr USE {++} {[]} : {[CExpr]}]
+
+SEM CBindAspect
+        | Bind lhs.gathExpr = [@expr.trf] -- The fuseMap holds the result of any inlining done to this code instead of the original
+
+-------------------------------------------------------------------------------
+-- Inline any functions marked as fuse...is this enough?
+-- Need to "mark" which functions to try and fuse as a result
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- Figure out if an App is at the top of a tree of applications so that we only inline fully saturated applications
+-------------------------------------------------------------------------------
+
+ATTR CExpr [ isTop : Bool || ]
+
+SEM CModule
+        | Mod expr.isTop = True   
+
+SEM CExpr 
+        | App  func.isTop = False
+               arg.isTop  = True
+
+SEM CAlt
+        | Alt expr.isTop = True
+
+SEM CBindAspect
+        | Bind expr.isTop = True
+        | FFE expr.isTop  = True
+        | Val expr.isTop  = True
+       
+SEM CPatFld
+        | Fld offset.isTop = True
+
+SEM MbCExpr
+        | Just just.isTop = True
+         
+
+-------------------------------------------------------------------------------
+-- Gather the arguments of any function application
+-------------------------------------------------------------------------------
+ATTR CExpr [ || gathArgs USE {++} {[]} : {[CExpr]}]
+
+SEM CExpr 
+        | App loc.gathArgs     = @func.gathArgs ++ [@arg.trf] -- gather all the arguments in a list, should this be @arg.trf or @arg?
+        | * - App lhs.gathArgs = []
+
+ATTR CExpr [ || getFunName : {Maybe HsName} ] -- captures the function name of an application and pushes it up the tree of Apps, returns nothing if the function is something other than a named function
+
+SEM CExpr
+        | App lhs.getFunName         = @func.getFunName
+        | Var lhs.getFunName         = Just (acbrefNm @ref) --do we need to check anything else?
+        | * - App Var lhs.getFunName = Nothing
+
+SEM CExpr 
+        | App lhs.trf = case @lhs.isTop of 
+                                True -> case @func.getFunName of -- check if there is a function name or not
+                                          Just name -> case Map.lookup name @lhs.fuseMp of
+                                                Just expr -> trace ("Applying " ++ show @func.getFunName ++  " to " ++ show @loc.gathArgs ++ "\n") $ acoreApp expr @loc.gathArgs -- inline the transformed code from fuseMp
+                                                Nothing   -> (CExpr_App @func.trf @arg.trf) -- return the same thing (but with transformed args?)
+                                          _ -> CExpr_App @func.trf @arg.trf -- transformed or not? They are just copied if there's no change, anyway 
+                                _ -> (CExpr_App @func.trf @arg.trf) --return the same thing
+
+ATTR CodeAGItf [ || trf : CModule]
+ATTR AllCodeNT [ || trf : SELF]
+
+%%]

@@ -50,6 +50,8 @@
 %%]
 %%[(8 codegen grin) hs import(Debug.Trace)
 %%]
+%%[93 import ({%{EH}Core.Trf.Fusion})
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Monad utils
@@ -166,6 +168,10 @@ trfCore opts dataGam modNm trfcore
                  -- pass all globals used in CAF explicit as argument
                ; t_caf_asarg
                ; t_let_unrec
+%%[[93
+               ; when (ehcOptFusion opts) 
+                      t_fusion
+%%]]
                ; u2 <- modifyGets uniq
                ; t_anormal u2
                
@@ -219,6 +225,9 @@ trfCore opts dataGam modNm trfcore
         t_ann_simpl     = liftTrf  "ann-simpl"          $ cmodTrfAnnBasedSimplify opts
         t_ren_uniq    o = liftTrf  "ren-uniq"           $ cmodTrfRenUniq o
         t_let_unrec     = liftTrf  "let-unrec"          $ cmodTrfLetUnrec
+%%[[93
+        t_fusion        = liftTrf  "fusion"            $ cmodTrfFusion (trfcoreInhLamMp trfcore)
+%%]]
         t_let_defbefuse = liftTrf  "let-defbefuse"      $ cmodTrfLetDefBeforeUse
         t_let_flatstr   = liftTrf  "let-flatstr"        $ cmodTrfLetFlattenStrict
         t_inl_letali    = liftTrf  "inl-letali"         $ cmodTrfInlineLetAlias
