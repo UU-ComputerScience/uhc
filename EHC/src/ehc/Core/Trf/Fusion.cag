@@ -10,6 +10,46 @@ cmodTrfFusion lamMp cmod =
      in {-trace (show lamMp) $-} trf_Syn_CodeAGItf t
 }
 
+{
+
+-- | 'apply func arg' will produce the result of performing a beta reduction by
+-- | applying the lamda abstraction func to the expression arg. Used to inline 
+-- | functions at App nodes where func has been marked as fusible 
+
+-- This will call an attribute grammar transformation for the attribute substd
+-- apply :: CExpr -> CExpr -> CExpr
+-- apply func arg
+}
+
+ATTR CExpr [ | | applied : CExpr ]
+
+SEM CExpr
+        | App lhs.applied = if @func.isFusible 
+                            then apply @func.applied @arg.applied -- inline this function application
+                            else aCoreApp1 @func.applied @arg.applied -- recreate the App expression with their inlined verisons
+
+{
+
+--subst :: HsName -> CExpr -> CExpr -> CExpr
+--subst nm body expr = 
+
+}
+
+ATTR CExpr [ substExpr : CExpr | | ] 
+
+ATTR CExpr [ | | substd : CExpr ]
+
+SEM CExpr
+        | Lam lhs.substd = subst @arg @body.substd @lhs.substExpr
+
+ATTR CExpr [ | | subst : CExpr]
+
+SEM CExpr
+        | Var lhs.subst = if (acbrefNm @ref) == name 
+                          then @lhs.substExpr 
+                          else Var @ref
+        
+
 ------------------------------------------------------------------------------
 -- Pass fused function names and bodies down the expressions
 ------------------------------------------------------------------------------
