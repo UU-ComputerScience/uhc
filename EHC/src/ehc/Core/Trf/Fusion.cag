@@ -6,8 +6,11 @@
 {
 cmodTrfFusion :: LamMp -> CModule -> CModule
 cmodTrfFusion lamMp cmod = 
-     let t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf cmod)) (Inh_CodeAGItf {fuseMp_Inh_CodeAGItf = Map.empty, lamMp_Inh_CodeAGItf = lamMp})
-     in {-trace (show lamMp) $-} trf_Syn_CodeAGItf t
+     let t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf cmod)) 
+                            (Inh_CodeAGItf { fuseMp_Inh_CodeAGItf = Map.empty 
+                                           , lamMp_Inh_CodeAGItf = lamMp
+                                           } )
+     in trf_Syn_CodeAGItf t
 }
 
 {
@@ -60,7 +63,7 @@ WRAPPER CodeAGItf
 type FuseMp = Map.Map HsName CExpr
 }
 
-ATTR CodeAGItf AllCodeNT [lamMp : LamMp   | | ] -- passed in, contains which functions have which fusion roles
+ATTR CodeAGItf AllCodeNT [lamMp  : LamMp   | | ] -- passed in, contains which functions have which fusion roles
 ATTR CodeAGItf AllCodeNT [fuseMp : FuseMp | | ] -- starts blank, this will contain the transformed code (circular dependecy) for the functions that need to be inlined for fusion 
 
 
@@ -76,19 +79,19 @@ SEM CBind
   | Bind loc.gathFuseMp = case Map.lookup @nm @lhs.lamMp of -- look up a binding too see if it has a fusion role
                                 Nothing      -> Map.empty
                                 Just lamInfo -> case Map.lookup acbaspkeyFusionRole (laminfoBindAspMp lamInfo) of 
-                                                        Just (LamInfoBindAsp_FusionRole FusionRole_Fuse) -> Map.singleton @nm $ head @bindAspects.gathExpr -- hold the name + expression 
+                                                        Just (LamInfoBindAsp_FusionRole FusionRole_Fuse) -> Map.singleton @nm $ head @bindAspects.gathExpr -- add the name + expression 
                                                         _                                                -> Map.empty
 
 ATTR CBindAspectL [ || gathExpr USE {++} {[]} : {[CExpr]} ] -- this should just be always be a singleton list, but probably not the safest way...
 
-ATTR CBindAspectL [ || traceInfo USE {++} {[]} : {String} ]
+--ATTR CBindAspectL [ || traceInfo USE {++} {[]} : {String} *]
 
-ATTR CBindAspect [ || traceInfo : {String} ]
+--ATTR CBindAspect [ || traceInfo : {String} ]
 
-SEM CBindAspect
-        | * - Bind FFE lhs.traceInfo = show @aspectKeyS ++ ", "
-        | Bind lhs.traceInfo = ""
-        | FFE lhs.traceInfo = ""
+--SEM CBindAspect
+--        | * - Bind FFE lhs.traceInfo = show @aspectKeyS ++ ", "
+--        | Bind lhs.traceInfo = ""
+--        | FFE lhs.traceInfo = ""
 
 ATTR CBindAspect [ || gathExpr USE {++} {[]} : {[CExpr]}]
 
@@ -137,12 +140,20 @@ SEM CExpr
         | App loc.gathArgs     = @func.gathArgs ++ [@arg.trf] -- gather all the arguments in a list, should this be @arg.trf or @arg?
         | * - App lhs.gathArgs = []
 
-ATTR CExpr [ || getFunName : {Maybe HsName} ] -- captures the function name of an application and pushes it up the tree of Apps, returns nothing if the function is something other than a named function
+ATTR CExpr [ || getFunName : {Maybe HsName} ] -- captures the function name of an application and pushes it up the tree of Apps, 
+                                              -- returns nothing if the function is something other than a named function
 
+-------------------------------------------------------------------------------
+-- Get names of functions so that we can look them up in a Map
+-------------------------------------------------------------------------------
 SEM CExpr
         | App lhs.getFunName         = @func.getFunName
         | Var lhs.getFunName         = Just (acbrefNm @ref) --do we need to check anything else?
         | * - App Var lhs.getFunName = Nothing
+
+-------------------------------------------------------------------------------
+-- Actually do the inlining
+-------------------------------------------------------------------------------
 
 SEM CExpr 
         | App lhs.trf = case @lhs.isTop of 
