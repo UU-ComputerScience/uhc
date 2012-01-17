@@ -13,23 +13,46 @@ cmodTrfFusion lamMp cmod =
      in trf_Syn_CodeAGItf t
 }
 
+
+-- Main idea: inlined should inline all fusible functions (and their non-recursive subterms)
+--            rewrite should take the result and do forall x. cons (abs x) x
+--            fused should finish the job
+
 {
 
--- | 'apply func arg' will produce the result of performing a beta reduction by
+-- | 'inline func arg' will produce the result of performing a beta reduction by
 -- | applying the lamda abstraction func to the expression arg. Used to inline 
 -- | functions at App nodes where func has been marked as fusible 
 
 -- This will call an attribute grammar transformation for the attribute substd
--- apply :: CExpr -> CExpr -> CExpr
--- apply func arg
+-- inline :: CExpr -> CExpr -> CExpr
+-- inline func arg
 }
 
-ATTR CExpr [ | | applied : CExpr ]
+ATTR CExpr [ | | inlined : CExpr ]
 
 SEM CExpr
-        | App lhs.applied = if @func.isFusible 
-                            then apply @func.applied @arg.applied -- inline this function application
-                            else aCoreApp1 @func.applied @arg.applied -- recreate the App expression with their inlined verisons
+        | App lhs.inlined = if @func.isFusible 
+                            then apply @func.inlined @arg  -- inline this function application.  We actually want the fused version of the arg, but this hasn't been defined yet
+                            else aCoreApp1 @func.inlined @arg -- recreate the App, @arg should again be "fused" here
+
+
+-- Tests to see if a function is marked as fusible, or is fusible.  A @func of an App is fusible 
+-- if it is a named function found in the fuseMp, or if is another function application whose 
+-- @func is fusible. 
+
+ATTR CExpr [ | | isFusible : Bool ]
+
+SEM CExpr
+        | Var lhs.isFusible = case Map.lookup (abcrefNm @ref) @lhs.fuseMp of --if this is the style we keep, we don't need a fuseMp, only a fuseS
+                               Just _  -> True
+                               Nothing -> False
+        | App lhs.isFusible = @func.isFusible
+        | * - App Var lhs.isFusible   = False
+
+-- Transformations to actually perform a beta reduction. An App node is beta reduced by calling 
+-- subst nm body expr, where nm is the variable to replace, body is the body of the function, and 
+-- expr is the expr to substitute in for nm that passes in the substExpr attribute.
 
 {
 
