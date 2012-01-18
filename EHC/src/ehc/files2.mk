@@ -7,7 +7,11 @@ $(patsubst %,%/ehc,$(EHC_VARIANTS)): %/ehc: $(call FUN_EHC_INSTALL_VARIANT_ASPEC
 #$(patsubst $(BIN_PREFIX)%$(EXEC_SUFFIX),%,$(EHC_ALL_EXECS)): %: $(BIN_PREFIX)%$(EXEC_SUFFIX)
 
 # for (e.g.) install/99/bin/ehc, ehc binaries
-$(EHC_ALL_EXECS): %: $(EHC_ALL_SRC_FIND) $(EHC_MKF) $(RTS_ALL_SRC)
+$(EHC_ALL_EXECS): %: \
+		$(EHC_ALL_SRC_FIND) \
+		$(if $(EHC_CFG_USE_RULER),$(RULER2),) \
+		$(EHC_MKF) \
+		$(RTS_ALL_SRC)
 	@$(EXIT_IF_ABSENT_LIB_OR_TOOL)
 	$(MAKE) INCLUDE_DERIVED_MK=yes EHC_VARIANT=`echo $@ | sed -n -e 's+$(call FUN_EHC_INSTALL_VARIANT_ASPECTS_EXEC,\([0-9_]*\)).*+\1+p'` ehc-variant
 
@@ -39,7 +43,8 @@ $(patsubst %,%/clean,$(EHC_VARIANTS)):
 ###########################################################################################
 
 lib-eh-variant: 
-	$(MAKE) EHC_VARIANT_RULER_SEL="(($(EHC_VARIANT)=$(EHC_ON_RULES_VIEW_$(EHC_VARIANT)))).($(EHC_BY_RULER_GROUPS_BASE)).($(EHC_BY_RULER_RULES_$(EHC_VARIANT)))" \
+	$(MAKE) \
+	  $(if $(EHC_CFG_USE_RULER),EHC_VARIANT_RULER_SEL="(($(EHC_VARIANT)=$(EHC_ON_RULES_VIEW_$(EHC_VARIANT)))).($(EHC_BY_RULER_GROUPS_BASE)).($(EHC_BY_RULER_RULES_$(EHC_VARIANT)))",) \
 	  $(LIB_EHC_INS_FLAG)
 
 ###########################################################################################
@@ -47,10 +52,14 @@ lib-eh-variant:
 ###########################################################################################
 
 ehc-variant:
-	$(MAKE) EHC_VARIANT_RULER_SEL="(($(EHC_VARIANT)=$(EHC_ON_RULES_VIEW_$(EHC_VARIANT)))).($(EHC_BY_RULER_GROUPS_BASE)).($(EHC_BY_RULER_RULES_$(EHC_VARIANT)))" \
+	$(MAKE) \
+	  $(if $(EHC_CFG_USE_RULER),EHC_VARIANT_RULER_SEL="(($(EHC_VARIANT)=$(EHC_ON_RULES_VIEW_$(EHC_VARIANT)))).($(EHC_BY_RULER_GROUPS_BASE)).($(EHC_BY_RULER_RULES_$(EHC_VARIANT)))",) \
 	  ehc-variant-dflt
 
-ehc-variant-dflt: $(EHC_ALL_DPDS) $(LIB_EH_UTIL_INS_FLAG) $(LIB_EHC_INS_FLAG)
+ehc-variant-dflt: \
+		$(EHC_ALL_DPDS) \
+		$(LIB_EH_UTIL_INS_FLAG) \
+		$(LIB_EHC_INS_FLAG)
 	mkdir -p $(dir $(EHC_INSTALL_VARIANT_ASPECTS_EXEC)) && \
 	$(GHC) --make $(GHC_OPTS) $(GHC_OPTS_WHEN_EHC) -package $(LIB_EH_UTIL_PKG_NAME) -package $(LIB_EHC_PKG_NAME) \
 	       -i$(EHC_BLD_VARIANT_ASPECTS_PREFIX) $(EHC_BLD_VARIANT_ASPECTS_PREFIX)$(EHC_MAIN).hs -o $(EHC_INSTALL_VARIANT_ASPECTS_EXEC)
@@ -99,7 +108,8 @@ $(call FUN_INSTALL_VARIANT_BIN_PREFIX,$(EHC_VARIANT))llvmc: $(BIN_PREFIX)llvmc
 ###########################################################################################
 
 ehc-haddock-variant: 
-	$(MAKE) EHC_VARIANT_RULER_SEL="(($(EHC_VARIANT)=$(EHC_ON_RULES_VIEW_$(EHC_VARIANT)))).($(EHC_BY_RULER_GROUPS_BASE)).($(EHC_BY_RULER_RULES_$(EHC_VARIANT)))" \
+	$(MAKE) \
+	  $(if $(EHC_CFG_USE_RULER),EHC_VARIANT_RULER_SEL="(($(EHC_VARIANT)=$(EHC_ON_RULES_VIEW_$(EHC_VARIANT)))).($(EHC_BY_RULER_GROUPS_BASE)).($(EHC_BY_RULER_RULES_$(EHC_VARIANT)))",) \
 	  ehc-haddock-variant-dflt
 
 ehc-haddock-variant-dflt: $(EHC_ALL_DPDS) $(LIB_EH_UTIL_HS_DRV)
