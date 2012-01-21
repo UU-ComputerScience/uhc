@@ -384,7 +384,7 @@ primToPlainObj = function ( obj ) {
   return foldObj(toPlainAlg, {}, obj, true);
 };
 
-foldObj = function (alg, target, original deep) {
+foldObj = function (alg, target, original, deep) {
   var name, src, copy, copyIsArray, clone;
 
   // Extend the base object
