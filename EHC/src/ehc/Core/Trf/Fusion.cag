@@ -107,6 +107,7 @@ ATTR CBindAspectL [ || gathExpr USE {++} {[]} : {[CExpr]} ] -- this should just 
 ATTR CBindAspect [ || gathExpr USE {++} {[]} : {[CExpr]}]
 
 SEM CBindAspect
+        | Bind lhs.gathExpr = [@expr.inlined] -- The fuseMap holds the result of any inlining done to this code instead of the original
 -------------------------------------------------------------------------------
 -- Actually do the inlining
 -------------------------------------------------------------------------------
