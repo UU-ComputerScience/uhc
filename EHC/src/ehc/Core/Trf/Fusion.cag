@@ -107,65 +107,10 @@ ATTR CBindAspectL [ || gathExpr USE {++} {[]} : {[CExpr]} ] -- this should just 
 ATTR CBindAspect [ || gathExpr USE {++} {[]} : {[CExpr]}]
 
 SEM CBindAspect
-        | Bind lhs.gathExpr = [@expr.trf] -- The fuseMap holds the result of any inlining done to this code instead of the original
-
--------------------------------------------------------------------------------
--- Inline any functions marked as fuse...is this enough?
--- Need to "mark" which functions to try and fuse as a result
--------------------------------------------------------------------------------
-
--------------------------------------------------------------------------------
--- Figure out if an App is at the top of a tree of applications so that we only inline fully saturated applications
--------------------------------------------------------------------------------
-
-ATTR CExpr [ isTop : Bool || ]
-
-SEM CModule
-        | Mod expr.isTop = True   
-
-SEM CExpr 
-        | App  func.isTop = False
-               arg.isTop  = True
-
-SEM CAlt
-        | Alt expr.isTop = True
-
-SEM CBindAspect
-        | Bind expr.isTop = True
-        | FFE expr.isTop  = True
-        | Val expr.isTop  = True
-       
-SEM CPatFld
-        | Fld offset.isTop = True
-
-SEM MbCExpr
-        | Just just.isTop = True
-         
-
--------------------------------------------------------------------------------
--- Gather the arguments of any function application
--------------------------------------------------------------------------------
-ATTR CExpr [ || gathArgs USE {++} {[]} : {[CExpr]}]
-
-SEM CExpr 
-        | App loc.gathArgs     = @func.gathArgs ++ [@arg.trf] -- gather all the arguments in a list, should this be @arg.trf or @arg?
-        | * - App lhs.gathArgs = []
-
-ATTR CExpr [ || getFunName : {Maybe HsName} ] -- captures the function name of an application and pushes it up the tree of Apps, 
-                                              -- returns nothing if the function is something other than a named function
-
--------------------------------------------------------------------------------
--- Get names of functions so that we can look them up in a Map
--------------------------------------------------------------------------------
-SEM CExpr
-        | App lhs.getFunName         = @func.getFunName
-        | Var lhs.getFunName         = Just (acbrefNm @ref) --do we need to check anything else?
-        | * - App Var lhs.getFunName = Nothing
-
 -------------------------------------------------------------------------------
 -- Actually do the inlining
 -------------------------------------------------------------------------------
-
+%%]
 SEM CExpr 
         | App lhs.trf = case @lhs.isTop of 
                                 True -> case @func.getFunName of -- check if there is a function name or not
@@ -177,5 +122,3 @@ SEM CExpr
 
 ATTR CodeAGItf [ || trf : CModule]
 ATTR AllCodeNT [ || trf : SELF]
-
-%%]
