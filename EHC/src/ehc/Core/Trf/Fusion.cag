@@ -10,7 +10,7 @@ cmodTrfFusion lamMp cmod =
                             (Inh_CodeAGItf { fuseMp_Inh_CodeAGItf = Map.empty 
                                            , lamMp_Inh_CodeAGItf = lamMp
                                            } )
-     in trf_Syn_CodeAGItf t
+     in inlined_Syn_CodeAGItf t
 }
 
 
@@ -32,13 +32,13 @@ apply func                arg = acoreApp func [arg] -- this shouldn't happen, bu
 
 }
 
-ATTR CExpr [ | | inlined : CExpr ]
+ATTR CodeAGItf [ || inlined : CModule]
+ATTR AllCodeNT [ || inlined : SELF]
 
 SEM CExpr
         | App lhs.inlined = if @func.isFusible 
-                            then apply @func.inlined @arg  -- inline this function application.  We actually want the fused version of the arg, but this hasn't been defined yet
-                            else aCoreApp1 @func.inlined @arg -- recreate the App, @arg should again be "fused" here
-
+                            then apply @func.inlined @arg.inlined  -- inline this function application.  We actually want the fused version of the arg, but this hasn't been defined yet
+                            else @inlined
 
 -- Tests to see if a function is marked as fusible, or is fusible.  A @func of an App is fusible 
 -- if it is a named function found in the fuseMp, or if is another function application whose 
