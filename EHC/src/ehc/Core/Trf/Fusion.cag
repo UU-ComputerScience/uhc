@@ -1,4 +1,4 @@
-%%[93 hs module {%{EH}Core.Trf.Fusion} import (Debug.Trace,{%{EH}Ty},{%{EH}Base.Common},{%{EH}LamInfo},{%{EH}Core},{%{EH}AbstractCore}, qualified Data.Map as Map)
+%%[93 hs module {%{EH}Core.Trf.Fusion} import (Debug.Trace,{%{EH}Ty},{%{EH}Base.Common},{%{EH}LamInfo},{%{EH}Core},{%{EH}AbstractCore}, {%{EH}Core.Trf.Subst} (cexprSubst), qualified Data.Map as Map)
 %%]
 
 %%[93 ag import ({Core/AbsSyn})
@@ -20,13 +20,16 @@ cmodTrfFusion lamMp cmod =
 
 {
 
--- | 'inline func arg' will produce the result of performing a beta reduction by
+-- | 'apply func arg' will produce the result of performing a beta reduction by
 -- | applying the lamda abstraction func to the expression arg. Used to inline 
 -- | functions at App nodes where func has been marked as fusible 
 
 -- This will call an attribute grammar transformation for the attribute substd
--- inline :: CExpr -> CExpr -> CExpr
--- inline func arg
+
+apply :: CExpr -> CExpr -> CExpr
+apply (CExpr_Lam nm body) arg = cexprSubst nm body arg
+apply func                arg = acoreApp func [arg] -- this shouldn't happen, but don't want to cause a crash
+
 }
 
 ATTR CExpr [ | | inlined : CExpr ]
@@ -60,21 +63,6 @@ SEM CExpr
 --subst nm body expr = 
 
 }
-
-ATTR CExpr [ substExpr : CExpr | | ] 
-
-ATTR CExpr [ | | substd : CExpr ]
-
-SEM CExpr
-        | Lam lhs.substd = subst @arg @body.substd @lhs.substExpr
-
-ATTR CExpr [ | | subst : CExpr]
-
-SEM CExpr
-        | Var lhs.subst = if (acbrefNm @ref) == name 
-                          then @lhs.substExpr 
-                          else Var @ref
-        
 
 ------------------------------------------------------------------------------
 -- Pass fused function names and bodies down the expressions

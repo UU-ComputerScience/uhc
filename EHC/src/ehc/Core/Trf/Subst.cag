@@ -1,0 +1,35 @@
+%%[93 hs module {%{EH}Core.Trf.Subst} import ({%{EH}AbstractCore},{%{EH}Core},{%{EH}Ty},{%{EH}Base.Common}) 
+%%]
+
+%%[93 ag import ({Core/AbsSyn})
+
+{
+
+cexprSubst :: HsName -> CExpr -> CExpr -> CExpr
+cexprSubst nm body arg = 
+        let t = wrap_CExpr (sem_CExpr body)
+                           (Inh_CExpr { substExpr_Inh_CExpr = arg
+                                      , substName_Inh_CExpr = nm
+                                      } )
+        in substd_Syn_CExpr t
+
+}
+
+WRAPPER CExpr 
+
+ATTR AllCodeNT [ substExpr : CExpr    | |  ]
+ATTR AllCodeNT [ substName : {HsName} | |  ] 
+
+SEM CExpr
+
+ATTR AllCodeNT [ | | substd : SELF ]
+
+SEM CExpr
+        | Var lhs.substd = if (acbrefNm @ref) == @lhs.substName 
+                           then @lhs.substExpr 
+                           else @substd
+        | Lam lhs.substd = if @arg == @lhs.substName -- hole in the scope of substExpr
+                           then @substd
+                           else acoreLam [@arg] @body.substd
+         
+%%]
