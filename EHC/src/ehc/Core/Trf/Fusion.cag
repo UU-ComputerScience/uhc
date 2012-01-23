@@ -47,7 +47,7 @@ SEM CExpr
 ATTR CExpr [ | | isFusible : Bool ]
 
 SEM CExpr
-        | Var lhs.isFusible = case Map.lookup (abcrefNm @ref) @lhs.fuseMp of --if this is the style we keep, we don't need a fuseMp, only a fuseS
+        | Var lhs.isFusible = case Map.lookup (acbrefNm @ref) @lhs.fuseMp of --if this is the style we keep, we don't need a fuseMp, only a fuseS
                                Just _  -> True
                                Nothing -> False
         | App lhs.isFusible = @func.isFusible
