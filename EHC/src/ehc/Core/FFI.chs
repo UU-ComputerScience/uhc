@@ -201,16 +201,16 @@ ffiGrinMk
      -> UID
      -> HsName
 %%[[8
-     -> String          -- name
+     -> String					-- name
 %%][90
-     -> FFIWay          -- calling convention
-     -> ForeignEnt        -- reference to the foreign entity
+     -> FFIWay					-- calling convention
+     -> ForeignEnt				-- reference to the foreign entity
 %%]]
 %%[[99
-     -> Bool          -- result is evaluated
+     -> Bool					-- result is evaluated
 %%]]
-     -> [(GrVal,Ty)]      -- arguments info
-     -> Ty            -- result info
+     -> [(GrVal,Ty)]			-- arguments info
+     -> Ty						-- result info
      -> GrExpr
 ffiGrinMk
      opts dataGam uniq modNm
@@ -276,14 +276,14 @@ ffiMbIORes opts resTy
 -- | adapt type etc for IO ffi call
 ffiIOAdapt
   :: EHCOpts
-     -> (UID -> HsName)        -- make unique name (if needed so)
+     -> (UID -> HsName)				-- make unique name (if needed so)
      -> (HsName -> e -> e)              -- handle unit result
      -> (HsName -> HsName -> e -> e)    -- make tupled result, for state representation
-     -> UID
-     -> Ty                -- IO result type
-     -> ( [Ty]              -- type of additional arguments
-        , [HsName]            -- names of additional arguments
-        , e -> e            -- wrapping/adaption of result
+     -> UID                             
+     -> Ty								-- IO result type
+     -> ( [Ty]							-- type of additional arguments
+        , [HsName]						-- names of additional arguments
+        , e -> e						-- wrapping/adaption of result
         )
 ffiIOAdapt
      opts
@@ -305,9 +305,9 @@ ffiIOAdapt
 -- | adapt type etc for IO ffi call, specialized for Grin
 ffiGrinIOAdapt
   :: EHCOpts
-     -> UID
+     -> UID                             
      -> HsName                          -- module name
-     -> Ty                -- IO result type
+     -> Ty								-- IO result type
      -> ([Ty],[HsName],GrExpr -> GrExpr)
 ffiGrinIOAdapt
      opts
@@ -327,8 +327,8 @@ ffiGrinIOAdapt
 -- | adapt type etc for IO ffi call, specialized for Core
 ffiCoreIOAdapt
   :: EHCOpts
-     -> UID
-     -> Ty                -- IO result type
+     -> UID                             
+     -> Ty								-- IO result type
      -> ([Ty],[HsName],CExpr -> CExpr)
 ffiCoreIOAdapt
      opts
@@ -348,10 +348,10 @@ ffiCoreIOAdapt
 %%[(8 codegen) export(ffiEvalAdapt)
 -- | evaluate value etc for ffi call
 ffiEvalAdapt
-  :: ((HsName,intro,Bool) -> e -> e)    -- construct arg w.r.t. eval need, and bind to intro
-     -> ((HsName,e,Bool) -> e)        -- construct result w.r.t. eval need
-     -> [(HsName,intro,Bool)]        -- arg name + introduction + eval need
-     -> (HsName,e,Bool)            -- result
+  :: ((HsName,intro,Bool) -> e -> e)		-- construct arg w.r.t. eval need, and bind to intro
+     -> ((HsName,e,Bool) -> e)				-- construct result w.r.t. eval need
+     -> [(HsName,intro,Bool)]				-- arg name + introduction + eval need
+     -> (HsName,e,Bool)						-- result
      -> e
 ffiEvalAdapt
      evalBindArg
@@ -368,8 +368,8 @@ ffiEvalAdapt
 %%[(8 codegen grin) export(ffiGrinEvalAdapt)
 -- | evaluate value etc for ffi call, specialized for Grin
 ffiGrinEvalAdapt
-  :: [(HsName,GrPatLam,Bool)]        -- arg name + introduction + eval need
-     -> (HsName,GrExpr,Bool)        -- result
+  :: [(HsName,GrPatLam,Bool)]				-- arg name + introduction + eval need
+     -> (HsName,GrExpr,Bool)				-- result
      -> GrExpr
 ffiGrinEvalAdapt
   = ffiEvalAdapt
@@ -380,8 +380,8 @@ ffiGrinEvalAdapt
 %%[(8 codegen) export(ffiCoreEvalAdapt)
 -- | evaluate value etc for ffi call, specialized for Core
 ffiCoreEvalAdapt
-  :: [(HsName,HsName,Bool)]        -- arg name + introduction + eval need
-     -> (HsName,CExpr,Bool)        -- result
+  :: [(HsName,HsName,Bool)]				-- arg name + introduction + eval need
+     -> (HsName,CExpr,Bool)				-- result
      -> CExpr
 ffiCoreEvalAdapt
   = ffiEvalAdapt
@@ -398,12 +398,12 @@ ffiCoreEvalAdapt
 -- | Construct Core code for FFI
 ffiCoreMk
   :: EHCOpts
-     -> ( Ty -> CExpr      -- make FFI call
+     -> ( Ty -> CExpr			-- make FFI call
         )
      -> UID
      -> RCEEnv
-     -> ForeignExtraction    -- the ffi info
-     -> Ty            -- original type signature of FFI
+     -> ForeignExtraction		-- the ffi info
+     -> Ty						-- original type signature of FFI
      -> CExpr
 ffiCoreMk
      opts
@@ -455,9 +455,9 @@ ffeCoreMk
   :: EHCOpts
      -> UID
      -> RCEEnv
-     -> Ty            -- original type signature of FFE
-     -> ( CExpr -> CExpr    -- ffe wrapper
-        , Ty          -- corresponding type
+     -> Ty						-- original type signature of FFE
+     -> ( CExpr -> CExpr		-- ffe wrapper
+        , Ty					-- corresponding type
         )
 ffeCoreMk
      opts uniq rceEnv
@@ -467,8 +467,8 @@ ffeCoreMk
           $ acoreLet1Strict nmEvalRes 
               (wrapRes $ acoreApp e $ map acoreVar nmArgL ++ argLExtra)
               (acoreVar nmEvalRes)
-  , argTyL `mkArrow` resTyAdapted
-  )
+	, argTyL `mkArrow` resTyAdapted
+	)
   where (argTyL,resTy) = tyArrowArgsRes tyFFE
         argLen = length argTyL
         (nmRes:nmEvalRes:nmIOEvalRes:nmArgL) = map mkHNm $ mkNewLevUIDL (argLen+3) uniq

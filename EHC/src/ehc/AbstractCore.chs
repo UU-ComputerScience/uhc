@@ -42,8 +42,8 @@ class AbstractCore  expr metaval bind bindaspect bindcateg metabind ty pat patre
     , ty         -> expr
     , pat        -> expr
     , patrest    -> expr
-    , patfld   -> expr
-    , alt       -> expr
+    , patfld	 -> expr
+    , alt    	 -> expr
   where
   ------------------------- constructing: expr -------------------------
   -- | 1 arg application, together with meta info about the argument
@@ -248,33 +248,33 @@ acoreMetaLiftDict = fmap2Tuple acoreMetavalDfltDict
 %%[(8 codegen) export(ACoreBindAspectKey(..),ACoreBindAspectKeyS,ACoreBindAspMp)
 -- | A ACoreBindAspectKeyS formed out of multiple ACoreBindAspectKey identifies a particular binding aspect
 data ACoreBindAspectKey
-  = ACoreBindAspectKey_Default     -- identifies the default binding, if omitted in a reference this aspect is the one chosen.
-  | ACoreBindAspectKey_Ty          -- the normal ty
-  | ACoreBindAspectKey_RelevTy     -- the relevance ty
-  | ACoreBindAspectKey_Strict      -- the as strict as possible variant
-  | ACoreBindAspectKey_Debug       -- internal debugging only
-  | ACoreBindAspectKey_Core        -- core
+  = ACoreBindAspectKey_Default				-- identifies the default binding, if omitted in a reference this aspect is the one chosen.
+  | ACoreBindAspectKey_Ty					-- the normal ty
+  | ACoreBindAspectKey_RelevTy				-- the relevance ty
+  | ACoreBindAspectKey_Strict				-- the as strict as possible variant
+  | ACoreBindAspectKey_Debug				-- internal debugging only
+  | ACoreBindAspectKey_Core					-- core
 %%[[93
-  | ACoreBindAspectKey_FusionRole  -- fusion role
+  | ACoreBindAspectKey_FusionRole			-- fusion role
 %%]]
   deriving (Eq,Ord,Enum)
 
 instance Show ACoreBindAspectKey where
-  show ACoreBindAspectKey_Default     = "dft"
-  show ACoreBindAspectKey_Strict      = "str"
-  show ACoreBindAspectKey_Ty          = "ty"
-  show ACoreBindAspectKey_RelevTy     = "rty"
-  show ACoreBindAspectKey_Debug       = "dbg"
-  show ACoreBindAspectKey_Core        = "core"
+  show ACoreBindAspectKey_Default 		= "dft"
+  show ACoreBindAspectKey_Strict 		= "str"
+  show ACoreBindAspectKey_Ty 			= "ty"
+  show ACoreBindAspectKey_RelevTy 		= "rty"
+  show ACoreBindAspectKey_Debug 		= "dbg"
+  show ACoreBindAspectKey_Core 			= "core"
 %%[[93
-  show ACoreBindAspectKey_FusionRole  = "fusionrole"
+  show ACoreBindAspectKey_FusionRole	= "fusionrole"
 %%]]
 
 instance PP ACoreBindAspectKey where
   pp = pp . show
 
-type ACoreBindAspectKeyS   =  Set.Set ACoreBindAspectKey
-type ACoreBindAspMp x      =  Map.Map ACoreBindAspectKeyS x
+type ACoreBindAspectKeyS		=	Set.Set ACoreBindAspectKey
+type ACoreBindAspMp x			=	Map.Map ACoreBindAspectKeyS x
 
 acbaspkeyMk :: [ACoreBindAspectKey] -> ACoreBindAspectKeyS
 acbaspkeyMk = Set.fromList
@@ -351,8 +351,8 @@ deriving instance Data ACoreBindAspectKey
 -- | reference to binding aspect: name + aspect keys
 data ACoreBindRef
   = ACoreBindRef
-      { acbrefNm    :: !HsName
-      , acbrefMbAspKey  :: !(Maybe ACoreBindAspectKeyS)
+      { acbrefNm		:: !HsName
+      , acbrefMbAspKey	:: !(Maybe ACoreBindAspectKeyS)
       }
   deriving (Eq,Ord)
 
@@ -796,20 +796,20 @@ to be applied at the last possible moment.
 
 %%[(8 codegen) hs export(Coe'(..))
 data Coe' expr metaval bind bindasp ty
-  = Coe_Map          !(expr -> expr)          -- normal, expression as function
-  | Coe_C            !expr              -- constant
-  | Coe_Compose      !(Coe' expr metaval bind bindasp ty)  -- composition
-                     !(Coe' expr metaval bind bindasp ty)
-  | Coe_App1         !expr                 -- apply
-  | Coe_App          [HsName]            -- apply n args
-  | Coe_Lam          !HsName !ty            -- lambda
-  | Coe_CloseExists  !TyVarId !ty !ty        -- closing existential
-  | Coe_OpenExists   !TyVarId !ty !ty        -- opening existential
+  = Coe_Map      		!(expr -> expr)					-- normal, expression as function
+  | Coe_C        		!expr							-- constant
+  | Coe_Compose  		!(Coe' expr metaval bind bindasp ty)	-- composition
+                        !(Coe' expr metaval bind bindasp ty)
+  | Coe_App1     		!expr       					-- apply
+  | Coe_App      		[HsName]						-- apply n args
+  | Coe_Lam      		!HsName !ty						-- lambda
+  | Coe_CloseExists		!TyVarId !ty !ty				-- closing existential
+  | Coe_OpenExists		!TyVarId !ty !ty				-- opening existential
 %%[[9
-  | Coe_LamLet       !HsName !ty !UID        -- lambda with a let binding in the body
-  | Coe_LetRec       ![bind]              -- let rec
-  | Coe_ImplApp      !ImplsVarId            -- implicits, for apply
-  | Coe_ImplLam      !ImplsVarId            -- implicits, for lambda
+  | Coe_LamLet   		!HsName !ty !UID				-- lambda with a let binding in the body
+  | Coe_LetRec   		![bind]							-- let rec
+  | Coe_ImplApp  		!ImplsVarId						-- implicits, for apply
+  | Coe_ImplLam  		!ImplsVarId						-- implicits, for lambda
 %%]]
 
 instance Show (Coe' expr metaval bind bindasp ty) where
@@ -1015,24 +1015,24 @@ instance CSubstitutable e m b ba t (CSubst' e m b ba t) where
 
 %%[(8 codegen) hs export(RAlt'(..),RPat'(..),RPatConBind'(..),RPatFld'(..),RCEAltL')
 data RAlt' e t b pr
-  = RAlt_Alt      { rcaPats :: ![RPat' e t b pr], raaExpr :: !e, raaFailS :: UIDS }
+  = RAlt_Alt			{ rcaPats :: ![RPat' e t b pr], raaExpr :: !e, raaFailS :: UIDS }
 
 data RPat' e t b pr
-  = RPat_Var          { rcpPNm :: !RPatNm, rcpTy :: !t }
-  | RPat_Con          { rcpPNm :: !RPatNm, rcpTy :: !t, rcpTag :: !CTag, rcpBinds :: !(RPatConBind' e t b pr) }
-  | RPat_Int          { rcpPNm :: !RPatNm, rcpTy :: !t, rcpInt :: !Integer }
-  | RPat_Char         { rcpPNm :: !RPatNm, rcpTy :: !t, rcpChar :: !Char }
-  | RPat_Irrefutable  { rcpPNm :: !RPatNm, rcpTy :: !t, rcpValBindL :: ![b] }
+  = RPat_Var			{ rcpPNm :: !RPatNm, rcpTy :: !t }
+  | RPat_Con			{ rcpPNm :: !RPatNm, rcpTy :: !t, rcpTag :: !CTag, rcpBinds :: !(RPatConBind' e t b pr) }
+  | RPat_Int			{ rcpPNm :: !RPatNm, rcpTy :: !t, rcpInt :: !Integer }
+  | RPat_Char			{ rcpPNm :: !RPatNm, rcpTy :: !t, rcpChar :: !Char }
+  | RPat_Irrefutable	{ rcpPNm :: !RPatNm, rcpTy :: !t, rcpValBindL :: ![b] }
 %%[[97
-  | RPat_BoolExpr     { rcpPNm :: !RPatNm, rcpTy :: !t, rcpExpr :: !e, rcpMbConst :: Maybe SrcConst }
+  | RPat_BoolExpr		{ rcpPNm :: !RPatNm, rcpTy :: !t, rcpExpr :: !e, rcpMbConst :: Maybe SrcConst }
 %%]]
 
 data RPatConBind' e t b pr
-  = RPatConBind_One    { rpcbRest :: !pr, rpcbBinds :: ![RPatFld' e t b pr] }
-  | RPatConBind_Many   { rpcbConBinds :: ![RPatConBind' e t b pr] }
+  = RPatConBind_One		{ rpcbRest :: !pr, rpcbBinds :: ![RPatFld' e t b pr] }
+  | RPatConBind_Many	{ rpcbConBinds :: ![RPatConBind' e t b pr] }
 
 data RPatFld' e t b pr
-  = RPatFld_Fld        { rpbLbl :: !HsName, rpbOffset :: !e, rpbNm :: !HsName, rpbPat :: !(RPat' e t b pr)}
+  = RPatFld_Fld		    { rpbLbl :: !HsName, rpbOffset :: !e, rpbNm :: !HsName, rpbPat :: !(RPat' e t b pr)}
 
 type RCEAltL' e t b pr = [RAlt' e t b pr]
 %%]
@@ -1120,8 +1120,8 @@ acoreRPat2Pat p
 acoreRPatConBind2PatConBind :: (AbstractCore e m b basp bcat mbind t p pr pf a) => RPatConBind' e t b pr -> (pr,[pf])
 acoreRPatConBind2PatConBind b
   = case b of
-      RPatConBind_One   r bs   -> (r,map acoreRPatBind2PatFld bs)
-      RPatConBind_Many   bs     -> head (map acoreRPatConBind2PatConBind bs)
+  	  RPatConBind_One 	r bs 	-> (r,map acoreRPatBind2PatFld bs)
+  	  RPatConBind_Many 	bs 		-> head (map acoreRPatConBind2PatConBind bs)
 
 acoreRPatBind2PatFld :: (AbstractCore e m b basp bcat mbind t p pr pf a) => RPatFld' e t b pr -> pf
 acoreRPatBind2PatFld (RPatFld_Fld l o _ p@(RPat_Var n _)) = acorePatFldTy (rcpTy p) (l,o) (rpatNmNm n)
@@ -1135,8 +1135,8 @@ In the following, note the hardcodedness!!!!!
 
 %%[(8 codegen) hs export(ctagTrue, ctagFalse)
 ctagTrue, ctagFalse :: EHCOpts -> CTag
-ctagTrue  opts = CTag (ehcOptBuiltin opts ehbnDataBool) (ehcOptBuiltin opts ehbnBoolTrue)  1 0 0    -- this makes it hardcoded, ideally dependent on datatype def itself !!
-ctagFalse opts = CTag (ehcOptBuiltin opts ehbnDataBool) (ehcOptBuiltin opts ehbnBoolFalse) 0 0 0    -- this makes it hardcoded, ideally dependent on datatype def itself !!
+ctagTrue  opts = CTag (ehcOptBuiltin opts ehbnDataBool) (ehcOptBuiltin opts ehbnBoolTrue)  1 0 0		-- this makes it hardcoded, ideally dependent on datatype def itself !!
+ctagFalse opts = CTag (ehcOptBuiltin opts ehbnDataBool) (ehcOptBuiltin opts ehbnBoolFalse) 0 0 0		-- this makes it hardcoded, ideally dependent on datatype def itself !!
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1147,8 +1147,8 @@ In the following, note the hardcodedness!!!!!
 
 %%[(8 codegen) hs export(ctagCons,ctagNil)
 ctagCons, ctagNil :: EHCOpts -> CTag
-ctagCons opts = CTag (ehcOptBuiltin opts ehbnDataList) (ehcOptBuiltin opts ehbnDataListAltCons) 0 2 2    -- this makes it hardcoded, ideally dependent on datatype def itself !!
-ctagNil  opts = CTag (ehcOptBuiltin opts ehbnDataList) (ehcOptBuiltin opts ehbnDataListAltNil ) 1 0 2    -- this makes it hardcoded, ideally dependent on datatype def itself !!
+ctagCons opts = CTag (ehcOptBuiltin opts ehbnDataList) (ehcOptBuiltin opts ehbnDataListAltCons) 0 2 2		-- this makes it hardcoded, ideally dependent on datatype def itself !!
+ctagNil  opts = CTag (ehcOptBuiltin opts ehbnDataList) (ehcOptBuiltin opts ehbnDataListAltNil ) 1 0 2		-- this makes it hardcoded, ideally dependent on datatype def itself !!
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1158,9 +1158,9 @@ ctagNil  opts = CTag (ehcOptBuiltin opts ehbnDataList) (ehcOptBuiltin opts ehbnD
 %%[(8 codegen) hs export(CaseAltFailReason(..))
 -- | Reason to fail a case alternative
 data CaseAltFailReason
-  = CaseAltFailReason_Absence          -- failed because of absence
+  = CaseAltFailReason_Absence					-- failed because of absence
   | CaseAltFailReason_Continue
-      { cafailCaseId    :: UID        -- failed as part of case match attempt, but continues with code identified by id
+      { cafailCaseId		:: UID				-- failed as part of case match attempt, but continues with code identified by id
       }
   deriving (Show,Eq,Ord)
 
@@ -1186,9 +1186,9 @@ deriving instance Data CaseAltFailReason
 
 %%[(8 codegen) hs export(AppFunKind(..))
 data AppFunKind
-  = AppFunKind_NoApp          -- inlined Nothing
-  | AppFunKind_Fun   ACoreBindRef
-  | AppFunKind_Tag   CTag
+  = AppFunKind_NoApp					-- inlined Nothing
+  | AppFunKind_Fun 	ACoreBindRef
+  | AppFunKind_Tag 	CTag
   | AppFunKind_FFI
 %%]
 
@@ -1199,9 +1199,9 @@ data AppFunKind
 %%[(8 codegen) hs export(WhatExpr(..))
 data WhatExpr
   = ExprIsLam
-  | ExprIsApp   Int      -- arity
-  | ExprIsVar   HsName
-  | ExprIsInt   Int
+  | ExprIsApp	Int			-- arity
+  | ExprIsVar 	HsName
+  | ExprIsInt 	Int
   | ExprIsOther
   | ExprIsBind
   deriving Eq

@@ -75,6 +75,7 @@ EHC_UHC_INSTALL_VARIANT			:= 101
 EHC_PREL_VARIANTS				:= $(EHC_PREL_VARIANT) $(EHC_UHC_VARIANT) $(EHC_UHC_INSTALL_VARIANT)
 EHC_GMP_VARIANTS				:= $(EHC_PREL_VARIANTS) 97 98 $(EHC_OTHER_CODE_VARIANTS)
 EHC_LTM_VARIANTS				:= $(EHC_GMP_VARIANTS)
+EHC_PUB_RULER_VARIANTS			:= 1 2 3 4
 EHC_PUB_NOCODE_VARIANTS			:= 1 2 3 4 5 6 7
 EHC_PUB_NOPREL_VARIANTS			:= 8 9 10 11 12 13 14 15 17 18 19 20 30 31 50 90 91 92 93 96 97 98
 EHC_PUB_CODE_VARIANTS			:= $(EHC_PUB_NOPREL_VARIANTS) $(EHC_PREL_VARIANTS)
@@ -99,6 +100,12 @@ TEST_VARIANTS					:= $(EHC_PUB_NOCODE_VARIANTS) 8 9 10 11 $(EHC_PREL_VARIANT)
 ###########################################################################################
 
 EXIT_IF_ABSENT_LIB_OR_TOOL		:= @EXIT_IF_ABSENT_LIB_OR_TOOL@
+
+###########################################################################################
+# use of ruler depents on variant
+###########################################################################################
+
+EHC_CFG_USE_RULER						:= $(filter $(EHC_VARIANT),$(EHC_PUB_RULER_VARIANTS))
 
 ###########################################################################################
 # rts building depends on target

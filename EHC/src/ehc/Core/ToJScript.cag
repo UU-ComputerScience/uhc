@@ -396,7 +396,7 @@ SEM CExpr
                                                         @ty
                                                         @foreignEntInfo
                                                         @lhs.opts False @argMbConL @resMbCon
-                            .   js              = if null @argMbConL
+                            .   js              =   if null @argMbConL
                                                     then (@mkResJS $ @mkFFI [])
                                                     else (jsVar $ mkHNm $ forextractEnt @foreignEntInfo)
   | Let         loc         .   (jbindsLet,jstatsLet)
@@ -672,13 +672,11 @@ SEM CBindAspect
                                                         else if Seq.null @expr.jstats -- not @isCAF
                                                              then str dflt
                                                              else str caf
-
 %%[[90
   | FFE         loc         .   js              = mkWrapFn @jsArgL
                                                     $ jsBody J.Stat_Ret @expr.jbinds @expr.jstats (Just @expr.jsLamBody)
 %%]]
 %%]
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Generation: toplevel

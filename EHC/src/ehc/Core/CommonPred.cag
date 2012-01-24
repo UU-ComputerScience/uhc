@@ -12,7 +12,7 @@ ATTR CExpr [ | | mbLam: {Maybe [HsName]} ]
 SEM CExpr
   | Lam         lhs         .   mbLam       =   Just $ maybe [@arg] (@arg:) @body.mbLam
   | * - Lam Ann CaseAltFail
-                lhs         .   mbLam       =   Nothing
+  				lhs         .   mbLam       =   Nothing
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -41,8 +41,8 @@ ATTR CExpr [ | | mbVar: {Maybe HsName} ]
 
 SEM CExpr
   | Var         loc         .   mbVar       =   Just @nm
-                loc         .   mbVar : {Maybe HsName}
+  				loc			.	mbVar		:	{Maybe HsName}
   | * - Var Ann CaseAltFail
-                lhs         .   mbVar       =   Nothing
+  				lhs         .   mbVar       =   Nothing
 %%]
 
