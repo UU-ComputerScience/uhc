@@ -111,7 +111,7 @@ trfCore opts dataGam modNm trfcore
   where trf
           = do { -- initial is just to obtain Core for dumping stages
                  t_initial
-                 
+               
                  -- removal of unnecessary constructs: simplifications based on annotations (experimential, temporary)
                ; t_ann_simpl
 
@@ -152,7 +152,10 @@ trfCore opts dataGam modNm trfcore
                ; t_const_prop
                ; t_inl_letali
                ; t_elim_trivapp
-
+%%[[93
+               ; when (ehcOptFusion opts) 
+                      t_fusion
+%%]] 
                  -- put in A-normal form, where args to app only may be identifiers
                ; u1 <- modifyGets uniq
                ; t_anormal u1
@@ -168,10 +171,7 @@ trfCore opts dataGam modNm trfcore
                  -- pass all globals used in CAF explicit as argument
                ; t_caf_asarg
                ; t_let_unrec
-%%[[93
-               ; when (ehcOptFusion opts) 
-                      t_fusion
-%%]]
+
                ; u2 <- modifyGets uniq
                ; t_anormal u2
                
@@ -219,15 +219,15 @@ trfCore opts dataGam modNm trfcore
           where (n,h) = mkNewLevUID u
 
         t_initial       = liftTrf  "initial"            $ id
+%%[[93
+        t_fusion        = liftTrf  "fusion"             $ cmodTrfFusion (trfcoreInhLamMp trfcore)
+%%]]
         t_eta_red       = liftTrf  "eta-red"            $ cmodTrfEtaRed
         t_erase_ty      = liftTrf2 "erase-ty" lamMpPropagate
                                                         $ \s -> cmodTrfEraseExtractTysigCore opts
         t_ann_simpl     = liftTrf  "ann-simpl"          $ cmodTrfAnnBasedSimplify opts
         t_ren_uniq    o = liftTrf  "ren-uniq"           $ cmodTrfRenUniq o
         t_let_unrec     = liftTrf  "let-unrec"          $ cmodTrfLetUnrec
-%%[[93
-        t_fusion        = liftTrf  "fusion"            $ cmodTrfFusion (trfcoreInhLamMp trfcore)
-%%]]
         t_let_defbefuse = liftTrf  "let-defbefuse"      $ cmodTrfLetDefBeforeUse
         t_let_flatstr   = liftTrf  "let-flatstr"        $ cmodTrfLetFlattenStrict
         t_inl_letali    = liftTrf  "inl-letali"         $ cmodTrfInlineLetAlias
