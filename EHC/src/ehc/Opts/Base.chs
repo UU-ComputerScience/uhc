@@ -243,7 +243,7 @@ emptyEHCOpts
 %%[[(8 codegen tycore)
       ,  ehcOptShowTyCore       =   False
 %%]]
-      ,  ehcOptPriv             =   True
+      ,  ehcOptPriv             =   False
       ,  ehcOptHsChecksInEH     =   False
 %%[[1
       ,  ehcOptShowEH           =   True

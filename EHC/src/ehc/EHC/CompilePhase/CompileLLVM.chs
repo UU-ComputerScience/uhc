@@ -1,32 +1,32 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% EHC Compile XXX
+%%% EHC Compile LLVM
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 LLVM compilation
 
-%%[8 module {%{EH}EHC.CompilePhase.CompileLLVM}
+%%[(8 codegen llvm) module {%{EH}EHC.CompilePhase.CompileLLVM}
 %%]
 
 -- general imports
-%%[8 import({%{EH}EHC.Common})
+%%[(8 codegen llvm) import({%{EH}EHC.Common})
 %%]
-%%[8 import({%{EH}EHC.CompileUnit})
+%%[(8 codegen llvm) import({%{EH}EHC.CompileUnit})
 %%]
-%%[8 import({%{EH}EHC.CompileRun})
+%%[(8 codegen llvm) import({%{EH}EHC.CompileRun})
 %%]
 
-%%[8 import(qualified {%{EH}Config} as Cfg)
+%%[(8 codegen llvm) import(qualified {%{EH}Config} as Cfg)
 %%]
-%%[8 import({%{EH}EHC.Environment})
+%%[(8 codegen llvm) import({%{EH}EHC.Environment})
 %%]
-%%[(8 codegen) import({%{EH}Base.Target})
+%%[(8 codegen llvm) import({%{EH}Base.Target})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Compile actions: LLVM compilation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin) export(cpCompileWithLLVM)
+%%[(8 codegen llvm) export(cpCompileWithLLVM)
 cpCompileWithLLVM :: HsName -> EHCompilePhase()
 cpCompileWithLLVM modNm
   = do { cr <- get

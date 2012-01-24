@@ -45,6 +45,10 @@ Translation to another AST
 %%[(8 codegen grin) import({%{EH}GrinCode.ToGrinByteCode}(grinMod2ByteCodeMod))
 %%]
 
+-- Cmm semantics
+%%[(8 codegen cmm) import(qualified {%{EH}Cmm} as Cmm)
+%%]
+
 -- Bytecode semantics
 %%[(8 codegen grin) import({%{EH}GrinByteCode.ToC}(gbmod2C))
 %%]
@@ -283,14 +287,32 @@ cpTranslateByteCode modNm
         ; let  (ecu,crsi,opts,_) = crBaseInfo modNm cr
                mbBytecode = ecuMbBytecode ecu
 %%[[8
-               grinbcPP = gbmod2C opts $ panicJust "cpTranslateByteCode1" mbBytecode
+               ( grinbcPP
+%%[[(8 cmm)
+                ,cmmMod
+%%]]
+                ) = gbmod2C opts $ panicJust "cpTranslateByteCode1" mbBytecode
+%%[[(8 cmm)
+               grinbcCmm = Cmm.Module_Mod modNm cmmMod
+%%]]
 %%][50
                coreInh  = crsiCoreInh crsi
-               (grinbcPP,functionInfoExportMp)
+               ( grinbcPP
+%%[[(50 cmm)
+                 ,grinbcCmm
+%%]]
+                 ,functionInfoExportMp)
                         = ( vlist ([ppMod] ++ (if ecuIsMainMod ecu then [ppMain] else []))
+%%[[(50 cmm)
+                          , Cmm.Module_Mod modNm $ cmmMod  ++ (if ecuIsMainMod ecu then cmmMain else [])
+%%]]
                           , functionInfoExportMp
                           )
-                        where (ppMod,ppMain,functionInfoExportMp)
+                        where ( ppMod,ppMain
+%%[[(50 cmm)
+                               ,cmmMod,cmmMain
+%%]]
+                               ,functionInfoExportMp)
                                 = gbmod2C opts lkup $ panicJust "cpTranslateByteCode2" mbBytecode
                                 where lkup n = do { li <- Map.lookup n (Core2GrSem.lamMp_Inh_CodeAGItf coreInh)
                                                   ; ex <- laminfoGrinByteCode li
@@ -301,6 +323,9 @@ cpTranslateByteCode modNm
         ; when (ehcOptEmitBytecode opts && isJust mbBytecode)
                (do { cpUpdCU modNm
                       ( ecuStoreBytecodeSem grinbcPP
+%%[[(8 cmm)
+                      . ecuStoreCmm grinbcCmm
+%%]]
 %%[[50
                       . ( let hii = ecuHIInfo ecu
                           in  ecuStoreHIInfo

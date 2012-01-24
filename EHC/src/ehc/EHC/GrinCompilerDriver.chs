@@ -91,11 +91,11 @@
 %%]
 %%[(8 codegen grin) import({%{EH}Silly.PrettyC(prettyC)})
 %%]
-%%[(8 codegen grin) import({%{EH}Silly.ToLLVM(silly2llvm)})
+%%[(8 codegen grin llvm) import({%{EH}Silly.ToLLVM(silly2llvm)})
 %%]
-%%[(8 codegen grin) import({%{EH}LLVM(LLVMModule(..))})
+%%[(8 codegen llvm) import({%{EH}LLVM(LLVMModule(..))})
 %%]
-%%[(8 codegen grin) import({%{EH}LLVM.Pretty(prettyLLVMModule)})
+%%[(8 codegen llvm) import({%{EH}LLVM.Pretty(prettyLLVMModule)})
 %%]
 %%[(8 codegen clr) hs import(Language.Cil (Assembly (..), cil))
 %%]
@@ -234,11 +234,13 @@ doCompileGrin input opts
                 -- the GroupAllocs transformation is not compatible with the new EmbedVars tactique of sharing locations.
                 -- GroupAllocs is a bad idea anyway.
 --              ; transformSilly groupAllocs        "GroupAllocs"      ; caWriteSilly "-205" "sil" pretty ehcOptDumpGrinStages
+%%[[(8 codegen llvm)
                 ; when (ehcOptEmitLLVM options) 
                   (do { caSilly2LLVM
                       ; caWriteLLVM
                       }
                    )
+%%]]
 %%[[(8 codegen clr)
                 ; when (ehcOptEmitCLR options) 
                   (do { caGrin2Cil
@@ -257,6 +259,8 @@ initialState opts (Right (fp,grmod)) = (initState opts) {gcsPath=fp, gcsGrin=grm
 initState opts
   = GRINCompileState { gcsGrin       = GrModule_Mod hsnUnknown [] [] Map.empty
                      , gcsSilly      = SilModule_SilModule [] [] []
+%%]
+%%[(8 codegen llvm)
                      , gcsLLVM       = LLVMModule_LLVMModule [] [] [] [] [] []
 %%]
 %%[(8 codegen clr)
@@ -317,6 +321,9 @@ caGrin2Silly = do
     ; modify (gcsUpdateSilly silly)
     }
 
+%%]
+
+%%[(8 codegen llvm)
 caSilly2LLVM :: CompileAction ()
 caSilly2LLVM = do
     { code <- gets gcsSilly
@@ -354,11 +361,13 @@ caWriteFile extra suffix ppFun struct =
           }
      }
 
+%%[[(8 codegen llvm)
 caWriteLLVM  :: CompileAction()
 caWriteLLVM  =
   do { llvm <- gets gcsLLVM
      ; caWriteFile "" "ll" (const prettyLLVMModule) llvm
      }
+%%]]
 
 %%[[(8 codegen clr)
 caWriteCil :: String -> CompileAction()
@@ -413,7 +422,9 @@ caWriteHptMap fn
 data GRINCompileState = GRINCompileState
     { gcsGrin      :: !GrModule
     , gcsSilly     :: !SilModule
+%%[[(8 codegen llvm)
     , gcsLLVM      :: !LLVMModule
+%%]]
 %%[[(8 codegen clr)
     , gcsCil       :: Assembly
 %%]]
@@ -424,7 +435,9 @@ data GRINCompileState = GRINCompileState
 
 gcsUpdateGrin   x s = s { gcsGrin   = x }
 gcsUpdateSilly  x s = s { gcsSilly  = x }
+%%[[(8 codegen llvm)
 gcsUpdateLLVM   x s = s { gcsLLVM   = x }
+%%]]
 %%[[(8 codegen clr)
 gcsUpdateCil    x s = s { gcsCil    = x }
 %%]]

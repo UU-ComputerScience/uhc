@@ -576,9 +576,7 @@ SEM CExpr
 -- | construct the ffi call
 ffiJScriptMkCall
   ::  Ty                          -- type of the imported function
-%%[[90
   ->  ForeignExtraction
-%%]]
   ->  EHCOpts
   ->  Bool                        -- do eval of args
   ->  [Maybe HsName]              -- list of (possibly) type constructor names of arguments
@@ -588,9 +586,7 @@ ffiJScriptMkCall
       , [J.Expr] -> J.Expr        -- and primitive call itself
       )
 ffiJScriptMkCall ty
-%%[[90
      ent
-%%]]
   = javalikeMkFFICall
       ( const tyDefault
       , \_ _ -> bx
@@ -612,9 +608,7 @@ ffiJScriptMkCall ty
       , mkDyn
       , jsEvl, tyDefault
       )
-%%[[90
       ent
-%%]]
   where bx = (id,tyDefault)
         mkfargs f as -- TODO: Is this redundant?
 %%[[90
@@ -629,6 +623,8 @@ ffiJScriptMkCall ty
 %%]]
 %%[[8
         mk = J.Expr_Call
+        mkWrap _ _ = panic "ffiJScriptMkCall.mkWrap"
+        mkDyn  _ _ = panic "ffiJScriptMkCall.mkDyn"
 %%][90
         mkObj as = jsCall "primToPlainObj" as
         mk = foreignexprEval (J.Expr_Sel,J.Expr_ArrInx,J.Expr_Call,id,mkObj,jsVar,J.Expr_Str) (forextractForeignExpr ent)

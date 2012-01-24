@@ -6,39 +6,39 @@
 -}
 }
 %%]
-%%[(8 codegen grin) hs module {%{EH}Silly.ToLLVM}
+%%[(8 codegen grin llvm) hs module {%{EH}Silly.ToLLVM}
 %%]
-%%[(8 codegen grin) hs import({%{EH}LLVM})
+%%[(8 codegen grin llvm) hs import({%{EH}LLVM})
 %%]
-%%[(8 codegen grin) hs import({%{EH}Silly})
+%%[(8 codegen grin llvm) hs import({%{EH}Silly})
 %%]
-%%[(8 codegen grin) hs import({%{EH}Base.Common})
+%%[(8 codegen grin llvm) hs import({%{EH}Base.Common})
 %%]
-%%[(8 codegen grin) hs import({%{EH}Opts})
+%%[(8 codegen grin llvm) hs import({%{EH}Opts})
 %%]
-%%[(8 codegen grin) hs import({%{EH}ConfigDefines})
+%%[(8 codegen grin llvm) hs import({%{EH}ConfigDefines})
 %%]
-%%[(8 codegen grin) import({Silly/AbsSyn})
+%%[(8 codegen grin llvm) import({Silly/AbsSyn})
 %%]
-%%[(8 codegen grin) hs import(qualified Data.Map)
+%%[(8 codegen grin llvm) hs import(qualified Data.Map)
 %%]
-%%[(8 codegen grin) hs import(qualified Data.Set)
+%%[(8 codegen grin llvm) hs import(qualified Data.Set)
 %%]
-%%[(8 codegen grin) hs import(qualified Data.List)
+%%[(8 codegen grin llvm) hs import(qualified Data.List)
 %%]
-%%[(8 codegen grin) hs import(Data.Char)
+%%[(8 codegen grin llvm) hs import(Data.Char)
 %%]
-%%[(8 codegen grin) hs import(Foreign.Marshal.Utils)
+%%[(8 codegen grin llvm) hs import(Foreign.Marshal.Utils)
 %%]
-%%[(8 codegen grin)
+%%[(8 codegen grin llvm)
 WRAPPER SilModule
 %%]
 
-%%[(8 codegen grin)
+%%[(8 codegen grin llvm)
 PRAGMA nocycle
 %%]
 
-%%[(8 codegen grin) hs export( silly2llvm )
+%%[(8 codegen grin llvm) hs export( silly2llvm )
 {-|
   Transform a 'SilModule' to a 'LLVMModule'. In this module, we use cells which
   have the size @sizeof(intptr_t)@, so that we can store both integers and
@@ -64,7 +64,7 @@ silly2llvm opts silmod =
    in llvmCode_Syn_SilModule t
 %%]
 
-%%[(8 codegen grin)
+%%[(8 codegen grin llvm)
 ATTR SilModule
      [ | | llvmCode : {LLVMModule} ]
 
@@ -469,7 +469,7 @@ SEM Constant
                                 in Constant value @lhs.intType                                                                 
 %%]
 
-%%[(8 codegen grin)
+%%[(8 codegen grin llvm)
 --------------------------------------------------------------------------------
 -- Thread a UID through the program in a way that the numbering follow
 -- the flow of the code.
@@ -529,7 +529,7 @@ SEM Variable
                  
 %%]
 
-%%[(8 codegen grin)
+%%[(8 codegen grin llvm)
 --------------------------------------------------------------------------------
 -- Passing up the signatures of the functions declared and the functions 
 -- defined in this module. If we have the set of these functions, we can 
@@ -567,7 +567,7 @@ SEM Function
                               in LLVMFunctionDecl_LLVMFunctionDecl (hs2str @name) Void FixedArgs prms (Just "shadow-stack")
 %%]
   
-%%[(8 codegen grin)
+%%[(8 codegen grin llvm)
 --------------------------------------------------------------------------------
 -- Passing up the string constants used in functions 
 --------------------------------------------------------------------------------
@@ -587,7 +587,7 @@ SEM Constant
                 lhs.constants = [ ]
 %%]
 
-%%[(8 codegen grin)
+%%[(8 codegen grin llvm)
 --------------------------------------------------------------------------------
 -- Passing down platform depended types.
 --------------------------------------------------------------------------------
@@ -596,7 +596,7 @@ ATTR AllNT
      [ intType, pointerType, globalType : {LLVMType} | | ]
 %%]
 
-%%[(8 codegen grin)
+%%[(8 codegen grin llvm)
 --------------------------------------------------------------------------------
 -- We pass down a map, containing the alias name and the 
 -- corresponding Int value of constructor tags
@@ -614,7 +614,7 @@ SEM SilModule
   | SilModule   functions.constantMap = Data.Map.fromList (map (\ci->(constantInfoName ci, constantInfoSeqNr ci)) @constants)
 %%]
 
-%%[(8 codegen grin)
+%%[(8 codegen grin llvm)
 --------------------------------------------------------------------------------
 -- Pass type mapping of locals to statements
 --------------------------------------------------------------------------------
@@ -630,7 +630,7 @@ SEM Function
 %%]
 
 
-%%[(8 codegen grin)
+%%[(8 codegen grin llvm)
 --------------------------------------------------------------------------------
 -- TODO: Bubble up if a variable is a Local variable. This is needed, because
 -- those are implemented with an address on the stack.
@@ -644,7 +644,7 @@ SEM Variable
                 lhs.isLocal  = False                           
 %%]
 
-%%[(8 codegen grin)
+%%[(8 codegen grin llvm)
 --------------------------------------------------------------------------------
 -- Pass the max size of the closure that is stored in RP up
 -- so that we can initialize it at the start up.
@@ -669,7 +669,7 @@ SEM Variable
                 lhs.isRP   = False                           
 %%]
 
-%%[(8 codegen grin)
+%%[(8 codegen grin llvm)
 --------------------------------------------------------------------------------
 -- Pass function declarations that are defined extern
 --------------------------------------------------------------------------------
@@ -684,7 +684,7 @@ SEM Value
   | Call        lhs.externFuncs = [@loc.fnDecl]                  
 %%]
 
-%%[(8 codegen grin)
+%%[(8 codegen grin llvm)
 {
 -------------------------------------------------------------------------------
 -- Functions for extraction of values from the (UID,[LLVMVar],LLVMStatements) 
@@ -711,7 +711,7 @@ getCode (_,_,x) = x
 }
 %%]
 
-%%[(8 codegen grin)
+%%[(8 codegen grin llvm)
 {
 -------------------------------------------------------------------------------
 -- Some 'LLVMLLVMFunctionDecl_LLVMFunctionDecltionDecl's for usage in calls and forward declarations.
@@ -799,7 +799,7 @@ rtsExitFuncDecl =
 }
 %%]
 
-%%[(8 codegen grin)
+%%[(8 codegen grin llvm)
 {
 -------------------------------------------------------------------------------
 -- Cast functions
@@ -847,7 +847,7 @@ makeFitting nr what hole
 }
 %%]
 
-%%[(8 codegen grin)
+%%[(8 codegen grin llvm)
 {
 -------------------------------------------------------------------------------
 -- Variable loading functions.
@@ -874,7 +874,7 @@ load2value nr var
 }
 %%]
 
-%%[(8 codegen grin)
+%%[(8 codegen grin llvm)
 {
 -------------------------------------------------------------------------------
 -- Assign an 'LLVMExpression' to a 'LLVMVar'.
@@ -897,7 +897,7 @@ assign2var nr (expr,tp) =
 }
 %%]
 
-%%[(8 codegen grin)
+%%[(8 codegen grin llvm)
 {
 -------------------------------------------------------------------------------
 -- Often used constants.
@@ -914,7 +914,7 @@ defaultCase nr var =
 
 %%]
 
-%%[(8 codegen grin)
+%%[(8 codegen grin llvm)
 {
 -------------------------------------------------------------------------------
 -- Construct LLVM Data
@@ -948,7 +948,7 @@ mkGCGlobalsDescr vars intType = (GlobalVar "_llvm_globals_descriptor" i8 , Array
 }
 %%]
 
-%%[(8 codegen grin)
+%%[(8 codegen grin llvm)
 {
 -------------------------------------------------------------------------------
 -- Auxiliary functions

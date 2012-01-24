@@ -133,19 +133,27 @@ fi
 enableJScript="yes"
 AC_SUBST(ENABLE_JSCRIPT,$enableJScript)
 
-### enable options: llvm
+### enable options: cmm, default is no, temporary until development is ready
+AC_ARG_ENABLE(cmm, AS_HELP_STRING([--enable-cmm],[include cmm code generation]), [enableCmm=yes], [enableCmm=no])
+AC_SUBST(ENABLE_CMM,$enableCmm)
+
+### enable options: cwholeprog, the C whole program backend, default is no, temporary until development restarts
+AC_ARG_ENABLE(cwholeprog, AS_HELP_STRING([--enable-cwholeprog],[include C whole program code generation]), [enableCWholeprog=yes], [enableCWholeprog=no])
+AC_SUBST(ENABLE_CWHOLEPROG,$enableCWholeprog)
+
+### enable options: llvm, default is no
 AC_ARG_ENABLE(llvm, AS_HELP_STRING([--enable-llvm],[include llvm code generation]), [enableLlvm=yes], [enableLlvm=no])
 AC_SUBST(ENABLE_LLVM,$enableLlvm)
 
-### enable options: clr (Tom Lokhorsts CLR backend)
+### enable options: clr (Tom Lokhorsts CLR backend), default is no
 AC_ARG_ENABLE(clr, AS_HELP_STRING([--enable-clr],[include clr code generation]), [enableClr=yes], [enableClr=no])
 AC_SUBST(ENABLE_CLR,$enableClr)
 
-### enable options: tycore (Typed Core)
+### enable options: tycore (Typed Core), default is no
 AC_ARG_ENABLE(tycore, AS_HELP_STRING([--enable-tycore],[include TyCore typed intermediate language]), [enableTyCore=yes], [enableTyCore=no])
 AC_SUBST(ENABLE_TYCORE,$enableTyCore)
 
-### enable options: tauphi (Tom Lokhorsts type based transformations on TyCore, based on work by Stefan Holdermans)
+### enable options: tauphi (Tom Lokhorsts type based transformations on TyCore, based on work by Stefan Holdermans), default is no
 AC_ARG_ENABLE(tauphi, AS_HELP_STRING([--enable-tauphi],[include TauPhi language extension and analyses]), [enableTauPhi=yes], [enableTauPhi=no])
 AC_SUBST(ENABLE_TAUPHI,$enableTauPhi)
 

@@ -161,13 +161,16 @@ supportedTargetMp :: Map.Map String Target
 %%]]
 %%[[(8 codegen grin)
                  ++ [ mk Target_Interpreter_Grin_C [FFIWay_CCall]
-                    , mk Target_FullProgAnal_Grin_C [FFIWay_CCall]
                     ]
 %%]]
-%%[[(8 codegen llvm)
+%%[[(8 codegen grin cwholeprog)
+                 ++ [ mk Target_FullProgAnal_Grin_C [FFIWay_CCall]
+                    ]
+%%]]
+%%[[(8 codegen llvm cwholeprog)
                  ++ [ mk Target_FullProgAnal_Grin_LLVM [FFIWay_CCall] ]
 %%]]
-%%[[(8 codegen clr)
+%%[[(8 codegen clr cwholeprog)
                  ++ [ mk Target_FullProgAnal_Grin_CLR [FFIWay_CCall] ]
 %%]]
           ]

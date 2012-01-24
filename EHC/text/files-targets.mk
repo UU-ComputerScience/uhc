@@ -418,6 +418,7 @@ text-variant-blog:
 text-variant-slides-javascript:
 	$(MAKE) \
 	  LHS2TEX_OPTS_VARIANT_CONFIG="--set=yesBeamer --unset=asArticle --set=asSlides --unset=useHyperref --unset=refToPDF" \
+	  INCLUDE_DERIVED_MK=yes \
 	  TEXT_SHUFFLE_VARIANT=65 \
 	  text-variant-dflt-once
 

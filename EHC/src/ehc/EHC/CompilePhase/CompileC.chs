@@ -2,7 +2,11 @@
 %%% EHC Compile XXX
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[doesWhat doclatex
 C + CPP compilation
+
+20111121: Prep for C--
+%%]
 
 %%[8 module {%{EH}EHC.CompilePhase.CompileC}
 %%]
@@ -16,6 +20,12 @@ C + CPP compilation
 %%]
 %%[8 import({%{EH}EHC.CompileRun})
 %%]
+
+-- for now (20111121), not yet used
+%%[(8 codegen cmm) import(qualified {%{EH}Cmm}, qualified {%{EH}Cmm.ToC} as CmmSem)
+%%]
+
+-- other stuff
 
 %%[8 import(qualified {%{EH}Config} as Cfg)
 %%]

@@ -137,7 +137,7 @@ shellCmdGcc :: String
 shellCmdGcc = "@TOPLEVEL_SYSTEM_ABSPATH_PREFIX@@GCC_CMD@@SUFFIX_EXEC@"
 %%]
 
-%%[8 export(shellCmdLLVMC)
+%%[(8 llvm) export(shellCmdLLVMC)
 shellCmdLLVMC :: EHCOpts -> String -> [String]
 shellCmdLLVMC opts variant = [mkInstallBindirPrefix opts variant ++ "llvmc", "@LLVM_AS_CMD@", "@LLVM_OPT_CMD@", "@LLVM_LLC_CMD@", "@GCC_CMD@"]
 %%]

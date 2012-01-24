@@ -1,0 +1,251 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%[doesWhat doclatex
+C subset, modelled after C--
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell importable interface to Cmm
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen cmm) hs module {%{EH}Cmm} import({%{EH}Base.Common} hiding (Range))
+%%]
+
+%%[(8 codegen cmm) hs import(EH.Util.Utils)
+%%]
+
+%%[(8 codegen cmm) hs import(qualified Data.Map as Map)
+%%]
+%%[(8 codegen cmm) hs import(qualified {%{EH}Config} as Cfg)
+%%]
+
+%%[(8 codegen cmm) hs export(AGItf(..))
+%%]
+%%[(8 codegen cmm) hs export(Module(..), TopLevel(..), TopLevelL, Section(..), SectionL, Decl(..), DeclL, Target(..), TargetL, Import(..), ImportL, Export(..), ExportL)
+%%]
+%%[(8 codegen cmm) hs export(Datum(..), DatumL, Init(..), MbInit)
+%%]
+%%[(8 codegen cmm) hs export(Regs(..), RegNmInit(..), RegNmInitL)
+%%]
+%%[(8 codegen cmm) hs export(BodyDecl(..), BodyDeclL, Body(..), MbBody, Proc(..), Conv(..), MbConv, Formal(..), FormalL, Actual(..), ActualL, Stmt(..))
+%%]
+%%[(8 codegen cmm) hs export(RetCont(..), MbRetCont, KindName(..), KindNameL, Arm(..), ArmL, Range(..), RangeL, LValue(..), LValueL)
+%%]
+%%[(8 codegen cmm) hs export(Flow(..), FlowL, Also(..), AlsoL, Alias(..), FlowAlias(..), FlowAliasL, Targets(..), Expr(..), ExprL, MbExpr, Ty(..), MbTy, Bits(..), GC(..), MbGC)
+%%]
+%%[(8 codegen cmm) hs export(String16(..), Assert(..), MbAssert, Op(..), Round(..), Lit(..))
+%%]
+%%[(8 codegen cmm) hs export(StructFld(..), StructFldL)
+%%]
+
+%%[(50 codegen cmm) hs import(Control.Monad hiding(join), {%{EH}Base.Serialize}, {%{EH}Base.Binary}(liftM6))
+%%]
+%%[(50 codegen cmm) hs import(Data.Typeable(Typeable), Data.Generics(Data))
+%%]
+
+%%[(8 codegen cmm) ag import({Cmm/AbsSyn})
+%%]
+
+%%[(8888 codegen cmm) ag
+DERIVING *
+  : Show
+%%[[50
+  , Typeable, Data
+%%]]
+
+DERIVING *
+  : Eq, Ord
+%%]
+
+-- debug only
+%%[(8888 codegen cmm) hs import({%{EH}Base.Debug},EH.Util.Pretty)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Additional types
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen cmm) hs export(Nm,NmL)
+type Nm = HsName
+type NmL = [Nm]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Constructing: misc
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen cmm) hs export(cmt)
+-- | Comment
+cmt :: String -> Decl
+cmt = Decl_Comment
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Constructing: module, toplevel
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen cmm) hs export(imp)
+-- | Import
+imp :: NmL -> Decl
+imp ns = Decl_Import (map Import_Imp ns)
+%%]
+
+%%[(8 codegen cmm) hs export(arr)
+-- | Array decl
+arr :: Ty -> Nm -> ExprL -> Decl
+arr t n es = Decl_ConstArray t n es
+%%]
+
+%%[(8 codegen cmm) hs export(top,topDecl,topProc)
+-- | lift to top level
+top :: (x -> TopLevel) -> [x] -> TopLevelL
+top lift xs = map lift xs
+
+-- | lift decls to top level
+topDecl :: DeclL -> TopLevelL
+topDecl = top TopLevel_Decl
+
+-- | lift procedures to top level
+topProc :: [Proc] -> TopLevelL
+topProc = top TopLevel_Proc
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Configuration for semantics, info about the target machinery
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen cmm) hs export(CmmCfg(..))
+data TargetTyInfo
+  = TargetTyInfo
+      { targtyinfoNm			:: !Nm												-- name of the type in the target language
+      , targtyinfoNrBits		:: !Int												-- nr of bits
+      , targtyinfoTy			:: !Ty												-- the basic bits ty
+      }
+
+data CmmCfg
+  = CmmCfg
+      { cmmcfgWordInfo			:: !TargetTyInfo								-- info about word
+      , cmmcfgPtrInfo			:: !TargetTyInfo								--            pointer
+      , cmmcfgUnitInfo			:: !TargetTyInfo								--            smallest addressable unit, usually a byte
+      , cmmcfgAvailSizeMp		:: !(Map.Map Int TargetTyInfo)					-- info about available (bit)sizes
+      }
+%%]
+
+%%[(8 codegen cmm) hs export(defaultCmmCfg)
+-- | default cfg is based on global config, all temporary hackish
+defaultCmmCfg :: CmmCfg
+defaultCmmCfg
+  = CmmCfg
+      { cmmcfgWordInfo = winfo
+      , cmmcfgPtrInfo = winfo
+      , cmmcfgUnitInfo = mki "Word8" (Cfg.sizeofWordInBits `div` Cfg.sizeofWord)
+      , cmmcfgAvailSizeMp = Map.fromList [ (s, mki ("Word" ++ show s) s) | s <- [8, 16, 32, 64] ]
+      }
+  where mki n sz = TargetTyInfo (mkHNm n) sz (Ty_Bits $ Bits_Size sz)
+        winfo = mki "Word" Cfg.sizeofWordInBits
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Environment for semantics, e.g. holding mappings for type names
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen cmm) hs export(CmmEnv(..))
+data CmmEnv
+  = CmmEnv
+      { cmmenvCfg				:: CmmCfg										-- the target machine config
+      }
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Utils
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen cmm) hs export(ty2TargetTy)
+-- | Get the type in terms of the target, corresponding to ty.
+--   Assumption: cfg covers required size
+ty2TargetTy :: CmmEnv -> Ty -> Ty
+ty2TargetTy env ty
+  = t ty
+  where b m bs@(Bits_Size sz) | sz <= targtyinfoNrBits minfo = Ty_Nm (targtyinfoNm minfo)
+                              | otherwise                    = b m' bs
+          where mbMin = Map.minViewWithKey m
+                ((msz,minfo),m') = panicJust "ty2TargetTy" mbMin
+        b _ (Bits_Ptr _) = Ty_Nm (targtyinfoNm $ cmmcfgPtrInfo  cfg)
+        b _ (Bits_Word ) = Ty_Nm (targtyinfoNm $ cmmcfgWordInfo cfg)
+        
+        t (Ty_Bits bits) = b (cmmcfgAvailSizeMp cfg) bits
+        t (Ty_Struct flds) = Ty_Struct [ (StructFld_Fld n (t fty)) | (StructFld_Fld n fty) <- flds ]
+        t ty             = ty
+
+        cfg = cmmenvCfg env
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Instances: Binary, Serialize
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(5050 codegen cmm) hs
+instance Serialize RQuant where
+  sput = sputEnum8
+  sget = sgetEnum8
+
+instance Serialize RelevQual where
+  sput (RelevQual_SubEval a b        ) = sputWord8 0 >> sput a >> sput b
+  -- sput (RelevQual_Alt     a b c d e f) = sputWord8 1 >> sput a >> sput b >> sput c >> sput d >> sput e >> sput f
+  sget
+    = do t <- sgetWord8
+         case t of
+            0 -> liftM2 RelevQual_SubEval         sget sget
+            -- 1 -> liftM6 RelevQual_Alt             sget sget sget sget sget sget
+
+instance Serialize RelevTy where
+  sput (RelevTy_Ana   a        ) = sputWord8 0 >> sput a
+  sput (RelevTy_Fun   a b c d e) = sputWord8 1 >> sput a >> sput b >> sput c >> sput d >> sput e
+  sput (RelevTy_None           ) = sputWord8 2
+  sput (RelevTy_Err   a        ) = sputWord8 3 >> sput a
+  sget
+    = do t <- sgetWord8
+         case t of
+            0 -> liftM  RelevTy_Ana         sget
+            1 -> liftM5 RelevTy_Fun         sget sget sget sget sget
+            2 -> return RelevTy_None
+            3 -> liftM  RelevTy_Err         sget
+
+instance Serialize RelevCoe where
+  sput (RelevCoe_Id             ) = sputWord8 0
+  sput (RelevCoe_Err     a      ) = sputWord8 1 >> sput a
+  sput (RelevCoe_Comp    a b    ) = sputWord8 2 >> sput a >> sput b
+  sput (RelevCoe_Fun     a b    ) = sputWord8 3 >> sput a >> sput b
+  sput (RelevCoe_Cast    a      ) = sputWord8 4 >> sput a
+  sput (RelevCoe_Eval    a b    ) = sputWord8 5 >> sput a >> sput b
+  sput (RelevCoe_CastTy  a b    ) = sputWord8 6 >> sput a >> sput b
+  sget
+    = do t <- sgetWord8
+         case t of
+            0 -> return RelevCoe_Id
+            1 -> liftM  RelevCoe_Err         sget
+            2 -> liftM2 RelevCoe_Comp        sget sget
+            3 -> liftM2 RelevCoe_Fun         sget sget
+            4 -> liftM  RelevCoe_Cast        sget
+            5 -> liftM2 RelevCoe_Eval        sget sget
+            6 -> liftM2 RelevCoe_CastTy      sget sget
+
+instance Serialize AnaEval where
+  sput (AnaEval_Var   a      ) = sputWord8 0 >> sput a
+  sput (AnaEval_WHNF         ) = sputWord8 1
+  sput (AnaEval_Lazy         ) = sputWord8 2
+  sput (AnaEval_Meet  a      ) = sputWord8 3 >> sput a
+  sput (AnaEval_Join  a      ) = sputWord8 4 >> sput a
+  sget
+    = do t <- sgetWord8
+         case t of
+            0 -> liftM  AnaEval_Var         sget
+            1 -> return AnaEval_WHNF         
+            2 -> return AnaEval_Lazy         
+            3 -> liftM  AnaEval_Meet        sget
+            4 -> liftM  AnaEval_Join        sget
+
+%%]

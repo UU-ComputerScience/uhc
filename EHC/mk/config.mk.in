@@ -80,6 +80,16 @@ ifeq (@ENABLE_LLVM@,yes)
 ENABLE_LLVM					:= yes
 endif
 
+# include cmm route for C generation
+ifeq (@ENABLE_CMM@,yes)
+ENABLE_CMM					:= yes
+endif
+
+# include C backend combined with whole program analysis
+ifeq (@ENABLE_CWHOLEPROG@,yes)
+ENABLE_CWHOLEPROG			:= yes
+endif
+
 # include TyCore
 ifeq (@ENABLE_TYCORE@,yes)
 ENABLE_TYCORE				:= yes

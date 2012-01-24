@@ -177,7 +177,7 @@ ehcOptEmitJava :: EHCOpts -> Bool
 ehcOptEmitJava o = ehcOptTarget o == Target_Interpreter_Core_Java
 %%]
 
-%%[(8 codegen grin) export(ehcOptEmitLLVM)
+%%[(8 codegen) export(ehcOptEmitLLVM)
 -- generate LLVM
 ehcOptEmitLLVM :: EHCOpts -> Bool
 ehcOptEmitLLVM = targetIsLLVM . ehcOptTarget
@@ -481,6 +481,8 @@ ehcCmdLineOpts
                                                   -- , ehcOptEmitBytecode     = False
                                                   -- , ehcOptErrAboutBytecode = False
                                                   -- }
+%%]]
+%%[[(8 codegen llvm)
                                 Just m | m `elem` ["lexe", "lexec"]
                                              -> o { ehcOptMbTarget         = JustOk Target_FullProgAnal_Grin_LLVM
                                                   }                   

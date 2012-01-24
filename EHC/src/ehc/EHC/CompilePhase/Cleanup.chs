@@ -71,6 +71,15 @@ cpCleanupCore modNmL
                   )
 %%]
 
+%%[(99 codegen cmm) export(cpCleanupCmm)
+cpCleanupCmm :: HsName -> EHCompilePhase ()
+cpCleanupCmm modNm
+  = cpUpdCU modNm
+      (\e -> e { ecuMbCmm               = Nothing
+               }
+      )
+%%]
+
 %%[(99 codegen grin) export(cpCleanupGrin,cpCleanupFoldBytecode,cpCleanupBytecode)
 cpCleanupGrin :: [HsName] -> EHCompilePhase ()
 cpCleanupGrin modNmL

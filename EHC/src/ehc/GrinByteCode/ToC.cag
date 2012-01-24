@@ -2,13 +2,15 @@
 %%% Prettyprint Grin ByteCode program as C
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin) hs module {%{EH}GrinByteCode.ToC} import(EH.Util.Pretty,{%{EH}Base.Common},{%{EH}Opts},{%{EH}GrinByteCode})
+%%[(8 codegen grin) hs module {%{EH}GrinByteCode.ToC} import(EH.Util.Pretty,{%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Opts},{%{EH}GrinByteCode})
 %%]
 
 %%[(8 codegen grin) hs import(EH.Util.Pretty,{%{EH}Base.Common},{%{EH}Opts},qualified {%{EH}Config} as Cfg,{%{EH}GrinByteCode}, {%{EH}LamInfo})
 %%]
 
 %%[(8 codegen grin) hs import({%{EH}Base.GenC})
+%%]
+%%[(8 codegen grin cmm) hs import(qualified {%{EH}Cmm} as C)
 %%]
 
 %%[(8 codegen grin) hs import(Data.Maybe,Data.Char,Data.Bits,qualified EH.Util.FastSeq as Seq,EH.Util.Utils,qualified Data.Map as Map)
@@ -18,16 +20,38 @@
 %%]
 
 %%[(8 codegen grin).gbmod2C hs export(gbmod2C)
-gbmod2C :: EHCOpts -> Module -> GenC
+gbmod2C
+  :: EHCOpts
+     -> Module
+     -> ( GenC
+%%[[(8 cmm)
+        , C.TopLevelL
+%%]]
+        )
 gbmod2C opts m
   = let t = wrap_AGItf (sem_AGItf (AGItf_AGItf m))
                        (Inh_AGItf {opts_Inh_AGItf = opts}
                        )
-    in  pp_Syn_AGItf t
+    in  ( pp_Syn_AGItf t
+%%[[(8 cmm)
+        , cmmDeclL_Syn_AGItf t
+%%]]
+        )
 %%]
 
 %%[(50 codegen grin) -8.gbmod2C hs export(gbmod2C)
-gbmod2C :: EHCOpts -> LookupGrinByteCodeLamInfo -> Module -> (GenC,GenC,FunctionInfoExportMp)
+gbmod2C
+  :: EHCOpts
+     -> LookupGrinByteCodeLamInfo
+    -> Module
+    -> ( GenC
+       , GenC
+%%[[(8 cmm)
+       , C.TopLevelL
+       , C.TopLevelL
+%%]]
+       , FunctionInfoExportMp
+       )
 gbmod2C opts lkupGrinByteCodeLamInfo m
   = let t = wrap_AGItf (sem_AGItf (AGItf_AGItf m))
                        (Inh_AGItf
@@ -37,6 +61,10 @@ gbmod2C opts lkupGrinByteCodeLamInfo m
                        )
     in  ( pp_Syn_AGItf t
         , ppMain_Syn_AGItf t
+%%[[(8 cmm)
+        , cmmDeclL_Syn_AGItf t
+        , cmmMainDeclL_Syn_AGItf t
+%%]]
         , functionInfoExportMp_Syn_AGItf t
         )
 %%]
@@ -99,6 +127,7 @@ ppHex prec x = head $ ppHex' Nothing prec x
 ppHex' :: (Show a, Integral a) => Maybe Int -> Int -> a -> [GenC]
 ppHex' = ppHex'' "0x"
 
+{-
 ppHex'' :: (Show a, Integral a) => String -> Maybe Int -> Int -> a -> [GenC]
 ppHex'' prefix split prec x
   = case split of
@@ -108,6 +137,14 @@ ppHex'' prefix split prec x
                              ([],_ ) -> []
                              (l1,l2) -> l1 : s l2
   where h = strHex prec x
+-}
+
+ppHex'' :: (Show a, Integral a) => String -> Maybe Int -> Int -> a -> [GenC]
+ppHex'' prefix split prec x
+  = case split of
+      Nothing  -> [prefix >|< strHex prec x]
+      Just spl -> map ((prefix >|<) . strHex spl) l
+               where (_,l) = splitByRadix (prec `div` spl) (16 ^ spl) x
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -455,7 +492,7 @@ SEM Instr
                                                   _      -> (@lhs.stringConstMp,@bytePoolMp1,Nothing)
   | Call        (lhs.stringConstMp,loc.bytePoolMp2,loc.stringConstInx,loc.functionInfoModOff,loc.functionInfoOff)
                                             =   let dflt@(x,y,z,_,_)  = (@lhs.stringConstMp,@bytePoolMp1,Nothing,noInx,noInx)
-                                                    noInx = (-1)::Int		-- must be same as FunctionInfo_Inx_None
+                                                    noInx = (-1)::Int       -- must be same as FunctionInfo_Inx_None
                                                 in  case ciMbKey @callInfo of
                                                       Just (ms,nm) -> ( a, b, c, d, e )
                                                                    where (a,b,c) = (x,y,z) -- maybe (x,y,z) (\s -> stringConstMpAdd s @lhs.stringConstMp @bytePoolMp1) ms
@@ -622,8 +659,457 @@ SEM Module
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% PP as code
+%%% Symbolic bytecode table (for trace, debug)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin) hs
+type BCTrL = [(Int,Int,GenC)]
+%%]
+
+%%[(8 codegen grin)
+ATTR Instrs [ | | bcTrL: {[BCTrL]} ]
+
+SEM Instrs
+  | Nil         lhs         .   bcTrL       =   [[]]
+  | Cons        lhs         .   bcTrL       =   if @hd.hasCode
+                                                then let i = (@lhs.cLoc,@hd.cLoc - @lhs.cLoc,ppCommas' ([@hd.mn] ++ [ k >|< "=" >|< m | (k,m) <- @annL, allow k]))
+                                                         allow k = not (k `elem` [AnnComment,AnnStackDepth])
+                                                     in  case @tl.bcTrL of
+                                                           (l:ls) -> (i:l) : ls
+                                                else if @hd.isEntry then [] : @tl.bcTrL else @tl.bcTrL
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Generates code?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin)
+ATTR Instr [ | | hasCode: Bool ]
+
+SEM Instr
+  | Meta Label
+                lhs         .   hasCode     =   False
+  | * - Meta Label
+                lhs         .   hasCode     =   True
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Additional comment
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin)
+%%]
+ATTR Instr Meta [ | | ppExtra USE {>|<} {empty}: GenC ]
+ATTR Instrs [ ppExtra: GenC | | ]
+
+SEM Meta
+  | CmtHeader   lhs         .   ppExtra     =   indent 40 (ppCmtC @lhs.opts ("[" >#< @ann >#< "]"))
+
+SEM Instr
+  | Label       lhs         .   ppExtra     =   ppCmtC @lhs.opts ("[ .lbl" >#< lrefId @locRef >#< "]")
+
+SEM Instrs
+  | Cons        tl          .   ppExtra     =   @hd.ppExtra
+
+SEM Module
+  | Mod         instrs      .   ppExtra     =   empty
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Additional meta info to PP
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin) hs
+type AnnL = [(AnnKind,GenC)]
+%%]
+
+%%[(8 codegen grin)
+ATTR Instr Meta [ | | gathAnnL USE {++} {[]}: AnnL ]
+ATTR Instrs Instr Meta [ annL: AnnL | | ]
+
+SEM Meta
+  | CmtHeader   lhs         .   gathAnnL    =   [(@kind,genc @ann)]
+
+SEM Instr
+  | Label       lhs         .   gathAnnL    =   [(AnnLabel,genc @locRef)]
+  | LabelRef    lhs         .   gathAnnL    =   [(AnnLabelRef,genc @locRef)]
+  | Ann         lhs         .   gathAnnL    =   (@kind,genc @ann) : @instr.gathAnnL
+
+SEM Instrs
+  | Cons        (loc.annL,tl.annL)          =   let m = @lhs.annL ++ @hd.gathAnnL
+                                                in  if @hd.hasCode
+                                                    then (m,[])
+                                                    else ([],m)
+
+SEM Module
+  | Mod         instrs      .   annL        =   []
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% PP as mnemonic
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin)
+ATTR AllInsOp Instr Imm [ | | mn USE {>|<} {empty}: GenC ]
+%%]
+
+%%[(8 codegen grin)
+SEM Instr
+  | Ld          loc         .   mn          =   "l"             >|< @ind.mn >|< @locDst.mn >|< @locSrc.mn >|< @immSz.mn >#< @imm.mn
+  | St          loc         .   mn          =   "s"             >|< @ind.mn >|< @locDst.mn >|< @locSrc.mn >|< @immSz.mn >#< @imm.mn
+  | AllocStore  loc         .   mn          =   "allocstore"    >|< @locSrc.mn
+  | Fetch       loc         .   mn          =   "fetch"         >|< @locSrc.mn
+  | Call        loc         .   mn          =   "call"          >|< @locSrc.mn
+  | TailCall    loc         .   mn          =   "tailcall"      >|< @locSrc.mn >|< @nArgMineSz.mn >|< @nArgSurrSz.mn >#< @nArgMine.mn >#< @nArgSurr.mn
+  | TailApply   loc         .   mn          =   "tailapply"     >|< @locSrc.mn >|< @nArgMineSz.mn >|< @nArgSurrSz.mn >#< @nArgMine.mn >#< @nArgSurr.mn
+  | TailEval    loc         .   mn          =   "taileval"      >|< @locSrc.mn >|< @nArgSurrSz.mn >#< @nArgSurr.mn 
+  | CaseCall    loc         .   mn          =   genc "casecall"
+  | FetchUpdate loc         .   mn          =   genc "fetchupd"
+  | LdNodeTag   loc         .   mn          =   genc "lnt"
+  | CallC       loc         .   mn          =   "callc"         >|< @nArgSz.mn >#< @nArg.mn
+  | RetCall     loc         .   mn          =   "retcall"       >|< @nArgMineSz.mn >|< @nArgSurrSz.mn >#< @nArgMine.mn >#< @nArgSurr.mn
+  | RetCase     loc         .   mn          =   "retcase"       >|< @nResSz.mn >|< @retOffSurrSz.mn >#< @nRes.mn >#< @retOffSurr.mn
+  | Eval        loc         .   mn          =   "eval"          >|< @locSrc.mn
+  | Apply       loc         .   mn          =   "apply"         >|< @locSrc.mn
+  | Halt        loc         .   mn          =   genc "halt"
+  | TagInt2Word loc         .   mn          =   genc "tagi2w"
+  | UntagWord2Int
+                loc         .   mn          =   genc "untagw2i"
+  | TagWord2Word
+                loc         .   mn          =   genc "tagw2w"
+  | UntagWord2Word
+                loc         .   mn          =   genc "untagw2w"
+  | LdGlobal    loc         .   mn          =   "ldg"           >|< @locDst.mn
+  | LdString    loc         .   mn          =   "ldstr"         >|< @locDst.mn
+  | Op          loc         .   mn          =   "o"             >|< @op.mn >|< @locDst.mn >|< @opndTy.mn >|< @ind.mn >|< @locSrc.mn >|< @immSz.mn >#< @imm.mn
+  | LabelRef    loc         .   mn          =   ".ref"          >#< lrefId @locRef
+  | LinkChain   loc         .   mn          =   genc ".lnk"
+  | FunStart    loc         .   mn          =   genc ".fun"
+
+SEM Imm
+  | Int         lhs         .   mn          =   case @lhs.immSz of
+                                                  InsOp_ImmSz_Bits08 -> ppHex  2 @int
+                                                  InsOp_ImmSz_Bits16 -> ppHex  4 @int
+                                                  InsOp_ImmSz_Bits32 -> ppHex  8 @int
+                                                  InsOp_ImmSz_Bits64 -> ppHex 16 @int
+
+SEM InsOp_LocE
+  | SP          lhs         .   mn          =   genc "s"
+  | Reg         lhs         .   mn          =   genc "r"
+  | Imm         lhs         .   mn          =   genc "i"
+  | PC          lhs         .   mn          =   genc "p"
+
+SEM InsOp_LocB
+  | TOS         lhs         .   mn          =   genc "t"
+  | Reg         lhs         .   mn          =   genc "r"
+
+SEM InsOp_LocODst
+  | TOS         lhs         .   mn          =   genc "t"
+  | Reg         lhs         .   mn          =   genc "r"
+
+SEM InsOp_LocOSrc
+  | SP          lhs         .   mn          =   genc "s"
+  | Reg         lhs         .   mn          =   genc "r"
+  | Imm         lhs         .   mn          =   genc "i"
+  | TOS         lhs         .   mn          =   genc "t"
+
+SEM InsOp_TyOp
+  | Add         lhs         .   mn          =   genc "a"
+  | Sub         lhs         .   mn          =   genc "s"
+  | Mul         lhs         .   mn          =   genc "m"
+  | Quot        lhs         .   mn          =   genc "q"
+
+SEM InsOp_DataOp
+  | IntWord     lhs         .   mn          =   genc "iw"
+  | IntInf      lhs         .   mn          =   genc "ii"
+  | FloatWord   lhs         .   mn          =   genc "fw"
+
+SEM InsOp_ImmSz
+  | Bits08      lhs         .   mn          =   genc "08"
+  | Bits16      lhs         .   mn          =   genc "16"
+  | Bits32      lhs         .   mn          =   genc "32"
+  | Bits64      lhs         .   mn          =   genc "64"
+
+SEM InsOp_Deref
+  | Zero        lhs         .   mn          =   genc "0"
+  | One         lhs         .   mn          =   genc "1"
+  | Two         lhs         .   mn          =   genc "2"
+  | Int         lhs         .   mn          =   genc "i"
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Encodings, must be same as rts/src/grinbc
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin) hs
+enc_InsOp_Deref_Zero   = 0
+enc_InsOp_LocE_Imm     = 2
+enc_InsOp_ImmSz_Bits32 = 2
+enc_InsOp_ImmSz_Bits64 = 3
+
+insOpImmSz2Enc :: Int -> Int
+insOpImmSz2Enc 4 = enc_InsOp_ImmSz_Bits32
+insOpImmSz2Enc 8 = enc_InsOp_ImmSz_Bits64
+insOpImmSz2Enc x = panic ("ToC.insOpImmSz2Enc:" ++ show x)
+
+-- enc of InsOpImmSz -> nr bytes
+insOpImmSzEnc2NrBytes :: Int -> Int
+insOpImmSzEnc2NrBytes e = 1 `shiftL` e
+
+-- enc of InsOpImmSz -> nr bits
+insOpImmSzEnc2NrBits :: Int -> Int
+insOpImmSzEnc2NrBits e = 8 * insOpImmSzEnc2NrBytes e
+%%]
+
+1st byte of encoding
+
+%%[(8 codegen grin)
+ATTR AllInsOp Meta [ | | enc: Int ]
+
+SEM Instr
+  -- load group
+  | Ld          loc         .   indEnc      =   @ind.enc
+                            .   locDstEnc   =   @locDst.enc 
+                            .   locSrcEnc   =   @locSrc.enc
+                            .   immSzEnc    =   @immSz.enc
+  | LdString    loc         .   indEnc      =   enc_InsOp_Deref_Zero
+                            .   locDstEnc   =   @locDst.enc 
+                            .   locSrcEnc   =   enc_InsOp_LocE_Imm
+                            .   immSzEnc    =   insOpImmSz2Enc Cfg.sizeofWord
+  | Ld LdString loc         .   enc         =   0x00 .|. (@indEnc `shiftL` 5) .|. (@locDstEnc `shiftL` 4) .|. (@locSrcEnc `shiftL` 2) .|. (@immSzEnc)
+  -- store group
+  | St          loc         .   enc         =   0x80 .|. (@ind.enc `shiftL` 5) .|. (@locDst.enc `shiftL` 3) .|. (@locSrc.enc `shiftL` 2) .|. (@immSz.enc)
+  -- arithmetic group
+  | Op          loc         .   enc         =   0xC0 .|. (@op.enc `shiftL` 3) .|. (@opndTy.enc `shiftL` 1) .|. (@locDst.enc)
+  -- eval/ldg group
+  | Eval        loc         .   enc         =   0xE0 .|. (@locSrc.enc)
+  | Apply       loc         .   enc         =   0xE2 .|. (@locSrc.enc)
+  | LdGlobal    loc         .   enc         =   0xE6 .|. (@locDst.enc)
+  -- call/control group
+  | Call        loc         .   enc         =   0xF0 .|. (@locSrc.enc)
+  | RetCall     loc         .   enc         =   0xF4
+  | RetCase     loc         .   enc         =   0xF5
+  | CaseCall    loc         .   enc         =   0xF6
+  | CallC       loc         .   enc         =   0xF7
+  -- tail eval/call/control group, via extension
+  | TailCall TailEval TailApply
+                loc         .   enc         =   0xFE
+  -- alloc group
+  | AllocStore  loc         .   enc         =   0xEC .|. (@locSrc.enc)
+  | Fetch       loc         .   enc         =   0xEE .|. (@locSrc.enc)
+  -- others
+  | FetchUpdate loc         .   enc         =   0xF9
+  | LdNodeTag   loc         .   enc         =   0xFC
+  | Halt TagInt2Word UntagWord2Int TagWord2Word UntagWord2Word
+                loc         .   enc         =   0xFE
+%%]
+
+2nd byte of encoding
+
+%%[(8 codegen grin)
+SEM Instr
+  | TailCall    loc         .   enc2        =   (0x00 `shiftL` 1) .|. (@locSrc.enc)
+  | TailEval    loc         .   enc2        =   (0x01 `shiftL` 1) .|. (@locSrc.enc)
+  | TailApply   loc         .   enc2        =   (0x02 `shiftL` 1) .|. (@locSrc.enc)
+  | RetCall
+                loc         .   enc2        =   (@nArgMineSz.enc `shiftL` 2) .|. (@nArgSurrSz.enc `shiftL` 0)
+  | CallC       loc         .   enc2        =   (@nArgSz.enc)
+  | RetCase     loc         .   enc2        =   (@nResSz.enc `shiftL` 2) .|. (@retOffSurrSz.enc)
+  | Op          loc         .   enc2        =   (@ind.enc `shiftL` 4) .|. (@locSrc.enc `shiftL` 2) .|. (@immSz.enc)
+  | Halt        loc         .   enc2        =   0xFF
+  | TagInt2Word loc         .   enc2        =   0xFC
+  | UntagWord2Int
+                loc         .   enc2        =   0xFD
+  | TagWord2Word
+                loc         .   enc2        =   0xFA
+  | UntagWord2Word
+                loc         .   enc2        =   0xFB
+%%]
+
+3rd byte of encoding
+
+%%[(8 codegen grin)
+  | TailCall TailApply
+                loc         .   enc3        =   (@nArgMineSz.enc `shiftL` 2) .|. (@nArgSurrSz.enc `shiftL` 0)
+  | TailEval    loc         .   enc3        =   (@nArgSurrSz.enc `shiftL` 0)
+%%]
+
+%%[(8 codegen grin)
+SEM Meta
+  | CmtHeader   loc         .   enc         =   0xFF
+
+SEM InsOp_LocE
+  | SP          lhs         .   enc         =   0
+  | Reg         lhs         .   enc         =   1
+  | Imm         lhs         .   enc         =   enc_InsOp_LocE_Imm
+  | PC          lhs         .   enc         =   3
+
+SEM InsOp_LocB
+  | TOS         lhs         .   enc         =   0
+  | Reg         lhs         .   enc         =   1
+
+SEM InsOp_LocODst
+  | TOS         lhs         .   enc         =   0
+  | Reg         lhs         .   enc         =   1
+
+SEM InsOp_LocOSrc
+  | SP          lhs         .   enc         =   0
+  | Reg         lhs         .   enc         =   1
+  | Imm         lhs         .   enc         =   2
+  | TOS         lhs         .   enc         =   3
+
+SEM InsOp_TyOp
+  | Add         lhs         .   enc         =   0
+  | Sub         lhs         .   enc         =   1
+  | Mul         lhs         .   enc         =   2
+  | Quot        lhs         .   enc         =   3
+
+SEM InsOp_DataOp
+  | IntWord     lhs         .   enc         =   0
+  | IntInf      lhs         .   enc         =   1
+  | FloatWord   lhs         .   enc         =   2
+
+SEM InsOp_ImmSz
+  | Bits08      lhs         .   enc         =   0
+  | Bits16      lhs         .   enc         =   1
+  | Bits32      lhs         .   enc         =   enc_InsOp_ImmSz_Bits32
+  | Bits64      lhs         .   enc         =   enc_InsOp_ImmSz_Bits64
+
+SEM InsOp_Deref
+  | Zero        lhs         .   enc         =   enc_InsOp_Deref_Zero
+  | One         lhs         .   enc         =   1
+  | Two         lhs         .   enc         =   2
+  | Int         lhs         .   enc         =   3
+
+SEM InsOp_DerefB
+  | One         lhs         .   enc         =   0
+  | Two         lhs         .   enc         =   1
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% How to pp, context
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin)
+ATTR Imm [ immSz: InsOp_ImmSz | | ]
+
+SEM Instr
+  | Ld St       imm         .   immSz       =   @immSz.self
+  | Op          imm         .   immSz       =   @immSz.self
+  | TailCall RetCall TailApply
+                nArgMine    .   immSz       =   @nArgMineSz.self
+                nArgSurr    .   immSz       =   @nArgSurrSz.self
+  | TailEval    nArgSurr    .   immSz       =   @nArgSurrSz.self
+  | CallC       nArg        .   immSz       =   @nArgSz.self
+  | RetCase     nRes        .   immSz       =   @nResSz.self
+                retOffSurr  .   immSz       =   @retOffSurrSz.self
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Replica's, SELF
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin)
+ATTR InsOp_ImmSz InsOp_Deref InsOp_LocE InsOp_LocB [ | | self: SELF ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% PP, directly to C, no bytecode
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin) hs
+vmCall :: (PP nm) => nm -> [GenC] -> GenC
+vmCall nm args = gencCall ("GB_VM_" >|< nm) args
+
+vmLbl :: PP l => l -> GenC
+vmLbl l = "L_" >|< l
+%%]
+
+%%[(8 codegen grin)
+ATTR Instrs Instr [ | | gencL: {[GenC]} ]
+ATTR AllImm [ | | genc: GenC ]
+
+SEM Instrs
+  | Nil             loc         .   gencL               =   []
+  | Cons            loc         .   gencL               =   map gencStat @hd.gencL ++ @tl.gencL
+  
+SEM Instr
+  | Ld              loc         .   gencL               =   let p = case (@ind.self, @locDst.self, @locSrc.self) of
+                                                                      (InsOp_Deref_Zero, InsOp_LocB_TOS, InsOp_LocE_Imm) -> "Push"
+                                                                      (InsOp_Deref_Int , InsOp_LocB_TOS, InsOp_LocE_Imm) -> "PushInt"
+                                                                      (InsOp_Deref_One , InsOp_LocB_TOS, InsOp_LocE_SP ) -> "PushTos"
+                                                                      (InsOp_Deref_Two , InsOp_LocB_TOS, InsOp_LocE_SP ) -> "PushTosX"
+                                                                      (InsOp_Deref_One , InsOp_LocB_TOS, InsOp_LocE_Reg) -> "PushRrX"
+                                                                      (InsOp_Deref_One , InsOp_LocB_Reg, InsOp_LocE_SP ) -> "LdRrTos"
+                                                                      _                                                  -> "Push_NotImplemented"
+                                                            in  [vmCall (p >|< insOpImmSzEnc2NrBits @immSz.enc) [@imm.genc]]
+  | Eval            loc         .   gencL               =   let p = case @locSrc.self of
+                                                                      InsOp_LocB_TOS -> "EvalTos"
+                                                                      _              -> "Eval_NotImplemented"
+                                                            in  [vmCall p []]
+  | Apply           loc         .   gencL               =   let p = case @locSrc.self of
+                                                                      InsOp_LocB_TOS -> "ApplyTos"
+                                                                      _              -> "Apply_NotImplemented"
+                                                            in  [vmCall p []]
+  | LdNodeTag       loc         .   gencL               =   [vmCall "PushNdTg" []]
+  | Fetch           loc         .   gencL               =   [vmCall "FetchTos" []]
+  | FetchUpdate     loc         .   gencL               =   [vmCall "FetchUpdateTos" []]
+  | TagInt2Word     loc         .   gencL               =   [vmCall "TagInt2WordTos" []]
+  | UntagWord2Int   loc         .   gencL               =   [vmCall "UntagWord2IntTos" []]
+  | TagWord2Word    loc         .   gencL               =   [vmCall "TagWord2WordTos" []]
+  | UntagWord2Word  loc         .   gencL               =   [vmCall "UntagWord2WordTos" []]
+  | AllocStore      loc         .   gencL               =   [vmCall "AllocStoreTos" [gencCast "Word" $ gencAddrArrayAt (@lhs.ppNm strNmGcStackInfos) $ lcentryInfo @linkChainEntry]]
+  | CaseCall        loc         .   gencL               =   [vmCall "CaseBegin" []]
+  | Label           loc         .   gencL               =   case @locRef of 
+                                                                LocRef_EndSwitch _ -> [vmCall "CaseEnd" []]
+                                                                LocRef_CaseArm _ i -> [vmCall "CaseArm" [genc i]]
+                                                                r                  -> [gencLabel r]
+  | * - Ld Eval Apply LdNodeTag Fetch FetchUpdate
+        TagInt2Word UntagWord2Int TagWord2Word UntagWord2Word
+        AllocStore CaseCall
+        Label
+        Ann Meta
+                    loc         .   gencL               =   [gencCmt @mn]
+  | Ann Meta
+                    loc         .   gencL               =   []
+
+SEM Imm
+  | Int             loc         .   genc                =   ppHex (2 * @sz) @int
+
+%%]
+
+%%[(8 codegen grin)
+ATTR Instr [ | | mbFunStart: {Maybe FunctionInfo} ]
+
+SEM Instr
+  | FunStart    lhs         .   mbFunStart          =   Just @functionInfo
+  | * - FunStart
+                lhs         .   mbFunStart          =   Nothing
+%%]
+
+%%[(8 codegen grin) hs
+type Fun2CMp = Map.Map String [GenC]
+%%]
+
+%%[(8 codegen grin)
+ATTR Instrs [ | | fun2CMp: Fun2CMp ]
+
+SEM Instrs
+  | Nil         lhs         .   fun2CMp     =   Map.empty
+  | Cons        lhs         .   (fun2CMp,gencL)
+                                            =   case @hd.mbFunStart of
+                                                    Just i -> (Map.insert (hsnShowAlphanumeric $ funinfoNm i) @tl.gencL @tl.fun2CMp, [])
+                                                    _      -> (@tl.fun2CMp, @gencL)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% PP, as bytecode
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin) hs
+-- Names of tables
+strNmGcStackInfos = "gcStackInfos"
+%%]
 
 %%[(8 codegen grin) hs
 nl :: GenC
@@ -671,10 +1157,76 @@ ppTbl' tp nm tbl = [nl, gencStatic $ tp >#< nm >|< "[] ="] ++ ppArr' tbl
 
 %%[(8 codegen grin)
 ATTR AllNT AGItf [ | | pp USE {>-<} {empty}: GenC ]
+ATTR AllInstr [ ppNm: {String -> GenC} | | ]
+%%]
+
+%%[(8 codegen grin cmm)
+ATTR Module AGItf [ | | cmmDeclL: {C.TopLevelL} ]
 %%]
 
 %%[(50 codegen grin)
 ATTR Module AGItf [ | | ppMain: GenC ]
+%%]
+
+%%[(50 codegen grin cmm)
+ATTR Module AGItf [ | | cmmMainDeclL: {C.TopLevelL} ]
+%%]
+
+%%[(8 codegen grin cmm)
+SEM Module
+  | Mod                     -- 201101220: under construction, rewrite of PP gen to Cmm gen
+                loc         .   cmmTop                  =   [ C.cmt $ "bytecode in C encoding for module " ++ @moduleNm 
+                                                            , C.imp $ map mkHNm [ "rts", "bc/interpreter" ]
+%%[[90
+                                                                      -- ++ @includeL   -- TBD: how to deal with C foreign stuff?
+%%]]
+                                                            ]
+                            -- . cmmCFuns
+                            .   cmmBCode                =   [ C.arr (C.Ty_Nm $ mkHNm "Word8") (mkHNm "bytecode") (map (\i -> C.Expr_Int (toInteger i) Nothing) @instrs.bcode) ]
+%%[[8
+                lhs         .   cmmDeclL
+%%][50
+                lhs         .   (cmmDeclL,cmmMainDeclL)
+%%]]
+                                            =   -- 20091002, the below expr is growing too large, need to reorg someday
+                                                let 
+                                                in  ( C.topDecl
+                                                      $  @cmmTop
+                                                      -- ++ @ccallencWrappers
+                                                      -- ++ bytePool
+                                                      -- ++ linkChainInds
+                                                      -- ++ gcStackInfosTbl
+                                                      -- ++ functionInfosTbl
+                                                      -- ++ callinfos
+                                                      ++ @cmmBCode
+                                                      -- ++ (if ehcOptGenTrace @lhs.opts then bcodetrace ++ bcodeentries else [])
+                                                      -- ++ [bcodemodtrace]
+                                                      -- ++ consts
+                                                      -- ++ cfuns
+                                                      -- ++ cafGlEntryIndices
+                                                      -- ++ glEntries
+%%[[50
+                                                      -- ++ [ expnd
+                                                      --    , impmods
+                                                      --    ]
+%%]]
+                                                      -- ++ [ initf
+%%[[8
+                                                      --    , mods
+                                                      --    , maincaf
+                                                      --    , mainf
+%%][50
+%%]]
+                                                      --    ]
+%%[[50
+                                                    , C.topDecl
+                                                      $  [] --    [ maincaf ]
+                                                      -- ++ externs
+                                                      -- ++ [ mods
+                                                      --    , mainf
+                                                      --    ]
+%%]]
+                                                    )
 %%]
 
 %%[(8 codegen grin)
@@ -699,7 +1251,7 @@ SEM Module
                             .   ppNmMainCAFEntry        =   @ppNm "mainEntryPtr"
                             .   ppNmModEntriesTbl       =   @ppNm "moduleEntries"
                             -- .   ppNmGCInfosTbl          =   @ppNm "gcInfos"
-                            .   ppNmGCStackInfosTbl     =   @ppNm "gcStackInfos"
+                            .   ppNmGCStackInfosTbl     =   @ppNm strNmGcStackInfos
                             .   ppNmLinkChainIndTbl     =   @ppNm "linkChainIndirections"
                             .   ppNmCallInfoTbl         =   @ppNm "callinfos"
                             .   ppNmBytePool            =   @ppNm "bytePool"
@@ -715,7 +1267,7 @@ SEM Module
 %%]]
 
 %%[[8
-                lhs         .   pp          
+                lhs         .   pp
 %%][50
                 lhs         .   (pp,ppMain)
 %%]]
@@ -727,6 +1279,8 @@ SEM Module
                                                                               ++ @includeL
 %%]]
                                                                            )  )
+                                                    cfuns | ehcOptPriv @lhs.opts  = [ gencFunDef "void" n [] b | (n,b) <- Map.toList $ Map.delete (show hsnMain) $ @instrs.fun2CMp ]
+                                                          | otherwise             = []
                                                     callinfos
                                                             = ppTbl' "CallInfo" @ppNmCallInfoTbl
                                                                 [ "MkCallInfoWith"
@@ -904,6 +1458,7 @@ SEM Module
                                                       ++ (if ehcOptGenTrace @lhs.opts then bcodetrace ++ bcodeentries else [])
                                                       ++ [bcodemodtrace]
                                                       ++ consts
+                                                      ++ cfuns
                                                       ++ cafGlEntryIndices
                                                       ++ glEntries
 %%[[50
@@ -1008,350 +1563,51 @@ SEM Instrs
                                                 else @tl.ppL
 %%]
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Symbolic bytecode table (for trace, debug)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+Bytecode directly encoded
 
 %%[(8 codegen grin) hs
-type BCTrL = [(Int,Int,GenC)]
+bcodeWord' :: (Integral c) => Int -> c -> [Int]
+bcodeWord' sz x
+  = (if Cfg.machineIsBigEndian then id else reverse) $ snd $ splitByRadix sz 256 x -- ppHexL . ppHex' (Just 2) (Cfg.sizeofWord * 2)
+
+bcodeWord :: (Integral c) => c -> [Int]
+bcodeWord = bcodeWord' Cfg.sizeofWord
+
+bcodeLinkChain :: Integer -> [Int]
+bcodeLinkChain = bcodeWord
 %%]
 
 %%[(8 codegen grin)
-ATTR Instrs [ | | bcTrL: {[BCTrL]} ]
-
-SEM Instrs
-  | Nil         lhs         .   bcTrL       =   [[]]
-  | Cons        lhs         .   bcTrL       =   if @hd.hasCode
-                                                then let i = (@lhs.cLoc,@hd.cLoc - @lhs.cLoc,ppCommas' ([@hd.mn] ++ [ k >|< "=" >|< m | (k,m) <- @annL, allow k]))
-                                                         allow k = not (k `elem` [AnnComment,AnnStackDepth])
-                                                     in  case @tl.bcTrL of
-                                                           (l:ls) -> (i:l) : ls
-                                                else if @hd.isEntry then [] : @tl.bcTrL else @tl.bcTrL
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Generates code?
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8 codegen grin)
-ATTR Instr [ | | hasCode: Bool ]
-
-SEM Instr
-  | Meta Label
-                lhs         .   hasCode     =   False
-  | * - Meta Label
-                lhs         .   hasCode     =   True
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Additional comment
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8 codegen grin)
-%%]
-ATTR Instr Meta [ | | ppExtra USE {>|<} {empty}: GenC ]
-ATTR Instrs [ ppExtra: GenC | | ]
-
-SEM Meta
-  | CmtHeader   lhs         .   ppExtra     =   indent 40 (ppCmtC @lhs.opts ("[" >#< @ann >#< "]"))
-
-SEM Instr
-  | Label       lhs         .   ppExtra     =   ppCmtC @lhs.opts ("[ .lbl" >#< lrefId @locRef >#< "]")
-
-SEM Instrs
-  | Cons        tl          .   ppExtra     =   @hd.ppExtra
-
-SEM Module
-  | Mod         instrs      .   ppExtra     =   empty
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Additional meta info to PP
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8 codegen grin) hs
-type AnnL = [(AnnKind,GenC)]
-%%]
-
-%%[(8 codegen grin)
-ATTR Instr Meta [ | | gathAnnL USE {++} {[]}: AnnL ]
-ATTR Instrs Instr Meta [ annL: AnnL | | ]
-
-SEM Meta
-  | CmtHeader   lhs         .   gathAnnL    =   [(@kind,genc @ann)]
-
-SEM Instr
-  | Label       lhs         .   gathAnnL    =   [(AnnLabel,genc @locRef)]
-  | LabelRef    lhs         .   gathAnnL    =   [(AnnLabelRef,genc @locRef)]
-  | Ann         lhs         .   gathAnnL    =   (@kind,genc @ann) : @instr.gathAnnL
-
-SEM Instrs
-  | Cons        (loc.annL,tl.annL)          =   let m = @lhs.annL ++ @hd.gathAnnL
-                                                in  if @hd.hasCode
-                                                    then (m,[])
-                                                    else ([],m)
-
-SEM Module
-  | Mod         instrs      .   annL        =   []
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% PP as mnemonic
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8 codegen grin)
-ATTR AllInsOp Instr Imm [ | | mn USE {>|<} {empty}: GenC ]
-%%]
-
-%%[(8 codegen grin)
-SEM Instr
-  | Ld          lhs         .   mn          =   "l"             >|< @ind.mn >|< @locDst.mn >|< @locSrc.mn >|< @immSz.mn >#< @imm.mn
-  | St          lhs         .   mn          =   "s"             >|< @ind.mn >|< @locDst.mn >|< @locSrc.mn >|< @immSz.mn >#< @imm.mn
-  | AllocStore  lhs         .   mn          =   "allocstore"    >|< @locSrc.mn
-  | Fetch       lhs         .   mn          =   "fetch"         >|< @locSrc.mn
-  | Call        lhs         .   mn          =   "call"          >|< @locSrc.mn
-  | TailCall    lhs         .   mn          =   "tailcall"      >|< @locSrc.mn >|< @nArgMineSz.mn >|< @nArgSurrSz.mn >#< @nArgMine.mn >#< @nArgSurr.mn
-  | TailApply   lhs         .   mn          =   "tailapply"     >|< @locSrc.mn >|< @nArgMineSz.mn >|< @nArgSurrSz.mn >#< @nArgMine.mn >#< @nArgSurr.mn
-  | TailEval    lhs         .   mn          =   "taileval"      >|< @locSrc.mn >|< @nArgSurrSz.mn >#< @nArgSurr.mn 
-  | CaseCall    lhs         .   mn          =   genc "casecall"
-  | FetchUpdate lhs         .   mn          =   genc "fetchupd"
-  | LdNodeTag   lhs         .   mn          =   genc "lnt"
-  | CallC       lhs         .   mn          =   "callc"         >|< @nArgSz.mn >#< @nArg.mn
-  | RetCall     lhs         .   mn          =   "retcall"       >|< @nArgMineSz.mn >|< @nArgSurrSz.mn >#< @nArgMine.mn >#< @nArgSurr.mn
-  | RetCase     lhs         .   mn          =   "retcase"       >|< @nResSz.mn >|< @retOffSurrSz.mn >#< @nRes.mn >#< @retOffSurr.mn
-  | Eval        lhs         .   mn          =   "eval"          >|< @locSrc.mn
-  | Apply       lhs         .   mn          =   "apply"         >|< @locSrc.mn
-  | Halt        lhs         .   mn          =   genc "halt"
-  | TagInt2Word lhs         .   mn          =   genc "tagi2w"
-  | UntagWord2Int
-                lhs         .   mn          =   genc "untagw2i"
-  | TagWord2Word
-                lhs         .   mn          =   genc "tagw2w"
-  | UntagWord2Word
-                lhs         .   mn          =   genc "untagw2w"
-  | LdGlobal    lhs         .   mn          =   "ldg"           >|< @locDst.mn
-  | LdString    lhs         .   mn          =   "ldstr"         >|< @locDst.mn
-  | Op          lhs         .   mn          =   "o"             >|< @op.mn >|< @locDst.mn >|< @opndTy.mn >|< @ind.mn >|< @locSrc.mn >|< @immSz.mn >#< @imm.mn
-  | LabelRef    lhs         .   mn          =   ".ref"          >#< lrefId @locRef
-  | LinkChain   lhs         .   mn          =   genc ".lnk"
-  | FunStart    lhs         .   mn          =   genc ".fun"
+ATTR Instrs Instr Imm [ | | bcode USE {++} {[]} : {[Int]} ]
 
 SEM Imm
-  | Int         lhs         .   mn          =   case @lhs.immSz of
-                                                  InsOp_ImmSz_Bits08 -> ppHex  2 @int
-                                                  InsOp_ImmSz_Bits16 -> ppHex  4 @int
-                                                  InsOp_ImmSz_Bits32 -> ppHex  8 @int
-                                                  InsOp_ImmSz_Bits64 -> ppHex 16 @int
-
-SEM InsOp_LocE
-  | SP          lhs         .   mn          =   genc "s"
-  | Reg         lhs         .   mn          =   genc "r"
-  | Imm         lhs         .   mn          =   genc "i"
-  | PC          lhs         .   mn          =   genc "p"
-
-SEM InsOp_LocB
-  | TOS         lhs         .   mn          =   genc "t"
-  | Reg         lhs         .   mn          =   genc "r"
-
-SEM InsOp_LocODst
-  | TOS         lhs         .   mn          =   genc "t"
-  | Reg         lhs         .   mn          =   genc "r"
-
-SEM InsOp_LocOSrc
-  | SP          lhs         .   mn          =   genc "s"
-  | Reg         lhs         .   mn          =   genc "r"
-  | Imm         lhs         .   mn          =   genc "i"
-  | TOS         lhs         .   mn          =   genc "t"
-
-SEM InsOp_TyOp
-  | Add         lhs         .   mn          =   genc "a"
-  | Sub         lhs         .   mn          =   genc "s"
-  | Mul         lhs         .   mn          =   genc "m"
-  | Quot        lhs         .   mn          =   genc "q"
-
-SEM InsOp_DataOp
-  | IntWord     lhs         .   mn          =   genc "iw"
-  | IntInf      lhs         .   mn          =   genc "ii"
-  | FloatWord   lhs         .   mn          =   genc "fw"
-
-SEM InsOp_ImmSz
-  | Bits08      lhs         .   mn          =   genc "08"
-  | Bits16      lhs         .   mn          =   genc "16"
-  | Bits32      lhs         .   mn          =   genc "32"
-  | Bits64      lhs         .   mn          =   genc "64"
-
-SEM InsOp_Deref
-  | Zero        lhs         .   mn          =   genc "0"
-  | One         lhs         .   mn          =   genc "1"
-  | Two         lhs         .   mn          =   genc "2"
-  | Int         lhs         .   mn          =   genc "i"
-
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Encodings, must be same as rts/src/grinbc
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8 codegen grin) hs
-enc_InsOp_Deref_Zero   = 0
-enc_InsOp_LocE_Imm     = 2
-enc_InsOp_ImmSz_Bits32 = 2
-enc_InsOp_ImmSz_Bits64 = 3
-
-encInsOpImmSz :: Int -> Int
-encInsOpImmSz 4 = enc_InsOp_ImmSz_Bits32
-encInsOpImmSz 8 = enc_InsOp_ImmSz_Bits64
-encInsOpImmSz x = panic ("ToC.encInsOpImmSz:" ++ show x)
-%%]
-
-1st byte of encoding
-
-%%[(8 codegen grin)
-ATTR AllInsOp Meta [ | | enc: Int ]
+  | Int         lhs         .   bcode       =   bcodeWord' @sz @int
 
 SEM Instr
-  -- load group
-  | Ld          loc         .   indEnc      =   @ind.enc
-                            .   locDstEnc   =   @locDst.enc 
-                            .   locSrcEnc   =   @locSrc.enc
-                            .   immSzEnc    =   @immSz.enc
-  | LdString    loc         .   indEnc      =   enc_InsOp_Deref_Zero
-                            .   locDstEnc   =   @locDst.enc 
-                            .   locSrcEnc   =   enc_InsOp_LocE_Imm
-                            .   immSzEnc    =   encInsOpImmSz Cfg.sizeofWord
-  | Ld LdString loc         .   enc         =   0x00 .|. (@indEnc `shiftL` 5) .|. (@locDstEnc `shiftL` 4) .|. (@locSrcEnc `shiftL` 2) .|. (@immSzEnc)
-  -- store group
-  | St          loc         .   enc         =   0x80 .|. (@ind.enc `shiftL` 5) .|. (@locDst.enc `shiftL` 3) .|. (@locSrc.enc `shiftL` 2) .|. (@immSz.enc)
-  -- arithmetic group
-  | Op          loc         .   enc         =   0xC0 .|. (@op.enc `shiftL` 3) .|. (@opndTy.enc `shiftL` 1) .|. (@locDst.enc)
-  -- eval/ldg group
-  | Eval        loc         .   enc         =   0xE0 .|. (@locSrc.enc)
-  | Apply       loc         .   enc         =   0xE2 .|. (@locSrc.enc)
-  | LdGlobal    loc         .   enc         =   0xE6 .|. (@locDst.enc)
-  -- call/control group
-  | Call        loc         .   enc         =   0xF0 .|. (@locSrc.enc)
-  | RetCall     loc         .   enc         =   0xF4
-  | RetCase     loc         .   enc         =   0xF5
-  | CaseCall    loc         .   enc         =   0xF6
-  | CallC       loc         .   enc         =   0xF7
-  -- tail eval/call/control group, via extension
-  | TailCall TailEval TailApply
-                loc         .   enc         =   0xFE
-  -- alloc group
-  | AllocStore  loc         .   enc         =   0xEC .|. (@locSrc.enc)
-  | Fetch       loc         .   enc         =   0xEE .|. (@locSrc.enc)
-  -- others
-  | FetchUpdate loc         .   enc         =   0xF9
-  | LdNodeTag   loc         .   enc         =   0xFC
-  | Halt TagInt2Word UntagWord2Int TagWord2Word UntagWord2Word
-                loc         .   enc         =   0xFE
-%%]
-
-2nd byte of encoding
-
-%%[(8 codegen grin)
-SEM Instr
-  | TailCall    loc         .   enc2        =   (0x00 `shiftL` 1) .|. (@locSrc.enc)
-  | TailEval    loc         .   enc2        =   (0x01 `shiftL` 1) .|. (@locSrc.enc)
-  | TailApply   loc         .   enc2        =   (0x02 `shiftL` 1) .|. (@locSrc.enc)
+  | Ld St       lhs         .   bcode       =   @enc : @imm.bcode
+  | Fetch       lhs         .   bcode       =   [@enc]
+  | LdString Call Eval Apply AllocStore CaseCall LdGlobal
+                lhs         .   bcode       =   @enc : bcodeLinkChain @linkChain
   | RetCall
-                loc         .   enc2        =   (@nArgMineSz.enc `shiftL` 2) .|. (@nArgSurrSz.enc `shiftL` 0)
-  | CallC       loc         .   enc2        =   (@nArgSz.enc)
-  | RetCase     loc         .   enc2        =   (@nResSz.enc `shiftL` 2) .|. (@retOffSurrSz.enc)
-  | Op          loc         .   enc2        =   (@ind.enc `shiftL` 4) .|. (@locSrc.enc `shiftL` 2) .|. (@immSz.enc)
-  | Halt        loc         .   enc2        =   0xFF
-  | TagInt2Word loc         .   enc2        =   0xFC
-  | UntagWord2Int
-                loc         .   enc2        =   0xFD
-  | TagWord2Word
-                loc         .   enc2        =   0xFA
-  | UntagWord2Word
-                loc         .   enc2        =   0xFB
-%%]
-
-3rd byte of encoding
-
-%%[(8 codegen grin)
+                lhs         .   bcode       =   [@enc, @enc2] ++ @nArgMine.bcode ++ @nArgSurr.bcode
   | TailCall TailApply
-                loc         .   enc3        =   (@nArgMineSz.enc `shiftL` 2) .|. (@nArgSurrSz.enc `shiftL` 0)
-  | TailEval    loc         .   enc3        =   (@nArgSurrSz.enc `shiftL` 0)
+                lhs         .   bcode       =   [@enc, @enc2, @enc3] ++ @nArgMine.bcode ++ @nArgSurr.bcode
+  | TailEval    lhs         .   bcode       =   [@enc, @enc2, @enc3] ++ @nArgSurr.bcode ++ bcodeLinkChain @linkChain
+  | FetchUpdate LdNodeTag
+                lhs         .   bcode       =   [@enc]
+  | CallC       lhs         .   bcode       =   [@enc, @enc2] ++ @nArg.bcode ++ bcodeLinkChain @linkChainCallEnc ++ bcodeLinkChain @linkChain
+  | RetCase     lhs         .   bcode       =   [@enc, @enc2] ++ @nRes.bcode ++ @retOffSurr.bcode ++ bcodeLinkChain @linkChain
+  | Op          lhs         .   bcode       =   [@enc, @enc2] ++ @imm.bcode
+  | Ann         lhs         .   bcode       =   @instr.bcode -- >#< ppCmtC @lhs.opts @ann
+  | Halt TagInt2Word UntagWord2Int TagWord2Word UntagWord2Word
+                lhs         .   bcode       =   [@enc, @enc2]
+  | LabelRef    lhs         .   bcode       =   bcodeWord @refOff
+  | LinkChain FunStart
+                lhs         .   bcode       =   bcodeLinkChain @linkChain
+
+SEM Instrs
+  | Nil         lhs         .   bcode       =   []
+  | Cons        lhs         .   bcode       =   if @hd.hasCode
+                                                then @hd.bcode ++ @tl.bcode
+                                                else @tl.bcode
 %%]
-
-%%[(8 codegen grin)
-SEM Meta
-  | CmtHeader   loc         .   enc         =   0xFF
-
-SEM InsOp_LocE
-  | SP          lhs         .   enc         =   0
-  | Reg         lhs         .   enc         =   1
-  | Imm         lhs         .   enc         =   enc_InsOp_LocE_Imm
-  | PC          lhs         .   enc         =   3
-
-SEM InsOp_LocB
-  | TOS         lhs         .   enc         =   0
-  | Reg         lhs         .   enc         =   1
-
-SEM InsOp_LocODst
-  | TOS         lhs         .   enc         =   0
-  | Reg         lhs         .   enc         =   1
-
-SEM InsOp_LocOSrc
-  | SP          lhs         .   enc         =   0
-  | Reg         lhs         .   enc         =   1
-  | Imm         lhs         .   enc         =   2
-  | TOS         lhs         .   enc         =   3
-
-SEM InsOp_TyOp
-  | Add         lhs         .   enc         =   0
-  | Sub         lhs         .   enc         =   1
-  | Mul         lhs         .   enc         =   2
-  | Quot        lhs         .   enc         =   3
-
-SEM InsOp_DataOp
-  | IntWord     lhs         .   enc         =   0
-  | IntInf      lhs         .   enc         =   1
-  | FloatWord   lhs         .   enc         =   2
-
-SEM InsOp_ImmSz
-  | Bits08      lhs         .   enc         =   0
-  | Bits16      lhs         .   enc         =   1
-  | Bits32      lhs         .   enc         =   enc_InsOp_ImmSz_Bits32
-  | Bits64      lhs         .   enc         =   enc_InsOp_ImmSz_Bits64
-
-SEM InsOp_Deref
-  | Zero        lhs         .   enc         =   enc_InsOp_Deref_Zero
-  | One         lhs         .   enc         =   1
-  | Two         lhs         .   enc         =   2
-  | Int         lhs         .   enc         =   3
-
-SEM InsOp_DerefB
-  | One         lhs         .   enc         =   0
-  | Two         lhs         .   enc         =   1
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% How to pp, context
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8 codegen grin)
-ATTR Imm [ immSz: InsOp_ImmSz | | ]
-
-SEM Instr
-  | Ld St       imm         .   immSz       =   @immSz.self
-  | Op          imm         .   immSz       =   @immSz.self
-  | TailCall RetCall TailApply
-                nArgMine    .   immSz       =   @nArgMineSz.self
-                nArgSurr    .   immSz       =   @nArgSurrSz.self
-  | TailEval    nArgSurr    .   immSz       =   @nArgSurrSz.self
-  | CallC       nArg        .   immSz       =   @nArgSz.self
-  | RetCase     nRes        .   immSz       =   @nResSz.self
-                retOffSurr  .   immSz       =   @retOffSurrSz.self
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Replica's, SELF
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8 codegen grin)
-ATTR InsOp_ImmSz [ | | self: SELF ]
-%%]
-

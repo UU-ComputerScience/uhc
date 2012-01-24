@@ -682,6 +682,8 @@ jarCmd
 JAVAC_CMD
 JAR_CMD
 ENABLE_JSCRIPT
+ENABLE_CMM
+ENABLE_CWHOLEPROG
 ENABLE_LLVM
 ENABLE_CLR
 ENABLE_TYCORE
@@ -1368,6 +1370,8 @@ Optional Features:
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
   --enable-java           include java code generation
+  --enable-cmm            include cmm code generation
+  --enable-cwholeprog     include C whole program code generation
   --enable-llvm           include llvm code generation
   --enable-clr            include clr code generation
   --enable-tycore         include TyCore typed intermediate language
@@ -2372,7 +2376,29 @@ enableJScript="yes"
 ENABLE_JSCRIPT=$enableJScript
 
 
-### enable options: llvm
+### enable options: cmm, default is no, temporary until development is ready
+# Check whether --enable-cmm was given.
+if test "${enable_cmm+set}" = set; then
+  enableval=$enable_cmm; enableCmm=yes
+else
+  enableCmm=no
+fi
+
+ENABLE_CMM=$enableCmm
+
+
+### enable options: cwholeprog, the C whole program backend, default is no, temporary until development restarts
+# Check whether --enable-cwholeprog was given.
+if test "${enable_cwholeprog+set}" = set; then
+  enableval=$enable_cwholeprog; enableCWholeprog=yes
+else
+  enableCWholeprog=no
+fi
+
+ENABLE_CWHOLEPROG=$enableCWholeprog
+
+
+### enable options: llvm, default is no
 # Check whether --enable-llvm was given.
 if test "${enable_llvm+set}" = set; then
   enableval=$enable_llvm; enableLlvm=yes
@@ -2383,7 +2409,7 @@ fi
 ENABLE_LLVM=$enableLlvm
 
 
-### enable options: clr (Tom Lokhorsts CLR backend)
+### enable options: clr (Tom Lokhorsts CLR backend), default is no
 # Check whether --enable-clr was given.
 if test "${enable_clr+set}" = set; then
   enableval=$enable_clr; enableClr=yes
@@ -2394,7 +2420,7 @@ fi
 ENABLE_CLR=$enableClr
 
 
-### enable options: tycore (Typed Core)
+### enable options: tycore (Typed Core), default is no
 # Check whether --enable-tycore was given.
 if test "${enable_tycore+set}" = set; then
   enableval=$enable_tycore; enableTyCore=yes
@@ -2405,7 +2431,7 @@ fi
 ENABLE_TYCORE=$enableTyCore
 
 
-### enable options: tauphi (Tom Lokhorsts type based transformations on TyCore, based on work by Stefan Holdermans)
+### enable options: tauphi (Tom Lokhorsts type based transformations on TyCore, based on work by Stefan Holdermans), default is no
 # Check whether --enable-tauphi was given.
 if test "${enable_tauphi+set}" = set; then
   enableval=$enable_tauphi; enableTauPhi=yes
@@ -32264,6 +32290,8 @@ jarCmd!$jarCmd$ac_delim
 JAVAC_CMD!$JAVAC_CMD$ac_delim
 JAR_CMD!$JAR_CMD$ac_delim
 ENABLE_JSCRIPT!$ENABLE_JSCRIPT$ac_delim
+ENABLE_CMM!$ENABLE_CMM$ac_delim
+ENABLE_CWHOLEPROG!$ENABLE_CWHOLEPROG$ac_delim
 ENABLE_LLVM!$ENABLE_LLVM$ac_delim
 ENABLE_CLR!$ENABLE_CLR$ac_delim
 ENABLE_TYCORE!$ENABLE_TYCORE$ac_delim
@@ -32292,8 +32320,6 @@ GHC_GEN_OPTIONS!$GHC_GEN_OPTIONS$ac_delim
 GHC_CMD1!$GHC_CMD1$ac_delim
 ghcPkgCmd!$ghcPkgCmd$ac_delim
 hsc2hsCmd!$hsc2hsCmd$ac_delim
-HSC2HS_CMD!$HSC2HS_CMD$ac_delim
-haddockCmd!$haddockCmd$ac_delim
 _ACEOF
 
   if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 97; then
@@ -32335,6 +32361,8 @@ _ACEOF
 ac_delim='%!_!# '
 for ac_last_try in false false false false false :; do
   cat >conf$$subs.sed <<_ACEOF
+HSC2HS_CMD!$HSC2HS_CMD$ac_delim
+haddockCmd!$haddockCmd$ac_delim
 HADDOCK_CMD!$HADDOCK_CMD$ac_delim
 HADDOCK_VERSION!$HADDOCK_VERSION$ac_delim
 OPT_GHC_STANDARD_PACKAGES!$OPT_GHC_STANDARD_PACKAGES$ac_delim
@@ -32408,7 +32436,7 @@ LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 71; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 73; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5
@@ -32764,7 +32792,7 @@ do
     cat >>$CONFIG_STATUS <<_ACEOF
     # First, check the format of the line:
     cat >"\$tmp/defines.sed" <<\\CEOF
-/^[	 ]*#[	 ]*undef[	 ][	 ]*$ac_word_re[	 ]*\$/b def
+/^[	 ]*#[	 ]*undef[	 ][	 ]*$ac_word_re[	 ]*/b def
 /^[	 ]*#[	 ]*define[	 ][	 ]*$ac_word_re[(	 ]/b def
 b
 :def

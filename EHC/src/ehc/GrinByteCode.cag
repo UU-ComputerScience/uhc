@@ -141,19 +141,26 @@ type StringConst = StringConst' String
 
 %%[(8 codegen grin) hs export(LocRef(..),lrefIsLabel)
 lrefIsLabel :: LocRef -> Bool
-lrefIsLabel (LocRef_Label _) = True
-lrefIsLabel _                = False
+lrefIsLabel (LocRef_CodeEntry     _) = False
+lrefIsLabel _                        = True
 
 data LocRef
-  = LocRef_CodeEntry    !Int                         -- resolved at initialization runtime, translates to
+  = LocRef_CodeEntry    { lrefId :: !Int     }       -- resolved at initialization runtime, translates to
   | LocRef_Label        { lrefId :: !LabelId }       -- resolved before runtime, translates to offsets
+  | LocRef_EndSwitch    { lrefId :: !LabelId }       -- as label, but we know it is the end of a switch
+  | LocRef_CaseArm      							 -- as label, but with tag of case arm included, for optional use further down the pipeline
+                        { lrefId  :: !LabelId
+                        , lrefTag :: !Int
+                        }       
   deriving (Eq,Ord,Show)
 %%]
 
 %%[(8 codegen grin) hs
 instance PP LocRef where
-  pp (LocRef_CodeEntry c) = ".cod" >#< c
-  pp (LocRef_Label     l) = ".lbl" >#< l
+  pp (LocRef_CodeEntry c) = "_FunLbl_"                     >|< c
+  pp (LocRef_Label     l) = "_Lbl_"                        >|< l
+  pp (LocRef_EndSwitch l) = "_EndSwitchLbl_"               >|< l
+  pp (LocRef_CaseArm l c) = "_CaseLbl_" >|< l
 %%]
 
 %%[(8 codegen grin) hs export(StackDepth)

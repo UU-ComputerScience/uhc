@@ -31,7 +31,10 @@ HsNameUniqifier to guarantee such an invariant.
 %%[8 import(qualified Data.Set as Set,Data.Maybe, Data.Char, Numeric)
 %%]
 
-%%[8 import(EH.Util.FPath,Data.Char,qualified Data.Map as Map)
+%%[7 import(qualified Data.Map as Map)
+%%]
+
+%%[8 import(EH.Util.FPath,Data.Char)
 %%]
 
 %%[8 export(OrigName(..))

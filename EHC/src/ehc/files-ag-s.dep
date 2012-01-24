@@ -118,3 +118,4 @@ TyCore/Trf/RemoveLazyFunctions1of2.cag
 TyCore/Trf/RemoveLazyFunctions2of2.cag
 TyCore/Trf/OptimizeStrictness1of2.cag
 TyCore/Trf/OptimizeStrictness2of2.cag
+Cmm/ToC

@@ -821,8 +821,25 @@ hsnLclSupply = hsnLclSupplyWith (hsnFromString "")
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Hex printing
+%%% Hex printing, dissecting numbers
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 export(splitByRadix)
+splitByRadix :: (Integral b) => Int -> Int -> b -> (Int,[Int])
+splitByRadix len radix num
+  = ( fromIntegral $ signum num
+    , replicate difflen 0 ++ drop (-difflen) repr
+    )
+  where radix' = fromIntegral radix
+        repr = reverse $
+               unfoldr
+                 (\b -> if b == 0
+                        then Nothing
+                        else let (q,r) = b `divMod` radix'
+                             in  Just (fromIntegral r, q))
+                 (abs num)
+        difflen = len - length repr
+%%]
 
 %%[8 export(strHex)
 strHex :: (Show a, Integral a) => Int -> a -> String

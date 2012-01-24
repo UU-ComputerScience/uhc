@@ -54,7 +54,7 @@ level 2..6 : with prefix 'cpEhc'
 %%]
 %%[8 import({%{EH}EHC.CompilePhase.CompileC})
 %%]
-%%[(8 codegen grin) import({%{EH}EHC.CompilePhase.CompileLLVM})
+%%[(8 codegen llvm) import({%{EH}EHC.CompilePhase.CompileLLVM})
 %%]
 %%[(8 codegen java) import({%{EH}EHC.CompilePhase.CompileJVM})
 %%]
@@ -881,7 +881,9 @@ Make final executable code, either still partly or fully (i.e. also linking)
 cpEhcExecutablePerModule :: FinalCompileHow -> [HsName] -> HsName -> EHCompilePhase ()
 cpEhcExecutablePerModule how impModNmL modNm
   = cpSeq [ cpCompileWithGCC how impModNmL modNm
+%%[[(8 llvm)
           , cpCompileWithLLVM modNm
+%%]]
 %%[[(8 jazy)
           , cpCompileJazyJVM how impModNmL modNm
 %%]]
@@ -1039,9 +1041,15 @@ cpProcessBytecode modNm
 %%[[99
                , cpCleanupFoldBytecode modNm
 %%]]
-               , when (ehcOptEmitBytecode opts) (cpOutputByteCodeC "c" modNm)
+               , when (ehcOptEmitBytecode opts)
+                      (do { cpOutputByteCodeC "c" modNm
+                          })
 %%[[99
                , cpCleanupBytecode modNm
+%%]]
+%%[[(99 cmm)
+               -- 20111220: temporary, until Cmm is in main path
+               , cpCleanupCmm modNm
 %%]]
                ]
        }

@@ -392,7 +392,7 @@ FUN_PREFIX2DIR			= $(patsubst %/,%,$(1))
 
 tst:
 	@echo $(INSABS_EHC_LIB_ALL_AG)
-	@echo $(EHC_AG_D_DDPDS_DERIV_AG)
+	@echo $(INSTALLABS_VARIANT_LIB_AG_PREFIX)
 
 tstv:
 	$(MAKE) INCLUDE_DERIVED_MK=yes EHC_VARIANT=100 tst

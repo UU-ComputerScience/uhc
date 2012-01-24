@@ -48,6 +48,9 @@ Output generation, on stdout or file
 -- Java output
 %%[(8888 codegen java) import({%{EH}Core.ToJava})
 %%]
+-- Cmm output
+%%[(8 codegen cmm) import({%{EH}Cmm.ToC}(cmmMod2C))
+%%]
 
 -- serialization
 %%[50 import(qualified {%{EH}Base.Binary} as Bin, {%{EH}Base.Serialize})
@@ -178,13 +181,24 @@ cpOutputByteCodeC :: String -> HsName -> EHCompilePhase ()
 cpOutputByteCodeC suff modNm
   =  do  {  cr <- get
          ;  let  (ecu,_,opts,fp) = crBaseInfo modNm cr
-                 bc       = panicJust "cpOutputByteCodeC" $ ecuMbBytecodeSem ecu
+                 bc       = panicJust "cpOutputByteCodeC bytecode" $ ecuMbBytecodeSem ecu
                  fpC      = mkOutputFPath opts modNm fp suff
+%%[[(8 cmm)
+                 cmm      = panicJust "cpOutputByteCodeC cmm" $ ecuMbCmm ecu
+                 fpCmm    = mkOutputFPath opts modNm fp (suff ++ "-cmm")
+%%]]
          ;  cpMsg' modNm VerboseALot "Emit ByteCode C" Nothing fpC     -- '
 %%[[99
          ;  cpRegisterFilesToRm [fpC]
 %%]]
          ;  lift $ putPPFPath fpC bc 150
+%%[[(8 cmm)
+         -- 20111220: temporary, until Cmm is main path
+         ;  when (ehcOptPriv opts)
+                 (do { let cmmPP = cmmMod2C opts cmm
+                     ; lift $ putPPFPath fpCmm cmmPP 150
+                     })
+%%]]
          }
 %%]
 

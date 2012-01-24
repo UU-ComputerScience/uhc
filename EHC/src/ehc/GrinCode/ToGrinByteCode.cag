@@ -229,14 +229,36 @@ SEM GrExpr
 %%]
 
 %%[(8 codegen grin)
+ATTR GrPatAlt GrTag [ | | tag: Int ]
+
+SEM GrPatAlt
+  | LitInt		lhs			.	tag				=	@int
+  | Otherwise	lhs			.	tag				=	-1
+  | * - LitInt Tag Node Otherwise
+  				lhs			.	tag				=	panic "ToGrinByteCode.GrPatAlt.*-LitInt(etc).tag"
+
+SEM GrTag
+  | Con			lhs			.	tag				=	@int
+  | * - Con		lhs			.	tag				=	panic "ToGrinByteCode.GrTag.*-Con.tag"
+%%]
+
+%%[(8 codegen grin)
+ATTR AllAlt [ | | gathNrOfAlts USE {+} {0}: Int ]
+ATTR AllAlt [ nrOfAlts: Int | | ]
+
+SEM GrAlt
+  | Alt         loc         .   gathNrOfAlts	=   1
+%%]
+
+%%[(8 codegen grin)
 ATTR AllAlt [ | | altLocRefs USE {++} {[]}: {[GB.LocRef]} ]
 
 SEM GrAlt
-  | Alt         loc         .   altLocRef       =   GB.LocRef_Label @altLabel
+  | Alt         loc         .   altLocRef       =   if @lhs.nrOfAlts < 2 then GB.LocRef_Label @altLabel else GB.LocRef_CaseArm @altLabel @pat.tag
                 loc         .   altLocRefs      =   [@altLocRef]
 
 SEM GrExpr
-  | Case        loc         .   aftCaseLocRef   =   GB.LocRef_Label @aftCaseLabel
+  | Case        loc         .   aftCaseLocRef   =   GB.LocRef_EndSwitch @aftCaseLabel
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -245,7 +267,7 @@ SEM GrExpr
 
 %%[(8 codegen grin)
 SEM GrExpr
-  | Case        loc         .   nrOfAlts        =   length @altL.altLocRefs
+  | Case        loc         .   nrOfAlts        =   @altL.gathNrOfAlts
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -70,6 +70,15 @@ gencNULL = genc "NULL"
 
 %%]
 
+%%[8 export(gencInt)
+-- | C constant: int
+gencInt :: (PP ty, PP int) => Maybe ty -> (GenC -> GenC) -> int -> GenC
+gencInt mbTy mkL int
+  = maybe i (\t -> gencCast t $ mkL i) $ mbTy
+  where i = pp int
+
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Statements
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -77,7 +86,7 @@ gencNULL = genc "NULL"
 %%[8 export(gencAssign,gencUpdAssign)
 -- | C update assign: lval <op>= rval ;
 gencUpdAssign :: (PP lval,PP rval) => String -> lval -> rval -> GenC
-gencUpdAssign op lval rval = gencStat (lval >#< op >|< "=" >#< rval)
+gencUpdAssign op lval rval = gencStat (lval >#< op >|< "=" >-< indent 1 rval)
 
 -- | C assign: lval = rval ;
 gencAssign :: (PP lval,PP rval) => lval -> rval -> GenC
@@ -89,7 +98,7 @@ gencAssign = gencUpdAssign ""
 %%% Expressions: general
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(gencCast,gencCall,gencSizeof,gencOp,gencStr)
+%%[8 export(gencCast,gencCall,gencSizeof,gencStr)
 -- | C cast: ((ty)(val))
 gencCast :: (PP ty,PP val) => ty -> val -> GenC
 -- gencCast ty val = "Cast" >|< ppParensCommas [genc ty,genc val]
@@ -103,13 +112,24 @@ gencCall nm args = nm >|< ppParensCommas args
 gencSizeof :: PP x => x -> GenC
 gencSizeof x = gencCall "sizeof" [genc x]
 
--- | C binary operator expression: e1 o e2
-gencOp :: (PP op,PP e1,PP e2) => op -> e1 -> e2 -> GenC
-gencOp o e1 e2 = ppParens (e1 >#< o >#< e2)
-
 -- | C string: "str"
 gencStr :: String -> GenC
 gencStr = genc . show
+
+%%]
+
+%%[8 export(gencOp,gencOpL1Pre,gencOpL2)
+-- | C binary operator expression: o e, [] variant
+gencOpL1Pre :: (PP op,PP e) => op -> [e] -> GenC
+gencOpL1Pre o [e] = ppParens (o >#< e)
+
+-- | C binary operator expression: e1 o e2, [] variant
+gencOpL2 :: (PP op,PP e) => op -> [e] -> GenC
+gencOpL2 o [e1,e2] = ppParens (e1 >#< o >#< e2)
+
+-- | C binary operator expression: e1 o e2
+gencOp :: (PP op,PP e) => op -> e -> e -> GenC
+gencOp o e1 e2 = gencOpL2 o [e1,e2]
 
 %%]
 
@@ -204,24 +224,36 @@ gencStat = gencEndsemic
 gencSwitch :: (PP sel) => sel -> [GenC] -> GenC -> GenC
 gencSwitch sel cases dflt = "switch" >#< ppParens sel >-< ppCurlysBlock (cases ++ [dflt])
 
-gencSwitchcase' :: PP sel => sel -> GenC -> GenC
-gencSwitchcase' sel stat = sel >#< ":" >-< indent 2 (stat >-< gencEndsemic "break")
+gencSwitchcase' :: PP sel => [sel] -> GenC -> GenC
+gencSwitchcase' sels stat = vlist (map (>#< ":") sels) >-< indent 2 (stat >-< gencEndsemic "break")
 
-gencSwitchcase :: PP sel => sel -> [GenC] -> GenC
-gencSwitchcase sel stats = gencSwitchcase' ("case" >#< sel) (vlist stats)
+gencSwitchcase :: PP sel => [sel] -> [GenC] -> GenC
+gencSwitchcase sels stats = gencSwitchcase' (map ("case" >#<) sels) (vlist stats)
 
 gencSwitchdefault :: GenC -> GenC
-gencSwitchdefault = gencSwitchcase' "default"
+gencSwitchdefault = gencSwitchcase' ["default"]
 
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Control
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 export(gencLabel)
+gencLabel :: PP l => l -> GenC
+gencLabel l = l >|< ":"
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% File level
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(gencInclude)
+%%[8 export(gencInclude,gencInclude')
+gencInclude' :: PP f => String -> f -> GenC
+gencInclude' suff f = "#include \"" >|< f >|< (if null suff then empty else ("." >|< suff)) >|< "\""
+
 gencInclude :: PP f => f -> GenC
-gencInclude f = "#include \"" >|< f >|< "\""
+gencInclude = gencInclude' ""
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -316,7 +348,7 @@ gencWrapperCFunDef tyPre mbNArgsNm
             , gencStat (gencCall "GB_PopCastIn" ["GB_BytePtr",pcNm])
             , gencStat (gencCall "GB_PopIn" [nargsNm])
             -- , gencStat (gencCall "printf" [show $ "CallEnc pop args %d\n", nargsNm])
-            , gencAssign spNm (gencCall "GB_RegByteRel" [genc "GB_Word", genc spNm, gencOp "-" (gencOp "*" nargsNm (gencSizeof "GB_Word")) (gencSizeof restyStck)])
+            , gencAssign spNm (gencCall "GB_RegByteRel" [genc "GB_Word", genc spNm, gencOp "-" (gencOp "*" (pp nargsNm) (gencSizeof "GB_Word")) (gencSizeof restyStck)])
             , gencStat (gencCall "GB_SetCallCResult" [genc restyStck, genc (gbtyAsReturned resgbty), genc spNm, genc "0", genc $ r' res])
             -- , gencStat (gencCall "printf" [genc $ show $ "TOS %lld %lld %llx " ++ r' res ++ " %d " ++ " %lld\n", gencDeref $ genc spNm, gencCall "GB_Int2GBInt" [gencDeref $ genc spNm], gencDeref $ genc spNm, genc $ r' res, genc $ r' res])
             ]
