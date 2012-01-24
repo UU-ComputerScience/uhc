@@ -36,7 +36,7 @@ ATTR CodeAGItf [ || inlined : CModule]
 ATTR AllCodeNT [ || inlined : SELF]
 
 SEM CExpr
-        | App lhs.inlined = if @func.isFusible 
+        | App lhs.inlined = if @func.isFusible -- && @arg.isFusible
                             then apply @func.inlined @arg.inlined  -- inline this function application.  We actually want the fused version of the arg, but this hasn't been defined yet
                             else @inlined
         | Var lhs.inlined = if @isFusible 
