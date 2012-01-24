@@ -63,13 +63,6 @@ SEM CExpr
 -- subst nm body expr, where nm is the variable to replace, body is the body of the function, and 
 -- expr is the expr to substitute in for nm that passes in the substExpr attribute.
 
-{
-
---subst :: HsName -> CExpr -> CExpr -> CExpr
---subst nm body expr = 
-
-}
-
 ------------------------------------------------------------------------------
 -- Pass fused function names and bodies down the expressions
 ------------------------------------------------------------------------------
