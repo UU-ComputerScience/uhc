@@ -642,7 +642,7 @@ ffiJScriptMkCall ty
 
         mkDyn _ (e:es) = J.Expr_Call e es
 %%]]
-        mkcall (f,as)
+        mkcall (f,as) -- TODO: Is this redundant?
 %%[[90
           | forextractOptIsPtr ent = f
 %%]]

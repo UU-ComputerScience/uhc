@@ -370,7 +370,7 @@ primClone = function(obj) {
   var cloneAlg = function(name, target, copy) {
     target[ name ] = copy;
   };
-  return foldObj(cloneAlg, {}, obj);
+  return foldObj(cloneAlg, {}, obj, false);
 }
 
 // Converts a UHC JS datatype object to a plain JS object
@@ -381,10 +381,10 @@ primToPlainObj = function ( obj ) {
       target[name] = _e_(copy);
     }
   };
-  return foldObj(toPlainAlg, {}, obj);
+  return foldObj(toPlainAlg, {}, obj, true);
 };
 
-foldObj = function (alg, target, original ) {
+foldObj = function (alg, target, original, deep) {
   var name, src, copy, copyIsArray, clone;
 
   // Extend the base object
@@ -398,7 +398,7 @@ foldObj = function (alg, target, original ) {
     }
 
     // Recurse if we're merging plain objects or arrays
-    if ( copy && ( isPlainObject(copy) || (copyIsArray = isArray(copy)) ) ) {
+    if (deep && copy && ( isPlainObject(copy) || (copyIsArray = isArray(copy)) ) ) {
       if ( copyIsArray ) {
         copyIsArray = false;
         clone = src && isArray(src) ? src : [];
@@ -407,7 +407,7 @@ foldObj = function (alg, target, original ) {
       }
 
       // Never move original objects, clone them
-      target[ name ] = foldObj(alg, clone, copy );
+      target[ name ] = foldObj(alg, clone, copy, deep);
 
     // Don't bring in undefined values
     } else if ( copy !== undefined ) {

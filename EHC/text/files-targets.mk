@@ -421,4 +421,7 @@ text-variant-slides-javascript:
 	  TEXT_SHUFFLE_VARIANT=65 \
 	  text-variant-dflt-once
 
-
+text-variant-improving-uhc-js:
+	$(MAKE) \
+	  TEXT_SHUFFLE_VARIANT=68 \
+	  text-variant-dflt-doc

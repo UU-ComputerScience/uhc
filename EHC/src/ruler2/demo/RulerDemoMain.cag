@@ -7,7 +7,7 @@
 %%% Haskell interface to AG generated code for compiler
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[3 hs import(IO,Data.List,UU.Pretty,UU.Parsing,UU.Scanner,UU.Scanner.Position( initPos, Pos ),RulerDemoUtils)
+%%[3 hs import(System.IO,Data.List,UU.Pretty,UU.Parsing,UU.Scanner,UU.Scanner.Position( initPos, Pos ),RulerDemoUtils)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

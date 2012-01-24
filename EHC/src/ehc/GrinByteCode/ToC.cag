@@ -93,13 +93,13 @@ ppCmtC :: PP a => EHCOpts -> a -> GenC
 ppCmtC opts x | ehcOptGenCmt opts = gencCmt x
               | otherwise         = empty
 
-ppHex :: Integral a => Int -> a -> GenC
+ppHex :: (Show a, Integral a) => Int -> a -> GenC
 ppHex prec x = head $ ppHex' Nothing prec x
 
-ppHex' :: Integral a => Maybe Int -> Int -> a -> [GenC]
+ppHex' :: (Show a, Integral a) => Maybe Int -> Int -> a -> [GenC]
 ppHex' = ppHex'' "0x"
 
-ppHex'' :: Integral a => String -> Maybe Int -> Int -> a -> [GenC]
+ppHex'' :: (Show a, Integral a) => String -> Maybe Int -> Int -> a -> [GenC]
 ppHex'' prefix split prec x
   = case split of
       Nothing  -> [prefix >|< h]
@@ -948,7 +948,7 @@ ppStringAsHex :: String -> GenC
 ppStringAsHex = ppCurlysCommas . ppStringAsHex'
 -- ppStringAsHex s = ppCurlysCommas [ ppHex' (Just 2) 2 (ord c) | c <- s ++ [chr 0] ]
 
-ppWord :: (Integral c) => c -> GenC
+ppWord :: (Show c, Integral c) => c -> GenC
 ppWord = ppHexL . ppHex' (Just 2) (Cfg.sizeofWord * 2)
 
 ppLinkChain :: Integer -> GenC

@@ -1,0 +1,864 @@
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{url}
+\usepackage[unicode=true]{hyperref}
+\usepackage[backend=biber]{biblatex}
+\addbibresource{bibliography.bib}
+
+%include polycode.fmt
+%format a_1
+%format a_i
+%format a_j
+%format a_n
+
+%format MANY   = "\!^{*}"
+
+
+\newenvironment{jscode}
+{\par\begin{list}{}{
+\setlength{\listparindent}{0pt}% needed for AMS classes
+\raggedright
+\setlength{\itemsep}{0pt}
+\setlength{\parsep}{0pt}
+\normalfont\ttfamily}%
+ \item[]}
+{\end{list}}
+
+%%[abstract
+In this document we describe current and new usecases for the UHC \js backend.
+Some of these usecases were already supported by the backend, but their
+implementation was not obvious. In addition, we propose several conventions and
+best-practices to make code using the backend easier to use and understand. The
+primary contribution of this report is a whole new way of dealing with \js
+objects from the Haskell world. To support this, we implement several new
+primitive functions and expand the foreign function interface expression
+language. In addition, we implement foreign wrappers and dynamic imports.
+%%]
+
+
+%%[introPaper
+This report describes several enhancements made to the UHC \js backend. This
+backend enables one to write Haskell code and cross-compile it to JavaScript
+so that it may be executed in a web browser. With this approach, we can
+piggy-back on Haskell's powerful typesystem to write type-correct \js programs.
+The backend was originally implemented by Atze Dijkstra and released with UHC
+version 1.1. Due to the fact that nobody was using the backend in practice, it
+was unclear how complete it was, or whether essential features were missing. It
+was clear, however, that there still was some work to do.
+
+The goal of the project that has led to this report was twofold: experiment
+with the existing implementation of the \js backend and propose and implement
+improvements where necessary. Since these goals were very general, this
+project was started by implementing parts of the ECMA-262\cite{ecma262}
+standard and parts of the Backbone.js\cite{backbone} library to get a feel for
+where the existing implementation was lacking. Experimenting with the ECMA-262
+led to formulating some conventions, which are described in section
+\ref{conventions}, while experimenting with Backbone.js led to implementing
+improved support for \js objects, both in the foreign function
+interface\cite{ffiaddendum,haskell2010} and in the \js runtime systems (RTS).
+To properly deal with functions in callbacks and objects, support for
+``wrapper'' and ``dynamic'' foreign imports was also implemented.
+
+The rest of this report is structured as follows. Subsection \ref{prelim} will
+give an introduction to the \js backend basics that were already available
+before the start of this project. Section \ref{uhc-jscript} will then present a
+library which has been developed in order to test certain aspect of the \js
+backend and to provide a foundation upon which to build \js application.
+Section \ref{conventions} will then suggest several ways of using the backend
+and some conventions, after which section \ref{ffi} will show support for
+\textit{dynamic} and \textit{wrapper} imports. Section \ref{object-rts} will
+present object-related enhancements to the RTS and FFI. Finally, section
+\ref{conclusion} will discuss future work and conclude.
+
+
+\subsection{\label{prelim}Preliminaries}
+
+Before we can get started with diving into the UHC \js backend, this subsection
+will provide the reader with a crash-course in using the backend. While the UHC
+User Manual\cite{uhc-manual} already provides a brief introduction, this
+introduction will also cover foreign exports, which are absent from the manual.
+First, we will see several ways of interacting with JavaScript, after which we
+will briefly see how to actually use the compiler to output JavaScript. For a
+more in-depth discussion of how the RTS works, please see the UHC
+blog\cite{uhc-blog}.
+
+The backend provides three ways of dealing with JavaScript:
+
+\begin{Itemize}
+  \item Write Haskell code which will be compiled to JavaScript
+  \item Export this Haskell code via the foreign function interface (FFI) to
+        give it a known name in the generated \js code
+  \item import existing \js code via de FFI, so that it can be used in writing
+        your Haskell code
+\end{Itemize}
+
+Since the first way does not require any further action from the programmer,
+aside from writing Haskell code and compiling it with the UHC \js backend, we
+will not discuss it any further in detail.
+
+\subsubsection*{Exporting functions}
+Exporting existing Haskell functions to a \js function with a known name is the
+second-simplest form of \js interaction. Suppose we have a simple Haskell
+function for adding two numbers:
+
+\begin{code}
+myAdd :: Int -> Int -> Int
+myAdd x y = x + y
+\end{code}
+
+If we were to compile this piece of code to JavaScript, it would generate a
+UHC RTS representation of the function, similar to the following:
+
+\begin{jscode}
+new \_F\_("myAdd", function(n,m) \{...\});
+\end{jscode}
+
+This function object would be available with a name similar to
+\texttt{\$my\_mod.\$myAdd}. We are now faced with two problems. Existing \js
+libraries and programs do not know how to deal with these function objects;
+they only have the concept of regular \js to interface with. Secondly, the
+generated name may change with future releases of the compiler and cannot be
+depended upon. To solve these two problems, we need to create a plain \js
+function with a fixed name that wraps around the RTS function object. This
+function would accept the necessary arguments and make sure that the Haskell
+function is applied to them and the result is evaluated before it is returned.
+This is exactly what the FFI export interface (refered to as FFE from now on)
+allows you to do:
+
+\begin{code}
+foreign export jscript "myAdd"
+  myAdd :: Int -> Int -> Int
+\end{code}
+
+This export declaration tells the compiler to use the |jscript| calling
+convention and generate a function called |myAdd|, which wraps around the
+compiler-generated function \texttt{\$my\_mod.\$myAdd}, solving the problems
+mentioned before.
+
+
+\subsubsection*{Importing functions}
+
+When writing a real-life \js application it is generally desirable to reuse
+existing \js libraries, since many have already been written and are widely
+used in practice. The FFI allows for doing just this. Suppose we want to show
+an alert with an integer in it, the \js code would look like the following,
+where |n| would be our integer:
+
+\begin{jscode}
+alert(n);
+\end{jscode}
+
+Now lets think about the Haskell type signature the alert function would have.
+We have a function call and an integer argument. Since it would generate a
+side-effect (an alert appearing), the operation would be in |IO|. Its type
+signature could be:
+
+%%[[wrap=safecode
+alert :: Int -> IO ()
+%%]]
+
+Using the |jscript| calling convention and the normal way of using the FFI,
+we could try importing this \texttt{alert} function into the Haskell world:
+
+%%[[wrap=safecode
+foreign import jscript "alert"
+  alert :: Int -> IO ()
+%%]]
+
+This import declaration has a problem, though. How does the compiler know that
+\texttt{alert} 1) is a function and 2) expects the integer argument to be put
+in parenthesis as a function argument? After all, \texttt{alert} could also
+have been an array of which the integer was an index. To solve this problem,
+the UHC introduces the Foreign Expression Language (FEL). It allows you to
+write very small pieces of JavaScript-like code in your import declarations.
+This allows us to redefine the import and specify how we want our integer
+argument to be used:
+
+%%[[wrap=safecode
+foreign import jscript "alert(%1)"
+  alert :: Int -> IO ()
+%%]]
+
+The \texttt{\%1} says: take the first parameter to the function and insert it
+here. We can even use the FEL to execute methods on functions, passing some
+arguments. Suppose we have an opaque type |MyObj|, which represents a \js
+object which has a \texttt{doStuff} method, which in turn takes two integers
+as an argument and returns a new integer. We can import the method as follows:
+
+%%[[wrap=safecode
+foreign import jscript "%1.doStuff(%2, %3)"
+  doStuff :: MyObj -> Int -> Int -> Int
+%%]]
+
+Now we use the \texttt{\%1} to indicate the object, after which the
+conventional \js syntax for calling methods specifies the method name to be
+called and its arguments. Since it is tedious to specify all arguments manually
+all the time, the FEL offers a shortcut:
+
+%%[[wrap=safecode
+foreign import jscript "%1.doStuff(%*)"
+  doStuff :: MyObj -> Int -> Int -> Int
+%%]]
+
+This shortcut says: take all remaining parameters to this function and insert
+them here.
+
+One of the previous paragraphs mentioned that |MyObj| was an opaque type
+representing a \js object. They are usually represented by empty data
+declarations in Haskell. Since it is opaque, we cannot deconstruct it in any
+way. These opaque types can only be obtained via the FFI, after which they can
+be passed around in Haskell like any other type, only with the aforementioned
+restrictions. More on this can be found in section \ref{object-rts}.
+
+
+\subsubsection*{Strings and arrays}
+
+Strings and arrays deserve a bit of special attention. In JavaScript, strings
+are of type \texttt{string} and arrays are of type \texttt{object}. In Haskell,
+however, both of these types are represented as a list; |String|s as lists of
+characters and arrays as lists of anything in which the indexing is implicit.
+To properly import and export these types to and from JavaScript, they need to
+be converted to a unique type first. For |String|s, this is the |PackedString|
+type and for arrays this is the |BoxArray|. Both of these types can be found in
+the UHC base library. The \uhcjscript library offers several functions to aid
+in the conversion. It also offers two type synonyms to make dealing with \js
+strings and arrays more intuitive: |JSString| and |JSArray|. More on this
+library in section \ref{uhc-jscript}.
+
+
+\subsubsection*{Primitive functions}
+
+In order to facilitate interaction with the \js world, UHC offers several
+primitive \js functions which perform lower-level operations. These functions
+can be imported using the |prim| calling convention. This calling convention
+only requires specifying the name of the primitive function. Arguments to the
+function cannot be specified using the FEL. All available primitive functions
+are defined in \textit{EHC/jscript/rts/prim.cjs} in the compiler source code.
+The list of primitive functions is too extensive to list here.
+
+
+\subsubsection*{Compiling to JavaScript}
+
+In order to compile Haskell code to JavaScript, one needs to make sure UHC is
+compiled and called correctly. Support for the \js backend is introduced in UHC
+variants 8 and 90 and is also contained in variants 99 (debug) and 101
+(production).
+
+There are two ways of compiling Haskell code to JavaScript: via a manual call
+to \texttt{uhc}, or via Cabal. For a manual compilation, issue the following
+command after making sure variant 101 is installed system-wide:
+
+\begin{jscode}
+uhc -tjscript myfile.hs
+\end{jscode}
+
+Support for building with Cabal is currently limited, although it is possible
+to let Cabal instruct UHC to compile \js files. To do so, specify UHC's
+\texttt{base} package version $3.0$ as a dependency. When calling \texttt{cabal
+configure} append the \texttt{--uhc} flag. Finally, build the package by
+issuing the following command:
+
+\begin{jscode}
+cabal build --uhc-option="-tjscript"
+\end{jscode}
+
+Note that HTML files will not be available when doing this.
+%%]
+
+
+%%[uhcJscriptLib
+The \uhcjscript library was written to explore the limits of the existing \js
+backend and to provide a base library which people can use to start writing \js
+applications in Haskell. The library is available on
+GitHub\footnote{https://github.com/norm2782/uhc-jscript/}.
+
+|Language.UHC.JScript.Primitives| defines basic pointer types and imports (and
+wraps) most of the object related primitive functions from the RTS. More on
+this in section \ref{object-rts}.
+
+|Language.UHC.JScript.Types| defines the |ToJS| and |FromJS| typeclasses, which
+serve to convert Haskell types to their respective \js types and vice versa. It
+also defines some simple abstractions to make importing functions easier.
+
+The |Language.UHC.JScript.ECMA| module and the modules it imports implement the
+ECMA-262 interfaces to \texttt{Array} and \texttt{String} prototypes and some
+other ECMA functions.
+
+The |Language.UHC.JScript.JQuery.JQuery| implements a small subset of the
+jQuery library.
+
+The |Language.UHC.JScript.Backbone| module and the modules it imports implement
+an interface to most of the Backbone.js library.
+
+|Language.UHC.JScript.W3C| implements some of the HTML 5 DOM.
+
+|Language.UHC.JScript.JSON2| implements the JSON2 library.
+
+|Language.UHC.JScript.Assorted| defines functions that do not really fit in
+anywhere else. Currently it only contains the \texttt{alert} function.
+
+
+\section{\label{conventions}Usage suggestions and proposed conventions}
+
+This section will discuss several ways of using the \js backend. None of these
+use-cases are new in the sense that these were already possible in UHC prior to
+the start of this project. In some cases, however, it was not immediately clear
+that the existing backend could support them. In addition, this section
+proposes several conventions that will make the use of the \js backend more
+convenient and uniform for programmers using the backend.
+
+\subsection{Functions with an arbitrary number of arguments}
+
+In JavaScript, it is possible to define functions which take an arbitrary
+number of arguments. An example is the \texttt{concat} function in the
+\texttt{String} prototype, which the ECMA-262 standard defines as follows:
+
+\begin{jscode}
+String.prototype.concat(
+
+~ [string1[,string2[,...]]])
+\end{jscode}
+
+Which allows for \js code such as:
+
+\begin{jscode}
+var myStr = "foo";
+
+myStr.concat("bar", "baz, "bat");
+\end{jscode}
+
+This poses a problem in Haskell, since all Haskell functions are required to
+have a predefined number of arguments. Luckily, the \js FFI syntax offers a
+simple way out, using the \allargs marker. Since \allargs just fills in the
+rest of the arguments for you, all that is required is defining explicit
+imports, one for each number of arguments:
+
+%%[[wrap=safecode
+foreign import jscript "%1.concat(%*)"
+  concat :: JSString -> JSString -> JSString
+
+foreign import jscript "%1.concat(%*)"
+  concat2  ::  JSString -> JSString
+           ->  JSString -> JSString
+
+-- etcetera
+%%]]
+
+While this requires a bit more work than the native JavaScript functionality, it
+does present a more functional and simple solution.
+
+
+\subsection{\label{int-failure}Integer failure indication}
+
+Some \js functions in the ECMA-262 standard related to searching an array or
+string index return an integer, with the convention that |-1| signals failure
+and any number $\geq{0}$ is an answer. In Haskell, this is more naturally
+encoded with a |Maybe Int| type. We therefore suggest the following convention.
+Import the \js function as one would normally, prefixing the name of the
+imported function with an underscore. Next, define a function with the same
+name, without the underscore prefix, and have it return a |Maybe Int|. In this
+function, call the imported function and apply |mkIdxRes| -- imported from the
+\textit{uhc-jscript} library -- on the result, which creates the desired
+|Maybe Int| value:
+
+%%[[wrap=safecode
+foreign import jscript "%1.indexOf(%*)"
+  _indexOf  :: JSString -> JSString -> Int
+
+indexOf :: JSString -> JSString -> Maybe Int
+indexOf a x = mkIdxRes $ _indexOf a x
+
+mkIdxRes :: Int -> Maybe Int
+%%]]
+
+\subsection{\label{strings}Dealing with Strings}
+
+Strings in Haskell are nothing more than a type synonym for |[Char]|; a list of
+characters. In \js however, lists of characters and strings are distinct types.
+For this reason we need to pack Haskell strings to \js strings, using the
+primitive function |primStringToPackedString|.
+
+To offer an easy-to-use API in such situations, a similar approach to the one
+taken in section \ref{int-failure} is proposed. We wrap the call to the
+imported function in another function, as is shown below:
+
+%%[[wrap=safecode
+foreign import prim
+  "primStringToPackedString"
+  stringToJSString :: String -> JSString
+
+foreign import jscript "%1.indexOf(%*)"
+  _indexOf  :: JSString -> JSString -> Int
+
+indexOf :: String -> String -> Maybe Int
+indexOf a x = mkIdxRes $ _indexOf a' x'
+  where  a'  = stringToJSString a
+         x'  = stringToJSString x
+%%]]
+
+Beware that, although this convention provides an easy-to use API to the
+programmer, it does come at the cost of $O(n)$ time conversion at runtime
+between a Haskell |String| and a \js string.
+
+\subsection{Hardcoding string arguments}
+
+While not new, an important observation to make is that the \js FFI supports
+hardocing string argument in the import declaration. Suppose we have a \js
+function which takes a string and an integer as argument and returns an IO
+action as result, but the string will be static throughout the code. We can
+then define an import such as the following:
+
+%%[[wrap=safecode
+foreign import jscript "myFun(\"arg1\", %1)"
+  myFun :: Int -> IO ()
+%%]]
+
+\subsection{Accessing array indices}
+
+In the same way that the string hardcoding was already possible, so is
+accessing array indices, although it is good to document these features. When
+a pointer to a \js array is available, index lookup may be performed in a
+similar fashing to JavaScript;
+
+%%[[wrap=safecode
+foreign import jscript "%1[%2]"
+  nodeListItem  ::  NodeList Node -> Int
+                ->  IO Node
+%%]]
+%%]
+
+
+%%[supportingDynamicWrapper
+Prior to the start of this project, the UHC FFI did not support the
+\textit{wrapper} and \textit{dynamic} import declarations. A wrapper import
+allows a Haskell function to be wrapped as a foreign function at runtime. The
+Haskell 2010 report states that a wrapper must be of the form
+|ft -> IO (FunPtr ft)|. This allows a Haskell function to be used as callback
+from a \js function. A dynamic import allows foreign functions to be converted
+to plain Haskell functions at runtime. This is useful in cases where \js
+functions return plain \js functions as a result. Its type must be of the form
+|FunPtr ft -> ft|.
+
+UHC now offers support for these two import declarations. We do, however,
+impose a minor restriction on the type of wrapper. The |ft| type needs to be
+in the form of |a_1 -> a_n -> m r|, where |m| can be any monad, but will in
+most cases be |IO|. This restriction is due limitations in the current
+implementation, however, since callbacks can generally only be useful when they
+can perform side-effects, this is a minor restriction.
+
+Before going on with examples, it is important to know why these mechanisms are
+required in the first place. The \js RTS models Haskell function definition and
+application in JavaScript. Functions are defined in \js using a \texttt{\_F\_}
+constructor and function application with a \texttt{\_A\_} constructor.
+Expressions are evaluated with the \texttt{\_e\_} function:
+
+\begin{jscode}
+\_e\_(new \_A\_(new \_F\_("mySum,
+
+~ function(n,m) \{...\}, [2,3]));
+\end{jscode}
+
+This is, however, different from the way functions in \js are usually defined
+and very specific to the RTS. For plain \js to interact with a function like
+the above, it needs to be wrapped in a plain \js function, hence the name
+\textit{wrapper}. The problem holds the other way around as well. Since the RTS
+expects functions to be defined like above, we cannot simply interact with
+plain \js functions. We need to dynamically encapsulate them in an
+\texttt{\_F\_} constructor.
+
+Lets look at some examples, starting with \textit{dynamic}. Suppose we have a
+simple \js function that take an argument and returns a function, which takes
+another argument and then sums both arguments, returning the result:
+
+\begin{jscode}
+function partSum(x) \{
+
+~ return function(y) \{
+
+~ ~ return x + y;
+
+~ \};
+
+\}
+\end{jscode}
+
+We would import the function as follows:
+
+%%[[wrap=safecode
+foreign import jscript "partSum(%1)"
+  partSum :: Int -> IO (FunPtr (Int -> Int))
+%%]]
+
+After applying \texttt{partSum} to an integer, we get back a pointer to a
+function in |IO|. We need to extract it from |IO| and import it dynamically
+into Haskell. To do this, we need a dynamic function:
+
+%%[[wrap=safecode
+foreign import jscript "dynamic"
+  mkSumFun  ::  FunPtr (Int -> Int)
+            ->  (Int -> Int)
+%%]]
+
+Note that the latter parenthesis are redundant. We can now use the
+\texttt{partSum} function to sum two integers:
+
+%%[[wrap=safecode
+main = do
+  fn <- partSum 2
+  let fn' = mkSumFun fn
+  print (fn' 3) -- Prints 5
+%%]]
+
+Now for \textit{wrapper}. Suppose we have a \js function that takes two
+integers and a callback, sums the integers and calls the callback with the
+result of the sum:
+
+\begin{jscode}
+function sum(n, m, cb) \{
+
+~ cb(n + m);
+
+\}
+\end{jscode}
+
+To call this function, we first need to import it into the Haskell world:
+
+%%[[wrap=safecode
+foreign import jscript "sumCb(%*)"
+  sum  ::  Int -> Int -> FunPtr (Int -> IO ())
+       ->  IO ()
+%%]]
+
+We want to be able to define the callback function in Haskell. In this case, it
+simply prints the result:
+
+%%[[wrap=safecode
+myCB :: Int -> IO ()
+myCB n = print n
+%%]]
+
+Before we can apply |sum| to this function, we need to wrap it in a |FunPtr|.
+For this, we need to import a wrapper function:
+
+%%[[wrap=safecode
+foreign import jscript "wrapper"
+  mkIntCb  ::  (Int -> IO ())
+           ->  IO (FunPtr (Int -> IO ()))
+%%]]
+
+With all the ingredients in place, we define our |main|:
+
+%%[[wrap=safecode
+main = do
+  cb <- mkIntCb myCb
+  sum 2 3 cb -- Prints 5
+%%]]
+
+So far, all of these functions have used the |FunPtr| type, which is exported
+by the |Foreign.Ptr| module. The \textit{uhc-jscript} library offers a type
+synonym called |JSFunPtr| to distinguish between \js and C pointers.
+%%]
+
+
+%%[creatingHandlingObjects
+Being a purely functional programming language, Haskell has no notion of
+objects. JavaScript, however, does. Objects come in two flavours: anonymous and
+named objects. The former is denoted in \js as |{}|, while the latter is
+created by defining a constructor function of which the name starts with an
+uppercase letter, like so: |function MyObj() {}|. Objects can then be
+instantiated with the |new| keyword: |new MyObj()|. Each function also has a
+prototype object. This prototype allows for defining values and functions
+within the object scope. New object instances will automatically have the same
+values and functions as the prototype.
+
+UHC now offers a functional interface for creating, instantiating and
+manipulating objects and prototypes in \js during runtime. We can convert
+datatypes to objects, or we can define objects from scratch.
+
+
+\subsection{Creating, manipulating and querying objects}
+
+UHC now offers support for creating, manipulating and querying objects. It does
+so with the help of several new primitive functions in the RTS. Instead of
+showing the rather uninteresting function definitions in JavaScript, the code
+below shows the Haskell type signatures which need to be used when importing
+these primitives with the FFI:
+
+%%[[wrap=safecode
+primMkCtor  :: JSString -> IO ()
+primMkObj   :: JSString -> JSPtr c
+primMkAnonObj  :: IO (JSPtr c)
+primGetAttr  ::  JSString -> JSPtr c -> a
+primSetAttr  ::  JSString -> a -> JSPtr c
+             ->  IO (JSPtr c)
+primModAttr  ::  JSString -> (a -> b)
+             ->  JSPtr c -> IO (JSPtr c)
+primGetProtoAttr  ::  JSString -> JSString -> a
+primSetProtoAttr  ::  JSString -> a
+                  ->  JSString -> IO ()
+primModProtoAttr  ::  JSString -> (a -> b)
+                  ->  JSString -> IO ()
+%%]]
+
+The |primMkCtor| creates a new constructor function if it does not yet exist
+in the |window| scope. This function is usually only called from within the
+other functions listed above. The |primMkAnonObj| function creates an anonymous
+object |{}|, while the |primMkObj| accepts a string with the class name of the
+new object. If the class does not exist yet, it is created using an empty
+constructor.
+
+The other functions manipulate objects and prototypes, using a mechanism
+inspired by so-called lenses\cite{lenses}; an abstraction over
+accessors and mutators. The first argument is always the name of the object
+attribute of interest in the shape of a string. In case of the |Set| functions,
+the second argument is the value that needs to be set. Since \js is a loosely
+typed language, this can be any type. The |Mod| functions take as second
+parameter a function which modifies the attribute specified in the first
+argument. Modifying an attribute can cause it to be of a different type, hence
+the |a -> b| type for the function. Finally, the last argument is either a
+reference to an object, or the name of a class in the form of a string.
+
+These functions can be used by importing them as primitives:
+
+%%[[wrap=safecode
+foreign import prim "primGetAttr"
+  _getAttr :: JSString -> JSPtr p -> a
+%%]]
+
+Objects are represented in Haskell by a |JSPtr a| type, which has no
+constructors, so it can't be instantiated directly. The only way an object can
+be obtained is by getting it via the FFI. A |JSPtr a| requires one type
+argument, which specifies the type of the \js object. This should again be a
+type without constructor. Suppose we want a pointer to a |Book| object, we
+could define it as follows:
+
+%%[[wrap=safecode
+data JSPtr a
+data BookPtr
+type Book = JSPtr BookPtr
+%%]]
+
+We can now define functions on the |Book| type, giving us a type-safe way to
+deal with \js objects. This is similar approach as is taken in the C FFI to
+deal with pointer types.
+
+To facilitate these basic operations, taking into account the best-practices
+described in section \ref{strings}, we offer the
+|Language.UHC.JScript.Primitives| module, which defines primitive imports and
+abstracts away from |JSString|. Using these functions we can now create,
+manipulate and query an object:
+
+%%[[wrap=safecode
+main = do
+  o  <- mkObj "Book"
+  setAttr "pages" 123 o
+  modAttr "pages" (+1) o
+  p  <- getAttr "pages" o
+  print p -- Prints 124
+%%]]
+
+\subsection{Creating objects from datatypes}
+
+While defining objects as shown in the previous subsection works fine, the
+process is rather verbose and tedious. It would therefore be ideal if we could
+use Haskell datatypes to achieve the same results. In some ways, datatypes and
+\js objects have a lot in common, especially when the datatype has record
+selectors. Suppose we have a simple |Book| type in Haskell:
+
+%%[[wrap=safecode
+data Book
+  =  Book
+  {  author  :: JSString
+  ,  title   :: JSString
+  ,  pages   :: Int
+  }
+%%]]
+
+And a concrete |Book| value would look something like the following:
+
+%%[[wrap=safecode
+book
+  =  Book
+  {  author  = toJS "me"
+  ,  title   = toJS "story"
+  ,  pages   = 123
+  }
+%%]]
+
+The representation of |myBook| closely resembles an object with the same data
+in JavaScript:
+
+\begin{jscode}
+book
+
+~  =
+
+~   \{  author  : "me"
+
+~   ,  title   ~: "story"
+
+~   ,  pages   ~: 123
+
+~   \}
+
+\end{jscode}
+
+In fact, a \js object very similar to the one shown above is already being
+generated by the UHC. However, since it is generated as an application of
+a constructor to some values the generated datatype values are not directly
+usable in other \js libraries. We require a mechanism to convert the Haskell
+representation of the datatype into a \js representation. This idea is similar
+to that of the wrapper import discussed in section \ref{ffi} where we
+wrapped a Haskell function in a \js function. We will use a similar approach to
+make datatypes available as \js objects. We introduce the object import:
+
+%%[[wrap=safecode
+foreign import jscript "{}"
+  mkObj :: a -> IO (JSPtr b)
+%%]]
+
+It takes a datatype |a| and converts it to a plain \js object, resulting in a
+pointer to the new object. If the datatype contains record selectors, they will
+be used as the object's indices. When no record selectors are available, a
+integer $\geq{1}$ with an underscore prefix is used instead. The fact that a
+non-numeric index is being created is a shortcoming of the current
+implementation.
+
+Creating the object is achieved by recursively evaluating and cloning the data
+inside the datatype to a new, empty object, disposing of RTS-specific
+information in the process. Taking the example from before, but now using the
+object wrapper. An example of the object wrapper is provided below.
+
+%%[[wrap=safecode
+main = do
+  let b' = book { pages = pages book + 1 }
+  b  <- mkObj b'
+  p  <- getAttr "pages" b
+  print p -- Prints 124
+%%]]
+
+Note that even though this example is only one line shorter, we also have the
+two strings available in our \js object, which would haven taken two more lines
+in the original example. More importantly, Haskell's typesystem is in a much
+better position to catch programmer mistakes, since record selectors are used
+in the modification of the |pages| value instead of strings.
+
+Below is a updated EBNF grammar of the FEL, containing the object expression:
+
+\begin{code}
+exp    ::=  '{}'
+         |  '&' MANY (arg | ident) post MANY
+
+post   ::=  '.' ident
+         |  '[' exp ']'
+         |  '(' arg (, arg) MANY ')'
+
+arg    ::=  '%' ('*' | int)
+         |  '"' str '"'
+
+ident  ::= a valid JavaScript identifier
+int    ::= any integer
+str    ::= any string
+\end{code}
+
+\subsubsection{Functions in objects}
+
+It is common for \js library functions to accept an anonymous object with some
+configuration parameters, including functions. These functions are often used
+as callbacks. The jQuery \texttt{post()} function, for example, expects an
+object which amongst other things contains callback functions. These functions
+are called when the AJAX request succeeds or fails. As we have seen in section
+\ref{ffi}, creating callback functions is done at runtime using a wrapper.
+Since we want to support these common use-cases, we restrict object creation to
+runtime as well.
+
+
+\subsection{Pure objects}
+
+Objects in \js are mutable by nature. By modifying an object, you modify it for
+everything that has a pointer to that particular object. This forces any update
+operation to be defined in |IO|. In order to escape the |IO| monad, update
+operations need to become non-destructive, which is achieved by creating a copy
+of an object before modifying it. The RTS exports a primitive to do just this:
+
+%%[[wrap=safecode
+primClone :: JSPtr a -> JSPtr a
+%%]]
+
+By cloning an object first, all pointers to the original object remain
+untouched when modifying the clone. This enables pure variants of the
+|primSetAttr| and |primModAttr| functions:
+
+%%[[wrap=safecode
+primPureSetAttr  ::  JSString -> a -> JSPtr c
+                 ->  JSPtr c
+primPureModAttr  ::  JSString -> (a -> b)
+                 ->  JSPtr c -> JSPtr c
+%%]]
+
+Since a potentially large tree of objects will be cloned by these pure
+functions, they should be used with care. The cloning method used is a copy of
+the cloning method used by jQuery\cite{jQuery}, with some minor modifications
+to make the code more specialised for the RTS purposes.
+%%]
+
+
+%%[futureWorkConclusion
+\subsection{Future work}
+
+\subsubsection*{Typechecking}
+Currently, foreign expressions are not typechecked at all. In case of a
+programming error the compiler will currently panic in the best-case scenario
+and happily generate \js code that fails at runtime in the worst-case scenario.
+Constraints on the imports and exports need to be formalised and the foreign
+types should be typechecked according to the foreign expressions. Some example
+constraints that could be typechecked:
+
+\begin{Itemize}
+  \item Only datatype values may be exported as objects, not functions or
+        primitive types.
+  \item Only wrapped functions may be exported in objects.
+\end{Itemize}
+
+The first item could be realised by supporting type constraints in the foreign
+import. This is already allowed by the type system, but the RTS does not
+currently support this.
+
+\subsubsection*{Testing}
+During development, the code has only received limited, informal testing. The
+UHC's test suite should be expanded to enable automated testing. Additionally,
+real-world \js front-end applications should be ported to Haskell and the
+\uhcjscript library to identify shortcomings of the existing ideas and
+implementations.
+
+\subsubsection*{Benchmarking an optimising}
+Some benchmarks have been performed that show that the generated \js is quite
+a bit slower than a hand-written version of the same code. Unfortunately, these
+numbers aren't publicly available, nor is is clear where the biggest
+bottlenecks are located. It would be very interesting to do another round of
+benchmarks, including the object code. Afterwards, it would be interesting to
+identify bottlenecks and find ways to speed up the generated code.
+
+\subsubsection*{Static object compilation}
+Currently the only way of converting a datatype to a \js object is to do so at
+runtime. This, however, is a process with time complexity linear in the number
+of datatype records. Future work could focus on generating (parts of) \js
+objects at compile-time, so that only dynamic values will need to be copied to
+the object at runtime.
+
+\subsubsection*{Numeric object indices}
+When a datatype without record selectors is converted into a \js object, the
+object's attribute name becomes an integer $\geq{1}$ with an underscore prefix.
+Ideally this would be a numeric index $\geq{0}$.
+
+\subsection{Conclusion}
+With the work presented in this report, the UHC \js backend is now capable to
+support the majority of use-cases one might encounter in developing a
+JavaScript-based front-end application. While the actual implementation in the
+compiler still has some shortcomings, as noted by the previous subsection, this
+work is a significant step forward in eliminating the need for writing \js code
+by hand.
+%%]
+
+\printbibliography
+

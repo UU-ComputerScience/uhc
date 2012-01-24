@@ -10,7 +10,7 @@ Variants:
 %%[1 module Main
 %%]
 
-%%[1 import(System, Data.Char, Data.Maybe, Control.Monad, Control.Monad.State, System.Console.GetOpt, IO)
+%%[1 import(System, Data.Char, Data.Maybe, Control.Monad, Control.Monad.State, System.Console.GetOpt, System.IO)
 %%]
 
 %%[1 import(Data.Map as Map, Data.Set as Set, Data.List as List)

@@ -87,27 +87,27 @@ foreignexprEval
         oe   = ev fexpr (IE [a | (i,a) <- argl, not $ i `Set.member` oeUsed oe])
         ev (ForeignExpr_Ent    ) ie =   let
                                         in  mkOE ent
-                                               ( Set.empty )
+                                                 ( Set.empty )
         ev (ForeignExpr_EntNm n) ie =   let
                                         in  mkOE ( mkNm n )
-                                               ( Set.empty )
+                                                 ( Set.empty )
         ev (ForeignExpr_Str   s) ie =   let
                                         in  mkOE ( mkStr s )
-                                               ( Set.empty )
+                                                 ( Set.empty )
         ev (ForeignExpr_Arg a  ) ie =   let
                                         in  mkOE ( Map.findWithDefault (panic "foreignexprEval.Arg") a env )
-                                               ( Set.singleton a )
+                                                 ( Set.singleton a )
         ev (ForeignExpr_AllArg ) ie =   let
                                         in  OE ( ieArgs ie )
                                                ( Set.empty )
         ev (ForeignExpr_Sel e s) ie =   let eo = ev e ie
                                             so = ev s ie
                                         in  mkOE ( mkSel (oeE eo) (oeE so) )
-                                               ( oeUsed eo `Set.union` oeUsed so )
+                                                 ( oeUsed eo `Set.union` oeUsed so )
         ev (ForeignExpr_Inx e i) ie =   let eo = ev e ie
                                             io = ev i ie
                                         in  mkOE ( mkInx (oeE eo) (oeE io) )
-                                               ( oeUsed eo `Set.union` oeUsed io )
+                                                 ( oeUsed eo `Set.union` oeUsed io )
         ev (ForeignExpr_Ptr e  ) ie =   let eo = ev e ie
                                         in  eo {oeEL = [mkPtr $ oeE eo]}
         ev (ForeignExpr_Call e ) ie =   let eo = ev e ie

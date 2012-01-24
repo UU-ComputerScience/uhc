@@ -1103,6 +1103,11 @@ version
 \date{Dec 2010}
 %%]
 
+%%[68
+\title{Improving the UHC JavaScript backend}
+\author{Jurri\"en Stutterheim}
+\date{November 14, 2011}
+%%]
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -3075,6 +3080,42 @@ To be done ...
 %%[64 doclatex
 %%@Blog.main
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% EHC 68: Improving the UHC JavaScript backend
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[68
+\newcommand{\allargs}{\texttt{\%*} }
+\newcommand{\uhcjscript}{\textit{uhc-jscript} }
+\newcommand{\js}{JavaScript }
+
+\section{Introduction}
+
+%%@TopicImprovingUHCJS.introPaper
+
+\section{The \uhcjscript library}
+\label{uhc-jscript}
+
+TopicImprovingUHCJS.uhcJscriptLib
+
+\section{Supporting \textit{dynamic} and \textit{wrapper} imports}
+\label{ffi}
+
+TopicImprovingUHCJS.supportingDynamicWrapper
+
+\section{Creating and handling objects}
+\label{object-rts}
+
+TopicImprovingUHCJS.creatingHandlingObjects
+
+\section{Future work and conclusion}
+\label{conclusion}
+
+TopicImprovingUHCJS.futureWorkConclusion
+
+%%]
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Grin ByteCode design
