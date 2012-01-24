@@ -28,7 +28,7 @@ cmodTrfFusion lamMp cmod =
 
 apply :: CExpr -> CExpr -> CExpr
 apply (CExpr_Lam nm body) arg = cexprSubst nm body arg
-apply func                arg = acoreApp func [arg] -- this shouldn't happen, but don't want to cause a crash
+apply func                arg = trace "tried to inline a non-Lambda expression" $ acoreApp1 func arg -- this shouldn't happen, but don't want to cause a crash
 
 }
 
