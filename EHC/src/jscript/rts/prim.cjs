@@ -460,4 +460,12 @@ isPlainObject = function( obj ) {
   return key === undefined || hasOwn.call( obj, key );
 }
 
+function wrappedThis(cps) {
+  return function() {
+    var args = Array.prototype.slice.call(arguments);
+    args.unshift(this);
+    return cps.apply(this, args);
+  } 
+}
+
 %%]
