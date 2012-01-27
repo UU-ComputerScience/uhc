@@ -303,7 +303,7 @@ function _aN_(f,a) {
 %%[8
 // indirection
 function _i_() {
-  return new _A_(function(){throw "_i_: attempt to prematurely evaluate indirection";},[]) ; 
+  return new _A_(new _F_("_i_", function(){throw "_i_: attempt to prematurely evaluate indirection";}),[]) ; 
 }
 
 function _i_set_(i,x) {

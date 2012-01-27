@@ -121,22 +121,22 @@ pForeignVar = tokGetVal <$> (pVARID <|> pCONID)
 pForeignExpr :: ForeignParser ForeignExpr
 pForeignExpr
   = pExp
-  where pExp  = pObj <|> mk <$> pPre <*> pExpB <*> pPost
-        pPre  = pList pPtr
-        pPost = pList (pSel <|> pInx <|> pCall)
-        pExpB = pArg <|> pEnt
-        pArg  = pPERCENT
-                <**> (   const ForeignExpr_AllArg               <$  pSTAR
-                     <|> (\i _ -> ForeignExpr_Arg (tokMkInt i)) <$> pInteger10Tk
-                     )
-              <|> pStr
-        pObj  = ForeignExpr_ObjData <$ pOCURLY <* pCCURLY
-        pEnt  = ForeignExpr_EntNm <$> pForeignVar
-        pStr  = (ForeignExpr_Str . tokMkStr) <$> pStringTk
-        pPtr  = ForeignExpr_Ptr <$ pAMPERSAND
-        pInx  = (flip ForeignExpr_Inx) <$ pOBRACK <*> pExp <* pCBRACK
-        pSel  = (flip ForeignExpr_Sel) <$ pDOT <*> pEnt
-        pCall = flip ForeignExpr_CallArgs <$ pOPAREN <*> pListSep pCOMMA pArg <* pCPAREN
-        mk    = \pre e post -> foldr ($) e $ pre ++ reverse post
+  where pExp      = pObj <|> mk <$> pPre <*> pExpB <*> pPost
+        pPre      = pMb (ForeignExpr_NewObj <$ pNEW)
+        pPost     = pList (pSel <|> pInx <|> pCall)
+        pExpB     = pArg <|> pEnt
+        pManyArg  = ForeignExpr_AllArg <$ pPERCENT <* pSTAR
+        pArg      = (pPERCENT *> ((ForeignExpr_Arg . tokMkInt) <$> pInteger10Tk)) <|> pStr
+        pObj      = ForeignExpr_ObjData <$ pOCURLY <* pCCURLY
+        pEnt      = ForeignExpr_EntNm <$> pForeignVar
+        pStr      = (ForeignExpr_Str . tokMkStr) <$> pStringTk
+        pInx      = flip ForeignExpr_Inx <$ pOBRACK <*> pExp <* pCBRACK
+        pSel      = flip ForeignExpr_Sel <$ pDOT <*> (pEnt <|> pArg)
+        pCall     = flip ForeignExpr_CallArgs <$ pOPAREN <*> pCallExpr <* pCPAREN
+        pCallExpr = ((\x -> [x]) <$> pManyArg) <|> (pListSep pCOMMA pArg)
+
+        mk    = \pre e post -> let pre' = maybe [] ((flip (:)) []) pre
+                               in foldr ($) e $ pre' ++ reverse post
+
 %%]
 

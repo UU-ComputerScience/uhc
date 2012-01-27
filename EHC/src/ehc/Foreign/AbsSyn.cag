@@ -94,6 +94,7 @@ DATA ForeignExpr
   | Empty												-- nothing
   | Str  			str				: String			-- string constant
   | ObjData                                             -- data export for JS objects
+  | NewObj          expr            : ForeignExpr
 
 TYPE ForeignExprs	=	[ForeignExpr]
 

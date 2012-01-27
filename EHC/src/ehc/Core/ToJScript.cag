@@ -627,7 +627,7 @@ ffiJScriptMkCall ty
         mkDyn  _ _ = panic "ffiJScriptMkCall.mkDyn"
 %%][90
         mkObj as = jsCall "primToPlainObj" as
-        mk = foreignexprEval (J.Expr_Sel,J.Expr_ArrInx,J.Expr_Call,id,mkObj,jsVar,J.Expr_Str) (forextractForeignExpr ent)
+        mk = foreignexprEval (J.Expr_Sel,J.Expr_ArrInx,J.Expr_Call,id,mkObj,J.Expr_New,jsVar,J.Expr_Str) (forextractForeignExpr ent)
         -- TODO: Reuse some of the foreign export code for this? It's more or less generating the same code...
         -- TODO: Document that we require callback functions to be in IO
         mkWrap n (e:_) = mkWrapFn as bdy
