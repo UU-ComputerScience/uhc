@@ -8,50 +8,173 @@ This info is used for TyCore generation and pretty printing.
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Final type
+%%% Final ValGam
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(2 hmtyinfer).finValGam
-ATTR AllDecl [ finValGam: ValGam | | ]
-ATTR AllNT [ finTyVarMp: VarMp | | ]
+ATTR
+  AllDecl
+%%[[8
+  AllExpr AllPatExpr AllCase
+%%]]
+    [ finValGam: ValGam | | ]
 
 SEM Expr
-  | Let         loc         .   finValGamDecls      =   @lhs.finTyVarMp |=> (gamTop @decls.patValGam)
-                decls       .   finValGam           =   @finValGamDecls
+%%[[2
+  | Let         loc         .   finValGamDecls      =   gamTop @decls.patValGam
+%%][3
+  | Let         loc         .   finValGamDecls      :=  @quValGam_
+%%][4
+  | Let         loc         .   finValGamDecls      :=  @quValGam_ex_
+%%][8
+  | Let         loc         .   finValGamDecls      :=  @quValGam_ex_subst
+%%]]
 
-SEM Decl
-  | TySig       loc         .   finalTy             =   vgiTy $ fromJust
-                                                        $ valGamLookup @nm $ @lhs.finValGam
+SEM Expr
+  | Let
+%%[[2
+                decls       .   finValGam           =   @finValGamDecls
+%%][92
+                loc         .   finValGam           =   (if @lhs.isFirstLet then gamUnion @gathValGam else id) @lhs.finValGam
+%%]]
 
 SEM AGItf
-  | AGItf       expr        .   finTyVarMp          =   @expr.tyVarMp
+  | AGItf       loc          
+%%[[8
+                            .   finValGam           =   emptyGam
+%%][50
+                            .   finValGam           =   @expr.gathValGam `gamUnion` @lhs.valGam
+%%]]
 %%]
 
-%%[(3 hmtyinfer).finValGam
-SEM Expr
-  | Let         loc         .   finValGamDecls      :=  @lhs.finTyVarMp |=> @quValGam_
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Final TyVarMp
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(2 hmtyinfer).finValGam
+ATTR AllNT [ finTyVarMp: VarMp | | ]
+
+SEM AGItf
+  | AGItf       loc         .   finTyVarMp          =   
+%%[[9
+                                                        @chrSolveSimpTyVarMp `varUpd`
+%%]]
+                                                        @expr.tyVarMp
 %%]
 
-%%[(4 hmtyinfer).finValGam
+%%[(9 hmtyinfer)
 SEM Expr
-  | Let         loc         .   finValGamDecls      :=  @lhs.finTyVarMp |=> @quValGam_ex_
+  | Let         loc         .   finTyVarMp          =   varUpd @tmpoTyVarMp $
+%%[[9999
+                                                        varUpd @bodyVarMp2 $
+%%]]
+                                                        @lhs.finTyVarMp
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Final type
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(2 hmtyinfer)
+SEM Decl
+  | TySig       loc         .   finalTy             =   vgiTy $ panicJust "EH.Infer.Decl.TySig" $ valGamLookup @nm            @lhs.finValGam
+  | Val         loc         .   finalTy             =           maybe Ty_Any vgiTy              $ valGamLookup @patExpr.topNm @lhs.finValGam
+%%[[9
+  | Instance    loc         .   finalTy             =           maybe Ty_Any vgiTy              $ valGamLookup @dictNm        @lhs.finValGam
+%%]]
+%%]
+
+%%[(93 hmtyinfer)
+SEM Decl
+  | FusionConv  loc         .   finConTy            =   vgiTy $ panicJust ("EH.Infer.Decl.FusionConv: " ++ show @conNm) $ valGamLookup @conNm @lhs.finValGam
+                            .   finAbsTy            =   vgiTy $ panicJust ("EH.Infer.Decl.FusionConv: " ++ show @absNm) $ valGamLookup @absNm @lhs.finValGam
+%%]
+
+%%[(8 hmtyinfer)
+SEM PatExpr
+  | Var VarAs AppTop Rec DataFields Con IConst CConst SConst Irrefutable App
+%%[[97
+    Expr
+%%]]
+                loc         .   finalTy             =   maybe Ty_Any vgiTy $ valGamLookup (rpatNmNm @cpNm) @lhs.finValGam
 %%]
 
 %%[(5 hmtyinfer)
 SEM DataConstr
-  | Constr      loc         .   finDataConTy        =   @lhs.finTyVarMp |=> @dataConTyAsVar
+  | Constr      loc         .   finDataConTy        =   @lhs.finTyVarMp `varUpd` @dataConTyAsVar
 
 SEM PatExpr
   | AppTop Con
 %%[[7
     Rec
 %%]]
-  				loc         .   finKnPatTy          =   @lhs.finTyVarMp |=> @knPatTy
+                loc         .   finKnPatTy          =   @lhs.finTyVarMp `varUpd` @knPatTy
 %%]
 
-%%[(9 hmtyinfer)
+%%[(8 hmtyinfer)
 SEM Expr
-  | Let         loc         .   finTyVarMp          =   @tmpoTyVarMp |=> @lhs.finTyVarMp
+  | AppTop      loc         .   finalTy             =   @lhs.finTyVarMp `varUpd` @ty
+  | Case        loc         .   finalTyExpr         =   @lhs.finTyVarMp `varUpd` @expr.ty
+%%]
+
+%%[(8 hmtyinfer)
+SEM DataFieldExpr
+  | Upd         loc         .   finalTyExpr         =   @lhs.finTyVarMp `varUpd` @expr.ty
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Final type, but also expanded w.r.t. type synonyms, except for IO
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 hmtyinfer)
+SEM Expr
+%%[[8
+  | AppTop      loc         .   finalTyExpanded     =   @finalTy
+  | Case        loc         .   finalTyExprExpanded =   @finalTyExpr
+%%][11
+  | AppTop      loc         .   finalTyExpanded     =   tyCanonicFFI (emptyFI {fiEnv = @fe} :: FIIn) @finalTy
+  | Case        loc         .   finalTyExprExpanded =   tyCanonicFFI (emptyFI {fiEnv = @fe} :: FIIn) @finalTyExpr
+%%]]
+%%]
+
+%%[(8 hmtyinfer)
+SEM DataFieldExpr
+%%[[8
+  | Upd         loc         .   finalTyExprExpanded =   @finalTyExpr
+%%][11
+  | Upd         loc         .   finalTyExprExpanded =   tyCanonicFFI (emptyFI {fiEnv = @fe} :: FIIn) @finalTyExpr
+%%]]
+%%]
+
+%%[(8 hmtyinfer)
+SEM PatExpr
+  | Var VarAs AppTop Rec DataFields Con IConst CConst SConst Irrefutable App
+%%[[97
+    Expr
+%%]]
+%%[[8
+                loc         .   finalTyExpanded     =   @finalTy
+%%][11
+                loc         .   finalTyExpanded     =   tyCanonicFFI (emptyFI {fiEnv = @fe} :: FIIn) @finalTy
+%%]]
+%%]
+
+%%[(8 hmtyinfer)
+SEM Decl
+%%[[8
+  | Val         loc         .   finalTyExpanded     =   @finalTy
+%%][11
+  | Val         loc         .   finalTyExpanded     =   tyCanonicFFI (emptyFI {fiEnv = @fe} :: FIIn) @finalTy
+%%]]
+  | FFI
+%%[[90
+    FFE
+%%]]
+%%[[8
+                loc         .   finalTyExpanded     =   @ty_sig_
+%%][11
+                loc         .   finalTyExpanded     =   tyCanonicFFI (emptyFI {fiEnv = @fe} :: FIIn) @ty_sig_
+%%]]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -72,7 +195,7 @@ SEM AGItf
   | AGItf       expr        .   finTyKiGam          =   emptyGam
 
 SEM Expr
-  | Let         loc         .   finTyKiGam          =   @lhs.finKiVarMp |=> @tyKiGam_l_ `gamUnion` @lhs.finTyKiGam
+  | Let         loc         .   finTyKiGam          =   @lhs.finKiVarMp `varUpd` @tyKiGam_l_ `gamUnion` @lhs.finTyKiGam
 
 %%]
 

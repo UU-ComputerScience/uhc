@@ -10,16 +10,13 @@
 %%[1 module {%{EH}Base.Common} import(UU.Scanner.Position,EH.Util.Utils,{%{EH}Base.HsName},{%{EH}Base.Builtin}) export(module {%{EH}Base.HsName})
 %%]
 
-%%[1 export(Assoc,AssocL)
+%%[1 import({%{EH}Base.UID}) export(module {%{EH}Base.UID})
 %%]
 
-%%[1111.exp.hdAndTl export(hdAndTl, hdAndTl')
+%%[1 import({%{EH}Base.AssocL}) export(module {%{EH}Base.AssocL})
 %%]
 
-%%[1 import(EH.Util.Pretty, Data.List) export(ppListSepFill, ppSpaced, ppCon, ppCmt)
-%%]
-
-%%[1 export(assocLElts,assocLKeys)
+%%[1 import(EH.Util.Pretty, Data.List) export(ppSpaced, ppCon, ppCmt)
 %%]
 
 %%[1 export(ParNeed(..), ParNeedL, parNeedApp)
@@ -28,13 +25,7 @@
 %%[1 export(Fixity(..))
 %%]
 
-%%[1 export(mkNewLevUID, mkNewLevUID2, mkNewLevUID3, mkNewLevUID4, mkNewLevUID5, mkNewLevUID6, mkNewLevUID7, mkNewLevUID8, uidNext, mkNewUID, mkNewUIDL, uidStart, uidNull, uidChild, mkInfNewUIDL)
-%%]
-
 %%[1 export(Range(..),emptyRange,builtinRange,mkRange1,mkRange2)
-%%]
-
-%%[1 export(assocLMapElt,assocLMapKey)
 %%]
 
 %%[1 export(NmLev,nmLevAbsent, nmLevBuiltin, nmLevOutside, nmLevModule)
@@ -61,9 +52,6 @@
 %%[7777 export(Seq,mkSeq,unitSeq,concatSeq,"(<+>)",seqToList,emptySeq,concatSeqs,filterSeq)
 %%]
 
-%%[7 export(mkNewLevUIDL,mkInfNewLevUIDL)
-%%]
-
 %%[7_2 import(qualified Data.Map as Map, Data.Map(Map), Data.Set(Set))
 %%]
 
@@ -73,10 +61,7 @@
 %%[7 export(uidHNm, uidQualHNm)
 %%]
 
-%%[8888 -(1.exp.hdAndTl 1.Misc.hdAndTl) import (EH.Util.Utils hiding (tr,trp)) export(module EH.Util.Utils)
-%%]
-
-%%[8 import (EH.Util.FPath,IO,Char,Data.Maybe,Numeric)
+%%[8 import (EH.Util.FPath,System.IO,System.Environment,System.Exit,Data.Char,Data.Maybe,Numeric)
 %%]
 
 %%[8 export(putCompileMsg)
@@ -85,19 +70,7 @@
 %%[8 import (qualified Data.Map as Map) export(showPP,ppPair,ppFM)
 %%]
 
-%%[8 export(CTag(..),ctagTag,ctagChar,ctagInt,emptyCTag)
-%%]
-
-%%[8 hs export(ctag,ppCTag,ppCTagInt) 
-%%]
-
-%%[8 export(CTagsMp)
-%%]
-
-%%[8 export(ppUID')
-%%]
-
-%%[90 export(groupSortByOn)
+%%[8 hs export(ctag,ppCTag,ppCTagInt)
 %%]
 
 %%[9 export(ppListV)
@@ -106,25 +79,20 @@
 %%[9 export(snd3,thd)
 %%]
 
-%%[20 export(ppCurlysAssocL)
+%%[(8 codegen) import({%{EH}Base.Strictness}) export(module {%{EH}Base.Strictness})
+%%]
+
+%%[50 import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
 %%]
 
 %%[99 import({%{EH}Base.Hashable})
 %%]
-%%[99 import({%{EH}Base.ForceEval})
+%%[9999 import({%{EH}Base.ForceEval})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Printing of names with non-alpha numeric constants
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-instance Show (Ptr a) where
-   showsPrec _ (Ptr a) rs = pad_out (showHex (addrToInteger a) "")
-     where
-        -- want 0s prefixed to pad it out to a fixed length.
-       pad_out ls = 
-          '0':'x':(replicate (2*SIZEOF_HSPTR - length ls) '0') ++ ls ++ rs
-
 
 %%[8 export(ppHsnNonAlpha,ppHsnEscaped,hsnEscapeeChars)
 ppHsnEscaped :: Either Char (Set.Set Char) -> Char -> Set.Set Char -> HsName -> PP_Doc
@@ -150,156 +118,9 @@ ppHsnNonAlpha scanOpts
         p n = let name = show n
               in  {- if name `elem`  scoKeywordsTxt scanOpts
                    then pp ('$' : '_' : name)
-                   else -} 
+                   else -}
                         let s = foldr (\c r -> if c `Set.member` escapeeChars then '$':c:r else c:r) [] name
                          in  pp ('$':s)
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Unique id's
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[1.UID.Base export(UID)
-%%[[1
-newtype UID = UID { uidInts :: [Int] }
-%%][99
-data UID = UID { uidHash :: !Hash, uidInts :: [Int] }
-%%]]
-  deriving (Eq,Ord)
-%%]
-
-%%[1 export(mkUID)
-mkUID :: [Int] -> UID
-%%[[1
-mkUID is = UID is
-%%][99
-mkUID is = UID (hashList is) is
-%%]]
-%%]
-
-%%[1
-instance HSNM UID where
-  mkHNm = mkHNm . show
-%%]
-
-%%[99
-instance Hashable UID where
-  hash = uidHash
-%%]
-
-%%[1.UID.UIDL
-type UIDL = [UID]
-%%]
-
-%%[2 export(UIDS)
-type UIDS = Set.Set UID
-%%]
-
-%%[1.UID.Show
-instance Show UID where
-  show uid = concat . intersperse "_" . map show . reverse $ uidInts uid
-%%]
-
-%%[1.UID.mkNewLevUID
-uidNext :: UID -> UID
-%%[[1
-uidNext (UID   (n:ns)) = mkUID (n+1:ns)
-%%][99
-uidNext (UID _ (n:ns)) = mkUID (n+1:ns)
-%%]]
-
-uidChild :: UID -> UID
-%%[[1
-uidChild (UID   ns) = mkUID (0:ns)
-%%][99
-uidChild (UID _ ns) = mkUID (0:ns)
-%%]]
-%%]
-
-%%[1.UID.mkNewLevUID
-mkNewLevUID :: UID -> (UID,UID)
-mkNewLevUID u = (uidNext u, uidChild u)
-%%]
-
-%%[1 export(uidFromInt)
-uidFromInt :: Int -> UID
-uidFromInt i = mkUID [i]
-%%]
-
-%%[1
-uidStart :: UID
-uidStart = uidFromInt 0
-%%]
-
-%%[1.UID.Utils
-mkNewLevUID2 u = let { (u',u1)          = mkNewLevUID   u; (u'',u2)          = mkNewLevUID   u'} in (u'',u1,u2)
-mkNewLevUID3 u = let { (u',u1,u2)       = mkNewLevUID2  u; (u'',u3)          = mkNewLevUID   u'} in (u'',u1,u2,u3)
-mkNewLevUID4 u = let { (u',u1,u2)       = mkNewLevUID2  u; (u'',u3,u4)       = mkNewLevUID2  u'} in (u'',u1,u2,u3,u4)
-mkNewLevUID5 u = let { (u',u1,u2)       = mkNewLevUID2  u; (u'',u3,u4,u5)    = mkNewLevUID3  u'} in (u'',u1,u2,u3,u4,u5)
-mkNewLevUID6 u = let { (u',u1,u2,u3)    = mkNewLevUID3  u; (u'',u4,u5,u6)    = mkNewLevUID3  u'} in (u'',u1,u2,u3,u4,u5,u6)
-mkNewLevUID7 u = let { (u',u1,u2,u3,u4) = mkNewLevUID4  u; (u'',u5,u6,u7)    = mkNewLevUID3  u'} in (u'',u1,u2,u3,u4,u5,u6,u7)
-mkNewLevUID8 u = let { (u',u1,u2,u3,u4) = mkNewLevUID4  u; (u'',u5,u6,u7,u8) = mkNewLevUID4  u'} in (u'',u1,u2,u3,u4,u5,u6,u7,u8)
-
-uidNull :: UID
-uidNull  = mkUID []
-
-mkNewUID :: UID -> (UID,UID)
-mkNewUID   uid = (uidNext uid,uid)
-
-mkInfNewUIDL' :: (UID -> (UID,UID)) -> UID -> [UID]
-mkInfNewUIDL' mk uid
-  =  let  l = iterate (\(nxt,uid) -> mk nxt) . mkNewUID $ uid
-     in   map snd l
-
-mkNewUIDL' :: (UID -> (UID,UID)) -> Int -> UID -> [UID] -- assume sz > 0
-mkNewUIDL' mk sz uid
-  =  take sz (mkInfNewUIDL' mk uid)
-
-mkNewUIDL :: Int -> UID -> [UID] -- assume sz > 0
-mkNewUIDL = mkNewUIDL' mkNewUID
-
-mkInfNewUIDL :: UID -> [UID]
-mkInfNewUIDL = mkInfNewUIDL' mkNewUID
-
-instance PP UID where
-  pp = text . show
-%%]
-
-%%[8
-ppUID' :: UID -> PP_Doc
-ppUID' uid = ppCurlysCommas $ uidInts uid
-%%]
-
-%%[7
-uidHNm :: UID -> HsName
-uidHNm = hsnFromString . show
-%%]
-
-%%[7
-uidQualHNm :: HsName -> UID -> HsName
-uidQualHNm modnm uid = 
-%%[[20                  
-                        hsnPrefixQual modnm $
-%%]]
-                        uidHNm uid
-%%]
-
-
-
-%%[7
-mkInfNewLevUIDL :: UID -> [UID]
-mkInfNewLevUIDL = mkInfNewUIDL' mkNewLevUID
-
-mkNewLevUIDL :: Int -> UID -> [UID]
-mkNewLevUIDL = mkNewUIDL' mkNewLevUID
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Interface to unique mechanism of AG
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[1 export(nextUnique)
-nextUnique = mkNewLevUID
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -309,7 +130,7 @@ nextUnique = mkNewLevUID
 %%[9 hs export(PredOccId(..))
 newtype PredOccId
   = PredOccId
-      { poiId    	:: UID
+      { poiId       :: UID
       }
   deriving (Show,Eq,Ord)
 %%]
@@ -331,43 +152,6 @@ mkPrIdCHR = mkPrId
 emptyPredOccId :: PredOccId
 emptyPredOccId = mkPrId uidStart
 %%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Ordered sequence, 'delayed concat' list
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[7
-%%]
-newtype Seq a = Seq ([a] -> [a])
-
-emptySeq :: Seq a
-emptySeq = Seq id
-
-mkSeq :: [a] -> Seq a
-mkSeq l = Seq (l++)
-
-unitSeq :: a -> Seq a
-unitSeq e = Seq (e:)
-
-concatSeq :: Seq a -> Seq a -> Seq a
-concatSeq (Seq s1) (Seq s2) = Seq (s1.s2)
-
-concatSeqs :: [Seq a] -> Seq a
-concatSeqs = foldr (<+>) emptySeq
-
-infixr 5 <+>
-
-(<+>) :: Seq a -> Seq a -> Seq a
-(<+>) = concatSeq
-
-seqToList :: Seq a -> [a]
-seqToList (Seq s) = s []
-
-instance Functor Seq where
-  fmap f = mkSeq . map f . seqToList
-
-filterSeq :: (a -> Bool) -> Seq a -> Seq a
-filterSeq p = mkSeq . filter p . seqToList
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Semantics classes
@@ -410,10 +194,10 @@ class SemApp a where
   semVar            =   semRngVar    emptyRange
   semCon            =   semRngCon    emptyRange
   semParens         =   semRngParens emptyRange
-  semRngApp    _    =   semApp   
+  semRngApp    _    =   semApp
   semRngAppTop _    =   semAppTop
-  semRngVar    _    =   semVar   
-  semRngCon    _    =   semCon   
+  semRngVar    _    =   semVar
+  semRngCon    _    =   semCon
   semRngParens _    =   semParens
   -- defaults
   mkApp             =   mkRngApp emptyRange
@@ -424,7 +208,7 @@ class SemApp a where
   mk1Arrow   a r    =   mkApp [semCon hsnArrow,a,r]
   mkArrow           =   flip (foldr mk1Arrow)
   -- defaults with Range
-  mkRngProd rng     =   mkProdApp				-- to be done
+  mkRngProd rng     =   mkProdApp               -- to be done
   mk1RngApp rng a r =   mkRngApp rng [a,r]
   mkRngApp  rng as  =   case as of
                           [a] -> a
@@ -450,10 +234,11 @@ mkRngParApp r as  = semRngParens r (mkRngApp r as)
 %%[1.PP.ppAppTop export(ppAppTop)
 ppAppTop :: PP arg => (HsName,arg) -> [arg] -> PP_Doc -> PP_Doc
 ppAppTop (conNm,con) argL dflt
-  =  if       hsnIsArrow conNm
+  =  if       (  hsnIsArrow conNm
 %%[[9
               || hsnIsPrArrow conNm
 %%]]
+              ) && length argL == 2
                                 then  ppListSep "" "" (" " >|< con >|< " ") argL
      else if  hsnIsProd  conNm  then  ppParensCommas argL
 %%[[5
@@ -488,12 +273,6 @@ ppCmt p = "{-" >#< p >#< "-}"
 ppSpaced :: PP a => [a] -> PP_Doc
 ppSpaced = ppListSep "" "" " "
 
-ppListSepFill :: (PP s, PP c, PP o, PP a) => o -> c -> s -> [a] -> PP_Doc
-ppListSepFill o c s pps
-  = l pps
-  where l []      = o >|< c
-        l [p]     = o >|< pp p >|< c
-        l (p:ps)  = fill ((o >|< pp p) : map (s >|<) ps) >|< c
 %%]
 
 %%[7 export(ppFld,mkPPAppFun,mkPPAppFun')
@@ -521,7 +300,7 @@ mkExtAppPP :: (HsName,PP_Doc,[PP_Doc]) -> (HsName,PP_Doc,[PP_Doc],PP_Doc) -> (PP
 mkExtAppPP = mkExtAppPP' "|"
 %%]
 
-%%[9
+%%[8
 instance (PP a, PP b) => PP (a,b) where
   pp (a,b) = ppParensCommas' [pp a,pp b]
 %%]
@@ -633,17 +412,21 @@ instance PP Belowness where
 %%% Tags (of data)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs
+%%[8 hs export(CTag(..),ctagIsRec,ctagTag,ctagChar,ctagInt,emptyCTag)
 data CTag
   = CTagRec
   | CTag
-      { ctagTyNm 		:: !HsName
-      , ctagNm 			:: !HsName
-      , ctagTag' 		:: !Int
-      , ctagArity 		:: !Int
-      , ctagMaxArity 	:: !Int
+      { ctagTyNm        :: !HsName
+      , ctagNm          :: !HsName
+      , ctagTag'        :: !Int
+      , ctagArity       :: !Int
+      , ctagMaxArity    :: !Int
       }
   deriving (Show,Eq,Ord)
+
+ctagIsRec :: CTag -> Bool
+ctagIsRec CTagRec = True
+ctagIsRec t       = False
 
 ctagTag :: CTag -> Int
 ctagTag CTagRec = 0
@@ -690,68 +473,11 @@ data Unbox
 %%% Misc info passed to backend
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs
+%%[8 hs export(CTagsMp, emptyCTagsMp)
 type CTagsMp = AssocL HsName (AssocL HsName CTag)
-%%]
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% AssocL
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[1.AssocL
-type Assoc k v = (k,v)
-type AssocL k v = [Assoc k v]
-%%]
-
-%%[1.ppAssocL export(ppAssocL)
-ppAssocL :: (PP k, PP v) => AssocL k v -> PP_Doc
-ppAssocL al = ppListSepFill "[ " " ]" ", " (map (\(k,v) -> pp k >|< ":" >|< pp v) al)
-%%]
-
-%%[8.ppAssocL -1.ppAssocL export(ppAssocL,ppAssocL',ppAssocLV)
-ppAssocL' :: (PP k, PP v, PP s) => ([PP_Doc] -> PP_Doc) -> s -> AssocL k v -> PP_Doc
-ppAssocL' ppL sep al = ppL (map (\(k,v) -> pp k >|< sep >#< pp v) al)
-
-ppAssocL :: (PP k, PP v) => AssocL k v -> PP_Doc
-ppAssocL = ppAssocL' (ppBlock "[" "]" ",") ":"
-
-ppAssocLV :: (PP k, PP v) => AssocL k v -> PP_Doc
-ppAssocLV = ppAssocL' vlist ":"
-%%]
-
-%%[20
--- intended for parsing
-ppCurlysAssocL :: (k -> PP_Doc) -> (v -> PP_Doc) -> AssocL k v -> PP_Doc
-ppCurlysAssocL pk pv = ppCurlysCommasBlock . map (\(k,v) -> pk k >#< "=" >#< pv v)
-%%]
-
-%%[1
-assocLMap :: (k -> v -> (k',v')) -> AssocL k v -> AssocL k' v'
-assocLMap f = map (uncurry f)
-
-assocLMapElt :: (v -> v') -> AssocL k v -> AssocL k v'
-assocLMapElt f = assocLMap (\k v -> (k,f v))
-
-assocLMapKey :: (k -> k') -> AssocL k v -> AssocL k' v
-assocLMapKey f = assocLMap (\k v -> (f k,v))
-%%]
-
-%%[4 export(assocLMapUnzip)
-assocLMapUnzip :: AssocL k (v1,v2) -> (AssocL k v1,AssocL k v2)
-assocLMapUnzip l = unzip [ ((k,v1),(k,v2)) | (k,(v1,v2)) <- l ]
-%%]
-
-%%[1
-assocLKeys :: AssocL k v -> [k]
-assocLKeys = map fst
-
-assocLElts :: AssocL k v -> [v]
-assocLElts = map snd
-%%]
-
-%%[1 export(assocLGroupSort)
-assocLGroupSort :: Ord k => AssocL k v -> AssocL k [v]
-assocLGroupSort = map (foldr (\(k,v) (_,vs) -> (k,v:vs)) (undefined,[])) . groupSortOn fst
+emptyCTagsMp :: CTagsMp
+emptyCTagsMp = []
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -775,7 +501,7 @@ threadMap f c = foldr (\a (bs, c) -> let (b, c') = f a c in (b:bs, c')) ([], c)
 
 %%[7_2
 groupAllBy :: Ord b => (a -> b) -> [a] -> [[a]]
-groupAllBy f = Map.elems . foldr (\v -> Map.insertWith (++) (f v) [v]) Map.empty 
+groupAllBy f = Map.elems . foldr (\v -> Map.insertWith (++) (f v) [v]) Map.empty
 %%]
 
 %%[7_2
@@ -792,7 +518,10 @@ replicateBy l e = replicate (length l) e
 %%% Misc
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(strBlankPad)
+%%[8 export(strPadLeft, strBlankPad)
+strPadLeft :: Char -> Int -> String -> String
+strPadLeft c n s = replicate (n - length s) c ++ s
+
 strBlankPad :: Int -> String -> String
 strBlankPad n s = s ++ replicate (n - length s) ' '
 %%]
@@ -826,16 +555,6 @@ data CHRScoped
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Optimisation level
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8 export(Optimise(..))
-data Optimise
-  = OptimiseNone | OptimiseNormal | OptimiseALot
-  deriving (Eq,Ord,Show)
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Point in sequence of EH compilation phases
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -859,7 +578,7 @@ data CompilePoint
 %%[1
 data Fixity
   = Fixity_Infix | Fixity_Infixr | Fixity_Infixl
-  deriving (Eq,Ord,Show)
+  deriving (Eq,Ord,Show,Enum)
 
 instance PP Fixity where
   pp Fixity_Infix  = pp "infix"
@@ -872,7 +591,7 @@ fixityMaxPrio :: Int
 fixityMaxPrio = 9
 %%]
 
-%%[95 export(fixityAppPrio)
+%%[91 export(fixityAppPrio)
 fixityAppPrio :: Int
 fixityAppPrio = fixityMaxPrio + 1
 %%]
@@ -921,7 +640,7 @@ mkRange2 p1 p2 = Range_Range (mkPos p1) (mkPos p2)
 %%[1
 show2Pos :: Pos -> Pos -> String
 show2Pos p1 p2
-  | p1 /= p2 && p2 /= noPos  = if line p1 == line p2 
+  | p1 /= p2 && p2 /= noPos  = if line p1 == line p2
                                then mk (show (line p1))                          (Just $ show (column p1) ++ "-" ++ show (column p2))
                                else mk (show (line p1) ++ "-" ++ show (line p2)) Nothing
   | otherwise                =      mk (show (line p1))                          (Just $ show (column p1))
@@ -945,12 +664,14 @@ isEmptyRange (Range_Range p _) = p == noPos
 isEmptyRange  _                = False
 %%]
 
-%%[99
+20100209 AD: The lax equality/compare goes badly with serialization. TBD: fix this...
+
+%%[50
 instance Eq Range where
-  _ == _ = True				-- a Range is ballast, not a criterium to decide equality for
+  _ == _ = True             -- a Range is ballast, not a criterium to decide equality for
 
 instance Ord Range where
-  _ `compare` _ = EQ		-- a Range is ballast, not a criterium to decide equality for
+  _ `compare` _ = EQ        -- a Range is ballast, not a criterium to decide equality for
 %%]
 
 %%[1
@@ -1017,9 +738,17 @@ rngAntilift = const
 %%[9 export(InstVariant(..))
 data InstVariant
   = InstNormal | InstDefault
-%%[[95
-  | InstDeriving
+%%[[91
+  | InstDeriving InstDerivingFrom
 %%]]
+  deriving (Eq,Ord,Show)
+%%]
+
+%%[91 export(InstDerivingFrom(..))
+-- | Either a deriving combined from a datatype directly or a standalone
+data InstDerivingFrom
+  = InstDerivingFrom_Datatype
+  | InstDerivingFrom_Standalone
   deriving (Eq,Ord,Show)
 %%]
 
@@ -1041,6 +770,13 @@ nmLevModule  =  0
 %%% Token related
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[1.tokenVal hs export(tokenVal)
+tokenVal = genTokVal
+%%]
+
+%%[5 -1.tokenVal hs
+%%]
+
 %%[1 hs
 -- Assumption: tokTpIsInt (genTokTp t) == True
 tokMkInt :: Token -> Int
@@ -1048,23 +784,23 @@ tokMkInt t
   = case genTokTp t of
       Just TkInteger10 -> read v
       _                -> 0
-  where v = genTokVal t
+  where v = tokenVal t
 
 tokMkStr :: Token -> String
-tokMkStr = genTokVal
+tokMkStr = tokenVal
 %%]
 
 %%[1.tokMkQName hs
 tokMkQName :: Token -> HsName
-tokMkQName = hsnFromString . genTokVal
+tokMkQName = hsnFromString . tokenVal
 %%]
 
 %%[7 -1.tokMkQName hs
 tokMkQName :: Token -> HsName
 tokMkQName t
   = case genTokTp t of
-      Just tp | tokTpIsInt tp -> HNPos $ tokMkInt t
-      _                       -> mkHNm $ genTokVal t
+      Just tp | tokTpIsInt tp -> mkHNmPos $ tokMkInt t
+      _                       -> mkHNm $ map hsnFromString $ tokenVals t
 %%]
 
 %%[1 hs
@@ -1088,11 +824,28 @@ hsnLclSupply = hsnLclSupplyWith (hsnFromString "")
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Hex printing
+%%% Hex printing, dissecting numbers
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[8 export(splitByRadix)
+splitByRadix :: (Integral b) => Int -> Int -> b -> (Int,[Int])
+splitByRadix len radix num
+  = ( fromIntegral $ signum num
+    , replicate difflen 0 ++ drop (-difflen) repr
+    )
+  where radix' = fromIntegral radix
+        repr = reverse $
+               unfoldr
+                 (\b -> if b == 0
+                        then Nothing
+                        else let (q,r) = b `divMod` radix'
+                             in  Just (fromIntegral r, q))
+                 (abs num)
+        difflen = len - length repr
+%%]
+
 %%[8 export(strHex)
-strHex :: Integral a => Int -> a -> String
+strHex :: (Show a, Integral a) => Int -> a -> String
 strHex prec x
   = replicate (prec - length h) '0' ++ h
   where h = showHex x []
@@ -1110,10 +863,10 @@ data Backend
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% ForceEval
+%%% Instances: ForceEval
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[99
+%%[9999
 instance ForceEval Fixity
 %%[[102
   where
@@ -1127,15 +880,15 @@ instance ForceEval OrigName where
   forceEval x                                         = x
 
 instance ForceEval HsName where
-  forceEval x@(HNm     s) | forceEval s `seq` True = x
-  forceEval x@(HNmNr _ n) | forceEval n `seq` True = x
-  forceEval x@(HNmQ    l) | forceEval l `seq` True = x
+  -- forceEval x@(HsName_Base     s) | forceEval s `seq` True = x
+  -- forceEval x@(HNmNr _ n) | forceEval n `seq` True = x
+  -- forceEval x@(HNmQ    l) | forceEval l `seq` True = x
   forceEval x                                      = x
 %%[[102
-  fevCount (HNm   _ s) = cm1 "HNm"   `cmUnion` fevCount s
+  fevCount (HsName_Base   _ s) = cm1 "HNm"   `cmUnion` fevCount s
   fevCount (HNmNr i n) = cm1 "HNmNr" `cmUnion` fevCount n
   fevCount (HNmQ  _ l) = cm1 "HNmQ"  `cmUnion` fevCount l
-  fevCount (HNPos   p) = cm1 "HNPos" `cmUnion` fevCount p
+  fevCount (HsName_Pos   p) = cm1 "HsName_Pos" `cmUnion` fevCount p
 %%]]
 
 instance ForceEval CTag where
@@ -1200,9 +953,9 @@ agFakeDependOn _ x = x
 
 %%[9 export(VarUIDHsName(..),vunmNm)
 data VarUIDHsName
-  = VarUIDHs_Name		{ vunmId :: !UID, vunmNm' :: !HsName }
-  | VarUIDHs_UID		{ vunmId :: !UID }
-  | VarUIDHs_Var		!UID
+  = VarUIDHs_Name       { vunmId :: !UID, vunmNm' :: !HsName }
+  | VarUIDHs_UID        { vunmId :: !UID }
+  | VarUIDHs_Var        !UID
   deriving (Eq, Ord)
 
 vunmNm :: VarUIDHsName -> HsName
@@ -1232,30 +985,34 @@ instance PP VarUIDHsName where
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[2 hs
-withLkupLiftCyc2 :: (t -> Maybe UID) -> (UID -> Maybe t) -> x -> (UIDS -> t -> x) -> (t -> x) -> UIDS -> UID -> x
-withLkupLiftCyc2 get lookup dflt yes no vsVisited v
+withLkupLiftCyc2 :: (t -> Maybe UID) -> (t -> UIDS) -> (UID -> Maybe t) -> x -> (UIDS -> t -> x) -> (t -> x) -> UIDS -> UID -> x
+withLkupLiftCyc2 get noVisit lookup dflt yes no vsVisited v
   = case lookup v of
       Just t | not (v `Set.member` vsVisited)
-        -> yes (Set.insert v vsVisited) t
+        -> yes (Set.insert v $ Set.union (noVisit t) vsVisited) t
       _ -> dflt
 %%]
 
-%%[2 hs export(withLkupLiftCyc1,withLkupLift)
-withLkupLiftCyc1 :: (t -> Maybe UID) -> (UID -> Maybe t) -> (UIDS -> t -> x) -> (t -> x) -> UIDS -> t -> x
-withLkupLiftCyc1 get lookup yes no vsVisited t
-  = maybe dflt (withLkupLiftCyc2 get lookup dflt yes no vsVisited) $ get t
+%%[2 hs export(withLkupLiftCyc1,withLkupChkVisitLift,withLkupLift)
+withLkupLiftCyc1 :: (t -> Maybe UID) -> (t -> UIDS) -> (UID -> Maybe t) -> (UIDS -> t -> x) -> (t -> x) -> UIDS -> t -> x
+withLkupLiftCyc1 get noVisit lookup yes no vsVisited t
+  = maybe dflt (withLkupLiftCyc2 get noVisit lookup dflt yes no vsVisited) $ get t
   where dflt = no t
 
+withLkupChkVisitLift :: (t -> Maybe UID) -> (t -> UIDS) -> (UID -> Maybe t) -> (t -> x) -> (t -> x) -> t -> x
+withLkupChkVisitLift get noVisit lookup yes no t
+  = withLkupLiftCyc1 get noVisit lookup (\_ t -> yes t) no Set.empty t
+
 withLkupLift :: (t -> Maybe UID) -> (UID -> Maybe t) -> (t -> x) -> (t -> x) -> t -> x
-withLkupLift get lookup yes no t
-  = withLkupLiftCyc1 get lookup (\_ t -> yes t) no Set.empty t
+withLkupLift get
+  = withLkupChkVisitLift get (const Set.empty)
 %%]
 
 %%[2 hs
 lookupLiftCyc1 :: (x -> Maybe UID) -> (UID -> Maybe x) -> x' -> (x->x') -> x -> x'
 lookupLiftCyc1 get lookup dflt found x
   = lk Set.empty dflt found x
-  where lk s dflt found x = withLkupLiftCyc1 get lookup (\s t -> lk s (found t) found t) (const dflt) s x
+  where lk s dflt found x = withLkupLiftCyc1 get (const Set.empty) lookup (\s t -> lk s (found t) found t) (const dflt) s x
 
 lookupLiftCyc2 :: (x -> Maybe UID) -> (UID -> Maybe x) -> x' -> (x->x') -> UID -> x'
 lookupLiftCyc2 get lookup dflt found x
@@ -1391,6 +1148,29 @@ instance Show a => Show (RLList a) where
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% AlwaysEq
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+General purpose info for which comparison always yields EQ.
+This is to fool 'deriving' when info is added for debugging purposes only.
+
+%%[1 export(AlwaysEq(..))
+data AlwaysEq a = AlwaysEq a
+
+instance Eq (AlwaysEq a) where
+  _ == _ = True
+
+instance Ord (AlwaysEq a) where
+  _ `compare` _ = EQ
+
+instance Show a => Show (AlwaysEq a) where
+  show (AlwaysEq x) = show x
+
+instance PP a => PP (AlwaysEq a) where
+  pp (AlwaysEq x) = pp x
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Package name
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -1404,9 +1184,9 @@ type PkgName = String
 
 %%[99 export(DerivTreeWay(..))
 data DerivTreeWay
-  = DerivTreeWay_Infer		-- follow order of inference when printing type variables
-  | DerivTreeWay_Final		-- use final mapping of type variables instead
-  | DerivTreeWay_None		-- no printing
+  = DerivTreeWay_Infer      -- follow order of inference when printing type variables
+  | DerivTreeWay_Final      -- use final mapping of type variables instead
+  | DerivTreeWay_None       -- no printing
   deriving Eq
 %%]
 
@@ -1440,5 +1220,296 @@ metaLevKi  = metaLevTy  + 1
 metaLevSo  = metaLevKi  + 1
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Instances: Typeable, Data
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[50
+deriving instance Typeable VarUIDHsName
+deriving instance Data VarUIDHsName
+
+deriving instance Typeable Fixity
+deriving instance Data Fixity
+
+deriving instance Typeable1 AlwaysEq
+deriving instance Data x => Data (AlwaysEq x)
+
+deriving instance Typeable PredOccId
+deriving instance Data PredOccId
+
+deriving instance Typeable1 RLList
+deriving instance Data x => Data (RLList x)
+
+deriving instance Typeable CTag
+deriving instance Data CTag
+
+deriving instance Typeable Range
+deriving instance Data Range
+
+deriving instance Typeable Pos
+deriving instance Data Pos
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% HsName functionality for UID
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[7
+uidHNm :: UID -> HsName
+uidHNm = mkHNm -- hsnFromString . show
+%%]
+
+%%[7
+uidQualHNm :: HsName -> UID -> HsName
+uidQualHNm modnm uid =
+%%[[50
+                        hsnPrefixQual modnm $
+%%]]
+                        uidHNm uid
+%%]
+
+%%[1
+instance HSNM UID where
+  mkHNm x = hsnFromString ('_' : show x)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Instances: Binary, Serialize
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[50
+instance Serialize VarUIDHsName where
+  sput (VarUIDHs_Name a b) = sputWord8 0 >> sput a >> sput b
+  sput (VarUIDHs_UID  a  ) = sputWord8 1 >> sput a
+  sput (VarUIDHs_Var  a  ) = sputWord8 2 >> sput a
+  sget = do t <- sgetWord8
+            case t of
+              0 -> liftM2 VarUIDHs_Name sget sget
+              1 -> liftM  VarUIDHs_UID  sget
+              2 -> liftM  VarUIDHs_Var  sget
+
+instance Binary Fixity where
+  put = putEnum8
+  get = getEnum8
+
+instance Serialize Fixity where
+  sput = sputPlain
+  sget = sgetPlain
+
+instance Binary KnownPrim where
+  put = putEnum8
+  get = getEnum8
+
+instance Serialize KnownPrim where
+  sput = sputPlain
+  sget = sgetPlain
+
+instance Binary x => Binary (AlwaysEq x) where
+  put (AlwaysEq x) = put x
+  get = liftM AlwaysEq get
+
+instance Serialize x => Serialize (AlwaysEq x) where
+  sput (AlwaysEq x) = sput x
+  sget = liftM AlwaysEq sget
+
+instance Binary PredOccId where
+  put (PredOccId a) = put a
+  get = liftM PredOccId get
+
+instance Serialize PredOccId where
+  sput = sputPlain
+  sget = sgetPlain
+
+instance Binary a => Binary (RLList a) where
+  put (RLList a) = put a
+  get = liftM RLList get
+
+instance Serialize CTag where
+  sput = sputShared
+  sget = sgetShared
+  sputNested (CTagRec          ) = sputWord8 0
+  sputNested (CTag    a b c d e) = sputWord8 1 >> sput a >> sput b >> sput c >> sput d >> sput e
+  sgetNested
+    = do t <- sgetWord8
+         case t of
+           0 -> return CTagRec
+           1 -> liftM5 CTag    sget sget sget sget sget
+
+instance Binary Range where
+  put (Range_Unknown    ) = putWord8 0
+  put (Range_Builtin    ) = putWord8 1
+  put (Range_Range   a b) = putWord8 2 >> put a >> put b
+  get = do t <- getWord8
+           case t of
+             0 -> return Range_Unknown
+             1 -> return Range_Builtin
+             2 -> liftM2 Range_Range get get
+
+instance Serialize Range where
+  sput = sputShared
+  sget = sgetShared
+  sputNested = sputPlain
+  sgetNested = sgetPlain
+
+instance Binary Pos where
+  put (Pos a b c) = put a >> put b >> put c
+  get = liftM3 Pos get get get
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Constants as appearing directly from the source text, without class related toInteger (etc) interpretation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[97 export(SrcConst(..))
+data SrcConst
+  = SrcConst_Int    Integer
+  | SrcConst_Char   Char
+  | SrcConst_Ratio  Integer Integer
+  deriving (Eq,Show,Ord)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Lifting
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 export(fmap2Tuple)
+fmap2Tuple :: Functor f => snd -> f x -> f (x,snd)
+fmap2Tuple snd = fmap (\x -> (x,snd))
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Name generation for variables, mapping from arbitrary to concise name from ['a' .. ]
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 export(genNmMap)
+genNmMap :: Ord x => (String->s) -> [x] -> Map.Map x s -> (Map.Map x s, [s])
+genNmMap mk xs m
+  = (m',reverse ns)
+  where (m',_,ns)
+          = foldl (\(m,sz,ns) x
+                    -> case Map.lookup x m of
+                         Just n -> (m, sz, n:ns)
+                         _      -> (Map.insert x n m, sz+1, n:ns)
+                                where n = mk $ ch sz
+                  )
+                  (m,Map.size m,[]) xs
+        ch x | x < 26    = [chr $ ord 'a' + x]
+             | otherwise = let (q,r) = x `quotRem` 26 in ch q ++ ch r
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Variation of Maybe
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) export(MaybeOk(..),isJustOk,isNotOk,maybeOk,fromJustOk,fromNotOk)
+data MaybeOk a
+  = JustOk  a
+  | NotOk   String
+  deriving (Eq,Ord,Show)
+
+isJustOk (JustOk _) = True
+isJustOk _          = False
+
+fromJustOk (JustOk x) = x
+fromJustOk _          = panic "fromJustOk"
+
+isNotOk (NotOk _) = True
+isNotOk _         = False
+
+fromNotOk (NotOk x) = x
+fromNotOk _         = panic "fromNotOk"
+
+maybeOk :: (String -> x) -> (a -> x) -> MaybeOk a -> x
+maybeOk _ j (JustOk x) = j x
+maybeOk n _ (NotOk  x) = n x
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Visit as graph
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99 export(graphVisit)
+-- | Abstract graph visit, over arbitrary structures
+graphVisit
+  :: (Ord node)
+     => (thr -> graph -> node -> (thr,Set.Set node))        -- fun: visit node, get new thr and nodes to visit next
+     -> (Set.Set node -> Set.Set node -> Set.Set node)      -- fun: combine new to visit + already known to visit (respectively)
+     -> thr                                                 -- the accumulator, threaded as state
+     -> Set.Set node                                        -- root/start
+     -> graph                                               -- graph over which we visit
+     -> thr                                                 -- accumulator is what we are interested in
+graphVisit visit unionUnvisited thr start graph
+  = snd $ v ((Set.empty,start),thr)
+  where v st@((visited,unvisited),thr)
+          | Set.null unvisited = st
+          | otherwise          = let (n,unvisited2)      = Set.deleteFindMin unvisited
+                                     (thr',newUnvisited) = visit thr graph n
+                                     visited'            = Set.insert n visited
+                                     unvisited3          = unionUnvisited (newUnvisited `Set.difference` visited') unvisited2
+                                 in  v ((visited',unvisited3),thr')
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Known primitives, encoding semantics of particular primitives in a FFI decl, propagated to backend
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) export(KnownPrim(..))
+data KnownPrim
+  =
+    -- platform Int
+    KnownPrim_AddI
+  | KnownPrim_SubI
+  | KnownPrim_MulI
+
+%%[[97
+    -- platform Float
+  | KnownPrim_AddF
+  | KnownPrim_SubF
+  | KnownPrim_MulF
+
+    -- platform Double
+  | KnownPrim_AddD
+  | KnownPrim_SubD
+  | KnownPrim_MulD
+
+    -- 8 bit
+  | KnownPrim_Add8          -- add: 1 byte / 8 bit, etc etc
+  | KnownPrim_Sub8
+  | KnownPrim_Mul8
+
+    -- 16 bit
+  | KnownPrim_Add16
+  | KnownPrim_Sub16
+  | KnownPrim_Mul16
+
+    -- 32 bit
+  | KnownPrim_Add32
+  | KnownPrim_Sub32
+  | KnownPrim_Mul32
+
+    -- 64 bit
+  | KnownPrim_Add64
+  | KnownPrim_Sub64
+  | KnownPrim_Mul64
+%%]]
+  deriving (Show,Eq,Enum,Bounded)
+%%]
+
+%%[(50 codegen)
+deriving instance Data KnownPrim
+deriving instance Typeable KnownPrim
+%%]
+
+%%[(8 codegen)
+instance PP KnownPrim where
+  pp = pp . show
+%%]
+
+%%[(8 codegen) export(allKnownPrimMp)
+allKnownPrimMp :: Map.Map String KnownPrim
+allKnownPrimMp
+  = Map.fromList [ (drop prefixLen $ show t, t) | t <- [ minBound .. maxBound ] ]
+  where prefixLen = length "KnownPrim_"
+%%]
 

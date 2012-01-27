@@ -9,6 +9,8 @@
 
 %%[1
 ATTR AllNT AGItf [ | | pp USE {>-<} {empty} : PP_Doc ]
+
+ATTR AllNT AGItf [ | | ppWrap USE {.} {const empty} : {PP_Doc -> PP_Doc} ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -18,18 +20,15 @@ ATTR AllNT AGItf [ | | pp USE {>-<} {empty} : PP_Doc ]
 %%[1.Body
 SEM Body
     | Body
-        lhs         .   pp          =   @declarations.pp >-< @ppExtra
-		loc			.	ppExtra		=	empty
+        lhs         .   pp          =  
+%%[[50
+                                        @importdeclarations.pp >-< 
+%%]]
+                                        @declarations.pp >-< @ppExtra
+        loc         .   ppExtra     =   empty
 %%]
 
-%%[20.Body -1.Body
-SEM Body
-    | Body
-        lhs         .   pp          =   @importdeclarations.pp >-< @declarations.pp >-< @ppExtra
-		loc			.	ppExtra		=	empty
-%%]
-
-%%[20
+%%[50
 SEM AGItf
 	| AGItf
 		lhs			.	pp			=	@ppExtra >-< @module.pp
@@ -67,15 +66,15 @@ SEM Declaration
 %%]
 %%[5
     | Data
-        loc         .   pp          =   "data" >#< @simpletype.pp
+        loc         .   pp          =   "data" >#< @typelefthandside.pp
                                                >#< "=" >#< @constructors.pp
-%%[[95
+%%[[91
                                                >-< ppParensCommas @derivings.ppL
 %%]]
     | Newtype
-        loc         .   pp          =   "newtype" >#< @simpletype.pp
+        loc         .   pp          =   "newtype" >#< @typelefthandside.pp
                                                   >#< "=" >#< @constructors.pp
-%%[[95
+%%[[91
                                                   >-< ppParensCommas @derivings.ppL
 %%]]
 %%]
@@ -89,7 +88,7 @@ SEM Declaration
 %%]
 %%[9
     | Class
-        loc         .   pp          =   "class" >#< ppParens @context.pp >#< "=>" >#< @simpletype.pp
+        loc         .   pp          =   "class" >#< ppParens @context.pp >#< "=>" >#< @typelefthandside.pp
 %%[[15
                                         >#< "|" >#< @dependencies.pp
 %%]]
@@ -101,11 +100,21 @@ SEM Declaration
     | InstanceUseImplicitly
         loc         .   pp          =   "instance" >#< @expression.pp >#< "<:" >#< @name >#< ppSpaces @types.ppL
     | Default
-        loc         .   pp          =   "default" >#< ppParensCommas @types.ppL
+        loc         .   pp          =   "default" >#< maybe empty pp @name >#< ppParensCommas @types.ppL
 %%]
 %%[11
     | Type
-        loc         .   pp          =   "type" >#< @simpletype.pp >#< "=" >#< @type.pp
+        loc         .   pp          =   "type" >#< @typelefthandside.pp >#< "=" >#< @type.pp
+%%]
+%%[93
+    | FusionDeclaration
+        loc         .   pp          =   "fuse" >#< @fusename
+    | FusionConversion
+        loc         .   pp          =   "convert" >#< ppCommas [@conname, @absname]
+%%]
+%%[99
+    | Pragma
+        loc         .   pp          =   "{-#" >#< @pragma.pp >#< "#-}"
 %%]
 
 %%[15
@@ -114,16 +123,30 @@ SEM FunctionalDependency
         loc         .   pp          =   ppSpaces @fromtypevariables >#< "->" >#< @totypevariables
 %%]
 
-%%[(94 codegen)
+%%[(90 codegen)
 SEM Declaration
     | ForeignExport
         loc         .   pp          =   "foreign export" >#< @callconvention >#< @exportname >#< @name >#< "::" >#< @type.pp
 %%]
 
-%%[95
+%%[91
 SEM Deriving
     | Deriving
         loc         .   pp          =   ppInstNm @useimplicitly @maybeinstancename >#< @name
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Pragms          
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99
+SEM Pragma
+  | Language
+  		loc			.	pp			=	"LANGUAGE" >#< ppCommas @pragmas
+  | Derivable
+  		loc			.	pp			=	"DERIVABLE" >#< @className >#< @fieldName >#< @defaultName
+  | ExcludeIfTarget
+  		loc			.	pp			=	"EXCLUDE_IF_TARGET" >#< ppCommas @targetNames
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -166,10 +189,14 @@ SEM Type
         loc         .   pp          =   ppCon @name
     | Parenthesized
         loc         .   pp          =   ppParens @type.pp
+    | Annotate
+        loc         .   pp          =   @annotation.ppWrap @type.pp
 %%]
 %%[2
     | Wildcard
         loc         .   pp          =   pp "..."
+    | MonoWildcard
+        loc         .   pp          =   pp "...."
 %%]
 %%[3
     | Variable
@@ -214,7 +241,7 @@ SEM Type
     | NoImplicits
         loc         .   pp          =   EH.mkRngEH @range EH.TyExpr_NoImpls
 
-%%[5
+%%[5555
 SEM SimpleType
     | SimpleType
         loc         .   pp          =   @name >#< ppSpaces @typevariables
@@ -267,12 +294,6 @@ SEM Constructor
 SEM FieldDeclaration
     | FieldDeclaration
         loc         .   pp          =   ppCommas' @names >#< "::" >#< @type.pp
-%%]
-
-%%[5
-SEM AnnotatedType
-    | Type -- ToDo: or _Type?
-        loc         .   pp          =   (if @strict then pp "!" else empty) >|< @type.pp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -444,6 +465,10 @@ SEM RecordPatternBinding
         loc         .   pp          =   pp @name
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% LHS, RHS of for value bindings        
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %%[1
 SEM FunctionBinding
     | FunctionBinding
@@ -477,7 +502,21 @@ SEM RightHandSide
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Patterns        
+%%% LHS of for type bindings        
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[5
+SEM TypeLeftHandSide
+    | Function
+        loc         .   pp          =   @name >#< ppSpaces @patterns.ppL
+    | Infix
+        loc         .   pp          =   @leftPattern.pp >#< @operator >#< @rightPattern.pp
+    | Parenthesized
+        loc         .   pp          =   ppParens @lefthandside.pp >#< ppSpaces @patterns.ppL
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Patterns for values
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1
@@ -538,12 +577,55 @@ SEM ContextedPattern
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Annotations          
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1
+SEM TypeAnnotation
+%%[[1
+    | Empty
+        loc         .   pp          =   empty
+%%][5
+    | Strict
+        loc         .   ppWrap      =   \t -> "!" >|< t
+%%[[(8 tauphi)
+    | * - Strict
+        loc         .   ppWrap      =   \t -> "@" >|< @loc.pp >#< t
+    | AnnotationName
+        loc         .   pp          =   pp @name
+    | AnnotationVar
+        loc         .   pp          =   pp @name >|< ":" >|< pp @var
+%%]]
+%%]]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Patterns for types
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[5
+SEM TypePattern
+    | Variable
+        loc         .   pp          =   pp @name       
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Basics          
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1
 SEM Literal
-    | *
+    | Int
+        loc         .   pp          =   pp @value
+    | Char
+        loc         .   pp          =   pp ("'" ++ @value ++ "'")
+%%]
+%%[5
+    | String
+        loc         .   pp          =   pp (show @value)
+%%]
+%%[97
+    | Float
         loc         .   pp          =   pp @value
 %%]
 
@@ -606,15 +688,15 @@ SEM Patterns
 %%]
 
 %%[5
-ATTR Qualifiers AnnotatedTypes [ | | ppL: {[PP_Doc]} ]
+ATTR TypePatterns Qualifiers [ | | ppL: {[PP_Doc]} ]
 
-SEM AnnotatedTypes
+SEM Qualifiers
     | Cons
         lhs         .   ppL         =   @hd.pp : @tl.ppL
     | Nil
         lhs         .   ppL         =   []
 
-SEM Qualifiers
+SEM TypePatterns
     | Cons
         lhs         .   ppL         =   @hd.pp : @tl.ppL
     | Nil
@@ -707,7 +789,7 @@ SEM ContextedPatterns
 
 %%]
 
-%%[95
+%%[91
 ATTR
   Derivings
     [ | | ppL: {[PP_Doc]} ]
@@ -723,7 +805,7 @@ SEM Derivings
 %%% Extra info for pp
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20
+%%[50
 %%]
 SEM AGItf
 	| AGItf

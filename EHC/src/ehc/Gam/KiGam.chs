@@ -26,7 +26,7 @@
 %%[(6 hmtyinfer) import({%{EH}Ty.Trf.Quantify})
 %%]
 
-%%[99 import({%{EH}Base.ForceEval})
+%%[9999 import({%{EH}Base.ForceEval})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -71,7 +71,7 @@ initKiGam
 %%% Instances
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(99 hmtyinfer || hmtyast)
+%%[(9999 hmtyinfer || hmtyast)
 instance ForceEval KiGamInfo where
   forceEval x@(KiGamInfo k) | forceEval k `seq` True = x
 %%[[102

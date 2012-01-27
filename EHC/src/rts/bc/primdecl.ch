@@ -1,3 +1,8 @@
+%%[8
+#ifndef __BC_PRIMDECL_H__
+#define __BC_PRIMDECL_H__
+%%]
+
 %%% Declarations for macro-generated primitive functions
 
 %%[99
@@ -15,4 +20,20 @@ PRIMS_BITSHIFT_INTERFACE(Word8,Word8,Word)
 PRIMS_BITSHIFT_INTERFACE(Word16,Word16,Word)
 PRIMS_BITSHIFT_INTERFACE(Word32,Word32,Word)
 PRIMS_BITSHIFT_INTERFACE(Word64,Word64,Word64)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Initialization
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[97
+extern void prim_integer_Initialize() ;
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% EOF
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+#endif /* __BC_PRIMDECL_H__ */
 %%]

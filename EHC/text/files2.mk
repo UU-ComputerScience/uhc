@@ -9,10 +9,12 @@
 
 TEXT_BLD_PDF				:= $(DOC_PREFIX)$(TEXT_VARIANT).pdf
 TEXT_BLD_TWIKI				:= $(DOC_PREFIX)$(TEXT_VARIANT).twiki
+TEXT_BLD_HTML				:= $(DOC_PREFIX)$(TEXT_VARIANT).html
 TEXT_ALL_PUB_PDFS			:= $(patsubst %,$(DOC_PREFIX)%.pdf,$(TEXT_PUB_VARIANTS))
 TEXT_ALL_PDFONLY_PDFS		:= $(patsubst %,$(DOC_PREFIX)%.pdf,$(TEXT_PDFONLY_VARIANTS))
 TEXT_ALL_DOCLTX_PDFS		:= $(patsubst %,$(DOC_PREFIX)%.pdf,$(TEXT_DOCLTX_VARIANTS))
 TEXT_ALL_DOCLTX_TWIKIS		:= $(patsubst %,$(DOC_PREFIX)%.twiki,$(TEXT_DOCLTX_VARIANTS))
+TEXT_ALL_DOCLTX_HTMLS		:= $(patsubst %,$(DOC_PREFIX)%.html,$(TEXT_DOCLTX_VARIANTS))
 TEXT_ALL_DOCLTX_GIFS		:= $(patsubst $(FIGS_SRC_PREFIX)%.pdf,$(DOC_PREFIX)%.gif,$(FIGS_ASIS_SRC_PDF))
 
 ###########################################################################################
@@ -31,6 +33,7 @@ TEXT_MAIN_DRV_STY			:= $(TEXT_MAIN_DRV_LSTY:.lsty=.sty)
 TEXT_DOCMAIN_DRV_TTEX		:= $(TEXT_TMP_VARIANT_PREFIX)$(TEXT_DOCMAIN).ttex
 TEXT_DOCMAIN_DRV_TEX		:= $(TEXT_DOCMAIN_DRV_TTEX:.ttex=.tex)
 TEXT_DOCMAIN_DRV_TWIKI		:= $(TEXT_DOCMAIN_DRV_TTEX:.ttex=.twiki)
+TEXT_DOCMAIN_DRV_HTML		:= $(TEXT_DOCMAIN_DRV_TTEX:.ttex=.html)
 TEXT_DOCMAIN_DRV_STY		:= $(TEXT_TMP_VARIANT_PREFIX)$(TEXT_DOCMAIN)sty.sty
 
 # 
@@ -159,13 +162,24 @@ TEXT_RULEUX_ALL_DRV_TEX		:= $(TEXT_RULEUX_DRV_TEX)
 TEXT_EDIT_SRC				:= $(TEXT_MAIN_SRC_CLTEX) $(TEXT_SUBS_SRC_CLTEX) $(TEXT_MAIN_SRC_CLSTY) $(TEXT_RULES_MISC_SRC_RUL) $(TEXT_INF2PS_SRC_CRUL) $(TEXT_RULEX_SRC_CRUL) $(TEXT_EXPERIMENTS_SUBST_SRC_RUL)
 TEXT_ALL_SRC				:= $(TEXT_EDIT_SRC) $(TEXT_SUBS_ASIS_SRC) $(TEXT_BIB1_SRC) $(TEXT_BIB2_SRC) $(TEXT_BIB3_SRC) $(TEXT_BIB4_SRC) $(TEXT_MKF)
 
+# all material upon which building doc depends, i.e. the trigger
+TEXT_TRIGGER_BLD			:=	$(TEXT_ALL_SRC) \
+								$(RULER2_DEMO_ALL_SRC) \
+								$(EHC_ALL_SRC) \
+								$(RULER2_DEMO_ALL_DRV_TEX) \
+								$(RULER2_RULES_SRC_RL2) \
+								$(TEXT_ALL_MK_FILES) \
+								$(FIGS_ALL_SRC) \
+								$(EXPERIMENTS_SUBST_ALL_SRC)
+
 # all deriveds (as counting for make dependencies)
 TEXT_ALL_PDFONLY_DPD		:= $(TEXT_MAIN_DRV_TEX) $(TEXT_SUBS_DRV_TEX) $(TEXT_MAIN_DRV_STY) $(TEXT_RULER2_DEMO_TEX) $(TEXT_INF2PS_ALL_DRV_TEX) $(TEXT_RULEX_ALL_DRV_TEX) $(TEXT_RULER2_DEMO_ALL_DRV_TEX) \
 								$(TEXT_SUBS_ASIS_DRV) $(FIGS_XFIG_DRV_TEX) $(FIGS_XFIG_DRV_PDF) $(FIGS_EPS_DRV_PDF) $(FIGS_DOT_DRV_PDF) $(TEXT_RULER2_DEMO_STUFF) $(FIGS_ASIS_DRV) $(TEXT_HIDE_DRV_TEX)  \
 								$(TEXT_GEN_BY_RULER_TABLE_TEX) $(TEXT_INCL_LIST_TEX) $(TEXT_RULEUX_ALL_DRV_TEX) $(TEXT_RULEUX_ALL_DRV_TEX) $(TEXT_EXPERIMENTS_SUBST_ALL_DRV_TEX)
 
-TEXT_ALL_DOCLTX_DPD			:= $(TEXT_DOCMAIN_DRV_TEX) $(TEXT_DOCMAIN_DRV_TWIKI) $(TEXT_DOCMAIN_DRV_STY) $(FIGS_ASIS_DRV)
+TEXT_ALL_DOCLTX_DPD			:= $(TEXT_DOCMAIN_DRV_TEX) $(TEXT_DOCMAIN_DRV_TWIKI) $(TEXT_DOCMAIN_DRV_HTML) $(TEXT_DOCMAIN_DRV_STY) $(FIGS_ASIS_DRV)
 TEXT_ALL_TWIKI_DPD			:= $(TEXT_DOCMAIN_DRV_TWIKI) $(FIGS_ALL_DRV_GIF)
+TEXT_ALL_HTML_DPD			:= $(TEXT_DOCMAIN_DRV_HTML) $(FIGS_ALL_DRV_GIF)
 
 # all shuffle included material
 TEXT_SUBS_SHUFFLE1			:= $(TEXT_SUBS_SRC_CLTEX) $(TEXT_RULES_3_DRV_CAG) $(RULER2_ALL_CHUNK_SRC) $(AGPRIMER_ALL_CHUNK_SRC) $(TEXT_RULES_EXPLAIN_3_DRV_CAG) \
@@ -187,17 +201,20 @@ TEXT_DIST_FILES				:= $(TEXT_ALL_SRC)
 TEXT_WWW_DOC_PDFS			:= $(TEXT_ALL_DOCLTX_PDFS)
 TEXT_WWW_DOC_GIFS			:= $(TEXT_ALL_DOCLTX_GIFS)
 TEXT_WWW_DOC_TWIKIS			:= $(TEXT_ALL_DOCLTX_TWIKIS)
+TEXT_WWW_DOC_HTMLS			:= $(TEXT_ALL_DOCLTX_HTMLS)
 
 ###########################################################################################
 # variant dispatch rules for targets
 ###########################################################################################
 
-$(TEXT_ALL_PDFONLY_PDFS) $(TEXT_ALL_DOCLTX_PDFS): $(DOC_PREFIX)%.pdf: $(TEXT_ALL_SRC) $(RULER2_DEMO_ALL_SRC) $(EHC_ALL_SRC) $(RULER2_DEMO_ALL_DRV_TEX) \
-										$(RULER2_RULES_SRC_RL2) $(TEXT_ALL_MK_FILES) $(FIGS_ALL_SRC) $(RULER2) $(EXPERIMENTS_SUBST_ALL_SRC)
-	$(MAKE) TEXT_VARIANT=$(*F) text-variant-$(*F)
+$(TEXT_ALL_PDFONLY_PDFS) $(TEXT_ALL_DOCLTX_PDFS): $(DOC_PREFIX)%.pdf: $(TEXT_TRIGGER_BLD)
+	$(MAKE) INCLUDE_DERIVED_MK=yes TEXT_VARIANT=$(*F) text-variant-$(*F)
 
 $(TEXT_PDFONLY_VARIANTS) $(TEXT_DOCLTX_VARIANTS) : % : $(DOC_PREFIX)%.pdf
 	open $<
+#$(TEXT_PDFONLY_VARIANTS) $(TEXT_DOCLTX_VARIANTS) : % :
+#	$(MAKE) INCLUDE_DERIVED_MK=yes $(DOC_PREFIX)$@.pdf
+#	open $(DOC_PREFIX)$@.pdf
 
 text-variant-dflt-once: $(TEXT_ALL_PDFONLY_DPD)
 	mkdir -p $(dir $(TEXT_BLD_PDF))
@@ -205,10 +222,11 @@ text-variant-dflt-once: $(TEXT_ALL_PDFONLY_DPD)
 	cp $(TEXT_TMP_VARIANT_PREFIX)$(TEXT_MAIN).pdf $(TEXT_BLD_PDF)
 
 text-variant-dflt-doc: $(TEXT_ALL_DOCLTX_DPD) # $(TEXT_ALL_TWIKI_DPD)
-	mkdir -p $(dir $(TEXT_BLD_PDF)) $(dir $(TEXT_BLD_TWIKI))
+	mkdir -p $(dir $(TEXT_BLD_PDF)) $(dir $(TEXT_BLD_TWIKI)) $(dir $(TEXT_BLD_HTML))
 	cd $(TEXT_TMP_VARIANT_PREFIX) ; $(PDFLATEX) $(TEXT_DOCMAIN) ; $(PDFLATEX) $(TEXT_DOCMAIN)
 	cp $(TEXT_TMP_VARIANT_PREFIX)$(TEXT_DOCMAIN).pdf $(TEXT_BLD_PDF)
 	cp $(TEXT_TMP_VARIANT_PREFIX)$(TEXT_DOCMAIN).twiki $(TEXT_BLD_TWIKI)
+	cp $(TEXT_TMP_VARIANT_PREFIX)$(TEXT_DOCMAIN).html $(TEXT_BLD_HTML)
 
 text-variant-dflt-bib: $(TEXT_ALL_PDFONLY_DPD) $(TEXT_BIB_DRV)
 	mkdir -p $(dir $(TEXT_BLD_PDF))
@@ -217,6 +235,18 @@ text-variant-dflt-bib: $(TEXT_ALL_PDFONLY_DPD) $(TEXT_BIB_DRV)
 	cd $(TEXT_TMP_VARIANT_PREFIX) ; \
 	$(BIBTEX) $(TEXT_MAIN) ; \
 	$(PDFLATEX) $(TEXT_MAIN) ; \
+	$(PDFLATEX) $(TEXT_MAIN)
+	cp $(TEXT_TMP_VARIANT_PREFIX)$(TEXT_MAIN).pdf $(TEXT_BLD_PDF)
+
+# variation on -bib where .dot file is generated, to be included later as drawn pdf
+text-variant-dflt-bib-dotdpd: $(TEXT_ALL_PDFONLY_DPD) $(TEXT_BIB_DRV)
+	mkdir -p $(dir $(TEXT_BLD_PDF))
+	cd $(TEXT_TMP_VARIANT_PREFIX) ; \
+	echo "graph {}" | dot -Tpdf > $(TEXT_MAIN)-dpd.pdf ; \
+	$(PDFLATEX) $(TEXT_MAIN) ; \
+	$(BIBTEX) $(TEXT_MAIN) ; \
+	$(PDFLATEX) $(TEXT_MAIN) ; \
+	dot -Tpdf $(TEXT_MAIN).dot > $(TEXT_MAIN)-dpd.pdf ; \
 	$(PDFLATEX) $(TEXT_MAIN)
 	cp $(TEXT_TMP_VARIANT_PREFIX)$(TEXT_MAIN).pdf $(TEXT_BLD_PDF)
 
@@ -240,12 +270,16 @@ $(TEXT_DOCMAIN_DRV_TTEX) : $(TEXT_MAIN_SRC_CLTEX) $(TEXT_SUBS_SHUFFLE) $(SHUFFLE
 	mkdir -p $(@D)
 	$(SHUFFLE) --gen=$(TEXT_SHUFFLE_VARIANT) --plain --text2text --lhs2tex=no --order="$(TEXT_SHUFFLE_ORDER)" $< $(TEXT_SUBS_SHUFFLE_ALIAS) > $@
 
-$(TEXT_DOCMAIN_DRV_TEX) : %.tex : %.ttex
+$(TEXT_DOCMAIN_DRV_TEX) : %.tex : %.ttex $(TEXT2TEXT)
 	$(TEXT2TEXT) --doclatex $< \
 	  > $@
 
-$(TEXT_DOCMAIN_DRV_TWIKI) : %.twiki : %.ttex
+$(TEXT_DOCMAIN_DRV_TWIKI) : %.twiki : %.ttex $(TEXT2TEXT)
 	$(TEXT2TEXT) --twiki --gen-header-numbering=yes $< \
+	  > $@
+
+$(TEXT_DOCMAIN_DRV_HTML) : %.html : %.ttex $(TEXT2TEXT)
+	$(TEXT2TEXT) --html $< \
 	  > $@
 
 $(TEXT_ALL_DOCLTX_GIFS): $(DOC_PREFIX)%.gif : $(FIGS_SRC_PREFIX)%.pdf $(TEXT_MKF)

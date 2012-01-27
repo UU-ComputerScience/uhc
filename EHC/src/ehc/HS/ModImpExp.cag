@@ -8,16 +8,21 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-%%[20 hs module {%{EH}HS.ModImpExp} import({%{EH}Base.Builtin},{%{EH}Base.Common}, {%{EH}Base.Opts}, {%{EH}HS}, {%{EH}Gam.Full}, {%{EH}NameAspect})
+%%[50 hs module {%{EH}HS.ModImpExp} import({%{EH}Base.Builtin},{%{EH}Base.Common}, {%{EH}Opts}, {%{EH}HS}, {%{EH}Gam.Full}, {%{EH}NameAspect})
 %%]
 
-%%[20 hs export(Inh_AGItf(..),Syn_AGItf(..),sem_AGItf,wrap_AGItf)
+%%[50 hs export(Inh_AGItf(..),Syn_AGItf(..),sem_AGItf,wrap_AGItf)
 %%]
 
-%%[20 hs import(qualified Data.Set as Set)
+%%[50 hs import(qualified Data.Set as Set,qualified Data.Map as Map,Data.Maybe)
 %%]
 
-%%[20 hs import(qualified EH.Util.Rel as Rel,{%{EH}Module})
+%%[50 hs import(qualified EH.Util.Rel as Rel,{%{EH}Module})
+%%]
+
+%%[(99 codegen) hs import ({%{EH}Base.Target})
+%%]
+%%[99 hs import(qualified {%{EH}Base.Pragma} as Pragma)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -28,23 +33,27 @@
 WRAPPER AGItf
 %%]
 
+%%[99 ag import({HS/Pragmas})
+%%]
+
 %%[99
 PRAGMA strictcase
+PRAGMA novisit nocycle
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Options
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20
-ATTR AGItf Module [ opts: EHCOpts | | ]
+%%[50
+ATTR AGItf AllModuleDeclaration AllExpression [ opts: EHCOpts | | ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Top level instance names, to be propagated to next phase -- a hack :-(
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20
+%%[50
 ATTR AllNT [ | topInstanceNmL: {[HsName]} | ]
 
 SEM Declaration
@@ -58,21 +67,21 @@ SEM AGItf
                                         =   []
 %%]
 
-%%[95
+%%[91
 SEM Deriving
     | Deriving
         lhs             .   topInstanceNmL
                                         =   @instancename : @lhs.topInstanceNmL
 %%]
 
-%%[20
+%%[50
 SEM Declaration
     | Class Instance InstanceUseImplicitly
         loc             .   mbPrevInstancename
                                         =   Nothing
 %%]
 
-%%[95
+%%[91
 SEM Deriving
     | Deriving
         loc             .   mbPrevInstancename
@@ -83,13 +92,13 @@ SEM Deriving
 %%% Does 'main' exists? -- also a hack :-(
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20
+%%[50
 ATTR
   AGItf AllTopLevel AllDeclarationPlain AllFunctionBinding LeftHandSide Pattern Patterns
     [ | | mainValExists USE {||} {False}: Bool ]
 %%]
 
-%%[20
+%%[50
 SEM LeftHandSide
     | Function
         loc             .   mainValExists
@@ -102,3 +111,13 @@ SEM Pattern
         								=   @name == hsnMain
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Dummy def
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99
+SEM Declaration
+    | Class
+        loc             .   generDerivInfoL
+                                        =   []
+%%]

@@ -10,11 +10,11 @@ Used by all compiler driver code
 -- general imports
 %%[1 import(Data.List, Data.Char, Data.Maybe) export(module Data.Maybe, module Data.List, module Data.Char)
 %%]
-%%[1 import(Control.Monad.State, IO, System) export(module IO, module Control.Monad.State, module System)
+%%[1 import(Control.Monad.State, System.IO) export(module System.IO, module Control.Monad.State)
 %%]
 %%[1 import(EH.Util.CompileRun, EH.Util.Pretty, EH.Util.FPath, EH.Util.Utils) export(module EH.Util.CompileRun, module EH.Util.Pretty, module EH.Util.FPath, module EH.Util.Utils)
 %%]
-%%[1 import({%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{EH}Base.Opts}) export(module {%{EH}Base.Common}, module {%{EH}Base.Builtin}, module {%{EH}Base.Opts})
+%%[1 import({%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{EH}Opts}) export(module {%{EH}Base.Common}, module {%{EH}Base.Builtin}, module {%{EH}Opts})
 %%]
 %%[1 import({%{EH}Error},{%{EH}Error.Pretty}) export(module {%{EH}Error},module {%{EH}Error.Pretty})
 %%]
@@ -22,7 +22,7 @@ Used by all compiler driver code
 %%[8 import({%{EH}Gam.Full}) export(module {%{EH}Gam.Full})
 %%]
 
-%%[20 import(System.Time, System.Directory) export(module System.Time, module System.Directory)
+%%[50 import(System.Time, System.Directory) export(module System.Time, module System.Directory)
 %%]
 
 %%[1
@@ -37,24 +37,24 @@ The state HS compilation can be in
 
 %%[8 export(HSState(..))
 data HSState
-  = HSStart					-- starting from .hs
-  | HSAllSem				-- done all semantics for .hs
-%%[[20
-  | HSOnlyImports			-- done imports from .hs
-  | HIStart					-- starting from .hi
-  | HIAllSem				-- done all semantics for .hi
-  | HIOnlyImports			-- done imports from .hi
+  = HSStart                 -- starting from .hs
+  | HSAllSem                -- done all semantics for .hs
+%%[[50
+  | HSOnlyImports           -- done imports from .hs
+  | HIStart                 -- starting from .hi
+  | HIAllSem                -- done all semantics for .hi
+  | HIOnlyImports           -- done imports from .hi
 %%]]
 %%[[99
-  | LHSStart				-- starting from .lhs
-  | LHSOnlyImports			-- done imports from .lhs
+  | LHSStart                -- starting from .lhs
+  | LHSOnlyImports          -- done imports from .lhs
 %%]]
   deriving (Show,Eq)
 %%]
 
 Is a state working on literal haskell input?
 
-%%[20 export(hsstateIsLiteral)
+%%[50 export(hsstateIsLiteral)
 hsstateIsLiteral :: HSState -> Bool
 %%[[99
 hsstateIsLiteral LHSStart       = True
@@ -63,7 +63,7 @@ hsstateIsLiteral LHSOnlyImports = True
 hsstateIsLiteral _              = False
 %%]
 
-%%[20 export(hsstateShowLit)
+%%[50 export(hsstateShowLit)
 hsstateShowLit :: HSState -> String
 %%[[99
 hsstateShowLit LHSStart       = "Literal"
@@ -74,7 +74,7 @@ hsstateShowLit _              = ""
 
 The next thing to do for HSState.
 
-%%[20 export(hsstateNext)
+%%[50 export(hsstateNext)
 hsstateNext :: HSState -> HSState
 hsstateNext HSStart       = HSOnlyImports
 hsstateNext HIStart       = HIOnlyImports
@@ -95,7 +95,7 @@ data EHState
 
 The state C compilation can be in, which basically is just administering it has to be compiled
 
-%%[(94 codegen) export(CState(..))
+%%[(90 codegen) export(CState(..))
 data CState
   = CStart
   | CAllSem
@@ -109,7 +109,7 @@ data EHCompileUnitState
   = ECUSUnknown
   | ECUSHaskell !HSState
   | ECUSEh      !EHState
-%%[[(94 codegen)
+%%[[(90 codegen)
   | ECUSC       !CState
 %%]]
   | ECUSGrin
@@ -123,11 +123,11 @@ data EHCompileUnitState
 
 %%[8 export(EHCompileUnitKind(..))
 data EHCompileUnitKind
-  = EHCUKind_HS		-- Haskell: .hs .lhs .hi
-%%[[94
-  | EHCUKind_C		-- C: .c
+  = EHCUKind_HS     -- Haskell: .hs .lhs .hi
+%%[[90
+  | EHCUKind_C      -- C: .c
 %%]]
-  | EHCUKind_None	-- Nothing
+  | EHCUKind_None   -- Nothing
   deriving Eq
 %%]
 
@@ -136,7 +136,7 @@ ecuStateToKind :: EHCompileUnitState -> EHCompileUnitKind
 ecuStateToKind s
   = case s of
       ECUSHaskell _ -> EHCUKind_HS
-%%[[94
+%%[[90
       ECUSC       _ -> EHCUKind_C
 %%]]
       _             -> EHCUKind_None
@@ -175,8 +175,8 @@ mkInOrOutputFPathDirFor inoutputfor opts modNm fp suffix
   = (fpathSetSuff suffix fp', d)
   where (fp',d) = case inoutputfor of
                     OutputFor_Module   -> f ehcOptOutputDir
-                    OutputFor_Pkg      -> f ehcOptOutputPkgLibDir
-                    InputFrom_Loc l 
+                    OutputFor_Pkg      -> f ehcOptOutputDir -- ehcOptOutputPkgLibDir
+                    InputFrom_Loc l
                       | filelocIsPkg l -> f (const Nothing)
                       | otherwise      -> f ehcOptOutputDir
         f g     = case g opts of
@@ -195,5 +195,39 @@ mkInOrOutputFPathFor inoutputfor opts modNm fp suffix
 %%[8 export(mkOutputFPath)
 mkOutputFPath :: FPATH nm => EHCOpts -> nm -> FPath -> String -> FPath
 mkOutputFPath = mkInOrOutputFPathFor OutputFor_Module
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Construction of output names
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 export(mkPerModuleOutputFPath)
+-- | FPath for per module output
+mkPerModuleOutputFPath :: EHCOpts -> Bool -> HsName -> FPath -> String -> FPath
+mkPerModuleOutputFPath opts doSepBy_ modNm fp suffix
+  = fpO modNm fp
+%%[[8
+  where fpO m f= mkOutputFPath opts m f suffix
+%%][99
+  where fpO m f= case ehcOptPkg opts of
+                   Just _        -> nm_
+                   _ | doSepBy_  -> nm_
+                     | otherwise -> mkOutputFPath opts m f suffix
+               where nm_ = mkOutputFPath opts (hsnMapQualified (const base) m) (fpathSetBase base f) suffix
+                         where base = hsnShow True "_" "_" m
+%%]]
+%%]
+
+%%[8 export(mkPerExecOutputFPath)
+-- | FPath for final executable
+mkPerExecOutputFPath :: EHCOpts -> HsName -> FPath -> Maybe String -> FPath
+mkPerExecOutputFPath opts modNm fp mbSuffix
+  = fpExec
+  where fpExecBasedOnSrc = maybe (mkOutputFPath opts modNm fp "") (\s -> mkOutputFPath opts modNm fp s) mbSuffix
+%%[[8
+        fpExec = fpExecBasedOnSrc
+%%][99
+        fpExec = maybe fpExecBasedOnSrc id (ehcOptMbOutputFile opts)
+%%]]
 %%]
 

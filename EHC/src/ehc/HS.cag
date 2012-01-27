@@ -18,13 +18,16 @@
 %%[1 hs export(mkRngNm,mkRngNm',mkRngStr)
 %%]
 
+%%[5 hs export(TypeLeftHandSide(..), TypePattern(..), TypePatterns)
+%%]
+
 %%[5 hs export(Constructor(..), Constructors)
 %%]
 
 %%[5 hs export(GuardedExpression(..), GuardedExpressions, Alternative(..), Alternatives, Qualifier(..), Qualifiers)
 %%]
 
-%%[5 hs export(SimpleType(..), AnnotatedType(..), AnnotatedTypes)
+%%[5555 hs export(SimpleType(..))
 %%]
 
 %%[6 hs export(Kind(..), Kinds, KindAnnotation(..))
@@ -60,10 +63,13 @@
 %%[15 hs export(FunctionalDependency(..), FunctionalDependencies)
 %%]
 
-%%[20 hs export(Export(..), Exports, MaybeExports, ImportDeclaration(..), ImportDeclarations, ImportSpecification(..), MaybeImportSpecification, Import(..), Imports)
+%%[50 hs export(Export(..), Exports, MaybeExports, ImportDeclaration(..), ImportDeclarations, ImportSpecification(..), MaybeImportSpecification, Import(..), Imports)
 %%]
 
-%%[95 hs export(Deriving(..), Derivings)
+%%[91 hs export(Deriving(..), Derivings)
+%%]
+
+%%[99 hs export(Pragma(..), Pragmas)
 %%]
 
 %%[1.Token hs import(UU.Scanner.Token)

@@ -17,10 +17,10 @@ to avoid explosion of search space during resolution.
 %%[(9 hmtyinfer || hmtyast) import({%{EH}CHR.Key}) export(module {%{EH}CHR.Key})
 %%]
 
-%%[(20 hmtyinfer || hmtyast) import({%{EH}Base.CfgPP})
+%%[(50 hmtyinfer || hmtyast) import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
 %%]
 
-%%[(99 hmtyinfer || hmtyast) import({%{EH}Base.ForceEval})
+%%[(9999 hmtyinfer || hmtyast) import({%{EH}Base.ForceEval})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -35,6 +35,9 @@ data CHR cnstr guard subst
       , chrGuard        :: ![guard] 		-- subst -> Maybe subst
       , chrBody         :: ![cnstr]
       }
+%%[[50
+  deriving (Typeable, Data)
+%%]]
 
 emptyCHRGuard :: [a]
 emptyCHRGuard = []
@@ -62,39 +65,23 @@ instance (PP c,PP g) => PP (CHR c g s) where
           ppChr l = vlist l -- ppCurlysBlock
 %%]
 
-%%[(20 hmtyinfer || hmtyast)
-instance (PPForHI c, PPForHI g) => PPForHI (CHR c g s) where
-  ppForHI chr
-    = ppCurlysSemisBlock
-        [ ppCurlysSemisBlock $ map ppForHI $ chrHead   chr
-        , ppForHI                          $ chrSimpSz chr
-        , ppCurlysSemisBlock $ map ppForHI $ chrGuard  chr
-        , ppCurlysSemisBlock $ map ppForHI $ chrBody   chr
-        ]
-%%]
-
 %%[(9 hmtyinfer || hmtyast)
 instance Keyable cnstr => Keyable (CHR cnstr guard subst) where
   toKey chr = toKey $ head $ chrHead chr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% CHRSubstitutable
+%%% Var instances
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(9 hmtyinfer || hmtyast) export(CHRSubstitutable(..))
-class Ord var => CHRSubstitutable x var subst | x -> var, x -> subst where
-  chrFtv       :: x -> Set.Set var
-  chrAppSubst  :: subst -> x -> x
---  chrCmbSubst  :: subst -> subst -> subst
-%%]
-
 %%[(9 hmtyinfer || hmtyast)
-instance (CHRSubstitutable c v s,CHRSubstitutable g v s) => CHRSubstitutable (CHR c g s) v s where
-  chrFtv          (CHR {chrHead=h, chrGuard=g, chrBody=b})
-    = Set.unions $ concat [map chrFtv h, map chrFtv g, map chrFtv b]
-  chrAppSubst s r@(CHR {chrHead=h, chrGuard=g, chrBody=b})
-    = r {chrHead = map (chrAppSubst s) h, chrGuard = map (chrAppSubst s) g, chrBody = map (chrAppSubst s) b}
+instance (VarExtractable c v,VarExtractable g v) => VarExtractable (CHR c g s) v where
+  varFreeSet          (CHR {chrHead=h, chrGuard=g, chrBody=b})
+    = Set.unions $ concat [map varFreeSet h, map varFreeSet g, map varFreeSet b]
+
+instance (VarUpdatable c s,VarUpdatable g s) => VarUpdatable (CHR c g s) s where
+  varUpd s r@(CHR {chrHead=h, chrGuard=g, chrBody=b})
+    = r {chrHead = map (varUpd s) h, chrGuard = map (varUpd s) g, chrBody = map (varUpd s) b}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -115,7 +102,7 @@ class CHREmptySubstitution subst where
 A Matchable participates in the reduction process as a reducable constraint.
 
 %%[(9 hmtyinfer || hmtyast) export(CHRMatchable(..))
-class (Keyable x) => CHRMatchable env x subst | x -> subst env where
+class (Keyable x) => CHRMatchable env x subst where -- | x -> subst env where
   chrMatchTo      :: env -> subst -> x -> x -> Maybe subst
 %%]
 
@@ -126,7 +113,7 @@ class (Keyable x) => CHRMatchable env x subst | x -> subst env where
 A Checkable participates in the reduction process as a guard, to be checked.
 
 %%[(9 hmtyinfer || hmtyast) export(CHRCheckable(..))
-class CHRCheckable env x subst | x -> subst env where
+class CHRCheckable env x subst where
   chrCheck      :: env -> subst -> x -> Maybe subst
 %%]
 
@@ -147,13 +134,19 @@ chr |> g = chr {chrGuard = chrGuard chr ++ g}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% ForceEval
+%%% Instances: ForceEval, Binary, Serialize
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(99 hmtyinfer || hmtyast)
+%%[(9999 hmtyinfer || hmtyast)
 instance (ForceEval c, ForceEval g) => ForceEval (CHR c g s) where
   forceEval x@(CHR h sz g b) | forceEval h `seq` forceEval g `seq` forceEval b `seq` True = x
 %%[[102
   fevCount (CHR h sz g b) = cm1 "CHR" `cmUnion` fevCount h `cmUnion` fevCount sz `cmUnion` fevCount g `cmUnion` fevCount b
 %%]]
+%%]
+
+%%[(50 hmtyinfer || hmtyast)
+instance (Serialize c,Serialize g,Serialize s) => Serialize (CHR c g s) where
+  sput (CHR a b c d) = sput a >> sput b >> sput c >> sput d
+  sget = liftM4 CHR sget sget sget sget
 %%]

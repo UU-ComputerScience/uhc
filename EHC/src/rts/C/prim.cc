@@ -15,6 +15,13 @@ PRIM void primPatternMatchFailure()
     exit(1);
 }
 
+PRIM void primPatternMatchFailureDebug(Word x)
+{
+    printf("Pattern match failure, no match found for tag: %d \n", x);
+    exit(1);
+}
+
+
 PRIM Word primOrd(Word x)
 {
 	return x;	
@@ -55,17 +62,6 @@ PRIM Word primError(Word s)
 	return 0;	
 }
 
-
-PRIM Word primMinInt()
-{
-	return 0x10000000;
-}
-PRIM Word primMaxInt()
-{
-	return 0x0FFFFFFF;
-}
-
-
 %%]
 
 
@@ -82,6 +78,31 @@ PRIM Word primExitWith(Word n)
 }
 
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Program arguments
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99
+PRIM void getProgArgv( Word argc, Word argv )
+{
+	*((int*)argc) = rtsArgC ;
+	*((char***)argv) = rtsArgV ;
+}
+
+PRIM void setProgArgv( Word argc, Word argv )
+{
+	rtsArgC = (int)argc ;
+	rtsArgV = (char**) argv ;
+}
+
+%%]
+
+
+
+
+
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% IO
@@ -199,7 +220,7 @@ PRIM Word packedStringToInteger(Word w)
 {
 	char *s = (char*) w;
 	Word res;
-    res = heapalloc(1);
+    res = malloc(1);
     ((WPtr)res)[0] = atoi( (char*)s );
     return res;
 }
@@ -208,7 +229,7 @@ PRIM Word packedStringToInteger(Word w)
 PRIM Word primIntToInteger(Word n)
 {
 	Word res;
-    res = heapalloc(1);
+    res = malloc(1);
     ((WPtr)res)[0] = n;
     return res;
 }
@@ -216,7 +237,7 @@ PRIM Word primIntToInteger(Word n)
 PRIM Word primInt32ToInteger(Word32 n)
 {
 	Word res;
-    res = heapalloc(1);
+    res = malloc(1);
     ((WPtr)res)[0] = n;
     return res;
 }
@@ -235,6 +256,12 @@ PRIM Word32 primIntegerToWord32(Word p)
     return res;
 }
 
+PRIM Int32 primIntegerToInt32(Word p)
+{
+	Int32 res;
+    res = ((WPtr)p)[0];
+    return res;
+}
 
 PRIM Word primCmpInteger(Word x, Word y)
 {   if (((WPtr)x)[0] > ((WPtr)y)[0])
@@ -254,7 +281,7 @@ PRIM Word primEqInteger(Word x, Word y)
 PRIM Word primAddInteger(Word x, Word y)
 {   
 	Word res;
-    res = heapalloc(1);
+    res = malloc(1);
     ((WPtr)res)[0] = ((WPtr)x)[0] + ((WPtr)y)[0];
     return res;
 }
@@ -262,7 +289,7 @@ PRIM Word primAddInteger(Word x, Word y)
 PRIM Word primSubInteger(Word x, Word y)
 {   
 	Word res;
-    res = heapalloc(1);
+    res = malloc(1);
     ((WPtr)res)[0] = ((WPtr)x)[0] - ((WPtr)y)[0];
     return res;
 }
@@ -270,7 +297,7 @@ PRIM Word primSubInteger(Word x, Word y)
 PRIM Word primMulInteger(Word x, Word y)
 {   
 	Word res;
-    res = heapalloc(1);
+    res = malloc(1);
     ((WPtr)res)[0] = ((WPtr)x)[0] * ((WPtr)y)[0];
     return res;
 }
@@ -278,7 +305,7 @@ PRIM Word primMulInteger(Word x, Word y)
 PRIM Word primNegInteger(Word x)
 {   
 	Word res;
-    res = heapalloc(1);
+    res = malloc(1);
     ((WPtr)res)[0] = -((WPtr)x)[0];
     return res;
 }
@@ -286,7 +313,7 @@ PRIM Word primNegInteger(Word x)
 PRIM Word primQuotInteger(Word x, Word y)
 {   
 	Word res;
-    res = heapalloc(1);
+    res = malloc(1);
     ((WPtr)res)[0] = ((WPtr)x)[0] / ((WPtr)y)[0];
     return res;
 }
@@ -294,7 +321,7 @@ PRIM Word primQuotInteger(Word x, Word y)
 PRIM Word primRemInteger(Word x, Word y)
 {   
 	Word res;
-    res = heapalloc(1);
+    res = malloc(1);
     ((WPtr)res)[0] = ((WPtr)x)[0] % ((WPtr)y)[0];
     return res;
 }
@@ -302,7 +329,7 @@ PRIM Word primRemInteger(Word x, Word y)
 PRIM Word primDivInteger(Word x, Word y)
 {   
 	Word res;
-    res = heapalloc(1);
+    res = malloc(1);
     ((WPtr)res)[0] = ((WPtr)x)[0] / ((WPtr)y)[0];
     return res;
 }
@@ -310,7 +337,7 @@ PRIM Word primDivInteger(Word x, Word y)
 PRIM Word primModInteger(Word x, Word y)
 {   
 	Word res;
-    res = heapalloc(1);
+    res = malloc(1);
     ((WPtr)res)[0] = ((WPtr)x)[0] % ((WPtr)y)[0];
     return res;
 }

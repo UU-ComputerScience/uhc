@@ -8,7 +8,7 @@ An EHC compile unit maintains info for one unit of compilation, a Haskell (HS) m
 %%]
 
 -- general imports
-%%[8 import(qualified Data.Map as Map)
+%%[8 import(qualified Data.Map as Map,qualified Data.Set as Set)
 %%]
 %%[8 import({%{EH}EHC.Common})
 %%]
@@ -19,11 +19,15 @@ An EHC compile unit maintains info for one unit of compilation, a Haskell (HS) m
 -- Language syntax: Core, TyCore, Grin, ...
 %%[(8 codegen) import( qualified {%{EH}Core} as Core)
 %%]
-%%[(8 codegen) import(qualified {%{EH}TyCore} as C)
+%%[(8 codegen tycore) import(qualified {%{EH}TyCore} as C)
 %%]
 %%[(8 codegen grin) import(qualified {%{EH}GrinCode} as Grin, qualified {%{EH}GrinByteCode} as Bytecode)
 %%]
 %%[(8 jazy) hs import(qualified {%{EH}JVMClass} as Jvm)
+%%]
+%%[(8 javascript) hs import(qualified {%{EH}JavaScript} as JS)
+%%]
+%%[(8 codegen cmm) hs import(qualified {%{EH}Cmm} as Cmm)
 %%]
 -- Language semantics: HS, EH
 %%[8 import(qualified {%{EH}EH.MainAG} as EHSem, qualified {%{EH}HS.MainAG} as HSSem)
@@ -33,24 +37,28 @@ An EHC compile unit maintains info for one unit of compilation, a Haskell (HS) m
 %%]
 
 -- HI Syntax and semantics, HS module semantics
-%%[20 import(qualified {%{EH}HI} as HI, qualified {%{EH}HI.MainAG} as HISem)
+%%[50 import(qualified {%{EH}HI} as HI)
 %%]
-%%[20 import(qualified {%{EH}HS.ModImpExp} as HSSemMod)
+%%[50 import(qualified {%{EH}HS.ModImpExp} as HSSemMod)
 %%]
 -- module admin
-%%[20 import({%{EH}Module})
+%%[50 import({%{EH}Module})
 %%]
 
 -- timestamps
-%%[20 import(System.Time, System.Directory)
+%%[50 import(System.Time, System.Directory)
 %%]
 
 -- Force evaluation for IO
-%%[99 import({%{EH}Base.ForceEval})
+%%[9999 import({%{EH}Base.ForceEval})
 %%]
-%%[(99 codegen) import({%{EH}Core.Trf.ForceEval})
+%%[(9999 codegen) import({%{EH}Core.Trf.ForceEval})
 %%]
-%%[(99 codegen grin) import({%{EH}GrinCode.Trf.ForceEval}, {%{EH}GrinByteCode.Trf.ForceEval})
+%%[(9999 codegen grin) import({%{EH}GrinCode.Trf.ForceEval}, {%{EH}GrinByteCode.Trf.ForceEval})
+%%]
+
+-- pragma, target
+%%[99 hs import(qualified {%{EH}Base.Pragma} as Pragma, {%{EH}Base.Target})
 %%]
 
 -- debug
@@ -65,10 +73,10 @@ Intermodule optimisation info.
 Currently only for Grin meant to be compiled to GrinByteCode.
 Absence of this info should not prevent correct compilation.
 
-%%[20 export(Optim(..),defaultOptim)
+%%[50 export(Optim(..),defaultOptim)
 data Optim
   = Optim
-%%[[(20 grin)
+%%[[(50 grin)
       { optimGrInlMp          :: Grin.GrInlMp        -- inlining map, from name to GrExpr (grin expressions)
       }
 %%]]
@@ -76,7 +84,7 @@ data Optim
 defaultOptim :: Optim
 defaultOptim
   = Optim
-%%[[(20 grin)
+%%[[(50 grin)
       Map.empty
 %%]]
 %%]
@@ -91,11 +99,12 @@ Ok, it is useful to see how much is done.
 %%[99 export(EHCCompileSeqNr(..))
 data EHCCompileSeqNr
   = EHCCompileSeqNr
-      { ecseqnrThis		:: !Int
-      , ecseqnrTotal	:: !Int
+      { ecseqnrThis     :: !Int
+      , ecseqnrTotal    :: !Int
       }
   deriving (Eq,Ord)
 
+zeroEHCCompileSeqNr :: EHCCompileSeqNr
 zeroEHCCompileSeqNr = EHCCompileSeqNr 0 0
 
 instance Show EHCCompileSeqNr where
@@ -126,44 +135,56 @@ data EHCompileUnit
 %%[[(8 codegen)
       , ecuMbCore            :: !(Maybe Core.CModule)
       , ecuMbCoreSem         :: !(Maybe Core2GrSem.Syn_CodeAGItf)
+%%]]
+%%[[(8 codegen tycore)
       , ecuMbTyCore          :: !(Maybe C.Module)
-      -- , ecuMbTyCoreSem       :: !(Maybe Core2GrSem.Syn_CodeAGItf)
 %%]]
 %%[[(8 grin)
       , ecuMbGrin            :: !(Maybe Grin.GrModule)
       , ecuMbBytecode        :: !(Maybe Bytecode.Module)
       , ecuMbBytecodeSem     :: !(Maybe PP_Doc)
 %%]]
+%%[[(8 cmm)
+      , ecuMbCmm             :: !(Maybe Cmm.Module)
+%%]]
 %%[[(8 jazy)
       , ecuMbJVMClassL       :: !(Maybe (HsName,[Jvm.Class]))
 %%]]
+%%[[(8 javascript)
+      , ecuMbJavaScript      :: !(Maybe JS.JavaScriptModule)
+%%]]
       , ecuState             :: !EHCompileUnitState
-%%[[20
-      , ecuHSDeclImpNmL      :: ![HsName]							-- imported modules as declared in src .hs
-      , ecuHIDeclImpNmL      :: ![HsName]							-- imported modules as declared, either in .hs of .hi
-      , ecuHIUsedImpNmL      :: ![HsName]							-- imported modules as actually used
-      , ecuIsTopMod          :: !Bool								-- been specified on commandline
-      , ecuHasMain           :: !Bool								-- has a def for 'main'?
-      , ecuNeedsCompile      :: !Bool								-- (re)compilation from .hs needed?
-      , ecuMbHSTime          :: !(Maybe ClockTime)
-      , ecuMbHITime          :: !(Maybe ClockTime)
+%%[[50
+      , ecuHSDeclImpNmL      :: ![HsName]                           -- imported modules as declared in src .hs
+      , ecuHIDeclImpNmL      :: ![HsName]                           -- imported modules as declared, either in .hs or .hi
+      , ecuHIUsedImpNmL      :: ![HsName]                           -- imported modules as actually used
+      , ecuIsTopMod          :: !Bool                               -- module has been specified for compilation on commandline
+      , ecuHasMain           :: !Bool                               -- has a def for 'main'?
+      , ecuNeedsCompile      :: !Bool                               -- (re)compilation from .hs needed?
+      , ecuMbHSTime          :: !(Maybe ClockTime)                  -- timestamp of possibly absent hs file
+      , ecuMbHIInfoTime      :: !(Maybe ClockTime)                  -- timestamp of possibly previously generated hi file
 %%[[(8 codegen)
-      , ecuMbCoreTime        :: !(Maybe ClockTime)
+      , ecuMbCoreTime        :: !(Maybe ClockTime)                  -- timestamp of possibly previously generated core file
 %%]]
 %%[[(8 codegen grin)
-      , ecuMbGrinTime        :: !(Maybe ClockTime)
+      , ecuMbGrinTime        :: !(Maybe ClockTime)                  -- timestamp of possibly previously generated grin file
 %%]]
       , ecuMbHSSemMod        :: !(Maybe HSSemMod.Syn_AGItf)
-      , ecuMod               :: !Mod
-      , ecuMbPrevHI          :: !(Maybe HI.AGItf)
-      , ecuMbPrevHISem       :: !(Maybe HISem.Syn_AGItf)
+      , ecuMod               :: !Mod                                -- import/export info of module
+      , ecuMbPrevHIInfo      :: !(Maybe HI.HIInfo)                  -- possible HI info of previous run
       , ecuMbOptim           :: !(Maybe Optim)
-      , ecuHIInfo            :: !HI.HIInfo
-      , ecuDirIsWritable     :: !Bool
+      , ecuHIInfo            :: !HI.HIInfo                          -- HI info of module
+      , ecuDirIsWritable     :: !Bool                               -- can be written in dir of module?
+%%]]
+%%[[99
+      , ecuMbOpts            :: (Maybe EHCOpts)                     -- possibly per module adaption of options (caused by pragmas)
+      , ecuTarget            :: Target                              -- target for which we compile
+      , ecuPragmas           :: !(Set.Set Pragma.Pragma)            -- pragmas of module
+      , ecuUsedNames         :: ModEntRelFilterMp                   -- map holding actually used names, to later filter cache of imported hi's to be included in this module's hi
 %%]]
 %%[[(99 codegen)
-      , ecuGenCodeFiles      :: ![FPath]
-      , ecuSeqNr      		 :: !EHCCompileSeqNr
+      , ecuGenCodeFiles      :: ![FPath]                            -- generated code fiels
+      , ecuSeqNr             :: !EHCCompileSeqNr                    -- sequence nr of sorted compilation
 %%]]
       }
 %%]
@@ -178,9 +199,20 @@ ecuFilePath ecu
 %%]]
 %%]
 
-%%[20 export(ecuIsMainMod)
+%%[50 export(ecuIsMainMod)
 ecuIsMainMod :: EHCompileUnit -> Bool
 ecuIsMainMod e = ecuIsTopMod e && ecuHasMain e
+%%]
+
+%%[99 export(ecuAnHIInfo)
+-- | give the current value HIInfo, or the previous one
+ecuAnHIInfo :: EHCompileUnit -> HI.HIInfo
+ecuAnHIInfo e
+  = case ecuMbPrevHIInfo e of
+      Just pi | HI.hiiIsEmpty hii
+        -> pi
+      _ -> hii
+  where hii = ecuHIInfo e
 %%]
 
 %%[8 export(emptyECU)
@@ -203,19 +235,26 @@ emptyECU
 %%[[(8 codegen)
       , ecuMbCore            = Nothing
       , ecuMbCoreSem         = Nothing
+%%]]
+%%[[(8 codegen tycore)
       , ecuMbTyCore          = Nothing
-      -- , ecuMbTyCoreSem       = Nothing
 %%]]
 %%[[(8 grin)
       , ecuMbGrin            = Nothing
       , ecuMbBytecode        = Nothing
       , ecuMbBytecodeSem     = Nothing
 %%]]
+%%[[(8 cmm)
+      , ecuMbCmm             = Nothing
+%%]]
 %%[[(8 jazy)
       , ecuMbJVMClassL       = Nothing
 %%]]
+%%[[(8 javascript)
+      , ecuMbJavaScript      = Nothing
+%%]]
       , ecuState             = ECUSUnknown
-%%[[20
+%%[[50
       , ecuHSDeclImpNmL      = []
       , ecuHIDeclImpNmL      = []
       , ecuHIUsedImpNmL      = []
@@ -223,30 +262,35 @@ emptyECU
       , ecuHasMain           = False
       , ecuNeedsCompile      = True
       , ecuMbHSTime          = Nothing
-      , ecuMbHITime          = Nothing
-%%[[(20 codegen)
+      , ecuMbHIInfoTime      = Nothing
+%%[[(50 codegen)
       , ecuMbCoreTime        = Nothing
 %%]]
-%%[[(20 codegen grin)
+%%[[(50 codegen grin)
       , ecuMbGrinTime        = Nothing
 %%]]
       , ecuMbHSSemMod        = Nothing
       , ecuMod               = emptyMod
-      , ecuMbPrevHI          = Nothing
-      , ecuMbPrevHISem       = Nothing
+      , ecuMbPrevHIInfo      = Nothing
       , ecuMbOptim           = Nothing
       , ecuHIInfo            = HI.emptyHIInfo
       , ecuDirIsWritable     = False
 %%]]
+%%[[99
+      , ecuMbOpts            = Nothing
+      , ecuTarget            = defaultTarget
+      , ecuPragmas           = Set.empty
+      , ecuUsedNames         = Map.empty
+%%]]
 %%[[(99 codegen)
       , ecuGenCodeFiles      = []
-      , ecuSeqNr			 = zeroEHCCompileSeqNr
+      , ecuSeqNr             = zeroEHCCompileSeqNr
 %%]]
       }
 %%]
       , ecuMbEHSem2          = Nothing
 
-%%[20 export(ecuImpNmL)
+%%[50 export(ecuImpNmL)
 ecuImpNmL :: EHCompileUnit -> [HsName]
 ecuImpNmL ecu = (nub $ ecuHSDeclImpNmL ecu ++ ecuHIDeclImpNmL ecu ++ ecuHIUsedImpNmL ecu) \\ [ecuModNm ecu]
 %%]
@@ -264,7 +308,7 @@ instance CompileUnitState EHCompileUnitState where
 %%[8.cusIsImpKnown
   cusIsImpKnown _ = True
 %%]
-%%[20 -8.cusIsImpKnown
+%%[50 -8.cusIsImpKnown
   cusIsImpKnown s = case s of
                       ECUSHaskell HSOnlyImports  -> True
                       ECUSHaskell HIOnlyImports  -> True
@@ -295,14 +339,21 @@ instance CompileUnit EHCompileUnit HsName FileLoc EHCompileUnitState where
   cuUpdKey   nm u   = u {ecuModNm = nm}
 %%[[8
   cuImports         = const []
-%%][20
+%%][50
   cuImports         = ecuImpNmL
 %%]]
+%%[[99
+  cuParticipation u = if not (Set.null $ Set.filter (Pragma.pragmaIsExcludeTarget $ ecuTarget u) $ ecuPragmas u)
+                      then [CompileParticipation_NoImport]
+                      else []
+%%]]
+
+instance FPathError Err
 
 instance CompileRunError Err () where
-  crePPErrL                 = ppErrL
-  creMkNotFoundErrL _ fp sp = [rngLift emptyRange Err_FileNotFound fp sp]
-  creAreFatal               = errLIsFatal
+  crePPErrL                      = ppErrL
+  creMkNotFoundErrL _ fp sp sufs = [rngLift emptyRange Err_FileNotFound fp sp sufs]
+  creAreFatal                    = errLIsFatal
 
 instance CompileModName HsName where
   mkCMNm = hsnFromString
@@ -313,7 +364,7 @@ instance Show EHCompileUnit where
 instance PP EHCompileUnit where
   pp ecu
     = ecuModNm ecu >|<
-%%[[20
+%%[[50
       ":" >#< ppCommas (ecuImpNmL ecu) >|<
 %%]]
       "," >#< show (ecuState ecu)
@@ -356,14 +407,13 @@ ecuStoreCore :: EcuUpdater Core.CModule
 %%[[8
 ecuStoreCore x ecu = ecu { ecuMbCore = Just x }
 %%][99
+ecuStoreCore x ecu | x `seq` True = ecu { ecuMbCore = Just x }
+%%][9999
 ecuStoreCore x ecu | forceEval x `seq` True = ecu { ecuMbCore = Just x }
 %%]]
 %%]
 
-%%[(8 codegen) export(ecuStoreTyCore)
--- ecuStoreTyCoreSem :: EcuUpdater Core2GrSem.Syn_CodeAGItf
--- ecuStoreTyCoreSem x ecu = ecu { ecuMbCoreSem = Just x }
-
+%%[(8 codegen tycore) export(ecuStoreTyCore)
 ecuStoreTyCore :: EcuUpdater C.Module
 ecuStoreTyCore x ecu = ecu { ecuMbTyCore = Just x }
 %%]
@@ -371,6 +421,11 @@ ecuStoreTyCore x ecu = ecu { ecuMbTyCore = Just x }
 %%[(8 jazy) export(ecuStoreJVMClassL)
 ecuStoreJVMClassL :: EcuUpdater (HsName,[Jvm.Class])
 ecuStoreJVMClassL x ecu = ecu { ecuMbJVMClassL = Just x }
+%%]
+
+%%[(8 javascript) export(ecuStoreJavaScript)
+ecuStoreJavaScript :: EcuUpdater (JS.JavaScriptModule)
+ecuStoreJavaScript x ecu = ecu { ecuMbJavaScript = Just x }
 %%]
 
 ecuStoreJVMClassFPathL :: EcuUpdater [FPath]
@@ -381,6 +436,8 @@ ecuStoreGrin :: EcuUpdater Grin.GrModule
 %%[[8
 ecuStoreGrin x ecu = ecu { ecuMbGrin = Just x }
 %%][99
+ecuStoreGrin x ecu | x `seq` True = ecu { ecuMbGrin = Just x }
+%%][9999
 ecuStoreGrin x ecu | forceEval x `seq` True = ecu { ecuMbGrin = Just x }
 %%]]
 
@@ -388,6 +445,8 @@ ecuStoreBytecode :: EcuUpdater Bytecode.Module
 %%[[8
 ecuStoreBytecode x ecu = ecu { ecuMbBytecode = Just x }
 %%][99
+ecuStoreBytecode x ecu | x `seq` True = ecu { ecuMbBytecode = Just x }
+%%][9999
 ecuStoreBytecode x ecu | forceEval x `seq` True = ecu { ecuMbBytecode = Just x }
 %%]]
 
@@ -395,12 +454,20 @@ ecuStoreBytecodeSem :: EcuUpdater PP_Doc
 ecuStoreBytecodeSem x ecu = ecu { ecuMbBytecodeSem = Just x }
 %%]
 
-%%[20 export(ecuStoreHSDeclImpL,ecuSetNeedsCompile,ecuStoreHIUsedImpL,ecuStoreHSTime,ecuStoreHITime,ecuStoreHSSemMod,ecuStoreHIDeclImpL,ecuStoreMod,ecuSetIsTopMod,ecuSetHasMain,ecuStorePrevHI,ecuStorePrevHISem,ecuStoreOptim,ecuStoreHIInfo)
+%%[(8 codegen cmm) export(ecuStoreCmm)
+ecuStoreCmm :: EcuUpdater Cmm.Module
+ecuStoreCmm x ecu = ecu { ecuMbCmm = Just x }
+%%]
+
+%%[50 export(ecuStoreHSDeclImpL,ecuSetNeedsCompile,ecuStoreHIUsedImpL,ecuStoreHIInfoTime,ecuStoreHSTime,ecuStoreHSSemMod,ecuStoreHIDeclImpL,ecuStoreMod,ecuSetIsTopMod,ecuSetHasMain,ecuStoreOptim,ecuStoreHIInfo,ecuStorePrevHIInfo)
 ecuStoreHSTime :: EcuUpdater ClockTime
 ecuStoreHSTime x ecu = ecu { ecuMbHSTime = Just x }
 
-ecuStoreHITime :: EcuUpdater ClockTime
-ecuStoreHITime x ecu = ecu { ecuMbHITime = Just x }
+-- ecuStoreHITime :: EcuUpdater ClockTime
+-- ecuStoreHITime x ecu = ecu { ecuMbHITime = Just x }
+
+ecuStoreHIInfoTime :: EcuUpdater ClockTime
+ecuStoreHIInfoTime x ecu = ecu { ecuMbHIInfoTime = Just x }
 
 ecuStoreHSSemMod :: EcuUpdater HSSemMod.Syn_AGItf
 ecuStoreHSSemMod x ecu = ecu { ecuMbHSSemMod = Just x }
@@ -426,11 +493,14 @@ ecuSetHasMain x ecu = ecu { ecuHasMain = x }
 ecuSetNeedsCompile :: EcuUpdater Bool
 ecuSetNeedsCompile x ecu = ecu { ecuNeedsCompile = x }
 
-ecuStorePrevHI :: EcuUpdater HI.AGItf
-ecuStorePrevHI x ecu = ecu { ecuMbPrevHI = Just x }
+-- ecuStorePrevHI :: EcuUpdater HI.AGItf
+-- ecuStorePrevHI x ecu = ecu { ecuMbPrevHI = Just x }
 
-ecuStorePrevHISem :: EcuUpdater HISem.Syn_AGItf
-ecuStorePrevHISem x ecu = ecu { ecuMbPrevHISem = Just x }
+-- ecuStorePrevHISem :: EcuUpdater HISem.Syn_AGItf
+-- ecuStorePrevHISem x ecu = ecu { ecuMbPrevHISem = Just x }
+
+ecuStorePrevHIInfo :: EcuUpdater HI.HIInfo
+ecuStorePrevHIInfo x ecu = ecu { ecuMbPrevHIInfo = Just x }
 
 ecuStoreOptim :: EcuUpdater Optim
 ecuStoreOptim x ecu = ecu { ecuMbOptim = Just x }
@@ -439,23 +509,39 @@ ecuStoreHIInfo :: EcuUpdater HI.HIInfo
 %%[[8
 ecuStoreHIInfo x ecu = ecu { ecuHIInfo = x }
 %%][99
+ecuStoreHIInfo x ecu | x `seq` True = ecu { ecuHIInfo = x }
+%%][9999
 ecuStoreHIInfo x ecu | forceEval x `seq` True = ecu { ecuHIInfo = x }
 %%]]
 %%]
 
-%%[(20 codegen) export(ecuStoreCoreTime)
+%%[(50 codegen) export(ecuStoreCoreTime)
 ecuStoreCoreTime :: EcuUpdater ClockTime
 ecuStoreCoreTime x ecu = ecu { ecuMbCoreTime = Just x }
 %%]
 
-%%[(20 codegen grin) export(ecuStoreGrinTime)
+%%[(50 codegen grin) export(ecuStoreGrinTime)
 ecuStoreGrinTime :: EcuUpdater ClockTime
 ecuStoreGrinTime x ecu = ecu { ecuMbGrinTime = Just x }
 %%]
 
-%%[20 export(ecuStoreDirIsWritable)
+%%[50 export(ecuStoreDirIsWritable)
 ecuStoreDirIsWritable :: EcuUpdater Bool
 ecuStoreDirIsWritable x ecu = ecu { ecuDirIsWritable = x }
+%%]
+
+%%[99 export(ecuStoreOpts,ecuStorePragmas,ecuStoreUsedNames,ecuSetTarget)
+ecuStoreOpts :: EcuUpdater EHCOpts
+ecuStoreOpts x ecu = ecu { ecuMbOpts = Just x }
+
+ecuSetTarget :: EcuUpdater Target
+ecuSetTarget x ecu = ecu { ecuTarget = x }
+
+ecuStorePragmas :: EcuUpdater (Set.Set Pragma.Pragma)
+ecuStorePragmas x ecu = ecu { ecuPragmas = x }
+
+ecuStoreUsedNames :: EcuUpdater ModEntRelFilterMp
+ecuStoreUsedNames x ecu = ecu { ecuUsedNames = x }
 %%]
 
 %%[(99 codegen) export(ecuStoreGenCodeFiles,ecuStoreCppFilePath,ecuStoreSeqNr)
@@ -473,21 +559,21 @@ ecuStoreCppFilePath x ecu = ecu { ecuMbCppFilePath = Just x }
 %%% Predicates on EHCompileUnit
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20 haddock
+%%[50 haddock
 Is HS newer?
 If no HS exists False is returned.
 %%]
 
-%%[20 export(ecuIsHSNewerThanHI)
+%%[50 export(ecuIsHSNewerThanHI)
 ecuIsHSNewerThanHI :: EHCompileUnit -> Bool
 ecuIsHSNewerThanHI ecu
-  = case (ecuMbHSTime ecu,ecuMbHITime ecu) of
+  = case (ecuMbHSTime ecu,ecuMbHIInfoTime ecu) of
       (Just ths,Just thi) -> ths `diffClockTimes` thi > noTimeDiff 
       (Nothing ,Just thi) -> False
       _                   -> True
 %%]
 
-%%[20 export(ecuIsValidHI)
+%%[5020 export(ecuIsValidHI)
 ecuIsValidHI :: EHCompileUnit -> Bool
 ecuIsValidHI ecu
   = case ecuMbPrevHISem ecu of
@@ -495,15 +581,23 @@ ecuIsValidHI ecu
       _      -> False
 %%]
 
-%%[20 haddock
+%%[50 export(ecuIsValidHIInfo)
+ecuIsValidHIInfo :: EHCompileUnit -> Bool
+ecuIsValidHIInfo ecu
+  = case ecuMbPrevHIInfo ecu of
+      Just i -> HI.hiiValidity i == HI.HIValidity_Ok
+      _      -> False
+%%]
+
+%%[50 haddock
 Can HI be used instead of HS?
 This is purely based on HI being of the right version and HS not newer.
 The need for recompilation considers dependencies on imports as well.
 %%]
 
-%%[20 export(ecuCanUseHIInsteadOfHS)
+%%[50 export(ecuCanUseHIInsteadOfHS)
 ecuCanUseHIInsteadOfHS :: EHCompileUnit -> Bool
 ecuCanUseHIInsteadOfHS ecu
-  = ecuIsValidHI ecu && not (ecuIsHSNewerThanHI ecu)
+  = ecuIsValidHIInfo ecu && not (ecuIsHSNewerThanHI ecu)
 %%]
 

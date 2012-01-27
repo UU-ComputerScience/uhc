@@ -25,7 +25,7 @@ See Gam/ScopeMapGam for the next generation of this impl.
 %%[9 import({%{EH}Base.Common})
 %%]
 
-%%[99 import({%{EH}Base.ForceEval})
+%%[9999 import({%{EH}Base.ForceEval})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -61,7 +61,7 @@ lgamFilterMapEltAccumWithKey
           -> acc -> LGam k v -> (LGam k' v',acc)
 lgamFilterMapEltAccumWithKey p fyes fno a g
   = (g {lgMap = m'},a')
-  where (m',a') = Map.foldWithKey
+  where (m',a') = Map.foldrWithKey
                     (\k es ma@(m,a)
                       -> foldr (\e (m,a)
                                  -> if p k e
@@ -166,7 +166,7 @@ lgamNoDups g
 %%% ForceEval
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[99
+%%[9999
 instance ForceEval v => ForceEval (LGamElt v) where
   forceEval x@(LGamElt l v) | forceEval v `seq` True = x
 %%[[102

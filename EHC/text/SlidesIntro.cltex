@@ -525,7 +525,7 @@ infers kind @Eq :: Forall a . a -> a -> *@
 {
 \frametitle{EH version 9: explicit implicit parameters}
 %%[[wrap=safecode
-%%@[file:test/regress/9/eq2.eh%%]
+%%@[file:test/regress/9/eqlist.eh%%]
 %%]
 }
 

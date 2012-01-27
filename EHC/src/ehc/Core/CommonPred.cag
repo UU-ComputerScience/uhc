@@ -1,0 +1,48 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Common AG for Core: predicates about something
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Is expr a lam?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR CExpr [ | | mbLam: {Maybe [HsName]} ]
+
+SEM CExpr
+  | Lam         lhs         .   mbLam       =   Just $ maybe [@arg] (@arg:) @body.mbLam
+  | * - Lam Ann CaseAltFail
+  				lhs         .   mbLam       =   Nothing
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Is CExpr the creation of a tuple?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR CExpr [ | | appFunKind: AppFunKind ]
+
+SEM CExpr
+  | Tup         lhs         .   appFunKind  =   AppFunKind_Tag @tag
+  | FFI         lhs         .   appFunKind  =   AppFunKind_FFI
+  | Var         lhs         .   appFunKind  =   AppFunKind_Fun @ref
+  | App         lhs         .   appFunKind  =   @func.appFunKind
+  | * - Tup App Ann Var FFI CaseAltFail
+                lhs         .   appFunKind  =   AppFunKind_NoApp
+%%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Is expr a var?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR CExpr [ | | mbVar: {Maybe HsName} ]
+
+SEM CExpr
+  | Var         loc         .   mbVar       =   Just @nm
+  				loc			.	mbVar		:	{Maybe HsName}
+  | * - Var Ann CaseAltFail
+  				lhs         .   mbVar       =   Nothing
+%%]
+

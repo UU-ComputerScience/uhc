@@ -1,0 +1,203 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Translate & Prettyprint Cmm to C
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen cmm) hs module {%{EH}Cmm.ToC}
+%%]
+
+%%[(8 codegen cmm) hs import({%{EH}Base.Builtin},{%{EH}Cmm},{%{EH}Base.Common} hiding (Range),{%{EH}Opts},qualified {%{EH}Config} as Cfg)
+%%]
+
+%%[(8 codegen cmm) hs import(EH.Util.Pretty,{%{EH}Base.GenC})
+%%]
+
+%%[(8 codegen cmm) hs import(Data.Maybe,Data.Char,qualified Data.Bits as B,EH.Util.Utils,qualified Data.Map as Map)
+%%]
+
+%%[(8 codegen cmm) import({Cmm/AbsSyn})
+%%]
+
+%%[(8 codegen cmm).cmmMod2C hs export(cmmMod2C)
+cmmMod2C :: EHCOpts -> Module -> GenC
+cmmMod2C opts m
+  = let t = wrap_AGItf (sem_AGItf (AGItf_AGItf m))
+                       (Inh_AGItf {opts_Inh_AGItf = opts}
+                       )
+    in  c_Syn_AGItf t
+%%]
+
+%%[(8 codegen cmm)
+WRAPPER AGItf
+%%]
+PRAGMA nocycle
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% General info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Options
+
+%%[(8 codegen cmm)
+ATTR AGItf AllNT [ opts: EHCOpts | | ]
+%%]
+
+Prefixing of global names ?? Or to be done outside
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Utils
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen cmm) hs
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Generation of C: GenC/PP
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen cmm)
+ATTR AGItf AllNT [ | | c USE {>-<} {empty}: GenC ]
+%%]
+
+Top level
+
+%%[(8 codegen cmm)
+SEM Decl
+  | Const				lhs			.	c		=	gencUpdAssign "" (@ty.c >#< @nm) @expr.c
+  | ConstArray			lhs			.	c		=	gencUpdAssign "" (@ty.c >#< @nm >|< "[]") (ppCurlysCommasBlock @exprs.lc)
+  | Typedef				lhs			.	c		=	vlist $ map (\n -> gencTypeDecl n @ty.c) @nms
+  -- | Regs
+  -- | Target
+  | Comment				lhs			.	c		=	gencCmt @str
+
+SEM Proc
+  | Proc				lhs			.	c		=	gencFunDef "void" @nm @formals.lc @body.lc
+
+SEM Body
+  | Body				lhs			.	c		=	ppCurlysBlock @decls.lc
+
+SEM Formal
+  | Formal				lhs			.	c		=	gencFunDefArg @ty.c @nm
+
+SEM Import
+  | Imp	ImpAs			lhs			.	c		=	gencInclude' "h" @nm
+
+SEM Export
+  | Exp	ExpAs			lhs			.	c		=	gencEndsemic $ gencExtern $ @ty.c >#< @nm
+%%]
+
+Top level global data
+
+%%[(8 codegen cmm)
+SEM Datum
+  -- | Nm
+  -- | Align
+  -- | Ty					lhs			.	c		=	gencUpdAssign (@ty.c 
+
+SEM Init
+  | Seq					lhs			.	c		=	gencArray @exprs.lc
+  | Str					lhs			.	c		=	gencStr @str
+  -- | Str16
+%%]
+
+Statement
+
+%%[(8 codegen cmm)
+SEM BodyDecl
+  -- | StackDecl
+
+SEM Stmt
+  | If                  lhs         .   c       =   "if" >#< ppParens @condExpr.c
+                                                    >-< indent 2 @thenBody.c
+                                                    >-< maybe empty (\c -> "else" >-< indent 2 c) @elseMbBody.mbc
+  | Switch				lhs			.	c		=	gencSwitch @expr.c @arms.lc empty
+  | Assign				lhs			.	c		=	vlist $ zipWith (\l r -> gencUpdAssign "" l r) @lval.lc @rhs.lc	-- TBD: parallel update ignored, assume given order is ok
+  -- | Call
+  -- | Jump
+  -- | Ret
+  | Label				lhs			.	c		=	gencLabel @nm
+  -- | Cont
+  -- | Goto
+  -- | Cut
+
+SEM LValue
+  | Nm					lhs			.	c		=	pp @nm
+  -- | Typed
+%%]
+
+Expression
+
+%%[(8 codegen cmm)
+SEM Expr
+  | Int                 lhs         .   c       =   gencInt @mbTy.mbc (>|< "L") (show @val)
+  -- | Lit
+  -- | Round
+  -- | Rat
+  -- | Float
+  -- | Char
+  | Nm					lhs			.	c		=	pp @nm
+  -- | Typed
+  | Op					lhs			.	c		=	@op.lcmk @exprs.lc
+%%]
+
+Type
+
+%%[(8 codegen cmm)
+SEM Ty
+  -- | Bits
+  | Nm					lhs			.	c		=	pp @nm
+  -- | Struct
+  -- | Ptr					lhs			.	c		=	ppParens $ @ty.c >|< "*"
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Generation of C: Maybe, List forms
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Maybe
+
+%%[(8 codegen cmm)
+ATTR MbBody MbTy [ | | mbc: {Maybe GenC} ]
+
+SEM MbBody MbTy
+  | Just				lhs			.	mbc		=	Just @just.c
+  | Nothing				lhs			.	mbc		=	Nothing
+%%]
+
+List
+
+%%[(8 codegen cmm)
+ATTR
+  ArmL Arm
+  RangeL Range
+  ExprL
+  LValueL
+  FormalL
+  BodyDeclL Body
+    [ | | lc USE {++} {[]}: {[GenC]} ]
+
+SEM Arm
+  | Case				lhs			.	lc		=	[gencSwitchcase @ranges.lc @body.lc]
+
+SEM Range
+  | Range1				lhs			.	lc		=	[@expr1.c]
+  -- | Range2	-- we need evaluation here... TBD
+
+SEM ExprL LValueL FormalL BodyDeclL
+  | Cons				lhs			.	lc		=	@hd.c : @tl.lc
+
+%%]
+
+Delayed construction
+
+%%[(8 codegen cmm)
+ATTR Op [ | | lcmk: {[GenC] -> GenC} ]
+
+SEM Op
+  -- | FEq, ...
+  -- | FAbs, ...
+  -- | F2F, ...
+  -- | NaN, ...
+  | Eq					lhs			.	lcmk	=	gencOpL2 "=="
+  | * - Eq				lhs			.	lcmk	=	const empty
+%%]
+

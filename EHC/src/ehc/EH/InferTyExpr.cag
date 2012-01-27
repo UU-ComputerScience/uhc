@@ -96,15 +96,18 @@ tvGathFlowIn newG lhsG = gamPushNew (gamPushGam newG lhsG)
 -- generated from ruler rules into EHRulerRules, was 2.tyVarGather
 %%[(5 hmtyinfer).tyVarGather
 SEM TyExpr
-  | Wild        loc         .   tyVarId             =   @lUniq
-                            .   tgi_                =   TyGamInfo (mkNewTyVar @tyVarId)
+  | Wild Mono   loc         .   tyVarId             =   @lUniq
+                            .   tvarv               =   mkNewTyVar @tyVarId
                 loc         .   lUniq               :   UNIQUEREF gUniq
+  | Wild        loc         .   tgi_                =   TyGamInfo @tvarv
+  | Mono        loc         .   tgi_                =   TyGamInfo @tvarv -- (Ty_Ann TyAnn_Mono @tvarv)
 %%]
 
 %%[(6 hmtyinfer)
 SEM TyExpr
-  | Wild        loc         .   tgi_                :=  let t = mkNewTyVar @tyVarId in mkTGI t
-                            .   tkgi_               =   TyKiGamInfo (tgiTy @tgi_)
+  | Wild        loc         .   tgi_                :=  mkTGI @tvarv
+  | Mono        loc         .   tgi_                :=  mkTGI (Ty_Ann TyAnn_Mono @tvarv)
+  | Wild Mono   loc         .   tkgi_               =   TyKiGamInfo @tvarv
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 3.tyVarGather
@@ -209,7 +212,7 @@ SEM TyExpr
 
 -- generated from ruler rules into EHRulerRules, was 2.tyVarWildL
 %%[(5 hmtyinfer).tyVarWildL
-ATTR AllTyExpr [ | | tyVarWildL USE {++} {[]}: TyVarIdL ]
+ATTR AllTyExpr [ | | tyVarWildMp USE {`Map.union`} {Map.empty}: TyVarWildMp ]
 %%]
 
 %%[(3 hmtyinfer).tyWildL
@@ -219,18 +222,31 @@ ATTR TyExpr [ | | tyWildL USE {++} {[]}: TyL ]
 -- generated from ruler rules into EHRulerRules, was 2.Wild
 %%[(5 hmtyinfer).Wild
 SEM TyExpr
-  | Wild        lhs         .   tyVarWildL          =   [@tyVarId]
+  | Wild        lhs         .   tyVarWildMp         =   Map.singleton @tyVarId TyVarWild_NoQuantTyExpr_YesQuantLetBinding
+  | Mono        lhs         .   tyVarWildMp         =   Map.singleton @tyVarId TyVarWild_NoQuantTyExpr_NoQuantLetBinding
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 3.Wild
 %%[(5 hmtyinfer).Wild
 SEM TyExpr
-  | VarWild     lhs         .   tyVarWildL          =   [@tyVarId]
+  | VarWild     lhs         .   tyVarWildMp         =   Map.singleton @tyVarId TyVarWild_NoQuantTyExpr_YesQuantLetBinding
 %%]
 
 %%[(9 hmtyinfer).Wild
 SEM TyExpr
-  | Impls       lhs         .   tyVarWildL          =   [@implsVarId]
+  | Impls       lhs         .   tyVarWildMp         =   Map.singleton @implsVarId TyVarWild_NoQuantTyExpr_YesQuantLetBinding
+%%]
+
+-- gather tvars over which explicitly is declared not to quantify, thus enforcing monomorphism
+%%[(2 hmtyinfer)
+ATTR AllDecl AllExpr [ | | noLetQuantTyVarIdS USE {`Set.union`} {Set.empty} : TyVarIdS ]
+
+SEM Decl
+  | TySig		lhs			.	noLetQuantTyVarIdS	=	tvwmpNoQuantS @tyExpr.tyVarWildMp
+
+SEM Expr
+  | TypeAs		lhs			.	noLetQuantTyVarIdS	=	tvwmpNoQuantS @tyExpr.tyVarWildMp `Set.union` @expr.noLetQuantTyVarIdS
+  | Let			lhs			.	noLetQuantTyVarIdS	=	@body.noLetQuantTyVarIdS
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -278,18 +294,18 @@ ATTR TyExprs TyVars [ | | kiL: TyL ]
 %%[(6 hmtyinfer)
 SEM TyExpr
   | Var VarWild loc         .   ki                  =   tkgiKi @tkgi_
-  | Wild        loc         .   ki                  =   tkgiKi @tkgi_
+  | Wild Mono   loc         .   ki                  =   tkgiKi @tkgi_
   | Con         loc         .   ki                  =   tkgiKi @tkgi_
   | App         loc         .   knResKi             =   mkNewTyVar @lUniq
                             .   knFunKi             =   [@arg.ki] `mkArrow` @knResKi
                             .   fo_                 =   fitsIn weakFIOpts defaultFIEnv @lUniq2 @arg.kiVarMp @func.ki @knFunKi
                             .   fKi                 =   foTy @fo_
                             .   ki                  =   @knResKi
-                lhs         .   kiVarMp             =   foVarMp @fo_ |=> @arg.kiVarMp
+                lhs         .   kiVarMp             =   foVarMp @fo_ `varUpd` @arg.kiVarMp
                 loc         .   lUniq               :   UNIQUEREF gUniq
                 loc         .   lUniq2              :   UNIQUEREF gUniq
 %%]
-                            .   fo_                 =   fitsIn weakFIOpts defaultFIEnv @lUniq2 @arg.kiVarMp (@arg.kiVarMp |=> @func.ki) @knFunKi
+                            .   fo_                 =   fitsIn weakFIOpts defaultFIEnv @lUniq2 @arg.kiVarMp (@arg.kiVarMp `varUpd` @func.ki) @knFunKi
 
 %%[(6 hmtyinfer)
 SEM TyExprs
@@ -311,7 +327,7 @@ SEM TyExpr
 SEM RowTyExpr
   | Ext         loc         .   fo_                 =   fitsIn weakFIOpts defaultFIEnv @lUniq @tyExpr.kiVarMp @tyExpr.ki kiStar
                             .   ki                  =   foTy @fo_
-                lhs         .   kiVarMp             =   foVarMp @fo_ |=> @tyExpr.kiVarMp
+                lhs         .   kiVarMp             =   foVarMp @fo_ `varUpd` @tyExpr.kiVarMp
                 loc         .   lUniq               :   UNIQUEREF gUniq
 %%]
 
@@ -329,7 +345,7 @@ SEM TyExpr
 SEM RowTyExpr
   | Var         loc         .   fo_                 =   fitsIn weakFIOpts defaultFIEnv @lUniq2 @lhs.kiVarMp (tkgiKi @tkgi_) kiRow
                             .   ki                  =   foTy @fo_
-                lhs         .   kiVarMp             =   foVarMp @fo_ |=> @lhs.kiVarMp
+                lhs         .   kiVarMp             =   foVarMp @fo_ `varUpd` @lhs.kiVarMp
                 loc         .   lUniq2              :   UNIQUEREF gUniq
 %%]
 
@@ -337,7 +353,7 @@ SEM RowTyExpr
 SEM TyExpr
   | Lam         loc         .   ki                  =   [tkgiKi @tkgi_] `mkArrow` @tyExpr.ki
 %%]
-  | Lam         loc         .   ki                  =   [@tyExpr.kiVarMp |=> tkgiKi @tkgi_] `mkArrow` @tyExpr.ki
+  | Lam         loc         .   ki                  =   [@tyExpr.kiVarMp `varUpd` tkgiKi @tkgi_] `mkArrow` @tyExpr.ki
 
 %%[(9 hmtyinfer)
 ATTR PrExpr [ | | ki: Ty ]
@@ -347,7 +363,7 @@ SEM PrExpr
   | Class       loc         .   (tkgi_,clKiNmErrs)  =   tyKiGamLookupByNameErr (hsnClass2Kind @nm) @lhs.tyKiGam
                             .   fo_                 =   fitsIn weakFIOpts defaultFIEnv @lUniq @tyExprs.kiVarMp
                                                           (@tyExprs.kiL `mkArrow` kiStar) (tkgiKi @tkgi_)
-                lhs         .   kiVarMp             =   foVarMp @fo_ |=> @tyExprs.kiVarMp
+                lhs         .   kiVarMp             =   foVarMp @fo_ `varUpd` @tyExprs.kiVarMp
                 loc         .   lUniq               :   UNIQUEREF gUniq
 %%]
 
@@ -364,12 +380,15 @@ ATTR TyExpr [ | | ty: Ty ]
 SEM TyExpr
   | Con         loc         .   ty                  =   Ty_Con @nm
   | App         loc         .   ty                  =   Ty_App @func.ty @arg.ty
+  | Ann         loc         .   ty                  =   if @ann.isEmpty
+                                                        then @tyExpr.ty
+                                                        else Ty_Ann @ann.ann @tyExpr.ty
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 2.ty
 %%[(5 hmtyinfer).ty
 SEM TyExpr
-  | Wild        loc         .   ty                  =   tgiTy @tgi_
+  | Wild Mono   loc         .   ty                  =   tgiTy @tgi_
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 3.ty
@@ -417,7 +436,26 @@ SEM TyExpr
 
 %%[(11 hmtyinfer)
 SEM TyExpr
-  | Lam         loc         .   ty                  =   Ty_Lam @tv @tyExpr.ty
+  | Lam         loc         .   ty                  =   mkTyLam [@tv] @tyExpr.ty
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Annotation on TyExprAnn
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(1 hmtyinfer).ty
+ATTR TyExprAnn [ | | ann : TyAnn
+                     isEmpty : Bool ]
+
+SEM TyExprAnn
+  | Empty       lhs         .   ann         =   TyAnn_Empty
+%%[[(8 codegen)
+  | Strictness  lhs         .   ann         =   TyAnn_Strictness @strictness
+%%]]
+
+SEM TyExprAnn
+  | Empty       lhs         .   isEmpty     =   True
+  | * - Empty   lhs         .   isEmpty     =   False
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -502,7 +540,7 @@ SEM Decl
                 lhs         .   patTyGam            =   gamAdd @tyNm @typeTgi @lhs.patTyGam
                 loc         .   foTy_               =   fitsIn  weakFIOpts defaultFIEnv @lUniq2 @lhs.tyTyVarMp
                                                                 @tyExpr.ty (tgiTy @typeTgi)
-                lhs         .   tyTyVarMp           =   foVarMp @foTy_ |=> @lhs.tyTyVarMp
+                lhs         .   tyTyVarMp           =   foVarMp @foTy_ `varUpd` @lhs.tyTyVarMp
                 loc         .   lUniq               :   UNIQUEREF gUniq
                 loc         .   lUniq2              :   UNIQUEREF gUniq
 %%]
@@ -521,6 +559,6 @@ SEM Decl
                 lhs         .   patTyKiGam          =   tyKiGamNameSingleton @tyNm @typeTkgi `gamUnion` @lhs.patTyKiGam
                 loc         .   foKi_               =   fitsIn  strongFIOpts defaultFIEnv @lUniq2 @tyExpr.kiVarMp
                                                                 @tyExpr.ki (tkgiKi @typeTkgi)
-                lhs         .   kiVarMp             =   foVarMp @foKi_ |=> @tyExpr.kiVarMp
+                lhs         .   kiVarMp             =   foVarMp @foKi_ `varUpd` @tyExpr.kiVarMp
 %%]
 

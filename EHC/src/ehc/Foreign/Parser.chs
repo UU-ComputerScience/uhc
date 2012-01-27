@@ -24,28 +24,28 @@ foreign import ccall unsafe "string.h" memcpy  :: Ptr a -> Ptr a -> CSize -> IO 
 
 %%]
 
-%%[94 module {%{EH}Foreign.Parser} import(UU.Scanner.GenToken, {%{EH}Base.Builtin},{%{EH}Base.Common}, {%{EH}Scanner.Common}, {%{EH}Foreign})
+%%[90 module {%{EH}Foreign.Parser} import(UU.Scanner.GenToken, {%{EH}Base.Builtin},{%{EH}Base.Common}, {%{EH}Scanner.Common}, {%{EH}Foreign})
 %%]
 
-%%[94 import(EH.Util.ParseUtils, UU.Parsing, EH.Util.Utils)
+%%[90 import(EH.Util.ParseUtils, UU.Parsing, EH.Util.Utils)
 %%]
 
-%%[94 import({%{EH}Error},{%{EH}Error.Pretty})
+%%[90 import({%{EH}Error},{%{EH}Error.Pretty})
 %%]
 
-%%[94 import({%{EH}Base.Target})
+%%[90 import({%{EH}Base.Target})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Parse to ForeignEnt
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[94 hs export(parseForeignEnt)
-parseForeignEnt :: FFIWay -> Maybe String -> String -> (ForeignEnt,ErrL)
-parseForeignEnt way dfltNm s
+%%[90 hs export(parseForeignEnt)
+parseForeignEnt :: ForeignDirection -> FFIWay -> Maybe String -> String -> (ForeignEnt,ErrL)
+parseForeignEnt dir way dfltNm s
   = (res,errs)
-  where tokens     = scan foreignEntScanOpts (initPos s) s
-        (res,msgs) = parseToResMsgs (pForeignEnt way dfltNm) tokens
+  where tokens     = scan (foreignEntScanOpts way) (initPos s) s
+        (res,msgs) = parseToResMsgs (pForeignEnt dir way dfltNm) tokens
         errs       = map (rngLift emptyRange mkPPErr) msgs
 %%]
 
@@ -56,45 +56,27 @@ parseForeignEnt way dfltNm s
 These parsers are only used by the HS frontend to parse the string holding the import/export entity of a foreign function
 to a corresponding abstract syntax.
 
-%%[94
+%%[90
 type ForeignParser        ep    =    PlainParser Token ep
 %%]
 
-%%[94 export(pForeignEnt)
-pForeignEnt :: FFIWay -> Maybe String -> ForeignParser ForeignEnt
-pForeignEnt way dfltNm
-  = case way of
-      FFIWay_CCall -> ForeignEnt_CCall <$> pCCall dfltNm
-      _            -> ForeignEnt_PlainCall <$> pPlainCall dfltNm
+%%[90
+pForeignEnt :: ForeignDirection -> FFIWay -> Maybe String -> ForeignParser ForeignEnt
+pForeignEnt dir way dfltNm
+  = case (dir,way) of
+      (_                      ,FFIWay_CCall  		) -> ForeignEnt_CCall        	<$> pCCall       dfltNm
+      (_                      ,FFIWay_Prim   		) -> ForeignEnt_PrimCall     	<$> pPrimCall    dfltNm
+%%[[(90 javascript)
+      (ForeignDirection_Import,FFIWay_JavaScript	) -> ForeignEnt_JavaScriptCall  <$> pJavaScriptCall dfltNm
+%%]]
+      _                                        		  -> ForeignEnt_PlainCall    	<$> pPlainCall   dfltNm
 
 pCCall :: Maybe String -> ForeignParser CCall
 pCCall dfltNm
-  =
-{- this def would be nice, but is ambiguous:
-      CCall_Id
-        <$> pMaybe False (const True) pSTATIC
-        <*> pMaybe Nothing (\v -> Just (v ++ ".h")) (pForeignVar <* pDOT <* pH)
-        <*> pMaybe False (const True) pAMPERSAND
-        <*> pMaybe nm id pForeignVar
--}
-{-
-      pMaybe False (const True) pSTATIC
-      <**> (   pForeignVar
-               <**> (   (pDOT <* pH)
-                        <**> (   (\nm _ incl st -> CCall_Id st (Just (incl ++ ".h")) True  nm) <$> pPtrForeignVar
-                             <|> (\nm _ incl st -> CCall_Id st (Just (incl ++ ".h")) False nm) <$> pForeignVar
-                             )
-                    <|> pSucceed (\nm st -> CCall_Id st Nothing False nm)
-                    )
-           <|> (\nm st -> CCall_Id st Nothing True nm) <$> pPtrForeignVar
-           <|> pSucceed (\st -> CCall_Id st Nothing False nm)
-           )
--}
-      (True <$ pSTATIC) <**> pAfterStatic
+  =   (True <$ pSTATIC) <**> pAfterStatic
   <|> ($ False) <$> pAfterStatic
   <|> CCall_Dynamic <$ pDYNAMIC
   <|> CCall_Wrapper <$ pWRAPPER
-  -- <|> pSucceed CCall_Empty
   where nm = maybe "" id dfltNm
         pPtrForeignVar
           = pAMPERSAND
@@ -120,65 +102,41 @@ pPlainCall dfltNm
   `opt` PlainCall_Id nm
   where nm = maybe "" id dfltNm
 
+pPrimCall :: Maybe String -> ForeignParser PrimCall
+pPrimCall dfltNm
+  = PrimCall_Id <$> (pForeignVar `opt` nm) <*> pKnownPrim
+  where nm = maybe "" id dfltNm
+        pKnownPrim = pMb (pAnyFromMap pKeyTk allKnownPrimMp)
+
+pJavaScriptCall :: Maybe String -> ForeignParser JavaScriptCall
+pJavaScriptCall dfltNm
+  =   JavaScriptCall_Id nm   <$> pMb pForeignExpr
+  <|> JavaScriptCall_Dynamic <$  pDYNAMIC
+  <|> JavaScriptCall_Wrapper <$  pWRAPPER
+  where nm = maybe "" id dfltNm
+
 pForeignVar :: ForeignParser String
 pForeignVar = tokGetVal <$> (pVARID <|> pCONID)
+
+pForeignExpr :: ForeignParser ForeignExpr
+pForeignExpr
+  = pExp
+  where pExp      = pObj <|> mk <$> pPre <*> pExpB <*> pPost
+        pPre      = pMb (ForeignExpr_NewObj <$ pNEW)
+        pPost     = pList (pSel <|> pInx <|> pCall)
+        pExpB     = pArg <|> pEnt
+        pManyArg  = ForeignExpr_AllArg <$ pPERCENT <* pSTAR
+        pArg      = (pPERCENT *> ((ForeignExpr_Arg . tokMkInt) <$> pInteger10Tk)) <|> pStr
+        pObj      = ForeignExpr_ObjData <$ pOCURLY <* pCCURLY
+        pEnt      = ForeignExpr_EntNm <$> pForeignVar
+        pStr      = (ForeignExpr_Str . tokMkStr) <$> pStringTk
+        pInx      = flip ForeignExpr_Inx <$ pOBRACK <*> pExp <* pCBRACK
+        pSel      = flip ForeignExpr_Sel <$ pDOT <*> (pEnt <|> pArg)
+        pCall     = flip ForeignExpr_CallArgs <$ pOPAREN <*> pCallExpr <* pCPAREN
+        pCallExpr = ((\x -> [x]) <$> pManyArg) <|> (pListSep pCOMMA pArg)
+
+        mk    = \pre e post -> let pre' = maybe [] ((flip (:)) []) pre
+                               in foldr ($) e $ pre' ++ reverse post
+
 %%]
 
-pCCall :: Maybe String -> ForeignParser CCall
-pCCall dfltNm
-  =   CCall_Id
-        <$> pMaybe False (const True) pSTATIC
-        <*> pMaybe Nothing (\v -> Just (v ++ ".h")) (pForeignVar <* pDOT <* pH)
-        <*> pMaybe False (const True) pAMPERSAND
-        <*> pForeignVar
-  <|> CCall_Dynamic <$ pDYNAMIC
-  <|> CCall_Wrapper <$ pWRAPPER
-  <|> pSucceed CCall_Empty
-
-
-pCCall :: Maybe String -> ForeignParser CCall
-pCCall dfltNm
-  =
-{- this def would be nice, but is ambiguous:
-      CCall_Id
-        <$> pMaybe False (const True) pSTATIC
-        <*> pMaybe Nothing (\v -> Just (v ++ ".h")) (pForeignVar <* pDOT <* pH)
-        <*> pMaybe False (const True) pAMPERSAND
-        <*> pMaybe nm id pForeignVar
--}
-{-
-      pMaybe False (const True) pSTATIC
-      <**> (   pForeignVar
-               <**> (   (pDOT <* pH)
-                        <**> (   (\nm _ incl st -> CCall_Id st (Just (incl ++ ".h")) True  nm) <$> pPtrForeignVar
-                             <|> (\nm _ incl st -> CCall_Id st (Just (incl ++ ".h")) False nm) <$> pForeignVar
-                             )
-                    <|> pSucceed (\nm st -> CCall_Id st Nothing False nm)
-                    )
-           <|> (\nm st -> CCall_Id st Nothing True nm) <$> pPtrForeignVar
-           <|> pSucceed (\st -> CCall_Id st Nothing False nm)
-           )
--}
-      pSTATIC
-      <**> (
-           <|>
-           )
-  <|> CCall_Dynamic <$ pDYNAMIC
-  <|> CCall_Wrapper <$ pWRAPPER
-  <|> pSucceed CCall_Empty
-  where nm = maybe "" id dfltNm
-        pPtrForeignVar
-          = pAMPERSAND
-            <**> (   const <$> pForeignVar
-                 <|> pSucceed (const nm)
-                 )
-        pAfterStatic
-          = pForeignVar
-              <**> (   (pDOT <* pH)
-                       <**> (   (\nm _ incl st -> CCall_Id st (Just (incl ++ ".h")) True  nm) <$> pPtrForeignVar
-                            <|> (\nm _ incl st -> CCall_Id st (Just (incl ++ ".h")) False nm) <$> pForeignVar
-                            )
-                   <|> pSucceed (\nm st -> CCall_Id st Nothing False nm)
-                   )
-          <|> (\nm st -> CCall_Id st Nothing True nm) <$> pPtrForeignVar
-          <|> pSucceed (\st -> CCall_Id st Nothing False nm)

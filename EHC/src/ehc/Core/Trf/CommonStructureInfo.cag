@@ -1,0 +1,48 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Common AG for Core structure
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) ag import({Core/CommonPred})
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Maybe an app
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR CExpr [ | | mbFunVar: {Maybe HsName} ]
+
+SEM CExpr
+  | Var         lhs         .   mbFunVar    =   @mbVar
+  | App         lhs         .   mbFunVar    =   @func.mbFunVar
+  | * - Var App Ann CaseAltFail
+  				lhs         .   mbFunVar    =   Nothing
+%%]
+
+%%[(8 codegen)
+ATTR CExpr [ | | argL: {[CExpr]} ]
+
+SEM CExpr
+  | App         loc         .   argL        =   @arg.cTrf : @func.argL
+  | * - App Ann CaseAltFail
+  				lhs         .   argL        =   []
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Maybe an con pat with tag
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR CAlt CPat [ | | mbCTag: {Maybe CTag} ]
+
+SEM CPat
+  | Con			lhs			.	mbCTag		=	Just @tag
+  | * - Con	Ann
+  				lhs			.	mbCTag		=	Nothing
+%%]
+

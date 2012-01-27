@@ -3,11 +3,26 @@
 %include afp.fmt
 %%]
 
-Pass all free variables of the following let bound expressions explicitly:
-- lambda expressions
-- other non function application, except the strictly evaluated ones
+Pass all free variables of let bound lambda expressions explicitly.
+Later, these expressions can then be lifted globally.
 
-Later, these expressions (lambda or CAF) can then be lifted globally.
+
+For example:
+f is a let-bound lambda expression that uses a (more) global variable g
+
+   let g = ...            
+in let f = \x -> ...g...  
+in ...f...
+
+The transformation introduces an additional formal parameter e to the lambda expression
+and passes the global variable g as an actual parameter to all uses of f:
+
+   let g = ...            
+in let f = \e x -> ...e...  
+in ...f g...
+
+
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Globals as args
@@ -19,11 +34,16 @@ Later, these expressions (lambda or CAF) can then be lifted globally.
 %%[(8 codegen) hs import({%{EH}Core.Utils})
 %%]
 
+%%[(8 codegen) hs import({%{EH}AbstractCore})
+%%]
+
 -- for debug
 %%[(8 codegen) hs import({%{EH}Base.Debug},EH.Util.Pretty)
 %%]
+%%[(8 codegen) hs import(Debug.Trace)
+%%]
 
-%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/Trf/CommonFv},{Core/Trf/CommonLev},{Core/Trf/CommonGlobalAsArg})
+%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonCtxtPred},{Core/CommonBindNm},{Core/Trf/CommonFv},{Core/Trf/CommonLev},{Core/Trf/CommonGlobalAsArg})
 WRAPPER CodeAGItf
 %%]
 
@@ -97,31 +117,31 @@ ATTR AllCodeNT [ | gUniq: Int | ]
 SEM CodeAGItf
   | AGItf       module      .   gUniq       =   0
 
-SEM CBind
-  | Bind        expr		.	gUniq		=	@lhs.gUniq + Map.size @argMpNew
+SEM CBindAspect
+  | Bind        expr        .   gUniq       =   @lhs.gUniq + Map.size @argMpNew
 
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Free var of lam's for which arg lifting is done
+%%% Free var of lams for which arg lifting is done
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen)
-ATTR AllCodeNT [ fvSLamMp: FvSMp | | ]
+ATTR AllCodeNT [ lamFvSMp: FvSMp | | ]
 
 SEM CodeAGItf
-  | AGItf       module      .   fvSLamMp    =   Map.empty
+  | AGItf       module      .   lamFvSMp    =   Map.empty
 
 SEM CExpr
-  | Let         loc         .   fvSLamMp    =   (let  start varS = fvsClosure @binds.bindLamS @lhs.lamS varS @lhs.fvSLamMp @binds.fvSMp
+  | Let         loc         .   lamFvSMp    =   (let  start varS = fvsClosure @binds.bindLamS @lhs.lamS varS @lhs.lamFvSMp @binds.fvSMp
                                                  in   case @categ of
-                                                        CBindings_Rec
+                                                        CBindCateg_Rec
                                                           ->  fvsTransClosure lm m
                                                           where (m,lm)  = start (@lhs.varS `Set.union` @binds.bindVarS)
                                                         _ ->  m
                                                           where (m,_)   = start @lhs.varS
                                                 )
-                                                `Map.union` @lhs.fvSLamMp
+                                                `Map.union` @lhs.lamFvSMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -134,8 +154,37 @@ ATTR AllCodeNT [ argMp: CVarReplNmMp | | ]
 SEM CodeAGItf
   | AGItf       module      .   argMp       =   Map.empty
 
-SEM CBind
+SEM CBindAspect
   | Bind        expr        .   argMp       =   @argMpNew `Map.union` @lhs.argMp
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Passing info between aspects
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs
+%%[[8
+type AspBindLamArgInfo = LamArgMp
+%%][9
+type AspBindLamArgInfo = (LamArgMp,Env)
+%%]]
+%%]
+
+%%[(8 codegen)
+ATTR AllBindAspect   [ aspBindLamArgMp: {ACoreBindAspMp AspBindLamArgInfo} | | gathAspBindLamArgMp USE {`Map.union`} {Map.empty}: {ACoreBindAspMp AspBindLamArgInfo} ]
+
+SEM CBind
+  | Bind		loc			.	aspBindLamArgMp
+  											=	@bindAspects.gathAspBindLamArgMp
+
+SEM CBindAspect
+  | Bind  		lhs			.	gathAspBindLamArgMp
+  											=	Map.singleton acbaspkeyDefault
+  											                  ( @expr.bindLamArgMp
+%%[[9
+  											                  , @expr.envUp
+%%]]
+  											                  )
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -147,7 +196,18 @@ type LamArgMp = Map.Map HsName CVarIntroL
 %%]
 
 %%[(8 codegen)
-ATTR AllBind [ | | bindLamArgMp USE {`Map.union`} {Map.empty}: LamArgMp ]
+ATTR AllBind CExpr [ | | bindLamArgMp USE {`Map.union`} {Map.empty}: LamArgMp ]
+ATTR AllMetaVal [ bindLamArgMp: LamArgMp | | ]
+
+SEM CBindAspect
+  | Meta  		cmetas  	.	( bindLamArgMp
+%%[[9
+                                , envFinal
+%%]]
+                                ) 			=  	panicJust "LamGlobalAsArg.CBindAspect.Meta.aspBindLamArgMp" $ Map.lookup acbaspkeyDefault @lhs.aspBindLamArgMp
+%%]
+
+%%[(8 codegen)
 ATTR AllCodeNT [ lamArgMp: LamArgMp | | ]
 
 SEM CodeAGItf
@@ -155,6 +215,19 @@ SEM CodeAGItf
 
 SEM CExpr
   | Let         loc         .   lamArgMp    =   @binds.bindLamArgMp `Map.union` @lhs.lamArgMp
+%%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Finding instance annotations
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(9 codegen)
+ATTR CMetaVal CMetas [ | | isInstance: {Bool} ]
+
+SEM CMetaVal
+  | DictInstance    lhs.isInstance = True
+  | *-DictInstance  lhs.isInstance = False
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -165,31 +238,142 @@ SEM CExpr
 ATTR AllCodeNT [ | | cTrf: SELF ]
 ATTR CodeAGItf [ | | cTrf: CModule ]
 
-SEM CBind
-  | Bind        loc			.	(argNewL,argMpNew,bindLamArgMp)
-                                            =   if {- @isLiftable && @lhs.lev /= cLevModule -} @expr.isLam
-                                                then  let  argLevL = fvLAsArg @lhs.introCVarIntroMp $ panicJust "LamGlobalAsArg.CBind.Bind.argLevL" $ Map.lookup @nm $ @lhs.fvSLamMp
+SEM CBindAspect
+  | Bind        loc         .   (argNewL,argMpNew,bindLamArgMp)
+                                            =   if {- @isLiftable && not @isGlobal -} isJust @expr.mbLam
+                                                then  let  argLevL = fvLAsArg @lhs.introCVarIntroMp $ panicJust "LamGlobalAsArg.CBind.Bind.argLevL" $ Map.lookup @lhs.nm $ @lhs.lamFvSMp
                                                            (argOL,argNL,argONMp) = fvLArgRepl @lhs.gUniq $ argLevL
-                                                      in   (argNL, argONMp, @nm `Map.singleton` argOL)
+                                                      in   (argNL, argONMp, @lhs.nm `Map.singleton` argOL)
                                                 else  ([],Map.empty, Map.empty)
 %%]
 
+
 %%[(8 codegen)
-SEM CBind
+SEM CBindAspect
 %%[[8
-  | Bind        lhs			.	cTrf        =   mkCBind1 @nm $ mkCExprLam (assocLKeys @argNewL) @expr.cTrf
+  | Bind        lhs         .   cTrf        =   acoreBindaspVal1Cat CBindCateg_Plain @lhs.nm $ acoreLam (assocLKeys @argNewL) @expr.cTrf
 %%][9
-  | Bind        lhs			.	cTrf        =   mkCBind1Metas @nm @bindMeta.cTrf $ mkCExprLamMeta [(n,cviMeta cvi) | (n,cvi) <- @argNewL] @expr.cTrf
+  | Bind        lhs         .   cTrf        =   --trace ("use of global: " ++ show @lhs.nm ++ " uses " ++ show @bindLamArgMp ++ "\n"
+                                                --      ++ (if @bindMeta.isInstance then ("instance " ++ show @lhs.nm ++ " finds " ++ show @expr.bindLamArgMp ++ "\n") else "")
+                                                --      ) $
+                                                (acoreBindaspVal1Metas @lhs.nm @bindMeta.cTrf $ acoreLam [(n) | (n,cvi) <- @argNewL] @expr.cTrf)
+                bindMeta    . bindLamArgMp  =  @expr.bindLamArgMp
 %%]]
+%%]
+
+
+
+
+%%[(8 codegen)
 
 SEM CExpr
   | Var         lhs         .   cTrf        =   let  r n = fvVarRepl @lhs.argMp n
                                                      v1 = r @nm
 %%[[8
-                                                     mk as = mkCExprApp v1 $ [r a | (a,_) <- as]
+                                                     mk as = acoreApp v1 $ [r a | (a,_) <- as]
 %%][9
-                                                     mk as = mkCExprAppMeta v1 $ [(r a,cviMeta cvi) | (a,cvi) <- as]
+                                                     mk as = acoreApp v1 $ [(r a) | (a,cvi) <- as]
 %%]]
                                                      v2 = maybe v1 mk $ Map.lookup @nm $ @lhs.lamArgMp
                                                 in   v2
+%%]
+
+
+%%[(9 codegen)
+
+{
+
+type Env = Map.Map HsName Track
+
+metaExtendTrack :: LamArgMp -> Env -> Track -> Track
+metaExtendTrack mp env (TrackVarApply nm ps) = let r = Map.lookup nm mp
+                                                   xs = maybe [] assocLKeys r
+                                                   ts = map (\x -> Map.findWithDefault (TrackVarApply x []) x env) xs
+                                               in  -- trace (show nm ++ " extended with " ++ show ts) $
+                                                         (TrackVarApply nm (ts++ps))
+metaExtendTrack _ _ t = t
+
+}
+
+ATTR AllExprOnly [ mbCtxCount:{Maybe Int} isDictClass:{Bool} | | ]
+
+SEM CModule
+  | Mod  expr.mbCtxCount = Nothing
+         expr.isDictClass = False
+
+%%[[90
+SEM CBindAspect
+  | FFE  expr.mbCtxCount = Nothing
+         expr.isDictClass = False
+%%]]
+
+SEM CAlt
+  | Alt  expr.mbCtxCount = Nothing
+         expr.isDictClass = False
+  
+SEM CPatFld
+  | Fld  offset.mbCtxCount = Nothing
+         offset.isDictClass = False
+
+SEM CBindAspect
+  | Bind  expr.mbCtxCount = if @bindMeta.isDictInstance
+                            then Just 0
+                            else Nothing
+          expr.isDictClass = @bindMeta.isDictClass
+  | Val   expr.mbCtxCount = Nothing						-- TBD
+          expr.isDictClass = False						-- TBD
+
+SEM CExpr
+  | Lam   body.mbCtxCount = do { n <- @lhs.mbCtxCount
+                               ; return (n+1)
+                               }
+  | Let   body.mbCtxCount = Nothing
+          body.isDictClass = False
+
+
+ATTR CMetaVal CMetas [ | | isDictClass:Bool isDictInstance:Bool ]
+
+SEM CMetaVal
+  | DictClass      lhs.isDictClass    = True
+  | *-DictClass    lhs.isDictClass    = False
+  | DictInstance   lhs.isDictInstance = True
+  | *-DictInstance lhs.isDictInstance = False
+
+
+
+ATTR CMetas CMetaVal [ | | mbTrack : {Maybe Track} ]
+ATTR CMetas CMetaVal [ envFinal:Env  | | ]
+
+
+SEM CMetaVal
+  | Track          lhs.mbTrack  =  Just @track
+  | *-Track        lhs.mbTrack  =  Nothing
+
+SEM CBindAspect
+  | Bind  bindMeta.envFinal = @expr.envUp
+
+
+ATTR AllBind CExpr [ | | envUp USE {`Map.union`} {Map.empty} : Env ]
+
+SEM CBindAspect
+  | Bind   lhs.envUp  =  maybe (Map.empty)
+                               (\t -> Map.singleton @lhs.nm t)
+                               @bindMeta.mbTrack
+
+SEM CExpr
+  | Let    lhs.envUp = Map.union @binds.envUp @body.envUp
+  | Lam    lhs.envUp = maybe (if @lhs.isDictClass
+                              then Map.insert @arg TrackSelf @body.envUp
+                              else @body.envUp
+                             )
+                             (\n -> Map.insert @arg (TrackCtx n) @body.envUp)
+                             @lhs.mbCtxCount
+  | *-Let
+      Lam  lhs.envUp = Map.empty
+
+
+ SEM CMetaVal
+   |  DictClass      lhs.cTrf = CMetaVal_DictClass    (map (metaExtendTrack @lhs.bindLamArgMp @lhs.envFinal) @tracks)
+   |  DictInstance   lhs.cTrf = CMetaVal_DictInstance (map (metaExtendTrack @lhs.bindLamArgMp @lhs.envFinal) @tracks)
+
 %%]

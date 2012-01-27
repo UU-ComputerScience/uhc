@@ -1,0 +1,142 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell importable interface to JavaScript pretty print
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 javascript) hs module {%{EH}JavaScript.Pretty} import(EH.Util.Pretty,{%{EH}Base.Common},{%{EH}JavaScript}) 
+%%]
+
+%%[(8 javascript).WRAPPER ag import({JavaScript/AbsSyn})
+WRAPPER AGItf
+%%]
+
+%%[(8 javascript) hs export(ppJavaScriptModule)
+ppJavaScriptModule
+  :: JavaScriptModule
+     -> ( PP_Doc
+%%[[50
+        , PP_Doc
+%%]]
+        )
+ppJavaScriptModule ent
+  = ( pp_Syn_AGItf t
+%%[[8
+    >-<
+%%][50
+    ,
+%%]]
+        ppMain_Syn_AGItf t
+    )
+  where t = wrap_AGItf
+                 (sem_AGItf (AGItf_AGItf ent))
+                 Inh_AGItf
+%%]
+
+instance Show JavaScriptModule where
+  show t = "JavaScriptModule t"
+
+instance PP JavaScriptModule where
+  pp t = ppJavaScriptModule t
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Utilities & combinators
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 javascript) hs
+ppStat :: PP_Doc -> PP_Doc
+ppStat x = x >|< ";"
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% JavaScript pretty printing
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 javascript)
+ATTR
+  AGItf AllNT
+  - NmExprL NmExpr ExprL MbExpr StatL AltL
+    [ | | pp USE {>-<} {empty}: PP_Doc ]
+
+SEM Expr
+  | Var         loc     .   pp      =   pp @nm
+  | Int         loc     .   pp      =   pp $ show @int
+  | Str			loc		.	pp		=	pp $ show @str
+  | Char		loc		.	pp		=	pp $ show @char
+  | Sel			loc		.	pp		=	@expr.pp >|< "." >|< @sel.pp
+  | Op			loc		.	pp		=	ppParens (@l.pp >|< @nm >|< @r.pp)
+  | If			loc		.	pp		=	ppParens (@c.pp >#< "?" >#< @t.pp >#< ":" >#< @e.pp)
+  | Call		loc		.	pp		=	@fun.pp >|< ppParensCommas @args.ppL
+  -- | Fun			loc		.	pp		=	"function" >|< maybe empty (\n -> " " >|< n) @mbNm >|< ppParensCommas @args >|< @body.pp
+  | Fun			loc		.	pp		=	"function" >|< maybe empty (\n -> " " >|< n) @mbNm >|< ppParensCommas @args >-< @body.pp
+  | New			loc		.	pp		=	"new" >#< @expr.pp
+  | Arr			loc		.	pp		=	ppBracketsCommas @elts.ppL
+  | ArrInx		loc		.	pp		=	{- ppParens -} @arr.pp >|< ppBrackets @inx.pp
+  | Obj			loc		.	pp		=	ppCurlysCommas $ map (\(x,y) -> x >|< ":" >|< y) @elts.ppL
+  | ObjFld		loc		.	pp		=	@obj.pp >|< "." >|< @fld
+  | This		loc		.	pp		=	pp "this"
+  | True		loc		.	pp		=	pp "true"
+  | False		loc		.	pp		=	pp "false"
+  | Undefined	loc		.	pp		=	pp "undefined"
+  | Inline		loc		.	pp		=	pp @str
+
+SEM Stat
+  -- | VarDecl     lhs     .   pp      =   ppStat $ "var" >#< @nm >|< maybe empty (\e -> "=" >|< e ) @mbExpr.ppMb
+  | VarDecl     lhs     .   pp      =   ppStat $
+                                        case @mbExpr.ppMb of
+                                          Just e -> pp "var" >#< @nm >|< "=" >-< indent 1 e
+                                          _      -> pp "var" >#< @nm
+  | FunDecl     lhs     .   pp      =   @expr.pp
+  -- | Assign		lhs		.	pp		=	ppStat $ @nm >|< "=" >|< @expr.pp
+  | Assign		lhs		.	pp		=	ppStat $ @to.pp >|< "=" >-< indent 1 @expr.pp
+  | Expr		lhs		.	pp		=	ppStat $ @expr.pp
+  -- | Block		lhs		.	pp		=	ppListSep "{" "}" "" @stats.ppL
+  | Block		lhs		.	pp		=	ppCurlys $ vlist @stats.ppL
+  | Throw		lhs		.	pp		=	ppStat $ "throw" >#< @expr.pp
+  | Ret			loc		.	pp		=	ppStat $ "return" >#< @expr.pp
+  | Switch		loc		.	pp		=	"switch" >|< ppParens @expr.pp >-< indent 1 (ppCurlys $ vlist @alts.ppL)
+  | Break		loc		.	pp		=	ppStat $ pp "break"
+
+SEM Alt
+  | Alt			lhs		.	pp		=	"case" >#< @tag >|< ":" >-< indent 1 (vlist @stats.ppL)
+
+SEM JavaScriptModule
+  | Mod			lhs		.	pp		=	vlist @decls.ppL
+%%]
+
+%%[(8 javascript)
+SEM ExprL StatL AltL [ | | ppL: {[PP_Doc]} ]
+  | Cons		lhs		.	ppL		=	@hd.pp : @tl.ppL
+  | Nil			lhs		.	ppL		=	[]
+%%]
+
+%%[(8 javascript)
+ATTR NmExprL NmExpr [ | | ppL USE {++} {[]} : {[(HsName,PP_Doc)]} ]
+
+SEM NmExpr
+  | Tuple		lhs		.	ppL		=	[(@x1, @x2.pp)]
+%%]
+
+%%[(8 javascript)
+SEM MbExpr [ | | ppMb: {Maybe PP_Doc} ]
+  | Just		lhs		.	ppMb	=	Just @just.pp
+  | Nothing		lhs		.	ppMb	=	Nothing
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% JavaScript pretty printing for top level body (i.e. is main)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 javascript)
+ATTR
+  AGItf JavaScriptModule
+    [ | | ppMain: PP_Doc ]
+
+SEM JavaScriptModule
+  | Mod			lhs		.	ppMain	=	vlist @main.ppL
+
+%%]
+

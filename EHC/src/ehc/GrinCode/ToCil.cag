@@ -31,13 +31,13 @@ thunks.
 %%]
 %%[(8 codegen clr) hs import(EH.Util.Pretty, EH.Util.Utils)
 %%]
-%%[(8 codegen clr) hs import({%{EH}Base.Common}, {%{EH}Base.Opts}, {%{EH}GrinCode})
+%%[(8 codegen clr) hs import({%{EH}Base.Common}, {%{EH}Opts}, {%{EH}GrinCode})
 %%]
 %%[(8 codegen clr) hs import({%{EH}GrinCode.Common} hiding (Variable(..)), {%{EH}Config}, {%{EH}Silly})
 %%]
 %%[(8 codegen clr) hs import({%{EH}Cil.Common}, {%{EH}Cil.TyTag})
 %%]
-%%[(94 codegen clr) hs import({%{EH}Foreign.Extract})
+%%[(8 codegen clr) hs import({%{EH}Foreign.Extract})
 %%]
 
 %%[(8 codegen clr)
@@ -61,7 +61,7 @@ type Code = [MethodDecl]
 
 -- The name of the pointer class.
 refObjNm :: DottedName
-refObjNm = hsn2TypeDottedName (HNm "ReferenceObject")
+refObjNm = hsn2TypeDottedName (mkHNmBase "ReferenceObject")
 
 -- The pointer class.
 refObj :: TypeDef
@@ -328,7 +328,7 @@ SEM GrBind
           expr.hasNext    = False
           loc.params      = map (Param Object . hsnShowAlphanumeric) @argNmL
           loc.cilCode     = localsInit @loc.locals : @expr.cilCode ++ [ret]
-          loc.locals      = Map.foldWithKey (\nm pt xs -> Local pt nm : xs) [] @expr.locals
+          loc.locals      = Map.foldrWithKey (\nm pt xs -> Local pt nm : xs) [] @expr.locals
           loc.funArities  = Map.singleton @nm (length @argNmL)
 
 SEM GrExpr

@@ -26,7 +26,10 @@
 %%[(3 hmtyinfer) import({%{EH}Ty.Trf.Quantify})
 %%]
 
-%%[99 import({%{EH}Base.ForceEval})
+%%[(50 hmtyinfer) import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
+%%]
+
+%%[9999 import({%{EH}Base.ForceEval})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -43,6 +46,11 @@ data TyGamInfo
       deriving Show
 %%]
 
+%%[(50 hmtyinfer)
+deriving instance Typeable TyGamInfo
+deriving instance Data TyGamInfo
+%%]
+
 %%[(6 hmtyinfer || hmtyast).mkTGIData export(mkTGIData)
 mkTGIData :: Ty -> Ty -> TyGamInfo
 mkTGIData t _ = TyGamInfo t
@@ -53,9 +61,9 @@ mkTGI :: Ty -> TyGamInfo
 mkTGI t = mkTGIData t Ty_Any
 %%]
 
-%%[1.emtpyTGI export(emtpyTGI)
-emtpyTGI :: TyGamInfo
-emtpyTGI
+%%[1.emptyTGI export(emptyTGI)
+emptyTGI :: TyGamInfo
+emptyTGI
   = TyGamInfo
 %%[[(1 hmtyinfer || hmtyast)
       Ty_Any
@@ -74,7 +82,7 @@ tyGamLookup nm g
 %%[[(1 hmtyinfer || hmtyast) 
                  -> Just (TyGamInfo (Ty_Con nm))
 %%][1
-                 -> Just emtpyTGI
+                 -> Just emptyTGI
 %%]]
        Just tgi  -> Just tgi
        _         -> Nothing
@@ -84,7 +92,7 @@ tyGamLookup nm g
 tyGamLookupErr :: HsName -> TyGam -> (TyGamInfo,ErrL)
 tyGamLookupErr n g
   = case tyGamLookup n g of
-      Nothing  -> (emtpyTGI,[rngLift emptyRange mkErr_NamesNotIntrod "type" [n]])
+      Nothing  -> (emptyTGI,[rngLift emptyRange mkErr_NamesNotIntrod "type" [n]])
       Just tgi -> (tgi,[])
 %%]
 
@@ -97,7 +105,7 @@ tyGamLookup nm g
 %%[[(6 hmtyinfer || hmtyast) 
                  -> Just (TyGamInfo (Ty_Con nm))
 %%][6
-                 -> Just emtpyTGI
+                 -> Just emptyTGI
 %%]]
        Just tgi  -> Just tgi
        _         -> Nothing
@@ -122,9 +130,9 @@ initTyGam
       , (hsnChar,   TyGamInfo tyChar)
       ]
 %%][1
-      [ (hsnArrow,  emtpyTGI)
-      , (hsnInt,    emtpyTGI)
-      , (hsnChar,   emtpyTGI)
+      [ (hsnArrow,  emptyTGI)
+      , (hsnInt,    emptyTGI)
+      , (hsnChar,   emptyTGI)
       ]
 %%]]
 %%]
@@ -186,7 +194,7 @@ initTyGam
           , hsnAddrUnboxed
 %%]]
           ]
-          (repeat emtpyTGI)
+          (repeat emptyTGI)
 %%]]
 %%]
 
@@ -195,12 +203,14 @@ initTyGam
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(2 hmtyinfer || hmtyast).Substitutable.inst.TyGamInfo
-instance Substitutable TyGamInfo TyVarId VarMp where
-  s |=>  tgi         =   tgi { tgiTy = s |=> tgiTy tgi }
+instance VarUpdatable TyGamInfo VarMp where
+  s `varUpd`  tgi         =   tgi { tgiTy = s `varUpd` tgiTy tgi }
 %%[[4
-  s |==> tgi         =   substLift tgiTy (\i x -> i {tgiTy = x}) (|==>) s tgi
+  s `varUpdCyc` tgi         =   substLift tgiTy (\i x -> i {tgiTy = x}) varUpdCyc s tgi
 %%]]
-  ftvSet tgi         =   ftvSet (tgiTy tgi)
+
+instance VarExtractable TyGamInfo TyVarId where
+  varFreeSet tgi         =   varFreeSet (tgiTy tgi)
 %%]
 
 %%[(1 hmtyinfer || hmtyast).PP.TyGamInfo
@@ -208,7 +218,7 @@ instance PP TyGamInfo where
   pp tgi = ppTy (tgiTy tgi)
 %%]
 
-%%[(99 hmtyinfer || hmtyast)
+%%[(9999 hmtyinfer || hmtyast)
 instance ForceEval TyGamInfo where
   forceEval x@(TyGamInfo t) | forceEval t `seq` True = x
 %%[[102
@@ -216,3 +226,8 @@ instance ForceEval TyGamInfo where
 %%]]
 %%]
 
+%%[(50 hmtyinfer || hmtyast)
+instance Serialize TyGamInfo where
+  sput (TyGamInfo a) = sput a
+  sget = liftM TyGamInfo sget
+%%]

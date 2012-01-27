@@ -1,3 +1,8 @@
+%%[8
+#ifndef __PRIMINLINE_H__
+#define __PRIMINLINE_H__
+%%]
+
 Some C functions are overloaded for various numeric C types:
 - arithmetic
 - minimum and maximum values of type
@@ -62,8 +67,8 @@ extern PrimTypeC         primMin   ## PrimTypeName()	;								\
 
 
 #define PRIMS_INTCONVERT_INTERFACE(PrimTypeName,PrimTypeC) 								\
-extern PrimTypeC         primIntTo ## PrimTypeName( Word x ) ;							\
-extern Word              prim      ## PrimTypeName ## ToInt( PrimTypeC x ) ;			\
+extern PrimTypeC         primIntTo ## PrimTypeName( Int x ) ;							\
+extern Int               prim      ## PrimTypeName ## ToInt( PrimTypeC x ) ;			\
 
 %%]
 
@@ -83,10 +88,20 @@ extern PrimTypeCWord 		 primRotateRight 	## PrimTypeName( PrimTypeC x, Word y ) 
 %%]
 
 %%[99
+
+#ifdef __UHC_TARGET_C__
+
+#define PRIMS_STORABLE_INTERFACE(PrimTypeName,PrimTypeC) 											\
+extern PrimTypeC  primRead ## PrimTypeName ## OffAddr( Word ptr, Word off ) ;					\
+extern Word       primWrite ## PrimTypeName ## OffAddr( Word ptr, Word off, Word val ) ;	\
+
+#else
+
 #define PRIMS_STORABLE_INTERFACE(PrimTypeName,PrimTypeC) 											\
 extern PrimTypeC  primRead ## PrimTypeName ## OffAddr( PrimTypeC* ptr, Word off ) ;					\
 extern Word       primWrite ## PrimTypeName ## OffAddr( PrimTypeC* ptr, Word off, PrimTypeC val ) ;	\
 
+#endif
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -146,6 +161,9 @@ PRIM Word  primCmp ## PrimTypeName( PrimTypeC x, PrimTypeC y )														\
 }																													\
 																													\
 
+%%]
+
+%%[8
 #define PRIMS_NUM_CODE(PrimTypeName,PrimTypeC) 		\
 PRIM PrimTypeC  primAdd ## PrimTypeName( PrimTypeC x, PrimTypeC y )													\
 {																													\
@@ -167,6 +185,10 @@ PRIM PrimTypeC  primNeg ## PrimTypeName( PrimTypeC x )																\
 }																													\
 
 
+%%]
+	printf( "primNeg %d %lld -> %d %lld %d %lld\n", x, x, -x, -x, (PrimTypeC)(-x), (PrimTypeC)(-x) ) ;\
+
+%%[8
 #define PRIMS_INTEGRAL_CODE(PrimTypeName,PrimTypeC) 		\
 PRIM PrimTypeC  primDiv ## PrimTypeName( PrimTypeC numerator, PrimTypeC divisor )									\
 {																													\
@@ -228,11 +250,11 @@ PRIMS_FRACTIONAL_CODE(PrimTypeName,PrimTypeC) \
 
 %%[8
 #define PRIMS_INTCONVERT_CODE(PrimTypeName,PrimTypeC) 																\
-PRIM PrimTypeC  primIntTo ## PrimTypeName( Word x )																	\
+PRIM PrimTypeC  primIntTo ## PrimTypeName( Int x )																	\
 {																													\
 	return (x) ;																									\
 }																													\
-PRIM Word  prim ## PrimTypeName ## ToInt( PrimTypeC x )																\
+PRIM Int  prim ## PrimTypeName ## ToInt( PrimTypeC x )																\
 {																													\
 	return (x) ;																									\
 }																													\
@@ -254,6 +276,7 @@ PRIM PrimTypeC  primMin ## PrimTypeName()																			\
 }																				
 																				
 %%]
+	printf( "primMin %llx %llx %d\n", PrimTypeC ## _MinValue, (PrimTypeC)(PrimTypeC ## _MinValue), PrimTypeC ## _MinValue ) ; \
 
 
 
@@ -346,6 +369,23 @@ PRIM PrimTypeCWord  primRotateRight ## PrimTypeName( PrimTypeC x, Word y ) {				
 
 
 %%[99
+
+#ifdef __UHC_TARGET_C__
+
+#define PRIMS_STORABLE_CODE(PrimTypeName,PrimTypeC) 																	\
+																														\
+PRIM PrimTypeC  primRead ## PrimTypeName ## OffAddr( Word ptr, Word off ) {										\
+	return ((PrimTypeC*)ptr)[ off ] ;																									\
+}																														\
+																														\
+PRIM Word  primWrite ## PrimTypeName ## OffAddr( Word ptr, Word off, Word val ) {							\
+	((PrimTypeC*)ptr)[ off ] = (PrimTypeC) val ;																									\
+	return (Word)RTS_Unit ;																								\
+}																														\
+
+
+#else
+
 #define PRIMS_STORABLE_CODE(PrimTypeName,PrimTypeC) 																	\
 																														\
 PRIM PrimTypeC  primRead ## PrimTypeName ## OffAddr( PrimTypeC* ptr, Word off ) {										\
@@ -357,5 +397,14 @@ PRIM Word  primWrite ## PrimTypeName ## OffAddr( PrimTypeC* ptr, Word off, PrimT
 	return (Word)RTS_Unit ;																								\
 }																														\
 
+#endif
+
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% EOF
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+#endif /* __PRIMINLINE_H__ */
+%%]

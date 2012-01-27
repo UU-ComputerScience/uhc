@@ -107,7 +107,7 @@ SEM TyExpr
   | AppTop      loc     .   pp      =   ppAppTop  (@tyExpr.appFunNm,@tyExpr.appFunPP)
                                                   @tyExpr.appArgPPL @tyExpr.pp
   | Parens      loc     .   pp      =   ppParens @tyExpr.pp
-  | Ann         loc     .   pp      =   {- @ann.pp >#< -} @tyExpr.pp
+  | Ann         loc     .   pp      =   @ann.pp >#< @tyExpr.pp
 
 SEM Decls
   | Cons        lhs     .   pp      =   @hd.pp
@@ -146,6 +146,7 @@ SEM Expr
 %%[2.Wild.pp
 SEM TyExpr
   | Wild        loc     .   pp      =   pp "..."
+  | Mono        loc     .   pp      =   pp "%..."
 %%]
 
 %%[3
@@ -163,7 +164,7 @@ SEM Decl
 
 %%[(5 hmtyinfer).Wild.pp
 SEM Decl
-  | TySig       loc     .   tyPP    :=  if null @tyExpr.tyVarWildL
+  | TySig       loc     .   tyPP    :=  if Map.null @tyExpr.tyVarWildMp
                                         then  @tyExpr.pp
                                         else  ppTy @finalTy
 %%]
@@ -302,7 +303,7 @@ SEM Expr
 
 SEM Decl
   | FFI         loc     .   pp      =   "foreign import" >#< @callconv >#< @safety >#< pp (show @impEnt) >#< @nm >#< "::" >#< @tyExpr.pp
-%%[[94
+%%[[90
   | FFE         loc     .   pp      =   "foreign export" >#< @nm >#< @callconv >#< ppForeignEnt @expEnt >#< @expr.pp >#< "::" >#< @tyExpr.pp
 %%]]
 
@@ -336,11 +337,16 @@ SEM Decl
 %%[[15
                                                     >#< "|" >#< ppListSep "" "" ", " @funcDeps.ppL
 %%]]
-                                                    >#< "where" >-< indent 2 @decls.pp
+                                                    >#< "where"
+                                                    >-< indent 2 (@decls.pp
+%%[[92
+                                                                  >-< ppCmt (ppAssocL @generDerivs)
+%%]]
+                                                                 )
   | Instance    loc     .   pp      =   "instance"  >|< maybe empty (\(n,e) -> " " >|< n >#< (if e then "<:" else "::")) @mbNmElim
                                                     >#< @tyPrExpr.pp
                                                     >#< "where"
-%%[[95
+%%[[91
                                                     >#< ppCmt (pp $ show @instVariant)
 %%]]
                                                     >-< indent 2 @decls.pp
@@ -355,6 +361,7 @@ SEM Decl
                                                     >-< @errInstPP
 %%][102
 %%]]
+  | Default     loc     .   pp      =   "default"  >#< @nm >#< ppParensCommas' @tyExprs.ppL
 %%]
 
 %%[10
@@ -369,7 +376,7 @@ SEM Expr
 %%[1010
 SEM Decl
   | DynVal      loc     .   pp      =   hsnDynVar >|< @nm >#< "=" >#< @expr.pp
-  | DynTySig    loc     .   tyPP    =   if null @tyExpr.tyVarWildL
+  | DynTySig    loc     .   tyPP    =   if Map.null @tyExpr.tyVarWild<p
                                         then  @tyExpr.pp
                                         else  ppTy @finalTy
                         .   pp      =   hsnDynVar >|< @nm >#< "::" >#< @tyPP
@@ -424,6 +431,9 @@ SEM PatExprAnn
 
 SEM TyExprAnn
   | Empty		loc		.	pp		=	empty
+%%[[(8 codegen)
+  | Strictness  loc     .   pp      =   "@" >|< show @strictness
+%%]]
 %%]
 
 %%[6
@@ -474,16 +484,16 @@ SEM DataConstr
                                         >|<  @extraPP
                         .   extraPP =   empty
 %%]
-%%[16
+%%[41
 SEM DataConstr
   | Constr      loc     .   extraPP :=  hlist . map ("," >#<) $ @eqs.ppL
 %%]
-%%[50
+%%[40
 SEM DataConstr
   | Constr      loc     .   extraPP :=  hlist . map ("," >#<) $ @eqs.ppL
 %%]
 
-%%[16
+%%[41
 ATTR DataConstrEqs [ | | ppL: {[PP_Doc]} ]
 
 SEM DataConstrEq
@@ -493,7 +503,7 @@ SEM DataConstrEqs
   | Nil         lhs     .   ppL     =   []
   | Cons        lhs     .   ppL     =   @hd.pp : @tl.ppL
 %%]
-%%[50
+%%[40
 ATTR DataConstrEqs [ | | ppL: {[PP_Doc]} ]
 
 SEM DataConstrEq
@@ -502,6 +512,25 @@ SEM DataConstrEq
 SEM DataConstrEqs
   | Nil         lhs     .   ppL     =   []
   | Cons        lhs     .   ppL     =   @hd.pp : @tl.ppL
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Generics
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[92
+SEM Decl
+  | GenerRep    loc     .   pp      =   "generic" >#< (@maxArity >#< @tyNm >-< (vlist @conNmL) >-< (ppAssocLV $ assocLMapElt ppCurlysCommas @recFldNmL))
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Fusion
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[93
+SEM Decl
+  | FusionDecl  loc     .   pp      =   "fuse" >#< @fuseNm
+  | FusionConv  loc     .   pp      =   "convert" >#< ppCommas [@absNm, @conNm]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -558,32 +587,28 @@ SEM Expr
 
 %%[(2 hmtyinfer)
 SEM Expr
-  | Let         loc     .   extraPP     :=  ppCmt (ppGam (@lhs.finTyVarMp |=> (gamTop @decls.patValGam)))
+  | Let         loc     .   extraPP     :=  ppCmt (ppGam (@lhs.finTyVarMp `varUpd` (gamTop @decls.patValGam)))
 %%]
 
 %%[(3 hmtyinfer)
 SEM Expr
-  | Let         loc     .   extraPP     :=  ppCmt (ppGam (@lhs.finTyVarMp |=> @quValGam_))
-%%]
-
-%%[(4 hmtyinfer)
-SEM Expr
-  | Let         loc     .   extraPP     :=  ppCmt (ppGam (@lhs.finTyVarMp |=> @quValGam_ex_))
+  | Let         loc     .   extraPP     :=  ppCmt (ppGam $ @lhs.finTyVarMp `varUpd` @finValGamDecls)
 %%]
 
 %%[(6 hmtyinfer)
 SEM Expr
-  | Let         loc     .   extraPP     :=  ppCmt (ppGam $ fst $ gamPartition (\k _ -> tyKiKeyIsName k) @lQuTyKiGam_ex_subst) >-< ppCmt (ppGam (@lhs.finTyVarMp |=> @quValGam_ex_))
+  | Let         loc     .   extraPP     :=  ppCmt (ppGam $ fst $ gamPartition (\k _ -> tyKiKeyIsName k) @lQuTyKiGam_ex_subst) >-< ppCmt (ppGam $ @lhs.finTyVarMp `varUpd` @finValGamDecls)
 %%]
 
 %%[(9 hmtyinfer)
 SEM Expr
   | Let         loc     .   extraPP     :=  if ehcOptVerbosity @lhs.opts > VerboseNormal
-                                            then ppCmt (    ppGam (fst $ gamPartition (\k _ -> tyKiKeyIsName k) @lQuTyKiGam)
-                                                       >-<  ppGam (@lhs.finTyVarMp |=> @quValGam_ex_)
+                                            then ppCmt (    ppGam (fst $ gamPartition (\k _ -> tyKiKeyIsName k) @lQuTyKiGam_ex_subst)
+                                                       >-<  ppGam @lQuTyGam
+                                                       >-<  ppGam (@lhs.finTyVarMp `varUpd` @finValGamDecls)
                                                        >-<  ppGam @lClGamNoDups
 %%[[17
-                                                       >-<  ppGam @loc.finGathPolGam
+                                                       >-<  ppGam @loc.finGathPolGam_extra
 %%]]
                                                        )
                                             else empty
@@ -599,7 +624,7 @@ SEM Expr
 SEM AGItf
   | AGItf       loc     .   extraPP     :=  ppVarMpV @expr.tyVarMp
 
-%%[(20 hmtyinfer)
+%%[(50 hmtyinfer)
 SEM AGItf
   | AGItf       loc     .   extraPP     :=  if ehcOptVerbosity @lhs.opts > VerboseNormal
                                             then ppCmt (ppGam @lhs.valGam)

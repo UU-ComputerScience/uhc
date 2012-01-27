@@ -40,6 +40,7 @@ the machinery.
 %format iaddi(rd)(x)         = "\mathsf{addi}\langle{" rd "}\rangle" ^^ x
 %format icall(rs)         = "\mathsf{call}\langle{" rs "}\rangle"
 %format itailcall(rs)(n)(m)         = "\mathsf{tailcall}\langle{" rs "}\rangle" ^^ n ^^ m
+%format itailapply(rs)(n)(m)         = "\mathsf{tailapply}\langle{" rs "}\rangle" ^^ n ^^ m
 %format ildg(rd)(a)         = "\mathsf{ldg}\langle{" rd "}\rangle" ^^ a
 %format iretcall(n)(m)         = "\mathsf{retcall}" ^^ n ^^ m
 %format iretcase(n)(r)(c)         = "\mathsf{retcase}" ^^ n ^^ r ^^ c
@@ -55,6 +56,7 @@ the machinery.
 %format ifetch(rs)         = "\mathsf{fetch}\langle{" rs "}\rangle"
 %format icallc(n)         = "\mathsf{callc}" ^^ n
 %format tailcall         = "\mathsf{tailcall}"
+%format tailapply         = "\mathsf{tailapply}"
 %format taileval         = "\mathsf{taileval}"
 %format fetchupd         = "\mathsf{fetchupd}"
 %format applycont         = "\mathsf{applycont}"
@@ -385,7 +387,7 @@ Node construction:
 \begin{GrinCS}
 |CSOne(unit (C ^^ Sub(v)(1..n)))(Sub(CSDep)(1))(Sub(CSDep)(n+1))(CSEnv)|
 &=&
-|Vecr(CSVar(Sub(v)(i))(Sub(CSDep)(i))(Sub(CSDep)(i+1))(CSEnv)) : ldc C : ldc n : allocstore|
+|Vecr(CSVar(Sub(v)(i))(Sub(CSDep)(i))(Sub(CSDep)(i+1))(CSEnv)) : ldc C : ldc n : allocstore gcinfo|
 \end{GrinCS}
 
 Note:
@@ -856,16 +858,23 @@ For example, all loading instructions start with |0|.
 Currently the following categories are used.
 Those without comment are not yet used.
 
+\paragraph{Plain instructions}
 %{
 %format <<  = "{\ll}"
 %%[[wrap=code
 0           ^^  x00        ^^  x00        -- loading
 10          ^^  x02 << 6   ^^  x80        -- storing
 110         ^^  x06 << 5   ^^  xC0        -- arithmetic
-1110  0     ^^  x1C << 3   ^^  xE0        -- (tail)eval/apply/ldg
+1110  0     ^^  x1C << 3   ^^  xE0        -- eval/apply/ldg
 1110  1     ^^  x1D << 3   ^^  xE8        -- heap: node alloc/fetch, extensible rec
 1111  0     ^^  x1E << 3   ^^  xF0        -- calling, case
 1111  1     ^^  x1F << 3   ^^  xF8        -- no arg instrs, extension, other
+%%]]
+
+\paragraph{Extension instructions, prefixed with |xFE|}
+
+%%[[wrap=code
+0000  0     ^^  x00        ^^  x00        -- tail variants
 %%]]
 %}
 
@@ -1168,10 +1177,10 @@ Callinfo |callinfo| depends on context from which is called: |callinfoCall, call
 
 \begin{GrinEncoding}{|itailcall(rs)(n)(m)|}
  &
-|1111 ^^ 001 ^ ixx1(rs)(0)| &
+|1111 ^^ 111 ^ 0| &
+|0000 ^^ 000 ^ ixx1(rs)(0)| &
 |0000 ^ ixxjuxt(n)(1)(0) ^ ixxjuxt(m)(1)(0)| &
-... &
-\\
+... \\
 \end{GrinEncoding}
 
 where |n, m :: angle(is)|.
@@ -1199,6 +1208,49 @@ where |n, m :: angle(is)|.
   |gframep|
  }{}
 }
+
+
+
+\subsubsection{Tail apply}
+
+\begin{GrinEncoding}{|itailapply(rs)(n)(m)|}
+ &
+|1111 ^^ 111 ^ 0| &
+|0000 ^^ 010 ^ ixx1(rs)(0)| &
+|0000 ^ ixxjuxt(n)(1)(0) ^ ixxjuxt(m)(1)(0)| &
+... \\
+\end{GrinEncoding}
+
+where |n, m :: angle(is)|.
+
+20091013. To be done... (copied from tail call)
+
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |tailapply n m : _|
+ }{%
+  |p : n : a1 .. an : .. : (gframep :-> gframep') : gcode : b1 .. bm : gstack|
+ }{%
+  |gheap|
+ }{
+  |gframep|
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |applyt : gcode|
+ }{%
+  |p : n : a1 .. an : gstack|
+ }{%
+  |gheap|
+ }{
+  |gframep'|
+ }{}
+}
+
+Note: no callinfo is inlined for |tailapply|. This is not necessary as |tailapply| has no stackframe itself,
+but builds on top of the stackframe of the context calling the function in which the |tailapply| is invoked.
 
 
 
@@ -1280,7 +1332,7 @@ where |n, r:: angle(is)|
 \begin{GrinEncoding}{|icasecall|}
  &
 |1111 ^^ 0110| &
-|n| locations &
+|n|, |n| locations &
 ... &
 \\
 \end{GrinEncoding}
@@ -1577,11 +1629,10 @@ Context call info of |gcode|: |callinfoEval|.
 \subsubsection{Tail eval}
 
 \begin{GrinEncoding}{|itaileval(rs)(m)|}
- &
-|1110 ^^ 010 ^ ixx1(rs)(0)| &
+|1111 ^^ 111 ^ 0| &
+|0000 ^^ 001 ^ ixx1(rs)(0)| &
 |0000 ^^ 00 ^ ixxjuxt(m)(1)(0)|  &
-... &
-\\
+... \\
 \end{GrinEncoding}
 
 \GriniStep{%
@@ -1805,17 +1856,20 @@ where |n' = m+k|.
 \begin{GrinEncoding}{|iallocstore(rs)|}
  &
 |1110 ^^ 110 ^ ixx1(rs)(0)| &
- &
- &
+gcinfo &
+... &
 \\
 \end{GrinEncoding}
+
+|gcinfo| is a word sized value, patched by linking during initialisation, passed to the garbage collector.
+It is used to point to info about what can and cannot be collected.
 
 Size in bytes, including tag.
 
 \GriniStep{%
  \GriniStateBefore{%
  }{%
-  |allocstore : gcode|
+  |allocstore gcinfo: gcode|
  }{%
   |s : t : f1 : .. : Sub(f)(s-1) : gstack|
  }{%
@@ -1917,6 +1971,9 @@ To tie the knot for mutual recursive structures on a non-global level (linking s
  &
 \\
 \end{GrinEncoding}
+
+Obsolete (20091009).
+Instruction code has been recycled for |tailevalcont|
 
 
 \subsubsection{Extension prefix}
@@ -2097,7 +2154,7 @@ The variable is used to indicate exception handling throughout C primitive calls
             ldc         5
             ldc         #0/C/$Int       ^
             ldc         2
-            allocstore                  CSEnv ^ [$10_0_42_1 :-> offset ...]
+            allocstore  gcinfo          CSEnv ^ [$10_0_42_1 :-> offset ...]
           $$+ $x1 $10_0_42_1
             ldl         $10_0_42_1
             ldg         $x1
@@ -2154,7 +2211,7 @@ The variable is used to indicate exception handling throughout C primitive calls
                                                     ldi             4
                                                     ldc             #0/C/$Int
                                                     ldc             2
-                                                    allocstore
+                                                    allocstore      gcinfo
                                                     retcall         1 1 1
               } 
                                                 l3:

@@ -2,8 +2,11 @@
 %%% Memory management: plan
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[doesWhat doclatex
 A plan is the place where all mm ingredients are combined.
+A plan makes/decides on policies.
 Only one plan can exist for a running program.
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%  interface
@@ -23,10 +26,23 @@ typedef struct MM_Plan {
   	// setup with a particular MM_Pages
   	void			 			(*init)( struct MM_Plan* ) ;
   	
-  	// poll, the point where GC can take place
-  	// isSpaceFull indicates space from which is polled is full
+  	// stop
+  	void			 			(*exit)( struct MM_Plan* ) ;
+  	
+#if MM_BYPASS_PLAN
+  	// setup bypass for efficiency
+  	void			 			(*initBypass)( struct MM_Plan* ) ;
+#endif
+  	
+  	// the point where GC can take place.
+  	// isPreemptiveGC indicates that space was not yet full, asking for a preemptive GC
   	// return True if collection is/was required/done
-  	Bool 						(*pollForGC)( struct MM_Plan*, Bool isSpaceFull, MM_Space* space ) ;
+  	Bool 						(*doGC)( struct MM_Plan*, Bool isPreemptiveGC, Word gcInfo ) ;
+
+%%[[90
+  	// get the queue of to be finalized weak ptrs
+  	MM_DEQue* 					(*getWeakPtrFinalizeQue)( struct MM_Plan* ) ;
+%%]]
 
   	// dumping info
   	void 						(*dump)( struct MM_Plan* ) ;
@@ -42,10 +58,11 @@ extern MM_Plan mm_plan ;
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Initialization
+%%% Initialization, Finalization
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
 extern void mm_init_plan() ;
+extern void mm_exit_plan() ;
 %%]
 

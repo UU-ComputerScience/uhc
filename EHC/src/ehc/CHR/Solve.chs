@@ -8,7 +8,10 @@ Assumptions (to be documented further)
 - The key [Trie.TrieKey Key] used to lookup a constraint in a CHR should be distinguishing enough to be used for the prevention
   of the application of a propagation rule for a 2nd time.
 
-%%[(9 hmtyinfer || hmtyast) module {%{EH}CHR.Solve} import({%{EH}CHR},{%{EH}CHR.Constraint},{%{EH}CHR.Key})
+%%[(9 hmtyinfer || hmtyast) module {%{EH}CHR.Solve} import({%{EH}CHR},{%{EH}CHR.Constraint},{%{EH}CHR.Key},{%{EH}Substitutable})
+%%]
+
+%%[(9 hmtyinfer || hmtyast) import({%{EH}VarLookup})
 %%]
 
 %%[(9 hmtyinfer || hmtyast) import({%{EH}Base.Common},{%{EH}Base.Trie} as Trie)
@@ -20,7 +23,14 @@ Assumptions (to be documented further)
 %%[(9 hmtyinfer || hmtyast) import(EH.Util.Pretty as Pretty)
 %%]
 
-%%[(99 hmtyinfer || hmtyast) import({%{EH}Base.ForceEval})
+%%[50 import(Data.Typeable(Typeable,Typeable1), Data.Generics(Data))
+%%]
+%%[(50 hmtyinfer || hmtyast) import({%{EH}Base.Serialize})
+%%]
+%%[(50 hmtyinfer || hmtyast) import( Control.Monad)
+%%]
+
+%%[(9999 hmtyinfer || hmtyast) import({%{EH}Base.ForceEval})
 %%]
 
 -- For debug
@@ -44,14 +54,20 @@ data StoredCHR p i g s
       , storedKeys      :: ![Maybe CHRKey]               	-- keys of all constraints; at storedKeyedInx: Nothing
       , storedIdent     :: !UsedByKey                    	-- the identification of a CHR, used for propagation rules (see remark at begin)
       }
+%%[[50
+  deriving (Typeable, Data)
+%%]]
 
 storedSimpSz :: StoredCHR p i g s -> Int
 storedSimpSz = chrSimpSz . storedChr
 
-data CHRStore pred info guard subst
+newtype CHRStore pred info guard subst
   = CHRStore
       { chrstoreTrie    :: Trie.Trie Key [StoredCHR pred info guard subst]
       }
+%%[[50
+  deriving (Typeable, Data)
+%%]]
 
 mkCHRStore trie = CHRStore trie
 
@@ -356,22 +372,40 @@ chrSolveStateTrace = stTrace
 %%[(9 hmtyinfer || hmtyast) export(chrSolve,chrSolve')
 chrSolve
   :: ( CHRMatchable env p s, CHRCheckable env g s
-     , CHRSubstitutable s tvar s, CHRSubstitutable g tvar s, CHRSubstitutable i tvar s, CHRSubstitutable p tvar s
+     -- , VarUpdatable s s, VarUpdatable g s, VarUpdatable i s, VarUpdatable p s
+     , VarLookupCmb s s
+     , VarUpdatable s s, VarUpdatable g s, VarUpdatable i s, VarUpdatable p s
      , CHREmptySubstitution s
      , Ord (Constraint p i)
+%%[[9
      , PP g, PP i, PP p -- for debugging
-     ) => env -> CHRStore p i g s -> [Constraint p i] -> [Constraint p i]
+%%][100
+%%]]
+     )
+     => env
+     -> CHRStore p i g s
+     -> [Constraint p i]
+     -> [Constraint p i]
 chrSolve env chrStore cnstrs
   = work ++ done
   where (work,done,_) = chrSolve' env chrStore cnstrs
 
 chrSolve'
   :: ( CHRMatchable env p s, CHRCheckable env g s
-     , CHRSubstitutable s tvar s, CHRSubstitutable g tvar s, CHRSubstitutable i tvar s, CHRSubstitutable p tvar s
+     -- , VarUpdatable s s, VarUpdatable g s, VarUpdatable i s, VarUpdatable p s
+     , VarLookupCmb s s
+     , VarUpdatable s s, VarUpdatable g s, VarUpdatable i s, VarUpdatable p s
      , CHREmptySubstitution s
      , Ord (Constraint p i)
+%%[[9
      , PP g, PP i, PP p -- for debugging
-     ) => env -> CHRStore p i g s -> [Constraint p i] -> ([Constraint p i],[Constraint p i],SolveTrace p i g s)
+%%][100
+%%]]
+     )
+     => env
+     -> CHRStore p i g s
+     -> [Constraint p i]
+     -> ([Constraint p i],[Constraint p i],SolveTrace p i g s)
 chrSolve' env chrStore cnstrs
   = (wlToList (stWorkList finalState), stDoneCnstrs finalState, stTrace finalState)
   where finalState = chrSolve'' env chrStore cnstrs emptySolveState
@@ -379,17 +413,28 @@ chrSolve' env chrStore cnstrs
 
 %%[(9 hmtyinfer || hmtyast) export(chrSolve'')
 chrSolve''
-  :: ( CHRMatchable env p s, CHRCheckable env g s
-     , CHRSubstitutable s tvar s, CHRSubstitutable g tvar s, CHRSubstitutable i tvar s, CHRSubstitutable p tvar s
+  :: -- forall env p i g s .
+     ( CHRMatchable env p s, CHRCheckable env g s
+     -- , VarUpdatable s s, VarUpdatable g s, VarUpdatable i s, VarUpdatable p s
+     , VarLookupCmb s s
+     , VarUpdatable s s, VarUpdatable g s, VarUpdatable i s, VarUpdatable p s
      , CHREmptySubstitution s
      , Ord (Constraint p i)
+%%[[9
      , PP g, PP i, PP p -- for debugging
-     ) => env -> CHRStore p i g s -> [Constraint p i] -> SolveState p i g s -> SolveState p i g s
+%%][100
+%%]]
+     )
+     => env
+     -> CHRStore p i g s
+     -> [Constraint p i]
+     -> SolveState p i g s
+     -> SolveState p i g s
 chrSolve'' env chrStore cnstrs prevState
   = postState {stMatchCache = Map.empty}
   where postState
 %%[[9
-          = addStats Map.empty [("workMatches",ppAssocLV [(k,pp (fromJust l)) | (k,c) <- Map.toList $ stCountCnstr st, let l = Map.lookup "workMatched" c, isJust l])] st
+          = addStats Map.empty [("workMatches",ppAssocLV [(ppTrieKey k,pp (fromJust l)) | (k,c) <- Map.toList $ stCountCnstr st, let l = Map.lookup "workMatched" c, isJust l])] st
 %%][100
           = st
 %%]]
@@ -400,13 +445,14 @@ chrSolve'' env chrStore cnstrs prevState
 %%[[9
                 -> expandMatch
                        (addStats Map.empty
-                            [ ("(0) yes work", pp workHdKey)
+                            [ ("(0) yes work", ppTrieKey workHdKey)
                             ] stmatch)
                        matches
 %%][100
                 -> expandMatch stmatch matches
 %%]]
-                where expandMatch st@(SolveState {stWorkList = wl, stHistoryCount = histCount})
+                where -- expandMatch :: SolveState p i g s -> [((StoredCHR p i g s, ([WorkKey], [Work p i])), s)] -> SolveState p i g s
+                      expandMatch st@(SolveState {stWorkList = wl, stHistoryCount = histCount})
                                   ( ( ( schr@(StoredCHR {storedIdent = chrId, storedChr = chr@(CHR {chrBody = b, chrSimpSz = simpSz})})
                                       , (keys,works)
                                       )
@@ -432,14 +478,13 @@ chrSolve'' env chrStore cnstrs prevState
                         where (tlMatchY,tlMatchN) = partition (\(r@(_,(ks,_)),_) -> not (any (`elem` keysSimp) ks || isUsedByPropPart (wlUsedIn wl') r)) tlMatch
                               (keysSimp,keysProp) = splitAt simpSz keys
                               usedIn              = Map.singleton (Set.fromList keysProp) (Set.singleton chrId)
-                              (bTodo,bDone)       = splitDone $ map (chrAppSubst subst) b
+                              (bTodo,bDone)       = splitDone $ map (varUpd subst) b
                               bTodo'              = wlCnstrToIns wl bTodo
                               wl' = wlDeleteByKeyAndInsert' histCount keysSimp bTodo'
                                     $ wl { wlUsedIn  = usedIn `wlUsedInUnion` wlUsedIn wl
                                          , wlScanned = []
                                          , wlQueue   = wlQueue wl ++ wlScanned wl
                                          }
-                              chr'= subst `chrAppSubst` chr
                               st' = st { stWorkList       = wl'
 %%[[9
                                        , stTrace          = SolveStep chr' subst (assocLElts bTodo') bDone : {- SolveDbg (ppwork >-< ppdbg) : -} stTrace st
@@ -450,6 +495,7 @@ chrSolve'' env chrStore cnstrs prevState
                                        , stHistoryCount   = histCount + 1
                                        }
 %%[[9
+                              chr'= subst `varUpd` chr
                               ppwork = "workkey" >#< ppTrieKey workHdKey >#< ":" >#< (ppBracketsCommas (map (ppTrieKey . fst) workTl) >-< ppBracketsCommas (map (ppTrieKey . fst) $ wlScanned wl))
                                          >-< "workkeys" >#< ppBracketsCommas (map ppTrieKey keys)
                                          >-< "worktrie" >#< wlTrie wl
@@ -464,17 +510,17 @@ chrSolve'' env chrStore cnstrs prevState
                       
 %%[[9
               _ -> iter (addStats Map.empty
-                             [ ("no match work", pp workHdKey)
+                             [ ("no match work", ppTrieKey workHdKey)
                              , ("wl queue sz", pp (length (wlQueue wl')))
                              ] st')
 %%][100
               _ -> iter st'
 %%]]
                 where wl' = wl { wlScanned = workHd : wlScanned wl, wlQueue = workTl }
-                      st' = stmatch { stWorkList = wl', stTrace = {- SolveDbg (ppdbg) : -} stTrace stmatch }
+                      st' = stmatch { stWorkList = wl', stTrace = SolveDbg (ppdbg) : {- -} stTrace stmatch }
           where (matches,lastQuery,ppdbg,stats) = workMatches st
 %%[[9
-                stmatch = addStats stats [("(a) workHd", pp workHdKey), ("(b) matches", ppBracketsCommasV [ s `chrAppSubst` storedChr schr | ((schr,_),s) <- matches ])]
+                stmatch = addStats stats [("(a) workHd", ppTrieKey workHdKey), ("(b) matches", ppBracketsCommasV [ s `varUpd` storedChr schr | ((schr,_),s) <- matches ])]
 %%][100
                 stmatch =
 %%]]
@@ -498,6 +544,7 @@ chrSolve'' env chrStore cnstrs prevState
           | otherwise         = ( r5
                                 , foldr lqUnion lastQuery [ lqSingleton ck wks histCount | (_,(_,(ck,wks))) <- r23 ]
 %%[[9
+                                -- , Pretty.empty
                                 , pp2 >-< {- pp2b >-< pp2c >-< -} pp3
                                 , mkStats Map.empty [("(1) lookup sz",pp (length r2)), ("(2) cand sz",pp (length r3)), ("(3) unused cand sz",pp (length r4)), ("(4) final cand sz",pp (length r5))]
 %%][100
@@ -521,10 +568,9 @@ chrSolve'' env chrStore cnstrs prevState
 %%][100
 %%]]
                 -- util functions
-                candidate (StoredCHR {storedIdent = (ck,_), storedKeys = ks, storedChr = chr@(CHR {chrSimpSz = simpSz})})
-                  = (cand lkup sks ++ cand (\h k -> lkup h k) pks, (ck,queriedWorkS))
-                  where (sks,pks)     = splitAt simpSz ks
-                        lkup how k    = partition (\(_,w) -> workTime w < lastQueryTm) $ lookupResultToList $ lookupPartialByKey' (,) how k wlTrie
+                candidate (StoredCHR {storedIdent = (ck,_), storedKeys = ks, storedChr = chr})
+                  = (cand lkup ks, (ck,queriedWorkS))
+                  where lkup how k    = partition (\(_,w) -> workTime w < lastQueryTm) $ lookupResultToList $ lookupPartialByKey' (,) how k wlTrie
                                       where lastQueryTm = lqLookupW k lastQueryW
                         cand lkup     = map (maybe (lkup TrieLookup_Normal workHdKey) (lkup TrieLookup_StopAtPartial))
                         lastQueryW    = lqLookupC ck lastQuery
@@ -546,7 +592,7 @@ chrSolve'' env chrStore cnstrs prevState
                         checks (StoredCHR {storedChr = CHR {chrGuard = gd}})
                           = map chk gd
                           where chk g subst = chrCheck env subst g
-                        cmb (Just s) next = fmap (`chrAppSubst` s) $ next s
+                        cmb (Just s) next = fmap (|+> s) $ next s
                         cmb _        _    = Nothing
         isUsedByPropPart wlUsedIn (chr,(keys,_))
           = fnd $ drop (storedSimpSz chr) keys
@@ -557,20 +603,16 @@ chrSolve'' env chrStore cnstrs prevState
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% ForceEval
+%%% Instance: ForceEval, Serialize
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(99 hmtyinfer || hmtyast)
-instance ForceEval (CHR (Constraint p i) g s) => ForceEval (StoredCHR p i g s) where
-  forceEval x@(StoredCHR c i ks id) | forceEval c `seq` forceEval ks `seq` forceEval id `seq` True = x
-%%[[102
-  fevCount (StoredCHR c i ks id) = cm1 "StoredCHR" `cmUnion` fevCount c `cmUnion` fevCount i `cmUnion` fevCount ks `cmUnion` fevCount id
-%%]]
-
-instance ForceEval (StoredCHR p i g s) => ForceEval (CHRStore p i g s) where
-  forceEval x@(CHRStore t) | forceEval t `seq` True = x
-%%[[102
-  fevCount (CHRStore t) = cm1 "CHRStore" `cmUnion` fevCount t
-%%]]
+%%[(50 hmtyinfer)
+instance (Serialize p, Serialize i, Serialize g, Serialize s) => Serialize (CHRStore p i g s) where
+  sput (CHRStore a) = sput a
+  sget = liftM CHRStore sget
+  
+instance (Serialize p, Serialize i, Serialize g, Serialize s) => Serialize (StoredCHR p i g s) where
+  sput (StoredCHR a b c d) = sput a >> sput b >> sput c >> sput d
+  sget = liftM4 StoredCHR sget sget sget sget
 %%]
 

@@ -7,6 +7,9 @@ Cleanup between phases
 %%[99 module {%{EH}EHC.CompilePhase.Cleanup}
 %%]
 
+%%[99 import({%{EH}Base.Optimize})
+%%]
+
 -- general imports
 %%[99 import({%{EH}EHC.Common})
 %%]
@@ -55,24 +58,36 @@ cpCleanupEH modNm
 %%]
 
 %%[(99 codegen) export(cpCleanupCore)
-cpCleanupCore :: HsName -> EHCompilePhase ()
-cpCleanupCore modNm
+cpCleanupCore :: [HsName] -> EHCompilePhase ()
+cpCleanupCore modNmL
+  = cpSeq [cl m | m <- modNmL]
+  where cl m = cpUpdCU m
+                  (\e -> e { ecuMbCore            = Nothing
+%%[[(99 tycore)
+                           , ecuMbTyCore          = Nothing
+%%]]
+                           , ecuMbCoreSem         = Nothing
+                           }
+                  )
+%%]
+
+%%[(99 codegen cmm) export(cpCleanupCmm)
+cpCleanupCmm :: HsName -> EHCompilePhase ()
+cpCleanupCmm modNm
   = cpUpdCU modNm
-      (\e -> e { ecuMbCore            = Nothing
-               , ecuMbTyCore          = Nothing
-               , ecuMbCoreSem         = Nothing
-               -- , ecuMbTyCoreSem       = Nothing
+      (\e -> e { ecuMbCmm               = Nothing
                }
       )
 %%]
 
 %%[(99 codegen grin) export(cpCleanupGrin,cpCleanupFoldBytecode,cpCleanupBytecode)
-cpCleanupGrin :: HsName -> EHCompilePhase ()
-cpCleanupGrin modNm
-  = cpUpdCU modNm
-      (\e -> e { ecuMbGrin            = Nothing
-               }
-      )
+cpCleanupGrin :: [HsName] -> EHCompilePhase ()
+cpCleanupGrin modNmL
+  = cpSeq [cl m | m <- modNmL]
+  where cl m = cpUpdCU m
+                  (\e -> e { ecuMbGrin            = Nothing
+                           }
+                  )
 
 cpCleanupFoldBytecode :: HsName -> EHCompilePhase ()
 cpCleanupFoldBytecode modNm
@@ -102,7 +117,7 @@ cpCleanupCU modNm
        -- TODO think about this a bit longer.
        ; cr <- get
        ; let (_,opts) = crBaseInfo' cr
-       ; when (not $ ehcOptFullProgAnalysis opts) $ cpCleanupGrin modNm
+       ; when (ehcOptOptimizationScope opts < OptimizationScope_WholeGrin) $ cpCleanupGrin [modNm]
 %%]]
        }
 
@@ -110,8 +125,9 @@ cpCleanupFlow :: HsName -> EHCompilePhase ()
 cpCleanupFlow modNm
   = cpUpdCU modNm
       (\e -> e { ecuMbHSSemMod        = Nothing
-               , ecuMbPrevHI          = Nothing
-               , ecuMbPrevHISem       = Nothing
+               -- , ecuMbPrevHI          = Nothing
+               -- , ecuMbPrevHISem       = Nothing
+               -- , ecuMbPrevHIInfo      = Nothing
                }
       )
 %%]

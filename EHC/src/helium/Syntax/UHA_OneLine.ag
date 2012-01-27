@@ -3,7 +3,7 @@ module Helium.Syntax.UHA_OneLine
 where
 }
 {
-import Char
+import Data.Char
 import List
 import Helium.Utils.OneLiner
 import Helium.Syntax.UHA_Utils (showNameAsOperator)

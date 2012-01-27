@@ -18,6 +18,15 @@ by
    EVAL xk
 
 
+similarly, replace
+   STORE (F/sel dict)
+by
+   UNIT xk
+
+
+
+The idea below seems to be obsolete:
+
 xk is known to be bound by
    xk <- STORE (#P/i/fk cs)
   
@@ -26,6 +35,8 @@ Similarly we can also replace
   STORE (A/_ f bs)
 by
   STORE (F/fk cs bs)
+
+
 
 
 
@@ -86,33 +97,23 @@ ATTR AllBind
 SEM GrExpr
   | Call   lhs.grTrf  =  maybe @loc.grTrf 
                                id
-                               (do
+                               (do   -- in the Maybe monad
                                 { n <- Map.lookup @nm @lhs.allSels
                                 ; v <- @argL.singleVar
                                 ; d <- Map.lookup v @lhs.allDicts
                                 ; let field = d !! n
                                 ; return (GrExpr_Eval field)
                                 })
-                           
-  | Seq    lhs.grTrf  =  maybe @loc.grTrf 
+
+  | Store  lhs.grTrf  =  maybe @loc.grTrf
                                id
-                               (do
-                                { f <- @expr.storedSelectedFunction
-                                ; when (show f == "_") Nothing
-                                ; (ps,pat,rest) <- @body.seqStoredApplyRest
-                                ; let j = length ps
-                                ; let node = Map.findWithDefault (error ("MemberSelect: " ++ show f ++ " not found in " ++ show @lhs.allGlobs)) f @lhs.allGlobs
-                                ; let node2 = case node of (GrVal_Node (GrTag_PApp i g) qs) -> node
-                                                           (GrVal_Node (GrTag_Fun f)    qs) -> GrVal_Node (GrTag_PApp 0 f) qs
-                                                           _                                -> error (show f ++ " is not a PApp but a " ++ show node ++ " while pat is " ++ show pat)
-                                ; let (GrVal_Node (GrTag_PApp i g) qs) = node2
-                                ; let args = qs ++ ps
-                                ; if  j>i
-                                  then Nothing  -- TODO: add optimisation for oversaturated case
-                                  else return ( if j==i
-                                                then GrExpr_Seq (GrExpr_Store (GrVal_Node (GrTag_Fun        g) args)) pat rest
-                                                else GrExpr_Seq (GrExpr_Store (GrVal_Node (GrTag_PApp (i-j) g) args)) pat rest
-                                              )
+                               (do   -- in the Maybe monad
+                                { name <- @val.mbFname
+                                ; n <- Map.lookup name @lhs.allSels
+                                ; v <- @val.singleVar
+                                ; d <- Map.lookup v @lhs.allDicts
+                                ; let field = d !! n
+                                ; return (GrExpr_Unit (GrVal_Var field) GrType_None )
                                 })
 
 
@@ -136,78 +137,39 @@ SEM GrSplit
 %%]]
 
 
-
--- Auxiliary attributes needed for gathering
-
-ATTR GrExpr  [  | | storedSelectedFunction : {Maybe HsName}
-                    storedApplyParameters  : {Maybe [GrVal]}
-                    seqStoredApplyRest     : {Maybe (GrValL,GrPatLam,GrExpr)}  ]
-
-ATTR GrVal   [  | | nodeApplyParameters    : {Maybe [GrVal]} 
-                    nodeSelectedFunction   : {Maybe HsName}
-             ]
-
-ATTR GrTag   [  | | isApplyTag : Bool
-                    p0name     : {Maybe HsName}
-             ]
-                    
-SEM GrExpr
-  | Store   lhs.storedSelectedFunction = @val.nodeSelectedFunction
-  | *-Store lhs.storedSelectedFunction = Nothing
-
-  | Store   lhs.storedApplyParameters  = @val.nodeApplyParameters
-  | *-Store lhs.storedApplyParameters  = Nothing
-
-  | Seq     lhs.seqStoredApplyRest     = do
-                                         { ps <- @expr.storedApplyParameters
-                                         ; return (tail ps,@pat.grTrf,@body.grTrf)
-                                         }
-  | *-Seq   lhs.seqStoredApplyRest     = Nothing
-
-SEM GrVal
-  | Node    lhs.nodeApplyParameters    = if @tag.isApplyTag
-                                         then Just @fldL.grTrf
-                                         else Nothing
-  | *-Node  lhs.nodeApplyParameters    = Nothing
-  
-  | Node    lhs.nodeSelectedFunction   = do
-                                         { nm <- @tag.p0name
-                                         ; n  <- Map.lookup nm @lhs.allSels
-                                         ; v  <- @fldL.singleVar
-                                         ; d  <- Map.lookup v @lhs.allDicts
-                                         ; let field = d !! n
-                                         ; return field
-                                         }
-  | *-Node  lhs.nodeSelectedFunction   = Nothing
-
-SEM GrTag
-  | App     lhs.isApplyTag = True
-  | *-App   lhs.isApplyTag = False
-
-  | PApp    lhs.p0name     = if @needs==0
-                             then Just @nm
-                             else Nothing
-  | *-PApp  lhs.p0name     = Nothing
-
-
 -- Auxiliary attributes needed for gathering
 
 ATTR GrValL [ | | singleVar : {Maybe HsName}   isEmpty : Bool ]
+ATTR GrVal  [ | | singleVar : {Maybe HsName}   mbFname : {Maybe HsName} ]
 ATTR GrVal  [ | | mbVar : {Maybe HsName} ]
 ATTR GrVal  [ | | mbTupel : {Maybe [HsName]} ]
-ATTR GrVal GrValL GrPatAlt [ | | variables USE {++} {[]} : {[HsName]} ]
-ATTR GrTag  [ | | isTupel : Bool ]
+ATTR GrVal 
+     GrValL [ | | variables USE {++} {[]} : {[HsName]} ]
+ATTR GrTag  [ | | isTupel : Bool    mbFname : {Maybe HsName} ]
 
 SEM GrValL
   | Nil    lhs.isEmpty      = True
   | Cons   lhs.isEmpty      = False
 
   | Nil    lhs.singleVar    = Nothing
-  | Cons   lhs.singleVar    = @hd.mbVar
+  | Cons   lhs.singleVar    = if @tl.isEmpty
+                              then @hd.mbVar
+                              else Nothing
 
 SEM GrVal
   | Var    lhs.mbVar        = Just @nm
   | *-Var  lhs.mbVar        = Nothing
+  
+  | Node   lhs.mbFname      = @tag.mbFname
+           lhs.singleVar    = @fldL.singleVar
+  | *-Node lhs.mbFname      = Nothing
+           lhs.singleVar    = Nothing
+  
+SEM GrTag
+  | Fun    lhs.mbFname      = Just @nm
+  | *-Fun  lhs.mbFname      = Nothing
+  
+  
 
 SEM GrGlobal
  | Global  lhs.dictionaries = maybe Map.empty
@@ -224,73 +186,11 @@ SEM GrVal
 SEM GrVal
   | Var    lhs.variables = [ @nm ]
 
-SEM GrPatAlt
-  | Node   lhs.variables = @fldL
-  
+ 
 SEM GrTag
   | Con     lhs.isTupel = True
   | *-Con   lhs.isTupel = False
 
 
-
--- Auxiliary attributes needed for gathering selectors
-
-ATTR GrExpr [ | | selectorbody : {Maybe Int}  
-                  caseSelector : {HsName -> Maybe Int}  
-                  mbEval       : {Maybe HsName} 
-            ]
-ATTR GrAlt  [ | | selectorbody : {Maybe Int} 
-            ]
-ATTR GrAltL [ | | singleSelectorBody : {Maybe Int}  
-                  isEmpty : Bool 
-            ]
-
-SEM GrBind
-  | Bind  lhs.selectors = if   length @argNmL /= 1
-                          then Map.empty
-                          else maybe Map.empty
-                                     (\n -> Map.singleton @nm n)
-                                     @expr.selectorbody
-
-SEM GrExpr
-  | Seq    lhs.selectorbody = maybe Nothing
-                                    (\v -> @body.caseSelector v)
-                                    @expr.mbEval
-  | *-Seq  lhs.selectorbody = Nothing
-
-  | Case   lhs.caseSelector = \v -> @altL.singleSelectorBody
-  | *-Case lhs.caseSelector = \v -> Nothing
-
-  | Eval   lhs.mbEval       = Just @nm
-  | *-Eval lhs.mbEval       = Nothing
-
-SEM GrAltL
-  | Nil    lhs.isEmpty      = True
-  | Cons   lhs.isEmpty      = False
-  
-  | Nil    lhs.singleSelectorBody = Nothing
-  | Cons   lhs.singleSelectorBody = if @tl.isEmpty
-                                    then @hd.selectorbody
-                                    else Nothing
-
-SEM GrAlt
-  | Alt    lhs.selectorbody  = maybe Nothing
-                                     (\v -> findIndex 0 v @pat.variables)
-                                     @expr.mbEval
-
-{
-findIndex :: Int -> HsName -> [HsName] -> Maybe Int
-findIndex n x [] = Nothing
-findIndex n x (y:ys) | x==y      = Just n
-                     | otherwise = findIndex (n+1) x ys
-	
-}
-
-
--- code snippet that might be useful in the TODO task
-
---if j>i
---then GrExpr_Seq (GrExpr_Store (GrVal_Node (GrTag_Fun        g) (take i args))) @pat.grTrf (GrExpr_Seq (GrExpr_Store (GrVal_Node (GrTag_App us) (var:drop i args))) pat rest)) 
---else 
 
 %%]

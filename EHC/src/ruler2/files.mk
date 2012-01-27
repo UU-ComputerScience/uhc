@@ -44,19 +44,37 @@ endif
 
 RULER2_AG_DS_MAIN_SRC_AG				:=
 
-RULER2_AG_ALL_DPDS_SRC_AG				:= $(pathsubst $(SRC_RULER2_PREFIX)%.cag,$(RULER2_BLD_PREFIX)%.ag,$(sort $(RULER2_AG_D_DPDS_SRC_AG) $(RULER2_AG_S_DPDS_SRC_AG)))
+RULER2_AG_ALL_DPDS_SRC_AG				:= $(patsubst $(SRC_RULER2_PREFIX)%.cag,$(RULER2_BLD_PREFIX)%.ag,$(sort $(RULER2_AG_D_DPDS_SRC_AG) $(RULER2_AG_S_DPDS_SRC_AG)))
 RULER2_AG_ALL_MAIN_SRC_AG				:= $(RULER2_AG_D_MAIN_SRC_AG) $(RULER2_AG_S_MAIN_SRC_AG) $(RULER2_AG_DS_MAIN_SRC_AG)
-RULER2_AG_ALL_ODPDS_SRC_AG                              := $(sort $(RULER2_AG_D_ODPDS_SRC_AG) $(RULER2_AG_S_ODPDS_SRC_AG))
+RULER2_AG_ALL_ODPDS_SRC_AG              := $(sort $(RULER2_AG_D_ODPDS_SRC_AG) $(RULER2_AG_S_ODPDS_SRC_AG))
 
 
 # Regenerate derived makefile
 $(RULER2_BLD_PREFIX)files-ag-s-dep.mk : $(SRC_PREFIX)ruler2/files-ag-s.dep $(SHUFFLE) $(RULER2_AG_ALL_ODPDS_SRC_AG) $(RULER2_AG_ALL_MAIN_SRC_AG)
 	mkdir -p $(RULER2_BLD_PREFIX)
-	$(SHUFFLE) $(SRC_RULER2_PREFIX)files-ag-s.dep --dep --depnameprefix=RULER2_ --depsrcvar=SRC_RULER2_PREFIX --depdstvar=RULER2_BLD_PREFIX --depmainvar=RULER2_AG_S_MAIN_SRC_AG --depdpdsvar=RULER2_AG_S_DPDS_SRC_AG --deporigdpdsvar=RULER2_AG_S_ODPDS_SRC_AG --depbase=$(SRC_RULER2_PREFIX) > $(RULER2_BLD_PREFIX)files-ag-s-dep.mk
+	$(SHUFFLE) $(SRC_RULER2_PREFIX)files-ag-s.dep --dep \
+		--depnameprefix=RULER2_ \
+		--depsrcvar=SRC_RULER2_PREFIX \
+		--depdstvar=RULER2_BLD_PREFIX \
+		--depmainvar=RULER2_AG_S_MAIN_SRC_AG \
+		--depdpdsvar=RULER2_AG_S_DPDS_SRC_AG \
+		--deporigdpdsvar=RULER2_AG_S_ODPDS_SRC_AG \
+		--depderivdpdsvar=RULER2_AG_S_DDPDS_DERIV_AG \
+		--depbase=$(SRC_RULER2_PREFIX) \
+		> $(RULER2_BLD_PREFIX)files-ag-s-dep.mk
 
 $(RULER2_BLD_PREFIX)files-ag-d-dep.mk : $(SRC_PREFIX)ruler2/files-ag-d.dep $(SHUFFLE) $(RULER2_AG_ALL_ODPDS_SRC_AG) $(RULER2_AG_ALL_MAIN_SRC_AG)
 	mkdir -p $(RULER2_BLD_PREFIX)
-	$(SHUFFLE) $(SRC_RULER2_PREFIX)files-ag-d.dep --dep --depnameprefix=RULER2_ --depsrcvar=SRC_RULER2_PREFIX --depdstvar=RULER2_BLD_PREFIX --depmainvar=RULER2_AG_D_MAIN_SRC_AG --depdpdsvar=RULER2_AG_D_DPDS_SRC_AG --deporigdpdsvar=RULER2_AG_D_ODPDS_SRC_AG --depbase=$(SRC_RULER2_PREFIX) > $(RULER2_BLD_PREFIX)files-ag-d-dep.mk
+	$(SHUFFLE) $(SRC_RULER2_PREFIX)files-ag-d.dep --dep \
+		--depnameprefix=RULER2_ \
+		--depsrcvar=SRC_RULER2_PREFIX \
+		--depdstvar=RULER2_BLD_PREFIX \
+		--depmainvar=RULER2_AG_D_MAIN_SRC_AG \
+		--depdpdsvar=RULER2_AG_D_DPDS_SRC_AG \
+		--deporigdpdsvar=RULER2_AG_D_ODPDS_SRC_AG \
+		--depderivdpdsvar=RULER2_AG_D_DDPDS_DERIV_AG \
+		--depbase=$(SRC_RULER2_PREFIX) \
+		> $(RULER2_BLD_PREFIX)files-ag-d-dep.mk
 
 # all src
 RULER2_ALL_SRC							:= $(RULER2_AG_ALL_MAIN_SRC_AG) $(RULER2_AG_ALL_DPDS_SRC_AG) $(RULER2_HS_MAIN_SRC_HS) \
@@ -90,7 +108,7 @@ ruler-clean:
 ###########################################################################################
 
 $(RULER2_BLD_EXEC): $(RULER2_AG_ALL_MAIN_DRV_HS) $(RULER2_HS_ALL_DRV_HS) $(RULER2_CHS_UTIL_DRV_HS) $(LIB_EH_UTIL_INS_FLAG)
-	$(GHC) --make $(GHC_OPTS) $(GHC_OPTS_WHEN_EHC) -package $(LIB_EH_UTIL_PKG_NAME) -i$(RULER2_BLD_PREFIX) $(RULER2_BLD_PREFIX)$(RULER2_MAIN).hs -o $@
+	$(GHC) --make $(GHC_OPTS) $(GHC_OPTS_WHEN_EHC) -ignore-package uulib-debug -package $(LIB_EH_UTIL_PKG_NAME) -i$(RULER2_BLD_PREFIX) $(RULER2_BLD_PREFIX)$(RULER2_MAIN).hs -o $@
 	$(STRIP) $@
 
 $(RULER2_BLD_PREFIX)%.ag: $(SRC_RULER2_PREFIX)%.cag $(SHUFFLE)

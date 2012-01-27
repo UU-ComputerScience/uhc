@@ -11,13 +11,13 @@
 %%[8 import(Data.Maybe,Data.List,EH.Util.Utils,EH.Util.FPath)
 %%]
 
-%%[8 import({%{EH}ConfigDefines}, {%{EH}Base.Opts}) export(module {%{EH}ConfigDefines})
+%%[8 import({%{EH}ConfigDefines}, {%{EH}Opts}) export(module {%{EH}ConfigDefines})
 %%]
 
 %%[8 import({%{EH}EHC.Environment})
 %%]
 
-%%[20 import(qualified {%{EH}SourceCodeSig} as Sig)
+%%[50 import(qualified {%{EH}SourceCodeSig} as Sig)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -34,8 +34,9 @@ data Version
       , verQuality          :: !String
       , verShort            :: !String
       , verFull             :: !String
+      , verAsNumber         :: !String
       , verProg             :: !String
-%%[[20
+%%[[50
       , verTimestamp        :: !String
       , verSig              :: !String
 %%]
@@ -53,23 +54,44 @@ version
       , verQuality          = "@EH_VERSION_STABILITY@"
       , verShort            = "@EH_VERSION_SHORT@"
       , verFull             = "@EH_VERSION_FULL@"
+      , verAsNumber         = "@EH_VERSION_ASNUMBER@"
       , verProg             = "@EHC_EXEC_NAME@"
-%%[[20
+%%[[50
       , verTimestamp        = Sig.timestamp
       , verSig              = Sig.sig
 %%]
       }
 %%]
 
-%%[1 export(verNumeric, verDist, verInfo)
-verNumeric :: Version -> String
-verNumeric v = verShort v ++ "." ++ verMinorMinor v
-
-verDist :: Version -> String
-verDist v = verFull v
-
+%%[1 export(verInfo)
 verInfo :: Version -> String
-verInfo v = verProg v ++ "-" ++ verDist v ++ ", " ++ verSvnRevision v
+verInfo v = verProg v ++ "-" ++ verFull v ++ ", Revision " ++ verSvnRevision v
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Install locations
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) export(installRoot)
+installRoot :: EHCOpts -> String
+installRoot opts
+%%[[8
+  = envroot
+%%][99
+  = maybe envroot id (ehcOptCfgInstallRoot opts)
+%%]]
+  where envroot = ehcenvInstallRoot $ ehcOptEnvironment opts
+%%]
+
+%%[(8 codegen) export(installVariant)
+installVariant :: EHCOpts -> String
+installVariant opts
+%%[[8
+  = envvariant
+%%][99
+  = maybe envvariant id (ehcOptCfgInstallVariant opts)
+%%]]
+  where envvariant = ehcenvVariant $ ehcOptEnvironment opts
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -79,7 +101,31 @@ verInfo v = verProg v ++ "-" ++ verDist v ++ ", " ++ verSvnRevision v
 %%[(8 codegen) export(mkInstallFilePrefix)
 mkInstallFilePrefix :: EHCOpts -> WhatInstallFile -> String -> String -> String
 mkInstallFilePrefix opts whatfile variant pkg
-  = mkDirbasedInstallPrefix (ehcenvInstallRoot $ ehcOptEnvironment opts) whatfile variant (show $ ehcOptTarget opts) pkg
+  = mkDirbasedInstallPrefix (installRoot opts) whatfile variant (show $ ehcOptTarget opts) pkg
+%%]
+
+%%[(8 codegen) export(mkInstallBindirPrefix)
+mkInstallBindirPrefix :: EHCOpts -> String -> String
+mkInstallBindirPrefix opts variant
+  = mkDirbasedInstallPrefix (installRoot opts) INST_BIN variant "" ""
+%%]
+
+%%[(99 codegen) export(mkInstallPkgdirSystem)
+mkInstallPkgdirSystem :: EHCOpts -> String
+mkInstallPkgdirSystem opts
+  = filePathUnPrefix $ mkInstallFilePrefix opts INST_LIB_PKG2 (installVariant opts) ""
+%%]
+
+%%[(99 codegen) export(mkInstallPkgdirUser)
+mkInstallPkgdirUser :: EHCOpts -> String
+mkInstallPkgdirUser opts
+  = filePathCoalesceSeparator $ filePathUnPrefix $ mkDirbasedInstallPrefix (ehcOptUserDir opts) INST_LIB_PKG2 "" (show $ ehcOptTarget opts) ""
+%%]
+
+%%[(8 codegen) export(mkInstalledRts)
+-- | construct path for RTS
+mkInstalledRts :: EHCOpts -> (String -> String -> String) -> WhatInstallFile -> String -> String -> String
+mkInstalledRts opts mkLib how variant rts = mkLib (mkInstallFilePrefix opts how variant rts) rts
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -91,7 +137,12 @@ shellCmdGcc :: String
 shellCmdGcc = "@TOPLEVEL_SYSTEM_ABSPATH_PREFIX@@GCC_CMD@@SUFFIX_EXEC@"
 %%]
 
-%%[8 export(shellCmdLLVM)
+%%[(8 llvm) export(shellCmdLLVMC)
+shellCmdLLVMC :: EHCOpts -> String -> [String]
+shellCmdLLVMC opts variant = [mkInstallBindirPrefix opts variant ++ "llvmc", "@LLVM_AS_CMD@", "@LLVM_OPT_CMD@", "@LLVM_LLC_CMD@", "@GCC_CMD@"]
+%%]
+
+%%[8888 export(shellCmdLLVM)
 shellCmdLLVM :: String
 shellCmdLLVM = "@TOPLEVEL_SYSTEM_ABSPATH_PREFIX@@SHELLRUN@" ++ "@TOP_ABS@/bin/llvm-compilerdriver"
 %%]
@@ -99,6 +150,11 @@ shellCmdLLVM = "@TOPLEVEL_SYSTEM_ABSPATH_PREFIX@@SHELLRUN@" ++ "@TOP_ABS@/bin/ll
 %%[(8 java || jazy) export(shellCmdJar)
 shellCmdJar :: String
 shellCmdJar = "@TOPLEVEL_SYSTEM_ABSPATH_PREFIX@@JAR_CMD@@SUFFIX_EXEC@"
+%%]
+
+%%[(8 javascript) export(shellCmdCat)
+shellCmdCat :: String
+shellCmdCat = "@TOPLEVEL_SYSTEM_ABSPATH_PREFIX@@CAT_CMD@@SUFFIX_EXEC@"
 %%]
 
 %%[99 export(shellCmdCpp)
@@ -113,7 +169,7 @@ shellCmdAr = "@TOPLEVEL_SYSTEM_ABSPATH_PREFIX@@AR_CMD@@SUFFIX_EXEC@"
 
 %%[99 export(shellCmdRanlib)
 shellCmdRanlib :: String
-shellCmdRanlib = "@TOPLEVEL_SYSTEM_ABSPATH_PREFIX@@RANLIB_CMD@@SUFFIX_EXEC@"
+shellCmdRanlib = "@TOPLEVEL_SYSTEM_ABSPATH_PREFIX@@RANLIB_CMD@@SUFFIX_EXEC@ -c"
 %%]
 
 %%[99 export(shellCmdLibtoolStatic)
@@ -130,8 +186,8 @@ shellCmdLibtoolStaticOpts = "@LIBTOOL_STATIC_OPTS@"
 mkShellCmdLibtool :: String -> [String] -> [[String]]
 mkShellCmdLibtool archive files
   = if True -- "@LIBTOOL_STATIC_CMD@" == "no"
-    then [ [shellCmdAr,"r",{- "-c", -} archive] ++ files
-         , [shellCmdRanlib,archive]
+    then [ [shellCmdAr,"-r","-s",archive] ++ files
+         -- , [shellCmdRanlib,archive]
          ]
     else [ [shellCmdLibtoolStatic,shellCmdLibtoolStaticOpts,archive] ++ files
          ]
@@ -141,30 +197,25 @@ mkShellCmdLibtool archive files
 %%% Libraries
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
-prefixLib :: String
-prefixLib = "@PREFIX_LIB@"
-%%]
-
 %%[8 export(libnamesGcc)
-libnamesGcc :: [String]
-libnamesGcc
+libnamesGcc :: EHCOpts -> [String]
+libnamesGcc opts
   = [ ]
-    ++ (if useBoehmGC
+    ++ (if useBoehmGC opts
         then [ "@EXTLIBS_BGC_PKG_NAME@" ]
         else []
        )
 %%[[97
-    ++ (if useGMP
+    ++ (if mpLib == MPLib_GMP
         then [ "@EXTLIBS_GMP_PKG_NAME@" ]
         else []
        )
 %%]]
 %%]
 
-%%[8 export(libnamesGccPerVariant)
-libnamesGccPerVariant :: [String]
-libnamesGccPerVariant
+%%[8 export(libnamesRts)
+libnamesRts :: [String]
+libnamesRts
   = [ prefixLib ++ "@RTS_PKG_NAME@"]
 %%]
 
@@ -198,10 +249,15 @@ libnamesGccEhcExtraExternalLibs
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% File suffixes
+%%% File suffixes, prefixes
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(mbSuffixExec)
+%%[8
+prefixLib :: String
+prefixLib = "@PREFIX_LIB@"
+%%]
+
+%%[8 export(mbSuffixExec,linkerSymbolPrefix)
 suffixExec :: String
 suffixExec = "@SUFFIX_EXEC@"
 
@@ -211,24 +267,14 @@ mbSuffixExec
       ('.':s) -> Just s
       ""      -> Nothing
       s       -> Just s
+
+linkerSymbolPrefix :: String
+linkerSymbolPrefix = "@LINKER_SYMBOL_PREFIX@"
+
 %%]
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Options to adapt the structure of the generated code
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8 codegen grin) export( machDepCForTailcallEnter, machDepCForTailcallLeave1, machDepCForTailcallLeave2 )
--- assembler instruction(s) to correct the C stack when
--- jumping out of a function instead of doing a tail call
--- should be "leave" for x86 processor
-
-machDepCForTailcallEnter :: String
-machDepCForTailcallEnter = "@MACH_DEP_C_FOR_TAILCALL_ENTER@"
-
-machDepCForTailcallLeave1 :: String
-machDepCForTailcallLeave1 = "@MACH_DEP_C_FOR_TAILCALL_LEAVE1@"
-
-machDepCForTailcallLeave2 :: String
-machDepCForTailcallLeave2 = "@MACH_DEP_C_FOR_TAILCALL_LEAVE2@"
+%%[(8 javascript) export(suffixJavaScriptLib)
+suffixJavaScriptLib :: String
+suffixJavaScriptLib = filter (/= '.') "@SUFFIX_LIBJS@"
 %%]
 

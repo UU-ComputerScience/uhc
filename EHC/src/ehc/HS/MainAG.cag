@@ -8,7 +8,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-%%[1 hs module {%{EH}HS.MainAG} import(Data.Char,Data.Maybe,Data.List as List,qualified Data.Map as Map,EH.Util.Pretty,{%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Base.Opts},{%{EH}Gam.Full},{%{EH}Error},{%{EH}Error.Pretty}, {%{EH}HS}, {%{EH}NameAspect}, EH.Util.DependencyGraph)
+%%[1 hs module {%{EH}HS.MainAG} import(Data.Char,Data.Maybe,Data.List as List,qualified Data.Map as Map,EH.Util.Pretty,{%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Opts},{%{EH}Gam.Full},{%{EH}Error},{%{EH}Error.Pretty}, {%{EH}HS}, {%{EH}NameAspect}, EH.Util.DependencyGraph)
 %%]
 
 %%[1 hs import(qualified EH.Util.FastSeq as Seq,EH.Util.Utils)
@@ -38,16 +38,19 @@
 %%[9 hs import({%{EH}Pred})
 %%]
 
-%%[20 hs import(qualified EH.Util.Rel as Rel,{%{EH}Module})
+%%[50 hs import(qualified EH.Util.Rel as Rel,{%{EH}Module})
 %%]
 
-%%[94 hs import({%{EH}Foreign},{%{EH}Foreign.Parser})
+%%[90 hs import({%{EH}Foreign},{%{EH}Foreign.Parser})
 %%]
 
 %%[97 hs import(Data.Ratio,{%{EH}Scanner.Common(floatDenot2NomDenom,intDenot2Integer)})
 %%]
 
-%%[97 hs import({%{EH}Base.Debug} as Debug, Debug.Trace)
+%%[97 hs import({%{EH}Base.Debug} as Debug)
+%%]
+
+%%[99 hs import(qualified {%{EH}Base.Pragma} as Pragma)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -56,6 +59,9 @@
 
 %%[1 ag import({HS/AbsSyn},{HS/ToEH},{HS/Fixity},{HS/Pretty},{HS/GatherError},{HS/ExtraChecks},{HS/NameLevel},{HS/NameDef},{HS/NameAnalysis},{HS/Uniq})
 WRAPPER AGItf
+%%]
+
+%%[99 ag import({HS/Pragmas})
 %%]
 
 %%[3
@@ -74,18 +80,21 @@ ATTR AGItf AllNT [ opts: EHCOpts | | ]
 %%% Tying together gam's, combining with imported info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20
+%%[50
 ATTR AGItf Module Body [ modEntToOrig: ModEntRngMp | | gathIdGam: IdDefOccGam ]
 %%]
 
-%%[20
+%%[50
 SEM Body
     | Body
-        lhs             .   gathIdGam   =   @declarations.idDefOccGam
-                                            `gamUnion` assocLToGam [ (o {ioccNm = hsnSetQual @lhs.moduleNm (ioccNm o)},d)
-                                                                   | (o,d) <- gamToAssocL @lhs.idGam
-                                                                   , n <- Map.findWithDefault [] o @lhs.modEntToOrig
-                                                                   ]
+        lhs             .   gathIdGam   =   {- idDefOccGamStrip 
+                                              $ -}
+                                                @declarations.idDefOccGam
+                                                `gamUnion`
+                                                assocLToGam [ (o {ioccNm = hsnSetQual @lhs.moduleNm (ioccNm o)},d)
+                                                            | (o,d) <- gamToAssocL @lhs.idGam
+                                                            , n <- Map.findWithDefault [] o @lhs.modEntToOrig
+                                                            ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -198,8 +207,12 @@ SEM Type
     | NormalApplication
         arguments   .   isAsPred    =   False
 
-SEM AnnotatedType
-    | *
+SEM Constructor
+    | Constructor Infix
+        loc         .   isAsPred    =   False
+
+SEM FieldDeclaration
+    | FieldDeclaration
         loc         .   isAsPred    =   False
 
 SEM Declaration
@@ -254,10 +267,13 @@ SEM Expression
 SEM Declaration
     | *
         loc         .   doGenVarWild=   False
-%%]
-%%[5
-SEM AnnotatedType
-    | Type
+
+SEM Constructor
+    | Constructor Infix
+        loc         .   doGenVarWild=   False
+
+SEM FieldDeclaration
+    | FieldDeclaration
         loc         .   doGenVarWild=   False
 %%]
 
@@ -292,22 +308,76 @@ SEM Constructor
 %%% Is toplevel mod? Is main mod?
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20
+%%[50
 ATTR AllModule AGItf [ isTopMod : Bool | | ]
 ATTR AllModule       [ isMainMod: Bool | | ]
 %%]
 
-%%[20
+%%[50
 SEM AGItf
-	| AGItf
-		loc			.	isMainMod	=	@module.mainValExists
+    | AGItf
+        loc         .   isMainMod   =   @module.mainValExists
+%%]
+
+%%[99
+-- to keep uuagc happy with a not-used dummy value
+SEM Declaration
+    | Module
+        loc         .   isMainMod   =   False
+                    .   isTopMod    =   False
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Is a pattern just a binding, or really inspecting something?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[2
+ATTR Pattern [ | | isVar: Bool ]
+%%]
+
+%%[2
+SEM Pattern
+    | Variable
+        lhs         .   isVar       =   True
+    | * - Variable As Parenthesized Annotate
+%%[[4
+          Typed
+%%]]
+%%[[8
+          Irrefutable
+%%]]
+        lhs         .   isVar       =   False
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Must rhs of pattern binding be enforced to be monomorphic?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[2
+ATTR RightHandSide AllGuardedExpression [ mustBeMono: Bool | | ]
+%%]
+
+%%[2
+SEM Declaration
+    | PatternBinding
+        righthandside   .   mustBeMono  =   not @pattern.isVar
+
+SEM FunctionBinding
+    | FunctionBinding
+        righthandside   .   mustBeMono  =   False
+%%]
+
+%%[5
+SEM Alternative
+    | Alternative
+        righthandside   .   mustBeMono  =   False
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Top level instance names, propagated from prev phase -- a hack :-(
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20 hs
+%%[50 hs
 extrTopInstanceNm :: [HsName] -> (Maybe HsName,[HsName])
 extrTopInstanceNm nms
   = case nms of
@@ -315,7 +385,7 @@ extrTopInstanceNm nms
       _     -> (Nothing,[])
 %%]
 
-%%[20
+%%[50
 ATTR AllNT [ | topInstanceNmL: {[HsName]} | ]
 ATTR AGItf [ topInstanceNmL: {[HsName]} | | ]
 
@@ -325,10 +395,73 @@ SEM Declaration
                                         =   extrTopInstanceNm @lhs.topInstanceNmL
 %%]
 
-%%[95
+%%[91
 SEM Deriving
     | Deriving
         (loc.mbPrevInstancename,lhs.topInstanceNmL)
                                         =   extrTopInstanceNm @lhs.topInstanceNmL
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Distribution of pragmas
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99
+ATTR Body AllDeclaration AllExpression [ pragmas: {Set.Set Pragma.Pragma} | | ]
+
+SEM Module
+    | Module
+        body            .   pragmas     =   @fileHeaderPragmas
+
+SEM Body
+    | Body
+        loc             .   pragmas     =   @declarations.gathPragmas `Set.union` @lhs.pragmas
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Distribution of info derived from pragmas: class derivables
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Assumption:
+The DERIVABLE pragma occurs in the same module as the class + generic definitions,
+so it does not participate in name analysis etc, and we brutally qualify the involved names.
+
+%%[99
+ATTR AllDeclaration AllExpression [ generDerivMp: {Map.Map HsName [(HsName,HsName)]} | | ]
+
+SEM Body
+    | Body
+        declarations    .   generDerivMp=   let nm n = hsnSetLevQual @lhs.nmLev @lhs.moduleNm n
+                                            in  Map.unionsWith (++)
+                                                    [ Map.singleton (nm clNm) [(nm fldNm,nm dfltNm)]
+                                                    | (Pragma.Pragma_Derivable clNm fldNm dfltNm) <- Set.toList @pragmas
+                                                    ]
+
+SEM Declaration
+    | Class
+        loc             .   generDerivInfoL
+                                        =   Map.findWithDefault [] @classrefname @lhs.generDerivMp
+%%]
+
+%%[9999
+-- to keep uuagc happy with a not-used dummy value
+SEM Module
+    | Module
+        loc             .   generDerivMp=   Map.empty
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Foreign entities
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+SEM Declaration
+    | ForeignImport
+%%[[8
+        loc         .   ent         =   maybe (show @name) id @importname
+%%][90
+        loc         .   nmForParse 	=	maybe "" id @importname
+                    . 	(ent,entErrs)
+                                    =   parseForeignEnt ForeignDirection_Import @callconvention (Just $ show @name) @nmForParse
+%%]]
+%%]

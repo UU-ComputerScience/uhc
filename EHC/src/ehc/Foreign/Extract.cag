@@ -16,29 +16,53 @@ Extract various info out of the FFI declaration:
 \end{itemize}
 %%]
 
-%%[94 hs module {%{EH}Foreign.Extract} import({%{EH}Base.Common},{%{EH}Foreign}) 
+%%[8 hs module {%{EH}Foreign.Extract} import({%{EH}Base.Common}) 
 %%]
 
-%%[94 hs import(Data.Maybe) 
+%%[90 hs import({%{EH}Foreign}) 
 %%]
 
-%%[94.WRAPPER ag import({Foreign/AbsSyn})
+%%[90 hs import(Data.Maybe) 
+%%]
+
+%%[90.WRAPPER ag import({Foreign/AbsSyn})
 WRAPPER ForeignAGItf
 %%]
 
-%%[94 hs export(ForeignExtraction(..))
-data ForeignExtraction
-  = ForeignExtraction
-      {	forextractIncludes		:: [String]
-      ,	forextractEnt			:: String
-      ,	forextractOptIsStatic	:: Bool
-      ,	forextractOptIsPtr		:: Bool
-      }
+%%[8.ForeignExtraction hs export(ForeignExtraction,forextractEnt,forextractMbEnt)
+type ForeignExtraction = String
 
-emptyForeignExtraction = ForeignExtraction [] "??" False False
+forextractEnt :: ForeignExtraction -> String
+forextractEnt = id
+
+forextractMbEnt :: ForeignExtraction -> Maybe String
+forextractMbEnt = Just . forextractEnt
 %%]
 
-%%[94 hs export(foreignEntExtract)
+%%[90 -8.ForeignExtraction hs export(ForeignExtraction(..),forextractMbEnt)
+-- | all relevant info for all calling conventions is gathered in one place, for backends to choose from
+data ForeignExtraction
+  = ForeignExtraction_Plain
+      { forextractIncludes      :: ![String]            -- ccall: include files
+      , forextractEnt           :: !String              -- all: name of function/...
+      , forextractMbKnownPrim   :: !(Maybe KnownPrim)   -- prim: known semantics
+      , forextractMbThisArgNr   :: !(Maybe Int)         -- javascript: which arg acts as this/receiver of call
+      , forextractMbIndexArgNr  :: !(Maybe Int)         -- javascript: combination with indexing an array
+      , forextractOptIsStatic   :: !Bool                -- ccall: static
+      , forextractOptIsPtr      :: !Bool                -- ccall: pointer
+      , forextractForeignExpr   :: !ForeignExpr         -- the AST for building the FFI call in terms of the target language (20101020 AD: soon replaces flags above)
+      }
+  | ForeignExtraction_Wrapper
+  | ForeignExtraction_Dynamic
+
+emptyForeignExtraction = ForeignExtraction_Plain [] "??" Nothing Nothing Nothing False False (ForeignExpr_Call ForeignExpr_Ent)
+
+forextractMbEnt :: ForeignExtraction -> Maybe String
+forextractMbEnt (ForeignExtraction_Plain{forextractEnt=e})  = Just e
+forextractMbEnt _                                           = Nothing
+%%]
+
+%%[90 hs export(foreignEntExtract)
 foreignEntExtract :: ForeignEnt -> ForeignExtraction
 foreignEntExtract ty
   =  let  t =  wrap_ForeignAGItf
@@ -48,21 +72,39 @@ foreignEntExtract ty
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Foreign entity
+%%% Foreign entity, extraction of info from calling convention specific AST
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[94
+%%[90
 ATTR ForeignAGItf AllForeign [ | | extr: ForeignExtraction ]
 
+SEM JavaScriptCall
+  | Id          lhs     .   extr    =   emptyForeignExtraction
+                                            { forextractEnt             = @nm
+                                            , forextractForeignExpr     = maybe (forextractForeignExpr emptyForeignExtraction) id @mbForeignExpr
+                                            }
+  | Wrapper     lhs     .   extr    =   ForeignExtraction_Wrapper
+  | Dynamic     lhs     .   extr    =   ForeignExtraction_Dynamic
+
+SEM PrimCall
+  | Id          lhs     .   extr    =   emptyForeignExtraction
+                                            { forextractEnt             = @nm
+                                            , forextractMbKnownPrim     = @mbKnownPrim
+                                            }
+
 SEM PlainCall
-  | Id          lhs     .   extr    =   emptyForeignExtraction {forextractEnt = @nm}
+  | Id          lhs     .   extr    =   emptyForeignExtraction
+                                            { forextractEnt             = @nm
+                                            }
 
 SEM CCall
-  | Id          lhs     .   extr    =   ForeignExtraction
-  											(maybeToList @mbInclude)
-  											@nm
-  											@isStatic
-  											@asPointer
-  | * - Id      lhs     .   extr    =   emptyForeignExtraction
+  | Id          lhs     .   extr    =   emptyForeignExtraction
+                                            { forextractIncludes        = maybeToList @mbInclude
+                                            , forextractEnt             = @nm
+                                            , forextractOptIsStatic     = @isStatic
+                                            , forextractOptIsPtr        = @asPointer
+                                            }
+  | Wrapper     lhs     .   extr    =   ForeignExtraction_Wrapper
+  | Dynamic     lhs     .   extr    =   ForeignExtraction_Dynamic
 %%]
 

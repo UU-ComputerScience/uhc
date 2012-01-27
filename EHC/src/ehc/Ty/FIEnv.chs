@@ -21,7 +21,7 @@ If this is going to be avoided, the eagerness must be avoided, or use of subsump
 %%[(4 hmtyinfer) module {%{EH}Ty.FIEnv} import({%{EH}Base.Common})
 %%]
 
-%%[(4 hmtyinfer) import({%{EH}Base.Opts})
+%%[(4 hmtyinfer) import({%{EH}Opts})
 %%]
 
 %%[(4 hmtyinfer) import(qualified Data.Set as Set)
@@ -30,7 +30,9 @@ If this is going to be avoided, the eagerness must be avoided, or use of subsump
 %%]
 %%[(8 hmtyinfer) import({%{EH}VarMp})
 %%]
-%%[(8 hmtyinfer) import(qualified {%{EH}TyCore.Full0} as C)
+%%[(8 hmtyinfer) import({%{EH}AbstractCore})
+%%]
+%%[(8 hmtyinfer tycore) import(qualified {%{EH}TyCore.Full0} as C)
 %%]
 %%[(9 hmtyinfer) import({%{EH}Ty})
 %%]
@@ -60,6 +62,8 @@ data FIEnv
         {   feAppSpineGam   :: !AppSpineGam			-- ty app spine info
 %%[[8
         ,   feEHCOpts       :: !EHCOpts				-- compiler options
+%%]]
+%%[[(8 tycore)
         ,   feFIReqs        :: !FitsInRequires		-- functions required by fitsIn
 %%]]
 %%[[9
@@ -87,6 +91,8 @@ emptyFE
         {   feAppSpineGam   =   emptyGam
 %%[[8
         ,   feEHCOpts       =   defaultEHCOpts
+%%]]
+%%[[(8 tycore)
         ,   feFIReqs        =	emptyFitsInRequires -- panic "FIEnv.feFIReqs: no way we can define this"
 %%]]
 %%[[9
@@ -127,12 +133,12 @@ instance PP FIEnv where
 %%% FitsInRequires
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 hmtyinfer) export(FitsInRequires(..))
+%%[(8 hmtyinfer tycore) export(FitsInRequires(..))
 data FitsInRequires
   =   FitsInRequires
-        { fireqLRCoeForLamTyAppAsSubst	:: EHCOpts -> UID -> C.Ty -> C.LRCoe -> C.LRCoe -> (C.LRCoe,C.CSubst)
-        , fireqCSubstAppExpr 			:: C.CSubst -> C.Expr -> C.Expr
+        { fireqCSubstAppExpr 			:: C.CSubst -> C.Expr -> C.Expr
         , fireqCSubstAppSubst 			:: C.CSubst -> C.CSubst -> C.CSubst
+        , fireqLRCoeForLamTyAppAsSubst	:: EHCOpts -> UID -> C.Ty -> C.LRCoe -> C.LRCoe -> (C.LRCoe,C.CSubst)
 %%[[10
         , fireqCoeEvalOnAsSubst       	:: {- FIEnv -> -} UID -> C.Coe -> C.Expr -> (C.Expr,C.CSubst)
         , fireqLRCoeWipeWeaveAsSubst	:: EHCOpts -> UID -> VarMp -> C.LRCoe -> (C.Coe,C.CSubst)
@@ -140,15 +146,15 @@ data FitsInRequires
         }
 %%]
 
-%%[(8 hmtyinfer) export(emptyFitsInRequires)
+%%[(8 hmtyinfer tycore) export(emptyFitsInRequires)
 emptyFitsInRequires
   =   FitsInRequires
-        { fireqLRCoeForLamTyAppAsSubst  = \_ _ _ _ _ -> (C.emptyLRCoe,C.emptyCSubst)
-        , fireqCSubstAppExpr			= \_ a       -> a
+        { fireqCSubstAppExpr			= \_ a       -> a
         , fireqCSubstAppSubst			= \_ a       -> a
+        , fireqLRCoeForLamTyAppAsSubst  = \_ _ _ _ _ -> (C.emptyLRCoe,emptyCSubst)
 %%[[10
-        , fireqCoeEvalOnAsSubst       	= \{- _ -} _ _ _   -> (C.Expr_Err "emptyFitsInRequires",C.emptyCSubst)
-        , fireqLRCoeWipeWeaveAsSubst	= \_ _ _ _   -> (C.coeId,C.emptyCSubst)
+        , fireqCoeEvalOnAsSubst       	= \{- _ -} _ _ _   -> (C.Expr_Err "emptyFitsInRequires",emptyCSubst)
+        , fireqLRCoeWipeWeaveAsSubst	= \_ _ _ _   -> (acoreCoeId,emptyCSubst)
 %%]]
         }
 %%]

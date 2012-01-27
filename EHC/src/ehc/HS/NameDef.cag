@@ -6,10 +6,10 @@
 %%% Module name
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20
+%%[50
 ATTR
-  AGItf AllModule AllDeclaration AllFunctionBinding LeftHandSide AllFieldDeclaration AllConstructor
-  AllExpression AllPattern AllRowRecordPatternBinding
+  AGItf AllModuleDeclaration AllFunctionBinding TypeLeftHandSide LeftHandSide AllFieldDeclaration AllConstructor
+  AllExpression AllPattern AllTypePattern AllRowRecordPatternBinding
     [ moduleNm: HsName | | ]
 %%]
 
@@ -23,7 +23,7 @@ SEM Body
         loc             .   refmainname	=   hsnMain
 %%]
 
-%%[20 -8.Body.refname
+%%[50 -8.Body.refname
 SEM Body
     | Body
         loc             .   refmainname	=   hsnSetLevQual @lhs.nmLev @lhs.moduleNm hsnMain
@@ -37,7 +37,7 @@ SEM Declaration
         loc             .   refnames    =   @names
 %%[[5
     | Data Newtype
-        loc             .   typerefname =   @simpletype.name
+        loc             .   typerefname =   @typelefthandside.name
 %%]]
 %%[[6
     | KindSignature
@@ -52,17 +52,17 @@ SEM Declaration
         loc             .   instancerefname
                                         =   @instancename
     | Class
-        loc             .   classrefname=   @simpletype.name
+        loc             .   classrefname=   @typelefthandside.name
 %%]]
 %%[[11
     | Type
-        loc             .   typerefname =   @simpletype.name
+        loc             .   typerefname =   @typelefthandside.name
 %%]]
 %%]
     | Instance InstanceUseImplicitly
         loc             .   classrefname=   @name
 
-%%[20 -1.Declaration.refname
+%%[50 -1.Declaration.refname
 SEM Declaration
     | Fixity
         loc             .   oprefnames  =   map (hsnSetLevQual @lhs.nmLev @lhs.moduleNm) @operators
@@ -71,8 +71,8 @@ SEM Declaration
     | KindSignature
         loc             .   refnames    =   map (hsnSetLevQual @lhs.nmLev @lhs.moduleNm) @names
     | Data Newtype
-        loc             .   typerefname =   hsnSetLevQual @lhs.nmLev @lhs.moduleNm @simpletype.name
-%%[[(20 codegen)
+        loc             .   typerefname =   hsnSetLevQual @lhs.nmLev @lhs.moduleNm @typelefthandside.name
+%%[[(50 codegen)
     | ForeignImport
         loc             .   refname     =   hsnSetLevQual @lhs.nmLev @lhs.moduleNm @name
 %%]]
@@ -81,21 +81,21 @@ SEM Declaration
                                         =   hsnSetLevQual @lhs.nmLev @lhs.moduleNm
                                             $ maybe @instancename id @mbPrevInstancename
     | Class
-        loc             .   classrefname=   hsnSetLevQual @lhs.nmLev @lhs.moduleNm @simpletype.name
+        loc             .   classrefname=   hsnSetLevQual @lhs.nmLev @lhs.moduleNm @typelefthandside.name
     | Type
-        loc             .   typerefname =   hsnSetLevQual @lhs.nmLev @lhs.moduleNm @simpletype.name
+        loc             .   typerefname =   hsnSetLevQual @lhs.nmLev @lhs.moduleNm @typelefthandside.name
 %%]
     | Instance InstanceUseImplicitly
         loc             .   classrefname=   hsnSetLevQual @lhs.nmLev @lhs.moduleNm @name
 
-%%[(94 codegen)
+%%[(90 codegen)
 SEM Declaration
     | ForeignExport
         loc             .   exportrefname
-                                        =   mkHNmExport @name
+                                        =   hsnUniqify HsNameUniqifier_FFE @name
 %%]
 
-%%[95
+%%[91
 SEM Deriving
     | Deriving
         loc             .   instancerefname
@@ -104,7 +104,9 @@ SEM Deriving
 %%]
 
 %%[1
-ATTR LeftHandSide [ | | refname: HsName ]
+ATTR
+  LeftHandSide
+    [ | | refname: HsName ]
 %%]
 
 %%[1.LeftHandSide.refname
@@ -113,25 +115,37 @@ SEM LeftHandSide
         loc             .   refname     =   @name
     | Infix
         loc             .   refname     =   @operator
+
 %%]
 
-%%[20 -1.LeftHandSide.refname
+%%[50 -1.LeftHandSide.refname
 SEM LeftHandSide
     | Function
         loc             .   refname     =   hsnSetLevQual @lhs.nmLevFun @lhs.moduleNm @name
     | Infix
         loc             .   refname     =   hsnSetLevQual @lhs.nmLevFun @lhs.moduleNm @operator
+
 %%]
 
 %%[1.Pattern.refname
 SEM Pattern
     | Variable As
         loc             .   refname     =   @name
+
+%%[[5
+SEM TypePattern
+    | Variable
+        loc             .   refname     =   @name
+%%]]
 %%]
 
-%%[20 -1.Pattern.refname
+%%[50 -1.Pattern.refname
 SEM Pattern
     | Variable As
+        loc             .   refname     =   hsnSetLevQual @lhs.nmLev @lhs.moduleNm @name
+
+SEM TypePattern
+    | Variable
         loc             .   refname     =   hsnSetLevQual @lhs.nmLev @lhs.moduleNm @name
 %%]
 
@@ -152,7 +166,7 @@ SEM Constructor
 %%]
 %%]
 
-%%[20 -5.Constructor.refname
+%%[50 -5.Constructor.refname
 SEM Constructor
     | Constructor Record
         loc             .   conrefname  =   hsnSetLevQual @lhs.nmLev @lhs.moduleNm @constructor
@@ -184,7 +198,7 @@ SEM FieldDeclaration
         loc             .   fldrefnames =   @names
 %%]
 
-%%[20 -7.FieldDeclaration.refname
+%%[50 -7.FieldDeclaration.refname
 SEM FieldDeclaration
     | FieldDeclaration
         loc             .   fldrefnames =   map (hsnSetLevQual @lhs.nmLev @lhs.moduleNm) @names
@@ -203,10 +217,20 @@ SEM RecordPatternBinding
         loc             .   refname     =   @name
 %%]
 
-%%[20 -7.RecordPatternBinding.refname
+%%[50 -7.RecordPatternBinding.refname
 SEM RecordPatternBinding
     | Pun
         loc             .   refname     =   hsnSetLevQual @lhs.nmLev @lhs.moduleNm @name
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Extra names for some cases
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99
+SEM Declaration
+	| Class
+		loc				.	extranames	=	[] -- map snd @generDerivInfoL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -216,7 +240,7 @@ SEM RecordPatternBinding
 %%[1
 SEM Pattern
     | Variable As
-        loc             .   isWildcard  =   @name == hsnWild
+        loc             .   isWildcard  =   hsnIsWild @name
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -228,6 +252,9 @@ ATTR
   AllPattern
   AllDeclaration AllFunctionBinding
   LeftHandSide
+%%[[5
+  TypeLeftHandSide
+%%]]
 %%[[7
   AllRowRecordPatternBinding
   AllRecordPatternBinding
@@ -254,10 +281,21 @@ SEM Declaration
 %%[[7
                         .   idOccDefsFld=   [ IdOcc n IdOcc_Val | (_,ns) <- @constructors.conAndFldrefnames, n <- ns ]
 %%]]
+%%[[92
+                        .   generMaxRemArity
+                                        =   length @typelefthandside.typevariables `min` 1
+                        .   idOccDefsGener
+                                        =   if ehcOptGenGenerics @lhs.opts
+                                            then [ IdOcc (hsnNm2GenerReprSyn arity @typerefname) IdOcc_Type | arity <- [0 .. @generMaxRemArity] ]
+                                            else []
+%%]]
                         .   idOccDefs   =   [@idOccDef]
                                             ++ @idOccDefsCon
 %%[[7
                                             ++ @idOccDefsFld
+%%]]
+%%[[92
+                                            ++ @idOccDefsGener
 %%]]
 %%]
 %%[6
@@ -291,11 +329,18 @@ SEM Declaration
         loc             .   idOccDef    =   IdOcc @refname IdOcc_Val
                         .   idOccDefs   =   [@idOccDef]
 %%]
-%%[(94 codegen)
+%%[(90 codegen)
     | ForeignExport
         loc             .   idOccDef    =   IdOcc @exportrefname IdOcc_Val
                         .   idOccDefs   =   [@idOccDef]
 %%]
+%%[93
+    | FusionDeclaration FusionConversion
+        loc             .   idOccDef    =   IdOcc (mkHNm @lUniq) IdOcc_Fusion
+                        .   idOccDefs   =   [@idOccDef]
+		loc				.	lUniq		:	UNIQUEREF gUniq
+%%]
+
 
 %%[1
 SEM FunctionBinding
@@ -328,7 +373,7 @@ SEM Body
         loc             .   idOccDefMain=   IdOcc hsnMain IdOcc_Val
 %%]
 
-%%[95
+%%[91
 SEM Deriving
     | Deriving
         loc             .   idOccDef    =   IdOcc @instancerefname IdOcc_Inst
@@ -337,10 +382,10 @@ SEM Deriving
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Misc: simpletype internal info
+%%% Introduction of type: Simpletype, TypeLeftHandSide
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[5
+%%[5555
 ATTR SimpleType [ | | range: Range  name: Name  typevariables: Names ]
 
 SEM SimpleType
@@ -349,6 +394,28 @@ SEM SimpleType
                     .   name        =   @name
                     .   typevariables
                                     =   @typevariables
+%%]
+
+%%[5
+ATTR
+  TypeLeftHandSide
+    [ | | range: Range  name: Name ]
+ATTR
+  TypeLeftHandSide AllTypePattern
+    [ | | typevariables USE {++} {[]}: Names ]
+
+SEM TypeLeftHandSide
+    | Function
+        lhs         .   range       =   @range
+                    .   name        =   @name
+    | Infix
+        lhs         .   range       =   @range
+                    .   name        =   @operator
+
+SEM TypePattern
+    | Variable
+        lhs         .   typevariables
+                                    =   [@name]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -385,9 +452,9 @@ SEM Pattern
 %%[9
 SEM Declaration
     | Instance
-        loc         .   instancename=   maybe (hsnSuffix (mkHNm @lUniq) ("_instance_"++ show @name)) id @maybeinstancename
+        loc         .   instancename=   maybe (hsnUniqifyUID HsNameUniqifier_ClassDict @lUniq (mkHNm @name)) id @maybeinstancename -- maybe (hsnSuffix (mkHNm @lUniq) ("_instance_"++ show @name)) id @maybeinstancename
     | Class
-        loc         .   instancename=   hsnSuffix (mkHNm @lUniq) ("_class_"++ show @simpletype.name)
+        loc         .   instancename=   hsnUniqifyUID HsNameUniqifier_Class @lUniq (mkHNm @typelefthandside.name) -- hsnSuffix (mkHNm @lUniq) ("_class_"++ show @typelefthandside.name)
     | InstanceUseImplicitly
         loc         .   instancename=   mkHNm @lUniq
     | Default
@@ -398,7 +465,7 @@ SEM Declaration
 		loc			.	lUniq		:	UNIQUEREF gUniq
 %%]
 
-%%[95
+%%[91
 SEM Deriving
     | Deriving
         loc         .   instancename=   maybe (mkHNm @lUniq) id @maybeinstancename

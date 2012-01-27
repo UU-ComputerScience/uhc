@@ -1,3 +1,6 @@
+{-# LANGUAGE CPP #-}
+{-# EXCLUDE_IF_TARGET js #-}
+
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  System.Environment

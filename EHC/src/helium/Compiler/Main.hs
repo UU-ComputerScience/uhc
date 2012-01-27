@@ -11,7 +11,7 @@ import Helium.Compiler.Compile(compile)
 import Helium.Parser.Parser(parseOnlyImports)
 
 import List(nub, elemIndex, isSuffixOf, intersperse)
-import Maybe(fromJust, isNothing)
+import Data.Maybe(fromJust, isNothing)
 import Lvm.Common.Standard(searchPathMaybe,getLvmPath, splitPath)
 import Directory(doesFileExist, getModificationTime)
 import Helium.Compiler.CompileUtils

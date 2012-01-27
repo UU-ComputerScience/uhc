@@ -7,7 +7,7 @@
 %%% Haskell interface to AG generated code for compiler
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 hs module {%{EH}EH.MainAG} import(Data.Char,Data.List as List,EH.Util.Pretty,{%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Base.Opts}, {%{EH}Gam.Full},{%{EH}Error},{%{EH}Error.Pretty}, {%{EH}EH})
+%%[1 hs module {%{EH}EH.MainAG} import(Data.Char,Data.List as List,EH.Util.Pretty,{%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Opts}, {%{EH}Gam.Full},{%{EH}Error},{%{EH}Error.Pretty}, {%{EH}EH})
 %%]
 
 %%[(1 hmtyinfer || hmtyast).Ty hs import({%{EH}Ty})
@@ -53,20 +53,34 @@
 %%[(7 hmtyinfer) hs import({%{EH}Ty.Trf.FreshVar},{%{EH}Ty.Ftv})
 %%]
 
- %%[7_2 hs import({%{EH}Ty.AnnCommon},{%{EH}Ty.Trf.InfuseAnn},{%{EH}Ty.TyConPat},{%{EH}Ty.AnnInferKind}, {%{EH}Ty.InferExposedAnns}, {%{EH}Ty.Trf.InfuseExp}, {%{EH}Annotations.Constraints}, {%{EH}Ty.AnnSubst}, {%{EH}Ty.Expand}, {%{EH}EH.ConstrInferTy}, {%{EH}Annotations.ConstraintSolver}, {%{EH}Annotations.BelownessSolver}, {%{EH}Annotations.VarianceSolver}, {%{EH}Annotations.UniquenessSolver}, {%{EH}Ty.InfuseDataTruncs}, {%{EH}Base.HtmlCommon}, {%{EH}Ty.PrettyHTML}, Debug.Trace(trace))
- %%]
-
-%%[7_2 hs import(qualified Data.Set as Set,Data.Set(Set),qualified Data.Map as Map,Data.Map(Map))
-%%]
-
 %%[8 hs import(EH.Util.Utils(groupSortOn))
 %%]
 
-%%[(8 codegen) hs import({%{EH}Core},{%{EH}Core.Utils},{%{EH}Core.Pretty},{%{EH}Core.SubstCaseAltFail})
+%%[8 hs import(Control.Applicative((<|>)))
 %%]
-%%[(8 codegen) hs import(qualified {%{EH}TyCore.Full2} as C)
+
+%%[(8 codegen) hs import({%{EH}AbstractCore}, {%{EH}AbstractCore.Utils})
 %%]
-%%[(8 codegen hmtyinfer) hs import({%{EH}Ty.Utils2})
+%%[(8 codegen) hs import({%{EH}Core},{%{EH}Core.FFI},{%{EH}Core.Utils},{%{EH}Core.Pretty})
+%%]
+%%[(8 codegen tycore) hs import(qualified {%{EH}TyCore.Full2} as C)
+%%]
+%%[(8 codegen tycore hmtyinfer) hs import({%{EH}Ty.Utils2})
+%%]
+%%[(8 codegen) hs import({%{EH}Foreign.Extract})
+%%]
+%%[(8 codegen) hs import({%{EH}LamInfo})
+%%]
+%%[(90 codegen) hs import({%{EH}BuiltinPrims},{%{EH}Foreign})
+%%]
+
+%%[(9 hmtyinfer) hs import(Control.Monad.State)
+%%]
+
+%%[(9 codegen hmtyinfer) hs import({%{EH}Ty.Utils2})
+%%]
+
+%%[(9 codegen) hs import({%{EH}Base.Target})
 %%]
 
 %%[(9 codegen) hs import({%{EH}Core.Subst},{%{EH}Core.Coercion})
@@ -75,27 +89,41 @@
 %%[(9 hmtyinfer) hs import({%{EH}Ty.Trf.MergePreds},{%{EH}Ty.Trf.Canonic})
 %%]
 
-%%[(9 hmtyinfer) hs import({%{EH}Pred},{%{EH}CHR},{%{EH}CHR.Constraint},{%{EH}Pred.CHR},{%{EH}Pred.ToCHR},{%{EH}Pred.Heuristics},{%{EH}CHR.Solve})
+%%[(9 hmtyinfer) hs import({%{EH}Pred},{%{EH}Pred.RedGraph}(redPruneReductionsUntil),{%{EH}CHR},{%{EH}CHR.Constraint},{%{EH}Pred.CHR},{%{EH}Pred.ToCHR},{%{EH}Pred.Heuristics},{%{EH}CHR.Solve})
 %%]
 
 %%[(9 codegen) hs import({%{EH}Pred.EvidenceToCore})
 %%]
-%%[(9 codegen) hs import(qualified {%{EH}Pred.EvidenceToTyCore} as E2C)
+%%[(9 codegen tycore) hs import(qualified {%{EH}Pred.EvidenceToTyCore} as E2C)
+%%]
+%%[(9 hmtyinfer) hs import ({%{EH}Gam.ClassDefaultGam})
 %%]
 
-%%[(16 hmtyinfer) hs import({%{EH}Ty.Trf.Subst})
+%%[(11 hmtyinfer) hs import({%{EH}Ty.Trf.BetaReduce}(tyBetaRedFull))
 %%]
 
-%%[(50 hmtyinfer) hs import({%{EH}Ty.Trf.ElimEqual},{%{EH}Gam.Utils})
+%%[(41 hmtyinfer) hs import({%{EH}Ty.Trf.Subst})
 %%]
 
-%%[94 hs import({%{EH}Foreign},{%{EH}Foreign.Pretty})
+%%[50 hs import({%{EH}Module},{%{EH}Ty.UsedNames})
 %%]
 
-%%[(95 codegen) hs import({%{EH}Deriving})
+%%[(40 hmtyinfer) hs import({%{EH}Ty.Trf.ElimEqual},{%{EH}Gam.Utils})
+%%]
+
+%%[90 hs import({%{EH}Foreign},{%{EH}Foreign.Pretty})
+%%]
+
+%%[(91 codegen) hs import({%{EH}Deriving})
+%%]
+
+%%[(92 codegen) hs import({%{EH}Generics})
 %%]
 
 %%[(99 hmtyinfer).DerivationTree hs import({%{EH}DerivationTree})
+%%]
+
+%%[(99 hmtyinfer) hs import({%{EH}VarMp.Utils})
 %%]
 
 %%[(100 hmtyinfer) -99.DerivationTree
@@ -109,7 +137,7 @@
 WRAPPER AGItf
 %%]
 
-%%[(1 hmtyinfer) ag import({EH/Infer},{EH/InferExpr},{EH/InferPatExpr},{EH/InferTyExpr})
+%%[(1 hmtyinfer) ag import({EH/InferUtils},{EH/Infer},{EH/InferExpr},{EH/InferTyUpDown},{EH/InferPatExpr},{EH/InferTyExpr},{EH/InferInit})
 %%]
 %%[(2 hmtyinfer) ag import({EH/FinalInfo})
 %%]
@@ -162,18 +190,26 @@ WRAPPER AGItf
 %%[(6 hmtyinfer) ag import({EH/InferKiExpr})
 %%]
 
- %%[7_2 ag import({Ty/TyConPatCollect},{Annotations/AnnDT},{Ty/AnnDecomposePat},{EH/ConstrInferExpr},{EH/ConstrInferData}, {Annotations/AnnSolvers}, {EH/PrettyHTML})
- %%]
-
 %%[(8 codegen) ag import({EH/ToCore})
 %%]
-%%[(8 codegen) ag import({EH/ToTyCore})
+%%[(8 codegen tycore) ag import({EH/ToTyCore})
+%%]
+%%[8 ag import({EH/GatherMisc})
 %%]
 
-%%[(9 hmtyinfer) ag import({EH/ResolvePred},{EH/InferClass},{EH/InferClassCHR},{EH/ResolvePredCHR})
+%%[(9 hmtyinfer) ag import({EH/ResolvePred},{EH/InferClass},{EH/InferClassCHR},{EH/ResolvePredCHR},{EH/InferDefault})
+%%]
+
+%%[9 ag import({EH/GatherGam})
 %%]
 
 %%[(17 hmtyinfer) ag import({EH/InferPolarity})
+%%]
+
+%%[50 ag import({EH/UsedNames})
+%%]
+
+%%[92 ag import({EH/Generics})
 %%]
 
 %%[99 ag import({EH/FakeDependencies},{EH/LocalAttrTypes})
@@ -185,7 +221,7 @@ PRAGMA strictcase
 %%]
 PRAGMA gencostcentres
 
-%%[100
+%%[99
 PRAGMA sepsemmods
 %%]
 
@@ -198,75 +234,27 @@ ATTR AllNT AGItf [ opts: EHCOpts | | ]
 %%]
 
 %%[8
-ATTR AGItf [ moduleNm: HsName | | ]
+ATTR
+  AGItf
+%%[[50
+  AllNT
+%%]]
+    [ moduleNm: HsName | | ]
 %%]
 
-%%[20
-ATTR AllNT AGItf [ idQualGam: IdQualGam | | ]
+%%[50
+ATTR AGItf [ idQualGam: IdQualGam | | ]
 %%]
 
-%%[95
+%%[91
 %%]
 ATTR NTPrf AGItf [ fixityGam: FixityGam | | ]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Tying together gam's, combining with imported info, gathering for following modules and/or global use
-%%% Note: will move to AG files where attr's are actually defined/used
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(20 hmtyinfer)
-ATTR AGItf Expr [ | | gathValGam: ValGam ]
-
-SEM Expr
-  | Let         lhs         .   gathValGam          =   @body.gathValGam `gamUnion` @finValGamDecls
-  | * - Let     lhs         .   gathValGam          =   emptyGam
-%%]
-
-%%[(20 hmtyinfer)
-ATTR AGItf Expr [ | | gathTyGam: TyGam ]
-
-SEM Expr
-  | Let         lhs         .   gathTyGam           =   @body.gathTyGam `gamUnion` @lQuTyGam
-  | * - Let     lhs         .   gathTyGam           =   emptyGam
-%%]
-
-%%[(20 hmtyinfer)
-ATTR AGItf Expr [ | | gathTyKiGam: TyKiGam ]
-
-SEM Expr
-  | Let         lhs         .   gathTyKiGam         =   @body.gathTyKiGam `gamUnion` @lQuTyKiGam_ex_subst -- @lQuTyKiGam 
-  | * - Let     lhs         .   gathTyKiGam         =   emptyGam
-%%]
-
-%%[(20 hmtyinfer)
-ATTR AGItf Expr [ | | gathKiGam: KiGam ]
-
-SEM Expr
-  | Let         lhs         .   gathKiGam           =   @body.gathKiGam -- `gamUnion` @xxx
-  | * - Let     lhs         .   gathKiGam           =   emptyGam
-%%]
-
-%%[(20 hmtyinfer)
-ATTR AGItf Expr [ | | gathClGam: ClGam ]
-
-SEM Expr
-  | Let         lhs         .   gathClGam           =   @body.gathClGam `gamUnion` @lClGamNoDups
-  | * - Let     lhs         .   gathClGam           =   emptyGam
-%%]
-
-%%[(20 hmtyinfer)
-ATTR AGItf Expr [ | | gathPolGam: PolGam ]
-
-SEM Expr
-  | Let         lhs         .   gathPolGam          =   @body.gathPolGam `gamUnion` @finGathPolGam
-  | * - Let     lhs         .   gathPolGam          =   emptyGam
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Is toplevel mod?
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20
+%%[50
 ATTR AGItf [ isMainMod: Bool | | ]
 %%]
 
@@ -284,7 +272,7 @@ SEM Decl
 %%[[9
     InstanceIntro
 %%]]
-%%[[94
+%%[[90
     FFE
 %%]]
                 expr        .   isFirstLet          =   True
@@ -490,7 +478,7 @@ SEM KiExpr
 ATTR PatExpr [ | | mbTopNm: {Maybe HsName} ]
 
 SEM PatExpr
-  | Var VarAs   loc         .   mbTopNm             =   if @nm == hsnWild then Nothing else Just @nm
+  | Var VarAs   loc         .   mbTopNm             =   if hsnIsWild @nm then Nothing else Just @nm
 %%[[1
   | * - Var VarAs
                 loc         .   mbTopNm             =   Nothing
@@ -505,7 +493,7 @@ SEM PatExpr
 ATTR PatExpr [ | | topNm: HsName ]
 
 SEM PatExpr
-  | Var VarAs   loc         .   topNm               =   if @nm == hsnWild then uidHNm @lUniq else @nm
+  | Var VarAs   loc         .   topNm               =   if hsnIsWild @nm then uidHNm @lUniq else @nm
   | App         lhs         .   topNm               =   hsnUnknown
   | AppTop Con Rec CConst IConst DataFields
 %%[[97

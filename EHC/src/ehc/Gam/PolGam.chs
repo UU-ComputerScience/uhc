@@ -23,7 +23,10 @@
 %%[(6 hmtyinfer || hmtyast) import({%{EH}VarMp},{%{EH}Substitutable})
 %%]
 
-%%[99 import({%{EH}Base.ForceEval})
+%%[(50 hmtyinfer || hmtyast) import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
+%%]
+
+%%[9999 import({%{EH}Base.ForceEval})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -45,6 +48,11 @@ type PolGam = Gam HsName PolGamInfo
 mapPolGam :: (Ty -> Ty) -> PolGam -> PolGam
 mapPolGam f
   = fst . gamMapThr (\(nm, PolGamInfo ty) thr -> ((nm, PolGamInfo $ f ty), thr)) ()
+%%]
+
+%%[(50 hmtyinfer || hmtyast)
+deriving instance Typeable PolGamInfo
+deriving instance Data PolGamInfo
 %%]
 
 %%[(17 hmtyinfer || hmtyast) export(polGamLookup,polGamLookupErr)
@@ -102,10 +110,12 @@ initPolGam
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(17 hmtyinfer || hmtyast).Substitutable.inst.PolGamInfo
-instance Substitutable PolGamInfo TyVarId VarMp where
-  s |=> pgi  = pgi { pgiPol = s |=> pgiPol pgi }
-  s |==> pgi = substLift pgiPol (\i x -> i {pgiPol = x}) (|==>) s pgi
-  ftvSet pgi = ftvSet (pgiPol pgi)
+instance VarUpdatable PolGamInfo VarMp where
+  s `varUpd` pgi  = pgi { pgiPol = s `varUpd` pgiPol pgi }
+  s `varUpdCyc` pgi = substLift pgiPol (\i x -> i {pgiPol = x}) varUpdCyc s pgi
+
+instance VarExtractable PolGamInfo TyVarId where
+  varFreeSet pgi = varFreeSet (pgiPol pgi)
 %%]
 
 %%[(17 hmtyinfer || hmtyast)
@@ -113,11 +123,17 @@ instance PP PolGamInfo where
   pp i = ppTy (pgiPol i)
 %%]
 
-%%[(99 hmtyinfer)
+%%[(9999 hmtyinfer)
 instance ForceEval PolGamInfo where
   forceEval x@(PolGamInfo p) | forceEval p `seq` True = x
 %%[[102
   fevCount (PolGamInfo p) = cmUnions [cm1 "PolGamInfo",fevCount p]
 %%]]
+%%]
+
+%%[(50 hmtyinfer)
+instance Serialize PolGamInfo where
+  sput (PolGamInfo a) = sput a
+  sget = liftM PolGamInfo sget
 %%]
 

@@ -12,9 +12,9 @@
 %%]
 %%[(8 codegen grin) hs export(SilModule(..), Function(..), Statement(..), Alternative(..), Constant(..), Variable(..), Value(..), Alternatives, Statements, Functions, Values )
 %%]
-%%[(8 codegen grin) hs export(SillyAllocManageType(..))
+%%[(8 codegen grin) hs export(SillyAllocManageType(..), SilTp(..), ConstantInfo(..), StackInfo, emptyStackInfo)
 %%]
-%%[(8 codegen grin) hs import({%{EH}Base.Common})
+%%[(8 codegen grin) hs import({%{EH}Base.Common}, qualified Data.Set as Set)
 %%]
 
 %%[(8 codegen grin) ag import({Silly/AbsSyn})
@@ -36,3 +36,46 @@ data SillyAllocManageType
   | GCManaged
   deriving( Eq, Show, Ord )  
 %%]
+
+%%[(8 codegen grin) hs
+data SilTp
+  = SilTpTag
+  | SilTpWord
+  | SilTpLong
+  | SilTpPtr
+  | SilTpUnknown
+  | SilTpUnion
+  | SilTpOther
+  deriving( Eq, Ord )  
+  
+instance Show SilTp where
+  show SilTpTag   = "Tag"
+  show SilTpWord  = "Word"
+  show SilTpPtr   = "Ptr"
+  show SilTpUnknown   = "Unknown"
+  show SilTpUnion   = "Union"
+  show SilTpOther = "Other"  
+
+type StackInfo = (Int, Set.Set Int)
+
+emptyStackInfo :: StackInfo
+emptyStackInfo = (0, Set.empty)
+
+
+data ConstantInfo 
+  = ConstantInfo
+    {  constantInfoName        :: String
+    ,  constantInfoSeqNr       :: Int
+    ,  constantInfoNodeSize    :: Int
+    ,  constantInfoPayloadSize :: Int
+    ,  constantInfoHasPointers :: Bool
+    }
+  deriving( Eq, Ord, Show )  
+
+
+
+
+%%]
+
+
+

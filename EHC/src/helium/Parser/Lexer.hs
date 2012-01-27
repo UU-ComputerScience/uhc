@@ -20,7 +20,7 @@ import Text.ParserCombinators.Parsec.Pos
 import Helium.Utils.Utils(internalError)
 
 import Monad(when)
-import Char(ord)
+import Data.Char(ord)
 import List(isPrefixOf)
 
 lexer :: String -> [Char] -> Either LexerError ([Token], [LexerWarning])

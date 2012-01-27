@@ -5,7 +5,7 @@
 The content of this module depends on Base.Builtin and Base.Opts,
 hence must be in a separate module.
 
-%%[8 module {%{EH}Base.Builtin2} import({%{EH}Base.HsName},{%{EH}Base.Builtin},{%{EH}Base.Opts})
+%%[8 module {%{EH}Base.Builtin2} import({%{EH}Base.HsName},{%{EH}Base.Builtin},{%{EH}Opts})
 %%]
 
 %%[8 import(qualified {%{EH}Config} as Cfg)
@@ -48,7 +48,7 @@ data BuiltinInfo
 emptyBuiltinInfo :: BuiltinInfo
 emptyBuiltinInfo
   = BuiltinInfo
-  	  { biGrinBoxAnnot			= BasicAnnot_Size basicSizeWord BasicTy_Word
+  	  { biGrinBoxAnnot			= basicAnnotWord
       , biGbcMayLiveUnboxed		= False
       , biIsSigned              = False
 %%[[(8 jazy)
@@ -57,14 +57,19 @@ emptyBuiltinInfo
   	  }
 %%]
 
+%%[(8 codegen) hs export(BuiltinInfoMp)
+type BuiltinInfoMp = Map.Map HsName BuiltinInfo
+%%]
+
 %%[(97 codegen) hs
-builtin32BitsTyMp :: EHCOpts -> Bool -> Map.Map HsName BuiltinInfo
+builtin32BitsTyMp :: EHCOpts -> Bool -> BuiltinInfoMp
 builtin32BitsTyMp opts _
   = Map.fromList
        [ ( builtinNm opts ehbnInt32
          , emptyBuiltinInfo
              { biGbcMayLiveUnboxed	= livesUnboxed
              , biIsSigned           = True
+             , biGrinBoxAnnot 	    = BasicAnnot_Size BasicSize_Int32 annHWord BasicAnnotTagging_None True -- annHWord
 %%[[(97 jazy)
              , biJazyBasicTy      	= BasicJazy_Int
 %%]]
@@ -73,6 +78,7 @@ builtin32BitsTyMp opts _
        , ( builtinNm opts ehbnWord32
          , emptyBuiltinInfo
              { biGbcMayLiveUnboxed	= livesUnboxed
+             , biGrinBoxAnnot 	    = BasicAnnot_Size BasicSize_Word32 annHWord BasicAnnotTagging_None False -- annHWord
 %%[[(97 jazy)
              , biJazyBasicTy      	= BasicJazy_Int
 %%]]
@@ -81,7 +87,7 @@ builtin32BitsTyMp opts _
        , ( builtinNm opts ehbnFloat
          , emptyBuiltinInfo
              { biGbcMayLiveUnboxed	= livesUnboxed
-             , biGrinBoxAnnot 		= BasicAnnot_Size basicSizeFloat  BasicTy_Float
+             , biGrinBoxAnnot 		= BasicAnnot_Size basicSizeFloat BasicTy_Float BasicAnnotTagging_None False
 %%[[(97 jazy)
              , biJazyBasicTy    	= BasicJazy_Float
 %%]]
@@ -89,10 +95,14 @@ builtin32BitsTyMp opts _
          )
        ]
   where livesUnboxed = Cfg.use64Bits
+%%[[97
+        annHWord | Cfg.isSameSizeForIntAndWord = BasicTy_SWord
+                 | otherwise                   = BasicTy_SHWord
+%%]]
 %%]
 
 %%[(8 codegen) hs export(builtinMayLiveUnboxedTyMp)
-builtinMayLiveUnboxedTyMp :: EHCOpts -> Map.Map HsName BuiltinInfo
+builtinMayLiveUnboxedTyMp :: EHCOpts -> BuiltinInfoMp
 builtinMayLiveUnboxedTyMp opts
   = Map.fromList
          [ ( hsnInt
@@ -124,34 +134,46 @@ builtinMayLiveUnboxedTyMp opts
          , ( builtinNm opts ehbnInt8
            , emptyBuiltinInfo
                { biGbcMayLiveUnboxed	= True
+%%[[97
+               , biGrinBoxAnnot 	    = BasicAnnot_Size BasicSize_Int8 annHWord BasicAnnotTagging_None True -- annHWord
+%%]]
                , biIsSigned             = True
 %%[[(97 jazy)
-               , biJazyBasicTy    		= BasicJazy_Byte
+               , biJazyBasicTy    		= BasicJazy_Int
 %%]]
                }
            )
          , ( builtinNm opts ehbnWord8
            , emptyBuiltinInfo
                { biGbcMayLiveUnboxed	= True
+%%[[97
+               , biGrinBoxAnnot 	    = BasicAnnot_Size BasicSize_Word8 annHWord BasicAnnotTagging_None False -- annHWord
+%%]]
 %%[[(97 jazy)
-               , biJazyBasicTy    		= BasicJazy_Byte
+               , biJazyBasicTy    		= BasicJazy_Int
 %%]]
                }
            )
          , ( builtinNm opts ehbnInt16
            , emptyBuiltinInfo
                { biGbcMayLiveUnboxed	= True
+%%[[97
+               , biGrinBoxAnnot 	    = BasicAnnot_Size BasicSize_Int16 annHWord BasicAnnotTagging_None True -- annHWord
+%%]]
                , biIsSigned             = True
 %%[[(97 jazy)
-               , biJazyBasicTy    		= BasicJazy_Short
+               , biJazyBasicTy    		= BasicJazy_Int
 %%]]
                }
            )
          , ( builtinNm opts ehbnWord16
            , emptyBuiltinInfo
                { biGbcMayLiveUnboxed	= True
+%%[[97
+               , biGrinBoxAnnot 	    = BasicAnnot_Size BasicSize_Word16 annHWord BasicAnnotTagging_None False -- annHWord
+%%]]
 %%[[(97 jazy)
-               , biJazyBasicTy    		= BasicJazy_Short
+               , biJazyBasicTy    		= BasicJazy_Int
 %%]]
                }
            )
@@ -162,6 +184,10 @@ builtinMayLiveUnboxedTyMp opts
     `Map.union`
        (if Cfg.use64Bits then builtin32BitsTyMp opts True else Map.empty)
 %%]]
+%%[[97
+  where annHWord | Cfg.isSameSizeForIntAndWord = BasicTy_SWord
+                 | otherwise                   = BasicTy_SHWord
+%%]]
 %%]
 
 %%[(8 codegen) hs
@@ -171,7 +197,7 @@ builtinMayLiveUnboxedTyNmL opts
 %%]
 
 %%[(8 codegen) hs export(builtinKnownBoxedTyMp)
-builtinKnownBoxedTyMp :: EHCOpts -> Map.Map HsName BuiltinInfo
+builtinKnownBoxedTyMp :: EHCOpts -> BuiltinInfoMp
 builtinKnownBoxedTyMp opts
   = builtinMayLiveUnboxedTyMp opts
     `Map.union`
@@ -208,7 +234,7 @@ builtinKnownBoxedTyMp opts
            )
          , ( builtinNm opts ehbnDouble
            , emptyBuiltinInfo
-               { biGrinBoxAnnot 	= BasicAnnot_Size basicSizeDouble BasicTy_Double
+               { biGrinBoxAnnot 	= BasicAnnot_Size basicSizeDouble BasicTy_Double BasicAnnotTagging_None False
 %%[[(97 jazy)
                , biJazyBasicTy    	= BasicJazy_Double
 %%]]
@@ -216,7 +242,7 @@ builtinKnownBoxedTyMp opts
            )
          , ( builtinNm opts ehbnInt64
            , emptyBuiltinInfo
-               { biGrinBoxAnnot 	= BasicAnnot_Size BasicSize_Word64 BasicTy_Word
+               { biGrinBoxAnnot 	= BasicAnnot_Size BasicSize_Int64 BasicTy_Word BasicAnnotTagging_None True
                , biIsSigned         = True
 %%[[(97 jazy)
                , biJazyBasicTy    	= BasicJazy_Long
@@ -225,7 +251,7 @@ builtinKnownBoxedTyMp opts
            )
          , ( builtinNm opts ehbnWord64
            , emptyBuiltinInfo
-               { biGrinBoxAnnot 	= BasicAnnot_Size BasicSize_Word64 BasicTy_Word
+               { biGrinBoxAnnot 	= BasicAnnot_Size BasicSize_Word64 BasicTy_Word BasicAnnotTagging_None False
 %%[[(97 jazy)
                , biJazyBasicTy    	= BasicJazy_Long
 %%]]
@@ -235,7 +261,7 @@ builtinKnownBoxedTyMp opts
 %%[[99
          , ( builtinNm opts ehbnAddr
            , emptyBuiltinInfo
-               { biGrinBoxAnnot 	= BasicAnnot_Size (if Cfg.use32Bits then BasicSize_Word32 else BasicSize_Word64) BasicTy_Word
+               { biGrinBoxAnnot 	= BasicAnnot_Size (if Cfg.use32Bits then BasicSize_Word32 else BasicSize_Word64) BasicTy_Word BasicAnnotTagging_None False
 %%[[(99 jazy)
                , biJazyBasicTy    	= BasicJazy_Int
 %%]]
@@ -298,6 +324,6 @@ builtinKnownRecTyNmL
 
 %%[(8 codegen)
 builtinNm :: EHCOpts -> (EHBuiltinNames -> HsName) -> HsName
-builtinNm opts f = f $ ehcOptBuiltinNames opts
+builtinNm = ehcOptBuiltin
 %%]
 

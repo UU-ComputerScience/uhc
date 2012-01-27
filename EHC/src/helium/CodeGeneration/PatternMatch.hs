@@ -13,7 +13,7 @@ import Helium.Syntax.UHA
 import Helium.Syntax.UHA_Utils
 import Helium.Syntax.UHA_Range
 import Lvm.Common.Id
-import Char
+import Data.Char
 import Helium.Utils.Utils
 import Helium.CodeGeneration.CoreUtils
 

@@ -2,20 +2,34 @@
 %%% Memory management: Double Ended Queue
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[doesWhat doclatex
 DEQue provides an efficient buffer based implementation for double ended
 queues of Words. A dll of buffers is maintained, with offsets pointing
-to the head and tail elements in the buffer. The use of a dll of buffers
-avoids the necessity of reallocating one single buffer and allows for
-flexible growth.
+to the head and tail elements in the buffer. For a DEQue holding
+elements, elements at an index >= headOffset can be read, elements <=
+tailOffset have been written. The use of a dll of buffers avoids the
+necessity of reallocating one single buffer and allows for flexible
+growth.
 
 The API is split up in functions for
-- finding out much headroom is available for reading/writing
-- stepping through this headroom
-- extending the headroom
+\begin{itemize}
+\item finding out much headroom is available for reading/writing
+\item stepping through this headroom
+\item extending the headroom
+\end{itemize}
 This allows for fast pointer access by avoiding a per step check on available headroom.
 
 The structure is biased towards addition at the tail and reading from
-the head. This is part initialization, part lack of dual API.
+the head. This reflects itself in the initialization where head and tail
+are pointing to the beginning of the one buffer, ready to be filled at
+the tail; filling at the head would require an immediate allocation of a
+buffer in front of the head. This is also reflected in the asymmetric
+implementation of the API, which lacks writing at the head and reading
+at the tail.
+
+Although DEQue is content agnostic, it knows the size of an element.
+This is to guarantee contiguousness of each element, necessary for iterating.
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% DEQue
@@ -29,15 +43,16 @@ the head. This is part initialization, part lack of dual API.
 %%[8
 // the descriptor for a deque
 typedef struct MM_DEQue {
-	MM_DLL			dll ;		// dll of buffers
-	Word			headOff ;	// offset into 1st buffer, pointing to 1st element
-	Word			tailOff ;	// offset into last buffer, pointing to last element
+	MM_DLL			dll ;				// dll of buffers
+	Word			headOff ;			// offset into 1st buffer, pointing to 1st element
+	Word			tailOff ;			// offset into last buffer, pointing to last element
+	Word			nrWordsElt ;		// sz of element, to avoid splitting data up
 	MM_Malloc*		memMgt ;
 } MM_DEQue ;
 %%]
 
 The DLL embedded in MM_DEQue buffer pages is assumed to be at the
-beginning, so as to be able to cast free between the DLL and the
+beginning, so as to be able to cast freely between the DLL and the
 MM_DEQue_PageHeader.
 
 %%[8
@@ -46,6 +61,10 @@ typedef struct MM_DEQue_PageHeader {
 	MM_DLL			dll ;		// dll of buffers
 	Word			tailOff ;	// == tailOff for tail pages, for internal pages it corresponds to the last global tailOff before extending
 } MM_DEQue_PageHeader ;
+%%]
+
+%%[8
+#define MM_DEQue_HeadOffInit	sizeof(MM_DEQue_PageHeader)			// initial head offset
 %%]
 
 %%[8
@@ -67,6 +86,11 @@ static inline WPtr mm_deque_Tail( MM_DEQue* deque ) {
 // set head offset
 static inline void mm_deque_SetHeadOff( MM_DEQue* deque, Word off ) {
 	deque->headOff = off ;
+}
+
+// set head offset to initial value
+static inline void mm_deque_SetHeadOffInit( MM_DEQue* deque ) {
+	mm_deque_SetHeadOff( deque, MM_DEQue_HeadOffInit ) ;
 }
 
 // set tail offset
@@ -96,15 +120,20 @@ static inline Word mm_deque_TailAvailWrite( MM_DEQue* deque ) {
 	return ((MM_Page_Size - Word_SizeInBytes) - deque->tailOff) >> Word_SizeInBytes_Log ;
 }
 
-// nr of available words for reading at the head end
-static inline Word mm_deque_HeadAvailRead( MM_DEQue* deque ) {
+// nr of available words for reading at some offset in buffer
+static inline Word mm_deque_HeadAvailReadAt( MM_DEQue* deque, Word atOff ) {
 	return
 		( ( mm_deque_HeadTailShareBuffer( deque )
 	      ? deque->tailOff + Word_SizeInBytes
 	      : ((MM_DEQue_PageHeader*)(deque->dll.next))->tailOff + Word_SizeInBytes
 	      )
-	    - deque->headOff
+	    - atOff
 	    ) >> Word_SizeInBytes_Log ;
+}
+
+// nr of available words for reading at the head end
+static inline Word mm_deque_HeadAvailRead( MM_DEQue* deque ) {
+	return mm_deque_HeadAvailReadAt( deque, deque->headOff ) ;
 }
 
 // nr of available words for reading at the tail end
@@ -123,7 +152,11 @@ static inline Word mm_deque_TailAvailRead( MM_DEQue* deque ) {
 extern Bool mm_deque_IsEmpty( MM_DEQue* deque ) ;
 
 // init with one buffer, prepared for writing at the tail end
-extern void mm_deque_Init( MM_DEQue* deque, MM_Malloc* memmgt ) ;
+extern void mm_deque_InitWithSize( MM_DEQue* deque, MM_Malloc* memmgt, Word nrWordsElt ) ;
+
+static inline void mm_deque_Init( MM_DEQue* deque, MM_Malloc* memmgt ) {
+	mm_deque_InitWithSize( deque, memmgt, 1 ) ;
+}
 
 // reset to initial state, deallocating buffers
 extern void mm_deque_Reset( MM_DEQue* deque ) ;
@@ -165,6 +198,23 @@ extern void mm_deque_TailEnsure( MM_DEQue* deque, Word nrWords ) ;
 
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% DEQue iterating
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+extern void mm_deque_Iterator( MM_DEQue* deque, MM_Iterator* i ) ;
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% DEQue dump/debug
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+#ifdef TRACE
+extern void mm_deque_Dump( MM_DEQue* deque ) ;
+#endif
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% DEQue test

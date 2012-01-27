@@ -53,7 +53,7 @@ import qualified Data.Set as Set
 import Data.Map(Map)
 import Data.Set(Set)
 import Network.URI
-import IO
+import System.IO
 import System.Directory
 import System.Console.GetOpt
 import EH.Util.Pretty
@@ -148,6 +148,7 @@ data Opts
       , optDepMainVar    		:: String
       , optDepDpdsVar    		:: String
       , optDepOrigDpdsVar 		:: String
+      , optDepDerivDpdsVar 		:: String
       , optDepBaseDir     		:: String
       , optDepTerm        		:: Map String [String]
       , optDepIgn         		:: Set String
@@ -181,10 +182,11 @@ defaultOpts
       , optDepMainVar    		=  error "optDepMainVar not set"
       , optDepDpdsVar    		=  error "optDepDpdsVar not set"
       , optDepOrigDpdsVar 		=  error "optDepOrigDpdsVar not set"
+      , optDepDerivDpdsVar 		=  error "optDepDerivDpdsVar not set"
       , optDepBaseDir     		=  error "optDepBaseDir not set"
       , optDepTerm        		=  Map.empty
       , optDepIgn         		=  Set.empty
-      , optAGModHeader    		=  False
+      , optAGModHeader    		=  True
       }
 
 optsHasNoVariantRefOrder :: Opts -> Bool
@@ -228,6 +230,7 @@ data ChDest
 
 data ChWrap
   = ChWrapCode
+  | ChWrapHsBox
   | ChWrapBoxCode 			(Maybe String)
   | ChWrapBeamerBlockCode 	String
   | ChWrapTT

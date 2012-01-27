@@ -1,13 +1,16 @@
 EH
 HS
-HI
 Ty
 Core
 TyCore
 JVMClass
+JavaScript
 Foreign
 GrinCode
 GrinByteCode
 LLVM
 Silly
 Error
+AnaDomain
+Cmm
+

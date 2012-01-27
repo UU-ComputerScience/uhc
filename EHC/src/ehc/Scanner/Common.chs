@@ -9,7 +9,13 @@ Note: everything is exported.
 %%% Main
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 module {%{EH}Scanner.Common} import(IO, UU.Parsing, UU.Parsing.Offside, UU.Scanner.Position, UU.Scanner.GenToken, UU.Scanner.GenTokenParser, EH.Util.ScanUtils(), {%{EH}Base.Builtin}, {%{EH}Base.Common})
+%%[1 module {%{EH}Scanner.Common}
+%%]
+
+%%[1 import(System.IO, UU.Parsing, UU.Parsing.Offside, UU.Scanner.Position, UU.Scanner.GenToken, UU.Scanner.GenTokenParser, EH.Util.ScanUtils(), {%{EH}Base.Builtin}, {%{EH}Base.Common})
+%%]
+
+%%[1 import({%{EH}Opts.Base})
 %%]
 
 %%[1 import(qualified Data.Set as Set)
@@ -18,7 +24,7 @@ Note: everything is exported.
 %%[1 import(EH.Util.ScanUtils)
 %%]
 
-%%[1.Scanner import(UU.Scanner) export(module UU.Scanner)
+%%[1.Scanner import(UU.Scanner, {%{EH}Scanner.TokenParser}) export(module UU.Scanner)
 %%]
 
 %%[1 export(module {%{EH}Scanner.Common})
@@ -40,8 +46,8 @@ Note: everything is exported.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1.ehScanOpts
-ehScanOpts :: ScanOpts
-ehScanOpts
+ehScanOpts :: EHCOpts -> ScanOpts
+ehScanOpts opts
   =  defaultScanOpts
 %%]
 %%[1
@@ -68,14 +74,17 @@ ehScanOpts
 %%[11
                     ++ tokKeywStrsEH11
 %%]
-%%[20
+%%[50
                     ++ tokKeywStrsEH12
 %%]
-%%[94
-                    ++ tokKeywStrsEH94
+%%[90
+                    ++ tokKeywStrsEH90
 %%]
-%%[95
-                    ++ tokKeywStrsEH95
+%%[91
+                    ++ tokKeywStrsEH91
+%%]
+%%[93
+                    ++ (if ehcOptFusion opts then tokKeywStrsEH93 else [])
 %%]
 %%[1
         ,   scoKeywordsOps      =
@@ -98,7 +107,7 @@ ehScanOpts
                     ++ tokOpStrsEH6
 %%]
 %%[7
-                    ++ tokOpStrsEH7
+                    ++ (if ehcOptExtensibleRecords opts then tokOpStrsEH7 else [])
 %%]
 %%[9
                     ++ tokOpStrsEH9
@@ -129,6 +138,9 @@ ehScanOpts
 %%]
 %%[1
         ,   scoOffsideTrigs     =   offsideTrigs
+%%[[9
+        ,   scoOffsideTrigsGE   =   offsideTrigsGE
+%%]]
         ,   scoOffsideModule    =   "let"
         ,   scoOffsideOpen      =   "{"
         ,   scoOffsideClose     =   "}"
@@ -141,20 +153,22 @@ ehScanOpts
 %%[[8
             ,  "letstrict"
 %%]]
-%%[[9
-            ,  "do"
-%%]]
             ]
+%%[[9
+        offsideTrigsGE   =
+            [  "do"
+            ]
+%%]]
 %%]
 
 %%[1
-hsScanOpts :: ScanOpts
-hsScanOpts
-  = ehScanOpts
+hsScanOpts :: EHCOpts -> ScanOpts
+hsScanOpts opts
+  = ehScanOpts'
 %%]
 %%[1
         {   scoKeywordsTxt      =
-                scoKeywordsTxt ehScanOpts `Set.union`
+                scoKeywordsTxt ehScanOpts' `Set.union`
                 (Set.fromList $
                        offsideTrigs
                     ++ tokKeywStrsHS1
@@ -176,19 +190,28 @@ hsScanOpts
 %%[[11
                     ++ tokKeywStrsHS11
 %%]]
-%%[[20
+%%[[50
                     ++ tokKeywStrsHS12
 %%]]
-%%[[94
-                    ++ tokKeywStrsHS94
+%%[[90
+                    ++ tokKeywStrsHS90
 %%]]
+%%[[93
+                    ++ (if ehcOptFusion opts then tokKeywStrsHS93 else [])
+%%]]
+                )
+%%]
+%%[99
+        ,   scoPragmasTxt      =
+                (Set.fromList $
+                       tokPragmaStrsHS99
                 )
 %%]
 %%[1
         ,   scoKeywordsOps      =
-                scoKeywordsOps ehScanOpts
+                scoKeywordsOps ehScanOpts'
                 `Set.union`
-                (Set.fromList $ 
+                (Set.fromList $
                        tokOpStrsHS1
 %%[[2
                     ++ tokOpStrsHS2
@@ -221,13 +244,16 @@ hsScanOpts
 %%]
 %%[1
         ,   scoOffsideTrigs     =
-                scoOffsideTrigs ehScanOpts
+                scoOffsideTrigs ehScanOpts'
                 ++ offsideTrigs
+        ,   scoOffsideTrigsGE   =
+                scoOffsideTrigsGE ehScanOpts'
         ,   scoOffsideModule    =   "module"
         }
   where offsideTrigs     =
             [  "where"
             ]
+        ehScanOpts' = ehScanOpts opts
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -235,8 +261,8 @@ hsScanOpts
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-coreScanOpts :: ScanOpts
-coreScanOpts
+coreScanOpts :: EHCOpts -> ScanOpts
+coreScanOpts opts
   =  grinScanOpts
         {   scoKeywordsTxt      =   (Set.fromList $
                                         [ "let", "in", "case", "of", "rec", "foreign", "uniq"
@@ -247,21 +273,22 @@ coreScanOpts
 %%[[9
                                         , "DICT", "DICTCLASS", "DICTINSTANCE", "DICTOVERLOADED"
 %%]]
-%%[[20
-                                        , "Integer" 
+%%[[50
+                                        , "Integer"
 %%]]
-%%[[94
-                                        , "foreignexport" 
+%%[[90
+                                        , "foreignexport"
 %%]]
                                         ])
                                     `Set.union` scoKeywordsTxt tyScanOpts
-                                    `Set.union` scoKeywordsTxt hsScanOpts
-        ,   scoKeywordsOps      =   scoKeywordsOps grinScanOpts `Set.union` scoKeywordsOps hsScanOpts
+                                    `Set.union` scoKeywordsTxt hsScanOpts'
+        ,   scoKeywordsOps      =   scoKeywordsOps grinScanOpts `Set.union` scoKeywordsOps hsScanOpts'
         ,   scoDollarIdent      =   True
-        ,   scoOpChars          =   scoOpChars grinScanOpts `Set.union` scoOpChars hsScanOpts
-        ,   scoSpecChars        =   Set.fromList "!=" `Set.union` scoSpecChars grinScanOpts `Set.union` scoSpecChars hsScanOpts
-        ,   scoSpecPairs        =   scoSpecPairs hsScanOpts
+        ,   scoOpChars          =   scoOpChars grinScanOpts `Set.union` scoOpChars hsScanOpts'
+        ,   scoSpecChars        =   Set.fromList "!=" `Set.union` scoSpecChars grinScanOpts `Set.union` scoSpecChars hsScanOpts'
+        ,   scoSpecPairs        =   scoSpecPairs hsScanOpts'
         }
+  where hsScanOpts' = hsScanOpts opts
 %%]
 
 Todo:
@@ -279,11 +306,11 @@ tycoreScanOpts
 %%[[9
                                         , "DICT", "DICTCLASS", "DICTINSTANCE", "DICTOVERLOADED"
 %%]]
-%%[[20
-                                        , "Integer" 
+%%[[50
+                                        , "Integer"
 %%]]
-%%[[94
-                                        , "foreignexport" 
+%%[[90
+                                        , "foreignexport"
 %%]]
                                         ])
         ,   scoKeywordsOps      =   Set.fromList [ "->", "=", ":", "::", "|", "\\" ]
@@ -319,7 +346,7 @@ grinScanOpts
                                         , "True", "False"  -- for FFI annotation
 %%]]
                                         ]
-%%[[94
+%%[[90
                                         ++ map show allFFIWays
 %%]]
         ,   scoKeywordsOps      =   Set.fromList [ "<-", "->", "=", "+=", "-=", ":=", "-", "*" ]
@@ -330,9 +357,9 @@ grinScanOpts
 %%]
 
 %%[8
-hiScanOpts :: ScanOpts
-hiScanOpts
-  =  hsScanOpts
+hiScanOpts :: EHCOpts -> ScanOpts
+hiScanOpts opts
+  =  hsScanOpts'
         {   scoKeywordsTxt      =   (Set.fromList $
                                         [ "value", "fixity", "stamp", "uid", "rule", "var", "ctxt", "sup", "iddef", "arity", "grInline"
                                         , "Value", "Pat", "Type", "Kind", "Class", "Instance", "Default", "Any", "Data"
@@ -346,6 +373,7 @@ hiScanOpts
                                         , "HasStrictCommonScope", "IsStrictParentScope", "IsVisibleInScope", "EqualScope", "NotEqualScope"
                                         , "redhowinst", "redhowsuper", "redhowprove", "redhowassume", "redhowscope", "redhoweqsym", "redhoweqtrans", "redhoweqcongr"
                                         , "varuidnmname", "varuidnmuid", "varuidnmvar"
+                                        , "cxtscope1"
 %%]]
 %%[[10
                                         , "label", "offset"
@@ -358,23 +386,25 @@ hiScanOpts
 %%[[13
                                         , "redhowlambda"
 %%]]
-%%[[20
+%%[[50
                                         , "visibleno", "visibleyes"
                                         , "importmodules"
 %%]]
                                         ]
-%%[[20
+%%[[50
                                         ++ tokKeywStrsHI6
 %%]]
                                     )
-                                    `Set.union` scoKeywordsTxt hsScanOpts
+                                    `Set.union` scoKeywordsTxt hsScanOpts'
                                     `Set.union` scoKeywordsTxt tyScanOpts
                                     `Set.union` scoKeywordsTxt grinScanOpts
-        ,   scoOpChars          =   scoOpChars coreScanOpts
+        ,   scoOpChars          =   scoOpChars coreScanOpts'
         ,   scoDollarIdent      =   True
-        ,   scoSpecChars        =   scoSpecChars coreScanOpts
-        ,   scoKeywordsOps      =   Set.fromList [ "??" ] `Set.union` scoKeywordsOps coreScanOpts
+        ,   scoSpecChars        =   scoSpecChars coreScanOpts'
+        ,   scoKeywordsOps      =   Set.fromList [ "??" ] `Set.union` scoKeywordsOps coreScanOpts'
         }
+  where hsScanOpts' = hsScanOpts opts
+        coreScanOpts' = coreScanOpts opts
 %%]
 
 %%[8
@@ -385,15 +415,23 @@ tyScanOpts
         }
 %%]
 
-%%[94
-foreignEntScanOpts :: ScanOpts
-foreignEntScanOpts
-  =  defaultScanOpts
-        {   scoKeywordsTxt      =   Set.fromList [ "dynamic", "wrapper", "h", "static" ]
-        ,   scoSpecChars        =   Set.fromList ".&"
-        ,   scoDollarIdent      =   False
-        , 	scoAllowQualified	=	False
-        }
+%%[90
+foreignEntScanOpts :: FFIWay -> ScanOpts
+foreignEntScanOpts way
+  =  o {   scoKeywordsTxt      =   Set.fromList [ "dynamic", "wrapper", "h", "static", "new" ]
+       ,   scoSpecChars        =   Set.fromList ",.&%[]()*{}"
+       ,   scoDollarIdent      =   False
+       ,   scoKeywExtraChars   =   Set.fromList wayKeywExtraChars
+       ,   scoAllowQualified   =   False
+       ,   scoStringDelims     =   scoStringDelims o ++ wayStringDelims
+       }
+  where o = defaultScanOpts
+        (wayKeywExtraChars,wayStringDelims)
+          = case way of
+%%[[(90 javascript)
+              FFIWay_JavaScript -> ("$", "'")
+%%]]
+              _                 -> ("" , "" )
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -408,7 +446,7 @@ scanHandle opts fn fh
                          (Set.toList $ scoKeywordsOps opts)
                          (Set.toList $ scoSpecChars opts)
                          (Set.toList $ scoOpChars opts)
-                         (initPos fn) 
+                         (initPos fn)
                   $ txt
         }
 %%]
@@ -416,16 +454,34 @@ scanHandle opts fn fh
 %%[5 -1.scanHandle
 %%]
 
+%%[99
+splitTokensOnModuleTrigger :: ScanOpts -> [Token] -> Maybe ([Token],[Token])
+splitTokensOnModuleTrigger scanOpts ts
+  = case break ismod ts of
+      (ts1,ts2@[]) -> Nothing
+      tss          -> Just tss
+  where ismod (Reserved s _) | s == scoOffsideModule scanOpts = True
+        ismod _                                               = False
+%%]
+
 %%[1.offsideScanHandle
 offsideScanHandle scanOpts fn fh
   = do  {  tokens <- scanHandle scanOpts fn fh
         -- ;  putStrLn (" tokens: " ++ show tokens)
-        ;  return (scanOffside moduleT oBrace cBrace triggers tokens)
+%%[[1
+        ;  return (scanOffsideWithTriggers moduleT oBrace cBrace triggers tokens)
+%%][99
+        ;  case splitTokensOnModuleTrigger scanOpts tokens of
+             Just (ts1,ts2) -> return $ scanLiftTokensToOffside ts1
+                                      $ scanOffsideWithTriggers moduleT oBrace cBrace triggers ts2
+             _              -> return $ scanOffsideWithTriggers moduleT oBrace cBrace triggers tokens
+%%]]
         }
   where   moduleT   = reserved (scoOffsideModule scanOpts) noPos
           oBrace    = reserved (scoOffsideOpen scanOpts) noPos
           cBrace    = reserved (scoOffsideClose scanOpts) noPos
-          triggers  = [ reserved x noPos | x <- scoOffsideTrigs scanOpts ]
+          triggers  =  [ (Trigger_IndentGT,reserved x noPos) | x <- scoOffsideTrigs   scanOpts ]
+                    ++ [ (Trigger_IndentGE,reserved x noPos) | x <- scoOffsideTrigsGE scanOpts ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -475,7 +531,7 @@ pStringTk, pCharTk,
   pVaridUnboxedTk, pConidUnboxedTk,
   pVarsymUnboxedTk, pConsymUnboxedTk,
 %%]
-%%[20
+%%[50
   pQVaridTk, pQConidTk,
   pQVarsymTk, pQConsymTk,
 %%]
@@ -485,33 +541,33 @@ pStringTk, pCharTk,
   pTextnmTk, pTextlnTk, pIntegerTk, pVarsymTk, pConsymTk
     :: IsParser p Token => p Token
 
-pStringTk     =   pCostValToken' 7 TkString    ""        
-pCharTk       =   pCostValToken' 7 TkChar      "\NUL"    
-pInteger8Tk   =   pCostValToken' 7 TkInteger8  "0"       
-pInteger10Tk  =   pCostValToken' 7 TkInteger10 "0"       
-pInteger16Tk  =   pCostValToken' 7 TkInteger16 "0"
-pFractionTk   =   pCostValToken' 7 TkFraction  "0.0"
-pVaridTk      =   pCostValToken' 7 TkVarid     "<identifier>" 
-pVaridTk'     =   pCostValToken' 6 TkVarid     "<identifier>" 
-pConidTk      =   pCostValToken' 7 TkConid     "<Identifier>" 
-pConidTk'     =   pCostValToken' 6 TkConid     "<Identifier>" 
-pConsymTk     =   pCostValToken' 7 TkConOp     "<conoperator>"
-pVarsymTk     =   pCostValToken' 7 TkOp        "<operator>" 
-pTextnmTk     =   pCostValToken' 7 TkTextnm    "<name>"       
-pTextlnTk     =   pCostValToken' 7 TkTextln    "<line>"     
+pStringTk     =   pHsCostValToken' 7 TkString    ""
+pCharTk       =   pHsCostValToken' 7 TkChar      "\NUL"
+pInteger8Tk   =   pHsCostValToken' 7 TkInteger8  "0"
+pInteger10Tk  =   pHsCostValToken' 7 TkInteger10 "0"
+pInteger16Tk  =   pHsCostValToken' 7 TkInteger16 "0"
+pFractionTk   =   pHsCostValToken' 7 TkFraction  "0.0"
+pVaridTk      =   pHsCostValToken' 7 TkVarid     "<identifier>"
+pVaridTk'     =   pHsCostValToken' 6 TkVarid     "<identifier>"
+pConidTk      =   pHsCostValToken' 7 TkConid     "<Identifier>"
+pConidTk'     =   pHsCostValToken' 6 TkConid     "<Identifier>"
+pConsymTk     =   pHsCostValToken' 7 TkConOp     "<conoperator>"
+pVarsymTk     =   pHsCostValToken' 7 TkOp        "<operator>"
+pTextnmTk     =   pHsCostValToken' 7 TkTextnm    "<name>"
+pTextlnTk     =   pHsCostValToken' 7 TkTextln    "<line>"
 pIntegerTk    =   pInteger10Tk
 %%]
 %%[18
-pVaridUnboxedTk      =   pCostValToken' 7 TkVaridUnboxed     "<identifier#>" 
-pConidUnboxedTk      =   pCostValToken' 7 TkConidUnboxed     "<Identifier#>" 
-pConsymUnboxedTk     =   pCostValToken' 7 TkConOpUnboxed     "<conoperator#>"
-pVarsymUnboxedTk     =   pCostValToken' 7 TkOpUnboxed        "<operator#>" 
+pVaridUnboxedTk      =   pHsCostValToken' 7 TkVaridUnboxed     "<identifier#>"
+pConidUnboxedTk      =   pHsCostValToken' 7 TkConidUnboxed     "<Identifier#>"
+pConsymUnboxedTk     =   pHsCostValToken' 7 TkConOpUnboxed     "<conoperator#>"
+pVarsymUnboxedTk     =   pHsCostValToken' 7 TkOpUnboxed        "<operator#>"
 %%]
-%%[20
-pQVaridTk     =   pCostValToken' 7 TkQVarid     "<identifier>" 
-pQConidTk     =   pCostValToken' 7 TkQConid     "<Identifier>" 
-pQConsymTk    =   pCostValToken' 7 TkQConOp     "<conoperator>"
-pQVarsymTk    =   pCostValToken' 7 TkQOp        "<operator>" 
+%%[50
+pQVaridTk     =   pHsCostValToken' 7 TkQVarid     "<identifier>"
+pQConidTk     =   pHsCostValToken' 7 TkQConid     "<Identifier>"
+pQConsymTk    =   pHsCostValToken' 7 TkQConOp     "<conoperator>"
+pQVarsymTk    =   pHsCostValToken' 7 TkQOp        "<operator>"
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -538,7 +594,7 @@ pVARIDUNBOXED    = pVaridUnboxedTk
 pVARSYMUNBOXED   = pVarsymUnboxedTk
 %%]
 
-%%[20
+%%[50
 pQCONID, pQCONSYM, pQVARID, pQVARSYM :: IsParser p Token => p Token
 
 pQCONID          = pQConidTk
@@ -554,9 +610,13 @@ pQVARSYM         = pQVarsymTk
 %%[1
 tokGetVal :: Token -> String
 tokGetVal x
+%%[[1
   = case x of
       ValToken _ v p -> v
       Reserved v p   -> v
+%%][5
+  = tokenVal x
+%%]]
 
 pV :: (IsParser p Token) => p Token -> p String
 pV p = tokGetVal <$> p
@@ -599,7 +659,7 @@ pMODULE        ,
     pLET       ,
     pLAM       ,
     pUNDERSCORE,
-    pIN        
+    pIN
   :: IsParser p Token => p Token
 %%]
 
@@ -642,14 +702,16 @@ tokOpStrsHS1   = [ "-", "*", "!", "_", "%", "." ]
 %%]
 
 %%[2
-pTDOT    
+pTDOT    	,
+    pQDOT
   :: IsParser p Token => p Token
 %%]
 
 %%[2
 pTDOT            = pKeyTk "..."
+pQDOT            = pKeyTk "...."
 
-tokOpStrsEH2   = [ "..." ]
+tokOpStrsEH2   = [ "...", "...." ]
 tokOpStrsHS2   = [  ]
 %%]
 
@@ -661,7 +723,7 @@ tokOpStrsHS3   = [  ]
 %%[4
 pFORALL       ,
     pEXISTS   ,
-    pTILDE    
+    pTILDE
   :: IsParser p Token => p Token
 %%]
 
@@ -686,7 +748,7 @@ pLARROW        ,
     pIF        ,
     pTHEN      ,
     pELSE      ,
-    pDOTDOT    
+    pDOTDOT
   :: IsParser p Token => p Token
 %%]
 
@@ -710,7 +772,7 @@ tokOpStrsHS5   = [ "<-", "..", ":" ]
 
 %%[6
 pFFORALL      ,
-    pEEXISTS  
+    pEEXISTS
   :: IsParser p Token => p Token
 %%]
 
@@ -794,7 +856,7 @@ pDARROW         ,
     pCLASS      ,
     pINSTANCE   ,
     pDEFAULT    ,
-    pDO         
+    pDO
   :: IsParser p Token => p Token
 %%]
 
@@ -815,11 +877,11 @@ tokOpStrsHS9   = [  ]
 %%]
 
 %%[10
-tokOpStrsEH10  = [ show hsnDynVar ]
+tokOpStrsEH10  = [] -- [ show hsnDynVar ]
 tokOpStrsHS10  = [  ]
 %%]
 
-%%[50
+%%[40
 %%]
 
 %%[11
@@ -838,16 +900,16 @@ tokOpStrsEH11   = [  ]
 tokOpStrsHS11   = [  ]
 %%]
 
-%%[20
+%%[50
 pQUALIFIED      ,
     pQUESTQUEST ,
     pAS         ,
     pHIDING     ,
-    pNUMBER     
+    pNUMBER
   :: IsParser p Token => p Token
 %%]
 
-%%[20
+%%[50
 pQUALIFIED       = pKeyTk "qualified"
 pAS              = pKeyTk "as"
 pHIDING          = pKeyTk "hiding"
@@ -858,22 +920,23 @@ tokKeywStrsEH12 = [  ]
 tokKeywStrsHS12 = [ "qualified", "as", "hiding" ]
 %%]
 
-%%[95
-pDERIVING   
+%%[91
+pDERIVING
   :: IsParser p Token => p Token
 
 pDERIVING        = pKeyTk "deriving"
 
-tokKeywStrsEH95 = [ "deriving" ]
+tokKeywStrsEH91 = [ "deriving" ]
 %%]
 
-%%[94
+%%[90
 pUNSAFE     ,
     pTHREADSAFE ,
     pDYNAMIC    ,
     pWRAPPER    ,
     pSTATIC     ,
     pH          ,
+    pNEW        ,
     pAMPERSAND
   :: IsParser p Token => p Token
 
@@ -884,12 +947,45 @@ pWRAPPER         = pKeyTk "wrapper" -- not a HS keyword, but only for foreign fu
 pSTATIC          = pKeyTk "static" -- not a HS keyword, but only for foreign function entity
 pH               = pKeyTk "h" -- not a HS keyword, but only for foreign function entity
 pAMPERSAND       = pKeyTk "&" -- not a HS keyword, but only for foreign function entity
+pNEW             = pKeyTk "new"
 
-tokKeywStrsEH94 = [  ]
-tokKeywStrsHS94 = [ "unsafe", "threadsafe", "dynamic" ]
+tokKeywStrsEH90  = [  ]
+tokKeywStrsHS90  = [ "unsafe", "threadsafe", "dynamic" ]
 %%]
 
-%%[90
+%%[93
+pFUSE         ,
+    -- pWITH     ,
+    pCONVERT
+  :: IsParser p Token => p Token
+
+pFUSE    = pKeyTk "fuse"
+-- pWITH    = pKeyTk "with"
+pCONVERT = pKeyTk "convert"    
+
+tokKeywStrsEH93  = [  ]
+tokKeywStrsHS93  = [ "fuse", "convert" ]
+%%]
+
+%%[99
+pLANGUAGE_prag  		,
+	-- pOPTIONSGHC_prag  	,
+	pDERIVABLE_prag		,
+	pEXCLUDEIFTARGET_prag,
+    pOPRAGMA    		,
+    pCPRAGMA
+  :: IsParser p Token => p Token
+
+pLANGUAGE_prag   = pKeyTk "LANGUAGE"
+pDERIVABLE_prag  = pKeyTk "DERIVABLE"
+pEXCLUDEIFTARGET_prag  = pKeyTk "EXCLUDE_IF_TARGET"
+-- pOPTIONSGHC_prag = pKeyTk "OPTIONS_GHC"
+pOPRAGMA         = pKeyTk "{-#"
+pCPRAGMA         = pKeyTk "#-}"
+
+tokPragmaStrsHS99= [ "LANGUAGE", "DERIVABLE", "EXCLUDE_IF_TARGET" {-, "OPTIONS_GHC" , "INLINE", "NOINLINE", "SPECIALIZE" -} ]
+%%]
+
 pDEPRECATED_prag = pKeyTk "deprecated_prag"
 pCLOSE_prag      = pKeyTk "close_prag"
 pSOURCE_prag     = pKeyTk "source_prag"
@@ -926,7 +1022,6 @@ p_SCC_           = pKeyTk "scc"
 pSCC_prag        = pKeyTk "scc_prag"
 pMDO             = pKeyTk "mdo"
 pPROC            = pKeyTk "proc"
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Position
@@ -935,7 +1030,7 @@ pPROC            = pKeyTk "proc"
 %%[1
 %%]
 instance Position (Maybe Token) where
-  line    =  maybe (-1)  (line.position) 
+  line    =  maybe (-1)  (line.position)
   column  =  maybe (-1)  (column.position)
   file    =  maybe ""    (file.position)
 

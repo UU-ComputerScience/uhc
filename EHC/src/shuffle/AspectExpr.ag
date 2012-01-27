@@ -4,7 +4,7 @@
 
 imports
 {
-import IO
+import System.IO
 import qualified Data.Set as Set
 }
 

@@ -33,11 +33,12 @@ void mm_space_Fragment_Init( MM_Space* fragmentSpace, MM_Malloc* memmgt, MM_Page
 MM_Space_FragmentInx mm_space_Fragment_GrowSpaceLog2( MM_Space* fragmentSpace, MM_Pages_LogSize szFragLog ) {
 	MM_Space_Fragment_Data* spc = (MM_Space_Fragment_Data*)fragmentSpace->data ;
 
-	MM_Space_FragmentInx frgInx = mm_flexArray_NewSlot( &spc->fragments ) ;
+	// IF_GB_TR_ON(3,{printf("mm_space_Fragment_GrowSpaceLog2 szFragLog=%x\n", szFragLog);}) ;
+	MM_Space_FragmentInx frgInx = mm_flexArray_AllocSlot( &spc->fragments ) ;
 	MM_Space_Fragment* frg = (MM_Space_Fragment*)mm_flexArray_At( &spc->fragments, frgInx ) ;
 	frg->frag = spc->pages->allocPagesLog2( spc->pages, szFragLog ) ;
 	frg->sizeLog = szFragLog ;
-	frg->size = 1 << szFragLog ;
+	frg->size = ((Word)(1)) << szFragLog ;
 
 	// mm_Spaces_RegisterSpaceFrame( fragmentSpace, frg ) ;
 	return frgInx ;
@@ -46,7 +47,7 @@ MM_Space_FragmentInx mm_space_Fragment_GrowSpaceLog2( MM_Space* fragmentSpace, M
 MM_Space_FragmentInx mm_space_Fragment_GrowSpace( MM_Space* fragmentSpace, Word szFrag ) {
 	MM_Space_Fragment_Data* spc = (MM_Space_Fragment_Data*)fragmentSpace->data ;
 
-	MM_Space_FragmentInx frgInx = mm_flexArray_NewSlot( &spc->fragments ) ;
+	MM_Space_FragmentInx frgInx = mm_flexArray_AllocSlot( &spc->fragments ) ;
 	MM_Space_Fragment* frg = (MM_Space_Fragment*)mm_flexArray_At( &spc->fragments, frgInx ) ;
 	frg->frag = spc->pages->allocPages( spc->pages, szFrag ) ;
 	frg->sizeLog = 0 ;
@@ -88,6 +89,12 @@ MM_Space_Fragment* mm_space_Fragment_GetFragment( MM_Space* fragmentSpace, MM_Sp
 	return frg ;
 }
 
+Word mm_space_Fragment_GetFragmentSize( MM_Space* fragmentSpace, MM_Space_FragmentInx fragmentInx ) {
+	MM_Space_Fragment_Data* spc = (MM_Space_Fragment_Data*)fragmentSpace->data ;
+	MM_Space_Fragment* frg = (MM_Space_Fragment*)mm_flexArray_At( &spc->fragments, fragmentInx ) ;
+	return frg->size ;
+}
+
 MM_Pages* mm_space_Fragment_GetPages( MM_Space* fragmentSpace ) {
 	MM_Space_Fragment_Data* spc = (MM_Space_Fragment_Data*)fragmentSpace->data ;
 	return spc->pages ;
@@ -100,7 +107,7 @@ Word mm_space_Fragment_GetGrowDefaultLog( MM_Space* fragmentSpace ) {
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Fragment Space dump
+%%% Tracing: Fragment Space dump
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
@@ -123,6 +130,25 @@ void mm_space_Fragment_Dump( MM_Space* fragmentSpace ) {
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Tracing: marking fresh
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+#ifdef TRACE
+void mm_space_Fragment_MarkAsFresh( MM_Space* fragmentSpace ) {
+	MM_Space_Fragment_Data* spc = (MM_Space_Fragment_Data*)fragmentSpace->data ;
+	int i ;
+	
+	for ( i = 0 ; i < mm_flexArray_SizeUsed(&spc->fragments) ; i++ ) {
+		MM_Space_Fragment* frg = (MM_Space_Fragment*)mm_flexArray_At( &spc->fragments, i ) ;
+		// IF_GB_TR_ON(3,{printf("mm_space_Fragment_MarkAsFresh frag=%x, sz(frag)=%x\n", frg->frag, frg->size);}) ;
+		memset( frg->frag, MM_GC_FreshMem_Pattern_Byte, frg->size ) ;
+	}
+}
+#endif
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Space Fragment interface object
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -138,10 +164,12 @@ MM_Space mm_space_Fragment =
 	, &mm_space_Fragment_DeallocSpace
 	, &mm_space_Fragment_GetNrFragments
 	, &mm_space_Fragment_GetFragment
+	, &mm_space_Fragment_GetFragmentSize
 	, &mm_space_Fragment_GetPages
 	, &mm_space_Fragment_GetGrowDefaultLog
 #ifdef TRACE
 	, &mm_space_Fragment_Dump
+	, &mm_space_Fragment_MarkAsFresh
 #endif
 	} ;
 %%]

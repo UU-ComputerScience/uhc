@@ -2,19 +2,27 @@
 %%% Constraint Handling Rules: Constraint language
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(9 hmtyinfer || hmtyast) module {%{EH}CHR.Constraint} import({%{EH}Base.Common},{%{EH}Ty},{%{EH}CHR},{%{EH}CHR.Key},{%{EH}Base.Trie})
+%%[(9 hmtyinfer || hmtyast) module {%{EH}CHR.Constraint} import({%{EH}Base.Common},{%{EH}Ty},{%{EH}CHR},{%{EH}CHR.Key},{%{EH}Base.Trie},{%{EH}Substitutable})
 %%]
 
-%%[(9 hmtyinfer || hmtyast) import(EH.Util.Pretty)
+%%[(9 hmtyinfer || hmtyast) import(EH.Util.Pretty as PP)
 %%]
 
 %%[(9 hmtyinfer || hmtyast) import(qualified Data.Set as Set,qualified Data.Map as Map)
 %%]
 
-%%[(20 hmtyinfer || hmtyast) import({%{EH}Base.CfgPP})
+%%[(15 hmtyinfer || hmtyast) import({%{EH}VarMp})
 %%]
 
-%%[(99 hmtyinfer || hmtyast) import({%{EH}Base.ForceEval})
+%%[(50 hmtyinfer || hmtyast) import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
+%%]
+%%[(50 hmtyinfer || hmtyast) import(Data.Typeable(Typeable,Typeable2), Data.Generics(Data))
+%%]
+
+%%[(50 hmtyinfer || hmtyast) import({%{EH}Opts.Base})
+%%]
+
+%%[(9999 hmtyinfer || hmtyast) import({%{EH}Base.ForceEval})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -23,10 +31,31 @@
 
 %%[(9 hmtyinfer || hmtyast) export(Constraint(..))
 data Constraint p info
-  = Prove      		{ cnstrPred :: !p }														-- proof obligation
-  | Assume     		{ cnstrPred :: !p }														-- assumed
-  | Reduction  		{ cnstrPred :: !p, cnstrInfo :: !info, cnstrFromPreds :: ![p] }			-- 'side effect', residual info used by (e.g.) codegeneration
+  = Prove           { cnstrPred :: !p }             -- proof obligation
+  | Assume          { cnstrPred :: !p }             -- assumed constraint
+  | Reduction                                       -- 'side effect', residual info used by (e.g.) codegeneration
+                    { cnstrPred :: !p               -- the pred to which reduction was done
+                    , cnstrInfo :: !info            -- additional reduction specific info w.r.t. codegeneration
+                    , cnstrFromPreds :: ![p]        -- the preds from which reduction was done
+%%[[15
+                    , cnstrVarMp :: VarMp           -- additional bindings for type (etc.) variables, i.e. improving substitution
+%%]]
+                    }
   deriving (Eq, Ord, Show)
+%%]
+
+%%[(9 hmtyinfer || hmtyast) export(mkReduction)
+mkReduction :: p -> info -> [p] -> Constraint p info
+mkReduction p i ps
+  = Reduction p i ps
+%%[[15
+              varlookupEmpty
+%%]]
+%%]
+
+%%[(50 hmtyinfer || hmtyast)
+deriving instance Typeable2 Constraint
+deriving instance (Data x, Data y) => Data (Constraint x y)
 %%]
 
 %%[(9 hmtyinfer || hmtyast)
@@ -46,37 +75,103 @@ instance (CHRMatchable env p s) => CHRMatchable env (Constraint p info) s where
          ; (_,p2,_) <- reducablePart c2
          ; chrMatchTo env s p1 p2
          }
+%%]
 
-instance (CHRSubstitutable p v s,CHRSubstitutable info v s) => CHRSubstitutable (Constraint p info) v s where
-  chrFtv c
+%%[(9 hmtyinfer || hmtyast)
+instance (VarExtractable p v,VarExtractable info v) => VarExtractable (Constraint p info) v where
+  varFreeSet c
     = case reducablePart c of
-        Just (_,p,_) -> chrFtv p
+        Just (_,p,_) -> varFreeSet p
         _            -> Set.empty
 
-  chrAppSubst s      (Prove     p     ) = Prove      (chrAppSubst s p)
-  chrAppSubst s      (Assume    p     ) = Assume     (chrAppSubst s p)
-  chrAppSubst s      (Reduction p i ps) = Reduction  (chrAppSubst s p) (chrAppSubst s i) (map (chrAppSubst s) ps)
+instance (VarUpdatable p s,VarUpdatable info s) => VarUpdatable (Constraint p info) s where
+  varUpd s      (Prove     p       ) = Prove      (varUpd s p)
+  varUpd s      (Assume    p       ) = Assume     (varUpd s p)
+  varUpd s      r@(Reduction {cnstrPred=p, cnstrInfo=i, cnstrFromPreds=ps})
+                                     = r {cnstrPred=varUpd s p, cnstrInfo=varUpd s i, cnstrFromPreds=map (varUpd s) ps}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Mapping: constraint -> info
+%%% Resolution trace reification, for error reporting
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(9 hmtyinfer || hmtyast) export(ConstraintToInfoMap,emptyCnstrMp)
-type ConstraintToInfoMap p info = Map.Map (Constraint p info) [info]
+%%[(9 hmtyinfer) export(UnresolvedTrace(..))
+-- | The trace of an unresolved predicate
+data UnresolvedTrace p info
+  = UnresolvedTrace_None									-- no trace required when all is resolved
+  | UnresolvedTrace_Red										-- ok reduction, with failure deeper down
+      { utraceRedFrom		:: p
+      , utraceInfoTo2From	:: info
+      , utraceRedTo			:: [UnresolvedTrace p info]
+      }
+  | UnresolvedTrace_Fail									-- failed reduction
+      { utraceRedFrom		:: p
+      }
+  | UnresolvedTrace_Overlap									-- choice could not be made
+      { utraceRedFrom		:: p
+      , utraceRedChoices	:: [[UnresolvedTrace p info]]
+      }
+  deriving Show
 
-emptyCnstrMp :: ConstraintToInfoMap p info
+instance Eq p => Eq (UnresolvedTrace p info) where
+  t1 == t2 = utraceRedFrom t1 == utraceRedFrom t2
+
+instance (PP p, PP info) => PP (UnresolvedTrace p info) where
+  pp x = case x of
+  		   UnresolvedTrace_None 			-> PP.empty
+  		   UnresolvedTrace_Red 		p i us 	-> p >|< ":" >#< i >-< indent 2 (vlist $ map pp us)
+  		   UnresolvedTrace_Fail 	p 		-> p >|< ": FAIL"
+  		   UnresolvedTrace_Overlap 	p uss 	-> p >|< ": OVERLAP" >-< indent 2 (vlist $ map (vlist . map pp) uss)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Mapping: constraint -> info (in varieties)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(9 hmtyinfer || hmtyast)
+type ConstraintMp' p info x = Map.Map (Constraint p info) [x]
+%%]
+
+%%[(9 hmtyinfer || hmtyast) export(cnstrMpFromList)
+cnstrMpFromList :: (Ord p, Ord i) => [(Constraint p i,x)] -> ConstraintMp' p i x
+cnstrMpFromList l = Map.fromListWith (++) [ (c,[x]) | (c,x) <- l ]
+
+cnstrMpMap :: (Ord p, Ord i) => (x -> y) -> ConstraintMp' p i x -> ConstraintMp' p i y
+cnstrMpMap f = Map.map (map f)
+%%]
+
+%%[(9 hmtyinfer || hmtyast) export(ConstraintToInfoTraceMp)
+type ConstraintToInfoTraceMp p info = ConstraintMp' p info (info,UnresolvedTrace p info)
+%%]
+
+%%[(9 hmtyinfer || hmtyast) export(cnstrTraceMpLiftTrace,cnstrTraceMpElimTrace,cnstrTraceMpFromList)
+cnstrTraceMpFromList :: (Ord p, Ord i) => [(Constraint p i,(i,UnresolvedTrace p i))] -> ConstraintToInfoTraceMp p i
+cnstrTraceMpFromList = cnstrMpFromList
+
+cnstrTraceMpElimTrace :: (Ord p, Ord i) => ConstraintToInfoTraceMp p i -> ConstraintToInfoMap p i
+cnstrTraceMpElimTrace = cnstrMpMap fst
+
+cnstrTraceMpLiftTrace :: (Ord p, Ord i) => ConstraintToInfoMap p i -> ConstraintToInfoTraceMp p i
+cnstrTraceMpLiftTrace = cnstrMpMap (\x -> (x,UnresolvedTrace_None))
+%%]
+
+%%[(9 hmtyinfer || hmtyast) export(ConstraintToInfoMap,emptyCnstrMp)
+type ConstraintToInfoMap     p info = ConstraintMp' p info info
+
+emptyCnstrMp :: ConstraintMp' p info x
 emptyCnstrMp = Map.empty
 %%]
 
-%%[(9 hmtyinfer || hmtyast) export(cnstrMpFromList,cnstrMpUnion,cnstrMpUnions)
+%%[(9999 hmtyinfer || hmtyast) export(cnstrMpFromList)
 cnstrMpFromList :: (Ord p, Ord i) => [(Constraint p i,i)] -> ConstraintToInfoMap p i
 cnstrMpFromList l = Map.fromListWith (++) [ (c,[i]) | (c,i) <- l ]
+%%]
 
-cnstrMpUnion :: (Ord p, Ord i) => ConstraintToInfoMap p i -> ConstraintToInfoMap p i -> ConstraintToInfoMap p i
+%%[(9 hmtyinfer || hmtyast) export(cnstrMpUnion,cnstrMpUnions)
+cnstrMpUnion :: (Ord p, Ord i) => ConstraintMp' p i x -> ConstraintMp' p i x -> ConstraintMp' p i x
 cnstrMpUnion = Map.unionWith (++)
 
-cnstrMpUnions :: (Ord p, Ord i) => [ConstraintToInfoMap p i] -> ConstraintToInfoMap p i
+cnstrMpUnions :: (Ord p, Ord i) => [ConstraintMp' p i x] -> ConstraintMp' p i x
 cnstrMpUnions = Map.unionsWith (++)
 %%]
 
@@ -94,8 +189,8 @@ type CHRRule p g s info = CHR (Constraint p info) g s
 
 %%[(9 hmtyinfer || hmtyast) export(cnstrRequiresSolve)
 cnstrRequiresSolve :: Constraint p info -> Bool
-cnstrRequiresSolve (Reduction _ _ _) = False
-cnstrRequiresSolve _                 = True
+cnstrRequiresSolve (Reduction {}) = False
+cnstrRequiresSolve _              = True
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -106,30 +201,23 @@ cnstrRequiresSolve _                 = True
 instance (PP p, PP info) => PP (Constraint p info) where
   pp (Prove     p     ) = "Prove"  >#< p
   pp (Assume    p     ) = "Assume" >#< p
-  pp (Reduction p i ps) = "Red"    >#< p >#< "<" >#< i >#< "<" >#< ppBracketsCommas ps
-%%]
-
-%%[(20 hmtyinfer || hmtyast)
-instance (PPForHI p, PPForHI info) => PPForHI (Constraint p info) where
-  ppForHI (Prove     p     ) = "Prove"     >#< ppCurlysCommasBlock [ppForHI p]
-  ppForHI (Assume    p     ) = "Assume"    >#< ppCurlysCommasBlock [ppForHI p]
-  ppForHI (Reduction p i ps) = "Reduction" >#< ppCurlysCommasBlock [ppForHI p, ppForHI i, ppCurlysCommasBlock $ map ppForHI ps]
+  pp (Reduction {cnstrPred=p, cnstrInfo=i, cnstrFromPreds=ps})
+                        = "Red"    >#< p >#< "<" >#< i >#< "<" >#< ppBracketsCommas ps
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% ForceEval
+%%% Instances: Binary, Serialize
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(99 hmtyinfer || hmtyast)
-instance (ForceEval p, ForceEval info) => ForceEval (Constraint p info) where
-  forceEval x@(Prove     p     ) | forceEval p `seq` True = x
-  forceEval x@(Assume    p     ) | forceEval p `seq` True = x
-  forceEval x@(Reduction p i ps) | forceEval p `seq` forceEval i `seq` forceEval ps `seq` True = x
-%%[[102
-  fevCount (Prove     p     ) = cm1 "Prove"     `cmUnion` fevCount p
-  fevCount (Assume    p     ) = cm1 "Assume"    `cmUnion` fevCount p
-  fevCount (Reduction p i ps) = cm1 "Reduction" `cmUnion` fevCount p `cmUnion` fevCount i `cmUnion` fevCount ps
-%%]]
+%%[(50 hmtyinfer || hmtyast)
+instance (Serialize p, Serialize i) => Serialize (Constraint p i) where
+  sput (Prove     a      ) = sputWord8 0 >> sput a
+  sput (Assume    a      ) = sputWord8 1 >> sput a
+  sput (Reduction a b c d) = sputWord8 2 >> sput a >> sput b >> sput c >> sput d
+  sget = do t <- sgetWord8
+            case t of
+              0 -> liftM  Prove     sget
+              1 -> liftM  Assume    sget
+              2 -> liftM4 Reduction sget sget sget sget
 %%]
-
 

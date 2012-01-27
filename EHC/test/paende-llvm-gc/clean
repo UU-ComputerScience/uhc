@@ -1,0 +1,10 @@
+#!/bin/bash
+
+rm -f *.grin
+rm -f *.sil
+rm -f *.ll
+rm -f *.core
+rm -f *.bc
+rm -f *.s
+rm -f *hpt.txt
+

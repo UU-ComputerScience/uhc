@@ -204,6 +204,7 @@ SEM Decl
                                                                   (scVwGam si)
                                                             mkNm n = n `nmStrApd` Nm "s"
                                                     vwSels = dgVertices @lhs.vwDpdGr
+						    mkg :: Ord k => (v -> k) -> [v] -> Gam k v
                                                     mkg mkn l = gamFromAssocs [ (mkn i,i) | i <- l ]
                                                     mkRsInfo nl scGam
                                                       = RsInfo (@nm `nmApd` Nm "base") @pos @nm vwSels ("Rules for " ++ show @nm) (mkg rlNm [rl1])

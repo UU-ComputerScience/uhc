@@ -29,7 +29,7 @@ import Helium.Utils.Utils (internalError)
 import Lvm.Common.TopSort (topSort)
 import Helium.ModuleSystem.ImportEnvironment hiding (setTypeSynonyms)
 import Helium.StaticAnalysis.Messages.KindErrors
-import Char (isLower)
+import Data.Char (isLower)
 import Helium.StaticAnalysis.Inferencers.BindingGroupAnalysis (Assumptions, PatternAssumptions, noAssumptions, combine, single) 
 }
 -------------------------------------------------------------------------------

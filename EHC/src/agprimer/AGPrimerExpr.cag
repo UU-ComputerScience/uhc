@@ -3,7 +3,7 @@
 %include afp.fmt
 %%]
 
-%%[1 hs import(IO,Char,UU.Parsing,UU.Pretty)
+%%[1 hs import(System.IO,Char,UU.Parsing,UU.Pretty)
 %%]
 
 %%[1.data

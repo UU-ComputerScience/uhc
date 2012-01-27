@@ -23,10 +23,10 @@ ATTR AllMeta [ | | self: SELF ]
 SEM CExpr
   | Lam         loc         .   cvi                 =   CVarIntro
                                                           { cviLev  = @lev
-                                                          , cviMeta = @argMeta.self
+                                                          , cviMeta = CMetaVal_Val -- @argMeta.self
                                                           }
 
-SEM CBind
+SEM CBindAspect
   | Bind        loc         .   cmetaVal            =   cmetasVal @bindMeta.self
                             .   cvi                 =   emptyCVarIntro { cviLev  = @lhs.lev   , cviMeta = @cmetaVal }
                             .   cviExpr             =   emptyCVarIntro { cviLev  = @expr.levOf, cviMeta = @cmetaVal }
@@ -50,12 +50,12 @@ SEM CExpr
   | Let         loc         .   maxBindLev  =   fvsLev @lhs.cvarIntroMp cLevModule @binds.fvS
                 (loc.strLev,binds.cvarIntroMp)
                                             =   case @categ of
-                                                    CBindings_Strict -> (const @lhs.lev,@lhs.cvarIntroMp)
-                                                    CBindings_Rec   -> ( const @maxBindLev
-                                                                       , Map.map (\cvi -> cvi {cviLev = @maxBindLev}) @binds.cvarIntroExprMp
-                                                                           `Map.union` @lhs.cvarIntroMp
-                                                                       )
-                                                    _               -> (id,@lhs.cvarIntroMp)
+                                                    CBindCateg_Strict -> (const @lhs.lev,@lhs.cvarIntroMp)
+                                                    CBindCateg_Rec    -> ( const @maxBindLev
+                                                                         , Map.map (\cvi -> cvi {cviLev = @maxBindLev}) @binds.cvarIntroExprMp
+                                                                             `Map.union` @lhs.cvarIntroMp
+                                                                         )
+                                                    _                 -> (id,@lhs.cvarIntroMp)
                 body        .   cvarIntroMp =   Map.map (\cvi -> cvi {cviLev = @strLev $ cviLev cvi}) @binds.cvarIntroExprMp `Map.union` @lhs.cvarIntroMp
 
 SEM CAlt
@@ -83,9 +83,9 @@ SEM CAlt
 %%[(8 codegen)
 ATTR AllBind [ | | bindsIntroCVarIntroMp USE {`Map.union`} {Map.empty}: CVarIntroMp ]
 
-SEM CBind
+SEM CBindAspect
   | Bind        lhs         .   bindsIntroCVarIntroMp
-                                                    =   Map.singleton @nm @cvi
+                                                    =   Map.singleton @lhs.nm @cvi
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -104,7 +104,7 @@ SEM CExpr
                 loc         .   levOf       =   @expr.levOf `max` @offset.levOf `max` @fldExpr.levOf
   | Lam         loc         .   levOf       =   fvsLev @lhs.cvarIntroMp cLevModule @body.fvS
   | Let         loc         .   levOf       =   fvsLev @lhs.cvarIntroMp cLevModule @fvS
-%%[[20
+%%[[50
   | String      loc         .   levOf       =   cLevIntern
 %%]]
 
@@ -113,8 +113,8 @@ SEM CAlt
 
 ATTR AllBind [ | | cvarIntroExprMp USE {`Map.union`} {Map.empty}: CVarIntroMp ]
 
-SEM CBind
+SEM CBindAspect
   | Bind        lhs         .   cvarIntroExprMp
-                                            =   Map.singleton @nm @cviExpr
+                                            =   Map.singleton @lhs.nm @cviExpr
 %%]
 

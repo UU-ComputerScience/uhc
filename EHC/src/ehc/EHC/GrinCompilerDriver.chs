@@ -13,7 +13,7 @@
 %%]
 %%[(8 codegen grin) import(EH.Util.Pretty, EH.Util.CompileRun, EH.Util.FPath)
 %%]
-%%[(8 codegen grin) import({%{EH}Base.Common}, {%{EH}Base.Opts}, {%{EH}Scanner.Scanner}, {%{EH}Scanner.Common(grinScanOpts)})
+%%[(8 codegen grin) import({%{EH}Base.Common}, {%{EH}Base.Target}, {%{EH}Base.Builtin}, {%{EH}Opts}, {%{EH}Scanner.Scanner}, {%{EH}Scanner.Common(grinScanOpts)})
 %%]
 %%[(8 codegen grin) import({%{EH}GrinCode}, {%{EH}GrinCode.Parser}, {%{EH}GrinCode.Pretty})
 %%]
@@ -77,7 +77,7 @@
 %%]
 %%[(8 codegen grin) import({%{EH}GrinCode.ToSilly(grin2silly)})
 %%]
-%%[(8 codegen grin) import({%{EH}Silly(SilModule)})
+%%[(8 codegen grin) import({%{EH}Silly(SilModule(..))})
 %%]
 %%[(8 codegen grin) import({%{EH}Silly.InlineExpr(inlineExpr)})
 %%]
@@ -91,13 +91,11 @@
 %%]
 %%[(8 codegen grin) import({%{EH}Silly.PrettyC(prettyC)})
 %%]
-%%[(8 codegen grin) import({%{EH}Silly.PrettyS(prettyS)})
+%%[(8 codegen grin llvm) import({%{EH}Silly.ToLLVM(silly2llvm)})
 %%]
-%%[(8 codegen grin) import({%{EH}Silly.ToLLVM(silly2llvm)})
+%%[(8 codegen llvm) import({%{EH}LLVM(LLVMModule(..))})
 %%]
-%%[(8 codegen grin) import({%{EH}LLVM(LLVMModule)})
-%%]
-%%[(8 codegen grin) import({%{EH}LLVM.Pretty(prettyLLVMModule)})
+%%[(8 codegen llvm) import({%{EH}LLVM.Pretty(prettyLLVMModule)})
 %%]
 %%[(8 codegen clr) hs import(Language.Cil (Assembly (..), cil))
 %%]
@@ -158,11 +156,12 @@ doCompileGrin input opts
 %%]]
          ; transformCode         buildAppBindings   "BuildAppBindings" ; caWriteGrin "-117-appsbound"
          ; transformCode         globalConstants    "GlobalConstants"  ; caWriteGrin "-118-globconst"
-         ; transformCodeInline                      "Inline" 
-         ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-119-inlined"
+         
+         -- ; transformCodeInline                      "Inline" 
+         -- ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-119-inlined"
 
-         ; transformCode         singleCase         "singleCase"       ; 
-         ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-121-singleCase"
+         -- ; transformCode         singleCase         "singleCase"       ; 
+         -- ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-121-singleCase"
 
          ; transformCode         setGrinInvariant   "SetGrinInvariant" ; caWriteGrin "-122-invariant"
          ; checkCode             checkGrinInvariant "CheckGrinInvariant"
@@ -175,6 +174,12 @@ doCompileGrin input opts
          ; specialize "-123-6"
          -- ; specialize "-123-7"
          -- ; specialize "-123-8"
+
+         ; transformCodeInline                      "Inline" 
+         ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-124-inlined"
+
+         ; transformCode         evalStored         "EvalStored"       ; caWriteGrin ("125-evalstored")
+
 
          ; transformCode         (dropUnreachableBindings False) 
                                              "DropUnreachableBindings" ; caWriteGrin "-126-reachable"
@@ -206,6 +211,7 @@ doCompileGrin input opts
          ; transformCodeIterated dropUnusedExpr     "DropUnusedExpr"   ; caWriteGrin "-144-unusedExprDropped"
 		 ; transformCode         mergeCase          "MergeCase"        ; caWriteGrin "-145-caseMerged"         
          ; transformCodeChgHpt   lowerGrin          "LowerGrin"        ; caWriteGrin "-151-lowered"
+                                                                       ; caWriteHptMap "-152-hpt"
          ; transformCodeIterated copyPropagation    "CopyPropagation"  ; caWriteGrin "-161-after-cp"
          ; transformCodeUseHpt   impossibleCase     "ImpossibleCase"   ; caWriteGrin "-162-possibleCase"
          ; transformCode         singleCase         "singleCase"       ; 
@@ -214,21 +220,27 @@ doCompileGrin input opts
 
          ; transformCodeIterated dropUnusedExpr     "DropUnusedExpr"   ; caWriteGrin "-169-unusedExprDropped"
          ; transformCodeChgHpt   splitFetch         "SplitFetch"       ; caWriteGrin "-171-splitFetch"
+                                                                       ; caWriteHptMap "-172-hpt"
          ; transformCodeIterated dropUnusedExpr     "DropUnusedExpr"   ; caWriteGrin "-176-unusedExprDropped"
          ; transformCodeIterated copyPropagation    "copyPropagation"  ; caWriteGrin "-179-final"
                                                                        ; caWriteHptMap "-180-hpt"
 
-         ; when (ehcOptFullProgAnalysis options)
+         ; when (targetDoesHPTAnalysis (ehcOptTarget options))
            ( do { caGrin2Silly                                         ; caWriteSilly "-201" "sil" pretty ehcOptDumpGrinStages
                 ; transformSilly inlineExpr         "InlineExpr"       ; caWriteSilly "-202" "sil" pretty ehcOptDumpGrinStages
                 ; transformSilly elimUnused         "ElimUnused"       ; caWriteSilly "-203" "sil" pretty ehcOptDumpGrinStages
                 ; transformSilly embedVars          "EmbedVars"        ; caWriteSilly "-204" "sil" pretty ehcOptDumpGrinStages
-                ; transformSilly groupAllocs        "GroupAllocs"      ; caWriteSilly "-205" "sil" pretty ehcOptDumpGrinStages
+                
+                -- the GroupAllocs transformation is not compatible with the new EmbedVars tactique of sharing locations.
+                -- GroupAllocs is a bad idea anyway.
+--              ; transformSilly groupAllocs        "GroupAllocs"      ; caWriteSilly "-205" "sil" pretty ehcOptDumpGrinStages
+%%[[(8 codegen llvm)
                 ; when (ehcOptEmitLLVM options) 
                   (do { caSilly2LLVM
                       ; caWriteLLVM
                       }
                    )
+%%]]
 %%[[(8 codegen clr)
                 ; when (ehcOptEmitCLR options) 
                   (do { caGrin2Cil
@@ -237,7 +249,6 @@ doCompileGrin input opts
                    )
 %%]]
                 ; caWriteSilly "" "c" prettyC ehcOptEmitC
---              ; caWriteSilly "" "s" prettyS ehcOptEmitC
                 }
            )
          }
@@ -246,15 +257,17 @@ initialState opts (Left fn)          = (initState opts) {gcsPath=mkTopLevelFPath
 initialState opts (Right (fp,grmod)) = (initState opts) {gcsPath=fp, gcsGrin=grmod}
 
 initState opts
-  = GRINCompileState { gcsGrin       = undefined
-                     , gcsSilly      = undefined
-                     , gcsLLVM       = undefined
+  = GRINCompileState { gcsGrin       = GrModule_Mod hsnUnknown [] [] Map.empty
+                     , gcsSilly      = SilModule_SilModule [] [] []
+%%]
+%%[(8 codegen llvm)
+                     , gcsLLVM       = LLVMModule_LLVMModule [] [] [] [] [] []
 %%]
 %%[(8 codegen clr)
-                     , gcsCil        = undefined
+                     , gcsCil        = panic "GrinCompilerDriver.initState.gcsCil"
 %%]
 %%[(8 codegen grin) -1.doCompileGrin
-                     , gcsHptMap     = undefined
+                     , gcsHptMap     = listArray (1,0) []
                      , gcsPath       = emptyFPath
                      , gcsOpts       = opts
                      }
@@ -308,6 +321,9 @@ caGrin2Silly = do
     ; modify (gcsUpdateSilly silly)
     }
 
+%%]
+
+%%[(8 codegen llvm)
 caSilly2LLVM :: CompileAction ()
 caSilly2LLVM = do
     { code <- gets gcsSilly
@@ -345,11 +361,13 @@ caWriteFile extra suffix ppFun struct =
           }
      }
 
+%%[[(8 codegen llvm)
 caWriteLLVM  :: CompileAction()
 caWriteLLVM  =
   do { llvm <- gets gcsLLVM
      ; caWriteFile "" "ll" (const prettyLLVMModule) llvm
      }
+%%]]
 
 %%[[(8 codegen clr)
 caWriteCil :: String -> CompileAction()
@@ -402,20 +420,24 @@ caWriteHptMap fn
 
 %%[(8 codegen grin).State
 data GRINCompileState = GRINCompileState
-    { gcsGrin      :: GrModule
-    , gcsSilly     :: SilModule
-    , gcsLLVM      :: LLVMModule
+    { gcsGrin      :: !GrModule
+    , gcsSilly     :: !SilModule
+%%[[(8 codegen llvm)
+    , gcsLLVM      :: !LLVMModule
+%%]]
 %%[[(8 codegen clr)
     , gcsCil       :: Assembly
 %%]]
-    , gcsHptMap    :: HptMap
-    , gcsPath      :: FPath
-    , gcsOpts      :: EHCOpts
+    , gcsHptMap    :: !HptMap
+    , gcsPath      :: !FPath
+    , gcsOpts      :: !EHCOpts
     }
 
 gcsUpdateGrin   x s = s { gcsGrin   = x }
 gcsUpdateSilly  x s = s { gcsSilly  = x }
+%%[[(8 codegen llvm)
 gcsUpdateLLVM   x s = s { gcsLLVM   = x }
+%%]]
 %%[[(8 codegen clr)
 gcsUpdateCil    x s = s { gcsCil    = x }
 %%]]
@@ -460,7 +482,7 @@ transformCodeInline message
        ; grin <- gets gcsGrin
 %%[[8
        ; let code = grInline False grin
-%%][20
+%%][50
        ; let (code,_) = grInline False Set.empty Map.empty grin 
 %%]]
        ; modify (gcsUpdateGrin code)
@@ -562,6 +584,8 @@ task minVerbosity taskDesc ca f = do
     { startMsg minVerbosity taskDesc
     ; start   <- liftIO getCPUTime
     ; result  <- ca
+    -- ; g <- gets gcsGrin
+    -- ; liftIO $ putStrLn (result `seq` g `seq` "debug")
     ; end     <- liftIO getCPUTime
     ; finishMsg minVerbosity (f result) (end-start)
     }

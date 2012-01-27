@@ -230,7 +230,7 @@ SEM GrExpr
   | Catch       lhs  .  grTrf    =  GrExpr_Catch      @body.grTrf @newName @handler.grTrf
 %%[[8
   | FFI         lhs  .  grTrf    =  GrExpr_FFI  @nm @argL.grTrf
-%%][94
+%%][90
   | FFI         lhs  .  grTrf    =  GrExpr_FFI  @callconv @impEnt @argL.grTrf
 %%][99
   | FFI         lhs  .  grTrf    =  GrExpr_FFI  @callconv @impEnt @ffiAnnot @argL.grTrf

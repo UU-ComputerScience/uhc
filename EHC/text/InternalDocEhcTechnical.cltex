@@ -36,8 +36,8 @@ The following transformations are performed on each separate module:
 
 \item ElimTrivApp (again):
 
-\item FullLazy:
-%%@EHCoreTrfFullLazy.doesWhat
+\item ANormal:
+%%@EHCoreTrfANormal.doesWhat
 
 \item LamGlobalAsArg:
 
@@ -85,8 +85,8 @@ The following transformations are performed on each separate module:
 \item (only when optimizing flag is on) AliasElim:
 %%@EHGrinCodeTrfAliasElim.doesWhat
 
-\item (only if specifically requested) PrettyVarNames:
-%%@EHGrinCodeTrfPrettyVarNames.doesWhat
+%\item (only if specifically requested) PrettyVarNames:
+% %%@EHGrinCodeTrfPrettyVarNames.doesWhat
 
 \item (only when optimizing flag is on) EvalElim:
 %%@EHGrinCodeTrfEvalElim.doesWhat

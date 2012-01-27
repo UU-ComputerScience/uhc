@@ -6,7 +6,7 @@ module EH.Util.PrettySimple
   ( PP_Doc, PP(..)
   , disp
   , hPut
-  
+
   , (>|<), (>-<)
   , (>#<)
   , hlist, vlist, hv
@@ -22,7 +22,7 @@ module EH.Util.PrettySimple
   )
   where
 
-import IO
+import System.IO
 
 -------------------------------------------------------------------------
 -- Doc structure
@@ -42,7 +42,7 @@ type PP_Doc = Doc
 -------------------------------------------------------------------------
 
 infixr 3 >|<, >#<
-infixr 2 >-< 
+infixr 2 >-<
 
 (>|<) :: (PP a, PP b) => a -> b -> PP_Doc
 l >|< r = pp l `Hor` pp r

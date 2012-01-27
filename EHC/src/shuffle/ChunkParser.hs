@@ -8,7 +8,7 @@ module ChunkParser
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 import Data.List
-import IO
+import System.IO
 
 import UU.Parsing
 -- import UU.Parsing.CharParser
@@ -31,7 +31,7 @@ chKindMp = Map.fromList
              [ ("hs",ChHS), ("ag",ChAG), ("plain",ChPlain), ("haddock",ChHaddock) ]
            `Map.union` Map.fromList [ (v,k) | (k,v) <- Map.toList t2tChKinds ]
 chDestMp = Map.fromList [ ("here",ChHere), ("hide",ChHide) ]
-chWrapMp = Map.fromList [ ("code",ChWrapCode), ("safecode",ChWrapBoxCode Nothing), ("tt",ChWrapTT), ("tttiny",ChWrapTTtiny) , ("verbatim",ChWrapVerbatim), ("verbatimsmall",ChWrapVerbatimSmall) ]
+chWrapMp = Map.fromList [ ("hsbox",ChWrapHsBox), ("code",ChWrapCode), ("safecode",ChWrapBoxCode Nothing), ("tt",ChWrapTT), ("tttiny",ChWrapTTtiny) , ("verbatim",ChWrapVerbatim), ("verbatimsmall",ChWrapVerbatimSmall) ]
 
 kwTxtAsVarTooA
   = [ "module", "import", "export", "wrap", "ghc" ]

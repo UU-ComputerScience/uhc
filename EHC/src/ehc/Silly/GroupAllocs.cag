@@ -47,7 +47,7 @@ WRAPPER SilModule
 %%]
 %%[(8 codegen grin) hs import({%{EH}Base.Common})
 %%]
-%%[(8 codegen grin) hs import({%{EH}Base.Opts})
+%%[(8 codegen grin) hs import({%{EH}Opts})
 %%]
 %%[(8 codegen grin) hs import(Data.Maybe)
 %%]
@@ -70,7 +70,7 @@ ATTR AllNT [ | | trf: SELF ]
 -- use the offset expression to get to the correct memory location
 SEM Value
   | Alloc       lhs .trf            = if @lhs.allocWordCount == 0
-                                      then Value_Alloc @lhs.allocSize @gcManaged
+                                      then Value_Alloc @lhs.allocSize @gcManaged @stackInfo
                                       else Value_Offset 
                                              (fromJust @lhs.ptrToAlloc) 
                                              @lhs.allocWordCount
@@ -129,3 +129,4 @@ SEM Statement
                                       then Just @dest.trf
                                       else @lhs.ptrToAlloc
 %%]
+

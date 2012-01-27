@@ -10,7 +10,7 @@
 %%[1 hs export (bldDtInfo, bldScInfo, bldRsInfo)
 %%]
 
-%%[1 hs import (Maybe, qualified Data.Set as Set, qualified Data.Map as Map, Data.List, EH.Util.Nm, EH.Util.Utils)
+%%[1 hs import (Data.Maybe, qualified Data.Set as Set, qualified Data.Map as Map, Data.List, EH.Util.Nm, EH.Util.Utils)
 %%]
 
 %%[1 hs import (KeywParser( propsSynInhMp ), Opts, Err, Common, Expr.Utils, ARule.Utils( exprSubst ), ViewSel.Utils)
@@ -200,9 +200,9 @@ gamAtDirMp vi g = gamToMap $ gamMapWithKey (\n _ -> maybe [] atDirs . gamLookup 
 -- split attr dir map into sets of syn/inh attrs
 atDirMpSynInh :: Map.Map Nm [AtDir] -> (Set.Set Nm,Set.Set Nm)
 atDirMpSynInh m
-  = Map.foldWithKey (\n d (s,i) -> (if AtSyn `elem` d then Set.insert n s else s
-                                   ,if AtInh `elem` d then Set.insert n i else i))
-                    (Set.empty,Set.empty) m
+  = Map.foldrWithKey (\n d (s,i) -> (if AtSyn `elem` d then Set.insert n s else s
+                                    ,if AtInh `elem` d then Set.insert n i else i))
+                     (Set.empty,Set.empty) m
 
 -- union of all judge attr defs in a set (of names with a specific direction)
 jaGamUseInS :: JAGam e -> Set.Set Nm -> Set.Set Nm
@@ -423,7 +423,7 @@ rlGamUpdVws cxRs opts vwDpdGr extNmS dtInvGam scGam rsGam rlGam rsInfo rlInfo
                          (pregBldDflt,postgBldDflt) = bldDfltForJds nVw scGam (pregBld,postgBld)
                          pregBldFull  = pregBld  `reGamUnionShadow` pregBldDflt
                          postgBldFull = postgBld `reGamUnionShadow` postgBldDflt
-                         
+
                          -- rule info
                          (scInfo,vwScInfo) = maybe (emptyScInfo,emptyVwScInfo) id $ scVwGamLookup (rsScNm rsInfo) nVw scGam
 
@@ -467,7 +467,7 @@ rlGamUpdVws cxRs opts vwDpdGr extNmS dtInvGam scGam rsGam rlGam rsInfo rlInfo
                                  -- [mkTr (ppBracketsCommas [rsScNm rsInfo,rlNm rlInfo,nVw]) (ppBracketsCommas $ Set.toList $ vwSel)]
                          errsVw = errFirst [errPost,errDups,errUndefs,errChkBldL,errBldL] ++ errTr
                          errsOther = errVwNotSel
-                         
+
                          -- next build state
                          br' = br {brPreGam = preg', brPostGam = postg', brJdBldL = rlJdBldL, brRlChGam = prevVwRlChs'}
 

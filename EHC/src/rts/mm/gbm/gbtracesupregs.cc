@@ -29,21 +29,21 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-void mm_traceSupply_GBRegs_Reset( MM_TraceSupply* traceSupply ) {
+void mm_traceSupply_GBRegs_Reset( MM_TraceSupply* traceSupply, Word gcInfo ) {
 	MM_TraceSupply_GBRegs_Data* trsup = (MM_TraceSupply_GBRegs_Data*)traceSupply->data ;
 }
 
-void mm_traceSupply_GBRegs_Init( MM_TraceSupply* traceSupply, MM_Malloc* memmgt, MM_Trace* trace ) {
+void mm_traceSupply_GBRegs_Init( MM_TraceSupply* traceSupply, MM_Malloc* memmgt, MM_Mutator* mutator ) {
 	MM_TraceSupply_GBRegs_Data* trsup = memmgt->malloc( sizeof(MM_TraceSupply_GBRegs_Data) ) ;
-	trsup->trace = trace ;
+	trsup->trace = mutator->trace ;
 	traceSupply->data = (MM_TraceSupply_Data_Priv*)trsup ;
-	mm_traceSupply_GBRegs_Reset( traceSupply ) ;
+	mm_traceSupply_GBRegs_Reset( traceSupply, 0 ) ;
 }
 
 void mm_traceSupply_GBRegs_Run( MM_TraceSupply* traceSupply ) {
 	MM_TraceSupply_GBRegs_Data* trsup = (MM_TraceSupply_GBRegs_Data*)traceSupply->data ;
 	
-	rr = mm_Trace_TraceObject( trsup->trace, rr, MM_Trace_Flg_All ) ;
+	rr = mm_Trace_TraceObject( trsup->trace, rr ) ;
 }
 
 

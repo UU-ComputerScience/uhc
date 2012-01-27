@@ -24,7 +24,7 @@ module Lvm.Lvm.Instr( Instr(..)
             , instrHasStrictResult
             ) where
 
-import Char     ( toUpper )
+import Data.Char     ( toUpper )
 import Lvm.Common.Standard ( strict )
 import Lvm.Common.Id       ( Id, dummyId )
 import Lvm.Common.Byte     ( Bytes, nil )

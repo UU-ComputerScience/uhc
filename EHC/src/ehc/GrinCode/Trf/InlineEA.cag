@@ -166,7 +166,7 @@ SEM GrModule
                                           allTags2      = -- trace ("allTags: " ++ show allTags ++ "\nextraTags: " ++ show extraTags ) 
                                                           (Map.union allTags extraTags)
                                           nodeMap       = (Map.map (\n -> replicate n Set.empty) allTags2)
-                                          (u2,ni,evalBody) = evalCode2 @bindL.unique @lhs.hptMap parameterName (const True) True (AbsNodes (Nodes nodeMap))
+                                          (u2,ni,evalBody) = evalCode2 @bindL.unique @lhs.hptMap parameterName notHole True (AbsNodes (Nodes nodeMap))
                                           evalBind      = GrBind_Bind functionName
                                                                       GrBindAnnNormal 
                                                                       [parameterName]
@@ -236,7 +236,7 @@ buildEvalAlt locatName locatNeedsUpdate nodeName unique hptMap (tag,args)
  =  let (unique2, newItems2, patNames) = newNames2 hptMap unique args
         codeHead annot = GrAlt_Alt annot (GrPatAlt_Node tag patNames)
     in  case unevaluatedName tag of
-          Nothing -> (unique2, newItems2, codeHead GrAltAnnIdent (GrExpr_Unit (GrVal_Var nodeName)))
+          Nothing -> (unique2, newItems2, codeHead GrAltAnnIdent (GrExpr_Unit (GrVal_Var nodeName) GrType_None))
           Just functName  ->
                    let -- get the abstract value for the function-result and exception-result of the called function
                        resultAbsVal= getEnvVar hptMap (getNr functName)
@@ -251,7 +251,7 @@ buildEvalAlt locatName locatNeedsUpdate nodeName unique hptMap (tag,args)
                        -- generate code for the call
                        callExpr0   = GrExpr_Call functName $ map GrVal_Var patNames
                        callExpr1   = GrExpr_Seq callExpr0 resultPat  $
-                                     GrExpr_Unit resultVal
+                                     GrExpr_Unit resultVal GrType_None
                        callExpr2   = GrExpr_Seq callExpr0 resultPat  $
                                      GrExpr_UpdateUnit locatName resultVal
                        callExpr    = if   locatNeedsUpdate
@@ -275,7 +275,7 @@ buildEvalAlt locatName locatNeedsUpdate nodeName unique hptMap (tag,args)
                                               GrExpr_Seq (GrExpr_UpdateUnit locatName eNode) noPat  $
                                               GrExpr_Throw throwVar
                                  handleExpr = GrExpr_Seq eCode catchPat $
-                                              GrExpr_Unit catchVal
+                                              GrExpr_Unit catchVal GrType_None
                              in  (unique4, newItems2++newItems3++newItems4, codeHead (GrAltAnnCalling resultMaxArity locatName) handleExpr )
 
 
@@ -327,10 +327,15 @@ evalCode2 unique hptMap locatName isPossibleNode locatNeedsUpdate nodeAbsVal
 
 
 
+notHole :: (GrTag,[Set.Set Variable]) -> Bool
+notHole (GrTag_Hole,_) = False
+notHole _              = True
+
 isBasicTag (GrTag_Con _ _ nm) = True  -- nm==hsnInt || nm==hsnChar || nm==hsnPackedString
 isBasicTag _                  = False
 
 hasExpectedResultTag :: GrPatLam -> HptMap -> (GrTag,[Set.Set Variable]) -> Bool
+hasExpectedResultTag _ _ (GrTag_Hole,_) = False
 hasExpectedResultTag (GrPatLam_BasicNode _ _) hptMap (tag,_) 
   = case unevaluatedName tag of
       Nothing         -> isBasicTag tag
@@ -372,7 +377,7 @@ buildApplyAlt appArgs unique hptMap (tag@(GrTag_PApp needsParams functName), arg
     in  case compare getsParams needsParams of
           LT -> -- undersaturated
                 let newtag = GrTag_PApp (needsParams-getsParams) functName 
-                in  (unique2, newItems2, codeHead $ GrExpr_Unit (GrVal_Node newtag (patVars ++ appArgs)))
+                in  (unique2, newItems2, codeHead $ GrExpr_Unit (GrVal_Node newtag (patVars ++ appArgs)) GrType_None)
           EQ -> -- exactly saturated
                     (unique2, newItems2, codeHead $ GrExpr_Call functName          (patVars ++ appArgs))
           GT -> -- oversaturated

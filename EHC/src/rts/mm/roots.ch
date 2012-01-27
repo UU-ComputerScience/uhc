@@ -18,7 +18,6 @@ Global roots
 typedef struct MM_Roots_Entry {
 	WPtr	 					ptrToObj ;		// ptr to live object
 	HalfWord	 				nrObjs ;		// nr of objects rooted at ptrToObj
-	MM_Trace_Flg				flags ;
 } MM_Roots_Entry ;
 
 %%]
@@ -46,10 +45,10 @@ extern MM_FlexArray			mm_Roots ;
 %%]
 
 %%[8
-extern void mm_Roots_RegisterNWithFlag( WPtr toObj, HalfWord nr, MM_Trace_Flg flg ) ;
+extern void mm_Roots_RegisterNWithFlag( WPtr toObj, HalfWord nr ) ;
 
 static inline void mm_Roots_RegisterN( WPtr toObj, HalfWord nr ) {
-	mm_Roots_RegisterNWithFlag( toObj, 1, MM_Trace_Flg_Copy | MM_Trace_Flg_Trace ) ;
+	mm_Roots_RegisterNWithFlag( toObj, 1 ) ;
 }
 
 static inline void mm_Roots_Register1( WPtr toObj ) {
@@ -58,7 +57,7 @@ static inline void mm_Roots_Register1( WPtr toObj ) {
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Interface for local roots
+%%% Interface for local roots, which follow call nesting of C functions, to be used in C functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
@@ -66,7 +65,7 @@ static inline void mm_Roots_Register1( WPtr toObj ) {
 #define MM_LclRoot_LeaveGrp								mm_LclRoots = _mm_lclRoot_Grp.next
 
 #define MM_LclRoot_EnterOne(n,nm)						MM_LclRoot_One _##n##_MM_LclRoot_One = { mm_LclRoots->ones, (WPtr)(&(nm)) } ; mm_LclRoots->ones = &_##n##_MM_LclRoot_One
-#define MM_LclRoot_EnterOne_Zeroed(n,nm)				MM_LclRoot_EnterOne(n,nm) ; (nm) = NULL
+#define MM_LclRoot_EnterOne_Zeroed(n,nm)				MM_LclRoot_EnterOne(n,nm) ; { WPtr pnm = (WPtr)(&(nm)) ; *pnm = 0 ; }
 #define MM_LclRoot_EnterOne1(nm1)						MM_LclRoot_EnterOne(1,nm1)
 #define MM_LclRoot_EnterOne2(nm1,nm2)					MM_LclRoot_EnterOne1(nm1) ; MM_LclRoot_EnterOne(2,nm2)
 #define MM_LclRoot_EnterOne3(nm1,nm2,nm3)				MM_LclRoot_EnterOne2(nm1,nm2) ; MM_LclRoot_EnterOne(3,nm3)

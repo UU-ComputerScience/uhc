@@ -67,20 +67,29 @@ test-lists: $(TEST_MKF)
 test-expect test-regress: test-lists
 	@how=`echo $@ | sed -e 's/.*expect.*/exp/' -e 's/.*regress.*/reg/'` ; \
 	nerrors=0; \
+	nerrorsPlatformDpd=0; \
 	nwarnings=0; \
 	ehcOpts="--target=$(EHC_VARIANT_TARGET)" ; \
     case $(EHC_VARIANT_TARGET) in \
       C) \
         texeInvoke="" ; \
         texeSuffix="$(EXEC_SUFFIX)" ; \
+        ehcTargetOpts="" ; \
         ;; \
       bc) \
         texeInvoke="" ; \
         texeSuffix="$(EXEC_SUFFIX)" ; \
+        ehcTargetOpts="" ; \
         ;; \
       jazy) \
         texeInvoke="java -jar" ; \
         texeSuffix=".jar" ; \
+        ehcTargetOpts="" ; \
+        ;; \
+      js) \
+        texeInvoke="js" ; \
+        texeSuffix=".js" ; \
+        ehcTargetOpts="-O,2" ; \
         ;; \
     esac ; \
 	cd $(TEST_REGRESS_SRC_PREFIX) ; \
@@ -97,6 +106,7 @@ test-expect test-regress: test-lists
 	    gri=$(call FUN_INSTALLABS_VARIANT_BIN_PREFIX,$${v})$(GRINI_EXEC_NAME)$(EXEC_SUFFIX) ; \
 	    optPreludePath="" ; \
 	  fi ; \
+      echo "== testing with cmd: $${ehc} $${ehcOpts} $${ehcTargetOpts} ==" ; \
 	  echo "== version $${v} ==" ; \
 	  if test -x $${ehc} ; \
 	  then \
@@ -118,6 +128,7 @@ test-expect test-regress: test-lists
 	      if test -r $$t -a -x $${ehc} ; \
 	      then \
 	        te=$${t}.exp$${v} ; tr=$${t}.reg$${v} ; th=$${t}.$${how}$${v} ; \
+	        rm -f $${tb}.hi ; \
 	        if test $${v} -lt $(EHC_PREL_VARIANT) ; \
 	        then \
 	          tprelbase=`sed -n -e 's/^-- %% *inline test *([a-z0-9]*) --$$/prefix1/p' < $$t` ; \
@@ -135,7 +146,7 @@ test-expect test-regress: test-lists
 	          tc=$${tb2}.core ; tg=$${tb2}.grin2 ; texe=$${tb2}$(EXEC_SUFFIX) ; \
 	          cleanup="$${cleanup} $${texe}" ; \
 	          rm -f $${tc} $${tg} ; \
-	          $${ehc} $${ehcOpts} $${TEST_OPTIONS} -v --code=core $${t2} > $${th} 2>&1 ; \
+	          $${ehc} $${ehcOpts} $${ehcTargetOpts} $${TEST_OPTIONS} -v --code=core $${t2} > $${th} 2>&1 ; \
 	          if test -r $${tc} ; \
 	          then \
 	            echo "== core ==" >> $${th} ; \
@@ -143,13 +154,13 @@ test-expect test-regress: test-lists
 	            rm -f $${tg} ; \
 	            if test -x $${gri} ; \
 	            then \
-	              $${ehc} $${ehcOpts} $${TEST_OPTIONS} --code=grin $${t2} > /dev/null ; \
+	              $${ehc} $${ehcOpts} $${ehcTargetOpts} $${TEST_OPTIONS} --code=grin $${t2} > /dev/null ; \
 	              echo "== grin interpreter execution ==" >> $${th} ; \
 	              $${gri} $${tg} >> $${th} 2>&1 ; \
 	            fi ; \
 	            rm -f $${texe} ; \
 	            echo "== grin bytecode (GBM) compilation ==" >> $${th} ; \
-	            $${ehc} $${ehcOpts} $${TEST_OPTIONS} --pretty=- --code=bexe $${t2} >> $${th} 2>&1 ; \
+	            $${ehc} $${ehcOpts} $${ehcTargetOpts} $${TEST_OPTIONS} --pretty=- --code=bexe $${t2} >> $${th} 2>&1 ; \
 	            if test $$? = 0 -a -x $${texe} ; \
 	            then \
 	              echo "== grin bytecode (GBM) execution ==" >> $${th} ; \
@@ -157,7 +168,7 @@ test-expect test-regress: test-lists
 	            fi ; \
 	            rm -f $${texe} ; \
 	            echo "== grin full program analysis compilation ==" >> $${th} ; \
-	            $${ehc} $${ehcOpts} $${TEST_OPTIONS} --pretty=- --code=exe $${t2} >> $${th} 2>&1 ; \
+	            $${ehc} $${ehcOpts} $${ehcTargetOpts} $${TEST_OPTIONS} --pretty=- --code=exe $${t2} >> $${th} 2>&1 ; \
 	            if test $$? = 0 -a -x $${texe} ; \
 	            then \
 	              echo "== grin full program analysis execution ==" >> $${th} ; \
@@ -167,20 +178,38 @@ test-expect test-regress: test-lists
 	        else \
 	          texe=$${tb}$${texeSuffix} ; \
 	          cleanup="$${cleanup} $${texe}" ; \
-	          $${ehc} $${ehcOpts} $${optPreludePath} $${t} > $${th} 2>&1 ; \
-	          if test $$? = 0 -a -r $${texe} ; \
+	          platformDpd="`grep platform: $${t}`" ; \
+	          targetExclude="`grep exclude-if-$(EHC_VARIANT_TARGET) $${t}`" ; \
+	          platformMsg="" ; \
+	          if test "x$${targetExclude}" = "x" ; \
 	          then \
-	            echo "== target '$(EHC_VARIANT_TARGET)' execution ==" >> $${th} ; \
-	            $${texeInvoke} $${texe} >> $${th} 2>&1 ; \
+                if test "x$${platformDpd}" != "x" ; \
+                then \
+                  platformMsg="($${platformDpd}) --" ; \
+                fi ; \
+                $${ehc} $${ehcOpts} $${ehcTargetOpts} $${optPreludePath} $${t} > $${th} 2>&1 ; \
+                if test $$? = 0 -a -r $${texe} ; \
+                then \
+                  echo "== target '$(EHC_VARIANT_TARGET)' execution ==" >> $${th} ; \
+                  $${texeInvoke} $${texe} >> $${th} 2>&1 ; \
+                fi \
 	          fi \
 	        fi ; \
-	        if test $${tr} = $${th} -a -r $${te} ; \
+	        if test "x$${targetExclude}" != "x" ; \
 	        then \
-	          echo "-- $${te} -- $${th} --" | $(INDENT2) ; \
+	          echo "-- $${t}: excluded for target $(EHC_VARIANT_TARGET)" | $(INDENT2) ; \
+	        elif test $${tr} = $${th} -a -r $${te} ; \
+	        then \
+	          echo "-- $${te} -- $${th} --" $${platformMsg} | $(INDENT2) ; \
 	          if ! cmp $${te} $${th} > /dev/null ; \
 	          then \
 	            diff $${te} $${th} | $(INDENT4) ; \
-	            nerrors="`expr $${nerrors} + 1`" ; \
+	            if test "x$${platformDpd}" != "x" ; \
+	            then \
+	              nerrorsPlatformDpd="`expr $${nerrorsPlatformDpd} + 1`" ; \
+	            else \
+	              nerrors="`expr $${nerrors} + 1`" ; \
+	            fi \
 	          fi \
 	        elif test ! -r $${te} ; \
 	        then \
@@ -196,7 +225,7 @@ test-expect test-regress: test-lists
 	    exit 1; \
 	  fi \
 	done; \
-	echo "== completed with $${nerrors} errors and $${nwarnings} warnings =="; \
+	echo "== completed with $${nerrors} errors, $${nerrorsPlatformDpd} (probably) platform dependent errors, and $${nwarnings} warnings =="; \
 	exit $${nerrors};
 
 

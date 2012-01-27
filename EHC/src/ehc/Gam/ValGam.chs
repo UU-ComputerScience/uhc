@@ -26,7 +26,10 @@
 %%[(3 hmtyinfer) import({%{EH}Ty.Trf.Quantify})
 %%]
 
-%%[99 import({%{EH}Base.ForceEval})
+%%[(50 hmtyinfer) import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
+%%]
+
+%%[9999 import({%{EH}Base.ForceEval})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -44,6 +47,11 @@ data ValGamInfo
 type ValGam = Gam HsName ValGamInfo
 %%]
 
+%%[(50 hmtyinfer)
+deriving instance Typeable ValGamInfo
+deriving instance Data ValGamInfo
+%%]
+
 %%[8 export(vgiGetSet)
 vgiGetSet = (vgiTy,(\x i -> i {vgiTy = x}))
 %%]
@@ -59,6 +67,12 @@ valGamLookupTy n g
   =  case valGamLookup n g of
        Nothing    ->  (Ty_Any,[rngLift emptyRange mkErr_NamesNotIntrod "value" [n]])
        Just vgi   ->  (vgiTy vgi,[])
+%%]
+
+%%[(8 hmtyinfer || hmtyast) export(valGamLookupTyDefault)
+-- | lookup Ty in ValGam, defaulting to Ty_Any
+valGamLookupTyDefault :: HsName -> ValGam -> Ty
+valGamLookupTyDefault n g = maybe (Ty_Dbg $ "valGamLookupTyDefault: " ++ show n) vgiTy $ valGamLookup n g
 %%]
 
 %%[4.valGamLookup -1.valGamLookup export(valGamLookup)
@@ -127,12 +141,14 @@ valGamRestrictKiVarMp g = varmpIncMetaLev $ assocTyLToVarMp [ (v,kiStar) | vgi <
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(2 hmtyinfer || hmtyast).Substitutable.inst.ValGamInfo
-instance Substitutable ValGamInfo TyVarId VarMp where
-  s |=>  vgi         =   vgi { vgiTy = s |=> vgiTy vgi }
+instance VarUpdatable ValGamInfo VarMp where
+  s `varUpd`  vgi         =   vgi { vgiTy = s `varUpd` vgiTy vgi }
 %%[[4
-  s |==> vgi         =   substLift vgiTy (\i x -> i {vgiTy = x}) (|==>) s vgi
+  s `varUpdCyc` vgi         =   substLift vgiTy (\i x -> i {vgiTy = x}) varUpdCyc s vgi
 %%]]
-  ftvSet vgi         =   ftvSet (vgiTy vgi)
+
+instance VarExtractable ValGamInfo TyVarId where
+  varFreeSet vgi         =   varFreeSet (vgiTy vgi)
 %%]
 
 %%[(1 hmtyinfer || hmtyast).PP.ValGamInfo
@@ -140,10 +156,17 @@ instance PP ValGamInfo where
   pp vgi = ppTy (vgiTy vgi)
 %%]
 
-%%[(99 hmtyinfer || hmtyast)
+%%[(9999 hmtyinfer || hmtyast)
 instance ForceEval ValGamInfo where
   forceEval x@(ValGamInfo t) | forceEval t `seq` True = x
 %%[[102
   fevCount (ValGamInfo x) = cm1 "ValGamInfo" `cmUnion` fevCount x
 %%]]
 %%]
+
+%%[(50 hmtyinfer || hmtyast)
+instance Serialize ValGamInfo where
+  sput (ValGamInfo a) = sput a
+  sget = liftM ValGamInfo sget
+%%]
+

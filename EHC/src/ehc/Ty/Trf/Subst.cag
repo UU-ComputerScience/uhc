@@ -96,7 +96,7 @@ defaultOpts :: SubstOpts
 defaultOpts = SubstOpts
 %%]
 
-%%[(16 hmtyinfer || hmtyast).substOpts -4.substOpts hs
+%%[(41 hmtyinfer || hmtyast).substOpts -4.substOpts hs
 data SubstOpts
   = SubstOpts
       { onlySubstRHSOfEq :: Bool
@@ -106,14 +106,14 @@ defaultOpts :: SubstOpts
 defaultOpts = SubstOpts { onlySubstRHSOfEq = False }
 %%]
 
-%%[(16 hmtyinfer || hmtyast) hs export (tyAppVarLookup2_RhsOfEqOnly)
+%%[(41 hmtyinfer || hmtyast) hs export (tyAppVarLookup2_RhsOfEqOnly)
 tyAppVarLookup2_RhsOfEqOnly :: VarMp -> Ty -> (Ty, VarMp)
 tyAppVarLookup2_RhsOfEqOnly varmp ty
   = tyAppVarLookup' (SubstOpts { onlySubstRHSOfEq = True }) varmp Map.empty ty
 %%]
 
 %%[(4 hmtyinfer || hmtyast)
-PRAGMA novisit
+-- PRAGMA novisit
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -138,9 +138,16 @@ mkLkup m = \mlev v -> {- trm "Subst.lkup" (\r -> mlev >#< v >#< r) $ -} varlooku
 ATTR TyAGItf AllTy [ lkup: Lkup | | ]
 %%]
 
-%%[(6 hmtyinfer || hmtyast)
+%%[(3 hmtyinfer || hmtyast)
 SEM Ty
-  | Quant			l1'		.	lkup		=	\mlev v -> @lhs.lkup (mlev+1) v
+  | Quant
+%%[[11
+    Lam
+%%]]
+                    ty      .   lkup        =   \mlev v -> if v == @tv then Nothing else @lhs.lkup mlev v
+%%[[6
+  | Quant           l1'     .   lkup        =   \mlev v -> @lhs.lkup (mlev+1) v
+%%]]
 %%]
 
 %%[(10 hmtyinfer || hmtyast)
@@ -194,37 +201,53 @@ tvRepl3 tv tvuse mk repl replv replho cycmpho
 %%% Replacement
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+-- Put in dummy value for higher order child if the child is not needed to avoid infinite trees
 %%[(4 hmtyinfer || hmtyast)
 SEM Ty
   | Var             inst    .   repl'       :   Ty
                     (loc.replv,loc.isRepl)  =   maybe (@repl,False) (\t -> (t,True)) $ vmiMbTy $? @lhs.lkup 0 @tv
-                    inst    .   repl'       =   @replv
+		    loc     .   needRepl    =   case @tvUse of
+		    	    		    	   TVFree -> @isRepl
+						   _      -> False
+                    inst    .   repl'       =   if @needRepl then @replv else Ty_Any
 %%]
 
 %%[(9 hmtyinfer || hmtyast)
 SEM Impls
   | Tail            inst    .   repl'       :   Impls
                     (loc.replv,loc.isRepl)  =   maybe (@repl,False) (\t -> (t,True)) $ vmiMbImpls $? @lhs.lkup 0 @iv
-                    inst    .   repl'       =   @replv
+		    loc     .   needRepl    =   case @tvUse of
+		    	    		           TVFree -> @isRepl
+						   _      -> False
+                    inst    .   repl'       =   if @needRepl then @replv else Impls_Nil
 
 SEM Pred
   | Var             inst    .   repl'       :   Pred
                     (loc.replv,loc.isRepl)  =   maybe (@repl,False) (\t -> (t,True)) $ vmiMbPred $? @lhs.lkup 0 @pv
-                    inst    .   repl'       =   @replv
+		    loc     .   needRepl    =   case @tvUse of
+		    	    		           TVFree -> @isRepl
+						   _      -> False
+                    inst    .   repl'       =   if @needRepl then @replv else Pred_Preds PredSeq_Nil
 %%]
 
 %%[(10 hmtyinfer || hmtyast)
 SEM Label
   | Var             inst    .   repl'       :   Label
                     (loc.replv,loc.isRepl)  =   maybe (@repl,False) (\t -> (t,True)) $ vmiMbLabel $? @lhs.lkup 0 @lv
-                    inst    .   repl'       =   @replv
+		    loc     .   needRepl    =   case @tvUse of
+		    	    		           TVFree -> @isRepl
+						   _      -> False
+                    inst    .   repl'       =   if @needRepl then @replv else Label_Lab (HsName_Base "")
 %%]
 
 %%[(13 hmtyinfer || hmtyast)
 SEM PredSeq
   | Var             inst    .   repl'       :   PredSeq
                     (loc.replv,loc.isRepl)  =   maybe (@repl,False) (\t -> (t,True)) $ vmiMbPredSeq $? @lhs.lkup 0 @av
-                    inst    .   repl'       =   @replv
+		    loc     .   needRepl    =   case @tvUse of
+		    	    		           TVFree -> @isRepl
+						   _      -> False
+                    inst    .   repl'       =   if @needRepl then @replv else PredSeq_Nil
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -330,12 +353,17 @@ ATTR LabelAGItf        [               | | repl: Label    ]
 
 %%[(2 hmtyinfer || hmtyast)
 SEM Ty
-  | Var             lhs     .   repl        =   maybe @repl id (@lhs.lkup 0 @tv)
+  | Ann             lhs     .   repl        =   tyCanonAnn @repl
+%%]
+
+%%[(2 hmtyinfer || hmtyast)
+SEM Ty
+  | Var             lhs     .   repl        =   tyCanonAnn $ maybe @repl id (@lhs.lkup 0 @tv)
 %%]
 
 %%[(3 hmtyinfer || hmtyast)
 SEM Ty
-  | Var             lhs     .   repl        :=  tvRepl @tv @lhs.lkup @lhs.tvUseMp @repl
+  | Var             lhs     .   repl        :=  tyCanonAnn $ tvRepl @tv @lhs.lkup @lhs.tvUseMp @repl
 %%]
 
 %%[(4 hmtyinfer || hmtyast)
@@ -352,11 +380,16 @@ SEM Ty
   							.	cycVarMp	=	varmpIncMetaLev @l1'.cycVarMp `varmpPlus` @ty.cycVarMp
 %%]
 
+Occurrences of call site context passing, identified by proveOccs, needs to be combined, so we gather all locations.
+
 %%[(9 hmtyinfer || hmtyast)
 SEM Impls
   | Tail            lhs     .   (repl,cycVarMp)
                                             :=  if @isRepl
-                                                then tvRepl3 @iv @tvUse varmpImplsUnit @repl @replv @repl'.repl @repl'.cycVarMp
+                                                then let replrepl = case @repl'.repl of
+                                                                      Impls_Tail i occs -> Impls_Tail i (occs ++ @proveOccs)
+                                                                      r                 -> r
+                                                     in  tvRepl3 @iv @tvUse varmpImplsUnit @repl @replv replrepl @repl'.cycVarMp
                                                 else (@repl,emptyVarMp)
 
 SEM Pred
@@ -382,7 +415,7 @@ SEM PredSeq
                                                 else (@repl,emptyVarMp)
 %%]
 
-%%[(16 hmtyinfer || hmtyast)
+%%[(41 hmtyinfer || hmtyast)
 
 -- if "onlySubstRHSOfEq" is True, then tyL is either a Var or a Con and the orig attribute is used and defined.
 -- The orig attribute is not used if "onlySubstRHSOfEq" is False. This setting is almost always False.
@@ -390,7 +423,7 @@ SEM PredSeq
 ATTR Ty [ | | orig: Ty ]
 SEM Ty
   | Var Con      loc.orig = @loc.repl
-  | * - Var Con  loc.orig = undefined
+  | * - Var Con  loc.orig = panic "Ty.Trf.Subst.Ty.*-{Var,Con}.orig"
 
 SEM Pred
   | Eq

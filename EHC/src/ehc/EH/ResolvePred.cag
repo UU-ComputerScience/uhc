@@ -45,18 +45,24 @@ SEM Expr
 
 %%[(9 hmtyinfer)
 SEM Expr
-  | AppTop      loc         .   imSubsTy            =   foVarMp @foKnRes |=> @imTy
-  | Lam         loc         .   imSubsTy            =   foVarMp @fo_fitF_ |=> @imTy
+  | AppTop Rec Let
+                loc         .   imSubsTy            =   foVarMp @foKnRes `varUpd` @imTy
+  | Lam         loc         .   imSubsTy            =   foVarMp @fo_fitF_ `varUpd` @imTy
 %%]
 
 %%[(9 hmtyinfer)
 SEM Expr
-  | AppTop Lam  loc         .   (knPrL,knImplsTl)   =   implsPredsTail @predScope $ tyImpls @imSubsTy
+  | AppTop Rec Lam Let
+                loc         .   (knPrL,knImplsTl)   =   implsPredsTail @predScope $ tyImpls @imSubsTy
+                            .   implsIsEmpty        =   let (knpr,_)
+                                                              = implsPredsTailWithLkup (varmpImplsLookupCyc2 @lhs.tyVarMp) initPredScope
+                                                              $ tyImplsWithLkup (varmpTyLookupCyc2 @lhs.tyVarMp) @lhs.knTy
+                                                        in  null knpr
 %%]
 
 %%[(12 hmtyinfer)
 SEM Expr
-  | LamImpl     loc         .   knPr                =   tyPred $ (@body.tyVarMp |=>) $ @knArgImpl
+  | LamImpl     loc         .   knPr                =   tyPred $ (@body.tyVarMp `varUpd`) $ @knArgImpl
                             .   knPrUid             =   mkPrIdCHR @lUniq
                             .   knPrL               =   [mkPredOcc @knPr @knPrUid @predScope]
 %%]
@@ -72,27 +78,30 @@ SEM AGItf
   | AGItf       loc         .   cSubst              =   emptyCSubst
 
 SEM Decl
-  | Instance    decls       .   cSubst              =   cSubstApp @lhs.cSubst
+  | Instance    loc         .   cSubstDecls         =   cSubstApp @lhs.cSubst
                                                         $ evidKeyBindMpToCSubst @chrEvidBindMp
+                decls       .   cSubst              =   @cSubstDecls
+                lhs         .   cSubst              =   cSubstApp @decls.cSubst @cSubstInst
 
 SEM Expr
-  | Let         decls       .   cSubst              =   cSubstApp @lhs.cSubst
+  | Let         decls       .   cSubst              =   ehcOptTrace @lhs.opts "Expr.Let.decls.cSubst"
+                                                        $ cSubstApp @lhs.cSubst
                                                         $ cSubstApp @prvArgCSubst
-                                                        $ cSubstApp (cnstrImplsToCSubst @lhs.opts @tmpoTyVarMp)
+                                                        $ cSubstApp (acoreCSubstFromVarMpImpls @tmpoTyVarMp)
                                                         $ evidKeyBindMpToCSubst @chrSolveEvidBindMp
 %%]
 
 TyCore version/clone:
 
-%%[(9 codegen hmtyinfer)
+%%[(9 codegen tycore hmtyinfer)
 SEM Decl
-  | Instance    decls       .   tcSubst             =   C.cSubstApp @lhs.tcSubst
+  | Instance    decls       .   tcSubst             =   cSubstApp @lhs.tcSubst
                                                         $ E2C.evidKeyBindMpToSubst @chrEvidBindMpTC
 
 SEM Expr
-  | Let         decls       .   tcSubst             =   C.cSubstApp @lhs.tcSubst
-                                                        $ C.cSubstApp @prvArgTCSubst
-                                                        $ C.cSubstApp (C.cnstrImplsToCSubst @lhs.opts @tmpoTyVarMp)
+  | Let         decls       .   tcSubst             =   cSubstApp @lhs.tcSubst
+                                                        $ cSubstApp @prvArgTCSubst
+                                                        $ cSubstApp (acoreCSubstFromVarMpImpls @tmpoTyVarMp)
                                                         $ E2C.evidKeyBindMpToSubst @chrSolveEvidBindMpTC
 %%]
 
@@ -102,8 +111,9 @@ SEM Expr
 
 %%[(9 hmtyinfer)
 SEM Expr
-  | Lam AppTop  loc         .   impls2KnHd          =   tyImpls @imSubsTy
-                            .   impls2KnTl          =   @lhs.finTyVarMp |=> @knImplsTl
+  | AppTop Rec Lam Let
+                loc         .   impls2KnHd          =   tyImpls @imSubsTy
+                            .   impls2KnTl          =   @lhs.finTyVarMp `varUpd` @knImplsTl
                             .   poiLKnTl            =   implsPrIds @impls2KnTl
                             .   poiL                =   implsPrIds @impls2KnHd ++ @poiLKnTl
 %%]
@@ -115,12 +125,18 @@ SEM Expr
 
 %%[(9 codegen hmtyinfer)
 SEM Expr
-  | Lam AppTop
+  | AppTop Rec Lam
 %%[[12
     LamImpl
 %%]]
                 loc         .   poiBindL            =   @chrAssumeBindL ++ @chrScopeBindL
-                loc         .   poiBindLTC          =   @chrAssumeBindLTC ++ @chrScopeBindLTC	-- for TyCore clone
+%%[[(9 tycore)
+                loc         .   poiBindLTC          =   @chrAssumeBindLTC ++ @chrScopeBindLTC   -- for TyCore clone
+%%]]
+  | Let         loc         .   poiBindL            =   @chrAssumeBindL
+%%[[(9 tycore)
+                loc         .   poiBindLTC          =   @chrAssumeBindLTC                       -- for TyCore clone
+%%]]
 %%]
 
 

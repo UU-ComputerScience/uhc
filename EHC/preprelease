@@ -1,0 +1,19 @@
+#!/bin/sh
+
+# the things to be done before releasing, and to be run correctly.
+
+make clean                                  &&
+./configure                                 &&
+make 100/ehclib                             &&
+make {1,8,20}/ehc                           &&
+make uhc                                    &&
+make test-expect TEST_VARIANTS=uhc          &&
+make freeze-test-expect                     
+
+# sync only when enough permissions
+# make www                                    &&
+# make www-sync
+
+# optional:
+# sudo make install                           &&
+# make test-regress TEST_VARIANTS=100          &&

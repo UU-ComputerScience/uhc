@@ -1,9 +1,11 @@
 {- ----------------------------------------------------------------------------------------
    what    : readFile, writeFile
    expected: ok
+   constraints: exclude-if-js
 ---------------------------------------------------------------------------------------- -}
 
 module Main where
+import Debug.Trace
 
 main :: IO ()
 main

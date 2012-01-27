@@ -8,7 +8,7 @@
 %%[(2 hmtyinfer || hmtyast) import(EH.Util.Pretty) 
 %%]
 
-%%[(98 hmtyinfer || hmtyast) import({%{EH}Base.Builtin}, {%{EH}Base.Opts}) 
+%%[(98 hmtyinfer || hmtyast) import({%{EH}Base.Builtin}, {%{EH}Opts}) 
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -16,12 +16,12 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(2 hmtyinfer || hmtyast) hs export(ppTyS)
-ppTyS :: VarMp -> Ty -> PP_Doc
+ppTyS :: VarUpdatable Ty m => m -> Ty -> PP_Doc
 ppTyS = ppS ppTy
 %%]
 
 %%[(98 hmtyinfer || hmtyast) hs export(tyTopLevelMain)
-tyTopLevelMain :: EHCOpts -> Ty
-tyTopLevelMain opts = mk1ConApp (ehbnIO $ ehcOptBuiltinNames opts) (mkProdApp [])
+tyTopLevelMain :: EHCOpts -> TyVarId -> Ty
+tyTopLevelMain opts uniq = mk1ConApp (ehcOptBuiltin opts ehbnIO) (mkTyVar uniq)
 %%]
 

@@ -20,7 +20,7 @@
 %%[1 hs export (pKeySPos, pNmStr, pNmStrSPos, pNmStrI, pNmStrISPos, pSymEscStr, pSymEscStrSPos, pSymStr, pSymStrSPos)
 %%]
 
-%%[1 hs import (qualified Data.Map as Map, qualified Data.Set as Set, IO, UU.Parsing, UU.Parsing.Offside, Scanner, Config, EH.Util.ParseUtils, AttrProps, EH.Util.ScanUtils)
+%%[1 hs import (qualified Data.Map as Map, qualified Data.Set as Set, System.IO, UU.Parsing, UU.Parsing.Offside, Scanner, Config, EH.Util.ParseUtils, AttrProps, EH.Util.ScanUtils)
 %%]
 
 
@@ -96,7 +96,7 @@ mkScan fn txt = scan rulerScanOpts (initPos fn) txt
 mkHScan :: FilePath -> Handle -> IO [Token]
 mkHScan fn fh
   = do  {  txt <- hGetContents fh
-        ;  return (mkScan fn txt) 
+        ;  return (mkScan fn txt)
         }
 
 mkOffScan :: FilePath -> Handle -> IO (OffsideInput [Token] Token (Maybe Token))

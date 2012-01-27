@@ -7,14 +7,14 @@
 %%% Haskell importable interface to Foreign pretty print
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[94 hs module {%{EH}Foreign.Pretty} import(EH.Util.Pretty,{%{EH}Base.Common},{%{EH}Foreign}) 
+%%[90 hs module {%{EH}Foreign.Pretty} import(EH.Util.Pretty,{%{EH}Base.Common},{%{EH}Foreign}) 
 %%]
 
-%%[94.WRAPPER ag import({Foreign/AbsSyn})
-WRAPPER ForeignAGItf
+%%[90.WRAPPER ag import({Foreign/AbsSyn})
+WRAPPER ForeignAGItf ForeignExprAGItf
 %%]
 
-%%[94 hs export(ppForeignEnt)
+%%[90 hs export(ppForeignEnt)
 ppForeignEnt :: ForeignEnt -> PP_Doc
 ppForeignEnt ent
   =  let  t =  wrap_ForeignAGItf
@@ -26,12 +26,40 @@ instance PP ForeignEnt where
   pp t = ppForeignEnt t
 %%]
 
+%%[90 hs export(ppForeignExpr)
+ppForeignExpr :: String -> ForeignExpr -> PP_Doc
+ppForeignExpr nm e
+  =  let  t =  wrap_ForeignExprAGItf
+                 (sem_ForeignExprAGItf (ForeignExprAGItf_AGItf e))
+                 (Inh_ForeignExprAGItf
+                   { entNm_Inh_ForeignExprAGItf = nm
+                   })
+     in   pp_Syn_ForeignExprAGItf t
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Foreign entity
+%%% Global info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[94
-ATTR ForeignAGItf AllForeign [ | | pp: PP_Doc ]
+%%[90
+ATTR ForeignExprAGItf AllForeignExpr [ entNm: String | | ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% PP
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[90
+ATTR ForeignAGItf ForeignExprAGItf AllForeign ForeignExpr [ | | pp: PP_Doc ]
+
+SEM JavaScriptCall
+  -- | Id          lhs     .   pp      =   maybe empty (\i -> "%" >|< i >|< ".") @mbThisArgNr >|< pp @nm >|< maybe empty (\i -> "[%" >|< i >|< "]") @mbIndexArgNr
+  | Id          lhs     .   pp      =   maybe (pp @nm) (ppForeignExpr @nm) @mbForeignExpr
+  | Wrapper     lhs     .   pp      =   pp "wrapper"
+  | Dynamic     lhs     .   pp      =   pp "dynamic"
+
+SEM PrimCall
+  | Id          lhs     .   pp      =   pp @nm >#< maybe empty pp @mbKnownPrim
 
 SEM PlainCall
   | Id          lhs     .   pp      =   pp @nm
@@ -43,6 +71,24 @@ SEM CCall
                                         >#< @nm
   | Wrapper     lhs     .   pp      =   pp "wrapper"
   | Dynamic     lhs     .   pp      =   pp "dynamic"
-  | Empty       lhs     .   pp      =   empty
+
+SEM ForeignExpr
+  | Call		lhs		.	pp		=	@expr.pp >|< ppParens empty
+  | CallArgs	lhs		.	pp		=	@expr.pp >|< ppParensCommas @args.ppL
+  | Ent			lhs		.	pp		=	pp @lhs.entNm
+  | EntNm		lhs		.	pp		=	pp @nm
+  | Arg			lhs		.	pp		=	"%" >|< @nr
+  | AllArg		lhs		.	pp		=	pp "%*"
+  | Sel			lhs		.	pp		=	@expr.pp >|< "." >|< @sel.pp
+  | Inx			lhs		.	pp		=	@expr.pp >|< "[" >|< @inx.pp >|< "]"
+  | Ptr			lhs		.	pp		=	"&" >|< @expr.pp
+  | Empty		lhs		.	pp		=	empty
+  | Str  		lhs		.	pp		=	pp $ show @str
+  | ObjData     lhs     .   pp      =   pp "{}"
 %%]
 
+%%[90
+SEM ForeignExprs [ | | ppL: {[PP_Doc]} ]
+  | Nil			lhs		.	ppL		=	[]
+  | Cons		lhs		.	ppL		=	@hd.pp : @tl.ppL
+%%]

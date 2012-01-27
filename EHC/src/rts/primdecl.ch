@@ -1,3 +1,8 @@
+%%[8
+#ifndef __PRIMDECL_H__
+#define __PRIMDECL_H__
+%%]
+
 %%% Declarations for macro-generated primitive functions
 
 
@@ -62,3 +67,11 @@ PRIMS_STORABLE_INTERFACE(Float ,float )
 PRIMS_STORABLE_INTERFACE(Double,double) 
 %%]
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% EOF
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+#endif /* __PRIMDECL_H__ */
+%%]

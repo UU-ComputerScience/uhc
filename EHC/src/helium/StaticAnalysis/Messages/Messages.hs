@@ -20,8 +20,8 @@ import Helium.Utils.OneLiner
 import Helium.Utils.Similarity (similar)
 import Helium.Utils.Utils      (internalError)
 import List       (sortBy, sort, partition, union, nub)
-import Maybe      (fromJust, isNothing)
-import Char       (toUpper)
+import Data.Maybe      (fromJust, isNothing)
+import Data.Char       (toUpper)
 
 type Message       = [MessageLine] 
 

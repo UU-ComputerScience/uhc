@@ -11,7 +11,7 @@
 
 module Lvm.Lvm.ModulePretty ( modulePretty, ppId, ppVarId, ppConId, ppString ) where
 
-import Char     ( isAlphaNum, isAlpha, isLower, isUpper )
+import Data.Char     ( isAlphaNum, isAlpha, isLower, isUpper )
 import Lvm.Common.PPrint
 import Lvm.Common.Byte     ( stringFromBytes )
 import Lvm.Common.Id       ( Id, stringFromId, idFromString )

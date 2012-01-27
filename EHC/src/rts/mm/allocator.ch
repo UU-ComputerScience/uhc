@@ -27,8 +27,14 @@ typedef struct MM_Allocator {
   	void			 			(*init)( struct MM_Allocator*, MM_Malloc* memmgt, MM_Space* space ) ;
   	void			 			(*resetWithSpace)( struct MM_Allocator*, MM_Space* space ) ;
   	
-  	// allocation
-  	Ptr 						(*alloc)( struct MM_Allocator*, Word sz ) ;
+  	// allocation, with additional GC info, gcInfo==0 means no info
+  	Ptr 						(*alloc)( struct MM_Allocator*, Word sz, Word gcInfo ) ;
+  	// only ensure enough mem
+  	void 						(*ensure)( struct MM_Allocator*, Word sz, Word gcInfo ) ;
+  	// alloc after ensuring enough mem
+  	Ptr 						(*allocEnsured)( struct MM_Allocator*, Word sz ) ;
+
+  	// deallocation
   	void 						(*dealloc)( struct MM_Allocator*, Ptr ptr ) ;
   	
   	// last allocated location, or NULL if cannot determine
@@ -53,6 +59,9 @@ typedef struct MM_Allocator {
   	// dumping info
   	void 						(*dump)( struct MM_Allocator* ) ;
 #endif
+
+	// constants: max alloc size, (default) 0 if no max
+	Word						maxAllocSize ;
 } MM_Allocator ;
 %%]
 

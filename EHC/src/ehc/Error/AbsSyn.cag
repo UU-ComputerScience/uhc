@@ -13,7 +13,7 @@
 
 %%[99
 DATA Err
-  | *               	range      : Range
+  | *                   range      : Range
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -47,6 +47,9 @@ DATA Err
 %%[(1 hmtyinfer || hmtyast)
 DATA Err
   | PatArity            ty         : {Ty}
+                        arity      : {Int}
+  | PatArity2           kind       : String
+                        what       : {PP_Doc}
                         arity      : {Int}
 %%]
 
@@ -129,6 +132,7 @@ DATA Err
 DATA Err
   | FileNotFound        fileName   : {String}
                         locations  : {[String]}
+                        suffixes   : {[FileSuffix]}
   | AmbiguousExport     name       : {HsName}
 %%[[8
                         entities   : {[PP_Doc]}
@@ -145,6 +149,9 @@ DATA Err
                         ty2        : {PP_Doc}
                         ty1detail  : {PP_Doc}
                         ty2detail  : {PP_Doc}
+  | TyCoreSeqLevels     hereLev    : {Int}
+                        mustLev    : {Int}
+                        ty         : {PP_Doc}
   | NoCoerceDerivation  func       : {Ty}
                         arg        : {Ty}
 %%]
@@ -156,14 +163,14 @@ DATA Err
 %%[[9
   | NotProvenPreds      preds      : {[Pred]}
 %%][99
-  | NotProvenPreds      preds      : {[(Pred,[Range])]}
+  | NotProvenPreds      preds      : {[((Pred,[Range]),PP_Doc)]}
 %%]]
 %%[[9
   | AmbigPreds          preds      : {[Pred]}
 %%][99
   | AmbigPreds          preds      : {[(Pred,[Range])]}
 %%]]
-                        inQBinds   : {AssocL HsName PP_Doc}	-- quantified
+                        inQBinds   : {AssocL HsName PP_Doc} -- quantified
                         inBinds    : {AssocL HsName PP_Doc} -- unquantified
   | OverlapPreds        overl      : {AssocL Pred [PP_Doc]}
   | TyHasFreeTVars      ty         : {Ty}
@@ -187,21 +194,23 @@ DATA Err
                         limit      : {Int}
 %%]
 
-%%[20
+%%[50
 DATA Err
-  | MayOnlyHaveNrMain   nrAllowed  : Int		-- 0 or 1, depending on option ehcOptDoLinking
-                        prevModNmL : {[HsName]}	-- possible previous modules in which main was defined
+  | MayOnlyHaveNrMain   nrAllowed  : Int        -- 0 or 1, depending on option ehcOptDoLinking
+                        prevModNmL : {[HsName]} -- possible previous modules in which main was defined
                         modNm      : HsName
   | MayNotHaveMain      modNm      : HsName
   | MustHaveMain
   | ModNameMismatch     nmOfFile   : HsName
                         nmFromSrc  : HsName
-  | AmbiguousNameRef    nm         : HsName
+  | AmbiguousNameRef    kindName   : {String}
+                        kind       : {String}
+                        nm         : HsName
                         nmAlts     : {[HsName]}
   | MutRecModules       mutRecL    : {[[HsName]]}
 %%]
 
-%%[(95 hmtyinfer || hmtyast)
+%%[(91 hmtyinfer || hmtyast)
 DATA Err
   | MalformedTy         kind       : String
                         purpose    : String
@@ -210,6 +219,22 @@ DATA Err
   | NoDerivForData      ty         : Ty
                         clNm       : HsName
                         reason     : String
+%%]
+
+%%[(93 hmtyinfer || hmtyast)
+DATA Err
+  | FusionBuildInverse  ty1        : {Ty}
+                        ty2        : {Ty}
+%%]
+
+%%[99
+DATA Err
+  | InconsistentHI      modNm      : String
+                        file       : String
+                        expected   : {[String]}
+                        inHI       : {[String]}
+  | WrongMagic          modNm      : String
+                        file       : String
 %%]
 
 

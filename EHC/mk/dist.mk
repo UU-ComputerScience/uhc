@@ -33,6 +33,6 @@ dist-ehc $(DIST_TGZ): dist-variant-dflt
 dist-variant-dflt: $(DIST_FILES)
 	@rm -rf $(DIST_PREFIX) ; \
 	mkdir -p $(DIST_PREFIX) ; \
-	((tar --ignore-failed-read -cf - $(DIST_FILES)) | (cd $(DIST_PREFIX) && tar xf -)) ; \
+	(($(TAR) --ignore-failed-read -cf - $(DIST_FILES)) | (cd $(DIST_PREFIX) && $(TAR) xf -)) ; \
 	echo "== $(DIST_TGZ) ==" ; \
-	tar cfz $(DIST_TGZ) $(DIST_PREFIX)
+	$(TAR) cfz $(DIST_TGZ) $(DIST_PREFIX)

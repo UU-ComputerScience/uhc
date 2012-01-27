@@ -6,9 +6,9 @@ module EH.Util.Pretty
   ( -- module UU.Pretty
     -- module EH.Util.Chitil.Pretty
     module EH.Util.PrettySimple
-  
+
   , PP_DocL
-  
+
   , ppListSep, ppListSepV, ppListSepVV
   , ppBlock, ppBlock'
   , ppCommas, ppCommas'
@@ -26,11 +26,12 @@ module EH.Util.Pretty
   , ppBrackets
   , ppBracketsCommas, ppBracketsCommas', ppBracketsCommasV
   , ppHorizontally, ppVertically
-  
+  , ppListSepFill
+
   , ppPacked, ppParens, ppCurly, ppVBar
-  
+
   , ppDots, ppMb, ppUnless, ppWhen
-  
+
   , hPutWidthPPLn, putWidthPPLn
   , hPutPPLn, putPPLn
   , hPutPPFile, putPPFile
@@ -42,7 +43,7 @@ module EH.Util.Pretty
 -- import EH.Util.Chitil.Pretty
 import EH.Util.PrettySimple
 import EH.Util.FPath
-import IO
+import System.IO
 import Data.List
 
 -------------------------------------------------------------------------
@@ -179,6 +180,13 @@ ppVertically = vlist
 ppHorizontally :: [PP_Doc] -> PP_Doc
 ppHorizontally = hlist
 
+ppListSepFill :: (PP s, PP c, PP o, PP a) => o -> c -> s -> [a] -> PP_Doc
+ppListSepFill o c s pps
+  = l pps
+  where l []      = o >|< c
+        l [p]     = o >|< pp p >|< c
+        l (p:ps)  = fill ((o >|< pp p) : map (s >|<) ps) >|< c
+
 -------------------------------------------------------------------------
 -- Printing open/close pairs
 -------------------------------------------------------------------------
@@ -244,7 +252,7 @@ putPPLn = hPutPPLn stdout
 hPutPPFile :: Handle -> PP_Doc -> Int -> IO ()
 hPutPPFile h pp wid
   = hPutLn h wid pp
-    
+
 
 putPPFPath :: FPath -> PP_Doc -> Int -> IO ()
 putPPFPath fp pp wid

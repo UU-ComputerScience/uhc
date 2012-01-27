@@ -1,4 +1,4 @@
-%%[1 import(IO, Data.List, UU.Pretty, UU.Parsing, UU.Scanner, UU.Scanner.Position (initPos,Pos), Infer2PassSupport,MainAG)
+%%[1 import(System.IO, Data.List, UU.Pretty, UU.Parsing, UU.Scanner, UU.Scanner.Position (initPos,Pos), Infer2PassSupport,MainAG)
 %%]
 
 -------------------------------------------------------------------------

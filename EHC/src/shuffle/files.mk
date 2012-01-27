@@ -91,6 +91,7 @@ SHUFFLE_AG_PRE			:= $(SHUFFLE) --ag --preamble=yes --lhs2tex=no --line=no --comp
 SHUFFLE_PLAIN		:= $(SHUFFLE) --plain --preamble=no --lhs2tex=no --line=no
 SHUFFLE_C			:= $(SHUFFLE_PLAIN)
 SHUFFLE_JAVA		:= $(SHUFFLE_PLAIN)
+SHUFFLE_JS			:= $(SHUFFLE_PLAIN)
 # setting --line=yes for AG is not possible because of uuagc's weird interpretation of the layout rule
 
 
@@ -112,7 +113,7 @@ shuffle-clean:
 
 $(SHUFFLE_BLD_EXEC): $(SHUFFLE_AG_ALL_MAIN_DRV_HS) $(SHUFFLE_HS_ALL_DRV_HS) $(LIB_EH_UTIL_INS_FLAG)
 	@$(EXIT_IF_ABSENT_LIB_OR_TOOL)
-	$(GHC) --make $(GHC_OPTS) $(GHC_OPTS_OPTIM) $(GHC_OPTS_WHEN_EHC) -package $(LIB_EH_UTIL_PKG_NAME) -i$(SHUFFLE_BLD_PREFIX) $(SHUFFLE_BLD_PREFIX)$(SHUFFLE_MAIN).hs -o $@
+	$(GHC) --make $(GHC_OPTS) $(GHC_OPTS_OPTIM) $(GHC_OPTS_WHEN_EHC) -ignore-package uulib-debug -package $(LIB_EH_UTIL_PKG_NAME) -i$(SHUFFLE_BLD_PREFIX) $(SHUFFLE_BLD_PREFIX)$(SHUFFLE_MAIN).hs -o $@
 	$(STRIP) $@
 
 $(SHUFFLE_AG_D_MAIN_DRV_HS): $(SHUFFLE_BLD_PREFIX)%.hs: $(SRC_SHUFFLE_PREFIX)%.ag

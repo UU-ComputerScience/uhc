@@ -209,7 +209,7 @@ gamMapAccumWithKey :: (a -> k -> b -> (a, c)) -> a -> Gam k b -> (a, Gam k c)
 gamMapAccumWithKey f = Map.mapAccumWithKey (liftMapAccumKey f)
 
 gamFoldWithKey :: (k -> v -> a -> a) -> a -> Gam k v -> a
-gamFoldWithKey f = Map.foldWithKey (liftFoldKey f)
+gamFoldWithKey f = Map.foldrWithKey (liftFoldKey f)
 
 gamFold :: (v -> a -> a) -> a -> Gam k v -> a
 gamFold f = Map.fold (liftFold f)

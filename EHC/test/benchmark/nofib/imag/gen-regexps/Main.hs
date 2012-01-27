@@ -9,10 +9,8 @@
 module Main (main) where
 
 import Data.Char
-import System.Environment
 
-main =  do [xs] <- getArgs  
-           print (numchars (expand xs))
+main = getContents >>= print . numchars . expand . head . lines
 
 numchars :: [String] -> Int
 numchars l = sum $ map length l

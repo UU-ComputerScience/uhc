@@ -1,3 +1,10 @@
+
+For the construction of dictionaries, two lists of definitions need to be merged:
+  - the default definitions form the class
+  - the definitions from the instance
+
+
+
 %%[(9 codegen grin) ag import({GrinCode/AbsSyn})
 %%]
 
@@ -5,7 +12,7 @@
 WRAPPER GrAGItf
 %%]
 
-%%[(9 codegen grin) hs module {%{EH}GrinCode.Trf.MergeInstance} import(qualified Data.Map as Map)
+%%[(9 codegen grin) hs module {%{EH}GrinCode.Trf.MergeInstance} import(qualified Data.Map as Map,qualified Data.Set as Set)
 %%]
 %%[(9 codegen grin) hs import(Debug.Trace)
 %%]
@@ -29,10 +36,13 @@ ATTR AllNT   [ | | grTrf: SELF     ]
 
 %%[(9 codegen grin) hs
 
-type ClassMap = Map.Map HsName [Maybe HsName]
-type DictMap  = Map.Map HsName [Maybe HsName]
-type ArityMap = Map.Map HsName (Int, [[Int]])
+type ClassMap = Map.Map HsName [Track]
+type DictMap  = Map.Map HsName ([HsName],[Track])
+type DictMap2 = Map.Map HsName (HsName,[HsName],[Track])
+type ArityMap = Map.Map HsName Int
 type SynoMap  = Map.Map HsName HsName
+type DictMap3 = Map.Map [HsName] HsName
+
 
 %%]
 
@@ -44,23 +54,41 @@ ATTR AllBind [
              | collectClassMap USE {`Map.union`} {Map.empty} : {ClassMap} 
                collectArityMap USE {`Map.union`} {Map.empty} : {ArityMap} 
                collectDictMap  USE {`Map.union`} {Map.empty} : {DictMap}
+               collectDictGenMap  USE {`Map.union`} {Map.empty} : {DictMap}
+               collectDictAppMap  USE {`Map.union`} {Map.empty} : {DictMap3}
                newBinds        USE {++}          {[]}        : GrBindL
              ]
               
-ATTR AllGlobal [ dictMap  :  {DictMap}
-                 classMap :  {ClassMap}
-                 arityMap :  {ArityMap}
+ATTR AllGlobal [ omit : {Set.Set HsName}
                | 
                | collectSynoMap USE {`Map.union`} {Map.empty} : {SynoMap}
                ]
 
+ATTR AllBind GrExpr [ dictGenMap  : {DictMap} | | ]
+
+ATTR GrExpr  [ | | mbDictGenCall : { Maybe (HsName,[HsName],[Track]) } ]
+
 ATTR GrTag GrVal [ | | mbFunNm : {Maybe HsName} ]
+
+ATTR GrVal  [ | | getName  : { HsName } ]
+ATTR GrValL [ | | getNames : {[HsName]} ]
 
 
 SEM GrModule
-  | Mod    globalL.dictMap  = Map.mapKeys (\k -> (Map.findWithDefault (error "MergeInstance: no synonym") k @globalL.collectSynoMap)) @bindL.collectDictMap 
-           globalL.classMap = @bindL.collectClassMap
-           globalL.arityMap = @bindL.collectArityMap
+  | Mod    bindL.dictGenMap   = @bindL.collectDictGenMap
+           globalL.omit       = Map.keysSet @loc.dictMap
+           loc.dictMap        = Map.mapKeys (\k -> (Map.findWithDefault (error ("MergeInstance: no synonym for" ++ show k ++ " in " ++ show @globalL.collectSynoMap)) k @globalL.collectSynoMap)) @bindL.collectDictMap 
+           loc.dictAppMap     = Map.map     (\v -> (Map.findWithDefault (error ("MergeInstance: no synonym for" ++ show v ++ " in " ++ show @globalL.collectSynoMap)) v @globalL.collectSynoMap)) @bindL.collectDictAppMap
+           loc.mergedDictMap  = Map.mapWithKey (mergeDict @bindL.collectClassMap)  @loc.dictMap 
+           lhs.grTrf = -- trace ("mergedDictMap: " ++ show @loc.mergedDictMap ++ "  dictAppMap: " ++ show @loc.dictAppMap) $
+                             (GrModule_Mod @moduleNm  
+                                           (extraGlobals @bindL.collectArityMap @loc.mergedDictMap @loc.dictAppMap ++ @globalL.grTrf)
+                                           @bindL.grTrf   
+                                           @tagsMp
+                             )
+
+SEM GrAlt
+  | Alt    expr.dictGenMap  = Map.empty
 
 
 SEM GrBind
@@ -68,20 +96,62 @@ SEM GrBind
                                       GrBindAnnClass xs -> Map.singleton @nm xs
                                       _                 -> Map.empty
             lhs.collectArityMap  =  case @annot of
-                                      GrBindAnnOverloaded xs -> Map.singleton @nm (length @argNmL - length xs, xs )
                                       GrBindAnnClass _       -> Map.empty
                                       GrBindAnnInstance _    -> Map.empty
-                                      _                      -> Map.singleton @nm (length @argNmL            , [] )
+                                      _                      -> Map.singleton @nm (length @argNmL)
 
+            lhs.collectDictGenMap =  case @annot of
+                                           GrBindAnnInstance ts  -> if null @argNmL 
+                                                                    then Map.empty
+                                                                    else Map.singleton @nm (@argNmL , ts )
+                                           _                     -> Map.empty
+                                           
+                                           
+            (lhs.newBinds
+            ,lhs.collectDictMap
+            ,lhs.collectDictAppMap)  =  case @annot of
+                                           GrBindAnnInstance ts  -> ( if null @argNmL
+                                                                      then []               -- makeDict function is deleted from bindings, because it is now statically evaluated
+                                                                      else 
+                                                                           [@loc.grTrf]     -- TODO: genDict function should also be deletable from bindings, but if we try we get problems with locally generated dictionaries, as e.g. Eq [Char] in UHC.Base.lex
+                                                                      -- []    -- both makeDict and genDict are removed from bindings
+                                                                    , if null @argNmL
+                                                                      then Map.singleton @nm ([],ts)   -- makeDict
+                                                                      else Map.empty                   -- genDict
+                                                                    , Map.empty
+                                                                    )
+                                           GrBindAnnClass _      -> ( [@loc.grTrf], Map.empty, Map.empty )   -- TODO: class function should also be deletable from bindings
+                                           _                     -> if null @argNmL
+                                                                    then  maybe ([@loc.grTrf], Map.empty, Map.empty)
+                                                                                (\(genNm,ctx,ts) -> ( []  --  [@loc.grTrf]                                     -- function which only calls genDict function can be deleted from bindings, because it is now statically evaluated
+                                                                                                    , Map.singleton @nm (ctx,ts)
+                                                                                                    , Map.singleton (genNm:ctx) @nm
+                                                                                                    )
+                                                                                )   
+                                                                                @expr.mbDictGenCall
+                                                                    else  ( [@loc.grTrf]
+                                                                          , Map.empty
+                                                                          , Map.empty
+                                                                          )
+  | Rec     lhs.newBinds = [GrBind_Rec @bindL.grTrf]
 
+SEM GrExpr
+  | Call    lhs.mbDictGenCall  =  maybe Nothing 
+                                        (\(_,ts) -> Just (@nm, @argL.getNames, ts))
+                                        (Map.lookup @nm @lhs.dictGenMap)
+  | *-Call  lhs.mbDictGenCall  =  Nothing
 
-SEM GrBind
-  | Bind    (lhs.newBinds
-            ,lhs.collectDictMap)  =  case @annot of
-                                           GrBindAnnInstance xs  -> ([], Map.singleton @nm xs)
-                                           _                     -> ([@loc.grTrf], Map.empty)
-  | Rec     lhs.newBinds = [GrBind_Rec @bindL.newBinds]
+SEM GrVal
+  | Var    lhs.getName = @nm
+  | *-Var  lhs.getName = error ("MergeInstance: expected name, found " ++ show (@loc.grTrf))
+  
+SEM GrValL
+  | Nil    lhs.getNames = []
+  | Cons   lhs.getNames = @hd.getName : @tl.getNames
 
+SEM GrBindL
+  | Nil     lhs.grTrf = []
+  | Cons    lhs.grTrf = @hd.newBinds ++ @tl.grTrf
 
 SEM GrGlobal
   | Global  lhs.collectSynoMap  =  maybe Map.empty
@@ -101,22 +171,9 @@ SEM GrVal
 
 SEM GrGlobalL
   | Cons     lhs.grTrf  =  case @hd.grTrf of
-                             GrGlobal_Global nm1 (GrVal_Node (GrTag_Fun nm2) []) 
-                                -> maybe @loc.grTrf
-                                         (\(Just tagNm : Just classNm : funDefs)
-                                             ->                let dfltDefs = Map.findWithDefault (error "class not found") classNm @lhs.classMap
-                                                                   arity  = length funDefs
-                                                                   tagAnn = GrTagAnn arity arity
-                                                                   tag    = GrTag_Con tagAnn 0 tagNm
-                                                                   pairs  = mergeFields @lhs.dictMap @lhs.arityMap nm1 funDefs dfltDefs
-                                                                   fields = [ v | (v, _     ) <- pairs ]
-                                                                   globs  = [ g | (_, Just g) <- pairs ]
-                                                                   value  = GrVal_Node tag fields
-                                                                   glob   = GrGlobal_Global nm1 value
-                                                               in  ( globs ++ [glob] ++ @tl.grTrf)
-                                         )
-                                         (Map.lookup nm1 @lhs.dictMap)                 
-                             _ -> @loc.grTrf
+                             GrGlobal_Global nm1 node  ->  if nm1 `Set.member` @lhs.omit
+                                                           then @tl.grTrf
+                                                           else @loc.grTrf
 
 
 
@@ -124,30 +181,61 @@ SEM GrGlobalL
 
 %%[(9 codegen grin) hs
 
-mergeFields :: DictMap -> ArityMap -> HsName -> [Maybe HsName] -> [Maybe HsName] -> [(GrVal, Maybe GrGlobal)]
-mergeFields dictMap am i fundefs defltdefs =  zipWith3 (mergeField dictMap fundefs am i) [0..] fundefs defltdefs
+extraGlobals :: ArityMap -> DictMap2 -> DictMap3 -> [GrGlobal]
+extraGlobals am dm pm = concatMap (extraGlobalsDict am dm pm) (Map.toList dm)
 
-mergeField :: DictMap -> [Maybe HsName] -> ArityMap -> HsName -> Int -> Maybe HsName -> Maybe HsName -> (GrVal, Maybe GrGlobal)
-mergeField dictMap fundefs am nm k (Just v) _        = makeGlobal dictMap fundefs am nm k v
-mergeField dictMap fundefs am nm k _        (Just v) = makeGlobal dictMap fundefs am nm k v
-mergeField dictMap fundefs am nm k Nothing  Nothing  = (GrVal_Var hsnUndefined, Nothing)
+extraGlobalsDict :: ArityMap -> DictMap2 -> DictMap3 -> (HsName,(HsName,[HsName],[Track])) -> [GrGlobal]
+extraGlobalsDict am dm pm (dictNm,(tagNm,context,ts))
+  =  let arity  = length ts
+         tagAnn = GrTagAnn arity arity
+         tag    = GrTag_Con tagAnn 0 tagNm
+         value  = GrVal_Node tag fields
+         dict   = GrGlobal_Global dictNm value
+         pairs  = zipWith (extraGlobalField am dm pm dictNm context) [0..] ts
+         fields = [ GrVal_Var v | (v, _     ) <- pairs ]
+         globs  = [           g | (_, Just g) <- pairs ]
+     in  dict : globs
 
-makeGlobal :: DictMap -> [Maybe HsName] -> ArityMap -> HsName -> Int -> HsName -> (GrVal, Maybe GrGlobal)
-makeGlobal dictMap fundefs am nm k v 
-   = case Map.lookup v am of
-                        Nothing      -> (GrVal_Var v, Nothing)
-                        Just (a,dss) -> let tag  = GrTag_PApp a v
-                                            args = map f dss
-                                            f ds = selectField dictMap fundefs nm ds
-                                            node = GrVal_Node tag args
-                                            name = hsnSuffix nm ('~':show k)
-                                        in  (GrVal_Var name, Just (GrGlobal_Global name node))
+extraGlobalField :: ArityMap -> DictMap2 -> DictMap3 -> HsName -> [HsName] -> Int -> Track -> (HsName, Maybe GrGlobal)
+extraGlobalField am dm pm dictNm context k TrackNone 
+  = (hsnUndefined, Nothing)
+extraGlobalField am dm pm dictNm context k (TrackVarApply v vs) 
+  = case Map.lookup v am of
+        Nothing      -> if null vs 
+                        then (v, Nothing)
+                        else let pay = map (\t -> (fst (extraGlobalField am dm pm dictNm context undefined t))) vs
+                             in  case Map.lookup (v:pay) pm of
+                                      Nothing -> trace ("not in aritymap: " ++ show v ++ " yet applied to " ++ show vs) (v, Nothing)
+                                      Just x  -> (x, Nothing)
+        Just a       -> let a2   = a - length vs
+                            tag  = GrTag_PApp a2 v
+                            pay  = map (\t -> (GrVal_Var (fst (extraGlobalField am dm pm dictNm context undefined t)))) vs
+                            node = GrVal_Node tag pay
+                            name = hsnUniqifyStr HsNameUniqifier_GloballyUniqueDict (show k) dictNm
+                        in  (name, Just (GrGlobal_Global name node))
+extraGlobalField am dm pm dictNm context k TrackSelf 
+  = (dictNm, Nothing)
+extraGlobalField am dm pm dictNm context k (TrackCtx n)
+  = (context!!n, Nothing)
+extraGlobalField am dm pm dictNm context k (TrackSelect n t) 
+  = let (d2,_) = extraGlobalField am dm pm dictNm context undefined t
+        (_,_,as) = Map.findWithDefault (error ("context not found in dictionary: " ++ show d2)) d2 dm
+        TrackVarApply r _ = as !! n
+    in  (r, Nothing)
 
-selectField :: DictMap -> [Maybe HsName] -> HsName -> [Int] -> GrVal
-selectField dictMap fundefs nm []     =  GrVal_Var nm
-selectField dictMap fundefs nm (x:xs) =  let Just a = fundefs!!x
-                                             b = Map.findWithDefault (error ("not found: " ++ show a ++ " being " ++ show x ++ " from " ++ show fundefs )) a dictMap
-                                         in selectField dictMap (drop 2 b) a xs
+
+
+
+mergeDict :: ClassMap -> HsName -> ([HsName],[Track]) -> (HsName,[HsName],[Track])
+mergeDict cm nm (context, t1@(TrackVarApply tagNm _)  : t2@(TrackVarApply classNm _) : instanceFields)
+  =  let defaultFields = Map.findWithDefault (error "class not found") classNm cm
+         mergedFields = zipWith mergeDictField defaultFields instanceFields
+     in  (tagNm, context, mergedFields)
+
+mergeDictField :: Track -> Track -> Track
+mergeDictField t         TrackNone = t
+mergeDictField _         t         = t
 
 
 %%]
+

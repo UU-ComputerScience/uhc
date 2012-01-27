@@ -36,7 +36,7 @@ PRAGMA nostrictcase
 
 %%[(3 hmtyinfer || hmtyast).tyQuantify hs
 tyQuantify :: TvIsBound -> Ty -> Ty
-tyQuantify tvIsBound ty = mkTyQu (filter (not.tvIsBound) (ftv ty)) ty
+tyQuantify tvIsBound ty = mkTyQu (filter (not.tvIsBound) (varFree ty)) ty
 %%]
 
 %%[(3 hmtyinfer || hmtyast).valTyQuantify hs export(valTyQuantify)
@@ -87,14 +87,21 @@ tyQuantifyOuter tvKi tvIsBound ty
 
 %%[(6 hmtyinfer || hmtyast) -3.valTyQuantify hs export(tyKiQuantify,valTyQuantify)
 tyKiQuantify :: TvIsBound -> Ty -> Ty
-tyKiQuantify tvIsBound ty = tyQuantify' tvIsBound tyQu_Forall {- tyQu_KiForall -} ty
+tyKiQuantify tvIsBound ty -- = tyQuantify' tvIsBound tyQu_Forall {- tyQu_KiForall -} ty
+  = tqoTy $ tyQuantifyWithOpts opts ty
+  where opts = defaultTyQuOpts
+                  { tqoptAllowInnerQuant = False
+                  , tqoptTvIsBound       = tvIsBound
+                  , tqoptBaseQuant       = tyQu_Forall
+                  }
 
 valTyQuantify :: (TyVarId -> Ty) -> TvIsBound -> Ty -> Ty
 valTyQuantify tvKi tvIsBound ty
   = tqoTy $ tyQuantifyWithOpts opts ty
   where opts = defaultTyQuOpts
-                  { tqoptTvIsBound      = tvIsBound
-                  , tqoptTvL1       	= tvKi
+                  { tqoptAllowInnerQuant = False
+                  , tqoptTvIsBound       = tvIsBound
+                  , tqoptTvL1       	 = tvKi
                   }
 %%]
 
@@ -221,7 +228,7 @@ SEM TyAGItf
 %%% Free row vars
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(90 hmtyinfer || hmtyast)
+%%[(9090 hmtyinfer || hmtyast)
 ATTR Ty [ | | frRowTvL: TyVarIdL ]
 
 SEM Ty
@@ -346,7 +353,7 @@ tvNotBound mlev tvIsBound = Set.filter (\tv -> not (tvIsBound mlev tv))
 tvarsToQuantL1 :: TyVarIdsToBind -> TvLevIsBound -> (TyVarIdsToBind,TyVarIdS,TvLevIsBound)
 tvarsToQuantL1 boundablesL tvIsBound
   = (boundablesL1L,boundablesL1S,tvBoundAddS 1 boundablesL1S tvIsBound)
-  where boundablesL1S = tvNotBound 1 tvIsBound $ Set.unions [ ftvSet l1 | (_,l1) <- boundablesL ]
+  where boundablesL1S = tvNotBound 1 tvIsBound $ Set.unions [ varFreeSet l1 | (_,l1) <- boundablesL ]
         boundablesL1L = [ (v,kiStar) | v <- Set.toList boundablesL1S ]
 %%]
 
@@ -444,7 +451,7 @@ SEM Ty
 %%]
 SEM Ty
   | App Var     loc         .   (qBndTvs,qBndExTvs,qBndL1Tvs,tvIsBound)
-                                                        :=  tvarsToQuant @lhs.opts @isQuLoc @lhs.fxTvM (tvMayQuFx @hereQu @lhs.fxTvM @isQuFxLoc) @lhs.tvIsBound (@qHereTvS `Set.union` ftvSet @candPrL)
+                                                        :=  tvarsToQuant @lhs.opts @isQuLoc @lhs.fxTvM (tvMayQuFx @hereQu @lhs.fxTvM @isQuFxLoc) @lhs.tvIsBound (@qHereTvS `Set.union` varFreeSet @candPrL)
 
 %%[(9 hmtyinfer || hmtyast)
 SEM Ty

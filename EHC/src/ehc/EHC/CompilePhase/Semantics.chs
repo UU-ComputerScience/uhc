@@ -10,7 +10,7 @@ Folding over AST to compute semantics
 -- general imports
 %%[8 import(qualified Data.Map as Map)
 %%]
-%%[20 import(qualified Data.Set as Set)
+%%[50 import(qualified Data.Set as Set)
 %%]
 
 %%[8 import({%{EH}EHC.Common})
@@ -30,19 +30,23 @@ Folding over AST to compute semantics
 %%[(8 codegen grin) import(qualified {%{EH}Core} as Core, qualified {%{EH}Core.ToGrin} as Core2GrSem)
 %%]
 -- TyCore syntax and semantics
-%%[(8 codegen) import(qualified {%{EH}TyCore} as C)
+%%[(8 codegen tycore) import(qualified {%{EH}TyCore} as C)
 %%]
 
 -- HI syntax and semantics
-%%[20 import(qualified {%{EH}HI.MainAG} as HISem,qualified {%{EH}HI} as HI)
+%%[50 import(qualified {%{EH}HI} as HI)
 %%]
 
 -- Module
-%%[20 import(qualified EH.Util.Rel as Rel)
+%%[50 import(qualified EH.Util.Rel as Rel)
 %%]
-%%[20 import({%{EH}Module})
+%%[50 import({%{EH}Module})
 %%]
-%%[20 import(qualified {%{EH}HS.ModImpExp} as HSSemMod)
+%%[50 import(qualified {%{EH}HS.ModImpExp} as HSSemMod)
+%%]
+
+-- for debug
+%%[50 hs import({%{EH}Base.Debug},EH.Util.Pretty)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -60,7 +64,7 @@ cpFoldCore modNm
                  coreSem  = Core2GrSem.wrap_CodeAGItf
                               (Core2GrSem.sem_CodeAGItf (Core.CodeAGItf_AGItf core))
                               (coreInh { Core2GrSem.gUniq_Inh_CodeAGItf            = crsiHereUID crsi
-                                       , Core2GrSem.opts_Inh_CodeAGItf             = crsiOpts crsi
+                                       , Core2GrSem.opts_Inh_CodeAGItf             = opts
                                        })
          ;  when (isJust mbCore)
                  (cpUpdCU modNm ( ecuStoreCoreSem coreSem
@@ -79,7 +83,7 @@ cpFoldEH modNm
                                                   { EHSem.moduleNm_Inh_AGItf         = ecuModNm ecu
                                                   , EHSem.gUniq_Inh_AGItf            = crsiHereUID crsi
                                                   , EHSem.opts_Inh_AGItf             = opts
-%%[[20
+%%[[50
                                                   , EHSem.isMainMod_Inh_AGItf        = ecuIsMainMod ecu
 %%]]
                                                   })
@@ -96,9 +100,9 @@ cpFoldHs modNm
                  mbHS   = ecuMbHS ecu
                  inh    = crsiHSInh crsi
                  hsSem  = HSSem.wrap_AGItf (HSSem.sem_AGItf $ panicJust "cpFoldHs" mbHS)
-                                           (inh { HSSem.opts_Inh_AGItf             = crsiOpts crsi
+                                           (inh { HSSem.opts_Inh_AGItf             = opts
                                                 , HSSem.gUniq_Inh_AGItf            = crsiHereUID crsi
-%%[[20
+%%[[50
                                                 , HSSem.moduleNm_Inh_AGItf         = modNm
                                                 , HSSem.isTopMod_Inh_AGItf         = ecuIsTopMod ecu
                                                 , HSSem.modInScope_Inh_AGItf       = inscps
@@ -106,44 +110,36 @@ cpFoldHs modNm
                                                 , HSSem.topInstanceNmL_Inh_AGItf   = modInstNmL (ecuMod ecu)
 %%]]
                                                 })
-%%[[20
+%%[[50
                         where mmi    = panicJust "cpFoldHs.crsiModMp" $ Map.lookup modNm $ crsiModMp crsi
                               inscps = Rel.toDomMap $ mmiInscps $ mmi
                               exps   = Rel.toRngMap $ Rel.restrictRng (\o -> let mq = hsnQualifier (ioccNm o) in isJust mq && fromJust mq /= modNm)
-                                                    $ Rel.mapRng mentIdOcc $ mmiExps $ mmi
+                                                    $ Rel.mapRng mentIdOcc $ mmiExps mmi
 %%]]
-%%[[20
+%%[[50
                  hasMain= HSSem.mainValExists_Syn_AGItf hsSem
 %%]]
          ;  when (isJust mbHS)
                  (do { cpUpdCU modNm ( ecuStoreHSSem hsSem
-%%[[20
+%%[[50
                                      . ecuStoreHIDeclImpL (ecuHSDeclImpNmL ecu)
                                      -- . ecuSetHasMain hasMain
 %%]]
                                      )
-%%[[20
+%%[[50
                      ; when (ehcOptVerbosity opts >= VerboseDebug)
                             (lift $ putStrLn (show modNm ++ " hasMain=" ++ show hasMain))
-                     ; when hasMain
-                            (do { cr <- get
-                                ; let (crsi,opts) = crBaseInfo' cr
-                                      mkerr lim ns = cpSetLimitErrs 1 "compilation run" [rngLift emptyRange Err_MayOnlyHaveNrMain lim ns modNm]
-                                ; case crsiMbMainNm crsi of
-                                    Just n                   -> mkerr 1 [n]
-                                    _ | ehcOptDoLinking opts -> cpUpdSI (\crsi -> crsi {crsiMbMainNm = Just modNm})
-                                      | otherwise            -> mkerr 0 []
-                                })
+                     ; when hasMain (crSetAndCheckMain modNm)
 %%]]
                      })
          }
 %%]
 
-%%[20 export(cpFoldHsMod)
+%%[50 export(cpFoldHsMod)
 cpFoldHsMod :: HsName -> EHCompilePhase ()
 cpFoldHsMod modNm
   =  do  {  cr <- get
-         ;  let  (ecu,crsi,_,_) = crBaseInfo modNm cr
+         ;  let  (ecu,crsi,opts,_) = crBaseInfo modNm cr
                  mbHS       = ecuMbHS ecu
                  inh        = crsiHSModInh crsi
                  hsSemMod   = HSSemMod.wrap_AGItf (HSSemMod.sem_AGItf $ panicJust "cpFoldHsMod" mbHS)
@@ -151,37 +147,50 @@ cpFoldHsMod modNm
                                                        , HSSemMod.moduleNm_Inh_AGItf     = modNm
                                                        })
                  hasMain= HSSemMod.mainValExists_Syn_AGItf hsSemMod
+%%[[99
+                 pragmas = HSSemMod.fileHeaderPragmas_Syn_AGItf hsSemMod
+                 (ecuOpts,modifiedOpts)
+                         = ehcOptUpdateWithPragmas pragmas opts
+%%]]
          ;  when (isJust mbHS)
                  (cpUpdCU modNm ( ecuStoreHSSemMod hsSemMod
                                 . ecuSetHasMain hasMain
+%%[[99
+                                . ecuStorePragmas pragmas
+                                . (if modifiedOpts then ecuStoreOpts ecuOpts else id)
+%%]]
                  )              )
          }
 %%]
 
-%%[20 export(cpFoldHI)
-cpFoldHI :: HsName -> EHCompilePhase ()
-cpFoldHI modNm
+%%[50 export(cpFoldHIInfo)
+cpFoldHIInfo :: HsName -> EHCompilePhase ()
+cpFoldHIInfo modNm
   =  do  {  cr <- get
          ;  let  (ecu,crsi,opts,_) = crBaseInfo modNm cr
-                 mbHI   = ecuMbPrevHI ecu
-                 inh    = crsiHIInh crsi
-                 hiSem  = HISem.wrap_AGItf (HISem.sem_AGItf $ panicJust "cpFoldHI" mbHI)
-                                           (inh { HISem.opts_Inh_AGItf             = crsiOpts crsi
-                                                })
-                 hiSettings = maybe HI.emptyHiSettings id $ HISem.settings_Syn_AGItf hiSem
-                 hasMain    = HI.hisettingsHasMain hiSettings
-         ;  when (isJust mbHI && HISem.isValidVersion_Syn_AGItf hiSem)
+                 mbHIInfo   = ecuMbPrevHIInfo ecu
+                 hiInfo     = panicJust "cpFoldHIInfo" mbHIInfo
+                 hasMain    = HI.hiiHasMain hiInfo
+         ;  when (isJust mbHIInfo && HI.hiiValidity hiInfo == HI.HIValidity_Ok)
                  (do { let mm     = crsiModMp crsi
                            mmi    = Map.findWithDefault emptyModMpInfo modNm mm
-                           mmi'   = mkModMpInfo modNm (mmiInscps mmi) (HISem.exportRel_Syn_AGItf hiSem) (HISem.exportHideRel_Syn_AGItf hiSem)
+                           mmi'   = mkModMpInfo modNm
+                                                (mmiInscps mmi)
+                                                ({- (\v -> tr "cpFoldHIInfo.hiiExps" (pp v) v) $ -} HI.hiiExps hiInfo)
+                                                (HI.hiiHiddenExps hiInfo)
+                     ; when hasMain (crSetAndCheckMain modNm)
                      ; cpUpdSI (\crsi -> crsi {crsiModMp = Map.insert modNm mmi' mm})
-                     ; cpUpdCU modNm ( ecuStorePrevHISem hiSem
-                                     . ecuStoreHIDeclImpL (HISem.asDeclImpModL_Syn_AGItf hiSem)
-                                     . ecuStoreHIUsedImpL (HISem.asUsedImpModL_Syn_AGItf hiSem)
+                     ; cpUpdCU modNm ( ecuStorePrevHIInfo hiInfo
+                                     . ecuStoreHIDeclImpL (HI.hiiHIDeclImpModL hiInfo)
+                                     . ecuStoreHIUsedImpL (HI.hiiHIUsedImpModL hiInfo)
                                      . ecuSetHasMain hasMain
                                      )
                      ; when (ehcOptVerbosity opts >= VerboseDebug)
-                            (lift $ putStrLn (show modNm ++ ": hi imps, decl=" ++ show (HISem.asDeclImpModL_Syn_AGItf hiSem) ++ ", used=" ++ show (HISem.asUsedImpModL_Syn_AGItf hiSem)))
+                            (lift $ putStrLn
+                               (show modNm
+                                ++ ": hi imps, decl=" ++ show (HI.hiiHIDeclImpModL hiInfo)
+                                ++ ", used=" ++ show (HI.hiiHIUsedImpModL hiInfo)
+                            )  )
                      })
          }
 %%]

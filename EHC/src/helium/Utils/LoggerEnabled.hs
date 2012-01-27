@@ -12,9 +12,9 @@ import Network
 import Control.Concurrent
 import Monad
 import System
-import Char
+import Data.Char
 import List
-import IO
+import System.IO
 import Helium.Compiler.Version
 
 {-# NOTINLINE logger #-}

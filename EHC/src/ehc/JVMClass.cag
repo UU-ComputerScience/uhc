@@ -2,7 +2,7 @@
 %%% Haskell importable interface to JVM class
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 java) hs module {%{EH}JVMClass} import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Base.Opts})
+%%[(8 java) hs module {%{EH}JVMClass} import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Opts})
 %%]
 
 %%[(8 java) hs import(Data.Maybe,Data.Char,Data.List)
@@ -73,7 +73,7 @@ type Label = Int
 
 %%[(8 java) hs export(showClassRef)
 showClassRef :: ClassRef -> String
-showClassRef r = hsnShow "/" r
+showClassRef r = hsnShow True "/" "_" r
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -30,7 +30,7 @@ import Helium.StaticAnalysis.Miscellaneous.TypeConstraints
 import qualified Data.Map as M
 import Helium.ModuleSystem.ImportEnvironment
 import Helium.Parser.OperatorTable
-import Char ( isUpper )
+import Data.Char ( isUpper )
 }
 
 ATTR *

@@ -5,7 +5,7 @@
 %%[1 hs module(Main)
 %%]
 
-%%[1 hs import (System, IO, Control.Monad.State, qualified Data.Map as Map)
+%%[1 hs import (System.IO, System.Environment, System.Exit, Control.Monad.State, qualified Data.Map as Map)
 %%]
 
 %%[1 hs import (System.Console.GetOpt, EH.Util.Pretty, EH.Util.Utils( panicJust ))
@@ -93,10 +93,12 @@ instance CompileUnit RCompileUnit Nm String RCompileUnitState where
   cuUpdKey   nm u   = u {rcuModNm = nm}
   cuImports         = rcuImpNmL
 
+instance FPathError Err
+
 instance CompileRunError Err SPos where
-  crePPErrL                 = ppErrPPL
-  creMkNotFoundErrL p fp sp = [Err_FileNotFound p fp sp]
-  creAreFatal               = errLIsFatal
+  crePPErrL                      = ppErrPPL
+  creMkNotFoundErrL p fp sp sufs = [Err_FileNotFound p fp sp]
+  creAreFatal                    = errLIsFatal
 
 instance CompileRunStateInfo RCompileRunStateInfo Nm SPos where
   crsiImportPosOfCUKey n i = Map.findWithDefault emptySPos n (crsiImpPosMp i)
@@ -124,10 +126,10 @@ instance PP RCompileUnit where
 -- File suffix
 -------------------------------------------------------------------------
 
-type FileSuffMp = [(String,RCompileUnitState)]
+type FileSuffMp = [(FileSuffix,RCompileUnitState)]
 
 fileSuffMp :: FileSuffMp
-fileSuffMp = [ ( "rul", RCUSRuler ), ( "", RCUSRuler ), ( "*", RCUSRuler ) ]
+fileSuffMp = [ ( Just "rul", RCUSRuler ), ( Just "", RCUSRuler ), ( Just "*", RCUSRuler ) ]
 
 -------------------------------------------------------------------------
 -- Compile run actions

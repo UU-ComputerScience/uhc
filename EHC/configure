@@ -667,20 +667,37 @@ EH_VERSION_MINORMINOR
 EH_VERSION_STABILITY
 EH_VERSION_SHORT
 EH_VERSION_FULL
+EH_VERSION_ASNUMBER
+m4Cmd
+svnCmd
+SVN_EXISTS
+SVN_CMD
+svnVersionCmd
+SVN_VERSION_EXISTS
+SVN_VERSION_CMD
+SVN_REVISION
 ENABLE_JAVA
 javacCmd
 jarCmd
 JAVAC_CMD
 JAR_CMD
+ENABLE_JS
+ENABLE_CMM
+ENABLE_CWHOLEPROG
+ENABLE_LLVM
 ENABLE_CLR
+ENABLE_TYCORE
+ENABLE_TAUPHI
 ranlibCmd
 RANLIB_CMD
 arCmd
 AR_CMD
+catCmd
+CAT_CMD
 libtoolStaticCmd
+EHC_BUILD_SUFFIX
 GCC_EHC_OPTIONS
 CPP_EHC_OPTIONS
-GHC_EHC_OPTIONS
 SHUFFLE_EHC_OPTIONS
 UUAGC_OPTIONS
 UUAGC_EHC_AST_OPTIONS
@@ -690,7 +707,12 @@ TOPLEVEL_SYSTEM_ABSPATH_PREFIX
 ghcCmd
 GHC_CMD
 GHC_VERSION
+GHC_EHC_OPTIONS
+GHC_GEN_OPTIONS
+GHC_CMD1
 ghcPkgCmd
+hsc2hsCmd
+HSC2HS_CMD
 haddockCmd
 HADDOCK_CMD
 HADDOCK_VERSION
@@ -720,20 +742,25 @@ llvmLlc
 LLVM_LLC_CMD
 md5Cmd
 MD5_CMD
+tarCmd
+TAR_CMD
 CPP
 GREP
 EGREP
 GCC_EXTLIBS_OPTIONS
-MACH_DEP_C_FOR_TAILCALL_ENTER
-MACH_DEP_C_FOR_TAILCALL_LEAVE1
-MACH_DEP_C_FOR_TAILCALL_LEAVE2
+GMP_ABI
+GCLIB
+MPLIB
+GMP_LIB_ARCHIVE
 GCC_EHC_EXTRA_EXTERN_LIBS
 SUFFIX_SHELL
 SUFFIX_EXEC
-SUFFIX_LIB
+SUFFIX_LIBC
+SUFFIX_LIBJS
 PREFIX_LIB
 PATHS_SEP
 SLASH
+LINKER_SYMBOL_PREFIX
 DEVELOPMENT_PLATFORM
 LIBTOOL_STATIC_CMD
 LIBTOOL_STATIC_OPTS
@@ -1343,20 +1370,25 @@ Optional Features:
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
   --enable-java           include java code generation
+  --enable-cmm            include cmm code generation
+  --enable-cwholeprog     include C whole program code generation
+  --enable-llvm           include llvm code generation
   --enable-clr            include clr code generation
+  --enable-tycore         include TyCore typed intermediate language
+  --enable-tauphi         include TauPhi language extension and analyses
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
+  --with-build-suffix=<suffix for build locations>
+                          Suffix for build locations and library names of
+                          globally visible cabal managed libraries.
   --with-gcc-ehc-options=<gcc compiler options for compiling runtime and ehc's gcc invocation>
                           Additional options to pass to GCC when compiling
                           with EHC.
   --with-cpp-ehc-options=<cpp preprocessor options for ehc's cpp invocation>
                           Additional options to pass to GCC when compiling
                           with EHC.
-  --with-ghc-ehc-options=<haskell compiler options for compiling ehc>
-                          Additional options to pass to GHC when compiling
-                          EHC.
   --with-shuffle-ehc-options=<shuffle options for compiling ehc>
                           Additional options to pass to SHUFFLE when compiling
                           EHC.
@@ -1377,6 +1409,9 @@ Optional Packages:
   --with-hc=<haskell compiler>
                           Use a command different from 'ghc' to compile with
                           GHC.
+  --with-ghc-ehc-options=<haskell compiler options for compiling ehc>
+                          Additional options to pass to GHC when compiling
+                          EHC.
   --with-haddock=<haddock>
                           Use a command different from 'haddock' to generate
                           doc.
@@ -1395,6 +1430,11 @@ Optional Packages:
                           Path to the LLVM bitcode optimizer
   --with-llc=<LLVM Compiler>
                           Path to the LLVM Compiler
+  --with-mplib=ltm|gmp    Specify which MP library to use. Default is ltm
+                          (builtin derivative of LibTomMath).
+  --with-gmplibarchive=<gmp lib archive>
+                          If GMP is used, specify absolute location of GMP
+                          archive (named like .../gmp-X.Y.Z.tar.gz).
 
 Some influential environment variables:
   CC          C compiler command
@@ -1839,7 +1879,7 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
 ### version of autoconf used (and required)
-#AC_PREREQ(2.52)
+#AC_PREREQ(2.64)
 
 ### revision
 
@@ -1991,7 +2031,6 @@ case $host_os in *\ *) host_os=`echo "$host_os" | sed 's/ /-/g'`;; esac
 
 
 HostPlatform=`/bin/sh $srcdir/config.sub $host` || exit 1
-
 ### Version info, extract from file VERSION
 # big change
 EH_VERSION_MAJOR=`awk -F . '{print $1}' VERSION`
@@ -2011,6 +2050,7 @@ EH_VERSION_SHORT=$EH_VERSION_MAJOR.$EH_VERSION_MINOR
 
 EH_VERSION_FULL=$EH_VERSION_MAJOR.$EH_VERSION_MINOR.$EH_VERSION_MINORMINOR
 
+EH_VERSION_ASNUMBER=$EH_VERSION_MAJOR$EH_VERSION_MINOR$EH_VERSION_MINORMINOR
 
 
 
@@ -2020,7 +2060,172 @@ EH_VERSION_FULL=$EH_VERSION_MAJOR.$EH_VERSION_MINOR.$EH_VERSION_MINORMINOR
 
 
 
-### enable options
+
+### obvious utils which are amiss on some platforms: m4
+
+  # Extract the first word of "m4", so it can be a program name with args.
+set dummy m4; ac_word=$2
+{ echo "$as_me:$LINENO: checking for $ac_word" >&5
+echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6; }
+if test "${ac_cv_path_m4Cmd+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  case $m4Cmd in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_m4Cmd="$m4Cmd" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+  for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_m4Cmd="$as_dir/$ac_word$ac_exec_ext"
+    echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+m4Cmd=$ac_cv_path_m4Cmd
+if test -n "$m4Cmd"; then
+  { echo "$as_me:$LINENO: result: $m4Cmd" >&5
+echo "${ECHO_T}$m4Cmd" >&6; }
+else
+  { echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6; }
+fi
+
+
+  if test -z "$m4Cmd"; then
+
+  { { echo "$as_me:$LINENO: error:
+     You must install m4 before you can continue
+     Perhaps it is already installed, but not in your PATH?" >&5
+echo "$as_me: error:
+     You must install m4 before you can continue
+     Perhaps it is already installed, but not in your PATH?" >&2;}
+   { (exit 1); exit 1; }; }
+
+  fi
+
+
+### svn log/history
+# Extract the first word of "svn", so it can be a program name with args.
+set dummy svn; ac_word=$2
+{ echo "$as_me:$LINENO: checking for $ac_word" >&5
+echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6; }
+if test "${ac_cv_path_svnCmd+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  case $svnCmd in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_svnCmd="$svnCmd" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+  for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_svnCmd="$as_dir/$ac_word$ac_exec_ext"
+    echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+svnCmd=$ac_cv_path_svnCmd
+if test -n "$svnCmd"; then
+  { echo "$as_me:$LINENO: result: $svnCmd" >&5
+echo "${ECHO_T}$svnCmd" >&6; }
+else
+  { echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6; }
+fi
+
+
+if test -x "$svnCmd"
+then
+  svnExists="yes"
+  ### $svnCmd log -rHEAD:1 --limit 100 > SVNLOG
+else
+  svnExists="no"
+fi
+SVN_EXISTS=$svnExists
+
+SVN_CMD=$svnCmd
+
+
+### svn revision
+# Extract the first word of "svnversion", so it can be a program name with args.
+set dummy svnversion; ac_word=$2
+{ echo "$as_me:$LINENO: checking for $ac_word" >&5
+echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6; }
+if test "${ac_cv_path_svnVersionCmd+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  case $svnVersionCmd in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_svnVersionCmd="$svnVersionCmd" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+  for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_svnVersionCmd="$as_dir/$ac_word$ac_exec_ext"
+    echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+svnVersionCmd=$ac_cv_path_svnVersionCmd
+if test -n "$svnVersionCmd"; then
+  { echo "$as_me:$LINENO: result: $svnVersionCmd" >&5
+echo "${ECHO_T}$svnVersionCmd" >&6; }
+else
+  { echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6; }
+fi
+
+
+if test -x "$svnVersionCmd"
+then
+  svnVersionExists="yes"
+  $svnVersionCmd > SVNREVISION
+else
+  svnVersionExists="no"
+fi
+svnRevision=`cat SVNREVISION`
+SVN_VERSION_EXISTS=$svnVersionExists
+
+SVN_VERSION_CMD=$svnVersionCmd
+
+SVN_REVISION=$svnRevision
+
+
+### enable options: java
 # Check whether --enable-java was given.
 if test "${enable_java+set}" = set; then
   enableval=$enable_java; enableJava=yes
@@ -2165,6 +2370,46 @@ echo "$as_me: error:
 
 fi
 
+### enable options: js (JavaScript), default is yes
+# AC_ARG_ENABLE(js, AS_HELP_STRING([--enable-js],[include JavaScript code generation]), [enableJavaScript=yes], [enableJavaScript=no])
+enableJavaScript="yes"
+ENABLE_JS=$enableJavaScript
+
+
+### enable options: cmm, default is no, temporary until development is ready
+# Check whether --enable-cmm was given.
+if test "${enable_cmm+set}" = set; then
+  enableval=$enable_cmm; enableCmm=yes
+else
+  enableCmm=no
+fi
+
+ENABLE_CMM=$enableCmm
+
+
+### enable options: cwholeprog, the C whole program backend, default is no, temporary until development restarts
+# Check whether --enable-cwholeprog was given.
+if test "${enable_cwholeprog+set}" = set; then
+  enableval=$enable_cwholeprog; enableCWholeprog=yes
+else
+  enableCWholeprog=no
+fi
+
+ENABLE_CWHOLEPROG=$enableCWholeprog
+
+
+### enable options: llvm, default is no
+# Check whether --enable-llvm was given.
+if test "${enable_llvm+set}" = set; then
+  enableval=$enable_llvm; enableLlvm=yes
+else
+  enableLlvm=no
+fi
+
+ENABLE_LLVM=$enableLlvm
+
+
+### enable options: clr (Tom Lokhorsts CLR backend), default is no
 # Check whether --enable-clr was given.
 if test "${enable_clr+set}" = set; then
   enableval=$enable_clr; enableClr=yes
@@ -2175,7 +2420,29 @@ fi
 ENABLE_CLR=$enableClr
 
 
-### ar, ranlib, libtool
+### enable options: tycore (Typed Core), default is no
+# Check whether --enable-tycore was given.
+if test "${enable_tycore+set}" = set; then
+  enableval=$enable_tycore; enableTyCore=yes
+else
+  enableTyCore=no
+fi
+
+ENABLE_TYCORE=$enableTyCore
+
+
+### enable options: tauphi (Tom Lokhorsts type based transformations on TyCore, based on work by Stefan Holdermans), default is no
+# Check whether --enable-tauphi was given.
+if test "${enable_tauphi+set}" = set; then
+  enableval=$enable_tauphi; enableTauPhi=yes
+else
+  enableTauPhi=no
+fi
+
+ENABLE_TAUPHI=$enableTauPhi
+
+
+### ranlib
 
   # Extract the first word of "ranlib", so it can be a program name with args.
 set dummy ranlib; ac_word=$2
@@ -2243,6 +2510,7 @@ esac
 RANLIB_CMD=$ranlibCmd
 
 
+### ar
 
   # Extract the first word of "ar", so it can be a program name with args.
 set dummy ar; ac_word=$2
@@ -2310,6 +2578,75 @@ esac
 AR_CMD=$arCmd
 
 
+### cat
+
+  # Extract the first word of "cat", so it can be a program name with args.
+set dummy cat; ac_word=$2
+{ echo "$as_me:$LINENO: checking for $ac_word" >&5
+echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6; }
+if test "${ac_cv_path_catCmd+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  case $catCmd in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_catCmd="$catCmd" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+  for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_catCmd="$as_dir/$ac_word$ac_exec_ext"
+    echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+catCmd=$ac_cv_path_catCmd
+if test -n "$catCmd"; then
+  { echo "$as_me:$LINENO: result: $catCmd" >&5
+echo "${ECHO_T}$catCmd" >&6; }
+else
+  { echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6; }
+fi
+
+
+  if test -z "$catCmd"; then
+
+  { { echo "$as_me:$LINENO: error:
+     You must install cat before you can continue
+     Perhaps it is already installed, but not in your PATH?" >&5
+echo "$as_me: error:
+     You must install cat before you can continue
+     Perhaps it is already installed, but not in your PATH?" >&2;}
+   { (exit 1); exit 1; }; }
+
+  fi
+
+# See remarks about cpp
+case $HostPlatform in
+  i*86-*-mingw* | i*86-*-cygwin* )
+        if test ! -x "$toplevelSystemAbsolutePathPrefix/$catCmd"
+        then
+          catCmd="`echo $catCmd | sed -e 's+/usr++'`"
+        fi
+        ;;
+  *)
+        ;;
+esac
+CAT_CMD=$catCmd
+
+
+### libtool
 
   # Extract the first word of "libtool", so it can be a program name with args.
 set dummy libtool; ac_word=$2
@@ -2365,6 +2702,20 @@ echo "$as_me: WARNING:
   fi
 
 
+### 'with' option for build suffix
+
+# Check whether --with-build-suffix was given.
+if test "${with_build_suffix+set}" = set; then
+  withval=$with_build_suffix;  ehcBuildSuffix="$withval"
+fi
+
+#if test "x$ehcBuildSuffix" != "x"
+#then
+#  ehcBuildSuffix="-$ehcBuildSuffix"
+#fi
+EHC_BUILD_SUFFIX="$ehcBuildSuffix"
+
+
 ### 'with' option for gcc options
 
 # Check whether --with-gcc-ehc-options was given.
@@ -2408,16 +2759,6 @@ case $HostPlatform in
 esac
 
 CPP_EHC_OPTIONS="$cppEhcOptions"
-
-
-### 'with' option for ghc options
-
-# Check whether --with-ghc-ehc-options was given.
-if test "${with_ghc_ehc_options+set}" = set; then
-  withval=$with_ghc_ehc_options;  ghcEhcOptions="$withval"
-fi
-
-GHC_EHC_OPTIONS="$ghcEhcOptions"
 
 
 ### 'with' option for shuffle options
@@ -2561,7 +2902,44 @@ GHC_CMD=$ghcCmd
 GHC_VERSION=$ghcVersion
 
 
-### now we know we have ghc, check for some libraries using ghc-pkg
+### 'with' option for ghc options
+
+# Check whether --with-ghc-ehc-options was given.
+if test "${with_ghc_ehc_options+set}" = set; then
+  withval=$with_ghc_ehc_options;  ghcEhcOptions="$withval"
+fi
+
+
+### some options *must* be passed to ghc >= 7.xx, but *may not* be passed to earlier ones
+case $ghcVersion in
+  6*)
+    ;;
+  *)
+    ghcGenOptions="$ghcGenOptions -rtsopts"
+    ;;
+esac
+
+GHC_EHC_OPTIONS="$ghcEhcOptions"
+
+GHC_GEN_OPTIONS="$ghcGenOptions"
+
+
+case $HostPlatform in
+  i*86-*-mingw* | i*86-*-cygwin* )
+  ghcCmd1=`echo $ghcCmd | sed 's+/\(.\)/+\1:/+'`
+  echo "ghcCmd is $ghcCmd, raw is $ghcCmd1"
+  echo $ghcCmd | sed 's+/\(.\)/+\1:/+'
+  ;;
+  *)
+  ghcCmd1=$ghcCmd
+  ;;
+esac
+
+GHC_CMD1=$ghcCmd1
+
+
+
+### assuming we have ghc, check for some of the additional tools
 # Extract the first word of "ghc-pkg", so it can be a program name with args.
 set dummy ghc-pkg; ac_word=$2
 { echo "$as_me:$LINENO: checking for $ac_word" >&5
@@ -2602,8 +2980,54 @@ echo "${ECHO_T}no" >&6; }
 fi
 
 
+# Extract the first word of "hsc2hs", so it can be a program name with args.
+set dummy hsc2hs; ac_word=$2
+{ echo "$as_me:$LINENO: checking for $ac_word" >&5
+echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6; }
+if test "${ac_cv_path_hsc2hsCmd+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  case $hsc2hsCmd in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_hsc2hsCmd="$hsc2hsCmd" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+  for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_hsc2hsCmd="$as_dir/$ac_word$ac_exec_ext"
+    echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+hsc2hsCmd=$ac_cv_path_hsc2hsCmd
+if test -n "$hsc2hsCmd"; then
+  { echo "$as_me:$LINENO: result: $hsc2hsCmd" >&5
+echo "${ECHO_T}$hsc2hsCmd" >&6; }
+else
+  { echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6; }
+fi
+
+
+HSC2HS_CMD=$hsc2hsCmd
+
+
+### now we know we have ghc, check for some libraries using ghc-pkg
 ghcLibUulibExists=no
 ghcLibFglExists=no
+ghcLibNetwork=no
+ghcLibBinary=no
 if test x$ghcExists = xyes
 then
   if test -x "$ghcCmd" -a -x "$ghcPkgCmd"
@@ -2624,6 +3048,12 @@ then
     ghcLibNetwork=`$ghcPkgCmd list --simple-output network`
     if test "x$ghcLibNetwork" != "x" ; then
       ghcLibNetworkExists=yes
+    fi
+
+    # binary
+    ghcLibBinary=`$ghcPkgCmd list --simple-output binary`
+    if test "x$ghcLibBinary" != "x" ; then
+      ghcLibBinaryExists=yes
     fi
   fi
 fi
@@ -2696,7 +3126,7 @@ HADDOCK_VERSION=$haddockVersion
 
 
 # GHC version dependencies: packages passed as option, cabal packages
-cabal_base_lib_depends="base haskell98 mtl fgl directory old-time"
+cabal_base_lib_depends="base mtl fgl directory old-time"
 if test x$enableClr = "xyes"
 then
   cabal_base_lib_depends="$cabal_base_lib_depends language-cil"
@@ -2868,6 +3298,10 @@ case $HostPlatform in
         if test ! -x "$toplevelSystemAbsolutePathPrefix/$gccCmd"
         then
           gccCmd="`echo $gccCmd | sed -e 's+/usr++'`"
+          if test -L "$toplevelSystemAbsolutePathPrefix/$gccCmd"
+          then
+            gccCmd="$gccCmd-3"
+          fi
         fi
         ;;
   *)
@@ -3953,12 +4387,17 @@ fi
 # Now we have to deal with weird cygwin behaviour which allows /usr/bin to be used
 # whereas in reality it is mapped onto /bin. Direct acccess to /usr/bin with a c:/cygwin prefix therefore does not work
 # and has to be stripped of the /usr part.
+# Then, the resulting filename may refer to a symbolic link. If so, Try to dereference it by postfixing -3, that is cpp becomes cpp-3
 # For other tools like gcc we have to this too.
 case $HostPlatform in
   i*86-*-mingw* | i*86-*-cygwin* )
         if test ! -x "$toplevelSystemAbsolutePathPrefix/$cppCmd"
         then
           cppCmd="`echo $cppCmd | sed -e 's+/usr++'`"
+          if test -L "$toplevelSystemAbsolutePathPrefix/$cppCmd"
+          then
+            cppCmd="$cppCmd-3"
+          fi
         fi
         ;;
   *)
@@ -3968,15 +4407,21 @@ esac
 CPP_CMD=$cppCmd
 
 
-# LLVM Assembler
+
+if test x$enableLlvm = xyes
+then
+  # LLVM Assembler
 
 # Check whether --with-llvm-as was given.
 if test "${with_llvm_as+set}" = set; then
   withval=$with_llvm_as;  llvmAs="$withval"
 else
 
-  if test "$LLVM_AS" = ""; then
-    # Extract the first word of "llvm-as", so it can be a program name with args.
+    if test "x$LLVM_AS" = "x"; then
+      if test x$enableLlvm = xyes
+      then
+
+  # Extract the first word of "llvm-as", so it can be a program name with args.
 set dummy llvm-as; ac_word=$2
 { echo "$as_me:$LINENO: checking for $ac_word" >&5
 echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6; }
@@ -4016,25 +4461,41 @@ echo "${ECHO_T}no" >&6; }
 fi
 
 
-  else
-    llvmAs=$LLVM_AS
+  if test -z "$llvmAs"; then
+
+  { { echo "$as_me:$LINENO: error:
+     You must install llvm-as before you can continue
+     Perhaps it is already installed, but not in your PATH?" >&5
+echo "$as_me: error:
+     You must install llvm-as before you can continue
+     Perhaps it is already installed, but not in your PATH?" >&2;}
+   { (exit 1); exit 1; }; }
+
   fi
+
+      fi
+    else
+      llvmAs=$LLVM_AS
+    fi
 
 
 fi
 
-LLVM_AS_CMD=$llvmAs
+  LLVM_AS_CMD=$llvmAs
 
 
-# LLVM Optimizer
+  # LLVM Optimizer
 
 # Check whether --with-opt was given.
 if test "${with_opt+set}" = set; then
   withval=$with_opt;  llvmOpt="$withval"
 else
 
-  if test "$LLVM_OPT" = ""; then
-    # Extract the first word of "opt", so it can be a program name with args.
+    if test "x$LLVM_OPT" = "x"; then
+      if test x$enableLlvm = xyes
+      then
+
+  # Extract the first word of "opt", so it can be a program name with args.
 set dummy opt; ac_word=$2
 { echo "$as_me:$LINENO: checking for $ac_word" >&5
 echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6; }
@@ -4074,25 +4535,41 @@ echo "${ECHO_T}no" >&6; }
 fi
 
 
-  else
-    llvmOpt=$LLVM_OPT
+  if test -z "$llvmOpt"; then
+
+  { { echo "$as_me:$LINENO: error:
+     You must install opt before you can continue
+     Perhaps it is already installed, but not in your PATH?" >&5
+echo "$as_me: error:
+     You must install opt before you can continue
+     Perhaps it is already installed, but not in your PATH?" >&2;}
+   { (exit 1); exit 1; }; }
+
   fi
+
+      fi
+    else
+      llvmOpt=$LLVM_OPT
+    fi
 
 
 fi
 
-LLVM_OPT_CMD=$llvmOpt
+  LLVM_OPT_CMD=$llvmOpt
 
 
-# LLVM Compiler
+  # LLVM Compiler
 
 # Check whether --with-llc was given.
 if test "${with_llc+set}" = set; then
   withval=$with_llc;  llvmLlc="$withval"
 else
 
-  if test "$LLC" = ""; then
-    # Extract the first word of "llc", so it can be a program name with args.
+    if test "x$LLC" = "x"; then
+      if test x$enableLlvm = xyes
+      then
+
+  # Extract the first word of "llc", so it can be a program name with args.
 set dummy llc; ac_word=$2
 { echo "$as_me:$LINENO: checking for $ac_word" >&5
 echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6; }
@@ -4132,15 +4609,36 @@ echo "${ECHO_T}no" >&6; }
 fi
 
 
-  else
-    llvmLlc=$LLC
+  if test -z "$llvmLlc"; then
+
+  { { echo "$as_me:$LINENO: error:
+     You must install llc before you can continue
+     Perhaps it is already installed, but not in your PATH?" >&5
+echo "$as_me: error:
+     You must install llc before you can continue
+     Perhaps it is already installed, but not in your PATH?" >&2;}
+   { (exit 1); exit 1; }; }
+
   fi
+
+      fi
+    else
+      llvmLlc=$LLC
+    fi
 
 
 fi
 
-LLVM_LLC_CMD=$llvmLlc
+  LLVM_LLC_CMD=$llvmLlc
 
+
+  if test -x $llvmLlc -a -x $llvmAs -a -x $llvmOpt
+  then
+    llvmExists=yes
+  else
+    llvmExists=no
+  fi
+fi
 
 # md5
 # Extract the first word of "md5 md5sum", so it can be a program name with args.
@@ -4184,6 +4682,52 @@ fi
 
 
 MD5_CMD=$md5Cmd
+
+
+# (gnu)tar; gnutar is required, but sometimes it already is available as tar
+for ac_prog in gnutar tar
+do
+  # Extract the first word of "$ac_prog", so it can be a program name with args.
+set dummy $ac_prog; ac_word=$2
+{ echo "$as_me:$LINENO: checking for $ac_word" >&5
+echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6; }
+if test "${ac_cv_prog_tarCmd+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  if test -n "$tarCmd"; then
+  ac_cv_prog_tarCmd="$tarCmd" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+  for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_prog_tarCmd="$ac_prog"
+    echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+done
+IFS=$as_save_IFS
+
+fi
+fi
+tarCmd=$ac_cv_prog_tarCmd
+if test -n "$tarCmd"; then
+  { echo "$as_me:$LINENO: result: $tarCmd" >&5
+echo "${ECHO_T}$tarCmd" >&6; }
+else
+  { echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6; }
+fi
+
+
+  test -n "$tarCmd" && break
+done
+
+TAR_CMD=$tarCmd
 
 
 # xxx
@@ -4620,7 +5164,7 @@ if (eval "$ac_cpp conftest.$ac_ext") 2>&5 |
 else
   ac_cv_sys_tiocgwinsz_in_termios_h=no
 fi
-rm -f conftest*
+rm -f -r conftest*
 
 fi
 { echo "$as_me:$LINENO: result: $ac_cv_sys_tiocgwinsz_in_termios_h" >&5
@@ -4651,7 +5195,7 @@ if (eval "$ac_cpp conftest.$ac_ext") 2>&5 |
 else
   ac_cv_sys_tiocgwinsz_in_sys_ioctl_h=no
 fi
-rm -f conftest*
+rm -f -r conftest*
 
 fi
 { echo "$as_me:$LINENO: result: $ac_cv_sys_tiocgwinsz_in_sys_ioctl_h" >&5
@@ -4734,7 +5278,7 @@ if (eval "$ac_cpp conftest.$ac_ext") 2>&5 |
 else
   ac_cv_header_stdc=no
 fi
-rm -f conftest*
+rm -f -r conftest*
 
 fi
 
@@ -4755,7 +5299,7 @@ if (eval "$ac_cpp conftest.$ac_ext") 2>&5 |
 else
   ac_cv_header_stdc=no
 fi
-rm -f conftest*
+rm -f -r conftest*
 
 fi
 
@@ -5182,10 +5726,796 @@ fi
 done
 
 
-### type configuration, machine characteristics
 
-# sizeof GrWord
-# AC_CHECK_SIZEOF([unsigned int])
+
+
+for ac_func in ftime gmtime_r localtime_r
+do
+as_ac_var=`echo "ac_cv_func_$ac_func" | $as_tr_sh`
+{ echo "$as_me:$LINENO: checking for $ac_func" >&5
+echo $ECHO_N "checking for $ac_func... $ECHO_C" >&6; }
+if { as_var=$as_ac_var; eval "test \"\${$as_var+set}\" = set"; }; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+/* Define $ac_func to an innocuous variant, in case <limits.h> declares $ac_func.
+   For example, HP-UX 11i <limits.h> declares gettimeofday.  */
+#define $ac_func innocuous_$ac_func
+
+/* System header to define __stub macros and hopefully few prototypes,
+    which can conflict with char $ac_func (); below.
+    Prefer <limits.h> to <assert.h> if __STDC__ is defined, since
+    <limits.h> exists even on freestanding compilers.  */
+
+#ifdef __STDC__
+# include <limits.h>
+#else
+# include <assert.h>
+#endif
+
+#undef $ac_func
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char $ac_func ();
+/* The GNU C library defines this for functions which it implements
+    to always fail with ENOSYS.  Some functions are actually named
+    something starting with __ and the normal name is an alias.  */
+#if defined __stub_$ac_func || defined __stub___$ac_func
+choke me
+#endif
+
+int
+main ()
+{
+return $ac_func ();
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext conftest$ac_exeext
+if { (ac_try="$ac_link"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_link") 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && {
+	 test -z "$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest$ac_exeext &&
+       $as_test_x conftest$ac_exeext; then
+  eval "$as_ac_var=yes"
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+	eval "$as_ac_var=no"
+fi
+
+rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
+      conftest$ac_exeext conftest.$ac_ext
+fi
+ac_res=`eval echo '${'$as_ac_var'}'`
+	       { echo "$as_me:$LINENO: result: $ac_res" >&5
+echo "${ECHO_T}$ac_res" >&6; }
+if test `eval echo '${'$as_ac_var'}'` = yes; then
+  cat >>confdefs.h <<_ACEOF
+#define `echo "HAVE_$ac_func" | $as_tr_cpp` 1
+_ACEOF
+
+fi
+done
+
+
+
+for ac_func in lchown
+do
+as_ac_var=`echo "ac_cv_func_$ac_func" | $as_tr_sh`
+{ echo "$as_me:$LINENO: checking for $ac_func" >&5
+echo $ECHO_N "checking for $ac_func... $ECHO_C" >&6; }
+if { as_var=$as_ac_var; eval "test \"\${$as_var+set}\" = set"; }; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+/* Define $ac_func to an innocuous variant, in case <limits.h> declares $ac_func.
+   For example, HP-UX 11i <limits.h> declares gettimeofday.  */
+#define $ac_func innocuous_$ac_func
+
+/* System header to define __stub macros and hopefully few prototypes,
+    which can conflict with char $ac_func (); below.
+    Prefer <limits.h> to <assert.h> if __STDC__ is defined, since
+    <limits.h> exists even on freestanding compilers.  */
+
+#ifdef __STDC__
+# include <limits.h>
+#else
+# include <assert.h>
+#endif
+
+#undef $ac_func
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char $ac_func ();
+/* The GNU C library defines this for functions which it implements
+    to always fail with ENOSYS.  Some functions are actually named
+    something starting with __ and the normal name is an alias.  */
+#if defined __stub_$ac_func || defined __stub___$ac_func
+choke me
+#endif
+
+int
+main ()
+{
+return $ac_func ();
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext conftest$ac_exeext
+if { (ac_try="$ac_link"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_link") 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && {
+	 test -z "$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest$ac_exeext &&
+       $as_test_x conftest$ac_exeext; then
+  eval "$as_ac_var=yes"
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+	eval "$as_ac_var=no"
+fi
+
+rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
+      conftest$ac_exeext conftest.$ac_ext
+fi
+ac_res=`eval echo '${'$as_ac_var'}'`
+	       { echo "$as_me:$LINENO: result: $ac_res" >&5
+echo "${ECHO_T}$ac_res" >&6; }
+if test `eval echo '${'$as_ac_var'}'` = yes; then
+  cat >>confdefs.h <<_ACEOF
+#define `echo "HAVE_$ac_func" | $as_tr_cpp` 1
+_ACEOF
+
+fi
+done
+
+
+{ echo "$as_me:$LINENO: checking whether time.h and sys/time.h may both be included" >&5
+echo $ECHO_N "checking whether time.h and sys/time.h may both be included... $ECHO_C" >&6; }
+if test "${ac_cv_header_time+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+#include <sys/types.h>
+#include <sys/time.h>
+#include <time.h>
+
+int
+main ()
+{
+if ((struct tm *) 0)
+return 0;
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext
+if { (ac_try="$ac_compile"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_compile") 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && {
+	 test -z "$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest.$ac_objext; then
+  ac_cv_header_time=yes
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+	ac_cv_header_time=no
+fi
+
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+fi
+{ echo "$as_me:$LINENO: result: $ac_cv_header_time" >&5
+echo "${ECHO_T}$ac_cv_header_time" >&6; }
+if test $ac_cv_header_time = yes; then
+
+cat >>confdefs.h <<\_ACEOF
+#define TIME_WITH_SYS_TIME 1
+_ACEOF
+
+fi
+
+
+{ echo "$as_me:$LINENO: checking whether struct tm is in sys/time.h or time.h" >&5
+echo $ECHO_N "checking whether struct tm is in sys/time.h or time.h... $ECHO_C" >&6; }
+if test "${ac_cv_struct_tm+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+#include <sys/types.h>
+#include <time.h>
+
+int
+main ()
+{
+struct tm tm;
+				     int *p = &tm.tm_sec;
+ 				     return !p;
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext
+if { (ac_try="$ac_compile"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_compile") 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && {
+	 test -z "$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest.$ac_objext; then
+  ac_cv_struct_tm=time.h
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+	ac_cv_struct_tm=sys/time.h
+fi
+
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+fi
+{ echo "$as_me:$LINENO: result: $ac_cv_struct_tm" >&5
+echo "${ECHO_T}$ac_cv_struct_tm" >&6; }
+if test $ac_cv_struct_tm = sys/time.h; then
+
+cat >>confdefs.h <<\_ACEOF
+#define TM_IN_SYS_TIME 1
+_ACEOF
+
+fi
+
+{ echo "$as_me:$LINENO: checking for struct tm.tm_zone" >&5
+echo $ECHO_N "checking for struct tm.tm_zone... $ECHO_C" >&6; }
+if test "${ac_cv_member_struct_tm_tm_zone+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+#include <sys/types.h>
+#include <$ac_cv_struct_tm>
+
+
+int
+main ()
+{
+static struct tm ac_aggr;
+if (ac_aggr.tm_zone)
+return 0;
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext
+if { (ac_try="$ac_compile"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_compile") 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && {
+	 test -z "$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest.$ac_objext; then
+  ac_cv_member_struct_tm_tm_zone=yes
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+	cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+#include <sys/types.h>
+#include <$ac_cv_struct_tm>
+
+
+int
+main ()
+{
+static struct tm ac_aggr;
+if (sizeof ac_aggr.tm_zone)
+return 0;
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext
+if { (ac_try="$ac_compile"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_compile") 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && {
+	 test -z "$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest.$ac_objext; then
+  ac_cv_member_struct_tm_tm_zone=yes
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+	ac_cv_member_struct_tm_tm_zone=no
+fi
+
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+fi
+
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+fi
+{ echo "$as_me:$LINENO: result: $ac_cv_member_struct_tm_tm_zone" >&5
+echo "${ECHO_T}$ac_cv_member_struct_tm_tm_zone" >&6; }
+if test $ac_cv_member_struct_tm_tm_zone = yes; then
+
+cat >>confdefs.h <<_ACEOF
+#define HAVE_STRUCT_TM_TM_ZONE 1
+_ACEOF
+
+
+fi
+
+if test "$ac_cv_member_struct_tm_tm_zone" = yes; then
+
+cat >>confdefs.h <<\_ACEOF
+#define HAVE_TM_ZONE 1
+_ACEOF
+
+else
+  { echo "$as_me:$LINENO: checking whether tzname is declared" >&5
+echo $ECHO_N "checking whether tzname is declared... $ECHO_C" >&6; }
+if test "${ac_cv_have_decl_tzname+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+#include <time.h>
+
+int
+main ()
+{
+#ifndef tzname
+  (void) tzname;
+#endif
+
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext
+if { (ac_try="$ac_compile"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_compile") 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && {
+	 test -z "$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest.$ac_objext; then
+  ac_cv_have_decl_tzname=yes
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+	ac_cv_have_decl_tzname=no
+fi
+
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+fi
+{ echo "$as_me:$LINENO: result: $ac_cv_have_decl_tzname" >&5
+echo "${ECHO_T}$ac_cv_have_decl_tzname" >&6; }
+if test $ac_cv_have_decl_tzname = yes; then
+
+cat >>confdefs.h <<_ACEOF
+#define HAVE_DECL_TZNAME 1
+_ACEOF
+
+
+else
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_DECL_TZNAME 0
+_ACEOF
+
+
+fi
+
+
+  { echo "$as_me:$LINENO: checking for tzname" >&5
+echo $ECHO_N "checking for tzname... $ECHO_C" >&6; }
+if test "${ac_cv_var_tzname+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+#include <time.h>
+#if !HAVE_DECL_TZNAME
+extern char *tzname[];
+#endif
+
+int
+main ()
+{
+return tzname[0][0];
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext conftest$ac_exeext
+if { (ac_try="$ac_link"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_link") 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && {
+	 test -z "$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest$ac_exeext &&
+       $as_test_x conftest$ac_exeext; then
+  ac_cv_var_tzname=yes
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+	ac_cv_var_tzname=no
+fi
+
+rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
+      conftest$ac_exeext conftest.$ac_ext
+fi
+{ echo "$as_me:$LINENO: result: $ac_cv_var_tzname" >&5
+echo "${ECHO_T}$ac_cv_var_tzname" >&6; }
+  if test $ac_cv_var_tzname = yes; then
+
+cat >>confdefs.h <<\_ACEOF
+#define HAVE_TZNAME 1
+_ACEOF
+
+  fi
+fi
+
+
+
+for ac_header in sys/time.h
+do
+as_ac_Header=`echo "ac_cv_header_$ac_header" | $as_tr_sh`
+if { as_var=$as_ac_Header; eval "test \"\${$as_var+set}\" = set"; }; then
+  { echo "$as_me:$LINENO: checking for $ac_header" >&5
+echo $ECHO_N "checking for $ac_header... $ECHO_C" >&6; }
+if { as_var=$as_ac_Header; eval "test \"\${$as_var+set}\" = set"; }; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+fi
+ac_res=`eval echo '${'$as_ac_Header'}'`
+	       { echo "$as_me:$LINENO: result: $ac_res" >&5
+echo "${ECHO_T}$ac_res" >&6; }
+else
+  # Is the header compilable?
+{ echo "$as_me:$LINENO: checking $ac_header usability" >&5
+echo $ECHO_N "checking $ac_header usability... $ECHO_C" >&6; }
+cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+$ac_includes_default
+#include <$ac_header>
+_ACEOF
+rm -f conftest.$ac_objext
+if { (ac_try="$ac_compile"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_compile") 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && {
+	 test -z "$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest.$ac_objext; then
+  ac_header_compiler=yes
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+	ac_header_compiler=no
+fi
+
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ echo "$as_me:$LINENO: result: $ac_header_compiler" >&5
+echo "${ECHO_T}$ac_header_compiler" >&6; }
+
+# Is the header present?
+{ echo "$as_me:$LINENO: checking $ac_header presence" >&5
+echo $ECHO_N "checking $ac_header presence... $ECHO_C" >&6; }
+cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+#include <$ac_header>
+_ACEOF
+if { (ac_try="$ac_cpp conftest.$ac_ext"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_cpp conftest.$ac_ext") 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } >/dev/null && {
+	 test -z "$ac_c_preproc_warn_flag$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       }; then
+  ac_header_preproc=yes
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+  ac_header_preproc=no
+fi
+
+rm -f conftest.err conftest.$ac_ext
+{ echo "$as_me:$LINENO: result: $ac_header_preproc" >&5
+echo "${ECHO_T}$ac_header_preproc" >&6; }
+
+# So?  What about this header?
+case $ac_header_compiler:$ac_header_preproc:$ac_c_preproc_warn_flag in
+  yes:no: )
+    { echo "$as_me:$LINENO: WARNING: $ac_header: accepted by the compiler, rejected by the preprocessor!" >&5
+echo "$as_me: WARNING: $ac_header: accepted by the compiler, rejected by the preprocessor!" >&2;}
+    { echo "$as_me:$LINENO: WARNING: $ac_header: proceeding with the compiler's result" >&5
+echo "$as_me: WARNING: $ac_header: proceeding with the compiler's result" >&2;}
+    ac_header_preproc=yes
+    ;;
+  no:yes:* )
+    { echo "$as_me:$LINENO: WARNING: $ac_header: present but cannot be compiled" >&5
+echo "$as_me: WARNING: $ac_header: present but cannot be compiled" >&2;}
+    { echo "$as_me:$LINENO: WARNING: $ac_header:     check for missing prerequisite headers?" >&5
+echo "$as_me: WARNING: $ac_header:     check for missing prerequisite headers?" >&2;}
+    { echo "$as_me:$LINENO: WARNING: $ac_header: see the Autoconf documentation" >&5
+echo "$as_me: WARNING: $ac_header: see the Autoconf documentation" >&2;}
+    { echo "$as_me:$LINENO: WARNING: $ac_header:     section \"Present But Cannot Be Compiled\"" >&5
+echo "$as_me: WARNING: $ac_header:     section \"Present But Cannot Be Compiled\"" >&2;}
+    { echo "$as_me:$LINENO: WARNING: $ac_header: proceeding with the preprocessor's result" >&5
+echo "$as_me: WARNING: $ac_header: proceeding with the preprocessor's result" >&2;}
+    { echo "$as_me:$LINENO: WARNING: $ac_header: in the future, the compiler will take precedence" >&5
+echo "$as_me: WARNING: $ac_header: in the future, the compiler will take precedence" >&2;}
+    ( cat <<\_ASBOX
+## http://www.cs.uu.nl/wiki/UHC/WebHomehttp://www.cs.uu.nl/wiki/UHC/WebHomehttp://www.cs.uu.nl/wiki/UHC/WebHomehttp://www.cs.uu.nl/wiki/UHC/WebHomehttp://www.cs.uu.nl/wiki/UHC/WebHomehttp://www.cs.uu.nl/wiki/UHC/WebHomehttp://www.cs.uu.nl/wiki/UHC/WebHomehttp://www.cs.uu.nl/wiki/UHC/WebHomehttp://www.cs.uu.nl/wiki/UHC/WebHomehttp://www.cs.uu.nl/wiki/UHC/WebHomehttp://www.cs.uu.nl/wiki/UHC/WebHomehttp://www.cs.uu.nl/wiki/UHC/WebHomehttp://www.cs.uu.nl/wiki/UHC/WebHomehttp://www.cs.uu.nl/wiki/UHC/WebHomehttp://www.cs.uu.nl/wiki/UHC/WebHomehttp://www.cs.uu.nl/wiki/UHC/WebHomehttp://www.cs.uu.nl/wiki/UHC/WebHomehttp://www.cs.uu.nl/wiki/UHC/WebHomehttp://www.cs.uu.nl/wiki/UHC/WebHomehttp://www.cs.uu.nl/wiki/UHC/WebHomehttp://www.cs.uu.nl/wiki/UHC/WebHomehttp://www.cs.uu.nl/wiki/UHC/WebHomehttp://www.cs.uu.nl/wiki/UHC/WebHomehttp://www.cs.uu.nl/wiki/UHC/WebHomehttp://www.cs.uu.nl/wiki/UHC/WebHomehttp://www.cs.uu.nl/wiki/UHC/WebHomehttp://www.cs.uu.nl/wiki/UHC/WebHomehttp://www.cs.uu.nl/wiki/UHC/WebHomehttp://www.cs.uu.nl/wiki/UHC/WebHomehttp://www.cs.uu.nl/wiki/UHC/WebHomehttp://www.cs.uu.nl/wiki/UHC/WebHomehttp://www.cs.uu.nl/wiki/UHC/WebHomehttp://www.cs.uu.nl/wiki/UHC/WebHomehttp://www.cs.uu.nl/wiki/UHC/WebHomehttp://www.cs.uu.nl/wiki/UHC/WebHomehttp://www.cs.uu.nl/wiki/UHC/WebHomehttp://www.cs.uu.nl/wiki/UHC/WebHomehttp://www.cs.uu.nl/wiki/UHC/WebHome ##
+## Report this to uhc-developers@cs.uu.nl ##
+## http://www.cs.uu.nl/wiki/UHC/WebHomehttp://www.cs.uu.nl/wiki/UHC/WebHomehttp://www.cs.uu.nl/wiki/UHC/WebHomehttp://www.cs.uu.nl/wiki/UHC/WebHomehttp://www.cs.uu.nl/wiki/UHC/WebHomehttp://www.cs.uu.nl/wiki/UHC/WebHomehttp://www.cs.uu.nl/wiki/UHC/WebHomehttp://www.cs.uu.nl/wiki/UHC/WebHomehttp://www.cs.uu.nl/wiki/UHC/WebHomehttp://www.cs.uu.nl/wiki/UHC/WebHomehttp://www.cs.uu.nl/wiki/UHC/WebHomehttp://www.cs.uu.nl/wiki/UHC/WebHomehttp://www.cs.uu.nl/wiki/UHC/WebHomehttp://www.cs.uu.nl/wiki/UHC/WebHomehttp://www.cs.uu.nl/wiki/UHC/WebHomehttp://www.cs.uu.nl/wiki/UHC/WebHomehttp://www.cs.uu.nl/wiki/UHC/WebHomehttp://www.cs.uu.nl/wiki/UHC/WebHomehttp://www.cs.uu.nl/wiki/UHC/WebHomehttp://www.cs.uu.nl/wiki/UHC/WebHomehttp://www.cs.uu.nl/wiki/UHC/WebHomehttp://www.cs.uu.nl/wiki/UHC/WebHomehttp://www.cs.uu.nl/wiki/UHC/WebHomehttp://www.cs.uu.nl/wiki/UHC/WebHomehttp://www.cs.uu.nl/wiki/UHC/WebHomehttp://www.cs.uu.nl/wiki/UHC/WebHomehttp://www.cs.uu.nl/wiki/UHC/WebHomehttp://www.cs.uu.nl/wiki/UHC/WebHomehttp://www.cs.uu.nl/wiki/UHC/WebHomehttp://www.cs.uu.nl/wiki/UHC/WebHomehttp://www.cs.uu.nl/wiki/UHC/WebHomehttp://www.cs.uu.nl/wiki/UHC/WebHomehttp://www.cs.uu.nl/wiki/UHC/WebHomehttp://www.cs.uu.nl/wiki/UHC/WebHomehttp://www.cs.uu.nl/wiki/UHC/WebHomehttp://www.cs.uu.nl/wiki/UHC/WebHomehttp://www.cs.uu.nl/wiki/UHC/WebHomehttp://www.cs.uu.nl/wiki/UHC/WebHome ##
+_ASBOX
+     ) | sed "s/^/$as_me: WARNING:     /" >&2
+    ;;
+esac
+{ echo "$as_me:$LINENO: checking for $ac_header" >&5
+echo $ECHO_N "checking for $ac_header... $ECHO_C" >&6; }
+if { as_var=$as_ac_Header; eval "test \"\${$as_var+set}\" = set"; }; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  eval "$as_ac_Header=\$ac_header_preproc"
+fi
+ac_res=`eval echo '${'$as_ac_Header'}'`
+	       { echo "$as_me:$LINENO: result: $ac_res" >&5
+echo "${ECHO_T}$ac_res" >&6; }
+
+fi
+if test `eval echo '${'$as_ac_Header'}'` = yes; then
+  cat >>confdefs.h <<_ACEOF
+#define `echo "HAVE_$ac_header" | $as_tr_cpp` 1
+_ACEOF
+
+fi
+
+done
+
+{ echo "$as_me:$LINENO: checking whether altzone is declared" >&5
+echo $ECHO_N "checking whether altzone is declared... $ECHO_C" >&6; }
+if test "${ac_cv_have_decl_altzone+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+#if TIME_WITH_SYS_TIME
+# include <sys/time.h>
+# include <time.h>
+#else
+# if HAVE_SYS_TIME_H
+#  include <sys/time.h>
+# else
+#  include <time.h>
+# endif
+#endif
+
+int
+main ()
+{
+#ifndef altzone
+  (void) altzone;
+#endif
+
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext
+if { (ac_try="$ac_compile"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_compile") 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && {
+	 test -z "$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest.$ac_objext; then
+  ac_cv_have_decl_altzone=yes
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+	ac_cv_have_decl_altzone=no
+fi
+
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+fi
+{ echo "$as_me:$LINENO: result: $ac_cv_have_decl_altzone" >&5
+echo "${ECHO_T}$ac_cv_have_decl_altzone" >&6; }
+if test $ac_cv_have_decl_altzone = yes; then
+
+cat >>confdefs.h <<_ACEOF
+#define HAVE_DECL_ALTZONE 1
+_ACEOF
+
+
+else
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_DECL_ALTZONE 0
+_ACEOF
+
+
+fi
+
+
+
+
+### type configuration, machine characteristics
 
 # sizeof GrWord*, Pointer, ...
 { echo "$as_me:$LINENO: checking for char" >&5
@@ -16542,6 +17872,33 @@ cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
 $ac_includes_default
+#include <stddef.h>
+
+#if HAVE_FCNTL_H
+# include <fcntl.h>
+#endif
+
+#if HAVE_SIGNAL_H
+# include <signal.h>
+#endif
+
+#if HAVE_TIME_H
+# include <time.h>
+#endif
+
+#if HAVE_TERMIOS_H
+# include <termios.h>
+#endif
+
+#if HAVE_STRING_H
+# include <string.h>
+#endif
+
+#if HAVE_SYS_RESOURCE_H
+# include <sys/resource.h>
+#endif
+
+
 typedef cc_t ac__type_new_;
 int
 main ()
@@ -16602,6 +17959,33 @@ cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
 $ac_includes_default
+#include <stddef.h>
+
+#if HAVE_FCNTL_H
+# include <fcntl.h>
+#endif
+
+#if HAVE_SIGNAL_H
+# include <signal.h>
+#endif
+
+#if HAVE_TIME_H
+# include <time.h>
+#endif
+
+#if HAVE_TERMIOS_H
+# include <termios.h>
+#endif
+
+#if HAVE_STRING_H
+# include <string.h>
+#endif
+
+#if HAVE_SYS_RESOURCE_H
+# include <sys/resource.h>
+#endif
+
+
    typedef cc_t ac__type_sizeof_;
 int
 main ()
@@ -16639,6 +18023,33 @@ cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
 $ac_includes_default
+#include <stddef.h>
+
+#if HAVE_FCNTL_H
+# include <fcntl.h>
+#endif
+
+#if HAVE_SIGNAL_H
+# include <signal.h>
+#endif
+
+#if HAVE_TIME_H
+# include <time.h>
+#endif
+
+#if HAVE_TERMIOS_H
+# include <termios.h>
+#endif
+
+#if HAVE_STRING_H
+# include <string.h>
+#endif
+
+#if HAVE_SYS_RESOURCE_H
+# include <sys/resource.h>
+#endif
+
+
    typedef cc_t ac__type_sizeof_;
 int
 main ()
@@ -16693,6 +18104,33 @@ cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
 $ac_includes_default
+#include <stddef.h>
+
+#if HAVE_FCNTL_H
+# include <fcntl.h>
+#endif
+
+#if HAVE_SIGNAL_H
+# include <signal.h>
+#endif
+
+#if HAVE_TIME_H
+# include <time.h>
+#endif
+
+#if HAVE_TERMIOS_H
+# include <termios.h>
+#endif
+
+#if HAVE_STRING_H
+# include <string.h>
+#endif
+
+#if HAVE_SYS_RESOURCE_H
+# include <sys/resource.h>
+#endif
+
+
    typedef cc_t ac__type_sizeof_;
 int
 main ()
@@ -16730,6 +18168,33 @@ cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
 $ac_includes_default
+#include <stddef.h>
+
+#if HAVE_FCNTL_H
+# include <fcntl.h>
+#endif
+
+#if HAVE_SIGNAL_H
+# include <signal.h>
+#endif
+
+#if HAVE_TIME_H
+# include <time.h>
+#endif
+
+#if HAVE_TERMIOS_H
+# include <termios.h>
+#endif
+
+#if HAVE_STRING_H
+# include <string.h>
+#endif
+
+#if HAVE_SYS_RESOURCE_H
+# include <sys/resource.h>
+#endif
+
+
    typedef cc_t ac__type_sizeof_;
 int
 main ()
@@ -16794,6 +18259,33 @@ cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
 $ac_includes_default
+#include <stddef.h>
+
+#if HAVE_FCNTL_H
+# include <fcntl.h>
+#endif
+
+#if HAVE_SIGNAL_H
+# include <signal.h>
+#endif
+
+#if HAVE_TIME_H
+# include <time.h>
+#endif
+
+#if HAVE_TERMIOS_H
+# include <termios.h>
+#endif
+
+#if HAVE_STRING_H
+# include <string.h>
+#endif
+
+#if HAVE_SYS_RESOURCE_H
+# include <sys/resource.h>
+#endif
+
+
    typedef cc_t ac__type_sizeof_;
 int
 main ()
@@ -16852,6 +18344,33 @@ cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
 $ac_includes_default
+#include <stddef.h>
+
+#if HAVE_FCNTL_H
+# include <fcntl.h>
+#endif
+
+#if HAVE_SIGNAL_H
+# include <signal.h>
+#endif
+
+#if HAVE_TIME_H
+# include <time.h>
+#endif
+
+#if HAVE_TERMIOS_H
+# include <termios.h>
+#endif
+
+#if HAVE_STRING_H
+# include <string.h>
+#endif
+
+#if HAVE_SYS_RESOURCE_H
+# include <sys/resource.h>
+#endif
+
+
    typedef cc_t ac__type_sizeof_;
 static long int longval () { return (long int) (sizeof (ac__type_sizeof_)); }
 static unsigned long int ulongval () { return (long int) (sizeof (ac__type_sizeof_)); }
@@ -16947,6 +18466,33 @@ cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
 $ac_includes_default
+#include <stddef.h>
+
+#if HAVE_FCNTL_H
+# include <fcntl.h>
+#endif
+
+#if HAVE_SIGNAL_H
+# include <signal.h>
+#endif
+
+#if HAVE_TIME_H
+# include <time.h>
+#endif
+
+#if HAVE_TERMIOS_H
+# include <termios.h>
+#endif
+
+#if HAVE_STRING_H
+# include <string.h>
+#endif
+
+#if HAVE_SYS_RESOURCE_H
+# include <sys/resource.h>
+#endif
+
+
 typedef speed_t ac__type_new_;
 int
 main ()
@@ -17007,6 +18553,33 @@ cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
 $ac_includes_default
+#include <stddef.h>
+
+#if HAVE_FCNTL_H
+# include <fcntl.h>
+#endif
+
+#if HAVE_SIGNAL_H
+# include <signal.h>
+#endif
+
+#if HAVE_TIME_H
+# include <time.h>
+#endif
+
+#if HAVE_TERMIOS_H
+# include <termios.h>
+#endif
+
+#if HAVE_STRING_H
+# include <string.h>
+#endif
+
+#if HAVE_SYS_RESOURCE_H
+# include <sys/resource.h>
+#endif
+
+
    typedef speed_t ac__type_sizeof_;
 int
 main ()
@@ -17044,6 +18617,33 @@ cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
 $ac_includes_default
+#include <stddef.h>
+
+#if HAVE_FCNTL_H
+# include <fcntl.h>
+#endif
+
+#if HAVE_SIGNAL_H
+# include <signal.h>
+#endif
+
+#if HAVE_TIME_H
+# include <time.h>
+#endif
+
+#if HAVE_TERMIOS_H
+# include <termios.h>
+#endif
+
+#if HAVE_STRING_H
+# include <string.h>
+#endif
+
+#if HAVE_SYS_RESOURCE_H
+# include <sys/resource.h>
+#endif
+
+
    typedef speed_t ac__type_sizeof_;
 int
 main ()
@@ -17098,6 +18698,33 @@ cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
 $ac_includes_default
+#include <stddef.h>
+
+#if HAVE_FCNTL_H
+# include <fcntl.h>
+#endif
+
+#if HAVE_SIGNAL_H
+# include <signal.h>
+#endif
+
+#if HAVE_TIME_H
+# include <time.h>
+#endif
+
+#if HAVE_TERMIOS_H
+# include <termios.h>
+#endif
+
+#if HAVE_STRING_H
+# include <string.h>
+#endif
+
+#if HAVE_SYS_RESOURCE_H
+# include <sys/resource.h>
+#endif
+
+
    typedef speed_t ac__type_sizeof_;
 int
 main ()
@@ -17135,6 +18762,33 @@ cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
 $ac_includes_default
+#include <stddef.h>
+
+#if HAVE_FCNTL_H
+# include <fcntl.h>
+#endif
+
+#if HAVE_SIGNAL_H
+# include <signal.h>
+#endif
+
+#if HAVE_TIME_H
+# include <time.h>
+#endif
+
+#if HAVE_TERMIOS_H
+# include <termios.h>
+#endif
+
+#if HAVE_STRING_H
+# include <string.h>
+#endif
+
+#if HAVE_SYS_RESOURCE_H
+# include <sys/resource.h>
+#endif
+
+
    typedef speed_t ac__type_sizeof_;
 int
 main ()
@@ -17199,6 +18853,33 @@ cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
 $ac_includes_default
+#include <stddef.h>
+
+#if HAVE_FCNTL_H
+# include <fcntl.h>
+#endif
+
+#if HAVE_SIGNAL_H
+# include <signal.h>
+#endif
+
+#if HAVE_TIME_H
+# include <time.h>
+#endif
+
+#if HAVE_TERMIOS_H
+# include <termios.h>
+#endif
+
+#if HAVE_STRING_H
+# include <string.h>
+#endif
+
+#if HAVE_SYS_RESOURCE_H
+# include <sys/resource.h>
+#endif
+
+
    typedef speed_t ac__type_sizeof_;
 int
 main ()
@@ -17257,6 +18938,33 @@ cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
 $ac_includes_default
+#include <stddef.h>
+
+#if HAVE_FCNTL_H
+# include <fcntl.h>
+#endif
+
+#if HAVE_SIGNAL_H
+# include <signal.h>
+#endif
+
+#if HAVE_TIME_H
+# include <time.h>
+#endif
+
+#if HAVE_TERMIOS_H
+# include <termios.h>
+#endif
+
+#if HAVE_STRING_H
+# include <string.h>
+#endif
+
+#if HAVE_SYS_RESOURCE_H
+# include <sys/resource.h>
+#endif
+
+
    typedef speed_t ac__type_sizeof_;
 static long int longval () { return (long int) (sizeof (ac__type_sizeof_)); }
 static unsigned long int ulongval () { return (long int) (sizeof (ac__type_sizeof_)); }
@@ -17352,6 +19060,33 @@ cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
 $ac_includes_default
+#include <stddef.h>
+
+#if HAVE_FCNTL_H
+# include <fcntl.h>
+#endif
+
+#if HAVE_SIGNAL_H
+# include <signal.h>
+#endif
+
+#if HAVE_TIME_H
+# include <time.h>
+#endif
+
+#if HAVE_TERMIOS_H
+# include <termios.h>
+#endif
+
+#if HAVE_STRING_H
+# include <string.h>
+#endif
+
+#if HAVE_SYS_RESOURCE_H
+# include <sys/resource.h>
+#endif
+
+
 typedef tcflag_t ac__type_new_;
 int
 main ()
@@ -17412,6 +19147,33 @@ cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
 $ac_includes_default
+#include <stddef.h>
+
+#if HAVE_FCNTL_H
+# include <fcntl.h>
+#endif
+
+#if HAVE_SIGNAL_H
+# include <signal.h>
+#endif
+
+#if HAVE_TIME_H
+# include <time.h>
+#endif
+
+#if HAVE_TERMIOS_H
+# include <termios.h>
+#endif
+
+#if HAVE_STRING_H
+# include <string.h>
+#endif
+
+#if HAVE_SYS_RESOURCE_H
+# include <sys/resource.h>
+#endif
+
+
    typedef tcflag_t ac__type_sizeof_;
 int
 main ()
@@ -17449,6 +19211,33 @@ cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
 $ac_includes_default
+#include <stddef.h>
+
+#if HAVE_FCNTL_H
+# include <fcntl.h>
+#endif
+
+#if HAVE_SIGNAL_H
+# include <signal.h>
+#endif
+
+#if HAVE_TIME_H
+# include <time.h>
+#endif
+
+#if HAVE_TERMIOS_H
+# include <termios.h>
+#endif
+
+#if HAVE_STRING_H
+# include <string.h>
+#endif
+
+#if HAVE_SYS_RESOURCE_H
+# include <sys/resource.h>
+#endif
+
+
    typedef tcflag_t ac__type_sizeof_;
 int
 main ()
@@ -17503,6 +19292,33 @@ cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
 $ac_includes_default
+#include <stddef.h>
+
+#if HAVE_FCNTL_H
+# include <fcntl.h>
+#endif
+
+#if HAVE_SIGNAL_H
+# include <signal.h>
+#endif
+
+#if HAVE_TIME_H
+# include <time.h>
+#endif
+
+#if HAVE_TERMIOS_H
+# include <termios.h>
+#endif
+
+#if HAVE_STRING_H
+# include <string.h>
+#endif
+
+#if HAVE_SYS_RESOURCE_H
+# include <sys/resource.h>
+#endif
+
+
    typedef tcflag_t ac__type_sizeof_;
 int
 main ()
@@ -17540,6 +19356,33 @@ cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
 $ac_includes_default
+#include <stddef.h>
+
+#if HAVE_FCNTL_H
+# include <fcntl.h>
+#endif
+
+#if HAVE_SIGNAL_H
+# include <signal.h>
+#endif
+
+#if HAVE_TIME_H
+# include <time.h>
+#endif
+
+#if HAVE_TERMIOS_H
+# include <termios.h>
+#endif
+
+#if HAVE_STRING_H
+# include <string.h>
+#endif
+
+#if HAVE_SYS_RESOURCE_H
+# include <sys/resource.h>
+#endif
+
+
    typedef tcflag_t ac__type_sizeof_;
 int
 main ()
@@ -17604,6 +19447,33 @@ cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
 $ac_includes_default
+#include <stddef.h>
+
+#if HAVE_FCNTL_H
+# include <fcntl.h>
+#endif
+
+#if HAVE_SIGNAL_H
+# include <signal.h>
+#endif
+
+#if HAVE_TIME_H
+# include <time.h>
+#endif
+
+#if HAVE_TERMIOS_H
+# include <termios.h>
+#endif
+
+#if HAVE_STRING_H
+# include <string.h>
+#endif
+
+#if HAVE_SYS_RESOURCE_H
+# include <sys/resource.h>
+#endif
+
+
    typedef tcflag_t ac__type_sizeof_;
 int
 main ()
@@ -17662,6 +19532,33 @@ cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
 $ac_includes_default
+#include <stddef.h>
+
+#if HAVE_FCNTL_H
+# include <fcntl.h>
+#endif
+
+#if HAVE_SIGNAL_H
+# include <signal.h>
+#endif
+
+#if HAVE_TIME_H
+# include <time.h>
+#endif
+
+#if HAVE_TERMIOS_H
+# include <termios.h>
+#endif
+
+#if HAVE_STRING_H
+# include <string.h>
+#endif
+
+#if HAVE_SYS_RESOURCE_H
+# include <sys/resource.h>
+#endif
+
+
    typedef tcflag_t ac__type_sizeof_;
 static long int longval () { return (long int) (sizeof (ac__type_sizeof_)); }
 static unsigned long int ulongval () { return (long int) (sizeof (ac__type_sizeof_)); }
@@ -17757,6 +19654,33 @@ cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
 $ac_includes_default
+#include <stddef.h>
+
+#if HAVE_FCNTL_H
+# include <fcntl.h>
+#endif
+
+#if HAVE_SIGNAL_H
+# include <signal.h>
+#endif
+
+#if HAVE_TIME_H
+# include <time.h>
+#endif
+
+#if HAVE_TERMIOS_H
+# include <termios.h>
+#endif
+
+#if HAVE_STRING_H
+# include <string.h>
+#endif
+
+#if HAVE_SYS_RESOURCE_H
+# include <sys/resource.h>
+#endif
+
+
 typedef rlim_t ac__type_new_;
 int
 main ()
@@ -17817,6 +19741,33 @@ cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
 $ac_includes_default
+#include <stddef.h>
+
+#if HAVE_FCNTL_H
+# include <fcntl.h>
+#endif
+
+#if HAVE_SIGNAL_H
+# include <signal.h>
+#endif
+
+#if HAVE_TIME_H
+# include <time.h>
+#endif
+
+#if HAVE_TERMIOS_H
+# include <termios.h>
+#endif
+
+#if HAVE_STRING_H
+# include <string.h>
+#endif
+
+#if HAVE_SYS_RESOURCE_H
+# include <sys/resource.h>
+#endif
+
+
    typedef rlim_t ac__type_sizeof_;
 int
 main ()
@@ -17854,6 +19805,33 @@ cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
 $ac_includes_default
+#include <stddef.h>
+
+#if HAVE_FCNTL_H
+# include <fcntl.h>
+#endif
+
+#if HAVE_SIGNAL_H
+# include <signal.h>
+#endif
+
+#if HAVE_TIME_H
+# include <time.h>
+#endif
+
+#if HAVE_TERMIOS_H
+# include <termios.h>
+#endif
+
+#if HAVE_STRING_H
+# include <string.h>
+#endif
+
+#if HAVE_SYS_RESOURCE_H
+# include <sys/resource.h>
+#endif
+
+
    typedef rlim_t ac__type_sizeof_;
 int
 main ()
@@ -17908,6 +19886,33 @@ cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
 $ac_includes_default
+#include <stddef.h>
+
+#if HAVE_FCNTL_H
+# include <fcntl.h>
+#endif
+
+#if HAVE_SIGNAL_H
+# include <signal.h>
+#endif
+
+#if HAVE_TIME_H
+# include <time.h>
+#endif
+
+#if HAVE_TERMIOS_H
+# include <termios.h>
+#endif
+
+#if HAVE_STRING_H
+# include <string.h>
+#endif
+
+#if HAVE_SYS_RESOURCE_H
+# include <sys/resource.h>
+#endif
+
+
    typedef rlim_t ac__type_sizeof_;
 int
 main ()
@@ -17945,6 +19950,33 @@ cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
 $ac_includes_default
+#include <stddef.h>
+
+#if HAVE_FCNTL_H
+# include <fcntl.h>
+#endif
+
+#if HAVE_SIGNAL_H
+# include <signal.h>
+#endif
+
+#if HAVE_TIME_H
+# include <time.h>
+#endif
+
+#if HAVE_TERMIOS_H
+# include <termios.h>
+#endif
+
+#if HAVE_STRING_H
+# include <string.h>
+#endif
+
+#if HAVE_SYS_RESOURCE_H
+# include <sys/resource.h>
+#endif
+
+
    typedef rlim_t ac__type_sizeof_;
 int
 main ()
@@ -18009,6 +20041,33 @@ cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
 $ac_includes_default
+#include <stddef.h>
+
+#if HAVE_FCNTL_H
+# include <fcntl.h>
+#endif
+
+#if HAVE_SIGNAL_H
+# include <signal.h>
+#endif
+
+#if HAVE_TIME_H
+# include <time.h>
+#endif
+
+#if HAVE_TERMIOS_H
+# include <termios.h>
+#endif
+
+#if HAVE_STRING_H
+# include <string.h>
+#endif
+
+#if HAVE_SYS_RESOURCE_H
+# include <sys/resource.h>
+#endif
+
+
    typedef rlim_t ac__type_sizeof_;
 int
 main ()
@@ -18067,6 +20126,33 @@ cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
 $ac_includes_default
+#include <stddef.h>
+
+#if HAVE_FCNTL_H
+# include <fcntl.h>
+#endif
+
+#if HAVE_SIGNAL_H
+# include <signal.h>
+#endif
+
+#if HAVE_TIME_H
+# include <time.h>
+#endif
+
+#if HAVE_TERMIOS_H
+# include <termios.h>
+#endif
+
+#if HAVE_STRING_H
+# include <string.h>
+#endif
+
+#if HAVE_SYS_RESOURCE_H
+# include <sys/resource.h>
+#endif
+
+
    typedef rlim_t ac__type_sizeof_;
 static long int longval () { return (long int) (sizeof (ac__type_sizeof_)); }
 static unsigned long int ulongval () { return (long int) (sizeof (ac__type_sizeof_)); }
@@ -18162,6 +20248,33 @@ cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
 $ac_includes_default
+#include <stddef.h>
+
+#if HAVE_FCNTL_H
+# include <fcntl.h>
+#endif
+
+#if HAVE_SIGNAL_H
+# include <signal.h>
+#endif
+
+#if HAVE_TIME_H
+# include <time.h>
+#endif
+
+#if HAVE_TERMIOS_H
+# include <termios.h>
+#endif
+
+#if HAVE_STRING_H
+# include <string.h>
+#endif
+
+#if HAVE_SYS_RESOURCE_H
+# include <sys/resource.h>
+#endif
+
+
 typedef clock_t ac__type_new_;
 int
 main ()
@@ -18222,6 +20335,33 @@ cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
 $ac_includes_default
+#include <stddef.h>
+
+#if HAVE_FCNTL_H
+# include <fcntl.h>
+#endif
+
+#if HAVE_SIGNAL_H
+# include <signal.h>
+#endif
+
+#if HAVE_TIME_H
+# include <time.h>
+#endif
+
+#if HAVE_TERMIOS_H
+# include <termios.h>
+#endif
+
+#if HAVE_STRING_H
+# include <string.h>
+#endif
+
+#if HAVE_SYS_RESOURCE_H
+# include <sys/resource.h>
+#endif
+
+
    typedef clock_t ac__type_sizeof_;
 int
 main ()
@@ -18259,6 +20399,33 @@ cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
 $ac_includes_default
+#include <stddef.h>
+
+#if HAVE_FCNTL_H
+# include <fcntl.h>
+#endif
+
+#if HAVE_SIGNAL_H
+# include <signal.h>
+#endif
+
+#if HAVE_TIME_H
+# include <time.h>
+#endif
+
+#if HAVE_TERMIOS_H
+# include <termios.h>
+#endif
+
+#if HAVE_STRING_H
+# include <string.h>
+#endif
+
+#if HAVE_SYS_RESOURCE_H
+# include <sys/resource.h>
+#endif
+
+
    typedef clock_t ac__type_sizeof_;
 int
 main ()
@@ -18313,6 +20480,33 @@ cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
 $ac_includes_default
+#include <stddef.h>
+
+#if HAVE_FCNTL_H
+# include <fcntl.h>
+#endif
+
+#if HAVE_SIGNAL_H
+# include <signal.h>
+#endif
+
+#if HAVE_TIME_H
+# include <time.h>
+#endif
+
+#if HAVE_TERMIOS_H
+# include <termios.h>
+#endif
+
+#if HAVE_STRING_H
+# include <string.h>
+#endif
+
+#if HAVE_SYS_RESOURCE_H
+# include <sys/resource.h>
+#endif
+
+
    typedef clock_t ac__type_sizeof_;
 int
 main ()
@@ -18350,6 +20544,33 @@ cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
 $ac_includes_default
+#include <stddef.h>
+
+#if HAVE_FCNTL_H
+# include <fcntl.h>
+#endif
+
+#if HAVE_SIGNAL_H
+# include <signal.h>
+#endif
+
+#if HAVE_TIME_H
+# include <time.h>
+#endif
+
+#if HAVE_TERMIOS_H
+# include <termios.h>
+#endif
+
+#if HAVE_STRING_H
+# include <string.h>
+#endif
+
+#if HAVE_SYS_RESOURCE_H
+# include <sys/resource.h>
+#endif
+
+
    typedef clock_t ac__type_sizeof_;
 int
 main ()
@@ -18414,6 +20635,33 @@ cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
 $ac_includes_default
+#include <stddef.h>
+
+#if HAVE_FCNTL_H
+# include <fcntl.h>
+#endif
+
+#if HAVE_SIGNAL_H
+# include <signal.h>
+#endif
+
+#if HAVE_TIME_H
+# include <time.h>
+#endif
+
+#if HAVE_TERMIOS_H
+# include <termios.h>
+#endif
+
+#if HAVE_STRING_H
+# include <string.h>
+#endif
+
+#if HAVE_SYS_RESOURCE_H
+# include <sys/resource.h>
+#endif
+
+
    typedef clock_t ac__type_sizeof_;
 int
 main ()
@@ -18472,6 +20720,33 @@ cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
 $ac_includes_default
+#include <stddef.h>
+
+#if HAVE_FCNTL_H
+# include <fcntl.h>
+#endif
+
+#if HAVE_SIGNAL_H
+# include <signal.h>
+#endif
+
+#if HAVE_TIME_H
+# include <time.h>
+#endif
+
+#if HAVE_TERMIOS_H
+# include <termios.h>
+#endif
+
+#if HAVE_STRING_H
+# include <string.h>
+#endif
+
+#if HAVE_SYS_RESOURCE_H
+# include <sys/resource.h>
+#endif
+
+
    typedef clock_t ac__type_sizeof_;
 static long int longval () { return (long int) (sizeof (ac__type_sizeof_)); }
 static unsigned long int ulongval () { return (long int) (sizeof (ac__type_sizeof_)); }
@@ -18957,6 +21232,411 @@ echo "${ECHO_T}$ac_cv_sizeof_time_t" >&6; }
 
 cat >>confdefs.h <<_ACEOF
 #define SIZEOF_TIME_T $ac_cv_sizeof_time_t
+_ACEOF
+
+
+{ echo "$as_me:$LINENO: checking for useconds_t" >&5
+echo $ECHO_N "checking for useconds_t... $ECHO_C" >&6; }
+if test "${ac_cv_type_useconds_t+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+$ac_includes_default
+typedef useconds_t ac__type_new_;
+int
+main ()
+{
+if ((ac__type_new_ *) 0)
+  return 0;
+if (sizeof (ac__type_new_))
+  return 0;
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext
+if { (ac_try="$ac_compile"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_compile") 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && {
+	 test -z "$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest.$ac_objext; then
+  ac_cv_type_useconds_t=yes
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+	ac_cv_type_useconds_t=no
+fi
+
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+fi
+{ echo "$as_me:$LINENO: result: $ac_cv_type_useconds_t" >&5
+echo "${ECHO_T}$ac_cv_type_useconds_t" >&6; }
+
+# The cast to long int works around a bug in the HP C Compiler
+# version HP92453-01 B.11.11.23709.GP, which incorrectly rejects
+# declarations like `int a3[[(sizeof (unsigned char)) >= 0]];'.
+# This bug is HP SR number 8606223364.
+{ echo "$as_me:$LINENO: checking size of useconds_t" >&5
+echo $ECHO_N "checking size of useconds_t... $ECHO_C" >&6; }
+if test "${ac_cv_sizeof_useconds_t+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  if test "$cross_compiling" = yes; then
+  # Depending upon the size, compute the lo and hi bounds.
+cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+$ac_includes_default
+   typedef useconds_t ac__type_sizeof_;
+int
+main ()
+{
+static int test_array [1 - 2 * !(((long int) (sizeof (ac__type_sizeof_))) >= 0)];
+test_array [0] = 0
+
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext
+if { (ac_try="$ac_compile"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_compile") 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && {
+	 test -z "$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest.$ac_objext; then
+  ac_lo=0 ac_mid=0
+  while :; do
+    cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+$ac_includes_default
+   typedef useconds_t ac__type_sizeof_;
+int
+main ()
+{
+static int test_array [1 - 2 * !(((long int) (sizeof (ac__type_sizeof_))) <= $ac_mid)];
+test_array [0] = 0
+
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext
+if { (ac_try="$ac_compile"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_compile") 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && {
+	 test -z "$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest.$ac_objext; then
+  ac_hi=$ac_mid; break
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+	ac_lo=`expr $ac_mid + 1`
+			if test $ac_lo -le $ac_mid; then
+			  ac_lo= ac_hi=
+			  break
+			fi
+			ac_mid=`expr 2 '*' $ac_mid + 1`
+fi
+
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+  done
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+	cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+$ac_includes_default
+   typedef useconds_t ac__type_sizeof_;
+int
+main ()
+{
+static int test_array [1 - 2 * !(((long int) (sizeof (ac__type_sizeof_))) < 0)];
+test_array [0] = 0
+
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext
+if { (ac_try="$ac_compile"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_compile") 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && {
+	 test -z "$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest.$ac_objext; then
+  ac_hi=-1 ac_mid=-1
+  while :; do
+    cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+$ac_includes_default
+   typedef useconds_t ac__type_sizeof_;
+int
+main ()
+{
+static int test_array [1 - 2 * !(((long int) (sizeof (ac__type_sizeof_))) >= $ac_mid)];
+test_array [0] = 0
+
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext
+if { (ac_try="$ac_compile"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_compile") 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && {
+	 test -z "$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest.$ac_objext; then
+  ac_lo=$ac_mid; break
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+	ac_hi=`expr '(' $ac_mid ')' - 1`
+			if test $ac_mid -le $ac_hi; then
+			  ac_lo= ac_hi=
+			  break
+			fi
+			ac_mid=`expr 2 '*' $ac_mid`
+fi
+
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+  done
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+	ac_lo= ac_hi=
+fi
+
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+fi
+
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+# Binary search between lo and hi bounds.
+while test "x$ac_lo" != "x$ac_hi"; do
+  ac_mid=`expr '(' $ac_hi - $ac_lo ')' / 2 + $ac_lo`
+  cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+$ac_includes_default
+   typedef useconds_t ac__type_sizeof_;
+int
+main ()
+{
+static int test_array [1 - 2 * !(((long int) (sizeof (ac__type_sizeof_))) <= $ac_mid)];
+test_array [0] = 0
+
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext
+if { (ac_try="$ac_compile"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_compile") 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && {
+	 test -z "$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest.$ac_objext; then
+  ac_hi=$ac_mid
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+	ac_lo=`expr '(' $ac_mid ')' + 1`
+fi
+
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+done
+case $ac_lo in
+?*) ac_cv_sizeof_useconds_t=$ac_lo;;
+'') if test "$ac_cv_type_useconds_t" = yes; then
+     { { echo "$as_me:$LINENO: error: cannot compute sizeof (useconds_t)
+See \`config.log' for more details." >&5
+echo "$as_me: error: cannot compute sizeof (useconds_t)
+See \`config.log' for more details." >&2;}
+   { (exit 77); exit 77; }; }
+   else
+     ac_cv_sizeof_useconds_t=0
+   fi ;;
+esac
+else
+  cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+$ac_includes_default
+   typedef useconds_t ac__type_sizeof_;
+static long int longval () { return (long int) (sizeof (ac__type_sizeof_)); }
+static unsigned long int ulongval () { return (long int) (sizeof (ac__type_sizeof_)); }
+#include <stdio.h>
+#include <stdlib.h>
+int
+main ()
+{
+
+  FILE *f = fopen ("conftest.val", "w");
+  if (! f)
+    return 1;
+  if (((long int) (sizeof (ac__type_sizeof_))) < 0)
+    {
+      long int i = longval ();
+      if (i != ((long int) (sizeof (ac__type_sizeof_))))
+	return 1;
+      fprintf (f, "%ld\n", i);
+    }
+  else
+    {
+      unsigned long int i = ulongval ();
+      if (i != ((long int) (sizeof (ac__type_sizeof_))))
+	return 1;
+      fprintf (f, "%lu\n", i);
+    }
+  return ferror (f) || fclose (f) != 0;
+
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest$ac_exeext
+if { (ac_try="$ac_link"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_link") 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && { ac_try='./conftest$ac_exeext'
+  { (case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_try") 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+  ac_cv_sizeof_useconds_t=`cat conftest.val`
+else
+  echo "$as_me: program exited with status $ac_status" >&5
+echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+( exit $ac_status )
+if test "$ac_cv_type_useconds_t" = yes; then
+     { { echo "$as_me:$LINENO: error: cannot compute sizeof (useconds_t)
+See \`config.log' for more details." >&5
+echo "$as_me: error: cannot compute sizeof (useconds_t)
+See \`config.log' for more details." >&2;}
+   { (exit 77); exit 77; }; }
+   else
+     ac_cv_sizeof_useconds_t=0
+   fi
+fi
+rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext conftest.$ac_objext conftest.$ac_ext
+fi
+rm -f conftest.val
+fi
+{ echo "$as_me:$LINENO: result: $ac_cv_sizeof_useconds_t" >&5
+echo "${ECHO_T}$ac_cv_sizeof_useconds_t" >&6; }
+
+
+
+cat >>confdefs.h <<_ACEOF
+#define SIZEOF_USECONDS_T $ac_cv_sizeof_useconds_t
 _ACEOF
 
 
@@ -27772,6 +30452,63 @@ _ACEOF
 
 
 
+# Haskell types corresponding to C types, defined here for those independent of 32/64 bitness of platform
+
+cat >>confdefs.h <<\_ACEOF
+#define HTYPE_CHAR Int8
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define HTYPE_DOUBLE Double
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define HTYPE_FLOAT Float
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define HTYPE_INTMAX_T Int64
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define HTYPE_LONG_LONG Int64
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define HTYPE_SHORT Int16
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define HTYPE_SIGNED_CHAR Int8
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define HTYPE_UINTMAX_T Word64
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define HTYPE_UNSIGNED_CHAR Word8
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define HTYPE_UNSIGNED_LONG_LONG Word64
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define HTYPE_UNSIGNED_SHORT Word16
+_ACEOF
+
+
 { echo "$as_me:$LINENO: checking whether byte ordering is bigendian" >&5
 echo $ECHO_N "checking whether byte ordering is bigendian... $ECHO_C" >&6; }
 if test "${ac_cv_c_bigendian+set}" = set; then
@@ -28019,63 +30756,6 @@ echo "$as_me: error: unknown endianness
 presetting ac_cv_c_bigendian=no (or yes) will help" >&2;}
    { (exit 1); exit 1; }; } ;;
 esac
-
-
-# Haskell types corresponding to C types, defined here for those independent of 32/64 bitness of platform
-
-cat >>confdefs.h <<\_ACEOF
-#define HTYPE_CHAR Int8
-_ACEOF
-
-
-cat >>confdefs.h <<\_ACEOF
-#define HTYPE_DOUBLE Double
-_ACEOF
-
-
-cat >>confdefs.h <<\_ACEOF
-#define HTYPE_FLOAT Float
-_ACEOF
-
-
-cat >>confdefs.h <<\_ACEOF
-#define HTYPE_INTMAX_T Int64
-_ACEOF
-
-
-cat >>confdefs.h <<\_ACEOF
-#define HTYPE_LONG_LONG Int64
-_ACEOF
-
-
-cat >>confdefs.h <<\_ACEOF
-#define HTYPE_SHORT Int16
-_ACEOF
-
-
-cat >>confdefs.h <<\_ACEOF
-#define HTYPE_SIGNED_CHAR Int8
-_ACEOF
-
-
-cat >>confdefs.h <<\_ACEOF
-#define HTYPE_UINTMAX_T Word64
-_ACEOF
-
-
-cat >>confdefs.h <<\_ACEOF
-#define HTYPE_UNSIGNED_CHAR Word8
-_ACEOF
-
-
-cat >>confdefs.h <<\_ACEOF
-#define HTYPE_UNSIGNED_LONG_LONG Word64
-_ACEOF
-
-
-cat >>confdefs.h <<\_ACEOF
-#define HTYPE_UNSIGNED_SHORT Word16
-_ACEOF
 
 
 # C error codes
@@ -28605,30 +31285,99 @@ fi
 if test "x$use32bits" = "xyes"
 then
   gccExtlibsOptions="$gccExtlibsOptions -m32"
+  gmpABI="32"
 fi
 
 if test "x$use64bits" = "xyes"
 then
   gccExtlibsOptions="$gccExtlibsOptions -m64"
+  gmpABI="64"
 fi
 
 GCC_EXTLIBS_OPTIONS=$gccExtlibsOptions
 
+GMP_ABI=$gmpABI
+
 
 ### general configuration
 
-# Use Boehm's GC
+# Use Boehm's GC, turned off, if ever turned on again, please inspect dependencies on this and following GC related flags
 
 cat >>confdefs.h <<\_ACEOF
-#define USE_BOEHM_GC 1
+#define USE_BOEHM_GC 0
 _ACEOF
 
 
-# Use GMP
+# BGC needs additional flags sometimes
+case $HostPlatform in
+  i386-apple-darwin10.* )
+        # as from 10.6 this seems to be required
+        extlibsOptionsBGC="-D_XOPEN_SOURCE"
+        ;;
+  *)
+        extlibsOptionsBGC=""
+        ;;
+esac
+
+# remove comment if BGC is to be included, all is configured to use the builtin GC, named MM
+# AC_SUBST(EXTLIBS_BGC_OPTS,$extlibsOptionsBGC)
+GCLIB=mm
+
+
+# which MP library
+
+# Check whether --with-mplib was given.
+if test "${with_mplib+set}" = set; then
+  withval=$with_mplib;  mplib="$withval"
+else
+   mplib="ltm"
+
+fi
+
+MPLIB=$mplib
+
+
+# Use GMP or LTM
+if test "$mplib" = "gmp" ; then
 
 cat >>confdefs.h <<\_ACEOF
 #define USE_GMP 1
 _ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define USE_LTM 0
+_ACEOF
+
+else
+
+cat >>confdefs.h <<\_ACEOF
+#define USE_GMP 0
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define USE_LTM 1
+_ACEOF
+
+fi
+
+# which GMP archive
+
+# Check whether --with-gmplibarchive was given.
+if test "${with_gmplibarchive+set}" = set; then
+  withval=$with_gmplibarchive;  gmpLibArchive="$withval"
+else
+   gmpLibArchive=`pwd`/"extlibs/gmp/gmp-4.2.1.tar.gz"
+
+fi
+
+if test -r "$gmpLibArchive" ; then
+  gmpLibArchiveExists="yes"
+else
+  gmpLibArchiveExists="no"
+fi
+GMP_LIB_ARCHIVE="$gmpLibArchive"
 
 
 # Prefix used for global values, assumed to be present by RTS
@@ -28639,52 +31388,35 @@ _ACEOF
 
 
 ### machine dependent code
+
+
 case $HostPlatform in
   i*86-*-mingw* | i*86-*-cygwin* )
-        mach_dep_c_for_tailcall_leave1="asm(\\\"leave\\\") ;"
-        mach_dep_c_for_tailcall_leave2=""
-        mach_dep_c_for_tailcall_enter=""
         ;;
   powerpc-apple-* )
-        mach_dep_c_for_tailcall_leave1="asm(\\\"lwz r1,0(r1)\\\") ; asm(\\\"lwz r0,8(r1)\\\") ; asm(\\\"mtlr r0\\\") ;"
-        mach_dep_c_for_tailcall_leave2="asm(\\\"lmw r30,-8(r1)\\\") ;"
-        mach_dep_c_for_tailcall_enter="asm( \\\"lwz r2,0(r1)\\\" ) ; asm( \\\"stw r0,8(r2)\\\" ) ;"
         ;;
   i*86-pc-linux-gnu )
         gcc_ehc_extra_extern_libs="pthread"
-        mach_dep_c_for_tailcall_leave1="asm(\\\"leave\\\") ;"
         ;;
   *-linux-gnu )
         gcc_ehc_extra_extern_libs="pthread"
         ;;
   x86_64-* )
-        mach_dep_c_for_tailcall_leave1="asm(\\\"leave\\\") ;"
         ;;
   i386-apple-* )
-        mach_dep_c_for_tailcall_leave1="asm(\\\"leave\\\") ;"
-        mach_dep_c_for_tailcall_leave2="asm(\\\"movl -8(%esp), %ebx\\\") ;"
         ;;
   *)
-        mach_dep_c_for_tailcall_leave1=""
-        mach_dep_c_for_tailcall_leave2=""
-        mach_dep_c_for_tailcall_enter=""
         ;;
 esac
-MACH_DEP_C_FOR_TAILCALL_ENTER="$mach_dep_c_for_tailcall_enter"
-
-MACH_DEP_C_FOR_TAILCALL_LEAVE1="$mach_dep_c_for_tailcall_leave1"
-
-MACH_DEP_C_FOR_TAILCALL_LEAVE2="$mach_dep_c_for_tailcall_leave2"
-
 GCC_EHC_EXTRA_EXTERN_LIBS="$gcc_ehc_extra_extern_libs"
-
 
 ### other platform specific stuff
 # defaults:
 # file suffixes
 suffix_shell=""
 suffix_exec=""
-suffix_lib=".a"
+suffix_libC=".a"
+suffix_libJavaScript=".mjs"
 prefix_lib=""
 # development platform
 development_platform="UNIX"
@@ -28697,12 +31429,14 @@ libtoolStaticOpts="-static -o"
 libtoolDynamicCmd="echo Dynamic linking not available: "
 libtoolDynamicOpts=""
 ehcGccOptsStatic=""
+linker_symbol_prefix="_"
+
 case $HostPlatform in
   i*86-*-mingw* | i*86-*-cygwin* )
         # file suffixes
         suffix_shell=".bat"
         suffix_exec=".exe"
-        #suffix_lib=".lib"
+        #suffix_libC=".lib"
         #prefix_lib="lib"
         development_platform="CYGWIN"
         # path separator
@@ -28717,8 +31451,9 @@ case $HostPlatform in
         # libtool usage
         #libtoolStaticCmd="no"
         # ehcGccOptsStatic="-static"
-	    # libtoolStaticCmd="libtool --mode=link gcc -static -o"
+	    # libtoolStaticCmd="libttcflagool --mode=link gcc -static -o"
         libtoolStaticCmd="no"
+        linker_symbol_prefix=""
         ;;
   x86*-*-linux-gnu )
         # file suffixes
@@ -28738,13 +31473,17 @@ SUFFIX_SHELL="$suffix_shell"
 
 SUFFIX_EXEC="$suffix_exec"
 
-SUFFIX_LIB="$suffix_lib"
+SUFFIX_LIBC="$suffix_libC"
+
+SUFFIX_LIBJS="$suffix_libJavaScript"
 
 PREFIX_LIB="$prefix_lib"
 
 PATHS_SEP="$paths_sep"
 
 SLASH="$slash"
+
+LINKER_SYMBOL_PREFIX="$linker_symbol_prefix"
 
 
 # misc
@@ -28776,7 +31515,7 @@ case $HostPlatform in
         # get rid off /cygdrive/ prefix
         hardtop=`echo ${hardtop} | sed -e 's%^/cygdrive/\(.\)/%\1:/%' `
         hardtop_plat=`cygpath -w ${hardtop} | sed -e 's@\\\\@/@g' `
-        hardtop_plat2=`echo ${hardtop_plat} | sed -e 's@^\(.\):@/\1@' `
+        hardtop_plat2=${hardtop}
         shellrun="/bin/bash "
         ;;
   *)
@@ -28828,13 +31567,14 @@ EXTLIBS_BGC_PKG_NAME="gc"
 EXTLIBS_GMP_PKG_NAME="gmp"
  # should coincide with installed lib in extlibs/gmp
 
-### if some of the required libraries/tools are absent, this def will check for it and exit
+### if some of the required libraries/tools are absent, this def will check for it and exit when make is invoked
 if test "x$uuagcExists" = "xyes" \
    -a "x$ghcExists" = "xyes" \
    -a "x$gccExists" = "xyes" \
    -a "x$ghcLibFglExists" = "xyes" \
    -a "x$ghcLibUulibExists" = "xyes" \
-   -a "x$ghcLibNetworkExists" = "xyes"
+   -a "x$ghcLibNetworkExists" = "xyes" \
+   -a "x$ghcLibBinaryExists" = "xyes"
 then
   exitIfAbsentLibOrTool=""
 else
@@ -28846,11 +31586,15 @@ EXIT_IF_ABSENT_LIB_OR_TOOL=$exitIfAbsentLibOrTool
 ### file generation
 ac_config_files="$ac_config_files mk/config.mk mk/shared.mk"
 
+ac_config_files="$ac_config_files test/benchmark/runbenchmark.pl"
+
 ac_config_files="$ac_config_files src/ehc/Config.chs src/helium/Utils/OSSpecific.hs"
 
-ac_config_files="$ac_config_files bin/llvm-compilerdriver"
+# AC_CONFIG_FILES([bin/llvm-compilerdriver], [chmod +x bin/llvm-compilerdriver]
+ac_config_headers="$ac_config_headers src/ehc/ConfigDefines.chs src/rts/config.ch src/rts/mm/config.ch ehclib/uhcbase/include/MachDeps.h ehclib/uhcbase/include/HsBaseConfig.h ehclib/old-time/include/HsTimeConfig.h ehclib/directory/include/HsDirectoryConfig.h ehclib/unix/include/HsUnixConfig.h"
 
-ac_config_headers="$ac_config_headers src/ehc/ConfigDefines.chs src/rts/config.ch src/rts/mm/config.ch ehclib/base/include/MachDeps.h ehclib/base/include/HsBaseConfig.h"
+
+ac_config_files="$ac_config_files src/text2text/text2text.cabal"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -29406,14 +32150,18 @@ do
   case $ac_config_target in
     "mk/config.mk") CONFIG_FILES="$CONFIG_FILES mk/config.mk" ;;
     "mk/shared.mk") CONFIG_FILES="$CONFIG_FILES mk/shared.mk" ;;
+    "test/benchmark/runbenchmark.pl") CONFIG_FILES="$CONFIG_FILES test/benchmark/runbenchmark.pl" ;;
     "src/ehc/Config.chs") CONFIG_FILES="$CONFIG_FILES src/ehc/Config.chs" ;;
     "src/helium/Utils/OSSpecific.hs") CONFIG_FILES="$CONFIG_FILES src/helium/Utils/OSSpecific.hs" ;;
-    "bin/llvm-compilerdriver") CONFIG_FILES="$CONFIG_FILES bin/llvm-compilerdriver" ;;
     "src/ehc/ConfigDefines.chs") CONFIG_HEADERS="$CONFIG_HEADERS src/ehc/ConfigDefines.chs" ;;
     "src/rts/config.ch") CONFIG_HEADERS="$CONFIG_HEADERS src/rts/config.ch" ;;
     "src/rts/mm/config.ch") CONFIG_HEADERS="$CONFIG_HEADERS src/rts/mm/config.ch" ;;
-    "ehclib/base/include/MachDeps.h") CONFIG_HEADERS="$CONFIG_HEADERS ehclib/base/include/MachDeps.h" ;;
-    "ehclib/base/include/HsBaseConfig.h") CONFIG_HEADERS="$CONFIG_HEADERS ehclib/base/include/HsBaseConfig.h" ;;
+    "ehclib/uhcbase/include/MachDeps.h") CONFIG_HEADERS="$CONFIG_HEADERS ehclib/uhcbase/include/MachDeps.h" ;;
+    "ehclib/uhcbase/include/HsBaseConfig.h") CONFIG_HEADERS="$CONFIG_HEADERS ehclib/uhcbase/include/HsBaseConfig.h" ;;
+    "ehclib/old-time/include/HsTimeConfig.h") CONFIG_HEADERS="$CONFIG_HEADERS ehclib/old-time/include/HsTimeConfig.h" ;;
+    "ehclib/directory/include/HsDirectoryConfig.h") CONFIG_HEADERS="$CONFIG_HEADERS ehclib/directory/include/HsDirectoryConfig.h" ;;
+    "ehclib/unix/include/HsUnixConfig.h") CONFIG_HEADERS="$CONFIG_HEADERS ehclib/unix/include/HsUnixConfig.h" ;;
+    "src/text2text/text2text.cabal") CONFIG_FILES="$CONFIG_FILES src/text2text/text2text.cabal" ;;
 
   *) { { echo "$as_me:$LINENO: error: invalid argument: $ac_config_target" >&5
 echo "$as_me: error: invalid argument: $ac_config_target" >&2;}
@@ -29527,20 +32275,37 @@ EH_VERSION_MINORMINOR!$EH_VERSION_MINORMINOR$ac_delim
 EH_VERSION_STABILITY!$EH_VERSION_STABILITY$ac_delim
 EH_VERSION_SHORT!$EH_VERSION_SHORT$ac_delim
 EH_VERSION_FULL!$EH_VERSION_FULL$ac_delim
+EH_VERSION_ASNUMBER!$EH_VERSION_ASNUMBER$ac_delim
+m4Cmd!$m4Cmd$ac_delim
+svnCmd!$svnCmd$ac_delim
+SVN_EXISTS!$SVN_EXISTS$ac_delim
+SVN_CMD!$SVN_CMD$ac_delim
+svnVersionCmd!$svnVersionCmd$ac_delim
+SVN_VERSION_EXISTS!$SVN_VERSION_EXISTS$ac_delim
+SVN_VERSION_CMD!$SVN_VERSION_CMD$ac_delim
+SVN_REVISION!$SVN_REVISION$ac_delim
 ENABLE_JAVA!$ENABLE_JAVA$ac_delim
 javacCmd!$javacCmd$ac_delim
 jarCmd!$jarCmd$ac_delim
 JAVAC_CMD!$JAVAC_CMD$ac_delim
 JAR_CMD!$JAR_CMD$ac_delim
+ENABLE_JS!$ENABLE_JS$ac_delim
+ENABLE_CMM!$ENABLE_CMM$ac_delim
+ENABLE_CWHOLEPROG!$ENABLE_CWHOLEPROG$ac_delim
+ENABLE_LLVM!$ENABLE_LLVM$ac_delim
 ENABLE_CLR!$ENABLE_CLR$ac_delim
+ENABLE_TYCORE!$ENABLE_TYCORE$ac_delim
+ENABLE_TAUPHI!$ENABLE_TAUPHI$ac_delim
 ranlibCmd!$ranlibCmd$ac_delim
 RANLIB_CMD!$RANLIB_CMD$ac_delim
 arCmd!$arCmd$ac_delim
 AR_CMD!$AR_CMD$ac_delim
+catCmd!$catCmd$ac_delim
+CAT_CMD!$CAT_CMD$ac_delim
 libtoolStaticCmd!$libtoolStaticCmd$ac_delim
+EHC_BUILD_SUFFIX!$EHC_BUILD_SUFFIX$ac_delim
 GCC_EHC_OPTIONS!$GCC_EHC_OPTIONS$ac_delim
 CPP_EHC_OPTIONS!$CPP_EHC_OPTIONS$ac_delim
-GHC_EHC_OPTIONS!$GHC_EHC_OPTIONS$ac_delim
 SHUFFLE_EHC_OPTIONS!$SHUFFLE_EHC_OPTIONS$ac_delim
 UUAGC_OPTIONS!$UUAGC_OPTIONS$ac_delim
 UUAGC_EHC_AST_OPTIONS!$UUAGC_EHC_AST_OPTIONS$ac_delim
@@ -29550,28 +32315,11 @@ TOPLEVEL_SYSTEM_ABSPATH_PREFIX!$TOPLEVEL_SYSTEM_ABSPATH_PREFIX$ac_delim
 ghcCmd!$ghcCmd$ac_delim
 GHC_CMD!$GHC_CMD$ac_delim
 GHC_VERSION!$GHC_VERSION$ac_delim
+GHC_EHC_OPTIONS!$GHC_EHC_OPTIONS$ac_delim
+GHC_GEN_OPTIONS!$GHC_GEN_OPTIONS$ac_delim
+GHC_CMD1!$GHC_CMD1$ac_delim
 ghcPkgCmd!$ghcPkgCmd$ac_delim
-haddockCmd!$haddockCmd$ac_delim
-HADDOCK_CMD!$HADDOCK_CMD$ac_delim
-HADDOCK_VERSION!$HADDOCK_VERSION$ac_delim
-OPT_GHC_STANDARD_PACKAGES!$OPT_GHC_STANDARD_PACKAGES$ac_delim
-CABAL_BASE_LIB_DEPENDS!$CABAL_BASE_LIB_DEPENDS$ac_delim
-CABAL_EXTRA_LIB_DEPENDS!$CABAL_EXTRA_LIB_DEPENDS$ac_delim
-CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES!$CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES$ac_delim
-uuagcCmd!$uuagcCmd$ac_delim
-UUAGC_CMD!$UUAGC_CMD$ac_delim
-gccCmd!$gccCmd$ac_delim
-GCC_CMD!$GCC_CMD$ac_delim
-CC!$CC$ac_delim
-CFLAGS!$CFLAGS$ac_delim
-LDFLAGS!$LDFLAGS$ac_delim
-CPPFLAGS!$CPPFLAGS$ac_delim
-ac_ct_CC!$ac_ct_CC$ac_delim
-EXEEXT!$EXEEXT$ac_delim
-OBJEXT!$OBJEXT$ac_delim
-CC_STD_FLAG!$CC_STD_FLAG$ac_delim
-cppCmd!$cppCmd$ac_delim
-CPP_CMD!$CPP_CMD$ac_delim
+hsc2hsCmd!$hsc2hsCmd$ac_delim
 _ACEOF
 
   if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 97; then
@@ -29613,6 +32361,28 @@ _ACEOF
 ac_delim='%!_!# '
 for ac_last_try in false false false false false :; do
   cat >conf$$subs.sed <<_ACEOF
+HSC2HS_CMD!$HSC2HS_CMD$ac_delim
+haddockCmd!$haddockCmd$ac_delim
+HADDOCK_CMD!$HADDOCK_CMD$ac_delim
+HADDOCK_VERSION!$HADDOCK_VERSION$ac_delim
+OPT_GHC_STANDARD_PACKAGES!$OPT_GHC_STANDARD_PACKAGES$ac_delim
+CABAL_BASE_LIB_DEPENDS!$CABAL_BASE_LIB_DEPENDS$ac_delim
+CABAL_EXTRA_LIB_DEPENDS!$CABAL_EXTRA_LIB_DEPENDS$ac_delim
+CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES!$CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES$ac_delim
+uuagcCmd!$uuagcCmd$ac_delim
+UUAGC_CMD!$UUAGC_CMD$ac_delim
+gccCmd!$gccCmd$ac_delim
+GCC_CMD!$GCC_CMD$ac_delim
+CC!$CC$ac_delim
+CFLAGS!$CFLAGS$ac_delim
+LDFLAGS!$LDFLAGS$ac_delim
+CPPFLAGS!$CPPFLAGS$ac_delim
+ac_ct_CC!$ac_ct_CC$ac_delim
+EXEEXT!$EXEEXT$ac_delim
+OBJEXT!$OBJEXT$ac_delim
+CC_STD_FLAG!$CC_STD_FLAG$ac_delim
+cppCmd!$cppCmd$ac_delim
+CPP_CMD!$CPP_CMD$ac_delim
 llvmAs!$llvmAs$ac_delim
 LLVM_AS_CMD!$LLVM_AS_CMD$ac_delim
 llvmOpt!$llvmOpt$ac_delim
@@ -29621,20 +32391,25 @@ llvmLlc!$llvmLlc$ac_delim
 LLVM_LLC_CMD!$LLVM_LLC_CMD$ac_delim
 md5Cmd!$md5Cmd$ac_delim
 MD5_CMD!$MD5_CMD$ac_delim
+tarCmd!$tarCmd$ac_delim
+TAR_CMD!$TAR_CMD$ac_delim
 CPP!$CPP$ac_delim
 GREP!$GREP$ac_delim
 EGREP!$EGREP$ac_delim
 GCC_EXTLIBS_OPTIONS!$GCC_EXTLIBS_OPTIONS$ac_delim
-MACH_DEP_C_FOR_TAILCALL_ENTER!$MACH_DEP_C_FOR_TAILCALL_ENTER$ac_delim
-MACH_DEP_C_FOR_TAILCALL_LEAVE1!$MACH_DEP_C_FOR_TAILCALL_LEAVE1$ac_delim
-MACH_DEP_C_FOR_TAILCALL_LEAVE2!$MACH_DEP_C_FOR_TAILCALL_LEAVE2$ac_delim
+GMP_ABI!$GMP_ABI$ac_delim
+GCLIB!$GCLIB$ac_delim
+MPLIB!$MPLIB$ac_delim
+GMP_LIB_ARCHIVE!$GMP_LIB_ARCHIVE$ac_delim
 GCC_EHC_EXTRA_EXTERN_LIBS!$GCC_EHC_EXTRA_EXTERN_LIBS$ac_delim
 SUFFIX_SHELL!$SUFFIX_SHELL$ac_delim
 SUFFIX_EXEC!$SUFFIX_EXEC$ac_delim
-SUFFIX_LIB!$SUFFIX_LIB$ac_delim
+SUFFIX_LIBC!$SUFFIX_LIBC$ac_delim
+SUFFIX_LIBJS!$SUFFIX_LIBJS$ac_delim
 PREFIX_LIB!$PREFIX_LIB$ac_delim
 PATHS_SEP!$PATHS_SEP$ac_delim
 SLASH!$SLASH$ac_delim
+LINKER_SYMBOL_PREFIX!$LINKER_SYMBOL_PREFIX$ac_delim
 DEVELOPMENT_PLATFORM!$DEVELOPMENT_PLATFORM$ac_delim
 LIBTOOL_STATIC_CMD!$LIBTOOL_STATIC_CMD$ac_delim
 LIBTOOL_STATIC_OPTS!$LIBTOOL_STATIC_OPTS$ac_delim
@@ -29661,7 +32436,7 @@ LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 46; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 73; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5
@@ -30017,7 +32792,7 @@ do
     cat >>$CONFIG_STATUS <<_ACEOF
     # First, check the format of the line:
     cat >"\$tmp/defines.sed" <<\\CEOF
-/^[	 ]*#[	 ]*undef[	 ][	 ]*$ac_word_re[	 ]*\$/b def
+/^[	 ]*#[	 ]*undef[	 ][	 ]*$ac_word_re[	 ]*/b def
 /^[	 ]*#[	 ]*define[	 ][	 ]*$ac_word_re[(	 ]/b def
 b
 :def
@@ -30055,11 +32830,6 @@ echo "$as_me: $ac_file is unchanged" >&6;}
 
   esac
 
-
-  case $ac_file$ac_mode in
-    "bin/llvm-compilerdriver":F) chmod +x bin/llvm-compilerdriver ;;
-
-  esac
 done # for ac_tag
 
 
@@ -30096,6 +32866,7 @@ echo "Version: ${EH_VERSION_FULL}"
 echo "Installation/build summary."
 echo "  host                          : $host"
 echo "  prefix                        : $prefix"
+echo "  build suffix                  : $ehcBuildSuffix"
 
 echo "Required:"
 echo "  uuagc is available?           : $uuagcExists"
@@ -30110,6 +32881,7 @@ echo "  ghc is available?             : $ghcExists"
 if test "x$ghcExists" = "xyes" ;then
 echo "    version                     : $ghcVersion"
 echo "    command for ghc             : $ghcCmd"
+echo "    command for ghc raw         : $ghcCmd1"
 echo "    libraries:"
 echo "      uulib is available?       : $ghcLibUulibExists"
   if test "x$ghcLibUulibExists" = "xyes"
@@ -30132,6 +32904,13 @@ echo "      network is available?     : $ghcLibNetworkExists"
   else
     echo "        **** ERROR **** : 'network' must be installed, use cabal+hackage"
   fi
+echo "      binary is available?      : $ghcLibBinaryExists"
+  if test "x$ghcLibBinaryExists" = "xyes"
+  then
+    echo "        version                 : $ghcLibBinary"
+  else
+    echo "        **** ERROR **** : 'binary' must be installed, use cabal+hackage"
+  fi
 else
 echo "    **** ERROR **** : ghc must be installed, see http://www.haskell.org/ghc"
 fi
@@ -30153,6 +32932,37 @@ then
   fi
 fi
 
+if test x$enableLlvm = xyes
+then
+  echo "  llvm is available?            : $llvmExists"
+  echo "    command for llc             : $llvmLlc"
+  if test -x $llvmLlc
+  then
+    echo "    version                     :" `$llvmLlc -version`
+  else
+    echo "    **** ERROR **** : llc is not available and/or executable"
+  fi
+  echo "    command for llvm-as         : $llvmAs"
+  if test ! -x $llvmAs
+  then
+    echo "    **** ERROR **** : llvm-as is not available and/or executable"
+  fi
+  echo "    command for opt             : $llvmOpt"
+  if test ! -x $llvmOpt
+  then
+    echo "    **** ERROR **** : opt is not available and/or executable"
+  fi
+fi
+
+echo "  MP library                    : $mplib"
+if test "$mplib" == "gmp" ; then
+  if test "x$gmpLibArchiveExists" = "xyes" ;then
+    echo "    gmp lib archive             : $gmpLibArchive"
+  else
+    echo "    **** ERROR **** : GMP lib archive not readable: $gmpLibArchive"
+  fi
+fi
+
 echo "Optional:"
 echo "  haddock is available?         : $haddockExists"
 if test "x$haddockExists" = "xyes" ;then
@@ -30160,7 +32970,7 @@ echo "    version                     : $haddockVersion"
 echo "    command for haddock         : $haddockCmd"
 fi
 
-#echo
-#echo "Misc debug/tmp info:"
-#echo "  hardtop_plat                        : $hardtop_plat"
-
+echo "Absolute location of directories:"
+echo "  ehc repository                : $hardtop_plat2"
+echo "  ehc repository raw            : $hardtop_plat"
+echo "  unix root prefix raw          : $toplevelSystemAbsolutePathPrefix"

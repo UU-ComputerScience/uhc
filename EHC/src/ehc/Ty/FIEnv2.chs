@@ -12,7 +12,9 @@ This must be done in a separate module because of the module cycles it solves to
 %%[(4 hmtyinfer) import({%{EH}Ty.AppSpineGam})
 %%]
 
-%%[(8 hmtyinfer) import(qualified {%{EH}TyCore.Full1} as C)
+%%[(8 hmtyinfer) import({%{EH}AbstractCore})
+%%]
+%%[(8 hmtyinfer tycore) import(qualified {%{EH}TyCore.Full1} as C)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -23,12 +25,12 @@ This must be done in a separate module because of the module cycles it solves to
 defaultFIEnv
   =   emptyFE
         { feAppSpineGam = mkAppSpineGam defaultFIEnv
-%%[[8
+%%[[(8 tycore)
         , feFIReqs
             = FitsInRequires
                 { fireqLRCoeForLamTyAppAsSubst	= C.lrcoeForLamTyAppAsSubst
-                , fireqCSubstAppExpr			= C.cSubstApp
-                , fireqCSubstAppSubst			= C.cSubstApp
+                , fireqCSubstAppExpr			= cSubstApp
+                , fireqCSubstAppSubst			= cSubstApp
 %%[[10
                 , fireqCoeEvalOnAsSubst 		= C.coeEvalOnAsSubst
                 , fireqLRCoeWipeWeaveAsSubst 	= C.lrcoeWipeWeaveAsSubst
@@ -38,12 +40,4 @@ defaultFIEnv
         }
 %%]
 
-%%[(4444 hmtyinfer) export(defaultFIIn)
-defaultFIIn
-  =   emptyFI
-%%[[8
-        { fiEnv  = defaultFIEnv
-        }
-%%]]
-%%]
 

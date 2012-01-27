@@ -2,7 +2,7 @@
 %%% "Ty app spine" gam
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4 module {%{EH}Ty.AppSpineGam} import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Base.Opts})
+%%[4 module {%{EH}Ty.AppSpineGam} import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Opts})
 %%]
 %%[4 import({%{EH}Ty},{%{EH}Gam},{%{EH}Gam.AppSpineGam})
 %%]
@@ -10,9 +10,11 @@
 %%]
 %%[4 import({%{EH}Ty.FitsInCommon},{%{EH}Ty.FIEnv})
 %%]
-%%[(8 codegen hmtyinfer) import(qualified {%{EH}TyCore.Full0} as C)
+%%[(8 codegen tycore hmtyinfer) import(qualified {%{EH}TyCore.Full0} as C)
 %%]
-%%[(9 codegen hmtyinfer) import({%{EH}Core.Subst})
+%%[(9 codegen hmtyinfer) import({%{EH}AbstractCore},{%{EH}Core.Subst})
+%%]
+%%[(8 codegen hmtyinfer) hs import(EH.Util.Utils)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -59,19 +61,25 @@ arrowAppSpineVertebraeInfoL env
                          -- c = lrcoeForLamTyApp opts u1 (foCSubst afo) (foLRCoe ffo) (foLRCoe afo)
                          (c,s) = lrcoeForLamTyAppAsSubst opts u1 (foLRCoe ffo) (foLRCoe afo)
 %%]]
+%%[[(8 tycore)
                          (tc,ts) = {- C.lrcoeForLamTyAppAsSubst -} fireqLRCoeForLamTyAppAsSubst fiReqs opts u1 (C.tyErr ("arrowAppSpineVertebraeInfoL: " ++ show u1)) (foLRTCoe ffo) (foLRTCoe afo)
+%%]]
                      in  afo { foUniq = u'
 %%[[9
                              , foLRCoe = c
                              , foCSubst = foCSubst afo `cSubstApp` s
 %%]]
+%%[[(8 tycore)
                              , foLRTCoe = tc
                              , foTCSubst = fireqCSubstAppSubst fiReqs (foTCSubst afo) ts
+%%]]
                              }
           )     )
 %%]]
     ]
+%%[[(8 tycore)
   where fiReqs = feFIReqs env
+%%]]
 
 prodAppSpineVertebraeInfoL :: [AppSpineVertebraeInfo]
 prodAppSpineVertebraeInfoL
@@ -88,7 +96,7 @@ prodAppSpineVertebraeInfoL
 
 %%[(8 codegen hmtyinfer) export(asFOUpdCoe)
 dfltFOUpdCoe :: AppSpineFOUpdCoe
-dfltFOUpdCoe _ x = last x
+dfltFOUpdCoe _ x = last' (panic "Ty.AppSpineGam.dfltFOUpdCoe") x
 
 asFOUpdCoe :: AppSpineVertebraeInfo -> AppSpineFOUpdCoe
 asFOUpdCoe = maybe dfltFOUpdCoe id . asMbFOUpdCoe

@@ -11,10 +11,7 @@
 %%[1 export(IdDefOcc(..),emptyIdDefOcc,mkIdDefOcc)
 %%]
 
-%%[8 import({%{EH}Base.CfgPP})
-%%]
-
-%%[99 import({%{EH}Base.ForceEval})
+%%[9999 import({%{EH}Base.ForceEval})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -23,7 +20,7 @@
 
 Not used
 
-%%[1 hs export(IdEH(..))
+%%[1111 hs export(IdEH(..))
 data IdEH
   = IdEH_Val_Pat       	{iehDecl   ::  EH.Decl                         }
   | IdEH_Val_Fun       	{iehPatL   :: [EH.PatExpr], iehBody :: EH.Expr, iehUniq :: !UID}
@@ -49,39 +46,48 @@ data IdEH
 %%% Aspects
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+Absence of strictness is sometimes essential, as some declarations are harmlessly cyclic,
+e.g. Data in:
+  class Data a where
+    gfoldl :: (forall d. Data d => d) -> a
+
 %%[1 hs export(IdAspect(..))
 data IdAspect
   = IdAsp_Val_Var
-  | IdAsp_Val_Pat       {iaspDecl   ::  EH.Decl                         }
-  | IdAsp_Val_Fun       {iaspPatL   :: [EH.PatExpr], iaspBody :: EH.Expr, iaspUniq :: !UID}
-  | IdAsp_Val_Sig       {iaspDecl   ::  EH.Decl                         }
+  | IdAsp_Val_Pat       	{iaspDecl   ::  EH.Decl                         }
+  | IdAsp_Val_Fun       	{iaspPatL   :: [EH.PatExpr], iaspBody :: EH.Expr, iaspUniq :: !UID}
+  | IdAsp_Val_Sig       	{iaspDecl   ::  EH.Decl                         }
   | IdAsp_Val_Fix
   | IdAsp_Val_Con
 %%[[5
-  | IdAsp_Val_Fld       {iaspDataNm :: !HsName, iaspConNm :: !HsName    }
+  | IdAsp_Val_Fld       	{iaspDataNm :: !HsName, iaspConNm :: !HsName    }
+%%]]
+%%[[93
+  | IdAsp_Val_Fusion	  	{iaspDecl   ::  EH.Decl                         }
+  | IdAsp_Fusion_Conv  		{iaspDecl   ::  EH.Decl                         }
 %%]]
   | IdAsp_Type_Con
 %%[[3
   | IdAsp_Type_Var
 %%]]
 %%[[5
-  | IdAsp_Type_Def      {iaspDecl   ::  EH.Decl                         }
+  | IdAsp_Type_Def      	{iaspDecl   ::  EH.Decl                         }
 %%]]
 %%[[6
-  | IdAsp_Type_Sig      {iaspDecl   :: !EH.Decl                         }
+  | IdAsp_Type_Sig      	{iaspDecl   :: !EH.Decl                         }
   | IdAsp_Kind_Con
   | IdAsp_Kind_Var
 %%]]
 %%[[8
-  | IdAsp_Val_Foreign   {iaspDecl   :: !EH.Decl                         }
+  | IdAsp_Val_Foreign   	{iaspDecl   :: !EH.Decl                         }
 %%]]
 %%[[9
   | IdAsp_Class_Class
-  | IdAsp_Class_Def     {iaspDecl   :: !EH.Decl, iaspDeclInst :: !EH.Decl}
+  | IdAsp_Class_Def     	{iaspDecl   ::  EH.Decl, iaspDeclInst ::  EH.Decl}
   | IdAsp_Inst_Inst
-  | IdAsp_Inst_Def      {iaspDecl   ::  EH.Decl, iaspClassNm  :: !HsName}
-  | IdAsp_Dflt_Def      -- for now defaults are ignored
-                        -- {iaspDecl   :: !EH.Decl                         }
+  | IdAsp_Inst_Def      	{iaspDecl   ::  EH.Decl, iaspClassNm  :: !HsName}
+  | IdAsp_Dflt_Def     		-- for now defaults without explicit class name are ignored
+                       	 	{iaspDecl   :: !EH.Decl, iaspIgnore   :: !Bool  }
 %%]]
   | IdAsp_Any
 %%]
@@ -162,6 +168,10 @@ instance PP IdAspect where
 %%[[5
   pp (IdAsp_Val_Fld _ _  )  = pp "data field"
 %%]]
+%%[[93
+  pp (IdAsp_Val_Fusion  _)  = pp "fuse"
+  pp (IdAsp_Fusion_Conv _)  = pp "convert"
+%%]]
   pp  IdAsp_Type_Con        = pp "type constructor"
 %%[[3
   pp  IdAsp_Type_Var        = pp "type variable"
@@ -182,7 +192,7 @@ instance PP IdAspect where
   pp (IdAsp_Class_Def _ _)  = pp "class"
   pp  IdAsp_Inst_Inst       = pp "instance"
   pp (IdAsp_Inst_Def  _ _)  = pp "instance"
-  pp (IdAsp_Dflt_Def     )  = pp "default"
+  pp (IdAsp_Dflt_Def  _ _)  = pp "default"
 %%]]
   pp  IdAsp_Any             = pp "ANY"
 %%]
@@ -198,7 +208,7 @@ data IdDefOcc
       , doccAsp     :: !IdAspect
       , doccLev     :: !NmLev
       , doccRange   :: !Range
-%%[[20
+%%[[50
       , doccNmAlts  :: !(Maybe [HsName])
 %%]]
       }
@@ -213,7 +223,7 @@ mkIdDefOcc :: IdOcc -> IdAspect -> NmLev -> Range -> IdDefOcc
 mkIdDefOcc o a l r = IdDefOcc o a l r
 %%]
 
-%%[20 -1.mkIdDefOcc hs
+%%[50 -1.mkIdDefOcc hs
 mkIdDefOcc :: IdOcc -> IdAspect -> NmLev -> Range -> IdDefOcc
 mkIdDefOcc o a l r = IdDefOcc o a l r Nothing
 %%]
@@ -221,9 +231,15 @@ mkIdDefOcc o a l r = IdDefOcc o a l r Nothing
 %%[1
 instance PP IdDefOcc where
   pp o = doccOcc o >|< "/" >|< doccAsp o >|< "/" >|< doccLev o
-%%[[20
+%%[[50
          >|< maybe empty (\ns -> "/" >|< ppBracketsCommas ns) (doccNmAlts o)
 %%]
+%%]
+
+%%[50 hs export(doccStrip)
+-- | Strip positional info
+doccStrip :: IdDefOcc -> IdDefOcc
+doccStrip o = o {doccRange = emptyRange}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -232,7 +248,7 @@ instance PP IdDefOcc where
 
 not used
 
-%%[1 hs export(IdDefAsp(..))
+%%[1111 hs export(IdDefAsp(..))
 data IdDefAsp
   = IdDefAsp
       { daspOcc     :: !IdOcc
@@ -240,7 +256,7 @@ data IdDefAsp
       }
 %%]
 
-%%[1 hs export(mkIdDefAsp)
+%%[1111 hs export(mkIdDefAsp)
 mkIdDefAsp :: IdOcc -> IdEH -> IdDefAsp
 mkIdDefAsp o a = IdDefAsp o a
 %%]
@@ -249,7 +265,7 @@ mkIdDefAsp o a = IdDefAsp o a
 %%% ForceEval
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[99
+%%[9999
 instance ForceEval IdAspect where
   forceEval x@(IdAsp_Val_Pat d    ) | d `seq` True = x
   forceEval x@(IdAsp_Val_Fun p d i) | p `seq` d `seq` forceEval i `seq` True = x
@@ -277,24 +293,8 @@ instance ForceEval IdDefAsp where
 %%% PP
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(ppIdOcc)
--- intended for parsing
-ppIdOcc :: CfgPP x => x -> IdOcc -> PP_Doc
-ppIdOcc x o = ppCurlysCommas [cfgppHsName x (ioccNm o),pp (ioccKind o)]
-%%]
-
 %%[1.PP.IdOcc
 instance PP IdOcc where
   pp o = ppCurlysCommas [pp (ioccNm o),pp (ioccKind o)]
-%%]
-
-%%[8 -1.PP.IdOcc
-instance PP IdOcc where
-  pp = ppIdOcc CfgPP_Plain
-%%]
-
-%%[20
-instance PPForHI IdOcc where
-  ppForHI = ppIdOcc CfgPP_HI
 %%]
 

@@ -1,6 +1,8 @@
 {- ----------------------------------------------------------------------------------------
    what    : library Data.Bits, for Int variants
    expected: ok
+   platform: word size dependent
+   constraints: exclude-if-js
 ---------------------------------------------------------------------------------------- -}
 
 module DataBitsInt2 where

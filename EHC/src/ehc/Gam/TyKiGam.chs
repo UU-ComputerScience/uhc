@@ -23,7 +23,10 @@
 %%[(6 hmtyinfer || hmtyast) import({%{EH}VarMp},{%{EH}Substitutable})
 %%]
 
-%%[99 import({%{EH}Base.ForceEval})
+%%[(50 hmtyinfer) import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
+%%]
+
+%%[9999 import({%{EH}Base.ForceEval})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -46,6 +49,11 @@ emptyTKGI
 %%]]
 
 type TyKiGam = Gam TyKiKey TyKiGamInfo
+%%]
+
+%%[(50 hmtyinfer || hmtyast)
+deriving instance Typeable TyKiGamInfo
+deriving instance Data TyKiGamInfo
 %%]
 
 %%[8 export(tkgiGetSet)
@@ -138,9 +146,9 @@ Defaults to * (kiStar).
 tvarKi :: TyKiGam -> VarMp -> VarMp -> TyVarId -> Ty
 tvarKi tyKiGam tvKiVarMp _ tv
   = case tyKiGamLookup tv' tyKiGam of
-      Just tkgi -> tvKiVarMp |=> tkgiKi tkgi
-      _         -> tvKiVarMp |=> tv'
-  where tv' = {- tyVarMp |=> -} mkTyVar tv
+      Just tkgi -> tvKiVarMp `varUpd` tkgiKi tkgi
+      _         -> tvKiVarMp `varUpd` tv'
+  where tv' = {- tyVarMp `varUpd` -} mkTyVar tv
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -204,10 +212,12 @@ initTyKiGam
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(6 hmtyinfer || hmtyast).Substitutable.inst.TyKiGamInfo
-instance Substitutable TyKiGamInfo TyVarId VarMp where
-  s |=>  tkgi         =   tkgi { tkgiKi = s |=> tkgiKi tkgi }
-  s |==> tkgi         =   substLift tkgiKi (\i x -> i {tkgiKi = x}) (|==>) s tkgi
-  ftvSet tkgi         =   ftvSet (tkgiKi tkgi)
+instance VarUpdatable TyKiGamInfo VarMp where
+  s `varUpd`  tkgi         =   tkgi { tkgiKi = s `varUpd` tkgiKi tkgi }
+  s `varUpdCyc` tkgi         =   substLift tkgiKi (\i x -> i {tkgiKi = x}) varUpdCyc s tkgi
+
+instance VarExtractable TyKiGamInfo TyVarId where
+  varFreeSet tkgi         =   varFreeSet (tkgiKi tkgi)
 %%]
 
 %%[(6 hmtyinfer || hmtyast)
@@ -215,10 +225,17 @@ instance PP TyKiGamInfo where
   pp i = ppTy (tkgiKi i)
 %%]
 
-%%[(99 hmtyinfer || hmtyast)
+%%[(9999 hmtyinfer || hmtyast)
 instance ForceEval TyKiGamInfo where
   forceEval x@(TyKiGamInfo k) | forceEval k `seq` True = x
 %%[[102
   fevCount (TyKiGamInfo x) = cm1 "TyKiGamInfo" `cmUnion` fevCount x
 %%]]
 %%]
+
+%%[(50 hmtyinfer || hmtyast)
+instance Serialize TyKiGamInfo where
+  sput (TyKiGamInfo a) = sput a
+  sget = liftM TyKiGamInfo sget
+%%]
+

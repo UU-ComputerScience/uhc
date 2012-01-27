@@ -18,15 +18,17 @@ SEM Decl
 SEM Decl
   | Data        loc         .   dataTgi             =   mkTGI (Ty_Con @tyNm)
                             .   dataTkgi            =   TyKiGamInfo (tyEnsureNonAny @lUniq @knKi)
-                lhs         .   patTyGam            :=  if @hasKiSig  then @lhs.patTyGam
+                            .   dataPatTyGam        =   if @hasKiSig  then @lhs.patTyGam
                                                                       else gamAdd @tyNm @dataTgi @lhs.patTyGam
-                            .   patTyKiGam          =   if @hasKiSig  then @lhs.patTyKiGam
+                            .   dataPatTyKiGam      =   if @hasKiSig  then @lhs.patTyKiGam
                                                                       else tyKiGamNameSingleton @tyNm @dataTkgi `gamUnion` @lhs.patTyKiGam
+                lhs         .   patTyGam            :=  gamUnion @extraTyGam   @dataPatTyGam
+                            .   patTyKiGam          =   gamUnion @extraTyKiGam @dataPatTyKiGam
                 loc         .   fo_                 =   fitsIn  strongFIOpts defaultFIEnv @lUniq2 @lhs.patKiVarMp
                                                                 (@tyVars.kiL `mkArrow` kiStar) (tkgiKi @dataTkgi)
                             .   dataKi              =   foTy @fo_
-                lhs         .   patKiVarMp          =   foVarMp @fo_ |=> @lhs.patKiVarMp
-                constrs     .   tyKiGam             =   gamPushGam  (tyKiGamInst1Exists @lUniq3 (@lhs.kiVarMp |=> @tyVars.tyKiGam))
+                lhs         .   patKiVarMp          =   foVarMp @fo_ `varUpd` @lhs.patKiVarMp
+                constrs     .   tyKiGam             =   gamPushGam  (tyKiGamInst1Exists @lUniq3 (@lhs.kiVarMp `varUpd` @tyVars.tyKiGam))
                                                                     @lhs.tyKiGam
                 loc         .   lUniq               :   UNIQUEREF gUniq
                 loc         .   lUniq2              :   UNIQUEREF gUniq
@@ -42,7 +44,7 @@ SEM DataConstr
   | Constr      loc         .   fldsKiVarMp         =   @fields.kiVarMp
                             .   (_,fo_)             =   fitsInL  weakFIOpts defaultFIEnv @lUniq @fldsKiVarMp
                                                                  @fields.kiL (repeat kiStar)
-                lhs         .   kiVarMp             =   foVarMp @fo_ |=> @fldsKiVarMp
+                lhs         .   kiVarMp             =   foVarMp @fo_ `varUpd` @fldsKiVarMp
                 loc         .   lUniq               :   UNIQUEREF gUniq
 %%]
 
@@ -52,15 +54,27 @@ SEM DataConstr
 
 %%[(7 hmtyinfer).dataGam
 ATTR
-  AllDecl AllExpr AllCase
+  AllDecl AllExpr -- AllCase
 %%[[97
-  AllPatExpr
+  -- AllPatExpr
 %%]]
     [ | gathDataGam: DataGam | ]
-ATTR AllDecl AllExpr AllCase AllPatExpr [ dataGam: DataGam | | ]
+ATTR AGItf [ | | gathDataGam: DataGam ]
 
 SEM AGItf
   | AGItf       expr        .   gathDataGam         =   emptyGam
+
+SEM CaseAlt
+  | Pat         expr        .   gathDataGam         =   emptyGam
+
+%%[[97
+SEM PatExpr
+  | Expr        expr        .   gathDataGam         =   emptyGam
+%%]]
+%%]
+
+%%[(7 hmtyinfer)
+ATTR AllDecl AllExpr AllCase AllPatExpr [ dataGam: DataGam | | ]
 %%]
 
 %%[(7 hmtyinfer).initDataGam
@@ -68,8 +82,11 @@ SEM AGItf
   | AGItf       expr        .   dataGam             =   @expr.gathDataGam
 %%]
 
-%%[(20 hmtyinfer) -7.initDataGam
+%%[(50 hmtyinfer) -7.initDataGam
 ATTR AGItf [ dataGam: DataGam | | ]
+
+SEM AGItf
+  | AGItf       expr        .   dataGam             =   @expr.gathDataGam `gamUnion` @lhs.dataGam
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -77,28 +94,27 @@ ATTR AGItf [ dataGam: DataGam | | ]
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(7 hmtyinfer)
-ATTR AGItf [ | | gathDataGam: DataGam ]
+ATTR AllDecl [ | | gathDeclDataGam USE {`gamUnion`} {emptyGam}: DataGam ]
 
 SEM Decl
-  | Data        loc         .   dgi                 =   mkDGI @tyNm ([@dataTy] `mkArrow` @dataAltTy) @constrs.dataConstrNmL @constrs.dataConstrTagMp
+  | Data        loc         .   dataTyVarIdL        =   map (panicJust "EH.InferData.Decl.Data.tyMbVar" . tyMbVar) @tyVars.tyL
+                            .   dgi                 =   mkDGI @tyNm ([@dataTy] `mkArrow` @dataAltTy) @constrs.dataConstrNmL @constrs.dataConstrTagMp
 %%[[7
                                                               @isNewtype
-%%][94
+%%][90
                                                               (if @isNewtype
-                                                               then Just $ foldr Ty_Lam @constrs.dataAltForNewType (map (panicJust "EH.InferData.Decl.Data.tyMbVar" . tyMbVar) @tyVars.tyL)
-                                                               else Nothing
+                                                               then DataGamInfoVariant_Newtype $ mkTyLam @dataTyVarIdL @constrs.dataAltForNewType
+                                                               else DataGamInfoVariant_Plain
                                                               )
 %%]]
-                lhs         .   gathDataGam         =   gamAdd @tyNm @dgi @lhs.gathDataGam
-%%]
+%%[[92
+                                                              @mbGenerInfo
+%%]]
+                lhs         .   gathDeclDataGam     =   gamUnion @extraDataGam $ gamSingleton @tyNm @dgi
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Tying at toplevel
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(20 hmtyinfer)
-SEM AGItf
-  | AGItf       expr        .   dataGam             =   @expr.gathDataGam `gamUnion` @lhs.dataGam
+SEM Expr
+  | Let         loc         .   gathBodyDataGam     =   @extraDataGam `gamUnion` @decls.gathDeclDataGam `gamUnion` @decls.gathDataGam
+                body        .   gathDataGam         =   @gathBodyDataGam
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -111,9 +127,9 @@ ATTR AllDataConstr [ | patValGam: ValGam | ]
 
 SEM DataConstr
   | Constr      loc         .   dataConTy           =   @fields.tyL `mkArrow` @lhs.dataTy
-                            .   dataConTyFv         =   ftv @lhs.dataTy
+                            .   dataConTyFv         =   varFree @lhs.dataTy
                             .   dataConProdTy       =   mkProdApp @fields.tyL
-                            .   dataConProdTyFv     =   ftv @dataConProdTy
+                            .   dataConProdTyFv     =   varFree @dataConProdTy
                 loc         .   dataQuUnConTy       =   let fvD = @dataConTyFv
                                                             fvU = @dataConProdTyFv
 %%[[5
@@ -134,7 +150,7 @@ SEM DataConstr
                                                               ]
                                                           , @lhs.patValGam
                                                           ]
-                            .   patTyVarMp          =   assocTyLToVarMp [(@dataConTyVar,@dataConTy),(@dataUnConTyVar,@dataQuUnConTy)] |=> @lhs.patTyVarMp
+                            .   patTyVarMp          =   assocTyLToVarMp [(@dataConTyVar,@dataConTy),(@dataUnConTyVar,@dataQuUnConTy)] `varUpd` @lhs.patTyVarMp
                 loc         .   lUniq_con           :   UNIQUEREF gUniq
                 loc         .   lUniq_uncon         :   UNIQUEREF gUniq
 %%]
@@ -172,7 +188,7 @@ SEM Decl
                             .   dataTgi             :=  mkTGIData (Ty_Con @tyNm) Ty_Any {- ([@dataTy] `mkArrow` @dataAltTy) -}
 %%]
 
-%%[(94 hmtyinfer)
+%%[(90 hmtyinfer)
 ATTR AllDataConstr [ | | dataAltForNewType USE {`const`} {Ty_Any}: Ty ]
 
 SEM DataConstr
@@ -185,7 +201,7 @@ SEM DataConstr
                             .   dataConProdTy1      =   @loc.dataConProdTy2
 %%]
 
-%%[(16 hmtyinfer).dataConXTy -7.dataConXTy
+%%[(41 hmtyinfer).dataConXTy -7.dataConXTy
 SEM DataConstr
   | Constr
       (loc.dataConTy1, loc.cycVarMp) = @loc.eqsVarMp `tyAppVarLookup2_RhsOfEqOnly` @loc.dataConTy2
@@ -197,7 +213,7 @@ SEM DataConstr
                                          @loc.eqsVarMp @loc.cycVarMp
 %%]
 
-%%[(16 hmtyinfer) hs
+%%[(41 hmtyinfer) hs
 -- assumption: Ty is a product
 -- this function is supposed to be applied to the RHS of the unquantified type of the deconstructor function, which
 -- is a product of the field types of the constructor. The equality constraints are encoded by adding them to the
@@ -251,13 +267,16 @@ SEM DataConstr
   | Constr      lhs         .   dataConstrTagMp     =   @conNm `Map.singleton` @dti
                             .   dataConstrNmL       =   [@conNm]
                 loc         .   dti                 =   emptyDataTagInfo
-                                                          { dtiFldMp = @fldMp
-                                                          , dtiConNm = @conNm
+                                                          { dtiFldMp        = @fldMp
+                                                          , dtiFldTyL       = @fields.fldTyL
+                                                          , dtiConFldAnnL   = @fields.fldAnnL
+                                                          , dtiConNm        = @conNm
+                                                          , dtiConTy        = @dataConTyAsVar
 %%[[8
-                                                          , dtiCTag  = @ctag
+                                                          , dtiCTag         = @ctag
 %%]]
-%%[[95
-                                                          , dtiMbFixityPrio  = @mbFixityPrio
+%%[[91
+                                                          , dtiMbFixityPrio = @mbFixityPrio
 %%]]
                                                           }
 %%[[8
@@ -283,6 +302,16 @@ SEM Decl
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Nr of fields per label
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(7 hmtyinfer)
+SEM DataField
+  | Field       loc         .   nrFieldsForLabel    =   maybe 1 length @mbLabels
+                loc         .   nrFieldsForLabel    :   Int
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Type+label of data fields
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -294,6 +323,22 @@ SEM DataField
                                                           Just ls -> zipWith (\l t -> (Just l,t)) ls (repeat @tyExpr.ty)
                                                           _       -> [(Nothing,@tyExpr.ty)]
                 loc         .   fldTyL              :   FldTyL
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Annotation info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(7 hmtyinfer)
+ATTR AllDataField [ | | fldAnnL USE {++} {[]}: {[DataConFldAnnInfo]} ]
+
+SEM DataField
+  | Field       lhs         .   fldAnnL             =   replicate @nrFieldsForLabel
+  														  ( DataConFldAnnInfo
+%%[[(8 codegen)
+                                                              (maybe Strictness_NonStrict id @tyExpr.mbStrictness)
+%%]]
+                                                          )
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -330,7 +375,7 @@ SEM DataField
 ATTR AllDataField [ | | kiL USE {++} {[]}: TyL ]
 
 SEM DataField
-  | Field       lhs         .   kiL                 =   replicate (maybe 1 length @mbLabels) @tyExpr.ki
+  | Field       lhs         .   kiL                 =   replicate @nrFieldsForLabel @tyExpr.ki
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -356,11 +401,6 @@ SEM Expr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% DataFieldExpr: additional info for checks, codegen, etc
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(7 hmtyinfer)
-%%]
-SEM DataFieldExpr
-  | Con         loc         .   finConTy            =   @lhs.finTyVarMp |=> @ty
 
 %%[(7 hmtyinfer)
 ATTR DataFieldExpr [ | | mbConNm: {Maybe HsName} ]
@@ -415,10 +455,10 @@ SEM Expr
 
 Kind of LHS of the DataConstrEq should match the kind of the RHS.
 
-%%[(16 hmtyinfer)
+%%[(41 hmtyinfer)
 SEM DataConstrEq
   | Eq          loc         .   fo_                 =   fitsIn weakFIOpts defaultFIEnv @lUniq @tyExpr.kiVarMp @tyVar.ki @tyExpr.ki
-                lhs         .   kiVarMp             =   foVarMp @loc.fo_ |=> @tyExpr.kiVarMp
+                lhs         .   kiVarMp             =   foVarMp @loc.fo_ `varUpd` @tyExpr.kiVarMp
                 loc         .   lUniq               :   UNIQUEREF gUniq
 
 ATTR AllDataConstrEq [ | | prOccL USE {++} {[]} : {[PredOcc]} ]
@@ -435,7 +475,7 @@ Construct a substitution from the additional equations. This subsitution is appl
 the actual type of the constructor, i.e. the additional equations do not show up in the type of a constructor. The equations are required
 to be non-cyclic, and in case one equation is multiply defined, the right hand sides have to be equal modulo unification.
 
-%%[(16 hmtyinfer)
+%%[(41 hmtyinfer)
 SEM AllDataConstrEq [ | eqVarMp : {VarMp} | ]
 
 SEM DataConstr
@@ -447,7 +487,7 @@ SEM DataConstrEq
                 loc         .   knRhsTy             =   maybe Ty_Any id $ varmpTyLookup @loc.tv @lhs.eqVarMp
                 loc         .   foRhsTy             =   fitsIn strongFIOpts defaultFIEnv @lUniq2 @lhs.eqVarMp @loc.knRhsTy @tyExpr.ty
                 loc         .   unitVarMp           =   @loc.tv `varmpTyUnit` foTy @loc.foRhsTy
-                lhs         .   eqVarMp             =   @loc.unitVarMp |=> foVarMp @loc.foRhsTy |=> @lhs.eqVarMp
+                lhs         .   eqVarMp             =   @loc.unitVarMp `varUpd` foVarMp @loc.foRhsTy `varUpd` @lhs.eqVarMp
                 loc         .   lUniq               :   UNIQUEREF gUniq
 %%]
 
@@ -473,7 +513,7 @@ SEM DataFieldPatExpr
 %%]
 
 Check that LHS of equations is a tyvar in scope
-%%[(16 hmtyinfer)
+%%[(41 hmtyinfer)
 ATTR AllDataConstrEq TyVar [ | | tyvarNms USE {`Set.union`} {Set.empty} : {Set HsName} ]
 SEM TyVar
   | Var  lhs.tyvarNms = Set.singleton @nm
@@ -494,10 +534,20 @@ SEM DataConstr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Type signatures
+%%% Extra gams
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(99 hmtyinfer)
+%%[(6 hmtyinfer).extraGam
+SEM Decl
+  | Data        loc         .   extraTyGam          =   emptyGam
+                            .   extraTyKiGam        =   emptyGam
+                            .   extraDataGam        =   emptyGam
 %%]
-SEM DataConstr
-  | Constr      loc         .   arity               :   {Int}
+
+%%[(92 hmtyinfer) -6.extraGam
+SEM Decl
+  | Data        loc         .   extraTyGam          =   emptyGam
+                            .   extraTyKiGam        =   emptyGam
+                            .   extraDataGam        =   emptyGam
+%%]
+

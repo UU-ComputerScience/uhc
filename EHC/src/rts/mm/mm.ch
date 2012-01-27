@@ -1,3 +1,8 @@
+%%[8
+#ifndef __MM_MM_H__
+#define __MM_MM_H__
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Memory management
 %%% see mmitf.ch
@@ -20,14 +25,35 @@ Order of imports is important because of usage dependencies between types.
 #include "tracesupply/bumpsupply.h"
 #include "tracesupply/group.h"
 #include "tracesupply/supplyroots.h"
+%%[[99
+#include "tracesupply/weakptrfinalizeque.h"
+%%]]
+#include "weakptr/weakptrlist.h"
+
+
 #ifdef __UHC_TARGET_BC__
 #include "gbm/gbtrace.h"
 #include "gbm/gbtracesupregs.h"
 #include "gbm/gbtracesupstack.h"
 #include "gbm/gbtracesupmodule.h"
-#endif
 #include "semispace/gbssmutator.h"
 #include "semispace/gbssmodule.h"
+#endif
+
+#ifdef __UHC_TARGET_C__
+#include "C/Ctrace.h"
+#include "C/tracesupplystack.h"
+#include "C/ssmutator.h"
+#endif
+
+#ifdef __UHC_TARGET_LLVM__
+#include "llvm/trace.h"
+#include "llvm/tracesupplystack.h"
+#include "llvm/tracesupplyglobals.h"
+#include "llvm/ssmutator.h"
+#endif
+
+
 #include "semispace/sscollector.h"
 #include "semispace/ss.h"
 %%]
@@ -40,3 +66,11 @@ Order of imports is important because of usage dependencies between types.
 %%% Initialization
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% EOF
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+#endif /* __MM_MM_H__ */
+%%]

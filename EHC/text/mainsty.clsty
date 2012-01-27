@@ -114,26 +114,26 @@
 
 % Env for figure
 \newenvironment{Figure}[3]{%
-  \def\F@@Pos{\chooseFigPos{#1}}
-  \def\F@@Cap{#2}
-  \def\F@@Lab{#3}
-  \F@@Pos
+  \def\EHCFigPos{\chooseFigPos{#1}}
+  \def\EHCFigCap{#2}
+  \def\EHCFigLab{#3}
+  \EHCFigPos
 }{%
-  \caption{\F@@Cap}
-  \label{\F@@Lab}
+  \caption{\EHCFigCap}
+  \label{\EHCFigLab}
   \end{figure}
 }
 
 \newenvironment{CenterFigure}[3]{%
-  \def\F@@Pos{\chooseFigPos{#1}}
-  \def\F@@Cap{#2}
-  \def\F@@Lab{#3}
-  \F@@Pos
+  \def\EHCFigPos{\chooseFigPos{#1}}
+  \def\EHCFigCap{#2}
+  \def\EHCFigLab{#3}
+  \EHCFigPos
   \begin{center}
 }{%
   \end{center}
-  \caption{\F@@Cap}
-  \label{\F@@Lab}
+  \caption{\EHCFigCap}
+  \label{\EHCFigLab}
   \end{figure}
 }
 

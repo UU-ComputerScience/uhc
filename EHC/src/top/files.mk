@@ -84,9 +84,9 @@ top: $(LIB_TOP_INS_FLAG)
 # rules
 $(LIB_TOP_CABAL_DRV): $(TOP_MKF) $(LIB_TOP_HS_SRC)
 	mkdir -p $(@D)
-	$(call GEN_CABAL \
+	$(call FUN_GEN_CABAL_LIB \
 		, $(LIB_TOP_PKG_NAME) \
-		, $(EH_VERSION) \
+		, $(EH_VERSION_SHORT) \
 		, mtl \
 		, $(CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES) OverlappingInstances \
 		, Typing Our Programs library \

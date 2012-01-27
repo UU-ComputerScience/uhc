@@ -7,21 +7,21 @@
 %%% Ty parser
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(20 hmtyinfer || hmtyast) module {%{EH}Ty.Parser} import(UU.Parsing, EH.Util.ParseUtils, {%{EH}Base.Parser}, EH.Util.ScanUtils, {%{EH}Base.Common}, {%{EH}Base.Builtin},{%{EH}Scanner.Common}, {%{EH}Scanner.Scanner}, {%{EH}Ty})
+%%[(50 hmtyinfer || hmtyast) module {%{EH}Ty.Parser} import(UU.Parsing, EH.Util.ParseUtils, {%{EH}Base.Parser}, EH.Util.ScanUtils, {%{EH}Base.Common}, {%{EH}Base.Builtin},{%{EH}Scanner.Common}, {%{EH}Scanner.Scanner}, {%{EH}Ty})
 %%]
 
-%%[(20 hmtyinfer || hmtyast) export(pTy,pPred)
+%%[(50 hmtyinfer || hmtyast) export(pTy,pPred)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Parsers
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(20 hmtyinfer || hmtyast)
-type P p = PlainParser Token p
+%%[(50 hmtyinfer || hmtyast)
+-- type P p = PlainParser Token p
 %%]
 
-%%[(20 hmtyinfer || hmtyast)
+%%[(50 hmtyinfer || hmtyast)
 pPred :: P Pred
 pPred
   = pOIMPL
@@ -44,7 +44,7 @@ pTyBase
           = pOROWROW
              *> (   foldl (\r (l,e) -> Ty_Ext r l e)
                     <$> pRow <* pVBAR
-                    <*> pList1Sep pCOMMA ((,) <$> (pDollNm <|> HNPos <$> pInt) <* pDCOLON <*> pTy)
+                    <*> pList1Sep pCOMMA ((,) <$> (pDollNm <|> mkHNmPos <$> pInt) <* pDCOLON <*> pTy)
                 <|> pSucceed (Ty_Con hsnRowEmpty)
                 )
             <*  pCROWROW

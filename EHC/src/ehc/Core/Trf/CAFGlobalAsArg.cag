@@ -18,6 +18,9 @@ Assumes:
 %%[(8 codegen) hs import({%{EH}Core.Utils})
 %%]
 
+%%[(8 codegen) hs import({%{EH}AbstractCore})
+%%]
+
 
 %%[(8 codegen) hs import(qualified EH.Util.FastSeq as Seq)
 %%]
@@ -28,7 +31,7 @@ Assumes:
 %%[(8 codegen) hs import(Debug.Trace)
 %%]
 
-%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/Trf/CommonFv},{Core/Trf/CommonLev},{Core/Trf/CommonGlobalAsArg},{Core/Trf/CommonFloat})
+%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonCtxtPred},{Core/CommonBindNm},{Core/Trf/CommonFv},{Core/Trf/CommonLev},{Core/Trf/CommonGlobalAsArg},{Core/Trf/CommonFloat})
 WRAPPER CodeAGItf
 %%]
 
@@ -63,7 +66,7 @@ ATTR AllCodeNT [ | gUniq: Int | ]
 SEM CodeAGItf
   | AGItf       module      .   gUniq       =   0
 
-SEM CBind
+SEM CBindAspect
   | Bind        loc         .   lUniq1      =   @lhs.gUniq
                             .   lUniq2      =   @lUniq1 + 1
                 expr        .   gUniq       =   @lUniq2 + Map.size @argMpNew
@@ -71,7 +74,7 @@ SEM CBind
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Free var of CAF's for which arg lifting is done
+%%% Free var of CAFs for which arg lifting is done
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen)
@@ -83,7 +86,7 @@ SEM CodeAGItf
 SEM CExpr
   | Let         loc         .   fvSCafMp    =   (let  start varS = fvsClosure @binds.bindVarS Set.empty varS @lhs.fvSCafMp @binds.fvSMp
                                                  in   case @categ of
-                                                        CBindings_Rec
+                                                        CBindCateg_Rec
                                                           ->  fvsTransClosure lm m
                                                           where (m,lm)  = start (@lhs.varS `Set.union` @binds.bindVarS)
                                                         _ ->  m
@@ -102,7 +105,7 @@ ATTR AllCodeNT [ argMp: CVarReplNmMp | | ]
 SEM CodeAGItf
   | AGItf       module      .   argMp       =   Map.empty
 
-SEM CBind
+SEM CBindAspect
   | Bind        expr        .   argMp       =   @argMpNew `Map.union` @lhs.argMp
 %%]
 
@@ -111,11 +114,11 @@ SEM CBind
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen)
-SEM CBind
+SEM CBindAspect
   | Bind        loc         .   (argOldL,argNewL,argMpNew)
                                             =   if @loc.isClosurableBind
-                                                then  let  mbvs      = Map.lookup @nm @lhs.fvSCafMp
-                                                           vs        = panicJust ("CAFGlobalAsArg.CBind.Bind.argLevL: " ++ show @nm ++ " not found in " ++ show @lhs.fvSCafMp) mbvs  -- maybe Set.empty id mbvs
+                                                then  let  mbvs      = Map.lookup @lhs.nm @lhs.fvSCafMp
+                                                           vs        = panicJust ("CAFGlobalAsArg.CBind.Bind.argLevL: " ++ show @lhs.nm ++ " not found in " ++ show @lhs.fvSCafMp) mbvs  -- maybe Set.empty id mbvs
                                                            argLevL   = fvLAsArg @lhs.introCVarIntroMp vs
                                                       in   fvLArgRepl @lUniq2 argLevL
                                                 else  ([], [], Map.empty)
@@ -126,26 +129,26 @@ ATTR AllBind   [ | | varBindSq USE {`Seq.union`} {Seq.empty}: {Seq.Seq CBind}
                      lamBindSq USE {`Seq.union`} {Seq.empty}: {Seq.Seq CBind}
                ]
 
-SEM CBind
-  | Bind        loc         .   nmLam       =   mkFvNm @lUniq1 @nm
-                            .   cTrfVar     =   mkCBind1Metas @nm @bindMeta.cTrf
-                                                $ mkCExprAppMeta (CExpr_Var @nmLam)
-                                                $ map (\(n,cvi) -> (fvVarRepl @lhs.argMp n,cviMeta cvi)) @argOldL
-                            .   cTrfLam     =   mkCBind1 @nmLam
-                                                $ mkCExprLamMeta [(n,cviMeta cvi) | (n,cvi) <- @argNewL] @expr.cTrf
+SEM CBindAspect
+  | Bind        loc         .   nmLam       =   mkFvNm @lUniq1 @lhs.nm
+                            .   cTrfVar     =   acoreBind1MetasTy @lhs.nm @bindMeta.cTrf Ty_Any
+                                                $ acoreApp (acoreVar @nmLam)
+                                                $ map (\(n,cvi) -> (fvVarRepl @lhs.argMp n)) @argOldL
+                            .   cTrfLam     =   acoreBind1Cat CBindCateg_Plain @nmLam
+                                                $ acoreLam [(n) | (n,cvi) <- @argNewL] @expr.cTrf
                 lhs         .   (varBindSq,lamBindSq)
                                             =   if null @argNewL
-                                                then (Seq.singleton @cTrf    , Seq.empty             )
-                                                else (Seq.singleton @cTrfVar , Seq.singleton @cTrfLam)
-  | FFI
-%%[[94
-    FFE
+                                                then (Seq.singleton (acoreBind1Asp1 @lhs.nm @cTrf   ) , Seq.empty             )
+                                                else (Seq.singleton                         @cTrfVar  , Seq.singleton @cTrfLam)
+  -- | FFI
+%%[[90
+  | FFE
+                lhs         .   varBindSq   =   Seq.singleton (acoreBind1Asp1 @lhs.nm @cTrf)
 %%]]
-                lhs         .   varBindSq   =   Seq.singleton @cTrf
 
 SEM CExpr
   | Var         lhs         .   cTrf        =   fvVarRepl @lhs.argMp @nm
-  | Let         lhs         .   cTrf        =   mkCExprLet CBindings_Plain (Seq.toList @binds.lamBindSq)
-                                                $ mkCExprLet @categ (Seq.toList @binds.varBindSq)
+  | Let         lhs         .   cTrf        =   acoreLet CBindCateg_Plain (Seq.toList @binds.lamBindSq)
+                                                $ acoreLet @categ (Seq.toList @binds.varBindSq)
                                                 $ @body.cTrf
 %%]

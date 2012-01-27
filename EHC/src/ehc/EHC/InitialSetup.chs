@@ -28,17 +28,17 @@ Initial values
 %%[(8 codegen grin) import(qualified {%{EH}Core.ToGrin} as Core2GrSem)
 %%]
 -- HI semantics
-%%[20 import(qualified {%{EH}HI.MainAG} as HISem)
+%%[5020 import(qualified {%{EH}HI.MainAG} as HISem)
 %%]
 -- module
-%%[20 import(qualified {%{EH}HS.ModImpExp} as HSSemMod)
+%%[50 import(qualified {%{EH}HS.ModImpExp} as HSSemMod)
 %%]
 
 %%[9 import(qualified {%{EH}Pred} as Pr(initClGam))
 %%]
 
 -- CHR solver
-%%[(20 hmtyinfer) import({%{EH}Pred.ToCHR}(initScopedPredStore))
+%%[(50 hmtyinfer) import({%{EH}Pred.ToCHR}(initScopedPredStore))
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -56,12 +56,12 @@ initialHSSem opts
                                             `gamUnion` HSSem.clGam2IdDefOccGam Pr.initClGam
 %%]]
       , HSSem.gUniq_Inh_AGItf           = uidStart
-%%[[20
+%%[[50
       , HSSem.isTopMod_Inh_AGItf        = False
       , HSSem.moduleNm_Inh_AGItf        = hsnUnknown
       , HSSem.modInScope_Inh_AGItf      = Map.empty
       , HSSem.modEntToOrig_Inh_AGItf    = Map.empty
-      , HSSem.fixityGam_Inh_AGItf       = emptyGam
+      , HSSem.fixityGam_Inh_AGItf       = initFixityGam
       , HSSem.topInstanceNmL_Inh_AGItf  = []
 %%]]
       }
@@ -74,11 +74,11 @@ initialEHSem opts fp
       { EHSem.moduleNm_Inh_AGItf        = mkHNm (fpathBase fp)
       , EHSem.gUniq_Inh_AGItf           = uidStart
       , EHSem.opts_Inh_AGItf            = opts
-%%[[20
+%%[[50
       , EHSem.isMainMod_Inh_AGItf       = False
       , EHSem.idQualGam_Inh_AGItf       = emptyGam
 %%]]
-%%[[(20 hmtyinfer)
+%%[[(50 hmtyinfer)
       , EHSem.valGam_Inh_AGItf          = emptyGam
       , EHSem.dataGam_Inh_AGItf         = emptyGam
       , EHSem.tyGam_Inh_AGItf           = initTyGam
@@ -86,6 +86,7 @@ initialEHSem opts fp
       , EHSem.polGam_Inh_AGItf          = initPolGam
       , EHSem.kiGam_Inh_AGItf           = initKiGam
       , EHSem.clGam_Inh_AGItf           = Pr.initClGam
+      , EHSem.clDfGam_Inh_AGItf         = emptyGam
       , EHSem.chrStore_Inh_AGItf        = initScopedPredStore
 %%]]
       }
@@ -98,13 +99,11 @@ initialCore2GrSem opts
       { Core2GrSem.gUniq_Inh_CodeAGItf           = uidStart
       , Core2GrSem.dataGam_Inh_CodeAGItf         = emptyGam
       , Core2GrSem.opts_Inh_CodeAGItf            = opts
-%%[[20
-      , Core2GrSem.arityMp_Inh_CodeAGItf         = Map.empty
-%%]]
+      , Core2GrSem.lamMp_Inh_CodeAGItf           = Map.empty
       }
 %%]
 
-%%[20 export(initialHSSemMod)
+%%[50 export(initialHSSemMod)
 initialHSSemMod :: EHCOpts -> HSSemMod.Inh_AGItf
 initialHSSemMod opts
   = HSSemMod.Inh_AGItf
@@ -114,7 +113,7 @@ initialHSSemMod opts
       }
 %%]
 
-%%[20 export(initialHISem)
+%%[5020 export(initialHISem)
 initialHISem :: EHCOpts -> HISem.Inh_AGItf
 initialHISem opts
   = HISem.Inh_AGItf

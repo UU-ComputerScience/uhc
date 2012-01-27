@@ -23,6 +23,10 @@ typedef struct MM_Trace_GBM_Data {
 static inline Word mm_trace_GBM_ObjectSize( MM_Trace* trace, Word obj ) {
 	return GB_NH_Fld_Size(((GB_NodePtr)obj)->header) ;
 }
+
+static inline Bool mm_trace_GBM_HasTraceableWords( MM_Trace* trace, Word obj ) {
+	return gb_NH_HasTraceableFields(((GB_NodePtr)obj)->header) ;
+}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -30,7 +34,8 @@ static inline Word mm_trace_GBM_ObjectSize( MM_Trace* trace, Word obj ) {
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-extern void mm_trace_GBM_TraceObjects( MM_Trace* trace, Word* objs, Word nrObjs, MM_Trace_Flg flg ) ;
+extern void mm_trace_GBM_TraceObjects( MM_Trace* trace, Word* objs, Word nrObjs ) ;
+extern void mm_trace_GBM_TraceObjectPayload( MM_Trace* trace, Word obj ) ;
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

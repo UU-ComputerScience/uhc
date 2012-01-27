@@ -7,13 +7,16 @@
 %%% Basic/shared parsers
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 module {%{EH}Base.Parser} import(UU.Parsing, EH.Util.ParseUtils, EH.Util.ScanUtils, {%{EH}Base.Builtin},{%{EH}Base.Common}, {%{EH}Scanner.Common}, {%{EH}Scanner.Scanner})
+%%[8 module {%{EH}Base.Parser} import(UU.Parsing, EH.Util.ParseUtils, EH.Util.ScanUtils, {%{EH}Base.Builtin},{%{EH}Base.Common}, {%{EH}Scanner.Common}, {%{EH}Scanner.Scanner}, {%{EH}Base.ParseUtils})
 %%]
 
-%%[20 import({%{EH}Module},qualified Data.Set as Set,qualified EH.Util.Rel as Rel)
+%%[8 import({%{EH}Base.ParseUtils}) export(module {%{EH}Base.ParseUtils})
 %%]
 
-%%[(20 hmtyinfer) import(qualified {%{EH}Pred} as Pr)
+%%[50 import(qualified Data.Set as Set,qualified EH.Util.Rel as Rel)
+%%]
+
+%%[(5020 hmtyinfer) import(qualified {%{EH}Pred} as Pr)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -21,7 +24,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 export(pDollNm,pUID,pInt)
-type P p = PlainParser Token p
 
 pDollNm :: P HsName
 pDollNm = tokMkQName <$> pVaridTk
@@ -35,7 +37,7 @@ pInt = tokMkInt <$> pInteger10Tk
 
 %%]
 
-%%[20 export(pUIDHI)
+%%[50 export(pUIDHI)
 pUIDHI :: P UID
 pUIDHI = pKeyTk "uid" *> pUID
 %%]
@@ -55,13 +57,13 @@ pBool = True <$ pKeyTk "True" <|> False <$ pKeyTk "False"
 %%]
 
 -- counterpart of ppPredOccId'
-%%[20 export(pPredOccId)
+%%[50 export(pPredOccId)
 pPredOccId :: P PredOccId
 pPredOccId
   = mkPrId <$> pUIDHI
 %%]
 
-%%[20 export(pIdOcc)
+%%[50 export(pIdOcc,pIdOccKind)
 -- counterpart of PP IdOccKind instance
 pIdOccKind :: P IdOccKind
 pIdOccKind
@@ -79,29 +81,16 @@ pIdOcc :: P IdOcc
 pIdOcc = IdOcc <$ pOCURLY <*> pDollNm <* pCOMMA <*> pIdOccKind <* pCCURLY
 %%]
 
-%%[20
+%%[50 export(pAssocL)
 pAssocL :: P a -> P b -> P (AssocL a b)
 pAssocL pA pB = pOCURLY *> pListSep pCOMMA ((,) <$> pA <* pEQUAL <*> pB) <* pCCURLY
-%%]
-
-%%[20 export(pModEntRel)
-pModEnt :: P ModEnt
-pModEnt
-  = (\kind occ owns -> ModEnt kind occ owns emptyRange)
-    <$  pOCURLY <*> pIdOccKind <* pCOMMA <*> pIdOcc
-    <*> pMaybe Set.empty id (Set.fromList <$ pCOMMA <* pOCURLY <*> pListSep pCOMMA pModEnt <* pCCURLY)
-    <*  pCCURLY
-
-pModEntRel :: P ModEntRel
-pModEntRel
-  = Rel.fromList <$> pAssocL pDollNm pModEnt
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Parser abstractions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20 export(pCurlySemiBlock,pCurlys,pSemiBlock,pCurlyCommaBlock)
+%%[50 export(pCurlySemiBlock,pCurlys,pSemiBlock,pCurlyCommaBlock)
 pSemiBlock :: P p -> P [p]
 pSemiBlock p = pListSep pSEMI p
 

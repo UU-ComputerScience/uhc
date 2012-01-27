@@ -321,37 +321,15 @@ PRIM Word primGetArgVAt( Word argc )
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Program arguments
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[99
-PRIM void getProgArgv( int *argc, char ***argv )
-{
-	*argc = rtsArgC ;
-	*argv = rtsArgV ;
-}
-
-PRIM void setProgArgv( int argc, char **argv )
-{
-	rtsArgC = argc ;
-	rtsArgV = argv ;
-}
-
-%%]
-
-
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Stable ptr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 Stable pointers are guaranteed not to be moved by garbage collection.
-The primitives below assum the use of the Boehm garbage collector (BGC),
+The primitives below assume the use of the Boehm garbage collector (BGC),
 making their implementation simple because nothing is ever moved using BGC.
 
 %%[99
-#if USE_BOEHM_GC
+// #if USE_BOEHM_GC
 PRIM Word primMakeStableAddr( Word a )
 {
 	return a ;
@@ -374,6 +352,35 @@ PRIM Word primEqStableAddr( Word x, Word y )
   	return RTS_False ;
 }
 
-#endif
+// #endif
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Min/Max for Int, Word
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[91
+PRIM Word primMaxInt()
+{
+  	return Int_MaxValue ;
+}
+
+PRIM Word primMinInt()
+{
+  	return Int_MinValue ;
+}
+%%]
+
+%%[97
+PRIM Word primMaxWord()
+{
+	// printf( "primMaxWord %x\n", Word32_MaxValue >> GB_Word_SizeOfWordTag ) ;
+  	return Word_MaxValue ;
+}
+
+PRIM Word primMinWord()
+{
+  	return Word_MinValue ;
+}
 %%]
 

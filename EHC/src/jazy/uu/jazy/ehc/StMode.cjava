@@ -1,0 +1,31 @@
+%%[(99 jazy)
+package uu.jazy.ehc;
+
+// Flags for the st_mode field of the stat structure (copied from the man page).
+class StMode {
+	static int S_IFMT   = 0170000; // bit mask for the file type bit fields
+	static int S_IFSOCK = 0140000; // socket
+	static int S_IFLNK  = 0120000; // symbolic link
+	static int S_IFREG  = 0100000; // regular file
+	static int S_IFBLK  = 0060000; // block device
+	static int S_IFDIR  = 0040000; // directory
+	static int S_IFCHR  = 0020000; // character device
+	static int S_IFIFO  = 0010000; // FIFO
+	static int S_ISUID  = 0004000; // set UID bit
+	static int S_ISGID  = 0002000; // set-group-ID bit (see below)
+	static int S_ISVTX  = 0001000; // sticky bit (see below)
+	static int S_IRWXU  =   00700; // mask for file owner permissions
+	static int S_IRUSR  =   00400; // owner has read permission
+	static int S_IWUSR  =   00200; // owner has write permission
+	static int S_IXUSR  =   00100; // owner has execute permission
+	static int S_IRWXG  =   00070; // mask for group permissions
+	static int S_IRGRP  =   00040; // group has read permission
+	static int S_IWGRP  =   00020; // group has write permission
+	static int S_IXGRP  =   00010; // group has execute permission
+	static int S_IRWXO  =   00007; // mask for permissions for others (not in group)
+
+	static int S_IROTH  =   00004; // others have read permission
+	static int S_IWOTH  =   00002; // others have write permission
+	static int S_IXOTH  =   00001; // others have execute permission
+}
+%%]

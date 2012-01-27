@@ -7,7 +7,7 @@
 %%% Main
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 module Main import(System, System.Console.GetOpt, IO)
+%%[1 module Main import(System, System.Console.GetOpt, System.IO)
 %%]
 
 %%[8 import(UU.Parsing, EH.Util.Pretty,{%{EH}Base.Common},GRINICommon,{%{EH}Scanner.Common},{%{EH}Scanner.Scanner})

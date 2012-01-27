@@ -1,20 +1,21 @@
 module EH.Util.ScanUtils
   ( ScanOpts(..), defaultScanOpts
-  
+
   , isNoPos, posIs1stColumn
-  
+
   , InFilePos(..), infpStart, infpNone
   , infpAdvCol, infpAdvLine, infpAdv1Line, infpAdvStr
-  
+
   , genTokVal, genTokTp, genTokMap
-  
+
   , isLF, isStr, isStrQuote
   , isWhite, isBlack
   , isVarStart, isVarRest
+
   )
   where
 
-import IO
+import System.IO
 import Data.Char
 import Data.List
 import qualified Data.Set as Set
@@ -22,6 +23,7 @@ import qualified Data.Set as Set
 import EH.Util.Pretty
 
 import UU.Parsing
+import EH.Util.ParseUtils
 import UU.Scanner.Position( noPos, Pos(..), Position(..) )
 import UU.Scanner.GenToken
 
@@ -109,38 +111,48 @@ Hence not all options are used by all scanners.
 data ScanOpts
   =  ScanOpts
         {   scoKeywordsTxt      ::  !(Set.Set String)       -- identifiers which are keywords
+        ,   scoPragmasTxt       ::  !(Set.Set String)       -- identifiers which are pragmas
         ,   scoCommandsTxt      ::  !(Set.Set String)       -- identifiers which are commands
         ,   scoKeywordsOps      ::  !(Set.Set String)       -- operators which are keywords
+        ,   scoKeywExtraChars   ::  !(Set.Set Char)         -- extra chars to be used by identifiers
         ,   scoSpecChars        ::  !(Set.Set Char)         -- 1 char keywords
+        ,   scoStringDelims     ::  !String                 -- allowed delimiter for string
         ,   scoOpChars          ::  !(Set.Set Char)         -- chars used for operators
         ,   scoSpecPairs        ::  !(Set.Set String)       -- pairs of chars which form keywords
         ,   scoDollarIdent      ::  !Bool                   -- allow $ encoded identifiers
         ,   scoOffsideTrigs     ::  ![String]               -- offside triggers
+        ,   scoOffsideTrigsGE   ::  ![String]               -- offside triggers, but allowing equal indentation (for HS 'do' notation, as per Haskell2010)
         ,   scoOffsideModule    ::  !String                 -- offside start of module
         ,   scoOffsideOpen      ::  !String                 -- offside open symbol
         ,   scoOffsideClose     ::  !String                 -- offside close symbol
         ,   scoLitmode          ::  !Bool                   -- do literal scanning
         ,   scoVerbOpenClose    ::  ![(String,String)]      -- open/close pairs used for verbatim text
         ,   scoAllowQualified   ::  !Bool  					-- allow qualified variations, i.e. prefixing with "XXX."
+        ,   scoAllowFloat       ::  !Bool  					-- allow float notation, i.e. numbers with dots inside
         }
 
 defaultScanOpts :: ScanOpts
 defaultScanOpts
   =  ScanOpts
         {   scoKeywordsTxt      =   Set.empty
+        ,   scoPragmasTxt       =   Set.empty
         ,   scoCommandsTxt      =   Set.empty
         ,   scoKeywordsOps      =   Set.empty
+        ,   scoKeywExtraChars   =   Set.empty
         ,   scoSpecChars        =   Set.empty
+        ,   scoStringDelims     =   "\""
         ,   scoOpChars          =   Set.empty
         ,   scoSpecPairs        =   Set.empty
         ,   scoDollarIdent      =   False
         ,   scoOffsideTrigs     =   []
+        ,   scoOffsideTrigsGE   =   []
         ,   scoOffsideModule    =   ""
         ,   scoOffsideOpen      =   ""
         ,   scoOffsideClose     =   ""
         ,   scoLitmode          =   False
         ,   scoVerbOpenClose    =   []
         ,   scoAllowQualified   =	True
+        ,   scoAllowFloat       =   True
         }
 
 -------------------------------------------------------------------------

@@ -7,7 +7,7 @@
 %%% Main
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 module {%{EH}EH.Parser} import(IO, UU.Parsing, UU.Parsing.Offside, EH.Util.ParseUtils, UU.Scanner.GenToken, {%{EH}Base.Builtin},{%{EH}Base.Common}, {%{EH}Scanner.Common}, {%{EH}EH})
+%%[1 module {%{EH}EH.Parser} import(System.IO, UU.Parsing, UU.Parsing.Offside, EH.Util.ParseUtils, UU.Scanner.GenToken, {%{EH}Base.Builtin},{%{EH}Base.Common}, {%{EH}Scanner.Common}, {%{EH}EH})
 %%]
 
 %%[1 export(pAGItf)
@@ -19,7 +19,7 @@
 %%[8 import(qualified Data.Set as Set)
 %%]
 
-%%[94 import({%{EH}Foreign.Parser})
+%%[90 import({%{EH}Foreign.Parser},{%{EH}Foreign})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -107,7 +107,7 @@ pVar            =    hsnFromString <$> pVarid
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1.pAGItf
-pAGItf          =    AGItf_AGItf <$> pExpr    
+pAGItf          =    AGItf_AGItf <$> pExpr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -120,7 +120,12 @@ pDecl           =    mkEH Decl_Val        <$>  pPatExprBase  <*   pEQUAL   <*> p
                 <|>  mkEH Decl_TySig      <$>  pVar          <*   pDCOLON  <*> pTyExpr
 %%]
 %%[5.pDecl
-                <|>  mkEH Decl_Data False <$   pDATA         <*>  pCon       <*> pTyVars
+%%[[5
+                <|>  mkEH Decl_Data False
+%%][92
+                <|>  (\c tvs cons -> mkEH Decl_Data False c tvs cons Nothing)
+%%]]
+                                          <$   pDATA         <*>  pCon       <*> pTyVars
                                                              <*   pEQUAL     <*> pDataConstrs
 %%]
 %%[6.pDecl
@@ -128,17 +133,17 @@ pDecl           =    mkEH Decl_Val        <$>  pPatExprBase  <*   pEQUAL   <*> p
 %%]
 %%[8.pDecl
                 <|>  (\(conv,_) saf imp nm sig
-                        -> mkEH Decl_FFI conv saf 
+                        -> mkEH Decl_FFI conv saf
                              (
-%%[[94
-                               (\i -> fst $ parseForeignEnt conv Nothing i)
+%%[[90
+                               (\i -> fst $ parseForeignEnt ForeignDirection_Import conv Nothing i)
 %%]]
                                (if null imp then show nm else imp))
                              nm sig
                      )
                      <$   pFOREIGN <* pIMPORT <*> pFFIWay
                      <*>  (pV (   pSAFE
-%%[[94
+%%[[90
                               <|> pUNSAFE
 %%]]
                               ) `opt` "safe")
@@ -414,15 +419,15 @@ pDataConstr     =    mkEH DataConstr_Constr <$> pCon <*> pTyExprs
 %%[7.DataConstr1 -5.DataConstr1
 %%[[7
 pDataConstr     =    mkEH DataConstr_Constr
-%%][95
+%%][91
 pDataConstr     =    (\c f -> mkEH DataConstr_Constr c Nothing f)
 %%]]
                      <$> pCon <*> (pDataFields <|> pCurly pDataLabFields)
-%%[[16
+%%[[41
                      <*> pList (mkEH DataConstrEq_Eq <$ pComma <*> pTyVar <* pKey "=" <*> pTyExpr)
 %%]]
 %%]
-%%[50.DataConstr
+%%[40.DataConstr
                      <*> pList (mkEH DataConstrEq_Eq <$ pComma <*> pTyVar <* pKey "=" <*> pTyExpr)
 %%]
 %%[5.DataConstr2
@@ -478,7 +483,7 @@ pParenRow singleAsIs o c sep mbUpd (semEmpty,semVar,semExt,semRow,semParens) pSe
                                                 <|>  pSucceed (mkR [])
                                           else  semRow <$> pFldsOrExt
                        mkR fs        =    semRow (mkE semEmpty fs )
-                       mkE ext fs    =    foldl (\r f -> case f of 
+                       mkE ext fs    =    foldl (\r f -> case f of
                                                             FldSel l e -> semExt r (Just l) e
                                                             FldNoSel e -> semExt r Nothing e
                                                             FldUpd l e -> semUpd r l e
@@ -494,7 +499,7 @@ pExprSelSuffix  =    (\lbls e -> foldl (mkEH Expr_Sel) e lbls)
                      <$> pList (pHASH *> pSel)
 
 pSel            ::   EHCParser HsName
-pSel            =    pVar <|> pCon <|> HNPos <$> pInt
+pSel            =    pVar <|> pCon <|> mkHNmPos <$> pInt
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -534,7 +539,7 @@ pPrExprBase     =    pPrExprClass
                 <|>  pVar <**>  (    (\s v -> mkEH PrExpr_Lacks (mkEH RowTyExpr_Var v) s)
                                      <$ pKey "\\" <*> pSel
 %%]
-%%[50
+%%[40
 %%]
                                 <|>  (flip (mkEH PrExpr_Equal))
                                      <$ pKey "=" <*> pTyExpr
@@ -556,6 +561,8 @@ pDeclClass      ::   EHCParser Decl
 pDeclClass      =    (\h d -> mkEH Decl_Class h Nothing d)
 %%][15
 pDeclClass      =    (\h deps d -> mkEH Decl_Class h deps Nothing d)
+%%][92
+pDeclClass      =    (\h deps d -> mkEH Decl_Class h deps Nothing d [])
 %%]]
                      <$   pKey "class"
                      <*>  pClassHead
