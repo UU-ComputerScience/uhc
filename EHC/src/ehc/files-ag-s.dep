@@ -39,6 +39,7 @@ Core/FvS.cag
 Core/ModAsMap.cag
 Core/UsedModNms.cag
 Core/Trf/Fusion.cag
+Core/Trf/Rewrite.cag
 Core/Trf/Subst.cag
 Core/Trf/ConstProp.cag
 Core/Trf/EtaRed.cag

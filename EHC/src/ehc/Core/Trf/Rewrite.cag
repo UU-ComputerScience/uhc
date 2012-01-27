@@ -1,0 +1,80 @@
+%%[93 hs module {%{EH}Core.Trf.Rewrite} import (qualified Data.Map as Map, {%{EH}AbstractCore},{%{EH}Core},{%{EH}Ty},{%{EH}Base.Common}) 
+%%]
+
+%%[93 ag import ({Core/AbsSyn})
+
+{
+rewrite :: ConvMp -> CExpr -> CExpr
+rewrite convMp expr = 
+        let t = wrap_CExpr (sem_CExpr expr)
+                           (Inh_CExpr { convMp_Inh_CExpr = convMp
+                                      , leftApp_Inh_CExpr = Nothing 
+                                      } )
+        in rewritten_Syn_CExpr t
+}
+
+{
+
+data Role   = Abs | Con
+type ConvMp = Map.Map HsName Role
+
+}
+
+WRAPPER CExpr
+
+ATTR CodeAGItf [ convMp : ConvMp | | ]
+ATTR AllCodeNT [ convMp : ConvMp | | rewritten : SELF]
+
+SEM CExpr 
+        | App lhs.rewritten = if @arg.isRewritable || @loc.isRewritable -- already checks that @func here is the right function using @leftApp
+                              then @arg.rewritten 
+                              else acoreApp1 @func.rewritten @arg.rewritten
+
+
+ATTR CExpr [ | | isRewritable : Bool ]
+
+SEM CExpr
+        | App lhs.isRewritable = @isRewritable
+        | App loc.isRewritable = case @lhs.leftApp of
+                                        Nothing -> False
+                                        Just _  -> case @func.varName of
+                                                        Just nm -> case Map.lookup nm @lhs.convMp of
+                                                                        Just Abs -> True
+                                                                        _        -> False
+                                                        Nothing -> False
+        | * - App lhs.isRewritable = False
+
+ATTR CExpr [ | | varName : {Maybe HsName} ] 
+
+SEM CExpr
+        | Var lhs.varName     = Just $ acbrefNm @ref
+        | * - Var lhs.varName = Nothing
+
+
+
+ATTR CExpr [ leftApp : {Maybe HsName} | | ]
+
+SEM CExpr 
+        | App func.leftApp = Nothing
+        | App arg.leftApp  = case @func.varName of
+                                Just nm -> case Map.lookup nm @lhs.convMp of
+                                                Just Con -> Just nm
+                                                _        -> Nothing
+                                _       -> Nothing
+SEM CAlt
+        | Alt expr.leftApp = Nothing
+
+SEM CBindAspect
+        | Bind expr.leftApp = Nothing
+        | FFE  expr.leftApp = Nothing
+        | Val  expr.leftApp = Nothing
+
+SEM CModule
+        | Mod expr.leftApp = Nothing
+
+SEM CPatFld
+        | Fld offset.leftApp = Nothing
+
+SEM MbCExpr
+        | Just just.leftApp = Nothing
+%%]

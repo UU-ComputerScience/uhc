@@ -1,4 +1,4 @@
-%%[93 hs module {%{EH}Core.Trf.Fusion} import (Debug.Trace,{%{EH}Ty},{%{EH}Base.Common},{%{EH}LamInfo},{%{EH}Core},{%{EH}AbstractCore}, {%{EH}Core.Trf.Subst} (cexprSubst), qualified Data.Map as Map)
+%%[93 hs module {%{EH}Core.Trf.Fusion} import (Debug.Trace,{%{EH}Ty},{%{EH}Base.Common},{%{EH}LamInfo},{%{EH}Core},{%{EH}AbstractCore}, {%{EH}Core.Trf.Subst} (cexprSubst), {%{EH}Core.Trf.Rewrite} (rewrite, ConvMp(..), Role(..)), qualified Data.Map as Map)
 %%]
 
 %%[93 ag import ({Core/AbsSyn})
@@ -7,7 +7,8 @@
 cmodTrfFusion :: LamMp -> CModule -> CModule
 cmodTrfFusion lamMp cmod = 
      let t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf cmod)) 
-                            (Inh_CodeAGItf { fuseMp_Inh_CodeAGItf = Map.empty 
+                            (Inh_CodeAGItf { fuseMp_Inh_CodeAGItf = Map.empty
+                                           , convMp_Inh_CodeAGItf = Map.empty 
                                            , lamMp_Inh_CodeAGItf = lamMp
                                            } )
      in inlined_Syn_CodeAGItf t
@@ -15,7 +16,7 @@ cmodTrfFusion lamMp cmod =
 
 
 -- Main idea: inlined should inline all fusible functions (and their non-recursive subterms)
---            rewrite should take the result and do forall x. cons (abs x) x
+--            rewritten should take the result and do forall x. cons (abs x) |-> x
 --            fused should finish the job
 
 {
@@ -46,6 +47,13 @@ SEM CExpr
                                         Nothing   -> @inlined
                             else @inlined
 
+ATTR CodeAGItf [ || rewritten : CModule]
+ATTR AllCodeNT [ || rewritten : SELF]
+ 
+SEM CExpr 
+       | App lhs.rewritten = rewrite @lhs.convMp @loc.inlined -- take the inlined code and attempt to remove any con . abs
+         
+
 -- Tests to see if a function is marked as fusible, or is fusible.  A @func of an App is fusible 
 -- if it is a named function found in the fuseMp, or if is another function application whose 
 -- @func is fusible. 
@@ -65,7 +73,28 @@ SEM CExpr
 -- expr is the expr to substitute in for nm that passes in the substExpr attribute.
 
 ------------------------------------------------------------------------------
--- Pass fused function names and bodies down the expressions
+-- Gather the names of conversions and their role into a Map 
+------------------------------------------------------------------------------
+
+ATTR CodeAGItf AllCodeNT [ convMp : ConvMp | | ]
+
+SEM CExpr
+        | Let body.convMp = @binds.gathConvMp `Map.union` @lhs.convMp
+
+ATTR CBindL [ | | gathConvMp USE {`Map.union`} {Map.empty} : ConvMp ]
+
+ATTR CBind  [ | | gathConvMp : ConvMp ]
+
+SEM CBind
+        | Bind loc.gathConvMp = case Map.lookup @nm @lhs.lamMp of  
+                                        Nothing      -> Map.empty
+                                        Just lamInfo -> case Map.lookup acbaspkeyFusionRole (laminfoBindAspMp lamInfo) of
+                                                                Just (LamInfoBindAsp_FusionRole FusionRole_BuildLeft)  -> Map.singleton @nm Con
+                                                                Just (LamInfoBindAsp_FusionRole FusionRole_BuildRight) -> Map.singleton @nm Abs
+                                                                _                                                      -> Map.empty 
+
+------------------------------------------------------------------------------
+-- Pass fusible function names and bodies down the expressions
 ------------------------------------------------------------------------------
 
 WRAPPER CodeAGItf 
