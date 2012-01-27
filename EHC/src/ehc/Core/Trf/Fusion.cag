@@ -39,7 +39,9 @@ ATTR AllCodeNT [ || inlined : SELF]
 SEM CExpr
         | App lhs.inlined = @inlined
         | App loc.inlined = if @func.isFusible -- && @arg.isFusible
-                            then apply @func.inlined @arg.inlined  -- inline this function application.  We actually want the fused version of the arg, but this hasn't been defined yet
+                            then apply @func.inlined @arg.inlined  -- inline this function application.  
+                                                                   -- We actually want the fused version of the arg, 
+                                                                   -- but this hasn't been defined yet
                             else acoreApp1 @func.inlined @arg.inlined
         | Var lhs.inlined = if @isFusible 
                             then case Map.lookup (acbrefNm @ref) @lhs.fuseMp of
@@ -58,7 +60,7 @@ SEM CExpr
 -- if it is a named function found in the fuseMp, or if is another function application whose 
 -- @func is fusible. 
 
-ATTR CExpr [ | | isFusible : Bool ]
+ATTR CExpr [ || isFusible : Bool ]
 
 SEM CExpr
         | Var loc.isFusible = case Map.lookup (acbrefNm @ref) @lhs.fuseMp of 

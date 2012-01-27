@@ -28,8 +28,11 @@ SEM CExpr
         | Var lhs.substd = if (acbrefNm @ref) == @lhs.substName 
                            then @lhs.substExpr 
                            else @substd
-        | Lam lhs.substd = if @arg == @lhs.substName -- hole in the scope of substExpr
+        | Lam lhs.substd = if @arg == @lhs.substName -- hole in the scope of substName
                            then @substd
                            else acoreLam [@arg] @body.substd
+        -- TODO: Let bindings (anything else?) can also cut holes in the scope of 
+        -- substName, need to check for these
+
          
 %%]
