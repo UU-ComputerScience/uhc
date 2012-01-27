@@ -20,7 +20,7 @@ module UHC.ByteArray
   
   , indexCharArray, indexWideCharArray
   , indexIntArray, indexWordArray, indexAddrArray
-#if !defined( __UHC_TARGET_JSCRIPT__ )
+#if !defined( __UHC_TARGET_JS__ )
   , indexStablePtrArray
 #endif
   , indexFloatArray, indexDoubleArray
@@ -29,7 +29,7 @@ module UHC.ByteArray
 
   , readCharArray, readWideCharArray
   , readIntArray, readWordArray, readAddrArray
-#if !defined( __UHC_TARGET_JSCRIPT__ )
+#if !defined( __UHC_TARGET_JS__ )
   , readStablePtrArray
 #endif
   , readFloatArray, readDoubleArray
@@ -38,7 +38,7 @@ module UHC.ByteArray
 
   , writeCharArray, writeWideCharArray
   , writeIntArray, writeWordArray, writeAddrArray
-#if !defined( __UHC_TARGET_JSCRIPT__ )
+#if !defined( __UHC_TARGET_JS__ )
   , writeStablePtrArray
 #endif
   , writeFloatArray, writeDoubleArray
@@ -50,7 +50,7 @@ module UHC.ByteArray
 
 import UHC.Base
 import UHC.Ptr
-#if !defined( __UHC_TARGET_JSCRIPT__ )
+#if !defined( __UHC_TARGET_JS__ )
 import UHC.StablePtr
 #endif
 import UHC.Types
@@ -148,7 +148,7 @@ foreign import prim "primIndexWord64Array" 	indexWord64Array 	:: ByteArray -> In
 %%]
 
 %%[99
-#if !defined( __UHC_TARGET_JSCRIPT__ )
+#if !defined( __UHC_TARGET_JS__ )
 indexStablePtrArray :: forall s . ByteArray -> Int -> StablePtr s
 indexStablePtrArray a i = letstrict x = indexAddrArray a i in StablePtr x
 #endif
@@ -180,7 +180,7 @@ readFloatArray (MutableByteArray a) i s = letstrict x = indexFloatArray a i in (
 readDoubleArray :: MutableByteArray s -> Int -> State s -> ( State s,Double )
 readDoubleArray (MutableByteArray a) i s = letstrict x = indexDoubleArray a i in (s, x)
 
-#if !defined( __UHC_TARGET_JSCRIPT__ )
+#if !defined( __UHC_TARGET_JS__ )
 readStablePtrArray :: MutableByteArray s -> Int -> State s -> ( State s,StablePtr s )
 readStablePtrArray (MutableByteArray a) i s = letstrict x = indexStablePtrArray a i in (s, x)
 #endif
@@ -267,7 +267,7 @@ writeFloatArray (MutableByteArray a) i x s = letstrict _ = primWriteFloatArray a
 writeDoubleArray :: MutableByteArray s -> Int -> Double -> State s -> State s
 writeDoubleArray (MutableByteArray a) i x s = letstrict _ = primWriteDoubleArray a i x in s
 
-#if !defined( __UHC_TARGET_JSCRIPT__ )
+#if !defined( __UHC_TARGET_JS__ )
 writeStablePtrArray :: MutableByteArray s -> Int -> StablePtr s -> State s -> State s
 writeStablePtrArray (MutableByteArray a) i (StablePtr x) s = letstrict _ = primWriteAddrArray a i x in s
 #endif

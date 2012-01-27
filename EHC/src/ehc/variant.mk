@@ -13,7 +13,7 @@ EHC_ASPECTS								:= $(strip $(if $(ASPECTS),$(ASPECTS) \
 											 $(if $(ENABLE_LLVM),llvm,) \
 											 $(if $(ENABLE_CMM),cmm,) \
 											 $(if $(ENABLE_CWHOLEPROG),cwholeprog,) \
-											 $(if $(ENABLE_JSCRIPT),jscript,) \
+											 $(if $(ENABLE_JS),javascript,) \
 											 $(if $(ENABLE_CLR),clr,) \
 											 $(if $(ENABLE_TYCORE),tycore,) \
 											 $(if $(ENABLE_TAUPHI),tauphi,) \

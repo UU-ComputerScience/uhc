@@ -101,7 +101,8 @@ SEM Expr
 %%[[97
     IIConst
 %%]]
-                loc         .   fo_                 =   fitsIn @lhs.fiOpts @fe @lUniq @lhs.tyVarMp @constTy @lhs.knTy
+                loc         .   fo_                 =   ehcOptTrace @lhs.opts "Expr.?Const.loc.fo_" $
+                                                        fitsIn @lhs.fiOpts @fe @lUniq @lhs.tyVarMp @constTy @lhs.knTy
                             .   ty                  =   foTy @fo_
                             .   tyVarMp             =   foVarMp @fo_ `varUpd` @lhs.tyVarMp
                 loc         .   lUniq               :   UNIQUEREF gUniq
@@ -297,7 +298,11 @@ SEM Expr
 
 %%[(9 hmtyinfer)
 SEM Expr
-  | AppTop Let  loc         .   foKnRes             =   @doFit @lhs.fiOpts @lhs.tyVarMp
+  | AppTop      loc         .   foKnRes             =   -- ehcOptTrace @lhs.opts ("Expr.AppTop.loc.foKnRes: " ++ showPP (ppTyS @lhs.tyVarMp @resTy) ++ "<=" ++ showPP (ppTyS @lhs.tyVarMp @lhs.knTy)) $
+                                                        ehcOptTrace @lhs.opts "Expr.AppTop.loc.foKnRes" $
+                                                        @doFit @lhs.fiOpts @lhs.tyVarMp
+  | Let         loc         .   foKnRes             =   ehcOptTrace @lhs.opts "Expr.Let.loc.foKnRes" $
+                                                        @doFit @lhs.fiOpts @lhs.tyVarMp
   | Rec         loc         .   foKnRes             =   @doFit @recFiOpts @lhs.tyVarMp
 %%]
 

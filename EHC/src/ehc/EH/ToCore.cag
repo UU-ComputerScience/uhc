@@ -125,7 +125,8 @@ SEM Expr
                                                  )]
                             .   letCBindOtherL
                                             =   []
-                            .   cexprtop    =   foldr (\(c,b) e -> acoreLet c b e) @letCBody @letCBindRemL
+                            .   cexprtop    =   ehcOptTrace @lhs.opts "Expr.Let.lhs.cexprtop" $
+                                                foldr (\(c,b) e -> acoreLet c b e) @letCBody @letCBindRemL
   | App AppImpred
 %%[[12
     AppImpl
@@ -494,9 +495,9 @@ SEM Expr
   | Let         loc         .   cDataBindL  =   mkDataBinds
                                                     (\isNewtype
                                                       (DataTagInfo
-                                                        { dtiConNm    	= conNm
-                                                        , dtiConFldAnnL	= annL
-                                                        , dtiCTag     	= ctag
+                                                        { dtiConNm      = conNm
+                                                        , dtiConFldAnnL = annL
+                                                        , dtiCTag       = ctag
                                                         }) -> mkDataCBindL @lhs.opts ctag (valGamLookupTyDefault conNm @finValGamDecls) annL conNm isNewtype
                                                     )
                                                     @decls.gathDeclDataGam
@@ -680,7 +681,7 @@ SEM Expr
 
 %%[(9 codegen)
 SEM Expr
-  | *			loc			.	lamArgCoeL			:	{[Coe]}
+  | *           loc         .   lamArgCoeL          :   {[Coe]}
 %%]
 
 %%[(12 codegen)
@@ -759,8 +760,8 @@ SEM Decl
 
 %%[(93 codegen)
 SEM Decl
-  | FusionDecl  lhs      	.  cbindL           =  	[]
-  | FusionConv 	lhs        	.  cbindL           =  	[]
+  | FusionDecl  lhs         .  cbindL           =   []
+  | FusionConv  lhs         .  cbindL           =   []
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

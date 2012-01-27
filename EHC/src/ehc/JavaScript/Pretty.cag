@@ -4,25 +4,25 @@
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Haskell importable interface to JScript pretty print
+%%% Haskell importable interface to JavaScript pretty print
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 jscript) hs module {%{EH}JScript.Pretty} import(EH.Util.Pretty,{%{EH}Base.Common},{%{EH}JScript}) 
+%%[(8 javascript) hs module {%{EH}JavaScript.Pretty} import(EH.Util.Pretty,{%{EH}Base.Common},{%{EH}JavaScript}) 
 %%]
 
-%%[(8 jscript).WRAPPER ag import({JScript/AbsSyn})
+%%[(8 javascript).WRAPPER ag import({JavaScript/AbsSyn})
 WRAPPER AGItf
 %%]
 
-%%[(8 jscript) hs export(ppJScriptModule)
-ppJScriptModule
-  :: JScriptModule
+%%[(8 javascript) hs export(ppJavaScriptModule)
+ppJavaScriptModule
+  :: JavaScriptModule
      -> ( PP_Doc
 %%[[50
         , PP_Doc
 %%]]
         )
-ppJScriptModule ent
+ppJavaScriptModule ent
   = ( pp_Syn_AGItf t
 %%[[8
     >-<
@@ -36,26 +36,26 @@ ppJScriptModule ent
                  Inh_AGItf
 %%]
 
-instance Show JScriptModule where
-  show t = "JScriptModule t"
+instance Show JavaScriptModule where
+  show t = "JavaScriptModule t"
 
-instance PP JScriptModule where
-  pp t = ppJScriptModule t
+instance PP JavaScriptModule where
+  pp t = ppJavaScriptModule t
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Utilities & combinators
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 jscript) hs
+%%[(8 javascript) hs
 ppStat :: PP_Doc -> PP_Doc
 ppStat x = x >|< ";"
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% JScript pretty printing
+%%% JavaScript pretty printing
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 jscript)
+%%[(8 javascript)
 ATTR
   AGItf AllNT
   - NmExprL NmExpr ExprL MbExpr StatL AltL
@@ -103,39 +103,39 @@ SEM Stat
 SEM Alt
   | Alt			lhs		.	pp		=	"case" >#< @tag >|< ":" >-< indent 1 (vlist @stats.ppL)
 
-SEM JScriptModule
+SEM JavaScriptModule
   | Mod			lhs		.	pp		=	vlist @decls.ppL
 %%]
 
-%%[(8 jscript)
+%%[(8 javascript)
 SEM ExprL StatL AltL [ | | ppL: {[PP_Doc]} ]
   | Cons		lhs		.	ppL		=	@hd.pp : @tl.ppL
   | Nil			lhs		.	ppL		=	[]
 %%]
 
-%%[(8 jscript)
+%%[(8 javascript)
 ATTR NmExprL NmExpr [ | | ppL USE {++} {[]} : {[(HsName,PP_Doc)]} ]
 
 SEM NmExpr
   | Tuple		lhs		.	ppL		=	[(@x1, @x2.pp)]
 %%]
 
-%%[(8 jscript)
+%%[(8 javascript)
 SEM MbExpr [ | | ppMb: {Maybe PP_Doc} ]
   | Just		lhs		.	ppMb	=	Just @just.pp
   | Nothing		lhs		.	ppMb	=	Nothing
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% JScript pretty printing for top level body (i.e. is main)
+%%% JavaScript pretty printing for top level body (i.e. is main)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 jscript)
+%%[(8 javascript)
 ATTR
-  AGItf JScriptModule
+  AGItf JavaScriptModule
     [ | | ppMain: PP_Doc ]
 
-SEM JScriptModule
+SEM JavaScriptModule
   | Mod			lhs		.	ppMain	=	vlist @main.ppL
 
 %%]

@@ -84,7 +84,8 @@ SEM Decl
                 lhs         .   cSubst              =   cSubstApp @decls.cSubst @cSubstInst
 
 SEM Expr
-  | Let         decls       .   cSubst              =   cSubstApp @lhs.cSubst
+  | Let         decls       .   cSubst              =   ehcOptTrace @lhs.opts "Expr.Let.decls.cSubst"
+                                                        $ cSubstApp @lhs.cSubst
                                                         $ cSubstApp @prvArgCSubst
                                                         $ cSubstApp (acoreCSubstFromVarMpImpls @tmpoTyVarMp)
                                                         $ evidKeyBindMpToCSubst @chrSolveEvidBindMp
@@ -130,11 +131,11 @@ SEM Expr
 %%]]
                 loc         .   poiBindL            =   @chrAssumeBindL ++ @chrScopeBindL
 %%[[(9 tycore)
-                loc         .   poiBindLTC          =   @chrAssumeBindLTC ++ @chrScopeBindLTC	-- for TyCore clone
+                loc         .   poiBindLTC          =   @chrAssumeBindLTC ++ @chrScopeBindLTC   -- for TyCore clone
 %%]]
   | Let         loc         .   poiBindL            =   @chrAssumeBindL
 %%[[(9 tycore)
-                loc         .   poiBindLTC          =   @chrAssumeBindLTC 						-- for TyCore clone
+                loc         .   poiBindLTC          =   @chrAssumeBindLTC                       -- for TyCore clone
 %%]]
 %%]
 

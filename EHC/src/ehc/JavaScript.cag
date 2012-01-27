@@ -4,33 +4,33 @@
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Haskell importable interface to JScript/AbsSyn
+%%% Haskell importable interface to JavaScript/AbsSyn
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 jscript) hs module {%{EH}JScript} import({%{EH}Base.Common})
+%%[(8 javascript) hs module {%{EH}JavaScript} import({%{EH}Base.Common})
 %%]
 
-%%[(8 jscript) hs export(JScriptModule(..), Stat(..), StatL, NmExpr, NmExprL, Expr(..), ExprL, MbExpr, AGItf(..)) 
+%%[(8 javascript) hs export(JavaScriptModule(..), Stat(..), StatL, NmExpr, NmExprL, Expr(..), ExprL, MbExpr, AGItf(..)) 
 %%]
 
-%%[(8 jscript) hs export(Alt(..), AltL) 
+%%[(8 javascript) hs export(Alt(..), AltL) 
 %%]
 
-%%[(8 jscript) ag import({JScript/AbsSyn})
+%%[(8 javascript) ag import({JavaScript/AbsSyn})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Instances
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 jscript) hs
+%%[(8 javascript) hs
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Smart constructors
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 jscript) hs export(jsVarDecl)
+%%[(8 javascript) hs export(jsVarDecl)
 -- | declare a var, or a field in object, depending on name being qualified
 jsVarDecl :: HsName -> Expr -> Stat
 %%[[8
@@ -47,7 +47,7 @@ jsVarDecl n e
 %%% Observations
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 jscript) hs export(exprMbVar)
+%%[(8 javascript) hs export(exprMbVar)
 exprMbVar :: Expr -> Maybe HsName
 exprMbVar (Expr_Var n) = Just n
 exprMbVar _            = Nothing

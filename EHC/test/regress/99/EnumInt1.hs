@@ -1,7 +1,7 @@
 {- ----------------------------------------------------------------------------------------
    what    : Enum class, for Int
    expected: ok
-   constraints: exclude-if-jscript
+   constraints: exclude-if-js
 ---------------------------------------------------------------------------------------- -}
 
 module EnumInt1 where

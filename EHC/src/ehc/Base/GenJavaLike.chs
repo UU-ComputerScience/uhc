@@ -6,29 +6,29 @@
 Various Java like code generation utility snippets.
 %%]
 
-%%[(8 jazy || jscript) hs module {%{EH}Base.GenJavaLike}
+%%[(8 jazy || javascript) hs module {%{EH}Base.GenJavaLike}
 %%]
 
-%%[(8 jazy || jscript) hs import(qualified Data.Map as Map,Data.Bits, Data.List)
+%%[(8 jazy || javascript) hs import(qualified Data.Map as Map,Data.Bits, Data.List)
 %%]
 
-%%[(8 jazy || jscript) hs import({%{EH}Base.Builtin},{%{EH}Base.Builtin2},{%{EH}BuiltinPrims})
+%%[(8 jazy || javascript) hs import({%{EH}Base.Builtin},{%{EH}Base.Builtin2},{%{EH}BuiltinPrims})
 %%]
 
-%%[(8 jazy || jscript) hs import(EH.Util.Pretty, EH.Util.Utils, qualified EH.Util.FastSeq as Seq)
+%%[(8 jazy || javascript) hs import(EH.Util.Pretty, EH.Util.Utils, qualified EH.Util.FastSeq as Seq)
 %%]
 
-%%[(8 jazy || jscript) hs import({%{EH}Opts.Base},{%{EH}Base.HsName},{%{EH}Base.Common},{%{EH}Base.BasicAnnot})
+%%[(8 jazy || javascript) hs import({%{EH}Opts.Base},{%{EH}Base.HsName},{%{EH}Base.Common},{%{EH}Base.BasicAnnot})
 %%]
 
-%%[(8 jazy || jscript) hs import({%{EH}Foreign.Extract})
+%%[(8 jazy || javascript) hs import({%{EH}Foreign.Extract})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Environment info for code variables (CVar)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 jazy || jscript) hs export(CVarInfo'(..), CVarMp'(..))
+%%[(8 jazy || javascript) hs export(CVarInfo'(..), CVarMp'(..))
 data CVarInfo' ty varref tupfldref
   = CVarInfo_This                           -- this object
       { cvarType            :: ty
@@ -58,7 +58,7 @@ data CVarInfo' ty varref tupfldref
 type CVarMp' ty varref tupfldref = Map.Map HsName (CVarInfo' ty varref tupfldref)
 %%]
 
-%%[(8 jazy || jscript) hs export(cvarGlob)
+%%[(8 jazy || javascript) hs export(cvarGlob)
 -- | global reference
 cvarGlob :: ty -> HsName -> HsName -> HsName -> CVarInfo' ty varref tupfldref
 cvarGlob ty clNm nm safeVarNm
@@ -71,7 +71,7 @@ cvarGlob ty clNm nm safeVarNm
 %%]
 
 
-%%[(8 jazy || jscript) hs export(cvarToRef)
+%%[(8 jazy || javascript) hs export(cvarToRef)
 -- | generate ref 
 cvarToRef
   :: ( ty -> e                  		-- make for 'this',
@@ -109,7 +109,7 @@ cvarToRef
 %%% Dealing with >5 args
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 jazy || jscript) hs export(javalikeArgsPack)
+%%[(8 jazy || javascript) hs export(javalikeArgsPack)
 -- pack > 5 args into tuple, otherwise normal
 javalikeArgsPack
   :: Int								-- limit after which arguments are passed via array
@@ -123,7 +123,7 @@ javalikeArgsPack limit (tyTup,tyObj,mkTup,mkAppNm) args
         nm    = mkAppNm nArgs
 %%]
 
-%%[(8 jazy || jscript) hs export(javalikeArgsUnpack)
+%%[(8 jazy || javascript) hs export(javalikeArgsUnpack)
 -- unpack > 5 args from tuple, otherwise normal
 javalikeArgsUnpack
   :: Enum fldref
@@ -157,7 +157,7 @@ javalikeArgsUnpack limit (tyTup,tyObj,tyInt,toRef,mkInt,mkArgRefs,mkArgRefs5) ar
 %%% Case: scrutinee type (i.e. tag)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 jazy || jscript) hs export(Scrutinee(..))
+%%[(8 jazy || javascript) hs export(Scrutinee(..))
 data Scrutinee
   = Scrutinee_Tag   CTag
   | Scrutinee_Int   Int
@@ -169,7 +169,7 @@ data Scrutinee
 %%% FFI
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 jazy || jscript) hs export(javalikeMkFFICall)
+%%[(8 jazy || javascript) hs export(javalikeMkFFICall)
 -- | construct the ffi call
 javalikeMkFFICall
   ::    ( BuiltinInfo -> basicinfo          			-- extract machine specific info of builtin info
@@ -233,7 +233,7 @@ javalikeMkFFICall
 %%% Binding
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 jazy || jscript) hs export(JBind'(..),JBinds')
+%%[(8 jazy || javascript) hs export(JBind'(..),JBinds')
 data JBind' ty e fld
   = JBind
       { jbindOrigNm :: HsName
@@ -245,7 +245,7 @@ data JBind' ty e fld
 type JBinds' ty e fld = Seq.Seq (JBind' ty e fld)
 %%]
 
-%%[(8 jazy || jscript) hs export(jBind')
+%%[(8 jazy || javascript) hs export(jBind')
 jBind'
   :: ( ty					-- default type of binding
      , HsName -> HsName		-- make field name

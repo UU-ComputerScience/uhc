@@ -1,7 +1,7 @@
 {- ----------------------------------------------------------------------------------------
    what    : Non existing files
    expected: ok
-   constraints: exclude-if-jscript
+   constraints: exclude-if-js
 ---------------------------------------------------------------------------------------- -}
 
 module Main where

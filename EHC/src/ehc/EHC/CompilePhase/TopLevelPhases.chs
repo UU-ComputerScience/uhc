@@ -26,6 +26,10 @@ level 2..6 : with prefix 'cpEhc'
 %%[8 import(qualified Data.Map as Map,qualified Data.Set as Set)
 %%]
 
+-- trace, debug
+%%[8 import(System.IO.Unsafe, Debug.Trace)
+%%]
+
 %%[8 import({%{EH}Base.Optimize})
 %%]
 %%[(8 codegen) import({%{EH}Base.Target})
@@ -58,7 +62,7 @@ level 2..6 : with prefix 'cpEhc'
 %%]
 %%[(8 codegen java) import({%{EH}EHC.CompilePhase.CompileJVM})
 %%]
-%%[(8 codegen jscript) import({%{EH}EHC.CompilePhase.CompileJScript})
+%%[(8 codegen javascript) import({%{EH}EHC.CompilePhase.CompileJavaScript})
 %%]
 %%[99 import({%{EH}Base.PackageDatabase})
 %%]
@@ -887,8 +891,8 @@ cpEhcExecutablePerModule how impModNmL modNm
 %%[[(8 jazy)
           , cpCompileJazyJVM how impModNmL modNm
 %%]]
-%%[[(8 jscript)
-          , cpCompileJScript how impModNmL modNm
+%%[[(8 javascript)
+          , cpCompileJavaScript how impModNmL modNm
 %%]]
           ]
 %%]
@@ -915,7 +919,19 @@ cpProcessHs modNm
 cpProcessEH :: HsName -> EHCompilePhase ()
 cpProcessEH modNm
   = do { cr <- get
-       ; let (_,_,opts,_) = crBaseInfo modNm cr
+       ; let (_,_,opts,fp) = crBaseInfo modNm cr
+%%[[99
+             optsTr = opts { ehcOptTrace = \s x -> unsafePerformIO (do { (_,s) <- runStateT (do { cpMsg modNm VerboseALot ("EH>: " ++ s) 
+                                                                                                ; x `seq` cpMsg modNm VerboseALot ("EH<: " ++ s) 
+                                                                                                }) cr 
+                                                                       ; return x
+                                                                       }) }
+             -- optsTr = opts { ehcOptTrace = \s x -> unsafePerformIO (do { putCompileMsg VerboseALot (ehcOptVerbosity opts) ("EH: " ++ s) Nothing modNm fp ; return x }) }
+             -- optsTr = opts { ehcOptTrace = \s x -> unsafePerformIO (do { putStrLn ("EH: " ++ s) ; return x }) }
+             -- optsTr = opts { ehcOptTrace = trace }
+       -- ; cpUpdStateInfo (\crsi -> crsi {crsiOpts = optsTr})
+       ; cpUpdCU modNm (ecuStoreOpts optsTr)
+%%]]
        ; cpSeq [ cpFoldEH modNm
 %%[[99
                , cpCleanupFoldEH modNm
@@ -925,7 +941,7 @@ cpProcessEH modNm
 %%[[(8 codegen)
                ,
 %%[[(8 tycore)
-                 if ehcOptTyCore opts
+                 if ehcOptTyCore optsTr
                  then cpTranslateEH2TyCore modNm
                  else 
 %%]]
@@ -1003,8 +1019,8 @@ cpProcessCoreRest modNm
 %%[[(8 jazy)
                 ++ [ cpTranslateCore2Jazy modNm ]
 %%]]
-%%[[(8 jscript)
-                ++ [ cpTranslateCore2JScript modNm ]
+%%[[(8 javascript)
+                ++ [ cpTranslateCore2JavaScript modNm ]
 %%]]
 %%[[99
                 ++ [ cpCleanupCore [modNm] ]

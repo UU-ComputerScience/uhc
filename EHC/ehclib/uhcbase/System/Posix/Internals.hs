@@ -2,7 +2,7 @@
 {-# OPTIONS_GHC -XNoImplicitPrelude #-}
 {-# OPTIONS_GHC -fno-warn-unused-binds #-}
 {-# OPTIONS_HADDOCK hide #-}
-{-# EXCLUDE_IF_TARGET jscript #-}
+{-# EXCLUDE_IF_TARGET js #-}
 
 -----------------------------------------------------------------------------
 -- |

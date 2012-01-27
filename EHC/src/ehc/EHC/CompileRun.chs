@@ -12,6 +12,8 @@ An EHC compile run maintains info for one compilation invocation
 %%]
 %%[8 import(System.IO, System.Exit, System.Environment, System.Process, System.Cmd(rawSystem))
 %%]
+%%[99 import(System.CPUTime, System.Locale, Data.IORef, System.IO.Unsafe)
+%%]
 %%[99 import(System.Directory)
 %%]
 %%[99 import(EH.Util.FPath)
@@ -52,6 +54,60 @@ An EHC compile run maintains info for one compilation invocation
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Time
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99 export(EHCTime, EHCTimeDiff, getEHCTime, ehcTimeDiff, ehcTimeDiffFmt)
+type EHCTime = Integer
+type EHCTimeDiff = Integer
+
+getEHCTime :: IO EHCTime
+getEHCTime = getCPUTime
+
+ehcTimeDiff :: EHCTime -> EHCTime -> EHCTimeDiff
+ehcTimeDiff = (-)
+
+ehcTimeDiffFmt :: EHCTimeDiff -> String
+ehcTimeDiffFmt t
+  = fm 2 hrs ++ ":" ++ fm 2 mins ++ ":" ++ fm 2 secs ++ ":" ++ fm 6 (psecs `div` 1000000)
+  where (r0  , psecs) = t  `quotRem` 1000000000000
+        (r1  , secs ) = r0 `quotRem` 60
+        (r2  , mins ) = r1 `quotRem` 60
+        (days, hrs  ) = r2 `quotRem` 24
+        fm n x = strPadLeft '0' n (show x)
+%%]
+
+%%[99 export(EHCIOInfo(..),newEHCIOInfo)
+data EHCIOInfo
+  = EHCIOInfo
+      { ehcioinfoStartTime			:: EHCTime
+      , ehcioinfoLastTime			:: EHCTime
+      }
+
+newEHCIOInfo :: IO (IORef EHCIOInfo)
+newEHCIOInfo
+  = do t <- getEHCTime
+       newIORef (EHCIOInfo t t)
+%%]
+
+%%[99
+%%]
+
+%%[9999 export(unsafeTimedPerformIO)
+-- | Unsafe do IO with timing info
+unsafeTimedPerformIO
+  :: IORef EHCIOInfo
+     -> IO a
+     -> ( a
+        , EHCTime				-- last time being called
+        , EHCTimeDiff			-- delta since that time
+        )
+unsafeTimedPerformIO inforef io
+  = unsafePerformIO $
+    do info <- readIORef inforef
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Compile run combinators
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -78,6 +134,7 @@ data EHCompileRunStateInfo
       , crsiModOffMp    :: !Core.HsName2OffsetMpMp              -- mapping of all modules + exp entries to offsets in module + exp tables
 %%]]
 %%[[99
+      , crsiEHCIOInfo	:: !(IORef EHCIOInfo)					-- unsafe info
       , crsiFilesToRm   :: ![FPath]                             -- files to clean up (remove)
 %%]]
       }
@@ -107,6 +164,7 @@ emptyEHCompileRunStateInfo
       , crsiModOffMp    =   Map.empty
 %%]]
 %%[[99
+      , crsiEHCIOInfo   =   panic "emptyEHCompileRunStateInfo.crsiEHCIOInfo"
       , crsiFilesToRm   =   []
 %%]]
       }
@@ -233,14 +291,28 @@ cpMsg modNm v m
 cpMsg' :: HsName -> Verbosity -> String -> Maybe String -> FPath -> EHCompilePhase ()
 cpMsg' modNm v m mbInfo fp
   = do { cr <- get
-       ; let (ecu,_,opts,_) = crBaseInfo modNm cr
+       ; let (ecu,crsi,opts,_) = crBaseInfo modNm cr
+%%[[99
+       ; ehcioinfo <- lift $ readIORef (crsiEHCIOInfo crsi)
+       ; clockTime <- lift getEHCTime
+       ; let clockStartTimePrev = ehcioinfoStartTime ehcioinfo
+             clockTimePrev      = ehcioinfoLastTime ehcioinfo
+             clockStartTimeDiff = ehcTimeDiff clockTime clockStartTimePrev
+             clockTimeDiff      = ehcTimeDiff clockTime clockTimePrev
+%%]]
+       ; let
 %%[[8
              m'             = m
 %%][99
-             m'             = show (ecuSeqNr ecu) ++ " " ++ m
+             t				= if v >= VerboseALot then "<" ++ strBlankPad 35 (ehcTimeDiffFmt clockStartTimeDiff ++ "/" ++ ehcTimeDiffFmt clockTimeDiff) ++ ">" else ""
+             m'             = show (ecuSeqNr ecu) ++ t ++ " " ++ m
 %%]]
        ; lift $ putCompileMsg v (ehcOptVerbosity opts) m' mbInfo modNm fp
-       -- ; lift $ putStrLn "XX"
+%%[[99
+       ; clockTime <- lift getEHCTime
+       ; lift $ writeIORef (crsiEHCIOInfo crsi) (ehcioinfo {ehcioinfoLastTime = clockTime})
+       -- ; cpUpdSI (\crsi -> crsi { crsiTime = clockTime })
+%%]]
        ; cpMemUsage
        }
 %%]

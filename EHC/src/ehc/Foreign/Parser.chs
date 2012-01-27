@@ -64,12 +64,12 @@ type ForeignParser        ep    =    PlainParser Token ep
 pForeignEnt :: ForeignDirection -> FFIWay -> Maybe String -> ForeignParser ForeignEnt
 pForeignEnt dir way dfltNm
   = case (dir,way) of
-      (_                      ,FFIWay_CCall  ) -> ForeignEnt_CCall        <$> pCCall       dfltNm
-      (_                      ,FFIWay_Prim   ) -> ForeignEnt_PrimCall     <$> pPrimCall    dfltNm
-%%[[(90 jscript)
-      (ForeignDirection_Import,FFIWay_JScript) -> ForeignEnt_JScriptCall  <$> pJScriptCall dfltNm
+      (_                      ,FFIWay_CCall  		) -> ForeignEnt_CCall        	<$> pCCall       dfltNm
+      (_                      ,FFIWay_Prim   		) -> ForeignEnt_PrimCall     	<$> pPrimCall    dfltNm
+%%[[(90 javascript)
+      (ForeignDirection_Import,FFIWay_JavaScript	) -> ForeignEnt_JavaScriptCall  <$> pJavaScriptCall dfltNm
 %%]]
-      _                                        -> ForeignEnt_PlainCall    <$> pPlainCall   dfltNm
+      _                                        		  -> ForeignEnt_PlainCall    	<$> pPlainCall   dfltNm
 
 pCCall :: Maybe String -> ForeignParser CCall
 pCCall dfltNm
@@ -108,11 +108,11 @@ pPrimCall dfltNm
   where nm = maybe "" id dfltNm
         pKnownPrim = pMb (pAnyFromMap pKeyTk allKnownPrimMp)
 
-pJScriptCall :: Maybe String -> ForeignParser JScriptCall
-pJScriptCall dfltNm
-  =   JScriptCall_Id nm <$> pMb pForeignExpr
-  <|> JScriptCall_Dynamic <$ pDYNAMIC
-  <|> JScriptCall_Wrapper <$ pWRAPPER
+pJavaScriptCall :: Maybe String -> ForeignParser JavaScriptCall
+pJavaScriptCall dfltNm
+  =   JavaScriptCall_Id nm   <$> pMb pForeignExpr
+  <|> JavaScriptCall_Dynamic <$  pDYNAMIC
+  <|> JavaScriptCall_Wrapper <$  pWRAPPER
   where nm = maybe "" id dfltNm
 
 pForeignVar :: ForeignParser String

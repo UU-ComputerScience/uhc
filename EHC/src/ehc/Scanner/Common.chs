@@ -428,8 +428,10 @@ foreignEntScanOpts way
   where o = defaultScanOpts
         (wayKeywExtraChars,wayStringDelims)
           = case way of
-              FFIWay_JScript -> ("$", "'")
-              _              -> ("" , "" )
+%%[[(90 javascript)
+              FFIWay_JavaScript -> ("$", "'")
+%%]]
+              _                 -> ("" , "" )
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

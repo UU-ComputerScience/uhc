@@ -25,7 +25,7 @@ An EHC compile unit maintains info for one unit of compilation, a Haskell (HS) m
 %%]
 %%[(8 jazy) hs import(qualified {%{EH}JVMClass} as Jvm)
 %%]
-%%[(8 jscript) hs import(qualified {%{EH}JScript} as JS)
+%%[(8 javascript) hs import(qualified {%{EH}JavaScript} as JS)
 %%]
 %%[(8 codegen cmm) hs import(qualified {%{EH}Cmm} as Cmm)
 %%]
@@ -150,8 +150,8 @@ data EHCompileUnit
 %%[[(8 jazy)
       , ecuMbJVMClassL       :: !(Maybe (HsName,[Jvm.Class]))
 %%]]
-%%[[(8 jscript)
-      , ecuMbJScript         :: !(Maybe JS.JScriptModule)
+%%[[(8 javascript)
+      , ecuMbJavaScript      :: !(Maybe JS.JavaScriptModule)
 %%]]
       , ecuState             :: !EHCompileUnitState
 %%[[50
@@ -250,8 +250,8 @@ emptyECU
 %%[[(8 jazy)
       , ecuMbJVMClassL       = Nothing
 %%]]
-%%[[(8 jscript)
-      , ecuMbJScript         = Nothing
+%%[[(8 javascript)
+      , ecuMbJavaScript      = Nothing
 %%]]
       , ecuState             = ECUSUnknown
 %%[[50
@@ -423,9 +423,9 @@ ecuStoreJVMClassL :: EcuUpdater (HsName,[Jvm.Class])
 ecuStoreJVMClassL x ecu = ecu { ecuMbJVMClassL = Just x }
 %%]
 
-%%[(8 jscript) export(ecuStoreJScript)
-ecuStoreJScript :: EcuUpdater (JS.JScriptModule)
-ecuStoreJScript x ecu = ecu { ecuMbJScript = Just x }
+%%[(8 javascript) export(ecuStoreJavaScript)
+ecuStoreJavaScript :: EcuUpdater (JS.JavaScriptModule)
+ecuStoreJavaScript x ecu = ecu { ecuMbJavaScript = Just x }
 %%]
 
 ecuStoreJVMClassFPathL :: EcuUpdater [FPath]

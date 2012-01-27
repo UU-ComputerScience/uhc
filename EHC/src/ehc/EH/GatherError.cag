@@ -43,7 +43,7 @@ ATTR AllNT [ | | errSq USE {`Seq.union`} {Seq.empty} : ErrSq ]
 
 %%[1
 SEM AGItf
-  | AGItf       loc         .   lErrSq    	=   Seq.empty
+  | AGItf       loc         .   lErrSq      =   Seq.empty
 %%]
 
 %%[1
@@ -320,7 +320,7 @@ SEM Decl
 %%][92
                                                                  case @instVariant of
                                                                    InstDeriving InstDerivingFrom_Datatype
-                                                                     -> Seq.empty			-- ignore kind errors when deriving
+                                                                     -> Seq.empty           -- ignore kind errors when deriving
                                                                    _ -> @tyPrExpr.errSq
 %%]]
 %%[[(9 hmtyinfer)
@@ -415,12 +415,12 @@ SEM TyExpr
 
 %%[90
 SEM Decl
-  | FFI			lhs         .   errSq        =  rngLift @range mkNestErr' @pp [foErrSq @foFFI]
+  | FFI         lhs         .   errSq        =  rngLift @range mkNestErr' @pp [foErrSq @foFFI]
 %%]
 
 %%[(93 hmtyinfer)
 SEM Decl
-  | FusionConv	lhs         .   errSq        =  rngLift @range mkNestErr' @pp [foErrSq @foBuildInverse]
+  | FusionConv  lhs         .   errSq        =  rngLift @range mkNestErr' @pp [foErrSq @foBuildInverse]
 %%]
 
 %%[40
@@ -467,7 +467,8 @@ SEM Decls
   | Cons        lhs         .   allErrSq    =   Seq.unions [@hd.errSq, @hd.allErrSq, @tl.allErrSq]
 
 SEM Expr
-  | Let         lhs         .   allErrSq    =   Seq.unions [@letErrL, @body.errSq, @decls.allErrSq, @body.allErrSq]
+  | Let         lhs         .   allErrSq    =   ehcOptTrace @lhs.opts "Expr.Let.lhs.allErrSq" $
+                                                Seq.unions [@letErrL, @body.errSq, @decls.allErrSq, @body.allErrSq]
 %%]
 
 %%[9

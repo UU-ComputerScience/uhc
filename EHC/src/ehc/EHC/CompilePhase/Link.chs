@@ -23,7 +23,7 @@ Linking
 %%]
 %%[(99 codegen jazy) import({%{EH}EHC.CompilePhase.CompileJVM}) export(cpLinkJar)
 %%]
-%%[(9999 codegen jscript) import({%{EH}EHC.CompilePhase.CompileJScript}) export(cpLinkJScript)
+%%[(9999 codegen javascript) import({%{EH}EHC.CompilePhase.CompileJavaScript}) export(cpLinkJavaScript)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

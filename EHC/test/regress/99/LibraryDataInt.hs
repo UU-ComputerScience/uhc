@@ -2,7 +2,7 @@
    what    : base classes for Data.Int: Int64, Int32, Int16, Int8
    expected: ok
    platform: word size dependent
-   constraints: exclude-if-jscript
+   constraints: exclude-if-js
 ---------------------------------------------------------------------------------------- -}
 
 module LibraryDataInt where

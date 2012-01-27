@@ -2,7 +2,7 @@
    what    : Testing System.Time
    expected: ok
    platform: current time depends on ... current time. Printing calendar time is environment dependent.
-   constraints: exclude-if-jscript
+   constraints: exclude-if-js
 ---------------------------------------------------------------------------------------- -}
 
 import System.Time

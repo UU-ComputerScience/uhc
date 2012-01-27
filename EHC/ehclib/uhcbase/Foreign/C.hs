@@ -1,6 +1,6 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# OPTIONS_GHC -XNoImplicitPrelude #-}
-{-# EXCLUDE_IF_TARGET jscript #-}
+{-# EXCLUDE_IF_TARGET js #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Foreign.C

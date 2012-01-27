@@ -8,7 +8,7 @@ This info is used for TyCore generation and pretty printing.
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Final type
+%%% Final ValGam
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(2 hmtyinfer).finValGam
@@ -18,8 +18,6 @@ ATTR
   AllExpr AllPatExpr AllCase
 %%]]
     [ finValGam: ValGam | | ]
-
-ATTR AllNT [ finTyVarMp: VarMp | | ]
 
 SEM Expr
 %%[[2
@@ -41,17 +39,41 @@ SEM Expr
 %%]]
 
 SEM AGItf
-  | AGItf       loc         .   finTyVarMp          =   
-%%[[9
-                                                        @chrSolveSimpTyVarMp `varUpd`
-%%]]
-                                                        @expr.tyVarMp
+  | AGItf       loc          
 %%[[8
                             .   finValGam           =   emptyGam
 %%][50
                             .   finValGam           =   @expr.gathValGam `gamUnion` @lhs.valGam
 %%]]
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Final TyVarMp
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(2 hmtyinfer).finValGam
+ATTR AllNT [ finTyVarMp: VarMp | | ]
+
+SEM AGItf
+  | AGItf       loc         .   finTyVarMp          =   
+%%[[9
+                                                        @chrSolveSimpTyVarMp `varUpd`
+%%]]
+                                                        @expr.tyVarMp
+%%]
+
+%%[(9 hmtyinfer)
+SEM Expr
+  | Let         loc         .   finTyVarMp          =   varUpd @tmpoTyVarMp $
+%%[[9999
+                                                        varUpd @bodyVarMp2 $
+%%]]
+                                                        @lhs.finTyVarMp
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Final type
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(2 hmtyinfer)
 SEM Decl
@@ -74,7 +96,7 @@ SEM PatExpr
 %%[[97
     Expr
 %%]]
-                loc         .   finalTy        		=   maybe Ty_Any vgiTy $ valGamLookup (rpatNmNm @cpNm) @lhs.finValGam
+                loc         .   finalTy             =   maybe Ty_Any vgiTy $ valGamLookup (rpatNmNm @cpNm) @lhs.finValGam
 %%]
 
 %%[(5 hmtyinfer)
@@ -92,17 +114,12 @@ SEM PatExpr
 %%[(8 hmtyinfer)
 SEM Expr
   | AppTop      loc         .   finalTy             =   @lhs.finTyVarMp `varUpd` @ty
-  | Case		loc			.	finalTyExpr			=	@lhs.finTyVarMp `varUpd` @expr.ty
+  | Case        loc         .   finalTyExpr         =   @lhs.finTyVarMp `varUpd` @expr.ty
 %%]
 
 %%[(8 hmtyinfer)
 SEM DataFieldExpr
-  | Upd         loc         .   finalTyExpr			=	@lhs.finTyVarMp `varUpd` @expr.ty
-%%]
-
-%%[(9 hmtyinfer)
-SEM Expr
-  | Let         loc         .   finTyVarMp          =   @tmpoTyVarMp `varUpd` @lhs.finTyVarMp
+  | Upd         loc         .   finalTyExpr         =   @lhs.finTyVarMp `varUpd` @expr.ty
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

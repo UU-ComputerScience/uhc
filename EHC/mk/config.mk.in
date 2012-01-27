@@ -30,7 +30,7 @@ EH_VERSION_ASNUMBER		:= @EH_VERSION_ASNUMBER@
 
 EXEC_SUFFIX			:= @SUFFIX_EXEC@
 LIBC_SUFFIX			:= @SUFFIX_LIBC@
-LIBJSCRIPT_SUFFIX	:= @SUFFIX_LIBJSCRIPT@
+LIBJS_SUFFIX		:= @SUFFIX_LIBJS@
 PATH_SEP			:= /
 PATHS_SEP			:= @PATHS_SEP@
 PATHS_SEP_COL		:= :
@@ -71,8 +71,8 @@ ENABLE_CLR					:= yes
 endif
 
 # include javascript code generation
-ifeq (@ENABLE_JSCRIPT@,yes)
-ENABLE_JSCRIPT				:= yes
+ifeq (@ENABLE_JS@,yes)
+ENABLE_JS					:= yes
 endif
 
 # include llvm code generation

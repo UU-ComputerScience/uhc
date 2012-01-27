@@ -1,7 +1,7 @@
 {- ----------------------------------------------------------------------------------------
    what    : Testing System.Time
    expected: ok
-   constraints: exclude-if-jscript
+   constraints: exclude-if-js
 ---------------------------------------------------------------------------------------- -}
 
 import System.Time

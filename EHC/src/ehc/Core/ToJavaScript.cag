@@ -7,41 +7,41 @@
 %%% Code generation for Javascript
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 jscript) hs module {%{EH}Core.ToJScript} import({%{EH}Base.Common},{%{EH}Opts},{%{EH}Ty},{%{EH}Core})
+%%[(8 javascript) hs module {%{EH}Core.ToJavaScript} import({%{EH}Base.Common},{%{EH}Opts},{%{EH}Ty},{%{EH}Core})
 %%]
 
-%%[(8 jscript) hs import(Data.Maybe, qualified Data.Map as Map, qualified Data.Set as Set, Data.Char, Data.Maybe, Data.List)
+%%[(8 javascript) hs import(Data.Maybe, qualified Data.Map as Map, qualified Data.Set as Set, Data.Char, Data.Maybe, Data.List)
 %%]
-%%[(8 jscript) hs import(EH.Util.Utils, qualified EH.Util.FastSeq as Seq)
-%%]
-
-%%[(8 jscript) hs import({%{EH}Base.Builtin},{%{EH}Base.Builtin2},{%{EH}BuiltinPrims},{%{EH}Base.BasicAnnot},{%{EH}Base.GenJavaLike})
+%%[(8 javascript) hs import(EH.Util.Utils, qualified EH.Util.FastSeq as Seq)
 %%]
 
-%%[(8 jscript) hs import({%{EH}Gam.DataGam})
+%%[(8 javascript) hs import({%{EH}Base.Builtin},{%{EH}Base.Builtin2},{%{EH}BuiltinPrims},{%{EH}Base.BasicAnnot},{%{EH}Base.GenJavaLike})
 %%]
 
-%%[(8 jscript) hs import(qualified {%{EH}JScript} as J)
+%%[(8 javascript) hs import({%{EH}Gam.DataGam})
 %%]
 
-%%[(8 jscript) hs import({%{EH}Foreign.Extract})
+%%[(8 javascript) hs import(qualified {%{EH}JavaScript} as J)
+%%]
+
+%%[(8 javascript) hs import({%{EH}Foreign.Extract})
 %%]
 
 -- debug
-%%[(8 jscript) hs import({%{EH}Base.Debug},EH.Util.Pretty)
+%%[(8 javascript) hs import({%{EH}Base.Debug},EH.Util.Pretty)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Interface
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 jscript).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonBindNm},{Core/CommonJavaLike},{Core/CommonPred},{Core/CommonCtxtPred},{Core/CommonFFI})
+%%[(8 javascript).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonBindNm},{Core/CommonJavaLike},{Core/CommonPred},{Core/CommonCtxtPred},{Core/CommonFFI})
 WRAPPER CodeAGItf
 %%]
 
-%%[(8 jscript) hs export(cmod2JScriptModule)
-cmod2JScriptModule :: EHCOpts -> DataGam -> CModule -> J.JScriptModule
-cmod2JScriptModule opts dataGam cmod
+%%[(8 javascript) hs export(cmod2JavaScriptModule)
+cmod2JavaScriptModule :: EHCOpts -> DataGam -> CModule -> J.JavaScriptModule
+cmod2JavaScriptModule opts dataGam cmod
   =  js_Syn_CodeAGItf t
   where t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf cmod))
                                           (Inh_CodeAGItf { opts_Inh_CodeAGItf = opts
@@ -53,11 +53,11 @@ cmod2JScriptModule opts dataGam cmod
 %%% Global info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 jscript)
+%%[(8 javascript)
 ATTR CodeAGItf AllNT [ opts: EHCOpts | | ]
 %%]
 
-%%[(8 jscript)
+%%[(8 javascript)
 ATTR CodeAGItf AllNT [ dataGam: DataGam | | ]
 %%]
 
@@ -65,7 +65,7 @@ ATTR CodeAGItf AllNT [ dataGam: DataGam | | ]
 %%% Unique
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 jscript)
+%%[(8 javascript)
 ATTR AllNT [ | gUniq: UID | ]
 
 SEM CodeAGItf
@@ -76,7 +76,7 @@ SEM CodeAGItf
 %%% Names
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 jscript) hs
+%%[(8 javascript) hs
 nmFunSuff :: Int -> String
 nmFunSuff n | n >  5    = "N"
             | n >= 0    = show n
@@ -92,12 +92,12 @@ nmIndSet    = mkHNm "_i_set_"
 nmSwitchRes = mkHNm "_sw"
 %%]
 
-%%[(8 jscript) hs
-hsnJScriptVar :: Bool -> HsName -> HsName -> HsName -> HsName
+%%[(8 javascript) hs
+hsnJavaScriptVar :: Bool -> HsName -> HsName -> HsName -> HsName
 %%[[8
-hsnJScriptVar isGlobal = hsnJavaLikeVar (id, id, id)
+hsnJavaScriptVar isGlobal = hsnJavaLikeVar (id, id, id)
 %%][50
-hsnJScriptVar isGlobal = hsnJavaLikeVar (hsn, hsnPrefix "$", ('$':))
+hsnJavaScriptVar isGlobal = hsnJavaLikeVar (hsn, hsnPrefix "$", ('$':))
   where hsn | isGlobal  = id
             | otherwise = hsnQualified
 %%]]
@@ -107,23 +107,23 @@ hsnJScriptVar isGlobal = hsnJavaLikeVar (hsn, hsnPrefix "$", ('$':))
 %%% Safe name
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 jscript)
+%%[(8 javascript)
 SEM CBindAspect
-  | *           loc         .   varnm           =   hsnJScriptVar @lhs.isGlobal @lhs.pkgNm @lhs.topClassNm @lhs.nm
+  | *           loc         .   varnm           =   hsnJavaScriptVar @lhs.isGlobal @lhs.pkgNm @lhs.topClassNm @lhs.nm
                 loc         .   varnm           :   HsName
 
 SEM CExpr
-  | Var         loc         .   varnm           =   hsnJScriptVar True @lhs.pkgNm @lhs.topClassNm @nm
+  | Var         loc         .   varnm           =   hsnJavaScriptVar True @lhs.pkgNm @lhs.topClassNm @nm
 
 SEM CPatFld
-  | Fld         loc         .   varnm           =   hsnJScriptVar False @lhs.pkgNm @lhs.topClassNm @fldNm
+  | Fld         loc         .   varnm           =   hsnJavaScriptVar False @lhs.pkgNm @lhs.topClassNm @fldNm
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Extract all module names of globally introduced identifers
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(50 jscript)
+%%[(50 javascript)
 ATTR CExpr AllBind [ | | usedModNmS USE {`Set.union`} {Set.empty} : {FvS} ]
 
 SEM CBindAspect
@@ -135,16 +135,16 @@ SEM CBindAspect
 %%% Variable bindings for other than global
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 jscript) hs
+%%[(8 javascript) hs
 type CVarInfo = CVarInfo' () HsName Int
 type CVarMp   = CVarMp'   () HsName Int
 %%]
 
-%%[(8 jscript) hs
+%%[(8 javascript) hs
 tyDefault = ()
 %%]
 
-%%[(8 jscript) hs
+%%[(8 javascript) hs
 jvRef :: CVarMp -> CVarInfo -> J.Expr
 jvRef
   = cvarToRef
@@ -157,47 +157,47 @@ jvRef
       )
 %%]
 
-%%[(8 jscript)
+%%[(8 javascript)
 SEM CExpr
-  | Let         loc         .   nmToRefAssocL   =   map (\x -> (x, hsnJScriptVar @isGlobal @lhs.pkgNm @lhs.topClassNm x)) @binds.bindNmL
+  | Let         loc         .   nmToRefAssocL   =   map (\x -> (x, hsnJavaScriptVar @isGlobal @lhs.pkgNm @lhs.topClassNm x)) @binds.bindNmL
 %%]
 
-%%[(8 jscript)
+%%[(8 javascript)
 SEM CExpr
   | Lam         loc         .   (jsArgTyL,_,lamBindings)
                                                 =   if @hasFunHere
-                                                    then jsArgsUnpack (map (hsnJScriptVar False @lhs.pkgNm @lhs.topClassNm)) @nmArgL
+                                                    then jsArgsUnpack (map (hsnJavaScriptVar False @lhs.pkgNm @lhs.topClassNm)) @nmArgL
                                                     else ([],[],[])
 %%]
 
-%%[(90 jscript)
+%%[(90 javascript)
 SEM CBindAspect
-  | FFE         loc         .   jsArgL          =   maybe [] (map (hsnJScriptVar False @lhs.pkgNm @lhs.topClassNm)) @expr.mbLam
+  | FFE         loc         .   jsArgL          =   maybe [] (map (hsnJavaScriptVar False @lhs.pkgNm @lhs.topClassNm)) @expr.mbLam
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Case: scrutinee
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 jscript)
+%%[(8 javascript)
 %%]
 -- dummy
 SEM CExpr
   | Case        loc         .   scrutineeCVarInfo =   CVarInfo_None
 
-%%[(8 jscript)
+%%[(8 javascript)
 SEM CExpr
   | Case        loc         .   (scrutineeTagJS,scrutineeCVarInfo)
                                                 =   case @alts.scrutinees of
                                                       (Scrutinee_Var nm : _)
-                                                        -> panic ("Core.ToJScript.CExpr.Case.Scrutinee_Var: " ++ show nm ++ " : not yet implemented")
+                                                        -> panic ("Core.ToJavaScript.CExpr.Case.Scrutinee_Var: " ++ show nm ++ " : not yet implemented")
                                                       (Scrutinee_Int _ : _)
                                                         -> ( @expr.js
                                                            , CVarInfo_None
                                                            )
                                                       (Scrutinee_Tag tag : _)
                                                         -> ( gettag
-                                                           , CVarInfo_Local () $ panicJust "ToJScript.CExpr.Case scrutinee" $ J.exprMbVar @expr.js
+                                                           , CVarInfo_Local () $ panicJust "ToJavaScript.CExpr.Case scrutinee" $ J.exprMbVar @expr.js
                                                            )
                                                         where (gettag)
                                                                  = case tag of
@@ -205,12 +205,12 @@ SEM CExpr
                                                                      CTag _ _ _ _ _  -> ( J.Expr_Sel @expr.js (jsVar nmTag)
                                                                                         )
                                                       (Scrutinee_Other x : _)
-                                                        -> panic ("Core.ToJScript.CExpr.Case.Scrutinee_Other: " ++ x ++ " : not yet implemented")
+                                                        -> panic ("Core.ToJavaScript.CExpr.Case.Scrutinee_Other: " ++ x ++ " : not yet implemented")
                                                       []
-                                                        -> panic ("Core.ToJScript.CExpr.Case.-")
+                                                        -> panic ("Core.ToJavaScript.CExpr.Case.-")
 %%]
 
-%%[(8 jscript)
+%%[(8 javascript)
 SEM CAlt
   | Alt         loc         .   (scrutineeTag)
                                                 =   case @pat.scrutinees of
@@ -227,31 +227,31 @@ SEM CAlt
 %%% Case alt: names of fields, used to access fields in object representing data constructor
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 jscript)
+%%[(8 javascript)
 ATTR AllPatFld [ | dataFldNmL: {[HsName]} | ]
 
 SEM CPat
   | Con         binds       .   dataFldNmL      =   jsDataFldNames @lhs.dataGam @tag
 
 SEM CPatFld
-  | Fld         (loc.objFldNm,lhs.dataFldNmL)   =   hdAndTl' (panic "ToJScript.CPatFld.Fld.dataFldNmL") @lhs.dataFldNmL
+  | Fld         (loc.objFldNm,lhs.dataFldNmL)   =   hdAndTl' (panic "ToJavaScript.CPatFld.Fld.dataFldNmL") @lhs.dataFldNmL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Case: offsets of offsets in tuple
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 jscript)
+%%[(8 javascript)
 ATTR AllPat [ | | offsetBinds USE {++} {[]} : {[(HsName,CVarInfo,J.Expr)]} ]
 %%]
 
-%%[(8 jscript)
+%%[(8 javascript)
 %%]
 -- dummy
 SEM CPatFld
   | Fld         loc.cviField = CVarInfo_None
 
-%%[(8 jscript)
+%%[(8 javascript)
 SEM CPatFld
   | Fld         (loc.cviField,loc.offsetBinds)
                                                 =   case @lhs.ctag of
@@ -269,7 +269,7 @@ SEM CPatFld
                                                       CTag _ cn _ _ _
                                                         -> case @offset.whatBelow of
                                                              ExprIsInt i -> (CVarInfo_DataFld tyDefault @lhs.scrutineeCVarInfo hsnUnknown (show @objFldNm),[])
-                                                             _           -> panic "Core.ToJScript.CPatFld.Fld.cviField"
+                                                             _           -> panic "Core.ToJavaScript.CPatFld.Fld.cviField"
                                                         -- where cn' = hsnJavaLikeDataCon @lhs.pkgNm @lhs.topClassNm cn
 %%]
 
@@ -277,7 +277,7 @@ SEM CPatFld
 %%% Generation: App as args ++ func
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 jscript)
+%%[(8 javascript)
 ATTR CExpr [ | | jsArgFunL: {[J.Expr]} ]
 
 SEM CExpr
@@ -289,7 +289,7 @@ SEM CExpr
 %%% Generation: Lam as body + args
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 jscript)
+%%[(8 javascript)
 ATTR CExpr [ | | jsLamBody: {J.Expr} ]
 
 SEM CExpr
@@ -301,7 +301,7 @@ SEM CExpr
 %%% Generation: expr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 jscript) hs
+%%[(8 javascript) hs
 -- | tracing
 jsTr :: PP x => String -> x -> Seq.Seq J.Stat
 jsTr m x = Seq.singleton $ J.Stat_Expr $ J.Expr_Call (jsVar $ mkHNm "trace") [J.Expr_Str m, J.Expr_Inline $ showPP $ pp x]
@@ -373,11 +373,11 @@ jsBody mkRet binds stats lastExpr
     `Seq.union` Seq.fromList (map mkRet $ maybeToList lastExpr)
 %%]
 
-%%[(8 jscript)
+%%[(8 javascript)
 ATTR CExpr [ | | js: {J.Expr} ]
 %%]
 
-%%[(8 jscript)
+%%[(8 javascript)
 SEM CExpr
   | Var         loc         .   js              =   jvRef @lhs.cvarMp @cvi
   | Int         loc         .   js              =   jsIntConst  @int
@@ -392,7 +392,7 @@ SEM CExpr
                                                                _                  -> jsApp f as
                                                     else J.Expr_Str "*** ERR APP ***"
   | FFI         loc         .   (mkArgsJS,mkResJS,mkFFI)
-                                                =   ffiJScriptMkCall
+                                                =   ffiJavaScriptMkCall
                                                         @ty
                                                         @foreignEntInfo
                                                         @lhs.opts False @argMbConL @resMbCon
@@ -403,7 +403,7 @@ SEM CExpr
                                                 =   if @isGlobal
                                                     then ( @binds.jbinds, Seq.empty )
                                                     else let binds = [ ((offof n),t,e) | JBind n _ t e _ <- Seq.toList @binds.jbinds ]
-                                                             offof n = cvarOffset $ panicJust "ToJScript.CExpr.Let.js offset" $ Map.lookup n @cvarMpNew
+                                                             offof n = cvarOffset $ panicJust "ToJavaScript.CExpr.Let.js offset" $ Map.lookup n @cvarMpNew
                                                              initbinds
                                                                    = case @categ of
                                                                        CBindCateg_Rec
@@ -425,7 +425,7 @@ SEM CExpr
                                                                            ]
                                                                        , jsVar swRes
                                                                        )
-                                                                    where swRes   = hsnJScriptVar False @lhs.pkgNm @lhs.topClassNm $ hsnUniqifyUID HsNameUniqifier_JSSwitchResult @lUniq nmSwitchRes
+                                                                    where swRes   = hsnJavaScriptVar False @lhs.pkgNm @lhs.topClassNm $ hsnUniqifyUID HsNameUniqifier_JSSwitchResult @lUniq nmSwitchRes
                                                     in  alts
                 loc         .   lUniq           :   UNIQUEREF gUniq
   | CaseAltFail loc         .   js              =   @errorExpr.js
@@ -434,11 +434,11 @@ SEM CExpr
                 loc         .   js              =   J.Expr_Str "*** TODO: CExpr | loc.js ***"
 %%]
 
-%%[(8 jscript)
+%%[(8 javascript)
 ATTR AllAlt [ | | altsJsL USE {++} {[]} : {[(Int,Seq.Seq J.Stat,J.Expr)]} ]
 %%]
 
-%%[(8 jscript)
+%%[(8 javascript)
 SEM CAlt
   | Alt         loc         .   altsJsL         =   [(@scrutineeTag,@expr.jstats,@expr.js)]
 %%]
@@ -447,7 +447,7 @@ SEM CAlt
 %%% Additional unwrapping of arguments resp packing of res, in particular for FFI call
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 jscript)
+%%[(8 javascript)
 ATTR CExpr [ | | argUnpackWrapL : {[J.Expr -> J.Expr]} ]
 
 SEM CExpr
@@ -459,7 +459,7 @@ SEM CExpr
                 lhs         .   argUnpackWrapL  =   []
 %%]
 
-%%[(8 jscript)
+%%[(8 javascript)
 ATTR CExpr [ | | resPackWrap : {J.Expr -> J.Expr} ]
 
 SEM CExpr
@@ -469,7 +469,7 @@ SEM CExpr
                 lhs         .   resPackWrap     =   id
 %%]
 
-%%[(8 jscript)
+%%[(8 javascript)
 -- | Construction of the actual call given parameters. Already provided with the FFI function. The use of 'head' is arbitrary, because unused.
 ATTR CExpr [ | | mkFFI : {[J.Expr] -> J.Expr} ]
 
@@ -483,13 +483,13 @@ SEM CExpr
 %%% Dealing with >5 args
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 jscript) hs
+%%[(8 javascript) hs
 -- pack > 5 args into tuple, otherwise normal
 jsArgsPack :: [J.Expr] -> (String,(),[J.Expr])
 jsArgsPack = javalikeArgsPack (-1) ((),(),J.Expr_Arr,nmAppN)
 %%]
 
-%%[(8 jscript) hs
+%%[(8 javascript) hs
 -- unpack > 5 args from tuple, otherwise normal
 jsArgsUnpack :: ([HsName]->[HsName]) -> [HsName] -> ([(HsName,())],[(J.Expr,())],[(HsName,CVarInfo)])
 jsArgsUnpack toRef = javalikeArgsUnpack maxBound ((), (), (), toRef, jsIntConst, \_ a -> a, \n -> take n hsnLclSupply)
@@ -499,17 +499,17 @@ jsArgsUnpack toRef = javalikeArgsUnpack maxBound ((), (), (), toRef, jsIntConst,
 %%% Generation: single binding
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 jscript) hs
+%%[(8 javascript) hs
 type JBind  = JBind'  () J.Expr ()
 type JBinds = JBinds' () J.Expr ()
 %%]
 
-%%[(8 jscript) hs
+%%[(8 javascript) hs
 jBind :: HsName -> HsName -> J.Expr -> JBinds
 jBind = jBind' (tyDefault, id, const ())
 %%]
 
-%%[(8 jscript)
+%%[(8 javascript)
 SEM CBindAspect
   | Bind        lhs         .   jbinds          =   jBind @lhs.nm @varnm @js
 %%[[90
@@ -518,7 +518,7 @@ SEM CBindAspect
 %%]]
 %%]
 
-%%[(8 jscript)
+%%[(8 javascript)
 ATTR CExpr [ | | jstats: {Seq.Seq J.Stat} ]
 
 SEM CExpr
@@ -533,7 +533,7 @@ SEM CExpr
 %%% Generation: methods
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 jscript)
+%%[(8 javascript)
 SEM CModule
   | Mod         loc         .   jmodStats       =   jsBody J.Stat_Expr @expr.jbinds @expr.jstats Nothing
                             .   jmodStatsMain   =   [ J.Stat_Expr $ jsEvl $
@@ -548,7 +548,7 @@ SEM CModule
 %%% Generation: classes
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 jscript)
+%%[(8 javascript)
 SEM CExpr
   | Lam         loc         .   js              =   if @hasFunHere
                                                     then let as = [o | (o,_) <- @jsArgTyL]
@@ -572,9 +572,9 @@ SEM CExpr
                                                     else J.Expr_Str "*** ERR LAM ***"
 %%]
 
-%%[(8 jscript) hs
+%%[(8 javascript) hs
 -- | construct the ffi call
-ffiJScriptMkCall
+ffiJavaScriptMkCall
   ::  Ty                          -- type of the imported function
   ->  ForeignExtraction
   ->  EHCOpts
@@ -585,7 +585,7 @@ ffiJScriptMkCall
       ,  J.Expr -> J.Expr         -- and result
       , [J.Expr] -> J.Expr        -- and primitive call itself
       )
-ffiJScriptMkCall ty
+ffiJavaScriptMkCall ty
      ent
   = javalikeMkFFICall
       ( const tyDefault
@@ -599,9 +599,9 @@ ffiJScriptMkCall ty
                ForeignExtraction_Plain {forextractEnt = impEntNm}
                  -> jsVar $ mkHNm impEntNm
                ForeignExtraction_Wrapper
-                 -> panic "ffiJScriptMkCall.mkPrimFun: wrapper not implemented"
+                 -> panic "ffiJavaScriptMkCall.mkPrimFun: wrapper not implemented"
                ForeignExtraction_Dynamic
-                 -> panic "ffiJScriptMkCall.mkPrimFun: dynamic not implemented"
+                 -> panic "ffiJavaScriptMkCall.mkPrimFun: dynamic not implemented"
 %%]]
       , \_ _ -> mk
       , mkWrap
@@ -623,8 +623,8 @@ ffiJScriptMkCall ty
 %%]]
 %%[[8
         mk = J.Expr_Call
-        mkWrap _ _ = panic "ffiJScriptMkCall.mkWrap"
-        mkDyn  _ _ = panic "ffiJScriptMkCall.mkDyn"
+        mkWrap _ _ = panic "ffiJavaScriptMkCall.mkWrap"
+        mkDyn  _ _ = panic "ffiJavaScriptMkCall.mkDyn"
 %%][90
         mkObj as = jsCall "primToPlainObj" as
         mk = foreignexprEval (J.Expr_Sel,J.Expr_ArrInx,J.Expr_Call,id,mkObj,J.Expr_New,jsVar,J.Expr_Str) (forextractForeignExpr ent)
@@ -645,7 +645,7 @@ ffiJScriptMkCall ty
           | otherwise              = J.Expr_Call f as
 %%]
 
-%%[(90 jscript) hs
+%%[(90 javascript) hs
 tyNumArgs :: Ty -> Int
 tyNumArgs (Ty_App t@(Ty_App {}) arg)             = 1 + tyNumArgs t + tyNumArgs arg
 tyNumArgs (Ty_App _ (Ty_App t@(Ty_App {}) arg))  = 1 + tyNumArgs t + tyNumArgs arg
@@ -656,7 +656,7 @@ mkWrapFn as bdy = J.Expr_Fun Nothing as $ J.Stat_Block bdy
 %%]
 
 
-%%[(8 jscript)
+%%[(8 javascript)
 SEM CBindAspect
   | Bind        loc         .   js              =   let str  = if @lhs.evalCtx == EvalCtx_Eval then jsEvl else id
                                                         dflt = @expr.js
@@ -678,13 +678,13 @@ SEM CBindAspect
 %%% Generation: toplevel
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 jscript)
-ATTR CodeAGItf CModule [ | | js: {J.JScriptModule} ]
+%%[(8 javascript)
+ATTR CodeAGItf CModule [ | | js: {J.JavaScriptModule} ]
 %%]
 
-%%[(8 jscript)
+%%[(8 javascript)
 SEM CModule
- | Mod          lhs         .   js              =   J.JScriptModule_Mod (@jsModTraceStats ++ @jsModInitStats ++ @jmodStats) @jmodStatsMain
+ | Mod          lhs         .   js              =   J.JavaScriptModule_Mod (@jsModTraceStats ++ @jsModInitStats ++ @jmodStats) @jmodStatsMain
 %%[[8
                 loc         .   jsModInitStats  =   []
 %%][50

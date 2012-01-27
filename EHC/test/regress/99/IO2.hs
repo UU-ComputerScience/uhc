@@ -1,7 +1,7 @@
 {- ----------------------------------------------------------------------------------------
    what    : IO
    expected: error, attempt to read beyond EOF
-   constraints: exclude-if-jscript
+   constraints: exclude-if-js
 ---------------------------------------------------------------------------------------- -}
 
 module Main where

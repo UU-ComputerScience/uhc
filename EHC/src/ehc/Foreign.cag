@@ -10,7 +10,7 @@
 %%[90 hs module {%{EH}Foreign} import({%{EH}Base.Common})
 %%]
 
-%%[90 hs export(ForeignEnt(..), CCall(..), PlainCall(..), PrimCall(..), JScriptCall(..)) 
+%%[90 hs export(ForeignEnt(..), CCall(..), PlainCall(..), PrimCall(..), JavaScriptCall(..)) 
 %%]
 %%[90 hs export(ForeignExpr(..),ForeignExprs) 
 %%]
@@ -174,16 +174,16 @@ instance Serialize ForeignExpr where
 
 
 instance Serialize ForeignEnt where
-  sput (ForeignEnt_CCall        a) = sputWord8 0 >> sput a
-  sput (ForeignEnt_PlainCall    a) = sputWord8 1 >> sput a
-  sput (ForeignEnt_PrimCall     a) = sputWord8 2 >> sput a
-  sput (ForeignEnt_JScriptCall  a) = sputWord8 3 >> sput a
+  sput (ForeignEnt_CCall        	a) = sputWord8 0 >> sput a
+  sput (ForeignEnt_PlainCall    	a) = sputWord8 1 >> sput a
+  sput (ForeignEnt_PrimCall     	a) = sputWord8 2 >> sput a
+  sput (ForeignEnt_JavaScriptCall  	a) = sputWord8 3 >> sput a
   sget = do t <- sgetWord8
             case t of
-              0 -> liftM ForeignEnt_CCall       sget
-              1 -> liftM ForeignEnt_PlainCall   sget
-              2 -> liftM ForeignEnt_PrimCall    sget
-              3 -> liftM ForeignEnt_JScriptCall sget
+              0 -> liftM ForeignEnt_CCall       	sget
+              1 -> liftM ForeignEnt_PlainCall   	sget
+              2 -> liftM ForeignEnt_PrimCall    	sget
+              3 -> liftM ForeignEnt_JavaScriptCall 	sget
 
 instance Serialize CCall where
   sput (CCall_Id      a b c d) = sputWord8 0 >> sput a >> sput b >> sput c >> sput d
@@ -208,21 +208,21 @@ instance Serialize PrimCall where
               0 -> liftM2 PrimCall_Id sget sget
 
 {-
-instance Serialize JScriptCall where
-  sput (JScriptCall_Id      a b c d) = sputWord8 0 >> sput a >> sput b >> sput c >> sput d
+instance Serialize JavaScriptCall where
+  sput (JavaScriptCall_Id      a b c d) = sputWord8 0 >> sput a >> sput b >> sput c >> sput d
   sget = do t <- sgetWord8
             case t of
-              0 -> liftM4 JScriptCall_Id sget sget sget sget
+              0 -> liftM4 JavaScriptCall_Id sget sget sget sget
 -}
-instance Serialize JScriptCall where
-  sput (JScriptCall_Id          a b) = sputWord8 0 >> sput a >> sput b
-  sput (JScriptCall_Dynamic        ) = sputWord8 1
-  sput (JScriptCall_Wrapper        ) = sputWord8 2
+instance Serialize JavaScriptCall where
+  sput (JavaScriptCall_Id          a b) = sputWord8 0 >> sput a >> sput b
+  sput (JavaScriptCall_Dynamic        ) = sputWord8 1
+  sput (JavaScriptCall_Wrapper        ) = sputWord8 2
   sget = do t <- sgetWord8
             case t of
-              0 -> liftM2 JScriptCall_Id sget sget
-              1 -> return JScriptCall_Dynamic
-              2 -> return JScriptCall_Wrapper
+              0 -> liftM2 JavaScriptCall_Id sget sget
+              1 -> return JavaScriptCall_Dynamic
+              2 -> return JavaScriptCall_Wrapper
 
 %%]
 

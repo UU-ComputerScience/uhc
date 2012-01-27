@@ -349,10 +349,10 @@ FUN_MK_CLIB_FILENAME					= $(1)lib$(2)$(LIBC_SUFFIX)
 # $2: package name
 FUN_MK_JAVALIB_FILENAME					= $(1)lib$(2).jar
 
-# for a jscript library
+# for a javascript library
 # $1: directory/location prefix
 # $2: package name
-FUN_MK_JSLIB_FILENAME					= $(1)lib$(2)$(LIBJSCRIPT_SUFFIX)
+FUN_MK_JSLIB_FILENAME					= $(1)lib$(2)$(LIBJS_SUFFIX)
 
 ###########################################################################################
 # Regular options to commands, as functions still depending on variant + target

@@ -681,7 +681,7 @@ javacCmd
 jarCmd
 JAVAC_CMD
 JAR_CMD
-ENABLE_JSCRIPT
+ENABLE_JS
 ENABLE_CMM
 ENABLE_CWHOLEPROG
 ENABLE_LLVM
@@ -756,7 +756,7 @@ GCC_EHC_EXTRA_EXTERN_LIBS
 SUFFIX_SHELL
 SUFFIX_EXEC
 SUFFIX_LIBC
-SUFFIX_LIBJSCRIPT
+SUFFIX_LIBJS
 PREFIX_LIB
 PATHS_SEP
 SLASH
@@ -2370,10 +2370,10 @@ echo "$as_me: error:
 
 fi
 
-### enable options: jscript (JavaScript), default is yes
-# AC_ARG_ENABLE(jscript, AS_HELP_STRING([--enable-jscript],[include JavaScript code generation]), [enableJScript=yes], [enableJScript=no])
-enableJScript="yes"
-ENABLE_JSCRIPT=$enableJScript
+### enable options: js (JavaScript), default is yes
+# AC_ARG_ENABLE(js, AS_HELP_STRING([--enable-js],[include JavaScript code generation]), [enableJavaScript=yes], [enableJavaScript=no])
+enableJavaScript="yes"
+ENABLE_JS=$enableJavaScript
 
 
 ### enable options: cmm, default is no, temporary until development is ready
@@ -31416,7 +31416,7 @@ GCC_EHC_EXTRA_EXTERN_LIBS="$gcc_ehc_extra_extern_libs"
 suffix_shell=""
 suffix_exec=""
 suffix_libC=".a"
-suffix_libJScript=".mjs"
+suffix_libJavaScript=".mjs"
 prefix_lib=""
 # development platform
 development_platform="UNIX"
@@ -31475,7 +31475,7 @@ SUFFIX_EXEC="$suffix_exec"
 
 SUFFIX_LIBC="$suffix_libC"
 
-SUFFIX_LIBJSCRIPT="$suffix_libJScript"
+SUFFIX_LIBJS="$suffix_libJavaScript"
 
 PREFIX_LIB="$prefix_lib"
 
@@ -32289,7 +32289,7 @@ javacCmd!$javacCmd$ac_delim
 jarCmd!$jarCmd$ac_delim
 JAVAC_CMD!$JAVAC_CMD$ac_delim
 JAR_CMD!$JAR_CMD$ac_delim
-ENABLE_JSCRIPT!$ENABLE_JSCRIPT$ac_delim
+ENABLE_JS!$ENABLE_JS$ac_delim
 ENABLE_CMM!$ENABLE_CMM$ac_delim
 ENABLE_CWHOLEPROG!$ENABLE_CWHOLEPROG$ac_delim
 ENABLE_LLVM!$ENABLE_LLVM$ac_delim
@@ -32405,7 +32405,7 @@ GCC_EHC_EXTRA_EXTERN_LIBS!$GCC_EHC_EXTRA_EXTERN_LIBS$ac_delim
 SUFFIX_SHELL!$SUFFIX_SHELL$ac_delim
 SUFFIX_EXEC!$SUFFIX_EXEC$ac_delim
 SUFFIX_LIBC!$SUFFIX_LIBC$ac_delim
-SUFFIX_LIBJSCRIPT!$SUFFIX_LIBJSCRIPT$ac_delim
+SUFFIX_LIBJS!$SUFFIX_LIBJS$ac_delim
 PREFIX_LIB!$PREFIX_LIB$ac_delim
 PATHS_SEP!$PATHS_SEP$ac_delim
 SLASH!$SLASH$ac_delim

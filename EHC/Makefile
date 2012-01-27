@@ -79,8 +79,8 @@ include $(SRC_PREFIX)rts/files.mk
 ifeq ($(ENABLE_JAVA),yes)
 -include $(SRC_PREFIX)jazy/files.mk
 endif
-ifeq ($(ENABLE_JSCRIPT),yes)
--include $(SRC_PREFIX)jscript/files.mk
+ifeq ($(ENABLE_JS),yes)
+-include $(SRC_PREFIX)javascript/files.mk
 endif
 include $(SRC_PREFIX)ehc/files2.mk
 -include $(SRC_PREFIX)agprimer/files.mk
@@ -275,7 +275,7 @@ uhc-install-postprocess-core:
 	
 uhc-install-postprocess-jazy:
 	
-uhc-install-postprocess-jscript:
+uhc-install-postprocess-js:
 	
 uhc-install-postprocess-llvm:
 	

@@ -20,7 +20,7 @@ module Foreign.Ptr (
 
     -- * Data pointers
 
-#if ! defined(__UHC_TARGET_JSCRIPT__)
+#if ! defined(__UHC_TARGET_JS__)
     Ptr,      -- data Ptr a
     nullPtr,      -- :: Ptr a
     castPtr,      -- :: Ptr a -> Ptr b
@@ -31,7 +31,7 @@ module Foreign.Ptr (
     -- * Function pointers
 
     FunPtr,      -- data FunPtr a
-#if ! defined(__UHC_TARGET_JSCRIPT__)
+#if ! defined(__UHC_TARGET_JS__)
     nullFunPtr,      -- :: FunPtr a
     castFunPtr,      -- :: FunPtr a -> FunPtr b
     castFunPtrToPtr, -- :: FunPtr a -> Ptr b
@@ -41,7 +41,7 @@ module Foreign.Ptr (
     freeHaskellFunPtr, -- :: FunPtr a -> IO ()
     -- Free the function pointer created by foreign export dynamic.
 
-#if ! ( defined(__UHC_TARGET_JSCRIPT__) || defined(__NHC__) )
+#if ! ( defined(__UHC_TARGET_JS__) || defined(__NHC__) )
     -- * Integral types with lossless conversion to and from pointers
     IntPtr,
     ptrToIntPtr,
@@ -70,7 +70,7 @@ import Data.Word
 #elif __UHC__
 
 import Control.Monad    ( liftM )
-#if ! defined(__UHC_TARGET_JSCRIPT__)
+#if ! defined(__UHC_TARGET_JS__)
 import Foreign.C.Types
 #endif
 
@@ -82,7 +82,7 @@ import Foreign.C.Types
 import Data.Bits
 import Data.Typeable
 
-#if ! defined(__UHC_TARGET_JSCRIPT__)
+#if ! defined(__UHC_TARGET_JS__)
 import Foreign.Storable ( Storable(..) )
 #endif
 
@@ -111,7 +111,7 @@ import Hugs.Ptr
 import UHC.Ptr
 import UHC.IOBase
 import UHC.Base
-#if ! defined(__UHC_TARGET_JSCRIPT__)
+#if ! defined(__UHC_TARGET_JS__)
 import UHC.Read
 import UHC.Real
 import UHC.Show
@@ -161,7 +161,7 @@ intPtrToPtr (IntPtr (I# i#)) = Ptr (int2Addr# i#)
 
 # else /* !__GLASGOW_HASKELL__ */
 
-#if ! defined(__UHC_TARGET_JSCRIPT__)
+#if ! defined(__UHC_TARGET_JS__)
 INTEGRAL_TYPE(WordPtr,tyConWordPtr,"WordPtr",CUIntPtr)
 INTEGRAL_TYPE(IntPtr,tyConIntPtr,"IntPtr",CIntPtr)
 #endif
@@ -170,7 +170,7 @@ INTEGRAL_TYPE(IntPtr,tyConIntPtr,"IntPtr",CIntPtr)
 
 #  ifdef __UHC__
 
-#if ! defined(__UHC_TARGET_JSCRIPT__)
+#if ! defined(__UHC_TARGET_JS__)
 foreign import prim "primUnsafeId"
     ptrToWordPtr :: Ptr a -> WordPtr
 

@@ -1,7 +1,7 @@
 {- ----------------------------------------------------------------------------------------
    what    : Enum class, for Rational
    expected: ok
-   constraints: exclude-if-jscript
+   constraints: exclude-if-js
 ---------------------------------------------------------------------------------------- -}
 
 module EnumRational1 where

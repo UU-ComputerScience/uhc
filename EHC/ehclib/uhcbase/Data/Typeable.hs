@@ -86,7 +86,7 @@ module Data.Typeable
 import qualified Data.HashTable as HT
 #endif
 import Data.Maybe
-#if !defined(__UHC_TARGET_JSCRIPT__)
+#if !defined(__UHC_TARGET_JS__)
 import Data.Int
 import Data.Word
 #endif
@@ -635,7 +635,7 @@ INSTANCE_TYPEABLE0(Handle,handleTc,"Handle")
 #endif
 INSTANCE_TYPEABLE0(Integer,integerTc,"Integer")
 
-#if !defined(__UHC_TARGET_JSCRIPT__)
+#if !defined(__UHC_TARGET_JS__)
 INSTANCE_TYPEABLE0(Int8,int8Tc,"Int8")
 INSTANCE_TYPEABLE0(Int16,int16Tc,"Int16")
 INSTANCE_TYPEABLE0(Int32,int32Tc,"Int32")

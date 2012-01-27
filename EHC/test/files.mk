@@ -86,7 +86,7 @@ test-expect test-regress: test-lists
         texeSuffix=".jar" ; \
         ehcTargetOpts="" ; \
         ;; \
-      jscript) \
+      js) \
         texeInvoke="js" ; \
         texeSuffix=".js" ; \
         ehcTargetOpts="-O,2" ; \

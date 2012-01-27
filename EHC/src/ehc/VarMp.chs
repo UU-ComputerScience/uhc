@@ -347,6 +347,17 @@ varmpFilterTy f
 %%]]
 %%]
 
+%%[9 hs export(varmpTailAddOcc)
+varmpTailAddOcc :: ImplsProveOcc -> Impls -> (Impls,VarMp)
+varmpTailAddOcc o (Impls_Tail i os) = (t, varmpImplsUnit i t)
+                                    where t = Impls_Tail i (o:os)
+varmpTailAddOcc _ x                 = (x,emptyVarMp)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Fold: map
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %%[9 export(varmpMapThr,varmpMapThrTy)
 varmpMapThr :: (MetaLev -> TyVarId -> VarMpInfo -> thr -> (VarMpInfo,thr)) -> thr -> VarMp -> (VarMp,thr)
 varmpMapThr f thr (VarMp l ms)
@@ -378,11 +389,11 @@ varmpMapThrTy f
       )
 %%]
 
-%%[9 hs export(varmpTailAddOcc)
-varmpTailAddOcc :: ImplsProveOcc -> Impls -> (Impls,VarMp)
-varmpTailAddOcc o (Impls_Tail i os) = (t, varmpImplsUnit i t)
-                                    where t = Impls_Tail i (o:os)
-varmpTailAddOcc _ x                 = (x,emptyVarMp)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Visit as graph
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9999 export(varmpGraphVisit)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

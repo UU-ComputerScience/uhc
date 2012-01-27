@@ -112,7 +112,8 @@ Convention: most option names/fields start with 'ehcOpt'
 %%[1.EHCOpts export(EHCOpts(..))
 data EHCOpts
   = EHCOpts
-      {  ehcOptAspects        ::  String            -- which aspects are included in this compiler
+      {  ehcOptTrace          ::  forall a . String -> a -> a            -- tracing
+      ,  ehcOptAspects        ::  String            -- which aspects are included in this compiler
       ,  ehcOptShowHS         ::  Bool              -- show HS pretty print on stdout
       ,  ehcOptShowEH         ::  Bool              -- show EH pretty print on stdout
 %%[[(8 codegen tycore)
@@ -238,7 +239,8 @@ data EHCOpts
 %%[1.defaultEHCOpts export(emptyEHCOpts)
 emptyEHCOpts
   = EHCOpts
-      {  ehcOptAspects          =   "%%@{%{ASPECTS}%%}"
+      {  ehcOptTrace            =   \_ x -> x
+      ,  ehcOptAspects          =   "%%@{%{ASPECTS}%%}"
       ,  ehcOptShowHS           =   False
 %%[[(8 codegen tycore)
       ,  ehcOptShowTyCore       =   False

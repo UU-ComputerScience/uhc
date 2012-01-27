@@ -2,7 +2,7 @@
    what    : Working with directories
    expected: ok
    platform: environment dependent output
-   constraints: exclude-if-jscript
+   constraints: exclude-if-js
 ---------------------------------------------------------------------------------------- -}
 
 module Main where

@@ -2,14 +2,14 @@
 %%% Common stuff for Java like backends
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 jazy || jscript) ag import({Core/CommonLevLet})
+%%[(8 jazy || javascript) ag import({Core/CommonLevLet})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Global name info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 jazy || jscript)
+%%[(8 jazy || javascript)
 ATTR AllNT [ topClassNm: HsName  pkgNm: HsName | | ]
 %%[[8
 ATTR AllNT [ moduleClassNm: HsName | | ]
@@ -19,7 +19,7 @@ ATTR CodeAGItf CModule [ | | moduleClassNm: HsName ]
 %%]]
 %%]
 
-%%[(8 jazy || jscript)
+%%[(8 jazy || javascript)
 SEM CModule
   | Mod         loc         .   topClassNm      =   @moduleNm
                             .   pkgNm           =   @moduleNm
@@ -42,7 +42,7 @@ SEM CodeAGItf
 %%% Various contextual info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 jazy || jscript)
+%%[(8 jazy || javascript)
 ATTR AllExprOnly [ mbLamNm: {Maybe (HsName,HsName)} | | ]
 
 SEM CExpr
@@ -65,7 +65,7 @@ SEM CModule
   | Mod         expr        .   mbLamNm         =   Nothing
 %%]
 
-%%[(8 jazy || jscript)
+%%[(8 jazy || javascript)
 SEM CExpr
   | Lam         loc         .   (hasFunHere,(lamNm,origLamNm))
                                                 =   if @lhs.whatAbove /= ExprIsLam
@@ -89,14 +89,14 @@ assuming def for
   , CExpr.Lam : @loc.lamBindings
   , CPatFld.Fld: @loc.cviField
 
-%%[(8 jazy || jscript)
+%%[(8 jazy || javascript)
 ATTR AllBind [ | | bindNmL USE {++} {[]} : {[HsName]} ]
 
 SEM CBind
   | Bind        loc         .   bindNmL         =   [@nm]
 %%]
 
-%%[(8 jazy || jscript)
+%%[(8 jazy || javascript)
 ATTR AllNT [ cvarMp: CVarMp | | ]
 
 SEM CodeAGItf
@@ -104,14 +104,14 @@ SEM CodeAGItf
 
 %%]
 
-%%[(8 jazy || jscript)
+%%[(8 jazy || javascript)
 ATTR AllPat [ | | patCVarMp USE {`Map.union`} {Map.empty} : CVarMp ]
 
 SEM CPatFld
   | Fld         loc         .   patCVarMp       =   Map.singleton @fldNm @cviField
 %%]
 
-%%[(8 jazy || jscript)
+%%[(8 jazy || javascript)
 SEM CExpr
   | Lam         loc         .   cvarMp          =   Map.fromList @lamBindings `Map.union` @lhs.cvarMp
   | Let         loc         .   (nLocals,cvarMpNew)
@@ -131,7 +131,7 @@ SEM CAlt
                 expr        .   cvarMp          =   Map.unions [@cvarMpOffsets, @pat.patCVarMp, @lhs.cvarMp]
 %%]
 
-%%[(8 jazy || jscript)
+%%[(8 jazy || javascript)
 SEM CExpr
   | Var         loc         .   cvi             =   Map.findWithDefault (cvarGlob tyDefault @lhs.moduleClassNm @nm @varnm) @nm @lhs.cvarMp
 %%]
@@ -140,7 +140,7 @@ SEM CExpr
 %%% Lam args
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 jazy || jscript)
+%%[(8 jazy || javascript)
 ATTR CExpr [ | | nmArgL: {[HsName]} ]
 
 SEM CExpr
@@ -153,18 +153,18 @@ SEM CExpr
 %%% Case: scrutinee
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 jazy || jscript)
+%%[(8 jazy || javascript)
 ATTR AllAlt AllPat [ scrutineeCVarInfo: CVarInfo | | ]
 %%]
 
-%%[(8 jazy || jscript)
+%%[(8 jazy || javascript)
 ATTR AllPatFld [ ctag: CTag | | ]
 
 SEM CPat
   | Con         binds       .   ctag            =   @tag
 %%]
 
-%%[(8 jazy || jscript)
+%%[(8 jazy || javascript)
 ATTR AllAlt CPat [ | | scrutinees USE {++} {[]} : {[Scrutinee]} ]
 
 SEM CPat
@@ -180,11 +180,11 @@ SEM CPat
 %%% Bind gathering
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 jazy || jscript)
+%%[(8 jazy || javascript)
 ATTR AllBind CExpr [ | | jbinds USE {`Seq.union`} {Seq.empty}: JBinds]
 %%]
 
-%%[(8 jazy || jscript)
+%%[(8 jazy || javascript)
 SEM CExpr
   | Let         lhs         .   jbinds          =   @jbindsLet `Seq.union` @body.jbinds
 %%]

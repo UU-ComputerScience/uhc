@@ -28,11 +28,11 @@ TyCore/ToCore.cag
 TyCore/SubstApply.cag
 TyCore/Check.cag
 JVMClass/ToBinary.cag
-JScript/Pretty.cag
+JavaScript/Pretty.cag
 Error/Pretty.cag
 Core/ToGrin.cag
 Core/ToJazy.cag
-Core/ToJScript.cag
+Core/ToJavaScript.cag
 Core/Pretty.cag
 Core/Subst.cag
 Core/FvS.cag

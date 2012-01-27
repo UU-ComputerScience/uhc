@@ -1,6 +1,6 @@
 %%[99
 {-# LANGUAGE NoImplicitPrelude, CPP #-}
-{-# EXCLUDE_IF_TARGET jscript #-}
+{-# EXCLUDE_IF_TARGET js #-}
 
 -- Compiler knows the Word types of this module are defined here
 

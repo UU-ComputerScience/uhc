@@ -1,42 +1,42 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% EHC Compile XXX
+%%% EHC Compile Javascript
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-JScript compilation
+JavaScript compilation
 
-%%[(8 codegen jscript) module {%{EH}EHC.CompilePhase.CompileJScript}
+%%[(8 codegen javascript) module {%{EH}EHC.CompilePhase.CompileJavaScript}
 %%]
 
-%%[(8 codegen jscript) import(System.Directory)
+%%[(8 codegen javascript) import(System.Directory)
 %%]
 
 -- general imports
-%%[(8 codegen jscript) import({%{EH}EHC.Common})
+%%[(8 codegen javascript) import({%{EH}EHC.Common})
 %%]
-%%[(8 codegen jscript) import({%{EH}EHC.CompileUnit})
+%%[(8 codegen javascript) import({%{EH}EHC.CompileUnit})
 %%]
-%%[(8 codegen jscript) import({%{EH}EHC.CompileRun})
-%%]
-
-%%[(8 codegen jscript) import(qualified {%{EH}Config} as Cfg)
-%%]
-%%[(8 codegen jscript) import({%{EH}EHC.Environment})
-%%]
-%%[(8 codegen jscript) import({%{EH}Base.Target})
+%%[(8 codegen javascript) import({%{EH}EHC.CompileRun})
 %%]
 
-%%[(8 codegen jscript) import({%{EH}Core.ToJScript})
+%%[(8 codegen javascript) import(qualified {%{EH}Config} as Cfg)
 %%]
-%%[(8 codegen jscript) import({%{EH}Base.Bits},{%{EH}JScript.Pretty})
+%%[(8 codegen javascript) import({%{EH}EHC.Environment})
+%%]
+%%[(8 codegen javascript) import({%{EH}Base.Target})
+%%]
+
+%%[(8 codegen javascript) import({%{EH}Core.ToJavaScript})
+%%]
+%%[(8 codegen javascript) import({%{EH}Base.Bits},{%{EH}JavaScript.Pretty})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Compile actions: JScript linking
+%%% Compile actions: JavaScript linking
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen jscript) export(cpJScript)
-cpJScript :: String -> [String] -> EHCompilePhase ()
-cpJScript archive files
+%%[(8 codegen javascript) export(cpJavaScript)
+cpJavaScript :: String -> [String] -> EHCompilePhase ()
+cpJavaScript archive files
   = do { cr <- get
        ; let (_,opts) = crBaseInfo' cr
              cmd = mkShellCmd $ [Cfg.shellCmdCat] ++ files ++ [">", archive]
@@ -46,45 +46,45 @@ cpJScript archive files
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Compile actions: JScript compilation
+%%% Compile actions: JavaScript compilation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen jscript) export(cpCompileJScript)
-cpCompileJScript :: FinalCompileHow -> [HsName] -> HsName -> EHCompilePhase ()
-cpCompileJScript how othModNmL modNm
+%%[(8 codegen javascript) export(cpCompileJavaScript)
+cpCompileJavaScript :: FinalCompileHow -> [HsName] -> HsName -> EHCompilePhase ()
+cpCompileJavaScript how othModNmL modNm
   = do { cr <- get
        ; let  (ecu,_,opts,fp) = crBaseInfo modNm cr
-              mbJs            = ecuMbJScript ecu
-              fpO m f = mkPerModuleOutputFPath opts True m f Cfg.suffixJScriptLib
+              mbJs            = ecuMbJavaScript ecu
+              fpO m f = mkPerModuleOutputFPath opts True m f Cfg.suffixJavaScriptLib
               fpM     = fpO modNm fp
               fpExec  = mkPerExecOutputFPath opts modNm fp (Just "js")
               fpHtml  = mkPerExecOutputFPath opts modNm fp (Just "html")
-       ; when (isJust mbJs && targetIsJScript (ehcOptTarget opts))
-              (do { cpMsg modNm VerboseALot "Emit JScript"
+       ; when (isJust mbJs && targetIsJavaScript (ehcOptTarget opts))
+              (do { cpMsg modNm VerboseALot "Emit JavaScript"
                   ; when (ehcOptVerbosity opts >= VerboseDebug)
                          (do { lift $ putStrLn $ "fpO   : " ++ fpathToStr fpM
                              ; lift $ putStrLn $ "fpExec: " ++ fpathToStr fpExec
                              })
 %%[[8
-                  ; let ppMod = ppJScriptModule (fromJust mbJs)
+                  ; let ppMod = ppJavaScriptModule (fromJust mbJs)
 %%][50
                   ; let ppMod = vlist $ [p] ++ (if ecuIsMainMod ecu then [pmain] else [])
-                              where (p,pmain) = ppJScriptModule (fromJust mbJs)
+                              where (p,pmain) = ppJavaScriptModule (fromJust mbJs)
 %%]]
                   ; lift $ putPPFPath fpM ("//" >#< modNm >-< ppMod) 1000
                   ; case how of
                       FinalCompile_Exec
 %%[[50
                         | ehcOptWholeProgOptimizationScope opts
-                        -> do { cpJScript (fpathToStr fpExec) (rts ++ map fpathToStr [fpM])
+                        -> do { cpJavaScript (fpathToStr fpExec) (rts ++ map fpathToStr [fpM])
                               ; mkHtml fpHtml [fpathToStr fpExec]
                               }
 %%]]
                         | otherwise
-                        -> do { cpJScript (fpathToStr fpExec) (map fpathToStr [fpM])
+                        -> do { cpJavaScript (fpathToStr fpExec) (map fpathToStr [fpM])
                               ; mkHtml fpHtml $ rts ++ map fpathToStr ([ fpO m fp | m <- othModNmL, let (_,_,_,fp) = crBaseInfo m cr ] ++ [fpExec])
                               }
-                        where rts = map (Cfg.mkInstalledRts opts Cfg.mkJScriptLibFilename Cfg.INST_LIB (Cfg.installVariant opts)) Cfg.libnamesRts
+                        where rts = map (Cfg.mkInstalledRts opts Cfg.mkJavaScriptLibFilename Cfg.INST_LIB (Cfg.installVariant opts)) Cfg.libnamesRts
 %%[[8
                               oth = []
 %%][50

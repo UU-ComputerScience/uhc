@@ -23,17 +23,17 @@
 module UHC.Ptr
   ( 
     Addr,
-#if ! defined(__UHC_TARGET_JSCRIPT__)
+#if ! defined(__UHC_TARGET_JS__)
     nullAddr,
 #endif
 
     Ptr,
-#if ! defined(__UHC_TARGET_JSCRIPT__)
+#if ! defined(__UHC_TARGET_JS__)
     nullPtr, castPtr, plusPtr, alignPtr, minusPtr,
 #endif
 
     FunPtr,
-#if ! defined(__UHC_TARGET_JSCRIPT__)
+#if ! defined(__UHC_TARGET_JS__)
     nullFunPtr, castFunPtr, castPtrToFunPtr, castFunPtrToPtr,
 #endif
   
@@ -44,7 +44,7 @@ module UHC.Ptr
 import UHC.Base
 import UHC.Types
 
-#if ! defined(__UHC_TARGET_JSCRIPT__)
+#if ! defined(__UHC_TARGET_JS__)
 import UHC.Prims
 import UHC.Show          ( showHex )
 
@@ -54,7 +54,7 @@ import UHC.Show          ( showHex )
 ------------------------------------------------------------------------
 -- Address
 
-#if ! defined(__UHC_TARGET_JSCRIPT__)
+#if ! defined(__UHC_TARGET_JS__)
 
 #if __UHC_TARGET_JAZY__
 foreign import prim "primAddWord" primAddAddr :: Addr -> Int  -> Addr
@@ -91,7 +91,7 @@ foreign import prim "primNullAddr" nullAddr :: Addr
 
 newtype Ptr a		= Ptr Addr
 
-#if ! defined(__UHC_TARGET_JSCRIPT__)
+#if ! defined(__UHC_TARGET_JS__)
 
 -- ^ A value of type @'Ptr' a@ represents a pointer to an object, or an
 -- array of objects, which may be marshalled to or from Haskell values
@@ -140,7 +140,7 @@ minusPtr (Ptr a1) (Ptr a2) = a1 `primSubAddr` a2
 
 newtype FunPtr a		= FunPtr Addr
 
-#if ! defined(__UHC_TARGET_JSCRIPT__)
+#if ! defined(__UHC_TARGET_JS__)
 
 -- ^ A value of type @'FunPtr' a@ is a pointer to a function callable
 -- from foreign code.  The type @a@ will normally be a /foreign type/,

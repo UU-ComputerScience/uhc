@@ -13,18 +13,18 @@ module UHC.Run
 import UHC.Base
 import UHC.IOBase
 import UHC.OldException
-#ifndef __UHC_TARGET_JSCRIPT__
+#ifndef __UHC_TARGET_JS__
 import UHC.Handle
 #endif
 import UHC.StackTrace
 
-#if !( defined(__UHC_TARGET_C__) || defined(__UHC_TARGET_JSCRIPT__) )
+#if !( defined(__UHC_TARGET_C__) || defined(__UHC_TARGET_JS__) )
 import System.IO (hPutStrLn)
 #endif
 %%]
 
 %%[99
-#if defined(__UHC_TARGET_C__) || defined(__UHC_TARGET_JSCRIPT__) || defined (__UHC_TARGET_LLVM__)
+#if defined(__UHC_TARGET_C__) || defined(__UHC_TARGET_JS__) || defined (__UHC_TARGET_LLVM__)
 
 -- Wrapper around 'main', invoked as 'ehcRunMain main'
 ehcRunMain :: IO a -> IO a

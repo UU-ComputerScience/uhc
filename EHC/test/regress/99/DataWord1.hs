@@ -2,7 +2,7 @@
    what    : base classes for Data.Word: Word64, Word32, Word16, Word8, Word
    expected: ok
    platform: word size dependent
-   constraints: exclude-if-jscript
+   constraints: exclude-if-js
 ---------------------------------------------------------------------------------------- -}
 
 module DataWord1 where

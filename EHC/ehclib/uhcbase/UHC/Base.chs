@@ -251,7 +251,7 @@ packedStringToString p = if packedStringNull p
 data ByteArray
 
 foreign import prim primByteArrayLength   :: ByteArray -> Int
-#if defined(__UHC_TARGET_JSCRIPT__)
+#if defined(__UHC_TARGET_JS__)
 foreign import prim primByteArrayToPackedString :: ByteArray -> PackedString
 primByteArrayToString = packedStringToString . primByteArrayToPackedString
 #else
@@ -261,7 +261,7 @@ foreign import prim primByteArrayToString :: ByteArray -> String
 
 #if defined (__UHC_TARGET_C__) || defined (__UHC_TARGET_LLVM__)
 foreign import prim packedStringToInteger :: PackedString -> Integer
-#elif defined(__UHC_TARGET_JSCRIPT__)
+#elif defined(__UHC_TARGET_JS__)
 foreign import prim "primPackedStringToInteger" packedStringToInteger :: PackedString -> Integer
 #else
 foreign import prim "primCStringToInteger" packedStringToInteger :: PackedString -> Integer
@@ -946,7 +946,7 @@ foreign import prim primCmpInteger  :: Integer -> Integer -> Ordering
 foreign import prim primDivInteger  :: Integer -> Integer -> Integer
 foreign import prim primModInteger  :: Integer -> Integer -> Integer
 
-#if defined(__UHC_TARGET_JSCRIPT__)
+#if defined(__UHC_TARGET_JS__)
 -- Integers are represented by `jsbn' BigInteger library
 {-
 foreign import prim "primEqInt"   primEqInteger      :: Integer -> Integer -> Bool
@@ -962,12 +962,12 @@ foreign import prim "primModInt"  primModInteger     :: Integer -> Integer -> In
 foreign import prim "primQuotRemInt" primQuotRemInteger       :: Integer -> Integer -> (Integer,Integer)
 foreign import prim "primDivModInt"  primDivModInteger        :: Integer -> Integer -> (Integer,Integer)
 -}
-foreign import jscript "%1.add(%*)"				primAddInteger 				:: Integer -> Integer -> Integer
-foreign import jscript "%1.subtract(%*)" 		primSubInteger 				:: Integer -> Integer -> Integer
-foreign import jscript "%1.multiply(%*)" 		primMulInteger 				:: Integer -> Integer -> Integer
-foreign import jscript "%1.negate(%*)" 			primNegInteger 				:: Integer -> Integer
-foreign import jscript "%1.divide(%*)" 			primQuotInteger 			:: Integer -> Integer -> Integer
-foreign import jscript "%1.remainder(%*)" 		primRemInteger 				:: Integer -> Integer -> Integer
+foreign import js "%1.add(%*)"				primAddInteger 				:: Integer -> Integer -> Integer
+foreign import js "%1.subtract(%*)" 		primSubInteger 				:: Integer -> Integer -> Integer
+foreign import js "%1.multiply(%*)" 		primMulInteger 				:: Integer -> Integer -> Integer
+foreign import js "%1.negate(%*)" 			primNegInteger 				:: Integer -> Integer
+foreign import js "%1.divide(%*)" 			primQuotInteger 			:: Integer -> Integer -> Integer
+foreign import js "%1.remainder(%*)" 		primRemInteger 				:: Integer -> Integer -> Integer
 #else
 foreign import prim primAddInteger  :: Integer -> Integer -> Integer
 foreign import prim primSubInteger  :: Integer -> Integer -> Integer
@@ -977,7 +977,7 @@ foreign import prim primQuotInteger :: Integer -> Integer -> Integer
 foreign import prim primRemInteger  :: Integer -> Integer -> Integer
 #endif
 
-#if defined( __UHC_TARGET_BC__ ) || defined(__UHC_TARGET_JSCRIPT__)
+#if defined( __UHC_TARGET_BC__ ) || defined(__UHC_TARGET_JS__)
 foreign import prim primQuotRemInteger       :: Integer -> Integer -> (Integer,Integer)
 foreign import prim primDivModInteger        :: Integer -> Integer -> (Integer,Integer)
 #endif
@@ -1055,9 +1055,9 @@ showInteger x | x<0  = '-' : showInteger(-x)
 instance Show Integer where
     show   = showInteger
     
-#elif defined( __UHC_TARGET_JSCRIPT__ )
+#elif defined( __UHC_TARGET_JS__ )
 
-foreign import jscript "%1.toString()" 			primIntegerToPackedString 	:: Integer -> PackedString
+foreign import js "%1.toString()" 			primIntegerToPackedString 	:: Integer -> PackedString
 
 instance Show Integer where
     show   = packedStringToString . primIntegerToPackedString
@@ -1090,7 +1090,7 @@ instance Read Integer where
 data Float     -- opaque datatype of 32bit IEEE floating point numbers
 data Double    -- opaque datatype of 64bit IEEE floating point numbers
 
-#if defined(__UHC_TARGET_JSCRIPT__)
+#if defined(__UHC_TARGET_JS__)
 foreign import prim "primEqInt"          	primEqFloat             :: Float -> Float -> Bool
 foreign import prim "primCmpInt"         	primCmpFloat            :: Float -> Float -> Ordering
 
@@ -1144,9 +1144,9 @@ foreign import prim primRationalToFloat     :: Rational -> Float
 foreign import prim primRationalToDouble    :: Rational -> Double
 #endif
 
-#if defined(__UHC_TARGET_JSCRIPT__)
-foreign import jscript "%1.doubleValue()"  		primIntegerToFloat      :: Integer -> Float
-foreign import jscript "%1.doubleValue()"  		primIntegerToDouble     :: Integer -> Double
+#if defined(__UHC_TARGET_JS__)
+foreign import js "%1.doubleValue()"  		primIntegerToFloat      :: Integer -> Float
+foreign import js "%1.doubleValue()"  		primIntegerToDouble     :: Integer -> Double
 #else
 foreign import prim primIntegerToFloat      :: Integer -> Float
 foreign import prim primIntegerToDouble     :: Integer -> Double
@@ -1252,7 +1252,7 @@ foreign import prim  primExpFloat   :: Float -> Float
 foreign import prim  primLogFloat   :: Float -> Float
 foreign import prim  primSqrtFloat  :: Float -> Float
 foreign import prim  primAtan2Float :: Float -> Float -> Float
-#elif defined(__UHC_TARGET_JSCRIPT__)
+#elif defined(__UHC_TARGET_JS__)
 foreign import prim "primSinDouble"  primSinFloat   :: Float -> Float
 foreign import prim "primCosDouble"  primCosFloat   :: Float -> Float
 foreign import prim "primTanDouble"  primTanFloat   :: Float -> Float
@@ -1283,7 +1283,7 @@ foreign import ccall "tanhf" primTanhFloat  :: Float -> Float
 foreign import ccall "atan2f"  primAtan2Float   :: Float -> Float -> Float
 #endif
 
-#if defined(__UHC_TARGET_JSCRIPT__)
+#if defined(__UHC_TARGET_JS__)
 foreign import prim "primIsNaNDouble         " primIsNaNFloat              :: Float -> Bool
 foreign import prim "primIsNegativeZeroDouble" primIsNegativeZeroFloat     :: Float -> Bool
 foreign import prim "primIsDenormalizedDouble" primIsDenormalizedFloat     :: Float -> Bool
@@ -1307,7 +1307,7 @@ foreign import prim primEncodeFloat             :: Integer -> Int -> Float
 
 -- primitive Double functions
 
-#if defined( __UHC_TARGET_JAZY__ ) || defined(__UHC_TARGET_JSCRIPT__)
+#if defined( __UHC_TARGET_JAZY__ ) || defined(__UHC_TARGET_JS__)
 foreign import prim  primSinDouble   :: Double -> Double
 foreign import prim  primCosDouble   :: Double -> Double
 foreign import prim  primTanDouble   :: Double -> Double
@@ -1352,7 +1352,7 @@ foreign import prim primEncodeDouble            :: Integer -> Int -> Double
 foreign import prim primIsIEEE  :: Bool
 foreign import prim primRadixDoubleFloat  :: Int
 
-#if defined( __UHC_TARGET_JAZY__ ) || defined( __UHC_TARGET_JSCRIPT__ )
+#if defined( __UHC_TARGET_JAZY__ ) || defined( __UHC_TARGET_JS__ )
 foreign import prim primShowFloatToPackedString :: Float -> PackedString
 #else
 foreign import prim primShowFloat :: Float -> String
@@ -1458,13 +1458,13 @@ instance Show Float where
     showsPrec   = primShowsFloat
 -----------------------------}
 instance Show Float where
-#if defined( __UHC_TARGET_JAZY__ ) || defined( __UHC_TARGET_JSCRIPT__ )
+#if defined( __UHC_TARGET_JAZY__ ) || defined( __UHC_TARGET_JS__ )
     show   = packedStringToString . primShowFloatToPackedString
 #else
     show   = primShowFloat
 #endif
 
-#if defined( __UHC_TARGET_JAZY__ ) || defined( __UHC_TARGET_JSCRIPT__ )
+#if defined( __UHC_TARGET_JAZY__ ) || defined( __UHC_TARGET_JS__ )
 foreign import prim primShowDoubleToPackedString :: Double -> PackedString
 #else
 foreign import prim primShowDouble :: Double -> String
@@ -1479,7 +1479,7 @@ instance Show Double where
     showsPrec   = primShowsDouble
 -----------------------------}
 instance Show Double where
-#if defined( __UHC_TARGET_JAZY__ ) || defined( __UHC_TARGET_JSCRIPT__ )
+#if defined( __UHC_TARGET_JAZY__ ) || defined( __UHC_TARGET_JS__ )
     show   = packedStringToString . primShowDoubleToPackedString
 #else
     show   = primShowDouble

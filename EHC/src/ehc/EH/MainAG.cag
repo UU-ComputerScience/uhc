@@ -123,6 +123,9 @@
 %%[(99 hmtyinfer).DerivationTree hs import({%{EH}DerivationTree})
 %%]
 
+%%[(99 hmtyinfer) hs import({%{EH}VarMp.Utils})
+%%]
+
 %%[(100 hmtyinfer) -99.DerivationTree
 %%]
 

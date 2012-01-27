@@ -1,6 +1,6 @@
 {-# LANGUAGE NoImplicitPrelude, CPP #-}
 {-# OPTIONS_GHC -XNoImplicitPrelude -#include "HsBase.h" #-}
-{-# EXCLUDE_IF_TARGET jscript #-}
+{-# EXCLUDE_IF_TARGET js #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  System.IO

@@ -13,7 +13,7 @@ module UHC.OldIO
   , hClose, hPutChar, hPutStr, hPutStrLn, hFlush
   , putChar, putStr, putStrLn, print{- hPrint, -} 
   , stdout, stderr
-#if !defined(__UHC_TARGET_JSCRIPT__)
+#if !defined(__UHC_TARGET_JS__)
   , stdin
   , openFile
   , hGetContents, hGetChar, hGetLine
@@ -112,7 +112,7 @@ stderr = OldHandle primStderr
 hIsEOF       :: Handle -> IO Bool
 hIsEOF (OldHandle h) =  ioFromPrim (\_ -> primHIsEOF h)
 
-#elif defined(__UHC_TARGET_JSCRIPT__)
+#elif defined(__UHC_TARGET_JS__)
 stdout, stderr :: Handle
 stdout = OldHandle (JSHandle "stdout")
 stderr = OldHandle (JSHandle "stderr")
@@ -149,7 +149,7 @@ stderr = primOpenFileOrStd "<stderr>" WriteMode (Just 2)
 
 -- specializations for stdin, stdout
 
-#if !defined(__UHC_TARGET_JSCRIPT__)
+#if !defined(__UHC_TARGET_JS__)
 getChar     :: IO Char
 getChar     = hGetChar stdin
 
@@ -172,7 +172,7 @@ putStr      = hPutStr   stdout
 putStrLn    :: String -> IO ()
 putStrLn    = hPutStrLn stdout
 
-#if !defined(__UHC_TARGET_JSCRIPT__)
+#if !defined(__UHC_TARGET_JS__)
 interact    :: (String -> String) -> IO ()
 interact f  = getContents >>= (putStr . f)
 #endif
@@ -188,7 +188,7 @@ hPutStrLn h s =  do { hPutStr h s
 hPrint        :: Show a => Handle -> a -> IO ()
 hPrint h      =  hPutStrLn h . show
 
-#if !defined(__UHC_TARGET_JSCRIPT__)
+#if !defined(__UHC_TARGET_JS__)
 hGetLine :: Handle -> IO String
 hGetLine h = do { c <- hGetChar h
                 ; hGetLine2 c
@@ -211,7 +211,7 @@ hGetLine h = do { c <- hGetChar h
 #endif
 #endif
 
-#if !defined(__UHC_TARGET_JSCRIPT__)
+#if !defined(__UHC_TARGET_JS__)
 -- combinations with Read
 -- raises an exception instead of an error
 readIO          :: Read a => String -> IO a
@@ -230,7 +230,7 @@ readLn           = do l <- getLine
 
 -- file open&process&close wrapped in one function
 
-#if !defined(__UHC_TARGET_JSCRIPT__)
+#if !defined(__UHC_TARGET_JS__)
 readFile        :: FilePath -> IO String
 readFile name    = openFile name ReadMode >>= hGetContents
 
@@ -272,7 +272,7 @@ foreign import prim primHGetContents    :: Handle -> String
 --  or for efficiency using additional primitives
 ----------------------------------------------------------------
 
-#if !defined(__UHC_TARGET_JSCRIPT__)
+#if !defined(__UHC_TARGET_JS__)
 hGetContents     :: Handle -> IO String
 #endif
 hPutStr          :: Handle -> String -> IO ()
@@ -295,7 +295,7 @@ hGetContents h   = ioFromPrim (\_ -> primHGetContents h)
 #endif
 
 
-#if defined(__UHC_TARGET_C__) || defined(__UHC_TARGET_JSCRIPT__)
+#if defined(__UHC_TARGET_C__) || defined(__UHC_TARGET_JS__)
 
 hPutStr h s = do if null s 
                   then return () 

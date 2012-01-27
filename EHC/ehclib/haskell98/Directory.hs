@@ -1,4 +1,4 @@
-{-# EXCLUDE_IF_TARGET jscript #-}
+{-# EXCLUDE_IF_TARGET js #-}
 module Directory (
     Permissions( Permissions, readable, writable, executable, searchable ), 
     createDirectory, removeDirectory, removeFile, 

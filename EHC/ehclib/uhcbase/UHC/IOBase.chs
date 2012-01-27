@@ -57,7 +57,7 @@ module UHC.IOBase
     
 #if defined( __UHC_TARGET_C__ ) || defined (__UHC_TARGET_LLVM__)
     FHandle,
-#elif defined( __UHC_TARGET_JSCRIPT__ )
+#elif defined( __UHC_TARGET_JS__ )
     JSHandle(..),
 #endif
   )
@@ -377,7 +377,7 @@ data IOMode             -- alphabetical order of constructors required, assumed 
 #if defined( __UHC_TARGET_C__ ) || defined (__UHC_TARGET_LLVM__)
 
 data FHandle    -- opaque, contains FILE*
-#elif defined( __UHC_TARGET_JSCRIPT__ )
+#elif defined( __UHC_TARGET_JS__ )
 data JSHandle = JSHandle String
 #else
 data GBHandle   -- opaque, contains GB_Chan
@@ -391,7 +391,7 @@ instance Eq FHandle where
 instance Show FHandle where
     showsPrec _ h = showString "<handle>"
 
-#elif defined( __UHC_TARGET_JSCRIPT__ )
+#elif defined( __UHC_TARGET_JS__ )
 
 instance Eq JSHandle where
     _ == _ = False
@@ -433,7 +433,7 @@ data Handle
   | OldHandle                            
 #if defined( __UHC_TARGET_C__ )  || defined (__UHC_TARGET_LLVM__)
         FHandle                        
-#elif defined( __UHC_TARGET_JSCRIPT__ )
+#elif defined( __UHC_TARGET_JS__ )
         JSHandle                        
 #else
         GBHandle                        

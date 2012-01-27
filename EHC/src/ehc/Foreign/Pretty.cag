@@ -52,7 +52,7 @@ ATTR ForeignExprAGItf AllForeignExpr [ entNm: String | | ]
 %%[90
 ATTR ForeignAGItf ForeignExprAGItf AllForeign ForeignExpr [ | | pp: PP_Doc ]
 
-SEM JScriptCall
+SEM JavaScriptCall
   -- | Id          lhs     .   pp      =   maybe empty (\i -> "%" >|< i >|< ".") @mbThisArgNr >|< pp @nm >|< maybe empty (\i -> "[%" >|< i >|< "]") @mbIndexArgNr
   | Id          lhs     .   pp      =   maybe (pp @nm) (ppForeignExpr @nm) @mbForeignExpr
   | Wrapper     lhs     .   pp      =   pp "wrapper"

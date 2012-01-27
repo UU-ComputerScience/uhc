@@ -1,7 +1,7 @@
 {- ----------------------------------------------------------------------------------------
    what    : weak ptr explicit finalization
    expected: inaccessibility after finalize
-   constraints: exclude-if-jscript
+   constraints: exclude-if-js
 ---------------------------------------------------------------------------------------- -}
 
 module WeakPtr1 where

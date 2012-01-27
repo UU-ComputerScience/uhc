@@ -8,11 +8,11 @@ Representation of the subset of JavaScript required for UHC codegeneration.
 This AST and semantics are under construction.
 %%]
 
-%%[(8 jscript)
+%%[(8 javascript)
 DATA AGItf
-  | AGItf       module          : JScriptModule
+  | AGItf       module          : JavaScriptModule
 
-DATA JScriptModule
+DATA JavaScriptModule
   | Mod			decls			: StatL
   				main			: StatL
 %%]
@@ -21,7 +21,7 @@ DATA JScriptModule
 %%% Statements
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 jscript)
+%%[(8 javascript)
 DATA Stat
   | VarDecl     nm              : {HsName}
                 mbExpr          : MbExpr
@@ -39,7 +39,7 @@ DATA Stat
 TYPE StatL		= [Stat]
 %%]
 
-%%[(8 jscript)
+%%[(8 javascript)
 SET AllStat		= StatL Stat
 %%]
 
@@ -47,7 +47,7 @@ SET AllStat		= StatL Stat
 %%% Expressions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 jscript)
+%%[(8 javascript)
 DATA Expr
   | Var         nm              : {HsName}
   | Int         int             : {Integer}
@@ -87,7 +87,7 @@ TYPE ExprL		= [Expr]
 TYPE MbExpr		= MAYBE Expr
 %%]
 
-%%[(8 jscript)
+%%[(8 javascript)
 SET AllExpr		= ExprL Expr MbExpr NmExpr NmExprL
 %%]
 
@@ -95,7 +95,7 @@ SET AllExpr		= ExprL Expr MbExpr NmExpr NmExprL
 %%% Alternatives (of switch)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 jscript)
+%%[(8 javascript)
 DATA Alt
   | Alt			tag				: {Int}
   				stats			: StatL
@@ -103,7 +103,7 @@ DATA Alt
 TYPE AltL		= [Alt]
 %%]
 
-%%[(8 jscript)
+%%[(8 javascript)
 SET AllAlt		= Alt AltL
 %%]
 
@@ -111,11 +111,11 @@ SET AllAlt		= Alt AltL
 %%% Sets
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 jscript)
+%%[(8 javascript)
 SET AllNT
   = AllStat
     AllExpr
     AllAlt
-    JScriptModule
+    JavaScriptModule
 %%]
 

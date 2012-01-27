@@ -225,7 +225,8 @@ SEM Decl
                 lhs         .   chrClassDeclSq      =   Seq.singleton @chrClassDecl
 
 SEM Expr
-  | Let         loc         .   chrClassDeclSq      =   @decls.chrClassDeclSq `Seq.union` @body.chrClassDeclSq
+  | Let         loc         .   chrClassDeclSq      =   ehcOptTrace @lhs.opts "Expr.Let.loc.chrClassDeclSq" $ 
+                                                        @decls.chrClassDeclSq `Seq.union` @body.chrClassDeclSq
   | * - Let     lhs         .   chrClassDeclSq      =   Seq.empty
 %%]
 
@@ -261,5 +262,6 @@ SEM Decl
 
 %%[(92 hmtyinfer)
 SEM Expr
-  | Let         lhs         .   chrInstDeclSq       =   Seq.unions [Seq.fromList @generInstDeclL, @decls.chrInstDeclSq, @body.chrInstDeclSq]
+  | Let         lhs         .   chrInstDeclSq       =   ehcOptTrace @lhs.opts "Expr.Let.lhs.chrInstDeclSq" $ 
+                                                        Seq.unions [Seq.fromList @generInstDeclL, @decls.chrInstDeclSq, @body.chrInstDeclSq]
 %%]

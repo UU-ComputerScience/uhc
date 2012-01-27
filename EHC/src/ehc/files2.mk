@@ -88,7 +88,7 @@ ehc-codegentargetspecific-C:
 
 ehc-codegentargetspecific-jazy:
 
-ehc-codegentargetspecific-jscript:
+ehc-codegentargetspecific-js:
 
 ehc-codegentargetspecific-core:
 

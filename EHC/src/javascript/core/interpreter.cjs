@@ -1,5 +1,5 @@
 
-%%[(8 jscript).debugStuff
+%%[(8 javascript).debugStuff
 var traceOn = false ;
 
 function trace( m, s ) {
@@ -12,17 +12,17 @@ var evalCounter = 0 ;
 var nodeCounter = 0 ;
 %%]
 
-%%[(100 jscript) -8.debugStuff
+%%[(100 javascript) -8.debugStuff
 %%]
 
-%%[(8 jscript)
+%%[(8 javascript)
 function evaluatable(x) {
   return x !== undefined && x !== null && x.__eOrV__ !== undefined;
 }
 %%]
 
 // interface to eval
-%%[(8 jscript)
+%%[(8 javascript)
 function _e_( x ) {
 %%[[8
   trace( "> _e_", x ) ;

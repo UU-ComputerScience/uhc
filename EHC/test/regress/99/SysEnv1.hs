@@ -2,7 +2,7 @@
    what    : yield environmental info
    expected: ok, result may vary on how program is invoked from testing environment
    platform: SHELL env variable
-   constraints: exclude-if-jscript
+   constraints: exclude-if-js
 ---------------------------------------------------------------------------------------- -}
 
 module SysEnv1 where

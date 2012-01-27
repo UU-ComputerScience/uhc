@@ -39,7 +39,7 @@ SEM Expr
                 loc         .   gTyTvS              =   @valTyUpdFreeTvarS `Set.union` @tyTyUpdFreeTvarS
                             .   gSubsValGam_        =   @valGam_g_
 %%]]
-                			.	noLetQuantTyVarIdS	=	setSubst @tyVarMpDeclsL0 @decls.noLetQuantTyVarIdS `Set.union` @gTyTvS
+                            .   noLetQuantTyVarIdS  =   setSubst @tyVarMpDeclsL0 @decls.noLetQuantTyVarIdS `Set.union` @gTyTvS
                             .   (quValGam_qu_,cycTyVarMp_l)
                                                     =   let (g,cycMp) = @tyVarMpDeclsQuant `varUpdCyc` @valGam_l_
 %%[[5
@@ -48,7 +48,8 @@ SEM Expr
                                                         in  (valGamQuantify @valQuTyKiGam @quTvKiVarMp @tyVarMpDeclsQuant @noLetQuantTyVarIdS g,cycMp)
 %%]]
                             .   quValGam_           =   @quValGam_qu_
-                loc         .   bodyValGam          :=  gamPushGam @quValGam_ @gSubsValGam_
+                loc         .   bodyValGam          :=  ehcOptTrace @lhs.opts "Expr.Let.loc.bodyValGam" $ 
+                                                        gamAddGam @quValGam_ @gSubsValGam_
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 4.Let
@@ -64,7 +65,7 @@ SEM Expr
 
 %%[(6 hmtyinfer)
 SEM Expr
-  | Let         loc         .   valQuTyKiGam		=	gamUnions [@finTyKiGam,@decls.intlTyKiGam]
+  | Let         loc         .   valQuTyKiGam        =   gamUnions [@finTyKiGam,@decls.intlTyKiGam]
 %%]
                 decls       .   tyVarMp             :=  valGamRestrictKiVarMp @valGam_l_ `varUpd` @decls.patTyVarMp
 
@@ -72,19 +73,20 @@ SEM Expr
 SEM Expr
   | Let         loc         .   (gathTySigGam_l_,exTyVarMp1)
                                                     :=  (valGamInst1Exists {- WithVarMp @lhs.tyVarMp -} @lUniq @decls.gathTySigGam,emptyVarMp)
-                            .	exTyVarMp1b			=	(@exTyVarMp1 :: VarMp) `varUpd` @lhs.tyVarMp
+                            .   exTyVarMp1b         =   (@exTyVarMp1 :: VarMp) `varUpd` @lhs.tyVarMp
                 decls       .   patTyVarMp          :=  @exTyVarMp1b
                 loc         .   (quValGam_qu_,quTyVarMp, cycTyVarMp_l)
                                                     :=  valGamQuantifyWithVarMp @valQuTyKiGam @quTvKiVarMp @tyVarMpDeclsQuant @noLetQuantTyVarIdS @valGam_l_
                             .   bodyVarMp1          =   @quTyVarMp `varUpd` @tyVarMpDeclsL0
                             .   (quValGam_ex_,exTyVarMp2)
                                                     :=  (valGamInst1Exists {- WithVarMp @bodyVarMp1 -} @lUniq2 (@quTyVarMp `varUpd` @quValGam_qu_), emptyVarMp)
-                            .   bodyVarMp2          =   (@exTyVarMp2 :: VarMp) `varUpd` @bodyVarMp1
+                            .   bodyVarMp2          =   ehcOptTrace @lhs.opts ("Expr.Let.loc.bodyVarMp2 " ++ show (varmpSize @exTyVarMp2) ++ " " ++ show (varmpSize @bodyVarMp1)) $
+                                                        (@exTyVarMp2 :: VarMp) `varUpd` @bodyVarMp1
                             .   quValGam_ex_subst   :=  @bodyVarMp2 `varUpd` @quValGam_ex_
                 body        .   tyVarMp             =   @bodyVarMp2
                 
-                loc			.	exTyVarMp1			:	VarMp
-                loc			.	exTyVarMp1b			:	VarMp
+                loc         .   exTyVarMp1          :   VarMp
+                loc         .   exTyVarMp1b         :   VarMp
 %%]
                                                     :=  valGamInst1ExistsWithVarMp @bodyVarMp1 @lUniq2 @quValGam_qu_
                                                     :=  (valGamInst1Exists {- WithVarMp @bodyVarMp1 -} @lUniq2 (@quTyVarMp `varUpd` @quValGam_qu_), emptyVarMp)
@@ -101,7 +103,7 @@ doPredAmbigSplit get tqoGam prOccL
 %%[(9 hmtyinfer)
 SEM Expr
   | Let         decls       .   patTyVarMp          :=  @forExprTyVarMp `varUpd` @exTyVarMp1b
-                loc         .   doValGamQuantify	=	\doQuant tyVarMp prOccL -> valGamQuantifyWithVarMp doQuant @valQuTyKiGam @quTvKiVarMp tyVarMp @noLetQuantTyVarIdS prOccL @valGam_l_
+                loc         .   doValGamQuantify    =   \doQuant tyVarMp prOccL -> valGamQuantifyWithVarMp doQuant @valQuTyKiGam @quTvKiVarMp tyVarMp @noLetQuantTyVarIdS prOccL @valGam_l_
                             .   doPredAmbigSplitForSimplify
                                                     =   \chrPrOccL
                                                            -> let us                = mkNewLevUIDL (length chrPrOccL) uidStart
@@ -114,6 +116,18 @@ SEM Expr
                                                     :=  @doValGamQuantify True @tyVarMpDeclsQuant @toQuantOverPrOccL
                             .   tmpoTyVarMp         =   foldr (\tmpo c -> tmpoImplsVarMp tmpo `varUpd` c) emptyVarMp (gamElts @tqoGam)
 %%]
+
+%%[(99 hmtyinfer)
+%%]
+SEM Expr
+  | Let         body        .   tyVarMp             :=  varmpGraphVisit
+                                                            (Set.unions [ varFreeSet [ dtiConTy dti | dgi <- gamElts @decls.gathDeclDataGam, dti <- Map.elems (dgiConstrTagMp dgi) ]
+                                                                        -- , varFreeSet @decls.gathCnstrMp
+                                                                        -- , varFreeSet @toProveElsewhereCnstrMp
+                                                                        , @tyTyGlobFreeTvarSbody
+                                                                        ])
+                                                            @bodyVarMp2
+                                                        `varUpd` @lhs.tyVarMp
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Restriction of @decls.tyVarMp to meta level 0
@@ -541,9 +555,9 @@ SEM Decl
 SEM Decl
   | FFI         
 %%[[8
-  				loc         .   foreignEntInfo      =   @impEnt
+                loc         .   foreignEntInfo      =   @impEnt
 %%][90
-  				loc         .   foreignEntInfo      =   foreignEntExtract @impEnt
+                loc         .   foreignEntInfo      =   foreignEntExtract @impEnt
                             .   knTy                =   let v      = mkTyVar @lUniq
                                                             funptr = mk1ConApp (ehcOptBuiltin @lhs.opts ehbnFunPtr)
 %%[[90
@@ -640,20 +654,20 @@ ATTR Decl  [ | | ehGathExtraDeclL: Decls ]
 ATTR Decls [ ehExtraDeclL: Decls | | ]
 
 SEM Expr
-  | Let			decls		.	ehExtraDeclL		=	[]
+  | Let         decls       .   ehExtraDeclL        =   []
 
 SEM Decl
   | Class Instance
-  				decls		.	ehExtraDeclL		=	[]
+                decls       .   ehExtraDeclL        =   []
 
 SEM Decl
-  | Data		lhs			.	ehGathExtraDeclL	=	const [] @dgi
-  | * - Data	lhs			.	ehGathExtraDeclL	=	[]
+  | Data        lhs         .   ehGathExtraDeclL    =   const [] @dgi
+  | * - Data    lhs         .   ehGathExtraDeclL    =   []
 
 SEM Decls
-  | Cons		tl			.	ehExtraDeclL		=	@hd.ehGathExtraDeclL ++ @lhs.ehExtraDeclL
-  | Nil			inst		.	decls				:	Decls
-  				inst		.	decls				=	[]  -- @lhs.ehExtraDeclL
+  | Cons        tl          .   ehExtraDeclL        =   @hd.ehGathExtraDeclL ++ @lhs.ehExtraDeclL
+  | Nil         inst        .   decls               :   Decls
+                inst        .   decls               =   []  -- @lhs.ehExtraDeclL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

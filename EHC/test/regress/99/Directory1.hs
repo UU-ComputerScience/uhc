@@ -1,7 +1,7 @@
 {- ----------------------------------------------------------------------------------------
    what    : Create and remove directories
    expected: ok
-   constraints: exclude-if-jscript
+   constraints: exclude-if-js
 ---------------------------------------------------------------------------------------- -}
 
 module Main where

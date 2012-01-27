@@ -375,6 +375,9 @@ doCompilePrepare fnL@(fn:_) opts
        -- ; putStrLn $ "db3 " ++ show pkgDb3
        -- ; putStrLn (show $ ehcOptPackageSearchFilter opts)
 %%]]
+%%[[99
+       ; ehcioinfo <- newEHCIOInfo
+%%]]
        ; let searchPath     = [emptyFileLoc]
                               ++ ehcOptImportFileLocPath opts
 %%[[99
@@ -428,7 +431,7 @@ doCompilePrepare fnL@(fn:_) opts
                                                        Map.empty
 %%]]
 %%[[99
-                                                       []
+                                                       ehcioinfo []
 %%]]
                                 )
              initialState   = mkEmptyCompileRun topModNm crsi

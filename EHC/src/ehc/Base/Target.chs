@@ -82,8 +82,8 @@ data Target
 %%[[(8 codegen jazy)
   | Target_Interpreter_Core_Jazy			-- java based on Core, using jazy library
 %%]]
-%%[[(8 codegen jscript)
-  | Target_Interpreter_Core_JScript			-- jscript based on Core
+%%[[(8 codegen javascript)
+  | Target_Interpreter_Core_JavaScript		-- javascript based on Core
 %%]]
 %%[[(8888 codegen java)
   | Target_Interpreter_Core_Java			-- java based on Core, as src. Will be obsolete.
@@ -111,8 +111,8 @@ instance Show Target where
 %%[[(8 codegen jazy)
   show Target_Interpreter_Core_Jazy			= "jazy"
 %%]]
-%%[[(8 codegen jscript)
-  show Target_Interpreter_Core_JScript		= "jscript"
+%%[[(8 codegen javascript)
+  show Target_Interpreter_Core_JavaScript	= "js"
 %%]]
 %%[[(8888 codegen java)
   show Target_Interpreter_Core_Java			= "java"
@@ -153,8 +153,8 @@ supportedTargetMp :: Map.Map String Target
 %%[[(8 codegen jazy)
                  ++ [ mk Target_Interpreter_Core_Jazy [FFIWay_Jazy] ]
 %%]]
-%%[[(8 codegen jscript)
-                 ++ [ mk Target_Interpreter_Core_JScript [FFIWay_JScript] ]
+%%[[(8 codegen javascript)
+                 ++ [ mk Target_Interpreter_Core_JavaScript [FFIWay_JavaScript] ]
 %%]]
 %%[[(8888 codegen java)
                  -- ++ [ mk Target_Interpreter_Core_Java [] ]
@@ -328,14 +328,14 @@ targetIsJVM t
       _ 								-> False
 %%]
 
-%%[(8 codegen) export(targetIsJScript)
-targetIsJScript :: Target -> Bool
-targetIsJScript t
+%%[(8 codegen) export(targetIsJavaScript)
+targetIsJavaScript :: Target -> Bool
+targetIsJavaScript t
   = case t of
-%%[[(8 codegen jscript)
-      Target_Interpreter_Core_JScript	-> True
+%%[[(8 codegen javascript)
+      Target_Interpreter_Core_JavaScript	-> True
 %%]]
-      _ 								-> False
+      _ 									-> False
 %%]
 
 %%[(8 codegen) export(targetIsLLVM)
@@ -374,20 +374,20 @@ data FFIWay
   = FFIWay_Prim				-- as primitive
   | FFIWay_CCall			-- as C call
   | FFIWay_Jazy				-- as Java/Jazy
-%%[[(8 codegen jscript)
-  | FFIWay_JScript			-- JScript
+%%[[(8 codegen javascript)
+  | FFIWay_JavaScript		-- JavaScript
 %%]]
   | FFIWay_CLR				-- as CLR, just a placeholder
   deriving (Eq,Ord,Enum)
 
 instance Show FFIWay where
-  show FFIWay_Prim		= "prim"
-  show FFIWay_CCall		= "ccall"
-  show FFIWay_Jazy		= "jazy"
-%%[[(8 codegen jscript)
-  show FFIWay_JScript	= "jscript"
+  show FFIWay_Prim			= "prim"
+  show FFIWay_CCall			= "ccall"
+  show FFIWay_Jazy			= "jazy"
+%%[[(8 codegen javascript)
+  show FFIWay_JavaScript	= "js"
 %%]]
-  show FFIWay_CLR		= "dotnet"
+  show FFIWay_CLR			= "dotnet"
 
 instance PP FFIWay where
   pp = pp . show
@@ -400,8 +400,8 @@ ffiWayForPrim :: Target -> Maybe FFIWay
 %%[[(8 codegen jazy)
 ffiWayForPrim Target_Interpreter_Core_Jazy			= Just FFIWay_Jazy
 %%]]
-%%[[(8 codegen jscript)
-ffiWayForPrim Target_Interpreter_Core_JScript		= Just FFIWay_JScript
+%%[[(8 codegen javascript)
+ffiWayForPrim Target_Interpreter_Core_JavaScript	= Just FFIWay_JavaScript
 %%]]
 %%[[(8 codegen clr)
 ffiWayForPrim Target_FullProgAnal_Grin_CLR			= Just FFIWay_CLR

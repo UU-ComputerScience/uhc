@@ -76,7 +76,7 @@ data HsNameUniqifier
 %%[[92
   | HsNameUniqifier_GenericClass		-- a name introduced by generics
 %%]]
-%%[[(8 jscript)
+%%[[(8 javascript)
   | HsNameUniqifier_JSSwitchResult		-- var for result of switch
 %%]]
 %%[[(90 codegen)
@@ -110,7 +110,7 @@ instance Show HsNameUniqifier where
 %%[[91
   show HsNameUniqifier_GenericClass			= "GEN"
 %%]]
-%%[[(8 jscript)
+%%[[(8 javascript)
   show HsNameUniqifier_JSSwitchResult		= "JSW"
 %%]]
 %%[[(90 codegen)
@@ -793,7 +793,7 @@ type HsNameS = Set.Set HsName
 %%% Safe names for Java like backends
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 jazy || jscript) hs export(hsnSafeJavaLike)
+%%[(8 jazy || javascript) hs export(hsnSafeJavaLike)
 -- ensure a name valid for JVM like backends
 hsnSafeJavaLike :: HsName -> HsName
 hsnSafeJavaLike
@@ -813,7 +813,7 @@ hsnSafeJavaLike
         safe '@'  = "_at"
         safe  c   = [c]
 
-%%[(8 jazy || jscript) hs export(hsnJavaLikeVar)
+%%[(8 jazy || javascript) hs export(hsnJavaLikeVar)
 -- safe name of a variable
 hsnJavaLikeVar
   :: ( HsName -> HsName				-- adapt for particular platform, before mangling here
@@ -837,7 +837,7 @@ hsnJavaLikeVar (preadapt, postprefix, updqual) pkg mod v
 %%]]
 %%]
 
-%%[(8 jazy || jscript) hs export(hsnJavaLikeVarCls)
+%%[(8 jazy || javascript) hs export(hsnJavaLikeVarCls)
 -- name of the class of a variable
 hsnJavaLikeVarCls :: HsName -> HsName -> HsName -> HsName
 hsnJavaLikeVarCls pkg mod v
@@ -848,7 +848,7 @@ hsnJavaLikeVarCls pkg mod v
 %%]]
 %%]
 
-%%[(8 jazy || jscript) hs export(hsnJavaLikeVarToFld)
+%%[(8 jazy || javascript) hs export(hsnJavaLikeVarToFld)
 -- field name of var name
 hsnJavaLikeVarToFld :: HsName -> HsName
 hsnJavaLikeVarToFld v
@@ -859,7 +859,7 @@ hsnJavaLikeVarToFld v
 %%]]
 %%]
 
-%%[(8 jazy || jscript) hs export(hsnJavaLikeDataTy, hsnJavaLikeDataCon, hsnJavaLikeDataFldAt, hsnJavaLikeDataFlds)
+%%[(8 jazy || javascript) hs export(hsnJavaLikeDataTy, hsnJavaLikeDataCon, hsnJavaLikeDataFldAt, hsnJavaLikeDataFlds)
 -- name of class of data type
 hsnJavaLikeDataTy :: HsName -> HsName -> HsName -> HsName
 hsnJavaLikeDataTy pkg mod d = hsnSafeJavaLike d `hsnSuffix` "_Ty"

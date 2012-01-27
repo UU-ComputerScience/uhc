@@ -53,10 +53,10 @@ Translation to another AST
 %%[(8 codegen grin) import({%{EH}GrinByteCode.ToC}(gbmod2C))
 %%]
 
--- Jazy/JVM/JScript semantics
+-- Jazy/JVM/JavaScript semantics
 %%[(8 codegen jazy) import({%{EH}Core.ToJazy})
 %%]
-%%[(8 codegen jscript) import({%{EH}Core.ToJScript})
+%%[(8 codegen javascript) import({%{EH}Core.ToJavaScript})
 %%]
 %%[(8 codegen java) import({%{EH}Base.Bits},{%{EH}JVMClass.ToBinary})
 %%]
@@ -208,15 +208,15 @@ cpTranslateCore2Jazy modNm
        }
 %%]
 
-%%[(8 codegen jscript) export(cpTranslateCore2JScript)
-cpTranslateCore2JScript :: HsName -> EHCompilePhase ()
-cpTranslateCore2JScript modNm
+%%[(8 codegen javascript) export(cpTranslateCore2JavaScript)
+cpTranslateCore2JavaScript :: HsName -> EHCompilePhase ()
+cpTranslateCore2JavaScript modNm
   = do { cr <- get
        ; let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
               mbCore    = ecuMbCore ecu
               coreInh  = crsiCoreInh crsi
-       ; when (isJust mbCore && targetIsJScript (ehcOptTarget opts))
-              (cpUpdCU modNm $ ecuStoreJScript $ cmod2JScriptModule opts (Core2GrSem.dataGam_Inh_CodeAGItf coreInh) $ fromJust mbCore)
+       ; when (isJust mbCore && targetIsJavaScript (ehcOptTarget opts))
+              (cpUpdCU modNm $ ecuStoreJavaScript $ cmod2JavaScriptModule opts (Core2GrSem.dataGam_Inh_CodeAGItf coreInh) $ fromJust mbCore)
        }
 %%]
 

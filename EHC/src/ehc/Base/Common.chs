@@ -130,7 +130,7 @@ ppHsnNonAlpha scanOpts
 %%[9 hs export(PredOccId(..))
 newtype PredOccId
   = PredOccId
-      { poiId    	:: UID
+      { poiId       :: UID
       }
   deriving (Show,Eq,Ord)
 %%]
@@ -208,7 +208,7 @@ class SemApp a where
   mk1Arrow   a r    =   mkApp [semCon hsnArrow,a,r]
   mkArrow           =   flip (foldr mk1Arrow)
   -- defaults with Range
-  mkRngProd rng     =   mkProdApp				-- to be done
+  mkRngProd rng     =   mkProdApp               -- to be done
   mk1RngApp rng a r =   mkRngApp rng [a,r]
   mkRngApp  rng as  =   case as of
                           [a] -> a
@@ -416,11 +416,11 @@ instance PP Belowness where
 data CTag
   = CTagRec
   | CTag
-      { ctagTyNm 		:: !HsName
-      , ctagNm 			:: !HsName
-      , ctagTag' 		:: !Int
-      , ctagArity 		:: !Int
-      , ctagMaxArity 	:: !Int
+      { ctagTyNm        :: !HsName
+      , ctagNm          :: !HsName
+      , ctagTag'        :: !Int
+      , ctagArity       :: !Int
+      , ctagMaxArity    :: !Int
       }
   deriving (Show,Eq,Ord)
 
@@ -518,7 +518,10 @@ replicateBy l e = replicate (length l) e
 %%% Misc
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(strBlankPad)
+%%[8 export(strPadLeft, strBlankPad)
+strPadLeft :: Char -> Int -> String -> String
+strPadLeft c n s = replicate (n - length s) c ++ s
+
 strBlankPad :: Int -> String -> String
 strBlankPad n s = s ++ replicate (n - length s) ' '
 %%]
@@ -665,10 +668,10 @@ isEmptyRange  _                = False
 
 %%[50
 instance Eq Range where
-  _ == _ = True				-- a Range is ballast, not a criterium to decide equality for
+  _ == _ = True             -- a Range is ballast, not a criterium to decide equality for
 
 instance Ord Range where
-  _ `compare` _ = EQ		-- a Range is ballast, not a criterium to decide equality for
+  _ `compare` _ = EQ        -- a Range is ballast, not a criterium to decide equality for
 %%]
 
 %%[1
@@ -950,9 +953,9 @@ agFakeDependOn _ x = x
 
 %%[9 export(VarUIDHsName(..),vunmNm)
 data VarUIDHsName
-  = VarUIDHs_Name		{ vunmId :: !UID, vunmNm' :: !HsName }
-  | VarUIDHs_UID		{ vunmId :: !UID }
-  | VarUIDHs_Var		!UID
+  = VarUIDHs_Name       { vunmId :: !UID, vunmNm' :: !HsName }
+  | VarUIDHs_UID        { vunmId :: !UID }
+  | VarUIDHs_Var        !UID
   deriving (Eq, Ord)
 
 vunmNm :: VarUIDHsName -> HsName
@@ -1181,9 +1184,9 @@ type PkgName = String
 
 %%[99 export(DerivTreeWay(..))
 data DerivTreeWay
-  = DerivTreeWay_Infer		-- follow order of inference when printing type variables
-  | DerivTreeWay_Final		-- use final mapping of type variables instead
-  | DerivTreeWay_None		-- no printing
+  = DerivTreeWay_Infer      -- follow order of inference when printing type variables
+  | DerivTreeWay_Final      -- use final mapping of type variables instead
+  | DerivTreeWay_None       -- no printing
   deriving Eq
 %%]
 
@@ -1360,9 +1363,9 @@ instance Binary Pos where
 
 %%[97 export(SrcConst(..))
 data SrcConst
-  = SrcConst_Int	Integer
-  | SrcConst_Char	Char
-  | SrcConst_Ratio	Integer Integer
+  = SrcConst_Int    Integer
+  | SrcConst_Char   Char
+  | SrcConst_Ratio  Integer Integer
   deriving (Eq,Show,Ord)
 %%]
 
@@ -1423,6 +1426,31 @@ maybeOk n _ (NotOk  x) = n x
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Visit as graph
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99 export(graphVisit)
+-- | Abstract graph visit, over arbitrary structures
+graphVisit
+  :: (Ord node)
+     => (thr -> graph -> node -> (thr,Set.Set node))        -- fun: visit node, get new thr and nodes to visit next
+     -> (Set.Set node -> Set.Set node -> Set.Set node)      -- fun: combine new to visit + already known to visit (respectively)
+     -> thr                                                 -- the accumulator, threaded as state
+     -> Set.Set node                                        -- root/start
+     -> graph                                               -- graph over which we visit
+     -> thr                                                 -- accumulator is what we are interested in
+graphVisit visit unionUnvisited thr start graph
+  = snd $ v ((Set.empty,start),thr)
+  where v st@((visited,unvisited),thr)
+          | Set.null unvisited = st
+          | otherwise          = let (n,unvisited2)      = Set.deleteFindMin unvisited
+                                     (thr',newUnvisited) = visit thr graph n
+                                     visited'            = Set.insert n visited
+                                     unvisited3          = unionUnvisited (newUnvisited `Set.difference` visited') unvisited2
+                                 in  v ((visited',unvisited3),thr')
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Known primitives, encoding semantics of particular primitives in a FFI decl, propagated to backend
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -1446,7 +1474,7 @@ data KnownPrim
   | KnownPrim_MulD
 
     -- 8 bit
-  | KnownPrim_Add8			-- add: 1 byte / 8 bit, etc etc
+  | KnownPrim_Add8          -- add: 1 byte / 8 bit, etc etc
   | KnownPrim_Sub8
   | KnownPrim_Mul8
 

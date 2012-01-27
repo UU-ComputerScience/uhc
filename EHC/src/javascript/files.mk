@@ -2,7 +2,7 @@
 # location of these srcs
 ###########################################################################################
 
-SRC_JSCRIPT_PREFIX					:= $(SRC_PREFIX)jscript/
+SRC_JSCRIPT_PREFIX					:= $(SRC_PREFIX)javascript/
 
 ###########################################################################################
 # this file
@@ -14,7 +14,7 @@ JSCRIPT_MKF							:= $(patsubst %,$(SRC_JSCRIPT_PREFIX)%.mk,files)
 # build location
 ###########################################################################################
 
-JSCRIPT_BLD_JSCRIPT_PREFIX			:= $(EHC_BLD_VARIANT_ASPECTS_PREFIX)jscript/
+JSCRIPT_BLD_JSCRIPT_PREFIX			:= $(EHC_BLD_VARIANT_ASPECTS_PREFIX)js/
 
 ###########################################################################################
 # install location, config
@@ -34,6 +34,7 @@ INSTALLABS_JSCRIPT_LIB_PREFIX		:= $(call FUN_INSTALLABS_VARIANT_LIB_TARGET_PREFI
 
 # install
 INSTALL_LIB_JSCRIPT					:= $(call FUN_MK_JSLIB_FILENAME,$(INSTALLABS_JSCRIPT_LIB_PREFIX),$(JSCRIPT_PKG_NAME))
+INSTALL_LIB_JS						:= $(INSTALL_LIB_JSCRIPT)
 
 ###########################################################################################
 # names of sources + deriveds

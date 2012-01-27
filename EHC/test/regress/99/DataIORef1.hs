@@ -1,7 +1,7 @@
 {- ----------------------------------------------------------------------------------------
    what    : library Data.IORef
    expected: ok
-   constraints: exclude-if-jscript
+   constraints: exclude-if-js
 ---------------------------------------------------------------------------------------- -}
 
 module DataIORef1 where

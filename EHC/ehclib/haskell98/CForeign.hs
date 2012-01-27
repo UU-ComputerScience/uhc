@@ -1,3 +1,3 @@
-{-# EXCLUDE_IF_TARGET jscript #-}
+{-# EXCLUDE_IF_TARGET js #-}
 module CForeign ( module Foreign.C ) where
 import Foreign.C

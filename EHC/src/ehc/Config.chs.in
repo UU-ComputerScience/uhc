@@ -152,7 +152,7 @@ shellCmdJar :: String
 shellCmdJar = "@TOPLEVEL_SYSTEM_ABSPATH_PREFIX@@JAR_CMD@@SUFFIX_EXEC@"
 %%]
 
-%%[(8 jscript) export(shellCmdCat)
+%%[(8 javascript) export(shellCmdCat)
 shellCmdCat :: String
 shellCmdCat = "@TOPLEVEL_SYSTEM_ABSPATH_PREFIX@@CAT_CMD@@SUFFIX_EXEC@"
 %%]
@@ -273,8 +273,8 @@ linkerSymbolPrefix = "@LINKER_SYMBOL_PREFIX@"
 
 %%]
 
-%%[(8 jscript) export(suffixJScriptLib)
-suffixJScriptLib :: String
-suffixJScriptLib = filter (/= '.') "@SUFFIX_LIBJSCRIPT@"
+%%[(8 javascript) export(suffixJavaScriptLib)
+suffixJavaScriptLib :: String
+suffixJavaScriptLib = filter (/= '.') "@SUFFIX_LIBJS@"
 %%]
 

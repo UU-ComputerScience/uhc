@@ -58,6 +58,7 @@ EHC_HS_UTIL_SRC_CHS						:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
 													$(addprefix CHR/,Key Constraint Solve) \
 													$(addprefix AbstractCore/,Utils) \
 													$(addprefix AnaDomain/,Utils) \
+													$(addprefix VarMp/,Utils) \
 													$(addprefix Cil/,Common TyTag) \
 													$(addprefix Opts/,Base) \
 													$(addprefix Pred/,ToCHR CHR Evidence EvidenceToCore EvidenceToTyCore Heuristics CommonCHR RedGraph) \
@@ -73,7 +74,7 @@ EHC_HS_UTIL_SRC_CHS						:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
 													$(addprefix EHC/,Common Environment CompileUnit CompileGroup CompileRun GrinCompilerDriver InitialSetup \
 														$(addprefix CompilePhase/,Parsers Output Translations Transformations \
 															FlowBetweenPhase TransformGrin Semantics \
-															CompileLLVM CompileC CompileJVM CompileJScript Link \
+															CompileLLVM CompileC CompileJVM CompileJavaScript Link \
 															Cleanup Module TopLevelPhases \
 													)	) \
 													Debug/HighWaterMark \
@@ -328,7 +329,7 @@ $(LIB_EHC_CABAL_DRV): $(EHC_ALL_DPDS_NO_MAIN) $(EHC_MKF)
 	$(call FUN_GEN_CABAL_LIB \
 		, $(LIB_EHC_PKG_NAME) \
 		, $(EH_VERSION_SHORT) \
-		, $(LIB_EH_UTIL_PKG_NAME) binary syb bytestring uulib>=0.9.12 \
+		, $(LIB_EH_UTIL_PKG_NAME) binary syb bytestring uulib>=0.9.12 old-locale \
 		, $(CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES) DeriveDataTypeable OverlappingInstances LiberalTypeSynonyms \
 		, Part of EH$(EHC_VARIANT_ASPECTS) compiler packaged as library \
 		, $(subst $(PATH_SEP),.,$(patsubst $(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(LIB_EHC_QUAL_PREFIX)%,\
@@ -440,9 +441,9 @@ $(EHC_HS_CFGINSTALL_DRV_HS): $(EHC_MKF) $(MK_SHARED_MKF)
 	  echo "" ; \
 	  echo "mkJarFilename dirprefix pkg = \"$(call FUN_MK_JAVALIB_FILENAME,\" ++ dirprefix ++ \",\" ++ pkg ++ \")\"" ; \
 	  echo "" ; \
-	  if test x$(ENABLE_JSCRIPT) = xyes ; \
+	  if test x$(ENABLE_JS) = xyes ; \
 	  then \
-	    echo "mkJScriptLibFilename dirprefix pkg = \"$(call FUN_MK_JSLIB_FILENAME,\" ++ dirprefix ++ \",\" ++ pkg ++ \")\"" ; \
+	    echo "mkJavaScriptLibFilename dirprefix pkg = \"$(call FUN_MK_JSLIB_FILENAME,\" ++ dirprefix ++ \",\" ++ pkg ++ \")\"" ; \
 	    echo "" ; \
 	  fi ; \
 	  echo "mkInternalPkgFileBase pkg variant target tvariant = \"$(call FUN_PKG_VARIANT_TARGET_TVARIANT,\" ++ pkg ++ \",\" ++ variant ++ \",\" ++ target ++ \",\" ++ tvariant ++ \")\"" ; \

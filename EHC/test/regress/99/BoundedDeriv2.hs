@@ -2,7 +2,7 @@
    what    : Bounded class, derived (via generics)
    expected: ok
    platform: word size dependent
-   constraints: exclude-if-jscript
+   constraints: exclude-if-js
 ---------------------------------------------------------------------------------------- -}
 
 module BoundedDeriv2 where

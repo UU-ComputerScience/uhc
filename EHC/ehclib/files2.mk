@@ -254,7 +254,7 @@ ehclib-codegentargetspecific-C: $(if $(EHC_CFG_USE_GRIN),$(INSTALL_LIB_RTS),)
 
 ehclib-codegentargetspecific-jazy: $(if $(ENABLE_JAVA),$(INSTALL_LIB_JAZY),)
 
-ehclib-codegentargetspecific-jscript: $(if $(ENABLE_JSCRIPT),$(INSTALL_LIB_JSCRIPT),)
+ehclib-codegentargetspecific-js: $(if $(ENABLE_JS),$(INSTALL_LIB_JS),)
 
 ehclib-codegentargetspecific-core:
 

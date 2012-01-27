@@ -2,7 +2,7 @@
 {-# LANGUAGE NoImplicitPrelude, CPP #-}
 {-# OPTIONS_GHC -XNoImplicitPrelude #-}
 {-# OPTIONS_HADDOCK hide #-}
-{-# EXCLUDE_IF_TARGET jscript #-}
+{-# EXCLUDE_IF_TARGET js #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  GHC.ForeignPtr

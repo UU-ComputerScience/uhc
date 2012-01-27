@@ -11,7 +11,7 @@ In particular, System.IO requires this.
 
 %%[99
 {-# LANGUAGE NoImplicitPrelude #-}
-{-# EXCLUDE_IF_TARGET jscript #-}
+{-# EXCLUDE_IF_TARGET js #-}
 
 module UHC.Conc
   ( threadWaitRead, threadWaitWrite

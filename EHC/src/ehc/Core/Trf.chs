@@ -181,7 +181,7 @@ trfCore opts dataGam modNm trfcore
                           ; t_ana_relev
                           ; t_opt_strict
                           })
-               ; when (targetIsJScript (ehcOptTarget opts))
+               ; when (targetIsJavaScript (ehcOptTarget opts))
                       (do { {- t_let_flatstr
                           ; -} t_ren_uniq (emptyRenUniqOpts {renuniqOptResetOnlyInLam = True})
                           })

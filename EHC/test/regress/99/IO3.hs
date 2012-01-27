@@ -1,7 +1,7 @@
 {- ----------------------------------------------------------------------------------------
    what    : IO
    expected: error, attempt to open non existent file for reading
-   constraints: exclude-if-jscript
+   constraints: exclude-if-js
 ---------------------------------------------------------------------------------------- -}
 
 module Main where

@@ -128,10 +128,10 @@ then
   AC_SUBST(JAR_CMD,$jarCmd)
 fi
 
-### enable options: jscript (JavaScript), default is yes
-# AC_ARG_ENABLE(jscript, AS_HELP_STRING([--enable-jscript],[include JavaScript code generation]), [enableJScript=yes], [enableJScript=no])
-enableJScript="yes"
-AC_SUBST(ENABLE_JSCRIPT,$enableJScript)
+### enable options: js (JavaScript), default is yes
+# AC_ARG_ENABLE(js, AS_HELP_STRING([--enable-js],[include JavaScript code generation]), [enableJavaScript=yes], [enableJavaScript=no])
+enableJavaScript="yes"
+AC_SUBST(ENABLE_JS,$enableJavaScript)
 
 ### enable options: cmm, default is no, temporary until development is ready
 AC_ARG_ENABLE(cmm, AS_HELP_STRING([--enable-cmm],[include cmm code generation]), [enableCmm=yes], [enableCmm=no])
@@ -989,7 +989,7 @@ AC_SUBST(GCC_EHC_EXTRA_EXTERN_LIBS,"$gcc_ehc_extra_extern_libs")
 suffix_shell=""
 suffix_exec=""
 suffix_libC=".a"
-suffix_libJScript=".mjs"
+suffix_libJavaScript=".mjs"
 prefix_lib=""
 # development platform
 development_platform="UNIX"
@@ -1045,7 +1045,7 @@ esac
 AC_SUBST(SUFFIX_SHELL,"$suffix_shell")
 AC_SUBST(SUFFIX_EXEC,"$suffix_exec")
 AC_SUBST(SUFFIX_LIBC,"$suffix_libC")
-AC_SUBST(SUFFIX_LIBJSCRIPT,"$suffix_libJScript")
+AC_SUBST(SUFFIX_LIBJS,"$suffix_libJavaScript")
 AC_SUBST(PREFIX_LIB,"$prefix_lib")
 AC_SUBST(PATHS_SEP,"$paths_sep")
 AC_SUBST(SLASH,"$slash")
