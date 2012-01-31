@@ -6,6 +6,12 @@ MK_PREFIX									:= $(TOP_PREFIX)mk/
 MK_CONFIG_MKF								:= $(MK_PREFIX)config.mk
 
 ###########################################################################################
+# current date
+###########################################################################################
+
+DATE			:= $(shell /bin/date +%Y%m%d)
+
+###########################################################################################
 # the overall version of EH
 ###########################################################################################
 
@@ -55,6 +61,19 @@ EXTLIBS_GMP_PKG_NAME		:= @EXTLIBS_GMP_PKG_NAME@
 
 # name of pkg config file, assumed to be present for each package in its package dir
 UHC_PKG_CONFIGFILE_NAME		:= installed-pkg-config
+
+###########################################################################################
+# Platform we develop on; stuff depending on it, in particular to cater for cygwin
+###########################################################################################
+
+# platform: UNIX, CYGWIN
+DEVELOPMENT_PLATFORM				:= @DEVELOPMENT_PLATFORM@
+# platform: as known by configure, with wordsize added
+HOST_PLATFORM_NAME				:= @HOST_PLATFORM@
+HOST_PLATFORM_NRWORDBITS		:= @NRWORDBITS_PLATFORM@
+
+# A prefix to be added for direct access to otherwise hidden (by cygwin) locations
+TOPLEVEL_SYSTEM_ABSPATH_PREFIX		:= @TOPLEVEL_SYSTEM_ABSPATH_PREFIX@
 
 ###########################################################################################
 # inclusion of features

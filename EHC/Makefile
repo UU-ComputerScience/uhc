@@ -49,6 +49,7 @@ $(RULER1): $(RULER1_DIR)/$(RULER1_AG) $(LIB_EH_UTIL_INS_FLAG)
 
 include src/files.mk
 include $(SRC_PREFIX)ehc/shared.mk
+include $(MK_PREFIX)functions.mk
 include $(MK_PREFIX)shared.mk
 
 include $(SRC_PREFIX)libutil/files.mk
@@ -98,7 +99,7 @@ include ehclib/files2.mk
 include test/files.mk
 include test/benchmark/files.mk
 
--include $(MK_PREFIX)dist.mk
+#-include $(MK_PREFIX)dist.mk
 
 ###########################################################################################
 # all versions (as used by testing)
@@ -163,6 +164,10 @@ explanation:
 	echo  "make test-expect         : make expected output (for later comparison with test-regress), see test-regress for remarks" ; \
 	echo  "make benchmark           : run 16 nofib programs with 3 compilers on 3 inputs each"; \
 	echo  "" ; \
+    echo  "Distribution" ; \
+	echo  "===========" ; \
+	echo  "make uhc-dist            : make platform specific binary distribution from uhc build in $(DISTABS_PREFIX)" ; \
+	echo  "" ; \
     echo  "Cleaning up" ; \
 	echo  "===========" ; \
 	echo  "make <n>/clean           : cleanup for variant <n>" ; \
@@ -226,24 +231,33 @@ heliumdoc: $(LIB_HELIUM_ALL_DRV_HS) $(LIB_TOP_HS_DRV) $(LIB_LVM_HS_DRV)
 # Target: UHC: uhc + libs
 ###########################################################################################
 
+# install util functions, also used for building distribution (see target uhc-dist)
+
+# Copy install files to install/dist location
+# $1: src install prefix
+# $2: dst install prefix
+FUN_INSTALLUHC_COPY	= \
+	echo "Copying files to $(2) ..." && \
+	mkdir -p $(2) && \
+	$(call FUN_COPY_FILES_AND_RENAME,$(1),$(2),$(EHC_UHC_INSTALL_VARIANT),$(UHC_INSTALL_VARIANTNAME)) && \
+	$(STRIP) $(2)bin/$(EHC_EXEC_NAME)$(EXEC_SUFFIX) && \
+	alltargets="`$(EHC_FOR_UHC_BLD_EXEC) --meta-targets`" && \
+	echo "Postprocessing installation ..." && \
+	for target in $${alltargets} ; \
+	do \
+	  $(MAKE) uhc-install-postprocess-$${target} EHC_VARIANT_TARGET=$${target} ; \
+	done
+
+# install
+
 uhc: $(EHC_FOR_UHC_BLD_EXEC) $(EHC_UHC_INSTALL_VARIANT)/ehclibs
 
 uhc-install: uhc
 	@rm -f $(UHC_INSTALL_EXEC)
-	@echo "Copying files to $(UHC_INSTALL_PREFIX) ..."
-	@mkdir -p $(UHC_INSTALL_PREFIX)
-	@$(call FUN_COPY_FILES_AND_RENAME,$(UHC_INSTALL_VARIANT_PREFIX),$(UHC_INSTALL_PREFIX),$(EHC_UHC_INSTALL_VARIANT),$(UHC_INSTALL_VARIANTNAME)) ; \
-	alltargets="`$(EHC_FOR_UHC_BLD_EXEC) --meta-targets`" ; \
-	echo "Postprocessing installation ..." ; \
-	for target in $${alltargets} ; \
-	do \
-	  $(MAKE) uhc-install-postprocess-$${target} EHC_VARIANT_TARGET=$${target} ; \
-	done ; \
+	@$(call FUN_INSTALLUHC_COPY,$(UHC_INSTALL_VARIANT_PREFIX),$(UHC_INSTALL_PREFIX)) ; \
 	rm -f $(UHC_INSTALL_EXEC) ; \
 	mkdir -p $(INSTALL_UHC_BIN_PREFIX) ; \
-	$(STRIP) $(UHC_INSTALL_EHCBINARY) ; \
-	echo "Generating wrapper ..." ; \
-	$(call FUN_GEN_SHELL_ALIAS,$(UHC_INSTALL_EHCBINARY),$(UHC_INSTALL_SHELL),--cfg-install-root=$(TOPLEVEL_SYSTEM_ABSPATH_PREFIX)$(INSTALL_UHC_ROOT) --cfg-install-variant=$(UHC_INSTALL_VARIANTNAME))
+ 	$(call FUN_INSTALLUHC_WRAPPER,$(UHC_INSTALL_EHCBINARY),$(UHC_INSTALL_SHELL),$(INSTALL_UHC_BIN_PREFIX),$(TOPLEVEL_SYSTEM_ABSPATH_PREFIX)$(INSTALL_UHC_ROOT),$(UHC_INSTALL_VARIANTNAME))
 	@echo "Installation done"
 
 #	ln -s $(UHC_INSTALL_EHCBINARY) $(UHC_INSTALL_EXEC)
@@ -254,20 +268,20 @@ uhc-uninstall:
 	rm -fr $(UHC_INSTALL_PREFIX) $(UHC_INSTALL_EXEC)
 
 uhc-install-postprocess-bc:
-	@cd $(call FUN_DIR_VARIANT_LIB_TARGET_PREFIX,$(INSTALL_UHC_ROOT),$(UHC_INSTALL_VARIANTNAME),$(EHC_VARIANT_TARGET)) ; \
-	for pkg in $(EHC_PACKAGES_ASSUMED) ; \
-	do \
-	  rm -f $${pkg}/$(EHCLIB_MAIN)* ; \
-	done
+#	@cd $(call FUN_DIR_VARIANT_LIB_TARGET_PREFIX,$(INSTALL_UHC_ROOT),$(UHC_INSTALL_VARIANTNAME),$(EHC_VARIANT_TARGET)) ; \
+#	for pkg in $(EHC_PACKAGES_ASSUMED) ; \
+#	do \
+#	  rm -f $${pkg}/$(EHCLIB_MAIN)* ; \
+#	done
 
 #	  rm -f $${pkg}/*.{hs,hs-cpp,c} $${pkg}/*/*.{hs,hs-cpp,c} $${pkg}/$(EHCLIB_MAIN)* ; \
 
 uhc-install-postprocess-C:
-	@cd $(call FUN_DIR_VARIANT_LIB_TARGET_PREFIX,$(INSTALL_UHC_ROOT),$(UHC_INSTALL_VARIANTNAME),$(EHC_VARIANT_TARGET)) ; \
-	for pkg in $(EHC_PACKAGES_ASSUMED) ; \
-	do \
-	  rm -f $${pkg}/$(EHCLIB_MAIN)* ; \
-	done
+#	@cd $(call FUN_DIR_VARIANT_LIB_TARGET_PREFIX,$(INSTALL_UHC_ROOT),$(UHC_INSTALL_VARIANTNAME),$(EHC_VARIANT_TARGET)) ; \
+#	for pkg in $(EHC_PACKAGES_ASSUMED) ; \
+#	do \
+#	  rm -f $${pkg}/$(EHCLIB_MAIN)* ; \
+#	done
 
 #	  rm -f $${pkg}/*.{hs,hs-cpp} $${pkg}/*/*.{hs,hs-cpp} $${pkg}/$(EHCLIB_MAIN)* ; \
 
@@ -280,6 +294,66 @@ uhc-install-postprocess-js:
 uhc-install-postprocess-llvm:
 	
 # still to do: uhc --meta-export-env=$(INSTALL_UHC_LIB_PREFIX),$(UHC_EXEC_NAME)
+
+###########################################################################################
+# Target: UHC: binary distribution generation
+###########################################################################################
+
+uhc-dist: uhc
+	@distnm="$(UHC_INSTALL_VARIANTNAME)-R$(subst :,-,$(SVN_REVISION))-$(DATE)-$(HOST_PLATFORM_NRWORDBITS)-$(HOST_PLATFORM_NAME)" && \
+	distdir="$(DISTABS_PREFIX)$${distnm}" && \
+	mkdir -p $${distdir} && \
+	echo $${distnm} && \
+	echo $(UHC_INSTALL_VARIANT_PREFIX) $(UHC_INSTALL_PREFIX) && \
+	$(call FUN_INSTALLUHC_COPY,$(UHC_INSTALL_VARIANT_PREFIX),$${distdir}/dist/) && \
+	echo "Generating install (make, config, ...) files to $${distdir} ..." && \
+	mkdir -p $(UHC_INSTALL_VARIANT_PREFIX) && \
+	( echo "# installation makefile, generated for $${distnm}" && \
+	  echo "" && \
+	  echo "TAR:=$(TAR)" && \
+	  echo 'include mk/functions.mk' && \
+	  echo "" && \
+	  echo 'DIST_DIR:=@prefix@' && \
+	  echo 'DIST_PREFIX:=$$(DIST_DIR)/' && \
+	  echo 'DIST_LIB_DIR:=$$(DIST_PREFIX)lib' && \
+	  echo 'DIST_LIB_PREFIX:=$$(DIST_LIB_DIR)/' && \
+	  echo 'DIST_BIN_PREFIX:=$$(DIST_PREFIX)bin/' && \
+	  echo 'DIST_INSTALL_PREFIX:=$$(call FUN_DIR_VARIANT_PREFIX,$$(DIST_LIB_DIR),'"$(UHC_INSTALL_VARIANTNAME)"')' && \
+	  echo 'DIST_EHCBINARY:=$$(DIST_INSTALL_PREFIX)bin/'"$(EHC_EXEC_NAME)$(EXEC_SUFFIX)" && \
+	  echo 'DIST_UHCSHELL:=$$(DIST_BIN_PREFIX)'"$(UHC_EXEC_NAME)" && \
+	  echo "" && \
+	  echo "install:" && \
+	  echo '	@echo Copying files to $$(DIST_INSTALL_PREFIX) ...' && \
+	  echo '	@$$(call FUN_COPY_FILES_BY_TAR,dist,$$(DIST_INSTALL_PREFIX),*)' && \
+	  echo '	@$$(call FUN_INSTALLUHC_WRAPPER,$$(DIST_EHCBINARY),$$(DIST_UHCSHELL),$$(DIST_BIN_PREFIX),$$(DIST_LIB_PREFIX),'"$(UHC_INSTALL_VARIANTNAME)"')' && \
+	  echo "" && \
+	  echo "uninstall:" && \
+	  echo '	@echo Removing installation $$(DIST_INSTALL_PREFIX) ...' && \
+	  echo '	rm -rf $$(DIST_INSTALL_PREFIX) $$(DIST_UHCSHELL)' && \
+	  echo "" && \
+	  echo "# done" \
+	) > $${distdir}/Makefile.in && \
+	( echo "# installation configure, generated for $${distnm}" && \
+	  echo "AC_INIT([UHC],[$(EH_VERSION_FULL)],[uhc-users@lists.science.uu.nl, http://www.cs.uu.nl/wiki/UHC/WebHome])" && \
+	  echo 'AC_CANONICAL_HOST' && \
+	  echo 'AC_CONFIG_FILES([Makefile])' && \
+	  echo 'AC_OUTPUT' && \
+	  echo "# done" \
+	) > $${distdir}/configure.ac && \
+	cp LICENSE README \
+		aclocal.m4 \
+		install-sh \
+		config.guess config.sub \
+		$${distdir} && \
+	mkdir -p $${distdir}/mk && \
+	cp $(MK_PREFIX)functions.mk \
+		$${distdir}/mk && \
+	cd $${distdir} && \
+	autoconf && \
+	cd .. && \
+	echo "Building archive $${distnm}.tar.bz2 ..." && \
+	tar cfj $${distnm}.tar.bz2 $${distnm} && \
+	echo "Done"
 
 ###########################################################################################
 # Target: UHC: installation
@@ -309,6 +383,7 @@ clean:
 	$(MAKE) ruler-clean
 	$(MAKE) shuffle-clean
 	$(MAKE) libutil-clean
+	rm -rf $(DIST_PREFIX)
 
 #	@echo "NOTE: all but external libraries (gmp, ...) is cleaned. Use 'make clean-extlibs' for cleaning those."
 
@@ -331,42 +406,6 @@ bump-minor:
 bump-minorminor:
 	@echo $(EH_VERSION_MAJOR).$(EH_VERSION_MINOR).$$(($(EH_VERSION_MINORMINOR)+1)) > VERSION ; \
 	echo "bumped version to `cat VERSION`"
-
-###########################################################################################
-# Releasing, construct distribution
-###########################################################################################
-
-# NOTE: not maintained for some time already; guaranteed to be broken
-
-DISTS_DIR		:= $(BLD_PREFIX)dists
-DIST_UHC_SRC_NM	:= uhc-$(TODAY)-$(EH_VERSION_FULL)-src
-
-uhc-src-dist:
-	mkdir -p $(DISTS_DIR)/$(DIST_UHC_SRC_NM) ; \
-	( (tar cf - --exclude '.*' \
-	       src \
-	       ehclib extlibs \
-	       doc/*-doc.pdf \
-	       bin/filterOutEmptyFiles bin/agdepend bin/llvm-*.in \
-	       test/files.mk test/regress/frozen-test-expect.tgz \
-	       Makefile mk \
-	       configure.ac configure install-sh config.sub config.guess \
-	       Setup.hs \
-	       VERSION README ANNOUNCE LICENSE \
-	  ) \
-	| (cd $(DISTS_DIR)/$(DIST_UHC_SRC_NM) && tar xf -) \
-	) ; \
-	$(call FUN_GEN_CABAL_EXEC \
-		, uhc \
-		, $(EH_VERSION_FULL) \
-		, mtl \
-		,  \
-		, Utrecht Haskell Compiler \
-		, \
-		, \
-	) > $(DISTS_DIR)/$(DIST_UHC_SRC_NM)/uhc.cabal ; \
-	(cd $(DISTS_DIR) && tar cfj $(DIST_UHC_SRC_NM).tar.bz2 $(DIST_UHC_SRC_NM)) ; \
-	cp $(DISTS_DIR)/$(DIST_UHC_SRC_NM).tar.bz2 www
 
 ###########################################################################################
 # Releasing, currently just svn copying

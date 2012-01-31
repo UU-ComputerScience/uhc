@@ -762,6 +762,8 @@ PATHS_SEP
 SLASH
 LINKER_SYMBOL_PREFIX
 DEVELOPMENT_PLATFORM
+HOST_PLATFORM
+NRWORDBITS_PLATFORM
 LIBTOOL_STATIC_CMD
 LIBTOOL_STATIC_OPTS
 LIBTOOL_DYNAMIC_CMD
@@ -31282,6 +31284,9 @@ else
   use64bits=""
 fi
 
+# get nr of bits, for further Makefile use
+nrwordbits_platform="$((8 * $ac_cv_sizeof_intptr_t))"
+
 if test "x$use32bits" = "xyes"
 then
   gccExtlibsOptions="$gccExtlibsOptions -m32"
@@ -31420,6 +31425,7 @@ suffix_libJavaScript=".mjs"
 prefix_lib=""
 # development platform
 development_platform="UNIX"
+host_platform="$host"
 # path separator
 paths_sep=":"
 slash="/"
@@ -31488,6 +31494,10 @@ LINKER_SYMBOL_PREFIX="$linker_symbol_prefix"
 
 # misc
 DEVELOPMENT_PLATFORM="$development_platform"
+
+HOST_PLATFORM="$host_platform"
+
+NRWORDBITS_PLATFORM="$nrwordbits_platform"
 
 
 # libtool used, if any
@@ -32411,6 +32421,8 @@ PATHS_SEP!$PATHS_SEP$ac_delim
 SLASH!$SLASH$ac_delim
 LINKER_SYMBOL_PREFIX!$LINKER_SYMBOL_PREFIX$ac_delim
 DEVELOPMENT_PLATFORM!$DEVELOPMENT_PLATFORM$ac_delim
+HOST_PLATFORM!$HOST_PLATFORM$ac_delim
+NRWORDBITS_PLATFORM!$NRWORDBITS_PLATFORM$ac_delim
 LIBTOOL_STATIC_CMD!$LIBTOOL_STATIC_CMD$ac_delim
 LIBTOOL_STATIC_OPTS!$LIBTOOL_STATIC_OPTS$ac_delim
 LIBTOOL_DYNAMIC_CMD!$LIBTOOL_DYNAMIC_CMD$ac_delim
@@ -32436,7 +32448,7 @@ LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 73; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 75; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5
