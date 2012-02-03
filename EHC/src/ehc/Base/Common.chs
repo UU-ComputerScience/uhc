@@ -1039,10 +1039,9 @@ data Presence = Present | Absent deriving (Eq,Ord,Show)
 %%% Combinations
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-Combine [[x1..xn],..,[y1..ym]] to [[x1..y1],[x1..y2],..,[xn..ym]].
-Each element [xi..yi] is distinct based on the the key k in xi==(k,_)
-
 %%[9 export(combineToDistinguishedElts)
+-- | Combine [[x1..xn],..,[y1..ym]] to [[x1..y1],[x2..y1],..,[xn..ym]].
+--   Each element [xi..yi] is distinct based on the the key k in xi==(k,_)
 combineToDistinguishedElts :: Eq k => [AssocL k v] -> [AssocL k v]
 combineToDistinguishedElts []     = []
 combineToDistinguishedElts [[]]   = []

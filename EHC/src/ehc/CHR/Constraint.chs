@@ -30,6 +30,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(9 hmtyinfer || hmtyast) export(Constraint(..))
+-- | A Constraint is abstracted over the exact predicate, but differentiates on the role: to prove, can be assumed, and side effect of reduction
 data Constraint p info
   = Prove           { cnstrPred :: !p }             -- proof obligation
   | Assume          { cnstrPred :: !p }             -- assumed constraint
@@ -58,21 +59,22 @@ deriving instance Typeable2 Constraint
 deriving instance (Data x, Data y) => Data (Constraint x y)
 %%]
 
-%%[(9 hmtyinfer || hmtyast)
-reducablePart :: Constraint p info -> Maybe (String,p,p->Constraint p info)
-reducablePart (Prove  p) = Just ("Prf",p,Prove)
-reducablePart (Assume p) = Just ("Ass",p,Assume)
-reducablePart _          = Nothing
+%%[(9 hmtyinfer || hmtyast) export(constraintReducablePart)
+-- | Dissection of Constraint, including reconstruction function
+constraintReducablePart :: Constraint p info -> Maybe (String,p,p->Constraint p info)
+constraintReducablePart (Prove  p) = Just ("Prf",p,Prove)
+constraintReducablePart (Assume p) = Just ("Ass",p,Assume)
+constraintReducablePart _          = Nothing
 %%]
 
 %%[(9 hmtyinfer || hmtyast)
 instance Keyable p => Keyable (Constraint p info) where
-  toKey c = maybe [] (\(s,p,_) -> TK_One TKK_Normal (Key_Str s) : toKey p) $ reducablePart c
+  toKey c = maybe [] (\(s,p,_) -> TK_One TKK_Normal (Key_Str s) : toKey p) $ constraintReducablePart c
 
 instance (CHRMatchable env p s) => CHRMatchable env (Constraint p info) s where
   chrMatchTo env s c1 c2
-    = do { (_,p1,_) <- reducablePart c1
-         ; (_,p2,_) <- reducablePart c2
+    = do { (_,p1,_) <- constraintReducablePart c1
+         ; (_,p2,_) <- constraintReducablePart c2
          ; chrMatchTo env s p1 p2
          }
 %%]
@@ -80,7 +82,7 @@ instance (CHRMatchable env p s) => CHRMatchable env (Constraint p info) s where
 %%[(9 hmtyinfer || hmtyast)
 instance (VarExtractable p v,VarExtractable info v) => VarExtractable (Constraint p info) v where
   varFreeSet c
-    = case reducablePart c of
+    = case constraintReducablePart c of
         Just (_,p,_) -> varFreeSet p
         _            -> Set.empty
 
@@ -129,6 +131,7 @@ instance (PP p, PP info) => PP (UnresolvedTrace p info) where
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(9 hmtyinfer || hmtyast)
+-- | Map from constraint to something
 type ConstraintMp' p info x = Map.Map (Constraint p info) [x]
 %%]
 
@@ -141,6 +144,7 @@ cnstrMpMap f = Map.map (map f)
 %%]
 
 %%[(9 hmtyinfer || hmtyast) export(ConstraintToInfoTraceMp)
+-- | Map from constraint to info + trace
 type ConstraintToInfoTraceMp p info = ConstraintMp' p info (info,UnresolvedTrace p info)
 %%]
 
@@ -155,9 +159,12 @@ cnstrTraceMpLiftTrace :: (Ord p, Ord i) => ConstraintToInfoMap p i -> Constraint
 cnstrTraceMpLiftTrace = cnstrMpMap (\x -> (x,UnresolvedTrace_None))
 %%]
 
-%%[(9 hmtyinfer || hmtyast) export(ConstraintToInfoMap,emptyCnstrMp)
+%%[(9 hmtyinfer || hmtyast) export(ConstraintToInfoMap)
+-- | Map from constraint to info
 type ConstraintToInfoMap     p info = ConstraintMp' p info info
+%%]
 
+%%[(9 hmtyinfer || hmtyast) export(emptyCnstrMp)
 emptyCnstrMp :: ConstraintMp' p info x
 emptyCnstrMp = Map.empty
 %%]
@@ -176,18 +183,11 @@ cnstrMpUnions = Map.unionsWith (++)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Rule
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(9 hmtyinfer || hmtyast) export(CHRRule)
-type CHRRule p g s info = CHR (Constraint p info) g s
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Observations
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(9 hmtyinfer || hmtyast) export(cnstrRequiresSolve)
+-- | Predicate for whether solving is required
 cnstrRequiresSolve :: Constraint p info -> Bool
 cnstrRequiresSolve (Reduction {}) = False
 cnstrRequiresSolve _              = True

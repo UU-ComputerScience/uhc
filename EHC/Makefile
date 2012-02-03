@@ -282,6 +282,66 @@ uhc-install-postprocess-llvm:
 # still to do: uhc --meta-export-env=$(INSTALL_UHC_LIB_PREFIX),$(UHC_EXEC_NAME)
 
 ###########################################################################################
+# Target: UHC: binary distribution generation
+###########################################################################################
+
+uhc-dist: uhc
+	@distnm="$(UHC_INSTALL_VARIANTNAME)-$(subst :,-,$(SVN_REVISION))-$(DATE)-$(HOST_PLATFORM_NRWORDBITS)-$(HOST_PLATFORM_NAME)" && \
+	distdir="$(DISTABS_PREFIX)$${distnm}" && \
+	mkdir -p $${distdir} && \
+	$(call FUN_INSTALLUHC_COPY,$(UHC_INSTALL_VARIANT_PREFIX),$${distdir}/dist/) && \
+	echo "Generating install (make, config, ...) files to $${distdir} ..." && \
+	mkdir -p $(UHC_INSTALL_VARIANT_PREFIX) && \
+	( echo "# installation makefile, generated for $${distnm}" && \
+	  echo "" && \
+	  echo "TAR:=$(TAR)" && \
+	  echo 'include mk/functions.mk' && \
+	  echo "" && \
+	  echo 'DIST_DIR:=@prefix@' && \
+	  echo 'DIST_PREFIX:=$$(DIST_DIR)/' && \
+	  echo 'DIST_LIB_DIR:=$$(DIST_PREFIX)lib' && \
+	  echo 'DIST_LIB_PREFIX:=$$(DIST_LIB_DIR)/' && \
+	  echo 'DIST_BIN_PREFIX:=$$(DIST_PREFIX)bin/' && \
+	  echo 'DIST_INSTALL_PREFIX:=$$(call FUN_DIR_VARIANT_PREFIX,$$(DIST_LIB_DIR),'"$(UHC_INSTALL_VARIANTNAME)"')' && \
+	  echo 'DIST_EHCBINARY:=$$(DIST_INSTALL_PREFIX)bin/'"$(EHC_EXEC_NAME)$(EXEC_SUFFIX)" && \
+	  echo 'DIST_UHCSHELL:=$$(DIST_BIN_PREFIX)'"$(UHC_EXEC_NAME)" && \
+	  echo "" && \
+	  echo "default:" && \
+	  echo "	@echo This is a binary distribution, UHC is already built, install with \'make install\'" && \
+	  echo "" && \
+	  echo "install:" && \
+	  echo '	@echo Installing files to $$(DIST_INSTALL_PREFIX) ...' && \
+	  echo '	@$$(call FUN_COPY_FILES_BY_TAR,dist,$$(DIST_INSTALL_PREFIX),*)' && \
+	  echo '	@$$(call FUN_INSTALLUHC_WRAPPER,$$(DIST_EHCBINARY),$$(DIST_UHCSHELL),$$(DIST_BIN_PREFIX),$$(DIST_LIB_PREFIX),'"$(UHC_INSTALL_VARIANTNAME)"')' && \
+	  echo "" && \
+	  echo "uninstall:" && \
+	  echo '	@echo Removing installation $$(DIST_INSTALL_PREFIX) ...' && \
+	  echo '	rm -rf $$(DIST_INSTALL_PREFIX) $$(DIST_UHCSHELL)' && \
+	  echo "" \
+	) > $${distdir}/Makefile.in && \
+	( echo "# installation configure, generated for $${distnm}" && \
+	  echo "AC_INIT([UHC],[$(EH_VERSION_FULL)],[uhc-users@lists.science.uu.nl, http://www.cs.uu.nl/wiki/UHC/WebHome])" && \
+	  echo 'AC_CANONICAL_HOST' && \
+	  echo 'AC_CONFIG_FILES([Makefile])' && \
+	  echo 'AC_OUTPUT' && \
+	  echo "" \
+	) > $${distdir}/configure.ac && \
+	cp LICENSE README \
+		aclocal.m4 \
+		install-sh \
+		config.guess config.sub \
+		$${distdir} && \
+	mkdir -p $${distdir}/mk && \
+	cp $(MK_PREFIX)functions.mk \
+		$${distdir}/mk && \
+	cd $${distdir} && \
+	autoconf && \
+	cd .. && \
+	echo "Building distribution archive $${distnm}.tar.bz2 ..." && \
+	tar cfj $${distnm}.tar.bz2 $${distnm} && \
+	echo "Done"
+
+###########################################################################################
 # Target: UHC: installation
 ###########################################################################################
 

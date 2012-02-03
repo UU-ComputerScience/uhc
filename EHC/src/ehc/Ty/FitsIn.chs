@@ -1754,8 +1754,8 @@ fitsInFold opts env uniq varmp tyl
 
 %%[(9 hmtyinfer) export(fitPredIntoPred)
 fitPredIntoPred
-  :: ( VarLookup gm LabelVarId VarMpInfo
-     , VarLookupCmb VarMp gm
+  :: ( VarLookupCmb VarMp gm
+     , VarLookup gm TyVarId VarMpInfo
      )
      => FIIn' gm -> Pred -> Pred
      -> Maybe (Pred,VarMp)

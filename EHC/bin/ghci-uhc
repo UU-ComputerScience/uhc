@@ -1,0 +1,11 @@
+#!/bin/sh
+# invoke ghci on a uhc library
+variant=99
+module=$1
+ghci -ibuild/libutil:build/${variant}:build/${variant}/lib-ehc \
+	-package bytestring \
+	-XFlexibleContexts -XTypeSynonymInstances -XRankNTypes -XMultiParamTypeClasses \
+	-XMultiParamTypeClasses -XFunctionalDependencies -XFlexibleInstances \
+	-XExistentialQuantification -XUndecidableInstances -XOverlappingInstances -XDeriveDataTypeable -XLiberalTypeSynonyms \
+	-XScopedTypeVariables -XStandaloneDeriving \
+	${module} # build/${variant}/EHC.hs

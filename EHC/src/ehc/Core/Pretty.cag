@@ -89,7 +89,12 @@ ppOptCMetas x
 
 %%[(9 codegen) hs export(ppCBindL)
 ppCBindL :: CBindL -> PP_Doc
-ppCBindL = ppAssocL . map (\(CBind_Bind n [CBindAspect_Bind m v]) -> (n,v >|< ppOptCMetas m))
+ppCBindL
+  = ppAssocL
+  . map (\b -> case b of
+                 CBind_Bind n [CBindAspect_Bind m v] -> (n,v >|< ppOptCMetas m)
+                 CBind_Bind n _ -> (n,pp "..")
+        )
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

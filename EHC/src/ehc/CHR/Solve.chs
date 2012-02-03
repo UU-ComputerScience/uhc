@@ -47,6 +47,7 @@ type UsedByKey = (CHRKey,Int)
 %%]
 
 %%[(9 hmtyinfer || hmtyast) export(CHRStore,emptyCHRStore)
+-- | A CHR as stored in a CHRStore, requiring additional info for efficiency
 data StoredCHR p i g s
   = StoredCHR
       { storedChr       :: !(CHR (Constraint p i) g s)   	-- the CHR
@@ -58,9 +59,11 @@ data StoredCHR p i g s
   deriving (Typeable, Data)
 %%]]
 
+-- | The size of the simplification part of a CHR
 storedSimpSz :: StoredCHR p i g s -> Int
 storedSimpSz = chrSimpSz . storedChr
 
+-- | A CHR store is a trie structure
 newtype CHRStore pred info guard subst
   = CHRStore
       { chrstoreTrie    :: Trie.Trie Key [StoredCHR pred info guard subst]
@@ -76,6 +79,7 @@ emptyCHRStore = mkCHRStore Trie.empty
 %%]
 
 %%[(9 hmtyinfer || hmtyast)
+-- | Combine lists of stored CHRs by concat, adapting their identification nr to be unique
 cmbStoredCHRs :: [StoredCHR p i g s] -> [StoredCHR p i g s] -> [StoredCHR p i g s]
 cmbStoredCHRs s1 s2
   = map (\s@(StoredCHR {storedIdent=(k,nr)}) -> s {storedIdent = (k,nr+l)}) s1 ++ s2
@@ -102,6 +106,7 @@ instance (PP p, PP i, PP g) => PP (StoredCHR p i g s) where
 %%]
 
 %%[(9 hmtyinfer || hmtyast) export(chrStoreFromElems,chrStoreUnion,chrStoreUnions,chrStoreSingletonElem)
+-- | Convert from list to store
 chrStoreFromElems :: Keyable p => [CHR (Constraint p i) g s] -> CHRStore p i g s
 chrStoreFromElems chrs
   = mkCHRStore
@@ -168,7 +173,9 @@ initWorkTime = 0
 type WorkKey = CHRKey
 -- type WorkUsedInMap = Map.Map CHRKey (Set.Set UsedByKey)
 type WorkUsedInMap = Map.Map (Set.Set CHRKey) (Set.Set UsedByKey)
+type WorkTrie p i = Trie.Trie Key (Work p i)
 
+-- | A chunk of work to do when solving, a constraint + sequence nr
 data Work p i
   = Work
       { workCnstr   :: !(Constraint p i)            -- the constraint to be reduced
@@ -176,9 +183,12 @@ data Work p i
       -- , workUsedIn  :: Set.Set CHRKey              -- marked with the propagation rules already applied to it
       }
 
+-- | The work to be done (wlQueue), also represented as a trie (wlTrie) because efficient check on already worked on is needed.
+--   A done set (wlDoneSet) remembers which CHRs (itself a list of constraints) have been solved.
+--   To prevent duplicate propagation a mapping from CHRs to a map (wlUsedIn) to the CHRs it is used in is maintained.
 data WorkList p i
   = WorkList
-      { wlTrie      :: !(Trie.Trie Key (Work p i))
+      { wlTrie      :: !(WorkTrie p i)
       , wlDoneSet   :: !(Set.Set WorkKey)                  	-- accumulative store of all keys added, set semantics, thereby avoiding double entry
       , wlQueue     :: !(AssocL WorkKey (Work p i))
       , wlScanned   :: !(AssocL WorkKey (Work p i))     	-- tried but could not solve, so retry when other succeeds
@@ -413,7 +423,7 @@ chrSolve' env chrStore cnstrs
 
 %%[(9 hmtyinfer || hmtyast) export(chrSolve'')
 chrSolve''
-  :: -- forall env p i g s .
+  :: forall env p i g s .
      ( CHRMatchable env p s, CHRCheckable env g s
      -- , VarUpdatable s s, VarUpdatable g s, VarUpdatable i s, VarUpdatable p s
      , VarLookupCmb s s
@@ -475,7 +485,7 @@ chrSolve'' env chrStore cnstrs prevState
 %%][100
                         = expandMatch st' tlMatchY
 %%]]
-                        where (tlMatchY,tlMatchN) = partition (\(r@(_,(ks,_)),_) -> not (any (`elem` keysSimp) ks || isUsedByPropPart (wlUsedIn wl') r)) tlMatch
+                        where (tlMatchY,tlMatchN) = partition (\(r@(_,(ks,_)),_) -> not (any (`elem` keysSimp) ks || slvIsUsedByPropPart (wlUsedIn wl') r)) tlMatch
                               (keysSimp,keysProp) = splitAt simpSz keys
                               usedIn              = Map.singleton (Set.fromList keysProp) (Set.singleton chrId)
                               (bTodo,bDone)       = splitDone $ map (varUpd subst) b
@@ -552,54 +562,126 @@ chrSolve'' env chrStore cnstrs prevState
                                 , Map.empty
 %%]]
                                 )
-          where -- cache result
+          where -- cache result, if present use that, otherwise the below computation
                 mbInCache = Map.lookup workHdKey (stMatchCache st)
-                -- results
-                r2  = concat $ lookupResultToList $ lookupPartialByKey TrieLookup_Partial workHdKey $ chrstoreTrie chrStore
-                r23 = map (\c -> (c,candidate c)) r2
-                r3  = concatMap (\(c,cands) -> zip (repeat c) (map unzip $ combine cands)) $ r23
-                r4  = filter (not . isUsedByPropPart wlUsedIn) r3
-                r5  = mapMaybe (\r@(chr,kw@(_,works)) -> fmap (\s -> (r,s)) $ match chr (map workCnstr works)) r4
+                
+                -- results, stepwise computed for later reference in debugging output
+                -- basic search result
+                r2 :: [StoredCHR p i g s]										-- CHRs matching workHdKey
+                r2  = concat													-- flatten
+                		$ lookupResultToList									-- convert to list
+                		$ lookupPartialByKey TrieLookup_Partial workHdKey		-- lookup the store, allowing too many results
+                		$ chrstoreTrie chrStore
+                
+                -- lookup further info in wlTrie, in particular to find out what has been done already
+                r23 :: [( StoredCHR p i g s										-- the CHR
+                        , ( [( [(CHRKey, Work p i)]								-- for each CHR the list of constraints, all possible work matches
+                             , [(CHRKey, Work p i)]
+                             )]
+                          , (CHRKey, Set.Set CHRKey)
+                        ) )]
+                r23 = map (\c -> (c, slvCandidate workHdKey lastQuery wlTrie c)) r2
+                
+                -- possible matches
+                r3, r4
+                    :: [( StoredCHR p i g s										-- the matched CHR
+                        , ( [CHRKey]											-- possible matching constraints (matching with the CHR constraints), as Keys, as Works
+                          , [Work p i]
+                        ) )]
+                r3  = concatMap (\(c,cands) -> zip (repeat c) (map unzip $ slvCombine cands)) $ r23
+                
+                -- same, but now restricted to not used earlier as indicated by the worklist
+                r4  = filter (not . slvIsUsedByPropPart wlUsedIn) r3
+                
+                -- finally, the 'real' match of the 'real' constraint, yielding (by tupling) substitutions instantiating the found trie matches
+                r5  :: [( ( StoredCHR p i g s
+                          , ( [CHRKey]			
+                            , [Work p i]
+                          ) )
+                        , s
+                        )]
+                r5  = mapMaybe (\r@(chr,kw@(_,works)) -> fmap (\s -> (r,s)) $ slvMatch env chr (map workCnstr works)) r4
 %%[[9
+                -- debug info
                 pp2  = "lookups"    >#< ("for" >#< ppTrieKey workHdKey >-< ppBracketsCommasV r2)
                 -- pp2b = "cand1"      >#< (ppBracketsCommasV $ map (ppBracketsCommasV . map (ppBracketsCommasV . map (\(k,w) -> ppTrieKey k >#< w)) . fst . candidate) r2)
                 -- pp2c = "cand2"      >#< (ppBracketsCommasV $ map (ppBracketsCommasV . map (ppBracketsCommasV) . combineToDistinguishedElts . fst . candidate) r2)
                 pp3  = "candidates" >#< (ppBracketsCommasV $ map (\(chr,(ks,ws)) -> "chr" >#< chr >-< "keys" >#< ppBracketsCommas (map ppTrieKey ks) >-< "works" >#< ppBracketsCommasV ws) $ r3)
 %%][100
 %%]]
-                -- util functions
-                candidate (StoredCHR {storedIdent = (ck,_), storedKeys = ks, storedChr = chr})
-                  = (cand lkup ks, (ck,queriedWorkS))
-                  where lkup how k    = partition (\(_,w) -> workTime w < lastQueryTm) $ lookupResultToList $ lookupPartialByKey' (,) how k wlTrie
-                                      where lastQueryTm = lqLookupW k lastQueryW
-                        cand lkup     = map (maybe (lkup TrieLookup_Normal workHdKey) (lkup TrieLookup_StopAtPartial))
-                        lastQueryW    = lqLookupC ck lastQuery
-                        queriedWorkS  = Set.fromList $ map (maybe workHdKey id) ks
-                combine ([],_) = []
-                combine ((lh:lt),_)
-                  = concatMap combineToDistinguishedElts l2
-                  -- = combineToDistinguishedElts $ map (\(bef,aft) -> bef++aft) l
-                  where l2 = g2 [] lh lt
-                           where g2 ll l []           = [mk ll l []]
-                                 g2 ll l lr@(lrh:lrt) = mk ll l lr : g2 (ll ++ [l]) lrh lrt
-                                 mk ll (bef,aft) lr   = map fst ll ++ [aft] ++ map cmb lr
-                                                      where cmb (a,b) = a++b
-                match chr cnstrs
-                  = foldl cmb (Just chrEmptySubst) $ matches chr cnstrs ++ checks chr
-                  where matches (StoredCHR {storedChr = CHR {chrHead = hc}}) cnstrs
-                          = zipWith mt hc cnstrs
-                          where mt cFr cTo subst = chrMatchTo env subst cFr cTo
-                        checks (StoredCHR {storedChr = CHR {chrGuard = gd}})
-                          = map chk gd
-                          where chk g subst = chrCheck env subst g
-                        cmb (Just s) next = fmap (|+> s) $ next s
-                        cmb _        _    = Nothing
-        isUsedByPropPart wlUsedIn (chr,(keys,_))
-          = fnd $ drop (storedSimpSz chr) keys
-          where fnd k = maybe False (storedIdent chr `Set.member`) $ Map.lookup (Set.fromList k) wlUsedIn
         initState st = st { stWorkList = wlInsert (stHistoryCount st) wlnew $ stWorkList st, stDoneCnstrSet = Set.unions [Set.fromList done, stDoneCnstrSet st] }
                      where (wlnew,done) = splitDone cnstrs
         splitDone  = partition cnstrRequiresSolve
+%%]
+
+%%[(9 hmtyinfer || hmtyast)
+-- | Extract candidates matching a CHRKey.
+--   Return a list of CHR matches,
+--     each match expressed as the list of constraints (in the form of Work + Key) found in the workList wlTrie, thus giving all combis with constraints as part of a CHR,
+--     partititioned on before or after last query time (to avoid work duplication later)
+slvCandidate
+  :: CHRKey
+     -> LastQuery
+     -> WorkTrie p i
+     -> StoredCHR p i g s
+     -> ( [( [(CHRKey, Work p i)]
+           , [(CHRKey, Work p i)]
+           )]
+        , (CHRKey, Set.Set CHRKey)
+        )
+slvCandidate workHdKey lastQuery wlTrie (StoredCHR {storedIdent = (ck,_), storedKeys = ks, storedChr = chr})
+  = ( map (maybe (lkup TrieLookup_Normal workHdKey) (lkup TrieLookup_StopAtPartial)) ks
+    , ( ck
+      , Set.fromList $ map (maybe workHdKey id) ks
+    ) )
+  where lkup how k = partition (\(_,w) -> workTime w < lastQueryTm) $ lookupResultToList $ lookupPartialByKey' (,) how k wlTrie
+                   where lastQueryTm = lqLookupW k $ lqLookupC ck lastQuery
+%%]
+
+%%[(9 hmtyinfer || hmtyast)
+slvCombine :: Eq k => ([([Assoc k v], [Assoc k v])], t) -> [AssocL k v]
+slvCombine ([],_) = []
+slvCombine ((lh:lt),_)
+  = concatMap combineToDistinguishedElts l2
+  where l2 = g2 [] lh lt
+           where g2 ll l []           = [mk ll l []]
+                 g2 ll l lr@(lrh:lrt) = mk ll l lr : g2 (ll ++ [l]) lrh lrt
+                 mk ll (bef,aft) lr   = map fst ll ++ [aft] ++ map cmb lr
+                                      where cmb (a,b) = a++b
+%%]
+
+%%[(9 hmtyinfer || hmtyast)
+-- | Check whether the CHR propagation part of a match already has been used (i.e. propagated) earlier,
+--   this to avoid duplicate propagation.
+slvIsUsedByPropPart
+  :: Ord k
+     => Map.Map (Set.Set k) (Set.Set UsedByKey)
+     -> (StoredCHR p i g s, ([k], t))
+     -> Bool
+slvIsUsedByPropPart wlUsedIn (chr,(keys,_))
+  = fnd $ drop (storedSimpSz chr) keys
+  where fnd k = maybe False (storedIdent chr `Set.member`) $ Map.lookup (Set.fromList k) wlUsedIn
+%%]
+
+%%[(9 hmtyinfer || hmtyast)
+-- | Match the stored CHR with a set of possible constraints, giving a substitution on success
+slvMatch
+  :: ( CHREmptySubstitution s
+     , CHRMatchable env p s
+     , CHRCheckable env g s
+     , VarLookupCmb s s
+     )
+     => env -> StoredCHR p i g s -> [Constraint p i] -> Maybe s
+slvMatch env chr cnstrs
+  = foldl cmb (Just chrEmptySubst) $ matches chr cnstrs ++ checks chr
+  where matches (StoredCHR {storedChr = CHR {chrHead = hc}}) cnstrs
+          = zipWith mt hc cnstrs
+          where mt cFr cTo subst = chrMatchTo env subst cFr cTo
+        checks (StoredCHR {storedChr = CHR {chrGuard = gd}})
+          = map chk gd
+          where chk g subst = chrCheck env subst g
+        cmb (Just s) next = fmap (|+> s) $ next s
+        cmb _        _    = Nothing
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
