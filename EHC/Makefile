@@ -300,11 +300,9 @@ uhc-install-postprocess-llvm:
 ###########################################################################################
 
 uhc-dist: uhc
-	@distnm="$(UHC_INSTALL_VARIANTNAME)-R$(subst :,-,$(SVN_REVISION))-$(DATE)-$(HOST_PLATFORM_NRWORDBITS)-$(HOST_PLATFORM_NAME)" && \
+	@distnm="$(UHC_INSTALL_VARIANTNAME)-$(subst :,-,$(SVN_REVISION))-$(DATE)-$(HOST_PLATFORM_NRWORDBITS)-$(HOST_PLATFORM_NAME)" && \
 	distdir="$(DISTABS_PREFIX)$${distnm}" && \
 	mkdir -p $${distdir} && \
-	echo $${distnm} && \
-	echo $(UHC_INSTALL_VARIANT_PREFIX) $(UHC_INSTALL_PREFIX) && \
 	$(call FUN_INSTALLUHC_COPY,$(UHC_INSTALL_VARIANT_PREFIX),$${distdir}/dist/) && \
 	echo "Generating install (make, config, ...) files to $${distdir} ..." && \
 	mkdir -p $(UHC_INSTALL_VARIANT_PREFIX) && \
@@ -322,23 +320,25 @@ uhc-dist: uhc
 	  echo 'DIST_EHCBINARY:=$$(DIST_INSTALL_PREFIX)bin/'"$(EHC_EXEC_NAME)$(EXEC_SUFFIX)" && \
 	  echo 'DIST_UHCSHELL:=$$(DIST_BIN_PREFIX)'"$(UHC_EXEC_NAME)" && \
 	  echo "" && \
+	  echo "default:" && \
+	  echo "	@echo This is a binary distribution, UHC is already built, install with \'make install\'" && \
+	  echo "" && \
 	  echo "install:" && \
-	  echo '	@echo Copying files to $$(DIST_INSTALL_PREFIX) ...' && \
+	  echo '	@echo Installing files to $$(DIST_INSTALL_PREFIX) ...' && \
 	  echo '	@$$(call FUN_COPY_FILES_BY_TAR,dist,$$(DIST_INSTALL_PREFIX),*)' && \
 	  echo '	@$$(call FUN_INSTALLUHC_WRAPPER,$$(DIST_EHCBINARY),$$(DIST_UHCSHELL),$$(DIST_BIN_PREFIX),$$(DIST_LIB_PREFIX),'"$(UHC_INSTALL_VARIANTNAME)"')' && \
 	  echo "" && \
 	  echo "uninstall:" && \
 	  echo '	@echo Removing installation $$(DIST_INSTALL_PREFIX) ...' && \
 	  echo '	rm -rf $$(DIST_INSTALL_PREFIX) $$(DIST_UHCSHELL)' && \
-	  echo "" && \
-	  echo "# done" \
+	  echo "" \
 	) > $${distdir}/Makefile.in && \
 	( echo "# installation configure, generated for $${distnm}" && \
 	  echo "AC_INIT([UHC],[$(EH_VERSION_FULL)],[uhc-users@lists.science.uu.nl, http://www.cs.uu.nl/wiki/UHC/WebHome])" && \
 	  echo 'AC_CANONICAL_HOST' && \
 	  echo 'AC_CONFIG_FILES([Makefile])' && \
 	  echo 'AC_OUTPUT' && \
-	  echo "# done" \
+	  echo "" \
 	) > $${distdir}/configure.ac && \
 	cp LICENSE README \
 		aclocal.m4 \
@@ -351,7 +351,7 @@ uhc-dist: uhc
 	cd $${distdir} && \
 	autoconf && \
 	cd .. && \
-	echo "Building archive $${distnm}.tar.bz2 ..." && \
+	echo "Building distribution archive $${distnm}.tar.bz2 ..." && \
 	tar cfj $${distnm}.tar.bz2 $${distnm} && \
 	echo "Done"
 

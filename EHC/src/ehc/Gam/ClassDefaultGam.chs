@@ -49,7 +49,7 @@ type ClassDefaultGam = Gam HsName ClassDefaultGamInfo
 %%[(9 hmtyinfer || hmtyast) export(clDfGamLookupDefault)
 -- | Lookup a matching default for a predicate
 clDfGamLookupDefault
-  :: ( VarLookup gm LabelVarId VarMpInfo
+  :: ( VarLookup gm TyVarId VarMpInfo
      -- , VarLookup gm Ty VarMpInfo
      , VarLookupCmb VarMp gm
      )

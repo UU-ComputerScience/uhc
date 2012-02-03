@@ -2,8 +2,10 @@
 %%% Constraint Handling Rules
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[doesWhat doclatex
 Derived from work by Gerrit vd Geest, but with searching structures for predicates
 to avoid explosion of search space during resolution.
+%%]
 
 %%[(9 hmtyinfer || hmtyast) module {%{EH}CHR} import(qualified {%{EH}Base.Trie} as Trie,{%{EH}Base.Common},{%{EH}Substitutable},{%{EH}VarMp})
 %%]
@@ -28,6 +30,7 @@ to avoid explosion of search space during resolution.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(9 hmtyinfer || hmtyast) export(CHR(..))
+-- | A CHR (rule) consist of head (simplification + propagation, boundary indicated by an Int), guard, and a body. All may be empty, but not all at the same time.
 data CHR cnstr guard subst
   = CHR
       { chrHead     	:: ![cnstr]

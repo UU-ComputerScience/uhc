@@ -259,9 +259,16 @@ simplify' simplifyHow chrStore clDfGam heur partitionUnresolved2AmbigAndOthers t
 
        ; return ()
        }
-  where canon s (Prove p) = (Prove $ p {cpoPr = p'}, m)
+  where {-
+        canon s (Prove p) = (Prove $ p {cpoPr = p'}, m)
                           where (p',m) = predCanonic (simpEnv s) $ cpoPr p
         canon s  c        = (c, emptyVarMp)
+        -}
+        canon s c
+          = case constraintReducablePart c of
+              Just (_,p,mkc) -> (mkc $ p {cpoPr = p'}, m)
+                             where (p',m) = predCanonic (simpEnv s) $ cpoPr p
+              _              -> (c, emptyVarMp)
         
         -- basic simplification of reduction graph
         basicSimpRedGraph chrSolveAllCnstrMp

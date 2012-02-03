@@ -227,7 +227,7 @@ SEM Pred
 		    loc     .   needRepl    =   case @tvUse of
 		    	    		           TVFree -> @isRepl
 						   _      -> False
-                    inst    .   repl'       =   if @needRepl then @replv else Pred_Preds PredSeq_Nil
+                    inst    .   repl'       =   if @needRepl then @replv else Pred_Pred Ty_Any
 %%]
 
 %%[(10 hmtyinfer || hmtyast)
