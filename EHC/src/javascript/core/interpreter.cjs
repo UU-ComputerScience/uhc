@@ -100,15 +100,15 @@ _A_undersat_.prototype = {
           return fun.__aN__( args.slice( needs ) ) ;
         } } ;
     }
-  } ,
-  needsNrArgs : function() {
+  }
+, needsNrArgs : function() {
     return this.fun.needsNrArgs() - this.args.length ;
-  } ,
+  }
 %%[[8
-  getName : function () {
+, getName : function () {
     return "A-" + this.needsNrArgs() + "#" + this.nodeId + "'" ;
-  } ,
-  toString : function () {
+  }
+, toString : function () {
     return "(" + this.getName() + "=" + this.fun + "@" + this.args + ")" ;
   }
 %%][100
@@ -132,15 +132,15 @@ _A_.prototype = {
       __eOrV__ : function() {
         return fun.__aN__( args ) ;
       } } ;
-  } ,
+  }
 %%[[8
-  getName : function () {
+, getName : function () {
     return "A" + this.args.length + "#" + this.nodeId + "'" + this.fun.getName() ;
-  } ,
-  getVal : function () {
+  }
+, getVal : function () {
     return "V#" + this.nodeId + "'" + this.__eOrV__ ;
-  } ,
-  toString : function () {
+  }
+, toString : function () {
     if ( typeof this.__eOrV__ == 'function' ) {
       return "(" + this.getName() + "@args#" + this.args.length + "=(|" + this.args + "|))" ;
     } else {
@@ -206,15 +206,15 @@ _F_.prototype = {
           return fun.__aN__( remargs ) ;
         } } ;
     }
-  } ,
-  needsNrArgs : function() {
+  }
+, needsNrArgs : function() {
     return this.needs ;
-  } ,
+  }
 %%[[8
-  getName : function () {
+, getName : function () {
     return "F" + this.needs + "#" + this.nodeId + "'" + this.name ;
-  } ,
-  toString : function () {
+  }
+, toString : function () {
     return "(" + this.getName() + ")" ;
   }
 %%][100
