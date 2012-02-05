@@ -135,6 +135,8 @@ primTanhDouble = function(x) { return primSinhDouble(x) / primCoshDouble(x) ; }
 
 primAtan2Double = function(x,y) { return Math.atan2(x,y) ; }
 
+primGenericEq = function(a,b) { return PrimMkBool(a == b); }
+
 %%]
 
 %%[8
