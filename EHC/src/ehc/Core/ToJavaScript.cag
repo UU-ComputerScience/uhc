@@ -634,7 +634,7 @@ ffiJavaScriptMkCall ty
           where as   = map (mkHNm . ('v':) . show) [1..(tyNumArgs ty - 1)]
                 rn   = mkHNm "res"
                 bdy  = [ J.jsVarDecl rn $ jsEvl $ jsApp e $ (map jsVar as) ++ [J.Expr_Arr []]
-                       , J.Stat_Ret $ J.Expr_ArrInx (jsVar rn) (jsIntConst 1) ]
+                       , J.Stat_Ret $ jsEvl $ J.Expr_ArrInx (jsVar rn) (jsIntConst 1) ]
 
         mkDyn _ (e:es) = J.Expr_Call e es
 %%]]
