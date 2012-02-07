@@ -137,6 +137,15 @@ primAtan2Double = function(x,y) { return Math.atan2(x,y) ; }
 
 primGenericEq = function(a,b) { return PrimMkBool(a == b); }
 
+primTyEq = function(a,b) {
+  //bug in typeof, typeof null returns "object"
+  if(a === null) {
+    return PrimMkBool(a === b);
+  }
+
+  return PrimMkBool(typeof a == typeof b);
+}
+
 %%]
 
 %%[8
