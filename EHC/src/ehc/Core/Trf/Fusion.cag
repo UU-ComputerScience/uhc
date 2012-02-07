@@ -11,7 +11,7 @@ cmodTrfFusion lamMp cmod =
                                            , convMp_Inh_CodeAGItf = Map.empty 
                                            , lamMp_Inh_CodeAGItf = lamMp
                                            } )
-     in inlined_Syn_CodeAGItf t
+     in rewritten_Syn_CodeAGItf t
 }
 
 
@@ -138,7 +138,7 @@ ATTR CBindAspectL [ || gathExpr USE {++} {[]} : {[CExpr]} ] -- this should just 
 ATTR CBindAspect [ || gathExpr USE {++} {[]} : {[CExpr]}]
 
 SEM CBindAspect
-        | Bind lhs.gathExpr = [@expr.inlined] -- The fuseMap holds the result of any inlining done to this code instead of the original
+        | Bind lhs.gathExpr = [@expr.rewritten] -- The fuseMap holds the result of any inlining done to this code instead of the original
 -------------------------------------------------------------------------------
 -- Actually do the inlining
 -------------------------------------------------------------------------------
