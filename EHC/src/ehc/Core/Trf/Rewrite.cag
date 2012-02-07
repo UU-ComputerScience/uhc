@@ -1,4 +1,4 @@
-%%[93 hs module {%{EH}Core.Trf.Rewrite} import (qualified Data.Map as Map, {%{EH}AbstractCore},{%{EH}Core},{%{EH}Ty},{%{EH}Base.Common}) 
+%%[93 hs module {%{EH}Core.Trf.Rewrite} import (Data.Maybe(fromMaybe), Debug.Trace(trace),qualified Data.Map as Map, {%{EH}AbstractCore},{%{EH}Core},{%{EH}Ty},{%{EH}Base.Common}) 
 %%]
 
 %%[93 ag import ({Core/AbsSyn})
@@ -16,6 +16,13 @@ rewrite convMp expr =
 {
 
 data Role   = Abs | Con
+
+isCon Con = True
+isCon _   = False
+
+isAbs Abs = True
+isAbs _   = False
+
 type ConvMp = Map.Map HsName Role
 
 }
@@ -26,23 +33,22 @@ ATTR CodeAGItf [ convMp : ConvMp | | ]
 ATTR AllCodeNT [ convMp : ConvMp | | rewritten : SELF]
 
 SEM CExpr 
-        | App lhs.rewritten = if @arg.isRewritable || @loc.isRewritable -- already checks that @func here is the right function using @leftApp
-                              then @arg.rewritten 
+        | App lhs.rewritten = if @loc.isRewritable || @arg.isRewritten  
+                              then @arg.rewritten  
                               else acoreApp1 @func.rewritten @arg.rewritten
 
-
-ATTR CExpr [ | | isRewritable : Bool ]
+ATTR CExpr [ | | isRewritten : Bool isRewritable : Bool]
 
 SEM CExpr
-        | App lhs.isRewritable = @isRewritable
-        | App loc.isRewritable = case @lhs.leftApp of
-                                        Nothing -> False
-                                        Just _  -> case @func.varName of
-                                                        Just nm -> case Map.lookup nm @lhs.convMp of
-                                                                        Just Abs -> True
-                                                                        _        -> False
-                                                        Nothing -> False
-        | * - App lhs.isRewritable = False
+        | * lhs.isRewritten    = @isRewritable 
+        | App loc.isRewritable = fromMaybe False (do leftNm    <- @lhs.leftApp
+                                                     leftRole  <- Map.lookup leftNm @lhs.convMp
+                                                     rightNm   <- @func.varName
+                                                     rightRole <- Map.lookup rightNm @lhs.convMp
+                                                     return (isCon leftRole && isAbs rightRole))
+        | Let loc.isRewritable = @body.isRewritable
+        | Ann loc.isRewritable = @expr.isRewritable
+        | * - App Let Ann loc.isRewritable = False 
 
 ATTR CExpr [ | | varName : {Maybe HsName} ] 
 
@@ -56,11 +62,8 @@ ATTR CExpr [ leftApp : {Maybe HsName} | | ]
 
 SEM CExpr 
         | App func.leftApp = Nothing
-        | App arg.leftApp  = case @func.varName of
-                                Just nm -> case Map.lookup nm @lhs.convMp of
-                                                Just Con -> Just nm
-                                                _        -> Nothing
-                                _       -> Nothing
+        | App arg.leftApp  = @func.varName
+
 SEM CAlt
         | Alt expr.leftApp = Nothing
 
