@@ -39,10 +39,10 @@ ATTR AllCodeNT [ || inlined : SELF]
 SEM CExpr
         | App lhs.inlined = @inlined
         | App loc.inlined = if @func.isFusible -- && @arg.isFusible
-                            then apply @func.inlined @arg.inlined  -- inline this function application.  
+                            then apply @func.inlined @arg.rewritten -- inline this function application.  
                                                                    -- We actually want the fused version of the arg, 
                                                                    -- but this hasn't been defined yet
-                            else acoreApp1 @func.inlined @arg.inlined
+                            else acoreApp1 @func.inlined @arg.rewritten
         | Var lhs.inlined = if @isFusible 
                             then case Map.lookup (acbrefNm @ref) @lhs.fuseMp of
                                         Just expr -> trace ("Found expr to inline for " ++ (show (acbrefNm @ref)) ++ "\n") $ expr
