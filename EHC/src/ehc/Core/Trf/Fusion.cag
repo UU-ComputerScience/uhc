@@ -1,4 +1,4 @@
-%%[93 hs module {%{EH}Core.Trf.Fusion} import (Debug.Trace,{%{EH}Ty},{%{EH}Base.Common},{%{EH}LamInfo},{%{EH}Core},{%{EH}AbstractCore}, {%{EH}Core.Trf.Subst} (cexprSubst), {%{EH}Core.Trf.Rewrite} (rewrite, ConvMp(..), Role(..)), qualified Data.Map as Map)
+%%[93 hs module {%{EH}Core.Trf.Fusion} import (Data.Maybe (fromMaybe, isJust),Debug.Trace,{%{EH}Ty},{%{EH}Base.Common},{%{EH}LamInfo},{%{EH}Core},{%{EH}AbstractCore}, {%{EH}Core.Trf.Subst} (cexprSubst), {%{EH}Core.Trf.Rewrite} (rewrite, ConvMp(..), Role(..)), qualified Data.Map as Map)
 %%]
 
 %%[93 ag import ({Core/AbsSyn})
@@ -44,9 +44,7 @@ SEM CExpr
                                                                    -- but this hasn't been defined yet
                             else acoreApp1 @func.inlined @arg.rewritten
         | Var lhs.inlined = if @isFusible 
-                            then case Map.lookup (acbrefNm @ref) @lhs.fuseMp of
-                                        Just expr -> trace ("Found expr to inline for " ++ (show (acbrefNm @ref)) ++ "\n") $ expr
-                                        Nothing   -> @inlined
+                            then fromMaybe @inlined (Map.lookup (acbrefNm @ref) @lhs.fuseMp)
                             else @inlined
 
 ATTR CodeAGItf [ || rewritten : CModule]
@@ -55,19 +53,18 @@ ATTR AllCodeNT [ || rewritten : SELF]
 SEM CExpr 
        | App lhs.rewritten = rewrite @lhs.convMp @loc.inlined -- take the inlined code and attempt to remove any con . abs
          
-
--- Tests to see if a function is marked as fusible, or is fusible.  A @func of an App is fusible 
--- if it is a named function found in the fuseMp, or if is another function application whose 
--- @func is fusible. 
+------------------------------------------------------------------------------
+-- Tests to see if a function is fusible.  A @func of an App is fusible if it 
+-- is a named function found in the fuseMp, if it is a function application 
+-- whose @func is fusible. 
+------------------------------------------------------------------------------
 
 ATTR CExpr [ || isFusible : Bool ]
 
 SEM CExpr
-        | Var loc.isFusible = case Map.lookup (acbrefNm @ref) @lhs.fuseMp of 
-                               Just _  -> True
-                               Nothing -> False
-        | Var lhs.isFusible = @isFusible
-        | App lhs.isFusible = @func.isFusible
+        | Var loc.isFusible           = isJust (Map.lookup (acbrefNm @ref) @lhs.fuseMp)
+        | Var lhs.isFusible           = @isFusible
+        | App lhs.isFusible           = @func.isFusible
         | * - App Var lhs.isFusible   = False
 
 -- Transformations to actually perform a beta reduction. An App node is beta reduced by calling 
@@ -88,13 +85,15 @@ ATTR CBindL [ | | gathConvMp USE {`Map.union`} {Map.empty} : ConvMp ]
 ATTR CBind  [ | | gathConvMp : ConvMp ]
 
 SEM CBind
-        | Bind loc.gathConvMp = case Map.lookup @nm @lhs.lamMp of  
-                                        Nothing      -> Map.empty
-                                        Just lamInfo -> case Map.lookup acbaspkeyFusionRole (laminfoBindAspMp lamInfo) of
-                                                                Just (LamInfoBindAsp_FusionRole FusionRole_BuildLeft)  -> Map.singleton @nm Con
-                                                                Just (LamInfoBindAsp_FusionRole FusionRole_BuildRight) -> Map.singleton @nm Abs
-                                                                _                                                      -> Map.empty 
-
+        | Bind loc.gathConvMp = fromMaybe Map.empty (do 
+                                    { lamInfo <- Map.lookup @nm @lhs.lamMp   
+                                    ; role    <- Map.lookup acbaspkeyFusionRole (laminfoBindAspMp lamInfo) 
+                                    ; return (case role of
+                                                 LamInfoBindAsp_FusionRole FusionRole_BuildLeft  -> Map.singleton @nm Con
+                                                 LamInfoBindAsp_FusionRole FusionRole_BuildRight -> Map.singleton @nm Abs
+                                                 _                                               -> Map.empty)
+                                    })
+                                        
 ------------------------------------------------------------------------------
 -- Pass fusible function names and bodies down the expressions
 ------------------------------------------------------------------------------
@@ -105,7 +104,7 @@ WRAPPER CodeAGItf
 type FuseMp = Map.Map HsName CExpr
 }
 
-ATTR CodeAGItf AllCodeNT [lamMp  : LamMp   | | ] -- passed in, contains which functions have which fusion roles
+ATTR CodeAGItf AllCodeNT [lamMp  : LamMp  | | ] -- passed in, contains which functions have which fusion roles
 ATTR CodeAGItf AllCodeNT [fuseMp : FuseMp | | ] -- starts blank, this will contain the transformed code (circular dependecy) for the functions that need to be inlined for fusion 
 
 
@@ -118,22 +117,15 @@ ATTR CBindL [ || gathFuseMp USE {`Map.union`} {Map.empty} : FuseMp ] -- combine 
 ATTR CBind [ || gathFuseMp : FuseMp ]
 
 SEM CBind 
-  | Bind loc.gathFuseMp = case Map.lookup @nm @lhs.lamMp of -- look up a binding too see if it has a fusion role
-                                Nothing      -> Map.empty
-                                Just lamInfo -> case Map.lookup acbaspkeyFusionRole (laminfoBindAspMp lamInfo) of 
-                                                        Just (LamInfoBindAsp_FusionRole FusionRole_Fuse) -> Map.singleton @nm $ head @bindAspects.gathExpr -- add the name + expression 
-                                                        _                                                -> Map.empty
+  | Bind loc.gathFuseMp = fromMaybe Map.empty (do 
+                            { lamInfo <- Map.lookup @nm @lhs.lamMp -- look up a bindings lamInfo 
+                            ; role    <- Map.lookup acbaspkeyFusionRole (laminfoBindAspMp lamInfo) 
+                            ; return (case role of
+                                        LamInfoBindAsp_FusionRole FusionRole_Fuse -> Map.singleton @nm $ head @bindAspects.gathExpr -- add the name + expression 
+                                        _                                         -> Map.empty)
+                            })
 
 ATTR CBindAspectL [ || gathExpr USE {++} {[]} : {[CExpr]} ] -- this should just be always be a singleton list, but probably not the safest way...
-
---ATTR CBindAspectL [ || traceInfo USE {++} {[]} : {String} *]
-
---ATTR CBindAspect [ || traceInfo : {String} ]
-
---SEM CBindAspect
---        | * - Bind FFE lhs.traceInfo = show @aspectKeyS ++ ", "
---        | Bind lhs.traceInfo = ""
---        | FFE lhs.traceInfo = ""
 
 ATTR CBindAspect [ || gathExpr USE {++} {[]} : {[CExpr]}]
 
