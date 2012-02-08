@@ -139,7 +139,7 @@ primGenericEq = function(a,b) { return PrimMkBool(a == b); }
 
 primTyEq = function(a,b) {
   //bug in typeof, typeof null returns "object"
-  if(a === null) {
+  if(a === null || b === null) {
     return PrimMkBool(a === b);
   }
 
