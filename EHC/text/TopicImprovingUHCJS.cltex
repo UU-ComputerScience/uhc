@@ -1,18 +1,10 @@
-\usepackage[T1]{fontenc}
-\usepackage[utf8]{inputenc}
-\usepackage{url}
-\usepackage[unicode=true]{hyperref}
-\usepackage[backend=biber]{biblatex}
-\addbibresource{bibliography.bib}
 
-%include polycode.fmt
+%%[prelude
 %format a_1
 %format a_i
 %format a_j
 %format a_n
-
 %format MANY   = "\!^{*}"
-
 
 \newenvironment{jscode}
 {\par\begin{list}{}{
@@ -23,6 +15,7 @@
 \normalfont\ttfamily}%
  \item[]}
 {\end{list}}
+%%]
 
 %%[abstract
 In this document we describe current and new usecases for the UHC \js backend.
@@ -126,11 +119,11 @@ This is exactly what the FFI export interface (refered to as FFE from now on)
 allows you to do:
 
 \begin{code}
-foreign export jscript "myAdd"
+foreign export js "myAdd"
   myAdd :: Int -> Int -> Int
 \end{code}
 
-This export declaration tells the compiler to use the |jscript| calling
+This export declaration tells the compiler to use the |js| calling
 convention and generate a function called |myAdd|, which wraps around the
 compiler-generated function \texttt{\$my\_mod.\$myAdd}, solving the problems
 mentioned before.
@@ -157,11 +150,11 @@ signature could be:
 alert :: Int -> IO ()
 %%]]
 
-Using the |jscript| calling convention and the normal way of using the FFI,
+Using the |js| calling convention and the normal way of using the FFI,
 we could try importing this \texttt{alert} function into the Haskell world:
 
 %%[[wrap=safecode
-foreign import jscript "alert"
+foreign import js "alert"
   alert :: Int -> IO ()
 %%]]
 
@@ -175,7 +168,7 @@ This allows us to redefine the import and specify how we want our integer
 argument to be used:
 
 %%[[wrap=safecode
-foreign import jscript "alert(%1)"
+foreign import js "alert(%1)"
   alert :: Int -> IO ()
 %%]]
 
@@ -186,7 +179,7 @@ object which has a \texttt{doStuff} method, which in turn takes two integers
 as an argument and returns a new integer. We can import the method as follows:
 
 %%[[wrap=safecode
-foreign import jscript "%1.doStuff(%2, %3)"
+foreign import js "%1.doStuff(%2, %3)"
   doStuff :: MyObj -> Int -> Int -> Int
 %%]]
 
@@ -196,7 +189,7 @@ called and its arguments. Since it is tedious to specify all arguments manually
 all the time, the FEL offers a shortcut:
 
 %%[[wrap=safecode
-foreign import jscript "%1.doStuff(%*)"
+foreign import js "%1.doStuff(%*)"
   doStuff :: MyObj -> Int -> Int -> Int
 %%]]
 
@@ -233,7 +226,7 @@ primitive \js functions which perform lower-level operations. These functions
 can be imported using the |prim| calling convention. This calling convention
 only requires specifying the name of the primitive function. Arguments to the
 function cannot be specified using the FEL. All available primitive functions
-are defined in \textit{EHC/jscript/rts/prim.cjs} in the compiler source code.
+are defined in \textit{EHC/javascript/rts/prim.cjs} in the compiler source code.
 The list of primitive functions is too extensive to list here.
 
 
@@ -249,7 +242,7 @@ to \texttt{uhc}, or via Cabal. For a manual compilation, issue the following
 command after making sure variant 101 is installed system-wide:
 
 \begin{jscode}
-uhc -tjscript myfile.hs
+uhc -tjs myfile.hs
 \end{jscode}
 
 Support for building with Cabal is currently limited, although it is possible
@@ -259,7 +252,7 @@ configure} append the \texttt{--uhc} flag. Finally, build the package by
 issuing the following command:
 
 \begin{jscode}
-cabal build --uhc-option="-tjscript"
+cabal build --uhc-option="-tjs"
 \end{jscode}
 
 Note that HTML files will not be available when doing this.
@@ -334,10 +327,10 @@ rest of the arguments for you, all that is required is defining explicit
 imports, one for each number of arguments:
 
 %%[[wrap=safecode
-foreign import jscript "%1.concat(%*)"
+foreign import js "%1.concat(%*)"
   concat :: JSString -> JSString -> JSString
 
-foreign import jscript "%1.concat(%*)"
+foreign import js "%1.concat(%*)"
   concat2  ::  JSString -> JSString
            ->  JSString -> JSString
 
@@ -362,7 +355,7 @@ function, call the imported function and apply |mkIdxRes| -- imported from the
 |Maybe Int| value:
 
 %%[[wrap=safecode
-foreign import jscript "%1.indexOf(%*)"
+foreign import js "%1.indexOf(%*)"
   _indexOf  :: JSString -> JSString -> Int
 
 indexOf :: JSString -> JSString -> Maybe Int
@@ -387,7 +380,7 @@ foreign import prim
   "primStringToPackedString"
   stringToJSString :: String -> JSString
 
-foreign import jscript "%1.indexOf(%*)"
+foreign import js "%1.indexOf(%*)"
   _indexOf  :: JSString -> JSString -> Int
 
 indexOf :: String -> String -> Maybe Int
@@ -409,7 +402,7 @@ action as result, but the string will be static throughout the code. We can
 then define an import such as the following:
 
 %%[[wrap=safecode
-foreign import jscript "myFun(\"arg1\", %1)"
+foreign import js "myFun(\"arg1\", %1)"
   myFun :: Int -> IO ()
 %%]]
 
@@ -421,7 +414,7 @@ a pointer to a \js array is available, index lookup may be performed in a
 similar fashing to JavaScript;
 
 %%[[wrap=safecode
-foreign import jscript "%1[%2]"
+foreign import js "%1[%2]"
   nodeListItem  ::  NodeList Node -> Int
                 ->  IO Node
 %%]]
@@ -485,7 +478,7 @@ function partSum(x) \{
 We would import the function as follows:
 
 %%[[wrap=safecode
-foreign import jscript "partSum(%1)"
+foreign import js "partSum(%1)"
   partSum :: Int -> IO (FunPtr (Int -> Int))
 %%]]
 
@@ -494,7 +487,7 @@ function in |IO|. We need to extract it from |IO| and import it dynamically
 into Haskell. To do this, we need a dynamic function:
 
 %%[[wrap=safecode
-foreign import jscript "dynamic"
+foreign import js "dynamic"
   mkSumFun  ::  FunPtr (Int -> Int)
             ->  (Int -> Int)
 %%]]
@@ -524,7 +517,7 @@ function sum(n, m, cb) \{
 To call this function, we first need to import it into the Haskell world:
 
 %%[[wrap=safecode
-foreign import jscript "sumCb(%*)"
+foreign import js "sumCb(%*)"
   sum  ::  Int -> Int -> FunPtr (Int -> IO ())
        ->  IO ()
 %%]]
@@ -541,7 +534,7 @@ Before we can apply |sum| to this function, we need to wrap it in a |FunPtr|.
 For this, we need to import a wrapper function:
 
 %%[[wrap=safecode
-foreign import jscript "wrapper"
+foreign import js "wrapper"
   mkIntCb  ::  (Int -> IO ())
            ->  IO (FunPtr (Int -> IO ()))
 %%]]
@@ -713,7 +706,7 @@ wrapped a Haskell function in a \js function. We will use a similar approach to
 make datatypes available as \js objects. We introduce the object import:
 
 %%[[wrap=safecode
-foreign import jscript "{}"
+foreign import js "{}"
   mkObj :: a -> IO (JSPtr b)
 %%]]
 

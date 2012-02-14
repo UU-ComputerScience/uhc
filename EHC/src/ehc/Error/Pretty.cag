@@ -368,7 +368,8 @@ SEM Err
 %%[[9
                                                         (    "preds:" >#< vlist @preds
 %%][99
-                                                        (    "preds:" >#< (ppAssocLV [ (pp p, t >-< vlist r) | ((p,r),t) <- @preds ] )
+                                                        -- (    "preds:" >#< (ppAssocLV [ (pp p, t >-< vlist r) | ((p,r),t) <- @preds ] )
+                                                        (    "preds:" >#< (vlist [ pp p >-< indent 2 (("at   :" >#< vlist r) >-< ("trace:" >#< t)) | ((p,r),t) <- @preds ] )
 %%]]
                                                         )
 %%[[99

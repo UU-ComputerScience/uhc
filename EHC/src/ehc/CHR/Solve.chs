@@ -14,7 +14,7 @@ Assumptions (to be documented further)
 %%[(9 hmtyinfer || hmtyast) import({%{EH}VarLookup})
 %%]
 
-%%[(9 hmtyinfer || hmtyast) import({%{EH}Base.Common},{%{EH}Base.Trie} as Trie)
+%%[(9 hmtyinfer || hmtyast) import({%{EH}Base.Common},{%{EH}Base.TreeTrie} as TreeTrie,{%{EH}Base.Trie} as Trie)
 %%]
 
 %%[(9 hmtyinfer || hmtyast) import(qualified Data.Set as Set,qualified Data.Map as Map,Data.List as List,Data.Maybe)
@@ -107,7 +107,7 @@ instance (PP p, PP i, PP g) => PP (StoredCHR p i g s) where
 
 %%[(9 hmtyinfer || hmtyast) export(chrStoreFromElems,chrStoreUnion,chrStoreUnions,chrStoreSingletonElem)
 -- | Convert from list to store
-chrStoreFromElems :: Keyable p => [CHR (Constraint p i) g s] -> CHRStore p i g s
+chrStoreFromElems :: (Keyable p, TTKeyable p) => [CHR (Constraint p i) g s] -> CHRStore p i g s
 chrStoreFromElems chrs
   = mkCHRStore
     $ Trie.fromListByKeyWith cmbStoredCHRs
@@ -121,7 +121,7 @@ chrStoreFromElems chrs
               ks' = map Just ks1 ++ [Nothing] ++ map Just ks2
         ]
 
-chrStoreSingletonElem :: Keyable p => CHR (Constraint p i) g s -> CHRStore p i g s
+chrStoreSingletonElem :: (Keyable p, TTKeyable p) => CHR (Constraint p i) g s -> CHRStore p i g s
 chrStoreSingletonElem x = chrStoreFromElems [x]
 
 chrStoreUnion :: CHRStore p i g s -> CHRStore p i g s -> CHRStore p i g s
@@ -146,12 +146,15 @@ chrStoreElems :: CHRStore p i g s -> [CHR (Constraint p i) g s]
 chrStoreElems = concatMap snd . chrStoreToList
 %%]
 
-%%[(9 hmtyinfer || hmtyast) export(ppCHRStore,ppCHRStore')
+%%[(9 hmtyinfer || hmtyast) export(ppCHRStore,ppCHRStore',ppCHRStore'')
 ppCHRStore :: (PP p,PP g,PP i) => CHRStore p i g s -> PP_Doc
 ppCHRStore = ppCurlysCommasBlock . map (\(k,v) -> ppTrieKey k >-< indent 2 (":" >#< ppBracketsCommasV v)) . chrStoreToList
 
 ppCHRStore' :: (PP p,PP g,PP i) => CHRStore p i g s -> PP_Doc
 ppCHRStore' = ppCurlysCommasBlock . map (\(k,v) -> ppTrieKey k >-< indent 2 (":" >#< ppBracketsCommasV v)) . Trie.toListByKey . chrstoreTrie
+
+ppCHRStore'' :: (PP p,PP g,PP i) => CHRStore p i g s -> PP_Doc
+ppCHRStore'' = ppTrieAsIs . chrstoreTrie
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -215,13 +218,13 @@ ppUsedByKey (k,i) = ppTrieKey k >|< "/" >|< i
 %%]
 
 %%[(9 hmtyinfer || hmtyast)
-mkWorkList :: Keyable p => WorkTime -> [Constraint p i] -> WorkList p i
+mkWorkList :: (Keyable p, TTKeyable p) => WorkTime -> [Constraint p i] -> WorkList p i
 mkWorkList wtm = flip (wlInsert wtm) emptyWorkList
 
 wlToList :: {- (PP p, PP i) => -} WorkList p i -> [Constraint p i]
 wlToList wl = map workCnstr $ Trie.elems $ wlTrie wl
 
-wlCnstrToIns :: Keyable p => WorkList p i -> [Constraint p i] -> AssocL WorkKey (Constraint p i)
+wlCnstrToIns :: (Keyable p, TTKeyable p) => WorkList p i -> [Constraint p i] -> AssocL WorkKey (Constraint p i)
 wlCnstrToIns wl@(WorkList {wlDoneSet = ds}) inscs
   = [(toKey c,c) | c <- inscs, let k = toKey c, not (k `Set.member` ds)]
 
@@ -234,11 +237,11 @@ wlDeleteByKeyAndInsert' wtm delkeys inskeycs wl@(WorkList {wlQueue = wlq, wlTrie
   where inswork = Map.fromList [ (k,Work c wtm) | (k,c) <- inskeycs ]
         instrie = Trie.fromListPartialByKeyWith TrieLookup_Normal const $ Map.toList inswork
 
-wlDeleteByKeyAndInsert :: Keyable p => WorkTime -> [WorkKey] -> [Constraint p i] -> WorkList p i -> WorkList p i
+wlDeleteByKeyAndInsert :: (Keyable p, TTKeyable p) => WorkTime -> [WorkKey] -> [Constraint p i] -> WorkList p i -> WorkList p i
 wlDeleteByKeyAndInsert wtm delkeys inscs wl
   = wlDeleteByKeyAndInsert' wtm delkeys (wlCnstrToIns wl inscs) wl
 
-wlInsert :: Keyable p => WorkTime -> [Constraint p i] -> WorkList p i -> WorkList p i
+wlInsert :: (Keyable p, TTKeyable p) => WorkTime -> [Constraint p i] -> WorkList p i -> WorkList p i
 wlInsert wtm = wlDeleteByKeyAndInsert wtm []
 %%]
 
@@ -570,7 +573,8 @@ chrSolve'' env chrStore cnstrs prevState
                 r2 :: [StoredCHR p i g s]										-- CHRs matching workHdKey
                 r2  = concat													-- flatten
                 		$ lookupResultToList									-- convert to list
-                		$ lookupPartialByKey TrieLookup_Partial workHdKey		-- lookup the store, allowing too many results
+                		$ Trie.lookupPartialByKey TrieLookup_Partial workHdKey		-- lookup the store, allowing too many results
+                		-- $ lookupPartialByKey TrieLookup_ExpandAtPartialKey workHdKey		-- lookup the store, allowing too many results
                 		$ chrstoreTrie chrStore
                 
                 -- lookup further info in wlTrie, in particular to find out what has been done already
@@ -630,11 +634,11 @@ slvCandidate
         , (CHRKey, Set.Set CHRKey)
         )
 slvCandidate workHdKey lastQuery wlTrie (StoredCHR {storedIdent = (ck,_), storedKeys = ks, storedChr = chr})
-  = ( map (maybe (lkup TrieLookup_Normal workHdKey) (lkup TrieLookup_StopAtPartial)) ks
+  = ( map (maybe (lkup TrieLookup_Normal workHdKey) (lkup TrieLookup_ExpandAtPartialKey)) ks
     , ( ck
       , Set.fromList $ map (maybe workHdKey id) ks
     ) )
-  where lkup how k = partition (\(_,w) -> workTime w < lastQueryTm) $ lookupResultToList $ lookupPartialByKey' (,) how k wlTrie
+  where lkup how k = partition (\(_,w) -> workTime w < lastQueryTm) $ lookupResultToList $ Trie.lookupPartialByKey' (,) how k wlTrie
                    where lastQueryTm = lqLookupW k $ lqLookupC ck lastQuery
 %%]
 

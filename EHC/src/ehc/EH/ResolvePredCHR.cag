@@ -251,9 +251,9 @@ simplify' simplifyHow chrStore clDfGam heur partitionUnresolved2AmbigAndOthers t
                  
                  -- convert to Assume constraints
                  ; s <- get
-                 ; let (chrSolveRemCnstrMp,chrSolveEvidMp)
+                 ; let (chrSolveRemCnstrTraceMp,chrSolveEvidMp)
                          = patchUnresolvedWithAssumption ((simpEnv s) {fiUniq = u3}) (simpRemOccL s) (simpresRedGraph chrSimplifyResult) (simpEvidMp s)
-                 ; modify (\s -> s {simpRemCnstrTraceMp = cnstrTraceMpLiftTrace chrSolveRemCnstrMp, simpEvidMp = chrSolveEvidMp})
+                 ; modify (\s -> s {simpRemCnstrTraceMp = chrSolveRemCnstrTraceMp, simpEvidMp = chrSolveEvidMp})
                  }
          else modify (\s -> s {simpRemCnstrTraceMp = Map.empty, simpRemOccL = []})
 
@@ -265,7 +265,7 @@ simplify' simplifyHow chrStore clDfGam heur partitionUnresolved2AmbigAndOthers t
         canon s  c        = (c, emptyVarMp)
         -}
         canon s c
-          = case constraintReducablePart c of
+          = case cnstrReducablePart c of
               Just (_,p,mkc) -> (mkc $ p {cpoPr = p'}, m)
                              where (p',m) = predCanonic (simpEnv s) $ cpoPr p
               _              -> (c, emptyVarMp)
@@ -363,8 +363,8 @@ simplify simplifyHow env chrStore clDfGam heur partitionUnresolved2AmbigAndOther
     , chrSolveEvidCoreMpTC      -- for debug only
 %%]]
     )
-  where (_,s) = runState (simplify' simplifyHow chrStore clDfGam heur partitionUnresolved2AmbigAndOthers toProveHereCnstrMpPrev)
-                         (emptySimplifyState {simpEnv = env {fiUniq = u1}, simpToProveHereCnstrMp = toProveHereCnstrMp, simpRes = prevRes})
+  where s = execState (simplify' simplifyHow chrStore clDfGam heur partitionUnresolved2AmbigAndOthers toProveHereCnstrMpPrev)
+                      (emptySimplifyState {simpEnv = env {fiUniq = u1}, simpToProveHereCnstrMp = toProveHereCnstrMp, simpRes = prevRes})
         env'                        =   simpEnv s
         chrSimplifyResult4          =   simpRes s
         chrSolveAssumablePrOccL3    =   simpRemOccL s
@@ -387,8 +387,9 @@ simplify simplifyHow env chrStore clDfGam heur partitionUnresolved2AmbigAndOther
         (chrSolveEvidBindMp,chrSolveScopeBindMp)
           = evidKeyCoreMpToBinds chrSolveEvidCoreMp
         
-        -- overlapping errors
-        overlapErrs = if null overlapEvids then [] else [rngLift range Err_OverlapPreds [ (cpoPr $ overlapevidPredOcc a,map pp $ overlapevidInfos a) | a <- overlapEvids]]
+        -- overlapping errors; 20120209: is empty, detection done earlier
+        -- overlapErrs = if null overlapEvids then [] else [rngLift range Err_OverlapPreds [ (cpoPr $ overlapevidPredOcc a,map pp $ overlapevidInfos a) | a <- overlapEvids]]
+        overlapErrs = []
 %%]]
         -- TyCore variant
 %%[[(9 codegen tycore)
@@ -597,16 +598,16 @@ SEM AGItf
   | AGItf       loc         .   chrEvidBindMp       =   @chrSolveMainEvidBindMp
 
 SEM Decl
-  | Instance    loc         .   chrEvidBindMp       =   @chrSolveDeclsEvidBindMp `evidKeyToCBindMapUnion` @lhs.chrEvidBindMp
-                            .   chrScopeBindMp      =   @chrSolveDeclsScopeBindMp `predScopeToCBindMapUnion` @lhs.chrScopeBindMp
+  | Instance    loc         .   chrEvidBindMp       =   @chrSolveDeclsEvidBindMp `evidKeyToBindMapUnion` @lhs.chrEvidBindMp
+                            .   chrScopeBindMp      =   @chrSolveDeclsScopeBindMp `predScopeToBindMapUnion` @lhs.chrScopeBindMp
 
 SEM Expr
   | Let         loc         .   chrSolveEvidBindMp  =   @chrSolve2EvidBindMp
                             .   chrEvidBindMp       =   ehcOptTrace @lhs.opts "Expr.Let.loc.chrEvidBindMp" $ 
-                                                        @chrSolveEvidBindMp `evidKeyToCBindMapUnion` @lhs.chrEvidBindMp
+                                                        @chrSolveEvidBindMp `evidKeyToBindMapUnion` @lhs.chrEvidBindMp
                             .   chrSolveScopeBindMp =   @chrSolve2ScopeBindMp
                             .   chrLetScopeBindMp   =   ehcOptTrace @lhs.opts "Expr.Let.loc.chrLetScopeBindMp" $ 
-                                                        @chrSolveScopeBindMp `predScopeToCBindMapUnion` @lhs.chrScopeBindMp
+                                                        @chrSolveScopeBindMp `predScopeToBindMapUnion` @lhs.chrScopeBindMp
 %%]
 
 TyCore variant/clone:

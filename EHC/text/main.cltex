@@ -103,6 +103,10 @@
 %%@main.articleDocumentClass
 %%]
 
+%%[71
+\documentclass{article}
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Paper size
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -367,6 +371,15 @@
 
 %%[39 doclatex
 \usepackage{docmainsty}
+%%]
+
+%%[70
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{url}
+\usepackage[unicode=true]{hyperref}
+\usepackage[backend=biber]{biblatex}
+\addbibresource{bibliography.bib}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1103,7 +1116,7 @@ version
 \date{Dec 2010}
 %%]
 
-%%[68
+%%[70
 \title{Improving the UHC JavaScript backend}
 \author{Jurri\"en Stutterheim}
 \date{November 14, 2011}
@@ -1344,7 +1357,6 @@ WWW home page:
 
 
 %%[51
-
 \conferenceinfo{Haskell'09,} {September 3, 2009, Edinburgh, Scotland, UK.}
 \CopyrightYear{2009}
 \copyrightdata{978-1-60558-508-6/09/09}
@@ -1357,6 +1369,22 @@ WWW home page:
    P.O.Box 80.089, 3508 TB Utrecht, The Netherlands
   }
   {\{atze,jeroen,doaitse\}@@cs.uu.nl}
+%endif
+%%]
+
+%%[69
+%\conferenceinfo{ICFP 2012,} {September 3, 2009, Edinburgh, Scotland, UK.}
+%\CopyrightYear{2009}
+%\copyrightdata{978-1-60558-508-6/09/09}
+
+\title{JavaScript (worktitle)}
+%if acm && useSigplanconfSty
+\authorinfo{Atze Dijkstra \and Jurri\"en Stutterheim \and Alessandro Vermeulen \and S.~Doaitse Swierstra}
+  {Department of Information and Computing Sciences \\
+   Universiteit Utrecht \\
+   P.O.Box 80.089, 3508 TB Utrecht, The Netherlands
+  }
+  {\{atze,xx,xx,doaitse\}@@uu.nl}
 %endif
 %%]
 
@@ -1642,6 +1670,23 @@ Languages, Design
 
 \keywords
 Haskell, compiler architecture, attribute grammar, aspect orientation
+
+%%]
+
+
+%%[69
+\begin{abstract}
+%%@TopicJavaScript.abstract
+\end{abstract}
+
+%\category{D.3.4}{Programming languages}{Compilers; Preprocessors}
+%\category{F.3.2}{Logics and meanings of programs}{Program analysis}
+
+%\terms
+%Languages, Design
+
+%\keywords
+%Haskell, compiler architecture, attribute grammar, aspect orientation
 
 %%]
 
@@ -2339,6 +2384,48 @@ and pointing out where and why we differ from the `standard' \cite{stuckey02theo
 
 %%@TopicUHCArchitecture.body
 
+
+
+
+%}
+%%]
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% JavaScript experience report
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[69
+%{
+\section{Introduction}
+
+%%@TopicJavaScript.introduction
+
+\section{The web application}
+
+%%@TopicJavaScript.JuniorCollegeApp
+
+\section{Compiling Haskell to JavasScript}
+
+%%@TopicJavaScript.HaskellToJavaScript
+
+\section{Use of existing JavaScript infrastructure}
+
+%%@TopicJavaScript.UseOfExistingJavaScriptStuff
+
+\section{Discussion, unresolved issues}
+
+%%@TopicJavaScript.discussionAndIssues
+
+\section{Related work}
+
+%%@TopicJavaScript.relatedWork
+
+\section{Conclusion}
+
+%%@TopicJavaScript.conclusion
 
 
 
@@ -3086,6 +3173,8 @@ To be done ...
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[68
+%%@TopicImprovingUHCJS.prelude
+
 \newcommand{\allargs}{\texttt{\%*} }
 \newcommand{\uhcjscript}{\textit{uhc-jscript} }
 \newcommand{\js}{JavaScript }

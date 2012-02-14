@@ -2,7 +2,7 @@
 %%% Constraint Handling Rules: Constraint language
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(9 hmtyinfer || hmtyast) module {%{EH}CHR.Constraint} import({%{EH}Base.Common},{%{EH}Ty},{%{EH}CHR},{%{EH}CHR.Key},{%{EH}Base.Trie},{%{EH}Substitutable})
+%%[(9 hmtyinfer || hmtyast) module {%{EH}CHR.Constraint} import({%{EH}Base.Common},{%{EH}Ty},{%{EH}CHR},{%{EH}CHR.Key},{%{EH}Base.TreeTrie},{%{EH}Base.Trie},{%{EH}Substitutable})
 %%]
 
 %%[(9 hmtyinfer || hmtyast) import(EH.Util.Pretty as PP)
@@ -59,30 +59,35 @@ deriving instance Typeable2 Constraint
 deriving instance (Data x, Data y) => Data (Constraint x y)
 %%]
 
-%%[(9 hmtyinfer || hmtyast) export(constraintReducablePart)
+%%[(9 hmtyinfer || hmtyast) export(cnstrReducablePart)
 -- | Dissection of Constraint, including reconstruction function
-constraintReducablePart :: Constraint p info -> Maybe (String,p,p->Constraint p info)
-constraintReducablePart (Prove  p) = Just ("Prf",p,Prove)
-constraintReducablePart (Assume p) = Just ("Ass",p,Assume)
-constraintReducablePart _          = Nothing
+cnstrReducablePart :: Constraint p info -> Maybe (String,p,p->Constraint p info)
+cnstrReducablePart (Prove  p) = Just ("Prf",p,Prove)
+cnstrReducablePart (Assume p) = Just ("Ass",p,Assume)
+cnstrReducablePart _          = Nothing
 %%]
 
 %%[(9 hmtyinfer || hmtyast)
 instance Keyable p => Keyable (Constraint p info) where
-  toKey c = maybe [] (\(s,p,_) -> TK_One TKK_Normal (Key_Str s) : toKey p) $ constraintReducablePart c
+  toKey c = maybe [] (\(s,p,_) -> TK_One TKK_Normal (Key_Str s) : toKey p) $ cnstrReducablePart c
 
 instance (CHRMatchable env p s) => CHRMatchable env (Constraint p info) s where
   chrMatchTo env s c1 c2
-    = do { (_,p1,_) <- constraintReducablePart c1
-         ; (_,p2,_) <- constraintReducablePart c2
+    = do { (_,p1,_) <- cnstrReducablePart c1
+         ; (_,p2,_) <- cnstrReducablePart c2
          ; chrMatchTo env s p1 p2
          }
 %%]
 
 %%[(9 hmtyinfer || hmtyast)
+instance TTKeyable p => TTKeyable (Constraint p info) where
+  toTTKey c = maybe [] (\(s,p,_) -> ttkAdd (TT1K_One $ Key_Str s) [toTTKey p]) $ cnstrReducablePart c
+%%]
+
+%%[(9 hmtyinfer || hmtyast)
 instance (VarExtractable p v,VarExtractable info v) => VarExtractable (Constraint p info) v where
   varFreeSet c
-    = case constraintReducablePart c of
+    = case cnstrReducablePart c of
         Just (_,p,_) -> varFreeSet p
         _            -> Set.empty
 
@@ -108,22 +113,24 @@ data UnresolvedTrace p info
       }
   | UnresolvedTrace_Fail									-- failed reduction
       { utraceRedFrom		:: p
+      -- , utraceInfoTo2From	:: info
+      , utraceRedTo			:: [UnresolvedTrace p info]
       }
   | UnresolvedTrace_Overlap									-- choice could not be made
       { utraceRedFrom		:: p
-      , utraceRedChoices	:: [[UnresolvedTrace p info]]
+      , utraceRedChoices	:: [(info,[UnresolvedTrace p info])]
       }
   deriving Show
 
 instance Eq p => Eq (UnresolvedTrace p info) where
-  t1 == t2 = utraceRedFrom t1 == utraceRedFrom t2
+  t1 == t2 = True -- utraceRedFrom t1 == utraceRedFrom t2
 
 instance (PP p, PP info) => PP (UnresolvedTrace p info) where
   pp x = case x of
   		   UnresolvedTrace_None 			-> PP.empty
   		   UnresolvedTrace_Red 		p i us 	-> p >|< ":" >#< i >-< indent 2 (vlist $ map pp us)
-  		   UnresolvedTrace_Fail 	p 		-> p >|< ": FAIL"
-  		   UnresolvedTrace_Overlap 	p uss 	-> p >|< ": OVERLAP" >-< indent 2 (vlist $ map (vlist . map pp) uss)
+  		   UnresolvedTrace_Fail 	p   us  -> p >|< ": FAIL" >-< indent 2 (vlist $ map pp us)
+  		   UnresolvedTrace_Overlap 	p uss 	-> p >|< ": OVERLAP" >-< indent 2 (vlist $ map (\(i,u) -> i >-< indent 2 (vlist $ map pp u)) uss)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -135,7 +142,13 @@ instance (PP p, PP info) => PP (UnresolvedTrace p info) where
 type ConstraintMp' p info x = Map.Map (Constraint p info) [x]
 %%]
 
-%%[(9 hmtyinfer || hmtyast) export(cnstrMpFromList)
+%%[(9 hmtyinfer || hmtyast) export(cnstrMpSingletonL,cnstrMpFromList)
+cnstrMpSingletonL :: Constraint p i -> [x] -> ConstraintMp' p i x
+cnstrMpSingletonL c xs = Map.singleton c xs
+
+cnstrMpSingleton :: Constraint p i -> x -> ConstraintMp' p i x
+cnstrMpSingleton c x = cnstrMpSingletonL c [x]
+
 cnstrMpFromList :: (Ord p, Ord i) => [(Constraint p i,x)] -> ConstraintMp' p i x
 cnstrMpFromList l = Map.fromListWith (++) [ (c,[x]) | (c,x) <- l ]
 
@@ -145,18 +158,21 @@ cnstrMpMap f = Map.map (map f)
 
 %%[(9 hmtyinfer || hmtyast) export(ConstraintToInfoTraceMp)
 -- | Map from constraint to info + trace
-type ConstraintToInfoTraceMp p info = ConstraintMp' p info (info,UnresolvedTrace p info)
+type ConstraintToInfoTraceMp p info = ConstraintMp' p info (info,[UnresolvedTrace p info])
 %%]
 
-%%[(9 hmtyinfer || hmtyast) export(cnstrTraceMpLiftTrace,cnstrTraceMpElimTrace,cnstrTraceMpFromList)
-cnstrTraceMpFromList :: (Ord p, Ord i) => [(Constraint p i,(i,UnresolvedTrace p i))] -> ConstraintToInfoTraceMp p i
+%%[(9 hmtyinfer || hmtyast) export(cnstrTraceMpSingleton,cnstrTraceMpLiftTrace,cnstrTraceMpElimTrace,cnstrTraceMpFromList)
+cnstrTraceMpFromList :: (Ord p, Ord i) => [(Constraint p i,(i,[UnresolvedTrace p i]))] -> ConstraintToInfoTraceMp p i
 cnstrTraceMpFromList = cnstrMpFromList
+
+cnstrTraceMpSingleton :: Constraint p i -> i -> [UnresolvedTrace p i] -> ConstraintToInfoTraceMp p i
+cnstrTraceMpSingleton c i ts = cnstrMpSingleton c (i,ts)
 
 cnstrTraceMpElimTrace :: (Ord p, Ord i) => ConstraintToInfoTraceMp p i -> ConstraintToInfoMap p i
 cnstrTraceMpElimTrace = cnstrMpMap fst
 
 cnstrTraceMpLiftTrace :: (Ord p, Ord i) => ConstraintToInfoMap p i -> ConstraintToInfoTraceMp p i
-cnstrTraceMpLiftTrace = cnstrMpMap (\x -> (x,UnresolvedTrace_None))
+cnstrTraceMpLiftTrace = cnstrMpMap (\x -> (x,[]))
 %%]
 
 %%[(9 hmtyinfer || hmtyast) export(ConstraintToInfoMap)

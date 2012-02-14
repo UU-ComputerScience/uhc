@@ -125,6 +125,7 @@ constraint can only be reduced once still. However, the reduction steps
 will reflect the cycle still.
 
 %%[(9 hmtyinfer) export(initScopedPredStore)
+-- | The basic initial set of CHRs
 initScopedPredStore :: ScopedPredStore
 initScopedPredStore
   = chrStoreFromElems $
@@ -213,6 +214,7 @@ initScopedPredStore
 %%]
 
 %%[(9 hmtyinfer) export(mkScopedCHR2)
+-- | Construct CHRs from class and instance decls
 mkScopedCHR2
   :: FIIn -> [CHRClassDecl Pred RedHowAnnotation] -> [CHRScopedInstanceDecl Pred RedHowAnnotation PredScope]
        -> ScopedPredStore -> (ScopedPredStore,ScopedPredStore)
@@ -230,6 +232,7 @@ mkScopedCHR2 env clsDecls insts prevStore
 %%]
 
 %%[(9 hmtyinfer)
+-- | Construct simplification CHRs from class decls, building upon a given CHR store
 mkClassSimplChrs :: FIIn -> ScopedPredStore -> CHRClassDecl Pred RedHowAnnotation -> ScopedPredStore
 mkClassSimplChrs env rules (context, head, infos)
   = simps
@@ -333,20 +336,29 @@ simplifyResultResetForAdditionalWork r = r {simpresSolveState = solveStateResetD
 %%[(9 hmtyinfer)
 mkEvidence
   :: ( Ord p, Ord i
+%%[[9
      , PP i, PP p -- for debugging
+%%][100
+%%]]
      ) => Heuristic p i -> ConstraintToInfoMap p i -> RedGraph p i
           -> ( -- ConstraintToInfoMap p i						-- remaining constraints
                ConstraintToInfoTraceMp p i						-- remaining constraints
              , InfoToEvidenceMap p i							-- mapping to evidence
              , [Err]											-- errors
+%%[[9
              , [(HeurAlts p i, [(i, Evidence p i)])]        	-- debug info
+%%][100
+%%]]
              )
 mkEvidence heur cnstrMp redGraph
   = ( {- (cnstrMp `Map.intersection` remCnstrMp) `Map.union` -}
       cnstrTraceMpFromList remCnstrMp
     , evidMp
     , err
+%%[[9
     , dbg -- redAlts, redTrees                                  -- debug info
+%%][100
+%%]]
     )
   where (remCnstrMp,evidMp,err,dbg)
           = foldl (\(cm,em,err,dbg) c -> let (cm',em',err',dbg') = mk c in (cm' ++ cm, evidMpUnion em' em, err' ++ err, dbg' ++ dbg))
@@ -357,9 +369,9 @@ mkEvidence heur cnstrMp redGraph
           where redAlts    = redAlternatives redGraph p
                 redTrees   = heur infos redAlts
                 evidMp     = foldr (uncurry evidMpInsert) Map.empty redTrees
-                remCnstrMp = [ (Prove (utraceRedFrom u),(i,u)) | (i,t) <- redTrees, u <- evidUnresolved t ]
+                remCnstrMp = [ (Prove (utraceRedFrom u),(i,[u])) | (i,t) <- redTrees, u <- evidUnresolved t ]
         mk (c, infos)
-          = ([ (c,(i,UnresolvedTrace_None)) | i <- infos],Map.empty,[],[])
+          = ([ (c,(i,[])) | i <- infos],Map.empty,[],[])
 %%]
   where (remCnstrMp,evidMp,err,dbg)
           = foldl (\(cm,em,err,dbg) c -> let (cm',em',err',dbg') = mk c in (cnstrMpUnion cm' cm, evidMpUnion em' em, err' ++ err, dbg' ++ dbg))
@@ -403,12 +415,16 @@ partitionUnresolved2AssumableAndOthers unresCnstrMp
 shareUnresolvedAssumptionsByScope :: CHRPredOccCnstrTraceMp -> [(CHRConstraint,(PredScope,CHRPredOccCnstrTraceMp))]
 shareUnresolvedAssumptionsByScope unres
   = [ ( c
-      , ( foldr1 (\s1 s2 -> panicJust "shareUnresolvedAssumptionsByScope" $ pscpCommon s1 s2)
+      , ( -- the common prefix off all scopes, i.e. the most global scope
+          foldr1 (\s1 s2 -> panicJust "shareUnresolvedAssumptionsByScope" $ pscpCommon s1 s2)
                  [ cpoScope $ cnstrPred c | (c,_) <- cs ]
+          -- all original info for this predicate
         , Map.fromList cs
         )
       )
-    | cs@((c,_):_) <- groupSortOn (cpoPr . cnstrPred . fst) $ Map.toList unres
+    | cs@((c,_):_) <-
+        -- sort, then group by predicate, so we get all scopes for each predicate
+        groupSortOn (cpoPr . cnstrPred . fst) $ Map.toList unres
     ]
 %%]
 
@@ -417,14 +433,21 @@ shareUnresolvedAssumptionsByScope unres
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(9 hmtyinfer) export(patchUnresolvedWithAssumption)
-patchUnresolvedWithAssumption :: FIIn -> [CHRIntermediateUntilAssume] -> CHRRedGraph -> CHRPredOccEvidMp -> (CHRPredOccCnstrMp,CHRPredOccEvidMp)
+-- | Transform unresolved Prove constraints to Assume variants, used either for quantification over, or for error messages about unresolved predicates
+patchUnresolvedWithAssumption :: FIIn -> [CHRIntermediateUntilAssume] -> CHRRedGraph -> CHRPredOccEvidMp -> (CHRPredOccCnstrTraceMp,CHRPredOccEvidMp)
 patchUnresolvedWithAssumption env unres redGraph evidMp
-  = ( cnstrMpFromList assumeCnstrs
+  = ( assumeCnstrs
     , evidMpSubst (\p -> Map.lookup p assumeSubstMp) evidMp
     )
   where us = mkNewLevUIDL (length unres) $ fiUniq env
-        assumeCnstrs  = [ rngLift emptyRange mkAssumeConstraint (cpoPr p) u sc | ((p,(sc,_)),u) <- zip unres us ]
-        assumeSubstMp = Map.fromList [ (p,Evid_Proof p info []) | (Assume p,info) <- assumeCnstrs ]
+        assumeCnstrs
+          = cnstrMpUnions
+              [ cnstrTraceMpSingleton c i (concat [ us | es <- Map.elems trMap, (_,us) <- es ])
+              | ((p,(sc,trMap)),u) <- zip unres us
+              , let (c,i) = rngLift emptyRange mkAssumeConstraint (cpoPr p) u sc
+              ]
+        assumeSubstMp
+          = Map.fromList [ (p,Evid_Proof p i []) | (Assume p,((i,_):_)) <- Map.toList assumeCnstrs ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -468,7 +491,10 @@ chrSimplifySolveToRedGraph env chrStore cnstrInfoMpPrev cnstrInfoMp prevRes
 %%[(9 hmtyinfer) export(chrSimplifyRedGraphToEvidence)
 chrSimplifyRedGraphToEvidence
   :: ( Ord p, Ord i
+%%[[9
      , PP g, PP i, PP p -- for debugging
+%%][100
+%%]]
      ) => Heuristic p i -> ConstraintToInfoMap p i
           -> SimplifyResult p i g s
           -> ( ( ConstraintToInfoTraceMp p i, InfoToEvidenceMap p i, [Err] )
@@ -476,10 +502,22 @@ chrSimplifyRedGraphToEvidence
              )
 chrSimplifyRedGraphToEvidence heur cnstrInfoMpAll simpRes
   = ( (chrSolveRemCnstrMp,chrSolveEvidMp,chrSolveErrs)
-    , simpRes {simpresRedAlts = dbg1, simpresRedTrees = dbg2}
+    , simpRes
+%%[[9
+        {simpresRedAlts = dbg1, simpresRedTrees = dbg2}
+%%][100
+%%]]
     )
-  where (chrSolveRemCnstrMp,chrSolveEvidMp,chrSolveErrs,dbg)
+  where ( chrSolveRemCnstrMp,chrSolveEvidMp,chrSolveErrs
+%%[[9
+         , dbg
+%%][100
+%%]]
+         )
           = mkEvidence heur cnstrInfoMpAll (simpresRedGraph simpRes)
+%%[[9
         (dbg1,dbg2) = unzip dbg
+%%][100
+%%]]
 %%]
 

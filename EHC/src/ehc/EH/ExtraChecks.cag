@@ -129,7 +129,7 @@ mkPrvErr :: RangeMp -> Range -> CHRPredOccCnstrTraceMp -> [Err]
 mkPrvErr rm r m
   = if Map.null m
     then []
-    else [Err_NotProvenPreds r [ (mkRangedPred rm pr, pp t) | (c,((_,t):_)) <- Map.toList m, let pr = cpoPr (cnstrPred c) ]]
+    else [Err_NotProvenPreds r [ (mkRangedPred rm pr, vlist $ map pp t) | (c,((_,t):_)) <- Map.toList m, let pr = cpoPr (cnstrPred c) ]]
 %%]
 
 %%[(9 hmtyinfer)

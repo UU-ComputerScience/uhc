@@ -105,7 +105,7 @@ emptyTrfCore = TrfCore emptyCModule [] uidStart
 %%[(8 codegen) export(trfCore)
 trfCore :: EHCOpts -> DataGam -> HsName -> TrfCore -> TrfCore
 trfCore opts dataGam modNm trfcore
-  = snd $ runState trf trfcore
+  = execState trf trfcore
   where trf
           = do { -- initial is just to obtain Core for dumping stages
                  t_initial

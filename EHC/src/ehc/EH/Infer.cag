@@ -80,8 +80,7 @@ SEM Expr
                             .   bodyVarMp1          =   @quTyVarMp `varUpd` @tyVarMpDeclsL0
                             .   (quValGam_ex_,exTyVarMp2)
                                                     :=  (valGamInst1Exists {- WithVarMp @bodyVarMp1 -} @lUniq2 (@quTyVarMp `varUpd` @quValGam_qu_), emptyVarMp)
-                            .   bodyVarMp2          =   ehcOptTrace @lhs.opts ("Expr.Let.loc.bodyVarMp2 " ++ show (varmpSize @exTyVarMp2) ++ " " ++ show (varmpSize @bodyVarMp1)) $
-                                                        (@exTyVarMp2 :: VarMp) `varUpd` @bodyVarMp1
+                            .   bodyVarMp2          =   (@exTyVarMp2 :: VarMp) `varUpd` @bodyVarMp1
                             .   quValGam_ex_subst   :=  @bodyVarMp2 `varUpd` @quValGam_ex_
                 body        .   tyVarMp             =   @bodyVarMp2
                 
