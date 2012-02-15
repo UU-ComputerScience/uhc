@@ -75,7 +75,7 @@ instance Keyable cnstr => Keyable (CHR cnstr guard subst) where
 
 %%[(9 hmtyinfer || hmtyast)
 instance TTKeyable cnstr => TTKeyable (CHR cnstr guard subst) where
-  toTTKey chr = toTTKey $ head $ chrHead chr
+  toTTKey' o chr = toTTKey' o $ head $ chrHead chr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
