@@ -30,6 +30,7 @@ TEXT_PRIV_VARIANTS			+= flops06-ruler-paper flops06-ruler \
 								tr-abstrint ldta08-abstrint \
 								ldta09-agidiom \
 								hs09-uhcarch \
+								icfp2012-js \
 								theplan
 
 # subtext
@@ -59,6 +60,7 @@ TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 								HowToDoc HowToExperiment \
 								ReleaseHistory \
 								RoadMap \
+								TopicJavaScript \
 								ThePlan \
 								Blog
 								
@@ -78,6 +80,7 @@ TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 # 56: article: base (share)
 # 66: slides: base (share)
 # 67: slides: base (share), newer UU style
+# 71: plain article: base (share) (does not work properly)
 
 # ALL PRODUCTS
 # 2	: ehc book (previously phd)
@@ -133,6 +136,8 @@ TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 # 64: doc: blog
 # 65: slides "Javascript? Haskellscript!"
 # 68: doc: Improving the UHC JavaScript Backend
+# 69: paper (exp report for ICFP2012): "JavasScript (worktitle)"
+# 70: plain article: Improving the UHC JavaScript Backend (built upon 71, but not working)
 # 77: scratch (article format)
 
 TEXT_SHUFFLE_ORDER	+= \
@@ -154,6 +159,7 @@ TEXT_SHUFFLE_ORDER	+= \
 		1 < 54, \
 		1 < 56, \
 		1 < 66, \
+		1 < 71, \
 		66 < 18, \
 		66 < 67, \
 		35, \
@@ -172,6 +178,7 @@ TEXT_SHUFFLE_ORDER	+= \
 		26 < 25, \
 		26 < 36, \
 		26 < 51, \
+		26 < 69, \
 		30 < 7, \
 		30 < 29, \
 		37 < 33, \
@@ -197,5 +204,6 @@ TEXT_SHUFFLE_ORDER	+= \
 		54 < 31, \
 		54 < 55, \
 		56 < 57, \
-		67 < 65
+		67 < 65, \
+		71 < 70
 		

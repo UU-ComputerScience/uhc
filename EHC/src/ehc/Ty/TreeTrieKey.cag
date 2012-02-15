@@ -1,0 +1,354 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell importable interface to computation of a TreeTrieKey from a Ty
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+A TreeTrieKey for a Ty is a breadthfirst walk through the type structure, where unknown, too complex,
+or unifiable parts (like type variables) are marked by a wildcard.
+Minimal tree structure is retained in the key.
+In this way search via a TreeTrie proceeds breadth first top to bottom.
+
+%%[(9 hmtyinfer || hmtyast) hs module {%{EH}Ty.TreeTrieKey} import({%{EH}Base.Common},{%{EH}Base.HsName},{%{EH}Base.Builtin},{%{EH}Ty})
+%%]
+
+%%[(9 hmtyinfer || hmtyast) hs import(qualified Data.Set as Set,Data.List as Lst,EH.Util.FastSeq as Seq,{%{EH}Base.TreeTrie},{%{EH}CHR.Key})
+%%]
+
+%%[(9 hmtyinfer || hmtyast) ag import({Ty/AbsSyn},{Ty/CommonAG})
+WRAPPER TyAGItf
+%%]
+
+%%[(9 hmtyinfer || hmtyast) hs
+tyTreeTrieKey :: Ty -> TreeTrieKey Key
+tyTreeTrieKey ty
+  =  let  t =  wrap_TyAGItf
+                 (sem_TyAGItf (TyAGItf_AGItf ty))
+                 (Inh_TyAGItf)
+     in   (key_Syn_TyAGItf t)
+%%]
+
+%%[(9 hmtyinfer || hmtyast) hs
+instance TTKeyable Ty where
+  toTTKey = tyTreeTrieKey
+
+instance TTKeyable Pred where
+  toTTKey pr = tyTreeTrieKey $ Ty_Pred pr
+
+instance TTKeyable PredScope where
+  toTTKey (PredScope_Var v) = ttkSingleton TT1K_Any
+  toTTKey (PredScope_Lev l) = ttkSingleton $ TT1K_One $ Key_Str $ show l
+
+instance TTKeyable CHRPredOccCxt where
+  toTTKey (CHRPredOccCxt_Scope1 sc) = toTTKey sc -- for now
+
+instance TTKeyable PredOcc where
+  toTTKey po = toTTKey (poPr po)
+
+instance TTKeyable CHRPredOcc where
+  toTTKey po = ttkAdd (TT1K_One $ Key_Str "occ") [toTTKey (cpoCxt po), toTTKey (cpoPr po)]
+
+%%]
+
+%%[(9 hmtyinfer || hmtyast) hs
+instance TTKeyable PredOccId where
+  toTTKey (PredOccId     i) = ttkSingleton $ TT1K_One $ Key_UID i
+%%]
+
+%%[(10 hmtyinfer || hmtyast)
+WRAPPER LabelAGItf
+%%]
+
+%%[(10 hmtyinfer || hmtyast) hs
+labelTreeTrieKey :: Label -> TreeTrieKey Key
+labelTreeTrieKey label
+  =  let  t =  wrap_LabelAGItf
+                 (sem_LabelAGItf (LabelAGItf_AGItf label))
+                 (Inh_LabelAGItf)
+     in   (key_Syn_LabelAGItf t)
+%%]
+
+%%[(10 hmtyinfer || hmtyast) hs
+instance TTKeyable LabelOffset where
+  toTTKey (LabelOffset_Var v) = ttkSingleton TT1K_Any
+  toTTKey (LabelOffset_Off l) = ttkSingleton $ TT1K_One $ Key_Str $ show l
+
+instance TTKeyable Label where
+  toTTKey = labelTreeTrieKey
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% TreeTrieKey
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+For each parent (App) with children we need to know the parent key, the basic identification: TreeTrie1Key
+
+%%[(9 hmtyinfer || hmtyast)
+ATTR
+  Ty
+    [ | | bkey: {TreeTrie1Key Key} ]
+%%]
+
+%%[(9 hmtyinfer || hmtyast)
+SEM Ty
+  | Con             loc     .   bkey            =   TT1K_One (Key_HNm @nm)
+  | App             loc     .   bkey            =   @func.bkey
+  | Var             loc     .   bkey            =   if tvCatIsFixed @categ.self then TT1K_One (Key_UID @tv) else TT1K_Any
+  | Ext             loc     .   bkey            =   if @isSpineRoot && @ty.isFixed
+                                                    then let (_,exts) = tyRowExts @self
+                                                         in  TT1K_One (Key_Str $ concat $ intersperse "," $ Lst.map show $ assocLKeys exts)
+                                                    else TT1K_Any
+  | Quant           loc     .   bkey            =   TT1K_One (Key_TyQu @qu.self)
+  | * - App Con Var Quant Ext
+                    loc     .   bkey            =   TT1K_Any
+
+SEM Pred
+  | Var             loc     .   bkey            =   TT1K_Any
+%%]
+
+%%[(10 hmtyinfer || hmtyast)
+SEM Pred
+  | Lacks           loc     .   bkey            =   TT1K_One (Key_Str "\\")
+
+SEM Label
+  | Lab             loc     .   bkey            =   TT1K_One (Key_HNm @nm)
+  | Var             loc     .   bkey            =   TT1K_Any
+%%]
+
+%%[(13 hmtyinfer || hmtyast)
+SEM PredSeq
+  | Cons            loc     .   bkey            =   TT1K_One (Key_Str ":")
+  | Var             loc     .   bkey            =   TT1K_Any
+  | Nil             loc     .   bkey            =   TT1K_One (Key_Str "[]")
+
+SEM Pred
+  | Arrow           loc     .   bkey            =   TT1K_One (Key_Str "=>")
+  | Preds           loc     .   bkey            =   TT1K_One (Key_Str "seq")
+%%]
+
+The key
+
+%%[(9 hmtyinfer || hmtyast)
+ATTR
+  TyAGItf Ty Pred
+%%[[10
+  Label LabelAGItf {- RowExts -}
+%%]]
+%%[[13
+  PredSeq
+%%]]
+    [ | | key: {TreeTrieKey Key} ]
+%%]
+
+%%[(9 hmtyinfer || hmtyast)
+SEM Ty
+  | App Ext         loc     .   key             =   if @isSpineRoot
+                                                    then ttkAdd @bkey @childKeyL
+                                                    else []
+  | Quant           loc     .   key             =   ttkAdd @bkey @childKeyL
+  | *  - App Ext Quant
+                    loc     .   key             =   ttkSingleton @bkey
+
+SEM Pred
+  | Var             loc     .   key             =   ttkSingleton @bkey
+%%]
+
+%%[(10 hmtyinfer || hmtyast)
+SEM Pred
+  | Lacks           loc     .   key             =   ttkAdd @bkey (@lab.key : @ty.childKeyL)
+
+SEM Label
+  | Lab Var         loc     .   key             =   ttkSingleton @bkey
+%%]
+
+%%[(13 hmtyinfer || hmtyast)
+SEM PredSeq
+  | Cons            loc     .   key             =   if @isSpineRoot
+                                                    then ttkAdd @bkey @childKeyL
+                                                    else []
+  | Var Nil         loc     .   key             =   ttkSingleton @bkey
+
+SEM Pred
+  | Arrow           loc     .   key             =   ttkAdd @bkey [@args.key]
+  | Preds           loc     .   key             =   ttkAdd @bkey [@seq.key]
+%%]
+
+Children keys
+
+%%[(9 hmtyinfer || hmtyast)
+ATTR
+  Ty
+%%[[13
+  PredSeq
+%%]]
+    [ | | childKeyL: {[TreeTrieKey Key]} ]
+%%]
+
+%%[(9 hmtyinfer || hmtyast)
+SEM Ty
+  | App             loc     .   childKeyL       =   let cs = @arg.key : @func.childKeyL
+                                                    in  if @isSpineRoot
+                                                        then reverse cs
+                                                        else cs
+  | Ext             loc     .   childKeyL       =   let cs = @extTy.key : @ty.childKeyL
+                                                    in  if @isSpineRoot
+                                                        then reverse cs
+                                                        else cs
+  | Quant           loc     .   childKeyL       =   [@ty.key]
+  | *  - App Ext Quant
+                    loc     .   childKeyL       =   []
+%%]
+
+%%[(13 hmtyinfer || hmtyast)
+SEM PredSeq
+  | Cons            loc     .   childKeyL       =   @hd.key : @tl.childKeyL
+  | * - Cons        loc     .   childKeyL       =   []
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% TreeTrieKey
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(9999 hmtyinfer || hmtyast)
+ATTR
+  TyAGItf Ty Pred
+%%[[1010
+  Label LabelAGItf {- RowExts -}
+%%]]
+%%[[1313
+  PredSeq
+%%]]
+    [ | | trieKey: {FastSeq (TreeTrieKey Key)} ]
+ATTR
+  TyAGItf Ty Pred
+%%[[1313
+  PredSeq
+%%]]
+    [ | | trieKeyNest: {FastSeq (TreeTrieKey Key)} ]
+ATTR Ty [ | | trieKeyFun: {FastSeq (TreeTrieKey Key)} ]
+ATTR Ty [ | | trieKeyArgs, trieKeyArgsNest: {FastSeq (TreeTrieKey Key)} ]
+%%]
+
+%%[(9999 hmtyinfer || hmtyast)
+SEM Ty
+  | App             lhs     .   (trieKey,trieKeyNest)
+                                                =   if @isSpineRoot
+                                                    then (@trieKeyFun, @trieKeyArgs :++: @trieKeyArgsNest)
+                                                    else (empty,empty)
+  | Ext             loc     .   (trieKey,trieKeyNest)
+                                                =   if @isSpineRoot
+                                                    then let (_,exts) = tyRowExts @self
+                                                         in  ( singleton
+                                                               $ TK_One
+                                                                   (if @ty.isFixed then TKK_Normal else TKK_Partial)
+                                                                   (Key_Str $ concat $ intersperse "," $ Lst.map show $ assocLKeys exts)
+                                                             , @trieKeyArgs :++: @trieKeyArgsNest
+                                                             )
+                                                    else (empty,empty)
+  | Var             loc     .   trieKey         =   singleton $ TK_One
+                                                                  -- (if tvCatIsMeta @categ.self then TKK_Partial else TKK_Normal)
+                                                                  (if tvCatIsFixed @categ.self then TKK_Normal else TKK_Partial)
+                                                              $ Key_UID @tv
+                            .   trieKeyNest     =   empty
+  | Con             loc     .   trieKey         =   singleton $ TK_One TKK_Normal $ Key_HNm @nm
+                            .   trieKeyNest     =   empty
+  | Quant           loc     .   trieKey         =   singleton $ TK_One TKK_Normal $ Key_TyQu @qu.self
+                            .   trieKeyNest     =   @ty.trieKey :++: @ty.trieKeyNest
+  | Pred            loc     .   trieKey         =   @pr.trieKey
+                            .   trieKeyNest     =   @pr.trieKeyNest
+  | * - App Var Con Quant Ext Pred
+                    loc     .   trieKey         =   singleton $ TK_One TKK_Partial $ Key_Ty @self
+                            .   trieKeyNest     =   empty
+
+SEM Ty
+  | * - App Ext     lhs     .   trieKeyFun      =   @trieKey
+                            .   trieKeyArgs     =   empty
+                            .   trieKeyArgsNest =   empty
+  | App             loc     .   trieKeyFun      =   @func.trieKeyFun
+                            .   trieKeyArgs     =   @func.trieKeyArgs     :++: @arg.trieKeyFun
+                            .   trieKeyArgsNest =   @func.trieKeyArgsNest :++: @arg.trieKeyNest
+  | Ext             loc     .   trieKeyFun      =   @trieKey
+                            .   trieKeyArgs     =   @ty.trieKeyArgs     :++: @extTy.trieKeyFun
+                            .   trieKeyArgsNest =   @ty.trieKeyArgsNest :++: @extTy.trieKeyNest
+
+SEM Pred
+  | Var             lhs     .   trieKey         =   singleton $ TK_One TKK_Partial $ Key_UID @pv
+                            .   trieKeyNest     =   empty
+%%]
+
+%%[(1010 hmtyinfer || hmtyast)
+SEM Pred
+  | Lacks           lhs     .   trieKey         =   (singleton $ TK_One TKK_Normal $ Key_Str "\\") :++: @lab.trieKey
+                            .   trieKeyNest     =   @ty.trieKey :++: @ty.trieKeyNest
+%%]
+  | RowSplit        lhs     .   trieKey         =   singleton $ TK_One TKK_Normal $ Key_Str "|"
+                            .   trieKeyNest     =   @ty.trieKey :++: @exts.trieKey
+
+%%[(4141 hmtyinfer || hmtyast)
+SEM Pred
+  | Eq              lhs     .   trieKey         =   (singleton $ TK_One TKK_Normal $ Key_Str "=")
+                            .   trieKeyNest     =   @tyL.trieKey :++: @tyR.trieKey :++: @tyL.trieKeyNest :++: @tyR.trieKeyNest
+%%]
+
+%%[(1010 hmtyinfer || hmtyast)
+SEM Label
+  | Lab             lhs     .   trieKey         =   singleton $ TK_One TKK_Normal  $ Key_HNm @nm
+  | Var             lhs     .   trieKey         =   singleton $ TK_One TKK_Partial $ Key_UID @lv
+
+%%]
+SEM RowExts
+  | Exts            lhs     .   trieKey         =   singleton $ TK_One TKK_Normal  $ Key_Str "exts"
+  | Var             lhs     .   trieKey         =   singleton $ TK_One TKK_Partial $ Key_UID @ev
+
+%%[(1313 hmtyinfer || hmtyast)
+SEM PredSeq
+  | Cons            lhs     .   trieKey         =   singleton $ TK_One TKK_Normal $ Key_Str ":"
+                            .   trieKeyNest     =   @hd.trieKey :++: @tl.trieKey :++: @hd.trieKeyNest :++: @tl.trieKeyNest
+  | Var             lhs     .   trieKey         =   singleton $ TK_One TKK_Partial $ Key_UID @av
+                            .   trieKeyNest     =   empty
+  | Nil             lhs     .   trieKey         =   singleton $ TK_One TKK_Normal $ Key_Str "[]"
+                            .   trieKeyNest     =   empty
+
+SEM Pred
+  | Arrow           lhs     .   trieKey         =   singleton $ TK_One TKK_Normal $ Key_Str "=>"
+                            .   trieKeyNest     =   @args.trieKey :++: @args.trieKeyNest
+  | Preds           lhs     .   trieKey         =   singleton $ TK_One TKK_Normal $ Key_Str "seq"
+                            .   trieKeyNest     =   @seq.trieKey :++: @seq.trieKeyNest
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% (Ext) record info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(9 hmtyinfer || hmtyast)
+ATTR Ty [ | | isFixed: Bool ]
+
+SEM Ty
+  | Ext             lhs     .   isFixed         =   @ty.isFixed
+  | Var             lhs     .   isFixed         =   False
+  | * - Ext Var     lhs     .   isFixed         =   True
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Test
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(9 hmtyinfer || hmtyast) hs
+(_,u1,u2,u3,u4) = mkNewLevUID4 uidStart
+v1 = mkTyVar u1
+v2 = mkTyVar u2
+v3 = mkTyVar u3
+v4 = mkTyVar u4
+
+t1 = tyInt
+t2 = mkArrow [t1] t1
+t3 = mkArrow [t2] t2
+t4 = mkArrow [v1] v2
+t5 = mkArrow [v3] v4
+t6 = mkArrow [t4] t5
+t7 = mkArrow [v1] t5
+t8 = mkArrow [t4] v3
+%%]

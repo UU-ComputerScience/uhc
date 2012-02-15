@@ -98,59 +98,40 @@ heurTry f g a  | null (evidUnresolved ev) = ev
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Conversion to evidence
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(9999 hmtyinfer) export(toEvidence)
-toEvidence :: (HeurAlts p info -> HeurAlts p info) -> SHeuristic p info
-toEvidence f a = evd (f a)
-  where  evd (HeurAlts p [])                   =  Evid_Unresolved p
-         evd (HeurAlts p [r@(HeurRed_Rec p)])  =  Evid_Recurse p
-         evd (HeurAlts p [r@(HeurRed i   _)])  =  Evid_Proof   p i (snd $ red r)
-         evd (HeurAlts p rs)                   =  reallyOverlapEvid p (reds rs)
-         red (HeurRed i alts)                  =  (i,map evd alts)
-         reds rs                               =  map red rs
-%%]
-toEvidence :: (HeurAlts p info -> HeurAlts p info) -> SHeuristic p info
-toEvidence f a = evd (f a)
-  where  evd (HeurAlts p [])                 =  Evid_Unresolved p
-         evd (HeurAlts p [r@(HeurRed i _)])  =  Evid_Proof p i (snd $ red r)
-         evd (HeurAlts p rs)                 =  Evid_Ambig p (reds rs)
-         red (HeurRed i alts)                =  (i,map evd alts)
-         reds rs                             =  map red rs
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Local / Binary choice
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(9 hmtyinfer) export(localChoice,binChoice)
-localChoice :: Eq info => (p -> [info] -> [info]) -> SHeuristic p info  
+%%[(9 hmtyinfer) export(localChoice)
+localChoice :: (Eq p, Eq info) => (p -> [info] -> [info]) -> SHeuristic p info  
 localChoice choose (HeurAlts p reds) = 
   case filter ((`elem` redinfos) . redInfo) reds of
-    []                    -> Evid_Unresolved p
+    []                    -> Evid_Unresolved p (concatMap evidUnresolved [ Evid_Proof p i evs | (i,evs) <- chs reds])
     [r@(HeurRed_Rec p)]   -> Evid_Recurse p
     [r@(HeurRed i   _)]   -> Evid_Proof p i (snd $ ch r)
     rs                    -> reallyOverlapEvid p (chs rs)
   where redinfos          = choose p (map redInfo reds)
         ch (HeurRed i rs) = (i,map (localChoice choose) rs)
         chs rs            = map ch rs
+%%]
 
-binChoice :: Eq info => (info -> info -> PartialOrdering) -> SHeuristic p info
+%%[(9 hmtyinfer) export(binChoice)
+binChoice :: (Eq p, Eq info) => (info -> info -> PartialOrdering) -> SHeuristic p info
 binChoice order = localChoice (const local)
   where  local []  = []
          local is  = [mx]
-                   where (mx,eqPairs) = heurMaximumBy order is			-- do something with equal pairs, construct Evid_Ambig perhaps?
+                   where (mx,eqPairs) = heurMaximumBy order is
 %%]
 
 %%[(9 hmtyinfer)
-heurChoose :: (x -> x -> PartialOrdering) -> (x,[(x,x)]) -> x -> (x,[(x,x)])
+-- | Choose maximum, also giving list of equals of there are more maximum x-es
+heurChoose :: (x -> x -> PartialOrdering) -> (x,[x]) -> x -> (x,[x])
 heurChoose cmp (x,eqPairs) y
   = case cmp x y of
       P_LT -> (y,[])
       P_GT -> (x,eqPairs)
-      P_EQ -> (x,[(x,y)]++eqPairs)
+      P_EQ -> (x,if null eqPairs then [x,y] else y:eqPairs)
 
-heurMaximumBy :: (x -> x -> PartialOrdering) -> [x] -> (x,[(x,x)])
+heurMaximumBy :: (x -> x -> PartialOrdering) -> [x] -> (x,[x])
 heurMaximumBy cmp (x:xs)
   = foldl (heurChoose cmp) (x,[]) xs
 %%]
@@ -160,21 +141,21 @@ heurMaximumBy cmp (x:xs)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(9 hmtyinfer)
-contextChoice :: (p -> [HeurRed p info] -> [HeurRed p info]) -> SHeuristic p info
+contextChoice :: Eq p => (p -> [HeurRed p info] -> [HeurRed p info]) -> SHeuristic p info
 contextChoice choose (HeurAlts p reds) = 
   case choose p reds of
-         []                   -> Evid_Unresolved p
+         []                   -> Evid_Unresolved p [UnresolvedTrace_Fail p []]
          [r@(HeurRed_Rec p)]  -> Evid_Recurse p
          [r@(HeurRed i   _)]  -> Evid_Proof p i (snd $ ch r)
          rs                   -> reallyOverlapEvid p (chs rs)
   where ch (HeurRed i rs) = (i,map (contextChoice choose) rs)
         chs rs            = map ch rs
          
-contextBinChoice :: (HeurRed p info -> HeurRed p info -> PartialOrdering) -> SHeuristic p info
+contextBinChoice :: Eq p => (HeurRed p info -> HeurRed p info -> PartialOrdering) -> SHeuristic p info
 contextBinChoice order = contextChoice (const local)
   where  local []                = []
          local is | null eqPairs = [mx]
-                  | otherwise    = concatMap (\(x,y) -> [x,y]) eqPairs
+                  | otherwise    = eqPairs
                    where (mx,eqPairs) = heurMaximumBy order is			-- do something with equal pairs, construct Evid_Ambig perhaps?
 %%]
 
@@ -188,10 +169,16 @@ This should be merged with similar choices made at callsites.
 reallyOverlapEvid :: p -> [(info,[Evidence p info])] -> Evidence p info
 reallyOverlapEvid p evs
   = case filter (not . null . snd) evs of
-      []       -> Evid_Unresolved p
+      []       -> Evid_Ambig p evs
       [(i,ev)] -> Evid_Proof p i ev
       _        -> Evid_Ambig p evs
 %%]
+reallyOverlapEvid :: p -> [(info,[Evidence p info])] -> Evidence p info
+reallyOverlapEvid p evs
+  = case filter (not . null . snd) evs of
+      []       -> Evid_Unresolved p
+      [(i,ev)] -> Evid_Proof p i ev
+      _        -> Evid_Ambig p evs
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Heuristic that only selects solvable alternatives (using backtracking)
@@ -230,7 +217,7 @@ cmpSpecificness env p q =
 %%% Haskell98 heuristics
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(9 hmtyinfer) export(heurHaskell98)
+%%[(9999 hmtyinfer) export(heurHaskell98)
 anncmpHaskell98 :: CHRMatchable (FIIn' gm) Pred VarMp => FIIn' gm -> RedHowAnnotation -> RedHowAnnotation -> PartialOrdering
 anncmpHaskell98 env ann1 ann2
   = case (ann1,ann2) of
@@ -256,7 +243,7 @@ heurHaskell98 env = toHeuristic $ binChoice (anncmpHaskell98 env)
 %%% GHC heuristics
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(9 hmtyinfer) export(heurGHC)
+%%[(9999 hmtyinfer) export(heurGHC)
 anncmpGHCBinSolve :: FIIn' gm -> RedHowAnnotation -> RedHowAnnotation -> PartialOrdering
 anncmpGHCBinSolve env ann1 ann2
   = case (ann1,ann2) of

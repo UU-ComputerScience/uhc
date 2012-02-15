@@ -1,0 +1,71 @@
+%%[abstract
+Abstract ...
+%%]
+
+%%[introduction
+Introduction ...
+
+Desire to program in Haskell for browsers.
+
+Motivation/drive: JCU app.
+
+Technical: 
+%%]
+
+%%[JuniorCollegeApp
+The JCU app ...
+
+Structure: server (snap?), GUI, NanoProlog.
+%%]
+
+%%[HaskellToJavaScript
+Compiling ...
+%%]
+
+%%[UseOfExistingJavaScriptStuff
+Using existing infrastructure ...
+
+FFI.
+
+JQuery, Google, or other libraries for accessing DOM.
+
+DOM.
+
+User interface: HTML5, Canvas Drawing.
+
+%%]
+
+%%[discussionAndIssues
+Discuss ...
+
+Mapping to OO: FFI or other mechanism.
+
+Typing the untyped.
+
+Mismatch: Cabal does not deal with multiple backend of one compiler.
+
+Mismatch: Libraries take GHC as standard, not Haskell2010 (or H98).
+
+Unix based library is useless, basically other OS to run on, what about shared code, ...
+%%]
+
+%%[relatedWork
+Relate ...
+
+GHCjs \cite{www11ghcjs-git}.
+
+Function javascript \cite{www07functional-javascript}.
+
+Haskell in Javascript \cite{www10haskellinjavascript}.
+
+York/YHC for Javascript \cite{www07yhc-javascript}
+based project compiling DOM datamodel to corresponding wrapper code \cite{www07haskell-in-browser}.
+%%]
+
+%%[conclusion
+Conclude ...
+%%]
+
+%%[XX
+%%]
+

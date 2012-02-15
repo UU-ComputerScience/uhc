@@ -277,7 +277,7 @@ cModMergeByPullingIn
   = ( updMod (Seq.toList $ pullstBinds st)
     , Set.map (panicJust "cModMergeByPullingIn" . hsnQualifier) $ pullstPulledNmS st
     )
-  where (_,st) = runState (pull) (emptyPullState {pullstToDo = Set.toList $ getExprFvS rootExpr})
+  where st = execState (pull) (emptyPullState {pullstToDo = Set.toList $ getExprFvS rootExpr})
         pull = do
           s <- get
           case pullstToDo s of

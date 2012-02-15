@@ -921,9 +921,9 @@ cpProcessEH modNm
   = do { cr <- get
        ; let (_,_,opts,fp) = crBaseInfo modNm cr
 %%[[99
-             optsTr = opts { ehcOptTrace = \s x -> unsafePerformIO (do { (_,s) <- runStateT (do { cpMsg modNm VerboseALot ("EH>: " ++ s) 
-                                                                                                ; x `seq` cpMsg modNm VerboseALot ("EH<: " ++ s) 
-                                                                                                }) cr 
+             optsTr = opts { ehcOptTrace = \s x -> unsafePerformIO (do { s <- execStateT (do { cpMsg modNm VerboseALot ("EH>: " ++ s) 
+                                                                                             ; x `seq` cpMsg modNm VerboseALot ("EH<: " ++ s) 
+                                                                                             }) cr 
                                                                        ; return x
                                                                        }) }
              -- optsTr = opts { ehcOptTrace = \s x -> unsafePerformIO (do { putCompileMsg VerboseALot (ehcOptVerbosity opts) ("EH: " ++ s) Nothing modNm fp ; return x }) }

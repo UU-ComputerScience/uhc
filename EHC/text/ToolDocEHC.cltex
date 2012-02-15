@@ -149,8 +149,8 @@ hence no documentation is currently available.
 \subsubsection{@bc@ and @C@ backend}
 %%@ToolDocEHC.ffi.C.bc
 
-\subsubsection{@jscript@}
-%%@ToolDocEHC.ffi.jscript
+\subsubsection{@js@}
+%%@ToolDocEHC.ffi.js
 
 
 \subsection{Limitations}
@@ -1078,7 +1078,7 @@ The following pragmas are supported.
 \item @ExtensibleRecords@: turn on special syntax for extensible records. Available for internal backwards compatibility, but otherwise useless as codegeneration and runtime currently does not support extensible records. It reserves the operators \verb|#| and \verb|:=| for record selection and update respectively.
 \end{itemize}
 \item \verb|{-# DERIVING class field generic-function #-}| pragma: see \lref{generic-deriving}{generic deriving}.
-\item \verb|{-# EXCLUDE_IF_TARGET targets #-}| (file header pragma) make the module invisible for compilation. This is a (hopefully) temporary measure to deal with the abilities of distinctive backend. For example, the @jscript@ (Javascript) backend does not support (e.g.) file access.
+\item \verb|{-# EXCLUDE_IF_TARGET targets #-}| (file header pragma) make the module invisible for compilation. This is a (hopefully) temporary measure to deal with the abilities of distinctive backend. For example, the @js@ (Javascript) backend does not support (e.g.) file access.
 \end{itemize}
 Other or unsupported pragmas are silently ignored, even when appropriate currently no warning will be given.
 The text inside the pragma delimiters is then treated as normal comment, as were it inside plain \verb|{-| and \verb|-}| comment delimiters.
@@ -1318,8 +1318,8 @@ The @Foreign.XX@ library modules are available.
 Calling conventions @dynamic@, @wrapper@, @export@ as well as wrapping as finalizers is not yet supported.
 %%]
 
-%%[ffi.jscript doclatex
-The @jscript@ calling convention for the @jscript@ (Javascript) backend allows import entities to specify a little bit of OO like notation and array access.
+%%[ffi.js doclatex
+The @js@ calling convention for the @js@ (Javascript) backend allows import entities to specify a little bit of OO like notation and array access.
 The subsequent is taken from the \href{http://utrechthaskellcompiler.wordpress.com/2010/10/29/a-haskell-ffi-calling-convention-for-javascript/}{UHC blog}:
 
 %%@Blog.entry20101027.javascript.FFI
@@ -1448,10 +1448,10 @@ therefore make compilation fail.
  JVM expects this to be done per .class file. Because all functions and CAFs have a separate class definition this becomes quite costly in terms of jar file size and runtime startup time.
 \end{itemize}
 
-\subsubsection{@jscript@: Core based JavaScript, no whole program analysis}
+\subsubsection{@js@: Core based JavaScript, no whole program analysis}
 
 \begin{itemize}
-\item Only when enabled via @configure --enable-jscript@.
+\item Available by default, no configure flag to turn it off/on.
 \item Runs for latest variant, but all FFI related to the usual OS stuff is not available.
 \item No exceptions (yet).
 \item No cabal support (yet).

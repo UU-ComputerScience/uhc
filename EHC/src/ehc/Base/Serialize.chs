@@ -404,7 +404,7 @@ instance (Ord k, Serialize k, Serialize e) => Serialize (Map.Map k e) where
 
 %%[50 export(runSPut,runSGet)
 runSPut :: SPut -> Bn.Put
-runSPut x = sputsPut $ snd $ St.runState x emptySPutS
+runSPut x = sputsPut $ St.execState x emptySPutS
 
 runSGet :: SGet x -> Bn.Get x
 runSGet x = St.evalStateT x (SGetS Map.empty)

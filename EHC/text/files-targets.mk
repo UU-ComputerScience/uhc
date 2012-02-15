@@ -423,6 +423,16 @@ text-variant-slides-javascript:
 	  text-variant-dflt-once
 
 text-variant-improving-uhc-js:
-	$(MAKE) \
-	  TEXT_SHUFFLE_VARIANT=68 \
-	  text-variant-dflt-doc
+	$(MAKE) TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC=no \
+	  INCLUDE_DERIVED_MK=yes \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=kscode --set=blockstyle --set=asArticle" \
+	  TEXT_SHUFFLE_VARIANT=70 \
+	  text-variant-dflt-bib
+
+text-variant-icfp2012-js:
+	$(MAKE) TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC=no \
+	  INCLUDE_DERIVED_MK=yes \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=icfp2012 --set=kscode --set=acm --set=blockstyle --set=asArticle" \
+	  TEXT_SHUFFLE_VARIANT=69 \
+	  text-variant-dflt-bib
+

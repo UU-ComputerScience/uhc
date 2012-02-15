@@ -531,10 +531,10 @@ deriving instance Typeable CHRPredOccCxt
 deriving instance Data CHRPredOccCxt
 %%]
 
-%%[(9 hmtyinfer || hmtyast) hs export(CHRPredOcc(..),cpoScope,mkCHRPredOcc)
-data CHRPredOcc
+%%[(9 hmtyinfer || hmtyast) hs export(CHRPredOcc'(..),CHRPredOcc,cpoScope,mkCHRPredOcc)
+data CHRPredOcc' p
   =  CHRPredOcc
-       { cpoPr               :: !Pred
+       { cpoPr               :: !p
        -- , cpoScope            :: !PredScope
        , cpoCxt              :: !CHRPredOccCxt
 %%[[99
@@ -542,6 +542,8 @@ data CHRPredOcc
 %%]]
        }
   deriving (Show,Eq,Ord)
+
+type CHRPredOcc = CHRPredOcc' Pred
 
 mkCHRPredOcc :: Pred -> PredScope -> CHRPredOcc
 %%[[9
@@ -567,7 +569,7 @@ cpo2PredOcc i o
 %%]
 
 %%[(50 hmtyinfer || hmtyast) hs
-deriving instance Typeable CHRPredOcc
+deriving instance Typeable1 CHRPredOcc'
 deriving instance Data CHRPredOcc
 %%]
 

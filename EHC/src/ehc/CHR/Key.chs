@@ -2,7 +2,7 @@
 %%% Constraint Handling Rules: Key to be used as part of TrieKey
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 module {%{EH}CHR.Key} import({%{EH}Base.Common},{%{EH}Base.Trie})
+%%[9 module {%{EH}CHR.Key} import({%{EH}Base.Common},{%{EH}Base.TreeTrie},{%{EH}Base.Trie})
 %%]
 
 %%[9 import(EH.Util.Pretty)
@@ -50,12 +50,40 @@ data Key
            )
 %%]
 
-%%[9
+%%[9999
 instance Show Key where
   show _ = "Key"
 %%]
 
 %%[9
+instance Show Key where
+  show (Key_HNm  n) = "H:" ++ show n
+  show (Key_UID  n) = "U:" ++ show n
+  show (Key_Str  n) = "S:" ++ n
+%%[[(9 hmtyinfer || hmtyast)
+  show (Key_TyQu n) = "Q:" ++ show n
+  show (Key_Ty   n) = "T:" ++ show n
+%%]]
+%%[[9999
+  show (Key_Hash h) = pp $ show h
+%%]]
+%%]
+
+%%[9
+instance PP Key where
+  pp (Key_HNm  n) = "H:" >|< n
+  pp (Key_UID  n) = "U:" >|< n
+  pp (Key_Str  n) = "S:" >|< n
+%%[[(9 hmtyinfer || hmtyast)
+  pp (Key_TyQu n) = "Q:" >|< show n
+  pp (Key_Ty   n) = "T:" >|< n
+%%]]
+%%[[9999
+  pp (Key_Hash h) = pp $ show h
+%%]]
+%%]
+
+%%[9999
 instance PP Key where
   pp (Key_HNm  n) = pp n
   pp (Key_UID  n) = pp n
@@ -82,6 +110,7 @@ instance Hashable Key where
 %%]
 
 %%[9 export(Keyable(..))
+-- | Trie key construction
 class Keyable k where
   toKey               :: k -> [TrieKey Key]						-- the key of ...
   toKeyParentChildren :: k -> ([TrieKey Key],[TrieKey Key])		-- split up into (p,c), where key = p ++ c
@@ -101,6 +130,21 @@ instance Keyable x => TrieKeyable x Key where
   toTrieKey x = mkTrieKeys [Key_Hash (hashList k)] ++ k
               where k = toKey x
 %%]]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% TTKeyable
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9 export(TTKeyable(..))
+-- | TreeTrie key construction
+class TTKeyable x where
+  toTTKey :: x -> TreeTrieKey Key
+%%]
+
+%%[9
+instance TTKeyable x => TreeTrieKeyable x Key where
+  toTreeTrieKey   = toTTKey
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

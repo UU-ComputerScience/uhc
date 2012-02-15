@@ -28,7 +28,7 @@ with TKK_Partial. Only at insertion time the proper search structure is setup.
 %%[9 import(qualified EH.Util.FastSeq as Seq,qualified Data.List as List)
 %%]
 
-%%[9 import(EH.Util.Pretty hiding (empty))
+%%[9 import(EH.Util.Pretty hiding (empty), qualified EH.Util.Pretty as PP)
 %%]
 
 %%[50 import(Data.Typeable(Typeable,Typeable1), Data.Generics(Data))
@@ -113,9 +113,10 @@ class TrieKeyable x k where
 
 %%[9 export(TrieLookup(..))
 data TrieLookup
-  = TrieLookup_Normal
-  | TrieLookup_Partial
-  | TrieLookup_StopAtPartial
+  = TrieLookup_Normal					-- lookup normal
+  | TrieLookup_Partial					-- lookup ..
+  | TrieLookup_ExpandAtPartialKey		-- expand subtries at partial key
+  -- | TrieLookup_ExpandAtPartialTrie		-- expand subtries at partial trie
   deriving (Eq)
 %%]
 
@@ -150,7 +151,16 @@ trieUpdPartSubs :: SubTrie k v -> Trie k v -> Trie k v
 trieUpdPartSubs s t = t {triePartSubs = s}
 %%]
 
-%%[9
+%%[9 export(ppTrieAsIs)
+-- | PP a Trie as is, directly corresponding to original structure
+ppTrieAsIs :: (PP k, PP v) => Trie k v -> PP_Doc
+ppTrieAsIs t
+  =     "V:" >#< (maybe PP.empty pp $ trieMbVal t)
+    >-< "P:" >#< (ppSub $ triePartSubs t)
+    >-< "N:" >#< (ppSub $ trieSubs t)
+  where ppKV (k,v) = k >-< indent 2 (":" >#< ppTrieAsIs v)
+        ppSub = ppBracketsCommasV . map ppKV . Map.toList
+
 instance (Show k, Show v) => Show (Trie k v) where
   showsPrec _ t = showList $ toListByKey t
 
@@ -222,34 +232,47 @@ lookupPartialByKey' :: Ord k => ([TrieKey k] -> v -> v') -> TrieLookup -> [TrieK
 lookupPartialByKey' mkRes trieLookup keys trie
   = l keys
   where l  []                = ([],fmap (mkRes []) $ trieMbVal trie)
-        l  (kk@(TK_One TKK_Partial k) : ks) | trieLookup == TrieLookup_StopAtPartial
-                             = (map (\(ks,v) -> mkRes ks v) $ Seq.toList $ toFastSeq True trie,Nothing)
+        l  (kk@(TK_One TKK_Normal k) : ks) | trieLookup == TrieLookup_Partial
+                             = case Map.lookup k $ trieSubs trie of
+                                 Just trie'
+                                   -> (subsPart ++ p, m)
+                                   where (p,m) = lookupPartialByKey' (mkRes' kk) trieLookup ks trie'
+                                 _ -> (subsPart, Nothing)
+                             where subsPart = lp (triePartSubs trie) ks
+        l  (kk@(TK_One TKK_Normal k) : ks) | trieLookup == TrieLookup_ExpandAtPartialKey
+                             = case Map.lookup k $ trieSubs trie of
+                                 Just trie'
+                                   -> lookupPartialByKey' (mkRes' kk) trieLookup ks trie'
+                                 _ -> ([], Nothing)
+        {-
+        l  (kk@(TK_One TKK_Normal k) : ks) | trieLookup == TrieLookup_ExpandAtPartialTrie -- && not (Map.null $ triePartSubs trie)
+                             = case Map.lookup k $ trieSubs trie of
+                                 Just trie'
+                                   -> (p ++ subsPart, m)
+                                   where (p,m) = lookupPartialByKey' (mkRes' kk) trieLookup ks trie'
+                                 _ -> (subsPart, Nothing)
+                             where subsPart = lf mkRes (trie {trieSubs = Map.empty})
+        -}
+        l  (kk@(TK_One TKK_Partial k) : ks) | trieLookup == TrieLookup_ExpandAtPartialKey -- || trieLookup == TrieLookup_ExpandAtPartialTrie
+                             = (lf mkRes trie, Nothing)
         l  (kk@(TK_One TKK_Partial k) : ks) | trieLookup == TrieLookup_Partial
                              = case Map.lookup k $ triePartSubs trie of
                                  Just trie'
                                    -> (lp (k `Map.delete` triePartSubs trie) ks ++ p, m)
                                    where (p,m) = lookupPartialByKey' (mkRes' kk) trieLookup ks trie'
                                  _ -> (lp (triePartSubs trie) ks, Nothing)
-        l  (kk@(TK_One TKK_Normal k) : ks) | trieLookup == TrieLookup_Partial
-                             = case Map.lookup k $ trieSubs trie of
-                                 Just trie'
-                                   -> (lp (triePartSubs trie) ks ++ p, m)
-                                   where (p,m) = lookupPartialByKey' (mkRes' kk) trieLookup ks trie'
-                                 _ -> (lp (triePartSubs trie) ks, Nothing)
-        l  (kk@(TK_One TKK_Normal k) : ks) | trieLookup == TrieLookup_StopAtPartial
-                             = case Map.lookup k $ trieSubs trie of
-                                 Just trie'
-                                   -> lookupPartialByKey' (mkRes' kk) trieLookup ks trie'
-                                 _ -> ([], Nothing)
-        l  (kk@(TK_One knd k) : ks) | trieLookup /= TrieLookup_Partial
+        l  (kk@(TK_One knd k) : ks) | trieLookup /= TrieLookup_Partial -- && trieLookup /= TrieLookup_ExpandAtPartialTrie
                              = case Map.lookup k $ subsOf knd trie of
                                  Just trie'
                                    -> ([], m)
                                    where (_,m) = lookupPartialByKey' (mkRes' kk) trieLookup ks trie'
                                  _ -> ([], Nothing)
+        -- lookup sub tries
         lp subs ks           = concat [ lookupResultToList $ lookupPartialByKey' (mkResP k) trieLookup ks psub | (k,psub) <- psubs, ks <- kss ]
                              where kss = if List.null ks then [[]] else [[],ks]
                                    psubs = Map.toList subs
+        -- lookup full trie
+        lf mkRes trie        = map (\(ks,v) -> mkRes ks v) $ Seq.toList $ toFastSeq True trie
         mkRes' kk ks v       = mkRes (kk : ks) v
         mkResN k             = mkRes' (TK_One TKK_Normal k)
         mkResP k             = mkRes' (TK_One TKK_Partial k)
@@ -402,14 +425,28 @@ instance (Ord k, Serialize k, Serialize v) => Serialize (Trie k v) where
 %%% Test
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9999
+%%[99
 test1
   = fromListByKey
-      [ ([TK_One TKK_Partial 1],"a")
+      [ ([TK_One TKK_Partial 1],"A")
+      , ([TK_One TKK_Normal 1],"a")
+      , ([TK_One TKK_Partial 1,TK_One TKK_Normal 2],"Ab")
+      , ([TK_One TKK_Normal 1,TK_One TKK_Normal 2],"ab")
+      , ([TK_One TKK_Partial 1,TK_One TKK_Normal 2,TK_One TKK_Normal 3],"Abc")
+      , ([TK_One TKK_Normal 1,TK_One TKK_Normal 2,TK_One TKK_Normal 3],"abc")
+      , ([TK_One TKK_Partial 1,TK_One TKK_Normal 3],"Ac")
       , ([TK_One TKK_Normal 1,TK_One TKK_Normal 3],"ac")
-      , ([TK_One TKK_Normal 1,TK_One TKK_Partial 2],"ab")
-      , ([TK_One TKK_Normal 1,TK_One TKK_Partial 2,TK_One TKK_Normal 3],"abc")
+      , ([TK_One TKK_Normal 1,TK_One TKK_Partial 2],"aB")
+      , ([TK_One TKK_Normal 1,TK_One TKK_Partial 2,TK_One TKK_Normal 3],"aBc")
       , ([TK_One TKK_Normal 2],"b")
+      ]
+test2
+  = fromListByKey
+      [ ([TK_One TKK_Normal 1],"a")
+      , ([TK_One TKK_Normal 1,TK_One TKK_Normal 2],"ab")
+      , ([TK_One TKK_Normal 1,TK_One TKK_Normal 2,TK_One TKK_Normal 3],"abc")
+      , ([TK_One TKK_Normal 1,TK_One TKK_Normal 2,TK_One TKK_Normal 3,TK_One TKK_Normal 4],"abcd")
+      , ([TK_One TKK_Normal 1,TK_One TKK_Partial 2,TK_One TKK_Normal 3],"aBc")
       ]
 
 l1t1 = lookupPartialByKey' (,) TrieLookup_Partial [TK_One TKK_Normal 1]
@@ -424,8 +461,8 @@ test4
 
 l1t4 = lookupPartialByKey' (,) TrieLookup_Partial [TK_One TKK_Normal 1,TK_One TKK_Normal 2,TK_One TKK_Normal 3,TK_One TKK_Partial 4]
 l2t4 = lookupPartialByKey' (,) TrieLookup_Normal [TK_One TKK_Normal 1,TK_One TKK_Normal 2,TK_One TKK_Normal 3,TK_One TKK_Partial 4]
-l3t4 = lookupPartialByKey' (,) TrieLookup_StopAtPartial [TK_One TKK_Normal 1,TK_One TKK_Normal 2,TK_One TKK_Normal 3,TK_One TKK_Partial 4]
-l4t4 = lookupPartialByKey' (,) TrieLookup_StopAtPartial [TK_One TKK_Normal 1,TK_One TKK_Normal 2,TK_One TKK_Partial 4]
+l3t4 = lookupPartialByKey' (,) TrieLookup_ExpandAtPartialKey [TK_One TKK_Normal 1,TK_One TKK_Normal 2,TK_One TKK_Normal 3,TK_One TKK_Partial 4]
+l4t4 = lookupPartialByKey' (,) TrieLookup_ExpandAtPartialKey [TK_One TKK_Normal 1,TK_One TKK_Normal 2,TK_One TKK_Partial 4]
 %%]
 l1 = lookupPartialByKey False [TK_One TKK_Normal 1]
 l1pn = lookupPartialByKey True [TK_One TKK_Normal 1]

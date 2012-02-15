@@ -110,7 +110,12 @@ SEM Ty
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(1 hmtyinfer || hmtyast).appSpinePos
-ATTR AllTyTy [ appSpinePos : Int | | ]
+ATTR
+  AllTyTy
+%%[[13
+    PredSeq
+%%]]
+    [ appSpinePos : Int | | ]
 
 SEM TyAGItf
   | AGItf       ty          .   appSpinePos     =   0
@@ -136,6 +141,11 @@ SEM Pred
   | *           loc         .   appSpinePos     =   0
 %%]
 
+%%[(13 hmtyinfer || hmtyast)
+SEM PredSeq
+  | Cons        tl          .   appSpinePos     =   @lhs.appSpinePos + 1
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Context of type, i.e. where it is
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -149,8 +159,13 @@ SEM Ty
   | App
 %%[[7
     Ext
-%%]
+%%]]
                 loc         .   isSpineRoot     =   @lhs.appSpinePos == 0
+%%]
+
+%%[(13 hmtyinfer || hmtyast)
+SEM PredSeq
+  | Cons        loc         .   isSpineRoot     =   @lhs.appSpinePos == 0
 %%]
 
 %%[(4 hmtyinfer || hmtyast)
@@ -196,6 +211,11 @@ SEM Ty
   | App         loc         .   isArrowArg      :   Bool
                 loc         .   isSpineRoot     :   Bool
                 loc         .   isArrowRoot     :   Bool
+%%]
+
+%%[(13 hmtyinfer || hmtyast)
+SEM PredSeq
+  | Cons        loc         .   isSpineRoot     :   Bool
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
