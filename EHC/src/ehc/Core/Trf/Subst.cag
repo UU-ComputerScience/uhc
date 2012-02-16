@@ -17,12 +17,7 @@ cexprSubst nm body arg =
 
 WRAPPER CExpr 
 
-ATTR AllCodeNT [ substExpr : CExpr    | |  ]
-ATTR AllCodeNT [ substName : {HsName} | |  ] 
-
-SEM CExpr
-
-ATTR AllCodeNT [ | | substd : SELF ]
+ATTR AllCodeNT [ substExpr : CExpr substName : {HsName} | | substd : SELF  ]
 
 SEM CExpr
         | Var lhs.substd = if (acbrefNm @ref) == @lhs.substName 
