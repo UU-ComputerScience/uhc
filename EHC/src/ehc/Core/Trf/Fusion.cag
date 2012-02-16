@@ -7,9 +7,7 @@
 cmodTrfFusion :: LamMp -> CModule -> CModule
 cmodTrfFusion lamMp cmod = 
      let t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf cmod)) 
-                            (Inh_CodeAGItf { fuseMp_Inh_CodeAGItf = Map.empty
-                                           , convMp_Inh_CodeAGItf = Map.empty 
-                                           , lamMp_Inh_CodeAGItf = lamMp
+                            (Inh_CodeAGItf {lamMp_Inh_CodeAGItf = lamMp
                                            } )
      in rewritten_Syn_CodeAGItf t
 }
@@ -75,7 +73,10 @@ SEM CExpr
 -- Gather the names of conversions and their role into a Map 
 ------------------------------------------------------------------------------
 
-ATTR CodeAGItf AllCodeNT [ convMp : ConvMp | | ]
+ATTR AllCodeNT [ convMp : ConvMp | | ]
+
+SEM CodeAGItf
+        | AGItf module.convMp = Map.empty
 
 SEM CExpr
         | Let body.convMp = @binds.gathConvMp `Map.union` @lhs.convMp
@@ -101,20 +102,23 @@ SEM CBind
 WRAPPER CodeAGItf 
 
 {
-type FuseMp = Map.Map HsName CExpr
+type FuncMp = Map.Map HsName CExpr
 }
 
 ATTR CodeAGItf AllCodeNT [lamMp  : LamMp  | | ] -- passed in, contains which functions have which fusion roles
-ATTR CodeAGItf AllCodeNT [fuseMp : FuseMp | | ] -- starts blank, this will contain the transformed code (circular dependecy) for the functions that need to be inlined for fusion 
+ATTR AllCodeNT [fuseMp : FuncMp | | ] -- starts blank, this will contain the transformed code (circular dependecy) for the functions that need to be inlined for fusion 
+
+SEM CodeAGItf
+        | AGItf module.fuseMp = Map.empty
 
 
 SEM CExpr
         | Let body.fuseMp  = @binds.gathFuseMp `Map.union` @lhs.fuseMp -- gather the functions from let bindings that need to be fused, and add them to the parent's fusion map, and push this down the tree
 
 
-ATTR CBindL [ || gathFuseMp USE {`Map.union`} {Map.empty} : FuseMp ] -- combine all the maps for all the elements of a CBind list
+ATTR CBindL [ || gathFuseMp USE {`Map.union`} {Map.empty} : FuncMp ] -- combine all the maps for all the elements of a CBind list
 
-ATTR CBind [ || gathFuseMp : FuseMp ]
+ATTR CBind [ || gathFuseMp : FuncMp ]
 
 SEM CBind 
   | Bind loc.gathFuseMp = fromMaybe Map.empty (do 
