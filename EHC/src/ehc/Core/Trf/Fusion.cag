@@ -1,4 +1,4 @@
-%%[93 hs module {%{EH}Core.Trf.Fusion} import (Data.Maybe (fromMaybe, isJust),Debug.Trace,{%{EH}Ty},{%{EH}Base.Common},{%{EH}LamInfo},{%{EH}Core},{%{EH}AbstractCore}, {%{EH}Core.Trf.Subst} (cexprSubst), {%{EH}Core.Trf.Rewrite} (rewrite, ConvMp(..), Role(..)), qualified Data.Map as Map)
+%%[93 hs module {%{EH}Core.Trf.Fusion} import (qualified Data.Set as Set,Data.Maybe (fromMaybe, isJust),Debug.Trace,{%{EH}Ty},{%{EH}Base.Common},{%{EH}LamInfo},{%{EH}Core},{%{EH}AbstractCore}, {%{EH}Core.Trf.Subst} (cexprSubst), {%{EH}Core.Trf.Rewrite} (rewrite, ConvMp(..), Role(..)), qualified Data.Map as Map)
 %%]
 
 %%[93 ag import ({Core/AbsSyn})
@@ -103,6 +103,7 @@ WRAPPER CodeAGItf
 
 {
 type FuncMp = Map.Map HsName CExpr
+type FuncS  = Set.Set HsName
 }
 
 ATTR CodeAGItf AllCodeNT [lamMp  : LamMp  | | ] -- passed in, contains which functions have which fusion roles
@@ -135,6 +136,44 @@ ATTR CBindAspect [ || gathExpr USE {++} {[]} : {[CExpr]}]
 
 SEM CBindAspect
         | Bind lhs.gathExpr = [@expr.rewritten] -- The fuseMap holds the result of any inlining done to this code instead of the original
+
+
 -------------------------------------------------------------------------------
+-- Collect the names of fusible transformers (that is, functions that are used 
+-- in fusible functions that aren't conversion functions)
 -------------------------------------------------------------------------------
+
+ATTR AllCodeNT [ inFusibleFunc : Bool | | ]
+
+SEM CodeAGItf
+        | AGItf module.inFusibleFunc = False
+ 
+
+SEM CBind
+        | Bind bindAspects.inFusibleFunc = @lhs.inFusibleFunc || isJust (Map.lookup @nm @gathFuseMp) 
+                                               
+
+ATTR AllCodeNT [ funcMp : FuncMp | | ]
+
+ATTR CodeAGItf AllCodeNT [ | | funcS USE {`Set.union`} {Set.empty} : FuncS ]
+
+SEM CodeAGItf
+        | AGItf module.funcMp = Map.empty
+
+SEM CExpr
+        | Var lhs.funcS = if @lhs.inFusibleFunc 
+                          then Set.singleton (acbrefNm @ref)
+                          else Set.empty 
+
 SEM CExpr 
+        | Let body.funcMp = @binds.gathFuncMp `Map.union` @lhs.funcMp
+
+ATTR CBindL [ | | gathFuncMp USE {`Map.union`} {Map.empty} : FuncMp ]
+ATTR CBind  [ | | gathFuncMp : FuncMp ]
+
+SEM CBind 
+        | Bind loc.gathFuncMp = if Set.member @nm @bindAspects.funcS
+                                then Map.singleton @nm $ head @bindAspects.gathExpr
+                                else Map.empty                                  
+
+%%] 
