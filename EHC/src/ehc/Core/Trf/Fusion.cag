@@ -166,7 +166,9 @@ SEM CExpr
                           else Set.empty 
 
 SEM CExpr 
-        | Let body.funcMp = @binds.gathFuncMp `Map.union` @lhs.funcMp
+        | Let body.funcMp = if @categ == acoreBindcategRec -- no recursive functions allowed, or everything blows up 
+                            then @lhs.funcMp
+                            else @binds.gathFuncMp `Map.union` @lhs.funcMp
 
 ATTR CBindL [ | | gathFuncMp USE {`Map.union`} {Map.empty} : FuncMp ]
 ATTR CBind  [ | | gathFuncMp : FuncMp ]
