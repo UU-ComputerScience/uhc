@@ -132,17 +132,5 @@ ATTR CBindAspect [ || gathExpr USE {++} {[]} : {[CExpr]}]
 SEM CBindAspect
         | Bind lhs.gathExpr = [@expr.rewritten] -- The fuseMap holds the result of any inlining done to this code instead of the original
 -------------------------------------------------------------------------------
--- Actually do the inlining
 -------------------------------------------------------------------------------
-%%]
 SEM CExpr 
-        | App lhs.trf = case @lhs.isTop of 
-                                True -> case @func.getFunName of -- check if there is a function name or not
-                                          Just name -> case Map.lookup name @lhs.fuseMp of
-                                                Just expr -> trace ("Applying " ++ show @func.getFunName ++ "with expression" ++ show expr ++  " to " ++ show @loc.gathArgs ++ "\n") $ acoreApp expr @loc.gathArgs -- inline the transformed code from fuseMp
-                                                Nothing   -> (CExpr_App @func.trf @arg.trf) -- return the same thing (but with transformed args?)
-                                          _ -> CExpr_App @func.trf @arg.trf -- transformed or not? They are just copied if there's no change, anyway 
-                                _ -> (CExpr_App @func.trf @arg.trf) --return the same thing
-
-ATTR CodeAGItf [ || trf : CModule]
-ATTR AllCodeNT [ || trf : SELF]
