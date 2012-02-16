@@ -178,4 +178,9 @@ SEM CBind
                                 then Map.singleton @nm $ head @bindAspects.gathExpr
                                 else Map.empty                                  
 
+ATTR CExpr [ | | varName : {Maybe HsName} ] 
+
+SEM CExpr
+        | Var lhs.varName     = Just $ acbrefNm @ref
+        | * - Var lhs.varName = Nothing
 %%] 
