@@ -183,7 +183,8 @@ ATTR CBindL [ | | gathFuncMp USE {`Map.union`} {Map.empty} : FuncMp ]
 ATTR CBind  [ | | gathFuncMp : FuncMp ]
 
 SEM CBind 
-        | Bind loc.gathFuncMp = if Set.member @nm @bindAspects.funcS
+        | Bind loc.gathFuncMp = if Set.member @nm @bindAspects.funcS 
+                                   && isNothing (Map.lookup @nm @lhs.convMp)
                                 then Map.singleton @nm $ head @bindAspects.gathExpr
                                 else Map.empty                                  
 
