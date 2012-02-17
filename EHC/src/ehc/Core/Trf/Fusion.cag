@@ -67,7 +67,7 @@ SEM CExpr
 -- whose @func is fusible. 
 ------------------------------------------------------------------------------
 
-ATTR CExpr [ || isFusible : Bool ]
+ATTR CExpr [ | | isFusible : Bool ]
 
 SEM CExpr
         | Var loc.isFusible           = isJust (Map.lookup (acbrefNm @ref) @lhs.fuseMp)
@@ -115,7 +115,7 @@ WRAPPER CodeAGItf
 type FuncS  = Set.Set HsName
 }
 
-ATTR CodeAGItf AllCodeNT [lamMp  : LamMp  | | ] -- passed in, contains which functions have which fusion roles
+ATTR CodeAGItf AllCodeNT [lamMp : LamMp  | | ] -- passed in, contains which functions have which fusion roles
 ATTR AllCodeNT [fuseMp : FuncMp | | ] -- starts blank, this will contain the transformed code (circular dependecy) for the functions that need to be inlined for fusion 
 
 SEM CodeAGItf
