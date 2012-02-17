@@ -1,0 +1,26 @@
+%%[93 hs module {%{EH}Core.Trf.Inline} import ({%{EH}Ty},{%{EH}Base.Common},{%{EH}LamInfo},{%{EH}Core},{%{EH}AbstractCore}, {%{EH}Core.Trf.Subst} (cexprSubst), qualified Data.Map as Map)
+%%]
+
+%%[93 ag import ({Core/AbsSyn})
+
+{ 
+inline :: FuncMp -> CExpr -> CExpr
+inline funcMp expr = 
+        let t = wrap_CExpr (sem_CExpr expr)
+                           (Inh_CExpr { funcMp_Inh_CExpr = funcMp 
+                                      }
+                           )
+        in inlined_Syn_CExpr t
+}
+
+{
+
+type FuncMp = Map.Map HsName CExpr
+
+}
+    
+WRAPPER CExpr
+
+ATTR AllCodeNT [ funcMp : FuncMp | | inlined : SELF ]
+
+%%] 

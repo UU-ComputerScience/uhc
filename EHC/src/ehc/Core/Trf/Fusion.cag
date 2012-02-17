@@ -1,4 +1,7 @@
-%%[93 hs module {%{EH}Core.Trf.Fusion} import (qualified Data.Set as Set,Data.Maybe (fromMaybe, isJust),Debug.Trace,{%{EH}Ty},{%{EH}Base.Common},{%{EH}LamInfo},{%{EH}Core},{%{EH}AbstractCore}, {%{EH}Core.Trf.Subst} (cexprSubst), {%{EH}Core.Trf.Rewrite} (rewrite, ConvMp(..), Role(..)), qualified Data.Map as Map)
+%%[93 hs module {%{EH}Core.Trf.Fusion} import ({%{EH}Core.Trf.Rewrite} (rewrite, ConvMp(..), Role(..)), {%{EH}Core.Trf.Inline} (inline, FuncMp(..))) 
+%%]
+
+%%[93 hs import (qualified Data.Set as Set,Data.Maybe (fromMaybe, isJust, isNothing),Debug.Trace,{%{EH}Ty},{%{EH}Base.Common},{%{EH}LamInfo},{%{EH}Core},{%{EH}AbstractCore}, {%{EH}Core.Trf.Subst} (cexprSubst),  qualified Data.Map as Map)
 %%]
 
 %%[93 ag import ({Core/AbsSyn})
@@ -9,7 +12,7 @@ cmodTrfFusion lamMp cmod =
      let t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf cmod)) 
                             (Inh_CodeAGItf {lamMp_Inh_CodeAGItf = lamMp
                                            } )
-     in rewritten_Syn_CodeAGItf t
+     in inlined_Syn_CodeAGItf t
 }
 
 
@@ -31,25 +34,32 @@ apply func                arg = trace "tried to inline a non-Lambda expression" 
 
 }
 
-ATTR CodeAGItf [ || inlined : CModule]
-ATTR AllCodeNT [ || inlined : SELF]
+ATTR CodeAGItf [ || applied : CModule]
+ATTR AllCodeNT [ || applied : SELF]
 
 SEM CExpr
-        | App lhs.inlined = @inlined
-        | App loc.inlined = if @func.isFusible -- && @arg.isFusible
-                            then apply @func.inlined @arg.rewritten -- inline this function application.  
+        | App lhs.applied = @applied
+        | App loc.applied = if @func.isFusible -- && @arg.isFusible
+                            then apply @func.applied @arg.rewritten -- inline this function application.  
                                                                    -- We actually want the fused version of the arg, 
                                                                    -- but this hasn't been defined yet
-                            else acoreApp1 @func.inlined @arg.rewritten
-        | Var lhs.inlined = if @isFusible 
-                            then fromMaybe @inlined (Map.lookup (acbrefNm @ref) @lhs.fuseMp)
-                            else @inlined
+                            else acoreApp1 @func.applied @arg.rewritten
+        | Var lhs.applied = if @isFusible 
+                            then fromMaybe @applied (Map.lookup (acbrefNm @ref) @lhs.fuseMp)
+                            else @applied
 
-ATTR CodeAGItf [ || rewritten : CModule]
-ATTR AllCodeNT [ || rewritten : SELF]
+ATTR CodeAGItf [ | | rewritten : CModule]
+ATTR AllCodeNT [ | | rewritten : SELF]
  
 SEM CExpr 
-       | App lhs.rewritten = rewrite @lhs.convMp @loc.inlined -- take the inlined code and attempt to remove any con . abs
+       | App lhs.rewritten = @rewritten
+       | App loc.rewritten = rewrite @lhs.convMp @applied -- take the inlined code and attempt to remove any con . abs
+
+ATTR CodeAGItf [ | | inlined : CModule]
+ATTR AllCodeNT [ | | inlined : SELF   ]
+ 
+SEM CExpr 
+       | App lhs.inlined = inline @lhs.funcMp @loc.rewritten
          
 ------------------------------------------------------------------------------
 -- Tests to see if a function is fusible.  A @func of an App is fusible if it 
@@ -102,7 +112,6 @@ SEM CBind
 WRAPPER CodeAGItf 
 
 {
-type FuncMp = Map.Map HsName CExpr
 type FuncS  = Set.Set HsName
 }
 
