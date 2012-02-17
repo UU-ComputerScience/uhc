@@ -100,8 +100,8 @@ SEM CBind
                                     { lamInfo <- Map.lookup @nm @lhs.lamMp   
                                     ; role    <- Map.lookup acbaspkeyFusionRole (laminfoBindAspMp lamInfo) 
                                     ; return (case role of
-                                                 LamInfoBindAsp_FusionRole FusionRole_BuildLeft  -> Map.singleton @nm Con
-                                                 LamInfoBindAsp_FusionRole FusionRole_BuildRight -> Map.singleton @nm Abs
+                                                 LamInfoBindAsp_FusionRole FusionRole_BuildLeft  -> Map.singleton @nm Abs 
+                                                 LamInfoBindAsp_FusionRole FusionRole_BuildRight -> Map.singleton @nm Con 
                                                  _                                               -> Map.empty)
                                     })
                                         
