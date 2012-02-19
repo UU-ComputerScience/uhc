@@ -23,39 +23,40 @@ WRAPPER TyAGItf
 %%]
 
 %%[(9 hmtyinfer || hmtyast) hs
-tyTreeTrieKey :: Ty -> TreeTrieKey Key
-tyTreeTrieKey ty
+tyTreeTrieKey :: TTKeyableOpts -> Ty -> TreeTrieKey Key
+tyTreeTrieKey opts ty
   =  let  t =  wrap_TyAGItf
                  (sem_TyAGItf (TyAGItf_AGItf ty))
-                 (Inh_TyAGItf)
+                 (Inh_TyAGItf {opts_Inh_TyAGItf = opts})
      in   (key_Syn_TyAGItf t)
 %%]
 
 %%[(9 hmtyinfer || hmtyast) hs
 instance TTKeyable Ty where
-  toTTKey = tyTreeTrieKey
+  toTTKey' o = tyTreeTrieKey o
 
 instance TTKeyable Pred where
-  toTTKey pr = tyTreeTrieKey $ Ty_Pred pr
+  toTTKey' o pr = tyTreeTrieKey o $ Ty_Pred pr
 
 instance TTKeyable PredScope where
-  toTTKey (PredScope_Var v) = ttkSingleton TT1K_Any
-  toTTKey (PredScope_Lev l) = ttkSingleton $ TT1K_One $ Key_Str $ show l
+  toTTKey' o (PredScope_Var v) | ttkoptsVarsAsWild o = ttkSingleton TT1K_Any
+                               | otherwise           = ttkSingleton (TT1K_One $ Key_UID v)
+  toTTKey' o (PredScope_Lev l) = ttkSingleton $ TT1K_One $ Key_Str $ show l
 
 instance TTKeyable CHRPredOccCxt where
-  toTTKey (CHRPredOccCxt_Scope1 sc) = toTTKey sc -- for now
+  toTTKey' o (CHRPredOccCxt_Scope1 sc) = toTTKey' o sc -- for now
 
 instance TTKeyable PredOcc where
-  toTTKey po = toTTKey (poPr po)
+  toTTKey' o po = toTTKey' o (poPr po)
 
 instance TTKeyable CHRPredOcc where
-  toTTKey po = ttkAdd (TT1K_One $ Key_Str "occ") [toTTKey (cpoCxt po), toTTKey (cpoPr po)]
+  toTTKey' o po = ttkAdd (TT1K_One $ Key_Str "occ") [toTTKey' o (cpoCxt po), toTTKey' o (cpoPr po)]
 
 %%]
 
 %%[(9 hmtyinfer || hmtyast) hs
 instance TTKeyable PredOccId where
-  toTTKey (PredOccId     i) = ttkSingleton $ TT1K_One $ Key_UID i
+  toTTKey' o (PredOccId     i) = ttkSingleton $ TT1K_One $ Key_UID i
 %%]
 
 %%[(10 hmtyinfer || hmtyast)
@@ -63,21 +64,30 @@ WRAPPER LabelAGItf
 %%]
 
 %%[(10 hmtyinfer || hmtyast) hs
-labelTreeTrieKey :: Label -> TreeTrieKey Key
-labelTreeTrieKey label
+labelTreeTrieKey :: TTKeyableOpts -> Label -> TreeTrieKey Key
+labelTreeTrieKey opts label
   =  let  t =  wrap_LabelAGItf
                  (sem_LabelAGItf (LabelAGItf_AGItf label))
-                 (Inh_LabelAGItf)
+                 (Inh_LabelAGItf {opts_Inh_LabelAGItf = opts})
      in   (key_Syn_LabelAGItf t)
 %%]
 
 %%[(10 hmtyinfer || hmtyast) hs
 instance TTKeyable LabelOffset where
-  toTTKey (LabelOffset_Var v) = ttkSingleton TT1K_Any
-  toTTKey (LabelOffset_Off l) = ttkSingleton $ TT1K_One $ Key_Str $ show l
+  toTTKey' o (LabelOffset_Var v) | ttkoptsVarsAsWild o = ttkSingleton TT1K_Any
+                                 | otherwise           = ttkSingleton (TT1K_One $ Key_UID v)
+  toTTKey' o (LabelOffset_Off l) = ttkSingleton $ TT1K_One $ Key_Str $ show l
 
 instance TTKeyable Label where
-  toTTKey = labelTreeTrieKey
+  toTTKey' = labelTreeTrieKey
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Global info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(9 hmtyinfer || hmtyast)
+ATTR AllTyAGItf AllTy Label [ opts: TTKeyableOpts | | ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -89,6 +99,9 @@ For each parent (App) with children we need to know the parent key, the basic id
 %%[(9 hmtyinfer || hmtyast)
 ATTR
   Ty
+%%[[10
+  Label
+%%]]
     [ | | bkey: {TreeTrie1Key Key} ]
 %%]
 
@@ -96,7 +109,9 @@ ATTR
 SEM Ty
   | Con             loc     .   bkey            =   TT1K_One (Key_HNm @nm)
   | App             loc     .   bkey            =   @func.bkey
-  | Var             loc     .   bkey            =   if tvCatIsFixed @categ.self then TT1K_One (Key_UID @tv) else TT1K_Any
+  | Var             loc     .   bkey            =   if tvCatIsFixed @categ.self || not (ttkoptsVarsAsWild @lhs.opts)
+                                                    then TT1K_One (Key_UID @tv)
+                                                    else TT1K_Any
   | Ext             loc     .   bkey            =   if @isSpineRoot && @ty.isFixed
                                                     then let (_,exts) = tyRowExts @self
                                                          in  TT1K_One (Key_Str $ concat $ intersperse "," $ Lst.map show $ assocLKeys exts)
@@ -106,7 +121,9 @@ SEM Ty
                     loc     .   bkey            =   TT1K_Any
 
 SEM Pred
-  | Var             loc     .   bkey            =   TT1K_Any
+  | Var             loc     .   bkey            =   if ttkoptsVarsAsWild @lhs.opts
+                                                    then TT1K_Any
+                                                    else TT1K_One (Key_UID @pv)
 %%]
 
 %%[(10 hmtyinfer || hmtyast)
@@ -115,13 +132,17 @@ SEM Pred
 
 SEM Label
   | Lab             loc     .   bkey            =   TT1K_One (Key_HNm @nm)
-  | Var             loc     .   bkey            =   TT1K_Any
+  | Var             loc     .   bkey            =   if ttkoptsVarsAsWild @lhs.opts
+                                                    then TT1K_Any
+                                                    else TT1K_One (Key_UID @lv)
 %%]
 
 %%[(13 hmtyinfer || hmtyast)
 SEM PredSeq
   | Cons            loc     .   bkey            =   TT1K_One (Key_Str ":")
-  | Var             loc     .   bkey            =   TT1K_Any
+  | Var             loc     .   bkey            =   if ttkoptsVarsAsWild @lhs.opts
+                                                    then TT1K_Any
+                                                    else TT1K_One (Key_UID @av)
   | Nil             loc     .   bkey            =   TT1K_One (Key_Str "[]")
 
 SEM Pred
@@ -149,7 +170,7 @@ SEM Ty
                                                     then ttkAdd @bkey @childKeyL
                                                     else []
   | Quant           loc     .   key             =   ttkAdd @bkey @childKeyL
-  | *  - App Ext Quant
+  | *  - App Ext Quant Pred Ann
                     loc     .   key             =   ttkSingleton @bkey
 
 SEM Pred
@@ -158,10 +179,10 @@ SEM Pred
 
 %%[(10 hmtyinfer || hmtyast)
 SEM Pred
-  | Lacks           loc     .   key             =   ttkAdd @bkey (@lab.key : @ty.childKeyL)
+  | Lacks           loc     .   key             =   ttkAdd @bkey [ttkAdd @lab.bkey @ty.childKeyL]
 
 SEM Label
-  | Lab Var         loc     .   key             =   ttkSingleton @bkey
+  | Lab Var         loc     .   key             =   ttkSingleton @bkey      -- not used, constructed a layer higher in Lacks predicate
 %%]
 
 %%[(13 hmtyinfer || hmtyast)

@@ -204,7 +204,7 @@ toList :: Trie k v -> [([k],v)]
 toList = map (\(k,v) -> (map tkKey k,v)) . toListByKey
 %%]
 
-%%[9 export(fromListPartialByKeyWith,fromListByKey,fromListByKeyWith,fromListWith,fromList)
+%%[9 export(fromListPartialByKeyWith,fromListByKeyWith,fromList)
 fromListPartialByKeyWith :: Ord k => TrieLookup -> (v -> v -> v) -> [([TrieKey k],v)] -> Trie k v
 fromListPartialByKeyWith trieLookup cmb = unionsWith cmb . map (uncurry (singletonPartialByKey trieLookup))
 

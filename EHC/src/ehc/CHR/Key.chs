@@ -136,10 +136,24 @@ instance Keyable x => TrieKeyable x Key where
 %%% TTKeyable
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[(9 hmtyinfer || hmtyast) hs export(TTKeyableOpts(..),defaultTTKeyableOpts)
+data TTKeyableOpts
+  = TTKeyableOpts
+      { ttkoptsVarsAsWild		:: Bool				-- treat vars as wildcards
+      }
+
+defaultTTKeyableOpts = TTKeyableOpts True
+%%]
+
 %%[9 export(TTKeyable(..))
 -- | TreeTrie key construction
 class TTKeyable x where
-  toTTKey :: x -> TreeTrieKey Key
+  toTTKey  :: x -> TreeTrieKey Key
+  toTTKey' :: TTKeyableOpts -> x -> TreeTrieKey Key
+  
+  -- default impl
+  toTTKey    = toTTKey' defaultTTKeyableOpts
+  toTTKey' _ = toTTKey
 %%]
 
 %%[9

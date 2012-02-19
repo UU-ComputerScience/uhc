@@ -38,11 +38,111 @@ Assumptions (to be documented further)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Choice of Trie structure
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(9999 hmtyinfer || hmtyast)
+type CHRTrie k v = Trie.Trie k v
+type CHRTrieKey = [Trie.TrieKey Key]
+type CHRLookupHow = TrieLookup
+
+chrLookupHowExact      = TrieLookup_Normal
+chrLookupHowWildAtTrie = TrieLookup_Partial
+chrLookupHowWildAtKey  = TrieLookup_ExpandAtPartialKey
+
+emptyCHRTrie = Trie.empty
+
+ppCHRTrieKey :: CHRTrieKey -> PP_Doc
+ppCHRTrieKey = ppTrieKey
+
+chrTrieFromListByKeyWith :: (v -> v -> v) -> [(CHRTrieKey,v)] -> CHRTrie Key v
+chrTrieFromListByKeyWith = Trie.fromListByKeyWith
+
+chrTrieToListByKey :: CHRTrie Key v -> [(CHRTrieKey,v)]
+chrTrieToListByKey = Trie.toListByKey
+
+chrTrieUnionWith :: (v -> v -> v) -> CHRTrie Key v -> CHRTrie Key v -> CHRTrie Key v
+chrTrieUnionWith = Trie.unionWith
+
+chrTrieUnion :: CHRTrie Key v -> CHRTrie Key v -> CHRTrie Key v
+chrTrieUnion = Trie.union
+
+chrTrieElems :: CHRTrie Key v -> [v]
+chrTrieElems = Trie.elems
+
+chrTrieDeleteListByKey :: [CHRTrieKey] -> CHRTrie Key v -> CHRTrie Key v
+chrTrieDeleteListByKey = Trie.deleteListByKey
+
+chrTrieFromListPartialExactWith :: (v -> v -> v) -> [(CHRTrieKey,v)] -> CHRTrie Key v
+chrTrieFromListPartialExactWith = Trie.fromListPartialByKeyWith chrLookupHowExact
+
+chrTrieLookup' :: (CHRTrieKey -> v -> v') -> CHRLookupHow -> CHRTrieKey -> CHRTrie Key v -> ([v'],Maybe v')
+chrTrieLookup' = Trie.lookupPartialByKey'
+
+chrTrieLookup :: CHRLookupHow -> CHRTrieKey -> CHRTrie Key v -> ([v],Maybe v)
+chrTrieLookup = Trie.lookupPartialByKey
+
+chrToKey :: Keyable x => x -> CHRTrieKey
+chrToKey = toKey
+
+chrToWorkKey :: Keyable x => x -> CHRTrieKey
+chrToWorkKey = toKey
+%%]
+
+%%[(9 hmtyinfer || hmtyast)
+type CHRTrie k v = TreeTrie.TreeTrie k v
+type CHRTrieKey = TreeTrie.TreeTrieKey Key
+type CHRLookupHow = TreeTrieLookup
+
+chrLookupHowExact      = TTL_Exact
+chrLookupHowWildAtTrie = TTL_WildInTrie
+chrLookupHowWildAtKey  = TTL_WildInKey
+
+emptyCHRTrie = TreeTrie.empty
+
+ppCHRTrieKey :: CHRTrieKey -> PP_Doc
+ppCHRTrieKey = ppTreeTrieKey
+
+chrTrieFromListByKeyWith :: (v -> v -> v) -> [(CHRTrieKey,v)] -> CHRTrie Key v
+chrTrieFromListByKeyWith = TreeTrie.fromListByKeyWith
+
+chrTrieToListByKey :: CHRTrie Key v -> [(CHRTrieKey,v)]
+chrTrieToListByKey = TreeTrie.toListByKey
+
+chrTrieUnionWith :: (v -> v -> v) -> CHRTrie Key v -> CHRTrie Key v -> CHRTrie Key v
+chrTrieUnionWith = TreeTrie.unionWith
+
+chrTrieUnion :: CHRTrie Key v -> CHRTrie Key v -> CHRTrie Key v
+chrTrieUnion = TreeTrie.union
+
+chrTrieElems :: CHRTrie Key v -> [v]
+chrTrieElems = TreeTrie.elems
+
+chrTrieDeleteListByKey :: [CHRTrieKey] -> CHRTrie Key v -> CHRTrie Key v
+chrTrieDeleteListByKey = TreeTrie.deleteListByKey
+
+chrTrieFromListPartialExactWith :: (v -> v -> v) -> [(CHRTrieKey,v)] -> CHRTrie Key v
+chrTrieFromListPartialExactWith = TreeTrie.fromListByKeyWith
+
+chrTrieLookup' :: (CHRTrieKey -> v -> v') -> CHRLookupHow -> CHRTrieKey -> CHRTrie Key v -> ([v'],Maybe v')
+chrTrieLookup' = TreeTrie.lookupPartialByKey'
+
+chrTrieLookup :: CHRLookupHow -> CHRTrieKey -> CHRTrie Key v -> ([v],Maybe v)
+chrTrieLookup = TreeTrie.lookupPartialByKey
+
+chrToKey :: TTKeyable x => x -> CHRTrieKey
+chrToKey = ttkFixate . toTTKey
+
+chrToWorkKey :: TTKeyable x => x -> CHRTrieKey
+chrToWorkKey = ttkFixate . toTTKey' (defaultTTKeyableOpts {ttkoptsVarsAsWild = False})
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% CHR store, with fast search
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(9 hmtyinfer || hmtyast)
-type CHRKey = [Trie.TrieKey Key]
+type CHRKey = CHRTrieKey
 type UsedByKey = (CHRKey,Int)
 %%]
 
@@ -66,7 +166,7 @@ storedSimpSz = chrSimpSz . storedChr
 -- | A CHR store is a trie structure
 newtype CHRStore pred info guard subst
   = CHRStore
-      { chrstoreTrie    :: Trie.Trie Key [StoredCHR pred info guard subst]
+      { chrstoreTrie    :: CHRTrie Key [StoredCHR pred info guard subst]
       }
 %%[[50
   deriving (Typeable, Data)
@@ -75,7 +175,7 @@ newtype CHRStore pred info guard subst
 mkCHRStore trie = CHRStore trie
 
 emptyCHRStore :: CHRStore pred info guard subst
-emptyCHRStore = mkCHRStore Trie.empty
+emptyCHRStore = mkCHRStore emptyCHRTrie
 %%]
 
 %%[(9 hmtyinfer || hmtyast)
@@ -97,8 +197,8 @@ ppStoredCHR c@(StoredCHR {storedIdent=(idKey,idSeqNr)})
           (ppParensCommas
             [ pp $ storedKeyedInx c
             , pp $ storedSimpSz c
-            , "keys" >#< (ppBracketsCommas $ map (maybe (pp "?") ppTrieKey) $ storedKeys c)
-            , "ident" >#< ppParensCommas [ppTrieKey idKey,pp idSeqNr]
+            , "keys" >#< (ppBracketsCommas $ map (maybe (pp "?") ppCHRTrieKey) $ storedKeys c)
+            , "ident" >#< ppParensCommas [ppCHRTrieKey idKey,pp idSeqNr]
             ])
 
 instance (PP p, PP i, PP g) => PP (StoredCHR p i g s) where
@@ -110,12 +210,12 @@ instance (PP p, PP i, PP g) => PP (StoredCHR p i g s) where
 chrStoreFromElems :: (Keyable p, TTKeyable p) => [CHR (Constraint p i) g s] -> CHRStore p i g s
 chrStoreFromElems chrs
   = mkCHRStore
-    $ Trie.fromListByKeyWith cmbStoredCHRs
+    $ chrTrieFromListByKeyWith cmbStoredCHRs
         [ (k,[StoredCHR chr i ks' (concat ks,0)])
         | chr <- chrs
         , let cs = chrHead chr
               simpSz = chrSimpSz chr
-              ks = map toKey cs
+              ks = map chrToKey cs
         , (c,k,i) <- zip3 cs ks [0..]
         , let (ks1,(_:ks2)) = splitAt i ks
               ks' = map Just ks1 ++ [Nothing] ++ map Just ks2
@@ -125,7 +225,7 @@ chrStoreSingletonElem :: (Keyable p, TTKeyable p) => CHR (Constraint p i) g s ->
 chrStoreSingletonElem x = chrStoreFromElems [x]
 
 chrStoreUnion :: CHRStore p i g s -> CHRStore p i g s -> CHRStore p i g s
-chrStoreUnion cs1 cs2 = mkCHRStore $ Trie.unionWith cmbStoredCHRs (chrstoreTrie cs1) (chrstoreTrie cs2)
+chrStoreUnion cs1 cs2 = mkCHRStore $ chrTrieUnionWith cmbStoredCHRs (chrstoreTrie cs1) (chrstoreTrie cs2)
 
 chrStoreUnions :: [CHRStore p i g s] -> CHRStore p i g s
 chrStoreUnions []  = emptyCHRStore
@@ -137,7 +237,7 @@ chrStoreUnions ss  = foldr1 chrStoreUnion ss
 chrStoreToList :: CHRStore p i g s -> [(CHRKey,[CHR (Constraint p i) g s])]
 chrStoreToList cs
   = [ (k,chrs)
-    | (k,e) <- Trie.toListByKey $ chrstoreTrie cs
+    | (k,e) <- chrTrieToListByKey $ chrstoreTrie cs
     , let chrs = [chr | (StoredCHR {storedChr = chr, storedKeyedInx = 0}) <- e]
     , not $ Prelude.null chrs
     ]
@@ -146,13 +246,15 @@ chrStoreElems :: CHRStore p i g s -> [CHR (Constraint p i) g s]
 chrStoreElems = concatMap snd . chrStoreToList
 %%]
 
-%%[(9 hmtyinfer || hmtyast) export(ppCHRStore,ppCHRStore',ppCHRStore'')
+%%[(9 hmtyinfer || hmtyast) export(ppCHRStore,ppCHRStore')
 ppCHRStore :: (PP p,PP g,PP i) => CHRStore p i g s -> PP_Doc
-ppCHRStore = ppCurlysCommasBlock . map (\(k,v) -> ppTrieKey k >-< indent 2 (":" >#< ppBracketsCommasV v)) . chrStoreToList
+ppCHRStore = ppCurlysCommasBlock . map (\(k,v) -> ppCHRTrieKey k >-< indent 2 (":" >#< ppBracketsCommasV v)) . chrStoreToList
 
 ppCHRStore' :: (PP p,PP g,PP i) => CHRStore p i g s -> PP_Doc
-ppCHRStore' = ppCurlysCommasBlock . map (\(k,v) -> ppTrieKey k >-< indent 2 (":" >#< ppBracketsCommasV v)) . Trie.toListByKey . chrstoreTrie
+ppCHRStore' = ppCurlysCommasBlock . map (\(k,v) -> ppCHRTrieKey k >-< indent 2 (":" >#< ppBracketsCommasV v)) . chrTrieToListByKey . chrstoreTrie
+%%]
 
+%%[(9999 hmtyinfer || hmtyast) export(ppCHRStore'')
 ppCHRStore'' :: (PP p,PP g,PP i) => CHRStore p i g s -> PP_Doc
 ppCHRStore'' = ppTrieAsIs . chrstoreTrie
 %%]
@@ -174,14 +276,14 @@ initWorkTime = 0
 
 %%[(9 hmtyinfer || hmtyast)
 type WorkKey = CHRKey
--- type WorkUsedInMap = Map.Map CHRKey (Set.Set UsedByKey)
 type WorkUsedInMap = Map.Map (Set.Set CHRKey) (Set.Set UsedByKey)
-type WorkTrie p i = Trie.Trie Key (Work p i)
+type WorkTrie p i = CHRTrie Key (Work p i)
 
 -- | A chunk of work to do when solving, a constraint + sequence nr
 data Work p i
   = Work
-      { workCnstr   :: !(Constraint p i)            -- the constraint to be reduced
+      { workKey     :: WorkKey
+      , workCnstr   :: !(Constraint p i)            -- the constraint to be reduced
       , workTime	:: WorkTime						-- the history count at which the work was added
       -- , workUsedIn  :: Set.Set CHRKey              -- marked with the propagation rules already applied to it
       }
@@ -198,7 +300,7 @@ data WorkList p i
       , wlUsedIn    :: !WorkUsedInMap                    	-- which work items are used in which propagation constraints
       }
 
-emptyWorkList = WorkList Trie.empty Set.empty [] {- Set.empty -} [] Map.empty
+emptyWorkList = WorkList emptyCHRTrie Set.empty [] {- Set.empty -} [] Map.empty
 %%]
 
 %%[(9 hmtyinfer || hmtyast)
@@ -214,7 +316,7 @@ instance (PP p,PP i) => PP (Work p i) where
   pp w = pp $ workCnstr w
 
 ppUsedByKey :: UsedByKey -> PP_Doc
-ppUsedByKey (k,i) = ppTrieKey k >|< "/" >|< i
+ppUsedByKey (k,i) = ppCHRTrieKey k >|< "/" >|< i
 %%]
 
 %%[(9 hmtyinfer || hmtyast)
@@ -222,20 +324,20 @@ mkWorkList :: (Keyable p, TTKeyable p) => WorkTime -> [Constraint p i] -> WorkLi
 mkWorkList wtm = flip (wlInsert wtm) emptyWorkList
 
 wlToList :: {- (PP p, PP i) => -} WorkList p i -> [Constraint p i]
-wlToList wl = map workCnstr $ Trie.elems $ wlTrie wl
+wlToList wl = map workCnstr $ chrTrieElems $ wlTrie wl
 
 wlCnstrToIns :: (Keyable p, TTKeyable p) => WorkList p i -> [Constraint p i] -> AssocL WorkKey (Constraint p i)
 wlCnstrToIns wl@(WorkList {wlDoneSet = ds}) inscs
-  = [(toKey c,c) | c <- inscs, let k = toKey c, not (k `Set.member` ds)]
+  = [(chrToWorkKey c,c) | c <- inscs, let k = chrToKey c, not (k `Set.member` ds)]
 
 wlDeleteByKeyAndInsert' :: WorkTime -> [WorkKey] -> AssocL WorkKey (Constraint p i) -> WorkList p i -> WorkList p i
 wlDeleteByKeyAndInsert' wtm delkeys inskeycs wl@(WorkList {wlQueue = wlq, wlTrie = wlt, wlDoneSet = ds})
   = wl { wlQueue   = Map.toList inswork ++ [ w | w@(k,_) <- wlq, not (k `elem` delkeys) ]
-       , wlTrie    = instrie `Trie.union` Trie.deleteListByKey delkeys wlt
+       , wlTrie    = instrie `chrTrieUnion` chrTrieDeleteListByKey delkeys wlt
        , wlDoneSet = Map.keysSet inswork `Set.union` ds
        }
-  where inswork = Map.fromList [ (k,Work c wtm) | (k,c) <- inskeycs ]
-        instrie = Trie.fromListPartialByKeyWith TrieLookup_Normal const $ Map.toList inswork
+  where inswork = Map.fromList [ (k,Work k c wtm) | (k,c) <- inskeycs ]
+        instrie = chrTrieFromListPartialExactWith const $ Map.toList inswork
 
 wlDeleteByKeyAndInsert :: (Keyable p, TTKeyable p) => WorkTime -> [WorkKey] -> [Constraint p i] -> WorkList p i -> WorkList p i
 wlDeleteByKeyAndInsert wtm delkeys inscs wl
@@ -447,7 +549,7 @@ chrSolve'' env chrStore cnstrs prevState
   = postState {stMatchCache = Map.empty}
   where postState
 %%[[9
-          = addStats Map.empty [("workMatches",ppAssocLV [(ppTrieKey k,pp (fromJust l)) | (k,c) <- Map.toList $ stCountCnstr st, let l = Map.lookup "workMatched" c, isJust l])] st
+          = addStats Map.empty [("workMatches",ppAssocLV [(ppCHRTrieKey k,pp (fromJust l)) | (k,c) <- Map.toList $ stCountCnstr st, let l = Map.lookup "workMatched" c, isJust l])] st
 %%][100
           = st
 %%]]
@@ -458,7 +560,7 @@ chrSolve'' env chrStore cnstrs prevState
 %%[[9
                 -> expandMatch
                        (addStats Map.empty
-                            [ ("(0) yes work", ppTrieKey workHdKey)
+                            [ ("(0) yes work", ppCHRTrieKey workHdKey)
                             ] stmatch)
                        matches
 %%][100
@@ -509,13 +611,13 @@ chrSolve'' env chrStore cnstrs prevState
                                        }
 %%[[9
                               chr'= subst `varUpd` chr
-                              ppwork = "workkey" >#< ppTrieKey workHdKey >#< ":" >#< (ppBracketsCommas (map (ppTrieKey . fst) workTl) >-< ppBracketsCommas (map (ppTrieKey . fst) $ wlScanned wl))
-                                         >-< "workkeys" >#< ppBracketsCommas (map ppTrieKey keys)
+                              ppwork = "workkey" >#< ppCHRTrieKey workHdKey >#< ":" >#< (ppBracketsCommas (map (ppCHRTrieKey . fst) workTl) >-< ppBracketsCommas (map (ppCHRTrieKey . fst) $ wlScanned wl))
+                                         >-< "workkeys" >#< ppBracketsCommas (map ppCHRTrieKey keys)
                                          >-< "worktrie" >#< wlTrie wl
                                          >-< "schr" >#< schr
                                          >-< "usedin" >#< (ppBracketsCommasV $ map (\(k,s) -> ppKs k >#< ppBracketsCommas (map ppUsedByKey $ Set.toList s)) $ Map.toList $ wlUsedIn wl)
                                          >-< "usedin'" >#< (ppBracketsCommasV $ map (\(k,s) -> ppKs k >#< ppBracketsCommas (map ppUsedByKey $ Set.toList s)) $ Map.toList $ wlUsedIn wl')
-                                     where ppKs ks = ppBracketsCommas $ map ppTrieKey $ Set.toList ks
+                                     where ppKs ks = ppBracketsCommas $ map ppCHRTrieKey $ Set.toList ks
 %%][100
 %%]]
                       expandMatch st _ 
@@ -523,7 +625,7 @@ chrSolve'' env chrStore cnstrs prevState
                       
 %%[[9
               _ -> iter (addStats Map.empty
-                             [ ("no match work", ppTrieKey workHdKey)
+                             [ ("no match work", ppCHRTrieKey workHdKey)
                              , ("wl queue sz", pp (length (wlQueue wl')))
                              ] st')
 %%][100
@@ -533,7 +635,7 @@ chrSolve'' env chrStore cnstrs prevState
                       st' = stmatch { stWorkList = wl', stTrace = SolveDbg (ppdbg) : {- -} stTrace stmatch }
           where (matches,lastQuery,ppdbg,stats) = workMatches st
 %%[[9
-                stmatch = addStats stats [("(a) workHd", ppTrieKey workHdKey), ("(b) matches", ppBracketsCommasV [ s `varUpd` storedChr schr | ((schr,_),s) <- matches ])]
+                stmatch = addStats stats [("(a) workHd", ppCHRTrieKey workHdKey), ("(b) matches", ppBracketsCommasV [ s `varUpd` storedChr schr | ((schr,_),s) <- matches ])]
 %%][100
                 stmatch =
 %%]]
@@ -573,8 +675,7 @@ chrSolve'' env chrStore cnstrs prevState
                 r2 :: [StoredCHR p i g s]										-- CHRs matching workHdKey
                 r2  = concat													-- flatten
                 		$ lookupResultToList									-- convert to list
-                		$ Trie.lookupPartialByKey TrieLookup_Partial workHdKey		-- lookup the store, allowing too many results
-                		-- $ lookupPartialByKey TrieLookup_ExpandAtPartialKey workHdKey		-- lookup the store, allowing too many results
+                		$ chrTrieLookup chrLookupHowWildAtTrie workHdKey		-- lookup the store, allowing too many results
                 		$ chrstoreTrie chrStore
                 
                 -- lookup further info in wlTrie, in particular to find out what has been done already
@@ -607,10 +708,10 @@ chrSolve'' env chrStore cnstrs prevState
                 r5  = mapMaybe (\r@(chr,kw@(_,works)) -> fmap (\s -> (r,s)) $ slvMatch env chr (map workCnstr works)) r4
 %%[[9
                 -- debug info
-                pp2  = "lookups"    >#< ("for" >#< ppTrieKey workHdKey >-< ppBracketsCommasV r2)
-                -- pp2b = "cand1"      >#< (ppBracketsCommasV $ map (ppBracketsCommasV . map (ppBracketsCommasV . map (\(k,w) -> ppTrieKey k >#< w)) . fst . candidate) r2)
+                pp2  = "lookups"    >#< ("for" >#< ppCHRTrieKey workHdKey >-< ppBracketsCommasV r2)
+                -- pp2b = "cand1"      >#< (ppBracketsCommasV $ map (ppBracketsCommasV . map (ppBracketsCommasV . map (\(k,w) -> ppCHRTrieKey k >#< w)) . fst . candidate) r2)
                 -- pp2c = "cand2"      >#< (ppBracketsCommasV $ map (ppBracketsCommasV . map (ppBracketsCommasV) . combineToDistinguishedElts . fst . candidate) r2)
-                pp3  = "candidates" >#< (ppBracketsCommasV $ map (\(chr,(ks,ws)) -> "chr" >#< chr >-< "keys" >#< ppBracketsCommas (map ppTrieKey ks) >-< "works" >#< ppBracketsCommasV ws) $ r3)
+                pp3  = "candidates" >#< (ppBracketsCommasV $ map (\(chr,(ks,ws)) -> "chr" >#< chr >-< "keys" >#< ppBracketsCommas (map ppCHRTrieKey ks) >-< "works" >#< ppBracketsCommasV ws) $ r3)
 %%][100
 %%]]
         initState st = st { stWorkList = wlInsert (stHistoryCount st) wlnew $ stWorkList st, stDoneCnstrSet = Set.unions [Set.fromList done, stDoneCnstrSet st] }
@@ -634,13 +735,20 @@ slvCandidate
         , (CHRKey, Set.Set CHRKey)
         )
 slvCandidate workHdKey lastQuery wlTrie (StoredCHR {storedIdent = (ck,_), storedKeys = ks, storedChr = chr})
-  = ( map (maybe (lkup TrieLookup_Normal workHdKey) (lkup TrieLookup_ExpandAtPartialKey)) ks
+  = ( map (maybe (lkup chrLookupHowExact workHdKey) (lkup chrLookupHowWildAtKey)) ks
     , ( ck
       , Set.fromList $ map (maybe workHdKey id) ks
     ) )
-  where lkup how k = partition (\(_,w) -> workTime w < lastQueryTm) $ lookupResultToList $ Trie.lookupPartialByKey' (,) how k wlTrie
+  where lkup how k = partition (\(_,w) -> workTime w < lastQueryTm) $ map (\w -> (workKey w,w)) $ lookupResultToList $ chrTrieLookup how k wlTrie
                    where lastQueryTm = lqLookupW k $ lqLookupC ck lastQuery
 %%]
+slvCandidate workHdKey lastQuery wlTrie (StoredCHR {storedIdent = (ck,_), storedKeys = ks, storedChr = chr})
+  = ( map (maybe (lkup chrLookupHowExact workHdKey) (lkup chrLookupHowWildAtKey)) ks
+    , ( ck
+      , Set.fromList $ map (maybe workHdKey id) ks
+    ) )
+  where lkup how k = partition (\(_,w) -> workTime w < lastQueryTm) $ lookupResultToList $ chrTrieLookup' (,) how k wlTrie
+                   where lastQueryTm = lqLookupW k $ lqLookupC ck lastQuery
 
 %%[(9 hmtyinfer || hmtyast)
 slvCombine :: Eq k => ([([Assoc k v], [Assoc k v])], t) -> [AssocL k v]

@@ -81,7 +81,7 @@ instance (CHRMatchable env p s) => CHRMatchable env (Constraint p info) s where
 
 %%[(9 hmtyinfer || hmtyast)
 instance TTKeyable p => TTKeyable (Constraint p info) where
-  toTTKey c = maybe [] (\(s,p,_) -> ttkAdd (TT1K_One $ Key_Str s) [toTTKey p]) $ cnstrReducablePart c
+  toTTKey' o c = maybe [] (\(s,p,_) -> ttkAdd (TT1K_One $ Key_Str s) [toTTKey' o p]) $ cnstrReducablePart c
 %%]
 
 %%[(9 hmtyinfer || hmtyast)
