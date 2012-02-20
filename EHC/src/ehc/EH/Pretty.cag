@@ -187,9 +187,6 @@ SEM TyExpr
 %%]
 
 %%[5
-ATTR TyVars CaseAlts [ | | ppL: {[PP_Doc]} ]
-ATTR TyExprs [ | | ppL: {[PP_Doc]} ]
-
 SEM Expr
   | SConst      loc     .   pp      =   pp (show @str)
   | Case        loc     .   pp      =   "case"  >#< @expr.pp >#< "of"
@@ -208,21 +205,8 @@ SEM CaseAlt
   | Pat         loc     .   pp      =   @patExpr.pp >|< @extraPP >###< "->" >#< @expr.pp
                         .   extraPP =   empty
 
-SEM CaseAlts
-  | Nil         lhs     .   ppL     =   []
-  | Cons        lhs     .   ppL     =   (@hd.pp >|< @extraPP) : @tl.ppL
-                loc     .   extraPP =   empty
-
-SEM TyExprs
-  | Nil         lhs     .   ppL     =   []
-  | Cons        lhs     .   ppL     =   @hd.pp : @tl.ppL
-
 SEM TyVar
   | Var         lhs     .   pp      =   pp @nm
-
-SEM TyVars
-  | Nil         lhs     .   ppL     =   []
-  | Cons        lhs     .   ppL     =   @hd.pp : @tl.ppL
 %%]
 
 %%[6
@@ -239,8 +223,6 @@ SEM Decl
 %%]
 
 %%[7
-ATTR RecExpr RowTyExpr RecPatExpr DataFields DataFieldExpr DataFieldPatExpr [ | | ppL: {[PP_Doc]} ]
-
 SEM Expr
   | DataFields  loc     .   pp      =   @dataFieldExpr.pp >#< ppCurlysCommas' (reverse @dataFieldExpr.ppL)
   | Rec         loc     .   pp      =   ppAppTop  (hsnRec,mkPPAppFun @appFunNm @recExpr.pp)
@@ -249,13 +231,10 @@ SEM Expr
 
 SEM RecExpr
   | Empty       loc     .   pp      =   hsnORec >|< hsnCRec
-                lhs     .   ppL     =   []
   | Ext         loc     .   pp      =   ppFld "=" (Just @positionalNm) @nm (pp @nm) @expr.pp
   | Upd         loc     .   pp      =   ppFld ":=" Nothing @nm (pp @nm) @expr.pp
-  | Ext Upd     lhs     .   ppL     =   @pp : @recExpr.ppL
-                        .   pp      =   @recExpr.pp
+  | Ext Upd     lhs     .   pp      =   @recExpr.pp
   | Expr        loc     .   pp      =   @expr.pp
-                lhs     .   ppL     =   []
 
 SEM PatExpr
   | DataFields  loc     .   pp      =   @dataFieldPatExpr.pp >#< ppCurlysCommas' (reverse @dataFieldPatExpr.ppL)
@@ -264,36 +243,26 @@ SEM PatExpr
 
 SEM RecPatExpr
   | Empty       loc     .   pp      =   hsnORec >|< hsnCRec
-                lhs     .   ppL     =   []
   | Ext         loc     .   pp      =   @recPatExpr.pp
-                lhs     .   ppL     =   ppFld "=" (Just @positionalNm) @nm (pp @nm) @patExpr.pp : @recPatExpr.ppL
   | Expr        loc     .   pp      =   @patExpr.pp
-                lhs     .   ppL     =   []
 
 SEM TyExpr
   | Row         loc     .   pp      =   ppAppTop  (hsnRow,mkPPAppFun hsnRow @rowTyExpr.pp)
                                                   (reverse @rowTyExpr.ppL) @rowTyExpr.pp
 
 SEM RowTyExpr
-  | Empty       lhs     .   ppL     =   []
   | Ext         lhs     .   pp      =   @rowTyExpr.pp
-                        .   ppL     =   ppFld "::" (Just @positionalNm) @nm (pp @nm) @tyExpr.pp : @rowTyExpr.ppL
 
 SEM DataFieldExpr
   | Upd         loc     .   pp      =   ppFld "=" Nothing @nm (pp @nm) @expr.pp
-                lhs     .   ppL     =   @pp : @dataFieldExpr.ppL
-                        .   pp      =   @dataFieldExpr.pp
+                lhs     .   pp      =   @dataFieldExpr.pp
   | Con         loc     .   pp      =   pp @nm
   | Expr        loc     .   pp      =   @expr.pp
-  | Con Expr    lhs     .   ppL     =   []
-
 
 SEM DataFieldPatExpr
   | Ext         loc     .   pp      =   ppFld "=" Nothing @nm (pp @nm) @patExpr.pp
-                lhs     .   ppL     =   @pp : @dataFieldPatExpr.ppL
-                        .   pp      =   @dataFieldPatExpr.pp
+                lhs     .   pp      =   @dataFieldPatExpr.pp
   | Con         loc     .   pp      =   pp @nm
-                lhs     .   ppL     =   []
 %%]
 
 %%[8
@@ -312,11 +281,8 @@ SEM PatExpr
 %%]
 
 %%[9
-ATTR PrExprs [ | | ppL: {[PP_Doc]} ]
-
 SEM RowTyExpr
   | Var         loc     .   pp      =   pp @nm
-                lhs     .   ppL     =   []
 
 SEM TyExpr
   | Pred        loc     .   pp      =   hsnOImpl >#< @prExpr.pp >#< hsnCImpl
@@ -327,10 +293,6 @@ SEM PrExpr
   | Class       loc     .   pp      =   ppSpaced (pp @nm : @tyExprs.ppL)
   | Arrow       loc     .   pp      =   @arg.pp >#< hsnPrArrow >#< @res.pp
   | Forall      loc     .   pp      =   "forall" >#< @tyVar >#< "." >#< @prExpr.pp
-
-SEM PrExprs
-  | Nil         lhs     .   ppL     =   []
-  | Cons        lhs     .   ppL     =   @hd.pp : @tl.ppL
 
 SEM Decl
   | Class       loc     .   pp      =   "class"     >#< @tyPrExpr.pp
@@ -398,14 +360,9 @@ SEM Expr
 %%]
 
 %%[15
-ATTR FuncDeps [ | | ppL: {[PP_Doc]} ]
-
 SEM FuncDep
   | Dep         lhs     .   pp      =   @fromTvs.pp >#< "->" >#< @toTvs.pp
 
-SEM FuncDeps
-  | Nil         lhs     .   ppL     =   []
-  | Cons        lhs     .   ppL     =   @hd.pp : @tl.ppL
 %%]
 
 %%[97
@@ -446,34 +403,16 @@ SEM KiExprAnn
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[5
-ATTR DataConstrs [ | | ppL: {[PP_Doc]} ]
-
 SEM Decl
   | Data        loc     .   pp      =   (if @isNewtype then "newtype" else "data")
                                         >#< @tyNm >#< ppSpaced @tyVars.ppL
                                         >#< "=" >#< ppListSepFill "" "" " | " @constrs.ppL
 
 SEM DataConstr
-  | Constr      loc     .   pp      =   pp @conNm >#< ppSpaced @fields.ppL
-
-SEM DataConstrs
-  | Nil         lhs     .   ppL     =   []
-  | Cons        lhs     .   ppL     =   @hd.pp : @tl.ppL
-%%]
-
-%%[7
-SEM DataFields
-  | Nil         lhs     .   ppL     =   []
-  | Cons        lhs     .   ppL     =   @hd.pp : @tl.ppL
-
-SEM DataField
-  | Field       lhs     .   pp      =   case @mbLabels of
-                                          Just l  -> ppCommas' l >#< "::" >#< @tyExpr.pp
-                                          Nothing -> @tyExpr.pp
-
-SEM DataConstr
-  | Constr      loc     .   pp      :=  pp @conNm
-%%[[(7 hmtyinfer)
+  | Constr      loc     .   pp      =   pp @conNm
+%%[[5
+  										>#< ppSpaced @fields.ppL
+%%][(7 hmtyinfer)
                                         >#<  (if null $ catMaybes $ assocLKeys $ @fields.fldTyL
                                               then ppSpaced @fields.ppL
                                               else ppCurlysCommas' @fields.ppL
@@ -481,9 +420,20 @@ SEM DataConstr
 %%][7
                                         >#<  ppCurlysCommas' @fields.ppL
 %%]]
-                                        >|<  @extraPP
+%%[[31
+              							>|< maybe empty (\t -> " ->" >#< t) @mbGadtTyExpr.ppMb
+%%]]
                         .   extraPP =   empty
 %%]
+
+%%[7
+SEM DataField
+  | Field       lhs     .   pp      =   case @mbLabels of
+                                          Just l  -> ppCommas' l >#< "::" >#< @tyExpr.pp
+                                          Nothing -> @tyExpr.pp
+
+%%]
+
 %%[41
 SEM DataConstr
   | Constr      loc     .   extraPP :=  hlist . map ("," >#<) $ @eqs.ppL
@@ -494,14 +444,9 @@ SEM DataConstr
 %%]
 
 %%[41
-ATTR DataConstrEqs [ | | ppL: {[PP_Doc]} ]
-
 SEM DataConstrEq
   | Eq          loc     .   pp      =   @tyVar.pp >|< "=" >|< @tyExpr.pp
 
-SEM DataConstrEqs
-  | Nil         lhs     .   ppL     =   []
-  | Cons        lhs     .   ppL     =   @hd.pp : @tl.ppL
 %%]
 %%[40
 ATTR DataConstrEqs [ | | ppL: {[PP_Doc]} ]
@@ -634,6 +579,104 @@ SEM AGItf
 %%[100
 SEM AGItf
   | AGItf       loc     .   extraPP     :=  empty
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Maybe of ...
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[31
+ATTR
+  MbTyExpr
+    [ | | ppMb: {Maybe PP_Doc} ]
+
+SEM MbTyExpr
+  | Just		lhs		.	ppMb	=	Just @just.pp
+  | Nothing		lhs		.	ppMb	=	Nothing
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Lists of ...
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[5
+ATTR
+  TyVars TyExprs DataConstrs
+%%[[7
+  DataFields
+%%]]
+%%[[41
+  DataConstrEqs
+%%]]
+    [ | | ppL: {[PP_Doc]} ]
+
+SEM
+  TyExprs TyVars DataConstrs
+%%[[7
+  DataFields
+%%]]
+%%[[41
+  DataConstrEqs
+%%]]
+  | Nil         lhs     .   ppL     =   []
+  | Cons        lhs     .   ppL     =   @hd.pp : @tl.ppL
+
+%%]
+
+%%[5
+ATTR CaseAlts [ | | ppL: {[PP_Doc]} ]
+
+SEM CaseAlts
+  | Nil         lhs     .   ppL     =   []
+  | Cons        lhs     .   ppL     =   (@hd.pp >|< @extraPP) : @tl.ppL
+                loc     .   extraPP =   empty
+
+%%]
+
+%%[7
+ATTR RecExpr RowTyExpr RecPatExpr DataFieldExpr DataFieldPatExpr [ | | ppL: {[PP_Doc]} ]
+
+SEM RecExpr
+  | Empty       lhs     .   ppL     =   []
+  | Ext Upd     lhs     .   ppL     =   @pp : @recExpr.ppL
+  | Expr        lhs     .   ppL     =   []
+
+SEM RecPatExpr
+  | Empty       lhs     .   ppL     =   []
+  | Ext         lhs     .   ppL     =   ppFld "=" (Just @positionalNm) @nm (pp @nm) @patExpr.pp : @recPatExpr.ppL
+  | Expr        lhs     .   ppL     =   []
+
+SEM RowTyExpr
+  | Empty       lhs     .   ppL     =   []
+  | Ext         lhs     .   ppL     =   ppFld "::" (Just @positionalNm) @nm (pp @nm) @tyExpr.pp : @rowTyExpr.ppL
+%%[[9
+  | Var         lhs     .   ppL     =   []
+%%]]
+
+SEM DataFieldExpr
+  | Upd         lhs     .   ppL     =   @pp : @dataFieldExpr.ppL
+  | Con Expr    lhs     .   ppL     =   []
+
+SEM DataFieldPatExpr
+  | Ext         lhs     .   ppL     =   @pp : @dataFieldPatExpr.ppL
+  | Con         lhs     .   ppL     =   []
+%%]
+
+%%[9
+ATTR PrExprs [ | | ppL: {[PP_Doc]} ]
+
+SEM PrExprs
+  | Nil         lhs     .   ppL     =   []
+  | Cons        lhs     .   ppL     =   @hd.pp : @tl.ppL
+
+%%]
+
+%%[15
+ATTR FuncDeps [ | | ppL: {[PP_Doc]} ]
+
+SEM FuncDeps
+  | Nil         lhs     .   ppL     =   []
+  | Cons        lhs     .   ppL     =   @hd.pp : @tl.ppL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -67,6 +67,9 @@ SEM Declaration
                                                                    _
 %%]]
                                                                    [_]
+%%[[31
+                                                                   _
+%%]]
 %%[[41
                                                                    _
 %%]]
@@ -184,6 +187,9 @@ SEM Type
 %%[5
 SEM Declaration
     | Data Newtype
+%%[[31
+      GADT
+%%]]
         loc             .   errDupIntro  =   idDefOccGamCheckDupNames @idDefOccGamType2
 
 SEM Alternative

@@ -122,10 +122,16 @@ SEM Type
 %%[5
 SEM Declaration
     | Data
+%%[[31
+      GADT
+%%]]
         loc         .   locErrs     =   Seq.empty
     | Newtype
         loc         .   locErrs     =   Seq.fromList @errNewtype
     | Data Newtype
+%%[[31
+      GADT
+%%]]
         loc         .   errSq       =   Seq.unions [ @locErrs
                                                    , @typelefthandside.errSq
                                                    , Seq.fromList @errDupIntro

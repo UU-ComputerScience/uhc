@@ -172,6 +172,9 @@ SEM Declaration
 %%]
 %%[5
     | Data Newtype
+%%[[31
+      GADT
+%%]]
         loc             .   idDefOccGamType
                                         =   tvarS2IdDefOccGam @nmLev @typelefthandside.range @constructors.freeTvarS -- ???? or from constrs itself, so implicit exists is allowed
                         .   idDefOccGamType2
@@ -235,6 +238,9 @@ SEM Declaration
 %%]]
 %%[[11
       Type
+%%]]
+%%[[31
+      GADT
 %%]]
         loc             .   idDefOccGamInside
                                         =   tvarL2IdDefOccGam @nmLev @typelefthandside.range @typelefthandside.typevariables
@@ -522,6 +528,9 @@ SEM Declaration
     | Data Newtype
 %%[[11
       Type
+%%]]
+%%[[31
+      GADT
 %%]]
         loc             .   idGam       =   gamAddGam @idDefOccGamType @lhs.idGam
 %%]]
@@ -920,6 +929,9 @@ SEM Body
 %%[8
 SEM Declaration
     | Data
+%%[[31
+      GADT
+%%]]
         loc             .   (_,_,idUseOccGamVal,errIdUseVal)
                                         =   mkUseOccGam @lhs.opts @lhs.idGam [] IdOcc_Val IdAsp_Val_Var @range
     | Newtype
@@ -936,7 +948,7 @@ SEM Declaration
 
 %%[92
 SEM Declaration
-    | Data Newtype
+    | Data Newtype GADT
         loc             .   (_,_,idUseOccGamClass,errIdUseClass)
                                         =   mkUseOccGam @lhs.opts @lhs.idGam
                                                         (if ehcOptGenGenerics @lhs.opts then builtinGenerClassNmL else [])
@@ -1039,6 +1051,9 @@ SEM Declaration
         lhs             .   undefOccGam =   gamUnions [@undefOccGam,@righthandside.undefOccGam]
 %%[[5
     | Data Newtype
+%%[[31
+      GADT
+%%]]
         loc             .   (idUseOccGam,idUseHereOccL,_,undefOccGam)
                                         =   splitIdUseOccGam @lhs.nmLev
                                                 (gamUnions
@@ -1209,7 +1224,7 @@ SEM Body
 ATTR AllDeriving [ idOccDefData: IdOcc | | ]
 
 SEM Declaration
-    | Data Newtype
+    | Data Newtype GADT
         derivings       .   idOccDefData=   @idOccDef
 %%]
 

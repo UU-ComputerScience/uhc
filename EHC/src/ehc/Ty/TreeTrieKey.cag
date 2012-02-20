@@ -50,7 +50,8 @@ instance TTKeyable PredOcc where
   toTTKey' o po = toTTKey' o (poPr po)
 
 instance TTKeyable CHRPredOcc where
-  toTTKey' o po = ttkAdd (TT1K_One $ Key_Str "occ") [toTTKey' o (cpoCxt po), toTTKey' o (cpoPr po)]
+  -- toTTKey' o po = ttkAdd (TT1K_One $ Key_Str "occ") [toTTKey' o (cpoCxt po), toTTKey' o (cpoPr po)]
+  toTTKeyParentChildren' o po = (TT1K_One $ Key_Str "occ", ttkChildren [toTTKey' o (cpoCxt po), toTTKey' o (cpoPr po)])
 
 %%]
 
@@ -87,7 +88,12 @@ instance TTKeyable Label where
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(9 hmtyinfer || hmtyast)
-ATTR AllTyAGItf AllTy Label [ opts: TTKeyableOpts | | ]
+ATTR
+  AllTyAGItf AllTy
+%%[[10
+  Label
+%%]]
+    [ opts: TTKeyableOpts | | ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -37,6 +37,9 @@ SEM Declaration
         loc             .   refnames    =   @names
 %%[[5
     | Data Newtype
+%%[[31
+      GADT
+%%]]
         loc             .   typerefname =   @typelefthandside.name
 %%]]
 %%[[6
@@ -70,7 +73,7 @@ SEM Declaration
         loc             .   refnames    =   map (hsnSetLevQual @lhs.nmLev @lhs.moduleNm) @names
     | KindSignature
         loc             .   refnames    =   map (hsnSetLevQual @lhs.nmLev @lhs.moduleNm) @names
-    | Data Newtype
+    | Data Newtype GADT
         loc             .   typerefname =   hsnSetLevQual @lhs.nmLev @lhs.moduleNm @typelefthandside.name
 %%[[(50 codegen)
     | ForeignImport
@@ -156,6 +159,9 @@ ATTR AllConstructor [ | | conrefnames USE {++} {[]} : Names ]
 %%[5.Constructor.refname
 SEM Constructor
     | Constructor
+%%[[31
+      GADTFunction
+%%]]
         loc             .   conrefname  =   @constructor
     | Infix
         loc             .   conrefname  =   @constructorOperator
@@ -168,7 +174,7 @@ SEM Constructor
 
 %%[50 -5.Constructor.refname
 SEM Constructor
-    | Constructor Record
+    | Constructor Record GADTFunction
         loc             .   conrefname  =   hsnSetLevQual @lhs.nmLev @lhs.moduleNm @constructor
     | Infix
         loc             .   conrefname  =   hsnSetLevQual @lhs.nmLev @lhs.moduleNm @constructorOperator
@@ -177,6 +183,9 @@ SEM Constructor
 %%[5
 SEM Constructor
     | Constructor
+%%[[31
+      GADTFunction
+%%]]
         lhs             .   conrefnames =   [@conrefname]
     | Infix
         lhs             .   conrefnames =   [@conrefname]
@@ -276,6 +285,9 @@ SEM Declaration
 %%]
 %%[5
     | Data Newtype
+%%[[31
+      GADT
+%%]]
         loc             .   idOccDef    =   IdOcc @typerefname IdOcc_Type
                         .   idOccDefsCon=   [ IdOcc n IdOcc_Val | n <- @constructors.conrefnames ]
 %%[[7

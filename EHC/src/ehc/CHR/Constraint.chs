@@ -5,7 +5,7 @@
 %%[(9 hmtyinfer || hmtyast) module {%{EH}CHR.Constraint} import({%{EH}Base.Common},{%{EH}Ty},{%{EH}CHR},{%{EH}CHR.Key},{%{EH}Base.TreeTrie},{%{EH}Base.Trie},{%{EH}Substitutable})
 %%]
 
-%%[(9 hmtyinfer || hmtyast) import(EH.Util.Pretty as PP)
+%%[(9 hmtyinfer || hmtyast) import(EH.Util.Pretty as PP, EH.Util.Utils)
 %%]
 
 %%[(9 hmtyinfer || hmtyast) import(qualified Data.Set as Set,qualified Data.Map as Map)
@@ -81,7 +81,11 @@ instance (CHRMatchable env p s) => CHRMatchable env (Constraint p info) s where
 
 %%[(9 hmtyinfer || hmtyast)
 instance TTKeyable p => TTKeyable (Constraint p info) where
-  toTTKey' o c = maybe [] (\(s,p,_) -> ttkAdd (TT1K_One $ Key_Str s) [toTTKey' o p]) $ cnstrReducablePart c
+  toTTKey' o c -- = maybe [] (\(s,p,_) -> ttkAdd (TT1K_One $ Key_Str s) [toTTKey' o p]) $ cnstrReducablePart c
+    = case cnstrReducablePart c of
+        Just (s,p,_) -> ttkAdd' (TT1K_One $ Key_Str s) cs
+                     where (_,cs) = toTTKeyParentChildren' o p
+        _            -> panic "TTKeyable (Constraint p info).toTTKey'" -- ttkEmpty
 %%]
 
 %%[(9 hmtyinfer || hmtyast)

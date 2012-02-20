@@ -44,7 +44,12 @@ SEM DataConstr
   | Constr      loc         .   fldsKiVarMp         =   @fields.kiVarMp
                             .   (_,fo_)             =   fitsInL  weakFIOpts defaultFIEnv @lUniq @fldsKiVarMp
                                                                  @fields.kiL (repeat kiStar)
-                lhs         .   kiVarMp             =   foVarMp @fo_ `varUpd` @fldsKiVarMp
+%%[[6
+                lhs
+%%][31
+                mbGadtTyExpr
+%%]]
+                	        .   kiVarMp				=   foVarMp @fo_ `varUpd` @fldsKiVarMp
                 loc         .   lUniq               :   UNIQUEREF gUniq
 %%]
 

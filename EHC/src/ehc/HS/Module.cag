@@ -175,7 +175,7 @@ SEM Declaration
         lhs             .   modDefsRel  =   Rel.fromList [ (hsnQualified (ioccNm o),ModEnt IdOcc_Val o Set.empty @range) | o <- @idOccDefs ]
     | Type
         lhs             .   modDefsRel  =   Rel.fromList [ (hsnQualified (ioccNm o),ModEnt IdOcc_Type o Set.empty @range) | o <- @idOccDefs ]
-    | Data Newtype
+    | Data Newtype GADT
         loc             .   modDefsRel  =   Rel.singleton
                                               @typelefthandside.name
                                               (ModEnt IdOcc_Data @idOccDef (Set.fromList @modEntsSub) @range)
@@ -196,7 +196,7 @@ SEM Declaration
                         .   (_,modHideDefsRel)
                                         =   mkInstDefsRel False @instancename Nothing @idOccDef @idOccDefVal
                         .   modEntsSub  =   [ ModEnt IdOcc_Val o Set.empty @range | o <- @idOccDefsSig ]
-    | Data Newtype Class
+    | Data Newtype GADT Class
         lhs             .   modDefsRel  =   @modDefsRel
                                             `Rel.union`
                                             Rel.fromList [ (hsnQualified $ ioccNm $ mentIdOcc e,e) | e <- @modEntsSub ]

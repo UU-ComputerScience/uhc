@@ -158,6 +158,9 @@ SEM Declaration
 %%]
 %%[5
     | Data
+%%[[31
+      GADT
+%%]]
         loc         .   eh          =   rngLift @range EH.Decl_Data False @typerefname (map (rngLift @range EH.TyVar_Var) @typelefthandside.typevariables) @constructors.eh
 %%[[92
                                                 (if ehcOptGenGenerics @lhs.opts then Just @generMaxRemArity else Nothing)
@@ -170,7 +173,7 @@ SEM Declaration
 %%]]
         lhs         .   eh          =   [@eh]
 %%[[92
-    | Data Newtype
+    | Data Newtype GADT
         loc         .   ehGener     =   rngLift @range EH.Decl_GenerRep @generMaxRemArity @typerefname @constructors.conrefnames @constructors.conAndFldrefnames
 %%]]
 %%[[93
@@ -262,7 +265,7 @@ SEM FunctionalDependency
 ATTR AllDeriving [ ehDataTyExpr: {EH.TyExpr} | | ]
 
 SEM Declaration
-    | Data Newtype
+    | Data Newtype GADT
         derivings   .   ehDataTyExpr=   mkApp (rngLift @range EH.TyExpr_Con @typerefname : map (rngLift @range EH.TyExpr_Var) @typelefthandside.typevariables)
 
 SEM Deriving
@@ -304,10 +307,15 @@ SEM Kind
 
 %%[7.ehTyExprArg hs
 ehTyExprArg :: EH.TyExpr -> EH.TyExpr
+ehTyExprArg = snd . panicJust "HS.ToEH.ehTyExprArg" . isApp1 . unTop
+%%]
+
+%%[7777.ehTyExprArg hs
+ehTyExprArg :: EH.TyExpr -> EH.TyExpr
 ehTyExprArg (EH.TyExpr_App  _ a) = a
 ehTyExprArg (EH.TyExpr_AppTop e) = ehTyExprArg e
 %%]
-%%[99 -7.ehTyExprArg hs
+%%[9999 -7.ehTyExprArg hs
 ehTyExprArg :: EH.TyExpr -> EH.TyExpr
 ehTyExprArg (EH.TyExpr_App  _ _ a) = a
 ehTyExprArg (EH.TyExpr_AppTop _ e) = ehTyExprArg e
@@ -476,16 +484,23 @@ SEM Constructor
     | Constructor 
         lhs         .   eh          =   rngLift @range EH.DataConstr_Constr @conrefname
                                                 @types.eh
+%%[[31
+                                                Nothing
+%%]]
 %%[[41
                                                 []
 %%]]
     | Infix
         lhs         .   eh          =   rngLift @range EH.DataConstr_Constr @conrefname
                                                 [@leftType.eh,@rightType.eh]
+%%[[31
+                                                Nothing
+%%]]
 %%[[41
                                                 []
 %%]]
 %%]
+
 %%[7.Constructor -5.Constructor
 SEM Constructor
     | Constructor 
@@ -494,8 +509,25 @@ SEM Constructor
                                                 Nothing
 %%]]
                                                 (map (ehPlainDataField emptyRange) @types.eh)
+%%[[31
+                                                Nothing
+%%]]
 %%[[41
                                                 []
+%%]]
+%%[[31
+    | GADTFunction 
+        loc			.	(ehArgs,ehRes)
+        							=	unArrow @type.eh
+        lhs         .   eh          =   rngLift @range EH.DataConstr_Constr @conrefname
+%%[[91
+                                                Nothing
+%%]]
+                                                (map (ehPlainDataField emptyRange) @ehArgs)
+                                                (Just @ehRes)
+%%[[41
+                                                []
+%%]]
 %%]]
     | Infix
         lhs         .   eh          =   rngLift @range EH.DataConstr_Constr @conrefname
@@ -506,6 +538,9 @@ SEM Constructor
                                                 )
 %%]]
                                                 (map (ehPlainDataField emptyRange) [@leftType.eh,@rightType.eh])
+%%[[31
+                                                Nothing
+%%]]
 %%[[41
                                                 []
 %%]]
@@ -515,13 +550,16 @@ SEM Constructor
                                                 Nothing
 %%]]
                                                 @fieldDeclarations.eh
+%%[[31
+                                                Nothing
+%%]]
 %%[[41
                                                 []
 %%]]
-%%]
-%%[9
+%%[[9
 	| Contexted
 		lhs			.	eh			=	@constructor.eh			-- for now: ignore
+%%]]
 %%]
 
 %%[7

@@ -209,6 +209,9 @@ SEM Type
 
 SEM Constructor
     | Constructor Infix
+%%[[31
+      GADTFunction
+%%]]
         loc         .   isAsPred    =   False
 
 SEM FieldDeclaration
@@ -270,6 +273,9 @@ SEM Declaration
 
 SEM Constructor
     | Constructor Infix
+%%[[31
+      GADTFunction
+%%]]
         loc         .   doGenVarWild=   False
 
 SEM FieldDeclaration

@@ -179,6 +179,10 @@ TYPE TyVars         = [TyVar]
 SET AllTyVar        = TyVar TyVars
 %%]
 
+%%[31
+TYPE MbTyExpr       = MAYBE TyExpr
+%%]
+
 %%[1.AllTyExpr
 SET AllTyExpr
     = TyExpr
@@ -191,6 +195,9 @@ SET AllTyExpr
 %%]]
 %%[[9
       PrExpr PrExprs
+%%]]
+%%[[31
+      MbTyExpr
 %%]]
 %%]
 
@@ -478,6 +485,9 @@ DATA DataConstr
                     fields          : TyExprs
 %%][7
                     fields          : DataFields
+%%]]
+%%[[31
+					mbGadtTyExpr	: MbTyExpr			-- the constrained result ty for GADT
 %%]]
 %%[[41
                     eqs             : DataConstrEqs

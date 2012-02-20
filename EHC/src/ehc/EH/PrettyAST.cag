@@ -423,10 +423,19 @@ SEM TyVars
   | Cons        lhs     .  ppAST    =   ppNest ["TyVars","Cons"] [] [@hd.ppAST,@tl.ppAST]
 
 SEM DataConstr
-  | Constr      loc     .  ppAST    =   ppNestInfo @lhs.opts ["DataConstr","Constr"] [ppNm @conNm] [@fields.ppAST] (@info_6 ++ @info_8 ++ @info_16)
+  | Constr      loc     .  ppAST    =   ppNestInfo @lhs.opts ["DataConstr","Constr"] [ppNm @conNm]
+          													 [ @fields.ppAST
+%%[[31
+          													 , @mbGadtTyExpr.ppAST
+%%]]
+%%[[41
+          													 , @eqs.ppAST
+%%]]
+          													 ] (@info_6 ++ @info_8 ++ @info_16 ++ @info_31)
                 loc     .  info_6   =   []
                         .  info_8   =   []
                         .  info_16  =   []
+                        .  info_31  =   []
 
 SEM DataConstrs
   | Nil         lhs     .  ppAST    =   ppNest ["DataConstrs","Nil"] [] []
@@ -938,6 +947,12 @@ SEM FuncDeps
 
 %%]
 
+%%[31
+SEM MbTyExpr
+  | Just		loc     .  ppAST    =   ppNest ["MbTyExpr","Just"] [] [@just.ppAST]
+  | Nothing		loc     .  ppAST    =   ppNest ["MbTyExpr","Nothing"] [] []
+%%]
+
 %%[1010
 SEM Decl
   | DynVal      lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Decl","DynVal"] [ppNm @nm] [@expr.ppAST] @info
@@ -955,15 +970,6 @@ SEM DataConstrEq
 SEM DataConstrEqs
   | Nil         lhs     .  ppAST    =   ppNest ["DataConstrEqs","Nil"] [] []
   | Cons        lhs     .  ppAST    =   ppNest ["DataConstrEqs","Cons"] [] [@hd.ppAST,@tl.ppAST]
-
-SEM DataConstr
-  | Constr      loc     .  ppAST    :=  ppNestInfo @lhs.opts  ["DataConstr","Constr"] [ppNm @conNm] [@fields.ppAST,@eqs.ppAST] (@info_6 ++ @info_16)
-%%]
-
-%%[(41 hmtyinfer)
-SEM DataConstr
-  | Constr      loc     .  info_16  :=  [ -- mkInfo1 "eqs.eqTyVarMp" (pp @eqs.eqTyVarMp)
-                                        ]
 %%]
 
 %%[(17 hmtyinfer)

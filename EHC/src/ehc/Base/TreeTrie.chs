@@ -129,28 +129,52 @@ instance Hashable k => Hashable (TreeTrieKey k) where
 %%% TreeTrieMpKey inductive construction from new node and children keys
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 export(ttkSingleton,ttkAdd,ttkFixate)
+%%[9 export(ttkSingleton,ttkAdd',ttkAdd,ttkChildren,ttkFixate)
 -- | Make singleton, which should at end be stripped from bottom layer of empty TTM1K []
 ttkSingleton :: TreeTrie1Key k -> TreeTrieKey k
-ttkSingleton k = [[TTM1K [k]],[TTM1K []]]
+ttkSingleton k = [TTM1K [k]] : ttkEmpty
 
--- | Add a new layer with single node on top, combining the rest.
+-- | empty key
+ttkEmpty :: TreeTrieKey k
+ttkEmpty = [[TTM1K []]]
+
+-- | Construct intermediate structure for children for a new Key
 --   length ks >= 2
-ttkAdd :: TreeTrie1Key k -> [TreeTrieKey k] -> TreeTrieKey k
-ttkAdd k ks
-  = [TTM1K [k]]                                         -- new top node
-    : [TTM1K $ concat [k | TTM1K k <- concat hs]]       -- first level children are put together in singleton list of list with all children
+ttkChildren :: [TreeTrieKey k] -> [TreeTrieMpKey k]
+ttkChildren ks
+  =   [TTM1K $ concat [k | TTM1K k <- concat hs]]       -- first level children are put together in singleton list of list with all children
     : merge (split tls)                                 -- and the rest is just concatenated
   where (hs,tls) = split ks
         split = unzip . map hdAndTl
         merge (hs,[]) = [concat hs]
         merge (hs,tls) = concat hs : merge (split $ filter (not . List.null) tls)
 
+-- | Add a new layer with single node on top, combining the rest.
+ttkAdd' :: TreeTrie1Key k -> [TreeTrieMpKey k] -> TreeTrieKey k
+ttkAdd' k ks = [TTM1K [k]] : ks
+
+-- | Add a new layer with single node on top, combining the rest.
+--   length ks >= 2
+ttkAdd :: TreeTrie1Key k -> [TreeTrieKey k] -> TreeTrieKey k
+ttkAdd k ks = ttkAdd' k (ttkChildren ks)
+
 -- | Fixate by removing lowest layer empty children
 ttkFixate :: TreeTrieKey k -> TreeTrieKey k
 ttkFixate (kk:kks) | all (\(TTM1K k) -> List.null k) kk = []
                    | otherwise                          = kk : ttkFixate kks
 ttkFixate _                                             = []
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% TreeTrieKey deconstruction
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9 export(ttkParentChildren)
+-- | Split key into parent and children components, inverse of ttkAdd'
+ttkParentChildren :: TreeTrieKey k -> ( TreeTrie1Key k, [TreeTrieMpKey k] )
+ttkParentChildren k
+  = case k of
+      ([TTM1K [h]] : t) -> (h,t)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

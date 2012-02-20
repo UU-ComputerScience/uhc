@@ -203,6 +203,9 @@ SEM Decl
 
 SEM DataConstr
   | Constr      lhs         .   errSq       =   rngLift @range mkNestErr' @pp [ @fields.errSq
+%%[[(31 hmtyinfer)
+                                                                              , @mbGadtTyExpr.errSq
+%%]]
 %%[[(7 hmtyinfer)
                                                                               , Seq.fromList @dupErrs
 %%]]

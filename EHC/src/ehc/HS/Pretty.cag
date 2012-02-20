@@ -77,6 +77,16 @@ SEM Declaration
 %%[[91
                                                   >-< ppParensCommas @derivings.ppL
 %%]]
+%%[[31
+    | GADT
+        loc         .   pp          =   "data" >#< @typelefthandside.pp
+                                                  >#< "where"
+                                                  >-< indent 2 (@constructors.pp
+%%[[91
+                                                                >-< ppParensCommas @derivings.ppL
+%%]]
+                                                               )
+%%]]
 %%]
 %%[6
     | KindSignature
@@ -275,19 +285,18 @@ SEM Constructor
         loc         .   pp          =   @constructor >#< ppSpaces @types.ppL
     | Infix
         loc         .   pp          =   @leftType.pp >#< @constructorOperator >#< @rightType.pp
-%%]
-%%[7.Constructor -5.Constructor
-SEM Constructor
-    | Constructor 
-        loc         .   pp          =   @constructor >#< ppSpaces @types.ppL
-    | Infix
-        loc         .   pp          =   @leftType.pp >#< @constructorOperator >#< @rightType.pp
+%%[[7
     | Record
         loc         .   pp          =   @constructor >#< ppCurlysCommas' @fieldDeclarations.ppL
-%%]
-%%[9
+%%]]
+%%[[9
   	| Contexted
   		loc			.	pp			=	@context.pp >#< "=>" >#< @constructor.pp
+%%]]
+%%[[31
+  	| GADTFunction
+  		loc			.	pp			=	@constructor >#< "::" >#< @type.pp
+%%]]
 %%]
 
 %%[7

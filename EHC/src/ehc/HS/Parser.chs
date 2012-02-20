@@ -227,12 +227,12 @@ pImportDeclaration
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1
-pDeclarations' :: HSParser d -> HSParser [d]
-pDeclarations' pD
+pLayoutList :: HSParser d -> HSParser [d]
+pLayoutList pD
   =   pBlock pOCURLY pSEMI pCCURLY pD
 
-pDeclarations1' :: HSParser d -> HSParser [d]
-pDeclarations1' pD
+pLayoutList1 :: HSParser d -> HSParser [d]
+pLayoutList1 pD
   =   pBlock1 pOCURLY pSEMI pCCURLY pD
 
 %%]
@@ -244,7 +244,7 @@ pDeclarations1' pD
 %%[50
 pBodyImport :: EHCOpts -> HSParser Body
 pBodyImport opts
-  =   (\d -> Body_Body emptyRange d []) <$> pDeclarations' pImportDeclaration
+  =   (\d -> Body_Body emptyRange d []) <$> pLayoutList pImportDeclaration
   <?> "pBodyImport"
 %%]
 
@@ -257,13 +257,13 @@ pBody opts = pBody' opts id
 pBody' :: EHCOpts -> (HSParser2 Declaration) -> HSParser Body
 pBody' opts addDecl
 %%[[1
-  =   Body_Body emptyRange <$> pDeclarations1' (addDecl pTopDeclaration)
+  =   Body_Body emptyRange <$> pLayoutList1 (addDecl pTopDeclaration)
   <|> pSucceed (Body_Body emptyRange [])
 %%][50
   =   (\ids -> let (i,d) = foldr cmbid ([],[]) ids in Body_Body emptyRange i d)
-      <$> pDeclarations' (   (\d -> ([],[d])) <$> (addDecl pTopDeclaration)
-                         <|> (\i -> ([i],[])) <$> pImportDeclaration
-                         )
+      <$> pLayoutList (   (\d -> ([],[d])) <$> (addDecl pTopDeclaration)
+                      <|> (\i -> ([i],[])) <$> pImportDeclaration
+                      )
 %%]]
   <?> "pBody"
   where
@@ -319,16 +319,19 @@ pBody' opts addDecl
 %%[1
         pDeclarations :: HSParser Declarations
         pDeclarations
-          =   pDeclarations' pDeclaration
+          =   pLayoutList pDeclaration
 
         pDeclarations1 :: HSParser Declarations
         pDeclarations1
-          =   pDeclarations1' pDeclaration
+          =   pLayoutList1 pDeclaration
 %%]
 
 %%[1
-        pWhere' :: HSParser Declaration -> HSParser MaybeDeclarations
-        pWhere' pD = pMb (pWHERE *> pDeclarations' pD)
+        pWhere'' :: HSParser d -> HSParser [d]
+        pWhere'' pD = pWHERE *> pLayoutList pD
+
+        pWhere' :: HSParser d -> HSParser (Maybe [d])
+        pWhere' pD = pMb (pWhere'' pD)
 
         pWhere :: HSParser MaybeDeclarations
         pWhere = pWhere' pDeclaration
@@ -438,19 +441,32 @@ pBody' opts addDecl
 %%[5
         pDeclarationData :: HSParser Declaration
         pDeclarationData
-          =   pD pDATA    (Declaration_Data    . mkRange1) (pEQUAL *> pListSep pVBAR pDCon <|> pSucceed [])
-          <|> pD pNEWTYPE (Declaration_Newtype . mkRange1) (pEQUAL *> pNCon)
+          =   pDATA
+              <**> (pCtxt
+              <**>  (pTypeLeftHandSide
+              <**>   (   (\cs der lhs cx k -> mk Declaration_Data k cx lhs cs der)
+                         <$> (pEQUAL *> pListSep pVBAR pDCon) <*> pDer
+%%[[31
+                     <|> (\cs der lhs cx k -> mk Declaration_Data k cx lhs cs der)
+                         <$> pWhere'' (pGADTConstructor) <*> pDer
+%%]]
+                     <|> pSucceed (\lhs cx k -> mk Declaration_Data k cx lhs [] [])
+                   )))
+          <|> pNEWTYPE
+              <**> (   (\cx lhs c der k -> mk Declaration_Newtype k cx lhs c der)
+                       <$> pCtxt <*> pTypeLeftHandSide <* pEQUAL <*> pNCon <*> pDer
+                   )
           <?> "pDeclarationData"
-          where pD pK sem pC
-                  = sem <$> pK
-%%[[9
-                    <*> pContextItemsPrefixOpt
+          where mk sem =
+                      \k cx lhs cs der
+%%[[5
+                         -> sem (mkRange1 k)    lhs cs
+%%][9
+                         -> sem (mkRange1 k) cx lhs cs
+%%][91
+                         -> sem (mkRange1 k) cx lhs cs der
 %%]]
-                    <*> pTypeLeftHandSide <*> pC
-%%[[91
-                    <*> (pDERIVING *> ((:[]) <$> pDeriving <|> pParens (pListSep pCOMMA pDeriving)) <|> pSucceed [])
-%%]]
-                -- TBD, for now: ignore quantifiers
+                -- TBD, for now: parse, but ignore quantifiers
                 pDCon, pNCon :: HSParser Constructor
 %%[[5
                 pDCon = pList pTypeQuantPrefix *> pConstructor
@@ -458,6 +474,20 @@ pBody' opts addDecl
                 pDCon = pList pTypeQuantPrefix *> pContextedConstructor
 %%]]
                 pNCon = pList pTypeQuantPrefix *> pConstructor
+%%[[5
+                pCtxt :: HSParser ()
+                pCtxt = pSucceed ()
+%%][9
+                pCtxt :: HSParser ContextItems
+                pCtxt = pContextItemsPrefixOpt
+%%]]
+%%[[5
+                pDer :: HSParser ()
+                pDer = pSucceed ()
+%%][91
+                pDer :: HSParser [Deriving]
+                pDer = pDERIVING *> ((:[]) <$> pDeriving <|> pParens (pListSep pCOMMA pDeriving)) <|> pSucceed []
+%%]]
 %%]
 
 %%[91
@@ -487,6 +517,12 @@ pBody' opts addDecl
         pContextedConstructor
           =   Constructor_Contexted emptyRange <$> pContextItemsPrefix <*> pConstructor
           <|> pConstructor
+%%]
+
+%%[31
+        pGADTConstructor :: HSParser Constructor
+        pGADTConstructor
+          =   mkRngNm Constructor_GADTFunction <$> con <* pDCOLON <*> pType
 %%]
 
 %%[7
@@ -1325,8 +1361,8 @@ pBody' opts addDecl
               <*> pDeclarations <* pIN
 %%][8
           =   (\(s,t,d) -> Expression_Let (mkRange1 t) s d)
-              <$> (   (,,) False <$> pLET       <*> pDeclarations                          <* pIN
-                  <|> (,,) True  <$> pLETSTRICT <*> pDeclarations' pDeclarationSimpleValue <* pIN
+              <$> (   (,,) False <$> pLET       <*> pDeclarations                       <* pIN
+                  <|> (,,) True  <$> pLETSTRICT <*> pLayoutList pDeclarationSimpleValue <* pIN
                   )
 %%]]
           <?> "pExpressionLetPrefix"

@@ -183,7 +183,6 @@ DATA Declaration                                  {- *** -}
         context                  : ContextItems
 %%]]
         typelefthandside         : TypeLeftHandSide
-        -- simpletype               : SimpleType
         constructors             : Constructors
 %%[[91
         derivings                : Derivings
@@ -196,8 +195,17 @@ DATA Declaration                                  {- *** -}
         context                  : ContextItems
 %%]]
         typelefthandside         : TypeLeftHandSide
-        -- simpletype               : SimpleType
         constructors             : Constructor  -- has only one field, no strictness
+%%[[91
+        derivings                : Derivings
+%%]]
+%%]
+%%[31
+    | GADT
+        range                    : Range
+        context                  : ContextItems
+        typelefthandside         : TypeLeftHandSide
+        constructors             : Constructors
 %%[[91
         derivings                : Derivings
 %%]]
@@ -593,6 +601,12 @@ DATA Constructor
         range                    : Range
         context                  : ContextItems
         constructor              : Constructor
+%%]
+%%[31
+    | GADTFunction
+        range                    : Range
+        constructor              : Name
+        type                     : Type
 %%]
 
 %%[5

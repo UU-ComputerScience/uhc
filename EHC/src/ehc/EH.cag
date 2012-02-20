@@ -63,7 +63,7 @@
 %%[15 hs export(FuncDep(..), FuncDeps)
 %%]
 
-%%[41 hs export(DataConstrEq(..), DataConstrEqs)
+%%[31 hs export(MbTyExpr)
 %%]
 
 %%[40 hs export(DataConstrEq(..), DataConstrEqs)
@@ -254,6 +254,28 @@ instance SemApp TyExpr where
     = mkEH TyExpr_Row $ mkEH RowTyExpr_Empty `mkRow` l
     where mkRow = foldl (\r e -> mkEH RowTyExpr_Ext r Nothing e)
 %%]]
+%%[[1
+  unTop (TyExpr_AppTop   x)       = unTop x
+  unTop (TyExpr_Parens   x)       = unTop x
+  unTop (TyExpr_Ann    _ x)       = unTop x
+%%][99
+  unTop (TyExpr_AppTop _ x)       = unTop x
+  unTop (TyExpr_Parens _ x)       = unTop x
+  unTop (TyExpr_Ann  _ _ x)       = unTop x
+%%]]
+  unTop x                         = x
+%%[[1
+  isApp1 (TyExpr_App   f a)       = Just (f,a)
+%%][99
+  isApp1 (TyExpr_App _ f a)       = Just (f,a)
+%%]]
+  isApp1 _                        = Nothing
+%%[[1
+  isCon (TyExpr_Con   n)          = Just n
+%%][99
+  isCon (TyExpr_Con _ n)          = Just n
+%%]]
+  isCon _                         = Nothing
 %%]
 
 %%[6 hs
