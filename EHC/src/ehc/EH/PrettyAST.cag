@@ -951,6 +951,10 @@ SEM FuncDeps
 SEM MbTyExpr
   | Just		loc     .  ppAST    =   ppNest ["MbTyExpr","Just"] [] [@just.ppAST]
   | Nothing		loc     .  ppAST    =   ppNest ["MbTyExpr","Nothing"] [] []
+
+SEM DataConstr
+  | Constr      loc     .  info_31  :=  [ mkInfo1 "gadtTyVarMp" (pp (@gadtTyVarMp))
+                                        ]
 %%]
 
 %%[1010
@@ -988,6 +992,11 @@ SEM TyExpr
                                         ]
   | App Lam     loc     .  info_17  :=  [ mkInfo1 "lhs.knPolCtx" (ppTyS @lhs.polVarMp @lhs.knPolCtx)
                                         ]
+%%]
+
+%%[31
+SEM PrExpr
+  | Eq          loc     .  ppAST    =   ppNest ["PrExpr","Eq"] [] [@tyExpr1.ppAST,@tyExpr2.ppAST]
 %%]
 
 %%[40

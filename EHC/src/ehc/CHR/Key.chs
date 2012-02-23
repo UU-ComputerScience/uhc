@@ -2,7 +2,7 @@
 %%% Constraint Handling Rules: Key to be used as part of TrieKey
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 module {%{EH}CHR.Key} import({%{EH}Base.Common},{%{EH}Base.TreeTrie},{%{EH}Base.Trie})
+%%[9 module {%{EH}CHR.Key} import({%{EH}Base.Common},{%{EH}Base.TreeTrie})
 %%]
 
 %%[9 import(EH.Util.Pretty, EH.Util.Utils)
@@ -109,7 +109,7 @@ instance Hashable Key where
   hash (Key_Hash h) = h
 %%]
 
-%%[9 export(Keyable(..))
+%%[9999 export(Keyable(..))
 -- | Trie key construction
 class Keyable k where
   toKey               :: k -> [TrieKey Key]                     -- the key of ...
@@ -122,7 +122,7 @@ class Keyable k where
                             _     -> ([],[])
 %%]
 
-%%[9
+%%[9999
 instance Keyable x => TrieKeyable x Key where
 %%[[9
   toTrieKey   = toKey

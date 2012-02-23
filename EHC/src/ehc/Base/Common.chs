@@ -196,6 +196,7 @@ class SemApp a where
   isCon             :: a -> Maybe (HsName)
   isApp1            :: a -> Maybe (a,a)
   isApp             :: a -> Maybe (a,[a])
+  isConApp          :: a -> Maybe (HsName,[a])
   isArrow           :: a -> Maybe ([a],a)
   unArrow           :: a -> ([a],a)
 
@@ -226,11 +227,15 @@ class SemApp a where
                           _   -> semRngAppTop rng (foldl1 (semRngApp rng) as)
 
   -- default inspection
-  unTop				= id
+  unTop             = id
   isCon             = const Nothing
   isApp1            = const Nothing
   isApp     x       = do { (f1,a) <- isApp1 $ unTop x
                          ; (do {(f2,as) <- isApp f1; return (f2,as++[a])}) <|> (return (f1,[a]))
+                         }
+  isConApp  x       = do { (f,as) <- isApp x
+                         ; c <- isCon f
+                         ; return (c,as)
                          }
   unArrow   x       = case isApp x of
                         Just (fx,asx) -> case isCon fx of

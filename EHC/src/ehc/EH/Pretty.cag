@@ -335,6 +335,11 @@ SEM Expr
   | DynVar      loc     .   pp      =   hsnDynVar >|< pp @nm
 %%]
 
+%%[31
+SEM PrExpr
+  | Eq          loc     .   pp      =   @tyExpr1.pp >#< hsnEqTilde >#< @tyExpr2.pp
+%%]
+
 %%[1010
 SEM Decl
   | DynVal      loc     .   pp      =   hsnDynVar >|< @nm >#< "=" >#< @expr.pp
@@ -413,7 +418,7 @@ SEM DataConstr
 %%[[5
   										>#< ppSpaced @fields.ppL
 %%][(7 hmtyinfer)
-                                        >#<  (if null $ catMaybes $ assocLKeys $ @fields.fldTyL
+                                        >#<  (if null $ catMaybes $ assocLKeys $ @dataConGadtFldTyL
                                               then ppSpaced @fields.ppL
                                               else ppCurlysCommas' @fields.ppL
                                              )

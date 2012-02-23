@@ -212,6 +212,9 @@ SEM DataConstr
 %%[[(6 hmtyinfer)
                                                                               , foErrSq @fo_
 %%]]
+%%[[(31 hmtyinfer)
+                                                                              , maybe Seq.empty foErrSq @mbGadtFO
+%%]]
                                                                               ]
 %%]
 

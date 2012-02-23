@@ -217,7 +217,7 @@ SEM Declaration
                                             `gamUnion` @idDefOccGamSigAsVar
     | Instance
         loc             .   idDefOccGamType
-                                        =   tvarS2IdDefOccGam @lhs.nmLev @range @types.freeTvarS
+                                        =   tvarS2IdDefOccGam @lhs.nmLev @range  @type.freeTvarS -- @types.freeTvarS
                         .   idDefOccGam =   mkDefOccGam @lhs.nmLev @range (IdAsp_Inst_Def @eh @classrefname) [@idOccDef]
                                             `gamUnion` mkDefOccGam @lhs.nmLev @range IdAsp_Val_Var [@idOccDefVal]
     | InstanceUseImplicitly
@@ -854,7 +854,9 @@ SEM Kind
 SEM Type
     | Constructor
         loc             .   (idOccKind,idAsp)
-                                        :=  if @lhs.isAsPred then (IdOcc_Class,IdAsp_Class_Class) else (IdOcc_Type,IdAsp_Type_Con)
+                                        :=  if @lhs.isAsPred && @tyConIs == TyConIsOther
+                                            then (IdOcc_Class,IdAsp_Class_Class)
+                                            else (IdOcc_Type,IdAsp_Type_Con)				-- TBD, now treated as types whereas they are other special constructs actually
 %%]
 
 %%[7
@@ -882,7 +884,11 @@ SEM ContextItem
         lhs             .   idUseOccGam =   gamUnions [@idUseOccGam,@types.idUseOccGam]
 
 SEM Declaration
-    | Instance InstanceUseImplicitly
+    | Instance
+        loc             .   (classrefname,_,idUseOccGamInst,errIdUse)
+                                        -- =   mkUseOccGam @lhs.opts @lhs.idGam [@name] IdOcc_Class IdAsp_Class_Class @range
+                                        =   mkUseOccGam @lhs.opts @lhs.idGam [@type.conNm] IdOcc_Class IdAsp_Class_Class @range
+    | InstanceUseImplicitly
         loc             .   (classrefname,_,idUseOccGamInst,errIdUse)
                                         =   mkUseOccGam @lhs.opts @lhs.idGam [@name] IdOcc_Class IdAsp_Class_Class @range
     | Default
@@ -1119,7 +1125,7 @@ SEM Declaration
     | Instance
         loc             .   (idUseOccGam,idUseHereOccL,_,undefOccGam)
                                         =   splitIdUseOccGam @lhs.nmLev
-                                                (gamUnions [@idUseOccGamInst,@context.idUseOccGam,@types.idUseOccGam,@where.idUseOccGam])
+                                                (gamUnions [@idUseOccGamInst,@context.idUseOccGam,@type.idUseOccGam {- @types.idUseOccGam -},@where.idUseOccGam])
                         .   idDpdMp     =   idDpdMpUnions
                                                 [ idToOccL2DpdMp [@idOccDef] @idUseHereOccL
                                                 , idDpdMpSingleton @idOccDefVal @idOccDef

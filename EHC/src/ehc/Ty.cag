@@ -29,7 +29,7 @@ used by EHC. The AST is described in Ty/AbsSyn.
 
 %%[(3 hmtyinfer || hmtyast) hs export(mkTyQu, TyVarCateg(..))
 %%]
-acoreBuiltinUndefined
+
 %%[4 hs export(TyQu(..)) 
 %%]
 
@@ -69,7 +69,7 @@ acoreBuiltinUndefined
 %%[(8 hmtyinfer || hmtyast) hs export(tyRecOffset) 
 %%]
 
-%%[(9 hmtyinfer || hmtyast) hs export(Pred(..),predNm,predTy,tyPredNm,tyPred,mkTyImpls,mkTyPr,tyPrArrowArgsRes)
+%%[(9 hmtyinfer || hmtyast) hs export(Pred(..))
 %%]
 
 %%[(9 hmtyinfer || hmtyast) hs export(Impls(..),ImplsVarId)
@@ -881,16 +881,16 @@ mkImplsNil :: Ty
 mkImplsNil = Ty_Impls Impls_Nil
 %%]
 
-%%[(9 hmtyinfer || hmtyast) hs
+%%[(9 hmtyinfer || hmtyast) hs export(mkTyImpls)
 mkTyImpls :: [Pred] -> Ty -> Ty
-mkTyImpls prL t = map Ty_Pred prL `mkArrow` t
+mkTyImpls prL t = map mkTyPr prL `mkArrow` t
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Construction of pred type
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(9 hmtyinfer || hmtyast) hs
+%%[(9 hmtyinfer || hmtyast) hs export(mkTyPr)
 mkTyPr :: Pred -> Ty
 mkTyPr p
   =  case p of
@@ -1437,7 +1437,7 @@ tyRecOffsetWithLkup lookup nm
 %%% Destruction for predicates
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(9 hmtyinfer || hmtyast) hs
+%%[(9 hmtyinfer || hmtyast) hs export(tyPred,predNm,tyPredNm,tyPrArrowArgsRes)
 tyPred :: Ty -> Pred
 tyPred t
   =  case tyUnAnn t of
@@ -1483,18 +1483,18 @@ tyPred2DataTy :: Ty -> Ty
 tyPred2DataTy = pred2DataTy . tyPred
 %%]
 
-%%[(9 hmtyinfer || hmtyast) hs
+%%[(9 hmtyinfer || hmtyast) hs export(predTy)
 predTy :: Pred -> Ty
 predTy p
   =  case p of
        Pred_Class t    -> t
        Pred_Pred  t    -> t
-%%]
-%%[(10 hmtyinfer || hmtyast) hs
+%%[[(10 hmtyinfer || hmtyast)
        Pred_Lacks    t _  -> t
-%%]
-%%[(41 hmtyinfer || hmtyast) hs
+%%]]
+%%[[(31 hmtyinfer || hmtyast)
        Pred_Eq t _ -> t  -- does it matter if we return the left or the right type?
+%%]]
 %%]
 
 %%[(13 hmtyinfer || hmtyast) hs export(predSeqToList,predLFlatten)
@@ -2113,7 +2113,7 @@ instance Serialize Pred where
   sput (Pred_Pred   a  ) = sputWord8 1 >> sput a
   sput (Pred_Lacks  a b) = sputWord8 2 >> sput a >> sput b
   sput (Pred_Arrow  a b) = sputWord8 3 >> sput a >> sput b
-%%[[41
+%%[[31
   sput (Pred_Eq     a b) = sputWord8 4 >> sput a >> sput b
 %%]]
   sput (Pred_Var    a  ) = sputWord8 5 >> sput a
@@ -2124,7 +2124,7 @@ instance Serialize Pred where
               1 -> liftM  Pred_Pred    sget
               2 -> liftM2 Pred_Lacks   sget sget
               3 -> liftM2 Pred_Arrow   sget sget
-%%[[41
+%%[[31
               4 -> liftM2 Pred_Eq      sget sget
 %%]]
               5 -> liftM  Pred_Var     sget

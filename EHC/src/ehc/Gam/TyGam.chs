@@ -157,6 +157,9 @@ initTyGam
       , (hsnRecUnboxed		, mkTGI (Ty_Con hsnRecUnboxed))
       , (hsnIntUnboxed		, mkTGI tyIntUnboxed)
 %%]]
+%%[[31
+      , (hsnEqTilde			, mkTGI (Ty_Con hsnEqTilde))
+%%]]
 %%[[97
       , (hsnInteger			, mkTGI tyInteger		)
       , (hsnInt8Unboxed  	, mkTGI (Ty_Con hsnInt8Unboxed  )	)
@@ -183,6 +186,9 @@ initTyGam
 %%]]
 %%[[18
           , hsnIntUnboxed, hsnRecUnboxed
+%%]]
+%%[[31
+          , hsnEqTilde
 %%]]
 %%[[97
           , hsnInteger

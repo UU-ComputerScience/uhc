@@ -831,7 +831,7 @@ SEM DataConstr
   | Constr      lhs         .   valBindL    =   []
 %%]
                 loc         .   ctyDataCon  =   C.tyToTyCore fitsInForToTyCore (tyKiGamLookupKi @lhs.finTyKiGam) @finDataConTy
-                lhs         .   valBindL    =   let len = length @fields.fldTyL
+                lhs         .   valBindL    =   let len = length @dataConGadtFldTyL
                                                     nms = map (\i -> hsnFromString ("x" ++ show i)) [1..len]
                                                 in  [ C.mkValThunkBind1 @conNm @ctyDataCon
                                                          (let (mk,(args,res)) = C.tcMergeLamTySeqAndArgNms @ctyDataCon nms

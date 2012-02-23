@@ -7,7 +7,7 @@ Derived from work by Gerrit vd Geest, but with searching structures for predicat
 to avoid explosion of search space during resolution.
 %%]
 
-%%[(9 hmtyinfer || hmtyast) module {%{EH}CHR} import(qualified {%{EH}Base.Trie} as Trie,qualified {%{EH}Base.TreeTrie} as TreeTrie, {%{EH}Base.Common},{%{EH}Substitutable},{%{EH}VarMp})
+%%[(9 hmtyinfer || hmtyast) module {%{EH}CHR} import(qualified {%{EH}Base.TreeTrie} as TreeTrie, {%{EH}Base.Common},{%{EH}Substitutable},{%{EH}VarMp})
 %%]
 
 %%[(9 hmtyinfer || hmtyast) import(Data.Monoid,qualified Data.Set as Set)
@@ -68,7 +68,7 @@ instance (PP c,PP g) => PP (CHR c g s) where
           ppChr l = vlist l -- ppCurlysBlock
 %%]
 
-%%[(9 hmtyinfer || hmtyast)
+%%[(9999 hmtyinfer || hmtyast)
 instance Keyable cnstr => Keyable (CHR cnstr guard subst) where
   toKey chr = toKey $ head $ chrHead chr
 %%]
@@ -110,7 +110,7 @@ class CHREmptySubstitution subst where
 A Matchable participates in the reduction process as a reducable constraint.
 
 %%[(9 hmtyinfer || hmtyast) export(CHRMatchable(..))
-class (Keyable x, TTKeyable x) => CHRMatchable env x subst where -- | x -> subst env where
+class (TTKeyable x) => CHRMatchable env x subst where -- | x -> subst env where
   chrMatchTo      :: env -> subst -> x -> x -> Maybe subst
 %%]
 

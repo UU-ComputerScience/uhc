@@ -36,7 +36,7 @@ instance TTKeyable Ty where
   toTTKey' o = tyTreeTrieKey o
 
 instance TTKeyable Pred where
-  toTTKey' o pr = tyTreeTrieKey o $ Ty_Pred pr
+  toTTKey' o pr = tyTreeTrieKey o $ mkTyPr pr
 
 instance TTKeyable PredScope where
   toTTKey' o (PredScope_Var v) | ttkoptsVarsAsWild o = ttkSingleton TT1K_Any
@@ -156,6 +156,11 @@ SEM Pred
   | Preds           loc     .   bkey            =   TT1K_One (Key_Str "seq")
 %%]
 
+%%[(31 hmtyinfer || hmtyast)
+SEM Pred
+  | Eq              loc     .   bkey            =   TT1K_One (Key_HNm hsnEqTilde)
+%%]
+
 The key
 
 %%[(9 hmtyinfer || hmtyast)
@@ -201,6 +206,11 @@ SEM PredSeq
 SEM Pred
   | Arrow           loc     .   key             =   ttkAdd @bkey [@args.key]
   | Preds           loc     .   key             =   ttkAdd @bkey [@seq.key]
+%%]
+
+%%[(31 hmtyinfer || hmtyast)
+SEM Pred
+  | Eq              loc     .   key             =   ttkAdd @bkey [@tyL.key,@tyR.key]
 %%]
 
 Children keys

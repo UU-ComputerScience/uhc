@@ -123,6 +123,58 @@ SEM Expr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Constraints induced by GADT like type
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(5 hmtyinfer)
+SEM DataConstr
+%%[[5
+  | Constr      loc         .   gadtTyVarMp         =   (emptyVarMp :: VarMp)
+%%][31
+  | Constr      loc         .   gadtTyVarMp         =   maybe emptyVarMp foVarMp @mbGadtFO 
+%%]]
+%%]
+
+%%[(31 hmtyinfer)
+SEM DataConstr
+  | Constr      loc         .   mbGadtFO            =   fmap (\ty -> fitsIn (unifyFIOpts {fioDontBind = varFreeSet ty}) defaultFIEnv uidStart (emptyVarMp::VarMp) @lhs.dataTy ty) @mbGadtTyExpr.tyMb
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Fields: Ty, Ann
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(5 hmtyinfer)
+SEM DataConstr
+  | Constr
+%%[[5    
+  				loc         .	dataConGadtTyL		=	[]
+%%][31
+  				loc         .	dataConGadtTyL		=	[ mkTyPr $ Pred_Eq (mkTyVar v) t | (v,t) <- varmpToAssocTyL @gadtTyVarMp ]
+%%]]
+
+%%[[5
+  				loc			.   dataConTyL          =   @fields.tyL
+%%][7
+  							.   dataConFldTyL       =   @fields.fldTyL
+  							.   dataConTyL          =   assocLElts @dataConFldTyL
+				 			.	dataConGadtFldTyL	=	zip (repeat Nothing) @dataConGadtTyL ++ @dataConFldTyL
+%%]]
+%%]
+
+%%[(7 hmtyinfer)
+SEM DataConstr
+  | Constr
+                loc         .   dataConGadtFldAnnL  =   replicate (length @dataConGadtTyL)
+                                                                  (DataConFldAnnInfo
+%%[[(8 codegen)
+                                                                    Strictness_NonStrict
+%%]]
+                                                                  )
+                                                        ++ @fields.fldAnnL
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Type of data constructors
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -131,9 +183,10 @@ ATTR AllData [ dataTy: Ty | | ]
 ATTR AllDataConstr [ | patValGam: ValGam | ]
 
 SEM DataConstr
-  | Constr      loc         .   dataConTy           =   @fields.tyL `mkArrow` @lhs.dataTy
+  | Constr      loc         .   dataConTy           =   @dataConTyL `mkArrow` @lhs.dataTy
+                            .	dataConGadtTy		=	@gadtTyVarMp `varUpd` @dataConTy
                             .   dataConTyFv         =   varFree @lhs.dataTy
-                            .   dataConProdTy       =   mkProdApp @fields.tyL
+                            .   dataConProdTy       =   mkProdApp @dataConGadtFldTyL
                             .   dataConProdTyFv     =   varFree @dataConProdTy
                 loc         .   dataQuUnConTy       =   let fvD = @dataConTyFv
                                                             fvU = @dataConProdTyFv
@@ -155,7 +208,7 @@ SEM DataConstr
                                                               ]
                                                           , @lhs.patValGam
                                                           ]
-                            .   patTyVarMp          =   assocTyLToVarMp [(@dataConTyVar,@dataConTy),(@dataUnConTyVar,@dataQuUnConTy)] `varUpd` @lhs.patTyVarMp
+                            .   patTyVarMp          =   assocTyLToVarMp [(@dataConTyVar,@dataConGadtTy),(@dataUnConTyVar,@dataQuUnConTy)] `varUpd` @lhs.patTyVarMp
                 loc         .   lUniq_con           :   UNIQUEREF gUniq
                 loc         .   lUniq_uncon         :   UNIQUEREF gUniq
 %%]
@@ -179,9 +232,9 @@ SEM Decl
 ATTR AllDataConstr [ | | dataAltTyL USE {++} {[]}: {AssocL HsName Ty} ]
 
 SEM DataConstr
-  | Constr      loc         .   dataConTy2          =   assocLElts @fields.fldTyL `mkArrow` @lhs.dataTy 
-                            .   dataConProdTy2      =   let  lbls = zipWith (\p (ml,_) -> maybe p id ml) positionalFldNames @fields.fldTyL
-                                                        in   mkTyRec (zipWith (\l (_,t) -> (l,t)) lbls @fields.fldTyL) 
+  | Constr      loc         .   dataConTy2          =   @dataConTyL `mkArrow` @lhs.dataTy 
+                            .   dataConProdTy2      =   let  lbls = zipWith (\p (ml,_) -> maybe p id ml) positionalFldNames @dataConGadtFldTyL
+                                                        in   mkTyRec (zipWith (\l (_,t) -> (l,t)) lbls @dataConGadtFldTyL) 
 
                             .   dataConTy           :=  @dataConTy1
                             .   dataConProdTy       :=  @dataConProdTy1
@@ -197,7 +250,7 @@ SEM Decl
 ATTR AllDataConstr [ | | dataAltForNewType USE {`const`} {Ty_Any}: Ty ]
 
 SEM DataConstr
-  | Constr      loc         .   dataAltForNewType   =   maybeHd Ty_Any snd @fields.fldTyL       -- should be only one
+  | Constr      loc         .   dataAltForNewType   =   maybeHd Ty_Any snd @dataConGadtFldTyL       -- should be only one
 %%]
 
 %%[(7 hmtyinfer).dataConXTy
@@ -225,7 +278,7 @@ SEM DataConstr
 -- end of this product.
 appendEqPreds :: [PredOcc] -> Ty -> Ty
 appendEqPreds preds ty
-  = let predsTyL = map (Ty_Pred . poPr) preds
+  = let predsTyL = map (mkTyPr . poPr) preds
         prodTyL  = tyProdArgs ty
      in mkProdApp (prodTyL ++ predsTyL)
 %%]
@@ -258,7 +311,7 @@ SEM DataConstr
   | Constr      loc         .   fldMp               =   let mk o = emptyDataFldInfo {dfiOffset = o}
                                                             mkfs = fst . foldl (\(m,o) (ml,_) -> maybe (m,o+1) (\l -> ((l,mk o):m,o+1)) ml) ([],0)
 %%]]
-                                                        in  Map.fromList $ mkfs $ @fields.fldTyL
+                                                        in  Map.fromList $ mkfs $ @dataConGadtFldTyL
 %%]
 
 %%[(7 hmtyinfer)
@@ -273,8 +326,8 @@ SEM DataConstr
                             .   dataConstrNmL       =   [@conNm]
                 loc         .   dti                 =   emptyDataTagInfo
                                                           { dtiFldMp        = @fldMp
-                                                          , dtiFldTyL       = @fields.fldTyL
-                                                          , dtiConFldAnnL   = @fields.fldAnnL
+                                                          , dtiFldTyL       = @dataConGadtFldTyL
+                                                          , dtiConFldAnnL   = @dataConGadtFldAnnL
                                                           , dtiConNm        = @conNm
                                                           , dtiConTy        = @dataConTyAsVar
 %%[[8
@@ -286,7 +339,7 @@ SEM DataConstr
                                                           }
 %%[[8
                             .   tag                 =   tyRecOffset @conNm @lhs.dataAltTy
-                            .   arity               =   length @fields.fldTyL
+                            .   arity               =   length @dataConGadtFldTyL
                             .   ctag                =   CTag @lhs.tyNm @conNm @tag @arity @lhs.maxArity
                 loc         .   ctag                :   CTag
 %%]]

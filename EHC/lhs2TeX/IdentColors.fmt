@@ -1,4 +1,4 @@
-%%if slides
+%if slides
 \newcommand{\varid}[1]{{\textcolor{black}{\mathit{#1}}}}
 \newcommand{\con}[1]{\textcolor{blue}{\mathit{#1}}}
 \newcommand{\tycon}[1]{\con{#1}}
@@ -9,9 +9,10 @@
 \newcommand{\blankline}{\vspace{\baselineskip}\par}
 \newcommand{\dsl}[1]{\textcolor{uuxgreen}{#1}}
 \newcommand{\dslid}[1]{\mathit{{\textcolor{uuxgreen}{#1}}}}
-%%endif
+%endif
 %if dictaat
 \newcommand{\varid}[1]{{{\mathit{#1}}}}
+\newcommand{\con}[1]{{\mathit{#1}}}
 \newcommand{\tycon}[1]{\con{#1}}
 \newcommand{\cl}[1]{{\mathit{#1}}}
 \newcommand{\class}[1]{\cl{#1}}

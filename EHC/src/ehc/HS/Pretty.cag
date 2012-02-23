@@ -14,6 +14,16 @@ ATTR AllNT AGItf [ | | ppWrap USE {.} {const empty} : {PP_Doc -> PP_Doc} ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Utils
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1111 hs
+ppv :: PP x => EHCOpts -> String -> x -> PP_Doc
+ppv o s x | ehcOptVerbosity o > VerboseALot = "<" >|< s >#< x >|< ">"
+          | otherwise                       =            pp x
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Top level    
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -105,7 +115,7 @@ SEM Declaration
                                         >-< indent 2 @where.pp
     | Instance
         loc         .   pp          =   "instance" >|< ppInstNm @useimplicitly @maybeinstancename
-                                        >#< ppParens @context.pp >#< "=>" >#< @name >#< ppSpaces @types.ppL
+                                        >#< ppParens @context.pp >#< "=>" >#< @type.pp -- @name >#< ppSpaces @types.ppL
                                         >-< indent 2 @where.pp
     | InstanceUseImplicitly
         loc         .   pp          =   "instance" >#< @expression.pp >#< "<:" >#< @name >#< ppSpaces @types.ppL
@@ -166,11 +176,11 @@ SEM Pragma
 %%[6
 SEM Kind
     | NormalApplication
-        loc         .   pp          =   ppAppTop  (@function.conNm,@function.pp)
+        loc         .   pp          =   ppAppTop  (@function.conNm, @function.pp)
                                                   @arguments.ppL (@function.pp >#< ppSpaces @arguments.ppL)
     | InfixApplication
         loc         .   pp          =   let args = [@leftKind.pp,@rightKind.pp]
-        								in	ppAppTop  (@operator.conNm,@operator.pp)
+        								in	ppAppTop  (@operator.conNm, @operator.pp)
                                                   	  args (@operator.pp >#< ppSpaces args)
     | Constructor
         loc         .   pp          =   ppCon @name
@@ -189,12 +199,14 @@ SEM Kind
 %%[1
 SEM Type
     | NormalApplication
-        loc         .   pp          =   ppAppTop  (@function.conNm,@function.pp)
-                                                  @arguments.ppL (@function.pp >#< ppSpaces @arguments.ppL)
+        loc         .   pp          =   let f = @function.pp
+                                        in  ppAppTop  (@function.conNm, f)
+                                                  @arguments.ppL (f >#< ppSpaces @arguments.ppL)
     | InfixApplication
         loc         .   pp          =   let args = [@leftType.pp,@rightType.pp]
-        								in	ppAppTop  (@operator.conNm,@operator.pp)
-                                                  	  args (@operator.pp >#< ppSpaces args)
+                                            o = @operator.pp
+                                        in  ppAppTop  (@operator.conNm, o)
+                                                      args (o >#< ppSpaces args)
     | Constructor
         loc         .   pp          =   ppCon @name
     | Parenthesized
@@ -265,18 +277,20 @@ SEM ContextItem
         loc         .   pp          =   pp "..."
     | NoImplicits
         loc         .   pp          =   empty
-%%]
-%%[10
-SEM ContextItem
+%%[[10
     | RowLacksLabel
         loc         .   pp          =   @name >|< "\\" >|< @rowvariable
-%%]
-%%[13
-SEM ContextItem
+%%]]
+%%[[13
     | Arrow
         loc         .   pp          =   @argument.pp >#< "->" >#< @result.pp
     | Forall
         loc         .   pp          =   "forall" >#< ppSpaces @typevariables >#< "." >#< @context.pp
+%%]]
+%%[[31
+    | Equal
+        loc         .   pp          =   @type1.pp >#< hsnEqTilde >#< @type2.pp
+%%]]
 %%]
 
 %%[5.Constructor

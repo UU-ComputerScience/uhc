@@ -430,8 +430,10 @@ release-prepare:
 FUN_PREFIX2DIR			= $(patsubst %/,%,$(1))
 
 tst:
-	@echo $(INSABS_EHC_LIB_ALL_AG)
-	@echo $(INSTALLABS_VARIANT_LIB_AG_PREFIX)
+	@echo $(INSTALL_LIB_JS)
+	@echo $(JSCRIPT_JS_JSCRIPT_DRV_JS)
+	@echo $(SRC_JSCRIPT_PREFIX)
+	@echo $(JSCRIPT_BLD_JSCRIPT_PREFIX)
 
 tstv:
 	$(MAKE) INCLUDE_DERIVED_MK=yes EHC_VARIANT=100 tst

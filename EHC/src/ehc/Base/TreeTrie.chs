@@ -388,7 +388,7 @@ lookupByKey keys ttrie = snd $ lookupPartialByKey TTL_WildInTrie keys ttrie
 lookup = lookupByKey
 %%]
 
-%%[9999 export(lookupResultToList)
+%%[9 export(lookupResultToList)
 lookupResultToList :: ([v],Maybe v) -> [v]
 lookupResultToList (vs,mv) = maybeToList mv ++ vs
 %%]

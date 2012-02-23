@@ -235,7 +235,7 @@ SEM Expr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(9 hmtyinfer)
-ATTR NTPrf [ | | chrInstDeclSq USE {`Seq.union`} {Seq.empty}: {Seq.FastSeq (CHRScopedInstanceDecl Pred RedHowAnnotation PredScope)} ]
+ATTR NTCode [ | | chrInstDeclSq USE {`Seq.union`} {Seq.empty}: {Seq.FastSeq (CHRScopedInstanceDecl Pred RedHowAnnotation PredScope)} ]
 %%]
 
 %%[(9 hmtyinfer)

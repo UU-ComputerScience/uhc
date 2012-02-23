@@ -286,6 +286,12 @@ DATA PrExpr
                     tyExpr          : TyExpr
 %%]
 
+%%[31
+DATA PrExpr
+  | Eq              tyExpr1         : TyExpr
+                    tyExpr2         : TyExpr
+%%]
+
 %%[9
 SET AllPrExpr       = PrExpr PrExprs
 %%]

@@ -19,7 +19,7 @@ Derived from work by Gerrit vd Geest.
 %%[(9 hmtyinfer) import({%{EH}Base.Common})
 %%]
 
-%%[(9 hmtyinfer) import({%{EH}Ty},{%{EH}VarMp},{%{EH}Substitutable},{%{EH}Ty.FitsInCommon2},{%{EH}Ty.FitsIn},{%{EH}Ty.TrieKey},{%{EH}Ty.TreeTrieKey})
+%%[(9 hmtyinfer) import({%{EH}Ty},{%{EH}VarMp},{%{EH}Substitutable},{%{EH}Ty.FitsInCommon2},{%{EH}Ty.FitsIn},{%{EH}Ty.TreeTrieKey})
 %%]
 
 %%[(10 hmtyinfer) import({%{EH}Base.Builtin})

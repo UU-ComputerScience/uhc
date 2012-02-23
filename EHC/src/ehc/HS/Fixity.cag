@@ -178,6 +178,8 @@ SEM Expression
 %%% Chain of infix types (right balanced) (clone of the above)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+20120222 TBD: this should be done first before transformation of predicate part takes place.
+
 %%[5
 SEM Type [ | | opChain: {OpChain EH.TyExpr} ]
     | InfixApplication

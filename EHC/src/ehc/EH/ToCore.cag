@@ -1319,7 +1319,7 @@ mkDataGenerBinds
                 (dictSelfNm,dictBuildNm) = mkInstanceBuildNms dictNm
                 
                 -- match predicate to get the record type describing fields of dictionary
-                evFO  = fitPredToEvid' u1 emptyVarMp (Ty_Pred pr) (Left clgi)
+                evFO  = fitPredToEvid' u1 emptyVarMp (mkTyPr pr) (Left clgi)
                 recTy = foVarMp evFO `varUpd` foTy evFO
                 
                 -- the bindings for datatypes acting as labels

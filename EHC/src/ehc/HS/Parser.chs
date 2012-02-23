@@ -586,17 +586,20 @@ pBody' opts addDecl
         pDeclarationInstance :: HSParser Declaration
         pDeclarationInstance
           =   pINSTANCE
-              <**> (   (\((n,u),c,cl,ts) d t -> Declaration_Instance (mkRange1 t) InstNormal n u c (tokMkQName cl) ts d)
+              <**> (   -- (\((n,u),c,cl,ts) d t -> Declaration_Instance (mkRange1 t) InstNormal n u c (tokMkQName cl) ts d)
+                       (\((n,u),c,h) d t -> Declaration_Instance (mkRange1 t) InstNormal n u c h d)
                        <$> pHeader
                        <*> pWhere' pDeclarationValue
                    <|> (\e cl ts t -> Declaration_InstanceUseImplicitly (mkRange1 t) e (tokMkQName cl) ts)
                        <$> pExpression <* pLTCOLON <*> qconid <*> pList1 pTypeBase
                    )
 %%[[91
-          <|> (\t ((n,u),c,cl,ts) -> Declaration_Instance (mkRange1 t) (InstDeriving InstDerivingFrom_Standalone) n u c (tokMkQName cl) ts Nothing)
+          <|> -- (\t ((n,u),c,cl,ts) -> Declaration_Instance (mkRange1 t) (InstDeriving InstDerivingFrom_Standalone) n u c (tokMkQName cl) ts Nothing)
+              (\t ((n,u),c,h) -> Declaration_Instance (mkRange1 t) (InstDeriving InstDerivingFrom_Standalone) n u c h Nothing)
               <$> pDERIVING <* pINSTANCE <*> pHeader
 %%]]
-          where pHeader = (,,,) <$> pInstanceName <*> pContextItemsPrefixOpt <*> qconid <*> pList1 pTypeBase
+          -- where pHeader = (,,,) <$> pInstanceName <*> pContextItemsPrefixOpt <*> qconid <*> pList1 pTypeBase
+          where pHeader = (,,) <$> pInstanceName <*> pContextItemsPrefixOpt <*> pType' pTypeOpBase (\_ p -> p)
 %%]
 
 %%[9
@@ -731,11 +734,11 @@ pBody' opts addDecl
 %%]]
 %%[[11
                             <|> (\(o,_) e r -> Type_SectionApplication r (Just e) o Nothing)
-                                <$> pTypeOpBase
+                                <$> pTypeOpBaseEq
 %%]]
                       )     )
 %%[[11
-                  <|> (pTypeOpBase
+                  <|> (pTypeOpBaseEq
                        <**> (   (\e (o,_) r -> Type_SectionApplication r Nothing o (Just e)) <$> pType
                             -- <|> pSucceed (\(o,_) r -> Type_SectionApplication r Nothing o Nothing)
                       )     )
@@ -768,8 +771,40 @@ pBody' opts addDecl
         pType =  pChainr (mk1Arrow <$ pRARROW) pTypeBase
 %%]
 %%[4.pType -1.pType
+        pType' :: HSParser (Type,Range) -> (HSParser Type -> HSParser (Type,Int) -> HSParser (Type,Int)) -> HSParser Type
+        pType' pOp extend
+          = pT'
+          where pT' :: HSParser Type
+                pT' = mkT <$> pT
+                pT :: HSParser (Type,Int)
+                pT = extend pT'
+                     $ pTypeApp
+                        <**> (   pSucceed unit
+                             <|> (\(op,rng) (r,cnt) l -> (Type_InfixApplication rng l op r,cnt+1)) <$> pOp <*> pT
+                             )
+                unit e    = (e,0)
+%%[[4
+                mkT (e,_) =  e
+%%][5
+                mkT (e,0) =  e
+                mkT (e,_) =  Type_InfixApplicationChainTop emptyRange e
+%%]]
+%%]
+
+%%[4.pType -1.pType
         pType ::  HSParser Type
         pType
+          = pType'
+              pTypeOp
+              (\pT pTApp -> 
+                         pTApp
+%%[[9
+                     <|> (\c t -> unit $ Type_Qualified emptyRange [c] t) <$> pContextItemImpl <* pRARROW <*> pT
+%%]]
+                     <|> unit <$> (pTypeQuantPrefix <*> pT)
+              )
+          where unit e    = (e,0)
+{-
           = mkT <$> pT
           where pT :: HSParser (Type,Int)
                 pT = pTypeApp
@@ -787,6 +822,7 @@ pBody' opts addDecl
                 mkT (e,0) =  e
                 mkT (e,_) =  Type_InfixApplicationChainTop emptyRange e
 %%]]
+-}
 %%]
 
 %%[4.pTypeQuantPrefix
@@ -808,7 +844,7 @@ pBody' opts addDecl
 %%[1
         pTypeOp :: HSParser (Type,Range)
         pTypeOp
-          =   pTypeOpBase
+          =   pTypeOpBaseEq
 %%[[5
           <|> mkRngNm' Type_Variable    <$> varop_no_ty
 %%]]
@@ -823,6 +859,15 @@ pBody' opts addDecl
           = mkRngNm' Type_Constructor
             <$> (   gtycon_for_insection
                 )
+%%]
+
+%%[1
+        pTypeOpBaseEq :: HSParser (Type,Range)
+        pTypeOpBaseEq
+          =   pTypeOpBase
+%%[[31  
+          <|> mkRngNm' Type_Constructor <$> pTILDE
+%%]] 
 %%]
 
 %%[1.pTypeApp
@@ -971,20 +1016,20 @@ pBody' opts addDecl
         pContextItemBase ::   HSParser ContextItem
         pContextItemBase
           =   pContextItemClass
-%%]
-%%[1010
+%%[[1010
           <|> ContextItem_DynVar <$> pDynVar <* pDCOLON <*> pType
-%%]
-%%[10
-          <|> tyvar <**>  (    (\s v -> mkRngNm ContextItem_RowLacksLabel v (tokMkQName s))
+%%]]
+%%[[10
+          <|> tyvar <**>  (    (\s tv -> mkRngNm ContextItem_RowLacksLabel tv (tokMkQName s))
                                <$ pLAM <*> pSelector
-%%]
-%%[40
-                          <|>  (flip ContextItem_Equal)
-                               <$ pKey "=" <*> pType
-%%]
-%%[10
+%%]]
+%%[[3131
+                          <|>  (\t ty tv -> ContextItem_Equal (mkRange1 t) (mkRngNm Type_Variable tv) ty)
+                               <$> pTILDE <*> pType
+%%]]
+%%[[10
                           )
+%%]]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

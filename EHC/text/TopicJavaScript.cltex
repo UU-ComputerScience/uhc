@@ -1,68 +1,279 @@
+%%[prelude
+%include IdentColors.fmt
+%include Javascript.fmt
+
+% defs etc
+\newcommand{\todo}[1]{{\color{red}#1}}
+%%]
+
 %%[abstract
-Abstract ...
+We describe a small web application intended to make highschool students familiar with programming languages.
+The application demonstrates the use of Haskell on various levels.
+First, the accompanying teaching material for the web application explains both Prolog and its implementation in Haskell.
+Second, the web application has been written in Haskell, both server and browser side.
+As an experiment, the browser side has been implemented using the JavaScript backend of the Utrecht Haskell Compiler.
+We discuss the consequences a Haskell frontend for an Object-Oriented language brings.
 %%]
 
 %%[introduction
 Introduction ...
 
-Desire to program in Haskell for browsers.
+\todo{Desire to program in Haskell for browsers.}
 
-Motivation/drive: JCU app.
+\todo{Motivation/drive: JCU app.}
 
-Technical: 
+\todo{Technical: }
+UHC \cite{www09uhc,dijkstra09uhc-arch}
+
+Contributions and overview of remainder of this paper:
+\begin{itemize}
+\item ... (Section~\ref{JuniorCollegeApp})
+\item A FFI based mapping between Haskell and JavaScript, in principle applicable to other OO languages as well
+ (Sections~\ref{HaskellToJavaScript} and \ref{UseOfExistingJavaScriptStuff}).
+\item Insight in the consequences of stretching the use of Haskell
+ beyond its comfortzone found in and around the defacto default production compiler GHC
+ (Section~\ref{discussionAndIssues}).
+\end{itemize}
+
+Finally we wrap up in Sections~\ref{relatedWork} and \ref{conclusion}.
+
+
 %%]
 
 %%[JuniorCollegeApp
+\label{JuniorCollegeApp}
 The JCU app ...
 
-Structure: server (snap?), GUI, NanoProlog.
+\todo{Structure: server (snap?), GUI, NanoProlog.}
 %%]
 
 %%[HaskellToJavaScript
-Compiling ...
+\label{HaskellToJavaScript}
+There is an obvious mismatch between Haskell and Object-Oriented languages,
+which has been addressed in various ways over time (Section~\ref{relatedWork}):
+\begin{itemize}
+\item
+ Mapping the runtime machinery required for Haskell to an imperative language has to deal with the lazy evaluation strategy
+ imposed by Haskell;
+ we deal with this in the remaining part of this section.
+\item
+ Use of OO language mechanisms available in JavaScript; we avoid dealing with this problem.
+\item
+ Use of available libraries built with JavaScript;
+ we deal with this in the following section by exploiting the freedom offered by Haskells foreign function interface
+\end{itemize}
+
+The design of any backend for a lazy functional languages needs to deal with functions, their (lazy) application to arguments,
+and forcing evaluation of such applications to weak head normal form (WHNF).
+The design should also cater for under- and oversaturated function applications as well as tail recursion.
+
+In UHCs JavaScript backend these are all represented straightforwardly by objects, being the principle datastructure available:
+
+\begin{code}
+Fun.prototype = {
+    applyN : function ( args ) ...
+    needsNrArgs : function() ...
+}
+
+function Fun( fun ) { ... }
+\end{code}
+
+For now we omit implementation details and only expose the programmatic interface.
+A |Fun| object wraps a JavaScript function so that it can be used as a Haskell function.
+The |applyN| field is only used when evaluation of a function application takes place,
+in which case it is necessary to know the |needsNrArgs| number of arguments which must be passed.
+Until then it stays unevaluated as a |Fun| object wrapped inside a closure object |App| or |AppLT|.
+
+Similarly, partially applied (and thus undersaturated) functions
+need to remember already applied arguments and how many arguments are still missing.
+An |AppLT| object encodes this, again we provide its programmatic interface first:
+
+\begin{code}
+AppLT.prototype = {
+    applyN : function ( args ) ...
+    needsNrArgs : function() ...
+}
+
+function AppLT( fun, args ) { ... }
+\end{code}
+
+An |AppLT| only wraps other |AppLT| objects or |Fun| objects.
+
+Finally, for all remaining saturation cases an |App| object is used, knowledge about saturedness is delegated to the encapsulated
+function object, which may be another |App|, |AppLT|, or |Fun|.
+
+\begin{code}
+App.prototype = {
+    applyN : function ( args ) ...
+}
+
+function App( fun, args ) { ... }
+\end{code}
+
+With this interface we now can translate Haskell functions, for example a function |id2 x = id (id x)| would be translated to the
+following, assuming |id| is available:
+
+\begin{code}
+new Fun( function(x) {
+    return new App(id,[x]);
+} )
+\end{code}
+
+Note that a function does not evaluate directly because this would lead tail recursion to overflow the stack of the underlying
+Javascript engine.
+Instead a trampoline mechanism is used, delegating evaluation to an evaluation loop in the |eval| function which evaluates until
+a WHNF has been reached:
+
+\begin{code}
+function eval( x ) {
+    while ( x && x.eOrV ) {
+        if ( typeof x.eOrV == 'function' ) {
+            x = x.eOrV() ;
+        } else {
+            x = x.eOrV ;
+    }   }
+    return x ;
+}
+\end{code}
+
+The |eval| function assumes the presence of an |eOrV| (evaluator Or Value) field for all Haskell runtime values,
+WHNF have no |eOrV| field.
+The |eOrV| either is a function representing a next evaluation step, or a WHNF value.
+Even JavaScript values can be thrown at |eval|, which distinguishes those values by absence of the |eOrV| field.
+In the actual runtime system all the above names are chosen to be more unclear as to reduce chances of accidentily
+bumping into a JavaScript object having this hidden field.
+The actual |eval| function is somewhat more involved as it provides more protection against null values and it is also necessary to update
+the |eOrV| field for all intermediate objects computed in the evaluation loop.
+
+The evaluation function is invoked when a Haskell value needs to be inspected,
+for example by a case expression or by a primitive requiring underlying JavaScript values such as
+the following translation of a primitive multiplication function:
+
+\begin{code}
+new Fun( function(a,b) {
+    return eval(a) * eval(b) ;
+} )
+\end{code}
+
+\begin{figure}[t]
+\hrule
+\begin{code}
+_F_.prototype = {
+  __aN__ : function ( args ) {
+    if ( args.length < this. __evN__.length ) {
+      return new _A_undersat_( this, args ) ;
+    } else if ( args.length == this. __evN__.length ) {
+      return this. __evN__.apply( null, args ) ;
+    } else {
+      var fun = _e_( this. __evN__.apply
+                       ( null, args.slice( 0, this. __evN__.length ) ) ) ;
+      var remargs = args.slice( this. __evN__.length ) ;
+      return {
+        __eOrV__ : function() {
+          return fun. __aN__( remargs ) ;
+        } } ;
+  } }
+, needsNrArgs : function() {
+    return this. __evN__.length ;
+} }
+function _F_( evalN ) {
+  this. __evN__ = evalN ;
+}
+
+_A_.prototype = {
+  __aN__ : function ( args ) {
+    var fun = _e_(this) ;
+    return {
+      __eOrV__ : function() {
+        return fun. __aN__( args ) ;
+      } } ;
+} }
+function _A_( fun, args ) {
+  this. __eOrV__ = function() {
+    return fun. __aN__( args ) ;
+} }
+
+_A_undersat_.prototype = {
+  __aN__ : function ( args ) { ... }
+, needsNrArgs : function() {
+    return this.fun.needsNrArgs() - this.args.length ;
+} }
+function _A_undersat_( fun, args ) {
+  this.fun = fun ;
+  this.args = args ;
+}
+
+function _e_( x ) { ... }
+\end{code}
+\caption{JavaScript runtime system}
+\label{rts}
+\end{figure}
+
+Figure~\ref{rts} shows how the actual evaluation is delegated to |applyN| of |Fun|.
+Depending on the number of arguments provided an undersatured closure is build, the function is directly invoked using
+JavaScripts |apply|.
+In case too many arguments are provided a JavaScript closure is constructed, which subsequently is evaluated in the evaluation 
+loop of |eval|.
+The implementation of |AppLT| is similar to that of |Fun|, therefore omitted from Figure~\ref{rts}.
+|App|s implementation of |applyN| simply delegates to |applyN| of its function.
+Also omitted are the encodings of nullary applications, used for CAFs (unevaluated constants) and indirection nodes required for
+mutual recursive definitions.
+Datatypes and tuples are straightforwardly mapped onto JavaScript arrays,
+where the first element for a datatype constructor holds a tag.
 %%]
 
 %%[UseOfExistingJavaScriptStuff
-Using existing infrastructure ...
+\label{UseOfExistingJavaScriptStuff}
+What makes translating to JavaScript so attractive is not that JavaScript is such an interesting language,
+but that many libraries are built in JavaScript and available for use inside a browser environment.
+We also do not aim to make Haskell into an OO programming platform,
+but aim to facilitate the use of existing libraries in Haskell.
+Similarly to other external library use from Haskell we use the Foreign Function Interface (FFI) for this purpose.
 
-FFI.
+\todo{FFI.}
 
-JQuery, Google, or other libraries for accessing DOM.
+\todo{JQuery, Google, or other libraries for accessing DOM.}
 
-DOM.
+\todo{DOM.}
 
-User interface: HTML5, Canvas Drawing.
+\todo{User interface: HTML5, Canvas Drawing.}
 
 %%]
 
 %%[discussionAndIssues
 Discuss ...
 
-Mapping to OO: FFI or other mechanism.
+\todo{Mapping to OO: FFI or other mechanism.}
 
-Typing the untyped.
+\todo{Typing the untyped.}
 
-Mismatch: Cabal does not deal with multiple backend of one compiler.
+\todo{Mismatch: Cabal does not deal with multiple backend of one compiler.}
 
-Mismatch: Libraries take GHC as standard, not Haskell2010 (or H98).
+\todo{Mismatch: Libraries take GHC as standard, not Haskell2010 (or H98).}
 
-Unix based library is useless, basically other OS to run on, what about shared code, ...
+\todo{Unix based library is useless, basically other OS to run on, what about shared code, ...}
 %%]
 
 %%[relatedWork
+\label{relatedWork}
 Relate ...
 
-GHCjs \cite{www11ghcjs-git}.
+\todo{OO bridging} \cite{shields01haskell-oo-overloading,kiselyov05haskell-oo}
 
-Function javascript \cite{www07functional-javascript}.
+\todo{GHCjs} \cite{www11ghcjs-git}.
 
-Haskell in Javascript \cite{www10haskellinjavascript}.
+\todo{Functional javascript} \cite{www07functional-javascript}.
 
-York/YHC for Javascript \cite{www07yhc-javascript}
+\todo{Haskell in Javascript} \cite{www10haskellinjavascript}.
+
+\todo{iTasks, Clean} \cite{jansen10phd-itasks-sapl-funcweb,bruel10sapl-javascript,plasmeijer08clientside-itasks-ajax}.
+
+\todo{York/YHC for Javascript} \cite{www07yhc-javascript}
 based project compiling DOM datamodel to corresponding wrapper code \cite{www07haskell-in-browser}.
 %%]
 
 %%[conclusion
+\label{conclusion}
 Conclude ...
 %%]
 

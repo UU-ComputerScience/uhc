@@ -37,7 +37,7 @@ pTyBase
   <|> Ty_Any  <$  pQUESTQUEST
   <|> Ty_Con  <$> pDollNm
   <|> pParens pTy
-  <|> Ty_Pred <$> pPred
+  <|> mkTyPr  <$> pPred
   <|> pRow
   where pRow :: P Ty
         pRow

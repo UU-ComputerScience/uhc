@@ -88,8 +88,6 @@ SEM Declaration
     | Type
         loc             .   typerefname =   hsnSetLevQual @lhs.nmLev @lhs.moduleNm @typelefthandside.name
 %%]
-    | Instance InstanceUseImplicitly
-        loc             .   classrefname=   hsnSetLevQual @lhs.nmLev @lhs.moduleNm @name
 
 %%[(90 codegen)
 SEM Declaration
@@ -464,7 +462,8 @@ SEM Pattern
 %%[9
 SEM Declaration
     | Instance
-        loc         .   instancename=   maybe (hsnUniqifyUID HsNameUniqifier_ClassDict @lUniq (mkHNm @name)) id @maybeinstancename -- maybe (hsnSuffix (mkHNm @lUniq) ("_instance_"++ show @name)) id @maybeinstancename
+        -- loc         .   instancename=   maybe (hsnUniqifyUID HsNameUniqifier_ClassDict @lUniq (mkHNm @name)) id @maybeinstancename -- maybe (hsnSuffix (mkHNm @lUniq) ("_instance_"++ show @name)) id @maybeinstancename
+        loc         .   instancename=   maybe (hsnUniqifyUID HsNameUniqifier_ClassDict @lUniq (@type.conNm)) id @maybeinstancename -- maybe (hsnSuffix (mkHNm @lUniq) ("_instance_"++ show @name)) id @maybeinstancename
     | Class
         loc         .   instancename=   hsnUniqifyUID HsNameUniqifier_Class @lUniq (mkHNm @typelefthandside.name) -- hsnSuffix (mkHNm @lUniq) ("_class_"++ show @typelefthandside.name)
     | InstanceUseImplicitly
@@ -484,4 +483,24 @@ SEM Deriving
 		loc			.	lUniq		:	UNIQUEREF gUniq
 %%]
 
+%%[1
+ATTR Type Expression [ | | conNm: Name ]
+
+SEM Type
+    | Constructor
+        lhs         .   conNm       =   @name
+    | InfixApplication
+        lhs         .   conNm       =   @operator.conNm
+    | * - Constructor NormalApplication InfixApplication
+%%[[5
+          InfixApplicationChainTop
+%%]]
+        lhs         .   conNm       =   hsnUnknown
+
+SEM Expression
+    | Constructor
+        lhs         .   conNm       =   @name
+    | * - Constructor
+        lhs         .   conNm       =   hsnUnknown
+%%]
 

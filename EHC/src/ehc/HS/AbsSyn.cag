@@ -249,9 +249,9 @@ DATA Declaration                                  {- *** -}
         maybeinstancename        : MaybeName
         useimplicitly            : Bool
         context                  : ContextItems -- is a "simple" context
-        name                     : Name
-        types                    : Types        -- Haskell 98 allows only one type
-                                                -- that is severely restricted
+        -- name                     : Name
+        -- types                    : Types
+        type					 : Type
         where                    : MaybeDeclarations -- cannot have everything
     | InstanceUseImplicitly
         range                    : Range
@@ -570,6 +570,12 @@ DATA ContextItem
         range                    : Range
         rowvariable              : Name
         name                     : Name
+%%]]
+%%[[31
+    | Equal
+        range                    : Range
+        type1                    : Type
+        type2                    : Type
 %%]]
 
 SET AllContextItem

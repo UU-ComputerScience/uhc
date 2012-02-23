@@ -212,12 +212,19 @@ WRAPPER AGItf
 %%[92 ag import({EH/Generics})
 %%]
 
-%%[99 ag import({EH/FakeDependencies},{EH/LocalAttrTypes})
+%%[99 ag import({EH/LocalAttrTypes})
+%%]
+%%[99 ag import({EH/FakeDependencies})
+%%]
+%%[9999 ag import({EH/FakeDependencies2})
 %%]
 
 %%[99
 PRAGMA strictsem
 PRAGMA strictcase
+%%]
+%%[9999
+PRAGMA kennedywarren
 %%]
 PRAGMA gencostcentres
 

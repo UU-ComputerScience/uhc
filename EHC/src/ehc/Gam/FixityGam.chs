@@ -56,14 +56,20 @@ fixityGamLookup nm fg = maybe defaultFixityGamInfo id $ gamLookup nm fg
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Init of fixityGam
+%%% Init of fixityGam, currently shared between value and type operators
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1.initFixityGam export(initFixityGam)
 initFixityGam :: FixityGam
 initFixityGam
   = assocLToGam
-      [ (hsnArrow,  FixityGamInfo 1 Fixity_Infixr)
+      [ (hsnArrow  ,  FixityGamInfo 1 Fixity_Infixr)
+%%[[9
+      , (hsnPrArrow,  FixityGamInfo 2 Fixity_Infixr)
+%%]]
+%%[[31
+      , (hsnEqTilde,  FixityGamInfo 3 Fixity_Infix )
+%%]]
       ]
 %%]
 

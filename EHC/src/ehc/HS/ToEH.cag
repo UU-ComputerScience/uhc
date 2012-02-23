@@ -216,8 +216,8 @@ SEM Declaration
                                             )
         lhs         .   eh          =   [@eh,@ehInst]
     | Instance
-        loc         .   eh          =   let h = rngLift @range EH.TyExpr_Pred
-                                                $ rngLift @range EH.PrExpr_Class @classrefname @types.eh
+        loc         .   eh          =   let -- h = rngLift @range EH.TyExpr_Pred $ rngLift @range EH.PrExpr_Class @classrefname @types.eh
+                                            h = rngLift @range EH.TyExpr_Pred $ panicJust "HS.ToEH.Instance.eh.type.ehMbAsPr" @type.ehMbAsPr
                                             c = map (rngLift @range EH.TyExpr_Pred) @context.eh
                                         in  rngLift @range EH.Decl_Instance (Just (@instancerefname,@useimplicitly)) @instVariant (mkArrow c h) (concat @ehReorderedDecls)
         lhs         .   eh          =   [@eh]
@@ -310,17 +310,6 @@ ehTyExprArg :: EH.TyExpr -> EH.TyExpr
 ehTyExprArg = snd . panicJust "HS.ToEH.ehTyExprArg" . isApp1 . unTop
 %%]
 
-%%[7777.ehTyExprArg hs
-ehTyExprArg :: EH.TyExpr -> EH.TyExpr
-ehTyExprArg (EH.TyExpr_App  _ a) = a
-ehTyExprArg (EH.TyExpr_AppTop e) = ehTyExprArg e
-%%]
-%%[9999 -7.ehTyExprArg hs
-ehTyExprArg :: EH.TyExpr -> EH.TyExpr
-ehTyExprArg (EH.TyExpr_App  _ _ a) = a
-ehTyExprArg (EH.TyExpr_AppTop _ e) = ehTyExprArg e
-%%]
-
 %%[1
 ATTR Types [ | | eh USE {:} {[]}: {[EH.TyExpr]} ]
 
@@ -343,7 +332,7 @@ SEM Type
 %%][9
     | InfixApplication
         loc         .   (eh,ctxtFormErrs,isPredOp)
-                                    =   if @operator.isPrArrow && not @lhs.isAsPred
+                                    =   if not @lhs.isAsPred && @operator.tyConIs == TyConIsPrArrow
                                         then let t = foldr mk1Arrow @rightType.eh [ pr | (Just pr) <- @leftType.ehMbAsTyPrL ]
                                              in  if all isJust @leftType.ehMbAsTyPrL
                                                  then (t, []                                                  , True )
@@ -446,11 +435,19 @@ SEM ContextItem
         loc         .   eh          =   rngLift @range EH.PrExpr_Class @refname @types.eh
     | Implicits NoImplicits
         loc         .   eh          =   undefined -- may not occur nested
+%%[[10
+    | RowLacksLabel
+        loc         .   eh          =   rngLift @range EH.PrExpr_Lacks (rngLift @range EH.RowTyExpr_Var @rowvariable) @name
+%%]]
 %%[[13
     | Arrow
         loc         .   eh          =   rngLift @range EH.PrExpr_Arrow @argument.eh @result.eh
     | Forall
         loc         .   eh          =   foldr (rngLift @range EH.PrExpr_Forall) @context.eh @typevariables
+%%]]
+%%[[31
+    | Equal
+        loc         .   eh          =   rngLift @range EH.PrExpr_Eq @type1.eh @type2.eh
 %%]]
 
 SEM ContextItem
@@ -460,11 +457,6 @@ SEM ContextItem
         loc         .   ehTy        =   rngLift @range EH.TyExpr_Impls
     | NoImplicits
         loc         .   ehTy        =   rngLift @range EH.TyExpr_NoImpls
-%%]
-%%[10
-SEM ContextItem
-    | RowLacksLabel
-        loc         .   eh          =   rngLift @range EH.PrExpr_Lacks (rngLift @range EH.RowTyExpr_Var @rowvariable) @name
 %%]
 
 %%[5
@@ -578,21 +570,26 @@ ATTR Type [ | | ehMbAsPr: {Maybe EH.PrExpr} ]
 SEM Type
     | NormalApplication
         loc         .   ehMbAsPr    =   case @function.mbRefConNm of
-                                          Just conNm
+                                          Just conNm | @lhs.isAsPred
                                             -> Just $ rngLift @range EH.PrExpr_Class conNm @arguments.eh
                                           _ -> Nothing
     | Forall
         loc         .   ehMbAsPr    =   foldr (\tv pr -> fmap (rngLift @range EH.PrExpr_Forall tv) pr) @type.ehMbAsPr @typevariables
     | InfixApplication
         loc         .   ehMbAsPr    =   case (@leftType.ehMbAsPr,@rightType.ehMbAsPr) of
-                                          (Just l,Just r) | @operator.isPrArrow && @lhs.isAsPred
+                                          (Just l,Just r) | @operator.tyConIs == TyConIsPrArrow && @lhs.isAsPred
                                             -> Just $ rngLift @range EH.PrExpr_Arrow l r
-                                          (Nothing,Nothing) | isJust @operator.mbRefConNm && @lhs.isAsPred
-                                            -> Just $ rngLift @range EH.PrExpr_Class (fromJust @operator.mbRefConNm) [@leftType.eh,@rightType.eh]
+                                          (Nothing,Nothing) | @lhs.isAsPred
+                                            -> case @operator.tyConIs of
+                                                 TyConIsPrArrow -> Just $ rngLift @range EH.PrExpr_Class (fromJust @operator.mbRefConNm) [@leftType.eh,@rightType.eh]
+%%[[31
+                                                 TyConIsEqTilde -> Just $ rngLift @range EH.PrExpr_Eq @leftType.eh @rightType.eh
+%%]]
+                                                 TyConIsOther   -> Just $ rngLift @range EH.PrExpr_Class (fromJust @operator.mbRefConNm) [@leftType.eh,@rightType.eh]
                                           _ -> Nothing
-    | InfixApplicationChainTop
+    | InfixApplicationChainTop Parenthesized Annotate
         loc         .   ehMbAsPr    =   @type.ehMbAsPr
-    | * - NormalApplication Forall InfixApplication InfixApplicationChainTop
+    | * - NormalApplication Forall InfixApplication InfixApplicationChainTop Parenthesized Annotate
         loc         .   ehMbAsPr    =   Nothing
 
 ATTR Type AllRowTypeUpdate [ | | ehMbAsPrL USE {++} {[]}: {[Maybe EH.PrExpr]} ]
@@ -600,7 +597,9 @@ ATTR Type AllRowTypeUpdate [ | | ehMbAsPrL USE {++} {[]}: {[Maybe EH.PrExpr]} ]
 SEM Type
     | RowRecUpdate
         loc         .   ehMbAsPrL   =   @rowTypeUpdates.ehMbAsPrL
-    | * - RowRecUpdate Parenthesized
+    | Parenthesized Annotate
+        loc         .   ehMbAsPrL   =   @type.ehMbAsPrL
+    | * - RowRecUpdate Parenthesized Annotate
         loc         .   ehMbAsPrL   =   [@ehMbAsPr]
 
 SEM RowTypeUpdate

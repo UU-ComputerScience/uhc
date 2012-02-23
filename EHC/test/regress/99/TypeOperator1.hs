@@ -26,7 +26,7 @@ liftA2 = undefined
 class a :=: b where
   (===) :: a -> b -> Bool
 
-f1 :: (a :=: b) => a -> b -> Bool
+f1 :: (a :=: b, a ~ b) => a -> b -> Bool
 f1 = undefined
 
 main = return ()

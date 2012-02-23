@@ -2,7 +2,7 @@
 %%% Constraint Handling Rules: Constraint language
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(9 hmtyinfer || hmtyast) module {%{EH}CHR.Constraint} import({%{EH}Base.Common},{%{EH}Ty},{%{EH}CHR},{%{EH}CHR.Key},{%{EH}Base.TreeTrie},{%{EH}Base.Trie},{%{EH}Substitutable})
+%%[(9 hmtyinfer || hmtyast) module {%{EH}CHR.Constraint} import({%{EH}Base.Common},{%{EH}Ty},{%{EH}CHR},{%{EH}CHR.Key},{%{EH}Base.TreeTrie},{%{EH}Substitutable})
 %%]
 
 %%[(9 hmtyinfer || hmtyast) import(EH.Util.Pretty as PP, EH.Util.Utils)
@@ -67,10 +67,12 @@ cnstrReducablePart (Assume p) = Just ("Ass",p,Assume)
 cnstrReducablePart _          = Nothing
 %%]
 
-%%[(9 hmtyinfer || hmtyast)
+%%[(9999 hmtyinfer || hmtyast)
 instance Keyable p => Keyable (Constraint p info) where
   toKey c = maybe [] (\(s,p,_) -> TK_One TKK_Normal (Key_Str s) : toKey p) $ cnstrReducablePart c
+%%]
 
+%%[(9 hmtyinfer || hmtyast)
 instance (CHRMatchable env p s) => CHRMatchable env (Constraint p info) s where
   chrMatchTo env s c1 c2
     = do { (_,p1,_) <- cnstrReducablePart c1

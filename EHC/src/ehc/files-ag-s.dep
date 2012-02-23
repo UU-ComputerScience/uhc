@@ -10,7 +10,6 @@ AnaDomain/Trf/Subst.cag
 Ty/Ftv.cag
 Ty/UsedNames.cag
 Ty/ToTyCore.cag
-Ty/TrieKey.cag
 Ty/TreeTrieKey.cag
 Ty/Pretty.cag
 Ty/PrettyHTML.cag
