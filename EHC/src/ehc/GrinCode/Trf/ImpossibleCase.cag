@@ -25,25 +25,25 @@ Assumptions:
 - scrutinizer is a simple variable
 
 
-%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.ImpossibleCase} export(impossibleCase)
+%%[(8 codegen grin wholeprogAnal) hs module {%{EH}GrinCode.Trf.ImpossibleCase} export(impossibleCase)
 %%]
 
 
-%%[(8 codegen grin) ag import({GrinCode/AbsSyn})
+%%[(8 codegen grin wholeprogAnal) ag import({GrinCode/AbsSyn})
 %%]
-%%[(8 codegen grin) hs import(qualified Data.Map as Map, {%{EH}Base.Common(HsName, CTagsMp)})
+%%[(8 codegen grin wholeprogAnal) hs import(qualified Data.Map as Map, {%{EH}Base.Common(HsName, CTagsMp)})
 %%]
-%%[(8 codegen grin) hs import({%{EH}GrinCode})
+%%[(8 codegen grin wholeprogAnal) hs import({%{EH}GrinCode})
 %%]
-%%[(8 codegen grin) hs import({%{EH}GrinCode.Common(HptMap, getTags, getNr, getEnvVar)})
+%%[(8 codegen grin wholeprogAnal) hs import({%{EH}GrinCode.Common(HptMap, getTags, getNr, getEnvVar)})
 %%]
-%%[(8 codegen grin) hs import(Debug.Trace)
+%%[(8 codegen grin wholeprogAnal) hs import(Debug.Trace)
 %%]
-%%[(8 codegen grin)
+%%[(8 codegen grin wholeprogAnal)
 WRAPPER GrAGItf
 %%]
 
-%%[(8 codegen grin) hs
+%%[(8 codegen grin wholeprogAnal) hs
 impossibleCase :: (GrModule,HptMap) -> GrModule
 impossibleCase (input,hptMap)
   = let inh = Inh_GrAGItf {hptMap_Inh_GrAGItf=hptMap}
@@ -51,7 +51,7 @@ impossibleCase (input,hptMap)
     in  grTrf_Syn_GrAGItf syn
 %%]
 
-%%[(8 codegen grin)
+%%[(8 codegen grin wholeprogAnal)
 -- synthesize a modified copy
 ATTR GrAGItf   [ | | grTrf: GrModule ]
 ATTR AllNT     [ | | grTrf: SELF     ]
@@ -82,7 +82,7 @@ SEM GrAltL
                                    else             @tl.grTrf
 %%]
 
-%%[(8 codegen grin)
+%%[(8 codegen grin wholeprogAnal)
 ATTR GrPatAlt [ | | tag: GrTag ]
 ATTR GrVal    [ | | varId: {Either Int GrTag} ]
 

@@ -1207,6 +1207,9 @@ DATA Pattern
     | Irrefutable
         range                    : Range
         pattern                  : Pattern
+    | Bang
+        range                    : Range
+        pattern                  : Pattern
 %%]
 %%[55
     | Successor                    -- n+k patterns        

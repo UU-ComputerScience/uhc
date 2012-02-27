@@ -3,26 +3,26 @@
 %include afp.fmt
 %%]
 
-%%[(8 codegen grin) import({Silly/AbsSyn})
+%%[(8 codegen grin wholeprogAnal wholeprogC) import({Silly/AbsSyn})
 %%]
-%%[(8 codegen grin).wrapper
+%%[(8 codegen grin wholeprogAnal wholeprogC).wrapper
 WRAPPER SilModule
 %%]
 
-%%[(8 codegen grin) hs module {%{EH}Silly.InlineExpr} export(inlineExpr)
+%%[(8 codegen grin wholeprogAnal wholeprogC) hs module {%{EH}Silly.InlineExpr} export(inlineExpr)
 %%]
-%%[(8 codegen grin) hs import({%{EH}Silly})
+%%[(8 codegen grin wholeprogAnal wholeprogC) hs import({%{EH}Silly})
 %%]
-%%[(8 codegen grin) hs import({%{EH}Base.Common})
+%%[(8 codegen grin wholeprogAnal wholeprogC) hs import({%{EH}Base.Common})
 %%]
-%%[(8 codegen grin) hs import({%{EH}Opts})
+%%[(8 codegen grin wholeprogAnal wholeprogC) hs import({%{EH}Opts})
 %%]
-%%[(8 codegen grin) hs import(qualified Data.Map as Map)
+%%[(8 codegen grin wholeprogAnal wholeprogC) hs import(qualified Data.Map as Map)
 %%]
-%%[(8 codegen grin) hs import(qualified Data.Set as Set)
+%%[(8 codegen grin wholeprogAnal wholeprogC) hs import(qualified Data.Set as Set)
 %%]
 
-%%[(8 codegen grin) hs
+%%[(8 codegen grin wholeprogAnal wholeprogC) hs
 inlineExpr :: EHCOpts -> SilModule -> SilModule
 inlineExpr options input   
   = let t = wrap_SilModule (sem_SilModule input)
@@ -30,7 +30,7 @@ inlineExpr options input
     in trf_Syn_SilModule t
 %%]
 
-%%[(8 codegen grin)
+%%[(8 codegen grin wholeprogAnal wholeprogC)
 
 ATTR SilModule   [ opts : {EHCOpts} | | ]
 
@@ -167,7 +167,7 @@ SEM Value
 
 %%]
 
-%%[(8 codegen grin) hs
+%%[(8 codegen grin wholeprogAnal wholeprogC) hs
 
 isSP :: Variable -> Bool
 isSP (Variable_SP)          = True

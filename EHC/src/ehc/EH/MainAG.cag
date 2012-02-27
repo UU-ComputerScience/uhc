@@ -490,8 +490,9 @@ SEM PatExpr
   | * - Var VarAs
                 loc         .   mbTopNm             =   Nothing
 %%][8
-  | Irrefutable loc         .   mbTopNm             =   @patExpr.mbTopNm
-  | * - Var VarAs Irrefutable
+  | Irrefutable Bang
+  				loc         .   mbTopNm             =   @patExpr.mbTopNm
+  | * - Var VarAs Irrefutable Bang
                 loc         .   mbTopNm             =   Nothing
 %%]]
 %%]
@@ -509,7 +510,8 @@ SEM PatExpr
                 loc         .   topNm               =   uidHNm @lUniq
   | SConst      loc         .   topNm               =   uidHNm @lUniq
 %%[[8
-  | Irrefutable loc         .   topNm               =   @patExpr.topNm
+  | Irrefutable Bang
+  				loc         .   topNm               =   @patExpr.topNm
 %%]]
 %%]
 

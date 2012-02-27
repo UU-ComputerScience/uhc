@@ -231,31 +231,3 @@ fsLReorder opts fsL
      in   rowCanonOrderBy compare fsL'
 %%]
 
-%%[(8888 codegen tycore) export(rpbReorder,patBindLOffset)
-rpbReorder :: EHCOpts -> [RPatFld] -> [RPatFld]
-rpbReorder opts pbL
-  =  let  (pbL',_)
-            =  foldr
-                 (\(RPatFld_Fld l o n p) (pbL,exts) 
-                     ->  let  mkOff lbl exts o
-                                =  let nrSmaller = length . filter (\e -> rowLabCmp e lbl == LT) $ exts
-                                   in  acoreBuiltinAddInt opts o nrSmaller
-                         in   ((RPatFld_Fld l (mkOff l exts o) n p):pbL,l:exts)
-                 )
-                 ([],[])
-            $  pbL
-          cmpPB (RPatFld_Fld l1 _ _ _)  (RPatFld_Fld l2 _ _ _) = rowLabCmp l1 l2
-     in   sortBy cmpPB pbL'
-
-patBindLOffset :: [RPatFld] -> ([RPatFld],[ValBindL])
-patBindLOffset
-  =  unzip
-  .  map
-       (\b@(RPatFld_Fld l o n p@(RPat_Var pn _))
-           ->  let  offNm = hsnUniqify HsNameUniqifier_FieldOffset $ rpatNmNm pn
-               in   case o of
-                      Expr_Int _ _ -> (b,[])
-                      _            -> (RPatFld_Fld l (Expr_Var offNm) n p,[mkValBind1 offNm tyInt o])
-       )
-%%]
-

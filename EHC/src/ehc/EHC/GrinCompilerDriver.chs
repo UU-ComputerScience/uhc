@@ -1,121 +1,112 @@
-%%[(1 codegen grin) module {%{EH}EHC.GrinCompilerDriver} export(doCompileGrin)
+%%[(8 codegen grin wholeprogAnal) module {%{EH}EHC.GrinCompilerDriver} export(doCompileGrin)
 %%]
 
-%%[(8 codegen grin) import(System.IO, System.CPUTime, Numeric)
+%%[(8 codegen grin wholeprogAnal) import(System.IO, System.CPUTime, Numeric)
 %%]
-%%[(8 codegen grin) import(Control.Monad.Error, Control.Monad.State, Control.Exception)
+%%[(8 codegen grin wholeprogAnal) import(Control.Monad.Error, Control.Monad.State, Control.Exception)
 %%]
-%%[(8 codegen grin) import(Data.Maybe, Data.Array.IArray, qualified Data.Map as Map, qualified Data.Set as Set)
+%%[(8 codegen grin wholeprogAnal) import(Data.Maybe, Data.Array.IArray, qualified Data.Map as Map, qualified Data.Set as Set)
 %%]
-%%[(8 codegen grin) import(Debug.Trace)
+%%[(8 codegen grin wholeprogAnal) import(Debug.Trace)
 %%]
-%%[(8 codegen grin) import(UU.Parsing)
+%%[(8 codegen grin wholeprogAnal) import(UU.Parsing)
 %%]
-%%[(8 codegen grin) import(EH.Util.Pretty, EH.Util.CompileRun, EH.Util.FPath)
+%%[(8 codegen grin wholeprogAnal) import(EH.Util.Pretty, EH.Util.CompileRun, EH.Util.FPath)
 %%]
-%%[(8 codegen grin) import({%{EH}Base.Common}, {%{EH}Base.Target}, {%{EH}Base.Builtin}, {%{EH}Opts}, {%{EH}Scanner.Scanner}, {%{EH}Scanner.Common(grinScanOpts)})
+%%[(8 codegen grin wholeprogAnal) import({%{EH}Base.Common}, {%{EH}Base.Target}, {%{EH}Base.Builtin}, {%{EH}Opts}, {%{EH}Scanner.Scanner}, {%{EH}Scanner.Common(grinScanOpts)})
 %%]
-%%[(8 codegen grin) import({%{EH}GrinCode}, {%{EH}GrinCode.Parser}, {%{EH}GrinCode.Pretty})
+%%[(8 codegen grin wholeprogAnal) import({%{EH}GrinCode}, {%{EH}GrinCode.Parser}, {%{EH}GrinCode.Pretty})
 %%]
-%%[(8 codegen grin) import({%{EH}GrinCode.Common})
+%%[(8 codegen grin wholeprogAnal) import({%{EH}GrinCode.Common})
 %%]
-%%[(8 codegen grin) import({%{EH}GrinCode.Trf.DropUnreachableBindings(dropUnreachableBindings)})
+%%[(8 codegen grin wholeprogAnal) import({%{EH}GrinCode.Trf.DropUnreachableBindings(dropUnreachableBindings)})
 %%]
-%%[(8 codegen grin) import({%{EH}GrinCode.Trf.MemberSelect(memberSelect)})
+%%[(8 codegen grin wholeprogAnal) import({%{EH}GrinCode.Trf.MemberSelect(memberSelect)})
 %%]
-%%[(8 codegen grin) import({%{EH}GrinCode.Trf.SimpleNullary(simpleNullary)})
+%%[(8 codegen grin wholeprogAnal) import({%{EH}GrinCode.Trf.SimpleNullary(simpleNullary)})
 %%]
-%%[(8 codegen grin) import({%{EH}GrinCode.Trf.CleanupPass(cleanupPass)})
+%%[(8 codegen grin wholeprogAnal) import({%{EH}GrinCode.Trf.CleanupPass(cleanupPass)})
 %%]
-%%[(97 codegen grin) import({%{EH}GrinCode.Trf.ConstInt(constInt)})
+%%[(97 codegen grin wholeprogAnal) import({%{EH}GrinCode.Trf.ConstInt(constInt)})
 %%]
-%%[(8 codegen grin) import({%{EH}GrinCode.Trf.BuildAppBindings(buildAppBindings)})
+%%[(8 codegen grin wholeprogAnal) import({%{EH}GrinCode.Trf.BuildAppBindings(buildAppBindings)})
 %%]
-%%[(8 codegen grin) import({%{EH}GrinCode.Trf.GlobalConstants(globalConstants)})
+%%[(8 codegen grin wholeprogAnal) import({%{EH}GrinCode.Trf.GlobalConstants(globalConstants)})
 %%]
-%%[(8 codegen grin) import({%{EH}GrinCode.Trf.Inline(grInline)})
+%%[(8 codegen grin wholeprogAnal) import({%{EH}GrinCode.Trf.Inline(grInline)})
 %%]
-%%[(8 codegen grin) import({%{EH}GrinCode.Trf.FlattenSeq(grFlattenSeq)})
+%%[(8 codegen grin wholeprogAnal) import({%{EH}GrinCode.Trf.FlattenSeq(grFlattenSeq)})
 %%]
-%%[(8 codegen grin) import({%{EH}GrinCode.Trf.SetGrinInvariant(setGrinInvariant)})
+%%[(8 codegen grin wholeprogAnal) import({%{EH}GrinCode.Trf.SetGrinInvariant(setGrinInvariant)})
 %%]
-%%[(8 codegen grin) import({%{EH}GrinCode.Trf.CheckGrinInvariant(checkGrinInvariant)})
+%%[(8 codegen grin wholeprogAnal) import({%{EH}GrinCode.Trf.CheckGrinInvariant(checkGrinInvariant)})
 %%]
-%%[(9 codegen grin) import({%{EH}GrinCode.Trf.MergeInstance(mergeInstance)})
+%%[(9 codegen grin wholeprogAnal) import({%{EH}GrinCode.Trf.MergeInstance(mergeInstance)})
 %%]
-%%[(8 codegen grin) import({%{EH}GrinCode.Trf.EvalStored(evalStored)})
+%%[(8 codegen grin wholeprogAnal) import({%{EH}GrinCode.Trf.EvalStored(evalStored)})
 %%]
-%%[(8 codegen grin) import({%{EH}GrinCode.Trf.ApplyUnited(applyUnited)})
+%%[(8 codegen grin wholeprogAnal) import({%{EH}GrinCode.Trf.ApplyUnited(applyUnited)})
 %%]
-%%[(8 codegen grin) import({%{EH}GrinCode.Trf.SpecConst(specConst)})
+%%[(8 codegen grin wholeprogAnal) import({%{EH}GrinCode.Trf.SpecConst(specConst)})
 %%]
-%%[(8 codegen grin) import({%{EH}GrinCode.Trf.NumberIdents(numberIdents)})
+%%[(8 codegen grin wholeprogAnal) import({%{EH}GrinCode.Trf.NumberIdents(numberIdents)})
 %%]
-%%[(8 codegen grin) import({%{EH}GrinCode.Trf.DropUnusedExpr(dropUnusedExpr)})
+%%[(8 codegen grin wholeprogAnal) import({%{EH}GrinCode.Trf.DropUnusedExpr(dropUnusedExpr)})
 %%]
-%%[(8 codegen grin) import({%{EH}GrinCode.PointsToAnalysis(heapPointsToAnalysis)})
+%%[(8 codegen grin wholeprogAnal) import({%{EH}GrinCode.PointsToAnalysis(heapPointsToAnalysis)})
 %%]
-%%[(8 codegen grin) import({%{EH}GrinCode.Trf.InlineEA(inlineEA)})
+%%[(8 codegen grin wholeprogAnal) import({%{EH}GrinCode.Trf.InlineEA(inlineEA)})
 %%]
-%%[(8 codegen grin) import({%{EH}GrinCode.Trf.DropDeadBindings(dropDeadBindings)})
+%%[(8 codegen grin wholeprogAnal) import({%{EH}GrinCode.Trf.DropDeadBindings(dropDeadBindings)})
 %%]
-%%[(8 codegen grin) import({%{EH}GrinCode.Trf.EmptyAlts(emptyAlts)})
+%%[(8 codegen grin wholeprogAnal) import({%{EH}GrinCode.Trf.EmptyAlts(emptyAlts)})
 %%]
-%%[(8 codegen grin) import({%{EH}GrinCode.Trf.LateInline(lateInline)})
+%%[(8 codegen grin wholeprogAnal) import({%{EH}GrinCode.Trf.LateInline(lateInline)})
 %%]
-%%[(8 codegen grin) import({%{EH}GrinCode.Trf.ImpossibleCase(impossibleCase)})
+%%[(8 codegen grin wholeprogAnal) import({%{EH}GrinCode.Trf.ImpossibleCase(impossibleCase)})
 %%]
-%%[(8 codegen grin) import({%{EH}GrinCode.Trf.SingleCase(singleCase)})
+%%[(8 codegen grin wholeprogAnal) import({%{EH}GrinCode.Trf.SingleCase(singleCase)})
 %%]
-%%[(8 codegen grin) import({%{EH}GrinCode.Trf.MergeCase(mergeCase)})
+%%[(8 codegen grin wholeprogAnal) import({%{EH}GrinCode.Trf.MergeCase(mergeCase)})
 %%]
-%%[(8 codegen grin) import({%{EH}GrinCode.Trf.LowerGrin(lowerGrin)})
+%%[(8 codegen grin wholeprogAnal) import({%{EH}GrinCode.Trf.LowerGrin(lowerGrin)})
 %%]
-%%[(8 codegen grin) import({%{EH}GrinCode.Trf.CopyPropagation(copyPropagation)})
+%%[(8 codegen grin wholeprogAnal) import({%{EH}GrinCode.Trf.CopyPropagation(copyPropagation)})
 %%]
-%%[(8 codegen grin) import({%{EH}GrinCode.Trf.SplitFetch(splitFetch)})
+%%[(8 codegen grin wholeprogAnal) import({%{EH}GrinCode.Trf.SplitFetch(splitFetch)})
 %%]
-%%[(8 codegen grin) import({%{EH}GrinCode.ToSilly(grin2silly)})
+%%[(8 codegen grin wholeprogAnal wholeprogC) import({%{EH}GrinCode.ToSilly(grin2silly)})
 %%]
-%%[(8 codegen grin) import({%{EH}Silly(SilModule(..))})
+%%[(8 codegen grin wholeprogAnal wholeprogC) import({%{EH}Silly(SilModule(..))})
 %%]
-%%[(8 codegen grin) import({%{EH}Silly.InlineExpr(inlineExpr)})
+%%[(8 codegen grin wholeprogAnal wholeprogC) import({%{EH}Silly.InlineExpr(inlineExpr)})
 %%]
-%%[(8 codegen grin) import({%{EH}Silly.ElimUnused(elimUnused)})
+%%[(8 codegen grin wholeprogAnal wholeprogC) import({%{EH}Silly.ElimUnused(elimUnused)})
 %%]
-%%[(8 codegen grin) import({%{EH}Silly.GroupAllocs(groupAllocs)})
+%%[(8 codegen grin wholeprogAnal wholeprogC) import({%{EH}Silly.GroupAllocs(groupAllocs)})
 %%]
-%%[(8 codegen grin) import({%{EH}Silly.EmbedVars(embedVars)})
+%%[(8 codegen grin wholeprogAnal wholeprogC) import({%{EH}Silly.EmbedVars(embedVars)})
 %%]
-%%[(8 codegen grin) import({%{EH}Silly.Pretty(pretty)})
+%%[(8 codegen grin wholeprogAnal wholeprogC) import({%{EH}Silly.Pretty(pretty)})
 %%]
-%%[(8 codegen grin) import({%{EH}Silly.PrettyC(prettyC)})
+%%[(8 codegen grin wholeprogAnal wholeprogC) import({%{EH}Silly.PrettyC(prettyC)})
 %%]
-%%[(8 codegen grin llvm) import({%{EH}Silly.ToLLVM(silly2llvm)})
+%%[(8 codegen grin llvm wholeprogAnal wholeprogC) import({%{EH}Silly.ToLLVM(silly2llvm)})
 %%]
-%%[(8 codegen llvm) import({%{EH}LLVM(LLVMModule(..))})
+%%[(8 codegen llvm wholeprogAnal wholeprogC) import({%{EH}LLVM(LLVMModule(..))})
 %%]
-%%[(8 codegen llvm) import({%{EH}LLVM.Pretty(prettyLLVMModule)})
+%%[(8 codegen llvm wholeprogAnal wholeprogC) import({%{EH}LLVM.Pretty(prettyLLVMModule)})
 %%]
-%%[(8 codegen clr) hs import(Language.Cil (Assembly (..), cil))
+%%[(8 codegen clr wholeprogAnal wholeprogC) hs import(Language.Cil (Assembly (..), cil))
 %%]
-%%[(8 codegen clr) import({%{EH}GrinCode.ToCil(grin2cil)})
+%%[(8 codegen clr wholeprogAnal wholeprogC) import({%{EH}GrinCode.ToCil(grin2cil)})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Compilerdriver entry point
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(1 codegen grin).doCompileGrin
-doCompileGrin :: IO ()
-doCompileGrin
-  =  putStrLn "grinc: not available for this version (of ehc). Code generation is added in version 8."
-%%]
-
-
-%%[(8 codegen grin) -1.doCompileGrin
-
-
+%%[(8 codegen grin wholeprogAnal)
 specialize s 
   =    do{ transformCode         evalStored         "EvalStored"       ; caWriteGrin (s++"a-evalstored")
          ; transformCode         applyUnited        "ApplyUnited"      
@@ -130,9 +121,6 @@ specialize s
          ; transformCode         (dropUnreachableBindings False) 
                                              "DropUnreachableBindings" ; caWriteGrin (s++"i-reachable")
          }
-
-
-
 
 doCompileGrin :: Either String (FPath,GrModule)  -> EHCOpts -> IO ()
 doCompileGrin input opts
@@ -225,6 +213,7 @@ doCompileGrin input opts
          ; transformCodeIterated copyPropagation    "copyPropagation"  ; caWriteGrin "-179-final"
                                                                        ; caWriteHptMap "-180-hpt"
 
+%%[[(8 wholeprogC)
          ; when (targetDoesHPTAnalysis (ehcOptTarget options))
            ( do { caGrin2Silly                                         ; caWriteSilly "-201" "sil" pretty ehcOptDumpGrinStages
                 ; transformSilly inlineExpr         "InlineExpr"       ; caWriteSilly "-202" "sil" pretty ehcOptDumpGrinStages
@@ -234,14 +223,14 @@ doCompileGrin input opts
                 -- the GroupAllocs transformation is not compatible with the new EmbedVars tactique of sharing locations.
                 -- GroupAllocs is a bad idea anyway.
 --              ; transformSilly groupAllocs        "GroupAllocs"      ; caWriteSilly "-205" "sil" pretty ehcOptDumpGrinStages
-%%[[(8 codegen llvm)
+%%[[(8 llvm)
                 ; when (ehcOptEmitLLVM options) 
                   (do { caSilly2LLVM
                       ; caWriteLLVM
                       }
                    )
 %%]]
-%%[[(8 codegen clr)
+%%[[(8 clr)
                 ; when (ehcOptEmitCLR options) 
                   (do { caGrin2Cil
                       ; caWriteCil ""
@@ -251,6 +240,7 @@ doCompileGrin input opts
                 ; caWriteSilly "" "c" prettyC ehcOptEmitC
                 }
            )
+%%]]
          }
       
 initialState opts (Left fn)          = (initState opts) {gcsPath=mkTopLevelFPath "grin" fn}
@@ -258,19 +248,24 @@ initialState opts (Right (fp,grmod)) = (initState opts) {gcsPath=fp, gcsGrin=grm
 
 initState opts
   = GRINCompileState { gcsGrin       = GrModule_Mod hsnUnknown [] [] Map.empty
+%%[[(8 wholeprogC)
                      , gcsSilly      = SilModule_SilModule [] [] []
-%%]
-%%[(8 codegen llvm)
+%%]]
+%%[[(8 llvm wholeprogC)
                      , gcsLLVM       = LLVMModule_LLVMModule [] [] [] [] [] []
-%%]
-%%[(8 codegen clr)
+%%]]
+%%[[(8 clr wholeprogC)
                      , gcsCil        = panic "GrinCompilerDriver.initState.gcsCil"
-%%]
-%%[(8 codegen grin) -1.doCompileGrin
+%%]]
+%%[[(8 grin)
                      , gcsHptMap     = listArray (1,0) []
                      , gcsPath       = emptyFPath
                      , gcsOpts       = opts
                      }
+%%]]
+%%]
+
+%%[(8 codegen grin wholeprogAnal)
 putErrs (CompileError e) = putStrLn e >> return ()
 %%]
 
@@ -279,7 +274,7 @@ putErrs (CompileError e) = putStrLn e >> return ()
 %%% Low level compiler actions: input
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin)
+%%[(8 codegen grin wholeprogAnal)
 parseGrin :: FPath -> IO GrModule
 parseGrin path
   = do{ (fn,fh) <- openFPath path ReadMode False
@@ -301,7 +296,7 @@ caParseGrin
 %%% Low level compiler actions: processing
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin)
+%%[(8 codegen grin wholeprogAnal)
 
 caHeapPointsTo :: CompileAction ()
 caHeapPointsTo = task VerboseALot "Heap-points-to analysis"
@@ -312,6 +307,7 @@ caHeapPointsTo = task VerboseALot "Heap-points-to analysis"
          }
      ) (\i -> Just $ show i ++ " iteration(s)")
 
+%%[[(8 wholeprogC)
 caGrin2Silly :: CompileAction ()
 caGrin2Silly = do
     { code <- gets gcsGrin
@@ -320,10 +316,10 @@ caGrin2Silly = do
     ; let silly = grin2silly hptMap code opts
     ; modify (gcsUpdateSilly silly)
     }
-
+%%]]
 %%]
 
-%%[(8 codegen llvm)
+%%[(8 codegen llvm wholeprogAnal wholeprogC)
 caSilly2LLVM :: CompileAction ()
 caSilly2LLVM = do
     { code <- gets gcsSilly
@@ -333,7 +329,7 @@ caSilly2LLVM = do
     }
 %%]
 
-%%[(8 codegen clr)
+%%[(8 codegen clr wholeprogAnal wholeprogC)
 caGrin2Cil :: CompileAction ()
 caGrin2Cil = do
     { code <- gets gcsGrin
@@ -349,7 +345,7 @@ caGrin2Cil = do
 %%% Low level compiler actions: output
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin)
+%%[(8 codegen grin wholeprogAnal)
 caWriteFile :: String -> String -> (EHCOpts -> a -> PP_Doc) -> a -> CompileAction()
 caWriteFile extra suffix ppFun struct =
   do { input <- gets gcsPath
@@ -361,7 +357,7 @@ caWriteFile extra suffix ppFun struct =
           }
      }
 
-%%[[(8 codegen llvm)
+%%[[(8 llvm)
 caWriteLLVM  :: CompileAction()
 caWriteLLVM  =
   do { llvm <- gets gcsLLVM
@@ -369,7 +365,7 @@ caWriteLLVM  =
      }
 %%]]
 
-%%[[(8 codegen clr)
+%%[[(8 clr wholeprogC)
 caWriteCil :: String -> CompileAction()
 caWriteCil extra =
   do { cilAst <- gets gcsCil
@@ -387,6 +383,7 @@ caWriteGrin extra
            )
        }
      
+%%[[(8 wholeprogC)
 caWriteSilly :: String -> String -> (EHCOpts -> SilModule -> PP_Doc) -> (EHCOpts->Bool) -> CompileAction ()
 caWriteSilly extra suffix ppFun cond =
   do { opts <- gets gcsOpts
@@ -396,6 +393,7 @@ caWriteSilly extra suffix ppFun cond =
                 }
             )
      }
+%%]]
 
 caWriteHptMap :: String -> CompileAction ()
 caWriteHptMap fn
@@ -418,14 +416,16 @@ caWriteHptMap fn
 %%% Compilerdriver utilities
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin).State
+%%[(8 codegen grin wholeprogAnal).State
 data GRINCompileState = GRINCompileState
     { gcsGrin      :: !GrModule
+%%[[(8 wholeprogC)
     , gcsSilly     :: !SilModule
-%%[[(8 codegen llvm)
+%%]]
+%%[[(8 llvm wholeprogC)
     , gcsLLVM      :: !LLVMModule
 %%]]
-%%[[(8 codegen clr)
+%%[[(8 clr wholeprogC)
     , gcsCil       :: Assembly
 %%]]
     , gcsHptMap    :: !HptMap
@@ -434,11 +434,13 @@ data GRINCompileState = GRINCompileState
     }
 
 gcsUpdateGrin   x s = s { gcsGrin   = x }
+%%[[(8 wholeprogC)
 gcsUpdateSilly  x s = s { gcsSilly  = x }
-%%[[(8 codegen llvm)
+%%]]
+%%[[(8 llvm wholeprogC)
 gcsUpdateLLVM   x s = s { gcsLLVM   = x }
 %%]]
-%%[[(8 codegen clr)
+%%[[(8 clr wholeprogC)
 gcsUpdateCil    x s = s { gcsCil    = x }
 %%]]
 gcsUpdateHptMap x s = s { gcsHptMap = x }
@@ -513,6 +515,7 @@ transformCodeIterated process message
          if changed then (caFixCount $ n+1) else return n
 
 
+%%[[(8 wholeprogC)
 transformSilly :: (EHCOpts->SilModule->SilModule) -> String -> CompileAction ()
 transformSilly process message 
   = do { putMsg VerboseALot message Nothing
@@ -520,11 +523,11 @@ transformSilly process message
        ; options <- gets gcsOpts
        ; modify (gcsUpdateSilly (process options silly))
        }
-
+%%]]
 %%]
 
 
-%%[(8 codegen grin).Errors
+%%[(8 codegen grin wholeprogAnal).Errors
 newtype CompileError = CompileError String
     deriving (Show)
 
@@ -537,7 +540,7 @@ instance Error CompileError where
 %%% Compilerdriver abstractions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin).CompilerDriver
+%%[(8 codegen grin wholeprogAnal).CompilerDriver
 type CompileAction a = ErrorT CompileError (StateT GRINCompileState IO) a
 
 drive :: GRINCompileState -> (CompileError -> IO a) -> CompileAction a -> IO a
@@ -551,7 +554,7 @@ drive initState errorHandler action = do
 
 %%]
 
-%%[(8 codegen grin).errorHandling
+%%[(8 codegen grin wholeprogAnal).errorHandling
 ignoreErrors :: (Monad m) => a -> b -> m a
 -- ignoreErrors = const . return -- does not typecheck in HM (but does in ML-F)
 ignoreErrors v e = return v
@@ -569,7 +572,7 @@ force :: a -> CompileAction a
 force = liftIO . evaluate
 %%]
 
-%%[(8 codegen grin)
+%%[(8 codegen grin wholeprogAnal)
 putMsg :: Verbosity -> String -> (Maybe String) -> CompileAction ()
 putMsg minVerbosity msg mbMsg =  harden_ $ do
     currentVerbosity <- gets (ehcOptVerbosity . gcsOpts)

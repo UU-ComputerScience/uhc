@@ -37,14 +37,14 @@ type CaseFailSubst' e m b ba t = CSubst' e m b ba t
 -- | Env to support Reordering of Case Expression (RCE)
 data RCEEnv' expr metaval bind bindasp ty
   = RCEEnv
-      { rceValGam           :: !ValGam					-- type of value (amongst other)
-      , rceTyVarMp          :: !VarMp					-- tvar bindings for ValGam
-      , rceDataGam          :: !DataGam					-- data type + constructor info
-      , rceCaseFailSubst    :: !(CaseFailSubst' expr metaval bind bindasp ty)	-- fail continuation map
-      , rceCaseIds          :: !UIDS					-- fail ids
-      , rceCaseCont         :: !expr					-- continuation
-      , rceEHCOpts          :: !EHCOpts					-- options
-      -- , rceIsStrict			:: !Bool				-- scrutinee must be evaluated
+      { rceValGam           :: !ValGam                  -- type of value (amongst other)
+      , rceTyVarMp          :: !VarMp                   -- tvar bindings for ValGam
+      , rceDataGam          :: !DataGam                 -- data type + constructor info
+      , rceCaseFailSubst    :: !(CaseFailSubst' expr metaval bind bindasp ty)   -- fail continuation map
+      , rceCaseIds          :: !UIDS                    -- fail ids
+      , rceCaseCont         :: !expr                    -- continuation
+      , rceEHCOpts          :: !EHCOpts                 -- options
+      -- , rceIsStrict          :: !Bool                -- scrutinee must be evaluated
       }
 
 emptyRCEEnv :: (AbstractCore e m b basp bcat mbind t p pr pf a) => EHCOpts -> RCEEnv' e m b ba t
@@ -162,7 +162,7 @@ type MbPatRest' pr = Maybe (pr,Int) -- (pat rest, arity)
 -- |   - or, when only a single alternative binding a single field, bind it directly with a let
 acoreStrictSatCaseMetaTy :: (Eq bcat, AbstractCore e m b basp bcat mbind t p pr pf a) => RCEEnv' e m b ba t -> Maybe (HsName,t) -> m -> e -> [a] -> e
 acoreStrictSatCaseMetaTy env mbNm meta e []
-  = rceCaseCont env			-- TBD: should be error message "scrutinizing datatype without constructors"
+  = rceCaseCont env         -- TBD: should be error message "scrutinizing datatype without constructors"
 acoreStrictSatCaseMetaTy env mbNm meta e [alt] -- [CAlt_Alt (CPat_Con (CTag tyNm _ _ _ _) CPatRest_Empty [CPatFld_Fld _ _ pnm _]) ae]
   | isJust mbPatCon && length flds == 1 && not (ctagIsRec tg) && isJust mbDgi && dgiIsNewtype (fromJust mbDgi)
   = acoreLet cat
@@ -383,7 +383,11 @@ acoreMatchTupleTy env fldNmL ty ok e
 
 %%[(8 codegen) hs
 data RCESplitCateg
-  = RCESplitVar UIDS | RCESplitCon | RCESplitConMany | RCESplitConst | RCESplitIrrefutable
+  = RCESplitVar UIDS
+  | RCESplitCon
+  | RCESplitConMany
+  | RCESplitConst
+  | RCESplitIrrefutable
 %%[[97
   | RCESplitBoolExpr
 %%]]
@@ -410,6 +414,7 @@ rceSplit f (x:xs@(x':_))
 %%]
 
 %%[(8 codegen) hs
+-- | Add bindings from the name n of each alt to nm, to take care of different namings
 rceRebinds :: (Eq bcat, AbstractCore e m b basp bcat mbind t p pr pf a) => Bool -> (HsName,t) -> RCEAltL' e t b pr -> [b]
 rceRebinds origOnly (nm,ty) alts
   = [ acoreBind1Ty n ty (acoreVar nm) | pn <- raltLPatNms alts, alsoUniq || rpatNmIsOrig pn, let n = rpatNmNm pn, n /= nm ]
@@ -419,10 +424,16 @@ rceRebinds origOnly (nm,ty) alts
 %%[(8 codegen) hs
 rceMatchVar :: (Eq bcat, AbstractCore e m b basp bcat mbind t p pr pf a, CSubstitutable e m b ba t e) => RCEEnv' e m b ba t ->  [(HsName,t)] -> RCEAltL' e t b pr -> e
 rceMatchVar env ((arg,ty):args') alts
-  = -- acoreLet acoreBindcategPlain (rceRebinds True (arg,ty) alts) remMatch
-    remMatch
-  where -- remMatch  = rceMatchTy env args' [RAlt_Alt remPats e f | a@(RAlt_Alt (RPat_Var _ _ : remPats) e f) <- alts]
-        remMatch  = rceMatchTy env args' [RAlt_Alt remPats (acoreLet acoreBindcategPlain (rceRebinds True (arg,ty) [a]) e) f | a@(RAlt_Alt (RPat_Var _ _ : remPats) e f) <- alts]
+  = remMatch
+  where remMatch
+          = rceMatchTy env args'
+              [ RAlt_Alt remPats (mk $ acoreLet acoreBindcategPlain (rceRebinds True (arg',ty) [a]) e) f
+              | a@(RAlt_Alt (RPat_Var _ _ mustEval : remPats) e f) <- alts
+              , let (arg',mk) = if mustEval
+                                then let argStrict = hsnUniqify HsNameUniqifier_Strict arg
+                                     in  (argStrict,acoreLet1StrictTy argStrict ty (acoreVar arg))
+                                else (arg,id)
+              ]
 
 rceMatchIrrefutable :: (Eq bcat, AbstractCore e m b basp bcat mbind t p pr pf a, CSubstitutable e m b ba t e) => RCEEnv' e m b ba t ->  [(HsName,t)] -> RCEAltL' e t b pr -> e
 rceMatchIrrefutable env (argty@(arg,ty):args') alts@[RAlt_Alt (RPat_Irrefutable n _ b : remPats) e f]
@@ -582,7 +593,7 @@ acoreRPatBindL2BindL env hasSub parNm ct rest pbL
                         pn  = parNm
                         pn' = hsnUniqifyEval pn
                         mkc n (Just o) = acoreExprSatSelCaseTy env (Just (pn',ty pn')) (acoreVar pn) ct n {- l -} o rest
-                        mkc n Nothing  = acoreSelCaseTy    env (Just (pn',ty pn')) (acoreVar pn) ct n {- l -} o rest
+                        mkc n Nothing  = acoreSelCaseTy        env (Just (pn',ty pn')) (acoreVar pn) ct n {- l -} o rest
                         ty n = acoreTyErr ("acoreRPatBindL2BindL: " ++ show n)
                    in   case rcpPNm p of
                             RPatNmOrig n           -> b n
@@ -592,37 +603,6 @@ acoreRPatBindL2BindL env hasSub parNm ct rest pbL
     $  pbL
 %%]
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% RPatFld utils
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8888 codegen) export(acoreRpbReorder,acoreRPatFldLSplitToOffset)
-acoreRpbReorder :: (AbstractCore e m b basp bcat mbind t p pr pf a) => EHCOpts -> [RPatFld' e t b pr] -> [RPatFld' e t b pr]
-acoreRpbReorder opts pbL
-  =  let  (pbL',_)
-            =  foldr
-                 (\(RPatFld_Fld l o n p) (pbL,exts) 
-                     ->  let  mkOff lbl exts o
-                                =  let nrSmaller = length . filter (\e -> rowLabCmp e lbl == LT) $ exts
-                                   in  acoreBuiltinAddInt opts o nrSmaller
-                         in   ((RPatFld_Fld l (mkOff l exts o) n p):pbL,l:exts)
-                 )
-                 ([],[])
-            $  pbL
-          cmpPB (RPatFld_Fld l1 _ _ _)  (RPatFld_Fld l2 _ _ _) = rowLabCmp l1 l2
-     in   sortBy cmpPB pbL'
-
-acoreRPatFldLSplitToOffset :: (Eq bcat, AbstractCore e m b basp bcat mbind t p pr pf a) => [RPatFld' e t b pr] -> ([RPatFld' e t b pr],[[b]])
-acoreRPatFldLSplitToOffset
-  =  unzip
-  .  map
-       (\b@(RPatFld_Fld l o n p@(RPat_Var pn _))
-           ->  let  offNm = hsnUniqify HsNameUniqifier_FieldOffset $ rpatNmNm pn
-               in   case acoreExprMbInt o of
-                      Just _ -> (b,[])
-                      _      -> (RPatFld_Fld l (acoreVar offNm) n p,[acoreBind1Ty offNm acoreTyInt o])
-       )
-%%]
 
 
 

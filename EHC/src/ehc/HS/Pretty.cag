@@ -581,6 +581,8 @@ SEM Pattern
 %%[8
     | Irrefutable
         loc         .   pp          =   "~" >|< @pattern.pp
+    | Bang
+        loc         .   pp          =   "!" >|< @pattern.pp
 %%]
 %%[55
     | Successor                    -- n+k patterns        

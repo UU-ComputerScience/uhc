@@ -14,17 +14,17 @@ Inspects the HPT table and updates it for introduced fresh variables.
 %include afp.fmt
 %%]
 
-%%[(8 codegen grin) ag import({GrinCode/AbsSyn})
+%%[(8 codegen grin wholeprogAnal) ag import({GrinCode/AbsSyn})
 %%]
 
-%%[(8 codegen grin).wrapper
+%%[(8 codegen grin wholeprogAnal).wrapper
 WRAPPER GrAGItf
 %%]
-%%[(8 codegen grin) hs import(Debug.Trace)
+%%[(8 codegen grin wholeprogAnal) hs import(Debug.Trace)
 %%]
 
 
-%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.LowerGrin} import({%{EH}Base.Common}, {%{EH}GrinCode.Common}, qualified Data.Set as Set, qualified Data.Map as Map, Data.List, Data.Monoid, Data.Maybe, {%{EH}GrinCode}) export(lowerGrin)
+%%[(8 codegen grin wholeprogAnal) hs module {%{EH}GrinCode.Trf.LowerGrin} import({%{EH}Base.Common}, {%{EH}GrinCode.Common}, qualified Data.Set as Set, qualified Data.Map as Map, Data.List, Data.Monoid, Data.Maybe, {%{EH}GrinCode}) export(lowerGrin)
 
 lowerGrin :: (GrModule,HptMap) -> (GrModule,HptMap)
 lowerGrin (input,hptMap)
@@ -34,7 +34,7 @@ lowerGrin (input,hptMap)
 
 %%]
 
-%%[(8 codegen grin)
+%%[(8 codegen grin wholeprogAnal)
 
 ATTR AllNT     [ | | grTrf: SELF     ]
 ATTR GrAGItf   [ | | grTrf: GrModule ]
@@ -65,7 +65,7 @@ SEM GrAGItf
 
 %%]
 
-%%[(8 codegen grin) hs
+%%[(8 codegen grin wholeprogAnal) hs
 
 tagArity (GrTag_Con ann _ nm)  = gtannArity ann
 
@@ -83,7 +83,7 @@ fillgaps (t1@(n1,v1):t2rest@((n2,v2):rest)) = t1 : [(n,AbsBottom) | n<-[n1+1..n2
 %% Vectorisation %%
 %%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin) hs
+%%[(8 codegen grin wholeprogAnal) hs
 type HptItems       = [ (Int,AbstractValue) ]
 
 containsNonbottom :: [AbstractValue] -> Bool
@@ -138,7 +138,7 @@ isSingleVar hptMap (HNmNr nr _)
 %%]
 
 
-%%[(8 codegen grin)
+%%[(8 codegen grin wholeprogAnal)
 ATTR AllNT     [ subst : {Map.Map HsName GrVal} | |  ]
 ATTR GrPatLam  [ | | subst : {Map.Map HsName GrVal}  ]
 
@@ -231,7 +231,7 @@ SEM GrExpr
 
 
 
-%%[(8 codegen grin)
+%%[(8 codegen grin wholeprogAnal)
 -- return the fields of pattern and value to the Alternative node
 ATTR GrPatAlt [ | | patFieldL: {[HsName]} patTag: GrTag ]
 

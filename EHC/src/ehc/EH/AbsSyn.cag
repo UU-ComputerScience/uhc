@@ -446,6 +446,7 @@ DATA PatExpr
 %%[8
 DATA PatExpr
   | Irrefutable     patExpr         : PatExpr
+  | Bang	     	patExpr         : PatExpr
 %%]
 
 %%[97

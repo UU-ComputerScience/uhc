@@ -2,8 +2,16 @@
 %include IdentColors.fmt
 %include Javascript.fmt
 
+%format a_1
+%format a_i
+%format a_j
+%format a_n
+%format MANY   = "\!^{*}"
+%format ::= = "::="
+
 % defs etc
 \newcommand{\todo}[1]{{\color{red}#1}}
+%\newcommand{\Coloneqq}[1]{{::=}}
 %%]
 
 %%[abstract
@@ -42,9 +50,17 @@ Finally we wrap up in Sections~\ref{relatedWork} and \ref{conclusion}.
 
 %%[JuniorCollegeApp
 \label{JuniorCollegeApp}
-The JCU app ...
+The JCU app ... Figure~\ref{jcuapp}
 
 \todo{Structure: server (snap?), GUI, NanoProlog.}
+
+\begin{figure}[t]
+\hrule\vspace{2mm}
+\FigCenterPDF{.23}{JCU1}
+\caption{JCU application (in Dutch)}
+\label{jcuapp}
+\end{figure}
+
 %%]
 
 %%[HaskellToJavaScript
@@ -224,11 +240,100 @@ where the first element for a datatype constructor holds a tag.
 
 %%[UseOfExistingJavaScriptStuff
 \label{UseOfExistingJavaScriptStuff}
-What makes translating to JavaScript so attractive is not that JavaScript is such an interesting language,
-but that many libraries are built in JavaScript and available for use inside a browser environment.
-We also do not aim to make Haskell into an OO programming platform,
-but aim to facilitate the use of existing libraries in Haskell.
-Similarly to other external library use from Haskell we use the Foreign Function Interface (FFI) for this purpose.
+What makes translating to JavaScript so attractive is that libraries can be accessed via
+the Foreign Function Interface (FFI),
+and we thus can avoid programming in JavaScript.
+For example, the globally (in a web browser environment) available function |alert|,
+which pops up an alert window,
+can be interfaced to by the following FFI declaration:
+
+\begin{code}
+foreign import js "alert(%*)"
+  _alert :: JSString -> IO ()
+\end{code}
+
+The type |JSString| represents JavaScript string values,
+conversion to and from |String| is provided by the runtime system and |Prelude|.
+
+\paragraph{JS calling convention.}
+The standard C calling convention requires only a rather simple syntax for import entities,
+all access is basically done via functions.
+However, JavaScript libraries often expose themselves via OO mechanisms or specific JavaScript idiom.
+The |js| calling convention introduced by UHC
+therefore allows a richer notation for specifying import entities,
+summarized in Figure~\ref{jsimpent}.
+\begin{figure}[t]
+\hrule
+\begin{code}
+exp    ::=  '{}'                                ^ -- empty object
+         |  (arg | ident) post MANY             ^ -- JS expression
+
+post   ::=  '.' ident                           ^ -- object field
+         |  '[' exp ']'                         ^ -- array indexing
+         |  '(' arg (, arg) MANY ')'            ^ -- function call
+
+arg    ::=  '%' ('*' | int)                     ^ -- all arguments, or a specific one
+         |  '"' str '"'                         ^ -- literal text
+
+ident  ::= a valid JavaScript identifier
+int    ::= any integer
+str    ::= any string
+\end{code}
+\caption{Import entity notation for the JS calling convention}
+\label{jsimpent}
+\end{figure}
+
+The notation allows the use of a subset of JavaScript expressions,
+in which (possibly converted) Haskell function arguments can be spliced.
+The above alert function uses |%*| to let the compiler expand all arguments.
+Similarly individual arguments can be referred to by number;
+a further occurrence of |%*| then does not include that individual argument anymore.
+This allows translation to OO style of function invocation, as in the following example:
+
+\begin{code}
+foreign import js "%1.charCodeAt(%2)"
+  charCodeAt :: JSString -> Int -> Int
+\end{code}
+
+However, functions taking a variable number of arguments as in |concat| cannot be expressed in Haskell,
+thus requiring an explicit definition for each number of arguments to |concat|.
+The import entity can still be the same because of the compiler generated expansion to the
+proper number of arguments.
+
+\begin{code}
+foreign import js "%1.concat(%*)"
+  concat :: JSString -> JSString -> JSString
+
+foreign import js "%1.concat(%*)"
+  concat2 :: JSString -> JSString -> JSString -> JSString
+-- etc.
+\end{code}
+
+\paragraph{Records.}
+Values of basic non aggregrate types like |Int| are shared between Haskell and JavaScript,
+no marshalling is required.
+Between |String| and |JSString| already conversion must be done as their internal representation is different;
+this still can be done straightforwardly with a pair of conversion functions, or hidden behind a class interface for conversion.
+However, the problem is more serious with records, as runtime representations of aggregrates vary between Haskell and JavaScript libraries.
+One cannot expect that these representations exactly coincide.
+We did consider various solutions:
+\begin{itemize}
+\item
+Design a FFI for datatypes, allowing one specify how fields are mapped between a JavaScript implementation and Haskell datatypes.
+This soon becomes cumbersome when record fields hold callback functions, or other aggregrates, as the conversion need to traverse
+the record type structure.
+\item
+Use some generic technique, for example generic deriving. This is heavyweight, would require marshalling for each FFI call, and fixes on a particular JavaScript representation.
+\item
+Leave it up to the programmer with some help from the runtime system to create objects and manipulate fields.
+\end{itemize}
+For now, we chose the last, most simple solution. For example, the following |Book| datatype is 
+
+\todo{Continue with example...}
+
+\todo{Predictably at many places there is tension between Haskell and JavaScript.
+There are many more places where there is tension between the typed and the untyped...}
+
 
 \todo{FFI.}
 
@@ -238,6 +343,8 @@ Similarly to other external library use from Haskell we use the Foreign Function
 
 \todo{User interface: HTML5, Canvas Drawing.}
 
+\todo{Deployment, compactification, whole prog.}
+
 %%]
 
 %%[discussionAndIssues
@@ -246,6 +353,10 @@ Discuss ...
 \todo{Mapping to OO: FFI or other mechanism.}
 
 \todo{Typing the untyped.}
+
+\todo{Records in JS vs HS.}
+
+\todo{All in IO, what can be done without IO, threads? STM?.}
 
 \todo{Mismatch: Cabal does not deal with multiple backend of one compiler.}
 

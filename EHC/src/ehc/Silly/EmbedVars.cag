@@ -3,31 +3,31 @@
 %include afp.fmt
 %%]
 
-%%[(8 codegen grin) import({Silly/AbsSyn})
+%%[(8 codegen grin wholeprogAnal wholeprogC) import({Silly/AbsSyn})
 %%]
 
-%%[(8 codegen grin).wrapper
+%%[(8 codegen grin wholeprogAnal wholeprogC).wrapper
 WRAPPER SilModule
 %%]
 
-%%[(8 codegen grin) hs module {%{EH}Silly.EmbedVars} export(embedVars)
+%%[(8 codegen grin wholeprogAnal wholeprogC) hs module {%{EH}Silly.EmbedVars} export(embedVars)
 %%]
-%%[(8 codegen grin) hs import({%{EH}Silly})
+%%[(8 codegen grin wholeprogAnal wholeprogC) hs import({%{EH}Silly})
 %%]
-%%[(8 codegen grin) hs import({%{EH}Base.Common})
+%%[(8 codegen grin wholeprogAnal wholeprogC) hs import({%{EH}Base.Common})
 %%]
-%%[(8 codegen grin) hs import({%{EH}Opts})
+%%[(8 codegen grin wholeprogAnal wholeprogC) hs import({%{EH}Opts})
 %%]
-%%[(8 codegen grin) hs import(Data.Bits)
+%%[(8 codegen grin wholeprogAnal wholeprogC) hs import(Data.Bits)
 %%]
-%%[(8 codegen grin) hs import(qualified Data.Map as Map)
+%%[(8 codegen grin wholeprogAnal wholeprogC) hs import(qualified Data.Map as Map)
 %%]
-%%[(8 codegen grin) hs import(qualified Data.Set as Set)
+%%[(8 codegen grin wholeprogAnal wholeprogC) hs import(qualified Data.Set as Set)
 %%]
-%%[(8 codegen grin) hs import(Debug.Trace)
+%%[(8 codegen grin wholeprogAnal wholeprogC) hs import(Debug.Trace)
 %%]
 
-%%[(8 codegen grin) hs
+%%[(8 codegen grin wholeprogAnal wholeprogC) hs
 
 
 decrement :: Int -> Int
@@ -40,7 +40,7 @@ embedVars options input
     in trf_Syn_SilModule t
 %%]
 
-%%[(8 codegen grin)
+%%[(8 codegen grin wholeprogAnal wholeprogC)
 
 ATTR SilModule   [ opts : {EHCOpts} | | ]
 ATTR AllNT [ | | trf: SELF ]
@@ -75,7 +75,12 @@ ATTR Function Functions
 
 
 SEM SilModule
-  | SilModule  loc.optGenOwn            = not (ehcOptEmitLLVM @lhs.opts)
+  | SilModule  loc.optGenOwn            = 
+%%[[(8 llvm)
+                                          not (ehcOptEmitLLVM @lhs.opts)
+%%][
+                                          True
+%%]]
                functions. frameSizeMp   = @functions.frameSizes
 
 
@@ -109,7 +114,7 @@ SEM Function
 
 %%]
 
-%%[(8 codegen grin)
+%%[(8 codegen grin wholeprogAnal wholeprogC)
 
 {
 worthyIsPointer :: HsName -> Map.Map HsName SilTp -> Bool
@@ -356,7 +361,7 @@ SEM Variable
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Embedding of parameters and local variables on the stack
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%[(8 codegen grin) hs
+%%[(8 codegen grin wholeprogAnal wholeprogC) hs
 
 type EmbedMap = Map.Map Int Variable
 type EmbedFunction = HsName->Variable
@@ -394,7 +399,7 @@ postPad n s = let w = length s
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% The Smart Assignation strategy (probably reinvented a topological sort algorithm here)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%[(8 codegen grin) hs
+%%[(8 codegen grin wholeprogAnal wholeprogC) hs
 
 type EIV = Either Int Value
 data SmartTree = SmartTree EIV [(SmartTree,Maybe Int)]

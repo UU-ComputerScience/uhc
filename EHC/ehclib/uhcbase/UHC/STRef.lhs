@@ -36,7 +36,7 @@ newSTRef init = ST $ \s1 ->
     case newMutVar init s1            of { ( s2, var ) ->
     ( s2, STRef var ) }
     {-
-    letstrict var = newMutVar init
+    let !var = newMutVar init
     in ( s1, STRef var )
     -}
 

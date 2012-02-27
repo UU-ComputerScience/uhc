@@ -16,27 +16,27 @@ The parameters of a function are numbered consecutively after that.
 %include afp.fmt
 %%]
 
-%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.NumberIdents}  export(numberIdents)
+%%[(8 codegen grin wholeprogAnal) hs module {%{EH}GrinCode.Trf.NumberIdents}  export(numberIdents)
 %%]
 
-%%[(8 codegen grin) hs import(Data.Array.IArray, qualified Data.Set as Set, qualified Data.Map as Map, Data.Maybe)
+%%[(8 codegen grin wholeprogAnal) hs import(Data.Array.IArray, qualified Data.Set as Set, qualified Data.Map as Map, Data.Maybe)
 %%]
-%%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{EH}GrinCode})
+%%[(8 codegen grin wholeprogAnal) hs import({%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{EH}GrinCode})
 %%]
-%%[(8 codegen grin) hs import({%{EH}GrinCode.Common}, {%{EH}Config})
+%%[(8 codegen grin wholeprogAnal) hs import({%{EH}GrinCode.Common}, {%{EH}Config})
 %%]
-%%[(8 codegen grin) hs import(Debug.Trace)
-%%]
-
-%%[(8 codegen grin) ag import({GrinCode/AbsSyn})
+%%[(8 codegen grin wholeprogAnal) hs import(Debug.Trace)
 %%]
 
+%%[(8 codegen grin wholeprogAnal) ag import({GrinCode/AbsSyn})
+%%]
 
-%%[(8 codegen grin).wrapper
+
+%%[(8 codegen grin wholeprogAnal).wrapper
 WRAPPER GrAGItf
 %%]
 
-%%[(8 codegen grin) hs
+%%[(8 codegen grin wholeprogAnal) hs
 numberIdents :: GrModule -> GrModule
 numberIdents code
   = let inh = Inh_GrAGItf {}
@@ -48,7 +48,7 @@ numberIdents code
 
 Haskell datatype NameMapping and utility functions for it
 
-%%[(8 codegen grin) hs
+%%[(8 codegen grin wholeprogAnal) hs
 type NameMapping = Map.Map HsName HsName
 
 findNewVar fm e  = Map.findWithDefault (trace ("NumberIdents.findNewVar: " ++ show e ++ " not found in " ++ show fm) e) e fm
@@ -65,7 +65,7 @@ addList u xs = foldl addName (Map.empty, [], u) xs
                                               
 %%]
 
-%%[(8 codegen grin)
+%%[(8 codegen grin wholeprogAnal)
 ATTR GrAGItf [ | | grTrf: GrModule  ]
 ATTR AllNT   [ | | grTrf: SELF      ]
 ATTR AllNT   [ | unique: Int | ]
@@ -77,7 +77,7 @@ SEM GrAGItf
 
 
 
-%%[(8 codegen grin)
+%%[(8 codegen grin wholeprogAnal)
 
 ATTR AllBind  [ 
               | 
@@ -107,7 +107,7 @@ SEM GrModule
 %%]
 
 
-%%[(8 codegen grin)
+%%[(8 codegen grin wholeprogAnal)
 
 ATTR GrVarL GrVar  [ | | names USE {++} {[]} : {[HsName]} ]
 SEM GrVar
@@ -178,7 +178,7 @@ SEM GrBind
 
 replacing every identifier with a number
 
-%%[(8 codegen grin)
+%%[(8 codegen grin wholeprogAnal)
 SEM GrGlobal
   | Global      lhs  .  grTrf  =  GrGlobal_Global @newName @val.grTrf
 

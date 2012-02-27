@@ -370,10 +370,16 @@ pBody' opts addDecl
           <|> pPatternOp
               <**> (   (flip mkP) <$> rhs
                    <|> (\o r rhs l -> mkF (mkLI l o r) rhs)
-                       <$> varop <*> pPatternOp <*> rhs
+                       <$> pVarOp <*> pPatternOp <*> rhs
                    )
           <?> "pDeclarationValue"
-          where pLhsTail ::  HSParser [Pattern]
+          where pVarOp :: HSParser Token
+%%[[1
+                pVarOp = varop
+%%][8
+                pVarOp = if ehcOptBangPatterns opts then varop_no_bang else varop
+%%]]
+                pLhsTail ::  HSParser [Pattern]
                 pLhsTail =   pList1 pPatternBaseCon
                 pLhs     ::  HSParser LeftHandSide
                 pLhs     =   mkRngNm LeftHandSide_Function <$> var <*> pLhsTail
@@ -1509,17 +1515,26 @@ pBody' opts addDecl
 %%[1.pPatternBaseNoParens
         pPatternBaseNoParens :: HSParser Pattern
         pPatternBaseNoParens
-          =   qvarid
-              <**> (   (\a p v -> Pattern_As (mkRange1 a) (tokMkQName v) p) <$> pAT <*> pPatternBaseCon
-                   <|> pSucceed (mkRngNm Pattern_Variable)
-                   )
-          <|> Pattern_Literal emptyRange 1 <$> pLiteral
+          = ( 
+%%[[1
+%%][8
+              (if ehcOptBangPatterns opts
+               then (\p -> p <|> (Pattern_Bang . mkRange1) <$> pBANG  <*> pPatternBaseCon)
+               else id
+              ) $
+%%]]
+              (   qvarid
+                  <**> (   (\a p v -> Pattern_As (mkRange1 a) (tokMkQName v) p) <$> pAT <*> pPatternBaseCon
+                       <|> pSucceed (mkRngNm Pattern_Variable)
+                       )
+              <|> Pattern_Literal emptyRange 1 <$> pLiteral
 %%[[5
-          <|> pBracks' (flip Pattern_List <$> pListSep pCOMMA pPattern)
+              <|> pBracks' (flip Pattern_List <$> pListSep pCOMMA pPattern)
 %%]]
 %%[[8
-          <|> (Pattern_Irrefutable . mkRange1) <$> pTILDE <*> pPatternBaseCon
+              <|> (Pattern_Irrefutable . mkRange1) <$> pTILDE <*> pPatternBaseCon
 %%]]
+            ) )
           <?> "pPatternBaseNoParens"
 %%]
 
@@ -1937,17 +1952,28 @@ qvarid
 
 %%[1
 -- | See comments with special_id
+special_sym_no_bang :: HSParser Token
+special_sym_no_bang
+  =   pDOT
+  <|> pSTAR
+  <|> pPERCENT
+  <?> "special_sym_no_bang"
+  
 special_sym :: HSParser Token
 special_sym
   =   pBANG
-  <|> pDOT
-  <|> pSTAR
-  <|> pPERCENT
+  <|> special_sym_no_bang
   <?> "special_sym"
 %%]
 
 %%[1
--- | Unqualified operator, e.g.: +, except -
+-- | Unqualified operator, e.g.: +, except -, !
+varsym_no_minus_bang :: HSParser Token
+varsym_no_minus_bang
+  =   pVARSYM
+  <|> special_sym_no_bang
+  <?> "varsym_no_minus_bang"
+
 varsym_no_minus :: HSParser Token
 varsym_no_minus
   =   pVARSYM
@@ -2003,6 +2029,13 @@ qvarsym
 %%]
 
 %%[1
+-- | (Un)qualified operator, e.g.: +, `f`, except -, !
+varop_no_minus_bang   :: HSParser Token
+varop_no_minus_bang
+  =   varsym_no_minus_bang
+  <|> pBACKQUOTE *> varid <* pBACKQUOTE
+  <?> "varop_no_minus_bang"
+
 -- | (Un)qualified operator, e.g.: +, `f`, except -
 varop_no_minus   :: HSParser Token
 varop_no_minus
@@ -2021,6 +2054,13 @@ varop_no_ty
 %%]
 
 %%[1
+-- | (Un)qualified operator, e.g.: +, `f`, except !
+varop_no_bang   :: HSParser Token
+varop_no_bang
+  =   varop_no_minus_bang
+  <|> pMINUS
+  <?> "varop_no_bang"
+
 -- | (Un)qualified operator, e.g.: +, `f`
 varop   :: HSParser Token
 varop

@@ -28,17 +28,17 @@ Examples:
 %include afp.fmt
 %%]
 
-%%[(8 codegen grin) ag import({GrinCode/AbsSyn})
+%%[(8 codegen grin wholeprogAnal) ag import({GrinCode/AbsSyn})
 %%]
 
-%%[(8 codegen grin).wrapper
+%%[(8 codegen grin wholeprogAnal).wrapper
 WRAPPER GrAGItf
 %%]
 
-%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.BuildAppBindings} import(qualified Data.Map as Map, qualified Data.Set as Set)
+%%[(8 codegen grin wholeprogAnal) hs module {%{EH}GrinCode.Trf.BuildAppBindings} import(qualified Data.Map as Map, qualified Data.Set as Set)
 %%]
 
-%%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}Base.Builtin},{%{EH}GrinCode.Common}, {%{EH}GrinCode}) export(buildAppBindings)
+%%[(8 codegen grin wholeprogAnal) hs import({%{EH}Base.Common}, {%{EH}Base.Builtin},{%{EH}GrinCode.Common}, {%{EH}GrinCode}) export(buildAppBindings)
 
 specialize = True
 
@@ -50,12 +50,12 @@ buildAppBindings code
 
 %%]
 
-%%[(8 codegen grin)
+%%[(8 codegen grin wholeprogAnal)
 ATTR GrAGItf [ | | grTrf: GrModule ]
 ATTR AllNT   [ | | grTrf: SELF     ]
 %%]
 
-%%[(8 codegen grin)
+%%[(8 codegen grin wholeprogAnal)
 ATTR AllBind AllGrExpr [ | applyNodeSizes: {Set.Set (Int,Int)} | ]
 
 SEM GrModule
@@ -86,7 +86,7 @@ SEM GrTag [ | | isGenApplyTag : Bool ]
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-%%[(8 codegen grin)
+%%[(8 codegen grin wholeprogAnal)
 
 ATTR AllGrExpr AllGrVal AllBind AllGlobal [ | atagId : Int | ]
 
@@ -94,7 +94,7 @@ ATTR AllGrExpr AllGrVal AllBind AllGlobal [ | atagId : Int | ]
 
 
 
-%%[(8 codegen grin).replaceApplyTags
+%%[(8 codegen grin wholeprogAnal).replaceApplyTags
 SEM GrVal
   | Node      loc  . newTag      = if   @tag.isGenApplyTag 
                                    then applyFunctionTag @fldL.fieldCount (@lhs.atagId+1)
@@ -111,7 +111,7 @@ SEM GrModule
   
 %%]
 
-%%[(10 codegen grin)
+%%[(10 codegen grin wholeprogAnal)
 SEM GrSplit
   | Sel       off  . atagId     =  error "BuildAppBindings: GrpSplit.Sel.atagId"
 %%]
@@ -121,7 +121,7 @@ SEM GrSplit
 %% Building the appN bindings %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin).buildAppBinding hs
+%%[(8 codegen grin wholeprogAnal).buildAppBinding hs
 
 applyFunctionName size specnr
   =  hsnFromString $ "app" ++ show size ++ (if specialize then "_" ++ show specnr else "")
@@ -141,7 +141,7 @@ buildAppBinding (size,specnr)
 
 %%]
 
-%%[(8 codegen grin).addAppBindings
+%%[(8 codegen grin wholeprogAnal).addAppBindings
 SEM GrModule
   | Mod  lhs  . grTrf  = GrModule_Mod @moduleNm 
                                       @globalL.grTrf 

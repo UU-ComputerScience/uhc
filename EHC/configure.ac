@@ -137,9 +137,13 @@ AC_SUBST(ENABLE_JS,$enableJavaScript)
 AC_ARG_ENABLE(cmm, AS_HELP_STRING([--enable-cmm],[include cmm code generation]), [enableCmm=yes], [enableCmm=no])
 AC_SUBST(ENABLE_CMM,$enableCmm)
 
-### enable options: cwholeprog, the C whole program backend, default is no, temporary until development restarts
-AC_ARG_ENABLE(cwholeprog, AS_HELP_STRING([--enable-cwholeprog],[include C whole program code generation]), [enableCWholeprog=yes], [enableCWholeprog=no])
-AC_SUBST(ENABLE_CWHOLEPROG,$enableCWholeprog)
+### enable options: wholeprogC, the C whole program backend, default is no, temporary until development restarts
+AC_ARG_ENABLE(wholeprogC, AS_HELP_STRING([--enable-wholeprogC],[include C whole program code generation]), [enableWholeprogC=yes], [enableWholeprogC=no])
+AC_SUBST(ENABLE_WHOLEPROGC,$enableWholeprogC)
+
+### enable options: wholeprogAnal, whole program analysis, default is no, temporary until development restarts
+AC_ARG_ENABLE(wholeprogAnal, AS_HELP_STRING([--enable-wholeprogAnal],[include C whole program code generation]), [enableWholeprogAnal=yes], [enableWholeprogAnal=no])
+AC_SUBST(ENABLE_WHOLEPROGANAL,$enableWholeprogAnal)
 
 ### enable options: llvm, default is no
 AC_ARG_ENABLE(llvm, AS_HELP_STRING([--enable-llvm],[include llvm code generation]), [enableLlvm=yes], [enableLlvm=no])

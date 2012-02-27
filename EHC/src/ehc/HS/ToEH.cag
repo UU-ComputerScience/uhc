@@ -1310,6 +1310,8 @@ SEM Pattern
 %%[8
     | Irrefutable
         lhs         .   eh          =   rngLift @range EH.PatExpr_Irrefutable @pattern.eh
+    | Bang
+        lhs         .   eh          =   rngLift @range EH.PatExpr_Bang        @pattern.eh
 %%]
 %%[55
     | Successor                    -- n+k patterns        

@@ -8,19 +8,19 @@ Use the left law if both are applicable.
 
 %%]
 
-%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.CopyPropagation} export(copyPropagation)
+%%[(8 codegen grin wholeprogAnal) hs module {%{EH}GrinCode.Trf.CopyPropagation} export(copyPropagation)
 %%]
-%%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}GrinCode.Common}, {%{EH}GrinCode}, Data.Maybe, qualified Data.Map as Map)
+%%[(8 codegen grin wholeprogAnal) hs import({%{EH}Base.Common}, {%{EH}GrinCode.Common}, {%{EH}GrinCode}, Data.Maybe, qualified Data.Map as Map)
 %%]
-%%[(8 codegen grin) hs import(Debug.Trace)
+%%[(8 codegen grin wholeprogAnal) hs import(Debug.Trace)
 %%]
-%%[(8 codegen grin) ag import({GrinCode/AbsSyn})
+%%[(8 codegen grin wholeprogAnal) ag import({GrinCode/AbsSyn})
 %%]
-%%[(8 codegen grin).wrapper
+%%[(8 codegen grin wholeprogAnal).wrapper
 WRAPPER GrAGItf
 %%]
 
-%%[(8 codegen grin) hs
+%%[(8 codegen grin wholeprogAnal) hs
 copyPropagation :: GrModule -> (GrModule, Bool)
 copyPropagation grmod 
    = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
@@ -28,7 +28,7 @@ copyPropagation grmod
      in (grTrf_Syn_GrAGItf t, changed_Syn_GrAGItf t)
 %%]
 
-%%[(8 codegen grin)
+%%[(8 codegen grin wholeprogAnal)
 ATTR GrAGItf [ | | grTrf: GrModule ]
 ATTR AllNT   [ | | grTrf: SELF     ]
 ATTR GrPatLam
@@ -68,7 +68,7 @@ SEM GrExpr
 %%%%%%%%%%%%%%%%%%%%%%
 %%% Right Unit law %%%
 %%%%%%%%%%%%%%%%%%%%%%
-%%[(8 codegen grin).rightUnit hs
+%%[(8 codegen grin wholeprogAnal).rightUnit hs
 
 testRight :: GrPatLam -> Maybe GrVal -> Bool
 testRight pat mbVal
@@ -107,7 +107,7 @@ equalVars _                   _              =  False
 %%% Left Unit law %%%
 %%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin).leftUnit hs
+%%[(8 codegen grin wholeprogAnal).leftUnit hs
 testLeft :: GrPatLam -> Maybe GrVal -> Maybe SubstTrafoPair
 testLeft pat mbVal
   =  do { val <- mbVal
@@ -157,7 +157,7 @@ unifyVars (GrVar_Var v1)      x                            =  (Map.insert v1 x, 
 %%% Value Information %%%
 %%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin).valueInfo
+%%[(8 codegen grin wholeprogAnal).valueInfo
 ATTR GrExpr [ | | mbUnitValue : {Maybe GrVal} ]
 
 SEM GrExpr
@@ -165,7 +165,7 @@ SEM GrExpr
   | * - Unit   loc  .  mbUnitValue = Nothing
 %%]
 
-%%[(8 codegen grin)
+%%[(8 codegen grin wholeprogAnal)
 ATTR GrExpr [ | | isFetchNode : {Bool} ]
 
 SEM GrExpr
@@ -178,7 +178,7 @@ SEM GrExpr
 %%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Apply substitutions
 %%%%%%%%%%%%%%%%%%%%%%%%%
-%%[(8 codegen grin) hs
+%%[(8 codegen grin wholeprogAnal) hs
 type Substitution = Map.Map HsName GrVal
 type SubstTrafo = Substitution -> Substitution
 type SubstTrafoPair = (SubstTrafo, SubstTrafo)
@@ -198,7 +198,7 @@ mbSubstTag nm subst
                       _           -> Nothing
 
 %%]
-%%[(8 codegen grin).applySubstitutions
+%%[(8 codegen grin wholeprogAnal).applySubstitutions
 
 ATTR AllExpr [ subst: Substitution | | ]
 ATTR GrExpr  [ | | patsubst : Substitution ]

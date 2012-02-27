@@ -13,20 +13,20 @@ Inspects the HPT table, but does not change it.
 %include afp.fmt
 %%]
 
-%%[(8 codegen grin) ag import({GrinCode/AbsSyn})
+%%[(8 codegen grin wholeprogAnal) ag import({GrinCode/AbsSyn})
 %%]
-%%[(8 codegen grin) hs import(Debug.Trace)
+%%[(8 codegen grin wholeprogAnal) hs import(Debug.Trace)
 %%]
 
 
-%%[(8 codegen grin).wrapper
+%%[(8 codegen grin wholeprogAnal).wrapper
 WRAPPER GrAGItf
 %%]
 
-%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.DropDeadBindings}
+%%[(8 codegen grin wholeprogAnal) hs module {%{EH}GrinCode.Trf.DropDeadBindings}
 %%]
 
-%%[(8 codegen grin) hs import(qualified Data.Map as Map, {%{EH}Base.Common}, {%{EH}GrinCode.Common}, {%{EH}GrinCode}, Data.Maybe) export(dropDeadBindings)
+%%[(8 codegen grin wholeprogAnal) hs import(qualified Data.Map as Map, {%{EH}Base.Common}, {%{EH}GrinCode.Common}, {%{EH}GrinCode}, Data.Maybe) export(dropDeadBindings)
 dropDeadBindings :: (GrModule,HptMap) -> GrModule
 dropDeadBindings (input,hptMap)
   = let inh = Inh_GrAGItf {hptMap_Inh_GrAGItf=hptMap}
@@ -37,13 +37,13 @@ dropDeadBindings (input,hptMap)
 %%]
 
 
-%%[(8 codegen grin)
+%%[(8 codegen grin wholeprogAnal)
 ATTR GrAGItf [ hptMap: HptMap | | grTrf: GrModule ]
 ATTR AllNT [ hptMap: HptMap | | grTrf: SELF ]
 %%]
 
 
-%%[(8 codegen grin)
+%%[(8 codegen grin wholeprogAnal)
 
 ATTR GrBind [ | | functionName : HsName ]
 SEM GrBind
@@ -62,7 +62,7 @@ SEM GrBindL
 %%]
 
 
-%%[(8 codegen grin)
+%%[(8 codegen grin wholeprogAnal)
 ATTR GrAlt GrPatAlt GrTag [ | | isDead: Bool ]
 
 SEM GrAlt

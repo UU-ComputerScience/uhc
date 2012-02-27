@@ -46,18 +46,18 @@ has lower arity than C1.
 %include afp.fmt
 %%]
 
-%%[(8 codegen grin) ag import({GrinCode/AbsSyn})
+%%[(8 codegen grin wholeprogAnal) ag import({GrinCode/AbsSyn})
 %%]
-%%[(8 codegen grin) hs import(qualified Data.Set as Set, Data.Monoid)
+%%[(8 codegen grin wholeprogAnal) hs import(qualified Data.Set as Set, Data.Monoid)
 %%]
-%%[(8 codegen grin) hs import(Debug.Trace)
+%%[(8 codegen grin wholeprogAnal) hs import(Debug.Trace)
 %%]
 
-%%[(8 codegen grin).wrapper
+%%[(8 codegen grin wholeprogAnal).wrapper
 WRAPPER GrAGItf
 %%]
 
-%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.SplitFetch} import({%{EH}Base.Common}, {%{EH}GrinCode.Common}, {%{EH}GrinCode}) export(splitFetch)
+%%[(8 codegen grin wholeprogAnal) hs module {%{EH}GrinCode.Trf.SplitFetch} import({%{EH}Base.Common}, {%{EH}GrinCode.Common}, {%{EH}GrinCode}) export(splitFetch)
 
 splitFetch :: (GrModule,HptMap) -> (GrModule,HptMap)
 splitFetch (input,hptMap)
@@ -70,7 +70,7 @@ type HptItems       = [ (Int,AbstractValue) ]
 %%]
 
 
-%%[(8 codegen grin)
+%%[(8 codegen grin wholeprogAnal)
 
 ATTR AllNT     [ | | grTrf: SELF     ]
 ATTR GrAGItf   [ | | grTrf: GrModule ]
@@ -116,7 +116,7 @@ SEM GrBind
 Assumption: if the tag is not statically known, the fetchnode expression
 is followed by a case expression which scrutinizes the tag
 
-%%[(8 codegen grin)
+%%[(8 codegen grin wholeprogAnal)
 
 ATTR GrPatLam GrVarL GrVar [ | | mbTag : {Maybe GrTag} ]
 
@@ -265,7 +265,7 @@ SEM GrAlt
          lhs   .  grTrf      =  GrAlt_Alt @ann @pat.grTrf (buildSeqs @expr.grTrf @newExprInfo)
 %%]
 
-%%[(8 codegen grin).lastFetch
+%%[(8 codegen grin wholeprogAnal).lastFetch
 
 
 ATTR AllGrExpr [ hasNext: {Bool} | | ]
@@ -303,7 +303,7 @@ SEM GrExpr
                                   else (@lhs.uniq, [], @loc.grTrf)
 %%]
 
-%%[(8 codegen grin).applySubst
+%%[(8 codegen grin wholeprogAnal).applySubst
 SEM GrVal
   | Var        lhs . grTrf       = maybe @grTrf GrVal_Var (Map.lookup (getNr @nm) @lhs.renameMap)
 
@@ -317,7 +317,7 @@ SEM GrExpr
   | Throw      loc  . grTrf      = GrExpr_Throw @newName
 %%]
 
-%%[(8 codegen grin) hs import(qualified Data.Map as Map, Data.Maybe, Data.List)
+%%[(8 codegen grin wholeprogAnal) hs import(qualified Data.Map as Map, Data.Maybe, Data.List)
 
 type FetchEnv = Map.Map HsName [(HsName, GrExpr)]
 type RenMap = Map.Map Int HsName
@@ -393,7 +393,7 @@ absFetchField hptmap nm i = let j = i-1
 %%]
 
 
-%%[(8 codegen grin)
+%%[(8 codegen grin wholeprogAnal)
 
 ATTR AllBind [ | | genArities USE {`Map.union`} {Map.empty}: {Map.Map Int Int}  ]
 ATTR AllBind AllGrExpr [ arityMap : {Map.Map Int Int} | | ]

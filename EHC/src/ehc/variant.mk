@@ -12,7 +12,8 @@ EHC_ASPECTS								:= $(strip $(if $(ASPECTS),$(ASPECTS) \
 											 $(if $(ENABLE_JAVA),java jazy,) \
 											 $(if $(ENABLE_LLVM),llvm,) \
 											 $(if $(ENABLE_CMM),cmm,) \
-											 $(if $(ENABLE_CWHOLEPROG),cwholeprog,) \
+											 $(if $(ENABLE_WHOLEPROGC),wholeprogC,) \
+											 $(if $(ENABLE_WHOLEPROGANAL),wholeprogAnal,) \
 											 $(if $(ENABLE_JS),javascript,) \
 											 $(if $(ENABLE_CLR),clr,) \
 											 $(if $(ENABLE_TYCORE),tycore,) \

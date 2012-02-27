@@ -3,30 +3,30 @@
 %include afp.fmt
 %%]
 
-%%[(8 codegen grin) module {%{EH}GrinCode.SolveEqs}
+%%[(8 codegen grin wholeprogAnal) module {%{EH}GrinCode.SolveEqs}
 %%]
-%%[(8 codegen grin) export(solveEquations)
+%%[(8 codegen grin wholeprogAnal) export(solveEquations)
 %%]
-%%[(8 codegen grin) import(Data.Maybe, Data.Either, Data.List, Data.Ix, Data.Monoid, Data.Array.ST, Data.Array.IArray, Control.Monad.ST, Control.Monad)
+%%[(8 codegen grin wholeprogAnal) import(Data.Maybe, Data.Either, Data.List, Data.Ix, Data.Monoid, Data.Array.ST, Data.Array.IArray, Control.Monad.ST, Control.Monad)
 %%]
-%%[(8 codegen grin) import(qualified Data.Set as Set, qualified Data.Map as Map)
+%%[(8 codegen grin wholeprogAnal) import(qualified Data.Set as Set, qualified Data.Map as Map)
 %%]
-%%[(8 codegen grin) import({%{EH}Base.Common}, {%{EH}GrinCode})
+%%[(8 codegen grin wholeprogAnal) import({%{EH}Base.Common}, {%{EH}GrinCode})
 %%]
-%%[(8 codegen grin) import({%{EH}GrinCode.Common})
+%%[(8 codegen grin wholeprogAnal) import({%{EH}GrinCode.Common})
 %%]
-%%[(8 codegen grin) import(Debug.Trace)
+%%[(8 codegen grin wholeprogAnal) import(Debug.Trace)
 %%]
-%%[(8 codegen grin) import(System.IO.Unsafe)
+%%[(8 codegen grin wholeprogAnal) import(System.IO.Unsafe)
 %%]
 
-%%[(8 codegen grin).updateEnv
+%%[(8 codegen grin wholeprogAnal).updateEnv
 
 type AbstractEnv s  = STArray s Variable AbstractValue
 
 %%]
 
-%%[(8 codegen grin).envChanges
+%%[(8 codegen grin wholeprogAnal).envChanges
 
 
 -- This function decides which equations need only be applied once.
@@ -258,7 +258,7 @@ envChanges equat env
 
 %%]
 
-%%[(8 codegen grin)
+%%[(8 codegen grin wholeprogAnal)
 
 fixpoint procEqs env
   = countFixpoint 0

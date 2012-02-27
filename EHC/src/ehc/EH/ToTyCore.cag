@@ -941,7 +941,7 @@ SEM PatExpr
   | IConst      loc         .   rpatTC      =   RPat_Int @tcpNm C.tyInt (toInteger @int)
   | CConst      loc         .   rpatTC      =   RPat_Char @tcpNm C.tyChar @char
   | SConst      loc         .   rpatTC      =   RPat_Int @tcpNm C.tyInt (-1) -- for now
-  | Var         loc         .   rpatTC      =   RPat_Var @tcpNm @cty
+  | Var         loc         .   rpatTC      =   RPat_Var @tcpNm @cty False
   | VarAs       loc         .   rpatTC      =   @patExpr.rpatTC {rcpPNm = @tcpNm}
   | Con         loc         .   rpatTC      =   RPat_Con @tcpNm (C.tyErr "PatExpr.Con.rpatTC") @tag (RPatConBind_One C.PatRest_Empty [])
   | AppTop      loc         .   rpatTC      =   RPat_Con @tcpNm @cty {- (C.tyErr "PatExpr.AppTop.rpatTC") -} @tag (RPatConBind_One @tcrest (map fst @rpatValBinds))
@@ -957,6 +957,7 @@ SEM PatExpr
                                                            @rpatValBindss
                                                     )
   | Irrefutable loc         .   rpatTC      =   RPat_Irrefutable @tcpNm (C.tyErr "PatExpr.Irrefutable.rpatTC") @patExpr.valBindL
+  | Bang 		loc         .   rpatTC      =   @patExpr.rpatTC	-- TBD
 %%]
 
 %%[(97 codegen)
@@ -1058,7 +1059,7 @@ SEM PatExpr
                                                     max = ctagArity @tag - 1
                                                     sat = -- (\v -> v `seq` tr "PatExpr.DataFields.rpatBindss" ("tag" >#< @tag >#< "arity" >#< max) v) $
                                                           listSaturateWith 0 max (C.foffOffset . fst)
-                                                            (zipWith (\o n -> (o,(C.FldKnownOffset n o,RPat_Var (RPatNmOrig n) (ty n)))) [0..max] hsnLclSupply)
+                                                            (zipWith (\o n -> (o,(C.FldKnownOffset n o,RPat_Var (RPatNmOrig n) (ty n) False))) [0..max] hsnLclSupply)
                                                     ty n = C.tyErr ("PatExpr.DataFields.fld: " ++ show n)
                                                 in  ( map (C.fsL2PatOffsetL . sat) $ grp fsL      -- groups of bindings which can be dealt with simultaneously
                                                     , C.fsL2PatOffsetL fsL                        -- bindings
@@ -1095,7 +1096,7 @@ SEM PatExpr
 ATTR PatExpr [ | | tcpNm: {RPatNm} ]
 
 SEM PatExpr
-  | Var VarAs AppTop Rec DataFields Con IConst CConst SConst Irrefutable
+  | Var VarAs AppTop Rec DataFields Con IConst CConst SConst Irrefutable Bang
 %%[[97
     Expr
 %%]]

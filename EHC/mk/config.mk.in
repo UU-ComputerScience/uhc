@@ -104,9 +104,15 @@ ifeq (@ENABLE_CMM@,yes)
 ENABLE_CMM					:= yes
 endif
 
-# include C backend combined with whole program analysis
-ifeq (@ENABLE_CWHOLEPROG@,yes)
-ENABLE_CWHOLEPROG			:= yes
+# include C backend combined using whole program analysis
+ifeq (@ENABLE_WHOLEPROGC@,yes)
+ENABLE_WHOLEPROGC			:= yes
+ENABLE_WHOLEPROGANAL		:= yes
+endif
+
+# include whole program analysis
+ifeq (@ENABLE_WHOLEPROGANAL@,yes)
+ENABLE_WHOLEPROGANAL		:= yes
 endif
 
 # include TyCore

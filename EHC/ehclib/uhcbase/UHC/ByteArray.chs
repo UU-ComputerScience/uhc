@@ -150,7 +150,7 @@ foreign import prim "primIndexWord64Array" 	indexWord64Array 	:: ByteArray -> In
 %%[99
 #if !defined( __UHC_TARGET_JS__ )
 indexStablePtrArray :: forall s . ByteArray -> Int -> StablePtr s
-indexStablePtrArray a i = letstrict x = indexAddrArray a i in StablePtr x
+indexStablePtrArray a i = let !x = indexAddrArray a i in StablePtr x
 #endif
 %%]
 
@@ -158,56 +158,56 @@ indexStablePtrArray a i = letstrict x = indexAddrArray a i in StablePtr x
 -- |Read 8-bit character; offset in bytes.
 
 readCharArray :: MutableByteArray s -> Int -> State s -> ( State s,Char )
-readCharArray (MutableByteArray a) i s = letstrict x = indexCharArray a i in (s, x)
+readCharArray (MutableByteArray a) i s = let !x = indexCharArray a i in (s, x)
 
 -- |Read 31-bit character; offset in 4-byte words.
 
 readWideCharArray :: MutableByteArray s -> Int -> State s -> ( State s,Char )
-readWideCharArray (MutableByteArray a) i s = letstrict x = indexWideCharArray a i in (s, x)
+readWideCharArray (MutableByteArray a) i s = let !x = indexWideCharArray a i in (s, x)
 
 readIntArray :: MutableByteArray s -> Int -> State s -> ( State s,Int )
-readIntArray (MutableByteArray a) i s = letstrict x = indexIntArray a i in (s, x)
+readIntArray (MutableByteArray a) i s = let !x = indexIntArray a i in (s, x)
 
 readWordArray :: MutableByteArray s -> Int -> State s -> ( State s,Word )
-readWordArray (MutableByteArray a) i s = letstrict x = indexWordArray a i in (s, x)
+readWordArray (MutableByteArray a) i s = let !x = indexWordArray a i in (s, x)
 
 readAddrArray :: MutableByteArray s -> Int -> State s -> ( State s,Addr )
-readAddrArray (MutableByteArray a) i s = letstrict x = indexAddrArray a i in (s, x)
+readAddrArray (MutableByteArray a) i s = let !x = indexAddrArray a i in (s, x)
 
 readFloatArray :: MutableByteArray s -> Int -> State s -> ( State s,Float )
-readFloatArray (MutableByteArray a) i s = letstrict x = indexFloatArray a i in (s, x)
+readFloatArray (MutableByteArray a) i s = let !x = indexFloatArray a i in (s, x)
 
 readDoubleArray :: MutableByteArray s -> Int -> State s -> ( State s,Double )
-readDoubleArray (MutableByteArray a) i s = letstrict x = indexDoubleArray a i in (s, x)
+readDoubleArray (MutableByteArray a) i s = let !x = indexDoubleArray a i in (s, x)
 
 #if !defined( __UHC_TARGET_JS__ )
 readStablePtrArray :: MutableByteArray s -> Int -> State s -> ( State s,StablePtr s )
-readStablePtrArray (MutableByteArray a) i s = letstrict x = indexStablePtrArray a i in (s, x)
+readStablePtrArray (MutableByteArray a) i s = let !x = indexStablePtrArray a i in (s, x)
 #endif
 
 readInt8Array :: MutableByteArray s -> Int -> State s -> ( State s,Int8 )
-readInt8Array (MutableByteArray a) i s = letstrict x = indexInt8Array a i in (s, x)
+readInt8Array (MutableByteArray a) i s = let !x = indexInt8Array a i in (s, x)
 
 readInt16Array :: MutableByteArray s -> Int -> State s -> ( State s,Int16 )
-readInt16Array (MutableByteArray a) i s = letstrict x = indexInt16Array a i in (s, x)
+readInt16Array (MutableByteArray a) i s = let !x = indexInt16Array a i in (s, x)
 
 readInt32Array :: MutableByteArray s -> Int -> State s -> ( State s,Int32 )
-readInt32Array (MutableByteArray a) i s = letstrict x = indexInt32Array a i in (s, x)
+readInt32Array (MutableByteArray a) i s = let !x = indexInt32Array a i in (s, x)
 
 readInt64Array :: MutableByteArray s -> Int -> State s -> ( State s,Int64 )
-readInt64Array (MutableByteArray a) i s = letstrict x = indexInt64Array a i in (s, x)
+readInt64Array (MutableByteArray a) i s = let !x = indexInt64Array a i in (s, x)
 
 readWord8Array :: MutableByteArray s -> Int -> State s -> ( State s,Word8 )
-readWord8Array (MutableByteArray a) i s = letstrict x = indexWord8Array a i in (s, x)
+readWord8Array (MutableByteArray a) i s = let !x = indexWord8Array a i in (s, x)
 
 readWord16Array :: MutableByteArray s -> Int -> State s -> ( State s,Word16 )
-readWord16Array (MutableByteArray a) i s = letstrict x = indexWord16Array a i in (s, x)
+readWord16Array (MutableByteArray a) i s = let !x = indexWord16Array a i in (s, x)
 
 readWord32Array :: MutableByteArray s -> Int -> State s -> ( State s,Word32 )
-readWord32Array (MutableByteArray a) i s = letstrict x = indexWord32Array a i in (s, x)
+readWord32Array (MutableByteArray a) i s = let !x = indexWord32Array a i in (s, x)
 
 readWord64Array :: MutableByteArray s -> Int -> State s -> ( State s,Word64 )
-readWord64Array (MutableByteArray a) i s = letstrict x = indexWord64Array a i in (s, x)
+readWord64Array (MutableByteArray a) i s = let !x = indexWord64Array a i in (s, x)
 
 %%]
 
@@ -245,56 +245,56 @@ foreign import prim "primWriteWord64Array" primWriteWord64Array 	:: ByteArray ->
 -- |Write 8-bit character; offset in bytes.
 
 writeCharArray :: MutableByteArray s -> Int -> Char -> State s -> State s
-writeCharArray (MutableByteArray a) i x s = letstrict _ = primWriteCharArray a i x in s
+writeCharArray (MutableByteArray a) i x s = let !_ = primWriteCharArray a i x in s
 
 -- |Write 31-bit character; offset in 4-byte words.
 
 writeWideCharArray :: MutableByteArray s -> Int -> Char -> State s -> State s
-writeWideCharArray (MutableByteArray a) i x s = letstrict _ = primWriteWideCharArray a i x in s
+writeWideCharArray (MutableByteArray a) i x s = let !_ = primWriteWideCharArray a i x in s
 
 writeIntArray :: MutableByteArray s -> Int -> Int -> State s -> State s
-writeIntArray (MutableByteArray a) i x s = letstrict _ = primWriteIntArray a i x in s
+writeIntArray (MutableByteArray a) i x s = let !_ = primWriteIntArray a i x in s
 
 writeWordArray :: MutableByteArray s -> Int -> Word -> State s -> State s
-writeWordArray (MutableByteArray a) i x s = letstrict _ = primWriteWordArray a i x in s
+writeWordArray (MutableByteArray a) i x s = let !_ = primWriteWordArray a i x in s
 
 writeAddrArray :: MutableByteArray s -> Int -> Addr -> State s -> State s
-writeAddrArray (MutableByteArray a) i x s = letstrict _ = primWriteAddrArray a i x in s
+writeAddrArray (MutableByteArray a) i x s = let !_ = primWriteAddrArray a i x in s
 
 writeFloatArray :: MutableByteArray s -> Int -> Float -> State s -> State s
-writeFloatArray (MutableByteArray a) i x s = letstrict _ = primWriteFloatArray a i x in s
+writeFloatArray (MutableByteArray a) i x s = let !_ = primWriteFloatArray a i x in s
 
 writeDoubleArray :: MutableByteArray s -> Int -> Double -> State s -> State s
-writeDoubleArray (MutableByteArray a) i x s = letstrict _ = primWriteDoubleArray a i x in s
+writeDoubleArray (MutableByteArray a) i x s = let !_ = primWriteDoubleArray a i x in s
 
 #if !defined( __UHC_TARGET_JS__ )
 writeStablePtrArray :: MutableByteArray s -> Int -> StablePtr s -> State s -> State s
-writeStablePtrArray (MutableByteArray a) i (StablePtr x) s = letstrict _ = primWriteAddrArray a i x in s
+writeStablePtrArray (MutableByteArray a) i (StablePtr x) s = let !_ = primWriteAddrArray a i x in s
 #endif
 
 writeInt8Array :: MutableByteArray s -> Int -> Int8 -> State s -> State s
-writeInt8Array (MutableByteArray a) i x s = letstrict _ = primWriteInt8Array a i x in s
+writeInt8Array (MutableByteArray a) i x s = let !_ = primWriteInt8Array a i x in s
 
 writeInt16Array :: MutableByteArray s -> Int -> Int16 -> State s -> State s
-writeInt16Array (MutableByteArray a) i x s = letstrict _ = primWriteInt16Array a i x in s
+writeInt16Array (MutableByteArray a) i x s = let !_ = primWriteInt16Array a i x in s
 
 writeInt32Array :: MutableByteArray s -> Int -> Int32 -> State s -> State s
-writeInt32Array (MutableByteArray a) i x s = letstrict _ = primWriteInt32Array a i x in s
+writeInt32Array (MutableByteArray a) i x s = let !_ = primWriteInt32Array a i x in s
 
 writeInt64Array :: MutableByteArray s -> Int -> Int64 -> State s -> State s
-writeInt64Array (MutableByteArray a) i x s = letstrict _ = primWriteInt64Array a i x in s
+writeInt64Array (MutableByteArray a) i x s = let !_ = primWriteInt64Array a i x in s
 
 writeWord8Array :: MutableByteArray s -> Int -> Word8 -> State s -> State s
-writeWord8Array (MutableByteArray a) i x s = letstrict _ = primWriteWord8Array a i x in s
+writeWord8Array (MutableByteArray a) i x s = let !_ = primWriteWord8Array a i x in s
 
 writeWord16Array :: MutableByteArray s -> Int -> Word16 -> State s -> State s
-writeWord16Array (MutableByteArray a) i x s = letstrict _ = primWriteWord16Array a i x in s
+writeWord16Array (MutableByteArray a) i x s = let !_ = primWriteWord16Array a i x in s
 
 writeWord32Array :: MutableByteArray s -> Int -> Word32 -> State s -> State s
-writeWord32Array (MutableByteArray a) i x s = letstrict _ = primWriteWord32Array a i x in s
+writeWord32Array (MutableByteArray a) i x s = let !_ = primWriteWord32Array a i x in s
 
 writeWord64Array :: MutableByteArray s -> Int -> Word64 -> State s -> State s
-writeWord64Array (MutableByteArray a) i x s = letstrict _ = primWriteWord64Array a i x in s
+writeWord64Array (MutableByteArray a) i x s = let !_ = primWriteWord64Array a i x in s
 
 %%]
 

@@ -347,7 +347,7 @@ SEM Pattern
           Typed
 %%]]
 %%[[8
-          Irrefutable
+          Irrefutable Bang
 %%]]
         lhs         .   isVar       =   False
 %%]

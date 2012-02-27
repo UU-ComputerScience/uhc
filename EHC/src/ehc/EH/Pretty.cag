@@ -278,6 +278,7 @@ SEM Decl
 
 SEM PatExpr
   | Irrefutable loc     .   pp      =   "~" >|< @patExpr.pp
+  | Bang 		loc     .   pp      =   "!" >|< @patExpr.pp
 %%]
 
 %%[9
