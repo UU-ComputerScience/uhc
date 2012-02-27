@@ -216,8 +216,6 @@ WRAPPER AGItf
 %%]
 %%[99 ag import({EH/FakeDependencies})
 %%]
-%%[9999 ag import({EH/FakeDependencies2})
-%%]
 
 %%[99
 PRAGMA strictsem
