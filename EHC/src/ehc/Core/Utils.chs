@@ -209,34 +209,6 @@ fsLReorder opts fsL
      in   tyRowCanonOrderBy compare fsL'
 %%]
 
-%%[(8888 codegen) export(rpbReorder,patBindLOffset)
-rpbReorder :: EHCOpts -> [RPatFld] -> [RPatFld]
-rpbReorder opts pbL
-  =  let  (pbL',_)
-            =  foldr
-                 (\(RPatFld_Fld l o n p) (pbL,exts) 
-                     ->  let  mkOff lbl exts o
-                                =  let nrSmaller = length . filter (\e -> rowLabCmp e lbl == LT) $ exts
-                                   in  acoreBuiltinAddInt opts o nrSmaller
-                         in   ((RPatFld_Fld l (mkOff l exts o) n p):pbL,l:exts)
-                 )
-                 ([],[])
-            $  pbL
-          cmpPB (RPatFld_Fld l1 _ _ _)  (RPatFld_Fld l2 _ _ _) = rowLabCmp l1 l2
-     in   sortBy cmpPB pbL'
-
-patBindLOffset :: [RPatFld] -> ([RPatFld],[CBindL])
-patBindLOffset
-  =  unzip
-  .  map
-       (\b@(RPatFld_Fld l o n p@(RPat_Var pn _))
-           ->  let  offNm = hsnUniqify HsNameUniqifier_FieldOffset $ rpatNmNm pn
-               in   case o of
-                      CExpr_Int _  -> (b,[])
-                      _            -> (RPatFld_Fld l (acoreVar offNm) n p,[acoreBind1Cat CBindCateg_Plain offNm o])
-       )
-%%]
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Module merge by pulling in only that which is required
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

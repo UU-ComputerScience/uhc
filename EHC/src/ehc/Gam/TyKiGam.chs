@@ -197,6 +197,9 @@ initTyKiGam
 %%[[18
       , (tyKiGamNameSingleton hsnRecUnboxed (TyKiGamInfo ([kiRow] `mkArrow` kiUnboxed)))
 %%]]
+%%[[31
+      , (tyKiGamNameSingleton hsnEqTilde    (TyKiGamInfo ([kiStar,kiStar] `mkArrow` kiStar)))	-- TBD: should be polykinded, but does not matter as already rewritten to explicit equality predicate at the time this info is used
+%%]]
       ]
   where star = TyKiGamInfo kiStar
 %%[[18

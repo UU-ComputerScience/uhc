@@ -8,26 +8,26 @@
 %%% Fix fields of a dictionaries
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(9 codegen) hs module {%{EH}Core.Trf.FixDictFields} export(cmodTrfFixDictFields)
+%%[(9 codegen wholeprogAnal) hs module {%{EH}Core.Trf.FixDictFields} export(cmodTrfFixDictFields)
 %%]
-%%[(9 codegen) hs import(Data.Maybe, qualified Data.Set as Set, qualified Data.Map as Map)
+%%[(9 codegen wholeprogAnal) hs import(Data.Maybe, qualified Data.Set as Set, qualified Data.Map as Map)
 %%]
-%%[(9 codegen) hs import(EH.Util.Utils,qualified EH.Util.FastSeq as Seq,{%{EH}Base.Common},{%{EH}Core},{%{EH}Ty})
+%%[(9 codegen wholeprogAnal) hs import(EH.Util.Utils,qualified EH.Util.FastSeq as Seq,{%{EH}Base.Common},{%{EH}Core},{%{EH}Ty})
 %%]
-%%[(9 codegen) hs import({%{EH}AbstractCore})
+%%[(9 codegen wholeprogAnal) hs import({%{EH}AbstractCore})
 %%]
 
 -- for debug
-%%[(9 codegen) hs import({%{EH}Base.Debug},EH.Util.Pretty)
+%%[(9 codegen wholeprogAnal) hs import({%{EH}Base.Debug},EH.Util.Pretty)
 %%]
-%%[(9 codegen) hs import(Debug.Trace)
+%%[(9 codegen wholeprogAnal) hs import(Debug.Trace)
 %%]
 
-%%[(9 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonPred},{Core/CommonCtxtPred},{Core/CommonBindNm})
+%%[(9 codegen wholeprogAnal).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonPred},{Core/CommonCtxtPred},{Core/CommonBindNm})
 WRAPPER CodeAGItf
 %%]
 
-%%[(99 codegen)
+%%[(99 codegen wholeprogAnal)
 PRAGMA nocycle
 %%]
 
@@ -35,7 +35,7 @@ PRAGMA nocycle
 %%% Haskell itf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(9 codegen) hs
+%%[(9 codegen wholeprogAnal) hs
 cmodTrfFixDictFields :: CModule -> CModule
 cmodTrfFixDictFields cmod
   =  let  t = wrap_CodeAGItf  (sem_CodeAGItf (CodeAGItf_AGItf cmod))
@@ -47,7 +47,7 @@ cmodTrfFixDictFields cmod
 %%% Transformed result
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(9 codegen)
+%%[(9 codegen wholeprogAnal)
 ATTR CodeAGItf [ | | cTrf: CModule ]
 ATTR AllCodeNT [ | | cTrf: SELF    ]
 %%]
@@ -56,7 +56,7 @@ ATTR AllCodeNT [ | | cTrf: SELF    ]
 %%% Passing info between aspects
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(9 codegen)
+%%[(9 codegen wholeprogAnal)
 ATTR AllBindAspect   [ aspBindInfo: {ACoreBindAspMp (Maybe Track,Env)} | | gathAspBindInfo USE {`Map.union`} {Map.empty}: {ACoreBindAspMp (Maybe Track,Env)} ]
 
 SEM CBind
@@ -71,7 +71,7 @@ SEM CBindAspect
 %%% The real work
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(9 codegen) hs
+%%[(9 codegen wholeprogAnal) hs
 
 type Env = Map.Map HsName Track
 
@@ -90,7 +90,7 @@ substTrack _ t                                 = t
 
 %%]
 
-%%[(9 codegen)
+%%[(9 codegen wholeprogAnal)
 
 
 ATTR CMetas CMetaVal [ mbTrack : {Maybe Track}  envFinal:Env  | | ]

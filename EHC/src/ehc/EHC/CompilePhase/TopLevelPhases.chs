@@ -1039,7 +1039,9 @@ cpProcessGrin modNm
                 ++ [cpTransformGrin modNm]
                 ++ (if ehcOptDumpGrinStages opts then [cpOutputGrin False "-099-final" modNm]  else [])
                 ++ (if ehcOptEmitBytecode opts then [cpTranslateGrin2Bytecode modNm] else [])
+%%[[(8 wholeprogAnal)
                 ++ (if targetDoesHPTAnalysis (ehcOptTarget opts) then [cpTranslateGrin modNm] else [])
+%%]]
                )
        }
 %%]

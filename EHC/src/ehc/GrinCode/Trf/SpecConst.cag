@@ -7,20 +7,20 @@ Specialize functions that are called with constant arguments
 
 
 
-%%[(8 codegen grin) ag import({GrinCode/AbsSyn})
+%%[(8 codegen grin wholeprogAnal) ag import({GrinCode/AbsSyn})
 %%]
-%%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{EH}GrinCode.Common}, {%{EH}GrinCode}, {%{EH}GrinCode.Trf.SubstExpr(substExpr)})
+%%[(8 codegen grin wholeprogAnal) hs import({%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{EH}GrinCode.Common}, {%{EH}GrinCode}, {%{EH}GrinCode.Trf.SubstExpr(substExpr)})
 %%]
-%%[(8 codegen grin) hs import(qualified Data.Map as Map, qualified Data.Set as Set, Data.Maybe)
+%%[(8 codegen grin wholeprogAnal) hs import(qualified Data.Map as Map, qualified Data.Set as Set, Data.Maybe)
 %%]
-%%[(8 codegen grin) hs import(Debug.Trace)
+%%[(8 codegen grin wholeprogAnal) hs import(Debug.Trace)
 %%]
 
-%%[(8 codegen grin)
+%%[(8 codegen grin wholeprogAnal)
 WRAPPER GrAGItf
 %%]
 
-%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.SpecConst} export(specConst)
+%%[(8 codegen grin wholeprogAnal) hs module {%{EH}GrinCode.Trf.SpecConst} export(specConst)
 specConst :: GrModule -> GrModule
 specConst grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
                                        (Inh_GrAGItf)
@@ -28,12 +28,12 @@ specConst grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
 %%]
 
 
-%%[(8 codegen grin)
+%%[(8 codegen grin wholeprogAnal)
 ATTR GrAGItf [ | | grTrf: GrModule ]
 ATTR AllNT [ | | grTrf: SELF ]
 %%]
 
-%%[(8 codegen grin)
+%%[(8 codegen grin wholeprogAnal)
 
 -- collect global constants
 

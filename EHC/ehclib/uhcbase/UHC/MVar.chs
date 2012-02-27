@@ -48,7 +48,7 @@ Underlying routines using in MutVar
 tryTakeMutVar :: MVar' a -> MState -> ( MState, Maybe a )
 tryTakeMutVar v s
   = case readMutVar v s of
-      (s2,x@(Just _)) -> letstrict s3 = writeMutVar v Nothing s2 in (s3,x)
+      (s2,x@(Just _)) -> let !s3 = writeMutVar v Nothing s2 in (s3,x)
       fail            -> fail
 
 -- return Just with non put value when cannot put
@@ -56,7 +56,7 @@ tryPutMutVar :: MVar' a -> a -> MState -> ( MState, Maybe a )
 tryPutMutVar v a s
   = case readMutVar v s of
       (s2,Just _) -> (s2,Just a)
-      (s2,_     ) -> letstrict s3 = writeMutVar v (Just a) s2 in (s3,Nothing)
+      (s2,_     ) -> let !s3 = writeMutVar v (Just a) s2 in (s3,Nothing)
 %%]
 
 Actual MVar
@@ -68,7 +68,7 @@ newEmptyMVar = IO $ \ s1 ->
     case newMutVar Nothing s1 of
       (s2, svar) -> ( s2, MVar svar )
     {-
-    letstrict svar = newMutVar Nothing
+    let !svar = newMutVar Nothing
     in ( s, MVar svar )
     -}
 
@@ -103,7 +103,7 @@ putMVar (MVar mvar) x = IO $ \ s ->
 tryTakeMVar :: MVar a -> IO (Maybe a)
 tryTakeMVar (MVar m) = IO $ \ s ->
     case readMutVar m s of
-      (s2,x@(Just _)) -> letstrict s3 = writeMutVar m Nothing s2 in (s3,x)
+      (s2,x@(Just _)) -> let !s3 = writeMutVar m Nothing s2 in (s3,x)
       fail            -> fail
 
 -- |A non-blocking version of 'putMVar'.  The 'tryPutMVar' function

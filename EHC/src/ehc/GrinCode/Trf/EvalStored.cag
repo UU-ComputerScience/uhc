@@ -29,18 +29,18 @@ by
    UNIT (#C/c x y)
 
 
-%%[(8 codegen grin) ag import({GrinCode/AbsSyn})
+%%[(8 codegen grin wholeprogAnal) ag import({GrinCode/AbsSyn})
 %%]
-%%[(8 codegen grin) hs import (qualified Data.Map as Map, qualified Data.Set as Set)
+%%[(8 codegen grin wholeprogAnal) hs import (qualified Data.Map as Map, qualified Data.Set as Set)
 %%]
-%%[(8 codegen grin) hs import ({%{EH}Base.Common}, {%{EH}GrinCode.Common}, {%{EH}GrinCode}, {%{EH}Base.HsName} )
+%%[(8 codegen grin wholeprogAnal) hs import ({%{EH}Base.Common}, {%{EH}GrinCode.Common}, {%{EH}GrinCode}, {%{EH}Base.HsName} )
 %%]
-%%[(8 codegen grin) hs import(Debug.Trace)
+%%[(8 codegen grin wholeprogAnal) hs import(Debug.Trace)
 %%]
-%%[(8 codegen grin)
+%%[(8 codegen grin wholeprogAnal)
 WRAPPER GrAGItf
 %%]
-%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.EvalStored} export(evalStored)
+%%[(8 codegen grin wholeprogAnal) hs module {%{EH}GrinCode.Trf.EvalStored} export(evalStored)
 
 evalStored :: GrModule -> GrModule
 evalStored grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
@@ -49,13 +49,13 @@ evalStored grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
 %%]
 
 
-%%[(8 codegen grin)
+%%[(8 codegen grin wholeprogAnal)
 ATTR GrAGItf [ | | grTrf: GrModule ]
 ATTR AllNT [ | | grTrf: SELF ]
 %%]
 
 
-%%[(8 codegen grin)
+%%[(8 codegen grin wholeprogAnal)
 
 -- Environment passes information about stored values.
 -- * Global variables with final tag
@@ -115,7 +115,7 @@ SEM GrExpr
 
 %%]
 
-%%[(8 codegen grin) hs
+%%[(8 codegen grin wholeprogAnal) hs
 
 evaluateNode node@(GrVal_Node tag flds) 
   =  case tag of
@@ -129,7 +129,7 @@ evaluateNode node@(GrVal_Node tag flds)
 
 
 
-%%[(8 codegen grin)
+%%[(8 codegen grin wholeprogAnal)
 
 -- We collect bottom-up the use frequency of all free variables in an Expression, Value, and Tag.
 -- This includes the use of function names in calls and F, P, and A-tags (but not in C-tags) used in values (but not in patterns and annotations).
@@ -233,7 +233,7 @@ SEM GrVar
 
 %%]
 
-%%[(10 codegen grin)
+%%[(10 codegen grin wholeprogAnal)
 SEM GrSplit
   | Sel           lhs.defined   =  Set.singleton @nm
 %%]

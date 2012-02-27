@@ -2,16 +2,16 @@ This is a transformation on GrExpr, not on a complete GrModule.
 It substitutes variable names by other names (names of variables only, not function names).
 Used in LateInline and MergeCase.
 
-%%[(8 codegen grin) ag import({GrinCode/AbsSyn})
+%%[(8 codegen grin wholeprogAnal) ag import({GrinCode/AbsSyn})
 %%]
-%%[(8 codegen grin) hs import(Debug.Trace)
+%%[(8 codegen grin wholeprogAnal) hs import(Debug.Trace)
 %%]
 
-%%[(8 codegen grin)
+%%[(8 codegen grin wholeprogAnal)
 WRAPPER GrExpr
 %%]
 
-%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.SubstExpr} import(qualified Data.Map as Map, {%{EH}GrinCode.Common}, {%{EH}Base.Common}, {%{EH}GrinCode}) export(substExpr)
+%%[(8 codegen grin wholeprogAnal) hs module {%{EH}GrinCode.Trf.SubstExpr} import(qualified Data.Map as Map, {%{EH}GrinCode.Common}, {%{EH}Base.Common}, {%{EH}GrinCode}) export(substExpr)
 
 type Env = Map.Map HsName HsName
 
@@ -22,12 +22,12 @@ substExpr env expr  = let t = wrap_GrExpr (sem_GrExpr expr)
 
 %%]
 
-%%[(8 codegen grin)
+%%[(8 codegen grin wholeprogAnal)
 ATTR AllExpr   [ env : Env | | grTrf: SELF ]
 %%]
 
 
-%%[(8 codegen grin) hs
+%%[(8 codegen grin wholeprogAnal) hs
 
 findNewVar fm e             = Map.findWithDefault e e fm
 
@@ -37,7 +37,7 @@ findNewAltAnn fm ann                    = ann
 %%]
 
 
-%%[(8 codegen grin)
+%%[(8 codegen grin wholeprogAnal)
 
 SEM GrVal
   | Var         lhs  .  grTrf  = GrVal_Var                  (findNewVar @lhs.env @nm)
@@ -66,7 +66,7 @@ SEM GrAlt
 
 %%]
 
-%%[(8 codegen grin)
+%%[(8 codegen grin wholeprogAnal)
 -- The transformation is meant to be performed on GrExpr.
 -- The following definitions just serve to keep UUAGC from complaining about missing definitions.
 

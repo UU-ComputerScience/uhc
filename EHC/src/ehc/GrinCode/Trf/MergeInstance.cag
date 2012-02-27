@@ -5,20 +5,20 @@ For the construction of dictionaries, two lists of definitions need to be merged
 
 
 
-%%[(9 codegen grin) ag import({GrinCode/AbsSyn})
+%%[(9 codegen grin wholeprogAnal) ag import({GrinCode/AbsSyn})
 %%]
 
-%%[(9 codegen grin).wrapper
+%%[(9 codegen grin wholeprogAnal).wrapper
 WRAPPER GrAGItf
 %%]
 
-%%[(9 codegen grin) hs module {%{EH}GrinCode.Trf.MergeInstance} import(qualified Data.Map as Map,qualified Data.Set as Set)
+%%[(9 codegen grin wholeprogAnal) hs module {%{EH}GrinCode.Trf.MergeInstance} import(qualified Data.Map as Map,qualified Data.Set as Set)
 %%]
-%%[(9 codegen grin) hs import(Debug.Trace)
+%%[(9 codegen grin wholeprogAnal) hs import(Debug.Trace)
 %%]
 
 
-%%[(9 codegen grin) hs import({%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{EH}GrinCode.Common}, {%{EH}GrinCode}) export(mergeInstance)
+%%[(9 codegen grin wholeprogAnal) hs import({%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{EH}GrinCode.Common}, {%{EH}GrinCode}) export(mergeInstance)
 
 mergeInstance :: GrModule -> GrModule
 mergeInstance code
@@ -28,13 +28,13 @@ mergeInstance code
 
 %%]
 
-%%[(9 codegen grin)
+%%[(9 codegen grin wholeprogAnal)
 ATTR GrAGItf [ | | grTrf: GrModule ]
 ATTR AllNT   [ | | grTrf: SELF     ]
 %%]
 
 
-%%[(9 codegen grin) hs
+%%[(9 codegen grin wholeprogAnal) hs
 
 type ClassMap = Map.Map HsName [Track]
 type DictMap  = Map.Map HsName ([HsName],[Track])
@@ -47,7 +47,7 @@ type DictMap3 = Map.Map [HsName] HsName
 %%]
 
 
-%%[(9 codegen grin)
+%%[(9 codegen grin wholeprogAnal)
 
 ATTR AllBind [ 
              | 
@@ -179,7 +179,7 @@ SEM GrGlobalL
 
 %%]
 
-%%[(9 codegen grin) hs
+%%[(9 codegen grin wholeprogAnal) hs
 
 extraGlobals :: ArityMap -> DictMap2 -> DictMap3 -> [GrGlobal]
 extraGlobals am dm pm = concatMap (extraGlobalsDict am dm pm) (Map.toList dm)

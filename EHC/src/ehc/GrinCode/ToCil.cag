@@ -15,36 +15,36 @@ thunks.
 
 %%]
 
-%%[(8 codegen clr) hs module {%{EH}GrinCode.ToCil} export(grin2cil)
+%%[(8 codegen clr wholeprogAnal wholeprogC) hs module {%{EH}GrinCode.ToCil} export(grin2cil)
 %%]
-%%[(8 codegen clr) ag import({GrinCode/AbsSyn})
+%%[(8 codegen clr wholeprogAnal wholeprogC) ag import({GrinCode/AbsSyn})
 %%]
-%%[(8 codegen clr) ag import({GrinCode/CommonForGen})
+%%[(8 codegen clr wholeprogAnal wholeprogC) ag import({GrinCode/CommonForGen})
 %%]
-%%[(8 codegen clr) hs import(Language.Cil hiding(tail))
+%%[(8 codegen clr wholeprogAnal wholeprogC) hs import(Language.Cil hiding(tail))
 %%]
-%%[(8 codegen clr) hs import(Debug.Trace)
+%%[(8 codegen clr wholeprogAnal wholeprogC) hs import(Debug.Trace)
 %%]
-%%[(8 codegen clr) hs import(Data.List((\\), nub), Data.Maybe (maybe, isJust, fromJust), qualified Data.Map as Map, Data.Map (Map), qualified Data.Set as Set, Data.Set (Set), Data.Bits)
+%%[(8 codegen clr wholeprogAnal wholeprogC) hs import(Data.List((\\), nub), Data.Maybe (maybe, isJust, fromJust), qualified Data.Map as Map, Data.Map (Map), qualified Data.Set as Set, Data.Set (Set), Data.Bits)
 %%]
-%%[(8 codegen clr) hs import(Control.Arrow(first, second))
+%%[(8 codegen clr wholeprogAnal wholeprogC) hs import(Control.Arrow(first, second))
 %%]
-%%[(8 codegen clr) hs import(EH.Util.Pretty, EH.Util.Utils)
+%%[(8 codegen clr wholeprogAnal wholeprogC) hs import(EH.Util.Pretty, EH.Util.Utils)
 %%]
-%%[(8 codegen clr) hs import({%{EH}Base.Common}, {%{EH}Opts}, {%{EH}GrinCode})
+%%[(8 codegen clr wholeprogAnal wholeprogC) hs import({%{EH}Base.Common}, {%{EH}Opts}, {%{EH}GrinCode})
 %%]
-%%[(8 codegen clr) hs import({%{EH}GrinCode.Common} hiding (Variable(..)), {%{EH}Config}, {%{EH}Silly})
+%%[(8 codegen clr wholeprogAnal wholeprogC) hs import({%{EH}GrinCode.Common} hiding (Variable(..)), {%{EH}Config}, {%{EH}Silly})
 %%]
-%%[(8 codegen clr) hs import({%{EH}Cil.Common}, {%{EH}Cil.TyTag})
+%%[(8 codegen clr wholeprogAnal wholeprogC) hs import({%{EH}Cil.Common}, {%{EH}Cil.TyTag})
 %%]
-%%[(8 codegen clr) hs import({%{EH}Foreign.Extract})
+%%[(8 codegen clr wholeprogAnal wholeprogC) hs import({%{EH}Foreign.Extract})
 %%]
 
-%%[(8 codegen clr)
+%%[(8 codegen clr wholeprogAnal wholeprogC)
 WRAPPER GrAGItf
 %%]
 
-%%[(8 codegen clr) hs
+%%[(8 codegen clr wholeprogAnal wholeprogC) hs
 {- TODO (clean up:
  - Remove duplicate code from GrTag.
  - clear up debugComment.
@@ -102,7 +102,7 @@ newRefObj = newobj "" refObjNm [Object]
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Code generation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%[(8 codegen clr)
+%%[(8 codegen clr wholeprogAnal wholeprogC)
 
 ATTR GrAGItf AllNT
   [
@@ -540,7 +540,7 @@ SEM GrTag
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Helper functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%[(8 codegen clr) hs
+%%[(8 codegen clr wholeprogAnal wholeprogC) hs
 
 absValue :: HsName -> HptMap -> AbstractValue
 absValue hsName hptMap = case absValues hsName hptMap of

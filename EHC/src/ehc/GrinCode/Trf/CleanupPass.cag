@@ -6,19 +6,19 @@ do not delay constructorfunctions: instead of F/Con, use C/Con;
 
 %%]
 
-%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.CleanupPass} export(cleanupPass)
+%%[(8 codegen grin wholeprogAnal) hs module {%{EH}GrinCode.Trf.CleanupPass} export(cleanupPass)
 %%]
-%%[(8 codegen grin) hs import(qualified Data.Set as Set,qualified Data.Map as Map, {%{EH}Base.Builtin}(hsnIsConstructorName), Data.Maybe(fromJust))
+%%[(8 codegen grin wholeprogAnal) hs import(qualified Data.Set as Set,qualified Data.Map as Map, {%{EH}Base.Builtin}(hsnIsConstructorName), Data.Maybe(fromJust))
 %%]
-%%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}GrinCode.Common}, {%{EH}GrinCode})
+%%[(8 codegen grin wholeprogAnal) hs import({%{EH}Base.Common}, {%{EH}GrinCode.Common}, {%{EH}GrinCode})
 %%]
-%%[(8 codegen grin) ag import({GrinCode/AbsSyn})
+%%[(8 codegen grin wholeprogAnal) ag import({GrinCode/AbsSyn})
 %%]
-%%[(8 codegen grin).wrapper
+%%[(8 codegen grin wholeprogAnal).wrapper
 WRAPPER GrAGItf
 %%]
 
-%%[(8 codegen grin) hs
+%%[(8 codegen grin wholeprogAnal) hs
 cleanupPass :: GrModule -> GrModule
 cleanupPass grmod
    = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
@@ -26,7 +26,7 @@ cleanupPass grmod
      in grTrf_Syn_GrAGItf t
 %%]
 
-%%[(8 codegen grin)
+%%[(8 codegen grin wholeprogAnal)
 -- synthesize a modified copy
 ATTR GrAGItf [ | | grTrf: GrModule ]
 ATTR AllNT   [ | | grTrf: SELF ]
@@ -38,7 +38,7 @@ ATTR AllNT   [ | | grTrf: SELF ]
 %%%%% translate #F/c   to #C/c
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin)
+%%[(8 codegen grin wholeprogAnal)
 -- Pass down the ctagMap to all GrTag positions, because it is needed when generating #C tags.
 -- The map is taken from the module header and slightly tweaked before passing down.
 
@@ -55,7 +55,7 @@ SEM GrTag
                        else @loc.grTrf
 %%]
 
-%%[(8 codegen grin) hs
+%%[(8 codegen grin wholeprogAnal) hs
 dontDelayConstructors :: Map.Map HsName GrTag -> HsName -> GrTag
 dontDelayConstructors tagMap nm
   = maybe (GrTag_Fun nm)

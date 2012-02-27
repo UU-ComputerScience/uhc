@@ -7,21 +7,21 @@ This is not a transformation, just an extra check whether SetGrinInvariant worke
 
 %%]
 
-%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.CheckGrinInvariant} export(checkGrinInvariant)
+%%[(8 codegen grin wholeprogAnal) hs module {%{EH}GrinCode.Trf.CheckGrinInvariant} export(checkGrinInvariant)
 %%]
-%%[(8 codegen grin) ag import({GrinCode/AbsSyn},{GrinCode/CommonForGen})
+%%[(8 codegen grin wholeprogAnal) ag import({GrinCode/AbsSyn},{GrinCode/CommonForGen})
 %%]
-%%[(8 codegen grin) hs import(Data.Maybe(fromJust), qualified Data.Map as Map)
+%%[(8 codegen grin wholeprogAnal) hs import(Data.Maybe(fromJust), qualified Data.Map as Map)
 %%]
-%%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}Base.Builtin},{%{EH}GrinCode.Common}, {%{EH}GrinCode})
+%%[(8 codegen grin wholeprogAnal) hs import({%{EH}Base.Common}, {%{EH}Base.Builtin},{%{EH}GrinCode.Common}, {%{EH}GrinCode})
 %%]
-%%[(8 codegen grin) hs import({%{EH}Foreign.Extract})
+%%[(8 codegen grin wholeprogAnal) hs import({%{EH}Foreign.Extract})
 %%]
-%%[(8 codegen grin)
+%%[(8 codegen grin wholeprogAnal)
 WRAPPER GrAGItf
 %%]
 
-%%[(8 codegen grin) hs
+%%[(8 codegen grin wholeprogAnal) hs
 
 checkGrinInvariant :: GrModule -> [String]
 checkGrinInvariant code
@@ -31,7 +31,7 @@ checkGrinInvariant code
 
 %%]
 
-%%[(8 codegen grin) hs
+%%[(8 codegen grin wholeprogAnal) hs
 
 data Mode = ModeWord
           | ModeNode
@@ -58,7 +58,7 @@ unifyModes s (m:ms) = (m, concatMap (checkMd ("case alternatives have unbalanced
 
 %%]
 
-%%[(8 codegen grin)
+%%[(8 codegen grin wholeprogAnal)
 
 ATTR GrAGItf
      GrModule

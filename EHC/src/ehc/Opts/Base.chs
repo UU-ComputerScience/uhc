@@ -175,6 +175,7 @@ data EHCOpts
 
       ,  ehcOptBuiltinNames   ::  EHBuiltinNames
       ,  ehcOptEnvironment    ::  EHCEnvironment    -- runtime environment
+      ,  ehcOptBangPatterns   ::  Bool              -- allow bang patterns
       
 %%]]
 %%[[9
@@ -292,6 +293,7 @@ emptyEHCOpts
 
       ,  ehcOptDumpGrinStages   =   False
       -- ,  ehcOptEarlyModMerge    =   False
+      ,  ehcOptBangPatterns		= 	True
 %%]]
 %%[[8
       ,  ehcOptVerbosity        =   VerboseNormal

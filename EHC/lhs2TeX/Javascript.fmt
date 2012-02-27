@@ -1,21 +1,27 @@
 %% keywords
-%format throw	  	= "\text{\textbf{throw}}"
 %format function  	= "\text{\textbf{function}}"
-%format var     	= "\text{\textbf{var}}"
-%format if	     	= "\text{\textbf{if}}"
-%format this     	= "\text{\textbf{this}}"
 %format return     	= "\text{\textbf{return}}"
 %format typeof     	= "\text{\textbf{typeof}}"
+%format throw	  	= "\text{\textbf{throw}}"
 %format while     	= "\text{\textbf{while}}"
+%format this     	= "\text{\textbf{this}}"
 %format else     	= "\text{\textbf{else}}"
+%format var     	= "\text{\textbf{var}}"
+%format new     	= "\text{\textbf{new}}"
+%format if	     	= "\text{\textbf{if}}"
+
+%format .	     	= "."
 
 %% DSL types/constructors
 %format Fun 		= "\con{Fun}"
 %format App 		= "\con{App}"
 %format AppLT 		= "\con{AppLT}"
+%format _A_ 		= "\con{App}"
+%format _F_ 		= "\con{Fun}"
+%format _A_undersat_= "\con{AppLT}"
 
 %% DSL identifiers
-%format ev 			= "\dsl{ev}"
+%format indset 		= "\dsl{indset}"
 %format applyN 		= "\dsl{applyN}"
 %format app1 		= "\con{app1}"
 %format app2 		= "\con{app2}"
@@ -23,4 +29,9 @@
 %format app4 		= "\con{app4}"
 %format eOrV 		= "\dsl{eOrV}"
 %format ind 		= "\dsl{ind}"
-%format indset 		= "\dsl{indset}"
+%format ev 			= "\dsl{ev}"
+%format __eOrV__ 	= "\dsl{eOrV}"
+%format __aN__ 		= "\dsl{applyN}"
+%format _e_ 		= "\dsl{eval}"
+%format evalN	 	= "\dsl{fun}"
+%format __evN__ 	= "\dsl{fun}"

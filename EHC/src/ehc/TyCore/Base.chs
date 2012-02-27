@@ -43,35 +43,6 @@ type RPatFld 		= RPatFld' 		Expr Ty ValBind PatRest
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Conversion from Rxxx -> Cxxx
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8888 codegen) hs export(rpat2Pat)
-rpat2Pat :: RPat -> Pat
-rpat2Pat p
-  = case p of
-      RPat_Var      n ty       -> Pat_Var (rpatNmNm n) ty
-      RPat_Con      n ty t b   -> Pat_Con t r bs
-                               where (r,bs) = rpatConBind2PatConBind b
-      RPat_Int      n ty v     -> Pat_Int v ty
-      RPat_Char     n ty v     -> Pat_Char v ty
-%%[[97
-      RPat_BoolExpr n ty v _   -> Pat_BoolExpr v
-%%]]
-%%]
-
-%%[(8888 codegen) hs export(rpatConBind2PatConBind,rpatBind2FldBind)
-rpatConBind2PatConBind :: RPatConBind -> (PatRest,[FldBind])
-rpatConBind2PatConBind b
-  = case b of
-  	  RPatConBind_One 	r bs 	-> (r,map rpatBind2FldBind bs)
-  	  RPatConBind_Many 	bs 		-> head (map rpatConBind2PatConBind bs)
-
-rpatBind2FldBind :: RPatFld -> FldBind
-rpatBind2FldBind (RPatFld_Fld l o n p) = FldBind_Fld n (rcpTy p) o		-- guaranteed to be a rpat with a Ty
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Utility functions for CMeta
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

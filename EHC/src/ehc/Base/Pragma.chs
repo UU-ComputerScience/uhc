@@ -37,6 +37,8 @@ data Pragma
       }
   | Pragma_NoGenericDeriving                -- turn off generic deriving
   | Pragma_GenericDeriving                  -- turn on generic deriving (default)
+  | Pragma_NoBangPatterns               	-- turn off bang patterns
+  | Pragma_BangPatterns                  	-- turn on bang patterns (default)
   | Pragma_ExtensibleRecords                -- turn on extensible records
   | Pragma_Fusion               			-- turn on fusion syntax
 %%[[(99 codegen)
@@ -60,6 +62,8 @@ allSimplePragmaMp
                   , Pragma_CPP
                   , Pragma_GenericDeriving
                   , Pragma_NoGenericDeriving
+                  , Pragma_BangPatterns
+                  , Pragma_NoBangPatterns
                   , Pragma_ExtensibleRecords
                   , Pragma_Fusion
                   ]
@@ -101,6 +105,8 @@ instance Serialize Pragma where
   sput (Pragma_ExcludeIfTarget a        ) = sputWord8 6 >> sput a
 %%]]
   sput (Pragma_Fusion        			) = sputWord8 7
+  sput (Pragma_NoBangPatterns           ) = sputWord8 8
+  sput (Pragma_BangPatterns             ) = sputWord8 9
   sget = do t <- sgetWord8
             case t of
               0 -> return Pragma_NoImplicitPrelude
@@ -113,6 +119,8 @@ instance Serialize Pragma where
               6 -> liftM  Pragma_ExcludeIfTarget        sget
 %%]]
               7 -> return Pragma_Fusion
+              8 -> return Pragma_NoBangPatterns
+              9 -> return Pragma_BangPatterns
 
 %%]
 

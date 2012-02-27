@@ -215,6 +215,12 @@ hsnIsUnknown                        =   (==hsnUnknown)
 hsnDynVar         =   hsnFromString "?"
 %%]
 
+%%[4 export(hsnEqTilde,hsnIsEqTilde)
+hsnEqTilde        =   hsnFromString "~"
+
+hsnIsEqTilde = (==hsnEqTilde)
+%%]
+
 %%[4 export(hsnCovariant, hsnContravariant, hsnInvariant)
 hsnCovariant, hsnContravariant, hsnInvariant :: HsName
 hsnCovariant      = mkHNm "+Covariant"

@@ -730,11 +730,11 @@ pFORALL       ,
 %%[4
 pFORALL          = pKeyTk "forall"
 pEXISTS          = pKeyTk "exists"
-pTILDE           = pKeyTk "~"
+pTILDE           = pKeyTk (show hsnEqTilde)
 
 tokKeywStrsEH4 = [ "forall", "exists" ]
 tokKeywStrsHS4 = [  ]
-tokOpStrsEH4   = [ ".", "~" ]
+tokOpStrsEH4   = [ ".", show hsnEqTilde ]
 tokOpStrsHS4   = [  ]
 %%]
 

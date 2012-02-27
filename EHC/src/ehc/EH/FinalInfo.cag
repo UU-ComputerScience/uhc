@@ -92,7 +92,7 @@ SEM Decl
 
 %%[(8 hmtyinfer)
 SEM PatExpr
-  | Var VarAs AppTop Rec DataFields Con IConst CConst SConst Irrefutable App
+  | Var VarAs AppTop Rec DataFields Con IConst CConst SConst Irrefutable Bang App
 %%[[97
     Expr
 %%]]
@@ -148,7 +148,7 @@ SEM DataFieldExpr
 
 %%[(8 hmtyinfer)
 SEM PatExpr
-  | Var VarAs AppTop Rec DataFields Con IConst CConst SConst Irrefutable App
+  | Var VarAs AppTop Rec DataFields Con IConst CConst SConst Irrefutable Bang App
 %%[[97
     Expr
 %%]]

@@ -121,7 +121,7 @@ array (l,u) ies
 
 {-# INLINE unsafeArray #-}
 unsafeArray :: Ix i => (i,i) -> [(Int, e)] -> Array i e
-unsafeArray b ies = letstrict x = unsafeArray' b (rangeSize b) ies in x
+unsafeArray b ies = let !x = unsafeArray' b (rangeSize b) ies in x
 
 {-# INLINE unsafeArray' #-}
 unsafeArray' :: Ix i => (i,i) -> Int -> [(Int, e)] -> Array i e
@@ -141,7 +141,7 @@ unsafeArray' (l,u) n ies = runST (ST $ \s1 ->
 {-# INLINE fill #-}
 fill :: MutableBoxArray s e -> (Int, e) -> STRep s a -> STRep s a
 fill marr (i, e) next s1 =
-    letstrict w = writeArray marr i e s1 in case w of { s2 ->
+    let !w = writeArray marr i e s1 in case w of { s2 ->
     next s2 }
 
 {-# INLINE done #-}
@@ -157,7 +157,7 @@ done l u n marr s1 =
 -- using mechanisms currently available.
 
 listArray :: Ix i => (i,i) -> [e] -> Array i e
-listArray (l,u) es = letstrict x = unsafeArray (l,u) (zip [0 .. rangeSize (l,u) - 1] es) in x
+listArray (l,u) es = let !x = unsafeArray (l,u) (zip [0 .. rangeSize (l,u) - 1] es) in x
 
 {-# INLINE listArray #-}
 {-
@@ -179,7 +179,7 @@ listArray (l,u) es = runST (ST $ \s1# ->
 {-# INLINE (!) #-}
 -- | The value at the given index in an array.
 (!) :: Ix i => Array i e -> i -> e
-arr@(Array l u n _) ! i = unsafeAt arr $ safeIndex (l,u) n i
+(!) arr@(Array l u n _) i = unsafeAt arr $ safeIndex (l,u) n i
 
 {-# INLINE safeRangeSize #-}
 safeRangeSize :: Ix i => (i, i) -> Int
@@ -267,7 +267,7 @@ adjust :: (e -> a -> e) -> MutableBoxArray s e -> (Int, a) -> STRep s b -> STRep
 adjust f marr (i, new) next s1 =
     case readArray marr i s1 of
         (s2, old) ->
-            letstrict w = writeArray marr i (f old new) s2 in case w of
+            let !w = writeArray marr i (f old new) s2 in case w of
                 s3 -> next s3
 
 {-# INLINE (//) #-}
@@ -413,7 +413,7 @@ writeSTArray marr@(STArray l u n _) i e =
 {-# INLINE unsafeWriteSTArray #-}
 unsafeWriteSTArray :: Ix i => STArray s i e -> Int -> e -> ST s () 
 unsafeWriteSTArray (STArray _ _ _ marr) i e = ST $ \s1 ->
-    letstrict s2 = writeArray marr i e s1 in ( s2, () )
+    let !s2 = writeArray marr i e s1 in ( s2, () )
 %%]
 
 Moving between mutable and immutable
@@ -425,11 +425,11 @@ freezeSTArray (STArray l u n marr) = ST $ \s1 ->
     let copy i s3 | i == n = s3
                   | otherwise =
             case readArray marr i s3 of { ( s4, e ) ->
-            letstrict s5 = writeArray marr' i e s4 in 
+            let !s5 = writeArray marr' i e s4 in 
             copy (i + 1) s5 } in
     -- This evaluates too strict, but must be done because of (later) side effects in the original array.
     -- Looks like the dual problem of thawSTArray.
-    letstrict s3 = copy 0 s2 in
+    let !s3 = copy 0 s2 in
     case unsafeFreezeArray marr' s3  of { ( s4, arr ) ->
     ( s4, Array l u n arr ) }}
 
@@ -447,9 +447,9 @@ thawSTArray (Array l u n arr) = ST $ \s1 ->
             -- There is currently no way (by lack of (un)boxing notation) to indicate we only want to evaluate indexArray, not the content.
             -- Either the closure, or the evaluated value is put in the new array.
             let e = indexArray arr i in
-            letstrict s4 = writeArray marr i e s3 in 
+            let !s4 = writeArray marr i e s3 in 
             copy (i + 1) s4  in
-    letstrict s3 = copy 0 s2 in
+    let !s3 = copy 0 s2 in
     ( s3, STArray l u n marr ) }
 
 {-# INLINE unsafeThawSTArray #-}

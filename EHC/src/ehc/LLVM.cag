@@ -10,19 +10,19 @@
 }
 %%]
 
-%%[(8 codegen llvm) hs module {%{EH}LLVM}
+%%[(8 codegen llvm wholeprogAnal wholeprogC) hs module {%{EH}LLVM}
 %%]
 
-%%[(8 codegen llvm) hs export( LLVMModule(..), LLVMFunction(..), LLVMFunctionDecl(..), LLVMStatement(..) )
+%%[(8 codegen llvm wholeprogAnal wholeprogC) hs export( LLVMModule(..), LLVMFunction(..), LLVMFunctionDecl(..), LLVMStatement(..) )
 %%]
-%%[(8 codegen llvm) hs export( LLVMExpression(..), LLVMFunctions, LLVMFunctionDecls , LLVMStatements )
+%%[(8 codegen llvm wholeprogAnal wholeprogC) hs export( LLVMExpression(..), LLVMFunctions, LLVMFunctionDecls , LLVMStatements )
 %%]
-%%[(8 codegen llvm) ag import({LLVM/AbsSyn})
+%%[(8 codegen llvm wholeprogAnal wholeprogC) ag import({LLVM/AbsSyn})
 %%]
-%%[(8 codegen llvm) hs import(qualified Data.List)
+%%[(8 codegen llvm wholeprogAnal wholeprogC) hs import(qualified Data.List)
 %%]
 
-%%[(8 codegen llvm) hs export( LLVMCmpOp(..) )
+%%[(8 codegen llvm wholeprogAnal wholeprogC) hs export( LLVMCmpOp(..) )
 {-| 
   LLVM compare functions, parameter of the 'Expression_Compare' constructor 
   of type 'Expression'
@@ -63,7 +63,7 @@ instance Show LLVMCmpOp where
   show CMPSLE = "sle"
 %%]
 
-%%[(8 codegen llvm) hs export( LLVMBinOp(..) )
+%%[(8 codegen llvm wholeprogAnal wholeprogC) hs export( LLVMBinOp(..) )
 {-| 
   LLVM binary operators, parameter of the 'Expression_BinOp' constructor of type
   'Expression'
@@ -94,7 +94,7 @@ instance Show LLVMBinOp where
   show OR  = "or"
 %%]
 
-%%[(8 codegen llvm) hs export( LLVMVar(..), isGlobal, getName, getPlainName, getType )
+%%[(8 codegen llvm wholeprogAnal wholeprogC) hs export( LLVMVar(..), isGlobal, getName, getPlainName, getType )
 {-|
   LLVM variables
 -}
@@ -168,7 +168,7 @@ getType (NamedTy _ y)     = y
 
 %%]
 
-%%[(8 codegen llvm) hs export( LLVMType(..), i64, i32, i8, i1, pLift, pLower, isInt, isPointer)
+%%[(8 codegen llvm wholeprogAnal wholeprogC) hs export( LLVMType(..), i64, i32, i8, i1, pLift, pLower, isInt, isPointer)
 {-|
   LLVM types.
 -}
@@ -246,7 +246,7 @@ isPointer (Pointer _) = True
 isPointer _           = False
 %%]
 
-%%[(8 codegen llvm) hs export( LLVMCallType(..) )
+%%[(8 codegen llvm wholeprogAnal wholeprogC) hs export( LLVMCallType(..) )
 {-|
   Different types to call a function.
 -}
@@ -258,7 +258,7 @@ data LLVMCallType
   deriving (Eq,Show)
 %%]
 
-%%[(8 codegen llvm) hs export( LLVMParameterListType(..) )
+%%[(8 codegen llvm wholeprogAnal wholeprogC) hs export( LLVMParameterListType(..) )
 {-|
   Functions can have a fixed amount of parameters, or a variable amount.
 -}
@@ -270,7 +270,7 @@ data LLVMParameterListType
   deriving (Eq,Show)
 %%]
 
-%%[(8 codegen llvm) hs export( LLVMLinkageType(..) )
+%%[(8 codegen llvm wholeprogAnal wholeprogC) hs export( LLVMLinkageType(..) )
 {-|
   Linkage type of a symbol. The description of the constructors is copied from
   the LLVM Assembly Language Reference Manual 

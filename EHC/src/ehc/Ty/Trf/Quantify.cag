@@ -563,7 +563,7 @@ SEM Ty
                                                     in   mkTyQuForRank @lhs.opts @isQuRank @hereQu @qBndL1Tvs rwNTvS @qBndExTvs
                                                          $  mkTyQuForRank @lhs.opts @isQuRank @lhs.baseQu [] rwYTvS []
                                                          $  @quTyBase
-  | Pred        lhs         .   quTy            =   mkTyQuForRank @lhs.opts @isQuRank @hereQu @qBndL1Tvs @qBndTvs @qBndExTvs (Ty_Pred @pr.quTy)
+  | Pred        lhs         .   quTy            =   mkTyQuForRank @lhs.opts @isQuRank @hereQu @qBndL1Tvs @qBndTvs @qBndExTvs (mkTyPr @pr.quTy)
 %%]
 
 %%[(11 hmtyinfer || hmtyast)
