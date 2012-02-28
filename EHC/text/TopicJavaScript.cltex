@@ -15,7 +15,7 @@
 %%]
 
 %%[abstract
-We describe a small web application intended to make highschool students familiar with functional and logic programming.
+We describe a small web application intended to make secondary school students familiar with functional and logic programming.
 The application demonstrates the use of Haskell on various levels.
 First, the accompanying teaching material for the web application explains both Prolog and its implementation in Haskell.
 Second, the web application has been written in Haskell, both server and browser side.
@@ -73,7 +73,7 @@ To make our contribution more precise, in the following sections we discuss the 
  (Section~\ref{discussionIssuesRelatedWork}).
 \end{itemize}
 
-Finally we wrap up in Sections~\ref{relatedWork} and \ref{conclusion}.
+Finally we wrap up in Section~\ref{conclusion}.
 
 
 %%]
@@ -99,7 +99,7 @@ The JCU app ... Figure~\ref{jcuapp}
 %%[HaskellToJavaScript
 \label{HaskellToJavaScript}
 There is an obvious mismatch between Haskell and Object-Oriented languages,
-which has been addressed in various ways over time (Section~\ref{relatedWork}):
+which has been addressed in various ways over time (Section~\ref{discussionIssuesRelatedWork}):
 \begin{itemize}
 \item
  Mapping the runtime machinery required for Haskell to an imperative language has to deal with the lazy evaluation strategy
@@ -425,7 +425,9 @@ There are many more places where there is tension between the typed and the unty
 
 \todo{User interface: HTML5, Canvas Drawing.}
 
-\todo{Deployment, compactification, whole prog.}
+\paragraph{JCU.}
+
+\todo{JCU specific and interesting stuff}
 
 %%]
 
@@ -465,25 +467,57 @@ respectively a small compiler for a subset of Haskell has been written in JavaSc
 
 Object Oriented behavior itself can be realized inside Haskell by exploiting the class system
 \cite{shields01haskell-oo-overloading,kiselyov05haskell-oo}.
+However, we aim to access libraries written in JavaScript, not mimic JavaScript inside Haskell.
+
+When functionality of the libraries would have to be (re)written in Haskell some form of OO mechanism
+should be available.
+This issue arises when one would code in Haskell a platform independent part of an otherwise OO GUI library,
+say |wxHaskell|.
+For now we limit ourselves to accessing JavaScript libraries via the FFI, hiding OO idiom inside FFI import entities. 
 
 
-\todo{Mapping to OO: FFI or other mechanism.}
+%\todo{Mapping to OO: FFI or other mechanism.}
 
-\todo{Records in JS vs HS.}
+%\todo{Records in JS vs HS.}
 
 \paragraph{Type system absence.}
 
-\todo{Typing the untyped.}
+JavaScript has no type system, the absence of which can be dealt with
+by using phantom types in wrapper functions around untyped FFI calls.
+More problematic however are for example DOM functions returning objects with a different interface,
+like a DOM element or attribute.
+A sum type defining all possible result types could be used, but datatypes are not extensible,
+which might be too limiting in practice.
+Dynamics might be used as result values, but require assistence from the runtime system as well
+as knowledge about types (e.g. in the form of |TypeRep|).
+Existentially quantified datatypes and classes might be used (similar to extensible exceptions \cite{marlow06extensible-exception}),
+but then knowledge about the class system also seeps into the runtime system.
+Currently this has not yet been further addressed.
+
+%\todo{Typing the untyped.}
 
 \paragraph{Side effects.}
 
-\todo{All in IO, what can be done without IO, threads? STM?.}
+Currently all access to JavaScript values is done in the IO monad, so side effect can be properly modelled.
+For now it is assumed that no threads exist, JavaScripts worker thread mechanism can be used safely,
+hence no semaphore, STM, or other shared data access machinery needs
+to be implemented.
+
+%\todo{All in IO, what can be done without IO, threads? STM?.}
 
 \paragraph{Deployment.}
 
-\todo{Code compactification, module loading, ...}
+JavaScript code is usually downloaded, hence compact representation as well as avoiding or delaying loading of code is
+important.
+UHC allows pruning of unused code as to achieve a relative compact representation,
+but provides no mechanism for dynamic loading.
+It is left up to the user of the compiled code to incorporate it into a webpage.
+
+%\todo{Code compactification, module loading, whole prog, ...}
 
 \paragraph{Runtime performance.}
+
+??
 
 \paragraph{Libraries, Haskell platform.}
 

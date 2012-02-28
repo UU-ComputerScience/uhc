@@ -190,6 +190,7 @@ import UHC.Handle
 import UHC.IO
 import UHC.OldException (bracket, onException)
 import System.IO.Unsafe (unsafeInterleaveIO)
+import System.IO.Fix (fixIO)
 #endif
 
 #ifdef __HUGS__
@@ -408,20 +409,7 @@ fixIO k = do
     return result
 
 #elif defined(__UHC__)
-data Lazy a = Lazy a
-
--- functie aangepast met Lazy data type als wrapper voor newIORef (strict in zijn argument).
-fixIO :: (a -> IO a) -> IO a
-fixIO k = do
-    ref <- newIORef (Lazy (throw NonTermination))
-    ~(Lazy ans) <- unsafeInterleaveIO (readIORef ref)
-    result <- k ans
-    writeIORef ref (Lazy result)
-    return result
-
--- NOTE: we do our own explicit black holing here, because GHC's lazy
--- blackholing isn't enough.  In an infinite loop, GHC may run the IO
--- computation a few times before it notices the loop, which is wrong.
+-- See System.IO.Fix
 #endif
 
 #if defined(__NHC__)

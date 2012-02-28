@@ -27,7 +27,11 @@ module Control.Monad.Fix (
   ) where
 
 import Prelude
+#ifdef __UHC__
+import System.IO.Fix
+#else
 import System.IO
+#endif
 import Control.Monad.Instances ()
 import Data.Function (fix)
 #ifdef __HUGS__
