@@ -177,6 +177,12 @@ SEM Decl
 %%]]
 %%]
 
+%%[(50 hmtyinfer)
+SEM Decl
+  | Instance    loc         .   finalHdInstArgLExpanded
+                                                    =   map (tyCanonic (emptyFI {fiEnv = @fe} :: FIIn)) @instArgTyL
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Final kind
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

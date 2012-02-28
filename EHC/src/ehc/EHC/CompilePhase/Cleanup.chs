@@ -108,7 +108,7 @@ cpCleanupBytecode modNm
 cpCleanupCU :: HsName -> EHCompilePhase ()
 cpCleanupCU modNm
   = do { cpUpdCU modNm
-           (\e -> e { ecuHIInfo            = HI.emptyHIInfo
+           (\e -> e { ecuHIInfo            = HI.hiiRetainAfterCleanup (ecuHIInfo e)
                     , ecuMbOptim           = Nothing
                     }
            )

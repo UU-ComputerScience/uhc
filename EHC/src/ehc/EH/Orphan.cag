@@ -1,0 +1,35 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Determination whether module is an orphan module, i.e. has orphan instances
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[50 hs
+-- | determine the orphans given a modulenm, of a nm
+orphanNmS :: HsName -> HsName -> Set.Set HsName
+orphanNmS moduleNm nm
+  = case hsnQualifier nm of
+      Just m | m /= moduleNm -> Set.singleton m
+      _                      -> Set.empty
+%%]
+
+%%[50
+ATTR Expr AllDecl [ | | orphanS USE {`Set.union`} {Set.empty} : {Set.Set HsName} ]
+
+SEM Expr
+  | * - Let     lhs         .   orphanS             =   Set.empty
+
+SEM Decl
+  | Instance    loc         .   clsOrphanS          =   orphanNmS @lhs.moduleNm @instClsNm
+                            .   tyOrphanS           =   Set.unions [ orphanNmS @lhs.moduleNm c | t <- @finalHdInstArgLExpanded, c <- Set.toList $ tyAllConS t ]
+                            .   orphanS             =   if not (Set.null @clsOrphanS || Set.null @tyOrphanS)
+                                                        then @clsOrphanS `Set.union` @tyOrphanS
+                                                        else Set.empty
+%%]
+
+%%[50
+ATTR AGItf [ | | mbOrphan: {Maybe (Set.Set HsName)} ]
+
+SEM AGItf
+  | AGItf       lhs         .   mbOrphan            =   if Set.null @expr.orphanS then Nothing else Just @expr.orphanS
+%%]
+
+

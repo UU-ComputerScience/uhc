@@ -206,7 +206,7 @@ WRAPPER AGItf
 %%[(17 hmtyinfer) ag import({EH/InferPolarity})
 %%]
 
-%%[50 ag import({EH/UsedNames})
+%%[50 ag import({EH/UsedNames},{EH/Orphan})
 %%]
 
 %%[92 ag import({EH/Generics})

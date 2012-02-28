@@ -740,7 +740,7 @@ SEM Expr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen)
-ATTR Decl Decls [ | | bangEvalL USE {++} {[]} : {[CExpr -> CExpr]} ]
+ATTR AllDecl [ | | bangEvalL USE {++} {[]} : {[CExpr -> CExpr]} ]
 
 SEM Decl
   | Val			lhs			.	bangEvalL		=	if @patExpr.isBang then [acoreLet1StrictTy (hsnUniqify HsNameUniqifier_Strict @patExpr.topNm) @finalTy (acoreVar @patExpr.topNm)] else []
@@ -752,7 +752,7 @@ SEM Decl
 
 %%[(8 codegen)
 ATTR
-  Decls Decl AllDataConstr
+  AllDecl AllDataConstr
     [ | | cbindL
         , ffiCBindL
 %%[[90

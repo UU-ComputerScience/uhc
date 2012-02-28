@@ -80,11 +80,11 @@ SEM Module
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[50
-ATTR AGItf Module [ | | modImpNmL: {[HsName]} ]
+ATTR AGItf Module [ | | modImpNmS: {Set.Set HsName} ]
 
 SEM Module
     | Module
-        lhs             .   modImpNmL   =   map mimpSource @modImpL
+        lhs             .   modImpNmS   =   Set.fromList $ map mimpSource @modImpL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

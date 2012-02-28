@@ -15,32 +15,62 @@
 %%]
 
 %%[abstract
-We describe a small web application intended to make highschool students familiar with programming languages.
+We describe a small web application intended to make highschool students familiar with functional and logic programming.
 The application demonstrates the use of Haskell on various levels.
 First, the accompanying teaching material for the web application explains both Prolog and its implementation in Haskell.
 Second, the web application has been written in Haskell, both server and browser side.
 As an experiment, the browser side has been implemented using the JavaScript backend of the Utrecht Haskell Compiler.
-We discuss the consequences a Haskell frontend for an Object-Oriented language brings.
+We discuss the consequences that the actual use of a Haskell frontend for an Object-Oriented language bring.
 %%]
 
 %%[introduction
-Introduction ...
+Haskell afficionados occasionally are confronted with the question ``All nice this Haskell, but does it also run on XYZ?'',
+where XYZ can be substituted with your favorite and usually widespread platform.
+This is a valid question as many developers are tied to such platforms for a variety of reasons
+yet also wish for niceties such as type safety.
+In this paper we substitute ``JavaScript in a web browser'' for XYZ,
+and indeed frustration with JavaScript turned out to be a strong motivation for the work described by this paper.
 
-\todo{Desire to program in Haskell for browsers.}
+The context for this paper is provided by a small client-server application to teach secondary school math students
+about logic and functional programming, called the Junior College University (JCU) application.
+Figure~\ref{jcuapp} shows the web browser user interface which allows the user to define Prolog like facts,
+which then can be queried and unified with.
+An accompanying document \cite{swierstra11jcu} walks the students through the application,
+its use, its implementation in terms of Prolog, and its Haskell implementation of Prolog,
+thus exposing students to a variety of programming language concepts.
 
-\todo{Motivation/drive: JCU app.}
+The server side of the JCU application is written using Snap \cite{www11snap-framework} whereas the
+(original) client side is written using various JavaScript frameworks
+(coffeescript \cite{www11coffeescript}, Brunch \cite{www11brunch}, JQuery \cite{www11jquery}).
+The task we set ourselves was to rewrite as much as possible of the JavaScript part to Haskell,
+using the JavaScript backend of the Utrecht Haskell Compiler (UHC) \cite{www09uhc,dijkstra09uhc-arch}.
+We also moved part of the Prolog machinery from server to client,
+leaving only database access (for Prolog rules) at the server side.
 
-\todo{Technical: }
-UHC \cite{www09uhc,dijkstra09uhc-arch}
+Moving functionality outside the usual Haskell habitat --Unix environments and C-- to
+a diffent runtime environment and target langauge poses some challenges,
+of which most have been looked into before.
+Our contribution is to actually do it and observe what the consequences are for Haskell
+as a language and for its libraries and runtime environment.
+To make our contribution more precise, in the following sections we discuss the following topics.
 
-Contributions and overview of remainder of this paper:
+%Introduction ...
+
+%\todo{Desire to program in Haskell for browsers.}
+
+%\todo{Motivation/drive: JCU app.}
+
+%\todo{Technical: }
+%UHC \cite{www09uhc,dijkstra09uhc-arch}
+
+%Contributions and overview of remainder of this paper:
 \begin{itemize}
-\item ... (Section~\ref{JuniorCollegeApp})
+\item The structure of the JCU application (Section~\ref{JuniorCollegeApp})
 \item A FFI based mapping between Haskell and JavaScript, in principle applicable to other OO languages as well
  (Sections~\ref{HaskellToJavaScript} and \ref{UseOfExistingJavaScriptStuff}).
 \item Insight in the consequences of stretching the use of Haskell
  beyond its comfortzone found in and around the defacto default production compiler GHC
- (Section~\ref{discussionAndIssues}).
+ (Section~\ref{discussionIssuesRelatedWork}).
 \end{itemize}
 
 Finally we wrap up in Sections~\ref{relatedWork} and \ref{conclusion}.
@@ -50,6 +80,9 @@ Finally we wrap up in Sections~\ref{relatedWork} and \ref{conclusion}.
 
 %%[JuniorCollegeApp
 \label{JuniorCollegeApp}
+
+
+
 The JCU app ... Figure~\ref{jcuapp}
 
 \todo{Structure: server (snap?), GUI, NanoProlog.}
@@ -57,7 +90,7 @@ The JCU app ... Figure~\ref{jcuapp}
 \begin{figure}[t]
 \hrule\vspace{2mm}
 \FigCenterPDF{.23}{JCU1}
-\caption{JCU application (in Dutch)}
+\caption{JCU application}
 \label{jcuapp}
 \end{figure}
 
@@ -327,15 +360,64 @@ Use some generic technique, for example generic deriving. This is heavyweight, w
 \item
 Leave it up to the programmer with some help from the runtime system to create objects and manipulate fields.
 \end{itemize}
-For now, we chose the last, most simple solution. For example, the following |Book| datatype is 
+For now, we chose the last and simplest solution.
+Lower level access to construction and manipulation of JavaScript objects is offered by Lens like \cite{oconnor11lens} primitives,
+of which we show the interfaces of their wrappers only:
+\begin{code}
+data JSPtr a
+newObj :: String -> IO (JSPtr p)
 
-\todo{Continue with example...}
+getAttr :: String -> JSPtr p -> IO a
+setAttr :: String -> a -> JSPtr p -> IO (JSPtr p)
+modAttr :: String -> (a -> b) -> JSPtr p -> IO (JSPtr p)
+\end{code}
+
+Lack of types in JavaScript is visible in the interfaces, and the only guarantee is that a |JSPtr| can only be created via
+the runtime system:
+|newObj| constructs an instance of the JavaScript type (i.e. constructor object) with the name of its |String| argument.
+It is the responsibility of the user of these functions to enforce a type discipline, e.g. by using phantom types.
+
+For example, the following |Book| datatype is constructed and manipulated by the following:
+\begin{code}
+data BookPtr
+type Book = JSPtr BookPtr
+
+main = do
+  o  <- mkObj "Book"
+  setAttr "pages" 123 o
+  modAttr "pages" (+1) o
+  p  <- getAttr "pages" o   ^^
+  print p                   ^^ -- Prints 124
+\end{code}
+
+The runtime system can actually do somewhat better than the above manual JavaScript object construction by
+exploiting knowledge about the Haskell representation of datatypes:
+\begin{code}
+mkObj :: a -> IO (JSPtr b)
+\end{code}
+Primitive |mkObj| takes a Haskell datatype constructor, enforces WHNF of all components, and constructs
+a corresponding JavaScript object.
+All components must have a runtime representation known to JavaScript.
+
+For example, now assume the following |Book| definition:
+\begin{code}
+data Book = Book
+  { author  ::  JSString   , title  ::  JSString      , pages  ::  Int  }
+book = Book
+  { author  =   toJS "me"  , title  =   toJS "story"  , pages  =   123  }
+\end{code}
+
+The above is then manipulated by
+\begin{code}
+main = do
+  let b' = book { pages = pages book + 1 }
+  b  <- mkObj b'
+  p  <- getAttr "pages" b   ^^
+  print p                   ^^ -- Prints 124
+\end{code}
 
 \todo{Predictably at many places there is tension between Haskell and JavaScript.
 There are many more places where there is tension between the typed and the untyped...}
-
-
-\todo{FFI.}
 
 \todo{JQuery, Google, or other libraries for accessing DOM.}
 
@@ -347,40 +429,92 @@ There are many more places where there is tension between the typed and the unty
 
 %%]
 
-%%[discussionAndIssues
-Discuss ...
+%%[discussionIssuesRelatedWork
+\label{discussionIssuesRelatedWork}
+
+\paragraph{Alternate approaches.}
+The idea of running Haskell in a browser is not new.
+First attempts to do so were done in the context of
+the York Haskell Compiler (YHC) \cite{www07yhc-javascript}.
+The DOM inside a browser was accessed via wrapper code generated
+from HTML standard definitions \cite{www07haskell-in-browser}.
+However, since then YHC is no longer maintained and direct interfacing to DOM
+nowadays is replaced by libraries built on top of the multiple DOM variations.
+
+The idea of running functional programs in a browser even goes further back
+to the availability of Java applets.
+The workflow framework iTasks built on top of the Clean system \cite{www11clean-system}
+uses a minimal platform independent functional language SAPL to
+encode code intended to run in a browser.
+SAPL code is then interpreted in a browser; the latest interpreter incarnations are written in JavaScript
+\cite{jansen10phd-itasks-sapl-funcweb,bruel10sapl-javascript,plasmeijer08clientside-itasks-ajax}.
+Although currently a Haskell frontend exists for Clean, the use of it in a browser seems to be tied up to the iTasks system.
+The use of a separate intermediate language SAPL also seems not to provide the equivalent of Haskells FFI.
+
+Of the GHC a version exists which generates JavaScript \cite{www11ghcjs-git},
+based on the GHC API, supporting the use of primitives but not the FFI.
+Further down we elaborate on some consequences of multiple platforms and backends
+which seem to be relevant for this GHC variant as well.
+
+Both ``Functional javascript'' \cite{www07functional-javascript} and
+``Haskell in Javascript'' \cite{www10haskellinjavascript} do not use a separate Haskell compiler.
+Instead JavaScript is used directly in a functional style
+respectively a small compiler for a subset of Haskell has been written in JavaScript.
+
+\paragraph{Object orientation.}
+
+Object Oriented behavior itself can be realized inside Haskell by exploiting the class system
+\cite{shields01haskell-oo-overloading,kiselyov05haskell-oo}.
+
 
 \todo{Mapping to OO: FFI or other mechanism.}
 
+\todo{Records in JS vs HS.}
+
+\paragraph{Type system absence.}
+
 \todo{Typing the untyped.}
 
-\todo{Records in JS vs HS.}
+\paragraph{Side effects.}
 
 \todo{All in IO, what can be done without IO, threads? STM?.}
 
-\todo{Mismatch: Cabal does not deal with multiple backend of one compiler.}
+\paragraph{Deployment.}
 
-\todo{Mismatch: Libraries take GHC as standard, not Haskell2010 (or H98).}
+\todo{Code compactification, module loading, ...}
 
-\todo{Unix based library is useless, basically other OS to run on, what about shared code, ...}
-%%]
+\paragraph{Runtime performance.}
 
-%%[relatedWork
-\label{relatedWork}
-Relate ...
+\paragraph{Libraries, Haskell platform.}
 
-\todo{OO bridging} \cite{shields01haskell-oo-overloading,kiselyov05haskell-oo}
+Targeting Haskell to a different platform means that some assumptions assumed valid
+when using one platform only are no longer valid.
+First, a different platform means a different runtime environment.
+Almost all of the UNIX functionality available for the usual Haskell UNIX runtime
+naturally is not available inside a web browser,
+and vice versa specific JavaScript libraries like jQuery are not available on a UNIX platform.
+Some library modules cannot be build on some platforms.
+To cater for this, UHC rather ad-hoc marks libraries to be unavailable for a backend by a pragma
+\verb|{-# EXCLUDE_IF_TARGET js #-}|.
+However, in general, awareness of platform permeates all aspects of a language system, from the compiler itself
+to the library build system like |Cabal|.
+In particular, |Cabal| needs a specification mechanism for such variation in target and platform
+to allow for selective or different compilation.
+Currently this means that UHC compilation for the JavaScript backend cannot be done via |Cabal|.
 
-\todo{GHCjs} \cite{www11ghcjs-git}.
+A second aspect has more to do with the evolution of Haskell as an ecosystem.
+Many libraries no longer take a Haskell standard as standard,
+but GHC.
+Currently, such libraries evolve to use (say) type families, a feature not (yet) available in UHC.
+For Haskell compiler writers to keep with this pace of evolution poses a considerable challenge,
+with a Haskell monoculture as a possible outcome.
 
-\todo{Functional javascript} \cite{www07functional-javascript}.
+%\todo{Mismatch: Cabal does not deal with multiple backend of one compiler.}
 
-\todo{Haskell in Javascript} \cite{www10haskellinjavascript}.
+%\todo{Mismatch: Libraries take GHC as standard, not Haskell2010 (or H98).}
 
-\todo{iTasks, Clean} \cite{jansen10phd-itasks-sapl-funcweb,bruel10sapl-javascript,plasmeijer08clientside-itasks-ajax}.
+%\todo{Unix based library is useless, basically other OS to run on, what about shared code, ...}
 
-\todo{York/YHC for Javascript} \cite{www07yhc-javascript}
-based project compiling DOM datamodel to corresponding wrapper code \cite{www07haskell-in-browser}.
 %%]
 
 %%[conclusion

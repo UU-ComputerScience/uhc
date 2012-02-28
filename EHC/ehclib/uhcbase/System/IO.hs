@@ -398,13 +398,25 @@ withBinaryFile name mode = bracket (openBinaryFile name mode) hClose
 -- ---------------------------------------------------------------------------
 -- fixIO
 
-#if defined(__GLASGOW_HASKELL__) || defined(__HUGS__) || defined(__UHC__)
+#if defined(__GLASGOW_HASKELL__) || defined(__HUGS__)
 fixIO :: (a -> IO a) -> IO a
 fixIO k = do
     ref <- newIORef (throw NonTermination)
     ans <- unsafeInterleaveIO (readIORef ref)
     result <- k ans
     writeIORef ref result
+    return result
+
+#elif defined(__UHC__)
+data Lazy a = Lazy a
+
+-- functie aangepast met Lazy data type als wrapper voor newIORef (strict in zijn argument).
+fixIO :: (a -> IO a) -> IO a
+fixIO k = do
+    ref <- newIORef (Lazy (throw NonTermination))
+    ~(Lazy ans) <- unsafeInterleaveIO (readIORef ref)
+    result <- k ans
+    writeIORef ref (Lazy result)
     return result
 
 -- NOTE: we do our own explicit black holing here, because GHC's lazy
