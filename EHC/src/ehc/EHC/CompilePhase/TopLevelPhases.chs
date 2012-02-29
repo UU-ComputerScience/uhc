@@ -159,6 +159,18 @@ cpEhcCheckAbsenceOfMutRecModules
       }
 %%]
 
+%%[50 export(cpEhcFetchAllMissingModulesForLinking)
+-- | Fetch all necessary modules, but just the minimal info
+cpEhcFetchAllMissingModulesForLinking :: EHCompilePhase ()
+cpEhcFetchAllMissingModulesForLinking
+ = do { cr <- get
+      ; let modNmLL = crCompileOrder cr
+            modNmL = map head modNmLL
+            otherUsedModNmS = Set.unions [ ecuTransClosedUsedModS me | m <- modNmL, let me = crCU m cr ] `Set.difference` Set.fromList modNmL
+      ; return ()
+      }
+%%]
+
 %%[50 export(cpEhcFullProgCompileAllModules)
 cpEhcFullProgCompileAllModules :: EHCompilePhase ()
 cpEhcFullProgCompileAllModules
@@ -365,6 +377,14 @@ cpEhcModuleCompile1 targHSState modNm
 %%]]
 %%]
 %%[50
+           (ECUSHaskell HIStart,Just HMOnlyMinimal)
+             -- |    st == HIStart
+             -> do { cpMsg modNm VerboseNormal ("Minimal of HM")
+                   ; cpUpdCU modNm (ecuStoreState (ECUSHaskell HMOnlyMinimal))
+                   ; return modNm
+                   }
+%%]
+%%[50
            (ECUSHaskell st,Just HSOnlyImports)
              |    st == HSStart
 %%[[99
@@ -381,7 +401,7 @@ cpEhcModuleCompile1 targHSState modNm
                    ; when (ehcOptVerbosity opts >= VerboseDebug)
                           (do { cr <- get
                               ; let (ecu,_,opts,fp) = crBaseInfo modNm2 cr
-                              ; lift $ putStrLn ("After HS import: nm=" ++ show modNm ++ ", newnm=" ++ show modNm2 ++ ", fp=" ++ show fp ++ ", imp=" ++ show (ecuImpNmL ecu))
+                              ; lift $ putStrLn ("After HS import: nm=" ++ show modNm ++ ", newnm=" ++ show modNm2 ++ ", fp=" ++ show fp ++ ", imp=" ++ show (ecuImpNmS ecu))
                               })
                    ; cpUpdCU modNm2 (ecuStoreState (ECUSHaskell stnext))
                    ; cpStopAt CompilePoint_Imports
@@ -395,7 +415,7 @@ cpEhcModuleCompile1 targHSState modNm
                    ; when (ehcOptVerbosity opts >= VerboseDebug)
                           (do { cr <- get
                               ; let (ecu,_,opts,fp) = crBaseInfo modNm cr
-                              ; lift $ putStrLn ("After HI import: nm=" ++ show modNm ++ ", fp=" ++ show fp ++ ", imp=" ++ show (ecuImpNmL ecu))
+                              ; lift $ putStrLn ("After HI import: nm=" ++ show modNm ++ ", fp=" ++ show fp ++ ", imp=" ++ show (ecuImpNmS ecu))
                               })
                    ; return defaultResult
                    }

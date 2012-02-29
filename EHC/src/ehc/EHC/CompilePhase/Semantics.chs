@@ -122,7 +122,7 @@ cpFoldHs modNm
          ;  when (isJust mbHS)
                  (do { cpUpdCU modNm ( ecuStoreHSSem hsSem
 %%[[50
-                                     . ecuStoreHIDeclImpL (ecuHSDeclImpNmL ecu)
+                                     . ecuStoreHIDeclImpS (ecuHSDeclImpNmS ecu)
                                      -- . ecuSetHasMain hasMain
 %%]]
                                      )
@@ -181,15 +181,15 @@ cpFoldHIInfo modNm
                      ; when hasMain (crSetAndCheckMain modNm)
                      ; cpUpdSI (\crsi -> crsi {crsiModMp = Map.insert modNm mmi' mm})
                      ; cpUpdCU modNm ( ecuStorePrevHIInfo hiInfo
-                                     . ecuStoreHIDeclImpL (HI.hiiHIDeclImpModL hiInfo)
-                                     . ecuStoreHIUsedImpL (HI.hiiHIUsedImpModL hiInfo)
+                                     . ecuStoreHIDeclImpS (HI.hiiHIDeclImpModS hiInfo)
+                                     . ecuStoreHIUsedImpS (HI.hiiHIUsedImpModS hiInfo)
                                      . ecuSetHasMain hasMain
                                      )
                      ; when (ehcOptVerbosity opts >= VerboseDebug)
                             (lift $ putStrLn
                                (show modNm
-                                ++ ": hi imps, decl=" ++ show (HI.hiiHIDeclImpModL hiInfo)
-                                ++ ", used=" ++ show (HI.hiiHIUsedImpModL hiInfo)
+                                ++ ": hi imps, decl=" ++ show (HI.hiiHIDeclImpModS hiInfo)
+                                ++ ", used=" ++ show (HI.hiiHIUsedImpModS hiInfo)
                             )  )
                      })
          }

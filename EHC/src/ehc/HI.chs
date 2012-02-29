@@ -98,10 +98,11 @@ data HIInfo
       , hiiExps                 :: !ModEntRel                               -- exported stuff
       , hiiHiddenExps           :: !ModEntRel                               -- exported, but hidden otherwise (instances, optimized code variants, ...)
       , hiiFixityGam            :: !FixityGam                               -- fixity of identifiers
-      -- , hiiIdDefAssocL          :: !(AssocL IdOcc IdOcc) -- IdDefOccGam      -- name mappings
-      -- , hiiIdDefHIIdGam         :: !(Gam IdOcc IdOcc) -- IdDefOccGam     -- name mappings
-      , hiiHIDeclImpModL        :: ![HsName]                                -- declared imports
-      , hiiHIUsedImpModL        :: ![HsName]                                -- used imports, usually indirectly via renaming
+      , hiiHIDeclImpModS        :: !(Set.Set HsName)                        -- declared imports
+      , hiiHIUsedImpModS        :: !(Set.Set HsName)                        -- used imports, usually indirectly via renaming
+      , hiiTransClosedUsedModS  :: !(Set.Set HsName)                        -- used modules, required to be linked together, transitively closed/cached over imported modules
+      , hiiTransClosedOrphanModS:: !(Set.Set HsName)                        -- orphan modules, required to read its .hi file, transitively closed/cached over imported modules
+      , hiiMbOrphan             :: !(Maybe (Set.Set HsName))                -- is orphan module, carrying the module names required
 %%[[(50 hmtyinfer)
       , hiiValGam               :: !ValGam                                  -- value identifier environment
       , hiiTyGam                :: !TyGam                                   -- type identifier env
@@ -132,9 +133,9 @@ emptyHIInfo :: HIInfo
 emptyHIInfo 
   = HIInfo HIValidity_Absent HIOrigin_FromFile
            "" defaultTarget defaultTargetFlavor "" "" False hsnUnknown "" "" "" "" ""
-           Rel.empty Rel.empty emptyGam -- emptyGam
-           [] []
-           -- emptyHiSettings
+           Rel.empty Rel.empty emptyGam
+           Set.empty Set.empty
+           Set.empty Set.empty Nothing
 %%[[(50 hmtyinfer)
            emptyGam emptyGam emptyGam emptyGam emptyGam emptyGam emptyGam emptyCHRStore
 %%]]
@@ -170,18 +171,34 @@ instance Show HIInfo where
   show _ = "HIInfo"
 
 instance PP HIInfo where
-  pp i = "HIInfo" >#< (   "ModNm  =" >|< pp         (hiiModuleNm      i)
-                      >-< "DeclImp=" >|< ppCommas   (hiiHIDeclImpModL i)
-                      >-< "UsedImp=" >|< ppCommas   (hiiHIUsedImpModL i)
-                      >-< "Exps="    >|< pp         (hiiExps          i)
-                      >-< "Exps(H)=" >|< pp         (hiiHiddenExps    i)
-                      >-< "ValGam =" >|< pp         (hiiValGam        i)
-                      >-< "TyGam  =" >|< pp         (hiiTyGam         i)
-                      -- >-< "IdGam  =" >|< pp          (hiiIdDefHIIdGam  i)
+  pp i = "HIInfo" >#< (   "ModNm  =" >#< pp         (             hiiModuleNm              i)
+                      >-< "DeclImp=" >#< ppCommas   (Set.toList $ hiiHIDeclImpModS         i)
+                      >-< "UsedImp=" >#< ppCommas   (Set.toList $ hiiHIUsedImpModS         i)
+                      >-< "AllUsed=" >#< ppCommas   (Set.toList $ hiiTransClosedUsedModS   i)
+                      >-< "AllOrph=" >#< ppCommas   (Set.toList $ hiiTransClosedOrphanModS i)
+                      >-< "MbOrph =" >#< ppCommas   (maybe [] Set.toList $ hiiMbOrphan     i)
+                      -- >-< "Exps="    >#< pp         (hiiExps          i)
+                      -- >-< "Exps(H)=" >#< pp         (hiiHiddenExps    i)
+                      -- >-< "ValGam =" >#< pp         (hiiValGam        i)
+                      -- >-< "TyGam  =" >#< pp         (hiiTyGam         i)
 %%[[99
-                      >-< "Cached =" >|< ppAssocLV  (assocLMapElt pp $ Map.toList $ hiiImpHIMp    i)
+                      -- >-< "Cached =" >#< ppAssocLV  (assocLMapElt pp $ Map.toList $ hiiImpHIMp    i)
 %%]]
                       )
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Retain info of a HI which is still needed after cleanup.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99 hs export(hiiRetainAfterCleanup)
+hiiRetainAfterCleanup :: HIInfo -> HIInfo
+hiiRetainAfterCleanup hii
+  = emptyHIInfo
+      { hiiTransClosedUsedModS		=	hiiTransClosedUsedModS 		hii
+      , hiiTransClosedOrphanModS	=	hiiTransClosedOrphanModS	hii
+      , hiiMbOrphan					=	hiiMbOrphan					hii
+      }
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -266,7 +283,7 @@ hiiIncludeCacheOfImport imp mfm hii
       { hiiImpHIMp = Map.map reset $ Map.unions [top, subtop]
       }
   where -- imports of this module
-        top    = Map.unions [ Map.singleton i $ hiiRestrictToFilterMp mfm $ {- (\x -> tr "hiiIncludeCacheOfImport.1" (i >#< x) x) $ -} imp i | i <- hiiHIDeclImpModL hii ++ hiiHIUsedImpModL hii ]
+        top    = Map.unions [ Map.singleton i $ hiiRestrictToFilterMp mfm $ {- (\x -> tr "hiiIncludeCacheOfImport.1" (i >#< x) x) $ -} imp i | i <- Set.toList $ hiiHIDeclImpModS hii `Set.union` hiiHIUsedImpModS hii ]
 
         -- the closure of the imports w.r.t. import relationship
         subtop = Map.map (hiiRestrictToFilterMp mfm) $ Map.unionsWith hiiUnion $ map hiiImpHIMp $ Map.elems top
@@ -275,8 +292,8 @@ hiiIncludeCacheOfImport imp mfm hii
         reset hii = hii { hiiImpHIMp                = Map.empty
                         , hiiExps                   = Rel.empty
                         , hiiHiddenExps             = Rel.empty
-                        , hiiHIDeclImpModL          = []
-                        , hiiHIUsedImpModL          = []
+                        , hiiHIDeclImpModS          = Set.empty
+                        , hiiHIUsedImpModS          = Set.empty
                         , hiiCHRStore               = emptyCHRStore     -- this cannot be, but no solution for filtering this...
                         , hiiSrcSig                 = ""
                         , hiiCompiler               = ""
@@ -385,9 +402,11 @@ sgetHIInfo opts = do
                       ; e         <- sget
                       ; he        <- sget
                       ; fg        <- sget
-                      -- ; idg       <- sget
                       ; impd      <- sget
                       ; impu      <- sget
+                      ; tclused   <- sget
+                      ; tclorph   <- sget
+                      ; isorph    <- sget
 %%[[(50 hmtyinfer)
                       ; vg        <- sget
                       ; tg        <- sget
@@ -425,10 +444,11 @@ sgetHIInfo opts = do
                             , hiiExps                 = e
                             , hiiHiddenExps           = he
                             , hiiFixityGam            = fg
-                            -- , hiiIdDefHIIdGam         = {- tr "HIInfo.Binary.get idGam" (pp $ lookup (IdOcc (mkHNm "Prelude.putStrLn") IdOcc_Val) idg) $ -}
-                            --                             mentrelToIdDefOccGam hi_nm e -- idg
-                            , hiiHIDeclImpModL        = impd
-                            , hiiHIUsedImpModL        = impu
+                            , hiiHIDeclImpModS        = impd
+                            , hiiHIUsedImpModS        = impu
+                            , hiiTransClosedUsedModS  = tclused
+                            , hiiTransClosedOrphanModS= tclorph
+                            , hiiMbOrphan             = isorph
 %%[[(50 hmtyinfer)
                             , hiiValGam               = vg
                             , hiiTyGam                = tg
@@ -486,9 +506,11 @@ instance Serialize HIInfo where
                   , hiiExps                 = e
                   , hiiHiddenExps           = he
                   , hiiFixityGam            = fg
-                  -- , hiiIdDefHIIdGam         = idg
-                  , hiiHIDeclImpModL        = impd
-                  , hiiHIUsedImpModL        = impu
+                  , hiiHIDeclImpModS        = impd
+                  , hiiHIUsedImpModS        = impu
+                  , hiiTransClosedUsedModS  = tclused
+                  , hiiTransClosedOrphanModS= tclorph
+                  , hiiMbOrphan             = isorph
 %%[[(50 hmtyinfer)
                   , hiiValGam               = vg
                   , hiiTyGam                = tg
@@ -525,9 +547,11 @@ instance Serialize HIInfo where
                 >> sput e
                 >> sput he
                 >> sput (gamFlatten fg)
-                -- >> sput idg
                 >> sput impd
                 >> sput impu
+                >> sput tclused
+                >> sput tclorph
+                >> sput isorph
 %%[[(50 hmtyinfer)
                 >> sput (gamFlatten vg)
                 >> sput (gamFlatten tg)

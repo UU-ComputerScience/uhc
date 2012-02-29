@@ -456,8 +456,8 @@ doCompileRun fnL@(fn:_) opts
                                      (cpEhcModuleCompile1 nm)
                               }
 %%][50
-                       imp :: Maybe FPath -> Maybe (HsName,(FPath,FileLoc)) -> HsName -> EHCompilePhase (HsName,Maybe (HsName,(FPath,FileLoc)))
-                       imp mbFp mbPrev nm
+                       imp :: HSState -> Maybe FPath -> Maybe (HsName,(FPath,FileLoc)) -> HsName -> EHCompilePhase (HsName,Maybe (HsName,(FPath,FileLoc)))
+                       imp desiredState mbFp mbPrev nm
                          = do { let isTopModule = isJust mbFp
                                     fileSuffMpHs' = (if isTopModule then fileSuffMpHsNoSuff else []) ++ fileSuffMpHs
 %%[[50
@@ -480,7 +480,7 @@ doCompileRun fnL@(fn:_) opts
 %%]]
                               ; case fpsFound of
                                   (fp:_)
-                                    -> do { nm' <- cpEhcModuleCompile1 (Just HSOnlyImports) nm
+                                    -> do { nm' <- cpEhcModuleCompile1 (Just desiredState) nm
                                           ; cr <- get
                                           ; let (ecu,_,_,_) = crBaseInfo nm' cr
                                           ; return (nm',Just (nm',(fp, ecuFileLocation ecu)))
@@ -506,8 +506,8 @@ doCompileRun fnL@(fn:_) opts
                  ; _ <- runStateT (cpSeq [ comp (Just fp) topModNm
                                          ]) initialState
 %%][50
-                 ; _ <- runStateT (do { topModNmL' <- zipWithM (\fp topModNm -> imp (Just fp) Nothing topModNm) fpL topModNmL
-                                      ; cpImportGatherFromMods (imp Nothing) (map fst topModNmL')
+                 ; _ <- runStateT (do { topModNmL' <- zipWithM (\fp topModNm -> imp HSOnlyImports (Just fp) Nothing topModNm) fpL topModNmL
+                                      ; cpImportGatherFromModsWithImp ecuImpNmL (imp HSOnlyImports Nothing) (map fst topModNmL')
                                       ; cpCheckMods' [modBuiltin]
                                       ; cpEhcCheckAbsenceOfMutRecModules
                                       ; cpEhcFullProgCompileAllModules

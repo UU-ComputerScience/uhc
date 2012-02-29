@@ -190,6 +190,7 @@ import UHC.Handle
 import UHC.IO
 import UHC.OldException (bracket, onException)
 import System.IO.Unsafe (unsafeInterleaveIO)
+import System.IO.Fix (fixIO)
 #endif
 
 #ifdef __HUGS__
@@ -398,7 +399,7 @@ withBinaryFile name mode = bracket (openBinaryFile name mode) hClose
 -- ---------------------------------------------------------------------------
 -- fixIO
 
-#if defined(__GLASGOW_HASKELL__) || defined(__HUGS__) || defined(__UHC__)
+#if defined(__GLASGOW_HASKELL__) || defined(__HUGS__)
 fixIO :: (a -> IO a) -> IO a
 fixIO k = do
     ref <- newIORef (throw NonTermination)
@@ -407,9 +408,8 @@ fixIO k = do
     writeIORef ref result
     return result
 
--- NOTE: we do our own explicit black holing here, because GHC's lazy
--- blackholing isn't enough.  In an infinite loop, GHC may run the IO
--- computation a few times before it notices the loop, which is wrong.
+#elif defined(__UHC__)
+-- See System.IO.Fix
 #endif
 
 #if defined(__NHC__)

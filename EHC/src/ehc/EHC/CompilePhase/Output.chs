@@ -10,7 +10,7 @@ Output generation, on stdout or file
 -- general imports
 %%[8 import(qualified EH.Util.FastSeq as Seq)
 %%]
-%%[8 import(qualified Data.Map as Map)
+%%[8 import(qualified Data.Map as Map, qualified Data.Set as Set)
 %%]
 
 %%[8 import({%{EH}EHC.Common})
@@ -209,6 +209,7 @@ cpOutputHI suff modNm
          ;  let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
                  mmi    = panicJust "cpOutputHI.crsiModMp" $ Map.lookup modNm $ crsiModMp crsi
                  hii1   = ecuHIInfo ecu
+                 impNmS = ecuImpNmS ecu
                  hii2   = hii1 { HI.hiiValidity             = HI.HIValidity_Ok
                                , HI.hiiModuleNm             = modNm
                                , HI.hiiExps                 = mmiExps       mmi
@@ -224,6 +225,13 @@ cpOutputHI suff modNm
                                , HI.hiiSrcVersionSvn        = Cfg.verSvnRevision Cfg.version
                                , HI.hiiCompileFlags         = optsDiscrRecompileRepr opts
                                , HI.hiiCompiler             = Cfg.installVariant opts
+                               , HI.hiiTransClosedUsedModS  = Set.unions $
+                                                                impNmS : [ ecuTransClosedUsedModS $ crCU m cr | m <- Set.toList impNmS ]
+                               , HI.hiiTransClosedOrphanModS= Set.unions $
+                                                                [ Set.unions [if ecuIsOrphan me then Set.singleton m else Set.empty, ecuTransClosedOrphanModS me]
+                                                                | m <- Set.toList impNmS
+                                                                , let me = crCU m cr
+                                                                ]
                                }
 %%[[50
                  hii3   = hii2
@@ -240,6 +248,7 @@ cpOutputHI suff modNm
                  (lift $ removeFile fnH)
          ;  when (ehcOptVerbosity opts > VerboseALot)
                  (do { lift $ putPPLn ("hii3: " >#< hii3)
+                     ; lift $ putPPLn ("orph: " >#< vlist [ m >#< (fmap Set.toList $ HI.hiiMbOrphan $ ecuHIInfo me) | m <- Set.toList impNmS, let me = crCU m cr ])
 %%[[99
                      ; lift $ putPPLn ("used nms: " >#< (pp $ show $ ecuUsedNames ecu))
 %%]]

@@ -1202,6 +1202,14 @@ tyAppFunConNm :: Ty -> HsName
 tyAppFunConNm = tyConNm . fst . tyAppFunArgs
 %%]
 
+%%[(50 hmtyinfer || hmtyast) hs export(tyAllConS)
+-- | All constructors occurring in a type
+tyAllConS    :: Ty -> Set.Set HsName
+tyAllConS t
+  =  Set.unions $ (maybe Set.empty Set.singleton $ tyMbCon f) : map tyAllConS a
+  where (f,a,_) = tyDecomposeMk t
+%%]
+
 %%[(9 hmtyinfer || hmtyast) hs export(tyQuant)
 tyQuant :: Ty -> Ty
 tyQuant t

@@ -1231,7 +1231,7 @@ SEM Expr
 
 %%[(8 codegen)
 ATTR
-  Decls Decl AllDataConstr
+  AllDecl AllDataConstr
     [ | | valBindL
         , tyBindL
         , ffiValBindL
