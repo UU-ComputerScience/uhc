@@ -179,10 +179,6 @@ TYPE TyVars         = [TyVar]
 SET AllTyVar        = TyVar TyVars
 %%]
 
-%%[31
-TYPE MbTyExpr       = MAYBE TyExpr
-%%]
-
 %%[1.AllTyExpr
 SET AllTyExpr
     = TyExpr
@@ -195,9 +191,6 @@ SET AllTyExpr
 %%]]
 %%[[9
       PrExpr PrExprs
-%%]]
-%%[[31
-      MbTyExpr
 %%]]
 %%]
 
@@ -284,12 +277,6 @@ DATA PrExpr
                     nm              : {HsName}
   | DynVar          nm              : {HsName}
                     tyExpr          : TyExpr
-%%]
-
-%%[31
-DATA PrExpr
-  | Eq              tyExpr1         : TyExpr
-                    tyExpr2         : TyExpr
 %%]
 
 %%[9
@@ -446,7 +433,6 @@ DATA PatExpr
 %%[8
 DATA PatExpr
   | Irrefutable     patExpr         : PatExpr
-  | Bang	     	patExpr         : PatExpr
 %%]
 
 %%[97
@@ -492,9 +478,6 @@ DATA DataConstr
                     fields          : TyExprs
 %%][7
                     fields          : DataFields
-%%]]
-%%[[31
-					mbGadtTyExpr	: MbTyExpr			-- the constrained result ty for GADT
 %%]]
 %%[[41
                     eqs             : DataConstrEqs

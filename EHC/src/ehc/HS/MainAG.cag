@@ -125,6 +125,22 @@ SEM Kind
 %%% Misc: Type internal info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[1
+ATTR Type Expression [ | | conNm: Name ]
+
+SEM Type
+    | Constructor
+        lhs         .   conNm       =   @name
+    | * - Constructor
+        lhs         .   conNm       =   hsnUnknown
+
+SEM Expression
+    | Constructor
+        lhs         .   conNm       =   @name
+    | * - Constructor
+        lhs         .   conNm       =   hsnUnknown
+%%]
+
 %%[3
 ATTR
   AllType
@@ -172,51 +188,27 @@ SEM Type
 %%% Info required to determine whether type application is actually a type context prefix
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 hs
-data TypeConFixedMeaning
-  = TyConIsOther
-  | TyConIsPrArrow
-%%[[31
-  | TyConIsEqTilde
-%%]]
-  deriving Eq
-%%]
-
 %%[9
-ATTR Type [ | | tyConIs: TypeConFixedMeaning ]
+ATTR Type [ | | isPrArrow: Bool ]
 
 SEM Type
     | Constructor
-        loc         .   tyConIs     =   if      hsnIsPrArrow @name then TyConIsPrArrow
-%%[[31
-                                        else if hsnIsEqTilde @name then TyConIsEqTilde
-%%]]
-                                        else                            TyConIsOther
-    | NormalApplication
-        lhs         .   tyConIs     =  	@function.tyConIs
-    | * - Constructor NormalApplication Annotate
-        lhs         .   tyConIs     =   TyConIsOther
+        lhs         .   isPrArrow   =   hsnIsPrArrow @name
+    | * - Constructor
+        lhs         .   isPrArrow   =   False
 %%]
 
 %%[9
-ATTR Types Type AllRowTypeUpdate [ isAsPred: Bool | | ]
+ATTR Types Type MaybeType AllRowTypeUpdate [ isAsPred: Bool | | ]
 
 SEM Type
     | InfixApplication
-        leftType    .   isAsPred    =   @lhs.isAsPred || @operator.tyConIs == TyConIsPrArrow
+        leftType    .   isAsPred    =   @operator.isPrArrow
     | NormalApplication
         arguments   .   isAsPred    =   False
- 	| * - InfixApplication NormalApplication Parenthesized Annotate RowRecUpdate InfixApplicationChainTop
-%%[[11
- 	      TupleConstructor
-%%]]
- 		loc			.	isAsPred	=	False
 
 SEM Constructor
     | Constructor Infix
-%%[[31
-      GADTFunction
-%%]]
         loc         .   isAsPred    =   False
 
 SEM FieldDeclaration
@@ -224,20 +216,19 @@ SEM FieldDeclaration
         loc         .   isAsPred    =   False
 
 SEM Declaration
-    | Instance
-        loc         .   isAsPred    =   True -- False -- True
-    | * - Instance
+    | *
         loc         .   isAsPred    =   False
 
-SEM MaybeType Pattern Expression
+SEM Pattern
+    | *
+        loc         .   isAsPred    =   False
+
+SEM Expression
     | *
         loc         .   isAsPred    =   False
 
 SEM ContextItem
     | Class
-%%[[31
-      Equal
-%%]]
         loc         .   isAsPred    =   False
 
 SEM LeftHandSide
@@ -279,9 +270,6 @@ SEM Declaration
 
 SEM Constructor
     | Constructor Infix
-%%[[31
-      GADTFunction
-%%]]
         loc         .   doGenVarWild=   False
 
 SEM FieldDeclaration
@@ -289,11 +277,20 @@ SEM FieldDeclaration
         loc         .   doGenVarWild=   False
 %%]
 
-%%[31
-SEM ContextItem
-    | Equal
+SEM Type
+    | InfixApplication
+        leftType    .   doGenVarWild=   @operator.isPrArrow
+    | NormalApplication
+        arguments   .   doGenVarWild=   False
+
+
+SEM Pattern
+    | *
         loc         .   doGenVarWild=   False
-%%]
+
+SEM ContextItem
+    | Class
+        loc         .   doGenVarWild=   False
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Data decl has fields?
@@ -347,7 +344,7 @@ SEM Pattern
           Typed
 %%]]
 %%[[8
-          Irrefutable Bang
+          Irrefutable
 %%]]
         lhs         .   isVar       =   False
 %%]

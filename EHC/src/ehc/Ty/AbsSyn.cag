@@ -222,7 +222,7 @@ DATA PredSeq
   | Nil
 %%]
 
-%%[(31 hmtyinfer || hmtyast)
+%%[(41 hmtyinfer || hmtyast)
 DATA Pred
   | Eq          tyL : Ty
                 tyR : Ty

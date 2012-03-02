@@ -70,8 +70,6 @@ ehcOptUpdateWithPragmas pragmas opts
           = case pragma of
               Pragma_NoGenericDeriving  -> Just $ opts { ehcOptGenGenerics 			= False }
               Pragma_GenericDeriving    -> Just $ opts { ehcOptGenGenerics 			= True  }
-              Pragma_NoBangPatterns  	-> Just $ opts { ehcOptBangPatterns 		= False }
-              Pragma_BangPatterns    	-> Just $ opts { ehcOptBangPatterns 		= True  }
               Pragma_ExtensibleRecords  -> Just $ opts { ehcOptExtensibleRecords 	= True  }
               Pragma_Fusion             -> Just $ opts { ehcOptFusion 				= True  }
               _                         -> Nothing
@@ -179,13 +177,13 @@ ehcOptEmitJava :: EHCOpts -> Bool
 ehcOptEmitJava o = ehcOptTarget o == Target_Interpreter_Core_Java
 %%]
 
-%%[(8 codegen grin llvm wholeprogAnal wholeprogC) export(ehcOptEmitLLVM)
+%%[(8 codegen) export(ehcOptEmitLLVM)
 -- generate LLVM
 ehcOptEmitLLVM :: EHCOpts -> Bool
 ehcOptEmitLLVM = targetIsLLVM . ehcOptTarget
 %%]
 
-%%[(8 codegen clr wholeprogC) export(ehcOptEmitCLR)
+%%[(8 codegen clr) export(ehcOptEmitCLR)
 -- generate CIL, as .il assembly file
 ehcOptEmitCLR :: EHCOpts -> Bool
 ehcOptEmitCLR = targetIsCLR . ehcOptTarget
@@ -473,13 +471,10 @@ ehcCmdLineOpts
                                                   -- , ehcOptErrAboutBytecode = False
                                                   -- }
 
-%%[[(8 wholeprogC)
                                 Just m | m `elem` ["exe","exec"]
                                              -> o { ehcOptMbTarget         = JustOk Target_FullProgAnal_Grin_C
                                                   }
-%%]]
 
-%%[[(8 llvm wholeprogC)
                                 Just "llvm"  -> o -- { ehcOptEmitLLVM         = True
                                                   -- , ehcOptWholeProgHPTAnalysis = True
                                                   -- , ehcOptEmitExecBytecode = False
@@ -487,14 +482,12 @@ ehcCmdLineOpts
                                                   -- , ehcOptErrAboutBytecode = False
                                                   -- }
 %%]]
-
-%%]]
-%%[[(8 codegen llvm wholeprogC)
+%%[[(8 codegen llvm)
                                 Just m | m `elem` ["lexe", "lexec"]
                                              -> o { ehcOptMbTarget         = JustOk Target_FullProgAnal_Grin_LLVM
                                                   }                   
 %%]]
-%%[[(8 codegen clr wholeprogC)
+%%[[(8 codegen clr)
                                 Just "clr"   -> o { ehcOptMbTarget         = JustOk Target_FullProgAnal_Grin_CLR   }
 %%]]
 %%[[(99 hmtyinfer)

@@ -420,12 +420,9 @@ pDataConstr     =    mkEH DataConstr_Constr <$> pCon <*> pTyExprs
 %%[[7
 pDataConstr     =    mkEH DataConstr_Constr
 %%][91
-pDataConstr     =    (\c -> mkEH DataConstr_Constr c Nothing)
+pDataConstr     =    (\c f -> mkEH DataConstr_Constr c Nothing f)
 %%]]
                      <$> pCon <*> (pDataFields <|> pCurly pDataLabFields)
-%%[[31
-                     <*> pSucceed Nothing
-%%]]
 %%[[41
                      <*> pList (mkEH DataConstrEq_Eq <$ pComma <*> pTyVar <* pKey "=" <*> pTyExpr)
 %%]]

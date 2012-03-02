@@ -206,23 +206,18 @@ WRAPPER AGItf
 %%[(17 hmtyinfer) ag import({EH/InferPolarity})
 %%]
 
-%%[50 ag import({EH/UsedNames},{EH/Orphan})
+%%[50 ag import({EH/UsedNames})
 %%]
 
 %%[92 ag import({EH/Generics})
 %%]
 
-%%[99 ag import({EH/LocalAttrTypes})
-%%]
-%%[99 ag import({EH/FakeDependencies})
+%%[99 ag import({EH/FakeDependencies},{EH/LocalAttrTypes})
 %%]
 
 %%[99
 PRAGMA strictsem
 PRAGMA strictcase
-%%]
-%%[9999
-PRAGMA kennedywarren
 %%]
 PRAGMA gencostcentres
 
@@ -488,9 +483,8 @@ SEM PatExpr
   | * - Var VarAs
                 loc         .   mbTopNm             =   Nothing
 %%][8
-  | Irrefutable Bang
-  				loc         .   mbTopNm             =   @patExpr.mbTopNm
-  | * - Var VarAs Irrefutable Bang
+  | Irrefutable loc         .   mbTopNm             =   @patExpr.mbTopNm
+  | * - Var VarAs Irrefutable
                 loc         .   mbTopNm             =   Nothing
 %%]]
 %%]
@@ -508,8 +502,7 @@ SEM PatExpr
                 loc         .   topNm               =   uidHNm @lUniq
   | SConst      loc         .   topNm               =   uidHNm @lUniq
 %%[[8
-  | Irrefutable Bang
-  				loc         .   topNm               =   @patExpr.topNm
+  | Irrefutable loc         .   topNm               =   @patExpr.topNm
 %%]]
 %%]
 

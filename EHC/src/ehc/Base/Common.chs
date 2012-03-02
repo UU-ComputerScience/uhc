@@ -19,9 +19,6 @@
 %%[1 import(EH.Util.Pretty, Data.List) export(ppSpaced, ppCon, ppCmt)
 %%]
 
-%%[1 import(Control.Applicative((<|>)))
-%%]
-
 %%[1 export(ParNeed(..), ParNeedL, parNeedApp)
 %%]
 
@@ -190,15 +187,6 @@ class SemApp a where
   mk1RngApp         ::  Range -> a -> a -> a
   mkRngApp          ::  Range -> [a] -> a
   mkRngProd         ::  Range -> [a] -> a
-  
-  -- inspection/deconstruction
-  unTop				:: a -> a
-  isCon             :: a -> Maybe (HsName)
-  isApp1            :: a -> Maybe (a,a)
-  isApp             :: a -> Maybe (a,[a])
-  isConApp          :: a -> Maybe (HsName,[a])
-  isArrow           :: a -> Maybe ([a],a)
-  unArrow           :: a -> ([a],a)
 
   -- defaults semantics
   semApp            =   semRngApp    emptyRange
@@ -225,30 +213,6 @@ class SemApp a where
   mkRngApp  rng as  =   case as of
                           [a] -> a
                           _   -> semRngAppTop rng (foldl1 (semRngApp rng) as)
-
-  -- default inspection
-  unTop             = id
-  isCon             = const Nothing
-  isApp1            = const Nothing
-  isApp     x       = do { (f1,a) <- isApp1 $ unTop x
-                         ; (do {(f2,as) <- isApp f1; return (f2,as++[a])}) <|> (return (f1,[a]))
-                         }
-  isConApp  x       = do { (f,as) <- isApp x
-                         ; c <- isCon f
-                         ; return (c,as)
-                         }
-  unArrow   x       = case isApp x of
-                        Just (fx,asx) -> case isCon fx of
-                                           Just con | hsnIsArrow con -> (arg:as,r)
-                                                                     where [arg,res] = asx
-                                                                           (as,r) = unArrow res
-                                           _                         -> dflt
-                        _             -> dflt
-                    where dflt = ([],x)
-  isArrow   x       = case unArrow x of
-                        a@((_:_),_) -> Just a
-                        _           -> Nothing
-                         
 %%]
 
 %%[1 export(mkRngProdOpt)

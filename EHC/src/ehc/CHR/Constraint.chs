@@ -2,10 +2,10 @@
 %%% Constraint Handling Rules: Constraint language
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(9 hmtyinfer || hmtyast) module {%{EH}CHR.Constraint} import({%{EH}Base.Common},{%{EH}Ty},{%{EH}CHR},{%{EH}CHR.Key},{%{EH}Base.TreeTrie},{%{EH}Substitutable})
+%%[(9 hmtyinfer || hmtyast) module {%{EH}CHR.Constraint} import({%{EH}Base.Common},{%{EH}Ty},{%{EH}CHR},{%{EH}CHR.Key},{%{EH}Base.TreeTrie},{%{EH}Base.Trie},{%{EH}Substitutable})
 %%]
 
-%%[(9 hmtyinfer || hmtyast) import(EH.Util.Pretty as PP, EH.Util.Utils)
+%%[(9 hmtyinfer || hmtyast) import(EH.Util.Pretty as PP)
 %%]
 
 %%[(9 hmtyinfer || hmtyast) import(qualified Data.Set as Set,qualified Data.Map as Map)
@@ -67,12 +67,10 @@ cnstrReducablePart (Assume p) = Just ("Ass",p,Assume)
 cnstrReducablePart _          = Nothing
 %%]
 
-%%[(9999 hmtyinfer || hmtyast)
+%%[(9 hmtyinfer || hmtyast)
 instance Keyable p => Keyable (Constraint p info) where
   toKey c = maybe [] (\(s,p,_) -> TK_One TKK_Normal (Key_Str s) : toKey p) $ cnstrReducablePart c
-%%]
 
-%%[(9 hmtyinfer || hmtyast)
 instance (CHRMatchable env p s) => CHRMatchable env (Constraint p info) s where
   chrMatchTo env s c1 c2
     = do { (_,p1,_) <- cnstrReducablePart c1
@@ -83,11 +81,7 @@ instance (CHRMatchable env p s) => CHRMatchable env (Constraint p info) s where
 
 %%[(9 hmtyinfer || hmtyast)
 instance TTKeyable p => TTKeyable (Constraint p info) where
-  toTTKey' o c -- = maybe [] (\(s,p,_) -> ttkAdd (TT1K_One $ Key_Str s) [toTTKey' o p]) $ cnstrReducablePart c
-    = case cnstrReducablePart c of
-        Just (s,p,_) -> ttkAdd' (TT1K_One $ Key_Str s) cs
-                     where (_,cs) = toTTKeyParentChildren' o p
-        _            -> panic "TTKeyable (Constraint p info).toTTKey'" -- ttkEmpty
+  toTTKey' o c = maybe [] (\(s,p,_) -> ttkAdd (TT1K_One $ Key_Str s) [toTTKey' o p]) $ cnstrReducablePart c
 %%]
 
 %%[(9 hmtyinfer || hmtyast)

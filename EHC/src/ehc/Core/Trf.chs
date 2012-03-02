@@ -32,9 +32,7 @@
 %%]
 %%[(8 codegen) import({%{EH}Core.Trf.LamGlobalAsArg}, {%{EH}Core.Trf.CAFGlobalAsArg}, {%{EH}Core.Trf.FloatToGlobal}, {%{EH}Core.Trf.ConstProp})
 %%]
-%%[(8 codegen) import({%{EH}Core.Trf.EtaRed}, {%{EH}Core.Trf.ElimTrivApp})
-%%]
-%%[(8 codegen wholeprogAnal) import({%{EH}Core.Trf.FindNullaries})
+%%[(8 codegen) import({%{EH}Core.Trf.EtaRed}, {%{EH}Core.Trf.ElimTrivApp}, {%{EH}Core.Trf.FindNullaries})
 %%]
 %%[(8 codegen) import({%{EH}Core.Trf.AnnBasedSimplify})
 %%]
@@ -46,7 +44,7 @@
 %%]
 %%[(8 codegen) import({%{EH}Core.Trf.EraseExtractTysigCore})
 %%]
-%%[(9 codegen wholeprogAnal) import({%{EH}Core.Trf.FixDictFields})
+%%[(9 codegen) import({%{EH}Core.Trf.FixDictFields})
 %%]
 %%[(99 codegen) import({%{EH}Core.Trf.ExplicitStackTrace})
 %%]
@@ -157,7 +155,7 @@ trfCore opts dataGam modNm trfcore
                ; u1 <- modifyGets uniq
                ; t_anormal u1
 
-%%[[(9 wholeprogAnal)
+%%[[9
                ; when (targetDoesHPTAnalysis (ehcOptTarget opts))
                       t_fix_dictfld
 %%]]
@@ -176,10 +174,8 @@ trfCore opts dataGam modNm trfcore
                  -- from now on INVARIANT: no local lambdas
                  --             ASSUME   : 
 
-%%[[(8 wholeprogAnal)
                ; when (targetDoesHPTAnalysis (ehcOptTarget opts))
                       t_find_null
-%%]]
                ; when (ehcOptOptimizes Optimize_StrictnessAnalysis opts)
                       (do { t_let_defbefuse
                           ; t_ana_relev
@@ -235,14 +231,12 @@ trfCore opts dataGam modNm trfcore
         t_lam_asarg     = liftTrf  "lam-asarg"          $ cmodTrfLamGlobalAsArg
         t_caf_asarg     = liftTrf  "caf-asarg"          $ cmodTrfCAFGlobalAsArg
         t_float_glob    = liftTrf  "float-glob"         $ cmodTrfFloatToGlobal
-%%[[(8 wholeprogAnal)
         t_find_null     = liftTrf  "find-null"          $ cmodTrfFindNullaries
-%%]]
         t_ana_relev     = liftTrf2 "ana-relev" lamMpPropagate
                                                         $ \s -> cmodTrfAnaRelevance opts dataGam (trfcoreInhLamMp s)
         t_opt_strict    = liftTrf2 "optim-strict" lamMpPropagate
                                                         $ \s -> cmodTrfOptimizeStrictness opts (trfcoreInhLamMp s)
-%%[[(9 wholeprogAnal)
+%%[[9
         t_fix_dictfld   = liftTrf  "fix-dictfld"        $ cmodTrfFixDictFields
 %%]]
 %%[[99        

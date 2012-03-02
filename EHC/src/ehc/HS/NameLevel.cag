@@ -30,9 +30,6 @@ SEM Declaration
         loc             .   nmLev       =   @lhs.nmLev + 1
 %%[[5
     | Data Newtype
-%%[[31
-      GADT
-%%]]
         loc             .   nmLev       =   @lhs.nmLev -- + 1
 %%]]
 %%[[6
@@ -61,9 +58,6 @@ SEM Type
 %%[5
 SEM Constructor
     | Constructor Infix
-%%[[31
-      GADTFunction
-%%]]
         loc             .   nmLev       =   @lhs.nmLev + 1
 %%]
 

@@ -75,36 +75,28 @@ Currently there are target flavors for:
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen) export(Target(..))
--- | All possible targets, even though they may not be configured (done in supportedTargetMp)
 data Target
   = Target_None								-- no codegen
   | Target_None_Core_None					-- only Core
   | Target_None_TyCore_None					-- only TyCore
-
-  -- jazy
+%%[[(8 codegen jazy)
   | Target_Interpreter_Core_Jazy			-- java based on Core, using jazy library
-
-  -- javascript
+%%]]
+%%[[(8 codegen javascript)
   | Target_Interpreter_Core_JavaScript		-- javascript based on Core
+%%]]
 %%[[(8888 codegen java)
-  -- not used at all
   | Target_Interpreter_Core_Java			-- java based on Core, as src. Will be obsolete.
 %%]]
-
-  -- grin, wholeprogC
+%%[[(8 codegen grin)
   | Target_FullProgAnal_Grin_C				-- full program analysis on grin, generating C
-
-  -- grin, llvm, wholeprogC
   | Target_FullProgAnal_Grin_LLVM			-- full program analysis on grin, generating LLVM
-
-  -- grin, jvm, wholeprogC
   | Target_FullProgAnal_Grin_JVM			-- full program analysis on grin, generating for Java VM
-
-  -- grin
   | Target_Interpreter_Grin_C				-- no full program analysis, grin interpreter, generating C
-
-  -- grin, clr, wholeprogC
+%%]]
+%%[[(8 codegen clr)
   | Target_FullProgAnal_Grin_CLR			-- full program analysis on grin, generating for Common Language Runtime (.NET / Mono)
+%%]]
   deriving ( Eq, Ord, Enum )
 %%]
 
@@ -116,16 +108,24 @@ instance Show Target where
   show Target_None							= "NONE"
   show Target_None_Core_None				= "core"
   show Target_None_TyCore_None				= "tycore"
+%%[[(8 codegen jazy)
   show Target_Interpreter_Core_Jazy			= "jazy"
+%%]]
+%%[[(8 codegen javascript)
   show Target_Interpreter_Core_JavaScript	= "js"
+%%]]
 %%[[(8888 codegen java)
   show Target_Interpreter_Core_Java			= "java"
 %%]]
+%%[[(8 codegen grin)
   show Target_FullProgAnal_Grin_C			= "C"
   show Target_FullProgAnal_Grin_LLVM		= "llvm"
   show Target_FullProgAnal_Grin_JVM			= "jvm"
   show Target_Interpreter_Grin_C			= "bc"
+%%]]
+%%[[(8 codegen clr)
   show Target_FullProgAnal_Grin_CLR			= "clr"
+%%]]
 %%]
 
 Default target
@@ -163,14 +163,14 @@ supportedTargetMp :: Map.Map String Target
                  ++ [ mk Target_Interpreter_Grin_C [FFIWay_CCall]
                     ]
 %%]]
-%%[[(8 codegen grin wholeprogC)
+%%[[(8 codegen grin cwholeprog)
                  ++ [ mk Target_FullProgAnal_Grin_C [FFIWay_CCall]
                     ]
 %%]]
-%%[[(8 codegen llvm wholeprogC)
+%%[[(8 codegen llvm cwholeprog)
                  ++ [ mk Target_FullProgAnal_Grin_LLVM [FFIWay_CCall] ]
 %%]]
-%%[[(8 codegen clr wholeprogC)
+%%[[(8 codegen clr cwholeprog)
                  ++ [ mk Target_FullProgAnal_Grin_CLR [FFIWay_CCall] ]
 %%]]
           ]
@@ -239,14 +239,12 @@ showAllTargetFlavors
 targetDoesHPTAnalysis :: Target -> Bool
 targetDoesHPTAnalysis t
   = case t of
-%%[[(8 grin wholeprogC)
+%%[[(8 codegen grin)
       Target_FullProgAnal_Grin_C 		-> True
+      Target_FullProgAnal_Grin_LLVM 	-> True
       Target_FullProgAnal_Grin_JVM 		-> True
 %%]]
-%%[[(8 llvm wholeprogC)
-      Target_FullProgAnal_Grin_LLVM 	-> True
-%%]]
-%%[[(8 clr wholeprogC)
+%%[[(8 codegen clr)
       Target_FullProgAnal_Grin_CLR	 	-> True
 %%]]
       _ 								-> False
@@ -277,10 +275,8 @@ targetIsGrin t
 targetIsC :: Target -> Bool
 targetIsC t
   = case t of
-%%[[(8 grin)
-%%[[(8 wholeprogAnal)
+%%[[(8 codegen grin)
       Target_FullProgAnal_Grin_C 		-> True
-%%]]
       Target_Interpreter_Grin_C		 	-> True
 %%]]
       _ 								-> False
@@ -342,7 +338,7 @@ targetIsJavaScript t
       _ 									-> False
 %%]
 
-%%[(8 codegen grin llvm wholeprogAnal wholeprogC) export(targetIsLLVM)
+%%[(8 codegen) export(targetIsLLVM)
 targetIsLLVM :: Target -> Bool
 targetIsLLVM t
   = case t of
@@ -352,7 +348,7 @@ targetIsLLVM t
       _ 								-> False
 %%]
 
-%%[(8 codegen grin clr wholeprogC) export(targetIsCLR)
+%%[(8 codegen) export(targetIsCLR)
 targetIsCLR :: Target -> Bool
 targetIsCLR t
   = case t of
@@ -378,24 +374,20 @@ data FFIWay
   = FFIWay_Prim				-- as primitive
   | FFIWay_CCall			-- as C call
   | FFIWay_Jazy				-- as Java/Jazy
-%%[[(8 javascript)
+%%[[(8 codegen javascript)
   | FFIWay_JavaScript		-- JavaScript
 %%]]
-%%[[(8 clr grin wholeprogC)
   | FFIWay_CLR				-- as CLR, just a placeholder
-%%]]
   deriving (Eq,Ord,Enum)
 
 instance Show FFIWay where
   show FFIWay_Prim			= "prim"
   show FFIWay_CCall			= "ccall"
   show FFIWay_Jazy			= "jazy"
-%%[[(8 javascript)
+%%[[(8 codegen javascript)
   show FFIWay_JavaScript	= "js"
 %%]]
-%%[[(8 clr grin wholeprogC)
   show FFIWay_CLR			= "dotnet"
-%%]]
 
 instance PP FFIWay where
   pp = pp . show
@@ -405,16 +397,16 @@ The default FFIWay for FFIWay_Prim for a target
 
 %%[(8 codegen) export(ffiWayForPrim)
 ffiWayForPrim :: Target -> Maybe FFIWay
-%%[[(8 jazy)
+%%[[(8 codegen jazy)
 ffiWayForPrim Target_Interpreter_Core_Jazy			= Just FFIWay_Jazy
 %%]]
-%%[[(8 javascript)
+%%[[(8 codegen javascript)
 ffiWayForPrim Target_Interpreter_Core_JavaScript	= Just FFIWay_JavaScript
 %%]]
-%%[[(8 grin clr wholeprogC)
+%%[[(8 codegen clr)
 ffiWayForPrim Target_FullProgAnal_Grin_CLR			= Just FFIWay_CLR
 %%]]
-%%[[(8 grin llvm wholeprogC)
+%%[[(8 codegen llvm)
 ffiWayForPrim Target_FullProgAnal_Grin_LLVM			= Just FFIWay_CCall
 %%]]
 ffiWayForPrim t | targetIsC t						= Just FFIWay_CCall

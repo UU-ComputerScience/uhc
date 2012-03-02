@@ -125,11 +125,8 @@ SEM Expr
                                                  )]
                             .   letCBindOtherL
                                             =   []
-                            .	mkBangEval	=	\e -> foldr ($) e @decls.bangEvalL
                             .   cexprtop    =   ehcOptTrace @lhs.opts "Expr.Let.lhs.cexprtop" $
-                                                foldr (\(c,b) e -> acoreLet c b e)
-                                                      (@mkBangEval @letCBody)
-                                                      @letCBindRemL
+                                                foldr (\(c,b) e -> acoreLet c b e) @letCBody @letCBindRemL
   | App AppImpred
 %%[[12
     AppImpl
@@ -507,18 +504,6 @@ SEM Expr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Dealing with bang pattern
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8 codegen)
-ATTR PatExpr [ | | isBang: Bool ]
-
-SEM PatExpr
-  | Bang		lhs			.	isBang		=	True
-  | * - Bang 	lhs			.	isBang		=	False
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Pat for use in case alt
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -526,7 +511,7 @@ SEM PatExpr
 ATTR PatExpr [ | | cpNm: RPatNm ]
 
 SEM PatExpr
-  | Var VarAs AppTop Rec DataFields Con IConst CConst SConst Irrefutable Bang
+  | Var VarAs AppTop Rec DataFields Con IConst CConst SConst Irrefutable
 %%[[97
     Expr
 %%]]
@@ -569,7 +554,7 @@ SEM PatExpr
                                                     sat = -- (\v -> v `seq` tr "PatExpr.DataFields.rpatBindss" ("tag" >#< @tag >#< "arity" >#< max) v) $
                                                           listSaturateWith 0 max (foffOffset . fst) $
                                                           -- (\v -> v `seq` tr "PatExpr.DataFields.rpatBindss2" ("tag" >#< @tag >#< "arity" >#< max) v) $
-                                                            (zipWith (\o n -> (o,(FldKnownOffset n o,RPat_Var (RPatNmOrig n) (acoreTyErr $ "EH.ToCore.PatExpr.DataFields: " ++ show n) False))) [0..max] hsnLclSupply)
+                                                            (zipWith (\o n -> (o,(FldKnownOffset n o,RPat_Var (RPatNmOrig n) (acoreTyErr $ "EH.ToCore.PatExpr.DataFields: " ++ show n)))) [0..max] hsnLclSupply)
                                                 in  ( map (fsL2PatOffsetL . sat) $ grp fsL      -- groups of bindings which can be dealt with simultaneously
                                                     , fsL2PatOffsetL fsL                        -- bindings
                                                     , fsL2PatOffsetL $ sat []                   -- 0 binding
@@ -583,7 +568,7 @@ SEM PatExpr
   | IConst      loc         .   rpat        =   RPat_Int @cpNm @finalTyExpanded (toInteger @int)
   | CConst      loc         .   rpat        =   RPat_Char @cpNm @finalTyExpanded @char
   | SConst      loc         .   rpat        =   RPat_Int @cpNm @finalTyExpanded (-1) -- for now
-  | Var         loc         .   rpat        =   RPat_Var @cpNm @finalTyExpanded False
+  | Var         loc         .   rpat        =   RPat_Var @cpNm @finalTyExpanded
   | VarAs       loc         .   rpat        =   @patExpr.rpat {rcpPNm = @cpNm}
   | Con         loc         .   rpat        =   RPat_Con @cpNm @finalTyExpanded @tag (RPatConBind_One CPatRest_Empty [])
   | AppTop      loc         .   rpat        =   RPat_Con @cpNm @finalTyExpanded @tag (RPatConBind_One @rest (map fst @rpatBinds))
@@ -599,9 +584,6 @@ SEM PatExpr
                                                            @rpatBindss
                                                     )
   | Irrefutable loc         .   rpat        =   RPat_Irrefutable @cpNm @finalTyExpanded @patExpr.cbindL -- $ cbindInPatFlatten @patExpr.cbindInPatL
-  | Bang        loc         .   rpat        =   case @patExpr.rpat of
-                                                  r@(RPat_Var _ _ _) -> r {rcpMustEval = True}
-                                                  r                  -> r
 %%]
 
 %%[(97 codegen)
@@ -736,23 +718,12 @@ SEM Expr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Let level bang pattern evaluation
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8 codegen)
-ATTR AllDecl [ | | bangEvalL USE {++} {[]} : {[CExpr -> CExpr]} ]
-
-SEM Decl
-  | Val			lhs			.	bangEvalL		=	if @patExpr.isBang then [acoreLet1StrictTy (hsnUniqify HsNameUniqifier_Strict @patExpr.topNm) @finalTy (acoreVar @patExpr.topNm)] else []
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Decl
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen)
 ATTR
-  AllDecl AllDataConstr
+  Decls Decl AllDataConstr
     [ | | cbindL
         , ffiCBindL
 %%[[90
@@ -1348,7 +1319,7 @@ mkDataGenerBinds
                 (dictSelfNm,dictBuildNm) = mkInstanceBuildNms dictNm
                 
                 -- match predicate to get the record type describing fields of dictionary
-                evFO  = fitPredToEvid' u1 emptyVarMp (mkTyPr pr) (Left clgi)
+                evFO  = fitPredToEvid' u1 emptyVarMp (Ty_Pred pr) (Left clgi)
                 recTy = foVarMp evFO `varUpd` foTy evFO
                 
                 -- the bindings for datatypes acting as labels

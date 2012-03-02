@@ -172,9 +172,6 @@ SEM Declaration
 %%]
 %%[5
     | Data Newtype
-%%[[31
-      GADT
-%%]]
         loc             .   idDefOccGamType
                                         =   tvarS2IdDefOccGam @nmLev @typelefthandside.range @constructors.freeTvarS -- ???? or from constrs itself, so implicit exists is allowed
                         .   idDefOccGamType2
@@ -217,7 +214,7 @@ SEM Declaration
                                             `gamUnion` @idDefOccGamSigAsVar
     | Instance
         loc             .   idDefOccGamType
-                                        =   tvarS2IdDefOccGam @lhs.nmLev @range  @type.freeTvarS -- @types.freeTvarS
+                                        =   tvarS2IdDefOccGam @lhs.nmLev @range @types.freeTvarS
                         .   idDefOccGam =   mkDefOccGam @lhs.nmLev @range (IdAsp_Inst_Def @eh @classrefname) [@idOccDef]
                                             `gamUnion` mkDefOccGam @lhs.nmLev @range IdAsp_Val_Var [@idOccDefVal]
     | InstanceUseImplicitly
@@ -238,9 +235,6 @@ SEM Declaration
 %%]]
 %%[[11
       Type
-%%]]
-%%[[31
-      GADT
 %%]]
         loc             .   idDefOccGamInside
                                         =   tvarL2IdDefOccGam @nmLev @typelefthandside.range @typelefthandside.typevariables
@@ -528,9 +522,6 @@ SEM Declaration
     | Data Newtype
 %%[[11
       Type
-%%]]
-%%[[31
-      GADT
 %%]]
         loc             .   idGam       =   gamAddGam @idDefOccGamType @lhs.idGam
 %%]]
@@ -854,9 +845,7 @@ SEM Kind
 SEM Type
     | Constructor
         loc             .   (idOccKind,idAsp)
-                                        :=  if @lhs.isAsPred && @tyConIs == TyConIsOther
-                                            then (IdOcc_Class,IdAsp_Class_Class)
-                                            else (IdOcc_Type,IdAsp_Type_Con)				-- TBD, now treated as types whereas they are other special constructs actually
+                                        :=  if @lhs.isAsPred then (IdOcc_Class,IdAsp_Class_Class) else (IdOcc_Type,IdAsp_Type_Con)
 %%]
 
 %%[7
@@ -884,11 +873,7 @@ SEM ContextItem
         lhs             .   idUseOccGam =   gamUnions [@idUseOccGam,@types.idUseOccGam]
 
 SEM Declaration
-    | Instance
-        loc             .   (classrefname,_,idUseOccGamInst,errIdUse)
-                                        -- =   mkUseOccGam @lhs.opts @lhs.idGam [@name] IdOcc_Class IdAsp_Class_Class @range
-                                        =   mkUseOccGam @lhs.opts @lhs.idGam [@type.conNm] IdOcc_Class IdAsp_Class_Class @range
-    | InstanceUseImplicitly
+    | Instance InstanceUseImplicitly
         loc             .   (classrefname,_,idUseOccGamInst,errIdUse)
                                         =   mkUseOccGam @lhs.opts @lhs.idGam [@name] IdOcc_Class IdAsp_Class_Class @range
     | Default
@@ -935,9 +920,6 @@ SEM Body
 %%[8
 SEM Declaration
     | Data
-%%[[31
-      GADT
-%%]]
         loc             .   (_,_,idUseOccGamVal,errIdUseVal)
                                         =   mkUseOccGam @lhs.opts @lhs.idGam [] IdOcc_Val IdAsp_Val_Var @range
     | Newtype
@@ -954,7 +936,7 @@ SEM Declaration
 
 %%[92
 SEM Declaration
-    | Data Newtype GADT
+    | Data Newtype
         loc             .   (_,_,idUseOccGamClass,errIdUseClass)
                                         =   mkUseOccGam @lhs.opts @lhs.idGam
                                                         (if ehcOptGenGenerics @lhs.opts then builtinGenerClassNmL else [])
@@ -1057,9 +1039,6 @@ SEM Declaration
         lhs             .   undefOccGam =   gamUnions [@undefOccGam,@righthandside.undefOccGam]
 %%[[5
     | Data Newtype
-%%[[31
-      GADT
-%%]]
         loc             .   (idUseOccGam,idUseHereOccL,_,undefOccGam)
                                         =   splitIdUseOccGam @lhs.nmLev
                                                 (gamUnions
@@ -1125,7 +1104,7 @@ SEM Declaration
     | Instance
         loc             .   (idUseOccGam,idUseHereOccL,_,undefOccGam)
                                         =   splitIdUseOccGam @lhs.nmLev
-                                                (gamUnions [@idUseOccGamInst,@context.idUseOccGam,@type.idUseOccGam {- @types.idUseOccGam -},@where.idUseOccGam])
+                                                (gamUnions [@idUseOccGamInst,@context.idUseOccGam,@types.idUseOccGam,@where.idUseOccGam])
                         .   idDpdMp     =   idDpdMpUnions
                                                 [ idToOccL2DpdMp [@idOccDef] @idUseHereOccL
                                                 , idDpdMpSingleton @idOccDefVal @idOccDef
@@ -1230,7 +1209,7 @@ SEM Body
 ATTR AllDeriving [ idOccDefData: IdOcc | | ]
 
 SEM Declaration
-    | Data Newtype GADT
+    | Data Newtype
         derivings       .   idOccDefData=   @idOccDef
 %%]
 

@@ -2,10 +2,10 @@
 %%% Constraint Handling Rules: Key to be used as part of TrieKey
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 module {%{EH}CHR.Key} import({%{EH}Base.Common},{%{EH}Base.TreeTrie})
+%%[9 module {%{EH}CHR.Key} import({%{EH}Base.Common},{%{EH}Base.TreeTrie},{%{EH}Base.Trie})
 %%]
 
-%%[9 import(EH.Util.Pretty, EH.Util.Utils)
+%%[9 import(EH.Util.Pretty)
 %%]
 
 %%[(9 hmtyinfer || hmtyast) import({%{EH}Ty},{%{EH}Ty.Pretty})
@@ -33,15 +33,15 @@
 
 %%[9 export(Key(..))
 data Key
-  = Key_HNm     !HsName         -- type constant, its name
-  | Key_UID     !UID            -- type variable, its id, used with TKK_Partial
-  | Key_Str     !String         -- arbitrary string
+  = Key_HNm     !HsName			-- type constant, its name
+  | Key_UID     !UID			-- type variable, its id, used with TKK_Partial
+  | Key_Str     !String			-- arbitrary string
 %%[[(9 hmtyinfer || hmtyast)
-  | Key_TyQu    !TyQu           -- quantified type, used with TKK_Partial
-  | Key_Ty      !Ty             -- catchall for the rest, used with TKK_Partial
+  | Key_TyQu    !TyQu			-- quantified type, used with TKK_Partial
+  | Key_Ty      !Ty				-- catchall for the rest, used with TKK_Partial
 %%]]
 %%[[9999
-  | Key_Hash    !Hash           -- a hash summary, to be the first value used for comparison, speeding up the comparison
+  | Key_Hash	!Hash			-- a hash summary, to be the first value used for comparison, speeding up the comparison
 %%]]
   deriving ( Eq, Ord
 %%[[50
@@ -109,11 +109,11 @@ instance Hashable Key where
   hash (Key_Hash h) = h
 %%]
 
-%%[9999 export(Keyable(..))
+%%[9 export(Keyable(..))
 -- | Trie key construction
 class Keyable k where
-  toKey               :: k -> [TrieKey Key]                     -- the key of ...
-  toKeyParentChildren :: k -> ([TrieKey Key],[TrieKey Key])     -- split up into (p,c), where key = p ++ c
+  toKey               :: k -> [TrieKey Key]						-- the key of ...
+  toKeyParentChildren :: k -> ([TrieKey Key],[TrieKey Key])		-- split up into (p,c), where key = p ++ c
 
   -- minimal def, mutually recursive
   toKey               x = let (p,c) = toKeyParentChildren x in p ++ c
@@ -122,7 +122,7 @@ class Keyable k where
                             _     -> ([],[])
 %%]
 
-%%[9999
+%%[9
 instance Keyable x => TrieKeyable x Key where
 %%[[9
   toTrieKey   = toKey
@@ -139,7 +139,7 @@ instance Keyable x => TrieKeyable x Key where
 %%[(9 hmtyinfer || hmtyast) hs export(TTKeyableOpts(..),defaultTTKeyableOpts)
 data TTKeyableOpts
   = TTKeyableOpts
-      { ttkoptsVarsAsWild       :: Bool             -- treat vars as wildcards
+      { ttkoptsVarsAsWild		:: Bool				-- treat vars as wildcards
       }
 
 defaultTTKeyableOpts = TTKeyableOpts True
@@ -148,17 +148,12 @@ defaultTTKeyableOpts = TTKeyableOpts True
 %%[9 export(TTKeyable(..))
 -- | TreeTrie key construction
 class TTKeyable x where
-  toTTKey'                  :: TTKeyableOpts -> x ->  TreeTrieKey  Key                          -- option parameterized constuction
-  toTTKeyParentChildren'    :: TTKeyableOpts -> x -> (TreeTrie1Key Key, [TreeTrieMpKey  Key])   -- building block: parent of children + children
+  toTTKey  :: x -> TreeTrieKey Key
+  toTTKey' :: TTKeyableOpts -> x -> TreeTrieKey Key
   
   -- default impl
-  toTTKey' o                    = uncurry ttkAdd' . toTTKeyParentChildren' o
-  toTTKeyParentChildren' o      = ttkParentChildren . toTTKey' o
-%%]
-
-%%[9 export(toTTKey)
-toTTKey :: TTKeyable x => x -> TreeTrieKey Key
-toTTKey = toTTKey' defaultTTKeyableOpts
+  toTTKey    = toTTKey' defaultTTKeyableOpts
+  toTTKey' _ = toTTKey
 %%]
 
 %%[9

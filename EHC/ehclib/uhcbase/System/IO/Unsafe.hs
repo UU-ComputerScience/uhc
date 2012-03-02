@@ -39,12 +39,15 @@ import UHC.Base (IO, return)
 
 #if !__GLASGOW_HASKELL__ && !__HUGS__
 unsafeInterleaveIO :: IO a -> IO a
-unsafeInterleaveIO f = return (unsafePerformIO f)
--- causes exception
---unsafeInterleaveIO (IO m)
---	= IO ( \ s -> let
---                   r = case m s of (_, res) -> res
---                in
---                (s, r))
+--unsafeInterleaveIO f = return (unsafePerformIO f)
+unsafeInterleaveIO (IO m)
+	= IO ( \ s -> let
+                   r = case m s of (_, res) -> res
+                in
+                (s, r))
  
+-- = IO ( \ s -> let
+ --                  r = case m s of (_, res) -> res
+ --               in
+ --               (s, r))
 #endif

@@ -92,7 +92,7 @@ SEM Decl
 
 %%[(8 hmtyinfer)
 SEM PatExpr
-  | Var VarAs AppTop Rec DataFields Con IConst CConst SConst Irrefutable Bang App
+  | Var VarAs AppTop Rec DataFields Con IConst CConst SConst Irrefutable App
 %%[[97
     Expr
 %%]]
@@ -148,7 +148,7 @@ SEM DataFieldExpr
 
 %%[(8 hmtyinfer)
 SEM PatExpr
-  | Var VarAs AppTop Rec DataFields Con IConst CConst SConst Irrefutable Bang App
+  | Var VarAs AppTop Rec DataFields Con IConst CConst SConst Irrefutable App
 %%[[97
     Expr
 %%]]
@@ -175,12 +175,6 @@ SEM Decl
 %%][11
                 loc         .   finalTyExpanded     =   tyCanonicFFI (emptyFI {fiEnv = @fe} :: FIIn) @ty_sig_
 %%]]
-%%]
-
-%%[(50 hmtyinfer)
-SEM Decl
-  | Instance    loc         .   finalHdInstArgLExpanded
-                                                    =   map (tyCanonic (emptyFI {fiEnv = @fe} :: FIIn)) @instArgTyL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

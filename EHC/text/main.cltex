@@ -1384,10 +1384,8 @@ WWW home page:
    Universiteit Utrecht \\
    P.O.Box 80.089, 3508 TB Utrecht, The Netherlands
   }
-  {atze@@uu.nl, j.stutterheim@@me.com, a.vermeulen@@students.uu.nl, doaitse@@uu.nl}
+  {\{atze,xx,xx,doaitse\}@@uu.nl}
 %endif
-
-%%@TopicJavaScript.prelude
 %%]
 
 
@@ -2417,13 +2415,13 @@ and pointing out where and why we differ from the `standard' \cite{stuckey02theo
 
 %%@TopicJavaScript.UseOfExistingJavaScriptStuff
 
-\section{Discussion, issues, and related work}
+\section{Discussion, unresolved issues}
 
-%%@TopicJavaScript.discussionIssuesRelatedWork
+%%@TopicJavaScript.discussionAndIssues
 
-%\section{Related work}
+\section{Related work}
 
-% %%@TopicJavaScript.relatedWork
+%%@TopicJavaScript.relatedWork
 
 \section{Conclusion}
 
