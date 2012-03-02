@@ -359,12 +359,21 @@ SEM TyExpr
 ATTR PrExpr [ | | ki: Ty ]
 
 SEM PrExpr
-  | *           lhs         .   ki                  =   kiStar
+  | *
+%%[[31
+    - Eq
+%%]]
+                lhs         .   ki                  =   kiStar
   | Class       loc         .   (tkgi_,clKiNmErrs)  =   tyKiGamLookupByNameErr (hsnClass2Kind @nm) @lhs.tyKiGam
                             .   fo_                 =   fitsIn weakFIOpts defaultFIEnv @lUniq @tyExprs.kiVarMp
                                                           (@tyExprs.kiL `mkArrow` kiStar) (tkgiKi @tkgi_)
                 lhs         .   kiVarMp             =   foVarMp @fo_ `varUpd` @tyExprs.kiVarMp
                 loc         .   lUniq               :   UNIQUEREF gUniq
+%%[[31
+  | Eq			loc			.	fo_					=	fitsIn unifyFIOpts defaultFIEnv @lUniq @tyExpr2.kiVarMp @tyExpr1.ki @tyExpr2.ki
+                loc         .   lUniq               :   UNIQUEREF gUniq
+                lhs         .   kiVarMp             =   foVarMp @fo_ `varUpd` @tyExpr2.kiVarMp
+%%]]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -439,6 +448,14 @@ SEM TyExpr
   | Lam         loc         .   ty                  =   mkTyLam [@tv] @tyExpr.ty
 %%]
 
+%%[(31 hmtyinfer)
+ATTR MbTyExpr [ | | tyMb: {Maybe Ty} ]
+
+SEM MbTyExpr
+  | Nothing     lhs         .   tyMb                =   Nothing
+  | Just        lhs         .   tyMb                =   Just @just.ty
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Annotation on TyExprAnn
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -507,6 +524,11 @@ SEM PrExpr
   | DynVar      loc         .   pr                  =   Pred_Class ((hsnDynVar `hsnConcat` @nm) `mkConApp` [@tyExpr.ty])
 %%]
 
+%%[(31 hmtyinfer)
+SEM PrExpr
+  | Eq          loc         .   pr                  =   Pred_Eq @tyExpr1.ty @tyExpr2.ty
+%%]
+
 %%[(9 hmtyinfer)
 ATTR PrExprs [ | | prL: {[Pred]} ]
 
@@ -520,7 +542,7 @@ ATTR PrExpr [ | | ty: Ty ]
 ATTR PrExprs [ | | tyL: TyL ]
 
 SEM PrExpr
-  | *           loc         .   ty                  =   Ty_Pred @pr
+  | *           loc         .   ty                  =   mkTyPr @pr
 
 SEM PrExprs
   | Nil         lhs         .   tyL                 =   []

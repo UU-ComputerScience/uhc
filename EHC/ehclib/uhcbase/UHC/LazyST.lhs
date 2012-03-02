@@ -105,7 +105,7 @@ Convert a lazy 'ST' computation into a strict one.
 lazyToStrictST :: ST s a -> ST.ST s a
 lazyToStrictST (ST m) = ST.ST $ \s ->
         case (m s) of
-        (s', a) -> letstrict s'' = s'
+        (s', a) -> let !s'' = s'
                    in ( s'', a )
 
 unsafeInterleaveST :: ST s a -> ST s a

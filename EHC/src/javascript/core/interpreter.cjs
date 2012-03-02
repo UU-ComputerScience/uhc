@@ -175,9 +175,9 @@ function _A_( fun, args ) {
 // Function node
 _F_.prototype = {
   __aN__ : function ( args ) {
-    if ( args.length < this.needs ) {
+    if ( args.length < this.__evN__.length ) {
       return new _A_undersat_( this, args ) ;
-    } else if ( args.length == this.needs ) {
+    } else if ( args.length == this.__evN__.length ) {
 %%[[8
       trace( "> _F_.__aN__(=sat)", this + "(|args#" + args.length + "=" + args + "|)") ;
 %%][100
@@ -191,13 +191,13 @@ _F_.prototype = {
       return x ;
     } else {
 %%[[8
-      trace( "> _F_.__aN__(>sat)", this + "(|needs#" + this.needs + "args#" + args.length + "=" + args + "|)") ;
+      trace( "> _F_.__aN__(>sat)", this + "(|needs#" + this.__evN__.length + "args#" + args.length + "=" + args + "|)") ;
 %%][100
 %%]]
-      var fun = _e_( this.__evN__.apply( null, args.slice( 0, this.needs ) ) ) ;
-      var remargs = args.slice( this.needs ) ;
+      var fun = _e_( this.__evN__.apply( null, args.slice( 0, this.__evN__.length ) ) ) ;
+      var remargs = args.slice( this.__evN__.length ) ;
 %%[[8
-      trace( "< _F_.__aN__(>sat)", fun + "(|needs#" + this.needs + "remargs#" + remargs.length + "=" + remargs + "|)") ;
+      trace( "< _F_.__aN__(>sat)", fun + "(|needs#" + this.__evN__.length + "remargs#" + remargs.length + "=" + remargs + "|)") ;
       trace( "<   ->", fun) ;
 %%][100
 %%]]
@@ -208,11 +208,11 @@ _F_.prototype = {
     }
   }
 , needsNrArgs : function() {
-    return this.needs ;
+    return this.__evN__.length ;
   }
 %%[[8
 , getName : function () {
-    return "F" + this.needs + "#" + this.nodeId + "'" + this.name ;
+    return "F" + this.__evN__.length + "#" + this.nodeId + "'" + this.name ;
   }
 , toString : function () {
     return "(" + this.getName() + ")" ;
@@ -225,7 +225,7 @@ function _F_( name, evalN ) {
 %%][100
 function _F_( evalN ) {
 %%]]
-  this.needs = evalN.length ;
+  //this.needs = evalN.length ;
   this.__evN__ = evalN ;
 %%[[8
   this.name = name ;
@@ -303,7 +303,13 @@ function _aN_(f,a) {
 %%[8
 // indirection
 function _i_() {
-  return new _A_(new _F_("_i_", function(){throw "_i_: attempt to prematurely evaluate indirection";}),[]) ; 
+  return new _A_(new _F_(
+%%[[8
+      "_i_",
+%%][100
+%%]]
+      function(){throw "_i_: attempt to prematurely evaluate indirection";}
+    ),[]) ; 
 }
 
 function _i_set_(i,x) {

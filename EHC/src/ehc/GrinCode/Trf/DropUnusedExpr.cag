@@ -8,21 +8,21 @@ Alternatives with tags that involve functions that do no longer exist are remove
 
 %%]
 
-%%[(8 codegen grin) ag import({GrinCode/AbsSyn})
+%%[(8 codegen grin wholeprogAnal) ag import({GrinCode/AbsSyn})
 %%]
-%%[(8 codegen grin) hs import(Debug.Trace)
+%%[(8 codegen grin wholeprogAnal) hs import(Debug.Trace)
 %%]
-%%[(8 codegen grin) hs import(Data.Maybe, qualified Data.Set as Set, qualified Data.Map as Map)
+%%[(8 codegen grin wholeprogAnal) hs import(Data.Maybe, qualified Data.Set as Set, qualified Data.Map as Map)
 %%]
-%%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}GrinCode}, {%{EH}Base.Builtin(hsnMain)})
+%%[(8 codegen grin wholeprogAnal) hs import({%{EH}Base.Common}, {%{EH}GrinCode}, {%{EH}Base.Builtin(hsnMain)})
 %%]
-%%[(8 codegen grin) hs import({%{EH}GrinCode.Common})
+%%[(8 codegen grin wholeprogAnal) hs import({%{EH}GrinCode.Common})
 %%]
-%%[(8 codegen grin)
+%%[(8 codegen grin wholeprogAnal)
 WRAPPER GrAGItf
 PRAGMA nocycle novisit
 %%]
-%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.DropUnusedExpr}  export(dropUnusedExpr)
+%%[(8 codegen grin wholeprogAnal) hs module {%{EH}GrinCode.Trf.DropUnusedExpr}  export(dropUnusedExpr)
 
 dropUnusedExpr :: GrModule -> (GrModule, Bool)
 dropUnusedExpr grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod)) Inh_GrAGItf
@@ -30,7 +30,7 @@ dropUnusedExpr grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod)) 
 
 %%]
 
-%%[(8 codegen grin)
+%%[(8 codegen grin wholeprogAnal)
 
 -- Top-level targets: a transformed module, and a changes bit used for fixpoint iteration.
 
@@ -40,7 +40,7 @@ ATTR GrAGItf GrModule AllBind AllGlobal AllGrExpr [ | | changes USE {||} {False}
 %%]
 
 
-%%[(8 codegen grin)
+%%[(8 codegen grin wholeprogAnal)
 
 -- We collect bottom-up the free variables used in an Expression, Value, and Tag.
 -- This includes the use of function names in calls and F, P, and A-tags (but not in C-tags) used in values (but not in patterns and annotations).
@@ -143,13 +143,13 @@ SEM GrVar
 
 %%]
 
-%%[(10 codegen grin)
+%%[(10 codegen grin wholeprogAnal)
 SEM GrSplit
   | Sel           lhs.defined  =  Set.singleton @nm
 %%]
 
 
-%%[(8 codegen grin)
+%%[(8 codegen grin wholeprogAnal)
 
 -- Determine which expressions have a side effect.
 -- This is certainly the case for FFI, Throw, and Update.
@@ -195,7 +195,7 @@ SEM GrModule
 %%]
 
 
-%%[(8 codegen grin)
+%%[(8 codegen grin wholeprogAnal)
 
 ATTR AllGrExpr[ mbMask : {Maybe [Bool]} | | ]
 
@@ -251,7 +251,7 @@ SEM GrValL
                 
 %%]
 
-%%[(10 codegen grin)
+%%[(10 codegen grin wholeprogAnal)
 SEM GrAdapt
   | Upd Ins     off.mbBit  = Nothing
                 val.mbBit  = Nothing
@@ -266,7 +266,7 @@ SEM GrSplit
 %%]
 
 
-%%[(8 codegen grin)
+%%[(8 codegen grin wholeprogAnal)
 
 -- The actual removals
 -- Expressions without side effects which are bound to variables that are never used are deleted.
@@ -302,7 +302,7 @@ SEM GrBindL GrGlobalL GrAltL
 %%]
 
 
-%%[(8 codegen grin)
+%%[(8 codegen grin wholeprogAnal)
 -- So, we need a "life" attribute that decides whether a Binding/Global/Alternative is deleted.
 ATTR GrBind GrGlobal GrAlt [ | | life : Bool ]
 
@@ -343,7 +343,7 @@ SEM GrTag
 
 %%]
 
-%%[(8 codegen grin)
+%%[(8 codegen grin wholeprogAnal)
 
 -- Variables bound in patterns which are never used are replaced with wildcards.
 -- (This is only important for the result of expressions that are kept because of their side effects)

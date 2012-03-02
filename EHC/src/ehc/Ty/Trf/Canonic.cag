@@ -134,7 +134,7 @@ tyCanonic' opts ty = maybe (mkDfltTyCanonicOut ty) id $ tyCanonicMb' opts ty
 %%[(9 hmtyinfer).predCanonicPrime hs export(predCanonic')
 predCanonic' :: TyCanonicOpts -> Pred -> (Pred,VarMp)
 predCanonic' opts pr
-  = case tyCanonic' opts $ Ty_Pred pr of
+  = case tyCanonic' opts $ mkTyPr pr of
       (Ty_Pred pr',m) -> (pr',m)
 %%]
 
@@ -150,7 +150,7 @@ predCanonic' opts (Pred_Eq t1 t2)
       (t2',m2) = tyCanonic' opts t2 -- (m1 `varUpd` t2)
 %%]]
 predCanonic' opts pr
-  = case tyCanonicMb' opts $ Ty_Pred pr of
+  = case tyCanonicMb' opts $ mkTyPr pr of
       Just (Ty_Pred pr',m) -> (pr', m)
       _                    -> mkDfltTyCanonicOut pr
 %%]

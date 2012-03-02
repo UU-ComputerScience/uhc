@@ -5,19 +5,19 @@ can be encoded directly in the global variable that applies them.
 
 %%]
 
-%%[(8 codegen grin) ag import({GrinCode/AbsSyn})
+%%[(8 codegen grin wholeprogAnal) ag import({GrinCode/AbsSyn})
 %%]
 
-%%[(8 codegen grin).wrapper
+%%[(8 codegen grin wholeprogAnal).wrapper
 WRAPPER GrAGItf
 %%]
 
-%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.SimpleNullary} import(qualified Data.Map as Map)
+%%[(8 codegen grin wholeprogAnal) hs module {%{EH}GrinCode.Trf.SimpleNullary} import(qualified Data.Map as Map)
 %%]
-%%[(8 codegen grin) hs import(Debug.Trace)
+%%[(8 codegen grin wholeprogAnal) hs import(Debug.Trace)
 %%]
 
-%%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{EH}GrinCode.Common}, {%{EH}GrinCode}) export(simpleNullary)
+%%[(8 codegen grin wholeprogAnal) hs import({%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{EH}GrinCode.Common}, {%{EH}GrinCode}) export(simpleNullary)
 
 simpleNullary :: GrModule -> GrModule
 simpleNullary code
@@ -27,13 +27,13 @@ simpleNullary code
 
 %%]
 
-%%[(8 codegen grin)
+%%[(8 codegen grin wholeprogAnal)
 ATTR GrAGItf [ | | grTrf: GrModule ]
 ATTR AllNT   [ | | grTrf: SELF     ]
 %%]
 
 
-%%[(8 codegen grin)
+%%[(8 codegen grin wholeprogAnal)
 
 ATTR AllBind  [ | | info   USE {`Map.union`} {Map.empty} : {Map.Map HsName GrVal} ]
               

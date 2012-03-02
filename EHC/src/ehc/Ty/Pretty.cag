@@ -159,7 +159,7 @@ instance PP ImplsProveOcc where
   pp o = ipoId o >|< "/" >|< ipoScope o
 %%]
 
-%%[(41 hmtyinfer || hmtyast) hs
+%%[(13 hmtyinfer || hmtyast) hs
 instance PP PredSeq where
   pp (PredSeq_Cons hd tl) = pp hd >#< ":" >#< pp tl
   pp (PredSeq_Nil       ) = pp "[]"
@@ -637,9 +637,9 @@ SEM Ty
                                                        (cfgppAside @lhs.cfg ("\\" >|< @tnPP) ("->" >#< @ty.pp))
 %%]
 
-%%[(41 hmtyinfer || hmtyast)
+%%[(31 hmtyinfer || hmtyast)
 SEM Pred
-  | Eq              lhs     .   pp      =   ppParNeed @parNeed @lhs.parNeed (@tyL.pp >#< "=" >#< @tyR.pp)
+  | Eq              lhs     .   pp      =   @tyL.pp >#< hsnEqTilde >#< @tyR.pp
 %%]
 
 %%[(40 hmtyinfer || hmtyast)

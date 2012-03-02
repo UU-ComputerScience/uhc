@@ -4,26 +4,26 @@
 %%]
 
 
-%%[(8 codegen) hs module {%{EH}Core.Trf.FindNullaries} export(cmodTrfFindNullaries)
+%%[(8 codegen wholeprogAnal) hs module {%{EH}Core.Trf.FindNullaries} export(cmodTrfFindNullaries)
 %%]
-%%[(8 codegen) hs import(Data.Maybe, qualified Data.Set as Set, qualified Data.Map as Map)
+%%[(8 codegen wholeprogAnal) hs import(Data.Maybe, qualified Data.Set as Set, qualified Data.Map as Map)
 %%]
-%%[(8 codegen) hs import(EH.Util.Utils,qualified EH.Util.FastSeq as Seq,{%{EH}Base.Common},{%{EH}Core},{%{EH}Ty})
+%%[(8 codegen wholeprogAnal) hs import(EH.Util.Utils,qualified EH.Util.FastSeq as Seq,{%{EH}Base.Common},{%{EH}Core},{%{EH}Ty})
 %%]
-%%[(8 codegen) hs import({%{EH}AbstractCore})
+%%[(8 codegen wholeprogAnal) hs import({%{EH}AbstractCore})
 %%]
 
 -- for debug
-%%[(8 codegen) hs import({%{EH}Base.Debug},EH.Util.Pretty)
+%%[(8 codegen wholeprogAnal) hs import({%{EH}Base.Debug},EH.Util.Pretty)
 %%]
-%%[(8 codegen) hs import(Debug.Trace)
+%%[(8 codegen wholeprogAnal) hs import(Debug.Trace)
 %%]
 
-%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonLevLet},{Core/CommonCtxtPred},{Core/CommonBindNm})
+%%[(8 codegen wholeprogAnal).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonLevLet},{Core/CommonCtxtPred},{Core/CommonBindNm})
 WRAPPER CodeAGItf
 %%]
 
-%%[(99 codegen)
+%%[(99 codegen wholeprogAnal)
 PRAGMA strictcase
 %%]
 
@@ -31,7 +31,7 @@ PRAGMA strictcase
 %%% Haskell itf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs
+%%[(8 codegen wholeprogAnal) hs
 cmodTrfFindNullaries :: CModule -> CModule
 cmodTrfFindNullaries cmod
   =  let  t = wrap_CodeAGItf  (sem_CodeAGItf (CodeAGItf_AGItf cmod))
@@ -39,12 +39,12 @@ cmodTrfFindNullaries cmod
      in   cTrf_Syn_CodeAGItf t
 %%]
 
-%%[(8 codegen)
+%%[(8 codegen wholeprogAnal)
 ATTR CodeAGItf [ | | cTrf: CModule ]
 ATTR AllCodeNT [ | | cTrf: SELF    ]
 %%]
 
-%%[(8 codegen)
+%%[(8 codegen wholeprogAnal)
 
 SEM CBindAspect
   | Bind        lhs.cTrf  =  if  @lhs.lev == cLevModule+1

@@ -1018,7 +1018,7 @@ data RAlt' e t b pr
   = RAlt_Alt			{ rcaPats :: ![RPat' e t b pr], raaExpr :: !e, raaFailS :: UIDS }
 
 data RPat' e t b pr
-  = RPat_Var			{ rcpPNm :: !RPatNm, rcpTy :: !t }
+  = RPat_Var			{ rcpPNm :: !RPatNm, rcpTy :: !t, rcpMustEval :: Bool }
   | RPat_Con			{ rcpPNm :: !RPatNm, rcpTy :: !t, rcpTag :: !CTag, rcpBinds :: !(RPatConBind' e t b pr) }
   | RPat_Int			{ rcpPNm :: !RPatNm, rcpTy :: !t, rcpInt :: !Integer }
   | RPat_Char			{ rcpPNm :: !RPatNm, rcpTy :: !t, rcpChar :: !Char }
@@ -1057,8 +1057,8 @@ rcaTag = rpatConTag . head . rcaPats
 
 %%[(8 codegen) hs export(raltIsVar,raltIsConst)
 raltIsVar :: RAlt' e t b pr -> Bool
-raltIsVar (RAlt_Alt (RPat_Var _ _ : _) _ _)  = True
-raltIsVar _                                  = False
+raltIsVar (RAlt_Alt (RPat_Var _ _ _ : _) _ _)  = True
+raltIsVar _                                    = False
 
 raltIsConst :: RAlt' e t b pr -> Bool
 raltIsConst (RAlt_Alt (p : _) _ _)
@@ -1071,13 +1071,13 @@ raltIsConst (RAlt_Alt (p : _) _ _)
 %%[(8 codegen) hs export(raltIsConMany)
 raltIsConMany :: RAlt' e t b pr -> Bool
 raltIsConMany (RAlt_Alt (RPat_Con _ _ _ (RPatConBind_Many _) : _) _ _) = True
-raltIsConMany _                                                      = False
+raltIsConMany _                                                        = False
 %%]
 
 %%[(8 codegen) hs export(raltIsIrrefutable)
 raltIsIrrefutable :: RAlt' e t b pr -> Bool
 raltIsIrrefutable (RAlt_Alt (RPat_Irrefutable _ _ _ : _) _ _) = True
-raltIsIrrefutable _                                         = False
+raltIsIrrefutable _                                           = False
 %%]
 
 %%[(97 codegen) hs export(raltMbBoolExpr,raltIsBoolExpr)
@@ -1106,7 +1106,7 @@ rpatConBindUnFlatten _ bs  = RPatConBind_Many bs
 acoreRPat2Pat :: (AbstractCore e m b basp bcat mbind t p pr pf a) => RPat' e t b pr -> p
 acoreRPat2Pat p
   = case p of
-      RPat_Var      n ty      -> acorePatVarTy  (rpatNmNm n) ty
+      RPat_Var      n ty _    -> acorePatVarTy  (rpatNmNm n) ty
       RPat_Con      n _ t b   -> acorePatCon    t r bs
                               where (r,bs) = acoreRPatConBind2PatConBind b
       RPat_Int      n ty v    -> acorePatIntTy2 ty v
@@ -1124,7 +1124,7 @@ acoreRPatConBind2PatConBind b
   	  RPatConBind_Many 	bs 		-> head (map acoreRPatConBind2PatConBind bs)
 
 acoreRPatBind2PatFld :: (AbstractCore e m b basp bcat mbind t p pr pf a) => RPatFld' e t b pr -> pf
-acoreRPatBind2PatFld (RPatFld_Fld l o _ p@(RPat_Var n _)) = acorePatFldTy (rcpTy p) (l,o) (rpatNmNm n)
+acoreRPatBind2PatFld (RPatFld_Fld l o _ p@(RPat_Var n _ _)) = acorePatFldTy (rcpTy p) (l,o) (rpatNmNm n)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

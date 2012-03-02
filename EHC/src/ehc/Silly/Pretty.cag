@@ -7,15 +7,15 @@
 %%% Prettyprint Silly program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin) hs module {%{EH}Silly.Pretty} import(Data.List(intersperse), EH.Util.Pretty,  qualified Data.Map as Map, {%{EH}GrinCode.Common} hiding (Variable(..)),{%{EH}Silly}, {%{EH}BuiltinPrims}, {%{EH}Config}) export(pretty)
+%%[(8 codegen grin wholeprogAnal wholeprogC) hs module {%{EH}Silly.Pretty} import(Data.List(intersperse), EH.Util.Pretty,  qualified Data.Map as Map, {%{EH}GrinCode.Common} hiding (Variable(..)),{%{EH}Silly}, {%{EH}BuiltinPrims}, {%{EH}Config}) export(pretty)
 %%]
-%%[(8 codegen grin) hs import({%{EH}Base.Common})
+%%[(8 codegen grin wholeprogAnal wholeprogC) hs import({%{EH}Base.Common})
 %%]
-%%[(8 codegen grin) hs import({%{EH}Opts})
+%%[(8 codegen grin wholeprogAnal wholeprogC) hs import({%{EH}Opts})
 %%]
-%%[(8 codegen grin) import({Silly/AbsSyn})
+%%[(8 codegen grin wholeprogAnal wholeprogC) import({Silly/AbsSyn})
 %%]
-%%[(8 codegen grin) hs
+%%[(8 codegen grin wholeprogAnal wholeprogC) hs
 pretty :: EHCOpts -> SilModule -> PP_Doc
 pretty opts silmod
   = let t = wrap_SilModule (sem_SilModule silmod)
@@ -29,12 +29,12 @@ pretty opts silmod
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Options to adapt the structure of the generated code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%[(8 codegen grin)
+%%[(8 codegen grin wholeprogAnal wholeprogC)
 WRAPPER SilModule
 %%]
 
 
-%%[(8 codegen grin)
+%%[(8 codegen grin wholeprogAnal wholeprogC)
 ATTR SilModule [ opts : {EHCOpts} | | ]
 
 ATTR SilModule Functions Function Statements Statement Alternatives Alternative Value Values Variable Constant
@@ -100,7 +100,7 @@ SEM Values
   | Cons           lhs.pretty = @hd.pretty >|< ", " >|< @tl.pretty
 
 %%]
-%%[(8 codegen grin) hs
+%%[(8 codegen grin wholeprogAnal wholeprogC) hs
 comment :: [String] -> PP_Doc
 comment []  = text ""
 comment [s] = text ("// " ++ s)

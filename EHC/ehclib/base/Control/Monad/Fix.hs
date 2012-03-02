@@ -27,7 +27,9 @@ module Control.Monad.Fix (
   ) where
 
 import Prelude
-#ifndef __UHC__
+#ifdef __UHC__
+import System.IO.Fix
+#else
 import System.IO
 #endif
 import Control.Monad.Instances ()
@@ -77,11 +79,9 @@ instance MonadFix [] where
                []    -> []
                (x:_) -> x : mfix (tail . f)
 
-#ifndef __UHC__
 -- IO:
 instance MonadFix IO where
     mfix = fixIO 
-#endif
 
 instance MonadFix ((->) r) where
     mfix f = \ r -> let a = f a r in a

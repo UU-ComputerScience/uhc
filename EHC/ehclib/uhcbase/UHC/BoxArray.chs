@@ -50,7 +50,7 @@ foreign import prim "primSameArray"  	primSameArray 	:: BoxArray x -> BoxArray x
 
 %%[99
 newArray :: Int -> x -> State s -> ( State s, MutableBoxArray s x )
-newArray i x s = letstrict a = primNewArray i x in (s, MutableBoxArray a)
+newArray i x s = let !a = primNewArray i x in (s, MutableBoxArray a)
    
 sameMutableArray :: MutableBoxArray s x -> MutableBoxArray s x -> Bool
 sameMutableArray (MutableBoxArray a) (MutableBoxArray b) = primSameArray a b
@@ -58,16 +58,16 @@ sameMutableArray (MutableBoxArray a) (MutableBoxArray b) = primSameArray a b
 
 %%[99
 readArray :: MutableBoxArray s x -> Int -> State s -> ( State s,x )
-readArray (MutableBoxArray a) i s = letstrict x = indexArray a i in (s, x)
+readArray (MutableBoxArray a) i s = let !x = indexArray a i in (s, x)
 
 writeArray :: MutableBoxArray s x -> Int -> x -> State s -> State s
-writeArray (MutableBoxArray a) i x s = letstrict _ = primWriteArray a i x in s
+writeArray (MutableBoxArray a) i x s = let !_ = primWriteArray a i x in s
 %%]
 
 %%[99
 unsafeFreezeArray :: MutableBoxArray s a -> State s -> ( State s, BoxArray a )
-unsafeFreezeArray (MutableBoxArray a) s = letstrict _ = a in (s,a)
+unsafeFreezeArray (MutableBoxArray a) s = let !_ = a in (s,a)
 
 unsafeThawArray :: BoxArray a -> State s -> ( State s, MutableBoxArray s a )
-unsafeThawArray a s = letstrict _ = a in (s, MutableBoxArray a)
+unsafeThawArray a s = let !_ = a in (s, MutableBoxArray a)
 %%]

@@ -34,7 +34,7 @@ module EH.Util.CompileRun
 
   , cpFindFileForNameOrFPath
   , cpFindFilesForFPathInLocations, cpFindFilesForFPath, cpFindFileForFPath
-  , cpImportGather, cpImportGatherFromMods
+  , cpImportGather, cpImportGatherFromMods, cpImportGatherFromModsWithImp
   , cpPP, cpPPMsg
 
   , forgetM
@@ -325,13 +325,14 @@ cpFindFileForFPath suffs sp mbModNm mbFp
 -- Gather all imports
 -------------------------------------------------------------------------
 
--- | recursively extract imported modules
-cpImportGatherFromMods
+-- | recursively extract imported modules, providing a way to import + do the import
+cpImportGatherFromModsWithImp
   :: (Show n, Ord n, CompileUnit u n l s, CompileRunError e p, CompileUnitState s)
-     => (Maybe prev -> n -> CompilePhase n u i e (x,Maybe prev))		-- extract imports from 1 module
+     => (u -> [n])														-- get imports
+     -> (Maybe prev -> n -> CompilePhase n u i e (x,Maybe prev))		-- extract imports from 1 module
      -> [n]																-- to be imported modules
      -> CompilePhase n u i e ()
-cpImportGatherFromMods imp1Mod modNmL
+cpImportGatherFromModsWithImp getImports imp1Mod modNmL
   = do { cr <- get
        ; cpSeq (   [ one Nothing modNm | modNm <- modNmL ]
                 ++ [ cpImportScc ]
@@ -347,10 +348,19 @@ cpImportGatherFromMods imp1Mod modNmL
                }
         imps prev m
           = do { cr <- get
-               ; let impL m = [ i | i <- cuImports (crCU m cr), not (cusIsImpKnown (crCUState i cr)) ]
+               ; let impL m = [ i | i <- getImports (crCU m cr), not (cusIsImpKnown (crCUState i cr)) ]
                ; cpSeq (map (\n -> one prev n) (impL m))
                }
 
+-- | recursively extract imported modules
+cpImportGatherFromMods
+  :: (Show n, Ord n, CompileUnit u n l s, CompileRunError e p, CompileUnitState s)
+     => (Maybe prev -> n -> CompilePhase n u i e (x,Maybe prev))		-- extract imports from 1 module
+     -> [n]																-- to be imported modules
+     -> CompilePhase n u i e ()
+cpImportGatherFromMods = cpImportGatherFromModsWithImp cuImports
+
+-- | Abbreviation for cpImportGatherFromMods for 1 module
 cpImportGather
   :: (Show n,Ord n,CompileUnit u n l s,CompileRunError e p,CompileUnitState s)
        => (n -> CompilePhase n u i e ()) -> n -> CompilePhase n u i e ()

@@ -62,7 +62,7 @@ Translation to another AST
 %%]
 
 -- Alternative backends
-%%[(8 codegen grin) import(qualified {%{EH}EHC.GrinCompilerDriver} as GRINC)
+%%[(8 codegen grin wholeprogAnal) import(qualified {%{EH}EHC.GrinCompilerDriver} as GRINC)
 %%]
 
 -- HI AST
@@ -268,7 +268,7 @@ cpTranslateGrin2Bytecode modNm
         }
 %%]
 
-%%[(8 codegen grin) export(cpTranslateGrin)
+%%[(8 codegen grin wholeprogAnal) export(cpTranslateGrin)
 cpTranslateGrin :: HsName -> EHCompilePhase ()
 cpTranslateGrin modNm
   =  do { cr <- get

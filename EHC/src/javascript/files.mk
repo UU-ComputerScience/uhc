@@ -61,7 +61,7 @@ JSCRIPT_ALL_SRCDRV_JS				:= $(JSCRIPT_JS_JSCRIPT_SRC_JS) $(JSCRIPT_JS_JSCRIPT_DR
 ###########################################################################################
 
 # library install
-$(INSTALL_LIB_JSCRIPT): $(JSCRIPT_ALL_SRCDRV_JS) $(JSCRIPT_MKF)
+$(INSTALL_LIB_JSCRIPT): $(JSCRIPT_ALL_SRCDRV_JS) $(JSCRIPT_ALL_SRC) $(JSCRIPT_MKF)
 	mkdir -p $(@D)
 	cat $(JSCRIPT_ALL_SRCDRV_JS) > $@
 	touch $@

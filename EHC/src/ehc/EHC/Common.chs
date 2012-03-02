@@ -40,6 +40,8 @@ data HSState
   = HSStart                 -- starting from .hs
   | HSAllSem                -- done all semantics for .hs
 %%[[50
+  | HMOnlyMinimal           -- done minimal info only
+  -- | HMStart                 -- starting from nothing, not using .hi info nor .hs file, just for linking etc
   | HSOnlyImports           -- done imports from .hs
   | HIStart                 -- starting from .hi
   | HIAllSem                -- done all semantics for .hi
@@ -78,6 +80,7 @@ The next thing to do for HSState.
 hsstateNext :: HSState -> HSState
 hsstateNext HSStart       = HSOnlyImports
 hsstateNext HIStart       = HIOnlyImports
+-- hsstateNext HMStart       = HMOnlyMinimal
 %%[[99
 hsstateNext LHSStart      = LHSOnlyImports
 %%]]

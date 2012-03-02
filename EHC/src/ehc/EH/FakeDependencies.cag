@@ -2,96 +2,91 @@
 %%% Fake AG dependencies to avoid INDUCED cycles
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-Dependencies are declared for the first variant where both dependencees are available.
-
-%%[1
-SEM Expr
-  | Parens      lhs			.	opts				<	lhs.gUniq
-%%]
-
-%%[(1 hmtyinfer)
-SEM Decls
-  | Cons        lhs         .   opts                <   lhs.gathTySigGam
-%%]
-
-%%[(2 hmtyinfer)
-SEM AGItf
-  | AGItf       expr        .   gUniq               <   loc.tyGam
-%%]
-
-%%[(6 hmtyinfer)
-SEM AGItf
-  | AGItf       expr        .   gUniq               <   loc.tyKiGam
-                expr        .   gUniq               <   loc.kiGam
-
-SEM Expr
-  | Case        alts        .   kiVarMp             <   alts.patTyVarMp
-%%]
-
-%%[(6 hmtyinfer)
-SEM DataConstr
-  | Constr      lhs         .   dataTy              <   lhs.kiVarMp
-%%]
-
-SEM CaseAlts
-  | Cons        hd          .   gathDataGam         <   hd.kiVarMp
-%%[(7 hmtyinfer)
-
-SEM DataFieldPatExpr
-  | Ext         dataFieldPatExpr
-                            .   tyGam               <   dataFieldPatExpr.kiVarMp
-
+%%[99
 SEM Decl
-  | Data        loc         .   dataAltTy           <   loc.dataTy
-%%]
-
-%%[(9 hmtyinfer)
-SEM TyExprs
-  | Cons        hd          .   tyVarWildMp         <   hd.clGam
-%%]
-
-%%[(9 hmtyinfer)
-%%]
-SEM AGItf
-  | AGItf       expr        .   lexLev          	<   expr.predScope
-
-%%[(9 hmtyinfer)
-SEM Decl
-  | Data		constrs		.	intlTyKiGam			<	constrs.clGam
-%%]
-
-%%[(17 hmtyinfer)
-SEM DataConstr
-  | Constr      -- lhs         .   polGam              <   loc.dataAltTyL
-                lhs         .   knPolCtx            <   loc.dataAltTyL
-                -- lhs         .   polVarMp            <   loc.dataAltTyL
+  | Data
+  		-- constrs.dataConstrNmL < constrs.tyNm
+  		-- constrs.chrInstDeclSq < constrs.tyNm
+  		constrs.polVarMp < constrs.dataAltTy
+  		constrs.polVarMp < constrs.tyKiGam
+  		constrs.dataAltTyL < constrs.kiVarMp
+  		constrs.kiVarMp < constrs.maxArity
+  		-- constrs.kiVarMp < constrs.dataTy
+  		constrs.intlTyKiGam < constrs.patValGam
+  		constrs.intlTyKiGam < constrs.tyNm
   
-SEM TyExpr
-  | Pred		lhs			.	knPolCtx			< 	prExpr.tyGam
+  | TySig
+  		tyExpr.ty < tyExpr.knPolCtx
 
-SEM AGItf
-  | AGItf       expr        .   gathPolGam          <   expr.valGam
-                expr        .   range               <   expr.gUniq
-                expr        .   gUniq               <   loc.polGam
-                expr        .   polVarMp            <   expr.tyVarMp
-                expr        .   polVarMp            <   loc.clGam
-%%]
+SEM DataConstr
+  | Constr
+  		fields.fldAnnL < fields.tyKiGam
+  		fields.tyKiGam < fields.dataTy
+  		-- fields.fldAnnL < fields.dataTy
+  		fields.intlTyKiGam < fields.dataTy
+  		-- fields.intlTyKiGam < fields.tyKiGam
+  		fields.fldTyL < fields.tyKiGam
 
-SEM DataFieldExpr
-  | *           lhs         .   lexLev              <   lhs.polVarMp
-
-%%[(99 hmtyinfer)
-SEM AGItf
-  | AGItf       expr        .   range               <   expr.kiGam
-%%]
-
-%%[(99 hmtyinfer)
-SEM AGItf
-  | AGItf		expr		.	predSameScopeCounter	<	expr.predScope
-       			expr		.	predSameScopeCounter	<	expr.tyGam
-                expr        .   gUniq              		<   expr.predSameScopeCounter
-                -- expr        .   gUniq              		<   expr.valTyGlobFreeTvarS
-                -- expr		.	gathDataGam 			<	expr.valTyGlobFreeTvarS
 SEM Expr
-  | Let			decls       .   predSameScopeCounter    <   decls.gathKiSigGam
+  | Case
+  		alts.ty < alts.valTyGlobFreeTvarS
+  		-- alts.kiVarMp < alts.tyKiGlobFreeTvarS
+
+SEM DataFields
+  | Cons
+  		hd.polVarMp < hd.tyKiGam
+  		hd.fldTyL < hd.tyKiGam
+
+SEM AGItf
+  | AGItf
+  		expr.range < expr.gUniq
+  		expr.gUniq < expr.kiGam
+  		expr.predSameScopeCounter < expr.opts
+  		-- expr.predSameScopeCounter < expr.lexLev
+  		expr.hasInstDecl < expr.kiGam
+
+SEM Expr
+  | Let
+  		decls.gathKiSigGam < decls.kiGam
+  		decls.tyTyVarMp < decls.opts
+  		decls.gathTyKiSigGam < decls.predSameScopeCounter
+
+SEM TyExpr
+  | Pred
+  		prExpr.tyGam < prExpr.knPolCtx
+
+SEM TyExpr
+  | Row
+  		rowTyExpr.positionalFldNmL < rowTyExpr.tyGam
+  		-- rowTyExpr.clMissNmS < rowTyExpr.knPolCtx
+SEM PrExpr
+  | Lacks
+  		-- rowTyExpr.positionalFldNmL < rowTyExpr.tyGam
+SEM RowTyExpr
+  | Ext
+  		-- rowTyExpr.positionalFldNmL < rowTyExpr.tyGam
+
+SEM PrExpr
+  | Class
+  		tyExprs.tyVarWildMp < tyExprs.clGam
+  | Arrow
+  		res.intlTyKiGam < res.kiVarMp
+%%]
+
+%%[99
+%%]
+
+%%[99
+%%]
+
+%%[99
+%%]
+
+%%[99
+%%]
+
+%%[99
+%%]
+
+%%[99
 %%]

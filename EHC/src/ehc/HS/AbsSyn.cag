@@ -183,7 +183,6 @@ DATA Declaration                                  {- *** -}
         context                  : ContextItems
 %%]]
         typelefthandside         : TypeLeftHandSide
-        -- simpletype               : SimpleType
         constructors             : Constructors
 %%[[91
         derivings                : Derivings
@@ -196,8 +195,17 @@ DATA Declaration                                  {- *** -}
         context                  : ContextItems
 %%]]
         typelefthandside         : TypeLeftHandSide
-        -- simpletype               : SimpleType
         constructors             : Constructor  -- has only one field, no strictness
+%%[[91
+        derivings                : Derivings
+%%]]
+%%]
+%%[31
+    | GADT
+        range                    : Range
+        context                  : ContextItems
+        typelefthandside         : TypeLeftHandSide
+        constructors             : Constructors
 %%[[91
         derivings                : Derivings
 %%]]
@@ -241,9 +249,9 @@ DATA Declaration                                  {- *** -}
         maybeinstancename        : MaybeName
         useimplicitly            : Bool
         context                  : ContextItems -- is a "simple" context
-        name                     : Name
-        types                    : Types        -- Haskell 98 allows only one type
-                                                -- that is severely restricted
+        -- name                     : Name
+        -- types                    : Types
+        type					 : Type
         where                    : MaybeDeclarations -- cannot have everything
     | InstanceUseImplicitly
         range                    : Range
@@ -563,6 +571,12 @@ DATA ContextItem
         rowvariable              : Name
         name                     : Name
 %%]]
+%%[[31
+    | Equal
+        range                    : Range
+        type1                    : Type
+        type2                    : Type
+%%]]
 
 SET AllContextItem
   = ContextItem ContextItems
@@ -593,6 +607,12 @@ DATA Constructor
         range                    : Range
         context                  : ContextItems
         constructor              : Constructor
+%%]
+%%[31
+    | GADTFunction
+        range                    : Range
+        constructor              : Name
+        type                     : Type
 %%]
 
 %%[5
@@ -1185,6 +1205,9 @@ DATA Pattern
 %%]
 %%[8
     | Irrefutable
+        range                    : Range
+        pattern                  : Pattern
+    | Bang
         range                    : Range
         pattern                  : Pattern
 %%]

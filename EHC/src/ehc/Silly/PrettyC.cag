@@ -7,17 +7,17 @@
 %%% Prettyprint Silly program as C
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin) hs module {%{EH}Silly.PrettyC} import(Data.List(intersperse), EH.Util.Pretty,  qualified Data.Map as Map, qualified Data.Set as Set, {%{EH}GrinCode.Common} hiding (Variable(..)),{%{EH}Silly}, {%{EH}BuiltinPrims}, {%{EH}Config}) export(prettyC)
+%%[(8 codegen grin wholeprogAnal wholeprogC) hs module {%{EH}Silly.PrettyC} import(Data.List(intersperse), EH.Util.Pretty,  qualified Data.Map as Map, qualified Data.Set as Set, {%{EH}GrinCode.Common} hiding (Variable(..)),{%{EH}Silly}, {%{EH}BuiltinPrims}, {%{EH}Config}) export(prettyC)
 %%]
-%%[(8 codegen grin) hs import(Data.Maybe,EH.Util.Utils)
+%%[(8 codegen grin wholeprogAnal wholeprogC) hs import(Data.Maybe,EH.Util.Utils)
 %%]
-%%[(8 codegen grin) hs import({%{EH}Base.Common})
+%%[(8 codegen grin wholeprogAnal wholeprogC) hs import({%{EH}Base.Common})
 %%]
-%%[(8 codegen grin) hs import(qualified {%{EH}Config} as Cfg)
+%%[(8 codegen grin wholeprogAnal wholeprogC) hs import(qualified {%{EH}Config} as Cfg)
 %%]
-%%[(8 codegen grin) hs import({%{EH}Opts})
+%%[(8 codegen grin wholeprogAnal wholeprogC) hs import({%{EH}Opts})
 %%]
-%%[(8 codegen grin) import({Silly/AbsSyn})
+%%[(8 codegen grin wholeprogAnal wholeprogC) import({Silly/AbsSyn})
 %%]
 
 
@@ -25,7 +25,7 @@
 
 
 
-%%[(8 codegen grin) hs
+%%[(8 codegen grin wholeprogAnal wholeprogC) hs
 prettyC :: EHCOpts -> SilModule -> PP_Doc
 prettyC opts silmod
   = let t = wrap_SilModule (sem_SilModule silmod)
@@ -37,7 +37,7 @@ prettyC opts silmod
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Options to adapt the structure of the generated code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%[(8 codegen grin)
+%%[(8 codegen grin wholeprogAnal wholeprogC)
 
 WRAPPER SilModule
 
@@ -58,7 +58,7 @@ SEM SilModule
 %%]
 
 
-%%[(8 codegen grin)
+%%[(8 codegen grin wholeprogAnal wholeprogC)
 ATTR SilModule Functions Function Statements Statement Alternatives Alternative Value Variable Constant
          [ | | prettyC USE {>-<} {empty} : PP_Doc ]
 
@@ -282,7 +282,7 @@ SEM Variable
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-%%[(8 codegen grin)
+%%[(8 codegen grin wholeprogAnal wholeprogC)
 
 {
 type StackInfoMap = (Int, Map.Map StackInfo Int)
@@ -330,7 +330,7 @@ SEM Values
 %%% Building a C program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin) hs
+%%[(8 codegen grin wholeprogAnal wholeprogC) hs
 
 
 sizeofStackInfo :: Int
@@ -420,7 +420,7 @@ returnFromSillyFunction tras name
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% PP Auxiliaries
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%[(8 codegen grin) hs
+%%[(8 codegen grin wholeprogAnal wholeprogC) hs
 
 
 ppVerticallyWithCommas :: [PP_Doc] -> PP_Doc
@@ -440,7 +440,7 @@ ppHorizontallyWithCommas (p:ps) = p >|< ppHorizontally (map (text ", " >|<) ps)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Semantic functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%[(8 codegen grin) hs
+%%[(8 codegen grin wholeprogAnal wholeprogC) hs
 
 preambule :: PP_Doc
 preambule

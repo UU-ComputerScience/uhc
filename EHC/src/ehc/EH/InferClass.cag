@@ -225,7 +225,7 @@ SEM Decl
                                                                   dataTyArgs'   = take (length dataTyArgs - derivArity) dataTyArgs
                                                                   (hd',derivTruncTailArity)
                                                                                 = case instFrom of
-                                                                                    InstDerivingFrom_Datatype   -> (Ty_Pred $ Pred_Class $ mkApp [predTyCon, mkApp (dataTyCon : dataTyArgs')], derivArity)
+                                                                                    InstDerivingFrom_Datatype   -> (mkTyPr $ Pred_Class $ mkApp [predTyCon, mkApp (dataTyCon : dataTyArgs')], derivArity)
                                                                                     InstDerivingFrom_Standalone -> (hd                                                                       , 0         )
 %%]]
                                                                   (cxDt,_,errs2)= case instFrom of

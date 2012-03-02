@@ -14,7 +14,7 @@ Assumptions (to be documented further)
 %%[(9 hmtyinfer || hmtyast) import({%{EH}VarLookup})
 %%]
 
-%%[(9 hmtyinfer || hmtyast) import({%{EH}Base.Common},{%{EH}Base.TreeTrie} as TreeTrie,{%{EH}Base.Trie} as Trie)
+%%[(9 hmtyinfer || hmtyast) import({%{EH}Base.Common},{%{EH}Base.TreeTrie} as TreeTrie)
 %%]
 
 %%[(9 hmtyinfer || hmtyast) import(qualified Data.Set as Set,qualified Data.Map as Map,Data.List as List,Data.Maybe)
@@ -207,7 +207,7 @@ instance (PP p, PP i, PP g) => PP (StoredCHR p i g s) where
 
 %%[(9 hmtyinfer || hmtyast) export(chrStoreFromElems,chrStoreUnion,chrStoreUnions,chrStoreSingletonElem)
 -- | Convert from list to store
-chrStoreFromElems :: (Keyable p, TTKeyable p) => [CHR (Constraint p i) g s] -> CHRStore p i g s
+chrStoreFromElems :: (TTKeyable p) => [CHR (Constraint p i) g s] -> CHRStore p i g s
 chrStoreFromElems chrs
   = mkCHRStore
     $ chrTrieFromListByKeyWith cmbStoredCHRs
@@ -221,7 +221,7 @@ chrStoreFromElems chrs
               ks' = map Just ks1 ++ [Nothing] ++ map Just ks2
         ]
 
-chrStoreSingletonElem :: (Keyable p, TTKeyable p) => CHR (Constraint p i) g s -> CHRStore p i g s
+chrStoreSingletonElem :: (TTKeyable p) => CHR (Constraint p i) g s -> CHRStore p i g s
 chrStoreSingletonElem x = chrStoreFromElems [x]
 
 chrStoreUnion :: CHRStore p i g s -> CHRStore p i g s -> CHRStore p i g s
@@ -320,13 +320,13 @@ ppUsedByKey (k,i) = ppCHRTrieKey k >|< "/" >|< i
 %%]
 
 %%[(9 hmtyinfer || hmtyast)
-mkWorkList :: (Keyable p, TTKeyable p) => WorkTime -> [Constraint p i] -> WorkList p i
+mkWorkList :: (TTKeyable p) => WorkTime -> [Constraint p i] -> WorkList p i
 mkWorkList wtm = flip (wlInsert wtm) emptyWorkList
 
 wlToList :: {- (PP p, PP i) => -} WorkList p i -> [Constraint p i]
 wlToList wl = map workCnstr $ chrTrieElems $ wlTrie wl
 
-wlCnstrToIns :: (Keyable p, TTKeyable p) => WorkList p i -> [Constraint p i] -> AssocL WorkKey (Constraint p i)
+wlCnstrToIns :: (TTKeyable p) => WorkList p i -> [Constraint p i] -> AssocL WorkKey (Constraint p i)
 wlCnstrToIns wl@(WorkList {wlDoneSet = ds}) inscs
   = [(chrToWorkKey c,c) | c <- inscs, let k = chrToKey c, not (k `Set.member` ds)]
 
@@ -339,11 +339,11 @@ wlDeleteByKeyAndInsert' wtm delkeys inskeycs wl@(WorkList {wlQueue = wlq, wlTrie
   where inswork = Map.fromList [ (k,Work k c wtm) | (k,c) <- inskeycs ]
         instrie = chrTrieFromListPartialExactWith const $ Map.toList inswork
 
-wlDeleteByKeyAndInsert :: (Keyable p, TTKeyable p) => WorkTime -> [WorkKey] -> [Constraint p i] -> WorkList p i -> WorkList p i
+wlDeleteByKeyAndInsert :: (TTKeyable p) => WorkTime -> [WorkKey] -> [Constraint p i] -> WorkList p i -> WorkList p i
 wlDeleteByKeyAndInsert wtm delkeys inscs wl
   = wlDeleteByKeyAndInsert' wtm delkeys (wlCnstrToIns wl inscs) wl
 
-wlInsert :: (Keyable p, TTKeyable p) => WorkTime -> [Constraint p i] -> WorkList p i -> WorkList p i
+wlInsert :: (TTKeyable p) => WorkTime -> [Constraint p i] -> WorkList p i -> WorkList p i
 wlInsert wtm = wlDeleteByKeyAndInsert wtm []
 %%]
 
@@ -674,7 +674,7 @@ chrSolve'' env chrStore cnstrs prevState
                 -- basic search result
                 r2 :: [StoredCHR p i g s]										-- CHRs matching workHdKey
                 r2  = concat													-- flatten
-                		$ lookupResultToList									-- convert to list
+                		$ TreeTrie.lookupResultToList									-- convert to list
                 		$ chrTrieLookup chrLookupHowWildAtTrie workHdKey		-- lookup the store, allowing too many results
                 		$ chrstoreTrie chrStore
                 
@@ -739,7 +739,7 @@ slvCandidate workHdKey lastQuery wlTrie (StoredCHR {storedIdent = (ck,_), stored
     , ( ck
       , Set.fromList $ map (maybe workHdKey id) ks
     ) )
-  where lkup how k = partition (\(_,w) -> workTime w < lastQueryTm) $ map (\w -> (workKey w,w)) $ lookupResultToList $ chrTrieLookup how k wlTrie
+  where lkup how k = partition (\(_,w) -> workTime w < lastQueryTm) $ map (\w -> (workKey w,w)) $ TreeTrie.lookupResultToList $ chrTrieLookup how k wlTrie
                    where lastQueryTm = lqLookupW k $ lqLookupC ck lastQuery
 %%]
 slvCandidate workHdKey lastQuery wlTrie (StoredCHR {storedIdent = (ck,_), storedKeys = ks, storedChr = chr})

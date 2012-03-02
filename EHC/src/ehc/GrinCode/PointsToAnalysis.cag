@@ -11,24 +11,24 @@ This is not a transformation, but a phase that establishes the HPT table.
 %include lhs2TeX.fmt
 %include afp.fmt
 %%]
-%%[(8 codegen grin) ag import({GrinCode/AbsSyn})
+%%[(8 codegen grin wholeprogAnal) ag import({GrinCode/AbsSyn})
 %%]
-%%[(8 codegen grin).wrapper
+%%[(8 codegen grin wholeprogAnal).wrapper
 WRAPPER GrAGItf
 %%]
-%%[(8 codegen grin) hs module {%{EH}GrinCode.PointsToAnalysis}
+%%[(8 codegen grin wholeprogAnal) hs module {%{EH}GrinCode.PointsToAnalysis}
 %%]
-%%[(8 codegen grin) hs import(qualified Data.Map as Map, qualified Data.Set as Set, Data.Maybe, Data.List(transpose))
+%%[(8 codegen grin wholeprogAnal) hs import(qualified Data.Map as Map, qualified Data.Set as Set, Data.Maybe, Data.List(transpose))
 %%]
-%%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}GrinCode})
+%%[(8 codegen grin wholeprogAnal) hs import({%{EH}Base.Common}, {%{EH}GrinCode})
 %%]
-%%[(8 codegen grin) hs import({%{EH}GrinCode.Common}, {%{EH}GrinCode.SolveEqs})
+%%[(8 codegen grin wholeprogAnal) hs import({%{EH}GrinCode.Common}, {%{EH}GrinCode.SolveEqs})
 %%]
-%%[(8 codegen grin) hs import(Debug.Trace)
+%%[(8 codegen grin wholeprogAnal) hs import(Debug.Trace)
 %%]
 
 
-%%[(8 codegen grin) hs export(heapPointsToAnalysis)
+%%[(8 codegen grin wholeprogAnal) hs export(heapPointsToAnalysis)
 
 {-
 Main module entry point:
@@ -54,7 +54,7 @@ heapPointsToAnalysis grmod
 %%%%%%%%%%%%%%%%%%%%%
 %% Main attributes %%
 %%%%%%%%%%%%%%%%%%%%%
-%%[(8 codegen grin)
+%%[(8 codegen grin wholeprogAnal)
 {- 
 The overall goal is to collect equations that express
 what constraints variables satisfy.
@@ -127,7 +127,7 @@ SEM GrAGItf
                            ++  @module.equations
 %%]
 
-%%[(8 codegen grin)
+%%[(8 codegen grin wholeprogAnal)
 ATTR AllGrVal AllGrTag  [ | | self : SELF ]
 %%]
 
@@ -137,7 +137,7 @@ ATTR AllGrVal AllGrTag  [ | | self : SELF ]
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% value and pattern nodes  %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%[(8 codegen grin) hs
+%%[(8 codegen grin wholeprogAnal) hs
 -- A grin value is either a single variable or a complete node denotation (with known tag)
 data NodeInfo a 
   =  InVar   Variable 
@@ -153,7 +153,7 @@ fromInVar _          = error "HPT: Apply arguments should all be variables"
 
 %%]
 
-%%[(8 codegen grin).valInfo
+%%[(8 codegen grin wholeprogAnal).valInfo
 
 ATTR GrBindL GrBind GrExpr GrPatLam GrAltL GrAlt [ tagsMp : {Map.Map HsName [GrTag]} | | ] 
 
@@ -244,7 +244,7 @@ SEM GrVar
 
 %%]
 
-%%[(8 codegen grin) hs
+%%[(8 codegen grin wholeprogAnal) hs
 
 lookupTags tagsMp tycon = maybe []
                                 id
@@ -257,7 +257,7 @@ lookupTags tagsMp tycon = maybe []
 %% Target Information %%
 %%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin).targetInformation
+%%[(8 codegen grin wholeprogAnal).targetInformation
 {- 
 Target information is either:
 - the variable to which an expression is bound in a Sequence
@@ -285,7 +285,7 @@ ATTR AllAlt [ valInfo: {NodeInfo (Maybe Variable)} | | ]
 %%%%%%%%%%
 %% Unit %%
 %%%%%%%%%%
-%%[(8 codegen grin).unit
+%%[(8 codegen grin wholeprogAnal).unit
 {-
 There are eight cases, depending on the structure of target and source
 If the target is a variable, we generate a single equation for it
@@ -319,7 +319,7 @@ SEM GrExpr
 
                                                        
 %%]
-%%[(8 codegen grin).unitaux hs
+%%[(8 codegen grin wholeprogAnal).unitaux hs
 
 buildSelectEquations :: Variable -> GrTag -> [Variable] -> Equations
 buildSelectEquations svar ttag tnms
@@ -343,7 +343,7 @@ buildUnifyEquations snms tnms
 %%%%%%%%%%%
 %% Store %%
 %%%%%%%%%%%
-%%[(8 codegen grin).store
+%%[(8 codegen grin wholeprogAnal).store
 {-
 A heap-equation is generated, which associates the heaplocation with the node to be stored.
 An equation is generated, which states that the targetvariable is known to be associated with this heaplocation.
@@ -377,7 +377,7 @@ SEM GrGlobal
 %%%%%%%%%%%%%%%%%%%%%%
 %% Case Alternative %%
 %%%%%%%%%%%%%%%%%%%%%%
-%%[(8 codegen grin).alt
+%%[(8 codegen grin wholeprogAnal).alt
 
 ATTR AllAlt [ | | tags USE {++} {[]} : {[GrTag]} ]
 
@@ -427,7 +427,7 @@ SEM GrAlt
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Fetch, Update, FetchUpdate %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%[(8 codegen grin).fetch
+%%[(8 codegen grin wholeprogAnal).fetch
 SEM GrExpr
   | FetchNode    lhs . equations =  case @lhs.targetInfo of
                                       InVar tvar  -> [ IsEvaluation tvar (getNr @nm) tvar ]   -- TODO: third parameter is not sensible when exceptions are really used
@@ -445,7 +445,7 @@ SEM GrExpr
 %%%%%%%%%%
 %% Call %%
 %%%%%%%%%%
-%%[(8 codegen grin).call
+%%[(8 codegen grin wholeprogAnal).call
 {-
 If the target is a single variable, it is required to have the same value as the function result.
 If the target is a node denotation, a select-equation is generated for each variable in the node.
@@ -465,7 +465,7 @@ SEM GrExpr
 %%%%%%%%%%
 %% FFI %%%
 %%%%%%%%%%
-%%[(8 codegen grin).ffi
+%%[(8 codegen grin wholeprogAnal).ffi
 
 SEM GrExpr
   | FFI  loc . nodemap   =  Map.fromList ( [ (con, if con==GrTag_Unboxed then [Set.empty] else [] ) | con <- [] {- 20080228 AD: @tagL.self -} ] )
@@ -483,7 +483,7 @@ SEM GrExpr
 %%%%%%%%%%
 %% Eval %%
 %%%%%%%%%%
-%%[(8 codegen grin).eval
+%%[(8 codegen grin wholeprogAnal).eval
 {-
 A single equation is generated, associating the targetvariable with the evaluation result of the function
 -}
@@ -501,7 +501,7 @@ SEM GrExpr
 %%%%%%%%%%%
 %% Apply %%
 %%%%%%%%%%%
-%%[(8 codegen grin).apply
+%%[(8 codegen grin wholeprogAnal).apply
 SEM GrExpr
   | App  lhs . equations = case @lhs.targetInfo of
                              InVar tvar -> [ IsApplication tvar (getNr @nm : map fromInVar @argL.valsInfo) @lhs.exceptVar ]
@@ -512,7 +512,7 @@ SEM GrExpr
 %%%%%%%%%%%%%%%%%%
 %% Throw, Catch %%
 %%%%%%%%%%%%%%%%%%
-%%[(8 codegen grin).throw
+%%[(8 codegen grin wholeprogAnal).throw
 SEM GrExpr
   | Throw  loc     .  exceptions =  getNr @nm : @lhs.exceptions
            lhs     .  equations  =  case @lhs.targetInfo of
@@ -544,7 +544,7 @@ SEM GrBind
 %% Actuals %%
 %%%%%%%%%%%%%
 
-%%[(8 codegen grin)
+%%[(8 codegen grin wholeprogAnal)
 -- Collect all Fun, PApp and App nodes, and all Calls
 
 

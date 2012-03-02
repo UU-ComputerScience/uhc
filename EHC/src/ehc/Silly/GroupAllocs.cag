@@ -34,25 +34,25 @@
 %% in one block are of the same GC-type, and currently this is the case.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin) import({Silly/AbsSyn})
+%%[(8 codegen grin wholeprogAnal wholeprogC) import({Silly/AbsSyn})
 %%]
 
-%%[(8 codegen grin).wrapper
+%%[(8 codegen grin wholeprogAnal wholeprogC).wrapper
 WRAPPER SilModule
 %%]
 
-%%[(8 codegen grin) hs module {%{EH}Silly.GroupAllocs} export(groupAllocs)
+%%[(8 codegen grin wholeprogAnal wholeprogC) hs module {%{EH}Silly.GroupAllocs} export(groupAllocs)
 %%]
-%%[(8 codegen grin) hs import({%{EH}Silly})
+%%[(8 codegen grin wholeprogAnal wholeprogC) hs import({%{EH}Silly})
 %%]
-%%[(8 codegen grin) hs import({%{EH}Base.Common})
+%%[(8 codegen grin wholeprogAnal wholeprogC) hs import({%{EH}Base.Common})
 %%]
-%%[(8 codegen grin) hs import({%{EH}Opts})
+%%[(8 codegen grin wholeprogAnal wholeprogC) hs import({%{EH}Opts})
 %%]
-%%[(8 codegen grin) hs import(Data.Maybe)
+%%[(8 codegen grin wholeprogAnal wholeprogC) hs import(Data.Maybe)
 %%]
 
-%%[(8 codegen grin) hs
+%%[(8 codegen grin wholeprogAnal wholeprogC) hs
 groupAllocs :: EHCOpts -> SilModule -> SilModule
 groupAllocs options input   
   = let t = wrap_SilModule (sem_SilModule input)
@@ -61,7 +61,7 @@ groupAllocs options input
 %%]
 
 
-%%[(8 codegen grin)
+%%[(8 codegen grin wholeprogAnal wholeprogC)
 -- Result of the AG transformation.
 ATTR AllNT [ | | trf: SELF ]
 
@@ -76,7 +76,7 @@ SEM Value
                                              @lhs.allocWordCount
 %%]
 
-%%[(8 codegen grin)
+%%[(8 codegen grin wholeprogAnal wholeprogC)
 -- Counter for the total amount of allocations in a list of
 -- statements. We reset the count with Alternatives, because
 -- we do not know if we follow that path.
@@ -93,7 +93,7 @@ SEM Value
   | Alloc       lhs .allocWordCount = @lhs.allocWordCount + @size  
 %%]
 
-%%[(8 codegen grin)
+%%[(8 codegen grin wholeprogAnal wholeprogC)
 -- Pass down the total amount of words that must be allocated
 -- for this block.
 ATTR Statement Statements
@@ -106,7 +106,7 @@ SEM Alternative
   | Alternative body.allocSize      = @body.allocWordCount
 %%]
 
-%%[(8 codegen grin)
+%%[(8 codegen grin wholeprogAnal wholeprogC)
 -- Attribute to determine to which local variable holds the pointer
 -- that points to the start of the allocated block.
 ATTR Statement Statements

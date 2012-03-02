@@ -10,31 +10,31 @@ Transforms a Grin program to a Silly program.
 %include afp.fmt
 %%]
 
-%%[(8 codegen grin) hs module {%{EH}GrinCode.ToSilly} export(grin2silly)
+%%[(8 codegen grin wholeprogAnal wholeprogC) hs module {%{EH}GrinCode.ToSilly} export(grin2silly)
 %%]
 
-%%[(8 codegen grin) ag import({GrinCode/AbsSyn},{GrinCode/CommonForGen})
+%%[(8 codegen grin wholeprogAnal wholeprogC) ag import({GrinCode/AbsSyn},{GrinCode/CommonForGen})
 %%]
 
-%%[(8 codegen grin) hs import(Debug.Trace)
+%%[(8 codegen grin wholeprogAnal wholeprogC) hs import(Debug.Trace)
 %%]
-%%[(8 codegen grin) hs import(Data.List((\\)), Data.Maybe, qualified Data.Map as Map, qualified Data.Set as Set, Data.Bits)
+%%[(8 codegen grin wholeprogAnal wholeprogC) hs import(Data.List((\\)), Data.Maybe, qualified Data.Map as Map, qualified Data.Set as Set, Data.Bits)
 %%]
-%%[(8 codegen grin) hs import(EH.Util.Pretty, EH.Util.Utils)
+%%[(8 codegen grin wholeprogAnal wholeprogC) hs import(EH.Util.Pretty, EH.Util.Utils)
 %%]
-%%[(8 codegen grin) hs import( {%{EH}Base.Builtin}, {%{EH}Base.Common}, {%{EH}Opts}, {%{EH}GrinCode})
+%%[(8 codegen grin wholeprogAnal wholeprogC) hs import( {%{EH}Base.Builtin}, {%{EH}Base.Common}, {%{EH}Opts}, {%{EH}GrinCode})
 %%]
-%%[(8 codegen grin) hs import({%{EH}GrinCode.Common} hiding (Variable(..)), {%{EH}Config}, {%{EH}Silly})
-%%]
-
-%%[(8 codegen grin) hs import({%{EH}Foreign.Extract})
+%%[(8 codegen grin wholeprogAnal wholeprogC) hs import({%{EH}GrinCode.Common} hiding (Variable(..)), {%{EH}Config}, {%{EH}Silly})
 %%]
 
-%%[(8 codegen grin)
+%%[(8 codegen grin wholeprogAnal wholeprogC) hs import({%{EH}Foreign.Extract})
+%%]
+
+%%[(8 codegen grin wholeprogAnal wholeprogC)
 WRAPPER GrAGItf
 %%]
 
-%%[(8 codegen grin) hs
+%%[(8 codegen grin wholeprogAnal wholeprogC) hs
 grin2silly :: HptMap -> GrModule -> EHCOpts -> SilModule
 grin2silly hptmap gr opts
  = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf gr))
@@ -48,7 +48,7 @@ grin2silly hptmap gr opts
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Code generation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%[(8 codegen grin)
+%%[(8 codegen grin wholeprogAnal wholeprogC)
 
 ATTR GrAGItf GrModule GrGlobalL GrGlobal GrBindL GrBind GrExpr GrAlt GrAltL [ hptMap : {HptMap} | | ]
 
@@ -76,7 +76,7 @@ ATTR GrExpr GrAlt GrAltL [ numberParameters : {Int}
 
 %%]
 
-%%[(8 codegen grin)
+%%[(8 codegen grin wholeprogAnal wholeprogC)
 
 ATTR GrExpr GrVal [ | | hasEmptyBody : {Bool} ]
 
@@ -377,7 +377,7 @@ SEM GrValL
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Determining the target
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%[(8 codegen grin)
+%%[(8 codegen grin wholeprogAnal wholeprogC)
 
 ATTR AllGrExpr [ targets : {[HsName]} mbPtrTarget: {Maybe HsName} | | ]
 ATTR GrPatLam GrVarL [ | |  patternNames: {[HsName]}  ]
@@ -430,7 +430,7 @@ SEM GrVar
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Options to adapt the structure of the generated code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%[(8 codegen grin)
+%%[(8 codegen grin wholeprogAnal wholeprogC)
 
 
 ATTR GrAGItf
@@ -445,7 +445,7 @@ ATTR GrModule GrBind GrBindL GrExpr GrAlt GrAltL
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Collect all tags
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%[(8 codegen grin)
+%%[(8 codegen grin wholeprogAnal wholeprogC)
 
 ATTR AllDef AllExpr [ | | genAllTags USE {`Set.union`} {Set.empty} : {Set.Set GrTag} ]
 
@@ -459,7 +459,7 @@ SEM GrTag
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Collect tag arities
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%[(8 codegen grin)
+%%[(8 codegen grin wholeprogAnal wholeprogC)
 
 ATTR AllBind [ | | genArities USE {`Map.union`} {Map.empty}: {Map.Map Int Int}  ]
 
@@ -474,7 +474,7 @@ SEM GrBind
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Auxiliary Haskell
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%[(8 codegen grin) hs
+%%[(8 codegen grin wholeprogAnal wholeprogC) hs
 
 
 assignments :: String -> [Variable] -> [Variable] -> [Value] -> [Statement]

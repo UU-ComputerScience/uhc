@@ -106,7 +106,7 @@ cpFlowHsSem1 modNm
                  hii'   = hii
                             { HI.hiiFixityGam            = fg
                             -- , HI.hiiIdDefHIIdGam         = HI.hiiIdDefOccGamToHIIdGam ig
-                            , HI.hiiHIDeclImpModL        = ecuHIDeclImpNmL ecu
+                            , HI.hiiHIDeclImpModS        = ecuHIDeclImpNmS ecu
                             }
                  opts'  = opts
                             { ehcOptBuiltinNames = mkEHBuiltinNames mk
@@ -157,7 +157,7 @@ cpFlowEHSem1 modNm
                  hii      = ecuHIInfo ecu
                  mentrelFilterMp
                           = mentrelFilterMpUnions [ EHSem.gathMentrelFilterMp_Syn_AGItf ehSem, mentrelToFilterMp' False [modNm] (mmiExps mmi) ]
-                 usedImpL = Set.toList $ mentrelFilterMpModuleNames mentrelFilterMp
+                 usedImpS = mentrelFilterMpModuleNames mentrelFilterMp
                  ehInh'   = ehInh
 %%[[(50 hmtyinfer)
                               { EHSem.dataGam_Inh_AGItf    = dg  `gamUnionFlow`  EHSem.dataGam_Inh_AGItf    ehInh
@@ -173,7 +173,8 @@ cpFlowEHSem1 modNm
 %%]]
                  hii'     = hii
                               { -- 20100717 AD: redundant because later extracted from Core because of inlining etc, TBD
-                                HI.hiiHIUsedImpModL = usedImpL
+                                HI.hiiHIUsedImpModS = usedImpS
+                              , HI.hiiMbOrphan      = EHSem.mbOrphan_Syn_AGItf ehSem
 %%[[(50 hmtyinfer)
                               , HI.hiiValGam        = vg
                               , HI.hiiTyGam     	= tg
@@ -211,7 +212,7 @@ cpFlowEHSem1 modNm
                                )
 %%[[50
                      ; cpUpdCU modNm ( ecuStoreHIInfo hii'
-                                     . ecuStoreHIUsedImpL usedImpL
+                                     . ecuStoreHIUsedImpS usedImpS
 %%[[99
                                      . ecuStoreUsedNames mentrelFilterMp
 %%]]
@@ -285,7 +286,7 @@ cpFlowCoreSem modNm
                  core     = panicJust "cpFlowCoreSem.core"    $ ecuMbCore    ecu
                  
                  -- 20100717 AD: required here because of inlining etc, TBD
-                 usedImpL = Set.toList $ cmodUsedModNms core
+                 usedImpS = cmodUsedModNms core
                  
                  coreInh  = crsiCoreInh crsi
                  hii      = ecuHIInfo ecu
@@ -296,7 +297,7 @@ cpFlowCoreSem modNm
                  hii'     = hii
 %%[[(50 codegen grin)
                               { -- 20100717 AD: required here because of inlining etc, TBD
-                                {- -} HI.hiiHIUsedImpModL = usedImpL
+                                {- -} HI.hiiHIUsedImpModS = usedImpS
                               , {- -} HI.hiiLamMp         = am
                               }
 %%]]
@@ -305,7 +306,7 @@ cpFlowCoreSem modNm
                      ; cpUpdCU modNm ( ecuStoreHIInfo hii'
                                      -- 
                                      -- 20100717 AD: required here because of inlining etc, TBD
-                                     . ecuStoreHIUsedImpL usedImpL
+                                     . ecuStoreHIUsedImpS usedImpS
                                      )
                      })
          }

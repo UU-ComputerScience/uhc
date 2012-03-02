@@ -38,18 +38,18 @@ and we'll have to deal with  CALL app p a b)
 For the moment, the inline transformation is postponed till after applyUnited, so there is no urgency to fix this.
 
 
-%%[(8 codegen grin) ag import({GrinCode/AbsSyn})
+%%[(8 codegen grin wholeprogAnal) ag import({GrinCode/AbsSyn})
 %%]
-%%[(8 codegen grin) hs import (qualified Data.Map as Map, qualified Data.Set as Set)
+%%[(8 codegen grin wholeprogAnal) hs import (qualified Data.Map as Map, qualified Data.Set as Set)
 %%]
-%%[(8 codegen grin) hs import ({%{EH}Base.Common}, {%{EH}GrinCode.Common}, {%{EH}GrinCode}, {%{EH}Base.HsName} )
+%%[(8 codegen grin wholeprogAnal) hs import ({%{EH}Base.Common}, {%{EH}GrinCode.Common}, {%{EH}GrinCode}, {%{EH}Base.HsName} )
 %%]
-%%[(8 codegen grin) hs import(Debug.Trace)
+%%[(8 codegen grin wholeprogAnal) hs import(Debug.Trace)
 %%]
-%%[(8 codegen grin)
+%%[(8 codegen grin wholeprogAnal)
 WRAPPER GrAGItf
 %%]
-%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.ApplyUnited} export(applyUnited)
+%%[(8 codegen grin wholeprogAnal) hs module {%{EH}GrinCode.Trf.ApplyUnited} export(applyUnited)
 
 applyUnited :: GrModule -> GrModule
 applyUnited grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
@@ -58,13 +58,13 @@ applyUnited grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
 %%]
 
 
-%%[(8 codegen grin)
+%%[(8 codegen grin wholeprogAnal)
 ATTR GrAGItf [ | | grTrf: GrModule ]
 ATTR AllNT [ | | grTrf: SELF ]
 %%]
 
 
-%%[(8 codegen grin)
+%%[(8 codegen grin wholeprogAnal)
 
 
 ATTR AllGlobal [ | | initialEnv USE {`Map.union`} {Map.empty} : {Map.Map HsName GrVal} ]
@@ -163,7 +163,7 @@ SEM GrVal
 
 %%]
 
-%%[(8 codegen grin) hs
+%%[(8 codegen grin wholeprogAnal) hs
 
 
 applyNode nm2 flds2 node@(GrVal_Node (GrTag_PApp needs nm) flds1) 
