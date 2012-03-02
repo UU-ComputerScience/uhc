@@ -55,7 +55,7 @@
 -- general imports
 %%[8 import(qualified Debug.Trace)
 %%]
-%%[8 import(qualified Data.Map as Map)
+%%[8 import(qualified Data.Map as Map, qualified Data.Set as Set)
 %%]
 
 -- module
@@ -92,7 +92,7 @@ main
 %%[[99
                                 where p = mkFPath progName
 %%][101
-                                where p = mkFPath "uhc"		-- hardbaked name
+                                where p = mkFPath "uhc"     -- hardbaked name
 %%]]
                  oo@(o,n,errs)  = getOpt Permute ehcCmdLineOpts args
                  opts2          = foldl (flip ($)) opts1 o
@@ -403,7 +403,7 @@ doCompilePrepare fnL@(fn:_) opts
                                     }
 {- this does not work in ghc 6.8.2
              crsi           = emptyEHCompileRunStateInfo
-                                { crsiOpts		 =	 opts3
+                                { crsiOpts       =   opts3
                                 , crsiHSInh      =   initialHSSem opts3
                                 , crsiEHInh      =   initialEHSem opts3 fp
 %%[[(8 codegen)
@@ -474,7 +474,7 @@ doCompileRun fnL@(fn:_) opts
                                          })
                               ; when isTopModule
                                      (cpUpdCU nm (ecuSetIsTopMod True))
-                              -- ; cpUpdCU nm (ecuSetIsTopMod isTopModule)		-- ???? not equivalent to above
+                              -- ; cpUpdCU nm (ecuSetIsTopMod isTopModule)      -- ???? not equivalent to above
 %%[[99
                               ; cpUpdCU nm (ecuSetTarget (ehcOptTarget opts))
 %%]]
@@ -506,12 +506,42 @@ doCompileRun fnL@(fn:_) opts
                  ; _ <- runStateT (cpSeq [ comp (Just fp) topModNm
                                          ]) initialState
 %%][50
-                 ; _ <- runStateT (do { topModNmL' <- zipWithM (\fp topModNm -> imp HSOnlyImports (Just fp) Nothing topModNm) fpL topModNmL
-                                      ; cpImportGatherFromModsWithImp ecuImpNmL (imp HSOnlyImports Nothing) (map fst topModNmL')
+                 ; _ <- runStateT (do { 
+                                      -- start with directly importing top modules, providing the filepath directly
+                                        topModNmL' <- zipWithM (\fp topModNm -> imp HSOnlyImports (Just fp) Nothing topModNm) fpL topModNmL
+                                      
+                                      -- follow the import relation to chase modules which have to be analysed
+                                      ; cpImportGatherFromModsWithImp
+                                          (if ehcOptPriv opts
+                                           then \ecu -> case ecuState ecu of
+                                                          ECUSHaskell HIStart -> Set.toList $ ecuTransClosedOrphanModS ecu
+                                                          ECUSHaskell HIOnlyImports -> Set.toList $ ecuTransClosedOrphanModS ecu
+                                                          _ -> ecuImpNmL ecu
+                                           else ecuImpNmL
+                                          )
+                                          (imp HSOnlyImports Nothing) (map fst topModNmL')
+                                      
+                                      -- modules not requiring analysis still must partake in linking etc, so load minimally
+                                      ; when (ehcOptPriv opts)
+                                             (do { cr <- get
+                                                 ; let allAnalysedModL = Map.keys $ crsiModMp $ crStateInfo cr
+                                                       allImpMp        = Map.unions [ ecuTransClosedUsedModMp $ crCU m cr | m <- allAnalysedModL ]
+                                                 -- ; lift $ putStrLn $ "search path: " ++ show searchPath
+                                                 ; cpImportGatherFromModsWithImp
+                                                     (\ecu -> Set.toList $ panicJust "EHC.doCompileRun.cpImportGatherFromModsWithImp2" $ Map.lookup (ecuModNm ecu) allImpMp)
+                                                     (imp HMOnlyMinimal Nothing) allAnalysedModL
+                                                 })
+                                      
+                                      -- check module import relationship
                                       ; cpCheckMods' [modBuiltin]
+                                      
+                                      -- inhibit mutual recursiveness
                                       ; cpEhcCheckAbsenceOfMutRecModules
+                                      
+                                      -- and compile it all
                                       ; cpEhcFullProgCompileAllModules
 %%[[100
+                                      -- cleanup
                                       ; unless (ehcOptKeepIntermediateFiles opts) cpRmFilesToRm
 %%]]
                                       })
@@ -523,4 +553,3 @@ doCompileRun fnL@(fn:_) opts
        }
 
 %%]
-

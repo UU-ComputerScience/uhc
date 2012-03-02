@@ -298,18 +298,18 @@ ecuImpNmL :: EHCompileUnit -> [HsName]
 ecuImpNmL = Set.toList . ecuImpNmS -- ecu = (nub $ ecuHSDeclImpNmL ecu ++ ecuHIDeclImpNmL ecu ++ ecuHIUsedImpNmL ecu) \\ [ecuModNm ecu]
 %%]
 
-%%[50 export(ecuTransClosedUsedModS, ecuTransClosedOrphanModS, ecuIsOrphan)
+%%[50 export(ecuTransClosedUsedModMp, ecuTransClosedOrphanModS, ecuIsOrphan)
 -- | The used modules, for linking, according to .hi info
-ecuTransClosedUsedModS :: EHCompileUnit -> Set.Set HsName
-ecuTransClosedUsedModS = HI.hiiTransClosedUsedModS . ecuHIInfo
+ecuTransClosedUsedModMp :: EHCompileUnit -> HI.HIInfoUsedModMp
+ecuTransClosedUsedModMp = HI.hiiTransClosedUsedModMp . ecuAnHIInfo
 
 -- | The orphan modules, must be .hi read, according to .hi info
 ecuTransClosedOrphanModS :: EHCompileUnit -> Set.Set HsName
-ecuTransClosedOrphanModS = HI.hiiTransClosedOrphanModS . ecuHIInfo
+ecuTransClosedOrphanModS = HI.hiiTransClosedOrphanModS . ecuAnHIInfo
 
 -- | Is orphan, according to .hi info
 ecuIsOrphan :: EHCompileUnit -> Bool
-ecuIsOrphan = isJust . HI.hiiMbOrphan . ecuHIInfo
+ecuIsOrphan = isJust . HI.hiiMbOrphan . ecuAnHIInfo
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
