@@ -564,16 +564,25 @@ SEM Decl
 %%][98
                                                             io     = mk1ConApp (ehcOptBuiltin @lhs.opts ehbnIO)
 %%]]
-                                                        in  case @foreignEntInfo of
-                                                              ForeignExtraction_Wrapper ->        v `mk1Arrow` io (funptr v)
-                                                              ForeignExtraction_Dynamic -> funptr v `mk1Arrow`            v
-                                                              _                         -> Ty_Any
-                            .   foFFI               =   fitsIn strongFIOpts @fe @lUniq2 (emptyVarMp :: VarMp) @ty_sig_ @knTy
+                                                        in  case targetIsJavaScript (ehcOptTarget @lhs.opts) of 
+                                                              True  -> let v1            = mkTyVar @lUniq2 
+                                                                           wrappedFunptr = mkApp [v1, funptr v]
+                                                                       in case @foreignEntInfo of
+                                                                            ForeignExtraction_Wrapper -> v `mk1Arrow` io wrappedFunptr
+                                                                            ForeignExtraction_Dynamic -> wrappedFunptr `mk1Arrow` v
+                                                                            _                         -> Ty_Any
+                                                              False -> case @foreignEntInfo of
+                                                                        ForeignExtraction_Wrapper -> v `mk1Arrow` io (funptr v)
+                                                                        ForeignExtraction_Dynamic -> funptr v `mk1Arrow` v
+                                                                        _                         -> Ty_Any
+                            .   foFFI               =   fitsIn strongFIOpts @fe @lUniq3 (emptyVarMp :: VarMp) @ty_sig_ @knTy
                 loc         .   lUniq               :   UNIQUEREF gUniq
                 loc         .   lUniq2              :   UNIQUEREF gUniq
+                loc         .   lUniq3              :   UNIQUEREF gUniq
 %%]]
                 loc         .   foreignEntInfo      :   ForeignExtraction
 %%]
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Kind signatures
