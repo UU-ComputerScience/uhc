@@ -1,4 +1,4 @@
-%%[93 hs module {%{EH}Core.Trf.Inline} import ({%{EH}Ty},{%{EH}Base.Common},{%{EH}LamInfo},{%{EH}Core},{%{EH}AbstractCore}, {%{EH}Core.Trf.Subst} (cexprSubst), qualified Data.Map as Map)
+%%[93 hs module {%{EH}Core.Trf.Inline} import ({%{EH}Ty},{%{EH}Base.Common},{%{EH}LamInfo},{%{EH}Core},{%{EH}AbstractCore}, {%{EH}Core.Trf.Subst} (apply), qualified Data.Map as Map, Debug.Trace(trace), Data.Maybe(fromJust,isJust), Control.Monad(when))
 %%]
 
 %%[93 ag import ({Core/AbsSyn})
@@ -22,5 +22,28 @@ type FuncMp = Map.Map HsName CExpr
 WRAPPER CExpr
 
 ATTR AllCodeNT [ funcMp : FuncMp | | inlined : SELF ]
+
+SEM CExpr 
+        | App lhs.inlined = if @func.isInlinable 
+                            then apply @func.inlined @arg.inlined
+                            else acoreApp1 @func.inlined @arg.inlined
+        | Var lhs.inlined = if @isInlinable
+                            then fromJust (Map.lookup (acbrefNm @ref) @lhs.funcMp)
+                            else @inlined
+
+ATTR CExpr [ | | isInlinable : Bool ]
+
+SEM CExpr
+        | Var loc.isInlinable = isJust (Map.lookup (acbrefNm @ref) @lhs.funcMp)
+        | Var lhs.isInlinable = @isInlinable
+        | App lhs.isInlinable = @func.isInlinable
+        | * - App Var lhs.isInlinable = False  
+
+ATTR CExpr [ | | varName : {Maybe HsName} ] 
+
+SEM CExpr
+        | Var loc.varName     = Just $ acbrefNm @ref
+        | Var lhs.varName     = @varName
+        | * - Var lhs.varName = Nothing
 
 %%] 
