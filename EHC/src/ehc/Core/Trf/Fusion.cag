@@ -1,7 +1,7 @@
 %%[93 hs module {%{EH}Core.Trf.Fusion} import ({%{EH}Core.Trf.Rewrite} (rewrite, ConvMp(..), Role(..)), {%{EH}Core.Trf.Inline} (inline, FuncMp(..))) 
 %%]
 
-%%[93 hs import (qualified Data.Set as Set,Data.Maybe (fromMaybe, isJust, isNothing),Debug.Trace,{%{EH}Ty},{%{EH}Base.Common},{%{EH}LamInfo},{%{EH}Core},{%{EH}AbstractCore}, {%{EH}Core.Trf.Subst} (cexprSubst),  qualified Data.Map as Map)
+%%[93 hs import (qualified Data.Set as Set,Data.Maybe (fromMaybe, isJust, isNothing),Debug.Trace,{%{EH}Ty},{%{EH}Base.Common},{%{EH}LamInfo},{%{EH}Core},{%{EH}AbstractCore}, {%{EH}Core.Trf.Subst} (apply),  qualified Data.Map as Map)
 %%]
 
 %%[93 ag import ({Core/AbsSyn})
@@ -20,19 +20,6 @@ cmodTrfFusion lamMp cmod =
 --            rewritten should take the result and do forall x. cons (abs x) |-> x
 --            fused should finish the job
 
-{
-
--- | 'apply func arg' will produce the result of performing a beta reduction by
--- | applying the lamda abstraction func to the expression arg. Used to inline 
--- | functions at App nodes where func has been marked as fusible 
-
--- This will call an attribute grammar transformation for the attribute substd
-
-apply :: CExpr -> CExpr -> CExpr
-apply (CExpr_Lam nm body) arg = cexprSubst nm body arg
-apply func                arg = trace "tried to inline a non-Lambda expression" $ acoreApp1 func arg -- this shouldn't happen, but don't want to cause a crash
-
-}
 
 ATTR CodeAGItf [ || applied : CModule]
 ATTR AllCodeNT [ || applied : SELF]
