@@ -368,6 +368,7 @@ AC_SUBST(HSC2HS_CMD,$hsc2hsCmd)
 ### now we know we have ghc, check for some libraries using ghc-pkg
 ghcLibUulibExists=no
 ghcLibFglExists=no
+ghcLibSybExists=no
 ghcLibNetwork=no
 ghcLibBinary=no
 if test x$ghcExists = xyes
@@ -378,6 +379,12 @@ then
     ghcLibFgl=`$ghcPkgCmd list --simple-output fgl`
     if test "x$ghcLibFgl" != "x" ; then
       ghcLibFglExists=yes
+    fi
+
+    # syb
+    ghcLibSyb=`$ghcPkgCmd list --simple-output syb`
+    if test "x$ghcLibSyb" != "x" ; then
+      ghcLibSybExists=yes
     fi
 
     # uulib
@@ -1126,6 +1133,7 @@ if test "x$uuagcExists" = "xyes" \
    -a "x$ghcExists" = "xyes" \
    -a "x$gccExists" = "xyes" \
    -a "x$ghcLibFglExists" = "xyes" \
+   -a "x$ghcLibSybExists" = "xyes" \
    -a "x$ghcLibUulibExists" = "xyes" \
    -a "x$ghcLibNetworkExists" = "xyes" \
    -a "x$ghcLibBinaryExists" = "xyes"
@@ -1181,6 +1189,13 @@ echo "      fgl is available?         : $ghcLibFglExists"
     echo "        version                 : $ghcLibFgl"
   else
     echo "        **** ERROR **** : 'fgl' must be installed, use cabal+hackage"
+  fi
+echo "      syb is available?         : $ghcLibSybExists"
+  if test "x$ghcLibSybExists" = "xyes"
+  then
+    echo "        version                 : $ghcLibSyb"
+  else
+    echo "        **** ERROR **** : 'syb' must be installed, use cabal+hackage"
   fi
 echo "      network is available?     : $ghcLibNetworkExists"
   if test "x$ghcLibNetworkExists" = "xyes"
