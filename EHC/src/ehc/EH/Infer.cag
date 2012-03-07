@@ -568,8 +568,8 @@ SEM Decl
                                                               True  -> let v1            = mkTyVar @lUniq2 
                                                                            wrappedFunptr = mkApp [v1, funptr v]
                                                                        in case @foreignEntInfo of
-                                                                            ForeignExtraction_Wrapper -> v `mk1Arrow` io wrappedFunptr
-                                                                            ForeignExtraction_Dynamic -> wrappedFunptr `mk1Arrow` v
+                                                                            ForeignExtraction_Wrapper -> Ty_Any -- v `mk1Arrow` io wrappedFunptr
+                                                                            ForeignExtraction_Dynamic -> Ty_Any -- wrappedFunptr `mk1Arrow` v
                                                                             _                         -> Ty_Any
                                                               False -> case @foreignEntInfo of
                                                                         ForeignExtraction_Wrapper -> v `mk1Arrow` io (funptr v)

@@ -133,7 +133,7 @@ pForeignExpr
         pInx      = flip ForeignExpr_Inx <$ pOBRACK <*> pExp <* pCBRACK
         pSel      = flip ForeignExpr_Sel <$ pDOT <*> (pEnt <|> pArg)
         pCall     = flip ForeignExpr_CallArgs <$ pOPAREN <*> pCallExpr <* pCPAREN
-        pCallExpr = ((\x -> [x]) <$> pManyArg) <|> (pListSep pCOMMA pArg)
+        pCallExpr = ((\x -> [x]) <$> pManyArg) <|> (pListSep pCOMMA pExpB)
 
         mk    = \pre e post -> let pre' = maybe [] ((flip (:)) []) pre
                                in foldr ($) e $ pre' ++ reverse post
