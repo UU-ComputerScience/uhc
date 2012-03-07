@@ -177,7 +177,7 @@ EHCLIB_DIST_FILES						:= $(EHCLIB_ALL_SRC) $(EHCLIB_MKF)
 #EHCLIB_BASE_OPTS						= 
 EHCLIB_BASE_OPTS						= -O2
 
-EHCLIB_DEBUG_OPTS						= -v4
+EHCLIB_DEBUG_OPTS						=
 #EHCLIB_DEBUG_OPTS						= --gen-trace=1
 #EHCLIB_DEBUG_OPTS						= --gen-trace=1 --dump-core-stages=1
 #EHCLIB_DEBUG_OPTS						= --dump-core-stages=1
