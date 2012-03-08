@@ -281,7 +281,7 @@ cpEhcFullProgModuleCompileN modNmL
 Find out whether a compilation is needed, and if so, can be done.
 %%]
 
-%%[50
+%%[50 export(cpEhcFullProgModuleDetermineNeedsCompile)
 cpEhcFullProgModuleDetermineNeedsCompile :: HsName -> EHCompilePhase ()
 cpEhcFullProgModuleDetermineNeedsCompile modNm
   = do { cr <- get
@@ -952,6 +952,7 @@ cpProcessEH modNm
   = do { cr <- get
        ; let (_,_,opts,fp) = crBaseInfo modNm cr
 %%[[99
+       {-
              optsTr = opts { ehcOptTrace = \s x -> unsafePerformIO (do { s <- execStateT (do { cpMsg modNm VerboseALot ("EH>: " ++ s) 
                                                                                              ; x `seq` cpMsg modNm VerboseALot ("EH<: " ++ s) 
                                                                                              }) cr 
@@ -962,6 +963,7 @@ cpProcessEH modNm
              -- optsTr = opts { ehcOptTrace = trace }
        -- ; cpUpdStateInfo (\crsi -> crsi {crsiOpts = optsTr})
        ; cpUpdCU modNm (ecuStoreOpts optsTr)
+       -}
 %%]]
        ; cpSeq [ cpFoldEH modNm
 %%[[99

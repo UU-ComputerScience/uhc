@@ -383,7 +383,7 @@ instance PP EHCompileUnit where
   pp ecu
     = ecuModNm ecu >|<
 %%[[50
-      ":" >#< ppCommas (ecuImpNmL ecu) >|<
+      ":" >#< ppBracketsCommas (ecuImpNmL ecu) >|<
 %%]]
       "," >#< show (ecuState ecu)
 %%]

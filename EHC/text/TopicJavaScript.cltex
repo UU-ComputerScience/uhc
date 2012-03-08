@@ -45,12 +45,12 @@ An accompanying document \cite{swierstra11jcu} walks the students through the ap
 its use, its implementation in terms of Prolog, and its Haskell implementation of Prolog,
 thus exposing students to a variety of programming language concepts.
 
-\begin{figure}[t]
+\begin{figure*}[t]
 \hrule\vspace{2mm}
-\FigCenterPDF{.23}{JCU1}
+\FigCenterPDF{.48}{JCU1}
 \caption{Browser interface of JCU application}
 \label{jcuapp}
-\end{figure}
+\end{figure*}
 
 The server side of the JCU application is written using Snap Framework \cite{www11snap-framework} whereas the
 (original) client side is written using various JavaScript frameworks
