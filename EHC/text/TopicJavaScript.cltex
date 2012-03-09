@@ -16,11 +16,11 @@
 %%]
 
 %%[abstract
-We describe a small web application intended to make secondary school students familiar with functional and logic programming.
-The application demonstrates the use of Haskell on various levels.
-First, the accompanying teaching material for the web application explains both Prolog and its implementation in Haskell.
-Second, the web application has been written in Haskell, both server and client side.
-As an experiment, the browser side has been implemented using the JavaScript backend of the Utrecht Haskell Compiler.
+We describe a small web application which was created in order to make secondary school students familiar with functional and logic programming.
+%The application demonstrates the use of Haskell on various levels.
+The accompanying teaching material  explains both Prolog, and for the more advanced students  its implementation in Haskell.
+Both the server and the client side of the web applcation have been written in Haskell, where the browser side has been implemented 
+using the JavaScript backend of the Utrecht Haskell Compiler.
 We discuss the consequences that the actual use of a Haskell frontend for an Object-Oriented language bring.
 %%]
 
@@ -30,20 +30,24 @@ where XYZ can be substituted with your favorite and usually widespread platform.
 This is a valid question as many developers are tied to such platforms for a variety of reasons,
 yet also wish for niceties Haskell offers, such as type safety.
 In this paper we substitute ``JavaScript in a web browser'' for XYZ,
-and indeed frustration with JavaScript turned out to be a strong motivation for the work described by this paper.
+and indeed frustration with the originally developped JavaScript client code was a strong motivation for the work described by this paper.
 
-The context for this paper is provided by a small client-server application to teach secondary school math students
-about logic and functional programming, called the Junior College University (JCU) application.
-Figure~\ref{jcuapp} shows the web browser user interface which allows the user to define Prolog like facts,
-which then can be queried and unified with.
-Prolog rules can be added (on the right) and are used to decompose a term (on the left), showing the resulting proof tree.
-Rules are chosen by dragging and dropping them on the query.
-Under the hood the browser interface delegates all work to the server, both Prolog queries and the storage
-of Prolog rules.
+The context for this paper is provided by a small client-server
+application to familiarize secondary school students with logic and
+functional programming As a first step we teach students how to
+construct a proof tree, using a small application shown in figure
+\ref{jcuapp}. To the right we see a list of Prolog clauses, which can be
+dragged onto a (sub)goalof the prooff tree which is being constructed
+at the left. If the head of a dragged rule unifies with the target
+goal the proof tree is extended with a list of new subgoals as defined
+by the right hand side of the rule. Colors indicate progress; green
+indicates the proof is complete, yellow that it is incomplete, etc.
+
+In the original implementatio nthe client delegated almost all work to the server, both processing of the Prolog queries and the storage
+of Prolog rules, just displaying the effects of the editing actions.
 
 An accompanying document \cite{swierstra11jcu} walks the students through the application,
-its use, its implementation in terms of Prolog, and its Haskell implementation of Prolog,
-thus exposing students to a variety of programming language concepts.
+its use, and the Haskell implementation of Prolog, thus exposing students to a variety of programming language concepts.
 
 \begin{figure*}[t]
 \hrule\vspace{2mm}
@@ -52,24 +56,24 @@ thus exposing students to a variety of programming language concepts.
 \label{jcuapp}
 \end{figure*}
 
-The server side of the JCU application is written using Snap Framework \cite{www11snap-framework} whereas the
+The server side of the JCU application is written using the Snap Framework \cite{www11snap-framework} whereas the
 (original) client side is written using various JavaScript frameworks
 (Brunch.IO \cite{www11brunch}, which contains CoffeeScript \cite{www11CoffeeScript} and jQuery \cite{www11jquery}).
-The task we set ourselves was to rewrite as much as possible of the JavaScript part to Haskell,
+The task we set ourselves was to rewrite as much as possible of the JavaScript part into Haskell,
 using the JavaScript backend of the Utrecht Haskell Compiler (UHC) \cite{www09uhc,dijkstra09uhc-arch}.
-We also moved the Prolog machinery from server to client,
+We also moved the Prolog machinery from the server to the client,
 leaving only database access (for Prolog rules) at the server side.
-In principle these rules also could move to the client side (and be stored on a particular client machine)
-with the loss of location transparency.
+In principle these rules  could also be moved to the client side (and be stored on a particular client machine)
+with the loss of location transparency, thus leading to a stand alone application.
 
 Moving functionality outside the usual Haskell habitat --Unix(like) environments and C-- to
 a diffent runtime environment and target langauge poses some challenges,
 of which most have been looked into before. In particular mappings to Java have been explored
 (see Section~\ref{discussionIssuesRelatedWork}).
 Our contribution is to actually build an application using such a mapping to an OO environment,
-observe what the consequences are for Haskell as a language and for its libraries and runtime environment,
-and --quite pragmatically-- try to make it all work.
-To make our contribution more precise, in the following sections we discuss the following topics.
+to observe what the consequences are for Haskell as a language and  its libraries and runtime environment,
+and --quite pragmatically-- to try to make it all work.
+We discuss the following topics:
 
 \begin{itemize}
 %\item The structure of the JCU application (Section~\ref{JuniorCollegeApp})
@@ -77,7 +81,7 @@ To make our contribution more precise, in the following sections we discuss the 
  (Sections~\ref{HaskellToJavaScript})
  and its use in accessing existing JavaScript libraries (Section~\ref{UseOfExistingJavaScriptStuff}).
 \item Experience with the consequences of stretching the use of Haskell
- beyond its comfort zone found in and around the defacto default production compiler GHC
+ beyond its comfort zone found as found by using GHC
  (Section~\ref{discussionIssuesRelatedWork}).
 \end{itemize}
 
@@ -97,26 +101,24 @@ Finally we wrap up in Section~\ref{conclusion}.
 
 %%[HaskellToJavaScript
 \label{HaskellToJavaScript}
-There is an obvious mismatch between Haskell and Object-Oriented (OO) languages,
+There exists an obvious mismatch between Haskell and Object-Oriented (OO) languages,
 which has been addressed in various ways over time (Section~\ref{discussionIssuesRelatedWork}):
 \begin{itemize}
 \item
  Mapping the runtime machinery required for Haskell to an imperative language has to deal with the lazy evaluation strategy
- imposed by Haskell;
- we deal with this in the remaining part of this section.
+ imposed by Haskell (rest of this section).
 \item
- Use of OO language mechanisms available in JavaScript, in particular prototype based objects; we avoid dealing with this problem.
+ Use of OO language mechanisms as available in JavaScript, in particular prototype based objects; we avoid dealing with this problem.
 \item
- Use of available libraries built with JavaScript;
- we deal with this in the following section by exploiting the freedom offered by Haskells Foreign Function Interface (FFI)
+ Use of available JavaScript libraries;
+ we deal with this in the next section by exploiting the freedom offered by Haskells Foreign Function Interface (FFI)
 \end{itemize}
 
 The design of any backend for a lazy functional languages needs to deal with functions, their (lazy) application to arguments,
-and forcing evaluation of such applications to Weak Head Normal Form (WHNF).
+and  evaluating  such applications to Weak Head Normal Form (WHNF).
 The design should also cater for under- and oversaturated function applications as well as tail recursion.
 
-In UHC's JavaScript backend functions and their applications are both represented straightforwardly by objects,
-being the principle OO datastructure available:
+In UHC's JavaScript backend functions and their applications are both represented straightforwardly by objects:
 
 \begin{code}
 Fun.prototype = {
@@ -127,15 +129,15 @@ Fun.prototype = {
 function Fun( fun ) { ... }
 \end{code}
 
-For now we omit implementation details and only expose the programmatic interface used by the runtime system.
+For now we omit implementation details and only expose the programmatic interface as used by the runtime system.
 A |Fun| object wraps a JavaScript function so that it can be used as a Haskell function.
-The |applyN| field is only used when evaluation of a function application takes place,
-in which case it is necessary to know the |needsNrArgs| number of arguments which must be passed.
-Until then it stays unevaluated as a |Fun| object wrapped inside a closure object |App| or |AppLT|.
+The |applyN| field is only used when function applications are being evaluated  (forced); only then
+it is necessary to know the |needsNrArgs| number of arguments which must be passed.
+For the time being it stays unevaluated as a |Fun| object wrapped inside an |App| or |AppLT|  closure object.
 
 Similarly, partially applied (and thus undersaturated) functions
-need to remember already applied arguments and how many arguments are still missing.
-An |AppLT| object encodes this, again we provide its programmatic interface first:
+need to store already passed arguments and how many arguments are still missing.
+An |AppLT| (|LT| stand for \emph{less than}) object encodes this and again we provide its programmatic interface first:
 
 \begin{code}
 AppLT.prototype = {
@@ -159,8 +161,7 @@ App.prototype = {
 function App( fun, args ) { ... }
 \end{code}
 
-With this interface we now can translate Haskell functions, for example a function |\x -> id ^ (id x)| would be translated to the
-following, assuming |id| is available:
+With this interface we now can embed Haskell functions; for example the function |\x -> id ^ (id x)| is, assuming an elementary JavaScript function |id| is available, by:
 
 \begin{code}
 new Fun( function(x) {
@@ -168,12 +169,12 @@ new Fun( function(x) {
 } )
 \end{code}
 
-Evaluation is done by a separate function |eval| which assumes the presence
-of an |eOrV| (evaluator Or Value) field for all Haskell runtime values,
-so it can decide whether an JavaScript object represents a Haskell non-WHNF value which needs further evaluation.
-If it is an evaluator, a JavaScript function, then it is a non WHNF.
-A Haskell function or application object does not evaluate itself because this would lead tail recursion to overflow the stack of the underlying
-Javascript engine.
+Evaluation is forced by a separate function |eval| which assumes the presence
+of an |eOrV| (evaluator Or Value) field in all Haskell runtime values, which tells us
+whether the JavaScript object represents a Haskell non-WHNF value which needs further evaluation or not; in the former case it will be a 
+JavaScipt function of arity 0, which can be called.
+A Haskell function or application object does not evaluate itself since the entailed tail recursion will cause the stack of the underlying
+JavaScript engine to flow over.
 The separate external function |eval| doing the evaluation allows non WHNF values to be returned,
 thus implementing a trampoline mechanism:
 
@@ -189,17 +190,12 @@ function eval( x ) {
 }
 \end{code}
 
-The |eOrV| is either a function representing a next evaluation step, or a WHNF value.
-Even JavaScript values can be thrown at |eval|, which distinguishes those values by the absence of the |eOrV| field.
-In the actual runtime system all the above names are chosen to be more unclear as to reduce chances of accidentily
-bumping into a JavaScript object having this hidden field.
-The actual |eval| function is somewhat more involved as it provides more protection against null values.
-It is also necessary to update
-the |eOrV| field for all intermediate non WHNF objects computed in the evaluation loop.
+Even normal JavaScript values can be thrown at |eval|, provided they do not (accidentally) contain an |eOrV| field.
+The actual |eval| function is somewhat more involved as it provides some protection against null values and also
+updates the |eOrV| field for all intermediate non WHNF objects computed in the evaluation loop.
 
-The evaluation function is invoked when a Haskell value needs to be inspected,
-for example by a case expression or by a primitive requiring underlying JavaScript values such as
-the following translation of a primitive multiplication function:
+As usual the evaluation is driven by the need to pattern-match on a value, e.g. as the result of a case expression or by a built-in JavaScipt primitive which is strict in the corresponding argument
+such as in the wrapper of the primitive multiplication function, which contains the actual multiplication (|*|):
 
 \begin{code}
 new Fun( function(a,b) {
@@ -262,24 +258,24 @@ function _e_( x ) { ... }
 \end{figure}
 
 Figure~\ref{rts} shows how the actual evaluation is delegated to |applyN| of |Fun| (or |App|, |AppLT|).
-Depending on the number of arguments provided either an undersatured closure is build, or the function is directly invoked using
+Depending on the number of arguments provided either an undersatured closure is built, or the function is directly invoked using
 JavaScripts |apply|.
 In case too many arguments are provided a JavaScript closure is constructed, which subsequently is evaluated in the evaluation 
 loop of |eval|.
-The implementation of |AppLT| is similar to that of |Fun|, therefore omitted from Figure~\ref{rts}.
+The implementation of |AppLT| is similar to that of |Fun|, and therefore omitted from Figure~\ref{rts}.
 |App|s implementation of |applyN| simply delegates to |applyN| of the function it applies to.
 Also omitted are the encodings of nullary applications, used for unevaluated constants (CAF, Constant Applicative Form) and indirection nodes required for
 mutual recursive definitions.
-Datatypes and tuples are straightforwardly mapped onto JavaScript objects
+Data types and tuples are straightforwardly mapped onto JavaScript objects
 with fields for the constructor tag and its fields.
-If available, record field names of the corresponding Haskell datatype are used.
+If available, record field names of the corresponding Haskell data type are used.
 %%]
 
 %%[UseOfExistingJavaScriptStuff
 \label{UseOfExistingJavaScriptStuff}
-Translating to JavaScript is attractive because we then can access its available libraries via
-the Foreign Function Interface (FFI);
-we thus can avoid programming in JavaScript.
+Translating to JavaScript is attractive because it makes it very easy to access  JavaScript libraries through
+the Foreign Function Interface (FFI).
+%;we thus can avoid programming in JavaScript.
 For example, the globally (in a web browser environment) available function |alert|,
 which pops up an alert window,
 can be interfaced to by the following FFI declaration:
@@ -295,10 +291,9 @@ conversion to and from |String| is provided by the runtime system and |Prelude|.
 \paragraph{JS calling convention.}
 The standard C calling convention requires only a rather simple syntax for import entities;
 all access is basically done via functions.
-However, JavaScript libraries often expose functionality via OO mechanisms or specific JavaScript idiom.
-The |js| calling convention introduced by UHC
-therefore provides a richer notation for specifying import entities,
-summarized in Figure~\ref{jsimpent}.
+However, JavaScript libraries often expose functionality via OO mechanisms or specific JavaScript idioms.
+The |js| calling convention as used by UHC
+thus provides a richer notation for specifying import entities (Figure~\ref{jsimpent}).
 \begin{figure}[t]
 \hrule
 \begin{code}
@@ -324,7 +319,7 @@ str    ::= any string
 
 The notation allows the use of a subset of JavaScript expressions,
 in which (possibly converted) Haskell function arguments can be spliced.
-The above alert function uses |%*| to let the compiler expand all arguments.
+The above |alert| function uses |%*| to instruct the compiler to expand all arguments.
 Similarly individual arguments can be referred to by number;
 a further occurrence of |%*| then does not include that individual argument anymore.
 This allows translation to OO style of function invocation, as in the following example:
@@ -355,16 +350,15 @@ The import entity can still be the same because of the compiler generated expans
 proper number of arguments.
 
 \paragraph{Records.}
-Values of basic non aggregrate types like |Int| are shared between Haskell and JavaScript,
-no marshalling is required. Absence of the hidden field |eOrV| makes the evaluation |eval| ignore these values.
-Between |String| and |JSString| conversion must be done as their internal representation is different;
-this still can be done straightforwardly with a pair of conversion functions, or hidden behind a class interface for conversion.
-However, the problem is more serious with records, as runtime representations of aggregrates vary between Haskell and JavaScript libraries.
-One cannot expect that these representations exactly coincide.
-We did consider various solutions:
+Values of basic non aggregrate types like |Int| are shared between Haskell and JavaScript, and thus
+no marshalling is required. Absence of the hidden field |eOrV| makes the evaluation |eval| just return these values unmodified.
+Since |String| and |JSString| are repesented differentlythey are converted using a pair of conversion functions.
+For records however the problem is more serious as runtime representations of aggregrates vary between the Haskell world and the JavaScript libraries.
+%One cannot expect that these representations exactly coincide.
+We considered various solutions:
 \begin{itemize}
 \item
-Design a FFI for datatypes, allowing one to specify how fields are mapped between a JavaScript implementation and Haskell datatypes.
+Design a FFI for data types, allowing one to specify how fields are mapped between a JavaScript implementation and Haskell data types.
 This soon becomes cumbersome when record fields hold callback functions, or other aggregrates, as the conversion need to traverse
 the record as well as its fields, steered by their types.
 \item
@@ -373,8 +367,8 @@ Use some generic technique, for example generic deriving. This is heavyweight, w
 Leave it up to the programmer with some help from the runtime system to create objects and manipulate fields.
 \end{itemize}
 For now, we chose the last and simplest solution.
-Lower level access to construction and manipulation of JavaScript objects is offered by Lens like \cite{oconnor11lens} primitives,
-of which we show the interfaces of their wrappers only:
+Lower level access to construction and manipulation of JavaScript objects is offered by a Lens-like \cite{oconnor11lens} interface,
+of which we show the types of their wrappers only:
 \begin{code}
 data JSPtr a
 newObj :: String -> IO (JSPtr p)
@@ -386,7 +380,7 @@ modAttr :: String -> (a -> b) -> JSPtr p -> IO (JSPtr p)
 
 Lack of types in JavaScript is visible in the interfaces, and the only guarantee is that a |JSPtr| can only be created via
 the runtime system:
-|newObj| constructs an instance of the JavaScript type (i.e. constructor object) with the name of its |String| argument.
+|newObj| constructs an instance of the JavaScript type (i.e. constructor object) as specified by its |String| argument.
 It is the responsibility of the user of these functions to enforce a type discipline, e.g. by using phantom types.
 
 For example, the following |Book| datatype is constructed and manipulated by the following:
@@ -403,7 +397,7 @@ main = do
 \end{code}
 
 The runtime system can actually do somewhat better than the above manual JavaScript object construction by
-exploiting knowledge about the Haskell representation of datatypes:
+exploiting knowledge about the Haskell representation of data types:
 \begin{code}
 foreign import js "{}"
   mkObj :: a -> IO (JSPtr b)
@@ -444,17 +438,16 @@ Note however, that there is no conversion back from JavaScript records to Haskel
 \paragraph{JCU application.}
 
 The JCU application uses a UHC JavaScript backend specific library to access browser functionality
-and available libraries.
-Much of the library consists of wrappers around library functionality.
-Most of this code is done by straightforward use of the discussed FFI import mechanisms.
+and available libraries, most of which consists of wrappers around existing library functionality and makes
+straightforward use of the discussed FFI import mechanisms.
 The code shown in Figure~\ref{jqueryevent} shows the exporting direction of the FFI:
 the part required to register Haskell code via the `wrapper' FFI entity for
 dealing with GUI events generated by the jQuery library.
-The ``wrapper'' FFI entity specification is used to wrap Haskell event handlers for use by JavaScript,
-bound to browser user interface elements, and called when a particular event happens.
+The ``wrapper'' FFI entity specification is used to wrap Haskell event handlers for use by JavaScript to bind to
+browser user interface elements, and to be called when a particular event happens.
 Specifically in the JCU application, this mechanism is also used as a way to encode access to global state:
 all event handlers are partial applications holding references to this global state.
-After each change in the global change all event handlers are then replaced with a new partial application to new state.
+After each change in the global change all event handlers are then replaced with a new partial application to the new state.
 
 \begin{figure}[t]
 \hrule
@@ -487,8 +480,8 @@ A small but nasty OO related detail is that the jQuery UI library ensures that @
 object an event is occurring on, instead of passing it as an argument.
 This complicates matters for the runtime system as @this@ is bound by functions generated by
 the compiler.
-Additional wrapping code adds @this@ to arguments before passing the arguments to a handler.
-The code for @this@ wrapping is not included.
+Additional wrapping code (not presented here) adds @this@ to the argument list before passing the list to a handler.
+%The code for @this@ wrapping is not included.
 
 %In the reworked JCU application the Prolog machinery has moved to the browser.
 
@@ -499,7 +492,7 @@ The code for @this@ wrapping is not included.
 %%[discussionIssuesRelatedWork
 \label{discussionIssuesRelatedWork}
 
-\paragraph{Alternate approaches.}
+\paragraph{Other approaches.}
 The idea of running Haskell in a browser is not new.
 To our knowledge
 first attempts to do so using JavaScript were done in the context of
@@ -511,23 +504,21 @@ nowadays is replaced by libraries built on top of the multiple DOM variations.
 
 The idea of running functional programs in a browser even goes further back
 to the availability of Java applets.
-The workflow framework iTasks, built on top of the Clean system \cite{www11clean-system},
-uses a minimal platform independent functional language, SAPL, to
-encode code intended to run in a browser.
-SAPL code is then interpreted in a browser, by a Java-written interpreter.
+The workflow framework |iTasks|, built on top of the Clean system \cite{www11clean-system},
+uses a minimal platform independent functional language, SAPL, which is interpreted in the browser by code written in Java.
 The latest interpreter incarnations are written in JavaScript
 \cite{jansen10phd-itasks-sapl-funcweb,bruel10sapl-javascript,plasmeijer08clientside-itasks-ajax}.
 Although currently a Haskell frontend exists for Clean, the use of it in a browser seems to be tied up to the iTasks system.
-The intermediate language SAPL also does not to provide the equivalent of the Haskell FFI.
-This limits used code to that which is generated by the iTasks system.
+The intermediate language SAPL also does not provide the facilities as provided by our Haskell FFI.
+%This limits used code to that which is generated by the iTasks system.
 
-Of the GHC a version exists which generates JavaScript \cite{www11ghcjs-git},
+For GHC there exists a version  which generates JavaScript \cite{www11ghcjs-git},
 based on the GHC API, supporting the use of primitives but not the FFI.
 Further down we elaborate on some consequences of multiple platforms and backends
 relevant for this GHC backend variant as well.
 
-Both ``Functional javascript'' \cite{www07functional-javascript} and
-``Haskell in Javascript'' \cite{www10haskellinjavascript} do not use a separate Haskell compiler.
+Both ``Functional JavaScript'' \cite{www07functional-javascript} and
+``Haskell in JavaScript'' \cite{www10haskellinjavascript} do not use a separate Haskell compiler.
 Instead, JavaScript is used directly in a functional style,
 respectively a small compiler for a subset of Haskell has been written in JavaScript.
 
@@ -535,12 +526,11 @@ respectively a small compiler for a subset of Haskell has been written in JavaSc
 
 Object Oriented behavior itself can be realized inside Haskell by exploiting the class system
 \cite{shields01haskell-oo-overloading,kiselyov05haskell-oo}.
-However, we aim to access libraries written in JavaScript, not mimic JavaScript or OO mechanism in general inside Haskell.
+We however aim to access libraries written in JavaScript, not to mimic JavaScript or OO mechanism in general inside Haskell.
 
-However, when functionality of the libraries would have to be (re)written in Haskell some form of OO mechanism
+Nevertheless, when functionality of the libraries is (re)written in Haskell some form of OO programming
 should be available.
-This issue arises when one would code in Haskell a platform independent part of an otherwise OO GUI library,
-say |wxHaskell|.
+This issue arises when one would codethe platform independent part of an otherwise OO GUI library in say |Haskell|.
 For now we limit ourselves to accessing JavaScript libraries via the FFI, hiding OO idiom inside FFI import entities. 
 
 %\paragraph{This is a moving target.}
@@ -551,29 +541,27 @@ For now we limit ourselves to accessing JavaScript libraries via the FFI, hiding
 
 %\todo{Records in JS vs HS.}
 
-\paragraph{Type system absence.}
+\paragraph{Absence of String Typing.}
 
 JavaScript has no type system, the absence of which can be dealt with
 by using phantom types in wrapper functions around untyped FFI calls.
-More problematic are for example DOM functions returning objects with a different interface,
+More problematic are for example DOM functions returning objects with a unspecified (i.e. non-static) interface,
 like a DOM element or attribute.
-A sum type defining all possible result types could be used, but datatypes are not extensible,
-which might be too limiting in practice.
-Dynamics might be used as result values, but require assistence from the runtime system as well
+A sum type defining all possible result types can be be used, but since data types are not easily extensible this soon becomes too limiting in practice.
+Dynamics might be used as result values, but they require assistence from the runtime system as well
 as knowledge about types (e.g. in the form of |TypeRep|).
 Existentially quantified datatypes and classes might be used (similar to extensible exceptions \cite{marlow06extensible-exception}),
 but then knowledge about the class system also seeps into the runtime system.
-Currently this has not yet been further addressed.
+Currently this issue has not yet been further addressed.
 
 %\todo{Typing the untyped.}
 
 \paragraph{Side effects.}
 
-All access to JavaScript values is done in the IO monad, so side effect can be properly modelled.
+All access to JavaScript values is done in the IO monad, so side effect are properly modelled.
 For now it is assumed that no threads exist.
-JavaScript's worker thread mechanism can be used safely,
-hence no semaphore, STM, or other shared data access machinery needs
-to be implemented.
+Since JavaScript's worker thread mechanism can be used safely we currently do not need
+ semaphores, STM, or other shared data access machinery.
 Some values like the globally available @window@ in a browser could be accessed without the use of the IO monad because its value does not change.
 However, if and when this assumption would not hold in a near future it would break our wrapping code as well.
 
@@ -601,24 +589,24 @@ using the same technique as described here.
 However, interfacing to libraries is still lacking in UHC, and in general library access and other
 runtime oriented features (threads, exceptions)
 is where the real work lies \cite{www12ghc-faq}.
-Wrapping and interfacing to libraries has to be done manually or by tools interpreting library code,
-either time consuming or suffering from misinterpretation.
-In the case of JavaScript lack of typing annotations even excludes automatic FFI wrapper generation,
+Wrapping and interfacing to libraries has to be done manually or by tools interpreting library code which requires substabtial effort and is 
+suffering from misinterpretation.
+In the case of JavaScript lack of typing annotations even precludes automatic FFI wrapper generation,
 unless type annotations in comments could be trustworthy and formal enough to be used instead.
 
 Efficient code generation is also an issue.
 Usually non standard OO language constructs are used to implement
 standard idiom of (lazy) functions.
 For now, with UHC we have taken the approach to first make it work and not bother about efficiency,
-generating code from an early stage in the compiler pipeline.
+generating code from an early stage in the compiler pipeline. Especially makinguse of results of the strictness analyser will speed up the code considerably, especially since we expect the existing compilers to be better able to nalayse the provided code.
 
 \paragraph{Libraries, Haskell platform.}
 
-Targeting Haskell to a different platform means that some assumptions assumed valid
-when using one platform only are no longer valid.
+Targeting Haskell to a different platform means that some assumptions following
+from using a single platform only are no longer valid.
 First, a different platform means a different runtime environment.
-Almost all of the UNIX functionality available for the usual Haskell UNIX runtime
-naturally is not available inside a web browser
+Almost all of the UNIX functionality is available for the usual Haskell UNIX runtime, but is
+naturally  not available inside a web browser
 and, vice verse, specific JavaScript libraries like jQuery are not available on a UNIX platform.
 Some library modules of a package (partially) cannot be build on some platforms, while others (partially) can.
 To cater for this, UHC rather ad-hoc marks modules to be unavailable for a backend by a pragma
@@ -627,14 +615,13 @@ Of course |cpp| can still be used to select functionality inside a module.
 However, in general, awareness of platform permeates all aspects of a language system, from the compiler itself
 to the library build system like |Cabal|.
 In particular, |Cabal| needs a specification mechanism for such variation in target and platform
-to allow for selective or different compilation.
-Currently this means that UHC compilation for the JavaScript backend cannot be done via |Cabal|.
+to allow for selective compilation of a collection of variants.
+Currently this means that UHC compilation for the JavaScript backend cannot be done through |Cabal|.
 
 A second aspect has more to do with the evolution of Haskell as an ecosystem.
-Many libraries no longer take a Haskell standard as standard,
-but GHC.
+Many libraries go far beyond the Haskell standard by making use of a plethora of GHC extensions.
 Currently, such libraries evolve to use (say) type families, a feature not (yet) available in UHC.
-For (non GHC) Haskell compiler writers to keep with this pace of evolution poses a considerable challenge,
+For (non GHC) Haskell compiler writers to keep with this pace of evolution poses a considerable challenge;
 yet in our opinion there is value in the availability of compiler alternatives as well as variation in what those
 compilers are good at.
 
