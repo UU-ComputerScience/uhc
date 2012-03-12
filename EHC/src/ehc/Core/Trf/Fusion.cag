@@ -15,6 +15,7 @@ cmodTrfFusion lamMp cmod =
      in inlined_Syn_CodeAGItf t
 }
 
+PRAGMA nocycle
 
 -- Main idea: inlined should inline all fusible functions (and their non-recursive subterms)
 --            rewritten should take the result and do forall x. cons (abs x) |-> x
@@ -40,14 +41,17 @@ ATTR AllCodeNT [ | | rewritten : SELF]
  
 SEM CExpr 
        | App lhs.rewritten = @rewritten
-       | App loc.rewritten = rewrite @lhs.convMp @applied -- take the inlined code and attempt to remove any con . abs
+       | App loc.rewritten = if @func.isFusible || @lhs.inFusibleFunc 
+                             then rewrite @lhs.convMp @applied 
+                             else acoreApp1 @func.rewritten @arg.rewritten
 
 ATTR CodeAGItf [ | | inlined : CModule]
 ATTR AllCodeNT [ | | inlined : SELF   ]
  
 SEM CExpr 
-       | App lhs.inlined = inline @lhs.funcMp @loc.rewritten
-         
+       | App lhs.inlined = if @func.isFusible || @lhs.inFusibleFunc
+                           then trace ("Calling inline with funcMp " ++ (show $ Map.keys @lhs.funcMp)) $ inline @lhs.funcMp @loc.rewritten
+                           else acoreApp1 @func.inlined @arg.rewritten 
 ------------------------------------------------------------------------------
 -- Tests to see if a function is fusible.  A @func of an App is fusible if it 
 -- is a named function found in the fuseMp, if it is a function application 
@@ -131,7 +135,7 @@ ATTR CBindAspectL [ || gathExpr USE {++} {[]} : {[CExpr]} ] -- this should just 
 ATTR CBindAspect [ || gathExpr USE {++} {[]} : {[CExpr]}]
 
 SEM CBindAspect
-        | Bind lhs.gathExpr = [@expr.rewritten] -- The fuseMap holds the result of any inlining done to this code instead of the original
+        | Bind lhs.gathExpr = [@expr.inlined] -- The fuseMap holds the result of any inlining done to this code instead of the original
 
 
 -------------------------------------------------------------------------------
@@ -149,31 +153,28 @@ SEM CBind
         | Bind bindAspects.inFusibleFunc = @lhs.inFusibleFunc || isJust (Map.lookup @nm @gathFuseMp) 
                                                
 
+ATTR CodeAGItf AllCodeNT [ | | gathFuncMp USE {`Map.union`} {Map.empty} : FuncMp ]
 ATTR AllCodeNT [ funcMp : FuncMp | | ]
 
 ATTR CodeAGItf AllCodeNT [ | | funcS USE {`Set.union`} {Set.empty} : FuncS ]
 
 SEM CodeAGItf
-        | AGItf module.funcMp = Map.empty
+        | AGItf module.funcMp = @module.gathFuncMp
 
 SEM CExpr
-        | Var lhs.funcS = if @lhs.inFusibleFunc 
-                          then Set.singleton (acbrefNm @ref)
+        | Var lhs.funcS = if @lhs.inFusibleFunc
+                          then trace ("Adding function " ++ show (acbrefNm @ref) ++ " to the funcS") $ Set.singleton (acbrefNm @ref)
                           else Set.empty 
 
 SEM CExpr 
-        | Let body.funcMp = if @categ == acoreBindcategRec -- no recursive functions allowed, or everything blows up 
-                            then @lhs.funcMp
-                            else @binds.gathFuncMp `Map.union` @lhs.funcMp
-
-ATTR CBindL [ | | gathFuncMp USE {`Map.union`} {Map.empty} : FuncMp ]
-ATTR CBind  [ | | gathFuncMp : FuncMp ]
-
+        | Let lhs.gathFuncMp = let funcMp = (Map.filterWithKey (\k _ -> Set.member k @body.funcS) @binds.gathFuncMp) in
+                                if @categ == acoreBindcategRec 
+                                then trace ("Recursive binding, discarding funcMp\n" ++ (show $ Map.keys funcMp)) $ Map.empty
+                                else funcMp `Map.union` @binds.gathFuncMp `Map.union` @body.gathFuncMp
 SEM CBind 
-        | Bind loc.gathFuncMp = if Set.member @nm @bindAspects.funcS 
-                                   && isNothing (Map.lookup @nm @lhs.convMp)
-                                then Map.singleton @nm $ head @bindAspects.gathExpr
-                                else Map.empty                                  
+        | Bind lhs.gathFuncMp = if not (isNothing (Map.lookup @nm @lhs.convMp))
+                                then trace ("Not adding function " ++ show @nm ++ "because it was a conversion function") $ Map.empty          
+                                else trace ("Adding function " ++ show @nm ++ "to the funcMp") $ Map.singleton @nm $ head @bindAspects.gathExpr
 
 ATTR CExpr [ | | varName : {Maybe HsName} ] 
 
