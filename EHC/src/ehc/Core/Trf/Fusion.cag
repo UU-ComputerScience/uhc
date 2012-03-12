@@ -15,7 +15,7 @@ cmodTrfFusion lamMp cmod =
      in inlined_Syn_CodeAGItf t
 }
 
-PRAGMA nocycle
+-- PRAGMA nocycle
 
 -- Main idea: inlined should inline all fusible functions (and their non-recursive subterms)
 --            rewritten should take the result and do forall x. cons (abs x) |-> x
@@ -41,7 +41,7 @@ ATTR AllCodeNT [ | | rewritten : SELF]
  
 SEM CExpr 
        | App lhs.rewritten = @rewritten
-       | App loc.rewritten = if @func.isFusible || @lhs.inFusibleFunc 
+       | App loc.rewritten = if @func.isFusible -- || @lhs.inFusibleFunc 
                              then rewrite @lhs.convMp @applied 
                              else acoreApp1 @func.rewritten @arg.rewritten
 
@@ -49,7 +49,7 @@ ATTR CodeAGItf [ | | inlined : CModule]
 ATTR AllCodeNT [ | | inlined : SELF   ]
  
 SEM CExpr 
-       | App lhs.inlined = if @func.isFusible || @lhs.inFusibleFunc
+       | App lhs.inlined = if @func.isFusible -- || @lhs.inFusibleFunc
                            then trace ("Calling inline with funcMp " ++ (show $ Map.keys @lhs.funcMp)) $ inline @lhs.funcMp @loc.rewritten
                            else acoreApp1 @func.inlined @arg.rewritten 
 ------------------------------------------------------------------------------
@@ -135,7 +135,7 @@ ATTR CBindAspectL [ || gathExpr USE {++} {[]} : {[CExpr]} ] -- this should just 
 ATTR CBindAspect [ || gathExpr USE {++} {[]} : {[CExpr]}]
 
 SEM CBindAspect
-        | Bind lhs.gathExpr = [@expr.inlined] -- The fuseMap holds the result of any inlining done to this code instead of the original
+        | Bind lhs.gathExpr = [@expr.rewritten] -- The fuseMap holds the result of any inlining done to this code instead of the original
 
 
 -------------------------------------------------------------------------------

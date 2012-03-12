@@ -25,7 +25,7 @@ ATTR AllCodeNT [ funcMp : FuncMp | | inlined : SELF ]
 
 SEM CExpr 
         | App lhs.inlined = if @func.isInlinable 
-                            then apply @func.inlined @arg.inlined
+                            then inline @lhs.funcMp (apply @func.inlined @arg.inlined)
                             else acoreApp1 @func.inlined @arg.inlined
         | Var lhs.inlined = if @isInlinable
                             then fromJust (Map.lookup (acbrefNm @ref) @lhs.funcMp)
