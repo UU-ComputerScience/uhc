@@ -154,7 +154,9 @@ trfCore opts dataGam modNm trfcore
                ; t_elim_trivapp
 %%[[93
                ; when (ehcOptFusion opts) 
-                      t_fusion
+                      (do { t_let_unrec
+                          ; t_fusion
+                          })
 %%]] 
                  -- put in A-normal form, where args to app only may be identifiers
                ; u1 <- modifyGets uniq
