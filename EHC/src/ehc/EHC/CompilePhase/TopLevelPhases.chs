@@ -68,7 +68,7 @@ level 2..6 : with prefix 'cpEhc'
 %%]
 %%[(99 codegen) import({%{EH}EHC.CompilePhase.Link})
 %%]
-%%[50 import({%{EH}EHC.CompilePhase.Module})
+%%[50 import({%{EH}EHC.CompilePhase.Module},{%{EH}Module})
 %%]
 %%[99 import({%{EH}Base.Pragma})
 %%]
@@ -159,14 +159,14 @@ cpEhcCheckAbsenceOfMutRecModules
       }
 %%]
 
-%%[50 export(cpEhcFetchAllMissingModulesForLinking)
+%%[5050 export(cpEhcFetchAllMissingModulesForLinking)
 -- | Fetch all necessary modules, but just the minimal info
 cpEhcFetchAllMissingModulesForLinking :: EHCompilePhase ()
 cpEhcFetchAllMissingModulesForLinking
  = do { cr <- get
       ; let modNmLL = crCompileOrder cr
             modNmL = map head modNmLL
-            otherUsedModNmS = Set.unions [ ecuTransClosedUsedModS me | m <- modNmL, let me = crCU m cr ] `Set.difference` Set.fromList modNmL
+            otherUsedModNmS = Set.unions [ ecuTransClosedUsedModMp me | m <- modNmL, let me = crCU m cr ] `Set.difference` Set.fromList modNmL
       ; return ()
       }
 %%]
@@ -281,7 +281,7 @@ cpEhcFullProgModuleCompileN modNmL
 Find out whether a compilation is needed, and if so, can be done.
 %%]
 
-%%[50
+%%[50 export(cpEhcFullProgModuleDetermineNeedsCompile)
 cpEhcFullProgModuleDetermineNeedsCompile :: HsName -> EHCompilePhase ()
 cpEhcFullProgModuleDetermineNeedsCompile modNm
   = do { cr <- get
@@ -376,7 +376,7 @@ cpEhcModuleCompile1 targHSState modNm
        ; case (ecuState ecu,targHSState) of
 %%]]
 %%]
-%%[50
+%%[5050
            (ECUSHaskell HIStart,Just HMOnlyMinimal)
              -- |    st == HIStart
              -> do { cpMsg modNm VerboseNormal ("Minimal of HM")
@@ -474,6 +474,17 @@ cpEhcModuleCompile1 targHSState modNm
                    ; return defaultResult
                    }
 %%[[50
+           (ECUSHaskell st,Just HMOnlyMinimal)
+             |    st == HIStart || st == HSStart -- st /= HMOnlyMinimal
+             -> do { let mod = emptyMod' modNm
+                   ; cpUpdCU modNm (ecuStoreMod mod)
+                   -- ; cpCheckMods [modNm]
+%%[[(50 codegen grin)
+				   ; cpUpdateModOffMp [modNm]
+%%]]
+                   ; cpUpdCU modNm (ecuStoreState (ECUSHaskell HMOnlyMinimal))
+                   ; return defaultResult
+                   }
            (_,Just HSOnlyImports)
              -> return defaultResult
 %%]]
@@ -941,6 +952,7 @@ cpProcessEH modNm
   = do { cr <- get
        ; let (_,_,opts,fp) = crBaseInfo modNm cr
 %%[[99
+       {-
              optsTr = opts { ehcOptTrace = \s x -> unsafePerformIO (do { s <- execStateT (do { cpMsg modNm VerboseALot ("EH>: " ++ s) 
                                                                                              ; x `seq` cpMsg modNm VerboseALot ("EH<: " ++ s) 
                                                                                              }) cr 
@@ -951,6 +963,7 @@ cpProcessEH modNm
              -- optsTr = opts { ehcOptTrace = trace }
        -- ; cpUpdStateInfo (\crsi -> crsi {crsiOpts = optsTr})
        ; cpUpdCU modNm (ecuStoreOpts optsTr)
+       -}
 %%]]
        ; cpSeq [ cpFoldEH modNm
 %%[[99

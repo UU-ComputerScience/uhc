@@ -230,7 +230,7 @@ instance PP ModImp where
 %%% Module
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[50
+%%[50 export(emptyMod')
 data Mod
   = Mod
       { modName         :: !HsName
@@ -243,7 +243,8 @@ data Mod
       }
   deriving (Show)
 
-emptyMod = Mod hsnUnknown Nothing Nothing [] Rel.empty Rel.empty []
+emptyMod' n = Mod n Nothing Nothing [] Rel.empty Rel.empty []
+emptyMod = emptyMod' hsnUnknown
 %%]
 
 %%[50 export(modBuiltin)

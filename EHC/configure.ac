@@ -1,5 +1,5 @@
 ### Process this file with autoconf to produce a configure script.
-AC_INIT([EH],[0.1],[uhc-developers@cs.uu.nl, http://www.cs.uu.nl/wiki/UHC/WebHome])
+AC_INIT([UHC],[1.1.3],[uhc-developers@lists.science.uu.nl, http://www.cs.uu.nl/wiki/UHC/WebHome])
 
 ### version of autoconf used (and required)
 #AC_PREREQ(2.64)
@@ -368,6 +368,7 @@ AC_SUBST(HSC2HS_CMD,$hsc2hsCmd)
 ### now we know we have ghc, check for some libraries using ghc-pkg
 ghcLibUulibExists=no
 ghcLibFglExists=no
+ghcLibSybExists=no
 ghcLibNetwork=no
 ghcLibBinary=no
 if test x$ghcExists = xyes
@@ -378,6 +379,12 @@ then
     ghcLibFgl=`$ghcPkgCmd list --simple-output fgl`
     if test "x$ghcLibFgl" != "x" ; then
       ghcLibFglExists=yes
+    fi
+
+    # syb
+    ghcLibSyb=`$ghcPkgCmd list --simple-output syb`
+    if test "x$ghcLibSyb" != "x" ; then
+      ghcLibSybExists=yes
     fi
 
     # uulib
@@ -897,6 +904,9 @@ else
   use64bits=""
 fi
 
+# get nr of bits, for further Makefile use
+nrwordbits_platform="$((8 * $ac_cv_sizeof_intptr_t))"
+
 if test "x$use32bits" = "xyes"
 then
   gccExtlibsOptions="$gccExtlibsOptions -m32"
@@ -997,6 +1007,7 @@ suffix_libJavaScript=".mjs"
 prefix_lib=""
 # development platform
 development_platform="UNIX"
+host_platform="$host"
 # path separator
 paths_sep=":"
 slash="/"
@@ -1057,6 +1068,8 @@ AC_SUBST(LINKER_SYMBOL_PREFIX,"$linker_symbol_prefix")
 
 # misc
 AC_SUBST(DEVELOPMENT_PLATFORM,"$development_platform")
+AC_SUBST(HOST_PLATFORM,"$host_platform")
+AC_SUBST(NRWORDBITS_PLATFORM,"$nrwordbits_platform")
 
 # libtool used, if any
 AC_SUBST(LIBTOOL_STATIC_CMD, "$libtoolStaticCmd")
@@ -1120,6 +1133,7 @@ if test "x$uuagcExists" = "xyes" \
    -a "x$ghcExists" = "xyes" \
    -a "x$gccExists" = "xyes" \
    -a "x$ghcLibFglExists" = "xyes" \
+   -a "x$ghcLibSybExists" = "xyes" \
    -a "x$ghcLibUulibExists" = "xyes" \
    -a "x$ghcLibNetworkExists" = "xyes" \
    -a "x$ghcLibBinaryExists" = "xyes"
@@ -1175,6 +1189,13 @@ echo "      fgl is available?         : $ghcLibFglExists"
     echo "        version                 : $ghcLibFgl"
   else
     echo "        **** ERROR **** : 'fgl' must be installed, use cabal+hackage"
+  fi
+echo "      syb is available?         : $ghcLibSybExists"
+  if test "x$ghcLibSybExists" = "xyes"
+  then
+    echo "        version                 : $ghcLibSyb"
+  else
+    echo "        **** ERROR **** : 'syb' must be installed, use cabal+hackage"
   fi
 echo "      network is available?     : $ghcLibNetworkExists"
   if test "x$ghcLibNetworkExists" = "xyes"

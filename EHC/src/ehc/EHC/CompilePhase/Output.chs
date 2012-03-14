@@ -225,8 +225,8 @@ cpOutputHI suff modNm
                                , HI.hiiSrcVersionSvn        = Cfg.verSvnRevision Cfg.version
                                , HI.hiiCompileFlags         = optsDiscrRecompileRepr opts
                                , HI.hiiCompiler             = Cfg.installVariant opts
-                               , HI.hiiTransClosedUsedModS  = Set.unions $
-                                                                impNmS : [ ecuTransClosedUsedModS $ crCU m cr | m <- Set.toList impNmS ]
+                               , HI.hiiTransClosedUsedModMp = Map.unions $
+                                                                Map.singleton modNm impNmS : [ ecuTransClosedUsedModMp $ crCU m cr | m <- Set.toList impNmS ]
                                , HI.hiiTransClosedOrphanModS= Set.unions $
                                                                 [ Set.unions [if ecuIsOrphan me then Set.singleton m else Set.empty, ecuTransClosedOrphanModS me]
                                                                 | m <- Set.toList impNmS

@@ -77,7 +77,9 @@ instance Show Visible where
 %%% HI info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[50 hs export(HIInfo(..))
+%%[50 hs export(HIInfoUsedModMp,HIInfo(..))
+type HIInfoUsedModMp = (Map.Map HsName (Set.Set HsName))
+
 data HIInfo
   = HIInfo
       { hiiValidity             :: !HIValidity                              -- a valid HI info?
@@ -100,7 +102,7 @@ data HIInfo
       , hiiFixityGam            :: !FixityGam                               -- fixity of identifiers
       , hiiHIDeclImpModS        :: !(Set.Set HsName)                        -- declared imports
       , hiiHIUsedImpModS        :: !(Set.Set HsName)                        -- used imports, usually indirectly via renaming
-      , hiiTransClosedUsedModS  :: !(Set.Set HsName)                        -- used modules, required to be linked together, transitively closed/cached over imported modules
+      , hiiTransClosedUsedModMp :: !HIInfoUsedModMp       					-- used modules with their imports, required to be linked together, transitively closed/cached over imported modules
       , hiiTransClosedOrphanModS:: !(Set.Set HsName)                        -- orphan modules, required to read its .hi file, transitively closed/cached over imported modules
       , hiiMbOrphan             :: !(Maybe (Set.Set HsName))                -- is orphan module, carrying the module names required
 %%[[(50 hmtyinfer)
@@ -135,7 +137,7 @@ emptyHIInfo
            "" defaultTarget defaultTargetFlavor "" "" False hsnUnknown "" "" "" "" ""
            Rel.empty Rel.empty emptyGam
            Set.empty Set.empty
-           Set.empty Set.empty Nothing
+           Map.empty Set.empty Nothing
 %%[[(50 hmtyinfer)
            emptyGam emptyGam emptyGam emptyGam emptyGam emptyGam emptyGam emptyCHRStore
 %%]]
@@ -174,7 +176,7 @@ instance PP HIInfo where
   pp i = "HIInfo" >#< (   "ModNm  =" >#< pp         (             hiiModuleNm              i)
                       >-< "DeclImp=" >#< ppCommas   (Set.toList $ hiiHIDeclImpModS         i)
                       >-< "UsedImp=" >#< ppCommas   (Set.toList $ hiiHIUsedImpModS         i)
-                      >-< "AllUsed=" >#< ppCommas   (Set.toList $ hiiTransClosedUsedModS   i)
+                      >-< "AllUsed=" >#< ppAssocLV  (assocLMapElt (ppCommas . Set.toList) $ Map.toList $ hiiTransClosedUsedModMp i)
                       >-< "AllOrph=" >#< ppCommas   (Set.toList $ hiiTransClosedOrphanModS i)
                       >-< "MbOrph =" >#< ppCommas   (maybe [] Set.toList $ hiiMbOrphan     i)
                       -- >-< "Exps="    >#< pp         (hiiExps          i)
@@ -191,11 +193,11 @@ instance PP HIInfo where
 %%% Retain info of a HI which is still needed after cleanup.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[99 hs export(hiiRetainAfterCleanup)
+%%[9999 hs export(hiiRetainAfterCleanup)
 hiiRetainAfterCleanup :: HIInfo -> HIInfo
 hiiRetainAfterCleanup hii
   = emptyHIInfo
-      { hiiTransClosedUsedModS		=	hiiTransClosedUsedModS 		hii
+      { hiiTransClosedUsedModMp		=	hiiTransClosedUsedModMp		hii
       , hiiTransClosedOrphanModS	=	hiiTransClosedOrphanModS	hii
       , hiiMbOrphan					=	hiiMbOrphan					hii
       }
@@ -446,7 +448,7 @@ sgetHIInfo opts = do
                             , hiiFixityGam            = fg
                             , hiiHIDeclImpModS        = impd
                             , hiiHIUsedImpModS        = impu
-                            , hiiTransClosedUsedModS  = tclused
+                            , hiiTransClosedUsedModMp = tclused
                             , hiiTransClosedOrphanModS= tclorph
                             , hiiMbOrphan             = isorph
 %%[[(50 hmtyinfer)
@@ -508,7 +510,7 @@ instance Serialize HIInfo where
                   , hiiFixityGam            = fg
                   , hiiHIDeclImpModS        = impd
                   , hiiHIUsedImpModS        = impu
-                  , hiiTransClosedUsedModS  = tclused
+                  , hiiTransClosedUsedModMp = tclused
                   , hiiTransClosedOrphanModS= tclorph
                   , hiiMbOrphan             = isorph
 %%[[(50 hmtyinfer)

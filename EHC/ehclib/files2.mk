@@ -190,7 +190,7 @@ EHCLIB_DEBUG_OPTS						=
 #EHCLIB_DEBUG_OPTS						= --target-flavor=debug --dump-core-stages=1 --dump-grin-stages=1 --gen-trace=1 --gen-cmt=1
 #EHCLIB_DEBUG_OPTS						= -O0
 #EHCLIB_DEBUG_OPTS						= -v3
-#EHCLIB_DEBUG_OPTS						= -v4
+#EHCLIB_DEBUG_OPTS						= -v4 --priv=1
 #EHCLIB_DEBUG_OPTS						= -v4 --debug-stopat-hi-error=1 
 #EHCLIB_DEBUG_OPTS						= -O0 --dump-core-stages=1 --dump-grin-stages=1 --gen-trace=1 --gen-cmt=1
 #EHCLIB_DEBUG_OPTS						= --dump-core-stages=1 --dump-grin-stages=1 --gen-trace=1 --gen-cmt=1 -O0
@@ -352,21 +352,37 @@ $(EHCLIB_CHS_ALL_DRV_HS): $(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)%.hs: $(EHCLIB_SRC
 
 # generate .hs from .hsc via hsc2hs
 # it seems that there is a problem with hsc2hs in the ghc 10.4 and the fix is to pass ghc as the c compiler (--cc).
+#$(EHCLIB_HSC_ALL_DRV_HS): $(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)%.hs: $(EHCLIB_SRC_PREFIX)%.hsc
+#	mkdir -p $(@D) && \
+#    $(HSC2HS) -v --output=$@ --no-compile --include=HsFFI.h \
+#	$< && \
+#	$(GCC) -D__UHC__=$(EH_VERSION_ASNUMBER) \
+#	      $(RTS_GCC_CC_OPTS_VARIANT_TARGET) \
+#	      -I$(call FUN_INSTALLABS_VARIANT_INC_TARGET_PREFIX,$(EHC_VARIANT),$(EHC_VARIANT_TARGET)) \
+#	      -I$(call FUN_INSTALLABS_VARIANT_INC_SHARED_PREFIX,$(EHC_VARIANT)) \
+#		    $(foreach pkg,$(EHC_PACKAGES_ASSUMED),-I$(EHCLIB_SRC_PREFIX)$(pkg)/include/) \
+#	        $(foreach pkg,$(EHC_PACKAGES_ASSUMED),-I$(call FUN_MK_PKG_INC_DIR,$(call FUN_INSTALL_PKG_PREFIX,$(call FUN_PKG_VERSIONED,$(pkg))))) \
+#		  -o $(@:.hs=_hsc_make) \
+#		  $(@:.hs=_hsc_make.c) \
+#	&& $(@:.hs=_hsc_make) > $@ \
+#	&& rm -f $(@:.hs=_hsc_make.c) \
+#	&& touch $@
+
+# hsc2hs makes assumptions about flags to be passed to the C compiler, the patch to HSC2HS_EXTRA removes these flags
 $(EHCLIB_HSC_ALL_DRV_HS): $(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)%.hs: $(EHCLIB_SRC_PREFIX)%.hsc
 	mkdir -p $(@D) && \
-    $(HSC2HS) -v --output=$@ --no-compile \
-	$< && \
-	$(GCC) -D__UHC__=$(EH_VERSION_ASNUMBER) \
+	sed -e 's/^HSC2HS_EXTRA=.*$$/HSC2HS_EXTRA=/' < $(HSC2HS) > $(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)hsc2hs && chmod +x $(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)hsc2hs && \
+    $(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)hsc2hs -v --output=$@ \
+              --include=HsFFI.h \
+              --cc=$(GCC) \
+	      -D__UHC__=$(EH_VERSION_ASNUMBER) \
 	      -D$(EHC_VARIANT_TARGET_UHC_DEFINE1) \
 	      -D$(EHC_VARIANT_TARGET_UHC_DEFINE2) \
 	      -I$(call FUN_INSTALLABS_VARIANT_INC_TARGET_PREFIX,$(EHC_VARIANT),$(EHC_VARIANT_TARGET)) \
 	      -I$(call FUN_INSTALLABS_VARIANT_INC_SHARED_PREFIX,$(EHC_VARIANT)) \
 		    $(foreach pkg,$(EHC_PACKAGES_ASSUMED),-I$(EHCLIB_SRC_PREFIX)$(pkg)/include/) \
 	        $(foreach pkg,$(EHC_PACKAGES_ASSUMED),-I$(call FUN_MK_PKG_INC_DIR,$(call FUN_INSTALL_PKG_PREFIX,$(call FUN_PKG_VERSIONED,$(pkg))))) \
-		  -o $(@:.hs=_hsc_make) \
-		  $(@:.hs=_hsc_make.c) \
-	&& $(@:.hs=_hsc_make) > $@ \
-	&& rm -f $(@:.hs=_hsc_make.c) \
+		$< \
 	&& touch $@
 
 # generate shell script for mapping package names

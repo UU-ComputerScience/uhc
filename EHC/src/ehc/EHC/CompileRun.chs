@@ -172,7 +172,7 @@ emptyEHCompileRunStateInfo
 
 %%[(50 codegen) export(crsiExpNmOffMp)
 crsiExpNmOffMp :: HsName -> EHCompileRunStateInfo -> Core.HsName2OffsetMp
-crsiExpNmOffMp modNm crsi = mmiNmOffMp $ panicJust "crsiExpNmOffMp" $ Map.lookup modNm $ crsiModMp crsi
+crsiExpNmOffMp modNm crsi = mmiNmOffMp $ panicJust ("crsiExpNmOffMp: " ++ show modNm) $ Map.lookup modNm $ crsiModMp crsi
 %%]
 
 %%[50
@@ -385,8 +385,10 @@ crPartitionNewerOlderImports modNm cr
   where ecu = crCU modNm cr
         t   = panicJust "crPartitionNewerOlderImports1" $ ecuMbHIInfoTime ecu
         isNewer ecu'
-            = t' `diffClockTimes` t > noTimeDiff
+            | isJust mbt = t' `diffClockTimes` t > noTimeDiff
+            | otherwise  = False
             where t' = panicJust "crPartitionNewerOlderImports2" $ ecuMbHIInfoTime ecu'
+                  mbt = ecuMbHIInfoTime ecu'
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -1377,14 +1377,14 @@ WWW home page:
 %\CopyrightYear{2009}
 %\copyrightdata{978-1-60558-508-6/09/09}
 
-\title{JavaScript (worktitle)}
+\title{Building JavaScript applications with Haskell\\(Experience Report)}
 %if acm && useSigplanconfSty
 \authorinfo{Atze Dijkstra \and Jurri\"en Stutterheim \and Alessandro Vermeulen \and S.~Doaitse Swierstra}
   {Department of Information and Computing Sciences \\
    Universiteit Utrecht \\
    P.O.Box 80.089, 3508 TB Utrecht, The Netherlands
   }
-  {atze@@uu.nl, j.stutterheim@@me.com, a.vermeulen@@students.uu.nl, doaitse@@uu.nl}
+  {atze@@uu.nl, j.stutterheim@@uu.nl, a.vermeulen@@uu.nl, doaitse@@uu.nl}
 %endif
 
 %%@TopicJavaScript.prelude
@@ -2405,9 +2405,9 @@ and pointing out where and why we differ from the `standard' \cite{stuckey02theo
 
 %%@TopicJavaScript.introduction
 
-\section{The web application}
+% \section{The web application}
 
-%%@TopicJavaScript.JuniorCollegeApp
+% %%@TopicJavaScript.JuniorCollegeApp
 
 \section{Compiling Haskell to JavasScript}
 

@@ -31,13 +31,15 @@ Module analysis
 
 %%[50 export(cpCheckMods')
 cpCheckMods' :: [Mod] -> EHCompilePhase ()
-cpCheckMods' modL
+cpCheckMods' modL@(Mod {modName = modNm} : _)
   = do { cr <- get
        ; let crsi   = crStateInfo cr
              (mm,e) = modMpCombine modL (crsiModMp crsi)
 %%[[50
        ; when (ehcOptVerbosity (crsiOpts crsi) >= VerboseDebug)
-              (lift $ putWidthPPLn 120 (pp (head modL) >-< ppModMp mm)) -- debug
+              (do { cpMsg modNm VerboseDebug "cpCheckMods'"
+                  ; lift $ putWidthPPLn 120 (pp (head modL) >-< ppModMp mm) -- debug
+                  })
 %%][99
 %%]]
        ; cpUpdSI (\crsi -> crsi {crsiModMp = mm})
@@ -76,12 +78,11 @@ allGetMeta = [GetMeta_HS, GetMeta_HI, GetMeta_Core, GetMeta_Grin, GetMeta_Dir]
 cpGetHsImports :: HsName -> EHCompilePhase HsName
 cpGetHsImports modNm
   =  do  {  cr <- get
-         ;  let  ecu        = crCU modNm cr
+         ;  let  (ecu,_,opts,_) = crBaseInfo modNm cr
                  mbHsSemMod = ecuMbHSSemMod ecu
                  hsSemMod   = panicJust "cpGetHsImports" mbHsSemMod
                  modNm'     = HSSemMod.realModuleNm_Syn_AGItf hsSemMod
                  upd        = ecuStoreHSDeclImpS (HSSemMod.modImpNmS_Syn_AGItf hsSemMod)
-         -- ; lift $ putWidthPPLn 120 (pp mod)
          ;  case mbHsSemMod of
               Just _ | ecuIsTopMod ecu -> cpUpdCUWithKey modNm (\_ ecu -> (modNm', upd $ cuUpdKey modNm' ecu))
                      | otherwise       -> do cpUpdCU modNm upd ; return modNm
@@ -91,13 +92,16 @@ cpGetHsImports modNm
 cpGetHsMod :: HsName -> EHCompilePhase ()
 cpGetHsMod modNm
   =  do  {  cr <- get
-         ;  let  ecu        = crCU modNm cr
+         ;  let  (ecu,_,opts,_) = crBaseInfo modNm cr
                  mbHsSemMod = ecuMbHSSemMod ecu
                  hsSemMod   = panicJust "cpGetHsMod" mbHsSemMod
                  mod        = HSSemMod.mod_Syn_AGItf hsSemMod
+         ;  when (ehcOptVerbosity opts >= VerboseDebug)
+                 (do { cpMsg modNm VerboseDebug "cpGetHsMod"
+                     ; lift $ putWidthPPLn 120 (pp mod)
+                     })
          ;  when (isJust mbHsSemMod)
                  (cpUpdCU modNm (ecuStoreMod mod))
-         -- ; lift $ putWidthPPLn 120 (pp mod)
          }
 
 cpGetMetaInfo :: [GetMeta] -> HsName -> EHCompilePhase ()
