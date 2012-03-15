@@ -69,6 +69,9 @@ function _e_( x ) {
       x_ = x_next ;
     }
   }
+  if (Array.isArray(x)) {
+    x = x.map(_e_);
+  }
 %%[[8
   ++evalCounter ;
   trace( "< _e_", x ) ;
