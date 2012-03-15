@@ -68,9 +68,9 @@ function _e_( x ) {
       x_.__eOrV__ = x ;
       x_ = x_next ;
     }
-  }
-  if (Array.isArray(x)) {
-    x = x.map(_e_);
+    if (Array.isArray(x)) {
+      x = x.map(_e_);
+    }
   }
 %%[[8
   ++evalCounter ;
