@@ -173,7 +173,7 @@ primNewArray = function(len,x) {
 	return a ;
 }
 primIndexArray = function(a,i) { return a[i] ; }
-primWriteArray = function(a,i,x) { a[i] = x ; return [] ; }
+primWriteArray = function(a,i,x) { a[i] = _e_(x); return [] ; }
 primSameArray = function(x,y) { return PrimMkBool(x===y) ; }
 %%]
 
