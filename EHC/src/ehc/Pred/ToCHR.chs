@@ -228,7 +228,7 @@ mkScopedCHR2 env clsDecls insts prevStore
          instSimplStore
          			 = chrStoreUnions $ instStore : simplStores
          canonInsts  = [ (map mkC cx, mkC hd, info, sc) | (cx,hd,info,sc) <- insts ]
-                     where mkC = fst . predCanonic env
+                     where mkC = fst . predCanonic (emptyTyBetaRedEnv {tbredFI=env})
 %%]
 
 %%[(9 hmtyinfer)

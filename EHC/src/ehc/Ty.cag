@@ -1385,6 +1385,14 @@ tyDecomposeMk t
                               (t2,as,mk2) = tyDecomposeMk    t1
 %%]
 
+%%[(11 hmtyinfer || hmtyast) hs export(tyRecMap)
+-- | Map 'f' over fields of record
+tyRecMap :: (Ty -> Ty) -> Ty -> Ty
+tyRecMap f r
+  = mk rem (map f fs)
+  where (rem,fs,mk) = tyDecomposeMk r
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Canonical ordering of fields of record
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

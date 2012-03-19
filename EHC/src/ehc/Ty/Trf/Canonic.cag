@@ -54,6 +54,8 @@ Currently (20090821) only empty implicits \verb@Impls_Tail@ are replaced by
 %%]
 %%[(98 hmtyinfer) hs import({%{EH}Base.Builtin})
 %%]
+%%[(98 hmtyinfer) hs import(Control.Applicative)
+%%]
 
 -- for debug
 %%[(90 hmtyinfer) hs import(EH.Util.Debug,EH.Util.Pretty)
@@ -76,11 +78,20 @@ PRAGMA strictcase
 type TyCanonicOut' x = (x,VarMp)
 type TyCanonicOut    = TyCanonicOut' Ty
 
+mkCanonicOut = (,)
+
 mkDfltTyCanonicOut :: x -> TyCanonicOut' x
 mkDfltTyCanonicOut x = (x,emptyVarMp)
+
+-- emptyTyBetaRedOut = (Ty_Any,emptyVarMp)
+
+tbroutRes = fst
+tbroutVarMp = snd
 %%][11
 type TyCanonicOut' x = TyBetaRedOut' x
 type TyCanonicOut    = TyBetaRedOut
+
+mkCanonicOut x y = emptyTyBetaRedOut {tbroutRes = x, tbroutVarMp = y}
 
 mkDfltTyCanonicOut :: x -> TyCanonicOut' x
 mkDfltTyCanonicOut = mkDfltTyBetaRedOut
@@ -113,7 +124,7 @@ tcoTyBetaRedFull tco ty = maybe (mkDfltTyCanonicOut ty) id $ tcoTyBetaRedFullMb 
 tyCanonic' :: TyCanonicOpts -> Ty -> TyCanonicOut
 tyCanonic' opts ty
   =  let  t =  wrap_TyAGItf (sem_TyAGItf (TyAGItf_AGItf ty)) Inh_TyAGItf
-     in   (repl_Syn_TyAGItf t,varMp_Syn_TyAGItf t)
+     in   mkCanonicOut (repl_Syn_TyAGItf t) (varMp_Syn_TyAGItf t)
 %%]
 
 %%[(11 hmtyinfer) -9.tyCanonicPrime hs export(tyCanonic')
@@ -125,7 +136,7 @@ tyCanonicMb' opts ty
                    { opts_Inh_TyAGItf = opts
                    }
                  )
-     in   if isReplaced_Syn_TyAGItf t then Just (repl_Syn_TyAGItf t,varMp_Syn_TyAGItf t) else Nothing
+     in   if isReplaced_Syn_TyAGItf t then Just (mkCanonicOut (repl_Syn_TyAGItf t) (varMp_Syn_TyAGItf t)) else Nothing
 
 tyCanonic' :: TyCanonicOpts -> Ty -> TyCanonicOut
 tyCanonic' opts ty = maybe (mkDfltTyCanonicOut ty) id $ tyCanonicMb' opts ty
@@ -151,56 +162,71 @@ predCanonic' opts (Pred_Eq t1 t2)
 %%]]
 predCanonic' opts pr
   = case tyCanonicMb' opts $ mkTyPr pr of
-      Just (Ty_Pred pr',m) -> (pr', m)
-      _                    -> mkDfltTyCanonicOut pr
+      -- Just (Ty_Pred pr',m) -> (pr', m)
+      Just (r@(TyBetaRedOut {tbroutRes = Ty_Pred pr'})) -> (pr', tbroutVarMp r) 
+      _                    -> (pr, emptyVarMp) 
 %%]
 
 %%[(9 hmtyinfer) hs export(tyCanonic)
 tyCanonic
   :: (VarLookup gm TyVarId VarMpInfo, VarLookupCmb VarMp gm)
-     => FIIn' gm -> Ty
+     => TyBetaRedEnv gm -> Ty
      -> Ty
 tyCanonic fi
-  = fst . tyCanonic' opts
+  = tbroutRes . tyCanonic' opts
   where opts = emptyTyCanonicOpts
 %%[[11
                   {tcoTyBetaRedFullMb = tyBetaRedFullMb fi canonLkupTy (tyCanonicMb' opts)}
+%%]]
+%%]
+
+%%[(9 hmtyinfer) hs export(tyCanonicFFI')
+tyCanonicFFI'
+  :: (VarLookup gm TyVarId VarMpInfo, VarLookupCmb VarMp gm)
+     => Bool			-- expand newtypes
+     -> TyBetaRedEnv gm 
+     -> Ty
+     -> Ty
+tyCanonicFFI' expNewtype renv
+  = tbroutRes . tyCanonic' opts
+  where opts = emptyTyCanonicOpts
+%%[[11
+                  {tcoTyBetaRedFullMb = tyBetaRedFullMb renv canonLkupTy' (tyCanonicMb' opts)}
+%%]]
+%%[[11
+        canonLkupTy' = canonLkupTy
+%%][98
+        canonLkupTy' renv nm = -- tr "tyCanonicFFI" (pp nm) $ 
+                             newtypeLamLkup <|> canonLkupTy renv nm
+                     where newtypeLamLkup | not expNewtype = Nothing
+                                          | ehcOptBuiltin ehcopts ehbnIO == nm
+                                                           = Nothing
+                                          | otherwise      = fmap mkDfltTyCanonicOut (dgiMbNewtype $? dataGamLookup nm $ feDataGam fe)
+        fe      = fiEnv fi
+        fi      = tbredFI renv
+        ehcopts = feEHCOpts fe
 %%]]
 %%]
 
 %%[(9 hmtyinfer) hs export(tyCanonicFFI)
 tyCanonicFFI
   :: (VarLookup gm TyVarId VarMpInfo, VarLookupCmb VarMp gm)
-     => FIIn' gm -> Ty
+     => TyBetaRedEnv gm
      -> Ty
-tyCanonicFFI fi
-  = fst . tyCanonic' opts
-  where opts = emptyTyCanonicOpts
-%%[[11
-                  {tcoTyBetaRedFullMb = tyBetaRedFullMb fi canonLkupTy' (tyCanonicMb' opts)}
-%%]]
-%%[[11
-        canonLkupTy' = canonLkupTy
-%%][98
-        canonLkupTy' fi nm = newtypeLamLkup `orMb` canonLkupTy fi nm
-                     where newtypeLamLkup | ehcOptBuiltin ehcopts ehbnIO == nm
-                                                      = Nothing
-                                          | otherwise = dgiMbNewtype $? dataGamLookup nm $ feDataGam fe 
-        fe      = fiEnv fi
-        ehcopts = feEHCOpts fe
-%%]]
+     -> Ty
+tyCanonicFFI = tyCanonicFFI' False
 %%]
 
 %%[(9 hmtyinfer) hs export(predCanonic)
 predCanonic
   :: (VarLookup gm TyVarId VarMpInfo, VarLookupCmb VarMp gm)
-     => FIIn' gm -> Pred
+     => TyBetaRedEnv gm -> Pred
      -> (Pred,VarMp)
-predCanonic fi
+predCanonic renv
   = predCanonic' opts
   where opts = emptyTyCanonicOpts
 %%[[11
-                  {tcoTyBetaRedFullMb = tyBetaRedFullMb fi canonLkupTy (tyCanonicMb' opts)}
+                  {tcoTyBetaRedFullMb = tyBetaRedFullMb renv canonLkupTy (tyCanonicMb' opts)}
 %%]]
 %%]
 
@@ -318,7 +344,7 @@ SEM Ty
                                                     then let (row,exts) = tyRowExtsUnAnn $ tyRowExts @repl
                                                          in  if tyRowIsCanonOrdered exts
                                                              then Nothing
-                                                             else Just $ mkTyRow row $ tyRowCanonOrder exts
+                                                             else Just $ mkDfltTyCanonicOut $ mkTyRow row $ tyRowCanonOrder exts
                                                     else Nothing
 %%]
 
@@ -366,13 +392,18 @@ SEM Ty
 
 %%[(10 hmtyinfer)
 SEM Ty
-  | Ext             lhs     .   repl            =   maybe @repl id @mbRepl
+  | Ext             lhs     .   repl            =   maybe @repl tbroutRes @mbRepl
+%%]
+
+%%[(11 hmtyinfer) hs
+extr :: TyCanonicOut -> (Ty,VarMp)
+extr o = (tbroutRes o, tbroutVarMp o)
 %%]
 
 %%[(11 hmtyinfer)
 SEM Ty
-  | App             (lhs.repl,loc.replVarMp)    :=  maybe (mkDfltTyCanonicOut @replNoImplNil) id @mbRepl
-  | Con             (lhs.repl,loc.replVarMp)    =   maybe (mkDfltTyCanonicOut @repl) id @mbRepl
+  | App             (lhs.repl,loc.replVarMp)    :=  maybe (@replNoImplNil,emptyVarMp) extr @mbRepl
+  | Con             (lhs.repl,loc.replVarMp)    =   maybe (@repl,emptyVarMp) extr @mbRepl
 %%]
 
 

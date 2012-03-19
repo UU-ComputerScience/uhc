@@ -374,7 +374,7 @@ mkDerivClsMp fe valGam dataGam
           = (c', DerivCls c' flds extraCtxt)
           where c' = fn c
         mkf f mbMkPat as mbAsSubs omTl cAllMatch mbCNoArg cLT cGT wrap
-          = DerivClsFld f' (tyCanonic ((emptyFI {fiEnv = fe}) :: FIIn) t) mkPat as asSubs omTl cAllMatch cNoArg cLT cGT wrap
+          = DerivClsFld f' (tyCanonic (emptyTyBetaRedEnv' fe) t) mkPat as asSubs omTl cAllMatch cNoArg cLT cGT wrap
           where f' = fn f
                 (t,_) = valGamLookupTy f' valGam
                 mkPat  = maybe (const acorePatTagArityMbNms) id mbMkPat

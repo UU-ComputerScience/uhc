@@ -908,7 +908,7 @@ SEM TyExpr
                 loc     .  info_17  =   []
 
 SEM RecExpr
-  | Ext         loc     .  info_11  :=  [ -- mkInfo1 "foTy foKnRec (betared)" (pp (tyBetaRedFull (emptyFI {fiEnv = @fe} :: FIIn) (foVarMp @foKnRec `varUpd` @lhs.tyVarMp) $ foTy @foKnRec))
+  | Ext         loc     .  info_11  :=  [ -- mkInfo1 "foTy foKnRec (betared)" (pp (tyBetaRedFull (emptyTyBetaRedEnv' @fe) (foVarMp @foKnRec `varUpd` @lhs.tyVarMp) $ foTy @foKnRec))
                                         ]
 %%]
 
