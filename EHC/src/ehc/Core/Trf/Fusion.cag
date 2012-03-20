@@ -153,24 +153,29 @@ SEM CBind
         | Bind bindAspects.inFusibleFunc = @lhs.inFusibleFunc || isJust (Map.lookup @nm @gathFuseMp) 
                                                
 
-ATTR CodeAGItf AllCodeNT [ | | gathFuncMp USE {`Map.union`} {Map.empty} : FuncMp ]
 ATTR AllCodeNT [ funcMp : FuncMp | | ]
 
+SEM CodeAGItf
+        | AGItf module.funcMp = Map.empty
+{-
 ATTR CodeAGItf AllCodeNT [ | | funcS USE {`Set.union`} {Set.empty} : FuncS ]
 
-SEM CodeAGItf
-        | AGItf module.funcMp = @module.gathFuncMp
 
 SEM CExpr
         | Var lhs.funcS = if @lhs.inFusibleFunc
                           then trace ("Adding function " ++ show (acbrefNm @ref) ++ " to the funcS") $ Set.singleton (acbrefNm @ref)
                           else Set.empty 
-
+-}
 SEM CExpr 
-        | Let lhs.gathFuncMp = let funcMp = (Map.filterWithKey (\k _ -> Set.member k @body.funcS) @binds.gathFuncMp) in
-                                if @categ == acoreBindcategRec 
-                                then trace ("Recursive binding, discarding funcMp\n" ++ (show $ Map.keys funcMp)) $ Map.empty
-                                else funcMp `Map.union` @binds.gathFuncMp `Map.union` @body.gathFuncMp
+        | Let body.funcMp = if @categ == acoreBindcategRec 
+                            then @lhs.funcMp `Map.difference` @binds.gathFuncMp 
+                            else @binds.gathFuncMp `Map.union` @lhs.funcMp
+        | Let binds.funcMp = @lhs.funcMp    
+
+ATTR CBindL [ | | gathFuncMp USE {`Map.union`} {Map.empty} : FuncMp ]
+
+ATTR CBind [ | | gathFuncMp : FuncMp ]
+
 SEM CBind 
         | Bind lhs.gathFuncMp = if not (isNothing (Map.lookup @nm @lhs.convMp))
                                 then trace ("Not adding function " ++ show @nm ++ "because it was a conversion function") $ Map.empty          
