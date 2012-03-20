@@ -28,10 +28,8 @@ ATTR AllCodeNT [ || applied : SELF]
 SEM CExpr
         | App lhs.applied = @applied
         | App loc.applied = if @func.isFusible -- && @arg.isFusible
-                            then apply @func.applied @arg.rewritten -- inline this function application.  
-                                                                   -- We actually want the fused version of the arg, 
-                                                                   -- but this hasn't been defined yet
-                            else acoreApp1 @func.applied @arg.rewritten
+                            then apply @func.applied @arg.applied
+                            else acoreApp1 @func.applied @arg.applied
         | Var lhs.applied = if @isFusible 
                             then fromMaybe @applied (Map.lookup (acbrefNm @ref) @lhs.fuseMp)
                             else @applied
@@ -50,7 +48,7 @@ ATTR AllCodeNT [ | | inlined : SELF   ]
  
 SEM CExpr 
        | App lhs.inlined = if @func.isFusible -- || @lhs.inFusibleFunc
-                           then trace ("Calling inline with funcMp " ++ (show $ Map.keys @lhs.funcMp)) $ inline @lhs.funcMp @loc.rewritten
+                           then trace ("Calling inline with funcMp " ++ (show $ Map.keys @lhs.funcMp)) $ inline @lhs.funcMp @lhs.convMp @loc.rewritten
                            else acoreApp1 @func.inlined @arg.rewritten 
 ------------------------------------------------------------------------------
 -- Tests to see if a function is fusible.  A @func of an App is fusible if it 
@@ -73,6 +71,8 @@ SEM CExpr
 ------------------------------------------------------------------------------
 -- Gather the names of conversions and their role into a Map 
 ------------------------------------------------------------------------------
+
+ATTR AllCodeNT [ | | original : SELF]
 
 ATTR AllCodeNT [ convMp : ConvMp | | ]
 
@@ -135,7 +135,7 @@ ATTR CBindAspectL [ || gathExpr USE {++} {[]} : {[CExpr]} ] -- this should just 
 ATTR CBindAspect [ || gathExpr USE {++} {[]} : {[CExpr]}]
 
 SEM CBindAspect
-        | Bind lhs.gathExpr = [@expr.rewritten] -- The fuseMap holds the result of any inlining done to this code instead of the original
+        | Bind lhs.gathExpr = [@expr.original] 
 
 
 -------------------------------------------------------------------------------
