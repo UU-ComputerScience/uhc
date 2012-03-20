@@ -1349,37 +1349,41 @@ mkIdDefEH def
 %%]
 
 %%[1.mergeFunDefL hs
-mergeFunDefL :: [IdDefOcc] -> ([IdDefOcc],[Err])
-mergeFunDefL ds
+mergeFunDefL :: Range -> [IdDefOcc] -> ([IdDefOcc],[Err])
+mergeFunDefL r ds
   = case ds of
       [_] -> (ds,[])
       (d:_:_)
-          -> ([d],[rngLift emptyRange Err_NamesDupIntrod "value" [(ioccNm $ doccOcc $ d,Nothing)]])
+          -> ([d],[rngLift r Err_NamesDupIntrod "value" [(ioccNm $ doccOcc d,Nothing)]])
       _   -> ([],[])
 %%]
 
 %%[5 -1.mergeFunDefL hs
-mergeFunDefL :: [IdDefOcc] -> ([IdDefOcc],[Err])
-mergeFunDefL ds
+mergeFunDefL :: Range -> [IdDefOcc] -> ([IdDefOcc],[Err])
+mergeFunDefL _ ds
   = case ds of
       [_] -> (ds,[])
       (od : _ : _) | iaspIsFun (doccAsp od)
-          -> ([d],[])
+          -> ([d],e)
           where (IdAsp_Val_Fun (patf:pats1) _ uniq) = doccAsp od
                 xSz   = length pats1
                 xNmL  = [ mkHNm ("x" ++ show i) | i <- [1..xSz] ]
-                xPatL = map (rngLift (doccRange od) EH.PatExpr_Var) xNmL
+                xPatL = map (rngLift r EH.PatExpr_Var) xNmL
                 b = EH.mkCase'
-                      (doccRange od) (mkRngProdOpt (doccRange od) $ map (rngLift (doccRange od) EH.Expr_Var) $ xNmL)
+                      r (mkRngProdOpt r $ map (rngLift r EH.Expr_Var) $ xNmL)
 %%[[8
                       (Just $ Set.fromList $ map (iaspUniq . doccAsp) ds)
                       Set.empty
                       (length xNmL > 1)
 %%]]
-                    $ zipWith (EH.mkAlt (doccRange od))
-                       [ mkRngProdOpt (doccRange od) $ tail $ iaspPatL $ doccAsp $ d | d <- ds ]
+                    $ zipWith (EH.mkAlt r)
+                       [ mkRngProdOpt r $ tail $ iaspPatL $ doccAsp d | d <- ds ]
                        [ iaspBody $ doccAsp $ d | d <- ds ]
-                d = mkIdDefOcc (doccOcc od) (IdAsp_Val_Fun (patf:xPatL) b uniq) 0 (doccRange od)
+                d = mkIdDefOcc (doccOcc od) (IdAsp_Val_Fun (patf:xPatL) b uniq) 0 r
+                e | length patLens > 1 = [rngLift r Err_FunPatternLengths (ioccNm $ doccOcc od)]
+                  | otherwise          = []
+                  where patLens = Set.toList $ Set.fromList [ length $ iaspPatL $ doccAsp d | d <- ds ]
+                r = rangeUnions [ doccRange d | d <- ds ]
       _   -> ([],[])
 %%]
 
@@ -1401,21 +1405,21 @@ splitOff
 idOcc2Defs :: IdDefOccGam -> IdOcc -> [IdDefOcc]
 idOcc2Defs idDefOccGam occ = maybe [] id $ gamLookupDup occ idDefOccGam
 
-mkIdOccEH :: [IdDefOcc] -> ([EH.Decl],[Err])
-mkIdOccEH defs
+mkIdOccEH :: Range -> [IdDefOcc] -> ([EH.Decl],[Err])
+mkIdOccEH r defs
   = case defs of
       (_:_)
         -> (concatMap mkIdDefEH (otherDefs ++ funDef),errL)
         where (funDefs,otherDefs) = partition (iaspIsFun . doccAsp) defs
-              (funDef,errL) = mergeFunDefL funDefs
+              (funDef,errL) = mergeFunDefL r funDefs
       _ -> ([],[])
 %%]
 
 %%[1.idDefOccs2Decls hs
-idDefOccs2Decls :: [[IdDefOcc]] -> ([[EH.Decl]],[Err])
-idDefOccs2Decls docss
+idDefOccs2Decls :: Range -> [[IdDefOcc]] -> ([[EH.Decl]],[Err])
+idDefOccs2Decls r docss
   = ([concat ds], concat es)
-  where (ds,es) = unzip $ map mkIdOccEH $ docss
+  where (ds,es) = unzip $ map (mkIdOccEH r) $ docss
 %%]
 
 %%[1.mkIdOccSccEH hs
@@ -1429,13 +1433,13 @@ mkIdOccSccEH r isStrict g moss
   where (m,d,e) = foldr mkl (id,[],[]) doss
         mkl dos (mke,d,e)
           = ((\e -> foldr mkLet e dss) . mke,dss ++ d, es ++ e)
-          where (dss,es) = idDefOccs2Decls dos
+          where (dss,es) = idDefOccs2Decls r dos
 %%[[1
         mkLet ds = EH.mkLet r (Just ds)
 %%][8
         mkLet ds = EH.mkLet' isStrict r (Just ds)
 %%]]
-        (sds,ses) = idDefOccs2Decls $ concat $ spls
+        (sds,ses) = idDefOccs2Decls r $ concat $ spls
         (doss:spls:_)
           = collapse
               [ collapse [ splitOff $ idOcc2Defs g $ l | l <- ll ]

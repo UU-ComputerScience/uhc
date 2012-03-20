@@ -33,8 +33,10 @@ For debug/trace:
 %%[(11 hmtyinfer) export(TyBetaRedOut,mkDfltTyBetaRedOut,TyBetaRedOut'(..))
 data TyBetaRedOut' x
   = TyBetaRedOut
-      { tbroutRes		:: x
-      , tbroutVarMp		:: VarMp
+      { tbroutRes			:: x
+      , tbroutVarMp			:: VarMp
+      , tbroutTracePPL		:: [PP_Doc]
+      , tbroutExpandedTo	:: Maybe TyBetaRedLookAheadExpansion	-- 1 expansion step lookahead type function + args
       }
 
 type TyBetaRedOut    = TyBetaRedOut' Ty
@@ -45,7 +47,7 @@ mkDfltTyBetaRedOut = emptyTyBetaRedOut'
 
 %%[(11 hmtyinfer) export(emptyTyBetaRedOut',emptyTyBetaRedOut)
 emptyTyBetaRedOut' :: x -> TyBetaRedOut' x
-emptyTyBetaRedOut' x = TyBetaRedOut x emptyVarMp
+emptyTyBetaRedOut' x = TyBetaRedOut x emptyVarMp [] Nothing
 
 emptyTyBetaRedOut :: TyBetaRedOut' Ty
 emptyTyBetaRedOut = emptyTyBetaRedOut' Ty_Any
@@ -55,7 +57,7 @@ emptyTyBetaRedOut = emptyTyBetaRedOut' Ty_Any
 %%% Beta reduction extra info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(11 hmtyinfer) export(TyBetaRedExtra(..), emptyTyBetaRedExtra)
+%%[(11 hmtyinfer)
 -- | expansion lookahead info
 type TyBetaRedLookAheadExpansion
   = ( Ty							-- type function
@@ -63,15 +65,6 @@ type TyBetaRedLookAheadExpansion
     , Maybe TyBetaRedOut			-- function in ty looked up as if it were to be used for expansion
     )
 
--- | extra result info from betared
-data TyBetaRedExtra
-  = TyBetaRedExtra
-      { tybetaredextraTracePPL		:: [PP_Doc]
-      , tybetaredextraExpandedTo	:: Maybe TyBetaRedLookAheadExpansion	-- 1 expansion step lookahead type function + args
-      }
-
-emptyTyBetaRedExtra :: TyBetaRedExtra
-emptyTyBetaRedExtra = TyBetaRedExtra [] Nothing
 %%]
 
 20100922 AD; Note: it is somewhat a mystery why this is not symmetric but IOBase will fail compilation.
@@ -80,10 +73,10 @@ So, for now, it therefore is somewhat a hack...
 %%[(11 hmtyinfer) export(betaRedIsOkFitsinCombi)
 -- | check for a valid combi using lookahead info of next expansion.
 --   Basically prevent synonyms and lambdas from being bound, but forced to be expanded
-betaRedIsOkFitsinCombi :: (Ty -> Bool) -> TyBetaRedExtra -> TyBetaRedExtra -> Bool
+betaRedIsOkFitsinCombi :: (Ty -> Bool) -> TyBetaRedOut -> TyBetaRedOut -> Bool
 betaRedIsOkFitsinCombi isBoundable
-                       (TyBetaRedExtra {tybetaredextraExpandedTo = Just (fl,al,_    )})		-- a tvar
-                       (TyBetaRedExtra {tybetaredextraExpandedTo = Just (fr,ar,mbExp)})		-- cannot be bound/matched against non expanded synonym/lambda
+                       (TyBetaRedOut {tbroutExpandedTo = Just (fl,al,_    )})		-- a tvar
+                       (TyBetaRedOut {tbroutExpandedTo = Just (fr,ar,mbExp)})		-- cannot be bound/matched against non expanded synonym/lambda
                        | isBoundable fl && not (null ar || null al) && (tyIsLam fr || isJust mbExp)
                        = False
 {-
@@ -135,7 +128,7 @@ betaRedTyLookAhead renv lkup ty
 tyBetaRed1
   :: (VarLookup gm TyVarId VarMpInfo, VarLookupCmb VarMp gm)
      => TyBetaRedEnv gm -> TyBetaRedLkup gm -> Either Ty TyBetaRedLookAheadExpansion
-     -> Maybe (TyBetaRedOut,TyBetaRedExtra)
+     -> Maybe TyBetaRedOut
 tyBetaRed1 renv lkup tyOrFunAndArgs
   = eval (either (betaRedTyLookAhead renv lkup) id tyOrFunAndArgs)
   where -- lambda expression: take body and substitute arguments
@@ -171,10 +164,9 @@ tyBetaRed1 renv lkup tyOrFunAndArgs
         eval _ = Nothing
 
         -- utils
-        mkres t  = Just ( emptyTyBetaRedOut' t
-                        , emptyTyBetaRedExtra
-                            { tybetaredextraExpandedTo = Just $ betaRedTyLookAhead renv lkup t
-                            , tybetaredextraTracePPL   = [trfitIn "tylam" ("from:" >#< ppTyWithFI fi (pack tyOrFunAndArgs) >-< "to  :" >#< ppTyWithFI fi t)]
+        mkres t  = Just ( (emptyTyBetaRedOut' t)
+                            { tbroutExpandedTo = Just $ betaRedTyLookAhead renv lkup t
+                            , tbroutTracePPL   = [trfitIn "tylam" ("from:" >#< ppTyWithFI fi (pack tyOrFunAndArgs) >-< "to  :" >#< ppTyWithFI fi t)]
                             }
                         )
         pack = either id (\(f,as,_) -> mkApp (f:as))
@@ -185,24 +177,24 @@ tyBetaRed1 renv lkup tyOrFunAndArgs
 tyBetaRed'
   :: (VarLookup gm TyVarId VarMpInfo, VarLookupCmb VarMp gm)
      => TyBetaRedEnv gm -> TyBetaRedLkup gm -> Either Ty TyBetaRedLookAheadExpansion
-     -> [(TyBetaRedOut,TyBetaRedExtra)]
+     -> [TyBetaRedOut]
 tyBetaRed' renv lkup tyOrFunArgs
   = case tyBetaRed1 renv lkup tyOrFunArgs of
-      Just (tf@(re,e)) -> tf : tyBetaRed' renv lkup (maybe (Left (tbroutRes re)) Right $ tybetaredextraExpandedTo e)
-      _              -> []
+      Just re -> re : tyBetaRed' renv lkup (maybe (Left (tbroutRes re)) Right $ tbroutExpandedTo re)
+      _       -> []
 
 tyBetaRed
   :: (VarLookup gm TyVarId VarMpInfo, VarLookupCmb VarMp gm)
      => TyBetaRedEnv gm -> TyBetaRedLkup gm -> Ty
-     -> [(TyBetaRedOut,TyBetaRedExtra)]
+     -> [TyBetaRedOut]
 tyBetaRed renv lkup ty = tyBetaRed' renv lkup (Left ty)
 
 tyBetaRedAndInit
   :: (VarLookup gm TyVarId VarMpInfo, VarLookupCmb VarMp gm)
      => TyBetaRedEnv gm -> TyBetaRedLkup gm -> Ty
-     -> [(TyBetaRedOut,TyBetaRedExtra)]
+     -> [TyBetaRedOut]
 tyBetaRedAndInit renv lkup ty
-  = (emptyTyBetaRedOut' ty, emptyTyBetaRedExtra {tybetaredextraExpandedTo = Just l}) : tyBetaRed' renv lkup (Right l)
+  = ((emptyTyBetaRedOut' ty) {tbroutExpandedTo = Just l}) : tyBetaRed' renv lkup (Right l)
   where l = betaRedTyLookAhead renv lkup ty
 %%]
 
@@ -220,7 +212,7 @@ tyBetaRedFullMb renv lkup redSub ty
   = fmap reda $ choose ty $ redl ty
   where env = fiEnv $ tbredFI renv
         lim     = ehcOptTyBetaRedCutOffAt $ feEHCOpts env
-        redl ty = take lim $ map fst $ tyBetaRed renv lkup ty
+        redl ty = take lim $ tyBetaRed renv lkup ty
         reda re = if null (catMaybes as')
                   then mkDfltTyBetaRedOut ty
                   else let as'' = zipWith (\t mt -> maybe (mkDfltTyBetaRedOut t) id mt) as as'

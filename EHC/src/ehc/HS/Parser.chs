@@ -381,21 +381,22 @@ pBody' opts addDecl
 %%]]
                 pLhsTail ::  HSParser [Pattern]
                 pLhsTail =   pList1 pPatternBaseCon
-                pLhs     ::  HSParser LeftHandSide
-                pLhs     =   mkRngNm LeftHandSide_Function <$> var <*> pLhsTail
+                pLhs     ::  HSParser (Range,LeftHandSide)
+                pLhs     =   (\v lhs -> let r = mkRange1 v in (r, LeftHandSide_Function r (tokMkQName v) lhs)) <$> var <*> pLhsTail
                          <|> pParens'
-                               (   (\l r t -> mkLP r l t)
+                               (   (\l r t -> (r, mkLP r l t))
                                    <$> pLhs
-                               <|> (\pl o pr r t -> mkLP r (mkLI pl o pr) t)
+                               <|> (\pl o pr r t -> (r, mkLP r (mkLI pl o pr) t))
                                    <$> pPatternOp <*> varop <*> pPatternOp
                                )
                              <*> pLhsTail
                 mkP  p     rhs = Declaration_PatternBinding emptyRange (p2p p) rhs'
                                where (p2p,rhs') = mkTyPat rhs
-                mkF  lhs   rhs = Declaration_FunctionBindings emptyRange [FunctionBinding_FunctionBinding emptyRange (l2l lhs) rhs']
+                mkF (r,lhs) rhs= Declaration_FunctionBindings r [FunctionBinding_FunctionBinding r (l2l lhs) rhs']
                                where (l2l,rhs') = mkTyLhs rhs
-                mkLI l o r     = LeftHandSide_Infix (mkRange1 o) l (tokMkQName o) r
-                mkLP r l t     = LeftHandSide_Parenthesized r l t
+                mkLI l o rh    = (r, LeftHandSide_Infix r l (tokMkQName o) rh)
+                               where r = mkRange1 o
+                mkLP r (_,l) t = LeftHandSide_Parenthesized r l t
 %%[[1
                 rhs         =   pRhs pEQUAL
                 mkTyLhs rhs = (id,rhs)

@@ -993,10 +993,10 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
               = case filter (not . foHasErrs) tries of
                   (fo:_) -> fo
                   _      -> case (drop limit rt1, drop limit rt2, tries) of
-                              (((t,tr):_),_         ,_       ) -> err (trfiAdd (tybetaredextraTracePPL tr) fi2) [rngLift range Err_TyBetaRedLimit (fiAppVarMp fi2 t1) (fiAppVarMp fi2 (tbroutRes t)) limit]
-                              (_         ,((t,tr):_),_       ) -> err (trfiAdd (tybetaredextraTracePPL tr) fi2) [rngLift range Err_TyBetaRedLimit (fiAppVarMp fi2 t2) (fiAppVarMp fi2 (tbroutRes t)) limit]
-                              (_         ,_         ,ts@(_:_)) -> last ts
-                              (_         ,_         ,_       ) -> errClash fi2 t1 t2
+                              ((t:_),_    ,_       ) -> err (trfiAdd (tbroutTracePPL t) fi2) [rngLift range Err_TyBetaRedLimit (fiAppVarMp fi2 t1) (fiAppVarMp fi2 (tbroutRes t)) limit]
+                              (_    ,(t:_),_       ) -> err (trfiAdd (tbroutTracePPL t) fi2) [rngLift range Err_TyBetaRedLimit (fiAppVarMp fi2 t2) (fiAppVarMp fi2 (tbroutRes t)) limit]
+                              (_    ,_    ,ts@(_:_)) -> last ts
+                              (_    ,_    ,_       ) -> errClash fi2 t1 t2
               where limit = ehcOptTyBetaRedCutOffAt globOpts
 %%[[11
                     fi2   = trfi "fTySyn" ("t1:" >#< ppTyWithFI fi t1 >-< "t2:" >#< ppTyWithFI fi t2) fi
@@ -1007,14 +1007,14 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                     rt2   = tyBetaRedAndInit (emptyTyBetaRedEnv {tbredFI=fi2}) betaRedTyLookup t2
                     tries = take (limit+1) $ try fi2 (rt1) (rt2)
                           where -- get the pairwise fitsIn of further and further expanded synonyms
-                                try fi ((t1,tr1):ts1@(_:_)) ((t2,tr2):ts2@(_:_)) = (ok tr1 tr2 $ fBase fi' updTy (tbroutRes t1) (tbroutRes t2)) ++ try fi' ts1 ts2
-                                                                                 where fi' = trfiAdd (tybetaredextraTracePPL tr1) $ trfiAdd (tybetaredextraTracePPL tr2) fi
-                                try fi ts1@[(t1,tr1)]       ((t2,tr2):ts2@(_:_)) = (ok tr1 tr2 $ fBase fi' updTy (tbroutRes t1) (tbroutRes t2)) ++ try fi' ts1 ts2
-                                                                                 where fi' = trfiAdd (tybetaredextraTracePPL tr2) fi
-                                try fi ((t1,tr1):ts1@(_:_)) ts2@[(t2,tr2)]       = (ok tr1 tr2 $ fBase fi' updTy (tbroutRes t1) (tbroutRes t2)) ++ try fi' ts1 ts2
-                                                                                 where fi' = trfiAdd (tybetaredextraTracePPL tr1) fi
-                                try fi [(t1,tr1)]           [(t2,tr2)]           =  ok tr1 tr2 $ fBase fi' updTy (tbroutRes t1) (tbroutRes t2)
-                                                                                 where fi' = fi
+                                try fi (t1:ts1@(_:_)) (t2:ts2@(_:_)) = (ok t1 t2 $ fBase fi' updTy (tbroutRes t1) (tbroutRes t2)) ++ try fi' ts1 ts2
+                                                                     where fi' = trfiAdd (tbroutTracePPL t1) $ trfiAdd (tbroutTracePPL t2) fi
+                                try fi ts1@[t1]       (t2:ts2@(_:_)) = (ok t1 t2 $ fBase fi' updTy (tbroutRes t1) (tbroutRes t2)) ++ try fi' ts1 ts2
+                                                                     where fi' = trfiAdd (tbroutTracePPL t2) fi
+                                try fi (t1:ts1@(_:_)) ts2@[t2]       = (ok t1 t2 $ fBase fi' updTy (tbroutRes t1) (tbroutRes t2)) ++ try fi' ts1 ts2
+                                                                     where fi' = trfiAdd (tbroutTracePPL t1) fi
+                                try fi [t1]           [t2]           =  ok t1 t2 $ fBase fi' updTy (tbroutRes t1) (tbroutRes t2)
+                                                                     where fi' = fi
                                 -- check for a valid combi using lookahead info of next expansion
                                 ok e1 e2 f | betaRedIsOkFitsinCombi (fiAllowTyVarBind fi)
                                                                     e1 e2 = [f]
