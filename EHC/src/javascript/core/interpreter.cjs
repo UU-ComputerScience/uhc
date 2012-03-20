@@ -31,7 +31,7 @@ function _e_( x ) {
   if (evaluatable(x)) {
     var x_ = x ;
     do {
-      if ( typeof x.__eOrV__ == 'function' ) {
+      if ( typeof x.__eOrV__ == 'function' && !x.fe ) {
 %%[[8
         trace( ">> _e_()", typeof x + "/" + typeof x.__eOrV__ + ":" + x ) ;
 %%][100
@@ -66,6 +66,7 @@ function _e_( x ) {
     while (evaluatable(x_)) {
       var x_next = x_.__eOrV__ ;
       x_.__eOrV__ = x ;
+      x_.fe = true ;
       x_ = x_next ;
     }
   }
@@ -167,6 +168,7 @@ function _A_( fun, args ) {
 %%[[8
   this.fun = fun ;
   this.args = args ;
+  this.fe = false;
   this.nodeId = ++nodeCounter ;
 %%][100
 %%]]
