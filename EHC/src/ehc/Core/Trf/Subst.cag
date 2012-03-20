@@ -6,8 +6,8 @@
 {
 
 apply :: CExpr -> CExpr -> CExpr
-apply (CExpr_Lam nm body) arg = cexprSubst nm body arg
-apply func                arg = trace "tried to inline a non-Lambda expression" $ acoreApp1 func arg -- this shouldn't happen, but don't want to cause a crash
+apply (CExpr_Lam nm body) arg = cexprSubst nm body arg -- perform a beta reduction
+apply func                arg = trace ("tried to inline a non-Lambda expression " ++ show func) $ acoreApp1 func arg -- cannot perform a beta reduction
 
 cexprSubst :: HsName -> CExpr -> CExpr -> CExpr
 cexprSubst nm body arg = 
@@ -27,11 +27,4 @@ SEM CExpr
         | Var lhs.substd = if (acbrefNm @ref) == @lhs.substName 
                            then @lhs.substExpr 
                            else @substd
-        | Lam lhs.substd = if @arg == @lhs.substName -- hole in the scope of substName
-                           then @substd
-                           else acoreLam [@arg] @body.substd
-        -- TODO: Let bindings (anything else?) can also cut holes in the scope of 
-        -- substName, need to check for these
-
-         
 %%]
