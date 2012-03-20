@@ -257,6 +257,11 @@ SEM Err
 %%[[99
                                                         @range
 %%]]
+  | FunPatternLengths   lhs     .  pp   =   ppMsgErr    ("Nr of arguments to function must be equal for all function alternatives")
+                                                        ("Function:" >#< @funNm)
+%%[[99
+                                                        @range
+%%]]
 %%]
 
 %%[(7 hmtyinfer || hmtyast)

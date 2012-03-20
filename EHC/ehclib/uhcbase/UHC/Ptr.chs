@@ -28,13 +28,15 @@ module UHC.Ptr
 #endif
 
     Ptr,
+    castPtr,
 #if ! defined(__UHC_TARGET_JS__)
-    nullPtr, castPtr, plusPtr, alignPtr, minusPtr,
+    nullPtr, plusPtr, alignPtr, minusPtr,
 #endif
 
     FunPtr,
+    castFunPtr, castPtrToFunPtr, castFunPtrToPtr,
 #if ! defined(__UHC_TARGET_JS__)
-    nullFunPtr, castFunPtr, castPtrToFunPtr, castFunPtrToPtr,
+    nullFunPtr,
 #endif
   
     freeHaskellFunPtr	-- for now
@@ -91,8 +93,6 @@ foreign import prim "primNullAddr" nullAddr :: Addr
 
 newtype Ptr a		= Ptr Addr
 
-#if ! defined(__UHC_TARGET_JS__)
-
 -- ^ A value of type @'Ptr' a@ represents a pointer to an object, or an
 -- array of objects, which may be marshalled to or from Haskell values
 -- of type @a@.
@@ -103,14 +103,20 @@ newtype Ptr a		= Ptr Addr
 -- to access the pointer.  For example you might write small foreign
 -- functions to get or set the fields of a C @struct@.
 
+#if ! defined(__UHC_TARGET_JS__)
+
 -- |The constant 'nullPtr' contains a distinguished value of 'Ptr'
 -- that is not associated with a valid memory location.
 nullPtr :: Ptr a
 nullPtr = Ptr nullAddr
 
+#endif
+
 -- |The 'castPtr' function casts a pointer from one type to another.
 castPtr :: forall a b . Ptr a -> Ptr b
 castPtr (Ptr addr) = Ptr addr
+
+#if ! defined(__UHC_TARGET_JS__)
 
 -- |Advances the given address by the given offset in bytes.
 plusPtr :: forall a b . Ptr a -> Int -> Ptr b
@@ -139,8 +145,6 @@ minusPtr (Ptr a1) (Ptr a2) = a1 `primSubAddr` a2
 -- Function pointers for the default calling convention.
 
 newtype FunPtr a		= FunPtr Addr
-
-#if ! defined(__UHC_TARGET_JS__)
 
 -- ^ A value of type @'FunPtr' a@ is a pointer to a function callable
 -- from foreign code.  The type @a@ will normally be a /foreign type/,
@@ -182,11 +186,15 @@ newtype FunPtr a		= FunPtr Addr
 -- > foreign import ccall "dynamic" 
 -- >   mkFun :: FunPtr IntFunction -> IntFunction
 
+#if ! defined(__UHC_TARGET_JS__)
+
 -- |The constant 'nullFunPtr' contains a
 -- distinguished value of 'FunPtr' that is not
 -- associated with a valid memory location.
 nullFunPtr :: FunPtr a
 nullFunPtr = FunPtr nullAddr
+
+#endif
 
 -- |Casts a 'FunPtr' to a 'FunPtr' of a different type.
 castFunPtr :: forall a b . FunPtr a -> FunPtr b
@@ -210,6 +218,7 @@ castFunPtrToPtr (FunPtr addr) = Ptr addr
 castPtrToFunPtr :: forall a b . Ptr a -> FunPtr b
 castPtrToFunPtr (Ptr addr) = FunPtr addr
 
+#if ! defined(__UHC_TARGET_JS__)
 
 ------------------------------------------------------------------------
 -- Eq, Ord instances for Ptr.

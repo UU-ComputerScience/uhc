@@ -119,6 +119,20 @@ fiLookupReplaceTyCyc  fi t  =  maybe t (maybe t id . fiLookupTyVarCyc fi) $ tyMb
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Extension of FIIn' used as env for ty betared, canonicalization
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(9 hmtyinfer) export(TyBetaRedEnv(..), emptyTyBetaRedEnv, emptyTyBetaRedEnv')
+data TyBetaRedEnv gm
+  = TyBetaRedEnv
+      { tbredFI		:: FIIn' gm
+      }
+
+emptyTyBetaRedEnv' fe = TyBetaRedEnv ((emptyFI {fiEnv = fe}) :: FIIn)
+emptyTyBetaRedEnv = TyBetaRedEnv emptyFI
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Allowing binding of tvar?
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

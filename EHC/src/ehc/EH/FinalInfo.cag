@@ -132,8 +132,8 @@ SEM Expr
   | AppTop      loc         .   finalTyExpanded     =   @finalTy
   | Case        loc         .   finalTyExprExpanded =   @finalTyExpr
 %%][11
-  | AppTop      loc         .   finalTyExpanded     =   tyCanonicFFI (emptyFI {fiEnv = @fe} :: FIIn) @finalTy
-  | Case        loc         .   finalTyExprExpanded =   tyCanonicFFI (emptyFI {fiEnv = @fe} :: FIIn) @finalTyExpr
+  | AppTop      loc         .   finalTyExpanded     =   tyCanonicFFI (emptyTyBetaRedEnv' @fe) @finalTy
+  | Case        loc         .   finalTyExprExpanded =   tyCanonicFFI (emptyTyBetaRedEnv' @fe) @finalTyExpr
 %%]]
 %%]
 
@@ -142,7 +142,7 @@ SEM DataFieldExpr
 %%[[8
   | Upd         loc         .   finalTyExprExpanded =   @finalTyExpr
 %%][11
-  | Upd         loc         .   finalTyExprExpanded =   tyCanonicFFI (emptyFI {fiEnv = @fe} :: FIIn) @finalTyExpr
+  | Upd         loc         .   finalTyExprExpanded =   tyCanonicFFI (emptyTyBetaRedEnv' @fe) @finalTyExpr
 %%]]
 %%]
 
@@ -155,7 +155,7 @@ SEM PatExpr
 %%[[8
                 loc         .   finalTyExpanded     =   @finalTy
 %%][11
-                loc         .   finalTyExpanded     =   tyCanonicFFI (emptyFI {fiEnv = @fe} :: FIIn) @finalTy
+                loc         .   finalTyExpanded     =   tyCanonicFFI (emptyTyBetaRedEnv' @fe) @finalTy
 %%]]
 %%]
 
@@ -164,7 +164,7 @@ SEM Decl
 %%[[8
   | Val         loc         .   finalTyExpanded     =   @finalTy
 %%][11
-  | Val         loc         .   finalTyExpanded     =   tyCanonicFFI (emptyFI {fiEnv = @fe} :: FIIn) @finalTy
+  | Val         loc         .   finalTyExpanded     =   tyCanonicFFI (emptyTyBetaRedEnv' @fe) @finalTy
 %%]]
   | FFI
 %%[[90
@@ -173,14 +173,14 @@ SEM Decl
 %%[[8
                 loc         .   finalTyExpanded     =   @ty_sig_
 %%][11
-                loc         .   finalTyExpanded     =   tyCanonicFFI (emptyFI {fiEnv = @fe} :: FIIn) @ty_sig_
+                loc         .   finalTyExpanded     =   tyCanonicFFI' True (emptyTyBetaRedEnv' @fe) @ty_sig_
 %%]]
 %%]
 
 %%[(50 hmtyinfer)
 SEM Decl
   | Instance    loc         .   finalHdInstArgLExpanded
-                                                    =   map (tyCanonic (emptyFI {fiEnv = @fe} :: FIIn)) @instArgTyL
+                                                    =   map (tyCanonic (emptyTyBetaRedEnv' @fe)) @instArgTyL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

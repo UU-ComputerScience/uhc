@@ -23,7 +23,7 @@ WRAPPER TyAGItf
 %%[(6 hmtyinfer || hmtyast) hs
 %%]
 
-%%[(9 hmtyinfer || hmtyast) hs import(Data.Maybe,EH.Util.Utils,EH.Util.Pretty) export(tyQuantifyRank)
+%%[(9 hmtyinfer || hmtyast) hs import(Data.Maybe,EH.Util.Utils,EH.Util.Pretty)
 %%]
 
 %%[(99 hmtyinfer || hmtyast)
@@ -49,13 +49,16 @@ tyQuantifyClosed :: Ty -> Ty
 tyQuantifyClosed = tyQuantify (const False)
 %%]
 
-%%[(9 hmtyinfer || hmtyast).tyQuantifyClosed -3.tyQuantifyClosed hs
+%%[(9 hmtyinfer || hmtyast).tyQuantifyClosed -3.tyQuantifyClosed hs export(tyQuantifyRank,tyQuantifyRank')
 tyQuantifyClosed :: Ty -> Ty
 tyQuantifyClosed = tyQuantifyRank [1..]
 
+tyQuantifyRank' :: TvIsBound -> [Int] -> Ty -> Ty
+tyQuantifyRank' tvIsBound rL ty
+  = tqoTy (tyQuantifyWithOpts (defaultTyQuOpts {tqoptQuRanks = rL, tqoptBaseQuant = tyQu_Forall, tqoptTvIsBound = tvIsBound}) ty)
+
 tyQuantifyRank :: [Int] -> Ty -> Ty
-tyQuantifyRank rL ty
-  = tqoTy (tyQuantifyWithOpts (defaultTyQuOpts {tqoptQuRanks = rL, tqoptBaseQuant = tyQu_Forall, tqoptTvIsBound = const False}) ty)
+tyQuantifyRank = tyQuantifyRank' (const False)
 %%]
 
 %%[(4 hmtyinfer || hmtyast).tyQuantify -3.tyQuantify hs
@@ -200,7 +203,7 @@ SEM TyAGItf
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Override hook vor quantifiable location
+%%% Override hook for quantifiable location
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(4 hmtyinfer || hmtyast)
@@ -429,12 +432,6 @@ SEM Ty
                                                                          @tvIsBoundQu @qHereTvS
                             .   qBndL1Tvs               =   @qBndL1TvsOther
 %%]
-                            .   (qBndTvs,qBndExTvs,qBndL1TvsOther,tvIsBound)
-                                                        =   ([],[],[],@tvIsBoundQu)
-                            .   (qBndTvs,qBndExTvs,qBndL1TvsOther,tvIsBound)
-                                                        =   tvarsToQuant @lhs.opts @isQuLoc @lhs.fxTvM
-                                                                         (tvMayQuFx @hereQu @lhs.fxTvM @isQuFxLoc)
-                                                                         @tvIsBoundQu @qHereTvS
 
 %%[(6 hmtyinfer || hmtyast)
 SEM Ty
@@ -449,9 +446,6 @@ SEM Ty
   | App Var     loc         .   (qBndTvs,qBndExTvs,qBndL1Tvs,tvIsBound)
                                                         :=  tvarsToQuant @lhs.opts @isQuLoc @lhs.fxTvM (tvMayQuFx @hereQu @lhs.fxTvM @isQuFxLoc) @lhs.tvIsBound @qHereTvS
 %%]
-SEM Ty
-  | App Var     loc         .   (qBndTvs,qBndExTvs,qBndL1Tvs,tvIsBound)
-                                                        :=  tvarsToQuant @lhs.opts @isQuLoc @lhs.fxTvM (tvMayQuFx @hereQu @lhs.fxTvM @isQuFxLoc) @lhs.tvIsBound (@qHereTvS `Set.union` varFreeSet @candPrL)
 
 %%[(9 hmtyinfer || hmtyast)
 SEM Ty

@@ -175,7 +175,7 @@ SEM Decl
                 loc         	.   lUniq		  	:   UNIQUEREF gUniq
   | Instance    tyPrExpr        .   tyGam           =   gamPushNew @lhs.tyGam
                 loc             .   (prTyFix,fixPrTyVarMp,unfixPrTyVarMp,metaPrTyVarMp)
-                                                    =   tyFixTyVars @lUniq_9_prTyFix $ tyQuantifyRank [2..] $ tyCanonic (emptyFI :: FIIn)  @tyPrExpr.ty
+                                                    =   tyFixTyVars @lUniq_9_prTyFix $ tyQuantifyRank [2..] $ tyCanonic (emptyTyBetaRedEnv' emptyFE)  @tyPrExpr.ty
 %%[[9
                                 .   (ctxtPrTyFixL,hdPrTyFix)
                                                     =   tyArrowArgsRes @prTyFix
@@ -255,7 +255,9 @@ SEM Decl
                                                         in   tyArrowArgs $ foVarMp fo `varUpd` foTy fo
                                 .   supClsFldNmL    =   tyPrLToSupNmL @supPrTyL
                                 .   ctxtPrFixL      =   map tyPred @ctxtPrTyFixL
-                                .   recTy           =   (@fixPrTyVarMp `varUpd`) $ tyQuantifyRank [2..] $ tyArrowRes @tyPrExpr.evTy
+                                .   recTy           =   (@fixPrTyVarMp `varUpd`) $ tyQuantifyRank' (\k -> isJust $ varmpTyLookup k @fixPrTyVarMp) [2..] $ tyArrowRes @tyPrExpr.evTy
+                                -- .   recTy           =   (@fixPrTyVarMp `varUpd`) $ tyQuantifyRank [2..] $ tyArrowRes @tyPrExpr.evTy
+                                -- .   recTy           =   (@fixPrTyVarMp `varUpd`) $ tyRecMap tyQuantifyClosed $ tyArrowRes @tyPrExpr.evTy
                                 .   recTyExts       =   snd $ tyRecExts @recTy
                                 .   dataDictNm      =   hsnClass2Dict @instClsNm -- only used when `not ehcCfgClassViaRec'
                                 .   dataDictTag     =   mkClassCTag @dataDictNm (length @recTyExts) -- only used when `not ehcCfgClassViaRec'

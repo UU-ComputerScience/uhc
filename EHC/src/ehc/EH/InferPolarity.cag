@@ -512,7 +512,7 @@ SEM Expr
                             .   cycErrSq            =   Seq.fromList $ rngLift @range varmpOccurErr @decls.polVarMp @cycVarMp
       
                             .   finGathPolGam       =   quantifyPolGam
-                                                        $ mapPolGam (tyCanonic (emptyFI {fiEnv = @fe} :: FIIn))
+                                                        $ mapPolGam (tyCanonic (emptyTyBetaRedEnv' @fe))
                                                         $ @lSubsPolGam2
                             .   finGathPolGam_extra =   @extraPolGam `gamUnion` @finGathPolGam
                 body        .   polGam              =   gamAddGam @finGathPolGam_extra @lhs.polGam

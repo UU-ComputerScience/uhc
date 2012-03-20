@@ -30,35 +30,41 @@ For debug/trace:
 %%% Beta reduction for type, only saturated applications are expanded
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(11 hmtyinfer) export(TyBetaRedOut,mkDfltTyBetaRedOut,TyBetaRedOut')
-type TyBetaRedOut' x = (x,VarMp)
+%%[(11 hmtyinfer) export(TyBetaRedOut,mkDfltTyBetaRedOut,TyBetaRedOut'(..))
+data TyBetaRedOut' x
+  = TyBetaRedOut
+      { tbroutRes			:: x
+      , tbroutVarMp			:: VarMp
+      , tbroutTracePPL		:: [PP_Doc]
+      , tbroutExpandedTo	:: Maybe TyBetaRedLookAheadExpansion	-- 1 expansion step lookahead type function + args
+      }
+
 type TyBetaRedOut    = TyBetaRedOut' Ty
 
 mkDfltTyBetaRedOut :: x -> TyBetaRedOut' x
-mkDfltTyBetaRedOut x = (x,emptyVarMp)
+mkDfltTyBetaRedOut = emptyTyBetaRedOut'
+%%]
+
+%%[(11 hmtyinfer) export(emptyTyBetaRedOut',emptyTyBetaRedOut)
+emptyTyBetaRedOut' :: x -> TyBetaRedOut' x
+emptyTyBetaRedOut' x = TyBetaRedOut x emptyVarMp [] Nothing
+
+emptyTyBetaRedOut :: TyBetaRedOut' Ty
+emptyTyBetaRedOut = emptyTyBetaRedOut' Ty_Any
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Beta reduction extra info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(11 hmtyinfer) export(TyBetaRedExtra(..), emptyTyBetaRedExtra)
+%%[(11 hmtyinfer)
 -- | expansion lookahead info
 type TyBetaRedLookAheadExpansion
-  = ( Ty				-- type function
-    , [Ty]				-- arguments
-    , Maybe Ty			-- function in ty looked up as if it were to be used for expansion
+  = ( Ty							-- type function
+    , [Ty]							-- arguments
+    , Maybe TyBetaRedOut			-- function in ty looked up as if it were to be used for expansion
     )
 
--- | extra result info from betared
-data TyBetaRedExtra
-  = TyBetaRedExtra
-      { tybetaredextraTracePPL		:: [PP_Doc]
-      , tybetaredextraExpandedTo	:: Maybe TyBetaRedLookAheadExpansion	-- 1 expansion step lookahead type function + args
-      }
-
-emptyTyBetaRedExtra :: TyBetaRedExtra
-emptyTyBetaRedExtra = TyBetaRedExtra [] Nothing
 %%]
 
 20100922 AD; Note: it is somewhat a mystery why this is not symmetric but IOBase will fail compilation.
@@ -67,10 +73,10 @@ So, for now, it therefore is somewhat a hack...
 %%[(11 hmtyinfer) export(betaRedIsOkFitsinCombi)
 -- | check for a valid combi using lookahead info of next expansion.
 --   Basically prevent synonyms and lambdas from being bound, but forced to be expanded
-betaRedIsOkFitsinCombi :: (Ty -> Bool) -> TyBetaRedExtra -> TyBetaRedExtra -> Bool
+betaRedIsOkFitsinCombi :: (Ty -> Bool) -> TyBetaRedOut -> TyBetaRedOut -> Bool
 betaRedIsOkFitsinCombi isBoundable
-                       (TyBetaRedExtra {tybetaredextraExpandedTo = Just (fl,al,_    )})		-- a tvar
-                       (TyBetaRedExtra {tybetaredextraExpandedTo = Just (fr,ar,mbExp)})		-- cannot be bound/matched against non expanded synonym/lambda
+                       (TyBetaRedOut {tbroutExpandedTo = Just (fl,al,_    )})		-- a tvar
+                       (TyBetaRedOut {tbroutExpandedTo = Just (fr,ar,mbExp)})		-- cannot be bound/matched against non expanded synonym/lambda
                        | isBoundable fl && not (null ar || null al) && (tyIsLam fr || isJust mbExp)
                        = False
 {-
@@ -89,41 +95,42 @@ betaRedIsOkFitsinCombi _ _ _
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(11 hmtyinfer) export(TyBetaRedLkup,betaRedTyLookup)
-type TyBetaRedLkup gm = FIIn' gm -> HsName -> Maybe Ty
+type TyBetaRedLkup gm = TyBetaRedEnv gm -> HsName -> Maybe TyBetaRedOut
 
 betaRedTyLookup :: TyBetaRedLkup gm
-betaRedTyLookup fi nm = fmap tgiTy $ tyGamLookup nm $ feTyGam $ fiEnv fi
+betaRedTyLookup fi nm = fmap (mkDfltTyBetaRedOut . tgiTy) $ tyGamLookup nm $ feTyGam $ fiEnv $ tbredFI fi
 %%]
 
 %%[(11 hmtyinfer)
 -- | lookup the type used as if in function position of type application
-betaRedTyFunLookup :: FIIn' gm -> TyBetaRedLkup gm -> Ty -> Maybe Ty
+betaRedTyFunLookup :: TyBetaRedEnv gm -> TyBetaRedLkup gm -> Ty -> Maybe TyBetaRedOut
 betaRedTyFunLookup fi lkup funTy
   = do nm <- tyMbCon funTy
        t' <- lkup fi nm
-       case t' of
+       case tbroutRes t' of
           Ty_Con nm' | nm == nm' -> Nothing
-          f                      -> Just f
+          f                      -> Just (mkDfltTyBetaRedOut f)
 %%]
 
 %%[(11 hmtyinfer)
 -- | get the lookahead for reduction
-betaRedTyLookAhead :: VarLookup gm TyVarId VarMpInfo => FIIn' gm -> TyBetaRedLkup gm -> Ty -> TyBetaRedLookAheadExpansion
-betaRedTyLookAhead fi lkup ty
+betaRedTyLookAhead :: VarLookup gm TyVarId VarMpInfo => TyBetaRedEnv gm -> TyBetaRedLkup gm -> Ty -> TyBetaRedLookAheadExpansion
+betaRedTyLookAhead renv lkup ty
   = unpack ty
-  where unpack t = (f', as, betaRedTyFunLookup fi lkup f')
+  where unpack t = (f', as, betaRedTyFunLookup renv lkup f')
           where (f,as) = tyAppFunArgsWithLkup (fiLookupTyVarCyc fi) t
                 f' = tyUnAnn $ fiLookupReplaceTyCyc fi f
+                fi = tbredFI renv
 %%]
 
 %%[(11 hmtyinfer)
 -- | one expansion step of type level beta reduction
 tyBetaRed1
   :: (VarLookup gm TyVarId VarMpInfo, VarLookupCmb VarMp gm)
-     => FIIn' gm -> TyBetaRedLkup gm -> Either Ty TyBetaRedLookAheadExpansion
-     -> Maybe (Ty,TyBetaRedExtra)
-tyBetaRed1 fi lkup tyOrFunAndArgs
-  = eval (either (betaRedTyLookAhead fi lkup) id tyOrFunAndArgs)
+     => TyBetaRedEnv gm -> TyBetaRedLkup gm -> Either Ty TyBetaRedLookAheadExpansion
+     -> Maybe TyBetaRedOut
+tyBetaRed1 renv lkup tyOrFunAndArgs
+  = eval (either (betaRedTyLookAhead renv lkup) id tyOrFunAndArgs)
   where -- lambda expression: take body and substitute arguments
         eval (lam@(Ty_Lam fa b), args, _)
           | lamLen <= argLen
@@ -151,44 +158,44 @@ tyBetaRed1 fi lkup tyOrFunAndArgs
 
         -- looked up in the environment
         eval (_, args, Just funExp)
-              = mkres $ mkApp $ funExp : args
+              = mkres $ mkApp $ tbroutRes funExp : args
 
         -- no expansion possible
         eval _ = Nothing
 
         -- utils
-        mkres t  = Just ( t
-                        , emptyTyBetaRedExtra
-                            { tybetaredextraExpandedTo = Just $ betaRedTyLookAhead fi lkup t
-                            , tybetaredextraTracePPL   = [trfitIn "tylam" ("from:" >#< ppTyWithFI fi (pack tyOrFunAndArgs) >-< "to  :" >#< ppTyWithFI fi t)]
+        mkres t  = Just ( (emptyTyBetaRedOut' t)
+                            { tbroutExpandedTo = Just $ betaRedTyLookAhead renv lkup t
+                            , tbroutTracePPL   = [trfitIn "tylam" ("from:" >#< ppTyWithFI fi (pack tyOrFunAndArgs) >-< "to  :" >#< ppTyWithFI fi t)]
                             }
                         )
         pack = either id (\(f,as,_) -> mkApp (f:as))
+        fi = tbredFI renv
 %%]
 
 %%[(11 hmtyinfer) export(tyBetaRed,tyBetaRedAndInit)
 tyBetaRed'
   :: (VarLookup gm TyVarId VarMpInfo, VarLookupCmb VarMp gm)
-     => FIIn' gm -> TyBetaRedLkup gm -> Either Ty TyBetaRedLookAheadExpansion
-     -> [(Ty,TyBetaRedExtra)]
-tyBetaRed' fi lkup tyOrFunArgs
-  = case tyBetaRed1 fi lkup tyOrFunArgs of
-      Just tf@(ty,e) -> tf : tyBetaRed' fi lkup (maybe (Left ty) Right $ tybetaredextraExpandedTo e)
-      _              -> []
+     => TyBetaRedEnv gm -> TyBetaRedLkup gm -> Either Ty TyBetaRedLookAheadExpansion
+     -> [TyBetaRedOut]
+tyBetaRed' renv lkup tyOrFunArgs
+  = case tyBetaRed1 renv lkup tyOrFunArgs of
+      Just re -> re : tyBetaRed' renv lkup (maybe (Left (tbroutRes re)) Right $ tbroutExpandedTo re)
+      _       -> []
 
 tyBetaRed
   :: (VarLookup gm TyVarId VarMpInfo, VarLookupCmb VarMp gm)
-     => FIIn' gm -> TyBetaRedLkup gm -> Ty
-     -> [(Ty,TyBetaRedExtra)]
-tyBetaRed fi lkup ty = tyBetaRed' fi lkup (Left ty)
+     => TyBetaRedEnv gm -> TyBetaRedLkup gm -> Ty
+     -> [TyBetaRedOut]
+tyBetaRed renv lkup ty = tyBetaRed' renv lkup (Left ty)
 
 tyBetaRedAndInit
   :: (VarLookup gm TyVarId VarMpInfo, VarLookupCmb VarMp gm)
-     => FIIn' gm -> TyBetaRedLkup gm -> Ty
-     -> [(Ty,TyBetaRedExtra)]
-tyBetaRedAndInit fi lkup ty
-  = (ty, emptyTyBetaRedExtra {tybetaredextraExpandedTo = Just l}) : tyBetaRed' fi lkup (Right l)
-  where l = betaRedTyLookAhead fi lkup ty
+     => TyBetaRedEnv gm -> TyBetaRedLkup gm -> Ty
+     -> [TyBetaRedOut]
+tyBetaRedAndInit renv lkup ty
+  = ((emptyTyBetaRedOut' ty) {tbroutExpandedTo = Just l}) : tyBetaRed' renv lkup (Right l)
+  where l = betaRedTyLookAhead renv lkup ty
 %%]
 
 Reduce fully (upto expansion limit) an outer layer of type synonyms,
@@ -199,19 +206,20 @@ Additional substitutions found are assumed to be non-contradictory, so threading
 %%[(11 hmtyinfer) export(tyBetaRedFullMb)
 tyBetaRedFullMb
   :: (VarLookup gm TyVarId VarMpInfo, VarLookupCmb VarMp gm)
-     => FIIn' gm -> TyBetaRedLkup gm -> (Ty -> Maybe TyBetaRedOut) -> Ty
+     => TyBetaRedEnv gm -> TyBetaRedLkup gm -> (Ty -> Maybe TyBetaRedOut) -> Ty
      -> Maybe TyBetaRedOut
-tyBetaRedFullMb fi lkup redSub ty
+tyBetaRedFullMb renv lkup redSub ty
   = fmap reda $ choose ty $ redl ty
-  where env = fiEnv fi
+  where env = fiEnv $ tbredFI renv
         lim     = ehcOptTyBetaRedCutOffAt $ feEHCOpts env
-        redl ty = take lim $ map fst $ tyBetaRed fi lkup ty
-        reda ty = if null (catMaybes as')
+        redl ty = take lim $ tyBetaRed renv lkup ty
+        reda re = if null (catMaybes as')
                   then mkDfltTyBetaRedOut ty
-                  else let (as'',ms) = unzip $ zipWith (\t mt -> maybe (mkDfltTyBetaRedOut t) id mt) as as'
-                       in  (mk f as'', varmpUnions ms)
+                  else let as'' = zipWith (\t mt -> maybe (mkDfltTyBetaRedOut t) id mt) as as'
+                       in   emptyTyBetaRedOut {tbroutRes = mk f $ map tbroutRes as'', tbroutVarMp = varmpUnions $ map tbroutVarMp as''}
                 where (f,as,mk) = tyDecomposeMk ty
                       as' = map redSub as
+                      ty  = tbroutRes re
         choose a [] = Nothing
         choose a as = Just (last as)
 %%]
@@ -221,11 +229,12 @@ Just expand, recursively, without intermediate external expanding.
 %%[(11 hmtyinfer) export(tyBetaRedFull)
 tyBetaRedFull
   :: (VarLookup gm TyVarId VarMpInfo, VarLookupCmb VarMp gm)
-     => FIIn' gm -> VarMp -> Ty
+     => TyBetaRedEnv gm -> VarMp -> Ty
      -> Ty
-tyBetaRedFull fi varmp ty
-  = maybe ty fst $ sub ty
-  where fi' = fi {fiVarMp = varmp}
-        sub = \t -> tyBetaRedFullMb fi' betaRedTyLookup sub $ varmp `varUpd` t
+tyBetaRedFull renv varmp ty
+  = maybe ty tbroutRes $ sub ty
+  where fi  = tbredFI renv
+        fi' = fi {fiVarMp = varmp}
+        sub = \t -> tyBetaRedFullMb (renv {tbredFI = fi'}) betaRedTyLookup sub $ varmp `varUpd` t
 %%]
 
