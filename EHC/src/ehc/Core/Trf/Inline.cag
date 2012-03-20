@@ -1,13 +1,14 @@
-%%[93 hs module {%{EH}Core.Trf.Inline} import ({%{EH}Ty},{%{EH}Base.Common},{%{EH}LamInfo},{%{EH}Core},{%{EH}AbstractCore}, {%{EH}Core.Trf.Subst} (apply), qualified Data.Map as Map, Debug.Trace(trace), Data.Maybe(fromJust,isJust), Control.Monad(when))
+%%[93 hs module {%{EH}Core.Trf.Inline} import ({%{EH}Ty},{%{EH}Base.Common},{%{EH}LamInfo},{%{EH}Core},{%{EH}AbstractCore}, {%{EH}Core.Trf.Subst} (apply), {%{EH}Core.Trf.Rewrite}(ConvMp(..)), qualified Data.Map as Map, Debug.Trace(trace), Data.Maybe(fromJust,isJust,isNothing), Control.Monad(when))
 %%]
 
 %%[93 ag import ({Core/AbsSyn})
 
 { 
-inline :: FuncMp -> CExpr -> CExpr
-inline funcMp expr = 
+inline :: FuncMp -> ConvMp -> CExpr -> CExpr
+inline funcMp convMp expr = 
         let t = wrap_CExpr (sem_CExpr expr)
                            (Inh_CExpr { funcMp_Inh_CExpr = funcMp 
+                                      , convMp_Inh_CExpr = convMp
                                       }
                            )
         in inlined_Syn_CExpr t
@@ -21,11 +22,37 @@ type FuncMp = Map.Map HsName CExpr
     
 WRAPPER CExpr
 
-ATTR AllCodeNT [ funcMp : FuncMp | | inlined : SELF ]
+ATTR AllCodeNT [ | | original : SELF ]
+
+ATTR AllCodeNT [ funcMp : FuncMp convMp : ConvMp | | inlined : SELF ]
+
+SEM CExpr
+        | Let body.funcMp = if @categ == acoreBindcategRec 
+                            then @lhs.funcMp `Map.difference` @binds.gathFuncMp 
+                            else @binds.gathFuncMp `Map.union` @lhs.funcMp
+        | Let binds.funcMp = @lhs.funcMp
+
+ATTR CBindL [ | | gathFuncMp USE {`Map.union`} {Map.empty} : FuncMp ]
+
+ATTR CBind [ | | gathFuncMp : FuncMp ]
+
+ATTR CBindAspectL [ || gathExpr USE {++} {[]} : {[CExpr]} ] -- this should just be always be a singleton list, but probably not the safest way...
+
+ATTR CBindAspect [ || gathExpr USE {++} {[]} : {[CExpr]}]
+
+SEM CBindAspect
+        | Bind lhs.gathExpr = [@expr.original] 
+
+SEM CBind 
+        | Bind lhs.gathFuncMp = if not (isNothing (Map.lookup @nm @lhs.convMp))
+                                then trace ("Not adding function " ++ show @nm ++ "because it was a conversion function") $ Map.empty          
+                                else trace ("Adding function " ++ show @nm ++ "to the funcMp") $ Map.singleton @nm $ head @bindAspects.gathExpr
+
+   
 
 SEM CExpr 
         | App lhs.inlined = if @func.isInlinable 
-                            then inline @lhs.funcMp (apply @func.inlined @arg.inlined)
+                            then trace ("Inlining " ++ show @func.inlined) $ inline @lhs.funcMp @lhs.convMp (apply @func.inlined @arg.inlined)
                             else acoreApp1 @func.inlined @arg.inlined
         | Var lhs.inlined = if @isInlinable
                             then fromJust (Map.lookup (acbrefNm @ref) @lhs.funcMp)
