@@ -37,7 +37,8 @@ SEM CExpr
         | Var loc.isInlinable = isJust (Map.lookup (acbrefNm @ref) @lhs.funcMp)
         | Var lhs.isInlinable = @isInlinable
         | App lhs.isInlinable = @func.isInlinable
-        | * - App Var lhs.isInlinable = False  
+        | Lam lhs.isInlinable = True
+        | * - App Var Lam lhs.isInlinable = False  
 
 ATTR CExpr [ | | varName : {Maybe HsName} ] 
 
