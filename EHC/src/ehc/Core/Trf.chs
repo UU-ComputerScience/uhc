@@ -156,6 +156,7 @@ trfCore opts dataGam modNm trfcore
                ; when (ehcOptFusion opts) 
                       (do { t_let_unrec
                           ; t_fusion
+                          ; t_ren_uniq emptyRenUniqOpts
                           })
 %%]] 
                  -- put in A-normal form, where args to app only may be identifiers
