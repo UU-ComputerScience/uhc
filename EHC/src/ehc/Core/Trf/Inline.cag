@@ -28,10 +28,11 @@ ATTR AllCodeNT [ funcMp : FuncMp convMp : ConvMp | | inlined : SELF ]
 
 SEM CExpr
         | Let body.funcMp = if @categ == acoreBindcategRec 
-                            then @lhs.funcMp `Map.difference` @binds.gathFuncMp 
-                            else @binds.gathFuncMp `Map.union` @lhs.funcMp
+                            then @lhs.funcMp {-`Map.difference` @binds.gathFuncMp-}
+                            else {-@binds.gathFuncMp `Map.union`-} @lhs.funcMp
         | Let binds.funcMp = @lhs.funcMp
 
+{-
 ATTR CBindL [ | | gathFuncMp USE {`Map.union`} {Map.empty} : FuncMp ]
 
 ATTR CBind [ | | gathFuncMp : FuncMp ]
@@ -46,13 +47,12 @@ SEM CBindAspect
 SEM CBind 
         | Bind lhs.gathFuncMp = if not (isNothing (Map.lookup @nm @lhs.convMp))
                                 then trace ("Not adding function " ++ show @nm ++ "because it was a conversion function") $ Map.empty          
-                                else trace ("Adding function " ++ show @nm ++ "to the funcMp") $ Map.singleton @nm $ head @bindAspects.gathExpr
-
-   
+                                else {-trace ("Adding function " ++ show @nm ++ "to the funcMp") $-} Map.singleton @nm $ head @bindAspects.gathExpr
+-}   
 
 SEM CExpr 
         | App lhs.inlined = if @func.isInlinable 
-                            then trace ("Inlining " ++ show @func.inlined) $ inline @lhs.funcMp @lhs.convMp (apply @func.inlined @arg.inlined)
+                            then {- trace ("Inlining " ++ show @func.inlined) $ -} inline @lhs.funcMp @lhs.convMp $ (apply @func.inlined @arg.inlined)
                             else acoreApp1 @func.inlined @arg.inlined
         | Var lhs.inlined = if @isInlinable
                             then fromJust (Map.lookup (acbrefNm @ref) @lhs.funcMp)
