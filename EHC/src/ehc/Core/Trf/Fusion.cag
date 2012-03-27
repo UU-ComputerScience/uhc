@@ -48,8 +48,8 @@ ATTR AllCodeNT [ | | inlined : SELF   ]
  
 SEM CExpr 
        | App lhs.inlined = if @func.isFusible -- || @lhs.inFusibleFunc
-                           then trace ("Calling inline with funcMp " ++ (show $ Map.keys @lhs.funcMp)) $ inline @lhs.funcMp @lhs.convMp @loc.rewritten
-                           else acoreApp1 @func.inlined @arg.rewritten 
+                           then trace ("Calling inline with funcMp " ++ (show $ Map.keys @lhs.funcMp)) $ inline @lhs.funcMp @lhs.convMp @loc.applied -- circumventing the rewritten attribute whilst we do some testing...
+                           else acoreApp1 @func.inlined @arg.inlined
 ------------------------------------------------------------------------------
 -- Tests to see if a function is fusible.  A @func of an App is fusible if it 
 -- is a named function found in the fuseMp, if it is a function application 
