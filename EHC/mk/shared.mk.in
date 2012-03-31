@@ -142,12 +142,12 @@ EHC_EXEC_NAME		:= @EHC_EXEC_NAME@
 UHC_EXEC_NAME		:= @UHC_EXEC_NAME@
 
 ###########################################################################################
-# SVN revision nr, and cmd to extract, if present
+# GIT revision nr, and cmd to extract, if present
 ###########################################################################################
 
-SVN_VERSION_EXISTS		:= @SVN_VERSION_EXISTS@
-SVN_VERSION_CMD			:= @SVN_VERSION_CMD@
-SVN_REVISION			:= @SVN_REVISION@
+GIT_VERSION_EXISTS		:= @GIT_VERSION_EXISTS@
+GIT_VERSION_CMD			:= @GIT_VERSION_CMD@
+GIT_REVISION			:= @GIT_REVISION@
 
 ###########################################################################################
 # Locations in source, build, install, distribution
