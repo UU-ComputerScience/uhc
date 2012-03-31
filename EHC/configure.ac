@@ -75,10 +75,10 @@ AC_PATH_PROG(gitCmd,git)
 if test -x "$gitCmd"
 then
   gitExists="yes"
-  gitHashCmd="git rev-parse HEAD"
-  gitHash=`${gitHashCmd}`
+  gitHash=`git rev-parse HEAD | cut -c 1-10`
+  gitBranch=`git symbolic-ref HEAD`
   gitVersionExists="yes"
-  echo $gitHash > GITHASH
+  echo "${gitBranch#refs/heads/} @ $gitHash" > GITHASH
 else
   gitExists="no"
   gitVersionExists="no"
