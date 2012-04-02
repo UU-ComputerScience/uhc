@@ -37,7 +37,9 @@ SEM Expr
 %%][92
                 loc         .   finValGam           =   (if @lhs.isFirstLet then gamUnion @gathValGam else id) @lhs.finValGam
 %%]]
+%%]
 
+%%[(8 hmtyinfer)
 SEM AGItf
   | AGItf       loc          
 %%[[8

@@ -723,7 +723,7 @@ rngAdd r1 r2
       _ -> Range_Unknown
 %%]
 
-%%[99 export(rangeUnion,rangeUnions)
+%%[5 export(rangeUnion,rangeUnions)
 posMax, posMin :: Pos -> Pos -> Pos
 posMax (Pos l1 c1 f1) (Pos l2 c2 _) = Pos (l1 `max` l2) (c1 `max` c2) f1
 posMin (Pos l1 c1 f1) (Pos l2 c2 _) = Pos (l1 `min` l2) (c1 `min` c2) f1
