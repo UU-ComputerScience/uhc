@@ -1,0 +1,6 @@
+The Utrecht Haskell Compiler (UHC)
+==================================
+
+Subdirectory EHC holds the actual compiler.
+See EHC/README for further installation instructions
+
