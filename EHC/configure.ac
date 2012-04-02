@@ -78,16 +78,18 @@ then
   gitHash=`git rev-parse HEAD | cut -c 1-10`
   gitBranch=`git symbolic-ref HEAD`
   gitVersionExists="yes"
-  echo "${gitBranch#refs/heads/} @ $gitHash" > GITHASH
+  echo "${gitBranch#refs/heads/}@$gitHash" > GITHASH
+  gitHashCmd="cat GITHASH"
 else
   gitExists="no"
   gitVersionExists="no"
+  gitHashCmd="echo 'no git available'"
 fi
 AC_SUBST(GIT_EXISTS,$gitExists)
 AC_SUBST(GIT_CMD,$gitCmd)
 
 ### git revision
-gitHashVal=`cat GITHASH`
+gitHashVal=`${gitHashCmd}`
 AC_SUBST(GIT_VERSION_EXISTS,$gitVersionExists)
 AC_SUBST(GIT_VERSION_CMD,$gitHashCmd)
 AC_SUBST(GIT_REVISION,$gitHashVal)
