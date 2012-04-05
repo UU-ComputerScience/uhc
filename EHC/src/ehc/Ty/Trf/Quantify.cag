@@ -216,7 +216,9 @@ SEM Ty
 %%% Fixed tvars
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(4 hmtyinfer || hmtyast)
+Moved to TyVarCommon
+
+%%[(4444 hmtyinfer || hmtyast)
 ATTR AllTy [ | | gathFxTvM USE {`Map.union`} {Map.empty}: TvCatMp ]
 ATTR AllTy [ fxTvM: TvCatMp | | ]
 
@@ -402,7 +404,7 @@ tvarsToQuant opts isQuLoc fxTvM mayQuFx tvIsBound tvS
 %%[(4 hmtyinfer || hmtyast).tvMayQuFx hs
 tvMayQuFx :: TyQu -> TvCatMp -> Bool -> TyVarId -> Bool
 tvMayQuFx qu fxTvM isQuFxLoc tv
-  = True
+  = False -- isQuFxLoc -- True
 %%]
 
 %%[(6_4 hmtyinfer || hmtyast).tvMayQuFx -4.tvMayQuFx hs
