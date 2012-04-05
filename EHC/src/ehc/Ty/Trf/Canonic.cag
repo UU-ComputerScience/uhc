@@ -299,10 +299,12 @@ SEM Ty
   | App             loc     .   isReplaced      =   isJust @mbReplNoImplNil || isJust @mbRepl
   | Con Ext         loc     .   isReplaced      =   isJust @mbRepl
   | Ann             loc     .   isReplaced      =   True
+--  | Lam             loc     .   isReplaced      =   isJust @mbRepl
 
 SEM Ty
   | App             lhs     .   isReplaced      =   @isReplaced || @func.isReplaced || @arg.isReplaced
   | Ext             lhs     .   isReplaced      =   @isReplaced || @ty.isReplaced || @extTy.isReplaced
+--  | Lam             lhs     .   isReplaced      =   @isReplaced || @ty.isReplaced
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -358,6 +360,7 @@ SEM Ty
                                                     then tcoTyBetaRedFullMb @lhs.opts @replNoImplNil
                                                     else Nothing
   | Con             loc     .   mbRepl          =   tcoTyBetaRedFullMb @lhs.opts @repl
+--  | Lam             loc		.	mbRepl		    =   fmap mkDfltTyBetaRedOut $ tyLamEtaRed @repl
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -404,6 +407,7 @@ extr o = (tbroutRes o, tbroutVarMp o)
 SEM Ty
   | App             (lhs.repl,loc.replVarMp)    :=  maybe (@replNoImplNil,emptyVarMp) extr @mbRepl
   | Con             (lhs.repl,loc.replVarMp)    =   maybe (@repl,emptyVarMp) extr @mbRepl
+--  | Lam             (lhs.repl,loc.replVarMp)    =   maybe (@repl,emptyVarMp) extr @mbRepl
 %%]
 
 

@@ -1247,6 +1247,16 @@ tyLamArgsRes
                 _           -> ([],t)
 %%]
 
+%%[(11 hmtyinfer || hmtyast) hs export(tyLamEtaRed)
+-- Eta reduce when the full list of args can be eliminated thus
+tyLamEtaRed :: Ty -> Maybe Ty
+tyLamEtaRed t
+  | length las > 0 && map mkTyVar las == ras = Just f
+  | otherwise                                = Nothing
+  where (las,r  ) = tyLamArgsRes t
+        (f  ,ras) = tyAppFunArgs r
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Construction for records/variants
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
