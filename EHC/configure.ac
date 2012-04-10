@@ -346,9 +346,9 @@ AC_SUBST(GHC_GEN_OPTIONS, "$ghcGenOptions")
 
 case $HostPlatform in
   i*86-*-mingw* | i*86-*-cygwin* )
-  ghcCmd1=`echo $ghcCmd | sed 's+/\(.\)/+\1:/+'`
+  ghcCmd1=`echo $ghcCmd | sed 's+^/\(cygdrive/\)\?\(.\)/+\2:/+'`
   echo "ghcCmd is $ghcCmd, raw is $ghcCmd1"
-  echo $ghcCmd | sed 's+/\(.\)/+\1:/+'
+  echo $ghcCmd | sed 's+^/\(cygdrive/\)\?\(.\)/+\2:/+'
   ;;
   *)
   ghcCmd1=$ghcCmd
