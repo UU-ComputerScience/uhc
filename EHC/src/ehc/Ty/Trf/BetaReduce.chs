@@ -134,7 +134,7 @@ tyBetaRed1 renv lkup tyOrFunAndArgs
   where -- lambda expression: take body and substitute arguments
         eval (lam@(Ty_Lam fa b), args, f)
           | isJust mbEtaRed
-              = eval (fromJust mbEtaRed, args, f)
+              = mkres (mkApp (fromJust mbEtaRed : args))
           | lamLen <= argLen
               = mkres (mkApp (subst `varUpd` lamBody : drop lamLen args))
           | otherwise
