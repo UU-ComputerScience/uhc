@@ -730,6 +730,9 @@ data IdOccKind
 %%[[6
   | IdOcc_Kind
 %%]]
+%%[[7
+  | IdOcc_Fld
+%%]]
 %%[[9
   | IdOcc_Class
   | IdOcc_Inst
@@ -753,6 +756,9 @@ instance Show IdOccKind where
   show IdOcc_Type     = "Type"
 %%[[6
   show IdOcc_Kind     = "Kind"
+%%]]
+%%[[7
+  show IdOcc_Fld      = "Field"
 %%]]
 %%[[9
   show IdOcc_Class    = "Class"

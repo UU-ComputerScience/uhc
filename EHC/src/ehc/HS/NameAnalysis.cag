@@ -184,7 +184,8 @@ SEM Declaration
 %%[[7
                                             `gamAddGam`
                                             mkDefOccGam'' @lhs.nmLev @typelefthandside.range (\c _ -> IdAsp_Val_Fld @typerefname c)
-                                                          [ (c,IdOcc n IdOcc_Val) | (c,ns) <- @constructors.conAndFldrefnames, n <- ns ]
+                                                          (concat [ [(c,IdOcc n IdOcc_Val), (c,IdOcc n IdOcc_Fld)] | (c,ns) <- @constructors.conAndFldrefnames, n <- ns ]
+                                                          )
                                                           -- [ IdOcc n IdOcc_Val | (con,ns) <- @constructors.conAndFldrefnames, n <- ns ]
 %%]]
 %%[[92
@@ -863,7 +864,7 @@ SEM Type
 SEM RecordExpressionBinding
     | Binding
         loc             .   (refname,_,idUseOccGam,errIdUse)
-                                        =   mkUseOccGam @lhs.opts @lhs.idGam [@name] IdOcc_Val (IdAsp_Val_Fld hsnUnknown hsnUnknown) @range
+                                        =   mkUseOccGam @lhs.opts @lhs.idGam [@name] IdOcc_Fld (IdAsp_Val_Fld hsnUnknown hsnUnknown) @range
         lhs             .   idUseOccGam =   gamUnions [@idUseOccGam,@expression.idUseOccGam]
 %%]
 
@@ -871,7 +872,7 @@ SEM RecordExpressionBinding
 SEM RecordPatternBinding
     | Binding Pun
         loc             .   (fldrefname,_,idUseOccGam,errIdUse)
-                                        =   mkUseOccGam @lhs.opts @lhs.idGam [@name] IdOcc_Val (IdAsp_Val_Fld hsnUnknown hsnUnknown) @range
+                                        =   mkUseOccGam @lhs.opts @lhs.idGam [@name] IdOcc_Fld (IdAsp_Val_Fld hsnUnknown hsnUnknown) @range
     | Binding
         lhs             .   idUseOccGam =   gamUnions [@idUseOccGam,@pattern.idUseOccGam]
 %%]
