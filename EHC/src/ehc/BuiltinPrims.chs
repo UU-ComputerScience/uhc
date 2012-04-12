@@ -48,6 +48,8 @@ primsNeedsEval
       , ( "primIndexArray"		, Prim [True,True] 			True  )
       , ( "primWriteArray"		, Prim [True,True,False] 	False )
       -- , ( "primReadMutVar"		, Prim [True,True]	 		True  )
+      , ( "primNewMutVar"		, Prim [False,True] 		False )
+      , ( "primWriteMutVar"		, Prim [True,False,True] 	False )
 %%]]
       ]
 %%]
