@@ -1248,13 +1248,17 @@ tyLamArgsRes
 %%]
 
 %%[(11 hmtyinfer || hmtyast) hs export(tyLamEtaRed)
--- Eta reduce when the full list of args can be eliminated thus
+-- Eta reduce when the full list of args can be eliminated thus, i.e. it matches with the tail of the args applied in the app (if any) of the body
 tyLamEtaRed :: Ty -> Maybe Ty
 tyLamEtaRed t
-  | length las > 0 && map mkTyVar las == ras = Just f
-  | otherwise                                = Nothing
+  | llas > 0 && rlDiff >= 0 && map mkTyVar las == rTl = Just (mkApp (f:rHd))
+  | otherwise                                         = Nothing
   where (las,r  ) = tyLamArgsRes t
         (f  ,ras) = tyAppFunArgs r
+        llas      = length las
+        rlas      = length ras
+        rlDiff	  = rlas - llas
+        (rHd,rTl) = splitAt rlDiff ras
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
