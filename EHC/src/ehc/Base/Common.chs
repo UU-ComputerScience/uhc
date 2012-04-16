@@ -838,6 +838,8 @@ tokMkQName t
       Just tp | tokTpIsInt tp -> mkHNmPos $ tokMkInt t
       _                       -> mkHNm $ map hsnFromString $ tokenVals t
 %%]
+      _                       -> mkHNm $ concat $ intersperse "." $ tokenVals t		-- ok
+      _                       -> mkHNm $ concat $ tokenVals t						-- not ok
 
 %%[1 hs
 tokMkQNames :: [Token] -> [HsName]

@@ -651,7 +651,8 @@ mkUseOccGam opts idGam names kind asp rng
 %%[[50
                 mbDef       = gamLookup idOccUse idGam
 %%][99
-                mbDef       = case gamLookup idOccUse idGam of
+                mbDef       = -- (\v -> tr "XX" (idOccUse >#< ">>>>>" >#< v) v) $
+                              case gamLookup idOccUse idGam of
                                 Nothing | hsnIsInPrelude name
                                             -> if ehcOptUseAssumePrelude opts
                                                then Just (emptyIdDefOcc {doccOcc = idOccUse})
