@@ -542,6 +542,10 @@ SEM PatExpr
                             .   dti         =   panicJust ("PatExpr.{AppTop,Con}.dti: " ++ show @tyConNm ++ "." ++ show @appFunNm)
                                                     $ Map.lookup @appFunNm $ dgiConstrTagMp @dgi
 %%]
+                            .   dgi         =   ehcOptFromJust @lhs.opts ("PatExpr.{AppTop,Con}.dgi: " ++ show @tyConNm ++ (showPP $ ppParens @finKnPatTy)) emptyDataGamInfo
+                                                    $ dataGamLookup @tyConNm $ @lhs.dataGam
+                            .   dti         =   ehcOptFromJust @lhs.opts ("PatExpr.{AppTop,Con}.dti: " ++ show @tyConNm ++ "." ++ show @appFunNm) emptyDataTagInfo
+                                                    $ Map.lookup @appFunNm $ dgiConstrTagMp @dgi
 
 %%[(8 codegen)
 SEM PatExpr

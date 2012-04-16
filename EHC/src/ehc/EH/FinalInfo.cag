@@ -67,9 +67,6 @@ SEM AGItf
 %%[(9 hmtyinfer)
 SEM Expr
   | Let         loc         .   finTyVarMp          =   varUpd @tmpoTyVarMp $
-%%[[9999
-                                                        varUpd @bodyVarMp2 $
-%%]]
                                                         @lhs.finTyVarMp
 %%]
 

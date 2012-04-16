@@ -393,3 +393,16 @@ ehcOptBuiltin2 :: EHCOpts -> (EHBuiltinNames -> Int -> HsName) -> Int -> HsName
 ehcOptBuiltin2 o f i = f (ehcOptBuiltinNames o) i
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Variation of maybe for allowing either debugging or panic
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 export(ehcOptFromJust)
+-- | Either fromJust with a possible panic, or with a default value (when debugging)
+ehcOptFromJust :: EHCOpts -> String -> a -> Maybe a -> a
+ehcOptFromJust opts panicMsg n m
+  | ehcOptDebug opts = maybe n id m
+  | otherwise        = panicJust panicMsg m
+%%]
+
+

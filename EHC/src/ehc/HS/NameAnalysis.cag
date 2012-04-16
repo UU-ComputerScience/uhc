@@ -1049,7 +1049,8 @@ SEM Declaration
         lhs             .   undefOccGam =   gamUnions [@undefOccGam,@type.undefOccGam]
     | PatternBinding
         loc             .   (idUseOccGam,idUseHereOccL,_,undefOccGam)
-                                        =   splitIdUseOccGam @lhs.nmLev @righthandside.idUseOccGam
+                                        =   splitIdUseOccGam @lhs.nmLev
+                                                 (gamUnions [@pattern.idUseOccGam,@righthandside.idUseOccGam])
                         .   idDpdMp     =   idToOccL2DpdMp [@idOccDef] @idUseHereOccL
                                             `idDpdMpUnion`
                                             idToOccL2DpdMp [@idOccDef] (gamToAssocL @pattern.idDefOccGam)
