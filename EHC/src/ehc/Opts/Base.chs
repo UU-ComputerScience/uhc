@@ -203,7 +203,7 @@ data EHCOpts
 %%[[93
       ,  ehcOptFusion   	  ::  Bool				-- allow fusion syntax, the optimization itself is triggered by optimize flags
 %%]]
-%%[[(99 hmtyinfer)
+%%[[(99 hmtyinfer tyderivtree)
       ,  ehcOptEmitDerivTree  ::  DerivTreeWay      -- show derivation tree on stdout
       ,  ehcOptEmitDerivTreePaperSize
                               ::  String            -- the paper size to be used
@@ -340,7 +340,7 @@ emptyEHCOpts
 %%][99
       ,  ehcOptFusion			=   False
 %%]]
-%%[[(99 hmtyinfer)
+%%[[(99 hmtyinfer tyderivtree)
       ,  ehcOptEmitDerivTree    =   DerivTreeWay_None
       ,  ehcOptEmitDerivTreePaperSize
                                 =   "2"

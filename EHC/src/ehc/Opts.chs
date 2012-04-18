@@ -338,7 +338,7 @@ ehcCmdLineOpts
      ,  Option "o"  ["output"]           (ReqArg oOutputFile "file")          "file to generate executable to"
      ,  Option ""   ["keep-intermediate-files"] (NoArg oKeepIntermediateFiles) "keep intermediate files (default=off)"
 %%]]
-%%[[(99 hmtyinfer)
+%%[[(99 hmtyinfer tyderivtree)
      ,  Option ""   ["deriv-tree"]       (OptArg oDerivTree ("f|i[,p=[{0,1,2,3,4,5}|<n>m]][,f=" ++ boolArgStr ++ "]"))
                                                                               "emit derivation tree on .lhs file; f=final, i=infer, default=f; p=paper size (0=a0,...; <n>m=2^<n> meter), dflt=2; f=show subsumption"
 %%][100
@@ -497,7 +497,7 @@ ehcCmdLineOpts
 %%[[(8 codegen clr wholeprogC)
                                 Just "clr"   -> o { ehcOptMbTarget         = JustOk Target_FullProgAnal_Grin_CLR   }
 %%]]
-%%[[(99 hmtyinfer)
+%%[[(99 hmtyinfer tyderivtree)
                                 Just "dt"    -> o { ehcOptEmitDerivTree    = DerivTreeWay_Final   }
 %%]]
                                 _            -> o
@@ -621,7 +621,7 @@ ehcCmdLineOpts
          oCfgInstallRoot      s o   = o { ehcOptCfgInstallRoot              = Just s }
          oCfgInstallVariant   s o   = o { ehcOptCfgInstallVariant           = Just s }
 %%]]
-%%[[(99 hmtyinfer)
+%%[[(99 hmtyinfer tyderivtree)
          oDerivTree  ms  o =  case ms of
                                 Just ('f':a) -> opts a $ o { ehcOptEmitDerivTree    = DerivTreeWay_Final  }
                                 Just ('i':a) -> opts a $ o { ehcOptEmitDerivTree    = DerivTreeWay_Infer  }

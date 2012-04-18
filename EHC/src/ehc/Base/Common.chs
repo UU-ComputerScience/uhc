@@ -1219,7 +1219,7 @@ type PkgName = String
 %%% Derivation tree ways of printing
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[99 export(DerivTreeWay(..))
+%%[(99 tyderivtree) export(DerivTreeWay(..))
 data DerivTreeWay
   = DerivTreeWay_Infer      -- follow order of inference when printing type variables
   | DerivTreeWay_Final      -- use final mapping of type variables instead
