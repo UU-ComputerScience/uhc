@@ -78,7 +78,7 @@ ATTR CodeAGItf [ | | cTrf: CModule ]
 
 SEM CExpr
   | Lam         (loc.cNew,loc.isMatch)      =   case @body.mbApp of
-                                                  Just ((f,fFvS),v) | isJust mbV && a == @arg && not (a `Set.member` fFvS)
+                                                  Just ((f,fFvS),v) | isJust mbV && a == @argNm && not (a `Set.member` fFvS)
                                                     -> (f,True)
                                                     where mbV@(~(Just a)) = acoreExprMbVar v
                                                   _ -> (@cTrf,False)

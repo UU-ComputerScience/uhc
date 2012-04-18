@@ -623,6 +623,8 @@ instance AbstractCore Expr MetaVal ValBind ValBind ValBindCateg MetaBind Ty Pat 
   acoreBindcategPlain					= ValBindCateg_Plain
 
   -- inspecting
+  -- acoreExprMbLam						-- TBD
+
   acoreExprMbLet (Expr_Let c b e)       = Just (c,b,e)
   acoreExprMbLet _                      = Nothing
 
@@ -648,6 +650,7 @@ instance AbstractCore Expr MetaVal ValBind ValBind ValBindCateg MetaBind Ty Pat 
 
   acoreUnAlt (Alt_Alt p e)				= (p,e)
   acoreUnPatFld (FldBind_Fld n t o)		= (t,(n,o),n)
+  -- acoreUnBind (Bind_Bind n _)			= (n,[])		-- TBD, erroneous this
 
   -- transforming
   acoreExprUnThunk 						= mkExprUnThunk

@@ -21,7 +21,7 @@
 %%[(90 codegen) hs import({%{EH}Foreign.Pretty})
 %%]
 
-%%[(8 codegen).WRAPPER ag import({Core/AbsSyn})
+%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonBindNm})
 WRAPPER
   CodeAGItf CExpr
 %%[[9
@@ -190,7 +190,7 @@ SEM CExpr
 
 SEM CExpr
   | Lam         loc         .   lamBodyPP   =   @body.lamBodyPP
-                            .   lamArgPPL   =   (ppCNm @arg) : @body.lamArgPPL
+                            .   lamArgPPL   =   (ppCNm @argNm) : @body.lamArgPPL
   | * - Lam     lhs         .   lamBodyPP   =   @pp
                             .   lamArgPPL   =   []
 

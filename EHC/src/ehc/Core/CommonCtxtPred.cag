@@ -16,6 +16,7 @@ ATTR AllBind [ letBindingsCateg: CBindCateg | | ]
 
 SEM CExpr
   | Let         loc         .   letBindingsCateg    =   @categ
+  | Lam         loc         .   letBindingsCateg    =   acoreBindcategPlain
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

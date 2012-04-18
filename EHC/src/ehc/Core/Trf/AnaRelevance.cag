@@ -514,6 +514,7 @@ ATTR AllBind [ forQuantRVarMp: RVarMp | | ]
 
 SEM CExpr
   | Let         binds       .   forQuantRVarMp  =   @binds.rvarMp
+  | Lam         bind        .   forQuantRVarMp  =   emptyRVarMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -804,7 +805,7 @@ SEM CExpr
   | Var Int Char Tup FFI
                 lhs         .   cTrf            =   -- @dbg $
                                                     @cTrf
-  | Lam         lhs         .   cTrf            =   CExpr_Lam @arg $ annCoe @hereBodyCoe @body.cTrf
+  | Lam         lhs         .   cTrf            =   acoreLam1 @argNm $ annCoe @hereBodyCoe @body.cTrf
   | App         lhs         .   cTrf            =   let a = -- dbgApp @lhs.opts @argTy @funTy @func.ty $
                                                             annCoe @hereArgCoe @arg.cTrf
                                                         app = CExpr_App (annCoe @hereFunCoe @func.cTrf) a

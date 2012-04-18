@@ -363,10 +363,10 @@ SEM CBindAspect
 SEM CExpr
   | Let    lhs.envUp = Map.union @binds.envUp @body.envUp
   | Lam    lhs.envUp = maybe (if @lhs.isDictClass
-                              then Map.insert @arg TrackSelf @body.envUp
+                              then Map.insert @argNm TrackSelf @body.envUp
                               else @body.envUp
                              )
-                             (\n -> Map.insert @arg (TrackCtx n) @body.envUp)
+                             (\n -> Map.insert @argNm (TrackCtx n) @body.envUp)
                              @lhs.mbCtxCount
   | *-Let
       Lam  lhs.envUp = Map.empty

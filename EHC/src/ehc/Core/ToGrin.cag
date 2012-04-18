@@ -657,7 +657,7 @@ SEM CExpr
 ATTR CExpr [ | | grLamArgL: {[HsName]}  grLamBody: GrExpr  ]
 
 SEM CExpr
-  | Lam         lhs         .   grLamArgL   =   @arg : @body.grLamArgL
+  | Lam         lhs         .   grLamArgL   =   @argNm : @body.grLamArgL
   | * - Lam Ann CaseAltFail
                 lhs         .   grLamArgL   =   []
                 lhs         .   grLamBody   =   @grExpr

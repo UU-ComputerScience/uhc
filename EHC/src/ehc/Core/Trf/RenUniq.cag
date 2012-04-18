@@ -255,7 +255,7 @@ SEM CExpr
 %%[[50
                                                         @lhs.moduleNm
 %%]]
-                                                        [@arg] @lIniq @lhs.aRenMp
+                                                        [@argNm] @lIniq @lhs.aRenMp
                 loc         .   aRenMp      =   @body.accumARenMp
   | * - Lam Let Char Int String Tup FFI Var Ann
 %%[[9
@@ -352,7 +352,7 @@ SEM CExpr
 %%[(8 codegen)
 SEM CExpr
   | Var         lhs         .   cTrf        =   acoreVar (aRenRepl @lhs.aRenMp @nm)
-  | Lam         lhs         .   cTrf        =   CExpr_Lam (aRenRepl @aRenMp @arg) @body.cTrf
+  | Lam         lhs         .   cTrf        =   acoreLam1 (aRenRepl @aRenMp @argNm) @body.cTrf
 
 SEM CBind
   | Bind        lhs         .   cTrf        =   CBind_Bind (aRenRepl @lhs.aRenMp @nm) @bindAspects.cTrf

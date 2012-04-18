@@ -316,7 +316,7 @@ SEM CExpr
                 (lhs.cTrf,loc.levBindSq)    =   mkTrf @trfIsOk @lhs.lev @levOf @trNm @cTrf
   | App Case    (lhs.cTrf,loc.levBindSq)    =   mkTrf @trfIsOk @lhs.lev @levOf @trNm @cTrf
   | Lam         (lhs.cTrf,loc.levBindSq)    =   let mkTLB = mkTrf @trfIsOk @lhs.lev @levOf @trNm
-                                                          . acoreLam1 @arg
+                                                          . acoreLam1 @argNm
                                                           . mkLetTrf @hereBindSq
                                                 in  if cexprIsLam @body.cTrf && not (List.null (Seq.toList @hereBindSq))
                                                     then mkTLB (CExpr_Let CBindCateg_Plain [acoreBind1Cat CBindCateg_Plain @trNm2 @body.cTrf] (acoreVar @trNm2))

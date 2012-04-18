@@ -1506,10 +1506,13 @@ predMatchNmArgs p
   =  case p of
        Pred_Class t    -> (tyAppFunConNm t, tyAppArgs t)
        Pred_Pred  t    -> predMatchNmArgs $ snd $ tyPrArrowArgsRes t
-%%]
-%%[(10 hmtyinfer || hmtyast) hs
+%%[[10
        Pred_Lacks _ (Label_Lab l)  -> (hsnUniqify HsNameUniqifier_LacksLabel l, [])
        Pred_Lacks _ _              -> (mkHNm "_LabVar_", [])      -- necessary? only used by CHR's
+%%]]
+%%[[31
+       Pred_Eq t1 t2   -> (hsnEqTilde,[t1,t2])
+%%]]
 %%]
 
 %%[(9 hmtyinfer || hmtyast) hs export(tyPred2DataTy,pred2DataTy)
@@ -1530,10 +1533,10 @@ predTy p
   =  case p of
        Pred_Class t    -> t
        Pred_Pred  t    -> t
-%%[[(10 hmtyinfer || hmtyast)
+%%[[10
        Pred_Lacks    t _  -> t
 %%]]
-%%[[(31 hmtyinfer || hmtyast)
+%%[[31
        Pred_Eq t _ -> t  -- does it matter if we return the left or the right type?
 %%]]
 %%]
@@ -1548,6 +1551,21 @@ predLFlatten
   = concatMap fl
   where fl (Pred_Preds s) = predSeqToList s
         fl p              = [p]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Predicates & evidence
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(9 hmtyinfer || hmtyast) hs export(predHasRuntimeEvidence)
+-- | Is runtime evidence required for the predicate?
+predHasRuntimeEvidence :: Pred -> Bool
+predHasRuntimeEvidence p
+  =  case p of
+%%[[31
+       Pred_Eq _ _ -> False
+%%]]
+       _           -> True
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -671,7 +671,8 @@ instance Serialize CMetaBind where
 instance AbstractCore CExpr CMetaVal CBind CBindAspect CBindCateg CMetaBind Ty CPat CPatRest CPatFld CAlt where
   -- expr
   acoreApp1       f a      				= CExpr_App f a
-  acoreLam1Ty a _ e 				    = CExpr_Lam a e
+  -- acoreLam1Ty a _ e 				    = CExpr_Lam (acoreBind1 a) e
+  acoreLam1Bind b e 				    = CExpr_Lam b e
   acoreTagTupTy   tg _ es 				= acoreApp (CExpr_Tup tg) es
   acoreBindaspVal1CatLevMetasTy _ _ _ m _ e
   										= CBindAspect_Bind m e
@@ -742,6 +743,9 @@ instance AbstractCore CExpr CMetaVal CBind CBindAspect CBindCateg CMetaBind Ty C
   acoreBindcategPlain					= CBindCateg_Plain
 
   -- inspecting
+  acoreExprMbLam (CExpr_Lam b e)        = Just (b,e)
+  acoreExprMbLam _                      = Nothing
+
   acoreExprMbLet (CExpr_Let c b e)      = Just (c,b,e)
   acoreExprMbLet _                      = Nothing
 
@@ -768,6 +772,7 @@ instance AbstractCore CExpr CMetaVal CBind CBindAspect CBindCateg CMetaBind Ty C
 
   acoreUnAlt (CAlt_Alt p e)				= (p,e)
   acoreUnPatFld (CPatFld_Fld l o n _)   = (Ty_Any,(l,o),n)
+  acoreUnBind (CBind_Bind n as)         = (n,as)
 
   -- coercion
 %%[[8

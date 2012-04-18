@@ -73,7 +73,8 @@ DATA CExpr
   -- application, abstraction
   | App         func            : CExpr
                 arg             : CExpr
-  | Lam         arg             : {HsName}
+  | Lam         -- arg             : {HsName}
+                bind            : CBind
                 body            : CExpr
 
   -- case

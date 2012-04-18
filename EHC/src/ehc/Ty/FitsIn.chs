@@ -64,10 +64,10 @@
 %%[(11 hmtyinfer) import({%{EH}Ty.Trf.BetaReduce})
 %%]
 
-%%[(99 hmtyinfer hmtyinfer).DerivationTree import({%{EH}DerivationTree})
+%%[(99 hmtyinfer).DerivationTree import({%{EH}DerivationTree})
 %%]
 
-%%[(100 hmtyinfer hmtyinfer) -99.DerivationTree
+%%[(100 hmtyinfer) -99.DerivationTree
 %%]
 
 For debug/trace:

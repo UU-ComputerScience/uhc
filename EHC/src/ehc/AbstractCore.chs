@@ -46,8 +46,11 @@ class AbstractCore  expr metaval bind bindaspect bindcateg metabind ty pat patre
     , alt    	 -> expr
   where
   ------------------------- constructing: expr -------------------------
+  -- | 1 arg application, together with meta info about the argument, packaged in the bind
+  acoreLam1Bind :: bind -> expr -> expr
+  
   -- | 1 arg application, together with meta info about the argument
-  acoreLam1Ty :: HsName -> ty -> expr -> expr
+  -- acoreLam1Ty :: HsName -> ty -> expr -> expr
   
   -- | 1 lam abstraction, together with meta info about, and type of the argument
   acoreApp1 :: expr -> expr -> expr
@@ -177,6 +180,9 @@ class AbstractCore  expr metaval bind bindaspect bindcateg metabind ty pat patre
   acoreBindcategPlain :: bindcateg
   
   ------------------------- inspecting/deconstructing -------------------------
+  -- | is expr a lambda?
+  acoreExprMbLam :: expr -> Maybe (bind,expr)
+
   -- | is expr a let?
   acoreExprMbLet :: expr -> Maybe (bindcateg,[bind],expr)
 
@@ -206,6 +212,9 @@ class AbstractCore  expr metaval bind bindaspect bindcateg metabind ty pat patre
 
   -- | 'un' patfld
   acoreUnPatFld :: patfld -> (ty,(HsName,expr),HsName)
+
+  -- | 'un' bind
+  acoreUnBind :: bind -> (HsName,[bindaspect])
 
   ------------------------- transforming -------------------------
   -- | unthunk expr
@@ -401,7 +410,12 @@ acoreApp f as = foldl (\f a -> acoreApp1 f a) f as
 %%% Derived functionality: lambda abstraction
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) export(acoreLam1,acoreLamTy,acoreLam)
+%%[(8 codegen) export(acoreLam1Ty,acoreLam1,acoreLamTy,acoreLam)
+acoreLam1Ty :: (AbstractCore e m b basp bcat mbind t p pr pf a) => HsName -> t -> e -> e
+acoreLam1Ty a t e = acoreLam1Bind (acoreBind1Nm1 a) e
+-- acoreLam1Ty a t e = acoreLam1Bind (acoreBind1Ty a t) e		-- 20120418, TBD: ignore type for now
+{-# INLINE acoreLam1Ty #-}
+
 acoreLam1 :: (AbstractCore e m b basp bcat mbind t p pr pf a) => HsName -> e -> e
 acoreLam1 a e = acoreLam1Ty a (acoreTyErr "acoreLam1") e
 {-# INLINE acoreLam1 #-}
@@ -428,6 +442,13 @@ acoreTup es = acoreTagTup CTagRec es
 acoreTag :: (AbstractCore e m b basp bcat mbind t p pr pf a) => CTag -> e
 acoreTag tg = acoreTagTup tg []
 {-# INLINE acoreTag #-}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Derived functionality: bind
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -495,9 +516,14 @@ acoreBind1Meta n m e = acoreBind1MetaTy n m acoreTyNone e
 
 %%]
 
-%%[(8 codegen) export(acoreBind1Asp1)
+%%[(8 codegen) export(acoreBind1Asp1,acoreBind1Nm1)
 acoreBind1Asp1 :: (AbstractCore e m b basp bcat mbind t p pr pf a) => HsName -> basp -> b
 acoreBind1Asp1 n ba = acoreBind1Asp n [ba]
+{-# INLINE acoreBind1Asp1 #-}
+
+acoreBind1Nm1 :: (AbstractCore e m b basp bcat mbind t p pr pf a) => HsName -> b
+acoreBind1Nm1 n = acoreBind1Asp n []
+{-# INLINE acoreBind1Nm1 #-}
 %%]
 
 %%[(8 codegen) export(acoreBindaspVal1CatLevMetaTy,acoreBindaspVal1CatLevTy,acoreBindaspVal1CatMetaTy,acoreBindaspVal1CatTy,acoreBindaspVal1Cat)
@@ -731,7 +757,7 @@ acoreBuiltinListSingleton opts e
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Derived functionality: inspection
+%%% Derived functionality: inspection: pattern, case alt
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen) export(acorePatConMbTag,acoreAltMbTag)
@@ -745,6 +771,17 @@ acoreAltMbTag = (\p ->     (\(tg,_,_) -> tg) <$> acorePatMbCon  p
                        <|> (const ctagInt)   <$> acorePatMbInt  p
                        -- <|> (const ctagChar)  <$> acorePatMbChar p
                 ) . fst . acoreUnAlt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Derived functionality: inspection: binding
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) export(acoreBindNm)
+-- | bound name of binding
+acoreBindNm :: (AbstractCore e m b basp bcat mbind t p pr pf a) => b -> HsName
+acoreBindNm = fst . acoreUnBind
+{-# INLINE acoreBindNm #-}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

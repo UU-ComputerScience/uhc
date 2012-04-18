@@ -95,7 +95,7 @@ SEM CExpr
   | Lam         lhs         .   isTraceCandidate
                                             =   True
                             .   traceCandidateLamArgs
-                                            =   @arg : @body.traceCandidateLamArgs
+                                            =   @argNm : @body.traceCandidateLamArgs
                             .   traceCandidateLamBody
                                             =   @body.traceCandidateLamBody
   | * - Lam     lhs         .   isTraceCandidate

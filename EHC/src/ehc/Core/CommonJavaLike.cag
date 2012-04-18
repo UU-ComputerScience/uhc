@@ -144,7 +144,7 @@ SEM CExpr
 ATTR CExpr [ | | nmArgL: {[HsName]} ]
 
 SEM CExpr
-  | Lam         loc         .   nmArgL      =   @arg : @body.nmArgL
+  | Lam         loc         .   nmArgL      =   @argNm : @body.nmArgL
                 loc         .   nmArgL      :   {[HsName]}
   | * - Lam Ann lhs         .   nmArgL      =   []
 %%]

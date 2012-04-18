@@ -13,6 +13,13 @@ SEM CBind
   | Bind        bindAspects .   nm              =   @nm
 %%]
 
+%%[(8 codegen)
+ATTR CBind [ | | nm: HsName ]
+
+SEM CBind
+  | Bind        lhs 		.   nm              =   @nm
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Name of use of binding
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -23,6 +30,8 @@ SEM CExpr
                             .   nmAsp           =   mkHNm @ref
                 loc         .   nm              :   HsName
                 loc         .   nmAsp           :   HsName
+  | Lam			loc			.	argNm			=	@bind.nm
+--  							.	arg				=	@argNm				-- for backwards compatibility, to be removed someday
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -163,7 +163,7 @@ SEM CExpr
                                                   Map.empty
                                                   @binds.bindNmMp
                             .   nmMp        =   Map.union @nmMpNew $ Map.difference @lhs.nmMp @binds.cvarIntroExprMp
-  | Lam			body		.	nmMp		=	Map.delete @arg @lhs.nmMp
+  | Lam			body		.	nmMp		=	Map.delete @argNm @lhs.nmMp
 
 SEM CAlt
   | Alt         expr        .   nmMp		=	foldr Map.delete @lhs.nmMp @pat.nmL
