@@ -193,5 +193,5 @@ pCPat
 
 pCPatFld :: CParser CPatFld
 pCPatFld
-  = (\l o n -> CPatFld_Fld l o n []) <$ pOCURLY <*> pDollNm <* pCOMMA <*> pCExpr <* pCCURLY <* pEQUAL <*> pDollNm -- pCPat
+  = (\l o n -> CPatFld_Fld l o n []) <$ pOCURLY <*> pDollNm <* pCOMMA <*> pCExpr <* pCCURLY <* pEQUAL <*> pCBind -- pCPat
 %%]

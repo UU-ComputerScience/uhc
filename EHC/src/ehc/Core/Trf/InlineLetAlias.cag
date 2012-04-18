@@ -226,6 +226,7 @@ SEM CModule
 
 SEM CPatFld
   | Fld   offset.allowTrfToCon  =  True
+  		  bind  .allowTrfToCon  =  False
 
 %%]
 
@@ -238,6 +239,7 @@ SEM CModule
 
 SEM CPatFld
   | Fld   offset.noTrfToConNmS  =  Set.empty
+  		  bind  .noTrfToConNmS  =  Set.empty
 
   
 SEM CBindAspect

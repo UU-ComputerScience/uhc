@@ -17,6 +17,9 @@ ATTR AllBind [ letBindingsCateg: CBindCateg | | ]
 SEM CExpr
   | Let         loc         .   letBindingsCateg    =   @categ
   | Lam         loc         .   letBindingsCateg    =   acoreBindcategPlain
+
+SEM CPatFld
+  | Fld         bind        .   letBindingsCateg    =   acoreBindcategPlain
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -138,6 +141,8 @@ SEM CBindAspect
 SEM CPatFld
   | Fld         offset      .   isStrict    =   True
                             .   isLamBody   =   False
+                bind		.   isStrict    =   False
+                            .   isLamBody   =   False
 
 SEM CExpr
   | Let         binds       .   isStrict    =   @isGlobal || @categ == CBindCateg_Strict
@@ -157,6 +162,7 @@ SEM CModule
 
 SEM CPatFld
   | Fld         offset      .   evalCtx         =   EvalCtx_Eval
+  				bind		.	evalCtx			=	EvalCtx_None
 
 
 SEM CExpr

@@ -713,7 +713,8 @@ instance AbstractCore CExpr CMetaVal CBind CBindAspect CBindCateg CMetaBind Ty C
 %%]]
   
   -- patfld
-  acorePatFldTy _ (lbl,off) n 			= CPatFld_Fld lbl off n []
+  acorePatFldBind (lbl,off) b			= CPatFld_Fld lbl off b []
+  -- acorePatFldTy _ (lbl,off) n 			= CPatFld_Fld lbl off n []
 
   -- patrest
   acorePatRestEmpty  					= CPatRest_Empty
@@ -774,7 +775,7 @@ instance AbstractCore CExpr CMetaVal CBind CBindAspect CBindCateg CMetaBind Ty C
   acorePatMbChar _                 		= Nothing
 
   acoreUnAlt (CAlt_Alt p e)				= (p,e)
-  acoreUnPatFld (CPatFld_Fld l o n _)   = (acoreTyErr "acoreUnPatFld",(l,o),n)
+  acoreUnPatFld (CPatFld_Fld l o b _)   = ((l,o),b)
   acoreUnBind (CBind_Bind n as)         = (n,as)
 
   -- coercion

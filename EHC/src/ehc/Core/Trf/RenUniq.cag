@@ -358,7 +358,7 @@ SEM CBind
   | Bind        lhs         .   cTrf        =   CBind_Bind (aRenRepl @lhs.aRenMp @nm) @bindAspects.cTrf
 
 SEM CPatFld
-  | Fld         lhs         .   cTrf        =   CPatFld_Fld @lbl @offset.cTrf (aRenRepl @aRenMp @fldNm) @fldAnns.cTrf -- @pat.cTrf
+  | Fld         lhs         .   cTrf        =   CPatFld_Fld @lbl @offset.cTrf (acoreBind1Nm1 $ aRenRepl @aRenMp @fldNm) @fldAnns.cTrf -- @pat.cTrf
 
 SEM CPat
   | Var         lhs         .   cTrf        =   CPat_Var (aRenRepl @lhs.aRenMp $ @pnm)
@@ -384,4 +384,5 @@ SEM CModule
 
 SEM CPatFld
   | Fld          offset.protectedBindingNames  =   []
+                 bind  .protectedBindingNames  =   []
 %%]

@@ -32,6 +32,9 @@ SEM CExpr
                 loc         .   nmAsp           :   HsName
   | Lam			loc			.	argNm			=	@bind.nm
 --  							.	arg				=	@argNm				-- for backwards compatibility, to be removed someday
+
+SEM CPatFld
+  | Fld         loc         .   fldNm         	=   @bind.nm
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

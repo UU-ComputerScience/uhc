@@ -594,7 +594,8 @@ instance AbstractCore Expr MetaVal ValBind ValBind ValBindCateg MetaBind Ty Pat 
 %%]]
   
   -- patfld
-  acorePatFldTy t (_,off) n 			= FldBind_Fld n t off
+  -- acorePatFldBind					-- TBD
+  acorePatFldTy t (_,off) n 			= FldBind_Fld n t off	-- obsolete
 
   -- patrest
   acorePatRestEmpty  					= PatRest_Empty
@@ -649,8 +650,8 @@ instance AbstractCore Expr MetaVal ValBind ValBind ValBindCateg MetaBind Ty Pat 
   acorePatMbChar _                 		= Nothing
 
   acoreUnAlt (Alt_Alt p e)				= (p,e)
-  acoreUnPatFld (FldBind_Fld n t o)		= (t,(n,o),n)
-  -- acoreUnBind (Bind_Bind n _)			= (n,[])		-- TBD, erroneous this
+  -- acoreUnPatFld (FldBind_Fld n t o)		= (t,(n,o),n)	-- TBD, not impl correct (bitrot)
+  -- acoreUnBind (Bind_Bind n _)			= (n,[])		-- TBD, not impl correct (bitrot)
 
   -- transforming
   acoreExprUnThunk 						= mkExprUnThunk

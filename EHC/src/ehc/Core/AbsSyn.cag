@@ -327,7 +327,8 @@ DATA CPatRest
 DATA CPatFld
   | Fld         lbl             : {HsName}
                 offset          : CExpr
-                fldNm           : {HsName}
+                -- fldNm           : {HsName}
+                bind            : CBind
                 fldAnns			: CBindAnnL
 
 TYPE CPatFldL   =   [CPatFld]

@@ -130,7 +130,8 @@ class AbstractCore  expr metaval bind bindaspect bindcateg metabind ty pat patre
 %%]]
   ------------------------- constructing: pat field -------------------------
   -- | pat field
-  acorePatFldTy :: ty -> (HsName,expr) -> HsName -> patfld
+  acorePatFldBind :: (HsName,expr) -> bind -> patfld
+  -- acorePatFldTy :: ty -> (HsName,expr) -> HsName -> patfld
 
   ------------------------- constructing: patrest -------------------------
   -- | patrest, empty
@@ -216,7 +217,10 @@ class AbstractCore  expr metaval bind bindaspect bindcateg metabind ty pat patre
   acoreUnAlt :: alt -> (pat,expr)
 
   -- | 'un' patfld
-  acoreUnPatFld :: patfld -> (ty,(HsName,expr),HsName)
+  acoreUnPatFld :: patfld -> ((HsName,expr),bind)
+
+  -- | 'un' patfld
+  -- acoreUnPatFld :: patfld -> (ty,(HsName,expr),HsName)
 
   -- | 'un' bind
   acoreUnBind :: bind -> (HsName,[bindaspect])
@@ -787,6 +791,17 @@ acoreAltMbTag = (\p ->     (\(tg,_,_) -> tg) <$> acorePatMbCon  p
 acoreBindNm :: (AbstractCore e m b basp bcat mbind t p pr pf a) => b -> HsName
 acoreBindNm = fst . acoreUnBind
 {-# INLINE acoreBindNm #-}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Derived functionality: inspection: pattern
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) export(acorePatFldTy)
+-- | bound name of binding
+acorePatFldTy :: (AbstractCore e m b basp bcat mbind t p pr pf a) => t -> (HsName,e) -> HsName -> pf
+acorePatFldTy _ lbloff n = acorePatFldBind lbloff (acoreBind1Nm1 n)
+{-# INLINE acorePatFldTy #-}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

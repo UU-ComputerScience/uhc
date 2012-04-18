@@ -515,6 +515,9 @@ ATTR AllBind [ forQuantRVarMp: RVarMp | | ]
 SEM CExpr
   | Let         binds       .   forQuantRVarMp  =   @binds.rvarMp
   | Lam         bind        .   forQuantRVarMp  =   emptyRVarMp
+
+SEM CPatFld
+  | Fld			bind        .   forQuantRVarMp  =   emptyRVarMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -818,7 +821,7 @@ SEM CAltL
                                                       CAlt_Alt p e -> CAlt_Alt p (annCoe @hereAltCoe e) : @tl.cTrf
 
 SEM CPatFld
-  | Fld         lhs         .   cTrf            =   CPatFld_Fld @lbl (annCoe @hereOffCoe @offset.cTrf) @fldNm [CBindAnn_Coe @hereFldCoe]
+  | Fld         lhs         .   cTrf            =   CPatFld_Fld @lbl (annCoe @hereOffCoe @offset.cTrf) @bind.cTrf [CBindAnn_Coe @hereFldCoe]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

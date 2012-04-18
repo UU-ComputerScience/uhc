@@ -125,11 +125,12 @@ acorePatBindOffsetL pbL
   =  let  (pbL',obL)
             =  unzip
                .  map
-                    (\b -> let (t,(l,o),n) = acoreUnPatFld b
+                    (\b -> let ((l,o),pbind) = acoreUnPatFld b
+                               (n,_) = acoreUnBind pbind
                                offNm = hsnUniqify HsNameUniqifier_FieldOffset l
                            in  case acoreExprMbInt o of
                                  Just _ -> (b,[])
-                                 _      -> (acorePatFldTy t (l,acoreVar offNm) n,[acoreBind1Ty offNm (acoreTyInt) o])
+                                 _      -> (acorePatFldTy (acoreTyErr "acorePatBindOffsetL") (l,acoreVar offNm) n,[acoreBind1Ty offNm (acoreTyInt) o])
                     )
                $  pbL
      in   (pbL',concat obL)
@@ -172,7 +173,8 @@ acoreStrictSatCaseMetaTy env mbNm meta e [alt] -- [CAlt_Alt (CPat_Con (CTag tyNm
   where mbDgi = dataGamLookup (ctagTyNm tg) (rceDataGam env)
         (pat,ae) = acoreUnAlt alt
         mbPatCon@(~(Just (tg,_,flds@(~([fld]))))) = acorePatMbCon pat
-        (_,_,pnm) = acoreUnPatFld fld
+        (_,pbind) = acoreUnPatFld fld
+        (pnm,_) = acoreUnBind pbind
         cat = acoreBindcategPlain
         ty = maybe (acoreTyErr "acoreStrictSatCaseMetaTy.ty") snd mbNm
 acoreStrictSatCaseMetaTy env mbNm meta e alts

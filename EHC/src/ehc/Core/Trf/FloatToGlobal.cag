@@ -117,6 +117,7 @@ SEM CModule
 
 SEM CPatFld
   | Fld                 offset      .   isLocalInInstance   =   False
+                        bind        .   isLocalInInstance   =   False
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

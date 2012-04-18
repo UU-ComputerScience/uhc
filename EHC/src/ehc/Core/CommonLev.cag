@@ -36,5 +36,8 @@ ATTR AllBind [ isGlobal: Bool | | ]
 SEM CExpr
   | Let         loc         .   isGlobal    =   @lhs.lev == cLevModule
   | Lam         loc         .   isGlobal    =   False
+
+SEM CPatFld
+  | Fld         bind        .   isGlobal    =   False
 %%]
 
