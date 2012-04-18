@@ -188,7 +188,7 @@ evidMpToCore2 env evidMp
         ann (RedHow_ByInstance   n _   sc) ctxt= ( acoreApp (mknm n) (map (\c -> (tcrCExpr c)) ctxt), maximumBy pscpCmpByLen $ sc : map tcrScope ctxt )
         ann (RedHow_BySuperClass n o t ) [sub] = let res = acoreSatSelsCaseMetaTy
                                                              (emptyRCEEnv $ feEHCOpts $ fiEnv env)
-                                                             (Just (hsnUniqifyEval n,Ty_Any))
+                                                             (Just (hsnUniqifyEval n,acoreTyErr "evidMpToCore2.ann.RedHow_BySuperClass"))
                                                              acoreMetavalDfltDict 
                                                              (tcrCExpr sub) 
                                                              t

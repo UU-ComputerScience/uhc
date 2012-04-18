@@ -497,7 +497,7 @@ rceMatchConst env ((arg,ty):args) alts
 
 %%[(97 codegen) hs
 rceMatchBoolExpr :: (Eq bcat, AbstractCore e m b basp bcat mbind t p pr pf a, CSubstitutable e m b ba t e) => RCEEnv' e m b ba t -> [(HsName,t)] -> RCEAltL' e t b pr -> e
-rceMatchBoolExpr env aargs@((arg,ty):args) alts
+rceMatchBoolExpr env aargs@((arg,_):args) alts
   = foldr (\(n,c,t) f -> acoreIf (rceEHCOpts env) (Just n) c t f) (rceCaseCont env) alts'
   where alts'  =  map (\(u, alts@(RAlt_Alt (RPat_BoolExpr _ _ b _ : _) _ _ : _))
                          -> ( hsnUniqifyInt HsNameUniqifier_Evaluated u arg
@@ -537,9 +537,10 @@ rceMatchTy env args alts
            ->  case acoreExprMbVar e of
                   Just _
                      ->  rceMatchSplits (rceUpdEnv e env) args alts
-                  _  ->  acoreLet1PlainTy nc (acoreTyErr "rceMatch") e
+                  _  ->  acoreLet1PlainTy nc (rcpTy pc) e
                          $ rceMatchSplits (rceUpdEnv (acoreVar nc) env) args alts
-                     where nc  = hsnUniqify HsNameUniqifier_CaseContinuation (rpatNmNm $ rcpPNm $ rcaPat $ head alts)
+                     where pc  = rcaPat $ head alts
+                           nc  = hsnUniqify HsNameUniqifier_CaseContinuation (rpatNmNm $ rcpPNm pc)
         )
         (rceCaseCont env)
      $ (rceSplit (\a -> if      raltIsVar           a  then RCESplitVar (raaFailS a)
@@ -553,7 +554,7 @@ rceMatchTy env args alts
                  ) alts)
 %%]
 
-%%[(8 codegen) hs export(rceMatch)
+%%[(8888 codegen) hs export(rceMatch)
 rceMatch :: (Eq bcat, AbstractCore e m b basp bcat mbind t p pr pf a, CSubstitutable e m b ba t e) => RCEEnv' e m b ba t -> [(HsName)] -> RCEAltL' e t b pr -> e
 rceMatch env args alts = rceMatchTy env (acoreTyLift "rceMatch" args) alts
 %%]

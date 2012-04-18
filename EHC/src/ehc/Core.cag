@@ -696,6 +696,9 @@ instance AbstractCore CExpr CMetaVal CBind CBindAspect CBindCateg CMetaBind Ty C
   acoreHoleLet							= CExpr_HoleLet
 %%]
 
+  -- ty constants
+  acoreTyBool o                         = semCon (ehcOptBuiltin o ehbnDataBool)
+  
   -- ty
   -- acoreTyInt2							= tyInt
 
@@ -728,7 +731,7 @@ instance AbstractCore CExpr CMetaVal CBind CBindAspect CBindCateg CMetaBind Ty C
 %%]]
   acoreMetabindDflt      				= CMetaBind_Plain
   acoreTyErr             				= Ty_Dbg
-  acoreTyNone            				= Ty_Any
+  acoreTyNone            				= acoreTyErr "acoreTyNone"
   acoreTyChar 							= tyChar
   acoreTyInt 							= tyInt
 %%[[8
@@ -771,7 +774,7 @@ instance AbstractCore CExpr CMetaVal CBind CBindAspect CBindCateg CMetaBind Ty C
   acorePatMbChar _                 		= Nothing
 
   acoreUnAlt (CAlt_Alt p e)				= (p,e)
-  acoreUnPatFld (CPatFld_Fld l o n _)   = (Ty_Any,(l,o),n)
+  acoreUnPatFld (CPatFld_Fld l o n _)   = (acoreTyErr "acoreUnPatFld",(l,o),n)
   acoreUnBind (CBind_Bind n as)         = (n,as)
 
   -- coercion

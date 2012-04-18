@@ -137,14 +137,14 @@ SEM Expr
                 loc         .   cexprapp    =   acoreApp1 @func.cexpr @arg.cexpr
                             .   cexpr       =   if @func.isNewtype then @arg.cexpr else @cexprapp
   | Lam         loc         .   cexpr       =   acoreLam1 @arg.topNm
-                                                    (rceMatch @rceEnv [@arg.topNm] [RAlt_Alt [@arg.rpat] @body.cexpr @body.caseFailS])
+                                                    (rceMatchTy @rceEnv [(@arg.topNm,@finalTyArgExpanded)] [RAlt_Alt [@arg.rpat] @body.cexpr @body.caseFailS])
   | Case        loc         .   cexpr       =   let (ns,bs,as)
                                                       = if @isTupOfArg
                                                         then let ns = [ acbrefNm ref | (CExpr_Var ref) <- fuL2ExprL (reverse @expr.fuCExprL) ]
-                                                             in  (ns,[],@alts.raltL')
+                                                             in  (zip ns (tyProdArgs @finalTyExprExpanded),[],@alts.raltL')
                                                         else let n = uidHNm @lUniq2
-                                                             in  ([n],[acoreBind1Ty n @finalTyExprExpanded @expr.cexpr],@alts.raltL)
-                                                in  acoreLet CBindCateg_Plain bs (rceMatch @rceEnv ns as)
+                                                             in  ([(n,@finalTyExprExpanded)],[acoreBind1Ty n @finalTyExprExpanded @expr.cexpr],@alts.raltL)
+                                                in  acoreLet CBindCateg_Plain bs (rceMatchTy @rceEnv ns as)
   | AppTop      loc         .   cexprtop    =   @expr.cexpr
   | Rec         loc         .   cexprtop    =   @rcexpr
   | Parens TypeAs
@@ -610,7 +610,7 @@ SEM PatExpr
 
 %%[(97 codegen)
 SEM PatExpr
-  | Expr        loc         .   rpat        =   RPat_BoolExpr @cpNm @finalTyExpanded @cexpr @mbConst
+  | Expr        loc         .   rpat        =   RPat_BoolExpr @cpNm (acoreTyErr "EH.ToCore.PatExpr.Expr") @cexpr @mbConst
 %%]
 
 %%[(8 codegen)
@@ -690,7 +690,7 @@ SEM Expr
     LamImpl
 %%]]
                 loc         .   lamBodyCoeL         =   mkLamBodyCoe
-                                                            (acoreCoeMap (\e -> rceMatch @rceEnv [@arg.topNm] [RAlt_Alt [@arg.rpat] e Set.empty]))
+                                                            (acoreCoeMap (\e -> rceMatchTy @rceEnv [(@arg.topNm,@finalTyArgExpanded)] [RAlt_Alt [@arg.rpat] e Set.empty]))
                                                             @body.appArgCoeL
 %%]
 

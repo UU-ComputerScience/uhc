@@ -100,8 +100,13 @@ class AbstractCore  expr metaval bind bindaspect bindcateg metabind ty pat patre
 %%]]
 
   ------------------------- constructing: ty -------------------------
+
+  ------------------------- constructing: ty constants -------------------------
   -- Int
   -- acoreTyInt2 :: ty
+  
+  -- Bool
+  acoreTyBool :: EHCOpts -> ty
   
   ------------------------- constructing: pat -------------------------
   -- | pat var, with type
@@ -792,7 +797,7 @@ acoreBindNm = fst . acoreUnBind
 -- | Construct 'if' expression. Hardcoded: tag nr, ordered alts (by tag)
 acoreIf :: (AbstractCore e m b basp bcat mbind t p pr pf a) => EHCOpts -> Maybe HsName -> e -> e -> e -> e
 acoreIf opts cn c t f
-  = acoreMbLet1StrictInMetaTyWith id id (fmap (\n -> (n,acoreTyErr "acoreIf: Bool")) cn) acoreMetavalDflt c
+  = acoreMbLet1StrictInMetaTyWith id id (fmap (\n -> (n,acoreTyBool opts)) cn) acoreMetavalDflt c
     $ (\c -> acoreCaseDflt c
                [ acoreAlt (acorePatCon (ctagFalse opts) acorePatRestEmpty []) f
                , acoreAlt (acorePatCon (ctagTrue  opts) acorePatRestEmpty []) t
@@ -1149,7 +1154,7 @@ acoreRPat2Pat p
       RPat_Int      n ty v    -> acorePatIntTy2 ty v
       RPat_Char     n ty v    -> acorePatCharTy ty v
 %%[[97
-      RPat_BoolExpr n _ v _   -> acorePatBoolExpr  v
+      RPat_BoolExpr n _  v _  -> acorePatBoolExpr  v
 %%]]
 %%]
 

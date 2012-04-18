@@ -76,27 +76,28 @@ SEM Expr
 
 %%[(2 hmtyinfer)
 SEM Decl
-  | TySig       loc         .   finalTy             =   vgiTy $ panicJust "EH.Infer.Decl.TySig" $ valGamLookup @nm            @lhs.finValGam
-  | Val         loc         .   finalTy             =           maybe Ty_Any vgiTy              $ valGamLookup @patExpr.topNm @lhs.finValGam
+  | TySig       loc         .   finalTy             =   maybe (acoreTyErr "EH.FinalInfo.Decl.TySig.finalTy")    vgiTy $ valGamLookup @nm            @lhs.finValGam
+  | Val         loc         .   finalTy             =   maybe (acoreTyErr "EH.FinalInfo.Decl.Val.finalTy")      vgiTy $ valGamLookup @patExpr.topNm @lhs.finValGam
 %%[[9
-  | Instance    loc         .   finalTy             =           maybe Ty_Any vgiTy              $ valGamLookup @dictNm        @lhs.finValGam
+  | Instance    loc         .   finalTy             =   maybe (acoreTyErr "EH.FinalInfo.Decl.Instance.finalTy") vgiTy $ valGamLookup @dictNm        @lhs.finValGam
 %%]]
 %%]
 
 %%[(93 hmtyinfer)
 SEM Decl
-  | FusionConv  loc         .   finConTy            =   vgiTy $ panicJust ("EH.Infer.Decl.FusionConv: " ++ show @conNm) $ valGamLookup @conNm @lhs.finValGam
-                            .   finAbsTy            =   vgiTy $ panicJust ("EH.Infer.Decl.FusionConv: " ++ show @absNm) $ valGamLookup @absNm @lhs.finValGam
+  | FusionConv  loc         .   finConTy            =   maybe (acoreTyErr $ "EH.FinalInfo.Decl.FusionConv.finConTy: " ++ show @conNm) vgiTy $ valGamLookup @conNm @lhs.finValGam
+                            .   finAbsTy            =   maybe (acoreTyErr $ "EH.FinalInfo.Decl.FusionConv.finAbsTy: " ++ show @absNm) vgiTy $ valGamLookup @absNm @lhs.finValGam
 %%]
 
 %%[(8 hmtyinfer)
 SEM PatExpr
-  | Var VarAs AppTop Rec DataFields Con IConst CConst SConst Irrefutable Bang App
+  | Var VarAs AppTop Rec DataFields Con IConst CConst SConst Irrefutable Bang
 %%[[97
-    Expr
+    -- Expr
 %%]]
-                loc         .   finalTy             =   maybe Ty_Any vgiTy $ valGamLookup (rpatNmNm @cpNm) @lhs.finValGam
+                loc         .   finalTy             =   @lhs.finTyVarMp `varUpd` @ty
 %%]
+                loc         .   finalTy             =   maybe (acoreTyErr $ "EH.FinalInfo.PatExpr.*.finalTy: " ++ show (rpatNmNm @cpNm)) vgiTy $ valGamLookup (rpatNmNm @cpNm) @lhs.finValGam
 
 %%[(5 hmtyinfer)
 SEM DataConstr
@@ -114,6 +115,11 @@ SEM PatExpr
 SEM Expr
   | AppTop      loc         .   finalTy             =   @lhs.finTyVarMp `varUpd` @ty
   | Case        loc         .   finalTyExpr         =   @lhs.finTyVarMp `varUpd` @expr.ty
+  | Lam
+%%[[12
+    LamImpl
+%%]]
+                loc         .   finalTyArg          =   @lhs.finTyVarMp `varUpd` @arg.ty
 %%]
 
 %%[(8 hmtyinfer)
@@ -130,9 +136,15 @@ SEM Expr
 %%[[8
   | AppTop      loc         .   finalTyExpanded     =   @finalTy
   | Case        loc         .   finalTyExprExpanded =   @finalTyExpr
+  | Lam         loc         .   finalTyArgExpanded  =   @finalTyArg
 %%][11
   | AppTop      loc         .   finalTyExpanded     =   tyCanonicFFI (emptyTyBetaRedEnv' @fe) @finalTy
   | Case        loc         .   finalTyExprExpanded =   tyCanonicFFI (emptyTyBetaRedEnv' @fe) @finalTyExpr
+  | Lam
+%%[[12
+    LamImpl
+%%]]
+                loc         .   finalTyArgExpanded  =   tyCanonicFFI (emptyTyBetaRedEnv' @fe) @finalTyArg
 %%]]
 %%]
 
@@ -147,9 +159,9 @@ SEM DataFieldExpr
 
 %%[(8 hmtyinfer)
 SEM PatExpr
-  | Var VarAs AppTop Rec DataFields Con IConst CConst SConst Irrefutable Bang App
+  | Var VarAs AppTop Rec DataFields Con IConst CConst SConst Irrefutable Bang
 %%[[97
-    Expr
+    -- Expr
 %%]]
 %%[[8
                 loc         .   finalTyExpanded     =   @finalTy
