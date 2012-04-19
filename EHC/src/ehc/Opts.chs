@@ -101,6 +101,14 @@ optOptsIsYes :: Eq opt => Maybe [opt] -> opt -> Bool
 optOptsIsYes mos o = maybe False (o `elem`) mos
 %%]
 
+%%[(8 codegen)
+instance Show CoreOpt where
+  show CoreOpt_SysF = "sysf"
+
+coreOptMp :: Map.Map String CoreOpt
+coreOptMp = Map.fromList [ (show o, o) | o <- [minBound .. maxBound] ]
+%%]
+
 %%[(8 codegen tycore)
 instance Show TyCoreOpt where
   show TyCoreOpt_Sugar      = "sugar"       -- first letters of alternatives must be unique
@@ -229,143 +237,139 @@ defaultEHCOpts
 
 %%[1 export(ehcCmdLineOpts)
 ehcCmdLineOpts
-  =  [  Option "h"  ["help"]             (NoArg oHelp)                        "print this help (then stop)"
-     ,  Option ""   ["version"]          (NoArg oVersion)                     "print version info (then stop)"
+  =  [  Option "h"  ["help"]             	(NoArg oHelp)                        	"print this help (then stop)"
+     ,  Option ""   ["version"]          	(NoArg oVersion)                     	"print version info (then stop)"
 %%[[99
-     ,  Option ""   ["version-dotted"]   (NoArg oNumVersion)                  ("print version in \"x.y.z\" style (then stop)")
-     ,  Option ""   ["version-asnumber"] (NoArg oVersionAsNumber)             ("print version in \"xyz\" style (then stop)")
-     ,  Option ""   ["numeric-version"]  (NoArg oNumVersion)                  "see --version-dotted (to become obsolete)"
+     ,  Option ""   ["version-dotted"]   	(NoArg oNumVersion)                  	("print version in \"x.y.z\" style (then stop)")
+     ,  Option ""   ["version-asnumber"] 	(NoArg oVersionAsNumber)             	("print version in \"xyz\" style (then stop)")
+     ,  Option ""   ["numeric-version"]  	(NoArg oNumVersion)                  	"see --version-dotted (to become obsolete)"
 %%]]
 %%[[8
-     ,  Option "v"  ["verbose"]          (OptArg oVerbose "0|1|2|3|4")        (   "be verbose, 0=quiet, 4=debug, "
+     ,  Option "v"  ["verbose"]          	(OptArg oVerbose "0|1|2|3|4")        	(   "be verbose, 0=quiet, 4=debug, "
 %%[[8
-                                                                               ++ "default=2"
+                                                                               		++ "default=2"
 %%][100
-                                                                               ++ "default=1"
+                                                                               		++ "default=1"
 %%]]
-                                                                              )
+                                                                              		)
 %%]]
 %%[[1
-     ,  Option "t"  ["target"]           (OptArg oTarget "")                  "code generation not available"
+     ,  Option "t"  ["target"]           	(OptArg oTarget "")                  	"code generation not available"
 %%][(8 codegen)
-     ,  Option "t"  ["target"]           (ReqArg oTarget (showSupportedTargets'  "|"))  ("generate code for target, default=" ++ show defaultTarget)
-     ,  Option ""   ["target-flavor"]    (ReqArg oTargetFlavor (showAllTargetFlavors' "|"))  ("generate code for target flavor, default=" ++ show defaultTargetFlavor)
+     ,  Option "t"  ["target"]           	(ReqArg oTarget (showSupportedTargets'  "|"))
+     																				("generate code for target, default=" ++ show defaultTarget)
+     ,  Option ""   ["target-flavor"]    	(ReqArg oTargetFlavor (showAllTargetFlavors' "|"))
+     																				("generate code for target flavor, default=" ++ show defaultTargetFlavor)
 %%]]
 %%[[1
-     ,  Option "p"  ["pretty"]           (OptArg oPretty "hs|eh|ast|-")       "show pretty printed source or EH abstract syntax tree, default=eh, -=off, (downstream only)"
+     ,  Option "p"  ["pretty"]           	(OptArg oPretty "hs|eh|ast|-")       	"show pretty printed source or EH abstract syntax tree, default=eh, -=off, (downstream only)"
 %%][(8 codegen tycore)
-     ,  Option "p"  ["pretty"]           (OptArg oPretty "hs|eh|ast|ty|-")    "show pretty printed source, EH abstract syntax tree or TyCore ast, default=eh, -=off, (downstream only)"
+     ,  Option "p"  ["pretty"]           	(OptArg oPretty "hs|eh|ast|ty|-")    	"show pretty printed source, EH abstract syntax tree or TyCore ast, default=eh, -=off, (downstream only)"
 %%]]
 %%[[1
-     ,  Option "d"  ["debug"]            (NoArg oDebug)                       "show debug information"
-     ,  Option ""   ["priv"]             (boolArg oPriv)                      "private flag, used during development of 2 impls of 1 feature"
+     ,  Option "d"  ["debug"]            	(NoArg oDebug)                       	"show debug information"
+     ,  Option ""   ["priv"]             	(boolArg oPriv)                      	"private flag, used during development of 2 impls of 1 feature"
 %%][100
 %%]]
 %%[[(1 hmtyinfer)
-     ,  Option ""   ["show-top-ty"]      (OptArg oShowTopTy "yes|no")         "show top ty, default=no"
+     ,  Option ""   ["show-top-ty"]      	(OptArg oShowTopTy "yes|no")         	"show top ty, default=no"
 %%][100
 %%]]
 
 %%[[1
      ,  Option ""   ["stopat"]
 %%[[1
-                                         (ReqArg oStopAt "0|1|2|3")           "stop at compile phase 0=imports, 1=parse, 2=hs, 3=eh"
+                                         	(ReqArg oStopAt "0|1|2|3")           	"stop at compile phase 0=imports, 1=parse, 2=hs, 3=eh"
 %%][(8 codegen)
-                                         (ReqArg oStopAt "0|1|2|3|4")         "stop at compile phase 0=imports, 1=parse, 2=hs, 3=eh, 4=core"
+                                         	(ReqArg oStopAt "0|1|2|3|4")         	"stop at compile phase 0=imports, 1=parse, 2=hs, 3=eh, 4=core"
 %%]]
 %%][100
 %%]]
 
 %%[[7_2
-     ,  Option ""   ["nounique"]         (NoArg oUnique)                      "do not compute uniqueness solution"
+     ,  Option ""   ["nounique"]         	(NoArg oUnique)                      	"do not compute uniqueness solution"
 %%]]
 %%[[(8 codegen)
-     ,  Option "O"  ["optimise"]         (OptArg oOptimization ("0|1|2|3|<opt>[=" ++ boolArgStr ++ "]"))
-                                                                              "optimise with level or specific by name, default=1"
+     ,  Option "O"  ["optimise"]         	(OptArg oOptimization ("0|1|2|3|<opt>[=" ++ boolArgStr ++ "]"))
+                                                                              		"optimise with level or specific by name, default=1"
 %%]]
 %%[[(8 codegen)
-     ,  Option ""   ["code"]             (OptArg oCode "hs|eh|exe[c]|lexe[c]|bexe[c]|-")  "write code to file, default=bexe (will be obsolete and/or changed, use --target)"
-     ,  Option ""   ["dump-core-stages"] (boolArg optDumpCoreStages)          "dump intermediate Core transformation stages (no)"
+     ,  Option ""   ["code"]             	(OptArg oCode "hs|eh|exe[c]|lexe[c]|bexe[c]|-")
+     																				"write code to file, default=bexe (will be obsolete and/or changed, use --target)"
+     ,  Option ""   ["dump-core-stages"] 	(boolArg optDumpCoreStages)          	"dump intermediate Core transformation stages (no)"
 %%][100
 %%]]
 %%[[(8 codegen grin)
-     ,  Option ""   ["time-compilation"] (NoArg oTimeCompile)                 "show grin compiler CPU usage for each compilation phase (only with -v2)"
-     ,  Option ""   ["gen-casedefault"]  (boolArg optSetGenCaseDefault)       "trap wrong casedistinction in C (no)"
-     ,  Option ""   ["gen-cmt"]          (boolArg optSetGenCmt)               "include comment about code in generated code"
-     ,  Option ""   ["gen-debug"]        (boolArg optSetGenDebug)             "include debug info in generated code (yes)"
-     ,  Option ""   ["gen-trace"]        (boolArg optSetGenTrace)             "trace functioncalls in C (no)"
-     ,  Option ""   ["gen-trace-assign"] (boolArg optSetGenTrace2)            "trace assignments in C (no)"
-     ,  Option ""   ["gen-rtsinfo"]      (ReqArg oRTSInfo "<nr>")             "flags for rts info dumping (default=0)"
-     ,  Option ""   ["dump-grin-stages"] (boolArg optDumpGrinStages)          "dump intermediate Grin and Silly transformation stages (no)"
---     ,  Option ""   ["early-mod-merge"]  (boolArg optEarlyModMerge)           "merge modules early, at Core stage (no)"
+     ,  Option ""   ["time-compilation"] 	(NoArg oTimeCompile)                 	"show grin compiler CPU usage for each compilation phase (only with -v2)"
+     ,  Option ""   ["gen-casedefault"]  	(boolArg optSetGenCaseDefault)       	"trap wrong casedistinction in C (no)"
+     ,  Option ""   ["gen-cmt"]          	(boolArg optSetGenCmt)               	"include comment about code in generated code"
+     ,  Option ""   ["gen-debug"]        	(boolArg optSetGenDebug)             	"include debug info in generated code (yes)"
+     ,  Option ""   ["gen-trace"]        	(boolArg optSetGenTrace)             	"trace functioncalls in C (no)"
+     ,  Option ""   ["gen-trace-assign"] 	(boolArg optSetGenTrace2)            	"trace assignments in C (no)"
+     ,  Option ""   ["gen-rtsinfo"]      	(ReqArg oRTSInfo "<nr>")             	"flags for rts info dumping (default=0)"
+     ,  Option ""   ["dump-grin-stages"] 	(boolArg optDumpGrinStages)          	"dump intermediate Grin and Silly transformation stages (no)"
 %%][100
 %%]]
 %%[[(8 codegen java)
 %%]]
-%%[[9
-     -- ,  Option ""   ["chr-scoped"]       (ReqArg  oCHRScoped "0|1|2")         "scoped CHR gen: 0=inst, 1=super, 2=all (default=2)"
-%%]]
 %%[[50
-     ,  Option ""   ["no-recomp"]        (NoArg oNoRecomp)                    "turn off recompilation check (force recompile)"
+     ,  Option ""   ["no-recomp"]        	(NoArg oNoRecomp)                    	"turn off recompilation check (force recompile)"
 %%]]
 %%[[99
-     ,  Option ""   ["no-prelude"]       (NoArg oNoPrelude)                   "do not assume presence of Prelude"
-     ,  Option ""   ["no-hi-check"]      (NoArg oNoHiCheck)                   "no check on .hi files not matching the compiler version"
+     ,  Option ""   ["no-prelude"]       	(NoArg oNoPrelude)                   	"do not assume presence of Prelude"
+     ,  Option ""   ["no-hi-check"]      	(NoArg oNoHiCheck)                   	"no check on .hi files not matching the compiler version"
 %%]]
 %%[[50
-     ,  Option "c"  ["compile-only"]     (NoArg oCompileOnly)                 "compile only, do not link"
+     ,  Option "c"  ["compile-only"]     	(NoArg oCompileOnly)                 	"compile only, do not link"
 %%]]
 %%[[50
      ,  Option ""   ["debug-stopat-hi-error"]
-                                         (boolArg oStopAtHIError)             "debug: stop at .hi parse error (default=off)"
+                                         	(boolArg oStopAtHIError)             	"debug: stop at .hi parse error (default=off)"
 %%][100
 %%]]
 %%[[(50 codegen)
      ,  Option ""   ["debug-stopat-core-error"]
-                                         (boolArg oStopAtCoreError)           "debug: stop at .core parse error (default=off)"
+                                         	(boolArg oStopAtCoreError)           	"debug: stop at .core parse error (default=off)"
 %%][100
 %%]]
 %%[[99
-     ,  Option "i"  ["import-path"]      (ReqArg oUsrFileLocPath "path")       "search path for user files, separators=';', appended to previous"
-     ,  Option "L"  ["lib-search-path"]  (ReqArg oLibFileLocPath "path")       "search path for library files, see also --import-path"
-     ,  Option ""   ["cpp"]              (NoArg oCPP)                         "preprocess source with CPP"
-     ,  Option ""   ["limit-tysyn-expand"]
-                                         (intArg oLimitTyBetaRed)             "type synonym expansion limit"
-     -- 20071002: limiting the number of context reduction steps is not supported starting with the use of CHRs
-     -- ,  Option ""   ["limit-ctxt-red"]   (intArg oLimitCtxtRed)               "context reduction steps limit"
-     
-     ,  Option ""   ["odir"]             (ReqArg oOutputDir "dir")            "base directory for generated files. Implies --compile-only"
-     ,  Option "o"  ["output"]           (ReqArg oOutputFile "file")          "file to generate executable to"
-     ,  Option ""   ["keep-intermediate-files"] (NoArg oKeepIntermediateFiles) "keep intermediate files (default=off)"
+     ,  Option "i"  ["import-path"]         (ReqArg oUsrFileLocPath "path")       	"search path for user files, separators=';', appended to previous"
+     ,  Option "L"  ["lib-search-path"]     (ReqArg oLibFileLocPath "path")       	"search path for library files, see also --import-path"
+     ,  Option ""   ["cpp"]                 (NoArg oCPP)                         	"preprocess source with CPP"
+     ,  Option ""   ["limit-tysyn-expand"]  (intArg oLimitTyBetaRed)             	"type synonym expansion limit"     
+     ,  Option ""   ["odir"]                (ReqArg oOutputDir "dir")            	"base directory for generated files. Implies --compile-only"
+     ,  Option "o"  ["output"]              (ReqArg oOutputFile "file")          	"file to generate executable to"
+     ,  Option ""   ["keep-intermediate-files"] (NoArg oKeepIntermediateFiles) 		"keep intermediate files (default=off)"
 %%]]
 %%[[(99 hmtyinfer tyderivtree)
-     ,  Option ""   ["deriv-tree"]       (OptArg oDerivTree ("f|i[,p=[{0,1,2,3,4,5}|<n>m]][,f=" ++ boolArgStr ++ "]"))
-                                                                              "emit derivation tree on .lhs file; f=final, i=infer, default=f; p=paper size (0=a0,...; <n>m=2^<n> meter), dflt=2; f=show subsumption"
+     ,  Option ""   ["deriv-tree"]          (OptArg oDerivTree ("f|i[,p=[{0,1,2,3,4,5}|<n>m]][,f=" ++ boolArgStr ++ "]"))
+                                                                              		"emit derivation tree on .lhs file; f=final, i=infer, default=f; p=paper size (0=a0,...; <n>m=2^<n> meter), dflt=2; f=show subsumption"
 %%][100
 %%]]
-     ,  Option ""   ["meta-variant"]        (NoArg oVariant)                     "meta: print variant (then stop)"
-     ,  Option ""   ["meta-target-default"] (NoArg oTargetDflt)                  "meta: print the default codegeneration target (then stop)"
-     ,  Option ""   ["meta-targets"]        (NoArg oTargets)                     "meta: print supported codegeneration targets (then stop)"
+     ,  Option ""   ["meta-variant"]        (NoArg oVariant)                     	"meta: print variant (then stop)"
+     ,  Option ""   ["meta-target-default"] (NoArg oTargetDflt)                  	"meta: print the default codegeneration target (then stop)"
+     ,  Option ""   ["meta-targets"]        (NoArg oTargets)                     	"meta: print supported codegeneration targets (then stop)"
 %%[[(8 codegen)
-     ,  Option ""   ["meta-optimizations"]  (NoArg oOptimizations)               "meta: print optimization names (then stop)"
+     ,  Option ""   ["meta-optimizations"]  (NoArg oOptimizations)               	"meta: print optimization names (then stop)"
 %%]
 %%[[99
-     -- ,  Option ""   ["meta-export-env"]      (OptArg oExportEnv "installdir[,variant]") "meta: export environmental info of installation (then stop) (will become obsolete soon)"
-     -- ,  Option ""   ["meta-dir-env"]         (NoArg oDirEnv)                      "meta: print directory holding environmental info of installation (then stop) (will become obsolete soon)"
-     ,  Option ""   ["meta-pkgdir-system"]  (NoArg oMetaPkgdirSys)               "meta: print system package dir (then stop)"
-     ,  Option ""   ["meta-pkgdir-user"]    (NoArg oMetaPkgdirUser)              "meta: print user package dir (then stop)"
-     ,  Option ""   ["package"]          (ReqArg oExposePackage "package")    "see --pkg-expose"
-     ,  Option ""   ["hide-all-packages"](NoArg oHideAllPackages)             "see --pkg-hide-all"
-     ,  Option ""   ["pkg-build"]           (ReqArg oPkgBuild "package")         "pkg: build package from files. Implies --compile-only"
-     ,  Option ""   ["pkg-expose"]          (ReqArg oExposePackage "package")    "pkg: expose/use package"
-     ,  Option ""   ["pkg-hide"]            (ReqArg oHidePackage   "package")    "pkg: hide package"
-     ,  Option ""   ["pkg-hide-all"]        (NoArg oHideAllPackages)             "pkg: hide all (implicitly) assumed/used packages"
-     ,  Option ""   ["pkg-searchpath"]      (ReqArg oPkgdirLocPath "path")       "pkg: package search directories, each dir has <pkg>/<variant>/<target>/<flavor>"
-     ,  Option ""   ["cfg-install-root"]    (ReqArg oCfgInstallRoot "dir")        "cfg: installation root (to be used only by wrapper script)"
-     ,  Option ""   ["cfg-install-variant"] (ReqArg oCfgInstallVariant "variant") "cfg: installation variant (to be used only by wrapper script)"
+     ,  Option ""   ["meta-pkgdir-system"]  (NoArg oMetaPkgdirSys)               	"meta: print system package dir (then stop)"
+     ,  Option ""   ["meta-pkgdir-user"]    (NoArg oMetaPkgdirUser)              	"meta: print user package dir (then stop)"
+     ,  Option ""   ["package"]             (ReqArg oExposePackage "package")    	"see --pkg-expose"
+     ,  Option ""   ["hide-all-packages"]   (NoArg oHideAllPackages)             	"see --pkg-hide-all"
+     ,  Option ""   ["pkg-build"]           (ReqArg oPkgBuild "package")         	"pkg: build package from files. Implies --compile-only"
+     ,  Option ""   ["pkg-expose"]          (ReqArg oExposePackage "package")    	"pkg: expose/use package"
+     ,  Option ""   ["pkg-hide"]            (ReqArg oHidePackage   "package")    	"pkg: hide package"
+     ,  Option ""   ["pkg-hide-all"]        (NoArg oHideAllPackages)             	"pkg: hide all (implicitly) assumed/used packages"
+     ,  Option ""   ["pkg-searchpath"]      (ReqArg oPkgdirLocPath "path")       	"pkg: package search directories, each dir has <pkg>/<variant>/<target>/<flavor>"
+     ,  Option ""   ["cfg-install-root"]    (ReqArg oCfgInstallRoot "dir")        	"cfg: installation root (to be used only by wrapper script)"
+     ,  Option ""   ["cfg-install-variant"] (ReqArg oCfgInstallVariant "variant") 	"cfg: installation variant (to be used only by wrapper script)"
+%%]]
+%%[[(8 codegen)
+     ,  Option ""   ["coreopt"]             (ReqArg oOptCore "opt[,...]")        	("core opts: " ++ (concat $ intersperse " " $ Map.keys coreOptMp))
 %%]]
 %%[[(8 codegen tycore)
-     ,  Option ""   ["tycore"]              (OptArg oUseTyCore "opt[,...]")      ("temporary/development: use typed core. opts: " ++ (concat $ intersperse " " $ Map.keys tycoreOptMp))
+     ,  Option ""   ["tycore"]              (OptArg oUseTyCore "opt[,...]")      	("temporary/development: use typed core. opts: " ++ (concat $ intersperse " " $ Map.keys tycoreOptMp))
 %%]]
      ]
 %%]
@@ -415,6 +419,9 @@ ehcCmdLineOpts
 %%]]
 %%[[(8 codegen)
          oTimeCompile    o =  o { ehcOptTimeCompile       = True    }
+%%]]
+%%[[(8 codegen)
+         oOptCore    s   o =  o { ehcOptCoreOpts = optOpts coreOptMp s }
 %%]]
 %%[[(8 codegen tycore)
          oUseTyCore ms   o =  case ms of
