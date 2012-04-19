@@ -32,11 +32,11 @@ all utility functions can be abstracted over the actual core.
 %%]
 
 %%[(8 codegen) export(AbstractCore(..))
-class AbstractCore  expr metaval bind bindaspect bindcateg metabind ty pat patrest patfld alt
-    | expr       ->      metaval bind bindaspect bindcateg metabind ty pat patrest patfld alt
+class AbstractCore  expr metaval bind bound bindcateg metabind ty pat patrest patfld alt
+    | expr       ->      metaval bind bound bindcateg metabind ty pat patrest patfld alt
     , metaval    -> expr
     , bind       -> expr
-    , bindaspect -> expr
+    , bound      -> expr
     , bindcateg  -> expr
     , metabind   -> expr
     , ty         -> expr
@@ -62,13 +62,13 @@ class AbstractCore  expr metaval bind bindaspect bindcateg metabind ty pat patre
   acoreBind1CatLevMetasTy :: bindcateg -> HsName -> MetaLev -> (metabind,metaval) -> ty -> expr -> bind
   
   -- | a value binding aspect, for a name + value, optionally type + metas + meta level
-  acoreBindaspVal1CatLevMetasTy :: bindcateg -> HsName -> MetaLev -> (metabind,metaval) -> ty -> expr -> bindaspect
+  acoreBoundVal1CatLevMetasTy :: bindcateg -> HsName -> MetaLev -> (metabind,metaval) -> ty -> expr -> bound
   
   -- | a type for value binding aspect, for a name + type, optionally meta level
-  acoreBindaspValTy1CatLev :: bindcateg -> HsName -> MetaLev -> ty -> bindaspect
+  acoreBoundValTy1CatLev :: bindcateg -> HsName -> MetaLev -> ty -> bound
   
   -- | a binding, for/from a single aspect (for now, later multiple)
-  acoreBind1Asp :: HsName -> [bindaspect] -> bind
+  acoreBind1Asp :: HsName -> [bound] -> bind
   
   -- | basic let binding
   acoreLetBase :: bindcateg -> [bind] -> expr -> expr
@@ -223,7 +223,7 @@ class AbstractCore  expr metaval bind bindaspect bindcateg metabind ty pat patre
   -- acoreUnPatFld :: patfld -> (ty,(HsName,expr),HsName)
 
   -- | 'un' bind
-  acoreUnBind :: bind -> (HsName,[bindaspect])
+  acoreUnBind :: bind -> (HsName,[bound])
 
   ------------------------- transforming -------------------------
   -- | unthunk expr
@@ -535,43 +535,43 @@ acoreBind1Nm1 n = acoreBind1Asp n []
 {-# INLINE acoreBind1Nm1 #-}
 %%]
 
-%%[(8 codegen) export(acoreBindaspVal1CatLevMetaTy,acoreBindaspVal1CatLevTy,acoreBindaspVal1CatMetaTy,acoreBindaspVal1CatTy,acoreBindaspVal1Cat)
-acoreBindaspVal1CatLevMetaTy :: (AbstractCore e m b basp bcat mbind t p pr pf a) => bcat -> HsName -> MetaLev -> m -> t -> e -> basp
-acoreBindaspVal1CatLevMetaTy bcat n mlev m t e = acoreBindaspVal1CatLevMetasTy bcat n mlev (acoreMetabindDflt,m) t e
-{-# INLINE acoreBindaspVal1CatLevMetaTy #-}
+%%[(8 codegen) export(acoreBoundVal1CatLevMetaTy,acoreBoundVal1CatLevTy,acoreBoundVal1CatMetaTy,acoreBoundVal1CatTy,acoreBoundVal1Cat)
+acoreBoundVal1CatLevMetaTy :: (AbstractCore e m b basp bcat mbind t p pr pf a) => bcat -> HsName -> MetaLev -> m -> t -> e -> basp
+acoreBoundVal1CatLevMetaTy bcat n mlev m t e = acoreBoundVal1CatLevMetasTy bcat n mlev (acoreMetabindDflt,m) t e
+{-# INLINE acoreBoundVal1CatLevMetaTy #-}
 
-acoreBindaspVal1CatLevTy :: (AbstractCore e m b basp bcat mbind t p pr pf a) => bcat -> HsName -> MetaLev -> t -> e -> basp
-acoreBindaspVal1CatLevTy cat n l t e = acoreBindaspVal1CatLevMetaTy cat n l acoreMetavalDflt t e
-{-# INLINE acoreBindaspVal1CatLevTy #-}
+acoreBoundVal1CatLevTy :: (AbstractCore e m b basp bcat mbind t p pr pf a) => bcat -> HsName -> MetaLev -> t -> e -> basp
+acoreBoundVal1CatLevTy cat n l t e = acoreBoundVal1CatLevMetaTy cat n l acoreMetavalDflt t e
+{-# INLINE acoreBoundVal1CatLevTy #-}
 
-acoreBindaspVal1CatMetaTy :: (AbstractCore e m b basp bcat mbind t p pr pf a) => bcat -> HsName -> m -> t -> e -> basp
-acoreBindaspVal1CatMetaTy cat n m t e = acoreBindaspVal1CatLevMetaTy cat n metaLevVal m t e
-{-# INLINE acoreBindaspVal1CatMetaTy #-}
+acoreBoundVal1CatMetaTy :: (AbstractCore e m b basp bcat mbind t p pr pf a) => bcat -> HsName -> m -> t -> e -> basp
+acoreBoundVal1CatMetaTy cat n m t e = acoreBoundVal1CatLevMetaTy cat n metaLevVal m t e
+{-# INLINE acoreBoundVal1CatMetaTy #-}
 
-acoreBindaspVal1CatTy :: (AbstractCore e m b basp bcat mbind t p pr pf a) => bcat -> HsName -> t -> e -> basp
-acoreBindaspVal1CatTy cat n t e = acoreBindaspVal1CatLevTy cat n metaLevVal t e
-{-# INLINE acoreBindaspVal1CatTy #-}
+acoreBoundVal1CatTy :: (AbstractCore e m b basp bcat mbind t p pr pf a) => bcat -> HsName -> t -> e -> basp
+acoreBoundVal1CatTy cat n t e = acoreBoundVal1CatLevTy cat n metaLevVal t e
+{-# INLINE acoreBoundVal1CatTy #-}
 
-acoreBindaspVal1Cat :: (AbstractCore e m b basp bcat mbind t p pr pf a) => bcat -> HsName -> e -> basp
-acoreBindaspVal1Cat cat n e = acoreBindaspVal1CatTy cat n (acoreTyErr "acoreBindaspVal1Cat") e
-{-# INLINE acoreBindaspVal1Cat #-}
+acoreBoundVal1Cat :: (AbstractCore e m b basp bcat mbind t p pr pf a) => bcat -> HsName -> e -> basp
+acoreBoundVal1Cat cat n e = acoreBoundVal1CatTy cat n (acoreTyErr "acoreBoundVal1Cat") e
+{-# INLINE acoreBoundVal1Cat #-}
 %%]
 
-%%[(8 codegen) export(acoreBindaspVal1Metas,acoreBindaspVal1Meta)
-acoreBindaspVal1Metas :: (AbstractCore e m b basp bcat mbind t p pr pf a) => HsName -> (mbind,m) -> e -> basp
-acoreBindaspVal1Metas n m e = acoreBindaspVal1CatLevMetasTy (acoreBindcategDflt e) n metaLevVal m (acoreTyErr "acoreBindaspVal1Metas") e
-{-# INLINE acoreBindaspVal1Metas #-}
+%%[(8 codegen) export(acoreBoundVal1Metas,acoreBoundVal1Meta)
+acoreBoundVal1Metas :: (AbstractCore e m b basp bcat mbind t p pr pf a) => HsName -> (mbind,m) -> e -> basp
+acoreBoundVal1Metas n m e = acoreBoundVal1CatLevMetasTy (acoreBindcategDflt e) n metaLevVal m (acoreTyErr "acoreBoundVal1Metas") e
+{-# INLINE acoreBoundVal1Metas #-}
 
-acoreBindaspVal1Meta :: (AbstractCore e m b basp bcat mbind t p pr pf a) => HsName -> m -> e -> basp
-acoreBindaspVal1Meta n m e = acoreBindaspVal1Metas n (acoreMetabindDflt,m) e
-{-# INLINE acoreBindaspVal1Meta #-}
+acoreBoundVal1Meta :: (AbstractCore e m b basp bcat mbind t p pr pf a) => HsName -> m -> e -> basp
+acoreBoundVal1Meta n m e = acoreBoundVal1Metas n (acoreMetabindDflt,m) e
+{-# INLINE acoreBoundVal1Meta #-}
 
 %%]
 
-%%[(8888 codegen) export(acoreBindaspVal1CatLevMetaTy,acoreBindaspVal1CatLevTy,acoreBindaspVal1CatMetaTy,acoreBindaspVal1CatTy,acoreBindaspVal1Cat)
-acoreBindaspValTy1 :: (AbstractCore e m b basp bcat mbind t p pr pf a) => bcat -> HsName -> MetaLev -> t -> basp
-acoreBindaspValTy1 bcat n mlev m t = acoreBindaspValTy1CatLev (acoreBindcategDflt e) n metaLevVal t
-{-# INLINE acoreBindaspValTy1 #-}
+%%[(8888 codegen) export(acoreBoundVal1CatLevMetaTy,acoreBoundVal1CatLevTy,acoreBoundVal1CatMetaTy,acoreBoundVal1CatTy,acoreBoundVal1Cat)
+acoreBoundValTy1 :: (AbstractCore e m b basp bcat mbind t p pr pf a) => bcat -> HsName -> MetaLev -> t -> basp
+acoreBoundValTy1 bcat n mlev m t = acoreBoundValTy1CatLev (acoreBindcategDflt e) n metaLevVal t
+{-# INLINE acoreBoundValTy1 #-}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

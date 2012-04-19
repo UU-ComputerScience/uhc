@@ -674,12 +674,12 @@ instance AbstractCore CExpr CMetaVal CBind CBound CBindCateg CMetaBind Ty CPat C
   -- acoreLam1Ty a _ e 				    = CExpr_Lam (acoreBind1 a) e
   acoreLam1Bind b e 				    = CExpr_Lam b e
   acoreTagTupTy   tg _ es 				= acoreApp (CExpr_Tup tg) es
-  acoreBindaspVal1CatLevMetasTy _ _ _ m _ e
+  acoreBoundVal1CatLevMetasTy _ _ _ m _ e
   										= CBound_Bind m e
-  acoreBindaspValTy1CatLev _ _ _ t		= CBound_Ty acbaspkeyDefaultTy t
+  acoreBoundValTy1CatLev _ _ _ t		= CBound_Ty acbaspkeyDefaultTy t
   acoreBind1Asp n as					= CBind_Bind n as
   acoreBind1CatLevMetasTy bcat n mlev mb t e
-  										= acoreBind1Asp n [acoreBindaspValTy1CatLev bcat n mlev t, acoreBindaspVal1CatLevMetasTy bcat n mlev mb t e]
+  										= acoreBind1Asp n [acoreBoundValTy1CatLev bcat n mlev t, acoreBoundVal1CatLevMetasTy bcat n mlev mb t e]
   acoreLetBase							= CExpr_Let
   acoreCaseDflt	e as d					= CExpr_Case e as (maybe (acoreVar hsnUnknown) id d)
   acoreVar n							= CExpr_Var (ACoreBindRef n Nothing) 
