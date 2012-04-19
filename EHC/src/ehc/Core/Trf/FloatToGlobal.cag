@@ -97,7 +97,7 @@ SEM CMetaVal
   | DictInstance        lhs         .   isInstance          =   True
   | * - DictInstance    lhs         .   isInstance          =   False
 
-SEM CBindAspect
+SEM CBound
   | Bind                expr        .   isLocalInInstance   =   -- trace ("Bind " ++ show @nm ++ " passes " ++ show @bindMeta.isInstance)  $
                                                                 @bindMeta.isInstance || @lhs.isLocalInInstance
   
@@ -130,7 +130,7 @@ ATTR AllBind   [ | | cLamBinds,
                      cSmallCAFBinds   USE {`Seq.union`} {Seq.empty}: {Seq.FastSeq CBind}                          ]
 
 
-SEM CBindAspect
+SEM CBound
   | Bind        loc . cBindTrf          =   acoreBind1Asp1 @lhs.nm @cTrf
                 lhs . ( cLamBinds
                       , cLargeCAFBinds

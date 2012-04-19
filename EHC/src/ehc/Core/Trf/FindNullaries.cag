@@ -46,28 +46,28 @@ ATTR AllCodeNT [ | | cTrf: SELF    ]
 
 %%[(8 codegen wholeprogAnal)
 
-SEM CBindAspect
+SEM CBound
   | Bind        lhs.cTrf  =  if  @lhs.lev == cLevModule+1
                              then let (metabind, metaval) = @bindMeta.cTrf
                                       newmetabind = case @expr.whatBelow of
                                                        ExprIsLam -> CMetaBind_Function1
                                                        _         -> CMetaBind_Function0
-                                  in  CBindAspect_Bind (newmetabind, metaval) @expr.cTrf
+                                  in  CBound_Bind (newmetabind, metaval) @expr.cTrf
                              else @loc.cTrf
 
 SEM CBindL
   | Cons        lhs.cTrf  =  case @hd.cTrf of
-                               CBind_Bind nm asp@[CBindAspect_Bind (CMetaBind_Function0,metaval) expr]
+                               CBind_Bind nm asp@[CBound_Bind (CMetaBind_Function0,metaval) expr]
                                  -> let nm1 = hsnPrefix "fun0~" nm
                                         b1  = CBind_Bind nm1 asp
-                                        b2  = CBind_Bind nm  [CBindAspect_Bind (CMetaBind_Apply0,    metaval) (acoreVar nm1)]
+                                        b2  = CBind_Bind nm  [CBound_Bind (CMetaBind_Apply0,    metaval) (acoreVar nm1)]
                                     in  b1 : b2 : @tl.cTrf
-                               -- CBind_Bind nm [CBindAspect_FFI c s i (Ty_Con t)]
+                               -- CBind_Bind nm [CBound_FFI c s i (Ty_Con t)]
                                -- 20100828 AD: is this still necessary, now FFI is just a normal lambda/expr
-                               CBind_Bind nm asp@[CBindAspect_Bind m (CExpr_FFI c s i (Ty_Con t))]
+                               CBind_Bind nm asp@[CBound_Bind m (CExpr_FFI c s i (Ty_Con t))]
                                  -> let nm1 = hsnPrefix "fun0~" nm
                                         b1  = CBind_Bind nm1 asp
-                                        b2  = CBind_Bind nm  [CBindAspect_Bind (CMetaBind_Apply0, CMetaVal_Val) (acoreVar nm1)]
+                                        b2  = CBind_Bind nm  [CBound_Bind (CMetaBind_Apply0, CMetaVal_Val) (acoreVar nm1)]
                                     in  b1 : b2 : @tl.cTrf
                                _ -> @loc.cTrf
 

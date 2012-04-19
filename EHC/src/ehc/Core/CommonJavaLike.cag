@@ -51,7 +51,7 @@ SEM CExpr
 SEM CAlt
   | Alt         loc         .   mbLamNm         =   Nothing
 
-SEM CBindAspect
+SEM CBound
   | Bind Val
 %%[[90
     FFE
@@ -72,7 +72,7 @@ SEM CExpr
                                                     then (True,fromJust @lhs.mbLamNm)
                                                     else (False,(hsnUnknown,hsnUnknown))
 
-SEM CBindAspect
+SEM CBound
   | Bind Val    loc         .   isCAF           =   @expr.whatBelow /= ExprIsLam
 %%]
 

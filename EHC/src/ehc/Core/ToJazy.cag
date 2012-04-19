@@ -163,7 +163,7 @@ nmSetOrEvlN n = nmEvalN n
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 jazy)
-SEM CBindAspect
+SEM CBound
   | *           loc         .   varnm           =   hsnJazyVar @lhs.pkgNm @lhs.topClassNm @lhs.nm
                 loc         .   varnm           :   HsName
 
@@ -643,12 +643,12 @@ jBind = jBind' (tyDefault, hsnJavaLikeVarToFld, \nm -> J.Field_Field [J.Flag_Pub
 %%]
 
 %%[(8 jazy)
-SEM CBindAspect
+SEM CBound
   | Bind Val    loc         .   jiExpr          =   (if @lhs.evalCtx == EvalCtx_Eval then jiEvl else id) @expr.ji
 %%]
 
 %%[(8 jazy)
-SEM CBindAspect
+SEM CBound
   | Bind        lhs         .   jbinds          =   if @isThrowOutMain then Seq.empty else jBind @lhs.nm @varnm @ji
   -- | FFI         lhs         .   jbinds          =   jBind @lhs.nm @varnm @ji
 %%]
@@ -915,7 +915,7 @@ ffiJazyMkCall
 %%]
 
 %%[(8 jazy)
-SEM CBindAspect
+SEM CBound
   | Bind        loc         .   (subClasses,ji) =   let dflt = (@expr.subClasses, @jiExpr)
                                                     in  if @lhs.isGlobal
                                                         then if @isCAF
@@ -943,7 +943,7 @@ SEM CModule
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 jazy)
-SEM CBindAspect
+SEM CBound
 %%[[8
   | Bind        loc         .   isThrowOutMain  =   False
 %%][50

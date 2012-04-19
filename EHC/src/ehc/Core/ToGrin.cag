@@ -45,7 +45,7 @@ WRAPPER CodeAGItf
 SEM CModule
   | Mod         expr        .   gathLamMp           <   expr.gUniq
 %%]
-SEM CBindAspect
+SEM CBound
   | Bind        lhs         .   opts                <   expr.gUniq
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -121,7 +121,7 @@ Here we only gather arity info, stack trace info is assumed to be gathered earli
 and assumed to propagate correctly when merged with this info.
 
 %%[(8 codegen grin)
-SEM CBindAspect
+SEM CBound
   | Bind        lhs         .   bindLamMp
                                             =   Map.singleton @lhs.nm
                                                               (emptyLamInfo {laminfoArity = length @expr.grLamArgL})
@@ -477,7 +477,7 @@ SEM CExpr
 SEM CModule
   | Mod         expr        .   doBox       =   True
 
-SEM CBindAspect
+SEM CBound
   | Bind Val
 %%[[90
     FFE
@@ -496,7 +496,7 @@ SEM CAlt
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen grin)
-SEM CBindAspect
+SEM CBound
   | Bind        loc         .   aspectKeyS  =   acbaspkeyNone
                             .   isApply0    =   @bindMeta.isApply0
                             .   grBindMeta  =   @bindMeta.grBindAnn
@@ -505,7 +505,7 @@ SEM CBindAspect
 %%]
 
 %%[(8 codegen grin)
-SEM CBindAspect
+SEM CBound
   | Bind Val    loc         .   nmAsp       =   hsnUniqifyACoreBindAspectKeyS @aspectKeyS @lhs.nm
 %%]
 
@@ -514,7 +514,7 @@ ATTR AllBind [ | | grBindL   USE {++} {[]}: GrBindL
                    grGlobalL USE {++} {[]}: GrGlobalL
              ]
 
-SEM CBindAspect
+SEM CBound
   | Bind Val    (lhs.grBindL, lhs.grGlobalL)=   if   @isApply0
                                                 then let nm2 = case @expr.whatBelow of
                                                                  ExprIsVar n -> n
@@ -533,7 +533,7 @@ SEM CBindAspect
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(90 codegen grin)
-SEM CBindAspect
+SEM CBound
   | FFE         lhs         .   grBindL     =   []  -- not implemented yet
 %%]
 

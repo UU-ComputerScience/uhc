@@ -95,7 +95,7 @@ SEM CExpr
   | Let         (binds.gIniq,loc.lIniq)     =   newIniq (length @binds.nmL) @lhs.gIniq
   | Lam         (body.gIniq,loc.lIniq)      =   newIniq 1 @lhs.gIniq
 
-SEM CBindAspect
+SEM CBound
   | Bind Val    expr        .   gIniq       =   if   renuniqOptResetOnlyInLam @lhs.ropts
                                                 then 1
                                                 else @lhs.gIniq
@@ -119,7 +119,7 @@ SEM CExpr
   | Let         (binds.gUniq,loc.lUniq)     =   mkNewLevUID  @lhs.gUniq
   | Lam         (body.gUniq,loc.lUniq)      =   mkNewUID     @lhs.gUniq
 
-SEM CBindAspect
+SEM CBound
   | Bind Val    expr        .   gUniq       =   if   renuniqOptResetOnlyInLam @lhs.ropts
                                                 then uidStart
                                                 else @lhs.gUniq
@@ -277,7 +277,7 @@ SEM CAlt
                                                         @pat.nmL @lIniq @lhs.aRenMp
                 loc         .   aRenMp      =   @expr.accumARenMp
 
-SEM CBindAspect
+SEM CBound
   | Bind Val
 %%[[90
     FFE
@@ -370,7 +370,7 @@ SEM CPatRest
 
 
 %%[(9 codegen)
-SEM CBindAspect
+SEM CBound
   | Bind         expr.protectedBindingNames  =   @bindMeta.protectableBindingNames ++ @lhs.protectedBindingNames
 
 SEM CMetaVal

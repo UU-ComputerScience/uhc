@@ -73,8 +73,7 @@ DATA CExpr
   -- application, abstraction
   | App         func            : CExpr
                 arg             : CExpr
-  | Lam         -- arg             : {HsName}
-                bind            : CBind
+  | Lam         bind            : CBind
                 body            : CExpr
 
   -- case
@@ -200,11 +199,13 @@ SET AllBindAnn	= CBindAnn CBindAnnL
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen)
+-- | The binder
 DATA CBind
   | Bind        nm              : {HsName}
-                bindAspects     : CBindAspectL
+                bindAspects     : CBoundL
 
-DATA CBindAspect
+-- | That which is bound, of which may be multiple, of which exist the below varieties
+DATA CBound
   -- default: binding used when (1) no specialized version is available, (2) the one passed higher order
   | Bind        bindMeta        : CMetas
                 expr            : CExpr
@@ -234,13 +235,13 @@ DATA CBindAspect
 %%]]
 
 TYPE CBindL     	=   [CBind]
-TYPE CBindAspectL	=	[CBindAspect]
+TYPE CBoundL		=	[CBound]
 %%]
 
 %%[(8 codegen)
-SET AllBindAspect   =   CBindAspect CBindAspectL
+SET AllBound        =   CBound CBoundL
 SET AllBindOnly 	=   CBind CBindL
-SET AllBind     	=   AllBindOnly AllBindAspect
+SET AllBind     	=   AllBindOnly AllBound
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -327,7 +328,6 @@ DATA CPatRest
 DATA CPatFld
   | Fld         lbl             : {HsName}
                 offset          : CExpr
-                -- fldNm           : {HsName}
                 bind            : CBind
                 fldAnns			: CBindAnnL
 

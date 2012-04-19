@@ -788,7 +788,7 @@ SEM Decl
                                                 =   ffeCoreMk @lhs.opts @lUniqFFE @rceEnv @finalTyExpanded
                             .   ffeCExpr        =   @ffeMkCExpr @expr.cexpr
                 loc         .   lUniqFFE        :   UNIQUEREF gUniq
-                lhs         .   ffeCBindL       =   [acoreBind1Asp1 @nm (CBindAspect_FFE @callconv @expEnt @ffeCExpr @ffeTy)]
+                lhs         .   ffeCBindL       =   [acoreBind1Asp1 @nm (CBound_FFE @callconv @expEnt @ffeCExpr @ffeTy)]
 %%]
 
 %%[(93 codegen)
@@ -1015,7 +1015,7 @@ mkNormalInstance
         mkSetFlds           = mkInstanceSetFlds opts dataGam dictTag instanceRecTy
 
         instanceBindingPairs= [ (nm,v)
-                              | CBind_Bind nm asps <- declsCBindL, CBindAspect_Bind _ v <- asps
+                              | CBind_Bind nm asps <- declsCBindL, CBound_Bind _ v <- asps
                               ]
         instanceMbBodies    = map (flip lookup instanceBindingPairs) memberNames
         instanceMbNewNames  = let f _ Nothing  = Nothing
@@ -1137,7 +1137,7 @@ mkInstanceCBindL
                 lookupMeta n = if n `elem` superFldNmL then CMetaVal_Dict else CMetaVal_Val
           
                 defaultBindingPairs = [ (nm,v)
-                                      | CBind_Bind nm asps <- defaultBindings, CBindAspect_Bind _ v <- asps
+                                      | CBind_Bind nm asps <- defaultBindings, CBound_Bind _ v <- asps
                                       ]
                 defaultMbBodies     = map (flip lookup defaultBindingPairs) memberNames
                 defaultMetas        = map lookupMeta                        memberNames
@@ -1247,13 +1247,13 @@ SEM Decl
 %%[(9 codegen) hs
 getBindRightVar :: CBind -> Maybe HsName
 
-getBindRightVar (CBind_Bind _ [CBindAspect_Bind _ v]) = acoreExprMbVar v
+getBindRightVar (CBind_Bind _ [CBound_Bind _ v]) = acoreExprMbVar v
 getBindRightVar _ = Nothing
 
 
 getBindLeftAndRightVar :: CBind -> (HsName,HsName)
 
-getBindLeftAndRightVar (CBind_Bind nm1 [CBindAspect_Bind _ (CExpr_Var ref2)]) = (nm1, acbrefNm ref2)
+getBindLeftAndRightVar (CBind_Bind nm1 [CBound_Bind _ (CExpr_Var ref2)]) = (nm1, acbrefNm ref2)
 getBindLeftAndRightVar _ = error "getBindLeftAndRightVar: not a bind"
 
 mbNameToTrack Nothing   = TrackNone

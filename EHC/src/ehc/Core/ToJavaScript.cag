@@ -108,7 +108,7 @@ hsnJavaScriptVar isGlobal = hsnJavaLikeVar (hsn, hsnPrefix "$", ('$':))
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 javascript)
-SEM CBindAspect
+SEM CBound
   | *           loc         .   varnm           =   hsnJavaScriptVar @lhs.isGlobal @lhs.pkgNm @lhs.topClassNm @lhs.nm
                 loc         .   varnm           :   HsName
 
@@ -126,7 +126,7 @@ SEM CPatFld
 %%[(50 javascript)
 ATTR CExpr AllBind [ | | usedModNmS USE {`Set.union`} {Set.empty} : {FvS} ]
 
-SEM CBindAspect
+SEM CBound
   | *           lhs         .   usedModNmS      =   maybe Set.empty Set.singleton $ hsnQualifier @varnm
 
 %%]
@@ -171,7 +171,7 @@ SEM CExpr
 %%]
 
 %%[(90 javascript)
-SEM CBindAspect
+SEM CBound
   | FFE         loc         .   jsArgL          =   maybe [] (map (hsnJavaScriptVar False @lhs.pkgNm @lhs.topClassNm)) @expr.mbLam
 %%]
 
@@ -510,7 +510,7 @@ jBind = jBind' (tyDefault, id, const ())
 %%]
 
 %%[(8 javascript)
-SEM CBindAspect
+SEM CBound
   | Bind        lhs         .   jbinds          =   jBind @lhs.nm @varnm @js
 %%[[90
   | FFE         lhs         .   jbinds          =   let n = mkHNm @expEntNm
@@ -657,7 +657,7 @@ mkWrapFn as bdy = J.Expr_Fun Nothing as $ J.Stat_Block bdy
 
 
 %%[(8 javascript)
-SEM CBindAspect
+SEM CBound
   | Bind        loc         .   js              =   let str  = if @lhs.evalCtx == EvalCtx_Eval then jsEvl else id
                                                         dflt = @expr.js
                                                         caf  = jsApp (jsFun @lhs.nm [] $ jsBody J.Stat_Ret @expr.jbinds @expr.jstats (Just dflt)) []

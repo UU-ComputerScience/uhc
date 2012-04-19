@@ -117,7 +117,7 @@ ATTR AllCodeNT [ | gUniq: Int | ]
 SEM CodeAGItf
   | AGItf       module      .   gUniq       =   0
 
-SEM CBindAspect
+SEM CBound
   | Bind        expr        .   gUniq       =   @lhs.gUniq + Map.size @argMpNew
 
 %%]
@@ -154,7 +154,7 @@ ATTR AllCodeNT [ argMp: CVarReplNmMp | | ]
 SEM CodeAGItf
   | AGItf       module      .   argMp       =   Map.empty
 
-SEM CBindAspect
+SEM CBound
   | Bind        expr        .   argMp       =   @argMpNew `Map.union` @lhs.argMp
 %%]
 
@@ -171,13 +171,13 @@ type AspBindLamArgInfo = (LamArgMp,Env)
 %%]
 
 %%[(8 codegen)
-ATTR AllBindAspect   [ aspBindLamArgMp: {ACoreBindAspMp AspBindLamArgInfo} | | gathAspBindLamArgMp USE {`Map.union`} {Map.empty}: {ACoreBindAspMp AspBindLamArgInfo} ]
+ATTR AllBound   [ aspBindLamArgMp: {ACoreBindAspMp AspBindLamArgInfo} | | gathAspBindLamArgMp USE {`Map.union`} {Map.empty}: {ACoreBindAspMp AspBindLamArgInfo} ]
 
 SEM CBind
   | Bind		loc			.	aspBindLamArgMp
   											=	@bindAspects.gathAspBindLamArgMp
 
-SEM CBindAspect
+SEM CBound
   | Bind  		lhs			.	gathAspBindLamArgMp
   											=	Map.singleton acbaspkeyDefault
   											                  ( @expr.bindLamArgMp
@@ -199,12 +199,12 @@ type LamArgMp = Map.Map HsName CVarIntroL
 ATTR AllBind CExpr [ | | bindLamArgMp USE {`Map.union`} {Map.empty}: LamArgMp ]
 ATTR AllMetaVal [ bindLamArgMp: LamArgMp | | ]
 
-SEM CBindAspect
+SEM CBound
   | Meta  		cmetas  	.	( bindLamArgMp
 %%[[9
                                 , envFinal
 %%]]
-                                ) 			=  	panicJust "LamGlobalAsArg.CBindAspect.Meta.aspBindLamArgMp" $ Map.lookup acbaspkeyDefault @lhs.aspBindLamArgMp
+                                ) 			=  	panicJust "LamGlobalAsArg.CBound.Meta.aspBindLamArgMp" $ Map.lookup acbaspkeyDefault @lhs.aspBindLamArgMp
 %%]
 
 %%[(8 codegen)
@@ -238,7 +238,7 @@ SEM CMetaVal
 ATTR AllCodeNT [ | | cTrf: SELF ]
 ATTR CodeAGItf [ | | cTrf: CModule ]
 
-SEM CBindAspect
+SEM CBound
   | Bind        loc         .   (argNewL,argMpNew,bindLamArgMp)
                                             =   if {- @isLiftable && not @isGlobal -} isJust @expr.mbLam
                                                 then  let  argLevL = fvLAsArg @lhs.introCVarIntroMp $ panicJust "LamGlobalAsArg.CBind.Bind.argLevL" $ Map.lookup @lhs.nm $ @lhs.lamFvSMp
@@ -249,7 +249,7 @@ SEM CBindAspect
 
 
 %%[(8 codegen)
-SEM CBindAspect
+SEM CBound
 %%[[8
   | Bind        lhs         .   cTrf        =   acoreBindaspVal1Cat CBindCateg_Plain @lhs.nm $ acoreLam (assocLKeys @argNewL) @expr.cTrf
 %%][9
@@ -302,7 +302,7 @@ SEM CModule
          expr.isDictClass = False
 
 %%[[90
-SEM CBindAspect
+SEM CBound
   | FFE  expr.mbCtxCount = Nothing
          expr.isDictClass = False
 %%]]
@@ -315,7 +315,7 @@ SEM CPatFld
   | Fld  offset.mbCtxCount = Nothing
          offset.isDictClass = False
 
-SEM CBindAspect
+SEM CBound
   | Bind  expr.mbCtxCount = if @bindMeta.isDictInstance
                             then Just 0
                             else Nothing
@@ -349,13 +349,13 @@ SEM CMetaVal
   | Track          lhs.mbTrack  =  Just @track
   | *-Track        lhs.mbTrack  =  Nothing
 
-SEM CBindAspect
+SEM CBound
   | Bind  bindMeta.envFinal = @expr.envUp
 
 
 ATTR AllBind CExpr [ | | envUp USE {`Map.union`} {Map.empty} : Env ]
 
-SEM CBindAspect
+SEM CBound
   | Bind   lhs.envUp  =  maybe (Map.empty)
                                (\t -> Map.singleton @lhs.nm t)
                                @bindMeta.mbTrack

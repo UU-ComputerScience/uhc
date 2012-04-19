@@ -74,7 +74,7 @@ SEM CAlt
   | Alt			lhs			.	useMp		=	foldr Map.delete @expr.useMp @pat.nmL
 -}
 
-SEM CBindAspect
+SEM CBound
   | Bind        expr        .   inNmL       =   @lhs.nm : @lhs.inNmL
                 lhs         .   useMp       =   (@lhs.nm `Map.singleton` []) `useMpComb` @expr.useMp
 %%]
@@ -90,7 +90,7 @@ type BindMp = Map.Map HsName (CExpr,CMetas)
 %%[(8 codegen)
 ATTR AllBind [ | | bindMp USE {`Map.union`} {Map.empty}: BindMp ]
 
-SEM CBindAspect
+SEM CBound
   | Bind        lhs         .   bindMp      =   @lhs.nm `Map.singleton` (@expr.cTrf,@bindMeta.cTrf)
 %%]
 

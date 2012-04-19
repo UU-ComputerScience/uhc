@@ -129,7 +129,7 @@ SEM CodeAGItf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen grin)
-SEM CBindAspect
+SEM CBound
   | Bind        loc         .   doBindStrict    =   WhatToRelevInfer_InstToBot `elem` @lhs.whatTo
                 lhs         .   bindLamMp       =   let l = [ (acbaspkeyDefaultRelevTy, LamInfoBindAsp_RelevTy @bindTy) ]
                                                             -- ++ (if @doBindStrict then [(acbaspkeyStrict, LamInfoBindAsp_RelevTy @strictTy2)] else [])
@@ -196,7 +196,7 @@ ATTR AllCodeNT [ env: REnv | | ]
 SEM CodeAGItf
   | AGItf       loc         .   env             =   emptyGam
 
-SEM CBindAspect
+SEM CBound
   | Bind        expr        .   env             =   gamAddGam @exprEnv @lhs.env
 
 SEM CExpr
@@ -242,7 +242,7 @@ ATTR AllBind -- AllPatFld AllPat
               [ | | gathEnv    USE {`gamUnion`} {emptyGam}: REnv ]
 ATTR AllBind  [ | | gathRecEnv USE {`gamUnion`} {emptyGam}: REnv ]
 
-SEM CBindAspect
+SEM CBound
   | Bind        loc         .   gathEnv         =   gamSingleton @lhs.nm @quantTy
                             .   gathRecEnv      =   gamSingleton @lhs.nm $ tup123to1 $ relevtyQuant [RelevTyQuantHow_Rec] emptyRVarMp Set.empty @ty
 %%]
@@ -257,7 +257,7 @@ ATTR AllExpr [ knTy: RelevTy | | ]
 SEM CModule
   | Mod         expr        .   knTy            =   RelevTy_None
 
-SEM CBindAspect
+SEM CBound
   | Bind        expr        .   knTy            =   @exprKnTy
 
 SEM CExpr
@@ -397,11 +397,11 @@ SEM CAltL
 ATTR CExpr CAltL [ altMbScrutTy: MbRelevTy | | ]
 ATTR AllBind [ | | altMbScrutTy USE {<|>} {Nothing} : MbRelevTy ]
 
-SEM CBindAspect
+SEM CBound
   | Bind        lhs         .   altMbScrutTy    =   do v <- @expr.mbVar
                                                        renvLookup v @lhs.env Map.empty -- @lhs.lamMp
 
-SEM CAlt CBindAspect CModule MbCExpr CPatFld
+SEM CAlt CBound CModule MbCExpr CPatFld
   | *           loc         .   altMbScrutTy    =   Nothing
 %%]
 
@@ -430,7 +430,7 @@ SEM CExpr
                                                       ExprIsLam -> RelevCoe_Id
                                                       _         -> @body.coe
 
-SEM CBindAspect
+SEM CBound
   | Bind        loc         .   hereBindCoe     =   @expr.coe <.> maybe RelevCoe_Id (@finalRVarMp `varUpd`) @mbBindCoe
 
 SEM CAltL
@@ -491,7 +491,7 @@ ATTR AllNT [ | rvarMp: RVarMp | ]
 SEM CodeAGItf
   | AGItf       loc         .   rvarMp          =   emptyRVarMp
 
-SEM CBindAspect
+SEM CBound
   | Bind        lhs         .   rvarMp          =   @quantVarMp |+> @rvarMpExpr
 %%]
 
@@ -530,7 +530,7 @@ ATTR AllNT [ finalRVarMp: RVarMp | | ]
 SEM CodeAGItf
   | AGItf       module      .   finalRVarMp     =   @module.rvarMp
 
-SEM CBindAspect
+SEM CBound
   | Bind        loc         .   finalRVarMp     =   {- @extraBindRVarMp |+> -} @lhs.finalRVarMp
 
 SEM CAltL
@@ -544,7 +544,7 @@ SEM CExpr
 %%[(8 codegen)
 ATTR AllBind [ | | extraBindRVarMp USE {|+>} {emptyRVarMp}: RVarMp ]
 
-SEM CBindAspect
+SEM CBound
   | Bind        loc         .   extraBindRVarMp =   if @doBindStrict then @strictVarMp else emptyRVarMp
                                                     -- @strictVarMp
 %%]
@@ -566,7 +566,7 @@ SEM CExpr
   | Let			lhs			.	qualS			=	Set.union @bindsQualSOuter @body.qualS
 
 %%[(8 codegen)
-SEM CBindAspect
+SEM CBound
   | Bind        lhs         .   qualS           =   Set.unions [amsGathQual @amsBind, @expr.qualS]
 %%]
 
@@ -659,7 +659,7 @@ ATTR AllExpr [ boundRelevTyVarS: UIDS | | ]
 %%]
 
 %%[(8 codegen)
-SEM CBindAspect
+SEM CBound
   | Bind        expr        .   boundRelevTyVarS=   @exprBoundS
 %%]
 
@@ -673,7 +673,7 @@ SEM CModule
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen)
-SEM CBindAspect
+SEM CBound
   | Bind        loc         .   (ty,exprKnTy,exprEnv,exprBoundS,bindConstrain)
                                                 =   let noConstrain _ _ _ = (emptyAnaMatchState, Nothing)
                                                         strictConstrain m t knTy = (ams, Just $ amsoCoe amso)
@@ -732,12 +732,12 @@ SEM CBindAspect
                                                         where q = @lhs.finalRVarMp `varUpd` Set.toList @expr.qualS
                                                       t -> t
                             .	strictTy2		=	@lhs.finalRVarMp `varUpd` @strictTy
-                            .   tyAspectL       =   [ CBindAspect_RelevTy acbaspkeyDefault @bindTy
-                                                    -- , CBindAspect_RelevTy acbaspkeyStrict  @strictTy
-                                                    -- , CBindAspect_RelevTy acbaspkeyDebug @debugTy2
+                            .   tyAspectL       =   [ CBound_RelevTy acbaspkeyDefault @bindTy
+                                                    -- , CBound_RelevTy acbaspkeyStrict  @strictTy
+                                                    -- , CBound_RelevTy acbaspkeyDebug @debugTy2
                                                     ]
                                                     ++ (if @doBindStrict
-                                                        then [CBindAspect_RelevTy acbaspkeyStrict @strictTy2]
+                                                        then [CBound_RelevTy acbaspkeyStrict @strictTy2]
                                                         else []
                                                        )
                 loc         .   ty              :   RelevTy
@@ -760,8 +760,8 @@ SEM CBindAspect
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen)
-ATTR AllBindAspect [ | | tyAspectL  USE {++} {[]}: {[CBindAspect]} ]
-ATTR AllBindAspect [ | | valAspectL USE {++} {[]}: {[CBindAspect]} ]
+ATTR AllBound [ | | tyAspectL  USE {++} {[]}: {[CBound]} ]
+ATTR AllBound [ | | valAspectL USE {++} {[]}: {[CBound]} ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -796,8 +796,8 @@ SEM CExpr
 ATTR AllCodeNT [ | | cTrf: SELF ]
 ATTR CodeAGItf [ | | cTrf: CModule ]
 
-SEM CBindAspect
-  | Bind        lhs         .   cTrf            =   CBindAspect_Bind @bindMeta.cTrf $ 
+SEM CBound
+  | Bind        lhs         .   cTrf            =   CBound_Bind @bindMeta.cTrf $ 
                                                     dbgBind @lhs.opts @lhs.finalRVarMp @gathEnv $
                                                     annCoe @hereBindCoe @expr.cTrf
 
@@ -831,7 +831,7 @@ SEM CPatFld
 %%[(8 codegen)
 ATTR AllExpr [ | | oTrf: SELF ]
 
-SEM CBindAspect
-  | Bind        loc         .   valAspectL      =   [ -- CBindAspect_Val acbaspkeyStrict @expr.oTrf
+SEM CBound
+  | Bind        loc         .   valAspectL      =   [ -- CBound_Val acbaspkeyStrict @expr.oTrf
                                                     ]
 %%]

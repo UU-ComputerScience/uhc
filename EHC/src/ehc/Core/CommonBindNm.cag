@@ -7,7 +7,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen)
-ATTR AllBindAspect [ nm: HsName | | ]
+ATTR AllBound [ nm: HsName | | ]
 
 SEM CBind
   | Bind        bindAspects .   nm              =   @nm

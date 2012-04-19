@@ -148,7 +148,7 @@ SEM CExpr
                                             =   (@body.levBindSq,Seq.empty) -- levBindSplit @lev @body.levBindSq
                 lhs         .   levBindSq   =   @remBindSq Seq.:++: @levBindSq
 
-SEM CBindAspect
+SEM CBound
   | Bind        lhs         .   bindL       =   [(@expr.levOf,acoreBind1Asp1 @lhs.nm @cTrf)]
   -- | FFI
 %%[[90
@@ -176,7 +176,7 @@ ATTR AllExprOnly [ appTrfIsOk: AppTop | | ]
 SEM CModule
   | Mod         expr        .   appTrfIsOk  =   AppYesLet
 
-SEM CBindAspect
+SEM CBound
   | Bind Val
 %%[[90
     FFE
@@ -205,7 +205,7 @@ ATTR AllExprOnly [ lamTrfIsOk: LamTop | | ]
 SEM CModule
   | Mod         expr        .   lamTrfIsOk  =   LamYesLet
 
-SEM CBindAspect
+SEM CBound
   | Bind Val
 %%[[90
     FFE
@@ -232,7 +232,7 @@ ATTR AllExprOnly [ letTrfIsOk: Bool | | ]
 SEM CModule
   | Mod         expr        .   letTrfIsOk  =   False
 
-SEM CBindAspect
+SEM CBound
   | Bind Val
 %%[[90
     FFE

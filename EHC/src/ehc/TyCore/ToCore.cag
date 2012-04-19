@@ -103,7 +103,7 @@ ATTR Expr [ | | mbFFI: {Maybe (HsName -> CBind)} ]
 
 -- 20100828 AD, TBD: correct translation of FFI
 SEM Expr
-  | FFI         lhs         .   mbFFI               =   Nothing -- Just (\n -> CBind_Bind n [CBindAspect_FFI @callconv @safety @impEnt @ty.coreTy])
+  | FFI         lhs         .   mbFFI               =   Nothing -- Just (\n -> CBind_Bind n [CBound_FFI @callconv @safety @impEnt @ty.coreTy])
   | * - FFI     lhs         .   mbFFI               =   Nothing
 %%]
 

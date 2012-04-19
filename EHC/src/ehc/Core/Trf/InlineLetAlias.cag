@@ -206,7 +206,7 @@ ATTR AllBind [ | | bindNmMp USE {`Map.union`} {Map.empty}: NmMp ]
 ATTR AllBind [ | | bindL USE {++} {[]}: {[(HsName,CBind)]} ]
 
 
-SEM CBindAspect
+SEM CBound
   | Bind        lhs         .   (bindNmMp,bindL)
                                             =   case @expr.mbRepl of
                                                   Just r | @lhs.nm /= hsnMain
@@ -242,7 +242,7 @@ SEM CPatFld
   		  bind  .noTrfToConNmS  =  Set.empty
 
   
-SEM CBindAspect
+SEM CBound
   | Bind  expr.allowTrfToCon  =  not (@lhs.nm `Set.member` @lhs.noTrfToConNmS)
           expr.noTrfToConNmS  =  @lhs.noTrfToConNmS `Set.union` @bindMeta.nameS
   
@@ -253,12 +253,12 @@ SEM CBindAspect
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(9 codegen)
-ATTR AllBindAspect   [ aspBindNmMp: {ACoreBindAspMp NmMp} | | gathAspBindNmMp USE {`Map.union`} {Map.empty}: {ACoreBindAspMp NmMp} ]
+ATTR AllBound   [ aspBindNmMp: {ACoreBindAspMp NmMp} | | gathAspBindNmMp USE {`Map.union`} {Map.empty}: {ACoreBindAspMp NmMp} ]
 
 SEM CBind
   | Bind		loc			.	aspBindNmMp =	@bindAspects.gathAspBindNmMp
 
-SEM CBindAspect
+SEM CBound
   | Bind  		lhs			.	gathAspBindNmMp
   											=	Map.singleton acbaspkeyDefault @expr.bindNmMp
 %%]
@@ -287,27 +287,27 @@ SEM CExpr
 %%]
 
 %%[(90 codegen)
-SEM CBindAspect
+SEM CBound
   | FFE         loc         .   bindsNoTrfNmS
                                             =   @expr.fvS
 %%]
-SEM CBindAspect
+SEM CBound
   | FFE         loc         .   (replNm,bindsNoTrfNmS)
                                             =   case Map.lookup @expNm @lhs.nmMp of
                                                     Just e | isJust mbNm
                                                       -> (fromJust mbNm,Set.empty)
                                                       where mbNm = cexprMbVar e
                                                     _ -> (@expNm,Set.singleton @expNm)
-                lhs         .   cTrf        =   CBindAspect_FFE @callconv @expEnt @replNm @ty
+                lhs         .   cTrf        =   CBound_FFE @callconv @expEnt @replNm @ty
 
 %%[(9 codegen)
 ATTR CExpr           [ | | bindNmMp     USE {`Map.union`} {Map.empty}: NmMp ]
 
 ATTR AllMetaVal      [ bindNmMp: NmMp | | nameS: HsNameS ]
 
-SEM CBindAspect
+SEM CBound
   | Bind  		bindMeta	.	bindNmMp  	=  	@expr.bindNmMp
-  | Meta  		cmetas  	.	bindNmMp  	=  	panicJust "InlineLetAlias.CBindAspect.Meta.aspBindNmMp" $ Map.lookup acbaspkeyDefault @lhs.aspBindNmMp
+  | Meta  		cmetas  	.	bindNmMp  	=  	panicJust "InlineLetAlias.CBound.Meta.aspBindNmMp" $ Map.lookup acbaspkeyDefault @lhs.aspBindNmMp
 
 SEM CMetaVal
   | Dict

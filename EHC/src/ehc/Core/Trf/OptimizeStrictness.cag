@@ -122,7 +122,7 @@ SEM CBind
 %%[(8 codegen)
 ATTR CExpr MbCExpr AllAlt [ anaEvalCtxt: AnaEval | | ]
 
-SEM CBindAspect
+SEM CBound
   | * - Bind    loc         .   anaEvalCtxt     =   top
 
 SEM CModule
@@ -140,16 +140,16 @@ SEM *
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen)
-ATTR AllBindAspect [ | | gathStrictTyL USE {++} {[]}: {[RelevTy]} ]
+ATTR AllBound [ | | gathStrictTyL USE {++} {[]}: {[RelevTy]} ]
 
-SEM CBindAspect
+SEM CBound
   | RelevTy     loc         .   gathStrictTyL   =   if @aspectKeyS == acbaspkeyStrict
                                                     then [@relevTy]
                                                     else []
 %%]
 
 %%[(8 codegen)
-ATTR AllBindAspect [ mbStrictArgsRes: {Maybe (RelevTy,[AnaEval],AnaEval)} | | ]
+ATTR AllBound [ mbStrictArgsRes: {Maybe (RelevTy,[AnaEval],AnaEval)} | | ]
 
 SEM CBind
   | Bind        loc         .   mbStrictArgsRes =   case @bindAspects.gathStrictTyL of
@@ -159,14 +159,14 @@ SEM CBind
 %%]
 
 %%[(8 codegen)
-SEM CBindAspect
+SEM CBound
   | Bind        loc         .   doWorkerWrapper =   isJust @lhs.mbStrictArgsRes
 %%]
 
 %%[(8 codegen)
 ATTR CExpr [ lamArgAnaEvalL: {[AnaEval]} | | ]
 
-SEM CBindAspect
+SEM CBound
   | Bind        (expr.lamArgAnaEvalL,expr.anaEvalCtxt)
                                                 =   maybe ([],top) tup123to23 @lhs.mbStrictArgsRes
   | * - Bind    loc         .   lamArgAnaEvalL  =   []
@@ -185,12 +185,12 @@ SEM CExpr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen)
-ATTR AllBindAspect [ | | cTrfBindAspectL USE {++} {[]} : {[CBindAspect]} ]
+ATTR AllBound [ | | cTrfBoundL USE {++} {[]} : {[CBound]} ]
 
-SEM CBindAspect
+SEM CBound
   | Bind        loc         .   wrapper         =   case (@expr.mbLam,@lhs.mbStrictArgsRes) of
                                                       (Just as, Just (_,evs,_))
-                                                        -> [ CBindAspect_Val acbaspkeyNone
+                                                        -> [ CBound_Val acbaspkeyNone
                                                            $ acoreLam wrapperArgs
                                                            $ (\b -> foldr ($) b bodyWrappers)
                                                            $ acoreApp (CExpr_Var (ACoreBindRef @lhs.nm (Just acbaspkeyStrict)))
@@ -201,22 +201,22 @@ SEM CBindAspect
                                                                  where a' = hsnUniqify HsNameUniqifier_Evaluated a
                                                               mk a _            = (a, a , id                             )
                                                       _ -> []
-                            .   worker          =   if @doWorkerWrapper then [CBindAspect_Val acbaspkeyStrict @expr.cTrf] else []
+                            .   worker          =   if @doWorkerWrapper then [CBound_Val acbaspkeyStrict @expr.cTrf] else []
                             .   oldbinding      =   if @doWorkerWrapper then [] else [@cTrf]
-                lhs         .   cTrfBindAspectL =   @worker ++ @wrapper ++ @oldbinding
+                lhs         .   cTrfBoundL      =   @worker ++ @wrapper ++ @oldbinding
 %%[[90
-  | FFE         lhs         .   cTrfBindAspectL =   [@cTrf]
+  | FFE         lhs         .   cTrfBoundL      =   [@cTrf]
 %%]]
   | * - Bind
 %%[[90
         FFE
 %%]]
-                lhs         .   cTrfBindAspectL =   []
+                lhs         .   cTrfBoundL      =   []
 %%]
 
 %%[(8 codegen)
 SEM CBind
-  | Bind        lhs         .   cTrf            =   CBind_Bind @nm @bindAspects.cTrfBindAspectL
+  | Bind        lhs         .   cTrf            =   CBind_Bind @nm @bindAspects.cTrfBoundL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -152,15 +152,15 @@ pCMetaValOpt :: CParser CMetaVal
 pCMetaValOpt
   =   pMaybe CMetaVal_Val id (pCOLON *> pCMetaVal)
 
--- 20100806 AD: due to intro of CBindAspect not consistent with pretty printing anymore, just patched it to have it compiled
+-- 20100806 AD: due to intro of CBound not consistent with pretty printing anymore, just patched it to have it compiled
 pCBind :: CParser CBind
 pCBind
   = (  (pDollNm P.<+> pCMetasOpt) <* pEQUAL)
-    <**> (   (\e (n,m)        -> CBind_Bind n [CBindAspect_Bind m e]) <$> pCExpr
-         <|> (\(c,_) s i t (n,m)  -> CBind_Bind n [CBindAspect_Bind m $ CExpr_FFI c s (mkImpEnt c i) t])
+    <**> (   (\e (n,m)        -> CBind_Bind n [CBound_Bind m e]) <$> pCExpr
+         <|> (\(c,_) s i t (n,m)  -> CBind_Bind n [CBound_Bind m $ CExpr_FFI c s (mkImpEnt c i) t])
              <$ pFOREIGN <* pOCURLY <*> pFFIWay <* pCOMMA <*> pS <* pCOMMA <*> pS <* pCOMMA <*> pTy <* pCCURLY
 %%[[90
-         <|> (\(c,_) e en t (n,m) -> CBind_Bind n [CBindAspect_FFE c (mkEnt ForeignDirection_Export c e) en t])
+         <|> (\(c,_) e en t (n,m) -> CBind_Bind n [CBound_FFE c (mkEnt ForeignDirection_Export c e) en t])
              <$ pKeyTk "foreignexport" <* pOCURLY <*> pFFIWay <* pCOMMA <*> pS <* pCOMMA <*> pCExpr {- pDollNm -} <* pCOMMA <*> pTy <* pCCURLY
 %%]]
          )
