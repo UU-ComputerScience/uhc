@@ -670,12 +670,13 @@ instance Serialize CMetaBind where
 %%[(8 codegen) hs
 instance AbstractCore CExpr CMetaVal CBind CBound CBindCateg CMetaBind Ty CPat CPatRest CPatFld CAlt where
   -- expr
-  acoreApp1       f a      				= CExpr_App f a
+  acoreApp1Bound   f a      			= CExpr_App f a
   -- acoreLam1Ty a _ e 				    = CExpr_Lam (acoreBind1 a) e
   acoreLam1Bind b e 				    = CExpr_Lam b e
   acoreTagTupTy   tg _ es 				= acoreApp (CExpr_Tup tg) es
   acoreBoundVal1CatLevMetasTy _ _ _ m _ e
   										= CBound_Bind m e
+  acoreBound1AspkeyVal a e  			= CBound_Val a e
   acoreBoundValTy1CatLev _ _ _ t		= CBound_Ty acbaspkeyDefaultTy t
   acoreBind1Asp n as					= CBind_Bind n as
   acoreBind1CatLevMetasTy bcat n mlev mb t e
@@ -777,6 +778,9 @@ instance AbstractCore CExpr CMetaVal CBind CBound CBindCateg CMetaBind Ty CPat C
   acoreUnAlt (CAlt_Alt p e)				= (p,e)
   acoreUnPatFld (CPatFld_Fld l o b _)   = ((l,o),b)
   acoreUnBind (CBind_Bind n as)         = (n,as)
+
+  acoreBoundMbVal (CBound_Val a e)		= Just (a,e)
+  acoreBoundMbVal _                 	= Nothing
 
   -- coercion
 %%[[8

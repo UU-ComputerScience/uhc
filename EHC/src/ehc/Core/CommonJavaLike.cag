@@ -43,7 +43,7 @@ SEM CodeAGItf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 jazy || javascript)
-ATTR AllExprOnly [ mbLamNm: {Maybe (HsName,HsName)} | | ]
+ATTR AllExprOnly CBound [ mbLamNm: {Maybe (HsName,HsName)} | | ]
 
 SEM CExpr
   | App Lam     loc         .   mbLamNm         =   Nothing

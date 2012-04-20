@@ -26,9 +26,11 @@ The following invariants are and must be maintained:
 %%% Float lambdas to global level
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs module {%{EH}Core.Trf.FloatToGlobal} import(EH.Util.Utils,qualified EH.Util.FastSeq as Seq,{%{EH}Base.Common},{%{EH}Core},{%{EH}Ty}) export(cmodTrfFloatToGlobal)
+%%[(8 codegen) hs module {%{EH}Core.Trf.FloatToGlobal} import(EH.Util.Utils,qualified EH.Util.FastSeq as Seq)
 %%]
 
+%%[(8 codegen) hs import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Core},{%{EH}Ty})
+%%]
 
 %%[(8 codegen) hs import(Data.Maybe, qualified Data.Set as Set, qualified Data.Map as Map, Data.List(partition) )
 %%]
@@ -54,7 +56,7 @@ PRAGMA strictcase
 %%% Haskell itf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs
+%%[(8 codegen) hs export(cmodTrfFloatToGlobal)
 cmodTrfFloatToGlobal :: CModule -> CModule
 cmodTrfFloatToGlobal cmod
   =  let  t = wrap_CodeAGItf  (sem_CodeAGItf (CodeAGItf_AGItf cmod))

@@ -53,7 +53,7 @@ class AbstractCore  expr metaval bind bound bindcateg metabind ty pat patrest pa
   -- acoreLam1Ty :: HsName -> ty -> expr -> expr
   
   -- | 1 lam abstraction, together with meta info about, and type of the argument
-  acoreApp1 :: expr -> expr -> expr
+  acoreApp1Bound :: expr -> bound -> expr
   
   -- | a tuple, with tag, and ty
   acoreTagTupTy :: CTag -> ty -> [expr] -> expr
@@ -66,6 +66,9 @@ class AbstractCore  expr metaval bind bound bindcateg metabind ty pat patrest pa
   
   -- | a type for value binding aspect, for a name + type, optionally meta level
   acoreBoundValTy1CatLev :: bindcateg -> HsName -> MetaLev -> ty -> bound
+  
+  -- | a expr binding aspect, for a name
+  acoreBound1AspkeyVal :: ACoreBindAspectKeyS -> expr -> bound
   
   -- | a binding, for/from a single aspect (for now, later multiple)
   acoreBind1Asp :: HsName -> [bound] -> bind
@@ -224,6 +227,9 @@ class AbstractCore  expr metaval bind bound bindcateg metabind ty pat patrest pa
 
   -- | 'un' bind
   acoreUnBind :: bind -> (HsName,[bound])
+
+  -- | is bound a expr?
+  acoreBoundMbVal :: bound -> Maybe (ACoreBindAspectKeyS,expr)
 
   ------------------------- transforming -------------------------
   -- | unthunk expr
@@ -410,7 +416,11 @@ deriving instance Data ACoreBindRef
 %%% Derived functionality: application
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) export(acoreApp)
+%%[(8 codegen) export(acoreApp1,acoreApp)
+acoreApp1 :: (AbstractCore e m b basp bcat mbind t p pr pf a) => e -> e -> e
+acoreApp1 f a = acoreApp1Bound f (acoreBound1Val a)
+{-# INLINE acoreApp1 #-}
+
 acoreApp :: (AbstractCore e m b basp bcat mbind t p pr pf a) => e -> [e] -> e
 acoreApp f as = foldl (\f a -> acoreApp1 f a) f as
 %%]
@@ -535,6 +545,10 @@ acoreBind1Nm1 n = acoreBind1Asp n []
 {-# INLINE acoreBind1Nm1 #-}
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Derived functionality: bound (previously: aka binding aspect)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %%[(8 codegen) export(acoreBoundVal1CatLevMetaTy,acoreBoundVal1CatLevTy,acoreBoundVal1CatMetaTy,acoreBoundVal1CatTy,acoreBoundVal1Cat)
 acoreBoundVal1CatLevMetaTy :: (AbstractCore e m b basp bcat mbind t p pr pf a) => bcat -> HsName -> MetaLev -> m -> t -> e -> basp
 acoreBoundVal1CatLevMetaTy bcat n mlev m t e = acoreBoundVal1CatLevMetasTy bcat n mlev (acoreMetabindDflt,m) t e
@@ -566,6 +580,12 @@ acoreBoundVal1Meta :: (AbstractCore e m b basp bcat mbind t p pr pf a) => HsName
 acoreBoundVal1Meta n m e = acoreBoundVal1Metas n (acoreMetabindDflt,m) e
 {-# INLINE acoreBoundVal1Meta #-}
 
+%%]
+
+%%[(8 codegen) export(acoreBound1Val)
+acoreBound1Val :: (AbstractCore e m b basp bcat mbind t p pr pf a) => e -> basp
+acoreBound1Val e = acoreBound1AspkeyVal acbaspkeyDefault e
+{-# INLINE acoreBound1Val #-}
 %%]
 
 %%[(8888 codegen) export(acoreBoundVal1CatLevMetaTy,acoreBoundVal1CatLevTy,acoreBoundVal1CatMetaTy,acoreBoundVal1CatTy,acoreBoundVal1Cat)
@@ -802,6 +822,17 @@ acoreBindNm = fst . acoreUnBind
 acorePatFldTy :: (AbstractCore e m b basp bcat mbind t p pr pf a) => t -> (HsName,e) -> HsName -> pf
 acorePatFldTy _ lbloff n = acorePatFldBind lbloff (acoreBind1Nm1 n)
 {-# INLINE acorePatFldTy #-}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Derived functionality: inspection: pattern
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) export(acoreUnBoundVal)
+-- | possible expr of bound (may panic)
+acoreUnBoundVal :: (AbstractCore e m b basp bcat mbind t p pr pf a) => basp -> e
+acoreUnBoundVal = maybe (panic "acoreBoundMbVal") snd . acoreBoundMbVal
+{-# INLINE acoreUnBoundVal #-}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

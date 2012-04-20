@@ -134,7 +134,7 @@ SEM CExpr
 
 
 
-ATTR AllExprOnly [ mbCtxCount:{Maybe Int} isDictClass:{Bool} | | ]
+ATTR AllExprOnly CBound [ mbCtxCount:{Maybe Int} isDictClass:{Bool} | | ]
 
 SEM CModule
   | Mod  expr.mbCtxCount = Nothing
@@ -176,6 +176,9 @@ SEM CMetaVal
   | DictInstance   lhs.isDictInstance = True
   | *-DictInstance lhs.isDictInstance = False
 
+SEM CBoundL
+  | Cons        hd          .   isDictClass  	=   False
+  							.	mbCtxCount		=	Nothing
 
 
 

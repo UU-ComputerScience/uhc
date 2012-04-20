@@ -51,7 +51,7 @@ ATTR AllCodeNT CodeAGItf [ opts: EHCOpts | | ]
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen)
-ATTR CExpr [ | | appLam: CExpr  appArgL: {[CExpr]} ]
+ATTR CExpr [ | | appLam: CExpr  appArgL: {[CBound]} ]
 
 SEM CExpr
   | App         loc         .   appLam      =   @func.appLam
@@ -71,8 +71,10 @@ ATTR CodeAGItf [ | | cTrf: CModule ]
 SEM CExpr
   | App         lhs         .   cTrf        =   if @lhs.isTopApp
                                                 then  case (acoreExprMbVar @appLam,reverse @appArgL) of
-                                                        (Just n,[CExpr_Int i1,CExpr_Int i2]) | n == (ehcOptBuiltin @lhs.opts ehbnPrimAddInt)
-                                                          -> acoreInt (i1 + i2)
+                                                        (Just n,[e1,e2]) | n == (ehcOptBuiltin @lhs.opts ehbnPrimAddInt) && isJust i1 && isJust i2
+                                                          -> acoreInt (fromInteger $ snd (fromJust i1) + snd (fromJust i2))
+                                                          where i1 = acoreExprMbInt $ acoreUnBoundVal e1
+                                                                i2 = acoreExprMbInt $ acoreUnBoundVal e2
                                                         _ -> @cTrf
                                                 else  @cTrf
 %%]

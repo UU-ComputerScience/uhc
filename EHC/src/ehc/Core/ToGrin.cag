@@ -308,10 +308,12 @@ mkVarBinds            bindL rest  = foldr mkVarBind           rest bindL
 
 
 %%[(8 codegen grin)
-ATTR CExpr   [ | | grExpr: GrExpr ]
-ATTR CExpr   [ | | grBindL   USE {++} {[]}: GrBindL
-                   grGlobalL USE {++} {[]}: GrGlobalL
-             ]
+ATTR CExpr CBound
+  [ | | grExpr: GrExpr ]
+ATTR CExpr
+  [ | | grBindL   USE {++} {[]}: GrBindL
+        grGlobalL USE {++} {[]}: GrGlobalL
+  ]
 
 SEM CExpr
   | Let         (loc.grExpr,lhs.grBindL)    =   if @isGlobal
@@ -425,6 +427,11 @@ SEM CExpr
     TupIns TupUpd TupDel
 %%]]
                 loc         .   grExpr      =   GrExpr_Unit @grVal GrType_None
+
+SEM CBound
+  | * - Val		loc			.	grExpr		= 	GrExpr_Unit GrVal_Empty GrType_None
+  							-- .	grBindL		=	[]
+  							-- .	grGlobalL	=	[]
 %%]
 
 %%[(10 codegen grin) hs
@@ -442,7 +449,7 @@ mkGrAdapt modNm u lamMp isStrict tupFldL tupRecNm
 %%]
 
 %%[(8 codegen grin)
-ATTR CExpr   [ | | grVal: GrVal ]
+ATTR CExpr CBound  [ | | grVal: GrVal ]
 
 SEM CExpr
   | Tup         loc         .   grVal       =   ctag (mkGrRecNode []) (\_ l t a ma -> mkGrConNode (mkGrTagAnn a ma) t l []) @tag
@@ -453,6 +460,9 @@ SEM CExpr
   | Ann         loc         .   grVal       =   @expr.grVal
   | * - Int Char String Var Tup Ann
                 loc         .   grVal       =   GrVal_Empty
+
+SEM CBound
+  | * - Val		loc			.	grVal       =   GrVal_Empty
 %%]
 
 %%[(97 codegen grin)
@@ -465,7 +475,7 @@ SEM CExpr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen grin)
-ATTR AllExprOnly [ doBox: Bool | | ]
+ATTR AllExprOnly CBound [ doBox: Bool | | ]
 
 SEM CExpr
   | TupUpd TupIns TupDel

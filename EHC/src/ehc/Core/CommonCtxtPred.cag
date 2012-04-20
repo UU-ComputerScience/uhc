@@ -16,7 +16,7 @@ ATTR AllBind [ letBindingsCateg: CBindCateg | | ]
 
 SEM CExpr
   | Let         loc         .   letBindingsCateg    =   @categ
-  | Lam         loc         .   letBindingsCateg    =   acoreBindcategPlain
+  | Lam App     loc         .   letBindingsCateg    =   acoreBindcategPlain
 
 SEM CPatFld
   | Fld         bind        .   letBindingsCateg    =   acoreBindcategPlain
@@ -27,7 +27,7 @@ SEM CPatFld
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen)
-ATTR CExpr [ isTopApp: Bool  isTopTup: Bool | | ]
+ATTR CExpr CBound [ isTopApp: Bool  isTopTup: Bool | | ]
 
 SEM CExpr
   | App         func        .   isTopApp    =   False
@@ -49,8 +49,12 @@ SEM CModule
   | Mod         expr        .   isTopApp    =   True
                             .   isTopTup    =   True
 
+SEM CBoundL
+  | Cons		hd			.	isTopApp    =   True
+                            .   isTopTup    =   True
+
 SEM CBound
-  | Bind Val
+  | Bind
 %%[[90
     FFE
 %%]]

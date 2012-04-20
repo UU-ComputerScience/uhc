@@ -171,13 +171,13 @@ data LamTop = LamYesLet | LamNoLet deriving (Eq,Ord)
 %%]
 
 %%[(8 codegen)
-ATTR AllExprOnly [ appTrfIsOk: AppTop | | ]
+ATTR AllExprOnly CBound [ appTrfIsOk: AppTop | | ]
 
 SEM CModule
   | Mod         expr        .   appTrfIsOk  =   AppYesLet
 
 SEM CBound
-  | Bind Val
+  | Bind
 %%[[90
     FFE
 %%]]
@@ -197,16 +197,19 @@ SEM CExpr
 
 SEM CAlt
   | Alt         expr        .   appTrfIsOk  =   AppYesLet
+
+SEM CBoundL
+  | Cons        hd          .   appTrfIsOk  =   AppNoLet
 %%]
 
 %%[(8 codegen)
-ATTR AllExprOnly [ lamTrfIsOk: LamTop | | ]
+ATTR AllExprOnly CBound [ lamTrfIsOk: LamTop | | ]
 
 SEM CModule
   | Mod         expr        .   lamTrfIsOk  =   LamYesLet
 
 SEM CBound
-  | Bind Val
+  | Bind
 %%[[90
     FFE
 %%]]
@@ -224,16 +227,19 @@ SEM CExpr
 
 SEM CAlt
   | Alt         expr        .   lamTrfIsOk  =   LamYesLet
+
+SEM CBoundL
+  | Cons        hd          .   lamTrfIsOk  =   LamNoLet
 %%]
 
 %%[(8 codegen)
-ATTR AllExprOnly [ letTrfIsOk: Bool | | ]
+ATTR AllExprOnly CBound [ letTrfIsOk: Bool | | ]
 
 SEM CModule
   | Mod         expr        .   letTrfIsOk  =   False
 
 SEM CBound
-  | Bind Val
+  | Bind
 %%[[90
     FFE
 %%]]
@@ -251,6 +257,9 @@ SEM CExpr
 
 SEM CAlt
   | Alt         expr        .   letTrfIsOk  =   False
+
+SEM CBoundL
+  | Cons        hd          .   letTrfIsOk  =   False
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

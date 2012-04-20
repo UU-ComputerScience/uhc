@@ -374,7 +374,7 @@ jsBody mkRet binds stats lastExpr
 %%]
 
 %%[(8 javascript)
-ATTR CExpr [ | | js: {J.Expr} ]
+ATTR CExpr CBound [ | | js: {J.Expr} ]
 %%]
 
 %%[(8 javascript)
@@ -432,6 +432,10 @@ SEM CExpr
   | Ann         loc         .   js              =   @expr.js
   | * - Var Int Char String App Tup Let CaseAltFail Lam FFI Case Ann
                 loc         .   js              =   J.Expr_Str "*** TODO: CExpr | loc.js ***"
+
+SEM CBound
+  | * - Val	FFE Bind
+    			loc			.	js				=	J.Expr_Str "*** ERR CBound ***"
 %%]
 
 %%[(8 javascript)

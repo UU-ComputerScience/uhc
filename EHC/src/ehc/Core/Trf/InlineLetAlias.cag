@@ -261,6 +261,9 @@ SEM CBind
 SEM CBound
   | Bind  		lhs			.	gathAspBindNmMp
   											=	Map.singleton acbaspkeyDefault @expr.bindNmMp
+
+SEM CExpr
+  | App			arg			.	aspBindNmMp	=	Map.empty
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

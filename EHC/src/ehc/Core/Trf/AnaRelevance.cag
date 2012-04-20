@@ -13,7 +13,7 @@ Analyse Core, using relevance analysis, to relate properties (like relevance) of
 %%% Type based simplifications
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs module {%{EH}Core.Trf.AnaRelevance} import({%{EH}Ty},{%{EH}Base.Common},{%{EH}Gam},{%{EH}Opts},{%{EH}Base.Optimize},{%{EH}Core},{%{EH}VarMp},{%{EH}Substitutable})
+%%[(8 codegen) hs module {%{EH}Core.Trf.AnaRelevance} import({%{EH}Ty},{%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Gam},{%{EH}Opts},{%{EH}Base.Optimize},{%{EH}Core},{%{EH}VarMp},{%{EH}Substitutable})
 %%]
 
 %%[(8 codegen) hs import(Data.Maybe, qualified Data.Map as Map, qualified Data.Set as Set, Control.Applicative)
@@ -48,8 +48,8 @@ WRAPPER CodeAGItf
 %%]
 
 %%[(99 codegen)
-PRAGMA strictcase
--- PRAGMA nocycle
+-- PRAGMA strictcase
+PRAGMA nocycle
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -410,7 +410,7 @@ SEM CAlt CBound CModule MbCExpr CPatFld
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen)
-ATTR CExpr CAlt [ | | coe: RelevCoe ]
+ATTR CExpr CBound CAlt [ | | coe: RelevCoe ]
 
 SEM CExpr
   | Var Int Char Tup FFI
@@ -432,6 +432,7 @@ SEM CExpr
 
 SEM CBound
   | Bind        loc         .   hereBindCoe     =   @expr.coe <.> maybe RelevCoe_Id (@finalRVarMp `varUpd`) @mbBindCoe
+  | * - Val		lhs			.	coe				=	RelevCoe_Id
 
 SEM CAltL
   | Cons        loc         .   hereAltCoe      =   @hd.coe <.> (@hdFinalRVarMp `varUpd` amsoCoe @amsoDw)
@@ -514,7 +515,7 @@ ATTR AllBind [ forQuantRVarMp: RVarMp | | ]
 
 SEM CExpr
   | Let         binds       .   forQuantRVarMp  =   @binds.rvarMp
-  | Lam         bind        .   forQuantRVarMp  =   emptyRVarMp
+  | Lam App     loc         .   forQuantRVarMp  =   emptyRVarMp
 
 SEM CPatFld
   | Fld			bind        .   forQuantRVarMp  =   emptyRVarMp
@@ -810,8 +811,8 @@ SEM CExpr
                                                     @cTrf
   | Lam         lhs         .   cTrf            =   acoreLam1 @argNm $ annCoe @hereBodyCoe @body.cTrf
   | App         lhs         .   cTrf            =   let a = -- dbgApp @lhs.opts @argTy @funTy @func.ty $
-                                                            annCoe @hereArgCoe @arg.cTrf
-                                                        app = CExpr_App (annCoe @hereFunCoe @func.cTrf) a
+                                                            maybe @arg.cTrf (\(a,e) -> acoreBound1AspkeyVal a (annCoe @hereArgCoe e)) $ acoreBoundMbVal @arg.cTrf
+                                                        app = acoreApp1Bound (annCoe @hereFunCoe @func.cTrf) a
                                                     in  app
   | Case        lhs         .   cTrf            =   -- @dbg $
                                                     @cTrf

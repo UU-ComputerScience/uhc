@@ -25,7 +25,7 @@ SEM CExpr
 %%]
 
 %%[(8 codegen)
-ATTR CExpr [ | | argL: {[CExpr]} ]
+ATTR CExpr [ | | argL: {[CBound]} ]
 
 SEM CExpr
   | App         loc         .   argL        =   @arg.cTrf : @func.argL

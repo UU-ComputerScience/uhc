@@ -11,6 +11,9 @@ ATTR AllBound [ nm: HsName | | ]
 
 SEM CBind
   | Bind        bindAspects .   nm              =   @nm
+
+SEM CExpr	
+  | App         arg 		.   nm              =   hsnUnknown
 %%]
 
 %%[(8 codegen)
