@@ -308,6 +308,10 @@ SEM CModule
   | Mod  expr.mbCtxCount = Nothing
          expr.isDictClass = False
 
+SEM CBoundL
+  | Cons hd.mbCtxCount = Nothing
+         hd.isDictClass = False
+
 %%[[90
 SEM CBound
   | FFE  expr.mbCtxCount = Nothing

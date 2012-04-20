@@ -487,6 +487,9 @@ SEM CExpr
 SEM CModule
   | Mod         expr        .   doBox       =   True
 
+SEM CBoundL
+  | Cons        hd          .   doBox       =   True
+
 SEM CBound
   | Bind Val
 %%[[90

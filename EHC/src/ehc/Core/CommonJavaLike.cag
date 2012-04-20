@@ -63,6 +63,9 @@ SEM CPatFld
 
 SEM CModule
   | Mod         expr        .   mbLamNm         =   Nothing
+
+SEM CBoundL
+  | Cons        hd          .   mbLamNm         =   Nothing
 %%]
 
 %%[(8 jazy || javascript)
