@@ -148,7 +148,7 @@ SEM CExpr
                                             =   (@body.levBindSq,Seq.empty) -- levBindSplit @lev @body.levBindSq
                 lhs         .   levBindSq   =   @remBindSq Seq.:++: @levBindSq
 
-SEM CBindAspect
+SEM CBound
   | Bind        lhs         .   bindL       =   [(@expr.levOf,acoreBind1Asp1 @lhs.nm @cTrf)]
   -- | FFI
 %%[[90
@@ -171,13 +171,13 @@ data LamTop = LamYesLet | LamNoLet deriving (Eq,Ord)
 %%]
 
 %%[(8 codegen)
-ATTR AllExprOnly [ appTrfIsOk: AppTop | | ]
+ATTR AllExprOnly CBound [ appTrfIsOk: AppTop | | ]
 
 SEM CModule
   | Mod         expr        .   appTrfIsOk  =   AppYesLet
 
-SEM CBindAspect
-  | Bind Val
+SEM CBound
+  | Bind
 %%[[90
     FFE
 %%]]
@@ -197,16 +197,19 @@ SEM CExpr
 
 SEM CAlt
   | Alt         expr        .   appTrfIsOk  =   AppYesLet
+
+SEM CBoundL
+  | Cons        hd          .   appTrfIsOk  =   AppNoLet
 %%]
 
 %%[(8 codegen)
-ATTR AllExprOnly [ lamTrfIsOk: LamTop | | ]
+ATTR AllExprOnly CBound [ lamTrfIsOk: LamTop | | ]
 
 SEM CModule
   | Mod         expr        .   lamTrfIsOk  =   LamYesLet
 
-SEM CBindAspect
-  | Bind Val
+SEM CBound
+  | Bind
 %%[[90
     FFE
 %%]]
@@ -224,16 +227,19 @@ SEM CExpr
 
 SEM CAlt
   | Alt         expr        .   lamTrfIsOk  =   LamYesLet
+
+SEM CBoundL
+  | Cons        hd          .   lamTrfIsOk  =   LamNoLet
 %%]
 
 %%[(8 codegen)
-ATTR AllExprOnly [ letTrfIsOk: Bool | | ]
+ATTR AllExprOnly CBound [ letTrfIsOk: Bool | | ]
 
 SEM CModule
   | Mod         expr        .   letTrfIsOk  =   False
 
-SEM CBindAspect
-  | Bind Val
+SEM CBound
+  | Bind
 %%[[90
     FFE
 %%]]
@@ -251,6 +257,9 @@ SEM CExpr
 
 SEM CAlt
   | Alt         expr        .   letTrfIsOk  =   False
+
+SEM CBoundL
+  | Cons        hd          .   letTrfIsOk  =   False
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -316,7 +325,7 @@ SEM CExpr
                 (lhs.cTrf,loc.levBindSq)    =   mkTrf @trfIsOk @lhs.lev @levOf @trNm @cTrf
   | App Case    (lhs.cTrf,loc.levBindSq)    =   mkTrf @trfIsOk @lhs.lev @levOf @trNm @cTrf
   | Lam         (lhs.cTrf,loc.levBindSq)    =   let mkTLB = mkTrf @trfIsOk @lhs.lev @levOf @trNm
-                                                          . acoreLam1 @arg
+                                                          . acoreLam1 @argNm
                                                           . mkLetTrf @hereBindSq
                                                 in  if cexprIsLam @body.cTrf && not (List.null (Seq.toList @hereBindSq))
                                                     then mkTLB (CExpr_Let CBindCateg_Plain [acoreBind1Cat CBindCateg_Plain @trNm2 @body.cTrf] (acoreVar @trNm2))

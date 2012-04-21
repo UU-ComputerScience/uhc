@@ -12,7 +12,7 @@
 %%[(8 codegen)
 ATTR AllBind [ | | bindVarS, bindLamS USE {`Set.union`} {Set.empty}: FvS ]
 
-SEM CBindAspect
+SEM CBound
   | Bind        lhs         .   (bindVarS,bindLamS)
                                             =   if isJust @expr.mbLam
                                                 then (Set.empty,Set.singleton @lhs.nm)
@@ -30,7 +30,7 @@ SEM CodeAGItf
 SEM CExpr
   | Let         loc         .   varS        =   @lhs.varS `Set.union` @binds.bindVarS
                             .   lamS        =   @lhs.lamS `Set.union` @binds.bindLamS
-  | Lam         loc         .   varS        =   @arg `Set.insert` @lhs.varS
+  | Lam         loc         .   varS        =   @argNm `Set.insert` @lhs.varS
 
 SEM CAlt
   | Alt         expr        .   varS        =   @lhs.varS `Set.union` Set.fromList @pat.nmL

@@ -223,7 +223,7 @@ simplify' simplifyHow chrStore clDfGam heur partitionUnresolved2AmbigAndOthers t
                   ; when ( -- Debug.tr "dfltPrOccL" (ppCommas (simpRemOccL s) >-< ppCommas dfltPrOccL >-< dfltTyVarMp) $
                            not (null dfltPrOccL))
                          -- when a match is found, apply the substitution and kick off proving again
-                         (do { modify (\s -> s {simpToProveHereCnstrMp = dfltTyVarMp `varUpd` simpToProveHereCnstrMp s})
+                         (do { modify (\s -> s {simpToProveHereCnstrMp = dfltTyVarMp `varUpd` simpToProveHereCnstrMp s, simpVarMp = dfltTyVarMp `varUpd` simpVarMp s})
                              ; (cannotResCnstrTraceMp,chrSolveAssumablePrOccL) <- fullSimp u1 toProveHereCnstrMpPrev prevSimplifyRes
                              ; modify (\s -> s {simpCannotCnstrTraceMp = cannotResCnstrTraceMp, simpRemOccL = chrSolveAssumablePrOccL})
                              })

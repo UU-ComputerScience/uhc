@@ -43,7 +43,7 @@ SEM CodeAGItf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 jazy || javascript)
-ATTR AllExprOnly [ mbLamNm: {Maybe (HsName,HsName)} | | ]
+ATTR AllExprOnly CBound [ mbLamNm: {Maybe (HsName,HsName)} | | ]
 
 SEM CExpr
   | App Lam     loc         .   mbLamNm         =   Nothing
@@ -51,7 +51,7 @@ SEM CExpr
 SEM CAlt
   | Alt         loc         .   mbLamNm         =   Nothing
 
-SEM CBindAspect
+SEM CBound
   | Bind Val
 %%[[90
     FFE
@@ -63,6 +63,9 @@ SEM CPatFld
 
 SEM CModule
   | Mod         expr        .   mbLamNm         =   Nothing
+
+SEM CBoundL
+  | Cons        hd          .   mbLamNm         =   Nothing
 %%]
 
 %%[(8 jazy || javascript)
@@ -72,7 +75,7 @@ SEM CExpr
                                                     then (True,fromJust @lhs.mbLamNm)
                                                     else (False,(hsnUnknown,hsnUnknown))
 
-SEM CBindAspect
+SEM CBound
   | Bind Val    loc         .   isCAF           =   @expr.whatBelow /= ExprIsLam
 %%]
 
@@ -144,7 +147,7 @@ SEM CExpr
 ATTR CExpr [ | | nmArgL: {[HsName]} ]
 
 SEM CExpr
-  | Lam         loc         .   nmArgL      =   @arg : @body.nmArgL
+  | Lam         loc         .   nmArgL      =   @argNm : @body.nmArgL
                 loc         .   nmArgL      :   {[HsName]}
   | * - Lam Ann lhs         .   nmArgL      =   []
 %%]

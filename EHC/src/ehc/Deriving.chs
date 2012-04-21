@@ -129,9 +129,9 @@ mkDerivClsMp fe valGam dataGam
                      -> case vs of
                           [] -> eq
                           _  -> foldr1 (\l r -> acoreStrictSatCaseTy env (Just (nStrict,acoreTyErr "Deriving.Ord.compare")) l
-                                                  [ CAlt_Alt (acorePatTagArityMbNms (orderingTag eqNm) 0 Nothing) r
-                                                  , CAlt_Alt (acorePatTagArityMbNms (orderingTag ltNm) 0 Nothing) lt
-                                                  , CAlt_Alt (acorePatTagArityMbNms (orderingTag gtNm) 0 Nothing) gt
+                                                  [ acoreAlt (acorePatTagArityMbNms (orderingTag eqNm) 0 Nothing) r
+                                                  , acoreAlt (acorePatTagArityMbNms (orderingTag ltNm) 0 Nothing) lt
+                                                  , acoreAlt (acorePatTagArityMbNms (orderingTag gtNm) 0 Nothing) gt
                                                   ]
                                        ) vs
                              where n = mkHNm uniq
@@ -341,8 +341,8 @@ mkDerivClsMp fe valGam dataGam
                                     remNmL  = nms "v"
                                     nmL = zip4 (nms "uv") (rNm:remNmL) (nms "u") remNmL
                                     nmLRemFinal = last' (panic "Deriving.nmLRemFinal") remNmL
-                                    mkLamTup     x res rem cont = acoreLam1 x $ acoreMatchTupleTy env [res,rem] Ty_Any cont (acoreVar x)
-                                    mkLamStr str x res rem cont = mkLamTup x res rem $ acoreMatchStringTy env str Ty_Any cont nil (acoreVar res)
+                                    mkLamTup     x res rem cont = acoreLam1Ty x (acoreTyErr "Deriving.Read.mkLamTup.lam") $ acoreMatchTupleTy env [res,rem] (acoreTyErr "Deriving.Read.mkLamTup.tup") cont (acoreVar x)
+                                    mkLamStr str x res rem cont = mkLamTup x res rem $ acoreMatchStringTy env str (acoreTyErr "Deriving.Read.mkLamStr.match") cont nil (acoreVar res)
                                     mkConcatMapTup lam prio rem subCall = acoreApp (acoreVar $ fn ehbnPrelConcatMap) [lam,acoreApp subCall [prio,acoreVar rem]]
                                     mkConcatMapStr lam      rem         = acoreApp (acoreVar $ fn ehbnPrelConcatMap) [lam,acoreApp (acoreVar $ fn ehbnPrelLex) [acoreVar rem]]
                                     mkPrio prio = acoreInt (prio + 1)

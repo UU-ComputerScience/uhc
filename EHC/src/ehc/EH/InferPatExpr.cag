@@ -116,7 +116,7 @@ SEM PatExpr
   | AppTop      loc         .  (knPatTy,knProdTy)   :=  tyArrowArgRes @patFunTy
   | Con         loc         .  knPatTy              :=  @tvarv1_
 %%[[7
-  | Rec         loc         .  knPatTy              =	@lhs.knTy
+  | Rec         loc         .  knPatTy              =   @lhs.knTy
 %%]]
 %%]
 
@@ -298,6 +298,12 @@ SEM DataFieldPatExpr
       loc.knTyShape := [@lhs.knTy] `mkArrow` (hsnRec `mkConApp` [@loc.tyvar])
 %%]
 
+%%[7
+SEM PatExpr
+  | Rec         loc         .   ty                  =   @recPatExpr.ty
+  | DataFields  loc         .   ty                  =   @dataFieldPatExpr.ty
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Row based records
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -321,7 +327,12 @@ SEM RecPatExpr
                 loc         .   lUniq2              :   UNIQUEREF gUniq
 %%]
 
-  | Ext         loc         .   (extTy,recTy,rowTy,patTy)
-                                                    =   let  [r,e] = mkNewTyVarL 2 @lUniq
-                                                             ext = hsnRec `mkConApp` [r]
-                                                        in   (ext, ext `mkTyRecExt` [(@nm,e)], r, e)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Other: irrefutable etc
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+SEM PatExpr
+  | Irrefutable Bang
+                loc         .   ty                  =   @patExpr.ty
+%%]

@@ -300,7 +300,7 @@ uhc-install-postprocess-llvm:
 ###########################################################################################
 
 uhc-dist: uhc
-	@distnm="$(UHC_INSTALL_VARIANTNAME)-$(subst :,-,$(SVN_REVISION))-$(DATE)-$(HOST_PLATFORM_NRWORDBITS)-$(HOST_PLATFORM_NAME)" && \
+	@distnm="$(UHC_INSTALL_VARIANTNAME)-$(subst :,-,$(GIT_REVISION))-$(DATE)-$(HOST_PLATFORM_NRWORDBITS)-$(HOST_PLATFORM_NAME)" && \
 	distdir="$(DISTABS_PREFIX)$${distnm}" && \
 	mkdir -p $${distdir} && \
 	$(call FUN_INSTALLUHC_COPY,$(UHC_INSTALL_VARIANT_PREFIX),$${distdir}/dist/) && \

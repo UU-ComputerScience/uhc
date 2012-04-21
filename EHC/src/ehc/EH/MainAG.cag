@@ -120,13 +120,13 @@
 %%[(92 codegen) hs import({%{EH}Generics})
 %%]
 
-%%[(99 hmtyinfer).DerivationTree hs import({%{EH}DerivationTree})
+%%[(99 hmtyinfer tyderivtree).DerivationTree hs import({%{EH}DerivationTree})
+%%]
+
+%%[(100 hmtyinfer tyderivtree) -99.DerivationTree
 %%]
 
 %%[(99 hmtyinfer) hs import({%{EH}VarMp.Utils})
-%%]
-
-%%[(100 hmtyinfer) -99.DerivationTree
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -157,10 +157,13 @@ WRAPPER AGItf
 %%[1.PrettyAST ag import({EH/PrettyAST})
 %%]
 
-%%[99.PrettyLaTeX ag import({EH/PrettyLatexDerivTree})
+%%[100 -1.PrettyAST
 %%]
 
-%%[100 -(1.PrettyAST 99.PrettyLaTeX)
+%%[(99 tyderivtree).PrettyLaTeX ag import({EH/PrettyLatexDerivTree})
+%%]
+
+%%[(100 tyderivtree) -99.PrettyLaTeX
 %%]
 
 %%[1.GatherError ag import({EH/GatherError})

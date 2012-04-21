@@ -747,6 +747,14 @@ tyIsQu :: Ty -> Bool
 tyIsQu = isJust . tyMbQu
 %%]
 
+%%[(4 hmtyinfer || hmtyast) hs export(tvIsPlain,tyIsVarPlain)
+tyIsVarPlain :: Ty -> Bool
+tyIsVarPlain = maybe False (tvCatIsPlain . snd) . tyMbVar'
+
+tvIsPlain :: TvCatMp -> TyVarId -> Bool
+tvIsPlain m v = maybe False (tvCatIsPlain . tvinfoCateg) $ Map.lookup v m
+%%]
+
 %%[(4_2 hmtyinfer || hmtyast) hs
 tyIsAlts :: Ty -> Bool
 tyIsAlts t = case t of {Ty_Alts _ _ -> True; _ -> False}
@@ -1146,8 +1154,11 @@ tyMbConWithLkup lookup = tyVarChkVisitLift lookup tyMbCon tyMbCon
 %%]
 
 %%[(3 hmtyinfer || hmtyast).unMkTy.tyMbVar hs export(tyMbVar)
+tyMbVar' :: Ty -> Maybe (TyVarId,TyVarCateg)
+tyMbVar' t = case tyUnAnn t of {Ty_Var v c -> Just (v,c) ; _ -> Nothing}
+
 tyMbVar :: Ty -> Maybe TyVarId
-tyMbVar t = case tyUnAnn t of {Ty_Var v _ -> Just v ; _ -> Nothing}
+tyMbVar = fmap fst . tyMbVar'
 %%]
 
 %%[(4 hmtyinfer || hmtyast) hs
@@ -1234,6 +1245,20 @@ tyLamArgsRes
                 Ty_Lam a r  -> (a:as',r')
                             where (as',r') = extr r
                 _           -> ([],t)
+%%]
+
+%%[(11 hmtyinfer || hmtyast) hs export(tyLamEtaRed)
+-- Eta reduce when the full list of args can be eliminated thus, i.e. it matches with the tail of the args applied in the app (if any) of the body
+tyLamEtaRed :: Ty -> Maybe Ty
+tyLamEtaRed t
+  | llas > 0 && rlDiff >= 0 && map mkTyVar las == rTl = Just (mkApp (f:rHd))
+  | otherwise                                         = Nothing
+  where (las,r  ) = tyLamArgsRes t
+        (f  ,ras) = tyAppFunArgs r
+        llas      = length las
+        rlas      = length ras
+        rlDiff	  = rlas - llas
+        (rHd,rTl) = splitAt rlDiff ras
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1481,10 +1506,13 @@ predMatchNmArgs p
   =  case p of
        Pred_Class t    -> (tyAppFunConNm t, tyAppArgs t)
        Pred_Pred  t    -> predMatchNmArgs $ snd $ tyPrArrowArgsRes t
-%%]
-%%[(10 hmtyinfer || hmtyast) hs
+%%[[10
        Pred_Lacks _ (Label_Lab l)  -> (hsnUniqify HsNameUniqifier_LacksLabel l, [])
        Pred_Lacks _ _              -> (mkHNm "_LabVar_", [])      -- necessary? only used by CHR's
+%%]]
+%%[[31
+       Pred_Eq t1 t2   -> (hsnEqTilde,[t1,t2])
+%%]]
 %%]
 
 %%[(9 hmtyinfer || hmtyast) hs export(tyPred2DataTy,pred2DataTy)
@@ -1505,10 +1533,10 @@ predTy p
   =  case p of
        Pred_Class t    -> t
        Pred_Pred  t    -> t
-%%[[(10 hmtyinfer || hmtyast)
+%%[[10
        Pred_Lacks    t _  -> t
 %%]]
-%%[[(31 hmtyinfer || hmtyast)
+%%[[31
        Pred_Eq t _ -> t  -- does it matter if we return the left or the right type?
 %%]]
 %%]
@@ -1523,6 +1551,21 @@ predLFlatten
   = concatMap fl
   where fl (Pred_Preds s) = predSeqToList s
         fl p              = [p]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Predicates & evidence
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(9 hmtyinfer || hmtyast) hs export(predHasRuntimeEvidence)
+-- | Is runtime evidence required for the predicate?
+predHasRuntimeEvidence :: Pred -> Bool
+predHasRuntimeEvidence p
+  =  case p of
+%%[[31
+       Pred_Eq _ _ -> False
+%%]]
+       _           -> True
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

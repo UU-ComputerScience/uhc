@@ -30,6 +30,19 @@ A |ScanOpts| specifies sets of keywords, variations on identifier parsing, etc e
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Scanner state
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[5
+data ScanState
+  = ScanState
+      { ssAfterQual		:: Bool
+      }
+
+defaultScanState = ScanState False
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Scanner
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -50,11 +63,11 @@ scanFile opts fn =
 scan :: ScanOpts -> Pos -> String -> [Token]
 scan opts pos input
 %%[[5
-  = doScan pos input
+  = doScan defaultScanState pos input
 %%][99
   = if scoLitmode opts
-    then scanLitText pos input
-    else doScan pos input
+    then scanLitText defaultScanState pos input
+    else doScan defaultScanState pos input
 %%]]
 
  where
@@ -73,7 +86,7 @@ scan opts pos input
 
    isIdStart c = isLower    c || c == '_' || iskwextra c
    isIdChar  c = isAlphaNum c || c == '\'' || c == '_' || iskwextra c
-   isQIdChar c = isIdChar   c || c == '.'
+   -- isQIdChar c = isIdChar   c || c == '.'
 
    allowQual   = scoAllowQualified opts
 
@@ -103,7 +116,8 @@ scan opts pos input
 %%[50
    scanQualified :: String -> ([String],String)
    scanQualified s
-     = qual [] s
+     = -- (\v -> tr "scanQualified" (s ++ ":"  ++ show v) v) $
+       qual [] s
      where split isX s  = span (\c -> isX c && c /= '.') s
            validQuald c = isId c || isOpsym c
            isId       c = isIdStart c || isUpper c
@@ -141,51 +155,51 @@ scan opts pos input
 %%]
 
 %%[99
-   scanLitText p ('\\':'b':'e':'g':'i':'n':'{':'c':'o':'d':'e':'}':s)
+   scanLitText scSt p ('\\':'b':'e':'g':'i':'n':'{':'c':'o':'d':'e':'}':s)
      | posIs1stColumn p
-         = doScan (advc 12 p) s
-   scanLitText p ('>':' ':s)
+         = doScan scSt (advc 12 p) s
+   scanLitText scSt p ('>':' ':s)
      | posIs1stColumn p
-         = doScan (advc 2 p) line ++ scanLitText (advc (length line) p) rest
+         = doScan scSt (advc 2 p) line ++ scanLitText scSt (advc (length line) p) rest
          where (line,rest) = break (== '\n') s
-   scanLitText p (c:s)
-         = scanLitText (adv p c) s
-   scanLitText p []
+   scanLitText scSt p (c:s)
+         = scanLitText scSt (adv p c) s
+   scanLitText scSt p []
          = []
 %%]
 
 %%[5
-   doScan p [] = []
-   doScan p (c:s)        | isSpace c = let (sp,next) = span isSpace s
-                                       in  doScan (foldl adv p (c:sp)) next
+   doScan scSt p [] = []
+   doScan scSt p (c:s)     | isSpace c = let (sp,next) = span isSpace s
+                                         in  doScan (scSt {ssAfterQual=False}) (foldl adv p (c:sp)) next
 
-   doScan p "--"  = []
-   doScan p ('-':'-':s@(c:_))
+   doScan scSt p "--"  = []
+   doScan scSt p ('-':'-':s@(c:_))
      | c == '-' || not (isOpsym c)
-       = doScan p (dropWhile (/= '\n') s)
+       = doScan (scSt {ssAfterQual=False}) p (dropWhile (/= '\n') s)
 %%[[99
 {-
 -}
-   doScan p ('{':'-':'#':s)
+   doScan scSt p ('{':'-':'#':s)
      | isPragma pragma
-       = reserved "{-#" p : reserved pragma p2 : doScan p3 s3
+       = reserved "{-#" p : reserved pragma p2 : doScan (scSt {ssAfterQual=False}) p3 s3
        where (w        ,s2) = getWhite s
              p2             = advc (length w) $ advc 3 p
              (pragma,p3,s3) = scanIdent isIdChar p2 s2
-   doScan p ('#':'-':'}':s) = reserved "#-}" p : doScan (advc 3 p) s
+   doScan scSt p ('#':'-':'}':s) = reserved "#-}" p : doScan (scSt {ssAfterQual=False}) (advc 3 p) s
 %%]]
-   doScan p ('{':'-':s)  = scanNestedComment doScan (advc 2 p) s
-   doScan p (d:ss)
+   doScan scSt p ('{':'-':s)  = scanNestedComment doScan scSt (advc 2 p) s
+   doScan scSt p (d:ss)
      | isStringDelim d
      = let (s,p',rest) = scanString d (advc 1 p) ss
        in if null rest || head rest /= d
-             then errToken "Unterminated string literal" p : doScan p' rest
-             else valueToken TkString s p : doScan (advc 1 p') (tail rest)
+             then errToken "Unterminated string literal" p : doScan scSt p' rest
+             else valueToken TkString s p : doScan scSt (advc 1 p') (tail rest)
 %%]
 
 %%[8
-   doScan p ('$':ss)
-     | scoDollarIdent opts   = tok : doScan (advc (w+1) p) ss'
+   doScan scSt p ('$':ss)
+     | scoDollarIdent opts   = tok : doScan scSt (advc (w+1) p) ss'
          where (ident,w,ss') = scanDollarIdent ss
                tok = if null ident
                      then errToken "Zero length $identifier" p
@@ -193,33 +207,34 @@ scan opts pos input
 %%]
 
 %%[99
-   doScan p ('\\':'e':'n':'d':'{':'c':'o':'d':'e':'}':s)
+   doScan scSt p ('\\':'e':'n':'d':'{':'c':'o':'d':'e':'}':s)
      | scoLitmode opts && posIs1stColumn p
-         = scanLitText (advc 10 p) s
+         = scanLitText scSt (advc 10 p) s
 %%]
 
 %%[5
    -- this is experimental, for now, not foolproof, only to be used for the Prelude
-   doScan p ('\'':'\'':ss)
+   doScan scSt p ('\'':'\'':ss)
      = let (s,w,r) = scanDQuoteIdent ss
         in if null r
-           then errToken "Unterminated double quote ident" p : doScan (advc (w+1) p) r
-           else valueToken TkConid s p : doScan (advc (w+4) p) r
+           then errToken "Unterminated double quote ident" p : doScan (scSt {ssAfterQual=False}) (advc (w+1) p) r
+           else valueToken TkConid s p : doScan (scSt {ssAfterQual=False}) (advc (w+4) p) r
 
-   doScan p ('\'':ss)
+   doScan scSt p ('\'':ss)
      = let (mc,cwidth,rest) = scanChar ss
        in case mc of
-            Nothing -> errToken "Error in character literal" p : doScan (advc cwidth p) rest
+            Nothing -> errToken "Error in character literal" p : doScan (scSt {ssAfterQual=False}) (advc cwidth p) rest
             Just c  -> if null rest || head rest /= '\''
-                          then errToken "Unterminated character literal" p : doScan (advc (cwidth+1) p) rest
-                          else valueToken TkChar [c] p : doScan (advc (cwidth+2) p) (tail rest)
+                          then errToken "Unterminated character literal" p : doScan scSt (advc (cwidth+1) p) rest
+                          else valueToken TkChar [c] p : doScan scSt (advc (cwidth+2) p) (tail rest)
 
-   doScan p cs@(c:c2:s)
-     | isPairSym sym = reserved sym p : doScan(advc 2 p) s
+   doScan scSt p cs@(c:c2:s)
+     | isPairSym sym = reserved sym p : doScan (scSt {ssAfterQual=False}) (advc 2 p) s
          where sym = [c,c2]
-   doScan p cs@(c:s)
-     | isSymbol c = reserved [c] p
-                  : doScan (advc 1 p) s
+   doScan scSt p cs@(c:s)
+     | isSymbol c
+                = reserved [c] p
+                  : doScan (scSt {ssAfterQual=False}) (advc 1 p) s
 %%]
 %%[5
      | isIdStart c || isUpper c
@@ -241,36 +256,32 @@ scan opts pos input
                                           then reserved name p
                                           else let n = mknm name
                                                in  valueToken (mktok $ varKind n) n p
-                    in  tok : doScan p'' s''
+                    in  tok : doScan scSt p'' s''
 %%[[50
-               else case doScan (advc (length qualPrefix + sum (map length qualPrefix)) p) qualTail of
+               else case doScan (scSt {ssAfterQual=True}) (advc (length qualPrefix + sum (map length qualPrefix)) p) qualTail of
                       (tok@(ValToken tp val _):toks)
                          -> ValToken (tokTpQual tp) (qualPrefix ++ val) p : toks
                       ts -> ts
 %%]]
-%%[[5020
-               else case doScan (advc (length qualPrefix) p) qualTail of
-                      (tok@(ValToken tp [val] _):toks)
-                         -> ValToken (tokTpQual tp) [qualPrefix ++ val] p : toks
-                      ts -> ts
-%%]]
 %%]
 %%[5
-     | isOpsym c = let (name, s') = span isOpsym cs
+     | isOpsym c
+                 = let (name, s') = span isOpsym cs
                        tok n p (c:_)
                            | length suf' == 2 && isPairSym suf'
                                        = (fst (tok pre p []) ++ [reserved suf' (advc (length pre) p)],1)
                            where (pre,suf) = splitAt (length n - 1) n
                                  suf'      = suf ++ [c]
                        tok n p s
-                           | isop n    = ([reserved n p],0)
+                           | isop n && not (ssAfterQual scSt)
+                                       = ([reserved n p],0)
                            | length suf == 2 && isPairSym suf
                                        = (fst (tok pre p []) ++ [reserved suf (advc (length pre) p)],0)
                            | c==':'    = ([valueToken TkConOp n p],0)
                            | otherwise = ([valueToken TkOp n p],0)
                            where (pre,suf) = splitAt (length n - 2) n
                        (toks,drops) = tok name p s'
-                   in toks ++ doScan (advc drops $ foldl adv p name) (drop drops s')
+                   in toks ++ doScan (scSt {ssAfterQual=False}) (advc drops $ foldl adv p name) (drop drops s')
 %%]
 %%[8
      | scoAllowFloat opts && isDigit c
@@ -278,15 +289,15 @@ scan opts pos input
                m = maybe "" (\mant -> "." ++ mant)
                e = maybe "" (\(sign,exp) -> "E" ++ maybe "" id sign ++ exp)
            in  valueToken tktype (number ++ m mantissa ++ e exp) p
-                 : doScan (advc w p) cs'
+                 : doScan scSt (advc w p) cs'
 %%]
 %%[5
      | isDigit c = let (tktype,number,width,s') = getNumber cs
-                   in  valueToken tktype number p : doScan (advc width p) s'
+                   in  valueToken tktype number p : doScan scSt (advc width p) s'
 %%]
 %%[5
      | otherwise = errToken ("Unexpected character " ++ show c) p
-                 : doScan (adv p c) s
+                 : doScan scSt (adv p c) s
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -301,15 +312,16 @@ varKind (c  :s) | isUpper c = TkConid
 varKind []                  = TkVarid
 
 scanNestedComment
-        :: (Pos -> String -> [Token])
+        :: (ScanState -> Pos -> String -> [Token])
+        -> ScanState
         -> Pos
         -> String
         -> [Token]
-scanNestedComment cont pos inp = nest cont pos inp
- where nest c p ('-':'}':s) = c (advc 2 p) s
-       nest c p ('{':'-':s) = nest (nest c) (advc 2 p) s
-       nest c p (x:s)       = nest c (adv p x) s
-       nest _ _ []          = [ errToken "Unterminated nested comment" pos]
+scanNestedComment cont scSt pos inp = nest cont scSt pos inp
+ where nest c scSt p ('-':'}':s) = c scSt (advc 2 p) s
+       nest c scSt p ('{':'-':s) = nest (nest c) scSt (advc 2 p) s
+       nest c scSt p (x:s)       = nest c scSt (adv p x) s
+       nest _ _    _ []          = [ errToken "Unterminated nested comment" pos]
 
 
 {-

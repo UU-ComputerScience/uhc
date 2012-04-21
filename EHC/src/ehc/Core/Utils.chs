@@ -15,7 +15,7 @@
 
 %%[(8 codegen) hs import({%{EH}AbstractCore})
 %%]
-%%[(8 codegen) hs import({%{EH}AbstractCore.Utils} hiding (rceMatch)) export(module {%{EH}AbstractCore.Utils})
+%%[(8 codegen) hs import({%{EH}AbstractCore.Utils}) export(module {%{EH}AbstractCore.Utils})
 %%]
 
 %%[(8 codegen) import({%{EH}Core.Subst})
@@ -41,7 +41,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen) export(RCEEnv)
-type RCEEnv = RCEEnv' CExpr CMetaVal CBind CBindAspect Ty
+type RCEEnv = RCEEnv' CExpr CMetaVal CBind CBound Ty
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

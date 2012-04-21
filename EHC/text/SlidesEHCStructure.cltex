@@ -120,11 +120,11 @@
 \end{center}
 
 \temporal<3>{%
-\hspace*{-10mm}\raisebox{-55mm}[16mm][0mm]{\FigScaledPDF{0.50}{ehc-dataflow2a}}
+\hspace*{-0mm}\raisebox{-0mm}[16mm][0mm]{\FigScaledPDF{0.50}{ehc-dataflow2a}}
 }{%
-\hspace*{-10mm}\raisebox{-55mm}[16mm][0mm]{\FigScaledPDF{0.50}{ehc-dataflow2b}}
+\hspace*{-0mm}\raisebox{-0mm}[16mm][0mm]{\FigScaledPDF{0.50}{ehc-dataflow2b}}
 }{%
-\hspace*{-10mm}\raisebox{-55mm}[16mm][0mm]{\FigScaledPDF{0.50}{ehc-dataflow2c}}
+\hspace*{-0mm}\raisebox{-0mm}[16mm][0mm]{\FigScaledPDF{0.50}{ehc-dataflow2c}}
 }
 
 Many intermediate languages\uncover<1->{, {\em 7 transformations}}
@@ -335,13 +335,13 @@ static GB_Byte vb1_bytecode[] =
           Haskell Compiler
 \end{itemize}
 }
-\hspace*{-10mm}%
-\only<1>{\raisebox{-10mm}[52mm][0mm]{\FigScaledPDF{0.3}{toolchain2a}}}%
-\only<2>{\raisebox{-10mm}[52mm][0mm]{\FigScaledPDF{0.3}{toolchain2b}}}%
-\only<3>{\raisebox{-10mm}[52mm][0mm]{\FigScaledPDF{0.3}{toolchain2c}}}%
-\only<4>{\raisebox{-10mm}[52mm][0mm]{\FigScaledPDF{0.3}{toolchain2d}}}%
-\only<5>{\raisebox{-10mm}[52mm][0mm]{\FigScaledPDF{0.3}{toolchain2e}}}%
-\only<6>{\raisebox{-10mm}[52mm][0mm]{\FigScaledPDF{0.3}{toolchain2f}}}
+\hspace*{-0mm}%
+\only<1>{\raisebox{-0mm}[52mm][0mm]{\FigScaledPDF{0.3}{toolchain2a}}}%
+\only<2>{\raisebox{-0mm}[52mm][0mm]{\FigScaledPDF{0.3}{toolchain2b}}}%
+\only<3>{\raisebox{-0mm}[52mm][0mm]{\FigScaledPDF{0.3}{toolchain2c}}}%
+\only<4>{\raisebox{-0mm}[52mm][0mm]{\FigScaledPDF{0.3}{toolchain2d}}}%
+\only<5>{\raisebox{-0mm}[52mm][0mm]{\FigScaledPDF{0.3}{toolchain2e}}}%
+\only<6>{\raisebox{-0mm}[52mm][0mm]{\FigScaledPDF{0.3}{toolchain2f}}}
 }
 
 \end{frame}

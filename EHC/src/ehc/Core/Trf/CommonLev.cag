@@ -26,7 +26,7 @@ SEM CExpr
                                                           , cviMeta = CMetaVal_Val -- @argMeta.self
                                                           }
 
-SEM CBindAspect
+SEM CBound
   | Bind        loc         .   cmetaVal            =   cmetasVal @bindMeta.self
                             .   cvi                 =   emptyCVarIntro { cviLev  = @lhs.lev   , cviMeta = @cmetaVal }
                             .   cviExpr             =   emptyCVarIntro { cviLev  = @expr.levOf, cviMeta = @cmetaVal }
@@ -46,7 +46,7 @@ SEM CodeAGItf
   | AGItf       module      .   cvarIntroMp =   Map.empty
 
 SEM CExpr
-  | Lam         body        .   cvarIntroMp =   Map.insert @arg @cvi @lhs.cvarIntroMp
+  | Lam         body        .   cvarIntroMp =   Map.insert @argNm @cvi @lhs.cvarIntroMp
   | Let         loc         .   maxBindLev  =   fvsLev @lhs.cvarIntroMp cLevModule @binds.fvS
                 (loc.strLev,binds.cvarIntroMp)
                                             =   case @categ of
@@ -73,7 +73,7 @@ SEM CodeAGItf
   | AGItf       module      .   introCVarIntroMp    =   Map.empty
 
 SEM CExpr
-  | Lam         body        .   introCVarIntroMp    =   Map.insert @arg @cvi @lhs.introCVarIntroMp
+  | Lam         body        .   introCVarIntroMp    =   Map.insert @argNm @cvi @lhs.introCVarIntroMp
   | Let         loc         .   introCVarIntroMp    =   Map.map (\cvi -> cvi {cviLev = @lhs.lev}) @binds.bindsIntroCVarIntroMp `Map.union` @lhs.introCVarIntroMp
 
 SEM CAlt
@@ -83,7 +83,7 @@ SEM CAlt
 %%[(8 codegen)
 ATTR AllBind [ | | bindsIntroCVarIntroMp USE {`Map.union`} {Map.empty}: CVarIntroMp ]
 
-SEM CBindAspect
+SEM CBound
   | Bind        lhs         .   bindsIntroCVarIntroMp
                                                     =   Map.singleton @lhs.nm @cvi
 %%]
@@ -113,7 +113,7 @@ SEM CAlt
 
 ATTR AllBind [ | | cvarIntroExprMp USE {`Map.union`} {Map.empty}: CVarIntroMp ]
 
-SEM CBindAspect
+SEM CBound
   | Bind        lhs         .   cvarIntroExprMp
                                             =   Map.singleton @lhs.nm @cviExpr
 %%]

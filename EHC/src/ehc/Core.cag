@@ -28,7 +28,7 @@ Datatype LamInfo holds the implementation info to be exported from a module.
 %%[(8 codegen) hs import(Data.Maybe,Data.Char,Data.List,EH.Util.Pretty,EH.Util.Utils)
 %%]
 
-%%[(8 codegen) hs export(CodeAGItf(..), CModule(..), CExpr(..), MbCExpr, CBind(..), CBindAspect(..), CMetaVal(..), CMetaBind(..), CMetas, CBindL, CBindAspectL, CPatRest(..), CAlt(..), CAltL, CPat(..), CPatFld(..), CPatFldL) 
+%%[(8 codegen) hs export(CodeAGItf(..), CModule(..), CExpr(..), MbCExpr, CBind(..), CBound(..), CMetaVal(..), CMetaBind(..), CMetas, CBindL, CBoundL, CPatRest(..), CAlt(..), CAltL, CPat(..), CPatFld(..), CPatFldL) 
 %%]
 
 %%[(8 codegen) hs export(CBindAnn(..), CBindAnnL, CExprAnn(..))
@@ -187,10 +187,10 @@ cbindNm (CBind_Bind      n _) = n
 
 %%[(50 codegen) hs export(cbindAspectMbExpr,cbindExprs)
 -- | extract expr for aspect, relevant for later use/analysis/...
-cbindAspectMbExpr :: CBindAspect -> Maybe CExpr
-cbindAspectMbExpr (CBindAspect_Bind _ e) = Just e
-cbindAspectMbExpr (CBindAspect_Val  _ e) = Just e
-cbindAspectMbExpr _                      = Nothing
+cbindAspectMbExpr :: CBound -> Maybe CExpr
+cbindAspectMbExpr (CBound_Bind _ e) = Just e
+cbindAspectMbExpr (CBound_Val  _ e) = Just e
+cbindAspectMbExpr _                 = Nothing
 
 -- | extract exprs of a binding which are relevant for use/analysis/...
 cbindExprs :: CBind -> [CExpr]
@@ -582,28 +582,28 @@ instance Serialize CBindAnn where
          case t of
             0 -> liftM  CBindAnn_Coe         sget            
 
-instance Serialize CBindAspect where
-  sput (CBindAspect_Bind 	a b      ) = sputWord8 0 >> sput a >> sput b
-  -- sput (CBindAspect_FFI  	a b c d  ) = sputWord8 1 >> sput a >> sput b >> sput c >> sput d
+instance Serialize CBound where
+  sput (CBound_Bind 	a b      ) = sputWord8 0 >> sput a >> sput b
+  -- sput (CBound_FFI  	a b c d  ) = sputWord8 1 >> sput a >> sput b >> sput c >> sput d
 %%[[90
-  sput (CBindAspect_FFE  	a b c d  ) = sputWord8 2 >> sput a >> sput b >> sput c >> sput d
+  sput (CBound_FFE  	a b c d  ) = sputWord8 2 >> sput a >> sput b >> sput c >> sput d
 %%]]
-  sput (CBindAspect_RelevTy a b      ) = sputWord8 3 >> sput a >> sput b
-  sput (CBindAspect_Meta    a b      ) = sputWord8 4 >> sput a >> sput b
-  sput (CBindAspect_Val     a b      ) = sputWord8 5 >> sput a >> sput b
-  sput (CBindAspect_Ty      a b      ) = sputWord8 6 >> sput a >> sput b
+  sput (CBound_RelevTy a b      ) = sputWord8 3 >> sput a >> sput b
+  sput (CBound_Meta    a b      ) = sputWord8 4 >> sput a >> sput b
+  sput (CBound_Val     a b      ) = sputWord8 5 >> sput a >> sput b
+  sput (CBound_Ty      a b      ) = sputWord8 6 >> sput a >> sput b
   sget
     = do t <- sgetWord8
          case t of
-            0 -> liftM2 CBindAspect_Bind          sget sget
-            -- 1 -> liftM4 CBindAspect_FFI           sget sget sget sget
+            0 -> liftM2 CBound_Bind          sget sget
+            -- 1 -> liftM4 CBound_FFI           sget sget sget sget
 %%[[90           
-            2 -> liftM4 CBindAspect_FFE           sget sget sget sget
+            2 -> liftM4 CBound_FFE           sget sget sget sget
 %%]]
-            3 -> liftM2 CBindAspect_RelevTy       sget sget
-            4 -> liftM2 CBindAspect_Meta          sget sget
-            5 -> liftM2 CBindAspect_Val           sget sget
-            6 -> liftM2 CBindAspect_Ty            sget sget
+            3 -> liftM2 CBound_RelevTy       sget sget
+            4 -> liftM2 CBound_Meta          sget sget
+            5 -> liftM2 CBound_Val           sget sget
+            6 -> liftM2 CBound_Ty            sget sget
 
 instance Serialize CBind where
   sput (CBind_Bind a b      ) = sputWord8 0 >> sput a >> sput b
@@ -668,17 +668,19 @@ instance Serialize CMetaBind where
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen) hs
-instance AbstractCore CExpr CMetaVal CBind CBindAspect CBindCateg CMetaBind Ty CPat CPatRest CPatFld CAlt where
+instance AbstractCore CExpr CMetaVal CBind CBound CBindCateg CMetaBind Ty CPat CPatRest CPatFld CAlt where
   -- expr
-  acoreApp1       f a      				= CExpr_App f a
-  acoreLam1Ty a _ e 				    = CExpr_Lam a e
+  acoreApp1Bound   f a      			= CExpr_App f a
+  -- acoreLam1Ty a _ e 				    = CExpr_Lam (acoreBind1 a) e
+  acoreLam1Bind b e 				    = CExpr_Lam b e
   acoreTagTupTy   tg _ es 				= acoreApp (CExpr_Tup tg) es
-  acoreBindaspVal1CatLevMetasTy _ _ _ m _ e
-  										= CBindAspect_Bind m e
-  acoreBindaspValTy1CatLev _ _ _ t		= CBindAspect_Ty acbaspkeyDefaultTy t
+  acoreBoundVal1CatLevMetasTy _ _ _ m _ e
+  										= CBound_Bind m e
+  acoreBound1AspkeyVal a e  			= CBound_Val a e
+  acoreBoundValTy1CatLev _ _ _ t		= CBound_Ty acbaspkeyDefaultTy t
   acoreBind1Asp n as					= CBind_Bind n as
   acoreBind1CatLevMetasTy bcat n mlev mb t e
-  										= acoreBind1Asp n [acoreBindaspValTy1CatLev bcat n mlev t, acoreBindaspVal1CatLevMetasTy bcat n mlev mb t e]
+  										= acoreBind1Asp n [acoreBoundValTy1CatLev bcat n mlev t, acoreBoundVal1CatLevMetasTy bcat n mlev mb t e]
   acoreLetBase							= CExpr_Let
   acoreCaseDflt	e as d					= CExpr_Case e as (maybe (acoreVar hsnUnknown) id d)
   acoreVar n							= CExpr_Var (ACoreBindRef n Nothing) 
@@ -695,6 +697,9 @@ instance AbstractCore CExpr CMetaVal CBind CBindAspect CBindCateg CMetaBind Ty C
   acoreHoleLet							= CExpr_HoleLet
 %%]
 
+  -- ty constants
+  acoreTyBool o                         = semCon (ehcOptBuiltin o ehbnDataBool)
+  
   -- ty
   -- acoreTyInt2							= tyInt
 
@@ -709,7 +714,8 @@ instance AbstractCore CExpr CMetaVal CBind CBindAspect CBindCateg CMetaBind Ty C
 %%]]
   
   -- patfld
-  acorePatFldTy _ (lbl,off) n 			= CPatFld_Fld lbl off n []
+  acorePatFldBind (lbl,off) b			= CPatFld_Fld lbl off b []
+  -- acorePatFldTy _ (lbl,off) n 			= CPatFld_Fld lbl off n []
 
   -- patrest
   acorePatRestEmpty  					= CPatRest_Empty
@@ -727,7 +733,7 @@ instance AbstractCore CExpr CMetaVal CBind CBindAspect CBindCateg CMetaBind Ty C
 %%]]
   acoreMetabindDflt      				= CMetaBind_Plain
   acoreTyErr             				= Ty_Dbg
-  acoreTyNone            				= Ty_Any
+  acoreTyNone            				= acoreTyErr "acoreTyNone"
   acoreTyChar 							= tyChar
   acoreTyInt 							= tyInt
 %%[[8
@@ -742,6 +748,9 @@ instance AbstractCore CExpr CMetaVal CBind CBindAspect CBindCateg CMetaBind Ty C
   acoreBindcategPlain					= CBindCateg_Plain
 
   -- inspecting
+  acoreExprMbLam (CExpr_Lam b e)        = Just (b,e)
+  acoreExprMbLam _                      = Nothing
+
   acoreExprMbLet (CExpr_Let c b e)      = Just (c,b,e)
   acoreExprMbLet _                      = Nothing
 
@@ -767,7 +776,11 @@ instance AbstractCore CExpr CMetaVal CBind CBindAspect CBindCateg CMetaBind Ty C
   acorePatMbChar _                 		= Nothing
 
   acoreUnAlt (CAlt_Alt p e)				= (p,e)
-  acoreUnPatFld (CPatFld_Fld l o n _)   = (Ty_Any,(l,o),n)
+  acoreUnPatFld (CPatFld_Fld l o b _)   = ((l,o),b)
+  acoreUnBind (CBind_Bind n as)         = (n,as)
+
+  acoreBoundMbVal (CBound_Val a e)		= Just (a,e)
+  acoreBoundMbVal _                 	= Nothing
 
   -- coercion
 %%[[8

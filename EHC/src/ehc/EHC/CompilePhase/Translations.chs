@@ -131,7 +131,7 @@ cpTranslateEH2Output modNm
                             (lift $ putPPLn (EHSem.ppAST_Syn_AGItf ehSem))
 %%][100
 %%]]
-%%[[(99 hmtyinfer)
+%%[[(99 hmtyinfer tyderivtree)
                      ; when (ecuIsTopMod ecu && ehcOptEmitDerivTree opts /= DerivTreeWay_None)
                             (lift $ putPPFPath (mkOutputFPath opts modNm fp "lhs") (EHSem.dt_Syn_AGItf ehSem) 1000)
 %%][100

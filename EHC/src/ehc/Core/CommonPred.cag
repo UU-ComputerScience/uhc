@@ -10,7 +10,7 @@
 ATTR CExpr [ | | mbLam: {Maybe [HsName]} ]
 
 SEM CExpr
-  | Lam         lhs         .   mbLam       =   Just $ maybe [@arg] (@arg:) @body.mbLam
+  | Lam         lhs         .   mbLam       =   Just $ maybe [@argNm] (@argNm:) @body.mbLam
   | * - Lam Ann CaseAltFail
   				lhs         .   mbLam       =   Nothing
 %%]

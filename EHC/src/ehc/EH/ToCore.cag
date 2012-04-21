@@ -137,14 +137,14 @@ SEM Expr
                 loc         .   cexprapp    =   acoreApp1 @func.cexpr @arg.cexpr
                             .   cexpr       =   if @func.isNewtype then @arg.cexpr else @cexprapp
   | Lam         loc         .   cexpr       =   acoreLam1 @arg.topNm
-                                                    (rceMatch @rceEnv [@arg.topNm] [RAlt_Alt [@arg.rpat] @body.cexpr @body.caseFailS])
+                                                    (rceMatchTy @rceEnv [(@arg.topNm,@finalTyArgExpanded)] [RAlt_Alt [@arg.rpat] @body.cexpr @body.caseFailS])
   | Case        loc         .   cexpr       =   let (ns,bs,as)
                                                       = if @isTupOfArg
                                                         then let ns = [ acbrefNm ref | (CExpr_Var ref) <- fuL2ExprL (reverse @expr.fuCExprL) ]
-                                                             in  (ns,[],@alts.raltL')
+                                                             in  (zip ns (tyProdArgs @finalTyExprExpanded),[],@alts.raltL')
                                                         else let n = uidHNm @lUniq2
-                                                             in  ([n],[acoreBind1Ty n @finalTyExprExpanded @expr.cexpr],@alts.raltL)
-                                                in  acoreLet CBindCateg_Plain bs (rceMatch @rceEnv ns as)
+                                                             in  ([(n,@finalTyExprExpanded)],[acoreBind1Ty n @finalTyExprExpanded @expr.cexpr],@alts.raltL)
+                                                in  acoreLet CBindCateg_Plain bs (rceMatchTy @rceEnv ns as)
   | AppTop      loc         .   cexprtop    =   @expr.cexpr
   | Rec         loc         .   cexprtop    =   @rcexpr
   | Parens TypeAs
@@ -542,6 +542,10 @@ SEM PatExpr
                             .   dti         =   panicJust ("PatExpr.{AppTop,Con}.dti: " ++ show @tyConNm ++ "." ++ show @appFunNm)
                                                     $ Map.lookup @appFunNm $ dgiConstrTagMp @dgi
 %%]
+                            .   dgi         =   ehcOptFromJust @lhs.opts ("PatExpr.{AppTop,Con}.dgi: " ++ show @tyConNm ++ (showPP $ ppParens @finKnPatTy)) emptyDataGamInfo
+                                                    $ dataGamLookup @tyConNm $ @lhs.dataGam
+                            .   dti         =   ehcOptFromJust @lhs.opts ("PatExpr.{AppTop,Con}.dti: " ++ show @tyConNm ++ "." ++ show @appFunNm) emptyDataTagInfo
+                                                    $ Map.lookup @appFunNm $ dgiConstrTagMp @dgi
 
 %%[(8 codegen)
 SEM PatExpr
@@ -606,7 +610,7 @@ SEM PatExpr
 
 %%[(97 codegen)
 SEM PatExpr
-  | Expr        loc         .   rpat        =   RPat_BoolExpr @cpNm @finalTyExpanded @cexpr @mbConst
+  | Expr        loc         .   rpat        =   RPat_BoolExpr @cpNm (acoreTyErr "EH.ToCore.PatExpr.Expr") @cexpr @mbConst
 %%]
 
 %%[(8 codegen)
@@ -686,7 +690,7 @@ SEM Expr
     LamImpl
 %%]]
                 loc         .   lamBodyCoeL         =   mkLamBodyCoe
-                                                            (acoreCoeMap (\e -> rceMatch @rceEnv [@arg.topNm] [RAlt_Alt [@arg.rpat] e Set.empty]))
+                                                            (acoreCoeMap (\e -> rceMatchTy @rceEnv [(@arg.topNm,@finalTyArgExpanded)] [RAlt_Alt [@arg.rpat] e Set.empty]))
                                                             @body.appArgCoeL
 %%]
 
@@ -784,7 +788,7 @@ SEM Decl
                                                 =   ffeCoreMk @lhs.opts @lUniqFFE @rceEnv @finalTyExpanded
                             .   ffeCExpr        =   @ffeMkCExpr @expr.cexpr
                 loc         .   lUniqFFE        :   UNIQUEREF gUniq
-                lhs         .   ffeCBindL       =   [acoreBind1Asp1 @nm (CBindAspect_FFE @callconv @expEnt @ffeCExpr @ffeTy)]
+                lhs         .   ffeCBindL       =   [acoreBind1Asp1 @nm (CBound_FFE @callconv @expEnt @ffeCExpr @ffeTy)]
 %%]
 
 %%[(93 codegen)
@@ -1011,7 +1015,7 @@ mkNormalInstance
         mkSetFlds           = mkInstanceSetFlds opts dataGam dictTag instanceRecTy
 
         instanceBindingPairs= [ (nm,v)
-                              | CBind_Bind nm asps <- declsCBindL, CBindAspect_Bind _ v <- asps
+                              | CBind_Bind nm asps <- declsCBindL, CBound_Bind _ v <- asps
                               ]
         instanceMbBodies    = map (flip lookup instanceBindingPairs) memberNames
         instanceMbNewNames  = let f _ Nothing  = Nothing
@@ -1133,7 +1137,7 @@ mkInstanceCBindL
                 lookupMeta n = if n `elem` superFldNmL then CMetaVal_Dict else CMetaVal_Val
           
                 defaultBindingPairs = [ (nm,v)
-                                      | CBind_Bind nm asps <- defaultBindings, CBindAspect_Bind _ v <- asps
+                                      | CBind_Bind nm asps <- defaultBindings, CBound_Bind _ v <- asps
                                       ]
                 defaultMbBodies     = map (flip lookup defaultBindingPairs) memberNames
                 defaultMetas        = map lookupMeta                        memberNames
@@ -1243,13 +1247,13 @@ SEM Decl
 %%[(9 codegen) hs
 getBindRightVar :: CBind -> Maybe HsName
 
-getBindRightVar (CBind_Bind _ [CBindAspect_Bind _ v]) = acoreExprMbVar v
+getBindRightVar (CBind_Bind _ [CBound_Bind _ v]) = acoreExprMbVar v
 getBindRightVar _ = Nothing
 
 
 getBindLeftAndRightVar :: CBind -> (HsName,HsName)
 
-getBindLeftAndRightVar (CBind_Bind nm1 [CBindAspect_Bind _ (CExpr_Var ref2)]) = (nm1, acbrefNm ref2)
+getBindLeftAndRightVar (CBind_Bind nm1 [CBound_Bind _ (CExpr_Var ref2)]) = (nm1, acbrefNm ref2)
 getBindLeftAndRightVar _ = error "getBindLeftAndRightVar: not a bind"
 
 mbNameToTrack Nothing   = TrackNone

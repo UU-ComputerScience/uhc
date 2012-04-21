@@ -21,7 +21,7 @@
 %%[(90 codegen) hs import({%{EH}Foreign.Pretty})
 %%]
 
-%%[(8 codegen).WRAPPER ag import({Core/AbsSyn})
+%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonBindNm})
 WRAPPER
   CodeAGItf CExpr
 %%[[9
@@ -92,7 +92,7 @@ ppCBindL :: CBindL -> PP_Doc
 ppCBindL
   = ppAssocL
   . map (\b -> case b of
-                 CBind_Bind n [CBindAspect_Bind m v] -> (n,v >|< ppOptCMetas m)
+                 CBind_Bind n [CBound_Bind m v] -> (n,v >|< ppOptCMetas m)
                  CBind_Bind n _ -> (n,pp "..")
         )
 %%]
@@ -146,7 +146,7 @@ ATTR CodeAGItf AllCodeNT [ lamMp: LamMp | | ]
 
 %%[(8 codegen)
 ATTR CodeAGItf AllCodeNT [ | | pp USE {>-<} {empty} : PP_Doc ]
-ATTR CPatFldL CBindL CAltL CBindAspectL CBindAnnL [ | | ppL: {[PP_Doc]} ]
+ATTR CPatFldL CBindL CAltL CBoundL CBindAnnL [ | | ppL: {[PP_Doc]} ]
 ATTR CExpr [ | | lamBodyPP: PP_Doc  lamArgPPL: {[PP_Doc]} ]
 ATTR CExpr [ | | appFunPP : PP_Doc  appArgPPL: {[PP_Doc]} ]
 
@@ -190,7 +190,7 @@ SEM CExpr
 
 SEM CExpr
   | Lam         loc         .   lamBodyPP   =   @body.lamBodyPP
-                            .   lamArgPPL   =   (ppCNm @arg) : @body.lamArgPPL
+                            .   lamArgPPL   =   (ppCNm @argNm) : @body.lamArgPPL
   | * - Lam     lhs         .   lamBodyPP   =   @pp
                             .   lamArgPPL   =   []
 
@@ -205,7 +205,7 @@ SEM CBind
                                                     p as  = ppCurlysSemisBlock as
                                                 in  ppDef (ppCNm @nm) (p $ @bindAspects.ppL ++ (maybe [] (\x -> [pp x]) $ Map.lookup @nm @lhs.lamMp))
 
-SEM CBindAspect
+SEM CBound
   | Bind        lhs         .   pp          =   @bindMeta.pp >-< "=" >#< @expr.pp
   | Ty     		lhs         .   pp          =   "::" >#< ppACBaspKeyS @aspectKeyS >#< @tyPP -- pp @relevTy
   | RelevTy     lhs         .   pp          =   "::_R" >#< ppACBaspKeyS @aspectKeyS >#< @tyPP -- pp @relevTy
@@ -215,7 +215,7 @@ SEM CBindAspect
   | FFE         lhs         .   pp          =   "=" >#< ("foreignexport" >#< ppCurlysCommasBlock [pp (show @callconv),"\"" >|< @expEnt >|< "\"",@expr.pp {- ppCNm @expNm -},ppTyWithCfg' CfgPP_Plain @ty])
 %%]]
 
-SEM CBindAspectL CBindL CPatFldL CAltL CBindAnnL
+SEM CBoundL CBindL CPatFldL CAltL CBindAnnL
   | Nil         lhs         .   ppL         =   []
   | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
 
@@ -304,9 +304,9 @@ SEM CModule
 %%]
 
 %%[(8 codegen)
-ATTR AllBindAspect [ | | gathVarPPMp USE {`Map.union`} {Map.empty}: VarPPMp ]
+ATTR AllBound [ | | gathVarPPMp USE {`Map.union`} {Map.empty}: VarPPMp ]
 
-SEM CBindAspect
+SEM CBound
   | RelevTy		(loc.tyPP,lhs.gathVarPPMp)	=	ppRelevTy Map.empty @relevTy		-- circular when given desired @lhs.varPPMp
   | Ty			loc			.	tyPP		=	ppTy @ty
 

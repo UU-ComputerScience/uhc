@@ -28,6 +28,7 @@ import System.IO.Unsafe
 -- ---------------------------------------------------------------------------
 -- fixIO
 
+{-
 data Lazy a = Lazy a
 
 -- functie aangepast met Lazy data type als wrapper voor newIORef (strict in zijn argument).
@@ -39,3 +40,12 @@ fixIO k = do
     writeIORef ref (Lazy result)
     return result
 
+-}
+
+fixIO :: (a -> IO a) -> IO a
+fixIO k = do
+    ref <- newIORef (throw NonTermination)
+    ans <- unsafeInterleaveIO (readIORef ref)
+    result <- k ans
+    writeIORef ref result
+    return result

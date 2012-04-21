@@ -45,7 +45,7 @@ WRAPPER CodeAGItf
 SEM CModule
   | Mod         expr        .   gathLamMp           <   expr.gUniq
 %%]
-SEM CBindAspect
+SEM CBound
   | Bind        lhs         .   opts                <   expr.gUniq
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -121,7 +121,7 @@ Here we only gather arity info, stack trace info is assumed to be gathered earli
 and assumed to propagate correctly when merged with this info.
 
 %%[(8 codegen grin)
-SEM CBindAspect
+SEM CBound
   | Bind        lhs         .   bindLamMp
                                             =   Map.singleton @lhs.nm
                                                               (emptyLamInfo {laminfoArity = length @expr.grLamArgL})
@@ -308,10 +308,12 @@ mkVarBinds            bindL rest  = foldr mkVarBind           rest bindL
 
 
 %%[(8 codegen grin)
-ATTR CExpr   [ | | grExpr: GrExpr ]
-ATTR CExpr   [ | | grBindL   USE {++} {[]}: GrBindL
-                   grGlobalL USE {++} {[]}: GrGlobalL
-             ]
+ATTR CExpr CBound
+  [ | | grExpr: GrExpr ]
+ATTR CExpr
+  [ | | grBindL   USE {++} {[]}: GrBindL
+        grGlobalL USE {++} {[]}: GrGlobalL
+  ]
 
 SEM CExpr
   | Let         (loc.grExpr,lhs.grBindL)    =   if @isGlobal
@@ -425,6 +427,11 @@ SEM CExpr
     TupIns TupUpd TupDel
 %%]]
                 loc         .   grExpr      =   GrExpr_Unit @grVal GrType_None
+
+SEM CBound
+  | * - Val		loc			.	grExpr		= 	GrExpr_Unit GrVal_Empty GrType_None
+  							-- .	grBindL		=	[]
+  							-- .	grGlobalL	=	[]
 %%]
 
 %%[(10 codegen grin) hs
@@ -442,7 +449,7 @@ mkGrAdapt modNm u lamMp isStrict tupFldL tupRecNm
 %%]
 
 %%[(8 codegen grin)
-ATTR CExpr   [ | | grVal: GrVal ]
+ATTR CExpr CBound  [ | | grVal: GrVal ]
 
 SEM CExpr
   | Tup         loc         .   grVal       =   ctag (mkGrRecNode []) (\_ l t a ma -> mkGrConNode (mkGrTagAnn a ma) t l []) @tag
@@ -453,6 +460,9 @@ SEM CExpr
   | Ann         loc         .   grVal       =   @expr.grVal
   | * - Int Char String Var Tup Ann
                 loc         .   grVal       =   GrVal_Empty
+
+SEM CBound
+  | * - Val		loc			.	grVal       =   GrVal_Empty
 %%]
 
 %%[(97 codegen grin)
@@ -465,7 +475,7 @@ SEM CExpr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen grin)
-ATTR AllExprOnly [ doBox: Bool | | ]
+ATTR AllExprOnly CBound [ doBox: Bool | | ]
 
 SEM CExpr
   | TupUpd TupIns TupDel
@@ -477,7 +487,10 @@ SEM CExpr
 SEM CModule
   | Mod         expr        .   doBox       =   True
 
-SEM CBindAspect
+SEM CBoundL
+  | Cons        hd          .   doBox       =   True
+
+SEM CBound
   | Bind Val
 %%[[90
     FFE
@@ -496,7 +509,7 @@ SEM CAlt
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen grin)
-SEM CBindAspect
+SEM CBound
   | Bind        loc         .   aspectKeyS  =   acbaspkeyNone
                             .   isApply0    =   @bindMeta.isApply0
                             .   grBindMeta  =   @bindMeta.grBindAnn
@@ -505,7 +518,7 @@ SEM CBindAspect
 %%]
 
 %%[(8 codegen grin)
-SEM CBindAspect
+SEM CBound
   | Bind Val    loc         .   nmAsp       =   hsnUniqifyACoreBindAspectKeyS @aspectKeyS @lhs.nm
 %%]
 
@@ -514,7 +527,7 @@ ATTR AllBind [ | | grBindL   USE {++} {[]}: GrBindL
                    grGlobalL USE {++} {[]}: GrGlobalL
              ]
 
-SEM CBindAspect
+SEM CBound
   | Bind Val    (lhs.grBindL, lhs.grGlobalL)=   if   @isApply0
                                                 then let nm2 = case @expr.whatBelow of
                                                                  ExprIsVar n -> n
@@ -533,7 +546,7 @@ SEM CBindAspect
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(90 codegen grin)
-SEM CBindAspect
+SEM CBound
   | FFE         lhs         .   grBindL     =   []  -- not implemented yet
 %%]
 
@@ -657,7 +670,7 @@ SEM CExpr
 ATTR CExpr [ | | grLamArgL: {[HsName]}  grLamBody: GrExpr  ]
 
 SEM CExpr
-  | Lam         lhs         .   grLamArgL   =   @arg : @body.grLamArgL
+  | Lam         lhs         .   grLamArgL   =   @argNm : @body.grLamArgL
   | * - Lam Ann CaseAltFail
                 lhs         .   grLamArgL   =   []
                 lhs         .   grLamBody   =   @grExpr

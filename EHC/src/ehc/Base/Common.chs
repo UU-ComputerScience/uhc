@@ -723,7 +723,7 @@ rngAdd r1 r2
       _ -> Range_Unknown
 %%]
 
-%%[99 export(rangeUnion,rangeUnions)
+%%[5 export(rangeUnion,rangeUnions)
 posMax, posMin :: Pos -> Pos -> Pos
 posMax (Pos l1 c1 f1) (Pos l2 c2 _) = Pos (l1 `max` l2) (c1 `max` c2) f1
 posMin (Pos l1 c1 f1) (Pos l2 c2 _) = Pos (l1 `min` l2) (c1 `min` c2) f1
@@ -838,6 +838,8 @@ tokMkQName t
       Just tp | tokTpIsInt tp -> mkHNmPos $ tokMkInt t
       _                       -> mkHNm $ map hsnFromString $ tokenVals t
 %%]
+      _                       -> mkHNm $ concat $ intersperse "." $ tokenVals t		-- ok
+      _                       -> mkHNm $ concat $ tokenVals t						-- not ok
 
 %%[1 hs
 tokMkQNames :: [Token] -> [HsName]
@@ -1217,7 +1219,7 @@ type PkgName = String
 %%% Derivation tree ways of printing
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[99 export(DerivTreeWay(..))
+%%[(99 tyderivtree) export(DerivTreeWay(..))
 data DerivTreeWay
   = DerivTreeWay_Infer      -- follow order of inference when printing type variables
   | DerivTreeWay_Final      -- use final mapping of type variables instead

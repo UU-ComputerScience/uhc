@@ -15,7 +15,7 @@ SEM TyAGItf
   | AGItf       loc         .   frTvS       =   head @ty.frTvSL
 
 SEM Ty
-  | Var         loc         .   frTvS       =   Set.singleton @tv
+  | Var         loc         .   frTvS       =   if tvCatIsPlain @categ.self then Set.singleton @tv else Set.empty
   | App         loc         .   frTvSL      =   @arg.frTvSL ++ @func.frTvSL
                             .   frTvS       =   Set.unions @frTvSL
                 lhs         .   frTvSL      =   if @isSpineRoot then [@frTvS] else @frTvSL
@@ -31,6 +31,8 @@ SEM Ty
 %%]]
                 lhs         .   frTvSL      =   [@frTvS]
 %%]
+SEM Ty
+  | Var         loc         .   frTvS       =   Set.singleton @tv
 
 %%[(4_2 hmtyinfer || hmtyast)
 SEM TyL
@@ -194,6 +196,24 @@ SEM Ty
                                                           else  @frTvS
                                                     else  Set.empty
 %%]
+  | Var Quant   loc         .   qHereTvS        =   if @isQuLoc then Set.filter (tvIsPlain @lhs.fxTvM) @frTvS else Set.empty
+  | App         loc         .   qHereTvS        =   if @isQuLoc
+                                                    then  if    @appIsArrow || @appIsLikeProd
+                                                          then  let fv = Set.unions (tvarSOccurGE2 @frTvSL : [@qOrphanTvS])
+                                                                in  if @appIsArrow
+                                                                    then Set.filter (tvIsPlain @lhs.fxTvM) fv
+                                                                    else fv
+                                                          else  @frTvS
+                                                    else  Set.empty
+  | Var Quant   loc         .   qHereTvS        =   if @isQuLoc then {- filter (tvIsPlain @lhs.fxTvM) -} @frTvS else Set.empty
+  | App         loc         .   qHereTvS        =   if @isQuLoc
+                                                    then  if    @appIsArrow || @appIsLikeProd
+                                                          then  let fv = Set.unions (tvarSOccurGE2 @frTvSL : [@qOrphanTvS])
+                                                                in  {- if @appIsArrow
+                                                                    then filter (tvIsPlain @lhs.fxTvM) fv
+                                                                    else -} fv
+                                                          else  @frTvS
+                                                    else  Set.empty
 
 %%[(6_4 hmtyinfer || hmtyast)
 SEM Ty
@@ -295,5 +315,20 @@ SEM TyAGItf
 SEM Ty
   | App Var Quant
                 loc         .   qSurrTvS                =   @qHereTvS `Set.union` @lhs.qSurrTvS
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Fixed tvars
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(4 hmtyinfer || hmtyast)
+ATTR AllTy [ | | gathFxTvM USE {`Map.union`} {Map.empty}: TvCatMp ]
+ATTR AllTy [ fxTvM: TvCatMp | | ]
+
+SEM Ty
+  | Var         lhs         .   gathFxTvM   =   @tv `Map.singleton` mkTvInfoTy @categ.self
+
+SEM TyAGItf
+  | AGItf       loc         .   fxTvM       =   @ty.gathFxTvM
 %%]
 

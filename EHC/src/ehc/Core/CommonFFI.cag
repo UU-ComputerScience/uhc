@@ -39,7 +39,7 @@ SEM CExpr
 %%]
 
 %%[(90 codegen)
-SEM CBindAspect
+SEM CBound
   | FFE         loc         .   argTyLresTy     =   tyArrowArgsRes @ty
                             .   argTyL          =   fst @loc.argTyLresTy
                             .   resTy           =   snd @loc.argTyLresTy

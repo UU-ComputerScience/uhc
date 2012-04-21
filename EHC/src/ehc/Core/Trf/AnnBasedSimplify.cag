@@ -76,20 +76,21 @@ ATTR AllCodeNT CodeAGItf [ opts: EHCOpts | | ]
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen)
-ATTR AllExprOnly AllAlt [ propDown: Prop | | ]
-ATTR CExpr [ | | propUp: Prop ]
-ATTR CExprAnn [ | | prop : Prop ]
+ATTR AllExprOnly CBound AllAlt [ propDown: Prop | | ]
 
 SEM CExpr
   | Ann         expr        .   propDown    =   @ann.prop
   | App         loc         .   propDown    =   Prop_None
+
+SEM CBoundL
+  | Cons        hd          .   propDown  	=   Prop_None
 %%]
 
 %%[(8 codegen)
 SEM CModule
   | Mod         expr        .   propDown    =   Prop_None
 
-SEM CBindAspect
+SEM CBound
   | Bind Val
 %%[[90
     FFE
@@ -101,6 +102,8 @@ SEM CPatFld
 %%]
 
 %%[(8 codegen)
+ATTR CExprAnn [ | | prop : Prop ]
+
 SEM CExprAnn
   | Ty          loc         .   prop        =   Prop_HasTy @ty
   | * - Ty      loc         .   prop        =   Prop_None
@@ -108,9 +111,11 @@ SEM CExprAnn
 %%]
 
 %%[(8 codegen)
+ATTR CExpr CBound [ | | propUp: Prop ]
+
 SEM CExpr
   | App         loc         .   propUp      =   if @lhs.isTopApp
-                                                then case (@func.mbFunVar,reverse (zip @argL @propUpL),@lhs.propDown) of
+                                                then case (@func.mbFunVar,reverse (zip (map acoreUnBoundVal @argL) @propUpL),@lhs.propDown) of
 %%[[97
                                                        (Just f,[(CExpr_String s,_)],_)
                                                          |    f == (ehcOptBuiltin @lhs.opts ehbnPackedStringToInteger)
@@ -130,6 +135,9 @@ SEM CExpr
                                                        _ -> Prop_None
                                                 else Prop_None
   | * - App     loc         .   propUp      =   Prop_None
+
+SEM CBound
+  | * - Val		loc			.	propUp      =   Prop_None
 %%]
 
 %%[(8 codegen)

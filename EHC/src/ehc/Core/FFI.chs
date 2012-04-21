@@ -10,7 +10,7 @@
 %%[(8 codegen) module {%{EH}Core.FFI} import({%{EH}Base.Builtin},{%{EH}Base.Builtin2},{%{EH}Opts},{%{EH}Base.Target},{%{EH}Base.Common})
 %%]
 
-%%[(8 codegen) hs import(qualified Data.Map as Map,Data.Maybe)
+%%[(8 codegen) hs import(qualified Data.Map as Map,Data.List,Data.Maybe)
 %%]
 %%[(8 codegen) hs import({%{EH}Base.BasicAnnot},{%{EH}Ty},{%{EH}Gam.DataGam})
 %%]
@@ -277,8 +277,8 @@ ffiMbIORes opts resTy
 ffiIOAdapt
   :: EHCOpts
      -> (UID -> HsName)				-- make unique name (if needed so)
-     -> (HsName -> e -> e)              -- handle unit result
-     -> (HsName -> HsName -> e -> e)    -- make tupled result, for state representation
+     -> (HsName -> Ty -> e -> e)              -- handle unit result
+     -> (HsName -> Ty -> HsName -> Ty -> e -> e)    -- make tupled result, for state representation
      -> UID                             
      -> Ty								-- IO result type
      -> ( [Ty]							-- type of additional arguments
@@ -294,10 +294,10 @@ ffiIOAdapt
   = ([tyState],[nmState],wrapRes)
   where tyState = Ty_Con $ ehcOptBuiltin opts ehbnRealWorld
         [nmState,nmRes,nmIgnoreRes] = take 3 (map (mkUniqNm) (iterate uidNext uniq))
-        wrapRes = mkTupledRes nmState nmRes . dealWithUnitRes
+        wrapRes = mkTupledRes nmState (acoreTyErr "ffiIOAdapt.mkTupledRes.state") nmRes (acoreTyErr "ffiIOAdapt.mkTupledRes.res") . dealWithUnitRes
                 where dealWithUnitRes
                         = case tyMbRecExts iores of
-                            Just (_,[]) -> mkUnitRes nmIgnoreRes
+                            Just (_,[]) -> mkUnitRes nmIgnoreRes (acoreTyErr "ffiIOAdapt.mkUnitRes")
                             _           -> id
 %%]
 
@@ -315,8 +315,8 @@ ffiGrinIOAdapt
   = ffiIOAdapt
       opts
       (uidQualHNm modNm)
-      (\nmIgnoreRes   r -> GrExpr_Seq r (GrPatLam_Var nmIgnoreRes) (GrExpr_Unit (mkGrRecNode []) GrType_None))
-      (\nmState nmRes r -> GrExpr_Seq (unit2store r) (GrPatLam_Var nmRes) (GrExpr_Unit (mkGrRecNode $ map GrVal_Var [nmState,nmRes]) GrType_None))
+      (\          nmIgnoreRes _ r -> GrExpr_Seq r (GrPatLam_Var nmIgnoreRes) (GrExpr_Unit (mkGrRecNode []) GrType_None))
+      (\nmState _ nmRes       _ r -> GrExpr_Seq (unit2store r) (GrPatLam_Var nmRes) (GrExpr_Unit (mkGrRecNode $ map GrVal_Var [nmState,nmRes]) GrType_None))
       uniq iores
   where unit2store :: GrExpr -> GrExpr
         unit2store (GrExpr_Seq e p (GrExpr_Unit x _))  =  GrExpr_Seq e p (GrExpr_Store x)
@@ -336,8 +336,8 @@ ffiCoreIOAdapt
   = ffiIOAdapt
       opts
       mkHNm
-      (\nmIgnoreRes   r -> acoreLet1Strict nmIgnoreRes r $ acoreTup [])
-      (\nmState nmRes r -> acoreLet1Strict nmRes r $ acoreTup [acoreVar nmState,acoreVar nmRes])
+      (\          nmIgnoreRes ty r -> acoreLet1StrictTy nmIgnoreRes ty r $ acoreTup []                               )
+      (\nmState _ nmRes       ty r -> acoreLet1StrictTy nmRes       ty r $ acoreTup [acoreVar nmState,acoreVar nmRes])
       uniq iores
 %%]
 
@@ -348,21 +348,17 @@ ffiCoreIOAdapt
 %%[(8 codegen) export(ffiEvalAdapt)
 -- | evaluate value etc for ffi call
 ffiEvalAdapt
-  :: ((HsName,intro,Bool) -> e -> e)		-- construct arg w.r.t. eval need, and bind to intro
-     -> ((HsName,e,Bool) -> e)				-- construct result w.r.t. eval need
-     -> [(HsName,intro,Bool)]				-- arg name + introduction + eval need
-     -> (HsName,e,Bool)						-- result
+  :: ((HsName,Ty,intro,Bool) -> e -> e)		-- construct arg w.r.t. eval need, and bind to intro
+     -> ((HsName,Ty,e,Bool) -> e)				-- construct result w.r.t. eval need
+     -> [(HsName,Ty,intro,Bool)]				-- arg name + introduction + eval need
+     -> (HsName,Ty,e,Bool)						-- result
      -> e
 ffiEvalAdapt
      evalBindArg
      evalRes
      args
      res
-  = foldr (\a@(n,i,ev) e
-            -> evalBindArg a e
-          )
-          (evalRes res)
-          args
+  = foldr evalBindArg (evalRes res) args
 %%]
 
 %%[(8 codegen grin) export(ffiGrinEvalAdapt)
@@ -371,22 +367,24 @@ ffiGrinEvalAdapt
   :: [(HsName,GrPatLam,Bool)]				-- arg name + introduction + eval need
      -> (HsName,GrExpr,Bool)				-- result
      -> GrExpr
-ffiGrinEvalAdapt
+ffiGrinEvalAdapt args res
   = ffiEvalAdapt
-      (\(n,i,ev) e -> GrExpr_Seq (if ev then GrExpr_Eval n else GrExpr_Unit (GrVal_Var n) GrType_None) i e)
-      (\(n,e,ev) -> if ev then GrExpr_Seq e (GrPatLam_Var n) (GrExpr_Eval n) else e)
+      (\(n,_,i,ev) e -> GrExpr_Seq (if ev then GrExpr_Eval n else GrExpr_Unit (GrVal_Var n) GrType_None) i e)
+      (\(n,_,e,ev) -> if ev then GrExpr_Seq e (GrPatLam_Var n) (GrExpr_Eval n) else e)
+      (map addTy args) (addTy res)
+  where addTy (n,x,b) = (n,acoreTyErr "ffiGrinEvalAdapt",x,b)
 %%]
 
 %%[(8 codegen) export(ffiCoreEvalAdapt)
 -- | evaluate value etc for ffi call, specialized for Core
 ffiCoreEvalAdapt
-  :: [(HsName,HsName,Bool)]				-- arg name + introduction + eval need
-     -> (HsName,CExpr,Bool)				-- result
+  :: [(HsName,Ty,HsName,Bool)]				-- arg name + introduction + eval need
+     -> (HsName,Ty,CExpr,Bool)				-- result
      -> CExpr
 ffiCoreEvalAdapt
   = ffiEvalAdapt
-      (\(n,i,ev) e -> (if ev then acoreLet1Strict                  else acoreLet1Plain) i (acoreVar n) e)
-      (\(n,e,ev)   ->  if ev then acoreLet1Strict n e (acoreVar n) else e             )
+      (\(n,ty,i,ev) e -> (if ev then acoreLet1StrictTy                     else acoreLet1PlainTy) i ty (acoreVar n) e)
+      (\(n,ty,e,ev)   ->  if ev then acoreLet1StrictTy n ty e (acoreVar n) else e               )
 
 %%]
 
@@ -411,10 +409,11 @@ ffiCoreMk
      uniq rceEnv
      foreignEntInfo
      tyFFI
-  = acoreLam (nmArgL ++ nmArgLExtra)
+  = acoreLamTy (zip nmArgL argTyL ++ zip nmArgLExtra (repeat $ acoreTyErr "ffiCoreMk.nmArgLExtra.TBD"))
     $ ffiCoreEvalAdapt
-        ( zip3 nmArgL nmArgPatL primArgNeedsEvalL )
+        ( zip4 nmArgL argTyL nmArgPatL primArgNeedsEvalL )
         ( nmEvalRes
+        , resTyAdapted
         , wrapRes
           $ acoreApp (mkFFI $ argTyL `mkArrow` resTyAdapted)
           $ map acoreVar nmArgPatL
@@ -463,8 +462,8 @@ ffeCoreMk
      opts uniq rceEnv
      tyFFE
   = ( \e ->
-          acoreLam nmArgL
-          $ acoreLet1Strict nmEvalRes 
+          acoreLamTy (zip nmArgL argTyL)
+          $ acoreLet1StrictTy nmEvalRes resTyAdapted
               (wrapRes $ acoreApp e $ map acoreVar nmArgL ++ argLExtra)
               (acoreVar nmEvalRes)
 	, argTyL `mkArrow` resTyAdapted
@@ -479,7 +478,7 @@ ffeCoreMk
                  Just iores
                    -> ( iores
                       , [acoreTup []]       -- (), unit, the world
-                      , \e -> acoreExprSatSelCaseTy rceEnv (Just (nmIOEvalRes,Ty_Any)) e CTagRec nmIOEvalRes 1 Nothing
+                      , \e -> acoreExprSatSelCaseTy rceEnv (Just (nmIOEvalRes,acoreTyErr "ffeCoreMk.wrapRes")) e CTagRec nmIOEvalRes 1 Nothing
                       )
                  _ ->
 %%]]

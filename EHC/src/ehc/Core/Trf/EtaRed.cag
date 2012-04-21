@@ -16,7 +16,7 @@ No special reason except it is the first transformation.
 %%[(8 codegen) hs module {%{EH}Core.Trf.EtaRed} import(Data.Maybe,qualified Data.Set as Set,qualified Data.Map as Map)
 %%]
 
-%%[(8 codegen) hs import({%{EH}Base.Common},{%{EH}Core},{%{EH}Ty})
+%%[(8 codegen) hs import({%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Core},{%{EH}Ty})
 %%]
 
 %%[(8 codegen) hs import({%{EH}AbstractCore})
@@ -46,7 +46,7 @@ cmodTrfEtaRed cmod
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen) hs
-type MbApp = Maybe ((CExpr,FvS),CExpr)
+type MbApp = Maybe ((CExpr,FvS),CBound)
 %%]
 
 %%[(8 codegen)
@@ -78,9 +78,9 @@ ATTR CodeAGItf [ | | cTrf: CModule ]
 
 SEM CExpr
   | Lam         (loc.cNew,loc.isMatch)      =   case @body.mbApp of
-                                                  Just ((f,fFvS),v) | isJust mbV && a == @arg && not (a `Set.member` fFvS)
+                                                  Just ((f,fFvS),v) | isJust mbV && a == @argNm && not (a `Set.member` fFvS)
                                                     -> (f,True)
-                                                    where mbV@(~(Just a)) = acoreExprMbVar v
+                                                    where mbV@(~(Just a)) = acoreExprMbVar $ acoreUnBoundVal v
                                                   _ -> (@cTrf,False)
                 lhs         .   cTrf        =   @cNew
 %%]

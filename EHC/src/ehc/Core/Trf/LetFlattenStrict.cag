@@ -26,7 +26,7 @@ let! x = v2
 in   ..
 \end{verbatim}
 
-Limitation: only works for 1 CBindAspect_Bind, if more aspects are defined the transformation is not done.
+Limitation: only works for 1 CBound_Bind, if more aspects are defined the transformation is not done.
 
 %%]
 
@@ -122,16 +122,16 @@ SEM CExpr
 %%]
 
 %%[(8 codegen)
-ATTR AllBindAspect [ | | hasNonPlainBinds USE {||} {False} : Bool ]
+ATTR AllBound [ | | hasNonPlainBinds USE {||} {False} : Bool ]
 
-SEM CBindAspect
+SEM CBound
   | * - Bind    lhs         .   hasNonPlainBinds=   True
 %%]
 
 %%[(8 codegen)
-ATTR AllBindAspect [ | | aspLiftL USE {++} {[]}: {[Lift]} ]
+ATTR AllBound [ | | aspLiftL USE {++} {[]}: {[Lift]} ]
 
-SEM CBindAspect
+SEM CBound
   | Bind        lhs         .   aspLiftL        =   maybe [] (:[]) @expr.mbLift
 %%]
 

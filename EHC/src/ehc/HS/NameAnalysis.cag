@@ -184,7 +184,8 @@ SEM Declaration
 %%[[7
                                             `gamAddGam`
                                             mkDefOccGam'' @lhs.nmLev @typelefthandside.range (\c _ -> IdAsp_Val_Fld @typerefname c)
-                                                          [ (c,IdOcc n IdOcc_Val) | (c,ns) <- @constructors.conAndFldrefnames, n <- ns ]
+                                                          (concat [ [(c,IdOcc n IdOcc_Val), (c,IdOcc n IdOcc_Fld)] | (c,ns) <- @constructors.conAndFldrefnames, n <- ns ]
+                                                          )
                                                           -- [ IdOcc n IdOcc_Val | (con,ns) <- @constructors.conAndFldrefnames, n <- ns ]
 %%]]
 %%[[92
@@ -650,7 +651,8 @@ mkUseOccGam opts idGam names kind asp rng
 %%[[50
                 mbDef       = gamLookup idOccUse idGam
 %%][99
-                mbDef       = case gamLookup idOccUse idGam of
+                mbDef       = -- (\v -> tr "XX" (idOccUse >#< ">>>>>" >#< v) v) $
+                              case gamLookup idOccUse idGam of
                                 Nothing | hsnIsInPrelude name
                                             -> if ehcOptUseAssumePrelude opts
                                                then Just (emptyIdDefOcc {doccOcc = idOccUse})
@@ -863,7 +865,7 @@ SEM Type
 SEM RecordExpressionBinding
     | Binding
         loc             .   (refname,_,idUseOccGam,errIdUse)
-                                        =   mkUseOccGam @lhs.opts @lhs.idGam [@name] IdOcc_Val (IdAsp_Val_Fld hsnUnknown hsnUnknown) @range
+                                        =   mkUseOccGam @lhs.opts @lhs.idGam [@name] IdOcc_Fld (IdAsp_Val_Fld hsnUnknown hsnUnknown) @range
         lhs             .   idUseOccGam =   gamUnions [@idUseOccGam,@expression.idUseOccGam]
 %%]
 
@@ -871,7 +873,7 @@ SEM RecordExpressionBinding
 SEM RecordPatternBinding
     | Binding Pun
         loc             .   (fldrefname,_,idUseOccGam,errIdUse)
-                                        =   mkUseOccGam @lhs.opts @lhs.idGam [@name] IdOcc_Val (IdAsp_Val_Fld hsnUnknown hsnUnknown) @range
+                                        =   mkUseOccGam @lhs.opts @lhs.idGam [@name] IdOcc_Fld (IdAsp_Val_Fld hsnUnknown hsnUnknown) @range
     | Binding
         lhs             .   idUseOccGam =   gamUnions [@idUseOccGam,@pattern.idUseOccGam]
 %%]
@@ -1048,7 +1050,8 @@ SEM Declaration
         lhs             .   undefOccGam =   gamUnions [@undefOccGam,@type.undefOccGam]
     | PatternBinding
         loc             .   (idUseOccGam,idUseHereOccL,_,undefOccGam)
-                                        =   splitIdUseOccGam @lhs.nmLev @righthandside.idUseOccGam
+                                        =   splitIdUseOccGam @lhs.nmLev
+                                                 (gamUnions [@pattern.idUseOccGam,@righthandside.idUseOccGam])
                         .   idDpdMp     =   idToOccL2DpdMp [@idOccDef] @idUseHereOccL
                                             `idDpdMpUnion`
                                             idToOccL2DpdMp [@idOccDef] (gamToAssocL @pattern.idDefOccGam)

@@ -38,7 +38,7 @@ to be applied at the last possible moment.
 The semantics of a coercion is its application to a CExpr. See coeEvalOn.
 
 %%[(9 codegen) hs export(Coe, Coe'(..))
-type Coe = Coe' CExpr CMetaVal CBind CBindAspect Ty
+type Coe = Coe' CExpr CMetaVal CBind CBound Ty
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

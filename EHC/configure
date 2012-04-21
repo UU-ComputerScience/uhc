@@ -669,13 +669,12 @@ EH_VERSION_SHORT
 EH_VERSION_FULL
 EH_VERSION_ASNUMBER
 m4Cmd
-svnCmd
-SVN_EXISTS
-SVN_CMD
-svnVersionCmd
-SVN_VERSION_EXISTS
-SVN_VERSION_CMD
-SVN_REVISION
+gitCmd
+GIT_EXISTS
+GIT_CMD
+GIT_VERSION_EXISTS
+GIT_VERSION_CMD
+GIT_REVISION
 ENABLE_JAVA
 javacCmd
 jarCmd
@@ -2120,17 +2119,17 @@ echo "$as_me: error:
   fi
 
 
-### svn log/history
-# Extract the first word of "svn", so it can be a program name with args.
-set dummy svn; ac_word=$2
+### git log/history
+# Extract the first word of "git", so it can be a program name with args.
+set dummy git; ac_word=$2
 { echo "$as_me:$LINENO: checking for $ac_word" >&5
 echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6; }
-if test "${ac_cv_path_svnCmd+set}" = set; then
+if test "${ac_cv_path_gitCmd+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
 else
-  case $svnCmd in
+  case $gitCmd in
   [\\/]* | ?:[\\/]*)
-  ac_cv_path_svnCmd="$svnCmd" # Let the user override the test with a path.
+  ac_cv_path_gitCmd="$gitCmd" # Let the user override the test with a path.
   ;;
   *)
   as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
@@ -2140,7 +2139,7 @@ do
   test -z "$as_dir" && as_dir=.
   for ac_exec_ext in '' $ac_executable_extensions; do
   if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
-    ac_cv_path_svnCmd="$as_dir/$ac_word$ac_exec_ext"
+    ac_cv_path_gitCmd="$as_dir/$ac_word$ac_exec_ext"
     echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
     break 2
   fi
@@ -2151,82 +2150,41 @@ IFS=$as_save_IFS
   ;;
 esac
 fi
-svnCmd=$ac_cv_path_svnCmd
-if test -n "$svnCmd"; then
-  { echo "$as_me:$LINENO: result: $svnCmd" >&5
-echo "${ECHO_T}$svnCmd" >&6; }
+gitCmd=$ac_cv_path_gitCmd
+if test -n "$gitCmd"; then
+  { echo "$as_me:$LINENO: result: $gitCmd" >&5
+echo "${ECHO_T}$gitCmd" >&6; }
 else
   { echo "$as_me:$LINENO: result: no" >&5
 echo "${ECHO_T}no" >&6; }
 fi
 
 
-if test -x "$svnCmd"
+if test -x "$gitCmd"
 then
-  svnExists="yes"
-  ### $svnCmd log -rHEAD:1 --limit 100 > SVNLOG
+  gitExists="yes"
+  gitHash=`git rev-parse HEAD | cut -c 1-10`
+  gitBranch=`git symbolic-ref HEAD`
+  gitVersionExists="yes"
+  echo "${gitBranch#refs/heads/}@$gitHash" > GITHASH
+  gitHashCmd="cat GITHASH"
 else
-  svnExists="no"
+  gitExists="no"
+  gitVersionExists="no"
+  gitHashCmd="echo 'no git available'"
 fi
-SVN_EXISTS=$svnExists
+GIT_EXISTS=$gitExists
 
-SVN_CMD=$svnCmd
-
-
-### svn revision
-# Extract the first word of "svnversion", so it can be a program name with args.
-set dummy svnversion; ac_word=$2
-{ echo "$as_me:$LINENO: checking for $ac_word" >&5
-echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6; }
-if test "${ac_cv_path_svnVersionCmd+set}" = set; then
-  echo $ECHO_N "(cached) $ECHO_C" >&6
-else
-  case $svnVersionCmd in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_svnVersionCmd="$svnVersionCmd" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-  for ac_exec_ext in '' $ac_executable_extensions; do
-  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
-    ac_cv_path_svnVersionCmd="$as_dir/$ac_word$ac_exec_ext"
-    echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-svnVersionCmd=$ac_cv_path_svnVersionCmd
-if test -n "$svnVersionCmd"; then
-  { echo "$as_me:$LINENO: result: $svnVersionCmd" >&5
-echo "${ECHO_T}$svnVersionCmd" >&6; }
-else
-  { echo "$as_me:$LINENO: result: no" >&5
-echo "${ECHO_T}no" >&6; }
-fi
+GIT_CMD=$gitCmd
 
 
-if test -x "$svnVersionCmd"
-then
-  svnVersionExists="yes"
-  $svnVersionCmd > SVNREVISION
-else
-  svnVersionExists="no"
-fi
-svnRevision=`cat SVNREVISION`
-SVN_VERSION_EXISTS=$svnVersionExists
+### git revision
+gitHashVal=`${gitHashCmd}`
+GIT_VERSION_EXISTS=$gitVersionExists
 
-SVN_VERSION_CMD=$svnVersionCmd
+GIT_VERSION_CMD=$gitHashCmd
 
-SVN_REVISION=$svnRevision
+GIT_REVISION=$gitHashVal
 
 
 ### enable options: java
@@ -2941,9 +2899,9 @@ GHC_GEN_OPTIONS="$ghcGenOptions"
 
 case $HostPlatform in
   i*86-*-mingw* | i*86-*-cygwin* )
-  ghcCmd1=`echo $ghcCmd | sed 's+/\(.\)/+\1:/+'`
+  ghcCmd1=`echo $ghcCmd | sed 's+^/\(cygdrive/\)\?\(.\)/+\2:/+'`
   echo "ghcCmd is $ghcCmd, raw is $ghcCmd1"
-  echo $ghcCmd | sed 's+/\(.\)/+\1:/+'
+  echo $ghcCmd | sed 's+^/\(cygdrive/\)\?\(.\)/+\2:/+'
   ;;
   *)
   ghcCmd1=$ghcCmd
@@ -31624,6 +31582,7 @@ ac_config_files="$ac_config_files src/ehc/Config.chs src/helium/Utils/OSSpecific
 # AC_CONFIG_FILES([bin/llvm-compilerdriver], [chmod +x bin/llvm-compilerdriver]
 ac_config_headers="$ac_config_headers src/ehc/ConfigDefines.chs src/rts/config.ch src/rts/mm/config.ch ehclib/uhcbase/include/MachDeps.h ehclib/uhcbase/include/HsBaseConfig.h ehclib/old-time/include/HsTimeConfig.h ehclib/directory/include/HsDirectoryConfig.h ehclib/unix/include/HsUnixConfig.h"
 
+
 ac_config_files="$ac_config_files src/text2text/text2text.cabal"
 
 cat >confcache <<\_ACEOF
@@ -32307,13 +32266,12 @@ EH_VERSION_SHORT!$EH_VERSION_SHORT$ac_delim
 EH_VERSION_FULL!$EH_VERSION_FULL$ac_delim
 EH_VERSION_ASNUMBER!$EH_VERSION_ASNUMBER$ac_delim
 m4Cmd!$m4Cmd$ac_delim
-svnCmd!$svnCmd$ac_delim
-SVN_EXISTS!$SVN_EXISTS$ac_delim
-SVN_CMD!$SVN_CMD$ac_delim
-svnVersionCmd!$svnVersionCmd$ac_delim
-SVN_VERSION_EXISTS!$SVN_VERSION_EXISTS$ac_delim
-SVN_VERSION_CMD!$SVN_VERSION_CMD$ac_delim
-SVN_REVISION!$SVN_REVISION$ac_delim
+gitCmd!$gitCmd$ac_delim
+GIT_EXISTS!$GIT_EXISTS$ac_delim
+GIT_CMD!$GIT_CMD$ac_delim
+GIT_VERSION_EXISTS!$GIT_VERSION_EXISTS$ac_delim
+GIT_VERSION_CMD!$GIT_VERSION_CMD$ac_delim
+GIT_REVISION!$GIT_REVISION$ac_delim
 ENABLE_JAVA!$ENABLE_JAVA$ac_delim
 javacCmd!$javacCmd$ac_delim
 jarCmd!$jarCmd$ac_delim
@@ -32350,6 +32308,7 @@ GHC_EHC_OPTIONS!$GHC_EHC_OPTIONS$ac_delim
 GHC_GEN_OPTIONS!$GHC_GEN_OPTIONS$ac_delim
 GHC_CMD1!$GHC_CMD1$ac_delim
 ghcPkgCmd!$ghcPkgCmd$ac_delim
+hsc2hsCmd!$hsc2hsCmd$ac_delim
 _ACEOF
 
   if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 97; then
@@ -32391,7 +32350,6 @@ _ACEOF
 ac_delim='%!_!# '
 for ac_last_try in false false false false false :; do
   cat >conf$$subs.sed <<_ACEOF
-hsc2hsCmd!$hsc2hsCmd$ac_delim
 HSC2HS_CMD!$HSC2HS_CMD$ac_delim
 haddockCmd!$haddockCmd$ac_delim
 HADDOCK_CMD!$HADDOCK_CMD$ac_delim
@@ -32469,7 +32427,7 @@ LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 76; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 75; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5
@@ -32895,7 +32853,8 @@ fi
 
 
 echo
-echo "Version: ${EH_VERSION_FULL}"
+echo "Version : ${EH_VERSION_FULL}"
+echo "GIT hash: ${gitHashVal}"
 echo "Installation/build summary."
 echo "  host                          : $host"
 echo "  prefix                        : $prefix"

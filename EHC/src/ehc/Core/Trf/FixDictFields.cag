@@ -57,12 +57,12 @@ ATTR AllCodeNT [ | | cTrf: SELF    ]
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(9 codegen wholeprogAnal)
-ATTR AllBindAspect   [ aspBindInfo: {ACoreBindAspMp (Maybe Track,Env)} | | gathAspBindInfo USE {`Map.union`} {Map.empty}: {ACoreBindAspMp (Maybe Track,Env)} ]
+ATTR AllBound   [ aspBindInfo: {ACoreBindAspMp (Maybe Track,Env)} | | gathAspBindInfo USE {`Map.union`} {Map.empty}: {ACoreBindAspMp (Maybe Track,Env)} ]
 
 SEM CBind
   | Bind        loc         .   aspBindInfo =   @bindAspects.gathAspBindInfo
 
-SEM CBindAspect
+SEM CBound
   | Bind        lhs         .   gathAspBindInfo
                                             =   Map.singleton acbaspkeyDefault (@expr.mbTrack,@expr.envUp)
 %%]
@@ -105,10 +105,10 @@ SEM CMetaVal
                                       @lhs.mbTrack
 
 
-SEM CBindAspect
+SEM CBound
   | Bind  bindMeta.mbTrack  = @expr.mbTrack
           bindMeta.envFinal = @expr.envUp
-  | Meta  cmetas.(mbTrack,envFinal) = panicJust "FixDictFields.CBindAspect.Meta.aspBindInfo" $ Map.lookup acbaspkeyDefault @lhs.aspBindInfo
+  | Meta  cmetas.(mbTrack,envFinal) = panicJust "FixDictFields.CBound.Meta.aspBindInfo" $ Map.lookup acbaspkeyDefault @lhs.aspBindInfo
  
 
 ATTR AllExprOnly AllBind AllAlt AllPat [  envDown:Env  | |  ]
@@ -119,7 +119,7 @@ SEM CModule
   
 ATTR AllBind CExpr [ | | envUp USE {`Map.union`} {Map.empty} : Env ]
 
-SEM CBindAspect
+SEM CBound
   | Bind   lhs.envUp  =  maybe (Map.empty)
                                (\t -> Map.singleton @lhs.nm t)
                                @expr.mbTrack
@@ -134,7 +134,7 @@ SEM CExpr
 
 
 
-ATTR AllExprOnly [ mbCtxCount:{Maybe Int} isDictClass:{Bool} | | ]
+ATTR AllExprOnly CBound [ mbCtxCount:{Maybe Int} isDictClass:{Bool} | | ]
 
 SEM CModule
   | Mod  expr.mbCtxCount = Nothing
@@ -148,7 +148,7 @@ SEM CPatFld
   | Fld  offset.mbCtxCount = Nothing
          offset.isDictClass = False
 
-SEM CBindAspect
+SEM CBound
   | Bind  expr.mbCtxCount = if @bindMeta.isDictInstance
                             then Just 0
                             else Nothing
@@ -176,6 +176,9 @@ SEM CMetaVal
   | DictInstance   lhs.isDictInstance = True
   | *-DictInstance lhs.isDictInstance = False
 
+SEM CBoundL
+  | Cons        hd          .   isDictClass  	=   False
+  							.	mbCtxCount		=	Nothing
 
 
 

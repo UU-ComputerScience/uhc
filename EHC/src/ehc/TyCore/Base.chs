@@ -561,13 +561,14 @@ instance AbstractCore Expr MetaVal ValBind ValBind ValBindCateg MetaBind Ty Pat 
   acoreApp1           			    	= mkExprApp1
   acoreLam1Ty         				    = mkExprLam1
   acoreTagTupTy   tg t es 				= mkExprTuple' tg t es
-  acoreBindaspVal1CatLevMetasTy cat n l m t e
+  acoreBoundVal1CatLevMetasTy cat n l m t e
   										= mkValBind1LevMetas doMkSeq n l m t e
                                         where doMkSeq = cat /= ValBindCateg_Strict
-  acoreBindaspValTy1CatLev _ _ _ t		= panic "TyCore.Base.acoreBindaspValTy1CatLev"
+  -- acoreBound1AspkeyVal				-- TBD
+  acoreBoundValTy1CatLev _ _ _ t		= panic "TyCore.Base.acoreBoundValTy1CatLev"
   acoreBind1Asp n [a]					= a
   acoreBind1CatLevMetasTy bcat n mlev mb t e
-  										= acoreBind1Asp n [acoreBindaspVal1CatLevMetasTy bcat n mlev mb t e]
+  										= acoreBind1Asp n [acoreBoundVal1CatLevMetasTy bcat n mlev mb t e]
   acoreLetBase							= Expr_Let
   acoreCaseDflt	e as d					= Expr_Case e as d
   acoreVar								= Expr_Var
@@ -594,7 +595,8 @@ instance AbstractCore Expr MetaVal ValBind ValBind ValBindCateg MetaBind Ty Pat 
 %%]]
   
   -- patfld
-  acorePatFldTy t (_,off) n 			= FldBind_Fld n t off
+  -- acorePatFldBind					-- TBD
+  acorePatFldTy t (_,off) n 			= FldBind_Fld n t off	-- obsolete
 
   -- patrest
   acorePatRestEmpty  					= PatRest_Empty
@@ -623,6 +625,8 @@ instance AbstractCore Expr MetaVal ValBind ValBind ValBindCateg MetaBind Ty Pat 
   acoreBindcategPlain					= ValBindCateg_Plain
 
   -- inspecting
+  -- acoreExprMbLam						-- TBD
+
   acoreExprMbLet (Expr_Let c b e)       = Just (c,b,e)
   acoreExprMbLet _                      = Nothing
 
@@ -647,7 +651,8 @@ instance AbstractCore Expr MetaVal ValBind ValBind ValBindCateg MetaBind Ty Pat 
   acorePatMbChar _                 		= Nothing
 
   acoreUnAlt (Alt_Alt p e)				= (p,e)
-  acoreUnPatFld (FldBind_Fld n t o)		= (t,(n,o),n)
+  -- acoreUnPatFld (FldBind_Fld n t o)		= (t,(n,o),n)	-- TBD, not impl correct (bitrot)
+  -- acoreUnBind (Bind_Bind n _)			= (n,[])		-- TBD, not impl correct (bitrot)
 
   -- transforming
   acoreExprUnThunk 						= mkExprUnThunk

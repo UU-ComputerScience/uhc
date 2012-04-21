@@ -95,7 +95,15 @@ data PkgOption
 %%% Option specific options
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[(8 codegen) export(CoreOpt(..))
+-- | Core options
+data CoreOpt
+  = CoreOpt_SysF			-- 20120419, work in startup/progress: generate System F
+  deriving (Eq,Enum,Bounded)
+%%]
+
 %%[(8 codegen tycore) export(TyCoreOpt(..))
+-- | TyCore options
 data TyCoreOpt
   = TyCoreOpt_Sugar         -- produce/accept sugared version
   | TyCoreOpt_Unicode       -- produce/accept unicode, implies sugar
@@ -150,6 +158,9 @@ data EHCOpts
       ,  ehcOptMbTarget       ::  MaybeOk Target            -- code generation target
       ,  ehcOptMbTargetFlavor ::  MaybeOk TargetFlavor      -- code generation target flavor
 %%]]
+%%[[(8 codegen)
+      ,  ehcOptCoreOpts       ::  [CoreOpt]  	    -- Core options
+%%]]
 %%[[(8 codegen tycore)
       ,  ehcOptUseTyCore      ::  Maybe [TyCoreOpt] -- use TyCore instead of Core (temporary option until Core is obsolete)
 %%]]
@@ -203,7 +214,7 @@ data EHCOpts
 %%[[93
       ,  ehcOptFusion   	  ::  Bool				-- allow fusion syntax, the optimization itself is triggered by optimize flags
 %%]]
-%%[[(99 hmtyinfer)
+%%[[(99 hmtyinfer tyderivtree)
       ,  ehcOptEmitDerivTree  ::  DerivTreeWay      -- show derivation tree on stdout
       ,  ehcOptEmitDerivTreePaperSize
                               ::  String            -- the paper size to be used
@@ -280,6 +291,9 @@ emptyEHCOpts
       ,  ehcOptMbTarget         =   JustOk defaultTarget
       ,  ehcOptMbTargetFlavor   =   JustOk defaultTargetFlavor
 %%]]
+%%[[(8 codegen)
+      ,  ehcOptCoreOpts         =   []
+%%]]
 %%[[(8 codegen tycore)
       ,  ehcOptUseTyCore        =   Nothing
 %%]]
@@ -340,7 +354,7 @@ emptyEHCOpts
 %%][99
       ,  ehcOptFusion			=   False
 %%]]
-%%[[(99 hmtyinfer)
+%%[[(99 hmtyinfer tyderivtree)
       ,  ehcOptEmitDerivTree    =   DerivTreeWay_None
       ,  ehcOptEmitDerivTreePaperSize
                                 =   "2"
@@ -392,4 +406,17 @@ ehcOptBuiltin o f = f $ ehcOptBuiltinNames o
 ehcOptBuiltin2 :: EHCOpts -> (EHBuiltinNames -> Int -> HsName) -> Int -> HsName
 ehcOptBuiltin2 o f i = f (ehcOptBuiltinNames o) i
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Variation of maybe for allowing either debugging or panic
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 export(ehcOptFromJust)
+-- | Either fromJust with a possible panic, or with a default value (when debugging)
+ehcOptFromJust :: EHCOpts -> String -> a -> Maybe a -> a
+ehcOptFromJust opts panicMsg n m
+  | ehcOptDebug opts = maybe n id m
+  | otherwise        = panicJust panicMsg m
+%%]
+
 

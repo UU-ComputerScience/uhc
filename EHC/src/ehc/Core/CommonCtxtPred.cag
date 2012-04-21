@@ -16,6 +16,10 @@ ATTR AllBind [ letBindingsCateg: CBindCateg | | ]
 
 SEM CExpr
   | Let         loc         .   letBindingsCateg    =   @categ
+  | Lam App     loc         .   letBindingsCateg    =   acoreBindcategPlain
+
+SEM CPatFld
+  | Fld         bind        .   letBindingsCateg    =   acoreBindcategPlain
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -23,7 +27,7 @@ SEM CExpr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen)
-ATTR CExpr [ isTopApp: Bool  isTopTup: Bool | | ]
+ATTR CExpr CBound [ isTopApp: Bool  isTopTup: Bool | | ]
 
 SEM CExpr
   | App         func        .   isTopApp    =   False
@@ -45,8 +49,12 @@ SEM CModule
   | Mod         expr        .   isTopApp    =   True
                             .   isTopTup    =   True
 
-SEM CBindAspect
-  | Bind Val
+SEM CBoundL
+  | Cons		hd			.	isTopApp    =   True
+                            .   isTopTup    =   True
+
+SEM CBound
+  | Bind
 %%[[90
     FFE
 %%]]
@@ -93,7 +101,7 @@ SEM CExpr
 SEM CExpr
   | Let         loc         .   isTopLet        =   @lhs.whatAbove == ExprIsBind
 
-SEM CBindAspect
+SEM CBound
   | Bind Val    loc         .   whatAbove       =   ExprIsBind
 %%[[90
   | FFE         loc         .   whatAbove       =   ExprIsLam		-- the construction of a lambda is special for backend, to assume we are already in a lam
@@ -127,7 +135,7 @@ SEM CModule
   | Mod         expr        .   isStrict    =   True
                             .   isLamBody   =   False
 
-SEM CBindAspect
+SEM CBound
   | Bind Val
 %%[[90
     FFE
@@ -136,6 +144,8 @@ SEM CBindAspect
 
 SEM CPatFld
   | Fld         offset      .   isStrict    =   True
+                            .   isLamBody   =   False
+                bind		.   isStrict    =   False
                             .   isLamBody   =   False
 
 SEM CExpr
@@ -156,6 +166,7 @@ SEM CModule
 
 SEM CPatFld
   | Fld         offset      .   evalCtx         =   EvalCtx_Eval
+  				bind		.	evalCtx			=	EvalCtx_None
 
 
 SEM CExpr
@@ -164,7 +175,7 @@ SEM CExpr
                                                     else EvalCtx_None
 %%]
 
-SEM CBindAspect
+SEM CBound
   | Bind Val FFE
                 expr        .   evalCtx         =   if @expr.whatBelow == ExprIsLam
                                                     then EvalCtx_Eval

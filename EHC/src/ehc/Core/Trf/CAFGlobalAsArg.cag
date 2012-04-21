@@ -15,7 +15,7 @@ Assumes:
 %%[(8 codegen) hs module {%{EH}Core.Trf.CAFGlobalAsArg} import(EH.Util.Utils,Data.Maybe,qualified Data.Set as Set,Data.List,qualified Data.Map as Map,{%{EH}Base.Common},{%{EH}Core},{%{EH}Ty}) export(cmodTrfCAFGlobalAsArg)
 %%]
 
-%%[(8 codegen) hs import({%{EH}Core.Utils})
+%%[(8 codegen) hs import({%{EH}Base.Builtin},{%{EH}Core.Utils})
 %%]
 
 %%[(8 codegen) hs import({%{EH}AbstractCore})
@@ -66,7 +66,7 @@ ATTR AllCodeNT [ | gUniq: Int | ]
 SEM CodeAGItf
   | AGItf       module      .   gUniq       =   0
 
-SEM CBindAspect
+SEM CBound
   | Bind        loc         .   lUniq1      =   @lhs.gUniq
                             .   lUniq2      =   @lUniq1 + 1
                 expr        .   gUniq       =   @lUniq2 + Map.size @argMpNew
@@ -105,7 +105,7 @@ ATTR AllCodeNT [ argMp: CVarReplNmMp | | ]
 SEM CodeAGItf
   | AGItf       module      .   argMp       =   Map.empty
 
-SEM CBindAspect
+SEM CBound
   | Bind        expr        .   argMp       =   @argMpNew `Map.union` @lhs.argMp
 %%]
 
@@ -114,7 +114,7 @@ SEM CBindAspect
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen)
-SEM CBindAspect
+SEM CBound
   | Bind        loc         .   (argOldL,argNewL,argMpNew)
                                             =   if @loc.isClosurableBind
                                                 then  let  mbvs      = Map.lookup @lhs.nm @lhs.fvSCafMp
@@ -129,12 +129,12 @@ ATTR AllBind   [ | | varBindSq USE {`Seq.union`} {Seq.empty}: {Seq.Seq CBind}
                      lamBindSq USE {`Seq.union`} {Seq.empty}: {Seq.Seq CBind}
                ]
 
-SEM CBindAspect
+SEM CBound
   | Bind        loc         .   nmLam       =   mkFvNm @lUniq1 @lhs.nm
-                            .   cTrfVar     =   acoreBind1MetasTy @lhs.nm @bindMeta.cTrf Ty_Any
+                            .   cTrfVar     =   acoreBind1MetasTy @lhs.nm @bindMeta.cTrf (acoreTyErr "CAFGlobalAsArg.CBound.Bind.cTrfVar")
                                                 $ acoreApp (acoreVar @nmLam)
                                                 $ map (\(n,cvi) -> (fvVarRepl @lhs.argMp n)) @argOldL
-                            .   cTrfLam     =   acoreBind1Cat CBindCateg_Plain @nmLam
+                            .   cTrfLam     =   acoreBind1CatTy CBindCateg_Plain @nmLam (acoreTyErr "CAFGlobalAsArg.CBound.Bind.cTrfLam")
                                                 $ acoreLam [(n) | (n,cvi) <- @argNewL] @expr.cTrf
                 lhs         .   (varBindSq,lamBindSq)
                                             =   if null @argNewL

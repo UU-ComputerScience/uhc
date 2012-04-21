@@ -76,7 +76,7 @@ SEM CodeAGItf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen grin)
-SEM CBindAspect
+SEM CBound
   | Ty          loc         .   bindLamL        =   [ (@aspectKeyS, LamInfoBindAsp_Ty @ty) ]
   | Bind        loc         .   bindLamL        =   [] -- [ (acbaspkeyDefaultCore, LamInfoBindAsp_Core @expr.cTrf) ]
   | Ty Bind     lhs         .   bindLamMp       =   Map.singleton @lhs.nm (emptyLamInfo {laminfoBindAspMp = Map.fromList @bindLamL})
@@ -93,9 +93,9 @@ ATTR CodeAGItf [ | | cTrf: CModule ]
 %%]
 
 %%[(8 codegen)
-ATTR AllBindAspect [ | | cBindTrf USE {++} {[]}: {[CBindAspect]} ]
+ATTR AllBound [ | | cBindTrf USE {++} {[]}: {[CBound]} ]
 
-SEM CBindAspect
+SEM CBound
   | * - Ty    	lhs         .   cBindTrf        =   [@cTrf]
 
 SEM CBind

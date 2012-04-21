@@ -95,7 +95,7 @@ SEM CExpr
   | Lam         lhs         .   isTraceCandidate
                                             =   True
                             .   traceCandidateLamArgs
-                                            =   @arg : @body.traceCandidateLamArgs
+                                            =   @argNm : @body.traceCandidateLamArgs
                             .   traceCandidateLamBody
                                             =   @body.traceCandidateLamBody
   | * - Lam     lhs         .   isTraceCandidate
@@ -105,7 +105,7 @@ SEM CExpr
                             .   traceCandidateLamBody
                                             =   @cTrf
 
-SEM CBindAspect
+SEM CBound
   | Bind        loc         .   isTraceCandidate
                                             =   @lhs.isGlobal || @expr.isTraceCandidate
 %%]
@@ -137,7 +137,7 @@ mbStackTrace opts isCand nm
 %%]
 
 %%[(99 codegen)
-SEM CBindAspect
+SEM CBound
   | Bind        (loc.mbStackTrace,lhs.bindLamMp)
                                             =   let mbt = mbStackTrace @lhs.opts @isTraceCandidate @lhs.nm
                                                 in  (mbt,Map.singleton @lhs.nm (emptyLamInfo {laminfoStackTrace = mbt}))
@@ -155,7 +155,7 @@ ATTR AllCodeNT [ | uniq: Int | ]
 SEM CodeAGItf
   | AGItf       loc         .   uniq        =   0
 
-SEM CBindAspect
+SEM CBound
   | Bind        loc         .   uniq        =   @lhs.uniq + 1
                             .   nmStackTrace=   mkHNm $ "_$" ++ show @lhs.uniq ++ "_stacktrace"
 %%]
@@ -167,7 +167,7 @@ SEM CBindAspect
 %%[(99 codegen)
 ATTR AllBind [ | | bindCTrfL USE {++} {[]}: {[CBind]} ]
 
-SEM CBindAspect
+SEM CBound
   | Bind        (loc.bindCTrfL,loc.mbInStackTraceCtxt,loc.newLamMp)
                                             =   case @mbStackTrace of
                                                   StackTraceInfo_HasStackTraceEquiv dbNm | @isTraceCandidate
@@ -214,7 +214,7 @@ ATTR
   CodeAGItf
     [ | | debugLamMp USE {`Map.union`} {Map.empty}: LamMp ]
 
-SEM CBindAspect
+SEM CBound
   | Bind        lhs         .   debugLamMp
                                             =   @newLamMp `Map.union` @expr.debugLamMp
 %%]
@@ -227,7 +227,7 @@ SEM CBindAspect
 SEM CBind
   | *           loc         .   cTrf        :   CBind
 
-SEM CBindAspect
-  | *           loc         .   cTrf        :   CBindAspect
+SEM CBound
+  | *           loc         .   cTrf        :   CBound
 %%]
 

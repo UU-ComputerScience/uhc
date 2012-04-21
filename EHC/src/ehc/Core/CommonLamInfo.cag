@@ -28,6 +28,6 @@ ATTR
 
 %%[(8 codegen)
 SEM CExpr
-  | Lam         body        .   lamMp       =   Map.delete @arg @lhs.lamMp
+  | Lam         body        .   lamMp       =   Map.delete @argNm @lhs.lamMp
 %%]
 

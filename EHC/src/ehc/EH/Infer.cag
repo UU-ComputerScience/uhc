@@ -77,7 +77,7 @@ SEM Expr
                 decls       .   patTyVarMp          :=  @exTyVarMp1b
                 loc         .   (quValGam_qu_,quTyVarMp, cycTyVarMp_l)
                                                     :=  valGamQuantifyWithVarMp @valQuTyKiGam @quTvKiVarMp @tyVarMpDeclsQuant @noLetQuantTyVarIdS @valGam_l_
-                            .   bodyVarMp1          =   @quTyVarMp `varUpd` @tyVarMpDeclsL0
+                            .   bodyVarMp1          =   @quTyVarMp `varUpd` @tyVarMpDeclsL0 		-- TBD: Use of @tyVarMpDeclsQuant increases compile time. Why???? Should be ok...
                             .   (quValGam_ex_,exTyVarMp2)
                                                     :=  (valGamInst1Exists {- WithVarMp @bodyVarMp1 -} @lUniq2 (@quTyVarMp `varUpd` @quValGam_qu_), emptyVarMp)
                             .   bodyVarMp2          =   (@exTyVarMp2 :: VarMp) `varUpd` @bodyVarMp1

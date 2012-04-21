@@ -289,7 +289,15 @@ SEM Declaration
         loc             .   idOccDef    =   IdOcc @typerefname IdOcc_Type
                         .   idOccDefsCon=   [ IdOcc n IdOcc_Val | n <- @constructors.conrefnames ]
 %%[[7
-                        .   idOccDefsFld=   [ IdOcc n IdOcc_Val | (_,ns) <- @constructors.conAndFldrefnames, n <- ns ]
+                        .   idOccDefsFld=   concat [ [IdOcc n IdOcc_Val, IdOcc n IdOcc_Fld] | (_,ns) <- @constructors.conAndFldrefnames, n <- ns ]
+%%]]
+%%[[92
+                        .   generMaxRemArity
+                                        =   length @typelefthandside.typevariables `min` 1
+                        .   idOccDefsGener
+                                        =   if ehcOptGenGenerics @lhs.opts
+                                            then [ IdOcc (hsnNm2GenerReprSyn arity @typerefname) IdOcc_Type | arity <- [0 .. @generMaxRemArity] ]
+                                            else []
 %%]]
 %%[[92
                         .   generMaxRemArity

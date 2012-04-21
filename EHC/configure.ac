@@ -70,31 +70,29 @@ AC_DEFUN(REQUIRED_OPTIONAL_PROG_FOR_EH,
 ### obvious utils which are amiss on some platforms: m4
 REQUIRED_PROG_FOR_EH(m4Cmd,m4)
 
-### svn log/history
-AC_PATH_PROG(svnCmd,svn)
-if test -x "$svnCmd"
+### git log/history
+AC_PATH_PROG(gitCmd,git)
+if test -x "$gitCmd"
 then
-  svnExists="yes"
-  ### $svnCmd log -rHEAD:1 --limit 100 > SVNLOG
+  gitExists="yes"
+  gitHash=`git rev-parse HEAD | cut -c 1-10`
+  gitBranch=`git symbolic-ref HEAD`
+  gitVersionExists="yes"
+  echo "${gitBranch#refs/heads/}@$gitHash" > GITHASH
+  gitHashCmd="cat GITHASH"
 else
-  svnExists="no"
+  gitExists="no"
+  gitVersionExists="no"
+  gitHashCmd="echo 'no git available'"
 fi
-AC_SUBST(SVN_EXISTS,$svnExists)
-AC_SUBST(SVN_CMD,$svnCmd)
+AC_SUBST(GIT_EXISTS,$gitExists)
+AC_SUBST(GIT_CMD,$gitCmd)
 
-### svn revision
-AC_PATH_PROG(svnVersionCmd,svnversion)
-if test -x "$svnVersionCmd"
-then
-  svnVersionExists="yes"
-  $svnVersionCmd > SVNREVISION
-else
-  svnVersionExists="no"
-fi
-svnRevision=`cat SVNREVISION`
-AC_SUBST(SVN_VERSION_EXISTS,$svnVersionExists)
-AC_SUBST(SVN_VERSION_CMD,$svnVersionCmd)
-AC_SUBST(SVN_REVISION,$svnRevision)
+### git revision
+gitHashVal=`${gitHashCmd}`
+AC_SUBST(GIT_VERSION_EXISTS,$gitVersionExists)
+AC_SUBST(GIT_VERSION_CMD,$gitHashCmd)
+AC_SUBST(GIT_REVISION,$gitHashVal)
 
 ### enable options: java
 AC_ARG_ENABLE(java, AS_HELP_STRING([--enable-java],[include java code generation]), [enableJava=yes], [enableJava=no])
@@ -348,9 +346,9 @@ AC_SUBST(GHC_GEN_OPTIONS, "$ghcGenOptions")
 
 case $HostPlatform in
   i*86-*-mingw* | i*86-*-cygwin* )
-  ghcCmd1=`echo $ghcCmd | sed 's+/\(.\)/+\1:/+'`
+  ghcCmd1=`echo $ghcCmd | sed 's+^/\(cygdrive/\)\?\(.\)/+\2:/+'`
   echo "ghcCmd is $ghcCmd, raw is $ghcCmd1"
-  echo $ghcCmd | sed 's+/\(.\)/+\1:/+'
+  echo $ghcCmd | sed 's+^/\(cygdrive/\)\?\(.\)/+\2:/+'
   ;;
   *)
   ghcCmd1=$ghcCmd
@@ -1155,7 +1153,8 @@ AC_CONFIG_FILES([src/text2text/text2text.cabal])
 AC_OUTPUT
 
 echo
-echo "Version: ${EH_VERSION_FULL}"
+echo "Version : ${EH_VERSION_FULL}"
+echo "GIT hash: ${gitHashVal}"
 echo "Installation/build summary."
 echo "  host                          : $host"
 echo "  prefix                        : $prefix"
