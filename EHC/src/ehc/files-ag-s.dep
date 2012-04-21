@@ -22,6 +22,7 @@ Ty/Trf/ElimBoth.cag
 Ty/Trf/FreshVar.cag
 Ty/Trf/ElimAlts.cag
 Ty/Trf/ElimEqual.cag
+Ty/Trf/ToSysfTy.cag
 TyCore/Pretty.cag
 TyCore/PrettyAST.cag
 TyCore/ToCore.cag

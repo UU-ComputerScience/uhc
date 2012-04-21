@@ -119,6 +119,16 @@ Debug:
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Explicit name for SysF type
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 hmtyinfer || hmtyast) hs export(SysfTy,SysfTySeq,SysfTySeq1)
+type SysfTy     	= Ty			-- base ty
+type SysfTySeq    	= Ty			-- sequence
+type SysfTySeq1    	= Ty			-- singleton
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Misc types
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -611,6 +621,9 @@ tyquIsExists _                       = False
 %%[(4 hmtyinfer || hmtyast) hs export(tyquMetaLev)
 tyquMetaLev (TyQu_Forall l)         = l
 tyquMetaLev (TyQu_Exists l)         = l
+%%[[8
+tyquMetaLev (TyQu_Plain  l)         = l
+%%]]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -640,6 +653,11 @@ showTyQu  (TyQu_Exists 0) =  "exists"
 showTyQu  (TyQu_Exists 1) =  "exists" ++ [charKindStar]
 showTyQu  (TyQu_Exists l) =  "exists" ++ [charKindStar] ++ show l
 %%]]
+%%[[8
+showTyQu  (TyQu_Plain  0) =  ""
+showTyQu  (TyQu_Plain  1) =  [charKindStar]
+showTyQu  (TyQu_Plain  l) =  [charKindStar] ++ show l
+%%]]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -653,7 +671,7 @@ tyIsA (Ty_App   a b    ) = "APP"
 tyIsA (Ty_Ann   a b    ) = "ANN"
 tyIsA (Ty_Var   a b    ) = "VAR"
 tyIsA (Ty_Any          ) = "ANY"
-tyIsA (Ty_Quant a b c d) = "QUANT"
+tyIsA (Ty_TBind a b c d) = "QUANT"
 tyIsA (Ty_Ext   a b c  ) = "EXT"
 tyIsA (Ty_Pred  a      ) = "PRED"
 tyIsA (Ty_Lam   a b    ) = "LAM"
@@ -838,6 +856,12 @@ tyEnsureNonAny :: UID -> Ty -> Ty
 tyEnsureNonAny u t = if t /= Ty_Any then t else mkNewTyVar u
 %%]
 
+%%[(8 hmtyinfer || hmtyast) hs export(mkTyThunk)
+-- | (placeholder for) make type level repr of thunk (i.e. laziness)
+mkTyThunk :: Ty -> Ty
+mkTyThunk = id
+%%]
+
 %%[(9 hmtyinfer || hmtyast).tyEnsureNonAnyImpl hs
 tyEnsureNonAnyImpl :: UID -> Ty -> Ty
 tyEnsureNonAnyImpl u t
@@ -848,17 +872,17 @@ tyEnsureNonAnyImpl u t
 
 %%[(3 hmtyinfer || hmtyast).mkTyQu hs
 mkTyQu :: TyVarIdL -> Ty -> Ty
-mkTyQu tvL t = foldr (\tv t -> Ty_Quant tv t) t tvL
+mkTyQu tvL t = foldr (\tv t -> Ty_TBind tv t) t tvL
 %%]
 
 %%[(4 hmtyinfer || hmtyast).mkTyQu -3.mkTyQu hs
 mkTyQu :: TyQu -> TyVarIdL -> Ty -> Ty
-mkTyQu q tvL t = foldr (\tv t -> Ty_Quant q tv t) t tvL
+mkTyQu q tvL t = foldr (\tv t -> Ty_TBind q tv t) t tvL
 %%]
 
 %%[(6 hmtyinfer || hmtyast).mkTyQu -(3.mkTyQu 4.mkTyQu) hs
 mkTyQu :: TyQu -> [(TyVarId,Ty)] -> Ty -> Ty
-mkTyQu q tvL t = foldr (\(tv,k) t -> Ty_Quant q tv k t) t tvL
+mkTyQu q tvL t = foldr (\(tv,k) t -> Ty_TBind q tv k t) t tvL
 %%]
 
 %%[(2 hmtyinfer || hmtyast).mkTyFreshProd hs
@@ -989,7 +1013,7 @@ tyMbArrowArgRes   :: Ty -> Maybe (Ty,Ty)
 tyMbArrowArgRes t
   =  case tyUnAnn t of
 %%[[7
-       Ty_Quant _ _ _ t   -> tyMbArrowArgRes t
+       Ty_TBind _ _ _ t   -> tyMbArrowArgRes t
 %%]]
        Ty_App a1 r
          -> case tyUnAnn a1 of
@@ -1009,7 +1033,7 @@ tyArrowArgsRes' :: Ty -> (([Ty],Ty),Ty->Ty)
 tyArrowArgsRes' t
   =  case tyUnAnn t of
 %%[[7
-       Ty_Quant q tv l t  -> let (asr,mk) = tyArrowArgsRes' t in (asr, Ty_Quant q tv l . mk)
+       Ty_TBind q tv l t  -> let (asr,mk) = tyArrowArgsRes' t in (asr, Ty_TBind q tv l . mk)
 %%]]
        t | isJust mbAR    -> let ((as,r'),_) = tyArrowArgsRes' r in ((a:as,r'),id)
          | otherwise      -> (([],t),id)
@@ -1091,7 +1115,7 @@ tyAppFunArgs
   where  extr as t
            =  case tyUnAnn t of
 %%[[6
-                Ty_Quant _ qv _ t -> extr as t
+                Ty_TBind _ qv _ t -> extr as t
 %%]]
                 Ty_App f a        -> extr (a:as) f
                 _                 -> (t,as)
@@ -1109,7 +1133,7 @@ tyAppFunArgsWithLkup lookup
   =  extr []
   where  extr as t
            =  case tyUnAnn t of
-                Ty_Quant _ qv _ t -> tyAppFunArgsWithLkup (\v -> if qv == v then Nothing else lookup v) t
+                Ty_TBind _ qv _ t -> tyAppFunArgsWithLkup (\v -> if qv == v then Nothing else lookup v) t
                 Ty_App f a        -> extr (a:as) f
                 _                 -> tyVarLift lookup (extr as) (flip (,) as) t
 
@@ -1122,7 +1146,7 @@ tyAppFunArgsMk
   =  extr []
   where  extr as t
            =  case tyUnAnn t of
-                Ty_Quant q v k t  -> (f,as,\f as -> Ty_Quant q v k $ mk f as)
+                Ty_TBind q v k t  -> (f,as,\f as -> Ty_TBind q v k $ mk f as)
                                   where (f,as,mk) = tyAppFunArgsMk t
                 Ty_App f a        -> extr (a:as) f
                 _                 -> (t,as,\f as -> mkApp (f:as))
@@ -1166,9 +1190,9 @@ tyMbQu :: Ty -> Maybe TyQu
 tyMbQu t
   = case tyUnAnn t of
 %%[[4
-      Ty_Quant q _ _
+      Ty_TBind q _ _
 %%][6
-      Ty_Quant q _ _ _
+      Ty_TBind q _ _ _
 %%]]
         -> Just q
       _ -> Nothing
@@ -1225,7 +1249,7 @@ tyAllConS t
 tyQuant :: Ty -> Ty
 tyQuant t
   =  case tyUnAnn t of
-       Ty_Quant _ _ _ t'  -> tyQuant t'
+       Ty_TBind _ _ _ t'  -> tyQuant t'
        _                  -> t
 %%]
 
@@ -1289,7 +1313,7 @@ mkTySum al = hsnSum `mkConApp` [tyRowEmpty `mkTyRow` al]
 tyVarChkVisitLift :: (TyVarId -> Maybe Ty) -> (Ty -> x) -> (Ty -> x) -> Ty -> x
 tyVarChkVisitLift
   = withLkupChkVisitLift tyMbVar (noVisit . tyUnAnn)
-  where noVisit (Ty_Quant _ qv _ _) = Set.singleton qv
+  where noVisit (Ty_TBind _ qv _ _) = Set.singleton qv
         noVisit _                   = Set.empty
 
 tyVarLift :: (TyVarId -> Maybe Ty) -> (Ty -> x) -> (Ty -> x) -> Ty -> x
@@ -1398,7 +1422,7 @@ tyRecExts2
 tyDecomposeMk    :: Ty -> (Ty, TyL, Ty -> TyL -> Ty)
 tyDecomposeMk t
   = case t of
-      Ty_Quant q v k t' -> (f,as,\f' as' -> Ty_Quant q v k $ mk f' as')
+      Ty_TBind q v k t' -> (f,as,\f' as' -> Ty_TBind q v k $ mk f' as')
                         where (f,as,mk) = tyDecomposeMk t'
       Ty_App _ _        -> (f,as,\f' as' -> mkApp (f':as'))
                         where (f,as) = tyAppFunArgs t
@@ -1767,7 +1791,7 @@ addAnn :: UID -> Ty -> Ty
 addAnn uid ty
   = case ty of
       Ty_App tl tr      -> addAnn uid tl `Ty_App` tr
-      Ty_Quant qu var t -> Ty_Quant qu var (addAnn uid t)
+      Ty_TBind qu var t -> Ty_TBind qu var (addAnn uid t)
       _                 -> Ty_Ann (Annotation uid Nothing Nothing) ty
 
 touchAnnTy :: Ty
@@ -1792,7 +1816,7 @@ rightmostResultAnnotation kind
     rec kind
       = case kind of
           Ty_Ann ann _   -> ann
-          Ty_Quant _ _ k -> rec k
+          Ty_TBind _ _ k -> rec k
           Ty_App _ k     -> rec k
           _              -> error ("rightmostResultAnnotation: no such annotation: " ++ show kind)
 
@@ -1803,7 +1827,7 @@ annotationsStar
     anns_ kind
       = case kind of
           Ty_Ann ann k   -> (if snd (anns_ k) then [ann] else [], False)
-          Ty_Quant _ _ k -> anns_ k
+          Ty_TBind _ _ k -> anns_ k
           Ty_Con hsn     -> ([], hsn == hsnKindStar || hsn == hsnKindRow)
           Ty_Var _ _     -> ([], False)
           Ty_App f a     -> let (af, _) = anns_ f
@@ -1842,7 +1866,7 @@ addTrunc anns
     rec ty
       = case ty of
           Ty_App tl tr      -> rec tl `Ty_App` tr
-          Ty_Quant qu var t -> Ty_Quant qu var (rec t)
+          Ty_TBind qu var t -> Ty_TBind qu var (rec t)
           Ty_Ann ann t      -> Ty_Ann ann (Ty_TruncTyCon anns t)
 
 %%]
@@ -1888,7 +1912,7 @@ tyAnnSubst mp
   where
     rec (Ty_App f a)            = Ty_App (rec f) (rec a)
     rec (Ty_Ann a t)            = Ty_Ann (repl a) (rec t)
-    rec (Ty_Quant tv cat ty)    = Ty_Quant tv cat (rec ty)
+    rec (Ty_TBind tv cat ty)    = Ty_TBind tv cat (rec ty)
     rec (Ty_TruncTyCon anns ty) = Ty_TruncTyCon (Set.map repl anns) (rec ty)
     rec (Ty_ExpTyCon cs as ty)  = Ty_ExpTyCon (map recCon cs) as (rec ty)
     rec t                       = t
@@ -2050,6 +2074,48 @@ instToL1AssocL l = [ (v,(tyquMetaLev q,k)) | (InstTo_Qu q _ v k) <- l ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Error
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 hmtyinfer || hmtyast) hs export(tyErr)
+-- a for the time being placeholder for yet unresolved/unpropagated type
+tyErr :: String -> Ty
+tyErr s = Ty_Dbg $ "*ERR: " ++ s ++ " :*"
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% System F generation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 coresysf && (hmtyinfer || hmtyast)) hs export(ArrowHowDecompose(..),tyArrowInstQuArgsRes)
+data ArrowHowDecompose
+ = ArrowDecompose_InstOnly		-- only ty instantiation
+ | ArrowDecompose_ArgBefore		-- split off arg before
+ | ArrowDecompose_ArgAfter		-- split off arg after
+ 
+-- split type + instantation into multiple type args (>=0) + optional 1 arg + 1 res:
+-- in other words, peel of type application(s) for Sys F, driven by InstTo
+tyArrowInstQuArgsRes :: ArrowHowDecompose -> [InstTo] -> SysfTy -> ([SysfTy],SysfTy,SysfTy)
+tyArrowInstQuArgsRes how instToL t
+  = case how of
+      ArrowDecompose_InstOnly
+        -> (taL,tyErr "Ty.tyArrowInstQuArgsRes.ArrowDecompose_InstOnly",r)
+        where (taL,r) = extr instToL t
+      ArrowDecompose_ArgBefore
+        -> (taL,a,r')
+        where (a,r) = tyArrowArgRes t
+              (taL,r') = extr instToL r
+      ArrowDecompose_ArgAfter
+        -> (taL,a,r')
+        where (taL,r) = extr instToL t
+              (a,r') = tyArrowArgRes r
+  where extr (InstTo_Qu _ _ _ _ : is) t = (a:a',r')
+   										where (a,r)   = tyArrowArgRes t
+   										      (a',r') = extr is r
+        extr _                        t = ([],t)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Instances: Binary
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -2117,7 +2183,7 @@ instance Serialize Ty where
   sput (Ty_Ann   a b    ) = sputWord8 2  >> sput a >> sput b
   sput (Ty_Var   a b    ) = sputWord8 3  >> sput a >> sput b
   sput (Ty_Any          ) = sputWord8 4
-  sput (Ty_Quant a b c d) = sputWord8 5  >> sput a >> sput b >> sput c >> sput d
+  sput (Ty_TBind a b c d) = sputWord8 5  >> sput a >> sput b >> sput c >> sput d
   sput (Ty_Ext   a b c  ) = sputWord8 6  >> sput a >> sput b >> sput c
   sput (Ty_Pred  a      ) = sputWord8 7  >> sput a
   sput (Ty_Lam   a b    ) = sputWord8 8  >> sput a >> sput b
@@ -2130,7 +2196,7 @@ instance Serialize Ty where
               2  -> liftM2 Ty_Ann   sget sget
               3  -> liftM2 Ty_Var   sget sget
               4  -> return Ty_Any
-              5  -> liftM4 Ty_Quant sget sget sget sget
+              5  -> liftM4 Ty_TBind sget sget sget sget
               6  -> liftM3 Ty_Ext   sget sget sget
               7  -> liftM  Ty_Pred  sget
               8  -> liftM2 Ty_Lam   sget sget
@@ -2158,10 +2224,12 @@ instance Serialize TyVarCateg where
 instance Binary TyQu where
   put (TyQu_Forall a) = putWord8 0 >> put a
   put (TyQu_Exists a) = putWord8 1 >> put a
+  put (TyQu_Plain  a) = putWord8 1 >> put a
   get = do tag <- getWord8
            case tag of
              0 -> liftM  TyQu_Forall   get
              1 -> liftM  TyQu_Exists   get
+             2 -> liftM  TyQu_Plain    get
 
 instance Serialize TyQu where
   sput = sputPlain

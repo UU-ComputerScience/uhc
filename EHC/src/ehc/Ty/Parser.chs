@@ -56,7 +56,7 @@ pTyApp
 pTy :: P Ty
 pTy
   =   pTyApp
-  <|> Ty_Quant
+  <|> Ty_TBind
       <$> ((TyQu_Forall <$ pFORALL <|> TyQu_Exists <$ pEXISTS) <*> pMaybe 0 id (pSTAR *> pMaybe 1 id pInt))
       <*> pUIDHI
       <*> pMaybe kiStar id (pParens pTy)

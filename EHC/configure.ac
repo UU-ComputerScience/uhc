@@ -155,6 +155,10 @@ AC_SUBST(ENABLE_CLR,$enableClr)
 AC_ARG_ENABLE(tycore, AS_HELP_STRING([--enable-tycore],[include TyCore typed intermediate language]), [enableTyCore=yes], [enableTyCore=no])
 AC_SUBST(ENABLE_TYCORE,$enableTyCore)
 
+### enable options: core + system F (Core variation of Typed Core, picking from Typed Core), default is no
+AC_ARG_ENABLE(coresysf, AS_HELP_STRING([--enable-coresysf],[include System F type generation for Core]), [enableCoreSysF=yes], [enableCoreSysF=no])
+AC_SUBST(ENABLE_CORESYSF,$enableCoreSysF)
+
 ### enable options: tauphi (Tom Lokhorsts type based transformations on TyCore, based on work by Stefan Holdermans), default is no
 AC_ARG_ENABLE(tauphi, AS_HELP_STRING([--enable-tauphi],[include TauPhi language extension and analyses]), [enableTauPhi=yes], [enableTauPhi=no])
 AC_SUBST(ENABLE_TAUPHI,$enableTauPhi)

@@ -127,7 +127,7 @@ SEM Ty
 
 %%[(3 hmtyinfer || hmtyast)
 SEM Ty
-  | Quant       ty          .   appSpinePos     =   0
+  | TBind       ty          .   appSpinePos     =   0
 %%]
 
 %%[(7 hmtyinfer || hmtyast)
@@ -224,7 +224,7 @@ SEM PredSeq
 
 %%[(3 hmtyinfer || hmtyast)
 SEM Ty
-  | Quant
+  | TBind
 %%[[11
     Lam
 %%]]
@@ -234,7 +234,7 @@ SEM Ty
 
 %%[(9 hmtyinfer || hmtyast)
 SEM Ty
-  | Quant
+  | TBind
 %%[[11
     Lam
 %%]]

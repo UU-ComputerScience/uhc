@@ -564,7 +564,7 @@ instance AbstractCore Expr MetaVal ValBind ValBind ValBindCateg MetaBind Ty Pat 
   acoreBoundVal1CatLevMetasTy cat n l m t e
   										= mkValBind1LevMetas doMkSeq n l m t e
                                         where doMkSeq = cat /= ValBindCateg_Strict
-  -- acoreBound1AspkeyVal				-- TBD
+  acoreBound1AspkeyVal		  			= panic "TyCore.Base.acoreBound1AspkeyVal"
   acoreBoundValTy1CatLev _ _ _ t		= panic "TyCore.Base.acoreBoundValTy1CatLev"
   acoreBind1Asp n [a]					= a
   acoreBind1CatLevMetasTy bcat n mlev mb t e
@@ -595,7 +595,7 @@ instance AbstractCore Expr MetaVal ValBind ValBind ValBindCateg MetaBind Ty Pat 
 %%]]
   
   -- patfld
-  -- acorePatFldBind					-- TBD
+  acorePatFldBind		  				= panic "TyCore.Base.acorePatFldBind"
   acorePatFldTy t (_,off) n 			= FldBind_Fld n t off	-- obsolete
 
   -- patrest
@@ -605,7 +605,7 @@ instance AbstractCore Expr MetaVal ValBind ValBind ValBindCateg MetaBind Ty Pat 
   -- alt
   acoreAlt                             	= Alt_Alt
 
-  -- acoreTy2ty            t = tyErr "acoreTy2ty"
+  acoreTy2ty							= panic "TyCore.Base.acoreTy2ty"
   
   -- defaults
   acoreMetavalDflt      				= MetaVal_Val
@@ -625,7 +625,7 @@ instance AbstractCore Expr MetaVal ValBind ValBind ValBindCateg MetaBind Ty Pat 
   acoreBindcategPlain					= ValBindCateg_Plain
 
   -- inspecting
-  -- acoreExprMbLam						-- TBD
+  acoreExprMbLam		  				= panic "TyCore.Base.acoreExprMbLam"
 
   acoreExprMbLet (Expr_Let c b e)       = Just (c,b,e)
   acoreExprMbLet _                      = Nothing

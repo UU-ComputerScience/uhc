@@ -140,13 +140,13 @@ ATTR TyAGItf AllTy [ lkup: Lkup | | ]
 
 %%[(3 hmtyinfer || hmtyast)
 SEM Ty
-  | Quant
+  | TBind
 %%[[11
     Lam
 %%]]
                     ty      .   lkup        =   \mlev v -> if v == @tv then Nothing else @lhs.lkup mlev v
 %%[[6
-  | Quant           l1'     .   lkup        =   \mlev v -> @lhs.lkup (mlev+1) v
+  | TBind           l1'     .   lkup        =   \mlev v -> @lhs.lkup (mlev+1) v
 %%]]
 %%]
 
@@ -256,7 +256,7 @@ SEM PredSeq
 
 %%[(6 hmtyinfer || hmtyast)
 SEM Ty
-  | Quant			inst	.	l1'			: 	Ty
+  | TBind			inst	.	l1'			: 	Ty
                     inst    .   l1'	       	=   @l1
 %%]
 
@@ -286,7 +286,7 @@ SEM TyAGItf
 
 %%[(3 hmtyinfer || hmtyast)
 SEM Ty
-  | Quant
+  | TBind
 %%[[11
     Lam
 %%]]
@@ -301,7 +301,7 @@ SEM Ty
 
 %%[(6 hmtyinfer || hmtyast)
 SEM Ty
-  | Quant			l1'     .   tvUseMp     =   Map.empty
+  | TBind			l1'     .   tvUseMp     =   Map.empty
 %%]
 
 %%[(9 hmtyinfer || hmtyast)
@@ -376,7 +376,7 @@ SEM Ty
 
 %%[(6 hmtyinfer || hmtyast)
 SEM Ty
-  | Quant			lhs		.	repl 		=	Ty_Quant @qu.repl @tv @l1'.repl @ty.repl
+  | TBind			lhs		.	repl 		=	Ty_TBind @qu.repl @tv @l1'.repl @ty.repl
   							.	cycVarMp	=	varmpIncMetaLev @l1'.cycVarMp `varmpPlus` @ty.cycVarMp
 %%]
 

@@ -216,3 +216,134 @@ SEM Expr
 
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Final ty for Core elaboration: redo all fitting, but now against complete(d) types
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 hmtyinfer codegen coresysf)
+SEM Expr
+  | Var Con     loc         .   fo_fin      =   @doFit (@lhs.fiOpts {fioExpandEqTyVar=True}) @lhs.finTyVarMp
+  | Lam         loc         .   fo_fin      =   @doFit (@knFunFIOpts {fioExpandEqTyVar=True}) @lhs.finTyVarMp
+%%[[9
+  | AppTop      loc         .   fo_fin      =   @doFit (@lhs.fiOpts {fioExpandEqTyVar=True}) @lhs.finTyVarMp
+%%]]
+%%[[12
+  | LamImpl     loc         .   fo_fin      =   @doFit (implFIOpts {fioBindRFirst=True, fioExpandEqTyVar=True}) @lhs.finTyVarMp
+%%]]
+%%]
+
+%%[(8 hmtyinfer codegen coresysf)
+SEM Decl
+  | Val         loc         .   doFit       =   \o m -> fitsIn o @fe @lUniq_fo m @expr.ty @exprKnTy
+                            .   fo_fin      =   @doFit (@exprFiOpts {fioExpandEqTyVar=True}) @lhs.finTyVarMp
+                loc         .   lUniq_fo    :   UNIQUEREF gUniq
+
+SEM DataConstr
+  | Constr      loc         .   doFit       =   \o m -> fitsIn o @fe @lUniq_fo m @dataConTy @dataConTyAsVar
+                            .   fo_fin      =   @doFit (strongFIOpts {fioExpandEqTyVar=True}) @lhs.finTyVarMp
+                loc         .   lUniq_fo    :   UNIQUEREF gUniq
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%  Final ty for Core elaboration: splitting into args/res for App
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Instantiation info [InstTo] drives the splitting up into type and value args.
+For now this is extracted from value bindings only, but must be done for other constructs as well.
+
+%%[(8 hmtyinfer codegen coresysf)
+ATTR Expr [ | | finAppInstToL: {[InstTo]} ]
+%%]
+
+%%[(8 hmtyinfer codegen coresysf)
+SEM Expr
+  | Var Con     
+%%[[9
+    AppTop
+%%]]
+                loc         .   (finAppInstToLHere,finAppInstToL)
+                                            =   instToSplitQu (foLInstToL @fo_fin)
+  | App AppImpred
+%%[[12
+    AppImpl
+%%]]
+                loc         .   (finAppInstToLHere,finAppInstToL)
+                                            =   instToSplitQu $ drop 1 @func.finAppInstToL
+  | * - Var Con App AppImpred
+%%[[9
+    AppTop
+%%]]
+%%[[12
+    AppImpl
+%%]]
+                loc         .   finAppInstToLHere
+                                            =   []
+                            .   finAppInstToL
+                             				=   []
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Final ty for Core elaboration: splitting into args/res for Lam
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Instantiation info [InstTo] drives the splitting up into type and value args,
+see remarks for finAppInstToL.
+
+%%[(8 hmtyinfer codegen coresysf)
+ATTR Expr [ finLamInstToL: {[InstTo]} | | ]
+%%]
+
+%%[(8 hmtyinfer codegen coresysf)
+SEM Decl
+  | Val         loc         .   finLamInstToL
+  											=   foRInstToL @fo_fin
+%%]
+
+%%[(8 hmtyinfer codegen coresysf)
+SEM Expr
+  | Lam         
+%%[[12
+    LamImpl
+%%]]
+                loc         .   (finLamInstToLHere,finLamInstToL)
+                                            =   let finLamInstToL = if @lhs.isTopLam then foRInstToL @fo_fin else @lhs.finLamInstToL
+                                                in  instToSplitQu finLamInstToL
+                body        .   finLamInstToL  =   drop 1 @finLamInstToL
+                            
+  | * - Lam
+%%[[12
+    LamImpl
+%%]]
+                loc         .   (finLamInstToLHere,finLamInstToL)
+                                            =   instToSplitQu @lhs.finLamInstToL
+%%]
+
+Defaults
+
+%%[(8 hmtyinfer codegen coresysf)
+SEM AGItf
+  | AGItf       expr        .   finLamInstToL  	=   []
+
+SEM CaseAlt
+  | Pat         expr        .   finLamInstToL  	=   []
+
+SEM DataFieldExpr RecExpr
+  | Expr Upd    expr        .   finLamInstToL  	=   []
+
+SEM RecExpr
+  | Ext         expr        .   finLamInstToL  	=   []
+
+%%[[9
+SEM Decl
+  | InstanceIntro
+%%[[90
+    FFE
+%%]]
+                expr        .   finLamInstToL  	=   []
+%%]]
+
+%%[[97
+SEM PatExpr
+  | Expr        expr        .   finLamInstToL  	=   []
+%%]]
+%%]

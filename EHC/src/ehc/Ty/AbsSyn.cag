@@ -131,7 +131,7 @@ DATA TyVarCateg
 
 %%[(3 hmtyinfer || hmtyast).Quant
 DATA Ty
-  | Quant
+  | TBind
 %%[[4
 				qu              : TyQu
 %%]]
@@ -139,13 +139,6 @@ DATA Ty
 %%[[6
 				l1              : {Ty}	-- 1 (or more, if MetaLev > 0) meta level higher, and its kind/sort/...
 %%]]
-                ty              : Ty
-%%]
-
-%%[(4444 hmtyinfer || hmtyast).Quant -3.Quant
-DATA Ty
-  | Quant       qu              : TyQu
-                tv              : {TyVarId}
                 ty              : Ty
 %%]
 
@@ -182,12 +175,17 @@ e.g.
 \item
 1: quantify over a kind in a type for a value.
 \end{itemize}
+
+Plain quantifiers indicate binding only
 %%]
 
 %%[4
 DATA TyQu
   | Forall		mlev			: MetaLev
   | Exists		mlev			: MetaLev
+%%[[8
+  | Plain		mlev			: MetaLev
+%%]]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

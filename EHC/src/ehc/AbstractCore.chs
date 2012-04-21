@@ -103,6 +103,8 @@ class AbstractCore  expr metaval bind bound bindcateg metabind ty pat patrest pa
 %%]]
 
   ------------------------- constructing: ty -------------------------
+  -- | construct ty from Ty, usable in Core context
+  acoreTy2ty :: Ty -> ty
 
   ------------------------- constructing: ty constants -------------------------
   -- Int

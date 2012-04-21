@@ -413,7 +413,7 @@ SEM LabelAGItf
 
 %%[(3 hmtyinfer || hmtyast)
 SEM Ty
-  | Quant
+  | TBind
 %%[[11
     Lam
 %%]]
@@ -425,7 +425,7 @@ SEM Ty
 
 %%[(8 hmtyinfer || hmtyast)
 SEM Ty
-  | Quant
+  | TBind
 %%[[11
     Lam
 %%]]
@@ -492,7 +492,7 @@ SEM Ty
 
 %%[(3 hmtyinfer || hmtyast).Quant
 SEM Ty
-  | Quant           loc     .   ppQu    =   pp "forall"
+  | TBind           loc     .   ppQu    =   pp "forall"
                             .   ppTv    =   @tnPP
                             .   ppTvPre =   empty
                             .   ppTvPost=   empty
@@ -502,13 +502,13 @@ SEM Ty
 
 %%[(4 hmtyinfer || hmtyast)
 SEM Ty
-  | Quant           loc     .   ppQu 	:=	@qu.pp
+  | TBind           loc     .   ppQu 	:=	@qu.pp
 
 %%]
 
 %%[(6 hmtyinfer || hmtyast)
 SEM Ty
-  | Quant           inst    .   l1'     :   Ty
+  | TBind           inst    .   l1'     :   Ty
                     inst    .   l1'     =   @l1
                     loc     .   ppL1    :=  @l1'.pp
                             .   ppTvPost:=  if maybe False (== hsnKindStar) $ tyMbCon @l1 then empty else ppParens @ppL1
@@ -516,7 +516,7 @@ SEM Ty
 
 %%[(8 hmtyinfer || hmtyast)
 SEM Ty
-  | Quant           loc     .   pp      :=  ppParNeed  @parNeed @lhs.parNeed
+  | TBind           loc     .   pp      :=  ppParNeed  @parNeed @lhs.parNeed
                                                        (cfgppAside @lhs.cfg (@ppQu >#< @ppTvPre >|< @ppTv >|< @ppTvPost) ("." >#< @ty.pp))
 %%]
 
@@ -543,7 +543,7 @@ SEM TyPlus
 
 %%[(4 hmtyinfer || hmtyast)
 SEM TyQu
-  | Forall Exists   lhs     .   pp      =   text (showTyQu @self)
+  | *   			lhs     .   pp      =   text (showTyQu @self)
 %%]
 
 %%[(7 hmtyinfer || hmtyast)
@@ -782,7 +782,7 @@ SEM Ty
 
 %%[(3 hmtyinfer || hmtyast)
 SEM Ty
-  | Quant       loc     .   parNeed             =   ParNotNeeded
+  | TBind       loc     .   parNeed             =   ParNotNeeded
 %%]
 
 %%[(4_2 hmtyinfer || hmtyast)

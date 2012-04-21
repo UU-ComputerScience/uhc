@@ -115,13 +115,20 @@ ifeq (@ENABLE_WHOLEPROGANAL@,yes)
 ENABLE_WHOLEPROGANAL		:= yes
 endif
 
+# include System F Ty generation for Core
+ifeq (@ENABLE_CORESYSF@,yes)
+ENABLE_CORESYSF				:= yes
+endif
+
 # include TyCore
 ifeq (@ENABLE_TYCORE@,yes)
+ENABLE_CORESYSF				:= yes
 ENABLE_TYCORE				:= yes
 endif
 
 # include TyCore based transformations
 ifeq (@ENABLE_TAUPHI@,yes)
+ENABLE_CORESYSF				:= yes
 ENABLE_TYCORE				:= yes
 ENABLE_TAUPHI				:= yes
 endif

@@ -17,6 +17,7 @@ EHC_ASPECTS								:= $(strip $(if $(ASPECTS),$(ASPECTS) \
 											 $(if $(ENABLE_JS),javascript,) \
 											 $(if $(ENABLE_CLR),clr,) \
 											 $(if $(ENABLE_TYCORE),tycore,) \
+											 $(if $(ENABLE_CORESYSF),coresysf,) \
 											 $(if $(ENABLE_TAUPHI),tauphi,) \
 											))
 EHC_ASPECTS_SUFFIX						:= $(if $(ASPECTS),-$(subst $(space),-,$(ASPECTS)),)

@@ -83,7 +83,7 @@ ATTR TyAGItf AllTyAndFlds [ globTvL: TyVarIdL | | ]
 ATTR TyAGItf AllTyAndFlds [ fio: FIOpts | | ]
 
 SEM Ty
-  | Quant           ty      .   fio         =   @lhs.fio {fioDontBind = @tv : fioDontBind @lhs.fio}
+  | TBind           ty      .   fio         =   @lhs.fio {fioDontBind = @tv : fioDontBind @lhs.fio}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -111,7 +111,7 @@ SEM Ty
 ATTR AllTy [ | | hasHardTy USE {||} {False}: Bool ]
 
 SEM Ty
-  | Quant           lhs     .   hasHardTy   =   True
+  | TBind           lhs     .   hasHardTy   =   True
 
 SEM TyPlus
   | Ty              lhs     .   hasHardTy   =   @hardness == TyHard || @ty.hasHardTy
@@ -182,7 +182,7 @@ SEM Ty
                                                     Just t
                                                         ->  (t,emptyVarMp,[])
                                                     _   ->  (@self,emptyVarMp,[])
-  | Quant           lhs     .   repl        =   mkTyQu @qu.self ([@tv] `intersect` varFree @ty.repl) @ty.repl
+  | TBind           lhs     .   repl        =   mkTyQu @qu.self ([@tv] `intersect` varFree @ty.repl) @ty.repl
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
