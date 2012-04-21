@@ -66,7 +66,7 @@ SEM Ty
 
 %%[(3 hmtyinfer || hmtyast).TyFtv
 SEM Ty
-  | Quant           lhs     .   tvs         =   @tv `delete` @ty.tvs
+  | TBind           lhs     .   tvs         =   @tv `delete` @ty.tvs
 %%]
 
 %%[(4 hmtyinfer || hmtyast) -(2.TyFtv 3.TyFtv)
@@ -77,7 +77,7 @@ ATTR TyVarCateg [ | | self: SELF ]
 
 SEM Ty
   | Var             lhs     .   tvMp        =   @tv `Map.singleton` mkTvInfoTy @categ.self
-  | Quant
+  | TBind
 %%[[11
     Lam
 %%]]

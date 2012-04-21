@@ -122,8 +122,8 @@ SEM Ty
                                                     then let (_,exts) = tyRowExts @self
                                                          in  TT1K_One (Key_Str $ concat $ intersperse "," $ Lst.map show $ assocLKeys exts)
                                                     else TT1K_Any
-  | Quant           loc     .   bkey            =   TT1K_One (Key_TyQu @qu.self)
-  | * - App Con Var Quant Ext
+  | TBind           loc     .   bkey            =   TT1K_One (Key_TyQu @qu.self)
+  | * - App Con Var TBind Ext
                     loc     .   bkey            =   TT1K_Any
 
 SEM Pred
@@ -180,8 +180,8 @@ SEM Ty
   | App Ext         loc     .   key             =   if @isSpineRoot
                                                     then ttkAdd @bkey @childKeyL
                                                     else []
-  | Quant           loc     .   key             =   ttkAdd @bkey @childKeyL
-  | *  - App Ext Quant Pred Ann
+  | TBind           loc     .   key             =   ttkAdd @bkey @childKeyL
+  | *  - App Ext TBind Pred Ann
                     loc     .   key             =   ttkSingleton @bkey
 
 SEM Pred
@@ -234,8 +234,8 @@ SEM Ty
                                                     in  if @isSpineRoot
                                                         then reverse cs
                                                         else cs
-  | Quant           loc     .   childKeyL       =   [@ty.key]
-  | *  - App Ext Quant
+  | TBind           loc     .   childKeyL       =   [@ty.key]
+  | *  - App Ext TBind
                     loc     .   childKeyL       =   []
 %%]
 
@@ -292,11 +292,11 @@ SEM Ty
                             .   trieKeyNest     =   empty
   | Con             loc     .   trieKey         =   singleton $ TK_One TKK_Normal $ Key_HNm @nm
                             .   trieKeyNest     =   empty
-  | Quant           loc     .   trieKey         =   singleton $ TK_One TKK_Normal $ Key_TyQu @qu.self
+  | TBind           loc     .   trieKey         =   singleton $ TK_One TKK_Normal $ Key_TyQu @qu.self
                             .   trieKeyNest     =   @ty.trieKey :++: @ty.trieKeyNest
   | Pred            loc     .   trieKey         =   @pr.trieKey
                             .   trieKeyNest     =   @pr.trieKeyNest
-  | * - App Var Con Quant Ext Pred
+  | * - App Var Con TBind Ext Pred
                     loc     .   trieKey         =   singleton $ TK_One TKK_Partial $ Key_Ty @self
                             .   trieKeyNest     =   empty
 

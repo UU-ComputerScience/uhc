@@ -40,6 +40,9 @@ Datatype LamInfo holds the implementation info to be exported from a module.
 %%[(8 codegen) hs import({%{EH}Ty})
 %%]
 
+%%[(8 codegen coresysf) hs import({%{EH}Ty.Trf.ToSysfTy})
+%%]
+
 %%[(50 codegen) hs import(Data.Array)
 %%]
 %%[(50 codegen) hs import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
@@ -702,6 +705,7 @@ instance AbstractCore CExpr CMetaVal CBind CBound CBindCateg CMetaBind Ty CPat C
   
   -- ty
   -- acoreTyInt2							= tyInt
+  acoreTy2ty							= id
 
   -- pat
   acorePatVarTy n _						= CPat_Var n

@@ -79,7 +79,7 @@ Encoding of polarities:
 
   Var, Forall:
   
-    Ty_Var, Ty_Quant
+    Ty_Var, Ty_TBind
   
   Arrow:
 

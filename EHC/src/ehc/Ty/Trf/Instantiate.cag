@@ -58,7 +58,7 @@ WRAPPER TyAGItf
 tyInst' :: (TyVarId -> Ty) -> UID -> Ty -> Ty
 tyInst' mkFreshTy uniq ty
   = s `varUpd` ty'
-  where  i u (Ty_Quant v t)  =  let  (u',v') = mkNewUID u
+  where  i u (Ty_TBind v t)  =  let  (u',v') = mkNewUID u
                                      (s,t') = i u' t
                                 in   ((v `varmpTyUnit` (mkFreshTy v')) `varUpd` s,t')
          i _ t               =  (emptyVarMp,t)
@@ -104,7 +104,7 @@ tyInst1Exists uniq ty = fst (tyInst uniq True instCoExist ty)
 tyInst :: UID -> Bool -> HowToInst -> Ty -> (Ty,TyVarIdL)
 tyInst uniq onlyExists howToInst ty
   = (s `varUpd` ty',tvl)
-  where  i u mbQ (Ty_Quant q v t) | not (tyquIsForall q && onlyExists) && maybe True (==q) mbQ
+  where  i u mbQ (Ty_TBind q v t) | not (tyquIsForall q && onlyExists) && maybe True (==q) mbQ
                              =  let  (u',v')        = mkNewUID u
                                      (s,t',tvl')    = i u' (Just q) t
                                 in   ((v `varmpTyUnit` (howToInst q v')) `varUpd` s,t',v':tvl')
@@ -164,16 +164,16 @@ SEM TyAGItf
                                 .   mbQ         =   Nothing
 
 SEM Ty
-  | Quant           loc         .   allow       =   @lhs.allow
+  | TBind           loc         .   allow       =   @lhs.allow
                                                         && not (tyquIsForall @qu.repl && @lhs.onlyExists)
                                                         && maybe True (== @qu.repl) @lhs.mbQ
                     ty          .   mbQ         =   Just @qu.repl
-  | * - Quant       loc         .   allow       =   False
+  | * - TBind       loc         .   allow       =   False
 %%]
 
 %%[(9 hmtyinfer || hmtyast)
 SEM Ty
-  | Quant           loc         .   allow       :   Bool
+  | TBind           loc         .   allow       :   Bool
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -185,7 +185,7 @@ ATTR AllTy [ | gUniq: UID | ]
 ATTR TyAGItf [ gUniq: UID | | ]
 
 SEM Ty
-  | Quant           (ty.gUniq,loc.lUniq)        =   mkNewUID @lhs.gUniq
+  | TBind           (ty.gUniq,loc.lUniq)        =   mkNewUID @lhs.gUniq
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -203,7 +203,7 @@ SEM TyAGItf
                                 .   replSubst   =   @ty.gathSubst
 
 SEM Ty
-  | Quant           loc         .   tvNew       =   @lUniq
+  | TBind           loc         .   tvNew       =   @lUniq
                     (loc.tyNew,ty.gathSubst)    =   if @allow
                                                     then let t = @lhs.howToInst @qu.repl @tvNew
                                                          in ( t
@@ -219,7 +219,7 @@ SEM Ty
 
 %%[(9 hmtyinfer || hmtyast)
 SEM Ty
-  | Quant           loc         .   tvNew       :   UID
+  | TBind           loc         .   tvNew       :   UID
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -247,18 +247,18 @@ SEM Ty
 
 %%[(4 hmtyinfer || hmtyast)
 SEM Ty
-  | Quant           loc         .   instTo      =   InstTo_Qu @qu.repl @tv @tvNew
+  | TBind           loc         .   instTo      =   InstTo_Qu @qu.repl @tv @tvNew
 %%]
 
 %%[(6 hmtyinfer || hmtyast)
 SEM Ty
-  | Quant           loc         .   l1Subst     =   varmpDecMetaLev @lhs.replSubst `varUpd` @l1
+  | TBind           loc         .   l1Subst     =   varmpDecMetaLev @lhs.replSubst `varUpd` @l1
                                 .   instTo      :=  InstTo_Qu @qu.repl @tv @tvNew @l1Subst
 %%]
 
 %%[(4 hmtyinfer || hmtyast)
 SEM Ty
-  | Quant           lhs         .   (repl,replTvL,instToL)
+  | TBind           lhs         .   (repl,replTvL,instToL)
                                                 =   if @allow
                                                     then (@ty.repl,@tvNew : @ty.replTvL, @instTo : @ty.instToL)
                                                     else (@repl,[],[])
@@ -276,5 +276,5 @@ SEM Ty
 
 %%[(9 hmtyinfer || hmtyast)
 SEM Ty
-  | Quant			loc			.	tyNew		: 	Ty
+  | TBind			loc			.	tyNew		: 	Ty
 %%]
