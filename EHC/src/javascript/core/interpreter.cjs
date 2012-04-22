@@ -20,10 +20,8 @@ var nodeCounter = 0;
 function evaluatable(x) {
   return x !== undefined && x !== null && x.__eOrV__ !== undefined;
 }
-%%]
 
 // interface to eval
-%%[(8 javascript)
 function _e_(x) {
   var x_, xx, x_next;
 %%[[8
@@ -119,8 +117,8 @@ _A_undersat_.prototype = {
   },
   needsNrArgs : function () {
     return this.fun.needsNrArgs() - this.args.length;
-  }
-%%[[8,
+  },
+%%[[8
   getName : function () {
     return "A-" + this.needsNrArgs() + "#" + this.nodeId + "'";
   },
@@ -140,8 +138,8 @@ _A_.prototype = {
         return fun.__aN__(args);
       }
     };
-  }
-%%[[8,
+  },
+%%[[8
   getName : function () {
     return "A" + this.args.length + "#" + this.nodeId + "'" + this.fun.getName();
   },
@@ -234,8 +232,8 @@ _F_.prototype = {
   },
   needsNrArgs : function () {
     return this.__evN__.length;
-  }
-%%[[8,
+  },
+%%[[8
   getName : function () {
     return "F" + this.__evN__.length + "#" + this.nodeId + "'" + this.name;
   },
@@ -247,15 +245,11 @@ _F_.prototype = {
 }
 %%]
 
-%%[8
-%%]
 // function construction wrappers
 function _f_(f) {
   return new _F_(f);
 }
 
-%%[8
-%%]
 // strict application wrappers
 function _e1_(f, a) {
   return _e_(f.__aN__([a]));
