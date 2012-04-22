@@ -17,10 +17,6 @@ var nodeCounter = 0;
 %%]
 
 %%[(8 javascript)
-function evaluatable(x) {
-  return x !== undefined && x !== null && x.__eOrV__ !== undefined;
-}
-
 // interface to eval
 function _e_(x) {
   var x_, xx, x_next;
@@ -28,7 +24,7 @@ function _e_(x) {
   trace("> _e_", x);
 %%][100
 %%]]
-  if (evaluatable(x)) {
+  if (x !== undefined && x !== null && x.__eOrV__ !== undefined) {
     x_ = x;
     do {
       if (typeof x.__eOrV__ === 'function' && !x.fe) {
@@ -40,7 +36,7 @@ function _e_(x) {
         x.__eOrV__ = xx;
         x = xx;
 %%[[8
-        if (evaluatable(x)) {
+        if (x !== undefined && x !== null && x.__eOrV__ !== undefined) {
           trace("<< _e_()", typeof x + "/" + typeof x.__eOrV__ + ":" + x);
         } else {
           trace("<< _e_()", typeof x + ":" + x);
@@ -54,7 +50,7 @@ function _e_(x) {
 %%]]
         x = x.__eOrV__;
 %%[[8
-        if (evaluatable(x)) {
+        if (x !== undefined && x !== null && x.__eOrV__ !== undefined) {
           trace("<< _e_()", typeof x + "/" + typeof x.__eOrV__ + ":" + x);
         } else {
           trace("<< _e_()", typeof x + ":" + x);
@@ -62,8 +58,8 @@ function _e_(x) {
 %%][100
 %%]]
       }
-    } while (evaluatable(x));
-    while (evaluatable(x_)) {
+    } while (x !== undefined && x !== null && x.__eOrV__ !== undefined);
+    while (x_ !== undefined && x_ !== null && x_.__eOrV__ !== undefined) {
       x_next = x_.__eOrV__;
       x_.__eOrV__ = x;
       x_.fe = true;
@@ -170,11 +166,12 @@ function _A_(fun, args) {
 %%]]
     return x;
   };
+  this.fe = false;
 %%[[8
   this.fun = fun;
   this.args = args;
-  this.fe = false;
-  this.nodeId = ++nodeCounter;
+  nodeCounter += 1;
+  this.nodeId = nodeCounter;
 %%][100
 %%]]
 }
@@ -188,7 +185,8 @@ function _F_(evalN) {
   this.__evN__ = evalN;
 %%[[8
   this.name = name;
-  this.nodeId = ++nodeCounter;
+  nodeCounter += 1;
+  this.nodeId = nodeCounter;
 %%][100
 %%]]
 }
