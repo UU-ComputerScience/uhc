@@ -233,7 +233,7 @@ SEM Ty
   | Ext         loc         .   stBase      =   tyErr "EXT"
 %%]
 
-%%[(8 codegen coresysf)
+%%[(9 codegen coresysf)
 SEM Ty
   | Impls       loc         .   stBase      =   tyErr "IMPLS"
   | Pred        loc         .   stBase      =   tyErr "PRED"

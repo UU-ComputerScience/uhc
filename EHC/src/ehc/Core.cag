@@ -40,9 +40,6 @@ Datatype LamInfo holds the implementation info to be exported from a module.
 %%[(8 codegen) hs import({%{EH}Ty})
 %%]
 
-%%[(8888 codegen coresysf) hs import({%{EH}Ty.Trf.ToSysfTy}) export(module {%{EH}Ty.Trf.ToSysfTy})
-%%]
-
 %%[(50 codegen) hs import(Data.Array)
 %%]
 %%[(50 codegen) hs import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
