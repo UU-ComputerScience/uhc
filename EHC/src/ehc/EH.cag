@@ -7,7 +7,7 @@
 %%% Haskell importable interface to EH/AbsSyn
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 hs module {%{EH}EH} import({%{EH}Base.Common},{%{EH}Base.Builtin})
+%%[1 hs module {%{EH}EH} import({%{EH}Base.Common},{%{EH}Base.AppLike},{%{EH}Base.Builtin})
 %%]
 
 %%[1 hs export(AGItf(..), Decl(..), Decls, TyExpr(..), Expr(..), PatExpr(..))
@@ -206,11 +206,11 @@ mkEH = rngLift emptyRange
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% SemApp class instances
+%%% AppLike class instances
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1 hs
-instance SemApp Expr where
+instance AppLike Expr where
   semRngApp    r  = rngLift r Expr_App
   semRngAppTop r  = rngLift r Expr_AppTop
   semRngVar    r  = rngLift r Expr_Var . mkHNm
@@ -225,7 +225,7 @@ instance SemApp Expr where
 
 
 %%[1 hs
-instance SemApp PatExpr where
+instance AppLike PatExpr where
   semRngApp    r  = rngLift r PatExpr_App
   semRngAppTop r  = rngLift r PatExpr_AppTop
   semRngVar    r  = rngLift r PatExpr_Var . mkHNm
@@ -239,7 +239,7 @@ instance SemApp PatExpr where
 %%]
 
 %%[1 hs
-instance SemApp TyExpr where
+instance AppLike TyExpr where
   semRngApp    r  = rngLift r TyExpr_App
   semRngAppTop r  = rngLift r TyExpr_AppTop
 %%[[1
@@ -279,7 +279,7 @@ instance SemApp TyExpr where
 %%]
 
 %%[6 hs
-instance SemApp KiExpr where
+instance AppLike KiExpr where
   semRngApp    r  = rngLift r KiExpr_App
   semRngAppTop r  = rngLift r KiExpr_AppTop
   semRngVar    r  = rngLift r KiExpr_Var . mkHNm

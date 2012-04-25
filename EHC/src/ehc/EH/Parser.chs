@@ -7,7 +7,7 @@
 %%% Main
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 module {%{EH}EH.Parser} import(System.IO, UU.Parsing, UU.Parsing.Offside, EH.Util.ParseUtils, UU.Scanner.GenToken, {%{EH}Base.Builtin},{%{EH}Base.Common}, {%{EH}Scanner.Common}, {%{EH}EH})
+%%[1 module {%{EH}EH.Parser} import(System.IO, UU.Parsing, UU.Parsing.Offside, EH.Util.ParseUtils, UU.Scanner.GenToken, {%{EH}Base.Builtin},{%{EH}Base.Common}, {%{EH}Base.AppLike}, {%{EH}Scanner.Common}, {%{EH}EH})
 %%]
 
 %%[1 export(pAGItf)
@@ -79,12 +79,12 @@ pDataField                  ::   EHCParser DataField
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1.pApp
-pApp            ::   SemApp ep => EHCParser ep -> EHCParser ep
+pApp            ::   AppLike ep => EHCParser ep -> EHCParser ep
 pApp p          =    mkApp <$> pList1 p
 %%]
 
 %%[1.pParenProd
-pParenProd :: SemApp ep => EHCParser ep -> EHCParser ep
+pParenProd :: AppLike ep => EHCParser ep -> EHCParser ep
 pParenProd pE
   =  pParens pP
   where  pP  =    mkProdApp <$> pSucceed []

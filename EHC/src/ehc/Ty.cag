@@ -12,7 +12,7 @@ used by EHC. The AST is described in Ty/AbsSyn.
 %%% Haskell importable interface to Ty
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 hs module {%{EH}Ty} import(EH.Util.Utils,{%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{EH}Opts.Base})
+%%[1 hs module {%{EH}Ty} import(EH.Util.Utils,{%{EH}Base.Common}, {%{EH}Base.AppLike}, {%{EH}Base.Builtin}, {%{EH}Opts.Base})
 %%]
 
 %%[(1 hmtyinfer || hmtyast) hs export(TyAGItf(..), Ty(..), TyAnn(..), TyL, tyInt, tyChar, mkTyCon)
@@ -116,16 +116,6 @@ DERIVING TyVarCateg
 Debug:
 
 %%[(9 hmtyinfer || hmtyast) hs import(EH.Util.Pretty,EH.Util.Utils)
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Explicit name for SysF type
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8 hmtyinfer || hmtyast) hs export(SysfTy,SysfTySeq,SysfTySeq1)
-type SysfTy     	= Ty			-- base ty
-type SysfTySeq    	= Ty			-- sequence
-type SysfTySeq1    	= Ty			-- singleton
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -801,8 +791,8 @@ tyIsLam ty
 %%% Construction of type
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(1 hmtyinfer || hmtyast).SemApp hs
-instance SemApp Ty where
+%%[(1 hmtyinfer || hmtyast).AppLike hs
+instance AppLike Ty where
   semApp         = Ty_App
   semAppTop      = id
   semCon         = Ty_Con . mkHNm
@@ -2081,38 +2071,6 @@ instToL1AssocL l = [ (v,(tyquMetaLev q,k)) | (InstTo_Qu q _ v k) <- l ]
 -- a for the time being placeholder for yet unresolved/unpropagated type
 tyErr :: String -> Ty
 tyErr s = Ty_Dbg $ "*ERR: " ++ s ++ " :*"
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% System F generation
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8 coresysf && (hmtyinfer || hmtyast)) hs export(ArrowHowDecompose(..),tyArrowInstQuArgsRes)
-data ArrowHowDecompose
- = ArrowDecompose_InstOnly		-- only ty instantiation
- | ArrowDecompose_ArgBefore		-- split off arg before
- | ArrowDecompose_ArgAfter		-- split off arg after
- 
--- split type + instantation into multiple type args (>=0) + optional 1 arg + 1 res:
--- in other words, peel of type application(s) for Sys F, driven by InstTo
-tyArrowInstQuArgsRes :: ArrowHowDecompose -> [InstTo] -> SysfTy -> ([SysfTy],SysfTy,SysfTy)
-tyArrowInstQuArgsRes how instToL t
-  = case how of
-      ArrowDecompose_InstOnly
-        -> (taL,tyErr "Ty.tyArrowInstQuArgsRes.ArrowDecompose_InstOnly",r)
-        where (taL,r) = extr instToL t
-      ArrowDecompose_ArgBefore
-        -> (taL,a,r')
-        where (a,r) = tyArrowArgRes t
-              (taL,r') = extr instToL r
-      ArrowDecompose_ArgAfter
-        -> (taL,a,r')
-        where (taL,r) = extr instToL t
-              (a,r') = tyArrowArgRes r
-  where extr (InstTo_Qu _ _ _ _ : is) t = (a:a',r')
-   										where (a,r)   = tyArrowArgRes t
-   										      (a',r') = extr is r
-        extr _                        t = ([],t)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

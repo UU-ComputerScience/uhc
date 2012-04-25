@@ -9,9 +9,9 @@
 
 %%[(8 codegen coresysf) hs module {%{EH}Ty.Trf.ToSysfTy}
 %%]
-%%[(8 codegen coresysf) hs import(EH.Util.Utils,{%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Opts.Base})
+%%[(8 codegen coresysf) hs import(EH.Util.Utils,{%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Base.AppLike},{%{EH}Opts.Base})
 %%]
-%%[(8 codegen coresysf) hs import({%{EH}Ty})
+%%[(8 codegen coresysf) hs import({%{EH}Ty},qualified {%{EH}Core.AsTy} as S)
 %%]
 
 %%[(8 codegen coresysf) hs import (qualified Data.Set as Set)
@@ -19,6 +19,48 @@
 
 %%[(8 codegen coresysf) ag import({Ty/AbsSyn},{Ty/CommonAG})
 WRAPPER TyAGItf
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Explicit name for SysF type
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 hmtyinfer || hmtyast) hs export(SysfTy,SysfTySeq,SysfTySeq1)
+type SysfTy     	= Ty			-- base ty
+type SysfTySeq    	= Ty			-- sequence
+type SysfTySeq1    	= Ty			-- singleton
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% System F generation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 coresysf && (hmtyinfer || hmtyast)) hs export(ArrowHowDecompose(..),tyArrowInstQuArgsRes)
+data ArrowHowDecompose
+ = ArrowDecompose_InstOnly		-- only ty instantiation
+ | ArrowDecompose_ArgBefore		-- split off arg before
+ | ArrowDecompose_ArgAfter		-- split off arg after
+ 
+-- split type + instantation into multiple type args (>=0) + optional 1 arg + 1 res:
+-- in other words, peel of type application(s) for Sys F, driven by InstTo
+tyArrowInstQuArgsRes :: ArrowHowDecompose -> [InstTo] -> SysfTy -> ([SysfTy],SysfTy,SysfTy)
+tyArrowInstQuArgsRes how instToL t
+  = case how of
+      ArrowDecompose_InstOnly
+        -> (taL,tyErr "Ty.tyArrowInstQuArgsRes.ArrowDecompose_InstOnly",r)
+        where (taL,r) = extr instToL t
+      ArrowDecompose_ArgBefore
+        -> (taL,a,r')
+        where (a,r) = tyArrowArgRes t
+              (taL,r') = extr instToL r
+      ArrowDecompose_ArgAfter
+        -> (taL,a,r')
+        where (taL,r) = extr instToL t
+              (a,r') = tyArrowArgRes r
+  where extr (InstTo_Qu _ _ _ _ : is) t = (a:a',r')
+   										where (a,r)   = tyArrowArgRes t
+   										      (a',r') = extr is r
+        extr _                        t = ([],t)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -60,8 +102,8 @@ data T2TCOpts
       , t2tcOptHowArrowArg      ::  T2THowArg       -- how to wrap arrow argument (is on the value level)
       , t2tcOptHowArrowRes      ::  T2THowArg       -- how to wrap arrow result (is on the value level)
       , t2tcOptHowAppArg        ::  T2THowArg       -- how to wrap app argument (is on the type level)
-      , t2tcOptTy2Ki            ::  Ty2Ki	       	-- mapping from type to their corresponding 1 meta level higher type (i.e. kind)
-      , t2tcOptKiFitsIn         ::  KiFitsIn	    -- fitting 2 kinds
+      , t2tcOptTy2Ki            ::  Ty2Ki           -- mapping from type to their corresponding 1 meta level higher type (i.e. kind)
+      , t2tcOptKiFitsIn         ::  KiFitsIn        -- fitting 2 kinds
       }
 
 defaultT2TCOpts
@@ -175,11 +217,11 @@ SEM TyAGItf
 %%[(8 codegen coresysf)
 ATTR TyAGItf
   [ | | st: {SysfTy} ]
-ATTR Ty TyAnn
+ATTR Ty TyVarCateg TyAnn
   [ | | st: SELF ]
 %%]
 
-%%[(8 codegen coresysf)
+%%[(8888 codegen coresysf)
 SEM Ty
   | Var         loc         .   stBase      =   semCon $ mkHNm @tv
   | Con         loc         .   stBase      =   semCon @nm
@@ -229,7 +271,8 @@ SEM Ty
                                                     else dflt
   | TBind       loc         .   stBase      =   let dflt = @ty.st
                                                 in  if t2tcOptQuantvarKi @lhs.opts && tyquIsForall @qu.self
-                                                    then let a   = case tyquMetaLev @qu.self of
+                                                    then let a   = -- Ty_TBind (TyQu_Plain $ tyquMetaLev @qu.self) @tv 
+                                                                   case tyquMetaLev @qu.self of
                                                                      0 -> const (semCon $ mkHNm @tv) -- C.ExprSeq1_L0Bind (mkHNm @tv)
                                                                      1 -> const (semCon $ mkHNm @tv) -- C.ExprSeq1_L1Bind (mkHNm @tv)
                                                              wra = argWrap' (t2tcOptHowArrowArg @lhs.opts) a
@@ -249,53 +292,8 @@ SEM Ty
   | Ann         loc         .   st          =   if @ann.isEmpty
                                                 then @ty.st
                                                 else Ty_Ann @ann.st @ty.st
-  | * - App Ann Dbg
+  | * - App Ann Dbg Con Var
                 loc         .   st          =   @sKiArgAppWrap @stBase
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% TyCore variant of Ty
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8888 codegen coresysf)
-ATTR Ty TyAGItf [ | | ct: {SysfTy} ]
-
-SEM Ty
-  | TBind       loc         .   ctBase      =   let dflt = @ty.ct
-                                                in  if t2tcOptQuantvarKi @lhs.opts && T.tyquIsForall @qu.self
-                                                    then let a   = case T.tyquMetaLev @qu.self of
-                                                                     0 -> C.ExprSeq1_L0Bind (mkHNm @tv)
-                                                                     1 -> C.ExprSeq1_L1Bind (mkHNm @tv)
-                                                             wra = argWrap' (t2tcOptHowArrowArg @lhs.opts) a
-                                                             wrr = argWrap  (t2tcOptHowArrowRes @lhs.opts)
-                                                         in  C.Expr_Arrow
-                                                               (wra $ tyToSysfTyKi @l1   )
-                                                               (wrr                @ty.ct)
-                                                    {- else if T.tyquIsExists @qu.self
-                                                         then let a = C.ExprSeq1_L0Bind (mkHNm @tv)
-                                                                  wra = argWrap' T2TArg_Seq1 a
-                                                              in  C.Expr_Exists 
-                                                                    (wra $ tyToSysfTyKi @l1   )
-                                                                    (                   @ty.ct)
-                                                         else dflt -}
-                                                    else if T.tyquIsExists @qu.self
-                                                    then let a = C.ExprSeq1_L0Bind (mkHNm @tv)
-                                                             wra = argWrap' T2TArg_Seq1 a
-                                                         in  C.Expr_Exists 
-                                                               (wra $ tyToSysfTyKi @l1   )
-                                                               (                   @ty.ct)
-                                                    else dflt -- for now
-%%]
-
-%%[(8888 codegen coresysf)
-ATTR TyAnn [ | | ann : {C.ExprAnn}
-                 isEmpty : Bool]
-
-SEM TyAnn
-  | Empty Mono  lhs         .   ann         =   C.ExprAnn_Empty
-%%[[(8 codegen coresysf)
-  | Strictness  lhs         .   ann         =   C.ExprAnn_Strictness @s
-%%]]
 %%]
 
 %%[(8 codegen coresysf)
@@ -304,7 +302,7 @@ ATTR TyAnn [ | | isEmpty : Bool]
 SEM TyAnn
   | Empty Mono  lhs         .   isEmpty     =   True
   | * - Empty Mono
-  				lhs         .   isEmpty     =   False
+                lhs         .   isEmpty     =   False
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -330,7 +328,7 @@ Environment:
 SEM Ty
   | TBind       ty          .   ty2ki       =   let m (Ty_Var v _) | v == @tv = @l1
                                                     m t                       = @lhs.ty2ki t
-  												in	m
+                                                in  m
 %%]
 
 %%[(8 codegen coresysf)

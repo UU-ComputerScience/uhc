@@ -7,7 +7,7 @@
 %%% Haskell importable interface to HS/AbsSyn (was: UHA_Syntax)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 hs module {%{EH}HS} import({%{EH}Base.Common}, UU.Scanner.Position, EH.Util.ScanUtils) export(module UU.Scanner.Position)
+%%[1 hs module {%{EH}HS} import({%{EH}Base.Common}, {%{EH}Base.AppLike}, UU.Scanner.Position, EH.Util.ScanUtils) export(module UU.Scanner.Position)
 %%]
 
 %%[1 hs export(AGItf(..), Module(..), Body(..), Declaration(..), Declarations, MaybeDeclarations, Type(..), Types, MaybeType, Expression(..), Expressions, MaybeExpression, FunctionBinding(..), FunctionBindings, LeftHandSide(..), RightHandSide(..), Pattern(..), Patterns, Literal(..), Name, Names, MaybeName, MaybeNames, Strings, Range(..), Fixity(..))
@@ -115,11 +115,11 @@ instance Show Range where
   show Range_Unknown     = "??"
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% SemApp instances
+%%% AppLike instances
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1 hs
-instance SemApp Type where
+instance AppLike Type where
   semApp        = \e1 e2 -> Type_NormalApplication emptyRange e1 [e2]
   semAppTop     = id
   semCon        = mkRngNm Type_Constructor
@@ -135,7 +135,7 @@ instance SemApp Type where
 %%]
 
 %%[1 hs
-instance SemApp Expression where
+instance AppLike Expression where
   semApp            = \e1 e2 -> Expression_NormalApplication emptyRange e1 [e2]
   semAppTop         = id
   semCon            = mkRngNm Expression_Constructor

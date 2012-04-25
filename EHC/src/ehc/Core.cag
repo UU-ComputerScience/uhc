@@ -13,7 +13,7 @@ Datatype LamInfo holds the implementation info to be exported from a module.
 %%% Haskell importable interface to Code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs module {%{EH}Core} import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Opts.Base})
+%%[(8 codegen) hs module {%{EH}Core} import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Base.AppLike},{%{EH}Opts.Base})
 %%]
 
 %%[(8 codegen) hs import({%{EH}AbstractCore}) export(module {%{EH}AbstractCore})
@@ -40,7 +40,7 @@ Datatype LamInfo holds the implementation info to be exported from a module.
 %%[(8 codegen) hs import({%{EH}Ty})
 %%]
 
-%%[(8 codegen coresysf) hs import({%{EH}Ty.Trf.ToSysfTy})
+%%[(8888 codegen coresysf) hs import({%{EH}Ty.Trf.ToSysfTy}) export(module {%{EH}Ty.Trf.ToSysfTy})
 %%]
 
 %%[(50 codegen) hs import(Data.Array)

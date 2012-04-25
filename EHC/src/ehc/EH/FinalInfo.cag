@@ -347,3 +347,12 @@ SEM PatExpr
   | Expr        expr        .   finLamInstToL  	=   []
 %%]]
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Final ty for Core elaboration: conversion of types to representation for use in Core
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 hmtyinfer codegen coresysf) hs
+sysfTyFromTy :: TyKiGam -> VarMp -> Ty -> Ty
+sysfTyFromTy tkg m t = tyToSysfTy fitsInForToTyCore (tyKiGamLookupKi tkg) (m `varUpd` t)
+%%]

@@ -12,7 +12,7 @@ or unifiable parts (like type variables) are marked by a wildcard.
 Minimal tree structure is retained in the key.
 In this way search via a TreeTrie proceeds breadth first top to bottom.
 
-%%[(9 hmtyinfer || hmtyast) hs module {%{EH}Ty.TreeTrieKey} import({%{EH}Base.Common},{%{EH}Base.HsName},{%{EH}Base.Builtin},{%{EH}Ty})
+%%[(9 hmtyinfer || hmtyast) hs module {%{EH}Ty.TreeTrieKey} import({%{EH}Base.Common},{%{EH}Base.AppLike},{%{EH}Base.HsName},{%{EH}Base.Builtin},{%{EH}Ty})
 %%]
 
 %%[(9 hmtyinfer || hmtyast) hs import(qualified Data.Set as Set,Data.List as Lst,EH.Util.FastSeq as Seq,{%{EH}Base.TreeTrie},{%{EH}CHR.Key})

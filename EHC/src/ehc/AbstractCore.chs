@@ -5,7 +5,7 @@
 %%[(8 codegen) module {%{EH}AbstractCore}
 %%]
 
-%%[(8 codegen) import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Opts.Base},{%{EH}Ty})
+%%[(8 codegen) import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Base.AppLike},{%{EH}Opts.Base},{%{EH}Ty})
 %%]
 
 %%[(8 codegen) import(EH.Util.Pretty,EH.Util.Utils)
@@ -250,6 +250,19 @@ class AbstractCore  expr metaval bind bound bindcateg metabind ty pat patrest pa
   -- | coercion arg placeholder
   acoreExprIsCoeArg :: expr -> Bool
 
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Construction via class AppLike
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs
+instance AbstractCore e m b basp bcat mbind t p pr pf a => AppLike e where
+  semApp         = acoreApp1
+  semAppTop      = id
+  semCon         = acoreVar . mkHNm
+  semParens      = id
+  semVar         = acoreVar . mkHNm
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
