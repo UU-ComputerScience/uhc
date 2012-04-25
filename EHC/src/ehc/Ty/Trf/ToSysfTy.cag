@@ -25,7 +25,7 @@ WRAPPER TyAGItf
 %%% Explicit name for SysF type
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 hmtyinfer || hmtyast) hs export(SysfTy,SysfTySeq,SysfTySeq1)
+%%[(8 coresysf && (hmtyinfer || hmtyast)) hs export(SysfTy,SysfTySeq,SysfTySeq1)
 type SysfTy     	= Ty			-- base ty
 type SysfTySeq    	= Ty			-- sequence
 type SysfTySeq1    	= Ty			-- singleton
