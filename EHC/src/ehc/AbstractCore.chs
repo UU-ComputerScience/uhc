@@ -191,6 +191,9 @@ class AbstractCore  expr metaval bind bound bindcateg metabind ty pat patrest pa
   acoreBindcategPlain :: bindcateg
   
   ------------------------- inspecting/deconstructing -------------------------
+  -- | is expr an application?
+  acoreExprMbApp :: expr -> Maybe (expr,bound)
+
   -- | is expr a lambda?
   acoreExprMbLam :: expr -> Maybe (bind,expr)
 
@@ -258,11 +261,16 @@ class AbstractCore  expr metaval bind bound bindcateg metabind ty pat patrest pa
 
 %%[(8 codegen) hs
 instance AbstractCore e m b basp bcat mbind t p pr pf a => AppLike e {- () () -} where
-  app1App        = acoreApp1
-  appTop         = id
-  appCon         = acoreVar . mkHNm
-  appPar         = id
-  appVar         = acoreVar . mkHNm
+  app1App       = acoreApp1
+  appTop        = id
+  appCon        = acoreVar . mkHNm
+  appPar        = id
+  appVar        = acoreVar . mkHNm
+  
+  appMbCon      = acoreExprMbVar
+  appMbApp1 e   = do (f,b) <- acoreExprMbApp e
+                     (_,a) <- acoreBoundMbVal b
+                     return (f,a)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

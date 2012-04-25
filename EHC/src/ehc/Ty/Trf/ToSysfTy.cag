@@ -51,14 +51,14 @@ tyArrowInstQuArgsRes how instToL t
         where (taL,r) = extr instToL t
       ArrowDecompose_ArgBefore
         -> (taL,a,r')
-        where (a,r) = tyArrowArgRes t
+        where (a,r) = panicJust "tyArrowInstQuArgsRes.ArrowDecompose_ArgBefore" $ appMb1Arr t
               (taL,r') = extr instToL r
       ArrowDecompose_ArgAfter
         -> (taL,a,r')
         where (taL,r) = extr instToL t
-              (a,r') = tyArrowArgRes r
+              (a,r') = panicJust "tyArrowInstQuArgsRes.ArrowDecompose_ArgAfter" $ appMb1Arr r
   where extr (InstTo_Qu _ _ _ _ : is) t = (a:a',r')
-   										where (a,r)   = tyArrowArgRes t
+   										where (a,r)   = panicJust "tyArrowInstQuArgsRes.extr" $ appMb1Arr t
    										      (a',r') = extr is r
         extr _                        t = ([],t)
 %%]

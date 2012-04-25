@@ -87,9 +87,9 @@ pApp p          =    appTopApp <$> pList1 p
 pParenProd :: AppLike a => EHCParser a -> EHCParser a
 pParenProd pE
   =  pParens pP
-  where  pP  =    mkProdApp <$> pSucceed []
+  where  pP  =    appProdApp <$> pSucceed []
              <|>  pE
-                  <**>  (    (\es e -> mkProdApp (e:es))
+                  <**>  (    (\es e -> appProdApp (e:es))
                              <$>  pList1 (pComma *> pE)
                         <|>  pSucceed appPar
                         )

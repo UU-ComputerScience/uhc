@@ -72,7 +72,6 @@ DATA CExpr
 
   -- application, abstraction
   | App         func            : CExpr
-                -- arg             : CExpr
                 arg             : CBound
   | Lam         bind            : CBind
                 body            : CExpr

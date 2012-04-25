@@ -558,11 +558,11 @@ SEM Decl
 %%][90
                 loc         .   foreignEntInfo      =   foreignEntExtract @impEnt
                             .   knTy                =   let v      = mkTyVar @lUniq
-                                                            funptr = mk1ConApp (ehcOptBuiltin @lhs.opts ehbnFunPtr)
+                                                            funptr = appCon1App (ehcOptBuiltin @lhs.opts ehbnFunPtr)
 %%[[90
                                                             io     = id
 %%][98
-                                                            io     = mk1ConApp (ehcOptBuiltin @lhs.opts ehbnIO)
+                                                            io     = appCon1App (ehcOptBuiltin @lhs.opts ehbnIO)
 %%]]
                                                         in  case targetIsJavaScript (ehcOptTarget @lhs.opts) of 
                                                               True  -> let v1            = mkTyVar @lUniq2 

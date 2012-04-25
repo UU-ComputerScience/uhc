@@ -307,7 +307,7 @@ SEM Kind
 
 %%[7.ehTyExprArg hs
 ehTyExprArg :: EH.TyExpr -> EH.TyExpr
-ehTyExprArg = snd . panicJust "HS.ToEH.ehTyExprArg" . appMbApp1 . snd . appUnTop
+ehTyExprArg = snd . panicJust "HS.ToEH.ehTyExprArg" . appMbApp1 . fst . appUnTop
 %%]
 
 %%[1
@@ -394,13 +394,13 @@ SEM Type
     | RowEmpty
         loc         .   eh          =   rngLift @range EH.TyExpr_Row (rngLift @range EH.RowTyExpr_Empty)
     | RowRecUpdate
-        loc         .   eh          =   foldl (\e u -> mk1ConApp hsnRec $ u $ ehTyExprArg $ e) @type.eh @rowTypeUpdates.eh
+        loc         .   eh          =   foldl (\e u -> appCon1App hsnRec $ u $ ehTyExprArg $ e) @type.eh @rowTypeUpdates.eh
     | RowRecEmpty
-        loc         .   eh          =   mk1ConApp hsnRec $ rngLift @range EH.TyExpr_Row (rngLift @range EH.RowTyExpr_Empty)
+        loc         .   eh          =   appCon1App hsnRec $ rngLift @range EH.TyExpr_Row (rngLift @range EH.RowTyExpr_Empty)
     | RowSumUpdate
-        loc         .   eh          =   foldl (\e u -> mk1ConApp hsnSum $ u $ ehTyExprArg $ e) @type.eh @rowTypeUpdates.eh
+        loc         .   eh          =   foldl (\e u -> appCon1App hsnSum $ u $ ehTyExprArg $ e) @type.eh @rowTypeUpdates.eh
     | RowSumEmpty
-        loc         .   eh          =   mk1ConApp hsnSum $ rngLift @range EH.TyExpr_Row (rngLift @range EH.RowTyExpr_Empty)
+        loc         .   eh          =   appCon1App hsnSum $ rngLift @range EH.TyExpr_Row (rngLift @range EH.RowTyExpr_Empty)
 %%]
 %%[9
     | Qualified
@@ -411,7 +411,7 @@ SEM Type
         loc         .   eh          =   ehTupleConstructor @range @arity EH.TyExpr_Var (rngAntilift id)
                                             EH.TyExpr_Lam
                                             (\ps r -> {- appArr (map (rngLift @range EH.TyExpr_Var) ps) -} r)
-                                            (rngAntilift $ \row -> mk1ConApp hsnRec (rngLift @range EH.TyExpr_Row row))
+                                            (rngAntilift $ \row -> appCon1App hsnRec (rngLift @range EH.TyExpr_Row row))
                                             EH.RowTyExpr_Ext EH.RowTyExpr_Empty
 %%]
     | Implicits

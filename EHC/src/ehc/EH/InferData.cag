@@ -186,7 +186,7 @@ SEM DataConstr
   | Constr      loc         .   dataConTy           =   @dataConTyL `appArr` @lhs.dataTy
                             .	dataConGadtTy		=	@gadtTyVarMp `varUpd` @dataConTy
                             .   dataConTyFv         =   varFree @lhs.dataTy
-                            .   dataConProdTy       =   mkProdApp @dataConGadtFldTyL
+                            .   dataConProdTy       =   appProdApp @dataConGadtFldTyL
                             .   dataConProdTyFv     =   varFree @dataConProdTy
                 loc         .   dataQuUnConTy       =   let fvD = @dataConTyFv
                                                             fvU = @dataConProdTyFv
@@ -280,7 +280,7 @@ appendEqPreds :: [PredOcc] -> Ty -> Ty
 appendEqPreds preds ty
   = let predsTyL = map (mkTyPr . poPr) preds
         prodTyL  = tyProdArgs ty
-     in mkProdApp (prodTyL ++ predsTyL)
+     in appProdApp (prodTyL ++ predsTyL)
 %%]
 
 %%[(8 hmtyinfer)

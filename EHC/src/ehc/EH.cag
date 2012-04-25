@@ -217,7 +217,7 @@ instance AppLike Expr {- ExprAnn () -} where
   appRngCon    r  = rngLift r Expr_Con . mkHNm
   appRngPar    r  = rngLift r Expr_Parens
 %%[[7
-  mkProdApp l
+  appProdApp l
     = mkEH Expr_Rec $ mkEH RecExpr_Empty `mkRow` l
     where mkRow = foldl (\r e -> mkEH RecExpr_Ext r Nothing e)
 %%]]
@@ -232,7 +232,7 @@ instance AppLike PatExpr {- PatExprAnn () -} where
   appRngCon    r  = rngLift r PatExpr_Con . mkHNm
   appRngPar    r  = rngLift r PatExpr_Parens
 %%[[7
-  mkProdApp l
+  appProdApp l
     = mkEH PatExpr_Rec $ mkEH RecPatExpr_Empty `mkRow` l
     where mkRow = foldl (\r e -> mkEH RecPatExpr_Ext r Nothing e)
 %%]]
@@ -250,22 +250,22 @@ instance AppLike TyExpr {- TyExprAnn () -} where
   appRngCon    r  = rngLift r TyExpr_Con . mkHNm
   appRngPar    r  = rngLift r TyExpr_Parens
 %%[[7
-  mkProdApp l
+  appProdApp l
     = mkEH TyExpr_Row $ mkEH RowTyExpr_Empty `mkRow` l
     where mkRow = foldl (\r e -> mkEH RowTyExpr_Ext r Nothing e)
 %%]]
 %%[[1
-  appMbAnn1 (TyExpr_Ann    a x)   = Just (TyExpr_Ann   a, x)
+  appMbAnn1 (TyExpr_Ann    a x)   = Just (x, TyExpr_Ann   a)
 %%][99
-  appMbAnn1 (TyExpr_Ann    r a x) = Just (TyExpr_Ann r a, x)
+  appMbAnn1 (TyExpr_Ann    r a x) = Just (x, TyExpr_Ann r a)
 %%]]
   appMbAnn1 _                     = Nothing
 %%[[1
-  appMbTop1 (TyExpr_AppTop   x)   = Just (TyExpr_AppTop  , x)
-  appMbTop1 (TyExpr_Parens   x)   = Just (TyExpr_Parens  , x)
+  appMbTop1 (TyExpr_AppTop   x)   = Just (x, TyExpr_AppTop  )
+  appMbTop1 (TyExpr_Parens   x)   = Just (x, TyExpr_Parens  )
 %%][99
-  appMbTop1 (TyExpr_AppTop r   x) = Just (TyExpr_AppTop r, x)
-  appMbTop1 (TyExpr_Parens r   x) = Just (TyExpr_Parens r, x)
+  appMbTop1 (TyExpr_AppTop r   x) = Just (x, TyExpr_AppTop r)
+  appMbTop1 (TyExpr_Parens r   x) = Just (x, TyExpr_Parens r)
 %%]]
   appMbTop1 x                     = appMbAnn1 x
 %%[[1

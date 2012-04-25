@@ -625,6 +625,7 @@ instance AbstractCore Expr MetaVal ValBind ValBind ValBindCateg MetaBind Ty Pat 
   acoreBindcategPlain					= ValBindCateg_Plain
 
   -- inspecting
+  acoreExprMbApp		  				= panic "TyCore.Base.acoreExprMbApp"
   acoreExprMbLam		  				= panic "TyCore.Base.acoreExprMbLam"
 
   acoreExprMbLet (Expr_Let c b e)       = Just (c,b,e)

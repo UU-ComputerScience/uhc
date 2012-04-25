@@ -3168,7 +3168,7 @@ relation mkProdTy =
     holes [ tyl: TyL | | pty: Ty ]
     judgespec pty === tyl
     judgeuse tex pty === ((ty).1, (...), (ty).n), ^^^ [(ty).1, (...), (ty).n] === tyl
-    judgeuse ag pty `=` mkProdApp (tyl)
+    judgeuse ag pty `=` appProdApp (tyl)
     
 -------------------------------------------------------------------------
 -- Construct prod ty, for use in PatExpr.AppTop combined with tyInitLastProd

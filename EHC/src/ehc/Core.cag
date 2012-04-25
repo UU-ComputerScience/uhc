@@ -752,6 +752,9 @@ instance AbstractCore CExpr CMetaVal CBind CBound CBindCateg CMetaBind Ty CPat C
   acoreBindcategPlain					= CBindCateg_Plain
 
   -- inspecting
+  acoreExprMbApp (CExpr_App f b)        = Just (f,b)
+  acoreExprMbApp _                      = Nothing
+
   acoreExprMbLam (CExpr_Lam b e)        = Just (b,e)
   acoreExprMbLam _                      = Nothing
 
