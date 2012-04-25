@@ -415,7 +415,7 @@ ffiCoreMk
         ( nmEvalRes
         , resTyAdapted
         , wrapRes
-          $ acoreApp (mkFFI $ argTyL `mkArrow` resTyAdapted)
+          $ acoreApp (mkFFI $ argTyL `appArr` resTyAdapted)
           $ map acoreVar nmArgPatL
         , primResNeedsEval
         )
@@ -466,7 +466,7 @@ ffeCoreMk
           $ acoreLet1StrictTy nmEvalRes resTyAdapted
               (wrapRes $ acoreApp e $ map acoreVar nmArgL ++ argLExtra)
               (acoreVar nmEvalRes)
-	, argTyL `mkArrow` resTyAdapted
+	, argTyL `appArr` resTyAdapted
 	)
   where (argTyL,resTy) = tyArrowArgsRes tyFFE
         argLen = length argTyL

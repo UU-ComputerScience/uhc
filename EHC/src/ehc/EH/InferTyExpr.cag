@@ -297,7 +297,7 @@ SEM TyExpr
   | Wild Mono   loc         .   ki                  =   tkgiKi @tkgi_
   | Con         loc         .   ki                  =   tkgiKi @tkgi_
   | App         loc         .   knResKi             =   mkNewTyVar @lUniq
-                            .   knFunKi             =   [@arg.ki] `mkArrow` @knResKi
+                            .   knFunKi             =   [@arg.ki] `appArr` @knResKi
                             .   fo_                 =   fitsIn weakFIOpts defaultFIEnv @lUniq2 @arg.kiVarMp @func.ki @knFunKi
                             .   fKi                 =   foTy @fo_
                             .   ki                  =   @knResKi
@@ -351,9 +351,9 @@ SEM RowTyExpr
 
 %%[(11 hmtyinfer)
 SEM TyExpr
-  | Lam         loc         .   ki                  =   [tkgiKi @tkgi_] `mkArrow` @tyExpr.ki
+  | Lam         loc         .   ki                  =   [tkgiKi @tkgi_] `appArr` @tyExpr.ki
 %%]
-  | Lam         loc         .   ki                  =   [@tyExpr.kiVarMp `varUpd` tkgiKi @tkgi_] `mkArrow` @tyExpr.ki
+  | Lam         loc         .   ki                  =   [@tyExpr.kiVarMp `varUpd` tkgiKi @tkgi_] `appArr` @tyExpr.ki
 
 %%[(9 hmtyinfer)
 ATTR PrExpr [ | | ki: Ty ]
@@ -366,7 +366,7 @@ SEM PrExpr
                 lhs         .   ki                  =   kiStar
   | Class       loc         .   (tkgi_,clKiNmErrs)  =   tyKiGamLookupByNameErr (hsnClass2Kind @nm) @lhs.tyKiGam
                             .   fo_                 =   fitsIn weakFIOpts defaultFIEnv @lUniq @tyExprs.kiVarMp
-                                                          (@tyExprs.kiL `mkArrow` kiStar) (tkgiKi @tkgi_)
+                                                          (@tyExprs.kiL `appArr` kiStar) (tkgiKi @tkgi_)
                 lhs         .   kiVarMp             =   foVarMp @fo_ `varUpd` @tyExprs.kiVarMp
                 loc         .   lUniq               :   UNIQUEREF gUniq
 %%[[31
@@ -503,7 +503,7 @@ SEM RowTyExpr
 ATTR PrExpr [ | | pr: Pred ]
 
 SEM PrExpr
-  | Class       loc         .   pr                  =   Pred_Class (@nm `mkConApp` @tyExprs.tyL)
+  | Class       loc         .   pr                  =   Pred_Class (@nm `appConApp` @tyExprs.tyL)
   | Arrow Forall
                 loc         .   pr                  =   Pred_Pred @prTy
 %%]
@@ -512,7 +512,7 @@ SEM PrExpr
 ATTR PrExpr [ | | prTy: Ty ]
 
 SEM PrExpr
-  | Arrow       loc         .   prTy                =   [@arg.prTy] `mkArrow` @res.prTy
+  | Arrow       loc         .   prTy                =   [@arg.prTy] `appArr` @res.prTy
   | Forall      loc         .   prTy                =   mkTyQu tyQu_Forall [(@tv,kiStar)] @prExpr.prTy  -- TBD
   | * - Arrow Forall
                 loc         .   prTy                =   @ty
@@ -521,7 +521,7 @@ SEM PrExpr
 %%[(10 hmtyinfer)
 SEM PrExpr
   | Lacks       loc         .   pr                  =   Pred_Lacks @rowTyExpr.tyRow (Label_Lab @nm)
-  | DynVar      loc         .   pr                  =   Pred_Class ((hsnDynVar `hsnConcat` @nm) `mkConApp` [@tyExpr.ty])
+  | DynVar      loc         .   pr                  =   Pred_Class ((hsnDynVar `hsnConcat` @nm) `appConApp` [@tyExpr.ty])
 %%]
 
 %%[(31 hmtyinfer)

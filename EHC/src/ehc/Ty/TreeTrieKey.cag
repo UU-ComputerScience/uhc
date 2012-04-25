@@ -381,11 +381,11 @@ v3 = mkTyVar u3
 v4 = mkTyVar u4
 
 t1 = tyInt
-t2 = mkArrow [t1] t1
-t3 = mkArrow [t2] t2
-t4 = mkArrow [v1] v2
-t5 = mkArrow [v3] v4
-t6 = mkArrow [t4] t5
-t7 = mkArrow [v1] t5
-t8 = mkArrow [t4] v3
+t2 = appArr [t1] t1
+t3 = appArr [t2] t2
+t4 = appArr [v1] v2
+t5 = appArr [v3] v4
+t6 = appArr [t4] t5
+t7 = appArr [v1] t5
+t8 = appArr [t4] v3
 %%]

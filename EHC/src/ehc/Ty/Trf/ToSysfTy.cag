@@ -223,8 +223,8 @@ ATTR Ty TyVarCateg TyAnn
 
 %%[(8888 codegen coresysf)
 SEM Ty
-  | Var         loc         .   stBase      =   semCon $ mkHNm @tv
-  | Con         loc         .   stBase      =   semCon @nm
+  | Var         loc         .   stBase      =   appCon $ mkHNm @tv
+  | Con         loc         .   stBase      =   appCon @nm
 %%]
 
 %%[(8 codegen coresysf)
@@ -246,13 +246,13 @@ SEM Ty
 
 %%[(8 codegen coresysf)
 SEM Ty
-  | App         loc         .   st          =   let dflt = @sKiArgAppWrap $ semApp @func.st (argWrap (t2tcOptHowAppArg @lhs.opts) @arg.st)
+  | App         loc         .   st          =   let dflt = @sKiArgAppWrap $ app1App @func.st (argWrap (t2tcOptHowAppArg @lhs.opts) @arg.st)
                                                     th = if t2tcOptMkThunk @lhs.opts then mkTyThunk else id
                                                     wra = argWrap (t2tcOptHowArrowArg @lhs.opts)
                                                     wrr = argWrap (t2tcOptHowArrowRes @lhs.opts)
                                                 in  if @isSpineRoot
                                                     then if @appIsArrow
-                                                         then mk1Arrow
+                                                         then app1Arr
                                                                 (wra $ th $ @appRevArgL !! 1)
                                                                 (wrr      $ @appRevArgL !! 0)
                                                          else if @appIsLikeProd
@@ -273,11 +273,11 @@ SEM Ty
                                                 in  if t2tcOptQuantvarKi @lhs.opts && tyquIsForall @qu.self
                                                     then let a   = -- Ty_TBind (TyQu_Plain $ tyquMetaLev @qu.self) @tv 
                                                                    case tyquMetaLev @qu.self of
-                                                                     0 -> const (semCon $ mkHNm @tv) -- C.ExprSeq1_L0Bind (mkHNm @tv)
-                                                                     1 -> const (semCon $ mkHNm @tv) -- C.ExprSeq1_L1Bind (mkHNm @tv)
+                                                                     0 -> const (appCon $ mkHNm @tv) -- C.ExprSeq1_L0Bind (mkHNm @tv)
+                                                                     1 -> const (appCon $ mkHNm @tv) -- C.ExprSeq1_L1Bind (mkHNm @tv)
                                                              wra = argWrap' (t2tcOptHowArrowArg @lhs.opts) a
                                                              wrr = argWrap  (t2tcOptHowArrowRes @lhs.opts)
-                                                         in  mk1Arrow
+                                                         in  app1Arr
                                                                (wra $ tyToSysfTyKi @l1   )
                                                                (wrr                @ty.st)
                                                     {-
@@ -333,8 +333,8 @@ SEM Ty
 
 %%[(8 codegen coresysf)
 SEM Ty
-  | Con         loc         .   ki          =   @lhs.ty2ki (semCon @nm)
-  | Var         loc         .   ki          =   @lhs.ty2ki (semCon $ mkHNm @tv)
+  | Con         loc         .   ki          =   @lhs.ty2ki (appCon @nm)
+  | Var         loc         .   ki          =   @lhs.ty2ki (appCon $ mkHNm @tv)
 %%]
 
 Top down ki:
@@ -347,7 +347,7 @@ SEM TyAGItf
 
 SEM Ty
   | App         loc         .   kiArg       =   mkNewTyVar @lUniq_arg
-                            .   kiFunc      =   [@kiArg] `mkArrow` @lhs.kiTopDown
+                            .   kiFunc      =   [@kiArg] `appArr` @lhs.kiTopDown
                 func        .   kiTopDown   =   @kiFunc
                 arg         .   kiTopDown   =   @kiArg
                 loc         .   lUniq_arg   :   UNIQUEREF gUniq
@@ -423,7 +423,7 @@ Additional kind arg wrapping
 %%[(8 codegen coresysf)
 SEM Ty
   | *           loc         .   sKiArgAppWrap
-                                            =   \e -> foldr (flip semApp) e $ {- @tcSubstAppSpine `C.cSubstApp` -} {- map C.tyL0BindToL1Val -} @skiKiAppArgL
+                                            =   \e -> foldr (flip app1App) e $ {- @tcSubstAppSpine `C.cSubstApp` -} {- map C.tyL0BindToL1Val -} @skiKiAppArgL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

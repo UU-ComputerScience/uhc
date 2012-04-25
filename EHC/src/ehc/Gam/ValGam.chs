@@ -82,9 +82,9 @@ valGamLookup nm g
        Nothing
 %%[[(4 hmtyinfer || hmtyast)
          |  hsnIsProd nm
-                 -> let pr = mkPr nm in mkRes (tyProdArgs pr `mkArrow` pr)
+                 -> let pr = mkPr nm in mkRes (tyProdArgs pr `appArr` pr)
          |  hsnIsUn nm && hsnIsProd (hsnUnUn nm)
-                 -> let pr = mkPr (hsnUnUn nm) in mkRes ([pr] `mkArrow` pr)
+                 -> let pr = mkPr (hsnUnUn nm) in mkRes ([pr] `appArr` pr)
          where  mkPr nm  = mkTyFreshProd (hsnProdArity nm)
                 mkRes t  = Just (ValGamInfo (tyQuantifyClosed t))
 %%][4

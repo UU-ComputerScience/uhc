@@ -68,8 +68,8 @@ pImpls = pPacked pOIMPL pCIMPL
 %%]
 
 %%[1.pApp
-pApp            ::   AppLike ep => HSParser ep -> HSParser ep
-pApp p          =    mkApp <$> pList1 p
+pApp            ::   AppLike a => HSParser a -> HSParser a
+pApp p          =    appTopApp <$> pList1 p
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -775,7 +775,7 @@ pBody' opts addDecl
 
 %%[1.pType
         pType :: HSParser Type
-        pType =  pChainr (mk1Arrow <$ pRARROW) pTypeBase
+        pType =  pChainr (app1Arr <$ pRARROW) pTypeBase
 %%]
 %%[4.pType -1.pType
         pType' :: HSParser (Type,Range) -> (HSParser Type -> HSParser (Type,Int) -> HSParser (Type,Int)) -> HSParser Type

@@ -214,7 +214,7 @@ dtVmExtend fvm dm
               $ zipWith (\(v,i) inx
                            -> let nm i inx = mkHNm $ show i ++ "_" ++ show inx
                               in  case tvinfoPurpose i of
-                                    TvPurpose_Ty _  -> varmpTyUnit    v (semCon $ nm i inx)
+                                    TvPurpose_Ty _  -> varmpTyUnit    v (appCon $ nm i inx)
                                     TvPurpose_Impls -> varmpImplsUnit v (mkImplsTail $ uidFromInt inx)
                                     _               -> emptyVarMp                                           -- incomplete
                         )

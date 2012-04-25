@@ -1373,14 +1373,14 @@ mergeFunDefL _ ds
                 xNmL  = [ mkHNm ("x" ++ show i) | i <- [1..xSz] ]
                 xPatL = map (rngLift r EH.PatExpr_Var) xNmL
                 b = EH.mkCase'
-                      r (mkRngProdOpt r $ map (rngLift r EH.Expr_Var) $ xNmL)
+                      r (appRngProdOpt r $ map (rngLift r EH.Expr_Var) $ xNmL)
 %%[[8
                       (Just $ Set.fromList $ map (iaspUniq . doccAsp) ds)
                       Set.empty
                       (length xNmL > 1)
 %%]]
                     $ zipWith (EH.mkAlt r)
-                       [ mkRngProdOpt r $ tail $ iaspPatL $ doccAsp d | d <- ds ]
+                       [ appRngProdOpt r $ tail $ iaspPatL $ doccAsp d | d <- ds ]
                        [ iaspBody $ doccAsp $ d | d <- ds ]
                 d = mkIdDefOcc (doccOcc od) (IdAsp_Val_Fun (patf:xPatL) b uniq) 0 r
                 e | length patLens > 1 = [rngLift r Err_FunPatternLengths (ioccNm $ doccOcc od)]

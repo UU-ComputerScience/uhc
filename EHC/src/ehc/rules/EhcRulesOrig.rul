@@ -18,9 +18,9 @@ viewhierarchy = E < K < C < HM < I1 < EX < DT < CG < P < TS < EP < MD < NUM < HS
 -------------------------------------------------------------------------
 
 -- Ty for expr
-format ag def  (a | Ty) -> (r | t) = ([a] `mkArrow` (r) | t)
-format ag def  (p | Ty) => (a | Ty) -> (r | t) = ([p,a] `mkArrow` (r) | t)
-format ag def  (a | TyL) -> (r | t) = ((a) `mkArrow` (r) | t)
+format ag def  (a | Ty) -> (r | t) = ([a] `appArr` (r) | t)
+format ag def  (p | Ty) => (a | Ty) -> (r | t) = ([p,a] `appArr` (r) | t)
+format ag def  (a | TyL) -> (r | t) = ((a) `appArr` (r) | t)
 
 format ag use ((a|Ty) -> r) `=` v = (a,r) `=` tyArrowArgRes (v)
 format ag use ((...) -> r) `=` v = r `=` tyArrowRes (v)
@@ -3156,7 +3156,7 @@ relation mkPatFunProdTy =
     judgespec pty === nm
     judgeuse tex pty === ((ty).1, (...), (ty).n) -> ((ty).1, (...), (ty).n), ^^^ n === `|` nm `|`
     judgeuse ag pty `=` ( let  prTy `=` mkTyFreshProdFrom unique (hsnProdArity nm)
-                        - in   ([prTy] `mkArrow` prTy)
+                        - in   ([prTy] `appArr` prTy)
                         )
     
 -------------------------------------------------------------------------

@@ -675,10 +675,11 @@ tyIsA (Ty_Impls a      ) = "IMPLS"
 %%[(1 hmtyinfer || hmtyast) hs export(tyUnAnn)
 -- | Remove TyAnn's
 tyUnAnn :: Ty -> Ty
-tyUnAnn (Ty_Ann _ t) = tyUnAnn t
-tyUnAnn t            = t
+tyUnAnn = snd . appUnAnn
 {-# INLINE tyUnAnn #-}
 %%]
+tyUnAnn (Ty_Ann _ t) = tyUnAnn t
+tyUnAnn t            = t
 
 %%[(7 hmtyinfer || hmtyast) hs export(tyRowUnAnn,tyRowExtsUnAnn)
 tyRowUnAnn :: AssocL HsName Ty -> AssocL HsName Ty
@@ -792,25 +793,26 @@ tyIsLam ty
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(1 hmtyinfer || hmtyast).AppLike hs
-instance AppLike Ty where
-  semApp         = Ty_App
-  semAppTop      = id
-  semCon         = Ty_Con . mkHNm
-  semParens      = id
-%%]
-%%[(1 hmtyinfer || hmtyast).semRngVar hs
-  semRngVar      = semRngCon
-%%]
-%%[(3 hmtyinfer || hmtyast) -1.semRngVar hs
-  semRngVar _    = panic "Ty:semRngVar"
-%%]
-%%[(7 hmtyinfer || hmtyast) hs
+instance AppLike Ty {- TyAnn () -} where
+  app1App        = Ty_App
+  appTop         = id
+  appCon         = Ty_Con . mkHNm
+  appPar         = id
+%%[[1
+  appRngVar      = appRngCon
+%%][3
+  appRngVar _    = panic "Ty:appRngVar"
+%%]]
+%%[[7
   mkProdApp tyL  = mkTyRec (zip positionalFldNames tyL)
+%%]]
+  appMbAnn1 (Ty_Ann a t) 	= Just (Ty_Ann a, t)
+  appMbAnn1 _            	= Nothing
 %%]
 
 %%[(1 hmtyinfer || hmtyast).mkTyCon hs
 mkTyCon :: String -> Ty
-mkTyCon n = semCon (hsnFromString n)
+mkTyCon n = appCon (hsnFromString n)
 %%]
 
 %%[(2 hmtyinfer || hmtyast).mkTyVar hs
@@ -857,7 +859,7 @@ tyEnsureNonAnyImpl :: UID -> Ty -> Ty
 tyEnsureNonAnyImpl u t
   = if t /= Ty_Any then  t
                    else  let  [i,r] = mkNewUIDL 2 u
-                         in   [mkImplsVar i] `mkArrow` mkTyVar r
+                         in   [mkImplsVar i] `appArr` mkTyVar r
 %%]
 
 %%[(3 hmtyinfer || hmtyast).mkTyQu hs
@@ -905,7 +907,7 @@ mkImplsNil = Ty_Impls Impls_Nil
 
 %%[(9 hmtyinfer || hmtyast) hs export(mkTyImpls)
 mkTyImpls :: [Pred] -> Ty -> Ty
-mkTyImpls prL t = map mkTyPr prL `mkArrow` t
+mkTyImpls prL t = map mkTyPr prL `appArr` t
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -934,7 +936,7 @@ tyChar  = Ty_Con hsnChar
 
 %%[(5 hmtyinfer || hmtyast).tyString hs export(tyString)
 tyString :: Ty
-tyString  = mkConApp hsnDataList [tyChar]
+tyString  = appConApp hsnDataList [tyChar]
 %%]
 
 %%[(11 hmtyinfer || hmtyast).tyString -5.tyString hs
@@ -1049,8 +1051,8 @@ tyArrowArity = length . tyArrowArgs
 tyArrowInverse :: Ty -> Ty
 tyArrowInverse t
   = case tyArrowArgsRes' t of
-      ((   [a]  ,r),mk) -> mk $ [r] `mkArrow` a
-      ((as@(_:_),r),mk) -> mk $ [r] `mkArrow` mkProdApp as
+      ((   [a]  ,r),mk) -> mk $ [r] `appArr` a
+      ((as@(_:_),r),mk) -> mk $ [r] `appArr` mkProdApp as
       _                 -> t
 %%]
 
@@ -1139,7 +1141,7 @@ tyAppFunArgsMk
                 Ty_TBind q v k t  -> (f,as,\f as -> Ty_TBind q v k $ mk f as)
                                   where (f,as,mk) = tyAppFunArgsMk t
                 Ty_App f a        -> extr (a:as) f
-                _                 -> (t,as,\f as -> mkApp (f:as))
+                _                 -> (t,as,\f as -> appTopApp (f:as))
 %%]
 
 %%[(1 hmtyinfer || hmtyast).unMkTy.funs hs
@@ -1265,7 +1267,7 @@ tyLamArgsRes
 -- Eta reduce when the full list of args can be eliminated thus, i.e. it matches with the tail of the args applied in the app (if any) of the body
 tyLamEtaRed :: Ty -> Maybe Ty
 tyLamEtaRed t
-  | llas > 0 && rlDiff >= 0 && map mkTyVar las == rTl = Just (mkApp (f:rHd))
+  | llas > 0 && rlDiff >= 0 && map mkTyVar las == rTl = Just (appTopApp (f:rHd))
   | otherwise                                         = Nothing
   where (las,r  ) = tyLamArgsRes t
         (f  ,ras) = tyAppFunArgs r
@@ -1284,15 +1286,15 @@ mkTyRow :: Ty -> AssocL HsName Ty -> Ty
 mkTyRow r = foldl (\t (n,e) -> Ty_Ext t n e) r
 
 mkTyRec :: AssocL HsName Ty -> Ty
-mkTyRec al = hsnRec `mkConApp` [tyRowEmpty `mkTyRow` al]
+mkTyRec al = hsnRec `appConApp` [tyRowEmpty `mkTyRow` al]
 
 mkTyRecExt :: Ty -> AssocL HsName Ty -> Ty
 mkTyRecExt recd al
   =  let  (row,exts) = tyRowExts (tyRecRow recd)
-     in   hsnRec `mkConApp` [row `mkTyRow` (exts ++ al)]
+     in   hsnRec `appConApp` [row `mkTyRow` (exts ++ al)]
 
 mkTySum :: AssocL HsName Ty -> Ty
-mkTySum al = hsnSum `mkConApp` [tyRowEmpty `mkTyRow` al]
+mkTySum al = hsnSum `appConApp` [tyRowEmpty `mkTyRow` al]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1352,7 +1354,7 @@ tyRecExtrWithLkup :: (TyVarId -> Maybe Ty) -> HsName -> Ty -> Maybe (Ty,Ty)
 tyRecExtrWithLkup lookup lbl t
   =  case tyRowExtrWithLkup lookup lbl (tyRecRowWithLkup lookup t) of
        Nothing    -> Nothing
-       Just (r,e) -> Just (hsnRec `mkConApp` [r],e)
+       Just (r,e) -> Just (hsnRec `appConApp` [r],e)
 
 tyMbRecRowWithLkup :: (TyVarId -> Maybe Ty) -> Ty -> Maybe Ty
 tyMbRecRowWithLkup lookup t
@@ -1414,7 +1416,7 @@ tyDecomposeMk t
   = case t of
       Ty_TBind q v k t' -> (f,as,\f' as' -> Ty_TBind q v k $ mk f' as')
                         where (f,as,mk) = tyDecomposeMk t'
-      Ty_App _ _        -> (f,as,\f' as' -> mkApp (f':as'))
+      Ty_App _ _        -> (f,as,\f' as' -> appTopApp (f':as'))
                         where (f,as) = tyAppFunArgs t
       Ty_Ext _ _ _      -> (r,assocLElts e,\r' e' -> mkTyRow r' $ zip (assocLKeys e) e')
                         where (r,e) = tyRowExts t
@@ -1533,7 +1535,7 @@ predMatchNmArgs p
 -- | construct for a predicate its corresponding data type
 pred2DataTy :: Pred -> Ty
 pred2DataTy p
-  = mkConApp (hsnClass2Dict n) as
+  = appConApp (hsnClass2Dict n) as
   where (n,as) = predMatchNmArgs p
 
 -- | construct for a predicate packaged as a Ty its corresponding data type
@@ -1936,13 +1938,13 @@ type Polarity = Ty
 
 %%[(4 hmtyinfer || hmtyast) hs export(polCovariant, polContravariant, polInvariant)
 polCovariant :: Polarity
-polCovariant = semCon hsnCovariant
+polCovariant = appCon hsnCovariant
 
 polContravariant :: Polarity
-polContravariant = semCon hsnContravariant
+polContravariant = appCon hsnContravariant
 
 polInvariant :: Polarity
-polInvariant = semCon hsnInvariant
+polInvariant = appCon hsnInvariant
 %%]
 
 %%[(17 hmtyinfer || hmtyast) hs export(mkPolNegate, mkPolVar)

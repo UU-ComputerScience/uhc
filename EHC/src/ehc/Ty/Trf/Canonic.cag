@@ -332,7 +332,7 @@ SEM Ty
                                                     in  case @func.mbPredL of
                                                           Nothing | @func.isPred -> Just r
                                                           Just [] | @func.isPred -> Just r
-                                                          _ -- | isJust @mbReplPred -> fmap (`mk1Arrow` r) @mbReplPred
+                                                          _ -- | isJust @mbReplPred -> fmap (`app1Arr` r) @mbReplPred
                                                             | otherwise          -> Nothing
 %%]
 

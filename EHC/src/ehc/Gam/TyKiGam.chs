@@ -72,7 +72,7 @@ tyKiGamLookupByName n g
       Nothing
         | hsnIsProd n
 %%[[(6 hmtyinfer || hmtyast)
-            -> Just (TyKiGamInfo (replicate (hsnProdArity n) kiStar `mkArrow` kiStar))
+            -> Just (TyKiGamInfo (replicate (hsnProdArity n) kiStar `appArr` kiStar))
 %%][6
             -> Just TyKiGamInfo
 %%]]
@@ -103,7 +103,7 @@ tyKiGamLookupKi g t = tkgiKi $ fst $ tyKiGamLookupErr t g
 
 %%[(6 hmtyinfer || hmtyast) export(tyKiGamLookupByNameErr)
 tyKiGamLookupByNameErr :: HsName -> TyKiGam -> (TyKiGamInfo,ErrL)
-tyKiGamLookupByNameErr n g = tyKiGamLookupErr (semCon n) g
+tyKiGamLookupByNameErr n g = tyKiGamLookupErr (appCon n) g
 %%]
 
 %%[(6 hmtyinfer || hmtyast) export(tyKiGamVarSingleton)
@@ -160,7 +160,7 @@ initTyKiGam :: TyKiGam
 initTyKiGam
 %%[[(6 hmtyinfer || hmtyast)
   = gamUnions
-      [ (tyKiGamNameSingleton hsnArrow      (TyKiGamInfo ([kiStar,kiStar] `mkArrow` kiStar)))
+      [ (tyKiGamNameSingleton hsnArrow      (TyKiGamInfo ([kiStar,kiStar] `appArr` kiStar)))
       , gamUnions
           (zipWith tyKiGamNameSingleton
                [ hsnInt, hsnChar
@@ -188,17 +188,17 @@ initTyKiGam
 %%]]
 %%[[7
       , (tyKiGamNameSingleton hsnRow        (TyKiGamInfo kiRow))
-      , (tyKiGamNameSingleton hsnRec        (TyKiGamInfo ([kiRow] `mkArrow` kiStar)))
-      , (tyKiGamNameSingleton hsnSum        (TyKiGamInfo ([kiRow] `mkArrow` kiStar)))
+      , (tyKiGamNameSingleton hsnRec        (TyKiGamInfo ([kiRow] `appArr` kiStar)))
+      , (tyKiGamNameSingleton hsnSum        (TyKiGamInfo ([kiRow] `appArr` kiStar)))
 %%]]
 %%[[9
-      , (tyKiGamNameSingleton hsnPrArrow    (TyKiGamInfo ([kiStar,kiStar] `mkArrow` kiStar)))
+      , (tyKiGamNameSingleton hsnPrArrow    (TyKiGamInfo ([kiStar,kiStar] `appArr` kiStar)))
 %%]]
 %%[[18
-      , (tyKiGamNameSingleton hsnRecUnboxed (TyKiGamInfo ([kiRow] `mkArrow` kiUnboxed)))
+      , (tyKiGamNameSingleton hsnRecUnboxed (TyKiGamInfo ([kiRow] `appArr` kiUnboxed)))
 %%]]
 %%[[31
-      , (tyKiGamNameSingleton hsnEqTilde    (TyKiGamInfo ([kiStar,kiStar] `mkArrow` kiStar)))	-- TBD: should be polykinded, but does not matter as already rewritten to explicit equality predicate at the time this info is used
+      , (tyKiGamNameSingleton hsnEqTilde    (TyKiGamInfo ([kiStar,kiStar] `appArr` kiStar)))	-- TBD: should be polykinded, but does not matter as already rewritten to explicit equality predicate at the time this info is used
 %%]]
       ]
   where star = TyKiGamInfo kiStar

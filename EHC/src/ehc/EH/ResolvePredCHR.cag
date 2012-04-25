@@ -118,7 +118,7 @@ SEM Decl
                                                             where ([dataTy],dataAltTy) = tyArrowArgsRes $ dgiDataTy @derivDataDGI
                                                                   alts = tyRecExts2 dataAltTy
                                                                   altsPrOcc
-                                                                       = [ [ rngLift @range mkPredOccRng (Pred_Class (mkApp [@derivHdPrTyCon,t])) (mkPrIdCHR u2) @predScope
+                                                                       = [ [ rngLift @range mkPredOccRng (Pred_Class (appTopApp [@derivHdPrTyCon,t])) (mkPrIdCHR u2) @predScope
                                                                            | ((_,t),u2) <- zip a1 (mkNewUIDL (length a1) u1)
                                                                            ]
                                                                          | ((_,a1),u1) <- zip alts (mkNewLevUIDL (length alts) @lUniq_95_altsPrOcc)

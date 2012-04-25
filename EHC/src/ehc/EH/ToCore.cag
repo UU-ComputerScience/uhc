@@ -874,7 +874,7 @@ SEM Decl
                                                              d = acoreApp (CExpr_Tup @dictTag) (replicate (length $ snd $ tyRecExts $ @clsTyRec) (acoreBuiltinUndefined @lhs.opts))
                                                              nD = hsnUniqify HsNameUniqifier_SelfDict nDflt
                                                 in   (maybe dDflt (const []) @mbDefaultInstNm)
-                                                     ++ [ acoreBind1CatTy CBindCateg_Plain n (tyQuantifyClosed $ [@dataDictTy] `mkArrow` t) $ acoreLam1 x $ mkApp $ mkSel n
+                                                     ++ [ acoreBind1CatTy CBindCateg_Plain n (tyQuantifyClosed $ [@dataDictTy] `appArr` t) $ acoreLam1 x $ mkApp $ mkSel n
                                                         | (n,t) <- @clsFldL
                                                         ]
 %%]

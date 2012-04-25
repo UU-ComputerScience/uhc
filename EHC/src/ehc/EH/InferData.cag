@@ -25,7 +25,7 @@ SEM Decl
                 lhs         .   patTyGam            :=  gamUnion @extraTyGam   @dataPatTyGam
                             .   patTyKiGam          =   gamUnion @extraTyKiGam @dataPatTyKiGam
                 loc         .   fo_                 =   fitsIn  strongFIOpts defaultFIEnv @lUniq2 @lhs.patKiVarMp
-                                                                (@tyVars.kiL `mkArrow` kiStar) (tkgiKi @dataTkgi)
+                                                                (@tyVars.kiL `appArr` kiStar) (tkgiKi @dataTkgi)
                             .   dataKi              =   foTy @fo_
                 lhs         .   patKiVarMp          =   foVarMp @fo_ `varUpd` @lhs.patKiVarMp
                 constrs     .   tyKiGam             =   gamPushGam  (tyKiGamInst1Exists @lUniq3 (@lhs.kiVarMp `varUpd` @tyVars.tyKiGam))
@@ -103,7 +103,7 @@ ATTR AllDecl [ | | gathDeclDataGam USE {`gamUnion`} {emptyGam}: DataGam ]
 
 SEM Decl
   | Data        loc         .   dataTyVarIdL        =   map (panicJust "EH.InferData.Decl.Data.tyMbVar" . tyMbVar) @tyVars.tyL
-                            .   dgi                 =   mkDGI @tyNm ([@dataTy] `mkArrow` @dataAltTy) @constrs.dataConstrNmL @constrs.dataConstrTagMp
+                            .   dgi                 =   mkDGI @tyNm ([@dataTy] `appArr` @dataAltTy) @constrs.dataConstrNmL @constrs.dataConstrTagMp
 %%[[7
                                                               @isNewtype
 %%][90
@@ -183,7 +183,7 @@ ATTR AllData [ dataTy: Ty | | ]
 ATTR AllDataConstr [ | patValGam: ValGam | ]
 
 SEM DataConstr
-  | Constr      loc         .   dataConTy           =   @dataConTyL `mkArrow` @lhs.dataTy
+  | Constr      loc         .   dataConTy           =   @dataConTyL `appArr` @lhs.dataTy
                             .	dataConGadtTy		=	@gadtTyVarMp `varUpd` @dataConTy
                             .   dataConTyFv         =   varFree @lhs.dataTy
                             .   dataConProdTy       =   mkProdApp @dataConGadtFldTyL
@@ -196,7 +196,7 @@ SEM DataConstr
                                                             tkg = gamUnion @lhs.finTyKiGam @fields.intlTyKiGam
                                                             mkk tvs = [ (v,tvarKi tkg @lhs.tvKiVarMp emptyVarMp v) | v <- tvs ] -- zip tvs (repeat kiStar) -- TBD
 %%]]
-                                                        in  ({- mkTyQu tyQu_Forall (mkk fvD) -} ([@lhs.dataTy] `mkArrow` mkTyQu tyQu_Exists (mkk (fvU \\ fvD)) @dataConProdTy))
+                                                        in  ({- mkTyQu tyQu_Forall (mkk fvD) -} ([@lhs.dataTy] `appArr` mkTyQu tyQu_Exists (mkk (fvU \\ fvD)) @dataConProdTy))
                 loc         .   dataConTyVar        =   @lUniq_con
                             .   dataConTyAsVar      =   mkNewTyVar @lUniq_con
                             .   dataUnConTyVar      =   @lUniq_uncon
@@ -215,7 +215,7 @@ SEM DataConstr
 
 %%[(5 hmtyinfer)
 SEM Decl
-  | Data        loc         .   dataTy              =   @tyNm `mkConApp` @tyVars.tyL
+  | Data        loc         .   dataTy              =   @tyNm `appConApp` @tyVars.tyL
 %%]
 
 %%[(7 hmtyinfer)
@@ -232,7 +232,7 @@ SEM Decl
 ATTR AllDataConstr [ | | dataAltTyL USE {++} {[]}: {AssocL HsName Ty} ]
 
 SEM DataConstr
-  | Constr      loc         .   dataConTy2          =   @dataConTyL `mkArrow` @lhs.dataTy 
+  | Constr      loc         .   dataConTy2          =   @dataConTyL `appArr` @lhs.dataTy 
                             .   dataConProdTy2      =   let  lbls = zipWith (\p (ml,_) -> maybe p id ml) positionalFldNames @dataConGadtFldTyL
                                                         in   mkTyRec (zipWith (\l (_,t) -> (l,t)) lbls @dataConGadtFldTyL) 
 
@@ -243,7 +243,7 @@ SEM DataConstr
 
 SEM Decl
   | Data        loc         .   dataAltTy           =   mkTySum @constrs.dataAltTyL
-                            .   dataTgi             :=  mkTGIData (Ty_Con @tyNm) Ty_Any {- ([@dataTy] `mkArrow` @dataAltTy) -}
+                            .   dataTgi             :=  mkTGIData (Ty_Con @tyNm) Ty_Any {- ([@dataTy] `appArr` @dataAltTy) -}
 %%]
 
 %%[(90 hmtyinfer)
@@ -407,7 +407,7 @@ SEM DataField
 ATTR AllDataField AllDataConstr [ | | fldSelGam USE {`gamUnion`} {emptyGam}: ValGam ]
 
 SEM DataField
-  | Field       loc         .   fldSelGam           =   assocLToGam [ (l,ValGamInfo $ [@lhs.dataTy] `mkArrow` t) | (Just l,t) <- @fldTyL ]
+  | Field       loc         .   fldSelGam           =   assocLToGam [ (l,ValGamInfo $ [@lhs.dataTy] `appArr` t) | (Just l,t) <- @fldTyL ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -418,7 +418,7 @@ SEM DataField
 ATTR AllDataField AllDataConstr [ | | fldUpdGam USE {`gamUnion`} {emptyGam}: ValGam ]
 
 SEM DataField
-  | Field       loc         .   fldUpdGam           =   let mk t = [t,fr @lhs.dataTy] `mkArrow` @lhs.dataTy
+  | Field       loc         .   fldUpdGam           =   let mk t = [t,fr @lhs.dataTy] `appArr` @lhs.dataTy
                                                                  where fv = tyFtvMp t
                                                                        fr dt = dt
                                                         in  assocLToGam [ (hsnFldUpd l,ValGamInfo $ mk t) | (Just l,t) <- @fldTyL ]

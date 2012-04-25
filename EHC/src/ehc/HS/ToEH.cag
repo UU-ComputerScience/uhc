@@ -24,9 +24,9 @@ ehSection :: AppLike eh
   -> eh
 ehSection uniq range semvar sempatvar semlam left op right
   = case (left,right) of
-      -- (Just l ,Just r ) -> mkRngParApp range [op,l,r]
-      (Nothing,Just r ) -> rngLift range semlam np (mkRngParApp range [op,ne,r])
-      (Just l ,Nothing) -> mkRngParApp range [op,l]
+      -- (Just l ,Just r ) -> appRngParApp range [op,l,r]
+      (Nothing,Just r ) -> rngLift range semlam np (appRngParApp range [op,ne,r])
+      (Just l ,Nothing) -> appRngParApp range [op,l]
       (Nothing,Nothing) -> op
   where n  = mkHNmHidden $ mkHNm ("x_" ++ show uniq)
         ne = rngLift range semvar n
@@ -54,7 +54,7 @@ ehTupleConstructor range arity semvar sempatvar semlam
         ps     = map (rngLift range sempatvar) ns
         recd   = mkt (map (rngLift range semvar) ns)
 %%[[1
-        mkt ns = mkRngParApp range (rngLift range semcon (hsnProd arity) : ns)
+        mkt ns = appRngParApp range (rngLift range semcon (hsnProd arity) : ns)
 %%][7
         mkt ns = semtop ps
                  $ rngLift range semrecd
@@ -118,12 +118,12 @@ SEM Body
 %%[[50
                                             (rngLift @range EH.Expr_Var @mainrefname)
 %%][99
-                                            (mkRngParApp @range [rngLift @range EH.Expr_Var (@mainrefnames !! 2),rngLift @range EH.Expr_Var @mainrefname])
+                                            (appRngParApp @range [rngLift @range EH.Expr_Var (@mainrefnames !! 2),rngLift @range EH.Expr_Var @mainrefname])
 %%]]
 %%[[98
                     .   ehMainSig   =   rngLift @range EH.Decl_TySig
                                             hsnMain
-                                            (mkRngParApp @range [rngLift @range EH.TyExpr_Con (@mainrefnames !! 1),rngLift @range EH.TyExpr_Wild])
+                                            (appRngParApp @range [rngLift @range EH.TyExpr_Con (@mainrefnames !! 1),rngLift @range EH.TyExpr_Wild])
 %%]]
 %%]
 
@@ -200,7 +200,7 @@ SEM Declaration
         loc         .   (eh,ehInst) =   let h = rngLift @range EH.TyExpr_Pred
                                                 $ rngLift @range EH.PrExpr_Class @classrefname (map (rngLift @range EH.TyExpr_Var) @typelefthandside.typevariables)
                                             c = map (rngLift @range EH.TyExpr_Pred) @context.eh
-                                            a = mkArrow c h
+                                            a = appArr c h
                                             (vals,sigs) = partition EH.ehIsDeclVal $ concat @ehReorderedDecls
                                         in  ( rngLift @range EH.Decl_Class a
 %%[[15
@@ -219,7 +219,7 @@ SEM Declaration
         loc         .   eh          =   let -- h = rngLift @range EH.TyExpr_Pred $ rngLift @range EH.PrExpr_Class @classrefname @types.eh
                                             h = rngLift @range EH.TyExpr_Pred $ panicJust "HS.ToEH.Instance.eh.type.ehMbAsPr" @type.ehMbAsPr
                                             c = map (rngLift @range EH.TyExpr_Pred) @context.eh
-                                        in  rngLift @range EH.Decl_Instance (Just (@instancerefname,@useimplicitly)) @instVariant (mkArrow c h) (concat @ehReorderedDecls)
+                                        in  rngLift @range EH.Decl_Instance (Just (@instancerefname,@useimplicitly)) @instVariant (appArr c h) (concat @ehReorderedDecls)
         lhs         .   eh          =   [@eh]
     | InstanceUseImplicitly
         loc         .   eh          =   let h = rngLift @range EH.PrExpr_Class @classrefname @types.eh
@@ -266,7 +266,7 @@ ATTR AllDeriving [ ehDataTyExpr: {EH.TyExpr} | | ]
 
 SEM Declaration
     | Data Newtype GADT
-        derivings   .   ehDataTyExpr=   mkApp (rngLift @range EH.TyExpr_Con @typerefname : map (rngLift @range EH.TyExpr_Var) @typelefthandside.typevariables)
+        derivings   .   ehDataTyExpr=   appTopApp (rngLift @range EH.TyExpr_Con @typerefname : map (rngLift @range EH.TyExpr_Var) @typelefthandside.typevariables)
 
 SEM Deriving
     | Deriving
@@ -286,9 +286,9 @@ ATTR Kind [ | | eh: {EH.KiExpr} ]
 
 SEM Kind
     | NormalApplication
-        lhs         .   eh          =   mkApp (@function.eh : @arguments.eh)
+        lhs         .   eh          =   appTopApp (@function.eh : @arguments.eh)
     | InfixApplication
-        loc         .   eh          =   mkRngParApp @range [@operator.eh,@leftKind.eh,@rightKind.eh]
+        loc         .   eh          =   appRngParApp @range [@operator.eh,@leftKind.eh,@rightKind.eh]
     | Constructor
         lhs         .   eh          =   rngLift @range EH.KiExpr_Con @refname
     | Parenthesized
@@ -307,7 +307,7 @@ SEM Kind
 
 %%[7.ehTyExprArg hs
 ehTyExprArg :: EH.TyExpr -> EH.TyExpr
-ehTyExprArg = snd . panicJust "HS.ToEH.ehTyExprArg" . isApp1 . unTop
+ehTyExprArg = snd . panicJust "HS.ToEH.ehTyExprArg" . appMbApp1 . snd . appUnTop
 %%]
 
 %%[1
@@ -325,19 +325,19 @@ SEM MaybeType
 %%[1
 SEM Type
     | NormalApplication
-        loc         .   eh          =   mkApp (@function.eh : @arguments.eh)
+        loc         .   eh          =   appTopApp (@function.eh : @arguments.eh)
 %%[[1
     | InfixApplication
-        loc         .   eh          =   mkRngParApp @range [@operator.eh,@leftType.eh,@rightType.eh]
+        loc         .   eh          =   appRngParApp @range [@operator.eh,@leftType.eh,@rightType.eh]
 %%][9
     | InfixApplication
         loc         .   (eh,ctxtFormErrs,isPredOp)
                                     =   if not @lhs.isAsPred && @operator.tyConIs == TyConIsPrArrow
-                                        then let t = foldr mk1Arrow @rightType.eh [ pr | (Just pr) <- @leftType.ehMbAsTyPrL ]
+                                        then let t = foldr app1Arr @rightType.eh [ pr | (Just pr) <- @leftType.ehMbAsTyPrL ]
                                              in  if all isJust @leftType.ehMbAsTyPrL
                                                  then (t, []                                                  , True )
                                                  else (t, [rngLift @range Err_MalformedPred @leftType.pp]     , False)
-                                        else (mkRngParApp @range [@operator.eh,@leftType.eh,@rightType.eh], [], False)
+                                        else (appRngParApp @range [@operator.eh,@leftType.eh,@rightType.eh], [], False)
 %%]]
 %%[[5
     | InfixApplicationChainTop
@@ -404,13 +404,13 @@ SEM Type
 %%]
 %%[9
     | Qualified
-        loc         .   eh          =   foldr mk1Arrow @type.eh @context.ehTy
+        loc         .   eh          =   foldr app1Arr @type.eh @context.ehTy
 %%]
 %%[11
     | TupleConstructor
         loc         .   eh          =   ehTupleConstructor @range @arity EH.TyExpr_Var (rngAntilift id)
                                             EH.TyExpr_Lam
-                                            (\ps r -> {- mkArrow (map (rngLift @range EH.TyExpr_Var) ps) -} r)
+                                            (\ps r -> {- appArr (map (rngLift @range EH.TyExpr_Var) ps) -} r)
                                             (rngAntilift $ \row -> mk1ConApp hsnRec (rngLift @range EH.TyExpr_Row row))
                                             EH.RowTyExpr_Ext EH.RowTyExpr_Empty
 %%]
@@ -510,7 +510,7 @@ SEM Constructor
 %%[[31
     | GADTFunction 
         loc			.	(ehArgs,ehRes)
-        							=	unArrow @type.eh
+        							=	appUnArr @type.eh
         lhs         .   eh          =   rngLift @range EH.DataConstr_Constr @conrefname
 %%[[91
                                                 Nothing
@@ -660,11 +660,11 @@ ehExpApp' app r f as
 
 ehExpConApp :: Range -> HsName -> [EH.Expr] -> EH.Expr
 ehExpConApp r n as
-  = mkRngParApp r (rngLift r EH.Expr_Con n : as)
+  = appRngParApp r (rngLift r EH.Expr_Con n : as)
 
 ehExpVarApp :: Range -> HsName -> [EH.Expr] -> EH.Expr
 ehExpVarApp r n as
-  = mkRngParApp r (rngLift r EH.Expr_Var n : as)
+  = appRngParApp r (rngLift r EH.Expr_Var n : as)
 
 ehExpUnTop :: EH.Expr -> EH.Expr
 %%[[1
@@ -724,9 +724,9 @@ SEM Expression
     | Parenthesized
         loc         .   eh          =   rngLift @range EH.Expr_Parens @expression.eh
     | NormalApplication
-        loc         .   eh          =   mkRngApp @range (@function.eh : @arguments.eh)
+        loc         .   eh          =   appRngTopApp @range (@function.eh : @arguments.eh)
     | InfixApplication
-        loc         .   eh          =   mkRngParApp @range [@operator.eh,@leftExpression.eh,@rightExpression.eh]
+        loc         .   eh          =   appRngParApp @range [@operator.eh,@leftExpression.eh,@rightExpression.eh]
     | InfixApplicationChainTop
         loc         .   eh          =   @ehFromOpChain
     | SectionApplication
@@ -825,7 +825,7 @@ ehGenerator :: Range -> EH.PatExpr -> (EH.Expr -> EH.Expr) -> EH.Expr -> EH.Expr
 ehGenerator r p mkRes fail e
   = EH.mkLet r
       (Just
-         [ {- -} rngLift r EH.Decl_TySig ok ([mono] `mkArrow` mk1App mono mono)
+         [ {- -} rngLift r EH.Decl_TySig ok ([mono] `appArr` appTopApp1 mono mono)
          , 
            rngLift r EH.Decl_Val
              (rngLift r EH.PatExpr_Var ok)
@@ -893,7 +893,7 @@ ehGenerator :: Range -> EH.PatExpr -> (EH.Expr -> EH.Expr) -> EH.Expr -> EH.Expr
 ehGenerator r p mkRes fail e
   = EH.mkLet r
       (Just
-         [ {- -} rngLift r EH.Decl_TySig ok ([mono] `mkArrow` mk1App mono mono)
+         [ {- -} rngLift r EH.Decl_TySig ok ([mono] `appArr` appTopApp1 mono mono)
          , 
            rngLift r EH.Decl_Val
              (rngLift r EH.PatExpr_Var ok)
@@ -945,16 +945,16 @@ ATTR Qualifier [ | | eh: {EH.Expr -> EH.Expr} ]
 
 SEM Qualifier
     | Guard
-        lhs         .   eh          =   \e -> EH.mkIf' (@typerefname : @valrefnames) @range @guard.eh e (semCon (@valrefnames !! 2))
+        lhs         .   eh          =   \e -> EH.mkIf' (@typerefname : @valrefnames) @range @guard.eh e (appCon (@valrefnames !! 2))
     | Let
         lhs         .   eh          =   @mkSccLet
     | Generator
         lhs         .   eh          =   ehGenerator
                                            @range @pattern.eh
                                            (\e -> ehExpVarApp @range (@refnames !! 0) [e,@expression.eh])
-                                           (semCon (@refnames !! 1))
+                                           (appCon (@refnames !! 1))
     | Empty
-        lhs         .   eh          =   \e -> ehExpConApp @range (@refnames !! 0) [e,semCon (@refnames !! 1)]
+        lhs         .   eh          =   \e -> ehExpConApp @range (@refnames !! 0) [e,appCon (@refnames !! 1)]
 %%]
 
 %%[5
@@ -1297,7 +1297,7 @@ SEM Pattern
     | InfixConstructor
         lhs         .   eh          =   ehPatConApp @range @refname [@leftPattern.eh,@rightPattern.eh]
     | List
-        lhs         .   eh          =   foldr (\l r -> ehPatConApp @range (@refnames !! 0) [l,r]) (semCon (@refnames !! 1)) @patterns.eh
+        lhs         .   eh          =   foldr (\l r -> ehPatConApp @range (@refnames !! 0) [l,r]) (appCon (@refnames !! 1)) @patterns.eh
 %%]
 %%[7
     | Record

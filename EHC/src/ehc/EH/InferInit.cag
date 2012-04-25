@@ -80,16 +80,16 @@ This is not maintained w.r.t. tyKiGam:
 %%[(7_2 hmtyinfer).initTyGam -1.initTyGam
 SEM AGItf
   | AGItf       loc         .   tyGam               :=  assocLToGam
-                                                          [ (hsnArrow       , mkTGI (Ty_Con hsnArrow) ([kiStar,kiStar] `mkArrow` kiStar))
+                                                          [ (hsnArrow       , mkTGI (Ty_Con hsnArrow) ([kiStar,kiStar] `appArr` kiStar))
                                                           , (hsnInt         , mkTGI tyInt kiStar)
                                                           , (hsnChar        , mkTGI tyChar kiStar)
                                                           , (hsnRow         , mkTGI (Ty_Con hsnUnknown) kiRow)
-                                                          , (hsnRec         , mkTGI (Ty_Con hsnRec) ([kiRow] `mkArrow` kiStar))
-                                                          , (hsnSum         , mkTGI (Ty_Con hsnSum) ([kiRow] `mkArrow` kiStar))
+                                                          , (hsnRec         , mkTGI (Ty_Con hsnRec) ([kiRow] `appArr` kiStar))
+                                                          , (hsnSum         , mkTGI (Ty_Con hsnSum) ([kiRow] `appArr` kiStar))
                                                           , (hsnRowEmpty    , mkTGI (Ty_Con hsnRowEmpty) kiRow)
                                                           , (hsnRow         , mkTGI (Ty_Con hsnUnknown) kiRow)
-                                                          , (hsnRec         , mkTGI (Ty_Con hsnRec) ([kiRow] `mkArrow` kiStar))
-                                                          , (hsnSum         , mkTGI (Ty_Con hsnSum) ([kiRow] `mkArrow` kiStar))
+                                                          , (hsnRec         , mkTGI (Ty_Con hsnRec) ([kiRow] `appArr` kiStar))
+                                                          , (hsnSum         , mkTGI (Ty_Con hsnSum) ([kiRow] `appArr` kiStar))
                                                           , (hsnRowEmpty    , mkTGI (Ty_Con hsnRowEmpty) kiRow)
                                                           ]
 %%]

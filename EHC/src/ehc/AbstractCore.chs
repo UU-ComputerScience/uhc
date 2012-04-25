@@ -257,12 +257,12 @@ class AbstractCore  expr metaval bind bound bindcateg metabind ty pat patrest pa
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen) hs
-instance AbstractCore e m b basp bcat mbind t p pr pf a => AppLike e where
-  semApp         = acoreApp1
-  semAppTop      = id
-  semCon         = acoreVar . mkHNm
-  semParens      = id
-  semVar         = acoreVar . mkHNm
+instance AbstractCore e m b basp bcat mbind t p pr pf a => AppLike e {- () () -} where
+  app1App        = acoreApp1
+  appTop         = id
+  appCon         = acoreVar . mkHNm
+  appPar         = id
+  appVar         = acoreVar . mkHNm
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -101,14 +101,14 @@ mkGenerRepresentableTypeSynTyProj
         mkC   f       = Ty_Con $ ehcOptBuiltin  opts f
         mkC2  f i     = Ty_Con $ ehcOptBuiltin2 opts f i
         mkSub (u,pu) (f,pf)
-                      = mkGenerThing (mkC u,pu) id (\(x,px) (y,py) -> (mkApp [mkC f, x, y], pf px py))
+                      = mkGenerThing (mkC u,pu) id (\(x,px) (y,py) -> (appTopApp [mkC f, x, y], pf px py))
         mkPr          = mkSub (ehbnGenerDataUnit1, Proj_U1   ) (ehbnGenerDataProd, Proj_Prod                             )
         mkSm          = mkSub (ehbnGenerDataVoid1, Proj_Void ) (ehbnGenerDataSum , \x y -> Proj_L1 x `Proj_Sum` Proj_R1 y)
         mkLblArg (mbLbl,t)
-                      = ( mkApp [ mkC ehbnGenerDataMetaS1, sel, t' ], Proj_M1_S1 p )
+                      = ( appTopApp [ mkC ehbnGenerDataMetaS1, sel, t' ], Proj_M1_S1 p )
                       where (t',p) = mkArg t
                             sel    = maybe (mkC ehbnGenerDataNoSelector) (Ty_Con) mbLbl
-        mkArg t       = (mkApp funarg, proj)
+        mkArg t       = (appTopApp funarg, proj)
                       where (funarg,proj)
                               | isJust mbVar     = case elemIndex tvar remTvarArgL of       -- TBD: check for kind *, check for one of tvarArgL
                                                      Just i -> ([ mkC ehbnGenerDataPar1    ], Proj_Par1 [t] (i+1))
@@ -116,21 +116,21 @@ mkGenerRepresentableTypeSynTyProj
                               | remArity > 0 && {- isJust mbCon && -} length args > 0 && isRepr
                                                  = case (initlast remTvarArgL, initlast args) of
                                                      (Just (_,tv), Just (firstargs,lastarg)) | maybe False (tv==) $ tyMbVar lastarg
-                                                       -> ([ mkC ehbnGenerDataRec1, mkApp (fun : firstargs) ], Proj_Rec1 [t] remArity)
+                                                       -> ([ mkC ehbnGenerDataRec1, appTopApp (fun : firstargs) ], Proj_Rec1 [t] remArity)
                                                      (_, Just (firstargs,lastarg)) | not $ Set.null $ varFreeSet lastarg
                                                        -> ( [ mkC ehbnGenerDataComp1, fmapTy, lastarg' ]
                                                           , Proj_Comp1 [t] fmapTy lastproj
                                                           )
                                                        where (lastarg',lastproj) = mkArg lastarg
-                                                             fmapTy = mkApp (fun : firstargs)
+                                                             fmapTy = appTopApp (fun : firstargs)
                                                      _ -> dflt
                               | otherwise        = dflt
                               where mbVar    @(~(Just tvar      )) = tyMbVar        t
                                     funArgs  @(       (fun,args) ) = tyAppFunArgs   t
                                     isRepr = maybe (isJust $ tyMbVar fun) (\con -> isRepresentable con remArity) $ tyMbCon fun
                                     dflt   = ([ mkC ehbnGenerDataRec0, t ], Proj_K1 [t])
-        mkAlt tg c (t,p)  = (mkApp [mkC2 ehbnGenerDataMetaCN 1, Ty_Con c, t], Proj_M1 $ Proj_Con tg p)
-        mkTop (t,p)   = ( mkTyLam lamTvarArgL (mkApp [ mkC2 ehbnGenerDataMetaDN 1, semCon tyNm, t ])
+        mkAlt tg c (t,p)  = (appTopApp [mkC2 ehbnGenerDataMetaCN 1, Ty_Con c, t], Proj_M1 $ Proj_Con tg p)
+        mkTop (t,p)   = ( mkTyLam lamTvarArgL (appTopApp [ mkC2 ehbnGenerDataMetaDN 1, appCon tyNm, t ])
                         , Proj $ Proj_M1 p
                         )
         -- eqLastTvar    = maybe (const False) (\(_,v) -> maybe False (v==) . tyMbVar) $ initlast tvarArgL
@@ -140,7 +140,7 @@ mkGenerRepresentableTypeSynTyProj
 mkGenerRepresentableTypeSynonymKi :: TyKiGam -> HsName -> Ty
 mkGenerRepresentableTypeSynonymKi tyKiGam tyNm
   = maybe (acoreTyErr $ "Generics.mkGenerRepresentableTypeSynonymKi: " ++ show tyNm) (addStar . tkgiKi) $ tyKiGamLookupByName tyNm tyKiGam
-  where addStar ki = mkArrow (as ++ [kiStar]) r
+  where addStar ki = appArr (as ++ [kiStar]) r
                    where (as,r) = tyArrowArgsRes ki
 
 -- TBD: sort out additional pol param at end, just like for kinds
@@ -227,7 +227,7 @@ SEM Expr
                                                               = ( ( [], pr, RedHow_ByInstance i pr sc, sc )
                                                                 , (orignm,i,cl,k,pr)
                                                                 )
-                                                              where pr = Pred_Class $ mkConApp cl [semCon nm]
+                                                              where pr = Pred_Class $ appConApp cl [appCon nm]
                                                             mkDataInst (t@(origtnm,_,_),cs,sc,_)
                                                               = map (mkd sc)
                                                                   $ [mkn ehbnGenerClassDatatype GenerInstKind_Datatype (origtnm, hsnNm2GenerDatatype origtnm)]
@@ -244,7 +244,7 @@ SEM Expr
                                                               = ( ( [], pr, RedHow_ByInstance i pr sc, sc )
                                                                 , (tyNm,i,repCl,k,pr)
                                                                 )
-                                                              where pr = Pred_Class $ mkConApp repCl [mkConApp tyNm tvL, mkConApp tyRepNm tvL]
+                                                              where pr = Pred_Class $ appConApp repCl [appConApp tyNm tvL, appConApp tyRepNm tvL]
                                                                     tvL = map mkTyMetaVar $ mkNewUIDL (arity - remArity) @lUniq_92_prTyMeta
                                                             mkReprInst (origtnm,tvL,sc,syns)
                                                               = map (mkr sc (length tvL))
@@ -277,16 +277,16 @@ SEM Decl
                                                           InstDeriving _ | not $ null generDerivFlds
                                                             -> [ ( fldNm, dfltvalNm
                                                                  , -- (\v -> tr "Decl.Instance.mbFSig" (ppTy v >-< ppTy (vgiTy (fromJust mbDSig))) v) $
-                                                                   repTy `mk1Arrow` vgiTy (fromJust mbFSig)
+                                                                   repTy `app1Arr` vgiTy (fromJust mbFSig)
                                                                  , vgiTy (fromJust mbDSig)
                                                                  )
                                                                | ((fldNm,dfltvalNm),u) <- zip generDerivFlds (mkNewLevUIDL (length generDerivFlds) @lUniq_generDeriv1)
                                                                , let mbFSig = valGamLookup fldNm     @tySigGam  , isJust mbFSig
                                                                , let mbDSig = valGamLookup dfltvalNm @lhs.valGam, isJust mbDSig
-                                                               , let repTy  = mkApp (  [Ty_Con repTyNm]
-                                                                                    ++ take (dataArity - @derivTruncTailArity) @derivDataTyArgs
-                                                                                    ++ [mkTyVar u]
-                                                                                    )
+                                                               , let repTy  = appTopApp (  [Ty_Con repTyNm]
+                                                                                        ++ take (dataArity - @derivTruncTailArity) @derivDataTyArgs
+                                                                                        ++ [mkTyVar u]
+                                                                                        )
                                                                ]
                                                             where generDerivFlds = clgiGenerDerivableL @clgi
                                                                   dataArity = length @derivDataTyArgs

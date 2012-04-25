@@ -119,30 +119,30 @@ instance Show Range where
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1 hs
-instance AppLike Type where
-  semApp        = \e1 e2 -> Type_NormalApplication emptyRange e1 [e2]
-  semAppTop     = id
-  semCon        = mkRngNm Type_Constructor
-  semParens     = Type_Parenthesized emptyRange
-  mkApp (a:as)  = if null as then a else Type_NormalApplication emptyRange a as
-  semRngCon r n = Type_Constructor r (mkHNm n)
+instance AppLike Type {- TypeAnnotation () -} where
+  app1App       = \e1 e2 -> Type_NormalApplication emptyRange e1 [e2]
+  appTop        = id
+  appCon        = mkRngNm Type_Constructor
+  appPar        = Type_Parenthesized emptyRange
+  appTopApp (a:as)  = if null as then a else Type_NormalApplication emptyRange a as
+  appRngCon r n     = Type_Constructor r (mkHNm n)
 %%]
-%%[1.semRngVar hs
-  semRngVar     = semRngCon
+%%[1.appRngVar hs
+  appRngVar     = appRngCon
 %%]
-%%[3 -1.semRngVar hs
-  semRngVar r n = Type_Variable r (mkHNm n)
+%%[3 -1.appRngVar hs
+  appRngVar r n = Type_Variable r (mkHNm n)
 %%]
 
 %%[1 hs
-instance AppLike Expression where
-  semApp            = \e1 e2 -> Expression_NormalApplication emptyRange e1 [e2]
-  semAppTop         = id
-  semCon            = mkRngNm Expression_Constructor
-  semParens         = Expression_Parenthesized emptyRange
-  mkApp (a:as)      = if null as then a else Expression_NormalApplication emptyRange a as
-  semRngCon r n     = Expression_Constructor r (mkHNm n)
-  semRngVar r n     = Expression_Variable r (mkHNm n)
+instance AppLike Expression {- ExpressionAnnotation () -} where
+  app1App           = \e1 e2 -> Expression_NormalApplication emptyRange e1 [e2]
+  appTop            = id
+  appCon            = mkRngNm Expression_Constructor
+  appPar            = Expression_Parenthesized emptyRange
+  appTopApp (a:as)  = if null as then a else Expression_NormalApplication emptyRange a as
+  appRngCon r n     = Expression_Constructor r (mkHNm n)
+  appRngVar r n     = Expression_Variable r (mkHNm n)
 %%]
 
 

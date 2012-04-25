@@ -307,7 +307,7 @@ ATTR TyExpr [ | | pol : Polarity ]
 SEM TyExpr
   | App     -- known polarity shape for the function part of the type application
                 loc         .   polArgVar           =   mkPolVar @lUniq_17_polArg
-                            .   knFuncPol           =   [@polArgVar] `mkArrow` @lhs.knPolCtx
+                            .   knFuncPol           =   [@polArgVar] `appArr` @lhs.knPolCtx
       
                 func        .   knPolCtx            =   @knFuncPol
                 arg         .   knPolCtx            =   @polArgVar
@@ -354,11 +354,11 @@ SEM TyExpr
 SEM TyExpr
   | Lam         loc         .   polArgVar           =   mkPolVar @lUniq_17_polArg
                             .   polResVar           =   mkPolVar @lUniq_17_polRes
-                            .   foPol               =   fitsIn weakFIOpts defaultFIEnv @lUniq_17_fitsIn_pol @lhs.polVarMp ([@polArgVar] `mkArrow` @polResVar) @lhs.knPolCtx
+                            .   foPol               =   fitsIn weakFIOpts defaultFIEnv @lUniq_17_fitsIn_pol @lhs.polVarMp ([@polArgVar] `appArr` @polResVar) @lhs.knPolCtx
                 tyExpr      .   knPolCtx            =   @polResVar
                             .   polGam              =   gamAdd @tyVar (mkPGI @polArgVar) @lhs.polGam
                             .   polVarMp            =   foVarMp @foPol `varUpd` @lhs.polVarMp
-                lhs         .   pol                 =   [@polArgVar] `mkArrow` @tyExpr.pol
+                lhs         .   pol                 =   [@polArgVar] `appArr` @tyExpr.pol
                 loc         .   lUniq_17_polArg     :   UNIQUEREF gUniq
                 loc         .   lUniq_17_polRes     :   UNIQUEREF gUniq
                 loc         .   lUniq_17_fitsIn_pol :   UNIQUEREF gUniq
@@ -425,9 +425,9 @@ ATTR AllDecl [ | patPolGam : PolGam | ]
 
 -- signature
 SEM Decl
-  | Data        loc         .   polSig              =   @tyVars.polVarL `mkArrow` @polCtxVar
+  | Data        loc         .   polSig              =   @tyVars.polVarL `appArr` @polCtxVar
   | Type        loc         .   polSig              =   @polTypeVar
-  | Class       loc         .   polSig              =   @tyPrExpr.polVarL `mkArrow` @polCtxVar
+  | Class       loc         .   polSig              =   @tyPrExpr.polVarL `appArr` @polCtxVar
 
 -- in environment
 SEM Decl

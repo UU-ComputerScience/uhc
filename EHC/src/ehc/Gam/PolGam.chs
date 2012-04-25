@@ -74,12 +74,12 @@ polGamLookupErr n g
 initPolGam :: PolGam
 initPolGam
   = assocLToGam
-      [ (hsnArrow       	, mkPGI $ quant $ [mkPolNegate var, var] `mkArrow` var)
+      [ (hsnArrow       	, mkPGI $ quant $ [mkPolNegate var, var] `appArr` var)
       , (hsnInt         	, mkPGI   quantvar)
       , (hsnChar        	, mkPGI   quantvar)
-      , (hsnRec         	, mkPGI $ quant $ [var] `mkArrow` var)
+      , (hsnRec         	, mkPGI $ quant $ [var] `appArr` var)
 %%[[18
-      , (hsnRecUnboxed  	, mkPGI $ quant $ [var] `mkArrow` var)
+      , (hsnRecUnboxed  	, mkPGI $ quant $ [var] `appArr` var)
       , (hsnIntUnboxed  	, mkPGI quantvar)
 %%]]
 %%[[97

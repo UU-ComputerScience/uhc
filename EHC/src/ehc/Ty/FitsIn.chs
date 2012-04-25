@@ -157,7 +157,7 @@ fiAppSpineLookup fi n gappSpineGam
           where pol = pgiPol pgi
                 (polargs,polres) = tyArrowArgsRes pol
                 (_,u1,u2) = mkNewLevUID2 uidStart
-                fo = fitsIn weakFIOpts emptyFE u1 (emptyVarMp :: VarMp) pol (map mkPolVar (mkNewUIDL (length polargs) u2) `mkArrow` polCovariant)
+                fo = fitsIn weakFIOpts emptyFE u1 (emptyVarMp :: VarMp) pol (map mkPolVar (mkNewUIDL (length polargs) u2) `appArr` polCovariant)
 %%]]
 %%]
 
@@ -213,7 +213,7 @@ fitsIn ty1 ty2
             f  t1@(Ty_App (Ty_App (Ty_Con c1) ta1) tr1)                                     -- m.arrow
                t2@(Ty_App (Ty_App (Ty_Con c2) ta2) tr2)
                  | hsnIsArrow c1 && c1 == c2
-                 = comp ta2 tr1 ta1 tr2 (\a r -> [a] `mkArrow` r)
+                 = comp ta2 tr1 ta1 tr2 (\a r -> [a] `appArr` r)
             f  t1@(Ty_App tf1 ta1)                                                          -- m.prod
                t2@(Ty_App tf2 ta2)
                  = comp tf1 ta1 tf2 ta2 Ty_App
@@ -573,7 +573,7 @@ fitsInFI fi ty1 ty2
             foUpdPrL prL prMp fo = foUpdCnstrMp prMp $ fo {foPredOccL = prL ++ foPredOccL fo}
             foUpdImplExpl iv im tpr fo
                             = foUpdVarMp (iv `varmpImplsUnit` im)
-                            $ foUpdTy ([tpr] `mkArrow` foTy fo)
+                            $ foUpdTy ([tpr] `appArr` foTy fo)
                             $ fo
 %%[[(9 codegen)
             foUpdLRCoe lrcoe fo = fo {foLRCoe = lrcoe `lrcoeUnion` foLRCoe fo}
@@ -611,7 +611,7 @@ A counterpart type to enforce deep quantifier instantiation.
                           || tyConNm f == hsnPolNegation
 %%]]
                           )
-                                  -> Just (mkApp $ mkNewTyVarL (length as + 1) u1, fi')
+                                  -> Just (appTopApp $ mkNewTyVarL (length as + 1) u1, fi')
                     | otherwise   -> Nothing
                     where (f,as) = tyAppFunArgs t
               where (u,u1) = mkNewLevUID (fiUniq fi)
@@ -1343,7 +1343,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                        fP fi tpr1@(Ty_Pred _)              tpr2@(Ty_Pred _)
                             =  if foHasErrs pfo
                                then Nothing
-                               else Just  ( foUpdTy (updTy $ [foTy pfo] `mkArrow` foTy fo)
+                               else Just  ( foUpdTy (updTy $ [foTy pfo] `appArr` foTy fo)
 %%[[(9 codegen)
                                           $ foUpdLRCoe (mkIdLRCoeWith n CMetaVal_Dict)
 %%]]
@@ -1371,7 +1371,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                                                       fo)
                             where  im2   = Impls_Tail u1 ipo2
                                    n     = uidHNm u2
-                                   fo    = fVar' fTySyn fi updTy tr1 ([Ty_Impls im2] `mkArrow` tr2)
+                                   fo    = fVar' fTySyn fi updTy tr1 ([Ty_Impls im2] `appArr` tr2)
                        fP fi (Ty_Impls (Impls_Tail iv1 ipo1)) tpr2@(Ty_Pred pr2)
                             =  Just (foUpdImplExplCoe iv1
 %%[[9
@@ -1389,7 +1389,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                                                       fo)
                             where  im1   = Impls_Tail u1 ipo1
                                    n     = uidHNm u2
-                                   fo    = fVar' fTySyn fi updTy ([Ty_Impls im1] `mkArrow` tr1) tr2
+                                   fo    = fVar' fTySyn fi updTy ([Ty_Impls im1] `appArr` tr1) tr2
                        fP fi (Ty_Impls (Impls_Tail iv1 _)) tpr2@(Ty_Impls im2@(Impls_Nil))
                             =  Just (foUpdImplExpl iv1 im2 tpr2 (fVar' fTySyn fi id tr1 tr2))
                        fP fi (Ty_Impls (Impls_Nil))   tpr2@(Ty_Impls im2@(Impls_Tail iv2 _))
@@ -1430,7 +1430,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                        -- the work
                        (u',u1)          = mkNewLevUID (fiUniq fi)
                        mbfp             = fVarPred1 fP (fi {fiUniq = u'}) tpr2
-                       mkPrTy pr2 fo    = [Ty_Pred ({- foVarMp fo `varUpd` -} pr2)] `mkArrow` foTy fo
+                       mkPrTy pr2 fo    = [Ty_Pred ({- foVarMp fo `varUpd` -} pr2)] `appArr` foTy fo
                        fSub fi updTy pr2v pr2 tr2
                             =  let  pr2n  = poiHNm pr2v
                                     (fi3,cnstrMp)
@@ -1481,7 +1481,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
 %%]]
                                    )
 %%]]
-                                    = fSub fi id pv2 pr2 ([Ty_Impls im2] `mkArrow` tr2)
+                                    = fSub fi id pv2 pr2 ([Ty_Impls im2] `appArr` tr2)
                        fP fi (Ty_Pred pr2)  | fioAllowRPredElim (fiFIOpts fi)
                             =  Just ( foUpdTy (updTy $ mkPrTy pr2 fo)
 %%[[(9 codegen)
@@ -1560,7 +1560,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
 %%[[(9 codegen tycore)
                                    , tlCoe
 %%]]
-                                   , cnstrMp ) = fSub fi updTy pv1 prfPredScope pr1 ([Ty_Impls im1] `mkArrow` tr1)
+                                   , cnstrMp ) = fSub fi updTy pv1 prfPredScope pr1 ([Ty_Impls im1] `appArr` tr1)
                        fP fi (Ty_Pred pr1)
                             =  Just ( foUpdPrL [] cnstrMp
 %%[[(9 codegen)
@@ -1582,17 +1582,17 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
 %%]
 
                        fP fi im2@(Ty_Impls (Impls_Nil))
-                            =  Just (foUpdTy ([im2] `mkArrow` foTy fo) $ fo)
+                            =  Just (foUpdTy ([im2] `appArr` foTy fo) $ fo)
                             where fo = fVar' fTySyn fi id t1 tr2
                        fP fi (Ty_Impls (Impls_Tail iv2 _))
-                            =  Just (foUpdVarMp (iv2 `varmpImplsUnit` Impls_Nil) $ foUpdTy ([Ty_Impls (Impls_Nil)] `mkArrow` foTy fo) $ fo)
+                            =  Just (foUpdVarMp (iv2 `varmpImplsUnit` Impls_Nil) $ foUpdTy ([Ty_Impls (Impls_Nil)] `appArr` foTy fo) $ fo)
                             where fo = fVar' fTySyn fi id t1 tr2
 
 %%[(7 hmtyinfer)
             fBase fi updTy t1@(Ty_App (Ty_Con n1) tr1)
                            t2@(Ty_App (Ty_Con n2) tr2)
                 | n1 == n2 && (isRec || isSum)
-                = foUpdTy (updTy $ n1 `mkConApp` [foTy fo]) fo
+                = foUpdTy (updTy $ n1 `appConApp` [foTy fo]) fo
                 where  -- decompose
                        -- the work
                        isRec = hsnIsRec n1
@@ -1602,7 +1602,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
             fBase fi updTy t1@(Ty_App ta1 tr1)
                            t2@(Ty_App ta2 tr2)
                 | isJust mbC1 && isJust mbC2 && n1 == n2 && (isRec || isSum)
-                = foUpdTy (updTy $ n1 `mkConApp` [foTy fo]) fo
+                = foUpdTy (updTy $ n1 `appConApp` [foTy fo]) fo
                 where  -- decompose
                        mbC1 = tyMbCon ta1
                        mbC2 = tyMbCon ta2
@@ -1872,11 +1872,11 @@ fitPredToEvid' u varmp prTy gg
                     where fClgi u clgi prTy
                             = fo {foTy = snd (tyArrowArgRes (foTy fo))}
                             where (u',u1,u2) = mkNewLevUID2 u
-                                  fo = fitsIn (predFIOpts {fioBindRVars = FIOBindNoBut $ Set.singleton u2}) emptyFE u1 varmp (clgiPrToEvidTy clgi) ([prTy] `mkArrow` mkTyVar u2)
+                                  fo = fitsIn (predFIOpts {fioBindRVars = FIOBindNoBut $ Set.singleton u2}) emptyFE u1 varmp (clgiPrToEvidTy clgi) ([prTy] `appArr` mkTyVar u2)
                  Ty_Pred (Pred_Pred t)
                     ->  let  (aL,r) = tyArrowArgsRes t
                              (_,aLr'@(r':aL')) = foldr (\t (u,ar) -> let (u',u1) = mkNewLevUID u in (u',fPr u1 t : ar)) (u,[]) (r : aL)
-                        in   manyFO (aLr' ++ [emptyFO {foTy = map foTy aL' `mkArrow` foTy r'}])
+                        in   manyFO (aLr' ++ [emptyFO {foTy = map foTy aL' `appArr` foTy r'}])
 %%]
 
 %%[(9 hmtyinfer) export(fitPredToEvid)

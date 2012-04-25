@@ -84,7 +84,7 @@ emptyDerivCls = DerivCls hsnUnknown [] []
 
 %%[(91 codegen) export(dccMkTy)
 dccMkTy :: DerivClsExtraCtxt -> Ty
-dccMkTy (DerivClsExtraCtxt_Fixed clNm tyNm) = mkConApp clNm [semCon tyNm]
+dccMkTy (DerivClsExtraCtxt_Fixed clNm tyNm) = appConApp clNm [appCon tyNm]
 %%]
 
 The table is dependent on builtin names, stored in EHCOpts in FIEnv.

@@ -830,7 +830,7 @@ SEM Decl
                                                         then snd (snd (tyRecExts2 @dataAltTy !! 0) !! 0)
                                                         else @dataAltTy
                                                 in  C.tyToTyCore fitsInForToTyCore (tyKiGamLookupKi @lhs.finTyKiGam)
-                                                    $ ((assocTyLToVarMp $ zipWith (\t n -> (tyVar t, semCon n)) @tyVars.tyL @tyVars.nmL) `varUpd`)
+                                                    $ ((assocTyLToVarMp $ zipWith (\t n -> (tyVar t, appCon n)) @tyVars.tyL @tyVars.nmL) `varUpd`)
                                                     $ t
                 lhs         .   tyBindL     =   let nms = @tyVars.nmL
                                                     (mk,_) = C.tcMergeLamTySeq1AndArgNms @cki nms

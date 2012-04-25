@@ -79,19 +79,19 @@ pDataField                  ::   EHCParser DataField
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1.pApp
-pApp            ::   AppLike ep => EHCParser ep -> EHCParser ep
-pApp p          =    mkApp <$> pList1 p
+pApp            ::   AppLike a => EHCParser a -> EHCParser a
+pApp p          =    appTopApp <$> pList1 p
 %%]
 
 %%[1.pParenProd
-pParenProd :: AppLike ep => EHCParser ep -> EHCParser ep
+pParenProd :: AppLike a => EHCParser a -> EHCParser a
 pParenProd pE
   =  pParens pP
   where  pP  =    mkProdApp <$> pSucceed []
              <|>  pE
                   <**>  (    (\es e -> mkProdApp (e:es))
                              <$>  pList1 (pComma *> pE)
-                        <|>  pSucceed semParens
+                        <|>  pSucceed appPar
                         )
 %%]
 
@@ -202,7 +202,7 @@ pKiExpr, pKiExprBase        ::   EHCParser KiExpr
 pKiExprBase     =    mkEH KiExpr_Con <$> (pCon <|> pHNm pSTAR)
                 <|>  mkEH KiExpr_Var <$> pVar
                 <|>  pParens pKiExpr
-pKiExpr         =    pChainr (mk1Arrow <$ pKeyw hsnArrow) pKiExprBase
+pKiExpr         =    pChainr (app1Arr <$ pKeyw hsnArrow) pKiExprBase
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -228,12 +228,12 @@ pTyExprBase     =    mkEH TyExpr_Con       <$>  pCon
                         pVar pTyExpr
                 <|>  pParenRow True (show hsnORec) (show hsnCRec) "::" Nothing
                         (mkEH RowTyExpr_Empty,semVar,mkEH RowTyExpr_Ext
-                            ,\r -> mkConApp hsnRec [mkEH TyExpr_Row r]
+                            ,\r -> appConApp hsnRec [mkEH TyExpr_Row r]
                             ,mkEH TyExpr_Parens)
                         pVar pTyExpr
                 <|>  pParenRow False (show hsnOSum) (show hsnCSum) "::" Nothing
                         (mkEH RowTyExpr_Empty,semVar,mkEH RowTyExpr_Ext
-                            ,\r -> mkConApp hsnSum [mkEH TyExpr_Row r]
+                            ,\r -> appConApp hsnSum [mkEH TyExpr_Row r]
                             ,id)
                         pVar pTyExpr
 %%]
@@ -246,12 +246,12 @@ pTyExprBase     =    mkEH TyExpr_Con       <$>  pCon
 
 %%[1.pTyExpr
 pTyExpr         =    pChainr
-                       (mk1Arrow <$ pKeyw hsnArrow)
+                       (app1Arr <$ pKeyw hsnArrow)
                        pTyExprBase
 %%]
 %%[4.pTyExpr -1.pTyExpr
 pTyExpr         =    pTyExprPrefix <*> pTyExpr
-                <|>  pTyExprApp <??> (flip mk1Arrow <$ pKeyw hsnArrow <*> pTyExpr)
+                <|>  pTyExprApp <??> (flip app1Arr <$ pKeyw hsnArrow <*> pTyExpr)
 %%]
 
 %%[5.pTyExprs
@@ -273,14 +273,14 @@ pTyExprPrefix   =    mkEH TyExpr_Quant
 
 %%[9.pTyPrExprPrefix
 pTyPrExprPrefix ::   EHCParser (TyExpr -> TyExpr)
-pTyPrExprPrefix =    mk1Arrow
+pTyPrExprPrefix =    app1Arr
                      <$>  pPackImpl
                             (    pPr <|> pIm
                             <|>  pSucceed  (mkEH TyExpr_NoImpls)
                             )
                      <*   pKeyw hsnArrow
-                <|>  (    mk1Arrow <$> (pPrB <|> pIm)
-                     <|>  flip (foldr mk1Arrow)
+                <|>  (    app1Arr <$> (pPrB <|> pIm)
+                     <|>  flip (foldr app1Arr)
                           <$> pParens ((:) <$> pPr <*> (pImO <|> (++) <$> pList1 (pComma *> pPr) <*> pImO))
                      )
                      <*   pKeyw hsnPrArrow
@@ -328,7 +328,7 @@ pExprBase       =    mkEH Expr_IConst     <$>  pInt
 %%]
 %%[7.pExprBase -1.pExprBaseParenProd
                 <|>  pParenRow True (show hsnORec) (show hsnCRec) "=" (Just (":=",mkEH RecExpr_Upd))
-                        (mkEH RecExpr_Empty,mkEH RecExpr_Expr . mkEH Expr_Var,mkEH RecExpr_Ext,mkEH Expr_Rec,semParens)
+                        (mkEH RecExpr_Empty,mkEH RecExpr_Expr . mkEH Expr_Var,mkEH RecExpr_Ext,mkEH Expr_Rec,appPar)
                         pVar pExpr
 %%]
 %%[8.pExprBase
@@ -349,13 +349,13 @@ pExpr           =    pE <??> (mkEH Expr_TypeAs <$ pKey "::" <*> pTyExpr)
 pExprApp        =    pApp pExprBase
 %%]
 %%[4.pExprApp -1.pExprApp
-pExprApp        =    pE <??> ((\l e -> semAppTop (foldl (flip ($)) e l)) <$> pList1 pA)
+pExprApp        =    pE <??> ((\l e -> appTop (foldl (flip ($)) e l)) <$> pList1 pA)
 %%]
 %%[4.pExprAppA
-                where  pA = flip semApp <$> pE <|> pImpred
+                where  pA = flip app1App <$> pE <|> pImpred
 %%]
 %%[12.pExprAppA -4.pExprAppA
-                where  pA = flip semApp <$> pE <|> pImpred <|> pImpl
+                where  pA = flip app1App <$> pE <|> pImpred <|> pImpl
 %%]
 %%[4.pExprAppE
                        pE = pExprBase

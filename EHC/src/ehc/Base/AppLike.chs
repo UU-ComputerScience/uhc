@@ -10,114 +10,199 @@
 %%[1 module {%{EH}Base.AppLike} import(UU.Scanner.Position,EH.Util.Utils,{%{EH}Base.Common},{%{EH}Base.HsName},{%{EH}Base.Builtin})
 %%]
 
-%%[1 import(Control.Applicative((<|>)))
+%%[1 import(Control.Applicative((<|>)), Data.Maybe)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% App like structures
+%%% App like structure
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1.AppLike export(AppLike(..))
 %%[[AppLikeCore1
-class AppLike a where
+class AppLike a {- ann bnd | a -> ann bnd -} where
   -- basic semantics
-  semApp            ::  a -> a -> a
-  semAppTop         ::  a -> a
-  semVar            ::  (Position n,HSNM n) => n -> a
-  semCon            ::  (Position n,HSNM n) => n -> a
-  semParens         ::  a -> a
+  app1App           ::  a -> a -> a							-- single application
+  appTop            ::  a -> a                              -- top of multiple apps
+  appVar            ::  (Position n,HSNM n) => n -> a       -- variable
+  appCon            ::  (Position n,HSNM n) => n -> a       -- constructor
+  appPar            ::  a -> a                              -- parenthesis
 %%]]
-  -- basic semantics with Range
-  semRngApp         ::  Range -> a -> a -> a
-  semRngAppTop      ::  Range -> a -> a
-  semRngVar         ::  (Position n,HSNM n) => Range -> n -> a
-  semRngCon         ::  (Position n,HSNM n) => Range -> n -> a
-  semRngParens      ::  Range -> a -> a
-  -- constructing
-%%[[AppLikeCore2
-  mkApp             ::  [a] -> a
-  mkConApp          ::  (Position n,HSNM n) => n -> [a] -> a
-  mkProdApp         ::  [a] -> a
-  mk1Arrow          ::  a -> a -> a
-  mkArrow           ::  [a] -> a -> a
-%%]]
-  mk1App            ::  a -> a -> a
-  mk1ConApp         ::  (Position n,HSNM n) => n -> a -> a
-  -- constructin with Range
-  mk1RngApp         ::  Range -> a -> a -> a
-  mkRngApp          ::  Range -> [a] -> a
-  mkRngProd         ::  Range -> [a] -> a
+  -- and the defaults
+  app1App           =   appRngApp1   emptyRange
+  appTop            =   appRngTop    emptyRange
+  appVar            =   appRngVar    emptyRange
+  appCon            =   appRngCon    emptyRange
+  appPar            =   appRngPar    emptyRange
+
+  -- variation with Range
+  appRngApp1        ::  Range -> a -> a -> a
+  appRngTop         ::  Range -> a -> a
+  appRngVar         ::  (Position n,HSNM n) => Range -> n -> a
+  appRngCon         ::  (Position n,HSNM n) => Range -> n -> a
+  appRngPar         ::  Range -> a -> a
+  
+  -- and the defaults
+  appRngApp1   _    =   app1App
+  appRngTop    _    =   appTop
+  appRngVar    _    =   appVar
+  appRngCon    _    =   appCon
+  appRngPar    _    =   appPar
   
   -- inspection/deconstruction
-  unTop				:: a -> a
-  isCon             :: a -> Maybe (HsName)
-  isApp1            :: a -> Maybe (a,a)
-  isApp             :: a -> Maybe (a,[a])
-  isConApp          :: a -> Maybe (HsName,[a])
-  isArrow           :: a -> Maybe ([a],a)
-  unArrow           :: a -> ([a],a)
-
-  -- defaults semantics
-  semApp            =   semRngApp    emptyRange
-  semAppTop         =   semRngAppTop emptyRange
-  semVar            =   semRngVar    emptyRange
-  semCon            =   semRngCon    emptyRange
-  semParens         =   semRngParens emptyRange
-  semRngApp    _    =   semApp
-  semRngAppTop _    =   semAppTop
-  semRngVar    _    =   semVar
-  semRngCon    _    =   semCon
-  semRngParens _    =   semParens
-  -- defaults
-  mkApp             =   mkRngApp emptyRange
-  mk1App     a r    =   mkApp [a,r]
-  mkConApp   c as   =   mkApp (semCon c : as)
-  mk1ConApp  c a    =   mkConApp c [a]
-  mkProdApp  as     =   mkConApp (hsnProd (length as)) as
-  mk1Arrow   a r    =   mkApp [semCon hsnArrow,a,r]
-  mkArrow           =   flip (foldr mk1Arrow)
-  -- defaults with Range
-  mkRngProd rng     =   mkProdApp               -- to be done
-  mk1RngApp rng a r =   mkRngApp rng [a,r]
-  mkRngApp  rng as  =   case as of
-                          [a] -> a
-                          _   -> semRngAppTop rng (foldl1 (semRngApp rng) as)
-
-  -- default inspection
-  unTop             = id
-  isCon             = const Nothing
-  isApp1            = const Nothing
-  isApp     x       = do { (f1,a) <- isApp1 $ unTop x
-                         ; (do {(f2,as) <- isApp f1; return (f2,as++[a])}) <|> (return (f1,[a]))
-                         }
-  isConApp  x       = do { (f,as) <- isApp x
-                         ; c <- isCon f
+  appMbAnn1         :: a -> Maybe (a->a,a)
+  appMbTop1         :: a -> Maybe (a->a,a)
+  appMbCon          :: a -> Maybe (HsName)
+  appMbApp1         :: a -> Maybe (a,a)
+  appUnApp          :: a ->       (a,[a])
+  appMbConApp       :: a -> Maybe (HsName,[a])
+  appUnArr          :: a ->       ([a],a)
+  
+  -- and the defaults
+  appMbAnn1         = const Nothing
+  appMbTop1         = appMbAnn1
+  appMbCon          = const Nothing
+  appMbApp1         = const Nothing
+  appUnApp     x    = un [] (snd $ appUnTop x)
+                    where un as x = case appMbApp1 x of
+                                      Just (f,a) -> un (a:as) (snd $ appUnAnn f)
+                                      _          -> (x,as)
+  appMbConApp  x    = do { (f,as) <- appMbApp x
+                         ; c <- appMbCon f
                          ; return (c,as)
                          }
-  unArrow   x       = case isApp x of
-                        Just (fx,asx) -> case isCon fx of
+  appUnArr  x       = case appMbApp x of
+                        Just (fx,asx) -> case appMbCon fx of
                                            Just con | hsnIsArrow con -> (arg:as,r)
                                                                      where [arg,res] = asx
-                                                                           (as,r) = unArrow res
+                                                                           (as,r) = appUnArr res
                                            _                         -> dflt
                         _             -> dflt
                     where dflt = ([],x)
-  isArrow   x       = case unArrow x of
-                        a@((_:_),_) -> Just a
-                        _           -> Nothing
+
+  -- specialised constructing
+  -- | Make application wrapped in top, except for singleton
+  appTopApp         ::  [a] -> a
+
+  -- and the defaults
+  appTopApp         =   appRngTopApp emptyRange
+
+  -- variation with Range
+  appRngTopApp      ::  Range -> [a] -> a
+
+  -- and the defaults
+  appRngTopApp  r [a] = a
+  appRngTopApp  r as  = appRngTop r (foldl1 (appRngApp1 r) as)
+
+%%[[AppLikeCore2
+  mkProdApp         ::  [a] -> a
+%%]]
+  mk1ConApp         ::  (Position n,HSNM n) => n -> a -> a
+  -- constructin with Range
+  mk1RngApp         ::  Range -> a -> a -> a
+  mkRngProd         ::  Range -> [a] -> a
+  
+  -- defaults semantics
+  -- defaults
+  mk1ConApp  c a    =   appConApp c [a]
+  mkProdApp  as     =   appConApp (hsnProd (length as)) as
+  -- defaults with Range
+  mkRngProd _   as  =   mkProdApp as            -- to be done
+  mk1RngApp rng a r =   appRngTopApp rng [a,r]
+
+  -- default inspection
                          
 %%]
 
-%%[1 export(mkRngProdOpt)
-mkRngProdOpt :: AppLike e => Range -> [e] -> e
-mkRngProdOpt r [e] = e
-mkRngProdOpt r es  = mkRngProd r es
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Derived constructing
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 export(appTopApp1)
+-- | Make single application, with top
+appTopApp1 :: AppLike a {- ann bnd -} => a -> a -> a
+appTopApp1 a r = appTopApp [a,r]
+{-# INLINE appTopApp1 #-}
 %%]
 
-%%[1 export(mkRngParApp)
-mkRngParApp :: AppLike e => Range -> [e] -> e
-mkRngParApp r [a] = a
-mkRngParApp r as  = semRngParens r (mkRngApp r as)
+%%[1 export(appRngProdOpt)
+-- | Make product, except for singleton
+appRngProdOpt :: AppLike a {- ann bnd -} => Range -> [a] -> a
+appRngProdOpt r [a] = a
+appRngProdOpt r as  = mkRngProd r as
+%%]
+
+%%[1 export(appRngParApp)
+-- | Make parenthesized app, except for singleton
+appRngParApp :: AppLike a {- ann bnd -} => Range -> [a] -> a
+appRngParApp r [a] = a
+appRngParApp r as  = appRngPar r (appRngTopApp r as)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Derived constructing: arrow
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 export(appConApp)
+-- | Make constructor applied to arguments
+appConApp          ::  (AppLike a {- ann bnd -}, Position n, HSNM n) => n -> [a] -> a
+appConApp   c as   =   appTopApp (appCon c : as)
+{-# INLINE appConApp #-}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Derived constructing: arrow
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 export(app1Arr,appArr)
+-- | Make (type) rep for single arrow (i.e. abstraction)
+app1Arr :: AppLike a {- ann bnd -} => a -> a -> a
+app1Arr a r = appConApp hsnArrow [a,r] -- appTopApp [appCon hsnArrow,a,r]
+{-# INLINE app1Arr #-}
+
+-- | Multiple app1Arr
+appArr :: AppLike a {- ann bnd -} => [a] -> a -> a
+appArr = flip (foldr app1Arr)
+{-# INLINE appArr #-}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Derived constructing
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1
+-- | Given a single level unwrap, deepnested unwrap top like stuff, also giving reconstruction
+appMb2Un :: (a -> Maybe (a->a,a)) -> a -> (a->a,a)
+appMb2Un un a
+  = case un a of
+      Just (mk1,a') -> (mk1 . mk, a'')
+                    where (mk,a'') = appMb2Un un a'
+      _ -> (id,a)
+%%]
+
+%%[1 export(appUnAnn,appUnTop)
+-- | Unwrap ann like stuff, also giving reconstruction
+appUnAnn :: AppLike a {- ann bnd -} => a -> (a->a,a)
+appUnAnn = appMb2Un appMbAnn1
+
+-- | Unwrap top like stuff, also giving reconstruction
+appUnTop :: AppLike a {- ann bnd -} => a -> (a->a,a)
+appUnTop = appMb2Un appMbTop1
+%%]
+
+%%[1 export(appMbApp,appMbArr)
+-- | Wrap app unpacking into Maybe
+appMbApp :: AppLike a {- ann bnd -} => a -> Maybe (a,[a])
+appMbApp x
+  = case appUnApp x of
+      u@(_,(_:_)) -> Just u
+      _           -> Nothing
+
+-- | Wrap arr unpacking into Maybe
+appMbArr :: AppLike a {- ann bnd -} => a -> Maybe ([a],a)
+appMbArr x 
+  = case appUnArr x of
+	  a@((_:_),_) -> Just a
+	  _           -> Nothing
 %%]
 
 

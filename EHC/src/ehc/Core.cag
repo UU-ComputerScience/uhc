@@ -701,7 +701,7 @@ instance AbstractCore CExpr CMetaVal CBind CBound CBindCateg CMetaBind Ty CPat C
 %%]
 
   -- ty constants
-  acoreTyBool o                         = semCon (ehcOptBuiltin o ehbnDataBool)
+  acoreTyBool o                         = appCon (ehcOptBuiltin o ehbnDataBool)
   
   -- ty
   -- acoreTyInt2							= tyInt

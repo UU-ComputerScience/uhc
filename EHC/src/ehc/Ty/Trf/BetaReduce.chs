@@ -134,9 +134,9 @@ tyBetaRed1 renv lkup tyOrFunAndArgs
   where -- lambda expression: take body and substitute arguments
         eval (lam@(Ty_Lam fa b), args, f)
           | isJust mbEtaRed
-              = mkres (mkApp (fromJust mbEtaRed : args))
+              = mkres (appTopApp (fromJust mbEtaRed : args))
           | lamLen <= argLen
-              = mkres (mkApp (subst `varUpd` lamBody : drop lamLen args))
+              = mkres (appTopApp (subst `varUpd` lamBody : drop lamLen args))
           | otherwise
               = Nothing
           where mbEtaRed = tyLamEtaRed lam
@@ -161,7 +161,7 @@ tyBetaRed1 renv lkup tyOrFunAndArgs
 
         -- looked up in the environment
         eval (_, args, Just funExp)
-              = mkres $ mkApp $ tbroutRes funExp : args
+              = mkres $ appTopApp $ tbroutRes funExp : args
 
         -- no expansion possible
         eval _ = Nothing
@@ -172,7 +172,7 @@ tyBetaRed1 renv lkup tyOrFunAndArgs
                             , tbroutTracePPL   = [trfitIn "tylam" ("from:" >#< ppTyWithFI fi (pack tyOrFunAndArgs) >-< "to  :" >#< ppTyWithFI fi t)]
                             }
                         )
-        pack = either id (\(f,as,_) -> mkApp (f:as))
+        pack = either id (\(f,as,_) -> appTopApp (f:as))
         fi = tbredFI renv
 %%]
 

@@ -304,7 +304,7 @@ SEM Ty
 
 %%[(8 codegen tycore)
 SEM Ty
-  | Con         loc         .   ki          =   @lhs.ty2ki (semCon @nm)
+  | Con         loc         .   ki          =   @lhs.ty2ki (appCon @nm)
   | Var         loc         .   ki          =   @lhs.ty2ki (T.mkTyVar @tv)
 %%]
 
@@ -318,7 +318,7 @@ SEM TyAGItf
 
 SEM Ty
   | App         loc         .   kiArg       =   T.mkNewTyVar @lUniq_arg
-                            .   kiFunc      =   [@kiArg] `mkArrow` @lhs.kiTopDown
+                            .   kiFunc      =   [@kiArg] `appArr` @lhs.kiTopDown
                 func        .   kiTopDown   =   @kiFunc
                 arg         .   kiTopDown   =   @kiArg
                 loc         .   lUniq_arg   :   UNIQUEREF gUniq
