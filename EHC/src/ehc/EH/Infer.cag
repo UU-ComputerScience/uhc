@@ -596,7 +596,7 @@ SEM Expr
                             .   kiSigGam            =   @decls.gathKiSigGam
 
 SEM Decl
-  | KiSig       lhs         .   gathKiSigGam        =   gamAdd @nm (mkTGI (Ty_Con @nm)) @lhs.gathKiSigGam
+  | KiSig       lhs         .   gathKiSigGam        =   gamAdd @nm (mkTGI (appCon @nm)) @lhs.gathKiSigGam
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

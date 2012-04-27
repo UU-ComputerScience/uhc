@@ -7,7 +7,7 @@
 %%% Code generation for jazy
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 jazy) hs module {%{EH}Core.ToJazy} import({%{EH}Base.Common},{%{EH}Opts},{%{EH}Ty},{%{EH}Core})
+%%[(8 jazy) hs module {%{EH}Core.ToJazy} import({%{EH}Base.Common},{%{EH}Base.AppLike},{%{EH}Opts},{%{EH}Ty},{%{EH}Core})
 %%]
 
 %%[(8 jazy) hs import(Data.Maybe, qualified Data.Map as Map, Data.Char)

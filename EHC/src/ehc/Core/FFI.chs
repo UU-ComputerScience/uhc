@@ -262,7 +262,7 @@ We deal with IO as follow:
 -- | is type an IO type, if so return the IO type argument (result returned by IO)
 ffiMbIORes :: EHCOpts -> Ty -> Maybe Ty
 ffiMbIORes opts resTy
-  = case tyMbAppConArgs resTy of
+  = case appMbConApp resTy of
       Just (n,[a]) | ehcOptBuiltin opts ehbnIO == n
         -> Just a
       _ -> Nothing
@@ -292,7 +292,7 @@ ffiIOAdapt
      mkTupledRes
      uniq iores
   = ([tyState],[nmState],wrapRes)
-  where tyState = Ty_Con $ ehcOptBuiltin opts ehbnRealWorld
+  where tyState = appCon $ ehcOptBuiltin opts ehbnRealWorld
         [nmState,nmRes,nmIgnoreRes] = take 3 (map (mkUniqNm) (iterate uidNext uniq))
         wrapRes = mkTupledRes nmState (acoreTyErr "ffiIOAdapt.mkTupledRes.state") nmRes (acoreTyErr "ffiIOAdapt.mkTupledRes.res") . dealWithUnitRes
                 where dealWithUnitRes
@@ -419,7 +419,7 @@ ffiCoreMk
           $ map acoreVar nmArgPatL
         , primResNeedsEval
         )
-  where (argTyL,resTy) = tyArrowArgsRes tyFFI
+  where (argTyL,resTy) = appUnArr tyFFI
         argLen = length argTyL
         (_,u1,u2) = mkNewLevUID2 uniq
         (nmRes:nmEvalRes:nmArgL) = take (argLen + 2) (map mkHNm (iterate uidNext u1))
@@ -468,7 +468,7 @@ ffeCoreMk
               (acoreVar nmEvalRes)
 	, argTyL `appArr` resTyAdapted
 	)
-  where (argTyL,resTy) = tyArrowArgsRes tyFFE
+  where (argTyL,resTy) = appUnArr tyFFE
         argLen = length argTyL
         (nmRes:nmEvalRes:nmIOEvalRes:nmArgL) = map mkHNm $ mkNewLevUIDL (argLen+3) uniq
         (resTyAdapted,argLExtra,wrapRes)

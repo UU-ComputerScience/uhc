@@ -118,7 +118,7 @@ valGamTyOfDataCon :: HsName -> ValGam -> (Ty,Ty,ErrL)
 valGamTyOfDataCon conNm g
   = (t,rt,e)
   where (t,e) = valGamLookupTy conNm g
-        (_,rt) = tyArrowArgsRes t
+        (_,rt) = appUnArr t
 %%]
 
 %%[(7 hmtyinfer || hmtyast) export(valGamTyOfDataFld)
@@ -127,7 +127,7 @@ valGamTyOfDataFld fldNm g
   | null e    = (t,rt,e)
   | otherwise = (t,Ty_Any,e)
   where (t,e) = valGamLookupTy fldNm g
-        ((rt:_),_) = tyArrowArgsRes t
+        ((rt:_),_) = appUnArr t
 %%]
 
 %%[(6 hmtyinfer || hmtyast)

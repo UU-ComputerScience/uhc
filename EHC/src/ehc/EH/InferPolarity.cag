@@ -75,7 +75,7 @@ Encoding of polarities:
 
   Covariant, Invariant, Contravariant:
 
-    Ty_Con "Covariant", Ty_Con "Invariant", Ty_Con "Contravariant"
+    appCon "Covariant", appCon "Invariant", appCon "Contravariant"
 
   Var, Forall:
   
@@ -83,11 +83,11 @@ Encoding of polarities:
   
   Arrow:
 
-    Ty_App (Ty_App (Ty_Con "->"))
+    Ty_App (Ty_App (appCon "->"))
   
   Negate:
   
-    Ty_App (Ty_Con "Negate")
+    Ty_App (appCon "Negate")
   
   With this encoding, fitsIn satisfies the above mgu-definition, except for the negation
   magic. That is to be placed in the part that combines subsitutions.

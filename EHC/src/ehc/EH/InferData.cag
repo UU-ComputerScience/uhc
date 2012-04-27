@@ -10,13 +10,13 @@
 %%[(5 hmtyinfer).tyGam
 SEM Decl
   | Data        tyVars      .   tyGam               =   emptyGam
-                lhs         .   patTyGam            =   gamAdd @tyNm (TyGamInfo (Ty_Con @tyNm)) @lhs.patTyGam
+                lhs         .   patTyGam            =   gamAdd @tyNm (TyGamInfo (appCon @tyNm)) @lhs.patTyGam
                 constrs     .   tyGam               =   gamPushGam @tyVars.tyGam @lhs.tyGam
 %%]
 
 %%[(6 hmtyinfer)
 SEM Decl
-  | Data        loc         .   dataTgi             =   mkTGI (Ty_Con @tyNm)
+  | Data        loc         .   dataTgi             =   mkTGI (appCon @tyNm)
                             .   dataTkgi            =   TyKiGamInfo (tyEnsureNonAny @lUniq @knKi)
                             .   dataPatTyGam        =   if @hasKiSig  then @lhs.patTyGam
                                                                       else gamAdd @tyNm @dataTgi @lhs.patTyGam
@@ -243,7 +243,7 @@ SEM DataConstr
 
 SEM Decl
   | Data        loc         .   dataAltTy           =   mkTySum @constrs.dataAltTyL
-                            .   dataTgi             :=  mkTGIData (Ty_Con @tyNm) Ty_Any {- ([@dataTy] `appArr` @dataAltTy) -}
+                            .   dataTgi             :=  mkTGIData (appCon @tyNm) Ty_Any {- ([@dataTy] `appArr` @dataAltTy) -}
 %%]
 
 %%[(90 hmtyinfer)

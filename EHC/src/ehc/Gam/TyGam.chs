@@ -8,7 +8,7 @@
 %%[1 import(EH.Util.Pretty,EH.Util.Utils)
 %%]
 
-%%[1 hs import ({%{EH}Base.Common},{%{EH}Base.Builtin})
+%%[1 hs import ({%{EH}Base.Common},{%{EH}Base.AppLike},{%{EH}Base.Builtin})
 %%]
 %%[1 hs import ({%{EH}Ty},{%{EH}Ty.Pretty})
 %%]
@@ -80,7 +80,7 @@ tyGamLookup nm g
   =  case gamLookup nm g of
        Nothing | hsnIsProd nm 
 %%[[(1 hmtyinfer || hmtyast) 
-                 -> Just (TyGamInfo (Ty_Con nm))
+                 -> Just (TyGamInfo (appCon nm))
 %%][1
                  -> Just emptyTGI
 %%]]
@@ -103,7 +103,7 @@ tyGamLookup nm g
        Nothing
          |  hsnIsProd nm
 %%[[(6 hmtyinfer || hmtyast) 
-                 -> Just (TyGamInfo (Ty_Con nm))
+                 -> Just (TyGamInfo (appCon nm))
 %%][6
                  -> Just emptyTGI
 %%]]
@@ -125,7 +125,7 @@ initTyGam :: TyGam
 initTyGam
   = assocLToGam
 %%[[(1 hmtyinfer || hmtyast)
-      [ (hsnArrow,  TyGamInfo (Ty_Con hsnArrow))
+      [ (hsnArrow,  TyGamInfo (appCon hsnArrow))
       , (hsnInt,    TyGamInfo tyInt)
       , (hsnChar,   TyGamInfo tyChar)
       ]
@@ -142,38 +142,38 @@ initTyGam :: TyGam
 initTyGam
   = assocLToGam
 %%[[(6 hmtyinfer || hmtyast)
-      [ (hsnArrow			, mkTGI (Ty_Con hsnArrow))
+      [ (hsnArrow			, mkTGI (appCon hsnArrow))
       , (hsnInt				, mkTGI tyInt)
       , (hsnChar			, mkTGI tyChar)
 %%[[7
-      , (hsnRow				, mkTGI (Ty_Con hsnUnknown))
-      , (hsnRec				, mkTGI (Ty_Con hsnRec))
-      , (hsnSum				, mkTGI (Ty_Con hsnSum))
+      , (hsnRow				, mkTGI (appCon hsnUnknown))
+      , (hsnRec				, mkTGI (appCon hsnRec))
+      , (hsnSum				, mkTGI (appCon hsnSum))
 %%]]
 %%[[9
-      , (hsnPrArrow			, mkTGI (Ty_Con hsnPrArrow))
+      , (hsnPrArrow			, mkTGI (appCon hsnPrArrow))
 %%]]
 %%[[18
-      , (hsnRecUnboxed		, mkTGI (Ty_Con hsnRecUnboxed))
+      , (hsnRecUnboxed		, mkTGI (appCon hsnRecUnboxed))
       , (hsnIntUnboxed		, mkTGI tyIntUnboxed)
 %%]]
 %%[[31
-      , (hsnEqTilde			, mkTGI (Ty_Con hsnEqTilde))
+      , (hsnEqTilde			, mkTGI (appCon hsnEqTilde))
 %%]]
 %%[[97
       , (hsnInteger			, mkTGI tyInteger		)
-      , (hsnInt8Unboxed  	, mkTGI (Ty_Con hsnInt8Unboxed  )	)
-      , (hsnInt16Unboxed 	, mkTGI (Ty_Con hsnInt16Unboxed )	)
-      , (hsnInt32Unboxed 	, mkTGI (Ty_Con hsnInt32Unboxed )	)
-      , (hsnInt64Unboxed 	, mkTGI (Ty_Con hsnInt64Unboxed )	)
-      , (hsnWordUnboxed  	, mkTGI (Ty_Con hsnWordUnboxed  )	)
-      , (hsnWord8Unboxed 	, mkTGI (Ty_Con hsnWord8Unboxed )	)
-      , (hsnWord16Unboxed	, mkTGI (Ty_Con hsnWord16Unboxed)	)
-      , (hsnWord32Unboxed	, mkTGI (Ty_Con hsnWord32Unboxed)	)
-      , (hsnWord64Unboxed	, mkTGI (Ty_Con hsnWord64Unboxed)	)
+      , (hsnInt8Unboxed  	, mkTGI (appCon hsnInt8Unboxed  )	)
+      , (hsnInt16Unboxed 	, mkTGI (appCon hsnInt16Unboxed )	)
+      , (hsnInt32Unboxed 	, mkTGI (appCon hsnInt32Unboxed )	)
+      , (hsnInt64Unboxed 	, mkTGI (appCon hsnInt64Unboxed )	)
+      , (hsnWordUnboxed  	, mkTGI (appCon hsnWordUnboxed  )	)
+      , (hsnWord8Unboxed 	, mkTGI (appCon hsnWord8Unboxed )	)
+      , (hsnWord16Unboxed	, mkTGI (appCon hsnWord16Unboxed)	)
+      , (hsnWord32Unboxed	, mkTGI (appCon hsnWord32Unboxed)	)
+      , (hsnWord64Unboxed	, mkTGI (appCon hsnWord64Unboxed)	)
 %%]]
 %%[[99
-      , (hsnAddrUnboxed		, mkTGI (Ty_Con hsnAddrUnboxed  )	)
+      , (hsnAddrUnboxed		, mkTGI (appCon hsnAddrUnboxed  )	)
 %%]]  
       ]
 %%][6

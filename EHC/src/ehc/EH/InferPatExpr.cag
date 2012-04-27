@@ -113,7 +113,7 @@ SEM Expr
 -- generated from ruler rules into EHRulerRules, was 1.knTy
 %%[(5 hmtyinfer).knTy
 SEM PatExpr
-  | AppTop      loc         .  (knPatTy,knProdTy)   :=  tyArrowArgRes @patFunTy
+  | AppTop      loc         .  (knPatTy,knProdTy)   :=  appUn1Arr @patFunTy
   | Con         loc         .  knPatTy              :=  @tvarv1_
 %%[[7
   | Rec         loc         .  knPatTy              =   @lhs.knTy

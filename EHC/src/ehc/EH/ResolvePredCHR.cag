@@ -115,7 +115,7 @@ SEM Decl
 %%]]
                                                             | otherwise
                                                               -> (emptyCnstrMp,[],[],emptyDerivCls)
-                                                            where ([dataTy],dataAltTy) = tyArrowArgsRes $ dgiDataTy @derivDataDGI
+                                                            where ([dataTy],dataAltTy) = appUnArr $ dgiDataTy @derivDataDGI
                                                                   alts = tyRecExts2 dataAltTy
                                                                   altsPrOcc
                                                                        = [ [ rngLift @range mkPredOccRng (Pred_Class (appTopApp [@derivHdPrTyCon,t])) (mkPrIdCHR u2) @predScope

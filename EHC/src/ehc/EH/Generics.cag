@@ -98,8 +98,8 @@ mkGenerRepresentableTypeSynTyProj
   where lamArity      = length tvarArgL - remArity
         (lamTvarArgL,remTvarArgL)
                       = splitAt lamArity tvarArgL
-        mkC   f       = Ty_Con $ ehcOptBuiltin  opts f
-        mkC2  f i     = Ty_Con $ ehcOptBuiltin2 opts f i
+        mkC   f       = appCon $ ehcOptBuiltin  opts f
+        mkC2  f i     = appCon $ ehcOptBuiltin2 opts f i
         mkSub (u,pu) (f,pf)
                       = mkGenerThing (mkC u,pu) id (\(x,px) (y,py) -> (appTopApp [mkC f, x, y], pf px py))
         mkPr          = mkSub (ehbnGenerDataUnit1, Proj_U1   ) (ehbnGenerDataProd, Proj_Prod                             )
@@ -107,7 +107,7 @@ mkGenerRepresentableTypeSynTyProj
         mkLblArg (mbLbl,t)
                       = ( appTopApp [ mkC ehbnGenerDataMetaS1, sel, t' ], Proj_M1_S1 p )
                       where (t',p) = mkArg t
-                            sel    = maybe (mkC ehbnGenerDataNoSelector) (Ty_Con) mbLbl
+                            sel    = maybe (mkC ehbnGenerDataNoSelector) (appCon) mbLbl
         mkArg t       = (appTopApp funarg, proj)
                       where (funarg,proj)
                               | isJust mbVar     = case elemIndex tvar remTvarArgL of       -- TBD: check for kind *, check for one of tvarArgL
@@ -126,22 +126,22 @@ mkGenerRepresentableTypeSynTyProj
                                                      _ -> dflt
                               | otherwise        = dflt
                               where mbVar    @(~(Just tvar      )) = tyMbVar        t
-                                    funArgs  @(       (fun,args) ) = tyAppFunArgs   t
+                                    funArgs  @(       (fun,args) ) = appUnApp       t
                                     isRepr = maybe (isJust $ tyMbVar fun) (\con -> isRepresentable con remArity) $ tyMbCon fun
                                     dflt   = ([ mkC ehbnGenerDataRec0, t ], Proj_K1 [t])
-        mkAlt tg c (t,p)  = (appTopApp [mkC2 ehbnGenerDataMetaCN 1, Ty_Con c, t], Proj_M1 $ Proj_Con tg p)
+        mkAlt tg c (t,p)  = (appTopApp [mkC2 ehbnGenerDataMetaCN 1, appCon c, t], Proj_M1 $ Proj_Con tg p)
         mkTop (t,p)   = ( mkTyLam lamTvarArgL (appTopApp [ mkC2 ehbnGenerDataMetaDN 1, appCon tyNm, t ])
                         , Proj $ Proj_M1 p
                         )
         -- eqLastTvar    = maybe (const False) (\(_,v) -> maybe False (v==) . tyMbVar) $ initlast tvarArgL
         -- isRec t       = not (null as) || tyConNm f `elem` allTyNmL
-        --               where (f,as) = tyAppFunArgs t
+        --               where (f,as) = appUnApp t
 
 mkGenerRepresentableTypeSynonymKi :: TyKiGam -> HsName -> Ty
 mkGenerRepresentableTypeSynonymKi tyKiGam tyNm
   = maybe (acoreTyErr $ "Generics.mkGenerRepresentableTypeSynonymKi: " ++ show tyNm) (addStar . tkgiKi) $ tyKiGamLookupByName tyNm tyKiGam
   where addStar ki = appArr (as ++ [kiStar]) r
-                   where (as,r) = tyArrowArgsRes ki
+                   where (as,r) = appUnArr ki
 
 -- TBD: sort out additional pol param at end, just like for kinds
 mkGenerRepresentableTypeSynonymPol :: PolGam -> HsName -> Ty
@@ -182,15 +182,15 @@ SEM Expr
                                                             ]
                                                           )
                                                         | ((origtnm,tvs,ki),cs,sc,remArity) <- @decls.generDataInfoL
-                                                        , let -- ki' = tyArrowArgsRes $ @bodyTyKiVarMp1 `varUpd` ki
+                                                        , let -- ki' = appUnArr $ @bodyTyKiVarMp1 `varUpd` ki
                                                               tnm = hsnNm2GenerDatatype origtnm
                                                         ]
 
                             -- various environments/gammas
-                            .   generDataGam        =   gamFromAssocL [ (n, mkDGIPlain n (Ty_Con n) [] Map.empty )
+                            .   generDataGam        =   gamFromAssocL [ (n, mkDGIPlain n (appCon n) [] Map.empty )
                                                                       | n <- @generDataTyAndConNmL
                                                                       ]
-                            .   generTyGam          =   gamFromAssocL [ (n, mkTGIData (Ty_Con n) (acoreTyErr $ "Generics.Expr.Let.TyGam.DataTyAndCon: " ++ show n))
+                            .   generTyGam          =   gamFromAssocL [ (n, mkTGIData (appCon n) (acoreTyErr $ "Generics.Expr.Let.TyGam.DataTyAndCon: " ++ show n))
                                                                       | n <- @generDataTyAndConNmL
                                                                       ]
                                                         `gamUnion`
@@ -283,7 +283,7 @@ SEM Decl
                                                                | ((fldNm,dfltvalNm),u) <- zip generDerivFlds (mkNewLevUIDL (length generDerivFlds) @lUniq_generDeriv1)
                                                                , let mbFSig = valGamLookup fldNm     @tySigGam  , isJust mbFSig
                                                                , let mbDSig = valGamLookup dfltvalNm @lhs.valGam, isJust mbDSig
-                                                               , let repTy  = appTopApp (  [Ty_Con repTyNm]
+                                                               , let repTy  = appTopApp (  [appCon repTyNm]
                                                                                         ++ take (dataArity - @derivTruncTailArity) @derivDataTyArgs
                                                                                         ++ [mkTyVar u]
                                                                                         )

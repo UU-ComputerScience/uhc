@@ -153,9 +153,9 @@ fiAppSpineLookup fi n gappSpineGam
         -> mbasi
   where upd pgi asi
           | foHasErrs fo = asi
-          | otherwise    = asi {asgiVertebraeL = zipWith asUpdateByPolarity (tyArrowArgs $ tyCanonic (emptyTyBetaRedEnv' emptyFE) $ foVarMp fo `varUpd` foTy fo) (asgiVertebraeL asi)}
+          | otherwise    = asi {asgiVertebraeL = zipWith asUpdateByPolarity (appUnArrArgs $ tyCanonic (emptyTyBetaRedEnv' emptyFE) $ foVarMp fo `varUpd` foTy fo) (asgiVertebraeL asi)}
           where pol = pgiPol pgi
-                (polargs,polres) = tyArrowArgsRes pol
+                (polargs,polres) = appUnArr pol
                 (_,u1,u2) = mkNewLevUID2 uidStart
                 fo = fitsIn weakFIOpts emptyFE u1 (emptyVarMp :: VarMp) pol (map mkPolVar (mkNewUIDL (length polargs) u2) `appArr` polCovariant)
 %%]]
@@ -613,7 +613,7 @@ A counterpart type to enforce deep quantifier instantiation.
                           )
                                   -> Just (appTopApp $ mkNewTyVarL (length as + 1) u1, fi')
                     | otherwise   -> Nothing
-                    where (f,as) = tyAppFunArgs t
+                    where (f,as) = appUnApp t
               where (u,u1) = mkNewLevUID (fiUniq fi)
                     fi' = fi {fiUniq = u}
 %%]
@@ -1870,11 +1870,11 @@ fitPredToEvid' u varmp prTy gg
                           Right g   -> maybe err (\clgi -> fClgi u clgi prTy) $ gamLookup (fst $ predMatchNmArgs p) g
                                     where err = emptyFO {foErrL = [rngLift emptyRange mkErr_NamesNotIntrod "class" [fst $ tyPredMatchNmArgs prTy]]}
                     where fClgi u clgi prTy
-                            = fo {foTy = snd (tyArrowArgRes (foTy fo))}
+                            = fo {foTy = appUnArrRes (foTy fo)}
                             where (u',u1,u2) = mkNewLevUID2 u
                                   fo = fitsIn (predFIOpts {fioBindRVars = FIOBindNoBut $ Set.singleton u2}) emptyFE u1 varmp (clgiPrToEvidTy clgi) ([prTy] `appArr` mkTyVar u2)
                  Ty_Pred (Pred_Pred t)
-                    ->  let  (aL,r) = tyArrowArgsRes t
+                    ->  let  (aL,r) = appUnArr t
                              (_,aLr'@(r':aL')) = foldr (\t (u,ar) -> let (u',u1) = mkNewLevUID u in (u',fPr u1 t : ar)) (u,[]) (r : aL)
                         in   manyFO (aLr' ++ [emptyFO {foTy = map foTy aL' `appArr` foTy r'}])
 %%]

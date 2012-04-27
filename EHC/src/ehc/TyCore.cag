@@ -254,7 +254,7 @@ unLazy _             = tyErr "TyCore.unLazy"
 tyStripL1Args :: Ty -> Ty
 tyStripL1Args t
   = foldr Expr_Arrow r $ filter (\x -> case unSeq x of {ExprSeq1_L0Bind _ _ -> False ; _ -> True}) as
-  where (as,r) = tyArrowArgsRes t
+  where (as,r) = appUnArr t
 %%]
 
 %%[(8 codegen tycore) hs export(tyL0BindToL1Val)

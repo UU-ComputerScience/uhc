@@ -10,7 +10,7 @@
 %%[(3 hmtyinfer || hmtyast) hs module {%{EH}Ty.Trf.Instantiate}
 %%]
 
-%%[(3 hmtyinfer || hmtyast) hs import({%{EH}Base.Common},{%{EH}Ty},{%{EH}VarMp},{%{EH}Substitutable})
+%%[(3 hmtyinfer || hmtyast) hs import({%{EH}Base.Common},{%{EH}Base.AppLike},{%{EH}Ty},{%{EH}VarMp},{%{EH}Substitutable})
 %%]
 
 %%[(4 hmtyinfer || hmtyast) hs import({%{EH}Base.Debug})
@@ -101,17 +101,6 @@ tyInst1Exists :: UID -> Ty -> Ty
 tyInst1Exists uniq ty = fst (tyInst uniq True instCoExist ty)
 %%]
 
-tyInst :: UID -> Bool -> HowToInst -> Ty -> (Ty,TyVarIdL)
-tyInst uniq onlyExists howToInst ty
-  = (s `varUpd` ty',tvl)
-  where  i u mbQ (Ty_TBind q v t) | not (tyquIsForall q && onlyExists) && maybe True (==q) mbQ
-                             =  let  (u',v')        = mkNewUID u
-                                     (s,t',tvl')    = i u' (Just q) t
-                                in   ((v `varmpTyUnit` (howToInst q v')) `varUpd` s,t',v':tvl')
-         i _ _ t             =  (emptyVarMp,t,[])
-         (s,ty',tvl)         =  i uniq Nothing ty
-
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% How to instantiate
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -120,7 +109,7 @@ tyInst uniq onlyExists howToInst ty
 type HowToInst = TyQu -> TyVarId -> Ty
 
 instCoConst, instContra, instCo :: HowToInst
-instCoConst  q v = if tyquIsForall q then Ty_Var v TyVarCateg_Plain else mkTyCon ("C_" ++ show v)
+instCoConst  q v = if tyquIsForall q then Ty_Var v TyVarCateg_Plain else appCon (mkHNm $ "C_" ++ show v)
 instContra   q v = if tyquIsForall q then Ty_Var v TyVarCateg_Fixed else Ty_Var v TyVarCateg_Plain
 instCo       q v = if tyquIsForall q then Ty_Var v TyVarCateg_Plain else Ty_Var v TyVarCateg_Fixed
 %%]

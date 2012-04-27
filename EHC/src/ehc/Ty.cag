@@ -15,10 +15,10 @@ used by EHC. The AST is described in Ty/AbsSyn.
 %%[1 hs module {%{EH}Ty} import(EH.Util.Utils,{%{EH}Base.Common}, {%{EH}Base.AppLike}, {%{EH}Base.Builtin}, {%{EH}Opts.Base})
 %%]
 
-%%[(1 hmtyinfer || hmtyast) hs export(TyAGItf(..), Ty(..), TyAnn(..), TyL, tyInt, tyChar, mkTyCon)
+%%[(1 hmtyinfer || hmtyast) hs export(TyAGItf(..), Ty(..), TyAnn(..), TyL, tyInt, tyChar)
 %%]
 
-%%[(1 hmtyinfer || hmtyast) hs export(tyLHdAndTl, tyArrowArgRes, tyArrowArgsRes, tyArrowArgs, tyArrowRes, tyAppFunArgs, tyProdArgs, tyAppArgs) 
+%%[(1 hmtyinfer || hmtyast) hs export(tyLHdAndTl, tyProdArgs) 
 %%]
 
 %%[(1 hmtyinfer || hmtyast) hs import(Data.Maybe, qualified Data.Set as Set, qualified Data.Map as Map) 
@@ -52,9 +52,6 @@ used by EHC. The AST is described in Ty/AbsSyn.
 %%]
 
 %%[(7 hmtyinfer || hmtyast) hs import(Data.List) export(kiRow,tyRowEmpty,tyRecEmpty,tySumEmpty,mkTyRow,mkTyRec,mkTySum,mkTyRecExt) 
-%%]
-
-%%[(7 hmtyinfer || hmtyast) hs export(tyAppFunArg) 
 %%]
 
 %%[(7_2 hmtyinfer || hmtyast) hs import(Data.Set(Set), qualified Data.Map as Map, Data.Map(Map))
@@ -806,6 +803,8 @@ instance AppLike Ty {- TyAnn () -} where
 %%[[7
   appProdApp tyL  = mkTyRec (zip positionalFldNames tyL)
 %%]]
+  -- appDflt		 = Ty_Any
+
   appMbCon (Ty_Con n) 	    = Just n
   appMbCon _            	= Nothing
 
@@ -825,7 +824,7 @@ instance AppLike Ty {- TyAnn () -} where
   appMbBind1 _            	    = Nothing
 %%]
 
-%%[(1 hmtyinfer || hmtyast).mkTyCon hs
+%%[(1111 hmtyinfer || hmtyast).mkTyCon hs
 mkTyCon :: String -> Ty
 mkTyCon n = appCon (hsnFromString n)
 %%]
@@ -942,11 +941,13 @@ mkTyPr p
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(1 hmtyinfer || hmtyast).tyInt hs
-tyInt   = Ty_Con hsnInt
+tyInt :: Ty
+tyInt   = appCon hsnInt
 %%]
 
 %%[(1 hmtyinfer || hmtyast).tyChar hs
-tyChar  = Ty_Con hsnChar
+tyChar :: Ty
+tyChar  = appCon hsnChar
 %%]
 
 %%[(5 hmtyinfer || hmtyast).tyString hs export(tyString)
@@ -958,151 +959,67 @@ tyString  = appConApp hsnDataList [tyChar]
 %%]
 
 %%[(6 hmtyinfer || hmtyast) hs
-kiStar  = Ty_Con hsnKindStar
+kiStar :: Ty
+kiStar  = appCon hsnKindStar
 %%]
 
 %%[(7 hmtyinfer || hmtyast) hs
-kiRow       = Ty_Con hsnKindRow
-tyRowEmpty  = Ty_Con hsnRowEmpty
+kiRow, tyRowEmpty :: Ty
+kiRow       = appCon hsnKindRow
+tyRowEmpty  = appCon hsnRowEmpty
 tyRecEmpty  = mkTyRec []
 tySumEmpty  = mkTySum []
 %%]
 
 %%[(18 hmtyinfer || hmtyast) hs export(tyIntUnboxed)
-tyIntUnboxed   = Ty_Con hsnIntUnboxed
+tyIntUnboxed   = appCon hsnIntUnboxed
 %%]
 
 %%[(18 hmtyinfer || hmtyast) hs export(kiUnboxed)
-kiUnboxed  = Ty_Con hsnKindUnboxed
+kiUnboxed  = appCon hsnKindUnboxed
 %%]
 
 %%[(97 hmtyinfer || hmtyast) hs export(tyInteger)
-tyInteger      	  = Ty_Con hsnInteger
+tyInteger :: Ty
+tyInteger      	  = appCon hsnInteger
 %%]
-tyInt8Unboxed     = Ty_Con hsnInt8Unboxed  
-tyInt16Unboxed    = Ty_Con hsnInt16Unboxed 
-tyInt32Unboxed    = Ty_Con hsnInt32Unboxed 
-tyInt64Unboxed    = Ty_Con hsnInt64Unboxed 
-tyWordUnboxed     = Ty_Con hsnWordUnboxed  
-tyWord8Unboxed    = Ty_Con hsnWord8Unboxed 
-tyWord16Unboxed   = Ty_Con hsnWord16Unboxed
-tyWord32Unboxed   = Ty_Con hsnWord32Unboxed
-tyWord64Unboxed   = Ty_Con hsnWord64Unboxed
+tyInt8Unboxed     = appCon hsnInt8Unboxed  
+tyInt16Unboxed    = appCon hsnInt16Unboxed 
+tyInt32Unboxed    = appCon hsnInt32Unboxed 
+tyInt64Unboxed    = appCon hsnInt64Unboxed 
+tyWordUnboxed     = appCon hsnWordUnboxed  
+tyWord8Unboxed    = appCon hsnWord8Unboxed 
+tyWord16Unboxed   = appCon hsnWord16Unboxed
+tyWord32Unboxed   = appCon hsnWord32Unboxed
+tyWord64Unboxed   = appCon hsnWord64Unboxed
 
 %%[(99 hmtyinfer || hmtyast) hs
 %%]
-tyAddrUnboxed   = Ty_Con hsnAddrUnboxed
+tyAddrUnboxed   = appCon hsnAddrUnboxed
 
 %%[(11 hmtyinfer || hmtyast) hs export(tyString)
 tyString :: EHCOpts -> Ty
-tyString o = Ty_Con (ehcOptBuiltin o ehbnPrelString)
+tyString o = appCon (ehcOptBuiltin o ehbnPrelString)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Destruction & manipulation for Arrow, i.e. function types
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(1 hmtyinfer || hmtyast).unMkTy.sigs.tyArrow hs
-tyArrowArgRes   :: Ty -> (Ty,Ty)
-%%]
-
 %%[(1 hmtyinfer || hmtyast).unMkTy.sigs.Arrow hs
-tyArrowArgsRes  :: Ty -> (TyL,Ty)
-tyAppFunArgs    :: Ty -> (Ty,TyL)
-tyAppArgs       :: Ty -> TyL
-tyArrowArgs     :: Ty -> TyL
-tyArrowRes      :: Ty -> Ty
-%%]
-
-%%[(1 hmtyinfer || hmtyast).unMkTy.tyArrowArgRes hs
-tyMbArrowArgRes   :: Ty -> Maybe (Ty,Ty)
-tyMbArrowArgRes = appMb1Arr
-{-# INLINE tyMbArrowArgRes #-}
-
-tyArrowArgRes t = maybe (Ty_Any,t) id $ tyMbArrowArgRes t
-%%]
-
-%%[(1111 hmtyinfer || hmtyast).unMkTy.tyArrowArgRes hs
--- | if an arrow, split into single arg + res
-tyMbArrowArgRes   :: Ty -> Maybe (Ty,Ty)
-tyMbArrowArgRes t
-  =  case tyUnAnn t of
-%%[[7
-       Ty_TBind _ _ _ t   -> tyMbArrowArgRes t
-%%]]
-       Ty_App a1 r
-         -> case tyUnAnn a1 of
-              Ty_App a2 a
-                -> case tyUnAnn a2 of
-                     Ty_Con nm | hsnIsArrow nm  -> Just (a,r)
-                     _                          -> Nothing
-              _ -> Nothing
-       _ -> Nothing
-
-tyArrowArgRes t = maybe (Ty_Any,t) id $ tyMbArrowArgRes t
-%%]
-
-%%[(1 hmtyinfer || hmtyast).unMkTy.tyArrowArgsRes hs
-tyArrowArgsRes' :: Ty -> (([Ty],Ty),Ty->Ty)
-tyArrowArgsRes' = appUnArr'
-{-# INLINE tyArrowArgsRes' #-}
-
--- | split into arguments and result
-tyArrowArgsRes = fst . tyArrowArgsRes'
-{-# INLINE tyArrowArgsRes #-}
-%%]
-
-%%[(1111 hmtyinfer || hmtyast).unMkTy.tyArrowArgsRes hs
--- | split into arguments and result, and give rebuilding function of outer layer
-tyArrowArgsRes' :: Ty -> (([Ty],Ty),Ty->Ty)
-tyArrowArgsRes' t
-  =  case tyUnAnn t of
-%%[[7
-       Ty_TBind q tv l t  -> let (asr,mk) = tyArrowArgsRes' t in (asr, Ty_TBind q tv l . mk)
-%%]]
-       t | isJust mbAR    -> let ((as,r'),_) = tyArrowArgsRes' r in ((a:as,r'),id)
-         | otherwise      -> (([],t),id)
-         where mbAR@(~(Just (a,r))) = tyMbArrowArgRes t
-
--- | split into arguments and result
-tyArrowArgsRes = fst . tyArrowArgsRes'
-%%]
-
-%%[(1 hmtyinfer || hmtyast).unMkTy.funs.arrow hs
-tyArrowArgs  = appUnArrArgs
-{-# INLINE tyArrowArgs #-}
-
-tyArrowRes   = appUnArrRes
-{-# INLINE tyArrowRes #-}
-%%]
-
-%%[(1111 hmtyinfer || hmtyast).unMkTy.funs.arrow hs
-tyArrowArgs  = fst . tyArrowArgsRes
-tyArrowRes   = snd . tyArrowArgsRes
-%%]
-
-%%[(9 hmtyinfer || hmtyast) hs export(tyArrowArity)
--- | the arity of an arrow type
-tyArrowArity :: Ty -> Int
-tyArrowArity = length . tyArrowArgs
-{-# INLINE tyArrowArity #-}
-%%]
-
-%%[(8 hmtyinfer || hmtyast) hs export(tyArrowInverse)
--- |  inverse type, i.e. a->b gives b->a, a->b->c gives c->(a,b)
-tyArrowInverse :: Ty -> Ty
-tyArrowInverse t
-  = case tyArrowArgsRes' t of
-      ((   [a]  ,r),mk) -> mk $ [r] `appArr` a
-      ((as@(_:_),r),mk) -> mk $ [r] `appArr` appProdApp as
-      _                 -> t
+-- tyArrowArgsRes  :: Ty -> (TyL,Ty)
+-- tyAppFunArgs    :: Ty -> (Ty,TyL)
+-- tyAppArgs       :: Ty -> TyL
+-- tyArrowArgs     :: Ty -> TyL
+-- tyArrowRes      :: Ty -> Ty
+-- tyArrowArg      :: Ty -> Ty
 %%]
 
 Substitution aware variants
 
 %%[(9 hmtyinfer || hmtyast) hs export(tyArrowArgResWithLkup)
 tyArrowArgResWithLkup :: (TyVarId -> Maybe Ty) -> Ty -> (Ty,Ty)
-tyArrowArgResWithLkup lookup = tyVarChkVisitLift lookup tyArrowArgRes tyArrowArgRes
+tyArrowArgResWithLkup lookup = tyVarChkVisitLift lookup appUn1Arr appUn1Arr
 %%]
 
 %%[(9 hmtyinfer || hmtyast) hs export(tyArrowImplsResWithLkup,tyArrowImplsArgResWithLkup)
@@ -1115,7 +1032,7 @@ tyArrowImplsArgResWithLkup lookup t
 tyArrowImplsResWithLkup :: (TyVarId -> Maybe Ty) -> Ty -> (TyL,Ty)
 tyArrowImplsResWithLkup lookup t
   = extr t
-  where extr t = case tyMbArrowArgRes t of
+  where extr t = case appMb1Arr t of
                    Just (a,r)
                      | isImpls a'
                        -> let (as,r') = extr r in (a':as,r')
@@ -1143,27 +1060,10 @@ tyProdArgs      :: Ty -> TyL
 tyLHdAndTl      :: [Ty] -> (Ty,TyL)
 %%]
 
-%%[(1 hmtyinfer || hmtyast).unMkTy.tyAppFunArgs hs
-tyAppFunArgs = appUnApp
-{-# INLINE tyAppFunArgs #-}
-%%]
-
-%%[(1111 hmtyinfer || hmtyast).unMkTy.tyAppFunArgs hs
-tyAppFunArgs
-  =  extr []
-  where  extr as t
-           =  case tyUnAnn t of
-%%[[6
-                Ty_TBind _ qv _ t -> extr as t
-%%]]
-                Ty_App f a        -> extr (a:as) f
-                _                 -> (t,as)
-%%]
-
 %%[(6 hmtyinfer || hmtyast) hs export(tyAppFunArgsWithLkup)
 -- Substitution aware
 tyAppFunArgsWithLkup :: (TyVarId -> Maybe Ty) -> Ty -> (Ty,TyL)
-tyAppFunArgsWithLkup lookup = tyVarChkVisitLift lookup tyAppFunArgs tyAppFunArgs
+tyAppFunArgsWithLkup lookup = tyVarChkVisitLift lookup appUnApp appUnApp
 {-# INLINE tyAppFunArgsWithLkup #-}
 %%]
 
@@ -1179,18 +1079,8 @@ tyAppFunArgsMk
                 _                 -> (t,as,\f as -> appTopApp (f:as))
 %%]
 
-%%[(1 hmtyinfer || hmtyast).unMkTy.funs hs
-tyAppArgs    = appUnAppArgs
-{-# INLINE tyAppArgs #-}
-%%]
-
-%%[(1111 hmtyinfer || hmtyast).unMkTy.funs hs
-tyAppArgs    = snd . tyAppFunArgs
-{-# INLINE tyAppArgs #-}
-%%]
-
 %%[(1 hmtyinfer || hmtyast).unMkTy.tyProdArgs hs
-tyProdArgs   = tyAppArgs
+tyProdArgs   = appUnAppArgs
 {-# INLINE tyProdArgs #-}
 %%]
 
@@ -1202,7 +1092,7 @@ tyLHdAndTl   = hdAndTl' Ty_Any
 %%[(4 hmtyinfer || hmtyast).unMkTy.tyConNm hs export(tyMbCon,tyConNm)
 tyMbCon :: Ty -> Maybe HsName
 -- tyMbCon t = case tyUnAnn t of {Ty_Con nm -> Just nm ; _ -> Nothing}
-tyMbCon = appMbCon . fst . appUnAnn
+tyMbCon = appMbCon -- . fst . appUnAnn
 {-# INLINE tyMbCon #-}
 
 tyConNm :: Ty -> HsName
@@ -1258,25 +1148,13 @@ tyPlusTy (TyPlus_Ty t _) = t
 tyProdArgs ty = let (t,al) = tyRecExts ty in map snd al
 %%]
 
-%%[(7 hmtyinfer || hmtyast) hs
-tyAppFunArg :: Ty -> (Ty,Ty)
-tyAppFunArg t =  case tyUnAnn t of {Ty_App f a -> (f,a); _ -> (Ty_Any,Ty_Any)}
-%%]
-
-%%[(9 hmtyinfer || hmtyast) hs export(tyMbAppConArgs)
-tyMbAppConArgs    :: Ty -> Maybe (HsName,TyL)
-tyMbAppConArgs t
-  =  fmap (\c -> (c,a)) $ tyMbCon f
-  where (f,a) = tyAppFunArgs t
-%%]
-
 %%[(7 hmtyinfer || hmtyast) hs export(tyAppFunMbConNm,tyAppFunConNm)
 tyAppFunMbConNm :: Ty -> Maybe HsName
-tyAppFunMbConNm = tyMbCon . fst . tyAppFunArgs
+tyAppFunMbConNm = tyMbCon . fst . appUnApp
 {-# INLINE tyAppFunMbConNm #-}
 
 tyAppFunConNm :: Ty -> HsName
-tyAppFunConNm = tyConNm . fst . tyAppFunArgs
+tyAppFunConNm = tyConNm . fst . appUnApp
 {-# INLINE tyAppFunConNm #-}
 %%]
 
@@ -1321,7 +1199,7 @@ tyLamEtaRed t
   | llas > 0 && rlDiff >= 0 && map mkTyVar las == rTl = Just (appTopApp (f:rHd))
   | otherwise                                         = Nothing
   where (las,r  ) = tyLamArgsRes t
-        (f  ,ras) = tyAppFunArgs r
+        (f  ,ras) = appUnApp r
         llas      = length las
         rlas      = length ras
         rlDiff	  = rlas - llas
@@ -1476,7 +1354,7 @@ tyDecomposeMk t
       Ty_TBind q v k t' -> (f,as,\f' as' -> Ty_TBind q v k $ mk f' as')
                         where (f,as,mk) = tyDecomposeMk t'
       Ty_App _ _        -> (f,as,\f' as' -> appTopApp (f':as'))
-                        where (f,as) = tyAppFunArgs t
+                        where (f,as) = appUnApp t
       Ty_Ext _ _ _      -> (r,assocLElts e,\r' e' -> mkTyRow r' $ zip (assocLKeys e) e')
                         where (r,e) = tyRowExts t
       _ | not (null an) -> (t2,as,\f' as' -> mk1 $ mk2 f' as')
@@ -1576,7 +1454,7 @@ tyPredNm = predNm . tyPred
 {-# INLINE tyPredNm #-}
 
 tyPrArrowArgsRes :: Ty -> ([Pred],Pred)
-tyPrArrowArgsRes tp = let (tl,t) = tyArrowArgsRes tp in (map tyPred tl, tyPred t)
+tyPrArrowArgsRes tp = let (tl,t) = appUnArr tp in (map tyPred tl, tyPred t)
 %%]
 
 %%[(9 hmtyinfer || hmtyast) hs export(tyPredMatchNmArgs,predMatchNmArgs)
@@ -1589,7 +1467,7 @@ tyPredMatchNmArgs = predMatchNmArgs . tyPred
 predMatchNmArgs :: Pred -> (HsName,[Ty])
 predMatchNmArgs p
   =  case p of
-       Pred_Class t    -> (tyAppFunConNm t, tyAppArgs t)
+       Pred_Class t    -> (tyAppFunConNm t, appUnAppArgs t)
        Pred_Pred  t    -> predMatchNmArgs $ snd $ tyPrArrowArgsRes t
 %%[[10
        Pred_Lacks _ (Label_Lab l)  -> (hsnUniqify HsNameUniqifier_LacksLabel l, [])
@@ -1751,7 +1629,7 @@ implsIsEmpty _                        = True
 tyIsPredicated :: Ty -> Bool
 tyIsPredicated (Ty_Impls i) = not $ implsIsEmpty i
 tyIsPredicated t            = isPr a
-                            where a = map tyUnAnn $ tyArrowArgs t
+                            where a = map tyUnAnn $ appUnArrArgs t
                                   isPr (Ty_Pred p:_) = True
                                   isPr _             = False
 
@@ -1872,7 +1750,7 @@ touchAnnTy = Ty_Ann touchAnn Ty_Any
 
 mkTruncArrow :: Ty -> Ty -> Ty
 mkTruncArrow a b
-  = Ty_App (Ty_App (Ty_TruncTyCon Set.empty (Ty_Con hsnArrow)) a) b
+  = Ty_App (Ty_App (Ty_TruncTyCon Set.empty (appCon hsnArrow)) a) b
 
 %%]
 
@@ -1925,7 +1803,7 @@ mkAnnArrow ty tyL uid
     
     mkTruncArr :: Ty -> Ty -> Ty
     mkTruncArr arg res
-      = Ty_App (Ty_App (Ty_TruncTyCon Set.empty (Ty_Con hsnArrow)) arg) res
+      = Ty_App (Ty_App (Ty_TruncTyCon Set.empty (appCon hsnArrow)) arg) res
 
 %%]
 

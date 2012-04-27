@@ -22,8 +22,8 @@ format ag def  (a | Ty) -> (r | t) = ([a] `appArr` (r) | t)
 format ag def  (p | Ty) => (a | Ty) -> (r | t) = ([p,a] `appArr` (r) | t)
 format ag def  (a | TyL) -> (r | t) = ((a) `appArr` (r) | t)
 
-format ag use ((a|Ty) -> r) `=` v = (a,r) `=` tyArrowArgRes (v)
-format ag use ((...) -> r) `=` v = r `=` tyArrowRes (v)
+format ag use ((a|Ty) -> r) `=` v = (a,r) `=` appUn1Arr (v)
+format ag use ((...) -> r) `=` v = r `=` appUnArrRes (v)
 format ag use (p => a -> r) `=` v = (p,a,r) `=` tyArrowImplsArgRes (v)
 
 -- VarMp
@@ -148,7 +148,7 @@ format ag ANY = (Ty_Any|Ty)
 format ag ity = imprTy
 format ag ty.ident = gTy
 
-format ag  tyString2 = "(Ty_Con (ehbnPrelString $ ehcOptBuiltinNames @lhs.opts))"
+format ag  tyString2 = "(appCon (ehbnPrelString $ ehcOptBuiltinNames @lhs.opts))"
 format tex tyString2 = tyString
 
 -- tvars
@@ -281,7 +281,7 @@ format ag pTopPatK = patExpr
 format ag pExpr = patExpr
 
 -- Translation from TyExpr to Ty
-format ag tyexprCon = Ty_Con
+format ag tyexprCon = appCon
 format ag tyexprQuant = Ty_Quant
 
 -- Translation to core (CExpr)

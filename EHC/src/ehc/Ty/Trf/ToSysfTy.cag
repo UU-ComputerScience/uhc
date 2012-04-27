@@ -25,7 +25,7 @@ WRAPPER TyAGItf
 %%% Explicit name for SysF type
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 coresysf && (hmtyinfer || hmtyast)) hs export(SysfTy,SysfTySeq,SysfTySeq1)
+%%[(8 codegen coresysf) hs export(SysfTy,SysfTySeq,SysfTySeq1)
 type SysfTy     	= Ty			-- base ty
 type SysfTySeq    	= Ty			-- sequence
 type SysfTySeq1    	= Ty			-- singleton
@@ -35,7 +35,7 @@ type SysfTySeq1    	= Ty			-- singleton
 %%% System F generation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 coresysf && (hmtyinfer || hmtyast)) hs export(ArrowHowDecompose(..),tyArrowInstQuArgsRes)
+%%[(8 codegen coresysf) hs export(ArrowHowDecompose(..),tyArrowInstQuArgsRes)
 data ArrowHowDecompose
  = ArrowDecompose_InstOnly		-- only ty instantiation
  | ArrowDecompose_ArgBefore		-- split off arg before

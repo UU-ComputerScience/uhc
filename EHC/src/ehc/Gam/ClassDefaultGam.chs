@@ -61,7 +61,7 @@ clDfGamLookupDefault fi pr clDfGam
         -> do (ClassDefaultGamInfo {cldiDefaultTypes = (tg:_)}) <- gamLookup nm clDfGam
               (_,tyVarMp) <- fitPredIntoPred fi pr (Pred_Class $ appCon1App nm tg)
               return tyVarMp
-        where mbConArgs@(~(Just (nm,args))) = tyMbAppConArgs t
+        where mbConArgs@(~(Just (nm,args))) = appMbConApp t
       _ -> Nothing
 %%]
 

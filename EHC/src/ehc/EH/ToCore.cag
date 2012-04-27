@@ -424,7 +424,7 @@ SEM Decl
                                                          ] ]
                                                     else [ [ acoreBind1Ty f t
                                                                (acoreLam [xn1]
-                                                                 (acoreSatSelsCasesTy (rceUpdEnv (acoreVar en) @rceEnv) (Just (xn2,fst $ tyArrowArgRes t)) (acoreVar xn1) tg))
+                                                                 (acoreSatSelsCasesTy (rceUpdEnv (acoreVar en) @rceEnv) (Just (xn2,appUnArrArg t)) (acoreVar xn1) tg))
                                                            ]
                                                            ++ (if isSaturated then [] else [ acoreBind1Ty en (acoreTyErr $ "EH.ToCore.Decl.Data.en: " ++ show en) (acoreBuiltinError @lhs.opts ("has no field selection '" ++ show f ++ "'")) ])
                                                          | (f,i) <- Map.toList $ dgiFldInConstrMp @dgi
@@ -536,7 +536,7 @@ SEM PatExpr
 
 %%[(8 codegen)
 SEM PatExpr
-  | AppTop Con  loc         .   tyConNm     =   tyConNm $ fst $ tyAppFunArgs @finKnPatTy -- $ tyAppFunArgsWithLkup (varmpTyLookupCyc2 @lhs.finTyVarMp) @knPatTy
+  | AppTop Con  loc         .   tyConNm     =   tyConNm $ fst $ appUnApp @finKnPatTy -- $ tyAppFunArgsWithLkup (varmpTyLookupCyc2 @lhs.finTyVarMp) @knPatTy
                             .   dgi         =   panicJust ("PatExpr.{AppTop,Con}.dgi: " ++ show @tyConNm)
                                                     $ dataGamLookup @tyConNm $ @lhs.dataGam
                             .   dti         =   panicJust ("PatExpr.{AppTop,Con}.dti: " ++ show @tyConNm ++ "." ++ show @appFunNm)
@@ -1295,7 +1295,7 @@ mkInstanceDerivingFldBind opts rceEnv dataGam uniq derivDataDGI derivHdDataTy di
                splitDTIs t ts -- in (lt,eq,gt), according to list ordering
                  = (l,e,g)
                  where (l,(e:g)) = span ((/= t) . dtiCTag) ts
-               fArity = (length $ tyArrowArgs $ dcfTy dcf) - dcfNrOmitTailArg dcf - length (dcfInitialArgL dcf) - 1 {- dictionary -}
+               fArity = (length $ appUnArrArgs $ dcfTy dcf) - dcfNrOmitTailArg dcf - length (dcfInitialArgL dcf) - 1 {- dictionary -}
                n1subs t = nsubs t n1
                nsubs t n = take (ctagArity t) $ hsnLclSupplyWith n
                extraCxL = [ acoreNmHolePred (poPoi prOcc) | prOcc <- derivExtraPrOcc ]

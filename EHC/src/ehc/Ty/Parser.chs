@@ -7,7 +7,7 @@
 %%% Ty parser
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(50 hmtyinfer || hmtyast) module {%{EH}Ty.Parser} import(UU.Parsing, EH.Util.ParseUtils, {%{EH}Base.Parser}, EH.Util.ScanUtils, {%{EH}Base.Common}, {%{EH}Base.Builtin},{%{EH}Scanner.Common}, {%{EH}Scanner.Scanner}, {%{EH}Ty})
+%%[(50 hmtyinfer || hmtyast) module {%{EH}Ty.Parser} import(UU.Parsing, EH.Util.ParseUtils, {%{EH}Base.Parser}, EH.Util.ScanUtils, {%{EH}Base.Common},{%{EH}Base.AppLike}, {%{EH}Base.Builtin},{%{EH}Scanner.Common}, {%{EH}Scanner.Scanner}, {%{EH}Ty})
 %%]
 
 %%[(50 hmtyinfer || hmtyast) export(pTy,pPred)
@@ -35,7 +35,7 @@ pTyBase :: P Ty
 pTyBase
   =   mkTyVar <$> pUIDHI
   <|> Ty_Any  <$  pQUESTQUEST
-  <|> Ty_Con  <$> pDollNm
+  <|> appCon  <$> pDollNm
   <|> pParens pTy
   <|> mkTyPr  <$> pPred
   <|> pRow
@@ -45,7 +45,7 @@ pTyBase
              *> (   foldl (\r (l,e) -> Ty_Ext r l e)
                     <$> pRow <* pVBAR
                     <*> pList1Sep pCOMMA ((,) <$> (pDollNm <|> mkHNmPos <$> pInt) <* pDCOLON <*> pTy)
-                <|> pSucceed (Ty_Con hsnRowEmpty)
+                <|> pSucceed (appCon hsnRowEmpty)
                 )
             <*  pCROWROW
 

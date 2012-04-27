@@ -8,7 +8,7 @@
 
 %%[(8 codegen)
 SEM CExpr
-  | FFI         loc         .   argTyLresTy     =   tyArrowArgsRes @ty
+  | FFI         loc         .   argTyLresTy     =   appUnArr @ty
                             .   argTyL          =   fst @loc.argTyLresTy
                             .   resTy           =   snd @loc.argTyLresTy
 %%[[8
@@ -40,7 +40,7 @@ SEM CExpr
 
 %%[(90 codegen)
 SEM CBound
-  | FFE         loc         .   argTyLresTy     =   tyArrowArgsRes @ty
+  | FFE         loc         .   argTyLresTy     =   appUnArr @ty
                             .   argTyL          =   fst @loc.argTyLresTy
                             .   resTy           =   snd @loc.argTyLresTy
                             .   foreignEntInfo  =   foreignEntExtract @expEnt
@@ -90,7 +90,7 @@ extra state param, extra state return (tupled with actual return value)
 
 %%[(9898 codegen grin)
 SEM CExpr
-  | FFI         loc         .   mbIORes     =   case tyMbAppConArgs @resTy of
+  | FFI         loc         .   mbIORes     =   case appMbConApp @resTy of
                                                   Just (n,[a]) | ehcOptBuiltin @lhs.opts ehbnIO == n
                                                     -> Just a
                                                   _ -> Nothing

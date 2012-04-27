@@ -50,6 +50,9 @@ class AppLike a {- ann bnd | a -> ann bnd -} where
   appRngCon    _    =   appCon
   appRngPar    _    =   appPar
   
+  -- fallback, default value
+  -- appDflt			:: a
+
   -- inspection/deconstruction
   appMbBind1        :: a -> Maybe (a,a->a)
   appMbAnn1         :: a -> Maybe (a,a->a)
@@ -208,7 +211,7 @@ appMbConApp x
        
 %%]
 
-%%[1 export(appMb1Arr',appMb1Arr,appMbArr,appUnArr',appUnArr)
+%%[1 export(appMb1Arr',appMb1Arr,appMbArr,appUnArr',appUnArr,appUn1Arr)
 -- | Wrap 1 arr unpacking into Maybe, together with reconstruction function for toplevel unwrapping
 appMb1Arr' :: AppLike a {- ann bnd -} => a -> Maybe ((a,a),a->a)
 appMb1Arr' x
@@ -235,13 +238,18 @@ appUnArr' x
                       where ((as,r'),_) = appUnArr' r
       _               -> (([],x),id)
 
--- | Arr unpacking
+-- | Arr unpacking into args + res
 appUnArr :: AppLike a {- ann bnd -} => a -> ([a],a)
 appUnArr = fst . appUnArr'
 {-# INLINE appUnArr #-}
+
+-- | Arr unpacking into arg + res, when failing to unpack arg hold a default
+appUn1Arr :: AppLike a {- ann bnd -} => a -> (a,a)
+appUn1Arr x = maybe (panic "appUn1Arr.arg",x) id $ appMb1Arr x
+{-# INLINE appUn1Arr #-}
 %%]
 
-%%[1 export(appUnArrArgs,appUnArrRes)
+%%[1 export(appUnArrArgs,appUnArrRes,appUnArrArg)
 -- | Arr unpacking, args only
 appUnArrArgs :: AppLike a {- ann bnd -} => a -> [a]
 appUnArrArgs = fst . appUnArr
@@ -251,5 +259,23 @@ appUnArrArgs = fst . appUnArr
 appUnArrRes :: AppLike a {- ann bnd -} => a -> a
 appUnArrRes = snd . appUnArr
 {-# INLINE appUnArrRes #-}
+
+-- | Arr unpacking, arg only
+appUnArrArg :: AppLike a {- ann bnd -} => a -> a
+appUnArrArg = fst . appUn1Arr
+{-# INLINE appUnArrArg #-}
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Derived constructing: misc
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs export(appArrInverse)
+-- |  inverse type, i.e. a->b gives b->a, a->b->c gives c->(a,b)
+appArrInverse :: AppLike a {- ann bnd -} => a -> a
+appArrInverse x
+  = case appUnArr' x of
+      ((   [a]  ,r),mk) -> mk $ [r] `appArr` a
+      ((as@(_:_),r),mk) -> mk $ [r] `appArr` appProdApp as
+      _                 -> x
+%%]

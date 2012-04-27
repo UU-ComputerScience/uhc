@@ -102,6 +102,9 @@ class AbstractCore  expr metaval bind bound bindcateg metabind ty pat patrest pa
   acoreHoleLet :: UID -> expr -> expr
 %%]]
 
+  -- | a default, fallback
+  -- acoreDflt :: expr
+
   ------------------------- constructing: ty -------------------------
   -- | construct ty from Ty, usable in Core context
   acoreTy2ty :: Ty -> ty
@@ -266,6 +269,8 @@ instance AbstractCore e m b basp bcat mbind t p pr pf a => AppLike e {- () () -}
   appCon        = acoreVar . mkHNm
   appPar        = id
   appVar        = acoreVar . mkHNm
+  
+  -- appDflt       = 
   
   appMbCon      = acoreExprMbVar
   appMbApp1 e   = do (f,b) <- acoreExprMbApp e

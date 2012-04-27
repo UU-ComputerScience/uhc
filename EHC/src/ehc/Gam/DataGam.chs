@@ -8,7 +8,7 @@
 %%[7 import(EH.Util.Pretty,EH.Util.Utils)
 %%]
 
-%%[7 hs import ({%{EH}Base.Common},{%{EH}Base.Builtin})
+%%[7 hs import ({%{EH}Base.Common},{%{EH}Base.AppLike},{%{EH}Base.Builtin})
 %%]
 %%[7 hs import ({%{EH}Ty},{%{EH}Ty.Pretty})
 %%]
@@ -274,14 +274,14 @@ dataGamDgiOfTy conTy dg = dataGamLookup (tyAppFunConNm conTy) dg
 %%[(8 hmtyinfer) export(dataGamDTIsOfTy)
 dataGamDTIsOfTy :: Ty -> DataGam -> Maybe [DataTagInfo]
 dataGamDTIsOfTy t g
-  = -- tr "dataGamDTIsOfTy" (t >#< tyAppFunConNm (tyArrowRes t)) $
+  = -- tr "dataGamDTIsOfTy" (t >#< tyAppFunConNm (appUnArrRes t)) $
     fmap
 %%[[8
       (Map.elems . dgiConstrTagMp)
 %%][91
       (assocLElts . dgiConstrTagAssocL)
 %%]]
-    $ gamLookup (tyAppFunConNm $ tyArrowRes t)
+    $ gamLookup (tyAppFunConNm $ appUnArrRes t)
     $ g
 %%]
 

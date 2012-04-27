@@ -696,6 +696,7 @@ instance AbstractCore CExpr CMetaVal CBind CBound CBindCateg CMetaBind Ty CPat C
 %%[[9
   acoreHoleLet							= CExpr_HoleLet
 %%]
+  -- acoreDflt								= 
 
   -- ty constants
   acoreTyBool o                         = appCon (ehcOptBuiltin o ehbnDataBool)

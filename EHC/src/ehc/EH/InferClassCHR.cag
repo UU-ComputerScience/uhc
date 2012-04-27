@@ -213,7 +213,7 @@ ATTR AllDecl Expr [ | | chrClassDeclSq USE {`Seq.union`} {Seq.empty}: {Seq.FastS
 SEM Decl
   | Class       loc         .   chrClassDecl        =   let off n = tyRecOffset n @clsTyRec
                                                             {-
-                                                            (cxt,hdt) = tyArrowArgsRes $ tyMetaTyVars @lUniq_9_prTyMeta @tyPrExpr.ty
+                                                            (cxt,hdt) = appUnArr $ tyMetaTyVars @lUniq_9_prTyMeta @tyPrExpr.ty
                                                             cx = map tyPred cxt
                                                             hd = tyPred hdt
                                                             -}

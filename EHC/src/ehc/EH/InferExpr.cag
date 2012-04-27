@@ -158,7 +158,7 @@ SEM Expr
 -- generated from ruler rules into EHRulerRules, was 1.Con
 %%[(9090 hmtyinfer).Con
 SEM Expr
-  | Con         loc         .   ty                  =   let  resTy = tyArrowRes @lhs.knTy
+  | Con         loc         .   ty                  =   let  resTy = appUnArrRes @lhs.knTy
                                                         in   tyProdArgs resTy `appArr` resTy
 %%]
 
@@ -166,7 +166,7 @@ SEM Expr
 %%[(9090 hmtyinfer).Con
 SEM Expr
   | Con         loc         .   fo_                 =   let  gTy      = mkTyFreshProdFrom @lUniq (hsnProdArity @nm)
-                                                             foKnRes  = gTy `fitsIn` (@lhs.tyVarMp `varUpd` tyArrowRes @lhs.knTy)
+                                                             foKnRes  = gTy `fitsIn` (@lhs.tyVarMp `varUpd` appUnArrRes @lhs.knTy)
                                                         in   foKnRes {foTy =  tyProdArgs (foTy foKnRes)
                                                                                 `appArr` (foTy foKnRes)}
                             .   ty                  :=  foTy @fo_
@@ -219,7 +219,7 @@ SEM Expr
                 loc         .   argTy               =   Ty_Any
                             .   knFunTy             =   [@argTy] `appArr` @lhs.knTy
                 func        .   knTy                =   @knFunTy
-                (arg.knTy,loc.ty_)                  =   tyArrowArgRes @func.ty
+                (arg.knTy,loc.ty_)                  =   appUn1Arr @func.ty
                 loc         .   ty                  =   @ty_
 %%]
 
@@ -344,7 +344,7 @@ SEM Expr
 SEM Expr
   | Lam         loc         .   funTy               =   [Ty_Any] `appArr` Ty_Any
                             .   fo_fitF_            =   @funTy `fitsIn` @lhs.knTy
-                (arg.knTy,body.knTy)                =   tyArrowArgRes (foTy @fo_fitF_)
+                (arg.knTy,body.knTy)                =   appUn1Arr (foTy @fo_fitF_)
                 arg         .   valGam              =   gamPushNew @lhs.valGam
                 loc         .   ty                  =   @lhs.knTy
 %%]
