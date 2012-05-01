@@ -5,7 +5,7 @@
 %%[(8 codegen) module {%{EH}AbstractCore}
 %%]
 
-%%[(8 codegen) import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Base.AppLike},{%{EH}Opts.Base},{%{EH}Ty})
+%%[(8 codegen) import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Base.TermLike},{%{EH}Opts.Base},{%{EH}Ty})
 %%]
 
 %%[(8 codegen) import(EH.Util.Pretty,EH.Util.Utils)

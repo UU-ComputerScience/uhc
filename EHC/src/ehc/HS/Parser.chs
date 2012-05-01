@@ -10,7 +10,7 @@
 %%[1 module {%{EH}HS.Parser} import(UU.Parsing, UU.Parsing.Offside, EH.Util.ParseUtils, UU.Scanner.GenToken, EH.Util.ScanUtils)
 %%]
 
-%%[1 import({%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{EH}Scanner.Common}, {%{EH}Base.AppLike}, {%{EH}Opts}, {%{EH}HS})
+%%[1 import({%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{EH}Scanner.Common}, {%{EH}Base.TermLike}, {%{EH}Opts}, {%{EH}HS})
 %%]
 
 %%[1 import(System.IO)

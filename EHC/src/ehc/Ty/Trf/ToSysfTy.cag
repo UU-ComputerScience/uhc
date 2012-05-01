@@ -9,7 +9,7 @@
 
 %%[(8 codegen coresysf) hs module {%{EH}Ty.Trf.ToSysfTy}
 %%]
-%%[(8 codegen coresysf) hs import(EH.Util.Utils,{%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Base.AppLike},{%{EH}Opts.Base})
+%%[(8 codegen coresysf) hs import(EH.Util.Utils,{%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Base.TermLike},{%{EH}Opts.Base})
 %%]
 %%[(8 codegen coresysf) hs import({%{EH}Ty},qualified {%{EH}Core.AsTy} as S)
 %%]

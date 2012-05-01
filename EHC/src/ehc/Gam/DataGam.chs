@@ -8,7 +8,7 @@
 %%[7 import(EH.Util.Pretty,EH.Util.Utils)
 %%]
 
-%%[7 hs import ({%{EH}Base.Common},{%{EH}Base.AppLike},{%{EH}Base.Builtin})
+%%[7 hs import ({%{EH}Base.Common},{%{EH}Base.TermLike},{%{EH}Base.Builtin})
 %%]
 %%[7 hs import ({%{EH}Ty},{%{EH}Ty.Pretty})
 %%]

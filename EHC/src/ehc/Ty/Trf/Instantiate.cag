@@ -10,7 +10,7 @@
 %%[(3 hmtyinfer || hmtyast) hs module {%{EH}Ty.Trf.Instantiate}
 %%]
 
-%%[(3 hmtyinfer || hmtyast) hs import({%{EH}Base.Common},{%{EH}Base.AppLike},{%{EH}Ty},{%{EH}VarMp},{%{EH}Substitutable})
+%%[(3 hmtyinfer || hmtyast) hs import({%{EH}Base.Common},{%{EH}Base.TermLike},{%{EH}Ty},{%{EH}VarMp},{%{EH}Substitutable})
 %%]
 
 %%[(4 hmtyinfer || hmtyast) hs import({%{EH}Base.Debug})

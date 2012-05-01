@@ -7,7 +7,7 @@
 %%% Ty parser
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(50 hmtyinfer || hmtyast) module {%{EH}Ty.Parser} import(UU.Parsing, EH.Util.ParseUtils, {%{EH}Base.Parser}, EH.Util.ScanUtils, {%{EH}Base.Common},{%{EH}Base.AppLike}, {%{EH}Base.Builtin},{%{EH}Scanner.Common}, {%{EH}Scanner.Scanner}, {%{EH}Ty})
+%%[(50 hmtyinfer || hmtyast) module {%{EH}Ty.Parser} import(UU.Parsing, EH.Util.ParseUtils, {%{EH}Base.Parser}, EH.Util.ScanUtils, {%{EH}Base.Common},{%{EH}Base.TermLike}, {%{EH}Base.Builtin},{%{EH}Scanner.Common}, {%{EH}Scanner.Scanner}, {%{EH}Ty})
 %%]
 
 %%[(50 hmtyinfer || hmtyast) export(pTy,pPred)

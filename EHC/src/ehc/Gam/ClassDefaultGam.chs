@@ -11,7 +11,7 @@ Currently only the first one is used.
 %%[(9 hmtyinfer || hmtyast) module {%{EH}Gam.ClassDefaultGam}
 %%]
 
-%%[(9 hmtyinfer || hmtyast) hs import ({%{EH}Base.Common},{%{EH}Base.AppLike},{%{EH}Base.Builtin})
+%%[(9 hmtyinfer || hmtyast) hs import ({%{EH}Base.Common},{%{EH}Base.TermLike},{%{EH}Base.Builtin})
 %%]
 %%[(9 hmtyinfer || hmtyast) import({%{EH}Gam},{%{EH}Ty},{%{EH}VarMp})
 %%]

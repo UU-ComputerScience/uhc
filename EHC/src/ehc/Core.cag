@@ -13,7 +13,7 @@ Datatype LamInfo holds the implementation info to be exported from a module.
 %%% Haskell importable interface to Code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs module {%{EH}Core} import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Base.AppLike},{%{EH}Opts.Base})
+%%[(8 codegen) hs module {%{EH}Core} import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Base.TermLike},{%{EH}Opts.Base})
 %%]
 
 %%[(8 codegen) hs import({%{EH}AbstractCore}) export(module {%{EH}AbstractCore})

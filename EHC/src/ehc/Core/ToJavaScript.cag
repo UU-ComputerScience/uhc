@@ -7,7 +7,7 @@
 %%% Code generation for Javascript
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 javascript) hs module {%{EH}Core.ToJavaScript} import({%{EH}Base.Common},{%{EH}Base.AppLike},{%{EH}Opts},{%{EH}Ty},{%{EH}Core})
+%%[(8 javascript) hs module {%{EH}Core.ToJavaScript} import({%{EH}Base.Common},{%{EH}Base.TermLike},{%{EH}Opts},{%{EH}Ty},{%{EH}Core})
 %%]
 
 %%[(8 javascript) hs import(Data.Maybe, qualified Data.Map as Map, qualified Data.Set as Set, Data.Char, Data.Maybe, Data.List)
