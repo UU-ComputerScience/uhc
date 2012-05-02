@@ -271,15 +271,21 @@ SEM Ty
                                                     else dflt
   | TBind       loc         .   stBase      =   let dflt = @ty.st
                                                 in  if t2tcOptQuantvarKi @lhs.opts && tyquIsForall @qu.self
-                                                    then let a   = -- Ty_TBind (TyQu_Plain $ tyquMetaLev @qu.self) @tv 
+                                                    then let {- a   = -- Ty_TBind (TyQu_Plain $ tyquMetaLev @qu.self) @tv 
+                                                                   -- bndBndIn (\n l -> Ty_TBind (TyQu_Plain l) n) @tv (tyquMetaLev @qu.self)
                                                                    case tyquMetaLev @qu.self of
                                                                      0 -> const (appCon $ mkHNm @tv) -- C.ExprSeq1_L0Bind (mkHNm @tv)
                                                                      1 -> const (appCon $ mkHNm @tv) -- C.ExprSeq1_L1Bind (mkHNm @tv)
                                                              wra = argWrap' (t2tcOptHowArrowArg @lhs.opts) a
+                                                             -}
+                                                             wra = argWrap  (t2tcOptHowArrowArg @lhs.opts)
                                                              wrr = argWrap  (t2tcOptHowArrowRes @lhs.opts)
+                                                         in  bndBndIn @tv (1 + tyquMetaLev @qu.self) (wra $ tyToSysfTyKi @l1) (wrr @ty.st)
+                                                    {-
                                                          in  app1Arr
                                                                (wra $ tyToSysfTyKi @l1   )
                                                                (wrr                @ty.st)
+                                                    -}
                                                     {-
                                                     else if T.tyquIsExists @qu.self
                                                     then let a = C.ExprSeq1_L0Bind (mkHNm @tv)

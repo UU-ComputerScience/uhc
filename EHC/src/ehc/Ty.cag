@@ -828,6 +828,12 @@ instance AppLike Ty {- TyAnn () -} where
 %%]
 
 %%[(1 hmtyinfer || hmtyast) hs
+instance BndLike Ty TyVarId {- TyAnn () -} where
+  -- BndLike
+  bndBndIn n l x = Ty_TBind (TyQu_Plain (l-1)) n x
+%%]
+
+%%[(1 hmtyinfer || hmtyast) hs
 instance RecLike Ty {- TyAnn () -} where
   -- RecLike
 %%[[7

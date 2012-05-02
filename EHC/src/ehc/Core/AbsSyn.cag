@@ -118,6 +118,14 @@ DATA CExpr
 %%]]
 %%]
 
+%%[(8 codegen coresysf)
+-- meta/type level only
+DATA CExpr
+  -- arrow type, i.e. the meta info of a Lam
+  | Arr         bind            : CBind
+                body            : CExpr
+%%]
+
 %%[(9 codegen)
 DATA CExpr
   -- coercion related

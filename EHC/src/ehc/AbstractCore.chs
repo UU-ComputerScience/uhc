@@ -56,7 +56,7 @@ class AbstractCore  expr metaval bind bound bindcateg metabind ty pat patrest pa
   acoreApp1Bound :: expr -> bound -> expr
   
   -- | a tuple, with tag, and ty
-  acoreTagTupTy :: CTag -> ty -> [expr] -> expr
+  acoreTagTyTupBound :: CTag -> ty -> [bound] -> expr
   
   -- | a value binding, for a name to value + type + metas + meta level
   acoreBind1CatLevMetasTy :: bindcateg -> HsName -> MetaLev -> (metabind,metaval) -> ty -> expr -> bind
@@ -67,7 +67,7 @@ class AbstractCore  expr metaval bind bound bindcateg metabind ty pat patrest pa
   -- | a type for value binding aspect, for a name + type, optionally meta level
   acoreBoundValTy1CatLev :: bindcateg -> HsName -> MetaLev -> ty -> bound
   
-  -- | a expr binding aspect, for a name
+  -- | a expr binding aspect, for a name, meta level and label
   acoreBound1AspkeyLevLblVal :: ACoreBindAspectKeyS -> MetaLev -> CLbl -> expr -> bound
   
   -- | a binding, for/from a single aspect (for now, later multiple)
@@ -104,6 +104,12 @@ class AbstractCore  expr metaval bind bound bindcateg metabind ty pat patrest pa
 
   -- | a default, fallback
   -- acoreDflt :: expr
+
+%%[[(8 coresysf)
+  ------------------------- constructing: meta level expr (i.e. ty represented as expr) -------------------------
+  -- | arrow
+  acorem1Arr :: bind -> expr -> expr
+%%]]
 
   ------------------------- constructing: ty -------------------------
   -- | construct ty from Ty, usable in Core context
@@ -278,11 +284,17 @@ instance AbstractCore e m b basp bcat mbind t p pr pf a => AppLike e {- () () -}
                      return (f,a)
 %%]
 
-%%[(8888 codegen) hs
+%%[(8 codegen coresysf) hs
+instance (AppLike e, HSNM bndnm, AbstractCore e m b basp bcat mbind t p pr pf a) => BndLike e bndnm {- () () -} where
+  -- BndLike
+  bndBndIn n l x = acorem1Arr $ acoreBind1Asp1 (mkHNm n) $ acoreBound1AspkeyLevLblVal acbaspkeyNone l CLbl_None x
+%%]
+
+%%[(8 codegen) hs
 instance AbstractCore e m b basp bcat mbind t p pr pf a => RecLike e {- () () -} where
-  recRow r 		= foldl (\t (n,e) -> Ty_Ext t n e) r
+  recRow _ fs 	= acoreTagTyTupBound CTagRec (acoreTyErr "AbstractCore.RecLike.recRow") [ acoreBound1AspkeyLevLblVal acbaspkeyNone 0 (CLbl_Nm n) e | (n,e) <- fs ]
   
-  recMbRecRow 	= Nothing -- tyMbRecRowWithLkup (const Nothing)
+  recMbRecRow  _= Nothing -- tyMbRecRowWithLkup (const Nothing)
   recUnRowExts e= (e,[])
 %%]
 
@@ -452,13 +464,16 @@ deriving instance Data ACoreBindRef
 %%% Derived functionality: application
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) export(acoreApp1,acoreApp)
+%%[(8 codegen) export(acoreApp1,acoreApp,acoreAppBound)
 acoreApp1 :: (AbstractCore e m b basp bcat mbind t p pr pf a) => e -> e -> e
 acoreApp1 f a = acoreApp1Bound f (acoreBound1Val a)
 {-# INLINE acoreApp1 #-}
 
 acoreApp :: (AbstractCore e m b basp bcat mbind t p pr pf a) => e -> [e] -> e
 acoreApp f as = foldl (\f a -> acoreApp1 f a) f as
+
+acoreAppBound :: (AbstractCore e m b basp bcat mbind t p pr pf a) => e -> [basp] -> e
+acoreAppBound f as = foldl (\f a -> acoreApp1Bound f a) f as
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -482,7 +497,10 @@ acoreLam :: (AbstractCore e m b basp bcat mbind t p pr pf a) => [HsName] -> e ->
 acoreLam as e = foldr (\(n) e -> acoreLam1 n e) e as
 %%]
 
-%%[(8 codegen) export(acoreTagTup,acoreTupTy,acoreTup,acoreTag)
+%%[(8 codegen) export(acoreTagTupTy,acoreTagTup,acoreTupTy,acoreTup,acoreTag)
+acoreTagTupTy :: (AbstractCore e m b basp bcat mbind t p pr pf a) => CTag -> t -> [e] -> e
+acoreTagTupTy tg t es = acoreTagTyTupBound tg t $ map acoreBound1Val es
+
 acoreTagTup :: (AbstractCore e m b basp bcat mbind t p pr pf a) => CTag -> [e] -> e
 acoreTagTup tg es = acoreTagTupTy tg (acoreTyErr "acoreTupTy") es
 
@@ -619,12 +637,12 @@ acoreBoundVal1Meta n m e = acoreBoundVal1Metas n (acoreMetabindDflt,m) e
 %%]
 
 %%[(8 codegen) export(acoreBound1AspkeyVal,acoreBound1Val)
-acoreBound1AspkeyVal :: (AbstractCore e m b basp bcat mbind t p pr pf a) => e -> basp
-acoreBound1AspkeyVal e = acoreBound1AspkeyLevLblVal acbaspkeyDefault 0 CLbl_None e
-{-# INLINE acoreBound1Val #-}
+acoreBound1AspkeyVal :: (AbstractCore e m b basp bcat mbind t p pr pf a) => ACoreBindAspectKeyS -> e -> basp
+acoreBound1AspkeyVal a e = acoreBound1AspkeyLevLblVal a 0 CLbl_None e
+{-# INLINE acoreBound1AspkeyVal #-}
 
 acoreBound1Val :: (AbstractCore e m b basp bcat mbind t p pr pf a) => e -> basp
-acoreBound1Val e = acoreBound1AspkeyVal acbaspkeyDefault e
+acoreBound1Val e = acoreBound1AspkeyVal acbaspkeyNone e
 {-# INLINE acoreBound1Val #-}
 %%]
 

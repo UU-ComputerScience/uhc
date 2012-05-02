@@ -187,6 +187,9 @@ SEM CExpr
 %%][90
                 loc         .   ppent       =   "\"" >|< @impEnt >|< "\""
 %%]]
+%%[[(8 coresysf)
+  | Arr			loc			.	pp			=	@bind.pp >#< "->" >#< @body.pp
+%%]]
 
 SEM CExpr
   | Lam         loc         .   lamBodyPP   =   @body.lamBodyPP

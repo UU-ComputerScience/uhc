@@ -515,7 +515,11 @@ ATTR AllBind [ forQuantRVarMp: RVarMp | | ]
 
 SEM CExpr
   | Let         binds       .   forQuantRVarMp  =   @binds.rvarMp
-  | Lam App     loc         .   forQuantRVarMp  =   emptyRVarMp
+  | Lam App
+%%[[(8 coresysf)
+    Arr
+%%]]
+  				loc         .   forQuantRVarMp  =   emptyRVarMp
 
 SEM CPatFld
   | Fld			bind        .   forQuantRVarMp  =   emptyRVarMp
