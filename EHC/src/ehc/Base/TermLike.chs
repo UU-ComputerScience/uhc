@@ -83,10 +83,12 @@ class AppLike a {- ann bnd | a -> ann bnd -} where
   -- | Make application wrapped in top, except for singleton
   appTopApp         ::  [a] -> a
   appProdApp        ::  [a] -> a
+  app1Arr 			:: 	a -> a -> a
 
   -- and the defaults
   appTopApp         =   appRngTopApp emptyRange
   appProdApp    as  =   appConApp (hsnProd (length as)) as
+  app1Arr       a r =   appConApp hsnArrow [a,r]
 
   -- variation with Range
   appRngTopApp      ::  Range -> [a] -> a
@@ -97,6 +99,16 @@ class AppLike a {- ann bnd | a -> ann bnd -} where
   appRngTopApp  r as  = appRngTop r (foldl1 (appRngApp1 r) as)
 
   appRngProdApp _ as  = appProdApp as            -- to be done
+  
+  -- specialised deconstructing
+  -- | Wrap 1 arr unpacking into Maybe, together with reconstruction function for toplevel unwrapping
+  appMb1ArrMk 		:: a -> Maybe ((a,a),a->a)
+
+  -- and the defaults
+  appMb1ArrMk x
+    = do let (x',mktop) = appUnBind $ fst $ appUnAnn x
+         (arr,[a,r]) <- appMbConApp x'
+         if hsnIsArrow arr then return ((a,r),mktop) else Nothing
   
   -- misc: debugging (intended to return a more appropriate value of type 'a')
   appDbg			:: 	String -> a
@@ -209,12 +221,13 @@ appCon1App c a = appConApp c [a]
 %%% Derived constructing: arrow
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 export(app1Arr,appArr)
+%%[1 export(appArr)
+{-
 -- | Make (type) rep for single arrow (i.e. abstraction)
 app1Arr :: AppLike a {- ann bnd -} => a -> a -> a
 app1Arr a r = appConApp hsnArrow [a,r] -- appTopApp [appCon hsnArrow,a,r]
 {-# INLINE app1Arr #-}
-
+-}
 -- | Multiple app1Arr
 appArr :: AppLike a {- ann bnd -} => [a] -> a -> a
 appArr = flip (foldr app1Arr)
@@ -288,16 +301,18 @@ appMbConApp x
        
 %%]
 
-%%[1 export(appMb1Arr',appMb1Arr,appMbArr,appUnArr',appUnArr,appUn1Arr)
+%%[1 export(appMb1Arr,appMbArr,appUnArrMk,appUnArr,appUn1Arr)
+{-
 -- | Wrap 1 arr unpacking into Maybe, together with reconstruction function for toplevel unwrapping
-appMb1Arr' :: AppLike a {- ann bnd -} => a -> Maybe ((a,a),a->a)
-appMb1Arr' x
+appMb1ArrMk :: AppLike a {- ann bnd -} => a -> Maybe ((a,a),a->a)
+appMb1ArrMk x
   = do let (x',mktop) = appUnBind $ fst $ appUnAnn x
        (arr,[a,r]) <- appMbConApp x'
        if hsnIsArrow arr then return ((a,r),mktop) else Nothing
+-}
 
 appMb1Arr :: AppLike a {- ann bnd -} => a -> Maybe (a,a)
-appMb1Arr = fmap fst . appMb1Arr'
+appMb1Arr = fmap fst . appMb1ArrMk
 {-# INLINE appMb1Arr #-}
 
 -- | Wrap arr unpacking into Maybe
@@ -308,16 +323,16 @@ appMbArr x
       _           -> Nothing
 
 -- | Arr unpacking, together with reconstruction function for toplevel unwrapping
-appUnArr' :: AppLike a {- ann bnd -} => a -> (([a],a),a->a)
-appUnArr' x
-  = case appMb1Arr' x of
+appUnArrMk :: AppLike a {- ann bnd -} => a -> (([a],a),a->a)
+appUnArrMk x
+  = case appMb1ArrMk x of
       Just ((a,r),mk) -> ((a:as,r'),mk)
-                      where ((as,r'),_) = appUnArr' r
+                      where ((as,r'),_) = appUnArrMk r
       _               -> (([],x),id)
 
 -- | Arr unpacking into args + res
 appUnArr :: AppLike a {- ann bnd -} => a -> ([a],a)
-appUnArr = fst . appUnArr'
+appUnArr = fst . appUnArrMk
 {-# INLINE appUnArr #-}
 
 -- | Arr unpacking into arg + res, when failing to unpack arg holds a default
@@ -351,7 +366,7 @@ appUnArrArg = fst . appUn1Arr
 -- |  inverse type, i.e. a->b gives b->a, a->b->c gives c->(a,b)
 appArrInverse :: AppLike a {- ann bnd -} => a -> a
 appArrInverse x
-  = case appUnArr' x of
+  = case appUnArrMk x of
       ((   [a]  ,r),mk) -> mk $ [r] `appArr` a
       ((as@(_:_),r),mk) -> mk $ [r] `appArr` appProdApp as
       _                 -> x

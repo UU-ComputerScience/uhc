@@ -7,7 +7,7 @@
 %%% Module itf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen coresysf) hs module {%{EH}Ty.Trf.ToSysfTy}
+%%[(8 codegen coresysf) hs module {%{EH}Ty.ToSysfTy}
 %%]
 %%[(8 codegen coresysf) hs import(EH.Util.Utils,{%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Base.TermLike},{%{EH}Opts.Base})
 %%]
@@ -26,10 +26,20 @@ WRAPPER TyAGItf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen coresysf) hs export(SysfTy,SysfTySeq,SysfTySeq1)
+type SysfTy     	= S.Ty			-- base ty
+type SysfTySeq    	= S.Ty			-- sequence
+type SysfTySeq1    	= S.Ty			-- singleton
+%%]
 type SysfTy     	= Ty			-- base ty
 type SysfTySeq    	= Ty			-- sequence
 type SysfTySeq1    	= Ty			-- singleton
-%%]
+
+S.
+S.
+S.
+
+
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% System F generation
@@ -217,14 +227,17 @@ SEM TyAGItf
 %%[(8 codegen coresysf)
 ATTR TyAGItf
   [ | | st: {SysfTy} ]
-ATTR Ty TyVarCateg TyAnn
-  [ | | st: SELF ]
+ATTR Ty
+  [ | | st: {SysfTy} ]
 %%]
+ATTR TyVarCateg TyAnn
+  [ | | st: SELF ]
 
-%%[(8888 codegen coresysf)
+%%[(8 codegen coresysf)
 SEM Ty
   | Var         loc         .   stBase      =   appCon $ mkHNm @tv
   | Con         loc         .   stBase      =   appCon @nm
+  | Dbg         loc         .   stBase      =   appDbg @info
 %%]
 
 %%[(8 codegen coresysf)
@@ -298,7 +311,7 @@ SEM Ty
   | Ann         loc         .   st          =   if @ann.isEmpty
                                                 then @ty.st
                                                 else {- Ty_Ann @ann.st -} @ty.st
-  | * - App Ann Dbg Con Var
+  | * - App Ann
                 loc         .   st          =   @sKiArgAppWrap @stBase
 %%]
 

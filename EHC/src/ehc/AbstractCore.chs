@@ -288,6 +288,7 @@ instance AbstractCore e m b basp bcat mbind t p pr pf a => AppLike e {- () () -}
 instance (AppLike e, HSNM bndnm, AbstractCore e m b basp bcat mbind t p pr pf a) => BndLike e bndnm {- () () -} where
   -- BndLike
   bndBndIn n l x = acorem1Arr $ acoreBind1Asp1 (mkHNm n) $ acoreBound1AspkeyLevLblVal acbaspkeyNone l CLbl_None x
+  -- bndBndIn n l x = app1Arr $ acoreBind1Asp1 (mkHNm n) $ acoreBound1AspkeyLevLblVal acbaspkeyNone l CLbl_None x
 %%]
 
 %%[(8 codegen) hs
