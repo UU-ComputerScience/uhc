@@ -15,7 +15,7 @@ SEM AGItf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1 hs
-ehSection :: AppLike eh
+ehSection :: AppLike eh bound
   => UID -> Range
   -> RngLiftArg (HsName -> eh)
   -> RngLiftArg (HsName -> ehp)
@@ -35,7 +35,7 @@ ehSection uniq range semvar sempatvar semlam left op right
 
 %%[1 hs
 ehTupleConstructor
-  :: AppLike eh
+  :: AppLike eh bound
      => Range -> Int -> RngLiftArg (HsName -> eh) -> RngLiftArg (HsName -> ehp) -> RngLiftArg (ehp -> eh -> eh)
 %%[[1
      -> RngLiftArg (HsName -> eh)

@@ -210,7 +210,7 @@ mkEH = rngLift emptyRange
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1 hs
-instance AppLike Expr {- ExprAnn () -} where
+instance AppLike Expr () {- ExprAnn () -} where
   appRngApp1   r  = rngLift r Expr_App
   appRngTop    r  = rngLift r Expr_AppTop
   appRngVar    r  = rngLift r Expr_Var . mkHNm
@@ -225,7 +225,7 @@ instance AppLike Expr {- ExprAnn () -} where
 
 
 %%[1 hs
-instance AppLike PatExpr {- PatExprAnn () -} where
+instance AppLike PatExpr () {- PatExprAnn () -} where
   appRngApp1   r  = rngLift r PatExpr_App
   appRngTop    r  = rngLift r PatExpr_AppTop
   appRngVar    r  = rngLift r PatExpr_Var . mkHNm
@@ -239,7 +239,7 @@ instance AppLike PatExpr {- PatExprAnn () -} where
 %%]
 
 %%[1 hs
-instance AppLike TyExpr {- TyExprAnn () -} where
+instance AppLike TyExpr () {- TyExprAnn () -} where
   appRngApp1   r  = rngLift r TyExpr_App
   appRngTop    r  = rngLift r TyExpr_AppTop
 %%[[1
@@ -283,7 +283,7 @@ instance AppLike TyExpr {- TyExprAnn () -} where
 %%]
 
 %%[6 hs
-instance AppLike KiExpr {- KiExprAnn () -} where
+instance AppLike KiExpr () {- KiExprAnn () -} where
   appRngApp1   r  = rngLift r KiExpr_App
   appRngTop    r  = rngLift r KiExpr_AppTop
   appRngVar    r  = rngLift r KiExpr_Var . mkHNm

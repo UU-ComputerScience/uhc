@@ -149,7 +149,7 @@ opChainReArrange opChain
              (r1l@(OpChain_Leaf _),rerr) -> (OpChain_Op op1 pp1 f1 p1 pos1 l1 r1l,rerr)
       _ -> (opChain,[])
 
-unOpChain :: AppLike a => OpChain a -> a
+unOpChain :: AppLike a boundmeta => OpChain a -> a
 unOpChain opChain
   = un opChain
   where un ch

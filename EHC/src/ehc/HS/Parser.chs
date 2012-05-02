@@ -68,7 +68,7 @@ pImpls = pPacked pOIMPL pCIMPL
 %%]
 
 %%[1.pApp
-pApp            ::   AppLike a => HSParser a -> HSParser a
+pApp            ::   AppLike a boundmeta => HSParser a -> HSParser a
 pApp p          =    appTopApp <$> pList1 p
 %%]
 

@@ -119,7 +119,7 @@ instance Show Range where
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1 hs
-instance AppLike Type {- TypeAnnotation () -} where
+instance AppLike Type () {- TypeAnnotation () -} where
   app1App       = \e1 e2 -> Type_NormalApplication emptyRange e1 [e2]
   appTop        = id
   appCon        = mkRngNm Type_Constructor
@@ -135,7 +135,7 @@ instance AppLike Type {- TypeAnnotation () -} where
 %%]
 
 %%[1 hs
-instance AppLike Expression {- ExpressionAnnotation () -} where
+instance AppLike Expression () {- ExpressionAnnotation () -} where
   app1App           = \e1 e2 -> Expression_NormalApplication emptyRange e1 [e2]
   appTop            = id
   appCon            = mkRngNm Expression_Constructor

@@ -268,8 +268,12 @@ class AbstractCore  expr metaval bind bound bindcateg metabind ty pat patrest pa
 %%% Construction via class AppLike, RecLike
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[(8 codegen coresysf) hs
+type ACoreAppLikeMetaBound = (ACoreBindAspectKeyS,MetaLev,CLbl)
+%%]
+
 %%[(8 codegen) hs
-instance AbstractCore e m b basp bcat mbind t p pr pf a => AppLike e {- () () -} where
+instance AbstractCore e m b basp bcat mbind t p pr pf a => AppLike e basp {- () () -} where
   app1App       = acoreApp1
   appTop        = id
   appCon        = acoreVar . mkHNm
@@ -285,14 +289,14 @@ instance AbstractCore e m b basp bcat mbind t p pr pf a => AppLike e {- () () -}
 %%]
 
 %%[(8 codegen coresysf) hs
-instance (AppLike e, HSNM bndnm, AbstractCore e m b basp bcat mbind t p pr pf a) => BndLike e bndnm {- () () -} where
+instance (AppLike e basp, HSNM bndnm, AbstractCore e m b basp bcat mbind t p pr pf a) => BndLike e bndnm {- () () -} where
   -- BndLike
   bndBndIn n l x = acorem1Arr $ acoreBind1Asp1 (mkHNm n) $ acoreBound1AspkeyLevLblVal acbaspkeyNone l CLbl_None x
-  -- bndBndIn n l x = app1Arr $ acoreBind1Asp1 (mkHNm n) $ acoreBound1AspkeyLevLblVal acbaspkeyNone l CLbl_None x
+  -- bndBndIn n l x = app1MetaArr () $ acoreBind1Asp1 (mkHNm n) $ acoreBound1AspkeyLevLblVal acbaspkeyNone l CLbl_None x
 %%]
 
 %%[(8 codegen) hs
-instance AbstractCore e m b basp bcat mbind t p pr pf a => RecLike e {- () () -} where
+instance AbstractCore e m b basp bcat mbind t p pr pf a => RecLike e basp {- () () -} where
   recRow _ fs 	= acoreTagTyTupBound CTagRec (acoreTyErr "AbstractCore.RecLike.recRow") [ acoreBound1AspkeyLevLblVal acbaspkeyNone 0 (CLbl_Nm n) e | (n,e) <- fs ]
   
   recMbRecRow  _= Nothing -- tyMbRecRowWithLkup (const Nothing)

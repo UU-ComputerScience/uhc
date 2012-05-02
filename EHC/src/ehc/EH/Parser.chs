@@ -79,12 +79,12 @@ pDataField                  ::   EHCParser DataField
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1.pApp
-pApp            ::   AppLike a => EHCParser a -> EHCParser a
+pApp            ::   AppLike a boundmeta => EHCParser a -> EHCParser a
 pApp p          =    appTopApp <$> pList1 p
 %%]
 
 %%[1.pParenProd
-pParenProd :: AppLike a => EHCParser a -> EHCParser a
+pParenProd :: AppLike a boundmeta => EHCParser a -> EHCParser a
 pParenProd pE
   =  pParens pP
   where  pP  =    appProdApp <$> pSucceed []

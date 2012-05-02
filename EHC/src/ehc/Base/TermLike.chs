@@ -29,7 +29,7 @@ Term like behavior encapsulated in various class interfaces.
 %%[[AppLikeCore1
 -- | Application like terms.
 --   Note: defaults for Range and non-Range variants are defined using eachother. Only one needs definition.
-class AppLike a {- ann bnd | a -> ann bnd -} where
+class AppLike a boundmeta {- ann bnd | a -> ann bnd -} | a -> boundmeta where
   ----------
   -- AppLike
   ----------
@@ -83,12 +83,12 @@ class AppLike a {- ann bnd | a -> ann bnd -} where
   -- | Make application wrapped in top, except for singleton
   appTopApp         ::  [a] -> a
   appProdApp        ::  [a] -> a
-  app1Arr 			:: 	a -> a -> a
+  app1MetaArr       :: 	boundmeta -> a -> a -> a
 
   -- and the defaults
   appTopApp         =   appRngTopApp emptyRange
   appProdApp    as  =   appConApp (hsnProd (length as)) as
-  app1Arr       a r =   appConApp hsnArrow [a,r]
+  app1MetaArr _ a r =   appConApp hsnArrow [a,r]
 
   -- variation with Range
   appRngTopApp      ::  Range -> [a] -> a
@@ -102,13 +102,13 @@ class AppLike a {- ann bnd | a -> ann bnd -} where
   
   -- specialised deconstructing
   -- | Wrap 1 arr unpacking into Maybe, together with reconstruction function for toplevel unwrapping
-  appMb1ArrMk 		:: a -> Maybe ((a,a),a->a)
+  appMb1ArrMk 		:: a -> Maybe ((bound,a,a),a->a)
 
   -- and the defaults
   appMb1ArrMk x
     = do let (x',mktop) = appUnBind $ fst $ appUnAnn x
          (arr,[a,r]) <- appMbConApp x'
-         if hsnIsArrow arr then return ((a,r),mktop) else Nothing
+         if hsnIsArrow arr then return ((undefined,a,r),mktop) else Nothing
   
   -- misc: debugging (intended to return a more appropriate value of type 'a')
   appDbg			:: 	String -> a
@@ -129,7 +129,7 @@ class AppLike a {- ann bnd | a -> ann bnd -} where
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1 export(BndLike(..))
-class {- AppLike a => -} BndLike a bndnm where
+class {- AppLike a boundmeta => -} BndLike a bndnm where
   bndBndIn			:: bndnm -> MetaLev -> a -> a -> a
 %%]
 
@@ -138,7 +138,7 @@ class {- AppLike a => -} BndLike a bndnm where
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1 export(RecLike(..))
-class AppLike a => RecLike a
+class AppLike a boundmeta => RecLike a boundmeta
 %%[[7
   where
   ----------
@@ -182,21 +182,21 @@ rowCanonOrder = rowCanonOrderBy rowLabCmp
 
 %%[1 export(appTopApp1)
 -- | Make single application, with top
-appTopApp1 :: AppLike a {- ann bnd -} => a -> a -> a
+appTopApp1 :: AppLike a boundmeta {- ann -} => a -> a -> a
 appTopApp1 a r = appTopApp [a,r]
 {-# INLINE appTopApp1 #-}
 %%]
 
 %%[1 export(appRngProdOpt)
 -- | Make product, except for singleton
-appRngProdOpt :: AppLike a {- ann bnd -} => Range -> [a] -> a
+appRngProdOpt :: AppLike a boundmeta {- ann -} => Range -> [a] -> a
 appRngProdOpt r [a] = a
 appRngProdOpt r as  = appRngProdApp r as
 %%]
 
 %%[1 export(appRngParApp)
 -- | Make parenthesized app, except for singleton
-appRngParApp :: AppLike a {- ann bnd -} => Range -> [a] -> a
+appRngParApp :: AppLike a boundmeta {- ann -} => Range -> [a] -> a
 appRngParApp r [a] = a
 appRngParApp r as  = appRngPar r (appRngTopApp r as)
 %%]
@@ -207,12 +207,12 @@ appRngParApp r as  = appRngPar r (appRngTopApp r as)
 
 %%[1 export(appConApp,appCon1App)
 -- | Make constructor applied to arguments
-appConApp :: (AppLike a {- ann bnd -}, Position n, HSNM n) => n -> [a] -> a
+appConApp :: (AppLike a boundmeta {- ann -}, Position n, HSNM n) => n -> [a] -> a
 appConApp c as = appTopApp (appCon c : as)
 {-# INLINE appConApp #-}
 
 -- | See 'appCon1App', just for 1 arg
-appCon1App :: (AppLike a {- ann bnd -}, Position n, HSNM n) => n -> a -> a
+appCon1App :: (AppLike a boundmeta {- ann -}, Position n, HSNM n) => n -> a -> a
 appCon1App c a = appConApp c [a]
 {-# INLINE appCon1App #-}
 %%]
@@ -221,15 +221,14 @@ appCon1App c a = appConApp c [a]
 %%% Derived constructing: arrow
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 export(appArr)
-{-
+%%[1 export(app1Arr,appArr)
 -- | Make (type) rep for single arrow (i.e. abstraction)
-app1Arr :: AppLike a {- ann bnd -} => a -> a -> a
-app1Arr a r = appConApp hsnArrow [a,r] -- appTopApp [appCon hsnArrow,a,r]
+app1Arr :: AppLike a boundmeta {- ann -} => a -> a -> a
+app1Arr = app1MetaArr undefined
 {-# INLINE app1Arr #-}
--}
+
 -- | Multiple app1Arr
-appArr :: AppLike a {- ann bnd -} => [a] -> a -> a
+appArr :: AppLike a boundmeta {- ann -} => [a] -> a -> a
 appArr = flip (foldr app1Arr)
 {-# INLINE appArr #-}
 %%]
@@ -250,24 +249,24 @@ appMb2Un un a
 
 %%[1 export(appUnAnn,appUnTop,appUnBind)
 -- | Unwrap binding like stuff (i.e. quantifiers), also giving reconstruction
-appUnBind :: AppLike a {- ann bnd -} => a -> (a,a->a)
+appUnBind :: AppLike a boundmeta {- ann -} => a -> (a,a->a)
 appUnBind = appMb2Un appMbBind1
 {-# INLINE appUnBind #-}
 
 -- | Unwrap ann like stuff, also giving reconstruction
-appUnAnn :: AppLike a {- ann bnd -} => a -> (a,a->a)
+appUnAnn :: AppLike a boundmeta {- ann -} => a -> (a,a->a)
 appUnAnn = appMb2Un appMbAnn1
 {-# INLINE appUnAnn #-}
 
 -- | Unwrap top like stuff, also giving reconstruction
-appUnTop :: AppLike a {- ann bnd -} => a -> (a,a->a)
+appUnTop :: AppLike a boundmeta {- ann -} => a -> (a,a->a)
 appUnTop = appMb2Un appMbTop1
 {-# INLINE appUnTop #-}
 %%]
 
 %%[1 export(appUnApp)
 -- | Unpack app into function and args
-appUnApp :: AppLike a {- ann bnd -} => a -> (a,[a])
+appUnApp :: AppLike a boundmeta {- ann -} => a -> (a,[a])
 appUnApp x
   = un [] (fst $ appUnTop x)
   where un as x = case appMbApp1 x' of
@@ -279,21 +278,21 @@ appUnApp x
 
 %%[1 export(appUnAppArgs)
 -- | Unpack app into function and args, args only
-appUnAppArgs :: AppLike a {- ann bnd -} => a -> [a]
+appUnAppArgs :: AppLike a boundmeta {- ann -} => a -> [a]
 appUnAppArgs = snd . appUnApp
 {-# INLINE appUnAppArgs #-}
 %%]
 
 %%[1 export(appMbApp,appMbConApp)
 -- | Wrap app unpacking into Maybe
-appMbApp :: AppLike a {- ann bnd -} => a -> Maybe (a,[a])
+appMbApp :: AppLike a boundmeta {- ann -} => a -> Maybe (a,[a])
 appMbApp x
   = case appUnApp x of
       u@(_,(_:_)) -> Just u
       _           -> Nothing
 
 -- | Wrap app into constructor name applied to args
-appMbConApp :: AppLike a {- ann bnd -} => a -> Maybe (HsName,[a])
+appMbConApp :: AppLike a boundmeta {- ann -} => a -> Maybe (HsName,[a])
 appMbConApp x
   = do let (f,as) = appUnApp x
        c <- appMbCon $ fst $ appUnAnn f
@@ -301,59 +300,54 @@ appMbConApp x
        
 %%]
 
-%%[1 export(appMb1Arr,appMbArr,appUnArrMk,appUnArr,appUn1Arr)
-{-
--- | Wrap 1 arr unpacking into Maybe, together with reconstruction function for toplevel unwrapping
-appMb1ArrMk :: AppLike a {- ann bnd -} => a -> Maybe ((a,a),a->a)
-appMb1ArrMk x
-  = do let (x',mktop) = appUnBind $ fst $ appUnAnn x
-       (arr,[a,r]) <- appMbConApp x'
-       if hsnIsArrow arr then return ((a,r),mktop) else Nothing
--}
+%%[1 export(appMb1MetaArr,appMb1Arr,appMbArr,appUnArrMk,appUnArr,appUn1Arr)
+appMb1MetaArr :: AppLike a boundmeta {- ann -} => a -> Maybe (bound,a,a)
+appMb1MetaArr = fmap fst . appMb1ArrMk
+{-# INLINE appMb1MetaArr #-}
 
-appMb1Arr :: AppLike a {- ann bnd -} => a -> Maybe (a,a)
-appMb1Arr = fmap fst . appMb1ArrMk
+appMb1Arr :: AppLike a boundmeta {- ann -} => a -> Maybe (a,a)
+appMb1Arr = fmap (\(_,x,y) -> (x,y)) . appMb1MetaArr
 {-# INLINE appMb1Arr #-}
 
 -- | Wrap arr unpacking into Maybe
-appMbArr :: AppLike a {- ann bnd -} => a -> Maybe ([a],a)
+appMbArr :: AppLike a boundmeta {- ann -} => a -> Maybe ([a],a)
 appMbArr x 
   = case appUnArr x of
       a@((_:_),_) -> Just a
       _           -> Nothing
 
 -- | Arr unpacking, together with reconstruction function for toplevel unwrapping
-appUnArrMk :: AppLike a {- ann bnd -} => a -> (([a],a),a->a)
+appUnArrMk :: AppLike a boundmeta {- ann -} => a -> (([a],a),a->a)
 appUnArrMk x
   = case appMb1ArrMk x of
-      Just ((a,r),mk) -> ((a:as,r'),mk)
-                      where ((as,r'),_) = appUnArrMk r
-      _               -> (([],x),id)
+      Just ((_,a,r),mk) -> ((a:as,r'),mk)
+                        where ((as,r'),_) = appUnArrMk r
+      _                 -> (([],x),id)
 
 -- | Arr unpacking into args + res
-appUnArr :: AppLike a {- ann bnd -} => a -> ([a],a)
+appUnArr :: AppLike a boundmeta {- ann -} => a -> ([a],a)
 appUnArr = fst . appUnArrMk
 {-# INLINE appUnArr #-}
 
 -- | Arr unpacking into arg + res, when failing to unpack arg holds a default
-appUn1Arr :: AppLike a {- ann bnd -} => a -> (a,a)
+appUn1Arr :: AppLike a boundmeta {- ann -} => a -> (a,a)
 appUn1Arr x = maybe (panic "appUn1Arr.arg",x) id $ appMb1Arr x
 {-# INLINE appUn1Arr #-}
 %%]
 
 %%[1 export(appUnArrArgs,appUnArrRes,appUnArrArg)
 -- | Arr unpacking, args only
-appUnArrArgs :: AppLike a {- ann bnd -} => a -> [a]
+appUnArrArgs :: AppLike a boundmeta {- ann -} => a -> [a]
 appUnArrArgs = fst . appUnArr
 {-# INLINE appUnArrArgs #-}
 
 -- | Arr unpacking, res only
-appUnArrRes :: AppLike a {- ann bnd -} => a -> a
+appUnArrRes :: AppLike a boundmeta {- ann -} => a -> a
 appUnArrRes = snd . appUnArr
 {-# INLINE appUnArrRes #-}
 
 -- | Arr unpacking, arg only
-appUnArrArg :: AppLike a {- ann bnd -} => a -> a
+appUnArrArg :: AppLike a boundmeta {- ann -} => a -> a
 appUnArrArg = fst . appUn1Arr
 {-# INLINE appUnArrArg #-}
 %%]
@@ -364,7 +358,7 @@ appUnArrArg = fst . appUn1Arr
 
 %%[8 hs export(appArrInverse)
 -- |  inverse type, i.e. a->b gives b->a, a->b->c gives c->(a,b)
-appArrInverse :: AppLike a {- ann bnd -} => a -> a
+appArrInverse :: AppLike a boundmeta {- ann -} => a -> a
 appArrInverse x
   = case appUnArrMk x of
       ((   [a]  ,r),mk) -> mk $ [r] `appArr` a
@@ -378,7 +372,7 @@ appArrInverse x
 
 %%[7 export(recUnRecRow)
 -- | If a row based record, return the row
-recUnRecRow :: RecLike a => a -> a
+recUnRecRow :: RecLike a boundmeta => a -> a
 recUnRecRow = maybe (panic "recUnRecRow") id . recMbRecRow
 {-# INLINE recUnRecRow #-}
 %%]
@@ -389,28 +383,28 @@ recUnRecRow = maybe (panic "recUnRecRow") id . recMbRecRow
 
 %%[7 export(recRec,recSum,recRecExt,recRecEmp, recSumEmp)
 -- | Construct record from labels + terms
-recRec :: RecLike a => AssocL HsName a -> a
+recRec :: RecLike a boundmeta => AssocL HsName a -> a
 recRec al = hsnRec `appConApp` [recRowEmp `recRow` al]
 {-# INLINE recRec #-}
 
 -- | Construct record from labels + terms
-recSum :: RecLike a => AssocL HsName a -> a
+recSum :: RecLike a boundmeta => AssocL HsName a -> a
 recSum al = hsnSum `appConApp` [recRowEmp `recRow` al]
 {-# INLINE recSum #-}
 
 -- | Construct record from record to be extended + labels + terms
-recRecExt :: RecLike a => a -> AssocL HsName a -> a
+recRecExt :: RecLike a boundmeta => a -> AssocL HsName a -> a
 recRecExt recd al
   = hsnRec `appConApp` [row `recRow` (exts ++ al)]
   where (row,exts) = recUnRowExts (recUnRecRow recd)
 
 -- | Empty record
-recRecEmp :: RecLike a => a
+recRecEmp :: RecLike a boundmeta => a
 recRecEmp = recRec []
 {-# INLINE recRecEmp #-}
 
 -- | Empty sum
-recSumEmp :: RecLike a => a
+recSumEmp :: RecLike a boundmeta => a
 recSumEmp = recSum []
 {-# INLINE recSumEmp #-}
 %%]
