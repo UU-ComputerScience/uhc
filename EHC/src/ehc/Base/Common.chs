@@ -388,6 +388,33 @@ instance PP CTag where
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Label for expr
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs export(CLbl(..),clbl)
+-- | Expressions in a CBound position optionally may be labelled
+data CLbl
+  = CLbl_None
+  | CLbl_Nm
+      { clblNm		:: !HsName
+      }
+  | CLbl_Tag
+      { clblTag		:: !CTag
+      }
+  deriving (Show,Eq,Ord)
+
+clbl :: a -> (HsName -> a) -> (CTag -> a) -> CLbl -> a
+clbl f _ _  CLbl_None   = f
+clbl _ f _ (CLbl_Nm  n) = f n
+clbl _ _ f (CLbl_Tag t) = f t
+%%]
+
+%%[8 hs
+instance PP CLbl where
+  pp = clbl empty pp pp
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Unboxed values
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -1124,7 +1151,7 @@ data DerivTreeWay
 %%% Row specific
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[7 hs export(rowCanonOrderBy)
+%%[7777 hs export(rowCanonOrderBy)
 -- order on ...
 rowCanonOrderBy :: (o -> o -> Ordering) -> AssocL o a -> AssocL o a
 rowCanonOrderBy cmp = sortByOn cmp fst
@@ -1169,6 +1196,9 @@ deriving instance Data PredOccId
 
 deriving instance Typeable1 RLList
 deriving instance Data x => Data (RLList x)
+
+deriving instance Typeable CLbl
+deriving instance Data CLbl
 
 deriving instance Typeable CTag
 deriving instance Data CTag
@@ -1218,6 +1248,16 @@ instance Serialize VarUIDHsName where
               0 -> liftM2 VarUIDHs_Name sget sget
               1 -> liftM  VarUIDHs_UID  sget
               2 -> liftM  VarUIDHs_Var  sget
+
+instance Serialize CLbl where
+  sput (CLbl_Nm   a  ) = sputWord8 0 >> sput a
+  sput (CLbl_Tag  a  ) = sputWord8 1 >> sput a
+  sput (CLbl_None    ) = sputWord8 2
+  sget = do t <- sgetWord8
+            case t of
+              0 -> liftM  CLbl_Nm 	sget
+              1 -> liftM  CLbl_Tag  sget
+              2 -> return CLbl_None
 
 instance Binary Fixity where
   put = putEnum8

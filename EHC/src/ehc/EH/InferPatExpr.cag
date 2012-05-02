@@ -310,14 +310,14 @@ SEM PatExpr
 
 %%[(7 hmtyinfer)
 SEM RecPatExpr
-  | Empty       loc         .   fo_                 =   fitsIn (@lhs.fiOpts) @fe @lUniq @lhs.patTyVarMp @lhs.knTy tyRecEmpty
+  | Empty       loc         .   fo_                 =   fitsIn (@lhs.fiOpts) @fe @lUniq @lhs.patTyVarMp @lhs.knTy recRecEmp
                             .   ty                  =   foTy @fo_
                 lhs         .   patTyVarMp          =   foVarMp @fo_ `varUpd` @lhs.patTyVarMp
                 loc         .   lUniq               :   UNIQUEREF gUniq
   | Ext         loc         .   (rowTy,patTy)       =   let  [r,e] = mkNewTyVarL 2 @lUniq
                                                         in   (r,e)
                             .   extTy               =   hsnRec `appConApp` [@rowTy]
-                            .   recTy               =   @extTy `mkTyRecExt` [(@nm,@patTy)]
+                            .   recTy               =   @extTy `recRecExt` [(@nm,@patTy)]
                             .   fo_                 =   fitsIn (@lhs.fiOpts) @fe @lUniq2 @lhs.patTyVarMp @lhs.knTy @recTy
                             .   ty                  =   foTy @fo_
                 recPatExpr  .   knTy                =   @extTy

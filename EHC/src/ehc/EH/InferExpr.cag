@@ -573,14 +573,14 @@ SEM Expr
 
 %%[(7 hmtyinfer)
 SEM RecExpr
-  | Empty       loc         .   fo_                 =   fitsIn (@lhs.fiOpts) @fe @lUniq @lhs.tyVarMp tyRecEmpty @lhs.knTy
+  | Empty       loc         .   fo_                 =   fitsIn (@lhs.fiOpts) @fe @lUniq @lhs.tyVarMp recRecEmp @lhs.knTy
                             .   ty                  =   foTy @fo_
                 lhs         .   tyVarMp             =   foVarMp @fo_ `varUpd` @lhs.tyVarMp
                 loc         .   lUniq               :   UNIQUEREF gUniq
   | Ext Upd     loc         .   (knRowTy,knRecTy,knTailTy,knExprTy)
                                                     =   let  [r,e] = mkNewTyVarL 2 @lUniq
                                                              tl = hsnRec `appConApp` [r]
-                                                        in   (r, tl `mkTyRecExt` [(@nm,e)], tl, e)
+                                                        in   (r, tl `recRecExt` [(@nm,e)], tl, e)
                             .   foKnRec             =   fitsIn @knFIOpts @fe @lUniq2 @lhs.tyVarMp @knRecTy @lhs.knTy
                 loc         .   recTyVarMp          =   foVarMp @foKnRec `varUpd` @lhs.tyVarMp
                 (loc.knRecHasLab,loc.recKnTlTy,expr.knTy)
@@ -590,14 +590,14 @@ SEM RecExpr
                 loc         .   lUniq               :   UNIQUEREF gUniq
                 loc         .   lUniq2              :   UNIQUEREF gUniq
   | Ext         recExpr     .   knTy                =   @recKnTlTy
-  | Upd         recExpr     .   knTy                =   @recKnTlTy `mkTyRecExt` [(@nm,mkNewTyVar @lUniq3)]
+  | Upd         recExpr     .   knTy                =   @recKnTlTy `recRecExt` [(@nm,mkNewTyVar @lUniq3)]
                 loc         .   lUniq3              :   UNIQUEREF gUniq
 %%]
 
 %%[(7 hmtyinfer)
 SEM Expr
   | Sel         (loc.knRowTy,loc.knExprTy)          =   let r = mkNewTyVar @lUniq_freshKnTy
-                                                        in  (r, (hsnRec `appConApp` [r]) `mkTyRecExt` [(@lbl,@lhs.knTy)])
+                                                        in  (r, (hsnRec `appConApp` [r]) `recRecExt` [(@lbl,@lhs.knTy)])
                 expr        .   knTy                =   @knExprTy
                 loc         .   (_,ty)              =   maybe (Ty_Any,Ty_Any) id (tyRecExtrWithLkup (varmpTyLookupCyc2 @expr.tyVarMp) @lbl @expr.ty)
                 loc         .   lUniq_freshKnTy     :   UNIQUEREF gUniq
@@ -622,7 +622,7 @@ SEM Expr
 %%[(9 hmtyinfer)
 SEM Expr
   | Sel         (loc.knRowTy,loc.knExprTy)          :=  let r = mkNewTyVar @lUniq_freshKnTy
-                                                        in  (r, [Ty_Impls Impls_Nil] `appArr` ((hsnRec `appConApp` [r]) `mkTyRecExt` [(@lbl,@lhs.knTy)]))
+                                                        in  (r, [Ty_Impls Impls_Nil] `appArr` ((hsnRec `appConApp` [r]) `recRecExt` [(@lbl,@lhs.knTy)]))
                 loc         .   (_,ty)              :=  maybe (Ty_Any,Ty_Any) id (tyRecExtrWithLkup (varmpTyLookupCyc2 @expr.tyVarMp) @lbl $ snd $ tyArrowImplsResWithLkup (varmpTyLookupCyc2 @expr.tyVarMp) @expr.ty)
 %%]
 

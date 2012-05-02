@@ -36,7 +36,7 @@ Currently (20090821) only empty implicits \verb@Impls_Tail@ are replaced by
 \verb@Impls_Nil@, and removed in the type itself.
 %%]
 
-%%[(9 hmtyinfer) hs module {%{EH}Ty.Trf.Canonic} import({%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Ty},{%{EH}VarMp},{%{EH}Substitutable},{%{EH}Ty.FitsInCommon2})
+%%[(9 hmtyinfer) hs module {%{EH}Ty.Trf.Canonic} import({%{EH}Base.Common},{%{EH}Base.TermLike},{%{EH}Base.Builtin},{%{EH}Ty},{%{EH}VarMp},{%{EH}Substitutable},{%{EH}Ty.FitsInCommon2})
 %%]
 
 %%[(9 hmtyinfer) hs import(Data.Maybe,qualified Data.Set as Set)
@@ -343,10 +343,10 @@ SEM Ty
 %%[(10 hmtyinfer)
 SEM Ty
   | Ext             loc     .   mbRepl          =   if @isSpineRoot
-                                                    then let (row,exts) = tyRowExtsUnAnn $ tyRowExts @repl
+                                                    then let (row,exts) = tyRowExtsUnAnn $ recUnRowExts @repl
                                                          in  if tyRowIsCanonOrdered exts
                                                              then Nothing
-                                                             else Just $ mkDfltTyCanonicOut $ mkTyRow row $ tyRowCanonOrder exts
+                                                             else Just $ mkDfltTyCanonicOut $ recRow row $ rowCanonOrder exts
                                                     else Nothing
 %%]
 

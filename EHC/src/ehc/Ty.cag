@@ -51,7 +51,7 @@ used by EHC. The AST is described in Ty/AbsSyn.
 %%[(6_4 hmtyinfer || hmtyast) hs export(tvIsEx) 
 %%]
 
-%%[(7 hmtyinfer || hmtyast) hs import(Data.List) export(kiRow,tyRowEmpty,tyRecEmpty,tySumEmpty,mkTyRow,mkTyRec,mkTySum,mkTyRecExt) 
+%%[(7 hmtyinfer || hmtyast) hs import(Data.List) export(kiRow) 
 %%]
 
 %%[(7_2 hmtyinfer || hmtyast) hs import(Data.Set(Set), qualified Data.Map as Map, Data.Map(Map))
@@ -786,11 +786,13 @@ tyIsLam ty
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Construction of type
+%%% AppLike, RecLike instances
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(1 hmtyinfer || hmtyast).AppLike hs
 instance AppLike Ty {- TyAnn () -} where
+  -- AppLike
+  
   app1App        = Ty_App
   appTop         = id
   appCon         = Ty_Con . mkHNm
@@ -801,9 +803,10 @@ instance AppLike Ty {- TyAnn () -} where
   appRngVar _    = panic "Ty.appRngVar"
 %%]]
 %%[[7
-  appProdApp tyL  = mkTyRec (zip positionalFldNames tyL)
+  appProdApp tyL  = recRec (zip positionalFldNames tyL)
 %%]]
   -- appDflt		 = Ty_Any
+  appDbg s		 = Ty_Dbg $ "*ERR: " ++ s ++ " :*"
 
   appMbCon (Ty_Con n) 	    = Just n
   appMbCon _            	= Nothing
@@ -823,6 +826,21 @@ instance AppLike Ty {- TyAnn () -} where
 %%]]
   appMbBind1 _            	    = Nothing
 %%]
+
+%%[(1 hmtyinfer || hmtyast) hs
+instance RecLike Ty {- TyAnn () -} where
+  -- RecLike
+%%[[7
+  recRow r 		= foldl (\t (n,e) -> Ty_Ext t n e) r
+  
+  recMbRecRow 	= tyMbRecRowWithLkup (const Nothing)
+  recUnRowExts	= tyRowExtsWithLkup (const Nothing)
+%%]]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Construction of type
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(1111 hmtyinfer || hmtyast).mkTyCon hs
 mkTyCon :: String -> Ty
@@ -862,10 +880,10 @@ tyEnsureNonAny :: UID -> Ty -> Ty
 tyEnsureNonAny u t = if t /= Ty_Any then t else mkNewTyVar u
 %%]
 
-%%[(8 hmtyinfer || hmtyast) hs export(mkTyThunk)
+%%[(8888 hmtyinfer || hmtyast) hs export(mkTyThunk)
 -- | (placeholder for) make type level repr of thunk (i.e. laziness)
 mkTyThunk :: Ty -> Ty
-mkTyThunk = id
+mkTyThunk = appNonEvl
 %%]
 
 %%[(9 hmtyinfer || hmtyast).tyEnsureNonAnyImpl hs
@@ -964,11 +982,9 @@ kiStar  = appCon hsnKindStar
 %%]
 
 %%[(7 hmtyinfer || hmtyast) hs
-kiRow, tyRowEmpty :: Ty
+kiRow :: Ty
 kiRow       = appCon hsnKindRow
-tyRowEmpty  = appCon hsnRowEmpty
-tyRecEmpty  = mkTyRec []
-tySumEmpty  = mkTySum []
+-- tyRowEmpty  = appCon hsnRowEmpty
 %%]
 
 %%[(18 hmtyinfer || hmtyast) hs export(tyIntUnboxed)
@@ -1211,19 +1227,21 @@ tyLamEtaRed t
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(7 hmtyinfer || hmtyast) hs
-mkTyRow :: Ty -> AssocL HsName Ty -> Ty
-mkTyRow r = foldl (\t (n,e) -> Ty_Ext t n e) r
+-- mkTyRow :: Ty -> AssocL HsName Ty -> Ty
+-- mkTyRow r = foldl (\t (n,e) -> Ty_Ext t n e) r
 
+{-
 mkTyRec :: AssocL HsName Ty -> Ty
-mkTyRec al = hsnRec `appConApp` [tyRowEmpty `mkTyRow` al]
+mkTyRec al = hsnRec `appConApp` [recRowEmp `recRow` al]
 
 mkTyRecExt :: Ty -> AssocL HsName Ty -> Ty
 mkTyRecExt recd al
-  =  let  (row,exts) = tyRowExts (tyRecRow recd)
-     in   hsnRec `appConApp` [row `mkTyRow` (exts ++ al)]
+  =  let  (row,exts) = recUnRowExts (recUnRecRow recd)
+     in   hsnRec `appConApp` [row `recRow` (exts ++ al)]
+-}
 
-mkTySum :: AssocL HsName Ty -> Ty
-mkTySum al = hsnSum `appConApp` [tyRowEmpty `mkTyRow` al]
+-- mkTySum :: AssocL HsName Ty -> Ty
+-- mkTySum al = hsnSum `appConApp` [recRowEmp `recRow` al]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1301,23 +1319,23 @@ tyMbRecRowWithLkup lookup t
 %%[(8 hmtyinfer || hmtyast) hs
 %%]
 
-%%[(7 hmtyinfer || hmtyast) hs export(tyRowExtr,tyRecExtr,tyRecExts,tyMbRecRow,tyRecRow,tyRowExts)
-tyMbRecRow :: Ty -> Maybe Ty
-tyMbRecRow = tyMbRecRowWithLkup (const Nothing)
-{-# INLINE tyMbRecRow #-}
+%%[(7 hmtyinfer || hmtyast) hs export(tyRowExtr,tyRecExtr,tyRecExts)
+-- tyMbRecRow :: Ty -> Maybe Ty
+-- tyMbRecRow = tyMbRecRowWithLkup (const Nothing)
+-- {-# INLINE tyMbRecRow #-}
 {-
   =  case tyAppFunArgs t of
        (Ty_Con n,[row]) | hsnIsRec n || hsnIsSum n -> Just row
        _                                           -> Nothing
 -}
 
-tyRecRow :: Ty -> Ty
-tyRecRow = tyRecRowWithLkup (const Nothing) -- maybe Ty_Any id . tyMbRecRow
-{-# INLINE tyRecRow #-}
+-- tyRecRow :: Ty -> Ty
+-- tyRecRow = maybe Ty_Any id . recMbRecRow
+-- {-# INLINE tyRecRow #-}
 
-tyRowExts :: Ty -> (Ty,AssocL HsName Ty)
-tyRowExts = tyRowExtsWithLkup (const Nothing)
-{-# INLINE tyRowExts #-}
+-- tyRowExts :: Ty -> (Ty,AssocL HsName Ty)
+-- tyRowExts = tyRowExtsWithLkup (const Nothing)
+-- {-# INLINE tyRowExts #-}
 
 tyRecExts :: Ty -> (Ty,AssocL HsName Ty)
 tyRecExts = tyRecExtsWithLkup (const Nothing)
@@ -1334,7 +1352,7 @@ tyRecExtr = tyRecExtrWithLkup (const Nothing)
 
 %%[(98 hmtyinfer || hmtyast) hs export(tyMbRecExts)
 tyMbRecExts :: Ty -> Maybe (Ty,AssocL HsName Ty)
-tyMbRecExts = fmap tyRowExts . tyMbRecRow
+tyMbRecExts = fmap recUnRowExts . recMbRecRow
 %%]
 
 %%[(8 hmtyinfer || hmtyast) hs export(tyRecExts2)
@@ -1355,8 +1373,8 @@ tyDecomposeMk t
                         where (f,as,mk) = tyDecomposeMk t'
       Ty_App _ _        -> (f,as,\f' as' -> appTopApp (f':as'))
                         where (f,as) = appUnApp t
-      Ty_Ext _ _ _      -> (r,assocLElts e,\r' e' -> mkTyRow r' $ zip (assocLKeys e) e')
-                        where (r,e) = tyRowExts t
+      Ty_Ext _ _ _      -> (r,assocLElts e,\r' e' -> recRow r' $ zip (assocLKeys e) e')
+                        where (r,e) = recUnRowExts t
       _ | not (null an) -> (t2,as,\f' as' -> mk1 $ mk2 f' as')
         | otherwise     -> (t,[],const)
                         where (t1,an,mk1) = tyAnnDecomposeMk t
@@ -1381,26 +1399,18 @@ tyRowIsCanonOrdered = isSortedByOn rowLabCmp fst
 {-# INLINE tyRowIsCanonOrdered #-}
 %%]
 
-%%[(7 hmtyinfer || hmtyast) hs export(rowExtCmp,tyRowCanonOrder,tyRowCanonOrderBy,tyRowCanonOrderOn,tyRowCanonLblOrder)
+%%[(7 hmtyinfer || hmtyast) hs export(rowExtCmp)
 rowExtCmp :: (HsName,a) -> (HsName,a) -> Ordering
 rowExtCmp (n1,_) (n2,_) = n1 `rowLabCmp` n2
 {-# INLINE rowExtCmp #-}
 
-tyRowCanonOrderOn :: (o -> HsName) -> AssocL o a -> AssocL o a
-tyRowCanonOrderOn sel = sortByOn rowLabCmp (sel . fst)
-{-# INLINE tyRowCanonOrderOn #-}
+-- tyRowCanonOrderBy :: (o -> o -> Ordering) -> AssocL o a -> AssocL o a
+-- tyRowCanonOrderBy = rowCanonOrderBy
+-- {-# INLINE tyRowCanonOrderBy #-}
 
-tyRowCanonOrderBy :: (o -> o -> Ordering) -> AssocL o a -> AssocL o a
-tyRowCanonOrderBy = rowCanonOrderBy
-{-# INLINE tyRowCanonOrderBy #-}
-
-tyRowCanonOrder :: AssocL HsName a -> AssocL HsName a
-tyRowCanonOrder = tyRowCanonOrderBy rowLabCmp
-{-# INLINE tyRowCanonOrder #-}
-
-tyRowCanonLblOrder :: [HsName] -> [HsName]
-tyRowCanonLblOrder = sortBy rowLabCmp
-{-# INLINE tyRowCanonLblOrder #-}
+-- tyRowCanonOrder :: AssocL HsName a -> AssocL HsName a
+-- tyRowCanonOrder = tyRowCanonOrderBy rowLabCmp
+-- {-# INLINE tyRowCanonOrder #-}
 %%]
 
 %%[(8 hmtyinfer || hmtyast) hs export(tyRowOffsetOrder)
@@ -1421,7 +1431,7 @@ tyExtsOffset lbl exts
 
 tyRecOffset :: HsName -> Ty -> Int
 tyRecOffset lbl t
-  = fst $ tyExtsOffset lbl $ tyRowCanonOrder exts
+  = fst $ tyExtsOffset lbl $ rowCanonOrder exts
   where (_,exts) = tyRecExts t
 %%]
 
@@ -1829,9 +1839,9 @@ Some utility functions to combine annotated records.
 
 tyInsertAnnRec :: Ty -> Maybe HsName -> Ty -> Ty
 tyInsertAnnRec (Ty_App tyInit tyExts) mbNm addTy
-  = let (tyEmpty, exts) = tyRowExts tyExts
+  = let (tyEmpty, exts) = recUnRowExts tyExts
         exts' = insert mbNm exts
-     in tyInit `Ty_App` (tyEmpty `mkTyRow` exts')
+     in tyInit `Ty_App` (tyEmpty `recRow` exts')
   where
     insert Nothing   exts = (mkHNmPos (1 + maxHnPos exts), addTy) : exts
     insert (Just nm) exts = (nm, addTy) : exts
@@ -1842,9 +1852,9 @@ maxHnPos l = maximum (0 : [n | (mkHNmPos n, _) <- l ])
 
 tyReplaceAnnRec :: Ty -> HsName -> Ty -> Ty
 tyReplaceAnnRec (Ty_App tyInit tyExts) nm replTy
-  = let (tyEmpty, exts) = tyRowExts tyExts
+  = let (tyEmpty, exts) = recUnRowExts tyExts
         exts' = replace exts
-     in tyInit `Ty_App` (tyEmpty `mkTyRow` exts')
+     in tyInit `Ty_App` (tyEmpty `recRow` exts')
   where
     replace (x@(n, t) : xs) | n == nm   = (nm, replTy) : xs
                             | otherwise = x : replace xs
@@ -2024,10 +2034,10 @@ instToL1AssocL l = [ (v,(tyquMetaLev q,k)) | (InstTo_Qu q _ v k) <- l ]
 %%% Error
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 hmtyinfer || hmtyast) hs export(tyErr)
+%%[(8888 hmtyinfer || hmtyast) hs export(tyErr)
 -- a for the time being placeholder for yet unresolved/unpropagated type
 tyErr :: String -> Ty
-tyErr s = Ty_Dbg $ "*ERR: " ++ s ++ " :*"
+tyErr = appDbg
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -199,7 +199,7 @@ SEM Ty
                                                                 (wra $ th $ @appRevArgL !! 1)
                                                                 (wrr      $ @appRevArgL !! 0)
                                                          else if @appIsLikeProd
-                                                         then let flds = C.mkTySeqNmVals $ assocLMapElt th $ T.tyRowCanonOrder @recFldL
+                                                         then let flds = C.mkTySeqNmVals $ assocLMapElt th $ T.rowCanonOrder @recFldL
                                                               in  case @recMbExt of
 %%[[8
                                                                     Just _ -> C.tyErr "EXTREC"
@@ -208,7 +208,7 @@ SEM Ty
 %%]]
                                                                     _      -> C.Expr_Prod flds -- C.Expr_Node CTagRec flds
                                                          else if @appIsSum
-                                                         then let flds = C.mkTySeqNmVals $ T.tyRowCanonOrder @recFldL
+                                                         then let flds = C.mkTySeqNmVals $ T.rowCanonOrder @recFldL
                                                               in  C.Expr_Sum flds
                                                          else dflt
                                                     else dflt

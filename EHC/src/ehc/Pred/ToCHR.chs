@@ -6,7 +6,7 @@ Derived from work by Gerrit vd Geest.
 
 Conversion from Pred to CHR.
 
-%%[(9 hmtyinfer) module {%{EH}Pred.ToCHR} import({%{EH}Opts},{%{EH}Base.Common},{%{EH}Ty},{%{EH}Ty.Ftv},{%{EH}Error},{%{EH}VarMp},{%{EH}Substitutable})
+%%[(9 hmtyinfer) module {%{EH}Pred.ToCHR} import({%{EH}Opts},{%{EH}Base.Common},{%{EH}Base.TermLike},{%{EH}Ty},{%{EH}Ty.Ftv},{%{EH}Error},{%{EH}VarMp},{%{EH}Substitutable})
 %%]
 
 %%[(9 hmtyinfer) import(Data.Maybe,qualified Data.Set as Set,qualified Data.Map as Map)
@@ -157,7 +157,7 @@ initScopedPredStore
 %%[[10
         l1s1         = mkCHRPredOcc (Pred_Lacks ty1 lab1) sc1
         l2s1         = mkCHRPredOcc (Pred_Lacks ty2 lab1) sc1
-        l3s1         = mkCHRPredOcc (Pred_Lacks tyRowEmpty lab1) sc1
+        l3s1         = mkCHRPredOcc (Pred_Lacks recRowEmp lab1) sc1
         labelProve1  = [Prove l1s1]
                          ==> [Prove l2s1, mkReduction l1s1 (RedHow_ByLabel lab1 off1 sc1) [l2s1]]
                           |> [NonEmptyRowLacksLabel ty2 off1 ty1 lab1]

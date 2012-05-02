@@ -564,7 +564,7 @@ instance AbstractCore Expr MetaVal ValBind ValBind ValBindCateg MetaBind Ty Pat 
   acoreBoundVal1CatLevMetasTy cat n l m t e
   										= mkValBind1LevMetas doMkSeq n l m t e
                                         where doMkSeq = cat /= ValBindCateg_Strict
-  acoreBound1AspkeyVal		  			= panic "TyCore.Base.acoreBound1AspkeyVal"
+  acoreBound1AspkeyLevLblVal		  	= panic "TyCore.Base.acoreBound1AspkeyLevLblVal"
   acoreBoundValTy1CatLev _ _ _ t		= panic "TyCore.Base.acoreBoundValTy1CatLev"
   acoreBind1Asp n [a]					= a
   acoreBind1CatLevMetasTy bcat n mlev mb t e

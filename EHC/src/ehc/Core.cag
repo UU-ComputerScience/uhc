@@ -188,9 +188,9 @@ cbindNm (CBind_Bind      n _) = n
 %%[(50 codegen) hs export(cbindAspectMbExpr,cbindExprs)
 -- | extract expr for aspect, relevant for later use/analysis/...
 cbindAspectMbExpr :: CBound -> Maybe CExpr
-cbindAspectMbExpr (CBound_Bind _ e) = Just e
-cbindAspectMbExpr (CBound_Val  _ e) = Just e
-cbindAspectMbExpr _                 = Nothing
+cbindAspectMbExpr (CBound_Bind _     e) = Just e
+cbindAspectMbExpr (CBound_Val  _ _ _ e) = Just e
+cbindAspectMbExpr _                     = Nothing
 
 -- | extract exprs of a binding which are relevant for use/analysis/...
 cbindExprs :: CBind -> [CExpr]
@@ -590,7 +590,7 @@ instance Serialize CBound where
 %%]]
   sput (CBound_RelevTy a b      ) = sputWord8 3 >> sput a >> sput b
   sput (CBound_Meta    a b      ) = sputWord8 4 >> sput a >> sput b
-  sput (CBound_Val     a b      ) = sputWord8 5 >> sput a >> sput b
+  sput (CBound_Val     a b c d  ) = sputWord8 5 >> sput a >> sput b >> sput c >> sput d
   sput (CBound_Ty      a b      ) = sputWord8 6 >> sput a >> sput b
   sget
     = do t <- sgetWord8
@@ -602,7 +602,7 @@ instance Serialize CBound where
 %%]]
             3 -> liftM2 CBound_RelevTy       sget sget
             4 -> liftM2 CBound_Meta          sget sget
-            5 -> liftM2 CBound_Val           sget sget
+            5 -> liftM4 CBound_Val           sget sget sget sget
             6 -> liftM2 CBound_Ty            sget sget
 
 instance Serialize CBind where
@@ -676,7 +676,7 @@ instance AbstractCore CExpr CMetaVal CBind CBound CBindCateg CMetaBind Ty CPat C
   acoreTagTupTy   tg _ es 				= acoreApp (CExpr_Tup tg) es
   acoreBoundVal1CatLevMetasTy _ _ _ m _ e
   										= CBound_Bind m e
-  acoreBound1AspkeyVal a e  			= CBound_Val a e
+  acoreBound1AspkeyLevLblVal a m l e  	= CBound_Val a m l e
   acoreBoundValTy1CatLev _ _ _ t		= CBound_Ty acbaspkeyDefaultTy t
   acoreBind1Asp n as					= CBind_Bind n as
   acoreBind1CatLevMetasTy bcat n mlev mb t e
@@ -784,7 +784,7 @@ instance AbstractCore CExpr CMetaVal CBind CBound CBindCateg CMetaBind Ty CPat C
   acoreUnPatFld (CPatFld_Fld l o b _)   = ((l,o),b)
   acoreUnBind (CBind_Bind n as)         = (n,as)
 
-  acoreBoundMbVal (CBound_Val a e)		= Just (a,e)
+  acoreBoundMbVal (CBound_Val a m l e)	= Just (a,m,l,e)
   acoreBoundMbVal _                 	= Nothing
 
   -- coercion

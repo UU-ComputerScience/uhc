@@ -234,7 +234,7 @@ ATTR AllDataConstr [ | | dataAltTyL USE {++} {[]}: {AssocL HsName Ty} ]
 SEM DataConstr
   | Constr      loc         .   dataConTy2          =   @dataConTyL `appArr` @lhs.dataTy 
                             .   dataConProdTy2      =   let  lbls = zipWith (\p (ml,_) -> maybe p id ml) positionalFldNames @dataConGadtFldTyL
-                                                        in   mkTyRec (zipWith (\l (_,t) -> (l,t)) lbls @dataConGadtFldTyL) 
+                                                        in   recRec (zipWith (\l (_,t) -> (l,t)) lbls @dataConGadtFldTyL) 
 
                             .   dataConTy           :=  @dataConTy1
                             .   dataConProdTy       :=  @dataConProdTy1
@@ -242,7 +242,7 @@ SEM DataConstr
                             .   dataAltTyL          =   [(@conNm,@dataConProdTy)]
 
 SEM Decl
-  | Data        loc         .   dataAltTy           =   mkTySum @constrs.dataAltTyL
+  | Data        loc         .   dataAltTy           =   recSum @constrs.dataAltTyL
                             .   dataTgi             :=  mkTGIData (appCon @tyNm) Ty_Any {- ([@dataTy] `appArr` @dataAltTy) -}
 %%]
 

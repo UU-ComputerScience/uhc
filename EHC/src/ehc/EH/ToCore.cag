@@ -276,7 +276,7 @@ SEM Expr
                                                     else
 %%]]                                                    
                                                           foldl acoreApp1 (CExpr_Tup CTagRec)
-                                                            $ fuL2ExprL $ tyRowCanonOrder $ @recExpr.fuCExprL
+                                                            $ fuL2ExprL $ rowCanonOrder $ @recExpr.fuCExprL
 %%[[10
                 loc         .   lUniq3          :   UNIQUEREF gUniq
 %%]]
@@ -564,8 +564,8 @@ fsL2PatOffsetL l = [ (RPatFld_Fld n oe n p,Just oi) | (o,(foff,p)) <- zip [0..] 
 
 %%[(8 codegen)
 SEM PatExpr
-  | AppTop      loc         .   rpatBinds   =   fsL2PatOffsetL $ reverse                   $ @fsRPatL
-  | Rec         loc         .   rpatBinds   =   fsL2PatOffsetL $ tyRowCanonOrderBy compare $ @fsRPatL
+  | AppTop      loc         .   rpatBinds   =   fsL2PatOffsetL $ reverse                 $ @fsRPatL
+  | Rec         loc         .   rpatBinds   =   fsL2PatOffsetL $ rowCanonOrderBy compare $ @fsRPatL
   | DataFields  loc         .   (rpatBindss,rpatBindsNonSat,rpatBind0)
                                             =   let fsL = reverse @fsRPatL
                                                     grp = groupByOn (\o1 o2 -> (foffOffset o1 `compare` foffOffset o2) /= GT) fst
@@ -964,7 +964,7 @@ mkInstanceNames
      dictNm instanceRecTy
   = (instanceFieldL,memberNames,memberNewNames,memberNewVars)
   where instanceFieldL  = snd $ tyRecExts instanceRecTy
-        memberNames     = assocLKeys $ tyRowCanonOrder instanceFieldL
+        memberNames     = assocLKeys $ rowCanonOrder instanceFieldL
         memberNewNames  = [ hsnUniqifyStr HsNameUniqifier_DictField (show n) dictNm | n <- memberNames ]
         memberNewVars   = map acoreVar memberNewNames
 %%]

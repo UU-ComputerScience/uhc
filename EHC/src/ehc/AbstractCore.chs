@@ -68,7 +68,7 @@ class AbstractCore  expr metaval bind bound bindcateg metabind ty pat patrest pa
   acoreBoundValTy1CatLev :: bindcateg -> HsName -> MetaLev -> ty -> bound
   
   -- | a expr binding aspect, for a name
-  acoreBound1AspkeyVal :: ACoreBindAspectKeyS -> expr -> bound
+  acoreBound1AspkeyLevLblVal :: ACoreBindAspectKeyS -> MetaLev -> CLbl -> expr -> bound
   
   -- | a binding, for/from a single aspect (for now, later multiple)
   acoreBind1Asp :: HsName -> [bound] -> bind
@@ -237,7 +237,7 @@ class AbstractCore  expr metaval bind bound bindcateg metabind ty pat patrest pa
   acoreUnBind :: bind -> (HsName,[bound])
 
   -- | is bound a expr?
-  acoreBoundMbVal :: bound -> Maybe (ACoreBindAspectKeyS,expr)
+  acoreBoundMbVal :: bound -> Maybe (ACoreBindAspectKeyS,MetaLev,CLbl,expr)
 
   ------------------------- transforming -------------------------
   -- | unthunk expr
@@ -259,7 +259,7 @@ class AbstractCore  expr metaval bind bound bindcateg metabind ty pat patrest pa
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Construction via class AppLike
+%%% Construction via class AppLike, RecLike
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen) hs
@@ -273,9 +273,17 @@ instance AbstractCore e m b basp bcat mbind t p pr pf a => AppLike e {- () () -}
   -- appDflt       = 
   
   appMbCon      = acoreExprMbVar
-  appMbApp1 e   = do (f,b) <- acoreExprMbApp e
-                     (_,a) <- acoreBoundMbVal b
+  appMbApp1 e   = do (f,b)     <- acoreExprMbApp e
+                     (_,_,_,a) <- acoreBoundMbVal b
                      return (f,a)
+%%]
+
+%%[(8888 codegen) hs
+instance AbstractCore e m b basp bcat mbind t p pr pf a => RecLike e {- () () -} where
+  recRow r 		= foldl (\t (n,e) -> Ty_Ext t n e) r
+  
+  recMbRecRow 	= Nothing -- tyMbRecRowWithLkup (const Nothing)
+  recUnRowExts e= (e,[])
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -610,7 +618,11 @@ acoreBoundVal1Meta n m e = acoreBoundVal1Metas n (acoreMetabindDflt,m) e
 
 %%]
 
-%%[(8 codegen) export(acoreBound1Val)
+%%[(8 codegen) export(acoreBound1AspkeyVal,acoreBound1Val)
+acoreBound1AspkeyVal :: (AbstractCore e m b basp bcat mbind t p pr pf a) => e -> basp
+acoreBound1AspkeyVal e = acoreBound1AspkeyLevLblVal acbaspkeyDefault 0 CLbl_None e
+{-# INLINE acoreBound1Val #-}
+
 acoreBound1Val :: (AbstractCore e m b basp bcat mbind t p pr pf a) => e -> basp
 acoreBound1Val e = acoreBound1AspkeyVal acbaspkeyDefault e
 {-# INLINE acoreBound1Val #-}
@@ -859,7 +871,7 @@ acorePatFldTy _ lbloff n = acorePatFldBind lbloff (acoreBind1Nm1 n)
 %%[(8 codegen) export(acoreUnBoundVal)
 -- | possible expr of bound (may panic)
 acoreUnBoundVal :: (AbstractCore e m b basp bcat mbind t p pr pf a) => basp -> e
-acoreUnBoundVal = maybe (panic "acoreBoundMbVal") snd . acoreBoundMbVal
+acoreUnBoundVal = maybe (panic "acoreBoundMbVal") (\(_,_,_,a) -> a) . acoreBoundMbVal
 {-# INLINE acoreUnBoundVal #-}
 %%]
 

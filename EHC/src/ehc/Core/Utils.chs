@@ -10,7 +10,7 @@
 %%[(8 codegen) module {%{EH}Core.Utils}
 %%]
 
-%%[(8 codegen) hs import({%{EH}Base.Builtin},{%{EH}Opts},{%{EH}Base.Common},{%{EH}Ty},{%{EH}Core},{%{EH}Gam.Full})
+%%[(8 codegen) hs import({%{EH}Base.Builtin},{%{EH}Opts},{%{EH}Base.Common},{%{EH}Base.TermLike},{%{EH}Ty},{%{EH}Core},{%{EH}Gam.Full})
 %%]
 
 %%[(8 codegen) hs import({%{EH}AbstractCore})
@@ -206,7 +206,7 @@ fsLReorder opts fsL
                  )
                  ([],[])
             $  fsL
-     in   tyRowCanonOrderBy compare fsL'
+     in   rowCanonOrderBy compare fsL'
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

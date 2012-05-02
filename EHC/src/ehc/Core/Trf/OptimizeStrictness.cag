@@ -196,7 +196,7 @@ ATTR AllBound [ | | cTrfBoundL USE {++} {[]} : {[CBound]} ]
 SEM CBound
   | Bind        loc         .   wrapper         =   case (@expr.mbLam,@lhs.mbStrictArgsRes) of
                                                       (Just as, Just (_,evs,_))
-                                                        -> [ CBound_Val acbaspkeyNone
+                                                        -> [ CBound_Val acbaspkeyNone 0 CLbl_None
                                                            $ acoreLam wrapperArgs
                                                            $ (\b -> foldr ($) b bodyWrappers)
                                                            $ acoreApp (CExpr_Var (ACoreBindRef @lhs.nm (Just acbaspkeyStrict)))
@@ -207,7 +207,7 @@ SEM CBound
                                                                  where a' = hsnUniqify HsNameUniqifier_Evaluated a
                                                               mk a _            = (a, a , id                             )
                                                       _ -> []
-                            .   worker          =   if @doWorkerWrapper then [CBound_Val acbaspkeyStrict @expr.cTrf] else []
+                            .   worker          =   if @doWorkerWrapper then [CBound_Val acbaspkeyStrict 0 CLbl_None @expr.cTrf] else []
                             .   oldbinding      =   if @doWorkerWrapper then [] else [@cTrf]
                 lhs         .   cTrfBoundL      =   @worker ++ @wrapper ++ @oldbinding
 %%[[90

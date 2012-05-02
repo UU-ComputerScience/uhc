@@ -64,7 +64,7 @@ SEM Decl
                                 .   supClsFldNmL    =   tyPrLToSupNmL @ctxtPrTyL
                                 .   clsFldL         =   assocLMapElt vgiTy (gamToAssocL @clsTySigDictGam)
                                 .   clsAllFldL      =   @clsFldL ++ zip @supClsFldNmL (repeat Ty_Any)
-                                .   clsTyRec        =   mkTyRec @clsAllFldL
+                                .   clsTyRec        =   recRec @clsAllFldL
                                 .   dataDictNm      =   hsnClass2Dict @clsNm                                -- only used when `not ehcCfgClassViaRec'
                                 .   dataDictTag     =   mkClassCTag @dataDictNm (length @clsAllFldL)        -- only used when `not ehcCfgClassViaRec'
                                 .   dataDictTy      =   appConApp @dataDictNm @clsArgTyL

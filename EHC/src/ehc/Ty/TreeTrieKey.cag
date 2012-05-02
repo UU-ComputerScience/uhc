@@ -119,7 +119,7 @@ SEM Ty
                                                     then TT1K_One (Key_UID @tv)
                                                     else TT1K_Any
   | Ext             loc     .   bkey            =   if @isSpineRoot && @ty.isFixed
-                                                    then let (_,exts) = tyRowExts @self
+                                                    then let (_,exts) = recUnRowExts @self
                                                          in  TT1K_One (Key_Str $ concat $ intersperse "," $ Lst.map show $ assocLKeys exts)
                                                     else TT1K_Any
   | TBind           loc     .   bkey            =   TT1K_One (Key_TyQu @qu.self)
@@ -277,7 +277,7 @@ SEM Ty
                                                     else (empty,empty)
   | Ext             loc     .   (trieKey,trieKeyNest)
                                                 =   if @isSpineRoot
-                                                    then let (_,exts) = tyRowExts @self
+                                                    then let (_,exts) = recUnRowExts @self
                                                          in  ( singleton
                                                                $ TK_One
                                                                    (if @ty.isFixed then TKK_Normal else TKK_Partial)

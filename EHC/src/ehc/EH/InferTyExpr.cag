@@ -486,7 +486,7 @@ SEM TyExpr
   | Row         loc         .   ty                  =   @rowTyExpr.tyRow
 
 SEM RowTyExpr
-  | Empty       lhs         .   tyRow               =   tyRowEmpty
+  | Empty       lhs         .   tyRow               =   recRowEmp
   | Ext         lhs         .   tyRow               =   Ty_Ext @rowTyExpr.tyRow @nm @tyExpr.ty
 %%]
 

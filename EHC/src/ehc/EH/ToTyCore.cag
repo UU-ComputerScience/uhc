@@ -602,10 +602,10 @@ SEM Expr
                                                     then  C.fuMkExpr @lhs.opts @lUniq3 (reverse @recExpr.tcfuExprL) @recExpr.tcrecExpr
                                                     else
 %%]]                                                    
-                                                          C.Expr_Node {- CTagRec -} $ C.fuL2ExprNodeFldL True Just $ tyRowCanonOrder @recExpr.tcfuExprL
+                                                          C.Expr_Node {- CTagRec -} $ C.fuL2ExprNodeFldL True Just $ rowCanonOrder @recExpr.tcfuExprL
 %%]
                                                           foldl acoreApp1 (C.Expr_Tup CTagRec)
-                                                            $ C.fuL2ExprL $ tyRowCanonOrder $ @recExpr.tcfuExprL
+                                                            $ C.fuL2ExprL $ rowCanonOrder $ @recExpr.tcfuExprL
 
 %%[(8888 codegen coresysf tycore)
 SEM Expr
@@ -959,8 +959,8 @@ SEM RecPatExpr
 
 %%[(8 codegen coresysf tycore)
 SEM PatExpr
-  | AppTop      loc         .   rpatValBinds=   C.fsL2PatOffsetL $ reverse                   $ @tcfsRPatL
-  | Rec         loc         .   rpatValBinds=   C.fsL2PatOffsetL $ tyRowCanonOrderBy compare $ @tcfsRPatL
+  | AppTop      loc         .   rpatValBinds=   C.fsL2PatOffsetL $ reverse                 $ @tcfsRPatL
+  | Rec         loc         .   rpatValBinds=   C.fsL2PatOffsetL $ rowCanonOrderBy compare $ @tcfsRPatL
   | DataFields  loc         .   (rpatValBindss,rpatValBindsNonSat,rpatValBind0)
                                             =   let fsL = reverse @tcfsRPatL
                                                     grp = groupByOn (\o1 o2 -> (C.foffOffset o1 `compare` C.foffOffset o2) /= GT) fst
@@ -1377,7 +1377,7 @@ SEM Decl
 
 
                                                      memberNames     = [ n 
-                                                                       | (n,_) <- tyRowCanonOrder @recTyExts 
+                                                                       | (n,_) <- rowCanonOrder @recTyExts 
                                                                        ]
                                                      memberNewNames  = [ hsnUniqifyStr HsNameUniqifier_DictField (show n) @dictNm -- hsnSuffix @dictNm ('~':show n)
                                                                        | n <- memberNames

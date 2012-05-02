@@ -203,16 +203,25 @@ SEM CExpr
 SEM CBind
  | Bind         lhs         .   pp          =   let p [a] = a
                                                     p as  = ppCurlysSemisBlock as
-                                                in  ppDef (ppCNm @nm) (p $ @bindAspects.ppL ++ (maybe [] (\x -> [pp x]) $ Map.lookup @nm @lhs.lamMp))
+                                                in  ppDef (ppCNm @nm) (p $ [ s >#< pp | (s,pp) <- @bindAspects.ppAndSepL ] ++ (maybe [] (\x -> [pp x]) $ Map.lookup @nm @lhs.lamMp))
 
 SEM CBound
-  | Bind        lhs         .   pp          =   @bindMeta.pp >-< "=" >#< @expr.pp
-  | Ty     		lhs         .   pp          =   "::" >#< ppACBaspKeyS @aspectKeyS >#< @tyPP -- pp @relevTy
-  | RelevTy     lhs         .   pp          =   "::_R" >#< ppACBaspKeyS @aspectKeyS >#< @tyPP -- pp @relevTy
-  | Meta        lhs         .   pp          =   "::_M" >#< ppACBaspKeyS @aspectKeyS >#< @cmetas.pp
-  | Val         lhs         .   pp          =   "=" >#< ppACBaspKeyS @aspectKeyS >#< @expr.pp
+  | Bind        loc         .   pp          =   @bindMeta.pp >-< @expr.pp
+  | Ty          loc         .   pp          =   ppACBaspKeyS @aspectKeyS >#< @tyPP -- pp @relevTy
+  | RelevTy     loc         .   pp          =   ppACBaspKeyS @aspectKeyS >#< @tyPP -- pp @relevTy
+  | Meta        loc         .   pp          =   ppACBaspKeyS @aspectKeyS >#< @cmetas.pp
+  | Val         loc         .   pp          =   let asp | Set.null @aspectKeyS  = id
+                                                        | otherwise             = \x -> ppACBaspKeyS @aspectKeyS >#< x
+                                                    lbl | @lbl == CLbl_None     = id
+                                                        | otherwise             = \x -> @lbl >#< "=" >#< x 
+                                                    lev | @mlev == 0            = id
+                                                        | otherwise             = \x -> "@" >|< @mlev >#< x 
+                                                    par | @mlev == 0 && @lbl == CLbl_None && Set.null @aspectKeyS
+                                                                                = id
+                                                        | otherwise             = ppParens
+                                                in  par $ lev $ asp $ lbl @expr.pp
 %%[[90
-  | FFE         lhs         .   pp          =   "=" >#< ("foreignexport" >#< ppCurlysCommasBlock [pp (show @callconv),"\"" >|< @expEnt >|< "\"",@expr.pp {- ppCNm @expNm -},ppTyWithCfg' CfgPP_Plain @ty])
+  | FFE         loc         .   pp          =   "foreignexport" >#< ppCurlysCommasBlock [pp (show @callconv),"\"" >|< @expEnt >|< "\"",@expr.pp {- ppCNm @expNm -},ppTyWithCfg' CfgPP_Plain @ty]
 %%]]
 
 SEM CBoundL CBindL CPatFldL CAltL CBindAnnL
@@ -275,11 +284,11 @@ SEM CExpr
 
 SEM CExprAnn
   | Ty          loc         .   pp          =   "::" >#< ppTyWithCfg' CfgPP_Plain @ty
-  | Coe			loc			.	pp			=	"~" >#< ppRelevCoe @lhs.varPPMp @coe
-  | Debug		loc			.	pp			=	ppCmt $ pp @info
+  | Coe         loc         .   pp          =   "~" >#< ppRelevCoe @lhs.varPPMp @coe
+  | Debug       loc         .   pp          =   ppCmt $ pp @info
 
 SEM CBindAnn
-  | Coe			loc			.	pp			=	"~" >#< ppRelevCoe @lhs.varPPMp @coe
+  | Coe         loc         .   pp          =   "~" >#< ppRelevCoe @lhs.varPPMp @coe
 %%]
 
 %%[(9 codegen)
@@ -293,6 +302,27 @@ SEM CExpr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% PP + separator for optional use in CBind
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AllBound [ | | ppAndSepL USE {++} {[]}: {[(String,PP_Doc)]} ]
+
+SEM CBound
+  | Bind        loc         .   sep         =   "="
+  | Ty          loc         .   sep         =   "::"
+  | RelevTy     loc         .   sep         =   "::_R"
+  | Meta        loc         .   sep         =   "::_M"
+  | Val         loc         .   sep         =   "="
+%%[[90
+  | FFE         loc         .   sep         =   "="
+%%]]
+
+SEM CBound
+  | *           lhs         .   ppAndSepL   = [(@sep,@pp)]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% UID mapping
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -300,18 +330,18 @@ SEM CExpr
 ATTR AllExprBase [ varPPMp: VarPPMp | | ]
 
 SEM CModule
-  | Mod			expr		.	varPPMp		=	Map.empty
+  | Mod         expr        .   varPPMp     =   Map.empty
 %%]
 
 %%[(8 codegen)
 ATTR AllBound [ | | gathVarPPMp USE {`Map.union`} {Map.empty}: VarPPMp ]
 
 SEM CBound
-  | RelevTy		(loc.tyPP,lhs.gathVarPPMp)	=	ppRelevTy Map.empty @relevTy		-- circular when given desired @lhs.varPPMp
-  | Ty			loc			.	tyPP		=	ppTy @ty
+  | RelevTy     (loc.tyPP,lhs.gathVarPPMp)  =   ppRelevTy Map.empty @relevTy        -- circular when given desired @lhs.varPPMp
+  | Ty          loc         .   tyPP        =   ppTy @ty
 
 SEM CBind
-  | Bind        bindAspects	.	varPPMp		=	Map.union @bindAspects.gathVarPPMp @lhs.varPPMp
+  | Bind        bindAspects .   varPPMp     =   Map.union @bindAspects.gathVarPPMp @lhs.varPPMp
 %%]
 
 %%]
@@ -322,5 +352,5 @@ SEM CBind
 
 %%[(8 codegen)
 SEM *
-  | *			loc			.	tyPP		:	PP_Doc
+  | *           loc         .   tyPP        :   PP_Doc
 %%]

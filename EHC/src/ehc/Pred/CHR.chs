@@ -16,7 +16,7 @@ Derived from work by Gerrit vd Geest.
 %%[(9 hmtyinfer) import(EH.Util.Pretty,EH.Util.AGraph)
 %%]
 
-%%[(9 hmtyinfer) import({%{EH}Base.Common})
+%%[(9 hmtyinfer) import({%{EH}Base.Common},{%{EH}Base.TermLike})
 %%]
 
 %%[(9 hmtyinfer) import({%{EH}Ty},{%{EH}VarMp},{%{EH}Substitutable},{%{EH}Ty.FitsInCommon2},{%{EH}Ty.FitsIn},{%{EH}Ty.TreeTrieKey})
@@ -213,7 +213,7 @@ instance CHRCheckable FIIn Guard VarMp where
             = return $ (vDst `varmpOffsetUnit` LabelOffset_Off offset)
                        `varUpd` (tv `varmpTyUnit` row)
             where (row,exts) = tyRowExtsWithLkup (varmpTyLookupCyc2 subst') ty
-                  (offset,presence) = tyExtsOffset lab' $ tyRowCanonOrder exts
+                  (offset,presence) = tyExtsOffset lab' $ rowCanonOrder exts
                   (Label_Lab lab') = varUpd subst' lab
 %%]]
 %%[[41

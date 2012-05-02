@@ -220,6 +220,8 @@ DATA CBound
   
   -- a (keyed) CExpr
   | Val		    aspectKeyS		: {ACoreBindAspectKeyS}
+  				mlev			: {MetaLev}
+  				lbl				: {CLbl}
   				expr 			: CExpr
   
   -- a (keyed) Ty, of the binding, (1) either the default for Bind, or (2, not yet used) for a Val with the same aspectKeyS

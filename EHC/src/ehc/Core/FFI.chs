@@ -107,7 +107,7 @@ ffiMkArgUnpack
         mbAnn = tyNmFFIBoxBasicAnnot opts tyNm
         mk | isJust mbAnn                   = mkNodeI (tyNmGBTagPtrBasicAnnot opts False tyNm (fromJust mbAnn)) argNm
            | tyIsFFIEnumable tyNm dataGam   = mkEnumI argNm
-           | isJust (tyMbRecRow ty)         = mkVarI  argNm
+           | isJust (recMbRecRow ty)        = mkVarI  argNm
            | tyIsFFIOpaque ty dataGam       = mkOpaqI argNm
            | otherwise                      = mkPtrI  argNm
 %%]
@@ -164,7 +164,7 @@ ffiMkResPack
            | isRec                          = mkBindE res (mkPtrI  recNm                                                       resNm) (mkPtrE          resNm)
            | tyIsFFIOpaque resTy dataGam    = mkBindE res (mkOpaqI                                                             resNm) (mkOpaqE         resNm)
            | otherwise                      = mkBindE res (mkPtrI  resTyNm                                                     resNm) (mkPtrE          resNm)
-           where isRec = isJust $ tyMbRecRow resTy
+           where isRec = isJust $ recMbRecRow resTy
                  arity = length $ snd $ tyRecExts resTy
                  recNm = builtinRecNm arity
 %%]

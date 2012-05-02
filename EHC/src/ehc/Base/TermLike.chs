@@ -13,8 +13,16 @@
 %%[1 import(Control.Applicative((<|>)), Control.Monad, Data.Maybe)
 %%]
 
+%%[doesWhat doclatex
+Term like behavior encapsulated in various class interfaces.
+\begin{itemize}
+\item AppLike: application, constructor, etc
+\item RecLike: (extensible) record
+\end{itemize}
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% App like structure
+%%% AppLike: App like structure
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1.AppLike export(AppLike(..))
@@ -22,6 +30,10 @@
 -- | Application like terms.
 --   Note: defaults for Range and non-Range variants are defined using eachother. Only one needs definition.
 class AppLike a {- ann bnd | a -> ann bnd -} where
+  ----------
+  -- AppLike
+  ----------
+  
   -- basic semantics
   app1App           ::  a -> a -> a                         -- single application
   appTop            ::  a -> a                              -- top of multiple apps
@@ -52,7 +64,7 @@ class AppLike a {- ann bnd | a -> ann bnd -} where
   
   -- fallback, default value
   -- appDflt			:: a
-
+  
   -- inspection/deconstruction
   appMbBind1        :: a -> Maybe (a,a->a)
   appMbAnn1         :: a -> Maybe (a,a->a)
@@ -85,10 +97,66 @@ class AppLike a {- ann bnd | a -> ann bnd -} where
   appRngTopApp  r as  = appRngTop r (foldl1 (appRngApp1 r) as)
 
   appRngProdApp _ as  = appProdApp as            -- to be done
+  
+  -- misc: debugging (intended to return a more appropriate value of type 'a')
+  appDbg			:: 	String -> a
+  appDbg m			=	panic $ "TermLike.appDbg: " ++ m
+
+  -- misc: evaluatedness (i.e. yes/no lazy/thunk)
+  -- yes evaluated (no thunk, not lazy)
+  appEvl			:: 	a -> a
+  appEvl			=	id
+  -- not evaluated (yes thunk, yes lazy)
+  appNonEvl			:: 	a -> a
+  appNonEvl			=	id
+  
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Derived constructing
+%%% RecLike: record/product like
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 export(RecLike(..))
+class AppLike a => RecLike a
+%%[[7
+  where
+  ----------
+  -- RecLike
+  ----------
+  
+  -- constructing
+  recRow 			:: a -> AssocL HsName a -> a
+  
+  -- default values
+  recRowEmp			:: a
+
+  -- and the defaults
+  recRowEmp			= appCon hsnRowEmpty
+
+  -- inspection/deconstruction
+  recMbRecRow 		:: a -> Maybe a
+  recUnRowExts 		:: a -> (a,AssocL HsName a)
+
+%%]]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Utils
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 export(rowCanonOrderBy,rowCanonOrder)
+-- | Order on labels, given a comparison function
+rowCanonOrderBy :: (o -> o -> Ordering) -> AssocL o a -> AssocL o a
+rowCanonOrderBy cmp = sortByOn cmp fst
+
+-- | Order on labels
+rowCanonOrder :: AssocL HsName a -> AssocL HsName a
+rowCanonOrder = rowCanonOrderBy rowLabCmp
+{-# INLINE rowCanonOrder #-}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% AppLike: Derived constructing
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1 export(appTopApp1)
@@ -113,7 +181,7 @@ appRngParApp r as  = appRngPar r (appRngTopApp r as)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Derived constructing: arrow
+%%% AppLike: Derived constructing: arrow
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1 export(appConApp,appCon1App)
@@ -145,7 +213,7 @@ appArr = flip (foldr app1Arr)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Derived constructing
+%%% AppLike: Derived constructing
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1
@@ -243,7 +311,7 @@ appUnArr :: AppLike a {- ann bnd -} => a -> ([a],a)
 appUnArr = fst . appUnArr'
 {-# INLINE appUnArr #-}
 
--- | Arr unpacking into arg + res, when failing to unpack arg hold a default
+-- | Arr unpacking into arg + res, when failing to unpack arg holds a default
 appUn1Arr :: AppLike a {- ann bnd -} => a -> (a,a)
 appUn1Arr x = maybe (panic "appUn1Arr.arg",x) id $ appMb1Arr x
 {-# INLINE appUn1Arr #-}
@@ -267,7 +335,7 @@ appUnArrArg = fst . appUn1Arr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Derived constructing: misc
+%%% AppLike: Derived constructing: misc
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 hs export(appArrInverse)
@@ -278,4 +346,47 @@ appArrInverse x
       ((   [a]  ,r),mk) -> mk $ [r] `appArr` a
       ((as@(_:_),r),mk) -> mk $ [r] `appArr` appProdApp as
       _                 -> x
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% RecLike: Derived inspecting
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[7 export(recUnRecRow)
+-- | If a row based record, return the row
+recUnRecRow :: RecLike a => a -> a
+recUnRecRow = maybe (panic "recUnRecRow") id . recMbRecRow
+{-# INLINE recUnRecRow #-}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% RecLike: Derived constructing
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[7 export(recRec,recSum,recRecExt,recRecEmp, recSumEmp)
+-- | Construct record from labels + terms
+recRec :: RecLike a => AssocL HsName a -> a
+recRec al = hsnRec `appConApp` [recRowEmp `recRow` al]
+{-# INLINE recRec #-}
+
+-- | Construct record from labels + terms
+recSum :: RecLike a => AssocL HsName a -> a
+recSum al = hsnSum `appConApp` [recRowEmp `recRow` al]
+{-# INLINE recSum #-}
+
+-- | Construct record from record to be extended + labels + terms
+recRecExt :: RecLike a => a -> AssocL HsName a -> a
+recRecExt recd al
+  = hsnRec `appConApp` [row `recRow` (exts ++ al)]
+  where (row,exts) = recUnRowExts (recUnRecRow recd)
+
+-- | Empty record
+recRecEmp :: RecLike a => a
+recRecEmp = recRec []
+{-# INLINE recRecEmp #-}
+
+-- | Empty sum
+recSumEmp :: RecLike a => a
+recSumEmp = recSum []
+{-# INLINE recSumEmp #-}
 %%]

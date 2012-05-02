@@ -47,7 +47,7 @@ tyArrowInstQuArgsRes :: ArrowHowDecompose -> [InstTo] -> SysfTy -> ([SysfTy],Sys
 tyArrowInstQuArgsRes how instToL t
   = case how of
       ArrowDecompose_InstOnly
-        -> (taL,tyErr "Ty.tyArrowInstQuArgsRes.ArrowDecompose_InstOnly",r)
+        -> (taL,appDbg "Ty.tyArrowInstQuArgsRes.ArrowDecompose_InstOnly",r)
         where (taL,r) = extr instToL t
       ArrowDecompose_ArgBefore
         -> (taL,a,r')
@@ -229,25 +229,25 @@ SEM Ty
 
 %%[(8 codegen coresysf)
 SEM Ty
-  | Any         loc         .   stBase      =   tyErr "ANY"
-  | Ext         loc         .   stBase      =   tyErr "EXT"
+  | Any         loc         .   stBase      =   appDbg "ANY"
+  | Ext         loc         .   stBase      =   appDbg "EXT"
 %%]
 
 %%[(9 codegen coresysf)
 SEM Ty
-  | Impls       loc         .   stBase      =   tyErr "IMPLS"
-  | Pred        loc         .   stBase      =   tyErr "PRED"
+  | Impls       loc         .   stBase      =   appDbg "IMPLS"
+  | Pred        loc         .   stBase      =   appDbg "PRED"
 %%]
 
 %%[(11 codegen coresysf)
 SEM Ty
-  | Lam         loc         .   stBase      =   tyErr "LAM"
+  | Lam         loc         .   stBase      =   appDbg "LAM"
 %%]
 
 %%[(8 codegen coresysf)
 SEM Ty
   | App         loc         .   st          =   let dflt = @sKiArgAppWrap $ app1App @func.st (argWrap (t2tcOptHowAppArg @lhs.opts) @arg.st)
-                                                    th = if t2tcOptMkThunk @lhs.opts then mkTyThunk else id
+                                                    th = if t2tcOptMkThunk @lhs.opts then appNonEvl else id
                                                     wra = argWrap (t2tcOptHowArrowArg @lhs.opts)
                                                     wrr = argWrap (t2tcOptHowArrowRes @lhs.opts)
                                                 in  if @isSpineRoot
@@ -256,17 +256,17 @@ SEM Ty
                                                                 (wra $ th $ @appRevArgL !! 1)
                                                                 (wrr      $ @appRevArgL !! 0)
                                                          else if @appIsLikeProd
-                                                         then let flds = assocLMapElt th $ tyRowCanonOrder @recFldL
+                                                         then let flds = assocLMapElt th $ rowCanonOrder @recFldL
                                                               in  case @recMbExt of
 %%[[8
-                                                                    Just _ -> tyErr "EXTREC"
+                                                                    Just _ -> appDbg "EXTREC"
 %%][1010
                                                                     Just v -> SysfTy_ExtRec (C.Expr_Var v) (C.Expr_Rec flds)
 %%]]
-                                                                    _      -> mkTyRec flds -- C.Expr_Node CTagRec flds
+                                                                    _      -> recRec flds -- C.Expr_Node CTagRec flds
                                                          else if @appIsSum
-                                                         then let flds = tyRowCanonOrder @recFldL
-                                                              in  mkTySum flds
+                                                         then let flds = rowCanonOrder @recFldL
+                                                              in  recSum flds
                                                          else dflt
                                                     else dflt
   | TBind       loc         .   stBase      =   let dflt = @ty.st
@@ -291,7 +291,7 @@ SEM Ty
                                                     else dflt -- for now
   | Ann         loc         .   st          =   if @ann.isEmpty
                                                 then @ty.st
-                                                else Ty_Ann @ann.st @ty.st
+                                                else {- Ty_Ann @ann.st -} @ty.st
   | * - App Ann Dbg Con Var
                 loc         .   st          =   @sKiArgAppWrap @stBase
 %%]
@@ -372,7 +372,7 @@ SEM Ty
   | Var Con     loc         .   ski         =   tyToSysfTyKi @ki
   | TBind       loc         .   ski         =   @ty.skiBotUp
   | * - Var Con TBind
-                loc         .   ski         =   tyErr "ski"
+                loc         .   ski         =   appDbg "ski"
 %%]
 
 Bottom up ski:

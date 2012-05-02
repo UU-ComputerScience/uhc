@@ -638,7 +638,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                 = foR
                 where  (r1,exts1) = tyRowExtsUnAnn $ tyRowExtsWithLkup (fiLookupTyVarCyc fi) tr1
                        (r2,exts2) = tyRowExtsUnAnn $ tyRowExtsWithLkup (fiLookupTyVarCyc fi) tr2
-                       (extsIn1,extsIn12,extsIn2) = split (tyRowCanonOrder exts1) (tyRowCanonOrder exts2)
+                       (extsIn1,extsIn12,extsIn2) = split (rowCanonOrder exts1) (rowCanonOrder exts2)
                        split ees1@(e1:es1) ees2@(e2:es2)
                          = case e1 `rowExtCmp` e2 of
                                EQ -> let (es1',es12,es2') = split es1  es2  in (es1',(e1,e2):es12,es2')
@@ -649,7 +649,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                        mkTv fi    = (fi',mkTyVar u)
                          where  (u',u) = mkNewUID (fiUniq fi)
                                 fi' = fi {fiUniq = u'}
-                       bind fo v r e = manyFO [fo,foUpdTy (foTy fo `mkTyRow` e) $ foUpdVarMp (v `varmpTyUnit` mkTyRow r e) $ fo]
+                       bind fo v r e = manyFO [fo,foUpdTy (foTy fo `recRow` e) $ foUpdVarMp (v `varmpTyUnit` recRow r e) $ fo]
                        (u',u1)    = mkNewLevUID (fiUniq fi)
                        fi2        = fi {fiUniq = u'}
                        
@@ -694,7 +694,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
 %%[[(10 codegen)
                                        $ foUpdRecFldsCoe eKeys foL tr1
 %%]]
-                                       $ foUpdTy (foTy fo `mkTyRow` eL) fo
+                                       $ foUpdTy (foTy fo `recRow` eL) fo
 %%]
 
 %%[(7 hmtyinfer).fitsIn.fRow.fRFinal
@@ -745,7 +745,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                                  predScope = fePredScope (fiEnv fi)
                                  -- tr1s = foVarMp fo `varUpd` tr1
                                  fi3 = fofi fo fi2
-                                 tr1s = uncurry mkTyRow $ tyRowExtsUnAnn $ tyRowExtsWithLkup (fiLookupTyVarCyc fi3) tr1
+                                 tr1s = uncurry recRow $ tyRowExtsUnAnn $ tyRowExtsWithLkup (fiLookupTyVarCyc fi3) tr1
                                  (u',u2,u3,u4) = mkNewLevUID3 (foUniq fo)
 %%[[(10 codegen)
                                  r = acoreVar rn
