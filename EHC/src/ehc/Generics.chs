@@ -132,7 +132,7 @@ projBuiltinNm opts proj
   where v  f   = ehcOptBuiltin  opts f
 
 -- | builtin var of constructor
-projBuiltinVar :: (AbstractCore e m b basp bcat mbind t p pr pf a) => EHCOpts -> Proj -> e
+projBuiltinVar :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => EHCOpts -> Proj -> e
 projBuiltinVar opts proj
   = acoreVar $ projBuiltinNm opts proj
 %%]
@@ -149,7 +149,7 @@ nmLForCase nL = zipWith (\n o -> (n,{-n,-}o)) nL [(0::Int) ..]
 %%[(92 hmtyinfer) export(projFrom)
 -- | from function, starting with a top level proj
 projFrom
-  :: (AbstractCore e m b basp bcat mbind t p pr pf a, Eq bcat)
+  :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a, Eq bcat)
      => EHCOpts
      -> RCEEnv' e m b ba t
      -> Proj        	-- projection descriptor
@@ -202,7 +202,7 @@ projFrom
 %%[(92 hmtyinfer) export(projTo)
 -- | from function, starting with a top level proj
 projTo
-  :: (AbstractCore e m b basp bcat mbind t p pr pf a, Eq bcat)
+  :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a, Eq bcat)
      => EHCOpts
      -> RCEEnv' e m b ba t
      -> Proj        	-- projection descriptor

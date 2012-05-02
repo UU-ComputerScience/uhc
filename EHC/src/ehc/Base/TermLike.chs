@@ -83,7 +83,7 @@ class AppLike a boundmeta {- ann bnd | a -> ann bnd -} | a -> boundmeta where
   -- | Make application wrapped in top, except for singleton
   appTopApp         ::  [a] -> a
   appProdApp        ::  [a] -> a
-  app1MetaArr       :: 	boundmeta -> a -> a -> a
+  app1MetaArr       :: 	(HsName,boundmeta) -> a -> a -> a
 
   -- and the defaults
   appTopApp         =   appRngTopApp emptyRange
@@ -102,7 +102,7 @@ class AppLike a boundmeta {- ann bnd | a -> ann bnd -} | a -> boundmeta where
   
   -- specialised deconstructing
   -- | Wrap 1 arr unpacking into Maybe, together with reconstruction function for toplevel unwrapping
-  appMb1ArrMk 		:: a -> Maybe ((bound,a,a),a->a)
+  appMb1ArrMk 		:: a -> Maybe (((HsName,boundmeta),a,a),a->a)
 
   -- and the defaults
   appMb1ArrMk x
@@ -301,7 +301,7 @@ appMbConApp x
 %%]
 
 %%[1 export(appMb1MetaArr,appMb1Arr,appMbArr,appUnArrMk,appUnArr,appUn1Arr)
-appMb1MetaArr :: AppLike a boundmeta {- ann -} => a -> Maybe (bound,a,a)
+appMb1MetaArr :: AppLike a boundmeta {- ann -} => a -> Maybe ((HsName,boundmeta),a,a)
 appMb1MetaArr = fmap fst . appMb1ArrMk
 {-# INLINE appMb1MetaArr #-}
 
