@@ -257,7 +257,7 @@ SEM CExpr
 %%]]
                                                         [@argNm] @lIniq @lhs.aRenMp
                 loc         .   aRenMp      =   @body.accumARenMp
-  | * - Lam Let Char Int String Tup FFI Var Ann
+  | * - Lam Let Char Int String Tup FFI Var Ann Dbg
 %%[[9
         CoeArg Hole
 %%]]

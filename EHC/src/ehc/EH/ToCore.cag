@@ -134,7 +134,7 @@ SEM Expr
 %%[[12
     AppImpl
 %%]]
-                loc         .   cexprapp    =   acoreApp1 @func.cexpr @arg.cexpr
+                loc         .   cexprapp    =   acore1App @func.cexpr @arg.cexpr
                             .   cexpr       =   if @func.isNewtype then @arg.cexpr else @cexprapp
   | Lam         loc         .   cexpr       =   acoreLam1 @arg.topNm
                                                     (rceMatchTy @rceEnv [(@arg.topNm,@finalTyArgExpanded)] [RAlt_Alt [@arg.rpat] @body.cexpr @body.caseFailS])
@@ -209,7 +209,7 @@ SEM Expr
     AppImpl
 %%]]
                 loc         .   (cexprapp,cexprappCSubst)
-                                            :=  mkWeaveExpr @lhs.opts @lUniq_cexpr @lhs.finTyVarMp @arg.cSubst (flip acoreApp1 @arg.cexpr) @func.cexpr @appImplsCoeL []
+                                            :=  mkWeaveExpr @lhs.opts @lUniq_cexpr @lhs.finTyVarMp @arg.cSubst (flip acore1App @arg.cexpr) @func.cexpr @appImplsCoeL []
                 lhs         .   cSubst      =   cSubstApp @arg.cSubst @cexprappCSubst
   | Lam
 %%[[12
@@ -275,7 +275,7 @@ SEM Expr
                                                     then  fuMkCExpr @lhs.opts @lUniq3 (reverse @recExpr.fuCExprL) @recExpr.recCExpr
                                                     else
 %%]]                                                    
-                                                          foldl acoreApp1 (CExpr_Tup CTagRec)
+                                                          foldl acore1App (CExpr_Tup CTagRec)
                                                             $ fuL2ExprL $ rowCanonOrder $ @recExpr.fuCExprL
 %%[[10
                 loc         .   lUniq3          :   UNIQUEREF gUniq
@@ -328,7 +328,7 @@ SEM RecExpr
 %%[(8 codegen)
 SEM Expr
   | DataFields  loc         .   dfexpr      =   let mkTup dti mkDflt con
-                                                      = foldl acoreApp1 con
+                                                      = foldl acore1App con
                                                         . fuL2ExprL
                                                         -- . (\v -> v `seq` tr "Expr.DataFields.dfexpr" ("arity" >#< length dflt) v)
                                                         . listSaturateWith 0 (ctagArity (dtiCTag dti) - 1) (\(_,(_,Just o)) -> o) dflt
@@ -866,7 +866,7 @@ SEM Decl
                                                                  ((emptyRCEEnv @lhs.opts) {rceDataGam = @lhs.dataGam}) (Just (xStrict,(acoreTyErr $ "EH.ToCore.Decl.Class.mkSel: " ++ show n))) CMetaVal_Dict vx @dictTag
                                                                  [(n,{-n,-}cdictOffset n @clsTyRec)] Nothing (acoreVar n)
                                                      mkApp = if ehcCfgInstFldHaveSelf @lhs.opts
-                                                             then (\f -> acoreApp1 f vx)
+                                                             then (\f -> acore1App f vx)
                                                              else id
                                                      dDflt
                                                        = [acoreBind1Ty nDflt (acoreTyErr $ "EH.ToCore.Decl.Class.dDflt: " ++ show nDflt) (acoreLam1 nD d)] 
@@ -1057,7 +1057,7 @@ mkNormalInstance
 
         instanceCHRBindings = chrSuperCtxtAssumeCBindL ++ chrSuperProveCBindL ++ chrDeclsCBindL
 
-        dict1     = acoreApp1 dfltVar rsltVar
+        dict1     = acore1App dfltVar rsltVar
         bind1     = acoreBind1MetaTy dfltNmStrict CMetaVal_Dict (acoreTyErr $ "EH.ToCore.mkNormalInstance.bind1: " ++ show dfltNmStrict) dict1
         
         dict2     = acoreLetBase (acoreBindcategStrict) [bind1] (mkSetFlds (superNameMapping ++ instanceNameMapping) dfltVarStrict)
@@ -1213,7 +1213,7 @@ SEM Decl
 %%[[92
                                                                | not $ null @generForFitsInL
                                                                           -> unzip
-                                                                               [ (acoreBind1 fld $ acoreApp1 f $ acoreBuiltinUndefined @lhs.opts,s)
+                                                                               [ (acoreBind1 fld $ acore1App f $ acoreBuiltinUndefined @lhs.opts,s)
                                                                                | ((fld,dflt,_,_),fo,u) <- zip3 @generForFitsInL @foGenerDerivL (mkNewLevUIDL (length @generForFitsInL) @lUniq_bind)
                                                                                , let (f,s) = foAppLRCoeAsSubst @lhs.opts u fo @lhs.finTyVarMp @cSubstDecls (acoreVar dflt)
                                                                                ]
@@ -1241,7 +1241,7 @@ SEM Decl
 %%]
                                                                              -- , let (e,s) = mkWeaveExpr -- :: EHCOpts -> UID -> VarMp -> CSubst -> (CExpr->CExpr) -> CExpr -> [Coe] -> [Coe] -> (CExpr,CSubst)
                                                                              --                   @lhs.opts u @lhs.finTyVarMp @cSubstDecls
-                                                                             --                   (flip acoreApp1 $ acoreBuiltinUndefined @lhs.opts) (acoreVar dflt)
+                                                                             --                   (flip acore1App $ acoreBuiltinUndefined @lhs.opts) (acoreVar dflt)
                                                                              --                   [] []
 
 %%[(9 codegen) hs
@@ -1470,7 +1470,6 @@ ATTR AllPatExpr [ ceParentNm: HsName | | ]
 
 SEM PatExpr
   | App         arg         .   ceParentNm  =   rpatNmNm @arg.cpNm
---  | Irrefutable patExpr       .   ceParentNm  =   tr "PatExpr.Irrefutable" (@cpNm >#< @lhs.ceParentNm >#< @patExpr.topNm) @lhs.ceParentNm
 
 SEM RecPatExpr
   | Ext         patExpr     .   ceParentNm  =   rpatNmNm @patExpr.cpNm

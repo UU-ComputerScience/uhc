@@ -33,6 +33,7 @@ SEM CExpr
     String
     Tup
     FFI
+    Dbg
     CaseAltFail
 %%[[(9 codegen)
     Hole

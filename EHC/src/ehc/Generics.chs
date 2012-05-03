@@ -190,11 +190,11 @@ projFrom
               Proj_Comp1 _ _ _  -> var
               Proj_Con   _ _    -> skip
               _                 -> panic ("projFrom.mkExp: " ++ show proj)
-          where wrap = (acoreApp1 (projBuiltinVar opts proj) x, nL')
+          where wrap = (acore1App (projBuiltinVar opts proj) x, nL')
                      where (x,nL') = mkExp (projProj proj) nL
                 unit = (projBuiltinVar opts proj, nL)
                 skip = mkExp (projProj proj) nL
-                var  = (acoreApp1 (projBuiltinVar opts proj) (acoreVar n), nL')
+                var  = (acore1App (projBuiltinVar opts proj) (acoreVar n), nL')
                        
         
 %%]

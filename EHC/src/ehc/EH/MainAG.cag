@@ -71,9 +71,7 @@
 %%]
 %%[(8 codegen) hs import({%{EH}LamInfo})
 %%]
-%%[(8 codegen coresysf) hs import({%{EH}Ty.ToSysfTy})
-%%]
-%%[(8888 codegen coresysf) hs import(qualified {%{EH}Core.AsTy} as S)
+%%[(8 codegen coresysf) hs import(qualified {%{EH}Core.AsTy} as SysF)
 %%]
 
 %%[(90 codegen) hs import({%{EH}BuiltinPrims},{%{EH}Foreign})
@@ -199,6 +197,8 @@ WRAPPER AGItf
 %%]
 
 %%[(8 codegen) ag import({EH/ToCore})
+%%]
+%%[(8 hmtyinfer codegen coresysf) ag import({EH/SysfTy})
 %%]
 %%[(8 codegen tycore) ag import({EH/ToTyCore})
 %%]
@@ -545,6 +545,17 @@ For patterns we need a unique value anyway, so declare it here globally
 %%[2.PatExpr.g
 SEM PatExpr
   | *           loc         .   lUniq               :   UNIQUEREF gUniq
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Strictness from letstrict
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AllDecl [ isStrict: Bool | | ]
+
+SEM Expr
+  | Let         decls       .   isStrict    =   @isStrict
 %%]
 
 

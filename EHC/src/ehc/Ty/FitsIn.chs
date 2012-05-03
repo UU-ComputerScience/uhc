@@ -1913,6 +1913,11 @@ fitsInForToTyCore uniq t1 t2
   where fo = fitsIn (strongFIOpts {fioExpandEqTyVar=True}) emptyFE uniq (emptyVarMp :: VarMp) t1 t2
 %%]
 
+%%[(8 codegen coresysf) export(fitsInForToSysF)
+-- fitsInForToSysF uniq t1 t2 = fitsInForToTyCore uniq t1 t2
+fitsInForToSysF = fitsInForToTyCore
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Deep type instantiation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

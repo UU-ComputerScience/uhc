@@ -11,7 +11,7 @@
 %%]
 %%[(8 codegen coresysf) hs import(EH.Util.Utils,{%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Base.TermLike},{%{EH}Opts.Base})
 %%]
-%%[(8 codegen coresysf) hs import({%{EH}Ty},qualified {%{EH}Core.AsTy} as S)
+%%[(8 codegen coresysf) hs import({%{EH}Ty} as T, qualified {%{EH}Core} as C)
 %%]
 
 %%[(8 codegen coresysf) hs import (qualified Data.Set as Set)
@@ -26,20 +26,13 @@ WRAPPER TyAGItf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen coresysf) hs export(SysfTy,SysfTySeq,SysfTySeq1)
-type SysfTy     	= S.Ty			-- base ty
-type SysfTySeq    	= S.Ty			-- sequence
-type SysfTySeq1    	= S.Ty			-- singleton
+type SysfTy     	= C.CExpr			-- base ty
+type SysfTySeq    	= C.CExpr			-- sequence
+type SysfTySeq1    	= C.CExpr			-- singleton
 %%]
 type SysfTy     	= Ty			-- base ty
 type SysfTySeq    	= Ty			-- sequence
 type SysfTySeq1    	= Ty			-- singleton
-
-S.
-S.
-S.
-
-
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% System F generation
@@ -61,12 +54,12 @@ tyArrowInstQuArgsRes how instToL t
         where (taL,r) = extr instToL t
       ArrowDecompose_ArgBefore
         -> (taL,a,r')
-        where (a,r) = panicJust "tyArrowInstQuArgsRes.ArrowDecompose_ArgBefore" $ appMb1Arr t
+        where (a,r) = maybe (appDbg "tyArrowInstQuArgsRes.ArrowDecompose_ArgBefore",t) id $ appMb1Arr t
               (taL,r') = extr instToL r
       ArrowDecompose_ArgAfter
         -> (taL,a,r')
         where (taL,r) = extr instToL t
-              (a,r') = panicJust "tyArrowInstQuArgsRes.ArrowDecompose_ArgAfter" $ appMb1Arr r
+              (a,r') = maybe (appDbg "tyArrowInstQuArgsRes.ArrowDecompose_ArgAfter",r) id $ appMb1Arr r
   where extr (InstTo_Qu _ _ _ _ : is) t = (a:a',r')
    										where (a,r)   = panicJust "tyArrowInstQuArgsRes.extr" $ appMb1Arr t
    										      (a',r') = extr is r
@@ -129,7 +122,7 @@ tyToSysfTy' :: T2TCOpts -> Ty -> SysfTy
 tyToSysfTy' opts ty
   = st_Syn_TyAGItf t
   where  t  =  wrap_TyAGItf
-                  (sem_TyAGItf  (TyAGItf_AGItf ty))
+                  (sem_TyAGItf  (T.TyAGItf_AGItf ty))
                   (Inh_TyAGItf
                      { opts_Inh_TyAGItf = opts
                      })
@@ -175,9 +168,9 @@ tyToSysfTyKi
 %%% Base/builtin defs
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8888 codegen coresysf) hs export(tyChar,tyInt)
-tyInt  = tyToSysfTyBase T.tyInt
-tyChar = tyToSysfTyBase T.tyChar
+%%[(8 codegen coresysf) hs export(sysftyChar,sysftyInt)
+sysftyInt  = tyToSysfTyBase T.tyInt
+sysftyChar = tyToSysfTyBase T.tyChar
 %%]
 
 %%[(8888 codegen coresysf) hs export(kiStar)

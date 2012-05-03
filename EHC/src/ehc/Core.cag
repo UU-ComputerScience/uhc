@@ -670,7 +670,7 @@ instance Serialize CMetaBind where
 %%[(8 codegen) hs
 instance AbstractCore CExpr CMetaVal CBind CBound ACoreAppLikeMetaBound CBindCateg CMetaBind Ty CPat CPatRest CPatFld CAlt where
   -- expr
-  acoreApp1Bound   f a      			= CExpr_App f a
+  acore1AppBound   f a      			= CExpr_App f a
   -- acoreLam1Ty a _ e 				    = CExpr_Lam (acoreBind1 a) e
   acoreLam1Bind b e 				    = CExpr_Lam b e
   acoreTagTyTupBound   tg _ es 			= acoreAppBound (CExpr_Tup tg) es
@@ -698,6 +698,7 @@ instance AbstractCore CExpr CMetaVal CBind CBound ACoreAppLikeMetaBound CBindCat
   acoreHoleLet							= CExpr_HoleLet
 %%]
   -- acoreDflt								= 
+  acoreExprErr							= CExpr_Dbg
 
 %%[[(8 coresysf)
   -- arrow
@@ -735,6 +736,7 @@ instance AbstractCore CExpr CMetaVal CBind CBound ACoreAppLikeMetaBound CBindCat
   -- acoreTy2ty            t = t
 
   -- defaults
+  acoreDfltBoundmeta					= (acbaspkeyDefault,0,CLbl_None)
   acoreMetavalDflt       				= CMetaVal_Val
 %%[[9
   acoreMetavalDfltDict   				= CMetaVal_Dict

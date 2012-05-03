@@ -349,7 +349,6 @@ ATTR AllDecl [ isStrict: Bool | | ]
 
 SEM Expr
   | Let         loc         .   howToValBind=   if @isStrict then C.ValBindCateg_Strict else C.ValBindCateg_Rec
-                decls       .   isStrict    =   @isStrict
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -449,7 +448,7 @@ SEM Expr
                                             :=  let (_,u1,u2) = mkNewLevUID2 @lUniq_cexpr
                                                     (ww,s1)   = C.coeWipeWeaveAsSubst2 @lhs.opts u1 @lhs.finTyVarMp @arg.tcSubst @appImplsCoeLTC []
                                                     (f ,s2)   = C.coeEvalOnAsSubst u2 ww @func.tcexpr
-                                                in  (@tcTyArgLamWrap $ @tcTyArgAppWrap $ acoreApp1 f @tcexprThArg, s1 `cSubstApp` s2)
+                                                in  (@tcTyArgLamWrap $ @tcTyArgAppWrap $ acore1App f @tcexprThArg, s1 `cSubstApp` s2)
                             .   tcexpr      =   if @func.isNewtype then @tcexprArg else @tcexprapp
                 lhs         .   tcSubst     =   cSubstApp @arg.tcSubst @tcexprappCSubst
   | Lam
@@ -604,7 +603,7 @@ SEM Expr
 %%]]                                                    
                                                           C.Expr_Node {- CTagRec -} $ C.fuL2ExprNodeFldL True Just $ rowCanonOrder @recExpr.tcfuExprL
 %%]
-                                                          foldl acoreApp1 (C.Expr_Tup CTagRec)
+                                                          foldl acore1App (C.Expr_Tup CTagRec)
                                                             $ C.fuL2ExprL $ rowCanonOrder $ @recExpr.tcfuExprL
 
 %%[(8888 codegen coresysf tycore)
@@ -1278,7 +1277,7 @@ SEM Decl
                                                                  ((emptyRCEEnv @lhs.opts) {rceDataGam = @lhs.dataGam}) (Just xStrict) CMetaVal_Dict vx @dictTag
                                                                  [(n,cdictOffset n @clsTyRec)] Nothing (Expr_Var n)
                                                      mkApp = if ehcCfgInstFldHaveSelf @lhs.opts
-                                                             then (\f -> acoreApp1Meta f vx CMetaVal_Dict)
+                                                             then (\f -> acore1AppMeta f vx CMetaVal_Dict)
                                                              else id
                                                      dDflt
                                                        = [C.mkValBind1 nDflt (mkExprLam1Meta nD CMetaVal_Dict d)] 
@@ -1442,7 +1441,7 @@ SEM Decl
                                                                                                 ++ @chrScopeDeclsBindL
                                                                                                 )
 
-                                                             dict1     = acoreApp1Meta dfltVar rsltVar CMetaVal_Dict
+                                                             dict1     = acore1AppMeta dfltVar rsltVar CMetaVal_Dict
                                                              dict2     = Expr_Let C.ValBindCateg_Strict [bind1] (@loc.mkSetFlds superNameMapping    dfltVarStrict)
                                                              dict3     = Expr_Let C.ValBindCateg_Strict [bind2] (@loc.mkSetFlds instanceNameMapping rsltVarStrict)
                                                              dict4     = mkExprLetRec ([bind3] ++ instanceNewBindings ++ instanceCHRBindings) rsltVar

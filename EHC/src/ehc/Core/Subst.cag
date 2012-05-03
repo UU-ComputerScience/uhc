@@ -211,7 +211,7 @@ coeEvalOnAsSubst uniq coe ce
           = case coe of
               c | acoreCoeIsId c-> mk ce
               Coe_Map  f        -> mk $ f ce
-              Coe_App1 a        -> mk $ acoreApp1 ce a
+              Coe_App1 a        -> mk $ acore1App ce a
               Coe_Lam n   _     -> mk $ acoreLam1 n ce
               Coe_LamLet n _ i  -> mk $ n `acoreLam1` acoreHoleLet i ce
               Coe_LetRec b      -> mk $ acoreLetRec b ce

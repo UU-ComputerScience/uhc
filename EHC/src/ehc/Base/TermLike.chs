@@ -29,7 +29,10 @@ Term like behavior encapsulated in various class interfaces.
 %%[[AppLikeCore1
 -- | Application like terms.
 --   Note: defaults for Range and non-Range variants are defined using eachother. Only one needs definition.
-class AppLike a boundmeta {- ann bnd | a -> ann bnd -} | a -> boundmeta where
+class AppLike a boundmeta {- ann bnd | a -> ann bnd -}
+  | a -> boundmeta
+  -- , boundmeta -> a
+  where
   ----------
   -- AppLike
   ----------
@@ -61,9 +64,6 @@ class AppLike a boundmeta {- ann bnd | a -> ann bnd -} | a -> boundmeta where
   appRngVar    _    =   appVar
   appRngCon    _    =   appCon
   appRngPar    _    =   appPar
-  
-  -- fallback, default value
-  -- appDflt			:: a
   
   -- inspection/deconstruction
   appMbBind1        :: a -> Maybe (a,a->a)
@@ -108,7 +108,7 @@ class AppLike a boundmeta {- ann bnd | a -> ann bnd -} | a -> boundmeta where
   appMb1ArrMk x
     = do let (x',mktop) = appUnBind $ fst $ appUnAnn x
          (arr,[a,r]) <- appMbConApp x'
-         if hsnIsArrow arr then return ((undefined,a,r),mktop) else Nothing
+         if hsnIsArrow arr then return (((mkHNm "??TermLike.appMb1ArrMk",appDfltBoundmeta a),a,r),mktop) else Nothing
   
   -- misc: debugging (intended to return a more appropriate value of type 'a')
   appDbg			:: 	String -> a
@@ -121,6 +121,11 @@ class AppLike a boundmeta {- ann bnd | a -> ann bnd -} | a -> boundmeta where
   -- not evaluated (yes thunk, yes lazy)
   appNonEvl			:: 	a -> a
   appNonEvl			=	id
+  
+  -- fallback, default value
+  -- appDflt			:: a
+  appDfltBoundmeta  :: a -> boundmeta	-- the 'a' is only required because a fundep boundmeta -> a would be too restrictive
+  appDfltBoundmeta _ = panic "TermLike.appDfltBoundmeta not implemented"
   
 %%]
 
@@ -224,7 +229,7 @@ appCon1App c a = appConApp c [a]
 %%[1 export(app1Arr,appArr)
 -- | Make (type) rep for single arrow (i.e. abstraction)
 app1Arr :: AppLike a boundmeta {- ann -} => a -> a -> a
-app1Arr = app1MetaArr undefined
+app1Arr x y = app1MetaArr (mkHNm "??TermLike.app1Arr",appDfltBoundmeta x) x y
 {-# INLINE app1Arr #-}
 
 -- | Multiple app1Arr

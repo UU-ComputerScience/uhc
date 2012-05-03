@@ -54,7 +54,7 @@ class AbstractCore  expr metaval bind bound boundmeta bindcateg metabind ty pat 
   -- acoreLam1Ty :: HsName -> ty -> expr -> expr
   
   -- | 1 lam abstraction, together with meta info about, and type of the argument
-  acoreApp1Bound :: expr -> bound -> expr
+  acore1AppBound :: expr -> bound -> expr
   
   -- | a tuple, with tag, and ty
   acoreTagTyTupBound :: CTag -> ty -> [bound] -> expr
@@ -108,6 +108,10 @@ class AbstractCore  expr metaval bind bound boundmeta bindcateg metabind ty pat 
 
   -- | a default, fallback
   -- acoreDflt :: expr
+
+  -- | get error/default expr
+  acoreExprErr :: String -> expr
+  acoreExprErr s = panic $ "AbstractCore.acoreExprErr: " ++ s
 
 %%[[(8 coresysf)
   ------------------------- constructing: meta level expr (i.e. ty represented as expr) -------------------------
@@ -178,8 +182,13 @@ class AbstractCore  expr metaval bind bound boundmeta bindcateg metabind ty pat 
   -- | get default for metabind
   acoreMetabindDflt :: metabind
   
+  -- | get default for metabind
+  acoreDfltBoundmeta :: boundmeta
+  acoreDfltBoundmeta = panic "AbstractCore.acoreDfltBoundmeta not implemented"
+  
   -- | get error/default ty, type indexed by ty
   acoreTyErr :: String -> ty
+  acoreTyErr s = panic $ "AbstractCore.acoreTyErr: " ++ s
 
   -- | get the ty representing the absent type, no type info
   acoreTyNone :: ty
@@ -255,11 +264,19 @@ class AbstractCore  expr metaval bind bound boundmeta bindcateg metabind ty pat 
   acoreBoundMbVal :: bound -> Maybe (boundmeta,expr)
 
   ------------------------- transforming -------------------------
-  -- | unthunk expr
+  -- | thunk expr, i.e. turn into delayed computation
+  acoreExprThunk :: expr -> expr
+  acoreExprThunk = id
+
+  -- | thunk ty, i.e. ty of 'acoreExprThunk'-ed expr
+  acoreTyThunk :: ty -> ty
+  acoreTyThunk = id
+
+  -- | unthunk expr, i.e. force computation of delayed computation
   acoreExprUnThunk :: expr -> expr
   acoreExprUnThunk = id
 
-  -- | unthunk ty
+  -- | unthunk ty, i.e. ty of 'acoreExprUnThunk'-ed expr
   acoreTyUnThunk :: ty -> ty
   acoreTyUnThunk = id
 
@@ -283,7 +300,7 @@ type ACoreAppLikeMetaBound = (ACoreBindAspectKeyS,MetaLev,CLbl)
 
 %%[(8 codegen) hs
 instance AbstractCore e m b bound boundmeta bcat mbind t p pr pf a => AppLike e boundmeta {- () () -} where
-  app1App       = acoreApp1
+  app1App       = acore1App
   appTop        = id
   appCon        = acoreVar . mkHNm
   appPar        = id
@@ -297,6 +314,8 @@ instance AbstractCore e m b bound boundmeta bcat mbind t p pr pf a => AppLike e 
                      return (((n,bm),a,r),id)
 %%]]  
   -- appDflt       = 
+  appDfltBoundmeta x = acoreDfltBoundmeta
+  appDbg        = acoreExprErr
   
   appMbCon      = acoreExprMbVar
   appMbApp1 e   = do (f,b) <- acoreExprMbApp e
@@ -307,12 +326,12 @@ instance AbstractCore e m b bound boundmeta bcat mbind t p pr pf a => AppLike e 
 %%[(8 codegen coresysf) hs
 instance (AppLike e ACoreAppLikeMetaBound, HSNM bndnm, AbstractCore e m b bound ACoreAppLikeMetaBound bcat mbind t p pr pf a) => BndLike e bndnm {- () () -} where
   -- BndLike
-  bndBndIn n l = app1MetaArr (mkHNm n,acoreBoundmeta acbaspkeyNone l CLbl_None)
+  bndBndIn n l = app1MetaArr (mkHNm n,acoreBoundmeta acbaspkeyDefault l CLbl_None)
 %%]
 
 %%[(8 codegen) hs
 instance AbstractCore e m b bound boundmeta bcat mbind t p pr pf a => RecLike e boundmeta {- () () -} where
-  recRow _ fs   = acoreTagTyTupBound CTagRec (acoreTyErr "AbstractCore.RecLike.recRow") [ acoreBound1MetaVal (acoreBoundmeta acbaspkeyNone 0 (CLbl_Nm n)) e | (n,e) <- fs ]
+  recRow _ fs   = acoreTagTyTupBound CTagRec (acoreTyErr "AbstractCore.RecLike.recRow") [ acoreBound1MetaVal (acoreBoundmeta acbaspkeyDefault 0 (CLbl_Nm n)) e | (n,e) <- fs ]
   
   recMbRecRow  _= Nothing -- tyMbRecRowWithLkup (const Nothing)
   recUnRowExts e= (e,[])
@@ -484,16 +503,16 @@ deriving instance Data ACoreBindRef
 %%% Derived functionality: application
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) export(acoreApp1,acoreApp,acoreAppBound)
-acoreApp1 :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => e -> e -> e
-acoreApp1 f a = acoreApp1Bound f (acoreBound1Val a)
-{-# INLINE acoreApp1 #-}
+%%[(8 codegen) export(acore1App,acoreApp,acoreAppBound)
+acore1App :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => e -> e -> e
+acore1App f a = acore1AppBound f (acoreBound1Val a)
+{-# INLINE acore1App #-}
 
 acoreApp :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => e -> [e] -> e
-acoreApp f as = foldl (\f a -> acoreApp1 f a) f as
+acoreApp f as = foldl (\f a -> acore1App f a) f as
 
 acoreAppBound :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => e -> [bound] -> e
-acoreAppBound f as = foldl (\f a -> acoreApp1Bound f a) f as
+acoreAppBound f as = foldl (\f a -> acore1AppBound f a) f as
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -662,7 +681,7 @@ acoreBound1AspkeyVal a e = acoreBound1MetaVal (acoreBoundmeta a 0 CLbl_None) e
 {-# INLINE acoreBound1AspkeyVal #-}
 
 acoreBound1Val :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => e -> bound
-acoreBound1Val e = acoreBound1AspkeyVal acbaspkeyNone e
+acoreBound1Val e = acoreBound1AspkeyVal acbaspkeyDefault e
 {-# INLINE acoreBound1Val #-}
 %%]
 
@@ -1126,9 +1145,9 @@ emptyCSubst = Map.empty
 %%% CSubst construction
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs export(acoreCSubstFromUidTyL)
-acoreCSubstFromUidTyL :: AssocL HsName t -> CSubst' e m b ba t
-acoreCSubstFromUidTyL l = Map.fromList [ (CSKey_Nm k,CSITy v) | (k,v) <- l ]
+%%[(8 codegen) hs export(acoreCSubstFromNmTyL)
+acoreCSubstFromNmTyL :: AssocL HsName t -> CSubst' e m b ba t
+acoreCSubstFromNmTyL l = Map.fromList [ (CSKey_Nm k,CSITy v) | (k,v) <- l ]
 %%]
   
 %%[(8 codegen) hs export(acoreCSubstFromUidExprL)

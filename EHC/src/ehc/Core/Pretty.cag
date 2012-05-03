@@ -187,8 +187,9 @@ SEM CExpr
 %%][90
                 loc         .   ppent       =   "\"" >|< @impEnt >|< "\""
 %%]]
+  | Dbg         loc         .   pp          =   "<<DBG:" >#< @info >#< ">>"
 %%[[(8 coresysf)
-  | Arr			loc			.	pp			=	@bind.pp >#< "->" >#< @body.pp
+  | Arr         loc         .   pp          =   @bind.pp >#< "->" >#< @body.pp
 %%]]
 
 SEM CExpr
@@ -213,7 +214,8 @@ SEM CBound
   | Ty          loc         .   pp          =   ppACBaspKeyS @aspectKeyS >#< @tyPP -- pp @relevTy
   | RelevTy     loc         .   pp          =   ppACBaspKeyS @aspectKeyS >#< @tyPP -- pp @relevTy
   | Meta        loc         .   pp          =   ppACBaspKeyS @aspectKeyS >#< @cmetas.pp
-  | Val         loc         .   pp          =   let asp | Set.null @aspectKeyS  = id
+  | Val         loc         .   pp          =   let asp | Set.null @aspectKeyS || acbaspkeyDefault == @aspectKeyS
+                                                                                = id
                                                         | otherwise             = \x -> ppACBaspKeyS @aspectKeyS >#< x
                                                     lbl | @lbl == CLbl_None     = id
                                                         | otherwise             = \x -> @lbl >#< "=" >#< x 

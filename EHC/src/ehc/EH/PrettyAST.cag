@@ -69,7 +69,7 @@ SEM Expr
   | CConst      lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","CConst"] [@pp] [] (@info_1 ++ @info_2)
                 loc     .  info_1   =   []
                         .  info_2   =   []
-  | Var         lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","Var"] [ppNm @nm] [] (@info_1 ++ @info_2 ++ @info_4 ++ @info_4_2 ++ @info_6 ++ @info_8 ++ @finfo_8 ++ @info_9)
+  | Var         lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","Var"] [ppNm @nm] [] (@info_1 ++ @info_2 ++ @info_4 ++ @info_4_2 ++ @info_6 ++ @info_8 ++ @finfo_8 ++ @sinfo_8 ++ @info_9)
                 loc     .  info_1   =   []
                         .  info_2   =   []
                         .  info_4   =   []
@@ -77,13 +77,15 @@ SEM Expr
                         .  info_6   =   []
                         .  info_8   =   []
                         .  finfo_8  =   []
+                        .  sinfo_8  =   []
                         .  info_9   =   []
-  | Con         lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","Con"] [ppNm @nm] [] (@info_1 ++ @info_4 ++ @info_5 ++ @info_6 ++ @finfo_8)
+  | Con         lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","Con"] [ppNm @nm] [] (@info_1 ++ @info_4 ++ @info_5 ++ @info_6 ++ @finfo_8 ++ @sinfo_8)
                 loc     .  info_1   =   []
                         .  info_4   =   []
                         .  info_5   =   []
                         .  info_6   =   []
                         .  finfo_8  =   []
+                        .  sinfo_8  =   []
   | Let         lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","Let"] [] [@decls.ppAST] (@info_2 ++ @info_3 ++ @info_4 ++ @info_4_2 ++ @info_6 ++ @info_9 ++ @info_17)
                                         >-< @body.ppAST
                 loc     .  info_2   =   []
@@ -93,26 +95,29 @@ SEM Expr
                         .  info_6   =   []
                         .  info_9   =   []
                         .  info_17  =   []
-  | App         lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","App"] [] [@func.ppAST,@arg.ppAST] (@info_1 ++ @info_2 ++ @info_4_2 ++ @info_8 ++ @finfo_8 ++ @info_9)
+  | App         lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","App"] [] [@func.ppAST,@arg.ppAST] (@info_1 ++ @info_2 ++ @info_4_2 ++ @info_8 ++ @finfo_8 ++ @sinfo_8 ++ @info_9)
                 loc     .  info_1   =   []
                         .  info_2   =   []
                         .  info_4_2 =   []
                         .  info_8   =   []
                         .  finfo_8  =   []
+                        .  sinfo_8  =   []
                         .  info_9   =   []
   | Parens      lhs     .  ppAST    =   ppNest ["Expr","Parens"] [] [@expr.ppAST]
-  | AppTop      lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","AppTop"] [] [@expr.ppAST] (@info_1 ++ @info_2 ++ @info_4 ++ @info_8 ++ @finfo_8 ++ @info_9)
+  | AppTop      lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","AppTop"] [] [@expr.ppAST] (@info_1 ++ @info_2 ++ @info_4 ++ @info_8 ++ @finfo_8 ++ @sinfo_8 ++ @info_9)
                 loc     .  info_1   =   []
                         .  info_2   =   []
                         .  info_4   =   []
                         .  info_8   =   []
                         .  finfo_8   =   []
+                        .  sinfo_8  =   []
                         .  info_9   =   []
-  | Lam         lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","Lam"] [] [@arg.ppAST,@body.ppAST] (@info_1 ++ @info_2 ++ @info_4_2 ++ @info_8 ++ @finfo_8 ++ @info_9)
+  | Lam         lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","Lam"] [] [@arg.ppAST,@body.ppAST] (@info_1 ++ @info_2 ++ @info_4_2 ++ @info_8 ++ @finfo_8 ++ @sinfo_8 ++ @info_9)
                 loc     .  info_1   =   []
                         .  info_2   =   []
                         .  info_8   =   []
                         .  finfo_8  =   []
+                        .  sinfo_8  =   []
                         .  info_9   =   []
                         .  info_4_2 =   []
   | TypeAs      lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","TypeAs"] [] [@expr.ppAST,@tyExpr.ppAST] (@info_3 ++ @info_4)
@@ -688,6 +693,20 @@ SEM Expr
                                         ]
   | App         loc     .  finfo_8  :=  [ mkInfo1 "finAppInstToLHere" (ppCommas $ @finAppInstToLHere)
                                         , mkInfo1 "finLamInstToLHere" (ppCommas $ @finLamInstToLHere)
+                                        ]
+%%]
+
+%%[(8 hmtyinfer codegen coresysf)
+SEM Expr
+  | Var Con
+%%[[9
+    AppTop
+%%]]
+                loc     .  sinfo_8  :=  [ mkInfo1 "sysfty" (pp @sysfty)
+                                        ]
+  | Lam         loc     .  sinfo_8  :=  [ mkInfo1 "sysfty" (pp @sysfty)
+                                        ]
+  | App         loc     .  sinfo_8  :=  [ mkInfo1 "sysfty" (pp @sysfty)
                                         ]
 %%]
 

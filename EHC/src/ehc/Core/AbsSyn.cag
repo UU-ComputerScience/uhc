@@ -118,6 +118,12 @@ DATA CExpr
 %%]]
 %%]
 
+%%[(8 codegen)
+-- for debugging
+DATA CExpr
+  | Dbg			info			: {String}
+%%]
+
 %%[(8 codegen coresysf)
 -- meta/type level only
 DATA CExpr

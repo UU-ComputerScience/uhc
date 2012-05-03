@@ -198,7 +198,7 @@ SEM CExpr
                                                   Just (LamInfo {laminfoStackTrace=StackTraceInfo_HasStackTraceEquiv dbNm})
                                                     -> case @lhs.mbInStackTraceCtxt of
                                                          Just stTrNm
-                                                           -> acoreApp1 (acoreVar dbNm)
+                                                           -> acore1App (acoreVar dbNm)
                                                                         (acoreApp (acoreVar hsnStackTracePush) [acoreBuiltinString @lhs.opts (show @nm), acoreVar stTrNm])
                                                          _ -> @cTrf
                                                   _ -> @cTrf

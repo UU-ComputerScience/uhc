@@ -816,7 +816,7 @@ SEM CExpr
   | Lam         lhs         .   cTrf            =   acoreLam1 @argNm $ annCoe @hereBodyCoe @body.cTrf
   | App         lhs         .   cTrf            =   let a = -- dbgApp @lhs.opts @argTy @funTy @func.ty $
                                                             maybe @arg.cTrf (\((a,_,_),e) -> acoreBound1AspkeyVal a (annCoe @hereArgCoe e)) $ acoreBoundMbVal @arg.cTrf
-                                                        app = acoreApp1Bound (annCoe @hereFunCoe @func.cTrf) a
+                                                        app = acore1AppBound (annCoe @hereFunCoe @func.cTrf) a
                                                     in  app
   | Case        lhs         .   cTrf            =   -- @dbg $
                                                     @cTrf

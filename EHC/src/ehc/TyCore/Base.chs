@@ -558,7 +558,7 @@ envFromGam {- tkg -} getTy ml g
 %%[(8 codegen tycore)
 instance AbstractCore Expr MetaVal ValBind ValBind ValBindCateg MetaBind Ty Pat PatRest FldBind Alt where
   -- expr
-  acoreApp1           			    	= mkExprApp1
+  acore1App           			    	= mkExprApp1
   acoreLam1Ty         				    = mkExprLam1
   acoreTagTupTy   tg t es 				= mkExprTuple' tg t es
   acoreBoundVal1CatLevMetasTy cat n l m t e
