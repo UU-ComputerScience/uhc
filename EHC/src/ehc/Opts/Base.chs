@@ -98,7 +98,10 @@ data PkgOption
 %%[(8 codegen) export(CoreOpt(..))
 -- | Core options
 data CoreOpt
-  = CoreOpt_SysF			-- 20120419, work in startup/progress: generate System F
+  = CoreOpt_PPParseable		-- pretty print parseable, negation means just make it readable
+%%[[(8 coresysf)
+  | CoreOpt_SysF			-- 20120419, work in startup/progress: generate System F
+%%]]
   deriving (Eq,Enum,Bounded)
 %%]
 
@@ -393,6 +396,16 @@ ehcOptTarget = maybeOk (\s -> panic ("ehcOptTarget: " ++ s)) id  . ehcOptMbTarge
 
 ehcOptTargetFlavor :: EHCOpts -> TargetFlavor
 ehcOptTargetFlavor = maybeOk (\s -> panic ("ehcOptTargetFlavor: " ++ s)) id . ehcOptMbTargetFlavor
+%%]
+
+%%[(8 codegen) export(ehcOptCoreSysF)
+-- | Generate system F (20120421 AD: very much under construction)
+ehcOptCoreSysF :: EHCOpts -> Bool
+%%[[(8 coresysf)
+ehcOptCoreSysF opts = CoreOpt_SysF `elem` ehcOptCoreOpts opts
+%%][8
+ehcOptCoreSysF _    = False
+%%]]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

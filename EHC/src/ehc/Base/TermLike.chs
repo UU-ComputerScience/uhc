@@ -83,7 +83,7 @@ class AppLike a boundmeta {- ann bnd | a -> ann bnd -}
   -- | Make application wrapped in top, except for singleton
   appTopApp         ::  [a] -> a
   appProdApp        ::  [a] -> a
-  app1MetaArr       :: 	(HsName,boundmeta) -> a -> a -> a
+  app1MetaArr       :: 	(Maybe HsName,boundmeta) -> a -> a -> a
 
   -- and the defaults
   appTopApp         =   appRngTopApp emptyRange
@@ -229,7 +229,7 @@ appCon1App c a = appConApp c [a]
 %%[1 export(app1Arr,appArr)
 -- | Make (type) rep for single arrow (i.e. abstraction)
 app1Arr :: AppLike a boundmeta {- ann -} => a -> a -> a
-app1Arr x y = app1MetaArr (mkHNm "??TermLike.app1Arr",appDfltBoundmeta x) x y
+app1Arr x y = app1MetaArr (Nothing,appDfltBoundmeta x) x y
 {-# INLINE app1Arr #-}
 
 -- | Multiple app1Arr

@@ -22,19 +22,6 @@ WRAPPER TyAGItf
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Explicit name for SysF type
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8 codegen coresysf) hs export(SysfTy,SysfTySeq,SysfTySeq1)
-type SysfTy     	= C.CExpr			-- base ty
-type SysfTySeq    	= C.CExpr			-- sequence
-type SysfTySeq1    	= C.CExpr			-- singleton
-%%]
-type SysfTy     	= Ty			-- base ty
-type SysfTySeq    	= Ty			-- sequence
-type SysfTySeq1    	= Ty			-- singleton
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% System F generation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -46,7 +33,7 @@ data ArrowHowDecompose
  
 -- split type + instantation into multiple type args (>=0) + optional 1 arg + 1 res:
 -- in other words, peel of type application(s) for Sys F, driven by InstTo
-tyArrowInstQuArgsRes :: ArrowHowDecompose -> [InstTo] -> SysfTy -> ([SysfTy],SysfTy,SysfTy)
+tyArrowInstQuArgsRes :: ArrowHowDecompose -> [InstTo] -> C.SysfTy -> ([C.SysfTy],C.SysfTy,C.SysfTy)
 tyArrowInstQuArgsRes how instToL t
   = case how of
       ArrowDecompose_InstOnly
@@ -61,7 +48,7 @@ tyArrowInstQuArgsRes how instToL t
         where (taL,r) = extr instToL t
               (a,r') = maybe (appDbg "tyArrowInstQuArgsRes.ArrowDecompose_ArgAfter",r) id $ appMb1Arr r
   where extr (InstTo_Qu _ _ _ _ : is) t = (a:a',r')
-   										where (a,r)   = panicJust "tyArrowInstQuArgsRes.extr" $ appMb1Arr t
+   										where (a,r)   = maybe (appDbg "tyArrowInstQuArgsRes.extr",t) id $ appMb1Arr t
    										      (a',r') = extr is r
         extr _                        t = ([],t)
 %%]
@@ -86,14 +73,14 @@ data T2THowArg
 %%]
 
 %%[(8 codegen coresysf) hs
-argWrap' :: T2THowArg -> (SysfTy -> SysfTySeq1) -> SysfTy -> SysfTy
+argWrap' :: T2THowArg -> (C.SysfTy -> C.SysfTySeq1) -> C.SysfTy -> C.SysfTy
 argWrap' T2TArg_AsIs  _  x = x
 argWrap' T2TArg_Seq1  sq x = x -- C.Expr_Seq1 $ sq x
 argWrap' T2TArg_Seq   sq x = x -- C.Expr_Seq   [sq x]
 argWrap' T2TArg_Seq1' sq x = x -- case x of {C.Expr_Seq1 _ -> x ; C.Expr_Arrow _ _ -> x ; _ -> argWrap' T2TArg_Seq1  sq x}
 argWrap' T2TArg_Seq'  sq x = x -- case x of {C.Expr_Seq  _ -> x ; C.Expr_Arrow _ _ -> x ; _ -> argWrap' T2TArg_Seq   sq x}
 
-argWrap :: T2THowArg -> SysfTy -> SysfTy
+argWrap :: T2THowArg -> C.SysfTy -> C.SysfTy
 argWrap how t = argWrap' how id {- C.ExprSeq1_L0Val -} t
 %%]
 
@@ -118,7 +105,7 @@ defaultT2TCOpts
 %%]
 
 %%[(8 codegen coresysf) hs
-tyToSysfTy' :: T2TCOpts -> Ty -> SysfTy
+tyToSysfTy' :: T2TCOpts -> Ty -> C.SysfTy
 tyToSysfTy' opts ty
   = st_Syn_TyAGItf t
   where  t  =  wrap_TyAGItf
@@ -130,7 +117,7 @@ tyToSysfTy' opts ty
 
 %%[(8 codegen coresysf) hs export(tyToSysfTy, tyToSysfTyBare, tyToSysfTyBase, tyToSysfTyKi)
 -- with all additional annotation
-tyToSysfTy :: KiFitsIn -> Ty2Ki -> Ty -> SysfTy
+tyToSysfTy :: KiFitsIn -> Ty2Ki -> Ty -> C.SysfTy
 tyToSysfTy fit t2k
   = tyToSysfTy'
       (defaultT2TCOpts
@@ -139,11 +126,11 @@ tyToSysfTy fit t2k
          })
 
 -- with all additional annotation, no meta level info
-tyToSysfTyBase :: Ty -> SysfTy
+tyToSysfTyBase :: Ty -> C.SysfTy
 tyToSysfTyBase = tyToSysfTy' defaultT2TCOpts
 
 -- without TyCore specifics
-tyToSysfTyBare :: Ty -> SysfTy
+tyToSysfTyBare :: Ty -> C.SysfTy
 tyToSysfTyBare
   = tyToSysfTy'
       (defaultT2TCOpts
@@ -154,7 +141,7 @@ tyToSysfTyBare
          })
 
 -- for kinds
-tyToSysfTyKi :: Ty -> SysfTy
+tyToSysfTyKi :: Ty -> C.SysfTy
 tyToSysfTyKi
   = tyToSysfTy'
       (defaultT2TCOpts
@@ -178,7 +165,7 @@ kiStar = tyToSysfTyBase T.kiStar
 %%]
 
 %%[(8888 codegen coresysf) hs export(tyBuiltinCon)
-tyBuiltinCon :: EHCOpts -> (EHBuiltinNames -> HsName) -> SysfTy
+tyBuiltinCon :: EHCOpts -> (EHBuiltinNames -> HsName) -> C.SysfTy
 tyBuiltinCon opts bnmOf = C.Expr_Var (ehcOptBuiltin opts bnmOf)
 %%]
 
@@ -219,9 +206,9 @@ SEM TyAGItf
 
 %%[(8 codegen coresysf)
 ATTR TyAGItf
-  [ | | st: {SysfTy} ]
+  [ | | st: {C.SysfTy} ]
 ATTR Ty
-  [ | | st: {SysfTy} ]
+  [ | | st: {C.SysfTy} ]
 %%]
 ATTR TyVarCateg TyAnn
   [ | | st: SELF ]
@@ -390,7 +377,7 @@ SEM Ty
 Bottom up ski:
 
 %%[(8 codegen coresysf)
-ATTR Ty [ | | skiBotUp: {SysfTy} ]
+ATTR Ty [ | | skiBotUp: {C.SysfTy} ]
 
 SEM Ty
   | *           lhs         .   skiBotUp    =   @skiKiAppRes
@@ -445,7 +432,7 @@ SEM Ty
 Reverse App spine
 
 %%[(8 codegen coresysf)
-ATTR Ty [ | | appRevArgL: {[SysfTy]} ]
+ATTR Ty [ | | appRevArgL: {[C.SysfTy]} ]
 %%]
 
 %%[(8 codegen coresysf)
@@ -457,7 +444,7 @@ SEM Ty
 Extensible record fields + maybe the extended type
 
 %%[(8 codegen coresysf)
-ATTR Ty [ | | recFldL: {AssocL HsName SysfTy} ]
+ATTR Ty [ | | recFldL: {AssocL HsName C.SysfTy} ]
 ATTR Ty [ | | recMbExt: {Maybe TyVarId} ]
 %%]
 

@@ -307,7 +307,7 @@ instance AbstractCore e m b bound boundmeta bcat mbind t p pr pf a => AppLike e 
   appVar        = acoreVar . mkHNm
   
 %%[[(8 coresysf)
-  app1MetaArr (n,bm) a r = acorem1Arr (acoreBind1Asp1 n $ acoreBound1MetaVal bm a) r
+  app1MetaArr (mn,bm) a r = acorem1Arr (acoreBind1Asp1 (maybe hsnWild id mn) $ acoreBound1MetaVal bm a) r
   appMb1ArrMk x = do (b,r) <- acoreExprMbArr x
                      let (n,(bo:_)) = acoreUnBind b
                      (bm,a) <- acoreBoundMbVal bo
@@ -326,7 +326,7 @@ instance AbstractCore e m b bound boundmeta bcat mbind t p pr pf a => AppLike e 
 %%[(8 codegen coresysf) hs
 instance (AppLike e ACoreAppLikeMetaBound, HSNM bndnm, AbstractCore e m b bound ACoreAppLikeMetaBound bcat mbind t p pr pf a) => BndLike e bndnm {- () () -} where
   -- BndLike
-  bndBndIn n l = app1MetaArr (mkHNm n,acoreBoundmeta acbaspkeyDefault l CLbl_None)
+  bndBndIn n l = app1MetaArr (Just $ mkHNm n,acoreBoundmeta acbaspkeyDefault l CLbl_None)
 %%]
 
 %%[(8 codegen) hs

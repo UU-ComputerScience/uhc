@@ -98,6 +98,43 @@ SEM PatExpr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% CTy to be used by generation via AbstractCore
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+SEM Decl
+  | * -
+      TySig
+      Data
+      KiSig
+%%[[9
+      Class Instance InstanceIntro Default
+%%]]
+%%[[11
+      Type
+%%]]
+%%[[92
+      GenerRep
+%%]]
+%%[[93
+      FusionConv FusionDecl
+%%]]
+  				loc         .   acorety		=	mkCTy @lhs.opts @finalTyExpanded @sysfty
+
+SEM DataFieldExpr
+  | Upd
+  				loc         .   acorety		=	mkCTy @lhs.opts @finalTyExprExpanded @sysfty
+
+SEM Expr
+  | Case
+  				loc         .   acorety		=	mkCTy @lhs.opts @finalTyExprExpanded @sysfty
+
+SEM PatExpr
+  | IConst CConst SConst Var Con AppTop Rec DataFields Irrefutable 
+  				loc         .   acorety		=	mkCTy @lhs.opts @finalTyExpanded @sysfty
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Expr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -141,9 +178,9 @@ SEM Expr
   | Case        loc         .   cexpr       =   let (ns,bs,as)
                                                       = if @isTupOfArg
                                                         then let ns = [ acbrefNm ref | (CExpr_Var ref) <- fuL2ExprL (reverse @expr.fuCExprL) ]
-                                                             in  (zip ns (tyProdArgs @finalTyExprExpanded),[],@alts.raltL')
+                                                             in  (zip ns (tyProdArgs @acorety),[],@alts.raltL')
                                                         else let n = uidHNm @lUniq2
-                                                             in  ([(n,@finalTyExprExpanded)],[acoreBind1Ty n @finalTyExprExpanded @expr.cexpr],@alts.raltL)
+                                                             in  ([(n,@acorety)],[acoreBind1Ty n @acorety @expr.cexpr],@alts.raltL)
                                                 in  acoreLet CBindCateg_Plain bs (rceMatchTy @rceEnv ns as)
   | AppTop      loc         .   cexprtop    =   @expr.cexpr
   | Rec         loc         .   cexprtop    =   @rcexpr
@@ -370,7 +407,7 @@ SEM DataFieldExpr
   | Upd         loc         .   fldExprNm   =   mkHNm @lUniq
                 lhs         .   fuCExprL    =   let mke dti o = CExpr_TupIns @dataFieldExpr.dfeCExpr (dtiCTag dti) @nm (acoreInt o) (acoreVar @fldExprNm)
                                                 in  (@nm,(mke,Nothing)) : @dataFieldExpr.fuCExprL
-                            .   dfeCBindL   =   acoreBind1Ty @fldExprNm @finalTyExprExpanded @expr.cexpr : @dataFieldExpr.dfeCBindL
+                            .   dfeCBindL   =   acoreBind1Ty @fldExprNm @acorety @expr.cexpr : @dataFieldExpr.dfeCBindL
   | Con         lhs         .   dfeCExpr    =   CExpr_Tup (dtiCTag @dti)
                             .   fuCExprL    =   []
                             .   dfeCBindL   =   []
@@ -417,7 +454,7 @@ SEM DataConstr
 SEM Decl
   | Data        loc         .   fldSelCBindL=   let (xn1:xn2:_) = hsnLclSupply
                                                     tgSels f i = [ (t,[(f,{-f,-}o)],Nothing,acoreVar f) | (t,o) <- Map.toList $ dficInTagMp i ]
-                                                    ty f = valGamLookupTyDefault f @lhs.finValGam
+                                                    ty f = ty2TyC @lhs.opts @lhs.finTyKiGam $ valGamLookupTyDefault f @lhs.finValGam
                                                 in  if @isNewtype
                                                     then [ [ acoreBind1Ty f (ty f) (acoreVar $ ehcOptBuiltin @lhs.opts ehbnId)
                                                            | (f,i) <- Map.toList $ dgiFldInConstrMp @dgi
@@ -446,7 +483,7 @@ SEM Decl
 
 %%[(8 codegen) hs
 -- | Make bindings for constructors, given various bits of info
-mkDataCBindL :: EHCOpts -> CTag -> Ty -> [DataConFldAnnInfo] -> HsName -> Bool -> [CBind]
+mkDataCBindL :: EHCOpts -> CTag -> CTy -> [DataConFldAnnInfo] -> HsName -> Bool -> [CBind]
 mkDataCBindL opts ctag ty annL conNm isNewtype
   | isNewtype = [ acoreBind1Ty conNm ty (acoreVar $ ehcOptBuiltin opts ehbnId) ]
   | otherwise = [ acoreBind1Ty conNm ty
@@ -501,7 +538,7 @@ SEM Expr
                                                         { dtiConNm      = conNm
                                                         , dtiConFldAnnL = annL
                                                         , dtiCTag       = ctag
-                                                        }) -> mkDataCBindL @lhs.opts ctag (valGamLookupTyDefault conNm @finValGamDecls) annL conNm isNewtype
+                                                        }) -> mkDataCBindL @lhs.opts ctag (ty2TyC @lhs.opts @lhs.finTyKiGam $ valGamLookupTyDefault conNm @finValGamDecls) annL conNm isNewtype
                                                     )
                                                     @decls.gathDeclDataGam
 %%]
@@ -584,25 +621,25 @@ SEM PatExpr
 ATTR PatExpr [ | | rpat: RPat ]
 
 SEM PatExpr
-  | IConst      loc         .   rpat        =   RPat_Int @cpNm @finalTyExpanded (toInteger @int)
-  | CConst      loc         .   rpat        =   RPat_Char @cpNm @finalTyExpanded @char
-  | SConst      loc         .   rpat        =   RPat_Int @cpNm @finalTyExpanded (-1) -- for now
-  | Var         loc         .   rpat        =   RPat_Var @cpNm @finalTyExpanded False
+  | IConst      loc         .   rpat        =   RPat_Int @cpNm @acorety (toInteger @int)
+  | CConst      loc         .   rpat        =   RPat_Char @cpNm @acorety @char
+  | SConst      loc         .   rpat        =   RPat_Int @cpNm @acorety (-1) -- for now
+  | Var         loc         .   rpat        =   RPat_Var @cpNm @acorety False
   | VarAs       loc         .   rpat        =   @patExpr.rpat {rcpPNm = @cpNm}
-  | Con         loc         .   rpat        =   RPat_Con @cpNm @finalTyExpanded @tag (RPatConBind_One CPatRest_Empty [])
-  | AppTop      loc         .   rpat        =   RPat_Con @cpNm @finalTyExpanded @tag (RPatConBind_One @rest (map fst @rpatBinds))
+  | Con         loc         .   rpat        =   RPat_Con @cpNm @acorety @tag (RPatConBind_One CPatRest_Empty [])
+  | AppTop      loc         .   rpat        =   RPat_Con @cpNm @acorety @tag (RPatConBind_One @rest (map fst @rpatBinds))
   | Rec         loc         .   rpat        =   case @rest of
                                                     CPatRest_Empty
-                                                      ->  RPat_Con @cpNm @finalTyExpanded @tag (RPatConBind_One @rest (map fst @rpatBinds))
+                                                      ->  RPat_Con @cpNm @acorety @tag (RPatConBind_One @rest (map fst @rpatBinds))
                                                     CPatRest_Var r
-                                                      ->  RPat_Con @cpNm @finalTyExpanded @tag (RPatConBind_One @rest pbL)
+                                                      ->  RPat_Con @cpNm @acorety @tag (RPatConBind_One @rest pbL)
                                                           where  pbL = map fst $ fsL2PatOffsetL $ fsLReorder @lhs.opts $ reverse $ @fsRPatL
-  | DataFields  loc         .   rpat        =   RPat_Con @cpNm @finalTyExpanded @tag
+  | DataFields  loc         .   rpat        =   RPat_Con @cpNm @acorety @tag
                                                     (rpatConBindUnFlatten (RPatConBind_One @rest $ map fst @rpatBind0)
                                                      $ map (RPatConBind_One @rest . map fst)
                                                            @rpatBindss
                                                     )
-  | Irrefutable loc         .   rpat        =   RPat_Irrefutable @cpNm @finalTyExpanded @patExpr.cbindL -- $ cbindInPatFlatten @patExpr.cbindInPatL
+  | Irrefutable loc         .   rpat        =   RPat_Irrefutable @cpNm @acorety @patExpr.cbindL -- $ cbindInPatFlatten @patExpr.cbindInPatL
   | Bang        loc         .   rpat        =   case @patExpr.rpat of
                                                   r@(RPat_Var _ _ _) -> r {rcpMustEval = True}
                                                   r                  -> r
@@ -747,7 +784,7 @@ SEM Expr
 ATTR AllDecl [ | | bangEvalL USE {++} {[]} : {[CExpr -> CExpr]} ]
 
 SEM Decl
-  | Val			lhs			.	bangEvalL		=	if @patExpr.isBang then [acoreLet1StrictTy (hsnUniqify HsNameUniqifier_Strict @patExpr.topNm) @finalTy (acoreVar @patExpr.topNm)] else []
+  | Val			lhs			.	bangEvalL		=	if @patExpr.isBang then [acoreLet1StrictTy (hsnUniqify HsNameUniqifier_Strict @patExpr.topNm) @acorety (acoreVar @patExpr.topNm)] else []
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -770,9 +807,9 @@ ATTR
 SEM Decl
   | TySig       lhs         .   cbindL          =   []
   | FFI         lhs         .   ffiCBindL       =   let ffi = ffiCoreMk @lhs.opts (\ty -> CExpr_FFI @callconv @safety @impEnt ty) @lUniqFFI @rceEnv @foreignEntInfo @finalTyExpanded
-                                                    in  [acoreBind1CatTy CBindCateg_Plain @nm @finalTyExpanded ffi]
+                                                    in  [acoreBind1CatTy CBindCateg_Plain @nm @acorety ffi]
                 loc         .   lUniqFFI        :   UNIQUEREF gUniq
-  | Val         lhs         .   cbindL          :=  [ acoreBind1CatTy CBindCateg_Plain @patExpr.topNm @finalTyExpanded $
+  | Val         lhs         .   cbindL          :=  [ acoreBind1CatTy CBindCateg_Plain @patExpr.topNm @acorety $
 %%[[9
                                                       acoreLetMerge True CBindCateg_Rec @chrScopeValBindL $
 %%]]
@@ -785,7 +822,7 @@ SEM Decl
 SEM Decl
   | FFE         loc         .   nmCoerced       =   hsnUniqify HsNameUniqifier_FFECoerced @nm
                             .   (ffeMkCExpr,ffeTy)
-                                                =   ffeCoreMk @lhs.opts @lUniqFFE @rceEnv @finalTyExpanded
+                                                =   ffeCoreMk @lhs.opts @lUniqFFE @rceEnv @acorety
                             .   ffeCExpr        =   @ffeMkCExpr @expr.cexpr
                 loc         .   lUniqFFE        :   UNIQUEREF gUniq
                 lhs         .   ffeCBindL       =   [acoreBind1Asp1 @nm (CBound_FFE @callconv @expEnt @ffeCExpr @ffeTy)]
@@ -874,7 +911,7 @@ SEM Decl
                                                              d = acoreApp (CExpr_Tup @dictTag) (replicate (length $ snd $ tyRecExts $ @clsTyRec) (acoreBuiltinUndefined @lhs.opts))
                                                              nD = hsnUniqify HsNameUniqifier_SelfDict nDflt
                                                 in   (maybe dDflt (const []) @mbDefaultInstNm)
-                                                     ++ [ acoreBind1CatTy CBindCateg_Plain n (tyQuantifyClosed $ [@dataDictTy] `appArr` t) $ acoreLam1 x $ mkApp $ mkSel n
+                                                     ++ [ acoreBind1CatTy CBindCateg_Plain n (ty2TyC @lhs.opts @lhs.finTyKiGam $ tyQuantifyClosed $ [@dataDictTy] `appArr` t) $ acoreLam1 x $ mkApp $ mkSel n
                                                         | (n,t) <- @clsFldL
                                                         ]
 %%]
@@ -1087,6 +1124,7 @@ mkNormalInstance
 mkInstanceCBindL
   :: EHCOpts
      -> ClGamInfo                           -- info about the class
+     -> TyKiGam                             -- env/gamma for ki of ty's
      -> DataGam                             -- env/gamma for datas
      -> InstVariant                         -- what kind of instance
      -> CTag                                -- tag of the dictionary (as data type)
@@ -1104,14 +1142,14 @@ mkInstanceCBindL
         )
      -> [CBind]
 mkInstanceCBindL
-      opts clgi dataGam instVariant dictTag
+      opts clgi tyKiGam dataGam instVariant dictTag
       nms@(dictNm,dictSelfNm,dictBuildNm)
       instanceTy
       instanceRecTy
       nmLs@(superFldNmL,superNmL,contextNmL)
       declsCBindL
       chrBindLs@(chrDeclsCBindL,chrSuperProveCBindL,chrSuperCtxtAssumeCBindL)
-  = [acoreBind1MetaTy dictNm generatedMeta instanceTy generatedDictionary]
+  = [acoreBind1MetaTy dictNm generatedMeta (ty2TyC opts tyKiGam instanceTy) generatedDictionary]
   where (generatedDictionary, generatedMeta)
           = case instVariant of
                InstNormal     -> mkNormalD  declsCBindL
@@ -1222,7 +1260,7 @@ SEM Decl
                                                                           -> ([ @mkf dcf | dcf <- dclFldL @derivDCL ],[])
 %%]]
                                                   in  ( mkInstanceCBindL
-                                                        @lhs.opts @clgi @lhs.dataGam @instVariant @dictTag
+                                                        @lhs.opts @clgi @lhs.finTyKiGam @lhs.dataGam @instVariant @dictTag
                                                         (@dictNm,@dictSelfNm,@dictBuildNm)
                                                         @finalTy @recTy
                                                         (@supClsFldNmL,@chrSuperProveNmL,@chrCtxtArgNmL)
@@ -1331,17 +1369,18 @@ mkDataGenerBinds
         EHCOpts
      -> RCEEnv
      -> ClGam                               -- env/gamma for class
+     -> TyKiGam                             -- env/gamma for ki of ty's
      -> DataGam                             -- env/gamma for datas
      -> UID                                 -- uniq
      -> [GenerDataInstInfo]                 -- inst infos
      -> ([CBind],[Err])
 mkDataGenerBinds
-     opts rceEnv clGam dataGam
+     opts rceEnv clGam tyKiGam dataGam
      uniq instInfoL
   = (concat instBinds, concat errs)
   where (instBinds,errs) = unzip $ map mk instInfoL
         mk (orignm,dictNm,clNm,instKind,pr)
-          = ( mkInstanceCBindL opts clgi dataGam InstNormal (clgiDictTag clgi) (dictNm,dictSelfNm,dictBuildNm) (pred2DataTy pr) recTy ([],[],[])
+          = ( mkInstanceCBindL opts clgi tyKiGam dataGam InstNormal (clgiDictTag clgi) (dictNm,dictSelfNm,dictBuildNm) (pred2DataTy pr) recTy ([],[],[])
                                binds ([],[],[])
             , foErrL evFO
             )
@@ -1409,7 +1448,7 @@ SEM Expr
                                             =   mkDataGenerBinds
                                                     @lhs.opts
                                                     (@rceEnv {rceValGam = @finValGam `gamUnion` rceValGam @rceEnv})
-                                                    @forDeclsClGam @lhs.dataGam
+                                                    @forDeclsClGam @lhs.finTyKiGam @lhs.dataGam
                                                     @lUniq_gener @generInstInfoL
                 loc         .   lUniq_gener :   UNIQUEREF gUniq
 %%]

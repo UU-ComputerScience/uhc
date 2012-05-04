@@ -11,7 +11,7 @@
 %%[(8 codegen) hs import({%{EH}AbstractCore})
 %%]
 
-%%[(8 codegen) hs import({%{EH}Ty.ToSysfTy}) export(module {%{EH}Ty.ToSysfTy})
+%%[(8 codegen coresysf) hs import({%{EH}Ty.ToSysfTy}) export(module {%{EH}Ty.ToSysfTy})
 %%]
 
 %%[(8 codegen) hs import(qualified Data.Map as Map,qualified Data.Set as Set)
@@ -27,6 +27,18 @@ i.e. provides the same API.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 hmtyinfer || hmtyast) hs export(Ty)
+-- | The type, represented by a term CExpr
+type Ty     		= SysfTy			-- base ty
+
+-- | A sequence of parameters (for now just a single type)
+type TySeq			= SysfTySeq
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Conversion to SysfTy & CTy
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8888 hmtyinfer || hmtyast) hs export(Ty)
 -- | The type, represented by a term CExpr
 type Ty     		= SysfTy			-- base ty
 

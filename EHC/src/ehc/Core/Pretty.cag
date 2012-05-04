@@ -35,6 +35,7 @@ ppCModule opts lamMp cmod
   =  let  t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf cmod))
                              (Inh_CodeAGItf
                                { lamMp_Inh_CodeAGItf = lamMp
+                               , opts_Inh_CodeAGItf = opts
                                })
      in   (pp_Syn_CodeAGItf t)
 
@@ -44,6 +45,8 @@ ppCExpr ce
                          (Inh_CExpr
                             { varPPMp_Inh_CExpr = Map.empty
                             , lamMp_Inh_CExpr = Map.empty
+                            , ppHow_Inh_CExpr = howHor
+                            , opts_Inh_CExpr = emptyEHCOpts
                             })
      in   (pp_Syn_CExpr t)
 
@@ -52,18 +55,17 @@ instance PP CExpr where
 %%]
 
 %%[(8 codegen) hs
-ppCNm :: HsName -> PP_Doc
--- ppCNm = cfgppHsName CfgPP_Core
-ppCNm = ppHsnNonAlpha coreScanOpts'
-  where coreScanOpts' = coreScanOpts emptyEHCOpts
-
-ppMbCNm :: Maybe HsName -> PP_Doc
-ppMbCNm = maybe (ppCNm (hsnFromString "_")) ppCNm
-
-ppManyCNm :: [HsName] -> PP_Doc
-ppManyCNm  =  ppListSep "" "" " " . map ppCNm
-
+ppCNm :: EHCOpts -> HsName -> PP_Doc
+ppCNm o n | CoreOpt_PPParseable `elem` ehcOptCoreOpts o = ppHsnNonAlpha coreScanOpts' n
+          | otherwise                                   = pp n
+          where coreScanOpts' = coreScanOpts emptyEHCOpts
 %%]
+ppMbCNm :: EHCOpts -> Maybe HsName -> PP_Doc
+ppMbCNm o = maybe (ppCNm o (hsnFromString "_")) (ppCNm o)
+
+ppManyCNm :: EHCOpts -> [HsName] -> PP_Doc
+ppManyCNm o =  ppListSep "" "" " " . map (ppCNm o)
+
 
 %%[(9 codegen) hs
 ppTrack :: Track -> PP_Doc
@@ -79,6 +81,7 @@ ppOptCMetas x
   =  let  t = wrap_CMetas (sem_CMetas x)
                           (Inh_CMetas
                              { lamMp_Inh_CMetas = Map.empty
+                             , opts_Inh_CMetas = emptyEHCOpts
                              })
      in   (pp_Syn_CMetas t)
 %%]
@@ -133,7 +136,59 @@ ppCurlyList pL xs = ppListSep "{ " " }" ", " $ map pL xs
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Context
+%%% Context: options
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR CodeAGItf AllNT [ opts: EHCOpts | | ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Context: how to pp
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs
+type CmbPP = PP_Doc -> PP_Doc -> PP_Doc
+
+data HowPP
+  = HowPP
+      { howDef      :: CmbPP
+      , howAside    :: CmbPP 
+      , howList     :: [PP_Doc] -> PP_Doc 
+      , howSep      :: PP_Doc -> PP_Doc -> PP_Doc -> [PP_Doc] -> PP_Doc
+      }
+
+howVert = HowPP  ppDef  (>-<)  vlist     ppBlock
+howHor  = HowPP  (>#<)  (>#<)  ppSpaces  ppListSep
+%%]
+
+%%[(8 codegen)
+ATTR AllExpr CModule - AllMeta [ ppHow: HowPP | | ]
+
+SEM CodeAGItf
+  | AGItf       loc         .   ppHow       =   howVert
+
+SEM CBound
+  | Val         loc         .   ppHow       =   if @mlev > 0 then howHor else @lhs.ppHow
+%%]
+
+SEM Expr
+  | Cast Inject
+                ty          .   ppHow       =   howHor
+
+SEM Pat
+  | *           loc         .   ppHow       =   howHor
+
+SEM FldBind
+  | Fld         ty          .   ppHow       =   howHor
+  | Ty          ki          .   ppHow       =   howHor
+
+SEM ValBind
+  | Val         bind        .   ppHow       =   howVert
+                l0          .   ppHow       =   howVert
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Context: Lam info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen)
@@ -151,7 +206,7 @@ ATTR CExpr [ | | lamBodyPP: PP_Doc  lamArgPPL: {[PP_Doc]} ]
 ATTR CExpr [ | | appFunPP : PP_Doc  appArgPPL: {[PP_Doc]} ]
 
 SEM CModule
-  | Mod         lhs         .   pp          =   "module" >#< ppCNm @moduleNm >#< "=" >-< @expr.pp >-< "-- data type tag map:" >-< ppCTagsMp CfgPP_Core @ctagsMp
+  | Mod         lhs         .   pp          =   "module" >#< ppCNm @lhs.opts @moduleNm >#< "=" >-< @expr.pp >-< "-- data type tag map:" >-< ppCTagsMp CfgPP_Core @ctagsMp
 
 SEM CExpr
   | Int         loc         .   pp          =   ppLit "Int"    (show @int)
@@ -160,10 +215,10 @@ SEM CExpr
 %%[[97
   | Integer     loc         .   pp          =   ppLit "Integer" (show @integer)
 %%]
-  | Var         loc         .   pp          =   ppACoreBindRef ppCNm @ref
+  | Var         loc         .   pp          =   ppACoreBindRef (ppCNm @lhs.opts) @ref
   | App         loc         .   pp          =   let args = reverse $ map ppParens $ @appArgPPL
                                                     fun  = ppParens @appFunPP
-                                                in  ppDef fun (vlist args)
+                                                in  howDef @lhs.ppHow fun (vlist args)
   | Let         loc         .   ppCateg     =   case @categ of
                                                   CBindCateg_Rec     -> pp " rec"
                                                   CBindCateg_Strict  -> pp " !"
@@ -172,14 +227,14 @@ SEM CExpr
                                                   CBindCateg_FFE     -> pp " foreignexport"
 %%]]
                                                   _                  -> empty
-                            .   pp          =   ppDef ("let" >|< @ppCateg) (ppCurlysSemisBlock @binds.ppL) >#< "in" >-< @body.pp
-  | Lam         loc         .   pp          =   ppDef ("\\" >|< ppSpaces @lamArgPPL >#< "->") (@lamBodyPP)
+                            .   pp          =   howDef @lhs.ppHow ("let" >|< @ppCateg) (ppCurlysSemisBlock @binds.ppL) >#< "in" >-< @body.pp
+  | Lam         loc         .   pp          =   howDef @lhs.ppHow ("\\" >|< ppSpaces @lamArgPPL >#< "->") (@lamBodyPP)
   | Case        loc         .   pp          =   "case" >#< @expr.pp >#< "of"
-                                                >-< indent 1 (ppCurlysSemisBlock @alts.ppL >-< ppCurlysSemisBlock [ppDef "default" @dflt.pp])
+                                                >-< indent 1 (ppCurlysSemisBlock @alts.ppL >-< ppCurlysSemisBlock [howDef @lhs.ppHow (pp "default") @dflt.pp])
   | Tup         loc         .   pp          =   "#Tag" >#< ppTag @tag
-  | TupDel      loc         .   pp          =   ppDef (ppParens @expr.pp) ("-=" >|< ppCurlysCommas' [ppTag @tag,@offset.pp,ppCNm @nm])
-  | TupIns      loc         .   pp          =   ppDef (ppParens @expr.pp) (ppDef ("+=" >|< ppCurlysCommas' [ppTag @tag,@offset.pp,ppCNm @nm]) (ppParens @fldExpr.pp))
-  | TupUpd      loc         .   pp          =   ppDef (ppParens @expr.pp) (ppDef (":=" >|< ppCurlysCommas' [ppTag @tag,@offset.pp,ppCNm @nm]) (ppParens @fldExpr.pp))
+  | TupDel      loc         .   pp          =   howDef @lhs.ppHow (ppParens @expr.pp) ("-=" >|< ppCurlysCommas' [ppTag @tag,@offset.pp,ppCNm @lhs.opts @nm])
+  | TupIns      loc         .   pp          =   howDef @lhs.ppHow (ppParens @expr.pp) (howDef @lhs.ppHow ("+=" >|< ppCurlysCommas' [ppTag @tag,@offset.pp,ppCNm @lhs.opts @nm]) (ppParens @fldExpr.pp))
+  | TupUpd      loc         .   pp          =   howDef @lhs.ppHow (ppParens @expr.pp) (howDef @lhs.ppHow (":=" >|< ppCurlysCommas' [ppTag @tag,@offset.pp,ppCNm @lhs.opts @nm]) (ppParens @fldExpr.pp))
   | CaseAltFail loc         .   pp          =   pp "FAIL" >#< @failReason
   | FFI         loc         .   pp          =   ("foreign" >#< ppCurlysCommasBlock [pp (show @callconv),pp (show @safety),@ppent,ppTy @ty])
 %%[[8
@@ -194,7 +249,7 @@ SEM CExpr
 
 SEM CExpr
   | Lam         loc         .   lamBodyPP   =   @body.lamBodyPP
-                            .   lamArgPPL   =   (ppCNm @argNm) : @body.lamArgPPL
+                            .   lamArgPPL   =   (ppCNm @lhs.opts @argNm) : @body.lamArgPPL
   | * - Lam     lhs         .   lamBodyPP   =   @pp
                             .   lamArgPPL   =   []
 
@@ -207,26 +262,35 @@ SEM CExpr
 SEM CBind
  | Bind         lhs         .   pp          =   let p [a] = a
                                                     p as  = ppCurlysSemisBlock as
-                                                in  ppDef (ppCNm @nm) (p $ [ s >#< pp | (s,pp) <- @bindAspects.ppAndSepL ] ++ (maybe [] (\x -> [pp x]) $ Map.lookup @nm @lhs.lamMp))
+                                                    par | or [ m | (_,m,_) <- @bindAspects.ppBindInfoL ] = ppParens
+                                                        | otherwise                                      = id
+                                                    isSingleNoNm = hsnIsWild @nm && length @bindAspects.ppBindInfoL == 1
+                                                    sep :: CmbPP
+                                                    sep | isSingleNoNm = flip const
+                                                        | otherwise    = (>#<)
+                                                    def | isSingleNoNm = par                                           val
+                                                        | otherwise    = par $ howDef @lhs.ppHow (ppCNm @lhs.opts @nm) val
+                                                        where val = p $ [ sep (pp s) $ pv | (s,_,pv) <- @bindAspects.ppBindInfoL ] ++ (maybe [] (\x -> [pp x]) $ Map.lookup @nm @lhs.lamMp)
+                                                in  def
 
 SEM CBound
   | Bind        loc         .   pp          =   @bindMeta.pp >-< @expr.pp
   | Ty          loc         .   pp          =   ppACBaspKeyS @aspectKeyS >#< @tyPP -- pp @relevTy
   | RelevTy     loc         .   pp          =   ppACBaspKeyS @aspectKeyS >#< @tyPP -- pp @relevTy
   | Meta        loc         .   pp          =   ppACBaspKeyS @aspectKeyS >#< @cmetas.pp
-  | Val         loc         .   pp          =   let asp | Set.null @aspectKeyS || acbaspkeyDefault == @aspectKeyS
+  | Val         loc         .   (pp,mustPar)=   let asp | Set.null @aspectKeyS || acbaspkeyDefault == @aspectKeyS
                                                                                 = id
                                                         | otherwise             = \x -> ppACBaspKeyS @aspectKeyS >#< x
                                                     lbl | @lbl == CLbl_None     = id
                                                         | otherwise             = \x -> @lbl >#< "=" >#< x 
-                                                    lev | @mlev == 0            = id
-                                                        | otherwise             = \x -> "@" >|< @mlev >#< x 
+                                                    -- lev | @mlev == 0            = id
+                                                    --     | otherwise             = \x -> "@" >|< @mlev >#< x 
                                                     par | @mlev == 0 && @lbl == CLbl_None && Set.null @aspectKeyS
                                                                                 = id
                                                         | otherwise             = ppParens
-                                                in  par $ lev $ asp $ lbl @expr.pp
+                                                in  ({- lev $ -} asp $ lbl @expr.pp, not $ @mlev == 0 && @lbl == CLbl_None && Set.null @aspectKeyS)
 %%[[90
-  | FFE         loc         .   pp          =   "foreignexport" >#< ppCurlysCommasBlock [pp (show @callconv),"\"" >|< @expEnt >|< "\"",@expr.pp {- ppCNm @expNm -},ppTyWithCfg' CfgPP_Plain @ty]
+  | FFE         loc         .   pp          =   "foreignexport" >#< ppCurlysCommasBlock [pp (show @callconv),"\"" >|< @expEnt >|< "\"",@expr.pp {- ppCNm @lhs.opts @expNm -},ppTyWithCfg' CfgPP_Plain @ty]
 %%]]
 
 SEM CBoundL CBindL CPatFldL CAltL CBindAnnL
@@ -234,21 +298,21 @@ SEM CBoundL CBindL CPatFldL CAltL CBindAnnL
   | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
 
 SEM CAlt
-  | Alt         lhs         .   pp          =   ppDef (@pat.pp >#< "->") (@expr.pp)
+  | Alt         lhs         .   pp          =   howDef @lhs.ppHow (@pat.pp >#< "->") (@expr.pp)
 
 SEM CPat
   | Int         lhs         .   pp          =   ppLit "Int"    (show @int)
   | Char        lhs         .   pp          =   ppLit "Char"   [@char]
-  | Var         lhs         .   pp          =   ppCNm @pnm
-  | Con         lhs         .   pp          =   ppDef ("#Tag" >#< ppTag @tag)
+  | Var         lhs         .   pp          =   ppCNm @lhs.opts @pnm
+  | Con         lhs         .   pp          =   howDef @lhs.ppHow ("#Tag" >#< ppTag @tag)
                                                       (ppCurly (@rest.pp >#< "|" >#< ppCommas' @binds.ppL))
 
 SEM CPatFld
-  | Fld         lhs         .   pp          =   ppCurlysCommas' [ppCNm @lbl,@offset.pp {- ,ppCNm @nm -}] >|< "=" >|< ppCNm @fldNm
+  | Fld         lhs         .   pp          =   ppCurlysCommas' [ppCNm @lhs.opts @lbl,@offset.pp {- ,ppCNm @lhs.opts @nm -}] >|< "=" >|< ppCNm @lhs.opts @fldNm
                                                 >|< (if null @fldAnns.ppL then empty else ppParensCommas' @fldAnns.ppL)
 
 SEM CPatRest
-  | Var         lhs         .   pp          =   ppCNm @nm
+  | Var         lhs         .   pp          =   ppCNm @lhs.opts @nm
 
 %%]
   | Undef       lhs         .   pp          =   pp hsnUnknown
@@ -299,10 +363,10 @@ SEM CBindAnn
 %%[(9 codegen)
 SEM CExpr
   | Hole        loc         .   pp          =   ppHole @uid
-  | HoleLet     loc         .   pp          =   "let --" >#< ppHole @bindsUid >-< ppDef "in" @body.pp
+  | HoleLet     loc         .   pp          =   "let --" >#< ppHole @bindsUid >-< howDef @lhs.ppHow (pp "in") @body.pp
   | CoeArg      loc         .   pp          =   pp "<_>"
-  | ImplsApp    loc         .   pp          =   ppDef (@func.pp >#< "-- Impl") (ppHole @uid)
-  | ImplsLam    loc         .   pp          =   ppDef ("\\" >|< ppHole @uid >#< "-- Impl") ("->" >#< @body.pp)
+  | ImplsApp    loc         .   pp          =   howDef @lhs.ppHow (@func.pp >#< "-- Impl") (ppHole @uid)
+  | ImplsLam    loc         .   pp          =   howDef @lhs.ppHow ("\\" >|< ppHole @uid >#< "-- Impl") ("->" >#< @body.pp)
 
 %%]
 
@@ -310,21 +374,34 @@ SEM CExpr
 %%% PP + separator for optional use in CBind
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[(8 codegen) hs
+type PPBindInfo
+  = ( String                -- separator
+    , Bool                  -- outside parenthesization required
+    , PP_Doc                -- actual payload
+    )
+%%]
+
 %%[(8 codegen)
-ATTR AllBound [ | | ppAndSepL USE {++} {[]}: {[(String,PP_Doc)]} ]
+ATTR AllBound [ | | ppBindInfoL USE {++} {[]}: {[PPBindInfo]} ]
+
+SEM CBound
+  | * - Val     loc         .   mustPar     =   False
 
 SEM CBound
   | Bind        loc         .   sep         =   "="
   | Ty          loc         .   sep         =   "::"
-  | RelevTy     loc         .   sep         =   "::_R"
-  | Meta        loc         .   sep         =   "::_M"
-  | Val         loc         .   sep         =   "="
+  | RelevTy     loc         .   sep         =   "::R"
+  | Meta        loc         .   sep         =   "::M"
+  | Val         loc         .   sep         =   if      @mlev == 0 then "="
+                                                else if @mlev >  1 then "::@" ++ show @mlev
+                                                else                    "::"
 %%[[90
   | FFE         loc         .   sep         =   "="
 %%]]
 
 SEM CBound
-  | *           lhs         .   ppAndSepL   = [(@sep,@pp)]
+  | *           lhs         .   ppBindInfoL =   [(@sep,@mustPar,@pp)]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

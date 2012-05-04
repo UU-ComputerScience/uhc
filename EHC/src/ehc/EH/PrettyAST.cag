@@ -51,10 +51,11 @@ SEM AGItf
                         .  info_99  =   []
 
 SEM Decl
-  | Val         lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Decl","Val"] [] [@patExpr.ppAST,@expr.ppAST] (@info_1 ++ @info_2 ++ @info_8 ++ @info_9)
+  | Val         lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Decl","Val"] [] [@patExpr.ppAST,@expr.ppAST] (@info_1 ++ @info_2 ++ @info_8 ++ @sinfo_8 ++ @info_9)
                 loc     .  info_1   =   []
                         .  info_2   =   []
                         .  info_8   =   []
+                        .  sinfo_8  =   []
                         .  info_9   =   []
   | TySig       lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Decl","TySig"] [ppNm @nm] [@tyExpr.ppAST] (@info_1 ++ @info_5 ++ @info_6)
                 loc     .  info_1   =   []
@@ -674,8 +675,9 @@ SEM Decl
 
 %%[8
 SEM Decl
-  | FFI         loc     .  ppAST    =   ppNestInfo @lhs.opts ["Decl","FFI"] [pp (show @impEnt),ppNm @nm] [@tyExpr.ppAST] @info_8
+  | FFI         loc     .  ppAST    =   ppNestInfo @lhs.opts ["Decl","FFI"] [pp (show @impEnt),ppNm @nm] [@tyExpr.ppAST] (@info_8 ++ @sinfo_8)
                         .  info_8   =   []
+                        .  sinfo_8  =   []
 %%]
 
 %%[(8 hmtyinfer codegen)
@@ -697,6 +699,18 @@ SEM Expr
 %%]
 
 %%[(8 hmtyinfer codegen coresysf)
+SEM Decl
+  | Val         loc     .  sinfo_8  :=  [ mkInfo1 "sysftyExprKnTy" (pp @sysftyExprKnTy)
+                                        , mkInfo1 "sysftyExprTy" (pp @sysftyExprTy)
+                                        , mkInfo1 "sysftyGam" (pp @sysftyGam)
+                                        , mkInfo1 "sysftyBind" (pp @sysftyBind)
+                                        , mkInfo1 "sysfty" (pp @sysfty)
+                                        -- , mkInfo1 "moutErrL moutExpr" (ppErrL $ C.moutErrL @moutExpr)
+                                        -- , mkInfo1 "tcSubstLamSpine" (ppAssocLV . Map.toList $ @tcSubstLamSpine)
+                                        ]
+  | FFI         loc     .  sinfo_8  :=  [ mkInfo1 "sysfty" (pp @sysfty)
+                                        ]
+
 SEM Expr
   | Var Con
 %%[[9

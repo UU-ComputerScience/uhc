@@ -104,7 +104,10 @@ optOptsIsYes mos o = maybe False (o `elem`) mos
 
 %%[(8 codegen)
 instance Show CoreOpt where
-  show CoreOpt_SysF = "sysf"
+  show CoreOpt_PPParseable 	= "pp-parseable"
+%%[[(8 coresysf)
+  show CoreOpt_SysF 		= "sysf"
+%%]]
 
 coreOptMp :: Map.Map String CoreOpt
 coreOptMp = Map.fromList [ (show o, o) | o <- [minBound .. maxBound] ]
@@ -216,16 +219,6 @@ ehcOptEmitTyCore opts
 ehcOptTyCore :: EHCOpts -> Bool
 ehcOptTyCore opts = ehcOptEmitTyCore opts || isJust (ehcOptUseTyCore opts)
 
-%%]
-
-%%[(8 codegen) export(ehcOptCoreSysF)
--- | Generate system F (20120421 AD: very much under construction)
-ehcOptCoreSysF :: EHCOpts -> Bool
-%%[[(8 coresysf)
-ehcOptCoreSysF opts = CoreOpt_SysF `elem` ehcOptCoreOpts opts
-%%][8
-ehcOptCoreSysF _    = False
-%%]]
 %%]
 
 %%[(8 codegen) export(ehcOptOptimizes)

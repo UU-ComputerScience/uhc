@@ -198,7 +198,7 @@ WRAPPER AGItf
 
 %%[(8 codegen) ag import({EH/ToCore})
 %%]
-%%[(8 hmtyinfer codegen coresysf) ag import({EH/SysfTy})
+%%[(8 hmtyinfer codegen) ag import({EH/SysfTy})
 %%]
 %%[(8 codegen tycore) ag import({EH/ToTyCore})
 %%]
