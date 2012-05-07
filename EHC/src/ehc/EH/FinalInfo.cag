@@ -76,17 +76,17 @@ SEM Expr
 
 %%[(2 hmtyinfer)
 SEM Decl
-  | TySig       loc         .   finalTy             =   maybe (acoreTyErr "EH.FinalInfo.Decl.TySig.finalTy")    vgiTy $ valGamLookup @nm            @lhs.finValGam
-  | Val         loc         .   finalTy             =   maybe (acoreTyErr "EH.FinalInfo.Decl.Val.finalTy")      vgiTy $ valGamLookup @patExpr.topNm @lhs.finValGam
+  | TySig       loc         .   finalTy             =   maybe (appDbg "EH.FinalInfo.Decl.TySig.finalTy")    vgiTy $ valGamLookup @nm            @lhs.finValGam
+  | Val         loc         .   finalTy             =   maybe (appDbg "EH.FinalInfo.Decl.Val.finalTy")      vgiTy $ valGamLookup @patExpr.topNm @lhs.finValGam
 %%[[9
-  | Instance    loc         .   finalTy             =   maybe (acoreTyErr "EH.FinalInfo.Decl.Instance.finalTy") vgiTy $ valGamLookup @dictNm        @lhs.finValGam
+  | Instance    loc         .   finalTy             =   maybe (appDbg "EH.FinalInfo.Decl.Instance.finalTy") vgiTy $ valGamLookup @dictNm        @lhs.finValGam
 %%]]
 %%]
 
 %%[(93 hmtyinfer)
 SEM Decl
-  | FusionConv  loc         .   finConTy            =   maybe (acoreTyErr $ "EH.FinalInfo.Decl.FusionConv.finConTy: " ++ show @conNm) vgiTy $ valGamLookup @conNm @lhs.finValGam
-                            .   finAbsTy            =   maybe (acoreTyErr $ "EH.FinalInfo.Decl.FusionConv.finAbsTy: " ++ show @absNm) vgiTy $ valGamLookup @absNm @lhs.finValGam
+  | FusionConv  loc         .   finConTy            =   maybe (appDbg $ "EH.FinalInfo.Decl.FusionConv.finConTy: " ++ show @conNm) vgiTy $ valGamLookup @conNm @lhs.finValGam
+                            .   finAbsTy            =   maybe (appDbg $ "EH.FinalInfo.Decl.FusionConv.finAbsTy: " ++ show @absNm) vgiTy $ valGamLookup @absNm @lhs.finValGam
 %%]
 
 %%[(8 hmtyinfer)
@@ -97,7 +97,7 @@ SEM PatExpr
 %%]]
                 loc         .   finalTy             =   @lhs.finTyVarMp `varUpd` @ty
 %%]
-                loc         .   finalTy             =   maybe (acoreTyErr $ "EH.FinalInfo.PatExpr.*.finalTy: " ++ show (rpatNmNm @cpNm)) vgiTy $ valGamLookup (rpatNmNm @cpNm) @lhs.finValGam
+                loc         .   finalTy             =   maybe (appDbg $ "EH.FinalInfo.PatExpr.*.finalTy: " ++ show (rpatNmNm @cpNm)) vgiTy $ valGamLookup (rpatNmNm @cpNm) @lhs.finValGam
 
 %%[(5 hmtyinfer)
 SEM DataConstr

@@ -71,6 +71,7 @@ class AppLike a boundmeta {- ann bnd | a -> ann bnd -}
   appMbTop1         :: a -> Maybe (a,a->a)
   appMbCon          :: a -> Maybe (HsName)
   appMbApp1         :: a -> Maybe (a,a)
+  appMbDbg          :: a -> Maybe String
   
   -- and the defaults
   appMbBind1        = const Nothing
@@ -78,6 +79,7 @@ class AppLike a boundmeta {- ann bnd | a -> ann bnd -}
   appMbTop1         = appMbAnn1
   appMbCon          = const Nothing
   appMbApp1         = const Nothing
+  appMbDbg          = const Nothing
 
   -- specialised constructing
   -- | Make application wrapped in top, except for singleton
@@ -127,6 +129,17 @@ class AppLike a boundmeta {- ann bnd | a -> ann bnd -}
   appDfltBoundmeta  :: a -> boundmeta	-- the 'a' is only required because a fundep boundmeta -> a would be too restrictive
   appDfltBoundmeta _ = panic "TermLike.appDfltBoundmeta not implemented"
   
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Conversion between two AppLikes
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 export(appToApp)
+appToApp :: (AppLike a aboundmeta, AppLike b bboundmeta) => a -> Maybe b
+appToApp x
+  = c appMbCon appCon x <|> c appMbDbg appDbg x
+  where c mbUn mk = fmap mk . mbUn
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

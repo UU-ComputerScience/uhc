@@ -72,7 +72,7 @@ SEM CExpr
   | App         lhs         .   cTrf        =   if @lhs.isTopApp
                                                 then  case (acoreExprMbVar @appLam,reverse @appArgL) of
                                                         (Just n,[e1,e2]) | n == (ehcOptBuiltin @lhs.opts ehbnPrimAddInt) && isJust i1 && isJust i2
-                                                          -> acoreInt (fromInteger $ snd (fromJust i1) + snd (fromJust i2))
+                                                          -> acoreInt @lhs.opts (fromInteger $ snd (fromJust i1) + snd (fromJust i2))
                                                           where i1 = acoreExprMbInt $ acoreUnBoundVal e1
                                                                 i2 = acoreExprMbInt $ acoreUnBoundVal e2
                                                         _ -> @cTrf

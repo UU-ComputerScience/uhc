@@ -52,6 +52,11 @@ ppCExpr ce
 
 instance PP CExpr where
   pp ce = ppCExpr ce
+
+%%[[(8 coresysf)
+instance PP CTy where
+  pp = cty pp pp
+%%]]
 %%]
 
 %%[(8 codegen) hs

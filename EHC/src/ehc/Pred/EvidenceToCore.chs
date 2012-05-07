@@ -199,8 +199,8 @@ evidMpToCore2 env evidMp
                                                     , tcrScope sub
                                                     )
 %%[[10
-        ann (RedHow_ByLabel _ (LabelOffset_Off o) sc) []     = ( acoreInt o, sc )
-        ann (RedHow_ByLabel _ (LabelOffset_Off o) sc) [roff] = ( acoreBuiltinAddInt (feEHCOpts $ fiEnv env) (tcrCExpr roff) o, sc )
+        ann (RedHow_ByLabel _ (LabelOffset_Off o) sc) []     = ( acoreInt opts o, sc )
+        ann (RedHow_ByLabel _ (LabelOffset_Off o) sc) [roff] = ( acoreBuiltinAddInt opts (tcrCExpr roff) o, sc )
 %%]]
 %%[[13
         ann (RedHow_Lambda  i sc) [body]       = ( [mkHNm i] `acoreLam` tcrCExpr body, sc )
@@ -226,6 +226,9 @@ evidMpToCore2 env evidMp
         splitOverlap  (Evid_Ambig p   ess@((i,es):_))  = let (es',_ ) = splitOverlaps es in (Evid_Proof p i es',[OverlapEvid p (map fst ess)])
         splitOverlap  ev                               = (ev,[])
         splitOverlaps es                               = let (es',as) = unzip $ map splitOverlap es in (es',concat as)
+        
+        -- | ehc options
+        opts = feEHCOpts $ fiEnv env
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -546,8 +549,8 @@ evidMpToCore env evidMp
 
 
 %%[(9 codegen) export(evidKeyCoreMpToBinds)
-evidKeyCoreMpToBinds :: EvidKeyToCExprMap -> (EvidKeyToCBindMap,PredScopeToCBindMap)
-evidKeyCoreMpToBinds m
+evidKeyCoreMpToBinds :: FIIn' gm -> EvidKeyToCExprMap -> (EvidKeyToCBindMap,PredScopeToCBindMap)
+evidKeyCoreMpToBinds env m
   = dbg "evidKeyCoreMpToBinds.res"
     $!
     ( dbg "evidKeyCoreMpToBinds.res1"
@@ -556,12 +559,12 @@ evidKeyCoreMpToBinds m
                -> let deepestScope = subevdId . maximumBy (\evd1 evd2 -> subevdScope evd1 `pscpCmpByLen` subevdScope evd2) . Set.toList
                   in  Map.singleton (deepestScope uses) [b]
             )
-      $ [ (acoreBind1MetaTy (mkHNm i) CMetaVal_Dict (tcrTy r) (tcrCExpr r),tcrUsed r)
+      $ [ (acoreBind1MetaTy (mkHNm i) CMetaVal_Dict (acoreTy2ty opts $ tcrTy r) (tcrCExpr r),tcrUsed r)
         | (i,r) <- dbg "evidKeyCoreMpToBinds.dependentOnAssumes"   $! Map.toList dependentOnAssumes   
         ]
     , dbg "evidKeyCoreMpToBinds.res2"
       $! Map.fromListWith (++)
-      $ [ (tcrScope r,[acoreBind1MetaTy (mkHNm i) CMetaVal_Dict (tcrTy r) (tcrCExpr r)]) 
+      $ [ (tcrScope r,[acoreBind1MetaTy (mkHNm i) CMetaVal_Dict (acoreTy2ty opts $ tcrTy r) (tcrCExpr r)]) 
         | (i,r) <- dbg "evidKeyCoreMpToBinds.independentOfAssumes" $! Map.toList independentOfAssumes 
         ]
     )
@@ -571,6 +574,7 @@ evidKeyCoreMpToBinds m
             $ dbg "evidKeyCoreMpToBinds.m"
             $! m
         dbg m = id -- Debug.tr m (pp m)
+        opts = feEHCOpts $ fiEnv env        
 %%]
 
 20090416.
@@ -587,17 +591,17 @@ Extract from the basic bindings for prove obligations the following:
 %%[(9 codegen) export(EvidCBindL,evidKeyCoreMpToBinds2)
 type EvidCBindL = [CBind]
 
-evidKeyCoreMpToBinds2 :: EvidKeyToCExprMap -> (EvidCBindL,EvidKeyToCBindMap,PredScopeToCBindMap)
-evidKeyCoreMpToBinds2 m
-  = (   [ mkd i (tcrCExpr r) (tcrTy r)
+evidKeyCoreMpToBinds2 :: FIIn' gm -> EvidKeyToCExprMap -> (EvidCBindL,EvidKeyToCBindMap,PredScopeToCBindMap)
+evidKeyCoreMpToBinds2 env m
+  = (   [ mkd i (tcrCExpr r) (acoreTy2ty opts $ tcrTy r)
         | (i,r) <- Map.toList independentOfAssumes
         ]
     , Map.unionsWith (++)
-      $ [ Map.singleton (subevdId $ head $ Set.toList $ tcrUsed r) [mkd i (tcrCExpr r) (tcrTy r)]
+      $ [ Map.singleton (subevdId $ head $ Set.toList $ tcrUsed r) [mkd i (tcrCExpr r) (acoreTy2ty opts $ tcrTy r)]
         | (i,r) <- Map.toList dependentOn1Assume
         ]
     , Map.unionsWith (++)
-      $ [ Map.singleton (deepestScope (tcrScope r) (tcrUsed r)) [mkd i (tcrCExpr r) (tcrTy r)]
+      $ [ Map.singleton (deepestScope (tcrScope r) (tcrUsed r)) [mkd i (tcrCExpr r) (acoreTy2ty opts $ tcrTy r)]
         | (i,r) <- Map.toList dependentOnNAssumes
         ]
     )
@@ -607,6 +611,7 @@ evidKeyCoreMpToBinds2 m
           = Map.partition (\r -> Set.size (tcrUsed r) == 1) m
         mkd i e t         = acoreBind1MetaTy (mkHNm i) CMetaVal_Dict t e
         deepestScope sc u = maximumBy pscpCmpByLen $ sc : (map subevdScope $ Set.toList u)
+        opts = feEHCOpts $ fiEnv env        
 %%]
 
 

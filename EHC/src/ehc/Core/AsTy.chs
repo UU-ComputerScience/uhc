@@ -101,8 +101,10 @@ tyUnThunkTy = unTySeq . tyUnThunkTySeq
 %%% Code substitution
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+??
+
 %%[(8 codegen coresysf) hs export(CSubst)
-type CSubstInfo = CSubstInfo' CExpr CMetaVal CBind CBound Ty
-type CSubst     = CSubst'     CExpr CMetaVal CBind CBound Ty
+type CSubstInfo = CSubstInfo' CExpr CMetaVal CBind CBound CTy
+type CSubst     = CSubst'     CExpr CMetaVal CBind CBound CTy
 %%]
 

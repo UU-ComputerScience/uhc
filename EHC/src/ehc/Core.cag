@@ -25,7 +25,7 @@ Datatype LamInfo holds the implementation info to be exported from a module.
 %%[(8 codegen) hs import ({%{EH}Base.Target}(FFIWay(..),TargetFlavor(..))) export(module {%{EH}Base.Target})
 %%]
 
-%%[(8 codegen) hs import(Data.Maybe,Data.Char,Data.List,EH.Util.Pretty,EH.Util.Utils)
+%%[(8 codegen) hs import(Data.Maybe,Data.Char,Data.List,EH.Util.Pretty,EH.Util.Utils,Control.Applicative((<|>)))
 %%]
 
 %%[(8 codegen) hs export(CodeAGItf(..), CModule(..), CExpr(..), MbCExpr, CBind(..), CBound(..), CMetaVal(..), CMetaBind(..), CMetas, CBindL, CBoundL, CPatRest(..), CAlt(..), CAltL, CPat(..), CPatFld(..), CPatFldL) 
@@ -239,7 +239,7 @@ mkCMod :: CExpr -> CModule
 mkCMod e = CModule_Mod (hsnFromString "") e []
 
 emptyCModule :: CModule
-emptyCModule = mkCMod (acoreInt 0)
+emptyCModule = mkCMod (CExpr_Int 0)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -258,7 +258,7 @@ cexprVar = maybe hsnUnknown id . cexprMbVar
 %%[(8 codegen) hs export(cexprTupFld)
 cexprTupFld :: CExpr -> CExpr
 cexprTupFld (CExpr_TupIns _ _ _ _ e) = e
-cexprTupFld _                        = acoreVar hsnUnknown
+cexprTupFld _                        = panic "Core.cexprTupFld" -- acoreVar hsnUnknown
 %%]
 
 %%[(8 codegen) hs export(cexprIsEvaluated)
@@ -477,7 +477,7 @@ data CModuleDatabase
       }
 
 emptyCModuleDatabase :: CModuleDatabase
-emptyCModuleDatabase = CModuleDatabase hsnUnknown (array (1,0) []) Map.empty (acoreInt 0) emptyCTagsMp
+emptyCModuleDatabase = CModuleDatabase hsnUnknown (array (1,0) []) Map.empty (CExpr_Int 0) emptyCTagsMp
 %%]
 
 %%[(50 codegen) hs export(cmoddbLookup)
@@ -501,16 +501,24 @@ type SysfTySeq    	= SysfTy			-- sequence
 type SysfTySeq1    	= SysfTy			-- singleton
 %%]
 
+%%[(8 codegen coresysf) hs export(tyToSysfTyBasePlainCases)
+-- | Simplistic (i.e. for simple types) conversion as conversion is mutually recursive with AbstractCore instance
+tyToSysfTyBasePlainCases :: Ty -> SysfTy
+tyToSysfTyBasePlainCases t
+  = panicJust "tyToSysfTyBasePlainCases" $ (fmap (appCon . mkHNm) $ tyMbVar t) <|> appToApp t
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% SysF: The type representation used for AbstractCore
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen) hs export(CTy,mkCTy,cty)
 -- | In case of SysF isomorphic to Either 'old ty' 'sysf ty', to be chosen at a higher level
-%%[[(8 coresysf xxx)
+%%[[(8 coresysf)
 data CTy
   = CTy_Ty		Ty			-- plain old ty
   | CTy_SysF	SysfTy		-- sysf ty
+  deriving Show
 
 -- | Make CTy, choosing on the basis of options which one (plain old, or sysf)
 mkCTy :: EHCOpts -> Ty -> SysfTy -> CTy
@@ -551,11 +559,12 @@ instance AbstractCore CExpr CMetaVal CBind CBound ACoreAppLikeMetaBound CBindCat
   										= CBound_Bind m e
   acoreBoundmeta a m l    	            = (a,m,l)
   acoreBound1MetaVal (a,m,l) e  	    = CBound_Val a m l e
-%%[[(8 coresysf xxx)
-  acoreBoundValTy1CatLev _ _ _ (CTy_Ty t)	= CBound_Ty acbaspkeyDefaultTy t
+%%[[(8 coresysf)
+  acoreBoundValTy1CatLev _ _ _ (CTy_Ty t)
 %%][8
-  acoreBoundValTy1CatLev _ _ _ t			= CBound_Ty acbaspkeyDefaultTy t
+  acoreBoundValTy1CatLev _ _ _ t
 %%]]
+  										= CBound_Ty acbaspkeyDefaultTy t
   acoreBind1Asp n as					= CBind_Bind n as
   acoreBind1CatLevMetasTy bcat n mlev mb t e
   										= acoreBind1Asp n [acoreBoundValTy1CatLev bcat n mlev t, acoreBoundVal1CatLevMetasTy bcat n mlev mb t e]
@@ -583,11 +592,15 @@ instance AbstractCore CExpr CMetaVal CBind CBound ACoreAppLikeMetaBound CBindCat
 %%]]
 
   -- ty constants
-  acoreTyBool o                         = appCon (ehcOptBuiltin o ehbnDataBool)
+  acoreTyBool o 						= acoreTy2ty o $ appCon (ehcOptBuiltin o ehbnDataBool)
   
   -- ty
   -- acoreTyInt2							= tyInt
-  acoreTy2ty							= id
+%%[[(8 coresysf)
+  acoreTy2ty o x						= mkCTy o x (tyToSysfTyBasePlainCases x)
+%%][8
+  acoreTy2ty _							= id
+%%]]
 
   -- pat
   acorePatVarTy n _						= CPat_Var n
@@ -610,8 +623,6 @@ instance AbstractCore CExpr CMetaVal CBind CBound ACoreAppLikeMetaBound CBindCat
   -- alt
   acoreAlt                             	= CAlt_Alt
 
-  -- acoreTy2ty            t = t
-
   -- defaults
   acoreDfltBoundmeta					= (acbaspkeyDefault,0,CLbl_None)
   acoreMetavalDflt       				= CMetaVal_Val
@@ -619,14 +630,14 @@ instance AbstractCore CExpr CMetaVal CBind CBound ACoreAppLikeMetaBound CBindCat
   acoreMetavalDfltDict   				= CMetaVal_Dict
 %%]]
   acoreMetabindDflt      				= CMetaBind_Plain
-  acoreTyErr             				= Ty_Dbg
-  acoreTyNone            				= acoreTyErr "acoreTyNone"
-  acoreTyChar 							= tyChar
-  acoreTyInt 							= tyInt
+  acoreTyErr s           				= acoreTy2ty emptyEHCOpts $ Ty_Dbg s
+  acoreTyNone            				= acoreTyErr "Core.acoreTyNone"
+  acoreTyChar o							= acoreTy2ty o $ tyChar
+  acoreTyInt o							= acoreTy2ty o $ tyInt
 %%[[8
-  acoreTyString _ 						= tyString
+  acoreTyString o 						= acoreTy2ty o $ tyString
 %%][11
-  acoreTyString o 						= tyString o
+  acoreTyString o 						= acoreTy2ty o $ tyString o
 %%]]
   
   -- bindcateg
@@ -652,7 +663,7 @@ instance AbstractCore CExpr CMetaVal CBind CBound ACoreAppLikeMetaBound CBindCat
   acoreExprMbVar (CExpr_Var r)          = Just (acbrefNm r)
   acoreExprMbVar _                      = Nothing
 
-  acoreExprMbInt (CExpr_Int i)          = Just (tyInt,toInteger i)
+  acoreExprMbInt (CExpr_Int i)          = Just (acoreTyErr "Core.acoreExprMbInt",toInteger i)
   acoreExprMbInt _                      = Nothing
 
   acoreBindcategMbRec CBindCateg_Rec    = Just CBindCateg_Rec
@@ -664,10 +675,10 @@ instance AbstractCore CExpr CMetaVal CBind CBound ACoreAppLikeMetaBound CBindCat
   acorePatMbCon (CPat_Con tg r fs)		= Just (tg,r,fs)
   acorePatMbCon _                 		= Nothing
 
-  acorePatMbInt (CPat_Int i)			= Just (tyInt,toInteger i)
+  acorePatMbInt (CPat_Int i)			= Just (acoreTyErr "Core.acorePatMbInt",toInteger i)
   acorePatMbInt _                 		= Nothing
 
-  acorePatMbChar (CPat_Char i)			= Just (tyChar,i)
+  acorePatMbChar (CPat_Char i)			= Just (acoreTyErr "Core.acorePatMbChar",i)
   acorePatMbChar _                 		= Nothing
 
   acoreUnAlt (CAlt_Alt p e)				= (p,e)

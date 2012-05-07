@@ -817,6 +817,9 @@ instance AppLike Ty Ty {- TyAnn () -} where
   appMbAnn1 (Ty_Ann a t) 	= Just (t, Ty_Ann a)
   appMbAnn1 _            	= Nothing
 
+  appMbDbg  (Ty_Dbg s) 		= Just s
+  appMbDbg  _            	= Nothing
+
 %%[[3
   appMbBind1 (Ty_TBind   v   t) = Just (t, Ty_TBind   v  )
 %%][4

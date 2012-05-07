@@ -113,6 +113,9 @@ SEM Decl
 %%[[11
       Type
 %%]]
+%%[[90
+      FFE
+%%]]
 %%[[92
       GenerRep
 %%]]
@@ -128,6 +131,11 @@ SEM DataFieldExpr
 SEM Expr
   | Case
   				loc         .   acorety		=	mkCTy @lhs.opts @finalTyExprExpanded @sysfty
+  | Lam
+%%[[12
+    LamImpl
+%%]]
+  				loc			.	acoretyArg	=	mkCTy @lhs.opts @finalTyArgExpanded @sysftyLamArg
 
 SEM PatExpr
   | IConst CConst SConst Var Con AppTop Rec DataFields Irrefutable 
@@ -139,7 +147,7 @@ SEM PatExpr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 -- generated from ruler rules into EHRulerRules
-  | IConst      loc         .   cexpr       =   acoreInt  @int
+  | IConst      loc         .   cexpr       =   acoreInt @lhs.opts @int
   | CConst      loc         .   cexpr       =   CExpr_Char @char
   | Var         loc         .   cexpr       =   acoreVar  @nm
   | Con         loc         .   cexpr       =   acoreVar  @nm
@@ -174,14 +182,14 @@ SEM Expr
                 loc         .   cexprapp    =   acore1App @func.cexpr @arg.cexpr
                             .   cexpr       =   if @func.isNewtype then @arg.cexpr else @cexprapp
   | Lam         loc         .   cexpr       =   acoreLam1 @arg.topNm
-                                                    (rceMatchTy @rceEnv [(@arg.topNm,@finalTyArgExpanded)] [RAlt_Alt [@arg.rpat] @body.cexpr @body.caseFailS])
+                                                    (rceMatchTy @rceEnv [(@arg.topNm,@acoretyArg)] [RAlt_Alt [@arg.rpat] @body.cexpr @body.caseFailS])
   | Case        loc         .   cexpr       =   let (ns,bs,as)
                                                       = if @isTupOfArg
                                                         then let ns = [ acbrefNm ref | (CExpr_Var ref) <- fuL2ExprL (reverse @expr.fuCExprL) ]
-                                                             in  (zip ns (tyProdArgs @acorety),[],@alts.raltL')
+                                                             in  (zip ns (tyProdArgs @finalTyExprExpanded),[],@alts.raltL')
                                                         else let n = uidHNm @lUniq2
-                                                             in  ([(n,@acorety)],[acoreBind1Ty n @acorety @expr.cexpr],@alts.raltL)
-                                                in  acoreLet CBindCateg_Plain bs (rceMatchTy @rceEnv ns as)
+                                                             in  ([(n,@finalTyExprExpanded)],[acoreBind1Ty n @acorety @expr.cexpr],@alts.raltL)
+                                                in  acoreLet CBindCateg_Plain bs (rceMatchTy @rceEnv (assocLMapElt (ty2TyC @lhs.opts emptyGam) ns) as)
   | AppTop      loc         .   cexprtop    =   @expr.cexpr
   | Rec         loc         .   cexprtop    =   @rcexpr
   | Parens TypeAs
@@ -193,7 +201,7 @@ SEM Expr
 %%]
 
 -- generated from ruler rules into EHRulerRules
-  | IConst      loc         .   cexprBase   :=  acoreInt @int
+  | IConst      loc         .   cexprBase   :=  acoreInt @lhs.opts @int
   | CConst      loc         .   cexprBase   :=  CExpr_Char @char
   | Var         loc         .   cexprBase   :=  acoreVar @nm
   | Var IConst CConst
@@ -204,7 +212,7 @@ SEM Expr
 -- between variant 5 .. 99, reconstruction of AG rules, getting rid of ruler3 until Arie's ruler4 can be used
 %%[(8 codegen noHmTyRuler)
 SEM Expr
-  | IConst      loc         .   cexprBase   =   acoreInt @int
+  | IConst      loc         .   cexprBase   =   acoreInt @lhs.opts @int
   | CConst      loc         .   cexprBase   =   CExpr_Char @char
   | SConst      loc         .   cexprBase   =   acoreBuiltinString @lhs.opts @str
 %%[[97
@@ -350,7 +358,7 @@ SEM RecExpr
 
 %%[(8 codegen)
 SEM RecExpr
-  | Ext Upd     loc         .   offset          =   acoreInt (tyRecOffsetWithLkup (varmpTyLookupCyc2 @lhs.finTyVarMp) @nm @recExpr.ty)
+  | Ext Upd     loc         .   offset          =   acoreInt @lhs.opts (tyRecOffsetWithLkup (varmpTyLookupCyc2 @lhs.finTyVarMp) @nm @recExpr.ty)
 %%]
 
 %%[(10 codegen)
@@ -371,7 +379,7 @@ SEM Expr
                                                         . listSaturateWith 0 (ctagArity (dtiCTag dti) - 1) (\(_,(_,Just o)) -> o) dflt
                                                         -- . (\v -> v `seq` tr "Expr.DataFields.dfexpr2" ("arity" >#< length dflt) v)
                                                         . fuMap (\l mke -> let o = dtiOffsetOfFld l dti in (mke dti o,o))
-                                                      where dflt = [ (o,(f,(CExpr_TupIns (acoreBuiltinUndefined @lhs.opts) (dtiCTag dti) f (acoreInt o) (mkDflt f),Just o)))
+                                                      where dflt = [ (o,(f,(CExpr_TupIns (acoreBuiltinUndefined @lhs.opts) (dtiCTag dti) f (acoreInt @lhs.opts o) (mkDflt f),Just o)))
                                                                    | (f,i) <- Map.toList $ dtiFldMp dti, let o = dfiOffset i
                                                                    ]
                                                 in  if dgiIsNewtype @dgi
@@ -405,7 +413,7 @@ ATTR
 
 SEM DataFieldExpr
   | Upd         loc         .   fldExprNm   =   mkHNm @lUniq
-                lhs         .   fuCExprL    =   let mke dti o = CExpr_TupIns @dataFieldExpr.dfeCExpr (dtiCTag dti) @nm (acoreInt o) (acoreVar @fldExprNm)
+                lhs         .   fuCExprL    =   let mke dti o = CExpr_TupIns @dataFieldExpr.dfeCExpr (dtiCTag dti) @nm (acoreInt @lhs.opts o) (acoreVar @fldExprNm)
                                                 in  (@nm,(mke,Nothing)) : @dataFieldExpr.fuCExprL
                             .   dfeCBindL   =   acoreBind1Ty @fldExprNm @acorety @expr.cexpr : @dataFieldExpr.dfeCBindL
   | Con         lhs         .   dfeCExpr    =   CExpr_Tup (dtiCTag @dti)
@@ -425,12 +433,12 @@ SEM DataFieldExpr
 
 %%[(8 codegen)
 SEM Expr
-  | Sel         loc         .   offset          =   acoreInt (tyRecOffsetWithLkup (varmpTyLookupCyc2 @lhs.finTyVarMp) @lbl @expr.ty)
+  | Sel         loc         .   offset          =   acoreInt @lhs.opts (tyRecOffsetWithLkup (varmpTyLookupCyc2 @lhs.finTyVarMp) @lbl @expr.ty)
                             .   cexpr           =   let  [n1,n2] = map uidHNm . mkNewUIDL 2 $ @lUniq_freshKnTy
                                                     -- in   mkCExprSelCase @rceEnv (Just n1) @expr.cexpr CTagRec n2 @lbl @offset Nothing
                                                     in   acoreSelCaseTy @rceEnv (Just (n1,(acoreTyErr $ "EH.ToCore.Expr.Sel.n1: " ++ show n1))) @expr.cexpr CTagRec n2 {- @lbl -} @offset Nothing
 %%]
-  | Sel         loc         .   offset          =   acoreInt (tyRecOffset @lbl (@lhs.finTyVarMp `varUpd` @expr.ty))
+  | Sel         loc         .   offset          =   acoreInt @lhs.opts (tyRecOffset @lbl (@lhs.finTyVarMp `varUpd` @expr.ty))
 
 %%[(10 codegen)
 SEM Expr
@@ -454,21 +462,22 @@ SEM DataConstr
 SEM Decl
   | Data        loc         .   fldSelCBindL=   let (xn1:xn2:_) = hsnLclSupply
                                                     tgSels f i = [ (t,[(f,{-f,-}o)],Nothing,acoreVar f) | (t,o) <- Map.toList $ dficInTagMp i ]
-                                                    ty f = ty2TyC @lhs.opts @lhs.finTyKiGam $ valGamLookupTyDefault f @lhs.finValGam
+                                                    ty1 f = valGamLookupTyDefault f @lhs.finValGam
+                                                    ty2 t = ty2TyC @lhs.opts @lhs.finTyKiGam t
                                                 in  if @isNewtype
-                                                    then [ [ acoreBind1Ty f (ty f) (acoreVar $ ehcOptBuiltin @lhs.opts ehbnId)
+                                                    then [ [ acoreBind1Ty f (ty2 $ ty1 f) (acoreVar $ ehcOptBuiltin @lhs.opts ehbnId)
                                                            | (f,i) <- Map.toList $ dgiFldInConstrMp @dgi
                                                          ] ]
-                                                    else [ [ acoreBind1Ty f t
+                                                    else [ [ acoreBind1Ty f (ty2 t)
                                                                (acoreLam [xn1]
-                                                                 (acoreSatSelsCasesTy (rceUpdEnv (acoreVar en) @rceEnv) (Just (xn2,appUnArrArg t)) (acoreVar xn1) tg))
+                                                                 (acoreSatSelsCasesTy (rceUpdEnv (acoreVar en) @rceEnv) (Just (xn2,ty2 $ appUnArrArg t)) (acoreVar xn1) tg))
                                                            ]
                                                            ++ (if isSaturated then [] else [ acoreBind1Ty en (acoreTyErr $ "EH.ToCore.Decl.Data.en: " ++ show en) (acoreBuiltinError @lhs.opts ("has no field selection '" ++ show f ++ "'")) ])
                                                          | (f,i) <- Map.toList $ dgiFldInConstrMp @dgi
                                                          , let en = hsnUniqifyStr HsNameUniqifier_New "datafield_sel_error" f -- hsnSuffix f "_datafield_sel_error"
                                                                tg = tgSels f i
                                                                isSaturated = length tg == Map.size (dgiConstrTagMp @dgi)
-                                                               t = ty f
+                                                               t = ty1 f
                                                          ]
 %%]
 
@@ -595,14 +604,14 @@ SEM PatExpr
 %%]
 
 %%[(8 codegen) hs
-fsL2PatOffsetL :: FieldSplitL -> AssocL RPatFld (Maybe Int)
-fsL2PatOffsetL l = [ (RPatFld_Fld n oe n p,Just oi) | (o,(foff,p)) <- zip [0..] l, let (oi,oe) = foffMkOff foff o, let n = foffLabel foff ]
+fsL2PatOffsetL :: EHCOpts -> FieldSplitL -> AssocL RPatFld (Maybe Int)
+fsL2PatOffsetL opts l = [ (RPatFld_Fld n oe n p,Just oi) | (o,(foff,p)) <- zip [0..] l, let (oi,oe) = foffMkOff opts foff o, let n = foffLabel foff ]
 %%]
 
 %%[(8 codegen)
 SEM PatExpr
-  | AppTop      loc         .   rpatBinds   =   fsL2PatOffsetL $ reverse                 $ @fsRPatL
-  | Rec         loc         .   rpatBinds   =   fsL2PatOffsetL $ rowCanonOrderBy compare $ @fsRPatL
+  | AppTop      loc         .   rpatBinds   =   fsL2PatOffsetL @lhs.opts $ reverse                 $ @fsRPatL
+  | Rec         loc         .   rpatBinds   =   fsL2PatOffsetL @lhs.opts $ rowCanonOrderBy compare $ @fsRPatL
   | DataFields  loc         .   (rpatBindss,rpatBindsNonSat,rpatBind0)
                                             =   let fsL = reverse @fsRPatL
                                                     grp = groupByOn (\o1 o2 -> (foffOffset o1 `compare` foffOffset o2) /= GT) fst
@@ -611,9 +620,9 @@ SEM PatExpr
                                                           listSaturateWith 0 max (foffOffset . fst) $
                                                           -- (\v -> v `seq` tr "PatExpr.DataFields.rpatBindss2" ("tag" >#< @tag >#< "arity" >#< max) v) $
                                                             (zipWith (\o n -> (o,(FldKnownOffset n o,RPat_Var (RPatNmOrig n) (acoreTyErr $ "EH.ToCore.PatExpr.DataFields: " ++ show n) False))) [0..max] hsnLclSupply)
-                                                in  ( map (fsL2PatOffsetL . sat) $ grp fsL      -- groups of bindings which can be dealt with simultaneously
-                                                    , fsL2PatOffsetL fsL                        -- bindings
-                                                    , fsL2PatOffsetL $ sat []                   -- 0 binding
+                                                in  ( map (fsL2PatOffsetL @lhs.opts . sat) $ grp fsL      -- groups of bindings which can be dealt with simultaneously
+                                                    , fsL2PatOffsetL @lhs.opts fsL                        -- bindings
+                                                    , fsL2PatOffsetL @lhs.opts $ sat []                   -- 0 binding
                                                     )
 %%]
 
@@ -633,7 +642,7 @@ SEM PatExpr
                                                       ->  RPat_Con @cpNm @acorety @tag (RPatConBind_One @rest (map fst @rpatBinds))
                                                     CPatRest_Var r
                                                       ->  RPat_Con @cpNm @acorety @tag (RPatConBind_One @rest pbL)
-                                                          where  pbL = map fst $ fsL2PatOffsetL $ fsLReorder @lhs.opts $ reverse $ @fsRPatL
+                                                          where  pbL = map fst $ fsL2PatOffsetL @lhs.opts $ fsLReorder @lhs.opts $ reverse $ @fsRPatL
   | DataFields  loc         .   rpat        =   RPat_Con @cpNm @acorety @tag
                                                     (rpatConBindUnFlatten (RPatConBind_One @rest $ map fst @rpatBind0)
                                                      $ map (RPatConBind_One @rest . map fst)
@@ -690,13 +699,13 @@ SEM PatExpr
 %%[(8 codegen)
 SEM DataFieldPatExpr
   | Ext         loc         .   ioffset     =   dfiOffset $ panicJust "DataFieldPatExpr.Ext.ioffset" $ Map.lookup @nm $ dtiFldMp @dataFieldPatExpr.dti
-                            .   offset      =   acoreInt @ioffset :: CExpr
+                            .   offset      =   acoreInt @lhs.opts @ioffset :: CExpr
 
 SEM RecPatExpr
   | Ext         loc         .   ioffset     =   tyRecOffsetWithLkup (varmpTyLookupCyc2 @lhs.finTyVarMp) @nm @recPatExpr.ty
-                            .   offset      =   acoreInt @ioffset :: CExpr
+                            .   offset      =   acoreInt @lhs.opts @ioffset :: CExpr
 %%]
-  | Ext         loc         .   offset      =   acoreInt (tyRecOffset @nm (@lhs.finTyVarMp `varUpd` @recPatExpr.ty))
+  | Ext         loc         .   offset      =   acoreInt @lhs.opts (tyRecOffset @nm (@lhs.finTyVarMp `varUpd` @recPatExpr.ty))
 
 %%[(10 codegen)
 SEM RecPatExpr
@@ -727,7 +736,7 @@ SEM Expr
     LamImpl
 %%]]
                 loc         .   lamBodyCoeL         =   mkLamBodyCoe
-                                                            (acoreCoeMap (\e -> rceMatchTy @rceEnv [(@arg.topNm,@finalTyArgExpanded)] [RAlt_Alt [@arg.rpat] e Set.empty]))
+                                                            (acoreCoeMap (\e -> rceMatchTy @rceEnv [(@arg.topNm,@acoretyArg)] [RAlt_Alt [@arg.rpat] e Set.empty]))
                                                             @body.appArgCoeL
 %%]
 
@@ -822,7 +831,7 @@ SEM Decl
 SEM Decl
   | FFE         loc         .   nmCoerced       =   hsnUniqify HsNameUniqifier_FFECoerced @nm
                             .   (ffeMkCExpr,ffeTy)
-                                                =   ffeCoreMk @lhs.opts @lUniqFFE @rceEnv @acorety
+                                                =   ffeCoreMk @lhs.opts @lUniqFFE @rceEnv @finalTyExpanded
                             .   ffeCExpr        =   @ffeMkCExpr @expr.cexpr
                 loc         .   lUniqFFE        :   UNIQUEREF gUniq
                 lhs         .   ffeCBindL       =   [acoreBind1Asp1 @nm (CBound_FFE @callconv @expEnt @ffeCExpr @ffeTy)]
@@ -1216,7 +1225,7 @@ mkInstanceSetFlds opts dataGam dictTag instanceRecTy
   where off n = cdictOffset n instanceRecTy
         mkSetFldsRec ts d0
           = foldl (\d (n,_,v) -> mkSet d n v) d0 ts
-          where mkSet d n v = CExpr_TupUpd d dictTag n (acoreInt $ off n) v
+          where mkSet d n v = CExpr_TupUpd d dictTag n (acoreInt opts $ off n) v
 
         mkSetFldsData ts d0
           = acoreSatSelsCaseMetaTy env Nothing CMetaVal_Dict d0 dictTag nmLblOffL Nothing sel
@@ -1422,7 +1431,7 @@ mkDataGenerBinds
                                                                Fixity_Infixr -> ehbnGenerDataAssociativityAltRight
                                                                Fixity_Infixl -> ehbnGenerDataAssociativityAltLeft
                                                       )     )
-                                           , acoreInt prio
+                                           , acoreInt opts prio
                                            ]
                                         ]
                                   )

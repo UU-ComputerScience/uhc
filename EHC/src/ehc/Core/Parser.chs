@@ -39,8 +39,8 @@ pCTagOnly = pNUMBER *> pKeyTk "Tag" *> pCTag
 pCNumber :: CParser CExpr
 pCNumber
   =    pNUMBER
-       *> (   (   (acoreInt2     . read) <$ pKeyTk "Int"
-              <|> (CExpr_Char    . head) <$ pKeyTk "Char"
+       *> (   (   {- (acoreInt2     . read) <$ pKeyTk "Int"
+              <|> -} (CExpr_Char    . head) <$ pKeyTk "Char"
               <|> (CExpr_String        ) <$ pKeyTk "String"
 %%[[97
               <|> (CExpr_Integer . read) <$ pKeyTk "Integer"

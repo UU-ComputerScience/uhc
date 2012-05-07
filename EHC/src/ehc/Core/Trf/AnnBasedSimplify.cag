@@ -128,7 +128,7 @@ SEM CExpr
                                                             else if t == tyInteger
                                                             then -- E.g.: fromInteger dict... (packedStringToInteger "123") :: Integer
                                                                  if signedFitsInBits 30 i
-                                                                 then Prop_IsInteger $ acoreApp (acoreVar $ ehcOptBuiltin @lhs.opts ehbnPrimIntToInteger) [acoreInt2 i]
+                                                                 then Prop_IsInteger $ acoreApp (acoreVar $ ehcOptBuiltin @lhs.opts ehbnPrimIntToInteger) [acoreInt2 @lhs.opts i]
                                                                  else Prop_IsInteger e
                                                             else Prop_None
 %%]]
@@ -159,7 +159,7 @@ ATTR CodeAGItf [ | | cTrf: CModule ]
 SEM CExpr
   | App         lhs         .   cTrf        =   case @propUp of
                                                   Prop_IsIntConst i
-                                                    -> acoreInt i
+                                                    -> acoreInt @lhs.opts i
                                                   Prop_IsInteger e
                                                     -> e
                                                   _ -> @cTrf

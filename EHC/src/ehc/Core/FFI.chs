@@ -294,10 +294,10 @@ ffiIOAdapt
   = ([tyState],[nmState],wrapRes)
   where tyState = appCon $ ehcOptBuiltin opts ehbnRealWorld
         [nmState,nmRes,nmIgnoreRes] = take 3 (map (mkUniqNm) (iterate uidNext uniq))
-        wrapRes = mkTupledRes nmState (acoreTyErr "ffiIOAdapt.mkTupledRes.state") nmRes (acoreTyErr "ffiIOAdapt.mkTupledRes.res") . dealWithUnitRes
+        wrapRes = mkTupledRes nmState (appDbg "ffiIOAdapt.mkTupledRes.state") nmRes (appDbg "ffiIOAdapt.mkTupledRes.res") . dealWithUnitRes
                 where dealWithUnitRes
                         = case tyMbRecExts iores of
-                            Just (_,[]) -> mkUnitRes nmIgnoreRes (acoreTyErr "ffiIOAdapt.mkUnitRes")
+                            Just (_,[]) -> mkUnitRes nmIgnoreRes (appDbg "ffiIOAdapt.mkUnitRes")
                             _           -> id
 %%]
 
@@ -336,8 +336,8 @@ ffiCoreIOAdapt
   = ffiIOAdapt
       opts
       mkHNm
-      (\          nmIgnoreRes ty r -> acoreLet1StrictTy nmIgnoreRes ty r $ acoreTup []                               )
-      (\nmState _ nmRes       ty r -> acoreLet1StrictTy nmRes       ty r $ acoreTup [acoreVar nmState,acoreVar nmRes])
+      (\          nmIgnoreRes ty r -> acoreLet1StrictTy nmIgnoreRes (acoreTy2ty opts ty) r $ acoreTup []                               )
+      (\nmState _ nmRes       ty r -> acoreLet1StrictTy nmRes       (acoreTy2ty opts ty) r $ acoreTup [acoreVar nmState,acoreVar nmRes])
       uniq iores
 %%]
 
@@ -372,19 +372,20 @@ ffiGrinEvalAdapt args res
       (\(n,_,i,ev) e -> GrExpr_Seq (if ev then GrExpr_Eval n else GrExpr_Unit (GrVal_Var n) GrType_None) i e)
       (\(n,_,e,ev) -> if ev then GrExpr_Seq e (GrPatLam_Var n) (GrExpr_Eval n) else e)
       (map addTy args) (addTy res)
-  where addTy (n,x,b) = (n,acoreTyErr "ffiGrinEvalAdapt",x,b)
+  where addTy (n,x,b) = (n,appDbg "ffiGrinEvalAdapt",x,b)
 %%]
 
 %%[(8 codegen) export(ffiCoreEvalAdapt)
 -- | evaluate value etc for ffi call, specialized for Core
 ffiCoreEvalAdapt
-  :: [(HsName,Ty,HsName,Bool)]				-- arg name + introduction + eval need
+  :: EHCOpts
+     -> [(HsName,Ty,HsName,Bool)]			-- arg name + introduction + eval need
      -> (HsName,Ty,CExpr,Bool)				-- result
      -> CExpr
-ffiCoreEvalAdapt
+ffiCoreEvalAdapt opts
   = ffiEvalAdapt
-      (\(n,ty,i,ev) e -> (if ev then acoreLet1StrictTy                     else acoreLet1PlainTy) i ty (acoreVar n) e)
-      (\(n,ty,e,ev)   ->  if ev then acoreLet1StrictTy n ty e (acoreVar n) else e               )
+      (\(n,ty,i,ev) e -> (if ev then acoreLet1StrictTy                                       else acoreLet1PlainTy) i (acoreTy2ty opts ty) (acoreVar n) e)
+      (\(n,ty,e,ev)   ->  if ev then acoreLet1StrictTy n (acoreTy2ty opts ty) e (acoreVar n) else e               )
 
 %%]
 
@@ -409,8 +410,8 @@ ffiCoreMk
      uniq rceEnv
      foreignEntInfo
      tyFFI
-  = acoreLamTy (zip nmArgL argTyL ++ zip nmArgLExtra (repeat $ acoreTyErr "ffiCoreMk.nmArgLExtra.TBD"))
-    $ ffiCoreEvalAdapt
+  = acoreLamTy (zip nmArgL (map (acoreTy2ty opts) argTyL) ++ zip nmArgLExtra (repeat $ acoreTyErr "ffiCoreMk.nmArgLExtra.TBD"))
+    $ ffiCoreEvalAdapt opts
         ( zip4 nmArgL argTyL nmArgPatL primArgNeedsEvalL )
         ( nmEvalRes
         , resTyAdapted
@@ -462,8 +463,8 @@ ffeCoreMk
      opts uniq rceEnv
      tyFFE
   = ( \e ->
-          acoreLamTy (zip nmArgL argTyL)
-          $ acoreLet1StrictTy nmEvalRes resTyAdapted
+          acoreLamTy (zipWith (\a t -> (a, acoreTy2ty opts t)) nmArgL argTyL)
+          $ acoreLet1StrictTy nmEvalRes (acoreTy2ty opts resTyAdapted)
               (wrapRes $ acoreApp e $ map acoreVar nmArgL ++ argLExtra)
               (acoreVar nmEvalRes)
 	, argTyL `appArr` resTyAdapted

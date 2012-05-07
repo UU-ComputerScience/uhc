@@ -119,10 +119,6 @@ class AbstractCore  expr metaval bind bound boundmeta bindcateg metabind ty pat 
   acorem1Arr :: bind -> expr -> expr
 %%]]
 
-  ------------------------- constructing: ty -------------------------
-  -- | construct ty from Ty, usable in Core context
-  acoreTy2ty :: Ty -> ty
-
   ------------------------- constructing: ty constants -------------------------
   -- Int
   -- acoreTyInt2 :: ty
@@ -167,8 +163,8 @@ class AbstractCore  expr metaval bind bound boundmeta bindcateg metabind ty pat 
   acoreAlt :: pat -> expr -> alt
   
   ------------------------- type related -------------------------
-  -- | convert Ty to ty
-  -- acoreTy2ty :: Ty -> ty
+  -- | construct ty from Ty, usable in Core context
+  acoreTy2ty :: EHCOpts -> Ty -> ty
   
   ------------------------- defaults -------------------------
   -- | get default for metaval
@@ -194,10 +190,10 @@ class AbstractCore  expr metaval bind bound boundmeta bindcateg metabind ty pat 
   acoreTyNone :: ty
 
   -- | get char ty
-  acoreTyChar :: ty
+  acoreTyChar :: EHCOpts -> ty
 
   -- | get int ty
-  acoreTyInt :: ty
+  acoreTyInt :: EHCOpts -> ty
 
   -- | get String ty
   acoreTyString :: EHCOpts -> ty
@@ -817,14 +813,14 @@ acoreBindcategDflt _ = acoreBindcategPlain
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen) export(acoreChar,acoreInt,acoreInt2)
-acoreChar :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => Char -> e
-acoreChar i = let x = acoreCharTy acoreTyChar i in x
+acoreChar :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => EHCOpts -> Char -> e
+acoreChar opts i = let x = acoreCharTy (acoreTyChar opts) i in x
 
-acoreInt :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => Int -> e
-acoreInt i = let x = acoreIntTy acoreTyInt i in x
+acoreInt :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => EHCOpts -> Int -> e
+acoreInt opts i = let x = acoreIntTy (acoreTyInt opts) i in x
 
-acoreInt2 :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => Integer -> e
-acoreInt2 i = let x = acoreIntTy2 acoreTyInt i in x
+acoreInt2 :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => EHCOpts -> Integer -> e
+acoreInt2 opts i = let x = acoreIntTy2 (acoreTyInt opts) i in x
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -843,17 +839,17 @@ acoreBuiltinAddInt opts e i
     then e
     else case acoreExprMbInt e of
            Just (t,i') -> acoreIntTy2 t (toInteger i + i')
-           _           -> acoreBuiltinApp opts ehbnPrimAddInt [e,acoreInt i]
+           _           -> acoreBuiltinApp opts ehbnPrimAddInt [e,acoreInt opts i]
 %%]
 
 %%[(8 codegen) hs export(acoreBuiltinGtInt)
 acoreBuiltinGtInt :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => EHCOpts -> e -> Int -> e
-acoreBuiltinGtInt opts e i = acoreBuiltinApp opts ehbnPrimGtInt [e,acoreInt i]
+acoreBuiltinGtInt opts e i = acoreBuiltinApp opts ehbnPrimGtInt [e,acoreInt opts i]
 %%]
 
 %%[(99 codegen) hs export(acoreBuiltinEqChar)
 acoreBuiltinEqChar :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => EHCOpts -> Char -> e -> e
-acoreBuiltinEqChar opts c e = acoreBuiltinApp opts ehbnPrimEqChar [e,acoreChar c]
+acoreBuiltinEqChar opts c e = acoreBuiltinApp opts ehbnPrimEqChar [e,acoreChar opts c]
 %%]
 
 %%[(8 codegen) hs export(acoreBuiltinString)

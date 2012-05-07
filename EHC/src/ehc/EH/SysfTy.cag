@@ -46,6 +46,13 @@ sysftyCloseExists t
 %%[(8 codegen)
 SEM Expr PatExpr Decl DataFieldExpr
   | *           loc         .   sysfty      =   appDbg "{Expr,PatExpr,Decl,DataFieldExpr}.sysfty not implemented"
+
+SEM Expr
+  | Lam         
+%%[[12
+    LamImpl
+%%]]
+                loc         .   sysftyLamArg=   appDbg "{Expr}.sysftyArg not implemented"
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -194,7 +201,7 @@ SEM Expr
     LamImpl
 %%]]
                 loc         .   (sysftyTyLamArgL,sysftyLamArg,sysftyLamRes)
-                                                =   SysF.tyArrowInstQuArgsRes SysF.ArrowDecompose_ArgAfter @finLamInstToLHere @lhs.sysftyTopDown
+                                                :=  SysF.tyArrowInstQuArgsRes SysF.ArrowDecompose_ArgAfter @finLamInstToLHere @lhs.sysftyTopDown
                             .   sysftyLamArgHere
                                                 =   {- TMP -- @sysfcSubstLamSpine `cSubstApp` -} SysF.unTySeq @sysftyLamArg
   | * - Lam

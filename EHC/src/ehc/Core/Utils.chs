@@ -41,7 +41,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen) export(RCEEnv)
-type RCEEnv = RCEEnv' CExpr CMetaVal CBind CBound Ty
+type RCEEnv = RCEEnv' CExpr CMetaVal CBind CBound CTy
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -170,10 +170,10 @@ instance Ord FldOffset where
   (FldKnownOffset _ o1) `compare` (FldKnownOffset _ o2) = o1 `compare` o2
   foff1                 `compare` foff2                 = foffLabel foff1 `rowLabCmp` foffLabel foff2
 
-foffMkOff :: FldOffset -> Int -> (Int,CExpr)
-foffMkOff FldImplicitOffset      o = (o,acoreInt o)
-foffMkOff (FldKnownOffset   _ o) _ = (o,acoreInt o)
-foffMkOff (FldComputeOffset _ e) o = (o,e)
+foffMkOff :: EHCOpts -> FldOffset -> Int -> (Int,CExpr)
+foffMkOff opts FldImplicitOffset      o = (o,acoreInt opts o)
+foffMkOff opts (FldKnownOffset   _ o) _ = (o,acoreInt opts o)
+foffMkOff _    (FldComputeOffset _ e) o = (o,e)
 
 foffLabel :: FldOffset -> HsName
 foffLabel FldImplicitOffset = hsnUnknown
@@ -304,5 +304,4 @@ cModMerge2 (mimpL,mmain)
            m <- (\x -> tr "cModMerge2.lkupMod" (n >#< x) x) $
                 hsnQualifier n
            Map.lookup m modDbMp
-
 

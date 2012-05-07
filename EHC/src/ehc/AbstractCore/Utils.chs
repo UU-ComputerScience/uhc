@@ -71,11 +71,11 @@ rceEnvDataAlts env t
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen) export(acorePatTagArityMbNms)
-acorePatTagArityMbNms :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => CTag -> Int -> Maybe [HsName] -> p
-acorePatTagArityMbNms ctag arity mbNmL
+acorePatTagArityMbNms :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => EHCOpts -> CTag -> Int -> Maybe [HsName] -> p
+acorePatTagArityMbNms opts ctag arity mbNmL
   = pat
   where pat = acorePatCon ctag (acorePatRestEmpty) (zipWith mkB nmL [0 .. arity - 1])
-        mkB n o = acorePatFldTy (acoreTyErr "acorePatTagArityMbNms") (n,acoreInt o) n
+        mkB n o = acorePatFldTy (acoreTyErr "acorePatTagArityMbNms") (n,acoreInt opts o) n
         nmL = maybe (repeat hsnWild) id mbNmL
 %%]
 
@@ -111,7 +111,7 @@ acoreAltLSaturate env alts
                                Just (_,i) -> ([ (fromInteger i, a) | a <- alts ], fromInteger . snd . panicJust "acoreAltLSaturate.acorePatMbInt(2)" . acorePatMbInt . fst . acoreUnAlt)
                                _          -> panic "acoreAltLSaturate.acorePatMbInt(1)"
                     where (pat,_) = acoreUnAlt alt1
-                          mkA env ct a = acoreAlt (acorePatTagArityMbNms ct a Nothing) (rceCaseCont env)
+                          mkA env ct a = acoreAlt (acorePatTagArityMbNms (rceEHCOpts env) ct a Nothing) (rceCaseCont env)
       _     -> []
 %%]
 
@@ -120,8 +120,8 @@ acoreAltLSaturate env alts
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen)
-acorePatBindOffsetL :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => [pf] -> ([pf],[b])
-acorePatBindOffsetL pbL
+acorePatBindOffsetL :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => EHCOpts -> [pf] -> ([pf],[b])
+acorePatBindOffsetL opts pbL
   =  let  (pbL',obL)
             =  unzip
                .  map
@@ -130,19 +130,19 @@ acorePatBindOffsetL pbL
                                offNm = hsnUniqify HsNameUniqifier_FieldOffset l
                            in  case acoreExprMbInt o of
                                  Just _ -> (b,[])
-                                 _      -> (acorePatFldTy (acoreTyErr "acorePatBindOffsetL") (l,acoreVar offNm) n,[acoreBind1Ty offNm (acoreTyInt) o])
+                                 _      -> (acorePatFldTy (acoreTyErr "acorePatBindOffsetL") (l,acoreVar offNm) n,[acoreBind1Ty offNm (acoreTyInt opts) o])
                     )
                $  pbL
      in   (pbL',concat obL)
 %%]
 
 %%[(8 codegen) export(acoreAltOffsetL)
-acoreAltOffsetL :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => a -> (a,[b])
-acoreAltOffsetL alt
+acoreAltOffsetL :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => EHCOpts -> a -> (a,[b])
+acoreAltOffsetL opts alt
   =  case acorePatMbCon p of
        Just (t,r,b)
          ->  (acoreAlt (acorePatCon t r b') e,offBL)
-             where (b',offBL) = acorePatBindOffsetL b
+             where (b',offBL) = acorePatBindOffsetL opts b
        _ ->  (alt,[])
   where (p,e) = acoreUnAlt alt
 %%]
@@ -183,7 +183,7 @@ acoreStrictSatCaseMetaTy env mbNm meta e alts
       Nothing -> mk alts e
   where mk (alt:alts) n
           = acoreLet (acoreBindcategStrict) altOffBL (acoreCaseDflt n (acoreAltLSaturate env (alt':alts)) (Just undef))
-          where (alt',altOffBL) = acoreAltOffsetL alt
+          where (alt',altOffBL) = acoreAltOffsetL (rceEHCOpts env) alt
         mk [] n
           = acoreCaseDflt n [] (Just undef) -- dummy case
         undef = acoreBuiltinUndefined (rceEHCOpts env)
@@ -279,10 +279,11 @@ acoreSatSelsCasesMetaTy env ne meta e tgSels
               (CTagRec       ,Nothing   ) -> map mklo nol
               (CTagRec       ,Just (_,a)) -> mkloL a
               (CTag _ _ _ a _,_         ) -> mkloL a
-          where mklo (n,{-l,-}o) = (n,{-l,-}acoreInt o)
+          where mklo (n,{-l,-}o) = (n,{-l,-}acoreInt opts o)
                 mkloL a = map mklo
                           $ listSaturateWith 0 (a-1) (\(_,{-_,-}o) -> o) [(o,(l,{-l,-}o)) | (o,l) <- zip [0..a-1] hsnLclSupply] $ nol
         alts = [ (ct,mkOffL ct mbRest nmLblOffL,mbRest,sel) | (ct,nmLblOffL,mbRest,sel) <- tgSels ]
+        opts = rceEHCOpts env
 
 acoreSatSelsCasesMeta :: (Eq bcat, AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => RCEEnv' e m b ba t -> Maybe (HsName) -> m -> e -> [(CTag,[(HsName,{-HsName,-}Int)],MbPatRest' pr,e)] -> e
 acoreSatSelsCasesMeta env ne meta e tgSels = acoreSatSelsCasesMetaTy env (acoreTyLift "acoreSatSelsCasesMeta" ne) meta e tgSels
