@@ -31,6 +31,7 @@ TyCore/Check.cag
 JVMClass/ToBinary.cag
 JavaScript/Pretty.cag
 Error/Pretty.cag
+Core/BindExtract.cag
 Core/ToGrin.cag
 Core/ToJazy.cag
 Core/ToJavaScript.cag

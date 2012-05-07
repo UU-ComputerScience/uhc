@@ -1,0 +1,100 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% See CommonBindExtract
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs module {%{EH}Core.BindExtract}
+%%]
+
+%%[(8 codegen) hs import({%{EH}Base.Common},{%{EH}Core},{%{EH}Ty})
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Interface structures
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs export(BoundSel(..),noBoundSel,emptyBoundSel)
+-- | Selection predicates, an algebra for CBound fixed to yield Bool
+data BoundSel
+  = BoundSel
+      { selBind         :: CMetas -> Bool
+      , selMeta         :: ACoreBindAspectKeyS -> CMetas -> Bool
+      , selRelevTy      :: ACoreBindAspectKeyS -> RelevTy -> Bool
+      , selVal          :: ACoreBindAspectKeyS -> MetaLev -> CLbl -> Bool
+      , selTy           :: ACoreBindAspectKeyS -> Bool
+%%[[9090
+      , selFFE          :: -- TBD
+%%]]
+      }
+
+noBoundSel, emptyBoundSel :: BoundSel
+noBoundSel
+  = BoundSel
+      { selBind			= const False
+      , selMeta			= \_ _ -> False
+      , selRelevTy		= \_ _ -> False
+      , selVal			= \_ _ _ -> False
+      , selTy			= const False
+%%[[9090
+      , selFFE			= -- TBD
+%%]]
+      }
+
+emptyBoundSel = noBoundSel
+%%]
+
+%%[(8 codegen) hs export(SelVal)
+type SelVal = CBound
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell itf
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonBindExtract})
+WRAPPER CBind
+%%]
+
+%%[(8 codegen) hs export(cbindExtract)
+cbindExtract :: BoundSel -> CBind -> [SelVal]
+cbindExtract sel b
+  = selvalL_Syn_CBind t
+  where t = wrap_CBind (sem_CBind b)
+              (Inh_CBind
+                { boundsel_Inh_CBind = sel
+                })
+%%]
+
+%%[(8 codegen) hs export(cbindExtractVal)
+cbindExtractVal :: CBind -> CExpr
+cbindExtractVal b
+  = e
+  where (CBound_Val _ _ _ e:_) = cbindExtract (noBoundSel {selVal = \_ _ _ -> True}) b
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% The bind selection, defaults
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+SEM CExpr
+  | Lam Let Arr
+  				loc			.	boundsel		=	noBoundSel
+
+SEM CPatFld
+  | Fld
+  				loc			.	boundsel		=	noBoundSel
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% The returned value, just self
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AllExpr [ | | boundval: SELF ]
+%%]
+

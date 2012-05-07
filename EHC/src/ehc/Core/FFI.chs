@@ -16,7 +16,7 @@
 %%]
 %%[(8 codegen) hs import({%{EH}AbstractCore})
 %%]
-%%[(8 codegen) hs import({%{EH}Core},{%{EH}Core.Utils})
+%%[(8 codegen) hs import({%{EH}Core},{%{EH}Core.Utils},qualified {%{EH}Core.AsTy} as SysF)
 %%]
 %%[(8 codegen) hs import({%{EH}GrinCode})
 %%]
@@ -336,8 +336,8 @@ ffiCoreIOAdapt
   = ffiIOAdapt
       opts
       mkHNm
-      (\          nmIgnoreRes ty r -> acoreLet1StrictTy nmIgnoreRes (acoreTy2ty opts ty) r $ acoreTup []                               )
-      (\nmState _ nmRes       ty r -> acoreLet1StrictTy nmRes       (acoreTy2ty opts ty) r $ acoreTup [acoreVar nmState,acoreVar nmRes])
+      (\          nmIgnoreRes ty r -> acoreLet1StrictTy nmIgnoreRes (SysF.ty2TyCforFFI opts ty) r $ acoreTup []                               )
+      (\nmState _ nmRes       ty r -> acoreLet1StrictTy nmRes       (SysF.ty2TyCforFFI opts ty) r $ acoreTup [acoreVar nmState,acoreVar nmRes])
       uniq iores
 %%]
 
@@ -384,8 +384,8 @@ ffiCoreEvalAdapt
      -> CExpr
 ffiCoreEvalAdapt opts
   = ffiEvalAdapt
-      (\(n,ty,i,ev) e -> (if ev then acoreLet1StrictTy                                       else acoreLet1PlainTy) i (acoreTy2ty opts ty) (acoreVar n) e)
-      (\(n,ty,e,ev)   ->  if ev then acoreLet1StrictTy n (acoreTy2ty opts ty) e (acoreVar n) else e               )
+      (\(n,ty,i,ev) e -> (if ev then acoreLet1StrictTy                                              else acoreLet1PlainTy) i (SysF.ty2TyCforFFI opts ty) (acoreVar n) e)
+      (\(n,ty,e,ev)   ->  if ev then acoreLet1StrictTy n (SysF.ty2TyCforFFI opts ty) e (acoreVar n) else e               )
 
 %%]
 
@@ -410,7 +410,7 @@ ffiCoreMk
      uniq rceEnv
      foreignEntInfo
      tyFFI
-  = acoreLamTy (zip nmArgL (map (acoreTy2ty opts) argTyL) ++ zip nmArgLExtra (repeat $ acoreTyErr "ffiCoreMk.nmArgLExtra.TBD"))
+  = acoreLamTy (zip nmArgL (map (SysF.ty2TyCforFFI opts) argTyL) ++ zip nmArgLExtra (repeat $ acoreTyErr "ffiCoreMk.nmArgLExtra.TBD"))
     $ ffiCoreEvalAdapt opts
         ( zip4 nmArgL argTyL nmArgPatL primArgNeedsEvalL )
         ( nmEvalRes
@@ -463,8 +463,8 @@ ffeCoreMk
      opts uniq rceEnv
      tyFFE
   = ( \e ->
-          acoreLamTy (zipWith (\a t -> (a, acoreTy2ty opts t)) nmArgL argTyL)
-          $ acoreLet1StrictTy nmEvalRes (acoreTy2ty opts resTyAdapted)
+          acoreLamTy (zipWith (\a t -> (a, SysF.ty2TyCforFFI opts t)) nmArgL argTyL)
+          $ acoreLet1StrictTy nmEvalRes (SysF.ty2TyCforFFI opts resTyAdapted)
               (wrapRes $ acoreApp e $ map acoreVar nmArgL ++ argLExtra)
               (acoreVar nmEvalRes)
 	, argTyL `appArr` resTyAdapted

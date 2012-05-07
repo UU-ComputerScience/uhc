@@ -75,10 +75,10 @@ DERIVING CMetaBind
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen) hs export(RAlt,RPat,RPatConBind,RPatFld)
-type RAlt 			= RAlt' 		CExpr CTy CBind CPatRest
-type RPat 			= RPat' 		CExpr CTy CBind CPatRest
-type RPatConBind 	= RPatConBind' 	CExpr CTy CBind CPatRest
-type RPatFld 		= RPatFld' 		CExpr CTy CBind CPatRest
+type RAlt           = RAlt'         CExpr CTy CBind CPatRest
+type RPat           = RPat'         CExpr CTy CBind CPatRest
+type RPatConBind    = RPatConBind'  CExpr CTy CBind CPatRest
+type RPatFld        = RPatFld'      CExpr CTy CBind CPatRest
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -137,12 +137,12 @@ cmetasMapVal f (b,v) = (b,f v)
 
 %%[(8 codegen) hs export(CBindCateg(..))
 data CBindCateg
-  = CBindCateg_Rec				-- mutually recursive
-  | CBindCateg_Strict			-- strictly evaluated
-  | CBindCateg_Plain				-- plain
-  | CBindCateg_FFI				-- imported function
+  = CBindCateg_Rec              -- mutually recursive
+  | CBindCateg_Strict           -- strictly evaluated
+  | CBindCateg_Plain                -- plain
+  | CBindCateg_FFI              -- imported function
 %%[[90
-  | CBindCateg_FFE				-- exported function (not implemented yet)
+  | CBindCateg_FFE              -- exported function (not implemented yet)
 %%]]
   deriving (Show,Eq,Enum)
 %%]
@@ -327,8 +327,8 @@ mkCListSingleton opts e
 %%[(8 codegen) hs export(CVarIntro(..),emptyCVarIntro)
 data CVarIntro
   = CVarIntro
-      { cviLev		:: Int		-- lexical level
-      , cviMeta		:: CMetaVal	-- meta info
+      { cviLev      :: Int      -- lexical level
+      , cviMeta     :: CMetaVal -- meta info
       }
 
 emptyCVarIntro :: CVarIntro
@@ -362,8 +362,8 @@ cLevIntern = 1
 %%[(8 codegen) hs export(CVarRepl(..))
 data CVarRepl r
   = CVarRepl
-      { cvrRepl		:: r		-- replacement
-      , cvrMeta		:: CMetaVal	-- meta info
+      { cvrRepl     :: r        -- replacement
+      , cvrMeta     :: CMetaVal -- meta info
       }
 %%]
 
@@ -392,7 +392,7 @@ type CVarReplNmL  = CVarReplAsc HsName
 cvrFromCvi :: CVarIntro -> CVarReplNm
 cvrFromCvi i
   = emptyCVarReplNm
-      { cvrMeta 	= cviMeta i
+      { cvrMeta     = cviMeta i
       }
 %%]
 
@@ -469,11 +469,11 @@ type CDbModuleBindMp = Map.Map HsName CDbBindRef
 -- | the full module represented in a map/database like format (20101004 AD: to be made into persistent db soon)
 data CModuleDatabase
   = CModuleDatabase
-      { cmoddbModNm			:: !HsName				-- module name
-      , cmoddbBindArr		:: !CDbBindArray		-- bindings
-      , cmoddbBindMp		:: !CDbModuleBindMp		-- map of name to bindings
-      , cmoddbMainExpr		:: !CExpr				-- the final expr of the module's let expr
-      , cmoddbTagsMp		:: !CTagsMp				-- datatype info
+      { cmoddbModNm         :: !HsName              -- module name
+      , cmoddbBindArr       :: !CDbBindArray        -- bindings
+      , cmoddbBindMp        :: !CDbModuleBindMp     -- map of name to bindings
+      , cmoddbMainExpr      :: !CExpr               -- the final expr of the module's let expr
+      , cmoddbTagsMp        :: !CTagsMp             -- datatype info
       }
 
 emptyCModuleDatabase :: CModuleDatabase
@@ -489,23 +489,29 @@ cmoddbLookup n db = Map.lookup n $ cmoddbBindMp db
 %%% SysF: Explicit name for SysF type
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs export(SysfTy,SysfTySeq,SysfTySeq1)
+%%[(8 codegen) hs export(SysfTy,SysfTyBind,SysfTyBound,SysfTySeq,SysfTySeq1)
 %%[[(8 coresysf)
 -- | SysF ty is also a Core term
-type SysfTy     	= CExpr			-- base ty
+type SysfTy         = CExpr         -- base ty
+type SysfTyBind     = CBind         -- binder
+type SysfTyBound    = CBound        -- to be bound by binder
 %%][8
 -- | If there is no SysF used, just the plain type (used during type check/infer)
-type SysfTy     	= Ty			-- base ty
+type SysfTy         = Ty            -- base ty
+type SysfTyBind     = Ty            -- binder
+type SysfTyBound    = Ty            -- to be bound by binder
 %%]]
-type SysfTySeq    	= SysfTy			-- sequence
-type SysfTySeq1    	= SysfTy			-- singleton
+type SysfTySeq      = SysfTy            -- sequence
+type SysfTySeq1     = SysfTy            -- singleton
 %%]
 
 %%[(8 codegen coresysf) hs export(tyToSysfTyBasePlainCases)
 -- | Simplistic (i.e. for simple types) conversion as conversion is mutually recursive with AbstractCore instance
 tyToSysfTyBasePlainCases :: Ty -> SysfTy
 tyToSysfTyBasePlainCases t
-  = panicJust "tyToSysfTyBasePlainCases" $ (fmap (appCon . mkHNm) $ tyMbVar t) <|> appToApp t
+  = panicJust "tyToSysfTyBasePlainCases"
+    $     (fmap (appCon . mkHNm) $ tyMbVar t)
+      <|> appToApp t
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -516,8 +522,8 @@ tyToSysfTyBasePlainCases t
 -- | In case of SysF isomorphic to Either 'old ty' 'sysf ty', to be chosen at a higher level
 %%[[(8 coresysf)
 data CTy
-  = CTy_Ty		Ty			-- plain old ty
-  | CTy_SysF	SysfTy		-- sysf ty
+  = CTy_Ty      Ty          -- plain old ty
+  | CTy_SysF    SysfTy      -- sysf ty
   deriving Show
 
 -- | Make CTy, choosing on the basis of options which one (plain old, or sysf)
@@ -551,99 +557,101 @@ cty f _ t = f t
 %%[(8 codegen) hs
 instance AbstractCore CExpr CMetaVal CBind CBound ACoreAppLikeMetaBound CBindCateg CMetaBind CTy CPat CPatRest CPatFld CAlt where
   -- expr
-  acore1AppBound   f a      			= CExpr_App f a
-  -- acoreLam1Ty a _ e 				    = CExpr_Lam (acoreBind1 a) e
-  acoreLam1Bind b e 				    = CExpr_Lam b e
-  acoreTagTyTupBound   tg _ es 			= acoreAppBound (CExpr_Tup tg) es
+  acore1AppBound   f a                  = CExpr_App f a
+  -- acoreLam1Ty a _ e                  = CExpr_Lam (acoreBind1 a) e
+  acoreLam1Bind b e                     = CExpr_Lam b e
+  acoreTagTyTupBound   tg _ es          = acoreAppBound (CExpr_Tup tg) es
   acoreBoundVal1CatLevMetasTy _ _ _ m _ e
-  										= CBound_Bind m e
-  acoreBoundmeta a m l    	            = (a,m,l)
-  acoreBound1MetaVal (a,m,l) e  	    = CBound_Val a m l e
+                                        = CBound_Bind m e
+  acoreBoundmeta a m l                  = (a,m,l)
+  acoreBound1MetaVal (a,m,l) e          = CBound_Val a m l e
 %%[[(8 coresysf)
+  acoreBoundValTy1CatLev _ _ _ (CTy_SysF t)
+                                        = acoreBound1MetaVal (acoreBoundmeta acbaspkeyDefault 1 CLbl_None) t
   acoreBoundValTy1CatLev _ _ _ (CTy_Ty t)
 %%][8
   acoreBoundValTy1CatLev _ _ _ t
 %%]]
-  										= CBound_Ty acbaspkeyDefaultTy t
-  acoreBind1Asp n as					= CBind_Bind n as
+                                        = CBound_Ty acbaspkeyDefaultTy t
+  acoreBind1Asp n as                    = CBind_Bind n as
   acoreBind1CatLevMetasTy bcat n mlev mb t e
-  										= acoreBind1Asp n [acoreBoundValTy1CatLev bcat n mlev t, acoreBoundVal1CatLevMetasTy bcat n mlev mb t e]
-  acoreLetBase							= CExpr_Let
-  acoreCaseDflt	e as d					= CExpr_Case e as (maybe (acoreVar hsnUnknown) id d)
-  acoreVar n							= CExpr_Var (ACoreBindRef n Nothing) 
-  acoreStringTy _ i						= CExpr_String i
-  acoreCharTy _ i						= CExpr_Char i
-  acoreIntTy _ i						= CExpr_Int i
-  acoreIntTy2 _ i						= CExpr_Int (fromInteger i)
+                                        = acoreBind1Asp n [acoreBoundValTy1CatLev bcat n mlev t, acoreBoundVal1CatLevMetasTy bcat n mlev mb t e]
+  acoreLetBase                          = CExpr_Let
+  acoreCaseDflt e as d                  = CExpr_Case e as (maybe (acoreVar hsnUnknown) id d)
+  acoreVar n                            = CExpr_Var (ACoreBindRef n Nothing) 
+  acoreStringTy _ i                     = CExpr_String i
+  acoreCharTy _ i                       = CExpr_Char i
+  acoreIntTy _ i                        = CExpr_Int i
+  acoreIntTy2 _ i                       = CExpr_Int (fromInteger i)
 %%[[8
-  acoreUidHole							= panic "Core.acoreUidHole"
+  acoreUidHole                          = panic "Core.acoreUidHole"
 %%][9
-  acoreUidHole							= CExpr_Hole
+  acoreUidHole                          = CExpr_Hole
 %%]
 %%[[9
-  acoreHoleLet							= CExpr_HoleLet
+  acoreHoleLet                          = CExpr_HoleLet
 %%]
-  -- acoreDflt								= 
-  acoreExprErr							= CExpr_Dbg
+  -- acoreDflt                              = 
+  acoreExprErr                          = CExpr_Dbg
 
 %%[[(8 coresysf)
   -- arrow
-  acorem1Arr 							= CExpr_Arr
+  acorem1Arr                            = CExpr_Arr
 %%]]
 
   -- ty constants
-  acoreTyBool o 						= acoreTy2ty o $ appCon (ehcOptBuiltin o ehbnDataBool)
+  acoreTyBool o                         = acoreTy2ty o $ appCon (ehcOptBuiltin o ehbnDataBool)
   
   -- ty
-  -- acoreTyInt2							= tyInt
+  -- acoreTyInt2                            = tyInt
 %%[[(8 coresysf)
-  acoreTy2ty o x						= mkCTy o x (tyToSysfTyBasePlainCases x)
+  acoreTy2ty o x                        = mkCTy o x (tyToSysfTyBasePlainCases x)
 %%][8
-  acoreTy2ty _							= id
+  acoreTy2ty _                          = id
 %%]]
 
   -- pat
-  acorePatVarTy n _						= CPat_Var n
-  acorePatCon 							= CPat_Con
-  acorePatIntTy _ i						= CPat_Int i
-  acorePatIntTy2 _ i					= CPat_Int (fromInteger i)
-  acorePatCharTy _ i					= CPat_Char i
+  acorePatVarTy n _                     = CPat_Var n
+  acorePatCon                           = CPat_Con
+  acorePatIntTy _ i                     = CPat_Int i
+  acorePatIntTy2 _ i                    = CPat_Int (fromInteger i)
+  acorePatCharTy _ i                    = CPat_Char i
 %%[[97
-  acorePatBoolExpr 						= CPat_BoolExpr
+  acorePatBoolExpr                      = CPat_BoolExpr
 %%]]
   
   -- patfld
-  acorePatFldBind (lbl,off) b			= CPatFld_Fld lbl off b []
-  -- acorePatFldTy _ (lbl,off) n 			= CPatFld_Fld lbl off n []
+  acorePatFldBind (lbl,off) b           = CPatFld_Fld lbl off b []
+  -- acorePatFldTy _ (lbl,off) n            = CPatFld_Fld lbl off n []
 
   -- patrest
-  acorePatRestEmpty  					= CPatRest_Empty
-  acorePatRestVar						= CPatRest_Var
+  acorePatRestEmpty                     = CPatRest_Empty
+  acorePatRestVar                       = CPatRest_Var
 
   -- alt
-  acoreAlt                             	= CAlt_Alt
+  acoreAlt                              = CAlt_Alt
 
   -- defaults
-  acoreDfltBoundmeta					= (acbaspkeyDefault,0,CLbl_None)
-  acoreMetavalDflt       				= CMetaVal_Val
+  acoreDfltBoundmeta                    = (acbaspkeyDefault,0,CLbl_None)
+  acoreMetavalDflt                      = CMetaVal_Val
 %%[[9
-  acoreMetavalDfltDict   				= CMetaVal_Dict
+  acoreMetavalDfltDict                  = CMetaVal_Dict
 %%]]
-  acoreMetabindDflt      				= CMetaBind_Plain
-  acoreTyErr s           				= acoreTy2ty emptyEHCOpts $ Ty_Dbg s
-  acoreTyNone            				= acoreTyErr "Core.acoreTyNone"
-  acoreTyChar o							= acoreTy2ty o $ tyChar
-  acoreTyInt o							= acoreTy2ty o $ tyInt
+  acoreMetabindDflt                     = CMetaBind_Plain
+  acoreTyErr s                          = acoreTy2ty emptyEHCOpts $ Ty_Dbg s
+  acoreTyNone                           = acoreTyErr "Core.acoreTyNone"
+  acoreTyChar o                         = acoreTy2ty o $ tyChar
+  acoreTyInt o                          = acoreTy2ty o $ tyInt
 %%[[8
-  acoreTyString o 						= acoreTy2ty o $ tyString
+  acoreTyString o                       = acoreTy2ty o $ tyString
 %%][11
-  acoreTyString o 						= acoreTy2ty o $ tyString o
+  acoreTyString o                       = acoreTy2ty o $ tyString o
 %%]]
   
   -- bindcateg
-  acoreBindcategRec 					= CBindCateg_Rec
-  acoreBindcategStrict 					= CBindCateg_Strict
-  acoreBindcategPlain					= CBindCateg_Plain
+  acoreBindcategRec                     = CBindCateg_Rec
+  acoreBindcategStrict                  = CBindCateg_Strict
+  acoreBindcategPlain                   = CBindCateg_Plain
 
   -- inspecting
   acoreExprMbApp (CExpr_App f b)        = Just (f,b)
@@ -672,29 +680,29 @@ instance AbstractCore CExpr CMetaVal CBind CBound ACoreAppLikeMetaBound CBindCat
   acoreBindcategMbStrict CBindCateg_Strict  = Just CBindCateg_Strict
   acoreBindcategMbStrict _                  = Nothing
 
-  acorePatMbCon (CPat_Con tg r fs)		= Just (tg,r,fs)
-  acorePatMbCon _                 		= Nothing
+  acorePatMbCon (CPat_Con tg r fs)      = Just (tg,r,fs)
+  acorePatMbCon _                       = Nothing
 
-  acorePatMbInt (CPat_Int i)			= Just (acoreTyErr "Core.acorePatMbInt",toInteger i)
-  acorePatMbInt _                 		= Nothing
+  acorePatMbInt (CPat_Int i)            = Just (acoreTyErr "Core.acorePatMbInt",toInteger i)
+  acorePatMbInt _                       = Nothing
 
-  acorePatMbChar (CPat_Char i)			= Just (acoreTyErr "Core.acorePatMbChar",i)
-  acorePatMbChar _                 		= Nothing
+  acorePatMbChar (CPat_Char i)          = Just (acoreTyErr "Core.acorePatMbChar",i)
+  acorePatMbChar _                      = Nothing
 
-  acoreUnAlt (CAlt_Alt p e)				= (p,e)
+  acoreUnAlt (CAlt_Alt p e)             = (p,e)
   acoreUnPatFld (CPatFld_Fld l o b _)   = ((l,o),b)
   acoreUnBind (CBind_Bind n as)         = (n,as)
 
-  acoreBoundMbVal (CBound_Val a m l e)	= Just ((a,m,l),e)
-  acoreBoundMbVal _                 	= Nothing
+  acoreBoundMbVal (CBound_Val a m l e)  = Just ((a,m,l),e)
+  acoreBoundMbVal _                     = Nothing
 
   -- coercion
 %%[[8
-  acoreCoeArg 							= panic "Core.acoreCoeArg"
-  acoreExprIsCoeArg						= const False
+  acoreCoeArg                           = panic "Core.acoreCoeArg"
+  acoreExprIsCoeArg                     = const False
 %%][9
-  acoreCoeArg 							= CExpr_CoeArg
-  acoreExprIsCoeArg						= (== CExpr_CoeArg)
+  acoreCoeArg                           = CExpr_CoeArg
+  acoreExprIsCoeArg                     = (== CExpr_CoeArg)
 %%]]
 %%]
 
@@ -738,6 +746,7 @@ instance Serialize CExpr where
 %%[[(50 coresysf)
   sput (CExpr_Arr       a b         ) = sputWord8 21 >> sput a >> sput b
 %%]]
+  sput (CExpr_Dbg       a           ) = sputWord8 22 >> sput a
   sget
     = do t <- sgetWord8
          case t of
@@ -767,6 +776,7 @@ instance Serialize CExpr where
 %%[[(50 coresysf)
            21 -> liftM2 CExpr_Arr           sget sget
 %%]]
+           22 -> liftM  CExpr_Dbg           sget
 
 instance Serialize CMetaVal where
   sput (CMetaVal_Val                ) = sputWord8 0
@@ -802,10 +812,10 @@ instance Serialize CBindAnn where
             0 -> liftM  CBindAnn_Coe         sget            
 
 instance Serialize CBound where
-  sput (CBound_Bind 	a b      ) = sputWord8 0 >> sput a >> sput b
-  -- sput (CBound_FFI  	a b c d  ) = sputWord8 1 >> sput a >> sput b >> sput c >> sput d
+  sput (CBound_Bind     a b      ) = sputWord8 0 >> sput a >> sput b
+  -- sput (CBound_FFI   a b c d  ) = sputWord8 1 >> sput a >> sput b >> sput c >> sput d
 %%[[90
-  sput (CBound_FFE  	a b c d  ) = sputWord8 2 >> sput a >> sput b >> sput c >> sput d
+  sput (CBound_FFE      a b c d  ) = sputWord8 2 >> sput a >> sput b >> sput c >> sput d
 %%]]
   sput (CBound_RelevTy a b      ) = sputWord8 3 >> sput a >> sput b
   sput (CBound_Meta    a b      ) = sputWord8 4 >> sput a >> sput b

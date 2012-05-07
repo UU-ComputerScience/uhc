@@ -218,7 +218,7 @@ SEM Expr
 %%[[97
   | IIConst     loc         .   cexprBase   =   acoreBuiltinInteger @lhs.opts @integer
 %%]]
-  | Var Con     loc         .   cexprBase   =   acoreVar @nm
+  | Var Con     loc         .   cexprBase   =   acoreExprUnThunk $ acoreVar @nm
 %%]
 
 %%[(8 codegen noHmTyRuler)
@@ -231,7 +231,11 @@ SEM Expr
                 loc         .   cexpr       =   @cexprBase
 %%][9
                 loc         .   (cexpr,cexprCSubst)
-                                            =   foAppLRCoeAsSubst @lhs.opts @lUniq_cexpr @fo_ @lhs.finTyVarMp @lhs.cSubst @cexprBase
+                                            =   foAppLRCoeAsSubst @lhs.opts @lUniq_cexpr @fo_ @lhs.finTyVarMp @lhs.cSubst $
+%%[[(8 coresysf)
+                                                @sysfcTyArgLamWrap $ @sysfcTyArgAppWrap $
+%%]]
+                                                @cexprBase
                 lhs         .   cSubst      =   cSubstApp @lhs.cSubst @cexprCSubst
 %%]]
 %%]
@@ -494,7 +498,7 @@ SEM Decl
 -- | Make bindings for constructors, given various bits of info
 mkDataCBindL :: EHCOpts -> CTag -> CTy -> [DataConFldAnnInfo] -> HsName -> Bool -> [CBind]
 mkDataCBindL opts ctag ty annL conNm isNewtype
-  | isNewtype = [ acoreBind1Ty conNm ty (acoreVar $ ehcOptBuiltin opts ehbnId) ]
+  | isNewtype = [ acoreBind1Ty conNm ty ({- TBD: see TyCore: cast -} acoreExprUnThunk $ acoreVar $ ehcOptBuiltin opts ehbnId) ]
   | otherwise = [ acoreBind1Ty conNm ty
                     (acoreLam nms
                       (foldr (.) id mkStrict

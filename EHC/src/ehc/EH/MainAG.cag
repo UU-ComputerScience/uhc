@@ -71,7 +71,7 @@
 %%]
 %%[(8 codegen) hs import({%{EH}LamInfo})
 %%]
-%%[(8 codegen coresysf) hs import(qualified {%{EH}Core.AsTy} as SysF)
+%%[(8 codegen coresysf) hs import(qualified {%{EH}Core.AsTy} as SysF, {%{EH}Core.BindExtract})
 %%]
 
 %%[(90 codegen) hs import({%{EH}BuiltinPrims},{%{EH}Foreign})

@@ -1,0 +1,32 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Common functionality to extract binding/bound info, to be used both on AG and HS level (via wrapping)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+To be filled in hooks:
+- boundval
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Selection criterium (on AG level thus only 1 is possible because hardwired via attr name)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AllBind [ boundsel: BoundSel | | ]
+
+SEM CExpr
+  | App			arg			.	boundsel		=	noBoundSel
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Extracted value (list, according to selection criterium)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Assumption: existence of local attr 'boundval'
+
+%%[(8 codegen)
+ATTR AllBound CBind [ | | selvalL USE {++} {[]}: {[SelVal]} ]
+
+SEM CBound
+  | Val         lhs         .   selvalL         =   if selVal @lhs.boundsel @aspectKeyS @mlev @lbl
+                                                    then [@boundval]
+                                                    else []
+%%]

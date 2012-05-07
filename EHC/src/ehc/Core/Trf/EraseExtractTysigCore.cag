@@ -96,7 +96,8 @@ ATTR CodeAGItf [ | | cTrf: CModule ]
 ATTR AllBound [ | | cBindTrf USE {++} {[]}: {[CBound]} ]
 
 SEM CBound
-  | * - Ty    	lhs         .   cBindTrf        =   [@cTrf]
+  | Val			lhs			.	cBindTrf        =   if @mlev == 0 then [@cTrf] else []
+  | * - Ty Val  lhs         .   cBindTrf        =   [@cTrf]
 
 SEM CBind
   | Bind		loc			.	cTrf			=	CBind_Bind @nm @bindAspects.cBindTrf

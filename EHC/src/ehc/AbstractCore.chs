@@ -515,7 +515,11 @@ acoreAppBound f as = foldl (\f a -> acore1AppBound f a) f as
 %%% Derived functionality: lambda abstraction
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) export(acoreLam1Ty,acoreLam1,acoreLamTy,acoreLam)
+%%[(8 codegen) export(acoreLamBind,acoreLam1Ty,acoreLam1,acoreLamTy,acoreLam)
+acoreLamBind :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => [b] -> e -> e
+acoreLamBind = flip (foldr acoreLam1Bind)
+{-# INLINE acoreLamBind #-}
+
 acoreLam1Ty :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => HsName -> t -> e -> e
 acoreLam1Ty a t e = acoreLam1Bind (acoreBind1Nm1 a) e
 -- acoreLam1Ty a t e = acoreLam1Bind (acoreBind1Ty a t) e       -- 20120418, TBD: ignore type for now

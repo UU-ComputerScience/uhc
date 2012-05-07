@@ -138,7 +138,8 @@ class AppLike a boundmeta {- ann bnd | a -> ann bnd -}
 %%[1 export(appToApp)
 appToApp :: (AppLike a aboundmeta, AppLike b bboundmeta) => a -> Maybe b
 appToApp x
-  = c appMbCon appCon x <|> c appMbDbg appDbg x
+  =   c appMbCon appCon x
+  <|> c appMbDbg appDbg x
   where c mbUn mk = fmap mk . mbUn
 %%]
 

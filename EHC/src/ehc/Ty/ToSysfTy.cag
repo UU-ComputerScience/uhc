@@ -11,7 +11,7 @@
 %%]
 %%[(8 codegen coresysf) hs import(EH.Util.Utils,{%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Base.TermLike},{%{EH}Opts.Base})
 %%]
-%%[(8 codegen coresysf) hs import({%{EH}Ty} as T, qualified {%{EH}Core} as C)
+%%[(8 codegen coresysf) hs import({%{EH}Ty} as T, qualified {%{EH}Core} as C, {%{EH}AbstractCore})
 %%]
 
 %%[(8 codegen coresysf) hs import (qualified Data.Set as Set)
@@ -33,24 +33,27 @@ data ArrowHowDecompose
  
 -- split type + instantation into multiple type args (>=0) + optional 1 arg + 1 res:
 -- in other words, peel of type application(s) for Sys F, driven by InstTo
-tyArrowInstQuArgsRes :: ArrowHowDecompose -> [InstTo] -> C.SysfTy -> ([C.SysfTy],C.SysfTy,C.SysfTy)
+tyArrowInstQuArgsRes :: ArrowHowDecompose -> [InstTo] -> C.SysfTy -> ([C.SysfTyBind],C.SysfTyBind,C.SysfTy)
 tyArrowInstQuArgsRes how instToL t
   = case how of
       ArrowDecompose_InstOnly
-        -> (taL,appDbg "Ty.tyArrowInstQuArgsRes.ArrowDecompose_InstOnly",r)
+        -> (taL,mkb hsnWild (appDfltBoundmeta r) $ appDbg "Ty.tyArrowInstQuArgsRes.ArrowDecompose_InstOnly",r)
         where (taL,r) = extr instToL t
       ArrowDecompose_ArgBefore
         -> (taL,a,r')
-        where (a,r) = maybe (appDbg "tyArrowInstQuArgsRes.ArrowDecompose_ArgBefore",t) id $ appMb1Arr t
+        where (a,r) = unArr "ArrowDecompose_ArgBefore" t
               (taL,r') = extr instToL r
       ArrowDecompose_ArgAfter
         -> (taL,a,r')
         where (taL,r) = extr instToL t
-              (a,r') = maybe (appDbg "tyArrowInstQuArgsRes.ArrowDecompose_ArgAfter",r) id $ appMb1Arr r
+              (a,r') = unArr "ArrowDecompose_ArgAfter" r
   where extr (InstTo_Qu _ _ _ _ : is) t = (a:a',r')
-   										where (a,r)   = maybe (appDbg "tyArrowInstQuArgsRes.extr",t) id $ appMb1Arr t
+   										where (a,r)   = unArr "extr" t
    										      (a',r') = extr is r
         extr _                        t = ([],t)
+        unArr m t = (mkb n bm a, r)
+          where ((n,bm),a,r) = maybe ((hsnWild,appDfltBoundmeta t),appDbg $ "tyArrowInstQuArgsRes." ++ m,t) id $ appMb1MetaArr t
+        mkb n bm a = acoreBind1Asp n [acoreBound1MetaVal bm a]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -239,7 +242,7 @@ SEM Ty
 
 %%[(8 codegen coresysf)
 SEM Ty
-  | App         loc         .   st          =   let dflt = @sKiArgAppWrap $ app1App @func.st (argWrap (t2tcOptHowAppArg @lhs.opts) @arg.st)
+  | App         loc         .   st          =   let dflt = {- @sKiArgAppWrap $ -} app1App @func.st (argWrap (t2tcOptHowAppArg @lhs.opts) @arg.st)
                                                     th = if t2tcOptMkThunk @lhs.opts then appNonEvl else id
                                                     wra = argWrap (t2tcOptHowArrowArg @lhs.opts)
                                                     wrr = argWrap (t2tcOptHowArrowRes @lhs.opts)
@@ -292,7 +295,7 @@ SEM Ty
                                                 then @ty.st
                                                 else {- Ty_Ann @ann.st -} @ty.st
   | * - App Ann
-                loc         .   st          =   @sKiArgAppWrap @stBase
+                loc         .   st          =   {- @sKiArgAppWrap -} @stBase
 %%]
 
 %%[(8 codegen coresysf)
@@ -419,7 +422,7 @@ SEM Ty
 
 Additional kind arg wrapping
 
-%%[(8 codegen coresysf)
+%%[(8888 codegen coresysf)
 SEM Ty
   | *           loc         .   sKiArgAppWrap
                                             =   \e -> foldr (flip app1App) e $ {- @tcSubstAppSpine `C.cSubstApp` -} {- map C.tyL0BindToL1Val -} @skiKiAppArgL

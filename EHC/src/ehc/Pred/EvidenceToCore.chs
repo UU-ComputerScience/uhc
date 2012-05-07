@@ -14,7 +14,7 @@
 %%[(9 codegen hmtyinfer) import({%{EH}Ty.FitsInCommon2},{%{EH}Core},{%{EH}Ty},{%{EH}Core.Utils},{%{EH}Core.Subst})
 %%]
 
-%%[(9 codegen) hs import({%{EH}AbstractCore})
+%%[(9 codegen) hs import({%{EH}AbstractCore},qualified {%{EH}Core.AsTy} as SysF)
 %%]
 
 %%[(9 codegen) import(EH.Util.Pretty)
@@ -559,12 +559,12 @@ evidKeyCoreMpToBinds env m
                -> let deepestScope = subevdId . maximumBy (\evd1 evd2 -> subevdScope evd1 `pscpCmpByLen` subevdScope evd2) . Set.toList
                   in  Map.singleton (deepestScope uses) [b]
             )
-      $ [ (acoreBind1MetaTy (mkHNm i) CMetaVal_Dict (acoreTy2ty opts $ tcrTy r) (tcrCExpr r),tcrUsed r)
+      $ [ (acoreBind1MetaTy (mkHNm i) CMetaVal_Dict (SysF.ty2TyCforFFI opts $ tcrTy r) (tcrCExpr r),tcrUsed r)
         | (i,r) <- dbg "evidKeyCoreMpToBinds.dependentOnAssumes"   $! Map.toList dependentOnAssumes   
         ]
     , dbg "evidKeyCoreMpToBinds.res2"
       $! Map.fromListWith (++)
-      $ [ (tcrScope r,[acoreBind1MetaTy (mkHNm i) CMetaVal_Dict (acoreTy2ty opts $ tcrTy r) (tcrCExpr r)]) 
+      $ [ (tcrScope r,[acoreBind1MetaTy (mkHNm i) CMetaVal_Dict (SysF.ty2TyCforFFI opts $ tcrTy r) (tcrCExpr r)]) 
         | (i,r) <- dbg "evidKeyCoreMpToBinds.independentOfAssumes" $! Map.toList independentOfAssumes 
         ]
     )
@@ -593,15 +593,15 @@ type EvidCBindL = [CBind]
 
 evidKeyCoreMpToBinds2 :: FIIn' gm -> EvidKeyToCExprMap -> (EvidCBindL,EvidKeyToCBindMap,PredScopeToCBindMap)
 evidKeyCoreMpToBinds2 env m
-  = (   [ mkd i (tcrCExpr r) (acoreTy2ty opts $ tcrTy r)
+  = (   [ mkd i (tcrCExpr r) (SysF.ty2TyCforFFI opts $ tcrTy r)
         | (i,r) <- Map.toList independentOfAssumes
         ]
     , Map.unionsWith (++)
-      $ [ Map.singleton (subevdId $ head $ Set.toList $ tcrUsed r) [mkd i (tcrCExpr r) (acoreTy2ty opts $ tcrTy r)]
+      $ [ Map.singleton (subevdId $ head $ Set.toList $ tcrUsed r) [mkd i (tcrCExpr r) (SysF.ty2TyCforFFI opts $ tcrTy r)]
         | (i,r) <- Map.toList dependentOn1Assume
         ]
     , Map.unionsWith (++)
-      $ [ Map.singleton (deepestScope (tcrScope r) (tcrUsed r)) [mkd i (tcrCExpr r) (acoreTy2ty opts $ tcrTy r)]
+      $ [ Map.singleton (deepestScope (tcrScope r) (tcrUsed r)) [mkd i (tcrCExpr r) (SysF.ty2TyCforFFI opts $ tcrTy r)]
         | (i,r) <- Map.toList dependentOnNAssumes
         ]
     )

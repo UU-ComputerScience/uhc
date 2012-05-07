@@ -24,7 +24,7 @@ ty2SysfWithKiGamVarMp :: TyKiGam -> VarMp -> Ty -> SysfTy
 ty2SysfWithKiGamVarMp tkg m t = ty2SysfWithKiGam tkg (m `varUpd` t)
 
 sysftyLookup :: VarMp -> TyKiGam -> HsName -> ValGam -> SysfTy
-sysftyLookup tyVarMp tkg nm g = SysF.tyToSysfTy fitsInForToSysF (tyKiGamLookupKi tkg) $ (tyVarMp `varUpd`) $ fst $ valGamLookupTy nm g
+sysftyLookup tyVarMp tkg nm g = ty2SysfWithKiGamVarMp tkg tyVarMp $ fst $ valGamLookupTy nm g
 
 sysftyBareFromTy :: VarMp -> Ty -> SysfTy
 sysftyBareFromTy m t = SysF.tyToSysfTyBare (m `varUpd` t)
@@ -170,7 +170,8 @@ SEM Expr
     AppImpl
 %%]]
                 loc         .   (sysftyTyAppArgL,sysftyAppArg,sysftyTyAppRes)
-                                                =   SysF.tyArrowInstQuArgsRes SysF.ArrowDecompose_ArgBefore @finAppInstToLHere @func.sysftyBotUp
+                                                =   let (al,a,r) = SysF.tyArrowInstQuArgsRes SysF.ArrowDecompose_ArgBefore @finAppInstToLHere @func.sysftyBotUp
+                                                    in  (al,cbindExtractVal a,r)
   | * - App AppImpred
 %%[[12
     AppImpl
@@ -179,12 +180,21 @@ SEM Expr
                                                 =   SysF.tyArrowInstQuArgsRes SysF.ArrowDecompose_InstOnly @finAppInstToLHere @sysfty
 %%]
 
-%%[(8888 codegen coresysf)
+%%[(8 codegen coresysf)
 SEM Expr
   | *           loc         .   sysfcTyArgAppWrap
-                                                =   \e -> foldr (flip SysF.Expr_App) e $ @sysfcSubstAppSpine `cSubstApp` map SysF.sysftyL0BindToL1Val @sysftyTyAppArgL
+                                                =   if ehcOptCoreSysF @lhs.opts
+                                                    then \e -> acoreAppBound e $
+                                                               {- @sysfcSubstAppSpine `cSubstApp` -}
+                                                               map (SysF.tyL0BindToL1Val 0)
+                                                                   @sysftyTyAppArgL
+                                                    else id
                             .   sysfcTyArgLamWrap
-                                                =   \e -> foldr SysF.Expr_Lam e $ map (SysF.cSubstAppExprAndBinds @lhs.sysfcSubstLamSpine . SysF.sysftyL0BindToL1Bind) @sysftyTyLamArgL
+                                                =   if ehcOptCoreSysF @lhs.opts
+                                                    then \e -> flip acoreLamBind e $
+                                                               map ({- SysF.cSubstAppExprAndBinds @lhs.sysfcSubstLamSpine . -} SysF.tyL0BindToL1Bind)
+                                                                   @sysftyTyLamArgL
+                                                    else id
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -201,7 +211,9 @@ SEM Expr
     LamImpl
 %%]]
                 loc         .   (sysftyTyLamArgL,sysftyLamArg,sysftyLamRes)
-                                                :=  SysF.tyArrowInstQuArgsRes SysF.ArrowDecompose_ArgAfter @finLamInstToLHere @lhs.sysftyTopDown
+                                                :=  let (al,a,r) = SysF.tyArrowInstQuArgsRes SysF.ArrowDecompose_ArgAfter @finLamInstToLHere @lhs.sysftyTopDown
+                                                        -- (_,bind:_) = acoreUnBind a 
+                                                    in  (al,cbindExtractVal a,r)
                             .   sysftyLamArgHere
                                                 =   {- TMP -- @sysfcSubstLamSpine `cSubstApp` -} SysF.unTySeq @sysftyLamArg
   | * - Lam
