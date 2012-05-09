@@ -36,7 +36,7 @@ gamInst1ExistsWithVarMp getset gamVarMp u g
           = gamDoTyWithVarMp
               getset
               (\_ (t,_) m u -> let (u',ue) = mkNewLevUID u
-                           in  (tyInst1Exists ue t,m,u')
+                               in  (tyInst1Exists ue t,m,u')
               )
               gamVarMp u g
 %%]

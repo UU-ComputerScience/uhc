@@ -33,12 +33,13 @@ i.e. provides the same API.
 -- | The type, represented by a term CExpr
 type Ty     		= C.SysfTy			-- base ty
 
--- | A sequence of parameters (for now just a single type)
-type TySeq			= C.SysfTySeq
-
 -- | Binding the bound
 type TyBind			= C.SysfTyBind
 type TyBound		= C.SysfTyBound
+
+-- | A sequence of parameters (for now just a single type)
+type TySeq			= C.SysfTySeq
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -148,7 +149,7 @@ tyBindToBound sel convYes convNo bind@(C.CBind_Bind n bbs)
 tyL0BindToL1Val :: MetaLev -> TyBind -> TyBound
 tyL0BindToL1Val mlev
   = tyBindToBound
-      (\a m l -> a == acbaspkeyDefault && (m-1) == mlev)
+      (\a m l -> a == acbaspkeyDefault) --  && (m-1) == mlev)
       (\n (C.CBound_Val a m l _) -> C.CBound_Val a m l (acoreVar n))
       (\_ b                      -> b                                  )
 %%]

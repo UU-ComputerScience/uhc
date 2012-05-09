@@ -212,8 +212,8 @@ coeEvalOnAsSubst uniq coe ce
               c | acoreCoeIsId c-> mk ce
               Coe_Map  f        -> mk $ f ce
               Coe_App1 a        -> mk $ acore1App ce a
-              Coe_Lam n   _     -> mk $ acoreLam1 n ce
-              Coe_LamLet n _ i  -> mk $ n `acoreLam1` acoreHoleLet i ce
+              Coe_Lam n   t     -> mk $ acoreLam1Ty n t ce
+              Coe_LamLet n t i  -> mk $ acoreLam1Ty n t $ acoreHoleLet i ce
               Coe_LetRec b      -> mk $ acoreLetRec b ce
               Coe_Compose c1 c2 -> (u2, c1', s2 `cSubstAppSubst` s1)
                                 where (u1,c2',s1) = ev uniq c2 ce

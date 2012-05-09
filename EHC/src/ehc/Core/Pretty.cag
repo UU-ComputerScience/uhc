@@ -24,6 +24,9 @@
 %%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonBindNm})
 WRAPPER
   CodeAGItf CExpr
+%%[[(8 coresysf)
+  CBind CBound
+%%]]
 %%[[9
   CMetas
 %%]]
@@ -51,12 +54,42 @@ ppCExpr ce
      in   (pp_Syn_CExpr t)
 
 instance PP CExpr where
-  pp ce = ppCExpr ce
+  pp = ppCExpr
+%%]
 
-%%[[(8 coresysf)
+%%[(8 coresysf) hs
+ppCBind :: CBind -> PP_Doc
+ppCBind ce
+  =  let  t = wrap_CBind (sem_CBind ce)
+                         (Inh_CBind
+                            { varPPMp_Inh_CBind = Map.empty
+                            , lamMp_Inh_CBind = Map.empty
+                            , ppHow_Inh_CBind = howHor
+                            , opts_Inh_CBind = emptyEHCOpts
+                            })
+     in   (pp_Syn_CBind t)
+
+ppCBound :: CBound -> PP_Doc
+ppCBound ce
+  =  let  t = wrap_CBound (sem_CBound ce)
+                          (Inh_CBound
+                            { varPPMp_Inh_CBound = Map.empty
+                            , lamMp_Inh_CBound = Map.empty
+                            , ppHow_Inh_CBound = howHor
+                            , opts_Inh_CBound = emptyEHCOpts
+                            , nm_Inh_CBound = hsnUnknown
+                            })
+     in   (pp_Syn_CBound t)
+
+
+instance PP CBind where
+  pp = ppCBind
+
+instance PP CBound where
+  pp = ppCBound
+
 instance PP CTy where
   pp = cty pp pp
-%%]]
 %%]
 
 %%[(8 codegen) hs
@@ -175,6 +208,9 @@ SEM CodeAGItf
 
 SEM CBound
   | Val         loc         .   ppHow       =   if @mlev > 0 then howHor else @lhs.ppHow
+
+SEM CExpr
+  | Lam         bind        .   ppHow       =   howHor
 %%]
 
 SEM Expr
@@ -203,6 +239,16 @@ ATTR CodeAGItf AllCodeNT [ lamMp: LamMp | | ]
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Pretty printed code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs
+-- | pp a CBound, for internal use here
+ppBound :: Bool -> Maybe String -> String -> PP_Doc -> PP_Doc
+ppBound isSingleNoNm mbLev s pv
+  = lev $ sep (pp s) pv
+  where sep | isSingleNoNm = flip const
+            | otherwise    = (>#<)
+        lev = maybe id (>#<) mbLev
+%%]
 
 %%[(8 codegen)
 ATTR CodeAGItf AllCodeNT [ | | pp USE {>-<} {empty} : PP_Doc ]
@@ -254,7 +300,7 @@ SEM CExpr
 
 SEM CExpr
   | Lam         loc         .   lamBodyPP   =   @body.lamBodyPP
-                            .   lamArgPPL   =   (ppCNm @lhs.opts @argNm) : @body.lamArgPPL
+                            .   lamArgPPL   =   @bind.pp {- (ppCNm @lhs.opts @argNm) -} : @body.lamArgPPL
   | * - Lam     lhs         .   lamBodyPP   =   @pp
                             .   lamArgPPL   =   []
 
@@ -265,38 +311,39 @@ SEM CExpr
                             .   appArgPPL   =   []
 
 SEM CBind
- | Bind         lhs         .   pp          =   let p [a] = a
+ | Bind         lhs         .   pp          =   let p [ ] = empty
+                                                    p [a] = a
                                                     p as  = ppCurlysSemisBlock as
                                                     par | or [ m | (_,m,_) <- @bindAspects.ppBindInfoL ] = ppParens
                                                         | otherwise                                      = id
                                                     isSingleNoNm = hsnIsWild @nm && length @bindAspects.ppBindInfoL == 1
-                                                    sep :: CmbPP
-                                                    sep | isSingleNoNm = flip const
-                                                        | otherwise    = (>#<)
                                                     def | isSingleNoNm = par                                           val
                                                         | otherwise    = par $ howDef @lhs.ppHow (ppCNm @lhs.opts @nm) val
-                                                        where val = p $ [ sep (pp s) $ pv | (s,_,pv) <- @bindAspects.ppBindInfoL ] ++ (maybe [] (\x -> [pp x]) $ Map.lookup @nm @lhs.lamMp)
+                                                        where val = p $ [ ppBound isSingleNoNm Nothing s pv | (s,_,pv) <- @bindAspects.ppBindInfoL ] ++ (maybe [] (\x -> [pp x]) $ Map.lookup @nm @lhs.lamMp)
                                                 in  def
 
 SEM CBound
-  | Bind        loc         .   pp          =   @bindMeta.pp >-< @expr.pp
-  | Ty          loc         .   pp          =   ppACBaspKeyS @aspectKeyS >#< @tyPP -- pp @relevTy
-  | RelevTy     loc         .   pp          =   ppACBaspKeyS @aspectKeyS >#< @tyPP -- pp @relevTy
-  | Meta        loc         .   pp          =   ppACBaspKeyS @aspectKeyS >#< @cmetas.pp
-  | Val         loc         .   (pp,mustPar)=   let asp | Set.null @aspectKeyS || acbaspkeyDefault == @aspectKeyS
+  | Bind        loc         .   ppBound     =   @bindMeta.pp >-< @expr.pp
+  | Ty          loc         .   ppBound     =   ppACBaspKeyS @aspectKeyS >#< @tyPP -- pp @relevTy
+  | RelevTy     loc         .   ppBound     =   ppACBaspKeyS @aspectKeyS >#< @tyPP -- pp @relevTy
+  | Meta        loc         .   ppBound     =   ppACBaspKeyS @aspectKeyS >#< @cmetas.pp
+  | Val         loc         .   (ppBound,lev,mustPar)
+                                            =   let asp | Set.null @aspectKeyS || acbaspkeyDefault == @aspectKeyS
                                                                                 = id
                                                         | otherwise             = \x -> ppACBaspKeyS @aspectKeyS >#< x
                                                     lbl | @lbl == CLbl_None     = id
                                                         | otherwise             = \x -> @lbl >#< "=" >#< x 
-                                                    -- lev | @mlev == 0            = id
-                                                    --     | otherwise             = \x -> "@" >|< @mlev >#< x 
-                                                    par | @mlev == 0 && @lbl == CLbl_None && Set.null @aspectKeyS
-                                                                                = id
-                                                        | otherwise             = ppParens
-                                                in  ({- lev $ -} asp $ lbl @expr.pp, not $ @mlev == 0 && @lbl == CLbl_None && Set.null @aspectKeyS)
+                                                in  ({- lev $ -} asp $ lbl @expr.pp
+                                                    , "@" ++ show @mlev
+                                                    , not $ @mlev == 0 && @lbl == CLbl_None && Set.null @aspectKeyS
+                                                    )
 %%[[90
-  | FFE         loc         .   pp          =   "foreignexport" >#< ppCurlysCommasBlock [pp (show @callconv),"\"" >|< @expEnt >|< "\"",@expr.pp {- ppCNm @lhs.opts @expNm -},ppTyWithCfg' CfgPP_Plain @ty]
+  | FFE         loc         .   ppBound     =   "foreignexport" >#< ppCurlysCommasBlock [pp (show @callconv),"\"" >|< @expEnt >|< "\"",@expr.pp {- ppCNm @lhs.opts @expNm -},ppTyWithCfg' CfgPP_Plain @ty]
 %%]]
+
+SEM CBound
+  | Val         loc         .   pp          =   ppBound True (Just @lev) @sep @ppBound
+  | * - Val     loc         .   pp          =   @ppBound
 
 SEM CBoundL CBindL CPatFldL CAltL CBindAnnL
   | Nil         lhs         .   ppL         =   []
@@ -399,14 +446,14 @@ SEM CBound
   | RelevTy     loc         .   sep         =   "::R"
   | Meta        loc         .   sep         =   "::M"
   | Val         loc         .   sep         =   if      @mlev == 0 then "="
-                                                else if @mlev >  1 then "::@" ++ show @mlev
-                                                else                    "::"
+                                                -- else if @mlev >  1 then "::@" ++ show @mlev
+                                                else                    "::" ++ @lev
 %%[[90
   | FFE         loc         .   sep         =   "="
 %%]]
 
 SEM CBound
-  | *           lhs         .   ppBindInfoL =   [(@sep,@mustPar,@pp)]
+  | *           lhs         .   ppBindInfoL =   [(@sep,@mustPar,@ppBound)]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

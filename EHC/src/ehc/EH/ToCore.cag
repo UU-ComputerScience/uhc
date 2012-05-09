@@ -122,24 +122,24 @@ SEM Decl
 %%[[93
       FusionConv FusionDecl
 %%]]
-  				loc         .   acorety		=	mkCTy @lhs.opts @finalTyExpanded @sysfty
+                loc         .   acorety     =   mkCTy @lhs.opts @finalTyExpanded @sysfty
 
 SEM DataFieldExpr
   | Upd
-  				loc         .   acorety		=	mkCTy @lhs.opts @finalTyExprExpanded @sysfty
+                loc         .   acorety     =   mkCTy @lhs.opts @finalTyExprExpanded @sysfty
 
 SEM Expr
   | Case
-  				loc         .   acorety		=	mkCTy @lhs.opts @finalTyExprExpanded @sysfty
+                loc         .   acorety     =   mkCTy @lhs.opts @finalTyExprExpanded @sysfty
   | Lam
 %%[[12
     LamImpl
 %%]]
-  				loc			.	acoretyArg	=	mkCTy @lhs.opts @finalTyArgExpanded @sysftyLamArg
+                loc         .   acoretyArg  =   mkCTy @lhs.opts @finalTyArgExpanded @sysftyLamArg
 
 SEM PatExpr
   | IConst CConst SConst Var Con AppTop Rec DataFields Irrefutable 
-  				loc         .   acorety		=	mkCTy @lhs.opts @finalTyExpanded @sysfty
+                loc         .   acorety     =   mkCTy @lhs.opts @finalTyExpanded @sysfty
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -170,7 +170,7 @@ SEM Expr
                                                  )]
                             .   letCBindOtherL
                                             =   []
-                            .	mkBangEval	=	\e -> foldr ($) e @decls.bangEvalL
+                            .   mkBangEval  =   \e -> foldr ($) e @decls.bangEvalL
                             .   cexprtop    =   ehcOptTrace @lhs.opts "Expr.Let.lhs.cexprtop" $
                                                 foldr (\(c,b) e -> acoreLet c b e)
                                                       (@mkBangEval @letCBody)
@@ -179,10 +179,46 @@ SEM Expr
 %%[[12
     AppImpl
 %%]]
-                loc         .   cexprapp    =   acore1App @func.cexpr @arg.cexpr
-                            .   cexpr       =   if @func.isNewtype then @arg.cexpr else @cexprapp
-  | Lam         loc         .   cexpr       =   acoreLam1 @arg.topNm
-                                                    (rceMatchTy @rceEnv [(@arg.topNm,@acoretyArg)] [RAlt_Alt [@arg.rpat] @body.cexpr @body.caseFailS])
+%%[[8
+                loc         .   cexprapp
+%%][9
+                loc         .   (cexprapp,cexprappCSubst)
+%%]]
+                                            =   let mkapp f = wr $ acore1App f @arg.cexpr
+%%[[(8 coresysf)
+                                                    wr      = @sysfcTyArgLamWrap . @sysfcTyArgAppWrap
+%%][8
+                                                    wr      = id
+%%]]
+%%[[8
+                                                    impl app= app @func.cexpr
+%%][9
+                                                    impl app= mkWeaveExpr @lhs.opts @lUniq_cexpr @lhs.finTyVarMp @arg.cSubst app @func.cexpr @appImplsCoeL []
+%%]]
+                                                in  impl mkapp
+                loc         .   cexpr       =   if @func.isNewtype then @arg.cexpr else @cexprapp
+  | Lam
+%%[[12
+    LamImpl
+%%]]
+%%[[8
+                loc         .   cexpr
+%%][9
+                loc         .   (cexpr,cexprlamCSubst)
+%%]]
+                                            =   let 
+%%[[(8 coresysf)
+                                                    wr      = @sysfcTyArgLamWrap
+%%][8
+                                                    wr      = id
+%%]]
+%%[[8
+                                                    lam     = acoreLam1Ty @arg.topNm @acoretyArg
+                                                                (rceMatchTy @rceEnv [(@arg.topNm,@acoretyArg)] [RAlt_Alt [@arg.rpat] @body.cexpr @body.caseFailS])
+%%][9
+                                                    lam     = mkWeaveExpr @lhs.opts @lUniq_cexpr @lhs.finTyVarMp @body.cSubst wr @body.appFunCExpr @lamBodyCoeL @lamArgCoeL
+%%]]
+                                                in  lam
   | Case        loc         .   cexpr       =   let (ns,bs,as)
                                                       = if @isTupOfArg
                                                         then let ns = [ acbrefNm ref | (CExpr_Var ref) <- fuL2ExprL (reverse @expr.fuCExprL) ]
@@ -257,15 +293,11 @@ SEM Expr
 %%[[12
     AppImpl
 %%]]
-                loc         .   (cexprapp,cexprappCSubst)
-                                            :=  mkWeaveExpr @lhs.opts @lUniq_cexpr @lhs.finTyVarMp @arg.cSubst (flip acore1App @arg.cexpr) @func.cexpr @appImplsCoeL []
                 lhs         .   cSubst      =   cSubstApp @arg.cSubst @cexprappCSubst
   | Lam
 %%[[12
     LamImpl
 %%]]
-                loc         .   (cexpr,cexprlamCSubst)
-                                            :=  mkWeaveExpr @lhs.opts @lUniq_cexpr @lhs.finTyVarMp @body.cSubst id @body.appFunCExpr @lamBodyCoeL @lamArgCoeL
                 lhs         .   cSubst      =   cSubstApp @body.cSubst @cexprlamCSubst
   | AppTop      loc         .   cSubstTop   =   @expr.cSubst
   | Rec         loc         .   cSubstTop   =   @recExpr.cSubst
@@ -564,8 +596,8 @@ SEM Expr
 ATTR PatExpr [ | | isBang: Bool ]
 
 SEM PatExpr
-  | Bang		lhs			.	isBang		=	True
-  | * - Bang 	lhs			.	isBang		=	False
+  | Bang        lhs         .   isBang      =   True
+  | * - Bang    lhs         .   isBang      =   False
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -746,7 +778,7 @@ SEM Expr
 
 %%[(9 codegen)
 SEM Expr
-  | Lam         loc         .   lamArgCoeL          =   acoreCoePoiLLam (acoreCoeLetRec @poiBindL) @poiL ++ [acoreCoeLam1 @arg.topNm]
+  | Lam         loc         .   lamArgCoeL          =   acoreCoePoiLLam (acoreCoeLetRec @poiBindL) @poiL ++ [acoreCoeLam1Ty @arg.topNm @acoretyArg]
   | AppTop Rec Let
                 loc         .   lamArgCoeL          =   acoreCoePoiLLam (acoreCoeLetRec @poiBindL) @poiL
 %%]
@@ -758,7 +790,7 @@ SEM Expr
 
 %%[(12 codegen)
 SEM Expr
-  | LamImpl     loc         .   lamArgCoeL          =   [acoreCoeLam1 @arg.topNm `acoreCoeCompose` acoreCoeLetRec @poiBindL]
+  | LamImpl     loc         .   lamArgCoeL          =   [acoreCoeLam1Ty @arg.topNm @acoretyArg `acoreCoeCompose` acoreCoeLetRec @poiBindL]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -797,7 +829,7 @@ SEM Expr
 ATTR AllDecl [ | | bangEvalL USE {++} {[]} : {[CExpr -> CExpr]} ]
 
 SEM Decl
-  | Val			lhs			.	bangEvalL		=	if @patExpr.isBang then [acoreLet1StrictTy (hsnUniqify HsNameUniqifier_Strict @patExpr.topNm) @acorety (acoreVar @patExpr.topNm)] else []
+  | Val         lhs         .   bangEvalL       =   if @patExpr.isBang then [acoreLet1StrictTy (hsnUniqify HsNameUniqifier_Strict @patExpr.topNm) @acorety (acoreVar @patExpr.topNm)] else []
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

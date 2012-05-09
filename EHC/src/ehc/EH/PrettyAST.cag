@@ -236,7 +236,7 @@ SEM TyExpr
 %%[(2 hmtyinfer)
 SEM Decl
   | Val         loc     .  info_2   :=  [ mkInfo1 "ty_sig_" (ppTy @ty_sig_)
-                                        , mkInfo1 "patExpr.ty" (ppTy @patExpr.ty)
+                                        , mkInfo1 "patExpr.ty" (ppTyS @patExpr.patTyVarMp @patExpr.ty)
                                         , mkInfo1 "expr.ty" (ppTy @expr.ty)
                                         , mkInfo1 "lhs.tyVarMp" (ppVarMpV @lhs.tyVarMp)
                                         , mkInfo1 "expr.tyVarMp" (ppVarMpV @expr.tyVarMp)
@@ -273,7 +273,7 @@ SEM Expr
                                         ]
 
 SEM PatExpr
-  | Var         loc     .  info_2   :=  [ mkInfo1 "ty" (ppTyS @lhs.patTyVarMp @ty)
+  | Var         loc     .  info_2   :=  [ mkInfo1 "ty" (ppTyS @patTyVarMpKnTy1 @ty)
                                         ]
   | AppTop      loc     .  info_2   :=  [ mkInfo1 "patExpr.patFunTy" (ppTy @patExpr.patFunTy)
                                         , mkInfo1 "patExpr.ty" (ppTyS @patExpr.patTyVarMp @patExpr.ty)
@@ -717,10 +717,16 @@ SEM Expr
     AppTop
 %%]]
                 loc     .  sinfo_8  :=  [ mkInfo1 "sysfty" (pp @sysfty)
+                                        , mkInfo1 "sysftyTyLamArgL" (ppCommas @sysftyTyLamArgL)
+                                        , mkInfo1 "sysftyTyAppArgL" (ppCommas @sysftyTyAppArgL)
                                         ]
   | Lam         loc     .  sinfo_8  :=  [ mkInfo1 "sysfty" (pp @sysfty)
+                                        , mkInfo1 "sysftyTyLamArgL" (ppCommas @sysftyTyLamArgL)
+                                        , mkInfo1 "sysftyTyAppArgL" (ppCommas @sysftyTyAppArgL)
                                         ]
   | App         loc     .  sinfo_8  :=  [ mkInfo1 "sysfty" (pp @sysfty)
+                                        , mkInfo1 "sysftyTyLamArgL" (ppCommas @sysftyTyLamArgL)
+                                        , mkInfo1 "sysftyTyAppArgL" (ppCommas @sysftyTyAppArgL)
                                         ]
 %%]
 

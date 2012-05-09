@@ -194,23 +194,27 @@ SEM PatExpr
 SEM PatExpr
   | Var VarAs   loc         .   (ty_g_,_)           =   valGamLookupTy @nm @lhs.tySigGam
                             .   ty_kn_              =   tyEnsureNonAny @lUniq @lhs.knTy
-                            .   fo_                 =   fitsIn @lhs.fiOpts @fe @lUniq_4_fo @lhs.patTyVarMp @ty_kn_ @ty_g_
-                            .   ty                  :=  tyInst1Exists @lUniq2 (foTy @fo_)
+                            .   patTyVarMpKnTy1     =   @lhs.patTyVarMp
+                            .   fo_                 =   fitsIn @lhs.fiOpts @fe @lUniq_4_fo @patTyVarMpKnTy1 @ty_kn_ @ty_g_
+                            .   (ty,patTyVarMpKnEx) :=  tyAsVarMp tyInst1Exists @lUniq2 (foTy @fo_)
                 loc         .   lUniq2              :   UNIQUEREF gUniq
                 loc         .   lUniq_4_fo          :   UNIQUEREF gUniq
-  | Var         lhs         .   patTyVarMp          =   foVarMp @fo_ `varUpd` @lhs.patTyVarMp
-  | VarAs       patExpr     .   patTyVarMp          =   foVarMp @fo_ `varUpd` @lhs.patTyVarMp
+  | Var         lhs         .   patTyVarMp          =   @patTyVarMpKnEx `varUpd` foVarMp @fo_ `varUpd` @patTyVarMpKnTy1
+  | VarAs       patExpr     .   patTyVarMp          =   @patTyVarMpKnEx `varUpd` foVarMp @fo_ `varUpd` @patTyVarMpKnTy1
 %%]
 
 %%[(6 hmtyinfer)
 SEM PatExpr
-  | Var         lhs         .   patTyVarMp          :=  tyRestrictKiVarMp [@ty] `varUpd` foVarMp @fo_ `varUpd` @lhs.patTyVarMp
-  | VarAs       patExpr     .   patTyVarMp          :=  tyRestrictKiVarMp [@ty] `varUpd` foVarMp @fo_ `varUpd` @lhs.patTyVarMp
+  | Var         lhs         .   patTyVarMp          :=  tyRestrictKiVarMp [@ty] `varUpd` @patTyVarMpKnEx `varUpd` foVarMp @fo_ `varUpd` @lhs.patTyVarMp
+  | VarAs       patExpr     .   patTyVarMp          :=  tyRestrictKiVarMp [@ty] `varUpd` @patTyVarMpKnEx `varUpd` foVarMp @fo_ `varUpd` @lhs.patTyVarMp
 %%]
 
 %%[(9 hmtyinfer).Var
 SEM PatExpr
-  | Var         loc         .   ty_kn_              :=  tyEnsureNonAnyImpl @lUniq @lhs.knTy
+  | Var         loc         .   (ty_kn_ensured,patTyVarMpKnTyEns)
+                                                    =   tyAsVarMp tyEnsureNonAnyImpl @lUniq @lhs.knTy
+                            .   patTyVarMpKnTy1     :=  @patTyVarMpKnTyEns `varUpd` @lhs.patTyVarMp
+                            .   ty_kn_              :=  @ty_kn_ensured
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 4.TypeAs

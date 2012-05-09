@@ -80,7 +80,7 @@ SEM Expr
     AppImpl
 %%]]
                 loc         .   sysftyTopDownArgBase
-                                            =   {- TMP -- cSubstApp @func.sysfcSubstAppSpine $ -} SysF.tyUnThunkTySeq $ SysF.unTySeq @sysftyAppArg
+                                            =   {- TMP -- cSubstApp @func.sysfcSubstAppSpine $ SysF.tyUnThunkTySeq $ SysF.unTySeq -} @sysftyAppArg
                 loc         .   sysfty      :=  @sysftyTyAppRes
   | * - Var Con IConst CConst App AppImpred
 %%[[12
@@ -214,8 +214,6 @@ SEM Expr
                                                 :=  let (al,a,r) = SysF.tyArrowInstQuArgsRes SysF.ArrowDecompose_ArgAfter @finLamInstToLHere @lhs.sysftyTopDown
                                                         -- (_,bind:_) = acoreUnBind a 
                                                     in  (al,cbindExtractVal a,r)
-                            .   sysftyLamArgHere
-                                                =   {- TMP -- @sysfcSubstLamSpine `cSubstApp` -} SysF.unTySeq @sysftyLamArg
   | * - Lam
 %%[[12
     LamImpl
@@ -223,6 +221,8 @@ SEM Expr
                 loc         .   (sysftyTyLamArgL,_,sysftyTyLamRes)
                                                 =   SysF.tyArrowInstQuArgsRes SysF.ArrowDecompose_InstOnly @finLamInstToLHere @lhs.sysftyTopDown
 %%]
+                            .   sysftyLamArgHere
+                                                =   {- TMP -- @sysfcSubstLamSpine `cSubstApp` -} SysF.unTySeq @sysftyLamArg
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% SysF's Ty: matching, in relation to type inference'd types

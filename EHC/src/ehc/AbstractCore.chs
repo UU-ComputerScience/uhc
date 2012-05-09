@@ -521,7 +521,8 @@ acoreLamBind = flip (foldr acoreLam1Bind)
 {-# INLINE acoreLamBind #-}
 
 acoreLam1Ty :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => HsName -> t -> e -> e
-acoreLam1Ty a t e = acoreLam1Bind (acoreBind1Nm1 a) e
+acoreLam1Ty a t e = acoreLam1Bind (acoreBind1NmTy1 a t) e
+-- acoreLam1Ty a t e = acoreLam1Bind (acoreBind1Nm1 a) e
 -- acoreLam1Ty a t e = acoreLam1Bind (acoreBind1Ty a t) e       -- 20120418, TBD: ignore type for now
 {-# INLINE acoreLam1Ty #-}
 
@@ -632,6 +633,10 @@ acoreBind1Meta n m e = acoreBind1MetaTy n m acoreTyNone e
 acoreBind1Asp1 :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => HsName -> bound -> b
 acoreBind1Asp1 n ba = acoreBind1Asp n [ba]
 {-# INLINE acoreBind1Asp1 #-}
+
+acoreBind1NmTy1 :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => HsName -> t -> b
+acoreBind1NmTy1 n t = acoreBind1Asp n [acoreBoundValTy1CatLev acoreBindcategPlain n 1 t]
+{-# INLINE acoreBind1NmTy1 #-}
 
 acoreBind1Nm1 :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => HsName -> b
 acoreBind1Nm1 n = acoreBind1Asp n []
