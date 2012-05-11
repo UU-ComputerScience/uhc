@@ -23,9 +23,9 @@
 
 %%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonBindNm})
 WRAPPER
-  CodeAGItf CExpr
+  CodeAGItf CExpr CBound
 %%[[(8 coresysf)
-  CBind CBound
+  CBind
 %%]]
 %%[[9
   CMetas
@@ -53,6 +53,21 @@ ppCExpr ce
                             })
      in   (pp_Syn_CExpr t)
 
+ppCBound :: CBound -> PP_Doc
+ppCBound ce
+  =  let  t = wrap_CBound (sem_CBound ce)
+                          (Inh_CBound
+                            { varPPMp_Inh_CBound = Map.empty
+                            , lamMp_Inh_CBound = Map.empty
+                            , ppHow_Inh_CBound = howHor
+                            , opts_Inh_CBound = emptyEHCOpts
+                            , nm_Inh_CBound = hsnUnknown
+                            })
+     in   (pp_Syn_CBound t)
+
+instance PP CBound where
+  pp = ppCBound
+
 instance PP CExpr where
   pp = ppCExpr
 %%]
@@ -69,24 +84,9 @@ ppCBind ce
                             })
      in   (pp_Syn_CBind t)
 
-ppCBound :: CBound -> PP_Doc
-ppCBound ce
-  =  let  t = wrap_CBound (sem_CBound ce)
-                          (Inh_CBound
-                            { varPPMp_Inh_CBound = Map.empty
-                            , lamMp_Inh_CBound = Map.empty
-                            , ppHow_Inh_CBound = howHor
-                            , opts_Inh_CBound = emptyEHCOpts
-                            , nm_Inh_CBound = hsnUnknown
-                            })
-     in   (pp_Syn_CBound t)
-
 
 instance PP CBind where
   pp = ppCBind
-
-instance PP CBound where
-  pp = ppCBound
 
 instance PP CTy where
   pp = cty pp pp

@@ -82,7 +82,10 @@ cbindExtractVal b
 
 %%[(8 codegen)
 SEM CExpr
-  | Lam Let Arr
+  | Lam Let
+%%[[(8 coresysf)
+    Arr
+%%]]
   				loc			.	boundsel		=	noBoundSel
 
 SEM CPatFld
