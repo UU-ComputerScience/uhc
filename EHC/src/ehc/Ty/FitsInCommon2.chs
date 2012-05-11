@@ -21,6 +21,9 @@ structures for fitsIn and related functions.
 %%[(4 hmtyinfer) import(qualified Data.Set as Set)
 %%]
 
+%%[(8 codegen) import({%{EH}AbstractCore})
+%%]
+
 For debug/trace:
 %%[(4 hmtyinfer) import(EH.Util.Pretty)
 %%]
@@ -62,6 +65,7 @@ data FIIn' globvm
       , fiMbInstRank      ::  !(Maybe Int)          -- rank where possible deep instantation did start
       , fiTrace           ::  [PP_Doc]              -- ???? 20080110, must be strict otherwise ghc 6.8.1 generates crashing program ????
 %%[[8
+      , fiCoeCtx		  ::  CoeCtx				-- the coercion context
       , fiEnv             ::  !FIEnv                -- environment (Gam's,...)
 %%]]
       }
@@ -83,6 +87,7 @@ emptyFI' m
       , fiMbInstRank      =   Nothing
       , fiTrace           =   []
 %%[[8
+      , fiCoeCtx		  =   CoeCtx_Allow
       , fiEnv             =   emptyFE
 %%]]
       }

@@ -153,7 +153,10 @@ DATA Err
   | TyCoreSeqLevels     hereLev    : {Int}
                         mustLev    : {Int}
                         ty         : {PP_Doc}
-  | NoCoerceDerivation  func       : {Ty}
+  | NoCoerceDerivation  ty1        : {Ty}
+                        ty2        : {Ty}
+                        fiMode     : {FIMode}
+                        func       : {Ty}
                         arg        : {Ty}
 %%]
 

@@ -68,6 +68,15 @@ ppMsgErr msg err r
               | otherwise      = r  >|< ":" >-< indent 2 x
 %%]
 
+%%[(4 hmtyinfer || hmtyast) hs
+ppFitPair :: FIMode -> Ty -> Ty -> PP_Doc
+ppFitPair fim t1 t2
+  = if tyIsSimple t1 then p1 >|< p2 else p1 >-< p2
+  where p1 = ppTy t1
+        p2 = m fim >|< ppTy t2
+        m fim = " " ++ show fim ++ " "
+%%]
+
 %%[(1 hmtyinfer || hmtyast).ppUnifyErr hs
 ppUnifyErr :: PP msg => msg -> Ty -> Ty -> Ty -> Ty -> PP_Doc
 ppUnifyErr msg t1 t2 t1d t2d
@@ -84,10 +93,8 @@ ppUnifyErr msg t1 t2 fim t1d t2d fimd
 ppUnifyErr :: PP msg => msg -> Ty -> Ty -> FIMode -> Ty -> Ty -> FIMode -> Range -> PP_Doc
 ppUnifyErr msg t1 t2 fim t1d t2d fimd r
 %%]]
-  =  ppMsgErr msg    (    "failed to fit:"  >#< (let p1 = ppTy t1
-                                                     p2 = m fim  >|< ppTy t2
-                                                 in  if tyIsSimple t1 then p1 >|< p2 else p1 >-< p2)
-                     >-<  "problem with :"  >#< (ppTy t1d >|< m fimd >|< ppTy t2d)
+  =  ppMsgErr msg    (    "failed to fit:"  >#< ppFitPair fim  t1  t2
+                     >-<  "problem with :"  >#< ppFitPair fimd t1d t2d -- (ppTy t1d >|< m fimd >|< ppTy t2d)
                      )
 %%[[99
                      r
@@ -352,7 +359,8 @@ SEM Err
                                                         @range
 %%]]
   | NoCoerceDerivation  lhs     .  pp   =   ppMsgErr    "Cannot derive coercion for type application"
-                                                        (    "type function:" >#< pp @func
+                                                        (    "in fit       :" >#< ppFitPair @fiMode @ty1 @ty2
+                                                         >-< "type function:" >#< pp @func
                                                          >-< "type arg     :" >#< pp @arg
                                                         )
 %%[[99

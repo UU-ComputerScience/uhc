@@ -1106,7 +1106,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
 %%]
 
 %%[(4 hmtyinfer)
-			-- | tvar binding part 1: 2 tvars
+            -- | tvar binding part 1: 2 tvars
             varBind1  fi updTy t1@(Ty_Var v1 f1)      t2@(Ty_Var v2 f2)
                 | v1 == v2 && f1 == f2                  = Just $ res  fi       t1
                 |     lBefR && fiAllowTyVarBind fi t1   = Just $ bind fi True  v1 (updTy t2)
@@ -1124,7 +1124,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
             -}
             varBind1  _  _     _                      _ = Nothing       
 
-			-- | tvar binding part 2: 1 of 2 tvars, impredicatively
+            -- | tvar binding part 2: 1 of 2 tvars, impredicatively
             varBind2  fi updTy t1@(Ty_Var v1 _)       t2
                 | allowImpredTVBindL fi t1 t2           = Just $ occurBind fi True  v1 (updTy t2)
             varBind2  fi updTy t1                     t2@(Ty_Var v2 _)
@@ -1141,7 +1141,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
             -}
             varBind2  _  _     _                      _ = Nothing       
 
-			-- | tvar binding part 3: 1 of 2 tvars, non impredicatively
+            -- | tvar binding part 3: 1 of 2 tvars, non impredicatively
             varBind3  fi updTy t1@(Ty_Var v1 _)       t2
                 | fiAllowTyVarBind fi t1                = case deepInstMatchTy fi t2 of
                                                             Just (t1',fi') | fiRankEqInstRank fi
@@ -1204,23 +1204,23 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                                                                $ res fi t2
 
             fBase fi updTy t1                    t2
-                | isJust mbVarBind					         = fromJust mbVarBind
+                | isJust mbVarBind                           = fromJust mbVarBind
                 where  mbVarBind = varBind1 fi updTy t1 t2
 %%]
 
 %%[(4 hmtyinfer).fitsIn.Ann
             -- get rid of annotation for fitsIn, but preserve as result
-            fBase fi updTy t1@(Ty_Ann TyAnn_Mono at1)     	t2          = fo
+            fBase fi updTy t1@(Ty_Ann TyAnn_Mono at1)       t2          = fo
                 where fi2 = fi { fiFIOpts = (fiFIOpts fi) {fioBindLFirst = False} }
                       fo  = fVar' fBase fi2 (updTy . tyAnnMono) at1 t2
-            fBase fi updTy t1                     			t2@(Ty_Ann TyAnn_Mono at2)
-                                                    			        = fo
+            fBase fi updTy t1                               t2@(Ty_Ann TyAnn_Mono at2)
+                                                                        = fo
                 where fi2 = fi { fiFIOpts = (fiFIOpts fi) {fioBindRFirst = False} }
                       fo  = fVar' fBase fi2 (updTy . tyAnnMono) t1 at2
 
-            fBase fi updTy t1@(Ty_Ann a1 at1)     			t2          = fVar' fBase fi updTy at1 t2
-            fBase fi updTy t1                     			t2@(Ty_Ann a2 at2)
-                                                    			        = fVar' fBase fi updTy t1 at2
+            fBase fi updTy t1@(Ty_Ann a1 at1)               t2          = fVar' fBase fi updTy at1 t2
+            fBase fi updTy t1                               t2@(Ty_Ann a2 at2)
+                                                                        = fVar' fBase fi updTy t1 at2
 %%]
 
 %%[(9 hmtyinfer)
@@ -1246,7 +1246,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
 %%[(4 hmtyinfer)
             -- here we decide whether to bind impredicatively, anything not to be bounded as such must be dealt with before here
             fBase fi updTy t1                    t2
-                | isJust mbVarBind					         = fromJust mbVarBind
+                | isJust mbVarBind                           = fromJust mbVarBind
                 where  mbVarBind = varBind2 fi updTy t1 t2
 %%]
 
@@ -1539,8 +1539,10 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                             =  Just (fVar' fTySyn fi updTy tr1 t2)
                        -}
                        fP fi (Ty_Impls (Impls_Tail iv1 _))
+                         | fiCoeCtx fi == CoeCtx_Allow
+                            =  Just (foUpdLRCoe (lrcoeLSingleton (Coe_ImplApp iv1)) (fVar' fTySyn fi updTy tr1 t2))
+                         | otherwise
                             =  Just (foUpdVarMp (iv1 `varmpImplsUnit` Impls_Nil) (fVar' fTySyn fi updTy tr1 t2))
-                            -- =  Just (foUpdLRCoe (lrcoeLSingleton (Coe_ImplApp iv1)) (fVar' fTySyn fi updTy tr1 t2))
 %%[[9
                        fP fi (Ty_Impls (Impls_Cons _ pr1 pv1 _ im1))
 %%][99
@@ -1616,7 +1618,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
 
 %%[(4 hmtyinfer).fitsIn.Var2
             fBase fi updTy t1                    t2
-                | isJust mbVarBind					= fromJust mbVarBind
+                | isJust mbVarBind                  = fromJust mbVarBind
                 where  mbVarBind = varBind3 fi updTy t1 t2
 %%]
 
@@ -1647,6 +1649,12 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                        (as,_) = hdAndTl' unknownAppSpineVertebraeInfo spine
 %%]]
                        pol    = asPolarity as
+%%[[(8 codegen)
+                       aCoeCtx= case (foMbAppSpineInfo ffo,asMbFOUpdCoe as) of
+                                  (Nothing,_      ) -> CoeCtx_DontAllow
+                                  (Just _ ,Nothing) -> CoeCtx_DontAllow
+                                  _                 -> CoeCtx_Allow
+%%]]
 %%[[4
                        fi3    = trfi "spine" ("f tf1 tf2:" >#< ppTyWithFI fi2 (foTy ffo) >-< "spine:" >#< ppCommas spine) fi2
 %%][100
@@ -1654,18 +1662,24 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
 %%]]
                        fi4    = -- (\x -> Debug.tr "fBase.fi4" ((pp $ show $ fioDontBind $ fiFIOpts fi) >-< (pp $ show $ foDontBind ffo) >-< (pp $ show $ fioDontBind $ fiFIOpts x) ) x) $
                                 -- (fofi ffo $ fiUpdRankByPolarity pol $ fiSwapCoCo fi3) {fiFIOpts = asFIO as $ fioSwapPolarity pol $ fiFIOpts fi}
-                                (fofi ffo $ fiUpdRankByPolarity pol $ fiSwapCoCo (fi3 {fiFIOpts = asFIO as $ fioSwapPolarity pol $ fiFIOpts fi}))
+                                (fofi ffo $
+                                 fiUpdRankByPolarity pol $
+                                 fiSwapCoCo
+                                   (fi3 { fiFIOpts = asFIO as $ fioSwapPolarity pol $ fiFIOpts fi
+%%[[(8 codegen)
+                                        , fiCoeCtx = aCoeCtx
+%%]]
+                                        }))
                        afo    = fVar' fTySyn fi4 id ta1 ta2
 %%[[4
                        rfo    = asFO as ffo $ foCmbApp ffo afo
 %%][(8 codegen)
-                       rfo    = case (foMbAppSpineInfo ffo,asMbFOUpdCoe as) of
-                                  (Nothing,_) | hasSubCoerce
-                                    -> errCoerce
-                                  (Just _,Nothing) | hasSubCoerce
-                                    -> errCoerce
-                                  _ -> asFOUpdCoe as globOpts [ffo, asFO as ffo $ foCmbApp ffo afo]
-                              where errCoerce = err fi4 [rngLift range Err_NoCoerceDerivation (foVarMp afo `varUpd` foTy ffo) (foVarMp afo `varUpd` foTy afo)]
+                       rfo    = if aCoeCtx == CoeCtx_DontAllow && hasSubCoerce
+                                then errCoerce
+                                else asFOUpdCoe as globOpts [ffo, asFO as ffo $ foCmbApp ffo afo]
+                              where errCoerce = err fi4 [rngLift range Err_NoCoerceDerivation
+                                                            (fiAppVarMp fi4 ty1) (fiAppVarMp fi4 ty2) (fioMode (fiFIOpts fi4))
+                                                            (foVarMp afo `varUpd` foTy ffo) (foVarMp afo `varUpd` foTy afo)]
 %%[[(8 tycore)
                                     hasSubCoerce = not $ C.lrcoeIsId $ foLRTCoe afo
 %%][8

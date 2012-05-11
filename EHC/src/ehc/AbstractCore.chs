@@ -1007,6 +1007,27 @@ instance Show (Coe' expr metaval bind bindasp ty) where
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Coercion context
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[doesWhat.Coe doclatex
+Coercions may either be applied or not on type arguments.
+In particular, due to lack of proper analysis (and generics code like generation),
+it is only known for arrow and product types how to construct a coercion from its type args, as they directly
+correspond to values.
+
+A CoeCtx encodes this yes/no may allow.
+A CoeCtx is isomorphic (for now) to Bool.
+%%]
+
+%%[(8 codegen) hs export(CoeCtx(..))
+data CoeCtx
+  = CoeCtx_Allow
+  | CoeCtx_DontAllow
+  deriving (Eq,Show)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Coercion construction
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
