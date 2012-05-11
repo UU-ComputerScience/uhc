@@ -134,7 +134,7 @@ ppCBindL
   = ppAssocL
   . map (\b -> case b of
                  CBind_Bind n [CBound_Bind m v] -> (n,v >|< ppOptCMetas m)
-                 CBind_Bind n _ -> (n,pp "..")
+                 CBind_Bind n a -> (n, vlist a)
         )
 %%]
 

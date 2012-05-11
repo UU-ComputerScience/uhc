@@ -1540,6 +1540,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                        -}
                        fP fi (Ty_Impls (Impls_Tail iv1 _))
                             =  Just (foUpdVarMp (iv1 `varmpImplsUnit` Impls_Nil) (fVar' fTySyn fi updTy tr1 t2))
+                            -- =  Just (foUpdLRCoe (lrcoeLSingleton (Coe_ImplApp iv1)) (fVar' fTySyn fi updTy tr1 t2))
 %%[[9
                        fP fi (Ty_Impls (Impls_Cons _ pr1 pv1 _ im1))
 %%][99

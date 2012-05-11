@@ -28,8 +28,15 @@ ppNestInfo opts nms attrs ps infos
 ppNm :: HsName -> PP_Doc
 ppNm = text . show . show
 
+mkInfo1'' :: Verbosity -> EHCOpts -> String -> PP_Doc -> [(String,PP_Doc)]
+mkInfo1'' v o s p | ehcOptVerbosity o >= v = [(s,p)]
+                  | otherwise              = []
+
+mkInfo1Dbg :: EHCOpts -> String -> PP_Doc -> [(String,PP_Doc)]
+mkInfo1Dbg = mkInfo1'' VerboseDebug
+
 mkInfo1 :: String -> PP_Doc -> (String,PP_Doc)
-mkInfo1 = (,)
+mkInfo1 s v = head $ mkInfo1'' VerboseQuiet defaultEHCOpts s v
 %%]
 
 %%[(9 hmtyinfer) hs
@@ -903,14 +910,14 @@ SEM Expr
                                         , mkInfo1 "quantCnstrMp" (ppAssocLV $ assocLMapElt ppBracketsCommas $ Map.toList @quantCnstrMp)
                                         , mkInfo1 "tqoGam" (ppGam @tqoGam)
                                         , mkInfo1 "tmpoTyVarMp" (pp @tmpoTyVarMp)
-                                        , mkInfo1 "chrSolve1Trace" (ppSolveTrace @chrSolve1Trace)
                                         , mkInfo1 "chrSolve1RedGraph" (pp $ show @chrSolve1RedGraph)
                                         , mkInfo1 "chrSimplifyResult1 redgraphs" (ppAssocLV $ assocLMapElt show $ simpresRedGraphs @chrSimplifyResult1)
-                                        , mkInfo1 "chrSolve2Trace" (ppSolveTrace @chrSolve2Trace)
                                         , mkInfo1 "chrSolve2RedGraph" (pp $ show @chrSolve2RedGraph)
                                         , mkInfo1 "chrSolve2RedAlts"  (ppBracketsCommasV @chrSolve2RedAlts )
                                         , mkInfo1 "chrSolve2RedTrees" (ppBracketsCommasV $ map ppAssocLV $ @chrSolve2RedTrees)
                                         ]
+                                        ++ mkInfo1Dbg @lhs.opts "chrSolve1Trace" (ppSolveTrace @chrSolve1Trace)
+                                        ++ mkInfo1Dbg @lhs.opts "chrSolve2Trace" (ppSolveTrace @chrSolve2Trace)
   | Lam         loc     .  info_9   :=  [ mkInfo1 "imTy" (pp @imTy)
                                         , mkInfo1 "imTy+subst" (pp (@body.tyVarMp `varUpd` @imTy))
                                         , mkInfo1 "knImpls" (pp @knImpls)
