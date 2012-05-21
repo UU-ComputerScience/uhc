@@ -45,14 +45,14 @@ sysftyCloseExists t
 
 %%[(8 codegen)
 SEM Expr PatExpr Decl DataFieldExpr
-  | *           loc         .   sysfty      =   appDbg "{Expr,PatExpr,Decl,DataFieldExpr}.sysfty not implemented"
+  | *           loc         .   sysfty      =   (appDbg "{Expr,PatExpr,Decl,DataFieldExpr}.sysfty not implemented" :: SysfTy)
 
 SEM Expr
   | Lam         
 %%[[12
     LamImpl
 %%]]
-                loc         .   sysftyLamArg=   appDbg "{Expr}.sysftyArg not implemented"
+                loc         .   sysftyLamArg=   (appDbg "{Expr}.sysftyArg not implemented" :: SysfTy)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -95,25 +95,25 @@ SEM PatExpr
   | Var         loc         .   sysfty      :=  @lhs.sysftyTopDown
   | AppTop      loc         .   sysfty      :=  SysF.mkTyThunk @sysftyPat
   | * - Var AppTop
-                loc         .   sysfty      :=  appDbg "PatExpr.sysfty not implemented"
+                loc         .   sysfty      :=  (appDbg "PatExpr.sysfty not implemented" :: SysfTy)
 
 SEM Decl
   | Val         loc         .   sysfty      :=  ty2SysfWithKiGamVarMp @lhs.finTyKiGam emptyVarMp @finalTyExpanded
                             .   sysftyGam   =   sysftyLookup @lhs.finTyVarMp @lhs.finTyKiGam @patExpr.topNm @lhs.finValGam
                             .   sysftyBind  =   if @lhs.isStrict then @sysfty else SysF.mkTyThunk @sysfty
-  | Data        loc         .   sysfty      :=  SysF.tyToSysfKi $ @lhs.finKiVarMp `varUpd` tkgiKi @dataTkgi -- $ tkgiKi $ fst $ tyKiGamLookupByNameErr @tyNm @lhs.finTyKiGam
+  | Data        loc         .   sysfty      :=  SysF.tyToSysfTyKi $ @lhs.finKiVarMp `varUpd` tkgiKi @dataTkgi -- $ tkgiKi $ fst $ tyKiGamLookupByNameErr @tyNm @lhs.finTyKiGam
   | FFI         loc         .   sysfty      :=  ty2SysfWithKiGamVarMp @lhs.finTyKiGam emptyVarMp @finalTyExpanded
   | * - Val Data FFI
-                loc         .   sysfty      :=  appDbg "Decl.sysfty not implemented"
+                loc         .   sysfty      :=  (appDbg "Decl.sysfty not implemented" :: SysfTy)
 
 SEM DataFieldExpr
   | *
-                loc         .   sysfty      :=  appDbg "DataFieldExpr.sysfty not implemented"
+                loc         .   sysfty      :=  (appDbg "DataFieldExpr.sysfty not implemented" :: SysfTy)
 %%]
 
 %%[(8 codegen coresysf)
 SEM AGItf
-  | AGItf       expr        .   sysftyTopDown   =   appDbg "AGItf.AGItf.sysftyTopDown"
+  | AGItf       expr        .   sysftyTopDown   =   (appDbg "AGItf.AGItf.sysftyTopDown" :: SysfTy)
 
 SEM Expr
   | Lam         
@@ -349,14 +349,14 @@ SEM Decl
 %%[[90
     FFE
 %%]]
-                expr        .   sysftyTopDown   =   appDbg "Decl.InstanceIntro.sysftyTopDown"
+                expr        .   sysftyTopDown   =   (appDbg "Decl.InstanceIntro.sysftyTopDown" :: SysfTy)
                             .   sysfcSubstLamSpine
                                                 =   emptyCSubst
 %%]]
 
 %%[[97
 SEM PatExpr
-  | Expr        expr        .   sysftyTopDown   =   appDbg "PatExpr.Expr.sysftyTopDown"
+  | Expr        expr        .   sysftyTopDown   =   (appDbg "PatExpr.Expr.sysftyTopDown" :: SysfTy)
                             .   sysfcSubstLamSpine
                                                 =   emptyCSubst
 %%]]

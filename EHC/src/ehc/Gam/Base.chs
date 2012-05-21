@@ -31,7 +31,7 @@
 %%[7 import(Data.Maybe,qualified Data.Set as Set,qualified Data.Map as Map) export(gamNoDups)
 %%]
 
-%%[9.ScopeMapGam import({%{EH}Gam.ScopeMapGam})
+%%[8.ScopeMapGam import({%{EH}Gam.ScopeMapGam})
 %%]
 
 
@@ -43,11 +43,7 @@
 newtype Gam k v     =   Gam [AssocL k v]  deriving Show
 %%]
 
-%%[9.Base.type -1.Base.type export(Gam)
-type Gam k v        =   SGam k v
-%%]
-
-%%[9999 -(9.Base.type 1.Base.type)
+%%[8.Base.type -1.Base.type export(Gam)
 type Gam k v        =   SGam k v
 %%]
 
@@ -76,23 +72,13 @@ gamAddGam       g1 (Gam (l2:ll2))   = Gam ((gamToAssocL g1 ++ l2):ll2)
 gamAdd          k v g               = gamAddGam (k `gamSingleton` v) g
 %%]
 
-%%[9
+%%[8
 gamToAssocL     g                   = [ (k,v) | (k,(v:_)) <- gamToAssocDupL g ]
 gamLookup       k g                 = fmap head $ gamLookupDup k g
 assocLToGam                         = gamUnions . map (uncurry gamSingleton)
 %%]
 
-%%[9.Base.funs -1.Base.funs
-emptyGam                            = emptySGam
-gamSingleton                        = sgamSingleton
-gamPushNew      g                   = sgamPushNew g
-gamPushGam      g1 g2               = sgamPushGam g1 g2
-gamPop          g                   = sgamPop g
-gamAddGam       g1 g2               = sgamUnion g1 g2
-gamAdd          k v g               = sgamUnion (sgamSingleton k v) g
-%%]
-
-%%[9999 -(9.Base.funs 1.Base.funs)
+%%[8.Base.funs -1.Base.funs
 emptyGam                            = emptySGam
 gamSingleton                        = sgamSingleton
 gamPushNew      g                   = sgamPushNew g
@@ -112,11 +98,7 @@ gamTop                              = fst . gamPop
 assocLToGam     l                   = Gam [l]
 %%]
 
-%%[9.Rest.funs -1.Rest.funs
-gamTop                              = sgamTop
-%%]
-
-%%[9999 -(9.Rest.funs 1.Rest.funs)
+%%[8.Rest.funs -1.Rest.funs
 gamTop                              = sgamTop
 %%]
 
@@ -125,12 +107,7 @@ assocDupLToGam :: Ord k => AssocL k [v] -> Gam k v
 assocDupLToGam = assocLToGam . concat . map (\(k,vs) -> zip (repeat k) vs)
 %%]
 
-%%[9.assocDupLToGam -1.assocDupLToGam
-assocDupLToGam :: Ord k => AssocL k [v] -> Gam k v
-assocDupLToGam = sgamFromAssocDupL
-%%]
-
-%%[9999 -(9.assocDupLToGam 1.assocDupLToGam)
+%%[8.assocDupLToGam -1.assocDupLToGam
 assocDupLToGam :: Ord k => AssocL k [v] -> Gam k v
 assocDupLToGam = sgamFromAssocDupL
 %%]
@@ -145,12 +122,7 @@ gamToAssocDupL :: Ord k => Gam k v -> AssocL k [v]
 gamToAssocDupL = assocLGroupSort . gamToAssocL
 %%]
 
-%%[9.gamToAssocDupL -1.gamToAssocDupL
-gamToAssocDupL :: Ord k => Gam k v -> AssocL k [v]
-gamToAssocDupL g = sgamToAssocDupL g
-%%]
-
-%%[9999 -(9.gamToAssocDupL 1.gamToAssocDupL)
+%%[8.gamToAssocDupL -1.gamToAssocDupL
 gamToAssocDupL :: Ord k => Gam k v -> AssocL k [v]
 gamToAssocDupL g = sgamToAssocDupL g
 %%]
@@ -165,12 +137,7 @@ gamNoDups :: Ord k => Gam k v -> Gam k v
 gamNoDups (Gam ll) = Gam (map (nubBy (\(k1,_) (k2,_) -> k1 == k2)) ll)
 %%]
 
-%%[9.gamNoDups -1.gamNoDups
-gamNoDups :: Ord k => Gam k v -> Gam k v
-gamNoDups g = sgamNoDups g
-%%]
-
-%%[9999 -(9.gamNoDups 1.gamNoDups)
+%%[8.gamNoDups -1.gamNoDups
 gamNoDups :: Ord k => Gam k v -> Gam k v
 gamNoDups g = sgamNoDups g
 %%]
@@ -180,12 +147,7 @@ gamMap :: ((k,v) -> (k',v')) -> Gam k v -> Gam k' v'
 gamMap f (Gam ll) = Gam (map (map f) ll)
 %%]
 
-%%[9.gamMap -1.gamMap
-gamMap :: (Ord k,Ord k') => ((k,v) -> (k',v')) -> Gam k v -> Gam k' v'
-gamMap = sgamMap
-%%]
-
-%%[9999 -(9.gamMap 1.gamMap)
+%%[8.gamMap -1.gamMap
 gamMap :: (Ord k,Ord k') => ((k,v) -> (k',v')) -> Gam k v -> Gam k' v'
 gamMap = sgamMap
 %%]
@@ -203,12 +165,7 @@ gamPartition f (Gam ll)
            = unzip $ map (partition (\(k,v) -> f k v)) $ ll
 %%]
 
-%%[9.gamPartition -3.gamPartition
-gamPartition :: Ord k => (k -> v -> Bool) -> Gam k v -> (Gam k v,Gam k v)
-gamPartition = sgamPartitionWithKey
-%%]
-
-%%[9999 -(9.gamPartition 3.gamPartition)
+%%[8.gamPartition -3.gamPartition
 gamPartition :: Ord k => (k -> v -> Bool) -> Gam k v -> (Gam k v,Gam k v)
 gamPartition = sgamPartitionWithKey
 %%]
@@ -228,12 +185,7 @@ gamMapThr f thr (Gam ll)
      in  (Gam ll',thr')
 %%]
 
-%%[9.gamMapThr -4.gamMapThr
-gamMapThr :: (Ord k,Ord k') => ((k,v) -> t -> ((k',v'),t)) -> t -> Gam k v -> (Gam k' v',t)
-gamMapThr = sgamMapThr
-%%]
-
-%%[9999 -(9.gamMapThr 4.gamMapThr)
+%%[8.gamMapThr -4.gamMapThr
 gamMapThr :: (Ord k,Ord k') => ((k,v) -> t -> ((k',v'),t)) -> t -> Gam k v -> (Gam k' v',t)
 gamMapThr = sgamMapThr
 %%]
@@ -253,12 +205,7 @@ gamLookupDup :: Ord k => k -> Gam k v -> Maybe [v]
 gamLookupDup k (Gam ll) = foldr (\l mv -> case filter ((==k) . fst) l of {[] -> mv; lf -> Just (assocLElts lf)}) Nothing ll
 %%]
 
-%%[9.gamLookupDup -1.gamLookupDup
-gamLookupDup :: Ord k => k -> Gam k v -> Maybe [v]
-gamLookupDup k g = sgamLookupDup k g
-%%]
-
-%%[9999 -(9.gamLookupDup 1.gamLookupDup)
+%%[8.gamLookupDup -1.gamLookupDup
 gamLookupDup :: Ord k => k -> Gam k v -> Maybe [v]
 gamLookupDup k g = sgamLookupDup k g
 %%]
@@ -270,7 +217,7 @@ gamUnzip (Gam ll)
      in   (Gam ll1,Gam ll2)
 %%]
 
-%%[9.gamUnzip -6.gamUnzip
+%%[8.gamUnzip -6.gamUnzip
 gamUnzip :: Ord k => Gam k (v1,v2) -> (Gam k v1,Gam k v2)
 gamUnzip g = sgamUnzip g
 %%]

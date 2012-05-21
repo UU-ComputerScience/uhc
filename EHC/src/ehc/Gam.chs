@@ -64,7 +64,7 @@
 %%[(9999 hmtyinfer) import({%{EH}Ty.FitsInCommon})
 %%]
 
-%%[9.ScopeMapGam import({%{EH}Gam.ScopeMapGam})
+%%[8.ScopeMapGam import({%{EH}Gam.ScopeMapGam})
 %%]
 
 %%[9 import({%{EH}Base.Debug})
@@ -217,7 +217,7 @@ instance (Eq k,Eq tk,VarExtractable vv k) => VarExtractable (Gam tk vv) k where
   varFreeSet (Gam ll)    =   Set.unions . map varFreeSet . map snd . concat $ ll
 %%]
 
-%%[(9 hmtyinfer || hmtyast).Substitutable.SGam -2.Substitutable.Gam
+%%[(8 hmtyinfer || hmtyast).Substitutable.SGam -2.Substitutable.Gam
 instance (Ord tk,VarUpdatable vv subst) => VarUpdatable (SGam tk vv) subst where
   s `varUpd`  g    =   gamMapElts (s `varUpd`) g
 %%[[4
@@ -248,16 +248,10 @@ instance (Ord k, PP k, PP v) => PP (Gam k v) where
   pp = ppGam
 %%]
 
-%%[9.PP.Gam -1.PP.Gam
+%%[8.PP.Gam -1.PP.Gam
 instance (Ord k, PP k, PP v) => PP (SGam k v) where
   pp g = ppGam g
 %%]
-
-%%[9999 -(9.PP.Gam 1.PP.Gam)
-instance (Ord k, PP k, PP v) => PP (SGam k v) where
-  pp g = ppGam g
-%%]
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% ForceEval

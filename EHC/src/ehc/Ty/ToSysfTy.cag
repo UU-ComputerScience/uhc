@@ -374,7 +374,7 @@ SEM Ty
   | Var Con     loc         .   ski         =   tyToSysfTyKi @ki
   | TBind       loc         .   ski         =   @ty.skiBotUp
   | * - Var Con TBind
-                loc         .   ski         =   appDbg "ski"
+                loc         .   ski         =   (appDbg "ski" :: C.SysfTy)
 %%]
 
 Bottom up ski:

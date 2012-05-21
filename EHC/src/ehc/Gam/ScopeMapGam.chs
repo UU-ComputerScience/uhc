@@ -14,22 +14,28 @@ Both a SGam and its entries know at which scope they are.
 Insertion is efficient, lookup also, because a single Map is used.
 
 The Map holds multiple entries, each with its own scope identifier.
-An SGam holds a stack of scopes, encoding the nesting.
+An SGam holds
+\begin{itemize}
+\item a stack of scopes, encoding the nesting, where
+\item each scope holds mappings for MetaLev's
+\end{itemize}
 Results are filtered out w.r.t. this stack, i.e. are checked to be in scope.
 In principle this can be done eagerly, that is, immediately after a change in scope, in particular in sgamPop.
 After some experimentation it did turn out that doing this lazily is overall faster, that is, when the SGam is consulted (lookup, conversion to association list, etc).
 Conceptually thus the invariant is that no entry is in the map which is not in scope. Guaranteeing this invariant is thus not done by the one function breaking it (sgamPop).
 %%]
 
-%%[9 module {%{EH}Gam.ScopeMapGam}
+%%[8 module {%{EH}Gam.ScopeMapGam}
 %%]
 
-%%[9 import(qualified Data.Set as Set,qualified Data.Map as Map,Data.Maybe,Data.List)
+%%[8 import(qualified Data.Set as Set,qualified Data.Map as Map,Data.Maybe,Data.List)
 %%]
-%%[9 import(EH.Util.Utils)
+%%[8 import({%{EH}VarMp})
+%%]
+%%[8 import(EH.Util.Utils)
 %%]
 
-%%[9 import({%{EH}Base.Common})
+%%[8 import({%{EH}Base.Common})
 %%]
 
 %%[50 hs import(Data.Typeable(Typeable), Data.Generics(Data), {%{EH}Base.Serialize})
@@ -55,7 +61,7 @@ tr _ _ x = x
 %%% Scope Gam, a Gam with entries having a level in a scope, and the Gam a scope
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 export(SGam,emptySGam)
+%%[8 export(SGam,emptySGam)
 type Scp = [Int]									-- a stack of scope idents defines what's in scope
 
 data SGamElt v
@@ -67,7 +73,11 @@ data SGamElt v
   deriving (Typeable, Data)
 %%]]
 
-type SMap k v = Map.Map k [SGamElt v]	
+-- type SMap k v = Map.Map k [SGamElt v]	
+type SMap k v = VarMp' k [SGamElt v]	
+
+emptySMap :: SMap k v
+emptySMap = emptyVarMp
 
 data SGam k v
   = SGam
@@ -83,14 +93,14 @@ mkSGam :: SMap k v -> SGam k v
 mkSGam = SGam 0 [0]
 
 emptySGam :: SGam k v
-emptySGam = mkSGam Map.empty
+emptySGam = mkSGam emptySMap
 
 instance Show (SGam k v) where
   show _ = "SGam"
 
 %%]
 
-%%[9
+%%[8
 -- scope ident in scope?
 inScp :: Scp -> Int -> Bool
 inScp = flip elem
@@ -100,7 +110,7 @@ sgameltInScp :: Scp -> SGamElt v -> Bool
 sgameltInScp scp = inScp scp . sgeScpId
 %%]
 
-%%[9
+%%[8
 -- filter out the out of scopes
 sgameltFilterInScp :: Scp -> [SGamElt v] -> [SGamElt v]
 sgameltFilterInScp scp = filter (sgameltInScp scp)
@@ -114,11 +124,12 @@ sgameltGetFilterInScp :: Scp -> (v -> v') -> [SGamElt v] -> [v']
 sgameltGetFilterInScp scp f es = [ f (sgeVal e) | e <- es, sgameltInScp scp e ]
 %%]
 
-%%[9
+%%[8
 -- filter out the out of scopes, applying a mapping function on the fly
 mapFilterInScp' :: Ord k => Scp -> ([SGamElt v] -> [SGamElt v]) -> SMap k v -> SMap k v
 mapFilterInScp' scp f m
-  = Map.mapMaybe (\es -> maybeNull Nothing (Just . f) $ sgameltFilterInScp scp es) m
+  -- = Map.mapMaybe (\es -> maybeNull Nothing (Just . f) $ sgameltFilterInScp scp es) m
+  = varmpMapMaybe (\es -> maybeNull Nothing (Just . f) $ sgameltFilterInScp scp es) m
 
 mapFilterInScp :: Ord k => Scp -> (SGamElt v -> SGamElt v) -> SMap k v -> SMap k v
 mapFilterInScp scp f m
@@ -129,7 +140,7 @@ sgamFilterInScp g@(SGam {sgScp = scp, sgMap = m})
   = g {sgMap = mapFilterInScp scp id m}
 %%]
 
-%%[9 export(sgamFilterMapEltAccumWithKey,sgamMapEltWithKey,sgamMapThr,sgamMap)
+%%[8 export(sgamFilterMapEltAccumWithKey,sgamMapEltWithKey,sgamMapThr,sgamMap)
 -- do it all: map, filter, fold
 sgamFilterMapEltAccumWithKey
   :: (Ord k')
@@ -138,8 +149,9 @@ sgamFilterMapEltAccumWithKey
           -> (k -> SGamElt v -> acc -> acc)
           -> acc -> SGam k v -> (SGam k' v',acc)
 sgamFilterMapEltAccumWithKey p fyes fno a g
-  = (g {sgMap = m'},a')
-  where (m',a') = Map.foldrWithKey
+  = (g {sgMap = mkVarMp m'},a')
+  where (m,_)   = varmpAsMap (sgMap g)
+        (m',a') = Map.foldrWithKey
                     (\k es ma@(m,a)
                       -> foldr (\e (m,a)
                                  -> if p k e
@@ -148,7 +160,7 @@ sgamFilterMapEltAccumWithKey p fyes fno a g
                                     else (m,fno k e a)
                                ) ma
                          $ sgameltFilterInScp (sgScp g) es
-                    ) (Map.empty,a) (sgMap g)
+                    ) (Map.empty,a) m
 
 sgamMapEltWithKey :: (Ord k,Ord k') => (k -> SGamElt v -> (k',SGamElt v')) -> SGam k v -> SGam k' v'
 sgamMapEltWithKey f g
@@ -162,39 +174,39 @@ sgamMap :: (Ord k,Ord k') => ((k,v) -> (k',v')) -> SGam k v -> SGam k' v'
 sgamMap f g = sgamMapEltWithKey (\k e -> let (k',v') = f (k,sgeVal e) in (k',e {sgeVal = v'})) g
 %%]
 
-%%[9 export(sgamSingleton)
+%%[8 export(sgamSingleton)
 sgamSingleton :: k -> v -> SGam k v
-sgamSingleton k v = mkSGam (Map.singleton k [SGamElt 0 v])
+sgamSingleton k v = mkSGam (varmpSingleton k [SGamElt 0 v])
 %%]
 
-%%[9 export(sgamUnion)
+%%[8 export(sgamUnion)
 -- combine gam, g1 is added to g2 with scope of g2
 sgamUnion :: Ord k => SGam k v -> SGam k v -> SGam k v
 sgamUnion g1@(SGam {sgScp = scp1, sgMap = m1}) g2@(SGam {sgScp = scp2@(hscp2:_), sgMap = m2})
-  = g2 {sgMap = Map.unionWith (++) m1' m2}
+  = g2 {sgMap = varmpUnionWith (++) m1' m2}
   where m1' = mapFilterInScp scp1 (\e -> e {sgeScpId = hscp2}) m1
 %%]
 
-%%[9 export(sgamPartitionEltWithKey,sgamPartitionWithKey)
+%%[8 export(sgamPartitionEltWithKey,sgamPartitionWithKey)
 -- equivalent of partition
 sgamPartitionEltWithKey :: Ord k => (k -> SGamElt v -> Bool) -> SGam k v -> (SGam k v,SGam k v)
 sgamPartitionEltWithKey p g
   = (g1, SGam (sgScpId g1) (sgScp g1) m2)
-  where (g1,m2) = sgamFilterMapEltAccumWithKey p (\k e a -> (k,e,a)) (\k e a -> Map.insertWith (++) k [e] a) Map.empty g
+  where (g1,m2) = sgamFilterMapEltAccumWithKey p (\k e a -> (k,e,a)) (\k e a -> varmpInsertWith (++) k [e] a) emptySMap g
 
 sgamPartitionWithKey :: Ord k => (k -> v -> Bool) -> SGam k v -> (SGam k v,SGam k v)
 sgamPartitionWithKey p = sgamPartitionEltWithKey (\k e -> p k (sgeVal e))
 %%]
 
-%%[9 export(sgamUnzip)
+%%[8 export(sgamUnzip)
 -- equivalent of unzip
 sgamUnzip :: Ord k => SGam k (v1,v2) -> (SGam k v1,SGam k v2)
 sgamUnzip g
   = (g1, g1 {sgMap = m2})
-  where (g1,m2) = sgamFilterMapEltAccumWithKey (\_ _ -> True) (\k e@(SGamElt {sgeVal = (v1,v2)}) m -> (k,e {sgeVal = v1},Map.insertWith (++) k [e {sgeVal = v2}] m)) undefined Map.empty g
+  where (g1,m2) = sgamFilterMapEltAccumWithKey (\_ _ -> True) (\k e@(SGamElt {sgeVal = (v1,v2)}) m -> (k,e {sgeVal = v1},varmpInsertWith (++) k [e {sgeVal = v2}] m)) undefined emptySMap g
 %%]
 
-%%[9 export(sgamPop,sgamTop)
+%%[8 export(sgamPop,sgamTop)
 -- split gam in top and the rest, both with the same scope
 sgamPop :: Ord k => SGam k v -> (SGam k v, SGam k v)
 sgamPop g@(SGam {sgMap = m, sgScpId = scpId, sgScp = scp@(hscp:tscp)})
@@ -207,7 +219,7 @@ sgamTop g
   = fst $ sgamPop g
 %%]
 
-%%[9 export(sgamPushNew,sgamPushGam)
+%%[8 export(sgamPushNew,sgamPushGam)
 -- enter a new scope
 sgamPushNew :: SGam k v -> SGam k v
 sgamPushNew g
@@ -219,31 +231,31 @@ sgamPushGam :: Ord k => SGam k v -> SGam k v -> SGam k v
 sgamPushGam g1 g2 = g1 `sgamUnion` sgamPushNew g2
 %%]
 
-%%[9 export(sgamLookupDup)
+%%[8 export(sgamLookupDup)
 -- lookup, return at least one found value, otherwise Nothing
 sgamLookupDup :: Ord k => k -> SGam k v -> Maybe [v]
 sgamLookupDup k g@(SGam {sgMap = m, sgScpId = scpId, sgScp = scp})
-  = case Map.lookup k m of
+  = case varmpLookup k m of
       Just es | not (null vs)
         -> Just vs
         where vs = {- map sgeVal es -- -} sgameltGetFilterInScp scp id es
       _ -> Nothing
 %%]
 
-%%[9 export(sgamToAssocDupL,sgamFromAssocDupL)
+%%[8 export(sgamToAssocDupL,sgamFromAssocDupL)
 -- convert to association list, with all duplicates, scope is lost
 sgamToAssocDupL :: Ord k => SGam k v -> AssocL k [v]
 sgamToAssocDupL g@(SGam {sgScp = scp, sgMap = m})
-  = Map.toList $ Map.map (map sgeVal) $ sgMap $ sgamFilterInScp g
+  = varmpToAssocL $ varmpMap (map sgeVal) $ sgMap $ sgamFilterInScp g
 
 -- convert from association list, assume default scope
 sgamFromAssocDupL :: Ord k => AssocL k [v] -> SGam k v
 sgamFromAssocDupL l
   = mkSGam m
-  where m = Map.map (map (SGamElt 0)) $ Map.fromList l
+  where m = varmpMap (map (SGamElt 0)) $ assocLToVarMp l
 %%]
 
-%%[9 export(sgamNoDups)
+%%[8 export(sgamNoDups)
 -- get rid of duplicate entries, by taking the first of them all
 sgamNoDups :: Ord k => SGam k v -> SGam k v
 sgamNoDups g@(SGam {sgScp = scp, sgMap = m})
@@ -269,23 +281,5 @@ instance (Ord k, Serialize k, Serialize v) => Serialize (SGam k v) where
 %%[50
 -- instance (Binary v) => Serialize (SGamElt v)
 -- instance (Ord k, Binary k, Binary v) => Serialize (SGam k v)
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Instances: ForceEval
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[9999
-instance ForceEval v => ForceEval (SGamElt v) where
-  forceEval x@(SGamElt l v) | forceEval v `seq` True = x
-%%[[102
-  fevCount (SGamElt l v) = cm1 "SGamElt" `cmUnion` fevCount l `cmUnion` fevCount v
-%%]]
-
-instance (ForceEval k, ForceEval v) => ForceEval (SGam k v) where
-  forceEval x@(SGam l s m) | forceEval s `seq` forceEval m `seq` True = x
-%%[[102
-  fevCount (SGam l s m) = cm1 "SGam" `cmUnion` fevCount l `cmUnion` fevCount s `cmUnion` fevCount m
-%%]]
 %%]
 

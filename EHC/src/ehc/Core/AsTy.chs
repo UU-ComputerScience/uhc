@@ -2,7 +2,7 @@
 %%% Core seen as Ty, for System F generation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs module {%{EH}Core.AsTy} import({%{EH}Base.Common},{%{EH}Opts.Base})
+%%[(8 codegen) hs module {%{EH}Core.AsTy} import({%{EH}Base.Common},{%{EH}Opts.Base},{%{EH}Error})
 %%]
 
 %%[(8 codegen) hs import(qualified {%{EH}Core} as C, qualified {%{EH}Ty} as T)
@@ -122,7 +122,7 @@ type CSubst     = CSubst'     C.CExpr C.CMetaVal C.CBind C.CBound C.CTy
 %%% Type manipulation: deriving type structures, e.g. from signature to actual application
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8888 codegen tycore) hs export(tyStripL1Args)
+%%[(8888 codegen coresysf) hs export(tyStripL1Args)
 -- strip L1 argument bindings of an arrow type
 tyStripL1Args :: Ty -> Ty
 tyStripL1Args t
@@ -176,5 +176,51 @@ tyL0BindToL1Bind
         to   (Expr_Seq  s) = Expr_Seq  (map tosq s)
         to   (Expr_Seq1 s) = Expr_Seq1 (    tosq s)
         to   t             = t
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Matching: input/output flow via records
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8888 codegen coresysf) hs export(MatchIn(..),emptyMatchIn)
+-- match input/options
+data MatchIn
+  = MatchIn
+      { minAllowLBind       :: Bool     -- allow tvars in left/first type to bind
+      , minAllowRL0BindBind :: Bool     --
+      , minAllowAlphaRename :: Bool     --
+      , minMetaLev          :: MetaLev  -- the base meta level
+      , minEnv              :: Env      -- introduced bindings
+      }
+
+emptyMatchIn :: MatchIn
+emptyMatchIn = MatchIn False False False metaLevVal emptyEnv
+%%]
+
+%%[(8888 codegen coresysf) hs export(allowLBindMatchIn)
+allowLBindMatchIn :: MatchIn
+allowLBindMatchIn = emptyMatchIn {minAllowLBind = True}
+
+allowRL0BindMatchIn :: MatchIn
+allowRL0BindMatchIn = emptyMatchIn {minAllowRL0BindBind = True}
+%%]
+
+%%[(8888 codegen coresysf) hs export(MatchOut(..))
+-- match output/result
+data MatchOut
+  = MatchOut
+      { moutErrL            :: [Err]    -- errors
+      , moutCSubst          :: CSubst   -- tvar bindings, possibly
+      , moutEnv             :: Env      -- introduced bindings
+      }
+
+emptyMatchOut :: MatchOut
+emptyMatchOut = MatchOut [] emptyCSubst emptyEnv
+
+moutHasErr :: MatchOut -> Bool
+moutHasErr = not . null . moutErrL
+
+moutErrs :: MatchOut -> ErrSq
+moutErrs = Seq.fromList . moutErrL
+%%]
 
 
