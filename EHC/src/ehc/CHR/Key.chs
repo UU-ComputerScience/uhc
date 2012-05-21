@@ -24,7 +24,7 @@
 %%[(9999 hmtyinfer || hmtyast) import({%{EH}Ty.Trf.ForceEval})
 %%]
 
-%%[99 import({%{EH}Base.Hashable},Data.Bits)
+%%[9999 import({%{EH}Base.Hashable},Data.Bits)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -584,14 +584,14 @@ neededTags opts
         ]     
 %%[[98
         ++
-        [ GrTag_Con (GrTagAnn 0 0) 0 (HsName_Modf qual (HsName_Base "AppendBinaryMode")    Map.empty)
-        , GrTag_Con (GrTagAnn 0 0) 1 (HsName_Modf qual (HsName_Base "AppendMode")          Map.empty)
-        , GrTag_Con (GrTagAnn 0 0) 2 (HsName_Modf qual (HsName_Base "ReadBinaryMode")      Map.empty)
-        , GrTag_Con (GrTagAnn 0 0) 3 (HsName_Modf qual (HsName_Base "ReadMode")            Map.empty)
-        , GrTag_Con (GrTagAnn 0 0) 4 (HsName_Modf qual (HsName_Base "ReadWriteBinaryMode") Map.empty)
-        , GrTag_Con (GrTagAnn 0 0) 5 (HsName_Modf qual (HsName_Base "ReadWriteMode")       Map.empty)
-        , GrTag_Con (GrTagAnn 0 0) 6 (HsName_Modf qual (HsName_Base "WriteBinaryMode")     Map.empty)
-        , GrTag_Con (GrTagAnn 0 0) 7 (HsName_Modf qual (HsName_Base "WriteMode")           Map.empty)
+        [ GrTag_Con (GrTagAnn 0 0) 0 (hsnMkModf qual (HsName_Base "AppendBinaryMode")    Map.empty)
+        , GrTag_Con (GrTagAnn 0 0) 1 (hsnMkModf qual (HsName_Base "AppendMode")          Map.empty)
+        , GrTag_Con (GrTagAnn 0 0) 2 (hsnMkModf qual (HsName_Base "ReadBinaryMode")      Map.empty)
+        , GrTag_Con (GrTagAnn 0 0) 3 (hsnMkModf qual (HsName_Base "ReadMode")            Map.empty)
+        , GrTag_Con (GrTagAnn 0 0) 4 (hsnMkModf qual (HsName_Base "ReadWriteBinaryMode") Map.empty)
+        , GrTag_Con (GrTagAnn 0 0) 5 (hsnMkModf qual (HsName_Base "ReadWriteMode")       Map.empty)
+        , GrTag_Con (GrTagAnn 0 0) 6 (hsnMkModf qual (HsName_Base "WriteBinaryMode")     Map.empty)
+        , GrTag_Con (GrTagAnn 0 0) 7 (hsnMkModf qual (HsName_Base "WriteMode")           Map.empty)
         ]
         where qual = ["UHC", "IOBase"]
 %%]]

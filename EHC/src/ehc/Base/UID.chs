@@ -20,7 +20,9 @@
 %%[50 import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
 %%]
 
-%%[99 import({%{EH}Base.Hashable})
+%%[99 import(Data.Hashable)
+%%]
+%%[9999 import({%{EH}Base.Hashable})
 %%]
 %%[9999 import({%{EH}Base.ForceEval})
 %%]
@@ -33,7 +35,7 @@
 %%[[1
 newtype UID = UID { uidInts :: [Int] }
 %%][99
-data UID = UID { uidHash :: !Hash, uidInts :: [Int] }
+data UID = UID { uidHash :: !Int, uidInts :: [Int] }
 %%]]
   deriving (Eq,Ord)
 %%]
@@ -43,7 +45,7 @@ mkUID :: [Int] -> UID
 %%[[1
 mkUID is = UID is
 %%][99
-mkUID is = UID (hashList is) is
+mkUID is = UID (hash is) is
 %%]]
 %%]
 
@@ -58,6 +60,11 @@ type UIDS = Set.Set UID
 %%[1.UID.Show
 instance Show UID where
   show uid = concat . intersperse "_" . map show . reverse $ uidInts uid
+%%]
+
+%%[99
+instance Hashable UID where
+  hashWithSalt salt (UID h _) = salt `combine` h
 %%]
 
 %%[1.UID.mkNewLevUID
@@ -162,7 +169,7 @@ deriving instance Data UID
 %%% Instances: Typeable, Data
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[99
+%%[9999
 instance Hashable UID where
   hash = uidHash
 %%]

@@ -231,16 +231,19 @@ sgamPushGam :: Ord k => SGam k v -> SGam k v -> SGam k v
 sgamPushGam g1 g2 = g1 `sgamUnion` sgamPushNew g2
 %%]
 
-%%[8 export(sgamLookupDup)
+%%[8 export(sgamLookupMetaLevDup)
 -- lookup, return at least one found value, otherwise Nothing
-sgamLookupDup :: Ord k => k -> SGam k v -> Maybe [v]
-sgamLookupDup k g@(SGam {sgMap = m, sgScpId = scpId, sgScp = scp})
-  = case varmpLookup k m of
+sgamLookupMetaLevDup :: Ord k => MetaLev -> k -> SGam k v -> Maybe [v]
+sgamLookupMetaLevDup mlev k g@(SGam {sgMap = m, sgScpId = scpId, sgScp = scp})
+  = case varlookupWithMetaLev mlev k m of
       Just es | not (null vs)
         -> Just vs
         where vs = {- map sgeVal es -- -} sgameltGetFilterInScp scp id es
       _ -> Nothing
 %%]
+-- lookup, return at least one found value, otherwise Nothing
+sgamLookupDup :: Ord k => k -> SGam k v -> Maybe [v]
+sgamLookupDup = sgamLookupMetaLevDup metaLevVal
 
 %%[8 export(sgamToAssocDupL,sgamFromAssocDupL)
 -- convert to association list, with all duplicates, scope is lost

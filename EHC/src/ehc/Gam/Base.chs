@@ -72,6 +72,11 @@ gamAddGam       g1 (Gam (l2:ll2))   = Gam ((gamToAssocL g1 ++ l2):ll2)
 gamAdd          k v g               = gamAddGam (k `gamSingleton` v) g
 %%]
 
+%%[8 export(gamLookupMetaLev)
+gamLookupMetaLev :: Ord k => MetaLev -> k -> Gam k v -> Maybe v
+gamLookupMetaLev mlev k g = fmap head $ gamLookupMetaLevDup mlev k g
+%%]
+
 %%[8
 gamToAssocL     g                   = [ (k,v) | (k,(v:_)) <- gamToAssocDupL g ]
 gamLookup       k g                 = fmap head $ gamLookupDup k g
@@ -100,6 +105,7 @@ assocLToGam     l                   = Gam [l]
 
 %%[8.Rest.funs -1.Rest.funs
 gamTop                              = sgamTop
+{-# INLINE gamTop #-}
 %%]
 
 %%[1.assocDupLToGam
@@ -110,21 +116,25 @@ assocDupLToGam = assocLToGam . concat . map (\(k,vs) -> zip (repeat k) vs)
 %%[8.assocDupLToGam -1.assocDupLToGam
 assocDupLToGam :: Ord k => AssocL k [v] -> Gam k v
 assocDupLToGam = sgamFromAssocDupL
+{-# INLINE assocDupLToGam #-}
 %%]
 
 %%[1 export(assocLToGamWithDups)
 assocLToGamWithDups :: Ord k => AssocL k v -> Gam k v
 assocLToGamWithDups = assocDupLToGam . assocLGroupSort
+{-# INLINE assocLToGamWithDups #-}
 %%]
 
 %%[1.gamToAssocDupL
 gamToAssocDupL :: Ord k => Gam k v -> AssocL k [v]
 gamToAssocDupL = assocLGroupSort . gamToAssocL
+{-# INLINE gamToAssocDupL #-}
 %%]
 
 %%[8.gamToAssocDupL -1.gamToAssocDupL
 gamToAssocDupL :: Ord k => Gam k v -> AssocL k [v]
-gamToAssocDupL g = sgamToAssocDupL g
+gamToAssocDupL = sgamToAssocDupL
+{-# INLINE gamToAssocDupL #-}
 %%]
 
 %%[1.gamToOnlyDups export(gamToOnlyDups)
@@ -139,7 +149,8 @@ gamNoDups (Gam ll) = Gam (map (nubBy (\(k1,_) (k2,_) -> k1 == k2)) ll)
 
 %%[8.gamNoDups -1.gamNoDups
 gamNoDups :: Ord k => Gam k v -> Gam k v
-gamNoDups g = sgamNoDups g
+gamNoDups = sgamNoDups
+{-# INLINE gamNoDups #-}
 %%]
 
 %%[1.gamMap
@@ -150,11 +161,13 @@ gamMap f (Gam ll) = Gam (map (map f) ll)
 %%[8.gamMap -1.gamMap
 gamMap :: (Ord k,Ord k') => ((k,v) -> (k',v')) -> Gam k v -> Gam k' v'
 gamMap = sgamMap
+{-# INLINE gamMap #-}
 %%]
 
 %%[3.gamMapElts export(gamMapElts)
 gamMapElts :: Ord k => (v -> v') -> Gam k v -> Gam k v'
 gamMapElts f = gamMap (\(n,v) -> (n,f v))
+{-# INLINE gamMapElts #-}
 %%]
 
 %%[3.gamPartition
@@ -168,6 +181,7 @@ gamPartition f (Gam ll)
 %%[8.gamPartition -3.gamPartition
 gamPartition :: Ord k => (k -> v -> Bool) -> Gam k v -> (Gam k v,Gam k v)
 gamPartition = sgamPartitionWithKey
+{-# INLINE gamPartition #-}
 %%]
 
 %%[4.gamMapThr
@@ -188,16 +202,19 @@ gamMapThr f thr (Gam ll)
 %%[8.gamMapThr -4.gamMapThr
 gamMapThr :: (Ord k,Ord k') => ((k,v) -> t -> ((k',v'),t)) -> t -> Gam k v -> (Gam k' v',t)
 gamMapThr = sgamMapThr
+{-# INLINE gamMapThr #-}
 %%]
 
 %%[1
 gamKeys :: Ord k => Gam k v -> [k]
 gamKeys = assocLKeys . gamToAssocL
+{-# INLINE gamKeys #-}
 %%]
 
 %%[6 export(gamElts)
 gamElts :: Ord k => Gam k v -> [v]
 gamElts = assocLElts . gamToAssocL
+{-# INLINE gamElts #-}
 %%]
 
 %%[1.gamLookupDup
@@ -206,8 +223,13 @@ gamLookupDup k (Gam ll) = foldr (\l mv -> case filter ((==k) . fst) l of {[] -> 
 %%]
 
 %%[8.gamLookupDup -1.gamLookupDup
+gamLookupMetaLevDup :: Ord k => MetaLev -> k -> Gam k v -> Maybe [v]
+gamLookupMetaLevDup = sgamLookupMetaLevDup
+{-# INLINE gamLookupMetaLevDup #-}
+
 gamLookupDup :: Ord k => k -> Gam k v -> Maybe [v]
-gamLookupDup k g = sgamLookupDup k g
+gamLookupDup = gamLookupMetaLevDup metaLevVal
+{-# INLINE gamLookupDup #-}
 %%]
 
 %%[6.gamUnzip
@@ -220,6 +242,7 @@ gamUnzip (Gam ll)
 %%[8.gamUnzip -6.gamUnzip
 gamUnzip :: Ord k => Gam k (v1,v2) -> (Gam k v1,Gam k v2)
 gamUnzip g = sgamUnzip g
+{-# INLINE gamUnzip #-}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -229,12 +252,15 @@ gamUnzip g = sgamUnzip g
 %%[1
 gamInsert :: Ord k => k -> v -> Gam k v -> Gam k v
 gamInsert = gamAdd
+{-# INLINE gamInsert #-}
 
 gamUnion :: Ord k => Gam k v -> Gam k v -> Gam k v
 gamUnion = gamAddGam
+{-# INLINE gamUnion #-}
 
 gamFromAssocL ::  Ord k =>  AssocL k v  -> Gam k v
 gamFromAssocL = assocLToGam
+{-# INLINE gamFromAssocL #-}
 %%]
 
 %%[1

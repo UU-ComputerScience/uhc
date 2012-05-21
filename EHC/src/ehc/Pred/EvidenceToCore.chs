@@ -14,7 +14,7 @@
 %%[(9 codegen hmtyinfer) import({%{EH}Ty.FitsInCommon2},{%{EH}Core},{%{EH}Ty},{%{EH}Core.Utils},{%{EH}Core.Subst})
 %%]
 
-%%[(9 codegen) hs import({%{EH}AbstractCore},qualified {%{EH}Core.AsTy} as SysF)
+%%[(9 codegen) hs import({%{EH}AbstractCore},qualified {%{EH}Core.SysF.AsTy} as SysF)
 %%]
 
 %%[(9 codegen) import(EH.Util.Pretty)

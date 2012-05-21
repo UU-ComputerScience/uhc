@@ -88,7 +88,7 @@
 %%[50 import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
 %%]
 
-%%[99 import({%{EH}Base.Hashable})
+%%[9999 import({%{EH}Base.Hashable})
 %%]
 %%[9999 import({%{EH}Base.ForceEval})
 %%]
