@@ -56,69 +56,69 @@ HsNameUniqifier to guarantee such an invariant.
 %%[7 export(HsNameUniqifier(..))
 -- | A HsNameUniqifier represents the 'type' of unification
 data HsNameUniqifier
-  = HsNameUniqifier_Blank				-- just a new identifier, with an empty show
-  | HsNameUniqifier_New					-- just a new identifier
-  | HsNameUniqifier_GloballyUnique		-- globally unique
-  | HsNameUniqifier_Evaluated			-- evaluated
-  | HsNameUniqifier_Field				-- extracted field
-  | HsNameUniqifier_Class				-- class
-  | HsNameUniqifier_ClassDict			-- dictionary
-  | HsNameUniqifier_SelfDict			-- dictionary under construction itself, passed as arg in tying the knot recursion
-  | HsNameUniqifier_ResultDict			-- dictionary under construction result
-  | HsNameUniqifier_SuperClass			-- super class field
-  | HsNameUniqifier_DictField			-- dictionary field
-  | HsNameUniqifier_Inline				-- new identifier because of inlining
-  | HsNameUniqifier_GloballyUniqueDict	-- globally unique dictionary
-  | HsNameUniqifier_FieldOffset			-- offset for a field
-  | HsNameUniqifier_CaseContinuation	-- continuation of a case expression
-  | HsNameUniqifier_GrinUpdated			-- Grin: updated value
-  | HsNameUniqifier_FFIArg				-- arg evaluated for FFI
-  | HsNameUniqifier_LacksLabel			-- label used in lacking predicates
-  | HsNameUniqifier_BindAspect			-- binding aspect
-  | HsNameUniqifier_Strict				-- strict variant of binding
+  = HsNameUniqifier_Blank               -- just a new identifier, with an empty show
+  | HsNameUniqifier_New                 -- just a new identifier
+  | HsNameUniqifier_GloballyUnique      -- globally unique
+  | HsNameUniqifier_Evaluated           -- evaluated
+  | HsNameUniqifier_Field               -- extracted field
+  | HsNameUniqifier_Class               -- class
+  | HsNameUniqifier_ClassDict           -- dictionary
+  | HsNameUniqifier_SelfDict            -- dictionary under construction itself, passed as arg in tying the knot recursion
+  | HsNameUniqifier_ResultDict          -- dictionary under construction result
+  | HsNameUniqifier_SuperClass          -- super class field
+  | HsNameUniqifier_DictField           -- dictionary field
+  | HsNameUniqifier_Inline              -- new identifier because of inlining
+  | HsNameUniqifier_GloballyUniqueDict  -- globally unique dictionary
+  | HsNameUniqifier_FieldOffset         -- offset for a field
+  | HsNameUniqifier_CaseContinuation    -- continuation of a case expression
+  | HsNameUniqifier_GrinUpdated         -- Grin: updated value
+  | HsNameUniqifier_FFIArg              -- arg evaluated for FFI
+  | HsNameUniqifier_LacksLabel          -- label used in lacking predicates
+  | HsNameUniqifier_BindAspect          -- binding aspect
+  | HsNameUniqifier_Strict              -- strict variant of binding
 %%[[92
-  | HsNameUniqifier_GenericClass		-- a name introduced by generics
+  | HsNameUniqifier_GenericClass        -- a name introduced by generics
 %%]]
 %%[[(8 javascript)
-  | HsNameUniqifier_JSSwitchResult		-- var for result of switch
+  | HsNameUniqifier_JSSwitchResult      -- var for result of switch
 %%]]
 %%[[(90 codegen)
-  | HsNameUniqifier_FFE					-- name of value to be ff exported
-  | HsNameUniqifier_FFECoerced			-- name of possibly coerced value to be ff exported
+  | HsNameUniqifier_FFE                 -- name of value to be ff exported
+  | HsNameUniqifier_FFECoerced          -- name of possibly coerced value to be ff exported
 %%]]
   deriving (Eq,Ord,Enum)
 
 -- | The show of a HsNameUniqifier is found back in the pretty printed code, current convention is 3 uppercase letters, as a balance between size and clarity of meaning
 instance Show HsNameUniqifier where
-  show HsNameUniqifier_Blank			 	= ""
-  show HsNameUniqifier_New			 		= "NEW"
-  show HsNameUniqifier_GloballyUnique 		= "UNQ"
-  show HsNameUniqifier_Evaluated 			= "EVL"
-  show HsNameUniqifier_Field	 			= "FLD"
-  show HsNameUniqifier_Class	 			= "CLS"
-  show HsNameUniqifier_ClassDict	 		= "DCT"
-  show HsNameUniqifier_SelfDict	 			= "SDC"
-  show HsNameUniqifier_ResultDict	 		= "RDC"
-  show HsNameUniqifier_SuperClass	 		= "SUP"
-  show HsNameUniqifier_DictField	 		= "DFL"
-  show HsNameUniqifier_Inline		 		= "INL"
-  show HsNameUniqifier_GloballyUniqueDict	= "UND"
-  show HsNameUniqifier_FieldOffset			= "OFF"
-  show HsNameUniqifier_CaseContinuation		= "CCN"
-  show HsNameUniqifier_GrinUpdated			= "UPD"
-  show HsNameUniqifier_FFIArg				= "FFI"
-  show HsNameUniqifier_LacksLabel			= "LBL"
-  show HsNameUniqifier_BindAspect			= "ASP"
-  show HsNameUniqifier_Strict			    = "STR"
+  show HsNameUniqifier_Blank                = ""
+  show HsNameUniqifier_New                  = "NEW"
+  show HsNameUniqifier_GloballyUnique       = "UNQ"
+  show HsNameUniqifier_Evaluated            = "EVL"
+  show HsNameUniqifier_Field                = "FLD"
+  show HsNameUniqifier_Class                = "CLS"
+  show HsNameUniqifier_ClassDict            = "DCT"
+  show HsNameUniqifier_SelfDict             = "SDC"
+  show HsNameUniqifier_ResultDict           = "RDC"
+  show HsNameUniqifier_SuperClass           = "SUP"
+  show HsNameUniqifier_DictField            = "DFL"
+  show HsNameUniqifier_Inline               = "INL"
+  show HsNameUniqifier_GloballyUniqueDict   = "UND"
+  show HsNameUniqifier_FieldOffset          = "OFF"
+  show HsNameUniqifier_CaseContinuation     = "CCN"
+  show HsNameUniqifier_GrinUpdated          = "UPD"
+  show HsNameUniqifier_FFIArg               = "FFI"
+  show HsNameUniqifier_LacksLabel           = "LBL"
+  show HsNameUniqifier_BindAspect           = "ASP"
+  show HsNameUniqifier_Strict               = "STR"
 %%[[91
-  show HsNameUniqifier_GenericClass			= "GEN"
+  show HsNameUniqifier_GenericClass         = "GEN"
 %%]]
 %%[[(8 javascript)
-  show HsNameUniqifier_JSSwitchResult		= "JSW"
+  show HsNameUniqifier_JSSwitchResult       = "JSW"
 %%]]
 %%[[(90 codegen)
-  show HsNameUniqifier_FFE					= "FFE"
-  show HsNameUniqifier_FFECoerced			= "FFC"
+  show HsNameUniqifier_FFE                  = "FFE"
+  show HsNameUniqifier_FFECoerced           = "FFC"
 %%]]
 %%]
 
@@ -210,14 +210,18 @@ hsnUniqifyEval = hsnUniqify HsNameUniqifier_Evaluated
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[99
+hsnHashWithSalt :: Int -> HsName -> Int
+hsnHashWithSalt salt (HsName_Base s      ) = hashWithSalt salt s
+hsnHashWithSalt salt (HsName_Pos  p      ) = hashWithSalt salt p
+hsnHashWithSalt salt (HsName_Modf _ q b u) = hashWithSalt salt q `combine` hashWithSalt salt b `combine` hashWithSalt salt (Map.toList u)
+hsnHashWithSalt salt (HNmNr i n          ) = i `combine` hashWithSalt salt n
+
 instance Hashable HsName where
-  hashWithSalt salt (HsName_Base s		) = hashWithSalt salt s
-  hashWithSalt salt (HsName_Pos  p		) = hashWithSalt salt p
-  hashWithSalt salt (HsName_Modf _ q b u) = hashWithSalt salt q `combine` hashWithSalt salt b `combine` hashWithSalt salt (Map.toList u)
-  hashWithSalt salt (HNmNr i n    		) = i `combine` hashWithSalt salt n
+  hashWithSalt salt n@(HsName_Modf h _ _ _) | h /= 0 = h
+  hashWithSalt salt n                                = hsnHashWithSalt salt n
 
 instance Hashable OrigName where
-  hashWithSalt salt (OrigNone	 ) = salt
+  hashWithSalt salt (OrigNone    ) = salt
   hashWithSalt salt (OrigLocal  n) = 23 `combine` hashWithSalt salt n
   hashWithSalt salt (OrigGlobal n) = 19 `combine` hashWithSalt salt n
   hashWithSalt salt (OrigFunc   n) = 17 `combine` hashWithSalt salt n
@@ -236,7 +240,7 @@ instance Hashable HsNameUniqifier where
 -- | Fixate hash
 hsnFixateHash :: HsName -> HsName
 %%[[99
-hsnFixateHash n@(HsName_Modf _ _ _ _) = n {hsnHash = hash n}
+hsnFixateHash n@(HsName_Modf _ _ _ _) = n {hsnHash = hsnHashWithSalt 17 n}
 %%]]
 hsnFixateHash n                       = n
 {-# INLINE hsnFixateHash #-}
@@ -252,7 +256,7 @@ data HsName
 %%[[7
   |   HsName_Modf
         { 
-		  -- a secret hash, prefixing other fields as to enforce comparison on the hash first; only used at variant 99 and onwards to avoid clutter
+          -- a secret hash, prefixing other fields as to enforce comparison on the hash first; only used at variant 99 and onwards to avoid clutter
           hsnHash               ::  !Int
         , hsnQualifiers         ::  ![String]
         , hsnBase               ::  !HsName
@@ -880,9 +884,9 @@ hsnSafeJavaLike
 %%[(8 jazy || javascript) hs export(hsnJavaLikeVar)
 -- safe name of a variable
 hsnJavaLikeVar
-  :: ( HsName -> HsName				-- adapt for particular platform, before mangling here
-     , HsName -> HsName				-- post prefix
-     , String -> String				-- adapt module qualifiers
+  :: ( HsName -> HsName             -- adapt for particular platform, before mangling here
+     , HsName -> HsName             -- post prefix
+     , String -> String             -- adapt module qualifiers
      )
      -> HsName -> HsName -> HsName -> HsName
 hsnJavaLikeVar (preadapt, postprefix, updqual) pkg mod v

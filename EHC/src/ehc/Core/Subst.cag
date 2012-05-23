@@ -17,7 +17,7 @@
 %%]
 
 %%[(8 codegen).WRAPPER ag import({Core/AbsSyn})
-WRAPPER CExpr
+WRAPPER CExpr CBind CBound
 %%]
 
 %%[(9 codegen)
@@ -35,7 +35,7 @@ type CSubst     = CSubst'     CExpr CMetaVal CBind CBound CTy
 
 On CExpr
 
-%%[(8 codegen) hs export(cSubstAppExpr)
+%%[(8 codegen) hs export(cSubstAppExpr,cSubstAppBind,cSubstAppBound)
 cSubstAppExpr :: Bool -> CSubst -> CExpr -> Maybe CExpr -> CExpr
 cSubstAppExpr doDeepSubst cs ce mbOnCe
   = cRepl_Syn_CExpr t
@@ -47,8 +47,37 @@ cSubstAppExpr doDeepSubst cs ce mbOnCe
 %%]]
                          , doDeepSubst_Inh_CExpr = doDeepSubst
                          })
+
+cSubstAppBind :: Bool -> CSubst -> CBind -> CBind
+cSubstAppBind doDeepSubst cs ce
+  = cRepl_Syn_CBind t
+  where t = wrap_CBind
+              (sem_CBind ce)
+              (Inh_CBind { cSubst_Inh_CBind = cs
+%%[[9
+                         , coeArg_Inh_CBind = maybe CExpr_CoeArg id Nothing
+%%]]
+                         , doDeepSubst_Inh_CBind = doDeepSubst
+                         })
+
+cSubstAppBound :: {- Bool -> -} CSubst -> CBound -> CBound
+cSubstAppBound {- doDeepSubst -} cs ce
+  = cRepl_Syn_CBound t
+  where t = wrap_CBound
+              (sem_CBound ce)
+              (Inh_CBound { cSubst_Inh_CBound = cs
+%%[[9
+                         , coeArg_Inh_CBound = maybe CExpr_CoeArg id Nothing
+%%]]
+                         , doDeepSubst_Inh_CBound = False -- doDeepSubst
+                         })
 %%]
   
+%%[(8 codegen) hs export(cSubstAppExprAndBinds)
+cSubstAppExprAndBinds :: CSubst -> CBind -> CBind
+cSubstAppExprAndBinds cs ct = cSubstAppBind {- (defaultCSubstOpts {csoptsDoSubstBind = True}) -} False cs ct
+%%]
+
 %%[(9 codegen) hs export(cAppCoeArg)
 cAppCoeArg :: CExpr -> CExpr -> CExpr
 cAppCoeArg ce coeArg
@@ -96,11 +125,11 @@ ATTR AllCodeNT CodeAGItf [ doDeepSubst: Bool | | ]
 %%[(9 codegen)
 SEM CExpr
   | HoleLet ImplsApp ImplsLam
-  				loc			.	doDeepSubstHere
-  											=	False
+                loc         .   doDeepSubstHere
+                                            =   False
   | Hole
-  				loc			.	doDeepSubstHere
-  											=	@lhs.doDeepSubst
+                loc         .   doDeepSubstHere
+                                            =   @lhs.doDeepSubst
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -132,29 +161,45 @@ SEM CExpr
 
 %%[(8 codegen)
 SEM CExpr
+  | CaseAltFail
+%%[[9
+    Hole ImplsApp ImplsLam
+%%]]
+                loc         .   csKey       =   CSKey_UID @uid
+%%[[9
+  | HoleLet     loc         .   csKey       =   CSKey_UID @bindsUid
+%%]]
+  | Var         loc         .   csKey       =   CSKey_Ref @ref
+%%]
+
+%%[(8 codegen)
+SEM CExpr
   | CaseAltFail (loc.replv,loc.isRepl)      =   if @canSubst
-                                                then case Map.lookup (CSKey_UID @uid) @lhs.cSubst of
+                                                then case Map.lookup @csKey @lhs.cSubst of
                                                        Just (CSIExpr ce)  -> (ce,True)
                                                        _                  -> (@cRepl,False)
                                                 else (@cRepl,False)
+  | Var         (loc.replv,loc.isRepl)      =   case Map.lookup @csKey @lhs.cSubst of
+                                                  Just (CSIExpr e)   -> (e,True)
+                                                  _                  -> (@cRepl,False)
 %%]
 
 %%[(9 codegen)
 SEM CExpr
-  | Hole        (loc.replv,loc.isRepl)      =   case Map.lookup (CSKey_UID @uid) @lhs.cSubst of
+  | Hole        (loc.replv,loc.isRepl)      =   case Map.lookup @csKey @lhs.cSubst of
                                                   Just (CSIExpr ce)  -> (ce,True)
                                                   _                  -> (@cRepl,False)
 %%]
 
 %%[(9 codegen)
 SEM CExpr
-  | HoleLet     (loc.replv,loc.isRepl)      =   case Map.lookup (CSKey_UID @bindsUid) @lhs.cSubst of
+  | HoleLet     (loc.replv,loc.isRepl)      =   case Map.lookup @csKey @lhs.cSubst of
                                                   Just (CSIBinds b)  -> (@lhs.cSubst `cSubstApp` acoreLetRec b @body.cRepl,True)
                                                   _                  -> (@cRepl,False)
   | CoeArg      (loc.replv,loc.isRepl)      =   (@lhs.coeArg,True)
   | ImplsApp ImplsLam
                 (loc.coeAppL,loc.coeLamL,loc.isRepl)
-                                            =   case Map.lookup (CSKey_UID @uid) @lhs.cSubst of
+                                            =   case Map.lookup @csKey @lhs.cSubst of
                                                   Just (CSIImpls ca cl)  -> (ca,cl,True)
                                                   _                      -> ([],[],False)
   | ImplsApp    loc         .   replv       =   coeWeaveOn2 emptyCSubst @coeAppL [] @func.cRepl
@@ -163,7 +208,7 @@ SEM CExpr
 
 %%[(8 codegen)
 SEM CExpr
-  | CaseAltFail
+  | CaseAltFail Var
 %%[[9
     Hole HoleLet CoeArg ImplsApp ImplsLam
 %%]]
@@ -173,11 +218,11 @@ SEM CExpr
 
 %%[(8 codegen)
 SEM CExpr
-  | CaseAltFail
+  | CaseAltFail Var
 %%[[9
     Hole HoleLet ImplsApp ImplsLam
 %%]]
-                repl'       .   cSubst      =   Map.delete (CSKey_UID @uid) @lhs.cSubst
+                repl'       .   cSubst      =   Map.delete @csKey @lhs.cSubst
 %%]
 
 %%[(8 codegen)
@@ -186,7 +231,7 @@ ATTR AllCodeNT CodeAGItf [ | | cRepl: SELF ]
 
 %%[(8 codegen)
 SEM CExpr
-  | CaseAltFail
+  | CaseAltFail Var
 %%[[9
     Hole HoleLet ImplsApp ImplsLam
 %%]]

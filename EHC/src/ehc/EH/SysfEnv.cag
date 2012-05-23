@@ -1,0 +1,30 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Final environmental info for (e.g.) conversion to System F
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[doesWhat doclatex
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% The environment for SysF
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AllNT [ sysfEnv: {ToSysfEnv} | | ]
+
+SEM AGItf
+  | AGItf       loc         .   sysfEnv             =   emptyToSysfEnv
+                                                            { sysfenvTyKiGam    = @tyKiGam
+%%[[9
+                                                            , sysfenvClGam      = @clGam
+%%]]
+                                                            }
+
+SEM Expr
+  | Let         loc         .   sysfEnv             =   @lhs.sysfEnv
+                                                            { sysfenvTyKiGam    = @finTyKiGam
+%%[[9
+                                                            , sysfenvClGam      = @forBodyClGam
+%%]]
+                                                            }
+%%]

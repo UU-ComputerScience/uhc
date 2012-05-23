@@ -93,7 +93,13 @@ ATTR CodeAGItf [ | | cTrf: CModule ]
 %%]
 
 %%[(8 codegen)
-ATTR AllBound [ | | cBindTrf USE {++} {[]}: {[CBound]} ]
+ATTR AllBind [ | | cBindTrf USE {++} {[]}: {[CBound]} ]
+
+{-
+SEM CExpr
+  | App			lhs			.	cTrf			=	if null @arg.cBindTrf  then @func.cTrf else @cTrf
+  | Lam			lhs			.	cTrf			=	if null @bind.cBindTrf then @body.cTrf else @cTrf
+-}
 
 SEM CBound
   | Val			lhs			.	cBindTrf        =   if @mlev == 0 then [@cTrf] else []

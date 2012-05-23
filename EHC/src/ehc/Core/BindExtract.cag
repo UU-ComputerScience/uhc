@@ -69,11 +69,16 @@ cbindExtract sel b
                 })
 %%]
 
-%%[(8 codegen) hs export(cbindExtractVal)
+%%[(8 codegen) hs export(cbindExtractVal',cbindExtractVal)
+cbindExtractVal' :: CBind -> (ACoreBindAspectKeyS,MetaLev,CExpr)
+cbindExtractVal' b
+  = (a,ml,e)
+  where (CBound_Val a ml _ e:_) = cbindExtract (noBoundSel {selVal = \_ _ _ -> True}) b
+
 cbindExtractVal :: CBind -> CExpr
 cbindExtractVal b
   = e
-  where (CBound_Val _ _ _ e:_) = cbindExtract (noBoundSel {selVal = \_ _ _ -> True}) b
+  where (_,_,e) = cbindExtractVal' b
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

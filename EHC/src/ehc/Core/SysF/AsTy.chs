@@ -8,13 +8,16 @@
 %%[(8 codegen) hs import(qualified {%{EH}Core} as C, qualified {%{EH}Ty} as T)
 %%]
 
+%%[(8 codegen) hs import(EH.Util.Pretty,{%{EH}Core.Pretty},{%{EH}Error.Pretty})
+%%]
+
 %%[(8 codegen) hs import({%{EH}AbstractCore})
 %%]
 
 %%[(8 codegen) hs import({%{EH}Core.BindExtract})
 %%]
 
-%%[(8 codegen coresysf) hs import({%{EH}Ty.ToSysfTy}) export(module {%{EH}Ty.ToSysfTy})
+%%[(8 codegen coresysf) hs import({%{EH}Ty.ToSysfTy},{%{EH}FinalEnv}) export(module {%{EH}Ty.ToSysfTy})
 %%]
  
 %%[(8 codegen) hs import({%{EH}Gam})
@@ -23,7 +26,7 @@
 %%[(8 codegen) hs import(qualified Data.Map as Map,Data.Maybe)
 %%]
 
-%%[(8 codegen) hs import(EH.Util.Pretty,qualified EH.Util.FastSeq as Seq)
+%%[(8 codegen) hs import(qualified EH.Util.FastSeq as Seq)
 %%]
 
 %%[doesWhat doclatex
@@ -37,14 +40,14 @@ i.e. provides the same API.
 
 %%[(8 hmtyinfer || hmtyast) hs export(Ty)
 -- | The type, represented by a term CExpr
-type Ty     		= C.SysfTy			-- base ty
+type Ty             = C.SysfTy          -- base ty
 
 -- | Binding the bound
-type TyBind			= C.SysfTyBind
-type TyBound		= C.SysfTyBound
+type TyBind         = C.SysfTyBind
+type TyBound        = C.SysfTyBound
 
 -- | A sequence of parameters (for now just a single type)
-type TySeq			= C.SysfTySeq
+type TySeq          = C.SysfTySeq
 
 %%]
 
@@ -56,9 +59,9 @@ type TySeq			= C.SysfTySeq
 -- | Construct a type for use by AbstractCore, specifically for use by FFI
 ty2TyCforFFI :: EHCOpts -> T.Ty -> C.CTy
 %%[[(8 coresysf)
-ty2TyCforFFI o t = C.mkCTy o t (tyToSysfTyBase t)
+ty2TyCforFFI o t = C.mkCTy o t (tyToSysfTyBase emptyToSysfEnv t)
 %%][8
-ty2TyCforFFI o t = C.mkCTy o t                 t
+ty2TyCforFFI o t = C.mkCTy o t                                t
 %%]]
 %%]
 
@@ -139,9 +142,9 @@ tyStripL1Args t
 %%[(8 codegen coresysf) hs
 -- convert bind to bound
 tyBindToBound
-  :: (ACoreBindAspectKeyS -> MetaLev -> CLbl -> Bool)		-- selection
-     -> (HsName -> TyBound -> x)							-- when found
-     -> (HsName -> TyBound -> x)							-- when not found
+  :: (ACoreBindAspectKeyS -> MetaLev -> CLbl -> Bool)       -- selection
+     -> (HsName -> TyBound -> x)                            -- when found
+     -> (HsName -> TyBound -> x)                            -- when not found
      -> TyBind
      -> x
 tyBindToBound sel convYes convNo bind@(C.CBind_Bind n bbs)
@@ -227,7 +230,7 @@ data MatchOut
   = MatchOut
       { moutErrL            :: [Err]    -- errors
       , moutCSubst          :: CSubst   -- tvar bindings, possibly
-      , moutEnv             :: SysfGam      -- introduced bindings
+      , moutEnv             :: SysfGam  -- introduced bindings
       }
 
 emptyMatchOut :: MatchOut
@@ -238,6 +241,14 @@ moutHasErr = not . null . moutErrL
 
 moutErrs :: MatchOut -> ErrSq
 moutErrs = Seq.fromList . moutErrL
+%%]
+
+%%[(8 codegen coresysf) hs
+instance Show MatchOut where
+  show _ = "MatchOut"
+
+instance PP MatchOut where
+  pp o = ppErrL (moutErrL o) >-< "CSubst:" >#< ppAssocLV (Map.toList $ moutCSubst o)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -268,32 +279,42 @@ match' min ex1 ex2
         m min mout      t1@(C.CExpr_Var v1)             t2
             | isJust mbv                                                        =   m min mout (fromJust mbv) t2
             where mbv = gamLookupMetaLev (minMetaLev min) v1 (minEnv min)
-{-
-        m min mout      t1                              t2@(Expr_Var v2)
+        m min mout      t1                              t2@(C.CExpr_Var v2)
             | isJust mbv                                                        =   m min mout t1 (fromJust mbv)
-            where mbv = envLookup' v2 (minMetaLev min) (minEnv min)
+            where mbv = gamLookupMetaLev (minMetaLev min) v2 (minEnv min)
 
-        m min mout      t1@(Expr_Var v1)                t2@(Expr_Var v2)
+        m min mout      t1@(C.CExpr_Var v1)             t2@(C.CExpr_Var v2)
             | v1 == v2                                                          =   mout
             | minAllowLBind min                                                 =   bind mout v1 t2
--}
-{- NO?
-        -- matching: constant
-        m min mout      t1@(Expr_Tup n1)                t2@(Expr_Tup n2)
-            | n1 == n2                                                          =   mout
--}
+
+        -- matching: left to right binding (if permitted)
+        m min mout      t1@(C.CExpr_Var v1)             t2
+            | minAllowLBind min                                                 =   bind mout v1 t2
+
 {-
+-}
+        -- matching: constant
+{- NO?
+-}
+        m min mout      t1@(C.CExpr_Tup n1)             t2@(C.CExpr_Tup n2)
+            | n1 == n2                                                          =   mout
         -- matching: annotations are ignored
-        m min mout      t1@(Expr_Ann _ t1')             t2                      =   m min mout t1' t2
-        m min mout      t1                              t2@(Expr_Ann _ t2')     =   m min mout t1  t2'
+        m min mout      t1@(C.CExpr_Ann _ t1')          t2                      =   m min mout t1' t2
+        m min mout      t1                              t2@(C.CExpr_Ann _ t2')  =   m min mout t1  t2'
         
+        -- matching: debug info is accepted/ignored
+        m min mout      t1@(C.CExpr_Dbg _)              t2@(C.CExpr_Dbg _)      =   mout
+
+{-
+-}
         -- matching: structure with binding intro's
-        m min mout      t1@(Expr_Arrow  a1 r1)          t2@(Expr_Arrow  a2 r2)  =   mm' ( \i o -> i {minEnv = moutEnv o `envUnion` minEnv i}
-                                                                                        , \o -> o {moutEnv = moutEnv mout}
+        m min mout      t1@(C.CExpr_Arr  a1 r1)         t2@(C.CExpr_Arr  a2 r2) =   mm' ( \i o -> i {minEnv  = moutEnv o `gamUnion` minEnv i}
+                                                                                        , \  o -> o {moutEnv = moutEnv mout}
                                                                                         )
-                                                                                        m min mout [(a1,a2),(r1,r2)]
+                                                                                        min mout [mf mbi a1 a2, mf m r1 r2]
         -- matching: structure without binding intro's
-        m min mout      t1@(Expr_App    f1 a1)          t2@(Expr_App    f2 a2)  =   mm m min mout [(f1,f2),(a1,a2)]
+        m min mout      t1@(C.CExpr_App f1 a1)          t2@(C.CExpr_App f2 a2)  =   mm min mout [mf m f1 f2, mf mbo a1 a2]
+{-
 %%[[1010
         m min mout      t1@(Ty_ExtRec e1 b1)            t2@(Ty_ExtRec e2 b2)    =   mm m min mout [(e1,e2),(b1,b2)]
 %%]]
@@ -311,6 +332,27 @@ match' min ex1 ex2
 
         -- error
         m min mout      t1                              t2                      =   err mout t1 t2
+
+        -- m, but flipped args to allow for partial param
+        mf m            e1                              e2 min mout             =   m min mout e1 e2
+
+        -- matching: bind & bound
+        mboi min mout   b1@(C.CBound_Val _ _ _ e1)      b2@(C.CBind_Bind n2 _)
+            | minAllowRL0BindBind min                                           =   m (min {minAllowLBind=True}) mout (acoreVar n2) e2
+            where e2 = cbindExtractVal b2
+
+        -- matching: bound
+        mbo min mout    b1@(C.CBound_Val _ _ _ e1)      b2@(C.CBound_Val _ _ _ e2)  =   m min mout e1 e2
+
+        -- matching: bind
+        mbi min mout    b1@(C.CBind_Bind n1 _)          b2@(C.CBind_Bind n2 _)
+            | n1 == n2 && mlevIsEq                                              =   m (min {minMetaLev = minMetaLev min + ml1}) mout e1 e2
+            | minAllowAlphaRename min                                           =   let mout' = m (min {minMetaLev = minMetaLev min + ml1}) mout e1 e2
+                                                                                    in  mout' {moutEnv = gamMetaLevSingleton (minMetaLev min) (acoreMkRef n1) (acoreVar n2) `gamUnion` moutEnv mout' }
+            | otherwise                                                         =   err' mout (pp b1) (pp b2)
+            where (a1,ml1,e1) = cbindExtractVal' b1
+                  (a2,ml2,e2) = cbindExtractVal' b2
+                  mlevIsEq = ml1 == ml2
 
         -- matching: 1 record field
 {-
@@ -339,19 +381,19 @@ match' min ex1 ex2
             | v1 == v2                                                              =   m (min {minMetaLev = minMetaLev min + 3}) mout k1 k2
             | otherwise                                                             =   err' mout (pp v1) (pp v2)
         ms1 min mout    s1                              s2                          =   err' mout (pp s1) (pp s2)
+-}
 
-        -- match multiple
-        mm' (mout2min,finalize) m min mout   ((t1,t2):tts)     
+        -- match multiple, taking care of flow of info
+        mm' (mout2min,finalize) min mout ((m_t1_t2):tts)     
             | moutHasErr mout'              = finalize mout'
-            | otherwise                     = mm m (mout2min min mout') mout' tts
-            where mout' = m min mout t1 t2
-        mm' (_       ,finalize) m min mout   _
+            | otherwise                     = mm (mout2min min mout') mout' tts
+            where mout' = m_t1_t2 min mout
+        mm' (_       ,finalize) min mout _
                                             = finalize mout
         mm                                  = mm' (const,id)
 
         -- binding of tvar for output
-        bind mout v t = mout {moutCSubst = acoreCSubstFromNmTyL [(v,t)] `cSubstApp` moutCSubst mout}
--}
+        bind mout v t = mout {moutCSubst = acoreCSubstFromRefExprL [(v,t)] `cSubstApp` moutCSubst mout}
         -- error
         err' mout pp1 pp2 = mout {moutErrL = [rngLift emptyRange Err_TyCoreMatchClash (pp ex1) (pp ex2) pp1 pp2]}
         err  mout t1  t2  = err' mout (pp t1) (pp t2)

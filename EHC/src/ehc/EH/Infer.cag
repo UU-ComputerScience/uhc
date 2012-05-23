@@ -69,6 +69,8 @@ SEM Expr
 %%]
                 decls       .   tyVarMp             :=  valGamRestrictKiVarMp @valGam_l_ `varUpd` @decls.patTyVarMp
 
+20120523 AD: Note: use of tyVarMpDeclsQuant as described below does not work, however, incorporating chrSolve1SimpTyVarMp (part of tyVarMpDeclsQuant) into bodyVarMp2 in a later stage is ok (does not blow up timewise). Why o why????
+
 %%[(8 hmtyinfer)
 SEM Expr
   | Let         loc         .   (gathTySigGam_l_,exTyVarMp1)
@@ -77,7 +79,7 @@ SEM Expr
                 decls       .   patTyVarMp          :=  @exTyVarMp1b
                 loc         .   (quValGam_qu_,quTyVarMp, cycTyVarMp_l)
                                                     :=  valGamQuantifyWithVarMp @valQuTyKiGam @quTvKiVarMp @tyVarMpDeclsQuant @noLetQuantTyVarIdS @valGam_l_
-                            .   bodyVarMp1          =   @quTyVarMp `varUpd` @tyVarMpDeclsL0 		-- TBD: Use of @tyVarMpDeclsQuant increases compile time. Why???? Should be ok...
+                            .   bodyVarMp1          =   @quTyVarMp `varUpd` @tyVarMpDeclsL0 -- @tyVarMpDeclsQuant -- @tyVarMpDeclsL0 		-- TBD: Use of @tyVarMpDeclsQuant increases compile time. Why???? Should be ok...
                             .   (quValGam_ex_,exTyVarMp2)
                                                     :=  (valGamInst1Exists {- WithVarMp @bodyVarMp1 -} @lUniq2 (@quTyVarMp `varUpd` @quValGam_qu_), emptyVarMp)
                             .   bodyVarMp2          =   (@exTyVarMp2 :: VarMp) `varUpd` @bodyVarMp1
@@ -114,6 +116,7 @@ SEM Expr
                             .   (quValGam_qu_,quTyVarMp, (cycTyVarMp_l,tqoGam))
                                                     :=  @doValGamQuantify True @tyVarMpDeclsQuant @toQuantOverPrOccL
                             .   tmpoTyVarMp         =   foldr (\tmpo c -> tmpoImplsVarMp tmpo `varUpd` c) emptyVarMp (gamElts @tqoGam)
+                            .   bodyVarMp2          :=  @chrSolve1SimpTyVarMp `varUpd` (@exTyVarMp2 :: VarMp) `varUpd` @bodyVarMp1
 %%]
 
 %%[(99 hmtyinfer)
@@ -647,8 +650,9 @@ SEM Expr
                 loc         .   (lClGam,_)          =   gamPop @decls.patClGam2
                             .   lClGamNoDups        =   gamNoDups @lClGam
                             .   forDeclsClGam       =   gamPushGam @lClGamNoDups @lhs.clGam
+                            .   forBodyClGam        =   gamAddGam @lClGamNoDups @lhs.clGam
                 decls       .   clGam               =   @forDeclsClGam
-                body        .   clGam               =   gamAddGam @lClGamNoDups @lhs.clGam
+                body        .   clGam               =   @forBodyClGam
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

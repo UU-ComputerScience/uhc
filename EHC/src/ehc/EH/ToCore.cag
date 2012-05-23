@@ -225,7 +225,7 @@ SEM Expr
                                                              in  (zip ns (tyProdArgs @finalTyExprExpanded),[],@alts.raltL')
                                                         else let n = uidHNm @lUniq2
                                                              in  ([(n,@finalTyExprExpanded)],[acoreBind1Ty n @acorety @expr.cexpr],@alts.raltL)
-                                                in  acoreLet CBindCateg_Plain bs (rceMatchTy @rceEnv (assocLMapElt (ty2TyC @lhs.opts emptyGam) ns) as)
+                                                in  acoreLet CBindCateg_Plain bs (rceMatchTy @rceEnv (assocLMapElt (ty2TyC @lhs.opts @lhs.sysfEnv) ns) as)
   | AppTop      loc         .   cexprtop    =   @expr.cexpr
   | Rec         loc         .   cexprtop    =   @rcexpr
   | Parens TypeAs
@@ -499,7 +499,7 @@ SEM Decl
   | Data        loc         .   fldSelCBindL=   let (xn1:xn2:_) = hsnLclSupply
                                                     tgSels f i = [ (t,[(f,{-f,-}o)],Nothing,acoreVar f) | (t,o) <- Map.toList $ dficInTagMp i ]
                                                     ty1 f = valGamLookupTyDefault f @lhs.finValGam
-                                                    ty2 t = ty2TyC @lhs.opts @lhs.finTyKiGam t
+                                                    ty2 t = ty2TyC @lhs.opts @lhs.sysfEnv t
                                                 in  if @isNewtype
                                                     then [ [ acoreBind1Ty f (ty2 $ ty1 f) (acoreVar $ ehcOptBuiltin @lhs.opts ehbnId)
                                                            | (f,i) <- Map.toList $ dgiFldInConstrMp @dgi
@@ -583,7 +583,7 @@ SEM Expr
                                                         { dtiConNm      = conNm
                                                         , dtiConFldAnnL = annL
                                                         , dtiCTag       = ctag
-                                                        }) -> mkDataCBindL @lhs.opts ctag (ty2TyC @lhs.opts @lhs.finTyKiGam $ valGamLookupTyDefault conNm @finValGamDecls) annL conNm isNewtype
+                                                        }) -> mkDataCBindL @lhs.opts ctag (ty2TyC @lhs.opts @lhs.sysfEnv $ valGamLookupTyDefault conNm @finValGamDecls) annL conNm isNewtype
                                                     )
                                                     @decls.gathDeclDataGam
 %%]
@@ -956,7 +956,7 @@ SEM Decl
                                                              d = acoreApp (CExpr_Tup @dictTag) (replicate (length $ snd $ tyRecExts $ @clsTyRec) (acoreBuiltinUndefined @lhs.opts))
                                                              nD = hsnUniqify HsNameUniqifier_SelfDict nDflt
                                                 in   (maybe dDflt (const []) @mbDefaultInstNm)
-                                                     ++ [ acoreBind1CatTy CBindCateg_Plain n (ty2TyC @lhs.opts @lhs.finTyKiGam $ tyQuantifyClosed $ [@dataDictTy] `appArr` t) $ acoreLam1 x $ mkApp $ mkSel n
+                                                     ++ [ acoreBind1CatTy CBindCateg_Plain n (ty2TyC @lhs.opts @lhs.sysfEnv $ tyQuantifyClosed $ [@dataDictTy] `appArr` t) $ acoreLam1 x $ mkApp $ mkSel n
                                                         | (n,t) <- @clsFldL
                                                         ]
 %%]
@@ -1168,6 +1168,7 @@ mkNormalInstance
 --  Make a dictionary for a normal instance, the default-definitions of a class, or for a derived instance
 mkInstanceCBindL
   :: EHCOpts
+     -> ToSysfEnv                      -- environmental info for SysF stuff
      -> ClGamInfo                           -- info about the class
      -> TyKiGam                             -- env/gamma for ki of ty's
      -> DataGam                             -- env/gamma for datas
@@ -1187,14 +1188,14 @@ mkInstanceCBindL
         )
      -> [CBind]
 mkInstanceCBindL
-      opts clgi tyKiGam dataGam instVariant dictTag
+      opts sysfEnv clgi tyKiGam dataGam instVariant dictTag
       nms@(dictNm,dictSelfNm,dictBuildNm)
       instanceTy
       instanceRecTy
       nmLs@(superFldNmL,superNmL,contextNmL)
       declsCBindL
       chrBindLs@(chrDeclsCBindL,chrSuperProveCBindL,chrSuperCtxtAssumeCBindL)
-  = [acoreBind1MetaTy dictNm generatedMeta (ty2TyC opts tyKiGam instanceTy) generatedDictionary]
+  = [acoreBind1MetaTy dictNm generatedMeta (ty2TyC opts sysfEnv instanceTy) generatedDictionary]
   where (generatedDictionary, generatedMeta)
           = case instVariant of
                InstNormal     -> mkNormalD  declsCBindL
@@ -1305,7 +1306,7 @@ SEM Decl
                                                                           -> ([ @mkf dcf | dcf <- dclFldL @derivDCL ],[])
 %%]]
                                                   in  ( mkInstanceCBindL
-                                                        @lhs.opts @clgi @lhs.finTyKiGam @lhs.dataGam @instVariant @dictTag
+                                                        @lhs.opts @lhs.sysfEnv @clgi @lhs.finTyKiGam @lhs.dataGam @instVariant @dictTag
                                                         (@dictNm,@dictSelfNm,@dictBuildNm)
                                                         @finalTy @recTy
                                                         (@supClsFldNmL,@chrSuperProveNmL,@chrCtxtArgNmL)
@@ -1412,6 +1413,7 @@ SEM Decl
 mkDataGenerBinds
   :: -- (AbstractCore e m b bcat mbind t) =>
         EHCOpts
+     -> ToSysfEnv
      -> RCEEnv
      -> ClGam                               -- env/gamma for class
      -> TyKiGam                             -- env/gamma for ki of ty's
@@ -1420,12 +1422,12 @@ mkDataGenerBinds
      -> [GenerDataInstInfo]                 -- inst infos
      -> ([CBind],[Err])
 mkDataGenerBinds
-     opts rceEnv clGam tyKiGam dataGam
+     opts sysfEnv rceEnv clGam tyKiGam dataGam
      uniq instInfoL
   = (concat instBinds, concat errs)
   where (instBinds,errs) = unzip $ map mk instInfoL
         mk (orignm,dictNm,clNm,instKind,pr)
-          = ( mkInstanceCBindL opts clgi tyKiGam dataGam InstNormal (clgiDictTag clgi) (dictNm,dictSelfNm,dictBuildNm) (pred2DataTy pr) recTy ([],[],[])
+          = ( mkInstanceCBindL opts sysfEnv clgi tyKiGam dataGam InstNormal (clgiDictTag clgi) (dictNm,dictSelfNm,dictBuildNm) (pred2DataTy pr) recTy ([],[],[])
                                binds ([],[],[])
             , foErrL evFO
             )
@@ -1491,7 +1493,7 @@ mkDataGenerBinds
 SEM Expr
   | Let         loc         .   (cDataGenerBindL,errsDataGenerBind)
                                             =   mkDataGenerBinds
-                                                    @lhs.opts
+                                                    @lhs.opts @sysfEnv
                                                     (@rceEnv {rceValGam = @finValGam `gamUnion` rceValGam @rceEnv})
                                                     @forDeclsClGam @lhs.finTyKiGam @lhs.dataGam
                                                     @lUniq_gener @generInstInfoL

@@ -14,6 +14,14 @@
 %%[(8 codegen coresysf) hs import({%{EH}Ty} as T, qualified {%{EH}Core} as C, {%{EH}AbstractCore})
 %%]
 
+%%[(8 codegen coresysf) hs import ({%{EH}Gam.Base},{%{EH}Gam.TyKiGam})
+%%]
+%%[(9 codegen coresysf) hs import ({%{EH}Gam.ClGam})
+%%]
+
+%%[(8 codegen coresysf) hs import ({%{EH}FinalEnv})
+%%]
+
 %%[(8 codegen coresysf) hs import (qualified Data.Set as Set)
 %%]
 
@@ -27,9 +35,9 @@ WRAPPER TyAGItf
 
 %%[(8 codegen coresysf) hs export(ArrowHowDecompose(..),tyArrowInstQuArgsRes)
 data ArrowHowDecompose
- = ArrowDecompose_InstOnly		-- only ty instantiation
- | ArrowDecompose_ArgBefore		-- split off arg before
- | ArrowDecompose_ArgAfter		-- split off arg after
+ = ArrowDecompose_InstOnly      -- only ty instantiation
+ | ArrowDecompose_ArgBefore     -- split off arg before
+ | ArrowDecompose_ArgAfter      -- split off arg after
  
 -- split type + instantation into multiple type args (>=0) + optional 1 arg + 1 res:
 -- in other words, peel of type application(s) for Sys F, driven by InstTo
@@ -48,8 +56,8 @@ tyArrowInstQuArgsRes how instToL t
         where (taL,r) = extr instToL t
               (a,r') = unArr "ArrowDecompose_ArgAfter" r
   where extr (InstTo_Qu _ _ _ _ : is) t = (a:a',r')
-   										where (a,r)   = unArr "extr" t
-   										      (a',r') = extr is r
+                                        where (a,r)   = unArr "extr" t
+                                              (a',r') = extr is r
         extr _                        t = ([],t)
         unArr m t = (mkb n bm a, r)
           where ((n,bm),a,r) = maybe ((hsnWild,appDfltBoundmeta t),appDbg $ "tyArrowInstQuArgsRes." ++ m,t) id $ appMb1MetaArr t
@@ -61,7 +69,7 @@ tyArrowInstQuArgsRes how instToL t
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen coresysf) hs export(Ty2Ki,KiFitsIn)
-type Ty2Ki = Ty -> Ty
+type Ty2Ki = TyKiGam -> Ty -> Ty
 type KiFitsIn = UID -> Ty -> Ty -> [InstTo]
 %%]
 
@@ -103,24 +111,25 @@ defaultT2TCOpts
   = T2TCOpts
       True True
       T2TArg_Seq T2TArg_Seq' T2TArg_Seq1
-      (const Ty_Any)
+      (\_ _ -> Ty_Any)
       (\_ _ _ -> [])
 %%]
 
 %%[(8 codegen coresysf) hs
-tyToSysfTy' :: T2TCOpts -> Ty -> C.SysfTy
-tyToSysfTy' opts ty
+tyToSysfTy' :: T2TCOpts -> ToSysfEnv -> Ty -> C.SysfTy
+tyToSysfTy' opts env ty
   = st_Syn_TyAGItf t
   where  t  =  wrap_TyAGItf
                   (sem_TyAGItf  (T.TyAGItf_AGItf ty))
                   (Inh_TyAGItf
                      { opts_Inh_TyAGItf = opts
+                     , env_Inh_TyAGItf  = env
                      })
 %%]
 
 %%[(8 codegen coresysf) hs export(tyToSysfTy, tyToSysfTyBare, tyToSysfTyBase, tyToSysfTyKi)
 -- with all additional annotation
-tyToSysfTy :: KiFitsIn -> Ty2Ki -> Ty -> C.SysfTy
+tyToSysfTy :: KiFitsIn -> Ty2Ki -> ToSysfEnv -> Ty -> C.SysfTy
 tyToSysfTy fit t2k
   = tyToSysfTy'
       (defaultT2TCOpts
@@ -129,11 +138,11 @@ tyToSysfTy fit t2k
          })
 
 -- with all additional annotation, no meta level info
-tyToSysfTyBase :: Ty -> C.SysfTy
+tyToSysfTyBase :: ToSysfEnv -> Ty -> C.SysfTy
 tyToSysfTyBase = tyToSysfTy' defaultT2TCOpts
 
 -- without TyCore specifics
-tyToSysfTyBare :: Ty -> C.SysfTy
+tyToSysfTyBare :: ToSysfEnv -> Ty -> C.SysfTy
 tyToSysfTyBare
   = tyToSysfTy'
       (defaultT2TCOpts
@@ -144,7 +153,7 @@ tyToSysfTyBare
          })
 
 -- for kinds
-tyToSysfTyKi :: Ty -> C.SysfTy
+tyToSysfTyKi :: ToSysfEnv -> Ty -> C.SysfTy
 tyToSysfTyKi
   = tyToSysfTy'
       (defaultT2TCOpts
@@ -159,8 +168,8 @@ tyToSysfTyKi
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen coresysf) hs export(sysftyChar,sysftyInt)
-sysftyInt  = tyToSysfTyBase T.tyInt
-sysftyChar = tyToSysfTyBase T.tyChar
+sysftyInt  = tyToSysfTyBase emptyToSysfEnv T.tyInt
+sysftyChar = tyToSysfTyBase emptyToSysfEnv T.tyChar
 %%]
 
 %%[(8888 codegen coresysf) hs export(kiStar)
@@ -189,7 +198,11 @@ tyBool opts = tyBuiltinCon opts ehbnDataBool
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen coresysf)
-ATTR AllTy TyAGItf [ opts: T2TCOpts | | ]
+ATTR
+  AllTy TyAGItf
+    [ opts: T2TCOpts
+      env : ToSysfEnv
+    | | ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -208,13 +221,13 @@ SEM TyAGItf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen coresysf)
-ATTR TyAGItf
-  [ | | st: {C.SysfTy} ]
-ATTR Ty
-  [ | | st: {C.SysfTy} ]
+ATTR
+  Ty TyAGItf
+%%[[9
+  Pred
+%%]]
+    [ | | st: {C.SysfTy} ]
 %%]
-ATTR TyVarCateg TyAnn
-  [ | | st: SELF ]
 
 %%[(8 codegen coresysf)
 SEM Ty
@@ -232,7 +245,13 @@ SEM Ty
 %%[(9 codegen coresysf)
 SEM Ty
   | Impls       loc         .   stBase      =   appDbg "IMPLS"
-  | Pred        loc         .   stBase      =   appDbg "PRED"
+  | Pred        loc         .   stBase      =   @pr.st
+
+SEM Pred
+  | Class       loc         .   st          =   case gamLookup @ty.appFunNm (sysfenvClGam @lhs.env) of
+                                                  Just clgi -> appConApp (ctagTyNm $ clgiDictTag clgi) (reverse @ty.appRevArgL)
+                                                  _         -> @ty.st
+  | * - Class   loc         .   st          =   appDbg "PRED"
 %%]
 
 %%[(11 codegen coresysf)
@@ -276,7 +295,7 @@ SEM Ty
                                                              -}
                                                              wra = argWrap  (t2tcOptHowArrowArg @lhs.opts)
                                                              wrr = argWrap  (t2tcOptHowArrowRes @lhs.opts)
-                                                         in  bndBndIn @tv (1 + tyquMetaLev @qu.self) (wra $ tyToSysfTyKi @l1) (wrr @ty.st)
+                                                         in  bndBndIn @tv (1 + tyquMetaLev @qu.self) (wra $ tyToSysfTyKi @lhs.env @l1) (wrr @ty.st)
                                                     {-
                                                          in  app1Arr
                                                                (wra $ tyToSysfTyKi @l1   )
@@ -328,15 +347,15 @@ Environment:
 
 %%[(8 codegen coresysf)
 SEM Ty
-  | TBind       ty          .   ty2ki       =   let m (Ty_Var v _) | v == @tv = @l1
-                                                    m t                       = @lhs.ty2ki t
+  | TBind       ty          .   ty2ki       =   let m g (Ty_Var v _) | v == @tv = @l1
+                                                    m g t                       = @lhs.ty2ki g t
                                                 in  m
 %%]
 
 %%[(8 codegen coresysf)
 SEM Ty
-  | Con         loc         .   ki          =   @lhs.ty2ki (appCon @nm)
-  | Var         loc         .   ki          =   @lhs.ty2ki (appCon $ mkHNm @tv)
+  | Con         loc         .   ki          =   @lhs.ty2ki (sysfenvTyKiGam @lhs.env) (appCon @nm)
+  | Var         loc         .   ki          =   @lhs.ty2ki (sysfenvTyKiGam @lhs.env) (appCon $ mkHNm @tv)
 %%]
 
 Top down ki:
@@ -371,7 +390,7 @@ Local ski:
 
 %%[(8 codegen coresysf)
 SEM Ty
-  | Var Con     loc         .   ski         =   tyToSysfTyKi @ki
+  | Var Con     loc         .   ski         =   tyToSysfTyKi @lhs.env @ki
   | TBind       loc         .   ski         =   @ty.skiBotUp
   | * - Var Con TBind
                 loc         .   ski         =   (appDbg "ski" :: C.SysfTy)

@@ -174,9 +174,12 @@ sgamMap :: (Ord k,Ord k') => ((k,v) -> (k',v')) -> SGam k v -> SGam k' v'
 sgamMap f g = sgamMapEltWithKey (\k e -> let (k',v') = f (k,sgeVal e) in (k',e {sgeVal = v'})) g
 %%]
 
-%%[8 export(sgamSingleton)
+%%[8 export(sgamMetaLevSingleton,sgamSingleton)
+sgamMetaLevSingleton :: MetaLev -> k -> v -> SGam k v
+sgamMetaLevSingleton mlev k v = mkSGam (varmpMetaLevSingleton mlev k [SGamElt 0 v])
+
 sgamSingleton :: k -> v -> SGam k v
-sgamSingleton k v = mkSGam (varmpSingleton k [SGamElt 0 v])
+sgamSingleton = sgamMetaLevSingleton metaLevVal
 %%]
 
 %%[8 export(sgamUnion)

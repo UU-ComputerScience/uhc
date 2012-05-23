@@ -213,7 +213,7 @@ varmpSingleton :: k -> v -> VarMp' k v
 varmpSingleton tv t = VarMp [(tv,t)]
 %%]
 
-%%[6.VarMp.varmpSingleton -2.VarMp.varmpSingleton export(varmpSingleton)
+%%[6.VarMp.varmpSingleton -2.VarMp.varmpSingleton export(varmpMetaLevSingleton,varmpSingleton)
 varmpMetaLevSingleton :: MetaLev -> k -> v -> VarMp' k v
 varmpMetaLevSingleton mlev k v = VarMp mlev [Map.singleton k v]
 

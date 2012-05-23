@@ -79,18 +79,34 @@ gamLookupMetaLev mlev k g = fmap head $ gamLookupMetaLevDup mlev k g
 
 %%[8
 gamToAssocL     g                   = [ (k,v) | (k,(v:_)) <- gamToAssocDupL g ]
+
 gamLookup       k g                 = fmap head $ gamLookupDup k g
+{-# INLINE gamLookup #-}
+
 assocLToGam                         = gamUnions . map (uncurry gamSingleton)
 %%]
 
 %%[8.Base.funs -1.Base.funs
 emptyGam                            = emptySGam
+{-# INLINE emptyGam #-}
+
 gamSingleton                        = sgamSingleton
-gamPushNew      g                   = sgamPushNew g
-gamPushGam      g1 g2               = sgamPushGam g1 g2
-gamPop          g                   = sgamPop g
-gamAddGam       g1 g2               = sgamUnion g1 g2
+{-# INLINE gamSingleton #-}
+
+gamPushNew                          = sgamPushNew
+{-# INLINE gamPushNew #-}
+
+gamPushGam                          = sgamPushGam
+{-# INLINE gamPushGam #-}
+
+gamPop                              = sgamPop
+{-# INLINE gamPop #-}
+
+gamAddGam                           = sgamUnion
+{-# INLINE gamAddGam #-}
+
 gamAdd          k v g               = sgamUnion (sgamSingleton k v) g
+{-# INLINE gamAdd #-}
 %%]
 
 %%[1.Rest.sigs
@@ -106,6 +122,11 @@ assocLToGam     l                   = Gam [l]
 %%[8.Rest.funs -1.Rest.funs
 gamTop                              = sgamTop
 {-# INLINE gamTop #-}
+%%]
+
+%%[8 export(gamMetaLevSingleton)
+gamMetaLevSingleton                        = sgamMetaLevSingleton
+{-# INLINE gamMetaLevSingleton #-}
 %%]
 
 %%[1.assocDupLToGam

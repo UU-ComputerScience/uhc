@@ -454,7 +454,7 @@ deriving instance Data ACoreBindAspectKey
 %%% A reference to an aspected value, i.e. a particular aspect of a binding
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) export(ACoreBindRef(..))
+%%[(8 codegen) export(ACoreBindRef(..),acoreMkRef)
 -- | reference to binding aspect: name + aspect keys
 data ACoreBindRef
   = ACoreBindRef
@@ -462,6 +462,9 @@ data ACoreBindRef
       , acbrefMbAspKey  :: !(Maybe ACoreBindAspectKeyS)
       }
   deriving (Eq,Ord)
+
+acoreMkRef :: HsName -> ACoreBindRef
+acoreMkRef n = ACoreBindRef n Nothing
 
 instance HSNM ACoreBindRef where
   mkHNm (ACoreBindRef n ma) = maybe n (\a -> hsnUniqifyACoreBindAspectKeyS a n) ma
@@ -1139,6 +1142,7 @@ acoreCoeIsId _         = False
 data CSubstKey
   = CSKey_UID   UID
   | CSKey_Nm    HsName
+  | CSKey_Ref   ACoreBindRef
   deriving (Show,Eq,Ord)
 %%]
 
@@ -1174,6 +1178,11 @@ emptyCSubst = Map.empty
 %%[(8 codegen) hs export(acoreCSubstFromNmTyL)
 acoreCSubstFromNmTyL :: AssocL HsName t -> CSubst' e m b ba t
 acoreCSubstFromNmTyL l = Map.fromList [ (CSKey_Nm k,CSITy v) | (k,v) <- l ]
+%%]
+  
+%%[(8 codegen) hs export(acoreCSubstFromRefExprL)
+acoreCSubstFromRefExprL :: AssocL ACoreBindRef e -> CSubst' e m b ba t
+acoreCSubstFromRefExprL l = Map.fromList [ (CSKey_Ref k,CSIExpr v) | (k,v) <- l ]
 %%]
   
 %%[(8 codegen) hs export(acoreCSubstFromUidExprL)
@@ -1465,6 +1474,7 @@ instance Serialize CaseAltFailReason where
 instance PP CSubstKey where
   pp (CSKey_UID i)  = pp i
   pp (CSKey_Nm  n)  = pp n
+  pp (CSKey_Ref r)  = pp r
 %%]
 
 %%[(8 codegen) hs

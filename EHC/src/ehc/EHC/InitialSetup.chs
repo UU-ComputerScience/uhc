@@ -34,7 +34,7 @@ Initial values
 %%[50 import(qualified {%{EH}HS.ModImpExp} as HSSemMod)
 %%]
 
-%%[9 import(qualified {%{EH}Pred} as Pr(initClGam))
+%%[9 import(qualified {%{EH}Gam.ClGam} as Pr(initClGam))
 %%]
 
 -- CHR solver

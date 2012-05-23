@@ -31,7 +31,7 @@
 %%[50 hs import({%{EH}Config},{%{EH}Module})
 %%]
 
-%%[(50 hmtyinfer) hs import({%{EH}Pred.ToCHR},{%{EH}CHR.Solve},qualified {%{EH}Pred} as Pr)
+%%[(50 hmtyinfer) hs import({%{EH}Pred.ToCHR},{%{EH}CHR.Solve},qualified {%{EH}Gam.ClGam} as Pr)
 %%]
 
 %%[50 hs import(qualified Data.Set as Set,qualified Data.Map as Map,qualified EH.Util.Rel as Rel,qualified EH.Util.FastSeq as Seq,EH.Util.Utils)

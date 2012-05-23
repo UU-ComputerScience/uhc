@@ -49,7 +49,9 @@
 
 %%[(9 hmtyinfer) import({%{EH}Ty.Trf.Canonic})
 %%]
-%%[(9 hmtyinfer) import(qualified Data.Map as Map,EH.Util.Pretty,{%{EH}Pred})
+%%[(9 hmtyinfer) import(qualified Data.Map as Map,EH.Util.Pretty)
+%%]
+%%[(9 hmtyinfer) import({%{EH}Gam.ClGam},{%{EH}Pred})
 %%]
 %%[(9 codegen hmtyinfer) import({%{EH}Core.Pretty},{%{EH}Core},{%{EH}Core.Subst},{%{EH}Core.Coercion})
 %%]

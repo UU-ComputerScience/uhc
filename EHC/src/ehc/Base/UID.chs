@@ -35,7 +35,7 @@
 %%[[1
 newtype UID = UID { uidInts :: [Int] }
 %%][99
-data UID = UID { uidHash :: !Int, uidInts :: [Int] }
+data UID = UID { uidHash :: !Int, uidInts :: ![Int] }
 %%]]
   deriving (Eq,Ord)
 %%]

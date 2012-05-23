@@ -35,7 +35,7 @@
 %%[9 hs export(clGam2IdDefOccGam)
 %%]
 
-%%[9 hs import({%{EH}Pred})
+%%[9 hs import({%{EH}Gam.ClGam})
 %%]
 
 %%[50 hs import(qualified EH.Util.Rel as Rel,{%{EH}Module})

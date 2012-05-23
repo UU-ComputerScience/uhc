@@ -71,7 +71,11 @@
 %%]
 %%[(8 codegen) hs import({%{EH}LamInfo})
 %%]
+%%[(8 codegen) hs import({%{EH}FinalEnv})
+%%]
 %%[(8 codegen coresysf) hs import(qualified {%{EH}Core.SysF.AsTy} as SysF, {%{EH}Core.BindExtract})
+%%]
+%%[(8 codegen) hs import({%{EH}Core.Subst})
 %%]
 
 %%[(90 codegen) hs import({%{EH}BuiltinPrims},{%{EH}Foreign})
@@ -86,13 +90,13 @@
 %%[(9 codegen) hs import({%{EH}Base.Target})
 %%]
 
-%%[(9 codegen) hs import({%{EH}Core.Subst},{%{EH}Core.Coercion})
+%%[(9 codegen) hs import({%{EH}Core.Coercion})
 %%]
 
 %%[(9 hmtyinfer) hs import({%{EH}Ty.Trf.MergePreds},{%{EH}Ty.Trf.Canonic})
 %%]
 
-%%[(9 hmtyinfer) hs import({%{EH}Pred},{%{EH}Pred.RedGraph}(redPruneReductionsUntil),{%{EH}CHR},{%{EH}CHR.Constraint},{%{EH}Pred.CHR},{%{EH}Pred.ToCHR},{%{EH}Pred.Heuristics},{%{EH}CHR.Solve})
+%%[(9 hmtyinfer) hs import({%{EH}Gam.ClGam},{%{EH}Pred},{%{EH}Pred.RedGraph}(redPruneReductionsUntil),{%{EH}CHR},{%{EH}CHR.Constraint},{%{EH}Pred.CHR},{%{EH}Pred.ToCHR},{%{EH}Pred.Heuristics},{%{EH}CHR.Solve})
 %%]
 
 %%[(9 codegen) hs import({%{EH}Pred.EvidenceToCore})
@@ -198,7 +202,7 @@ WRAPPER AGItf
 
 %%[(8 codegen) ag import({EH/ToCore})
 %%]
-%%[(8 hmtyinfer codegen) ag import({EH/SysfTy})
+%%[(8 hmtyinfer codegen) ag import({EH/SysfTy},{EH/SysfEnv})
 %%]
 %%[(8 codegen tycore) ag import({EH/ToTyCore})
 %%]
