@@ -21,8 +21,8 @@
 -- | Selection predicates, an algebra for CBound fixed to yield Bool
 data BoundSel
   = BoundSel
-      { selBind         :: CMetas -> Bool
-      , selMeta         :: ACoreBindAspectKeyS -> CMetas -> Bool
+      { selBind         :: Bool
+      , selMeta         :: ACoreBindAspectKeyS -> Bool
       , selRelevTy      :: ACoreBindAspectKeyS -> RelevTy -> Bool
       , selVal          :: ACoreBindAspectKeyS -> MetaLev -> CLbl -> Bool
       , selTy           :: ACoreBindAspectKeyS -> Bool
@@ -31,11 +31,13 @@ data BoundSel
 %%]]
       }
 
+
+-- | Default selection
 noBoundSel, emptyBoundSel :: BoundSel
 noBoundSel
   = BoundSel
-      { selBind			= const False
-      , selMeta			= \_ _ -> False
+      { selBind			= False
+      , selMeta			= const False
       , selRelevTy		= \_ _ -> False
       , selVal			= \_ _ _ -> False
       , selTy			= const False
@@ -47,6 +49,32 @@ noBoundSel
 emptyBoundSel = noBoundSel
 %%]
 
+%%[(8 codegen) hs export(boundSelVal,boundSelMetaLev0,boundSelMetaLev01)
+-- | Predefined selection: Val
+boundSelVal :: BoundSel
+boundSelVal
+  = noBoundSel
+      { selVal 			= \_ _ _ -> True
+      }
+
+-- | Predefined selection: same MetaLev (i.e. 0)
+boundSelMetaLev0 :: BoundSel
+boundSelMetaLev0
+  = noBoundSel
+      { selBind			= True
+      , selVal 			= \_ mlev _ -> mlev == 0
+      }
+
+-- | Predefined selection: same MetaLev (i.e. 0), + 1 higher (i.e. has signature)
+boundSelMetaLev01 :: BoundSel
+boundSelMetaLev01
+  = noBoundSel
+      { selBind			= True
+      , selVal 			= \_ mlev _ -> mlev <= 1
+      , selTy			= const True
+      }
+%%]
+
 %%[(8 codegen) hs export(SelVal)
 type SelVal = CBound
 %%]
@@ -56,16 +84,26 @@ type SelVal = CBound
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonBindExtract})
-WRAPPER CBind
+WRAPPER CBind CBound
 %%]
 
-%%[(8 codegen) hs export(cbindExtract)
-cbindExtract :: BoundSel -> CBind -> [SelVal]
+%%[(8 codegen) hs export(cbindExtract,cboundExtract)
+-- | Extract CBounds for a binding, partitioned according to selection
+cbindExtract :: BoundSel -> CBind -> ([SelVal],[SelVal])
 cbindExtract sel b
-  = selvalL_Syn_CBind t
+  = (selvalYesL_Syn_CBind t, selvalNoL_Syn_CBind t)
   where t = wrap_CBind (sem_CBind b)
               (Inh_CBind
                 { boundsel_Inh_CBind = sel
+                })
+
+-- | Extract CBounds for a bound, partitioned according to selection
+cboundExtract :: BoundSel -> CBound -> ([SelVal],[SelVal])
+cboundExtract sel b
+  = (selvalYesL_Syn_CBound t, selvalNoL_Syn_CBound t)
+  where t = wrap_CBound (sem_CBound b)
+              (Inh_CBound
+                { boundsel_Inh_CBound = sel
                 })
 %%]
 
@@ -73,29 +111,12 @@ cbindExtract sel b
 cbindExtractVal' :: CBind -> (ACoreBindAspectKeyS,MetaLev,CExpr)
 cbindExtractVal' b
   = (a,ml,e)
-  where (CBound_Val a ml _ e:_) = cbindExtract (noBoundSel {selVal = \_ _ _ -> True}) b
+  where (CBound_Val a ml _ e:_, _) = cbindExtract boundSelVal b
 
 cbindExtractVal :: CBind -> CExpr
 cbindExtractVal b
   = e
   where (_,_,e) = cbindExtractVal' b
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% The bind selection, defaults
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8 codegen)
-SEM CExpr
-  | Lam Let
-%%[[(8 coresysf)
-    Arr
-%%]]
-  				loc			.	boundsel		=	noBoundSel
-
-SEM CPatFld
-  | Fld
-  				loc			.	boundsel		=	noBoundSel
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -11,9 +11,19 @@ To be filled in hooks:
 
 %%[(8 codegen)
 ATTR AllBind [ boundsel: BoundSel | | ]
+%%]
 
+%%[(8 codegen)
 SEM CExpr
-  | App			arg			.	boundsel		=	noBoundSel
+  | Lam Let App
+%%[[(8 coresysf)
+    Arr
+%%]]
+  				loc			.	boundsel		=	noBoundSel
+
+SEM CPatFld
+  | Fld
+  				loc			.	boundsel		=	noBoundSel
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -23,10 +33,32 @@ SEM CExpr
 Assumption: existence of local attr 'boundval'
 
 %%[(8 codegen)
-ATTR AllBound CBind [ | | selvalL USE {++} {[]}: {[SelVal]} ]
+ATTR
+  AllBound CBind
+    [ | | selvalYesL USE {++} {[]}: {[SelVal]}
+          selvalNoL  USE {++} {[]}: {[SelVal]}
+    ]
 
 SEM CBound
-  | Val         lhs         .   selvalL         =   if selVal @lhs.boundsel @aspectKeyS @mlev @lbl
-                                                    then [@boundval]
-                                                    else []
+  | Val         lhs         .   (selvalYesL,selvalNoL)
+                                                =   if selVal @lhs.boundsel @aspectKeyS @mlev @lbl
+                                                    then ([@boundval],[])
+                                                    else ([],[@boundval])
+  | Bind        lhs         .   (selvalYesL,selvalNoL)
+                                                =   if selBind @lhs.boundsel
+                                                    then ([@boundval],[])
+                                                    else ([],[@boundval])
+  | Meta        lhs         .   (selvalYesL,selvalNoL)
+                                                =   if selMeta @lhs.boundsel @aspectKeyS
+                                                    then ([@boundval],[])
+                                                    else ([],[@boundval])
+  | RelevTy     lhs         .   (selvalYesL,selvalNoL)
+                                                =   if selRelevTy @lhs.boundsel @aspectKeyS @relevTy
+                                                    then ([@boundval],[])
+                                                    else ([],[@boundval])
+  | Ty          lhs         .   (selvalYesL,selvalNoL)
+                                                =   if selTy @lhs.boundsel @aspectKeyS
+                                                    then ([@boundval],[])
+                                                    else ([],[@boundval])
 %%]
+

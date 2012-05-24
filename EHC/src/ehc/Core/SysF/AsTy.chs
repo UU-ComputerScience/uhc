@@ -150,7 +150,7 @@ tyBindToBound
 tyBindToBound sel convYes convNo bind@(C.CBind_Bind n bbs)
   | null bs   = convNo  n $ head bbs
   | otherwise = convYes n $ head bs
-  where bs = cbindExtract (noBoundSel {selVal = sel}) bind
+  where (bs,_) = cbindExtract (noBoundSel {selVal = sel}) bind
 %%]
 
 %%[(8 codegen coresysf) hs export(tyL0BindToL1Val)

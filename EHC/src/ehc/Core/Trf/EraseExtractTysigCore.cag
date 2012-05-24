@@ -14,11 +14,13 @@
 %%]
 %%[(8 codegen) hs import({%{EH}LamInfo})
 %%]
+%%[(8 codegen) hs import({%{EH}Core.BindExtract})
+%%]
 
 %%[(8 codegen) hs import(Data.Maybe, qualified Data.Map as Map)
 %%]
 
-%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonBindNm},{Core/CommonLamInfo},{Core/CommonGathLamInfo})
+%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonBindNm},{Core/CommonLamInfo},{Core/CommonGathLamInfo},{Core/CommonBindExtract})
 WRAPPER CodeAGItf
 %%]
 
@@ -62,13 +64,13 @@ ATTR AllCodeNT CodeAGItf [ opts: EHCOpts | | ]
 
 %%[(8 codegen)
 SEM CodeAGItf
-  | AGItf       loc         .	howUnionGathLamInfo
-  												=	id
+  | AGItf       loc         .   howUnionGathLamInfo
+                                                =   id
 %%]
 
 %%[(8 codegen)
 SEM CodeAGItf
-  | AGItf       loc         .   howMergeLamInfo	=   (\(LamInfo {laminfoBindAspMp=m}) i -> i {laminfoBindAspMp = m `Map.union` laminfoBindAspMp i})
+  | AGItf       loc         .   howMergeLamInfo =   (\(LamInfo {laminfoBindAspMp=m}) i -> i {laminfoBindAspMp = m `Map.union` laminfoBindAspMp i})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -83,6 +85,20 @@ SEM CBound
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% BoundExtract interfacing
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+SEM CBound
+  | *           loc         .   boundval        =   @cTrf
+
+SEM CExpr
+  | Let         binds       .   boundsel        =   boundSelMetaLev0
+  | Lam         bind        .   boundsel        =   boundSelMetaLev01
+  | App         arg         .   boundsel        =   boundSelMetaLev0
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Transformation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -93,20 +109,15 @@ ATTR CodeAGItf [ | | cTrf: CModule ]
 %%]
 
 %%[(8 codegen)
-ATTR AllBind [ | | cBindTrf USE {++} {[]}: {[CBound]} ]
-
-{-
 SEM CExpr
-  | App			lhs			.	cTrf			=	if null @arg.cBindTrf  then @func.cTrf else @cTrf
-  | Lam			lhs			.	cTrf			=	if null @bind.cBindTrf then @body.cTrf else @cTrf
--}
-
-SEM CBound
-  | Val			lhs			.	cBindTrf        =   if @mlev == 0 then [@cTrf] else []
-  | * - Ty Val  lhs         .   cBindTrf        =   [@cTrf]
+  | App         lhs         .   cTrf            =   if null @arg.selvalYesL  then @func.cTrf else @cTrf
+  | Lam         lhs         .   cTrf            =   if null @bind.selvalYesL
+                                                    then if null @bind.selvalNoL
+                                                         then @cTrf													-- already erased, take that
+                                                         else @body.cTrf											-- has meta stuff, then erase fully
+                                                    else CExpr_Lam (CBind_Bind @argNm @bind.selvalNoL) @body.cTrf	-- indeed termlevel, but include meta stuff only
 
 SEM CBind
-  | Bind		loc			.	cTrf			=	CBind_Bind @nm @bindAspects.cBindTrf
+  | Bind        loc         .   cTrf            =   CBind_Bind @nm @bindAspects.selvalYesL
 
 %%]
-
