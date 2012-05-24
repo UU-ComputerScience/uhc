@@ -703,10 +703,10 @@ acoreBoundValTy1 bcat n mlev m t = acoreBoundValTy1CatLev (acoreBindcategDflt e)
 %%% Lifting utils for introducing type errors where a type is not yet provided
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) export(acoreTyLift)
-acoreTyLift :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a, Functor f) => String -> f x -> f (x,t)
-acoreTyLift msg = fmap (\n -> (n,acoreTyErr msg))
-{-# INLINE acoreTyLift #-}
+%%[(8 codegen) export(acoreTyErrLift)
+acoreTyErrLift :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a, Functor f) => String -> f x -> f (x,t)
+acoreTyErrLift msg = fmap (\n -> (n,acoreTyErr msg))
+{-# INLINE acoreTyErrLift #-}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1058,7 +1058,7 @@ acoreCoeLamLet n u = acoreCoeLamLetTy n (acoreTyErr "acoreCoeLamLet") u
 -- | Let still requiring a body
 acoreCoeLetRec :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => [b] -> Coe' e m b ba t
 acoreCoeLetRec [] = acoreCoeId
-acoreCoeLetRec b  = Coe_LetRec b
+acoreCoeLetRec bs = Coe_LetRec bs
 %%]
 
 %%[(8 codegen) hs export(acoreCoeApp1,acoreCoeAppN,acoreCoeAppNbyName)
@@ -1104,10 +1104,10 @@ acoreCoePoiLApp :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) =
 acoreCoePoiLApp = map (\i -> acoreCoeApp1 (acoreNmHolePred i))
 
 acoreCoeImplsApp :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => Impls -> [Coe' e m b ba t]
-acoreCoeImplsApp = acoreCoePoiLApp . implsPrIds
+acoreCoeImplsApp = acoreCoePoiLApp . implsPrIdL
 %%]
 
-%%[(9 codegen) hs export(acoreCoePoiLLamTy,acoreCoePoiLLam,acoreCoeImplsLam)
+%%[(9 codegen) hs export(acoreCoePoiLLamTy,acoreCoeImplsLam)
 acoreCoePoiLLamTy :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => Coe' e m b ba t -> [(PredOccId,t)] -> [Coe' e m b ba t]
 acoreCoePoiLLamTy onLast poiL
   =  case map mk poiL of
@@ -1117,11 +1117,8 @@ acoreCoePoiLLamTy onLast poiL
          | otherwise      -> [onLast]
   where mk (poi,ty) = acoreCoeLam1Ty (poiHNm poi) ty
 
-acoreCoePoiLLam :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => Coe' e m b ba t -> [(PredOccId)] -> [Coe' e m b ba t]
-acoreCoePoiLLam onLast poiL = acoreCoePoiLLamTy onLast (acoreTyLift "acoreCoePoiLLam" poiL)
-
 acoreCoeImplsLam :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => Coe' e m b ba t -> Impls -> [Coe' e m b ba t]
-acoreCoeImplsLam onLast is = acoreCoePoiLLam onLast (implsPrIds is)
+acoreCoeImplsLam onLast is = acoreCoePoiLLamTy onLast (acoreTyErrLift "acoreCoeImplsLam" (implsPrIdL is))
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

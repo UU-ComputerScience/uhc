@@ -71,7 +71,7 @@ SEM Expr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Final type
+%%% Final type/pred
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(2 hmtyinfer)
@@ -127,8 +127,14 @@ SEM DataFieldExpr
   | Upd         loc         .   finalTyExpr         =   @lhs.finTyVarMp `varUpd` @expr.ty
 %%]
 
+%%[(9 hmtyinfer)
+SEM Expr
+  | AppTop Rec Lam Let
+                loc         .   finKnImplsL         =   map (mkTyPr . snd) @poiPrL
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Final type, but also expanded w.r.t. type synonyms, except for IO
+%%% Final type/pred, but also expanded w.r.t. type synonyms, except for IO
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 hmtyinfer)
@@ -186,6 +192,12 @@ SEM Decl
 %%][11
                 loc         .   finalTyExpanded     =   tyCanonicFFI' True (emptyTyBetaRedEnv' @fe) @ty_sig_
 %%]]
+%%]
+
+%%[(9 hmtyinfer)
+SEM Expr
+  | AppTop Rec Lam Let
+                loc         .   finKnImplsLExpanded	=	map (tyCanonicFFI (emptyTyBetaRedEnv' @fe)) @finKnImplsL
 %%]
 
 %%[(50 hmtyinfer)

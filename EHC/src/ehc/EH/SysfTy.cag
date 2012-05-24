@@ -45,15 +45,70 @@ sysftyCloseExists t
 
 %%[(8 codegen)
 SEM Expr PatExpr Decl DataFieldExpr
-  | *           loc         .   sysfty      =   (appDbg "{Expr,PatExpr,Decl,DataFieldExpr}.sysfty not implemented" :: SysfTy)
+  | *           loc         .   sysfty          =   (appDbg "{Expr,PatExpr,Decl,DataFieldExpr}.sysfty not implemented" :: SysfTy)
 
 SEM Expr
   | Lam         
 %%[[12
     LamImpl
 %%]]
-                loc         .   sysftyLamArg=   (appDbg "{Expr}.sysftyArg not implemented" :: SysfTy)
+                loc         .   sysftyLamArg    =   (appDbg "Expr.{Lam LamImpl}.sysftyArg not implemented" :: SysfTy)
 %%]
+
+%%[(9 codegen)
+SEM Expr
+  | AppTop Rec Lam Let
+                loc         .   sysftyKnImplsL  =   map (const (appDbg "Expr.{AppTop Rec Lam Let}.sysftyKnImplsL not implemented" :: SysfTy)) @finKnImplsLExpanded
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% SysF's Ty
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen coresysf)
+SEM Expr
+  | IConst      loc         .   sysfty      :=  SysF.sysftyInt
+  | CConst      loc         .   sysfty      :=  SysF.sysftyChar
+  | Var Con     loc         .   sysfty      :=  ty2SysfWithKiGamVarMp @lhs.sysfEnv @lhs.finTyVarMp @ty_g_
+  | App AppImpred
+%%[[12
+    AppImpl
+%%]]
+                loc         .   sysfty      :=  @sysftyTyAppRes
+  | * - Var Con IConst CConst App AppImpred
+%%[[12
+    AppImpl
+%%]]
+                loc         .   sysfty      :=  @lhs.sysftyTopDown
+
+SEM PatExpr
+  | Var         loc         .   sysfty      :=  @lhs.sysftyTopDown
+  | AppTop      loc         .   sysfty      :=  SysF.mkTyThunk @sysftyPat
+  | * - Var AppTop
+                loc         .   sysfty      :=  (appDbg "PatExpr.sysfty not implemented" :: SysfTy)
+
+SEM PatExpr
+  | AppTop Rec  loc         .   sysftyPat   =   SysF.mkTySeq $ ty2SysfWithKiGamVarMp @lhs.sysfEnv emptyVarMp @finKnPatTy -- @lhs.finTyVarMp @knPatTy
+
+SEM Decl
+  | Val         loc         .   sysfty      :=  ty2SysfWithKiGamVarMp @lhs.sysfEnv emptyVarMp @finalTyExpanded
+                            .   sysftyGam   =   sysftyLookup @lhs.finTyVarMp @lhs.sysfEnv @patExpr.topNm @lhs.finValGam
+                            .   sysftyBind  =   if @lhs.isStrict then @sysfty else SysF.mkTyThunk @sysfty
+  | Data        loc         .   sysfty      :=  SysF.tyToSysfTyKi @lhs.sysfEnv $ @lhs.finKiVarMp `varUpd` tkgiKi @dataTkgi -- $ tkgiKi $ fst $ tyKiGamLookupByNameErr @tyNm @lhs.finTyKiGam
+  | FFI         loc         .   sysfty      :=  ty2SysfWithKiGamVarMp @lhs.sysfEnv emptyVarMp @finalTyExpanded
+  | * - Val Data FFI
+                loc         .   sysfty      :=  (appDbg "Decl.sysfty not implemented" :: SysfTy)
+
+SEM DataFieldExpr
+  | *
+                loc         .   sysfty      :=  (appDbg "DataFieldExpr.sysfty not implemented" :: SysfTy)
+%%]
+
+%%[(9 codegen coresysf)
+%%]
+SEM Expr
+  | AppTop Rec Lam Let
+                loc         .   sysftyKnImplsL  =   map (ty2SysfWithKiGamVarMp @lhs.sysfEnv @lhs.finTyVarMp) @finKnImplsLExpanded
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% SysF's Ty: down passing
@@ -64,9 +119,6 @@ ATTR AllExpr AllPatExpr AllCase [ sysftyTopDown: {SysfTy} | | ]
 ATTR AllCase [ sysftyPatTopDown: {SysfTy} | | ]
 
 SEM Expr
-  | IConst      loc         .   sysfty      :=  SysF.sysftyInt
-  | CConst      loc         .   sysfty      :=  SysF.sysftyChar
-  | Var Con     loc         .   sysfty      :=  ty2SysfWithKiGamVarMp @lhs.sysfEnv @lhs.finTyVarMp @ty_g_
   | Lam         
 %%[[12
     LamImpl
@@ -81,34 +133,6 @@ SEM Expr
 %%]]
                 loc         .   sysftyTopDownArgBase
                                             =   cSubstApp @func.sysfcSubstAppSpine $ SysF.tyUnThunkTySeq $ SysF.unTySeq @sysftyAppArg
-                loc         .   sysfty      :=  @sysftyTyAppRes
-  | * - Var Con IConst CConst App AppImpred
-%%[[12
-    AppImpl
-%%]]
-                loc         .   sysfty      :=  @lhs.sysftyTopDown
-
-SEM PatExpr
-  | AppTop Rec  loc         .   sysftyPat   =   SysF.mkTySeq $ ty2SysfWithKiGamVarMp @lhs.sysfEnv emptyVarMp @finKnPatTy -- @lhs.finTyVarMp @knPatTy
-
-SEM PatExpr
-  | Var         loc         .   sysfty      :=  @lhs.sysftyTopDown
-  | AppTop      loc         .   sysfty      :=  SysF.mkTyThunk @sysftyPat
-  | * - Var AppTop
-                loc         .   sysfty      :=  (appDbg "PatExpr.sysfty not implemented" :: SysfTy)
-
-SEM Decl
-  | Val         loc         .   sysfty      :=  ty2SysfWithKiGamVarMp @lhs.sysfEnv emptyVarMp @finalTyExpanded
-                            .   sysftyGam   =   sysftyLookup @lhs.finTyVarMp @lhs.sysfEnv @patExpr.topNm @lhs.finValGam
-                            .   sysftyBind  =   if @lhs.isStrict then @sysfty else SysF.mkTyThunk @sysfty
-  | Data        loc         .   sysfty      :=  SysF.tyToSysfTyKi @lhs.sysfEnv $ @lhs.finKiVarMp `varUpd` tkgiKi @dataTkgi -- $ tkgiKi $ fst $ tyKiGamLookupByNameErr @tyNm @lhs.finTyKiGam
-  | FFI         loc         .   sysfty      :=  ty2SysfWithKiGamVarMp @lhs.sysfEnv emptyVarMp @finalTyExpanded
-  | * - Val Data FFI
-                loc         .   sysfty      :=  (appDbg "Decl.sysfty not implemented" :: SysfTy)
-
-SEM DataFieldExpr
-  | *
-                loc         .   sysfty      :=  (appDbg "DataFieldExpr.sysfty not implemented" :: SysfTy)
 %%]
 
 %%[(8 codegen coresysf)
@@ -170,14 +194,14 @@ SEM Expr
     AppImpl
 %%]]
                 loc         .   (sysftyTyAppArgL,sysftyAppArg,sysftyTyAppRes)
-                                                =   let (al,a,r) = SysF.tyArrowInstQuArgsRes SysF.ArrowDecompose_ArgBefore @finAppInstToLHere @func.sysftyBotUp
+                                                =   let (al,_,a,r) = SysF.tyArrowInstQuArgsRes SysF.ArrowDecompose_ArgBefore @finAppInstToLHere 0 @func.sysftyBotUp
                                                     in  (al,cbindExtractVal a,r)
   | * - App AppImpred
 %%[[12
     AppImpl
 %%]]
-                loc         .   (sysftyTyAppArgL,_,sysftyTyAppRes)
-                                                =   SysF.tyArrowInstQuArgsRes SysF.ArrowDecompose_InstOnly @finAppInstToLHere @sysfty
+                loc         .   (sysftyTyAppArgL,_,_,sysftyTyAppRes)
+                                                =   SysF.tyArrowInstQuArgsRes SysF.ArrowDecompose_InstOnly @finAppInstToLHere 0 @sysfty
 %%]
 
 %%[(8 codegen coresysf)
@@ -210,15 +234,19 @@ SEM Expr
     LamImpl
 %%]]
                 loc         .   (sysftyTyLamArgL,sysftyLamArg,sysftyLamRes)
-                                                :=  let (al,a,r) = SysF.tyArrowInstQuArgsRes SysF.ArrowDecompose_ArgAfter @finLamInstToLHere @lhs.sysftyTopDown
-                                                        -- (_,bind:_) = acoreUnBind a 
+                                                :=  let (al,_,a,r) = SysF.tyArrowInstQuArgsRes SysF.ArrowDecompose_ArgAfter @finLamInstToLHere @sysftyNrDropImpl @lhs.sysftyTopDown
                                                     in  (al,cbindExtractVal a,r)
   | * - Lam
 %%[[12
     LamImpl
 %%]]
-                loc         .   (sysftyTyLamArgL,_,sysftyTyLamRes)
-                                                =   SysF.tyArrowInstQuArgsRes SysF.ArrowDecompose_InstOnly @finLamInstToLHere @lhs.sysftyTopDown
+                loc         .   (sysftyTyLamArgL,sysftyTyLamRes)
+                                                =   let (al,_,_,r) = SysF.tyArrowInstQuArgsRes SysF.ArrowDecompose_InstOnly @finLamInstToLHere @sysftyNrDropImpl @lhs.sysftyTopDown
+                                                    in  (al,r)
+  | AppTop Rec Let Lam
+                loc         .   sysftyNrDropImpl=   length @finKnImplsL
+  | * - AppTop Rec Let Lam
+                loc         .   sysftyNrDropImpl=   (0::Int)
 %%]
                             .   sysftyLamArgHere
                                                 =   @sysfcSubstLamSpine `cSubstApp` SysF.unTySeq @sysftyLamArg

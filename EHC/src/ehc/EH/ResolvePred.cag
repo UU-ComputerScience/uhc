@@ -114,9 +114,12 @@ SEM Expr
   | AppTop Rec Lam Let
                 loc         .   impls2KnHd          =   tyImpls @imSubsTy
                             .   impls2KnTl          =   @lhs.finTyVarMp `varUpd` @knImplsTl
-                            .   poiLKnTl            =   implsPrIds @impls2KnTl
-                            .   poiL                =   implsPrIds @impls2KnHd ++ @poiLKnTl
+                            .	impls2KnHdTl		=	[@impls2KnHd, @impls2KnTl]
+                            .   poiPrL              =   concatMap implsPrIdPredL @impls2KnHdTl
+                            .   poiL                =   map fst @poiPrL
 %%]
+                            .   poiLKnTl            =   implsPrIdL @impls2KnTl
+                            .   poiL                =   implsPrIdL @impls2KnHd ++ @poiLKnTl
 
 %%[(12 hmtyinfer)
 SEM Expr

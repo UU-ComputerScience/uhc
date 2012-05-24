@@ -1557,7 +1557,7 @@ predHasRuntimeEvidence p
 
 Substitution aware
 
-%%[(9 hmtyinfer || hmtyast) hs export(implsPredsTailWithLkup,tyImplsWithLkup,implsPrIdsWithLkup)
+%%[(9 hmtyinfer || hmtyast) hs export(implsPredsTailWithLkup,tyImplsWithLkup,implsPrIdLWithLkup)
 implsPredsTailWithLkup' :: (TyVarId -> Maybe Impls) -> PredScope -> Impls -> ([(PredOcc,[ImplsProveOcc])],Impls)
 implsPredsTailWithLkup' lookup sc i
   = extr Set.empty i
@@ -1582,13 +1582,13 @@ tyImplsWithLkup :: (TyVarId -> Maybe Ty) -> Ty -> Impls
 tyImplsWithLkup lookup = tyVarLift lookup tyImpls tyImpls
 {-# INLINE tyImplsWithLkup #-}
 
-implsPrIdsWithLkup :: (TyVarId -> Maybe Impls) -> Impls -> [PredOccId]
-implsPrIdsWithLkup lookup = map poPoi . fst . implsPredsTailWithLkup lookup initPredScope
-{-# INLINE implsPrIdsWithLkup #-}
+implsPrIdLWithLkup :: (TyVarId -> Maybe Impls) -> Impls -> [PredOccId]
+implsPrIdLWithLkup lookup = map poPoi . fst . implsPredsTailWithLkup lookup initPredScope
+{-# INLINE implsPrIdLWithLkup #-}
 
 %%]
 
-%%[(9 hmtyinfer || hmtyast) hs export(tyImpls,implsPredsTail,implsPredsMbTail,implsIsTail,tyIsImplsTail,tyImplsPreds,implsPrIds)
+%%[(9 hmtyinfer || hmtyast) hs export(tyImpls,implsPredsTail,implsPredsMbTail,implsIsTail,tyIsImplsTail,tyImplsPreds,implsPrIdPredL,implsPrIdL)
 tyImpls :: Ty -> Impls
 tyImpls
   = extr . tyUnAnn
@@ -1619,9 +1619,12 @@ tyIsImplsTail :: Ty -> Bool
 tyIsImplsTail = implsIsTail . tyImpls
 {-# INLINE tyIsImplsTail #-}
 
-implsPrIds :: Impls -> [PredOccId]
-implsPrIds = map poPoi . fst . implsPredsTail initPredScope
-{-# INLINE implsPrIds #-}
+implsPrIdPredL :: Impls -> [(PredOccId,Pred)]
+implsPrIdPredL i = [ (poPoi po, poPr po) | po <- fst $ implsPredsTail initPredScope i ]
+
+implsPrIdL :: Impls -> [PredOccId]
+implsPrIdL = map fst . implsPrIdPredL
+{-# INLINE implsPrIdL #-}
 %%]
 
 %%[(9 hmtyinfer || hmtyast) hs export(implsMbVar,implsTailVar)

@@ -41,25 +41,36 @@ data ArrowHowDecompose
  
 -- split type + instantation into multiple type args (>=0) + optional 1 arg + 1 res:
 -- in other words, peel of type application(s) for Sys F, driven by InstTo
-tyArrowInstQuArgsRes :: ArrowHowDecompose -> [InstTo] -> C.SysfTy -> ([C.SysfTyBind],C.SysfTyBind,C.SysfTy)
-tyArrowInstQuArgsRes how instToL t
+tyArrowInstQuArgsRes
+  :: ArrowHowDecompose
+     -> [InstTo]			-- how to instantiate quantification, nr of ...
+     -> Int					-- nr of impls to drop
+     -> C.SysfTy			
+     -> ( [C.SysfTyBind]	-- sysf args for quantification
+        , [C.SysfTyBind]	-- implicits dropped
+        , C.SysfTyBind		-- the argument (if any)
+        , C.SysfTy			-- remaining/result type
+        )
+tyArrowInstQuArgsRes how instToL dropNrImpls t
   = case how of
       ArrowDecompose_InstOnly
-        -> (taL,mkb hsnWild (appDfltBoundmeta r) $ appDbg "Ty.tyArrowInstQuArgsRes.ArrowDecompose_InstOnly",r)
+        -> (taL,[],mkb hsnWild (appDfltBoundmeta r) $ appDbg "Ty.tyArrowInstQuArgsRes.ArrowDecompose_InstOnly",r)
         where (taL,r) = extr instToL t
       ArrowDecompose_ArgBefore
-        -> (taL,a,r')
-        where (a,r) = unArr "ArrowDecompose_ArgBefore" t
+        -> (taL,[],a,r')
+        where (a,r) = unArr dropNrImpls "Ty.tyArrowInstQuArgsRes.ArrowDecompose_ArgBefore" t
               (taL,r') = extr instToL r
       ArrowDecompose_ArgAfter
-        -> (taL,a,r')
+        -> (taL,[],a,r')
         where (taL,r) = extr instToL t
-              (a,r') = unArr "ArrowDecompose_ArgAfter" r
+              (a,r') = unArr dropNrImpls "Ty.tyArrowInstQuArgsRes.ArrowDecompose_ArgAfter" r
   where extr (InstTo_Qu _ _ _ _ : is) t = (a:a',r')
-                                        where (a,r)   = unArr "extr" t
+                                        where (a,r)   = unArr 0 "Ty.tyArrowInstQuArgsRes.extr" t
                                               (a',r') = extr is r
         extr _                        t = ([],t)
-        unArr m t = (mkb n bm a, r)
+        unArr ndrop m t
+          | ndrop > 0 = unArr (ndrop-1) m r
+          | otherwise = (mkb n bm a, r)
           where ((n,bm),a,r) = maybe ((hsnWild,appDfltBoundmeta t),appDbg $ "tyArrowInstQuArgsRes." ++ m,t) id $ appMb1MetaArr t
         mkb n bm a = acoreBind1Asp n [acoreBound1MetaVal bm a]
 %%]
@@ -433,10 +444,10 @@ SEM Ty
 
 %%[(8 codegen coresysf)
 SEM Ty
-  | App         loc         .   (skiKiAppArgL,skiAppArg,skiKiAppRes)
-                                            =   tyArrowInstQuArgsRes ArrowDecompose_ArgBefore @appInstToLHere @func.skiBotUp
-  | * - App     loc         .   (skiKiAppArgL,_,skiKiAppRes)
-                                            =   tyArrowInstQuArgsRes ArrowDecompose_InstOnly @appInstToLHere @ski
+  | App         loc         .   (skiKiAppArgL,_,skiAppArg,skiKiAppRes)
+                                            =   tyArrowInstQuArgsRes ArrowDecompose_ArgBefore @appInstToLHere 0 @func.skiBotUp
+  | * - App     loc         .   (skiKiAppArgL,_,_,skiKiAppRes)
+                                            =   tyArrowInstQuArgsRes ArrowDecompose_InstOnly @appInstToLHere 0 @ski
 %%]
 
 Additional kind arg wrapping

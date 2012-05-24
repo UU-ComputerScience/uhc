@@ -778,9 +778,12 @@ SEM Expr
 
 %%[(9 codegen)
 SEM Expr
-  | Lam         loc         .   lamArgCoeL          =   acoreCoePoiLLam (acoreCoeLetRec @poiBindL) @poiL ++ [acoreCoeLam1Ty @arg.topNm @acoretyArg]
+  | AppTop Rec Let Lam
+                loc         .   poiAndAcoreTyL		=   zipWith (\po ty -> (po,ty2TyC @lhs.opts @lhs.sysfEnv ty)) @poiL @finKnImplsLExpanded
+  | Lam         loc         .   lamArgCoeL          =   acoreCoePoiLLamTy (acoreCoeLetRec @poiBindL) @poiAndAcoreTyL
+                                                        ++ [acoreCoeLam1Ty @arg.topNm @acoretyArg]
   | AppTop Rec Let
-                loc         .   lamArgCoeL          =   acoreCoePoiLLam (acoreCoeLetRec @poiBindL) @poiL
+                loc         .   lamArgCoeL          =   acoreCoePoiLLamTy (acoreCoeLetRec @poiBindL) @poiAndAcoreTyL
 %%]
 
 %%[(9 codegen)

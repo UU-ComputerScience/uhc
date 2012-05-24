@@ -293,7 +293,7 @@ SEM CExpr
 %%][90
                 loc         .   ppent       =   "\"" >|< @impEnt >|< "\""
 %%]]
-  | Dbg         loc         .   pp          =   "<<DBG:" >#< @info >#< ">>"
+  | Dbg         loc         .   pp          =   ppParens $ "<<DBG:" >#< @info >#< ">>"
 %%[[(8 coresysf)
   | Arr         loc         .   pp          =   @bind.pp >#< "->" >#< @body.pp
 %%]]

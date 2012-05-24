@@ -189,7 +189,7 @@ acoreStrictSatCaseMetaTy env mbNm meta e alts
         undef = acoreBuiltinUndefined (rceEHCOpts env)
 
 acoreStrictSatCaseMeta :: (Eq bcat, AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => RCEEnv' e m b ba t -> Maybe (HsName) -> m -> e -> [a] -> e
-acoreStrictSatCaseMeta env eNm m e alts = acoreStrictSatCaseMetaTy env (acoreTyLift "acoreStrictSatCaseMeta" eNm) m e alts
+acoreStrictSatCaseMeta env eNm m e alts = acoreStrictSatCaseMetaTy env (acoreTyErrLift "acoreStrictSatCaseMeta" eNm) m e alts
 {-# INLINE acoreStrictSatCaseMeta #-}
 
 acoreStrictSatCaseTy :: (Eq bcat, AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => RCEEnv' e m b ba t -> Maybe (HsName,t) -> e -> [a] -> e
@@ -223,7 +223,7 @@ acoreSelsCasesMetaTy env mbNm meta e tgSels
                _          -> ctag (acorePatRestVar hsnWild) (\_ _ _ _ _ -> acorePatRestEmpty) ct
 
 acoreSelsCasesMeta :: (Eq bcat, AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => RCEEnv' e m b ba t -> Maybe (HsName) -> m -> e -> [(CTag,[(HsName,{-HsName,-}e)],MbPatRest' pr,e)] -> e
-acoreSelsCasesMeta env ne meta e tgSels = acoreSelsCasesMetaTy env (acoreTyLift "acoreStrictSatCaseMeta" ne) meta e tgSels
+acoreSelsCasesMeta env ne meta e tgSels = acoreSelsCasesMetaTy env (acoreTyErrLift "acoreStrictSatCaseMeta" ne) meta e tgSels
 {-# INLINE acoreSelsCasesMeta #-}
 
 acoreSelsCasesTy :: (Eq bcat, AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => RCEEnv' e m b ba t -> Maybe (HsName,t) -> e -> [(CTag,[(HsName,{-HsName,-}e)],MbPatRest' pr,e)] -> e
@@ -242,7 +242,7 @@ acoreSelsCaseMetaTy :: (Eq bcat, AbstractCore e m b bound boundmeta bcat mbind t
 acoreSelsCaseMetaTy env ne meta e ct nmLblOffL mbRest sel = acoreSelsCasesMetaTy env ne meta e [(ct,nmLblOffL,mbRest,sel)]
 
 acoreSelsCaseMeta :: (Eq bcat, AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => RCEEnv' e m b ba t -> Maybe (HsName) -> m -> e -> CTag -> [(HsName,{-HsName,-}e)] -> MbPatRest' pr -> e -> e
-acoreSelsCaseMeta env ne meta e ct nmLblOffL mbRest sel = acoreSelsCaseMetaTy env (acoreTyLift "acoreSelsCaseMeta" ne) meta e ct nmLblOffL mbRest sel
+acoreSelsCaseMeta env ne meta e ct nmLblOffL mbRest sel = acoreSelsCaseMetaTy env (acoreTyErrLift "acoreSelsCaseMeta" ne) meta e ct nmLblOffL mbRest sel
 {-# INLINE acoreSelsCaseMeta #-}
 
 acoreSelsCaseTy :: (Eq bcat, AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => RCEEnv' e m b ba t -> Maybe (HsName,t) -> e -> CTag -> [(HsName,{-HsName,-}e)] -> MbPatRest' pr -> e -> e
@@ -263,7 +263,7 @@ acoreSelCaseTy env ne e ct n {-lbl-} off mbRest
 
 acoreSelCase :: (Eq bcat, AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => RCEEnv' e m b ba t -> Maybe HsName -> e -> CTag -> HsName -> e -> MbPatRest' pr -> e
 acoreSelCase env ne e ct n {-lbl-} off mbRest
-  = acoreSelCaseTy env (acoreTyLift "acoreSelCase" ne) e ct n {-lbl-} off mbRest
+  = acoreSelCaseTy env (acoreTyErrLift "acoreSelCase" ne) e ct n {-lbl-} off mbRest
 {-# INLINE acoreSelCase #-}
 %%]
 
@@ -286,7 +286,7 @@ acoreSatSelsCasesMetaTy env ne meta e tgSels
         opts = rceEHCOpts env
 
 acoreSatSelsCasesMeta :: (Eq bcat, AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => RCEEnv' e m b ba t -> Maybe (HsName) -> m -> e -> [(CTag,[(HsName,{-HsName,-}Int)],MbPatRest' pr,e)] -> e
-acoreSatSelsCasesMeta env ne meta e tgSels = acoreSatSelsCasesMetaTy env (acoreTyLift "acoreSatSelsCasesMeta" ne) meta e tgSels
+acoreSatSelsCasesMeta env ne meta e tgSels = acoreSatSelsCasesMetaTy env (acoreTyErrLift "acoreSatSelsCasesMeta" ne) meta e tgSels
 {-# INLINE acoreSatSelsCasesMeta #-}
 
 acoreSatSelsCasesTy :: (Eq bcat, AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => RCEEnv' e m b ba t -> Maybe (HsName,t) -> e -> [(CTag,[(HsName,{-HsName,-}Int)],MbPatRest' pr,e)] -> e
@@ -294,7 +294,7 @@ acoreSatSelsCasesTy env ne e tgSels = acoreSatSelsCasesMetaTy env ne acoreMetava
 {-# INLINE acoreSatSelsCasesTy #-}
 
 acoreSatSelsCases :: (Eq bcat, AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => RCEEnv' e m b ba t -> Maybe (HsName) -> e -> [(CTag,[(HsName,{-HsName,-}Int)],MbPatRest' pr,e)] -> e
-acoreSatSelsCases env ne e tgSels = acoreSatSelsCasesTy env (acoreTyLift "acoreSatSelsCases" ne) e tgSels
+acoreSatSelsCases env ne e tgSels = acoreSatSelsCasesTy env (acoreTyErrLift "acoreSatSelsCases" ne) e tgSels
 {-# INLINE acoreSatSelsCases #-}
 %%]
 
@@ -306,7 +306,7 @@ acoreSatSelsCaseMetaTy :: (Eq bcat, AbstractCore e m b bound boundmeta bcat mbin
 acoreSatSelsCaseMetaTy env ne meta e ct nmLblOffL mbRest sel = acoreSatSelsCasesMetaTy env ne meta e [(ct,nmLblOffL,mbRest,sel)]
 
 acoreSatSelsCaseMeta :: (Eq bcat, AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => RCEEnv' e m b ba t -> Maybe (HsName) -> m -> e -> CTag -> [(HsName,{-HsName,-}Int)] -> MbPatRest' pr -> e -> e
-acoreSatSelsCaseMeta env ne meta e ct nmLblOffL mbRest sel = acoreSatSelsCaseMetaTy env (acoreTyLift "acoreSatSelsCaseMeta" ne) meta e ct nmLblOffL mbRest sel
+acoreSatSelsCaseMeta env ne meta e ct nmLblOffL mbRest sel = acoreSatSelsCaseMetaTy env (acoreTyErrLift "acoreSatSelsCaseMeta" ne) meta e ct nmLblOffL mbRest sel
 {-# INLINE acoreSatSelsCaseMeta #-}
 
 acoreSatSelsCaseTy :: (Eq bcat, AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => RCEEnv' e m b ba t -> Maybe (HsName,t) -> e -> CTag -> [(HsName,{-HsName,-}Int)] -> MbPatRest' pr -> e -> e
@@ -314,7 +314,7 @@ acoreSatSelsCaseTy env ne e ct nmLblOffL mbRest sel = acoreSatSelsCaseMetaTy env
 {-# INLINE acoreSatSelsCaseTy #-}
 
 acoreSatSelsCase :: (Eq bcat, AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => RCEEnv' e m b ba t -> Maybe (HsName) -> e -> CTag -> [(HsName,{-HsName,-}Int)] -> MbPatRest' pr -> e -> e
-acoreSatSelsCase env ne e ct nmLblOffL mbRest sel = acoreSatSelsCaseTy env (acoreTyLift "acoreSatSelsCase" ne) e ct nmLblOffL mbRest sel
+acoreSatSelsCase env ne e ct nmLblOffL mbRest sel = acoreSatSelsCaseTy env (acoreTyErrLift "acoreSatSelsCase" ne) e ct nmLblOffL mbRest sel
 {-# INLINE acoreSatSelsCase #-}
 %%]
 
@@ -326,7 +326,7 @@ acoreExprSatSelCaseTy :: (Eq bcat, AbstractCore e m b bound boundmeta bcat mbind
 acoreExprSatSelCaseTy env ne e ct n {- lbl -} off mbRest = acoreSatSelsCaseTy env ne e ct [(n,{-lbl,-}off)] mbRest (acoreVar n)
 
 acoreExprSatSelCase :: (Eq bcat, AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => RCEEnv' e m b ba t -> Maybe (HsName) -> e -> CTag -> HsName -> {- HsName -> -} Int -> MbPatRest' pr -> e
-acoreExprSatSelCase env ne e ct n {- lbl -} off mbRest = acoreExprSatSelCaseTy env (acoreTyLift "acoreExprSatSelCase" ne) e ct n {- lbl -} off mbRest
+acoreExprSatSelCase env ne e ct n {- lbl -} off mbRest = acoreExprSatSelCaseTy env (acoreTyErrLift "acoreExprSatSelCase" ne) e ct n {- lbl -} off mbRest
 {-# INLINE acoreExprSatSelCase #-}
 %%]
 
@@ -342,7 +342,7 @@ acoreSatSelsCaseUpdMetaTy env mbNm meta e ct arity offValL mbRest
                 $ listSaturateWith 0 (arity-1) fst [(o,(o,(acoreVar n,acoreMetavalDflt))) | (n,{-_,-}o) <- nmLblOffL] offValL
 
 acoreSatSelsCaseUpdMeta :: (Eq bcat, AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => RCEEnv' e m b ba t -> Maybe (HsName) -> m -> e -> CTag -> Int -> [(Int,(e,m))] -> MbPatRest' pr -> e
-acoreSatSelsCaseUpdMeta env mbNm meta e ct arity offValL mbRest = acoreSatSelsCaseUpdMetaTy env (acoreTyLift "acoreSatSelsCaseUpdMeta" mbNm) meta e ct arity offValL mbRest
+acoreSatSelsCaseUpdMeta env mbNm meta e ct arity offValL mbRest = acoreSatSelsCaseUpdMetaTy env (acoreTyErrLift "acoreSatSelsCaseUpdMeta" mbNm) meta e ct arity offValL mbRest
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -559,7 +559,7 @@ rceMatchTy env args alts
 
 %%[(8888 codegen) hs export(rceMatch)
 rceMatch :: (Eq bcat, AbstractCore e m b bound boundmeta bcat mbind t p pr pf a, CSubstitutable e m b ba t e) => RCEEnv' e m b ba t -> [(HsName)] -> RCEAltL' e t b pr -> e
-rceMatch env args alts = rceMatchTy env (acoreTyLift "rceMatch" args) alts
+rceMatch env args alts = rceMatchTy env (acoreTyErrLift "rceMatch" args) alts
 %%]
 
 %%[(8 codegen) hs export(rceUpdEnv)
