@@ -204,6 +204,18 @@ SEM Expr
                                                 =   SysF.tyArrowInstQuArgsRes SysF.ArrowDecompose_InstOnly @finAppInstToLHere 0 @sysfty
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% SysF's Ty: wrappers for inserting required type level args
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen coresysf) hs
+sysftyMkLamWrap :: CSubst -> [CBind] -> CExpr -> CExpr
+sysftyMkLamWrap spineSubst tyArgL e
+  = flip acoreLamBind e $
+    map (cSubstAppExprAndBinds spineSubst . SysF.tyL0BindToL1Bind)
+        tyArgL
+%%]
+
 %%[(8 codegen coresysf)
 SEM Expr
   | *           loc         .   sysfcTyArgAppWrap
@@ -214,9 +226,7 @@ SEM Expr
                                                     else id
                             .   sysfcTyArgLamWrap
                                                 =   if ehcOptCoreSysF @lhs.opts
-                                                    then \e -> flip acoreLamBind e $
-                                                               map (cSubstAppExprAndBinds @lhs.sysfcSubstLamSpine . SysF.tyL0BindToL1Bind)
-                                                                   @sysftyTyLamArgL
+                                                    then sysftyMkLamWrap @lhs.sysfcSubstLamSpine @sysftyTyLamArgL
                                                     else id
 %%]
 

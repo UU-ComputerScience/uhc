@@ -89,6 +89,14 @@ tyInst1Quants :: UID -> HowToInst -> Ty -> (Ty,TyVarIdL,[InstTo])
 tyInst1Quants uniq howToInst ty = tyInst uniq False howToInst ty
 %%]
 
+%%[(8 hmtyinfer || hmtyast) hs export(tyInstToL)
+-- | Instantiate, with the purpose of obtaining [InstTo] only
+tyInstToL :: Ty -> [InstTo]
+tyInstToL ty
+  = il
+  where (_,_,il) = tyInst1Quants uidStart instCoConst ty
+%%]
+
 %%[(4 hmtyinfer || hmtyast).tyInst1Exists hs
 tyInst1Exists :: UID -> Ty -> Ty
 tyInst1Exists uniq ty

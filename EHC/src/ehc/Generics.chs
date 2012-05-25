@@ -157,9 +157,9 @@ projFrom
 projFrom
      opts rceEnv
      (Proj sum)
-  = acoreLam [argNm]
+  = acoreLamTy (acoreTyErrLift "Generics.projFrom.argNm" [argNm])
     $ acoreSatSelsCasesTy
-        rceEnv (Just (hsnUniqifyEval argNm,acoreTyErr "Generics.projFrom.argNm")) (acoreVar argNm)
+        rceEnv (Just (hsnUniqifyEval argNm,acoreTyErr "Generics.projFrom.sel")) (acoreVar argNm)
         [ (tg, nmLForCase nL, Nothing, fst $ mkExp proj nL)
         | proj <- projSumAlts sum
         , let con = projCon proj
@@ -210,7 +210,7 @@ projTo
 projTo
      opts rceEnv
      (Proj sum)
-  = acoreLam [scrut]
+  = acoreLamTy (acoreTyErrLift "Generics.projTo.scrut" [scrut])
     $ mke (acoreVar scrut)	-- ref to scrut is just dummy
   where (mke,(scrut,_,_)) = mkExp sum [] (hsnLclSupplyWith $ mkHNm "proj")
 

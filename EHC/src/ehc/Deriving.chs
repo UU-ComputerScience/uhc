@@ -353,12 +353,12 @@ mkDerivClsMp fe valGam dataGam
                                       = case (subCalls,dtiMbFixityPrio dti,nmL) of
                                           ([subCall1,subCall2],Just (p,_),(subNms1:conNms:subNms2:_))
                                             -> ( acoreBuiltinGtInt opts (acoreVar dNm) p
-                                               , acoreLam1 rNm $ sub1 $ mkConRead conNms $ sub2 $ mkRes subResNmL nmLRemFinal
+                                               , acoreLam1Ty rNm (acoreTyErr "Deriving.Read.") $ sub1 $ mkConRead conNms $ sub2 $ mkRes subResNmL nmLRemFinal
                                                )
                                             where ([sub1,sub2],subResNmL) = unzip $ mkSubReads [subNms1,subNms2] subCalls
                                           (_,_,(conNms:subNmsL))
                                             -> ( acoreBuiltinGtInt opts (acoreVar dNm) fixityAppPrio
-                                               , acoreLam1 rNm $ foldr ($) (mkRes subResNmL nmLRemFinal) (mkConRead conNms : subs)
+                                               , acoreLam1Ty rNm (acoreTyErr "Deriving.Read.") $ foldr ($) (mkRes subResNmL nmLRemFinal) (mkConRead conNms : subs)
                                                )
                                             where (subs,subResNmL) = unzip $ mkSubReads subNmsL subCalls
                                           

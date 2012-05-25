@@ -203,7 +203,7 @@ evidMpToCore2 env evidMp
         ann (RedHow_ByLabel _ (LabelOffset_Off o) sc) [roff] = ( acoreBuiltinAddInt opts (tcrCExpr roff) o, sc )
 %%]]
 %%[[13
-        ann (RedHow_Lambda  i sc) [body]       = ( [mkHNm i] `acoreLam` tcrCExpr body, sc )
+        ann (RedHow_Lambda  i sc) [body]       = ( acoreTyErrLift "RedHow_Lambda" [mkHNm i]  `acoreLamTy` tcrCExpr body, sc )
 %%]]
 
         -- | Ignore proofs without real evidence
@@ -367,7 +367,7 @@ evidMpToCore3 env evidMp
         ann (RedHow_ByLabel _ (LabelOffset_Off o) sc) [roff] = ( acoreBuiltinAddInt (feEHCOpts $ fiEnv env) (tcrCExpr roff) o, sc )
 %%]]
 %%[[13
-        ann (RedHow_Lambda  i sc) [body]       = ( [mkHNm i] `acoreLam` tcrCExpr body, sc )
+        ann (RedHow_Lambda  i sc) [body]       = ( acoreTyErrLift "RedHow_Lambda" [mkHNm i]  `acoreLamTy` tcrCExpr body, sc )
 %%]]
 
         -- | Ignore proofs without real evidence
@@ -521,7 +521,7 @@ evidMpToCore env evidMp
         ann (RedHow_ByLabel _ (LabelOffset_Off o) sc) [roff] = ( acoreBuiltinAddInt (feEHCOpts $ fiEnv env) (tcrCExpr roff) o, sc )
 %%]]
 %%[[13
-        ann (RedHow_Lambda  i sc) [body]       = ( [mkHNm i] `acoreLam` tcrCExpr body, sc )
+        ann (RedHow_Lambda  i sc) [body]       = ( acoreTyErrLift "RedHow_Lambda" [mkHNm i] `acoreLamTy` tcrCExpr body, sc )
 %%]]
 %%[[41
         ignore (Evid_Proof _ red  _)
