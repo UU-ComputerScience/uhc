@@ -42,24 +42,6 @@ PRAGMA nocycle
 %%% Haskell itf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8888 codegen coresysf) hs
-cmodSysfCheck
-  :: EHCOpts
-     -> CModule
-     -> ( CModule
-        , LamMp
-        )
-cmodSysfCheck opts cmod
-  = ( cTrf_Syn_CodeAGItf t
-    , gathLamMp_Syn_CodeAGItf t
-    )
-  where t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf cmod))
-                           (Inh_CodeAGItf
-                             { opts_Inh_CodeAGItf = opts
-                             , lamMp_Inh_CodeAGItf = Map.empty
-                             })
-%%]
-
 %%[(8 codegen coresysf) hs export(CheckEnv(..),emptyCheckEnv)
 data CheckEnv
   = CheckEnv
@@ -186,7 +168,7 @@ Use:
 
 %%[(8 codegen coresysf)
 SEM CExpr
-  | Var         loc         .   (ty,undefNmMp)      =   let lk mlev r = gamLookupMetaLev mlev r @lhs.gam
+  | Var         loc         .   (ty,undefNmMp)      =   let lk mlev r = gamLookupMetaLev mlev r @lhs.gam <|> fmap libindaspCore (lamMpLookupAsp (acbrefNm r) (acbaspkeyDefaultSysfTy mlev) (cenvLamMp @lhs.env))
                                                         in  chkLkup' Map.empty (\l r -> Map.singleton l [r]) (@lhs.mlev+1) @ref lk
 %%]
 

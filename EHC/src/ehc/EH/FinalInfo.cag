@@ -324,9 +324,12 @@ SEM Expr
                                             =   @lhs.exprCtxt /= ExprCtxt_Lam
   | AppTop      loc         .   useCtxtLamInstL
                                             =   @lhs.exprCtxt == ExprCtxt_Top
-  | Lam AppTop
+  | Lam
 %%[[12
     LamImpl
+%%]]
+%%[[9
+    AppTop
 %%]]
                 loc         .   (finLamInstToLHere,finLamInstToL)
                                             =   let finLamInstToL = if @useCtxtLamInstL then @lhs.finLamInstToL else foRInstToL @fo_fin 
@@ -338,9 +341,12 @@ SEM Expr
                 body        .   finLamInstToL
                                             =   drop 1 @finLamInstToL
                             
-  | * - Lam AppTop Parens
+  | * - Lam Parens
 %%[[12
     LamImpl
+%%]]
+%%[[9
+    AppTop
 %%]]
                 loc         .   (finLamInstToLHere,finLamInstToL)
                                             =   instToSplitQu @lhs.finLamInstToL

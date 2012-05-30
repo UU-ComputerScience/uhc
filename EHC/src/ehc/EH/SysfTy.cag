@@ -255,7 +255,11 @@ SEM Expr
                                                 =   let (al,_,_,r) = SysF.tyArrowInstQuArgsRes SysF.ArrowDecompose_InstOnly @finLamInstToLHere @sysftyNrDropImpl @lhs.sysftyTopDown
                                                     in  (al,r)
   | AppTop Rec Let Lam
+%%[[8
+                loc         .   sysftyNrDropImpl=   (0::Int)
+%%][9
                 loc         .   sysftyNrDropImpl=   length @finKnImplsL
+%%]]
   | * - AppTop Rec Let Lam Parens
                 loc         .   sysftyNrDropImpl=   (0::Int)
 %%]
