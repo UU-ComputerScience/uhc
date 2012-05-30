@@ -276,12 +276,19 @@ ATTR AGItf [ isMainMod: Bool | | ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Is a lam a top/first lam?
+%%% Is a lam a top/first lam? Or: what is the context?
 %%% Is let a first let in a sequence of lets?
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[1 hs
+data ExprCtxt
+  = ExprCtxt_Top | ExprCtxt_Lam | ExprCtxt_Internal
+  deriving Eq
+%%]
+
 %%[1
-ATTR Expr [ isTopLam: Bool | | ]
+ATTR Expr [ exprCtxt: ExprCtxt | | ]
+-- ATTR Expr [ isTopLam: Bool | | ]
 ATTR Expr [ isFirstLet: Bool | | ]
 
 SEM Decl
@@ -293,11 +300,13 @@ SEM Decl
     FFE
 %%]]
                 expr        .   isFirstLet          =   True
-                            .   isTopLam            =   True
+                            -- .   isTopLam            =   True
+                            .   exprCtxt            =   ExprCtxt_Top
 
 SEM AGItf
   | AGItf       expr        .   isFirstLet          =   True
-                            .   isTopLam            =   True
+                            -- .   isTopLam            =   True
+                            .   exprCtxt            =   ExprCtxt_Top
 
 
 SEM Expr
@@ -309,35 +318,41 @@ SEM Expr
 %%[[12
     LamImpl
 %%]]
-                body        .   isTopLam            =   False
-  | * - Lam
+                body        -- .   isTopLam            =   False
+                            .   exprCtxt            =   ExprCtxt_Lam
+  | * - Lam Parens
 %%[[12
     LamImpl
 %%]]
-                loc         .   isTopLam            =   True
+                loc         -- .   isTopLam            =   True
+                            .   exprCtxt            =   ExprCtxt_Internal
 %%]
 
 %%[5
 SEM CaseAlt
   | Pat         expr        .   isFirstLet          =   True
-                            .   isTopLam            =   True
+                            -- .   isTopLam            =   True
+                            .   exprCtxt            =   ExprCtxt_Top
 %%]
 
 %%[7
 SEM DataFieldExpr
   | Upd Expr    expr        .   isFirstLet          =   True
-                            .   isTopLam            =   True
+                            -- .   isTopLam            =   True
+                            .   exprCtxt            =   ExprCtxt_Top
 
 SEM RecExpr
   | Upd Expr Ext
                 expr        .   isFirstLet          =   True
-                            .   isTopLam            =   True
+                            -- .   isTopLam            =   True
+                            .   exprCtxt            =   ExprCtxt_Top
 %%]
 
 %%[97
 SEM PatExpr
   | Expr        expr        .   isFirstLet          =   True
-                            .   isTopLam            =   True
+                            -- .   isTopLam            =   True
+                            .   exprCtxt            =   ExprCtxt_Top
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

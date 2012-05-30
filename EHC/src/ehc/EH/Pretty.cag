@@ -75,7 +75,7 @@ SEM Expr
 %%[[12
     LamImpl
 %%]]
-                loc     .   pp      =   if @lhs.isTopLam
+                loc     .   pp      =   if @lhs.exprCtxt /= ExprCtxt_Lam
                                         then let sep = case @lamArgPPL of
                                                          [_] -> (>#<)
                                                          _   -> (>###<)

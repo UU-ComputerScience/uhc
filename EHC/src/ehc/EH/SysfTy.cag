@@ -75,7 +75,7 @@ SEM Expr
     AppImpl
 %%]]
                 loc         .   sysfty      :=  @sysftyTyAppRes
-  | * - Var Con IConst CConst App AppImpred
+  | * - Var Con IConst CConst App AppImpred Parens
 %%[[12
     AppImpl
 %%]]
@@ -84,7 +84,7 @@ SEM Expr
 SEM PatExpr
   | Var         loc         .   sysfty      :=  @lhs.sysftyTopDown
   | AppTop      loc         .   sysfty      :=  SysF.mkTyThunk @sysftyPat
-  | * - Var AppTop
+  | * - Var AppTop Parens
                 loc         .   sysfty      :=  (appDbg "PatExpr.sysfty not implemented" :: SysfTy)
 
 SEM PatExpr
@@ -176,7 +176,7 @@ SEM CaseAlt
 ATTR Expr [ | | sysftyBotUp: {SysfTy} ]
 
 SEM Expr
-  | *
+  | * - Parens
                 loc         .   sysftyBotUp     =   @sysftyTyAppRes
 %%]
 
@@ -196,7 +196,7 @@ SEM Expr
                 loc         .   (sysftyTyAppArgL,sysftyAppArg,sysftyTyAppRes)
                                                 =   let (al,_,a,r) = SysF.tyArrowInstQuArgsRes SysF.ArrowDecompose_ArgBefore @finAppInstToLHere 0 @func.sysftyBotUp
                                                     in  (al,cbindExtractVal a,r)
-  | * - App AppImpred
+  | * - App AppImpred Parens
 %%[[12
     AppImpl
 %%]]
@@ -218,7 +218,7 @@ sysftyMkLamWrap spineSubst tyArgL e
 
 %%[(8 codegen coresysf)
 SEM Expr
-  | * - Ann
+  | * - Ann Parens
   				loc         .   sysfcTyArgAppWrap
                                                 =   if ehcOptCoreSysF @lhs.opts
                                                     then \e -> acoreAppBound e $
@@ -247,7 +247,7 @@ SEM Expr
                 loc         .   (sysftyTyLamArgL,sysftyLamArg,sysftyLamRes)
                                                 :=  let (al,_,a,r) = SysF.tyArrowInstQuArgsRes SysF.ArrowDecompose_ArgAfter @finLamInstToLHere @sysftyNrDropImpl @lhs.sysftyTopDown
                                                     in  (al,cbindExtractVal a,r)
-  | * - Lam
+  | * - Lam Parens
 %%[[12
     LamImpl
 %%]]
@@ -256,7 +256,7 @@ SEM Expr
                                                     in  (al,r)
   | AppTop Rec Let Lam
                 loc         .   sysftyNrDropImpl=   length @finKnImplsL
-  | * - AppTop Rec Let Lam
+  | * - AppTop Rec Let Lam Parens
                 loc         .   sysftyNrDropImpl=   (0::Int)
 %%]
                             .   sysftyLamArgHere
@@ -287,7 +287,7 @@ SEM Expr
 %%]]
                 loc         .   sysfcSubstAppSpine
                                                 =   @func.sysfcSubstAppSpine
-  | * - Var Con App AppImpred
+  | * - Var Con App AppImpred Parens
 %%[[12
     AppImpl
 %%]]
@@ -317,7 +317,7 @@ SEM Expr
 %%]]
                 loc         .   sysfcSubstLamSpine
                                                 =   @lhs.sysfcSubstLamSpine
-  | * - Lam
+  | * - Lam Parens
 %%[[12
     LamImpl
 %%]]

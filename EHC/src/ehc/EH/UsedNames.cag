@@ -71,7 +71,7 @@ SEM DataFieldExpr
 SEM Expr
   | Var Con     loc         .   gathMentrelFilterMp =   mentrelFilterMpSingleton [@lhs.moduleNm] IdOcc_Val @nm
                                                         `mentrelFilterMpUnion`
-                                                        tyUsedNames @lhs.moduleNm @ty_g_
+                                                        tyUsedNames @lhs.moduleNm @finalTy
   | Let         loc         .   gathMentrelFilterMp =   mentrelFilterMpUnions
                                                           [ @decls.gathMentrelFilterMp, @body.gathMentrelFilterMp
                                                           , gathMentrelFilterMpFromSimplifyResult @lhs.moduleNm @chrSimplifyResult1

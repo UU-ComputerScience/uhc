@@ -557,7 +557,7 @@ tyRestrictKiVarMp ts = varmpIncMetaLev $ assocTyLToVarMp [ (v,kiStar) | t <- ts,
 %%% VarMp: reification as VarMp
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4 export(tyAsVarMp',tyAsVarMp)
+%%[2 export(tyAsVarMp',tyAsVarMp)
 -- | Encode 'ty' as a tvar + VarMp, with additional initial construction
 tyAsVarMp' :: (UID -> Ty -> Ty) -> UID -> Ty -> (Ty,VarMp)
 tyAsVarMp' f u t

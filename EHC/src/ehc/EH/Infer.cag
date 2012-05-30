@@ -22,8 +22,22 @@ SEM Expr
 -- generated from ruler rules into EHRulerRules, was 2.Let
 %%[(5 hmtyinfer).Let
 SEM Expr
-  | Let         decls       .   patTyVarMp          =   @decls.gathTySigVarMp `varUpd` @lhs.tyVarMp
-                            .   tyVarMp             =   @decls.patTyVarMp
+  | Let         decls       .   patTyVarMp          =   @patTyVarMpDeclsUpd @lhs.tyVarMp
+                            .   tyVarMp             =   @tyVarMpDeclsUpd @decls.patTyVarMp
+%%]
+
+%%[(2 hmtyinfer)
+SEM Expr
+  | Let         loc         .   patTyVarMpDeclsUpd  =
+%%[[9
+                                                        (foVarMp @foKnRes `varUpd`) .
+%%]]
+%%[[8
+                                                        ((@exTyVarMp1 :: VarMp) `varUpd`) .
+%%]]
+                                                        (@decls.gathTySigVarMp `varUpd`)
+                            .   tyVarMpDeclsUpd     =
+                                                        id
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 3.Let
@@ -74,9 +88,9 @@ SEM Expr
 %%[(8 hmtyinfer)
 SEM Expr
   | Let         loc         .   (gathTySigGam_l_,exTyVarMp1)
-                                                    :=  (valGamInst1Exists {- WithVarMp @lhs.tyVarMp -} @lUniq @decls.gathTySigGam,emptyVarMp)
-                            .   exTyVarMp1b         =   (@exTyVarMp1 :: VarMp) `varUpd` @lhs.tyVarMp
-                decls       .   patTyVarMp          :=  @exTyVarMp1b
+                                                    -- :=  (valGamInst1Exists {- WithVarMp @decls.gathTySigVarMp -} @lUniq (@decls.gathTySigVarMp `varUpd` @decls.gathTySigGam), emptyVarMp)
+                                                    :=  valGamInst1ExistsWithVarMp @decls.gathTySigVarMp @lUniq @decls.gathTySigGam
+                            -- .   exTyVarMp1b         =   (@exTyVarMp1 :: VarMp) `varUpd` @decls.gathTySigVarMp `varUpd` @lhs.tyVarMp
                 loc         .   (quValGam_qu_,quTyVarMp, cycTyVarMp_l)
                                                     :=  valGamQuantifyWithVarMp @valQuTyKiGam @quTvKiVarMp @tyVarMpDeclsQuant @noLetQuantTyVarIdS @valGam_l_
                             .   bodyVarMp1          =   @quTyVarMp `varUpd` @tyVarMpDeclsL0 -- @tyVarMpDeclsQuant -- @tyVarMpDeclsL0        -- TBD: Use of @tyVarMpDeclsQuant increases compile time. Why???? Should be ok...
@@ -89,8 +103,10 @@ SEM Expr
                 loc         .   exTyVarMp1          :   VarMp
                 loc         .   exTyVarMp1b         :   VarMp
 %%]
+                                                    :=  valGamInst1ExistsWithVarMp @decls.gathTySigVarMp @lUniq @decls.gathTySigGam
                                                     :=  valGamInst1ExistsWithVarMp @bodyVarMp1 @lUniq2 @quValGam_qu_
                                                     :=  (valGamInst1Exists {- WithVarMp @bodyVarMp1 -} @lUniq2 (@quTyVarMp `varUpd` @quValGam_qu_), emptyVarMp)
+                decls       .   patTyVarMp          :=  @exTyVarMp1b
 
 %%[(9 hmtyinfer) hs
 -- | split a list of predicates into non-ambiguous & ambiguous, using quantifications results tqoGam,
@@ -103,8 +119,7 @@ doPredAmbigSplit get tqoGam prOccL
 
 %%[(9 hmtyinfer)
 SEM Expr
-  | Let         decls       .   patTyVarMp          :=  @forExprTyVarMp `varUpd` @exTyVarMp1b
-                loc         .   doValGamQuantify    =   \doQuant tyVarMp prOccL -> valGamQuantifyWithVarMp doQuant @valQuTyKiGam @quTvKiVarMp tyVarMp @noLetQuantTyVarIdS prOccL @valGam_l_
+  | Let         loc         .   doValGamQuantify    =   \doQuant tyVarMp prOccL -> valGamQuantifyWithVarMp doQuant @valQuTyKiGam @quTvKiVarMp tyVarMp @noLetQuantTyVarIdS prOccL @valGam_l_
                             .   doPredAmbigSplitForSimplify
                                                     =   \chrPrOccL
                                                            -> let us                = mkNewLevUIDL (length chrPrOccL) uidStart
@@ -118,7 +133,8 @@ SEM Expr
                             .   tmpoTyVarMp         =   foldr (\tmpo c -> tmpoImplsVarMp tmpo `varUpd` c) emptyVarMp (gamElts @tqoGam)
                             .   bodyVarMp2          :=  @chrSolve1SimpTyVarMp `varUpd` (@exTyVarMp2 :: VarMp) `varUpd` @bodyVarMp1
 %%]
-
+                decls       .   patTyVarMp          :=  foVarMp @foKnRes `varUpd` @exTyVarMp1b -- @forExprTyVarMp `varUpd` @exTyVarMp1b
+                
 %%[(99 hmtyinfer)
 %%]
 SEM Expr
@@ -200,7 +216,7 @@ SEM Decl
 -- generated from ruler rules into EHRulerRules, was 3.tyInstKnown
 %%[(5 hmtyinfer).tyInstKnown
 SEM Decl
-  | Val         loc         .   knTy                :=  tyInstKnown @lUniq @ty_sig_
+  | Val         loc         .   knTy                :=  tyInstKnown @lUniq (@lhs.patTyVarMp `varUpd` @ty_sig_)
                 loc         .   lUniq               :   UNIQUEREF gUniq
 %%]
 
@@ -470,28 +486,39 @@ SEM AGItf
 ATTR
   AllDecl
     [ | | gathTySigGam USE {`gamAddGam`} {emptyGam}: ValGam
+%%[[2
           gathTySigVarMp USE {`varUpd`} {emptyVarMp} : VarMp
+%%]]
     ]
 %%]
-
-%%[(1 hmtyinfer)
-%%]
-SEM Decls
-  | Cons        lhs         .   gathTySigGam        =   @hd.gathTySigGam `gamAddGam` @tl.gathTySigGam
 
 -- generated from ruler rules into EHRulerRules, was 1.gamSigTyGath
 %%[(5 hmtyinfer).gamSigTyGath
 SEM Decl
   | TySig       loc         .   gamSigTy            =   tyAsVarMp @lUniq_sig @tyExpr.ty
-                            .   gathTySigGam		=   @nm `gamSingleton` ValGamInfo @gamSigTy
+%%[[1
+                            .   gathTySigGam        =   @nm `gamSingleton` ValGamInfo @gamSigTy
+%%][2
+                            .   gathTySigGam        =   @nm `gamSingleton` ValGamInfo @gamSigTy
+%%][8
+                            .   (gathTySigGam,gathTySigVarMp)
+                                                    =   let (t,m) = tyAsVarMp @lUniq_sig @gamSigTy
+                                                        in  (@nm `gamSingleton` ValGamInfo t, m)
+%%]]
                 loc         .   lUniq_sig           :   UNIQUEREF gUniq
 %%]
                             .   (gathTySigGam,gathTySigVarMp)
                                                     =   let (t,m) = tyAsVarMp @lUniq_sig @gamSigTy
-                                                        in	(@nm `gamSingleton` ValGamInfo t, m)
+                                                        in  (@nm `gamSingleton` ValGamInfo t, m)
 
 %%[(1 hmtyinfer).tySigGam
-ATTR AllDecl AllPatExpr [ tySigGam: ValGam | | ]
+ATTR
+  AllDecl AllPatExpr
+    [ tySigGam: ValGam
+%%[[2
+      tySigVarMp: VarMp
+%%]]
+    | | ]
 %%]
 
 %%[(1 hmtyinfer)
@@ -501,17 +528,26 @@ SEM Expr
     LamImpl
 %%]]
                 loc         .   tySigGam            =   emptyGam
+%%[[2
+                            .   tySigVarMp          =   emptyVarMp
+%%]]
 %%]
 
 %%[(5 hmtyinfer)
 SEM CaseAlt
   | Pat         loc         .   tySigGam            =   emptyGam
+%%[[2
+                            .   tySigVarMp          =   emptyVarMp
+%%]]
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 1.tySigGam.TysigLet
 %%[(5 hmtyinfer).tySigGam.TysigLet
 SEM Expr
   | Let         decls       .   tySigGam            =   @decls.gathTySigGam
+%%[[2
+                            .   tySigVarMp          =   @decls.gathTySigVarMp
+%%]]
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 1.tySigGam.Val
@@ -523,7 +559,11 @@ SEM Decl
                                                           Just nm
                                                             ->  case gamLookup nm @lhs.tySigGam of
                                                                   Nothing   -> (Ty_Any,False)
-                                                                  Just vgi  -> (vgiTy vgi,True)
+%%[[1
+                                                                  Just vgi  -> (                         vgiTy vgi, True)
+%%][2
+                                                                  Just vgi  -> (@lhs.tySigVarMp `varUpd` vgiTy vgi, True)
+%%]]
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 3.TySig

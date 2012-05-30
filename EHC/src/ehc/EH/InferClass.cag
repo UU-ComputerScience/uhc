@@ -58,7 +58,7 @@ SEM Decl
                 decls           .   clGam           =   @lhs.patClGam2
                 loc             .   (ctxtPrTyL,hdPrTy)
                                                     =   appUnArr @tyPrExpr.ty
-                                .   lSigGam         =   @decls.gathTySigGam
+                                .   lSigGam         =   @decls.gathTySigVarMp `varUpd` @decls.gathTySigGam
                                 .   clsTySigGam     =   valGamMapTy (\t -> [@hdPrTy] `appArr` t) @lSigGam
                                 .   clsTySigDictGam =   if ehcCfgInstFldHaveSelf @lhs.opts then @clsTySigGam else @lSigGam
                                 .   supClsFldNmL    =   tyPrLToSupNmL @ctxtPrTyL

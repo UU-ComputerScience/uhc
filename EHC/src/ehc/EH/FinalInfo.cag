@@ -114,7 +114,7 @@ SEM PatExpr
 %%[(8 hmtyinfer)
 SEM Expr
   | AppTop Var Con
-  				loc         .   finalTy             =   @lhs.finTyVarMp `varUpd` @ty
+                loc         .   finalTy             =   @lhs.finTyVarMp `varUpd` @ty
   | Case        loc         .   finalTyExpr         =   @lhs.finTyVarMp `varUpd` @expr.ty
   | Lam
 %%[[12
@@ -142,12 +142,12 @@ SEM Expr
 SEM Expr
 %%[[8
   | AppTop Var Con
-  				loc         .   finalTyExpanded     =   @finalTy
+                loc         .   finalTyExpanded     =   @finalTy
   | Case        loc         .   finalTyExprExpanded =   @finalTyExpr
   | Lam         loc         .   finalTyArgExpanded  =   @finalTyArg
 %%][11
   | AppTop Var Con
-  				loc         .   finalTyExpanded     =   tyCanonicFFI (emptyTyBetaRedEnv' @fe) @finalTy
+                loc         .   finalTyExpanded     =   tyCanonicFFI (emptyTyBetaRedEnv' @fe) @finalTy
   | Case        loc         .   finalTyExprExpanded =   tyCanonicFFI (emptyTyBetaRedEnv' @fe) @finalTyExpr
   | Lam
 %%[[12
@@ -200,7 +200,7 @@ SEM Decl
 %%[(9 hmtyinfer)
 SEM Expr
   | AppTop Rec Lam Let
-                loc         .   finKnImplsLExpanded	=	map (tyCanonicFFI (emptyTyBetaRedEnv' @fe)) @finKnImplsL
+                loc         .   finKnImplsLExpanded =   map (tyCanonicFFI (emptyTyBetaRedEnv' @fe)) @finKnImplsL
 %%]
 
 %%[(50 hmtyinfer)
@@ -249,8 +249,8 @@ SEM Expr
 
 %%[(8 hmtyinfer codegen coresysf)
 SEM Decl
-  | Val         loc         .   doFit       =   \o m -> fitsIn o @fe @lUniq_fo m @expr.ty @exprKnTy
-                            .   fo_fin      =   @doFit (fioMkFinal @exprFiOpts) @lhs.finTyVarMp
+  | Val         loc         .   doFit       =   \o m t2 -> fitsIn o @fe @lUniq_fo m @expr.ty t2
+                            .   fo_fin      =   @doFit (fioMkFinal @exprFiOpts) @lhs.finTyVarMp @finalTy
                 loc         .   lUniq_fo    :   UNIQUEREF gUniq
 
 SEM DataConstr
@@ -284,7 +284,7 @@ SEM Expr
 %%]]
                 loc         .   (finAppInstToLHere,finAppInstToL)
                                             =   instToSplitQu $ drop 1 @func.finAppInstToL
-  | * - Var Con App AppImpred
+  | * - Var Con App AppImpred Parens
 %%[[9
     AppTop
 %%]]
@@ -294,7 +294,7 @@ SEM Expr
                 loc         .   finAppInstToLHere
                                             =   []
                             .   finAppInstToL
-                             				=   []
+                                            =   []
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -311,7 +311,7 @@ ATTR Expr [ finLamInstToL: {[InstTo]} | | ]
 %%[(8 hmtyinfer codegen coresysf)
 SEM Decl
   | Val         loc         .   finLamInstToL
-  											=   foRInstToL @fo_fin
+                                            =   foRInstToL @fo_fin
 %%]
 
 %%[(8 hmtyinfer codegen coresysf)
@@ -320,12 +320,25 @@ SEM Expr
 %%[[12
     LamImpl
 %%]]
+                loc         .   useCtxtLamInstL
+                                            =   @lhs.exprCtxt /= ExprCtxt_Lam
+  | AppTop      loc         .   useCtxtLamInstL
+                                            =   @lhs.exprCtxt == ExprCtxt_Top
+  | Lam AppTop
+%%[[12
+    LamImpl
+%%]]
                 loc         .   (finLamInstToLHere,finLamInstToL)
-                                            =   let finLamInstToL = if @lhs.isTopLam then foRInstToL @fo_fin else @lhs.finLamInstToL
+                                            =   let finLamInstToL = if @useCtxtLamInstL then @lhs.finLamInstToL else foRInstToL @fo_fin 
                                                 in  instToSplitQu finLamInstToL
-                body        .   finLamInstToL  =   drop 1 @finLamInstToL
+  | Lam         
+%%[[12
+    LamImpl
+%%]]
+                body        .   finLamInstToL
+                                            =   drop 1 @finLamInstToL
                             
-  | * - Lam
+  | * - Lam AppTop Parens
 %%[[12
     LamImpl
 %%]]
@@ -337,16 +350,16 @@ Defaults
 
 %%[(8 hmtyinfer codegen coresysf)
 SEM AGItf
-  | AGItf       expr        .   finLamInstToL  	=   []
+  | AGItf       expr        .   finLamInstToL   =   []
 
 SEM CaseAlt
-  | Pat         expr        .   finLamInstToL  	=   []
+  | Pat         expr        .   finLamInstToL   =   []
 
 SEM DataFieldExpr RecExpr
-  | Expr Upd    expr        .   finLamInstToL  	=   []
+  | Expr Upd    expr        .   finLamInstToL   =   []
 
 SEM RecExpr
-  | Ext         expr        .   finLamInstToL  	=   []
+  | Ext         expr        .   finLamInstToL   =   []
 
 %%[[9
 SEM Decl
@@ -354,12 +367,12 @@ SEM Decl
 %%[[90
     FFE
 %%]]
-                expr        .   finLamInstToL  	=   []
+                expr        .   finLamInstToL   =   []
 %%]]
 
 %%[[97
 SEM PatExpr
-  | Expr        expr        .   finLamInstToL  	=   []
+  | Expr        expr        .   finLamInstToL   =   []
 %%]]
 %%]
 

@@ -244,7 +244,7 @@ SEM TyExpr
 
 %%[(2 hmtyinfer)
 SEM Decl
-  | Val         loc     .  info_2   :=  [ mkInfo1 "ty_sig_" (ppTy @ty_sig_)
+  | Val         loc     .  info_2   :=  [ mkInfo1 "ty_sig_" (ppTyS @patExpr.patTyVarMp @ty_sig_)
                                         , mkInfo1 "patExpr.ty" (ppTyS @patExpr.patTyVarMp @patExpr.ty)
                                         , mkInfo1 "expr.ty" (ppTy @expr.ty)
                                         , mkInfo1 "lhs.tyVarMp" (ppVarMpV @lhs.tyVarMp)
@@ -274,7 +274,10 @@ SEM Expr
                                         , mkInfo1 "lhs.finTyVarMp" (pp @lhs.finTyVarMp)
                                         ]
   | Let         loc     .  info_2   :=  [ mkInfo1 "decls.gathTySigGam" (pp @decls.gathTySigGam)
+                                        , mkInfo1 "decls.gathTySigVarMp" (ppVarMpV @decls.gathTySigVarMp)
                                         , mkInfo1 "valGam_l_" (pp (gamTop @decls.patValGam))
+                                        , mkInfo1 "gathTySigGam_l_" (pp @gathTySigGam_l_)
+                                        , mkInfo1 "exTyVarMp1" (ppVarMpV @exTyVarMp1)
 %%[[4
                                         , mkInfo1 "valGam_l_+decls.tyVarMp" (pp (@tyVarMpDeclsL0 `varUpd` gamTop @decls.patValGam))
                                         -- , mkInfo1 "decls.tyVarMp" (ppVarMpV @tyVarMpDeclsL0)
@@ -362,7 +365,7 @@ SEM PatExpr
                                         , mkInfo1 "foVarMp fo" (pp (foVarMp @fo_))
                                         , mkInfo1 "lhs.fiOpts" (pp @lhs.fiOpts)
                                         ]
-  | Con         loc     .  info_4   :=  [ mkInfo1 "ty_g_" (ppTy @ty_g_)
+  | Con         loc     .  info_4   :=  [ mkInfo1 "ty_g_" (ppTyS @lhs.patTyVarMp @ty_g_)
                                         , mkInfo1 "tvarv1_" (ppTyS (@tyVarMp_p_ `varUpd` @lhs.patTyVarMp) @tvarv1_)
                                         ]
 %%]
@@ -710,6 +713,7 @@ SEM Expr
 SEM Decl
   | Val         loc     .  finfo_8  :=  [ mkInfo1 "expr.ty (final)" (ppTyS @lhs.finTyVarMp @expr.ty)
                                         , mkInfo1 "exprKnTy (final)" (ppTyS @lhs.finTyVarMp @exprKnTy)
+                                        , mkInfo1 "finalTy" (ppTy @finalTy)
                                         , mkInfo1 "foLInstToL @fo_fin" (ppCommas $ foLInstToL @fo_fin)
                                         , mkInfo1 "foRInstToL @fo_fin" (ppCommas $ foRInstToL @fo_fin)
                                         , mkInfo1 "foTrace fo_fin" (vlist $ foTrace @fo_fin)

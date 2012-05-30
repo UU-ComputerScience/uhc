@@ -231,7 +231,24 @@ SEM Expr
   | Parens TypeAs
                 loc         .   cexpr       =   @expr.cexpr
   | AppTop Rec Let
-                loc         .   cexpr       =   @cexprtop
+%%[[8
+                loc         .   cexpr
+%%][9
+                loc         .   (cexpr,cexprapptopCSubst)
+%%]]
+                                            =   let 
+%%[[(8 coresysf)
+                                                    wr      = @sysfcTyArgLamWrap
+%%][8
+                                                    wr      = id
+%%]]
+%%[[8
+                                                    top     = @cexprtop
+%%][9
+                                                    top     = -- mkWeaveExpr @lhs.opts @lUniq_cexpr @lhs.finTyVarMp @body.cSubst wr @body.appFunCExpr @lamBodyCoeL @lamArgCoeL
+                                                              mkWeaveExpr @lhs.opts @lUniq_cexpr @lhs.finTyVarMp @cSubstTop (wr . @cann) @cexprtop [] @lamArgCoeL
+%%]]
+                                                in  top
   | Undefined   loc         .   cexpr       =   acoreBuiltinUndefined @lhs.opts
   | CaseAltFail loc         .   cexpr       =   CExpr_CaseAltFail (CaseAltFailReason_Continue @caseId) (acoreBuiltinError @lhs.opts ("FAIL " ++ show @caseId))
 %%]
@@ -302,9 +319,6 @@ SEM Expr
   | AppTop      loc         .   cSubstTop   =   @expr.cSubst
   | Rec         loc         .   cSubstTop   =   @recExpr.cSubst
   | Let         loc         .   cSubstTop   =   @body.cSubst
-  | AppTop Rec Let
-                loc         .   (cexpr,cexprapptopCSubst)
-                                            :=  mkWeaveExpr @lhs.opts @lUniq_cexpr @lhs.finTyVarMp @cSubstTop @cann @cexprtop [] @lamArgCoeL
   | AppTop      lhs         .   cSubst      =   cSubstApp @expr.cSubst @cexprapptopCSubst
   | Rec         lhs         .   cSubst      =   cSubstApp @recExpr.cSubst @cexprapptopCSubst
   | Let         lhs         .   cSubst      =   cSubstApp @body.cSubst @cexprapptopCSubst
