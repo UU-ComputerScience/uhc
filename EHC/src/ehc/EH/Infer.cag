@@ -22,7 +22,7 @@ SEM Expr
 -- generated from ruler rules into EHRulerRules, was 2.Let
 %%[(5 hmtyinfer).Let
 SEM Expr
-  | Let         decls       .   patTyVarMp          =   @decls.gathTyVarMp `varUpd` @lhs.tyVarMp
+  | Let         decls       .   patTyVarMp          =   @decls.gathTySigVarMp `varUpd` @lhs.tyVarMp
                             .   tyVarMp             =   @decls.patTyVarMp
 %%]
 
@@ -483,7 +483,7 @@ SEM Decls
 %%[(5 hmtyinfer).gamSigTyGath
 SEM Decl
   | TySig       loc         .   gamSigTy            =   tyAsVarMp @lUniq_sig @tyExpr.ty
-                            .   gathTySigGam		=   @nm `gamSingleton` ValGamInfo t
+                            .   gathTySigGam		=   @nm `gamSingleton` ValGamInfo @gamSigTy
                 loc         .   lUniq_sig           :   UNIQUEREF gUniq
 %%]
                             .   (gathTySigGam,gathTySigVarMp)
