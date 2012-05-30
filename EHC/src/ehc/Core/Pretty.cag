@@ -3,6 +3,10 @@
 %include afp.fmt
 %%]
 
+%%[doesWhat doclatex
+Note (20120525): lamMp use removed because of cyclic module import
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Core Pretty Printer
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -12,7 +16,7 @@
 
 %%[(8 codegen) hs import({%{EH}AnaDomain.Pretty})
 %%]
-%%[(8 codegen) hs import({%{EH}LamInfo})
+%%[(8888 codegen) hs import({%{EH}LamInfo})
 %%]
 
 %%[(8 codegen) hs import(qualified Data.Map as Map,qualified Data.Set as Set,{%{EH}Ty.Pretty})
@@ -33,12 +37,12 @@ WRAPPER
 %%]
 
 %%[(8 codegen) hs
-ppCModule :: EHCOpts -> LamMp -> CModule -> PP_Doc
-ppCModule opts lamMp cmod
+ppCModule :: EHCOpts -> {- LamMp -> -} CModule -> PP_Doc
+ppCModule opts {- lamMp -} cmod
   =  let  t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf cmod))
                              (Inh_CodeAGItf
-                               { lamMp_Inh_CodeAGItf = lamMp
-                               , opts_Inh_CodeAGItf = opts
+                               { {- lamMp_Inh_CodeAGItf = lamMp
+                               , -} opts_Inh_CodeAGItf = opts
                                })
      in   (pp_Syn_CodeAGItf t)
 
@@ -47,7 +51,7 @@ ppCExpr ce
   =  let  t = wrap_CExpr (sem_CExpr ce)
                          (Inh_CExpr
                             { varPPMp_Inh_CExpr = Map.empty
-                            , lamMp_Inh_CExpr = Map.empty
+                            -- , lamMp_Inh_CExpr = Map.empty
                             , ppHow_Inh_CExpr = howHor
                             , opts_Inh_CExpr = emptyEHCOpts
                             })
@@ -58,7 +62,7 @@ ppCBound ce
   =  let  t = wrap_CBound (sem_CBound ce)
                           (Inh_CBound
                             { varPPMp_Inh_CBound = Map.empty
-                            , lamMp_Inh_CBound = Map.empty
+                            -- , lamMp_Inh_CBound = Map.empty
                             , ppHow_Inh_CBound = howHor
                             , opts_Inh_CBound = emptyEHCOpts
                             , nm_Inh_CBound = hsnUnknown
@@ -78,7 +82,7 @@ ppCBind ce
   =  let  t = wrap_CBind (sem_CBind ce)
                          (Inh_CBind
                             { varPPMp_Inh_CBind = Map.empty
-                            , lamMp_Inh_CBind = Map.empty
+                            -- , lamMp_Inh_CBind = Map.empty
                             , ppHow_Inh_CBind = howHor
                             , opts_Inh_CBind = emptyEHCOpts
                             })
@@ -118,8 +122,8 @@ ppOptCMetas :: CMetas -> PP_Doc
 ppOptCMetas x
   =  let  t = wrap_CMetas (sem_CMetas x)
                           (Inh_CMetas
-                             { lamMp_Inh_CMetas = Map.empty
-                             , opts_Inh_CMetas = emptyEHCOpts
+                             { {- lamMp_Inh_CMetas = Map.empty
+                             , -} opts_Inh_CMetas = emptyEHCOpts
                              })
      in   (pp_Syn_CMetas t)
 %%]
@@ -232,7 +236,7 @@ SEM ValBind
 %%% Context: Lam info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8888 codegen)
 ATTR CodeAGItf AllCodeNT [ lamMp: LamMp | | ]
 %%]
 
@@ -319,7 +323,7 @@ SEM CBind
                                                     isSingleNoNm = hsnIsWild @nm && length @bindAspects.ppBindInfoL == 1
                                                     def | isSingleNoNm = par                                           val
                                                         | otherwise    = par $ howDef @lhs.ppHow (ppCNm @lhs.opts @nm) val
-                                                        where val = p $ [ ppBound isSingleNoNm Nothing s pv | (s,_,pv) <- @bindAspects.ppBindInfoL ] ++ (maybe [] (\x -> [pp x]) $ Map.lookup @nm @lhs.lamMp)
+                                                        where val = p $ [ ppBound isSingleNoNm Nothing s pv | (s,_,pv) <- @bindAspects.ppBindInfoL ] -- ++ (maybe [] (\x -> [pp x]) $ Map.lookup @nm @lhs.lamMp)
                                                 in  def
 
 SEM CBound
@@ -328,7 +332,7 @@ SEM CBound
   | RelevTy     loc         .   ppBound     =   ppACBaspKeyS @aspectKeyS >#< @tyPP -- pp @relevTy
   | Meta        loc         .   ppBound     =   ppACBaspKeyS @aspectKeyS >#< @cmetas.pp
   | Val         loc         .   (ppBound,lev,mustPar)
-                                            =   let asp | Set.null @aspectKeyS || acbaspkeyDefault == @aspectKeyS
+                                            =   let asp | Set.null @aspectKeyS || ACoreBindAspectKey_Default `Set.member` @aspectKeyS
                                                                                 = id
                                                         | otherwise             = \x -> ppACBaspKeyS @aspectKeyS >#< x
                                                     lbl | @lbl == CLbl_None     = id

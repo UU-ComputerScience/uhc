@@ -32,6 +32,8 @@ Currently the following is maintained:
 %%]
 %%[(8 codegen) import({%{EH}Core})
 %%]
+%%[(8 codegen coresysf) import(qualified {%{EH}Core.SysF.AsTy} as SysF)
+%%]
 
 -- Analyses
 %%[(8 codegen) import({%{EH}AnaDomain})
@@ -94,8 +96,14 @@ data LamInfoBindAsp
   | LamInfoBindAsp_Ty								-- plain good old type
       { libindaspTy 			:: !Ty
       }
+%%[[(8888 coresysf)
+  | LamInfoBindAsp_SysfTy							-- system F type
+      { libindaspSysfTy 		:: !SysF.Ty
+      }
+%%]]
   | LamInfoBindAsp_Core								-- actual Core, should go paired with Ty (?? maybe pair them directly)
-      { libindaspCore			:: !CExpr
+      { libindaspMetaLev		:: !MetaLev
+      , libindaspCore			:: !CExpr
       }
 %%[[93
   | LamInfoBindAsp_FusionRole						-- role in fusion
@@ -115,7 +123,7 @@ type LamInfoBindAspMp = Map.Map ACoreBindAspectKeyS LamInfoBindAsp
 instance PP LamInfoBindAsp where
   pp (LamInfoBindAsp_RelevTy 	t) = "RTy"  >#< pp t
   pp (LamInfoBindAsp_Ty      	t) = "Ty"   >#< pp t
-  pp (LamInfoBindAsp_Core      	c) = pp "Core" -- >#< pp c -- Core.Pretty uses LamInfo, so module cycle...
+  pp (LamInfoBindAsp_Core    ml	c) = pp "Core" -- >#< pp c -- Core.Pretty uses LamInfo, so module cycle...
 %%[[93
   pp (LamInfoBindAsp_FusionRole	r) = "Fuse" >#< pp r
 %%]]
@@ -160,8 +168,11 @@ laminfo1stArgIsStackTrace _                                                     
 
 20100822 AD: Note: lamMpMergeInto and lamMpMergeFrom probably can be combined, but currently subtly differ in the flow of info.
 
-%%[(8 codegen) hs export(LamMp)
+%%[(8 codegen) hs export(LamMp,emptyLamMp)
 type LamMp    = Map.Map HsName LamInfo
+
+emptyLamMp :: LamMp
+emptyLamMp = Map.empty
 %%]
 
 %%[(8 codegen) hs export(lamMpUnionBindAspMp)
@@ -294,18 +305,24 @@ instance Serialize FusionRole where
 instance Serialize LamInfoBindAsp where
   sput (LamInfoBindAsp_RelevTy  	a) = sputWord8 0 >> sput a
   sput (LamInfoBindAsp_Ty 			a) = sputWord8 1 >> sput a
-  sput (LamInfoBindAsp_Core 		a) = sputWord8 2 >> sput a
+  sput (LamInfoBindAsp_Core 	  a b) = sputWord8 2 >> sput a >> sput b
 %%[[93
   sput (LamInfoBindAsp_FusionRole 	a) = sputWord8 3 >> sput a
+%%]]
+%%[[(8888 coresysf)
+  sput (LamInfoBindAsp_SysfTy   	a) = sputWord8 4 >> sput a
 %%]]
   sget = do
     t <- sgetWord8
     case t of
       0 -> liftM  LamInfoBindAsp_RelevTy  	sget
       1 -> liftM  LamInfoBindAsp_Ty 		sget
-      2 -> liftM  LamInfoBindAsp_Core 		sget
+      2 -> liftM2 LamInfoBindAsp_Core 		sget sget
 %%[[93
       3 -> liftM  LamInfoBindAsp_FusionRole sget
+%%]]
+%%[[(8888 coresysf)
+      4 -> liftM  LamInfoBindAsp_SysfTy		sget
 %%]]
 
 instance Serialize LamInfo where

@@ -26,7 +26,7 @@
 %%[(6 hmtyinfer || hmtyast) import(qualified Data.Map as Map)
 %%]
 
-%%[(6 hmtyinfer || hmtyast) hs import({%{EH}VarLookup})
+%%[(6 hmtyinfer || hmtyast) hs import({%{EH}VarLookup}, {%{EH}Base.TermLike})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -60,25 +60,6 @@ class Ord k => VarExtractable vv k | vv -> k where
   -- default
   varFree           =   Set.toList . varFreeSet
   varFreeSet        =   Set.fromList . varFree
-%%]
-
-%%[(2222 hmtyinfer || hmtyast).Substitutable export(Substitutable(..))
--- class Ord k => Substitutable vv k subst | vv -> subst k where
-class (VarExtractable vv k, VarUpdatable vv subst) => Substitutable vv k subst | vv -> subst k where
-  (|=>)         ::  subst -> vv -> vv
-%%[[4
-  (|==>)        ::  subst -> vv -> (vv,VarMp)
-%%]]
-  ftv           ::  vv -> [k]
-  ftvSet        ::  vv -> Set.Set k
-  
-  -- default
-  (|=>)			=	varUpd
-%%[[4
-  (|==>)		=	varUpdCyc
-%%]]
-  ftv           =   varFree
-  ftvSet        =   varFreeSet
 %%]
 
 %%[(4 hmtyinfer || hmtyast) export(substLift)
@@ -350,7 +331,7 @@ setSubst m s = varFreeSet $ (varUpd m) $ map mkTyVar $ Set.toList s
 %%[(6 hmtyinfer || hmtyast) export(varmpMapTyVarKey)
 varmpMapTyVarKey :: VarMp -> VarMp -> VarMp
 varmpMapTyVarKey mMap m
-  = varmpUnions [ varmpTyUnit v x | (Ty_Var v _,x) <- assocLMapKey (\v -> tyUnAnn $ mMap `varUpd` mkTyVar v) $ varmpToAssocTyL m ]
+  = varmpUnions [ varmpTyUnit v x | (Ty_Var v _,x) <- assocLMapKey (\v -> fst $ appUnAnnCanon $ mMap `varUpd` mkTyVar v) $ varmpToAssocTyL m ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

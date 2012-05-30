@@ -689,7 +689,7 @@ relation tyEnsureTVar =
     holes [ ty.e: Ty | | ty.v: Ty, cnstr: VarMp, tvarv: TyVarId ]
     judgespec ty.v, cnstr, tvarv === ty.e
     judgeuse tex ty.v === tvarv ^^ && ^^ cnstr === [tvarv :-> ty.e] ^^ && ^^ tvarv (text "fresh")
-    judgeuse ag (ty.v,cnstr) `=` tyAsVarMp unique (ty.e)
+    judgeuse ag (ty.v,cnstr) `=` tyAsVarMp' unique (ty.e)
 
 -------------------------------------------------------------------------
 -- Partitioning of alt ty

@@ -66,17 +66,19 @@ class AppLike a boundmeta {- ann bnd | a -> ann bnd -}
   appRngPar    _    =   appPar
   
   -- inspection/deconstruction
-  appMbBind1        :: a -> Maybe (a,a->a)
-  appMbAnn1         :: a -> Maybe (a,a->a)
-  appMbTop1         :: a -> Maybe (a,a->a)
-  appMbCon          :: a -> Maybe (HsName)
-  appMbApp1         :: a -> Maybe (a,a)
-  appMbDbg          :: a -> Maybe String
+  appMbBind1        :: a -> Maybe (a,a->a)					-- strip binding, if any, also giving reconstruction
+  appMbAnn1         :: a -> Maybe (a,a->a)					-- strip annotation, if any, also giving reconstruction
+  appMbTop1         :: a -> Maybe (a,a->a)					-- strip top of app, if any, also giving reconstruction
+  appMbCanon1       :: a -> Maybe (a,a->a)					-- minimal canonicalization (e.g. strip empty implicits), if any, also giving reconstruction
+  appMbCon          :: a -> Maybe (HsName)					-- is con?
+  appMbApp1         :: a -> Maybe (a,a)						-- is app?
+  appMbDbg          :: a -> Maybe String					-- is dbg?
   
   -- and the defaults
   appMbBind1        = const Nothing
   appMbAnn1         = const Nothing
   appMbTop1         = appMbAnn1
+  appMbCanon1       = const Nothing
   appMbCon          = const Nothing
   appMbApp1         = const Nothing
   appMbDbg          = const Nothing
@@ -266,7 +268,7 @@ appMb2Un un a
       _ -> (a,id)
 %%]
 
-%%[1 export(appUnAnn,appUnTop,appUnBind)
+%%[1 export(appUnAnn,appUnTop,appUnBind,appUnAnnCanon)
 -- | Unwrap binding like stuff (i.e. quantifiers), also giving reconstruction
 appUnBind :: AppLike a boundmeta {- ann -} => a -> (a,a->a)
 appUnBind = appMb2Un appMbBind1
@@ -276,6 +278,10 @@ appUnBind = appMb2Un appMbBind1
 appUnAnn :: AppLike a boundmeta {- ann -} => a -> (a,a->a)
 appUnAnn = appMb2Un appMbAnn1
 {-# INLINE appUnAnn #-}
+
+-- | Unwrap ann+canonic like stuff, also giving reconstruction
+appUnAnnCanon :: AppLike a boundmeta {- ann -} => a -> (a,a->a)
+appUnAnnCanon = appMb2Un (\a -> appMbAnn1 a <|> appMbCanon1 a)
 
 -- | Unwrap top like stuff, also giving reconstruction
 appUnTop :: AppLike a boundmeta {- ann -} => a -> (a,a->a)

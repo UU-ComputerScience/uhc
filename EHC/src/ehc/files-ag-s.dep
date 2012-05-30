@@ -59,6 +59,7 @@ Core/Trf/AnaRelevance.cag
 Core/Trf/ExplicitStackTrace.cag
 Core/Trf/OptimizeStrictness.cag
 Core/Trf/EraseExtractTysigCore.cag
+Core/SysF/Check.cag
 GrinCode/Pretty.cag
 GrinCode/FreeVars.cag
 GrinCode/PointsToAnalysis.cag

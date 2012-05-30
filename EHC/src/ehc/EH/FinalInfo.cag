@@ -113,7 +113,8 @@ SEM PatExpr
 
 %%[(8 hmtyinfer)
 SEM Expr
-  | AppTop      loc         .   finalTy             =   @lhs.finTyVarMp `varUpd` @ty
+  | AppTop Var Con
+  				loc         .   finalTy             =   @lhs.finTyVarMp `varUpd` @ty
   | Case        loc         .   finalTyExpr         =   @lhs.finTyVarMp `varUpd` @expr.ty
   | Lam
 %%[[12
@@ -140,11 +141,13 @@ SEM Expr
 %%[(8 hmtyinfer)
 SEM Expr
 %%[[8
-  | AppTop      loc         .   finalTyExpanded     =   @finalTy
+  | AppTop Var Con
+  				loc         .   finalTyExpanded     =   @finalTy
   | Case        loc         .   finalTyExprExpanded =   @finalTyExpr
   | Lam         loc         .   finalTyArgExpanded  =   @finalTyArg
 %%][11
-  | AppTop      loc         .   finalTyExpanded     =   tyCanonicFFI (emptyTyBetaRedEnv' @fe) @finalTy
+  | AppTop Var Con
+  				loc         .   finalTyExpanded     =   tyCanonicFFI (emptyTyBetaRedEnv' @fe) @finalTy
   | Case        loc         .   finalTyExprExpanded =   tyCanonicFFI (emptyTyBetaRedEnv' @fe) @finalTyExpr
   | Lam
 %%[[12
@@ -234,10 +237,10 @@ SEM Expr
 
 %%[(8 hmtyinfer codegen coresysf)
 SEM Expr
-  | Var Con     loc         .   fo_fin      =   @doFit (@lhs.fiOpts {fioExpandEqTyVar=True}) @lhs.finTyVarMp
-  | Lam         loc         .   fo_fin      =   @doFit (@knFunFIOpts {fioExpandEqTyVar=True}) @lhs.finTyVarMp
+  | Var Con     loc         .   fo_fin      =   @doFit (fioMkFinal @lhs.fiOpts) @lhs.finTyVarMp
+  | Lam         loc         .   fo_fin      =   @doFit (fioMkFinal @knFunFIOpts) @lhs.finTyVarMp
 %%[[9
-  | AppTop      loc         .   fo_fin      =   @doFit (@lhs.fiOpts {fioExpandEqTyVar=True}) @lhs.finTyVarMp
+  | AppTop      loc         .   fo_fin      =   @doFit (fioMkFinal @lhs.fiOpts) @lhs.finTyVarMp
 %%]]
 %%[[12
   | LamImpl     loc         .   fo_fin      =   @doFit (implFIOpts {fioBindRFirst=True, fioExpandEqTyVar=True}) @lhs.finTyVarMp
@@ -247,7 +250,7 @@ SEM Expr
 %%[(8 hmtyinfer codegen coresysf)
 SEM Decl
   | Val         loc         .   doFit       =   \o m -> fitsIn o @fe @lUniq_fo m @expr.ty @exprKnTy
-                            .   fo_fin      =   @doFit (@exprFiOpts {fioExpandEqTyVar=True}) @lhs.finTyVarMp
+                            .   fo_fin      =   @doFit (fioMkFinal @exprFiOpts) @lhs.finTyVarMp
                 loc         .   lUniq_fo    :   UNIQUEREF gUniq
 
 SEM DataConstr

@@ -22,7 +22,7 @@ SEM Expr
 -- generated from ruler rules into EHRulerRules, was 2.Let
 %%[(5 hmtyinfer).Let
 SEM Expr
-  | Let         decls       .   patTyVarMp          =   @lhs.tyVarMp
+  | Let         decls       .   patTyVarMp          =   @decls.gathTyVarMp `varUpd` @lhs.tyVarMp
                             .   tyVarMp             =   @decls.patTyVarMp
 %%]
 
@@ -79,7 +79,7 @@ SEM Expr
                 decls       .   patTyVarMp          :=  @exTyVarMp1b
                 loc         .   (quValGam_qu_,quTyVarMp, cycTyVarMp_l)
                                                     :=  valGamQuantifyWithVarMp @valQuTyKiGam @quTvKiVarMp @tyVarMpDeclsQuant @noLetQuantTyVarIdS @valGam_l_
-                            .   bodyVarMp1          =   @quTyVarMp `varUpd` @tyVarMpDeclsL0 -- @tyVarMpDeclsQuant -- @tyVarMpDeclsL0 		-- TBD: Use of @tyVarMpDeclsQuant increases compile time. Why???? Should be ok...
+                            .   bodyVarMp1          =   @quTyVarMp `varUpd` @tyVarMpDeclsL0 -- @tyVarMpDeclsQuant -- @tyVarMpDeclsL0        -- TBD: Use of @tyVarMpDeclsQuant increases compile time. Why???? Should be ok...
                             .   (quValGam_ex_,exTyVarMp2)
                                                     :=  (valGamInst1Exists {- WithVarMp @bodyVarMp1 -} @lUniq2 (@quTyVarMp `varUpd` @quValGam_qu_), emptyVarMp)
                             .   bodyVarMp2          =   (@exTyVarMp2 :: VarMp) `varUpd` @bodyVarMp1
@@ -467,7 +467,11 @@ SEM AGItf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(1 hmtyinfer).gathTySigGam
-ATTR AllDecl [ | | gathTySigGam USE {`gamAddGam`} {emptyGam}: ValGam ]
+ATTR
+  AllDecl
+    [ | | gathTySigGam USE {`gamAddGam`} {emptyGam}: ValGam
+          gathTySigVarMp USE {`varUpd`} {emptyVarMp} : VarMp
+    ]
 %%]
 
 %%[(1 hmtyinfer)
@@ -478,9 +482,13 @@ SEM Decls
 -- generated from ruler rules into EHRulerRules, was 1.gamSigTyGath
 %%[(5 hmtyinfer).gamSigTyGath
 SEM Decl
-  | TySig       loc         .   gamSigTy            =   @tyExpr.ty
-                            .   gathTySigGam        =   @nm `gamSingleton` ValGamInfo @gamSigTy
+  | TySig       loc         .   gamSigTy            =   tyAsVarMp @lUniq_sig @tyExpr.ty
+                            .   gathTySigGam		=   @nm `gamSingleton` ValGamInfo t
+                loc         .   lUniq_sig           :   UNIQUEREF gUniq
 %%]
+                            .   (gathTySigGam,gathTySigVarMp)
+                                                    =   let (t,m) = tyAsVarMp @lUniq_sig @gamSigTy
+                                                        in	(@nm `gamSingleton` ValGamInfo t, m)
 
 %%[(1 hmtyinfer).tySigGam
 ATTR AllDecl AllPatExpr [ tySigGam: ValGam | | ]

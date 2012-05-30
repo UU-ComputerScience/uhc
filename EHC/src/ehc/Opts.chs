@@ -107,6 +107,7 @@ instance Show CoreOpt where
   show CoreOpt_PPParseable 	= "pp-parseable"
 %%[[(8 coresysf)
   show CoreOpt_SysF 		= "sysf"
+  show CoreOpt_SysFCheck 	= "check"
 %%]]
 
 coreOptMp :: Map.Map String CoreOpt
@@ -936,6 +937,12 @@ fioMkStrong fi = fi {fioLeaveRInst = False, fioBindRFirst = True, fioBindLFirst 
 %%[(4 hmtyinfer).fioMkStrong export(fioMkWeak)
 fioMkWeak :: FIOpts -> FIOpts
 fioMkWeak fi = fi {fioLeaveRInst = True, fioBindRFirst = False}
+%%]
+
+%%[(8 hmtyinfer).fioMkStrong export(fioMkFinal)
+-- | Adapt options for extracting final ty
+fioMkFinal :: FIOpts -> FIOpts
+fioMkFinal fi = fi {fioBindLFirst = False, fioBindRFirst = False, fioExpandEqTyVar = True}
 %%]
 
 %%[(4 hmtyinfer).fioMkUnify export(fioMkUnify)

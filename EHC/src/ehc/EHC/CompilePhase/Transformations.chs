@@ -71,11 +71,6 @@ cpTransformCore modNm
          -- put back result: Core
        ; cpUpdCU modNm $! ecuStoreCore (trfcoreCore trfcoreOut)
 
-         -- dump intermediate stages, if any
-       ; cpSeq [ cpOutputCoreModule False ("-" ++ show n ++ "-" ++ nm) "core" modNm c
-               | (n,(nm,c)) <- zip [1..] (trfcoreCoreStages trfcoreOut)
-               ]
-
          -- put back result: unique counter
        ; cpSetUID (trfcoreUniq trfcoreOut)
 
@@ -93,6 +88,13 @@ cpTransformCore modNm
          -- put back result: additional hidden exports, it should be in a cpFlowXX variant
        ; cpUpdHiddenExports modNm $ zip (Set.toList $ trfcoreExtraExports trfcoreOut) (repeat IdOcc_Val)
 %%]]
+
+         -- dump intermediate stages, print errors, if any
+       ; cpSeq [ do { when (isJust mc) (cpOutputCoreModule False ("-" ++ show n ++ "-" ++ nm) "core" modNm (fromJust mc))
+                    ; cpSetLimitErrsWhen 5 ("Core errors: " ++ nm) err
+                    }
+               | (n,(nm,mc,err)) <- zip [1..] (trfcoreCoreStages trfcoreOut)
+               ]
        }
 %%]
 

@@ -218,7 +218,8 @@ sysftyMkLamWrap spineSubst tyArgL e
 
 %%[(8 codegen coresysf)
 SEM Expr
-  | *           loc         .   sysfcTyArgAppWrap
+  | * - Ann
+  				loc         .   sysfcTyArgAppWrap
                                                 =   if ehcOptCoreSysF @lhs.opts
                                                     then \e -> acoreAppBound e $
                                                                map (cSubstAppBound @sysfcSubstAppSpine . SysF.tyL0BindToL1Val 0)
@@ -277,7 +278,7 @@ SEM Expr
 
 %%[(8 codegen coresysf)
 SEM Expr
-  | Var Con     loc         .   moutFun         =   SysF.matchBind @sysftyForMatch $ sysftyBareFromTy @lhs.sysfEnv @lhs.finTyVarMp @ty
+  | Var Con     loc         .   moutFun         =   SysF.matchBind @sysftyForMatch $ sysftyBareFromTy @lhs.sysfEnv emptyVarMp @finalTyExpanded -- @lhs.finTyVarMp @ty
                             .   sysfcSubstAppSpine
                                                 =   SysF.moutCSubst @moutFun
   | App AppImpred
@@ -302,7 +303,7 @@ ATTR Expr [ sysfcSubstLamSpine: {SysF.CSubst} | | ]
 %%[(8 codegen coresysf)
 SEM Decl
   | Val         loc         .   sysftyExprKnTy  =   sysftyBareFromTy @lhs.sysfEnv @lhs.finTyVarMp @exprKnTy
-                            .   sysftyExprTy    =   sysftyBareFromTy @lhs.sysfEnv @lhs.finTyVarMp @expr.ty
+                            .   sysftyExprTy    =   sysftyBareFromTy @lhs.sysfEnv emptyVarMp @finalTyExpanded -- @lhs.finTyVarMp @expr.ty
                             .   moutExpr        =   SysF.matchBind @sysftyExprKnTy @sysftyExprTy
                             .   sysfcSubstLamSpine
                                                 =   SysF.moutCSubst @moutExpr

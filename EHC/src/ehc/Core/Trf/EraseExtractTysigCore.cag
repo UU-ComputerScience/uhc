@@ -17,7 +17,7 @@
 %%[(8 codegen) hs import({%{EH}Core.BindExtract})
 %%]
 
-%%[(8 codegen) hs import(Data.Maybe, qualified Data.Map as Map)
+%%[(8 codegen) hs import(Data.Maybe, qualified Data.Map as Map, qualified Data.Set as Set)
 %%]
 
 %%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonBindNm},{Core/CommonLamInfo},{Core/CommonGathLamInfo},{Core/CommonBindExtract})
@@ -79,9 +79,18 @@ SEM CodeAGItf
 
 %%[(8 codegen grin)
 SEM CBound
-  | Ty          loc         .   bindLamL        =   [ (@aspectKeyS, LamInfoBindAsp_Ty @ty) ]
-  | Bind        loc         .   bindLamL        =   [] -- [ (acbaspkeyDefaultCore, LamInfoBindAsp_Core @expr.cTrf) ]
-  | Ty Bind     lhs         .   bindLamMp       =   Map.singleton @lhs.nm (emptyLamInfo {laminfoBindAspMp = Map.fromList @bindLamL})
+  | Ty          loc         .   bindLamL        =   [ (Set.union acbaspkeyTy @aspectKeyS, LamInfoBindAsp_Ty @ty) ]
+  | Bind        loc         .   bindLamL        =   [] -- [ (acbaspkeyDefaultCore, LamInfoBindAsp_Core metaLevVal @expr.cTrf) ]
+%%[[(8 coresysf)
+  | Val         loc         .   bindLamL        =   if ehcOptCoreSysF @lhs.opts && @mlev >= metaLevTy
+                                                    then [(Set.union (acbaspkeySysfTy @mlev) @aspectKeyS, LamInfoBindAsp_Core @mlev @expr.cTrf)]
+                                                    else []
+%%]]
+  | Ty Bind
+%%[[(8 coresysf)
+    Val
+%%]]
+                lhs         .   bindLamMp       =   Map.singleton @lhs.nm (emptyLamInfo {laminfoBindAspMp = Map.fromList @bindLamL})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -113,9 +122,9 @@ SEM CExpr
   | App         lhs         .   cTrf            =   if null @arg.selvalYesL  then @func.cTrf else @cTrf
   | Lam         lhs         .   cTrf            =   if null @bind.selvalYesL
                                                     then if null @bind.selvalNoL
-                                                         then @cTrf													-- already erased, take that
-                                                         else @body.cTrf											-- has meta stuff, then erase fully
-                                                    else CExpr_Lam (CBind_Bind @argNm @bind.selvalNoL) @body.cTrf	-- indeed termlevel, but include meta stuff only
+                                                         then @cTrf                                                 -- already erased, take that
+                                                         else @body.cTrf                                            -- has meta stuff, then erase fully
+                                                    else CExpr_Lam (CBind_Bind @argNm @bind.selvalNoL) @body.cTrf   -- indeed termlevel, but include meta stuff only
 
 SEM CBind
   | Bind        loc         .   cTrf            =   CBind_Bind @nm @bindAspects.selvalYesL

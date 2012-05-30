@@ -113,13 +113,13 @@ cpOutputCoreModule binary nmsuff suff modNm cMod
                  coreInh = crsiCoreInh crsi
                  lm      = Core2GrSem.lamMp_Inh_CodeAGItf coreInh
 %%[[8
-         ;  lift $ putPPFPath fpC (ppCModule opts lm cMod) 100
+         ;  lift $ putPPFPath fpC (ppCModule opts {- lm -} cMod) 100
 %%][50
          ;  lift (if binary
                   then do { fpathEnsureExists fpC		-- should be in FPath equivalent of putSerializeFile
                           ; putSerializeFile fnC cMod
                           }
-                  else putPPFPath fpC (ppCModule opts lm cMod) 100
+                  else putPPFPath fpC (ppCModule opts {- lm -} cMod) 100
                  )
 %%]]
          }

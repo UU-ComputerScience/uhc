@@ -101,6 +101,7 @@ data CoreOpt
   = CoreOpt_PPParseable		-- pretty print parseable, negation means just make it readable
 %%[[(8 coresysf)
   | CoreOpt_SysF			-- 20120419, work in startup/progress: generate System F
+  | CoreOpt_SysFCheck		-- 20120419, work in startup/progress: typecheck generated System F
 %%]]
   deriving (Eq,Enum,Bounded)
 %%]
@@ -398,13 +399,21 @@ ehcOptTargetFlavor :: EHCOpts -> TargetFlavor
 ehcOptTargetFlavor = maybeOk (\s -> panic ("ehcOptTargetFlavor: " ++ s)) id . ehcOptMbTargetFlavor
 %%]
 
-%%[(8 codegen) export(ehcOptCoreSysF)
+%%[(8 codegen) export(ehcOptCoreSysF,ehcOptCoreSysFCheck)
 -- | Generate system F (20120421 AD: very much under construction)
 ehcOptCoreSysF :: EHCOpts -> Bool
 %%[[(8 coresysf)
 ehcOptCoreSysF opts = CoreOpt_SysF `elem` ehcOptCoreOpts opts
 %%][8
 ehcOptCoreSysF _    = False
+%%]]
+
+-- | Typecheck system F (20120421 AD: very much under construction)
+ehcOptCoreSysFCheck :: EHCOpts -> Bool
+%%[[(8 coresysf)
+ehcOptCoreSysFCheck opts = ehcOptCoreSysF opts && CoreOpt_SysFCheck `elem` ehcOptCoreOpts opts
+%%][8
+ehcOptCoreSysFCheck _    = False
 %%]]
 %%]
 

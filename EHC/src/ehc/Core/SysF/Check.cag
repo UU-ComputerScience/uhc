@@ -1,0 +1,291 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Type check as system F
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen coresysf) hs module {%{EH}Core.SysF.Check} import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Opts},{%{EH}Core},{%{EH}Ty},{%{EH}Error})
+%%]
+
+%%[(8 codegen coresysf) hs import({%{EH}Gam})
+%%]
+
+%%[(8 codegen coresysf) hs import({%{EH}AbstractCore})
+%%]
+%%[(8 codegen coresysf) hs import({%{EH}LamInfo})
+%%]
+%%[(8 codegen coresysf) hs import({%{EH}Core.BindExtract},qualified {%{EH}Core.SysF.AsTy} as SysF)
+%%]
+
+%%[(8 codegen coresysf) hs import(qualified EH.Util.FastSeq as Seq)
+%%]
+
+%%[(8 codegen coresysf) hs import(Data.Maybe, qualified Data.Map as Map, Control.Applicative)
+%%]
+
+%%[(8 codegen coresysf) hs import(EH.Util.Pretty)
+%%]
+
+%%[(8 codegen coresysf).WRAPPER ag import({Core/AbsSyn},{Core/CommonBindNm})
+WRAPPER CodeAGItf
+%%]
+
+%%[(99 codegen coresysf)
+-- PRAGMA strictcase
+PRAGMA nocycle
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell itf
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8888 codegen coresysf) hs
+cmodSysfCheck
+  :: EHCOpts
+     -> CModule
+     -> ( CModule
+        , LamMp
+        )
+cmodSysfCheck opts cmod
+  = ( cTrf_Syn_CodeAGItf t
+    , gathLamMp_Syn_CodeAGItf t
+    )
+  where t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf cmod))
+                           (Inh_CodeAGItf
+                             { opts_Inh_CodeAGItf = opts
+                             , lamMp_Inh_CodeAGItf = Map.empty
+                             })
+%%]
+
+%%[(8 codegen coresysf) hs export(CheckEnv(..),emptyCheckEnv)
+data CheckEnv
+  = CheckEnv
+      { cenvLamMp       :: LamMp
+      }
+
+emptyCheckEnv
+  = CheckEnv
+      emptyLamMp
+%%]
+
+%%[(8 codegen coresysf) hs export(cmodSysfCheck)
+cmodSysfCheck :: EHCOpts -> CheckEnv -> CModule -> ErrL
+cmodSysfCheck opts env cmod
+  = Seq.toList $ gathErrs_Syn_CodeAGItf t
+  where t = wrap_CodeAGItf
+              (sem_CodeAGItf (CodeAGItf_AGItf cmod))
+              (Inh_CodeAGItf
+                { opts_Inh_CodeAGItf = opts
+                , env_Inh_CodeAGItf  = env
+                })
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Global info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen coresysf)
+ATTR
+  AllCodeNT CodeAGItf
+    [ opts: EHCOpts
+      env : CheckEnv
+    | | ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% SELF
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen coresysf)
+ATTR AllCodeNT [ | | self: SELF ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Type checking: environment
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen coresysf) hs
+type CheckLookup = MetaLev -> ACoreBindRef -> Maybe CExpr
+
+chkLkup' :: err -> (MetaLev -> ACoreBindRef -> err) -> MetaLev -> ACoreBindRef -> CheckLookup -> (CExpr,err)
+chkLkup' emperr mkerr mlev r lk
+  = maybe ( acoreExprErr ("chkLkup: " ++ show r)
+          , mkerr mlev r
+          )
+          (\e -> (e,emperr))
+          (lk mlev r)
+
+chkLkup :: MetaLev -> ACoreBindRef -> CheckLookup -> (CExpr,ErrSq)
+chkLkup = chkLkup' Seq.empty (\mlev r -> Seq.singleton $ rngLift emptyRange mkErr_NamesNotIntrod ("SysF@" ++ show mlev) [mkHNm r])
+%%]
+
+%%[(8 codegen coresysf)
+ATTR 
+  AllCodeNT
+    [ chkLkup: CheckLookup
+    | | ]
+
+SEM CodeAGItf
+  | AGItf       loc         .   chkLkup             =   \_ _ -> Nothing
+%%]
+
+Gather:
+
+%%[(8 codegen coresysf)
+ATTR AllBind [ | | gathGam USE {`gamUnion`} {emptyGam} : {SysF.SysfGam} ]
+
+SEM CBound
+  | Val         lhs         .   gathGam             =   gamMetaLevSingleton @mlevHere (acoreMkRef @lhs.nm) @expr.self -- (acoreMkAspRef @aspectKeyS @lhs.nm) @expr.self
+%%]
+
+Distribute & Bind:
+
+%%[(8 codegen coresysf)
+ATTR AllCodeNT [ gam: {SysF.SysfGam} | | ]
+
+SEM CodeAGItf
+  | AGItf       loc         .   gam                 =   emptyGam
+
+SEM CExpr
+  | Let         loc         .   gam                 =   @binds.gathGam `gamUnion` @lhs.gam
+  | Lam Arr     body        .   gam                 =   @bind.gathGam  `gamUnion` @lhs.gam
+%%]
+
+%%[(8 codegen coresysf)
+%%]
+SEM CExpr
+  | Let         loc         .   chkLkup             =   \mlev r -> gamLookupMetaLev mlev r @binds.gathGam <|> gamLookupMetaLev mlev r @lhs.gam -- <|> @lhs.chkLkup mlev r
+
+%%[(8888 codegen tycore)
+ATTR AllValBind AllTyBind AllExprSeq1 AllPat Expr [ | | gathGam USE {`gamUnion`} {emptyEnv} : Env ]
+
+SEM ValBind
+  | Val         loc         .   gathGam             =   @bind.gathGam -- gamSingleton @nm @mlevHere @l1.t
+
+SEM ExprSeq1
+  | L0Bind      loc         .   gathGam             =   gamSingleton @nm @mlevHere @l1.t
+  | L1Bind      loc         .   gathGam             =   gamSingleton @nm @mlevHere @l2.t
+  | L2Bind      loc         .   gathGam             =   gamSingleton @nm @mlevHere @l3.t
+
+SEM Expr
+  | * - Seq Seq1
+                lhs         .   gathGam             =   emptyEnv
+
+SEM FldBind
+  | Fld         loc         .   gathGam             =   gamSingleton @nm @mlevHere @ty.t
+  | Ty          loc         .   gathGam             =   gamSingleton @nm @mlevHere @ki.t
+
+SEM Pat
+  | Var         loc         .   gathGam             =   gamSingleton @nm @mlevHere @ty.t
+%%]
+
+Use:
+
+%%[(8 codegen coresysf)
+SEM CExpr
+  | Var         loc         .   (ty,undefNmMp)      =   let lk mlev r = gamLookupMetaLev mlev r @lhs.gam
+                                                        in  chkLkup' Map.empty (\l r -> Map.singleton l [r]) (@lhs.mlev+1) @ref lk
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Meta level, used to stratify name space
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen coresysf)
+ATTR AllCodeNT [ mlev: MetaLev | | ]
+
+SEM CodeAGItf
+  | AGItf       loc         .   mlev                =   metaLevVal
+
+SEM CBound
+  | Val         loc         .   mlevHere            =   @lhs.mlev + @mlev
+                expr        .   mlev                =   @mlevHere
+%%]
+
+%%[(8 codegen tycore)
+SEM Module
+  | Mod         tbinds      .   mlev                =   @lhs.mlev + 1
+
+SEM ValBind
+  | Val         loc         .   mlevHere            =   @lhs.mlev + @mlev
+                bind        .   mlev                =   @mlevHere
+                l0          .   mlev                =   @mlevHere
+                -- l1          .   mlev                =   @mlevHere + 1
+
+SEM Pat
+  | Var         loc         .   mlevHere            =   @lhs.mlev
+                ty          .   mlev                =   @mlevHere + 1
+
+SEM Expr
+  | Cast Inject Int Char String CloseExists OpenExists
+                loc         .   mlevPlus1           =   @lhs.mlev + 1
+                ty          .   mlev                =   @mlevPlus1
+  | CloseExists tyClosed    .   mlev                =   @mlevPlus1
+  | OpenExists  tyOpened    .   mlev                =   @mlevPlus1
+
+SEM ExprSeq1
+  | L0Bind      loc         .   mlevHere            =   @lhs.mlev
+                l1          .   mlev                =   @mlevHere + 1
+  | L1Bind      loc         .   mlevHere            =   @lhs.mlev + 1
+                l2          .   mlev                =   @mlevHere + 1
+  | L2Bind      loc         .   mlevHere            =   @lhs.mlev + 2
+                l3          .   mlev                =   @mlevHere + 1
+  | L1Val       l1          .   mlev                =   @lhs.mlev + 1
+  | L2Val       l2          .   mlev                =   @lhs.mlev + 2
+
+SEM FldBind
+  | Fld         loc         .   mlevHere            =   @lhs.mlev
+                ty          .   mlev                =   @mlevHere + 1
+  | Ty          loc         .   mlevHere            =   @lhs.mlev + 1
+                ki          .   mlev                =   @mlevHere + 1
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Type checking: errors
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+No errors == ok
+
+%%[(8 codegen coresysf) hs
+type UndefNmMp = Map.Map MetaLev [ACoreBindRef]
+
+undefmpUnion :: UndefNmMp -> UndefNmMp -> UndefNmMp
+undefmpUnion = Map.unionWith (++)
+%%]
+
+%%[(8 codegen coresysf)
+ATTR AllNT [ | | undefNmMp USE {`undefmpUnion`} {Map.empty} : UndefNmMp ]
+%%]
+
+%%[(8 codegen coresysf)
+ATTR AllNT [ | | errs USE {`Seq.union`} {Seq.empty} : ErrSq ]
+ATTR AllNT CodeAGItf [ | | gathErrs USE {`Seq.union`} {Seq.empty} : ErrSq ]
+%%]
+
+%%[(8 codegen coresysf)
+SEM CBind
+  | Bind        loc         .   nmErrs              =   Seq.unions
+                                                            [ Seq.singleton $ rngLift emptyRange mkErr_NamesNotIntrod ("SysF@" ++ show l) (map mkHNm rs)
+                                                            | (l,rs) <- Map.toList @bindAspects.undefNmMp
+                                                            ]
+                lhs         .   gathErrs            =   let e = Seq.unions [@nmErrs,@bindAspects.errs]
+                                                        in  Seq.fromList $ rngLift emptyRange mkNestErr (pp @nm) $ Seq.toList e
+                            .   errs                =   Seq.empty
+                            .   undefNmMp           =   Map.empty
+
+%%]
+SEM CExpr
+  | Var         lhs         .   errs                =   @nmErrs
+                                                        in  Seq.unions
+                                                              [ @bind.gathErrs, @l0.gathErrs
+                                                              , Seq.fromList $ rngLift emptyRange mkNestErr (ppValBind @t) $ Seq.toList e
+                                                              ]
+SEM Expr
+  | App         lhs         .   errs                =   Seq.unions [@func.errs,@arg.errs,moutErrs @mout]
+  | Case        lhs         .   errs                =   Seq.unions ([@expr.errs,@alts.errs] ++ map moutErrs @moutL)
+  | Cast        lhs         .   errs                =   Seq.unions [@expr.errs,@ty.errs,@castErrs]
+  | Var Tup     lhs         .   errs                =   @nmErrs
+

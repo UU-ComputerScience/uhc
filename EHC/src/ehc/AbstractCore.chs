@@ -361,10 +361,13 @@ data ACoreBindAspectKey
   | ACoreBindAspectKey_Strict               -- the as strict as possible variant
   | ACoreBindAspectKey_Debug                -- internal debugging only
   | ACoreBindAspectKey_Core                 -- core
+%%[[(8 coresysf)
+  | ACoreBindAspectKey_SysF 	MetaLev		-- system F thingy, at a metalevel
+%%]]
 %%[[93
   | ACoreBindAspectKey_FusionRole           -- fusion role
 %%]]
-  deriving (Eq,Ord,Enum)
+  deriving (Eq,Ord)
 
 instance Show ACoreBindAspectKey where
   show ACoreBindAspectKey_Default       = "dft"
@@ -373,6 +376,9 @@ instance Show ACoreBindAspectKey where
   show ACoreBindAspectKey_RelevTy       = "rty"
   show ACoreBindAspectKey_Debug         = "dbg"
   show ACoreBindAspectKey_Core          = "core"
+%%[[(8 coresysf)
+  show (ACoreBindAspectKey_SysF ml)  	= "sysf@" ++ show ml
+%%]]
 %%[[93
   show ACoreBindAspectKey_FusionRole    = "fusionrole"
 %%]]
@@ -387,7 +393,7 @@ acbaspkeyMk :: [ACoreBindAspectKey] -> ACoreBindAspectKeyS
 acbaspkeyMk = Set.fromList
 %%]
 
-%%[(8 codegen) hs export(acbaspkeyDefaultTy, acbaspkeyDefaultCore, acbaspkeyNone,acbaspkeyDefault,acbaspkeyDefaultRelevTy,acbaspkeyStrict,acbaspkeyDebug)
+%%[(8 codegen) hs export(acbaspkeyDefaultTy, acbaspkeyTy, acbaspkeyDefaultCore, acbaspkeyNone,acbaspkeyDefault,acbaspkeyDefaultRelevTy,acbaspkeyStrict,acbaspkeyDebug)
 -- | predefined: 
 acbaspkeyNone :: ACoreBindAspectKeyS
 acbaspkeyNone = acbaspkeyMk
@@ -397,6 +403,11 @@ acbaspkeyNone = acbaspkeyMk
 acbaspkeyDefault :: ACoreBindAspectKeyS
 acbaspkeyDefault = acbaspkeyMk
   [ ACoreBindAspectKey_Default ]
+
+-- | predefined: 
+acbaspkeyTy :: ACoreBindAspectKeyS
+acbaspkeyTy = acbaspkeyMk
+  [ ACoreBindAspectKey_Ty ]
 
 -- | predefined: 
 acbaspkeyDefaultTy :: ACoreBindAspectKeyS
@@ -422,6 +433,23 @@ acbaspkeyStrict = acbaspkeyMk
 acbaspkeyDebug :: ACoreBindAspectKeyS
 acbaspkeyDebug = acbaspkeyMk
   [ ACoreBindAspectKey_Debug ]
+%%]
+
+%%[(8 codegen coresysf) hs export(acbaspkeyDefaultSysf,acbaspkeySysfTy,acbaspkeyDefaultSysfTy)
+-- | predefined: 
+acbaspkeyDefaultSysf :: MetaLev -> ACoreBindAspectKeyS
+acbaspkeyDefaultSysf ml = acbaspkeyMk
+  [ ACoreBindAspectKey_Default, ACoreBindAspectKey_SysF ml ]
+
+-- | predefined: 
+acbaspkeySysfTy :: MetaLev -> ACoreBindAspectKeyS
+acbaspkeySysfTy ml = acbaspkeyMk
+  [ ACoreBindAspectKey_Ty, ACoreBindAspectKey_SysF ml ]
+
+-- | predefined: 
+acbaspkeyDefaultSysfTy :: MetaLev -> ACoreBindAspectKeyS
+acbaspkeyDefaultSysfTy ml =
+  Set.union (acbaspkeySysfTy ml) (acbaspkeyDefaultSysf ml)
 %%]
 
 %%[(93 codegen) hs export(acbaspkeyFusionRole)
@@ -454,7 +482,7 @@ deriving instance Data ACoreBindAspectKey
 %%% A reference to an aspected value, i.e. a particular aspect of a binding
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) export(ACoreBindRef(..),acoreMkRef)
+%%[(8 codegen) export(ACoreBindRef(..),acoreMkRef,acoreMkAspRef)
 -- | reference to binding aspect: name + aspect keys
 data ACoreBindRef
   = ACoreBindRef
@@ -465,6 +493,9 @@ data ACoreBindRef
 
 acoreMkRef :: HsName -> ACoreBindRef
 acoreMkRef n = ACoreBindRef n Nothing
+
+acoreMkAspRef :: ACoreBindAspectKeyS -> HsName -> ACoreBindRef
+acoreMkAspRef a n = ACoreBindRef n (Just a)
 
 instance HSNM ACoreBindRef where
   mkHNm (ACoreBindRef n ma) = maybe n (\a -> hsnUniqifyACoreBindAspectKeyS a n) ma
@@ -1440,10 +1471,41 @@ whatExprAppArity _             = 0
 %%% Instances: Binary, Serialize, ForceEval
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(50 codegen) hs
+%%[(5050 codegen) hs
 instance Serialize ACoreBindAspectKey where
   sput = sputEnum8
   sget = sgetEnum8
+%%]
+
+%%[(50 codegen) hs
+instance Serialize ACoreBindAspectKey where
+  sput (ACoreBindAspectKey_Default       ) = sputWord8 0
+  sput (ACoreBindAspectKey_Strict        ) = sputWord8 1
+  sput (ACoreBindAspectKey_Ty            ) = sputWord8 2
+  sput (ACoreBindAspectKey_RelevTy       ) = sputWord8 3
+  sput (ACoreBindAspectKey_Debug         ) = sputWord8 4
+  sput (ACoreBindAspectKey_Core          ) = sputWord8 5
+%%[[(8 coresysf)
+  sput (ACoreBindAspectKey_SysF a  		 ) = sputWord8 6 >> sput a
+%%]]
+%%[[93
+  sput (ACoreBindAspectKey_FusionRole    ) = sputWord8 7
+%%]]
+  sget = do
+    t <- sgetWord8
+    case t of
+        0 -> return ACoreBindAspectKey_Default   
+        1 -> return ACoreBindAspectKey_Strict    
+        2 -> return ACoreBindAspectKey_Ty        
+        3 -> return ACoreBindAspectKey_RelevTy   
+        4 -> return ACoreBindAspectKey_Debug     
+        5 -> return ACoreBindAspectKey_Core      
+%%[[(8 coresysf)
+        6 -> liftM  ACoreBindAspectKey_SysF 		sget  	
+%%]]
+%%[[93
+        7 -> return ACoreBindAspectKey_FusionRole
+%%]]
 %%]
 
 %%[(50 codegen) hs

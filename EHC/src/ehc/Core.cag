@@ -578,7 +578,7 @@ instance AbstractCore CExpr CMetaVal CBind CBound ACoreAppLikeMetaBound CBindCat
                                         = acoreBind1Asp n [acoreBoundValTy1CatLev bcat n mlev t, acoreBoundVal1CatLevMetasTy bcat n mlev mb t e]
   acoreLetBase                          = CExpr_Let
   acoreCaseDflt e as d                  = CExpr_Case e as (maybe (acoreVar hsnUnknown) id d)
-  acoreVar n                            = CExpr_Var (ACoreBindRef n Nothing) 
+  acoreVar n                            = CExpr_Var (acoreMkRef n) 
   acoreStringTy _ i                     = CExpr_String i
   acoreCharTy _ i                       = CExpr_Char i
   acoreIntTy _ i                        = CExpr_Int i

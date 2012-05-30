@@ -552,12 +552,6 @@ mkDataCBindL opts sysfEnv ctag ty annL conNm isNewtype
         cty = mkt ty
         wrap = id
 %%]]
-{-
-          = unzip [ if s then (n',\e -> acoreLet1StrictIn n' (acoreVar n) (const e)) else (n,id)
-                  | (n,s) <- zip nms $ map ((==Strictness_Strict) . dcfaiStrictness) annL
-                  , let n' = hsnUniqifyEval n
-                  ]
--}
 %%]
 
 %%[(8 codegen) hs

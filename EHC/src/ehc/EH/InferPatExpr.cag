@@ -196,7 +196,7 @@ SEM PatExpr
                             .   ty_kn_              =   tyEnsureNonAny @lUniq @lhs.knTy
                             .   patTyVarMpKnTy1     =   @lhs.patTyVarMp
                             .   fo_                 =   fitsIn @lhs.fiOpts @fe @lUniq_4_fo @patTyVarMpKnTy1 @ty_kn_ @ty_g_
-                            .   (ty,patTyVarMpKnEx) :=  tyAsVarMp tyInst1Exists @lUniq2 (foTy @fo_)
+                            .   (ty,patTyVarMpKnEx) :=  tyAsVarMp' tyInst1Exists @lUniq2 (foTy @fo_)
                 loc         .   lUniq2              :   UNIQUEREF gUniq
                 loc         .   lUniq_4_fo          :   UNIQUEREF gUniq
   | Var         lhs         .   patTyVarMp          =   @patTyVarMpKnEx `varUpd` foVarMp @fo_ `varUpd` @patTyVarMpKnTy1
@@ -212,7 +212,7 @@ SEM PatExpr
 %%[(9 hmtyinfer).Var
 SEM PatExpr
   | Var         loc         .   (ty_kn_ensured,patTyVarMpKnTyEns)
-                                                    =   tyAsVarMp tyEnsureNonAnyImpl @lUniq @lhs.knTy
+                                                    =   tyAsVarMp' tyEnsureNonAnyImpl @lUniq @lhs.knTy
                             .   patTyVarMpKnTy1     :=  @patTyVarMpKnTyEns `varUpd` @lhs.patTyVarMp
                             .   ty_kn_              :=  @ty_kn_ensured
 %%]

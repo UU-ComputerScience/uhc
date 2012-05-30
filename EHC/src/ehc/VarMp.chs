@@ -50,7 +50,7 @@ A multiple level VarMp knows its own absolute metalevel, which is the default to
 %%[(4_2) import(Maybe) export(varmpDelAlphaRename,varmpFilterAlphaRename,varmpFilterTyAltsMappedBy)
 %%]
 
-%%[(4_2) export(tyAsVarMp,varmpTyRevUnit)
+%%[(4_2) export(tyAsVarMp',varmpTyRevUnit)
 %%]
 
 %%[6 import({%{EH}VarLookup}) export(module {%{EH}VarLookup})
@@ -557,14 +557,18 @@ tyRestrictKiVarMp ts = varmpIncMetaLev $ assocTyLToVarMp [ (v,kiStar) | t <- ts,
 %%% VarMp: reification as VarMp
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4 export(tyAsVarMp)
--- | Encode 'ty' as a tvar + VarMp
-tyAsVarMp :: (UID -> Ty -> Ty) -> UID -> Ty -> (Ty,VarMp)
-tyAsVarMp f u t
+%%[4 export(tyAsVarMp',tyAsVarMp)
+-- | Encode 'ty' as a tvar + VarMp, with additional initial construction
+tyAsVarMp' :: (UID -> Ty -> Ty) -> UID -> Ty -> (Ty,VarMp)
+tyAsVarMp' f u t
   = case f v1 t of
       t | tyIsVar t -> (t, emptyVarMp)
         | otherwise -> (mkTyVar v2, varmpTyUnit v2 t)
   where [v1,v2] = mkNewLevUIDL 2 u
+
+-- | Encode 'ty' as a tvar + VarMp
+tyAsVarMp :: UID -> Ty -> (Ty,VarMp)
+tyAsVarMp = tyAsVarMp' (flip const)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

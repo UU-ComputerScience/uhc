@@ -723,7 +723,7 @@ tyAnnDecomposeMk t
 
 Annotations, empty implicits do not carry type info, but sit in the way of finding out what is underneath.
 
-%%[(9 hmtyinfer || hmtyast) hs export(tyUnNoiseForVarBind)
+%%[(9999 hmtyinfer || hmtyast) hs export(tyUnNoiseForVarBind)
 -- | un-noise with the purpose of finding out whether we end up with Ty_Var
 tyUnNoiseForVarBind :: Ty -> Maybe Ty
 tyUnNoiseForVarBind t
@@ -817,7 +817,12 @@ instance AppLike Ty Ty {- TyAnn () -} where
   appMbAnn1 (Ty_Ann a t) 	= Just (t, Ty_Ann a)
   appMbAnn1 _            	= Nothing
 
-  appMbDbg  (Ty_Dbg s) 		= Just s
+%%[[9
+  appMbCanon1 t             = do (is,r) <- tyMbArrowImplsResWithLkup (const Nothing) t
+                                 if not (null is) && all (maybe False implsIsEmpty . tyMbImpls) is then return (r, appArr is) else Nothing
+%%]]
+
+  appMbDbg  (Ty_Dbg s)      = Just s
   appMbDbg  _            	= Nothing
 
 %%[[3
@@ -1054,18 +1059,24 @@ tyArrowImplsArgResWithLkup lookup t
   where (i,t')  = tyArrowImplsResWithLkup lookup t
         (a,r)   = tyArrowArgResWithLkup   lookup t'
 
-tyArrowImplsResWithLkup :: (TyVarId -> Maybe Ty) -> Ty -> (TyL,Ty)
-tyArrowImplsResWithLkup lookup t
+tyMbArrowImplsResWithLkup :: (TyVarId -> Maybe Ty) -> Ty -> Maybe (TyL,Ty)
+tyMbArrowImplsResWithLkup lookup t
   = extr t
   where extr t = case appMb1Arr t of
                    Just (a,r)
                      | isImpls a'
-                       -> let (as,r') = extr r in (a':as,r')
+                       -- -> let (as,r') = extr r in (a':as,r')
+                       -> case extr r of
+                            Just (as,r') -> Just (a':as,r')
+                            _            -> Just ([a'],r)
                      where  a' = tyUnAnn a
                             isImpls (Ty_Pred  _)  = True
                             isImpls (Ty_Impls _)  = True
                             isImpls _             = False
-                   _   -> tyVarLift lookup extr ((,) []) t
+                   _   -> tyVarLift lookup extr (const Nothing) t
+
+tyArrowImplsResWithLkup :: (TyVarId -> Maybe Ty) -> Ty -> (TyL,Ty)
+tyArrowImplsResWithLkup lookup t = maybe ([],t) id $ tyMbArrowImplsResWithLkup lookup t
 %%]
 
 %%[(9 hmtyinfer || hmtyast) hs export(tyArrowImplsRes,tyArrowImplsArgRes)
@@ -1589,10 +1600,15 @@ implsPrIdLWithLkup lookup = map poPoi . fst . implsPredsTailWithLkup lookup init
 %%]
 
 %%[(9 hmtyinfer || hmtyast) hs export(tyImpls,implsPredsTail,implsPredsMbTail,implsIsTail,tyIsImplsTail,tyImplsPreds,implsPrIdPredL,implsPrIdL)
-tyImpls :: Ty -> Impls
-tyImpls
+tyMbImpls :: Ty -> Maybe Impls
+tyMbImpls
   = extr . tyUnAnn
-  where extr (Ty_Impls i) = i
+  where extr (Ty_Impls i) = Just i
+        extr _            = Nothing
+
+tyImpls :: Ty -> Impls
+tyImpls = panicJust "tyImpls" . tyMbImpls
+{-# INLINE tyImpls #-}
 
 implsPredsTail' :: PredScope -> Impls -> ([(PredOcc,[ImplsProveOcc])],Impls)
 implsPredsTail' = implsPredsTailWithLkup' (const Nothing)
