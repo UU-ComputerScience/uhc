@@ -119,7 +119,10 @@ trfCore opts dataGam modNm trfcore
 %%[[(8 coresysf)
                  -- type check
                ; when (ehcOptCoreSysFCheck opts)
-                      t_sysf_check
+                      (do { t_sysf_check
+                            -- erase ty early as not to confuse later transformation; this should be fixed etc when sysf stuff works (20120531)
+                          ; t_erase_ty
+                          })
 %%]]
                  
                  -- removal of unnecessary constructs: simplifications based on annotations (experimential, temporary)
@@ -129,7 +132,8 @@ trfCore opts dataGam modNm trfcore
                ; t_eta_red
 
                  -- erase type signatures, extract the core + ty combi at this stage
-               ; t_erase_ty
+               ; unless (ehcOptCoreSysFCheck opts)
+                        t_erase_ty
 
                  -- make names unique
                ; t_ren_uniq emptyRenUniqOpts

@@ -859,6 +859,7 @@ SEM Decl
   | Val         loc     .  info_9   :=  [ mkInfo1 "predScope" (pp @predScope)
                                         ]
   | Instance    loc     .  info_9   :=  [ mkInfo1 "tySigGam" (ppGam @tySigGam)
+                                        , mkInfo1 "gamTop tyPrExpr.tyGam" (ppGam $ gamTop @tyPrExpr.tyGam)
                                         , mkInfo1 "predScope" (pp @predScope)
                                         , mkInfo1 "prTyFix" (ppTy @prTyFix)
                                         , mkInfo1 "ctxtPrTyFixL" (ppCommas $ map ppTy @ctxtPrTyFixL)

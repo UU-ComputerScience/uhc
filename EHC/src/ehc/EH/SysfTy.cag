@@ -220,13 +220,13 @@ sysftyMkLamWrap spineSubst tyArgL e
 SEM Expr
   | * - Ann Parens
   				loc         .   sysfcTyArgAppWrap
-                                                =   if ehcOptCoreSysF @lhs.opts
+                                                =   if ehcOptCoreSysFGen @lhs.opts
                                                     then \e -> acoreAppBound e $
                                                                map (cSubstAppBound @sysfcSubstAppSpine . SysF.tyL0BindToL1Val 0)
                                                                    @sysftyTyAppArgL
                                                     else id
                             .   sysfcTyArgLamWrap
-                                                =   if ehcOptCoreSysF @lhs.opts
+                                                =   if ehcOptCoreSysFGen @lhs.opts
                                                     then sysftyMkLamWrap @lhs.sysfcSubstLamSpine @sysftyTyLamArgL
                                                     else id
 %%]

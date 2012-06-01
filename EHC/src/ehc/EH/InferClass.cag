@@ -269,9 +269,12 @@ SEM Decl
                                                                      ) `appArr` @dataDictTy)
                                 .   tySigGam        =   assocLToGam $ assocLMapElt ValGamInfo @recTyExts
                 decls           .   patValGam       =   gamPushNew @lhs.patValGam
+                				.	patTyVarMp		=	@fixPrTyVarMp `varUpd` @lhs.tyVarMp
+                				.	tyVarMp			=	@decls.patTyVarMp
                 lhs             .   patTyGam        =   @lhs.patTyGam
                                 .   gathTySigGam    =   maybe emptyGam (\(n,_) -> n `gamSingleton` ValGamInfo (tyQuantifyClosed @tyPrExpr.evTy)) @mbNmElim
                                 .   patValGam       =   gamAdd @dictNm @vgi @lhs.patValGam
+                                .	patTyVarMp		=	@lhs.patTyVarMp
                 loc         	.   lUniq3		  	:   UNIQUEREF gUniq
                 loc         	.   lUniq4		  	:   UNIQUEREF gUniq
                 loc         	.   lUniq_9_prTyFix :   UNIQUEREF gUniq

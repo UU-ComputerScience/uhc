@@ -102,7 +102,7 @@ data CoreOpt
 %%[[(8 coresysf)
   | CoreOpt_SysF			-- 20120419, work in startup/progress: generate System F
   | CoreOpt_SysFCheck		-- 20120419, work in startup/progress: typecheck generated System F
-  | CoreOpt_OnlyHi			-- 20120419, work in startup/progress: no codegen, only .hi info propagation
+  | CoreOpt_SysFOnlyHi		-- 20120419, work in startup/progress: no codegen, only .hi info propagation
 %%]]
   deriving (Eq,Enum,Bounded)
 %%]

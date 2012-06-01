@@ -108,7 +108,7 @@ instance Show CoreOpt where
 %%[[(8 coresysf)
   show CoreOpt_SysF 		= "sysf"
   show CoreOpt_SysFCheck 	= "check"
-  show CoreOpt_OnlyHi 		= "onlyhi"
+  show CoreOpt_SysFOnlyHi 	= "onlyhi"
 %%]]
 
 coreOptMp :: Map.Map String CoreOpt
