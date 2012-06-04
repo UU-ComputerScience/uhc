@@ -368,44 +368,21 @@ AC_PATH_PROG(hsc2hsCmd,hsc2hs)
 AC_SUBST(HSC2HS_CMD,$hsc2hsCmd)
 
 ### now we know we have ghc, check for some libraries using ghc-pkg
-ghcLibUulibExists=no
-ghcLibFglExists=no
-ghcLibSybExists=no
-ghcLibNetwork=no
-ghcLibBinary=no
+ghcLibsRequired="fgl syb uulib network binary hashable"
 if test x$ghcExists = xyes
 then
   if test -x "$ghcCmd" -a -x "$ghcPkgCmd"
   then
-    # fgl
-    ghcLibFgl=`$ghcPkgCmd list --simple-output fgl`
-    if test "x$ghcLibFgl" != "x" ; then
-      ghcLibFglExists=yes
-    fi
-
-    # syb
-    ghcLibSyb=`$ghcPkgCmd list --simple-output syb`
-    if test "x$ghcLibSyb" != "x" ; then
-      ghcLibSybExists=yes
-    fi
-
-    # uulib
-    ghcLibUulib=`$ghcPkgCmd list --simple-output uulib`
-    if test "x$ghcLibUulib" != "x" ; then
-      ghcLibUulibExists=yes
-    fi
-
-    # network
-    ghcLibNetwork=`$ghcPkgCmd list --simple-output network`
-    if test "x$ghcLibNetwork" != "x" ; then
-      ghcLibNetworkExists=yes
-    fi
-
-    # binary
-    ghcLibBinary=`$ghcPkgCmd list --simple-output binary`
-    if test "x$ghcLibBinary" != "x" ; then
-      ghcLibBinaryExists=yes
-    fi
+    for l in ${ghcLibsRequired}
+    do
+      pkg=`$ghcPkgCmd list --simple-output ${l}`
+      if test "x${pkg}" != "x" ; then
+        ghcLibsRequiredAndPresent="${pkg} ${ghcLibsRequiredAndPresent}"
+      else
+        ghcLibsRequiredButAbsent="${l} ${ghcLibsRequiredButAbsent}"
+      fi
+    done
+    
   fi
 fi
 
@@ -1134,11 +1111,7 @@ AC_SUBST(EXTLIBS_GMP_PKG_NAME, "gmp") # should coincide with installed lib in ex
 if test "x$uuagcExists" = "xyes" \
    -a "x$ghcExists" = "xyes" \
    -a "x$gccExists" = "xyes" \
-   -a "x$ghcLibFglExists" = "xyes" \
-   -a "x$ghcLibSybExists" = "xyes" \
-   -a "x$ghcLibUulibExists" = "xyes" \
-   -a "x$ghcLibNetworkExists" = "xyes" \
-   -a "x$ghcLibBinaryExists" = "xyes"
+   -a "x$ghcLibsRequiredButAbsent" = "x"
 then
   exitIfAbsentLibOrTool=""
 else
@@ -1179,40 +1152,11 @@ echo "    version                     : $ghcVersion"
 echo "    command for ghc             : $ghcCmd"
 echo "    command for ghc raw         : $ghcCmd1"
 echo "    libraries:"
-echo "      uulib is available?       : $ghcLibUulibExists"
-  if test "x$ghcLibUulibExists" = "xyes"
+echo "      required and present      : $ghcLibsRequiredAndPresent"
+  if test "x$ghcLibsRequiredButAbsent" != "x"
   then
-    echo "        version                 : $ghcLibUulib"
-  else
-    echo "        **** ERROR **** : 'uulib' must be installed, use (1) cabal+hackage, or (2) http://www.cs.uu.nl/wiki/HUT"
-  fi
-echo "      fgl is available?         : $ghcLibFglExists"
-  if test "x$ghcLibFglExists" = "xyes"
-  then
-    echo "        version                 : $ghcLibFgl"
-  else
-    echo "        **** ERROR **** : 'fgl' must be installed, use cabal+hackage"
-  fi
-echo "      syb is available?         : $ghcLibSybExists"
-  if test "x$ghcLibSybExists" = "xyes"
-  then
-    echo "        version                 : $ghcLibSyb"
-  else
-    echo "        **** ERROR **** : 'syb' must be installed, use cabal+hackage"
-  fi
-echo "      network is available?     : $ghcLibNetworkExists"
-  if test "x$ghcLibNetworkExists" = "xyes"
-  then
-    echo "        version                 : $ghcLibNetwork"
-  else
-    echo "        **** ERROR **** : 'network' must be installed, use cabal+hackage"
-  fi
-echo "      binary is available?      : $ghcLibBinaryExists"
-  if test "x$ghcLibBinaryExists" = "xyes"
-  then
-    echo "        version                 : $ghcLibBinary"
-  else
-    echo "        **** ERROR **** : 'binary' must be installed, use cabal+hackage"
+    echo "      required but absent!!!    : $ghcLibsRequiredButAbsent"
+    echo "        **** ERROR ****         : these libraries must be installed, use (1) cabal+hackage, or (2) http://www.cs.uu.nl/wiki/HUT"
   fi
 else
 echo "    **** ERROR **** : ghc must be installed, see http://www.haskell.org/ghc"
