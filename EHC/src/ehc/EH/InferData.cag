@@ -103,7 +103,10 @@ ATTR AllDecl [ | | gathDeclDataGam USE {`gamUnion`} {emptyGam}: DataGam ]
 
 SEM Decl
   | Data        loc         .   dataTyVarIdL        =   map (panicJust "EH.InferData.Decl.Data.tyMbVar" . tyMbVar) @tyVars.tyL
-                            .   dgi                 =   mkDGI @tyNm ([@dataTy] `appArr` @dataAltTy) @constrs.dataConstrNmL @constrs.dataConstrTagMp
+                            .   dgi                 =   mkDGI @tyNm
+                            								  ([@dataTy] `appArr` @dataAltTy)
+                            								  (tkgiKi @dataTkgi)
+                            								  @constrs.dataConstrNmL @constrs.dataConstrTagMp
 %%[[7
                                                               @isNewtype
 %%][90

@@ -94,7 +94,7 @@ SEM Decl
   | Val         loc         .   sysfty      :=  ty2SysfWithKiGamVarMp @lhs.sysfEnv emptyVarMp @finalTyExpanded
                             .   sysftyGam   =   sysftyLookup @lhs.finTyVarMp @lhs.sysfEnv @patExpr.topNm @lhs.finValGam
                             .   sysftyBind  =   if @lhs.isStrict then @sysfty else SysF.mkTyThunk @sysfty
-  | Data        loc         .   sysfty      :=  SysF.tyToSysfTyKi @lhs.sysfEnv $ @lhs.finKiVarMp `varUpd` tkgiKi @dataTkgi -- $ tkgiKi $ fst $ tyKiGamLookupByNameErr @tyNm @lhs.finTyKiGam
+  | Data        loc         .   sysfki      =   SysF.tyToSysfTyKi @lhs.sysfEnv $ @lhs.finKiVarMp `varUpd` tkgiKi @dataTkgi -- $ tkgiKi $ fst $ tyKiGamLookupByNameErr @tyNm @lhs.finTyKiGam
   | FFI         loc         .   sysfty      :=  ty2SysfWithKiGamVarMp @lhs.sysfEnv emptyVarMp @finalTyExpanded
   | * - Val Data FFI
                 loc         .   sysfty      :=  (appDbg "Decl.sysfty not implemented" :: SysfTy)

@@ -17,6 +17,9 @@
 %%[(8 codegen) hs import({%{EH}Core.BindExtract})
 %%]
 
+%%[(8 codegen coresysf) hs import({%{EH}Base.TermLike})
+%%]
+ 
 %%[(8 codegen coresysf) hs import({%{EH}Ty.ToSysfTy},{%{EH}FinalEnv}) export(module {%{EH}Ty.ToSysfTy})
 %%]
  
@@ -185,6 +188,55 @@ tyL0BindToL1Bind
         to   (Expr_Seq  s) = Expr_Seq  (map tosq s)
         to   (Expr_Seq1 s) = Expr_Seq1 (    tosq s)
         to   t             = t
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Lam args merge of type and actual code
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen coresysf) hs
+type MergeArg = ((HsName,ACoreAppLikeMetaBound),Ty)
+%%]
+
+%%[(8 codegen coresysf) hs export(tcMergeArgTypeSeqAndCode')
+-- | Merge args from type and args from expr, adding type parameters from the type when necessary (i.e. higher metalev)
+tcMergeArgTypeSeqAndCode' :: (Ty -> TySeq) -> [MergeArg] -> [(HsName,C.CExpr->C.CExpr)] -> (C.CExpr->C.CExpr,[TySeq])
+tcMergeArgTypeSeqAndCode' mka ts as
+  -- = (id,[])
+  = merge ts as
+  where merge (((n,(_,mlev,_)),t):ts) aas@((argNm,mkBody):as)
+          | mlev == 0 = let (body,args) = merge ts  as in (mkl argNm . mkBody . body, t' : args)
+          | otherwise = let (body,args) = merge ts aas in (mkl n              . body,      args)
+          where t' = mka t
+                mkl n = acoreLam1Bind (acoreBind1NmLevTy1 n (mlev+1) (C.mkSTy t'))
+        merge _                       _                   = (id,[])
+%%]
+        merge ((ExprSeq1_L0Bind v   k:ts):tss)                 as  = (mkExprLam1Ty' mka v     k          . body,         args)
+                                                                   where (body,args) = merge (ts:tss) as
+        merge ((ExprSeq1_L1Bind v   k:ts):tss)                 as  = (mkExprLam1Ki' mka v     k          . body,         args)
+                                                                   where (body,args) = merge (ts:tss) as
+        merge (_                         :tss)                 as  =                   merge     tss  as
+
+%%[(8888 codegen tycore) hs export(tcMergeArgTypeSeqAndCode)
+tcMergeArgTypeSeqAndCode :: [TySeq1L] -> [(HsName,Expr->Expr)] -> Expr -> Expr
+tcMergeArgTypeSeqAndCode ts as
+  = fst $ tcMergeArgTypeSeqAndCode' mkTySeq ts as
+%%]
+
+%%[(8 codegen coresysf) hs export(tcMergeLamTySeqAndArgNms,tcMergeLamTySeq1AndArgNms)
+tcMergeLamTySeqAndArgNms' :: (Ty -> TySeq) -> (Ty -> TySeq) -> Ty -> [HsName] -> (C.CExpr->C.CExpr,([TySeq],TySeq))
+tcMergeLamTySeqAndArgNms' mka mkr t as
+  = (mk,(args,mkr res))
+  where (ts,res ) = appUnMetaArr t
+        (mk,args) = tcMergeArgTypeSeqAndCode' mka ts (zip as (repeat id))
+
+tcMergeLamTySeqAndArgNms :: Ty -> [HsName] -> (C.CExpr->C.CExpr,([TySeq],TySeq))
+tcMergeLamTySeqAndArgNms
+  = tcMergeLamTySeqAndArgNms' mkTySeq id
+
+tcMergeLamTySeq1AndArgNms :: Ty -> [HsName] -> (C.CExpr->C.CExpr,([TySeq],TySeq))
+tcMergeLamTySeq1AndArgNms
+  = tcMergeLamTySeqAndArgNms' mkTySeq1 mkTySeq1
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Checking: environment

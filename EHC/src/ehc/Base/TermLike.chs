@@ -325,7 +325,7 @@ appMbConApp x
        
 %%]
 
-%%[1 export(appMb1MetaArr,appMb1Arr,appMbArr,appUnArrMk,appUnArr,appUn1Arr)
+%%[1 export(appMb1MetaArr,appMb1Arr,appMbArr,appUnMetaArrMk,appUnArrMk,appUnMetaArr,appUnArr,appUn1Arr)
 appMb1MetaArr :: AppLike a boundmeta {- ann -} => a -> Maybe ((HsName,boundmeta),a,a)
 appMb1MetaArr = fmap fst . appMb1ArrMk
 {-# INLINE appMb1MetaArr #-}
@@ -342,12 +342,29 @@ appMbArr x
       _           -> Nothing
 
 -- | Arr unpacking, together with reconstruction function for toplevel unwrapping
+appUnMetaArrMk :: AppLike a boundmeta {- ann -} => a -> (([((HsName,boundmeta),a)],a),a->a)
+appUnMetaArrMk x
+  = case appMb1ArrMk x of
+      Just ((m,a,r),mk) -> (((m,a):as,r'),mk)
+                        where ((as,r'),_) = appUnMetaArrMk r
+      _                 -> (([],x),id)
+
+-- | Arr unpacking, together with reconstruction function for toplevel unwrapping
 appUnArrMk :: AppLike a boundmeta {- ann -} => a -> (([a],a),a->a)
 appUnArrMk x
+  = ((map snd as,r),mk)
+  where ((as,r),mk) = appUnMetaArrMk x
+{-
   = case appMb1ArrMk x of
       Just ((_,a,r),mk) -> ((a:as,r'),mk)
                         where ((as,r'),_) = appUnArrMk r
       _                 -> (([],x),id)
+-}
+
+-- | Arr unpacking into args + res
+appUnMetaArr :: AppLike a boundmeta {- ann -} => a -> ([((HsName,boundmeta),a)],a)
+appUnMetaArr = fst . appUnMetaArrMk
+{-# INLINE appUnMetaArr #-}
 
 -- | Arr unpacking into args + res
 appUnArr :: AppLike a boundmeta {- ann -} => a -> ([a],a)

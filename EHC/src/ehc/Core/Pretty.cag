@@ -273,7 +273,7 @@ SEM CExpr
   | Var         loc         .   pp          =   ppACoreBindRef (ppCNm @lhs.opts) @ref
   | App         loc         .   pp          =   let args = reverse $ map ppParens $ @appArgPPL
                                                     fun  = ppParens @appFunPP
-                                                in  howDef @lhs.ppHow fun (vlist args)
+                                                in  howDef @lhs.ppHow fun (foldr1 (howAside @lhs.ppHow) args)
   | Let         loc         .   ppCateg     =   case @categ of
                                                   CBindCateg_Rec     -> pp " rec"
                                                   CBindCateg_Strict  -> pp " !"

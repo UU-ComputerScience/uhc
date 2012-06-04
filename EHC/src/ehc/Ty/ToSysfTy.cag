@@ -277,7 +277,7 @@ SEM Ty
                                                     wra = argWrap (t2tcOptHowArrowArg @lhs.opts)
                                                     wrr = argWrap (t2tcOptHowArrowRes @lhs.opts)
                                                 in  if @isSpineRoot
-                                                    then if @appIsArrow
+                                                    then if @appIsArrow && length @appRevArgL == 2
                                                          then app1Arr
                                                                 (wra $ th $ @appRevArgL !! 1)
                                                                 (wrr      $ @appRevArgL !! 0)
