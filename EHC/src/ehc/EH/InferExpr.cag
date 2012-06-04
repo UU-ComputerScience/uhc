@@ -484,8 +484,8 @@ SEM Expr
                             .   ty_q_               :=  tyQuantifyOuter (const kiStar {- TBD -}) (`Set.member` (@tyVarWildS `Set.union` @gTyTvS)) @tyTy
                             .   fo_                 :=  fitsIn @knTyFIOpts @fe @lUniq @lhs.tyVarMp @ty_q_ @lhs.knTy
                             .   ty_q_2_VarMp        =   foVarMp @fo_ `varUpd` @lhs.tyVarMp
-                            .   knTyDown            =   mkTyVar @lUniq3
-                            .   fo_fitDown          =   fitsIn @downFIOpts @fe @lUniq2 @ty_q_2_VarMp @knTyDown @ty_q_
+                            .   knTyDown            =   @ty_q_ -- mkTyVar @lUniq3
+                            .   fo_fitDown          =   emptyFO -- fitsIn @downFIOpts @fe @lUniq2 @ty_q_2_VarMp @knTyDown @ty_q_
                 expr        .   knTy                :=  @knTyDown
                             .   tyVarMp             :=  foVarMp @fo_fitDown `varUpd` @ty_q_2_VarMp
                 loc         .   lUniq               :   UNIQUEREF gUniq
