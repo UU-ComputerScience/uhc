@@ -979,14 +979,8 @@ acoreBindNm = fst . acoreUnBind
 %%[(8 codegen) export(acorePatFldTy)
 -- | bound name of binding
 acorePatFldTy :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => t -> (HsName,e) -> HsName -> pf
-acorePatFldTy t lbloff n
-  = acorePatFldBind lbloff (b t)
-  where
-%%[[(8888 coresysf)
-        b t@(CTy_SysF _) = acoreBind1NmTy1 n t
-%%]]
-        b _              = acoreBind1Nm1   n
--- {-# INLINE acorePatFldTy #-}
+acorePatFldTy t lbloff n = acorePatFldBind lbloff (acoreBind1NmTy1 n t)
+{-# INLINE acorePatFldTy #-}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

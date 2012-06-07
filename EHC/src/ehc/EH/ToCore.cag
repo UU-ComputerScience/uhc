@@ -604,7 +604,7 @@ mkDataConCBindL opts sysfEnv ctag ty annL conNm isNewtype
         (al,_,_,r) = SysF.tyArrowInstQuArgsRes SysF.ArrowDecompose_InstOnly (tyInstToL ty) 0 sysfty
         cty = mkCTy opts ty sysfty
         wrap = sysftyMkLamWrap emptyCSubst al
-        tup  = acoreCast (mkSTy r) (CExpr_Tup ctag)
+        tup  = acoreCast cty (CExpr_Tup ctag)
 %%][8
         cty = mkt ty
         wrap = id
