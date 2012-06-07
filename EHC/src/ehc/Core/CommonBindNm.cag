@@ -12,15 +12,15 @@ ATTR AllBound [ nm: HsName | | ]
 SEM CBind
   | Bind        bindAspects .   nm              =   @nm
 
-SEM CExpr	
-  | App         arg 		.   nm              =   hsnUnknown
+SEM CExpr   
+  | App         arg         .   nm              =   hsnUnknown
 %%]
 
 %%[(8 codegen)
 ATTR CBind [ | | nm: HsName ]
 
 SEM CBind
-  | Bind        lhs 		.   nm              =   @nm
+  | Bind        lhs         .   nm              =   @nm
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -33,11 +33,11 @@ SEM CExpr
                             .   nmAsp           =   mkHNm @ref
                 loc         .   nm              :   HsName
                 loc         .   nmAsp           :   HsName
-  | Lam			loc			.	argNm			=	@bind.nm
---  							.	arg				=	@argNm				-- for backwards compatibility, to be removed someday
+  | Lam         loc         .   argNm           =   @bind.nm
+--                              .   arg             =   @argNm              -- for backwards compatibility, to be removed someday
 
 SEM CPatFld
-  | Fld         loc         .   fldNm         	=   @bind.nm
+  | Fld         loc         .   fldNm           =   @bind.nm
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -48,7 +48,7 @@ SEM CPatFld
 ATTR CPat CPatFldL CPatFld [ | | fldNmL USE {++} {[]}: {[HsName]} ]
 
 SEM CPatFld
-  | Fld         lhs         .   fldNmL         	=   [@fldNm]
+  | Fld         lhs         .   fldNmL          =   [@fldNm]
 %%]
 
 

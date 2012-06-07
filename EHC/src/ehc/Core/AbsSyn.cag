@@ -124,14 +124,6 @@ DATA CExpr
   | Dbg			info			: {String}
 %%]
 
-%%[(8 codegen coresysf)
--- meta/type level only
-DATA CExpr
-  -- arrow type, i.e. the meta info of a Lam
-  | Arr         bind            : CBind
-                body            : CExpr
-%%]
-
 %%[(9 codegen)
 DATA CExpr
   -- coercion related
@@ -148,6 +140,29 @@ DATA CExpr
 %%[(8 codegen)
 TYPE MbCExpr	= MAYBE CExpr
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% SysF specific
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen coresysf)
+-- meta (type, kind, ...) level only
+DATA CExpr
+  -- arrow type, i.e. the meta info of a Lam
+  | Arr         bind            : CBind
+                body            : CExpr
+%%]
+
+%%[(8 codegen coresysf)
+-- Coercion related
+DATA CExpr
+  | Cast        expr            : CExpr
+                ty              : CExpr
+%%]
+  | Inject      expr            : Expr		-- l0 only: special case of cast/coerce which injects a tuple into a datatype for a specific tag, expr must be of a node (of prod type)
+                tag             : CTag
+                ty              : Expr
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Meta information

@@ -1,0 +1,49 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% The minimum meta level in a context
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AllBound CBind [ minMetaLev: MetaLev | | gathMinMetaLev USE {`min`} {100}: MetaLev ]
+
+SEM CBound
+  | Val Ty Bind
+  				lhs         .   gathMinMetaLev  =   @mlevHere
+
+SEM CBindL
+  | Cons        loc         .   minMetaLev      =   @hd.gathMinMetaLev
+
+SEM CExpr
+  | Lam
+%%[[(8 coresysf)
+    Arr
+%%]]
+                loc         .   minMetaLev      =   @bind.gathMinMetaLev
+  | App         loc         .   minMetaLev      =   @arg.gathMinMetaLev
+
+SEM CPatFld
+  | Fld         loc         .   minMetaLev      =   @bind.gathMinMetaLev
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Meta level, used to stratify name space
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AllCodeNT [ mlev: MetaLev | | ]
+
+SEM CodeAGItf
+  | AGItf       loc         .   mlev            =   metaLevVal
+
+SEM CBound
+  | Val         loc         .   mlevHere        =   @lhs.mlev + acbaspkeyMetaLev @mlev      @aspectKeyS
+                expr        .   mlev            =   @mlevHere
+  | Ty          loc         .   mlevHere        =   @lhs.mlev + acbaspkeyMetaLev metaLevTy  @aspectKeyS
+  | Bind        loc         .   mlevHere        =   @lhs.mlev +                  metaLevVal
+                expr        .   mlev            =   @mlevHere
+
+%%[[(8 coresysf)
+SEM CExpr
+  | Cast		ty			.	mlev			=	@lhs.mlev + 1
+%%]]
+%%]
+

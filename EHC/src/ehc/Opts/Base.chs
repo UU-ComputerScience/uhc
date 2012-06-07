@@ -98,11 +98,12 @@ data PkgOption
 %%[(8 codegen) export(CoreOpt(..))
 -- | Core options
 data CoreOpt
-  = CoreOpt_PPParseable		-- pretty print parseable, negation means just make it readable
+  = CoreOpt_PPParseable			-- pretty print parseable, negation means just make it readable
 %%[[(8 coresysf)
-  | CoreOpt_SysF			-- 20120419, work in startup/progress: generate System F
-  | CoreOpt_SysFCheck		-- 20120419, work in startup/progress: typecheck generated System F
-  | CoreOpt_SysFOnlyHi		-- 20120419, work in startup/progress: no codegen, only .hi info propagation
+  | CoreOpt_SysF				-- 20120419, work in startup/progress: generate System F
+  | CoreOpt_SysFCheck			-- 20120419, work in startup/progress: typecheck generated System F
+  | CoreOpt_SysFCheckOnlyVal	-- 20120419, work in startup/progress: only check values (not types and higher meta defs)
+  | CoreOpt_SysFOnlyHi			-- 20120419, work in startup/progress: no codegen, only .hi info propagation
 %%]]
   deriving (Eq,Enum,Bounded)
 %%]
@@ -400,7 +401,7 @@ ehcOptTargetFlavor :: EHCOpts -> TargetFlavor
 ehcOptTargetFlavor = maybeOk (\s -> panic ("ehcOptTargetFlavor: " ++ s)) id . ehcOptMbTargetFlavor
 %%]
 
-%%[(8 codegen) export(ehcOptCoreSysF,ehcOptCoreSysFCheck,ehcOptCoreSysFGen)
+%%[(8 codegen) export(ehcOptCoreSysF,ehcOptCoreSysFCheck,ehcOptCoreSysFGen,ehcOptCoreSysFCheckOnlyVal)
 -- | Generate system F (20120421 AD: very much under construction)
 ehcOptCoreSysF :: EHCOpts -> Bool
 %%[[(8 coresysf)
@@ -423,6 +424,14 @@ ehcOptCoreSysFGen :: EHCOpts -> Bool
 ehcOptCoreSysFGen opts = ehcOptCoreSysF opts && not (CoreOpt_SysFOnlyHi `elem` ehcOptCoreOpts opts)
 %%][8
 ehcOptCoreSysFGen opts = ehcOptCoreSysF opts
+%%]]
+
+-- | Typecheck system F (20120421 AD: very much under construction)
+ehcOptCoreSysFCheckOnlyVal :: EHCOpts -> Bool
+%%[[(8 coresysf)
+ehcOptCoreSysFCheckOnlyVal opts = ehcOptCoreSysFCheck opts && CoreOpt_SysFCheckOnlyVal `elem` ehcOptCoreOpts opts
+%%][8
+ehcOptCoreSysFCheckOnlyVal opts = ehcOptCoreSysFCheck opts
 %%]]
 %%]
 

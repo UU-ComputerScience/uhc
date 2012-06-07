@@ -107,16 +107,28 @@ cboundExtract sel b
                 })
 %%]
 
-%%[(8 codegen) hs export(cbindExtractVal',cbindExtractVal)
-cbindExtractVal' :: CBind -> (ACoreBindAspectKeyS,MetaLev,CExpr)
-cbindExtractVal' b
+%%[(8 codegen) hs export(cbindExtractVal',cbindExtractVal,cboundExtractVal',cboundExtractVal)
+extractVal' :: (BoundSel -> b -> ([SelVal],[SelVal])) -> b -> (ACoreBindAspectKeyS,MetaLev,CExpr)
+extractVal' extr b
   = (a,ml,e)
-  where (CBound_Val a ml _ e:_, _) = cbindExtract boundSelVal b
+  where (CBound_Val a ml _ e:_, _) = extr boundSelVal b
+
+extractVal :: (BoundSel -> b -> ([SelVal],[SelVal])) -> b -> CExpr
+extractVal extr b
+  = e
+  where (_,_,e) = extractVal' extr b
+
+cbindExtractVal' :: CBind -> (ACoreBindAspectKeyS,MetaLev,CExpr)
+cbindExtractVal' = extractVal' cbindExtract
 
 cbindExtractVal :: CBind -> CExpr
-cbindExtractVal b
-  = e
-  where (_,_,e) = cbindExtractVal' b
+cbindExtractVal = extractVal cbindExtract
+
+cboundExtractVal' :: CBound -> (ACoreBindAspectKeyS,MetaLev,CExpr)
+cboundExtractVal' = extractVal' cboundExtract
+
+cboundExtractVal :: CBound -> CExpr
+cboundExtractVal = extractVal cboundExtract
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

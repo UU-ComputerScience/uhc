@@ -25,7 +25,7 @@ Note (20120525): lamMp use removed because of cyclic module import
 %%[(90 codegen) hs import({%{EH}Foreign.Pretty})
 %%]
 
-%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonBindNm})
+%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonBindNm},{Core/CommonMetaLev})
 WRAPPER
   CodeAGItf CExpr CBound
 %%[[(8 coresysf)
@@ -54,6 +54,7 @@ ppCExpr ce
                             -- , lamMp_Inh_CExpr = Map.empty
                             , ppHow_Inh_CExpr = howHor
                             , opts_Inh_CExpr = emptyEHCOpts
+                            , mlev_Inh_CExpr = metaLevVal
                             })
      in   (pp_Syn_CExpr t)
 
@@ -66,6 +67,8 @@ ppCBound ce
                             , ppHow_Inh_CBound = howHor
                             , opts_Inh_CBound = emptyEHCOpts
                             , nm_Inh_CBound = hsnUnknown
+                            , minMetaLev_Inh_CBound = metaLevVal -- gathMinMetaLev_Syn_CBound t
+                            , mlev_Inh_CBound = metaLevVal -- gathMinMetaLev_Syn_CBound t
                             })
      in   (pp_Syn_CBound t)
 
@@ -85,6 +88,8 @@ ppCBind ce
                             -- , lamMp_Inh_CBind = Map.empty
                             , ppHow_Inh_CBind = howHor
                             , opts_Inh_CBind = emptyEHCOpts
+                            , minMetaLev_Inh_CBind = metaLevVal -- gathMinMetaLev_Syn_CBind t
+                            , mlev_Inh_CBind = metaLevVal -- gathMinMetaLev_Syn_CBind t
                             })
      in   (pp_Syn_CBind t)
 
@@ -124,6 +129,7 @@ ppOptCMetas x
                           (Inh_CMetas
                              { {- lamMp_Inh_CMetas = Map.empty
                              , -} opts_Inh_CMetas = emptyEHCOpts
+                             , mlev_Inh_CMetas = metaLevVal
                              })
      in   (pp_Syn_CMetas t)
 %%]
@@ -211,14 +217,20 @@ SEM CodeAGItf
   | AGItf       loc         .   ppHow       =   howVert
 
 SEM CBound
-  | Val         loc         .   ppHow       =   if @mlev > 0 then howHor else @lhs.ppHow
+  | Val         loc         .   ppHow       =   if @mlevHere == @lhs.minMetaLev then @lhs.ppHow else howHor
 
 SEM CExpr
   | Lam         bind        .   ppHow       =   howHor
+%%[[(8 coresysf)
+  | Cast        ty          .   ppHow       =   howHor
+%%]]
+
+SEM CPatFld
+  | Fld         bind        .   ppHow       =   howHor
 %%]
 
 SEM Expr
-  | Cast Inject
+  | Inject
                 ty          .   ppHow       =   howHor
 
 SEM Pat
@@ -300,6 +312,7 @@ SEM CExpr
   | Dbg         loc         .   pp          =   ppParens $ "<<DBG:" >#< @info >#< ">>"
 %%[[(8 coresysf)
   | Arr         loc         .   pp          =   @bind.pp >#< "->" >#< @body.pp
+  | Cast		loc			.	pp			=	howDef @lhs.ppHow (pp "cast") (howAside @lhs.ppHow (ppParens @expr.pp) (ppParens @ty.pp))
 %%]]
 
 SEM CExpr
@@ -364,7 +377,7 @@ SEM CPat
                                                       (ppCurly (@rest.pp >#< "|" >#< ppCommas' @binds.ppL))
 
 SEM CPatFld
-  | Fld         lhs         .   pp          =   ppCurlysCommas' [ppCNm @lhs.opts @lbl,@offset.pp {- ,ppCNm @lhs.opts @nm -}] >|< "=" >|< ppCNm @lhs.opts @fldNm
+  | Fld         lhs         .   pp          =   ppCurlysCommas' [ppCNm @lhs.opts @lbl,@offset.pp {- ,ppCNm @lhs.opts @nm -}] >|< "=" >|< @bind.pp
                                                 >|< (if null @fldAnns.ppL then empty else ppParensCommas' @fldAnns.ppL)
 
 SEM CPatRest
@@ -449,9 +462,7 @@ SEM CBound
   | Ty          loc         .   sep         =   "::"
   | RelevTy     loc         .   sep         =   "::R"
   | Meta        loc         .   sep         =   "::M"
-  | Val         loc         .   sep         =   if      @mlev == 0 then "="
-                                                -- else if @mlev >  1 then "::@" ++ show @mlev
-                                                else                    "::" ++ @lev
+  | Val         loc         .   sep         =   (if @mlevHere == @lhs.minMetaLev then "=" else "::") ++ (if @mlevHere > @lhs.mlev then @lev else "")
 %%[[90
   | FFE         loc         .   sep         =   "="
 %%]]

@@ -35,6 +35,10 @@ Currently the following is maintained:
 %%[(8 codegen coresysf) import(qualified {%{EH}Core.SysF.AsTy} as SysF)
 %%]
 
+-- Gam
+%%[(8 codegen coresysf) import({%{EH}Gam},{%{EH}Gam.TyKiGam})
+%%]
+
 -- Analyses
 %%[(8 codegen) import({%{EH}AnaDomain})
 %%]
@@ -175,10 +179,13 @@ emptyLamMp :: LamMp
 emptyLamMp = Map.empty
 %%]
 
-%%[(8 codegen) hs export(lamMpUnionBindAspMp)
+%%[(8 codegen) hs export(lamMpUnionBindAspMp,lamMpUnionsBindAspMp)
 -- union, including the aspect map, but arbitrary for the info itself
 lamMpUnionBindAspMp :: LamMp -> LamMp -> LamMp
 lamMpUnionBindAspMp = Map.unionWith (\i1 i2 -> i1 {laminfoBindAspMp = laminfoBindAspMp i1 `Map.union` laminfoBindAspMp i2})
+
+lamMpUnionsBindAspMp :: [LamMp] -> LamMp
+lamMpUnionsBindAspMp = foldr lamMpUnionBindAspMp Map.empty
 %%]
 
 %%[(8 codegen) hs export(lamMpMergeInto)
@@ -285,6 +292,29 @@ data GrinByteCodeLamInfo
 
 emptyGrinByteCodeLamInfo :: GrinByteCodeLamInfo
 emptyGrinByteCodeLamInfo = GrinByteCodeLamInfo (-1)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Initial LamMp
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs export(initLamMp)
+initLamMp :: LamMp
+%%[[(8 coresysf)
+initLamMp
+  = lamMpUnionsBindAspMp
+      [ mk tkgiKi         metaLevTy [ (n,x) | (TyKiKey_Name n,x) <- gamToAssocL initTyKiGam]
+      {-
+      , mk (const kiStar) metaLevKi                                (gamToAssocL initKiGam)
+      , mk (const kiStar) metaLevSo                                (gamToAssocL initSoGam)
+      -}
+      ]
+  where mk get mlev l
+          = lamMpUnionsBindAspMp [ mk1 (mlev + 1) n (SysF.ty2TySysf $ get t) | (n,t) <- l ]
+          where mk1 l n e = Map.singleton n (emptyLamInfo {laminfoBindAspMp = Map.fromList [(acbaspkeyDefaultSysfTy l, LamInfoBindAsp_Core l e)]})
+%%][8
+initLamMp = emptyLamMp
+%%]]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -592,6 +592,11 @@ instance AbstractCore CExpr CMetaVal CBind CBound ACoreAppLikeMetaBound CBindCat
   acoreBind1CatLevMetasTy bcat n mlev mb t e
                                         = acoreBind1Asp n [acoreBoundValTy1CatLev bcat n (mlev+1) t, acoreBoundVal1CatLevMetasTy bcat n mlev mb t e]
   acoreLetBase                          = CExpr_Let
+%%[[(8 coresysf)
+  acoreCast (CTy_SysF t) e              = CExpr_Cast e t
+  acoreCast _            e              =            e
+%%][8
+%%]]
   acoreCaseDflt e as d                  = CExpr_Case e as (maybe (acoreVar hsnUnknown) id d)
   acoreVar n                            = CExpr_Var (acoreMkRef n) 
   acoreStringTy _ i                     = CExpr_String i
@@ -758,10 +763,11 @@ instance Serialize CExpr where
 %%]]
   sput (CExpr_Ann       a b         ) = sputWord8 19 >> sput a >> sput b
   sput (CExpr_FFI       a b c d     ) = sputWord8 20 >> sput a >> sput b >> sput c >> sput d
+  sput (CExpr_Dbg       a           ) = sputWord8 21 >> sput a
 %%[[(50 coresysf)
-  sput (CExpr_Arr       a b         ) = sputWord8 21 >> sput a >> sput b
+  sput (CExpr_Arr       a b         ) = sputWord8 22 >> sput a >> sput b
+  sput (CExpr_Cast      a b         ) = sputWord8 23 >> sput a >> sput b
 %%]]
-  sput (CExpr_Dbg       a           ) = sputWord8 22 >> sput a
   sget
     = do t <- sgetWord8
          case t of
@@ -788,10 +794,11 @@ instance Serialize CExpr where
 %%]]
            19 -> liftM2 CExpr_Ann           sget sget
            20 -> liftM4 CExpr_FFI           sget sget sget sget
+           21 -> liftM  CExpr_Dbg           sget
 %%[[(50 coresysf)
-           21 -> liftM2 CExpr_Arr           sget sget
+           22 -> liftM2 CExpr_Arr           sget sget
+           23 -> liftM2 CExpr_Cast          sget sget
 %%]]
-           22 -> liftM  CExpr_Dbg           sget
 
 instance Serialize CMetaVal where
   sput (CMetaVal_Val                ) = sputWord8 0

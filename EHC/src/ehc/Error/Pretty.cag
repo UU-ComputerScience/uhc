@@ -344,8 +344,8 @@ SEM Err
   | TyCoreMatchClash    lhs     .  pp   :=  ppMsgErr    "Core type mismatch"
                                                         (    "between          :" >#< @ty1
                                                          >-< "and              :" >#< @ty2
-                                                         >-< "in detail between:" >#< @ty1detail
-                                                         >-< "and              :" >#< @ty2detail
+                                                         >-< maybe empty (\d -> "in detail between:" >#< d) @ty1detail
+                                                         >-< maybe empty (\d -> "and              :" >#< d) @ty2detail
                                                         )
 %%[[99
                                                         @range

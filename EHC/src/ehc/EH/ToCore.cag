@@ -229,7 +229,7 @@ SEM Expr
                                                              in  (zip ns (tyProdArgs @finalTyExprExpanded),[],@alts.raltL')
                                                         else let n = uidHNm @lUniq2
                                                              in  ([(n,@finalTyExprExpanded)],[acoreBind1Ty n @acorety @expr.cexpr],@alts.raltL)
-                                                in  acoreLet CBindCateg_Plain bs (rceMatchTy @rceEnv (assocLMapElt (ty2TyC @lhs.opts @lhs.sysfEnv) ns) as)
+                                                in  acoreLet CBindCateg_Plain bs (rceMatchTy @rceEnv (assocLMapElt (SysF.ty2TyC @lhs.opts @lhs.sysfEnv) ns) as)
   | AppTop      loc         .   cexprtop    =   @expr.cexpr
   | Rec         loc         .   cexprtop    =   @rcexpr
   | Parens TypeAs
@@ -517,7 +517,7 @@ SEM Decl
   | Data        loc         .   fldSelCBindL=   let (xn1:xn2:_) = hsnLclSupply
                                                     tgSels f i = [ (t,[(f,{-f,-}o)],Nothing,acoreVar f) | (t,o) <- Map.toList $ dficInTagMp i ]
                                                     ty1 f = valGamLookupTyDefault f @lhs.finValGam
-                                                    ty2 t = ty2TyC @lhs.opts @lhs.sysfEnv t
+                                                    ty2 t = SysF.ty2TyC @lhs.opts @lhs.sysfEnv t
                                                 in  if @isNewtype
                                                     then [ [ acoreBind1Ty f (ty2 $ ty1 f) (acoreVar $ ehcOptBuiltin @lhs.opts ehbnId)
                                                            | (f,i) <- Map.toList $ dgiFldInConstrMp @dgi
@@ -569,7 +569,7 @@ mkDataTyCBindL opts sysfEnv (dTy,altTy) ki tyNm isNewtype
   = [ acoreBind1LevTy tyNm metaLevTy (mkSTy ki') (mk st) ]
   where t | isNewtype = snd (snd (tyRecExts2 altTy !! 0) !! 0)
           | otherwise = altTy
-        st = ty2SysfWithKiGam sysfEnv $ ((assocTyLToVarMp $ zip dTyArgVarL dTyArgL) `varUpd`) $ t
+        st = SysF.ty2TySysfWithEnv sysfEnv $ ((assocTyLToVarMp $ zip dTyArgVarL dTyArgL) `varUpd`) $ t
         dTyArgL = appUnAppArgs dTy
         dTyArgVarL = map tyVar dTyArgL
         (mk,_) = SysF.tcMergeLamTySeq1AndArgNms ki' (map mkHNm dTyArgVarL)
@@ -580,27 +580,35 @@ mkDataTyCBindL opts sysfEnv (dTy,altTy) ki tyNm isNewtype
 -- | Make bindings for constructors, given various bits of info
 mkDataConCBindL :: EHCOpts -> ToSysfEnv -> CTag -> Ty -> [DataConFldAnnInfo] -> HsName -> Bool -> [CBind]
 mkDataConCBindL opts sysfEnv ctag ty annL conNm isNewtype
-  | isNewtype = [ acoreBind1Ty conNm cty ({- TBD: see TyCore: cast -} acoreExprUnThunk $ acoreVar $ ehcOptBuiltin opts ehbnId) ]
-  | otherwise = [ acoreBind1Ty conNm cty
-                  $ wrap
-                  $ acoreLamTy (zip nms $ map mkt $ appUnArrArgs ty)
-                  $ foldr (.) id mkStrict
-                  $ acoreApp (CExpr_Tup ctag)
-                  $ map acoreVar nms'
-                ]
-  where nms = (map (\i -> hsnFromString ("x" ++ show i)) [1 .. ctagArity ctag])
-        (nms',mkStrict)
-          = (nms, replicate (ctagArity ctag) id)
-          where len = ctagArity ctag
-        mkt = ty2TyC opts sysfEnv
+  | isNewtype
+      = [ acoreBind1Ty conNm cty ({- TBD: see TyCore: cast -} acoreExprUnThunk $ acoreVar $ ehcOptBuiltin opts ehbnId)
+        ]
+  | otherwise
+      = [ acoreBind1Ty conNm cty
+          $ wrap
+          $ acoreLamTy (zip nms $ map mkt $ appUnArrArgs ty)
 %%[[(8 coresysf)
-        sysfty = ty2SysfWithKiGam emptyToSysfEnv ty
+          -- $ acoreCast (mkSTy $ appUnArrRes r)
+%%]]
+          $ foldr (.) id mkStrict
+          $ acoreApp tup
+          $ map acoreVar nms'
+        ]
+  where arity | isNewtype = 1
+              | otherwise = ctagArity ctag
+        nms = (map (\i -> hsnFromString ("x" ++ show i)) [1 .. arity])
+        (nms',mkStrict) = (nms, replicate arity id)
+        mkt = SysF.ty2TyC opts sysfEnv
+%%[[(8 coresysf)
+        sysfty = SysF.ty2TySysfWithEnv emptyToSysfEnv ty
         (al,_,_,r) = SysF.tyArrowInstQuArgsRes SysF.ArrowDecompose_InstOnly (tyInstToL ty) 0 sysfty
         cty = mkCTy opts ty sysfty
         wrap = sysftyMkLamWrap emptyCSubst al
+        tup  = acoreCast (mkSTy r) (CExpr_Tup ctag)
 %%][8
         cty = mkt ty
         wrap = id
+        tup  = CExpr_Tup ctag
 %%]]
 %%]
 
@@ -844,7 +852,7 @@ SEM Expr
 %%[(9 codegen)
 SEM Expr
   | AppTop Rec Let Lam
-                loc         .   poiAndAcoreTyL      =   zipWith (\po ty -> (po,ty2TyC @lhs.opts @lhs.sysfEnv ty)) @poiL @finKnImplsLExpanded
+                loc         .   poiAndAcoreTyL      =   zipWith (\po ty -> (po,SysF.ty2TyC @lhs.opts @lhs.sysfEnv ty)) @poiL @finKnImplsLExpanded
   | Lam         loc         .   lamArgCoeL          =   acoreCoePoiLLamTy (acoreCoeLetRec @poiBindL) @poiAndAcoreTyL
                                                         ++ [acoreCoeLam1Ty @arg.topNm @acoretyArg]
   | AppTop Rec Let
@@ -1029,7 +1037,7 @@ SEM Decl
                                                              nD = hsnUniqify HsNameUniqifier_SelfDict nDflt
                                                 in   (maybe dDflt (const []) @mbDefaultInstNm)
                                                      ++ [ acoreBind1CatTy CBindCateg_Plain n
-                                                            (ty2TyC @lhs.opts @lhs.sysfEnv $ tyQuantifyClosed $ [@dataDictTy] `appArr` t)
+                                                            (SysF.ty2TyC @lhs.opts @lhs.sysfEnv $ tyQuantifyClosed $ [@dataDictTy] `appArr` t)
                                                           $ acoreLam1Ty x (acoreTyErr "EH.ToCore.Decl.Class.valCBindL")
                                                           $ mkApp
                                                           $ mkSel n
@@ -1271,7 +1279,7 @@ mkInstanceCBindL
       nmLs@(superFldNmL,superNmL,contextNmL)
       declsCBindL
       chrBindLs@(chrDeclsCBindL,chrSuperProveCBindL,chrSuperCtxtAssumeCBindL)
-  = [acoreBind1MetaTy dictNm generatedMeta (ty2TyC opts sysfEnv instanceTy) generatedDictionary]
+  = [acoreBind1MetaTy dictNm generatedMeta (SysF.ty2TyC opts sysfEnv instanceTy) generatedDictionary]
   where (generatedDictionary, generatedMeta)
           = case instVariant of
                InstNormal     -> mkNormalD  declsCBindL

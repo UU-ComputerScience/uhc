@@ -118,8 +118,8 @@ trfCore opts dataGam modNm trfcore
                  
 %%[[(8 coresysf)
                  -- type check
-               ; when (ehcOptCoreSysFCheck opts)
-                      (do { t_sysf_check
+               ; when (ehcOptCoreSysF opts)
+                      (do { when (ehcOptCoreSysFCheck opts) t_sysf_check
                             -- erase ty early as not to confuse later transformation; this should be fixed etc when sysf stuff works (20120531)
                           ; t_erase_ty
                           })
@@ -132,7 +132,7 @@ trfCore opts dataGam modNm trfcore
                ; t_eta_red
 
                  -- erase type signatures, extract the core + ty combi at this stage
-               ; unless (ehcOptCoreSysFCheck opts)
+               ; unless (ehcOptCoreSysF opts)
                         t_erase_ty
 
                  -- make names unique

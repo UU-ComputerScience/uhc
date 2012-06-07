@@ -80,6 +80,10 @@ class AbstractCore  expr metaval bind bound boundmeta bindcateg metabind ty pat 
   -- | basic let binding
   acoreLetBase :: bindcateg -> [bind] -> expr -> expr
   
+  -- | cast, defaults to noop
+  acoreCast :: ty -> expr -> expr
+  acoreCast _ e = e
+  
   -- | case, with possible default
   acoreCaseDflt  :: expr -> [alt] -> Maybe expr -> expr
 
@@ -362,7 +366,7 @@ data ACoreBindAspectKey
   | ACoreBindAspectKey_Debug                -- internal debugging only
   | ACoreBindAspectKey_Core                 -- core
 %%[[(8 coresysf)
-  | ACoreBindAspectKey_SysF 	MetaLev		-- system F thingy, at a metalevel
+  | ACoreBindAspectKey_SysF     MetaLev     -- system F thingy, at a metalevel
 %%]]
 %%[[93
   | ACoreBindAspectKey_FusionRole           -- fusion role
@@ -377,7 +381,7 @@ instance Show ACoreBindAspectKey where
   show ACoreBindAspectKey_Debug         = "dbg"
   show ACoreBindAspectKey_Core          = "core"
 %%[[(8 coresysf)
-  show (ACoreBindAspectKey_SysF ml)  	= "sysf@" ++ show ml
+  show (ACoreBindAspectKey_SysF ml)     = "sysf@" ++ show ml
 %%]]
 %%[[93
   show ACoreBindAspectKey_FusionRole    = "fusionrole"
@@ -391,6 +395,17 @@ type ACoreBindAspMp x           =   Map.Map ACoreBindAspectKeyS x
 
 acbaspkeyMk :: [ACoreBindAspectKey] -> ACoreBindAspectKeyS
 acbaspkeyMk = Set.fromList
+%%]
+
+%%[(8 codegen) hs export(acbaspkeyMetaLev)
+acbaspkeyMetaLev :: MetaLev -> ACoreBindAspectKeyS -> MetaLev
+%%[[(8 coresysf)
+acbaspkeyMetaLev mlev a | null l    = mlev
+                        | otherwise = head l
+  where l = [ l | ACoreBindAspectKey_SysF l <- Set.toList a ]
+%%][8
+acbaspkeyMetaLev mlev _ = mlev
+%%]]
 %%]
 
 %%[(8 codegen) hs export(acbaspkeyDefaultTy, acbaspkeyTy, acbaspkeyDefaultCore, acbaspkeyNone,acbaspkeyDefault,acbaspkeyDefaultRelevTy,acbaspkeyStrict,acbaspkeyDebug)
@@ -964,8 +979,14 @@ acoreBindNm = fst . acoreUnBind
 %%[(8 codegen) export(acorePatFldTy)
 -- | bound name of binding
 acorePatFldTy :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => t -> (HsName,e) -> HsName -> pf
-acorePatFldTy _ lbloff n = acorePatFldBind lbloff (acoreBind1Nm1 n)
-{-# INLINE acorePatFldTy #-}
+acorePatFldTy t lbloff n
+  = acorePatFldBind lbloff (b t)
+  where
+%%[[(8888 coresysf)
+        b t@(CTy_SysF _) = acoreBind1NmTy1 n t
+%%]]
+        b _              = acoreBind1Nm1   n
+-- {-# INLINE acorePatFldTy #-}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1494,7 +1515,7 @@ instance Serialize ACoreBindAspectKey where
   sput (ACoreBindAspectKey_Debug         ) = sputWord8 4
   sput (ACoreBindAspectKey_Core          ) = sputWord8 5
 %%[[(8 coresysf)
-  sput (ACoreBindAspectKey_SysF a  		 ) = sputWord8 6 >> sput a
+  sput (ACoreBindAspectKey_SysF a        ) = sputWord8 6 >> sput a
 %%]]
 %%[[93
   sput (ACoreBindAspectKey_FusionRole    ) = sputWord8 7
@@ -1509,7 +1530,7 @@ instance Serialize ACoreBindAspectKey where
         4 -> return ACoreBindAspectKey_Debug     
         5 -> return ACoreBindAspectKey_Core      
 %%[[(8 coresysf)
-        6 -> liftM  ACoreBindAspectKey_SysF 		sget  	
+        6 -> liftM  ACoreBindAspectKey_SysF         sget    
 %%]]
 %%[[93
         7 -> return ACoreBindAspectKey_FusionRole

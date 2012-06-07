@@ -14,16 +14,16 @@
 %%[(8 codegen) hs import({%{EH}AbstractCore})
 %%]
 
-%%[(8 codegen) hs import({%{EH}Core.BindExtract})
+%%[(8 codegen) hs import({%{EH}Core.BindExtract},{%{EH}FinalEnv})
 %%]
 
 %%[(8 codegen coresysf) hs import({%{EH}Base.TermLike})
 %%]
  
-%%[(8 codegen coresysf) hs import({%{EH}Ty.ToSysfTy},{%{EH}FinalEnv}) export(module {%{EH}Ty.ToSysfTy})
+%%[(8 codegen coresysf) hs import({%{EH}Ty.ToSysfTy},{%{EH}Ty.FitsIn}) export(module {%{EH}Ty.ToSysfTy})
 %%]
  
-%%[(8 codegen) hs import({%{EH}Gam})
+%%[(8 codegen) hs import({%{EH}Gam},{%{EH}Gam.TyKiGam})
 %%]
 
 %%[(8 codegen) hs import(qualified Data.Map as Map,Data.Maybe)
@@ -52,6 +52,32 @@ type TyBound        = C.SysfTyBound
 -- | A sequence of parameters (for now just a single type)
 type TySeq          = C.SysfTySeq
 
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Conversion interface: general
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs export(ty2TySysfWithEnv,ty2TyC)
+ty2TySysfWithEnv :: ToSysfEnv -> T.Ty -> Ty
+%%[[(8 coresysf)
+ty2TySysfWithEnv env t = tyToSysfTy fitsInForToSysF tyKiGamLookupKi env t
+%%][8
+ty2TySysfWithEnv _   t =                                                     t
+%%]]
+
+-- | Construct a type for use by AbstractCore
+ty2TyC :: EHCOpts -> ToSysfEnv -> T.Ty -> C.CTy
+ty2TyC o env t = C.mkCTy o t (ty2TySysfWithEnv env t)
+%%]
+
+%%[(8 codegen) hs export(ty2TySysf)
+ty2TySysf :: T.Ty -> Ty
+%%[[(8 coresysf)
+ty2TySysf t = ty2TySysfWithEnv emptyToSysfEnv t
+%%][8
+ty2TySysf t =                                 t
+%%]]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -253,11 +279,12 @@ emptySysfGam = emptyGam
 %%% Matching: input/output flow via records
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen coresysf) hs export(MatchIn(..),emptyMatchIn)
+%%[(8 codegen coresysf) hs export(MatchIn(..),emptyMatchIn,emptyMatchOut)
 -- match input/options
 data MatchIn
   = MatchIn
       { minAllowLBind       :: Bool     -- allow tvars in left/first type to bind
+      , minAllowRBind       :: Bool     -- allow tvars in right/second type to bind
       , minAllowRL0BindBind :: Bool     --
       , minAllowAlphaRename :: Bool     --
       , minMetaLev          :: MetaLev  -- the base meta level
@@ -265,8 +292,12 @@ data MatchIn
       }
 
 emptyMatchIn :: MatchIn
-emptyMatchIn = MatchIn False False False metaLevVal emptySysfGam
+emptyMatchIn = MatchIn False False False False metaLevVal emptySysfGam
+
 %%]
+-- | Flip flags when switching co/contra variance (happening only for arrow args)
+miFlipVariance :: MatchIn -> MatchIn
+miFlipVariance mi = mi {minAllowLBind = minAllowRBind mi, minAllowRBind = minAllowLBind mi}
 
 %%[(8 codegen coresysf) hs export(allowLBindMatchIn)
 allowLBindMatchIn :: MatchIn
@@ -276,7 +307,7 @@ allowRL0BindMatchIn :: MatchIn
 allowRL0BindMatchIn = emptyMatchIn {minAllowRL0BindBind = True}
 %%]
 
-%%[(8 codegen coresysf) hs export(MatchOut(..))
+%%[(8 codegen coresysf) hs export(MatchOut(..),moutErrs,moutHasErr)
 -- match output/result
 data MatchOut
   = MatchOut
@@ -320,10 +351,26 @@ Matching is asymmetric in the following:
 For the rest, all matches are exact on syntactic structure.
 %%]
 
+%%[(8 codegen coresysf) hs export(MatchPair(..))
+data MatchPair
+  = Match_Ty 			Ty		Ty
+  | Match_BoundBind		TyBound	TyBind
+
+mp1PP :: MatchPair -> PP_Doc
+mp1PP (Match_Ty 		e _) = pp e
+mp1PP (Match_BoundBind 	e _) = pp e
+
+mp2PP :: MatchPair -> PP_Doc
+mp2PP (Match_Ty 		_ e) = pp e
+mp2PP (Match_BoundBind 	_ e) = pp e
+%%]
+
 %%[(8 codegen coresysf) hs
-match' :: MatchIn -> Ty -> Ty -> MatchOut
-match' min ex1 ex2
-  = m min emptyMatchOut ex1 ex2
+match' :: MatchIn -> MatchPair -> MatchOut
+match' min mp
+  = case mp of
+      Match_Ty 			ex1 ex2 -> m    min emptyMatchOut ex1 ex2
+      Match_BoundBind 	bo1 bi2 -> mboi min emptyMatchOut bo1 bi2
   where -- matching: var
         m min mout      t1@(C.CExpr_Var v1)             t2@(C.CExpr_Var v2)
             | v1 == v2                                                        =   mout
@@ -338,10 +385,13 @@ match' min ex1 ex2
         m min mout      t1@(C.CExpr_Var v1)             t2@(C.CExpr_Var v2)
             | v1 == v2                                                          =   mout
             | minAllowLBind min                                                 =   bind mout v1 t2
+            | minAllowRBind min                                                 =   bind mout v2 t1
 
-        -- matching: left to right binding (if permitted)
+        -- matching: left to right binding (if permitted) & viceversa
         m min mout      t1@(C.CExpr_Var v1)             t2
             | minAllowLBind min                                                 =   bind mout v1 t2
+        m min mout      t1             					t2@(C.CExpr_Var v2)
+            | minAllowRBind min                                                 =   bind mout v2 t1
 
 {-
 -}
@@ -389,9 +439,9 @@ match' min ex1 ex2
         mf m            e1                              e2 min mout             =   m min mout e1 e2
 
         -- matching: bind & bound
-        mboi min mout   b1@(C.CBound_Val _ _ _ e1)      b2@(C.CBind_Bind n2 _)
-            | minAllowRL0BindBind min                                           =   m (min {minAllowLBind=True}) mout (acoreVar n2) e2
-            where e2 = cbindExtractVal b2
+        mboi min mout   b1@(C.CBound_Val _ _ _ _)       b2@(C.CBind_Bind n2 _)
+            | minAllowRL0BindBind min                                           =   m (min {minAllowRBind=True}) mout e1 (acoreVar n2)
+            where (a1,ml1,e1) = cboundExtractVal' b1
 
         -- matching: bound
         mbo min mout    b1@(C.CBound_Val _ _ _ e1)      b2@(C.CBound_Val _ _ _ e2)  =   m min mout e1 e2
@@ -447,18 +497,18 @@ match' min ex1 ex2
         -- binding of tvar for output
         bind mout v t = mout {moutCSubst = acoreCSubstFromRefExprL [(v,t)] `cSubstApp` moutCSubst mout}
         -- error
-        err' mout pp1 pp2 = mout {moutErrL = [rngLift emptyRange Err_TyCoreMatchClash (pp ex1) (pp ex2) pp1 pp2]}
+        err' mout pp1 pp2 = mout {moutErrL = [rngLift emptyRange Err_TyCoreMatchClash (mp1PP mp) (mp2PP mp) (Just pp1) (Just pp2)]}
         err  mout t1  t2  = err' mout (pp t1) (pp t2)
 %%]
 
-%%[(8 codegen coresysf) hs export(matchBind)
+%%[(8 codegen coresysf) hs export(match,matchBind,matchRL0Bind)
 matchBind :: Ty -> Ty -> MatchOut
-matchBind = match' allowLBindMatchIn
+matchBind ex1 ex2 = match' allowLBindMatchIn (Match_Ty ex1 ex2)
 
-matchRL0Bind :: MetaLev -> Ty -> Ty -> MatchOut
-matchRL0Bind l = match' (allowRL0BindMatchIn {minMetaLev = l})
+matchRL0Bind :: MetaLev -> TyBound -> TyBind -> MatchOut
+matchRL0Bind l bo1 bi2 = match' (allowRL0BindMatchIn {minMetaLev = l}) (Match_BoundBind bo1 bi2)
 
 match :: MetaLev -> Ty -> Ty -> MatchOut
-match l = match' (emptyMatchIn {minMetaLev = l, minAllowAlphaRename = True})
+match l ex1 ex2 = match' (emptyMatchIn {minMetaLev = l, minAllowAlphaRename = True}) (Match_Ty ex1 ex2)
 %%]
 

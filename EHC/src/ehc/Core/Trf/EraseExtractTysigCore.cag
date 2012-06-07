@@ -112,9 +112,15 @@ SEM CExpr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen)
+ATTR AllBind [ | | cBindL USE {++} {[]}: {[CBind]} ]
+
+SEM CBind
+  | Bind        loc         .   cBindL          =   if null @bindAspects.selvalYesL then [] else [@cTrf]
+%%]
+
+%%[(8 codegen)
 ATTR AllCodeNT [ | | cTrf: SELF ]
 ATTR CodeAGItf [ | | cTrf: CModule ]
-
 %%]
 
 %%[(8 codegen)
@@ -125,6 +131,10 @@ SEM CExpr
                                                          then @cTrf                                                 -- already erased, take that
                                                          else @body.cTrf                                            -- has meta stuff, then erase fully
                                                     else CExpr_Lam (CBind_Bind @argNm @bind.selvalNoL) @body.cTrf   -- indeed termlevel, but include meta stuff only
+  | Let         lhs         .   cTrf            =   if null @binds.cBindL then @body.cTrf else CExpr_Let @categ @binds.cBindL @body.cTrf
+%%[[(8 coresysf)
+  | Cast		lhs			.	cTrf			=	@expr.cTrf
+%%]]
 
 SEM CBind
   | Bind        loc         .   cTrf            =   CBind_Bind @nm @bindAspects.selvalYesL

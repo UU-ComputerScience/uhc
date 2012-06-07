@@ -13,10 +13,6 @@ Initial values
 
 %%[8 import({%{EH}EHC.Common})
 %%]
-%%[8888 import({%{EH}EHC.CompileUnit})
-%%]
-%%[8888 import({%{EH}EHC.CompileRun})
-%%]
 
 -- HS semantics
 %%[8 import(qualified {%{EH}HS.MainAG} as HSSem)
@@ -32,6 +28,10 @@ Initial values
 %%]
 -- module
 %%[50 import(qualified {%{EH}HS.ModImpExp} as HSSemMod)
+%%]
+
+-- LamMp, SysF
+%%[8 import({%{EH}LamInfo})
 %%]
 
 %%[9 import(qualified {%{EH}Gam.ClGam} as Pr(initClGam))
@@ -99,7 +99,7 @@ initialCore2GrSem opts
       { Core2GrSem.gUniq_Inh_CodeAGItf           = uidStart
       , Core2GrSem.dataGam_Inh_CodeAGItf         = emptyGam
       , Core2GrSem.opts_Inh_CodeAGItf            = opts
-      , Core2GrSem.lamMp_Inh_CodeAGItf           = Map.empty
+      , Core2GrSem.lamMp_Inh_CodeAGItf           = initLamMp
       }
 %%]
 

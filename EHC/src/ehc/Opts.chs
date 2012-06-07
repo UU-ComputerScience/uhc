@@ -106,9 +106,10 @@ optOptsIsYes mos o = maybe False (o `elem`) mos
 instance Show CoreOpt where
   show CoreOpt_PPParseable 	= "pp-parseable"
 %%[[(8 coresysf)
-  show CoreOpt_SysF 		= "sysf"
-  show CoreOpt_SysFCheck 	= "check"
-  show CoreOpt_SysFOnlyHi 	= "onlyhi"
+  show CoreOpt_SysF 			= "sysf"
+  show CoreOpt_SysFCheck 		= "check"
+  show CoreOpt_SysFCheckOnlyVal	= "checkonlyval"
+  show CoreOpt_SysFOnlyHi 		= "onlyhi"
 %%]]
 
 coreOptMp :: Map.Map String CoreOpt

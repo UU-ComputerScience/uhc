@@ -164,7 +164,7 @@ type MbPatRest' pr = Maybe (pr,Int) -- (pat rest, arity)
 acoreStrictSatCaseMetaTy :: (Eq bcat, AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => RCEEnv' e m b ba t -> Maybe (HsName,t) -> m -> e -> [a] -> e
 acoreStrictSatCaseMetaTy env mbNm meta e []
   = rceCaseCont env         -- TBD: should be error message "scrutinizing datatype without constructors"
-acoreStrictSatCaseMetaTy env mbNm meta e [alt] -- [CAlt_Alt (CPat_Con (CTag tyNm _ _ _ _) CPatRest_Empty [CPatFld_Fld _ _ pnm _]) ae]
+acoreStrictSatCaseMetaTy env mbNm meta e [alt]
   | isJust mbPatCon && length flds == 1 && not (ctagIsRec tg) && isJust mbDgi && dgiIsNewtype (fromJust mbDgi)
   = acoreLet cat
       ( [ acoreBind1CatMetaTy cat pnm meta ty e ]

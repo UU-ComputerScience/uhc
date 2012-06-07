@@ -148,8 +148,8 @@ DATA Err
   | IllegalFFIWay       ffiWay     : {FFIWay}
   | TyCoreMatchClash    ty1        : {PP_Doc}
                         ty2        : {PP_Doc}
-                        ty1detail  : {PP_Doc}
-                        ty2detail  : {PP_Doc}
+                        ty1detail  : {Maybe PP_Doc}
+                        ty2detail  : {Maybe PP_Doc}
   | TyCoreSeqLevels     hereLev    : {Int}
                         mustLev    : {Int}
                         ty         : {PP_Doc}
