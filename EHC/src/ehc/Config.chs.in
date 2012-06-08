@@ -11,6 +11,9 @@
 %%[8 import(Data.Maybe,Data.List,EH.Util.Utils,EH.Util.FPath)
 %%]
 
+%%[8 import({%{EH}Opts.CommandLine})
+%%]
+
 %%[8 import({%{EH}ConfigDefines}, {%{EH}Opts}) export(module {%{EH}ConfigDefines})
 %%]
 
@@ -219,9 +222,12 @@ libnamesRts
   = [ prefixLib ++ "@RTS_PKG_NAME@"]
 %%]
 
-%%[8 export(ehcGccOptsStatic)
+%%[8 export(ehcGccOptsStatic,ehcGccOptsStatic')
+ehcGccOptsStatic' :: CmdLineOpts
+ehcGccOptsStatic' = fst $ parseCmdLineOpts Cmd_C "@EHC_GCC_OPTS_STATIC@"
+
 ehcGccOptsStatic :: [String]
-ehcGccOptsStatic = [ "@EHC_GCC_OPTS_STATIC@" ]
+ehcGccOptsStatic = map show ehcGccOptsStatic'
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -22,6 +22,9 @@ Used by all compiler driver code
 %%[8 import({%{EH}Gam.Full}) export(module {%{EH}Gam.Full})
 %%]
 
+%%[8 import({%{EH}Opts.CommandLine})
+%%]
+
 %%[50 import(System.Time, System.Directory) export(module System.Time, module System.Directory)
 %%]
 
@@ -159,7 +162,10 @@ data FinalCompileHow
 %%% Shell command construction
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(mkShellCmd)
+%%[8 export(mkShellCmd,mkShellCmd')
+mkShellCmd' :: [Cmd] -> String -> CmdLineOpts -> String
+mkShellCmd' forCmds cmdStr o = concat $ intersperse " " [cmdStr, showCmdLineOpts' forCmds o]
+
 mkShellCmd :: [String] -> String
 mkShellCmd = concat . intersperse " "
 %%]

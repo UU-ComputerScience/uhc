@@ -15,6 +15,8 @@
 %%]
 %%[99 import(Control.Monad)
 %%]
+%%[99 import({%{EH}Opts.CommandLine})
+%%]
 
 %%[doesWhat doclatex
 Internal representation of pragmas.

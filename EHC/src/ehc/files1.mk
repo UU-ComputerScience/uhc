@@ -60,7 +60,7 @@ EHC_HS_UTIL_SRC_CHS						:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
 													$(addprefix AnaDomain/,Utils) \
 													$(addprefix VarMp/,Utils) \
 													$(addprefix Cil/,Common TyTag) \
-													$(addprefix Opts/,Base) \
+													$(addprefix Opts/,Base CommandLine) \
 													$(addprefix Pred/,ToCHR CHR Evidence EvidenceToCore EvidenceToTyCore Heuristics CommonCHR RedGraph) \
 													$(addprefix Base/,TermLike AssocL UID Parser Parser2 Pragma Binary Serialize Strictness GenC GenJavaLike Target BasicAnnot Common Builtin Builtin2 HsName Debug TreeTrie CfgPP LaTeX HtmlCommon Bits FileSearchLocation PackageDatabase ParseUtils Optimize) \
 													$(addprefix Scanner/,Common Machine Scanner Token TokenParser) \
@@ -416,13 +416,16 @@ $(EHC_HS_SIG_DRV_HS): $(EHC_ALL_CHUNK_SRC) $(EHC_RULES_ALL_SRC) $(EHC_MKF)
 # installation configuration
 $(EHC_HS_CFGINSTALL_DRV_HS): $(EHC_MKF) $(MK_SHARED_MKF)
 	@(echo "module $(LIB_EHC_QUAL_PREFIX)$(EHC_HS_CFGINSTALL_MAIN) where" ; \
+	  echo "import $(LIB_EHC_QUAL_PREFIX)Opts.CommandLine" ; \
 	  echo "import Data.List" ; \
 	  echo "" ; \
 	  echo "ehcDefaultVariant = \"$(EHC_VARIANT_ASPECTS)\"" ; \
 	  echo "" ; \
-	  echo "gccOpts = \"$(GCC_OPTS_WHEN_EHC)\"" ; \
+	  echo "gccOpts' = fst $$ parseCmdLineOpts Cmd_CPP \"$(GCC_OPTS_WHEN_EHC)\"" ; \
+	  echo "gccOpts  = showCmdLineOpts gccOpts'" ; \
 	  echo "" ; \
-	  echo "cppOpts = \"$(CPP_OPTS_WHEN_EHC)\"" ; \
+	  echo "cppOpts' = fst $$ parseCmdLineOpts Cmd_CPP \"$(CPP_OPTS_WHEN_EHC)\"" ; \
+	  echo "cppOpts  = showCmdLineOpts cppOpts'" ; \
 	  echo "" ; \
 	  if test x$(GIT_VERSION_EXISTS) = xyes ; \
 	  then \
