@@ -55,7 +55,7 @@
 %%[99 import(qualified {%{EH}ConfigInstall} as Cfg)
 %%]
 
-%%[99 import({%{EH}Base.Pragma}, {%{EH}Base.Parser}, {%{EH}Base.Parser2})
+%%[99 import({%{EH}Base.Pragma}, {%{EH}Opts.CommandLine}, {%{EH}Base.Parser}, {%{EH}Base.Parser2})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -372,6 +372,8 @@ ehcCmdLineOpts
      ,  Option ""   ["pkg-searchpath"]      (ReqArg oPkgdirLocPath "path")       	"pkg: package search directories, each dir has <pkg>/<variant>/<target>/<flavor>"
      ,  Option ""   ["cfg-install-root"]    (ReqArg oCfgInstallRoot "dir")        	"cfg: installation root (to be used only by wrapper script)"
      ,  Option ""   ["cfg-install-variant"] (ReqArg oCfgInstallVariant "variant") 	"cfg: installation variant (to be used only by wrapper script)"
+     ,  Option ""   ["optP"]                (ReqArg (oCmdLineOpts Cmd_CPP_Preprocessing) "opt for cmd")
+     																				"opt: option for cmd used by compiler, currently only P (preprocessing)"
 %%]]
 %%[[(8 codegen)
      ,  Option ""   ["coreopt"]             (ReqArg oOptCore "opt[,...]")        	("core opts: " ++ (concat $ intersperse " " $ Map.keys coreOptMp))
@@ -635,6 +637,7 @@ ehcCmdLineOpts
                                         }
          oCfgInstallRoot      s o   = o { ehcOptCfgInstallRoot              = Just s }
          oCfgInstallVariant   s o   = o { ehcOptCfgInstallVariant           = Just s }
+         oCmdLineOpts cmd     s o   = o { ehcOptCmdLineOpts                 = ehcOptCmdLineOpts o ++ fst (parseCmdLineOpts cmd s) }
 %%]]
 %%[[(99 hmtyinfer tyderivtree)
          oDerivTree  ms  o =  case ms of

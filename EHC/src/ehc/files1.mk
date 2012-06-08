@@ -421,11 +421,11 @@ $(EHC_HS_CFGINSTALL_DRV_HS): $(EHC_MKF) $(MK_SHARED_MKF)
 	  echo "" ; \
 	  echo "ehcDefaultVariant = \"$(EHC_VARIANT_ASPECTS)\"" ; \
 	  echo "" ; \
-	  echo "gccOpts' = fst $$ parseCmdLineOpts Cmd_CPP \"$(GCC_OPTS_WHEN_EHC)\"" ; \
-	  echo "gccOpts  = showCmdLineOpts gccOpts'" ; \
+	  echo "gccOpts  = fst $$ parseCmdLineOpts Cmd_CPP \"$(GCC_OPTS_WHEN_EHC)\"" ; \
+	  echo "-- gccOpts  = showCmdLineOpts gccOpts'" ; \
 	  echo "" ; \
-	  echo "cppOpts' = fst $$ parseCmdLineOpts Cmd_CPP \"$(CPP_OPTS_WHEN_EHC)\"" ; \
-	  echo "cppOpts  = showCmdLineOpts cppOpts'" ; \
+	  echo "cppOpts  = fst $$ parseCmdLineOpts Cmd_CPP \"$(CPP_OPTS_WHEN_EHC)\"" ; \
+	  echo "-- cppOpts  = showCmdLineOpts cppOpts'" ; \
 	  echo "" ; \
 	  if test x$(GIT_VERSION_EXISTS) = xyes ; \
 	  then \

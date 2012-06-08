@@ -13,6 +13,11 @@
 %%[8 import(Data.List)
 %%]
 
+%%[50 import({%{EH}Base.Binary}, {%{EH}Base.Serialize})
+%%]
+%%[50 import(Control.Monad)
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Commandline options
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -32,18 +37,20 @@ data CmdFlag
   
   -- modifiers
   | CmdFlag_ModfMin      	CmdFlag		-- double '-'
-  deriving Eq
+  deriving (Eq,Typeable,Data)
 
 data Cmd
-  = Cmd_CPP
+  = Cmd_CPP_Preprocessing
+  | Cmd_CPP
   | Cmd_C
-  deriving (Eq,Ord,Enum,Bounded)
+  deriving (Eq,Ord,Enum,Bounded,Typeable,Data)
 
 data CmdLineOpt
   = CmdLineOpt
       { cloptForCmd     :: Cmd
       , cloptFlag       :: CmdFlag
       }
+  deriving (Typeable,Data)
 
 type CmdLineOpts = [CmdLineOpt]
 %%]

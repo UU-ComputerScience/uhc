@@ -43,8 +43,8 @@ C + CPP compilation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen)
-gccDefs' :: EHCOpts -> [String] -> CmdLineOpts
-gccDefs' opts builds
+gccDefs :: EHCOpts -> [String] -> CmdLineOpts
+gccDefs opts builds
   = map (\(d,mbval) -> cppOpt $ CmdFlag_Define ("__UHC" ++ d ++ "__") mbval)
       $  [ (""                                                    , Just (Cfg.verAsNumber Cfg.version))
          , ("_TARGET_" ++ (map toUpper $ show $ ehcOptTarget opts), Nothing                           )
@@ -54,8 +54,6 @@ gccDefs' opts builds
       ++ map (\x -> (x,Nothing))
              [ "_" ++ map (\c -> case c of {'.' -> '_'; c -> c}) (Cfg.verFull Cfg.version) ]
 
-gccDefs :: EHCOpts -> [String] -> [String]
-gccDefs opts builds = map show $ gccDefs' opts builds
 %%]
 
 %%[(99 codegen)
@@ -88,7 +86,7 @@ cpCompileWithGCC how othModNmL modNm
                             FinalCompile_Exec
                               -> ( fpExec
                                  ,    ( if ehcOptOptimizationLevel opts >= OptimizationLevel_Much then [gccOptF "O2"] else if ehcOptOptimizationLevel opts >= OptimizationLevel_Normal then [gccOptF "O1"] else [] )
-                                   ++ Cfg.gccOpts' ++ [gccOptOutput $ fpathToStr fpExec]
+                                   ++ Cfg.gccOpts ++ [gccOptOutput $ fpathToStr fpExec]
                                  , Cfg.ehcGccOptsStatic'
                                  ,
 %%[[99
@@ -124,7 +122,7 @@ cpCompileWithGCC how othModNmL modNm
                                                -}
 %%]]
                             FinalCompile_Module
-                              -> (o, Cfg.gccOpts' ++ [gccOptF "c", gccOptOutput $ fpathToStr o ], Cfg.ehcGccOptsStatic', [], [], [o])
+                              -> (o, Cfg.gccOpts ++ [gccOptF "c", gccOptOutput $ fpathToStr o ], Cfg.ehcGccOptsStatic', [], [], [o])
                               where o = fpO modNm fp
 %%[[8
                  pkgKeyL    = [] :: [String]
@@ -136,7 +134,7 @@ cpCompileWithGCC how othModNmL modNm
          ;  when (targetIsC (ehcOptTarget opts))
                  (do { let compileC
                              = mkShellCmd' [Cmd_CPP, Cmd_C] Cfg.shellCmdGcc
-                                 (  gccDefs' opts ["O"]
+                                 (  gccDefs opts ["O"]
                                  ++ [ cppOptI $ Cfg.mkInstallFilePrefix opts Cfg.INST_INCLUDE variant "" ]
                                  ++ [ cppOptI $ Cfg.mkInstallFilePrefix opts Cfg.INST_INCLUDE_SHARED variant "" ]
 %%[[(99 codegen)
@@ -144,6 +142,9 @@ cpCompileWithGCC how othModNmL modNm
 %%]]
                                  ++ linkOpts
                                  ++ targOpt
+%%[[99
+                                 ++ ehcOptCmdLineOpts opts
+%%]]
                                  ++ dotOFilesOpt
                                  ++ [ gccArg $ fpathToStr fpC ]
                                  ++ linkLibOpt
@@ -168,50 +169,6 @@ cpCompileWithGCC how othModNmL modNm
          }
 %%]
 
-%%[9999 export(cpPreprocessWithCPP)
-cpPreprocessWithCPP :: [PkgModulePartition] -> HsName -> EHCompilePhase ()
-cpPreprocessWithCPP pkgKeyDirL modNm 
-  = do { cr <- get
-       ; let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
-              fpCPP = fpathSetSuff {- mkOutputFPath opts modNm fp -} (maybe "" (\s -> s ++ "-") (fpathMbSuff fp) ++ "cpp") fp
-       ; {- when (  ehcOptCPP opts
-              || modNm == hsnModIntlBase      -- 20080211, AD: builtin hack to preprocess EHC.Prelude with cpp, for now, to avoid implementation of pragmas
-              ) -}
-              (do { let defs    = [ "UHC", "TARGET_" ++ (map toUpper $ show $ ehcOptTarget opts) ]
-%%[[(99 codegen grin)
-                                  ++ (if targetDoesHPTAnalysis (ehcOptTarget opts) then ["UHC_FULL_PROGRAM_ANALYSIS"] else [])
-%%]]
-                        -- (pkgKeyL,_) = crPartitionIntoPkgAndOthers cr othModNmL
-                        preCPP  = mkShellCmd
-                                    (  [ Cfg.shellCmdCpp ]
-                                    ++ [ Cfg.cppOpts ] ++ gccDefs opts ["CPP"]
-                                    ++ [ "-traditional-cpp", {- "-std=gnu99", -} "-fno-show-column", "-P" ]
-%%[[(99 codegen)
-                                    ++ [ "-I" ++ d | d <- gccInclDirs opts pkgKeyDirL ]
-%%]]
-                                    ++ [ fpathToStr fp, fpathToStr fpCPP ]
-                                    )
-                  ; when (ehcOptVerbosity opts >= VerboseALot)
-                         (do { cpMsg modNm VerboseALot "CPP"
-                             ; lift $ putStrLn ("pkg db: " ++ show (ehcOptPkgDb opts))
-                             ; lift $ putStrLn ("pkg srch filter: " ++ (show $ ehcOptPackageSearchFilter opts))
-                             ; lift $ putStrLn ("exposed pkgs: " ++ show (pkgExposedPackages $ ehcOptPkgDb opts))
-                             ; lift $ putStrLn ("pkgKeyDirL: " ++ show pkgKeyDirL)
-                             ; lift $ putStrLn preCPP
-                             })
-                  ; when (crModCanCompile modNm cr)
-                         (do { lift $ fpathEnsureExists fpCPP
-                             ; cpSystem preCPP
-%%[[99
-                             ; cpRegisterFilesToRm [fpCPP]
-%%]]
-                             })
-                  -- ; cpUpdCU modNm (ecuStoreSrcFilePath fpCPP)
-                  ; cpUpdCU modNm (ecuStoreCppFilePath fpCPP)
-                  })
-       }
-%%]
-
 %%[99 export(cpPreprocessWithCPP)
 cpPreprocessWithCPP :: [PkgModulePartition] -> HsName -> EHCompilePhase ()
 cpPreprocessWithCPP pkgKeyDirL modNm 
@@ -221,12 +178,13 @@ cpPreprocessWithCPP pkgKeyDirL modNm
        ; {- when (  ehcOptCPP opts
               || modNm == hsnModIntlBase      -- 20080211, AD: builtin hack to preprocess EHC.Prelude with cpp, for now, to avoid implementation of pragmas
               ) -}
-              (do { let preCPP  = mkShellCmd' [Cmd_CPP] Cfg.shellCmdCpp
-                                    (  Cfg.cppOpts' ++ gccDefs' opts ["CPP"]
+              (do { let preCPP  = mkShellCmd' [Cmd_CPP,Cmd_CPP_Preprocessing] Cfg.shellCmdCpp
+                                    (  Cfg.cppOpts ++ gccDefs opts ["CPP"]
                                     ++ map cppOptF [ "traditional-cpp", {- "std=gnu99", -} "fno-show-column", "P" ]
 %%[[(99 codegen)
                                     ++ [ cppOptI d | d <- gccInclDirs opts pkgKeyDirL ]
 %%]]
+                                    ++ ehcOptCmdLineOpts opts
                                     ++ map (cppArg . fpathToStr) [ fp, fpCPP ]
                                     )
                   ; when (ehcOptVerbosity opts >= VerboseALot)

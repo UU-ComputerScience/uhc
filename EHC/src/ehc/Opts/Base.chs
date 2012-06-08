@@ -44,6 +44,8 @@
 
 %%[99 import({%{EH}Base.Pragma})
 %%]
+%%[99 import({%{EH}Opts.CommandLine})
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Option after which its handling the compiler quits immediately
@@ -246,6 +248,7 @@ data EHCOpts
       ,  ehcOptPkg            ::  Maybe PkgOption   -- package building (etc) option
       ,  ehcOptCfgInstallRoot        ::  Maybe String      -- the directory where the installation resides; overrides ehcenvInstallRoot
       ,  ehcOptCfgInstallVariant     ::  Maybe String      -- the installation variant; overrides ehcenvVariant
+      ,  ehcOptCmdLineOpts    ::  CmdLineOpts       -- options from the commandline and pragma for such options
 %%]]
       }
 %%]
@@ -385,6 +388,7 @@ emptyEHCOpts
       ,  ehcOptPkg              =   Nothing
       ,  ehcOptCfgInstallRoot   =   Nothing
       ,  ehcOptCfgInstallVariant=   Nothing
+      ,  ehcOptCmdLineOpts      =   []
 %%]]
       }
 %%]
