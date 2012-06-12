@@ -373,7 +373,7 @@ appUnArr = fst . appUnArrMk
 
 -- | Arr unpacking into arg + res, when failing to unpack arg holds a default
 appUn1Arr :: AppLike a boundmeta {- ann -} => a -> (a,a)
-appUn1Arr x = maybe (panic "appUn1Arr.arg",x) id $ appMb1Arr x
+appUn1Arr x = maybe (appDbg "appUn1Arr.arg",x) id $ appMb1Arr x
 {-# INLINE appUn1Arr #-}
 %%]
 

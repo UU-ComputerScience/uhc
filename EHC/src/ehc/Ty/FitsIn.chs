@@ -891,7 +891,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                                      | n2 == hsnRowEmpty && not (null prBldL)
                                      ->  let
 %%[[(10 codegen)
-                                             coe = Coe_Map (\e -> acoreLet1Plain rn e (CExpr_Tup CTagRec `acoreApp` fBldL))
+                                             coe = Coe_Map (\e -> acoreLet1Plain rn e (acoreTagTupTy CTagRec (acoreTyErr "fitsIn.foUpdRecCoe.coe") fBldL))
 %%]]
 %%[[(10 codegen tycore)
                                              tcoe = C.Coe_Map (\e -> acoreLet1PlainTy rn (C.tyErr ("fitsIn.coe: " ++ show rn)) e (C.Expr_Tup CTagRec `acoreApp` tfBldL))

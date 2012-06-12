@@ -221,9 +221,9 @@ mkDGI tyNm dty ki cNmL m nt
 %%]
 
 %%[7 export(mkDGIPlain)
-mkDGIPlain :: HsName -> Ty -> [HsName] -> DataConstrTagMp -> DataGamInfo
-mkDGIPlain tyNm dty cNmL m
-  = mkDGI tyNm dty (appDbg $ "mkDGIPlain: " ++ show tyNm) cNmL m
+mkDGIPlain :: HsName -> Ty -> Ty -> [HsName] -> DataConstrTagMp -> DataGamInfo
+mkDGIPlain tyNm dty dki cNmL m
+  = mkDGI tyNm dty dki cNmL m
 %%[[7
           False
 %%][90
@@ -237,7 +237,7 @@ mkDGIPlain tyNm dty cNmL m
 
 %%[(7 hmtyinfer) export(emptyDataGamInfo,emptyDGI)
 emptyDataGamInfo, emptyDGI :: DataGamInfo
-emptyDataGamInfo = mkDGIPlain hsnUnknown (appDbg "emptyDataGamInfo") [] Map.empty
+emptyDataGamInfo = mkDGIPlain hsnUnknown (appDbg "emptyDataGamInfo") (appDbg "mkDGIPlain")  [] Map.empty
 emptyDGI = emptyDataGamInfo
 %%]
 

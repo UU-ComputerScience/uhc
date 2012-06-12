@@ -203,16 +203,16 @@ acoreStrictSatCase env eNm e alts = acoreStrictSatCaseMeta env eNm acoreMetavalD
 
 Export of the following group of defs can be removed after conversion of all utils to acore variants.
 
-%%[(8 codegen) export(acoreSelsCasesMetaTy,acoreSelsCasesTy)
+%%[(8 codegen) export(acoreSelsCasesMetaTy)
 -- | Make a case expr from non-saturated alternatives,
 -- | alternatives are given by their tag + fields (name/offset) + rest (for extensible records) + alt expr
-acoreSelsCasesMetaTy :: (Eq bcat, AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => RCEEnv' e m b ba t -> Maybe (HsName,t) -> m -> e -> [(CTag,[(HsName,{-HsName,-}e)],MbPatRest' pr,e)] -> e
+acoreSelsCasesMetaTy :: (Eq bcat, AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => RCEEnv' e m b ba t -> Maybe (HsName,t) -> m -> e -> [(CTag,[(HsName,t,{-HsName,-}e)],MbPatRest' pr,e)] -> e
 acoreSelsCasesMetaTy env mbNm meta e tgSels
   = acoreStrictSatCaseMetaTy env mbNm meta e alts
   where  alts = [ acoreAlt 
                     (acorePatCon ct
                        (mkRest mbRest ct)
-                       [acorePatFldTy (acoreTyErr "TBD: acoreSelsCasesMetaTy") (n,off) n | (n,{-lbl,-}off) <- nmLblOffL]
+                       [acorePatFldTy t (n,off) n | (n,t,{-lbl,-}off) <- nmLblOffL]
                     )
                     sel
                 | (ct,nmLblOffL,mbRest,sel) <- tgSels
@@ -222,36 +222,17 @@ acoreSelsCasesMetaTy env mbNm meta e tgSels
                Just (r,_) -> r
                _          -> ctag (acorePatRestVar hsnWild) (\_ _ _ _ _ -> acorePatRestEmpty) ct
 
-acoreSelsCasesMeta :: (Eq bcat, AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => RCEEnv' e m b ba t -> Maybe (HsName) -> m -> e -> [(CTag,[(HsName,{-HsName,-}e)],MbPatRest' pr,e)] -> e
-acoreSelsCasesMeta env ne meta e tgSels = acoreSelsCasesMetaTy env (acoreTyErrLift "acoreStrictSatCaseMeta" ne) meta e tgSels
-{-# INLINE acoreSelsCasesMeta #-}
-
-acoreSelsCasesTy :: (Eq bcat, AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => RCEEnv' e m b ba t -> Maybe (HsName,t) -> e -> [(CTag,[(HsName,{-HsName,-}e)],MbPatRest' pr,e)] -> e
-acoreSelsCasesTy env ne e tgSels = acoreSelsCasesMetaTy env ne acoreMetavalDflt e tgSels
-{-# INLINE acoreSelsCasesTy #-}
-
-acoreSelsCases :: (Eq bcat, AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => RCEEnv' e m b ba t -> Maybe (HsName) -> e -> [(CTag,[(HsName,{-HsName,-}e)],MbPatRest' pr,e)] -> e
-acoreSelsCases env ne e tgSels = acoreSelsCasesMeta env ne acoreMetavalDflt e tgSels
-{-# INLINE acoreSelsCases #-}
 %%]
 
 %%[(8 codegen) export(acoreSelsCaseMetaTy,acoreSelsCaseTy)
 -- | Make a case expr from a single alternative,
 -- | the alternative given by their tag + fields (name/offset) + rest (for extensible records) + alt expr
-acoreSelsCaseMetaTy :: (Eq bcat, AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => RCEEnv' e m b ba t -> Maybe (HsName,t) -> m -> e -> CTag -> [(HsName,{-HsName,-}e)] -> MbPatRest' pr -> e -> e
+acoreSelsCaseMetaTy :: (Eq bcat, AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => RCEEnv' e m b ba t -> Maybe (HsName,t) -> m -> e -> CTag -> [(HsName,t,{-HsName,-}e)] -> MbPatRest' pr -> e -> e
 acoreSelsCaseMetaTy env ne meta e ct nmLblOffL mbRest sel = acoreSelsCasesMetaTy env ne meta e [(ct,nmLblOffL,mbRest,sel)]
 
-acoreSelsCaseMeta :: (Eq bcat, AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => RCEEnv' e m b ba t -> Maybe (HsName) -> m -> e -> CTag -> [(HsName,{-HsName,-}e)] -> MbPatRest' pr -> e -> e
-acoreSelsCaseMeta env ne meta e ct nmLblOffL mbRest sel = acoreSelsCaseMetaTy env (acoreTyErrLift "acoreSelsCaseMeta" ne) meta e ct nmLblOffL mbRest sel
-{-# INLINE acoreSelsCaseMeta #-}
-
-acoreSelsCaseTy :: (Eq bcat, AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => RCEEnv' e m b ba t -> Maybe (HsName,t) -> e -> CTag -> [(HsName,{-HsName,-}e)] -> MbPatRest' pr -> e -> e
+acoreSelsCaseTy :: (Eq bcat, AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => RCEEnv' e m b ba t -> Maybe (HsName,t) -> e -> CTag -> [(HsName,t,{-HsName,-}e)] -> MbPatRest' pr -> e -> e
 acoreSelsCaseTy env ne e ct nmLblOffL mbRest sel = acoreSelsCaseMetaTy env ne acoreMetavalDflt e ct nmLblOffL mbRest sel
 {-# INLINE acoreSelsCaseTy #-}
-
-acoreSelsCase :: (Eq bcat, AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => RCEEnv' e m b ba t -> Maybe (HsName) -> e -> CTag -> [(HsName,{-HsName,-}e)] -> MbPatRest' pr -> e -> e
-acoreSelsCase env ne e ct nmLblOffL mbRest sel = acoreSelsCaseMeta env ne acoreMetavalDflt e ct nmLblOffL mbRest sel
-{-# INLINE acoreSelsCase #-}
 %%]
 
 %%[(8 codegen) export(acoreSelCaseTy)
@@ -259,7 +240,7 @@ acoreSelsCase env ne e ct nmLblOffL mbRest sel = acoreSelsCaseMeta env ne acoreM
 -- | the alternative given by their tag + field (name/offset) + rest (for extensible records) + alt expr
 acoreSelCaseTy :: (Eq bcat, AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => RCEEnv' e m b ba t -> Maybe (HsName,t) -> e -> CTag -> HsName -> e -> MbPatRest' pr -> e
 acoreSelCaseTy env ne e ct n {-lbl-} off mbRest
-  = acoreSelsCaseTy env ne e ct [(n,{-lbl,-}off)] mbRest (acoreVar n)
+  = acoreSelsCaseTy env ne e ct [(n,acoreTyErr $ "acoreSelCaseTy: " ++ show n,{-lbl,-}off)] mbRest (acoreVar n)
 
 acoreSelCase :: (Eq bcat, AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => RCEEnv' e m b ba t -> Maybe HsName -> e -> CTag -> HsName -> e -> MbPatRest' pr -> e
 acoreSelCase env ne e ct n {-lbl-} off mbRest
@@ -271,7 +252,9 @@ acoreSelCase env ne e ct n {-lbl-} off mbRest
 -- | Make a case expr from a single alternative with non-saturated fields,
 -- | the alternative given by their tag + field (name/offset) + rest (for extensible records) + alt expr,
 -- | the fields (and alternatives) are saturated according to the tag + rest info
-acoreSatSelsCasesMetaTy :: (Eq bcat, AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => RCEEnv' e m b ba t -> Maybe (HsName,t) -> m -> e -> [(CTag,[(HsName,{-HsName,-}Int)],MbPatRest' pr,e)] -> e
+acoreSatSelsCasesMetaTy
+  :: forall e m b bound boundmeta bcat mbind t p pr pf a ba .
+     (Eq bcat, AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => RCEEnv' e m b ba t -> Maybe (HsName,t) -> m -> e -> [(CTag,[(HsName,t,{-HsName,-}Int)],MbPatRest' pr,e)] -> e
 acoreSatSelsCasesMetaTy env ne meta e tgSels
   =  acoreSelsCasesMetaTy env ne meta e alts
   where mkOffL ct mbr nol
@@ -279,43 +262,33 @@ acoreSatSelsCasesMetaTy env ne meta e tgSels
               (CTagRec       ,Nothing   ) -> map mklo nol
               (CTagRec       ,Just (_,a)) -> mkloL a
               (CTag _ _ _ a _,_         ) -> mkloL a
-          where mklo (n,{-l,-}o) = (n,{-l,-}acoreInt opts o)
+          where mklo :: (HsName,t,Int) -> (HsName,t,e)
+                mklo (n,t,o) = (n,t,acoreInt opts o)
+                mkloL :: Int -> [(HsName,t,e)]
                 mkloL a = map mklo
-                          $ listSaturateWith 0 (a-1) (\(_,{-_,-}o) -> o) [(o,(l,{-l,-}o)) | (o,l) <- zip [0..a-1] hsnLclSupply] $ nol
+                          $ listSaturateWith
+                              0 (a-1)
+                              (\(_,_,o) -> o)
+                              [(o,(l,acoreTyErr $ "acoreSatSelsCasesMetaTy.mkloL: " ++ show l,o)) | (o,l) <- zip [0..a-1] hsnLclSupply]
+                              nol
         alts = [ (ct,mkOffL ct mbRest nmLblOffL,mbRest,sel) | (ct,nmLblOffL,mbRest,sel) <- tgSels ]
         opts = rceEHCOpts env
 
-acoreSatSelsCasesMeta :: (Eq bcat, AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => RCEEnv' e m b ba t -> Maybe (HsName) -> m -> e -> [(CTag,[(HsName,{-HsName,-}Int)],MbPatRest' pr,e)] -> e
-acoreSatSelsCasesMeta env ne meta e tgSels = acoreSatSelsCasesMetaTy env (acoreTyErrLift "acoreSatSelsCasesMeta" ne) meta e tgSels
-{-# INLINE acoreSatSelsCasesMeta #-}
-
-acoreSatSelsCasesTy :: (Eq bcat, AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => RCEEnv' e m b ba t -> Maybe (HsName,t) -> e -> [(CTag,[(HsName,{-HsName,-}Int)],MbPatRest' pr,e)] -> e
+acoreSatSelsCasesTy :: (Eq bcat, AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => RCEEnv' e m b ba t -> Maybe (HsName,t) -> e -> [(CTag,[(HsName,t,{-HsName,-}Int)],MbPatRest' pr,e)] -> e
 acoreSatSelsCasesTy env ne e tgSels = acoreSatSelsCasesMetaTy env ne acoreMetavalDflt e tgSels
 {-# INLINE acoreSatSelsCasesTy #-}
-
-acoreSatSelsCases :: (Eq bcat, AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => RCEEnv' e m b ba t -> Maybe (HsName) -> e -> [(CTag,[(HsName,{-HsName,-}Int)],MbPatRest' pr,e)] -> e
-acoreSatSelsCases env ne e tgSels = acoreSatSelsCasesTy env (acoreTyErrLift "acoreSatSelsCases" ne) e tgSels
-{-# INLINE acoreSatSelsCases #-}
 %%]
 
 %%[(8 codegen) export(acoreSatSelsCaseMetaTy,acoreSatSelsCaseTy)
 -- | Make a case expr from a single alternative with non-saturated fields,
 -- | the alternative given by their tag + field (name/offset) + rest (for extensible records) + alt expr,
 -- | the fields (and alternatives) are saturated according to the tag + rest info
-acoreSatSelsCaseMetaTy :: (Eq bcat, AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => RCEEnv' e m b ba t -> Maybe (HsName,t) -> m -> e -> CTag -> [(HsName,{-HsName,-}Int)] -> MbPatRest' pr -> e -> e
+acoreSatSelsCaseMetaTy :: (Eq bcat, AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => RCEEnv' e m b ba t -> Maybe (HsName,t) -> m -> e -> CTag -> [(HsName,t,{-HsName,-}Int)] -> MbPatRest' pr -> e -> e
 acoreSatSelsCaseMetaTy env ne meta e ct nmLblOffL mbRest sel = acoreSatSelsCasesMetaTy env ne meta e [(ct,nmLblOffL,mbRest,sel)]
 
-acoreSatSelsCaseMeta :: (Eq bcat, AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => RCEEnv' e m b ba t -> Maybe (HsName) -> m -> e -> CTag -> [(HsName,{-HsName,-}Int)] -> MbPatRest' pr -> e -> e
-acoreSatSelsCaseMeta env ne meta e ct nmLblOffL mbRest sel = acoreSatSelsCaseMetaTy env (acoreTyErrLift "acoreSatSelsCaseMeta" ne) meta e ct nmLblOffL mbRest sel
-{-# INLINE acoreSatSelsCaseMeta #-}
-
-acoreSatSelsCaseTy :: (Eq bcat, AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => RCEEnv' e m b ba t -> Maybe (HsName,t) -> e -> CTag -> [(HsName,{-HsName,-}Int)] -> MbPatRest' pr -> e -> e
+acoreSatSelsCaseTy :: (Eq bcat, AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => RCEEnv' e m b ba t -> Maybe (HsName,t) -> e -> CTag -> [(HsName,t,{-HsName,-}Int)] -> MbPatRest' pr -> e -> e
 acoreSatSelsCaseTy env ne e ct nmLblOffL mbRest sel = acoreSatSelsCaseMetaTy env ne acoreMetavalDflt e ct nmLblOffL mbRest sel
 {-# INLINE acoreSatSelsCaseTy #-}
-
-acoreSatSelsCase :: (Eq bcat, AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => RCEEnv' e m b ba t -> Maybe (HsName) -> e -> CTag -> [(HsName,{-HsName,-}Int)] -> MbPatRest' pr -> e -> e
-acoreSatSelsCase env ne e ct nmLblOffL mbRest sel = acoreSatSelsCaseTy env (acoreTyErrLift "acoreSatSelsCase" ne) e ct nmLblOffL mbRest sel
-{-# INLINE acoreSatSelsCase #-}
 %%]
 
 %%[(8 codegen) hs export(acoreExprSatSelCaseTy)
@@ -323,7 +296,7 @@ acoreSatSelsCase env ne e ct nmLblOffL mbRest sel = acoreSatSelsCaseTy env (acor
 -- | the alternative given by their tag + field (name/offset) + rest (for extensible records) + alt expr,
 -- | the fields (and alternatives) are saturated according to the tag + rest info
 acoreExprSatSelCaseTy :: (Eq bcat, AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => RCEEnv' e m b ba t -> Maybe (HsName,t) -> e -> CTag -> HsName -> {- HsName -> -} Int -> MbPatRest' pr -> e
-acoreExprSatSelCaseTy env ne e ct n {- lbl -} off mbRest = acoreSatSelsCaseTy env ne e ct [(n,{-lbl,-}off)] mbRest (acoreVar n)
+acoreExprSatSelCaseTy env ne e ct n {- lbl -} off mbRest = acoreSatSelsCaseTy env ne e ct [(n,acoreTyErr $ "acoreExprSatSelCaseTy: " ++ show n,{-lbl,-}off)] mbRest (acoreVar n)
 
 acoreExprSatSelCase :: (Eq bcat, AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => RCEEnv' e m b ba t -> Maybe (HsName) -> e -> CTag -> HsName -> {- HsName -> -} Int -> MbPatRest' pr -> e
 acoreExprSatSelCase env ne e ct n {- lbl -} off mbRest = acoreExprSatSelCaseTy env (acoreTyErrLift "acoreExprSatSelCase" ne) e ct n {- lbl -} off mbRest
@@ -361,8 +334,8 @@ acoreMatchStringTy env str ty ok fail e
             (matchNil xt ok)
     $ zip str nms
   where env' = env {rceCaseCont = fail}
-        matchCons (x,xh,xt) e = acoreSatSelsCaseTy env' (Just (hsnUniqifyEval x,ty)) (acoreVar x) constag [(xh,0),(xt,1)] (Just (acorePatRestEmpty,2)) e
-        matchNil   x        e = acoreSatSelsCaseTy env' (Just (hsnUniqifyEval x,ty)) (acoreVar x) niltag  []              (Just (acorePatRestEmpty,0)) e
+        matchCons (x,xh,xt) e = acoreSatSelsCaseTy env' (Just (hsnUniqifyEval x,ty)) (acoreVar x) constag [(xh,acoreTyErr "acoreMatchStringTy.hd",0),(xt,acoreTyErr "acoreMatchStringTy.tl",1)] (Just (acorePatRestEmpty,2)) e
+        matchNil   x        e = acoreSatSelsCaseTy env' (Just (hsnUniqifyEval x,ty)) (acoreVar x) niltag  []                                                                                    (Just (acorePatRestEmpty,0)) e
         constag = ctagCons opts
         niltag  = ctagNil  opts
         opts = rceEHCOpts env
@@ -376,7 +349,7 @@ acoreMatchStringTy env str ty ok fail e
 acoreMatchTupleTy :: (Eq bcat, AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => RCEEnv' e m b ba t -> [HsName] -> t -> e -> e -> e
 acoreMatchTupleTy env fldNmL ty ok e
   = acoreLet1PlainTy x ty e
-    $ acoreSatSelsCaseTy env (Just (hsnUniqifyEval x,ty)) (acoreVar x) CTagRec (zip fldNmL [0..]) (Just (acorePatRestEmpty,length fldNmL)) ok
+    $ acoreSatSelsCaseTy env (Just (hsnUniqifyEval x,ty)) (acoreVar x) CTagRec (zipWith (\f o -> (f,acoreTyErr $ "acoreMatchTupleTy: " ++ show f,o)) fldNmL [0..]) (Just (acorePatRestEmpty,length fldNmL)) ok
   where x = mkHNmHidden "x"
 %%]
 

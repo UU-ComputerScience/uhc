@@ -213,7 +213,7 @@ instance CHRCheckable FIIn Guard VarMp where
             = return $ (vDst `varmpOffsetUnit` LabelOffset_Off offset)
                        `varUpd` (tv `varmpTyUnit` row)
             where (row,exts) = tyRowExtsWithLkup (varmpTyLookupCyc2 subst') ty
-                  (offset,presence) = tyExtsOffset lab' $ rowCanonOrder exts
+                  ((offset,presence),_) = tyExtsOffset lab' $ rowCanonOrder exts
                   (Label_Lab lab') = varUpd subst' lab
 %%]]
 %%[[41

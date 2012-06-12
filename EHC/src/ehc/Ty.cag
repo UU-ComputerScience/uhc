@@ -1440,18 +1440,18 @@ tyRowOffsetOrder off = sortOn (off . snd)
 %%]
 
 %%[(8 hmtyinfer || hmtyast) hs export(tyExtsOffset)
-tyExtsOffset :: HsName -> AssocL HsName a -> (Int,Presence)
+tyExtsOffset :: HsName -> AssocL HsName a -> ((Int,Presence),Maybe a)
 tyExtsOffset lbl exts
   = find 0 lbl exts
-  where find o l (e:es) = case (l,panic "Ty.tyExtsOffset") `rowExtCmp` e of
+  where find o l (e@(_,a):es) = case (l,panic "Ty.tyExtsOffset") `rowExtCmp` e of
                             GT -> find (o+1) l es
-                            EQ -> (o,Present)
-                            LT -> (o,Absent)
-        find o _ []     = (o,Absent)
+                            EQ -> ((o,Present),Just a)
+                            LT -> ((o,Absent),Nothing)
+        find o _ []     = ((o,Absent),Nothing)
 
 tyRecOffset :: HsName -> Ty -> Int
 tyRecOffset lbl t
-  = fst $ tyExtsOffset lbl $ rowCanonOrder exts
+  = fst $ fst $ tyExtsOffset lbl $ rowCanonOrder exts
   where (_,exts) = tyRecExts t
 %%]
 

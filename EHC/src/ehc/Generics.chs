@@ -143,7 +143,7 @@ projBuiltinVar opts proj
 
 %%[(92 hmtyinfer)
 -- | pattern names arg to acoreSatSelsCases
-nmLForCase nL = zipWith (\n o -> (n,{-n,-}o)) nL [(0::Int) ..]
+nmLForCase nL = zipWith (\n o -> (n,acoreTyErr $ "nmLForCase: " ++ show n,{-n,-}o)) nL [(0::Int) ..]
 %%]
 
 %%[(92 hmtyinfer) export(projFrom)

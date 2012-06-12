@@ -192,7 +192,7 @@ evidMpToCore2 env evidMp
                                                              acoreMetavalDfltDict 
                                                              (tcrCExpr sub) 
                                                              t
-                                                             [(n,{-n,-}o)] 
+                                                             [(n,acoreTyErr $ "evidMpToCore2.ann.RedHow_BySuperClass.sub: " ++ show n,{-n,-}o)] 
                                                              Nothing 
                                                              (acoreVar n)
                                                  in ( res

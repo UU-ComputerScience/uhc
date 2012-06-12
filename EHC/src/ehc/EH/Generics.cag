@@ -167,7 +167,11 @@ SEM Decl
 SEM Expr
   | Let         loc         -- names for introduced datatypes
                             .   (generDataAllTyOrigNmL,generDataTyAndConNmLL)
-                                                    =   unzip [ (origtnm, hsnNm2GenerDatatype origtnm : [ hsnNm2GenerConstructor $ ctagNm x | (x,_) <- cs ]) | ((origtnm,_,_),cs,_,_) <- @decls.generDataInfoL ]
+                                                    =   unzip [ ( origtnm
+                                                                , hsnNm2GenerDatatype origtnm : [ hsnNm2GenerConstructor $ ctagNm x | (x,_) <- cs ]
+                                                                )
+                                                              | ((origtnm,_,ki),cs,_,_) <- @decls.generDataInfoL
+                                                              ]
                             .   generDataTyAndConNmL=   concat @generDataTyAndConNmLL
                             
                             -- representation type synonyms and projection descriptors
@@ -187,7 +191,7 @@ SEM Expr
                                                         ]
 
                             -- various environments/gammas
-                            .   generDataGam        =   gamFromAssocL [ (n, mkDGIPlain n (appCon n) [] Map.empty )
+                            .   generDataGam        =   gamFromAssocL [ (n, mkDGIPlain n (appCon n) kiStar [] Map.empty )
                                                                       | n <- @generDataTyAndConNmL
                                                                       ]
                             .   generTyGam          =   gamFromAssocL [ (n, mkTGIData (appCon n) (appDbg $ "Generics.Expr.Let.TyGam.DataTyAndCon: " ++ show n))
