@@ -132,6 +132,8 @@ pPragma' mk
           <$> pDERIVABLE_prag  <*> gtycon' tyconsym <*> var <*> qvar
       <|> (\t targ r -> mk r $ Pragma_ExcludeIfTarget (mkRange1 t) (map tokMkStr $ concat targ))
           <$> pEXCLUDEIFTARGET_prag  <*> pList1Sep pCOMMA (pList1 (conid <|> varid))
+      <|> (\t targ r -> mk r $ Pragma_OptionsUHC (mkRange1 t) (tokMkStr targ))
+          <$> pOPTIONSUHC_prag  <*> pStringTk
       )
 
 pPragma :: HSParser Pragma

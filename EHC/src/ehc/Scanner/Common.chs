@@ -969,7 +969,7 @@ tokKeywStrsHS93  = [ "fuse", "convert" ]
 
 %%[99
 pLANGUAGE_prag  		,
-	-- pOPTIONSGHC_prag  	,
+	pOPTIONSUHC_prag  	,
 	pDERIVABLE_prag		,
 	pEXCLUDEIFTARGET_prag,
     pOPRAGMA    		,
@@ -979,11 +979,11 @@ pLANGUAGE_prag  		,
 pLANGUAGE_prag   = pKeyTk "LANGUAGE"
 pDERIVABLE_prag  = pKeyTk "DERIVABLE"
 pEXCLUDEIFTARGET_prag  = pKeyTk "EXCLUDE_IF_TARGET"
--- pOPTIONSGHC_prag = pKeyTk "OPTIONS_GHC"
+pOPTIONSUHC_prag = pKeyTk "OPTIONS_UHC"
 pOPRAGMA         = pKeyTk "{-#"
 pCPRAGMA         = pKeyTk "#-}"
 
-tokPragmaStrsHS99= [ "LANGUAGE", "DERIVABLE", "EXCLUDE_IF_TARGET" {-, "OPTIONS_GHC" , "INLINE", "NOINLINE", "SPECIALIZE" -} ]
+tokPragmaStrsHS99= [ "LANGUAGE", "DERIVABLE", "EXCLUDE_IF_TARGET", "OPTIONS_UHC" {- , "INLINE", "NOINLINE", "SPECIALIZE" -} ]
 %%]
 
 pDEPRECATED_prag = pKeyTk "deprecated_prag"

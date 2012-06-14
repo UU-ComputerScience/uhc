@@ -329,9 +329,9 @@ DATA Pragma
     | Language
     	range					: Range
     	pragmas					: Names
-    | OptionsGHC
+    | OptionsUHC
     	range					: Range
-    	options					: Names
+    	options					: {String}
     | Derivable
     	range					: Range
     	className				: Name

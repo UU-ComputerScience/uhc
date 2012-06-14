@@ -249,6 +249,8 @@ data EHCOpts
       ,  ehcOptCfgInstallRoot        ::  Maybe String      -- the directory where the installation resides; overrides ehcenvInstallRoot
       ,  ehcOptCfgInstallVariant     ::  Maybe String      -- the installation variant; overrides ehcenvVariant
       ,  ehcOptCmdLineOpts    ::  CmdLineOpts       -- options from the commandline and pragma for such options
+      ,  ehcOptCmdLineOptsDoneViaPragma
+      						  ::  Bool       		-- options via OPTIONS_UHC pragma have been set
 %%]]
       }
 %%]
@@ -389,6 +391,8 @@ emptyEHCOpts
       ,  ehcOptCfgInstallRoot   =   Nothing
       ,  ehcOptCfgInstallVariant=   Nothing
       ,  ehcOptCmdLineOpts      =   []
+      ,  ehcOptCmdLineOptsDoneViaPragma
+                                =   False
 %%]]
       }
 %%]

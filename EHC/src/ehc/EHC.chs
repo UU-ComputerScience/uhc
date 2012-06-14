@@ -94,8 +94,8 @@ main
 %%][101
                                 where p = mkFPath "uhc"     -- hardbaked name
 %%]]
-                 oo@(o,n,errs)  = getOpt Permute ehcCmdLineOpts args
-                 opts2          = foldl (flip ($)) opts1 o
+                 oo@(o,n,errs)  = ehcCmdLineOptsApply args opts1
+                 opts2          = maybe opts1 id o
 %%[[(8 codegen)
          ;  case opts2 of
               o | isNotOk (ehcOptMbTarget       o) -> err $ "non existent target `"        ++ fromNotOk (ehcOptMbTarget       o) ++ "'"

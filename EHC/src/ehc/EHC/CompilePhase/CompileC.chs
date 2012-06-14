@@ -180,7 +180,7 @@ cpPreprocessWithCPP pkgKeyDirL modNm
               ) -}
               (do { let preCPP  = mkShellCmd' [Cmd_CPP,Cmd_CPP_Preprocessing] Cfg.shellCmdCpp
                                     (  Cfg.cppOpts ++ gccDefs opts ["CPP"]
-                                    ++ map cppOptF [ "traditional-cpp", {- "std=gnu99", -} "fno-show-column", "P" ]
+                                    ++ map cppOptF [ {- "traditional-cpp", -} {- "std=gnu99", -} "fno-show-column", "P" ]
 %%[[(99 codegen)
                                     ++ [ cppOptI d | d <- gccInclDirs opts pkgKeyDirL ]
 %%]]
@@ -189,10 +189,10 @@ cpPreprocessWithCPP pkgKeyDirL modNm
                                     )
                   ; when (ehcOptVerbosity opts >= VerboseALot)
                          (do { cpMsg modNm VerboseALot "CPP"
-                             ; lift $ putStrLn ("pkg db: " ++ show (ehcOptPkgDb opts))
-                             ; lift $ putStrLn ("pkg srch filter: " ++ (show $ ehcOptPackageSearchFilter opts))
-                             ; lift $ putStrLn ("exposed pkgs: " ++ show (pkgExposedPackages $ ehcOptPkgDb opts))
-                             ; lift $ putStrLn ("pkgKeyDirL: " ++ show pkgKeyDirL)
+                             -- ; lift $ putStrLn ("pkg db: " ++ show (ehcOptPkgDb opts))
+                             -- ; lift $ putStrLn ("pkg srch filter: " ++ (show $ ehcOptPackageSearchFilter opts))
+                             -- ; lift $ putStrLn ("exposed pkgs: " ++ show (pkgExposedPackages $ ehcOptPkgDb opts))
+                             -- ; lift $ putStrLn ("pkgKeyDirL: " ++ show pkgKeyDirL)
                              ; lift $ putStrLn preCPP
                              })
                   ; when (crModCanCompile modNm cr)

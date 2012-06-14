@@ -698,10 +698,17 @@ cpEhcHaskellImport
        ; cr2 <- get
        ; let (ecu,_,opts2,_) = crBaseInfo modNm' cr2
        
-       -- if we find out that CPP should have invoked, we backtrack to the original runstate and redo the above with CPP
-       ; if not (ehcOptCPP opts2) && Set.member Pragma_CPP (ecuPragmas ecu)
+       -- if we find out that CPP should have invoked or cmdline options (pragma OPTIONS_UHC) have been specified,
+       --  we backtrack to the original runstate and redo the above with CPP
+       ; if (not (ehcOptCPP opts2)						-- reinvoke if CPP has not been invoked before
+             || ehcOptCmdLineOptsDoneViaPragma opts2	-- or options have been set via pragma
+            )
+            -- check whether the pragma has a cmdline option like effect
+            && (not $ null $ filter pragmaInvolvesCmdLine $ Set.toList $ ecuPragmas ecu) -- Set.member Pragma_CPP (ecuPragmas ecu)
          then do { put cr
-                 ; cppAndParse modNm True
+                 ; when (isJust $ ecuMbOpts ecu)
+                        (cpUpdCU modNm (ecuStoreOpts opts2))
+                 ; cppAndParse modNm (ehcOptCPP opts || Set.member Pragma_CPP (ecuPragmas ecu))
                  ; cpStepUID
                  ; foldAndImport modNm
                  }

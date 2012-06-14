@@ -43,6 +43,9 @@ data Pragma
   | Pragma_BangPatterns                  	-- turn on bang patterns (default)
   | Pragma_ExtensibleRecords                -- turn on extensible records
   | Pragma_Fusion               			-- turn on fusion syntax
+  | Pragma_OptionsUHC              			-- commandline options
+      { pragmaOptions   			:: String
+      }
 %%[[(99 codegen)
   | Pragma_ExcludeIfTarget
       { pragmaExcludeTargets   		:: [Target]
@@ -91,6 +94,13 @@ pragmaIsExcludeTarget t (Pragma_ExcludeIfTarget ts) = t `elem` ts
 pragmaIsExcludeTarget _ _                           = False
 %%]
 
+%%[99 export(pragmaInvolvesCmdLine)
+pragmaInvolvesCmdLine :: Pragma -> Bool
+pragmaInvolvesCmdLine (Pragma_CPP         ) = True
+pragmaInvolvesCmdLine (Pragma_OptionsUHC _) = True
+pragmaInvolvesCmdLine _                     = False
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Instances: Binary, Serialize
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -109,20 +119,22 @@ instance Serialize Pragma where
   sput (Pragma_Fusion        			) = sputWord8 7
   sput (Pragma_NoBangPatterns           ) = sputWord8 8
   sput (Pragma_BangPatterns             ) = sputWord8 9
+  sput (Pragma_OptionsUHC      a        ) = sputWord8 10 >> sput a
   sget = do t <- sgetWord8
             case t of
-              0 -> return Pragma_NoImplicitPrelude
-              1 -> return Pragma_CPP
-              2 -> liftM3 Pragma_Derivable              sget sget sget
-              3 -> return Pragma_NoGenericDeriving
-              4 -> return Pragma_GenericDeriving
-              5 -> return Pragma_ExtensibleRecords
+              0  -> return Pragma_NoImplicitPrelude
+              1  -> return Pragma_CPP
+              2  -> liftM3 Pragma_Derivable              sget sget sget
+              3  -> return Pragma_NoGenericDeriving
+              4  -> return Pragma_GenericDeriving
+              5  -> return Pragma_ExtensibleRecords
 %%[[(99 codegen)
-              6 -> liftM  Pragma_ExcludeIfTarget        sget
+              6  -> liftM  Pragma_ExcludeIfTarget        sget
 %%]]
-              7 -> return Pragma_Fusion
-              8 -> return Pragma_NoBangPatterns
-              9 -> return Pragma_BangPatterns
+              7  -> return Pragma_Fusion
+              8  -> return Pragma_NoBangPatterns
+              9  -> return Pragma_BangPatterns
+              10 -> liftM  Pragma_OptionsUHC             sget
 
 %%]
 

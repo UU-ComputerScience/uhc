@@ -50,7 +50,7 @@ data CmdLineOpt
       { cloptForCmd     :: Cmd
       , cloptFlag       :: CmdFlag
       }
-  deriving (Typeable,Data)
+  deriving (Eq,Typeable,Data)
 
 type CmdLineOpts = [CmdLineOpt]
 %%]
