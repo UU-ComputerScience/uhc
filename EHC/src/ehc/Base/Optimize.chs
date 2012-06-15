@@ -161,7 +161,14 @@ data OptimizationScope
   | OptimizationScope_WholeGrin			-- whole program, starting with GRIN
   | OptimizationScope_WholeCore			-- whole program, starting with Core
 %%]]
-  deriving (Eq,Ord,Show,Enum,Bounded)
+  deriving (Eq,Ord,Enum,Bounded)
+
+instance Show OptimizationScope where
+  show OptimizationScope_PerModule = "permodule"
+%%[[50
+  show OptimizationScope_WholeGrin = "perwholegrin"
+  show OptimizationScope_WholeCore = "perwholecore"
+%%]]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
