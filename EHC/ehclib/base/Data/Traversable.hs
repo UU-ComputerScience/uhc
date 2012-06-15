@@ -1,4 +1,6 @@
 {-# LANGUAGE CPP #-}
+{-# OPTIONS_UHC "--optP=-traditional-cpp" #-}
+
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Data.Traversable

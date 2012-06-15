@@ -1,5 +1,7 @@
 {-# LANGUAGE CPP #-}
 {-# OPTIONS_GHC -XNoImplicitPrelude, CPP #-}
+{-# OPTIONS_UHC "--optP=-traditional-cpp" #-}
+
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Text.ParserCombinators.ReadP

@@ -1,5 +1,7 @@
 {-# LANGUAGE CPP #-}
 {-# OPTIONS_GHC -w #-}
+{-# OPTIONS_UHC "--optP=-traditional-cpp" #-}
+
 -- XXX We get some warnings on Windows
 
 -----------------------------------------------------------------------------
