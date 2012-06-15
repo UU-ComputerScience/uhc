@@ -11,7 +11,7 @@
 %%[(8 codegen) import(Control.Monad, Control.Monad.State)
 %%]
 
-%%[(8 codegen) import({%{EH}Base.Target})
+%%[(8 codegen) import({%{EH}Base.Target},{%{EH}Base.Optimize})
 %%]
 
 %%[(8 codegen) import({%{EH}EHC.Common})
@@ -109,8 +109,10 @@ emptyTrfCore = TrfCore emptyCModule [] uidStart
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen) export(trfCore)
-trfCore :: EHCOpts -> DataGam -> HsName -> TrfCore -> TrfCore
-trfCore opts dataGam modNm trfcore
+-- | Perform Core transformations.
+--   The 'optScope' tells at which compilation phase (per module, whole program) the transformations are done, default only per module
+trfCore :: EHCOpts -> OptimizationScope -> DataGam -> HsName -> TrfCore -> TrfCore
+trfCore opts optimScope dataGam modNm trfcore
   = execState trf trfcore
   where trf
           = do { -- initial is just to obtain Core for dumping stages
@@ -205,24 +207,25 @@ trfCore opts dataGam modNm trfcore
                           })
                }
 
-        liftTrfMod :: String -> (CModule -> CModule) -> State TrfCore ()
-        liftTrfMod nm t
-          = liftTrf nm (flip const) (\_ c -> (Just $ t c,(),[]))
+        liftTrfMod :: [OptimizationScope] -> String -> (CModule -> CModule) -> State TrfCore ()
+        liftTrfMod os nm t
+          = liftTrf os nm (flip const) (\_ c -> (Just $ t c,(),[]))
 
-        liftTrfInfoMod :: String -> (TrfCore -> CModule -> CModule) -> State TrfCore ()
-        liftTrfInfoMod nm t
-          = liftTrf nm (flip const) (\s c -> (Just $ t s c,(),[]))
+        liftTrfInfoMod :: [OptimizationScope] -> String -> (TrfCore -> CModule -> CModule) -> State TrfCore ()
+        liftTrfInfoMod os nm t
+          = liftTrf os nm (flip const) (\s c -> (Just $ t s c,(),[]))
 
-        liftTrfInfoModExtra :: String -> (extra -> TrfCore -> TrfCore) -> (TrfCore -> CModule -> (CModule,extra)) -> State TrfCore ()
-        liftTrfInfoModExtra nm update2 t
-          = liftTrf nm update2 (\s c -> let (c',e) = t s c in (Just c',e,[]))
+        liftTrfInfoModExtra :: [OptimizationScope] -> String -> (extra -> TrfCore -> TrfCore) -> (TrfCore -> CModule -> (CModule,extra)) -> State TrfCore ()
+        liftTrfInfoModExtra os nm update2 t
+          = liftTrf os nm update2 (\s c -> let (c',e) = t s c in (Just c',e,[]))
 
-        liftTrfCheck :: String -> (TrfCore -> CModule -> ErrL) -> State TrfCore ()
-        liftTrfCheck nm t
-          = liftTrf nm (flip const) (\s c -> let e = t s c in (Nothing,(),e))
+        liftTrfCheck :: [OptimizationScope] -> String -> (TrfCore -> CModule -> ErrL) -> State TrfCore ()
+        liftTrfCheck os nm t
+          = liftTrf os nm (flip const) (\s c -> let e = t s c in (Nothing,(),e))
 
-        liftTrf nm update2 t
-          = modify update
+        liftTrf os nm update2 t
+          | optimScope `elem` os = modify update
+          | otherwise            = return ()
           where update s@(TrfCore{trfcoreCore=c, trfcoreCoreStages=stages})
                   = update2 extra
                     $ s { trfcoreCore           = maybe c id c'
@@ -235,44 +238,46 @@ trfCore opts dataGam modNm trfcore
           = s {trfcoreGathLamMp = gl', trfcoreInhLamMp = Map.union gl' il}
           where gl' = Map.union l gl
         
+        -- bump uniq counter
         uniq s@(TrfCore{trfcoreUniq=u})
           = (h,s {trfcoreUniq = n})
           where (n,h) = mkNewLevUID u
 
-        t_initial       = liftTrfMod  "initial"            $ id
+        -- actual transformations
+        t_initial       = liftTrfMod  osmw "initial"            $ id
 %%[[(8 coresysf)
-        t_sysf_check    = liftTrfCheck  "sysf-type-check"  $ \s -> cmodSysfCheck opts (emptyCheckEnv {cenvLamMp = trfcoreInhLamMp s})
+        t_sysf_check    = liftTrfCheck  osm "sysf-type-check"  $ \s -> cmodSysfCheck opts (emptyCheckEnv {cenvLamMp = trfcoreInhLamMp s})
 %%]]
-        t_eta_red       = liftTrfMod  "eta-red"            $ cmodTrfEtaRed
-        t_erase_ty      = liftTrfInfoModExtra "erase-ty" lamMpPropagate
-                                                           $ \_ -> cmodTrfEraseExtractTysigCore opts
-        t_ann_simpl     = liftTrfMod  "ann-simpl"          $ cmodTrfAnnBasedSimplify opts
-        t_ren_uniq    o = liftTrfMod  "ren-uniq"           $ cmodTrfRenUniq o
-        t_let_unrec     = liftTrfMod  "let-unrec"          $ cmodTrfLetUnrec
-        t_let_defbefuse = liftTrfMod  "let-defbefuse"      $ cmodTrfLetDefBeforeUse
-        t_let_flatstr   = liftTrfMod  "let-flatstr"        $ cmodTrfLetFlattenStrict
-        t_inl_letali    = liftTrfMod  "inl-letali"         $ cmodTrfInlineLetAlias
+        t_eta_red       = liftTrfMod  osm "eta-red"            $ cmodTrfEtaRed
+        t_erase_ty      = liftTrfInfoModExtra osm "erase-ty" lamMpPropagate
+                                                               $ \_ -> cmodTrfEraseExtractTysigCore opts
+        t_ann_simpl     = liftTrfMod  osm "ann-simpl"          $ cmodTrfAnnBasedSimplify opts
+        t_ren_uniq    o = liftTrfMod  osm "ren-uniq"           $ cmodTrfRenUniq o
+        t_let_unrec     = liftTrfMod  osm "let-unrec"          $ cmodTrfLetUnrec
+        t_let_defbefuse = liftTrfMod  osm "let-defbefuse"      $ cmodTrfLetDefBeforeUse
+        t_let_flatstr   = liftTrfMod  osm "let-flatstr"        $ cmodTrfLetFlattenStrict
+        t_inl_letali    = liftTrfMod  osm "inl-letali"         $ cmodTrfInlineLetAlias
 %%[[50
                                                               (Map.keysSet $ trfcoreExpNmOffMp trfcore)
 %%]]
-        t_elim_trivapp  = liftTrfMod  "elim-trivapp"       $ cmodTrfElimTrivApp opts
-        t_const_prop    = liftTrfMod  "const-prop"         $ cmodTrfConstProp opts
-        t_anormal     u = liftTrfMod  "anormal"            $ cmodTrfANormal modNm u
-        t_lam_asarg     = liftTrfMod  "lam-asarg"          $ cmodTrfLamGlobalAsArg
-        t_caf_asarg     = liftTrfMod  "caf-asarg"          $ cmodTrfCAFGlobalAsArg
-        t_float_glob    = liftTrfMod  "float-glob"         $ cmodTrfFloatToGlobal
+        t_elim_trivapp  = liftTrfMod  osm "elim-trivapp"       $ cmodTrfElimTrivApp opts
+        t_const_prop    = liftTrfMod  osm "const-prop"         $ cmodTrfConstProp opts
+        t_anormal     u = liftTrfMod  osm "anormal"            $ cmodTrfANormal modNm u
+        t_lam_asarg     = liftTrfMod  osm "lam-asarg"          $ cmodTrfLamGlobalAsArg
+        t_caf_asarg     = liftTrfMod  osm "caf-asarg"          $ cmodTrfCAFGlobalAsArg
+        t_float_glob    = liftTrfMod  osm "float-glob"         $ cmodTrfFloatToGlobal
 %%[[(8 wholeprogAnal)
-        t_find_null     = liftTrfMod  "find-null"          $ cmodTrfFindNullaries
+        t_find_null     = liftTrfMod  osm "find-null"          $ cmodTrfFindNullaries
 %%]]
-        t_ana_relev     = liftTrfInfoModExtra "ana-relev" lamMpPropagate
-                                                           $ \s -> cmodTrfAnaRelevance opts dataGam (trfcoreInhLamMp s)
-        t_opt_strict    = liftTrfInfoModExtra "optim-strict" lamMpPropagate
-                                                           $ \s -> cmodTrfOptimizeStrictness opts (trfcoreInhLamMp s)
+        t_ana_relev     = liftTrfInfoModExtra osm "ana-relev" lamMpPropagate
+                                                               $ \s -> cmodTrfAnaRelevance opts dataGam (trfcoreInhLamMp s)
+        t_opt_strict    = liftTrfInfoModExtra osm "optim-strict" lamMpPropagate
+                                                               $ \s -> cmodTrfOptimizeStrictness opts (trfcoreInhLamMp s)
 %%[[(9 wholeprogAnal)
-        t_fix_dictfld   = liftTrfMod  "fix-dictfld"        $ cmodTrfFixDictFields
+        t_fix_dictfld   = liftTrfMod  osm "fix-dictfld"        $ cmodTrfFixDictFields
 %%]]
 %%[[99        
-        t_expl_trace    = liftTrfInfoModExtra "expl-sttrace"
+        t_expl_trace    = liftTrfInfoModExtra osm "expl-sttrace"
                                                   (\m s@(TrfCore {trfcoreExtraExports=exps})
                                                      -> (lamMpPropagate m s)
                                                           { trfcoreExtraExports   = exps `Set.union`
@@ -280,7 +285,10 @@ trfCore opts dataGam modNm trfcore
                                                                                                  | (n,LamInfo {laminfoStackTrace=(StackTraceInfo_IsStackTraceEquiv _)}) <- Map.toList m
                                                                                                  ]
                                                           }
-                                                  )        $ \s -> cmodTrfExplicitStackTrace opts (trfcoreInhLamMp s)
+                                                  )            $ \s -> cmodTrfExplicitStackTrace opts (trfcoreInhLamMp s)
 %%]]
+        -- abbreviations for optimatisation scope
+        osm  = [OptimizationScope_PerModule]
+        osmw = [OptimizationScope_WholeCore] ++ osm
 %%]
 

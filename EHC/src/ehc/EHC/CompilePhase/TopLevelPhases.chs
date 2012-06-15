@@ -244,9 +244,11 @@ cpEnsureGrin nm
 cpEhcCoreFullProgPostModulePhases opts modNmL (impModNmL,mainModNm)
   = cpSeq ([ cpSeq [cpGetPrevCore m | m <- modNmL]
            , mergeIntoOneBigCore
+           , cpTransformCore OptimizationScope_WholeCore mainModNm
+           , cpFlowHILamMp mainModNm
            , cpProcessCoreFold mainModNm -- redo folding for replaced main module
            ]
-           ++ (if ehcOptDumpCoreStages opts then [cpOutputCore False "" "full.core" mainModNm] else [])
+           -- ++ (if ehcOptDumpCoreStages opts then [cpOutputCore False "" "full.core" mainModNm] else [])
            ++ [ cpMsg mainModNm VerboseDebug ("Full Core generated, from: " ++ show impModNmL)
               ]
           )
@@ -1021,7 +1023,7 @@ cpProcessCoreBasic :: HsName -> EHCompilePhase ()
 cpProcessCoreBasic modNm 
   = do { cr <- get
        ; let (_,_,opts,_) = crBaseInfo modNm cr
-       ; cpSeq [ cpTransformCore modNm
+       ; cpSeq [ cpTransformCore OptimizationScope_PerModule modNm
 %%[[50
                , cpFlowHILamMp modNm
 %%]]
