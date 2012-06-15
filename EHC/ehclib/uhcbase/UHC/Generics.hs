@@ -10,6 +10,7 @@
 
 --  To remove
 {-#  LANGUAGE ScopedTypeVariables  #-}
+{-# OPTIONS_UHC "--optP=-traditional-cpp" #-}
 
 -- All contents moved to UHC.Base because of necessity to have definitions already available for first datatype defined.
 -- This file for now functions as placeholder only, until proper place and exporting is fixed.

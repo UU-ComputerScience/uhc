@@ -4,6 +4,7 @@
 
 %%[99
 {-# LANGUAGE NoImplicitPrelude, CPP #-}
+{-# OPTIONS_UHC "--optP=-traditional-cpp" #-}
 
 module UHC.OldIO
   ( Handle

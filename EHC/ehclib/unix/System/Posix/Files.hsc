@@ -1,6 +1,8 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE ForeignFunctionInterface #-}
 {-# OPTIONS_GHC -fno-warn-unused-imports #-}
+{-# OPTIONS_UHC "--optP=-traditional-cpp" #-}
+
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  System.Posix.Files
