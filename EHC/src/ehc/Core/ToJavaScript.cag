@@ -637,7 +637,9 @@ ffiJavaScriptMkCall ty
         mkWrap n (e:_) = mkWrapFn as bdy
           where as   = map (mkHNm . ('v':) . show) [1..(tyNumArgs ty - 1)]
                 rn   = mkHNm "res"
+                -- evaluate the composite parts of "res" before returning to the regular js world
                 bdy  = [ J.jsVarDecl rn $ jsEvl $ jsApp e $ (map jsVar as) ++ [J.Expr_Arr []]
+                       , J.Stat_Expr $ jsEvl $ J.Expr_ArrInx (jsVar rn) (jsIntConst 0)
                        , J.Stat_Ret $ jsEvl $ J.Expr_ArrInx (jsVar rn) (jsIntConst 1) ]
 
         mkDyn _ (e:es) = J.Expr_Call e es
