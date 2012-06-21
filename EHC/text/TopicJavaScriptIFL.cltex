@@ -12,10 +12,8 @@
 
 % defs etc
 \newcommand{\todo}[1]{{\color{red}#1}}
-\def\js{JavaScript\xspace}
+\newcommand{\js}{JavaScript\xspace}
 \newcommand{\uhcjscript}{\textit{uhc-jscript}\xspace}
-\newcommand{\con}[1]{#1}
-\newcommand{\dsl}[1]{#1}
 %%]
 
 %%[abstract

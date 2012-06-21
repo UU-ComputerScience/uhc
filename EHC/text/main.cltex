@@ -382,6 +382,10 @@
 \addbibresource{bibliography.bib}
 %%]
 
+%%[72
+\usepackage{xspace}
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Misc config
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1392,10 +1396,6 @@ WWW home page:
 
 
 %%[72
-%\conferenceinfo{IFL 2012,} {}
-%\CopyrightYear{2012}
-%\copyrightdata{}
-
 \title{Building JavaScript Applications with Haskell}
 \author{Atze Dijkstra \and Jurri\"en Stutterheim \and Alessandro Vermeulen \and Doaitse Swierstra}
 
@@ -1404,7 +1404,7 @@ WWW home page:
 23 P.O.Box 80.089, 3508 TB Utrecht, The Netherlands\\
 \email{\{atze, j.stutterheim, a.vermeulen, doaitse\}@@uu.nl}}
 
-%%@TopicJavaScript.prelude
+%%@TopicJavaScriptIFL.prelude
 %%]
 
 
@@ -2483,17 +2483,13 @@ and pointing out where and why we differ from the `standard' \cite{stuckey02theo
 
 %%@TopicJavaScriptIFL.HaskellToJavaScript
 
-\section{Use of existing JavaScript infrastructure}
-
-%%@TopicJavaScriptIFL.UseOfExistingJavaScriptStuff
-
 \section{Future Work}
 
 %%@TopicJavaScriptIFL.futureWork
 
 %\section{Related work}
 
-% %%@TopicJavaScriptIFL.relatedWork
+%%@TopicJavaScriptIFL.relatedWork
 
 \section{Conclusion}
 
