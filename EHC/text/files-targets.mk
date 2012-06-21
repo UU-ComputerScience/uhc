@@ -436,3 +436,9 @@ text-variant-icfp2012-js:
 	  TEXT_SHUFFLE_VARIANT=69 \
 	  text-variant-dflt-bib
 
+text-variant-ifl2012-js:
+	$(MAKE) TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC=no \
+	  INCLUDE_DERIVED_MK=yes \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=ifl2012 --set=kscode --set=llncs --set=blockstyle --set=asArticle --set=dictaat" \
+	  TEXT_SHUFFLE_VARIANT=72 \
+	  text-variant-dflt-bib

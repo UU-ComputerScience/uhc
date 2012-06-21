@@ -30,7 +30,7 @@ TEXT_PRIV_VARIANTS			+= flops06-ruler-paper flops06-ruler \
 								tr-abstrint ldta08-abstrint \
 								ldta09-agidiom \
 								hs09-uhcarch \
-								icfp2012-js \
+								icfp2012-js ifl2012-js \
 								theplan
 
 # subtext
@@ -138,6 +138,7 @@ TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 # 68: doc: Improving the UHC JavaScript Backend
 # 69: paper (exp report for ICFP2012): "JavasScript (worktitle)"
 # 70: plain article: Improving the UHC JavaScript Backend (built upon 71, but not working)
+# 72: paper (JavaScript IFL 2012)
 # 77: scratch (article format)
 
 TEXT_SHUFFLE_ORDER	+= \
@@ -179,6 +180,7 @@ TEXT_SHUFFLE_ORDER	+= \
 		26 < 36, \
 		26 < 51, \
 		26 < 69, \
+		26 < 72, \
 		30 < 7, \
 		30 < 29, \
 		37 < 33, \
