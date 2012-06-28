@@ -249,7 +249,7 @@ bindings to the jQuery\cite{jquery} JavaScript library and the
 AjaxQueue\cite{ajaxq} library.
 
 The Haskell implementation of the application has the same features and is as
-stable as the original \coffescript implementation. The Haskell implementation
+stable as the original \coffeescript implementation. The Haskell implementation
 is |IO|-heavy, but straightforward.
 
 Thus it is possible to implement a non-trivial application completely in
