@@ -16,6 +16,8 @@
 \newcommand{\uhcjscript}{\textit{uhc-jscript}\xspace}
 \def\brunch{\verb+Brunch+\xspace}
 \def\coffeescript{\verb+coffeescript+\xspace}
+\def\jq{jQuery\xspace}
+\def\jqui{jQuery UI\xspace}
 %%]
 
 %%[abstract
