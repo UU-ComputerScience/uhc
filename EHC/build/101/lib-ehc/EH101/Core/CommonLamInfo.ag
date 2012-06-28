@@ -1,8 +1,0 @@
-ATTR
-  AllCodeNT
-  CodeAGItf
-    [ lamMp: LamMp | | ]
-
-SEM CExpr
-  | Lam         body        .   lamMp       =   Map.delete @argNm @lhs.lamMp
-

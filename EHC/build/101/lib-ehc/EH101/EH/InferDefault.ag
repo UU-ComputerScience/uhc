@@ -1,6 +1,0 @@
-ATTR AllDecl [ | | gathClDfGam USE {`gamUnion`} {emptyGam}: ClassDefaultGam ]
-
-SEM Decl
-  | Default     lhs         .   gathClDfGam         =   gamSingleton @nm (ClassDefaultGamInfo @tyExprs.tyL)
-
-ATTR NTPrf [ clDfGam: ClassDefaultGam | | ]

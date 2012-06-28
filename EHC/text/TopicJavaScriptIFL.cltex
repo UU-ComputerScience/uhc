@@ -248,9 +248,7 @@ application is written in Haskell which compiles to \js by UHC. It uses the
 bindings to the jQuery\cite{jquery} JavaScript library and the
 AjaxQueue\cite{ajaxq} library.
 
-The Haskell implementation of the application has the same features and is as
-stable as the original \coffescript implementation. The Haskell implementation
-is |IO|-heavy, but straightforward.
+As our original application was written
 
 
 \subsection{\label{issues}Implementation Issues}

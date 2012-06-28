@@ -1,4 +1,0 @@
-SEM GrExpr
-  | FFI         loc         .   foreignEntInfo  =   foreignEntExtract @impEnt
-                            .   impEntNm        =   forextractEnt @foreignEntInfo
-
