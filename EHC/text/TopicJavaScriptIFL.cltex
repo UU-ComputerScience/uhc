@@ -248,8 +248,12 @@ application is written in Haskell which compiles to \js by UHC. It uses the
 bindings to the jQuery\cite{jquery} JavaScript library and the
 AjaxQueue\cite{ajaxq} library.
 
-As our original application was written
+The Haskell implementation of the application has the same features and is as
+stable as the original \coffescript implementation. The Haskell implementation
+is |IO|-heavy, but straightforward.
 
+Thus it is possible to implement a non-trivial application completely in
+Haskell, using the UHC JavaScript backend.
 
 \subsection{\label{issues}Implementation Issues}
 Which issues do you run into in general when you develop a JS app in Haskell?
@@ -257,6 +261,11 @@ Which issues do you run into in general when you develop a JS app in Haskell?
 Ale: non-termination/threads, no native OO, interfacing with annoyingly
 multi-interpretable functions (functions that are dimensioned in both the number
 and type of their arguments)
+
+We had to make concessions and create some workarounds due to the lack of
+support for advanced language features, such as Functional Dependencies and Type
+Families.
+
 
 \subsection{\label{performance}Performance}
 Performance is decent, except for the actual Prolog backtracking. Where is the bottleneck?
