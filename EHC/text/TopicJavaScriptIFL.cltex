@@ -266,6 +266,18 @@ We had to make concessions and create some workarounds due to the lack of
 support for advanced language features, such as Functional Dependencies and Type
 Families.
 
+In \js the keyword |this| refers to the object currently in scope when calling a
+function. Since the function our case was run by our RTS the |this| keyword
+referred to the RTS objects' scope. Essentially exposing the RTS to the Haskell
+world and hiding the scope that would expect to get when we would be using plain
+\js.
+ 
+Specifically, the \jqui library ensures that |this| in the event callbacks
+points to the object you, e.g., dropped another object on, instead of passing it
+as an argument. In order to work around this we added a wrapper function that
+captures |this| and passes it along to the wrapped function as an event. For
+more details see the |wrappedThis| function in the RTS.
+
 
 \subsection{\label{performance}Performance}
 Performance is decent, except for the actual Prolog backtracking. Where is the bottleneck?
@@ -340,6 +352,10 @@ runtime. This, however, is a process with time complexity linear in the number
 of datatype records. Future work could focus on generating (parts of) \js
 objects at compile-time, so that only dynamic values will need to be copied to
 the object at runtime.
+
+\subsection{Safe |this| scope (working title)}
+Is there a way to prevent the RTS from being exposed by using the keyword
+|this|?
 
 \subsubsection*{Numeric object indices}
 When a datatype without record selectors is converted into a \js object, the
