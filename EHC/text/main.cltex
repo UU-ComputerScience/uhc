@@ -2483,6 +2483,10 @@ and pointing out where and why we differ from the `standard' \cite{stuckey02theo
 
 %%@TopicJavaScriptIFL.HaskellToJavaScript
 
+\section{The JCU Application}
+
+%%@TopicJavaScriptIFL.JCUApp
+
 \section{Future Work}
 
 %%@TopicJavaScriptIFL.futureWork

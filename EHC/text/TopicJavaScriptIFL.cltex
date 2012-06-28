@@ -14,6 +14,8 @@
 \newcommand{\todo}[1]{{\color{red}#1}}
 \newcommand{\js}{JavaScript\xspace}
 \newcommand{\uhcjscript}{\textit{uhc-jscript}\xspace}
+\def\brunch{\verb+Brunch+\xspace}
+\def\coffeescript{\verb+coffeescript+\xspace}
 %%]
 
 %%[abstract
@@ -234,22 +236,19 @@ Is the UHC JS backend a full replacement for JS coding? Etc?
 
 The JCU Prolog Proof Assistant\cite{swierstra2011} is a tool developed for
 students to familiarize themselves with Prolog through the aided solving of
-Prolog proof trees. The tool is presented as a web application and can be run in
-any modern browser. Although the code run by the browser the tool itself is
-programmed in Haskell.
+Prolog proof trees. Originally programmed in \coffeescript\cite{coffeescript}
+(sugar for \js) and using the \brunch\cite{brunch} framework.
 
-The tool consists of an input box where the student can enter the Prolog term to
-be `proven' on the left hand side and a list of rules, `the world', on the right
-hand side. The student can proceed to prove the term by either drag and dropping
-a rule on a term or by performing a manual substitution through two additional
-input boxes. At any time the student can make the assistant check whether he is
-finished by clicking on the ``Check proof'' button.
+Students can proof their Prolog query by applying a combination of variable
+substitution and dropping rules from the list of rules on the tree.
 
-Each rule can be dropped upon a term in the tree. Each term has a function that
-is triggered when dropping a rule on it. This function is a partially applied
-Haskell function that is exposed as a \js function. This event handler is
-constructed when traversing the tree for printing and coupled to the drop event
-of the specific term.
+The tool is presented as a web application and runs in any modern browser. The
+application is written in Haskell which compiles to \js by UHC. It uses the
+\uhcjscript\cite{uhcjs} library. The \uhcjscript library provides (among others)
+bindings to the jQuery\cite{jquery} JavaScript library and the
+AjaxQueue\cite{ajaxq} library.
+
+As our original application was written
 
 
 \subsection{\label{issues}Implementation Issues}
