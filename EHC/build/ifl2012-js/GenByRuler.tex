@@ -1,0 +1,1165 @@
+egin{tabular}{llp{.6\linewidth}}
+EH version & Ruler view & rules \ \hline
+mkdir -p build/1/lib-ehc/EH1/
+bin/shuffle src/ehc/files-ag-d.dep --dep \
+	  --depnameprefix=EHC_ \
+	  --depsrcvar=SRC_EHC_PREFIX \
+	  --depdstvar=EHC_BLD_LIB_HS_VARIANT_PREFIX \
+	  --depmainvar=EHC_AG_D_MAIN_SRC_CAG \
+	  --depdpdsvar=EHC_AG_D_DPDS_SRC_CAG \
+	  --deporigdpdsvar=EHC_AG_D_ODPDS_SRC_CAG \
+	  --depderivdpdsvar=EHC_AG_D_DDPDS_DERIV_AG \
+	  --depbase=src/ehc/ \
+	  --depterm="EHRulerRules>" \
+	  --depign="EHRulerRules EHRulerRules.cag" \
+	    > build/1/lib-ehc/EH1/files-ag-d-dep.mk
+mkdir -p build/1/lib-ehc/EH1/
+bin/shuffle src/ehc/files-ag-s.dep --dep \
+	  --depnameprefix=EHC_ \
+	  --depsrcvar=SRC_EHC_PREFIX \
+	  --depdstvar=EHC_BLD_LIB_HS_VARIANT_PREFIX \
+	  --depmainvar=EHC_AG_S_MAIN_SRC_CAG \
+	  --depdpdsvar=EHC_AG_S_DPDS_SRC_CAG \
+	  --deporigdpdsvar=EHC_AG_S_ODPDS_SRC_CAG \
+	  --depderivdpdsvar=EHC_AG_S_DDPDS_DERIV_AG \
+	  --depbase=src/ehc/ \
+	  --depterm="EHRulerRules>" \
+	  --depign="EHRulerRules EHRulerRules.cag" \
+	    > build/1/lib-ehc/EH1/files-ag-s-dep.mk
+erb|1| & 	extit{K} & 
+-n 	extRL{d.tysig}\hspace{.5em} 
+-n 	extRL{d.val}\hspace{.5em} 
+-n 	extRL{e.ann}\hspace{.5em} 
+-n 	extRL{e.app}\hspace{.5em} 
+-n 	extRL{e.app.f}\hspace{.5em} 
+-n 	extRL{e.apptop}\hspace{.5em} 
+-n 	extRL{e.char}\hspace{.5em} 
+-n 	extRL{e.con}\hspace{.5em} 
+-n 	extRL{e.int}\hspace{.5em} 
+-n 	extRL{e.lam}\hspace{.5em} 
+-n 	extRL{e.let}\hspace{.5em} 
+-n 	extRL{e.var}\hspace{.5em} 
+-n 	extRL{p.ann}\hspace{.5em} 
+-n 	extRL{p.app}\hspace{.5em} 
+-n 	extRL{p.apptop}\hspace{.5em} 
+-n 	extRL{p.char}\hspace{.5em} 
+-n 	extRL{p.con}\hspace{.5em} 
+-n 	extRL{p.int}\hspace{.5em} 
+-n 	extRL{p.var}\hspace{.5em} 
+-n 	extRL{p.varas}\hspace{.5em} 
+-n 	extRL{t.app}\hspace{.5em} 
+-n 	extRL{t.con}\hspace{.5em} 
+-n 	extRL{t.quant}\hspace{.5em} 
+-n 	extRL{t.var}\hspace{.5em} 
+-n 	extRL{t.var.w}\hspace{.5em} 
+-n 	extRL{t.wild}\hspace{.5em} 
+\
+mkdir -p build/2/lib-ehc/EH2/
+bin/shuffle src/ehc/files-ag-d.dep --dep \
+	  --depnameprefix=EHC_ \
+	  --depsrcvar=SRC_EHC_PREFIX \
+	  --depdstvar=EHC_BLD_LIB_HS_VARIANT_PREFIX \
+	  --depmainvar=EHC_AG_D_MAIN_SRC_CAG \
+	  --depdpdsvar=EHC_AG_D_DPDS_SRC_CAG \
+	  --deporigdpdsvar=EHC_AG_D_ODPDS_SRC_CAG \
+	  --depderivdpdsvar=EHC_AG_D_DDPDS_DERIV_AG \
+	  --depbase=src/ehc/ \
+	  --depterm="EHRulerRules>" \
+	  --depign="EHRulerRules EHRulerRules.cag" \
+	    > build/2/lib-ehc/EH2/files-ag-d-dep.mk
+mkdir -p build/2/lib-ehc/EH2/
+bin/shuffle src/ehc/files-ag-s.dep --dep \
+	  --depnameprefix=EHC_ \
+	  --depsrcvar=SRC_EHC_PREFIX \
+	  --depdstvar=EHC_BLD_LIB_HS_VARIANT_PREFIX \
+	  --depmainvar=EHC_AG_S_MAIN_SRC_CAG \
+	  --depdpdsvar=EHC_AG_S_DPDS_SRC_CAG \
+	  --deporigdpdsvar=EHC_AG_S_ODPDS_SRC_CAG \
+	  --depderivdpdsvar=EHC_AG_S_DDPDS_DERIV_AG \
+	  --depbase=src/ehc/ \
+	  --depterm="EHRulerRules>" \
+	  --depign="EHRulerRules EHRulerRules.cag" \
+	    > build/2/lib-ehc/EH2/files-ag-s-dep.mk
+erb|2| & 	extit{C} & 
+-n 	extRL{d.tysig}\hspace{.5em} 
+-n 	extRL{d.val}\hspace{.5em} 
+-n 	extRL{e.ann}\hspace{.5em} 
+-n 	extRL{e.app}\hspace{.5em} 
+-n 	extRL{e.app.f}\hspace{.5em} 
+-n 	extRL{e.apptop}\hspace{.5em} 
+-n 	extRL{e.char}\hspace{.5em} 
+-n 	extRL{e.con}\hspace{.5em} 
+-n 	extRL{e.int}\hspace{.5em} 
+-n 	extRL{e.lam}\hspace{.5em} 
+-n 	extRL{e.let}\hspace{.5em} 
+-n 	extRL{e.var}\hspace{.5em} 
+-n 	extRL{p.ann}\hspace{.5em} 
+-n 	extRL{p.app}\hspace{.5em} 
+-n 	extRL{p.apptop}\hspace{.5em} 
+-n 	extRL{p.char}\hspace{.5em} 
+-n 	extRL{p.con}\hspace{.5em} 
+-n 	extRL{p.int}\hspace{.5em} 
+-n 	extRL{p.var}\hspace{.5em} 
+-n 	extRL{p.varas}\hspace{.5em} 
+-n 	extRL{t.app}\hspace{.5em} 
+-n 	extRL{t.con}\hspace{.5em} 
+-n 	extRL{t.quant}\hspace{.5em} 
+-n 	extRL{t.var}\hspace{.5em} 
+-n 	extRL{t.var.w}\hspace{.5em} 
+-n 	extRL{t.wild}\hspace{.5em} 
+\
+mkdir -p build/3/lib-ehc/EH3/
+bin/shuffle src/ehc/files-ag-d.dep --dep \
+	  --depnameprefix=EHC_ \
+	  --depsrcvar=SRC_EHC_PREFIX \
+	  --depdstvar=EHC_BLD_LIB_HS_VARIANT_PREFIX \
+	  --depmainvar=EHC_AG_D_MAIN_SRC_CAG \
+	  --depdpdsvar=EHC_AG_D_DPDS_SRC_CAG \
+	  --deporigdpdsvar=EHC_AG_D_ODPDS_SRC_CAG \
+	  --depderivdpdsvar=EHC_AG_D_DDPDS_DERIV_AG \
+	  --depbase=src/ehc/ \
+	  --depterm="EHRulerRules>" \
+	  --depign="EHRulerRules EHRulerRules.cag" \
+	    > build/3/lib-ehc/EH3/files-ag-d-dep.mk
+mkdir -p build/3/lib-ehc/EH3/
+bin/shuffle src/ehc/files-ag-s.dep --dep \
+	  --depnameprefix=EHC_ \
+	  --depsrcvar=SRC_EHC_PREFIX \
+	  --depdstvar=EHC_BLD_LIB_HS_VARIANT_PREFIX \
+	  --depmainvar=EHC_AG_S_MAIN_SRC_CAG \
+	  --depdpdsvar=EHC_AG_S_DPDS_SRC_CAG \
+	  --deporigdpdsvar=EHC_AG_S_ODPDS_SRC_CAG \
+	  --depderivdpdsvar=EHC_AG_S_DDPDS_DERIV_AG \
+	  --depbase=src/ehc/ \
+	  --depterm="EHRulerRules>" \
+	  --depign="EHRulerRules EHRulerRules.cag" \
+	    > build/3/lib-ehc/EH3/files-ag-s-dep.mk
+erb|3| & 	extit{HM} & 
+-n 	extRL{d.tysig}\hspace{.5em} 
+-n 	extRL{d.val}\hspace{.5em} 
+-n 	extRL{e.ann}\hspace{.5em} 
+-n 	extRL{e.app}\hspace{.5em} 
+-n 	extRL{e.app.f}\hspace{.5em} 
+-n 	extRL{e.apptop}\hspace{.5em} 
+-n 	extRL{e.char}\hspace{.5em} 
+-n 	extRL{e.con}\hspace{.5em} 
+-n 	extRL{e.int}\hspace{.5em} 
+-n 	extRL{e.lam}\hspace{.5em} 
+-n 	extRL{e.let}\hspace{.5em} 
+-n 	extRL{e.var}\hspace{.5em} 
+-n 	extRL{p.ann}\hspace{.5em} 
+-n 	extRL{p.app}\hspace{.5em} 
+-n 	extRL{p.apptop}\hspace{.5em} 
+-n 	extRL{p.char}\hspace{.5em} 
+-n 	extRL{p.con}\hspace{.5em} 
+-n 	extRL{p.int}\hspace{.5em} 
+-n 	extRL{p.var}\hspace{.5em} 
+-n 	extRL{p.varas}\hspace{.5em} 
+-n 	extRL{t.app}\hspace{.5em} 
+-n 	extRL{t.con}\hspace{.5em} 
+-n 	extRL{t.quant}\hspace{.5em} 
+-n 	extRL{t.var}\hspace{.5em} 
+-n 	extRL{t.var.w}\hspace{.5em} 
+-n 	extRL{t.wild}\hspace{.5em} 
+\
+mkdir -p build/4/lib-ehc/EH4/
+bin/shuffle src/ehc/files-ag-d.dep --dep \
+	  --depnameprefix=EHC_ \
+	  --depsrcvar=SRC_EHC_PREFIX \
+	  --depdstvar=EHC_BLD_LIB_HS_VARIANT_PREFIX \
+	  --depmainvar=EHC_AG_D_MAIN_SRC_CAG \
+	  --depdpdsvar=EHC_AG_D_DPDS_SRC_CAG \
+	  --deporigdpdsvar=EHC_AG_D_ODPDS_SRC_CAG \
+	  --depderivdpdsvar=EHC_AG_D_DDPDS_DERIV_AG \
+	  --depbase=src/ehc/ \
+	  --depterm="EHRulerRules>" \
+	  --depign="EHRulerRules EHRulerRules.cag" \
+	    > build/4/lib-ehc/EH4/files-ag-d-dep.mk
+mkdir -p build/4/lib-ehc/EH4/
+bin/shuffle src/ehc/files-ag-s.dep --dep \
+	  --depnameprefix=EHC_ \
+	  --depsrcvar=SRC_EHC_PREFIX \
+	  --depdstvar=EHC_BLD_LIB_HS_VARIANT_PREFIX \
+	  --depmainvar=EHC_AG_S_MAIN_SRC_CAG \
+	  --depdpdsvar=EHC_AG_S_DPDS_SRC_CAG \
+	  --deporigdpdsvar=EHC_AG_S_ODPDS_SRC_CAG \
+	  --depderivdpdsvar=EHC_AG_S_DDPDS_DERIV_AG \
+	  --depbase=src/ehc/ \
+	  --depterm="EHRulerRules>" \
+	  --depign="EHRulerRules EHRulerRules.cag" \
+	    > build/4/lib-ehc/EH4/files-ag-s-dep.mk
+erb|4| & 	extit{EX} & 
+-n 	extRL{d.tysig}\hspace{.5em} 
+-n 	extRL{d.val}\hspace{.5em} 
+-n 	extRL{e.ann}\hspace{.5em} 
+-n 	extRL{e.app}\hspace{.5em} 
+-n 	extRL{e.app.f}\hspace{.5em} 
+-n 	extRL{e.apptop}\hspace{.5em} 
+-n 	extRL{e.char}\hspace{.5em} 
+-n 	extRL{e.con}\hspace{.5em} 
+-n 	extRL{e.int}\hspace{.5em} 
+-n 	extRL{e.lam}\hspace{.5em} 
+-n 	extRL{e.let}\hspace{.5em} 
+-n 	extRL{e.var}\hspace{.5em} 
+-n 	extRL{p.ann}\hspace{.5em} 
+-n 	extRL{p.app}\hspace{.5em} 
+-n 	extRL{p.apptop}\hspace{.5em} 
+-n 	extRL{p.char}\hspace{.5em} 
+-n 	extRL{p.con}\hspace{.5em} 
+-n 	extRL{p.int}\hspace{.5em} 
+-n 	extRL{p.var}\hspace{.5em} 
+-n 	extRL{p.varas}\hspace{.5em} 
+-n 	extRL{t.app}\hspace{.5em} 
+-n 	extRL{t.con}\hspace{.5em} 
+-n 	extRL{t.quant}\hspace{.5em} 
+-n 	extRL{t.var}\hspace{.5em} 
+-n 	extRL{t.var.w}\hspace{.5em} 
+-n 	extRL{t.wild}\hspace{.5em} 
+\
+mkdir -p build/5/lib-ehc/EH5/
+bin/shuffle src/ehc/files-ag-d.dep --dep \
+	  --depnameprefix=EHC_ \
+	  --depsrcvar=SRC_EHC_PREFIX \
+	  --depdstvar=EHC_BLD_LIB_HS_VARIANT_PREFIX \
+	  --depmainvar=EHC_AG_D_MAIN_SRC_CAG \
+	  --depdpdsvar=EHC_AG_D_DPDS_SRC_CAG \
+	  --deporigdpdsvar=EHC_AG_D_ODPDS_SRC_CAG \
+	  --depderivdpdsvar=EHC_AG_D_DDPDS_DERIV_AG \
+	  --depbase=src/ehc/ \
+	  --depterm="EHRulerRules>" \
+	  --depign="EHRulerRules EHRulerRules.cag" \
+	    > build/5/lib-ehc/EH5/files-ag-d-dep.mk
+mkdir -p build/5/lib-ehc/EH5/
+bin/shuffle src/ehc/files-ag-s.dep --dep \
+	  --depnameprefix=EHC_ \
+	  --depsrcvar=SRC_EHC_PREFIX \
+	  --depdstvar=EHC_BLD_LIB_HS_VARIANT_PREFIX \
+	  --depmainvar=EHC_AG_S_MAIN_SRC_CAG \
+	  --depdpdsvar=EHC_AG_S_DPDS_SRC_CAG \
+	  --deporigdpdsvar=EHC_AG_S_ODPDS_SRC_CAG \
+	  --depderivdpdsvar=EHC_AG_S_DDPDS_DERIV_AG \
+	  --depbase=src/ehc/ \
+	  --depterm="EHRulerRules>" \
+	  --depign="EHRulerRules EHRulerRules.cag" \
+	    > build/5/lib-ehc/EH5/files-ag-s-dep.mk
+erb|5| & 	extit{DT} & 
+-n 	extRL{e.char}\hspace{.5em} 
+-n 	extRL{e.con}\hspace{.5em} 
+-n 	extRL{e.int}\hspace{.5em} 
+-n 	extRL{e.str}\hspace{.5em} 
+-n 	extRL{e.var}\hspace{.5em} 
+-n 	extRL{p.str}\hspace{.5em} 
+\
+mkdir -p build/6/lib-ehc/EH6/
+bin/shuffle src/ehc/files-ag-d.dep --dep \
+	  --depnameprefix=EHC_ \
+	  --depsrcvar=SRC_EHC_PREFIX \
+	  --depdstvar=EHC_BLD_LIB_HS_VARIANT_PREFIX \
+	  --depmainvar=EHC_AG_D_MAIN_SRC_CAG \
+	  --depdpdsvar=EHC_AG_D_DPDS_SRC_CAG \
+	  --deporigdpdsvar=EHC_AG_D_ODPDS_SRC_CAG \
+	  --depderivdpdsvar=EHC_AG_D_DDPDS_DERIV_AG \
+	  --depbase=src/ehc/ \
+	  --depterm="EHRulerRules>" \
+	  --depign="EHRulerRules EHRulerRules.cag" \
+	    > build/6/lib-ehc/EH6/files-ag-d-dep.mk
+mkdir -p build/6/lib-ehc/EH6/
+bin/shuffle src/ehc/files-ag-s.dep --dep \
+	  --depnameprefix=EHC_ \
+	  --depsrcvar=SRC_EHC_PREFIX \
+	  --depdstvar=EHC_BLD_LIB_HS_VARIANT_PREFIX \
+	  --depmainvar=EHC_AG_S_MAIN_SRC_CAG \
+	  --depdpdsvar=EHC_AG_S_DPDS_SRC_CAG \
+	  --deporigdpdsvar=EHC_AG_S_ODPDS_SRC_CAG \
+	  --depderivdpdsvar=EHC_AG_S_DDPDS_DERIV_AG \
+	  --depbase=src/ehc/ \
+	  --depterm="EHRulerRules>" \
+	  --depign="EHRulerRules EHRulerRules.cag" \
+	    > build/6/lib-ehc/EH6/files-ag-s-dep.mk
+erb|6| & 	extit{DT} & 
+-n 	extRL{e.char}\hspace{.5em} 
+-n 	extRL{e.con}\hspace{.5em} 
+-n 	extRL{e.int}\hspace{.5em} 
+-n 	extRL{e.str}\hspace{.5em} 
+-n 	extRL{e.var}\hspace{.5em} 
+-n 	extRL{p.str}\hspace{.5em} 
+\
+mkdir -p build/7/lib-ehc/EH7/
+bin/shuffle src/ehc/files-ag-d.dep --dep \
+	  --depnameprefix=EHC_ \
+	  --depsrcvar=SRC_EHC_PREFIX \
+	  --depdstvar=EHC_BLD_LIB_HS_VARIANT_PREFIX \
+	  --depmainvar=EHC_AG_D_MAIN_SRC_CAG \
+	  --depdpdsvar=EHC_AG_D_DPDS_SRC_CAG \
+	  --deporigdpdsvar=EHC_AG_D_ODPDS_SRC_CAG \
+	  --depderivdpdsvar=EHC_AG_D_DDPDS_DERIV_AG \
+	  --depbase=src/ehc/ \
+	  --depterm="EHRulerRules>" \
+	  --depign="EHRulerRules EHRulerRules.cag" \
+	    > build/7/lib-ehc/EH7/files-ag-d-dep.mk
+mkdir -p build/7/lib-ehc/EH7/
+bin/shuffle src/ehc/files-ag-s.dep --dep \
+	  --depnameprefix=EHC_ \
+	  --depsrcvar=SRC_EHC_PREFIX \
+	  --depdstvar=EHC_BLD_LIB_HS_VARIANT_PREFIX \
+	  --depmainvar=EHC_AG_S_MAIN_SRC_CAG \
+	  --depdpdsvar=EHC_AG_S_DPDS_SRC_CAG \
+	  --deporigdpdsvar=EHC_AG_S_ODPDS_SRC_CAG \
+	  --depderivdpdsvar=EHC_AG_S_DDPDS_DERIV_AG \
+	  --depbase=src/ehc/ \
+	  --depterm="EHRulerRules>" \
+	  --depign="EHRulerRules EHRulerRules.cag" \
+	    > build/7/lib-ehc/EH7/files-ag-s-dep.mk
+erb|7| & 	extit{DT} & 
+-n 	extRL{e.char}\hspace{.5em} 
+-n 	extRL{e.con}\hspace{.5em} 
+-n 	extRL{e.int}\hspace{.5em} 
+-n 	extRL{e.str}\hspace{.5em} 
+-n 	extRL{e.var}\hspace{.5em} 
+-n 	extRL{p.str}\hspace{.5em} 
+\
+mkdir -p build/8/lib-ehc/EH8/
+bin/shuffle src/ehc/files-ag-d.dep --dep \
+	  --depnameprefix=EHC_ \
+	  --depsrcvar=SRC_EHC_PREFIX \
+	  --depdstvar=EHC_BLD_LIB_HS_VARIANT_PREFIX \
+	  --depmainvar=EHC_AG_D_MAIN_SRC_CAG \
+	  --depdpdsvar=EHC_AG_D_DPDS_SRC_CAG \
+	  --deporigdpdsvar=EHC_AG_D_ODPDS_SRC_CAG \
+	  --depderivdpdsvar=EHC_AG_D_DDPDS_DERIV_AG \
+	  --depbase=src/ehc/ \
+	  --depterm="EHRulerRules>" \
+	  --depign="EHRulerRules EHRulerRules.cag" \
+	    > build/8/lib-ehc/EH8/files-ag-d-dep.mk
+mkdir -p build/8/lib-ehc/EH8/
+bin/shuffle src/ehc/files-ag-s.dep --dep \
+	  --depnameprefix=EHC_ \
+	  --depsrcvar=SRC_EHC_PREFIX \
+	  --depdstvar=EHC_BLD_LIB_HS_VARIANT_PREFIX \
+	  --depmainvar=EHC_AG_S_MAIN_SRC_CAG \
+	  --depdpdsvar=EHC_AG_S_DPDS_SRC_CAG \
+	  --deporigdpdsvar=EHC_AG_S_ODPDS_SRC_CAG \
+	  --depderivdpdsvar=EHC_AG_S_DDPDS_DERIV_AG \
+	  --depbase=src/ehc/ \
+	  --depterm="EHRulerRules>" \
+	  --depign="EHRulerRules EHRulerRules.cag" \
+	    > build/8/lib-ehc/EH8/files-ag-s-dep.mk
+erb|8| & 	extit{CG} & 
+-n 	extRL{e.char}\hspace{.5em} 
+-n 	extRL{e.con}\hspace{.5em} 
+-n 	extRL{e.int}\hspace{.5em} 
+-n 	extRL{e.str}\hspace{.5em} 
+-n 	extRL{e.var}\hspace{.5em} 
+-n 	extRL{p.str}\hspace{.5em} 
+\
+mkdir -p build/9/lib-ehc/EH9/
+bin/shuffle src/ehc/files-ag-d.dep --dep \
+	  --depnameprefix=EHC_ \
+	  --depsrcvar=SRC_EHC_PREFIX \
+	  --depdstvar=EHC_BLD_LIB_HS_VARIANT_PREFIX \
+	  --depmainvar=EHC_AG_D_MAIN_SRC_CAG \
+	  --depdpdsvar=EHC_AG_D_DPDS_SRC_CAG \
+	  --deporigdpdsvar=EHC_AG_D_ODPDS_SRC_CAG \
+	  --depderivdpdsvar=EHC_AG_D_DDPDS_DERIV_AG \
+	  --depbase=src/ehc/ \
+	  --depterm="EHRulerRules>" \
+	  --depign="EHRulerRules EHRulerRules.cag" \
+	    > build/9/lib-ehc/EH9/files-ag-d-dep.mk
+mkdir -p build/9/lib-ehc/EH9/
+bin/shuffle src/ehc/files-ag-s.dep --dep \
+	  --depnameprefix=EHC_ \
+	  --depsrcvar=SRC_EHC_PREFIX \
+	  --depdstvar=EHC_BLD_LIB_HS_VARIANT_PREFIX \
+	  --depmainvar=EHC_AG_S_MAIN_SRC_CAG \
+	  --depdpdsvar=EHC_AG_S_DPDS_SRC_CAG \
+	  --deporigdpdsvar=EHC_AG_S_ODPDS_SRC_CAG \
+	  --depderivdpdsvar=EHC_AG_S_DDPDS_DERIV_AG \
+	  --depbase=src/ehc/ \
+	  --depterm="EHRulerRules>" \
+	  --depign="EHRulerRules EHRulerRules.cag" \
+	    > build/9/lib-ehc/EH9/files-ag-s-dep.mk
+erb|9| & 	extit{P} & 
+-n 	extRL{e.char}\hspace{.5em} 
+-n 	extRL{e.con}\hspace{.5em} 
+-n 	extRL{e.int}\hspace{.5em} 
+-n 	extRL{e.str}\hspace{.5em} 
+-n 	extRL{e.var}\hspace{.5em} 
+-n 	extRL{p.str}\hspace{.5em} 
+\
+mkdir -p build/10/lib-ehc/EH10/
+bin/shuffle src/ehc/files-ag-d.dep --dep \
+	  --depnameprefix=EHC_ \
+	  --depsrcvar=SRC_EHC_PREFIX \
+	  --depdstvar=EHC_BLD_LIB_HS_VARIANT_PREFIX \
+	  --depmainvar=EHC_AG_D_MAIN_SRC_CAG \
+	  --depdpdsvar=EHC_AG_D_DPDS_SRC_CAG \
+	  --deporigdpdsvar=EHC_AG_D_ODPDS_SRC_CAG \
+	  --depderivdpdsvar=EHC_AG_D_DDPDS_DERIV_AG \
+	  --depbase=src/ehc/ \
+	  --depterm="EHRulerRules>" \
+	  --depign="EHRulerRules EHRulerRules.cag" \
+	    > build/10/lib-ehc/EH10/files-ag-d-dep.mk
+mkdir -p build/10/lib-ehc/EH10/
+bin/shuffle src/ehc/files-ag-s.dep --dep \
+	  --depnameprefix=EHC_ \
+	  --depsrcvar=SRC_EHC_PREFIX \
+	  --depdstvar=EHC_BLD_LIB_HS_VARIANT_PREFIX \
+	  --depmainvar=EHC_AG_S_MAIN_SRC_CAG \
+	  --depdpdsvar=EHC_AG_S_DPDS_SRC_CAG \
+	  --deporigdpdsvar=EHC_AG_S_ODPDS_SRC_CAG \
+	  --depderivdpdsvar=EHC_AG_S_DDPDS_DERIV_AG \
+	  --depbase=src/ehc/ \
+	  --depterm="EHRulerRules>" \
+	  --depign="EHRulerRules EHRulerRules.cag" \
+	    > build/10/lib-ehc/EH10/files-ag-s-dep.mk
+erb|10| & 	extit{P} & 
+-n 	extRL{e.char}\hspace{.5em} 
+-n 	extRL{e.con}\hspace{.5em} 
+-n 	extRL{e.int}\hspace{.5em} 
+-n 	extRL{e.str}\hspace{.5em} 
+-n 	extRL{e.var}\hspace{.5em} 
+-n 	extRL{p.str}\hspace{.5em} 
+\
+mkdir -p build/11/lib-ehc/EH11/
+bin/shuffle src/ehc/files-ag-d.dep --dep \
+	  --depnameprefix=EHC_ \
+	  --depsrcvar=SRC_EHC_PREFIX \
+	  --depdstvar=EHC_BLD_LIB_HS_VARIANT_PREFIX \
+	  --depmainvar=EHC_AG_D_MAIN_SRC_CAG \
+	  --depdpdsvar=EHC_AG_D_DPDS_SRC_CAG \
+	  --deporigdpdsvar=EHC_AG_D_ODPDS_SRC_CAG \
+	  --depderivdpdsvar=EHC_AG_D_DDPDS_DERIV_AG \
+	  --depbase=src/ehc/ \
+	  --depterm="EHRulerRules>" \
+	  --depign="EHRulerRules EHRulerRules.cag" \
+	    > build/11/lib-ehc/EH11/files-ag-d-dep.mk
+mkdir -p build/11/lib-ehc/EH11/
+bin/shuffle src/ehc/files-ag-s.dep --dep \
+	  --depnameprefix=EHC_ \
+	  --depsrcvar=SRC_EHC_PREFIX \
+	  --depdstvar=EHC_BLD_LIB_HS_VARIANT_PREFIX \
+	  --depmainvar=EHC_AG_S_MAIN_SRC_CAG \
+	  --depdpdsvar=EHC_AG_S_DPDS_SRC_CAG \
+	  --deporigdpdsvar=EHC_AG_S_ODPDS_SRC_CAG \
+	  --depderivdpdsvar=EHC_AG_S_DDPDS_DERIV_AG \
+	  --depbase=src/ehc/ \
+	  --depterm="EHRulerRules>" \
+	  --depign="EHRulerRules EHRulerRules.cag" \
+	    > build/11/lib-ehc/EH11/files-ag-s-dep.mk
+erb|11| & 	extit{TS} & 
+-n 	extRL{e.char}\hspace{.5em} 
+-n 	extRL{e.con}\hspace{.5em} 
+-n 	extRL{e.int}\hspace{.5em} 
+-n 	extRL{e.str}\hspace{.5em} 
+-n 	extRL{e.var}\hspace{.5em} 
+-n 	extRL{p.str}\hspace{.5em} 
+\
+mkdir -p build/12/lib-ehc/EH12/
+bin/shuffle src/ehc/files-ag-d.dep --dep \
+	  --depnameprefix=EHC_ \
+	  --depsrcvar=SRC_EHC_PREFIX \
+	  --depdstvar=EHC_BLD_LIB_HS_VARIANT_PREFIX \
+	  --depmainvar=EHC_AG_D_MAIN_SRC_CAG \
+	  --depdpdsvar=EHC_AG_D_DPDS_SRC_CAG \
+	  --deporigdpdsvar=EHC_AG_D_ODPDS_SRC_CAG \
+	  --depderivdpdsvar=EHC_AG_D_DDPDS_DERIV_AG \
+	  --depbase=src/ehc/ \
+	  --depterm="EHRulerRules>" \
+	  --depign="EHRulerRules EHRulerRules.cag" \
+	    > build/12/lib-ehc/EH12/files-ag-d-dep.mk
+mkdir -p build/12/lib-ehc/EH12/
+bin/shuffle src/ehc/files-ag-s.dep --dep \
+	  --depnameprefix=EHC_ \
+	  --depsrcvar=SRC_EHC_PREFIX \
+	  --depdstvar=EHC_BLD_LIB_HS_VARIANT_PREFIX \
+	  --depmainvar=EHC_AG_S_MAIN_SRC_CAG \
+	  --depdpdsvar=EHC_AG_S_DPDS_SRC_CAG \
+	  --deporigdpdsvar=EHC_AG_S_ODPDS_SRC_CAG \
+	  --depderivdpdsvar=EHC_AG_S_DDPDS_DERIV_AG \
+	  --depbase=src/ehc/ \
+	  --depterm="EHRulerRules>" \
+	  --depign="EHRulerRules EHRulerRules.cag" \
+	    > build/12/lib-ehc/EH12/files-ag-s-dep.mk
+erb|12| & 	extit{EP} & 
+-n 	extRL{e.char}\hspace{.5em} 
+-n 	extRL{e.con}\hspace{.5em} 
+-n 	extRL{e.int}\hspace{.5em} 
+-n 	extRL{e.str}\hspace{.5em} 
+-n 	extRL{e.var}\hspace{.5em} 
+-n 	extRL{p.str}\hspace{.5em} 
+\
+mkdir -p build/13/lib-ehc/EH13/
+bin/shuffle src/ehc/files-ag-d.dep --dep \
+	  --depnameprefix=EHC_ \
+	  --depsrcvar=SRC_EHC_PREFIX \
+	  --depdstvar=EHC_BLD_LIB_HS_VARIANT_PREFIX \
+	  --depmainvar=EHC_AG_D_MAIN_SRC_CAG \
+	  --depdpdsvar=EHC_AG_D_DPDS_SRC_CAG \
+	  --deporigdpdsvar=EHC_AG_D_ODPDS_SRC_CAG \
+	  --depderivdpdsvar=EHC_AG_D_DDPDS_DERIV_AG \
+	  --depbase=src/ehc/ \
+	  --depterm="EHRulerRules>" \
+	  --depign="EHRulerRules EHRulerRules.cag" \
+	    > build/13/lib-ehc/EH13/files-ag-d-dep.mk
+mkdir -p build/13/lib-ehc/EH13/
+bin/shuffle src/ehc/files-ag-s.dep --dep \
+	  --depnameprefix=EHC_ \
+	  --depsrcvar=SRC_EHC_PREFIX \
+	  --depdstvar=EHC_BLD_LIB_HS_VARIANT_PREFIX \
+	  --depmainvar=EHC_AG_S_MAIN_SRC_CAG \
+	  --depdpdsvar=EHC_AG_S_DPDS_SRC_CAG \
+	  --deporigdpdsvar=EHC_AG_S_ODPDS_SRC_CAG \
+	  --depderivdpdsvar=EHC_AG_S_DDPDS_DERIV_AG \
+	  --depbase=src/ehc/ \
+	  --depterm="EHRulerRules>" \
+	  --depign="EHRulerRules EHRulerRules.cag" \
+	    > build/13/lib-ehc/EH13/files-ag-s-dep.mk
+erb|13| & 	extit{EP} & 
+-n 	extRL{e.char}\hspace{.5em} 
+-n 	extRL{e.con}\hspace{.5em} 
+-n 	extRL{e.int}\hspace{.5em} 
+-n 	extRL{e.str}\hspace{.5em} 
+-n 	extRL{e.var}\hspace{.5em} 
+-n 	extRL{p.str}\hspace{.5em} 
+\
+mkdir -p build/14/lib-ehc/EH14/
+bin/shuffle src/ehc/files-ag-d.dep --dep \
+	  --depnameprefix=EHC_ \
+	  --depsrcvar=SRC_EHC_PREFIX \
+	  --depdstvar=EHC_BLD_LIB_HS_VARIANT_PREFIX \
+	  --depmainvar=EHC_AG_D_MAIN_SRC_CAG \
+	  --depdpdsvar=EHC_AG_D_DPDS_SRC_CAG \
+	  --deporigdpdsvar=EHC_AG_D_ODPDS_SRC_CAG \
+	  --depderivdpdsvar=EHC_AG_D_DDPDS_DERIV_AG \
+	  --depbase=src/ehc/ \
+	  --depterm="EHRulerRules>" \
+	  --depign="EHRulerRules EHRulerRules.cag" \
+	    > build/14/lib-ehc/EH14/files-ag-d-dep.mk
+mkdir -p build/14/lib-ehc/EH14/
+bin/shuffle src/ehc/files-ag-s.dep --dep \
+	  --depnameprefix=EHC_ \
+	  --depsrcvar=SRC_EHC_PREFIX \
+	  --depdstvar=EHC_BLD_LIB_HS_VARIANT_PREFIX \
+	  --depmainvar=EHC_AG_S_MAIN_SRC_CAG \
+	  --depdpdsvar=EHC_AG_S_DPDS_SRC_CAG \
+	  --deporigdpdsvar=EHC_AG_S_ODPDS_SRC_CAG \
+	  --depderivdpdsvar=EHC_AG_S_DDPDS_DERIV_AG \
+	  --depbase=src/ehc/ \
+	  --depterm="EHRulerRules>" \
+	  --depign="EHRulerRules EHRulerRules.cag" \
+	    > build/14/lib-ehc/EH14/files-ag-s-dep.mk
+erb|14| & 	extit{EP} & 
+-n 	extRL{e.char}\hspace{.5em} 
+-n 	extRL{e.con}\hspace{.5em} 
+-n 	extRL{e.int}\hspace{.5em} 
+-n 	extRL{e.str}\hspace{.5em} 
+-n 	extRL{e.var}\hspace{.5em} 
+-n 	extRL{p.str}\hspace{.5em} 
+\
+mkdir -p build/15/lib-ehc/EH15/
+bin/shuffle src/ehc/files-ag-d.dep --dep \
+	  --depnameprefix=EHC_ \
+	  --depsrcvar=SRC_EHC_PREFIX \
+	  --depdstvar=EHC_BLD_LIB_HS_VARIANT_PREFIX \
+	  --depmainvar=EHC_AG_D_MAIN_SRC_CAG \
+	  --depdpdsvar=EHC_AG_D_DPDS_SRC_CAG \
+	  --deporigdpdsvar=EHC_AG_D_ODPDS_SRC_CAG \
+	  --depderivdpdsvar=EHC_AG_D_DDPDS_DERIV_AG \
+	  --depbase=src/ehc/ \
+	  --depterm="EHRulerRules>" \
+	  --depign="EHRulerRules EHRulerRules.cag" \
+	    > build/15/lib-ehc/EH15/files-ag-d-dep.mk
+mkdir -p build/15/lib-ehc/EH15/
+bin/shuffle src/ehc/files-ag-s.dep --dep \
+	  --depnameprefix=EHC_ \
+	  --depsrcvar=SRC_EHC_PREFIX \
+	  --depdstvar=EHC_BLD_LIB_HS_VARIANT_PREFIX \
+	  --depmainvar=EHC_AG_S_MAIN_SRC_CAG \
+	  --depdpdsvar=EHC_AG_S_DPDS_SRC_CAG \
+	  --deporigdpdsvar=EHC_AG_S_ODPDS_SRC_CAG \
+	  --depderivdpdsvar=EHC_AG_S_DDPDS_DERIV_AG \
+	  --depbase=src/ehc/ \
+	  --depterm="EHRulerRules>" \
+	  --depign="EHRulerRules EHRulerRules.cag" \
+	    > build/15/lib-ehc/EH15/files-ag-s-dep.mk
+erb|15| & 	extit{EP} & 
+-n 	extRL{e.char}\hspace{.5em} 
+-n 	extRL{e.con}\hspace{.5em} 
+-n 	extRL{e.int}\hspace{.5em} 
+-n 	extRL{e.str}\hspace{.5em} 
+-n 	extRL{e.var}\hspace{.5em} 
+-n 	extRL{p.str}\hspace{.5em} 
+\
+mkdir -p build/17/lib-ehc/EH17/
+bin/shuffle src/ehc/files-ag-d.dep --dep \
+	  --depnameprefix=EHC_ \
+	  --depsrcvar=SRC_EHC_PREFIX \
+	  --depdstvar=EHC_BLD_LIB_HS_VARIANT_PREFIX \
+	  --depmainvar=EHC_AG_D_MAIN_SRC_CAG \
+	  --depdpdsvar=EHC_AG_D_DPDS_SRC_CAG \
+	  --deporigdpdsvar=EHC_AG_D_ODPDS_SRC_CAG \
+	  --depderivdpdsvar=EHC_AG_D_DDPDS_DERIV_AG \
+	  --depbase=src/ehc/ \
+	  --depterm="EHRulerRules>" \
+	  --depign="EHRulerRules EHRulerRules.cag" \
+	    > build/17/lib-ehc/EH17/files-ag-d-dep.mk
+mkdir -p build/17/lib-ehc/EH17/
+bin/shuffle src/ehc/files-ag-s.dep --dep \
+	  --depnameprefix=EHC_ \
+	  --depsrcvar=SRC_EHC_PREFIX \
+	  --depdstvar=EHC_BLD_LIB_HS_VARIANT_PREFIX \
+	  --depmainvar=EHC_AG_S_MAIN_SRC_CAG \
+	  --depdpdsvar=EHC_AG_S_DPDS_SRC_CAG \
+	  --deporigdpdsvar=EHC_AG_S_ODPDS_SRC_CAG \
+	  --depderivdpdsvar=EHC_AG_S_DDPDS_DERIV_AG \
+	  --depbase=src/ehc/ \
+	  --depterm="EHRulerRules>" \
+	  --depign="EHRulerRules EHRulerRules.cag" \
+	    > build/17/lib-ehc/EH17/files-ag-s-dep.mk
+erb|17| & 	extit{EP} & 
+-n 	extRL{e.char}\hspace{.5em} 
+-n 	extRL{e.con}\hspace{.5em} 
+-n 	extRL{e.int}\hspace{.5em} 
+-n 	extRL{e.str}\hspace{.5em} 
+-n 	extRL{e.var}\hspace{.5em} 
+-n 	extRL{p.str}\hspace{.5em} 
+\
+mkdir -p build/18/lib-ehc/EH18/
+bin/shuffle src/ehc/files-ag-d.dep --dep \
+	  --depnameprefix=EHC_ \
+	  --depsrcvar=SRC_EHC_PREFIX \
+	  --depdstvar=EHC_BLD_LIB_HS_VARIANT_PREFIX \
+	  --depmainvar=EHC_AG_D_MAIN_SRC_CAG \
+	  --depdpdsvar=EHC_AG_D_DPDS_SRC_CAG \
+	  --deporigdpdsvar=EHC_AG_D_ODPDS_SRC_CAG \
+	  --depderivdpdsvar=EHC_AG_D_DDPDS_DERIV_AG \
+	  --depbase=src/ehc/ \
+	  --depterm="EHRulerRules>" \
+	  --depign="EHRulerRules EHRulerRules.cag" \
+	    > build/18/lib-ehc/EH18/files-ag-d-dep.mk
+mkdir -p build/18/lib-ehc/EH18/
+bin/shuffle src/ehc/files-ag-s.dep --dep \
+	  --depnameprefix=EHC_ \
+	  --depsrcvar=SRC_EHC_PREFIX \
+	  --depdstvar=EHC_BLD_LIB_HS_VARIANT_PREFIX \
+	  --depmainvar=EHC_AG_S_MAIN_SRC_CAG \
+	  --depdpdsvar=EHC_AG_S_DPDS_SRC_CAG \
+	  --deporigdpdsvar=EHC_AG_S_ODPDS_SRC_CAG \
+	  --depderivdpdsvar=EHC_AG_S_DDPDS_DERIV_AG \
+	  --depbase=src/ehc/ \
+	  --depterm="EHRulerRules>" \
+	  --depign="EHRulerRules EHRulerRules.cag" \
+	    > build/18/lib-ehc/EH18/files-ag-s-dep.mk
+erb|18| & 	extit{EP} & 
+-n 	extRL{e.char}\hspace{.5em} 
+-n 	extRL{e.con}\hspace{.5em} 
+-n 	extRL{e.int}\hspace{.5em} 
+-n 	extRL{e.str}\hspace{.5em} 
+-n 	extRL{e.var}\hspace{.5em} 
+-n 	extRL{p.str}\hspace{.5em} 
+\
+mkdir -p build/19/lib-ehc/EH19/
+bin/shuffle src/ehc/files-ag-d.dep --dep \
+	  --depnameprefix=EHC_ \
+	  --depsrcvar=SRC_EHC_PREFIX \
+	  --depdstvar=EHC_BLD_LIB_HS_VARIANT_PREFIX \
+	  --depmainvar=EHC_AG_D_MAIN_SRC_CAG \
+	  --depdpdsvar=EHC_AG_D_DPDS_SRC_CAG \
+	  --deporigdpdsvar=EHC_AG_D_ODPDS_SRC_CAG \
+	  --depderivdpdsvar=EHC_AG_D_DDPDS_DERIV_AG \
+	  --depbase=src/ehc/ \
+	  --depterm="EHRulerRules>" \
+	  --depign="EHRulerRules EHRulerRules.cag" \
+	    > build/19/lib-ehc/EH19/files-ag-d-dep.mk
+mkdir -p build/19/lib-ehc/EH19/
+bin/shuffle src/ehc/files-ag-s.dep --dep \
+	  --depnameprefix=EHC_ \
+	  --depsrcvar=SRC_EHC_PREFIX \
+	  --depdstvar=EHC_BLD_LIB_HS_VARIANT_PREFIX \
+	  --depmainvar=EHC_AG_S_MAIN_SRC_CAG \
+	  --depdpdsvar=EHC_AG_S_DPDS_SRC_CAG \
+	  --deporigdpdsvar=EHC_AG_S_ODPDS_SRC_CAG \
+	  --depderivdpdsvar=EHC_AG_S_DDPDS_DERIV_AG \
+	  --depbase=src/ehc/ \
+	  --depterm="EHRulerRules>" \
+	  --depign="EHRulerRules EHRulerRules.cag" \
+	    > build/19/lib-ehc/EH19/files-ag-s-dep.mk
+erb|19| & 	extit{} & 
+\
+mkdir -p build/20/lib-ehc/EH20/
+bin/shuffle src/ehc/files-ag-d.dep --dep \
+	  --depnameprefix=EHC_ \
+	  --depsrcvar=SRC_EHC_PREFIX \
+	  --depdstvar=EHC_BLD_LIB_HS_VARIANT_PREFIX \
+	  --depmainvar=EHC_AG_D_MAIN_SRC_CAG \
+	  --depdpdsvar=EHC_AG_D_DPDS_SRC_CAG \
+	  --deporigdpdsvar=EHC_AG_D_ODPDS_SRC_CAG \
+	  --depderivdpdsvar=EHC_AG_D_DDPDS_DERIV_AG \
+	  --depbase=src/ehc/ \
+	  --depterm="EHRulerRules>" \
+	  --depign="EHRulerRules EHRulerRules.cag" \
+	    > build/20/lib-ehc/EH20/files-ag-d-dep.mk
+mkdir -p build/20/lib-ehc/EH20/
+bin/shuffle src/ehc/files-ag-s.dep --dep \
+	  --depnameprefix=EHC_ \
+	  --depsrcvar=SRC_EHC_PREFIX \
+	  --depdstvar=EHC_BLD_LIB_HS_VARIANT_PREFIX \
+	  --depmainvar=EHC_AG_S_MAIN_SRC_CAG \
+	  --depdpdsvar=EHC_AG_S_DPDS_SRC_CAG \
+	  --deporigdpdsvar=EHC_AG_S_ODPDS_SRC_CAG \
+	  --depderivdpdsvar=EHC_AG_S_DDPDS_DERIV_AG \
+	  --depbase=src/ehc/ \
+	  --depterm="EHRulerRules>" \
+	  --depign="EHRulerRules EHRulerRules.cag" \
+	    > build/20/lib-ehc/EH20/files-ag-s-dep.mk
+erb|20| & 	extit{MD} & 
+-n 	extRL{e.char}\hspace{.5em} 
+-n 	extRL{e.con}\hspace{.5em} 
+-n 	extRL{e.int}\hspace{.5em} 
+-n 	extRL{e.str}\hspace{.5em} 
+-n 	extRL{e.var}\hspace{.5em} 
+-n 	extRL{p.str}\hspace{.5em} 
+\
+mkdir -p build/30/lib-ehc/EH30/
+bin/shuffle src/ehc/files-ag-d.dep --dep \
+	  --depnameprefix=EHC_ \
+	  --depsrcvar=SRC_EHC_PREFIX \
+	  --depdstvar=EHC_BLD_LIB_HS_VARIANT_PREFIX \
+	  --depmainvar=EHC_AG_D_MAIN_SRC_CAG \
+	  --depdpdsvar=EHC_AG_D_DPDS_SRC_CAG \
+	  --deporigdpdsvar=EHC_AG_D_ODPDS_SRC_CAG \
+	  --depderivdpdsvar=EHC_AG_D_DDPDS_DERIV_AG \
+	  --depbase=src/ehc/ \
+	  --depterm="EHRulerRules>" \
+	  --depign="EHRulerRules EHRulerRules.cag" \
+	    > build/30/lib-ehc/EH30/files-ag-d-dep.mk
+mkdir -p build/30/lib-ehc/EH30/
+bin/shuffle src/ehc/files-ag-s.dep --dep \
+	  --depnameprefix=EHC_ \
+	  --depsrcvar=SRC_EHC_PREFIX \
+	  --depdstvar=EHC_BLD_LIB_HS_VARIANT_PREFIX \
+	  --depmainvar=EHC_AG_S_MAIN_SRC_CAG \
+	  --depdpdsvar=EHC_AG_S_DPDS_SRC_CAG \
+	  --deporigdpdsvar=EHC_AG_S_ODPDS_SRC_CAG \
+	  --depderivdpdsvar=EHC_AG_S_DDPDS_DERIV_AG \
+	  --depbase=src/ehc/ \
+	  --depterm="EHRulerRules>" \
+	  --depign="EHRulerRules EHRulerRules.cag" \
+	    > build/30/lib-ehc/EH30/files-ag-s-dep.mk
+erb|30| & 	extit{} & 
+\
+mkdir -p build/31/lib-ehc/EH31/
+bin/shuffle src/ehc/files-ag-d.dep --dep \
+	  --depnameprefix=EHC_ \
+	  --depsrcvar=SRC_EHC_PREFIX \
+	  --depdstvar=EHC_BLD_LIB_HS_VARIANT_PREFIX \
+	  --depmainvar=EHC_AG_D_MAIN_SRC_CAG \
+	  --depdpdsvar=EHC_AG_D_DPDS_SRC_CAG \
+	  --deporigdpdsvar=EHC_AG_D_ODPDS_SRC_CAG \
+	  --depderivdpdsvar=EHC_AG_D_DDPDS_DERIV_AG \
+	  --depbase=src/ehc/ \
+	  --depterm="EHRulerRules>" \
+	  --depign="EHRulerRules EHRulerRules.cag" \
+	    > build/31/lib-ehc/EH31/files-ag-d-dep.mk
+mkdir -p build/31/lib-ehc/EH31/
+bin/shuffle src/ehc/files-ag-s.dep --dep \
+	  --depnameprefix=EHC_ \
+	  --depsrcvar=SRC_EHC_PREFIX \
+	  --depdstvar=EHC_BLD_LIB_HS_VARIANT_PREFIX \
+	  --depmainvar=EHC_AG_S_MAIN_SRC_CAG \
+	  --depdpdsvar=EHC_AG_S_DPDS_SRC_CAG \
+	  --deporigdpdsvar=EHC_AG_S_ODPDS_SRC_CAG \
+	  --depderivdpdsvar=EHC_AG_S_DDPDS_DERIV_AG \
+	  --depbase=src/ehc/ \
+	  --depterm="EHRulerRules>" \
+	  --depign="EHRulerRules EHRulerRules.cag" \
+	    > build/31/lib-ehc/EH31/files-ag-s-dep.mk
+erb|31| & 	extit{} & 
+\
+mkdir -p build/50/lib-ehc/EH50/
+bin/shuffle src/ehc/files-ag-d.dep --dep \
+	  --depnameprefix=EHC_ \
+	  --depsrcvar=SRC_EHC_PREFIX \
+	  --depdstvar=EHC_BLD_LIB_HS_VARIANT_PREFIX \
+	  --depmainvar=EHC_AG_D_MAIN_SRC_CAG \
+	  --depdpdsvar=EHC_AG_D_DPDS_SRC_CAG \
+	  --deporigdpdsvar=EHC_AG_D_ODPDS_SRC_CAG \
+	  --depderivdpdsvar=EHC_AG_D_DDPDS_DERIV_AG \
+	  --depbase=src/ehc/ \
+	  --depterm="EHRulerRules>" \
+	  --depign="EHRulerRules EHRulerRules.cag" \
+	    > build/50/lib-ehc/EH50/files-ag-d-dep.mk
+mkdir -p build/50/lib-ehc/EH50/
+bin/shuffle src/ehc/files-ag-s.dep --dep \
+	  --depnameprefix=EHC_ \
+	  --depsrcvar=SRC_EHC_PREFIX \
+	  --depdstvar=EHC_BLD_LIB_HS_VARIANT_PREFIX \
+	  --depmainvar=EHC_AG_S_MAIN_SRC_CAG \
+	  --depdpdsvar=EHC_AG_S_DPDS_SRC_CAG \
+	  --deporigdpdsvar=EHC_AG_S_ODPDS_SRC_CAG \
+	  --depderivdpdsvar=EHC_AG_S_DDPDS_DERIV_AG \
+	  --depbase=src/ehc/ \
+	  --depterm="EHRulerRules>" \
+	  --depign="EHRulerRules EHRulerRules.cag" \
+	    > build/50/lib-ehc/EH50/files-ag-s-dep.mk
+erb|50| & 	extit{} & 
+\
+mkdir -p build/90/lib-ehc/EH90/
+bin/shuffle src/ehc/files-ag-d.dep --dep \
+	  --depnameprefix=EHC_ \
+	  --depsrcvar=SRC_EHC_PREFIX \
+	  --depdstvar=EHC_BLD_LIB_HS_VARIANT_PREFIX \
+	  --depmainvar=EHC_AG_D_MAIN_SRC_CAG \
+	  --depdpdsvar=EHC_AG_D_DPDS_SRC_CAG \
+	  --deporigdpdsvar=EHC_AG_D_ODPDS_SRC_CAG \
+	  --depderivdpdsvar=EHC_AG_D_DDPDS_DERIV_AG \
+	  --depbase=src/ehc/ \
+	  --depterm="EHRulerRules>" \
+	  --depign="EHRulerRules EHRulerRules.cag" \
+	    > build/90/lib-ehc/EH90/files-ag-d-dep.mk
+mkdir -p build/90/lib-ehc/EH90/
+bin/shuffle src/ehc/files-ag-s.dep --dep \
+	  --depnameprefix=EHC_ \
+	  --depsrcvar=SRC_EHC_PREFIX \
+	  --depdstvar=EHC_BLD_LIB_HS_VARIANT_PREFIX \
+	  --depmainvar=EHC_AG_S_MAIN_SRC_CAG \
+	  --depdpdsvar=EHC_AG_S_DPDS_SRC_CAG \
+	  --deporigdpdsvar=EHC_AG_S_ODPDS_SRC_CAG \
+	  --depderivdpdsvar=EHC_AG_S_DDPDS_DERIV_AG \
+	  --depbase=src/ehc/ \
+	  --depterm="EHRulerRules>" \
+	  --depign="EHRulerRules EHRulerRules.cag" \
+	    > build/90/lib-ehc/EH90/files-ag-s-dep.mk
+erb|90| & 	extit{} & 
+\
+mkdir -p build/91/lib-ehc/EH91/
+bin/shuffle src/ehc/files-ag-d.dep --dep \
+	  --depnameprefix=EHC_ \
+	  --depsrcvar=SRC_EHC_PREFIX \
+	  --depdstvar=EHC_BLD_LIB_HS_VARIANT_PREFIX \
+	  --depmainvar=EHC_AG_D_MAIN_SRC_CAG \
+	  --depdpdsvar=EHC_AG_D_DPDS_SRC_CAG \
+	  --deporigdpdsvar=EHC_AG_D_ODPDS_SRC_CAG \
+	  --depderivdpdsvar=EHC_AG_D_DDPDS_DERIV_AG \
+	  --depbase=src/ehc/ \
+	  --depterm="EHRulerRules>" \
+	  --depign="EHRulerRules EHRulerRules.cag" \
+	    > build/91/lib-ehc/EH91/files-ag-d-dep.mk
+mkdir -p build/91/lib-ehc/EH91/
+bin/shuffle src/ehc/files-ag-s.dep --dep \
+	  --depnameprefix=EHC_ \
+	  --depsrcvar=SRC_EHC_PREFIX \
+	  --depdstvar=EHC_BLD_LIB_HS_VARIANT_PREFIX \
+	  --depmainvar=EHC_AG_S_MAIN_SRC_CAG \
+	  --depdpdsvar=EHC_AG_S_DPDS_SRC_CAG \
+	  --deporigdpdsvar=EHC_AG_S_ODPDS_SRC_CAG \
+	  --depderivdpdsvar=EHC_AG_S_DDPDS_DERIV_AG \
+	  --depbase=src/ehc/ \
+	  --depterm="EHRulerRules>" \
+	  --depign="EHRulerRules EHRulerRules.cag" \
+	    > build/91/lib-ehc/EH91/files-ag-s-dep.mk
+erb|91| & 	extit{} & 
+\
+mkdir -p build/92/lib-ehc/EH92/
+bin/shuffle src/ehc/files-ag-d.dep --dep \
+	  --depnameprefix=EHC_ \
+	  --depsrcvar=SRC_EHC_PREFIX \
+	  --depdstvar=EHC_BLD_LIB_HS_VARIANT_PREFIX \
+	  --depmainvar=EHC_AG_D_MAIN_SRC_CAG \
+	  --depdpdsvar=EHC_AG_D_DPDS_SRC_CAG \
+	  --deporigdpdsvar=EHC_AG_D_ODPDS_SRC_CAG \
+	  --depderivdpdsvar=EHC_AG_D_DDPDS_DERIV_AG \
+	  --depbase=src/ehc/ \
+	  --depterm="EHRulerRules>" \
+	  --depign="EHRulerRules EHRulerRules.cag" \
+	    > build/92/lib-ehc/EH92/files-ag-d-dep.mk
+mkdir -p build/92/lib-ehc/EH92/
+bin/shuffle src/ehc/files-ag-s.dep --dep \
+	  --depnameprefix=EHC_ \
+	  --depsrcvar=SRC_EHC_PREFIX \
+	  --depdstvar=EHC_BLD_LIB_HS_VARIANT_PREFIX \
+	  --depmainvar=EHC_AG_S_MAIN_SRC_CAG \
+	  --depdpdsvar=EHC_AG_S_DPDS_SRC_CAG \
+	  --deporigdpdsvar=EHC_AG_S_ODPDS_SRC_CAG \
+	  --depderivdpdsvar=EHC_AG_S_DDPDS_DERIV_AG \
+	  --depbase=src/ehc/ \
+	  --depterm="EHRulerRules>" \
+	  --depign="EHRulerRules EHRulerRules.cag" \
+	    > build/92/lib-ehc/EH92/files-ag-s-dep.mk
+erb|92| & 	extit{} & 
+\
+mkdir -p build/93/lib-ehc/EH93/
+bin/shuffle src/ehc/files-ag-d.dep --dep \
+	  --depnameprefix=EHC_ \
+	  --depsrcvar=SRC_EHC_PREFIX \
+	  --depdstvar=EHC_BLD_LIB_HS_VARIANT_PREFIX \
+	  --depmainvar=EHC_AG_D_MAIN_SRC_CAG \
+	  --depdpdsvar=EHC_AG_D_DPDS_SRC_CAG \
+	  --deporigdpdsvar=EHC_AG_D_ODPDS_SRC_CAG \
+	  --depderivdpdsvar=EHC_AG_D_DDPDS_DERIV_AG \
+	  --depbase=src/ehc/ \
+	  --depterm="EHRulerRules>" \
+	  --depign="EHRulerRules EHRulerRules.cag" \
+	    > build/93/lib-ehc/EH93/files-ag-d-dep.mk
+mkdir -p build/93/lib-ehc/EH93/
+bin/shuffle src/ehc/files-ag-s.dep --dep \
+	  --depnameprefix=EHC_ \
+	  --depsrcvar=SRC_EHC_PREFIX \
+	  --depdstvar=EHC_BLD_LIB_HS_VARIANT_PREFIX \
+	  --depmainvar=EHC_AG_S_MAIN_SRC_CAG \
+	  --depdpdsvar=EHC_AG_S_DPDS_SRC_CAG \
+	  --deporigdpdsvar=EHC_AG_S_ODPDS_SRC_CAG \
+	  --depderivdpdsvar=EHC_AG_S_DDPDS_DERIV_AG \
+	  --depbase=src/ehc/ \
+	  --depterm="EHRulerRules>" \
+	  --depign="EHRulerRules EHRulerRules.cag" \
+	    > build/93/lib-ehc/EH93/files-ag-s-dep.mk
+erb|93| & 	extit{} & 
+\
+mkdir -p build/96/lib-ehc/EH96/
+bin/shuffle src/ehc/files-ag-d.dep --dep \
+	  --depnameprefix=EHC_ \
+	  --depsrcvar=SRC_EHC_PREFIX \
+	  --depdstvar=EHC_BLD_LIB_HS_VARIANT_PREFIX \
+	  --depmainvar=EHC_AG_D_MAIN_SRC_CAG \
+	  --depdpdsvar=EHC_AG_D_DPDS_SRC_CAG \
+	  --deporigdpdsvar=EHC_AG_D_ODPDS_SRC_CAG \
+	  --depderivdpdsvar=EHC_AG_D_DDPDS_DERIV_AG \
+	  --depbase=src/ehc/ \
+	  --depterm="EHRulerRules>" \
+	  --depign="EHRulerRules EHRulerRules.cag" \
+	    > build/96/lib-ehc/EH96/files-ag-d-dep.mk
+mkdir -p build/96/lib-ehc/EH96/
+bin/shuffle src/ehc/files-ag-s.dep --dep \
+	  --depnameprefix=EHC_ \
+	  --depsrcvar=SRC_EHC_PREFIX \
+	  --depdstvar=EHC_BLD_LIB_HS_VARIANT_PREFIX \
+	  --depmainvar=EHC_AG_S_MAIN_SRC_CAG \
+	  --depdpdsvar=EHC_AG_S_DPDS_SRC_CAG \
+	  --deporigdpdsvar=EHC_AG_S_ODPDS_SRC_CAG \
+	  --depderivdpdsvar=EHC_AG_S_DDPDS_DERIV_AG \
+	  --depbase=src/ehc/ \
+	  --depterm="EHRulerRules>" \
+	  --depign="EHRulerRules EHRulerRules.cag" \
+	    > build/96/lib-ehc/EH96/files-ag-s-dep.mk
+erb|96| & 	extit{MD} & 
+-n 	extRL{e.char}\hspace{.5em} 
+-n 	extRL{e.con}\hspace{.5em} 
+-n 	extRL{e.int}\hspace{.5em} 
+-n 	extRL{e.str}\hspace{.5em} 
+-n 	extRL{e.var}\hspace{.5em} 
+-n 	extRL{p.str}\hspace{.5em} 
+\
+mkdir -p build/97/lib-ehc/EH97/
+bin/shuffle src/ehc/files-ag-d.dep --dep \
+	  --depnameprefix=EHC_ \
+	  --depsrcvar=SRC_EHC_PREFIX \
+	  --depdstvar=EHC_BLD_LIB_HS_VARIANT_PREFIX \
+	  --depmainvar=EHC_AG_D_MAIN_SRC_CAG \
+	  --depdpdsvar=EHC_AG_D_DPDS_SRC_CAG \
+	  --deporigdpdsvar=EHC_AG_D_ODPDS_SRC_CAG \
+	  --depderivdpdsvar=EHC_AG_D_DDPDS_DERIV_AG \
+	  --depbase=src/ehc/ \
+	  --depterm="EHRulerRules>" \
+	  --depign="EHRulerRules EHRulerRules.cag" \
+	    > build/97/lib-ehc/EH97/files-ag-d-dep.mk
+mkdir -p build/97/lib-ehc/EH97/
+bin/shuffle src/ehc/files-ag-s.dep --dep \
+	  --depnameprefix=EHC_ \
+	  --depsrcvar=SRC_EHC_PREFIX \
+	  --depdstvar=EHC_BLD_LIB_HS_VARIANT_PREFIX \
+	  --depmainvar=EHC_AG_S_MAIN_SRC_CAG \
+	  --depdpdsvar=EHC_AG_S_DPDS_SRC_CAG \
+	  --deporigdpdsvar=EHC_AG_S_ODPDS_SRC_CAG \
+	  --depderivdpdsvar=EHC_AG_S_DDPDS_DERIV_AG \
+	  --depbase=src/ehc/ \
+	  --depterm="EHRulerRules>" \
+	  --depign="EHRulerRules EHRulerRules.cag" \
+	    > build/97/lib-ehc/EH97/files-ag-s-dep.mk
+erb|97| & 	extit{NUM} & 
+-n 	extRL{e.char}\hspace{.5em} 
+-n 	extRL{e.con}\hspace{.5em} 
+-n 	extRL{e.int}\hspace{.5em} 
+-n 	extRL{e.str}\hspace{.5em} 
+-n 	extRL{e.var}\hspace{.5em} 
+-n 	extRL{p.str}\hspace{.5em} 
+\
+mkdir -p build/98/lib-ehc/EH98/
+bin/shuffle src/ehc/files-ag-d.dep --dep \
+	  --depnameprefix=EHC_ \
+	  --depsrcvar=SRC_EHC_PREFIX \
+	  --depdstvar=EHC_BLD_LIB_HS_VARIANT_PREFIX \
+	  --depmainvar=EHC_AG_D_MAIN_SRC_CAG \
+	  --depdpdsvar=EHC_AG_D_DPDS_SRC_CAG \
+	  --deporigdpdsvar=EHC_AG_D_ODPDS_SRC_CAG \
+	  --depderivdpdsvar=EHC_AG_D_DDPDS_DERIV_AG \
+	  --depbase=src/ehc/ \
+	  --depterm="EHRulerRules>" \
+	  --depign="EHRulerRules EHRulerRules.cag" \
+	    > build/98/lib-ehc/EH98/files-ag-d-dep.mk
+mkdir -p build/98/lib-ehc/EH98/
+bin/shuffle src/ehc/files-ag-s.dep --dep \
+	  --depnameprefix=EHC_ \
+	  --depsrcvar=SRC_EHC_PREFIX \
+	  --depdstvar=EHC_BLD_LIB_HS_VARIANT_PREFIX \
+	  --depmainvar=EHC_AG_S_MAIN_SRC_CAG \
+	  --depdpdsvar=EHC_AG_S_DPDS_SRC_CAG \
+	  --deporigdpdsvar=EHC_AG_S_ODPDS_SRC_CAG \
+	  --depderivdpdsvar=EHC_AG_S_DDPDS_DERIV_AG \
+	  --depbase=src/ehc/ \
+	  --depterm="EHRulerRules>" \
+	  --depign="EHRulerRules EHRulerRules.cag" \
+	    > build/98/lib-ehc/EH98/files-ag-s-dep.mk
+erb|98| & 	extit{NUM} & 
+-n 	extRL{e.char}\hspace{.5em} 
+-n 	extRL{e.con}\hspace{.5em} 
+-n 	extRL{e.int}\hspace{.5em} 
+-n 	extRL{e.str}\hspace{.5em} 
+-n 	extRL{e.var}\hspace{.5em} 
+-n 	extRL{p.str}\hspace{.5em} 
+\
+mkdir -p build/99/lib-ehc/EH99/
+bin/shuffle src/ehc/files-ag-d.dep --dep \
+	  --depnameprefix=EHC_ \
+	  --depsrcvar=SRC_EHC_PREFIX \
+	  --depdstvar=EHC_BLD_LIB_HS_VARIANT_PREFIX \
+	  --depmainvar=EHC_AG_D_MAIN_SRC_CAG \
+	  --depdpdsvar=EHC_AG_D_DPDS_SRC_CAG \
+	  --deporigdpdsvar=EHC_AG_D_ODPDS_SRC_CAG \
+	  --depderivdpdsvar=EHC_AG_D_DDPDS_DERIV_AG \
+	  --depbase=src/ehc/ \
+	  --depterm="EHRulerRules>" \
+	  --depign="EHRulerRules EHRulerRules.cag" \
+	    > build/99/lib-ehc/EH99/files-ag-d-dep.mk
+mkdir -p build/99/lib-ehc/EH99/
+bin/shuffle src/ehc/files-ag-s.dep --dep \
+	  --depnameprefix=EHC_ \
+	  --depsrcvar=SRC_EHC_PREFIX \
+	  --depdstvar=EHC_BLD_LIB_HS_VARIANT_PREFIX \
+	  --depmainvar=EHC_AG_S_MAIN_SRC_CAG \
+	  --depdpdsvar=EHC_AG_S_DPDS_SRC_CAG \
+	  --deporigdpdsvar=EHC_AG_S_ODPDS_SRC_CAG \
+	  --depderivdpdsvar=EHC_AG_S_DDPDS_DERIV_AG \
+	  --depbase=src/ehc/ \
+	  --depterm="EHRulerRules>" \
+	  --depign="EHRulerRules EHRulerRules.cag" \
+	    > build/99/lib-ehc/EH99/files-ag-s-dep.mk
+erb|99| & 	extit{HS} & 
+-n 	extRL{e.char}\hspace{.5em} 
+-n 	extRL{e.con}\hspace{.5em} 
+-n 	extRL{e.int}\hspace{.5em} 
+-n 	extRL{e.str}\hspace{.5em} 
+-n 	extRL{e.var}\hspace{.5em} 
+-n 	extRL{p.str}\hspace{.5em} 
+\
+mkdir -p build/100/lib-ehc/EH100/
+bin/shuffle src/ehc/files-ag-d.dep --dep \
+	  --depnameprefix=EHC_ \
+	  --depsrcvar=SRC_EHC_PREFIX \
+	  --depdstvar=EHC_BLD_LIB_HS_VARIANT_PREFIX \
+	  --depmainvar=EHC_AG_D_MAIN_SRC_CAG \
+	  --depdpdsvar=EHC_AG_D_DPDS_SRC_CAG \
+	  --deporigdpdsvar=EHC_AG_D_ODPDS_SRC_CAG \
+	  --depderivdpdsvar=EHC_AG_D_DDPDS_DERIV_AG \
+	  --depbase=src/ehc/ \
+	  --depterm="EHRulerRules>" \
+	  --depign="EHRulerRules EHRulerRules.cag" \
+	    > build/100/lib-ehc/EH100/files-ag-d-dep.mk
+mkdir -p build/100/lib-ehc/EH100/
+bin/shuffle src/ehc/files-ag-s.dep --dep \
+	  --depnameprefix=EHC_ \
+	  --depsrcvar=SRC_EHC_PREFIX \
+	  --depdstvar=EHC_BLD_LIB_HS_VARIANT_PREFIX \
+	  --depmainvar=EHC_AG_S_MAIN_SRC_CAG \
+	  --depdpdsvar=EHC_AG_S_DPDS_SRC_CAG \
+	  --deporigdpdsvar=EHC_AG_S_ODPDS_SRC_CAG \
+	  --depderivdpdsvar=EHC_AG_S_DDPDS_DERIV_AG \
+	  --depbase=src/ehc/ \
+	  --depterm="EHRulerRules>" \
+	  --depign="EHRulerRules EHRulerRules.cag" \
+	    > build/100/lib-ehc/EH100/files-ag-s-dep.mk
+erb|100| & 	extit{HS} & 
+-n 	extRL{e.char}\hspace{.5em} 
+-n 	extRL{e.con}\hspace{.5em} 
+-n 	extRL{e.int}\hspace{.5em} 
+-n 	extRL{e.str}\hspace{.5em} 
+-n 	extRL{e.var}\hspace{.5em} 
+-n 	extRL{p.str}\hspace{.5em} 
+\
+erb|101| & 	extit{HS} & 
+-n 	extRL{e.char}\hspace{.5em} 
+-n 	extRL{e.con}\hspace{.5em} 
+-n 	extRL{e.int}\hspace{.5em} 
+-n 	extRL{e.str}\hspace{.5em} 
+-n 	extRL{e.var}\hspace{.5em} 
+-n 	extRL{p.str}\hspace{.5em} 
+\
+mkdir -p build/102/lib-ehc/EH102/
+bin/shuffle src/ehc/files-ag-d.dep --dep \
+	  --depnameprefix=EHC_ \
+	  --depsrcvar=SRC_EHC_PREFIX \
+	  --depdstvar=EHC_BLD_LIB_HS_VARIANT_PREFIX \
+	  --depmainvar=EHC_AG_D_MAIN_SRC_CAG \
+	  --depdpdsvar=EHC_AG_D_DPDS_SRC_CAG \
+	  --deporigdpdsvar=EHC_AG_D_ODPDS_SRC_CAG \
+	  --depderivdpdsvar=EHC_AG_D_DDPDS_DERIV_AG \
+	  --depbase=src/ehc/ \
+	  --depterm="EHRulerRules>" \
+	  --depign="EHRulerRules EHRulerRules.cag" \
+	    > build/102/lib-ehc/EH102/files-ag-d-dep.mk
+mkdir -p build/102/lib-ehc/EH102/
+bin/shuffle src/ehc/files-ag-s.dep --dep \
+	  --depnameprefix=EHC_ \
+	  --depsrcvar=SRC_EHC_PREFIX \
+	  --depdstvar=EHC_BLD_LIB_HS_VARIANT_PREFIX \
+	  --depmainvar=EHC_AG_S_MAIN_SRC_CAG \
+	  --depdpdsvar=EHC_AG_S_DPDS_SRC_CAG \
+	  --deporigdpdsvar=EHC_AG_S_ODPDS_SRC_CAG \
+	  --depderivdpdsvar=EHC_AG_S_DDPDS_DERIV_AG \
+	  --depbase=src/ehc/ \
+	  --depterm="EHRulerRules>" \
+	  --depign="EHRulerRules EHRulerRules.cag" \
+	    > build/102/lib-ehc/EH102/files-ag-s-dep.mk
+erb|102| & 	extit{HS} & 
+-n 	extRL{e.char}\hspace{.5em} 
+-n 	extRL{e.con}\hspace{.5em} 
+-n 	extRL{e.int}\hspace{.5em} 
+-n 	extRL{e.str}\hspace{.5em} 
+-n 	extRL{e.var}\hspace{.5em} 
+-n 	extRL{p.str}\hspace{.5em} 
+\
+mkdir -p build/103/lib-ehc/EH103/
+bin/shuffle src/ehc/files-ag-d.dep --dep \
+	  --depnameprefix=EHC_ \
+	  --depsrcvar=SRC_EHC_PREFIX \
+	  --depdstvar=EHC_BLD_LIB_HS_VARIANT_PREFIX \
+	  --depmainvar=EHC_AG_D_MAIN_SRC_CAG \
+	  --depdpdsvar=EHC_AG_D_DPDS_SRC_CAG \
+	  --deporigdpdsvar=EHC_AG_D_ODPDS_SRC_CAG \
+	  --depderivdpdsvar=EHC_AG_D_DDPDS_DERIV_AG \
+	  --depbase=src/ehc/ \
+	  --depterm="EHRulerRules>" \
+	  --depign="EHRulerRules EHRulerRules.cag" \
+	    > build/103/lib-ehc/EH103/files-ag-d-dep.mk
+mkdir -p build/103/lib-ehc/EH103/
+bin/shuffle src/ehc/files-ag-s.dep --dep \
+	  --depnameprefix=EHC_ \
+	  --depsrcvar=SRC_EHC_PREFIX \
+	  --depdstvar=EHC_BLD_LIB_HS_VARIANT_PREFIX \
+	  --depmainvar=EHC_AG_S_MAIN_SRC_CAG \
+	  --depdpdsvar=EHC_AG_S_DPDS_SRC_CAG \
+	  --deporigdpdsvar=EHC_AG_S_ODPDS_SRC_CAG \
+	  --depderivdpdsvar=EHC_AG_S_DDPDS_DERIV_AG \
+	  --depbase=src/ehc/ \
+	  --depterm="EHRulerRules>" \
+	  --depign="EHRulerRules EHRulerRules.cag" \
+	    > build/103/lib-ehc/EH103/files-ag-s-dep.mk
+erb|103| & 	extit{HS} & 
+-n 	extRL{e.char}\hspace{.5em} 
+-n 	extRL{e.con}\hspace{.5em} 
+-n 	extRL{e.int}\hspace{.5em} 
+-n 	extRL{e.str}\hspace{.5em} 
+-n 	extRL{e.var}\hspace{.5em} 
+-n 	extRL{p.str}\hspace{.5em} 
+\
+\end{tabular}

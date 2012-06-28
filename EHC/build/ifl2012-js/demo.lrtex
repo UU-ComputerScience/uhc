@@ -1,0 +1,321 @@
+%include lhs2TeX.fmt
+%include afp.fmt
+
+
+\rulerCmdDef{rulerDemo.3.expr.base.scheme}{%
+\ensuremath{| Cnstr | ^{ | k | } |  ; Gamma :- | ^{ | e | } |  e : tau ~> Cnstr | }
+}
+\rulerCmdDef{rulerDemo.3.expr.base.e.int}{%
+\rulerRule{e.int}{3}
+{%
+}
+{%
+| Cnstr | ^{ | k | } |  ; Gamma :- | ^{ | e | } |  int : Int ~> Cnstr | ^{ | k | } |  | 
+}
+}
+
+\rulerCmdDef{rulerDemo.3.expr.base.e.var}{%
+\rulerRule{e.var}{3}
+{%
+| i :-> sigma `elem` Gamma | 
+\\
+| tau = inst (sigma) | 
+}
+{%
+| Cnstr | ^{ | k | } |  ; Gamma :- | ^{ | e | } |  i : tau ~> Cnstr | ^{ | k | } |  | 
+}
+}
+
+\rulerCmdDef{rulerDemo.3.expr.base.e.app}{%
+\rulerRule{e.app}{3}
+{%
+| v | \;\mbox{fresh} |  | 
+\\
+| Cnstr | ^{ | k | } |  ; Gamma :- | ^{ | e | } |  f : tau | _{ | f | } |  ~> Cnstr | _{ | f | } |  | 
+\\
+| Cnstr | _{ | f | } |  ; Gamma :- | ^{ | e | } |  a : tau | _{ | a | } |  ~> Cnstr | _{ | a | } |  | 
+\\
+| tau | _{ | a | } |  -> v <=> Cnstr | _{ | a | } |  tau | _{ | f | } |  ~> Cnstr | 
+}
+{%
+| Cnstr | ^{ | k | } |  ; Gamma :- | ^{ | e | } |  f a : Cnstr Cnstr | _{ | a | } |  v ~> Cnstr Cnstr | _{ | a | } |  | 
+}
+}
+
+\rulerCmdDef{rulerDemo.3.expr.base.e.lam}{%
+\rulerRule{e.lam}{3}
+{%
+| v | \;\mbox{fresh} |  | 
+\\
+| Cnstr | ^{ | k | } |  ; (i :-> v) , Gamma :- | ^{ | e | } |  b : tau | _{ | b | } |  ~> Cnstr | _{ | b | } |  | 
+}
+{%
+| Cnstr | ^{ | k | } |  ; Gamma :- | ^{ | e | } |   \ i -> b : Cnstr | _{ | b | } |  v -> tau | _{ | b | } |  ~> Cnstr | _{ | b | } |  | 
+}
+}
+
+\rulerCmdDef{rulerDemo.3.expr.base.e.let}{%
+\rulerRule{e.let}{3}
+{%
+| v | \;\mbox{fresh} |  | 
+\\
+| Cnstr | ^{ | k | } |  ; (i :-> v) , Gamma :- | ^{ | e | } |  e : tau | _{ | e | } |  ~> Cnstr | _{ | e | } |  | 
+\\
+| sigma | _{ | e | } |  = forall (ftv (tau | _{ | e | } | ) \\ ftv (Cnstr | _{ | e | } |  Gamma)) . tau | _{ | e | } |  | 
+\\
+| Cnstr | _{ | e | } |  ; (i :-> sigma | _{ | e | } | ) , Gamma :- | ^{ | e | } |  b : tau | _{ | b | } |  ~> Cnstr | _{ | b | } |  | 
+}
+{%
+| Cnstr | ^{ | k | } |  ; Gamma :- | ^{ | e | } |  let i = e in b : tau | _{ | b | } |  ~> Cnstr | _{ | b | } |  | 
+}
+}
+
+\rulerCmdDef{rulerDemo.A.expr.base.scheme}{%
+\ensuremath{| Cnstr | ^{ | k | } |  ; Gamma :- | ^{ | e | } |  e : tau ~> Cnstr | }
+}
+\rulerCmdDef{rulerDemo.A.expr.base.e.int}{%
+\rulerRule{e.int}{A}
+{%
+}
+{%
+| | \rulerChngBegMark{} |  Cnstr | ^{ | k | } |  | \rulerChngEndMark{} |  ; | \rulerSameBegMark{} |  Gamma | \rulerSameEndMark{} |  :- | ^{ | e | } |  | \rulerSameBegMark{} |  int | \rulerSameEndMark{} |  : | \rulerSameBegMark{} |  Int | \rulerSameEndMark{} |  ~> | \rulerChngBegMark{} |  Cnstr | ^{ | k | } |  | \rulerChngEndMark{} |  | 
+}
+}
+
+\rulerCmdDef{rulerDemo.A.expr.base.e.var}{%
+\rulerRule{e.var}{A}
+{%
+| | \rulerSameBegMark{} |  tau = inst (sigma) | \rulerSameEndMark{} |  | 
+\\
+| | \rulerSameBegMark{} |  i :-> sigma `elem` Gamma | \rulerSameEndMark{} |  | 
+}
+{%
+| | \rulerChngBegMark{} |  Cnstr | ^{ | k | } |  | \rulerChngEndMark{} |  ; | \rulerSameBegMark{} |  Gamma | \rulerSameEndMark{} |  :- | ^{ | e | } |  | \rulerSameBegMark{} |  i | \rulerSameEndMark{} |  : | \rulerSameBegMark{} |  tau | \rulerSameEndMark{} |  ~> | \rulerChngBegMark{} |  Cnstr | ^{ | k | } |  | \rulerChngEndMark{} |  | 
+}
+}
+
+\rulerCmdDef{rulerDemo.A.expr.base.e.app}{%
+\rulerRule{e.app}{A}
+{%
+| | \rulerChngBegMark{} |  v | \rulerChngEndMark{} |  | \;\mbox{fresh} |  | 
+\\
+| | \rulerChngBegMark{} |  Cnstr | ^{ | k | } |  | \rulerChngEndMark{} |  ; | \rulerSameBegMark{} |  Gamma | \rulerSameEndMark{} |  :- | ^{ | e | } |  | \rulerSameBegMark{} |  f | \rulerSameEndMark{} |  : | \rulerChngBegMark{} |  tau | _{ | f | } |  | \rulerChngEndMark{} |  ~> | \rulerChngBegMark{} |  Cnstr | _{ | f | } |  | \rulerChngEndMark{} |  | 
+\\
+| | \rulerChngBegMark{} |  Cnstr | _{ | f | } |  | \rulerChngEndMark{} |  ; | \rulerSameBegMark{} |  Gamma | \rulerSameEndMark{} |  :- | ^{ | e | } |  | \rulerSameBegMark{} |  a | \rulerSameEndMark{} |  : | \rulerSameBegMark{} |  tau | _{ | a | } |  | \rulerSameEndMark{} |  ~> | \rulerChngBegMark{} |  Cnstr | _{ | a | } |  | \rulerChngEndMark{} |  | 
+\\
+| | \rulerChngBegMark{} |  tau | _{ | a | } |  -> v | \rulerChngEndMark{} |  <=> | \rulerChngBegMark{} |  Cnstr | _{ | a | } |  tau | _{ | f | } |  | \rulerChngEndMark{} |  ~> | \rulerChngBegMark{} |  Cnstr | \rulerChngEndMark{} |  | 
+}
+{%
+| | \rulerChngBegMark{} |  Cnstr | ^{ | k | } |  | \rulerChngEndMark{} |  ; | \rulerSameBegMark{} |  Gamma | \rulerSameEndMark{} |  :- | ^{ | e | } |  | \rulerSameBegMark{} |  f a | \rulerSameEndMark{} |  : | \rulerChngBegMark{} |  Cnstr Cnstr | _{ | a | } |  v | \rulerChngEndMark{} |  ~> | \rulerChngBegMark{} |  Cnstr Cnstr | _{ | a | } |  | \rulerChngEndMark{} |  | 
+}
+}
+
+\rulerCmdDef{rulerDemo.A.expr.base.e.lam}{%
+\rulerRule{e.lam}{A}
+{%
+| | \rulerChngBegMark{} |  v | \rulerChngEndMark{} |  | \;\mbox{fresh} |  | 
+\\
+| | \rulerChngBegMark{} |  Cnstr | ^{ | k | } |  | \rulerChngEndMark{} |  ; | \rulerChngBegMark{} |  (i :-> v) , Gamma | \rulerChngEndMark{} |  :- | ^{ | e | } |  | \rulerSameBegMark{} |  b | \rulerSameEndMark{} |  : | \rulerSameBegMark{} |  tau | _{ | b | } |  | \rulerSameEndMark{} |  ~> | \rulerChngBegMark{} |  Cnstr | _{ | b | } |  | \rulerChngEndMark{} |  | 
+}
+{%
+| | \rulerChngBegMark{} |  Cnstr | ^{ | k | } |  | \rulerChngEndMark{} |  ; | \rulerSameBegMark{} |  Gamma | \rulerSameEndMark{} |  :- | ^{ | e | } |  | \rulerSameBegMark{} |   \ i -> b | \rulerSameEndMark{} |  : | \rulerChngBegMark{} |  Cnstr | _{ | b | } |  v -> tau | _{ | b | } |  | \rulerChngEndMark{} |  ~> | \rulerChngBegMark{} |  Cnstr | _{ | b | } |  | \rulerChngEndMark{} |  | 
+}
+}
+
+\rulerCmdDef{rulerDemo.A.expr.base.e.let}{%
+\rulerRule{e.let}{A}
+{%
+| | \rulerChngBegMark{} |  v | \rulerChngEndMark{} |  | \;\mbox{fresh} |  | 
+\\
+| | \rulerChngBegMark{} |  Cnstr | ^{ | k | } |  | \rulerChngEndMark{} |  ; | \rulerChngBegMark{} |  (i :-> v) , Gamma | \rulerChngEndMark{} |  :- | ^{ | e | } |  | \rulerSameBegMark{} |  e | \rulerSameEndMark{} |  : | \rulerSameBegMark{} |  tau | _{ | e | } |  | \rulerSameEndMark{} |  ~> | \rulerChngBegMark{} |  Cnstr | _{ | e | } |  | \rulerChngEndMark{} |  | 
+\\
+| | \rulerSameBegMark{} |  sigma | _{ | e | } |  | \rulerSameEndMark{} |  = forall (ftv (| \rulerSameBegMark{} |  tau | _{ | e | } |  | \rulerSameEndMark{} | ) \\ ftv (| \rulerChngBegMark{} |  Cnstr | _{ | e | } |  Gamma | \rulerChngEndMark{} | )) . | \rulerSameBegMark{} |  tau | _{ | e | } |  | \rulerSameEndMark{} |  | 
+\\
+| | \rulerChngBegMark{} |  Cnstr | _{ | e | } |  | \rulerChngEndMark{} |  ; | \rulerSameBegMark{} |  (i :-> sigma | _{ | e | } | ) , Gamma | \rulerSameEndMark{} |  :- | ^{ | e | } |  | \rulerSameBegMark{} |  b | \rulerSameEndMark{} |  : | \rulerSameBegMark{} |  tau | _{ | b | } |  | \rulerSameEndMark{} |  ~> | \rulerChngBegMark{} |  Cnstr | _{ | b | } |  | \rulerChngEndMark{} |  | 
+}
+{%
+| | \rulerChngBegMark{} |  Cnstr | ^{ | k | } |  | \rulerChngEndMark{} |  ; | \rulerSameBegMark{} |  Gamma | \rulerSameEndMark{} |  :- | ^{ | e | } |  | \rulerSameBegMark{} |  let i = e in b | \rulerSameEndMark{} |  : | \rulerSameBegMark{} |  tau | _{ | b | } |  | \rulerSameEndMark{} |  ~> | \rulerChngBegMark{} |  Cnstr | _{ | b | } |  | \rulerChngEndMark{} |  | 
+}
+}
+
+\rulerCmdDef{rulerDemo.AG.expr.base.scheme}{%
+\ensuremath{| Cnstr | ^{ | k | } |  ; Gamma :- | ^{ | e | } |  e : tau ~> Cnstr | }
+}
+\rulerCmdDef{rulerDemo.AG.expr.base.e.int}{%
+\rulerRule{e.int}{AG}
+{%
+}
+{%
+| | \rulerSameBegMark{} |  Cnstr | ^{ | k | } |  ; Gamma :- | ^{ | e | } |  int : Int ~> Cnstr | ^{ | k | } |  | \rulerSameEndMark{} |  | 
+}
+}
+
+\rulerCmdDef{rulerDemo.AG.expr.base.e.var}{%
+\rulerRule{e.var}{AG}
+{%
+| | \rulerSameBegMark{} |  i :-> sigma `elem` Gamma | \rulerSameEndMark{} |  | 
+\\
+| | \rulerSameBegMark{} |  tau = inst (sigma) | \rulerSameEndMark{} |  | 
+}
+{%
+| | \rulerSameBegMark{} |  Cnstr | ^{ | k | } |  ; Gamma :- | ^{ | e | } |  i : tau ~> Cnstr | ^{ | k | } |  | \rulerSameEndMark{} |  | 
+}
+}
+
+\rulerCmdDef{rulerDemo.AG.expr.base.e.app}{%
+\rulerRule{e.app}{AG}
+{%
+| | \rulerSameBegMark{} |  v | \;\mbox{fresh} |  | \rulerSameEndMark{} |  | 
+\\
+| | \rulerSameBegMark{} |  Cnstr | ^{ | k | } |  ; Gamma :- | ^{ | e | } |  f : tau | _{ | f | } |  ~> Cnstr | _{ | f | } |  | \rulerSameEndMark{} |  | 
+\\
+| | \rulerSameBegMark{} |  Cnstr | _{ | f | } |  ; Gamma :- | ^{ | e | } |  a : tau | _{ | a | } |  ~> Cnstr | _{ | a | } |  | \rulerSameEndMark{} |  | 
+\\
+| | \rulerSameBegMark{} |  tau | _{ | a | } |  -> v <=> Cnstr | _{ | a | } |  tau | _{ | f | } |  ~> Cnstr | \rulerSameEndMark{} |  | 
+}
+{%
+| | \rulerSameBegMark{} |  Cnstr | ^{ | k | } |  ; Gamma :- | ^{ | e | } |  f a : Cnstr Cnstr | _{ | a | } |  v ~> Cnstr Cnstr | _{ | a | } |  | \rulerSameEndMark{} |  | 
+}
+}
+
+\rulerCmdDef{rulerDemo.AG.expr.base.e.lam}{%
+\rulerRule{e.lam}{AG}
+{%
+| | \rulerSameBegMark{} |  v | \;\mbox{fresh} |  | \rulerSameEndMark{} |  | 
+\\
+| | \rulerSameBegMark{} |  Cnstr | ^{ | k | } |  ; (i :-> v) , Gamma :- | ^{ | e | } |  b : tau | _{ | b | } |  ~> Cnstr | _{ | b | } |  | \rulerSameEndMark{} |  | 
+}
+{%
+| | \rulerSameBegMark{} |  Cnstr | ^{ | k | } |  ; Gamma :- | ^{ | e | } |   \ i -> b : Cnstr | _{ | b | } |  v -> tau | _{ | b | } |  ~> Cnstr | _{ | b | } |  | \rulerSameEndMark{} |  | 
+}
+}
+
+\rulerCmdDef{rulerDemo.AG.expr.base.e.let}{%
+\rulerRule{e.let}{AG}
+{%
+| | \rulerSameBegMark{} |  v | \;\mbox{fresh} |  | \rulerSameEndMark{} |  | 
+\\
+| | \rulerSameBegMark{} |  Cnstr | ^{ | k | } |  ; (i :-> v) , Gamma :- | ^{ | e | } |  e : tau | _{ | e | } |  ~> Cnstr | _{ | e | } |  | \rulerSameEndMark{} |  | 
+\\
+| | \rulerSameBegMark{} |  sigma | _{ | e | } |  = forall (ftv (tau | _{ | e | } | ) \\ ftv (Cnstr | _{ | e | } |  Gamma)) . tau | _{ | e | } |  | \rulerSameEndMark{} |  | 
+\\
+| | \rulerSameBegMark{} |  Cnstr | _{ | e | } |  ; (i :-> sigma | _{ | e | } | ) , Gamma :- | ^{ | e | } |  b : tau | _{ | b | } |  ~> Cnstr | _{ | b | } |  | \rulerSameEndMark{} |  | 
+}
+{%
+| | \rulerSameBegMark{} |  Cnstr | ^{ | k | } |  ; Gamma :- | ^{ | e | } |  let i = e in b : tau | _{ | b | } |  ~> Cnstr | _{ | b | } |  | \rulerSameEndMark{} |  | 
+}
+}
+
+\rulerCmdDef{rulerDemo.E.expr.base.scheme}{%
+\ensuremath{| Gamma :- | ^{ | e | } |  e : tau | }
+}
+\rulerCmdDef{rulerDemo.E.expr.base.e.int}{%
+\rulerRule{e.int}{E}
+{%
+}
+{%
+| Gamma :- | ^{ | e | } |  int : Int | 
+}
+}
+
+\rulerCmdDef{rulerDemo.E.expr.base.e.var}{%
+\rulerRule{e.var}{E}
+{%
+| tau = inst (sigma) | 
+\\
+| i :-> sigma `elem` Gamma | 
+}
+{%
+| Gamma :- | ^{ | e | } |  i : tau | 
+}
+}
+
+\rulerCmdDef{rulerDemo.E.expr.base.e.app}{%
+\rulerRule{e.app}{E}
+{%
+| Gamma :- | ^{ | e | } |  a : tau | _{ | a | } |  | 
+\\
+| Gamma :- | ^{ | e | } |  f : tau | _{ | a | } |  -> tau | 
+}
+{%
+| Gamma :- | ^{ | e | } |  f a : tau | 
+}
+}
+
+\rulerCmdDef{rulerDemo.E.expr.base.e.lam}{%
+\rulerRule{e.lam}{E}
+{%
+| (i :-> tau | _{ | i | } | ) , Gamma :- | ^{ | e | } |  b : tau | _{ | b | } |  | 
+}
+{%
+| Gamma :- | ^{ | e | } |   \ i -> b : tau | _{ | i | } |  -> tau | _{ | b | } |  | 
+}
+}
+
+\rulerCmdDef{rulerDemo.E.expr.base.e.let}{%
+\rulerRule{e.let}{E}
+{%
+| (i :-> sigma | _{ | e | } | ) , Gamma :- | ^{ | e | } |  b : tau | _{ | b | } |  | 
+\\
+| Gamma :- | ^{ | e | } |  e : tau | _{ | e | } |  | 
+\\
+| sigma | _{ | e | } |  = forall  | \overline{ | v | } |  . tau | _{ | e | } |  ,  ^^^  | \overline{ | v | } |  `notElem` ftv (Gamma) | 
+}
+{%
+| Gamma :- | ^{ | e | } |  let i = e in b : tau | _{ | b | } |  | 
+}
+}
+
+\rulerCmdDef{rulerDemo.3.expr.base}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{rulerDemo.3.expr.base.scheme}}{Expression type rules}{rulerDemo.3.expr.base}{3}
+\rulerCmdUse{rulerDemo.3.expr.base.e.int}
+\hspace{1ex}
+\rulerCmdUse{rulerDemo.3.expr.base.e.var}
+\hspace{1ex}
+\rulerCmdUse{rulerDemo.3.expr.base.e.app}
+\hspace{1ex}
+\rulerCmdUse{rulerDemo.3.expr.base.e.lam}
+\hspace{1ex}
+\rulerCmdUse{rulerDemo.3.expr.base.e.let}
+\end{rulerRulesetFigure}
+}
+\rulerCmdDef{rulerDemo.A.expr.base}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{rulerDemo.A.expr.base.scheme}}{Expression type rules}{rulerDemo.A.expr.base}{A}
+\rulerCmdUse{rulerDemo.A.expr.base.e.int}
+\hspace{1ex}
+\rulerCmdUse{rulerDemo.A.expr.base.e.var}
+\hspace{1ex}
+\rulerCmdUse{rulerDemo.A.expr.base.e.app}
+\hspace{1ex}
+\rulerCmdUse{rulerDemo.A.expr.base.e.lam}
+\hspace{1ex}
+\rulerCmdUse{rulerDemo.A.expr.base.e.let}
+\end{rulerRulesetFigure}
+}
+\rulerCmdDef{rulerDemo.AG.expr.base}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{rulerDemo.AG.expr.base.scheme}}{Expression type rules}{rulerDemo.AG.expr.base}{AG}
+\rulerCmdUse{rulerDemo.AG.expr.base.e.int}
+\hspace{1ex}
+\rulerCmdUse{rulerDemo.AG.expr.base.e.var}
+\hspace{1ex}
+\rulerCmdUse{rulerDemo.AG.expr.base.e.app}
+\hspace{1ex}
+\rulerCmdUse{rulerDemo.AG.expr.base.e.lam}
+\hspace{1ex}
+\rulerCmdUse{rulerDemo.AG.expr.base.e.let}
+\end{rulerRulesetFigure}
+}
+\rulerCmdDef{rulerDemo.E.expr.base}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{rulerDemo.E.expr.base.scheme}}{Expression type rules}{rulerDemo.E.expr.base}{E}
+\rulerCmdUse{rulerDemo.E.expr.base.e.int}
+\hspace{1ex}
+\rulerCmdUse{rulerDemo.E.expr.base.e.var}
+\hspace{1ex}
+\rulerCmdUse{rulerDemo.E.expr.base.e.app}
+\hspace{1ex}
+\rulerCmdUse{rulerDemo.E.expr.base.e.lam}
+\hspace{1ex}
+\rulerCmdUse{rulerDemo.E.expr.base.e.let}
+\end{rulerRulesetFigure}
+}
+

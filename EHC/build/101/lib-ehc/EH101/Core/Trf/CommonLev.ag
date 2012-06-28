@@ -1,0 +1,77 @@
+ATTR AllMeta [ | | self: SELF ]
+
+SEM CExpr
+  | Lam         loc         .   cvi                 =   CVarIntro
+                                                          { cviLev  = @lev
+                                                          , cviMeta = CMetaVal_Val -- @argMeta.self
+                                                          }
+
+SEM CBound
+  | Bind        loc         .   cmetaVal            =   cmetasVal @bindMeta.self
+                            .   cvi                 =   emptyCVarIntro { cviLev  = @lhs.lev   , cviMeta = @cmetaVal }
+                            .   cviExpr             =   emptyCVarIntro { cviLev  = @expr.levOf, cviMeta = @cmetaVal }
+
+SEM CAlt
+  | Alt         loc         .   cvi                 =   emptyCVarIntro { cviLev  = @lev }
+
+ATTR AllCodeNT [ cvarIntroMp: CVarIntroMp | | ]
+
+SEM CodeAGItf
+  | AGItf       module      .   cvarIntroMp =   Map.empty
+
+SEM CExpr
+  | Lam         body        .   cvarIntroMp =   Map.insert @argNm @cvi @lhs.cvarIntroMp
+  | Let         loc         .   maxBindLev  =   fvsLev @lhs.cvarIntroMp cLevModule @binds.fvS
+                (loc.strLev,binds.cvarIntroMp)
+                                            =   case @categ of
+                                                    CBindCateg_Strict -> (const @lhs.lev,@lhs.cvarIntroMp)
+                                                    CBindCateg_Rec    -> ( const @maxBindLev
+                                                                         , Map.map (\cvi -> cvi {cviLev = @maxBindLev}) @binds.cvarIntroExprMp
+                                                                             `Map.union` @lhs.cvarIntroMp
+                                                                         )
+                                                    _                 -> (id,@lhs.cvarIntroMp)
+                body        .   cvarIntroMp =   Map.map (\cvi -> cvi {cviLev = @strLev $ cviLev cvi}) @binds.cvarIntroExprMp `Map.union` @lhs.cvarIntroMp
+
+SEM CAlt
+  | Alt         expr        .   cvarIntroMp =   Map.fromList (zip @pat.nmL (repeat @cvi)) `Map.union` @lhs.cvarIntroMp
+
+ATTR AllCodeNT [ introCVarIntroMp: CVarIntroMp | | ]
+
+SEM CodeAGItf
+  | AGItf       module      .   introCVarIntroMp    =   Map.empty
+
+SEM CExpr
+  | Lam         body        .   introCVarIntroMp    =   Map.insert @argNm @cvi @lhs.introCVarIntroMp
+  | Let         loc         .   introCVarIntroMp    =   Map.map (\cvi -> cvi {cviLev = @lhs.lev}) @binds.bindsIntroCVarIntroMp `Map.union` @lhs.introCVarIntroMp
+
+SEM CAlt
+  | Alt         expr        .   introCVarIntroMp    =   Map.fromList (zip @pat.nmL (repeat @cvi)) `Map.union` @lhs.introCVarIntroMp
+
+ATTR AllBind [ | | bindsIntroCVarIntroMp USE {`Map.union`} {Map.empty}: CVarIntroMp ]
+
+SEM CBound
+  | Bind        lhs         .   bindsIntroCVarIntroMp
+                                                    =   Map.singleton @lhs.nm @cvi
+
+ATTR AllCodeNT [ | | levOf USE {`max`} {cLevModule}: Int ]
+
+SEM CExpr
+  | Var         lhs         .   levOf       =   fvLev @nm @lhs.cvarIntroMp
+  | App         loc         .   levOf       =   @func.levOf `max` @arg.levOf
+  | Case        loc         .   levOf       =   @expr.levOf `max` @alts.levOf `max` @dflt.levOf
+  | TupDel      loc         .   levOf       =   @expr.levOf `max` @offset.levOf
+  | TupIns TupUpd
+                loc         .   levOf       =   @expr.levOf `max` @offset.levOf `max` @fldExpr.levOf
+  | Lam         loc         .   levOf       =   fvsLev @lhs.cvarIntroMp cLevModule @body.fvS
+  | Let         loc         .   levOf       =   fvsLev @lhs.cvarIntroMp cLevModule @fvS
+  | String      loc         .   levOf       =   cLevIntern
+
+SEM CAlt
+  | Alt         lhs         .   levOf       =   fvsLev @lhs.cvarIntroMp cLevModule @expr.fvS
+
+ATTR AllBind [ | | cvarIntroExprMp USE {`Map.union`} {Map.empty}: CVarIntroMp ]
+
+SEM CBound
+  | Bind        lhs         .   cvarIntroExprMp
+                                            =   Map.singleton @lhs.nm @cviExpr
+

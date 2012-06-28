@@ -1,0 +1,25 @@
+ATTR CExpr [ | | mbLam: {Maybe [HsName]} ]
+
+SEM CExpr
+  | Lam         lhs         .   mbLam       =   Just $ maybe [@argNm] (@argNm:) @body.mbLam
+  | * - Lam Ann CaseAltFail
+  				lhs         .   mbLam       =   Nothing
+
+ATTR CExpr [ | | appFunKind: AppFunKind ]
+
+SEM CExpr
+  | Tup         lhs         .   appFunKind  =   AppFunKind_Tag @tag
+  | FFI         lhs         .   appFunKind  =   AppFunKind_FFI
+  | Var         lhs         .   appFunKind  =   AppFunKind_Fun @ref
+  | App         lhs         .   appFunKind  =   @func.appFunKind
+  | * - Tup App Ann Var FFI CaseAltFail
+                lhs         .   appFunKind  =   AppFunKind_NoApp
+
+ATTR CExpr [ | | mbVar: {Maybe HsName} ]
+
+SEM CExpr
+  | Var         loc         .   mbVar       =   Just @nm
+  				loc			.	mbVar		:	{Maybe HsName}
+  | * - Var Ann CaseAltFail
+  				lhs         .   mbVar       =   Nothing
+

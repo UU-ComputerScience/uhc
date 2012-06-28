@@ -1,0 +1,31 @@
+MODULE {EH101.JavaScript} {JavaScriptModule (..), Stat (..), StatL, NmExpr, NmExprL, Expr (..), ExprL, MbExpr, AGItf (..)
+, Alt (..), AltL
+, jsVarDecl
+, exprMbVar}
+{
+import EH101.Base.Common
+
+}
+{
+}
+{
+}
+{
+}
+INCLUDE "JavaScript/AbsSyn.ag"
+{
+}
+{
+-- | declare a var, or a field in object, depending on name being qualified
+jsVarDecl :: HsName -> Expr -> Stat
+jsVarDecl n e
+  = case hsnQualifier n of
+      Just _ -> Stat_Assign (Expr_Var n) e
+      _      -> Stat_VarDecl n (Just e)
+
+}
+{
+exprMbVar :: Expr -> Maybe HsName
+exprMbVar (Expr_Var n) = Just n
+exprMbVar _            = Nothing
+}

@@ -1,0 +1,23 @@
+ATTR AllPragma AllDeclaration [ | | gathPragmas USE {`Set.union`} {Set.empty}: {Set.Set Pragma.Pragma} ]
+ATTR AGItf Module [ | | fileHeaderPragmas USE {`Set.union`} {Set.empty}: {Set.Set Pragma.Pragma} ]
+
+SEM Pragma
+    | Language
+        loc             .   pragmaNames =   [ p |      p  <- map show @pragmas ]
+    | OptionsGHC
+        loc             .   pragmaNames =   [] -- [ p | ('X':p) <- map show @options ]
+
+SEM Pragma
+    | Language OptionsGHC
+        lhs             .   gathPragmas =   Set.fromList $ catMaybes [ Map.lookup p Pragma.allSimplePragmaMp | p <- @pragmaNames ]
+    | Derivable
+        lhs             .   gathPragmas =   Set.singleton (Pragma.Pragma_Derivable @className @fieldName @defaultName)
+    | ExcludeIfTarget
+        loc				.	targets		=	catMaybes $ map (\t -> Map.lookup t supportedTargetMp) @targetNames
+        lhs             .   gathPragmas =   Set.singleton (Pragma.Pragma_ExcludeIfTarget @targets)
+
+SEM Module
+    | Module
+        loc             .   fileHeaderPragmas
+                                        =   @fileheaderpragmas.gathPragmas
+

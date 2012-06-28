@@ -1,0 +1,41 @@
+MODULE {EH101.GrinCode.Trf.UnusedMetaInfoElim} {grUnusedMetaInfoElim}
+{
+import qualified EH.Util.FastSeq as Seq
+import qualified Data.Map as Map
+import EH101.Base.Common
+import EH101.GrinCode.Common
+import EH101.GrinCode
+
+}
+INCLUDE "GrinCode/AbsSyn.ag"
+{
+}
+{
+}
+{
+}
+{
+grUnusedMetaInfoElim :: GrModule -> GrModule
+grUnusedMetaInfoElim grmod
+  = trf_Syn_GrAGItf t
+  where t = wrap_GrAGItf (sem_GrAGItf $ GrAGItf_AGItf grmod)
+            $ Inh_GrAGItf
+
+}
+WRAPPER GrAGItf
+
+ATTR GrAGItf [ | | trf: GrModule ]
+ATTR AllNT [ | | trf: SELF ]
+
+SEM GrModule
+  | Mod         lhs         .   trf             =   GrModule_Mod @moduleNm [] @bindL.trf Map.empty
+
+SEM GrVal
+  | PtrNode OpaqueNode
+                lhs         .   trf             =   GrVal_Var @nm
+
+SEM GrPatLam
+  | PtrAnnot PtrNode OpaqueAnnot OpaqueNode
+                lhs         .   trf             =   GrPatLam_Var @nm
+--  | EnumAnnot   lhs         .   trf             =   GrPatLam_EnumAnnot [] @nm
+

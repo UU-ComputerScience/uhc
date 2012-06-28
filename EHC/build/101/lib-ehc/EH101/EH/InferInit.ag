@@ -1,0 +1,35 @@
+ATTR AGItf [ tyKiGam: TyKiGam | | ]
+
+SEM AGItf
+  | AGItf       loc         .   tyKiGam             =   @lhs.tyKiGam
+
+ATTR AGItf [ polGam: PolGam | | ]
+
+SEM AGItf
+  | AGItf       loc         .   polGam              =   @lhs.polGam
+
+ATTR AGItf [ kiGam: KiGam | | ]
+
+SEM AGItf
+  | AGItf       loc         .   kiGam               =   @lhs.kiGam
+
+ATTR AGItf [ tyGam: TyGam | | ]
+
+SEM AGItf
+  | AGItf       loc         .   tyGam               =   @lhs.tyGam
+
+ATTR AGItf [ clGam: ClGam | | ]
+
+SEM AGItf
+  | AGItf       loc         .   clGam               =   @lhs.clGam
+
+ATTR AGItf [ clDfGam: ClassDefaultGam | | ]
+
+SEM AGItf
+  | AGItf       loc         .   clDfGam             =   @expr.gathClDfGam `gamUnion` @lhs.clDfGam
+
+ATTR AGItf [ valGam: ValGam | | ]
+
+SEM AGItf
+  | AGItf       loc         .   valGam              =   @lhs.valGam
+

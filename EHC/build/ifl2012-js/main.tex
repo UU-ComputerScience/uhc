@@ -1,0 +1,957 @@
+\documentclass{llncs}
+
+
+% $Id$
+
+%% ODER: format ==         = "\mathrel{==}"
+%% ODER: format /=         = "\neq "
+%
+%
+\makeatletter
+\@ifundefined{lhs2tex.lhs2tex.sty.read}%
+  {\@namedef{lhs2tex.lhs2tex.sty.read}{}%
+   \newcommand\SkipToFmtEnd{}%
+   \newcommand\EndFmtInput{}%
+   \long\def\SkipToFmtEnd#1\EndFmtInput{}%
+  }\SkipToFmtEnd
+
+\newcommand\ReadOnlyOnce[1]{\@ifundefined{#1}{\@namedef{#1}{}}\SkipToFmtEnd}
+\usepackage{amstext}
+\usepackage{amssymb}
+\usepackage{stmaryrd}
+\DeclareFontFamily{OT1}{cmtex}{}
+\DeclareFontShape{OT1}{cmtex}{m}{n}
+  {<5><6><7><8>cmtex8
+   <9>cmtex9
+   <10><10.95><12><14.4><17.28><20.74><24.88>cmtex10}{}
+\DeclareFontShape{OT1}{cmtex}{m}{it}
+  {<-> ssub * cmtt/m/it}{}
+\newcommand{\texfamily}{\fontfamily{cmtex}\selectfont}
+\DeclareFontShape{OT1}{cmtt}{bx}{n}
+  {<5><6><7><8>cmtt8
+   <9>cmbtt9
+   <10><10.95><12><14.4><17.28><20.74><24.88>cmbtt10}{}
+\DeclareFontShape{OT1}{cmtex}{bx}{n}
+  {<-> ssub * cmtt/bx/n}{}
+\newcommand{\tex}[1]{\text{\texfamily#1}}	% NEU
+
+\newcommand{\Sp}{\hskip.33334em\relax}
+
+
+\newcommand{\Conid}[1]{\mathit{#1}}
+\newcommand{\Varid}[1]{\mathit{#1}}
+\newcommand{\anonymous}{\kern0.06em \vbox{\hrule\@width.5em}}
+\newcommand{\plus}{\mathbin{+\!\!\!+}}
+\newcommand{\bind}{\mathbin{>\!\!\!>\mkern-6.7mu=}}
+\newcommand{\rbind}{\mathbin{=\mkern-6.7mu<\!\!\!<}}% suggested by Neil Mitchell
+\newcommand{\sequ}{\mathbin{>\!\!\!>}}
+\renewcommand{\leq}{\leqslant}
+\renewcommand{\geq}{\geqslant}
+\usepackage{polytable}
+
+%mathindent has to be defined
+\@ifundefined{mathindent}%
+  {\newdimen\mathindent\mathindent\leftmargini}%
+  {}%
+
+\def\resethooks{%
+  \global\let\SaveRestoreHook\empty
+  \global\let\ColumnHook\empty}
+\newcommand*{\savecolumns}[1][default]%
+  {\g@addto@macro\SaveRestoreHook{\savecolumns[#1]}}
+\newcommand*{\restorecolumns}[1][default]%
+  {\g@addto@macro\SaveRestoreHook{\restorecolumns[#1]}}
+\newcommand*{\aligncolumn}[2]%
+  {\g@addto@macro\ColumnHook{\column{#1}{#2}}}
+
+\resethooks
+
+\newcommand{\onelinecommentchars}{\quad-{}- }
+\newcommand{\commentbeginchars}{\enskip\{-}
+\newcommand{\commentendchars}{-\}\enskip}
+
+\newcommand{\visiblecomments}{%
+  \let\onelinecomment=\onelinecommentchars
+  \let\commentbegin=\commentbeginchars
+  \let\commentend=\commentendchars}
+
+\newcommand{\invisiblecomments}{%
+  \let\onelinecomment=\empty
+  \let\commentbegin=\empty
+  \let\commentend=\empty}
+
+\visiblecomments
+
+\newlength{\blanklineskip}
+\setlength{\blanklineskip}{0.66084ex}
+
+\newcommand{\hsindent}[1]{\quad}% default is fixed indentation
+\let\hspre\empty
+\let\hspost\empty
+\newcommand{\NB}{\textbf{NB}}
+\newcommand{\Todo}[1]{$\langle$\textbf{To do:}~#1$\rangle$}
+
+\EndFmtInput
+\makeatother
+%
+
+%REGENERATE:
+%unlines ["%format " ++ l ++ num ++ ap | l <- map (:[]) (['a'..'z'] ++ ['A'..'Z']), num <- "" : map show [0..9], ap <- ["","'","''"], not (null (l ++ num ++ ap))]
+
+%% configuration
+
+
+
+
+%% end of configuration
+
+%% CONFIG: Omitted material excluded
+
+
+%% CONFIG: As article
+
+
+% format * = "\times "
+% subst inline a  	= "\ensuremath{{}\allowforspacecorrection " a "}"
+% subst varid a  	= a "{}\allowforspacecorrection "
+
+
+
+
+
+
+
+
+
+%% handling of `
+
+
+
+
+
+
+% various keywords
+
+
+
+
+
+
+
+
+
+
+
+
+
+% format CnstrVarpi	= Cnstr "^{" varpi "}"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+% format <=> 			= "\mathrel{\cong}"
+% format <+-> 			= "\setbox0=\hbox{\ensuremath{\mathrel{\vartriangle}}}\copy0\kern-.4\wd0\mathrel{\triangledown}"
+% format +	 			= ","
+% format ++	 			= ","
+
+
+
+% format fiopt			= "{\xi}"
+
+
+
+
+
+% format ANY				= "\makebox[0cm][l]{\(\top\)}\bot{}"
+
+
+
+
+% format ftv				= "\ftv "
+
+
+
+
+
+
+
+
+
+
+%% acronyms
+
+
+
+% Better formatting of code blocks ...
+
+% split of kscode into sty and fmt (this one)
+
+
+% the following two are not needed, because the {} are
+% already in %subst fromto ...
+
+%%%subst left a     = "@{}>{{}}l<{{}}@{}"
+%%%subst centered a = ">{{}}c<{{}}"
+
+% the following is an ugly hack:
+% we choose to represent keywords and some other things as math
+% operators, which get more space surrounding them, but that also
+% implies that they will not be aligned correctly.
+% To prevent that, we make the first column special.
+
+
+
+
+
+%% configuration of what to include
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\usepackage{epic}
+
+
+\def\BChng{}
+\def\EChng{}
+
+
+\newcommand{\chapterNotIncludedRef}{not included in \thispaper}
+
+\newcommand{\chapterEHVRef}{\chapterNotIncludedRef}
+
+\newcommand{\chapterEHVIRef}{\chapterNotIncludedRef}
+
+\newcommand{\chapterEHVIIRef}{\chapterNotIncludedRef}
+
+\newcommand{\chapterEHVIIIRef}{\chapterNotIncludedRef}
+
+\newcommand{\chapterEHXRef}{\chapterNotIncludedRef}
+
+
+\usepackage{fancyvrb}
+\usepackage{mainsty} %% needs: fancyvrb
+%\usepackage{scrtime}% needed for prelim/DRAFT warnings
+
+
+\usepackage{graphicx} %% needs: fancyvrb
+
+
+\usepackage{xspace}
+
+\usepackage{pgf}
+\usepackage{pgfarrows}
+\usepackage{pgfnodes}
+
+\pgfdeclareimage[width=4.3mm]{wwwlogo}{www-logo}%
+\newcommand{\WWWlogo}{%
+\begin{pgfpicture}{0cm}{0cm}{.5cm}{.43cm}
+\pgfputat{\pgfxy(0,0)}{\pgfbox[left,base]{\pgfuseimage{wwwlogo}}}%
+\end{pgfpicture}
+}
+
+\usepackage{kscode}
+
+\usepackage{array}
+
+
+% this column type is for tabulars of (type) inference rules
+\newcolumntype{P}{@{}>{\let\pcr=\\\begin{center}\let\\=\pcr\(}p{\linewidth}<{\)\end{center}}@{}}
+
+
+
+\usepackage[bbgreekl]{mathbbol}
+
+
+\let\origSection=\section
+\let\origSubsection=\subsection
+\let\origSubsubsection=\subsubsection
+
+\def\SetSectionsForBook{%
+\def\section{\chapter}
+\def\subsection{\origSection}
+\def\subsubsection{\origSubsection}
+\def\AddContentsLine##1{\addcontentsline{toc}{chapter}{##1}}
+}
+
+\def\SetSectionsForArticle{%
+\def\section{\origSection}
+\def\subsection{\origSubsection}
+\def\subsubsection{\origSubsubsection}
+\def\AddContentsLine##1{\addcontentsline{toc}{section}{##1}}
+}
+
+\SetSectionsForArticle
+
+%\usepackage{geometry}
+
+\setlength{\mathindent}{.03\linewidth}
+
+
+% Hyperref should be the last package loaded. The final online
+% version should use something different than the ugly boxes.
+
+
+
+
+\date{\today}
+\institute{Department of Information and Computing Sciences,\\
+Universiteit Utrecht,\\
+P.O.Box 80.089, \\
+Padualaan 14, Utrecht, Netherlands,\\
+\email{\text{\tt \char123{}atze\char44{}doaitse\char125{}\char64{}cs\char46{}uu\char46{}nl}},\\
+WWW home page:
+\texttt{http://www.cs.uu.nl}
+}
+
+\input InclList.tex
+
+% pgf picture
+\input afp-pgf.tex
+
+% the sort of paper
+\newcommand{\thispaper}{this paper}
+\newcommand{\thischapt}{this paper}
+
+\begin{document}
+
+\frontmatter
+
+
+\title{Building JavaScript Applications with Haskell}
+\author{Atze Dijkstra \and Jurri\"en Stutterheim \and Alessandro Vermeulen \and Doaitse Swierstra}
+
+\institute{Department of Information and Computing Sciences\\
+22 Universiteit Utrecht\\
+23 P.O.Box 80.089, 3508 TB Utrecht, The Netherlands\\
+\email{\{atze, j.stutterheim, a.vermeulen, doaitse\}@uu.nl}}
+
+\newcommand{\varid}[1]{{{\mathit{#1}}}}
+\newcommand{\con}[1]{{\mathit{#1}}}
+\newcommand{\tycon}[1]{\con{#1}}
+\newcommand{\cl}[1]{{\mathit{#1}}}
+\newcommand{\class}[1]{\cl{#1}}
+\newcommand{\ty}[1]{{\mathit{#1}}}
+\newcommand{\tyvar}[1]{\ty{#1}}
+\newcommand{\blankline}{\vspace{\baselineskip}\par}
+\newcommand{\dsl}[1]{#1}
+\newcommand{\dslid}[1]{\mathit{{#1}}}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Basic Types
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Classes
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+% %format ... = "\cdots"
+
+
+
+
+
+
+
+%% keywords
+
+
+%% DSL types/constructors
+
+%% DSL identifiers
+
+
+% defs etc
+\newcommand{\todo}[1]{{\color{red}#1}}
+\newcommand{\js}{JavaScript\xspace}
+\newcommand{\uhcjscript}{\textit{uhc-jscript}\xspace}
+\def\brunch{\text{\tt Brunch}\xspace}
+\def\coffeescript{\text{\tt coffeescript}\xspace}
+
+\maketitle
+
+% Avoid indentation
+\setlength{\parindent}{0mm}
+\addtolength{\parskip}{0.25\baselineskip}
+
+
+
+
+\begin{abstract}
+We introduce the Utrecht Haskell Compiler (UHC) JavaScript backend; a compiler
+backend which allows one to cross-compile Haskell to JavaScript, so it can be
+run in the browser. To interface with JavaScript and overcome part of the
+impedance mismatch between the two languages, we introduce the Foreign
+Expression Language; a small subset of JavaScript for use in Foreign Function
+Interface (FFI) imports. Finally we discuss the implementation of a JavaScript
+application, completely in Haskell, with which we show that it is now possible
+to develop JavaScript applications completely in Haskell.
+\end{abstract}
+
+%\category{D.3.4}{Programming languages}{Compilers; Preprocessors}
+%\category{F.3.2}{Logics and meanings of programs}{Program analysis}
+
+%\terms
+%Languages, Design
+
+%\keywords
+%Haskell, compiler architecture, attribute grammar, aspect orientation
+
+
+\section{Introduction}
+
+When developing interactive web applications, JavaScript is often the language
+of choice, due to every major browser supporting it natively. In contrast to
+other client-side programming languages, no plugins are needed to execute
+JavaScript. Unfortunately, JavaScript is currently the \textit{only}
+client-side programming language that is supported on all major browsers.
+People wishing to use other programming languages or paradigms have to rely on
+using existing plugins such as Flash or Java Applets, writing custom browser
+plugins, or hacking the browsers themselves. None of these options are ideal,
+since they either require a lot of work, or force the use of strict, imperative
+languages. Instead of choosing between the aforementioned options, we use the
+Utrecht Haskell Compiler (UHC) \cite{dijkstra09uhc-arch,www09uhc} to compile
+Haskell code to JavaScript, effectively turning JavaScript into a high-level
+byte-code of some sorts.
+
+In this paper, we introduce the UHC JavaScript backend, a compiler backend that
+allows one to compile Haskell to JavaScript, while keeping Haskell's lazy
+semantics. To overcome the impedance-mismatch between Haskell and JavaScript,
+we have extended UHC's Foreign Function Interface (FFI) with a small
+JavaScript-like expression language we call the Foreign Expression Language
+(FEL). With these enhancements to the FFI, we claim that it is now possible to
+write complete JavaScript applications using only Haskell. We back this claim
+up by porting a web-based Prolog proof assistant from JavaScript to Haskell.
+While this paper focusses on Haskell, the ideas should be relatively easy to
+implement in similar languages, such as Clean.
+
+With this paper, we make the following contributions:
+
+\begin{itemize}
+  \item We introduce the UHC JavaScript backend; a compiler backend that allows
+    one to compile any Haskell code supported by the UHC to JavaScript and
+    execute it in the browser with the same semantics.
+  \item We introduce the Foreign Expression Language (FEL), which allows for a
+    more natural way of interfacing with object-oriented languages.
+  \item We show that it is now possible to write complete JavaScript
+    applications using only Haskell.
+\end{itemize}
+
+The rest of this paper is structured as follows: section~\ref{hs2js} introduces
+the UHC JavaScript runtime system (RTS) and FFI, after which section~\ref{jcu}
+shows the implementation of a complete JavaScript application in Haskell, after
+which sections~\ref{future} and~\ref{related} discuss future and related work
+respectively. Finally, section~\ref{conclusion} concludes.
+
+\section{Compiling Haskell to JavasScript}
+
+\label{hs2js}
+
+\subsection{\label{rts}Runtime System}
+There exists an obvious mismatch between Haskell and Object-Oriented (OO) languages,
+which has been addressed in various ways over time (Section~\ref{discussionIssuesRelatedWork}):
+\begin{itemize}
+\item
+ Mapping the runtime machinery required for Haskell to an imperative language has to deal with the lazy evaluation strategy
+ imposed by Haskell (rest of this section).
+\item
+ Use of OO language mechanisms as available in JavaScript, in particular prototype based objects; we avoid dealing with this problem.
+\item
+ Use of available JavaScript libraries;
+ we deal with this in the next section by exploiting the freedom offered by Haskells Foreign Function Interface (FFI)
+\end{itemize}
+
+The design of any backend for a lazy functional languages needs to deal with functions, their (lazy) application to arguments,
+and  evaluating  such applications to Weak Head Normal Form (WHNF).
+The design should also cater for under- and oversaturated function applications as well as tail recursion.
+
+In UHC's JavaScript backend functions and their applications are both represented straightforwardly by objects:
+
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{5}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\fromto{B}{E}{\BF B\relax{\Varid{\con{Fun}.prototype}\mathrel{=}\{\mskip1.5mu }}\\
+\fromto{B}{5}{\BF B\relax{\hsindent{5}}}\fromto{5}{E}{\BF 5\relax{\dsl{applyN}\mathbin{:}\text{\textbf{function}}\;(\allowforspacecorrection \Varid{args})\ldots}}\\
+\fromto{B}{5}{\BF B\relax{\hsindent{5}}}\fromto{5}{E}{\BF 5\relax{\Varid{needsNrArgs}\mathbin{:}\text{\textbf{function}}\;(\allowforspacecorrection )\ldots}}\\
+\fromto{B}{E}{\BF B\relax{\mskip1.5mu\}}}\\[\blanklineskip]%
+\fromto{B}{E}{\BF B\relax{\text{\textbf{function}}\;\con{Fun}\;(\allowforspacecorrection \Varid{fun})\;\{\mskip1.5mu \ldots\mskip1.5mu\}}}\ColumnHook
+\end{hscode}\resethooks
+
+For now we omit implementation details and only expose the programmatic interface as used by the runtime system.
+A \ensuremath{\con{Fun}} object wraps a JavaScript function so that it can be used as a Haskell function.
+The \ensuremath{\dsl{applyN}} field is only used when function applications are being evaluated  (forced); only then
+it is necessary to know the \ensuremath{\Varid{needsNrArgs}} number of arguments which must be passed.
+For the time being it stays unevaluated as a \ensuremath{\con{Fun}} object wrapped inside an \ensuremath{\con{App}} or \ensuremath{\con{AppLT}}  closure object.
+
+Similarly, partially applied (and thus undersaturated) functions
+need to store already passed arguments and how many arguments are still missing.
+An \ensuremath{\con{AppLT}} (\ensuremath{\con{LT}} stand for \emph{less than}) object encodes this and again we provide its programmatic interface first:
+
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{5}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\fromto{B}{E}{\BF B\relax{\Varid{\con{AppLT}.prototype}\mathrel{=}\{\mskip1.5mu }}\\
+\fromto{B}{5}{\BF B\relax{\hsindent{5}}}\fromto{5}{E}{\BF 5\relax{\dsl{applyN}\mathbin{:}\text{\textbf{function}}\;(\allowforspacecorrection \Varid{args})\ldots}}\\
+\fromto{B}{5}{\BF B\relax{\hsindent{5}}}\fromto{5}{E}{\BF 5\relax{\Varid{needsNrArgs}\mathbin{:}\text{\textbf{function}}\;(\allowforspacecorrection )\ldots}}\\
+\fromto{B}{E}{\BF B\relax{\mskip1.5mu\}}}\\[\blanklineskip]%
+\fromto{B}{E}{\BF B\relax{\text{\textbf{function}}\;\con{AppLT}\;(\allowforspacecorrection \Varid{fun},\Varid{args})\;\{\mskip1.5mu \ldots\mskip1.5mu\}}}\ColumnHook
+\end{hscode}\resethooks
+
+An \ensuremath{\con{AppLT}} only wraps other \ensuremath{\con{AppLT}} objects or \ensuremath{\con{Fun}} objects.
+
+Finally, for all remaining saturation cases an \ensuremath{\con{App}} object is used, knowledge about saturedness is delegated to the encapsulated
+function object, which may be another \ensuremath{\con{App}}, \ensuremath{\con{AppLT}}, or \ensuremath{\con{Fun}}.
+
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{5}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\fromto{B}{E}{\BF B\relax{\Varid{\con{App}.prototype}\mathrel{=}\{\mskip1.5mu }}\\
+\fromto{B}{5}{\BF B\relax{\hsindent{5}}}\fromto{5}{E}{\BF 5\relax{\dsl{applyN}\mathbin{:}\text{\textbf{function}}\;(\allowforspacecorrection \Varid{args})\ldots}}\\
+\fromto{B}{E}{\BF B\relax{\mskip1.5mu\}}}\\[\blanklineskip]%
+\fromto{B}{E}{\BF B\relax{\text{\textbf{function}}\;\con{App}\;(\allowforspacecorrection \Varid{fun},\Varid{args})\;\{\mskip1.5mu \ldots\mskip1.5mu\}}}\ColumnHook
+\end{hscode}\resethooks
+
+With this interface we now can embed Haskell functions;
+for example the function \ensuremath{{\lambda}\Varid{x}\ty{\to} \Varid{id} (\allowforspacecorrection \Varid{id}\;\Varid{x})} is,
+assuming an elementary JavaScript function \ensuremath{\Varid{id}} is available, by:
+
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{5}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\fromto{B}{E}{\BF B\relax{\text{\textbf{new}}\;\con{Fun}\;(\allowforspacecorrection \text{\textbf{function}}\;(\allowforspacecorrection \Varid{x})\;\{\mskip1.5mu }}\\
+\fromto{B}{5}{\BF B\relax{\hsindent{5}}}\fromto{5}{E}{\BF 5\relax{\text{\textbf{return}}\;\text{\textbf{new}}\;\con{App}\;(\allowforspacecorrection \Varid{id},[\mskip1.5mu\allowforspacecorrection \text{\textbf{new}}\;\con{App}\;(\allowforspacecorrection \Varid{id},[\mskip1.5mu\allowforspacecorrection \Varid{x}\mskip1.5mu])\mskip1.5mu]);}}\\
+\fromto{B}{E}{\BF B\relax{\mskip1.5mu\})}}\ColumnHook
+\end{hscode}\resethooks
+
+Evaluation is forced by a separate function \ensuremath{\Varid{eval}} which assumes the presence
+of an \ensuremath{\dsl{eOrV}} (evaluator Or Value) field in all Haskell runtime values, which tells us
+whether the JavaScript object represents a Haskell non-WHNF value which needs further evaluation or not;
+in the former case it will be a
+JavaScipt function of arity 0, which can be called.
+A Haskell function or application object does not evaluate itself since the entailed tail recursion will cause the stack of the underlying
+JavaScript engine to flow over.
+The separate external function \ensuremath{\Varid{eval}} doing the evaluation allows non WHNF values to be returned,
+thus implementing a trampoline mechanism:
+
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{5}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{9}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{13}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\fromto{B}{E}{\BF B\relax{\text{\textbf{function}}\;\Varid{eval}\;(\allowforspacecorrection \Varid{x})\;\{\mskip1.5mu }}\\
+\fromto{B}{5}{\BF B\relax{\hsindent{5}}}\fromto{5}{E}{\BF 5\relax{\text{\textbf{while}}\;(\allowforspacecorrection \Varid{x}\mathrel{\wedge}\Varid{x}.\dsl{eOrV})\;\{\mskip1.5mu }}\\
+\fromto{5}{9}{\BF 5\relax{\hsindent{4}}}\fromto{9}{E}{\BF 9\relax{\text{\textbf{if}}\;(\allowforspacecorrection \text{\textbf{typeof}}\;\Varid{x}.\dsl{eOrV}==\text{\tt 'function'})\;\{\mskip1.5mu }}\\
+\fromto{9}{13}{\BF 9\relax{\hsindent{4}}}\fromto{13}{E}{\BF 13\relax{\Varid{x}\mathrel{=}\Varid{x}.\dsl{eOrV}\;(\allowforspacecorrection );}}\\
+\fromto{5}{9}{\BF 5\relax{\hsindent{4}}}\fromto{9}{E}{\BF 9\relax{\mskip1.5mu\}\;\text{\textbf{else}}\;\{\mskip1.5mu }}\\
+\fromto{9}{13}{\BF 9\relax{\hsindent{4}}}\fromto{13}{E}{\BF 13\relax{\Varid{x}\mathrel{=}\Varid{x}.\dsl{eOrV};}}\\
+\fromto{B}{5}{\BF B\relax{\hsindent{5}}}\fromto{5}{9}{\BF 5\relax{\mskip1.5mu\}}}\fromto{9}{E}{\BF 9\relax{\mskip1.5mu\}}}\\
+\fromto{B}{5}{\BF B\relax{\hsindent{5}}}\fromto{5}{E}{\BF 5\relax{\text{\textbf{return}}\;\Varid{x};}}\\
+\fromto{B}{E}{\BF B\relax{\mskip1.5mu\}}}\ColumnHook
+\end{hscode}\resethooks
+
+Even normal JavaScript values can be thrown at \ensuremath{\Varid{eval}}, provided they do not (accidentally) contain an \ensuremath{\dsl{eOrV}} field.
+The actual \ensuremath{\Varid{eval}} function is somewhat more involved as it provides some protection against null values and also
+updates the \ensuremath{\dsl{eOrV}} field for all intermediate non WHNF objects computed in the evaluation loop.
+
+As usual the evaluation is driven by the need to pattern-match on a value, e.g. as the result of a case expression or by a built-in JavaScipt primitive which is strict in the corresponding argument
+such as in the wrapper of the primitive multiplication function, which contains the actual multiplication (\ensuremath{\mathbin{*}}):
+
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{5}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\fromto{B}{E}{\BF B\relax{\text{\textbf{new}}\;\con{Fun}\;(\allowforspacecorrection \text{\textbf{function}}\;(\allowforspacecorrection \tyvar{a},\tyvar{b})\;\{\mskip1.5mu }}\\
+\fromto{B}{5}{\BF B\relax{\hsindent{5}}}\fromto{5}{E}{\BF 5\relax{\text{\textbf{return}}\;\Varid{eval}\;(\allowforspacecorrection \tyvar{a})\mathbin{*}\Varid{eval}\;(\allowforspacecorrection \tyvar{b});}}\\
+\fromto{B}{E}{\BF B\relax{\mskip1.5mu\})}}\ColumnHook
+\end{hscode}\resethooks
+
+Depending on the number of arguments provided either an undersatured closure is built, or the function is directly invoked using
+JavaScripts \ensuremath{\Varid{apply}}.
+In case too many arguments are provided a JavaScript closure is constructed, which subsequently is evaluated in the evaluation
+loop of \ensuremath{\Varid{eval}}.
+The implementation of \ensuremath{\con{AppLT}} is similar to that of \ensuremath{\con{Fun}}.
+\ensuremath{\con{App}}s implementation of \ensuremath{\dsl{applyN}} simply delegates to \ensuremath{\dsl{applyN}} of the function it applies to.
+Also omitted are the encodings of nullary applications, used for unevaluated constants (CAF, Constant Applicative Form) and indirection nodes required for
+mutual recursive definitions.
+Data types and tuples are straightforwardly mapped onto JavaScript objects
+with fields for the constructor tag and its fields.
+If available, record field names of the corresponding Haskell data type are used.
+
+
+\subsection{\label{ffi}JavaScript Foreign Function Interface}
+Talk about all the cool stuff
+- Mostly discuss the Foreign Expression Language (FEL)
+
+\begin{figure}[t]
+\hrule
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{8}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{10}{@{}>{\hspre}c<{\hspost}@{}}%
+\column{10E}{@{}l@{}}%
+\column{13}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{49}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\fromto{B}{8}{\BF B\relax{\Varid{exp}}}\fromto{8}{13}{\BF 8\relax{::=}}\fromto{13}{49}{\BF 13\relax{\text{\tt '\char123 \char125 '}}}\fromto{49}{E}{\BF 49\relax{ \mbox{\onelinecomment  Haskell constructor to JS object}}}\\
+\fromto{8}{10}{\BF 8\relax{\hsindent{2}}}\fromto{10}{10E}{\BF 10\relax{\mid }}\fromto{13}{49}{\BF 13\relax{(\allowforspacecorrection \Varid{arg}\mid i)\;\Varid{post}\;\!^{*}}}\fromto{49}{E}{\BF 49\relax{ \mbox{\onelinecomment  JS expression}}}\\[\blanklineskip]%
+\fromto{B}{8}{\BF B\relax{\Varid{post}}}\fromto{8}{13}{\BF 8\relax{::=}}\fromto{13}{49}{\BF 13\relax{\text{\tt '.'}\;i}}\fromto{49}{E}{\BF 49\relax{ \mbox{\onelinecomment  object field}}}\\
+\fromto{8}{10}{\BF 8\relax{\hsindent{2}}}\fromto{10}{10E}{\BF 10\relax{\mid }}\fromto{13}{49}{\BF 13\relax{\text{\tt '['}\;\Varid{exp}\;\text{\tt ']'}}}\fromto{49}{E}{\BF 49\relax{ \mbox{\onelinecomment  array indexing}}}\\
+\fromto{8}{10}{\BF 8\relax{\hsindent{2}}}\fromto{10}{10E}{\BF 10\relax{\mid }}\fromto{13}{49}{\BF 13\relax{\text{\tt '('}\;\Varid{args}\;\text{\tt ')'}}}\fromto{49}{E}{\BF 49\relax{ \mbox{\onelinecomment  function call}}}\\[\blanklineskip]%
+\fromto{B}{8}{\BF B\relax{\Varid{args}}}\fromto{8}{13}{\BF 8\relax{::=}}\fromto{13}{49}{\BF 13\relax{\varepsilon \mid \Varid{arg}\;(\allowforspacecorrection ,\Varid{arg})\;\!^{*}}}\fromto{49}{E}{\BF 49\relax{ \mbox{\onelinecomment  possible arguments}}}\\[\blanklineskip]%
+\fromto{B}{8}{\BF B\relax{\Varid{arg}}}\fromto{8}{13}{\BF 8\relax{::=}}\fromto{13}{49}{\BF 13\relax{\text{\tt '\%'}\;(\allowforspacecorrection \text{\tt '*'}\mid \Varid{int})}}\fromto{49}{E}{\BF 49\relax{ \mbox{\onelinecomment  all arguments, or a specific one}}}\\
+\fromto{8}{10}{\BF 8\relax{\hsindent{2}}}\fromto{10}{10E}{\BF 10\relax{\mid }}\fromto{13}{49}{\BF 13\relax{\text{\tt '\char34 '}\;\Varid{str}\;\text{\tt '\char34 '}}}\fromto{49}{E}{\BF 49\relax{ \mbox{\onelinecomment  literal text}}}\\[\blanklineskip]%
+\fromto{B}{8}{\BF B\relax{i}}\fromto{8}{E}{\BF 8\relax{::=\tyvar{a}\;\Varid{valid}\;\Conid{JavaScript}\;\Varid{identifier}}}\\
+\fromto{B}{8}{\BF B\relax{\Varid{int}}}\fromto{8}{E}{\BF 8\relax{::=\Varid{any}\;\Varid{integer}}}\\
+\fromto{B}{8}{\BF B\relax{\Varid{str}}}\fromto{8}{E}{\BF 8\relax{::=\Varid{any}\;\Varid{string}}}\ColumnHook
+\end{hscode}\resethooks
+\caption{Import entity notation for the JS calling convention}
+\label{jsimpent}
+\end{figure}
+
+- Briefly mention the dynamic/wrapper things
+
+\section{The JCU Application}
+
+\label{jcu}
+What does the app do? How is it implemented? Does it work? Does it work well?
+Is the UHC JS backend a full replacement for JS coding? Etc?
+\cite{swierstra2011,stutterheim2012} \cite{snap}
+
+The JCU Prolog Proof Assistant\cite{swierstra2011} is a tool developed for
+students to familiarize themselves with Prolog through the aided solving of
+Prolog proof trees. Originally programmed in \coffeescript\cite{coffeescript}
+(sugar for \js) and using the \brunch\cite{brunch} framework.
+
+Students can proof their Prolog query by applying a combination of variable
+substitution and dropping rules from the list of rules on the tree.
+
+The tool is presented as a web application and runs in any modern browser. The
+application is written in Haskell which compiles to \js by UHC. It uses the
+\uhcjscript\cite{uhcjs} library. The \uhcjscript library provides (among others)
+bindings to the jQuery\cite{jquery} JavaScript library and the
+AjaxQueue\cite{ajaxq} library.
+
+As our original application was written
+
+
+\subsection{\label{issues}Implementation Issues}
+Which issues do you run into in general when you develop a JS app in Haskell?
+
+Ale: non-termination/threads, no native OO, interfacing with annoyingly
+multi-interpretable functions (functions that are dimensioned in both the number
+and type of their arguments)
+
+\subsection{\label{performance}Performance}
+Performance is decent, except for the actual Prolog backtracking. Where is the bottleneck?
+Ale: Probably as I've stated before the problem is in the memory management as
+is supported by the benchmarks in Chrome and Fx.
+
+\section{Future Work}
+
+\label{future}
+
+\subsection{Communicating with the server}\label{ssec:communicating-with-server}
+Currently the communication with the server is encoded manually. That is, the
+creation of the \js values to be send over hardcoded in the application. When
+coding both the server and the client in Haskell one should be able to create
+something like `typed channels' for each server endpoint. This would further
+improve the type safety of the application.
+
+\subsection{Background threading}
+Although the basic interface for using \text{\tt WebWorkers} is present it is
+currently not possible to seamlessly pass Haskell values due to the presence
+of functions. Figuring out how then to pass Haskell values is subject to
+future research.
+
+\subsection{Generic \ensuremath{\Conid{FromJS}} and \ensuremath{\Conid{ToJS}} for converting objects/records}
+It should be fairly straightforward to implement a generic implementation for
+\ensuremath{\Conid{FromJS}} and \ensuremath{\Conid{ToJS}} using deriving Generic.
+
+\subsection{Providing an api to build web applications}\label{ssec:providing-an-api-to-build-web-applications}
+One could think of providing a similar API such as WxHaskell\cite{wxHaskell}
+does for constructing native application, but for web applications. Also one
+could think of providing a Functional
+Reactive\cite{Elliott:2009:PFR:1596638.1596643,Wan:2000:FRP:349299.349331,reactive-banana}
+interface to building the web application.
+
+\subsubsection*{Typechecking}
+Currently, foreign expressions are not typechecked at all. In case of a
+programming error the compiler will currently panic in the best-case scenario
+and happily generate \js code that fails at runtime in the worst-case scenario.
+Constraints on the imports and exports need to be formalised and the foreign
+types should be typechecked according to the foreign expressions. Some example
+constraints that could be typechecked:
+
+\begin{itemize}
+  \item Only datatype values may be exported as objects, not functions or
+        primitive types.
+  \item Only wrapped functions may be exported in objects.
+\end{itemize}
+
+The first item could be realised by supporting type constraints in the foreign
+import. This is already allowed by the type system, but the RTS does not
+currently support this.
+
+\subsubsection*{Testing}
+During development, the code has only received limited, informal testing. The
+UHC's test suite should be expanded to enable automated testing. Additionally,
+real-world \js front-end applications should be ported to Haskell and the
+\uhcjscript library to identify shortcomings of the existing ideas and
+implementations.
+
+\subsubsection*{Benchmarking an optimising}
+Some benchmarks have been performed that show that the generated \js is quite
+a bit slower than a hand-written version of the same code. Unfortunately, these
+numbers aren't publicly available, nor is is clear where the biggest
+bottlenecks are located. It would be very interesting to do another round of
+benchmarks, including the object code. Afterwards, it would be interesting to
+identify bottlenecks and find ways to speed up the generated code.
+
+\subsubsection*{Static object compilation}
+Currently the only way of converting a datatype to a \js object is to do so at
+runtime. This, however, is a process with time complexity linear in the number
+of datatype records. Future work could focus on generating (parts of) \js
+objects at compile-time, so that only dynamic values will need to be copied to
+the object at runtime.
+
+\subsubsection*{Numeric object indices}
+When a datatype without record selectors is converted into a \js object, the
+object's attribute name becomes an integer $\geq{1}$ with an underscore prefix.
+Ideally this would be a numeric index $\geq{0}$.
+
+%\section{Related work}
+
+\label{related}
+
+\paragraph{Other approaches.}
+The idea of running Haskell in a browser is not new.
+To our knowledge
+first attempts to do so using JavaScript were done in the context of
+the York Haskell Compiler (YHC) \cite{www07yhc-javascript}.
+The Document Object Model (DOM) inside a browser was accessed via wrapper code generated
+from HTML standard definitions \cite{www07haskell-in-browser}.
+However, YHC is no longer maintained and direct interfacing to DOM
+nowadays is replaced by libraries built on top of the multiple DOM variations.
+
+The idea of running functional programs in a browser even goes further back
+to the availability of Java applets.
+The workflow framework \ensuremath{\Varid{iTasks}}, built on top of the Clean system \cite{www11clean-system},
+uses a minimal platform independent functional language, SAPL,
+which is interpreted in the browser by code written in Java.
+The latest interpreter incarnations are written in JavaScript
+\cite{jansen10phd-itasks-sapl-funcweb,bruel10sapl-javascript,plasmeijer08clientside-itasks-ajax}.
+Although currently a Haskell frontend exists for Clean, the use of it in a browser seems to be tied up to the iTasks system.
+The intermediate language SAPL also does not provide the facilities as provided by our Haskell FFI.
+%This limits used code to that which is generated by the iTasks system.
+
+Of the GHC a version exists which generates JavaScript \cite{www11ghcjs-git},
+based on the GHC API, supporting the use of primitives but not the FFI.
+Further down we elaborate on some consequences of multiple platforms and backends
+relevant for this GHC backend variant as well.
+
+Both ``Functional javascript'' \cite{www07functional-javascript} and
+``Haskell in Javascript'' \cite{www10haskellinjavascript} do not use a separate Haskell compiler.
+Instead, JavaScript is used directly in a functional style,
+respectively a small compiler for a subset of Haskell has been written in JavaScript.
+
+\paragraph{Object orientation.}
+
+Object Oriented behavior itself can be realized inside Haskell by exploiting the class system
+\cite{shields01haskell-oo-overloading,kiselyov05haskell-oo}.
+However, we aim to access libraries written in JavaScript, not mimic JavaScript or OO mechanism in general inside Haskell.
+
+However, when functionality of the libraries would have to be (re)written in Haskell some form of OO mechanism
+should be available.
+This issue arises when one would code in Haskell a platform independent part of an otherwise OO GUI library,
+say \ensuremath{\Varid{wxHaskell}}.
+For now we limit ourselves to accessing JavaScript libraries via the FFI, hiding OO idiom inside FFI import entities.
+
+%\paragraph{This is a moving target.}
+
+%\todo{Explain about @this@}
+
+%\todo{Mapping to OO: FFI or other mechanism.}
+
+%\todo{Records in JS vs HS.}
+
+\paragraph{Type system absence.}
+
+JavaScript has no type system, the absence of which can be dealt with
+by using phantom types in wrapper functions around untyped FFI calls.
+More problematic are for example DOM functions returning objects with a different interface,
+like a DOM element or attribute.
+A sum type defining all possible result types could be used, but data types are not extensible,
+which might be too limiting in practice.
+Dynamics might be used as result values, but require assistence from the runtime system as well
+as knowledge about types (e.g. in the form of \ensuremath{\Conid{TypeRep}}).
+Existentially quantified data types and classes might be used (similar to extensible exceptions \cite{marlow06extensible-exception}),
+but then knowledge about the class system also seeps into the runtime system.
+Currently this has not yet been further addressed.
+
+%\todo{Typing the untyped.}
+
+\paragraph{Side effects.}
+
+All access to JavaScript values is done in the IO monad, so side effect can be properly modelled.
+For now it is assumed that no threads exist.
+Since JavaScript's worker thread mechanism can be used safely we currently do not need
+ semaphores, STM, or other shared data access machinery.
+Some values like the globally available \text{\tt window} in a browser could be accessed without the use of the IO monad because its value does not change.
+However, if and when this assumption would not hold in a near future it would break our wrapping code as well.
+
+%\todo{All in IO, what can be done without IO, threads? STM?.}
+
+\paragraph{Deployment.}
+
+JavaScript code is usually downloaded, hence compact representation as well as avoiding or delaying loading of code is
+important.
+UHC allows pruning of unused code as to achieve a relative compact representation,
+but provides no mechanism for dynamic loading.
+It is left up to the user of the compiled code to incorporate it into a webpage.
+
+%\todo{Code compactification, module loading, whole prog, ...}
+
+\paragraph{Mapping to OO runtime environments.}
+
+In general, it is attractive to map onto available virtual machines for popular OO languages,
+in particular because of the availability of a wealth of libraries.
+Targeting the Java virtual machine (JVM) has been experimented with
+\cite{wakeling98haskell-to-java,func:lazy:java:parser-combinator,stewart02mthesis-multiparadigm-jit,tullsen96haskell-to-java},
+as well as with the \text{\tt \char46{}NET} platform \cite{monteiro05functional-to-dotnet,www04haskell-dotnet,meijer07mondrian,meijer01dotnet-scripting-mondrian};
+UHC also provides a backend to the JVM \cite{func:lazy:java:parser-combinator}
+using the same technique as described here.
+However, interfacing to libraries is still lacking in UHC, and in general library access and other
+runtime oriented features (threads, exceptions)
+is where the real work lies \cite{www12ghc-faq}.
+Wrapping and interfacing to libraries has to be done manually or by tools interpreting library code which requires substabtial effort and is
+suffering from misinterpretation.
+In the case of JavaScript lack of typing annotations even precludes automatic FFI wrapper generation,
+unless type annotations in comments could be trustworthy and formal enough to be used instead.
+
+Efficient code generation is also an issue.
+Usually non standard OO language constructs are used to implement
+standard idiom of (lazy) functions.
+For now, with UHC we have taken the approach to first make it work and not bother about efficiency,
+generating code from an early stage in the compiler pipeline.
+We expect exploitation of the results of a strictness analyser to speed up the code considerably,
+especially because the existing JavaScript compilers to be better able to analyse the provided code.
+
+\paragraph{Libraries, Haskell platform.}
+
+Targeting Haskell to a different platform means that some assumptions following
+from using a single platform only are no longer valid.
+First, a different platform means a different runtime environment.
+Almost all of the UNIX functionality is available for the usual Haskell UNIX runtime, but is
+naturally  not available inside a web browser
+and, vice verse, specific JavaScript libraries like jQuery are not available on a UNIX platform.
+Some library modules of a package (partially) cannot be build on some platforms, while others (partially) can.
+To cater for this, UHC rather ad-hoc marks modules to be unavailable for a backend by a pragma
+\text{\tt \char123{}\char45{}\char35{}~EXCLUDE\char95{}IF\char95{}TARGET~js~\char35{}\char45{}\char125{}}.
+Of course \ensuremath{\Varid{cpp}} can still be used to select functionality inside a module.
+However, in general, awareness of platform permeates all aspects of a language system, from the compiler itself
+to the library build system like \ensuremath{\Conid{Cabal}}.
+In particular, \ensuremath{\Conid{Cabal}} needs a specification mechanism for such variation in target and platform
+to allow for selective compilation of a collection of variants.
+Currently this means that UHC compilation for the JavaScript backend cannot be done through \ensuremath{\Conid{Cabal}}.
+
+A second aspect has more to do with the evolution of Haskell as an ecosystem.
+Many libraries go far beyond the Haskell standard by making use of a plethora of GHC extensions.
+Currently, such libraries evolve to use (say) type families, a feature not (yet) available in UHC.
+For (non GHC) Haskell compiler writers to keep with this pace of evolution poses a considerable challenge;
+yet in our opinion there is value in the availability of compiler alternatives as well as variation in what those
+compilers are good at.
+
+%\todo{Mismatch: Cabal does not deal with multiple backend of one compiler.}
+
+%\todo{Mismatch: Libraries take GHC as standard, not Haskell2010 (or H98).}
+
+%\todo{Unix based library is useless, basically other OS to run on, what about shared code, ...}
+
+\paragraph{More info, download.}
+
+For the variant of the JCU application as implemented for this paper more info (download, how to install, etc)
+is available, via the UHC www site \cite{www09uhc} or directly \cite{www12uhc-js-backend}.
+
+\section{Conclusion}
+
+\label{conclusion}
+We have shown that the UHC is capable of supporting the development of complete
+client-side web applications. This opens the door to Haskell-only web
+development. Better abstractions are still required to reduce the amount of
+code that lives in the \ensuremath{\ty{IO}} monad directly, and to give programming with the
+UHC JavaScript backend a more functional feel. While in most cases performance
+is acceptable, it needs to be improved if computationally heavy functions are
+to be run on the client. In order for most of the frequently used Hackage
+libraries to be run on the client, UHC will need some more work as well.
+
+
+\AddContentsLine{References}
+\bibliographystyle{plain}
+{\sloppy\raggedright
+\small
+\setlength{\parskip}{-.2ex}
+\def\newblock{\hskip -.2em}
+\bibliography{\jobname}
+}
+
+\end{document}
+

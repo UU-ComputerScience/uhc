@@ -1,0 +1,163 @@
+ATTR AllNT AGItf [ | | errSq USE {`Seq.union`} {Seq.empty} : ErrSq ]
+
+SEM Module
+    | Module
+        lhs         .   errSq       =   Seq.firstNotEmpty [Seq.fromList @errUndef,Seq.fromList @errModName,@body.errSq]
+
+SEM Body
+    | Body
+        lhs         .   errSq       =   Seq.firstNotEmpty [Seq.fromList @errDupIntro, Seq.fromList @errIdUse,Seq.fromList @errReorder, @declarations.errSq]
+
+SEM Expression
+    | Literal
+        loc         .   errSq       =   Seq.unions [Seq.fromList @errIdUse, @literal.errSq]
+    | Variable Constructor
+        loc         .   errSq       =   Seq.fromList @errIdUse
+    | Let
+        loc         .   errSq       =   Seq.unions [Seq.fromList @errDupIntro, Seq.fromList @errReorder, @declarations.errSq, @expression.errSq]
+    | Lambda
+      ImplicitLambda
+        loc         .   errSq       =   Seq.unions [Seq.fromList @errDupIntro, @patterns.errSq, @expression.errSq]
+    | InfixApplicationChainTop
+        loc         .   errSq       =   Seq.unions [Seq.fromList @errRearr, @expression.errSq]
+    | Negate
+        loc         .   errSq       =   Seq.unions [Seq.fromList @errIdUse, @expression.errSq]
+    | List
+        loc         .   errSq       =   Seq.unions [Seq.fromList @errIdUse, @expressions.errSq]
+    | Enum
+        loc         .   errSq       =   Seq.unions [Seq.fromList @errIdUse, @from.errSq, @then.errSq, @to.errSq]
+    | If
+        loc         .   errSq       =   Seq.unions [Seq.fromList @errIdUseVal, Seq.fromList @errIdUseType, @guardExpression.errSq, @thenExpression.errSq, @elseExpression.errSq]
+    | RecordConstruction
+        loc         .   errSq       =   Seq.unions [Seq.fromList @errIdUse, @recordExpressionBindings.errSq]
+
+SEM RightHandSide
+    | Expression
+        loc         .   errSq       =   Seq.unions [Seq.fromList @errReorder, @expression.errSq, @where.errSq]
+
+SEM FunctionBinding
+    | FunctionBinding
+        loc         .   errSq       =   Seq.unions [Seq.fromList @errDupIntro, @lefthandside.errSq, @righthandside.errSq]
+
+SEM Pattern
+    | Constructor
+      List
+        loc         .   errSq       =   Seq.unions [Seq.fromList @errIdUse, @patterns.errSq]
+    | InfixConstructor
+        loc         .   errSq       =   Seq.unions [Seq.fromList @errIdUse, @leftPattern.errSq, @rightPattern.errSq]
+    | Literal
+        loc         .   errSq       =   Seq.unions [ Seq.fromList @errIdUse, Seq.fromList @errIdUseEq
+                                                   , Seq.fromList @errIdUseCls
+                                                   , @literal.errSq
+                                                   ]
+    | Record
+        loc         .   errSq       =   Seq.unions [Seq.fromList @errIdUse, @recordPatternBindings.errSq]
+    | Tuple
+        loc         .   errSq       =   Seq.unions [Seq.fromList @errArity, @patterns.errSq]
+
+SEM Type
+    | Constructor
+      Variable NamedWildcard
+        loc         .   errSq       =   Seq.fromList @errIdUse
+    | Forall Exists
+        loc         .   errSq       =   Seq.unions [Seq.fromList @errDupIntro, @type.errSq]
+    | InfixApplication
+        loc         .   errSq       =   Seq.unions [Seq.fromList @ctxtFormErrs, @leftType.errSq, @operator.errSq, @rightType.errSq]
+    | InfixApplicationChainTop
+        loc         .   errSq       =   Seq.unions [Seq.fromList @errRearr, @type.errSq]
+
+SEM Declaration
+    | Data
+      GADT
+        loc         .   locErrs     =   Seq.empty
+    | Newtype
+        loc         .   locErrs     =   Seq.fromList @errNewtype
+    | Data Newtype
+      GADT
+        loc         .   errSq       =   Seq.unions [ @locErrs
+                                                   , @typelefthandside.errSq
+                                                   , Seq.fromList @errDupIntro
+                                                   , Seq.fromList @errIdUseVal
+                                                   , @constructors.errSq
+                                                   , @context.errSq
+                                                   , @derivings.errSq
+                                                   , Seq.fromList @errIdUseClass
+                                                   ]
+
+SEM GuardedExpression
+    | GuardedExpression
+        loc         .   errSq       =   Seq.unions [Seq.fromList @errIdUseVal, Seq.fromList @errIdUseType, @guard.errSq, @expression.errSq]
+
+SEM Alternative
+    | Alternative
+        loc         .   errSq       =   Seq.unions [Seq.fromList @errDupIntro, @pattern.errSq, @righthandside.errSq]
+
+SEM Qualifier
+    | Let
+        loc         .   errSq       =   Seq.firstNotEmpty [Seq.fromList @errDupIntro, @declarations.errSq, Seq.fromList @errReorder]
+    | Guard
+        loc         .   errSq       =   Seq.unions [Seq.fromList @errIdUseVal, Seq.fromList @errIdUseType, @guard.errSq]
+    | Generator
+        loc         .   errSq       =   Seq.unions [Seq.fromList @errDupIntro, Seq.fromList @errIdUse, @pattern.errSq, @expression.errSq]
+    | Empty
+        loc         .   errSq       =   Seq.fromList @errIdUse
+
+SEM RecordExpressionBinding
+    | Binding
+        loc         .   errSq       =   Seq.unions [Seq.fromList @errIdUse, @expression.errSq]
+
+SEM RecordPatternBinding
+    | Binding
+        loc         .   errSq       =   Seq.unions [Seq.fromList @errIdUse, @pattern.errSq]
+    | Pun
+        loc         .   errSq       =   Seq.fromList @errIdUse
+
+SEM Statement
+    | Let
+        loc         .   errSq       =   Seq.unions [Seq.fromList @errDupIntro, Seq.fromList @errReorder, @declarations.errSq]
+    | Expression
+        loc         .   errSq       =   Seq.unions [Seq.fromList @errIdUse, @expression.errSq]
+    | Generator
+        loc         .   errSq       =   Seq.unions [Seq.fromList @errDupIntro, Seq.fromList @errIdUse, @pattern.errSq, @expression.errSq]
+
+SEM ContextItem
+    | Class
+        loc         .   errSq       =   Seq.unions [Seq.fromList @errIdUse, @types.errSq]
+
+SEM Declaration
+    | Class
+        loc         .   errSq       =   Seq.unions [ Seq.fromList @errDupIntro, Seq.fromList @errReorder, @context.errSq, @typelefthandside.errSq
+                                                   , @dependencies.errSq
+                                                   , Seq.fromList @errIdUseExtra
+                                                   , @where.errSq
+                                                   ]
+    | Instance
+        loc         .   errSq       =   Seq.firstNotEmpty [Seq.fromList @errIdUse, @context.errSq, @type.errSq, {- @types.errSq, -} @where.errSq, Seq.fromList @errReorder]
+    | InstanceUseImplicitly
+        loc         .   errSq       =   Seq.unions [Seq.fromList @errIdUse, @expression.errSq, @types.errSq]
+    | Default
+        loc         .   errSq       =   Seq.unions [Seq.fromList @errIdUse, @types.errSq]
+
+SEM Declaration
+    | Type
+        loc         .   errSq       =   Seq.unions [ Seq.fromList @errDupIntro, @typelefthandside.errSq, @type.errSq ]
+
+SEM Declaration
+    | ForeignImport
+        loc         .   errSq       =   Seq.unions [ Seq.fromList (rngLift @range mkNestErr (pp ("Parse of foreign entity '" ++ @nmForParse ++ "'")) @entErrs)
+                                                   , @type.errSq
+                                                   ]
+    | ForeignExport
+        loc         .   errSq       =   Seq.unions [ Seq.fromList @errIdUse
+                                                   , Seq.fromList (rngLift @range mkNestErr (pp ("Parse of foreign entity '" ++ @nmForParse ++ "'")) @entErrs)
+                                                   , @type.errSq
+                                                   ]
+
+SEM Declaration
+	| FusionDeclaration FusionConversion
+		loc			.	errSq		=	Seq.fromList @errIdUse
+
+SEM Deriving
+    | Deriving
+        loc         .   errSq       =   Seq.fromList @errIdUse
+

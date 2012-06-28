@@ -1,0 +1,11 @@
+
+ATTR AEqnDest AEqnDests [ isInComposite: Bool | | ]
+
+SEM AEqn
+  | Eqn             dest    .   isInComposite
+                                            =   False
+
+SEM AEqnDest
+  | Many            dests   .   isInComposite
+                                            =   True
+

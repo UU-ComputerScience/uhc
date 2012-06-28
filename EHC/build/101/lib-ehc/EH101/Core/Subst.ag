@@ -1,0 +1,264 @@
+MODULE {EH101.Core.Subst} {CSubst
+, cSubstAppExpr
+, cAppCoeArg
+, coeEvalOnAsSubst
+, coeWipeWeaveAsSubst2
+, mkLamBodyCoe
+, lrcoeWipeWeaveAsSubst, lrcoeForLamTyAppAsSubst}
+{
+import Data.Maybe
+import qualified Data.Set as Set
+import qualified Data.Map as Map
+import EH.Util.Pretty
+import EH.Util.Utils
+import EH101.Opts.Base
+import EH101.Base.Common
+import EH101.Ty
+import EH101.Core
+import EH101.VarMp
+import EH101.Core.Pretty
+import EH101.Core.FvS
+import EH101.AbstractCore
+import EH101.Core.Coercion
+
+}
+{
+}
+{
+}
+{
+}
+INCLUDE "Core/AbsSyn.ag"
+WRAPPER CExpr
+
+--PRAGMA novisit
+
+{
+type CSubstInfo = CSubstInfo' CExpr CMetaVal CBind CBound Ty
+type CSubst     = CSubst'     CExpr CMetaVal CBind CBound Ty
+
+}
+{
+cSubstAppExpr :: Bool -> CSubst -> CExpr -> Maybe CExpr -> CExpr
+cSubstAppExpr doDeepSubst cs ce mbOnCe
+  = cRepl_Syn_CExpr t
+  where t = wrap_CExpr
+              (sem_CExpr ce)
+              (Inh_CExpr { cSubst_Inh_CExpr = cs
+                         , coeArg_Inh_CExpr = maybe CExpr_CoeArg id mbOnCe
+                         , doDeepSubst_Inh_CExpr = doDeepSubst
+                         })
+
+}
+{
+cAppCoeArg :: CExpr -> CExpr -> CExpr
+cAppCoeArg ce coeArg
+  = cSubstAppExpr False emptyCSubst ce (Just coeArg)
+
+}
+{
+instance CSubstitutable CExpr CMetaVal CBind CBound Ty CExpr where
+  cSubstApp cs ce | Map.null cs
+    =  ce
+  cSubstApp cs ce
+    = cSubstAppExpr False cs ce Nothing
+
+}
+{
+cStopSubst = CExpr_String "Core.Subst.cStopSubst: may not happen"
+
+}
+ATTR AllCodeNT CodeAGItf [ doDeepSubst: Bool | | ]
+
+SEM CExpr
+  | HoleLet ImplsApp ImplsLam
+  				loc			.	doDeepSubstHere
+  											=	False
+  | Hole
+  				loc			.	doDeepSubstHere
+  											=	@lhs.doDeepSubst
+
+ATTR AllCodeNT CodeAGItf [ cSubst: CSubst | | ]
+
+ATTR AllCodeNT CodeAGItf [ coeArg: CExpr | | ]
+
+SEM CExpr
+  | CaseAltFail loc         .   (canSubst,uid)
+                                            =   cafailHasId @failReason
+
+SEM CExpr
+  | HoleLet     loc         .   uid         =   @bindsUid
+
+SEM CExpr
+  | CaseAltFail (loc.replv,loc.isRepl)      =   if @canSubst
+                                                then case Map.lookup (CSKey_UID @uid) @lhs.cSubst of
+                                                       Just (CSIExpr ce)  -> (ce,True)
+                                                       _                  -> (@cRepl,False)
+                                                else (@cRepl,False)
+
+SEM CExpr
+  | Hole        (loc.replv,loc.isRepl)      =   case Map.lookup (CSKey_UID @uid) @lhs.cSubst of
+                                                  Just (CSIExpr ce)  -> (ce,True)
+                                                  _                  -> (@cRepl,False)
+
+SEM CExpr
+  | HoleLet     (loc.replv,loc.isRepl)      =   case Map.lookup (CSKey_UID @bindsUid) @lhs.cSubst of
+                                                  Just (CSIBinds b)  -> (@lhs.cSubst `cSubstApp` acoreLetRec b @body.cRepl,True)
+                                                  _                  -> (@cRepl,False)
+  | CoeArg      (loc.replv,loc.isRepl)      =   (@lhs.coeArg,True)
+  | ImplsApp ImplsLam
+                (loc.coeAppL,loc.coeLamL,loc.isRepl)
+                                            =   case Map.lookup (CSKey_UID @uid) @lhs.cSubst of
+                                                  Just (CSIImpls ca cl)  -> (ca,cl,True)
+                                                  _                      -> ([],[],False)
+  | ImplsApp    loc         .   replv       =   coeWeaveOn2 emptyCSubst @coeAppL [] @func.cRepl
+  | ImplsLam    loc         .   replv       =   coeWeaveOn2 emptyCSubst [] @coeLamL @body.cRepl
+
+SEM CExpr
+  | CaseAltFail
+    Hole HoleLet CoeArg ImplsApp ImplsLam
+                inst        .   repl'       :   CExpr
+                inst        .   repl'       =   if @lhs.doDeepSubst && @isRepl then @replv else cStopSubst
+
+SEM CExpr
+  | CaseAltFail
+    Hole HoleLet ImplsApp ImplsLam
+                repl'       .   cSubst      =   Map.delete (CSKey_UID @uid) @lhs.cSubst
+
+ATTR AllCodeNT CodeAGItf [ | | cRepl: SELF ]
+
+SEM CExpr
+  | CaseAltFail
+    Hole HoleLet ImplsApp ImplsLam
+                lhs         .   cRepl       =   if @lhs.doDeepSubst && @isRepl then @repl'.cRepl else @replv
+
+SEM CExpr
+  | CoeArg      lhs         .   cRepl       =   @replv -- if @isRepl then @repl'.cRepl else @cRepl
+
+{
+coeEvalOnAsSubst :: UID -> Coe -> CExpr -> (CExpr,CSubst)
+coeEvalOnAsSubst uniq coe ce
+  = (c,s)
+  where (_,c,s) = ev uniq coe ce
+        ev uniq coe ce
+          = case coe of
+              c | acoreCoeIsId c-> mk ce
+              Coe_Map  f        -> mk $ f ce
+              Coe_App1 a        -> mk $ acoreApp1 ce a
+              Coe_Lam n   _     -> mk $ acoreLam1 n ce
+              Coe_LamLet n _ i  -> mk $ n `acoreLam1` acoreHoleLet i ce
+              Coe_LetRec b      -> mk $ acoreLetRec b ce
+              Coe_Compose c1 c2 -> (u2, c1', s2 `cSubstAppSubst` s1)
+                                where (u1,c2',s1) = ev uniq c2 ce
+                                      (u2,c1',s2) = ev u1   c1 c2'
+              Coe_C e           -> (u', e `cAppCoeArg` acoreUidHole u, acoreCSubstFromUidExprL [(u,ce)])
+                                where (u',u) = mkNewUID uniq
+              Coe_ImplApp iv    -> mk $ CExpr_ImplsApp ce iv
+              Coe_ImplLam iv    -> mk $ CExpr_ImplsLam iv ce
+          where mk c = (uniq,c,emptyCSubst)
+
+}
+{
+coeEvalOn :: Coe -> CExpr -> CExpr
+coeEvalOn coe ce
+  = s `cSubstApp` ce'
+  where (ce',s) = coeEvalOnAsSubst uidStart coe ce
+
+}
+{
+coeWeaveOnAsSubst :: UID -> [Coe] -> [Coe] -> CExpr -> (CExpr,CSubst)
+coeWeaveOnAsSubst = coeWeaveWithSubstOnAsSubst emptyCSubst
+
+coeWeaveWithSubstOnAsSubst :: CSubst -> UID -> [Coe] -> [Coe] -> CExpr -> (CExpr,CSubst)
+coeWeaveWithSubstOnAsSubst cs uniq lCoeL rCoeL ce
+  = snd $ foldr ev (foldr ev (uniq,(ce,emptyCSubst)) (reverse lCoeL)) rCoeL
+  where ev c (uniq,(e,s)) = (u',(cs `cSubstApp` e',s' `cSubstAppSubst` s))
+          where (u',u ) = mkNewUID uniq
+                (e',s') = coeEvalOnAsSubst u c e
+
+}
+{
+coeWeaveOn2 :: CSubst -> [Coe] -> [Coe] -> CExpr -> CExpr
+coeWeaveOn2 cs lCoeL rCoeL ce
+  = cSubstAppExpr True s e Nothing
+  where (e,s) = coeWeaveWithSubstOnAsSubst cs uidStart lCoeL rCoeL ce
+
+}
+{
+coeWipe :: [Coe] -> [Coe] -> ([Coe],[Coe])
+coeWipe l r
+  = (reverse l', reverse r')
+  where w l r =  case lr of
+                   (Coe_ImplApp li:ls,Coe_ImplLam ri:rs)
+                                  | li == ri   -> w ls rs
+                                  | otherwise  -> lr
+                   _                           -> lr
+              where lr = (l,r)
+        (l',r') = w (reverse l) (reverse r)
+
+}
+{
+coeWipeWeaveAsSubst :: EHCOpts -> UID -> VarMp -> [Coe] -> [Coe] -> (Coe,CSubst)
+coeWipeWeaveAsSubst opts uniq c lCoeL rCoeL
+  = (Coe_C e,s)
+  where (lCoeL',rCoeL') = coeWipe (concatMap (coeImplsAppLVarMp opts c) lCoeL) (concatMap (coeImplsAppRVarMp c) rCoeL)
+        (e,s) = coeWeaveOnAsSubst uniq lCoeL' rCoeL' CExpr_CoeArg
+
+coeWipeWeaveAsSubst2 :: EHCOpts -> UID -> VarMp -> CSubst -> [Coe] -> [Coe] -> (Coe,CSubst)
+coeWipeWeaveAsSubst2 opts uniq c cs lCoeL rCoeL
+  = (Coe_C e,s)
+  where (lCoeL',rCoeL') = coeWipe (concatMap (coeImplsAppLVarMp opts c) lCoeL) (concatMap (coeImplsAppRVarMp c) rCoeL)
+        (e,s) = coeWeaveWithSubstOnAsSubst cs uniq lCoeL' rCoeL' CExpr_CoeArg
+
+}
+{
+coeImplsAppLVarMp :: EHCOpts -> VarMp -> Coe -> [Coe]
+coeImplsAppLVarMp opts c coe
+  =  case coe of
+       Coe_ImplApp i  -> maybe [coe] (acoreCoeImplsApp) (varmpImplsLookupCyc i c)
+       _              -> [coe]
+
+coeImplsAppRVarMp :: VarMp -> Coe -> [Coe]
+coeImplsAppRVarMp c coe
+  =  case coe of
+       Coe_ImplLam i  -> maybe [coe] (acoreCoeImplsLam acoreCoeId) (varmpImplsLookupCyc i c)
+       _              -> [coe]
+
+mkLamBodyCoe :: Coe -> [Coe] -> [Coe]
+mkLamBodyCoe onLast l
+  =  case l of
+       (_:_)              -> h ++ [onLast `acoreCoeCompose` t]
+                          where h = init l
+                                t = last l
+       _ | acoreCoeIsId onLast -> []
+         | otherwise           -> [onLast]
+
+}
+{
+instance PP Coe where
+  pp c = "<" >|< pp (fst $ coeEvalOnAsSubst uidStart c CExpr_CoeArg) >|< ">"
+
+}
+{
+lrcoeWipeWeaveAsSubst :: EHCOpts -> UID -> VarMp -> LRCoe -> (Coe,CSubst)
+lrcoeWipeWeaveAsSubst opts uniq cnstr (LRCoe LRCoeId _ _) = (acoreCoeId,emptyCSubst)
+lrcoeWipeWeaveAsSubst opts uniq cnstr lrcoe               = coeWipeWeaveAsSubst opts uniq cnstr (lrcoeLeftL lrcoe) (lrcoeRightL lrcoe)
+
+lrcoeForLamTyAppAsSubst :: EHCOpts -> UID -> LRCoe -> LRCoe -> (LRCoe,CSubst)
+lrcoeForLamTyAppAsSubst opts uniq f a
+  = (LRCoe k [l] [r] `lrcoeUnion` a, s)
+  where (u',u1,u2,u3) = mkNewLevUID3 uniq
+        n = uidHNm u1
+        r = acoreCoeLam1 n
+        (k,l,s)
+          = case f of
+              lr@(LRCoe LRCoeOther _ _)
+                -> (lrcoeKindOfCoe c, acoreCoeAppN [a], cSubstAppSubst s1 s2)
+                where (c,s1) = lrcoeWipeWeaveAsSubst opts u2 emptyVarMp lr
+                      (a,s2) = coeEvalOnAsSubst u3 c (acoreVar n)
+              LRCoe LRCoeId _ _
+                -> (LRCoeId, l, emptyCSubst)
+                where l = acoreCoeAppN [acoreVar n]
+
+
+}

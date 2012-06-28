@@ -1,0 +1,22 @@
+%include lhs2TeX.fmt
+%include afp.fmt
+
+
+\rulerCmdDef{RulerExamples.expr.scheme}{%
+\ensuremath{| g :- | ^{ | e | } |  e : t | }
+}
+\rulerCmdDef{RulerExamples.expr.e.int}{%
+\rulerRule{e.int}{}
+{%
+}
+{%
+| g :- | ^{ | e | } |  int : Int | 
+}
+}
+
+\rulerCmdDef{RulerExamples.expr}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{RulerExamples.expr.scheme}}{Expression type rules}{RulerExamples.expr}{}
+\rulerCmdUse{RulerExamples.expr.e.int}
+\end{rulerRulesetFigure}
+}
+

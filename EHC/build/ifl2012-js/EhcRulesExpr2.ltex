@@ -1,0 +1,2449 @@
+%include lhs2TeX.fmt
+%include afp.fmt
+%include ehrules.fmt
+
+\rulerCmdDef{rules4.ANN.expr.base.scheme}{%
+\ensuremath{| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  e : sigma ~> VarMp | }
+}
+\rulerCmdDef{rules4.ANN.expr.base.e.int}{%
+\rulerRule{e.int}{ANN}
+{%
+| fiopt :- | ^{ | <= | } |  Int <= VarMp | ^{ | k | } |  sigma | ^{ | k | } |  : sigma ~> VarMp | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  int : sigma ~> VarMp VarMp | ^{ | k | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.ANN.expr.base.e.char}{%
+\rulerRule{e.char}{ANN}
+{%
+| fiopt :- | ^{ | <= | } |  Char <= VarMp | ^{ | k | } |  sigma | ^{ | k | } |  : sigma ~> VarMp | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  char : sigma ~> VarMp VarMp | ^{ | k | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.ANN.expr.base.e.var}{%
+\rulerRule{e.var}{ANN}
+{%
+| ident :-> sigma | _{ | g | } |  `elem` Gamma | 
+\\
+| fiopt :- | ^{ | <= | } |  VarMp | ^{ | k | } |  sigma | _{ | g | } |  <= VarMp | ^{ | k | } |  sigma | ^{ | k | } |  : sigma ~> VarMp | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  ident : sigma ~> VarMp VarMp | ^{ | k | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.ANN.expr.base.e.con}{%
+\rulerRule{e.con}{ANN}
+{%
+| identc :-> sigma | _{ | g | } |  `elem` Gamma | 
+\\
+| fiopt :- | ^{ | <= | } |  VarMp | ^{ | k | } |  sigma | _{ | g | } |  <= VarMp | ^{ | k | } |  sigma | ^{ | k | } |  : sigma ~> VarMp | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  identc : sigma ~> VarMp VarMp | ^{ | k | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.ANN.expr.base.e.app}{%
+\rulerRule{e.app}{ANN}
+{%
+| tvarv | \;\mbox{fresh} |  | 
+\\
+| strongFIOpts ; Gamma ; VarMp | ^{ | k | } |  ; tvarv -> sigma | ^{ | k | } |  :- | ^{ | e | } |  e | _{ | 1 | } |  : _ -> sigma ~> VarMp | _{ | f | } |  | 
+\\
+| instLFIOpts ; Gamma ; VarMp | _{ | f | } |  ; tvarv :- | ^{ | e | } |  e | _{ | 2 | } |  : _ ~> VarMp | _{ | a | } |  | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  e | _{ | 1 | } |  ^^ e | _{ | 2 | } |  : VarMp | _{ | a | } |  sigma ~> VarMp | _{ | a | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.ANN.expr.base.e.app.f}{%
+\rulerRule{e.app.f}{ANN}
+{%
+| tvarv | \;\mbox{fresh} |  | 
+\\
+| strongFIOpts ; Gamma ; VarMp | ^{ | k | } |  ; tvarv -> sigma | ^{ | k | } |  :- | ^{ | e | } |  e | _{ | 1 | } |  : _ -> sigma ~> VarMp | _{ | f | } |  | 
+\\
+| instLFIOpts ; Gamma ; VarMp | _{ | f | } |  ; tvarv :- | ^{ | e | } |  e | _{ | 2 | } |  : _ ~> VarMp | _{ | a | } |  | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  e | _{ | 1 | } |  ^^  ~ e | _{ | 2 | } |  : VarMp | _{ | a | } |  sigma ~> VarMp | _{ | a | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.ANN.expr.base.e.let}{%
+\rulerRule{e.let}{ANN}
+{%
+| Gamma | _{ | t | } |  ; Gamma | _{ | t | }^{ | nexists | } |  ++ Gamma ; Gamma | _{ | p | } |  ; VarMp | ^{ | k | } |  ; VarMp | _{ | p | } |  :- | ^{ | d | } |  d : Gamma | _{ | t | } |  ; Gamma | _{ | p | } |  ~> VarMp | _{ | p | } |  ; VarMp | _{ | d | } |  | 
+\\
+| Gamma | _{ | t | }^{ | nexists | } |  ===  [ i :-> VarMp sigma || (i :-> exists ^  | \overline{ | tvarv | } |  . sigma) <- Gamma | _{ | t | } |  , VarMp ===  | \overline{ | tvarv :-> tvarf | } |  , tvarf | \;\mbox{fresh} |  ]  | 
+\\
+| Gamma | _{ | l | } |  ++ Gamma | _{ | g | } |  === Gamma | _{ | p | } |  | 
+\\
+| Gamma | _{ | q | } |  ===  [ i :-> forall  | \overline{ | alpha | } |  . sigma || (i :-> sigma) <- VarMp | _{ | d | } |  Gamma | _{ | l | } |  ,  | \overline{ | alpha | } |  === ftv (sigma) - ftv (VarMp | _{ | d | } |  Gamma | _{ | g | } | ) ]  | 
+\\
+| Gamma | _{ | q | }^{ | nexists | } |  ===  [ i :-> VarMp sigma || (i :-> exists ^  | \overline{ | tvarv | } |  . sigma) <- Gamma | _{ | q | } |  , VarMp ===  | \overline{ | tvarv :-> tvarf | } |  , tvarf | \;\mbox{fresh} |  ]  | 
+\\
+| fiopt ; Gamma | _{ | q | }^{ | nexists | } |  + Gamma | _{ | g | } |  ; VarMp | _{ | d | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  b : sigma ~> VarMp | _{ | e | } |  | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  let d in b : sigma ~> VarMp | _{ | e | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.ANN.expr.base.e.lam}{%
+\rulerRule{e.lam}{ANN}
+{%
+| tvarv1 , tvarv2 | \;\mbox{fresh} |  | 
+\\
+| fioBindRFirstY , fiopt :- | ^{ | <= | } |  tvarv1 -> tvarv2 <= VarMp | ^{ | k | } |  sigma | ^{ | k | } |  : _ ~> VarMp | _{ | F | } |  | 
+\\
+| fiopt ;  []  ++ Gamma ; VarMp | _{ | F | } |  VarMp | ^{ | k | } |  ; tvarv1 :- | ^{ | p | } |  p : sigma | _{ | p | } |  ; Gamma | _{ | p | } |  ~> VarMp | _{ | p | } |  ; _ | 
+\\
+| fiopt ; Gamma | _{ | p | } |  ; VarMp | _{ | p | } |  ; tvarv2 :- | ^{ | e | } |  e : sigma | _{ | e | } |  ~> VarMp | _{ | e | } |  | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |   \ p -> e : VarMp | _{ | e | } |  sigma | _{ | p | } |  -> sigma | _{ | e | } |  ~> VarMp | _{ | e | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.C.expr.base.scheme}{%
+\ensuremath{| Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  e : sigma ~> VarMp | }
+}
+\rulerCmdDef{rules4.C.expr.base.e.int}{%
+\rulerRule{e.int}{C}
+{%
+|  :- | ^{ | <= | } |  Int <= VarMp | ^{ | k | } |  sigma | ^{ | k | } |  : sigma ~> VarMp | 
+}
+{%
+| Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  int : sigma ~> VarMp VarMp | ^{ | k | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.C.expr.base.e.char}{%
+\rulerRule{e.char}{C}
+{%
+|  :- | ^{ | <= | } |  Char <= VarMp | ^{ | k | } |  sigma | ^{ | k | } |  : sigma ~> VarMp | 
+}
+{%
+| Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  char : sigma ~> VarMp VarMp | ^{ | k | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.C.expr.base.e.var}{%
+\rulerRule{e.var}{C}
+{%
+| ident :-> sigma | _{ | g | } |  `elem` Gamma | 
+\\
+|  :- | ^{ | <= | } |  VarMp | ^{ | k | } |  sigma | _{ | g | } |  <= VarMp | ^{ | k | } |  sigma | ^{ | k | } |  : sigma ~> VarMp | 
+}
+{%
+| Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  ident : sigma ~> VarMp VarMp | ^{ | k | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.C.expr.base.e.con}{%
+\rulerRule{e.con}{C}
+{%
+|  | \overline{ | tvarv | } |  | \;\mbox{fresh} |  ,  ^^  || identc ||  ===  ||  | \overline{ | tvarv | } |  ||  | 
+\\
+| sigma | _{ | p | } |  === (sigma | _{ | 1 | } |  , ... , sigma | _{ | n | } | ) ,  ^^^  [ sigma | _{ | 1 | } |  , ... , sigma | _{ | n | } |  ]  ===  | \overline{ | tvarv | } |  | 
+\\
+|  :- | ^{ | <= | } |  ( | \overline{ | tvarv | } |  -> sigma | _{ | p | } | ) <= VarMp | ^{ | k | } |  sigma | ^{ | k | } |  : sigma ~> VarMp | 
+}
+{%
+| Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  identc : sigma ~> VarMp VarMp | ^{ | k | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.C.expr.base.e.app}{%
+\rulerRule{e.app}{C}
+{%
+| tvarv | \;\mbox{fresh} |  | 
+\\
+| Gamma ; VarMp | ^{ | k | } |  ; tvarv -> sigma | ^{ | k | } |  :- | ^{ | e | } |  e | _{ | 1 | } |  : sigma | _{ | a | } |  -> sigma ~> VarMp | _{ | f | } |  | 
+\\
+| Gamma ; VarMp | _{ | f | } |  ; sigma | _{ | a | } |  :- | ^{ | e | } |  e | _{ | 2 | } |  : _ ~> VarMp | _{ | a | } |  | 
+}
+{%
+| Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  e | _{ | 1 | } |  ^^ e | _{ | 2 | } |  : VarMp | _{ | a | } |  sigma ~> VarMp | _{ | a | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.C.expr.base.e.let}{%
+\rulerRule{e.let}{C}
+{%
+| Gamma | _{ | t | } |  ; Gamma | _{ | t | } |  ++ Gamma ; Gamma | _{ | p | } |  ; VarMp | ^{ | k | } |  ; VarMp | _{ | p | } |  :- | ^{ | d | } |  d : Gamma | _{ | t | } |  ; Gamma | _{ | p | } |  ~> VarMp | _{ | p | } |  ; VarMp | _{ | d | } |  | 
+\\
+| Gamma | _{ | p | } |  ; VarMp | _{ | d | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  b : sigma ~> VarMp | _{ | e | } |  | 
+}
+{%
+| Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  let d in b : sigma ~> VarMp | _{ | e | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.C.expr.base.e.lam}{%
+\rulerRule{e.lam}{C}
+{%
+| tvarv1 , tvarv2 | \;\mbox{fresh} |  | 
+\\
+|  :- | ^{ | <= | } |  tvarv1 -> tvarv2 <= VarMp | ^{ | k | } |  sigma | ^{ | k | } |  : _ ~> VarMp | _{ | F | } |  | 
+\\
+| VarMp | _{ | F | } |  VarMp | ^{ | k | } |  ;  []  ; tvarv1 :- | ^{ | p | } |  p : sigma | _{ | p | } |  ; Gamma | _{ | p | } |  ~> VarMp | _{ | p | } |  ; _ | 
+\\
+| Gamma | _{ | p | } |  + Gamma ; VarMp | _{ | p | } |  ; tvarv2 :- | ^{ | e | } |  e : sigma | _{ | e | } |  ~> VarMp | _{ | e | } |  | 
+}
+{%
+| Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |   \ p -> e : VarMp | _{ | e | } |  sigma | _{ | p | } |  -> sigma | _{ | e | } |  ~> VarMp | _{ | e | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.CG.expr.base.scheme}{%
+\ensuremath{| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  e : sigma ~> VarMp ; Transl | }
+}
+\rulerCmdDef{rules4.CG.expr.base.e.int}{%
+\rulerRule{e.int}{CG}
+{%
+| fiopt :- | ^{ | <= | } |  Int <= VarMp | ^{ | k | } |  sigma | ^{ | k | } |  : sigma ~> VarMp | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  int : sigma ~> VarMp VarMp | ^{ | k | } |  ; Transl (int) | 
+}
+}
+
+\rulerCmdDef{rules4.CG.expr.base.e.char}{%
+\rulerRule{e.char}{CG}
+{%
+| fiopt :- | ^{ | <= | } |  Char <= VarMp | ^{ | k | } |  sigma | ^{ | k | } |  : sigma ~> VarMp | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  char : sigma ~> VarMp VarMp | ^{ | k | } |  ; Transl (char) | 
+}
+}
+
+\rulerCmdDef{rules4.CG.expr.base.e.var}{%
+\rulerRule{e.var}{CG}
+{%
+| ident :-> sigma | _{ | g | } |  `elem` Gamma | 
+\\
+| fiopt :- | ^{ | <= | } |  VarMp | ^{ | k | } |  sigma | _{ | g | } |  <= VarMp | ^{ | k | } |  sigma | ^{ | k | } |  : sigma ~> VarMp | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  ident : sigma ~> VarMp VarMp | ^{ | k | } |  ; Transl (ident) | 
+}
+}
+
+\rulerCmdDef{rules4.CG.expr.base.e.con}{%
+\rulerRule{e.con}{CG}
+{%
+| identc :-> sigma | _{ | g | } |  `elem` Gamma | 
+\\
+| fiopt :- | ^{ | <= | } |  VarMp | ^{ | k | } |  sigma | _{ | g | } |  <= VarMp | ^{ | k | } |  sigma | ^{ | k | } |  : sigma ~> VarMp | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  identc : sigma ~> VarMp VarMp | ^{ | k | } |  ; Transl (identc) | 
+}
+}
+
+\rulerCmdDef{rules4.CG.expr.base.e.app}{%
+\rulerRule{e.app}{CG}
+{%
+| tvarv | \;\mbox{fresh} |  | 
+\\
+| strongFIOpts ; Gamma ; VarMp | ^{ | k | } |  ; tvarv -> sigma | ^{ | k | } |  :- | ^{ | e | } |  e | _{ | 1 | } |  : _ -> sigma ~> VarMp | _{ | f | } |  ; Transl | _{ | f | } |  | 
+\\
+| instLFIOpts ; Gamma ; VarMp | _{ | f | } |  ; tvarv :- | ^{ | e | } |  e | _{ | 2 | } |  : _ ~> VarMp | _{ | a | } |  ; Transl | _{ | a | } |  | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  e | _{ | 1 | } |  ^^ e | _{ | 2 | } |  : VarMp | _{ | a | } |  sigma ~> VarMp | _{ | a | } |  ; Transl | _{ | f | } |  ^^ Transl | _{ | a | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.CG.expr.base.e.app.f}{%
+\rulerRule{e.app.f}{CG}
+{%
+| tvarv | \;\mbox{fresh} |  | 
+\\
+| strongFIOpts ; Gamma ; VarMp | ^{ | k | } |  ; tvarv -> sigma | ^{ | k | } |  :- | ^{ | e | } |  e | _{ | 1 | } |  : _ -> sigma ~> VarMp | _{ | f | } |  ; Transl | _{ | f | } |  | 
+\\
+| instLFIOpts ; Gamma ; VarMp | _{ | f | } |  ; tvarv :- | ^{ | e | } |  e | _{ | 2 | } |  : _ ~> VarMp | _{ | a | } |  ; Transl | _{ | a | } |  | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  e | _{ | 1 | } |  ^^  ~ e | _{ | 2 | } |  : VarMp | _{ | a | } |  sigma ~> VarMp | _{ | a | } |  ; Transl | _{ | f | } |  ^^ Transl | _{ | a | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.CG.expr.base.e.let}{%
+\rulerRule{e.let}{CG}
+{%
+| Gamma | _{ | t | } |  ; Gamma | _{ | t | }^{ | nexists | } |  ++ Gamma ; Gamma | _{ | p | } |  ; VarMp | ^{ | k | } |  ; VarMp | _{ | p | } |  :- | ^{ | d | } |  d : Gamma | _{ | t | } |  ; Gamma | _{ | p | } |  ~> VarMp | _{ | p | } |  ; VarMp | _{ | d | } |  ;  | \overline{ | Transl | _{ | d | }} |  | 
+\\
+| Gamma | _{ | t | }^{ | nexists | } |  ===  [ i :-> VarMp sigma || (i :-> exists ^  | \overline{ | tvarv | } |  . sigma) <- Gamma | _{ | t | } |  , VarMp ===  | \overline{ | tvarv :-> tvarf | } |  , tvarf | \;\mbox{fresh} |  ]  | 
+\\
+| Gamma | _{ | l | } |  ++ Gamma | _{ | g | } |  === Gamma | _{ | p | } |  | 
+\\
+| Gamma | _{ | q | } |  ===  [ i :-> forall  | \overline{ | alpha | } |  . sigma || (i :-> sigma) <- VarMp | _{ | d | } |  Gamma | _{ | l | } |  ,  | \overline{ | alpha | } |  === ftv (sigma) - ftv (VarMp | _{ | d | } |  Gamma | _{ | g | } | ) ]  | 
+\\
+| Gamma | _{ | q | }^{ | nexists | } |  ===  [ i :-> VarMp sigma || (i :-> exists ^  | \overline{ | tvarv | } |  . sigma) <- Gamma | _{ | q | } |  , VarMp ===  | \overline{ | tvarv :-> tvarf | } |  , tvarf | \;\mbox{fresh} |  ]  | 
+\\
+| fiopt ; Gamma | _{ | q | }^{ | nexists | } |  + Gamma | _{ | g | } |  ; VarMp | _{ | d | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  b : sigma ~> VarMp | _{ | e | } |  ; Transl | _{ | e | } |  | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  let d in b : sigma ~> VarMp | _{ | e | } |  ; let  | \overline{ | Transl | _{ | d | }} |  ^^ in Transl | _{ | e | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.CG.expr.base.e.lam}{%
+\rulerRule{e.lam}{CG}
+{%
+| tvarv1 , tvarv2 | \;\mbox{fresh} |  | 
+\\
+| fioBindRFirstY , fiopt :- | ^{ | <= | } |  tvarv1 -> tvarv2 <= VarMp | ^{ | k | } |  sigma | ^{ | k | } |  : _ ~> VarMp | _{ | F | } |  | 
+\\
+| fiopt ;  []  ++ Gamma ; VarMp | _{ | F | } |  VarMp | ^{ | k | } |  ; tvarv1 :- | ^{ | p | } |  p : sigma | _{ | p | } |  ; Gamma | _{ | p | } |  ~> VarMp | _{ | p | } |  ; _ | 
+\\
+| fiopt ; Gamma | _{ | p | } |  ; VarMp | _{ | p | } |  ; tvarv2 :- | ^{ | e | } |  e : sigma | _{ | e | } |  ~> VarMp | _{ | e | } |  ; Transl | _{ | e | } |  | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |   \ p -> e : VarMp | _{ | e | } |  sigma | _{ | p | } |  -> sigma | _{ | e | } |  ~> VarMp | _{ | e | } |  ;  \ p -> Transl | _{ | e | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.DT.expr.base.scheme}{%
+\ensuremath{| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  e : sigma ~> VarMp | }
+}
+\rulerCmdDef{rules4.DT.expr.base.e.int}{%
+\rulerRule{e.int}{DT}
+{%
+| fiopt :- | ^{ | <= | } |  Int <= VarMp | ^{ | k | } |  sigma | ^{ | k | } |  : sigma ~> VarMp | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  int : sigma ~> VarMp VarMp | ^{ | k | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.DT.expr.base.e.char}{%
+\rulerRule{e.char}{DT}
+{%
+| fiopt :- | ^{ | <= | } |  Char <= VarMp | ^{ | k | } |  sigma | ^{ | k | } |  : sigma ~> VarMp | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  char : sigma ~> VarMp VarMp | ^{ | k | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.DT.expr.base.e.var}{%
+\rulerRule{e.var}{DT}
+{%
+| ident :-> sigma | _{ | g | } |  `elem` Gamma | 
+\\
+| fiopt :- | ^{ | <= | } |  VarMp | ^{ | k | } |  sigma | _{ | g | } |  <= VarMp | ^{ | k | } |  sigma | ^{ | k | } |  : sigma ~> VarMp | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  ident : sigma ~> VarMp VarMp | ^{ | k | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.DT.expr.base.e.con}{%
+\rulerRule{e.con}{DT}
+{%
+| identc :-> sigma | _{ | g | } |  `elem` Gamma | 
+\\
+| fiopt :- | ^{ | <= | } |  VarMp | ^{ | k | } |  sigma | _{ | g | } |  <= VarMp | ^{ | k | } |  sigma | ^{ | k | } |  : sigma ~> VarMp | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  identc : sigma ~> VarMp VarMp | ^{ | k | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.DT.expr.base.e.app}{%
+\rulerRule{e.app}{DT}
+{%
+| tvarv | \;\mbox{fresh} |  | 
+\\
+| strongFIOpts ; Gamma ; VarMp | ^{ | k | } |  ; tvarv -> sigma | ^{ | k | } |  :- | ^{ | e | } |  e | _{ | 1 | } |  : _ -> sigma ~> VarMp | _{ | f | } |  | 
+\\
+| instLFIOpts ; Gamma ; VarMp | _{ | f | } |  ; tvarv :- | ^{ | e | } |  e | _{ | 2 | } |  : _ ~> VarMp | _{ | a | } |  | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  e | _{ | 1 | } |  ^^ e | _{ | 2 | } |  : VarMp | _{ | a | } |  sigma ~> VarMp | _{ | a | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.DT.expr.base.e.app.f}{%
+\rulerRule{e.app.f}{DT}
+{%
+| tvarv | \;\mbox{fresh} |  | 
+\\
+| strongFIOpts ; Gamma ; VarMp | ^{ | k | } |  ; tvarv -> sigma | ^{ | k | } |  :- | ^{ | e | } |  e | _{ | 1 | } |  : _ -> sigma ~> VarMp | _{ | f | } |  | 
+\\
+| instLFIOpts ; Gamma ; VarMp | _{ | f | } |  ; tvarv :- | ^{ | e | } |  e | _{ | 2 | } |  : _ ~> VarMp | _{ | a | } |  | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  e | _{ | 1 | } |  ^^  ~ e | _{ | 2 | } |  : VarMp | _{ | a | } |  sigma ~> VarMp | _{ | a | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.DT.expr.base.e.let}{%
+\rulerRule{e.let}{DT}
+{%
+| Gamma | _{ | t | } |  ; Gamma | _{ | t | }^{ | nexists | } |  ++ Gamma ; Gamma | _{ | p | } |  ; VarMp | ^{ | k | } |  ; VarMp | _{ | p | } |  :- | ^{ | d | } |  d : Gamma | _{ | t | } |  ; Gamma | _{ | p | } |  ~> VarMp | _{ | p | } |  ; VarMp | _{ | d | } |  | 
+\\
+| Gamma | _{ | t | }^{ | nexists | } |  ===  [ i :-> VarMp sigma || (i :-> exists ^  | \overline{ | tvarv | } |  . sigma) <- Gamma | _{ | t | } |  , VarMp ===  | \overline{ | tvarv :-> tvarf | } |  , tvarf | \;\mbox{fresh} |  ]  | 
+\\
+| Gamma | _{ | l | } |  ++ Gamma | _{ | g | } |  === Gamma | _{ | p | } |  | 
+\\
+| Gamma | _{ | q | } |  ===  [ i :-> forall  | \overline{ | alpha | } |  . sigma || (i :-> sigma) <- VarMp | _{ | d | } |  Gamma | _{ | l | } |  ,  | \overline{ | alpha | } |  === ftv (sigma) - ftv (VarMp | _{ | d | } |  Gamma | _{ | g | } | ) ]  | 
+\\
+| Gamma | _{ | q | }^{ | nexists | } |  ===  [ i :-> VarMp sigma || (i :-> exists ^  | \overline{ | tvarv | } |  . sigma) <- Gamma | _{ | q | } |  , VarMp ===  | \overline{ | tvarv :-> tvarf | } |  , tvarf | \;\mbox{fresh} |  ]  | 
+\\
+| fiopt ; Gamma | _{ | q | }^{ | nexists | } |  + Gamma | _{ | g | } |  ; VarMp | _{ | d | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  b : sigma ~> VarMp | _{ | e | } |  | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  let d in b : sigma ~> VarMp | _{ | e | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.DT.expr.base.e.lam}{%
+\rulerRule{e.lam}{DT}
+{%
+| tvarv1 , tvarv2 | \;\mbox{fresh} |  | 
+\\
+| fioBindRFirstY , fiopt :- | ^{ | <= | } |  tvarv1 -> tvarv2 <= VarMp | ^{ | k | } |  sigma | ^{ | k | } |  : _ ~> VarMp | _{ | F | } |  | 
+\\
+| fiopt ;  []  ++ Gamma ; VarMp | _{ | F | } |  VarMp | ^{ | k | } |  ; tvarv1 :- | ^{ | p | } |  p : sigma | _{ | p | } |  ; Gamma | _{ | p | } |  ~> VarMp | _{ | p | } |  ; _ | 
+\\
+| fiopt ; Gamma | _{ | p | } |  ; VarMp | _{ | p | } |  ; tvarv2 :- | ^{ | e | } |  e : sigma | _{ | e | } |  ~> VarMp | _{ | e | } |  | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |   \ p -> e : VarMp | _{ | e | } |  sigma | _{ | p | } |  -> sigma | _{ | e | } |  ~> VarMp | _{ | e | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.E.expr.base.scheme}{%
+\ensuremath{| Gamma :- | ^{ | e | } |  e : sigma | }
+}
+\rulerCmdDef{rules4.E.expr.base.e.int}{%
+\rulerRule{e.int}{E}
+{%
+}
+{%
+| Gamma :- | ^{ | e | } |  int : Int | 
+}
+}
+
+\rulerCmdDef{rules4.E.expr.base.e.char}{%
+\rulerRule{e.char}{E}
+{%
+}
+{%
+| Gamma :- | ^{ | e | } |  char : Char | 
+}
+}
+
+\rulerCmdDef{rules4.E.expr.base.e.var}{%
+\rulerRule{e.var}{E}
+{%
+| ident :-> sigma `elem` Gamma | 
+}
+{%
+| Gamma :- | ^{ | e | } |  ident : sigma | 
+}
+}
+
+\rulerCmdDef{rules4.E.expr.base.e.app}{%
+\rulerRule{e.app}{E}
+{%
+| Gamma :- | ^{ | e | } |  e | _{ | 2 | } |  : sigma | _{ | a | } |  | 
+\\
+| Gamma :- | ^{ | e | } |  e | _{ | 1 | } |  : sigma | _{ | a | } |  -> sigma | 
+}
+{%
+| Gamma :- | ^{ | e | } |  e | _{ | 1 | } |  ^^ e | _{ | 2 | } |  : sigma | 
+}
+}
+
+\rulerCmdDef{rules4.E.expr.base.e.let}{%
+\rulerRule{e.let}{E}
+{%
+| Gamma | _{ | t | } |  ++ Gamma :- | ^{ | d | } |  d : Gamma | _{ | t | } |  | 
+\\
+| Gamma | _{ | t | } |  ++ Gamma :- | ^{ | e | } |  b : sigma | 
+}
+{%
+| Gamma :- | ^{ | e | } |  let d in b : sigma | 
+}
+}
+
+\rulerCmdDef{rules4.E.expr.base.e.lam}{%
+\rulerRule{e.lam}{E}
+{%
+| (identv :-> sigma | _{ | identv | } | ) + Gamma :- | ^{ | e | } |  e : sigma | _{ | e | } |  | 
+}
+{%
+| Gamma :- | ^{ | e | } |   \ identv -> e : sigma | _{ | identv | } |  -> sigma | _{ | e | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.EP.expr.base.scheme}{%
+\ensuremath{| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  e : sigma ~> VarMp ; Transl | }
+}
+\rulerCmdDef{rules4.EP.expr.base.e.int}{%
+\rulerRule{e.int}{EP}
+{%
+| fiopt :- | ^{ | <= | } |  Int <= VarMp | ^{ | k | } |  sigma | ^{ | k | } |  : sigma ~> VarMp ; Coe | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  int : sigma ~> VarMp VarMp | ^{ | k | } |  ; Coe Transl (int) | 
+}
+}
+
+\rulerCmdDef{rules4.EP.expr.base.e.char}{%
+\rulerRule{e.char}{EP}
+{%
+| fiopt :- | ^{ | <= | } |  Char <= VarMp | ^{ | k | } |  sigma | ^{ | k | } |  : sigma ~> VarMp ; Coe | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  char : sigma ~> VarMp VarMp | ^{ | k | } |  ; Coe Transl (char) | 
+}
+}
+
+\rulerCmdDef{rules4.EP.expr.base.e.var}{%
+\rulerRule{e.var}{EP}
+{%
+| ident :-> sigma | _{ | g | } |  `elem` Gamma | 
+\\
+| fiopt :- | ^{ | <= | } |  VarMp | ^{ | k | } |  sigma | _{ | g | } |  <= VarMp | ^{ | k | } |  sigma | ^{ | k | } |  : sigma ~> VarMp ; Coe | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  ident : sigma ~> VarMp VarMp | ^{ | k | } |  ; Coe Transl (ident) | 
+}
+}
+
+\rulerCmdDef{rules4.EP.expr.base.e.con}{%
+\rulerRule{e.con}{EP}
+{%
+| identc :-> sigma | _{ | g | } |  `elem` Gamma | 
+\\
+| fiopt :- | ^{ | <= | } |  VarMp | ^{ | k | } |  sigma | _{ | g | } |  <= VarMp | ^{ | k | } |  sigma | ^{ | k | } |  : sigma ~> VarMp ; Coe | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  identc : sigma ~> VarMp VarMp | ^{ | k | } |  ; Coe Transl (identc) | 
+}
+}
+
+\rulerCmdDef{rules4.EP.expr.base.e.app}{%
+\rulerRule{e.app}{EP}
+{%
+| tvarv , pvar | \;\mbox{fresh} |  | 
+\\
+| strongFIOpts ; Gamma ; VarMp | ^{ | k | } |  ; pvar => tvarv -> sigma | ^{ | k | } |  :- | ^{ | e | } |  e | _{ | 1 | } |  : _ => sigma | _{ | a | } |  -> sigma ~> VarMp | _{ | f | } |  ; Transl | _{ | f | } |  | 
+\\
+| instLFIOpts ; Gamma ; VarMp | _{ | f | } |  ; tvarv :- | ^{ | e | } |  e | _{ | 2 | } |  : _ ~> VarMp | _{ | a | } |  ; Transl | _{ | a | } |  | 
+\\
+| Gamma :- | ^{ | pi | } |  VarMp | _{ | a | } |  pvar ~>  | \overline{ | Transl | _{ | a | }} |  : _ | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  e | _{ | 1 | } |  ^^ e | _{ | 2 | } |  : VarMp | _{ | a | } |  sigma ~> VarMp | _{ | a | } |  ;  \ Transl | _{ | f | } |  ^^  | \overline{ | Transl | _{ | a | }} |  ^^ Transl | _{ | a | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.EP.expr.base.e.app.f}{%
+\rulerRule{e.app.f}{EP}
+{%
+| tvarv , pvar | \;\mbox{fresh} |  | 
+\\
+| strongFIOpts ; Gamma ; VarMp | ^{ | k | } |  ; pvar => tvarv -> sigma | ^{ | k | } |  :- | ^{ | e | } |  e | _{ | 1 | } |  : _ => sigma | _{ | a | } |  -> sigma ~> VarMp | _{ | f | } |  ; Transl | _{ | f | } |  | 
+\\
+| instLFIOpts ; Gamma ; VarMp | _{ | f | } |  ; tvarv :- | ^{ | e | } |  e | _{ | 2 | } |  : _ ~> VarMp | _{ | a | } |  ; Transl | _{ | a | } |  | 
+\\
+| Gamma :- | ^{ | pi | } |  VarMp | _{ | a | } |  pvar ~>  | \overline{ | Transl | _{ | a | }} |  : _ | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  e | _{ | 1 | } |  ^^  ~ e | _{ | 2 | } |  : VarMp | _{ | a | } |  sigma ~> VarMp | _{ | a | } |  ;  \ Transl | _{ | f | } |  ^^  | \overline{ | Transl | _{ | a | }} |  ^^ Transl | _{ | a | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.EP.expr.base.e.let}{%
+\rulerRule{e.let}{EP}
+{%
+| Gamma | _{ | t | } |  ; Gamma | _{ | t | }^{ | nexists | } |  ++ Gamma ; Gamma | _{ | p | } |  ; VarMp | ^{ | k | } |  ; VarMp | _{ | p | } |  :- | ^{ | d | } |  d : Gamma | _{ | t | } |  ; Gamma | _{ | p | } |  ~> VarMp | _{ | p | } |  ; VarMp | _{ | d | } |  ;  | \overline{ | Transl | _{ | d | }} |  | 
+\\
+| Gamma | _{ | t | }^{ | nexists | } |  ===  [ i :-> VarMp sigma || (i :-> exists ^  | \overline{ | tvarv | } |  . sigma) <- Gamma | _{ | t | } |  , VarMp ===  | \overline{ | tvarv :-> tvarf | } |  , tvarf | \;\mbox{fresh} |  ]  | 
+\\
+| Gamma | _{ | l | } |  ++ Gamma | _{ | g | } |  === Gamma | _{ | p | } |  | 
+\\
+| Gamma | _{ | q | } |  ===  [ i :-> forall  | \overline{ | alpha | } |  . sigma || (i :-> sigma) <- VarMp | _{ | d | } |  Gamma | _{ | l | } |  ,  | \overline{ | alpha | } |  === ftv (sigma) - ftv (VarMp | _{ | d | } |  Gamma | _{ | g | } | ) ]  | 
+\\
+| Gamma | _{ | q | }^{ | nexists | } |  ===  [ i :-> VarMp sigma || (i :-> exists ^  | \overline{ | tvarv | } |  . sigma) <- Gamma | _{ | q | } |  , VarMp ===  | \overline{ | tvarv :-> tvarf | } |  , tvarf | \;\mbox{fresh} |  ]  | 
+\\
+| fiopt ; Gamma | _{ | q | }^{ | nexists | } |  + Gamma | _{ | g | } |  ; VarMp | _{ | d | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  b : sigma ~> VarMp | _{ | e | } |  ; Transl | _{ | e | } |  | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  let d in b : sigma ~> VarMp | _{ | e | } |  ; let  | \overline{ | Transl | _{ | d | }} |  ^^ in Transl | _{ | e | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.EP.expr.base.e.lam}{%
+\rulerRule{e.lam}{EP}
+{%
+| tvarv1 , tvarv2 , pvar | \;\mbox{fresh} |  | 
+\\
+| fioBindRFirstY , fiopt :- | ^{ | <= | } |  pvar => tvarv1 -> tvarv2 <= VarMp | ^{ | k | } |  sigma | ^{ | k | } |  :  | \overline{ | pi | _{ | a | }} |  => sigma | _{ | p | } |  -> sigma | _{ | r | } |  ~> VarMp | _{ | F | } |  ; Coe | 
+\\
+| Gamma | _{ | i | } |  === inst | _{ | pi | } |  ( | \overline{ | pi | _{ | a | }} | ) | 
+\\
+|  [ _ :~>  | \overline{ | Transl | _{ | i | }} |  ]  === Gamma | _{ | i | } |  | 
+\\
+| fiopt ;  []  ++ Gamma ; VarMp | _{ | F | } |  VarMp | ^{ | k | } |  ; tvarv1 :- | ^{ | p | } |  p : sigma | _{ | p | } |  ; Gamma | _{ | p | } |  ~> VarMp | _{ | p | } |  ; _ | 
+\\
+| fiopt ; Gamma | _{ | i | } |  , Gamma ; VarMp | _{ | p | } |  ; tvarv2 :- | ^{ | e | } |  e : sigma | _{ | e | } |  ~> VarMp | _{ | e | } |  ; Transl | _{ | e | } |  | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |   \ p -> e : VarMp | _{ | e | } |   | \overline{ | pi | _{ | a | }} |  => VarMp | _{ | e | } |  sigma | _{ | p | } |  -> sigma | _{ | e | } |  ~> VarMp | _{ | e | } |  ;  | \overline{ | Transl | _{ | i | }} |  ->  \ p -> Transl | _{ | e | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.EX.expr.base.scheme}{%
+\ensuremath{| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  e : sigma ~> VarMp | }
+}
+\rulerCmdDef{rules4.EX.expr.base.e.int}{%
+\rulerRule{e.int}{EX}
+{%
+| fiopt :- | ^{ | <= | } |  Int <= VarMp | ^{ | k | } |  sigma | ^{ | k | } |  : sigma ~> VarMp | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  int : sigma ~> VarMp VarMp | ^{ | k | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.EX.expr.base.e.char}{%
+\rulerRule{e.char}{EX}
+{%
+| fiopt :- | ^{ | <= | } |  Char <= VarMp | ^{ | k | } |  sigma | ^{ | k | } |  : sigma ~> VarMp | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  char : sigma ~> VarMp VarMp | ^{ | k | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.EX.expr.base.e.var}{%
+\rulerRule{e.var}{EX}
+{%
+| ident :-> sigma | _{ | g | } |  `elem` Gamma | 
+\\
+| fiopt :- | ^{ | <= | } |  VarMp | ^{ | k | } |  sigma | _{ | g | } |  <= VarMp | ^{ | k | } |  sigma | ^{ | k | } |  : sigma ~> VarMp | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  ident : sigma ~> VarMp VarMp | ^{ | k | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.EX.expr.base.e.con}{%
+\rulerRule{e.con}{EX}
+{%
+| identc :-> sigma | _{ | g | } |  `elem` Gamma | 
+\\
+| fiopt :- | ^{ | <= | } |  VarMp | ^{ | k | } |  sigma | _{ | g | } |  <= VarMp | ^{ | k | } |  sigma | ^{ | k | } |  : sigma ~> VarMp | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  identc : sigma ~> VarMp VarMp | ^{ | k | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.EX.expr.base.e.app}{%
+\rulerRule{e.app}{EX}
+{%
+| tvarv | \;\mbox{fresh} |  | 
+\\
+| strongFIOpts ; Gamma ; VarMp | ^{ | k | } |  ; tvarv -> sigma | ^{ | k | } |  :- | ^{ | e | } |  e | _{ | 1 | } |  : _ -> sigma ~> VarMp | _{ | f | } |  | 
+\\
+| instLRFIOpts ; Gamma ; VarMp | _{ | f | } |  ; tvarv :- | ^{ | e | } |  e | _{ | 2 | } |  : _ ~> VarMp | _{ | a | } |  | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  e | _{ | 1 | } |  ^^ e | _{ | 2 | } |  : VarMp | _{ | a | } |  sigma ~> VarMp | _{ | a | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.EX.expr.base.e.app.f}{%
+\rulerRule{e.app.f}{EX}
+{%
+| tvarv | \;\mbox{fresh} |  | 
+\\
+| strongFIOpts ; Gamma ; VarMp | ^{ | k | } |  ; tvarv -> sigma | ^{ | k | } |  :- | ^{ | e | } |  e | _{ | 1 | } |  : _ -> sigma ~> VarMp | _{ | f | } |  | 
+\\
+| strongFIOpts ; Gamma ; VarMp | _{ | f | } |  ; tvarv :- | ^{ | e | } |  e | _{ | 2 | } |  : _ ~> VarMp | _{ | a | } |  | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  e | _{ | 1 | } |  ^^  ~ e | _{ | 2 | } |  : VarMp | _{ | a | } |  sigma ~> VarMp | _{ | a | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.EX.expr.base.e.let}{%
+\rulerRule{e.let}{EX}
+{%
+| Gamma | _{ | t | } |  ; Gamma | _{ | t | }^{ | nexists | } |  ++ Gamma ; Gamma | _{ | p | } |  ; VarMp | ^{ | k | } |  ; VarMp | _{ | p | } |  :- | ^{ | d | } |  d : Gamma | _{ | t | } |  ; Gamma | _{ | p | } |  ~> VarMp | _{ | p | } |  ; VarMp | _{ | d | } |  | 
+\\
+| Gamma | _{ | t | }^{ | nexists | } |  ===  [ i :-> VarMp sigma || (i :-> exists ^  | \overline{ | tvarv | } |  . sigma) <- Gamma | _{ | t | } |  , VarMp ===  | \overline{ | tvarv :-> tvarf | } |  , tvarf | \;\mbox{fresh} |  ]  | 
+\\
+| Gamma | _{ | l | } |  ++ Gamma | _{ | g | } |  === Gamma | _{ | p | } |  | 
+\\
+| Gamma | _{ | q | } |  ===  [ i :-> forall  | \overline{ | alpha | } |  . sigma || (i :-> sigma) <- VarMp | _{ | d | } |  Gamma | _{ | l | } |  ,  | \overline{ | alpha | } |  === ftv (sigma) - ftv (VarMp | _{ | d | } |  Gamma | _{ | g | } | ) ]  | 
+\\
+| Gamma | _{ | q | }^{ | nexists | } |  ===  [ i :-> VarMp sigma || (i :-> exists ^  | \overline{ | tvarv | } |  . sigma) <- Gamma | _{ | q | } |  , VarMp ===  | \overline{ | tvarv :-> tvarf | } |  , tvarf | \;\mbox{fresh} |  ]  | 
+\\
+| fiopt ; Gamma | _{ | q | }^{ | nexists | } |  + Gamma | _{ | g | } |  ; VarMp | _{ | d | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  b : sigma ~> VarMp | _{ | e | } |  | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  let d in b : sigma ~> VarMp | _{ | e | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.EX.expr.base.e.lam}{%
+\rulerRule{e.lam}{EX}
+{%
+| tvarv1 , tvarv2 | \;\mbox{fresh} |  | 
+\\
+| fioBindRFirstY , fiopt :- | ^{ | <= | } |  tvarv1 -> tvarv2 <= VarMp | ^{ | k | } |  sigma | ^{ | k | } |  : _ ~> VarMp | _{ | F | } |  | 
+\\
+| fiopt ;  []  ++ Gamma ; VarMp | _{ | F | } |  VarMp | ^{ | k | } |  ; tvarv1 :- | ^{ | p | } |  p : sigma | _{ | p | } |  ; Gamma | _{ | p | } |  ~> VarMp | _{ | p | } |  ; _ | 
+\\
+| fiopt ; Gamma | _{ | p | } |  ; VarMp | _{ | p | } |  ; tvarv2 :- | ^{ | e | } |  e : sigma | _{ | e | } |  ~> VarMp | _{ | e | } |  | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |   \ p -> e : VarMp | _{ | e | } |  sigma | _{ | p | } |  -> sigma | _{ | e | } |  ~> VarMp | _{ | e | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.HM.expr.base.scheme}{%
+\ensuremath{| Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  e : sigma ~> VarMp | }
+}
+\rulerCmdDef{rules4.HM.expr.base.e.int}{%
+\rulerRule{e.int}{HM}
+{%
+|  :- | ^{ | <= | } |  Int <= VarMp | ^{ | k | } |  sigma | ^{ | k | } |  : sigma ~> VarMp | 
+}
+{%
+| Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  int : sigma ~> VarMp VarMp | ^{ | k | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.HM.expr.base.e.char}{%
+\rulerRule{e.char}{HM}
+{%
+|  :- | ^{ | <= | } |  Char <= VarMp | ^{ | k | } |  sigma | ^{ | k | } |  : sigma ~> VarMp | 
+}
+{%
+| Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  char : sigma ~> VarMp VarMp | ^{ | k | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.HM.expr.base.e.var}{%
+\rulerRule{e.var}{HM}
+{%
+| ident :-> sigma | _{ | g | } |  `elem` Gamma | 
+\\
+| sigma | _{ | i | } |  === VarMp | _{ | i | } |  sigma' ,  ^^ forall ^  | \overline{ | tvarv | } |  . sigma' === sigma | _{ | g | } |  ,  ^^ VarMp | _{ | i | } |  ===  | \overline{ |  [ tvarv :-> tvarv | _{ | i | } |  ]  | } |  ,  ^^  | \overline{ | tvarv | _{ | i | } |  | } |  | \;\mbox{fresh} |  | 
+\\
+|  :- | ^{ | <= | } |  VarMp | ^{ | k | } |  sigma | _{ | i | } |  <= VarMp | ^{ | k | } |  sigma | ^{ | k | } |  : sigma ~> VarMp | 
+}
+{%
+| Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  ident : sigma ~> VarMp VarMp | ^{ | k | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.HM.expr.base.e.con}{%
+\rulerRule{e.con}{HM}
+{%
+|  | \overline{ | tvarv | } |  | \;\mbox{fresh} |  ,  ^^  || identc ||  ===  ||  | \overline{ | tvarv | } |  ||  | 
+\\
+| sigma | _{ | p | } |  === (sigma | _{ | 1 | } |  , ... , sigma | _{ | n | } | ) ,  ^^^  [ sigma | _{ | 1 | } |  , ... , sigma | _{ | n | } |  ]  ===  | \overline{ | tvarv | } |  | 
+\\
+|  :- | ^{ | <= | } |  ( | \overline{ | tvarv | } |  -> sigma | _{ | p | } | ) <= VarMp | ^{ | k | } |  sigma | ^{ | k | } |  : sigma ~> VarMp | 
+}
+{%
+| Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  identc : sigma ~> VarMp VarMp | ^{ | k | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.HM.expr.base.e.app}{%
+\rulerRule{e.app}{HM}
+{%
+| tvarv | \;\mbox{fresh} |  | 
+\\
+| Gamma ; VarMp | ^{ | k | } |  ; tvarv -> sigma | ^{ | k | } |  :- | ^{ | e | } |  e | _{ | 1 | } |  : sigma | _{ | a | } |  -> sigma ~> VarMp | _{ | f | } |  | 
+\\
+| Gamma ; VarMp | _{ | f | } |  ; sigma | _{ | a | } |  :- | ^{ | e | } |  e | _{ | 2 | } |  : _ ~> VarMp | _{ | a | } |  | 
+}
+{%
+| Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  e | _{ | 1 | } |  ^^ e | _{ | 2 | } |  : VarMp | _{ | a | } |  sigma ~> VarMp | _{ | a | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.HM.expr.base.e.let}{%
+\rulerRule{e.let}{HM}
+{%
+| Gamma | _{ | t | } |  ; Gamma | _{ | t | } |  ++ Gamma ; Gamma | _{ | p | } |  ; VarMp | ^{ | k | } |  ; VarMp | _{ | p | } |  :- | ^{ | d | } |  d : Gamma | _{ | t | } |  ; Gamma | _{ | p | } |  ~> VarMp | _{ | p | } |  ; VarMp | _{ | d | } |  | 
+\\
+| Gamma | _{ | l | } |  ++ Gamma | _{ | g | } |  === Gamma | _{ | p | } |  | 
+\\
+| Gamma | _{ | q | } |  ===  [ i :-> forall  | \overline{ | alpha | } |  . sigma || (i :-> sigma) <- VarMp | _{ | d | } |  Gamma | _{ | l | } |  ,  | \overline{ | alpha | } |  === ftv (sigma) - ftv (VarMp | _{ | d | } |  Gamma | _{ | g | } | ) ]  | 
+\\
+| Gamma | _{ | q | } |  + Gamma | _{ | g | } |  ; VarMp | _{ | d | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  b : sigma ~> VarMp | _{ | e | } |  | 
+}
+{%
+| Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  let d in b : sigma ~> VarMp | _{ | e | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.HM.expr.base.e.lam}{%
+\rulerRule{e.lam}{HM}
+{%
+| tvarv1 , tvarv2 | \;\mbox{fresh} |  | 
+\\
+|  :- | ^{ | <= | } |  tvarv1 -> tvarv2 <= VarMp | ^{ | k | } |  sigma | ^{ | k | } |  : _ ~> VarMp | _{ | F | } |  | 
+\\
+| VarMp | _{ | F | } |  VarMp | ^{ | k | } |  ;  []  ; tvarv1 :- | ^{ | p | } |  p : sigma | _{ | p | } |  ; Gamma | _{ | p | } |  ~> VarMp | _{ | p | } |  ; _ | 
+\\
+| Gamma | _{ | p | } |  + Gamma ; VarMp | _{ | p | } |  ; tvarv2 :- | ^{ | e | } |  e : sigma | _{ | e | } |  ~> VarMp | _{ | e | } |  | 
+}
+{%
+| Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |   \ p -> e : VarMp | _{ | e | } |  sigma | _{ | p | } |  -> sigma | _{ | e | } |  ~> VarMp | _{ | e | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.HS.expr.base.scheme}{%
+\ensuremath{| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  e : sigma ~> VarMp ; Transl | }
+}
+\rulerCmdDef{rules4.HS.expr.base.e.int}{%
+\rulerRule{e.int}{HS}
+{%
+| fiopt :- | ^{ | <= | } |  Int <= VarMp | ^{ | k | } |  sigma | ^{ | k | } |  : sigma ~> VarMp ; Coe | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  int : sigma ~> VarMp VarMp | ^{ | k | } |  ; Coe Transl (int) | 
+}
+}
+
+\rulerCmdDef{rules4.HS.expr.base.e.char}{%
+\rulerRule{e.char}{HS}
+{%
+| fiopt :- | ^{ | <= | } |  Char <= VarMp | ^{ | k | } |  sigma | ^{ | k | } |  : sigma ~> VarMp ; Coe | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  char : sigma ~> VarMp VarMp | ^{ | k | } |  ; Coe Transl (char) | 
+}
+}
+
+\rulerCmdDef{rules4.HS.expr.base.e.var}{%
+\rulerRule{e.var}{HS}
+{%
+| ident :-> sigma | _{ | g | } |  `elem` Gamma | 
+\\
+| fiopt :- | ^{ | <= | } |  VarMp | ^{ | k | } |  sigma | _{ | g | } |  <= VarMp | ^{ | k | } |  sigma | ^{ | k | } |  : sigma ~> VarMp ; Coe | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  ident : sigma ~> VarMp VarMp | ^{ | k | } |  ; Coe Transl (ident) | 
+}
+}
+
+\rulerCmdDef{rules4.HS.expr.base.e.con}{%
+\rulerRule{e.con}{HS}
+{%
+| identc :-> sigma | _{ | g | } |  `elem` Gamma | 
+\\
+| fiopt :- | ^{ | <= | } |  VarMp | ^{ | k | } |  sigma | _{ | g | } |  <= VarMp | ^{ | k | } |  sigma | ^{ | k | } |  : sigma ~> VarMp ; Coe | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  identc : sigma ~> VarMp VarMp | ^{ | k | } |  ; Coe Transl (identc) | 
+}
+}
+
+\rulerCmdDef{rules4.HS.expr.base.e.app}{%
+\rulerRule{e.app}{HS}
+{%
+| tvarv , pvar | \;\mbox{fresh} |  | 
+\\
+| strongFIOpts ; Gamma ; VarMp | ^{ | k | } |  ; pvar => tvarv -> sigma | ^{ | k | } |  :- | ^{ | e | } |  e | _{ | 1 | } |  : _ => sigma | _{ | a | } |  -> sigma ~> VarMp | _{ | f | } |  ; Transl | _{ | f | } |  | 
+\\
+| instLFIOpts ; Gamma ; VarMp | _{ | f | } |  ; tvarv :- | ^{ | e | } |  e | _{ | 2 | } |  : _ ~> VarMp | _{ | a | } |  ; Transl | _{ | a | } |  | 
+\\
+| Gamma :- | ^{ | pi | } |  VarMp | _{ | a | } |  pvar ~>  | \overline{ | Transl | _{ | a | }} |  : _ | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  e | _{ | 1 | } |  ^^ e | _{ | 2 | } |  : VarMp | _{ | a | } |  sigma ~> VarMp | _{ | a | } |  ;  \ Transl | _{ | f | } |  ^^  | \overline{ | Transl | _{ | a | }} |  ^^ Transl | _{ | a | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.HS.expr.base.e.app.f}{%
+\rulerRule{e.app.f}{HS}
+{%
+| tvarv , pvar | \;\mbox{fresh} |  | 
+\\
+| strongFIOpts ; Gamma ; VarMp | ^{ | k | } |  ; pvar => tvarv -> sigma | ^{ | k | } |  :- | ^{ | e | } |  e | _{ | 1 | } |  : _ => sigma | _{ | a | } |  -> sigma ~> VarMp | _{ | f | } |  ; Transl | _{ | f | } |  | 
+\\
+| instLFIOpts ; Gamma ; VarMp | _{ | f | } |  ; tvarv :- | ^{ | e | } |  e | _{ | 2 | } |  : _ ~> VarMp | _{ | a | } |  ; Transl | _{ | a | } |  | 
+\\
+| Gamma :- | ^{ | pi | } |  VarMp | _{ | a | } |  pvar ~>  | \overline{ | Transl | _{ | a | }} |  : _ | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  e | _{ | 1 | } |  ^^  ~ e | _{ | 2 | } |  : VarMp | _{ | a | } |  sigma ~> VarMp | _{ | a | } |  ;  \ Transl | _{ | f | } |  ^^  | \overline{ | Transl | _{ | a | }} |  ^^ Transl | _{ | a | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.HS.expr.base.e.let}{%
+\rulerRule{e.let}{HS}
+{%
+| Gamma | _{ | t | } |  ; Gamma | _{ | t | }^{ | nexists | } |  ++ Gamma ; Gamma | _{ | p | } |  ; VarMp | ^{ | k | } |  ; VarMp | _{ | p | } |  :- | ^{ | d | } |  d : Gamma | _{ | t | } |  ; Gamma | _{ | p | } |  ~> VarMp | _{ | p | } |  ; VarMp | _{ | d | } |  ;  | \overline{ | Transl | _{ | d | }} |  | 
+\\
+| Gamma | _{ | t | }^{ | nexists | } |  ===  [ i :-> VarMp sigma || (i :-> exists ^  | \overline{ | tvarv | } |  . sigma) <- Gamma | _{ | t | } |  , VarMp ===  | \overline{ | tvarv :-> tvarf | } |  , tvarf | \;\mbox{fresh} |  ]  | 
+\\
+| Gamma | _{ | l | } |  ++ Gamma | _{ | g | } |  === Gamma | _{ | p | } |  | 
+\\
+| Gamma | _{ | q | } |  ===  [ i :-> forall  | \overline{ | alpha | } |  . sigma || (i :-> sigma) <- VarMp | _{ | d | } |  Gamma | _{ | l | } |  ,  | \overline{ | alpha | } |  === ftv (sigma) - ftv (VarMp | _{ | d | } |  Gamma | _{ | g | } | ) ]  | 
+\\
+| Gamma | _{ | q | }^{ | nexists | } |  ===  [ i :-> VarMp sigma || (i :-> exists ^  | \overline{ | tvarv | } |  . sigma) <- Gamma | _{ | q | } |  , VarMp ===  | \overline{ | tvarv :-> tvarf | } |  , tvarf | \;\mbox{fresh} |  ]  | 
+\\
+| fiopt ; Gamma | _{ | q | }^{ | nexists | } |  + Gamma | _{ | g | } |  ; VarMp | _{ | d | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  b : sigma ~> VarMp | _{ | e | } |  ; Transl | _{ | e | } |  | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  let d in b : sigma ~> VarMp | _{ | e | } |  ; let  | \overline{ | Transl | _{ | d | }} |  ^^ in Transl | _{ | e | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.HS.expr.base.e.lam}{%
+\rulerRule{e.lam}{HS}
+{%
+| tvarv1 , tvarv2 , pvar | \;\mbox{fresh} |  | 
+\\
+| fioBindRFirstY , fiopt :- | ^{ | <= | } |  pvar => tvarv1 -> tvarv2 <= VarMp | ^{ | k | } |  sigma | ^{ | k | } |  :  | \overline{ | pi | _{ | a | }} |  => sigma | _{ | p | } |  -> sigma | _{ | r | } |  ~> VarMp | _{ | F | } |  ; Coe | 
+\\
+| Gamma | _{ | i | } |  === inst | _{ | pi | } |  ( | \overline{ | pi | _{ | a | }} | ) | 
+\\
+|  [ _ :~>  | \overline{ | Transl | _{ | i | }} |  ]  === Gamma | _{ | i | } |  | 
+\\
+| fiopt ;  []  ++ Gamma ; VarMp | _{ | F | } |  VarMp | ^{ | k | } |  ; tvarv1 :- | ^{ | p | } |  p : sigma | _{ | p | } |  ; Gamma | _{ | p | } |  ~> VarMp | _{ | p | } |  ; _ | 
+\\
+| fiopt ; Gamma | _{ | i | } |  , Gamma ; VarMp | _{ | p | } |  ; tvarv2 :- | ^{ | e | } |  e : sigma | _{ | e | } |  ~> VarMp | _{ | e | } |  ; Transl | _{ | e | } |  | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |   \ p -> e : VarMp | _{ | e | } |   | \overline{ | pi | _{ | a | }} |  => VarMp | _{ | e | } |  sigma | _{ | p | } |  -> sigma | _{ | e | } |  ~> VarMp | _{ | e | } |  ;  | \overline{ | Transl | _{ | i | }} |  ->  \ p -> Transl | _{ | e | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.I1.expr.base.scheme}{%
+\ensuremath{| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  e : sigma ~> VarMp | }
+}
+\rulerCmdDef{rules4.I1.expr.base.e.int}{%
+\rulerRule{e.int}{I1}
+{%
+| fiopt :- | ^{ | <= | } |  Int <= VarMp | ^{ | k | } |  sigma | ^{ | k | } |  : sigma ~> VarMp | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  int : sigma ~> VarMp VarMp | ^{ | k | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.I1.expr.base.e.char}{%
+\rulerRule{e.char}{I1}
+{%
+| fiopt :- | ^{ | <= | } |  Char <= VarMp | ^{ | k | } |  sigma | ^{ | k | } |  : sigma ~> VarMp | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  char : sigma ~> VarMp VarMp | ^{ | k | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.I1.expr.base.e.var}{%
+\rulerRule{e.var}{I1}
+{%
+| ident :-> sigma | _{ | g | } |  `elem` Gamma | 
+\\
+| fiopt :- | ^{ | <= | } |  VarMp | ^{ | k | } |  sigma | _{ | g | } |  <= VarMp | ^{ | k | } |  sigma | ^{ | k | } |  : sigma ~> VarMp | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  ident : sigma ~> VarMp VarMp | ^{ | k | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.I1.expr.base.e.con}{%
+\rulerRule{e.con}{I1}
+{%
+| identc :-> sigma | _{ | g | } |  `elem` Gamma | 
+\\
+| fiopt :- | ^{ | <= | } |  VarMp | ^{ | k | } |  sigma | _{ | g | } |  <= VarMp | ^{ | k | } |  sigma | ^{ | k | } |  : sigma ~> VarMp | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  identc : sigma ~> VarMp VarMp | ^{ | k | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.I1.expr.base.e.app}{%
+\rulerRule{e.app}{I1}
+{%
+| tvarv | \;\mbox{fresh} |  | 
+\\
+| strongFIOpts ; Gamma ; VarMp | ^{ | k | } |  ; tvarv -> sigma | ^{ | k | } |  :- | ^{ | e | } |  e | _{ | 1 | } |  : _ -> sigma ~> VarMp | _{ | f | } |  | 
+\\
+| instLRFIOpts ; Gamma ; VarMp | _{ | f | } |  ; tvarv :- | ^{ | e | } |  e | _{ | 2 | } |  : _ ~> VarMp | _{ | a | } |  | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  e | _{ | 1 | } |  ^^ e | _{ | 2 | } |  : VarMp | _{ | a | } |  sigma ~> VarMp | _{ | a | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.I1.expr.base.e.app.f}{%
+\rulerRule{e.app.f}{I1}
+{%
+| tvarv | \;\mbox{fresh} |  | 
+\\
+| strongFIOpts ; Gamma ; VarMp | ^{ | k | } |  ; tvarv -> sigma | ^{ | k | } |  :- | ^{ | e | } |  e | _{ | 1 | } |  : _ -> sigma ~> VarMp | _{ | f | } |  | 
+\\
+| strongFIOpts ; Gamma ; VarMp | _{ | f | } |  ; tvarv :- | ^{ | e | } |  e | _{ | 2 | } |  : _ ~> VarMp | _{ | a | } |  | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  e | _{ | 1 | } |  ^^  ~ e | _{ | 2 | } |  : VarMp | _{ | a | } |  sigma ~> VarMp | _{ | a | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.I1.expr.base.e.let}{%
+\rulerRule{e.let}{I1}
+{%
+| Gamma | _{ | t | } |  ; Gamma | _{ | t | } |  ++ Gamma ; Gamma | _{ | p | } |  ; VarMp | ^{ | k | } |  ; VarMp | _{ | p | } |  :- | ^{ | d | } |  d : Gamma | _{ | t | } |  ; Gamma | _{ | p | } |  ~> VarMp | _{ | p | } |  ; VarMp | _{ | d | } |  | 
+\\
+| Gamma | _{ | l | } |  ++ Gamma | _{ | g | } |  === Gamma | _{ | p | } |  | 
+\\
+| Gamma | _{ | q | } |  ===  [ i :-> forall  | \overline{ | alpha | } |  . sigma || (i :-> sigma) <- VarMp | _{ | d | } |  Gamma | _{ | l | } |  ,  | \overline{ | alpha | } |  === ftv (sigma) - ftv (VarMp | _{ | d | } |  Gamma | _{ | g | } | ) ]  | 
+\\
+| fiopt ; Gamma | _{ | q | } |  + Gamma | _{ | g | } |  ; VarMp | _{ | d | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  b : sigma ~> VarMp | _{ | e | } |  | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  let d in b : sigma ~> VarMp | _{ | e | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.I1.expr.base.e.lam}{%
+\rulerRule{e.lam}{I1}
+{%
+| tvarv1 , tvarv2 | \;\mbox{fresh} |  | 
+\\
+| fioBindRFirstY , fiopt :- | ^{ | <= | } |  tvarv1 -> tvarv2 <= VarMp | ^{ | k | } |  sigma | ^{ | k | } |  : _ ~> VarMp | _{ | F | } |  | 
+\\
+| fiopt ;  []  ++ Gamma ; VarMp | _{ | F | } |  VarMp | ^{ | k | } |  ; tvarv1 :- | ^{ | p | } |  p : sigma | _{ | p | } |  ; Gamma | _{ | p | } |  ~> VarMp | _{ | p | } |  ; _ | 
+\\
+| fiopt ; Gamma | _{ | p | } |  ; VarMp | _{ | p | } |  ; tvarv2 :- | ^{ | e | } |  e : sigma | _{ | e | } |  ~> VarMp | _{ | e | } |  | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |   \ p -> e : VarMp | _{ | e | } |  sigma | _{ | p | } |  -> sigma | _{ | e | } |  ~> VarMp | _{ | e | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.I2.expr.base.scheme}{%
+\ensuremath{| fiopt ; Gamma ; IVarMp | ^{ | k | } |  ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  e : isigma ; sigma ~> IVarMp ; VarMp | }
+}
+\rulerCmdDef{rules4.I2.expr.base.e.int}{%
+\rulerRule{e.int}{I2}
+{%
+| fiopt :- | ^{ | <= | } |  Int <= VarMp | ^{ | k | } |  sigma | ^{ | k | } |  : sigma ~> VarMp | 
+}
+{%
+| fiopt ; Gamma ; IVarMp | ^{ | k | } |  ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  int : Int ; sigma ~> IVarMp | ^{ | k | } |  ; VarMp VarMp | ^{ | k | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.I2.expr.base.e.char}{%
+\rulerRule{e.char}{I2}
+{%
+| fiopt :- | ^{ | <= | } |  Char <= VarMp | ^{ | k | } |  sigma | ^{ | k | } |  : sigma ~> VarMp | 
+}
+{%
+| fiopt ; Gamma ; IVarMp | ^{ | k | } |  ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  char : Char ; sigma ~> IVarMp | ^{ | k | } |  ; VarMp VarMp | ^{ | k | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.I2.expr.base.e.var}{%
+\rulerRule{e.var}{I2}
+{%
+| ident :-> sigma | _{ | g | } |  `elem` Gamma | 
+\\
+| fiopt :- | ^{ | <= | } |  VarMp | ^{ | k | } |  sigma | _{ | g | } |  <= VarMp | ^{ | k | } |  sigma | ^{ | k | } |  : sigma ~> VarMp | 
+}
+{%
+| fiopt ; Gamma ; IVarMp | ^{ | k | } |  ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  ident : IVarMp | ^{ | k | } |  sigma | _{ | g | } |  ; sigma ~> IVarMp | ^{ | k | } |  ; VarMp VarMp | ^{ | k | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.I2.expr.base.e.con}{%
+\rulerRule{e.con}{I2}
+{%
+| identc :-> sigma | _{ | g | } |  `elem` Gamma | 
+\\
+| fiopt :- | ^{ | <= | } |  VarMp | ^{ | k | } |  sigma | _{ | g | } |  <= VarMp | ^{ | k | } |  sigma | ^{ | k | } |  : sigma ~> VarMp | 
+}
+{%
+| fiopt ; Gamma ; IVarMp | ^{ | k | } |  ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  identc : IVarMp | ^{ | k | } |  sigma | _{ | g | } |  ; sigma ~> IVarMp | ^{ | k | } |  ; VarMp VarMp | ^{ | k | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.I2.expr.base.e.app}{%
+\rulerRule{e.app}{I2}
+{%
+| tvarv | \;\mbox{fresh} |  | 
+\\
+| strongFIOpts ; Gamma ; IVarMp | ^{ | k | } |  ; VarMp | ^{ | k | } |  ; tvarv -> sigma | ^{ | k | } |  :- | ^{ | e | } |  e | _{ | 1 | } |  : isigma | _{ | f | } |  ; _ -> sigma ~> IVarMp | _{ | f | } |  ; VarMp | _{ | f | } |  | 
+\\
+| impredFIOpts :- | ^{ | <= | } |  isigma | _{ | f | } |  <= IVarMp | _{ | f | } |  (tvarv -> sigma | ^{ | k | } | ) : _ ~> IVarMp | _{ | F | } |  | 
+\\
+| instLRFIOpts ; Gamma ; IVarMp | _{ | F | } |  IVarMp | _{ | f | } |  ; VarMp | _{ | f | } |  ; tvarv :- | ^{ | e | } |  e | _{ | 2 | } |  : isigma | _{ | a | } |  ; _ ~> IVarMp | _{ | a | } |  ; VarMp | _{ | a | } |  | 
+\\
+| fioBindToTyAltsY , instLFIOpts :- | ^{ | <= | } |  isigma | _{ | a | } |  <= IVarMp | _{ | a | } |  tvarv : _ ~> IVarMp | _{ | A | } |  | 
+\\
+| IVarMp | _{ | 1 | } |  === IVarMp | _{ | A | } |  IVarMp | _{ | a | } |  | 
+}
+{%
+| fiopt ; Gamma ; IVarMp | ^{ | k | } |  ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  e | _{ | 1 | } |  ^^ e | _{ | 2 | } |  : IVarMp | _{ | 1 | } |  sigma | ^{ | k | } |  ; VarMp | _{ | a | } |  sigma ~> IVarMp | _{ | 1 | } |  ; VarMp | _{ | a | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.I2.expr.base.e.app.f}{%
+\rulerRule{e.app.f}{I2}
+{%
+| tvarv | \;\mbox{fresh} |  | 
+\\
+| strongFIOpts ; Gamma ; IVarMp | ^{ | k | } |  ; VarMp | ^{ | k | } |  ; tvarv -> sigma | ^{ | k | } |  :- | ^{ | e | } |  e | _{ | 1 | } |  : isigma | _{ | f | } |  ; _ -> sigma ~> IVarMp | _{ | f | } |  ; VarMp | _{ | f | } |  | 
+\\
+| impredFIOpts :- | ^{ | <= | } |  isigma | _{ | f | } |  <= IVarMp | _{ | f | } |  (tvarv -> sigma | ^{ | k | } | ) : _ ~> IVarMp | _{ | F | } |  | 
+\\
+| strongFIOpts ; Gamma ; IVarMp | _{ | F | } |  IVarMp | _{ | f | } |  ; VarMp | _{ | f | } |  ; tvarv :- | ^{ | e | } |  e | _{ | 2 | } |  : isigma | _{ | a | } |  ; _ ~> IVarMp | _{ | a | } |  ; VarMp | _{ | a | } |  | 
+\\
+| impredFIOpts :- | ^{ | <= | } |  isigma | _{ | a | } |  <= IVarMp | _{ | a | } |  tvarv : _ ~> IVarMp | _{ | A | } |  | 
+\\
+| IVarMp | _{ | 1 | } |  === IVarMp | _{ | A | } |  IVarMp | _{ | a | } |  | 
+}
+{%
+| fiopt ; Gamma ; IVarMp | ^{ | k | } |  ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  e | _{ | 1 | } |  ^^  ~ e | _{ | 2 | } |  : IVarMp | _{ | 1 | } |  sigma | ^{ | k | } |  ; VarMp | _{ | a | } |  sigma ~> IVarMp | _{ | 1 | } |  ; VarMp | _{ | a | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.I2.expr.base.e.let}{%
+\rulerRule{e.let}{I2}
+{%
+|  | \overline{ | tvarv | _{ | g | }} |  === ftv (Gamma) | 
+\\
+| VarMp | _{ | t | } |  Gamma | _{ | t | } |  ; Gamma | _{ | t | } |  ++ Gamma ; Gamma | _{ | p | } |  ;  []  ; VarMp | _{ | t | }^{ | ex | } |  VarMp | _{ | t | } |  ; VarMp | _{ | p | } |  IVarMp | ^{ | k | } |  ; VarMp | _{ | Gamma | } |  VarMp | _{ | p | } |  VarMp | ^{ | k | } |  :- | ^{ | d | } |  d : Gamma | _{ | t | } |  ; Gamma | _{ | p | } |  ~> VarMp | _{ | t | } |  ; VarMp | _{ | p | } |  ; IVarMp | _{ | d | } |  ; VarMp | _{ | d | } |  | 
+\\
+| joinFIOpts ; IVarMp | _{ | d | } |  ;  | \overline{ | tvarv | _{ | g | }} |   | \stackrel{ | Gamma talt elim | }{ | :- | } |  Gamma | _{ | l | } |  : VarMp | _{ | Gamma | } |  | 
+\\
+| Gamma | _{ | l | } |  ++ Gamma | _{ | g | } |  === Gamma | _{ | p | } |  | 
+\\
+| VarMp | _{ | t | }^{ | ex | } |  ===  [ tvarv | _{ | g | } |  :-> VarMp sigma || (i :-> tvarv | _{ | g | } | ) <- Gamma | _{ | t | } |  , exists ^  | \overline{ | tvarv | } |  . sigma === VarMp | _{ | t | } |  tvarv | _{ | g | } |  , VarMp ===  | \overline{ | tvarv :-> tvarf | } |  , tvarf | \;\mbox{fresh} |  ]  | 
+\\
+| VarMp | _{ | q | } |  ===  [ tvarv | _{ | g | } |  :-> forall  | \overline{ | alpha | } |  . sigma || (i :-> tvarv | _{ | g | } | ) <- Gamma | _{ | l | } |  , sigma === VarMp | _{ | d | } |  tvarv | _{ | g | } |  ,  | \overline{ | alpha | } |  === ftv (sigma) \\ ftv (VarMp | _{ | d | } |  Gamma | _{ | g | } | ) ]  | 
+\\
+| VarMp | _{ | l | }^{ | ex | } |  ===  [ tvarv | _{ | g | } |  :-> VarMp sigma || (i :-> tvarv | _{ | g | } | ) <- Gamma | _{ | l | } |  , exists ^  | \overline{ | tvarv | } |  . sigma === VarMp | _{ | q | } |  VarMp | _{ | d | } |  tvarv | _{ | g | } |  , VarMp ===  | \overline{ | tvarv :-> tvarf | } |  , tvarf | \;\mbox{fresh} |  ]  | 
+\\
+| fiopt ; Gamma | _{ | p | } |  ; VarMp | _{ | Gamma | } |  IVarMp | _{ | d | } |  ; VarMp | _{ | l | }^{ | ex | } |  VarMp | _{ | q | } |  VarMp | _{ | d | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  b : isigma ; sigma ~> IVarMp | _{ | e | } |  ; VarMp | _{ | e | } |  | 
+}
+{%
+| fiopt ; Gamma ; IVarMp | ^{ | k | } |  ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  let d in b : isigma ; sigma ~> IVarMp | _{ | e | } |  ; VarMp | _{ | e | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.I2.expr.base.e.lam}{%
+\rulerRule{e.lam}{I2}
+{%
+|  | \overline{ | tvarv | _{ | g | }} |  === ftv (Gamma) | 
+\\
+| meetFIOpts ; IVarMp | ^{ | k | } |  ;  | \overline{ | tvarv | _{ | g | }} |   | \stackrel{ | talt elim | }{ | :- | } |  sigma | ^{ | k | } |  : sigma | _{ | e | }^{ | k | } |  ~> _ | 
+\\
+| tvarv1 , tvarv2 | \;\mbox{fresh} |  | 
+\\
+| fioBindRFirstY , fioBindLBeforeRN , fiopt :- | ^{ | <= | } |  VarMp | ^{ | k | } |  (tvarv1 -> tvarv2) <= VarMp | ^{ | k | } |  sigma | ^{ | k | } |  : _ ~> VarMp | _{ | F | } |  | 
+\\
+| fioBindRFirstY , fiopt :- | ^{ | <= | } |  tvarv1 -> tvarv2 <= sigma | _{ | e | }^{ | k | } |  : _ ~> IVarMp | _{ | F | } |  | 
+\\
+| fiopt ;  []  ++ Gamma ;  []  ; IVarMp | _{ | F | } |  tvarv1 :- | ^{ | p | } |  p : sigma | _{ | p | } |  ; Gamma | _{ | p | } |  ~> VarMp | _{ | p | } |  ; _ | 
+\\
+| Gamma | _{ | l | } |  ++ _ === Gamma | _{ | p | } |  | 
+\\
+| VarMp | _{ | 2 | } |  === VarMp | _{ | F | } |  ||\> ftv (VarMp | ^{ | k | } |  (tvarv1 -> tvarv2)) | 
+\\
+| fiopt ; Gamma | _{ | p | } |  ; VarMp | _{ | p | } |  IVarMp | _{ | F | } |  IVarMp | ^{ | k | } |  ; VarMp | _{ | 3 | } |  ; tvarv2 :- | ^{ | e | } |  e : isigma | _{ | e | } |  ; sigma | _{ | e | } |  ~> IVarMp | _{ | e | } |  ; VarMp | _{ | e | } |  | 
+\\
+| VarMp | _{ | 3 | } |  === VarMp | _{ | Gamma | } |  VarMp | _{ | p | } |  VarMp | _{ | 2 | } |  (VarMp | ^{ | k | } |  ||>> IVarMp | _{ | F | } | ) VarMp | ^{ | k | } |  | 
+\\
+| meetFIOpts ; IVarMp | _{ | e | } |  ;  | \overline{ | tvarv | _{ | g | }} |   | \stackrel{ | Gamma talt elim | }{ | :- | } |  Gamma | _{ | l | } |  : VarMp | _{ | Gamma | } |  | 
+\\
+| IVarMp | _{ | 1 | } |  === VarMp | _{ | Gamma | } |  IVarMp | _{ | e | } |  | 
+}
+{%
+| fiopt ; Gamma ; IVarMp | ^{ | k | } |  ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |   \ p -> e : IVarMp | _{ | 1 | } |  sigma | _{ | p | } |  -> VarMp | _{ | Gamma | } |  isigma | _{ | e | } |  ; VarMp | _{ | e | } |  sigma | _{ | p | } |  -> sigma | _{ | e | } |  ~> IVarMp | _{ | 1 | } |  ; VarMp | _{ | e | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.K.expr.base.scheme}{%
+\ensuremath{| Gamma ; sigma | ^{ | k | } |  :- | ^{ | e | } |  e : sigma | }
+}
+\rulerCmdDef{rules4.K.expr.base.e.int}{%
+\rulerRule{e.int}{K}
+{%
+|  :- | ^{ | <= | } |  Int <= sigma | ^{ | k | } |  : sigma | 
+}
+{%
+| Gamma ; sigma | ^{ | k | } |  :- | ^{ | e | } |  int : sigma | 
+}
+}
+
+\rulerCmdDef{rules4.K.expr.base.e.char}{%
+\rulerRule{e.char}{K}
+{%
+|  :- | ^{ | <= | } |  Char <= sigma | ^{ | k | } |  : sigma | 
+}
+{%
+| Gamma ; sigma | ^{ | k | } |  :- | ^{ | e | } |  char : sigma | 
+}
+}
+
+\rulerCmdDef{rules4.K.expr.base.e.var}{%
+\rulerRule{e.var}{K}
+{%
+| ident :-> sigma | _{ | g | } |  `elem` Gamma | 
+\\
+|  :- | ^{ | <= | } |  sigma | _{ | g | } |  <= sigma | ^{ | k | } |  : sigma | 
+}
+{%
+| Gamma ; sigma | ^{ | k | } |  :- | ^{ | e | } |  ident : sigma | 
+}
+}
+
+\rulerCmdDef{rules4.K.expr.base.e.con}{%
+\rulerRule{e.con}{K}
+{%
+|  | \overline{ | sigma | _{ | p | }} |  ===  [ sigma | _{ | 1 | } |  , ... , sigma | _{ | n | } |  ],  ^^^ (sigma | _{ | 1 | } |  , ... , sigma | _{ | n | } | ) === sigma | _{ | r | } |  | 
+}
+{%
+| Gamma ; ... -> sigma | _{ | r | } |  :- | ^{ | e | } |  (,) :  | \overline{ | sigma | _{ | p | }} |  -> sigma | _{ | r | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.K.expr.base.e.app}{%
+\rulerRule{e.app}{K}
+{%
+| Gamma ; ANY -> sigma | ^{ | k | } |  :- | ^{ | e | } |  e | _{ | 1 | } |  : sigma | _{ | a | } |  -> sigma | 
+\\
+| Gamma ; sigma | _{ | a | } |  :- | ^{ | e | } |  e | _{ | 2 | } |  : _ | 
+}
+{%
+| Gamma ; sigma | ^{ | k | } |  :- | ^{ | e | } |  e | _{ | 1 | } |  ^^ e | _{ | 2 | } |  : sigma | 
+}
+}
+
+\rulerCmdDef{rules4.K.expr.base.e.let}{%
+\rulerRule{e.let}{K}
+{%
+| Gamma | _{ | t | } |  ; Gamma | _{ | t | } |  ++ Gamma ; Gamma | _{ | p | } |  :- | ^{ | d | } |  d : Gamma | _{ | t | } |  ; Gamma | _{ | p | } |  | 
+\\
+| Gamma | _{ | p | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  b : sigma | 
+}
+{%
+| Gamma ; sigma | ^{ | k | } |  :- | ^{ | e | } |  let d in b : sigma | 
+}
+}
+
+\rulerCmdDef{rules4.K.expr.base.e.lam}{%
+\rulerRule{e.lam}{K}
+{%
+|  :- | ^{ | <= | } |  ANY -> ANY <= sigma | ^{ | k | } |  : sigma | _{ | p | } |  -> sigma | _{ | r | } |  | 
+\\
+|  []  ; sigma | _{ | p | } |  :- | ^{ | p | } |  p : Gamma | _{ | p | } |  | 
+\\
+| Gamma | _{ | p | } |  + Gamma ; sigma | _{ | r | } |  :- | ^{ | e | } |  e : sigma | _{ | e | } |  | 
+}
+{%
+| Gamma ; sigma | ^{ | k | } |  :- | ^{ | e | } |   \ p -> e : sigma | _{ | p | } |  -> sigma | _{ | e | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.MD.expr.base.scheme}{%
+\ensuremath{| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  e : sigma ~> VarMp ; Transl | }
+}
+\rulerCmdDef{rules4.MD.expr.base.e.int}{%
+\rulerRule{e.int}{MD}
+{%
+| fiopt :- | ^{ | <= | } |  Int <= VarMp | ^{ | k | } |  sigma | ^{ | k | } |  : sigma ~> VarMp ; Coe | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  int : sigma ~> VarMp VarMp | ^{ | k | } |  ; Coe Transl (int) | 
+}
+}
+
+\rulerCmdDef{rules4.MD.expr.base.e.char}{%
+\rulerRule{e.char}{MD}
+{%
+| fiopt :- | ^{ | <= | } |  Char <= VarMp | ^{ | k | } |  sigma | ^{ | k | } |  : sigma ~> VarMp ; Coe | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  char : sigma ~> VarMp VarMp | ^{ | k | } |  ; Coe Transl (char) | 
+}
+}
+
+\rulerCmdDef{rules4.MD.expr.base.e.var}{%
+\rulerRule{e.var}{MD}
+{%
+| ident :-> sigma | _{ | g | } |  `elem` Gamma | 
+\\
+| fiopt :- | ^{ | <= | } |  VarMp | ^{ | k | } |  sigma | _{ | g | } |  <= VarMp | ^{ | k | } |  sigma | ^{ | k | } |  : sigma ~> VarMp ; Coe | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  ident : sigma ~> VarMp VarMp | ^{ | k | } |  ; Coe Transl (ident) | 
+}
+}
+
+\rulerCmdDef{rules4.MD.expr.base.e.con}{%
+\rulerRule{e.con}{MD}
+{%
+| identc :-> sigma | _{ | g | } |  `elem` Gamma | 
+\\
+| fiopt :- | ^{ | <= | } |  VarMp | ^{ | k | } |  sigma | _{ | g | } |  <= VarMp | ^{ | k | } |  sigma | ^{ | k | } |  : sigma ~> VarMp ; Coe | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  identc : sigma ~> VarMp VarMp | ^{ | k | } |  ; Coe Transl (identc) | 
+}
+}
+
+\rulerCmdDef{rules4.MD.expr.base.e.app}{%
+\rulerRule{e.app}{MD}
+{%
+| tvarv , pvar | \;\mbox{fresh} |  | 
+\\
+| strongFIOpts ; Gamma ; VarMp | ^{ | k | } |  ; pvar => tvarv -> sigma | ^{ | k | } |  :- | ^{ | e | } |  e | _{ | 1 | } |  : _ => sigma | _{ | a | } |  -> sigma ~> VarMp | _{ | f | } |  ; Transl | _{ | f | } |  | 
+\\
+| instLFIOpts ; Gamma ; VarMp | _{ | f | } |  ; tvarv :- | ^{ | e | } |  e | _{ | 2 | } |  : _ ~> VarMp | _{ | a | } |  ; Transl | _{ | a | } |  | 
+\\
+| Gamma :- | ^{ | pi | } |  VarMp | _{ | a | } |  pvar ~>  | \overline{ | Transl | _{ | a | }} |  : _ | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  e | _{ | 1 | } |  ^^ e | _{ | 2 | } |  : VarMp | _{ | a | } |  sigma ~> VarMp | _{ | a | } |  ;  \ Transl | _{ | f | } |  ^^  | \overline{ | Transl | _{ | a | }} |  ^^ Transl | _{ | a | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.MD.expr.base.e.app.f}{%
+\rulerRule{e.app.f}{MD}
+{%
+| tvarv , pvar | \;\mbox{fresh} |  | 
+\\
+| strongFIOpts ; Gamma ; VarMp | ^{ | k | } |  ; pvar => tvarv -> sigma | ^{ | k | } |  :- | ^{ | e | } |  e | _{ | 1 | } |  : _ => sigma | _{ | a | } |  -> sigma ~> VarMp | _{ | f | } |  ; Transl | _{ | f | } |  | 
+\\
+| instLFIOpts ; Gamma ; VarMp | _{ | f | } |  ; tvarv :- | ^{ | e | } |  e | _{ | 2 | } |  : _ ~> VarMp | _{ | a | } |  ; Transl | _{ | a | } |  | 
+\\
+| Gamma :- | ^{ | pi | } |  VarMp | _{ | a | } |  pvar ~>  | \overline{ | Transl | _{ | a | }} |  : _ | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  e | _{ | 1 | } |  ^^  ~ e | _{ | 2 | } |  : VarMp | _{ | a | } |  sigma ~> VarMp | _{ | a | } |  ;  \ Transl | _{ | f | } |  ^^  | \overline{ | Transl | _{ | a | }} |  ^^ Transl | _{ | a | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.MD.expr.base.e.let}{%
+\rulerRule{e.let}{MD}
+{%
+| Gamma | _{ | t | } |  ; Gamma | _{ | t | }^{ | nexists | } |  ++ Gamma ; Gamma | _{ | p | } |  ; VarMp | ^{ | k | } |  ; VarMp | _{ | p | } |  :- | ^{ | d | } |  d : Gamma | _{ | t | } |  ; Gamma | _{ | p | } |  ~> VarMp | _{ | p | } |  ; VarMp | _{ | d | } |  ;  | \overline{ | Transl | _{ | d | }} |  | 
+\\
+| Gamma | _{ | t | }^{ | nexists | } |  ===  [ i :-> VarMp sigma || (i :-> exists ^  | \overline{ | tvarv | } |  . sigma) <- Gamma | _{ | t | } |  , VarMp ===  | \overline{ | tvarv :-> tvarf | } |  , tvarf | \;\mbox{fresh} |  ]  | 
+\\
+| Gamma | _{ | l | } |  ++ Gamma | _{ | g | } |  === Gamma | _{ | p | } |  | 
+\\
+| Gamma | _{ | q | } |  ===  [ i :-> forall  | \overline{ | alpha | } |  . sigma || (i :-> sigma) <- VarMp | _{ | d | } |  Gamma | _{ | l | } |  ,  | \overline{ | alpha | } |  === ftv (sigma) - ftv (VarMp | _{ | d | } |  Gamma | _{ | g | } | ) ]  | 
+\\
+| Gamma | _{ | q | }^{ | nexists | } |  ===  [ i :-> VarMp sigma || (i :-> exists ^  | \overline{ | tvarv | } |  . sigma) <- Gamma | _{ | q | } |  , VarMp ===  | \overline{ | tvarv :-> tvarf | } |  , tvarf | \;\mbox{fresh} |  ]  | 
+\\
+| fiopt ; Gamma | _{ | q | }^{ | nexists | } |  + Gamma | _{ | g | } |  ; VarMp | _{ | d | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  b : sigma ~> VarMp | _{ | e | } |  ; Transl | _{ | e | } |  | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  let d in b : sigma ~> VarMp | _{ | e | } |  ; let  | \overline{ | Transl | _{ | d | }} |  ^^ in Transl | _{ | e | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.MD.expr.base.e.lam}{%
+\rulerRule{e.lam}{MD}
+{%
+| tvarv1 , tvarv2 , pvar | \;\mbox{fresh} |  | 
+\\
+| fioBindRFirstY , fiopt :- | ^{ | <= | } |  pvar => tvarv1 -> tvarv2 <= VarMp | ^{ | k | } |  sigma | ^{ | k | } |  :  | \overline{ | pi | _{ | a | }} |  => sigma | _{ | p | } |  -> sigma | _{ | r | } |  ~> VarMp | _{ | F | } |  ; Coe | 
+\\
+| Gamma | _{ | i | } |  === inst | _{ | pi | } |  ( | \overline{ | pi | _{ | a | }} | ) | 
+\\
+|  [ _ :~>  | \overline{ | Transl | _{ | i | }} |  ]  === Gamma | _{ | i | } |  | 
+\\
+| fiopt ;  []  ++ Gamma ; VarMp | _{ | F | } |  VarMp | ^{ | k | } |  ; tvarv1 :- | ^{ | p | } |  p : sigma | _{ | p | } |  ; Gamma | _{ | p | } |  ~> VarMp | _{ | p | } |  ; _ | 
+\\
+| fiopt ; Gamma | _{ | i | } |  , Gamma ; VarMp | _{ | p | } |  ; tvarv2 :- | ^{ | e | } |  e : sigma | _{ | e | } |  ~> VarMp | _{ | e | } |  ; Transl | _{ | e | } |  | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |   \ p -> e : VarMp | _{ | e | } |   | \overline{ | pi | _{ | a | }} |  => VarMp | _{ | e | } |  sigma | _{ | p | } |  -> sigma | _{ | e | } |  ~> VarMp | _{ | e | } |  ;  | \overline{ | Transl | _{ | i | }} |  ->  \ p -> Transl | _{ | e | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.NUM.expr.base.scheme}{%
+\ensuremath{| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  e : sigma ~> VarMp ; Transl | }
+}
+\rulerCmdDef{rules4.NUM.expr.base.e.int}{%
+\rulerRule{e.int}{NUM}
+{%
+| fiopt :- | ^{ | <= | } |  Int <= VarMp | ^{ | k | } |  sigma | ^{ | k | } |  : sigma ~> VarMp ; Coe | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  int : sigma ~> VarMp VarMp | ^{ | k | } |  ; Coe Transl (int) | 
+}
+}
+
+\rulerCmdDef{rules4.NUM.expr.base.e.char}{%
+\rulerRule{e.char}{NUM}
+{%
+| fiopt :- | ^{ | <= | } |  Char <= VarMp | ^{ | k | } |  sigma | ^{ | k | } |  : sigma ~> VarMp ; Coe | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  char : sigma ~> VarMp VarMp | ^{ | k | } |  ; Coe Transl (char) | 
+}
+}
+
+\rulerCmdDef{rules4.NUM.expr.base.e.var}{%
+\rulerRule{e.var}{NUM}
+{%
+| ident :-> sigma | _{ | g | } |  `elem` Gamma | 
+\\
+| fiopt :- | ^{ | <= | } |  VarMp | ^{ | k | } |  sigma | _{ | g | } |  <= VarMp | ^{ | k | } |  sigma | ^{ | k | } |  : sigma ~> VarMp ; Coe | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  ident : sigma ~> VarMp VarMp | ^{ | k | } |  ; Coe Transl (ident) | 
+}
+}
+
+\rulerCmdDef{rules4.NUM.expr.base.e.con}{%
+\rulerRule{e.con}{NUM}
+{%
+| identc :-> sigma | _{ | g | } |  `elem` Gamma | 
+\\
+| fiopt :- | ^{ | <= | } |  VarMp | ^{ | k | } |  sigma | _{ | g | } |  <= VarMp | ^{ | k | } |  sigma | ^{ | k | } |  : sigma ~> VarMp ; Coe | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  identc : sigma ~> VarMp VarMp | ^{ | k | } |  ; Coe Transl (identc) | 
+}
+}
+
+\rulerCmdDef{rules4.NUM.expr.base.e.app}{%
+\rulerRule{e.app}{NUM}
+{%
+| tvarv , pvar | \;\mbox{fresh} |  | 
+\\
+| strongFIOpts ; Gamma ; VarMp | ^{ | k | } |  ; pvar => tvarv -> sigma | ^{ | k | } |  :- | ^{ | e | } |  e | _{ | 1 | } |  : _ => sigma | _{ | a | } |  -> sigma ~> VarMp | _{ | f | } |  ; Transl | _{ | f | } |  | 
+\\
+| instLFIOpts ; Gamma ; VarMp | _{ | f | } |  ; tvarv :- | ^{ | e | } |  e | _{ | 2 | } |  : _ ~> VarMp | _{ | a | } |  ; Transl | _{ | a | } |  | 
+\\
+| Gamma :- | ^{ | pi | } |  VarMp | _{ | a | } |  pvar ~>  | \overline{ | Transl | _{ | a | }} |  : _ | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  e | _{ | 1 | } |  ^^ e | _{ | 2 | } |  : VarMp | _{ | a | } |  sigma ~> VarMp | _{ | a | } |  ;  \ Transl | _{ | f | } |  ^^  | \overline{ | Transl | _{ | a | }} |  ^^ Transl | _{ | a | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.NUM.expr.base.e.app.f}{%
+\rulerRule{e.app.f}{NUM}
+{%
+| tvarv , pvar | \;\mbox{fresh} |  | 
+\\
+| strongFIOpts ; Gamma ; VarMp | ^{ | k | } |  ; pvar => tvarv -> sigma | ^{ | k | } |  :- | ^{ | e | } |  e | _{ | 1 | } |  : _ => sigma | _{ | a | } |  -> sigma ~> VarMp | _{ | f | } |  ; Transl | _{ | f | } |  | 
+\\
+| instLFIOpts ; Gamma ; VarMp | _{ | f | } |  ; tvarv :- | ^{ | e | } |  e | _{ | 2 | } |  : _ ~> VarMp | _{ | a | } |  ; Transl | _{ | a | } |  | 
+\\
+| Gamma :- | ^{ | pi | } |  VarMp | _{ | a | } |  pvar ~>  | \overline{ | Transl | _{ | a | }} |  : _ | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  e | _{ | 1 | } |  ^^  ~ e | _{ | 2 | } |  : VarMp | _{ | a | } |  sigma ~> VarMp | _{ | a | } |  ;  \ Transl | _{ | f | } |  ^^  | \overline{ | Transl | _{ | a | }} |  ^^ Transl | _{ | a | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.NUM.expr.base.e.let}{%
+\rulerRule{e.let}{NUM}
+{%
+| Gamma | _{ | t | } |  ; Gamma | _{ | t | }^{ | nexists | } |  ++ Gamma ; Gamma | _{ | p | } |  ; VarMp | ^{ | k | } |  ; VarMp | _{ | p | } |  :- | ^{ | d | } |  d : Gamma | _{ | t | } |  ; Gamma | _{ | p | } |  ~> VarMp | _{ | p | } |  ; VarMp | _{ | d | } |  ;  | \overline{ | Transl | _{ | d | }} |  | 
+\\
+| Gamma | _{ | t | }^{ | nexists | } |  ===  [ i :-> VarMp sigma || (i :-> exists ^  | \overline{ | tvarv | } |  . sigma) <- Gamma | _{ | t | } |  , VarMp ===  | \overline{ | tvarv :-> tvarf | } |  , tvarf | \;\mbox{fresh} |  ]  | 
+\\
+| Gamma | _{ | l | } |  ++ Gamma | _{ | g | } |  === Gamma | _{ | p | } |  | 
+\\
+| Gamma | _{ | q | } |  ===  [ i :-> forall  | \overline{ | alpha | } |  . sigma || (i :-> sigma) <- VarMp | _{ | d | } |  Gamma | _{ | l | } |  ,  | \overline{ | alpha | } |  === ftv (sigma) - ftv (VarMp | _{ | d | } |  Gamma | _{ | g | } | ) ]  | 
+\\
+| Gamma | _{ | q | }^{ | nexists | } |  ===  [ i :-> VarMp sigma || (i :-> exists ^  | \overline{ | tvarv | } |  . sigma) <- Gamma | _{ | q | } |  , VarMp ===  | \overline{ | tvarv :-> tvarf | } |  , tvarf | \;\mbox{fresh} |  ]  | 
+\\
+| fiopt ; Gamma | _{ | q | }^{ | nexists | } |  + Gamma | _{ | g | } |  ; VarMp | _{ | d | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  b : sigma ~> VarMp | _{ | e | } |  ; Transl | _{ | e | } |  | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  let d in b : sigma ~> VarMp | _{ | e | } |  ; let  | \overline{ | Transl | _{ | d | }} |  ^^ in Transl | _{ | e | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.NUM.expr.base.e.lam}{%
+\rulerRule{e.lam}{NUM}
+{%
+| tvarv1 , tvarv2 , pvar | \;\mbox{fresh} |  | 
+\\
+| fioBindRFirstY , fiopt :- | ^{ | <= | } |  pvar => tvarv1 -> tvarv2 <= VarMp | ^{ | k | } |  sigma | ^{ | k | } |  :  | \overline{ | pi | _{ | a | }} |  => sigma | _{ | p | } |  -> sigma | _{ | r | } |  ~> VarMp | _{ | F | } |  ; Coe | 
+\\
+| Gamma | _{ | i | } |  === inst | _{ | pi | } |  ( | \overline{ | pi | _{ | a | }} | ) | 
+\\
+|  [ _ :~>  | \overline{ | Transl | _{ | i | }} |  ]  === Gamma | _{ | i | } |  | 
+\\
+| fiopt ;  []  ++ Gamma ; VarMp | _{ | F | } |  VarMp | ^{ | k | } |  ; tvarv1 :- | ^{ | p | } |  p : sigma | _{ | p | } |  ; Gamma | _{ | p | } |  ~> VarMp | _{ | p | } |  ; _ | 
+\\
+| fiopt ; Gamma | _{ | i | } |  , Gamma ; VarMp | _{ | p | } |  ; tvarv2 :- | ^{ | e | } |  e : sigma | _{ | e | } |  ~> VarMp | _{ | e | } |  ; Transl | _{ | e | } |  | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |   \ p -> e : VarMp | _{ | e | } |   | \overline{ | pi | _{ | a | }} |  => VarMp | _{ | e | } |  sigma | _{ | p | } |  -> sigma | _{ | e | } |  ~> VarMp | _{ | e | } |  ;  | \overline{ | Transl | _{ | i | }} |  ->  \ p -> Transl | _{ | e | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.P.expr.base.scheme}{%
+\ensuremath{| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  e : sigma ~> VarMp ; Transl | }
+}
+\rulerCmdDef{rules4.P.expr.base.e.int}{%
+\rulerRule{e.int}{P}
+{%
+| fiopt :- | ^{ | <= | } |  Int <= VarMp | ^{ | k | } |  sigma | ^{ | k | } |  : sigma ~> VarMp ; Coe | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  int : sigma ~> VarMp VarMp | ^{ | k | } |  ; Coe Transl (int) | 
+}
+}
+
+\rulerCmdDef{rules4.P.expr.base.e.char}{%
+\rulerRule{e.char}{P}
+{%
+| fiopt :- | ^{ | <= | } |  Char <= VarMp | ^{ | k | } |  sigma | ^{ | k | } |  : sigma ~> VarMp ; Coe | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  char : sigma ~> VarMp VarMp | ^{ | k | } |  ; Coe Transl (char) | 
+}
+}
+
+\rulerCmdDef{rules4.P.expr.base.e.var}{%
+\rulerRule{e.var}{P}
+{%
+| ident :-> sigma | _{ | g | } |  `elem` Gamma | 
+\\
+| fiopt :- | ^{ | <= | } |  VarMp | ^{ | k | } |  sigma | _{ | g | } |  <= VarMp | ^{ | k | } |  sigma | ^{ | k | } |  : sigma ~> VarMp ; Coe | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  ident : sigma ~> VarMp VarMp | ^{ | k | } |  ; Coe Transl (ident) | 
+}
+}
+
+\rulerCmdDef{rules4.P.expr.base.e.con}{%
+\rulerRule{e.con}{P}
+{%
+| identc :-> sigma | _{ | g | } |  `elem` Gamma | 
+\\
+| fiopt :- | ^{ | <= | } |  VarMp | ^{ | k | } |  sigma | _{ | g | } |  <= VarMp | ^{ | k | } |  sigma | ^{ | k | } |  : sigma ~> VarMp ; Coe | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  identc : sigma ~> VarMp VarMp | ^{ | k | } |  ; Coe Transl (identc) | 
+}
+}
+
+\rulerCmdDef{rules4.P.expr.base.e.app}{%
+\rulerRule{e.app}{P}
+{%
+| tvarv , pvar | \;\mbox{fresh} |  | 
+\\
+| strongFIOpts ; Gamma ; VarMp | ^{ | k | } |  ; pvar => tvarv -> sigma | ^{ | k | } |  :- | ^{ | e | } |  e | _{ | 1 | } |  : _ => sigma | _{ | a | } |  -> sigma ~> VarMp | _{ | f | } |  ; Transl | _{ | f | } |  | 
+\\
+| instLFIOpts ; Gamma ; VarMp | _{ | f | } |  ; tvarv :- | ^{ | e | } |  e | _{ | 2 | } |  : _ ~> VarMp | _{ | a | } |  ; Transl | _{ | a | } |  | 
+\\
+| Gamma :- | ^{ | pi | } |  VarMp | _{ | a | } |  pvar ~>  | \overline{ | Transl | _{ | a | }} |  : _ | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  e | _{ | 1 | } |  ^^ e | _{ | 2 | } |  : VarMp | _{ | a | } |  sigma ~> VarMp | _{ | a | } |  ;  \ Transl | _{ | f | } |  ^^  | \overline{ | Transl | _{ | a | }} |  ^^ Transl | _{ | a | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.P.expr.base.e.app.f}{%
+\rulerRule{e.app.f}{P}
+{%
+| tvarv , pvar | \;\mbox{fresh} |  | 
+\\
+| strongFIOpts ; Gamma ; VarMp | ^{ | k | } |  ; pvar => tvarv -> sigma | ^{ | k | } |  :- | ^{ | e | } |  e | _{ | 1 | } |  : _ => sigma | _{ | a | } |  -> sigma ~> VarMp | _{ | f | } |  ; Transl | _{ | f | } |  | 
+\\
+| instLFIOpts ; Gamma ; VarMp | _{ | f | } |  ; tvarv :- | ^{ | e | } |  e | _{ | 2 | } |  : _ ~> VarMp | _{ | a | } |  ; Transl | _{ | a | } |  | 
+\\
+| Gamma :- | ^{ | pi | } |  VarMp | _{ | a | } |  pvar ~>  | \overline{ | Transl | _{ | a | }} |  : _ | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  e | _{ | 1 | } |  ^^  ~ e | _{ | 2 | } |  : VarMp | _{ | a | } |  sigma ~> VarMp | _{ | a | } |  ;  \ Transl | _{ | f | } |  ^^  | \overline{ | Transl | _{ | a | }} |  ^^ Transl | _{ | a | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.P.expr.base.e.let}{%
+\rulerRule{e.let}{P}
+{%
+| Gamma | _{ | t | } |  ; Gamma | _{ | t | }^{ | nexists | } |  ++ Gamma ; Gamma | _{ | p | } |  ; VarMp | ^{ | k | } |  ; VarMp | _{ | p | } |  :- | ^{ | d | } |  d : Gamma | _{ | t | } |  ; Gamma | _{ | p | } |  ~> VarMp | _{ | p | } |  ; VarMp | _{ | d | } |  ;  | \overline{ | Transl | _{ | d | }} |  | 
+\\
+| Gamma | _{ | t | }^{ | nexists | } |  ===  [ i :-> VarMp sigma || (i :-> exists ^  | \overline{ | tvarv | } |  . sigma) <- Gamma | _{ | t | } |  , VarMp ===  | \overline{ | tvarv :-> tvarf | } |  , tvarf | \;\mbox{fresh} |  ]  | 
+\\
+| Gamma | _{ | l | } |  ++ Gamma | _{ | g | } |  === Gamma | _{ | p | } |  | 
+\\
+| Gamma | _{ | q | } |  ===  [ i :-> forall  | \overline{ | alpha | } |  . sigma || (i :-> sigma) <- VarMp | _{ | d | } |  Gamma | _{ | l | } |  ,  | \overline{ | alpha | } |  === ftv (sigma) - ftv (VarMp | _{ | d | } |  Gamma | _{ | g | } | ) ]  | 
+\\
+| Gamma | _{ | q | }^{ | nexists | } |  ===  [ i :-> VarMp sigma || (i :-> exists ^  | \overline{ | tvarv | } |  . sigma) <- Gamma | _{ | q | } |  , VarMp ===  | \overline{ | tvarv :-> tvarf | } |  , tvarf | \;\mbox{fresh} |  ]  | 
+\\
+| fiopt ; Gamma | _{ | q | }^{ | nexists | } |  + Gamma | _{ | g | } |  ; VarMp | _{ | d | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  b : sigma ~> VarMp | _{ | e | } |  ; Transl | _{ | e | } |  | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  let d in b : sigma ~> VarMp | _{ | e | } |  ; let  | \overline{ | Transl | _{ | d | }} |  ^^ in Transl | _{ | e | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.P.expr.base.e.lam}{%
+\rulerRule{e.lam}{P}
+{%
+| tvarv1 , tvarv2 , pvar | \;\mbox{fresh} |  | 
+\\
+| fioBindRFirstY , fiopt :- | ^{ | <= | } |  pvar => tvarv1 -> tvarv2 <= VarMp | ^{ | k | } |  sigma | ^{ | k | } |  :  | \overline{ | pi | _{ | a | }} |  => sigma | _{ | p | } |  -> sigma | _{ | r | } |  ~> VarMp | _{ | F | } |  ; Coe | 
+\\
+| Gamma | _{ | i | } |  === inst | _{ | pi | } |  ( | \overline{ | pi | _{ | a | }} | ) | 
+\\
+|  [ _ :~>  | \overline{ | Transl | _{ | i | }} |  ]  === Gamma | _{ | i | } |  | 
+\\
+| fiopt ;  []  ++ Gamma ; VarMp | _{ | F | } |  VarMp | ^{ | k | } |  ; tvarv1 :- | ^{ | p | } |  p : sigma | _{ | p | } |  ; Gamma | _{ | p | } |  ~> VarMp | _{ | p | } |  ; _ | 
+\\
+| fiopt ; Gamma | _{ | i | } |  , Gamma ; VarMp | _{ | p | } |  ; tvarv2 :- | ^{ | e | } |  e : sigma | _{ | e | } |  ~> VarMp | _{ | e | } |  ; Transl | _{ | e | } |  | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |   \ p -> e : VarMp | _{ | e | } |   | \overline{ | pi | _{ | a | }} |  => VarMp | _{ | e | } |  sigma | _{ | p | } |  -> sigma | _{ | e | } |  ~> VarMp | _{ | e | } |  ;  | \overline{ | Transl | _{ | i | }} |  ->  \ p -> Transl | _{ | e | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.TS.expr.base.scheme}{%
+\ensuremath{| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  e : sigma ~> VarMp ; Transl | }
+}
+\rulerCmdDef{rules4.TS.expr.base.e.int}{%
+\rulerRule{e.int}{TS}
+{%
+| fiopt :- | ^{ | <= | } |  Int <= VarMp | ^{ | k | } |  sigma | ^{ | k | } |  : sigma ~> VarMp ; Coe | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  int : sigma ~> VarMp VarMp | ^{ | k | } |  ; Coe Transl (int) | 
+}
+}
+
+\rulerCmdDef{rules4.TS.expr.base.e.char}{%
+\rulerRule{e.char}{TS}
+{%
+| fiopt :- | ^{ | <= | } |  Char <= VarMp | ^{ | k | } |  sigma | ^{ | k | } |  : sigma ~> VarMp ; Coe | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  char : sigma ~> VarMp VarMp | ^{ | k | } |  ; Coe Transl (char) | 
+}
+}
+
+\rulerCmdDef{rules4.TS.expr.base.e.var}{%
+\rulerRule{e.var}{TS}
+{%
+| ident :-> sigma | _{ | g | } |  `elem` Gamma | 
+\\
+| fiopt :- | ^{ | <= | } |  VarMp | ^{ | k | } |  sigma | _{ | g | } |  <= VarMp | ^{ | k | } |  sigma | ^{ | k | } |  : sigma ~> VarMp ; Coe | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  ident : sigma ~> VarMp VarMp | ^{ | k | } |  ; Coe Transl (ident) | 
+}
+}
+
+\rulerCmdDef{rules4.TS.expr.base.e.con}{%
+\rulerRule{e.con}{TS}
+{%
+| identc :-> sigma | _{ | g | } |  `elem` Gamma | 
+\\
+| fiopt :- | ^{ | <= | } |  VarMp | ^{ | k | } |  sigma | _{ | g | } |  <= VarMp | ^{ | k | } |  sigma | ^{ | k | } |  : sigma ~> VarMp ; Coe | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  identc : sigma ~> VarMp VarMp | ^{ | k | } |  ; Coe Transl (identc) | 
+}
+}
+
+\rulerCmdDef{rules4.TS.expr.base.e.app}{%
+\rulerRule{e.app}{TS}
+{%
+| tvarv , pvar | \;\mbox{fresh} |  | 
+\\
+| strongFIOpts ; Gamma ; VarMp | ^{ | k | } |  ; pvar => tvarv -> sigma | ^{ | k | } |  :- | ^{ | e | } |  e | _{ | 1 | } |  : _ => sigma | _{ | a | } |  -> sigma ~> VarMp | _{ | f | } |  ; Transl | _{ | f | } |  | 
+\\
+| instLFIOpts ; Gamma ; VarMp | _{ | f | } |  ; tvarv :- | ^{ | e | } |  e | _{ | 2 | } |  : _ ~> VarMp | _{ | a | } |  ; Transl | _{ | a | } |  | 
+\\
+| Gamma :- | ^{ | pi | } |  VarMp | _{ | a | } |  pvar ~>  | \overline{ | Transl | _{ | a | }} |  : _ | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  e | _{ | 1 | } |  ^^ e | _{ | 2 | } |  : VarMp | _{ | a | } |  sigma ~> VarMp | _{ | a | } |  ;  \ Transl | _{ | f | } |  ^^  | \overline{ | Transl | _{ | a | }} |  ^^ Transl | _{ | a | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.TS.expr.base.e.app.f}{%
+\rulerRule{e.app.f}{TS}
+{%
+| tvarv , pvar | \;\mbox{fresh} |  | 
+\\
+| strongFIOpts ; Gamma ; VarMp | ^{ | k | } |  ; pvar => tvarv -> sigma | ^{ | k | } |  :- | ^{ | e | } |  e | _{ | 1 | } |  : _ => sigma | _{ | a | } |  -> sigma ~> VarMp | _{ | f | } |  ; Transl | _{ | f | } |  | 
+\\
+| instLFIOpts ; Gamma ; VarMp | _{ | f | } |  ; tvarv :- | ^{ | e | } |  e | _{ | 2 | } |  : _ ~> VarMp | _{ | a | } |  ; Transl | _{ | a | } |  | 
+\\
+| Gamma :- | ^{ | pi | } |  VarMp | _{ | a | } |  pvar ~>  | \overline{ | Transl | _{ | a | }} |  : _ | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  e | _{ | 1 | } |  ^^  ~ e | _{ | 2 | } |  : VarMp | _{ | a | } |  sigma ~> VarMp | _{ | a | } |  ;  \ Transl | _{ | f | } |  ^^  | \overline{ | Transl | _{ | a | }} |  ^^ Transl | _{ | a | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.TS.expr.base.e.let}{%
+\rulerRule{e.let}{TS}
+{%
+| Gamma | _{ | t | } |  ; Gamma | _{ | t | }^{ | nexists | } |  ++ Gamma ; Gamma | _{ | p | } |  ; VarMp | ^{ | k | } |  ; VarMp | _{ | p | } |  :- | ^{ | d | } |  d : Gamma | _{ | t | } |  ; Gamma | _{ | p | } |  ~> VarMp | _{ | p | } |  ; VarMp | _{ | d | } |  ;  | \overline{ | Transl | _{ | d | }} |  | 
+\\
+| Gamma | _{ | t | }^{ | nexists | } |  ===  [ i :-> VarMp sigma || (i :-> exists ^  | \overline{ | tvarv | } |  . sigma) <- Gamma | _{ | t | } |  , VarMp ===  | \overline{ | tvarv :-> tvarf | } |  , tvarf | \;\mbox{fresh} |  ]  | 
+\\
+| Gamma | _{ | l | } |  ++ Gamma | _{ | g | } |  === Gamma | _{ | p | } |  | 
+\\
+| Gamma | _{ | q | } |  ===  [ i :-> forall  | \overline{ | alpha | } |  . sigma || (i :-> sigma) <- VarMp | _{ | d | } |  Gamma | _{ | l | } |  ,  | \overline{ | alpha | } |  === ftv (sigma) - ftv (VarMp | _{ | d | } |  Gamma | _{ | g | } | ) ]  | 
+\\
+| Gamma | _{ | q | }^{ | nexists | } |  ===  [ i :-> VarMp sigma || (i :-> exists ^  | \overline{ | tvarv | } |  . sigma) <- Gamma | _{ | q | } |  , VarMp ===  | \overline{ | tvarv :-> tvarf | } |  , tvarf | \;\mbox{fresh} |  ]  | 
+\\
+| fiopt ; Gamma | _{ | q | }^{ | nexists | } |  + Gamma | _{ | g | } |  ; VarMp | _{ | d | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  b : sigma ~> VarMp | _{ | e | } |  ; Transl | _{ | e | } |  | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  let d in b : sigma ~> VarMp | _{ | e | } |  ; let  | \overline{ | Transl | _{ | d | }} |  ^^ in Transl | _{ | e | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.TS.expr.base.e.lam}{%
+\rulerRule{e.lam}{TS}
+{%
+| tvarv1 , tvarv2 , pvar | \;\mbox{fresh} |  | 
+\\
+| fioBindRFirstY , fiopt :- | ^{ | <= | } |  pvar => tvarv1 -> tvarv2 <= VarMp | ^{ | k | } |  sigma | ^{ | k | } |  :  | \overline{ | pi | _{ | a | }} |  => sigma | _{ | p | } |  -> sigma | _{ | r | } |  ~> VarMp | _{ | F | } |  ; Coe | 
+\\
+| Gamma | _{ | i | } |  === inst | _{ | pi | } |  ( | \overline{ | pi | _{ | a | }} | ) | 
+\\
+|  [ _ :~>  | \overline{ | Transl | _{ | i | }} |  ]  === Gamma | _{ | i | } |  | 
+\\
+| fiopt ;  []  ++ Gamma ; VarMp | _{ | F | } |  VarMp | ^{ | k | } |  ; tvarv1 :- | ^{ | p | } |  p : sigma | _{ | p | } |  ; Gamma | _{ | p | } |  ~> VarMp | _{ | p | } |  ; _ | 
+\\
+| fiopt ; Gamma | _{ | i | } |  , Gamma ; VarMp | _{ | p | } |  ; tvarv2 :- | ^{ | e | } |  e : sigma | _{ | e | } |  ~> VarMp | _{ | e | } |  ; Transl | _{ | e | } |  | 
+}
+{%
+| fiopt ; Gamma ; VarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |   \ p -> e : VarMp | _{ | e | } |   | \overline{ | pi | _{ | a | }} |  => VarMp | _{ | e | } |  sigma | _{ | p | } |  -> sigma | _{ | e | } |  ~> VarMp | _{ | e | } |  ;  | \overline{ | Transl | _{ | i | }} |  ->  \ p -> Transl | _{ | e | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.ANN.expr.base}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{rules4.ANN.expr.base.scheme}}{Expression type rules}{rules4.ANN.expr.base}{ANN}
+\rulerCmdUse{rules4.ANN.expr.base.e.int}
+\hspace{1ex}
+\rulerCmdUse{rules4.ANN.expr.base.e.char}
+\hspace{1ex}
+\rulerCmdUse{rules4.ANN.expr.base.e.var}
+\hspace{1ex}
+\rulerCmdUse{rules4.ANN.expr.base.e.con}
+\hspace{1ex}
+\rulerCmdUse{rules4.ANN.expr.base.e.app}
+\hspace{1ex}
+\rulerCmdUse{rules4.ANN.expr.base.e.app.f}
+\hspace{1ex}
+\rulerCmdUse{rules4.ANN.expr.base.e.let}
+\hspace{1ex}
+\rulerCmdUse{rules4.ANN.expr.base.e.lam}
+\end{rulerRulesetFigure}
+}
+\rulerCmdDef{rules4.C.expr.base}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{rules4.C.expr.base.scheme}}{Expression type rules}{rules4.C.expr.base}{C}
+\rulerCmdUse{rules4.C.expr.base.e.int}
+\hspace{1ex}
+\rulerCmdUse{rules4.C.expr.base.e.char}
+\hspace{1ex}
+\rulerCmdUse{rules4.C.expr.base.e.var}
+\hspace{1ex}
+\rulerCmdUse{rules4.C.expr.base.e.con}
+\hspace{1ex}
+\rulerCmdUse{rules4.C.expr.base.e.app}
+\hspace{1ex}
+\rulerCmdUse{rules4.C.expr.base.e.let}
+\hspace{1ex}
+\rulerCmdUse{rules4.C.expr.base.e.lam}
+\end{rulerRulesetFigure}
+}
+\rulerCmdDef{rules4.CG.expr.base}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{rules4.CG.expr.base.scheme}}{Expression type rules}{rules4.CG.expr.base}{CG}
+\rulerCmdUse{rules4.CG.expr.base.e.int}
+\hspace{1ex}
+\rulerCmdUse{rules4.CG.expr.base.e.char}
+\hspace{1ex}
+\rulerCmdUse{rules4.CG.expr.base.e.var}
+\hspace{1ex}
+\rulerCmdUse{rules4.CG.expr.base.e.con}
+\hspace{1ex}
+\rulerCmdUse{rules4.CG.expr.base.e.app}
+\hspace{1ex}
+\rulerCmdUse{rules4.CG.expr.base.e.app.f}
+\hspace{1ex}
+\rulerCmdUse{rules4.CG.expr.base.e.let}
+\hspace{1ex}
+\rulerCmdUse{rules4.CG.expr.base.e.lam}
+\end{rulerRulesetFigure}
+}
+\rulerCmdDef{rules4.DT.expr.base}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{rules4.DT.expr.base.scheme}}{Expression type rules}{rules4.DT.expr.base}{DT}
+\rulerCmdUse{rules4.DT.expr.base.e.int}
+\hspace{1ex}
+\rulerCmdUse{rules4.DT.expr.base.e.char}
+\hspace{1ex}
+\rulerCmdUse{rules4.DT.expr.base.e.var}
+\hspace{1ex}
+\rulerCmdUse{rules4.DT.expr.base.e.con}
+\hspace{1ex}
+\rulerCmdUse{rules4.DT.expr.base.e.app}
+\hspace{1ex}
+\rulerCmdUse{rules4.DT.expr.base.e.app.f}
+\hspace{1ex}
+\rulerCmdUse{rules4.DT.expr.base.e.let}
+\hspace{1ex}
+\rulerCmdUse{rules4.DT.expr.base.e.lam}
+\end{rulerRulesetFigure}
+}
+\rulerCmdDef{rules4.E.expr.base}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{rules4.E.expr.base.scheme}}{Expression type rules}{rules4.E.expr.base}{E}
+\rulerCmdUse{rules4.E.expr.base.e.int}
+\hspace{1ex}
+\rulerCmdUse{rules4.E.expr.base.e.char}
+\hspace{1ex}
+\rulerCmdUse{rules4.E.expr.base.e.var}
+\hspace{1ex}
+\rulerCmdUse{rules4.E.expr.base.e.app}
+\hspace{1ex}
+\rulerCmdUse{rules4.E.expr.base.e.let}
+\hspace{1ex}
+\rulerCmdUse{rules4.E.expr.base.e.lam}
+\end{rulerRulesetFigure}
+}
+\rulerCmdDef{rules4.EP.expr.base}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{rules4.EP.expr.base.scheme}}{Expression type rules}{rules4.EP.expr.base}{EP}
+\rulerCmdUse{rules4.EP.expr.base.e.int}
+\hspace{1ex}
+\rulerCmdUse{rules4.EP.expr.base.e.char}
+\hspace{1ex}
+\rulerCmdUse{rules4.EP.expr.base.e.var}
+\hspace{1ex}
+\rulerCmdUse{rules4.EP.expr.base.e.con}
+\hspace{1ex}
+\rulerCmdUse{rules4.EP.expr.base.e.app}
+\hspace{1ex}
+\rulerCmdUse{rules4.EP.expr.base.e.app.f}
+\hspace{1ex}
+\rulerCmdUse{rules4.EP.expr.base.e.let}
+\hspace{1ex}
+\rulerCmdUse{rules4.EP.expr.base.e.lam}
+\end{rulerRulesetFigure}
+}
+\rulerCmdDef{rules4.EX.expr.base}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{rules4.EX.expr.base.scheme}}{Expression type rules}{rules4.EX.expr.base}{EX}
+\rulerCmdUse{rules4.EX.expr.base.e.int}
+\hspace{1ex}
+\rulerCmdUse{rules4.EX.expr.base.e.char}
+\hspace{1ex}
+\rulerCmdUse{rules4.EX.expr.base.e.var}
+\hspace{1ex}
+\rulerCmdUse{rules4.EX.expr.base.e.con}
+\hspace{1ex}
+\rulerCmdUse{rules4.EX.expr.base.e.app}
+\hspace{1ex}
+\rulerCmdUse{rules4.EX.expr.base.e.app.f}
+\hspace{1ex}
+\rulerCmdUse{rules4.EX.expr.base.e.let}
+\hspace{1ex}
+\rulerCmdUse{rules4.EX.expr.base.e.lam}
+\end{rulerRulesetFigure}
+}
+\rulerCmdDef{rules4.HM.expr.base}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{rules4.HM.expr.base.scheme}}{Expression type rules}{rules4.HM.expr.base}{HM}
+\rulerCmdUse{rules4.HM.expr.base.e.int}
+\hspace{1ex}
+\rulerCmdUse{rules4.HM.expr.base.e.char}
+\hspace{1ex}
+\rulerCmdUse{rules4.HM.expr.base.e.var}
+\hspace{1ex}
+\rulerCmdUse{rules4.HM.expr.base.e.con}
+\hspace{1ex}
+\rulerCmdUse{rules4.HM.expr.base.e.app}
+\hspace{1ex}
+\rulerCmdUse{rules4.HM.expr.base.e.let}
+\hspace{1ex}
+\rulerCmdUse{rules4.HM.expr.base.e.lam}
+\end{rulerRulesetFigure}
+}
+\rulerCmdDef{rules4.HS.expr.base}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{rules4.HS.expr.base.scheme}}{Expression type rules}{rules4.HS.expr.base}{HS}
+\rulerCmdUse{rules4.HS.expr.base.e.int}
+\hspace{1ex}
+\rulerCmdUse{rules4.HS.expr.base.e.char}
+\hspace{1ex}
+\rulerCmdUse{rules4.HS.expr.base.e.var}
+\hspace{1ex}
+\rulerCmdUse{rules4.HS.expr.base.e.con}
+\hspace{1ex}
+\rulerCmdUse{rules4.HS.expr.base.e.app}
+\hspace{1ex}
+\rulerCmdUse{rules4.HS.expr.base.e.app.f}
+\hspace{1ex}
+\rulerCmdUse{rules4.HS.expr.base.e.let}
+\hspace{1ex}
+\rulerCmdUse{rules4.HS.expr.base.e.lam}
+\end{rulerRulesetFigure}
+}
+\rulerCmdDef{rules4.I1.expr.base}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{rules4.I1.expr.base.scheme}}{Expression type rules}{rules4.I1.expr.base}{I1}
+\rulerCmdUse{rules4.I1.expr.base.e.int}
+\hspace{1ex}
+\rulerCmdUse{rules4.I1.expr.base.e.char}
+\hspace{1ex}
+\rulerCmdUse{rules4.I1.expr.base.e.var}
+\hspace{1ex}
+\rulerCmdUse{rules4.I1.expr.base.e.con}
+\hspace{1ex}
+\rulerCmdUse{rules4.I1.expr.base.e.app}
+\hspace{1ex}
+\rulerCmdUse{rules4.I1.expr.base.e.app.f}
+\hspace{1ex}
+\rulerCmdUse{rules4.I1.expr.base.e.let}
+\hspace{1ex}
+\rulerCmdUse{rules4.I1.expr.base.e.lam}
+\end{rulerRulesetFigure}
+}
+\rulerCmdDef{rules4.I2.expr.base}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{rules4.I2.expr.base.scheme}}{Expression type rules}{rules4.I2.expr.base}{I2}
+\rulerCmdUse{rules4.I2.expr.base.e.int}
+\hspace{1ex}
+\rulerCmdUse{rules4.I2.expr.base.e.char}
+\hspace{1ex}
+\rulerCmdUse{rules4.I2.expr.base.e.var}
+\hspace{1ex}
+\rulerCmdUse{rules4.I2.expr.base.e.con}
+\hspace{1ex}
+\rulerCmdUse{rules4.I2.expr.base.e.app}
+\hspace{1ex}
+\rulerCmdUse{rules4.I2.expr.base.e.app.f}
+\hspace{1ex}
+\rulerCmdUse{rules4.I2.expr.base.e.let}
+\hspace{1ex}
+\rulerCmdUse{rules4.I2.expr.base.e.lam}
+\end{rulerRulesetFigure}
+}
+\rulerCmdDef{rules4.K.expr.base}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{rules4.K.expr.base.scheme}}{Expression type rules}{rules4.K.expr.base}{K}
+\rulerCmdUse{rules4.K.expr.base.e.int}
+\hspace{1ex}
+\rulerCmdUse{rules4.K.expr.base.e.char}
+\hspace{1ex}
+\rulerCmdUse{rules4.K.expr.base.e.var}
+\hspace{1ex}
+\rulerCmdUse{rules4.K.expr.base.e.con}
+\hspace{1ex}
+\rulerCmdUse{rules4.K.expr.base.e.app}
+\hspace{1ex}
+\rulerCmdUse{rules4.K.expr.base.e.let}
+\hspace{1ex}
+\rulerCmdUse{rules4.K.expr.base.e.lam}
+\end{rulerRulesetFigure}
+}
+\rulerCmdDef{rules4.MD.expr.base}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{rules4.MD.expr.base.scheme}}{Expression type rules}{rules4.MD.expr.base}{MD}
+\rulerCmdUse{rules4.MD.expr.base.e.int}
+\hspace{1ex}
+\rulerCmdUse{rules4.MD.expr.base.e.char}
+\hspace{1ex}
+\rulerCmdUse{rules4.MD.expr.base.e.var}
+\hspace{1ex}
+\rulerCmdUse{rules4.MD.expr.base.e.con}
+\hspace{1ex}
+\rulerCmdUse{rules4.MD.expr.base.e.app}
+\hspace{1ex}
+\rulerCmdUse{rules4.MD.expr.base.e.app.f}
+\hspace{1ex}
+\rulerCmdUse{rules4.MD.expr.base.e.let}
+\hspace{1ex}
+\rulerCmdUse{rules4.MD.expr.base.e.lam}
+\end{rulerRulesetFigure}
+}
+\rulerCmdDef{rules4.NUM.expr.base}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{rules4.NUM.expr.base.scheme}}{Expression type rules}{rules4.NUM.expr.base}{NUM}
+\rulerCmdUse{rules4.NUM.expr.base.e.int}
+\hspace{1ex}
+\rulerCmdUse{rules4.NUM.expr.base.e.char}
+\hspace{1ex}
+\rulerCmdUse{rules4.NUM.expr.base.e.var}
+\hspace{1ex}
+\rulerCmdUse{rules4.NUM.expr.base.e.con}
+\hspace{1ex}
+\rulerCmdUse{rules4.NUM.expr.base.e.app}
+\hspace{1ex}
+\rulerCmdUse{rules4.NUM.expr.base.e.app.f}
+\hspace{1ex}
+\rulerCmdUse{rules4.NUM.expr.base.e.let}
+\hspace{1ex}
+\rulerCmdUse{rules4.NUM.expr.base.e.lam}
+\end{rulerRulesetFigure}
+}
+\rulerCmdDef{rules4.P.expr.base}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{rules4.P.expr.base.scheme}}{Expression type rules}{rules4.P.expr.base}{P}
+\rulerCmdUse{rules4.P.expr.base.e.int}
+\hspace{1ex}
+\rulerCmdUse{rules4.P.expr.base.e.char}
+\hspace{1ex}
+\rulerCmdUse{rules4.P.expr.base.e.var}
+\hspace{1ex}
+\rulerCmdUse{rules4.P.expr.base.e.con}
+\hspace{1ex}
+\rulerCmdUse{rules4.P.expr.base.e.app}
+\hspace{1ex}
+\rulerCmdUse{rules4.P.expr.base.e.app.f}
+\hspace{1ex}
+\rulerCmdUse{rules4.P.expr.base.e.let}
+\hspace{1ex}
+\rulerCmdUse{rules4.P.expr.base.e.lam}
+\end{rulerRulesetFigure}
+}
+\rulerCmdDef{rules4.TS.expr.base}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{rules4.TS.expr.base.scheme}}{Expression type rules}{rules4.TS.expr.base}{TS}
+\rulerCmdUse{rules4.TS.expr.base.e.int}
+\hspace{1ex}
+\rulerCmdUse{rules4.TS.expr.base.e.char}
+\hspace{1ex}
+\rulerCmdUse{rules4.TS.expr.base.e.var}
+\hspace{1ex}
+\rulerCmdUse{rules4.TS.expr.base.e.con}
+\hspace{1ex}
+\rulerCmdUse{rules4.TS.expr.base.e.app}
+\hspace{1ex}
+\rulerCmdUse{rules4.TS.expr.base.e.app.f}
+\hspace{1ex}
+\rulerCmdUse{rules4.TS.expr.base.e.let}
+\hspace{1ex}
+\rulerCmdUse{rules4.TS.expr.base.e.lam}
+\end{rulerRulesetFigure}
+}
+
+\rulerCmdDef{rules4.I2.expr.impr.scheme}{%
+\ensuremath{| fiopt ; Gamma ; IVarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  e : isigma ~> IVarMp | }
+}
+\rulerCmdDef{rules4.I2.expr.impr.e.int}{%
+\rulerRule{e.int}{I2}
+{%
+}
+{%
+| fiopt ; Gamma ; IVarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  int : Int ~> IVarMp | ^{ | k | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.I2.expr.impr.e.char}{%
+\rulerRule{e.char}{I2}
+{%
+}
+{%
+| fiopt ; Gamma ; IVarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  char : Char ~> IVarMp | ^{ | k | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.I2.expr.impr.e.var}{%
+\rulerRule{e.var}{I2}
+{%
+}
+{%
+| fiopt ; Gamma ; IVarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  ident : IVarMp | ^{ | k | } |  sigma | _{ | g | } |  ~> IVarMp | ^{ | k | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.I2.expr.impr.e.con}{%
+\rulerRule{e.con}{I2}
+{%
+}
+{%
+| fiopt ; Gamma ; IVarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  identc : IVarMp | ^{ | k | } |  sigma | _{ | g | } |  ~> IVarMp | ^{ | k | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.I2.expr.impr.e.app}{%
+\rulerRule{e.app}{I2}
+{%
+| rulerUndefinedExtern ; rulerUndefinedExtern ; IVarMp | ^{ | k | } |  ; rulerUndefinedExtern :- | ^{ | e | } |  e | _{ | 1 | } |  : isigma | _{ | f | } |  ~> IVarMp | _{ | f | } |  | 
+\\
+| impredFIOpts :- | ^{ | <= | } |  isigma | _{ | f | } |  <= IVarMp | _{ | f | } |  (tvarv -> sigma | ^{ | k | } | ) : _ ~> IVarMp | _{ | F | } |  | 
+\\
+| rulerUndefinedExtern ; rulerUndefinedExtern ; IVarMp | _{ | F | } |  IVarMp | _{ | f | } |  ; rulerUndefinedExtern :- | ^{ | e | } |  e | _{ | 2 | } |  : isigma | _{ | a | } |  ~> IVarMp | _{ | a | } |  | 
+\\
+| fioBindToTyAltsY , instLFIOpts :- | ^{ | <= | } |  isigma | _{ | a | } |  <= IVarMp | _{ | a | } |  tvarv : _ ~> IVarMp | _{ | A | } |  | 
+\\
+| IVarMp | _{ | 1 | } |  === IVarMp | _{ | A | } |  IVarMp | _{ | a | } |  | 
+}
+{%
+| fiopt ; Gamma ; IVarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  e | _{ | 1 | } |  ^^ e | _{ | 2 | } |  : IVarMp | _{ | 1 | } |  sigma | ^{ | k | } |  ~> IVarMp | _{ | 1 | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.I2.expr.impr.e.app.f}{%
+\rulerRule{e.app.f}{I2}
+{%
+| rulerUndefinedExtern ; rulerUndefinedExtern ; IVarMp | ^{ | k | } |  ; rulerUndefinedExtern :- | ^{ | e | } |  e | _{ | 1 | } |  : isigma | _{ | f | } |  ~> IVarMp | _{ | f | } |  | 
+\\
+| impredFIOpts :- | ^{ | <= | } |  isigma | _{ | f | } |  <= IVarMp | _{ | f | } |  (tvarv -> sigma | ^{ | k | } | ) : _ ~> IVarMp | _{ | F | } |  | 
+\\
+| rulerUndefinedExtern ; rulerUndefinedExtern ; IVarMp | _{ | F | } |  IVarMp | _{ | f | } |  ; rulerUndefinedExtern :- | ^{ | e | } |  e | _{ | 2 | } |  : isigma | _{ | a | } |  ~> IVarMp | _{ | a | } |  | 
+\\
+| impredFIOpts :- | ^{ | <= | } |  isigma | _{ | a | } |  <= IVarMp | _{ | a | } |  tvarv : _ ~> IVarMp | _{ | A | } |  | 
+\\
+| IVarMp | _{ | 1 | } |  === IVarMp | _{ | A | } |  IVarMp | _{ | a | } |  | 
+}
+{%
+| fiopt ; Gamma ; IVarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  e | _{ | 1 | } |  ^^  ~ e | _{ | 2 | } |  : IVarMp | _{ | 1 | } |  sigma | ^{ | k | } |  ~> IVarMp | _{ | 1 | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.I2.expr.impr.e.lam}{%
+\rulerRule{e.lam}{I2}
+{%
+| Gamma | _{ | l | } |  ++ _ === Gamma | _{ | p | } |  | 
+\\
+|  | \overline{ | tvarv | _{ | g | }} |  === ftv (Gamma) | 
+\\
+| meetFIOpts ; IVarMp | ^{ | k | } |  ;  | \overline{ | tvarv | _{ | g | }} |   | \stackrel{ | talt elim | }{ | :- | } |  sigma | ^{ | k | } |  : sigma | _{ | e | }^{ | k | } |  ~> _ | 
+\\
+| fioBindRFirstY , fiopt :- | ^{ | <= | } |  tvarv1 -> tvarv2 <= sigma | _{ | e | }^{ | k | } |  : _ ~> IVarMp | _{ | F | } |  | 
+\\
+| rulerUndefinedExtern ; rulerUndefinedExtern ; VarMp | _{ | p | } |  IVarMp | _{ | F | } |  IVarMp | ^{ | k | } |  ; rulerUndefinedExtern :- | ^{ | e | } |  e : isigma | _{ | e | } |  ~> IVarMp | _{ | e | } |  | 
+\\
+| meetFIOpts ; IVarMp | _{ | e | } |  ;  | \overline{ | tvarv | _{ | g | }} |   | \stackrel{ | Gamma talt elim | }{ | :- | } |  Gamma | _{ | l | } |  : VarMp | _{ | Gamma | } |  | 
+\\
+| IVarMp | _{ | 1 | } |  === VarMp | _{ | Gamma | } |  IVarMp | _{ | e | } |  | 
+}
+{%
+| fiopt ; Gamma ; IVarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |   \ p -> e : IVarMp | _{ | 1 | } |  sigma | _{ | p | } |  -> VarMp | _{ | Gamma | } |  isigma | _{ | e | } |  ~> IVarMp | _{ | 1 | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.I2.expr.impr.e.let}{%
+\rulerRule{e.let}{I2}
+{%
+|  | \overline{ | tvarv | _{ | g | }} |  === ftv (Gamma) | 
+\\
+| VarMp | _{ | p | } |  IVarMp | ^{ | k | } |  :- | ^{ | d | } |  d ~> IVarMp | _{ | d | } |  | 
+\\
+| joinFIOpts ; IVarMp | _{ | d | } |  ;  | \overline{ | tvarv | _{ | g | }} |   | \stackrel{ | Gamma talt elim | }{ | :- | } |  Gamma | _{ | l | } |  : VarMp | _{ | Gamma | } |  | 
+\\
+| rulerUndefinedExtern ; rulerUndefinedExtern ; VarMp | _{ | Gamma | } |  IVarMp | _{ | d | } |  ; rulerUndefinedExtern :- | ^{ | e | } |  b : isigma ~> IVarMp | _{ | e | } |  | 
+}
+{%
+| fiopt ; Gamma ; IVarMp | ^{ | k | } |  ; sigma | ^{ | k | } |  :- | ^{ | e | } |  let d in b : isigma ~> IVarMp | _{ | e | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.I2.expr.impr}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{rules4.I2.expr.impr.scheme}}{Expression (quantifier propagation) type rules}{rules4.I2.expr.impr}{I2}
+\rulerCmdUse{rules4.I2.expr.impr.e.int}
+\hspace{1ex}
+\rulerCmdUse{rules4.I2.expr.impr.e.char}
+\hspace{1ex}
+\rulerCmdUse{rules4.I2.expr.impr.e.var}
+\hspace{1ex}
+\rulerCmdUse{rules4.I2.expr.impr.e.con}
+\hspace{1ex}
+\rulerCmdUse{rules4.I2.expr.impr.e.app}
+\hspace{1ex}
+\rulerCmdUse{rules4.I2.expr.impr.e.app.f}
+\hspace{1ex}
+\rulerCmdUse{rules4.I2.expr.impr.e.lam}
+\hspace{1ex}
+\rulerCmdUse{rules4.I2.expr.impr.e.let}
+\end{rulerRulesetFigure}
+}
+
+\rulerCmdDef{rules4.ANN.expr.invisible.scheme}{%
+\ensuremath{| KGamma ; TGamma :-  | }
+}
+\rulerCmdDef{rules4.ANN.expr.invisible.e.invisible}{%
+\rulerRule{e.invisible}{ANN}
+{%
+}
+{%
+| KGamma ; TGamma :-  | 
+}
+}
+
+\rulerCmdDef{rules4.C.expr.invisible.scheme}{%
+\ensuremath{| KGamma ; TGamma :-  | }
+}
+\rulerCmdDef{rules4.C.expr.invisible.e.invisible}{%
+\rulerRule{e.invisible}{C}
+{%
+}
+{%
+| KGamma ; TGamma :-  | 
+}
+}
+
+\rulerCmdDef{rules4.CG.expr.invisible.scheme}{%
+\ensuremath{| KGamma ; TGamma :-  | }
+}
+\rulerCmdDef{rules4.CG.expr.invisible.e.invisible}{%
+\rulerRule{e.invisible}{CG}
+{%
+}
+{%
+| KGamma ; TGamma :-  | 
+}
+}
+
+\rulerCmdDef{rules4.DT.expr.invisible.scheme}{%
+\ensuremath{| KGamma ; TGamma :-  | }
+}
+\rulerCmdDef{rules4.DT.expr.invisible.e.invisible}{%
+\rulerRule{e.invisible}{DT}
+{%
+}
+{%
+| KGamma ; TGamma :-  | 
+}
+}
+
+\rulerCmdDef{rules4.E.expr.invisible.scheme}{%
+\ensuremath{| KGamma ; TGamma :-  | }
+}
+\rulerCmdDef{rules4.E.expr.invisible.e.invisible}{%
+\rulerRule{e.invisible}{E}
+{%
+}
+{%
+| KGamma ; TGamma :-  | 
+}
+}
+
+\rulerCmdDef{rules4.EP.expr.invisible.scheme}{%
+\ensuremath{| KGamma ; TGamma :-  | }
+}
+\rulerCmdDef{rules4.EP.expr.invisible.e.invisible}{%
+\rulerRule{e.invisible}{EP}
+{%
+}
+{%
+| KGamma ; TGamma :-  | 
+}
+}
+
+\rulerCmdDef{rules4.EX.expr.invisible.scheme}{%
+\ensuremath{| KGamma ; TGamma :-  | }
+}
+\rulerCmdDef{rules4.EX.expr.invisible.e.invisible}{%
+\rulerRule{e.invisible}{EX}
+{%
+}
+{%
+| KGamma ; TGamma :-  | 
+}
+}
+
+\rulerCmdDef{rules4.HM.expr.invisible.scheme}{%
+\ensuremath{| KGamma ; TGamma :-  | }
+}
+\rulerCmdDef{rules4.HM.expr.invisible.e.invisible}{%
+\rulerRule{e.invisible}{HM}
+{%
+}
+{%
+| KGamma ; TGamma :-  | 
+}
+}
+
+\rulerCmdDef{rules4.HS.expr.invisible.scheme}{%
+\ensuremath{| KGamma ; TGamma :-  | }
+}
+\rulerCmdDef{rules4.HS.expr.invisible.e.invisible}{%
+\rulerRule{e.invisible}{HS}
+{%
+}
+{%
+| KGamma ; TGamma :-  | 
+}
+}
+
+\rulerCmdDef{rules4.I1.expr.invisible.scheme}{%
+\ensuremath{| KGamma ; TGamma :-  | }
+}
+\rulerCmdDef{rules4.I1.expr.invisible.e.invisible}{%
+\rulerRule{e.invisible}{I1}
+{%
+}
+{%
+| KGamma ; TGamma :-  | 
+}
+}
+
+\rulerCmdDef{rules4.I2.expr.invisible.scheme}{%
+\ensuremath{| KGamma ; TGamma :-  | }
+}
+\rulerCmdDef{rules4.I2.expr.invisible.e.invisible}{%
+\rulerRule{e.invisible}{I2}
+{%
+}
+{%
+| KGamma ; TGamma :-  | 
+}
+}
+
+\rulerCmdDef{rules4.K.expr.invisible.scheme}{%
+\ensuremath{| KGamma ; TGamma :-  | }
+}
+\rulerCmdDef{rules4.K.expr.invisible.e.invisible}{%
+\rulerRule{e.invisible}{K}
+{%
+}
+{%
+| KGamma ; TGamma :-  | 
+}
+}
+
+\rulerCmdDef{rules4.MD.expr.invisible.scheme}{%
+\ensuremath{| KGamma ; TGamma :-  | }
+}
+\rulerCmdDef{rules4.MD.expr.invisible.e.invisible}{%
+\rulerRule{e.invisible}{MD}
+{%
+}
+{%
+| KGamma ; TGamma :-  | 
+}
+}
+
+\rulerCmdDef{rules4.NUM.expr.invisible.scheme}{%
+\ensuremath{| KGamma ; TGamma :-  | }
+}
+\rulerCmdDef{rules4.NUM.expr.invisible.e.invisible}{%
+\rulerRule{e.invisible}{NUM}
+{%
+}
+{%
+| KGamma ; TGamma :-  | 
+}
+}
+
+\rulerCmdDef{rules4.P.expr.invisible.scheme}{%
+\ensuremath{| KGamma ; TGamma :-  | }
+}
+\rulerCmdDef{rules4.P.expr.invisible.e.invisible}{%
+\rulerRule{e.invisible}{P}
+{%
+}
+{%
+| KGamma ; TGamma :-  | 
+}
+}
+
+\rulerCmdDef{rules4.TS.expr.invisible.scheme}{%
+\ensuremath{| KGamma ; TGamma :-  | }
+}
+\rulerCmdDef{rules4.TS.expr.invisible.e.invisible}{%
+\rulerRule{e.invisible}{TS}
+{%
+}
+{%
+| KGamma ; TGamma :-  | 
+}
+}
+
+\rulerCmdDef{rules4.ANN.expr.invisible}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{rules4.ANN.expr.invisible.scheme}}{}{rules4.ANN.expr.invisible}{ANN}
+\rulerCmdUse{rules4.ANN.expr.invisible.e.invisible}
+\end{rulerRulesetFigure}
+}
+\rulerCmdDef{rules4.C.expr.invisible}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{rules4.C.expr.invisible.scheme}}{}{rules4.C.expr.invisible}{C}
+\rulerCmdUse{rules4.C.expr.invisible.e.invisible}
+\end{rulerRulesetFigure}
+}
+\rulerCmdDef{rules4.CG.expr.invisible}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{rules4.CG.expr.invisible.scheme}}{}{rules4.CG.expr.invisible}{CG}
+\rulerCmdUse{rules4.CG.expr.invisible.e.invisible}
+\end{rulerRulesetFigure}
+}
+\rulerCmdDef{rules4.DT.expr.invisible}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{rules4.DT.expr.invisible.scheme}}{}{rules4.DT.expr.invisible}{DT}
+\rulerCmdUse{rules4.DT.expr.invisible.e.invisible}
+\end{rulerRulesetFigure}
+}
+\rulerCmdDef{rules4.E.expr.invisible}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{rules4.E.expr.invisible.scheme}}{}{rules4.E.expr.invisible}{E}
+\rulerCmdUse{rules4.E.expr.invisible.e.invisible}
+\end{rulerRulesetFigure}
+}
+\rulerCmdDef{rules4.EP.expr.invisible}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{rules4.EP.expr.invisible.scheme}}{}{rules4.EP.expr.invisible}{EP}
+\rulerCmdUse{rules4.EP.expr.invisible.e.invisible}
+\end{rulerRulesetFigure}
+}
+\rulerCmdDef{rules4.EX.expr.invisible}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{rules4.EX.expr.invisible.scheme}}{}{rules4.EX.expr.invisible}{EX}
+\rulerCmdUse{rules4.EX.expr.invisible.e.invisible}
+\end{rulerRulesetFigure}
+}
+\rulerCmdDef{rules4.HM.expr.invisible}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{rules4.HM.expr.invisible.scheme}}{}{rules4.HM.expr.invisible}{HM}
+\rulerCmdUse{rules4.HM.expr.invisible.e.invisible}
+\end{rulerRulesetFigure}
+}
+\rulerCmdDef{rules4.HS.expr.invisible}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{rules4.HS.expr.invisible.scheme}}{}{rules4.HS.expr.invisible}{HS}
+\rulerCmdUse{rules4.HS.expr.invisible.e.invisible}
+\end{rulerRulesetFigure}
+}
+\rulerCmdDef{rules4.I1.expr.invisible}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{rules4.I1.expr.invisible.scheme}}{}{rules4.I1.expr.invisible}{I1}
+\rulerCmdUse{rules4.I1.expr.invisible.e.invisible}
+\end{rulerRulesetFigure}
+}
+\rulerCmdDef{rules4.I2.expr.invisible}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{rules4.I2.expr.invisible.scheme}}{}{rules4.I2.expr.invisible}{I2}
+\rulerCmdUse{rules4.I2.expr.invisible.e.invisible}
+\end{rulerRulesetFigure}
+}
+\rulerCmdDef{rules4.K.expr.invisible}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{rules4.K.expr.invisible.scheme}}{}{rules4.K.expr.invisible}{K}
+\rulerCmdUse{rules4.K.expr.invisible.e.invisible}
+\end{rulerRulesetFigure}
+}
+\rulerCmdDef{rules4.MD.expr.invisible}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{rules4.MD.expr.invisible.scheme}}{}{rules4.MD.expr.invisible}{MD}
+\rulerCmdUse{rules4.MD.expr.invisible.e.invisible}
+\end{rulerRulesetFigure}
+}
+\rulerCmdDef{rules4.NUM.expr.invisible}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{rules4.NUM.expr.invisible.scheme}}{}{rules4.NUM.expr.invisible}{NUM}
+\rulerCmdUse{rules4.NUM.expr.invisible.e.invisible}
+\end{rulerRulesetFigure}
+}
+\rulerCmdDef{rules4.P.expr.invisible}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{rules4.P.expr.invisible.scheme}}{}{rules4.P.expr.invisible}{P}
+\rulerCmdUse{rules4.P.expr.invisible.e.invisible}
+\end{rulerRulesetFigure}
+}
+\rulerCmdDef{rules4.TS.expr.invisible}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{rules4.TS.expr.invisible.scheme}}{}{rules4.TS.expr.invisible}{TS}
+\rulerCmdUse{rules4.TS.expr.invisible.e.invisible}
+\end{rulerRulesetFigure}
+}
+

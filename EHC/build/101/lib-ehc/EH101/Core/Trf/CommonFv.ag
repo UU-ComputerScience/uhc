@@ -1,0 +1,30 @@
+ATTR AllCodeNT [ | | fvS USE {`Set.union`} {Set.empty}: FvS ]
+ATTR AllBind [ | | fvSMp USE {`Map.union`} {Map.empty}: FvSMp ]
+
+SEM CExpr
+  | Lam         loc         .   fvS         =   @argNm `Set.delete` @body.fvS
+  | Let         loc         .   fvS         =   (@body.fvS `Set.union` @binds.fvS) `Set.difference` Set.fromList @binds.nmL
+  | Var         lhs         .   fvS         =   Set.singleton @nm
+  | App         loc         .   fvS         =   @func.fvS `Set.union` @arg.fvS
+
+SEM CBind
+  | Bind        lhs         .   fvSMp       =   Map.singleton @nm @bindAspects.fvS
+
+SEM CAlt
+  | Alt         loc         .   fvS         =   @expr.fvS `Set.difference` Set.fromList @pat.nmL
+
+ATTR AllBind AllPat [ | | nmL USE {++} {[]}: {[HsName]} ]
+
+SEM CBind
+  | Bind        lhs         .   nmL         =   [@nm]
+
+SEM CPatFld
+  | Fld         lhs         .   nmL         =   {- [@nm] ++ -} [@fldNm] -- @pat.nmL
+
+SEM CPatRest
+  | Var         lhs         .   nmL         =   [@nm]
+
+SEM CPat
+  | Var         lhs         .   nmL         =   [@pnm]
+  | Con         lhs         .   nmL         =   @rest.nmL ++ @binds.nmL
+

@@ -1,0 +1,79 @@
+DATA AGItf
+  | AGItf       module          : JavaScriptModule
+
+DATA JavaScriptModule
+  | Mod			decls			: StatL
+  				main			: StatL
+
+DATA Stat
+  | VarDecl     nm              : {HsName}
+                mbExpr          : MbExpr
+  | FunDecl     expr          	: Expr
+  | Assign		to				: Expr
+  				expr			: Expr
+  | Expr		expr			: Expr
+  | Block		stats			: StatL
+  | Throw		expr			: Expr
+  | Ret			expr			: Expr
+  | Switch		expr			: Expr
+  				alts			: AltL
+  | Break
+
+TYPE StatL		= [Stat]
+
+SET AllStat		= StatL Stat
+
+DATA Expr
+  | Var         nm              : {HsName}
+  | Int         int             : {Integer}
+  | Str         str             : {String}
+  | Char        char            : {Char}
+  | Op			nm              : {HsName}
+  				l				: Expr
+  				r				: Expr
+  | If			c               : Expr
+  				t				: Expr
+  				e				: Expr
+  | Sel			expr			: Expr
+  				sel				: Expr
+  | Call		fun				: Expr
+  				args			: ExprL
+  | New			expr			: Expr					-- must be a Call
+  | Fun			mbNm			: {Maybe HsName}
+  				args			: {[HsName]}
+  				body			: Stat
+  | Arr			elts			: ExprL
+  | ArrInx		arr				: Expr
+  				inx				: Expr
+  | Obj			elts			: NmExprL
+  | ObjFld		obj				: Expr
+  				fld				: {HsName}
+  | This
+  | True
+  | False
+  | Undefined
+  | Inline		str				: {String}				-- for debugging
+
+
+TYPE NmExpr		= (HsName,Expr)
+TYPE NmExprL	= [NmExpr]
+
+TYPE ExprL		= [Expr]
+TYPE MbExpr		= MAYBE Expr
+
+SET AllExpr		= ExprL Expr MbExpr NmExpr NmExprL
+
+DATA Alt
+  | Alt			tag				: {Int}
+  				stats			: StatL
+
+TYPE AltL		= [Alt]
+
+SET AllAlt		= Alt AltL
+
+SET AllNT
+  = AllStat
+    AllExpr
+    AllAlt
+    JavaScriptModule
+

@@ -1,0 +1,122 @@
+MODULE {EH101.Core.Trf.CAFGlobalAsArg} {cmodTrfCAFGlobalAsArg}
+{
+import EH.Util.Utils
+import Data.Maybe
+import qualified Data.Set as Set
+import Data.List
+import qualified Data.Map as Map
+import EH101.Base.Common
+import EH101.Core
+import EH101.Ty
+import EH101.Base.Builtin
+import EH101.Core.Utils
+import EH101.AbstractCore
+import qualified EH.Util.FastSeq as Seq
+import EH101.Base.Debug
+import EH.Util.Pretty
+import Debug.Trace
+
+}
+{
+}
+{
+}
+{
+}
+{
+}
+{
+}
+{
+}
+INCLUDE "Core/AbsSyn.ag"
+INCLUDE "Core/CommonLev.ag"
+INCLUDE "Core/CommonCtxtPred.ag"
+INCLUDE "Core/CommonBindNm.ag"
+INCLUDE "Core/Trf/CommonFv.ag"
+INCLUDE "Core/Trf/CommonLev.ag"
+INCLUDE "Core/Trf/CommonGlobalAsArg.ag"
+INCLUDE "Core/Trf/CommonFloat.ag"
+WRAPPER CodeAGItf
+
+PRAGMA nocycle
+
+{
+cmodTrfCAFGlobalAsArg :: CModule -> CModule
+cmodTrfCAFGlobalAsArg cmod
+  =  let  t = wrap_CodeAGItf  (sem_CodeAGItf (CodeAGItf_AGItf cmod))
+                              (Inh_CodeAGItf)
+     in   cTrf_Syn_CodeAGItf t
+
+}
+ATTR AllCodeNT [ | | cTrf: SELF ]
+ATTR CodeAGItf [ | | cTrf: CModule ]
+
+ATTR AllCodeNT [ | gUniq: Int | ]
+
+SEM CodeAGItf
+  | AGItf       module      .   gUniq       =   0
+
+SEM CBound
+  | Bind        loc         .   lUniq1      =   @lhs.gUniq
+                            .   lUniq2      =   @lUniq1 + 1
+                expr        .   gUniq       =   @lUniq2 + Map.size @argMpNew
+
+
+ATTR AllCodeNT [ fvSCafMp: FvSMp | | ]
+
+SEM CodeAGItf
+  | AGItf       module      .   fvSCafMp    =   Map.empty
+
+SEM CExpr
+  | Let         loc         .   fvSCafMp    =   (let  start varS = fvsClosure @binds.bindVarS Set.empty varS @lhs.fvSCafMp @binds.fvSMp
+                                                 in   case @categ of
+                                                        CBindCateg_Rec
+                                                          ->  fvsTransClosure lm m
+                                                          where (m,lm)  = start (@lhs.varS `Set.union` @binds.bindVarS)
+                                                        _ ->  m
+                                                          where (m,_)   = start @lhs.varS
+                                                )
+                                                `Map.union` @lhs.fvSCafMp
+
+ATTR AllCodeNT [ argMp: CVarReplNmMp | | ]
+
+SEM CodeAGItf
+  | AGItf       module      .   argMp       =   Map.empty
+
+SEM CBound
+  | Bind        expr        .   argMp       =   @argMpNew `Map.union` @lhs.argMp
+
+SEM CBound
+  | Bind        loc         .   (argOldL,argNewL,argMpNew)
+                                            =   if @loc.isClosurableBind
+                                                then  let  mbvs      = Map.lookup @lhs.nm @lhs.fvSCafMp
+                                                           vs        = panicJust ("CAFGlobalAsArg.CBind.Bind.argLevL: " ++ show @lhs.nm ++ " not found in " ++ show @lhs.fvSCafMp) mbvs  -- maybe Set.empty id mbvs
+                                                           argLevL   = fvLAsArg @lhs.introCVarIntroMp vs
+                                                      in   fvLArgRepl @lUniq2 argLevL
+                                                else  ([], [], Map.empty)
+
+ATTR AllBind   [ | | varBindSq USE {`Seq.union`} {Seq.empty}: {Seq.Seq CBind}
+                     lamBindSq USE {`Seq.union`} {Seq.empty}: {Seq.Seq CBind}
+               ]
+
+SEM CBound
+  | Bind        loc         .   nmLam       =   mkFvNm @lUniq1 @lhs.nm
+                            .   cTrfVar     =   acoreBind1MetasTy @lhs.nm @bindMeta.cTrf (acoreTyErr "CAFGlobalAsArg.CBound.Bind.cTrfVar")
+                                                $ acoreApp (acoreVar @nmLam)
+                                                $ map (\(n,cvi) -> (fvVarRepl @lhs.argMp n)) @argOldL
+                            .   cTrfLam     =   acoreBind1CatTy CBindCateg_Plain @nmLam (acoreTyErr "CAFGlobalAsArg.CBound.Bind.cTrfLam")
+                                                $ acoreLam [(n) | (n,cvi) <- @argNewL] @expr.cTrf
+                lhs         .   (varBindSq,lamBindSq)
+                                            =   if null @argNewL
+                                                then (Seq.singleton (acoreBind1Asp1 @lhs.nm @cTrf   ) , Seq.empty             )
+                                                else (Seq.singleton                         @cTrfVar  , Seq.singleton @cTrfLam)
+  -- | FFI
+  | FFE
+                lhs         .   varBindSq   =   Seq.singleton (acoreBind1Asp1 @lhs.nm @cTrf)
+
+SEM CExpr
+  | Var         lhs         .   cTrf        =   fvVarRepl @lhs.argMp @nm
+  | Let         lhs         .   cTrf        =   acoreLet CBindCateg_Plain (Seq.toList @binds.lamBindSq)
+                                                $ acoreLet @categ (Seq.toList @binds.varBindSq)
+                                                $ @body.cTrf

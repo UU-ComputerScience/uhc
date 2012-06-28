@@ -1,0 +1,188 @@
+ATTR AllData AllTyExpr [ knPolCtx : Polarity | | ]
+
+SEM Decl
+  | Data Class TySig
+                loc         .   polCtxVar           =   mkPolVar @lUniq_17_polCtx
+                loc         .   lUniq_17_polCtx     :   UNIQUEREF gUniq
+  | Type        loc         .   (polCtxVar,polTypeVar)
+                                                    =   let [v1,v2] = mkNewUIDL 2 @lUniq_17_seed_pol
+                                                        in  (mkPolVar v1,mkPolVar v2)
+                loc         .   lUniq_17_seed_pol   :   UNIQUEREF gUniq
+
+SEM TyExprs
+  | Cons        loc         .   polCtxVar           =   mkPolVar @lUniq_17_polCtx
+                loc         .   lUniq_17_polCtx     :   UNIQUEREF gUniq
+
+SEM Decl
+  | Data        constrs     .   knPolCtx            =   @polCtxVar
+  | Type        tyExpr      .   knPolCtx            =   @polCtxVar
+
+SEM Decl
+  | TySig       tyExpr      .   knPolCtx            =   maybe @polCtxVar id @lhs.mbKnPolCtx
+  | FFI
+    FFE
+                tyExpr      .   knPolCtx            =   polCovariant
+  | Class       tyPrExpr    .   knPolCtx            =   @polCtxVar -- polCovariant
+  | Instance    tyPrExpr    .   knPolCtx            =   mkPolVar @lUniq_17_polCtx -- polCovariant
+                loc         .   lUniq_17_polCtx     :   UNIQUEREF gUniq
+  | InstanceIntro
+                prExpr      .   knPolCtx            =   mkPolVar @lUniq_17_polCtx -- polCovariant
+                loc         .   lUniq_17_polCtx     :   UNIQUEREF gUniq
+  | Default     tyExprs     .   knPolCtx            =   mkPolVar @lUniq_17_polCtx -- polCovariant
+                loc         .   lUniq_17_polCtx     :   UNIQUEREF gUniq
+
+SEM Expr PatExpr
+  | TypeAs      tyExpr      .   knPolCtx            =   polCovariant
+
+SEM Expr
+  | AppImpl LamImpl
+                argPr       .   knPolCtx            =   polContravariant
+
+SEM TyExprs
+  | Cons        hd          .   knPolCtx            =   @polCtxVar
+
+ATTR AllDecl [ mbKnPolCtx : {Maybe Polarity} | | ]
+
+SEM Expr
+  | Let         decls       .   mbKnPolCtx          =   Nothing
+
+SEM Decl
+  | Class       decls       .   mbKnPolCtx          =   Just @polCtxVar
+  | * - Class   loc         .   mbKnPolCtx          =   Nothing
+
+ATTR TyExpr [ | | pol : Polarity ]
+
+SEM TyExpr
+  | App     -- known polarity shape for the function part of the type application
+                loc         .   polArgVar           =   mkPolVar @lUniq_17_polArg
+                            .   knFuncPol           =   [@polArgVar] `mkArrow` @lhs.knPolCtx
+
+                func        .   knPolCtx            =   @knFuncPol
+                arg         .   knPolCtx            =   @polArgVar
+                lhs         .   pol                 =   @lhs.knPolCtx
+                loc         .   lUniq_17_polArg     :   UNIQUEREF gUniq
+
+{
+polGamLookupOrAdd :: UID -> HsName -> PolGam -> PolGam -> (PolGamInfo,PolGam)
+polGamLookupOrAdd uniq nm polGamLkup polGam
+  =  case polGamLookup nm polGamLkup of
+       Nothing    ->  let  t    =  mkPolVar uniq
+                           pgi  =  mkPGI t
+                      in   (pgi,gamAdd nm pgi polGam)
+       Just pgi   ->  (pgi,polGam)
+
+}
+SEM TyExpr
+  | Con Var     loc         .   (pgi_,nmPolErrs)    =   polGamLookupErr @nm @lhs.polGam
+
+
+SEM TyExpr
+  | Con Var     loc         .   polFromEnv          =   pgiPol @pgi_
+                            .   foPol               =   fitsIn weakFIOpts defaultFIEnv @lUniq_17_fitsIn_pol @lhs.polVarMp @polFromEnv @lhs.knPolCtx
+                lhs         .   pol                 =   foTy @foPol
+                            .   polVarMp            =   foVarMp @foPol `varUpd` @lhs.polVarMp
+                loc         .   lUniq_17_fitsIn_pol :   UNIQUEREF gUniq
+
+SEM TyExpr
+  | Lam         loc         .   polArgVar           =   mkPolVar @lUniq_17_polArg
+                            .   polResVar           =   mkPolVar @lUniq_17_polRes
+                            .   foPol               =   fitsIn weakFIOpts defaultFIEnv @lUniq_17_fitsIn_pol @lhs.polVarMp ([@polArgVar] `mkArrow` @polResVar) @lhs.knPolCtx
+                tyExpr      .   knPolCtx            =   @polResVar
+                            .   polGam              =   gamAdd @tyVar (mkPGI @polArgVar) @lhs.polGam
+                            .   polVarMp            =   foVarMp @foPol `varUpd` @lhs.polVarMp
+                lhs         .   pol                 =   [@polArgVar] `mkArrow` @tyExpr.pol
+                loc         .   lUniq_17_polArg     :   UNIQUEREF gUniq
+                loc         .   lUniq_17_polRes     :   UNIQUEREF gUniq
+                loc         .   lUniq_17_fitsIn_pol :   UNIQUEREF gUniq
+
+SEM TyExpr
+  | Wild Mono VarWild
+                lhs         .   pol                 =   @lhs.knPolCtx
+
+SEM TyExpr
+  | Row Impls NoImpls Pred
+                lhs         .   pol                 =   @lhs.knPolCtx
+
+SEM PrExpr
+  | Arrow       arg         .   knPolCtx            =   mkPolNegate @lhs.knPolCtx
+                res         .   knPolCtx            =   @lhs.knPolCtx
+
+ATTR AllDecl AllData AllTyExpr AllExpr AllPatExpr AllCase [ | polVarMp : VarMp | ]
+
+SEM AGItf
+  | AGItf       expr        .   polVarMp            =   emptyVarMp
+
+ATTR AllDecl [ | patPolGam : PolGam | ]
+
+-- signature
+SEM Decl
+  | Data        loc         .   polSig              =   @tyVars.polVarL `mkArrow` @polCtxVar
+  | Type        loc         .   polSig              =   @polTypeVar
+  | Class       loc         .   polSig              =   @tyPrExpr.polVarL `mkArrow` @polCtxVar
+
+-- in environment
+SEM Decl
+  | Data Type   lhs         .   patPolGam           =   gamAdd @tyNm (mkPGI @polSig) @lhs.patPolGam
+  | Class       lhs         .   patPolGam           =   gamAdd (hsnClass2Polarity @clsNm) (mkPGI @polSig) @lhs.patPolGam
+  | Instance    lhs         .   patPolGam           =   @lhs.patPolGam
+
+-- inferencing
+SEM Decl
+  | Type        loc         .   foPol               =   fitsIn weakFIOpts defaultFIEnv @lUniq_17_fitsIn_pol @tyExpr.polVarMp @tyExpr.pol @polSig
+                lhs         .   polVarMp            =   foVarMp @foPol `varUpd` @tyExpr.polVarMp
+                loc         .   lUniq_17_fitsIn_pol :   UNIQUEREF gUniq
+
+ATTR AllTyVar TyExprs [ | | polVarL USE {++} {[]} : {[Polarity]} ]
+ATTR TyExpr PrExpr [ | | polVarL: {[Polarity]} ]
+
+SEM TyVar
+  | Var         loc         .   polVar              =   mkPolVar @lUniq_17_pol
+                lhs         .   polVarL             =   [@polVar]
+                loc         .   lUniq_17_pol        :   UNIQUEREF gUniq
+
+SEM PrExpr
+  | Lacks       lhs         .   polVarL             =   []
+
+SEM TyExpr
+  | Var         lhs         .   polVarL             =   [@lhs.knPolCtx]
+  | * - Var Pred
+                lhs         .   polVarL             =   []
+
+ATTR AllTyVar TyExprs TyExpr PrExpr [ | | gathTyVarPolGam USE {`gamUnion`} {emptyGam}: PolGam ]
+
+SEM TyVar
+  | Var         lhs         .   gathTyVarPolGam     =   gamSingleton @nm (mkPGI @polVar)
+
+SEM TyExpr
+  | Var         lhs         .   gathTyVarPolGam     =   gamSingleton @nm (mkPGI @lhs.knPolCtx)
+
+ATTR AllDecl AllData AllExpr AllPatExpr AllCase [ polGam : PolGam | | ]
+ATTR AllTyExpr [ polGam : PolGam | | ]
+
+SEM Decl
+  | Data        constrs     .   polGam              =   gamPushGam @tyVars.gathTyVarPolGam @lhs.polGam
+  | Class       decls       .   polGam              =   gamPushGam @tyPrExpr.gathTyVarPolGam @lhs.polGam
+  | Instance    decls       .   polGam              =   gamPushNew @lhs.polGam
+
+SEM Expr
+  | Let         decls       .   patPolGam           =   gamPushNew @lhs.polGam
+                            .   polGam              =   @decls.patPolGam
+                loc         .   (polGam_l,_)        =   gamPop @decls.patPolGam
+                (loc.lSubsPolGam1, loc.polVarMpCyc) =   @decls.polVarMp `varUpdCyc` @polGam_l
+                (loc.polOkCyc, loc.polErrCyc)       =   partition
+                                                            (\(v,p) -> let v' = mkPolVar v
+                                                                           p' = varmpDel [v] @decls.polVarMp `varUpd` p
+                                                                       in  mkPolNegate v' == p'
+                                                            )
+                                                            (varmpToAssocTyL @polVarMpCyc)
+                loc         .   polInvVarMp         =   assocTyLToVarMp [(v, polInvariant) | (v,_) <- @polOkCyc ]
+                            .   lSubsPolGam2        =   @polInvVarMp `varUpd` @lSubsPolGam1
+                            .   cycVarMp            =   assocTyLToVarMp @polErrCyc
+                            .   cycErrSq            =   Seq.fromList $ rngLift @range varmpOccurErr @decls.polVarMp @cycVarMp
+
+                            .   finGathPolGam       =   quantifyPolGam
+                                                        $ mapPolGam (tyCanonic (emptyTyBetaRedEnv' @fe))
+                                                        $ @lSubsPolGam2
+                            .   finGathPolGam_extra =   @extraPolGam `gamUnion` @finGathPolGam
+                body        .   polGam              =   gamAddGam @finGathPolGam_extra @lhs.polGam
+

@@ -1,0 +1,17 @@
+Name:				EH-Util
+Version:			1.1
+License:			BSD3
+Copyright:			Utrecht University, Department of Information and Computing Sciences, Software Technology group
+Build-Type:			 Simple
+license-file:		 /Users/alessandro/Documents/Uni/uhc/EHC/LICENSE 
+Author:				UHC Team
+Homepage:			http://www.cs.uu.nl/wiki/UHC
+Category:			Testing
+Build-Depends:		base,mtl,fgl,directory,old-time,containers,array,process,mtl,binary,bytestring,uulib
+Build-Tools:		
+Extensions:			RankNTypes,MultiParamTypeClasses,FunctionalDependencies
+Synopsis:			General purpose utilities for EH
+Exposed-Modules:	EH.Util.AGraph,EH.Util.Binary,EH.Util.CompileRun,EH.Util.Debug,EH.Util.DependencyGraph,EH.Util.FPath,EH.Util.FastSeq,EH.Util.Nm,EH.Util.ParseErrPrettyPrint,EH.Util.ParseUtils,EH.Util.Pretty,EH.Util.PrettySimple,EH.Util.PrettyUtils,EH.Util.Rel,EH.Util.ScanUtils,EH.Util.Utils
+Exposed:			False
+C-Sources:			
+Ghc-Options:		-rtsopts  -fglasgow-exts

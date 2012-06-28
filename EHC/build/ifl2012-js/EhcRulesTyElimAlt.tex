@@ -1,0 +1,337 @@
+%% ODER: format ==         = "\mathrel{==}"
+%% ODER: format /=         = "\neq "
+%
+%
+\makeatletter
+\@ifundefined{lhs2tex.lhs2tex.sty.read}%
+  {\@namedef{lhs2tex.lhs2tex.sty.read}{}%
+   \newcommand\SkipToFmtEnd{}%
+   \newcommand\EndFmtInput{}%
+   \long\def\SkipToFmtEnd#1\EndFmtInput{}%
+  }\SkipToFmtEnd
+
+\newcommand\ReadOnlyOnce[1]{\@ifundefined{#1}{\@namedef{#1}{}}\SkipToFmtEnd}
+\usepackage{amstext}
+\usepackage{amssymb}
+\usepackage{stmaryrd}
+\DeclareFontFamily{OT1}{cmtex}{}
+\DeclareFontShape{OT1}{cmtex}{m}{n}
+  {<5><6><7><8>cmtex8
+   <9>cmtex9
+   <10><10.95><12><14.4><17.28><20.74><24.88>cmtex10}{}
+\DeclareFontShape{OT1}{cmtex}{m}{it}
+  {<-> ssub * cmtt/m/it}{}
+\newcommand{\texfamily}{\fontfamily{cmtex}\selectfont}
+\DeclareFontShape{OT1}{cmtt}{bx}{n}
+  {<5><6><7><8>cmtt8
+   <9>cmbtt9
+   <10><10.95><12><14.4><17.28><20.74><24.88>cmbtt10}{}
+\DeclareFontShape{OT1}{cmtex}{bx}{n}
+  {<-> ssub * cmtt/bx/n}{}
+\newcommand{\tex}[1]{\text{\texfamily#1}}	% NEU
+
+\newcommand{\Sp}{\hskip.33334em\relax}
+
+
+\newcommand{\Conid}[1]{\mathit{#1}}
+\newcommand{\Varid}[1]{\mathit{#1}}
+\newcommand{\anonymous}{\kern0.06em \vbox{\hrule\@width.5em}}
+\newcommand{\plus}{\mathbin{+\!\!\!+}}
+\newcommand{\bind}{\mathbin{>\!\!\!>\mkern-6.7mu=}}
+\newcommand{\rbind}{\mathbin{=\mkern-6.7mu<\!\!\!<}}% suggested by Neil Mitchell
+\newcommand{\sequ}{\mathbin{>\!\!\!>}}
+\renewcommand{\leq}{\leqslant}
+\renewcommand{\geq}{\geqslant}
+\usepackage{polytable}
+
+%mathindent has to be defined
+\@ifundefined{mathindent}%
+  {\newdimen\mathindent\mathindent\leftmargini}%
+  {}%
+
+\def\resethooks{%
+  \global\let\SaveRestoreHook\empty
+  \global\let\ColumnHook\empty}
+\newcommand*{\savecolumns}[1][default]%
+  {\g@addto@macro\SaveRestoreHook{\savecolumns[#1]}}
+\newcommand*{\restorecolumns}[1][default]%
+  {\g@addto@macro\SaveRestoreHook{\restorecolumns[#1]}}
+\newcommand*{\aligncolumn}[2]%
+  {\g@addto@macro\ColumnHook{\column{#1}{#2}}}
+
+\resethooks
+
+\newcommand{\onelinecommentchars}{\quad-{}- }
+\newcommand{\commentbeginchars}{\enskip\{-}
+\newcommand{\commentendchars}{-\}\enskip}
+
+\newcommand{\visiblecomments}{%
+  \let\onelinecomment=\onelinecommentchars
+  \let\commentbegin=\commentbeginchars
+  \let\commentend=\commentendchars}
+
+\newcommand{\invisiblecomments}{%
+  \let\onelinecomment=\empty
+  \let\commentbegin=\empty
+  \let\commentend=\empty}
+
+\visiblecomments
+
+\newlength{\blanklineskip}
+\setlength{\blanklineskip}{0.66084ex}
+
+\newcommand{\hsindent}[1]{\quad}% default is fixed indentation
+\let\hspre\empty
+\let\hspost\empty
+\newcommand{\NB}{\textbf{NB}}
+\newcommand{\Todo}[1]{$\langle$\textbf{To do:}~#1$\rangle$}
+
+\EndFmtInput
+\makeatother
+%
+%% configuration
+
+
+
+
+%% end of configuration
+
+%% CONFIG: Omitted material excluded
+
+
+%% CONFIG: As article
+
+
+% format * = "\times "
+% subst inline a  	= "\ensuremath{{}\allowforspacecorrection " a "}"
+% subst varid a  	= a "{}\allowforspacecorrection "
+
+
+
+
+
+
+
+
+
+%% handling of `
+
+
+
+
+
+
+% various keywords
+
+
+
+
+
+
+
+
+
+
+
+
+
+% format CnstrVarpi	= Cnstr "^{" varpi "}"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+% format <=> 			= "\mathrel{\cong}"
+% format <+-> 			= "\setbox0=\hbox{\ensuremath{\mathrel{\vartriangle}}}\copy0\kern-.4\wd0\mathrel{\triangledown}"
+% format +	 			= ","
+% format ++	 			= ","
+
+
+
+% format fiopt			= "{\xi}"
+
+
+
+
+
+% format ANY				= "\makebox[0cm][l]{\(\top\)}\bot{}"
+
+
+
+
+% format ftv				= "\ftv "
+
+
+
+
+
+
+
+
+
+
+%% acronyms
+
+
+
+\rulerCmdDef{rules4.I2.tyAltTyElim.scheme}{%
+\ensuremath{\ensuremath{o;\mathbb{C}} ^{ \ensuremath{\Varid{k}} } \ensuremath{;} \overline{ \ensuremath{\Varid{v}} _{ \ensuremath{\Varid{g}} }} \ensuremath{} \stackrel{ \ensuremath{\varphi \;\Varid{elim}} }{ \ensuremath{\vdash } } \ensuremath{\mathbb{\bbsigma}\mathbin{:}\sigma \leadsto \mathbb{C}} }
+}
+\rulerCmdDef{rules4.I2.tyAltTyElim.ty.ae.alts}{%
+\rulerRule{ty.ae.alts}{I2}
+{%
+\ensuremath{\mathbb{N}\equiv \mathbf{if}\;\textit{fi}_{\mathrel{\vartriangle}}^{+}\in o\;\mathbf{then}\;\mathbb{N}_{r}\;\mathbf{else}\;\mathbb{N}_{o}} 
+\\
+\ensuremath{\Varid{v}\;[\mskip1.5mu\allowforspacecorrection } \overline{ \ensuremath{\varphi } } \ensuremath{\mskip1.5mu]\equiv \mathbb{\bbsigma}} 
+\\
+\ensuremath{\Varid{v}\notin } \overline{ \ensuremath{\Varid{v}} _{ \ensuremath{\Varid{g}} }} \ensuremath{} 
+\\
+\ensuremath{} \overline{ \ensuremath{\sigma } _{ \ensuremath{\mathbb{H}_{h}} }} \ensuremath{\equiv [\mskip1.5mu\allowforspacecorrection \sigma \mid (\allowforspacecorrection \sigma \mathbin{::}\mathbb{H}_{h}\mathbin{/}\mathbb{N})\leftarrow } \overline{ \ensuremath{\varphi } } \ensuremath{\mskip1.5mu]} 
+\\
+\ensuremath{} \overline{ \ensuremath{\sigma } _{ \ensuremath{\mathcal{Q}} }} \ensuremath{\equiv [\mskip1.5mu\allowforspacecorrection \sigma } _{ \ensuremath{\mathcal{Q}} } \ensuremath{\mid (\allowforspacecorrection \sigma } _{ \ensuremath{\mathcal{Q}} } \ensuremath{\mathbin{::}\mathbb{H}_{s}\mathbin{/}\mathbb{N})\leftarrow } \overline{ \ensuremath{\varphi } } \ensuremath{\mskip1.5mu]} 
+\\
+\ensuremath{o\vdash } ^{ \ensuremath{\cong } } \ensuremath{(\allowforspacecorrection } \overline{ \ensuremath{\sigma } _{ \ensuremath{\mathbb{H}_{h}} }} \ensuremath{,} \overline{ \ensuremath{\sigma } _{ \ensuremath{\mathcal{Q}} }} \ensuremath{)\cong {\Box}\mathbin{:}\mathbb{\bbsigma}} _{ \ensuremath{\mathbb{H}_{h}} } \ensuremath{\leadsto \mathbb{C}} _{ \ensuremath{\Varid{h}} } \ensuremath{} 
+\\
+\ensuremath{\mid } \overline{ \ensuremath{\sigma } _{ \ensuremath{\mathbb{H}_{h}} }} \ensuremath{,} \overline{ \ensuremath{\sigma } _{ \ensuremath{\mathcal{Q}} }} \ensuremath{\mid \mathbin{>}\mathrm{0}} 
+\\
+\ensuremath{} \overline{ \ensuremath{\sigma } _{ \ensuremath{\mathbb{H}_{s}} }} \ensuremath{\equiv [\mskip1.5mu\allowforspacecorrection \sigma } _{ \ensuremath{\neg\mathcal{Q}} } \ensuremath{\mid (\allowforspacecorrection \sigma } _{ \ensuremath{\neg\mathcal{Q}} } \ensuremath{\mathbin{::}\mathbb{H}_{s}\mathbin{/}\mathbb{N})\leftarrow } \overline{ \ensuremath{\varphi } } \ensuremath{\mskip1.5mu]} 
+\\
+\ensuremath{o\vdash } ^{ \ensuremath{\cong } } \ensuremath{\mathbb{C}} _{ \ensuremath{\Varid{h}} } \ensuremath{} \overline{ \ensuremath{\sigma } _{ \ensuremath{\mathbb{H}_{s}} }} \ensuremath{\cong \mathbb{\bbsigma}} _{ \ensuremath{\mathbb{H}_{h}} } \ensuremath{\mathbin{:}\mathbb{\bbsigma}} _{ \ensuremath{\mathbb{H}_{s}} } \ensuremath{\leadsto \anonymous } 
+\\
+\ensuremath{o;\mathbb{C}} ^{ \ensuremath{\Varid{k}} } \ensuremath{;} \overline{ \ensuremath{\Varid{v}} _{ \ensuremath{\Varid{g}} }} \ensuremath{} \stackrel{ \ensuremath{\varphi \;\Varid{elim}} }{ \ensuremath{\vdash } } \ensuremath{\mathbb{\bbsigma}} _{ \ensuremath{\mathbb{H}_{s}} } \ensuremath{\mathbin{:}\sigma \leadsto \mathcal{C}} _{ \ensuremath{\Varid{e}} } \ensuremath{} 
+\\
+\ensuremath{\mathcal{C}\equiv [\mskip1.5mu\allowforspacecorrection \Varid{v}\mapsto \sigma \mskip1.5mu]} 
+}
+{%
+\ensuremath{o;\mathbb{C}} ^{ \ensuremath{\Varid{k}} } \ensuremath{;} \overline{ \ensuremath{\Varid{v}} _{ \ensuremath{\Varid{g}} }} \ensuremath{} \stackrel{ \ensuremath{\varphi \;\Varid{elim}} }{ \ensuremath{\vdash } } \ensuremath{\mathbb{\bbsigma}\mathbin{:}\sigma \leadsto \mathcal{C}\;\mathcal{C}} _{ \ensuremath{\Varid{e}} } \ensuremath{} 
+}
+}
+
+\rulerCmdDef{rules4.I2.tyAltTyElim.ty.ae.var}{%
+\rulerRule{ty.ae.var}{I2}
+{%
+\ensuremath{\Varid{v}\;[\mskip1.5mu\allowforspacecorrection \anonymous \mskip1.5mu]\equiv \mathbb{\bbsigma}} 
+\\
+\ensuremath{\Varid{v}\notin } \overline{ \ensuremath{\Varid{v}} _{ \ensuremath{\Varid{g}} }} \ensuremath{} 
+}
+{%
+\ensuremath{o;\mathbb{C}} ^{ \ensuremath{\Varid{k}} } \ensuremath{;} \overline{ \ensuremath{\Varid{v}} _{ \ensuremath{\Varid{g}} }} \ensuremath{} \stackrel{ \ensuremath{\varphi \;\Varid{elim}} }{ \ensuremath{\vdash } } \ensuremath{\mathbb{\bbsigma}\mathbin{:}\Varid{v}\leadsto [\mskip1.5mu\allowforspacecorrection \mskip1.5mu]} 
+}
+}
+
+\rulerCmdDef{rules4.I2.tyAltTyElim.ty.ae.ty}{%
+\rulerRule{ty.ae.ty}{I2}
+{%
+}
+{%
+\ensuremath{o;\mathbb{C}} ^{ \ensuremath{\Varid{k}} } \ensuremath{;} \overline{ \ensuremath{\Varid{v}} _{ \ensuremath{\Varid{g}} }} \ensuremath{} \stackrel{ \ensuremath{\varphi \;\Varid{elim}} }{ \ensuremath{\vdash } } \ensuremath{\sigma \mathbin{:}\sigma \leadsto [\mskip1.5mu\allowforspacecorrection \mskip1.5mu]} 
+}
+}
+
+\rulerCmdDef{rules4.I2.tyAltTyElim.ty.ae.arrow}{%
+\rulerRule{ty.ae.arrow}{I2}
+{%
+\ensuremath{o} _{ \ensuremath{\Varid{a}} } \ensuremath{\equiv \mathbf{if}\;o\mathrel{=}\textit{fi}_{\mathrel{\vartriangle}}^{+}\;\mathbf{then}\;\textit{fi}_{\mathrel{\triangledown}}^{+}\;\mathbf{else}\;\textit{fi}_{\mathrel{\vartriangle}}^{+}} 
+\\
+\ensuremath{o;\mathbb{C}} ^{ \ensuremath{\Varid{k}} } \ensuremath{;} \overline{ \ensuremath{\Varid{v}} _{ \ensuremath{\Varid{g}} }} \ensuremath{} \stackrel{ \ensuremath{\varphi \;\Varid{elim}} }{ \ensuremath{\vdash } } \ensuremath{\mathbb{\bbsigma}} _{ \ensuremath{\Varid{r}} } \ensuremath{\mathbin{:}\sigma } _{ \ensuremath{\Varid{r}} } \ensuremath{\leadsto \mathcal{C}} _{ \ensuremath{\Varid{r}} } \ensuremath{} 
+\\
+\ensuremath{o} _{ \ensuremath{\Varid{a}} } \ensuremath{;\mathbb{C}} ^{ \ensuremath{\Varid{k}} } \ensuremath{;} \overline{ \ensuremath{\Varid{v}} _{ \ensuremath{\Varid{g}} }} \ensuremath{} \stackrel{ \ensuremath{\varphi \;\Varid{elim}} }{ \ensuremath{\vdash } } \ensuremath{\mathbb{\bbsigma}} _{ \ensuremath{\Varid{a}} } \ensuremath{\mathbin{:}\sigma } _{ \ensuremath{\Varid{a}} } \ensuremath{\leadsto \mathcal{C}} _{ \ensuremath{\Varid{a}} } \ensuremath{} 
+}
+{%
+\ensuremath{o;\mathbb{C}} ^{ \ensuremath{\Varid{k}} } \ensuremath{;} \overline{ \ensuremath{\Varid{v}} _{ \ensuremath{\Varid{g}} }} \ensuremath{} \stackrel{ \ensuremath{\varphi \;\Varid{elim}} }{ \ensuremath{\vdash } } \ensuremath{\mathbb{\bbsigma}} _{ \ensuremath{\Varid{a}} } \ensuremath{\to \mathbb{\bbsigma}} _{ \ensuremath{\Varid{r}} } \ensuremath{\mathbin{:}\sigma } _{ \ensuremath{\Varid{a}} } \ensuremath{\to \sigma } _{ \ensuremath{\Varid{r}} } \ensuremath{\leadsto \mathcal{C}} _{ \ensuremath{\Varid{a}} } \ensuremath{\mathcal{C}} _{ \ensuremath{\Varid{r}} } \ensuremath{} 
+}
+}
+
+\rulerCmdDef{rules4.I2.tyAltTyElim}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{rules4.I2.tyAltTyElim.scheme}}{Type alternative elimination}{rules4.I2.tyAltTyElim}{I2}
+\rulerCmdUse{rules4.I2.tyAltTyElim.ty.ae.alts}
+\hspace{1ex}
+\rulerCmdUse{rules4.I2.tyAltTyElim.ty.ae.var}
+\hspace{1ex}
+\rulerCmdUse{rules4.I2.tyAltTyElim.ty.ae.ty}
+\hspace{1ex}
+\rulerCmdUse{rules4.I2.tyAltTyElim.ty.ae.arrow}
+\end{rulerRulesetFigure}
+}
+
+\rulerCmdDef{rules4.I2.tyBtTyElim.scheme}{%
+\ensuremath{\ensuremath{\Varid{bv}} \stackrel{ \ensuremath{{\eqcirc}\Varid{elim}} }{ \ensuremath{\vdash } } \ensuremath{\sigma } _{ \ensuremath{{\eqcirc}} } \ensuremath{\mathbin{:}\sigma \leadsto \sigma } _{ \ensuremath{\Varid{e}} } \ensuremath{;\mathcal{C}} }
+}
+\rulerCmdDef{rules4.I2.tyBtTyElim.ty.eb.any}{%
+\rulerRule{ty.eb.any}{I2}
+{%
+\ensuremath{\Varid{v}\in \Varid{bv}} 
+}
+{%
+\ensuremath{\Varid{bv}} \stackrel{ \ensuremath{{\eqcirc}\Varid{elim}} }{ \ensuremath{\vdash } } \ensuremath{\Varid{v}{\eqcirc}{\Box}\mathbin{:}\Varid{v}\leadsto \Varid{v};[\mskip1.5mu\allowforspacecorrection \mskip1.5mu]} 
+}
+}
+
+\rulerCmdDef{rules4.I2.tyBtTyElim.ty.eb.var}{%
+\rulerRule{ty.eb.var}{I2}
+{%
+\ensuremath{\Varid{bv}} \stackrel{ \ensuremath{{\eqcirc}\Varid{elim}} }{ \ensuremath{\vdash } } \ensuremath{\sigma } _{ \ensuremath{\Varid{b}} } \ensuremath{\mathbin{:}\sigma \leadsto \Varid{v}} _{ \ensuremath{\Varid{e}} } \ensuremath{;\mathcal{C}} 
+\\
+\ensuremath{\Varid{v}\in \Varid{bv}} 
+}
+{%
+\ensuremath{\Varid{bv}} \stackrel{ \ensuremath{{\eqcirc}\Varid{elim}} }{ \ensuremath{\vdash } } \ensuremath{\Varid{v}{\eqcirc}\sigma } _{ \ensuremath{\Varid{b}} } \ensuremath{\mathbin{:}\Varid{v}\leadsto \Varid{v};[\mskip1.5mu\allowforspacecorrection \Varid{v}} _{ \ensuremath{\Varid{e}} } \ensuremath{\mapsto \Varid{v}\mskip1.5mu]\;\mathcal{C}} 
+}
+}
+
+\rulerCmdDef{rules4.I2.tyBtTyElim.ty.eb.ty}{%
+\rulerRule{ty.eb.ty}{I2}
+{%
+\ensuremath{\Varid{bv}} \stackrel{ \ensuremath{{\eqcirc}\Varid{elim}} }{ \ensuremath{\vdash } } \ensuremath{\sigma } _{ \ensuremath{\Varid{b}} } \ensuremath{\mathbin{:}\sigma \leadsto \sigma } _{ \ensuremath{\Varid{e}} } \ensuremath{;\mathcal{C}} 
+\\
+\ensuremath{\Varid{v}\in \Varid{bv}} 
+}
+{%
+\ensuremath{\Varid{bv}} \stackrel{ \ensuremath{{\eqcirc}\Varid{elim}} }{ \ensuremath{\vdash } } \ensuremath{\Varid{v}{\eqcirc}\sigma } _{ \ensuremath{\Varid{b}} } \ensuremath{\mathbin{:}\Varid{v}\leadsto \sigma } _{ \ensuremath{\Varid{e}} } \ensuremath{;[\mskip1.5mu\allowforspacecorrection \Varid{v}\mapsto \sigma } _{ \ensuremath{\Varid{e}} } \ensuremath{\mskip1.5mu]\;\mathcal{C}} 
+}
+}
+
+\rulerCmdDef{rules4.I2.tyBtTyElim}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{rules4.I2.tyBtTyElim.scheme}}{Type `both' elimination}{rules4.I2.tyBtTyElim}{I2}
+\rulerCmdUse{rules4.I2.tyBtTyElim.ty.eb.any}
+\hspace{1ex}
+\rulerCmdUse{rules4.I2.tyBtTyElim.ty.eb.var}
+\hspace{1ex}
+\rulerCmdUse{rules4.I2.tyBtTyElim.ty.eb.ty}
+\end{rulerRulesetFigure}
+}
+
+\rulerCmdDef{rules4.I2.valElimExprAlts.scheme}{%
+\ensuremath{\ensuremath{o;\mathbb{C}} ^{ \ensuremath{\Varid{k}} } \ensuremath{;} \overline{ \ensuremath{\Varid{v}} _{ \ensuremath{\Varid{g}} }} \ensuremath{} \stackrel{ \ensuremath{\Gamma \;\varphi \;\Varid{elim}} }{ \ensuremath{\vdash } } \ensuremath{\Gamma \mathbin{:}\mathbb{C}} }
+}
+\rulerCmdDef{rules4.I2.valElimExprAlts.g.ae.cons}{%
+\rulerRule{g.ae.cons}{I2}
+{%
+\ensuremath{o;\mathbb{C}} ^{ \ensuremath{\Varid{k}} } \ensuremath{;} \overline{ \ensuremath{\Varid{v}} _{ \ensuremath{\Varid{g}} }} \ensuremath{} \stackrel{ \ensuremath{\varphi \;\Varid{elim}} }{ \ensuremath{\vdash } } \ensuremath{\mathbb{C}} ^{ \ensuremath{\Varid{k}} } \ensuremath{\mathbb{\bbsigma}\mathbin{:}\anonymous \leadsto \mathbb{C}} _{ \ensuremath{\Varid{a}} } \ensuremath{} 
+\\
+\ensuremath{o;\mathbb{C}} ^{ \ensuremath{\Varid{k}} } \ensuremath{;} \overline{ \ensuremath{\Varid{v}} _{ \ensuremath{\Varid{g}} }} \ensuremath{} \stackrel{ \ensuremath{\Gamma \;\varphi \;\Varid{elim}} }{ \ensuremath{\vdash } } \ensuremath{\mathbb{C}} _{ \ensuremath{\Varid{a}} } \ensuremath{\Gamma \mathbin{:}\mathbb{C}} _{ \ensuremath{\Varid{g}} } \ensuremath{} 
+}
+{%
+\ensuremath{o;\mathbb{C}} ^{ \ensuremath{\Varid{k}} } \ensuremath{;} \overline{ \ensuremath{\Varid{v}} _{ \ensuremath{\Varid{g}} }} \ensuremath{} \stackrel{ \ensuremath{\Gamma \;\varphi \;\Varid{elim}} }{ \ensuremath{\vdash } } \ensuremath{(\allowforspacecorrection \anonymous \mapsto \mathbb{\bbsigma},\Gamma )\mathbin{:}\mathbb{C}} _{ \ensuremath{\Varid{g}} } \ensuremath{\mathbb{C}} _{ \ensuremath{\Varid{a}} } \ensuremath{} 
+}
+}
+
+\rulerCmdDef{rules4.I2.valElimExprAlts}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{rules4.I2.valElimExprAlts.scheme}}{Type alternative elimination (for a \ensuremath{\Gamma })}{rules4.I2.valElimExprAlts}{I2}
+\rulerCmdUse{rules4.I2.valElimExprAlts.g.ae.cons}
+\end{rulerRulesetFigure}
+}
+

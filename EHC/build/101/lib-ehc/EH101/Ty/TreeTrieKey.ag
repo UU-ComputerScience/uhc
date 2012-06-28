@@ -1,0 +1,213 @@
+MODULE {EH101.Ty.TreeTrieKey} {}
+{
+import EH101.Base.Common
+import EH101.Base.HsName
+import EH101.Base.Builtin
+import EH101.Ty
+import qualified Data.Set as Set
+import Data.List as Lst
+import EH.Util.FastSeq as Seq
+import EH101.Base.TreeTrie
+import EH101.CHR.Key
+
+}
+{
+}
+{
+}
+INCLUDE "Ty/AbsSyn.ag"
+INCLUDE "Ty/CommonAG.ag"
+WRAPPER TyAGItf
+
+{
+tyTreeTrieKey :: TTKeyableOpts -> Ty -> TreeTrieKey Key
+tyTreeTrieKey opts ty
+  =  let  t =  wrap_TyAGItf
+                 (sem_TyAGItf (TyAGItf_AGItf ty))
+                 (Inh_TyAGItf {opts_Inh_TyAGItf = opts})
+     in   (key_Syn_TyAGItf t)
+
+}
+{
+instance TTKeyable Ty where
+  toTTKey' o = tyTreeTrieKey o
+
+instance TTKeyable Pred where
+  toTTKey' o pr = tyTreeTrieKey o $ mkTyPr pr
+
+instance TTKeyable PredScope where
+  toTTKey' o (PredScope_Var v) | ttkoptsVarsAsWild o = ttkSingleton TT1K_Any
+                               | otherwise           = ttkSingleton (TT1K_One $ Key_UID v)
+  toTTKey' o (PredScope_Lev l) = ttkSingleton $ TT1K_One $ Key_Str $ show l
+
+instance TTKeyable CHRPredOccCxt where
+  toTTKey' o (CHRPredOccCxt_Scope1 sc) = toTTKey' o sc -- for now
+
+instance TTKeyable PredOcc where
+  toTTKey' o po = toTTKey' o (poPr po)
+
+instance TTKeyable CHRPredOcc where
+  -- toTTKey' o po = ttkAdd (TT1K_One $ Key_Str "occ") [toTTKey' o (cpoCxt po), toTTKey' o (cpoPr po)]
+  toTTKeyParentChildren' o po = (TT1K_One $ Key_Str "occ", ttkChildren [toTTKey' o (cpoCxt po), toTTKey' o (cpoPr po)])
+
+
+}
+{
+instance TTKeyable PredOccId where
+  toTTKey' o (PredOccId     i) = ttkSingleton $ TT1K_One $ Key_UID i
+
+}
+WRAPPER LabelAGItf
+
+{
+labelTreeTrieKey :: TTKeyableOpts -> Label -> TreeTrieKey Key
+labelTreeTrieKey opts label
+  =  let  t =  wrap_LabelAGItf
+                 (sem_LabelAGItf (LabelAGItf_AGItf label))
+                 (Inh_LabelAGItf {opts_Inh_LabelAGItf = opts})
+     in   (key_Syn_LabelAGItf t)
+
+}
+{
+instance TTKeyable LabelOffset where
+  toTTKey' o (LabelOffset_Var v) | ttkoptsVarsAsWild o = ttkSingleton TT1K_Any
+                                 | otherwise           = ttkSingleton (TT1K_One $ Key_UID v)
+  toTTKey' o (LabelOffset_Off l) = ttkSingleton $ TT1K_One $ Key_Str $ show l
+
+instance TTKeyable Label where
+  toTTKey' = labelTreeTrieKey
+
+}
+ATTR
+  AllTyAGItf AllTy
+  Label
+    [ opts: TTKeyableOpts | | ]
+
+ATTR
+  Ty
+  Label
+    [ | | bkey: {TreeTrie1Key Key} ]
+
+SEM Ty
+  | Con             loc     .   bkey            =   TT1K_One (Key_HNm @nm)
+  | App             loc     .   bkey            =   @func.bkey
+  | Var             loc     .   bkey            =   if tvCatIsFixed @categ.self || not (ttkoptsVarsAsWild @lhs.opts)
+                                                    then TT1K_One (Key_UID @tv)
+                                                    else TT1K_Any
+  | Ext             loc     .   bkey            =   if @isSpineRoot && @ty.isFixed
+                                                    then let (_,exts) = tyRowExts @self
+                                                         in  TT1K_One (Key_Str $ concat $ intersperse "," $ Lst.map show $ assocLKeys exts)
+                                                    else TT1K_Any
+  | TBind           loc     .   bkey            =   TT1K_One (Key_TyQu @qu.self)
+  | * - App Con Var TBind Ext
+                    loc     .   bkey            =   TT1K_Any
+
+SEM Pred
+  | Var             loc     .   bkey            =   if ttkoptsVarsAsWild @lhs.opts
+                                                    then TT1K_Any
+                                                    else TT1K_One (Key_UID @pv)
+
+SEM Pred
+  | Lacks           loc     .   bkey            =   TT1K_One (Key_Str "\\")
+
+SEM Label
+  | Lab             loc     .   bkey            =   TT1K_One (Key_HNm @nm)
+  | Var             loc     .   bkey            =   if ttkoptsVarsAsWild @lhs.opts
+                                                    then TT1K_Any
+                                                    else TT1K_One (Key_UID @lv)
+
+SEM PredSeq
+  | Cons            loc     .   bkey            =   TT1K_One (Key_Str ":")
+  | Var             loc     .   bkey            =   if ttkoptsVarsAsWild @lhs.opts
+                                                    then TT1K_Any
+                                                    else TT1K_One (Key_UID @av)
+  | Nil             loc     .   bkey            =   TT1K_One (Key_Str "[]")
+
+SEM Pred
+  | Arrow           loc     .   bkey            =   TT1K_One (Key_Str "=>")
+  | Preds           loc     .   bkey            =   TT1K_One (Key_Str "seq")
+
+SEM Pred
+  | Eq              loc     .   bkey            =   TT1K_One (Key_HNm hsnEqTilde)
+
+ATTR
+  TyAGItf Ty Pred
+  Label LabelAGItf {- RowExts -}
+  PredSeq
+    [ | | key: {TreeTrieKey Key} ]
+
+SEM Ty
+  | App Ext         loc     .   key             =   if @isSpineRoot
+                                                    then ttkAdd @bkey @childKeyL
+                                                    else []
+  | TBind           loc     .   key             =   ttkAdd @bkey @childKeyL
+  | *  - App Ext TBind Pred Ann
+                    loc     .   key             =   ttkSingleton @bkey
+
+SEM Pred
+  | Var             loc     .   key             =   ttkSingleton @bkey
+
+SEM Pred
+  | Lacks           loc     .   key             =   ttkAdd @bkey [ttkAdd @lab.bkey @ty.childKeyL]
+
+SEM Label
+  | Lab Var         loc     .   key             =   ttkSingleton @bkey      -- not used, constructed a layer higher in Lacks predicate
+
+SEM PredSeq
+  | Cons            loc     .   key             =   if @isSpineRoot
+                                                    then ttkAdd @bkey @childKeyL
+                                                    else []
+  | Var Nil         loc     .   key             =   ttkSingleton @bkey
+
+SEM Pred
+  | Arrow           loc     .   key             =   ttkAdd @bkey [@args.key]
+  | Preds           loc     .   key             =   ttkAdd @bkey [@seq.key]
+
+SEM Pred
+  | Eq              loc     .   key             =   ttkAdd @bkey [@tyL.key,@tyR.key]
+
+ATTR
+  Ty
+  PredSeq
+    [ | | childKeyL: {[TreeTrieKey Key]} ]
+
+SEM Ty
+  | App             loc     .   childKeyL       =   let cs = @arg.key : @func.childKeyL
+                                                    in  if @isSpineRoot
+                                                        then reverse cs
+                                                        else cs
+  | Ext             loc     .   childKeyL       =   let cs = @extTy.key : @ty.childKeyL
+                                                    in  if @isSpineRoot
+                                                        then reverse cs
+                                                        else cs
+  | TBind           loc     .   childKeyL       =   [@ty.key]
+  | *  - App Ext TBind
+                    loc     .   childKeyL       =   []
+
+SEM PredSeq
+  | Cons            loc     .   childKeyL       =   @hd.key : @tl.childKeyL
+  | * - Cons        loc     .   childKeyL       =   []
+
+ATTR Ty [ | | isFixed: Bool ]
+
+SEM Ty
+  | Ext             lhs     .   isFixed         =   @ty.isFixed
+  | Var             lhs     .   isFixed         =   False
+  | * - Ext Var     lhs     .   isFixed         =   True
+
+{
+(_,u1,u2,u3,u4) = mkNewLevUID4 uidStart
+v1 = mkTyVar u1
+v2 = mkTyVar u2
+v3 = mkTyVar u3
+v4 = mkTyVar u4
+
+t1 = tyInt
+t2 = mkArrow [t1] t1
+t3 = mkArrow [t2] t2
+t4 = mkArrow [v1] v2
+t5 = mkArrow [v3] v4
+t6 = mkArrow [t4] t5
+t7 = mkArrow [v1] t5
+t8 = mkArrow [t4] v3
+}

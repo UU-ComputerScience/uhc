@@ -1,0 +1,92 @@
+MODULE {EH101.Core.Trf.LetFlattenStrict} {cmodTrfLetFlattenStrict}
+{
+import EH101.Base.Common
+import EH101.Core
+import EH101.Ty
+import EH101.AbstractCore
+import Data.Maybe
+import qualified EH.Util.FastSeq as Seq
+
+}
+{
+}
+{
+}
+{
+}
+INCLUDE "Core/AbsSyn.ag"
+WRAPPER CodeAGItf
+
+-- PRAGMA strictcase
+PRAGMA nocycle
+
+{
+cmodTrfLetFlattenStrict :: CModule -> CModule
+cmodTrfLetFlattenStrict cmod
+  =  let  t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf cmod)) Inh_CodeAGItf
+     in   cTrf_Syn_CodeAGItf t
+
+}
+ATTR CExpr AllBind [ | isStrictChain: Bool | ]
+
+SEM CExpr
+  | Let         loc         .   isStrictChain   =   @categ == CBindCateg_Strict
+                            .   isFirstInChain  =   @isStrictChain && not @lhs.isStrictChain
+                            .   isLaterInChain  =   @isStrictChain &&     @lhs.isStrictChain
+                binds       .   isStrictChain   =   @isStrictChain
+                body        .   isStrictChain   =   @isStrictChain && @binds.isStrictChain
+                lhs         .   isStrictChain   =   @isStrictChain && @body.isStrictChain
+  | * - Let Ann lhs         .   isStrictChain   =   @lhs.isStrictChain
+
+SEM CModule CAlt MbCExpr CPatFld
+  | *           loc         .   isStrictChain   =   False
+
+ATTR AllCodeNT [ | | cTrf: SELF ]
+ATTR CodeAGItf [ | | cTrf: CModule ]
+
+{
+type Lift   = (Seq.Seq CBind,CExpr)
+type MbLift = Maybe Lift
+
+}
+ATTR CExpr [ | | mbLift: MbLift ]
+
+SEM CExpr
+  | Let         lhs         .   mbLift          =   if @isLaterInChain
+                                                    then Just (@letbinds, @body.flatExpr)
+                                                    else Nothing
+  | * - Let     lhs         .   mbLift          =   Nothing
+
+ATTR CExpr [ | | flatExpr: CExpr ]
+ATTR CExpr AllBindOnly [ | | binds USE {`Seq.union`} {Seq.empty}: {Seq.Seq CBind} ]
+
+SEM CExpr
+  | Let         loc         .   letbinds        =   @binds.binds `Seq.union` @body.binds
+                lhs         .   (binds,flatExpr)=   if @isLaterInChain
+                                                    then (@letbinds,@body.flatExpr)
+                                                    else (Seq.empty,@cTrf)
+  | * - Let     lhs         .   (binds,flatExpr)=   (Seq.empty,@cTrf)
+
+ATTR AllBound [ | | hasNonPlainBinds USE {||} {False} : Bool ]
+
+SEM CBound
+  | * - Bind    lhs         .   hasNonPlainBinds=   True
+
+ATTR AllBound [ | | aspLiftL USE {++} {[]}: {[Lift]} ]
+
+SEM CBound
+  | Bind        lhs         .   aspLiftL        =   maybe [] (:[]) @expr.mbLift
+
+
+SEM CBind
+  | Bind        lhs         .   binds
+                                                =   case @bindAspects.aspLiftL of
+                                                      [(flatBinds,flatExpr)] | not @bindAspects.hasNonPlainBinds
+                                                        -> flatBinds `Seq.union` Seq.singleton (acoreBind1Cat CBindCateg_Strict @nm flatExpr)
+                                                      _ -> Seq.singleton @cTrf
+
+SEM CExpr
+  | Let         lhs         .   cTrf            =   if @isFirstInChain
+                                                    then foldr (\b e -> CExpr_Let @categ [b] e) @body.flatExpr $ Seq.toList @letbinds
+                                                    else @cTrf
+

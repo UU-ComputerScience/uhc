@@ -1,0 +1,182 @@
+DATA GrAGItf
+  | AGItf       module          : GrModule
+
+DATA GrModule
+  | Mod         moduleNm        : {HsName}
+                globalL         : GrGlobalL
+                bindL           : GrBindL
+                tagsMp          : {Map.Map HsName [GrTag]}
+
+DATA GrGlobal
+  | Global      nm              : {HsName}
+                val             : GrVal
+
+TYPE GrGlobalL    =   [GrGlobal]
+
+DATA GrBind
+  | Bind        nm              : {HsName}
+                annot           : GrBindAnn
+                argNmL          : {[HsName]}
+                expr            : GrExpr
+  | Arity       nm              : {HsName}
+                arity           : {Int}
+  | Rec         bindL           : GrBindL
+
+TYPE GrBindL    =   [GrBind]
+
+DATA GrExpr
+  | Seq         expr            : GrExpr
+                pat             : GrPatLam
+                body            : GrExpr
+  | Unit        val             : GrVal
+                type			: GrType
+  | UpdateUnit  nm              : {HsName}
+                val             : GrVal
+  | Case        val             : GrVal
+                altL            : GrAltL
+  | FetchNode   nm              : {HsName}
+  | FetchUpdate src             : {HsName}
+                dst             : {HsName}
+  | FetchField  nm              : {HsName}
+                offset          : {Int}
+                mbTag           : {Maybe GrTag}
+  | Store       val             : GrVal
+  | Call        nm              : {HsName}
+                argL            : GrValL
+  | FFI
+                callconv        : {FFIWay}
+                impEnt          : {ForeignEnt}
+                ffiAnnot        : {GrFFIAnnot}
+                argL            : GrValL
+  | Eval        nm              : {HsName}
+  | App         nm              : {HsName}
+                argL            : GrValL
+  | Throw       nm              : {HsName}
+  | Catch       body            : GrExpr
+                arg             : {HsName}
+                handler         : GrExpr
+
+DATA GrVal
+  | Empty
+  | Var         nm              : {HsName}
+  | VarNode     fldL            : GrValL
+  | BasicNode   tag             : GrTag
+                nm              : {HsName}
+  | EnumNode    nm              : {HsName}
+  | PtrNode     nm              : {HsName}
+  | LitInt      int             : {Int}
+  | LitStr      str             : {String}
+  | Tag         tag             : GrTag
+  | Node        tag             : GrTag
+                fldL            : GrValL
+  | OpaqueNode  nm              : {HsName}
+  | NodeAdapt   nm              : {HsName}
+                fldL            : GrAdaptL
+
+
+DATA GrVar
+  | Var         nm              : {HsName}
+  | KnownTag    tag             : GrTag
+  | Ignore
+
+
+TYPE GrValL     =   [GrVal]
+TYPE GrVarL     =   [GrVar]
+
+DATA GrPatLam
+  | Empty
+  | Var         nm              : {HsName}
+  | VarNode     fldL            : GrVarL
+  | BasicNode   annot           : {BasicAnnot}
+                nm              : {HsName}
+  | EnumNode    nm              : {HsName}
+  | PtrNode     nm              : {HsName}
+  | OpaqueNode  nm              : {HsName}
+  | BasicAnnot  annot           : {BasicAnnot}
+                nm              : {HsName}
+  | EnumAnnot   tycon           : {HsName}
+                nm              : {HsName}
+  | PtrAnnot    tycon           : {HsName}
+                nm              : {HsName}
+  | OpaqueAnnot nm              : {HsName}
+
+
+DATA GrTag
+  | Con         grtgAnn         : {GrTagAnn}
+                int             : {Int}
+                nm              : {HsName}
+  | Fun         nm              : {HsName}
+  | PApp        needs           : {Int}
+                nm              : {HsName}
+  | App         nm              : {HsName}
+  | Unboxed
+  | Hole
+  | Rec
+
+TYPE GrTagL     =   [GrTag]
+
+DATA GrAlt
+  | Alt         ann             : {GrAltAnn}
+                pat             : GrPatAlt
+                expr            : GrExpr
+
+
+TYPE GrAltL     =   [GrAlt]
+
+DATA GrPatAlt
+  | LitInt      int             : {Int}
+  | Tag         tag             : GrTag
+  | Node        tag             : GrTag
+                fldL            : {[HsName]}
+  | Otherwise
+  | NodeSplit   tag             : GrTag
+                nm              : {HsName}
+                fldL            : GrSplitL
+
+
+DATA GrType
+  | None
+  | Arrow		args			: GrTypeBaseL
+     			res				: GrTypeBase
+
+DATA GrTypeBase
+  | Node
+  | Pointer
+
+TYPE GrTypeBaseL     =   [GrTypeBase]
+
+DATA GrSplit
+  | Sel         nm              : {HsName}
+                off             : GrVal
+
+DATA GrAdapt
+  | Upd         off             : GrVal
+                val             : GrVal
+  | Ins         off             : GrVal
+                val             : GrVal
+  | Del         off             : GrVal
+
+TYPE GrSplitL   =   [GrSplit]
+TYPE GrAdaptL   =   [GrAdapt]
+
+
+DATA GrFFIAnnot
+  | IsResEval	isEvaluated		: {Bool}		-- is the result already evaluated? Default: yes, but e.g. array primitives may have (and return when indexed) unevaluated elements.
+  												-- Whether this is the solution for longterm remains to be seen.
+
+SET AllType     =   GrType GrTypeBase GrTypeBaseL
+SET AllGlobal   =   GrGlobal GrGlobalL
+SET AllBind     =   GrBind GrBindL
+SET AllDef      =   AllGlobal AllBind
+SET AllAlt      =   GrAlt GrAltL
+SET AllGrExpr   =   GrExpr AllAlt
+SET AllGrTag    =   GrTag GrTagL
+SET AllExpr     =   AllGrExpr AllGrPat AllGrTag AllGrVal AllType
+SET AllAdapt    =   GrAdapt GrAdaptL
+SET AllSplit    =   GrSplit GrSplitL
+SET AllGrVal    =   GrVal GrValL
+                    AllAdapt
+SET AllGrPat    =   GrPatAlt GrPatLam GrVar GrVarL
+                    AllSplit
+SET AllNTNoMod  =   AllExpr AllGlobal AllBind
+SET AllNT       =   GrModule AllNTNoMod

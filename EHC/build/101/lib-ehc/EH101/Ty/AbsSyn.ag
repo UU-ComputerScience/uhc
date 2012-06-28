@@ -1,0 +1,162 @@
+{
+{-|
+There are some conventions/restrictions on the structure of types that are not enforced
+by the abstract syntax:
+
+Encoding of prove-constraints:
+  concrete syntax:
+    {! impls !} -> ty
+  abstract syntax:
+    Ty_App (Ty_App (Ty_Con "->") (Ty_Impls impls)) ty
+
+Encoding of assume-constraints:
+  concrete syntax:
+    (ty, {! pred1 !}, ..., {! predn !})
+  abstract syntax:
+    Ty_Ext (... (Ty_Ext ty (prod m+1) (Ty_Pred pred_1) ) ...) (prod m+n) (Ty_Pred pred_n)
+
+  In other words: the predicates are at the outset of a product, pred_n "more outermost"
+  than pred_{n-1}.
+
+-}
+}
+DATA TyAGItf
+  | AGItf       ty              : Ty
+
+DATA LabelAGItf
+  | AGItf       lab            	: Label
+
+{
+{-|
+The basic alternatives encode the following:
+- Con: data type constructors, including tuple constructors
+- App: application to 1 argument, for example 'a -> b' is encoded as (App (App -> a) b)
+- Any: representing Bot/Top depending on context: (1) unknown expected type, (2) error type
+- Var: type variables, including a category: plain tyvars, fixed tyvars (aka skolems)
+
+-}
+}
+DATA Ty
+  | Con         nm              : {HsName}
+  | App         func            : Ty
+                arg             : Ty
+
+DATA Ty
+  | Ann         ann             : TyAnn
+                ty              : Ty
+
+DATA Ty
+  | Dbg         info            : {String}
+
+DATA TyAnn
+  | Empty
+  | Strictness      s               : Strictness
+  | Mono		-- enforce predicative binding when matching
+
+DATA Ty
+  | Any
+
+DATA Ty
+  | Var         tv              : {TyVarId}
+                categ           : TyVarCateg
+
+DATA TyVarCateg
+  | Plain											-- plain type variables
+  | Fixed											-- fixed, i.e. cannot be bound during type matching/fitsIn
+  | Meta											-- tvar for reasoning about the typelevel, not on/in the typelevel; for CHR rules
+
+DATA Ty
+  | TBind
+				qu              : TyQu
+  				tv              : {TyVarId}
+				l1              : {Ty}	-- 1 (or more, if MetaLev > 0) meta level higher, and its kind/sort/...
+                ty              : Ty
+
+DATA Ty
+  | Ext         ty              : Ty
+                nm              : {HsName}
+                extTy           : Ty
+
+DATA Ty
+  | Pred        pr              : Pred
+
+DATA Ty
+  | Lam         tv              : {TyVarId}
+                ty              : Ty
+
+DATA TyQu
+  | Forall		mlev			: MetaLev
+  | Exists		mlev			: MetaLev
+  | Plain		mlev			: MetaLev
+
+DATA Pred
+  | Class       ty              : Ty
+  | Pred        ty              : Ty
+
+DATA Label
+  | Lab			nm              : HsName
+
+DATA Pred
+  | Lacks       ty              : Ty
+                lab             : Label
+
+DATA Pred
+  | Arrow       args            : PredSeq
+                res             : Pred
+
+DATA PredSeq
+  | Cons        hd              : Pred
+                tl              : PredSeq
+  | Nil
+
+DATA Pred
+  | Eq          tyL : Ty
+                tyR : Ty
+
+DATA Ty
+  | Impls       impls           : Impls
+
+DATA Impls
+  | Tail        iv              : {ImplsVarId}
+                proveOccs		: {[ImplsProveOcc]}
+  | Cons        iv              : {ImplsVarId}
+                pr              : Pred
+                pv              : {PredOccId}
+                prange          : {Range}
+                proveOccs		: {[ImplsProveOcc]}
+                tl              : Impls
+  | Nil
+
+DATA Pred
+  | Var         pv              : TyVarId
+
+DATA Label
+  | Var			lv              : LabelVarId
+
+DATA PredSeq
+  | Var         av              : TyVarId
+
+DATA Pred
+  | Preds       seq             : PredSeq
+
+
+
+SET AllTyTy
+  = Ty
+
+SET AllTy
+  = AllTyTy
+    Pred Impls
+    PredSeq
+
+SET AllTyAndFlds
+  = AllTy
+    TyAnn
+    TyVarCateg
+    TyQu
+    Label
+
+SET AllTyAGItf
+  = TyAGItf
+    LabelAGItf
+

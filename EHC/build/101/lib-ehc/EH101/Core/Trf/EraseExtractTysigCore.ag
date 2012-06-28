@@ -1,0 +1,74 @@
+MODULE {EH101.Core.Trf.EraseExtractTysigCore} {cmodTrfEraseExtractTysigCore}
+{
+import EH101.Base.Builtin
+import EH101.Base.Common
+import EH101.Opts
+import EH101.Core
+import EH101.Ty
+import EH101.AbstractCore
+import EH101.LamInfo
+import Data.Maybe
+import qualified Data.Map as Map
+
+}
+{
+}
+{
+}
+{
+}
+{
+}
+INCLUDE "Core/AbsSyn.ag"
+INCLUDE "Core/CommonBindNm.ag"
+INCLUDE "Core/CommonLamInfo.ag"
+INCLUDE "Core/CommonGathLamInfo.ag"
+WRAPPER CodeAGItf
+
+PRAGMA strictcase
+
+{
+cmodTrfEraseExtractTysigCore
+  :: EHCOpts
+     -> CModule
+     -> ( CModule
+        , LamMp
+        )
+cmodTrfEraseExtractTysigCore opts cmod
+  = ( cTrf_Syn_CodeAGItf t
+    , gathLamMp_Syn_CodeAGItf t
+    )
+  where t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf cmod))
+                           (Inh_CodeAGItf
+                             { opts_Inh_CodeAGItf = opts
+                             , lamMp_Inh_CodeAGItf = Map.empty
+                             })
+
+}
+ATTR AllCodeNT CodeAGItf [ opts: EHCOpts | | ]
+
+SEM CodeAGItf
+  | AGItf       loc         .	howUnionGathLamInfo
+  												=	id
+
+SEM CodeAGItf
+  | AGItf       loc         .   howMergeLamInfo	=   (\(LamInfo {laminfoBindAspMp=m}) i -> i {laminfoBindAspMp = m `Map.union` laminfoBindAspMp i})
+
+SEM CBound
+  | Ty          loc         .   bindLamL        =   [ (@aspectKeyS, LamInfoBindAsp_Ty @ty) ]
+  | Bind        loc         .   bindLamL        =   [] -- [ (acbaspkeyDefaultCore, LamInfoBindAsp_Core @expr.cTrf) ]
+  | Ty Bind     lhs         .   bindLamMp       =   Map.singleton @lhs.nm (emptyLamInfo {laminfoBindAspMp = Map.fromList @bindLamL})
+
+ATTR AllCodeNT [ | | cTrf: SELF ]
+ATTR CodeAGItf [ | | cTrf: CModule ]
+
+
+ATTR AllBound [ | | cBindTrf USE {++} {[]}: {[CBound]} ]
+
+SEM CBound
+  | * - Ty    	lhs         .   cBindTrf        =   [@cTrf]
+
+SEM CBind
+  | Bind		loc			.	cTrf			=	CBind_Bind @nm @bindAspects.cBindTrf
+
+

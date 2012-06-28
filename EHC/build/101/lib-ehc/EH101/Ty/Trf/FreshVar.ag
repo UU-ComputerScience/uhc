@@ -1,0 +1,53 @@
+MODULE {EH101.Ty.Trf.FreshVar} {tyFreshVar}
+{
+import EH101.Base.Common
+import EH101.Ty
+import EH101.VarMp
+import EH101.Substitutable
+
+}
+{
+}
+INCLUDE "Ty/AbsSyn.ag"
+WRAPPER TyAGItf
+
+{
+tyFreshVar' :: (TyVarId -> Bool) -> UID -> VarMp -> Ty -> (Ty,VarMp)
+tyFreshVar' allowFresh uniq tvVarMp ty
+  =  let  t =  wrap_TyAGItf
+                 (sem_TyAGItf (TyAGItf_AGItf ty))
+                 (Inh_TyAGItf {tvVarMp_Inh_TyAGItf = tvVarMp, allowFresh_Inh_TyAGItf = allowFresh, gUniq_Inh_TyAGItf = uniq})
+     in   (repl_Syn_TyAGItf t,tvVarMp_Syn_TyAGItf t)
+
+tyFreshVar :: (TyVarId -> Bool) -> UID -> Ty -> Ty
+tyFreshVar allowFresh uniq ty =  fst $ tyFreshVar' allowFresh uniq emptyVarMp ty
+
+}
+ATTR TyAGItf AllTyAndFlds [ allowFresh: {TyVarId -> Bool} | | ]
+
+SEM Ty
+  | TBind           ty      .   allowFresh  =   \v -> v /= @tv && @lhs.allowFresh v
+
+SEM LabelAGItf
+  | AGItf           loc     .   allowFresh  =   const False
+
+ATTR TyAGItf [ gUniq: UID | | ]
+ATTR AllTy [ | gUniq: UID | ]
+
+SEM Ty
+  | Var             (lhs.gUniq,loc.lUniq)   =   mkNewUID @lhs.gUniq
+
+ATTR AllTyAndFlds [ | | repl: SELF  ]
+ATTR TyAGItf      [ | | repl: Ty    ]
+
+ATTR AllTy TyAGItf [ | tvVarMp: VarMp | ]
+
+SEM Ty
+  | Var             lhs     .   (repl,tvVarMp)
+                                            =   if @lhs.allowFresh @tv
+                                                then  case varmpTyLookup @tv @lhs.tvVarMp of
+                                                        Just t   -> (t,@lhs.tvVarMp)
+                                                        Nothing  -> (t,(@tv `varmpTyUnit` t) `varUpd` @lhs.tvVarMp)
+                                                                 where t = Ty_Var @lUniq @categ.repl
+                                                else  (@repl,@lhs.tvVarMp)
+

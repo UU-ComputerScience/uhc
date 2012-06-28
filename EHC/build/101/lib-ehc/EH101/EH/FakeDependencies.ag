@@ -1,0 +1,75 @@
+SEM Decl
+  | Data
+  		-- constrs.dataConstrNmL < constrs.tyNm
+  		-- constrs.chrInstDeclSq < constrs.tyNm
+  		constrs.polVarMp < constrs.dataAltTy
+  		constrs.polVarMp < constrs.tyKiGam
+  		constrs.dataAltTyL < constrs.kiVarMp
+  		constrs.kiVarMp < constrs.maxArity
+  		-- constrs.kiVarMp < constrs.dataTy
+  		constrs.intlTyKiGam < constrs.patValGam
+  		constrs.intlTyKiGam < constrs.tyNm
+
+  | TySig
+  		tyExpr.ty < tyExpr.knPolCtx
+
+SEM DataConstr
+  | Constr
+  		fields.fldAnnL < fields.tyKiGam
+  		fields.tyKiGam < fields.dataTy
+  		-- fields.fldAnnL < fields.dataTy
+  		fields.intlTyKiGam < fields.dataTy
+  		-- fields.intlTyKiGam < fields.tyKiGam
+  		fields.fldTyL < fields.tyKiGam
+
+SEM Expr
+  | Case
+  		alts.ty < alts.valTyGlobFreeTvarS
+  		-- alts.kiVarMp < alts.tyKiGlobFreeTvarS
+
+SEM DataFields
+  | Cons
+  		hd.polVarMp < hd.tyKiGam
+  		hd.fldTyL < hd.tyKiGam
+
+SEM AGItf
+  | AGItf
+  		expr.range < expr.gUniq
+  		expr.gUniq < expr.kiGam
+  		expr.predSameScopeCounter < expr.opts
+  		-- expr.predSameScopeCounter < expr.lexLev
+  		expr.hasInstDecl < expr.kiGam
+
+SEM Expr
+  | Let
+  		decls.gathKiSigGam < decls.kiGam
+  		decls.tyTyVarMp < decls.opts
+  		decls.gathTyKiSigGam < decls.predSameScopeCounter
+
+SEM TyExpr
+  | Pred
+  		prExpr.tyGam < prExpr.knPolCtx
+
+SEM TyExpr
+  | Row
+  		rowTyExpr.positionalFldNmL < rowTyExpr.tyGam
+  		-- rowTyExpr.clMissNmS < rowTyExpr.knPolCtx
+SEM PrExpr
+  | Lacks
+  		-- rowTyExpr.positionalFldNmL < rowTyExpr.tyGam
+SEM RowTyExpr
+  | Ext
+  		-- rowTyExpr.positionalFldNmL < rowTyExpr.tyGam
+
+SEM PrExpr
+  | Class
+  		tyExprs.tyVarWildMp < tyExprs.clGam
+  | Arrow
+  		res.intlTyKiGam < res.kiVarMp
+
+
+
+
+
+
+

@@ -1,0 +1,127 @@
+ATTR AllBind [ letBindingsCateg: CBindCateg | | ]
+
+SEM CExpr
+  | Let         loc         .   letBindingsCateg    =   @categ
+  | Lam App     loc         .   letBindingsCateg    =   acoreBindcategPlain
+
+SEM CPatFld
+  | Fld         bind        .   letBindingsCateg    =   acoreBindcategPlain
+
+ATTR CExpr CBound [ isTopApp: Bool  isTopTup: Bool | | ]
+
+SEM CExpr
+  | App         func        .   isTopApp    =   False
+                arg         .   isTopApp    =   True
+  | * - App Ann loc         .   isTopApp    =   True
+  | TupUpd TupIns TupDel
+                expr        .   isTopTup    =   False
+                loc         .   isTopTup    =   True
+  | * - TupUpd TupIns TupDel Ann
+                loc         .   isTopTup    =   True
+
+  | *           loc         .   isTopApp    :   Bool
+
+SEM MbCExpr
+  | Just        just        .   isTopApp    =   True
+                            .   isTopTup    =   True
+
+SEM CModule
+  | Mod         expr        .   isTopApp    =   True
+                            .   isTopTup    =   True
+
+SEM CBoundL
+  | Cons		hd			.	isTopApp    =   True
+                            .   isTopTup    =   True
+
+SEM CBound
+  | Bind
+    FFE
+                expr        .   isTopApp    =   True
+                            .   isTopTup    =   True
+
+SEM CPatFld
+  | Fld         offset      .   isTopApp    =   True
+                            .   isTopTup    =   True
+
+SEM CAlt
+  | Alt         expr        .   isTopApp    =   True
+                            .   isTopTup    =   True
+
+ATTR CExpr [ | | whatBelow: WhatExpr ]
+
+SEM CExpr
+  | Lam         loc         .   whatBelow       =   ExprIsLam
+  | Var         loc         .   whatBelow       =   ExprIsVar @nm
+  | Int         loc         .   whatBelow       =   ExprIsInt @int
+  | App         loc         .   whatBelow       =   maybe (ExprIsApp 1) (\a -> ExprIsApp $ a + 1) $ whatExprMbApp @func.whatBelow
+  | * - Lam App Var Int Ann CaseAltFail
+                loc         .   whatBelow       =   ExprIsOther
+
+SEM CExpr
+  | App         loc         .   isTopApp'       =   isNothing $ whatExprMbApp @lhs.whatAbove
+
+ATTR CExpr [ whatAbove: WhatExpr | | ]
+
+SEM CExpr
+  | Lam         loc         .   whatAbove       =   ExprIsLam
+  | App         loc         .   whatAbove       =   maybe (ExprIsApp 1) (\a -> ExprIsApp $ a + 1) $ whatExprMbApp @lhs.whatAbove
+  | * - Lam App Ann
+                loc         .   whatAbove       =   ExprIsOther
+
+SEM CExpr
+  | Let         loc         .   isTopLet        =   @lhs.whatAbove == ExprIsBind
+
+SEM CBound
+  | Bind Val    loc         .   whatAbove       =   ExprIsBind
+  | FFE         loc         .   whatAbove       =   ExprIsLam		-- the construction of a lambda is special for backend, to assume we are already in a lam
+
+SEM CPatFld
+  | Fld         loc         .   whatAbove       =   ExprIsOther
+
+SEM CAlt
+  | Alt         loc         .   whatAbove       =   ExprIsOther
+
+SEM CModule
+  | Mod         loc         .   whatAbove       =   ExprIsOther
+
+SEM MbCExpr
+  | Just        loc         .   whatAbove       =   ExprIsOther
+
+SEM *
+  | *           loc         .   whatAbove       :   WhatExpr
+
+ATTR AllExprOnly AllAlt AllBind [ isStrict, isLamBody: Bool | | ]
+
+SEM CModule
+  | Mod         expr        .   isStrict    =   True
+                            .   isLamBody   =   False
+
+SEM CBound
+  | Bind Val
+    FFE
+                expr        .   isStrict    =   @lhs.isStrict || @expr.whatBelow == ExprIsLam
+
+SEM CPatFld
+  | Fld         offset      .   isStrict    =   True
+                            .   isLamBody   =   False
+                bind		.   isStrict    =   False
+                            .   isLamBody   =   False
+
+SEM CExpr
+  | Let         binds       .   isStrict    =   @isGlobal || @categ == CBindCateg_Strict
+
+ATTR AllExprOnly AllAlt AllBind [ evalCtx: EvalCtx | | ]
+
+SEM CModule
+  | Mod         expr        .   evalCtx         =   EvalCtx_Eval
+
+SEM CPatFld
+  | Fld         offset      .   evalCtx         =   EvalCtx_Eval
+  				bind		.	evalCtx			=	EvalCtx_None
+
+
+SEM CExpr
+  | Let         loc         .   evalCtx         =   if @categ == CBindCateg_Strict
+                                                    then EvalCtx_Eval
+                                                    else EvalCtx_None
+

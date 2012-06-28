@@ -1,0 +1,2 @@
+ATTR AllExpr [ | | self: SELF ]
+ATTR AGExprItf [ | | self: Expr ]

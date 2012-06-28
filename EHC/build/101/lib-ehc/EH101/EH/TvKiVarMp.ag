@@ -1,0 +1,16 @@
+ATTR
+  AllDecl AllExpr AllCase AllPatExpr AllData AllDataConstr
+    [ tvKiVarMp: VarMp
+    | |
+      gathTvKiVarMp USE {`varmpUnion`} {emptyVarMp}: VarMp
+    ]
+
+SEM AGItf
+  | AGItf       expr        .   tvKiVarMp           =   @expr.kiVarMp
+
+SEM Expr
+  | Let         loc         .   gathTvKiVarMp1      =   varmpMapTyVarKey @tyVarMpDeclsL0 (varmpDecMetaLev @decls.tyVarMp) -- @decls.gathTvKiVarMp -- (varmpDecMetaLev @decls.gathTvKiVarMp)
+                            .   quTvKiVarMp         =   @gathTvKiVarMp1 `varUpd` @lhs.tvKiVarMp
+                            .   gathTvKiVarMp2      =   varmpFilterTy (\v _ -> v `Set.member` @noLetQuantTyVarIdS) @gathTvKiVarMp1
+                body        .   tvKiVarMp           =   @gathTvKiVarMp2 `varUpd` @lhs.tvKiVarMp
+

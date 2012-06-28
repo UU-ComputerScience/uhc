@@ -1,0 +1,59 @@
+MODULE {EH101.Core.ModAsMap} {cexprModAsDatabase}
+{
+import qualified Data.Set as Set
+import qualified Data.Map as Map
+import Data.Array
+import qualified EH.Util.FastSeq as Seq
+import EH101.Base.Common
+import EH101.Core
+import EH101.Ty
+
+}
+{
+}
+{
+}
+{
+}
+{
+}
+INCLUDE "Core/AbsSyn.ag"
+WRAPPER CodeAGItf
+
+{
+cexprModAsDatabase :: CModule -> CModuleDatabase
+cexprModAsDatabase m
+  = db_Syn_CodeAGItf t
+  where t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf m)) Inh_CodeAGItf
+
+}
+ATTR CodeAGItf CModule [ | | db: CModuleDatabase ]
+
+SEM CModule
+  | Mod         lhs         .   db              =   let binds = Seq.toList @expr.bindSq
+                                                        nrBinds = length binds
+                                                        (refs,arrs)
+                                                              = unzip
+                                                                  [ (Map.unions refs, (cat, listArray (0, nrSubBinds-1) bs))
+                                                                  | (bi,(cat,bs)) <- zip [0 .. nrBinds-1] binds
+                                                                  , let nrSubBinds = length bs
+                                                                  , let refs = zipWith (\b i -> Map.singleton (cbindNm b) (bi,i)) bs [0 .. nrSubBinds-1]
+                                                                  ]
+                                                    in  emptyCModuleDatabase
+                                                            { cmoddbModNm       = @moduleNm
+                                                            , cmoddbBindMp      = Map.unions refs
+                                                            , cmoddbBindArr     = listArray (0, nrBinds-1) arrs
+                                                            , cmoddbMainExpr    = @expr.expr
+                                                            , cmoddbTagsMp      = @ctagsMp
+                                                            }
+
+ATTR AllNT [ | | copy: SELF ]
+ATTR CExpr [ | | bindSq: {Seq.Seq CDbBindLetInfo}
+                 expr  : CExpr
+           ]
+
+SEM CExpr
+  | Let         lhs         .   bindSq          =   Seq.singleton (@categ,@binds.copy) `Seq.union` @body.bindSq
+                            .   expr            =   @body.expr
+  | * - Let     lhs         .   bindSq          =   Seq.empty
+                            .   expr            =   @copy

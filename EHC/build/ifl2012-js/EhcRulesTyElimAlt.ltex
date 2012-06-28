@@ -1,0 +1,152 @@
+%include lhs2TeX.fmt
+%include afp.fmt
+%include ehrules.fmt
+
+\rulerCmdDef{rules4.I2.tyAltTyElim.scheme}{%
+\ensuremath{| fiopt ; IVarMp | ^{ | k | } |  ;  | \overline{ | tvarv | _{ | g | }} |   | \stackrel{ | talt elim | }{ | :- | } |  isigma : sigma ~> IVarMp | }
+}
+\rulerCmdDef{rules4.I2.tyAltTyElim.ty.ae.alts}{%
+\rulerRule{ty.ae.alts}{I2}
+{%
+| tneed === if fioMeetY `elem` fiopt then tneedR else tneedO | 
+\\
+| tvarv [  | \overline{ | talt | } |  ]  === isigma | 
+\\
+| tvarv `notElem`  | \overline{ | tvarv | _{ | g | }} |  | 
+\\
+|  | \overline{ | sigma | _{ | thardH | }} |  ===  [ sigma || (sigma :: thardH / tneed) <-  | \overline{ | talt | } |  ]  | 
+\\
+|  | \overline{ | sigma | _{ | Qu | }} |  ===  [ sigma | _{ | Qu | } |  || (sigma | _{ | Qu | } |  :: thardS / tneed) <-  | \overline{ | talt | } |  ]  | 
+\\
+| fiopt :- | ^{ |  <=>  | } |  ( | \overline{ | sigma | _{ | thardH | }} |  ,  | \overline{ | sigma | _{ | Qu | }} | )  <=>  ANY : isigma | _{ | thardH | } |  ~> IVarMp | _{ | h | } |  | 
+\\
+|  ||  | \overline{ | sigma | _{ | thardH | }} |  ,  | \overline{ | sigma | _{ | Qu | }} |  ||  > 0 | 
+\\
+|  | \overline{ | sigma | _{ | thardS | }} |  ===  [ sigma | _{ | nQu | } |  || (sigma | _{ | nQu | } |  :: thardS / tneed) <-  | \overline{ | talt | } |  ]  | 
+\\
+| fiopt :- | ^{ |  <=>  | } |  IVarMp | _{ | h | } |   | \overline{ | sigma | _{ | thardS | }} |   <=>  isigma | _{ | thardH | } |  : isigma | _{ | thardS | } |  ~> _ | 
+\\
+| fiopt ; IVarMp | ^{ | k | } |  ;  | \overline{ | tvarv | _{ | g | }} |   | \stackrel{ | talt elim | }{ | :- | } |  isigma | _{ | thardS | } |  : sigma ~> VarMp | _{ | e | } |  | 
+\\
+| VarMp ===  [ tvarv :-> sigma ]  | 
+}
+{%
+| fiopt ; IVarMp | ^{ | k | } |  ;  | \overline{ | tvarv | _{ | g | }} |   | \stackrel{ | talt elim | }{ | :- | } |  isigma : sigma ~> VarMp VarMp | _{ | e | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.I2.tyAltTyElim.ty.ae.var}{%
+\rulerRule{ty.ae.var}{I2}
+{%
+| tvarv [ _ ]  === isigma | 
+\\
+| tvarv `notElem`  | \overline{ | tvarv | _{ | g | }} |  | 
+}
+{%
+| fiopt ; IVarMp | ^{ | k | } |  ;  | \overline{ | tvarv | _{ | g | }} |   | \stackrel{ | talt elim | }{ | :- | } |  isigma : tvarv ~>  []  | 
+}
+}
+
+\rulerCmdDef{rules4.I2.tyAltTyElim.ty.ae.ty}{%
+\rulerRule{ty.ae.ty}{I2}
+{%
+}
+{%
+| fiopt ; IVarMp | ^{ | k | } |  ;  | \overline{ | tvarv | _{ | g | }} |   | \stackrel{ | talt elim | }{ | :- | } |  sigma : sigma ~>  []  | 
+}
+}
+
+\rulerCmdDef{rules4.I2.tyAltTyElim.ty.ae.arrow}{%
+\rulerRule{ty.ae.arrow}{I2}
+{%
+| fiopt | _{ | a | } |  === if ^^ fiopt = fioMeetY ^^ then ^^ fioJoinY ^^ else ^^ fioMeetY | 
+\\
+| fiopt ; IVarMp | ^{ | k | } |  ;  | \overline{ | tvarv | _{ | g | }} |   | \stackrel{ | talt elim | }{ | :- | } |  isigma | _{ | r | } |  : sigma | _{ | r | } |  ~> VarMp | _{ | r | } |  | 
+\\
+| fiopt | _{ | a | } |  ; IVarMp | ^{ | k | } |  ;  | \overline{ | tvarv | _{ | g | }} |   | \stackrel{ | talt elim | }{ | :- | } |  isigma | _{ | a | } |  : sigma | _{ | a | } |  ~> VarMp | _{ | a | } |  | 
+}
+{%
+| fiopt ; IVarMp | ^{ | k | } |  ;  | \overline{ | tvarv | _{ | g | }} |   | \stackrel{ | talt elim | }{ | :- | } |  isigma | _{ | a | } |  -> isigma | _{ | r | } |  : sigma | _{ | a | } |  -> sigma | _{ | r | } |  ~> VarMp | _{ | a | } |  VarMp | _{ | r | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.I2.tyAltTyElim}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{rules4.I2.tyAltTyElim.scheme}}{Type alternative elimination}{rules4.I2.tyAltTyElim}{I2}
+\rulerCmdUse{rules4.I2.tyAltTyElim.ty.ae.alts}
+\hspace{1ex}
+\rulerCmdUse{rules4.I2.tyAltTyElim.ty.ae.var}
+\hspace{1ex}
+\rulerCmdUse{rules4.I2.tyAltTyElim.ty.ae.ty}
+\hspace{1ex}
+\rulerCmdUse{rules4.I2.tyAltTyElim.ty.ae.arrow}
+\end{rulerRulesetFigure}
+}
+
+\rulerCmdDef{rules4.I2.tyBtTyElim.scheme}{%
+\ensuremath{| bv  | \stackrel{ | /=/ elim | }{ | :- | } |  sigma | _{ | /=/ | } |  : sigma ~> sigma | _{ | e | } |  ; VarMp | }
+}
+\rulerCmdDef{rules4.I2.tyBtTyElim.ty.eb.any}{%
+\rulerRule{ty.eb.any}{I2}
+{%
+| tvarv `elem` bv | 
+}
+{%
+| bv  | \stackrel{ | /=/ elim | }{ | :- | } |  tvarv /=/ ANY : tvarv ~> tvarv ;  []  | 
+}
+}
+
+\rulerCmdDef{rules4.I2.tyBtTyElim.ty.eb.var}{%
+\rulerRule{ty.eb.var}{I2}
+{%
+| bv  | \stackrel{ | /=/ elim | }{ | :- | } |  sigma | _{ | b | } |  : sigma ~> tvarv | _{ | e | } |  ; VarMp | 
+\\
+| tvarv `elem` bv | 
+}
+{%
+| bv  | \stackrel{ | /=/ elim | }{ | :- | } |  tvarv /=/ sigma | _{ | b | } |  : tvarv ~> tvarv ;  [ tvarv | _{ | e | } |  :-> tvarv ] VarMp | 
+}
+}
+
+\rulerCmdDef{rules4.I2.tyBtTyElim.ty.eb.ty}{%
+\rulerRule{ty.eb.ty}{I2}
+{%
+| bv  | \stackrel{ | /=/ elim | }{ | :- | } |  sigma | _{ | b | } |  : sigma ~> sigma | _{ | e | } |  ; VarMp | 
+\\
+| tvarv `elem` bv | 
+}
+{%
+| bv  | \stackrel{ | /=/ elim | }{ | :- | } |  tvarv /=/ sigma | _{ | b | } |  : tvarv ~> sigma | _{ | e | } |  ;  [ tvarv :-> sigma | _{ | e | } |  ] VarMp | 
+}
+}
+
+\rulerCmdDef{rules4.I2.tyBtTyElim}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{rules4.I2.tyBtTyElim.scheme}}{Type `both' elimination}{rules4.I2.tyBtTyElim}{I2}
+\rulerCmdUse{rules4.I2.tyBtTyElim.ty.eb.any}
+\hspace{1ex}
+\rulerCmdUse{rules4.I2.tyBtTyElim.ty.eb.var}
+\hspace{1ex}
+\rulerCmdUse{rules4.I2.tyBtTyElim.ty.eb.ty}
+\end{rulerRulesetFigure}
+}
+
+\rulerCmdDef{rules4.I2.valElimExprAlts.scheme}{%
+\ensuremath{| fiopt ; IVarMp | ^{ | k | } |  ;  | \overline{ | tvarv | _{ | g | }} |   | \stackrel{ | Gamma talt elim | }{ | :- | } |  Gamma : IVarMp | }
+}
+\rulerCmdDef{rules4.I2.valElimExprAlts.g.ae.cons}{%
+\rulerRule{g.ae.cons}{I2}
+{%
+| fiopt ; IVarMp | ^{ | k | } |  ;  | \overline{ | tvarv | _{ | g | }} |   | \stackrel{ | talt elim | }{ | :- | } |  IVarMp | ^{ | k | } |  isigma : _ ~> IVarMp | _{ | a | } |  | 
+\\
+| fiopt ; IVarMp | ^{ | k | } |  ;  | \overline{ | tvarv | _{ | g | }} |   | \stackrel{ | Gamma talt elim | }{ | :- | } |  IVarMp | _{ | a | } |  Gamma : IVarMp | _{ | g | } |  | 
+}
+{%
+| fiopt ; IVarMp | ^{ | k | } |  ;  | \overline{ | tvarv | _{ | g | }} |   | \stackrel{ | Gamma talt elim | }{ | :- | } |  (_ :-> isigma , Gamma) : IVarMp | _{ | g | } |  IVarMp | _{ | a | } |  | 
+}
+}
+
+\rulerCmdDef{rules4.I2.valElimExprAlts}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{rules4.I2.valElimExprAlts.scheme}}{Type alternative elimination (for a |Gamma|)}{rules4.I2.valElimExprAlts}{I2}
+\rulerCmdUse{rules4.I2.valElimExprAlts.g.ae.cons}
+\end{rulerRulesetFigure}
+}
+

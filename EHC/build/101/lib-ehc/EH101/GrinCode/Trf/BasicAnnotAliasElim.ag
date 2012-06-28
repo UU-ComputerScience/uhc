@@ -1,0 +1,75 @@
+MODULE {EH101.GrinCode.Trf.BasicAnnotAliasElim} {grBasicAnnotAliasElim}
+{
+import qualified Data.Map as Map
+import qualified Data.Set as Set
+import Data.Maybe
+import EH101.Base.Builtin
+import EH101.Base.Common
+import EH101.GrinCode.Common
+import EH101.GrinCode
+
+}
+INCLUDE "GrinCode/AbsSyn.ag"
+{
+}
+{
+}
+{
+}
+{
+grBasicAnnotAliasElim :: GrModule -> GrModule
+grBasicAnnotAliasElim grmod
+  = trf_Syn_GrAGItf t
+  where t = wrap_GrAGItf (sem_GrAGItf $ GrAGItf_AGItf grmod)
+            $ Inh_GrAGItf
+
+}
+WRAPPER GrAGItf
+
+ATTR GrExpr [ unitNmBoundByEval: FvS | | ]
+
+SEM GrAlt
+  | Alt         expr        .   unitNmBoundByEval
+                                                =   Set.empty
+
+SEM GrBind
+  | Bind        expr        .   unitNmBoundByEval
+                                                =   Set.empty
+
+SEM GrExpr
+  | Seq         loc         .   newBnd          =   case (@expr.trf,@pat.trf) of
+                                                      (GrExpr_Eval _, GrPatLam_Var n) -> Set.singleton n
+                                                      _ -> Set.empty
+                body        .   unitNmBoundByEval
+                                                =   Set.union @newBnd @lhs.unitNmBoundByEval
+
+{
+type UnitUnwrapMp = Map.Map HsName GrPatLam
+
+}
+ATTR GrExpr [ | | unitUnwrapMp USE {`Map.union`} {Map.empty} : UnitUnwrapMp ]
+
+SEM GrExpr
+  | Seq         loc         .   newMp           =   case @expr.trf of
+                                                      GrExpr_Unit (GrVal_Var n) _ | Set.member n @lhs.unitNmBoundByEval
+                                                        -> case @pat.trf of
+                                                             GrPatLam_BasicNode  _ _ -> Map.singleton n @pat.trf
+                                                             GrPatLam_EnumNode   _   -> Map.singleton n @pat.trf
+                                                             GrPatLam_PtrNode    _   -> Map.singleton n @pat.trf
+                                                             GrPatLam_OpaqueNode _   -> Map.singleton n @pat.trf
+                                                             _ -> Map.empty
+                                                      _ -> Map.empty
+                lhs         .   unitUnwrapMp    =   Map.union @newMp @body.unitUnwrapMp
+
+
+ATTR GrAGItf [ | | trf: GrModule ]
+ATTR AllNT [ | | trf: SELF ]
+
+{
+}
+SEM GrExpr
+  | Seq         lhs         .   trf             =   if not (Set.null @newBnd)
+                                                    then maybe @trf (\b -> GrExpr_Seq @expr.trf b @body.trf) (Map.lookup (Set.findMin @newBnd) @body.unitUnwrapMp)
+                                                    else if not (Map.null @newMp)
+                                                    then @body.trf
+                                                    else @trf

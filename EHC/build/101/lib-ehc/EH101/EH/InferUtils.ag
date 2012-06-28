@@ -1,0 +1,87 @@
+ATTR NTPrf [ lexLev: Int | | ]
+
+SEM AGItf
+  | AGItf       loc         .   lexLev              =   -1
+
+SEM Expr
+  | Let         loc         .   lexLev              =   if @lhs.isFirstLet then @lhs.lexLev + 1 else @lhs.lexLev
+                            .   lexLevIsGlobal      =   @lexLev == 0
+  | Lam
+    LamImpl
+                loc         .   lexLev              =   @lhs.lexLev + 1
+
+SEM CaseAlt
+  | Pat         loc         .   lexLev              =   @lhs.lexLev + 1
+
+ATTR Expr AllDecl [ | | hasInstDecl USE {||} {False}: Bool ]
+
+SEM Decl
+  | Instance InstanceIntro
+                lhs         .   hasInstDecl         =   True
+  | * - Instance InstanceIntro
+                lhs         .   hasInstDecl         =   False
+
+SEM Expr
+  | Let         loc         .   hasInstDecl         =   @decls.hasInstDecl || @body.hasInstDecl
+  | * - Let     lhs         .   hasInstDecl         =   False
+
+ATTR PatExpr [ inclVarBind: Bool | | ]
+
+SEM PatExpr
+  | AppTop      patExpr     .   inclVarBind         =   True
+
+SEM Decl
+  | Val         patExpr     .   inclVarBind         =   False
+
+SEM Expr
+  | Lam         arg         .   inclVarBind         =   True
+
+SEM Decl
+  | Val         patExpr     .   inclVarBind         :=  not @hasTySig
+
+SEM CaseAlt
+  | Pat         patExpr     .   inclVarBind         =   True
+
+SEM RecPatExpr
+  | Ext Expr    patExpr     .   inclVarBind         =   True
+
+SEM DataFieldPatExpr
+  | Ext         patExpr     .   inclVarBind         =   True
+
+SEM Expr
+  | LamImpl     arg         .   inclVarBind         =   True
+
+SEM Expr
+  | Lam Sel DataFields
+    LamImpl
+                loc         .   rceEnv      =   (emptyRCEEnv @lhs.opts) { rceValGam = @lhs.valGam, rceDataGam = @lhs.dataGam, rceTyVarMp = @lhs.finTyVarMp }
+  | Case        loc         .   rceEnv      =   (emptyRCEEnv @lhs.opts)
+                                                            { rceValGam  = @lhs.valGam, rceDataGam = @lhs.dataGam, rceTyVarMp = @lhs.finTyVarMp
+                                                            , rceCaseIds = @caseIds
+                                                            }
+  | Let         loc         .   rceEnv      =   (emptyRCEEnv @lhs.opts) { rceValGam = @bodyValGam, rceDataGam = @lhs.dataGam, rceTyVarMp = @finTyVarMp }
+
+SEM PatExpr
+  | AppTop Rec DataFields
+                loc         .   rceEnv      =   (emptyRCEEnv @lhs.opts) { rceValGam = @lhs.valGam, rceDataGam = @lhs.dataGam, rceTyVarMp = @lhs.finTyVarMp }
+
+SEM Decl
+  | Data        loc         .   rceEnv      =   (emptyRCEEnv @lhs.opts) { rceValGam = @lhs.valGam, rceDataGam = @lhs.dataGam, rceTyVarMp = @lhs.finTyVarMp }
+
+SEM Decl
+  | FFI
+    FFE
+    Instance
+                loc         .   rceEnv      =   (emptyRCEEnv @lhs.opts) { rceValGam = @lhs.valGam, rceDataGam = @lhs.dataGam, rceTyVarMp = @lhs.finTyVarMp }
+
+ATTR TyExpr TyExprAnn [ | | mbStrictness: {Maybe Strictness} ]
+
+SEM TyExpr
+  | Ann			lhs			.	mbStrictness=	@ann.mbStrictness <|> @tyExpr.mbStrictness
+  | * - Ann		lhs			.	mbStrictness=	Nothing
+
+SEM TyExprAnn
+  | Strictness	lhs			.	mbStrictness=	Just @strictness
+  | * - Strictness
+  				lhs			.	mbStrictness=	Nothing
+

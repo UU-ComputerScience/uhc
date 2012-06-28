@@ -1,0 +1,3380 @@
+%include lhs2TeX.fmt
+%include afp.fmt
+%include ehrules.fmt
+
+
+\rulerCmdDef{RulerUniquenessExamples.B.comp.base.scheme}{%
+\ensuremath{| hsnameFormat :- | ^{ | \*/ | } |  e ~> compFormat | }
+}
+\rulerCmdDef{RulerUniquenessExamples.B.comp.base.e.var}{%
+\rulerRule{e.var}{B}
+{%
+}
+{%
+| x :- | ^{ | \*/ | } |  n : utau ~> utau | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.B.comp.base.e.app}{%
+\rulerRule{e.app}{B}
+{%
+| x :- | ^{ | \*/ | } |  f ~> c | _{ | f | } |  | 
+\\
+| x :- | ^{ | \*/ | } |  a ~> c | _{ | a | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  f a ~> c | _{ | f | } |  \*/ c | _{ | a | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.B.comp.base.e.app.1}{%
+\rulerRule{e.app.1}{B}
+{%
+| x :- | ^{ | \*/ | } |  f ~> c | _{ | f | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  f a ~> c | _{ | f | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.B.comp.base.e.app.2}{%
+\rulerRule{e.app.2}{B}
+{%
+| x :- | ^{ | \*/ | } |  a ~> c | _{ | a | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  f a ~> c | _{ | a | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.B.comp.base.e.ite}{%
+\rulerRule{e.ite}{B}
+{%
+| x :- | ^{ | \*/ | } |  r ~> c | _{ | r | } |  | 
+\\
+| x :- | ^{ | \*/ | } |  l ~> c | _{ | l | } |  | 
+\\
+| x :- | ^{ | \*/ | } |  g ~> c | _{ | g | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | g | } |  \+/ (c | _{ | l | } |  \-/ c | _{ | r | } | ) | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.B.comp.base.e.ite.1}{%
+\rulerRule{e.ite.1}{B}
+{%
+| x :- | ^{ | \*/ | } |  r ~> c | _{ | r | } |  | 
+\\
+| x :- | ^{ | \*/ | } |  l ~> c | _{ | l | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | l | } |  \-/ c | _{ | r | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.B.comp.base.e.ite.2}{%
+\rulerRule{e.ite.2}{B}
+{%
+| x :- | ^{ | \*/ | } |  g ~> c | _{ | g | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | g | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.B.comp.base.e.ite.3}{%
+\rulerRule{e.ite.3}{B}
+{%
+| x :- | ^{ | \*/ | } |  l ~> c | _{ | l | } |  | 
+\\
+| x :- | ^{ | \*/ | } |  g ~> c | _{ | g | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | g | } |  \+/ c | _{ | l | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.B.comp.base.e.ite.4}{%
+\rulerRule{e.ite.4}{B}
+{%
+| x :- | ^{ | \*/ | } |  r ~> c | _{ | r | } |  | 
+\\
+| x :- | ^{ | \*/ | } |  g ~> c | _{ | g | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | g | } |  \+/ c | _{ | r | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.B.comp.base.e.ite.5}{%
+\rulerRule{e.ite.5}{B}
+{%
+| x :- | ^{ | \*/ | } |  l ~> c | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.B.comp.base.e.ite.6}{%
+\rulerRule{e.ite.6}{B}
+{%
+| x :- | ^{ | \*/ | } |  r ~> c | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.D.comp.base.scheme}{%
+\ensuremath{| hsnameFormat :- | ^{ | \*/ | } |  e ~> compFormat | }
+}
+\rulerCmdDef{RulerUniquenessExamples.D.comp.base.e.var}{%
+\rulerRule{e.var}{D}
+{%
+}
+{%
+| x :- | ^{ | \*/ | } |  n : utau ~> utau | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.D.comp.base.e.app}{%
+\rulerRule{e.app}{D}
+{%
+| x :- | ^{ | \*/ | } |  f ~> c | _{ | f | } |  | 
+\\
+| x :- | ^{ | \*/ | } |  a ~> c | _{ | a | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  f a ~> c | _{ | f | } |  \*/ c | _{ | a | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.D.comp.base.e.app.1}{%
+\rulerRule{e.app.1}{D}
+{%
+| x :- | ^{ | \*/ | } |  f ~> c | _{ | f | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  f a ~> c | _{ | f | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.D.comp.base.e.app.2}{%
+\rulerRule{e.app.2}{D}
+{%
+| x :- | ^{ | \*/ | } |  a ~> c | _{ | a | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  f a ~> c | _{ | a | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.D.comp.base.e.ite}{%
+\rulerRule{e.ite}{D}
+{%
+| x :- | ^{ | \*/ | } |  r ~> c | _{ | r | } |  | 
+\\
+| x :- | ^{ | \*/ | } |  l ~> c | _{ | l | } |  | 
+\\
+| x :- | ^{ | \*/ | } |  g ~> c | _{ | g | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | g | } |  \+/ (c | _{ | l | } |  \-/ c | _{ | r | } | ) | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.D.comp.base.e.ite.1}{%
+\rulerRule{e.ite.1}{D}
+{%
+| x :- | ^{ | \*/ | } |  r ~> c | _{ | r | } |  | 
+\\
+| x :- | ^{ | \*/ | } |  l ~> c | _{ | l | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | l | } |  \-/ c | _{ | r | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.D.comp.base.e.ite.2}{%
+\rulerRule{e.ite.2}{D}
+{%
+| x :- | ^{ | \*/ | } |  g ~> c | _{ | g | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | g | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.D.comp.base.e.ite.3}{%
+\rulerRule{e.ite.3}{D}
+{%
+| x :- | ^{ | \*/ | } |  l ~> c | _{ | l | } |  | 
+\\
+| x :- | ^{ | \*/ | } |  g ~> c | _{ | g | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | g | } |  \+/ c | _{ | l | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.D.comp.base.e.ite.4}{%
+\rulerRule{e.ite.4}{D}
+{%
+| x :- | ^{ | \*/ | } |  r ~> c | _{ | r | } |  | 
+\\
+| x :- | ^{ | \*/ | } |  g ~> c | _{ | g | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | g | } |  \+/ c | _{ | r | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.D.comp.base.e.ite.5}{%
+\rulerRule{e.ite.5}{D}
+{%
+| x :- | ^{ | \*/ | } |  l ~> c | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.D.comp.base.e.ite.6}{%
+\rulerRule{e.ite.6}{D}
+{%
+| x :- | ^{ | \*/ | } |  r ~> c | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.DC.comp.base.scheme}{%
+\ensuremath{| hsnameFormat :- | ^{ | \*/ | } |  e ~> compFormat | }
+}
+\rulerCmdDef{RulerUniquenessExamples.DC.comp.base.e.var}{%
+\rulerRule{e.var}{DC}
+{%
+}
+{%
+| x :- | ^{ | \*/ | } |  n : utau ~> utau | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.DC.comp.base.e.app}{%
+\rulerRule{e.app}{DC}
+{%
+| x :- | ^{ | \*/ | } |  f ~> c | _{ | f | } |  | 
+\\
+| x :- | ^{ | \*/ | } |  a ~> c | _{ | a | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  f a ~> c | _{ | f | } |  \*/ c | _{ | a | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.DC.comp.base.e.app.1}{%
+\rulerRule{e.app.1}{DC}
+{%
+| x :- | ^{ | \*/ | } |  f ~> c | _{ | f | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  f a ~> c | _{ | f | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.DC.comp.base.e.app.2}{%
+\rulerRule{e.app.2}{DC}
+{%
+| x :- | ^{ | \*/ | } |  a ~> c | _{ | a | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  f a ~> c | _{ | a | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.DC.comp.base.e.ite}{%
+\rulerRule{e.ite}{DC}
+{%
+| x :- | ^{ | \*/ | } |  r ~> c | _{ | r | } |  | 
+\\
+| x :- | ^{ | \*/ | } |  l ~> c | _{ | l | } |  | 
+\\
+| x :- | ^{ | \*/ | } |  g ~> c | _{ | g | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | g | } |  \+/ (c | _{ | l | } |  \-/ c | _{ | r | } | ) | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.DC.comp.base.e.ite.1}{%
+\rulerRule{e.ite.1}{DC}
+{%
+| x :- | ^{ | \*/ | } |  r ~> c | _{ | r | } |  | 
+\\
+| x :- | ^{ | \*/ | } |  l ~> c | _{ | l | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | l | } |  \-/ c | _{ | r | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.DC.comp.base.e.ite.2}{%
+\rulerRule{e.ite.2}{DC}
+{%
+| x :- | ^{ | \*/ | } |  g ~> c | _{ | g | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | g | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.DC.comp.base.e.ite.3}{%
+\rulerRule{e.ite.3}{DC}
+{%
+| x :- | ^{ | \*/ | } |  l ~> c | _{ | l | } |  | 
+\\
+| x :- | ^{ | \*/ | } |  g ~> c | _{ | g | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | g | } |  \+/ c | _{ | l | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.DC.comp.base.e.ite.4}{%
+\rulerRule{e.ite.4}{DC}
+{%
+| x :- | ^{ | \*/ | } |  r ~> c | _{ | r | } |  | 
+\\
+| x :- | ^{ | \*/ | } |  g ~> c | _{ | g | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | g | } |  \+/ c | _{ | r | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.DC.comp.base.e.ite.5}{%
+\rulerRule{e.ite.5}{DC}
+{%
+| x :- | ^{ | \*/ | } |  l ~> c | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.DC.comp.base.e.ite.6}{%
+\rulerRule{e.ite.6}{DC}
+{%
+| x :- | ^{ | \*/ | } |  r ~> c | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.E.comp.base.scheme}{%
+\ensuremath{| hsnameFormat :- | ^{ | \*/ | } |  e ~> compFormat | }
+}
+\rulerCmdDef{RulerUniquenessExamples.E.comp.base.e.var}{%
+\rulerRule{e.var}{E}
+{%
+}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  n : utau ~> utau | \rulerSameEndMark{} |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.E.comp.base.e.app}{%
+\rulerRule{e.app}{E}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  f ~> c | _{ | f | } |  | \rulerSameEndMark{} |  | 
+\\
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  a ~> c | _{ | a | } |  | \rulerSameEndMark{} |  | 
+}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  f a ~> c | _{ | f | } |  \*/ c | _{ | a | } |  | \rulerSameEndMark{} |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.E.comp.base.e.app.1}{%
+\rulerRule{e.app.1}{E}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  f ~> c | _{ | f | } |  | \rulerSameEndMark{} |  | 
+}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  f a ~> c | _{ | f | } |  | \rulerSameEndMark{} |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.E.comp.base.e.app.2}{%
+\rulerRule{e.app.2}{E}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  a ~> c | _{ | a | } |  | \rulerSameEndMark{} |  | 
+}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  f a ~> c | _{ | a | } |  | \rulerSameEndMark{} |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.E.comp.base.e.ite}{%
+\rulerRule{e.ite}{E}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  r ~> c | _{ | r | } |  | \rulerSameEndMark{} |  | 
+\\
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  l ~> c | _{ | l | } |  | \rulerSameEndMark{} |  | 
+\\
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  g ~> c | _{ | g | } |  | \rulerSameEndMark{} |  | 
+}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | g | } |  \+/ (c | _{ | l | } |  \-/ c | _{ | r | } | ) | \rulerSameEndMark{} |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.E.comp.base.e.ite.1}{%
+\rulerRule{e.ite.1}{E}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  r ~> c | _{ | r | } |  | \rulerSameEndMark{} |  | 
+\\
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  l ~> c | _{ | l | } |  | \rulerSameEndMark{} |  | 
+}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | l | } |  \-/ c | _{ | r | } |  | \rulerSameEndMark{} |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.E.comp.base.e.ite.2}{%
+\rulerRule{e.ite.2}{E}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  g ~> c | _{ | g | } |  | \rulerSameEndMark{} |  | 
+}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | g | } |  | \rulerSameEndMark{} |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.E.comp.base.e.ite.3}{%
+\rulerRule{e.ite.3}{E}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  l ~> c | _{ | l | } |  | \rulerSameEndMark{} |  | 
+\\
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  g ~> c | _{ | g | } |  | \rulerSameEndMark{} |  | 
+}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | g | } |  \+/ c | _{ | l | } |  | \rulerSameEndMark{} |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.E.comp.base.e.ite.4}{%
+\rulerRule{e.ite.4}{E}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  r ~> c | _{ | r | } |  | \rulerSameEndMark{} |  | 
+\\
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  g ~> c | _{ | g | } |  | \rulerSameEndMark{} |  | 
+}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | g | } |  \+/ c | _{ | r | } |  | \rulerSameEndMark{} |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.E.comp.base.e.ite.5}{%
+\rulerRule{e.ite.5}{E}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  l ~> c | \rulerSameEndMark{} |  | 
+}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  if g then l else r ~> c | \rulerSameEndMark{} |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.E.comp.base.e.ite.6}{%
+\rulerRule{e.ite.6}{E}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  r ~> c | \rulerSameEndMark{} |  | 
+}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  if g then l else r ~> c | \rulerSameEndMark{} |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.E0.comp.base.scheme}{%
+\ensuremath{| hsnameFormat :- | ^{ | \*/ | } |  e ~> compFormat | }
+}
+\rulerCmdDef{RulerUniquenessExamples.E0.comp.base.e.var}{%
+\rulerRule{e.var}{E0}
+{%
+}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  n : utau ~> utau | \rulerSameEndMark{} |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.E0.comp.base.e.app}{%
+\rulerRule{e.app}{E0}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  f ~> c | _{ | f | } |  | \rulerSameEndMark{} |  | 
+\\
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  a ~> c | _{ | a | } |  | \rulerSameEndMark{} |  | 
+}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  f a ~> c | _{ | f | } |  \*/ c | _{ | a | } |  | \rulerSameEndMark{} |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.E0.comp.base.e.app.1}{%
+\rulerRule{e.app.1}{E0}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  f ~> c | _{ | f | } |  | \rulerSameEndMark{} |  | 
+}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  f a ~> c | _{ | f | } |  | \rulerSameEndMark{} |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.E0.comp.base.e.app.2}{%
+\rulerRule{e.app.2}{E0}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  a ~> c | _{ | a | } |  | \rulerSameEndMark{} |  | 
+}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  f a ~> c | _{ | a | } |  | \rulerSameEndMark{} |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.E0.comp.base.e.ite}{%
+\rulerRule{e.ite}{E0}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  r ~> c | _{ | r | } |  | \rulerSameEndMark{} |  | 
+\\
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  l ~> c | _{ | l | } |  | \rulerSameEndMark{} |  | 
+\\
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  g ~> c | _{ | g | } |  | \rulerSameEndMark{} |  | 
+}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | g | } |  \+/ (c | _{ | l | } |  \-/ c | _{ | r | } | ) | \rulerSameEndMark{} |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.E0.comp.base.e.ite.1}{%
+\rulerRule{e.ite.1}{E0}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  r ~> c | _{ | r | } |  | \rulerSameEndMark{} |  | 
+\\
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  l ~> c | _{ | l | } |  | \rulerSameEndMark{} |  | 
+}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | l | } |  \-/ c | _{ | r | } |  | \rulerSameEndMark{} |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.E0.comp.base.e.ite.2}{%
+\rulerRule{e.ite.2}{E0}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  g ~> c | _{ | g | } |  | \rulerSameEndMark{} |  | 
+}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | g | } |  | \rulerSameEndMark{} |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.E0.comp.base.e.ite.3}{%
+\rulerRule{e.ite.3}{E0}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  l ~> c | _{ | l | } |  | \rulerSameEndMark{} |  | 
+\\
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  g ~> c | _{ | g | } |  | \rulerSameEndMark{} |  | 
+}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | g | } |  \+/ c | _{ | l | } |  | \rulerSameEndMark{} |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.E0.comp.base.e.ite.4}{%
+\rulerRule{e.ite.4}{E0}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  r ~> c | _{ | r | } |  | \rulerSameEndMark{} |  | 
+\\
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  g ~> c | _{ | g | } |  | \rulerSameEndMark{} |  | 
+}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | g | } |  \+/ c | _{ | r | } |  | \rulerSameEndMark{} |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.E0.comp.base.e.ite.5}{%
+\rulerRule{e.ite.5}{E0}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  l ~> c | \rulerSameEndMark{} |  | 
+}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  if g then l else r ~> c | \rulerSameEndMark{} |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.E0.comp.base.e.ite.6}{%
+\rulerRule{e.ite.6}{E0}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  r ~> c | \rulerSameEndMark{} |  | 
+}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  if g then l else r ~> c | \rulerSameEndMark{} |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.E1.comp.base.scheme}{%
+\ensuremath{| hsnameFormat :- | ^{ | \*/ | } |  e ~> compFormat | }
+}
+\rulerCmdDef{RulerUniquenessExamples.E1.comp.base.e.var}{%
+\rulerRule{e.var}{E1}
+{%
+}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  n : utau ~> utau | \rulerSameEndMark{} |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.E1.comp.base.e.app}{%
+\rulerRule{e.app}{E1}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  f ~> c | _{ | f | } |  | \rulerSameEndMark{} |  | 
+\\
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  a ~> c | _{ | a | } |  | \rulerSameEndMark{} |  | 
+}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  f a ~> c | _{ | f | } |  \*/ c | _{ | a | } |  | \rulerSameEndMark{} |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.E1.comp.base.e.app.1}{%
+\rulerRule{e.app.1}{E1}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  f ~> c | _{ | f | } |  | \rulerSameEndMark{} |  | 
+}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  f a ~> c | _{ | f | } |  | \rulerSameEndMark{} |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.E1.comp.base.e.app.2}{%
+\rulerRule{e.app.2}{E1}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  a ~> c | _{ | a | } |  | \rulerSameEndMark{} |  | 
+}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  f a ~> c | _{ | a | } |  | \rulerSameEndMark{} |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.E1.comp.base.e.ite}{%
+\rulerRule{e.ite}{E1}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  r ~> c | _{ | r | } |  | \rulerSameEndMark{} |  | 
+\\
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  l ~> c | _{ | l | } |  | \rulerSameEndMark{} |  | 
+\\
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  g ~> c | _{ | g | } |  | \rulerSameEndMark{} |  | 
+}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | g | } |  \+/ (c | _{ | l | } |  \-/ c | _{ | r | } | ) | \rulerSameEndMark{} |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.E1.comp.base.e.ite.1}{%
+\rulerRule{e.ite.1}{E1}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  r ~> c | _{ | r | } |  | \rulerSameEndMark{} |  | 
+\\
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  l ~> c | _{ | l | } |  | \rulerSameEndMark{} |  | 
+}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | l | } |  \-/ c | _{ | r | } |  | \rulerSameEndMark{} |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.E1.comp.base.e.ite.2}{%
+\rulerRule{e.ite.2}{E1}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  g ~> c | _{ | g | } |  | \rulerSameEndMark{} |  | 
+}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | g | } |  | \rulerSameEndMark{} |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.E1.comp.base.e.ite.3}{%
+\rulerRule{e.ite.3}{E1}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  l ~> c | _{ | l | } |  | \rulerSameEndMark{} |  | 
+\\
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  g ~> c | _{ | g | } |  | \rulerSameEndMark{} |  | 
+}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | g | } |  \+/ c | _{ | l | } |  | \rulerSameEndMark{} |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.E1.comp.base.e.ite.4}{%
+\rulerRule{e.ite.4}{E1}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  r ~> c | _{ | r | } |  | \rulerSameEndMark{} |  | 
+\\
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  g ~> c | _{ | g | } |  | \rulerSameEndMark{} |  | 
+}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | g | } |  \+/ c | _{ | r | } |  | \rulerSameEndMark{} |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.E1.comp.base.e.ite.5}{%
+\rulerRule{e.ite.5}{E1}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  l ~> c | \rulerSameEndMark{} |  | 
+}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  if g then l else r ~> c | \rulerSameEndMark{} |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.E1.comp.base.e.ite.6}{%
+\rulerRule{e.ite.6}{E1}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  r ~> c | \rulerSameEndMark{} |  | 
+}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  if g then l else r ~> c | \rulerSameEndMark{} |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.E2.comp.base.scheme}{%
+\ensuremath{| hsnameFormat :- | ^{ | \*/ | } |  e ~> compFormat | }
+}
+\rulerCmdDef{RulerUniquenessExamples.E2.comp.base.e.var}{%
+\rulerRule{e.var}{E2}
+{%
+}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  n : utau ~> utau | \rulerSameEndMark{} |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.E2.comp.base.e.app}{%
+\rulerRule{e.app}{E2}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  f ~> c | _{ | f | } |  | \rulerSameEndMark{} |  | 
+\\
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  a ~> c | _{ | a | } |  | \rulerSameEndMark{} |  | 
+}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  f a ~> c | _{ | f | } |  \*/ c | _{ | a | } |  | \rulerSameEndMark{} |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.E2.comp.base.e.app.1}{%
+\rulerRule{e.app.1}{E2}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  f ~> c | _{ | f | } |  | \rulerSameEndMark{} |  | 
+}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  f a ~> c | _{ | f | } |  | \rulerSameEndMark{} |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.E2.comp.base.e.app.2}{%
+\rulerRule{e.app.2}{E2}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  a ~> c | _{ | a | } |  | \rulerSameEndMark{} |  | 
+}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  f a ~> c | _{ | a | } |  | \rulerSameEndMark{} |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.E2.comp.base.e.ite}{%
+\rulerRule{e.ite}{E2}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  r ~> c | _{ | r | } |  | \rulerSameEndMark{} |  | 
+\\
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  l ~> c | _{ | l | } |  | \rulerSameEndMark{} |  | 
+\\
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  g ~> c | _{ | g | } |  | \rulerSameEndMark{} |  | 
+}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | g | } |  \+/ (c | _{ | l | } |  \-/ c | _{ | r | } | ) | \rulerSameEndMark{} |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.E2.comp.base.e.ite.1}{%
+\rulerRule{e.ite.1}{E2}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  r ~> c | _{ | r | } |  | \rulerSameEndMark{} |  | 
+\\
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  l ~> c | _{ | l | } |  | \rulerSameEndMark{} |  | 
+}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | l | } |  \-/ c | _{ | r | } |  | \rulerSameEndMark{} |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.E2.comp.base.e.ite.2}{%
+\rulerRule{e.ite.2}{E2}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  g ~> c | _{ | g | } |  | \rulerSameEndMark{} |  | 
+}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | g | } |  | \rulerSameEndMark{} |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.E2.comp.base.e.ite.3}{%
+\rulerRule{e.ite.3}{E2}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  l ~> c | _{ | l | } |  | \rulerSameEndMark{} |  | 
+\\
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  g ~> c | _{ | g | } |  | \rulerSameEndMark{} |  | 
+}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | g | } |  \+/ c | _{ | l | } |  | \rulerSameEndMark{} |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.E2.comp.base.e.ite.4}{%
+\rulerRule{e.ite.4}{E2}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  r ~> c | _{ | r | } |  | \rulerSameEndMark{} |  | 
+\\
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  g ~> c | _{ | g | } |  | \rulerSameEndMark{} |  | 
+}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | g | } |  \+/ c | _{ | r | } |  | \rulerSameEndMark{} |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.E2.comp.base.e.ite.5}{%
+\rulerRule{e.ite.5}{E2}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  l ~> c | \rulerSameEndMark{} |  | 
+}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  if g then l else r ~> c | \rulerSameEndMark{} |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.E2.comp.base.e.ite.6}{%
+\rulerRule{e.ite.6}{E2}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  r ~> c | \rulerSameEndMark{} |  | 
+}
+{%
+| | \rulerSameBegMark{} |  x :- | ^{ | \*/ | } |  if g then l else r ~> c | \rulerSameEndMark{} |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.EF.comp.base.scheme}{%
+\ensuremath{| hsnameFormat :- | ^{ | \*/ | } |  e ~> compFormat | }
+}
+\rulerCmdDef{RulerUniquenessExamples.EF.comp.base.e.var}{%
+\rulerRule{e.var}{EF}
+{%
+}
+{%
+| x :- | ^{ | \*/ | } |  n : utau ~> utau | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.EF.comp.base.e.app}{%
+\rulerRule{e.app}{EF}
+{%
+| x :- | ^{ | \*/ | } |  f ~> c | _{ | f | } |  | 
+\\
+| x :- | ^{ | \*/ | } |  a ~> c | _{ | a | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  f a ~> c | _{ | f | } |  \*/ c | _{ | a | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.EF.comp.base.e.app.1}{%
+\rulerRule{e.app.1}{EF}
+{%
+| x :- | ^{ | \*/ | } |  f ~> c | _{ | f | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  f a ~> c | _{ | f | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.EF.comp.base.e.app.2}{%
+\rulerRule{e.app.2}{EF}
+{%
+| x :- | ^{ | \*/ | } |  a ~> c | _{ | a | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  f a ~> c | _{ | a | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.EF.comp.base.e.ite}{%
+\rulerRule{e.ite}{EF}
+{%
+| x :- | ^{ | \*/ | } |  r ~> c | _{ | r | } |  | 
+\\
+| x :- | ^{ | \*/ | } |  l ~> c | _{ | l | } |  | 
+\\
+| x :- | ^{ | \*/ | } |  g ~> c | _{ | g | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | g | } |  \+/ (c | _{ | l | } |  \-/ c | _{ | r | } | ) | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.EF.comp.base.e.ite.1}{%
+\rulerRule{e.ite.1}{EF}
+{%
+| x :- | ^{ | \*/ | } |  r ~> c | _{ | r | } |  | 
+\\
+| x :- | ^{ | \*/ | } |  l ~> c | _{ | l | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | l | } |  \-/ c | _{ | r | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.EF.comp.base.e.ite.2}{%
+\rulerRule{e.ite.2}{EF}
+{%
+| x :- | ^{ | \*/ | } |  g ~> c | _{ | g | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | g | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.EF.comp.base.e.ite.3}{%
+\rulerRule{e.ite.3}{EF}
+{%
+| x :- | ^{ | \*/ | } |  l ~> c | _{ | l | } |  | 
+\\
+| x :- | ^{ | \*/ | } |  g ~> c | _{ | g | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | g | } |  \+/ c | _{ | l | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.EF.comp.base.e.ite.4}{%
+\rulerRule{e.ite.4}{EF}
+{%
+| x :- | ^{ | \*/ | } |  r ~> c | _{ | r | } |  | 
+\\
+| x :- | ^{ | \*/ | } |  g ~> c | _{ | g | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | g | } |  \+/ c | _{ | r | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.EF.comp.base.e.ite.5}{%
+\rulerRule{e.ite.5}{EF}
+{%
+| x :- | ^{ | \*/ | } |  l ~> c | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.EF.comp.base.e.ite.6}{%
+\rulerRule{e.ite.6}{EF}
+{%
+| x :- | ^{ | \*/ | } |  r ~> c | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.EL.comp.base.scheme}{%
+\ensuremath{| hsnameFormat :- | ^{ | \*/ | } |  e ~> compFormat | }
+}
+\rulerCmdDef{RulerUniquenessExamples.EL.comp.base.e.var}{%
+\rulerRule{e.var}{EL}
+{%
+}
+{%
+| x :- | ^{ | \*/ | } |  n : utau ~> utau | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.EL.comp.base.e.app}{%
+\rulerRule{e.app}{EL}
+{%
+| x :- | ^{ | \*/ | } |  f ~> c | _{ | f | } |  | 
+\\
+| x :- | ^{ | \*/ | } |  a ~> c | _{ | a | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  f a ~> c | _{ | f | } |  \*/ c | _{ | a | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.EL.comp.base.e.app.1}{%
+\rulerRule{e.app.1}{EL}
+{%
+| x :- | ^{ | \*/ | } |  f ~> c | _{ | f | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  f a ~> c | _{ | f | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.EL.comp.base.e.app.2}{%
+\rulerRule{e.app.2}{EL}
+{%
+| x :- | ^{ | \*/ | } |  a ~> c | _{ | a | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  f a ~> c | _{ | a | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.EL.comp.base.e.ite}{%
+\rulerRule{e.ite}{EL}
+{%
+| x :- | ^{ | \*/ | } |  r ~> c | _{ | r | } |  | 
+\\
+| x :- | ^{ | \*/ | } |  l ~> c | _{ | l | } |  | 
+\\
+| x :- | ^{ | \*/ | } |  g ~> c | _{ | g | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | g | } |  \+/ (c | _{ | l | } |  \-/ c | _{ | r | } | ) | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.EL.comp.base.e.ite.1}{%
+\rulerRule{e.ite.1}{EL}
+{%
+| x :- | ^{ | \*/ | } |  r ~> c | _{ | r | } |  | 
+\\
+| x :- | ^{ | \*/ | } |  l ~> c | _{ | l | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | l | } |  \-/ c | _{ | r | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.EL.comp.base.e.ite.2}{%
+\rulerRule{e.ite.2}{EL}
+{%
+| x :- | ^{ | \*/ | } |  g ~> c | _{ | g | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | g | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.EL.comp.base.e.ite.3}{%
+\rulerRule{e.ite.3}{EL}
+{%
+| x :- | ^{ | \*/ | } |  l ~> c | _{ | l | } |  | 
+\\
+| x :- | ^{ | \*/ | } |  g ~> c | _{ | g | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | g | } |  \+/ c | _{ | l | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.EL.comp.base.e.ite.4}{%
+\rulerRule{e.ite.4}{EL}
+{%
+| x :- | ^{ | \*/ | } |  r ~> c | _{ | r | } |  | 
+\\
+| x :- | ^{ | \*/ | } |  g ~> c | _{ | g | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | g | } |  \+/ c | _{ | r | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.EL.comp.base.e.ite.5}{%
+\rulerRule{e.ite.5}{EL}
+{%
+| x :- | ^{ | \*/ | } |  l ~> c | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.EL.comp.base.e.ite.6}{%
+\rulerRule{e.ite.6}{EL}
+{%
+| x :- | ^{ | \*/ | } |  r ~> c | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.EX.comp.base.scheme}{%
+\ensuremath{| hsnameFormat :- | ^{ | \*/ | } |  e ~> compFormat | }
+}
+\rulerCmdDef{RulerUniquenessExamples.EX.comp.base.e.var}{%
+\rulerRule{e.var}{EX}
+{%
+}
+{%
+| x :- | ^{ | \*/ | } |  n : utau ~> utau | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.EX.comp.base.e.app}{%
+\rulerRule{e.app}{EX}
+{%
+| x :- | ^{ | \*/ | } |  f ~> c | _{ | f | } |  | 
+\\
+| x :- | ^{ | \*/ | } |  a ~> c | _{ | a | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  f a ~> c | _{ | f | } |  \*/ c | _{ | a | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.EX.comp.base.e.app.1}{%
+\rulerRule{e.app.1}{EX}
+{%
+| x :- | ^{ | \*/ | } |  f ~> c | _{ | f | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  f a ~> c | _{ | f | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.EX.comp.base.e.app.2}{%
+\rulerRule{e.app.2}{EX}
+{%
+| x :- | ^{ | \*/ | } |  a ~> c | _{ | a | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  f a ~> c | _{ | a | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.EX.comp.base.e.ite}{%
+\rulerRule{e.ite}{EX}
+{%
+| x :- | ^{ | \*/ | } |  r ~> c | _{ | r | } |  | 
+\\
+| x :- | ^{ | \*/ | } |  l ~> c | _{ | l | } |  | 
+\\
+| x :- | ^{ | \*/ | } |  g ~> c | _{ | g | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | g | } |  \+/ (c | _{ | l | } |  \-/ c | _{ | r | } | ) | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.EX.comp.base.e.ite.1}{%
+\rulerRule{e.ite.1}{EX}
+{%
+| x :- | ^{ | \*/ | } |  r ~> c | _{ | r | } |  | 
+\\
+| x :- | ^{ | \*/ | } |  l ~> c | _{ | l | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | l | } |  \-/ c | _{ | r | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.EX.comp.base.e.ite.2}{%
+\rulerRule{e.ite.2}{EX}
+{%
+| x :- | ^{ | \*/ | } |  g ~> c | _{ | g | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | g | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.EX.comp.base.e.ite.3}{%
+\rulerRule{e.ite.3}{EX}
+{%
+| x :- | ^{ | \*/ | } |  l ~> c | _{ | l | } |  | 
+\\
+| x :- | ^{ | \*/ | } |  g ~> c | _{ | g | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | g | } |  \+/ c | _{ | l | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.EX.comp.base.e.ite.4}{%
+\rulerRule{e.ite.4}{EX}
+{%
+| x :- | ^{ | \*/ | } |  r ~> c | _{ | r | } |  | 
+\\
+| x :- | ^{ | \*/ | } |  g ~> c | _{ | g | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | g | } |  \+/ c | _{ | r | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.EX.comp.base.e.ite.5}{%
+\rulerRule{e.ite.5}{EX}
+{%
+| x :- | ^{ | \*/ | } |  l ~> c | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.EX.comp.base.e.ite.6}{%
+\rulerRule{e.ite.6}{EX}
+{%
+| x :- | ^{ | \*/ | } |  r ~> c | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.L.comp.base.scheme}{%
+\ensuremath{| hsnameFormat :- | ^{ | \*/ | } |  e ~> compFormat | }
+}
+\rulerCmdDef{RulerUniquenessExamples.L.comp.base.e.var}{%
+\rulerRule{e.var}{L}
+{%
+}
+{%
+| x :- | ^{ | \*/ | } |  n : utau ~> utau | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.L.comp.base.e.app}{%
+\rulerRule{e.app}{L}
+{%
+| x :- | ^{ | \*/ | } |  f ~> c | _{ | f | } |  | 
+\\
+| x :- | ^{ | \*/ | } |  a ~> c | _{ | a | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  f a ~> c | _{ | f | } |  \*/ c | _{ | a | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.L.comp.base.e.app.1}{%
+\rulerRule{e.app.1}{L}
+{%
+| x :- | ^{ | \*/ | } |  f ~> c | _{ | f | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  f a ~> c | _{ | f | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.L.comp.base.e.app.2}{%
+\rulerRule{e.app.2}{L}
+{%
+| x :- | ^{ | \*/ | } |  a ~> c | _{ | a | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  f a ~> c | _{ | a | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.L.comp.base.e.ite}{%
+\rulerRule{e.ite}{L}
+{%
+| x :- | ^{ | \*/ | } |  r ~> c | _{ | r | } |  | 
+\\
+| x :- | ^{ | \*/ | } |  l ~> c | _{ | l | } |  | 
+\\
+| x :- | ^{ | \*/ | } |  g ~> c | _{ | g | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | g | } |  \+/ (c | _{ | l | } |  \-/ c | _{ | r | } | ) | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.L.comp.base.e.ite.1}{%
+\rulerRule{e.ite.1}{L}
+{%
+| x :- | ^{ | \*/ | } |  r ~> c | _{ | r | } |  | 
+\\
+| x :- | ^{ | \*/ | } |  l ~> c | _{ | l | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | l | } |  \-/ c | _{ | r | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.L.comp.base.e.ite.2}{%
+\rulerRule{e.ite.2}{L}
+{%
+| x :- | ^{ | \*/ | } |  g ~> c | _{ | g | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | g | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.L.comp.base.e.ite.3}{%
+\rulerRule{e.ite.3}{L}
+{%
+| x :- | ^{ | \*/ | } |  l ~> c | _{ | l | } |  | 
+\\
+| x :- | ^{ | \*/ | } |  g ~> c | _{ | g | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | g | } |  \+/ c | _{ | l | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.L.comp.base.e.ite.4}{%
+\rulerRule{e.ite.4}{L}
+{%
+| x :- | ^{ | \*/ | } |  r ~> c | _{ | r | } |  | 
+\\
+| x :- | ^{ | \*/ | } |  g ~> c | _{ | g | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | g | } |  \+/ c | _{ | r | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.L.comp.base.e.ite.5}{%
+\rulerRule{e.ite.5}{L}
+{%
+| x :- | ^{ | \*/ | } |  l ~> c | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.L.comp.base.e.ite.6}{%
+\rulerRule{e.ite.6}{L}
+{%
+| x :- | ^{ | \*/ | } |  r ~> c | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.U1.comp.base.scheme}{%
+\ensuremath{| hsnameFormat :- | ^{ | \*/ | } |  e ~> compFormat | }
+}
+\rulerCmdDef{RulerUniquenessExamples.U1.comp.base.e.var}{%
+\rulerRule{e.var}{U1}
+{%
+}
+{%
+| x :- | ^{ | \*/ | } |  n : utau ~> utau | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.U1.comp.base.e.app}{%
+\rulerRule{e.app}{U1}
+{%
+| x :- | ^{ | \*/ | } |  f ~> c | _{ | f | } |  | 
+\\
+| x :- | ^{ | \*/ | } |  a ~> c | _{ | a | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  f a ~> c | _{ | f | } |  \*/ c | _{ | a | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.U1.comp.base.e.app.1}{%
+\rulerRule{e.app.1}{U1}
+{%
+| x :- | ^{ | \*/ | } |  f ~> c | _{ | f | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  f a ~> c | _{ | f | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.U1.comp.base.e.app.2}{%
+\rulerRule{e.app.2}{U1}
+{%
+| x :- | ^{ | \*/ | } |  a ~> c | _{ | a | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  f a ~> c | _{ | a | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.U1.comp.base.e.ite}{%
+\rulerRule{e.ite}{U1}
+{%
+| x :- | ^{ | \*/ | } |  r ~> c | _{ | r | } |  | 
+\\
+| x :- | ^{ | \*/ | } |  l ~> c | _{ | l | } |  | 
+\\
+| x :- | ^{ | \*/ | } |  g ~> c | _{ | g | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | g | } |  \+/ (c | _{ | l | } |  \-/ c | _{ | r | } | ) | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.U1.comp.base.e.ite.1}{%
+\rulerRule{e.ite.1}{U1}
+{%
+| x :- | ^{ | \*/ | } |  r ~> c | _{ | r | } |  | 
+\\
+| x :- | ^{ | \*/ | } |  l ~> c | _{ | l | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | l | } |  \-/ c | _{ | r | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.U1.comp.base.e.ite.2}{%
+\rulerRule{e.ite.2}{U1}
+{%
+| x :- | ^{ | \*/ | } |  g ~> c | _{ | g | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | g | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.U1.comp.base.e.ite.3}{%
+\rulerRule{e.ite.3}{U1}
+{%
+| x :- | ^{ | \*/ | } |  l ~> c | _{ | l | } |  | 
+\\
+| x :- | ^{ | \*/ | } |  g ~> c | _{ | g | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | g | } |  \+/ c | _{ | l | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.U1.comp.base.e.ite.4}{%
+\rulerRule{e.ite.4}{U1}
+{%
+| x :- | ^{ | \*/ | } |  r ~> c | _{ | r | } |  | 
+\\
+| x :- | ^{ | \*/ | } |  g ~> c | _{ | g | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | g | } |  \+/ c | _{ | r | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.U1.comp.base.e.ite.5}{%
+\rulerRule{e.ite.5}{U1}
+{%
+| x :- | ^{ | \*/ | } |  l ~> c | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.U1.comp.base.e.ite.6}{%
+\rulerRule{e.ite.6}{U1}
+{%
+| x :- | ^{ | \*/ | } |  r ~> c | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.U2.comp.base.scheme}{%
+\ensuremath{| hsnameFormat :- | ^{ | \*/ | } |  e ~> compFormat | }
+}
+\rulerCmdDef{RulerUniquenessExamples.U2.comp.base.e.var}{%
+\rulerRule{e.var}{U2}
+{%
+}
+{%
+| x :- | ^{ | \*/ | } |  n : utau ~> utau | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.U2.comp.base.e.app}{%
+\rulerRule{e.app}{U2}
+{%
+| x :- | ^{ | \*/ | } |  f ~> c | _{ | f | } |  | 
+\\
+| x :- | ^{ | \*/ | } |  a ~> c | _{ | a | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  f a ~> c | _{ | f | } |  \*/ c | _{ | a | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.U2.comp.base.e.app.1}{%
+\rulerRule{e.app.1}{U2}
+{%
+| x :- | ^{ | \*/ | } |  f ~> c | _{ | f | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  f a ~> c | _{ | f | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.U2.comp.base.e.app.2}{%
+\rulerRule{e.app.2}{U2}
+{%
+| x :- | ^{ | \*/ | } |  a ~> c | _{ | a | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  f a ~> c | _{ | a | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.U2.comp.base.e.ite}{%
+\rulerRule{e.ite}{U2}
+{%
+| x :- | ^{ | \*/ | } |  r ~> c | _{ | r | } |  | 
+\\
+| x :- | ^{ | \*/ | } |  l ~> c | _{ | l | } |  | 
+\\
+| x :- | ^{ | \*/ | } |  g ~> c | _{ | g | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | g | } |  \+/ (c | _{ | l | } |  \-/ c | _{ | r | } | ) | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.U2.comp.base.e.ite.1}{%
+\rulerRule{e.ite.1}{U2}
+{%
+| x :- | ^{ | \*/ | } |  r ~> c | _{ | r | } |  | 
+\\
+| x :- | ^{ | \*/ | } |  l ~> c | _{ | l | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | l | } |  \-/ c | _{ | r | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.U2.comp.base.e.ite.2}{%
+\rulerRule{e.ite.2}{U2}
+{%
+| x :- | ^{ | \*/ | } |  g ~> c | _{ | g | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | g | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.U2.comp.base.e.ite.3}{%
+\rulerRule{e.ite.3}{U2}
+{%
+| x :- | ^{ | \*/ | } |  l ~> c | _{ | l | } |  | 
+\\
+| x :- | ^{ | \*/ | } |  g ~> c | _{ | g | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | g | } |  \+/ c | _{ | l | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.U2.comp.base.e.ite.4}{%
+\rulerRule{e.ite.4}{U2}
+{%
+| x :- | ^{ | \*/ | } |  r ~> c | _{ | r | } |  | 
+\\
+| x :- | ^{ | \*/ | } |  g ~> c | _{ | g | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | g | } |  \+/ c | _{ | r | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.U2.comp.base.e.ite.5}{%
+\rulerRule{e.ite.5}{U2}
+{%
+| x :- | ^{ | \*/ | } |  l ~> c | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.U2.comp.base.e.ite.6}{%
+\rulerRule{e.ite.6}{U2}
+{%
+| x :- | ^{ | \*/ | } |  r ~> c | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.UF.comp.base.scheme}{%
+\ensuremath{| hsnameFormat :- | ^{ | \*/ | } |  e ~> compFormat | }
+}
+\rulerCmdDef{RulerUniquenessExamples.UF.comp.base.e.var}{%
+\rulerRule{e.var}{UF}
+{%
+}
+{%
+| x :- | ^{ | \*/ | } |  n : utau ~> utau | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.UF.comp.base.e.app}{%
+\rulerRule{e.app}{UF}
+{%
+| x :- | ^{ | \*/ | } |  f ~> c | _{ | f | } |  | 
+\\
+| x :- | ^{ | \*/ | } |  a ~> c | _{ | a | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  f a ~> c | _{ | f | } |  \*/ c | _{ | a | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.UF.comp.base.e.app.1}{%
+\rulerRule{e.app.1}{UF}
+{%
+| x :- | ^{ | \*/ | } |  f ~> c | _{ | f | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  f a ~> c | _{ | f | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.UF.comp.base.e.app.2}{%
+\rulerRule{e.app.2}{UF}
+{%
+| x :- | ^{ | \*/ | } |  a ~> c | _{ | a | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  f a ~> c | _{ | a | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.UF.comp.base.e.ite}{%
+\rulerRule{e.ite}{UF}
+{%
+| x :- | ^{ | \*/ | } |  r ~> c | _{ | r | } |  | 
+\\
+| x :- | ^{ | \*/ | } |  l ~> c | _{ | l | } |  | 
+\\
+| x :- | ^{ | \*/ | } |  g ~> c | _{ | g | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | g | } |  \+/ (c | _{ | l | } |  \-/ c | _{ | r | } | ) | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.UF.comp.base.e.ite.1}{%
+\rulerRule{e.ite.1}{UF}
+{%
+| x :- | ^{ | \*/ | } |  r ~> c | _{ | r | } |  | 
+\\
+| x :- | ^{ | \*/ | } |  l ~> c | _{ | l | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | l | } |  \-/ c | _{ | r | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.UF.comp.base.e.ite.2}{%
+\rulerRule{e.ite.2}{UF}
+{%
+| x :- | ^{ | \*/ | } |  g ~> c | _{ | g | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | g | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.UF.comp.base.e.ite.3}{%
+\rulerRule{e.ite.3}{UF}
+{%
+| x :- | ^{ | \*/ | } |  l ~> c | _{ | l | } |  | 
+\\
+| x :- | ^{ | \*/ | } |  g ~> c | _{ | g | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | g | } |  \+/ c | _{ | l | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.UF.comp.base.e.ite.4}{%
+\rulerRule{e.ite.4}{UF}
+{%
+| x :- | ^{ | \*/ | } |  r ~> c | _{ | r | } |  | 
+\\
+| x :- | ^{ | \*/ | } |  g ~> c | _{ | g | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | g | } |  \+/ c | _{ | r | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.UF.comp.base.e.ite.5}{%
+\rulerRule{e.ite.5}{UF}
+{%
+| x :- | ^{ | \*/ | } |  l ~> c | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.UF.comp.base.e.ite.6}{%
+\rulerRule{e.ite.6}{UF}
+{%
+| x :- | ^{ | \*/ | } |  r ~> c | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.UL.comp.base.scheme}{%
+\ensuremath{| hsnameFormat :- | ^{ | \*/ | } |  e ~> compFormat | }
+}
+\rulerCmdDef{RulerUniquenessExamples.UL.comp.base.e.var}{%
+\rulerRule{e.var}{UL}
+{%
+}
+{%
+| x :- | ^{ | \*/ | } |  n : utau ~> utau | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.UL.comp.base.e.app}{%
+\rulerRule{e.app}{UL}
+{%
+| x :- | ^{ | \*/ | } |  f ~> c | _{ | f | } |  | 
+\\
+| x :- | ^{ | \*/ | } |  a ~> c | _{ | a | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  f a ~> c | _{ | f | } |  \*/ c | _{ | a | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.UL.comp.base.e.app.1}{%
+\rulerRule{e.app.1}{UL}
+{%
+| x :- | ^{ | \*/ | } |  f ~> c | _{ | f | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  f a ~> c | _{ | f | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.UL.comp.base.e.app.2}{%
+\rulerRule{e.app.2}{UL}
+{%
+| x :- | ^{ | \*/ | } |  a ~> c | _{ | a | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  f a ~> c | _{ | a | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.UL.comp.base.e.ite}{%
+\rulerRule{e.ite}{UL}
+{%
+| x :- | ^{ | \*/ | } |  r ~> c | _{ | r | } |  | 
+\\
+| x :- | ^{ | \*/ | } |  l ~> c | _{ | l | } |  | 
+\\
+| x :- | ^{ | \*/ | } |  g ~> c | _{ | g | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | g | } |  \+/ (c | _{ | l | } |  \-/ c | _{ | r | } | ) | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.UL.comp.base.e.ite.1}{%
+\rulerRule{e.ite.1}{UL}
+{%
+| x :- | ^{ | \*/ | } |  r ~> c | _{ | r | } |  | 
+\\
+| x :- | ^{ | \*/ | } |  l ~> c | _{ | l | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | l | } |  \-/ c | _{ | r | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.UL.comp.base.e.ite.2}{%
+\rulerRule{e.ite.2}{UL}
+{%
+| x :- | ^{ | \*/ | } |  g ~> c | _{ | g | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | g | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.UL.comp.base.e.ite.3}{%
+\rulerRule{e.ite.3}{UL}
+{%
+| x :- | ^{ | \*/ | } |  l ~> c | _{ | l | } |  | 
+\\
+| x :- | ^{ | \*/ | } |  g ~> c | _{ | g | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | g | } |  \+/ c | _{ | l | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.UL.comp.base.e.ite.4}{%
+\rulerRule{e.ite.4}{UL}
+{%
+| x :- | ^{ | \*/ | } |  r ~> c | _{ | r | } |  | 
+\\
+| x :- | ^{ | \*/ | } |  g ~> c | _{ | g | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | g | } |  \+/ c | _{ | r | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.UL.comp.base.e.ite.5}{%
+\rulerRule{e.ite.5}{UL}
+{%
+| x :- | ^{ | \*/ | } |  l ~> c | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.UL.comp.base.e.ite.6}{%
+\rulerRule{e.ite.6}{UL}
+{%
+| x :- | ^{ | \*/ | } |  r ~> c | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.UX.comp.base.scheme}{%
+\ensuremath{| hsnameFormat :- | ^{ | \*/ | } |  e ~> compFormat | }
+}
+\rulerCmdDef{RulerUniquenessExamples.UX.comp.base.e.var}{%
+\rulerRule{e.var}{UX}
+{%
+}
+{%
+| x :- | ^{ | \*/ | } |  n : utau ~> utau | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.UX.comp.base.e.app}{%
+\rulerRule{e.app}{UX}
+{%
+| x :- | ^{ | \*/ | } |  f ~> c | _{ | f | } |  | 
+\\
+| x :- | ^{ | \*/ | } |  a ~> c | _{ | a | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  f a ~> c | _{ | f | } |  \*/ c | _{ | a | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.UX.comp.base.e.app.1}{%
+\rulerRule{e.app.1}{UX}
+{%
+| x :- | ^{ | \*/ | } |  f ~> c | _{ | f | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  f a ~> c | _{ | f | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.UX.comp.base.e.app.2}{%
+\rulerRule{e.app.2}{UX}
+{%
+| x :- | ^{ | \*/ | } |  a ~> c | _{ | a | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  f a ~> c | _{ | a | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.UX.comp.base.e.ite}{%
+\rulerRule{e.ite}{UX}
+{%
+| x :- | ^{ | \*/ | } |  r ~> c | _{ | r | } |  | 
+\\
+| x :- | ^{ | \*/ | } |  l ~> c | _{ | l | } |  | 
+\\
+| x :- | ^{ | \*/ | } |  g ~> c | _{ | g | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | g | } |  \+/ (c | _{ | l | } |  \-/ c | _{ | r | } | ) | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.UX.comp.base.e.ite.1}{%
+\rulerRule{e.ite.1}{UX}
+{%
+| x :- | ^{ | \*/ | } |  r ~> c | _{ | r | } |  | 
+\\
+| x :- | ^{ | \*/ | } |  l ~> c | _{ | l | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | l | } |  \-/ c | _{ | r | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.UX.comp.base.e.ite.2}{%
+\rulerRule{e.ite.2}{UX}
+{%
+| x :- | ^{ | \*/ | } |  g ~> c | _{ | g | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | g | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.UX.comp.base.e.ite.3}{%
+\rulerRule{e.ite.3}{UX}
+{%
+| x :- | ^{ | \*/ | } |  l ~> c | _{ | l | } |  | 
+\\
+| x :- | ^{ | \*/ | } |  g ~> c | _{ | g | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | g | } |  \+/ c | _{ | l | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.UX.comp.base.e.ite.4}{%
+\rulerRule{e.ite.4}{UX}
+{%
+| x :- | ^{ | \*/ | } |  r ~> c | _{ | r | } |  | 
+\\
+| x :- | ^{ | \*/ | } |  g ~> c | _{ | g | } |  | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | _{ | g | } |  \+/ c | _{ | r | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.UX.comp.base.e.ite.5}{%
+\rulerRule{e.ite.5}{UX}
+{%
+| x :- | ^{ | \*/ | } |  l ~> c | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.UX.comp.base.e.ite.6}{%
+\rulerRule{e.ite.6}{UX}
+{%
+| x :- | ^{ | \*/ | } |  r ~> c | 
+}
+{%
+| x :- | ^{ | \*/ | } |  if g then l else r ~> c | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.B.comp.base}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{RulerUniquenessExamples.B.comp.base.scheme}}{Aggregation type rule}{RulerUniquenessExamples.B.comp.base}{B}
+\rulerCmdUse{RulerUniquenessExamples.B.comp.base.e.var}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.B.comp.base.e.app}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.B.comp.base.e.app.1}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.B.comp.base.e.app.2}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.B.comp.base.e.ite}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.B.comp.base.e.ite.1}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.B.comp.base.e.ite.2}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.B.comp.base.e.ite.3}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.B.comp.base.e.ite.4}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.B.comp.base.e.ite.5}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.B.comp.base.e.ite.6}
+\end{rulerRulesetFigure}
+}
+\rulerCmdDef{RulerUniquenessExamples.D.comp.base}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{RulerUniquenessExamples.D.comp.base.scheme}}{Aggregation type rule}{RulerUniquenessExamples.D.comp.base}{D}
+\rulerCmdUse{RulerUniquenessExamples.D.comp.base.e.var}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.D.comp.base.e.app}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.D.comp.base.e.app.1}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.D.comp.base.e.app.2}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.D.comp.base.e.ite}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.D.comp.base.e.ite.1}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.D.comp.base.e.ite.2}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.D.comp.base.e.ite.3}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.D.comp.base.e.ite.4}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.D.comp.base.e.ite.5}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.D.comp.base.e.ite.6}
+\end{rulerRulesetFigure}
+}
+\rulerCmdDef{RulerUniquenessExamples.DC.comp.base}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{RulerUniquenessExamples.DC.comp.base.scheme}}{Aggregation type rule}{RulerUniquenessExamples.DC.comp.base}{DC}
+\rulerCmdUse{RulerUniquenessExamples.DC.comp.base.e.var}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.DC.comp.base.e.app}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.DC.comp.base.e.app.1}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.DC.comp.base.e.app.2}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.DC.comp.base.e.ite}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.DC.comp.base.e.ite.1}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.DC.comp.base.e.ite.2}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.DC.comp.base.e.ite.3}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.DC.comp.base.e.ite.4}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.DC.comp.base.e.ite.5}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.DC.comp.base.e.ite.6}
+\end{rulerRulesetFigure}
+}
+\rulerCmdDef{RulerUniquenessExamples.E.comp.base}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{RulerUniquenessExamples.E.comp.base.scheme}}{Aggregation type rule}{RulerUniquenessExamples.E.comp.base}{E}
+\rulerCmdUse{RulerUniquenessExamples.E.comp.base.e.var}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.E.comp.base.e.app}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.E.comp.base.e.app.1}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.E.comp.base.e.app.2}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.E.comp.base.e.ite}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.E.comp.base.e.ite.1}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.E.comp.base.e.ite.2}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.E.comp.base.e.ite.3}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.E.comp.base.e.ite.4}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.E.comp.base.e.ite.5}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.E.comp.base.e.ite.6}
+\end{rulerRulesetFigure}
+}
+\rulerCmdDef{RulerUniquenessExamples.E0.comp.base}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{RulerUniquenessExamples.E0.comp.base.scheme}}{Aggregation type rule}{RulerUniquenessExamples.E0.comp.base}{E0}
+\rulerCmdUse{RulerUniquenessExamples.E0.comp.base.e.var}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.E0.comp.base.e.app}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.E0.comp.base.e.app.1}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.E0.comp.base.e.app.2}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.E0.comp.base.e.ite}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.E0.comp.base.e.ite.1}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.E0.comp.base.e.ite.2}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.E0.comp.base.e.ite.3}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.E0.comp.base.e.ite.4}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.E0.comp.base.e.ite.5}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.E0.comp.base.e.ite.6}
+\end{rulerRulesetFigure}
+}
+\rulerCmdDef{RulerUniquenessExamples.E1.comp.base}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{RulerUniquenessExamples.E1.comp.base.scheme}}{Aggregation type rule}{RulerUniquenessExamples.E1.comp.base}{E1}
+\rulerCmdUse{RulerUniquenessExamples.E1.comp.base.e.var}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.E1.comp.base.e.app}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.E1.comp.base.e.app.1}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.E1.comp.base.e.app.2}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.E1.comp.base.e.ite}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.E1.comp.base.e.ite.1}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.E1.comp.base.e.ite.2}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.E1.comp.base.e.ite.3}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.E1.comp.base.e.ite.4}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.E1.comp.base.e.ite.5}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.E1.comp.base.e.ite.6}
+\end{rulerRulesetFigure}
+}
+\rulerCmdDef{RulerUniquenessExamples.E2.comp.base}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{RulerUniquenessExamples.E2.comp.base.scheme}}{Aggregation type rule}{RulerUniquenessExamples.E2.comp.base}{E2}
+\rulerCmdUse{RulerUniquenessExamples.E2.comp.base.e.var}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.E2.comp.base.e.app}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.E2.comp.base.e.app.1}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.E2.comp.base.e.app.2}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.E2.comp.base.e.ite}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.E2.comp.base.e.ite.1}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.E2.comp.base.e.ite.2}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.E2.comp.base.e.ite.3}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.E2.comp.base.e.ite.4}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.E2.comp.base.e.ite.5}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.E2.comp.base.e.ite.6}
+\end{rulerRulesetFigure}
+}
+\rulerCmdDef{RulerUniquenessExamples.EF.comp.base}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{RulerUniquenessExamples.EF.comp.base.scheme}}{Aggregation type rule}{RulerUniquenessExamples.EF.comp.base}{EF}
+\rulerCmdUse{RulerUniquenessExamples.EF.comp.base.e.var}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.EF.comp.base.e.app}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.EF.comp.base.e.app.1}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.EF.comp.base.e.app.2}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.EF.comp.base.e.ite}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.EF.comp.base.e.ite.1}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.EF.comp.base.e.ite.2}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.EF.comp.base.e.ite.3}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.EF.comp.base.e.ite.4}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.EF.comp.base.e.ite.5}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.EF.comp.base.e.ite.6}
+\end{rulerRulesetFigure}
+}
+\rulerCmdDef{RulerUniquenessExamples.EL.comp.base}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{RulerUniquenessExamples.EL.comp.base.scheme}}{Aggregation type rule}{RulerUniquenessExamples.EL.comp.base}{EL}
+\rulerCmdUse{RulerUniquenessExamples.EL.comp.base.e.var}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.EL.comp.base.e.app}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.EL.comp.base.e.app.1}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.EL.comp.base.e.app.2}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.EL.comp.base.e.ite}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.EL.comp.base.e.ite.1}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.EL.comp.base.e.ite.2}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.EL.comp.base.e.ite.3}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.EL.comp.base.e.ite.4}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.EL.comp.base.e.ite.5}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.EL.comp.base.e.ite.6}
+\end{rulerRulesetFigure}
+}
+\rulerCmdDef{RulerUniquenessExamples.EX.comp.base}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{RulerUniquenessExamples.EX.comp.base.scheme}}{Aggregation type rule}{RulerUniquenessExamples.EX.comp.base}{EX}
+\rulerCmdUse{RulerUniquenessExamples.EX.comp.base.e.var}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.EX.comp.base.e.app}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.EX.comp.base.e.app.1}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.EX.comp.base.e.app.2}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.EX.comp.base.e.ite}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.EX.comp.base.e.ite.1}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.EX.comp.base.e.ite.2}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.EX.comp.base.e.ite.3}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.EX.comp.base.e.ite.4}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.EX.comp.base.e.ite.5}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.EX.comp.base.e.ite.6}
+\end{rulerRulesetFigure}
+}
+\rulerCmdDef{RulerUniquenessExamples.L.comp.base}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{RulerUniquenessExamples.L.comp.base.scheme}}{Aggregation type rule}{RulerUniquenessExamples.L.comp.base}{L}
+\rulerCmdUse{RulerUniquenessExamples.L.comp.base.e.var}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.L.comp.base.e.app}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.L.comp.base.e.app.1}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.L.comp.base.e.app.2}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.L.comp.base.e.ite}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.L.comp.base.e.ite.1}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.L.comp.base.e.ite.2}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.L.comp.base.e.ite.3}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.L.comp.base.e.ite.4}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.L.comp.base.e.ite.5}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.L.comp.base.e.ite.6}
+\end{rulerRulesetFigure}
+}
+\rulerCmdDef{RulerUniquenessExamples.U1.comp.base}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{RulerUniquenessExamples.U1.comp.base.scheme}}{Aggregation type rule}{RulerUniquenessExamples.U1.comp.base}{U1}
+\rulerCmdUse{RulerUniquenessExamples.U1.comp.base.e.var}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.U1.comp.base.e.app}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.U1.comp.base.e.app.1}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.U1.comp.base.e.app.2}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.U1.comp.base.e.ite}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.U1.comp.base.e.ite.1}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.U1.comp.base.e.ite.2}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.U1.comp.base.e.ite.3}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.U1.comp.base.e.ite.4}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.U1.comp.base.e.ite.5}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.U1.comp.base.e.ite.6}
+\end{rulerRulesetFigure}
+}
+\rulerCmdDef{RulerUniquenessExamples.U2.comp.base}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{RulerUniquenessExamples.U2.comp.base.scheme}}{Aggregation type rule}{RulerUniquenessExamples.U2.comp.base}{U2}
+\rulerCmdUse{RulerUniquenessExamples.U2.comp.base.e.var}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.U2.comp.base.e.app}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.U2.comp.base.e.app.1}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.U2.comp.base.e.app.2}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.U2.comp.base.e.ite}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.U2.comp.base.e.ite.1}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.U2.comp.base.e.ite.2}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.U2.comp.base.e.ite.3}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.U2.comp.base.e.ite.4}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.U2.comp.base.e.ite.5}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.U2.comp.base.e.ite.6}
+\end{rulerRulesetFigure}
+}
+\rulerCmdDef{RulerUniquenessExamples.UF.comp.base}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{RulerUniquenessExamples.UF.comp.base.scheme}}{Aggregation type rule}{RulerUniquenessExamples.UF.comp.base}{UF}
+\rulerCmdUse{RulerUniquenessExamples.UF.comp.base.e.var}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.UF.comp.base.e.app}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.UF.comp.base.e.app.1}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.UF.comp.base.e.app.2}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.UF.comp.base.e.ite}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.UF.comp.base.e.ite.1}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.UF.comp.base.e.ite.2}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.UF.comp.base.e.ite.3}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.UF.comp.base.e.ite.4}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.UF.comp.base.e.ite.5}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.UF.comp.base.e.ite.6}
+\end{rulerRulesetFigure}
+}
+\rulerCmdDef{RulerUniquenessExamples.UL.comp.base}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{RulerUniquenessExamples.UL.comp.base.scheme}}{Aggregation type rule}{RulerUniquenessExamples.UL.comp.base}{UL}
+\rulerCmdUse{RulerUniquenessExamples.UL.comp.base.e.var}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.UL.comp.base.e.app}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.UL.comp.base.e.app.1}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.UL.comp.base.e.app.2}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.UL.comp.base.e.ite}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.UL.comp.base.e.ite.1}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.UL.comp.base.e.ite.2}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.UL.comp.base.e.ite.3}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.UL.comp.base.e.ite.4}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.UL.comp.base.e.ite.5}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.UL.comp.base.e.ite.6}
+\end{rulerRulesetFigure}
+}
+\rulerCmdDef{RulerUniquenessExamples.UX.comp.base}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{RulerUniquenessExamples.UX.comp.base.scheme}}{Aggregation type rule}{RulerUniquenessExamples.UX.comp.base}{UX}
+\rulerCmdUse{RulerUniquenessExamples.UX.comp.base.e.var}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.UX.comp.base.e.app}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.UX.comp.base.e.app.1}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.UX.comp.base.e.app.2}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.UX.comp.base.e.ite}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.UX.comp.base.e.ite.1}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.UX.comp.base.e.ite.2}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.UX.comp.base.e.ite.3}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.UX.comp.base.e.ite.4}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.UX.comp.base.e.ite.5}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.UX.comp.base.e.ite.6}
+\end{rulerRulesetFigure}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.E.expr.base.scheme}{%
+\ensuremath{| Gamma :- | ^{ | type | } |  e : tau | }
+}
+\rulerCmdDef{RulerUniquenessExamples.E.expr.base.e.int}{%
+\rulerRule{e.int}{E}
+{%
+}
+{%
+| | \rulerChngBegMark{} |  Gamma | \rulerChngEndMark{} |  :- | ^{ | type | } |  | \rulerChngBegMark{} |  n | \rulerChngEndMark{} |  : | \rulerChngBegMark{} |  Int | \rulerChngEndMark{} |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.E.expr.base.e.var}{%
+\rulerRule{e.var}{E}
+{%
+| | \rulerChngBegMark{} |  ident | \rulerChngEndMark{} |  :-> | \rulerChngBegMark{} |  tau | \rulerChngEndMark{} |  `elem` | \rulerChngBegMark{} |  Gamma | \rulerChngEndMark{} |  | 
+}
+{%
+| | \rulerChngBegMark{} |  Gamma | \rulerChngEndMark{} |  :- | ^{ | type | } |  | \rulerChngBegMark{} |  ident | \rulerChngEndMark{} |  : | \rulerChngBegMark{} |  tau | \rulerChngEndMark{} |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.E.expr.base.e.plus}{%
+\rulerRule{e.plus}{E}
+{%
+| | \rulerChngBegMark{} |  Gamma | \rulerChngEndMark{} |  :- | ^{ | type | } |  | \rulerChngBegMark{} |  y | \rulerChngEndMark{} |  : | \rulerChngBegMark{} |  Int | \rulerChngEndMark{} |  | 
+\\
+| | \rulerChngBegMark{} |  Gamma | \rulerChngEndMark{} |  :- | ^{ | type | } |  | \rulerChngBegMark{} |  x | \rulerChngEndMark{} |  : | \rulerChngBegMark{} |  Int | \rulerChngEndMark{} |  | 
+}
+{%
+| | \rulerChngBegMark{} |  Gamma | \rulerChngEndMark{} |  :- | ^{ | type | } |  | \rulerChngBegMark{} |  x opplus y | \rulerChngEndMark{} |  : | \rulerChngBegMark{} |  Int | \rulerChngEndMark{} |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.E.expr.base.e.app}{%
+\rulerRule{e.app}{E}
+{%
+| | \rulerChngBegMark{} |  Gamma | \rulerChngEndMark{} |  :- | ^{ | type | } |  | \rulerChngBegMark{} |  a | \rulerChngEndMark{} |  : | \rulerChngBegMark{} |  tau | _{ | a | } |  | \rulerChngEndMark{} |  | 
+\\
+| | \rulerChngBegMark{} |  tau | _{ | f | } |  | \rulerChngEndMark{} |  <=> | \rulerChngBegMark{} |  tau | _{ | a | } |  -> tau | \rulerChngEndMark{} |  | 
+\\
+| | \rulerChngBegMark{} |  Gamma | \rulerChngEndMark{} |  :- | ^{ | type | } |  | \rulerChngBegMark{} |  f | \rulerChngEndMark{} |  : | \rulerChngBegMark{} |  tau | _{ | f | } |  | \rulerChngEndMark{} |  | 
+}
+{%
+| | \rulerChngBegMark{} |  Gamma | \rulerChngEndMark{} |  :- | ^{ | type | } |  | \rulerChngBegMark{} |  f a | \rulerChngEndMark{} |  : | \rulerChngBegMark{} |  tau | \rulerChngEndMark{} |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.E.expr.base.e.lam}{%
+\rulerRule{e.lam}{E}
+{%
+| | \rulerChngBegMark{} |  x :-> tau | _{ | x | } |  + Gamma | \rulerChngEndMark{} |  :- | ^{ | type | } |  | \rulerChngBegMark{} |  b | \rulerChngEndMark{} |  : | \rulerChngBegMark{} |  tau | \rulerChngEndMark{} |  | 
+}
+{%
+| | \rulerChngBegMark{} |  Gamma | \rulerChngEndMark{} |  :- | ^{ | type | } |  | \rulerChngBegMark{} |   \ x -> b | \rulerChngEndMark{} |  : | \rulerChngBegMark{} |  tau | _{ | x | } |  -> tau | \rulerChngEndMark{} |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.EF.expr.base.scheme}{%
+\ensuremath{| Gamma :- | ^{ | type | } |  e : tau | }
+}
+\rulerCmdDef{RulerUniquenessExamples.EF.expr.base.e.var}{%
+\rulerRule{e.var}{EF}
+{%
+| ident | _{ | n | } |  :-> tau `elem` Gamma | 
+}
+{%
+| Gamma :- | ^{ | type | } |  ident : tau | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.EF.expr.base.e.let}{%
+\rulerRule{e.let}{EF}
+{%
+| x | _{ | m | } |  :-> tau | _{ | x | } |  + Gamma :- | ^{ | type | } |  body : tau | 
+\\
+| Gamma :- | ^{ | type | } |  expr : tau | _{ | x | } |  | 
+}
+{%
+| Gamma :- | ^{ | type | } |  let | _{ | m | } |  x = expr in body : tau | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.EF.expr.base.e.ite}{%
+\rulerRule{e.ite}{EF}
+{%
+| Gamma :- | ^{ | type | } |  e : tau | 
+\\
+| Gamma :- | ^{ | type | } |  t : tau | 
+\\
+| Gamma :- | ^{ | type | } |  g : Bool | 
+}
+{%
+| Gamma :- | ^{ | type | } |  let g then t else e : tau | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.EL.expr.base.scheme}{%
+\ensuremath{| Gamma :- | ^{ | type | } |  e : tau | }
+}
+\rulerCmdDef{RulerUniquenessExamples.EL.expr.base.e.var}{%
+\rulerRule{e.var}{EL}
+{%
+| ident | _{ | n | } |  :-> tau `elem` Gamma | 
+}
+{%
+| Gamma :- | ^{ | type | } |  ident : tau | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.EL.expr.base.e.let}{%
+\rulerRule{e.let}{EL}
+{%
+| x | _{ | m | } |  :-> tau | _{ | x | } |  + Gamma :- | ^{ | type | } |  body : tau | 
+\\
+| Gamma :- | ^{ | type | } |  expr : tau | _{ | x | } |  | 
+}
+{%
+| Gamma :- | ^{ | type | } |  let | _{ | m | } |  x = expr in body : tau | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.EX.expr.base.scheme}{%
+\ensuremath{| Gamma :- | ^{ | type | } |  e : tau | }
+}
+\rulerCmdDef{RulerUniquenessExamples.EX.expr.base.e.int}{%
+\rulerRule{e.int}{EX}
+{%
+}
+{%
+| Gamma :- | ^{ | type | } |  n : Int | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.EX.expr.base.e.var}{%
+\rulerRule{e.var}{EX}
+{%
+| ident :-> tau `elem` Gamma | 
+}
+{%
+| Gamma :- | ^{ | type | } |  ident : tau | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.EX.expr.base.e.plus}{%
+\rulerRule{e.plus}{EX}
+{%
+| Gamma :- | ^{ | type | } |  y : Int | 
+\\
+| Gamma :- | ^{ | type | } |  x : Int | 
+}
+{%
+| Gamma :- | ^{ | type | } |  x opplus y : Int | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.EX.expr.base.e.app}{%
+\rulerRule{e.app}{EX}
+{%
+| Gamma :- | ^{ | type | } |  a : tau | _{ | a | } |  | 
+\\
+| tau | _{ | f | } |  <=> tau | _{ | a | } |  -> tau | 
+\\
+| Gamma :- | ^{ | type | } |  f : tau | _{ | f | } |  | 
+}
+{%
+| Gamma :- | ^{ | type | } |  f a : tau | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.EX.expr.base.e.lam}{%
+\rulerRule{e.lam}{EX}
+{%
+| x :-> tau | _{ | x | } |  + Gamma :- | ^{ | type | } |  b : tau | 
+}
+{%
+| Gamma :- | ^{ | type | } |   \ x -> b : tau | _{ | x | } |  -> tau | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.L.expr.base.scheme}{%
+\ensuremath{| Gamma :- e : tau | }
+}
+\rulerCmdDef{RulerUniquenessExamples.L.expr.base.e.int}{%
+\rulerRule{e.int}{L}
+{%
+}
+{%
+| emptyset :- n : Int | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.L.expr.base.e.var}{%
+\rulerRule{e.var}{L}
+{%
+}
+{%
+|  { ident :-> tau }  :- ident : tau | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.L.expr.base.e.app}{%
+\rulerRule{e.app}{L}
+{%
+| Gamma | _{ | a | } |  :- a : tau | _{ | a | } |  | 
+\\
+| Gamma | _{ | f | } |  :- f : tau | _{ | a | } |  -> tau | 
+}
+{%
+| Gamma | _{ | f | } |  , Gamma | _{ | a | } |  :- f a : tau | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.L.expr.base.e.lam}{%
+\rulerRule{e.lam}{L}
+{%
+| x :-> tau | _{ | x | } |  + Gamma :- b : tau | 
+}
+{%
+| Gamma :-  \ x -> b : tau | _{ | x | } |  -> tau | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.U1.expr.base.scheme}{%
+\ensuremath{| Gamma :- | ^{ | unq | } |  e : utau ~> zeta | }
+}
+\rulerCmdDef{RulerUniquenessExamples.U1.expr.base.e.int}{%
+\rulerRule{e.int}{U1}
+{%
+| delta  arbitrary | 
+}
+{%
+| Gamma :- | ^{ | unq | } |  n : Int | ^{ | delta | } |  ~> emptyset | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.U1.expr.base.e.var}{%
+\rulerRule{e.var}{U1}
+{%
+| ident :-> tau `elem` Gamma | 
+\\
+| utau === (Sup( tau )( delta | 
+}
+{%
+| Gamma :- | ^{ | unq | } |  ident : utau ~> emptyset | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.U1.expr.base.e.plus}{%
+\rulerRule{e.plus}{U1}
+{%
+| zeta | _{ | c2 | } |  ===  { delta =>= | _{ | s | } |  b }  | 
+\\
+| zeta | _{ | c1 | } |  ===  { delta =>= | _{ | s | } |  a }  | 
+\\
+| Gamma :- | ^{ | unq | } |  x : Int | ^{ | a | } |  ~> zeta | _{ | a | } |  | 
+\\
+| Gamma :- | ^{ | unq | } |  y : Int | ^{ | b | } |  ~> zeta | _{ | b | } |  | 
+}
+{%
+| Gamma :- | ^{ | unq | } |  x opplus y : Int | ^{ | delta | } |  ~> zeta | _{ | c1 | } |  zeta | _{ | c2 | } |  zeta | _{ | a | } |  zeta | _{ | b | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.U1.expr.base.e.app}{%
+\rulerRule{e.app}{U1}
+{%
+| tau | _{ | r | } |  <=> tau | 
+\\
+| Gamma :- | ^{ | unq | } |  a : utau | _{ | a | } |  ~> zeta | _{ | a | } |  | 
+\\
+| Gamma :- | ^{ | unq | } |  f : utau | _{ | f | } |  ~> zeta | _{ | f | } |  | 
+\\
+| utau | _{ | f | } |  <=> utau | _{ | a | }^{ | 1 | } |  -> | ^{ | delta | _{ | 1 | } |  | } |  utau | _{ | r | } |  | 
+\\
+| zeta | _{ | m2 | } |  ===  { delta =>= | _{ | s | } |  delta | _{ | 1 | } |  }  | 
+\\
+|  :- | ^{ | flow | } |  utau =>= utau | _{ | r | } |  ~> zeta | _{ | r | } |  | 
+\\
+| utau === (Sup( _ )( delta | 
+\\
+| tau | _{ | p | } |  <=> tau | _{ | a | } |  | 
+\\
+|  :- | ^{ | flow | } |  utau | _{ | p | } |  =>= utau | _{ | a | } |  ~> zeta | _{ | m1 | } |  | 
+}
+{%
+| Gamma :- | ^{ | unq | } |  f a : utau ~> zeta | _{ | m1 | } |  zeta | _{ | m2 | } |  zeta | _{ | r | } |  zeta | _{ | a | } |  zeta | _{ | f | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.U1.expr.base.e.lam}{%
+\rulerRule{e.lam}{U1}
+{%
+| zeta | _{ | gat | } |  ===  { a | _{ | 1 | } |  \*/ ... \*/ a | _{ | n | } |  <= a }  | 
+\\
+| utau | _{ | x | } |  === (Sup( _ )( a | 
+\\
+| x :-> tau | _{ | x | } |  + Gamma :- | ^{ | unq | } |  b : utau ~> zeta | _{ | b | } |  | 
+\\
+| x :- | ^{ | gather | } |  b ~>  { x | _{ | 1 | } |  : (Sub(Sup(utau)(Sub(a)(1)))(1)) , ... , x | _{ | n | } |  : (Sub(Sup(utau)(Sub(a)(n)))(n)) }  | 
+\\
+| delta  arbitrary | 
+}
+{%
+| Gamma :- | ^{ | unq | } |   \ x -> b : utau | _{ | x | } |  -> | ^{ | delta | } |  utau ~> zeta | _{ | gat | } |  zeta | _{ | b | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.U2.expr.base.scheme}{%
+\ensuremath{| Phi ; Gamma :- | ^{ | unq | } |  e : utau ~> zeta ; Psi | }
+}
+\rulerCmdDef{RulerUniquenessExamples.U2.expr.base.e.int}{%
+\rulerRule{e.int}{U2}
+{%
+| delta  arbitrary | 
+}
+{%
+| Phi ; Gamma :- | ^{ | unq | } |  n : Int | ^{ | delta | } |  ~> emptyset ; emptyset | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.U2.expr.base.e.var}{%
+\rulerRule{e.var}{U2}
+{%
+| utau === (Sup( tau )( delta | 
+\\
+| ident :-> tau `elem` Gamma | 
+\\
+| ident :-> beta `elem` Phi | 
+}
+{%
+| Phi ; Gamma :- | ^{ | unq | } |  ident : utau ~> zeta | _{ | psi | } |  ;  { (beta , zeta | _{ | psi | } | ) }  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.U2.expr.base.e.plus}{%
+\rulerRule{e.plus}{U2}
+{%
+| zeta | _{ | c1 | } |  ===  { delta =>= | _{ | s | } |  a }  | 
+\\
+| zeta | _{ | c2 | } |  ===  { delta =>= | _{ | s | } |  b }  | 
+\\
+| Phi ; Gamma :- | ^{ | unq | } |  x : Int | ^{ | a | } |  ~> zeta | _{ | a | } |  ; Psi | _{ | a | } |  | 
+\\
+| Phi ; Gamma :- | ^{ | unq | } |  y : Int | ^{ | b | } |  ~> zeta | _{ | b | } |  ; Psi | _{ | b | } |  | 
+}
+{%
+| Phi ; Gamma :- | ^{ | unq | } |  x opplus y : Int | ^{ | delta | } |  ~> zeta | _{ | c1 | } |  zeta | _{ | c2 | } |  zeta | _{ | a | } |  zeta | _{ | b | } |  ; Psi | _{ | a | } |  Psi | _{ | b | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.U2.expr.base.e.app}{%
+\rulerRule{e.app}{U2}
+{%
+| tau | _{ | r | } |  <=> tau | 
+\\
+| utau | _{ | f | } |  <=> utau | _{ | p | } |  -> | _{ | beta | }^{ | delta | _{ | 1 | } |  | } |  utau | _{ | r | } |  | 
+\\
+| zeta | _{ | m2 | } |  ===  { delta =>= | _{ | s | } |  delta | _{ | 1 | } |  }  | 
+\\
+| utau === (Sup( _ )( delta | 
+\\
+|  :- | ^{ | flow | } |  utau | _{ | p | } |  =>= utau | _{ | a | } |  ~> zeta | _{ | m1 | } |  | 
+\\
+|  :- | ^{ | flow | } |  utau =>= utau | _{ | r | } |  ~> zeta | _{ | r | } |  | 
+\\
+| Phi ; Gamma :- | ^{ | unq | } |  a : utau | _{ | a | } |  ~> zeta | _{ | a | } |  ; Psi | _{ | a | } |  | 
+\\
+| Phi ; Gamma :- | ^{ | unq | } |  f : utau | _{ | f | } |  ~> zeta | _{ | f | } |  ; Psi | _{ | f | } |  | 
+\\
+| beta :-> zeta | _{ | a | } |  `elem` Psi | _{ | f | } |  | 
+\\
+| tau | _{ | p | } |  <=> tau | _{ | a | } |  | 
+}
+{%
+| Phi ; Gamma :- | ^{ | unq | } |  f a : utau ~> zeta | _{ | m1 | } |  zeta | _{ | m2 | } |  zeta | _{ | r | } |  zeta | _{ | a | } |  zeta | _{ | f | } |  ; Psi | _{ | f | } |  Psi | _{ | a | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.U2.expr.base.e.lam}{%
+\rulerRule{e.lam}{U2}
+{%
+| utau | _{ | x | } |  === (Sup( _ )( a | 
+\\
+| zeta | _{ | gat | } |  ===  { a | _{ | 1 | } |  \*/ ... \*/ a | _{ | n | } |  <= a }  | 
+\\
+| x :-> beta + Phi ; x :-> tau | _{ | x | } |  + Gamma :- | ^{ | unq | } |  b : utau ~> zeta | _{ | b | } |  ; Psi | 
+\\
+| x :- | ^{ | gather | } |  b ~>  { x | _{ | 1 | } |  : (Sub(Sup(utau)(Sub(a)(1)))(1)) , ... , x | _{ | n | } |  : (Sub(Sup(utau)(Sub(a)(n)))(n)) }  | 
+\\
+| delta  arbitrary | 
+}
+{%
+| Phi ; Gamma :- | ^{ | unq | } |   \ x -> b : utau | _{ | x | } |  -> | _{ | beta | }^{ | delta | } |  utau ~> zeta | _{ | gat | } |  zeta | _{ | b | } |  ; Psi | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.UF.expr.base.scheme}{%
+\ensuremath{| Gamma :- | ^{ | unq | } |  e : utau ~> zeta , omega | }
+}
+\rulerCmdDef{RulerUniquenessExamples.UF.expr.base.e.var}{%
+\rulerRule{e.var}{UF}
+{%
+| ident | _{ | n | } |  :-> tau `elem` Gamma | 
+}
+{%
+| Gamma :- | ^{ | unq | } |  ident : utau ~> zeta , omega | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.UF.expr.base.e.let}{%
+\rulerRule{e.let}{UF}
+{%
+| x | _{ | m | } |  :-> tau | _{ | x | } |  + Gamma :- | ^{ | unq | } |  body : utau ~> zeta , omega | 
+\\
+| Gamma :- | ^{ | unq | } |  expr : utau ~> zeta , omega | 
+}
+{%
+| Gamma :- | ^{ | unq | } |  let | _{ | m | } |  x = expr in body : utau ~> zeta , omega | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.UF.expr.base.e.ite}{%
+\rulerRule{e.ite}{UF}
+{%
+| Gamma :- | ^{ | unq | } |  t : utau | _{ | t | } |  ~> zeta | _{ | t | } |  , omega | _{ | t | } |  | 
+\\
+| tau <=> tau | _{ | t | } |  | 
+\\
+| tau <=> tau | _{ | e | } |  | 
+\\
+| Gamma :- | ^{ | unq | } |  g : Bool | ^{ | delta | } |  ~> zeta | _{ | g | } |  , omega | _{ | g | } |  | 
+\\
+| Gamma :- | ^{ | unq | } |  e : utau | _{ | e | } |  ~> zeta | _{ | e | } |  , omega | _{ | e | } |  | 
+\\
+| zeta | _{ | ec | } |  ===  { utau =>= | _{ | q | } |  utau | _{ | e | } |  }  | 
+\\
+| utau === (Sup( tau )( delta | _{ | e | } |  | 
+\\
+| zeta | _{ | gc | } |  ===  { delta | _{ | e | } |  =>= | _{ | s | } |  delta }  | 
+\\
+| zeta | _{ | tc | } |  ===  { utau =>= | _{ | q | } |  utau | _{ | t | } |  }  | 
+}
+{%
+| Gamma :- | ^{ | unq | } |  let g then t else e : utau ~> zeta | _{ | gc | } |  zeta | _{ | tc | } |  zeta | _{ | ec | } |  zeta | _{ | g | } |  zeta | _{ | t | } |  zeta | _{ | e | } |  , omega | _{ | g | } |  omega | _{ | t | } |  omega | _{ | e | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.UL.expr.base.scheme}{%
+\ensuremath{| Gamma :- | ^{ | unq | } |  e : utau ~> zeta ; omega | }
+}
+\rulerCmdDef{RulerUniquenessExamples.UL.expr.base.e.var}{%
+\rulerRule{e.var}{UL}
+{%
+| tau | _{ | b | } |  ~> tau ; pairs | 
+\\
+|  :- | ^{ | annot | } |  utau | _{ | b | } |  ~> utau | 
+\\
+| utau | _{ | i | } |  ; utau ; pairs :- | ^{ | genInst | } |  beta ~> zeta | 
+\\
+| ident | _{ | beta | } |  :-> utau | _{ | b | } |  `elem` Gamma | 
+}
+{%
+| Gamma :- | ^{ | unq | } |  ident : utau ~> zeta ; emptyset | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.UL.expr.base.e.app}{%
+\rulerRule{e.app}{UL}
+{%
+| tau | _{ | p | } |  <=> tau | _{ | a | } |  | 
+\\
+| Gamma :- | ^{ | unq | } |  e : utau | _{ | a | } |  ~> zeta | _{ | a | } |  ; omega | _{ | a | } |  | 
+\\
+| tau | _{ | r | } |  <=> tau | 
+\\
+|  :- | ^{ | flow | } |  utau | _{ | p | } |  =>= utau | _{ | a | } |  ~> zeta | _{ | m1 | } |  | 
+\\
+| utau | _{ | f | } |  <=> utau | _{ | p | } |  -> | _{ | beta | }^{ | delta | _{ | 1 | } |  | } |  utau | _{ | r | } |  | 
+\\
+| Gamma :- | ^{ | unq | } |  e : utau | _{ | f | } |  ~> zeta | _{ | f | } |  ; omega | _{ | f | } |  | 
+\\
+|  :- | ^{ | flow | } |  utau =>= utau | _{ | r | } |  ~> zeta | _{ | r | } |  | 
+\\
+| utau === (Sup( _ )( delta | 
+\\
+| zeta | _{ | m2 | } |  ===  { delta =>= | _{ | s | } |  delta | _{ | 1 | } |  }  | 
+\\
+| utau | _{ | a | } |  ; utau | _{ | p | } |  ;  []  :- | ^{ | genInst | } |  beta ~> zeta | _{ | ap | } |  | 
+}
+{%
+| Gamma :- | ^{ | unq | } |  e : utau ~> zeta | _{ | m1 | } |  zeta | _{ | m2 | } |  zeta | _{ | r | } |  zeta | _{ | ap | } |  zeta | _{ | f | } |  ;  { (beta , zeta | _{ | a | } | ) } omega | _{ | f | } |  omega | _{ | a | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.UL.expr.base.e.let}{%
+\rulerRule{e.let}{UL}
+{%
+| x | _{ | m | } |  :-> utau | _{ | x | } |  + Gamma :- | ^{ | unq | } |  body : utau ~> zeta | _{ | b | } |  ; omega | _{ | b | } |  | 
+\\
+| x :- | ^{ | gather | } |  expr , body ~>  { x | _{ | 1 | } |  : (Sub(Sup(utau)(Sub(a)(1)))(1)) , ... , x | _{ | n | } |  : (Sub(Sup(utau)(Sub(a)(n)))(n)) }  | 
+\\
+| Gamma :- | ^{ | unq | } |  expr : utau | _{ | e | } |  ~> zeta | _{ | e | } |  ; omega | _{ | e | } |  | 
+\\
+| utau | _{ | x | } |  === (Sup( _ )( delta | 
+\\
+| zeta | _{ | sum | } |  ===  { a | _{ | 1 | } |  \*/ ... \*/ a | _{ | n | } |  <= delta }  | 
+\\
+|  :- | ^{ | annot | } |  utau | _{ | e | } |  ~> utau | _{ | x | } |  | 
+}
+{%
+| Gamma :- | ^{ | unq | } |  let | _{ | m | } |  x = expr in body : utau ~> zeta | _{ | sum | } |  zeta | _{ | b | } |  ;  { (m , zeta | _{ | e | } | ) } omega | _{ | e | } |  omega | _{ | b | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.UX.expr.base.scheme}{%
+\ensuremath{| Phi ; Gamma :- | ^{ | unq | } |  e : utau ~> zeta ; Psi | }
+}
+\rulerCmdDef{RulerUniquenessExamples.UX.expr.base.e.int}{%
+\rulerRule{e.int}{UX}
+{%
+| delta  |fresh| | 
+}
+{%
+| Phi ; Gamma :- | ^{ | unq | } |  n : Int | ^{ | delta | } |  ~> emptyset ; emptyset | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.UX.expr.base.e.var}{%
+\rulerRule{e.var}{UX}
+{%
+|  :- | ^{ | annot | } |  utau | _{ | env | } |  ~> utau | 
+\\
+| utau | _{ | env | } |  ; utau :- | ^{ | rename | } |  zeta | _{ | ident | } |  ~> zeta | 
+\\
+| ident :-> utau | _{ | env | } |  `elem` Gamma | 
+\\
+| ident :-> beta `elem` Phi | 
+}
+{%
+| Phi ; Gamma :- | ^{ | unq | } |  ident : utau ~> zeta ;  { (beta , zeta | _{ | ident | } | ) }  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.UX.expr.base.e.plus}{%
+\rulerRule{e.plus}{UX}
+{%
+| zeta | _{ | c2 | } |  ===  { delta =>= | _{ | s | } |  b }  | 
+\\
+| delta  |fresh| | 
+\\
+| zeta | _{ | c1 | } |  ===  { delta =>= | _{ | s | } |  a }  | 
+\\
+| Phi ; Gamma :- | ^{ | unq | } |  x : Int | ^{ | a | } |  ~> zeta | _{ | a | } |  ; Psi | _{ | a | } |  | 
+\\
+| Phi ; Gamma :- | ^{ | unq | } |  y : Int | ^{ | b | } |  ~> zeta | _{ | b | } |  ; Psi | _{ | b | } |  | 
+}
+{%
+| Phi ; Gamma :- | ^{ | unq | } |  x opplus y : Int | ^{ | delta | } |  ~> zeta | _{ | c1 | } |  zeta | _{ | c2 | } |  zeta | _{ | a | } |  zeta | _{ | b | } |  ; Psi | _{ | a | } |  Psi | _{ | b | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.UX.expr.base.e.app}{%
+\rulerRule{e.app}{UX}
+{%
+| utau | _{ | f | } |  <=> utau | _{ | p | } |  -> | _{ | beta | }^{ | delta | _{ | f | } |  | } |  utau | 
+\\
+| utau === (Sup( tau )( delta | 
+\\
+| zeta | _{ | md | } |  ===  { delta =>= | _{ | s | } |  delta | _{ | f | } |  }  | 
+\\
+|  :- | ^{ | flow | } |  utau | _{ | p | } |  =>= utau | _{ | a | } |  ~> zeta | _{ | ma | } |  | 
+\\
+| Phi ; Gamma :- | ^{ | unq | } |  a : utau | _{ | a | } |  ~> zeta | _{ | a | } |  ; Psi | _{ | a | } |  | 
+\\
+| Phi ; Gamma :- | ^{ | unq | } |  f : utau | _{ | f | } |  ~> zeta | _{ | f | } |  ; Psi | _{ | f | } |  | 
+\\
+| beta :-> zeta | _{ | at | } |  `elem` Psi | _{ | f | } |  | 
+\\
+| utau | _{ | a | } |  ; utau | _{ | p | } |  :- | ^{ | rename | } |  zeta | _{ | a | } |  ~> zeta | _{ | at | } |  | 
+\\
+| tau | _{ | p | } |  <=> tau | _{ | a | } |  | 
+}
+{%
+| Phi ; Gamma :- | ^{ | unq | } |  f a : utau ~> zeta | _{ | md | } |  zeta | _{ | ma | } |  zeta | _{ | a | } |  zeta | _{ | f | } |  ; Psi | _{ | f | } |  Psi | _{ | a | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.UX.expr.base.e.lam}{%
+\rulerRule{e.lam}{UX}
+{%
+| zeta | _{ | sum | } |  ===  { a | _{ | 1 | } |  \*/ ... \*/ a | _{ | n | } |  <= a }  | 
+\\
+| x :- | ^{ | gather | } |  b ~>  { x | _{ | 1 | } |  : (Sub(Sup(utau)(Sub(a)(1)))(1)) , ... , x | _{ | n | } |  : (Sub(Sup(utau)(Sub(a)(n)))(n)) }  | 
+\\
+| utau | _{ | x | } |  === (Sup( _ )( a | 
+\\
+|  :- | ^{ | flow | } |  utau =>= utau | _{ | b | } |  ~> zeta | _{ | r | } |  | 
+\\
+| beta  |fresh| | 
+\\
+| delta  |fresh| | 
+\\
+| x :-> beta + Phi ; x :-> tau | _{ | x | } |  + Gamma :- | ^{ | unq | } |  b : utau | _{ | b | } |  ~> zeta | _{ | b | } |  ; Psi | 
+}
+{%
+| Phi ; Gamma :- | ^{ | unq | } |   \ x -> b : utau | _{ | x | } |  -> | _{ | beta | }^{ | delta | } |  utau ~> zeta | _{ | sum | } |  zeta | _{ | r | } |  zeta | _{ | b | } |  ; Psi | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.E.expr.base}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{RulerUniquenessExamples.E.expr.base.scheme}}{Expression type rules}{RulerUniquenessExamples.E.expr.base}{E}
+\rulerCmdUse{RulerUniquenessExamples.E.expr.base.e.int}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.E.expr.base.e.var}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.E.expr.base.e.plus}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.E.expr.base.e.app}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.E.expr.base.e.lam}
+\end{rulerRulesetFigure}
+}
+\rulerCmdDef{RulerUniquenessExamples.EF.expr.base}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{RulerUniquenessExamples.EF.expr.base.scheme}}{Expression type rules}{RulerUniquenessExamples.EF.expr.base}{EF}
+\rulerCmdUse{RulerUniquenessExamples.EF.expr.base.e.var}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.EF.expr.base.e.let}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.EF.expr.base.e.ite}
+\end{rulerRulesetFigure}
+}
+\rulerCmdDef{RulerUniquenessExamples.EL.expr.base}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{RulerUniquenessExamples.EL.expr.base.scheme}}{Expression type rules}{RulerUniquenessExamples.EL.expr.base}{EL}
+\rulerCmdUse{RulerUniquenessExamples.EL.expr.base.e.var}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.EL.expr.base.e.let}
+\end{rulerRulesetFigure}
+}
+\rulerCmdDef{RulerUniquenessExamples.EX.expr.base}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{RulerUniquenessExamples.EX.expr.base.scheme}}{Expression type rules}{RulerUniquenessExamples.EX.expr.base}{EX}
+\rulerCmdUse{RulerUniquenessExamples.EX.expr.base.e.int}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.EX.expr.base.e.var}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.EX.expr.base.e.plus}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.EX.expr.base.e.app}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.EX.expr.base.e.lam}
+\end{rulerRulesetFigure}
+}
+\rulerCmdDef{RulerUniquenessExamples.L.expr.base}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{RulerUniquenessExamples.L.expr.base.scheme}}{Expression type rules}{RulerUniquenessExamples.L.expr.base}{L}
+\rulerCmdUse{RulerUniquenessExamples.L.expr.base.e.int}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.L.expr.base.e.var}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.L.expr.base.e.app}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.L.expr.base.e.lam}
+\end{rulerRulesetFigure}
+}
+\rulerCmdDef{RulerUniquenessExamples.U1.expr.base}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{RulerUniquenessExamples.U1.expr.base.scheme}}{Expression type rules}{RulerUniquenessExamples.U1.expr.base}{U1}
+\rulerCmdUse{RulerUniquenessExamples.U1.expr.base.e.int}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.U1.expr.base.e.var}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.U1.expr.base.e.plus}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.U1.expr.base.e.app}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.U1.expr.base.e.lam}
+\end{rulerRulesetFigure}
+}
+\rulerCmdDef{RulerUniquenessExamples.U2.expr.base}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{RulerUniquenessExamples.U2.expr.base.scheme}}{Expression type rules}{RulerUniquenessExamples.U2.expr.base}{U2}
+\rulerCmdUse{RulerUniquenessExamples.U2.expr.base.e.int}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.U2.expr.base.e.var}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.U2.expr.base.e.plus}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.U2.expr.base.e.app}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.U2.expr.base.e.lam}
+\end{rulerRulesetFigure}
+}
+\rulerCmdDef{RulerUniquenessExamples.UF.expr.base}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{RulerUniquenessExamples.UF.expr.base.scheme}}{Expression type rules}{RulerUniquenessExamples.UF.expr.base}{UF}
+\rulerCmdUse{RulerUniquenessExamples.UF.expr.base.e.var}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.UF.expr.base.e.let}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.UF.expr.base.e.ite}
+\end{rulerRulesetFigure}
+}
+\rulerCmdDef{RulerUniquenessExamples.UL.expr.base}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{RulerUniquenessExamples.UL.expr.base.scheme}}{Expression type rules}{RulerUniquenessExamples.UL.expr.base}{UL}
+\rulerCmdUse{RulerUniquenessExamples.UL.expr.base.e.var}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.UL.expr.base.e.app}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.UL.expr.base.e.let}
+\end{rulerRulesetFigure}
+}
+\rulerCmdDef{RulerUniquenessExamples.UX.expr.base}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{RulerUniquenessExamples.UX.expr.base.scheme}}{Expression type rules}{RulerUniquenessExamples.UX.expr.base}{UX}
+\rulerCmdUse{RulerUniquenessExamples.UX.expr.base.e.int}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.UX.expr.base.e.var}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.UX.expr.base.e.plus}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.UX.expr.base.e.app}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.UX.expr.base.e.lam}
+\end{rulerRulesetFigure}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.U1.flow.base.scheme}{%
+\ensuremath{|  :- | ^{ | flow | } |  utau =>= utau ~> zeta | }
+}
+\rulerCmdDef{RulerUniquenessExamples.U1.flow.base.int}{%
+\rulerRule{int}{U1}
+{%
+| zeta ===  { a =>= b }  | 
+}
+{%
+|  :- | ^{ | flow | } |  Int | ^{ | a | } |  =>= Int | ^{ | b | } |  ~> zeta | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.U1.flow.base.arrow}{%
+\rulerRule{arrow}{U1}
+{%
+| zeta | _{ | f | } |  ===  { a =>= b }  | 
+\\
+|  :- | ^{ | flow | } |  utau | _{ | c | } |  =>= utau | _{ | a | } |  ~> zeta | _{ | 2 | } |  | 
+\\
+|  :- | ^{ | flow | } |  utau | _{ | b | } |  =>= utau | _{ | d | } |  ~> zeta | _{ | 1 | } |  | 
+}
+{%
+|  :- | ^{ | flow | } |  utau | _{ | a | } |  -> | ^{ | a | } |  utau | _{ | b | } |  =>= utau | _{ | c | } |  -> | ^{ | b | } |  utau | _{ | d | } |  ~> zeta | _{ | f | } |  zeta | _{ | 1 | } |  zeta | _{ | 2 | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.U2.flow.base.scheme}{%
+\ensuremath{|  :- | ^{ | flow | } |  utau =>= utau ~> zeta | }
+}
+\rulerCmdDef{RulerUniquenessExamples.U2.flow.base.int}{%
+\rulerRule{int}{U2}
+{%
+| zeta ===  { a =>= b }  | 
+}
+{%
+|  :- | ^{ | flow | } |  Int | ^{ | a | } |  =>= Int | ^{ | b | } |  ~> zeta | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.U2.flow.base.arrow}{%
+\rulerRule{arrow}{U2}
+{%
+| zeta | _{ | f | } |  ===  { a =>= b }  | 
+\\
+|  :- | ^{ | flow | } |  utau | _{ | c | } |  =>= utau | _{ | a | } |  ~> zeta | _{ | 2 | } |  | 
+\\
+|  :- | ^{ | flow | } |  utau | _{ | b | } |  =>= utau | _{ | d | } |  ~> zeta | _{ | 1 | } |  | 
+}
+{%
+|  :- | ^{ | flow | } |  utau | _{ | a | } |  -> | ^{ | a | } |  utau | _{ | b | } |  =>= utau | _{ | c | } |  -> | ^{ | b | } |  utau | _{ | d | } |  ~> zeta | _{ | f | } |  zeta | _{ | 1 | } |  zeta | _{ | 2 | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.U1.flow.base}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{RulerUniquenessExamples.U1.flow.base.scheme}}{Coercion generating type rules}{RulerUniquenessExamples.U1.flow.base}{U1}
+\rulerCmdUse{RulerUniquenessExamples.U1.flow.base.int}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.U1.flow.base.arrow}
+\end{rulerRulesetFigure}
+}
+\rulerCmdDef{RulerUniquenessExamples.U2.flow.base}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{RulerUniquenessExamples.U2.flow.base.scheme}}{Coercion generating type rules}{RulerUniquenessExamples.U2.flow.base}{U2}
+\rulerCmdUse{RulerUniquenessExamples.U2.flow.base.int}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.U2.flow.base.arrow}
+\end{rulerRulesetFigure}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.U1.prog.base.scheme}{%
+\ensuremath{| Gamma :- | ^{ | prog | } |  p | }
+}
+\rulerCmdDef{RulerUniquenessExamples.U1.prog.base.p}{%
+\rulerRule{p}{U1}
+{%
+| all triples consistent | 
+\\
+| satisfied zeta | _{ | f | } |  zeta | 
+\\
+| Gamma :- | ^{ | unq | } |  e : utau ~> zeta | 
+\\
+| zeta | _{ | f | } |  ===  { (1 , (Card(*)(*)) , 1) =>= | _{ | s | } |  delta }  | 
+\\
+| utau === (Sup( _ )( delta | 
+}
+{%
+| Gamma :- | ^{ | prog | } |  e : utau | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.U2.prog.base.scheme}{%
+\ensuremath{| Gamma :- | ^{ | prog | } |  p | }
+}
+\rulerCmdDef{RulerUniquenessExamples.U2.prog.base.p}{%
+\rulerRule{p}{U2}
+{%
+| all triples consistent | 
+\\
+| satisfied zeta | _{ | f | } |  zeta | 
+\\
+| Phi ; Gamma :- | ^{ | unq | } |  e : utau ~> zeta ; Psi | 
+\\
+| utau === (Sup( _ )( delta | 
+\\
+| zeta | _{ | f | } |  ===  { (1 , (Card(*)(*)) , 1) =>= | _{ | s | } |  delta }  | 
+}
+{%
+| Gamma :- | ^{ | prog | } |  e : utau | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.U1.prog.base}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{RulerUniquenessExamples.U1.prog.base.scheme}}{Program type rule}{RulerUniquenessExamples.U1.prog.base}{U1}
+\rulerCmdUse{RulerUniquenessExamples.U1.prog.base.p}
+\end{rulerRulesetFigure}
+}
+\rulerCmdDef{RulerUniquenessExamples.U2.prog.base}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{RulerUniquenessExamples.U2.prog.base.scheme}}{Program type rule}{RulerUniquenessExamples.U2.prog.base}{U2}
+\rulerCmdUse{RulerUniquenessExamples.U2.prog.base.p}
+\end{rulerRulesetFigure}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.D.tp.base.scheme}{%
+\ensuremath{| Gamma :- | ^{ | kind | } |  tau : kappa | }
+}
+\rulerCmdDef{RulerUniquenessExamples.D.tp.base.d.var}{%
+\rulerRule{d.var}{D}
+{%
+| ident :-> kappa `elem` Gamma | 
+}
+{%
+| Gamma :- | ^{ | kind | } |  ident : kappa | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.D.tp.base.d.con}{%
+\rulerRule{d.con}{D}
+{%
+| ident | _{ | n | } |  :-> kappa `elem` Gamma | 
+}
+{%
+| Gamma :- | ^{ | kind | } |  ident | _{ | n | } |  : kappa | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.D.tp.base.d.ann}{%
+\rulerRule{d.ann}{D}
+{%
+| Gamma :- | ^{ | kind | } |  tau : kappa | 
+}
+{%
+| Gamma :- | ^{ | kind | } |  tau | ^{ | delta | } |  : kappa | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.D.tp.base.d.app}{%
+\rulerRule{d.app}{D}
+{%
+| Gamma :- | ^{ | kind | } |  a : kappa | _{ | a | } |  | 
+\\
+| kappa | _{ | f | } |  <=> kappa | _{ | a | } |  -> kappa | 
+\\
+| Gamma :- | ^{ | kind | } |  f : kappa | _{ | f | } |  | 
+}
+{%
+| Gamma :- | ^{ | kind | } |  f a : kappa | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.DC.tp.base.scheme}{%
+\ensuremath{| Gamma :- | ^{ | kind | } |  tau : ukappa ~> zeta | }
+}
+\rulerCmdDef{RulerUniquenessExamples.DC.tp.base.d.var}{%
+\rulerRule{d.var}{DC}
+{%
+| kappa | _{ | i | } |  ~> kappa ; pairs | 
+\\
+|  :- | ^{ | annot | } |  ukappa | _{ | i | } |  ~> ukappa | 
+\\
+| ident | _{ | beta | } |  :-> ukappa | _{ | i | } |  `elem` Gamma | 
+\\
+| ukappa | _{ | i | } |  ; ukappa ; pairs :- | ^{ | genInst | } |  beta ~> zeta | 
+}
+{%
+| Gamma :- | ^{ | kind | } |  ident : ukappa ~> zeta | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.DC.tp.base.d.con}{%
+\rulerRule{d.con}{DC}
+{%
+|  :- | ^{ | annot | } |  ukappa | _{ | i | } |  ~> ukappa | 
+\\
+| ident | _{ | beta | } |  :-> ukappa | _{ | i | } |  `elem` Gamma | 
+\\
+| kappa | _{ | i | } |  ~> kappa ; pairs | 
+\\
+| ukappa | _{ | i | } |  ; ukappa ; pairs :- | ^{ | genInst | } |  beta ~> zeta | 
+}
+{%
+| Gamma :- | ^{ | kind | } |  ident | _{ | n | } |  : ukappa ~> zeta | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.DC.tp.base.d.ann}{%
+\rulerRule{d.ann}{DC}
+{%
+| zeta | _{ | ann | } |  ===  { delta | _{ | top | } |  =>= delta }  | 
+\\
+| Gamma :- | ^{ | kind | } |  tau : ukappa ~> zeta | 
+\\
+| ukappa === (Sup( kappa )( delta | _{ | top | } |  | 
+}
+{%
+| Gamma :- | ^{ | kind | } |  tau | ^{ | delta | } |  : ukappa ~> zeta | _{ | ann | } |  zeta | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.DC.tp.base.d.app}{%
+\rulerRule{d.app}{DC}
+{%
+| zeta | _{ | m2 | } |  ===  { delta =>= | _{ | s | } |  delta | _{ | top | } |  }  | 
+\\
+| kappa | _{ | r | } |  <=> kappa | 
+\\
+| Gamma :- | ^{ | kind | } |  a : ukappa | _{ | a | } |  ~> zeta | _{ | a | } |  | 
+\\
+| kappa | _{ | p | } |  <=> kappa | _{ | a | } |  | 
+\\
+|  :- | ^{ | flow | } |  ukappa | _{ | p | } |  =>= ukappa | _{ | a | } |  ~> zeta | _{ | m1 | } |  | 
+\\
+| ukappa | _{ | f | } |  <=> ukappa | _{ | p | } |  -> | _{ | beta | }^{ | delta | _{ | top | } |  | } |  ukappa | _{ | r | } |  | 
+\\
+| Gamma :- | ^{ | kind | } |  f : ukappa | _{ | f | } |  ~> zeta | _{ | f | } |  | 
+\\
+|  :- | ^{ | flow | } |  ukappa =>= ukappa | _{ | r | } |  ~> zeta | _{ | r | } |  | 
+\\
+| ukappa === (Sup( _ )( delta | 
+\\
+| ukappa | _{ | a | } |  ; ukappa | _{ | p | } |  ;  []  :- | ^{ | genInst | } |  beta ~> zeta | _{ | ap | } |  | 
+}
+{%
+| Gamma :- | ^{ | kind | } |  f a : ukappa ~> zeta | _{ | m1 | } |  zeta | _{ | m2 | } |  zeta | _{ | r | } |  zeta | _{ | ap | } |  zeta | _{ | f | } |  | 
+}
+}
+
+\rulerCmdDef{RulerUniquenessExamples.D.tp.base}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{RulerUniquenessExamples.D.tp.base.scheme}}{Type type rules}{RulerUniquenessExamples.D.tp.base}{D}
+\rulerCmdUse{RulerUniquenessExamples.D.tp.base.d.var}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.D.tp.base.d.con}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.D.tp.base.d.ann}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.D.tp.base.d.app}
+\end{rulerRulesetFigure}
+}
+\rulerCmdDef{RulerUniquenessExamples.DC.tp.base}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{RulerUniquenessExamples.DC.tp.base.scheme}}{Type type rules}{RulerUniquenessExamples.DC.tp.base}{DC}
+\rulerCmdUse{RulerUniquenessExamples.DC.tp.base.d.var}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.DC.tp.base.d.con}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.DC.tp.base.d.ann}
+\hspace{1ex}
+\rulerCmdUse{RulerUniquenessExamples.DC.tp.base.d.app}
+\end{rulerRulesetFigure}
+}
+

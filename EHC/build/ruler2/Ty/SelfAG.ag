@@ -1,0 +1,2 @@
+ATTR AllTy [ | | self: SELF ]
+ATTR AGTyItf [ | | self: Ty ]

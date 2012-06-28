@@ -1,0 +1,325 @@
+%include lhs2TeX.fmt
+%include afp.fmt
+%include ehrules.fmt
+
+\rulerCmdDef{MiscRules.eh4.scheme}{%
+\ensuremath{| Gamma :- | ^{ | EH | } |  e : sigma | }
+}
+\rulerCmdDef{MiscRules.eh4.dummy}{%
+\rulerRule{dummy}{}
+{%
+}
+{%
+| Gamma :- | ^{ | EH | } |  e : ANY | 
+}
+}
+
+\rulerCmdDef{MiscRules.eh4}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{MiscRules.eh4.scheme}}{}{MiscRules.eh4}{}
+\rulerCmdUse{MiscRules.eh4.dummy}
+\end{rulerRulesetFigure}
+}
+
+\rulerCmdDef{MiscRules.ehv.scheme}{%
+\ensuremath{| Gamma :- | ^{ | EH | } |  e : sigma ~> Transl ; Transl | _{ | a | } |  | }
+}
+\rulerCmdDef{MiscRules.ehv.dummy}{%
+\rulerRule{dummy}{}
+{%
+}
+{%
+| Gamma :- | ^{ | EH | } |  e : ANY ~> e ; e | 
+}
+}
+
+\rulerCmdDef{MiscRules.ehv}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{MiscRules.ehv.scheme}}{}{MiscRules.ehv}{}
+\rulerCmdUse{MiscRules.ehv.dummy}
+\end{rulerRulesetFigure}
+}
+
+\rulerCmdDef{MiscRules.hm.scheme}{%
+\ensuremath{| Gamma :- | ^{ | HM | } |  e : sigma | }
+}
+\rulerCmdDef{MiscRules.hm.dummy}{%
+\rulerRule{dummy}{}
+{%
+}
+{%
+| Gamma :- | ^{ | HM | } |  e : ANY | 
+}
+}
+
+\rulerCmdDef{MiscRules.hm}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{MiscRules.hm.scheme}}{}{MiscRules.hm}{}
+\rulerCmdUse{MiscRules.hm.dummy}
+\end{rulerRulesetFigure}
+}
+
+\rulerCmdDef{MiscRules.hmv.scheme}{%
+\ensuremath{| Gamma :- | ^{ | HM | } |  Transl : sigma | }
+}
+\rulerCmdDef{MiscRules.hmv.dummy}{%
+\rulerRule{dummy}{}
+{%
+}
+{%
+| Gamma :- | ^{ | HM | } |  Transl : ANY | 
+}
+}
+
+\rulerCmdDef{MiscRules.hmv}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{MiscRules.hmv.scheme}}{}{MiscRules.hmv}{}
+\rulerCmdUse{MiscRules.hmv.dummy}
+\end{rulerRulesetFigure}
+}
+
+\rulerCmdDef{MiscRules.sysf.scheme}{%
+\ensuremath{| Gamma :- | ^{ | F | } |  e : sigma | }
+}
+\rulerCmdDef{MiscRules.sysf.dummy}{%
+\rulerRule{dummy}{}
+{%
+}
+{%
+| Gamma :- | ^{ | F | } |  e : ANY | 
+}
+}
+
+\rulerCmdDef{MiscRules.sysf}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{MiscRules.sysf.scheme}}{}{MiscRules.sysf}{}
+\rulerCmdUse{MiscRules.sysf.dummy}
+\end{rulerRulesetFigure}
+}
+
+\rulerCmdDef{MiscRules.sysfv.scheme}{%
+\ensuremath{| Gamma :- | ^{ | F | } |  Transl | _{ | a | } |  : sigma | }
+}
+\rulerCmdDef{MiscRules.sysfv.dummy}{%
+\rulerRule{dummy}{}
+{%
+}
+{%
+| Gamma :- | ^{ | F | } |  e : ANY | 
+}
+}
+
+\rulerCmdDef{MiscRules.sysfv}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{MiscRules.sysfv.scheme}}{}{MiscRules.sysfv}{}
+\rulerCmdUse{MiscRules.sysfv.dummy}
+\end{rulerRulesetFigure}
+}
+
+\rulerCmdDef{MiscRules.entailn.all.scheme}{%
+\ensuremath{| prenv ; predschemes1 ::- | _{ | e | } |  predschemes2 | }
+}
+\rulerCmdDef{MiscRules.entailn.all.mono}{%
+\rulerRule{mono}{}
+{%
+| preds | _{ | 1 | } |  `supseteq` preds | _{ | 2 | } |  | 
+}
+{%
+| prenv ; preds | _{ | 1 | } |  ::- | _{ | e | } |  preds | _{ | 2 | } |  | 
+}
+}
+
+\rulerCmdDef{MiscRules.entailn.all.trans}{%
+\rulerRule{trans}{}
+{%
+| prenv ; preds | _{ | 1 | } |  ::- | _{ | e | } |  preds | _{ | 2 | } |  | 
+\\
+| prenv ; preds | _{ | 2 | } |  ::- | _{ | e | } |  preds | _{ | 3 | } |  | 
+}
+{%
+| prenv ; preds | _{ | 1 | } |  ::- | _{ | e | } |  preds | _{ | 3 | } |  | 
+}
+}
+
+\rulerCmdDef{MiscRules.entailn.all.closed}{%
+\rulerRule{closed}{}
+{%
+| prenv ; preds | _{ | 1 | } |  ::- | _{ | e | } |  preds | _{ | 2 | } |  | 
+}
+{%
+| prenv ; subst preds | _{ | 1 | } |  ::- | _{ | e | } |  subst preds | _{ | 2 | } |  | 
+}
+}
+
+\rulerCmdDef{MiscRules.entailn.all.class}{%
+\rulerRule{class}{}
+{%
+| prenv ; preds | _{ | 1 | } |  ::- | _{ | e | } |  pred | _{ | 3 | } |  | 
+\\
+| class ^^ preds | _{ | 2 | } |  => pred | _{ | 3 | } |  `elem` prenv | 
+}
+{%
+| prenv ; preds | _{ | 1 | } |  ::- | _{ | e | } |  preds | _{ | 2 | } |  | 
+}
+}
+
+\rulerCmdDef{MiscRules.entailn.all.inst}{%
+\rulerRule{inst}{}
+{%
+| instance ^^ preds | _{ | 3 | } |  => pred | _{ | 2 | } |  `elem` prenv | 
+\\
+| prenv ; preds | _{ | 1 | } |  ::- | _{ | e | } |  preds | _{ | 3 | } |  | 
+}
+{%
+| prenv ; preds | _{ | 1 | } |  ::- | _{ | e | } |  pred | _{ | 2 | } |  | 
+}
+}
+
+\rulerCmdDef{MiscRules.entailn.all}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{MiscRules.entailn.all.scheme}}{Entailment}{MiscRules.entailn.all}{}
+\rulerCmdUse{MiscRules.entailn.all.mono}
+\hspace{1ex}
+\rulerCmdUse{MiscRules.entailn.all.trans}
+\hspace{1ex}
+\rulerCmdUse{MiscRules.entailn.all.closed}
+\hspace{1ex}
+\rulerCmdUse{MiscRules.entailn.all.class}
+\hspace{1ex}
+\rulerCmdUse{MiscRules.entailn.all.inst}
+\end{rulerRulesetFigure}
+}
+
+\rulerCmdDef{MiscRules.entailscn.algo.scheme}{%
+\ensuremath{| prenv ; predschemes1sc ::- | _{ | e | } |  predschemes2sc | }
+}
+\rulerCmdDef{MiscRules.entailscn.algo.class1}{%
+\rulerRule{class1}{}
+{%
+| prenv ; preds | _{ | 1 | } |  ::- | _{ | e | } |  pred | _{ | 3 | }^{ | s | } |  | 
+\\
+| class ^^ preds | _{ | 2 | } |  => pred | _{ | 3 | } |  `elem` prenv | 
+}
+{%
+| prenv ; preds | _{ | 1 | } |  ::- | _{ | e | } |  preds | _{ | 2 | }^{ | s | } |  | 
+}
+}
+
+\rulerCmdDef{MiscRules.entailscn.algo.class2}{%
+\rulerRule{class2}{}
+{%
+| prenv ; preds | _{ | 1 | } |  ::- | _{ | e | } |  pred | _{ | 3 | }^{ | t' | } |  | 
+\\
+| t' === s `commonScope` t | 
+\\
+| not (s `visibleIn` t) | 
+\\
+| class ^^ preds | _{ | 2 | } |  => pred | _{ | 3 | } |  `elem` prenv | 
+}
+{%
+| prenv ; preds | _{ | 1 | } |  ::- | _{ | e | } |  pred | _{ | 3 | }^{ | s | } |  , preds | _{ | 2 | }^{ | t | } |  | 
+}
+}
+
+\rulerCmdDef{MiscRules.entailscn.algo.class3}{%
+\rulerRule{class3}{}
+{%
+| prenv ; preds | _{ | 1 | } |  ::- | _{ | e | } |  pred | _{ | 2 | }^{ | t' | } |  | 
+\\
+| t' === s `commonScope` t | 
+\\
+| not (t `visibleIn` s) | 
+\\
+| class ^^ preds | _{ | 2 | } |  => pred | _{ | 3 | } |  `elem` prenv | 
+}
+{%
+| prenv ; preds | _{ | 1 | } |  ::- | _{ | e | } |  pred | _{ | 3 | }^{ | s | } |  , preds | _{ | 2 | }^{ | t | } |  | 
+}
+}
+
+\rulerCmdDef{MiscRules.entailscn.algo.inst}{%
+\rulerRule{inst}{}
+{%
+| (instance ^^ preds | _{ | 3 | } |  => pred | _{ | 2 | } |  , t) `elem` prenv | 
+\\
+| prenv ; preds | _{ | 1 | } |  ::- | _{ | e | } |  preds | _{ | 3 | }^{ | s | } |  | 
+\\
+| t `visibleIn` s | 
+}
+{%
+| prenv ; preds | _{ | 1 | } |  ::- | _{ | e | } |  pred | _{ | 2 | }^{ | s | } |  | 
+}
+}
+
+\rulerCmdDef{MiscRules.entailscn.algo.scope}{%
+\rulerRule{scope}{}
+{%
+| t `visibleIn` s | 
+\\
+| s /= t | 
+\\
+| prenv ; preds | _{ | 1 | } |  ::- | _{ | e | } |  pred | _{ | 2 | }^{ | t | } |  | 
+}
+{%
+| prenv ; preds | _{ | 1 | } |  ::- | _{ | e | } |  pred | _{ | 2 | }^{ | s | } |  , pred | _{ | 2 | }^{ | t | } |  | 
+}
+}
+
+\rulerCmdDef{MiscRules.entailscn.algo}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{MiscRules.entailscn.algo.scheme}}{Entailment (scoped, CHR suitable)}{MiscRules.entailscn.algo}{}
+\rulerCmdUse{MiscRules.entailscn.algo.class1}
+\hspace{1ex}
+\rulerCmdUse{MiscRules.entailscn.algo.class2}
+\hspace{1ex}
+\rulerCmdUse{MiscRules.entailscn.algo.class3}
+\hspace{1ex}
+\rulerCmdUse{MiscRules.entailscn.algo.inst}
+\hspace{1ex}
+\rulerCmdUse{MiscRules.entailscn.algo.scope}
+\end{rulerRulesetFigure}
+}
+
+\rulerCmdDef{MiscRules.entailscn.all.scheme}{%
+\ensuremath{| prenv ; predschemes1sc ::- | _{ | e | } |  predschemes2sc | }
+}
+\rulerCmdDef{MiscRules.entailscn.all.class}{%
+\rulerRule{class}{}
+{%
+| prenv ; preds | _{ | 1 | } |  ::- | _{ | e | } |  pred | _{ | 3 | }^{ | s | } |  | 
+\\
+| class ^^ preds | _{ | 2 | } |  => pred | _{ | 3 | } |  `elem` prenv | 
+}
+{%
+| prenv ; preds | _{ | 1 | } |  ::- | _{ | e | } |  preds | _{ | 2 | }^{ | s | } |  | 
+}
+}
+
+\rulerCmdDef{MiscRules.entailscn.all.inst}{%
+\rulerRule{inst}{}
+{%
+| (instance ^^ preds | _{ | 3 | } |  => pred | _{ | 2 | } |  , t) `elem` prenv | 
+\\
+| prenv ; preds | _{ | 1 | } |  ::- | _{ | e | } |  preds | _{ | 3 | }^{ | s | } |  | 
+\\
+| t `visibleIn` s | 
+}
+{%
+| prenv ; preds | _{ | 1 | } |  ::- | _{ | e | } |  pred | _{ | 2 | }^{ | s | } |  | 
+}
+}
+
+\rulerCmdDef{MiscRules.entailscn.all.scope}{%
+\rulerRule{scope}{}
+{%
+| t `visibleIn` s | 
+\\
+| prenv ; preds | _{ | 1 | } |  ::- | _{ | e | } |  pred | _{ | 2 | }^{ | t | } |  | 
+}
+{%
+| prenv ; preds | _{ | 1 | } |  ::- | _{ | e | } |  pred | _{ | 2 | }^{ | s | } |  | 
+}
+}
+
+\rulerCmdDef{MiscRules.entailscn.all}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{MiscRules.entailscn.all.scheme}}{Entailment (scoped, declarative)}{MiscRules.entailscn.all}{}
+\rulerCmdUse{MiscRules.entailscn.all.class}
+\hspace{1ex}
+\rulerCmdUse{MiscRules.entailscn.all.inst}
+\hspace{1ex}
+\rulerCmdUse{MiscRules.entailscn.all.scope}
+\end{rulerRulesetFigure}
+}
+

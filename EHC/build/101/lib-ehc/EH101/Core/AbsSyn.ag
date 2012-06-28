@@ -1,0 +1,201 @@
+DATA CodeAGItf
+  | AGItf       module          : CModule
+
+DATA CModule
+  | Mod         moduleNm        : {HsName}
+                expr            : CExpr
+                ctagsMp         : {CTagsMp}
+
+DATA CExpr
+  -- base cases
+  | Var         ref             : {ACoreBindRef}
+  | Int         int             : {Int}
+  | Char        char            : {Char}
+  | String      str             : {String}
+  | Integer     integer         : {Integer}
+
+  -- node constructor, tuple or data constructor, determined by tag
+  | Tup         tag             : {CTag}
+
+  -- let bindings
+  | Let         categ           : {CBindCateg}
+                binds           : CBindL
+                body            : CExpr
+
+  -- application, abstraction
+  | App         func            : CExpr
+                -- arg             : CExpr
+                arg             : CBound
+  | Lam         bind            : CBind
+                body            : CExpr
+
+  -- case
+  | Case        expr            : CExpr
+                alts            : CAltL
+                dflt            : CExpr
+  | CaseAltFail failReason      : CaseAltFailReason
+                errorExpr       : CExpr
+
+  -- extensible records (no longer supported, but you never know for now)
+  | TupDel      expr            : CExpr
+                tag             : {CTag}
+                nm              : {HsName}
+                offset          : CExpr
+  | TupIns      expr            : CExpr
+                tag             : {CTag}
+                nm              : {HsName}
+                offset          : CExpr
+                fldExpr         : CExpr
+  | TupUpd      expr            : CExpr
+                tag             : {CTag}
+                nm              : {HsName}
+                offset          : CExpr
+                fldExpr         : CExpr
+
+  -- FFI call
+  | FFI         callconv        : {FFIWay}
+                safety          : {String}
+                impEnt          : {ForeignEnt}
+                ty              : {Ty}
+
+
+DATA CExpr
+  -- coercion related
+  | Hole        uid             : {UID}
+  | HoleLet     bindsUid        : {UID}
+                body            : CExpr
+  | CoeArg
+  | ImplsApp    func            : CExpr
+                uid             : {ImplsVarId}
+  | ImplsLam    uid             : {ImplsVarId}
+                body            : CExpr
+
+TYPE MbCExpr	= MAYBE CExpr
+
+TYPE CMetas 	= (CMetaBind,CMetaVal)
+
+DATA CMetaBind
+  | Plain		-- by default a binding is Plain
+  | Function0   -- special case of Plain, indicating it is a nullary function on top level (that is, the RHS is the computational part for a CAF)
+  | Function1   -- special case of Plain, indicating it is a non-nullary function on top level (that is, the RHS is a lambda)
+  | Apply0	    -- special case of Plain, indicating it is an apply of a Function0 (intended to implement lazy behaviour for a CAF)
+
+DATA CMetaVal
+  | Val
+  | Dict
+  | DictClass     tracks : {[Track]}
+  | DictInstance  tracks : {[Track]}
+  | Track         track  : {Track}
+
+SET AllMetaVal	= CMetaVal CMetas
+SET AllMetaBind = CMetaBind CMetas
+SET AllMeta		= CMetaVal CMetaBind CMetas
+
+-- | on CExpr
+DATA CExpr
+  | Ann         ann             : CExprAnn
+                expr            : CExpr
+
+-- | ann for CExpr
+DATA CExprAnn
+  | Ty			ty				: {Ty}
+  | Coe			coe				: {RelevCoe}
+  | Debug		info			: {String}
+
+-- | ann for name intro
+DATA CBindAnn
+  | Coe			coe				: {RelevCoe}
+
+TYPE CBindAnnL	= [CBindAnn]
+
+SET AllExprAnn	= CExprAnn
+SET AllBindAnn	= CBindAnn CBindAnnL
+
+-- | The binder
+DATA CBind
+  | Bind        nm              : {HsName}
+                bindAspects     : CBoundL
+
+-- | That which is bound, of which may be multiple, of which exist the below varieties
+DATA CBound
+  -- default: binding used when (1) no specialized version is available, (2) the one passed higher order
+  | Bind        bindMeta        : CMetas
+                expr            : CExpr
+
+  -- a (keyed) CMetas
+  | Meta		aspectKeyS		: {ACoreBindAspectKeyS}
+  				cmetas			: CMetas
+
+  -- a (keyed) RelevTy
+  | RelevTy		aspectKeyS		: {ACoreBindAspectKeyS}
+  				relevTy			: {RelevTy}
+
+  -- a (keyed) CExpr
+  | Val		    aspectKeyS		: {ACoreBindAspectKeyS}
+  				expr 			: CExpr
+
+  -- a (keyed) Ty, of the binding, (1) either the default for Bind, or (2, not yet used) for a Val with the same aspectKeyS
+  | Ty		    aspectKeyS		: {ACoreBindAspectKeyS}
+  				ty 			 	: {Ty}
+
+  -- FFE binding (not yet implemented for all backends)
+  | FFE         callconv        : {FFIWay}
+                expEnt          : {ForeignEnt}
+                expr            : CExpr
+                ty              : {Ty}
+
+TYPE CBindL     	=   [CBind]
+TYPE CBoundL		=	[CBound]
+
+SET AllBound        =   CBound CBoundL
+SET AllBindOnly 	=   CBind CBindL
+SET AllBind     	=   AllBindOnly AllBound
+
+DATA CAlt
+  | Alt         pat             : CPat
+                expr            : CExpr
+
+TYPE CAltL      =   [CAlt]
+
+DATA CPat
+  | Var         pnm             : {HsName}
+  | Con         tag             : {CTag}
+                rest            : CPatRest
+                binds           : CPatFldL
+  | Int         int             : {Int}
+  | Char        char            : {Char}
+
+DATA CPatRest
+  | Var         nm              : {HsName}
+  | Empty
+
+DATA CPatFld
+  | Fld         lbl             : {HsName}
+                offset          : CExpr
+                bind            : CBind
+                fldAnns			: CBindAnnL
+
+TYPE CPatFldL   =   [CPatFld]
+
+DATA CPat
+  | BoolExpr    cexpr           : {CExpr}
+
+SET AllAlt      =   CAlt CAltL
+SET AllPat      =   CPatRest CPat AllPatFld
+SET AllPatFld   =   CPatFld CPatFldL AllBindAnn
+
+SET AllCodeNT   =   CModule AllExpr
+
+SET AllExprOnly
+  = CExpr MbCExpr
+
+SET AllExprBase
+  = AllExprOnly AllExprAnn AllBind AllAlt AllPat
+
+SET AllExpr
+  = AllExprBase
+    AllMeta
+
+SET AllNT
+  = AllCodeNT
+

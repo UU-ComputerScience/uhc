@@ -1,0 +1,1784 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+
+%%[2.decl.d.tysig
+SEM Decl
+  | TySig  lhs  .  gathTySigGam  =  gamSingleton @nm (ValGamInfo @tyExpr.ty)
+%%]
+
+%%[2.decl.d.val
+SEM Decl
+  | Val  (patExpr.gUniq,loc.uniq1)
+                                   =  mkNewLevUID @lhs.gUniq
+         (loc.ty_sig_,loc.hasTySig)
+                                   =  case @patExpr.mbTopNm of
+                                           Nothing -> (Ty_Any , False)
+                                           Just nm -> case gamLookup nm @lhs.tySigGam of
+                                                           Nothing -> (Ty_Any , False)
+                                                           Just vgi -> (vgiTy vgi , True)
+         patExpr  .  knTy          =  if @hasTySig then @ty_sig_ else mkTyVar @uniq1
+                  .  valGam        =  @lhs.patValGam
+         expr     .  knTy          =  if @hasTySig then @ty_sig_ else @patExpr.ty
+                  .  valGam        =  @lhs.valGam
+         lhs      .  gathTySigGam  =  emptyGam
+                  .  patValGam     =  @patExpr.valGam
+%%]
+
+%%[4.decl.d.tysig
+SEM Decl
+  | TySig  loc  .  tvarv_TGamma____  =  ftvSet . (emptyVarMp |=>) . map (tgiTy . snd) . gamToAssocL $ @lhs.tyGam
+                .  ty_q_             =  tyQuantifyOuter (`Set.member` ((Set.fromList.map tyVar) @tyExpr.tyWildL `Set.union` @tvarv_TGamma____)) @tyExpr.ty
+           lhs  .  gathTySigGam      =  gamSingleton @nm (ValGamInfo @ty_q_)
+%%]
+
+%%[4.decl.d.val
+SEM Decl
+  | Val  (patExpr.gUniq,loc.uniq1)
+                                   =  mkNewLevUID @lhs.gUniq
+         (loc.ty_sig_,loc.hasTySig)
+                                   =  case @patExpr.mbTopNm of
+                                           Nothing -> (Ty_Any , False)
+                                           Just nm -> case gamLookup nm @lhs.tySigGam of
+                                                           Nothing -> (Ty_Any , False)
+                                                           Just vgi -> (vgiTy vgi , True)
+         patExpr  .  fiOpts        =  strongFIOpts
+                  .  knTy          =  if @hasTySig then @ty_sig_ else mkTyVar @uniq1
+                  .  valGam        =  @lhs.patValGam
+         expr     .  fiOpts        =  strongFIOpts
+                  .  knTy          =  if @hasTySig then @ty_sig_ else @patExpr.ty
+                  .  tyGam         =  @lhs.tyGam
+                  .  valGam        =  @lhs.valGam
+         lhs      .  gathTySigGam  =  emptyGam
+                  .  patValGam     =  @patExpr.valGam
+%%]
+
+%%[3.decl.d.tysig
+SEM Decl
+  | TySig  loc  .  ty_q_         =  tyQuantifyOuter (`Set.member` ((Set.fromList.map tyVar) @tyExpr.tyWildL)) @tyExpr.ty
+           lhs  .  gathTySigGam  =  gamSingleton @nm (ValGamInfo @ty_q_)
+%%]
+
+%%[3.decl.d.val
+SEM Decl
+  | Val  (patExpr.gUniq,loc.uniq1,loc.uniq2)
+                                   =  mkNewLevUID2 @lhs.gUniq
+         (loc.ty_sig_,loc.hasTySig)
+                                   =  case @patExpr.mbTopNm of
+                                           Nothing -> (Ty_Any , False)
+                                           Just nm -> case gamLookup nm @lhs.tySigGam of
+                                                           Nothing -> (Ty_Any , False)
+                                                           Just vgi -> (vgiTy vgi , True)
+         loc      .  ty_i_         =  tyInstKnown @uniq2 @ty_sig_
+         patExpr  .  knTy          =  if @hasTySig then @ty_i_ else mkTyVar @uniq1
+                  .  valGam        =  @lhs.patValGam
+         expr     .  knTy          =  if @hasTySig then @ty_i_ else @patExpr.ty
+                  .  valGam        =  @lhs.valGam
+         lhs      .  gathTySigGam  =  emptyGam
+                  .  patValGam     =  @patExpr.valGam
+%%]
+
+%%[42.decl.d.tysig
+SEM Decl
+  | TySig  (tyExpr.gUniq,loc.uniq1)     =  mkNewLevUID @lhs.gUniq
+           loc     .  tvarv_TGamma____  =  ftvSet . (emptyVarMp |=>) . map (tgiTy . snd) . gamToAssocL $ @lhs.tyGam
+                   .  ty_q_             =  tyQuantifyOuter (`Set.member` ((Set.fromList.map tyVar) @tyExpr.tyWildL `Set.union` @tvarv_TGamma____)) @tyExpr.ty
+           (loc.ty_v_,loc.tyVarMp_v_)   =  tyAsVarMp @uniq1 @ty_q_
+           lhs     .  gathTySigGam      =  gamSingleton @nm (ValGamInfo @ty_v_)
+                   .  tySigTyVarMp      =  @tyVarMp_v_ |=> @lhs.tySigTyVarMp
+%%]
+
+%%[42.decl.d.val
+SEM Decl
+  | Val  (patExpr.gUniq,loc.uniq1,loc.uniq2)
+                                   =  mkNewLevUID2 @lhs.gUniq
+         (loc.ty_sig_,loc.hasTySig)
+                                   =  case @patExpr.mbTopNm of
+                                           Nothing -> (Ty_Any , False)
+                                           Just nm -> case gamLookup nm @lhs.tySigGam of
+                                                           Nothing -> (Ty_Any , False)
+                                                           Just vgi -> (vgiTy vgi , True)
+         patExpr  .  fiOpts        =  strongFIOpts
+                  .  knTy          =  if @hasTySig then @ty_sig_ else mkTyVar @uniq1
+                  .  valGam        =  @lhs.patValGam
+         expr     .  fiOpts        =  strongFIOpts
+                  .  knTy          =  if @hasTySig then @ty_sig_ else @patExpr.ty
+                  .  tyGam         =  @lhs.tyGam
+                  .  valGam        =  @lhs.valGam
+         loc      .  fo_fitE_      =  fitsIn impredFIOpts @fe @uniq2 @expr.imprTyVarMp @expr.imprTy (@expr.imprTyVarMp |=> @patExpr.ty)
+         lhs      .  gathTySigGam  =  emptyGam
+                  .  imprTyVarMp   =  foVarMp @fo_fitE_ |=> @expr.imprTyVarMp
+                  .  patValGam     =  @patExpr.valGam
+%%]
+
+%%[1.decl.d.tysig
+SEM Decl
+  | TySig  lhs  .  gathTySigGam  =  gamSingleton @nm (ValGamInfo @tyExpr.ty)
+%%]
+
+%%[1.decl.d.val
+SEM Decl
+  | Val  (loc.ty_sig_,loc.nmErrs)  =  let  e = [ rngLift @range Err_MissingSig @patExpr.pp ]
+                                           l n = gamLookup n @lhs.tySigGam
+                                      in case  @patExpr.mbTopNm of
+                                               Nothing -> (Ty_Any , e)
+                                               Just nm -> case  l nm of
+                                                                Nothing -> (Ty_Any , e)
+                                                                Just vgi -> (vgiTy vgi , [])
+         patExpr  .  knTy          =  @ty_sig_
+                  .  valGam        =  @lhs.patValGam
+         expr     .  knTy          =  @ty_sig_
+                  .  valGam        =  @lhs.valGam
+         lhs      .  gathTySigGam  =  emptyGam
+                  .  patValGam     =  @patExpr.valGam
+%%]
+
+%%[9.decl.d.tysig
+SEM Decl
+  | TySig  loc  .  tvarv_TGamma____  =  ftvSet . (emptyVarMp |=>) . map (tgiTy . snd) . gamToAssocL $ @lhs.tyGam
+                .  ty_q_             =  tyQuantifyOuter (`Set.member` ((Set.fromList.map tyVar) @tyExpr.tyWildL `Set.union` @tvarv_TGamma____)) @tyExpr.ty
+           lhs  .  gathTySigGam      =  gamSingleton @nm (ValGamInfo @ty_q_)
+                .  translBind        =  emptyTranslBind
+%%]
+
+%%[9.decl.d.val
+SEM Decl
+  | Val  (patExpr.gUniq,loc.uniq1)
+                                   =  mkNewLevUID @lhs.gUniq
+         (loc.ty_sig_,loc.hasTySig)
+                                   =  case @patExpr.mbTopNm of
+                                           Nothing -> (Ty_Any , False)
+                                           Just nm -> case gamLookup nm @lhs.tySigGam of
+                                                           Nothing -> (Ty_Any , False)
+                                                           Just vgi -> (vgiTy vgi , True)
+         patExpr  .  fiOpts        =  strongFIOpts
+                  .  knTy          =  if @hasTySig then @ty_sig_ else mkTyVar @uniq1
+                  .  valGam        =  @lhs.patValGam
+         expr     .  fiOpts        =  if @hasTySig then strongFIOpts else weakFIOpts
+                  .  knTy          =  if @hasTySig then @ty_sig_ else @patExpr.ty
+                  .  tyGam         =  @lhs.tyGam
+                  .  valGam        =  @lhs.valGam
+         lhs      .  gathTySigGam  =  emptyGam
+                  .  translBind    =  [ @patExpr :-> @expr.cexpr ]
+                  .  patValGam     =  @patExpr.valGam
+%%]
+
+
+%%[2.expr.e.int
+SEM Expr
+  | IConst  loc  .  fo_      =  fitsIn  tyInt
+                                        (@lhs.tyVarMp |=> @lhs.knTy)
+                 .  ty       =  foTy @fo_
+                 .  tyVarMp  =  foVarMp @fo_ |=> @lhs.tyVarMp
+%%]
+
+%%[2.expr.e.char
+SEM Expr
+  | CConst  loc  .  fo_      =  fitsIn  tyChar
+                                        (@lhs.tyVarMp |=> @lhs.knTy)
+                 .  ty       =  foTy @fo_
+                 .  tyVarMp  =  foVarMp @fo_ |=> @lhs.tyVarMp
+%%]
+
+%%[2.expr.e.str
+SEM Expr
+  | SConst  loc  .  fo_      =  fitsIn  tyString
+                                        (@lhs.tyVarMp |=> @lhs.knTy)
+                 .  ty       =  foTy @fo_
+                 .  tyVarMp  =  foVarMp @fo_ |=> @lhs.tyVarMp
+%%]
+
+%%[2.expr.e.iint
+SEM Expr
+  | IIConst  loc  .  fo_      =  fitsIn  tyInteger
+                                         (@lhs.tyVarMp |=> @lhs.knTy)
+                  .  ty       =  foTy @fo_
+                  .  tyVarMp  =  foVarMp @fo_ |=> @lhs.tyVarMp
+%%]
+
+%%[2.expr.e.var
+SEM Expr
+  | Var  (loc.ty_g_,loc.nmErrs)
+                          =  valGamLookupTy @nm @lhs.valGam
+         loc  .  fo_      =  fitsIn  (@lhs.tyVarMp |=> @ty_g_)
+                                     (@lhs.tyVarMp |=> @lhs.knTy)
+              .  ty       =  foTy @fo_
+              .  tyVarMp  =  foVarMp @fo_ |=> @lhs.tyVarMp
+%%]
+
+%%[2.expr.e.con
+SEM Expr
+  | Con  (lhs.gUniq,loc.uniq1)
+                          =  mkNewLevUID @lhs.gUniq
+         loc  .  tvars_   =  map mkTyVar (mkNewUIDL (hsnProdArity @nm) @uniq1)
+              .  fo_      =  fitsIn  (@tvars_ `mkArrow` mkProdApp @tvars_)
+                                     (@lhs.tyVarMp |=> @lhs.knTy)
+              .  ty       =  foTy @fo_
+              .  tyVarMp  =  foVarMp @fo_ |=> @lhs.tyVarMp
+%%]
+
+%%[2.expr.e.app
+SEM Expr
+  | App  (func.gUniq,loc.uniq1)
+                         =  mkNewLevUID @lhs.gUniq
+         func  .  knTy   =  [ mkTyVar @uniq1 ] `mkArrow` @lhs.knTy
+         (loc.ty_a_,loc.ty_)
+                         =  tyArrowArgRes @func.ty
+         arg   .  knTy   =  @ty_a_
+         loc   .  ty     =  @arg.tyVarMp |=> @ty_
+%%]
+
+%%[2.expr.e.apptop
+SEM Expr
+  | AppTop  (expr.gUniq,loc.uniq1)
+                            =  mkNewLevUID @lhs.gUniq
+            expr  .  knTy   =  tyEnsureNonAny @uniq1 @lhs.knTy
+%%]
+
+%%[2.expr.e.lam
+SEM Expr
+  | Lam  (arg.gUniq,loc.uniq1,loc.uniq2)
+                              =  mkNewLevUID2 @lhs.gUniq
+         loc   .  tvarv1_     =  mkTyVar @uniq1
+               .  tvarv2_     =  mkTyVar @uniq2
+               .  fo_fitF_    =  fitsIn  ([ @tvarv1_ ] `mkArrow` @tvarv2_)
+                                         (@lhs.tyVarMp |=> @lhs.knTy)
+         arg   .  knTy        =  @tvarv1_
+               .  patTyVarMp  =  foVarMp @fo_fitF_ |=> @lhs.tyVarMp
+               .  valGam      =  emptyGam
+         body  .  knTy        =  @tvarv2_
+               .  valGam      =  gamAddGam @arg.valGam @lhs.valGam
+               .  tyVarMp     =  @arg.patTyVarMp
+         loc   .  ty          =  [ @body.tyVarMp |=> @arg.ty ] `mkArrow` @body.ty
+%%]
+
+%%[2.expr.e.let
+SEM Expr
+  | Let  decls  .  tySigGam    =  @decls.gathTySigGam
+                .  valGam      =  @decls.patValGam
+                .  patTyVarMp  =  @lhs.tyVarMp
+                .  patValGam   =  gamPushGam @decls.gathTySigGam @lhs.valGam
+                .  tyVarMp     =  @decls.patTyVarMp
+         body   .  valGam      =  @decls.patValGam
+%%]
+
+%%[2.expr.e.ann
+SEM Expr
+  | TypeAs  loc   .  fo_      =  fitsIn  @tyExpr.ty
+                                         (@lhs.tyVarMp |=> @lhs.knTy)
+            expr  .  knTy     =  @tyExpr.ty
+                  .  tyVarMp  =  foVarMp @fo_ |=> @lhs.tyVarMp
+%%]
+
+%%[4.expr.e.int
+SEM Expr
+  | IConst  (lhs.gUniq,loc.uniq1)
+                             =  mkNewLevUID @lhs.gUniq
+            loc  .  fo_      =  fitsIn @lhs.fiOpts @fe @uniq1 @lhs.tyVarMp tyInt @lhs.knTy
+                 .  ty       =  foTy @fo_
+                 .  tyVarMp  =  foVarMp @fo_ |=> @lhs.tyVarMp
+%%]
+
+%%[4.expr.e.char
+SEM Expr
+  | CConst  (lhs.gUniq,loc.uniq1)
+                             =  mkNewLevUID @lhs.gUniq
+            loc  .  fo_      =  fitsIn @lhs.fiOpts @fe @uniq1 @lhs.tyVarMp tyChar @lhs.knTy
+                 .  ty       =  foTy @fo_
+                 .  tyVarMp  =  foVarMp @fo_ |=> @lhs.tyVarMp
+%%]
+
+%%[4.expr.e.str
+SEM Expr
+  | SConst  (lhs.gUniq,loc.uniq1)
+                             =  mkNewLevUID @lhs.gUniq
+            loc  .  fo_      =  fitsIn @lhs.fiOpts @fe @uniq1 @lhs.tyVarMp tyString @lhs.knTy
+                 .  ty       =  foTy @fo_
+                 .  tyVarMp  =  foVarMp @fo_ |=> @lhs.tyVarMp
+%%]
+
+%%[4.expr.e.iint
+SEM Expr
+  | IIConst  (lhs.gUniq,loc.uniq1)
+                              =  mkNewLevUID @lhs.gUniq
+             loc  .  fo_      =  fitsIn @lhs.fiOpts @fe @uniq1 @lhs.tyVarMp tyInteger @lhs.knTy
+                  .  ty       =  foTy @fo_
+                  .  tyVarMp  =  foVarMp @fo_ |=> @lhs.tyVarMp
+%%]
+
+%%[4.expr.e.var
+SEM Expr
+  | Var  (lhs.gUniq,loc.uniq1)
+                          =  mkNewLevUID @lhs.gUniq
+         (loc.ty_g_,loc.nmErrs)
+                          =  valGamLookupTy @nm @lhs.valGam
+         loc  .  fo_      =  fitsIn @lhs.fiOpts @fe @uniq1 @lhs.tyVarMp @ty_g_ @lhs.knTy
+              .  ty       =  foTy @fo_
+              .  tyVarMp  =  foVarMp @fo_ |=> @lhs.tyVarMp
+%%]
+
+%%[4.expr.e.con
+SEM Expr
+  | Con  (lhs.gUniq,loc.uniq1)
+                          =  mkNewLevUID @lhs.gUniq
+         (loc.ty_g_,loc.nmErrs)
+                          =  valGamLookupTy @nm @lhs.valGam
+         loc  .  fo_      =  fitsIn @lhs.fiOpts @fe @uniq1 @lhs.tyVarMp @ty_g_ @lhs.knTy
+              .  ty       =  foTy @fo_
+              .  tyVarMp  =  foVarMp @fo_ |=> @lhs.tyVarMp
+%%]
+
+%%[4.expr.e.app
+SEM Expr
+  | App  (func.gUniq,loc.uniq1)
+                          =  mkNewLevUID @lhs.gUniq
+         loc   .  tvarv_  =  mkTyVar @uniq1
+         func  .  knTy    =  [ @tvarv_ ] `mkArrow` @lhs.knTy
+         (_,loc.ty_)      =  tyArrowArgRes @func.ty
+         arg   .  fiOpts  =  instLRFIOpts
+               .  knTy    =  @tvarv_
+         loc   .  ty      =  @lhs.knTy
+%%]
+
+%%[4.expr.e.app.f
+SEM Expr
+  | AppImpred  (func.gUniq,loc.uniq1)
+                                =  mkNewLevUID @lhs.gUniq
+               loc   .  tvarv_  =  mkTyVar @uniq1
+               func  .  knTy    =  [ @tvarv_ ] `mkArrow` @lhs.knTy
+               (_,loc.ty_)      =  tyArrowArgRes @func.ty
+               arg   .  fiOpts  =  strongFIOpts
+                     .  knTy    =  @tvarv_
+               loc   .  ty      =  @lhs.knTy
+%%]
+
+%%[4.expr.e.apptop
+SEM Expr
+  | AppTop  (expr.gUniq,loc.uniq1)
+                            =  mkNewLevUID @lhs.gUniq
+            expr  .  knTy   =  tyEnsureNonAny @uniq1 @lhs.knTy
+%%]
+
+%%[4.expr.e.lam
+SEM Expr
+  | Lam  (arg.gUniq,loc.uniq1,loc.uniq2,loc.uniq3)
+                              =  mkNewLevUID3 @lhs.gUniq
+         loc   .  tvarv1_     =  mkTyVar @uniq1
+               .  tvarv2_     =  mkTyVar @uniq2
+               .  fo_fitF_    =  fitsIn (@lhs.fiOpts { fioBindRFirst = True }) @fe @uniq3 @lhs.tyVarMp ([ @tvarv1_ ] `mkArrow` @tvarv2_) @lhs.knTy
+         arg   .  knTy        =  @tvarv1_
+               .  patTyVarMp  =  foVarMp @fo_fitF_ |=> @lhs.tyVarMp
+               .  valGam      =  gamPushGam emptyGam @lhs.valGam
+         body  .  knTy        =  @tvarv2_
+               .  tyVarMp     =  @arg.patTyVarMp
+         loc   .  ty          =  [ @arg.ty ] `mkArrow` @body.ty
+%%]
+
+%%[4.expr.e.let
+SEM Expr
+  | Let  (decls.gUniq,loc.uniq1,loc.uniq2)
+                                     =  mkNewLevUID2 @lhs.gUniq
+         decls  .  tySigGam          =  @decls.gathTySigGam
+                .  valGam            =  @decls.patValGam
+                .  patTyVarMp        =  @lhs.tyVarMp
+                .  patValGam         =  gamPushGam @gathTySigGam_ex_ @lhs.valGam
+                .  tyVarMp           =  @decls.patTyVarMp
+         loc    .  gathTySigGam_ex_  =  valGamInst1Exists @uniq1 @decls.gathTySigGam
+         (loc.valGam_l_,loc.valGam_g_)
+                                     =  gamPop @decls.patValGam
+         (loc.lSubsValGam_,loc.cycTyVarMp_l)
+                                     =  @decls.tyVarMp |==> @valGam_l_
+         (loc.gSubsValGam_,loc.cycTyVarMp_g)
+                                     =  @decls.tyVarMp |==> @valGam_g_
+         loc    .  gTyTvS_           =  ftvSet @gSubsValGam_
+                .  quValGam_         =  valGamQuantify @gTyTvS_ @lSubsValGam_
+                .  quValGam_ex_      =  valGamInst1Exists @uniq2 @quValGam_
+         body   .  valGam            =  gamAddGam @quValGam_ex_ @valGam_g_
+%%]
+
+%%[4.expr.e.ann
+SEM Expr
+  | TypeAs  (tyExpr.gUniq,loc.uniq1)     =  mkNewLevUID @lhs.gUniq
+            loc     .  tvarv_TGamma____  =  ftvSet . (@lhs.tyVarMp |=>) . map (tgiTy . snd) . gamToAssocL $ @lhs.tyGam
+                    .  ty_q_             =  tyQuantify (`Set.member` ((Set.fromList.map tyVar) @tyExpr.tyWildL `Set.union` ftvSet (@lhs.tyVarMp |=> @lhs.valGam) `Set.union` @tvarv_TGamma____)) (@lhs.tyVarMp |=> @tyExpr.ty)
+                    .  fo_               =  fitsIn @lhs.fiOpts @fe @uniq1 @lhs.tyVarMp @ty_q_ @lhs.knTy
+            expr    .  knTy              =  @ty_q_
+                    .  tyVarMp           =  foVarMp @fo_ |=> @lhs.tyVarMp
+            loc     .  ty                =  @expr.tyVarMp |=> @ty_q_
+%%]
+
+%%[3.expr.e.int
+SEM Expr
+  | IConst  loc  .  fo_      =  fitsIn  tyInt
+                                        (@lhs.tyVarMp |=> @lhs.knTy)
+                 .  ty       =  foTy @fo_
+                 .  tyVarMp  =  foVarMp @fo_ |=> @lhs.tyVarMp
+%%]
+
+%%[3.expr.e.char
+SEM Expr
+  | CConst  loc  .  fo_      =  fitsIn  tyChar
+                                        (@lhs.tyVarMp |=> @lhs.knTy)
+                 .  ty       =  foTy @fo_
+                 .  tyVarMp  =  foVarMp @fo_ |=> @lhs.tyVarMp
+%%]
+
+%%[3.expr.e.str
+SEM Expr
+  | SConst  loc  .  fo_      =  fitsIn  tyString
+                                        (@lhs.tyVarMp |=> @lhs.knTy)
+                 .  ty       =  foTy @fo_
+                 .  tyVarMp  =  foVarMp @fo_ |=> @lhs.tyVarMp
+%%]
+
+%%[3.expr.e.iint
+SEM Expr
+  | IIConst  loc  .  fo_      =  fitsIn  tyInteger
+                                         (@lhs.tyVarMp |=> @lhs.knTy)
+                  .  ty       =  foTy @fo_
+                  .  tyVarMp  =  foVarMp @fo_ |=> @lhs.tyVarMp
+%%]
+
+%%[3.expr.e.var
+SEM Expr
+  | Var  (lhs.gUniq,loc.uniq1)
+                          =  mkNewLevUID @lhs.gUniq
+         (loc.ty_g_,loc.nmErrs)
+                          =  valGamLookupTy @nm @lhs.valGam
+         loc  .  fo_      =  fitsIn  (@lhs.tyVarMp |=> tyInst @uniq1 @ty_g_)
+                                     (@lhs.tyVarMp |=> @lhs.knTy)
+              .  ty       =  foTy @fo_
+              .  tyVarMp  =  foVarMp @fo_ |=> @lhs.tyVarMp
+%%]
+
+%%[3.expr.e.con
+SEM Expr
+  | Con  (lhs.gUniq,loc.uniq1)
+                          =  mkNewLevUID @lhs.gUniq
+         loc  .  tvars_   =  map mkTyVar (mkNewUIDL (hsnProdArity @nm) @uniq1)
+              .  fo_      =  fitsIn  (@tvars_ `mkArrow` mkProdApp @tvars_)
+                                     (@lhs.tyVarMp |=> @lhs.knTy)
+              .  ty       =  foTy @fo_
+              .  tyVarMp  =  foVarMp @fo_ |=> @lhs.tyVarMp
+%%]
+
+%%[3.expr.e.app
+SEM Expr
+  | App  (func.gUniq,loc.uniq1)
+                         =  mkNewLevUID @lhs.gUniq
+         func  .  knTy   =  [ mkTyVar @uniq1 ] `mkArrow` @lhs.knTy
+         (loc.ty_a_,loc.ty_)
+                         =  tyArrowArgRes @func.ty
+         arg   .  knTy   =  @ty_a_
+         loc   .  ty     =  @arg.tyVarMp |=> @ty_
+%%]
+
+%%[3.expr.e.apptop
+SEM Expr
+  | AppTop  (expr.gUniq,loc.uniq1)
+                            =  mkNewLevUID @lhs.gUniq
+            expr  .  knTy   =  tyEnsureNonAny @uniq1 @lhs.knTy
+%%]
+
+%%[3.expr.e.lam
+SEM Expr
+  | Lam  (arg.gUniq,loc.uniq1,loc.uniq2)
+                              =  mkNewLevUID2 @lhs.gUniq
+         loc   .  tvarv1_     =  mkTyVar @uniq1
+               .  tvarv2_     =  mkTyVar @uniq2
+               .  fo_fitF_    =  fitsIn  ([ @tvarv1_ ] `mkArrow` @tvarv2_)
+                                         (@lhs.tyVarMp |=> @lhs.knTy)
+         arg   .  knTy        =  @tvarv1_
+               .  patTyVarMp  =  foVarMp @fo_fitF_ |=> @lhs.tyVarMp
+               .  valGam      =  emptyGam
+         body  .  knTy        =  @tvarv2_
+               .  valGam      =  gamAddGam @arg.valGam @lhs.valGam
+               .  tyVarMp     =  @arg.patTyVarMp
+         loc   .  ty          =  [ @body.tyVarMp |=> @arg.ty ] `mkArrow` @body.ty
+%%]
+
+%%[3.expr.e.let
+SEM Expr
+  | Let  decls  .  tySigGam      =  @decls.gathTySigGam
+                .  valGam        =  @decls.patValGam
+                .  patTyVarMp    =  @lhs.tyVarMp
+                .  patValGam     =  gamPushGam @decls.gathTySigGam @lhs.valGam
+                .  tyVarMp       =  @decls.patTyVarMp
+         (loc.valGam_l_,loc.valGam_g_)
+                                 =  gamPop @decls.patValGam
+         loc    .  lSubsValGam_  =  @decls.tyVarMp |=> @valGam_l_
+                .  gSubsValGam_  =  @decls.tyVarMp |=> @valGam_g_
+                .  gTyTvS_       =  ftvSet @gSubsValGam_
+                .  quValGam_     =  valGamQuantify @gTyTvS_ @lSubsValGam_
+         body   .  valGam        =  gamAddGam @quValGam_ @valGam_g_
+%%]
+
+%%[3.expr.e.ann
+SEM Expr
+  | TypeAs  (tyExpr.gUniq,loc.uniq1)
+                                =  mkNewLevUID @lhs.gUniq
+            loc     .  ty_q_    =  tyQuantify (`Set.member` ((Set.fromList.map tyVar) @tyExpr.tyWildL)) @tyExpr.ty
+                    .  ty_i_    =  tyInstKnown @uniq1 @ty_q_
+                    .  fo_      =  fitsIn  @ty_i_
+                                           (@lhs.tyVarMp |=> @lhs.knTy)
+            expr    .  knTy     =  @ty_i_
+                    .  tyGam    =  @lhs.tyGam
+                    .  tyVarMp  =  foVarMp @fo_ |=> @lhs.tyVarMp
+%%]
+
+%%[42.expr.e.int
+SEM Expr
+  | IConst  (lhs.gUniq,loc.uniq1)
+                             =  mkNewLevUID @lhs.gUniq
+            loc  .  fo_      =  fitsIn @lhs.fiOpts @fe @uniq1 @lhs.tyVarMp tyInt @lhs.knTy
+                 .  imprTy   =  tyInt
+                 .  ty       =  foTy @fo_
+                 .  tyVarMp  =  foVarMp @fo_ |=> @lhs.tyVarMp
+%%]
+
+%%[42.expr.e.char
+SEM Expr
+  | CConst  (lhs.gUniq,loc.uniq1)
+                             =  mkNewLevUID @lhs.gUniq
+            loc  .  fo_      =  fitsIn @lhs.fiOpts @fe @uniq1 @lhs.tyVarMp tyChar @lhs.knTy
+                 .  imprTy   =  tyChar
+                 .  ty       =  foTy @fo_
+                 .  tyVarMp  =  foVarMp @fo_ |=> @lhs.tyVarMp
+%%]
+
+%%[42.expr.e.str
+SEM Expr
+  | SConst  (lhs.gUniq,loc.uniq1)
+                             =  mkNewLevUID @lhs.gUniq
+            loc  .  fo_      =  fitsIn @lhs.fiOpts @fe @uniq1 @lhs.tyVarMp tyString @lhs.knTy
+                 .  imprTy   =  tyString
+                 .  ty       =  foTy @fo_
+                 .  tyVarMp  =  foVarMp @fo_ |=> @lhs.tyVarMp
+%%]
+
+%%[42.expr.e.iint
+SEM Expr
+  | IIConst  (lhs.gUniq,loc.uniq1)
+                              =  mkNewLevUID @lhs.gUniq
+             loc  .  fo_      =  fitsIn @lhs.fiOpts @fe @uniq1 @lhs.tyVarMp tyInteger @lhs.knTy
+                  .  imprTy   =  tyInteger
+                  .  ty       =  foTy @fo_
+                  .  tyVarMp  =  foVarMp @fo_ |=> @lhs.tyVarMp
+%%]
+
+%%[42.expr.e.var
+SEM Expr
+  | Var  (lhs.gUniq,loc.uniq1)
+                          =  mkNewLevUID @lhs.gUniq
+         (loc.ty_g_,loc.nmErrs)
+                          =  valGamLookupTy @nm @lhs.valGam
+         loc  .  fo_      =  fitsIn @lhs.fiOpts @fe @uniq1 @lhs.tyVarMp @ty_g_ @lhs.knTy
+              .  imprTy   =  @lhs.imprTyVarMp |=> @ty_g_
+              .  ty       =  foTy @fo_
+              .  tyVarMp  =  foVarMp @fo_ |=> @lhs.tyVarMp
+%%]
+
+%%[42.expr.e.con
+SEM Expr
+  | Con  (lhs.gUniq,loc.uniq1)
+                          =  mkNewLevUID @lhs.gUniq
+         (loc.ty_g_,loc.nmErrs)
+                          =  valGamLookupTy @nm @lhs.valGam
+         loc  .  fo_      =  fitsIn @lhs.fiOpts @fe @uniq1 @lhs.tyVarMp @ty_g_ @lhs.knTy
+              .  imprTy   =  @lhs.imprTyVarMp |=> @ty_g_
+              .  ty       =  foTy @fo_
+              .  tyVarMp  =  foVarMp @fo_ |=> @lhs.tyVarMp
+%%]
+
+%%[42.expr.e.app
+SEM Expr
+  | App  (func.gUniq,loc.uniq1,loc.uniq2,loc.uniq3)
+                                  =  mkNewLevUID3 @lhs.gUniq
+         loc   .  tvarv_          =  mkTyVar @uniq1
+         func  .  knTy            =  [ @tvarv_ ] `mkArrow` @lhs.knTy
+         (_,loc.ty_)              =  tyArrowArgRes @func.ty
+         loc   .  fo_fitF_        =  fitsIn impredFIOpts @fe @uniq2 @func.imprTyVarMp @func.imprTy (@func.imprTyVarMp |=> ([ @tvarv_ ] `mkArrow` @lhs.knTy))
+         arg   .  fiOpts          =  instLRFIOpts
+               .  knTy            =  @tvarv_
+               .  imprTyVarMp     =  foVarMp @fo_fitF_ |=> @func.imprTyVarMp
+         loc   .  fo_fitA_        =  fitsIn (instLFIOpts { fioBindToTyAlts = True }) @fe @uniq3 @arg.imprTyVarMp @arg.imprTy (@arg.imprTyVarMp |=> @tvarv_)
+               .  imprTyVarMp_1_  =  foVarMp @fo_fitA_ |=> @arg.imprTyVarMp
+               .  imprTy          =  @imprTyVarMp_1_ |=> @lhs.knTy
+               .  ty              =  @lhs.knTy
+         lhs   .  imprTyVarMp     =  @imprTyVarMp_1_
+%%]
+
+%%[42.expr.e.app.f
+SEM Expr
+  | AppImpred  (func.gUniq,loc.uniq1,loc.uniq2,loc.uniq3)
+                                        =  mkNewLevUID3 @lhs.gUniq
+               loc   .  tvarv_          =  mkTyVar @uniq1
+               func  .  knTy            =  [ @tvarv_ ] `mkArrow` @lhs.knTy
+               (_,loc.ty_)              =  tyArrowArgRes @func.ty
+               loc   .  fo_fitF_        =  fitsIn impredFIOpts @fe @uniq2 @func.imprTyVarMp @func.imprTy (@func.imprTyVarMp |=> ([ @tvarv_ ] `mkArrow` @lhs.knTy))
+               arg   .  fiOpts          =  strongFIOpts
+                     .  knTy            =  @tvarv_
+                     .  imprTyVarMp     =  foVarMp @fo_fitF_ |=> @func.imprTyVarMp
+               loc   .  fo_fitA_        =  fitsIn impredFIOpts @fe @uniq3 @arg.imprTyVarMp @arg.imprTy (@arg.imprTyVarMp |=> @tvarv_)
+                     .  imprTyVarMp_1_  =  foVarMp @fo_fitA_ |=> @arg.imprTyVarMp
+                     .  imprTy          =  @imprTyVarMp_1_ |=> @lhs.knTy
+                     .  ty              =  @lhs.knTy
+               lhs   .  imprTyVarMp     =  @imprTyVarMp_1_
+%%]
+
+%%[42.expr.e.apptop
+SEM Expr
+  | AppTop  (expr.gUniq,loc.uniq1)
+                            =  mkNewLevUID @lhs.gUniq
+            expr  .  knTy   =  tyEnsureNonAny @uniq1 @lhs.knTy
+%%]
+
+%%[42.expr.e.lam
+SEM Expr
+  | Lam  (arg.gUniq,loc.uniq1,loc.uniq2,loc.uniq3,loc.uniq4,loc.uniq5,loc.uniq6)
+                                     =  mkNewLevUID6 @lhs.gUniq
+         loc   .  tvarv_g____        =  ftvSet @lhs.valGam
+               .  fo_altElim         =  tyElimAlts (mkFitsInWrap' @fe) meetFIOpts @tvarv_g____ @uniq1 @lhs.imprTyVarMp (@lhs.imprTyVarMp |=> @lhs.knTy)
+               .  elimVarMp_         =  tyElimAltsCleanup @lhs.imprTyVarMp (foVarMp @fo_altElim)
+               .  ty_e_k_            =  foTy @fo_altElim
+               .  tvarv1_            =  mkTyVar @uniq2
+               .  tvarv2_            =  mkTyVar @uniq3
+               .  fo_fitF_           =  fitsIn (@lhs.fiOpts { fioBindRFirst = True , fioBindLBeforeR = False }) @fe @uniq4 @lhs.tyVarMp (@lhs.tyVarMp |=> ([ @tvarv1_ ] `mkArrow` @tvarv2_)) (@lhs.tyVarMp |=> @lhs.knTy)
+               .  fo_ifitF_          =  fitsIn (@lhs.fiOpts { fioBindRFirst = True }) @fe @uniq5 @elimVarMp_ ([ @tvarv1_ ] `mkArrow` @tvarv2_) @ty_e_k_
+               .  imprTyVarMp_fitF_  =  foVarMp @fo_ifitF_
+         arg   .  knTy               =  @imprTyVarMp_fitF_ |=> @tvarv1_
+               .  patTyVarMp         =  emptyVarMp
+               .  valGam             =  gamPushGam emptyGam @lhs.valGam
+         (loc.valGam_l_,_)           =  gamPop @arg.valGam
+         body  .  knTy               =  @tvarv2_
+               .  imprTyVarMp        =  @arg.patTyVarMp |+> @imprTyVarMp_fitF_ |+> @lhs.imprTyVarMp
+               .  tyVarMp            =  (@imprTyVarMp_elim_ |+> @arg.patTyVarMp |+> (foVarMp @fo_fitF_ |\> ftv (@lhs.tyVarMp |=> ([ @tvarv1_ ] `mkArrow` @tvarv2_))) |+> (@lhs.tyVarMp |>> @imprTyVarMp_fitF_)) |=> @lhs.tyVarMp
+         (loc.lArgElimValGam,loc.imprTyVarMp_elim_,loc.errGam)
+                                     =  valElimExprAlts meetFIOpts @fe @tvarv_g____ @uniq6 @body.imprTyVarMp @valGam_l_
+         loc   .  imprTyVarMp_1_     =  @imprTyVarMp_elim_ |=> @body.imprTyVarMp
+               .  imprTy             =  [ @imprTyVarMp_1_ |=> @arg.ty ] `mkArrow` (@imprTyVarMp_elim_ |=> @body.imprTy)
+               .  ty                 =  [ @arg.ty ] `mkArrow` @body.ty
+         lhs   .  imprTyVarMp        =  @imprTyVarMp_1_
+%%]
+
+%%[42.expr.e.let
+SEM Expr
+  | Let  (decls.gUniq,loc.uniq1,loc.uniq2,loc.uniq3)
+                                      =  mkNewLevUID3 @lhs.gUniq
+         decls  .  tySigGam           =  @decls.tySigTyVarMp |=> @decls.gathTySigGam
+                .  valGam             =  @decls.patValGam
+                .  imprTyVarMp        =  @decls.patTyVarMp |=> @lhs.imprTyVarMp
+                .  patTyVarMp         =  @tyVarMp_t_ex_ |=> @decls.tySigTyVarMp
+                .  patValGam          =  gamPushGam @decls.gathTySigGam @lhs.valGam
+                .  tySigTyVarMp       =  emptyVarMp
+                .  tyVarMp            =  @imprTyVarMp_elim_ |+> @decls.patTyVarMp |+> @lhs.tyVarMp
+         (loc.lArgElimValGam,loc.imprTyVarMp_elim_,loc.errGam)
+                                      =  valElimExprAlts joinFIOpts @fe (ftvSet @lhs.valGam) @uniq1 @decls.imprTyVarMp @valGam_l_
+         (loc.valGam_l_,loc.valGam_g_)
+                                      =  gamPop @decls.patValGam
+         (_,loc.tyVarMp_t_ex_)        =  valGamInst1ExistsWithVarMp @decls.tySigTyVarMp @uniq2 @decls.gathTySigGam
+         loc    .  lSubsValGam_       =  @decls.tyVarMp |=> @valGam_l_
+                .  gSubsValGam_       =  @decls.tyVarMp |=> @valGam_g_
+                .  gTyTvS_            =  ftvSet @gSubsValGam_
+         (loc.quValGam_,loc.tyVarMp_q_)
+                                      =  valGamQuantifyWithVarMp @decls.tyVarMp @gTyTvS_ @valGam_l_
+         (loc.quValGam_ex_,loc.tyVarMp_l_ex_)
+                                      =  valGamInst1ExistsWithVarMp (@tyVarMp_q_ |=> @decls.tyVarMp) @uniq3 @valGam_l_
+         body   .  valGam             =  @decls.patValGam
+                .  imprTyVarMp        =  @imprTyVarMp_elim_ |=> @decls.imprTyVarMp
+                .  tyVarMp            =  @tyVarMp_l_ex_ |+> @tyVarMp_q_ |+> @decls.tyVarMp
+%%]
+
+%%[42.expr.e.ann
+SEM Expr
+  | TypeAs  (tyExpr.gUniq,loc.uniq1,loc.uniq2)
+                                         =  mkNewLevUID2 @lhs.gUniq
+            loc     .  tvarv_TGamma____  =  ftvSet . (@lhs.imprTyVarMp |=>) . map (tgiTy . snd) . gamToAssocL $ @lhs.tyGam
+                    .  ty_q_             =  tyQuantify (`Set.member` ((Set.fromList.map tyVar) @tyExpr.tyWildL `Set.union` ftvSet (@lhs.imprTyVarMp |=> @lhs.valGam) `Set.union` @tvarv_TGamma____)) (@lhs.imprTyVarMp |=> @tyExpr.ty)
+                    .  fo_               =  fitsIn @lhs.fiOpts @fe @uniq1 @lhs.tyVarMp (@lhs.tyVarMp |=> @ty_q_) @lhs.knTy
+            expr    .  knTy              =  @ty_q_
+                    .  tyVarMp           =  foVarMp @fo_ |=> @lhs.tyVarMp
+            loc     .  fo_fitI_          =  fitsIn (@lhs.fiOpts { fioBindToTyAlts = True }) @fe @uniq2 @expr.imprTyVarMp @expr.imprTy @ty_q_
+                    .  imprTy            =  foTy @fo_fitI_
+                    .  ty                =  @expr.tyVarMp |=> @ty_q_
+            lhs     .  imprTyVarMp       =  foVarMp @fo_fitI_ |=> @expr.imprTyVarMp
+%%]
+
+%%[1.expr.e.int
+SEM Expr
+  | IConst  loc  .  fo_  =  tyInt `fitsIn` @lhs.knTy
+                 .  ty   =  foTy @fo_
+%%]
+
+%%[1.expr.e.char
+SEM Expr
+  | CConst  loc  .  fo_  =  tyChar `fitsIn` @lhs.knTy
+                 .  ty   =  foTy @fo_
+%%]
+
+%%[1.expr.e.str
+SEM Expr
+  | SConst  loc  .  fo_  =  tyString `fitsIn` @lhs.knTy
+                 .  ty   =  foTy @fo_
+%%]
+
+%%[1.expr.e.iint
+SEM Expr
+  | IIConst  loc  .  fo_  =  tyInteger `fitsIn` @lhs.knTy
+                  .  ty   =  foTy @fo_
+%%]
+
+%%[1.expr.e.var
+SEM Expr
+  | Var  (loc.ty_g_,loc.nmErrs)
+                         =  valGamLookupTy @nm @lhs.valGam
+         loc  .  fo_     =  @ty_g_ `fitsIn` @lhs.knTy
+              .  ty      =  foTy @fo_
+%%]
+
+%%[1.expr.e.con
+SEM Expr
+  | Con  loc  .  ty_r_  =  tyArrowRes @lhs.knTy
+              .  ty     =  tyProdArgs @ty_r_ `mkArrow` @ty_r_
+%%]
+
+%%[1.expr.e.app
+SEM Expr
+  | App  func  .  knTy   =  [ Ty_Any ] `mkArrow` @lhs.knTy
+         (loc.ty_a_,loc.ty_)
+                         =  tyArrowArgRes @func.ty
+         arg   .  knTy   =  @ty_a_
+         loc   .  ty     =  @ty_
+%%]
+
+%%[1.expr.e.lam
+SEM Expr
+  | Lam  loc   .  fo_fitF_  =  ([ Ty_Any ] `mkArrow` Ty_Any) `fitsIn` @lhs.knTy
+         (loc.ty_p_,loc.ty_r_)
+                            =  tyArrowArgRes (foTy @fo_fitF_)
+         arg   .  knTy      =  @ty_p_
+               .  valGam    =  emptyGam
+         body  .  knTy      =  @ty_r_
+               .  valGam    =  gamAddGam @arg.valGam @lhs.valGam
+         loc   .  ty        =  [ @ty_p_ ] `mkArrow` @body.ty
+%%]
+
+%%[1.expr.e.let
+SEM Expr
+  | Let  decls  .  tySigGam   =  @decls.gathTySigGam
+                .  valGam     =  @decls.patValGam
+                .  patValGam  =  gamPushGam @decls.gathTySigGam @lhs.valGam
+         body   .  valGam     =  @decls.patValGam
+%%]
+
+%%[1.expr.e.ann
+SEM Expr
+  | TypeAs  loc   .  fo_   =  @tyExpr.ty `fitsIn` @lhs.knTy
+            expr  .  knTy  =  @tyExpr.ty
+%%]
+
+%%[9.expr.e.int
+SEM Expr
+  | IConst  (lhs.gUniq,loc.uniq1)
+                             =  mkNewLevUID @lhs.gUniq
+            loc  .  fo_      =  fitsIn @lhs.fiOpts @fe @uniq1 @lhs.tyVarMp tyInt @lhs.knTy
+                 .  cexpr    =  foAppLRCoe' @lhs.opts (foCSubst @fo_ , foLRCoe @fo_) @lhs.finTyVarMp @lhs.cSubst (CExpr_Int @int)
+                 .  ty       =  foTy @fo_
+                 .  tyVarMp  =  foVarMp @fo_ |=> @lhs.tyVarMp
+%%]
+
+%%[9.expr.e.char
+SEM Expr
+  | CConst  (lhs.gUniq,loc.uniq1)
+                             =  mkNewLevUID @lhs.gUniq
+            loc  .  fo_      =  fitsIn @lhs.fiOpts @fe @uniq1 @lhs.tyVarMp tyChar @lhs.knTy
+                 .  cexpr    =  foAppLRCoe' @lhs.opts (foCSubst @fo_ , foLRCoe @fo_) @lhs.finTyVarMp @lhs.cSubst (CExpr_Char @char)
+                 .  ty       =  foTy @fo_
+                 .  tyVarMp  =  foVarMp @fo_ |=> @lhs.tyVarMp
+%%]
+
+%%[9.expr.e.str
+SEM Expr
+  | SConst  (lhs.gUniq,loc.uniq1)
+                             =  mkNewLevUID @lhs.gUniq
+            loc  .  fo_      =  fitsIn @lhs.fiOpts @fe @uniq1 @lhs.tyVarMp tyString @lhs.knTy
+                 .  cexpr    =  foAppLRCoe' @lhs.opts (foCSubst @fo_ , foLRCoe @fo_) @lhs.finTyVarMp @lhs.cSubst (cstring @lhs.opts @str)
+                 .  ty       =  foTy @fo_
+                 .  tyVarMp  =  foVarMp @fo_ |=> @lhs.tyVarMp
+%%]
+
+%%[9.expr.e.iint
+SEM Expr
+  | IIConst  (lhs.gUniq,loc.uniq1)
+                              =  mkNewLevUID @lhs.gUniq
+             loc  .  fo_      =  fitsIn @lhs.fiOpts @fe @uniq1 @lhs.tyVarMp tyInteger @lhs.knTy
+                  .  cexpr    =  foAppLRCoe' @lhs.opts (foCSubst @fo_ , foLRCoe @fo_) @lhs.finTyVarMp @lhs.cSubst (cinteger @lhs.opts @integer)
+                  .  ty       =  foTy @fo_
+                  .  tyVarMp  =  foVarMp @fo_ |=> @lhs.tyVarMp
+%%]
+
+%%[9.expr.e.var
+SEM Expr
+  | Var  (lhs.gUniq,loc.uniq1)
+                          =  mkNewLevUID @lhs.gUniq
+         (loc.ty_g_,loc.nmErrs)
+                          =  valGamLookupTy @nm @lhs.valGam
+         loc  .  fo_      =  fitsIn @lhs.fiOpts @fe @uniq1 @lhs.tyVarMp @ty_g_ @lhs.knTy
+              .  cexpr    =  foAppLRCoe' @lhs.opts (foCSubst @fo_ , foLRCoe @fo_) @lhs.finTyVarMp @lhs.cSubst (acoreVar @nm)
+              .  ty       =  foTy @fo_
+              .  tyVarMp  =  foVarMp @fo_ |=> @lhs.tyVarMp
+%%]
+
+%%[9.expr.e.con
+SEM Expr
+  | Con  (lhs.gUniq,loc.uniq1)
+                          =  mkNewLevUID @lhs.gUniq
+         (loc.ty_g_,loc.nmErrs)
+                          =  valGamLookupTy @nm @lhs.valGam
+         loc  .  fo_      =  fitsIn @lhs.fiOpts @fe @uniq1 @lhs.tyVarMp @ty_g_ @lhs.knTy
+              .  cexpr    =  foAppLRCoe' @lhs.opts (foCSubst @fo_ , foLRCoe @fo_) @lhs.finTyVarMp @lhs.cSubst (acoreVar @nm)
+              .  ty       =  foTy @fo_
+              .  tyVarMp  =  foVarMp @fo_ |=> @lhs.tyVarMp
+%%]
+
+%%[9.expr.e.app
+SEM Expr
+  | App  (func.gUniq,loc.uniq1,loc.uniq2)
+                           =  mkNewLevUID2 @lhs.gUniq
+         loc   .  tvarv_   =  mkTyVar @uniq1
+         func  .  knTy     =  [ mkImplsVar @uniq2 , @tvarv_ ] `mkArrow` @lhs.knTy
+         (_,loc.ty_a_,loc.ty_)
+                           =  tyArrowImplsArgRes @func.ty
+         arg   .  fiOpts   =  instLFIOpts
+               .  knTy     =  @tvarv_
+         ??    .  predGam  =  @lhs.valGam
+         loc   .  cexpr    =  \ @func.cexpr ^^ @??.cexpr ^^ @arg.cexpr
+               .  ty       =  @lhs.knTy
+%%]
+
+%%[9.expr.e.app.f
+SEM Expr
+  | AppImpred  (func.gUniq,loc.uniq1,loc.uniq2)
+                                 =  mkNewLevUID2 @lhs.gUniq
+               loc   .  tvarv_   =  mkTyVar @uniq1
+               func  .  knTy     =  [ mkImplsVar @uniq2 , @tvarv_ ] `mkArrow` @lhs.knTy
+               (_,loc.ty_a_,loc.ty_)
+                                 =  tyArrowImplsArgRes @func.ty
+               arg   .  fiOpts   =  instLFIOpts
+                     .  knTy     =  @tvarv_
+               ??    .  predGam  =  @lhs.valGam
+               loc   .  cexpr    =  \ @func.cexpr ^^ @??.cexpr ^^ @arg.cexpr
+                     .  ty       =  @lhs.knTy
+%%]
+
+%%[9.expr.e.apptop
+SEM Expr
+  | AppTop  (lhs.gUniq,loc.uniq1,loc.uniq2,loc.uniq3)
+                             =  mkNewLevUID3 @lhs.gUniq
+                 .  fiOpts   =  @lhs.fiOpts
+                 .  kiGam    =  @lhs.kiGam
+                 .  knTy     =  @ty_e_
+                 .  tyGam    =  @lhs.tyGam
+                 .  valGam   =  @predGam_i_ , @lhs.valGam
+                 .  tyVarMp  =  @tyVarMp_fitE_ |=> @lhs.tyVarMp
+            loc  .  cexpr    =  \ @cexpr_i____ -> @??.cexpr
+                 .  ty       =  (@??.tyVarMp |=> @pred_a____) -> @??.ty
+%%]
+
+%%[9.expr.e.lam
+SEM Expr
+  | Lam  (arg.gUniq,loc.uniq1,loc.uniq2,loc.uniq3,loc.uniq4)
+                              =  mkNewLevUID4 @lhs.gUniq
+         loc   .  tvarv1_     =  mkTyVar @uniq1
+               .  tvarv2_     =  mkTyVar @uniq2
+               .  fo_fitF_    =  fitsIn (@lhs.fiOpts { fioBindRFirst = True }) @fe @uniq4 @lhs.tyVarMp ([ mkTyVar @uniq3 , @tvarv1_ ] `mkArrow` @tvarv2_) @lhs.knTy
+         (loc.pred_a____,loc.ty_p_,loc.ty_r_)
+                              =  tyArrowImplsArgRes (foTy @fo_fitF_)
+         arg   .  knTy        =  @tvarv1_
+               .  patTyVarMp  =  foVarMp @fo_fitF_ |=> @lhs.tyVarMp
+               .  valGam      =  gamPushGam emptyGam @lhs.valGam
+         body  .  knTy        =  @tvarv2_
+               .  valGam      =  @predGam_i_ , @lhs.valGam
+               .  tyVarMp     =  @arg.patTyVarMp
+         loc   .  cexpr       =  @cexpr_i____ -> \ @arg -> @body.cexpr
+               .  ty          =  (@body.tyVarMp |=> @pred_a____) => (@body.tyVarMp |=> @arg.ty) -> @body.ty
+%%]
+
+%%[9.expr.e.let
+SEM Expr
+  | Let  (decls.gUniq,loc.uniq1,loc.uniq2)
+                                     =  mkNewLevUID2 @lhs.gUniq
+         decls  .  tySigGam          =  @decls.gathTySigGam
+                .  valGam            =  @decls.patValGam
+                .  patTyVarMp        =  @lhs.tyVarMp
+                .  patValGam         =  gamPushGam @gathTySigGam_ex_ @lhs.valGam
+                .  tyVarMp           =  @decls.patTyVarMp
+         loc    .  gathTySigGam_ex_  =  valGamInst1Exists @uniq1 @decls.gathTySigGam
+         (loc.valGam_l_,loc.valGam_g_)
+                                     =  gamPop @decls.patValGam
+         (loc.lSubsValGam_,loc.cycTyVarMp_l)
+                                     =  @decls.tyVarMp |==> @valGam_l_
+         (loc.gSubsValGam_,loc.cycTyVarMp_g)
+                                     =  @decls.tyVarMp |==> @valGam_g_
+         loc    .  gTyTvS_           =  ftvSet @gSubsValGam_
+                .  quValGam_         =  valGamQuantify @gTyTvS_ @lSubsValGam_
+                .  quValGam_ex_      =  valGamInst1Exists @uniq2 @quValGam_
+         body   .  valGam            =  gamAddGam @quValGam_ex_ @valGam_g_
+         loc    .  cexpr             =  @let @decls.translBind ^^ @in @body.cexpr
+%%]
+
+%%[9.expr.e.ann
+SEM Expr
+  | TypeAs  (tyExpr.gUniq,loc.uniq1)     =  mkNewLevUID @lhs.gUniq
+            loc     .  tvarv_TGamma____  =  ftvSet . (@lhs.tyVarMp |=>) . map (tgiTy . snd) . gamToAssocL $ @lhs.tyGam
+                    .  ty_q_             =  tyQuantify (`Set.member` ((Set.fromList.map tyVar) @tyExpr.tyWildL `Set.union` ftvSet (@lhs.tyVarMp |=> @lhs.valGam) `Set.union` @tvarv_TGamma____)) (@lhs.tyVarMp |=> @tyExpr.ty)
+                    .  fo_               =  fitsIn @lhs.fiOpts @fe @uniq1 @lhs.tyVarMp @ty_q_ @lhs.knTy
+            expr    .  knTy              =  @ty_q_
+                    .  tyVarMp           =  foVarMp @fo_ |=> @lhs.tyVarMp
+            loc     .  ty                =  @expr.tyVarMp |=> @ty_q_
+%%]
+
+
+%%[2.patexpr.p.int
+SEM PatExpr
+  | IConst  loc  .  fo_         =  fitsIn  (@lhs.patTyVarMp |=> @lhs.knTy)
+                                           tyInt
+            lhs  .  patFunTy    =  Ty_Any
+            loc  .  ty          =  tyInt
+            lhs  .  patTyVarMp  =  foVarMp @fo_ |=> @lhs.patTyVarMp
+%%]
+
+%%[2.patexpr.p.char
+SEM PatExpr
+  | CConst  loc  .  fo_         =  fitsIn  (@lhs.patTyVarMp |=> @lhs.knTy)
+                                           tyChar
+            lhs  .  patFunTy    =  Ty_Any
+            loc  .  ty          =  tyChar
+            lhs  .  patTyVarMp  =  foVarMp @fo_ |=> @lhs.patTyVarMp
+%%]
+
+%%[2.patexpr.p.str
+SEM PatExpr
+  | SConst  loc  .  fo_         =  fitsIn  (@lhs.patTyVarMp |=> @lhs.knTy)
+                                           tyString
+            lhs  .  patFunTy    =  Ty_Any
+            loc  .  ty          =  tyString
+            lhs  .  patTyVarMp  =  foVarMp @fo_ |=> @lhs.patTyVarMp
+%%]
+
+%%[2.patexpr.p.con
+SEM PatExpr
+  | Con  (lhs.gUniq,loc.uniq1)
+                           =  mkNewLevUID @lhs.gUniq
+         loc  .  tvars_    =  map mkTyVar (mkNewUIDL (hsnProdArity @nm) @uniq1)
+              .  ty_p_     =  mkProdApp @tvars_
+         lhs  .  patFunTy  =  [ @ty_p_ ] `mkArrow` @ty_p_
+         loc  .  ty        =  Ty_Any
+%%]
+
+%%[2.patexpr.p.var
+SEM PatExpr
+  | Var  (lhs.gUniq,loc.uniq1)
+                            =  mkNewLevUID @lhs.gUniq
+         loc  .  ty_p_      =  tyEnsureNonAny @uniq1 @lhs.knTy
+              .  valGam_i_  =  if @lhs.inclVarBind && not (hsnIsWild @nm)
+                               then gamSingleton @nm (ValGamInfo @ty_p_)
+                               else emptyGam
+         lhs  .  patFunTy   =  Ty_Any
+         loc  .  ty         =  @ty_p_
+         lhs  .  valGam     =  gamAddGam @valGam_i_ @lhs.valGam
+%%]
+
+%%[2.patexpr.p.varas
+SEM PatExpr
+  | VarAs  (patExpr.gUniq,loc.uniq1)
+                                  =  mkNewLevUID @lhs.gUniq
+           loc      .  ty_p_      =  tyEnsureNonAny @uniq1 @lhs.knTy
+                    .  valGam_i_  =  if @lhs.inclVarBind && not (hsnIsWild @nm)
+                                     then gamSingleton @nm (ValGamInfo @ty_p_)
+                                     else emptyGam
+           patExpr  .  knTy       =  @ty_p_
+           lhs      .  patFunTy   =  Ty_Any
+           loc      .  ty         =  @patExpr.patTyVarMp |=> @ty_p_
+           lhs      .  valGam     =  gamAddGam @valGam_i_ @patExpr.valGam
+%%]
+
+%%[2.patexpr.p.apptop
+SEM PatExpr
+  | AppTop  loc      .  fo_fitR_    =  fitsIn  (@lhs.patTyVarMp |=> @lhs.knTy)
+                                               @ty_a_
+            (loc.ty_a_,loc.ty_r_)   =  tyArrowArgRes @patExpr.patFunTy
+            patExpr  .  patTyVarMp  =  foVarMp @fo_fitR_ |=> @lhs.patTyVarMp
+            loc      .  tys_        =  tyProdArgs @ty_r_
+                     .  arityErrs   =  if length @tys_ == @patExpr.arity
+                                       then []
+                                       else [ rngLift @range Err_PatArity @lhs.knTy @patExpr.arity ]
+            patExpr  .  knTyL       =  reverse @tys_
+            lhs      .  patFunTy    =  Ty_Any
+            loc      .  ty          =  @patExpr.patTyVarMp |=> foTy @fo_fitR_
+%%]
+
+%%[2.patexpr.p.app
+SEM PatExpr
+  | App  (loc.ty_a_,loc.tyi_l)
+                         =  tyLHdAndTl @lhs.knTyL
+         func  .  knTyL  =  @tyi_l
+               .  knTy   =  Ty_Any
+         arg   .  knTy   =  @ty_a_
+%%]
+
+%%[4.patexpr.p.int
+SEM PatExpr
+  | IConst  (lhs.gUniq,loc.uniq1)
+                                =  mkNewLevUID @lhs.gUniq
+            loc  .  fo_         =  fitsIn @lhs.fiOpts @fe @uniq1 @lhs.patTyVarMp @lhs.knTy tyInt
+            lhs  .  patFunTy    =  Ty_Any
+            loc  .  ty          =  tyInt
+            lhs  .  patTyVarMp  =  foVarMp @fo_ |=> @lhs.patTyVarMp
+%%]
+
+%%[4.patexpr.p.char
+SEM PatExpr
+  | CConst  (lhs.gUniq,loc.uniq1)
+                                =  mkNewLevUID @lhs.gUniq
+            loc  .  fo_         =  fitsIn @lhs.fiOpts @fe @uniq1 @lhs.patTyVarMp @lhs.knTy tyChar
+            lhs  .  patFunTy    =  Ty_Any
+            loc  .  ty          =  tyChar
+            lhs  .  patTyVarMp  =  foVarMp @fo_ |=> @lhs.patTyVarMp
+%%]
+
+%%[4.patexpr.p.str
+SEM PatExpr
+  | SConst  (lhs.gUniq,loc.uniq1)
+                                =  mkNewLevUID @lhs.gUniq
+            loc  .  fo_         =  fitsIn @lhs.fiOpts @fe @uniq1 @lhs.patTyVarMp @lhs.knTy tyString
+            lhs  .  patFunTy    =  Ty_Any
+            loc  .  ty          =  tyString
+            lhs  .  patTyVarMp  =  foVarMp @fo_ |=> @lhs.patTyVarMp
+%%]
+
+%%[4.patexpr.p.con
+SEM PatExpr
+  | Con  (lhs.gUniq,loc.uniq1,loc.uniq2,loc.uniq3,loc.uniq4)
+                             =  mkNewLevUID4 @lhs.gUniq
+         loc  .  tvarv1_     =  mkTyVar @uniq1
+         (loc.ty_g_,loc.nmErrs)
+                             =  valGamLookupTy (hsnUn @nm) @lhs.valGam
+         loc  .  fo_fitP_    =  fitsIn instLRFIOpts @fe @uniq3 emptyVarMp @ty_g_ ([ @tvarv1_ ] `mkArrow` mkTyVar @uniq2)
+              .  tyVarMp_p_  =  foVarMp @fo_fitP_
+              .  fo_fitR_    =  fitsIn @lhs.fiOpts @fe @uniq4 (@tyVarMp_p_ |=> @lhs.patTyVarMp) @lhs.knTy @tvarv1_
+              .  ty_r_       =  foTy @fo_fitR_
+         lhs  .  patFunTy    =  @tyVarMp_p_ |=> foTy @fo_fitP_
+         loc  .  ty          =  @ty_r_
+         lhs  .  patTyVarMp  =  foVarMp @fo_fitR_ |+> @tyVarMp_p_ |+> @lhs.patTyVarMp
+%%]
+
+%%[4.patexpr.p.var
+SEM PatExpr
+  | Var  (lhs.gUniq,loc.uniq1,loc.uniq2)
+                            =  mkNewLevUID2 @lhs.gUniq
+         loc  .  ty_p_      =  tyInst1Exists @uniq2 (tyEnsureNonAny @uniq1 @lhs.knTy)
+              .  valGam_i_  =  if @lhs.inclVarBind && not (hsnIsWild @nm)
+                               then gamSingleton @nm (ValGamInfo @ty_p_)
+                               else emptyGam
+         lhs  .  patFunTy   =  Ty_Any
+         loc  .  ty         =  @ty_p_
+         lhs  .  valGam     =  gamAddGam @valGam_i_ @lhs.valGam
+%%]
+
+%%[4.patexpr.p.varas
+SEM PatExpr
+  | VarAs  (patExpr.gUniq,loc.uniq1,loc.uniq2)
+                                  =  mkNewLevUID2 @lhs.gUniq
+           loc      .  ty_p_      =  tyInst1Exists @uniq2 (tyEnsureNonAny @uniq1 @lhs.knTy)
+                    .  valGam_i_  =  if @lhs.inclVarBind && not (hsnIsWild @nm)
+                                     then gamSingleton @nm (ValGamInfo @ty_p_)
+                                     else emptyGam
+           patExpr  .  knTy       =  @ty_p_
+           lhs      .  patFunTy   =  Ty_Any
+           loc      .  ty         =  @ty_p_
+           lhs      .  valGam     =  gamAddGam @valGam_i_ @patExpr.valGam
+%%]
+
+%%[4.patexpr.p.apptop
+SEM PatExpr
+  | AppTop  (patExpr.gUniq,loc.uniq1)
+                                    =  mkNewLevUID @lhs.gUniq
+            loc      .  fo_fitR_    =  fitsIn @lhs.fiOpts @fe @uniq1 @lhs.patTyVarMp @lhs.knTy @ty_a_
+            (loc.ty_a_,loc.ty_r_)   =  tyArrowArgRes @patExpr.patFunTy
+            patExpr  .  patTyVarMp  =  foVarMp @fo_fitR_ |=> @lhs.patTyVarMp
+            loc      .  tys_        =  tyProdArgs @ty_r_
+                     .  arityErrs   =  if length @tys_ == @patExpr.arity
+                                       then []
+                                       else [ rngLift @range Err_PatArity @lhs.knTy @patExpr.arity ]
+            patExpr  .  knTyL       =  reverse @tys_
+            lhs      .  patFunTy    =  Ty_Any
+            loc      .  ty          =  foTy @fo_fitR_
+%%]
+
+%%[4.patexpr.p.app
+SEM PatExpr
+  | App  (loc.ty_a_,loc.tyi_l)
+                         =  tyLHdAndTl @lhs.knTyL
+         func  .  knTyL  =  @tyi_l
+               .  knTy   =  Ty_Any
+         arg   .  knTy   =  @ty_a_
+%%]
+
+%%[4.patexpr.p.ann
+SEM PatExpr
+  | TypeAs  (tyExpr.gUniq,loc.uniq1)
+                                    =  mkNewLevUID @lhs.gUniq
+            loc      .  fo_         =  fitsIn @lhs.fiOpts @fe @uniq1 @lhs.patTyVarMp @lhs.knTy @tyExpr.ty
+            patExpr  .  patTyVarMp  =  foVarMp @fo_ |=> @lhs.patTyVarMp
+            lhs      .  patFunTy    =  Ty_Any
+%%]
+
+%%[3.patexpr.p.int
+SEM PatExpr
+  | IConst  loc  .  fo_         =  fitsIn  (@lhs.patTyVarMp |=> @lhs.knTy)
+                                           tyInt
+            lhs  .  patFunTy    =  Ty_Any
+            loc  .  ty          =  tyInt
+            lhs  .  patTyVarMp  =  foVarMp @fo_ |=> @lhs.patTyVarMp
+%%]
+
+%%[3.patexpr.p.char
+SEM PatExpr
+  | CConst  loc  .  fo_         =  fitsIn  (@lhs.patTyVarMp |=> @lhs.knTy)
+                                           tyChar
+            lhs  .  patFunTy    =  Ty_Any
+            loc  .  ty          =  tyChar
+            lhs  .  patTyVarMp  =  foVarMp @fo_ |=> @lhs.patTyVarMp
+%%]
+
+%%[3.patexpr.p.str
+SEM PatExpr
+  | SConst  loc  .  fo_         =  fitsIn  (@lhs.patTyVarMp |=> @lhs.knTy)
+                                           tyString
+            lhs  .  patFunTy    =  Ty_Any
+            loc  .  ty          =  tyString
+            lhs  .  patTyVarMp  =  foVarMp @fo_ |=> @lhs.patTyVarMp
+%%]
+
+%%[3.patexpr.p.con
+SEM PatExpr
+  | Con  (lhs.gUniq,loc.uniq1)
+                           =  mkNewLevUID @lhs.gUniq
+         loc  .  tvars_    =  map mkTyVar (mkNewUIDL (hsnProdArity @nm) @uniq1)
+              .  ty_p_     =  mkProdApp @tvars_
+         lhs  .  patFunTy  =  [ @ty_p_ ] `mkArrow` @ty_p_
+         loc  .  ty        =  Ty_Any
+%%]
+
+%%[3.patexpr.p.var
+SEM PatExpr
+  | Var  (lhs.gUniq,loc.uniq1)
+                            =  mkNewLevUID @lhs.gUniq
+         loc  .  ty_p_      =  tyEnsureNonAny @uniq1 @lhs.knTy
+              .  valGam_i_  =  if @lhs.inclVarBind && not (hsnIsWild @nm)
+                               then gamSingleton @nm (ValGamInfo @ty_p_)
+                               else emptyGam
+         lhs  .  patFunTy   =  Ty_Any
+         loc  .  ty         =  @ty_p_
+         lhs  .  valGam     =  gamAddGam @valGam_i_ @lhs.valGam
+%%]
+
+%%[3.patexpr.p.varas
+SEM PatExpr
+  | VarAs  (patExpr.gUniq,loc.uniq1)
+                                  =  mkNewLevUID @lhs.gUniq
+           loc      .  ty_p_      =  tyEnsureNonAny @uniq1 @lhs.knTy
+                    .  valGam_i_  =  if @lhs.inclVarBind && not (hsnIsWild @nm)
+                                     then gamSingleton @nm (ValGamInfo @ty_p_)
+                                     else emptyGam
+           patExpr  .  knTy       =  @ty_p_
+           lhs      .  patFunTy   =  Ty_Any
+           loc      .  ty         =  @patExpr.patTyVarMp |=> @ty_p_
+           lhs      .  valGam     =  gamAddGam @valGam_i_ @patExpr.valGam
+%%]
+
+%%[3.patexpr.p.apptop
+SEM PatExpr
+  | AppTop  loc      .  fo_fitR_    =  fitsIn  (@lhs.patTyVarMp |=> @lhs.knTy)
+                                               @ty_a_
+            (loc.ty_a_,loc.ty_r_)   =  tyArrowArgRes @patExpr.patFunTy
+            patExpr  .  patTyVarMp  =  foVarMp @fo_fitR_ |=> @lhs.patTyVarMp
+            loc      .  tys_        =  tyProdArgs @ty_r_
+                     .  arityErrs   =  if length @tys_ == @patExpr.arity
+                                       then []
+                                       else [ rngLift @range Err_PatArity @lhs.knTy @patExpr.arity ]
+            patExpr  .  knTyL       =  reverse @tys_
+            lhs      .  patFunTy    =  Ty_Any
+            loc      .  ty          =  @patExpr.patTyVarMp |=> foTy @fo_fitR_
+%%]
+
+%%[3.patexpr.p.app
+SEM PatExpr
+  | App  (loc.ty_a_,loc.tyi_l)
+                         =  tyLHdAndTl @lhs.knTyL
+         func  .  knTyL  =  @tyi_l
+               .  knTy   =  Ty_Any
+         arg   .  knTy   =  @ty_a_
+%%]
+
+%%[42.patexpr.p.int
+SEM PatExpr
+  | IConst  (lhs.gUniq,loc.uniq1)
+                                =  mkNewLevUID @lhs.gUniq
+            loc  .  fo_         =  fitsIn @lhs.fiOpts @fe @uniq1 @lhs.patTyVarMp @lhs.knTy tyInt
+            lhs  .  patFunTy    =  Ty_Any
+            loc  .  ty          =  tyInt
+            lhs  .  patTyVarMp  =  foVarMp @fo_ |=> @lhs.patTyVarMp
+%%]
+
+%%[42.patexpr.p.char
+SEM PatExpr
+  | CConst  (lhs.gUniq,loc.uniq1)
+                                =  mkNewLevUID @lhs.gUniq
+            loc  .  fo_         =  fitsIn @lhs.fiOpts @fe @uniq1 @lhs.patTyVarMp @lhs.knTy tyChar
+            lhs  .  patFunTy    =  Ty_Any
+            loc  .  ty          =  tyChar
+            lhs  .  patTyVarMp  =  foVarMp @fo_ |=> @lhs.patTyVarMp
+%%]
+
+%%[42.patexpr.p.str
+SEM PatExpr
+  | SConst  (lhs.gUniq,loc.uniq1)
+                                =  mkNewLevUID @lhs.gUniq
+            loc  .  fo_         =  fitsIn @lhs.fiOpts @fe @uniq1 @lhs.patTyVarMp @lhs.knTy tyString
+            lhs  .  patFunTy    =  Ty_Any
+            loc  .  ty          =  tyString
+            lhs  .  patTyVarMp  =  foVarMp @fo_ |=> @lhs.patTyVarMp
+%%]
+
+%%[42.patexpr.p.con
+SEM PatExpr
+  | Con  (lhs.gUniq,loc.uniq1,loc.uniq2,loc.uniq3,loc.uniq4)
+                             =  mkNewLevUID4 @lhs.gUniq
+         loc  .  tvarv1_     =  mkTyVar @uniq1
+         (loc.ty_g_,loc.nmErrs)
+                             =  valGamLookupTy (hsnUn @nm) @lhs.valGam
+         loc  .  fo_fitP_    =  fitsIn instLRFIOpts @fe @uniq3 emptyVarMp @ty_g_ ([ @tvarv1_ ] `mkArrow` mkTyVar @uniq2)
+              .  tyVarMp_p_  =  foVarMp @fo_fitP_
+              .  fo_fitR_    =  fitsIn @lhs.fiOpts @fe @uniq4 (@tyVarMp_p_ |=> @lhs.patTyVarMp) @lhs.knTy @tvarv1_
+              .  ty_r_       =  foTy @fo_fitR_
+         lhs  .  patFunTy    =  @tyVarMp_p_ |=> foTy @fo_fitP_
+         loc  .  ty          =  @ty_r_
+         lhs  .  patTyVarMp  =  foVarMp @fo_fitR_ |+> @tyVarMp_p_ |+> @lhs.patTyVarMp
+%%]
+
+%%[42.patexpr.p.var
+SEM PatExpr
+  | Var  (lhs.gUniq,loc.uniq1,loc.uniq2,loc.uniq3)
+                             =  mkNewLevUID3 @lhs.gUniq
+         (loc.ty_p_,loc.tyVarMp_v_)
+                             =  tyAsVarMp @uniq3 (tyInst1Exists @uniq2 (tyEnsureNonAny @uniq1 @lhs.knTy))
+         loc  .  valGam_i_   =  if @lhs.inclVarBind && not (hsnIsWild @nm)
+                                then gamSingleton @nm (ValGamInfo @ty_p_)
+                                else emptyGam
+         lhs  .  patFunTy    =  Ty_Any
+         loc  .  ty          =  @ty_p_
+         lhs  .  patTyVarMp  =  @tyVarMp_v_ |=> @lhs.patTyVarMp
+              .  valGam      =  gamAddGam @valGam_i_ @lhs.valGam
+%%]
+
+%%[42.patexpr.p.varas
+SEM PatExpr
+  | VarAs  (patExpr.gUniq,loc.uniq1,loc.uniq2,loc.uniq3)
+                                   =  mkNewLevUID3 @lhs.gUniq
+           (loc.ty_p_,loc.tyVarMp_v_)
+                                   =  tyAsVarMp @uniq3 (tyInst1Exists @uniq2 (tyEnsureNonAny @uniq1 @lhs.knTy))
+           loc      .  valGam_i_   =  if @lhs.inclVarBind && not (hsnIsWild @nm)
+                                      then gamSingleton @nm (ValGamInfo @ty_p_)
+                                      else emptyGam
+           patExpr  .  knTy        =  @ty_p_
+                    .  patTyVarMp  =  @tyVarMp_v_ |=> @lhs.patTyVarMp
+           lhs      .  patFunTy    =  Ty_Any
+           loc      .  ty          =  @ty_p_
+           lhs      .  valGam      =  gamAddGam @valGam_i_ @patExpr.valGam
+%%]
+
+%%[42.patexpr.p.apptop
+SEM PatExpr
+  | AppTop  (patExpr.gUniq,loc.uniq1)
+                                    =  mkNewLevUID @lhs.gUniq
+            loc      .  fo_fitR_    =  fitsIn @lhs.fiOpts @fe @uniq1 @lhs.patTyVarMp @lhs.knTy @ty_a_
+            (loc.ty_a_,loc.ty_r_)   =  tyArrowArgRes @patExpr.patFunTy
+            patExpr  .  patTyVarMp  =  foVarMp @fo_fitR_ |=> @lhs.patTyVarMp
+            loc      .  tys_        =  tyProdArgs @ty_r_
+                     .  arityErrs   =  if length @tys_ == @patExpr.arity
+                                       then []
+                                       else [ rngLift @range Err_PatArity @lhs.knTy @patExpr.arity ]
+            patExpr  .  knTyL       =  reverse @tys_
+            lhs      .  patFunTy    =  Ty_Any
+            loc      .  ty          =  foTy @fo_fitR_
+%%]
+
+%%[42.patexpr.p.app
+SEM PatExpr
+  | App  (loc.ty_a_,loc.tyi_l)
+                         =  tyLHdAndTl @lhs.knTyL
+         func  .  knTyL  =  @tyi_l
+               .  knTy   =  Ty_Any
+         arg   .  knTy   =  @ty_a_
+%%]
+
+%%[42.patexpr.p.ann
+SEM PatExpr
+  | TypeAs  (tyExpr.gUniq,loc.uniq1)
+                                    =  mkNewLevUID @lhs.gUniq
+            loc      .  fo_         =  fitsIn @lhs.fiOpts @fe @uniq1 @lhs.patTyVarMp @lhs.knTy @tyExpr.ty
+            patExpr  .  patTyVarMp  =  foVarMp @fo_ |=> @lhs.patTyVarMp
+            lhs      .  patFunTy    =  Ty_Any
+%%]
+
+%%[1.patexpr.p.int
+SEM PatExpr
+  | IConst  loc  .  fo_  =  @lhs.knTy `fitsIn` tyInt
+%%]
+
+%%[1.patexpr.p.char
+SEM PatExpr
+  | CConst  loc  .  fo_  =  @lhs.knTy `fitsIn` tyChar
+%%]
+
+%%[1.patexpr.p.str
+SEM PatExpr
+  | SConst  loc  .  fo_  =  @lhs.knTy `fitsIn` tyString
+%%]
+
+%%[1.patexpr.p.con
+SEM PatExpr
+  | Con  
+%%]
+
+%%[1.patexpr.p.var
+SEM PatExpr
+  | Var  loc  .  valGam_i_  =  if @lhs.inclVarBind && not (hsnIsWild @nm)
+                               then gamSingleton @nm (ValGamInfo @lhs.knTy)
+                               else emptyGam
+         lhs  .  valGam     =  gamAddGam @valGam_i_ @lhs.valGam
+%%]
+
+%%[1.patexpr.p.varas
+SEM PatExpr
+  | VarAs  loc  .  valGam_i_  =  if @lhs.inclVarBind && not (hsnIsWild @nm)
+                                 then gamSingleton @nm (ValGamInfo @lhs.knTy)
+                                 else emptyGam
+           lhs  .  valGam     =  gamAddGam @valGam_i_ @patExpr.valGam
+%%]
+
+%%[1.patexpr.p.apptop
+SEM PatExpr
+  | AppTop  loc      .  tys_       =  tyProdArgs @lhs.knTy
+                     .  arityErrs  =  if length @tys_ == @patExpr.arity
+                                      then []
+                                      else [ rngLift @range Err_PatArity @lhs.knTy @patExpr.arity ]
+            patExpr  .  knTyL      =  reverse @tys_
+%%]
+
+%%[1.patexpr.p.app
+SEM PatExpr
+  | App  (loc.ty_a_,loc.tyi_l)
+                         =  tyLHdAndTl @lhs.knTyL
+         func  .  knTyL  =  @tyi_l
+               .  knTy   =  Ty_Any
+         arg   .  knTy   =  @ty_a_
+%%]
+
+%%[9.patexpr.p.int
+SEM PatExpr
+  | IConst  (lhs.gUniq,loc.uniq1)
+                                =  mkNewLevUID @lhs.gUniq
+            loc  .  fo_         =  fitsIn @lhs.fiOpts @fe @uniq1 @lhs.patTyVarMp @lhs.knTy tyInt
+            lhs  .  patFunTy    =  Ty_Any
+            loc  .  ty          =  tyInt
+            lhs  .  patTyVarMp  =  foVarMp @fo_ |=> @lhs.patTyVarMp
+%%]
+
+%%[9.patexpr.p.char
+SEM PatExpr
+  | CConst  (lhs.gUniq,loc.uniq1)
+                                =  mkNewLevUID @lhs.gUniq
+            loc  .  fo_         =  fitsIn @lhs.fiOpts @fe @uniq1 @lhs.patTyVarMp @lhs.knTy tyChar
+            lhs  .  patFunTy    =  Ty_Any
+            loc  .  ty          =  tyChar
+            lhs  .  patTyVarMp  =  foVarMp @fo_ |=> @lhs.patTyVarMp
+%%]
+
+%%[9.patexpr.p.str
+SEM PatExpr
+  | SConst  (lhs.gUniq,loc.uniq1)
+                                =  mkNewLevUID @lhs.gUniq
+            loc  .  fo_         =  fitsIn @lhs.fiOpts @fe @uniq1 @lhs.patTyVarMp @lhs.knTy tyString
+            lhs  .  patFunTy    =  Ty_Any
+            loc  .  ty          =  tyString
+            lhs  .  patTyVarMp  =  foVarMp @fo_ |=> @lhs.patTyVarMp
+%%]
+
+%%[9.patexpr.p.con
+SEM PatExpr
+  | Con  (lhs.gUniq,loc.uniq1,loc.uniq2,loc.uniq3,loc.uniq4)
+                             =  mkNewLevUID4 @lhs.gUniq
+         loc  .  tvarv1_     =  mkTyVar @uniq1
+         (loc.ty_g_,loc.nmErrs)
+                             =  valGamLookupTy (hsnUn @nm) @lhs.valGam
+         loc  .  fo_fitP_    =  fitsIn instFIOpts @fe @uniq3 emptyVarMp @ty_g_ ([ @tvarv1_ ] `mkArrow` mkTyVar @uniq2)
+              .  tyVarMp_p_  =  foVarMp @fo_fitP_
+              .  fo_fitR_    =  fitsIn @lhs.fiOpts @fe @uniq4 (@tyVarMp_p_ |=> @lhs.patTyVarMp) @lhs.knTy @tvarv1_
+              .  ty_r_       =  foTy @fo_fitR_
+         lhs  .  patFunTy    =  @tyVarMp_p_ |=> foTy @fo_fitP_
+         loc  .  ty          =  @ty_r_
+         lhs  .  patTyVarMp  =  foVarMp @fo_fitR_ |+> @tyVarMp_p_ |+> @lhs.patTyVarMp
+%%]
+
+%%[9.patexpr.p.var
+SEM PatExpr
+  | Var  (lhs.gUniq,loc.uniq1,loc.uniq2)
+                            =  mkNewLevUID2 @lhs.gUniq
+         loc  .  ty_p_      =  tyInst1Exists @uniq2 (tyEnsureNonAny @uniq1 @lhs.knTy)
+              .  valGam_i_  =  if @lhs.inclVarBind && not (hsnIsWild @nm)
+                               then gamSingleton @nm (ValGamInfo @ty_p_)
+                               else emptyGam
+         lhs  .  patFunTy   =  Ty_Any
+         loc  .  ty         =  @ty_p_
+         lhs  .  valGam     =  gamAddGam @valGam_i_ @lhs.valGam
+%%]
+
+%%[9.patexpr.p.varas
+SEM PatExpr
+  | VarAs  (patExpr.gUniq,loc.uniq1,loc.uniq2)
+                                  =  mkNewLevUID2 @lhs.gUniq
+           loc      .  ty_p_      =  tyInst1Exists @uniq2 (tyEnsureNonAny @uniq1 @lhs.knTy)
+                    .  valGam_i_  =  if @lhs.inclVarBind && not (hsnIsWild @nm)
+                                     then gamSingleton @nm (ValGamInfo @ty_p_)
+                                     else emptyGam
+           patExpr  .  knTy       =  @ty_p_
+           lhs      .  patFunTy   =  Ty_Any
+           loc      .  ty         =  @ty_p_
+           lhs      .  valGam     =  gamAddGam @valGam_i_ @patExpr.valGam
+%%]
+
+%%[9.patexpr.p.apptop
+SEM PatExpr
+  | AppTop  (patExpr.gUniq,loc.uniq1)
+                                    =  mkNewLevUID @lhs.gUniq
+            loc      .  fo_fitR_    =  fitsIn @lhs.fiOpts @fe @uniq1 @lhs.patTyVarMp @lhs.knTy @ty_a_
+            (loc.ty_a_,loc.ty_r_)   =  tyArrowArgRes @patExpr.patFunTy
+            patExpr  .  patTyVarMp  =  foVarMp @fo_fitR_ |=> @lhs.patTyVarMp
+            loc      .  tys_        =  tyProdArgs @ty_r_
+                     .  arityErrs   =  if length @tys_ == @patExpr.arity
+                                       then []
+                                       else [ rngLift @range Err_PatArity @lhs.knTy @patExpr.arity ]
+            patExpr  .  knTyL       =  reverse @tys_
+            lhs      .  patFunTy    =  Ty_Any
+            loc      .  ty          =  foTy @fo_fitR_
+%%]
+
+%%[9.patexpr.p.app
+SEM PatExpr
+  | App  (loc.ty_a_,loc.tyi_l)
+                         =  tyLHdAndTl @lhs.knTyL
+         func  .  knTyL  =  @tyi_l
+               .  knTy   =  Ty_Any
+         arg   .  knTy   =  @ty_a_
+%%]
+
+%%[9.patexpr.p.ann
+SEM PatExpr
+  | TypeAs  (tyExpr.gUniq,loc.uniq1)
+                                    =  mkNewLevUID @lhs.gUniq
+            loc      .  fo_         =  fitsIn @lhs.fiOpts @fe @uniq1 @lhs.patTyVarMp @lhs.knTy @tyExpr.ty
+            patExpr  .  patTyVarMp  =  foVarMp @fo_ |=> @lhs.patTyVarMp
+            lhs      .  patFunTy    =  Ty_Any
+%%]
+
+
+%%[2.tyexpr.t.con
+SEM TyExpr
+  | Con  (loc.tgi_,loc.nmErrs)
+                         =  tyGamLookupErr @nm @lhs.tyGam
+         loc  .  ty      =  tgiTy @tgi_
+%%]
+
+%%[2.tyexpr.t.app
+SEM TyExpr
+  | App  loc  .  ty  =  Ty_App @func.ty @arg.ty
+%%]
+
+%%[2.tyexpr.t.wild
+SEM TyExpr
+  | Wild  (lhs.gUniq,loc.uniq1)
+                         =  mkNewLevUID @lhs.gUniq
+          loc  .  tgi_   =  TyGamInfo (mkTyVar @uniq1)
+               .  ty     =  tgiTy @tgi_
+%%]
+
+%%[4.tyexpr.t.con
+SEM TyExpr
+  | Con  (loc.tgi_,loc.nmErrs)
+                          =  tyGamLookupErr @nm @lhs.tyGam
+         loc  .  ty       =  tgiTy @tgi_
+         lhs  .  tyWildL  =  []
+%%]
+
+%%[4.tyexpr.t.app
+SEM TyExpr
+  | App  loc  .  ty       =  Ty_App @func.ty @arg.ty
+         lhs  .  tyWildL  =  @arg.tyWildL ++ @func.tyWildL
+%%]
+
+%%[4.tyexpr.t.wild
+SEM TyExpr
+  | Wild  (lhs.gUniq,loc.uniq1)
+                           =  mkNewLevUID @lhs.gUniq
+          loc  .  tgi_     =  TyGamInfo (mkTyVar @uniq1)
+               .  tvarv_   =  tgiTy @tgi_
+               .  ty       =  @tvarv_
+          lhs  .  tyWildL  =  [ @tvarv_ ]
+%%]
+
+%%[4.tyexpr.t.var
+SEM TyExpr
+  | Var  (lhs.gUniq,loc.uniq1)
+                           =  mkNewLevUID @lhs.gUniq
+         (loc.tgi_,loc.tyGam_i_)
+                           =  case tyGamLookup @nm @lhs.tyGam of
+                                   Nothing -> let t = TyGamInfo (mkTyVar @uniq1)
+                                              in (t , gamSingleton @nm t)
+                                   Just t -> (t , emptyGam)
+         loc  .  ty_       =  tgiTy @tgi_
+              .  ty        =  @ty_
+         lhs  .  tyWildL   =  []
+              .  tyGam     =  gamAddGam @tyGam_i_ @lhs.tyGam
+%%]
+
+%%[4.tyexpr.t.var.w
+SEM TyExpr
+  | VarWild  (lhs.gUniq,loc.uniq1)
+                               =  mkNewLevUID @lhs.gUniq
+             (loc.tgi_,loc.tyGam_i_)
+                               =  case tyGamLookup @nm @lhs.tyGam of
+                                       Nothing -> let t = TyGamInfo (mkTyVar @uniq1)
+                                                  in (t , gamSingleton @nm t)
+                                       Just t -> (t , emptyGam)
+             loc  .  ty_       =  tgiTy @tgi_
+                  .  ty        =  @ty_
+             lhs  .  tyWildL   =  [ @ty_ ]
+                  .  tyGam     =  gamAddGam @tyGam_i_ @lhs.tyGam
+%%]
+
+%%[4.tyexpr.t.quant
+SEM TyExpr
+  | Quant  (tyExpr.gUniq,loc.uniq1)
+                                =  mkNewLevUID @lhs.gUniq
+           loc     .  tvarv_    =  mkTyVar @uniq1
+                   .  tgi_      =  TyGamInfo @tvarv_
+           tyExpr  .  tyGam     =  gamPushGam emptyGam (gamPushGam (gamSingleton @tyVar @tgi_) @lhs.tyGam)
+           (loc.tyGam_l_,_)     =  gamPop @tyExpr.tyGam
+           loc     .  ty        =  Ty_Quant @qu (tyVar @tvarv_) @tyExpr.ty
+           lhs     .  tyGam     =  gamAddGam @tyGam_l_ @lhs.tyGam
+%%]
+
+%%[3.tyexpr.t.con
+SEM TyExpr
+  | Con  (loc.tgi_,loc.nmErrs)
+                          =  tyGamLookupErr @nm @lhs.tyGam
+         loc  .  ty       =  tgiTy @tgi_
+         lhs  .  tyWildL  =  []
+%%]
+
+%%[3.tyexpr.t.app
+SEM TyExpr
+  | App  loc  .  ty       =  Ty_App @func.ty @arg.ty
+         lhs  .  tyWildL  =  @arg.tyWildL ++ @func.tyWildL
+%%]
+
+%%[3.tyexpr.t.wild
+SEM TyExpr
+  | Wild  (lhs.gUniq,loc.uniq1)
+                           =  mkNewLevUID @lhs.gUniq
+          loc  .  tgi_     =  TyGamInfo (mkTyVar @uniq1)
+               .  tvarv_   =  tgiTy @tgi_
+               .  ty       =  @tvarv_
+          lhs  .  tyWildL  =  [ @tvarv_ ]
+%%]
+
+%%[3.tyexpr.t.var
+SEM TyExpr
+  | Var  (lhs.gUniq,loc.uniq1)
+                           =  mkNewLevUID @lhs.gUniq
+         (loc.tgi_,loc.tyGam_i_)
+                           =  case tyGamLookup @nm @lhs.tyGam of
+                                   Nothing -> let t = TyGamInfo (mkTyVar @uniq1)
+                                              in (t , gamSingleton @nm t)
+                                   Just t -> (t , emptyGam)
+         loc  .  ty_       =  tgiTy @tgi_
+              .  ty        =  @ty_
+         lhs  .  tyWildL   =  []
+              .  tyGam     =  gamAddGam @tyGam_i_ @lhs.tyGam
+%%]
+
+%%[3.tyexpr.t.var.w
+SEM TyExpr
+  | VarWild  (lhs.gUniq,loc.uniq1)
+                               =  mkNewLevUID @lhs.gUniq
+             (loc.tgi_,loc.tyGam_i_)
+                               =  case tyGamLookup @nm @lhs.tyGam of
+                                       Nothing -> let t = TyGamInfo (mkTyVar @uniq1)
+                                                  in (t , gamSingleton @nm t)
+                                       Just t -> (t , emptyGam)
+             loc  .  ty_       =  tgiTy @tgi_
+                  .  ty        =  @ty_
+             lhs  .  tyWildL   =  [ @ty_ ]
+                  .  tyGam     =  gamAddGam @tyGam_i_ @lhs.tyGam
+%%]
+
+%%[42.tyexpr.t.con
+SEM TyExpr
+  | Con  (loc.tgi_,loc.nmErrs)
+                          =  tyGamLookupErr @nm @lhs.tyGam
+         loc  .  ty       =  tgiTy @tgi_
+         lhs  .  tyWildL  =  []
+%%]
+
+%%[42.tyexpr.t.app
+SEM TyExpr
+  | App  loc  .  ty       =  Ty_App @func.ty @arg.ty
+         lhs  .  tyWildL  =  @arg.tyWildL ++ @func.tyWildL
+%%]
+
+%%[42.tyexpr.t.wild
+SEM TyExpr
+  | Wild  (lhs.gUniq,loc.uniq1)
+                           =  mkNewLevUID @lhs.gUniq
+          loc  .  tgi_     =  TyGamInfo (mkTyVar @uniq1)
+               .  tvarv_   =  tgiTy @tgi_
+               .  ty       =  @tvarv_
+          lhs  .  tyWildL  =  [ @tvarv_ ]
+%%]
+
+%%[42.tyexpr.t.var
+SEM TyExpr
+  | Var  (lhs.gUniq,loc.uniq1)
+                           =  mkNewLevUID @lhs.gUniq
+         (loc.tgi_,loc.tyGam_i_)
+                           =  case tyGamLookup @nm @lhs.tyGam of
+                                   Nothing -> let t = TyGamInfo (mkTyVar @uniq1)
+                                              in (t , gamSingleton @nm t)
+                                   Just t -> (t , emptyGam)
+         loc  .  ty_       =  tgiTy @tgi_
+              .  ty        =  @ty_
+         lhs  .  tyWildL   =  []
+              .  tyGam     =  gamAddGam @tyGam_i_ @lhs.tyGam
+%%]
+
+%%[42.tyexpr.t.var.w
+SEM TyExpr
+  | VarWild  (lhs.gUniq,loc.uniq1)
+                               =  mkNewLevUID @lhs.gUniq
+             (loc.tgi_,loc.tyGam_i_)
+                               =  case tyGamLookup @nm @lhs.tyGam of
+                                       Nothing -> let t = TyGamInfo (mkTyVar @uniq1)
+                                                  in (t , gamSingleton @nm t)
+                                       Just t -> (t , emptyGam)
+             loc  .  ty_       =  tgiTy @tgi_
+                  .  ty        =  @ty_
+             lhs  .  tyWildL   =  [ @ty_ ]
+                  .  tyGam     =  gamAddGam @tyGam_i_ @lhs.tyGam
+%%]
+
+%%[42.tyexpr.t.quant
+SEM TyExpr
+  | Quant  (tyExpr.gUniq,loc.uniq1)
+                                =  mkNewLevUID @lhs.gUniq
+           loc     .  tvarv_    =  mkTyVar @uniq1
+                   .  tgi_      =  TyGamInfo @tvarv_
+           tyExpr  .  tyGam     =  gamPushGam emptyGam (gamPushGam (gamSingleton @tyVar @tgi_) @lhs.tyGam)
+           (loc.tyGam_l_,_)     =  gamPop @tyExpr.tyGam
+           loc     .  ty        =  Ty_Quant @qu (tyVar @tvarv_) @tyExpr.ty
+           lhs     .  tyGam     =  gamAddGam @tyGam_l_ @lhs.tyGam
+%%]
+
+%%[1.tyexpr.t.con
+SEM TyExpr
+  | Con  (loc.tgi_,loc.nmErrs)
+                         =  tyGamLookupErr @nm @lhs.tyGam
+         loc  .  ty      =  tgiTy @tgi_
+%%]
+
+%%[1.tyexpr.t.app
+SEM TyExpr
+  | App  loc  .  ty  =  Ty_App @func.ty @arg.ty
+%%]
+
+%%[9.tyexpr.t.con
+SEM TyExpr
+  | Con  (loc.tgi_,loc.nmErrs)
+                          =  tyGamLookupErr @nm @lhs.tyGam
+         loc  .  ty       =  tgiTy @tgi_
+         lhs  .  tyWildL  =  []
+%%]
+
+%%[9.tyexpr.t.app
+SEM TyExpr
+  | App  loc  .  ty       =  Ty_App @func.ty @arg.ty
+         lhs  .  tyWildL  =  @arg.tyWildL ++ @func.tyWildL
+%%]
+
+%%[9.tyexpr.t.wild
+SEM TyExpr
+  | Wild  (lhs.gUniq,loc.uniq1)
+                           =  mkNewLevUID @lhs.gUniq
+          loc  .  tgi_     =  TyGamInfo (mkTyVar @uniq1)
+               .  tvarv_   =  tgiTy @tgi_
+               .  ty       =  @tvarv_
+          lhs  .  tyWildL  =  [ @tvarv_ ]
+%%]
+
+%%[9.tyexpr.t.var
+SEM TyExpr
+  | Var  (lhs.gUniq,loc.uniq1)
+                           =  mkNewLevUID @lhs.gUniq
+         (loc.tgi_,loc.tyGam_i_)
+                           =  case tyGamLookup @nm @lhs.tyGam of
+                                   Nothing -> let t = TyGamInfo (mkTyVar @uniq1)
+                                              in (t , gamSingleton @nm t)
+                                   Just t -> (t , emptyGam)
+         loc  .  ty_       =  tgiTy @tgi_
+              .  ty        =  @ty_
+         lhs  .  tyWildL   =  []
+              .  tyGam     =  gamAddGam @tyGam_i_ @lhs.tyGam
+%%]
+
+%%[9.tyexpr.t.var.w
+SEM TyExpr
+  | VarWild  (lhs.gUniq,loc.uniq1)
+                               =  mkNewLevUID @lhs.gUniq
+             (loc.tgi_,loc.tyGam_i_)
+                               =  case tyGamLookup @nm @lhs.tyGam of
+                                       Nothing -> let t = TyGamInfo (mkTyVar @uniq1)
+                                                  in (t , gamSingleton @nm t)
+                                       Just t -> (t , emptyGam)
+             loc  .  ty_       =  tgiTy @tgi_
+                  .  ty        =  @ty_
+             lhs  .  tyWildL   =  [ @ty_ ]
+                  .  tyGam     =  gamAddGam @tyGam_i_ @lhs.tyGam
+%%]
+
+%%[9.tyexpr.t.quant
+SEM TyExpr
+  | Quant  (tyExpr.gUniq,loc.uniq1)
+                                =  mkNewLevUID @lhs.gUniq
+           loc     .  tvarv_    =  mkTyVar @uniq1
+                   .  tgi_      =  TyGamInfo @tvarv_
+           tyExpr  .  tyGam     =  gamPushGam emptyGam (gamPushGam (gamSingleton @tyVar @tgi_) @lhs.tyGam)
+           (loc.tyGam_l_,_)     =  gamPop @tyExpr.tyGam
+           loc     .  ty        =  Ty_Quant @qu (tyVar @tvarv_) @tyExpr.ty
+           lhs     .  tyGam     =  gamAddGam @tyGam_l_ @lhs.tyGam
+%%]
+
+

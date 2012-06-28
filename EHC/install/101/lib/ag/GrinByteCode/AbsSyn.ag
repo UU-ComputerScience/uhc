@@ -1,0 +1,167 @@
+DATA AGItf
+  | AGItf       module          : Module
+
+
+DATA Module
+  | Mod         moduleNm        : {String}
+                allImpModNmL	: {AssocL HsName String}
+                impModNmL		: {AssocL HsName Int}
+                expEntryL		: {[EntryInfo]}
+                allEntryL		: {[EntryInfo]}
+                instrs          : Instrs
+                -- stringL			: {[String]}
+                constL			: {[Const]}
+                cafEntryL		: {[Int]}
+                mainCafEntry	: Int
+                -- gcInfoL			: {[GCInfo]}				-- GC info
+                includeL		: {[String]}				-- C includes
+
+SET AllModule = Module
+
+-- Directly corresponding to bytecode
+DATA Instr
+  | Ld          ind             : InsOp_Deref
+  				locDst			: InsOp_LocB
+  				locSrc			: InsOp_LocE
+  				immSz			: InsOp_ImmSz
+  				imm 			: Imm
+  | St          ind             : InsOp_DerefB
+  				locDst			: InsOp_LocE
+  				locSrc			: InsOp_LocB
+  				immSz			: InsOp_ImmSz
+  				imm 			: Imm
+  | LinkChain   linkChainEntry	: LinkChainEntry
+  | LdGlobal	locDst			: InsOp_LocB
+                linkChainEntry	: LinkChainEntry
+  | LdNodeTag
+  | AllocStore  locSrc			: InsOp_LocB
+  				gcStackInfo		: GCStackInfo
+  | Fetch       locSrc			: InsOp_LocB
+  | FetchUpdate
+  | CaseCall	linkChainEntry	: LinkChainEntry
+  | CallC		nArgSz			: InsOp_ImmSz
+  				nArg			: Imm
+  				-- callEnc			: Imm					-- 20100126: obsolete, no code generated anymore, replaced by:
+  				-- callSizes		: {[BasicSize]}
+  				linkChainEntryCallEnc
+  								: LinkChainEntry
+  				callInfo		: CallInfo
+  | RetCall     nArgMineSz		: InsOp_ImmSz
+  				nArgSurrSz		: InsOp_ImmSz
+  				nArgMine		: Imm
+  				nArgSurr		: Imm
+  | RetCase     nResSz			: InsOp_ImmSz
+  				retOffSurrSz	: InsOp_ImmSz
+  				nRes			: Imm
+  				retOffSurr		: Imm
+  				linkChainEntry	: LinkChainEntry
+  | Call        locSrc			: InsOp_LocB
+  				callInfo		: CallInfoCall
+  | TailCall    locSrc			: InsOp_LocB
+  				nArgMineSz		: InsOp_ImmSz
+  				nArgSurrSz		: InsOp_ImmSz
+  				nArgMine		: Imm
+  				nArgSurr		: Imm
+  | Eval        locSrc			: InsOp_LocB
+  				callInfo		: CallInfo
+  | TailEval    locSrc			: InsOp_LocB
+  				nArgSurrSz		: InsOp_ImmSz
+  				nArgSurr		: Imm
+  				callInfo		: CallInfo
+  | Apply       locSrc			: InsOp_LocB
+  				callInfo		: CallInfo
+  | TailApply   locSrc			: InsOp_LocB
+  				nArgMineSz		: InsOp_ImmSz
+  				nArgSurrSz		: InsOp_ImmSz
+  				nArgMine		: Imm
+  				nArgSurr		: Imm
+  | Op			op				: InsOp_TyOp
+  				opndTy			: InsOp_DataOp
+  				locDst			: InsOp_LocODst
+  				ind             : InsOp_Deref
+  				locSrc			: InsOp_LocOSrc
+  				immSz			: InsOp_ImmSz
+  				imm 			: Imm
+  | Halt
+  | TagInt2Word
+  | UntagWord2Int
+  | TagWord2Word
+  | UntagWord2Word
+
+-- Not or indirectly corresponding/translated to bytecode
+DATA Instr
+  | FunStart	functionInfo	: FunctionInfo			-- precedes start of function
+  | LdString	locDst			: InsOp_LocB			-- expands to a plain Ld
+                stringConst		: StringConst
+  | Ann			kind            : AnnKind
+                ann				: String
+  				instr			: Instr
+  | Meta		meta			: Meta
+  | Label		locRef			: LocRef
+  | LabelRef	locRef			: LocRef
+
+DATA Meta
+  | CmtHeader	kind            : AnnKind
+                ann				: PP_Doc
+
+TYPE Instrs = [Instr]
+
+SET AllInstr = Instr Instrs Meta
+
+DATA InsOp_LocE
+  | SP
+  | Reg
+  | Imm
+  | PC
+
+DATA InsOp_LocB
+  | TOS
+  | Reg
+
+DATA InsOp_LocODst
+  | TOS
+  | Reg
+
+DATA InsOp_LocOSrc
+  | SP
+  | Reg
+  | Imm
+  | TOS
+
+DATA InsOp_TyOp
+  | Add
+  | Sub
+  | Mul
+  | Quot
+
+DATA InsOp_DataOp
+  | IntWord
+  | IntInf
+  | FloatWord
+
+DATA InsOp_ImmSz
+  | Bits08
+  | Bits16
+  | Bits32
+  | Bits64
+
+DATA InsOp_Deref
+  | Zero
+  | One
+  | Two
+  | Int
+
+DATA InsOp_DerefB
+  | One
+  | Two
+
+SET AllInsOp = InsOp_LocE InsOp_LocB InsOp_LocODst InsOp_LocOSrc InsOp_TyOp InsOp_DataOp InsOp_ImmSz InsOp_Deref InsOp_DerefB
+
+DATA Imm
+  | Int			int				: Integer
+
+SET AllImm = Imm
+
+SET AllNTNoModule = AllInstr AllImm AllInsOp
+SET AllNT = AllModule AllNTNoModule
+

@@ -1,0 +1,71 @@
+ATTR AllExpr AllPatExpr [ fiOpts: FIOpts | | ]
+
+SEM AGItf
+  | AGItf       expr        .  fiOpts               =   strongFIOpts
+
+SEM Expr
+  | AppImpred   func        .  fiOpts               =   strongFIOpts
+                loc         .  argFIOpts            =   strongFIOpts
+                arg         .  fiOpts               =   @argFIOpts
+
+SEM Decl
+  | Val
+    FFE
+                loc         .  exprFiOpts           =   strongFIOpts
+                expr        .  fiOpts               =   @exprFiOpts
+  | Val         patExpr     .  fiOpts               =   strongFIOpts
+
+SEM Expr
+  | Lam         loc         .  knFunFIOpts          =   (@lhs.fiOpts { fioBindRFirst=True })
+  | App         func        .  fiOpts               =   @lhs.fiOpts
+                loc         .  argFIOpts            =   instLFIOpts
+                arg         .  fiOpts               =   @argFIOpts
+-- 20100924 AD. Shouldn't this be strong for the subexpr?
+  | TypeAs      loc         .  knTyFIOpts           =   -- strongFIOpts
+                                                        @lhs.fiOpts
+                            .  downFIOpts           =   strongFIOpts {fioBindLFirst = False}
+                expr        .  fiOpts               =   @lhs.fiOpts -- @asFiOpts
+                                                        -- strongFIOpts
+
+ATTR AllCase [ fiOpts: FIOpts | | ]
+
+SEM Decl
+  | Val         expr        .  fiOpts               :=  (if @hasTySig then strongFIOpts else weakFIOpts)
+
+SEM CaseAlt
+  | Pat         patExpr     .  fiOpts               =   strongFIOpts
+
+SEM Expr
+  | Case        expr        .  fiOpts               =   @exprFiOpts
+                loc         .  exprFiOpts           =   (if @isTupOfArg then strongFIOpts else weakFIOpts)
+                loc         .  altsFiOpts           =   @lhs.fiOpts
+                                                          { fioBindRFirst = False }
+                alts        .  fiOpts               =   @altsFiOpts
+
+ATTR DataFieldExpr [ fldFIOpts: FIOpts | | ]
+
+SEM RecExpr
+  | Ext         loc         .  knFIOpts             =   @lhs.fiOpts
+                recExpr     .  fiOpts               =   @lhs.fiOpts {fioNoRLabElimFor = @nm : fioNoRLabElimFor @lhs.fiOpts}
+  | Upd         loc         .  knFIOpts             =   @lhs.fiOpts -- {fioNoRLabElimFor = [@nm]}
+  | Ext Upd     expr        .  fiOpts               =   @lhs.fiOpts -- strongFIOpts
+
+SEM Expr
+  | DataFields  loc         .  fldFIOpts            =   strongFIOpts
+
+SEM DataFieldExpr
+  | Upd         expr        .  fiOpts               =   @lhs.fldFIOpts
+
+SEM Expr
+  | Rec         loc         .  recFiOpts            =   strongFIOpts
+
+SEM Expr
+  | App         func        .  fiOpts               :=  implFIOpts
+
+SEM Decl
+  | InstanceIntro
+                expr        .  fiOpts               =   strongFIOpts
+
+SEM Expr
+  | AppImpl     arg         .  fiOpts               =   strongFIOpts
+

@@ -1,0 +1,20 @@
+ATTR AllCodeNT [ lev: Int | | ]
+
+SEM CodeAGItf
+  | AGItf       module      .   lev         =   cLevModule
+
+SEM CExpr
+  | Lam         loc         .   lev         =   @lhs.lev + 1
+
+SEM CAlt
+  | Alt         loc         .   lev         =   @lhs.lev + 1
+
+ATTR AllBind [ isGlobal: Bool | | ]
+
+SEM CExpr
+  | Let         loc         .   isGlobal    =   @lhs.lev == cLevModule
+  | Lam App     loc         .   isGlobal    =   False
+
+SEM CPatFld
+  | Fld         bind        .   isGlobal    =   False
+

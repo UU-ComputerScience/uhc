@@ -1,0 +1,36 @@
+MODULE {AS1.Imports} {ImpModMp, as1Imports, as1JoinAGItfs}
+{
+import qualified Data.Map as Map
+import Common
+import AbsSyn.AbsSyn1
+
+}
+{
+}
+{
+}
+{
+}
+INCLUDE "AbsSyn/AbsSyn1AG.ag"
+INCLUDE "AbsSyn/CommonAG.ag"
+INCLUDE "Expr/AbsSynAG.ag"
+WRAPPER AGItf
+
+{
+type ImpModMp = Map.Map Nm SPos
+
+as1Imports :: AGItf -> ImpModMp
+as1Imports r
+  = (impModMp_Syn_AGItf r2)
+  where r1 = sem_AGItf r
+        r2 = wrap_AGItf r1
+                (Inh_AGItf )
+
+as1JoinAGItfs :: [AGItf] -> AGItf
+as1JoinAGItfs ais = AGItf_AGItf $ concat $ [ ds | (AGItf_AGItf ds) <- ais ]
+
+}
+ATTR AllDecl AGItf [ | | impModMp USE {`Map.union`} {Map.empty}: {ImpModMp} ]
+
+SEM Decl
+  | Include         lhs     .   impModMp    =   Map.singleton @nm @pos

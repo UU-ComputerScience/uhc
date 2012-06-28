@@ -1,0 +1,19 @@
+ATTR AllGrPat [ | | introNmL USE {++} {[]}: {[HsName]} ]
+
+SEM GrPatAlt
+  | Node        lhs         .   introNmL        =   @fldL
+  | NodeSplit   lhs         .   introNmL        =   @nm : @fldL.introNmL
+
+SEM GrPatLam
+  | Var         lhs         .   introNmL        =   [@nm]
+  | VarNode     lhs         .   introNmL        =   tail @fldL.introNmL
+  | BasicNode EnumNode BasicAnnot EnumAnnot PtrAnnot PtrNode OpaqueNode OpaqueAnnot
+                lhs         .   introNmL        =   [@nm]
+
+SEM GrVar
+  | Var         lhs         .   introNmL        =   [@nm]
+  | KnownTag    lhs         .   introNmL        =   [ error "introNmL known tag" ]
+  | Ignore      lhs         .   introNmL        =   [ ]
+
+SEM GrSplit
+  | Sel         lhs         .   introNmL        =   [@nm]

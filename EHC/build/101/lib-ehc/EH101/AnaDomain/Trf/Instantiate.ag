@@ -1,0 +1,68 @@
+MODULE {EH101.AnaDomain.Trf.Instantiate} {relevtyInst}
+{
+import EH101.Base.Common
+import EH101.AnaDomain
+import EH101.VarMp
+import EH101.Substitutable
+import qualified Data.Map as Map
+import qualified Data.Set as Set
+
+}
+{
+}
+{
+}
+{
+}
+INCLUDE "AnaDomain/AbsSyn.ag"
+WRAPPER TyAGItf
+
+{
+relevtyInst :: UID -> RelevTy -> (RelevTy,RelevQualS)
+relevtyInst uniq ty
+  = (ty', extraQualS `Set.union` qualS_Syn_TyAGItf t)
+  where t = wrap_TyAGItf
+              (sem_TyAGItf (TyAGItf_AGItf ty))
+              (Inh_TyAGItf
+                 { gUniq_Inh_TyAGItf        = uniq
+                 })
+        ty' = repl_Syn_TyAGItf t
+        extraQualS
+          = case ty of
+              RelevTy_Fun RQuant_Rec _ _ a r
+                -> amsGathQual ams
+                where (amso,ams) = amsLE emptyRVarMp (RelevTy_Fun RQuant_None [] [] a r) ty'
+              _ -> Set.empty
+
+}
+ATTR AllNT [ | gUniq: UID | ]
+ATTR TyAGItf QualAGItf CoeAGItf [ gUniq: UID | | ]
+
+SEM RelevTy
+  | Fun             loc         .   lUniq       : UNIQUEREF gUniq
+
+SEM RelevTy
+  | Fun             loc         .   freshTvL    =   mkNewLevUIDL (length @quants) @lUniq
+
+ATTR AllNT [ freshMp: {Map.Map UID UID} | | ]
+
+SEM TyAGItf QualAGItf CoeAGItf
+  | AGItf           loc         .   freshMp     =   Map.empty
+
+SEM RelevTy
+  | Fun             loc         .   freshMp     =   Map.union (Map.fromList $ zip @quants @freshTvL) @lhs.freshMp
+
+ATTR AllNT [ | | repl: SELF ]
+ATTR TyAGItf [ | | repl: RelevTy ]
+
+SEM RelevTy
+  | Fun             lhs         .   repl        =   RelevTy_Fun RQuant_None [] [] @args.repl @res.repl
+
+SEM AnaEval
+  | Var             lhs         .   repl        =   AnaEval_Var $ Map.findWithDefault @av @av @lhs.freshMp
+
+ATTR AllNT TyAGItf [ | | qualS USE {`Set.union`} {Set.empty} : RelevQualS ]
+
+SEM RelevTy
+  | Fun             lhs         .   qualS       =   Set.unions [ Set.fromList @quals.repl, @args.qualS, @res.qualS ]
+

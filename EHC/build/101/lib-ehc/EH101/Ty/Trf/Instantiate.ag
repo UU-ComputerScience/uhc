@@ -1,0 +1,124 @@
+MODULE {EH101.Ty.Trf.Instantiate} {tyInst1Quants, tyInst1Exists, instCoConst, instContra, instCo}
+{
+import EH101.Base.Common
+import EH101.Ty
+import EH101.VarMp
+import EH101.Substitutable
+import EH101.Base.Debug
+import EH.Util.Pretty
+import Data.List
+import qualified Data.Set as Set
+
+}
+{
+}
+{
+}
+{
+}
+{
+}
+{
+}
+{
+}
+INCLUDE "Ty/AbsSyn.ag"
+WRAPPER TyAGItf
+{
+tyInst :: UID -> Bool -> HowToInst -> Ty -> (Ty,TyVarIdL,[InstTo])
+tyInst uniq onlyExists howToInst ty
+  = (repl_Syn_TyAGItf t, replTvL_Syn_TyAGItf t, instToL_Syn_TyAGItf t)
+  where t = wrap_TyAGItf
+              (sem_TyAGItf (TyAGItf_AGItf ty))
+              (Inh_TyAGItf
+                 { gUniq_Inh_TyAGItf 		= uniq
+                 , onlyExists_Inh_TyAGItf 	= onlyExists
+                 , howToInst_Inh_TyAGItf 	= howToInst
+                 })
+
+tyInst1Quants :: UID -> HowToInst -> Ty -> (Ty,TyVarIdL,[InstTo])
+tyInst1Quants uniq howToInst ty = tyInst uniq False howToInst ty
+
+}
+{
+tyInst1Exists :: UID -> Ty -> Ty
+tyInst1Exists uniq ty
+  = t
+  where (t,_,_) = tyInst uniq True instCoConst ty
+
+}
+{
+type HowToInst = TyQu -> TyVarId -> Ty
+
+instCoConst, instContra, instCo :: HowToInst
+instCoConst  q v = if tyquIsForall q then Ty_Var v TyVarCateg_Plain else mkTyCon ("C_" ++ show v)
+instContra   q v = if tyquIsForall q then Ty_Var v TyVarCateg_Fixed else Ty_Var v TyVarCateg_Plain
+instCo       q v = if tyquIsForall q then Ty_Var v TyVarCateg_Plain else Ty_Var v TyVarCateg_Fixed
+
+}
+ATTR TyAGItf AllTy [ howToInst: HowToInst  onlyExists: Bool | | ]
+
+ATTR AllTy [ allow: Bool  mbQ: {Maybe TyQu} | | ]
+
+SEM TyAGItf
+  | AGItf           ty          .   allow       =   True
+                                .   mbQ         =   Nothing
+
+SEM Ty
+  | TBind           loc         .   allow       =   @lhs.allow
+                                                        && not (tyquIsForall @qu.repl && @lhs.onlyExists)
+                                                        && maybe True (== @qu.repl) @lhs.mbQ
+                    ty          .   mbQ         =   Just @qu.repl
+  | * - TBind       loc         .   allow       =   False
+
+SEM Ty
+  | TBind           loc         .   allow       :   Bool
+
+ATTR AllTy [ | gUniq: UID | ]
+ATTR TyAGItf [ gUniq: UID | | ]
+
+SEM Ty
+  | TBind           (ty.gUniq,loc.lUniq)        =   mkNewUID @lhs.gUniq
+
+ATTR AllTy [ replSubst: VarMp | gathSubst: VarMp | ]
+ATTR Ty TyAGItf [ | | replTvL USE {++} {[]}: TyVarIdL ]
+ATTR AllTyAndFlds [ | | repl: SELF ]
+ATTR TyAGItf [ | | repl: Ty ]
+
+SEM TyAGItf
+  | AGItf           ty          .   gathSubst   =   emptyVarMp
+                                .   replSubst   =   @ty.gathSubst
+
+SEM Ty
+  | TBind           loc         .   tvNew       =   @lUniq
+                    (loc.tyNew,ty.gathSubst)    =   if @allow
+                                                    then let t = @lhs.howToInst @qu.repl @tvNew
+                                                         in ( t
+                                                            , (varmpMetaLevTyUnit (tyquMetaLev @qu.repl) @tv t)
+                                                                `varmpPlus` @lhs.gathSubst
+                                                            )
+                                                    else (Ty_Any,@lhs.gathSubst)
+
+SEM Ty
+  | TBind           loc         .   tvNew       :   UID
+
+ATTR Ty TyAGItf [ | | instToL USE {++} {[]}: {[InstTo]} ]
+
+
+
+SEM Ty
+  | TBind           loc         .   instTo      =   InstTo_Qu @qu.repl @tv @tvNew
+
+SEM Ty
+  | TBind           loc         .   l1Subst     =   varmpDecMetaLev @lhs.replSubst `varUpd` @l1
+                                .   instTo      :=  InstTo_Qu @qu.repl @tv @tvNew @l1Subst
+
+SEM Ty
+  | TBind           lhs         .   (repl,replTvL,instToL)
+                                                =   if @allow
+                                                    then (@ty.repl,@tvNew : @ty.replTvL, @instTo : @ty.instToL)
+                                                    else (@repl,[],[])
+  | Var             lhs         .   repl        =   maybe @repl id (varmpTyLookup @tv @lhs.replSubst)
+
+SEM Ty
+  | TBind			loc			.	tyNew		: 	Ty

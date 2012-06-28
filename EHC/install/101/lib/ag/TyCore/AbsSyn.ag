@@ -1,0 +1,11 @@
+DATA Expr
+  | HoleLet     bindsUid        : {UID}
+                body            : Expr
+  | ImplsApp    func            : Expr
+                uid             : {ImplsVarId}
+  | ImplsLam    uid             : {ImplsVarId}
+                body            : Expr
+
+DATA Pat
+  | BoolExpr    expr            : Expr
+

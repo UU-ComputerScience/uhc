@@ -1,0 +1,561 @@
+%% ODER: format ==         = "\mathrel{==}"
+%% ODER: format /=         = "\neq "
+%
+%
+\makeatletter
+\@ifundefined{lhs2tex.lhs2tex.sty.read}%
+  {\@namedef{lhs2tex.lhs2tex.sty.read}{}%
+   \newcommand\SkipToFmtEnd{}%
+   \newcommand\EndFmtInput{}%
+   \long\def\SkipToFmtEnd#1\EndFmtInput{}%
+  }\SkipToFmtEnd
+
+\newcommand\ReadOnlyOnce[1]{\@ifundefined{#1}{\@namedef{#1}{}}\SkipToFmtEnd}
+\usepackage{amstext}
+\usepackage{amssymb}
+\usepackage{stmaryrd}
+\DeclareFontFamily{OT1}{cmtex}{}
+\DeclareFontShape{OT1}{cmtex}{m}{n}
+  {<5><6><7><8>cmtex8
+   <9>cmtex9
+   <10><10.95><12><14.4><17.28><20.74><24.88>cmtex10}{}
+\DeclareFontShape{OT1}{cmtex}{m}{it}
+  {<-> ssub * cmtt/m/it}{}
+\newcommand{\texfamily}{\fontfamily{cmtex}\selectfont}
+\DeclareFontShape{OT1}{cmtt}{bx}{n}
+  {<5><6><7><8>cmtt8
+   <9>cmbtt9
+   <10><10.95><12><14.4><17.28><20.74><24.88>cmbtt10}{}
+\DeclareFontShape{OT1}{cmtex}{bx}{n}
+  {<-> ssub * cmtt/bx/n}{}
+\newcommand{\tex}[1]{\text{\texfamily#1}}	% NEU
+
+\newcommand{\Sp}{\hskip.33334em\relax}
+
+
+\newcommand{\Conid}[1]{\mathit{#1}}
+\newcommand{\Varid}[1]{\mathit{#1}}
+\newcommand{\anonymous}{\kern0.06em \vbox{\hrule\@width.5em}}
+\newcommand{\plus}{\mathbin{+\!\!\!+}}
+\newcommand{\bind}{\mathbin{>\!\!\!>\mkern-6.7mu=}}
+\newcommand{\rbind}{\mathbin{=\mkern-6.7mu<\!\!\!<}}% suggested by Neil Mitchell
+\newcommand{\sequ}{\mathbin{>\!\!\!>}}
+\renewcommand{\leq}{\leqslant}
+\renewcommand{\geq}{\geqslant}
+\usepackage{polytable}
+
+%mathindent has to be defined
+\@ifundefined{mathindent}%
+  {\newdimen\mathindent\mathindent\leftmargini}%
+  {}%
+
+\def\resethooks{%
+  \global\let\SaveRestoreHook\empty
+  \global\let\ColumnHook\empty}
+\newcommand*{\savecolumns}[1][default]%
+  {\g@addto@macro\SaveRestoreHook{\savecolumns[#1]}}
+\newcommand*{\restorecolumns}[1][default]%
+  {\g@addto@macro\SaveRestoreHook{\restorecolumns[#1]}}
+\newcommand*{\aligncolumn}[2]%
+  {\g@addto@macro\ColumnHook{\column{#1}{#2}}}
+
+\resethooks
+
+\newcommand{\onelinecommentchars}{\quad-{}- }
+\newcommand{\commentbeginchars}{\enskip\{-}
+\newcommand{\commentendchars}{-\}\enskip}
+
+\newcommand{\visiblecomments}{%
+  \let\onelinecomment=\onelinecommentchars
+  \let\commentbegin=\commentbeginchars
+  \let\commentend=\commentendchars}
+
+\newcommand{\invisiblecomments}{%
+  \let\onelinecomment=\empty
+  \let\commentbegin=\empty
+  \let\commentend=\empty}
+
+\visiblecomments
+
+\newlength{\blanklineskip}
+\setlength{\blanklineskip}{0.66084ex}
+
+\newcommand{\hsindent}[1]{\quad}% default is fixed indentation
+\let\hspre\empty
+\let\hspost\empty
+\newcommand{\NB}{\textbf{NB}}
+\newcommand{\Todo}[1]{$\langle$\textbf{To do:}~#1$\rangle$}
+
+\EndFmtInput
+\makeatother
+%
+%% configuration
+
+
+
+
+%% end of configuration
+
+%% CONFIG: Omitted material excluded
+
+
+%% CONFIG: As article
+
+
+% format * = "\times "
+% subst inline a  	= "\ensuremath{{}\allowforspacecorrection " a "}"
+% subst varid a  	= a "{}\allowforspacecorrection "
+
+
+
+
+
+
+
+
+
+%% handling of `
+
+
+
+
+
+
+% various keywords
+
+
+
+
+
+
+
+
+
+
+
+
+
+% format CnstrVarpi	= Cnstr "^{" varpi "}"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+% format <=> 			= "\mathrel{\cong}"
+% format <+-> 			= "\setbox0=\hbox{\ensuremath{\mathrel{\vartriangle}}}\copy0\kern-.4\wd0\mathrel{\triangledown}"
+% format +	 			= ","
+% format ++	 			= ","
+
+
+
+% format fiopt			= "{\xi}"
+
+
+
+
+
+% format ANY				= "\makebox[0cm][l]{\(\top\)}\bot{}"
+
+
+
+
+% format ftv				= "\ftv "
+
+
+
+
+
+
+
+
+
+
+%% acronyms
+
+
+
+
+
+%% Ruler keywords
+
+
+% format "`=`"	= "\mathrel{`=`}"
+
+
+\rulerCmdDef{RulerRules.E.expr.scheme}{%
+\ensuremath{\ensuremath{\Gamma } ^{ \ensuremath{\Varid{t}} } \ensuremath{\vdash } ^{ \ensuremath{\Varid{expr}} } \ensuremath{\Varid{e}\mathbin{:}\Varid{nms};\vartheta } }
+}
+\rulerCmdDef{RulerRules.E.expr.var}{%
+\rulerRule{var}{E}
+{%
+\ensuremath{(\allowforspacecorrection \Varid{nm}\mapsto \Varid{v})\in \Gamma } ^{ \ensuremath{\Varid{t}} } \ensuremath{} 
+}
+{%
+\ensuremath{\Gamma } ^{ \ensuremath{\Varid{t}} } \ensuremath{\vdash } ^{ \ensuremath{\Varid{expr}} } \ensuremath{\Varid{nm}\mathbin{:}[\mskip1.5mu\allowforspacecorrection \Varid{nm}\mskip1.5mu];\Varid{v}} 
+}
+}
+
+\rulerCmdDef{RulerRules.E.expr.app}{%
+\rulerRule{app}{E}
+{%
+\ensuremath{\Gamma } ^{ \ensuremath{\Varid{t}} } \ensuremath{\vdash } ^{ \ensuremath{\Varid{expr}} } \ensuremath{\Varid{e}} _{ \ensuremath{\mathrm{2}} } \ensuremath{\mathbin{:}\Varid{n}} _{ \ensuremath{\mathrm{2}} } \ensuremath{;\vartheta } _{ \ensuremath{\mathrm{2}} } \ensuremath{} 
+\\
+\ensuremath{\Gamma } ^{ \ensuremath{\Varid{t}} } \ensuremath{\vdash } ^{ \ensuremath{\Varid{expr}} } \ensuremath{\Varid{e}} _{ \ensuremath{\mathrm{1}} } \ensuremath{\mathbin{:}\Varid{n}} _{ \ensuremath{\mathrm{1}} } \ensuremath{;\vartheta } _{ \ensuremath{\mathrm{1}} } \ensuremath{} 
+}
+{%
+\ensuremath{\Gamma } ^{ \ensuremath{\Varid{t}} } \ensuremath{\vdash } ^{ \ensuremath{\Varid{expr}} } \ensuremath{\Varid{e}} _{ \ensuremath{\mathrm{1}} } \ensuremath{\Varid{e}} _{ \ensuremath{\mathrm{2}} } \ensuremath{\mathbin{:}\Varid{n}} _{ \ensuremath{\mathrm{1}} } \ensuremath{,\Varid{n}} _{ \ensuremath{\mathrm{2}} } \ensuremath{;\vartheta } _{ \ensuremath{\mathrm{1}} } \ensuremath{\vartheta } _{ \ensuremath{\mathrm{2}} } \ensuremath{} 
+}
+}
+
+\rulerCmdDef{RulerRules.E.expr.op}{%
+\rulerRule{op}{E}
+{%
+\ensuremath{\Gamma } ^{ \ensuremath{\Varid{t}} } \ensuremath{\vdash } ^{ \ensuremath{\Varid{expr}} } \ensuremath{\Varid{e}} _{ \ensuremath{\mathrm{2}} } \ensuremath{\mathbin{:}\Varid{n}} _{ \ensuremath{\mathrm{2}} } \ensuremath{;\vartheta } _{ \ensuremath{\mathrm{2}} } \ensuremath{} 
+\\
+\ensuremath{\Gamma } ^{ \ensuremath{\Varid{t}} } \ensuremath{\vdash } ^{ \ensuremath{\Varid{expr}} } \ensuremath{\Varid{e}} _{ \ensuremath{\mathrm{1}} } \ensuremath{\mathbin{:}\Varid{n}} _{ \ensuremath{\mathrm{1}} } \ensuremath{;\vartheta } _{ \ensuremath{\mathrm{1}} } \ensuremath{} 
+}
+{%
+\ensuremath{\Gamma } ^{ \ensuremath{\Varid{t}} } \ensuremath{\vdash } ^{ \ensuremath{\Varid{expr}} } \ensuremath{\Varid{e}} _{ \ensuremath{\mathrm{1}} } \ensuremath{\Varid{op}\;\Varid{e}} _{ \ensuremath{\mathrm{2}} } \ensuremath{\mathbin{:}\Varid{n}} _{ \ensuremath{\mathrm{1}} } \ensuremath{,\Varid{n}} _{ \ensuremath{\mathrm{2}} } \ensuremath{;\vartheta } _{ \ensuremath{\mathrm{1}} } \ensuremath{\Varid{op}\;\vartheta } _{ \ensuremath{\mathrm{2}} } \ensuremath{} 
+}
+}
+
+\rulerCmdDef{RulerRules.E.expr}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{RulerRules.E.expr.scheme}}{Expression}{RulerRules.E.expr}{E}
+\rulerCmdUse{RulerRules.E.expr.var}
+\hspace{1ex}
+\rulerCmdUse{RulerRules.E.expr.app}
+\hspace{1ex}
+\rulerCmdUse{RulerRules.E.expr.op}
+\end{rulerRulesetFigure}
+}
+
+\rulerCmdDef{RulerRules.E.hl.scheme}{%
+\ensuremath{\ensuremath{\Gamma } ^{ \ensuremath{\Varid{h}} } \ensuremath{;\delta \vdash } ^{ \ensuremath{\Varid{hl}} } \ensuremath{\Varid{h}} }
+}
+\rulerCmdDef{RulerRules.E.hl.hl}{%
+\rulerRule{hl}{E}
+{%
+\ensuremath{(\allowforspacecorrection \Varid{nm}\mapsto (\allowforspacecorrection \Varid{ty},[\mskip1.5mu\allowforspacecorrection \delta \mskip1.5mu]))\in \Gamma } ^{ \ensuremath{\Varid{h}} } \ensuremath{} 
+}
+{%
+\ensuremath{\Gamma } ^{ \ensuremath{\Varid{h}} } \ensuremath{;\delta \vdash } ^{ \ensuremath{\Varid{hl}} } \ensuremath{\Varid{nm}\mathbin{:}\Varid{ty}} 
+}
+}
+
+\rulerCmdDef{RulerRules.E.hl.nd}{%
+\rulerRule{nd}{E}
+{%
+\ensuremath{(\allowforspacecorrection \Varid{nm}\mapsto (\allowforspacecorrection \Varid{ty},[\mskip1.5mu\allowforspacecorrection \delta ,\delta } _{ \ensuremath{\Varid{n}} } \ensuremath{\mskip1.5mu]))\in \Gamma } ^{ \ensuremath{\Varid{h}} } \ensuremath{} 
+}
+{%
+\ensuremath{\Gamma } ^{ \ensuremath{\Varid{h}} } \ensuremath{;\delta \vdash } ^{ \ensuremath{\Varid{hl}} } \ensuremath{\mathbf{node}\;\Varid{nm}\mathbin{:}\Varid{ty}} 
+}
+}
+
+\rulerCmdDef{RulerRules.E.hl}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{RulerRules.E.hl.scheme}}{Hole}{RulerRules.E.hl}{E}
+\rulerCmdUse{RulerRules.E.hl.hl}
+\hspace{1ex}
+\rulerCmdUse{RulerRules.E.hl.nd}
+\end{rulerRulesetFigure}
+}
+
+\rulerCmdDef{RulerRules.E.jd.scheme}{%
+\ensuremath{\ensuremath{{\div};\Varid{vnm};\Gamma } ^{ \ensuremath{\Varid{s}} } \ensuremath{\vdash } ^{ \ensuremath{\Varid{jd}} } \ensuremath{\Varid{j}\mathbin{:}\vartheta } }
+}
+\rulerCmdDef{RulerRules.E.jd.jd}{%
+\rulerRule{jd}{E}
+{%
+\ensuremath{(\allowforspacecorrection \Varid{snm}\mapsto \Gamma } ^{ \ensuremath{\Varid{sv}} } \ensuremath{)\in \Gamma } ^{ \ensuremath{\Varid{s}} } \ensuremath{} 
+\\
+\ensuremath{(\allowforspacecorrection \Varid{vnm}\mapsto (\allowforspacecorrection \Gamma } ^{ \ensuremath{\Varid{h}} } \ensuremath{,\anonymous ))\in \Gamma } ^{ \ensuremath{\Varid{sv}} } \ensuremath{} 
+\\
+\ensuremath{{\div};\Gamma } ^{ \ensuremath{\Varid{h}} } \ensuremath{\vdash } ^{ \ensuremath{\Varid{jdats}} } \ensuremath{\Varid{jdhls}\mathbin{:}\vartheta } 
+}
+{%
+\ensuremath{{\div};\Varid{vnm};\Gamma } ^{ \ensuremath{\Varid{s}} } \ensuremath{\vdash } ^{ \ensuremath{\Varid{jd}} } \ensuremath{\mathbf{judge}\;\Varid{jnm}\mathbin{:}\Varid{snm}\mathrel{=}\Varid{jdhls}\mathbin{:}\vartheta } 
+}
+}
+
+\rulerCmdDef{RulerRules.E.jd}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{RulerRules.E.jd.scheme}}{Judgement in a view on rule in ruleset}{RulerRules.E.jd}{E}
+\rulerCmdUse{RulerRules.E.jd.jd}
+\end{rulerRulesetFigure}
+}
+
+\rulerCmdDef{RulerRules.E.jdat.scheme}{%
+\ensuremath{\ensuremath{{\div};\Gamma } ^{ \ensuremath{\Varid{h}} } \ensuremath{\vdash } ^{ \ensuremath{\Varid{jdat}} } \ensuremath{\Varid{a}\mathbin{:}\vartheta } }
+}
+\rulerCmdDef{RulerRules.E.jdat.presyn}{%
+\rulerRule{presyn}{E}
+{%
+\ensuremath{(\allowforspacecorrection \Varid{nd}\mapsto (\allowforspacecorrection \anonymous ,[\mskip1.5mu\allowforspacecorrection \delta } _{ \ensuremath{\Varid{n}} } \ensuremath{\mskip1.5mu]))\in \Gamma } ^{ \ensuremath{\Varid{h}} } \ensuremath{} 
+\\
+\ensuremath{(\allowforspacecorrection \Varid{nm}\mapsto (\allowforspacecorrection \anonymous ,[\mskip1.5mu\allowforspacecorrection \delta } _{ \ensuremath{{\uparrow}} } \ensuremath{\mskip1.5mu]))\in \Gamma } ^{ \ensuremath{\Varid{h}} } \ensuremath{} 
+\\
+\ensuremath{\Gamma } ^{ \ensuremath{\Varid{t}} } \ensuremath{\vdash } ^{ \ensuremath{\Varid{expr}} } \ensuremath{\Varid{e}\mathbin{:}\Varid{nms};\anonymous } 
+\\
+\ensuremath{(\allowforspacecorrection \Varid{n}\mapsto \spacecorrection @\mathbf{loc}.\Varid{n})\in \Gamma } ^{ \ensuremath{\Varid{t}} } \ensuremath{,\Varid{n}\in \Varid{nms}} 
+}
+{%
+\ensuremath{{\dotdiv};\Gamma } ^{ \ensuremath{\Varid{h}} } \ensuremath{\vdash } ^{ \ensuremath{\Varid{jdat}} } \ensuremath{\Varid{nm}\mathrel{=}\Varid{e}\mathbin{:}[\mskip1.5mu\allowforspacecorrection \Varid{e}\mathrel{=}\spacecorrection @\Varid{nd}.\Varid{nm}\mskip1.5mu]} 
+}
+}
+
+\rulerCmdDef{RulerRules.E.jdat.postinh}{%
+\rulerRule{postinh}{E}
+{%
+\ensuremath{(\allowforspacecorrection \Varid{nm}\mapsto (\allowforspacecorrection \anonymous ,[\mskip1.5mu\allowforspacecorrection \delta } _{ \ensuremath{{\downarrow}} } \ensuremath{\mskip1.5mu]))\in \Gamma } ^{ \ensuremath{\Varid{h}} } \ensuremath{} 
+\\
+\ensuremath{\Gamma } ^{ \ensuremath{\Varid{t}} } \ensuremath{\vdash } ^{ \ensuremath{\Varid{expr}} } \ensuremath{\Varid{e}\mathbin{:}\Varid{nms};\anonymous } 
+\\
+\ensuremath{(\allowforspacecorrection \Varid{n}\mapsto \spacecorrection @\mathbf{loc}.\Varid{n})\in \Gamma } ^{ \ensuremath{\Varid{t}} } \ensuremath{,\Varid{n}\in \Varid{nms}} 
+}
+{%
+\ensuremath{{\divdot};\Gamma } ^{ \ensuremath{\Varid{h}} } \ensuremath{\vdash } ^{ \ensuremath{\Varid{jdat}} } \ensuremath{\Varid{nm}\mathrel{=}\Varid{e}\mathbin{:}[\mskip1.5mu\allowforspacecorrection \Varid{e}\mathrel{=}\spacecorrection @\mathbf{lhs}.\Varid{nm}\mskip1.5mu]} 
+}
+}
+
+\rulerCmdDef{RulerRules.E.jdat.preinh}{%
+\rulerRule{preinh}{E}
+{%
+\ensuremath{(\allowforspacecorrection \Varid{nd}\mapsto (\allowforspacecorrection \anonymous ,[\mskip1.5mu\allowforspacecorrection \delta } _{ \ensuremath{\Varid{n}} } \ensuremath{\mskip1.5mu]))\in \Gamma } ^{ \ensuremath{\Varid{h}} } \ensuremath{} 
+\\
+\ensuremath{(\allowforspacecorrection \Varid{nm}\mapsto (\allowforspacecorrection \anonymous ,[\mskip1.5mu\allowforspacecorrection \delta } _{ \ensuremath{{\downarrow}} } \ensuremath{\mskip1.5mu]))\in \Gamma } ^{ \ensuremath{\Varid{h}} } \ensuremath{} 
+\\
+\ensuremath{\Gamma } ^{ \ensuremath{\Varid{t}} } \ensuremath{\vdash } ^{ \ensuremath{\Varid{expr}} } \ensuremath{\Varid{e}\mathbin{:}\anonymous ;\vartheta } _{ \ensuremath{\Varid{e}} } \ensuremath{} 
+}
+{%
+\ensuremath{{\dotdiv};\Gamma } ^{ \ensuremath{\Varid{h}} } \ensuremath{\vdash } ^{ \ensuremath{\Varid{jdat}} } \ensuremath{\Varid{nm}\mathrel{=}\Varid{e}\mathbin{:}[\mskip1.5mu\allowforspacecorrection \Varid{nd}.\Varid{nm}\mathrel{=}\vartheta } _{ \ensuremath{\Varid{e}} } \ensuremath{\mskip1.5mu]} 
+}
+}
+
+\rulerCmdDef{RulerRules.E.jdat.postsyn}{%
+\rulerRule{postsyn}{E}
+{%
+\ensuremath{(\allowforspacecorrection \Varid{nm}\mapsto (\allowforspacecorrection \anonymous ,[\mskip1.5mu\allowforspacecorrection \delta } _{ \ensuremath{{\uparrow}} } \ensuremath{\mskip1.5mu]))\in \Gamma } ^{ \ensuremath{\Varid{h}} } \ensuremath{} 
+\\
+\ensuremath{\Gamma } ^{ \ensuremath{\Varid{t}} } \ensuremath{\vdash } ^{ \ensuremath{\Varid{expr}} } \ensuremath{\Varid{e}\mathbin{:}\anonymous ;\vartheta } _{ \ensuremath{\Varid{e}} } \ensuremath{} 
+}
+{%
+\ensuremath{{\divdot};\Gamma } ^{ \ensuremath{\Varid{h}} } \ensuremath{\vdash } ^{ \ensuremath{\Varid{jdat}} } \ensuremath{\Varid{nm}\mathrel{=}\Varid{e}\mathbin{:}[\mskip1.5mu\allowforspacecorrection \mathbf{lhs}.\Varid{nm}\mathrel{=}\vartheta } _{ \ensuremath{\Varid{e}} } \ensuremath{\mskip1.5mu]} 
+}
+}
+
+\rulerCmdDef{RulerRules.E.jdat}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{RulerRules.E.jdat.scheme}}{Hole binding in a judgement in a view on rule in ruleset}{RulerRules.E.jdat}{E}
+\rulerCmdUse{RulerRules.E.jdat.presyn}
+\hspace{1ex}
+\rulerCmdUse{RulerRules.E.jdat.postinh}
+\hspace{1ex}
+\rulerCmdUse{RulerRules.E.jdat.preinh}
+\hspace{1ex}
+\rulerCmdUse{RulerRules.E.jdat.postsyn}
+\end{rulerRulesetFigure}
+}
+
+\rulerCmdDef{RulerRules.E.jspec.scheme}{%
+\ensuremath{\ensuremath{\Gamma } ^{ \ensuremath{\Varid{j}} } \ensuremath{\vdash } ^{ \ensuremath{\Varid{jspec}} } \ensuremath{\Varid{j}} }
+}
+\rulerCmdDef{RulerRules.E.jspec.jspec}{%
+\rulerRule{jspec}{E}
+{%
+\ensuremath{(\allowforspacecorrection \mathbf{spec}\mapsto \Varid{e})\in \Gamma } ^{ \ensuremath{\Varid{j}} } \ensuremath{} 
+}
+{%
+\ensuremath{\Gamma } ^{ \ensuremath{\Varid{j}} } \ensuremath{\vdash } ^{ \ensuremath{\Varid{jspec}} } \ensuremath{\mathbf{judgespec}\;\Varid{e}} 
+}
+}
+
+\rulerCmdDef{RulerRules.E.jspec.juse}{%
+\rulerRule{juse}{E}
+{%
+\ensuremath{\Varid{targ}\in \{\mskip1.5mu \mathbf{tex},\mathbf{ag}\mskip1.5mu\}} 
+\\
+\ensuremath{(\allowforspacecorrection \Varid{targ}\mapsto \Varid{e})\in \Gamma } ^{ \ensuremath{\Varid{j}} } \ensuremath{} 
+}
+{%
+\ensuremath{\Gamma } ^{ \ensuremath{\Varid{j}} } \ensuremath{\vdash } ^{ \ensuremath{\Varid{jspec}} } \ensuremath{\mathbf{judgeuse}\;\Varid{targ}\;\Varid{e}} 
+}
+}
+
+\rulerCmdDef{RulerRules.E.jspec}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{RulerRules.E.jspec.scheme}}{Judgement specification}{RulerRules.E.jspec}{E}
+\rulerCmdUse{RulerRules.E.jspec.jspec}
+\hspace{1ex}
+\rulerCmdUse{RulerRules.E.jspec.juse}
+\end{rulerRulesetFigure}
+}
+
+\rulerCmdDef{RulerRules.E.prog.scheme}{%
+\ensuremath{\ensuremath{\vdash } ^{ \ensuremath{\Varid{prog}} } \ensuremath{\Varid{p}\mathbin{:}\vartheta } }
+}
+\rulerCmdDef{RulerRules.E.prog.prog}{%
+\rulerRule{prog}{E}
+{%
+\ensuremath{\Conid{G}\vdash } ^{ \ensuremath{\Varid{vwhier}} } \ensuremath{\Varid{views}} 
+\\
+\ensuremath{\Conid{G};\Gamma } ^{ \ensuremath{\Varid{s}} } \ensuremath{\vdash } ^{ \ensuremath{\Varid{scms}} } \ensuremath{\Varid{schemes}} 
+\\
+\ensuremath{\Conid{G};\Gamma } ^{ \ensuremath{\Varid{s}} } \ensuremath{;\Gamma } ^{ \ensuremath{\Varid{rs}} } \ensuremath{\vdash } ^{ \ensuremath{\Varid{rsets}} } \ensuremath{\Varid{rulesets}\mathbin{:}\vartheta } 
+}
+{%
+\ensuremath{\vdash } ^{ \ensuremath{\Varid{prog}} } \ensuremath{\Varid{views}\;\Varid{schemes}\;\Varid{rulesets}\mathbin{:}\vartheta } 
+}
+}
+
+\rulerCmdDef{RulerRules.E.prog}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{RulerRules.E.prog.scheme}}{Ruler program}{RulerRules.E.prog}{E}
+\rulerCmdUse{RulerRules.E.prog.prog}
+\end{rulerRulesetFigure}
+}
+
+\rulerCmdDef{RulerRules.E.rset.scheme}{%
+\ensuremath{\ensuremath{\Conid{G};\Gamma } ^{ \ensuremath{\Varid{s}} } \ensuremath{;\Gamma } ^{ \ensuremath{\Varid{rs}} } \ensuremath{\vdash } ^{ \ensuremath{\Varid{rset}} } \ensuremath{\Varid{rs}\mathbin{:}\vartheta } }
+}
+\rulerCmdDef{RulerRules.E.rset.rset}{%
+\rulerRule{rset}{E}
+{%
+\ensuremath{(\allowforspacecorrection \Varid{rsnm}\mapsto (\allowforspacecorrection \Varid{snm},\Gamma } ^{ \ensuremath{\Varid{r}} } \ensuremath{))\in \Gamma } ^{ \ensuremath{\Varid{rs}} } \ensuremath{} 
+\\
+\ensuremath{(\allowforspacecorrection \Varid{snm}\mapsto \Gamma } ^{ \ensuremath{\Varid{sv}} } \ensuremath{)\in \Gamma } ^{ \ensuremath{\Varid{s}} } \ensuremath{} 
+\\
+\ensuremath{\Conid{G};\Gamma } ^{ \ensuremath{\Varid{s}} } \ensuremath{;\Gamma } ^{ \ensuremath{\Varid{sv}} } \ensuremath{;\Gamma } ^{ \ensuremath{\Varid{r}} } \ensuremath{\vdash } ^{ \ensuremath{\Varid{ruls}} } \ensuremath{\Varid{rls}\mathbin{:}\vartheta } 
+}
+{%
+\ensuremath{\Conid{G};\Gamma } ^{ \ensuremath{\Varid{s}} } \ensuremath{;\Gamma } ^{ \ensuremath{\Varid{rs}} } \ensuremath{\vdash } ^{ \ensuremath{\Varid{rset}} } \ensuremath{\mathbf{ruleset}\;\Varid{rsnm}\;\mathbf{scheme}\;\Varid{snm}\;\Varid{info}\mathrel{=}\Varid{rls}\mathbin{:}\vartheta } 
+}
+}
+
+\rulerCmdDef{RulerRules.E.rset}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{RulerRules.E.rset.scheme}}{Ruleset}{RulerRules.E.rset}{E}
+\rulerCmdUse{RulerRules.E.rset.rset}
+\end{rulerRulesetFigure}
+}
+
+\rulerCmdDef{RulerRules.E.rul.scheme}{%
+\ensuremath{\ensuremath{\Conid{G};\Gamma } ^{ \ensuremath{\Varid{s}} } \ensuremath{;\Gamma } ^{ \ensuremath{\Varid{sv}} } \ensuremath{;\Gamma } ^{ \ensuremath{\Varid{r}} } \ensuremath{\vdash } ^{ \ensuremath{\Varid{rul}} } \ensuremath{\Varid{rl}\mathbin{:}\vartheta } }
+}
+\rulerCmdDef{RulerRules.E.rul.rul}{%
+\rulerRule{rul}{E}
+{%
+\ensuremath{(\allowforspacecorrection \Varid{rnm}\mapsto \Gamma } ^{ \ensuremath{\Varid{rv}} } \ensuremath{)\in \Gamma } ^{ \ensuremath{\Varid{r}} } \ensuremath{} 
+\\
+\ensuremath{\Conid{G};\Gamma } ^{ \ensuremath{\Varid{s}} } \ensuremath{;\Gamma } ^{ \ensuremath{\Varid{sv}} } \ensuremath{;\Gamma } ^{ \ensuremath{\Varid{rv}} } \ensuremath{\vdash } ^{ \ensuremath{\Varid{rvws}} } \ensuremath{\Varid{vws}\mathbin{:}\vartheta } 
+}
+{%
+\ensuremath{\Conid{G};\Gamma } ^{ \ensuremath{\Varid{s}} } \ensuremath{;\Gamma } ^{ \ensuremath{\Varid{sv}} } \ensuremath{;\Gamma } ^{ \ensuremath{\Varid{r}} } \ensuremath{\vdash } ^{ \ensuremath{\Varid{rul}} } \ensuremath{\mathbf{rule}\;\Varid{rnm}\mathrel{=}\Varid{vws}\mathbin{:}\vartheta } 
+}
+}
+
+\rulerCmdDef{RulerRules.E.rul}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{RulerRules.E.rul.scheme}}{Rule in ruleset}{RulerRules.E.rul}{E}
+\rulerCmdUse{RulerRules.E.rul.rul}
+\end{rulerRulesetFigure}
+}
+
+\rulerCmdDef{RulerRules.E.rvw.scheme}{%
+\ensuremath{\ensuremath{\Conid{G};\Gamma } ^{ \ensuremath{\Varid{s}} } \ensuremath{;\Gamma } ^{ \ensuremath{\Varid{sv}} } \ensuremath{;\Gamma } ^{ \ensuremath{\Varid{rv}} } \ensuremath{\vdash } ^{ \ensuremath{\Varid{rvw}} } \ensuremath{\Varid{v}\mathbin{:}\vartheta } }
+}
+\rulerCmdDef{RulerRules.E.rvw.rvw}{%
+\rulerRule{rvw}{E}
+{%
+\ensuremath{{\dotdiv};\Varid{vnm};\Gamma } ^{ \ensuremath{\Varid{s}} } \ensuremath{\vdash } ^{ \ensuremath{\Varid{jds}} } \ensuremath{\Varid{prejds}\mathbin{:}\vartheta } _{ \ensuremath{\Varid{pre}} } \ensuremath{} 
+\\
+\ensuremath{{\divdot};\Varid{vnm};\Gamma } ^{ \ensuremath{\Varid{s}} } \ensuremath{\vdash } ^{ \ensuremath{\Varid{jd}} } \ensuremath{\Varid{postjd}\mathbin{:}\vartheta } _{ \ensuremath{\Varid{post}} } \ensuremath{} 
+}
+{%
+\ensuremath{\Conid{G};\Gamma } ^{ \ensuremath{\Varid{s}} } \ensuremath{;\Gamma } ^{ \ensuremath{\Varid{sv}} } \ensuremath{;\Gamma } ^{ \ensuremath{\Varid{rv}} } \ensuremath{\vdash } ^{ \ensuremath{\Varid{rvw}} } \ensuremath{\mathbf{view}\;\Varid{vnm}\mathrel{=}(\allowforspacecorrection \frac{\Varid{prejds}}{\Varid{postjd}})\mathbin{:}\vartheta } _{ \ensuremath{\Varid{pre}} } \ensuremath{,\vartheta } _{ \ensuremath{\Varid{post}} } \ensuremath{} 
+}
+}
+
+\rulerCmdDef{RulerRules.E.rvw}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{RulerRules.E.rvw.scheme}}{View on rule in ruleset}{RulerRules.E.rvw}{E}
+\rulerCmdUse{RulerRules.E.rvw.rvw}
+\end{rulerRulesetFigure}
+}
+
+\rulerCmdDef{RulerRules.E.scm.scheme}{%
+\ensuremath{\ensuremath{\Conid{G};\Gamma } ^{ \ensuremath{\Varid{s}} } \ensuremath{\vdash } ^{ \ensuremath{\Varid{scm}} } \ensuremath{\Varid{s}} }
+}
+\rulerCmdDef{RulerRules.E.scm.scm}{%
+\rulerRule{scm}{E}
+{%
+\ensuremath{(\allowforspacecorrection \Varid{nm}\mapsto \Gamma } ^{ \ensuremath{\Varid{sv}} } \ensuremath{)\in \Gamma } ^{ \ensuremath{\Varid{s}} } \ensuremath{} 
+\\
+\ensuremath{\Conid{G};\Gamma } ^{ \ensuremath{\Varid{sv}} } \ensuremath{\vdash } ^{ \ensuremath{\Varid{svws}} } \ensuremath{\Varid{vws}} 
+}
+{%
+\ensuremath{\Conid{G};\Gamma } ^{ \ensuremath{\Varid{s}} } \ensuremath{\vdash } ^{ \ensuremath{\Varid{scm}} } \ensuremath{\mathbf{scheme}\;\Varid{nm}\mathrel{=}\Varid{vws}} 
+}
+}
+
+\rulerCmdDef{RulerRules.E.scm}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{RulerRules.E.scm.scheme}}{Scheme}{RulerRules.E.scm}{E}
+\rulerCmdUse{RulerRules.E.scm.scm}
+\end{rulerRulesetFigure}
+}
+
+\rulerCmdDef{RulerRules.E.shls.scheme}{%
+\ensuremath{\ensuremath{\Gamma } ^{ \ensuremath{\Varid{h}} } \ensuremath{\vdash } ^{ \ensuremath{\Varid{shls}} } \ensuremath{\Varid{h}} }
+}
+\rulerCmdDef{RulerRules.E.shls.shls}{%
+\rulerRule{shls}{E}
+{%
+\ensuremath{\Gamma } ^{ \ensuremath{\Varid{h}} } \ensuremath{;\delta } _{ \ensuremath{{\updownarrow}} } \ensuremath{\vdash } ^{ \ensuremath{\Varid{hls}} } \ensuremath{\Varid{is}} 
+\\
+\ensuremath{\Gamma } ^{ \ensuremath{\Varid{h}} } \ensuremath{;\delta } _{ \ensuremath{{\uparrow}} } \ensuremath{\vdash } ^{ \ensuremath{\Varid{hls}} } \ensuremath{\Varid{s}} 
+\\
+\ensuremath{\Gamma } ^{ \ensuremath{\Varid{h}} } \ensuremath{;\delta } _{ \ensuremath{{\downarrow}} } \ensuremath{\vdash } ^{ \ensuremath{\Varid{hls}} } \ensuremath{\Varid{i}} 
+}
+{%
+\ensuremath{\Gamma } ^{ \ensuremath{\Varid{h}} } \ensuremath{\vdash } ^{ \ensuremath{\Varid{shls}} } \ensuremath{\mathbf{holes}\;[\mskip1.5mu\allowforspacecorrection \Varid{i}\mid \Varid{is}\mid \Varid{s}\mskip1.5mu]} 
+}
+}
+
+\rulerCmdDef{RulerRules.E.shls}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{RulerRules.E.shls.scheme}}{Scheme holes}{RulerRules.E.shls}{E}
+\rulerCmdUse{RulerRules.E.shls.shls}
+\end{rulerRulesetFigure}
+}
+
+\rulerCmdDef{RulerRules.E.svw.scheme}{%
+\ensuremath{\ensuremath{\Conid{G};\Gamma } ^{ \ensuremath{\Varid{sv}} } \ensuremath{\vdash } ^{ \ensuremath{\Varid{svw}} } \ensuremath{\Varid{v}} }
+}
+\rulerCmdDef{RulerRules.E.svw.svw}{%
+\rulerRule{svw}{E}
+{%
+\ensuremath{\Gamma } ^{ \ensuremath{\Varid{j}} } \ensuremath{{\backslash}\Gamma } _{ \ensuremath{\Varid{p}} }^{ \ensuremath{\Varid{j}} } \ensuremath{\vdash } ^{ \ensuremath{\Varid{jspecs}} } \ensuremath{\Varid{specs}} 
+\\
+\ensuremath{\Conid{G}\vdash \Varid{v}} _{ \ensuremath{\Varid{p}} } \ensuremath{\equiv \pi \;(\allowforspacecorrection \Varid{v})} 
+\\
+\ensuremath{\Gamma } ^{ \ensuremath{\Varid{h}} } \ensuremath{{\backslash}\Gamma } _{ \ensuremath{\Varid{p}} }^{ \ensuremath{\Varid{h}} } \ensuremath{\vdash } ^{ \ensuremath{\Varid{shls}} } \ensuremath{\Varid{hls}} 
+\\
+\ensuremath{(\allowforspacecorrection \Varid{v}} _{ \ensuremath{\Varid{p}} } \ensuremath{\mapsto (\allowforspacecorrection \Gamma } _{ \ensuremath{\Varid{p}} }^{ \ensuremath{\Varid{h}} } \ensuremath{,\Gamma } _{ \ensuremath{\Varid{p}} }^{ \ensuremath{\Varid{j}} } \ensuremath{))\in \Gamma } ^{ \ensuremath{\Varid{sv}} } \ensuremath{} 
+\\
+\ensuremath{(\allowforspacecorrection \Varid{v}\mapsto (\allowforspacecorrection \Gamma } ^{ \ensuremath{\Varid{h}} } \ensuremath{,\Gamma } ^{ \ensuremath{\Varid{j}} } \ensuremath{))\in \Gamma } ^{ \ensuremath{\Varid{sv}} } \ensuremath{} 
+}
+{%
+\ensuremath{\Conid{G};\Gamma } ^{ \ensuremath{\Varid{sv}} } \ensuremath{\vdash } ^{ \ensuremath{\Varid{svw}} } \ensuremath{\mathbf{view}\;\Varid{v}\mathrel{=}\Varid{hls}\;\Varid{specs}} 
+}
+}
+
+\rulerCmdDef{RulerRules.E.svw}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{RulerRules.E.svw.scheme}}{Scheme view}{RulerRules.E.svw}{E}
+\rulerCmdUse{RulerRules.E.svw.svw}
+\end{rulerRulesetFigure}
+}
+

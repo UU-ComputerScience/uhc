@@ -1,0 +1,82 @@
+ATTR AllNT [ nmLev: NmLev | | ]
+ATTR
+  LeftHandSide
+    [ nmLevFun: NmLev | | ]
+
+ATTR
+  Qualifier
+  Statement
+  [ | | nmLev: NmLev ]
+
+SEM AGItf
+    | AGItf
+        loc             .   nmLev       =   nmLevModule
+
+SEM Declaration
+    | TypeSignature
+        loc             .   nmLev       =   @lhs.nmLev + 1
+    | Data Newtype
+      GADT
+        loc             .   nmLev       =   @lhs.nmLev -- + 1
+    | KindSignature
+        loc             .   nmLev       =   @lhs.nmLev + 1
+    | Class InstanceUseImplicitly Default
+        loc             .   nmLev       =   @lhs.nmLev -- + 1
+    | Instance
+        loc             .   nmLev       =   @lhs.nmLev -- + 1
+        -- where           .   nmLev       =   @lhs.nmLev + 1
+    | Type
+        loc             .   nmLev       =   @lhs.nmLev -- + 1
+
+SEM Type
+    | Forall Exists
+        loc             .   nmLev       =   @lhs.nmLev + 1
+
+SEM Constructor
+    | Constructor Infix
+      GADTFunction
+        loc             .   nmLev       =   @lhs.nmLev + 1
+
+SEM FieldDeclaration
+    | FieldDeclaration
+        loc             .   nmLev       =   @lhs.nmLev + 1
+
+SEM ContextItem
+    | Forall
+        loc             .   nmLev       =   @lhs.nmLev + 1
+
+SEM Expression
+    | Lambda Let
+        loc             .   nmLev       =   @lhs.nmLev + 1
+    | Typed
+        type            .   nmLev       =   @lhs.nmLev + 1
+
+SEM Pattern
+    | Typed
+        type            .   nmLev       =   @lhs.nmLev + 1
+
+SEM LeftHandSide
+    | Typed
+        type            .   nmLev       =   @lhs.nmLev + 1
+
+SEM FunctionBinding
+    | FunctionBinding
+        loc             .   nmLev       =   @lhs.nmLev + 1
+                        .   nmLevFun    =   @lhs.nmLev
+
+SEM RightHandSide
+    | *
+        loc             .   nmLev       =   @lhs.nmLev + 1
+
+SEM Alternative
+    | Alternative
+        loc             .   nmLev       =   @lhs.nmLev + 1
+
+SEM Qualifier
+    | Let Generator
+        loc             .   nmLev       =   @lhs.nmLev + 1
+
+SEM Statement
+    | Let Generator
+        loc             .   nmLev       =   @lhs.nmLev + 1
+

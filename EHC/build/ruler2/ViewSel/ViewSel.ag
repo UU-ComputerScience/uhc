@@ -1,0 +1,10 @@
+MODULE {ViewSel.ViewSel} {}
+{
+import EH.Util.Nm
+}
+{
+}
+{
+}
+INCLUDE "ViewSel/AbsSynAG.ag"
+DERIVING AllViewSel AllRlSel AllNmSel: Show

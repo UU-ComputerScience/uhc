@@ -1,0 +1,354 @@
+%include lhs2TeX.fmt
+%include afp.fmt
+
+\chunkCmdDef{rulerDemoAG.3.0}{%
+\label{rulerDemoAG.3.0}%
+\begin{code}
+DATA Expr
+  | App  f    : Expr
+         a    : Expr
+  | Int  int  : {Int}
+  | Lam  i    : {String}
+         b    : Expr
+  | Let  i    : {String}
+         e    : Expr
+         b    : Expr
+  | Var  i    : {String}
+
+\end{code}
+}
+\chunkCmdDef{rulerDemoAG.3.expr.DATA}{%
+\label{rulerDemoAG.3.expr.DATA}%
+\chunkCmdUse{rulerDemoAG.3.0}%
+}
+\chunkCmdDef{rulerDemoAG.3.1}{%
+\label{rulerDemoAG.3.1}%
+\begin{code}
+ATTR Expr [g: Gam | c: Cnstr | ty: Ty]
+
+\end{code}
+}
+\chunkCmdDef{rulerDemoAG.3.expr.ATTR}{%
+\label{rulerDemoAG.3.expr.ATTR}%
+\chunkCmdUse{rulerDemoAG.3.1}%
+}
+\chunkCmdDef{rulerDemoAG.3.2}{%
+\label{rulerDemoAG.3.2}%
+\begin{code}
+SEM Expr
+  | Int  lhs  .  ty  =  Ty_Int
+
+\end{code}
+}
+\chunkCmdDef{rulerDemoAG.3.expr.e.int}{%
+\label{rulerDemoAG.3.expr.e.int}%
+\chunkCmdUse{rulerDemoAG.3.2}%
+}
+\chunkCmdDef{rulerDemoAG.3.3}{%
+\label{rulerDemoAG.3.3}%
+\begin{code}
+SEM Expr
+  | Var  (lhs.uniq,loc.uniq1)
+                         =  rulerMk1Uniq @lhs.uniq
+         (loc.pty_,loc.nmErrs)
+                         =  gamLookup @i @lhs.g
+         lhs  .  ty      =  tyInst @uniq1 @pty_
+
+\end{code}
+}
+\chunkCmdDef{rulerDemoAG.3.expr.e.var}{%
+\label{rulerDemoAG.3.expr.e.var}%
+\chunkCmdUse{rulerDemoAG.3.3}%
+}
+\chunkCmdDef{rulerDemoAG.3.4}{%
+\label{rulerDemoAG.3.4}%
+\begin{code}
+SEM Expr
+  | App  (f.uniq,loc.uniq1)
+                         =  rulerMk1Uniq @lhs.uniq
+         loc  .  tv_     =  Ty_Var @uniq1
+         (loc.c_,loc.mtErrs)
+                         =  (@a.ty `Ty_Arr` @tv_) <=> (@a.c |=> @f.ty)
+         lhs  .  ty      =  @c_ |=> @a.c |=> @tv_
+              .  c       =  @c_ |=> @a.c
+
+\end{code}
+}
+\chunkCmdDef{rulerDemoAG.3.expr.e.app}{%
+\label{rulerDemoAG.3.expr.e.app}%
+\chunkCmdUse{rulerDemoAG.3.4}%
+}
+\chunkCmdDef{rulerDemoAG.3.5}{%
+\label{rulerDemoAG.3.5}%
+\begin{code}
+SEM Expr
+  | Lam  (b.uniq,loc.uniq1)
+                        =  rulerMk1Uniq @lhs.uniq
+         loc  .  tv_    =  Ty_Var @uniq1
+         b    .  g      =  ([ (@i , @tv_) ]) ++ @lhs.g
+         lhs  .  ty     =  (@b.c |=> @tv_) `Ty_Arr` @b.ty
+
+\end{code}
+}
+\chunkCmdDef{rulerDemoAG.3.expr.e.lam}{%
+\label{rulerDemoAG.3.expr.e.lam}%
+\chunkCmdUse{rulerDemoAG.3.5}%
+}
+\chunkCmdDef{rulerDemoAG.3.6}{%
+\label{rulerDemoAG.3.6}%
+\begin{code}
+SEM Expr
+  | Let  (e.uniq,loc.uniq1)
+                         =  rulerMk1Uniq @lhs.uniq
+         e    .  g       =  ([ (@i , Ty_Var @uniq1) ]) ++ @lhs.g
+         loc  .  pty_e_  =  mkTyAll (ftv @e.ty \\ ftv (@e.c |=> @lhs.g)) @e.ty
+         b    .  g       =  ([ (@i , @pty_e_) ]) ++ @lhs.g
+
+\end{code}
+}
+\chunkCmdDef{rulerDemoAG.3.expr.e.let}{%
+\label{rulerDemoAG.3.expr.e.let}%
+\chunkCmdUse{rulerDemoAG.3.6}%
+}
+\chunkCmdDef{rulerDemoAG.3.7}{%
+\label{rulerDemoAG.3.7}%
+\begin{code}
+DATA Expr
+  | App  f    : Expr
+         a    : Expr
+  | Int  int  : {Int}
+  | Lam  i    : {String}
+         b    : Expr
+  | Let  i    : {String}
+         e    : Expr
+         b    : Expr
+  | Var  i    : {String}
+
+\end{code}
+}
+\chunkCmdDef{rulerDemoAG.3.expr.DATA}{%
+\label{rulerDemoAG.3.expr.DATA}%
+\chunkCmdUse{rulerDemoAG.3.7}%
+}
+\chunkCmdDef{rulerDemoAG.3.8}{%
+\label{rulerDemoAG.3.8}%
+\begin{code}
+ATTR Expr [g: Gam | c: Cnstr | ty: Ty]
+
+\end{code}
+}
+\chunkCmdDef{rulerDemoAG.3.expr.ATTR}{%
+\label{rulerDemoAG.3.expr.ATTR}%
+\chunkCmdUse{rulerDemoAG.3.8}%
+}
+\chunkCmdDef{rulerDemoAG.3.9}{%
+\label{rulerDemoAG.3.9}%
+\begin{code}
+SEM Expr
+  | Int  lhs  .  ty  =  Ty_Int
+
+\end{code}
+}
+\chunkCmdDef{rulerDemoAG.3.expr.e.int}{%
+\label{rulerDemoAG.3.expr.e.int}%
+\chunkCmdUse{rulerDemoAG.3.9}%
+}
+\chunkCmdDef{rulerDemoAG.3.10}{%
+\label{rulerDemoAG.3.10}%
+\begin{code}
+SEM Expr
+  | Var  (lhs.uniq,loc.uniq1)
+                         =  rulerMk1Uniq @lhs.uniq
+         (loc.pty_,loc.nmErrs)
+                         =  gamLookup @i @lhs.g
+         lhs  .  ty      =  tyInst @uniq1 @pty_
+
+\end{code}
+}
+\chunkCmdDef{rulerDemoAG.3.expr.e.var}{%
+\label{rulerDemoAG.3.expr.e.var}%
+\chunkCmdUse{rulerDemoAG.3.10}%
+}
+\chunkCmdDef{rulerDemoAG.3.11}{%
+\label{rulerDemoAG.3.11}%
+\begin{code}
+SEM Expr
+  | App  (f.uniq,loc.uniq1)
+                         =  rulerMk1Uniq @lhs.uniq
+         loc  .  tv_     =  Ty_Var @uniq1
+         (loc.c_,loc.mtErrs)
+                         =  (@a.ty `Ty_Arr` @tv_) <=> (@a.c |=> @f.ty)
+         lhs  .  ty      =  @c_ |=> @a.c |=> @tv_
+              .  c       =  @c_ |=> @a.c
+
+\end{code}
+}
+\chunkCmdDef{rulerDemoAG.3.expr.e.app}{%
+\label{rulerDemoAG.3.expr.e.app}%
+\chunkCmdUse{rulerDemoAG.3.11}%
+}
+\chunkCmdDef{rulerDemoAG.3.12}{%
+\label{rulerDemoAG.3.12}%
+\begin{code}
+SEM Expr
+  | Lam  (b.uniq,loc.uniq1)
+                        =  rulerMk1Uniq @lhs.uniq
+         loc  .  tv_    =  Ty_Var @uniq1
+         b    .  g      =  ([ (@i , @tv_) ]) ++ @lhs.g
+         lhs  .  ty     =  (@b.c |=> @tv_) `Ty_Arr` @b.ty
+
+\end{code}
+}
+\chunkCmdDef{rulerDemoAG.3.expr.e.lam}{%
+\label{rulerDemoAG.3.expr.e.lam}%
+\chunkCmdUse{rulerDemoAG.3.12}%
+}
+\chunkCmdDef{rulerDemoAG.3.13}{%
+\label{rulerDemoAG.3.13}%
+\begin{code}
+SEM Expr
+  | Let  (e.uniq,loc.uniq1)
+                         =  rulerMk1Uniq @lhs.uniq
+         e    .  g       =  ([ (@i , Ty_Var @uniq1) ]) ++ @lhs.g
+         loc  .  pty_e_  =  mkTyAll (ftv @e.ty \\ ftv (@e.c |=> @lhs.g)) @e.ty
+         b    .  g       =  ([ (@i , @pty_e_) ]) ++ @lhs.g
+
+\end{code}
+}
+\chunkCmdDef{rulerDemoAG.3.expr.e.let}{%
+\label{rulerDemoAG.3.expr.e.let}%
+\chunkCmdUse{rulerDemoAG.3.13}%
+}
+\chunkCmdDef{rulerDemoAG.3.14}{%
+\label{rulerDemoAG.3.14}%
+\begin{code}
+DATA Expr
+  | App  f    : Expr
+         a    : Expr
+  | Int  int  : {Int}
+  | Lam  i    : {String}
+         b    : Expr
+  | Let  i    : {String}
+         e    : Expr
+         b    : Expr
+  | Var  i    : {String}
+
+\end{code}
+}
+\chunkCmdDef{rulerDemoAG.3.expr.DATA}{%
+\label{rulerDemoAG.3.expr.DATA}%
+\chunkCmdUse{rulerDemoAG.3.14}%
+}
+\chunkCmdDef{rulerDemoAG.3.15}{%
+\label{rulerDemoAG.3.15}%
+\begin{code}
+ATTR Expr [g: Gam | c: Cnstr | ty: Ty]
+
+\end{code}
+}
+\chunkCmdDef{rulerDemoAG.3.expr.ATTR}{%
+\label{rulerDemoAG.3.expr.ATTR}%
+\chunkCmdUse{rulerDemoAG.3.15}%
+}
+\chunkCmdDef{rulerDemoAG.3.16}{%
+\label{rulerDemoAG.3.16}%
+\begin{code}
+SEM Expr
+  | Int  lhs  .  ty  =  Ty_Int
+
+\end{code}
+}
+\chunkCmdDef{rulerDemoAG.3.expr.e.int}{%
+\label{rulerDemoAG.3.expr.e.int}%
+\chunkCmdUse{rulerDemoAG.3.16}%
+}
+\chunkCmdDef{rulerDemoAG.3.17}{%
+\label{rulerDemoAG.3.17}%
+\begin{code}
+SEM Expr
+  | Var  (lhs.uniq,loc.uniq1)
+                         =  rulerMk1Uniq @lhs.uniq
+         (loc.pty_,loc.nmErrs)
+                         =  gamLookup @i @lhs.g
+         lhs  .  ty      =  tyInst @uniq1 @pty_
+
+\end{code}
+}
+\chunkCmdDef{rulerDemoAG.3.expr.e.var}{%
+\label{rulerDemoAG.3.expr.e.var}%
+\chunkCmdUse{rulerDemoAG.3.17}%
+}
+\chunkCmdDef{rulerDemoAG.3.18}{%
+\label{rulerDemoAG.3.18}%
+\begin{code}
+SEM Expr
+  | App  (f.uniq,loc.uniq1)
+                         =  rulerMk1Uniq @lhs.uniq
+         loc  .  tv_     =  Ty_Var @uniq1
+         (loc.c_,loc.mtErrs)
+                         =  (@a.ty `Ty_Arr` @tv_) <=> (@a.c |=> @f.ty)
+         lhs  .  ty      =  @c_ |=> @a.c |=> @tv_
+              .  c       =  @c_ |=> @a.c
+
+\end{code}
+}
+\chunkCmdDef{rulerDemoAG.3.expr.e.app}{%
+\label{rulerDemoAG.3.expr.e.app}%
+\chunkCmdUse{rulerDemoAG.3.18}%
+}
+\chunkCmdDef{rulerDemoAG.3.19}{%
+\label{rulerDemoAG.3.19}%
+\begin{code}
+SEM Expr
+  | Lam  (b.uniq,loc.uniq1)
+                        =  rulerMk1Uniq @lhs.uniq
+         loc  .  tv_    =  Ty_Var @uniq1
+         b    .  g      =  ([ (@i , @tv_) ]) ++ @lhs.g
+         lhs  .  ty     =  (@b.c |=> @tv_) `Ty_Arr` @b.ty
+
+\end{code}
+}
+\chunkCmdDef{rulerDemoAG.3.expr.e.lam}{%
+\label{rulerDemoAG.3.expr.e.lam}%
+\chunkCmdUse{rulerDemoAG.3.19}%
+}
+\chunkCmdDef{rulerDemoAG.3.20}{%
+\label{rulerDemoAG.3.20}%
+\begin{code}
+SEM Expr
+  | Let  (e.uniq,loc.uniq1)
+                         =  rulerMk1Uniq @lhs.uniq
+         e    .  g       =  ([ (@i , Ty_Var @uniq1) ]) ++ @lhs.g
+         loc  .  pty_e_  =  mkTyAll (ftv @e.ty \\ ftv (@e.c |=> @lhs.g)) @e.ty
+         b    .  g       =  ([ (@i , @pty_e_) ]) ++ @lhs.g
+
+\end{code}
+}
+\chunkCmdDef{rulerDemoAG.3.expr.e.let}{%
+\label{rulerDemoAG.3.expr.e.let}%
+\chunkCmdUse{rulerDemoAG.3.20}%
+}
+\chunkCmdDef{rulerDemoAG.3}{%
+\label{rulerDemoAG.3}%
+\chunkCmdUse{rulerDemoAG.3.0}%
+\chunkCmdUse{rulerDemoAG.3.1}%
+\chunkCmdUse{rulerDemoAG.3.2}%
+\chunkCmdUse{rulerDemoAG.3.3}%
+\chunkCmdUse{rulerDemoAG.3.4}%
+\chunkCmdUse{rulerDemoAG.3.5}%
+\chunkCmdUse{rulerDemoAG.3.6}%
+\chunkCmdUse{rulerDemoAG.3.7}%
+\chunkCmdUse{rulerDemoAG.3.8}%
+\chunkCmdUse{rulerDemoAG.3.9}%
+\chunkCmdUse{rulerDemoAG.3.10}%
+\chunkCmdUse{rulerDemoAG.3.11}%
+\chunkCmdUse{rulerDemoAG.3.12}%
+\chunkCmdUse{rulerDemoAG.3.13}%
+\chunkCmdUse{rulerDemoAG.3.14}%
+\chunkCmdUse{rulerDemoAG.3.15}%
+\chunkCmdUse{rulerDemoAG.3.16}%
+\chunkCmdUse{rulerDemoAG.3.17}%
+\chunkCmdUse{rulerDemoAG.3.18}%
+\chunkCmdUse{rulerDemoAG.3.19}%
+\chunkCmdUse{rulerDemoAG.3.20}%
+}

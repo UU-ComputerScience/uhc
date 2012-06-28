@@ -1,0 +1,74 @@
+{
+gathMentrelFilterMpFromSimplifyResult :: HsName -> SimplifyResult p RedHowAnnotation g m -> ModEntRelFilterMp
+gathMentrelFilterMpFromSimplifyResult moduleNm simpRes
+  = mentrelFilterMpUnions
+      [ mentrelFilterMpSingleton [moduleNm] IdOcc_Val nm
+      | (Reduction {cnstrInfo=RedHow_ByInstance nm _ _}) <- chrSolveStateDoneConstraints $ simpresSolveState simpRes
+      ]
+
+}
+ATTR AllNT AGItf [ | | gathMentrelFilterMp USE {`mentrelFilterMpUnion`} {Map.empty}: ModEntRelFilterMp ]
+
+SEM AGItf
+  | AGItf       loc         .   gathMentrelFilterMp =   mentrelFilterMpUnions
+                                                          [ @expr.gathMentrelFilterMp
+                                                          , gathMentrelFilterMpFromSimplifyResult @lhs.moduleNm @chrSimplifyResult
+                                                          ]
+
+SEM DataFieldPatExpr
+  | Con         loc         .   gathMentrelFilterMp =   mentrelFilterMpSingleton [@lhs.moduleNm] IdOcc_Val (hsnUn @nm)
+                                                        `mentrelFilterMpUnion`
+                                                        tyUsedNames @lhs.moduleNm @gTy
+  | Ext         loc         .   gathMentrelFilterMp =   mentrelFilterMpSingleton [@lhs.moduleNm] IdOcc_Val @nm
+                                                        `mentrelFilterMpUnion`
+                                                        tyUsedNames @lhs.moduleNm @gTy
+
+SEM DataFieldExpr
+  | Con         loc         .   gathMentrelFilterMp =   mentrelFilterMpSingleton [@lhs.moduleNm] IdOcc_Val (hsnUn @nm)
+                                                        `mentrelFilterMpUnion`
+                                                        tyUsedNames @lhs.moduleNm @gTy
+  | Upd         loc         .   gathMentrelFilterMp =   mentrelFilterMpSingleton [@lhs.moduleNm] IdOcc_Val (hsnFldUpd @nm)
+                                                        `mentrelFilterMpUnion`
+                                                        tyUsedNames @lhs.moduleNm @gTy
+
+SEM Expr
+  | Var Con     loc         .   gathMentrelFilterMp =   mentrelFilterMpSingleton [@lhs.moduleNm] IdOcc_Val @nm
+                                                        `mentrelFilterMpUnion`
+                                                        tyUsedNames @lhs.moduleNm @ty_g_
+  | Let         loc         .   gathMentrelFilterMp =   mentrelFilterMpUnions
+                                                          [ @decls.gathMentrelFilterMp, @body.gathMentrelFilterMp
+                                                          , gathMentrelFilterMpFromSimplifyResult @lhs.moduleNm @chrSimplifyResult1
+                                                          , gathMentrelFilterMpFromSimplifyResult @lhs.moduleNm @chrSimplifyResult2
+                                                          ]
+
+
+SEM Decl
+  | Default     loc         .   gathMentrelFilterMp =   mentrelFilterMpSingleton [@lhs.moduleNm] IdOcc_Type {- IdOcc_Class -} @nm
+                                                        `mentrelFilterMpUnion`
+                                                        @tyExprs.gathMentrelFilterMp
+  | Instance    loc         .   gathMentrelFilterMp =   mentrelFilterMpUnions
+                                                          [ mentrelFilterMpSingleton [@lhs.moduleNm] IdOcc_Val (clgiDfltDictNm @clgi)
+                                                          , @decls.gathMentrelFilterMp
+                                                          , gathMentrelFilterMpFromSimplifyResult @lhs.moduleNm @chrDeclsSimplifyResult
+                                                          , gathMentrelFilterMpFromSimplifyResult @lhs.moduleNm @chrSuperSimplifyResult
+                                                          ]
+  | FFE         loc         .   gathMentrelFilterMp =   mentrelFilterMpSingleton [@lhs.moduleNm] IdOcc_Val @nm
+                                                        `mentrelFilterMpUnion`
+                                                        @tyExpr.gathMentrelFilterMp
+
+SEM TyExpr
+  | Con         loc         .   gathMentrelFilterMp =   mentrelFilterMpSingleton [@lhs.moduleNm] IdOcc_Type @nm
+
+SEM PatExpr
+  | Con         loc         .   gathMentrelFilterMp =   mentrelFilterMpSingleton [@lhs.moduleNm] IdOcc_Val @nm
+                                                        `mentrelFilterMpUnion`
+                                                        tyUsedNames @lhs.moduleNm @ty_g_
+  | Expr        loc         .   gathMentrelFilterMp =   mentrelFilterMpSingleton [@lhs.moduleNm] IdOcc_Val @eqFldNm
+                                                        `mentrelFilterMpUnion`
+                                                        tyUsedNames @lhs.moduleNm @eqTy
+
+SEM PrExpr
+  | Class       loc         .   gathMentrelFilterMp =   mentrelFilterMpSingleton [@lhs.moduleNm] IdOcc_Type {- IdOcc_Class -} @nm
+                                                        `mentrelFilterMpUnion`
+                                                        @tyExprs.gathMentrelFilterMp
+

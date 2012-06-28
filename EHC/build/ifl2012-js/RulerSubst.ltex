@@ -1,0 +1,176 @@
+%include lhs2TeX.fmt
+%include afp.fmt
+%include experimentsubst.fmt
+
+
+\rulerCmdDef{subst.A.tree.basic.scheme}{%
+\ensuremath{| Subst | _{ | in | } |  ; Gamma :- Tree : Val ~> Subst | _{ | out | } |  | }
+}
+\rulerCmdDef{subst.A.tree.basic.t.con}{%
+\rulerRule{t.con}{A}
+{%
+}
+{%
+| Subst ; Gamma :- C : c ~> Subst | 
+}
+}
+
+\rulerCmdDef{subst.A.tree.basic.t.useb}{%
+\rulerRule{t.useb}{A}
+{%
+| (n :-> v) `elem` Gamma | 
+}
+{%
+| Subst ; Gamma :- n : Subst v ~> Subst | 
+}
+}
+
+\rulerCmdDef{subst.A.tree.basic.t.defb}{%
+\rulerRule{t.defb}{A}
+{%
+| Subst ; Gamma :- x : v ~> Subst | _{ | x | } |  | 
+\\
+| Subst | _{ | x | } |  ; n :-> v , Gamma :- y : w ~> Subst | _{ | y | } |  | 
+}
+{%
+| Subst ; Gamma :- bind n = x in y : w ~> Subst | _{ | y | } |  | 
+}
+}
+
+\rulerCmdDef{subst.A.tree.basic.t.tup}{%
+\rulerRule{t.tup}{A}
+{%
+| Subst ; Gamma :- x : v ~> Subst | _{ | x | } |  | 
+\\
+| Subst | _{ | x | } |  ; Gamma :- y : w ~> Subst | _{ | y | } |  | 
+}
+{%
+| Subst ; Gamma :- (x , y) : (Subst | _{ | y | } |  v , w) ~> Subst | _{ | y | } |  | 
+}
+}
+
+\rulerCmdDef{subst.A.tree.basic.t.fst}{%
+\rulerRule{t.fst}{A}
+{%
+| Subst ; Gamma :- x : vw ~> Subst | _{ | x | } |  | 
+\\
+| v , w | \;\mbox{fresh} |  | 
+\\
+| (v , w) === vw ~> Subst | _{ | m | } |  | 
+}
+{%
+| Subst ; Gamma :- fst x : Subst | _{ | m | } |  Subst | _{ | x | } |  v ~> Subst | _{ | m | } |  Subst | _{ | x | } |  | 
+}
+}
+
+\rulerCmdDef{subst.A.tree.basic.t.snd}{%
+\rulerRule{t.snd}{A}
+{%
+| Subst ; Gamma :- x : vw ~> Subst | _{ | x | } |  | 
+\\
+| v , w | \;\mbox{fresh} |  | 
+\\
+| (v , w) === vw ~> Subst | _{ | m | } |  | 
+}
+{%
+| Subst ; Gamma :- snd x : Subst | _{ | m | } |  Subst | _{ | x | } |  w ~> Subst | _{ | m | } |  Subst | _{ | x | } |  | 
+}
+}
+
+\rulerCmdDef{subst.D.tree.basic.scheme}{%
+\ensuremath{| Gamma :- Tree : Val | }
+}
+\rulerCmdDef{subst.D.tree.basic.t.con}{%
+\rulerRule{t.con}{D}
+{%
+}
+{%
+| Gamma :- C : c | 
+}
+}
+
+\rulerCmdDef{subst.D.tree.basic.t.useb}{%
+\rulerRule{t.useb}{D}
+{%
+| (n :-> v) `elem` Gamma | 
+}
+{%
+| Gamma :- n : v | 
+}
+}
+
+\rulerCmdDef{subst.D.tree.basic.t.defb}{%
+\rulerRule{t.defb}{D}
+{%
+| Gamma :- x : v | 
+\\
+| n :-> v , Gamma :- y : w | 
+}
+{%
+| Gamma :- bind n = x in y : w | 
+}
+}
+
+\rulerCmdDef{subst.D.tree.basic.t.tup}{%
+\rulerRule{t.tup}{D}
+{%
+| Gamma :- y : w | 
+\\
+| Gamma :- x : v | 
+}
+{%
+| Gamma :- (x , y) : (v , w) | 
+}
+}
+
+\rulerCmdDef{subst.D.tree.basic.t.fst}{%
+\rulerRule{t.fst}{D}
+{%
+| Gamma :- x : (v , w) | 
+}
+{%
+| Gamma :- fst x : v | 
+}
+}
+
+\rulerCmdDef{subst.D.tree.basic.t.snd}{%
+\rulerRule{t.snd}{D}
+{%
+| Gamma :- x : (v , w) | 
+}
+{%
+| Gamma :- snd x : w | 
+}
+}
+
+\rulerCmdDef{subst.A.tree.basic}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{subst.A.tree.basic.scheme}}{Rules for Val of Tree}{subst.A.tree.basic}{A}
+\rulerCmdUse{subst.A.tree.basic.t.con}
+\hspace{1ex}
+\rulerCmdUse{subst.A.tree.basic.t.useb}
+\hspace{1ex}
+\rulerCmdUse{subst.A.tree.basic.t.defb}
+\hspace{1ex}
+\rulerCmdUse{subst.A.tree.basic.t.tup}
+\hspace{1ex}
+\rulerCmdUse{subst.A.tree.basic.t.fst}
+\hspace{1ex}
+\rulerCmdUse{subst.A.tree.basic.t.snd}
+\end{rulerRulesetFigure}
+}
+\rulerCmdDef{subst.D.tree.basic}{%
+\begin{rulerRulesetFigure}{\rulerCmdUse{subst.D.tree.basic.scheme}}{Rules for Val of Tree}{subst.D.tree.basic}{D}
+\rulerCmdUse{subst.D.tree.basic.t.con}
+\hspace{1ex}
+\rulerCmdUse{subst.D.tree.basic.t.useb}
+\hspace{1ex}
+\rulerCmdUse{subst.D.tree.basic.t.defb}
+\hspace{1ex}
+\rulerCmdUse{subst.D.tree.basic.t.tup}
+\hspace{1ex}
+\rulerCmdUse{subst.D.tree.basic.t.fst}
+\hspace{1ex}
+\rulerCmdUse{subst.D.tree.basic.t.snd}
+\end{rulerRulesetFigure}
+}
+

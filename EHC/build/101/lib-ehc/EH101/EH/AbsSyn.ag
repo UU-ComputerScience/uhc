@@ -1,0 +1,368 @@
+DATA AllNT
+  | *               hsrange         : Range
+
+DATA AGItf
+  | AGItf           expr            : Expr
+
+DATA Decl
+  | TySig           nm              : {HsName}
+                    tyExpr          : TyExpr
+  | Val             patExpr         : PatExpr
+                    expr            : Expr
+
+TYPE Decls          = [Decl]
+
+SET AllDecl         = Decl Decls
+
+DATA Decl
+  | Data            isNewtype       : {Bool}
+                    tyNm            : {HsName}
+                    tyVars          : TyVars
+                    constrs         : DataConstrs
+					mbGenerInfo		: {Maybe Int}		-- max kind arity for generic behavior, currently \in {0,1}
+
+DATA Decl
+  | KiSig           nm              : {HsName}
+                    kiExpr          : KiExpr
+
+DATA Decl
+  | FFI             callconv        : {FFIWay}
+                    safety          : {String}
+                    impEnt          : {ForeignEnt}
+                    nm              : {HsName}
+                    tyExpr          : TyExpr
+
+DATA Decl
+  | Type            tyNm            : {HsName}
+                    tyExpr          : TyExpr
+
+DATA Decl
+  | FFE             nm              : {HsName}
+                    callconv        : {FFIWay}
+                    expEnt          : {ForeignEnt}
+                    expr            : Expr
+                    tyExpr          : TyExpr
+
+DATA Decl
+  | GenerRep        maxArity		: {Int}						-- max required unsaturated type arguments
+  					tyNm            : {HsName}					-- type name
+  					conNmL			: {[HsName]}		-- constructors + field names
+  					recFldNmL		: {[(HsName,[HsName])]}		-- record constructors + field names
+
+DATA Decl
+  | FusionDecl      fuseNm          : {HsName}
+                    -- with         : {HsName}
+  | FusionConv      conNm           : {HsName}
+                    absNm           : {HsName}
+
+DATA TyExpr
+  | Con             nm              : {HsName}
+  | App             func            : TyExpr
+                    arg             : TyExpr
+  | AppTop          tyExpr          : TyExpr
+  | Parens          tyExpr          : TyExpr
+  | Ann             ann             : TyExprAnn
+                    tyExpr          : TyExpr
+
+DATA TyExpr
+  | Wild											-- wildcard tyvar over which the TyExpr will not quantify, but later let binding will
+  | Mono											-- same as Wild, but no quantification in the let binding either
+
+DATA TyExpr
+  | Var             nm              : {HsName}
+
+DATA TyExpr
+  | VarWild         nm              : {HsName}
+
+DATA TyExpr
+  | Quant           qu              : {TyQu}
+                    tyVar           : {HsName}
+                    tyExpr          : TyExpr
+
+DATA TyExpr
+  | Row             rowTyExpr       : RowTyExpr
+
+DATA TyExpr
+  | Pred            prExpr          : PrExpr
+  | Impls
+  | NoImpls
+
+DATA TyExpr
+  | Lam             tyVar           : {HsName}
+                    tyExpr          : TyExpr
+
+TYPE TyExprs        = [TyExpr]
+
+DATA TyVar
+  | Var             nm              : {HsName}
+
+TYPE TyVars         = [TyVar]
+
+SET AllTyVar        = TyVar TyVars
+
+TYPE MbTyExpr       = MAYBE TyExpr
+
+SET AllTyExpr
+    = TyExpr
+      -- TyExprAnn
+      TyExprs
+      RowTyExpr
+      PrExpr PrExprs
+      MbTyExpr
+
+DATA DataFieldExpr
+  | Upd             dataFieldExpr   : DataFieldExpr
+                    nm              : {HsName}
+                    expr            : Expr
+  | Con             nm              : {HsName}
+  | Expr            expr            : Expr
+
+DATA DataFieldPatExpr
+  | Ext             dataFieldPatExpr: DataFieldPatExpr
+                    nm              : {HsName}
+                    patExpr         : PatExpr
+  | Con             nm              : {HsName}
+
+DATA RecExpr
+  | Empty
+  | Ext             recExpr         : RecExpr
+                    mbNm            : {Maybe HsName}
+                    expr            : Expr
+  | Upd             recExpr         : RecExpr
+                    nm              : {HsName}
+                    expr            : Expr
+  | Expr            expr            : Expr
+
+DATA RecPatExpr
+  | Empty
+  | Ext             recPatExpr      : RecPatExpr
+                    mbNm            : {Maybe HsName}
+                    patExpr         : PatExpr
+  | Expr            patExpr         : PatExpr
+
+DATA RowTyExpr
+  | Empty
+  | Ext             rowTyExpr       : RowTyExpr
+                    mbNm            : {Maybe HsName}
+                    tyExpr          : TyExpr
+
+DATA RowTyExpr
+  | Var             nm              : {HsName}
+
+DATA PrExpr
+  | Class           nm              : {HsName}
+                    tyExprs         : TyExprs
+  | Arrow           arg             : PrExpr
+                    res             : PrExpr
+  | Forall          tyVar           : {HsName}
+                    prExpr          : PrExpr
+
+TYPE PrExprs        = [PrExpr]
+
+DATA PrExpr
+  | Lacks           rowTyExpr       : RowTyExpr
+                    nm              : {HsName}
+  | DynVar          nm              : {HsName}
+                    tyExpr          : TyExpr
+
+DATA PrExpr
+  | Eq              tyExpr1         : TyExpr
+                    tyExpr2         : TyExpr
+
+SET AllPrExpr       = PrExpr PrExprs
+
+DATA KiExpr
+  | Con             nm              : {HsName}
+  | Var             nm              : {HsName}
+  | App             func            : KiExpr
+                    arg             : KiExpr
+  | AppTop          kiExpr          : KiExpr
+  | Parens          kiExpr          : KiExpr
+  | Ann             ann             : KiExprAnn
+                    kiExpr          : KiExpr
+
+SET AllKiExpr
+  = KiExpr
+    -- KiExprAnn
+
+DATA Expr
+  | IConst          int             : {Int}
+  | CConst          char            : {Char}
+  | Con             nm              : {HsName}
+  | Var             nm              : {HsName}
+  | App             func            : Expr
+                    arg             : Expr
+  | Let             isStrict        : {Bool}
+                    decls           : Decls
+                    body            : Expr
+  | Lam             arg             : PatExpr
+                    body            : Expr
+  | AppTop          expr            : Expr
+  | Parens          expr            : Expr
+  | TypeAs          tyExpr          : TyExpr
+                    expr            : Expr
+  | Ann             ann             : ExprAnn
+                    expr            : Expr
+
+DATA Expr
+  | AppImpred       func            : Expr
+                    arg             : Expr
+
+DATA Expr
+  | SConst          str             : {String}
+  | Case            expr            : Expr
+                    alts            : CaseAlts
+                    mbCaseIds       : {Maybe UIDS}
+                    caseFailS       : {UIDS}			-- can fail on these fail ids, encodes that this case implements a guard
+                    isTupOfArg      : {Bool}			-- tupling, only done as uncurry of arguments of lambda
+
+DATA Expr
+  | DataFields      dataFieldExpr   : DataFieldExpr
+  | Rec             recExpr         : RecExpr
+  | Sel             expr            : Expr
+                    lbl             : {HsName}
+
+DATA Expr
+  | Undefined
+  | CaseAltFail     caseId          : {UID}
+
+DATA Expr
+  | AppImpl         func            : Expr
+                    argPr           : PrExpr
+                    arg             : Expr
+  | LamImpl         argPr           : PrExpr
+                    arg             : PatExpr
+                    body            : Expr
+
+DATA Expr
+  | DynVar          nm              : {HsName}
+
+DATA Expr
+  | IIConst         integer         : {Integer}
+
+SET AllExpr
+    = Expr
+      -- ExprAnn
+      RecExpr DataFieldExpr
+
+DATA PatExpr
+  | IConst          int             : {Int}
+  | CConst          char            : {Char}
+  | Con             nm              : {HsName}
+  | Var             nm              : {HsName}
+  | VarAs           nm              : {HsName}
+                    patExpr         : PatExpr
+  | App             func            : PatExpr
+                    arg             : PatExpr
+  | AppTop          patExpr         : PatExpr
+  | Parens          patExpr         : PatExpr
+  | Ann             ann             : PatExprAnn
+                    patExpr         : PatExpr
+
+DATA PatExpr
+  | TypeAs          tyExpr          : TyExpr
+                    patExpr         : PatExpr
+
+DATA PatExpr
+  | SConst          str             : {String}
+
+DATA PatExpr
+  | Rec             recPatExpr      : RecPatExpr
+  | DataFields      dataFieldPatExpr: DataFieldPatExpr
+
+DATA PatExpr
+  | Irrefutable     patExpr         : PatExpr
+  | Bang	     	patExpr         : PatExpr
+
+DATA PatExpr
+  | Expr            expr            : Expr
+                    mbConst         : {Maybe SrcConst}
+
+SET AllPatExpr
+    = PatExpr
+      -- PatExprAnn
+      RecPatExpr DataFieldPatExpr
+
+DATA CaseAlt
+  | Pat             patExpr         : PatExpr
+                    expr            : Expr
+
+TYPE CaseAlts       = [CaseAlt]
+
+SET AllCase         = CaseAlt CaseAlts
+
+DATA DataConstr
+  | Constr          conNm           : {HsName}
+                    mbFixityPrio    : {Maybe (Int,Fixity)}       -- Nothing: not infix
+                    fields          : DataFields
+					mbGadtTyExpr	: MbTyExpr			-- the constrained result ty for GADT
+
+TYPE DataConstrs    = [DataConstr]
+
+DATA DataField
+  | Field           mbLabels        : {Maybe [HsName]}
+                    tyExpr          : TyExpr
+
+TYPE DataFields     = [DataField]
+
+SET AllDataConstr   = DataConstr DataConstrs
+
+SET AllDataField    = DataField DataFields
+
+SET AllData
+    = AllDataConstr
+      AllDataField
+
+DATA Decl
+  | Class           tyPrExpr        : TyExpr
+                    funcDeps        : FuncDeps
+                    mbDefaultInstNm : {Maybe HsName}
+                    decls           : Decls
+					generDerivs		: {[(HsName,HsName)]}			-- generically derivable fields, with their default
+  | Instance        mbNmElim        : {Maybe (HsName,Bool)}
+                    instVariant     : InstVariant
+                    tyPrExpr        : TyExpr
+                    decls           : Decls
+  | InstanceIntro   mbNmElim        : {Maybe (HsName)}
+                    expr            : Expr
+                    prExpr          : PrExpr
+  | Default         nm              : HsName
+                    tyExprs         : TyExprs
+
+DATA FuncDep
+  | Dep             fromTvs         : TyVars
+                    toTvs           : TyVars
+
+TYPE FuncDeps       = [FuncDep]
+
+SET AllFuncDep      = FuncDep FuncDeps
+
+DATA ExprAnn
+  | Empty
+
+DATA TyExprAnn
+  | Empty
+  | Strictness      strictness      : Strictness
+
+DATA PatExprAnn
+  | Empty
+
+DATA KiExprAnn
+  | Empty
+
+SET AllAnn
+    = ExprAnn TyExprAnn PatExprAnn
+      KiExprAnn
+
+SET AllNT
+    = AllTyExpr AllDecl AllPatExpr AllExpr
+      AllData AllCase AllTyVar
+      AllKiExpr
+      AllFuncDep
+
+SET NTCode
+    = AllDecl AllExpr AllCase AllPatExpr
+
+SET NTPrf
+    = NTCode AllData
+

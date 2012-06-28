@@ -1,0 +1,72 @@
+MODULE {EH101.Error} {Err (..), ErrL
+, ThingAndRange
+, ErrSq
+, mkThingAnd1Range
+, module EH101.Base.Target
+, errLIsFatal
+, errIsFatal
+, mkNestErr, mkNestErr'
+, mkErr_NamesNotIntrod, mkErr_NamesNotIntrod'}
+{
+import EH101.Base.Common
+import EH101.Ty
+import EH.Util.Pretty
+import qualified EH.Util.FastSeq as Seq
+import EH101.Base.Target (FFIWay)
+import EH.Util.FPath
+
+}
+{
+}
+{
+}
+{
+}
+INCLUDE "Error/AbsSyn.ag"
+{
+}
+{
+}
+DERIVING *     : Show
+
+{
+type ThingAndRange x = (x,Maybe [(Range,Maybe PP_Doc)])
+
+}
+{
+type ErrSq = Seq.FastSeq Err
+
+}
+{
+errIsFatal :: Err -> Bool
+errIsFatal (Err_MissingDataFields _ _ _) = False
+errIsFatal _                             = True
+
+}
+{
+errLIsFatal :: [Err] -> Bool
+errLIsFatal es = not (null es) && any errIsFatal es
+
+}
+{
+mkNestErr' :: Range -> PP_Doc -> [ErrSq] -> ErrSq
+mkNestErr' r wher errs = Seq.fromList $ mkNestErr r wher $ Seq.toList $ Seq.unions errs
+
+mkNestErr :: Range -> PP_Doc -> ErrL -> ErrL
+mkNestErr r wher errL | null ({- forceEval -} errL) = []
+                      | otherwise             = [Err_NestedIn r wher errL]
+
+}
+{
+mkThingAnd1Range :: Range -> x -> ThingAndRange x
+mkThingAnd1Range r x = (x,Just [(r,Nothing)])
+
+}
+{
+mkErr_NamesNotIntrod' :: PP n => Range -> String -> [ThingAndRange n] -> Err
+mkErr_NamesNotIntrod' r m ns = Err_NamesNotIntrod r m (assocLMapKey pp ns)
+
+mkErr_NamesNotIntrod :: Range -> String -> [HsName] -> Err
+mkErr_NamesNotIntrod r m ns = mkErr_NamesNotIntrod' r m (zip (map pp ns) (repeat Nothing))
+
+}

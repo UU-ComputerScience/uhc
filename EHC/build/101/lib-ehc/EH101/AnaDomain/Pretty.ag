@@ -1,0 +1,147 @@
+MODULE {EH101.AnaDomain.Pretty} {ppRelevTy
+, ppRelevQual
+, ppAnaEval
+, ppRelevCoe
+, VarPPMp}
+{
+import EH.Util.Pretty
+import EH101.AnaDomain
+import EH101.Base.Common
+import qualified Data.Map as Map
+import qualified Data.Set as Set
+import Data.Char
+
+}
+{
+}
+{
+}
+{
+}
+INCLUDE "AnaDomain/AbsSyn.ag"
+WRAPPER
+  RelevTy RelevQual RelevCoe AnaEval
+
+{
+ppRelevTy :: VarPPMp -> RelevTy -> (PP_Doc,VarPPMp)
+ppRelevTy vm x
+  =  let  t = wrap_RelevTy (sem_RelevTy x)
+                           (Inh_RelevTy
+                             { varMp_Inh_RelevTy = vm
+                             })
+     in   (pp_Syn_RelevTy t, quantVarMp_Syn_RelevTy t)
+
+instance PP RelevTy where
+  pp x = fst $ ppRelevTy Map.empty x
+
+}
+{
+ppRelevQual :: RelevQual -> PP_Doc
+ppRelevQual x
+  =  let  t = wrap_RelevQual (sem_RelevQual x)
+                             (Inh_RelevQual
+                               { varMp_Inh_RelevQual = Map.empty
+                               })
+     in   (pp_Syn_RelevQual t)
+
+instance PP RelevQual where
+  pp x = ppRelevQual x
+
+}
+{
+ppAnaEval :: AnaEval -> PP_Doc
+ppAnaEval x
+  =  let  t = wrap_AnaEval (sem_AnaEval x)
+                             (Inh_AnaEval
+                               { varMp_Inh_AnaEval = Map.empty
+                               })
+     in   (pp_Syn_AnaEval t)
+
+instance PP AnaEval where
+  pp x = ppAnaEval x
+
+}
+{
+ppRelevCoe :: VarPPMp -> RelevCoe -> PP_Doc
+ppRelevCoe vm x
+  =  let  t = wrap_RelevCoe (sem_RelevCoe x)
+                             (Inh_RelevCoe
+                               { varMp_Inh_RelevCoe = vm
+                               })
+     in   (pp_Syn_RelevCoe t)
+
+instance PP RelevCoe where
+  pp x = ppRelevCoe Map.empty x
+
+}
+{
+instance Show RVarMpInfo where
+  show _ = "RVarMpInfo"
+
+instance PP RVarMpInfo where
+  pp (RVMIEval a) = pp a
+
+}
+{
+instance PP AnaMatchState where
+  pp x = ppParens (amsOuterVarMp x) >#< amsLocalVarMp x >#< "~>" >#< ppCommas (Set.toList $ amsGathQual x)
+
+instance PP a => PP (AMSOut a) where
+  pp x = amsoLo x >#< "<=" >#< amsoHi x >#< "~" >#< amsoCoe x
+
+}
+ATTR AllNT [ | | pp USE {>-<} {empty} : PP_Doc ]
+
+SEM RelevTy
+  | None        lhs         .   pp          =   pp "#"
+  | Err         lhs         .   pp          =   "#:" >#< @str
+  | Ana         lhs         .   pp          =   @eval.pp
+  | Fun         lhs         .   pp          =   (if null @quantNmL then empty else "forall" >|< ppParens (show @quant) >#< ppSpaces @quantNmL >#< ". ")
+                                                >|< (if null @quals.ppL then empty else ppParensCommas' @quals.ppL >#< "=> ")
+                                                >|< ppParensCommas @args.ppL >#< "->" >#< ppParens @res.pp
+
+SEM RelevQual
+  | SubEval		lhs			.	pp			=	@l.pp >#< "<e=" >#< @r.pp
+  -- | Alt			lhs			.	pp			=	@qual.pp >#< "@" >|< @altId  >|< "/" >|< @altMbScrutTy.pp >#< {- fmap ctagNm -} @altMbTag >|< "/" >|< @altNr >|< "/" >|< @altMax
+
+SEM RelevCoe
+  | Id 			lhs			.	pp			=	pp "#_c"
+  | Err         lhs         .   pp          =   "#_c:" >#< @str
+  | Cast 		lhs			.	pp			=	"(#!" >#< @coe.pp >|< ")"
+  | Eval 		lhs			.	pp			=	ppParens $ @from.pp >#< "~e>" >#< @to.pp
+  | Comp		lhs			.	pp			=	@l.pp >#< "._c" >#< @r.pp
+  | Fun			lhs			.	pp			=	ppParensCommas' @args.ppL >#< "-c>" >#< @res.pp
+  | CastTy		lhs			.	pp			=	ppParens $ @l.pp >#< "`castTy`" >#< @r.pp
+
+SEM AnaEval
+  | Var         lhs         .   pp          =   Map.findWithDefault (pp @av) @av @lhs.varMp
+  | WHNF        lhs         .   pp          =   pp "S"
+  | Lazy        lhs         .   pp          =   pp "L"
+  | Meet        lhs         .   pp          =   ppListSep "" "" " /\\ " @opnds.ppL
+  | Join        lhs         .   pp          =   ppListSep "" "" " \\/ " @opnds.ppL
+
+
+SEM RelevTyL RelevQualL AnaEvalL RelevCoeL [ | | ppL: {[PP_Doc]} ]
+  | Nil         lhs         .   ppL         =   []
+  | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
+
+
+{
+type VarPPMp = Map.Map UID PP_Doc
+
+}
+ATTR AllNT [ varMp: VarPPMp | | ]
+
+SEM QualAGItf TyAGItf CoeAGItf
+  | AGItf		loc			.	varMp		=	Map.empty
+
+SEM RelevTy
+  | Fun         loc         .   (varMp,quantNmL)
+                                            =   genNmMap pp @quants @lhs.varMp
+
+ATTR TyAGItf RelevTy [ | | quantVarMp: VarPPMp ]
+
+SEM RelevTy
+  | Fun         loc         .   quantVarMp  =   @varMp
+  | * - Fun		loc			.	quantVarMp  =   Map.empty
+

@@ -1,0 +1,448 @@
+DATA AGItf
+  | AGItf			module			: Module
+
+DATA Module
+  | Mod				moduleNm		: Nm
+  					decls			: TopLevelL
+
+DATA TopLevel
+  | Section			snm				: String
+  					sections		: SectionL
+  | Decl			decl			: Decl
+  | Proc			proc			: Proc
+
+TYPE TopLevelL		= [TopLevel]
+
+DATA Section
+  | Decl			decl			: Decl
+  | Proc			proc			: Proc
+  | Datum			datum			: Datum
+  -- | Span				expr1			: Expr
+  -- 					expr2			: Expr
+  -- 					sections		: SectionL
+
+TYPE SectionL		= [Section]
+
+DATA Decl
+  | Import			imports			: ImportL
+  | Export			exports			: ExportL
+  | Const			ty				: Ty
+  					nm				: Nm
+  					expr			: Expr
+  | ConstArray		ty				: Ty
+  					nm				: Nm
+  					exprs			: ExprL
+  | Typedef			ty				: Ty
+  					nms				: NmL
+  | Regs			isInvariant		: Bool
+  					regs			: Regs
+  -- | Pragma			nm				: Nm
+  -- 					pragma			: PragmaL
+  | Target			targets			: TargetL
+  | Comment			str				: String
+
+TYPE DeclL			= [Decl]
+
+DATA Target
+  | Memsize			size			: Int
+  | Byteorder		isLittle		: Bool
+  | Pointersize		size			: Int
+  | Wordsize		size			: Int
+
+TYPE TargetL		= [Target]
+
+DATA Import
+  | Imp				nm				: Nm
+  | ImpAs			snmAs			: String
+  					nm				: Nm
+
+TYPE ImportL		= [Import]
+
+DATA Export
+  | Exp				nm				: Nm
+  					ty				: Ty
+  | ExpAs			nm				: Nm
+  					ty				: Ty
+  					snmAs			: String
+
+TYPE ExportL		= [Export]
+
+DATA Datum
+  | Nm				nm				: Nm
+  | Align			align			: Int
+  | Ty				ty				: Ty
+  					mbSize			: MbExpr
+  					mbInit			: MbInit
+
+TYPE DatumL			= [Datum]
+
+DATA Init
+  | Seq				exprs			: ExprL
+  | Str				str				: String
+  | Str16			str				: String16
+
+TYPE MbInit			= MAYBE Init
+
+DATA String16
+  | Unicode			str				: String
+
+DATA Regs
+  | Regs			kind			: {Maybe String}
+  					ty				: Ty
+  					nmInits			: RegNmInitL
+
+DATA RegNmInit
+  | NmInit			nm				: Nm
+  					mbIs			: {Maybe String}
+
+TYPE RegNmInitL		= [RegNmInit]
+
+SET AllTop			= Module
+					  TopLevel TopLevelL
+					  Section SectionL
+					  Decl DeclL
+					  Target TargetL
+					  Import ImportL
+					  Export ExportL
+					  Datum DatumL
+					  Init MbInit
+					  Regs RegNmInit RegNmInitL
+					  String16
+
+DATA BodyDecl
+  | Decl			decl			: Decl
+  | StackDecl		datums			: DatumL
+  | Stmt			stmt			: Stmt
+
+TYPE BodyDeclL		= [BodyDecl]
+
+DATA Body
+  | Body			decls			: BodyDeclL
+
+TYPE MbBody			= MAYBE Body
+
+DATA Proc
+  | Proc			mbConv			: MbConv
+  					nm				: Nm
+  					formals			: FormalL
+  					body			: Body
+
+DATA Conv
+  | Foreign			conv			: String
+
+TYPE MbConv			= MAYBE Conv
+
+DATA Formal
+  | Formal			mbKind			: {Maybe String}
+  					isInvariant		: Bool
+  					ty				: Ty
+  					nm				: Nm
+
+TYPE FormalL		= [Formal]
+
+DATA Actual
+  | Actual			mbKind			: {Maybe String}
+  					expr			: Expr
+
+TYPE ActualL		= [Actual]
+
+DATA Stmt
+  | If				condExpr		: Expr
+  					thenBody		: Body
+  					elseMbBody		: MbBody
+  | Switch			expr			: Expr
+  					arms			: ArmL
+  -- | Span				expr1			: Expr
+  -- 					expr2			: Expr
+  -- 					body			: Body
+  | Assign			lval			: LValueL
+  					rhs				: ExprL
+  -- | %%Assign
+  | Call			knames			: KindNameL
+  					mbConv			: MbConv
+  					expr			: Expr
+  					actuals			: ActualL
+  					targets			: Targets
+  					aliasflows		: FlowAliasL
+  | Jump			mbConv			: MbConv
+  					expr			: Expr
+  					actuals			: ActualL
+  					targets			: Targets
+  | Ret				mbConv			: MbConv
+  					mbCont			: MbRetCont
+  					actuals			: ActualL
+  | Label			nm				: Nm
+  | Cont			nm				: Nm
+  					knames			: KindNameL
+  | Goto			expr			: Expr
+  					targets			: Targets
+  | Cut				expr			: Expr
+  					actuals			: ActualL
+  					flows			: FlowL
+
+DATA RetCont
+  | Cont			expr1			: Expr
+  					expr2			: Expr
+
+TYPE MbRetCont		= MAYBE RetCont
+
+DATA KindName
+  | KindName		mbKind			: {Maybe String}
+  					nm				: Nm
+
+TYPE KindNameL		= [KindName]
+
+DATA Arm
+  | Case			ranges			: RangeL
+  					body			: Body
+
+TYPE ArmL			= [Arm]
+
+DATA Range
+  | Range1			expr1			: Expr
+  | Range2			expr1			: Expr
+  					expr2			: Expr
+
+TYPE RangeL			= [Range]
+
+DATA LValue
+  | Nm				nm				: Nm
+  | Typed			ty				: Ty
+  					expr			: Expr
+  					mbAssert		: MbAssert
+
+TYPE LValueL		= [LValue]
+
+DATA Flow
+  | AlsoTo			alsos			: AlsoL
+  					nms				: NmL
+  | AlsoAborts
+  | NeverReturns
+
+TYPE FlowL			= [Flow]
+
+DATA Also
+  | Cuts
+  | Unwinds
+  | Returns
+
+TYPE AlsoL			= [Also]
+
+DATA Alias
+  | Reads			nms				: NmL
+  | Writes			nms				: NmL
+
+DATA FlowAlias
+  | Flow			flow			: Flow
+  | Alias			alias			: Alias
+
+TYPE FlowAliasL		= [FlowAlias]
+
+DATA Targets
+  | Targets			nms				: NmL
+
+SET	AllStmt			= BodyDecl BodyDeclL
+					  Body MbBody
+					  Proc
+					  Conv MbConv
+					  Formal FormalL
+					  Actual ActualL
+					  Stmt
+					  RetCont MbRetCont
+					  KindName KindNameL
+					  Arm ArmL
+					  Range RangeL
+					  LValue LValueL
+					  Flow FlowL
+					  Also AlsoL
+					  Alias
+					  FlowAlias FlowAliasL
+					  Targets
+
+DATA Expr
+  | Int				val				: Integer
+  					mbTy			: MbTy
+  | Lit				val				: Lit
+  | Round			val				: Round
+  | Rat				nom				: Integer
+  					denom			: Integer
+  					mbTy			: MbTy
+  | Float			val				: Double
+  					mbTy			: MbTy
+  | Char			val				: Char
+  					mbTy			: MbTy
+  | Nm				nm				: Nm
+  | Typed			ty				: Ty
+  					expr			: Expr
+  					mbAssert		: MbAssert
+  | Op				op				: Op
+  					exprs			: ExprL
+
+TYPE ExprL			= [Expr]
+
+TYPE MbExpr			= MAYBE Expr
+
+DATA Assert
+  | AlignedIn		aligned			: Int
+  					nms				: NmL
+  | InAligned		nm				: Nm
+  					mbAligned		: {Maybe Int}
+
+TYPE MbAssert		= MAYBE Assert
+
+DATA Lit
+  | MInf			sz				: Int
+  | PInf			sz				: Int
+  | MZero			sz				: Int
+  | PZero			sz				: Int
+  | False
+  | True
+
+DATA Round
+  | Down
+  | Nearest
+  | Up
+  | Zero
+
+DATA Op
+  -- float comparisons
+  | FEq				osz				: Int
+  | FNe				osz				: Int
+  | FGe				osz				: Int
+  | FGt				osz				: Int
+  | FLe				osz				: Int
+  | FLt				osz				: Int
+  | FOrdered		osz				: Int
+  | FUnordered		osz				: Int
+
+  -- float arithmetic
+  | FAbs			osz				: Int
+  | FAdd			osz				: Int
+  | FDiv			osz				: Int
+  | FMul			osz				: Int
+  | FMulx			osz				: Int
+  | FNeg			osz				: Int
+  | FSqrt			osz				: Int
+  | FSub			osz				: Int
+
+  -- float conversions
+  | F2F				osz				: Int
+  					sz				: Int
+  | I2F				osz				: Int
+  					sz				: Int
+  | F2I				osz				: Int
+  					sz				: Int
+
+  -- float misc
+  | NaN				osz				: Int
+  					sz				: Int
+
+  -- comparisons
+  | Eq				osz				: Int
+  | Ne				osz				: Int
+  | Ge				osz				: Int
+  | Gt				osz				: Int
+  | Le				osz				: Int
+  | Lt				osz				: Int
+  | Geu				osz				: Int
+  | Gtu				osz				: Int
+  | Leu				osz				: Int
+  | Ltu				osz				: Int
+
+  -- arithmetic
+  | Add				osz				: Int
+  | Addc			osz				: Int
+  | Carry			osz				: Int
+  | Sub				osz				: Int
+  | Subb			osz				: Int
+  | Borrow			osz				: Int
+  | Neg				osz				: Int
+  | Mul				osz				: Int
+  | Mulux			osz				: Int
+  | Mulx			osz				: Int
+  | Div				osz				: Int
+  | Quot			osz				: Int
+  | Divu			osz				: Int
+  | Mod				osz				: Int
+  | Rem				osz				: Int
+  | Modu			osz				: Int
+
+  -- boolean conversions
+  | Bit
+  | Bool
+
+  -- boolean operations
+  | Conjoin
+  | Disjoin
+  | Not
+
+  -- bit operations
+  | And				osz				: Int
+  | Com				osz				: Int
+  | Or				osz				: Int
+  | Xor				osz				: Int
+  | RotL			osz				: Int
+  | RotR			osz				: Int
+  | ShL				osz				: Int
+  | ShRA			osz				: Int
+  | ShRL			osz				: Int
+  | PopCnt			osz				: Int
+
+  -- width changing conversions
+  | LoBits			osz				: Int
+  					sz				: Int
+  | SX				osz				: Int
+  					sz				: Int
+  | ZX				osz				: Int
+  					sz				: Int
+
+  -- overflow checking
+  | AddOverflows	osz				: Int
+  | DivOverflows	osz				: Int
+  | MulOverflows	osz				: Int
+  | MuluOverflows	osz				: Int
+  | QuotOverflows	osz				: Int
+  | SubOverflows	osz				: Int
+
+SET	AllExpr			= Expr ExprL MbExpr
+					  Assert MbAssert
+					  Op
+					  Lit
+					  Round
+
+DATA Ty
+  -- C-- types
+  | Bits			bits			: Bits
+  | Nm				nm				: Nm
+
+  -- C types
+  | Struct			flds			: StructFldL
+  -- | Ptr				ty				: Ty
+
+TYPE MbTy			= MAYBE Ty
+
+DATA StructFld
+  | Fld				nm				: Nm
+  					ty				: Ty
+
+TYPE StructFldL		= [StructFld]
+
+DATA Bits
+  | Size			sz				: Int
+  | Ptr				mbGc			: MbGC
+  | Word
+  -- | WordOrPtr
+
+DATA GC
+  | GCOwned
+  | NoGC
+
+TYPE MbGC			= MAYBE GC
+
+SET	AllTy			= Ty MbTy
+					  StructFld StructFldL
+					  Bits
+					  GC MbGC
+
+
+SET AllNT			= AllTop AllStmt AllExpr AllTy

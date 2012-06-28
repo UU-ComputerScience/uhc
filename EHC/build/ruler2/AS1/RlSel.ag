@@ -1,0 +1,8 @@
+
+ATTR AllDecl [ rlSelIsSel: RlSelIsSel | | ]
+
+SEM AGItf
+  | AGItf           loc     .   rlSelIsSel  =   case optMbRlSel @lhs.opts of
+                                                    Just rs -> rlSelIsSel @vwDpdGr rs
+                                                    _       -> \_ _ _ -> True
+

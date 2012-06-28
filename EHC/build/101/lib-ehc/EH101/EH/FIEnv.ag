@@ -1,0 +1,122 @@
+SEM AGItf
+  | AGItf       loc         .   fe                  =   defaultFIEnv
+                                                            { feEHCOpts = @lhs.opts
+                                                            , fePredScope = @predScope
+                                                            , feTyGam = @expr.gathTyGam
+                                                            , fePolGam = @expr.gathPolGam
+                                                            , feRange = emptyRange
+                                                            }
+
+SEM Decl
+  | *           loc         .   fe                  =   defaultFIEnv
+                                                            { feTyGam = @lhs.tyGam
+                                                            , feEHCOpts = @lhs.opts
+                                                            , feDataGam = @lhs.dataGam		-- required for proper FFI type expansion
+                                                            , fePolGam = @lhs.polGam
+                                                            , feRange = @range
+                                                            }
+
+SEM DataConstr
+  | Constr      loc         .   fe                  :=  defaultFIEnv
+                                                            { feEHCOpts = @lhs.opts
+                                                            , fePredScope = @lhs.predScope
+                                                            , feTyGam = @lhs.tyGam
+                                                            , fePolGam = @lhs.polGam
+                                                            , feRange = @range
+                                                            }
+
+SEM Decl
+  | Instance    loc         .   fe                  :=  defaultFIEnv
+                                                            { feEHCOpts = @lhs.opts
+                                                            , fePredScope = @lhs.predScope
+                                                            , feTyGam = @lhs.tyGam
+                                                            , fePolGam = @lhs.polGam
+                                                            , feRange = @range
+                                                            }
+                            .   fe2                 =   defaultFIEnv
+                                                            { feTyGam = @lhs.tyGam
+                                                            , fePolGam = @lhs.polGam
+                                                            , feRange = @range
+                                                            }
+
+SEM Expr
+  | Let         loc         .   fe                  =   defaultFIEnv
+                                                            { feEHCOpts = @lhs.opts
+                                                            , fePredScope = @lhs.predScope
+                                                            , feTyGam = @lhs.tyGam
+                                                            , fePolGam = @lhs.polGam
+                                                            , feRange = @range
+                                                            }
+  | Lam AppTop Rec
+    LamImpl
+                loc         .   fe                  =   defaultFIEnv
+                                                            { feEHCOpts = @lhs.opts
+                                                            , fePredScope = @predScope
+                                                            , feTyGam = @lhs.tyGam
+                                                            , fePolGam = @lhs.polGam
+                                                            , feRange = @range
+                                                            }
+  | * - Lam AppTop Rec Let
+    LamImpl
+                loc         .   fe                  =   defaultFIEnv
+                                                            { feEHCOpts = @lhs.opts
+                                                            , fePredScope = @lhs.predScope
+                                                            , feTyGam = @lhs.tyGam
+                                                            , fePolGam = @lhs.polGam
+                                                            , feRange = @range
+                                                            }
+
+SEM RecExpr
+  | *           loc         .   fe                  =   defaultFIEnv
+                                                            { feEHCOpts = @lhs.opts
+                                                            , fePredScope = @lhs.predScope
+                                                            , feTyGam = @lhs.tyGam
+                                                            , fePolGam = @lhs.polGam
+                                                            , feRange = @range
+                                                            }
+
+SEM DataFieldExpr
+  | *           loc         .   fe                  =   defaultFIEnv
+                                                            { feEHCOpts = @lhs.opts
+                                                            , fePredScope = @lhs.predScope
+                                                            , feTyGam = @lhs.tyGam
+                                                            , fePolGam = @lhs.polGam
+                                                            , feRange = @range
+                                                            }
+
+SEM PatExpr
+  | *           loc         .   fe                  =   defaultFIEnv
+                                                            { feEHCOpts = @lhs.opts
+                                                            , fePredScope = @lhs.predScope
+                                                            , feTyGam = @lhs.tyGam
+                                                            , fePolGam = @lhs.polGam
+                                                            , feRange = @range
+                                                            }
+
+SEM RecPatExpr
+  | *           loc         .   fe                  =   defaultFIEnv
+                                                            { feEHCOpts = @lhs.opts
+                                                            , fePredScope = @lhs.predScope
+                                                            , feTyGam = @lhs.tyGam
+                                                            , fePolGam = @lhs.polGam
+                                                            , feRange = @range
+                                                            }
+
+SEM DataFieldPatExpr
+  | *           loc         .   fe                  =   defaultFIEnv
+                                                            { feEHCOpts = @lhs.opts
+                                                            , fePredScope = @lhs.predScope
+                                                            , feTyGam = @lhs.tyGam
+                                                            , fePolGam = @lhs.polGam
+                                                            , feRange = @range
+                                                            }
+
+SEM TyExpr
+  | *           loc         .   fe                  =   defaultFIEnv
+
+SEM PrExpr
+  | *           loc         .   fe2                 =   defaultFIEnv
+                                                            { feTyGam = @lhs.tyGam
+                                                            , fePolGam = @lhs.polGam
+                                                            }
+

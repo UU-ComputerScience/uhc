@@ -1,0 +1,371 @@
+MODULE {EH101.EH.MainAG} {}
+{
+import Data.Char
+import Data.List as List
+import EH.Util.Pretty
+import EH101.Base.Common
+import EH101.Base.Builtin
+import EH101.Opts
+import EH101.Gam.Full
+import EH101.Error
+import EH101.Error.Pretty
+import EH101.EH
+import EH101.Ty.Pretty
+import EH101.Ty.FitsInCommon
+import EH101.Ty.FitsIn
+import qualified EH.Util.FastSeq as Seq
+import EH.Util.Utils
+import EH101.VarMp
+import EH101.Substitutable
+import Data.Maybe
+import EH101.Ty.Utils1
+import EH101.Ty.Trf.Quantify
+import EH101.Ty.Trf.Instantiate
+import EH101.Ty
+import EH101.Base.Debug as Debug
+import Debug.Trace
+import EH101.Ty.FitsInCommon2
+import EH101.Ty.FIEnv2
+import qualified Data.Set as Set
+import qualified Data.Map as Map
+import Data.Set (Set)
+import Data.Map (Map)
+import EH101.Ty.Trf.FreshVar
+import EH101.Ty.Ftv
+import EH.Util.Utils (groupSortOn)
+import Control.Applicative ((<|>))
+import EH101.AbstractCore
+import EH101.AbstractCore.Utils
+import EH101.Core
+import EH101.Core.FFI
+import EH101.Core.Utils
+import EH101.Core.Pretty
+import EH101.Foreign.Extract
+import EH101.LamInfo
+import Control.Monad.State
+import EH101.Ty.Utils2
+import EH101.Base.Target
+import EH101.Core.Subst
+import EH101.Core.Coercion
+import EH101.Ty.Trf.MergePreds
+import EH101.Ty.Trf.Canonic
+import EH101.Pred
+import EH101.Pred.RedGraph (redPruneReductionsUntil)
+import EH101.CHR
+import EH101.CHR.Constraint
+import EH101.Pred.CHR
+import EH101.Pred.ToCHR
+import EH101.Pred.Heuristics
+import EH101.CHR.Solve
+import EH101.Pred.EvidenceToCore
+import EH101.Gam.ClassDefaultGam
+import EH101.Ty.Trf.BetaReduce (tyBetaRedFull)
+import EH101.Module
+import EH101.Ty.UsedNames
+import EH101.BuiltinPrims
+import EH101.Foreign
+import EH101.Foreign
+import EH101.Foreign.Pretty
+import EH101.Deriving
+import EH101.Generics
+import EH101.VarMp.Utils
+}
+{
+}
+{
+}
+{
+}
+{
+}
+{
+}
+{
+}
+
+{
+}
+{
+}
+{
+}
+{
+}
+{
+}
+{
+}
+{
+}
+{
+}
+{
+}
+{
+}
+{
+}
+{
+}
+{
+}
+{
+}
+{
+}
+{
+}
+{
+}
+{
+}
+{
+}
+{
+}
+{
+}
+{
+}
+{
+}
+{
+}
+{
+}
+{
+}
+{
+}
+INCLUDE "EH/AbsSyn.ag"
+INCLUDE "EH/Range.ag"
+WRAPPER AGItf
+
+INCLUDE "EH/InferUtils.ag"
+INCLUDE "EH/Infer.ag"
+INCLUDE "EH/InferExpr.ag"
+INCLUDE "EH/InferTyUpDown.ag"
+INCLUDE "EH/InferPatExpr.ag"
+INCLUDE "EH/InferTyExpr.ag"
+INCLUDE "EH/InferInit.ag"
+INCLUDE "EH/FinalInfo.ag"
+INCLUDE "EH/FIOpts.ag"
+INCLUDE "EH/FIEnv.ag"
+INCLUDE "EH/TvKiVarMp.ag"
+
+
+INCLUDE "EH/GatherError.ag"
+INCLUDE "EH/ExtraChecks.ag"
+INCLUDE "EH/Pretty.ag"
+INCLUDE "EH/InferIncrFtv.ag"
+INCLUDE "EH/InferCaseExpr.ag"
+INCLUDE "EH/InferData.ag"
+INCLUDE "EH/InferKiExpr.ag"
+INCLUDE "EH/ToCore.ag"
+INCLUDE "EH/GatherMisc.ag"
+INCLUDE "EH/ResolvePred.ag"
+INCLUDE "EH/InferClass.ag"
+INCLUDE "EH/InferClassCHR.ag"
+INCLUDE "EH/ResolvePredCHR.ag"
+INCLUDE "EH/InferDefault.ag"
+INCLUDE "EH/GatherGam.ag"
+INCLUDE "EH/InferPolarity.ag"
+INCLUDE "EH/UsedNames.ag"
+INCLUDE "EH/Orphan.ag"
+INCLUDE "EH/Generics.ag"
+INCLUDE "EH/LocalAttrTypes.ag"
+INCLUDE "EH/FakeDependencies.ag"
+PRAGMA strictsem
+PRAGMA strictcase
+PRAGMA sepsemmods
+
+ATTR AllNT AGItf [ opts: EHCOpts | | ]
+
+ATTR
+  AGItf
+  AllNT
+    [ moduleNm: HsName | | ]
+
+ATTR AGItf [ idQualGam: IdQualGam | | ]
+
+
+ATTR AGItf [ isMainMod: Bool | | ]
+
+ATTR Expr [ isTopLam: Bool | | ]
+ATTR Expr [ isFirstLet: Bool | | ]
+
+SEM Decl
+  | Val
+    InstanceIntro
+    FFE
+                expr        .   isFirstLet          =   True
+                            .   isTopLam            =   True
+
+SEM AGItf
+  | AGItf       expr        .   isFirstLet          =   True
+                            .   isTopLam            =   True
+
+
+SEM Expr
+  | Let         loc         .   isFirstLet          =   False
+  | * - Let     loc         .   isFirstLet          =   True
+
+SEM Expr
+  | Lam
+    LamImpl
+                body        .   isTopLam            =   False
+  | * - Lam
+    LamImpl
+                loc         .   isTopLam            =   True
+
+SEM CaseAlt
+  | Pat         expr        .   isFirstLet          =   True
+                            .   isTopLam            =   True
+
+SEM DataFieldExpr
+  | Upd Expr    expr        .   isFirstLet          =   True
+                            .   isTopLam            =   True
+
+SEM RecExpr
+  | Upd Expr Ext
+                expr        .   isFirstLet          =   True
+                            .   isTopLam            =   True
+
+SEM PatExpr
+  | Expr        expr        .   isFirstLet          =   True
+                            .   isTopLam            =   True
+
+ATTR RecPatExpr RowTyExpr RecExpr [ | positionalFldNmL: {[HsName]} | ]
+ATTR RecPatExpr [ matchOnFld: Bool | | hasAFldRef: Bool ]
+
+SEM Expr
+  | Rec         recExpr     .   positionalFldNmL    =   positionalFldNames
+
+SEM TyExpr
+  | Row         rowTyExpr   .   positionalFldNmL    =   positionalFldNames
+
+SEM PatExpr
+  | Rec         recPatExpr  .   positionalFldNmL    =   positionalFldNames
+                            .   matchOnFld          =   @recPatExpr.hasAFldRef
+
+SEM RecPatExpr
+  | Ext         lhs         .   hasAFldRef          =   maybe @recPatExpr.hasAFldRef (const True) @mbNm
+                (loc.positionalNm,lhs.positionalFldNmL)
+                                                    =   hdAndTl @recPatExpr.positionalFldNmL
+                loc         .   nm                  =   case @mbNm of
+                                                          Just nm                     -> nm
+                                                          Nothing  | @lhs.matchOnFld  -> @patExpr.topNm
+                                                                   | otherwise        -> @positionalNm
+  | * - Ext     lhs         .   hasAFldRef          =   False
+
+SEM RowTyExpr
+  | Ext         (loc.positionalNm,lhs.positionalFldNmL)
+                                                    =   hdAndTl @rowTyExpr.positionalFldNmL
+                loc         .   nm                  =   maybe @positionalNm id @mbNm
+
+SEM RecExpr
+  | Ext         (loc.positionalNm,lhs.positionalFldNmL)
+                                                    =   hdAndTl @recExpr.positionalFldNmL
+                loc         .   nm                  =   maybe @positionalNm id @mbNm
+
+SEM PrExpr
+  | Lacks       rowTyExpr   .   positionalFldNmL    =   positionalFldNames
+
+ATTR Expr [ | | appFunNm: HsName ]
+
+SEM Expr
+  | Con         lhs     .   appFunNm    =   @nm
+  | App         lhs     .   appFunNm    =   @func.appFunNm
+  | * - Con App
+                lhs     .   appFunNm    =   hsnUnknown
+
+SEM Expr
+  | AppImpred   lhs     .   appFunNm    :=  @func.appFunNm
+
+ATTR RecExpr [ | | extNm: HsName ]
+
+SEM RecExpr
+  | Empty       lhs     .   extNm       =   hsnRowEmpty
+  | * - Empty Ext Upd
+                lhs     .   extNm       =   hsnUnknown
+
+SEM Expr
+  | Rec         loc     .   appFunNm    :=  @recExpr.extNm
+
+SEM Expr
+  | AppImpl     lhs     .   appFunNm    :=  @func.appFunNm
+
+ATTR TyExpr [ | | appFunNm: HsName ]
+
+SEM TyExpr
+  | Con         lhs     .   appFunNm    =   @nm
+  | App         lhs     .   appFunNm    =   @func.appFunNm
+  | * - App Con
+                lhs     .   appFunNm    =   hsnUnknown
+
+
+ATTR RowTyExpr [ | | extNm: HsName ]
+
+SEM RowTyExpr
+  | Empty       lhs     .   extNm       =   hsnRowEmpty
+  | * - Empty Ext
+                lhs     .   extNm       =   hsnUnknown
+
+SEM TyExpr
+  | Row         lhs     .   appFunNm    :=  @rowTyExpr.extNm
+
+ATTR PatExpr [ | | appFunNm: HsName ]
+
+SEM PatExpr
+  | Con         loc     .   appFunNm    =   @nm
+  | AppTop      loc     .   appFunNm    =   @patExpr.appFunNm
+  | App         lhs     .   appFunNm    =   @func.appFunNm
+  | * - App Con
+                lhs     .   appFunNm    =   hsnUnknown
+
+ATTR RecPatExpr [ | | extNm: HsName ]
+
+SEM RecPatExpr
+  | Empty       lhs     .   extNm       =   hsnRowEmpty
+  | * - Empty Ext
+                lhs     .   extNm       =   hsnUnknown
+
+SEM PatExpr
+  | Rec         loc     .   appFunNm    :=  @recPatExpr.extNm
+
+ATTR KiExpr [ | | appFunNm: HsName ]
+
+SEM KiExpr
+  | Con         lhs     .   appFunNm    =   @nm
+  | App         lhs     .   appFunNm    =   @func.appFunNm
+  | * - Con App
+                lhs     .   appFunNm    =   hsnUnknown
+
+ATTR PatExpr [ | | mbTopNm: {Maybe HsName} ]
+
+SEM PatExpr
+  | Var VarAs   loc         .   mbTopNm             =   if hsnIsWild @nm then Nothing else Just @nm
+  | Irrefutable Bang
+  				loc         .   mbTopNm             =   @patExpr.mbTopNm
+  | * - Var VarAs Irrefutable Bang
+                loc         .   mbTopNm             =   Nothing
+
+ATTR PatExpr [ | | topNm: HsName ]
+
+SEM PatExpr
+  | Var VarAs   loc         .   topNm               =   if hsnIsWild @nm then uidHNm @lUniq else @nm
+  | App         lhs         .   topNm               =   hsnUnknown
+  | AppTop Con Rec CConst IConst DataFields
+    Expr
+                loc         .   topNm               =   uidHNm @lUniq
+  | SConst      loc         .   topNm               =   uidHNm @lUniq
+  | Irrefutable Bang
+  				loc         .   topNm               =   @patExpr.topNm
+
+ATTR AllNT [ | gUniq: UID | ]
+
+ATTR AGItf [ | gUniq: UID | ]
+
+SEM PatExpr
+  | *           loc         .   lUniq               :   UNIQUEREF gUniq
+

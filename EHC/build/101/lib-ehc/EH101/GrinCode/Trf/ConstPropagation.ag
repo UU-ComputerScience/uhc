@@ -1,0 +1,56 @@
+MODULE {EH101.GrinCode.Trf.ConstPropagation} {grConstPropagation}
+{
+import qualified Data.Map as Map
+import qualified Data.Set as Set
+import Data.Maybe
+import EH101.Base.Builtin
+import EH101.Base.Common
+import EH101.GrinCode.Common
+import EH101.GrinCode
+import qualified EH101.Config as Cfg
+
+}
+INCLUDE "GrinCode/AbsSyn.ag"
+{
+}
+{
+}
+{
+}
+{
+}
+INCLUDE "GrinCode/Trf/CommonAliasAG.ag"
+INCLUDE "GrinCode/Trf/CommonRenameAG.ag"
+{
+grConstPropagation :: GrModule -> GrModule
+grConstPropagation grmod
+  = trf_Syn_GrAGItf t
+  where t = wrap_GrAGItf (sem_GrAGItf $ GrAGItf_AGItf grmod)
+            $ Inh_GrAGItf
+
+}
+WRAPPER GrAGItf
+
+PRAGMA nocycle
+
+SEM GrAGItf
+  | AGItf		loc			.	mkNewNm			=	id
+
+SEM GrExpr
+  | Seq         body        .   nmAliasMp       =   @newNmAliasMp `Map.union` @lhs.nmAliasMp
+
+ATTR GrAGItf [ | | trf: GrModule ]
+
+SEM GrExpr
+  | Seq         loc         .   (seqTrf,newNmAliasMp)
+                                                =   case (@expr.nmAlias,@pat.nmAlias,@body.nmAlias) of
+                                                      (c@(NmAlias_Const _ _),pp@(NmAlias_Nm p),_)					-- allow reference to constant instead
+                                                        -> (@trf,Map.singleton p (c {naliNm = p}))
+                                                      (NmAlias_Nm e,_,_) | isJust mbAli								-- use of name mapping to other value, may be replaced by orig value
+                                                        -> case mbAli of
+                                                             Just (NmAlias_Const _ c)
+                                                               -> (GrExpr_Seq (GrExpr_Unit c GrType_None) @pat.trf @body.trf,Map.empty)
+                                                             _ -> (@trf,Map.empty)
+                                                        where mbAli = Map.lookup e @lhs.nmAliasMp
+                                                      _ -> (@trf,Map.empty)
+                lhs         .   trf             =   @seqTrf

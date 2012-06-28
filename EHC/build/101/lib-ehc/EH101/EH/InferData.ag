@@ -1,0 +1,306 @@
+SEM Decl
+  | Data        tyVars      .   tyGam               =   emptyGam
+                lhs         .   patTyGam            =   gamAdd @tyNm (TyGamInfo (Ty_Con @tyNm)) @lhs.patTyGam
+                constrs     .   tyGam               =   gamPushGam @tyVars.tyGam @lhs.tyGam
+
+SEM Decl
+  | Data        loc         .   dataTgi             =   mkTGI (Ty_Con @tyNm)
+                            .   dataTkgi            =   TyKiGamInfo (tyEnsureNonAny @lUniq @knKi)
+                            .   dataPatTyGam        =   if @hasKiSig  then @lhs.patTyGam
+                                                                      else gamAdd @tyNm @dataTgi @lhs.patTyGam
+                            .   dataPatTyKiGam      =   if @hasKiSig  then @lhs.patTyKiGam
+                                                                      else tyKiGamNameSingleton @tyNm @dataTkgi `gamUnion` @lhs.patTyKiGam
+                lhs         .   patTyGam            :=  gamUnion @extraTyGam   @dataPatTyGam
+                            .   patTyKiGam          =   gamUnion @extraTyKiGam @dataPatTyKiGam
+                loc         .   fo_                 =   fitsIn  strongFIOpts defaultFIEnv @lUniq2 @lhs.patKiVarMp
+                                                                (@tyVars.kiL `mkArrow` kiStar) (tkgiKi @dataTkgi)
+                            .   dataKi              =   foTy @fo_
+                lhs         .   patKiVarMp          =   foVarMp @fo_ `varUpd` @lhs.patKiVarMp
+                constrs     .   tyKiGam             =   gamPushGam  (tyKiGamInst1Exists @lUniq3 (@lhs.kiVarMp `varUpd` @tyVars.tyKiGam))
+                                                                    @lhs.tyKiGam
+                loc         .   lUniq               :   UNIQUEREF gUniq
+                loc         .   lUniq2              :   UNIQUEREF gUniq
+                loc         .   lUniq3              :   UNIQUEREF gUniq
+
+SEM DataConstr
+  | Constr      loc         .   fldsKiVarMp         =   @fields.kiVarMp
+                            .   (_,fo_)             =   fitsInL  weakFIOpts defaultFIEnv @lUniq @fldsKiVarMp
+                                                                 @fields.kiL (repeat kiStar)
+                mbGadtTyExpr
+                	        .   kiVarMp				=   foVarMp @fo_ `varUpd` @fldsKiVarMp
+                loc         .   lUniq               :   UNIQUEREF gUniq
+
+ATTR
+  AllDecl AllExpr -- AllCase
+  -- AllPatExpr
+    [ | gathDataGam: DataGam | ]
+ATTR AGItf [ | | gathDataGam: DataGam ]
+
+SEM AGItf
+  | AGItf       expr        .   gathDataGam         =   emptyGam
+
+SEM CaseAlt
+  | Pat         expr        .   gathDataGam         =   emptyGam
+
+SEM PatExpr
+  | Expr        expr        .   gathDataGam         =   emptyGam
+
+ATTR AllDecl AllExpr AllCase AllPatExpr [ dataGam: DataGam | | ]
+
+ATTR AGItf [ dataGam: DataGam | | ]
+
+SEM AGItf
+  | AGItf       expr        .   dataGam             =   @expr.gathDataGam `gamUnion` @lhs.dataGam
+
+ATTR AllDecl [ | | gathDeclDataGam USE {`gamUnion`} {emptyGam}: DataGam ]
+
+SEM Decl
+  | Data        loc         .   dataTyVarIdL        =   map (panicJust "EH.InferData.Decl.Data.tyMbVar" . tyMbVar) @tyVars.tyL
+                            .   dgi                 =   mkDGI @tyNm ([@dataTy] `mkArrow` @dataAltTy) @constrs.dataConstrNmL @constrs.dataConstrTagMp
+                                                              (if @isNewtype
+                                                               then DataGamInfoVariant_Newtype $ mkTyLam @dataTyVarIdL @constrs.dataAltForNewType
+                                                               else DataGamInfoVariant_Plain
+                                                              )
+                                                              @mbGenerInfo
+                lhs         .   gathDeclDataGam     =   gamUnion @extraDataGam $ gamSingleton @tyNm @dgi
+
+SEM Expr
+  | Let         loc         .   gathBodyDataGam     =   @extraDataGam `gamUnion` @decls.gathDeclDataGam `gamUnion` @decls.gathDataGam
+                body        .   gathDataGam         =   @gathBodyDataGam
+
+SEM DataConstr
+  | Constr      loc         .   gadtTyVarMp         =   maybe emptyVarMp foVarMp @mbGadtFO
+
+SEM DataConstr
+  | Constr      loc         .   mbGadtFO            =   fmap (\ty -> fitsIn (unifyFIOpts {fioDontBind = varFreeSet ty}) defaultFIEnv uidStart (emptyVarMp::VarMp) @lhs.dataTy ty) @mbGadtTyExpr.tyMb
+
+SEM DataConstr
+  | Constr
+  				loc         .	dataConGadtTyL		=	[ mkTyPr $ Pred_Eq (mkTyVar v) t | (v,t) <- varmpToAssocTyL @gadtTyVarMp ]
+
+  							.   dataConFldTyL       =   @fields.fldTyL
+  							.   dataConTyL          =   assocLElts @dataConFldTyL
+				 			.	dataConGadtFldTyL	=	zip (repeat Nothing) @dataConGadtTyL ++ @dataConFldTyL
+
+SEM DataConstr
+  | Constr
+                loc         .   dataConGadtFldAnnL  =   replicate (length @dataConGadtTyL)
+                                                                  (DataConFldAnnInfo
+                                                                    Strictness_NonStrict
+                                                                  )
+                                                        ++ @fields.fldAnnL
+
+ATTR AllData [ dataTy: Ty | | ]
+ATTR AllDataConstr [ | patValGam: ValGam | ]
+
+SEM DataConstr
+  | Constr      loc         .   dataConTy           =   @dataConTyL `mkArrow` @lhs.dataTy
+                            .	dataConGadtTy		=	@gadtTyVarMp `varUpd` @dataConTy
+                            .   dataConTyFv         =   varFree @lhs.dataTy
+                            .   dataConProdTy       =   mkProdApp @dataConGadtFldTyL
+                            .   dataConProdTyFv     =   varFree @dataConProdTy
+                loc         .   dataQuUnConTy       =   let fvD = @dataConTyFv
+                                                            fvU = @dataConProdTyFv
+                                                            tkg = gamUnion @lhs.finTyKiGam @fields.intlTyKiGam
+                                                            mkk tvs = [ (v,tvarKi tkg @lhs.tvKiVarMp emptyVarMp v) | v <- tvs ] -- zip tvs (repeat kiStar) -- TBD
+                                                        in  ({- mkTyQu tyQu_Forall (mkk fvD) -} ([@lhs.dataTy] `mkArrow` mkTyQu tyQu_Exists (mkk (fvU \\ fvD)) @dataConProdTy))
+                loc         .   dataConTyVar        =   @lUniq_con
+                            .   dataConTyAsVar      =   mkNewTyVar @lUniq_con
+                            .   dataUnConTyVar      =   @lUniq_uncon
+                            .   dataUnConTyAsVar    =   mkNewTyVar @lUniq_uncon
+                lhs         .   patValGam           =   gamUnions
+                                                          [ assocLToGam
+                                                              [ (@conNm, ValGamInfo @dataConTyAsVar)
+                                                              , (hsnUn @conNm, ValGamInfo @dataUnConTyAsVar)
+                                                              ]
+                                                          , @lhs.patValGam
+                                                          ]
+                            .   patTyVarMp          =   assocTyLToVarMp [(@dataConTyVar,@dataConGadtTy),(@dataUnConTyVar,@dataQuUnConTy)] `varUpd` @lhs.patTyVarMp
+                loc         .   lUniq_con           :   UNIQUEREF gUniq
+                loc         .   lUniq_uncon         :   UNIQUEREF gUniq
+
+SEM Decl
+  | Data        loc         .   dataTy              =   @tyNm `mkConApp` @tyVars.tyL
+
+SEM Decl
+  | Data        lhs         .   patValGam           =   gamUnions
+                                                          [ gamNoDups @constrs.fldSelGam
+                                                          , gamNoDups @constrs.fldUpdGam
+                                                          , @constrs.patValGam
+                                                          ]
+
+ATTR AllDataConstr [ | | dataAltTyL USE {++} {[]}: {AssocL HsName Ty} ]
+
+SEM DataConstr
+  | Constr      loc         .   dataConTy2          =   @dataConTyL `mkArrow` @lhs.dataTy
+                            .   dataConProdTy2      =   let  lbls = zipWith (\p (ml,_) -> maybe p id ml) positionalFldNames @dataConGadtFldTyL
+                                                        in   mkTyRec (zipWith (\l (_,t) -> (l,t)) lbls @dataConGadtFldTyL)
+
+                            .   dataConTy           :=  @dataConTy1
+                            .   dataConProdTy       :=  @dataConProdTy1
+
+                            .   dataAltTyL          =   [(@conNm,@dataConProdTy)]
+
+SEM Decl
+  | Data        loc         .   dataAltTy           =   mkTySum @constrs.dataAltTyL
+                            .   dataTgi             :=  mkTGIData (Ty_Con @tyNm) Ty_Any {- ([@dataTy] `mkArrow` @dataAltTy) -}
+
+ATTR AllDataConstr [ | | dataAltForNewType USE {`const`} {Ty_Any}: Ty ]
+
+SEM DataConstr
+  | Constr      loc         .   dataAltForNewType   =   maybeHd Ty_Any snd @dataConGadtFldTyL       -- should be only one
+
+SEM DataConstr
+  | Constr      loc         .   dataConTy1          =   @loc.dataConTy2
+                            .   dataConProdTy1      =   @loc.dataConProdTy2
+
+ATTR AllDataConstr [ dataAltTy: Ty | | ]
+
+ATTR AllDataConstr [ tyNm: HsName | | ]
+
+SEM Decl
+  | Data        constrs     .   tyNm                =   @tyNm
+
+SEM DataConstr
+  | Constr      loc         .   fldMp               =   let mk o = emptyDataFldInfo {dfiOffset = o}
+                                                            mkfs = fst . foldl (\(m,o) (ml,_) -> maybe (m,o+1) (\l -> ((l,mk o):m,o+1)) ml) ([],0)
+                                                        in  Map.fromList $ mkfs $ @dataConGadtFldTyL
+
+ATTR
+  AllDataConstr
+    [ | | dataConstrTagMp USE {`Map.union`} {Map.empty}: DataConstrTagMp
+          dataConstrNmL USE {++} {[]}: {[HsName]}
+    ]
+
+SEM DataConstr
+  | Constr      lhs         .   dataConstrTagMp     =   @conNm `Map.singleton` @dti
+                            .   dataConstrNmL       =   [@conNm]
+                loc         .   dti                 =   emptyDataTagInfo
+                                                          { dtiFldMp        = @fldMp
+                                                          , dtiFldTyL       = @dataConGadtFldTyL
+                                                          , dtiConFldAnnL   = @dataConGadtFldAnnL
+                                                          , dtiConNm        = @conNm
+                                                          , dtiConTy        = @dataConTyAsVar
+                                                          , dtiCTag         = @ctag
+                                                          , dtiMbFixityPrio = @mbFixityPrio
+                                                          }
+                            .   tag                 =   tyRecOffset @conNm @lhs.dataAltTy
+                            .   arity               =   length @dataConGadtFldTyL
+                            .   ctag                =   CTag @lhs.tyNm @conNm @tag @arity @lhs.maxArity
+                loc         .   ctag                :   CTag
+
+ATTR AllDataConstr [ maxArity: Int | | gathMaxArity USE {`max`} {0}: Int ]
+
+SEM DataConstr
+  | Constr      lhs         .   gathMaxArity        =   @arity
+
+SEM Decl
+  | Data        constrs     .   maxArity            =   @constrs.gathMaxArity
+
+SEM DataField
+  | Field       loc         .   nrFieldsForLabel    =   maybe 1 length @mbLabels
+                loc         .   nrFieldsForLabel    :   Int
+
+ATTR AllDataField [ | | fldTyL USE {++} {[]}: FldTyL ]
+
+SEM DataField
+  | Field       loc         .   fldTyL              =   case @mbLabels of
+                                                          Just ls -> zipWith (\l t -> (Just l,t)) ls (repeat @tyExpr.ty)
+                                                          _       -> [(Nothing,@tyExpr.ty)]
+                loc         .   fldTyL              :   FldTyL
+
+ATTR AllDataField [ | | fldAnnL USE {++} {[]}: {[DataConFldAnnInfo]} ]
+
+SEM DataField
+  | Field       lhs         .   fldAnnL             =   replicate @nrFieldsForLabel
+  														  ( DataConFldAnnInfo
+                                                              (maybe Strictness_NonStrict id @tyExpr.mbStrictness)
+                                                          )
+
+ATTR AllDataField AllDataConstr [ | | fldSelGam USE {`gamUnion`} {emptyGam}: ValGam ]
+
+SEM DataField
+  | Field       loc         .   fldSelGam           =   assocLToGam [ (l,ValGamInfo $ [@lhs.dataTy] `mkArrow` t) | (Just l,t) <- @fldTyL ]
+
+ATTR AllDataField AllDataConstr [ | | fldUpdGam USE {`gamUnion`} {emptyGam}: ValGam ]
+
+SEM DataField
+  | Field       loc         .   fldUpdGam           =   let mk t = [t,fr @lhs.dataTy] `mkArrow` @lhs.dataTy
+                                                                 where fv = tyFtvMp t
+                                                                       fr dt = dt
+                                                        in  assocLToGam [ (hsnFldUpd l,ValGamInfo $ mk t) | (Just l,t) <- @fldTyL ]
+
+ATTR AllDataField [ | | kiL USE {++} {[]}: TyL ]
+
+SEM DataField
+  | Field       lhs         .   kiL                 =   replicate @nrFieldsForLabel @tyExpr.ki
+
+ATTR AllDataConstr [ isNewtype: Bool | | ]
+
+SEM Decl
+  | Data        constrs     .   isNewtype           =   @isNewtype
+
+ATTR Expr [ | | isNewtype: Bool ]
+
+SEM Expr
+  | Con         loc         .   (dgi,_)             =   dataGamLookupErr @nm @lhs.dataGam
+                            .   isNewtype           =   dgiIsNewtype @dgi
+  | * - Con     lhs         .   isNewtype           =   False
+
+ATTR DataFieldExpr [ | | mbConNm: {Maybe HsName} ]
+
+SEM DataFieldExpr
+  | Con         lhs         .   mbConNm             =   Just @nm
+  | * - Con Upd lhs         .   mbConNm             =   Nothing
+
+ATTR DataFieldExpr [ | | mbDti: {Maybe DataTagInfo} ]
+
+SEM DataFieldExpr
+  | Con         loc         .   dti                 =   dgiDtiOfCon @nm @lhs.dgi
+                lhs         .   mbDti               =   Just @dti
+  | * - Con Upd lhs         .   mbDti               =   Nothing
+
+ATTR DataFieldExpr [ | | fldL: {[HsName]} ]
+
+SEM DataFieldExpr
+  | Upd         lhs         .   fldL                =   @nm : @dataFieldExpr.fldL
+  | * - Upd     lhs         .   fldL                =   []
+
+SEM Expr
+  | DataFields  loc         .   fldL                =   sortBy rowLabCmp @dataFieldExpr.fldL
+                            .   fldS                =   Set.fromList @fldL
+
+ATTR DataFieldExpr [ dgi: DataGamInfo | | ]
+
+SEM Expr
+  | DataFields  loc         .   dgi                 =   let dgiOf t = maybe emptyDataGamInfo id $ dataGamDgiOfTy t @lhs.dataGam
+                                                        in  case (@dataFieldExpr.mbConNm,@fldL) of
+                                                              (Just c,_)
+                                                                -> dgiOf t
+                                                                where (_,t,_) = valGamTyOfDataCon c @lhs.valGam
+                                                              (_,(f:_))
+                                                                -> dgiOf t
+                                                                where (_,t,_) = valGamTyOfDataFld f @lhs.valGam
+                                                              _ -> panic "Expr.DataFields.dgi"
+                            .   dtiL                =   Map.elems $ dgiConstrTagMp @dgi
+                            .   (dtiInFldL,dtiOutFldL)
+                                                    =   partition (\i -> @fldS `Set.isSubsetOf` Map.keysSet (dtiFldMp i)) $ @dtiL
+
+ATTR DataFieldPatExpr [ | | dti: DataTagInfo ]
+
+SEM DataFieldPatExpr
+  | Con         loc         .   dgi                 =   let (_,t,_) = valGamTyOfDataCon @nm @lhs.valGam
+                                                        in  panicJust "DataFieldPatExpr.dgi" $ dataGamDgiOfTy t @lhs.dataGam
+                            .   dti                 =   dgiDtiOfCon @nm @dgi
+
+ATTR DataFieldPatExpr [ | | fldL: {[HsName]} ]
+
+SEM DataFieldPatExpr
+  | Ext         lhs         .   fldL                =   @nm : @dataFieldPatExpr.fldL
+  | * - Ext     lhs         .   fldL                =   []
+
+SEM Decl
+  | Data        loc         .   extraTyGam          =   emptyGam
+                            .   extraTyKiGam        =   emptyGam
+                            .   extraDataGam        =   emptyGam
+

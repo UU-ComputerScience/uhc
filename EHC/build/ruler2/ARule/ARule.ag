@@ -1,0 +1,14 @@
+MODULE {ARule.ARule} {}
+{
+import Common
+import Expr.Expr
+
+}
+{
+}
+{
+}
+INCLUDE "ARule/AbsSynAG.ag"
+{
+
+}

@@ -1,0 +1,87 @@
+MODULE {EH101.HS.ModImpExp} {Inh_AGItf (..), Syn_AGItf (..), sem_AGItf, wrap_AGItf}
+{
+import EH101.Base.Builtin
+import EH101.Base.Common
+import EH101.Opts
+import EH101.HS
+import EH101.Gam.Full
+import EH101.NameAspect
+import qualified Data.Set as Set
+import qualified Data.Map as Map
+import Data.Maybe
+import qualified EH.Util.Rel as Rel
+import EH101.Module
+import EH101.Base.Target
+import qualified EH101.Base.Pragma as Pragma
+}
+{
+}
+{
+}
+{
+}
+{
+}
+{
+}
+{
+}
+INCLUDE "HS/AbsSyn.ag"
+INCLUDE "HS/NameLevel.ag"
+INCLUDE "HS/NameDef.ag"
+INCLUDE "HS/Module.ag"
+INCLUDE "HS/Uniq.ag"
+WRAPPER AGItf
+
+INCLUDE "HS/Pragmas.ag"
+PRAGMA strictcase
+PRAGMA novisit nocycle
+
+ATTR AGItf AllModuleDeclaration AllExpression [ opts: EHCOpts | | ]
+
+ATTR AllNT [ | topInstanceNmL: {[HsName]} | ]
+
+SEM Declaration
+    | Class Instance InstanceUseImplicitly
+        lhs             .   topInstanceNmL
+                                        =   @instancename : @lhs.topInstanceNmL
+
+SEM AGItf
+    | AGItf
+        loc             .   topInstanceNmL
+                                        =   []
+
+SEM Deriving
+    | Deriving
+        lhs             .   topInstanceNmL
+                                        =   @instancename : @lhs.topInstanceNmL
+
+SEM Declaration
+    | Class Instance InstanceUseImplicitly
+        loc             .   mbPrevInstancename
+                                        =   Nothing
+
+SEM Deriving
+    | Deriving
+        loc             .   mbPrevInstancename
+                                        =   Nothing
+
+ATTR
+  AGItf AllTopLevel AllDeclarationPlain AllFunctionBinding LeftHandSide Pattern Patterns
+    [ | | mainValExists USE {||} {False}: Bool ]
+
+SEM LeftHandSide
+    | Function
+        loc             .   mainValExists
+        								=   @name == hsnMain
+
+
+SEM Pattern
+    | Variable
+        loc             .   mainValExists
+        								=   @name == hsnMain
+
+SEM Declaration
+    | Class
+        loc             .   generDerivInfoL
+                                        =   []

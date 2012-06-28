@@ -1,0 +1,88 @@
+DATA TyAGItf
+  | AGItf       relevTy         : RelevTy
+
+DATA QualAGItf
+  | AGItf       relevQual       : RelevQual
+
+DATA CoeAGItf
+  | AGItf       relevCoe        : RelevCoe
+
+DATA AnaEval
+  -- variable, for propagation
+  | Var         av				: {UID}
+
+  -- evaluated (Bot)
+  | WHNF
+
+  -- unknown (Top)
+  | Lazy
+
+  -- meet & join are explicitly encoded because of delayed or impossible simplification
+  | Meet		opnds			: AnaEvalL
+  | Join		opnds			: AnaEvalL
+
+TYPE AnaEvalL	=	[AnaEval]
+
+SET AllAna 		= 	AnaEval AnaEvalL
+
+DATA RelevCoe
+  -- no coercion
+  | Id
+
+  -- err coercion
+  | Err			str				: String
+
+  -- composition of coercion
+  | Comp		l				: RelevCoe
+  				r				: RelevCoe
+
+  -- coercion for function
+  | Fun 		args			: RelevCoeL
+  				res				: RelevCoe
+
+  -- coercion going in the 'wrong' direction of lattice, delegating the corresponding 'cast' to the outside
+  | Cast		coe 			: RelevCoe
+
+  -- coercion casting between types
+  | CastTy		l	 			: RelevTy
+  				r				: RelevTy
+
+  -- the real coercion, for each Ana lattice, may require substitutions later on
+  | Eval		from			: AnaEval
+  				to				: AnaEval
+
+TYPE RelevCoeL	=	[RelevCoe]
+
+SET AllCoe		=	RelevCoe RelevCoeL
+
+DATA RelevQual
+  -- less than or equal in AnaEval lattice
+  | SubEval		l				: AnaEval
+  				r				: AnaEval
+
+TYPE RelevQualL	=	[RelevQual]
+
+DATA RelevTy
+  -- no ty (for now)
+  | None
+  -- error ty (for now)
+  | Err			str				: String
+
+  -- analysis info is base case of ty
+  | Ana         eval			: AnaEval
+  				-- put others here
+
+  -- function structure
+  | Fun			quant			: {RQuant}
+  				quants			: {[UID]}
+  				quals			: RelevQualL
+  				args			: RelevTyL
+  				res				: RelevTy
+
+TYPE RelevTyL	=	[RelevTy]
+TYPE MbRelevTy	=	MAYBE RelevTy
+
+SET AllRelevTy	=	RelevTy RelevTyL MbRelevTy RelevQual RelevQualL
+
+SET AllNT = AllRelevTy AllAna AllCoe
+

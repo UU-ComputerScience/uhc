@@ -1,0 +1,50 @@
+MODULE {EH101.GrinCode.Trf.MayLiveUnboxed} {grMayLiveUnboxed}
+{
+import qualified Data.Map as Map
+import EH101.Base.Common
+import EH101.GrinCode.Common
+import EH101.GrinCode
+
+}
+INCLUDE "GrinCode/AbsSyn.ag"
+{
+}
+{
+}
+{
+grMayLiveUnboxed :: (GrTag -> Unbox) -> GrModule -> GrModule
+grMayLiveUnboxed tagAllowsUnboxedLife grmod
+  = trf_Syn_GrAGItf t
+  where t = wrap_GrAGItf (sem_GrAGItf $ GrAGItf_AGItf grmod)
+            $ Inh_GrAGItf
+                { tagAllowsUnboxedLife_Inh_GrAGItf = tagAllowsUnboxedLife
+                }
+
+}
+WRAPPER GrAGItf
+
+ATTR GrAGItf AllNT [ tagAllowsUnboxedLife: {GrTag -> Unbox} | | ]
+
+ATTR GrAGItf [ | | trf: GrModule ]
+ATTR AllNT [ | | trf: SELF ]
+
+SEM GrPatLam
+  | VarNode     lhs . trf   =   case @fldL.trf of
+                                  [GrVar_KnownTag t, GrVar_Var v]  -> case @lhs.tagAllowsUnboxedLife t of
+                                                                        Unbox_FirstField -> GrPatLam_Var v
+                                                                        _                -> @trf
+                                  _ -> @trf
+
+SEM GrVal
+  | Node        lhs . trf   =   case (@fldL.trf,@lhs.tagAllowsUnboxedLife @tag.trf) of
+                                  ([f],Unbox_FirstField)
+                                    -> f
+                                  ([],Unbox_Tag t)
+                                    -> GrVal_LitInt t
+                                  _ -> @trf
+
+SEM GrExpr
+  | Store       lhs . trf   =   case @val.trf of
+                                  GrVal_Node _ _        -> @trf
+                                  GrVal_NodeAdapt _ _   -> @trf
+                                  v                     -> GrExpr_Unit v GrType_None

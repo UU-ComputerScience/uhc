@@ -1,0 +1,32 @@
+MODULE {AbsSyn.AbsSyn2} {module Expr.Expr, module Ty.Ty, module ARule.ARule, module ViewSel.ViewSel
+, AGItf (..), Decl (..), Decls, RsVwDecl (..), RsVwDecls, AttrAGDecl (..), DataAGDecl (..), DataAGAlt (..), DataAGAlts
+, DataAGFld (..), DataAGFlds, VwDecl (..), VwDecls, RlDecl (..), RlDecls, Jd (..), Jds, JdAt (..), JdAts, wrapInChunk}
+{
+import qualified Data.Set as Set
+import Opts
+import Common
+import Expr.Expr
+import Ty.Ty
+import ARule.ARule
+import ViewSel.ViewSel
+
+}
+{
+}
+{
+}
+{
+}
+{
+}
+{
+}
+INCLUDE "AbsSyn/AbsSyn2AG.ag"
+INCLUDE "AbsSyn/CommonAG.ag"
+{
+wrapInChunk :: (Nm -> a->a) -> Opts -> Nm -> a -> a
+wrapInChunk mk opts n
+  = if optFragWrap opts
+    then mk n
+    else id
+}

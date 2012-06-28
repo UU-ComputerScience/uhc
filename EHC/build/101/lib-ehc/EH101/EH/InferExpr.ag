@@ -1,0 +1,339 @@
+SEM AGItf
+  | AGItf       loc         .   (foMain,nmErrs)     =   if @lhs.isMainMod
+                                                        then let (t,e) = valGamLookupTy hsnMain @expr.gathValGam
+                                                             in  (fitsIn strongFIOpts @fe @lUniq_98_fitsIn_ty @expr.tyVarMp t (tyTopLevelMain @lhs.opts @lUniq_98_IO_tvar), e)
+                                                        else (emptyFO,[])
+                loc         .   lUniq_98_IO_tvar    :   UNIQUEREF gUniq
+                loc         .   lUniq_98_fitsIn_ty  :   UNIQUEREF gUniq
+
+ATTR AllExpr [ knTy: Ty | | ]
+
+SEM AGItf
+  | AGItf       expr        .  knTy                 =  Ty_Any
+
+ATTR AllExpr [ | | ty: Ty ]
+
+SEM Expr
+  | IConst      loc         .   constTy             =   tyInt
+  | CConst      loc         .   constTy             =   tyChar
+  | SConst      loc         .   constTy             =   tyString @lhs.opts
+  | IIConst     loc         .   constTy             =   tyInteger
+
+SEM Expr
+  | IConst CConst SConst
+    IIConst
+                loc         .   fo_                 =   ehcOptTrace @lhs.opts "Expr.?Const.loc.fo_" $
+                                                        fitsIn @lhs.fiOpts @fe @lUniq @lhs.tyVarMp @constTy @lhs.knTy
+                            .   ty                  =   foTy @fo_
+                            .   tyVarMp             =   foVarMp @fo_ `varUpd` @lhs.tyVarMp
+                loc         .   lUniq               :   UNIQUEREF gUniq
+
+{
+type DoFit = FIOpts -> VarMp -> FIOut
+
+}
+SEM Expr
+  | Var Con     (loc.ty_g_,loc.nmErrs)              =   valGamLookupTy @nm @lhs.valGam
+                loc         .   doFit               =   \o m -> fitsIn o @fe @lUniq m @ty_g_ @lhs.knTy
+                            .   fo_                 =   @doFit @lhs.fiOpts @lhs.tyVarMp
+                            .   ty                  =   foTy @fo_
+                            .   tyVarMp             =   foVarMp @fo_ `varUpd` @lhs.tyVarMp
+                loc         .   lUniq               :   UNIQUEREF gUniq
+
+SEM Expr
+  | App AppImpred
+                loc         .   argTy               =   Ty_Any
+                            .   knFunTy             =   [@argTy] `mkArrow` @lhs.knTy
+                func        .   knTy                =   @knFunTy
+                (arg.knTy,loc.ty_)                  =   tyArrowArgRes @func.ty
+                loc         .   ty                  =   @ty_
+
+SEM Expr
+  | App AppImpred
+                loc         .   argTy               :=  mkNewTyVar @lUniq
+                            .   ty                  :=  @lhs.knTy
+                arg         .   knTy                :=  @argTy
+                loc         .   lUniq               :   UNIQUEREF gUniq
+
+SEM Expr
+  | App AppImpred
+                loc         .   (knFunTy,imTy,argTy):=  let  [i,a] = mkNewUIDL 2 @lUniq
+                                                             im = mkImplsVar i
+                                                             at = mkTyVar a
+                                                        in   ([im,at] `mkArrow` @lhs.knTy,im,at)
+                loc         .   ty_                 :=  @lhs.knTy
+                loc         .   (prOccL,implsTl)    =   implsPredsTailWithLkup (varmpImplsLookupCyc2 @arg.tyVarMp) @lhs.predScope $ tyImplsWithLkup (varmpTyLookupCyc2 @arg.tyVarMp) @imTy
+                            .   tyVarMpApp          =   @prvOccTlVarMp `varUpd` @arg.tyVarMp
+                lhs         .   tyVarMp             =   @tyVarMpApp
+
+SEM Expr
+  | AppImpl     loc         .   knFunTy             =   [@argPr.ty] `mkArrow` @lhs.knTy
+                func        .   knTy                =   @knFunTy
+                loc         .   (knImpls,ty_)       =   tyArrowImplsResWithLkup (varmpTyLookupCyc2 @func.tyVarMp) @func.ty
+                            .   (knArgImpl,knResImpls)
+                                                    =   case @knImpls of
+                                                            (a:r)  -> (a,r)
+                                                            []     -> (Ty_Any,[])
+                            .   foPr                =   fitPredToEvid @lUniq @func.tyVarMp @knArgImpl @lhs.clGam
+                arg         .   knTy                =   foTy @foPr
+                            .   tyVarMp             =   foVarMp @foPr `varUpd` @func.tyVarMp
+                loc         .   ty                  =   @knResImpls `mkArrow` @ty_
+                loc         .   lUniq               :   UNIQUEREF gUniq
+
+{
+mkFreshAppImTy :: UID -> (Ty -> Ty) -> (Ty,Ty,Ty)
+mkFreshAppImTy u mkr
+  = (im,rt,[im] `mkArrow` rt)
+  where [i,r] = mkNewUIDL 2 u
+        im = mkImplsVar i
+        rt = mkr $ mkTyVar r
+
+}
+SEM Expr
+  | AppTop Rec Let
+                loc         .   (imTy,knTopTy,resTy)=   mkFreshAppImTy @lUniq_freshKnTy id
+                            .   doFit               =   \o m -> fitsIn o @fe @lUniq_fit m @resTy @lhs.knTy
+                            .   forExprTyVarMp      =   foVarMp @foKnRes `varUpd` @lhs.tyVarMp
+                loc         .   lUniq_fit           :   UNIQUEREF gUniq
+  | Let         loc         .   lUniq_freshKnTy     :   UNIQUEREF gUniq
+
+SEM Expr
+  | AppTop      loc         .   foKnRes             =   -- ehcOptTrace @lhs.opts ("Expr.AppTop.loc.foKnRes: " ++ showPP (ppTyS @lhs.tyVarMp @resTy) ++ "<=" ++ showPP (ppTyS @lhs.tyVarMp @lhs.knTy)) $
+                                                        ehcOptTrace @lhs.opts "Expr.AppTop.loc.foKnRes" $
+                                                        @doFit @lhs.fiOpts @lhs.tyVarMp
+  | Let         loc         .   foKnRes             =   ehcOptTrace @lhs.opts "Expr.Let.loc.foKnRes" $
+                                                        @doFit @lhs.fiOpts @lhs.tyVarMp
+  | Rec         loc         .   foKnRes             =   @doFit @recFiOpts @lhs.tyVarMp
+
+SEM Expr
+  | Let         loc         .   knTy                =   @knTopTy
+                            .   ty                  =   @resTy
+
+SEM Expr
+  | AppTop      loc         .   knTy                =   tyEnsureNonAny @lUniq_freshKnTy @lhs.knTy
+                            .   ty                  =   @expr.ty
+                loc         .   lUniq_freshKnTy     :   UNIQUEREF gUniq
+
+SEM Expr
+  | AppTop      loc         .   knTy                :=  @knTopTy
+                            .   ty                  :=  @resTy
+                expr        .   tyVarMp             =   @forExprTyVarMp
+
+SEM Expr
+  | Lam         loc         .   funTy               =   [Ty_Any] `mkArrow` Ty_Any
+                            .   fo_fitF_            =   @funTy `fitsIn` @lhs.knTy
+                (arg.knTy,body.knTy)                =   tyArrowArgRes (foTy @fo_fitF_)
+                arg         .   valGam              =   gamPushNew @lhs.valGam
+                loc         .   ty                  =   @lhs.knTy
+
+SEM Expr
+  | Lam         loc         .   (argTy,resTy,funTy)
+                                                    :=  let  [a,r] = mkNewTyVarL 2 @lUniq
+                                                        in   (a,r,[a] `mkArrow` r)
+                            .   fo_fitF_            :=  @funTy `fitsIn` (@lhs.tyVarMp `varUpd` @lhs.knTy)
+                arg         .   knTy                :=  @argTy
+                            .   patTyVarMp          =   foVarMp @fo_fitF_ `varUpd` @lhs.tyVarMp
+                body        .   knTy                :=  @resTy
+                            .   tyVarMp             =   @arg.patTyVarMp
+                loc         .   bodyTyVarMp         =   @body.tyVarMp
+                            .   ty                  :=  [@bodyTyVarMp `varUpd` @arg.ty] `mkArrow` @body.ty
+                loc         .   lUniq               :   UNIQUEREF gUniq
+
+SEM Expr
+  | Lam         loc         .   lamKnTyVarMp        =   @lhs.tyVarMp
+                            .   doFit               =   \o m -> fitsIn o @fe @lUniq2 m @funTy @lhs.knTy
+                            .   fo_fitF_            :=  @doFit @knFunFIOpts @lamKnTyVarMp
+                            .   forArgTyVarMp       =   foVarMp @fo_fitF_ `varUpd` @lhs.tyVarMp
+                arg         .   patTyVarMp          :=  @forArgTyVarMp
+                loc         .   ty                  :=  [@arg.ty] `mkArrow` @body.ty
+                loc         .   lUniq2              :   UNIQUEREF gUniq
+
+SEM Expr
+  | Lam         arg         .   tyGam               =   gamPushNew @lhs.tyGam
+
+{
+mkFreshLamImTy :: UID -> (Ty,Ty,Ty,Ty)
+mkFreshLamImTy u
+  = (im,at,rt,[im,at] `mkArrow` rt)
+  where [i,a,r] = mkNewUIDL 3 u
+        im = mkImplsVar i
+        at = mkTyVar a
+        rt = mkTyVar r
+
+}
+SEM Expr
+  | Lam         loc         .   (imTy,argTy,resTy,funTy)
+                                                    :=  mkFreshLamImTy @lUniq
+                loc         .   (knImpls,_,_)       =   tyArrowImplsArgResWithLkup (varmpTyLookupCyc2 @forArgTyVarMp) @funTy
+                            .   ty                  :=  (@knImpls ++ [@arg.ty]) `mkArrow` @body.ty
+
+SEM Expr
+  | LamImpl     loc         .   funTy               =   let  r = mkNewTyVar @lUniq
+                                                        in   [@argPr.ty] `mkArrow` r
+                            .   doFit               =   \o m -> fitsIn o @fe @lUniq2 m @funTy @lhs.knTy
+                            .   fo_fitF_            =   @doFit (implFIOpts {fioBindRFirst=True}) @lhs.tyVarMp
+                            .   knImplsVarMp        =   foVarMp @fo_fitF_ `varUpd` @lhs.tyVarMp
+                            .   (knImpls,ty_)       =   tyArrowImplsResWithLkup (varmpTyLookupCyc2 @knImplsVarMp) @funTy
+                            .   (knArgImpl,knResImpls)
+                                                    =   hdAndTl @knImpls
+                            .   foPr                =   fitPredToEvid @lUniq4 @knImplsVarMp @knArgImpl @lhs.clGam
+                            .   forArgTyVarMp       =   foVarMp @foPr `varUpd` @knImplsVarMp
+                arg         .   knTy                =   foTy @foPr
+                            .   patTyVarMp          =   @forArgTyVarMp
+                body        .   knTy                =   @knResImpls `mkArrow` @ty_
+                            .   tyVarMp             =   @arg.patTyVarMp
+                loc         .   ty                  =   [@knArgImpl] `mkArrow` @body.ty
+                loc         .   lUniq               :   UNIQUEREF gUniq
+                loc         .   lUniq2              :   UNIQUEREF gUniq
+                loc         .   lUniq4              :   UNIQUEREF gUniq
+
+SEM Expr
+  | Lam LamImpl
+                arg         .   tyVarMp             =   @arg.patTyVarMp
+                body        .   tyVarMp             :=  @arg.tyVarMp
+
+SEM Expr
+  | Undefined CaseAltFail
+                loc         .   ty                  =   tyEnsureNonAny @lUniq @lhs.knTy
+                loc         .   lUniq               :   UNIQUEREF gUniq
+
+SEM Expr
+  | TypeAs      loc         .   fo_                 =   @tyExpr.ty `fitsIn` @lhs.knTy
+                expr        .   knTy                =   @tyExpr.ty
+
+SEM Expr
+  | TypeAs      loc         .   tyTy                =   @tyExpr.ty
+                            .   ty_q_               =   @tyTy
+
+SEM Expr
+  | TypeAs      loc         .   fo_                 :=  @ty_q_ `fitsIn` (@lhs.tyVarMp `varUpd` @lhs.knTy)
+                expr        .   knTy                :=  foVarMp @fo_ `varUpd` @ty_q_
+                            .   tyVarMp             =   foVarMp @fo_ `varUpd` @lhs.tyVarMp
+
+SEM Expr
+  | TypeAs      loc         .   tyTy                :=  @lhs.tyVarMp `varUpd` @tyExpr.ty
+                            .   gTyTvS              =   @tyTyUpdFreeTvarS `Set.union` @valTyUpdFreeTvarS
+                            .   tyVarWildS          =   Map.keysSet @tyExpr.tyVarWildMp
+                            .   ty_q_               :=  tyQuantifyOuter (const kiStar {- TBD -}) (`Set.member` (@tyVarWildS `Set.union` @gTyTvS)) @tyTy
+                            .   fo_                 :=  fitsIn @knTyFIOpts @fe @lUniq @lhs.tyVarMp @ty_q_ @lhs.knTy
+                            .   ty_q_2_VarMp        =   foVarMp @fo_ `varUpd` @lhs.tyVarMp
+                            .   knTyDown            =   mkTyVar @lUniq3
+                            .   fo_fitDown          =   fitsIn @downFIOpts @fe @lUniq2 @ty_q_2_VarMp @knTyDown @ty_q_
+                expr        .   knTy                :=  @knTyDown
+                            .   tyVarMp             :=  foVarMp @fo_fitDown `varUpd` @ty_q_2_VarMp
+                loc         .   lUniq               :   UNIQUEREF gUniq
+                loc         .   lUniq2              :   UNIQUEREF gUniq
+                loc         .   lUniq3              :   UNIQUEREF gUniq
+
+{
+dfCheck :: UID -> FIOpts -> FIEnv -> HsName -> ValGam -> VarMp -> Ty -> (Ty,Ty,Ty,FIOut,[Err])
+dfCheck uniq fiOpts fe fldNm valGam knTyVarMp knTy
+  = (gTy,knDataTy,knFldTy,fo,nmErrs)
+  where (gTy,nmErrs) = valGamLookupTy (hsnFldUpd fldNm) valGam
+        (_,u1,u2)    = mkNewLevUID2 uniq
+        (knFldTy,knDataTy,knFldUpdTy)
+                     = (e,df,v `mkArrow` knTy)
+                     where v@[e,df] = mkNewTyVarL 2 u1
+        fo           = fitsIn fiOpts fe u2 knTyVarMp gTy knFldUpdTy
+
+}
+SEM DataFieldExpr
+  | Upd         (loc.gTy,loc.knDataTy,expr.knTy,loc.fo_,loc.nmErrs)
+                                                    =   dfCheck @lUniq @lhs.fiOpts @fe @nm @lhs.valGam @lhs.tyVarMp @lhs.knTy
+                dataFieldExpr
+                            .   knTy                =   @knDataTy
+                            .   tyVarMp             =   foVarMp @fo_ `varUpd` @lhs.tyVarMp
+                loc         .   ty                  =   @knDataTy
+                loc         .   lUniq               :   UNIQUEREF gUniq
+  | Con         loc         .   (gTy,nmErrs)        =   valGamLookupTy (hsnUn @nm) @lhs.valGam
+                            .   fo_                 =   let [u] = mkNewTyVarL 1 @lUniq
+                                                        in  fitsIn @lhs.fiOpts @fe @lUniq2 @lhs.tyVarMp (@gTy) ([@lhs.knTy] `mkArrow` u)
+                            .   ty                  =   @lhs.knTy
+                lhs         .   tyVarMp             =   foVarMp @fo_ `varUpd` @lhs.tyVarMp
+                loc         .   lUniq               :   UNIQUEREF gUniq
+                loc         .   lUniq2              :   UNIQUEREF gUniq
+  | Expr        loc         .   ty                  =   @lhs.knTy
+
+ATTR DataFieldExpr [ | updExprTyVarMp: VarMp | updExprTy: Ty ]
+
+SEM Expr
+  | DataFields  dataFieldExpr
+                            .   updExprTyVarMp      =   @lhs.tyVarMp
+
+SEM DataFieldExpr
+  | Expr        expr        .   tyVarMp             =   @lhs.updExprTyVarMp
+                            .   knTy                =   mkNewTyVar @lUniq
+                lhs         .   updExprTyVarMp      =   @expr.tyVarMp
+                            .   updExprTy           =   @expr.ty
+                            .   tyVarMp             =   @lhs.tyVarMp
+                loc         .   lUniq               :   UNIQUEREF gUniq
+  | Con         lhs         .   updExprTy           =   Ty_Any
+
+SEM Expr
+  | DataFields  (dataFieldExpr.knTy,dataFieldExpr.tyVarMp,loc.dfErrs,loc.foL)
+                                                    =   case @dataFieldExpr.mbConNm of
+                                                          Just _
+                                                            -> (@lhs.knTy,@lhs.tyVarMp,[],[])
+                                                          _ -> (t,c,e,foL)
+                                                            where (t,_,c,e,foL,_)
+                                                                    = foldr (\fldNm (knTy,updExprTy,tyVarMp,errL,foL,u)
+                                                                               -> let (u',u1,u2) = mkNewLevUID2 u
+                                                                                      (_,knDTy,knFTy,fo1,e1) = dfCheck u1 @lhs.fiOpts @fe fldNm @lhs.valGam tyVarMp knTy
+                                                                                      tyVarMp' = foVarMp fo1 `varUpd` tyVarMp
+                                                                                      (gTy,nmErrs) = valGamLookupTy fldNm @lhs.valGam
+                                                                                      fo2 = fitsIn @fldFIOpts @fe u2 tyVarMp' gTy ([updExprTy] `mkArrow` knFTy)
+                                                                                  in  (knDTy, updExprTy, foVarMp fo2 `varUpd` tyVarMp', foErrL fo2 ++ foErrL fo1 ++ e1 ++ nmErrs ++ errL, fo1:fo2:foL, u')
+                                                                            )
+                                                                            (@lhs.knTy,@dataFieldExpr.updExprTy,@dataFieldExpr.updExprTyVarMp,[],[],@lUniq)
+                                                                            (Set.toList $ Set.unions [ Map.keysSet (dtiFldMp i) | i <- @dtiL ] `Set.difference` @fldS)
+                loc         .   lUniq               :   UNIQUEREF gUniq
+
+SEM RecExpr
+  | Empty       loc         .   fo_                 =   fitsIn (@lhs.fiOpts) @fe @lUniq @lhs.tyVarMp tyRecEmpty @lhs.knTy
+                            .   ty                  =   foTy @fo_
+                lhs         .   tyVarMp             =   foVarMp @fo_ `varUpd` @lhs.tyVarMp
+                loc         .   lUniq               :   UNIQUEREF gUniq
+  | Ext Upd     loc         .   (knRowTy,knRecTy,knTailTy,knExprTy)
+                                                    =   let  [r,e] = mkNewTyVarL 2 @lUniq
+                                                             tl = hsnRec `mkConApp` [r]
+                                                        in   (r, tl `mkTyRecExt` [(@nm,e)], tl, e)
+                            .   foKnRec             =   fitsIn @knFIOpts @fe @lUniq2 @lhs.tyVarMp @knRecTy @lhs.knTy
+                loc         .   recTyVarMp          =   foVarMp @foKnRec `varUpd` @lhs.tyVarMp
+                (loc.knRecHasLab,loc.recKnTlTy,expr.knTy)
+                                                    =   maybe (False,@knTailTy,@knExprTy) (\(r,e) -> (True,r,e)) $ tyRecExtrWithLkup (varmpTyLookupCyc2 @recTyVarMp) @nm $ foTy @foKnRec
+                recExpr     .   tyVarMp             =   @recTyVarMp
+                loc         .   ty                  =   foTy @foKnRec
+                loc         .   lUniq               :   UNIQUEREF gUniq
+                loc         .   lUniq2              :   UNIQUEREF gUniq
+  | Ext         recExpr     .   knTy                =   @recKnTlTy
+  | Upd         recExpr     .   knTy                =   @recKnTlTy `mkTyRecExt` [(@nm,mkNewTyVar @lUniq3)]
+                loc         .   lUniq3              :   UNIQUEREF gUniq
+
+SEM Expr
+  | Sel         (loc.knRowTy,loc.knExprTy)          =   let r = mkNewTyVar @lUniq_freshKnTy
+                                                        in  (r, (hsnRec `mkConApp` [r]) `mkTyRecExt` [(@lbl,@lhs.knTy)])
+                expr        .   knTy                =   @knExprTy
+                loc         .   (_,ty)              =   maybe (Ty_Any,Ty_Any) id (tyRecExtrWithLkup (varmpTyLookupCyc2 @expr.tyVarMp) @lbl @expr.ty)
+                loc         .   lUniq_freshKnTy     :   UNIQUEREF gUniq
+  | Rec         loc         .   knRecTy             =   let  r = mkNewTyVar @lUniq_freshKnTy
+                                                        in   hsnRec `mkConApp` [r]
+                            .   fo_                 =   fitsIn @recFiOpts @fe @lUniq2 @lhs.tyVarMp @knRecTy @lhs.knTy
+                recExpr     .   knTy                =   @knRecTy
+                            .   tyVarMp             =   foVarMp @fo_ `varUpd` @lhs.tyVarMp
+                loc         .   ty                  =   foTy @fo_
+                loc         .   lUniq_freshKnTy     :   UNIQUEREF gUniq
+                loc         .   lUniq2              :   UNIQUEREF gUniq
+
+SEM Expr
+  | Rec         loc         .   knRecTy             :=  @knTopTy
+                            .   fo_                 :=  @foKnRes
+                recExpr     .   tyVarMp             :=  @forExprTyVarMp
+                loc         .   ty                  :=  @resTy
+
+SEM Expr
+  | Sel         (loc.knRowTy,loc.knExprTy)          :=  let r = mkNewTyVar @lUniq_freshKnTy
+                                                        in  (r, [Ty_Impls Impls_Nil] `mkArrow` ((hsnRec `mkConApp` [r]) `mkTyRecExt` [(@lbl,@lhs.knTy)]))
+                loc         .   (_,ty)              :=  maybe (Ty_Any,Ty_Any) id (tyRecExtrWithLkup (varmpTyLookupCyc2 @expr.tyVarMp) @lbl $ snd $ tyArrowImplsResWithLkup (varmpTyLookupCyc2 @expr.tyVarMp) @expr.ty)
+
+SEM Expr
+  | DynVar      loc         .   ty                  =   Ty_Any

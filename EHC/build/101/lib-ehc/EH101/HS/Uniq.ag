@@ -1,0 +1,5 @@
+ATTR AllNT [ | gUniq: UID | ]
+
+ATTR AGItf [ gUniq: UID | | ]
+
+

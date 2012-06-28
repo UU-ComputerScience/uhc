@@ -1,0 +1,139 @@
+ATTR Ty [ | | appFunNm: HsName ]
+
+SEM Ty
+  | Con         lhs         .   appFunNm        =   @nm
+  | App         loc         .   appFunNm        =   @func.appFunNm
+
+SEM Ty
+  | Ext         loc         .   appFunNm        =   @ty.appFunNm
+  | * - Con App Ext
+                lhs         .   appFunNm        =   hsnUnknown
+
+SEM Ty
+  | Ext App     loc         .   appFunNm        :   {HsName}
+
+SEM Ty
+  | App         loc         .   appIsArrow      =   hsnIsArrow @func.appFunNm
+                            .   appIsLikeProd   =   hsnIsProd @func.appFunNm
+                            .   appIsOther      =   not (@appIsArrow || @appIsLikeProd)
+
+SEM Ty
+  | App         loc         .   appIsRec        =   hsnIsRec @func.appFunNm
+                            .   appIsSum        =   hsnIsSum @func.appFunNm
+                            .   appIsRecOrSum   =   @appIsRec || @appIsSum
+                            .   appIsLikeProd   :=  hsnIsProd @func.appFunNm || @appIsRec
+
+SEM Ty
+  | App         loc         .   appIsLikeProd   :   Bool
+                loc         .   appIsArrow      :   Bool
+                loc         .   appIsRec        :   Bool
+
+ATTR AllTy [ isAtTop: Bool | | ]
+
+SEM TyAGItf
+  | AGItf       ty          .   isAtTop         =   True
+
+SEM Ty
+  | *           loc         .   isAtTop         =   False
+
+ATTR AllTy [ isRow: Bool | | ]
+
+SEM TyAGItf
+  | AGItf       ty          .   isRow           =   False
+
+SEM Ty
+  | App         loc         .   argIsRow        =   @isSpineRoot && @appIsRecOrSum
+                arg         .   isRow           =   @argIsRow
+  | * - App     loc         .   isRow           =   False
+
+SEM Ty
+  | App     	loc         .   argIsRow   		:   Bool
+
+ATTR
+  AllTyTy
+    PredSeq
+    [ appSpinePos : Int | | ]
+
+SEM TyAGItf
+  | AGItf       ty          .   appSpinePos     =   0
+
+SEM Ty
+  | App         func        .   appSpinePos     =   @lhs.appSpinePos + 1
+                arg         .   appSpinePos     =   0
+
+SEM Ty
+  | TBind       ty          .   appSpinePos     =   0
+
+SEM Ty
+  | Ext         ty          .   appSpinePos     =   @lhs.appSpinePos + 1 {- 0 -}
+                extTy       .   appSpinePos     =   0
+
+SEM Pred
+  | *           loc         .   appSpinePos     =   0
+
+SEM PredSeq
+  | Cons        tl          .   appSpinePos     =   @lhs.appSpinePos + 1
+
+{
+data TyQuCtxt = TyQuCtxtArrow | TyQuCtxtProd | TyQuCtxtOnTop | TyQuCtxtOther deriving (Show,Eq)
+
+}
+SEM Ty
+  | App
+    Ext
+                loc         .   isSpineRoot     =   @lhs.appSpinePos == 0
+
+SEM PredSeq
+  | Cons        loc         .   isSpineRoot     =   @lhs.appSpinePos == 0
+
+SEM Ty
+  | App         loc         .   isArrowRoot     =   @appIsArrow && @isSpineRoot
+                            .   isArrowArg      =   @appIsArrow && @lhs.appSpinePos == 1
+                            .   isProdRoot      =   @appIsLikeProd && @isSpineRoot
+
+ATTR Ty [ | | isArrow: Bool ]
+
+SEM Ty
+  | App         lhs         .   isArrow         =   @isArrowRoot
+  | * - App     lhs         .   isArrow         =   False
+
+ATTR AllTy [ tyCtxt: TyQuCtxt | | ]
+
+SEM Ty
+  | App         loc         .   tyCtxt          =   if      @appIsArrow     then TyQuCtxtArrow
+                                                    else if @appIsLikeProd  then TyQuCtxtProd
+                                                                            else TyQuCtxtOther
+  | * - App     loc         .   tyCtxt          =   TyQuCtxtOther
+
+SEM TyAGItf
+  | AGItf       ty          .   tyCtxt          =   TyQuCtxtOnTop
+
+ATTR Ty [ | | isPred: Bool ]
+
+SEM Ty
+  | Pred Impls  lhs         .   isPred          =   True
+  | App         lhs         .   isPred          =   if @isArrowArg then @arg.isPred else False
+  | * - Pred Impls App
+                lhs         .   isPred          =   False
+
+SEM Ty
+  | App         loc         .   isArrowArg      :   Bool
+                loc         .   isSpineRoot     :   Bool
+                loc         .   isArrowRoot     :   Bool
+
+SEM PredSeq
+  | Cons        loc         .   isSpineRoot     :   Bool
+
+SEM Ty
+  | TBind
+    Lam
+                loc         .   introTVarL      =   [@tv]
+                            .   introTVarS      =   Set.singleton @tv
+
+SEM Ty
+  | TBind
+    Lam
+                loc         .   introTVarS      :   TyVarIdS
+
+ATTR AllTyAndFlds [ | | self: SELF ]
+

@@ -1,0 +1,181 @@
+MODULE {EH101.Ty.Trf.MergePreds} {tyMergePreds
+, TyMergePredOut (..)
+, TQOGam}
+{
+import EH.Util.Utils
+import EH101.Base.Common
+import EH101.Base.Builtin
+import EH101.Ty
+import EH101.VarMp
+import EH101.Substitutable
+import EH101.Gam
+import qualified Data.Set as Set
+import qualified Data.Map as Map
+import Data.List as List
+import Data.Maybe
+import EH.Util.Pretty
+
+}
+{
+}
+{
+}
+{
+}
+{
+}
+INCLUDE "Ty/AbsSyn.ag"
+INCLUDE "Ty/CommonAG.ag"
+INCLUDE "Ty/TyVarCommon.ag"
+WRAPPER TyAGItf
+
+PRAGMA nocycle
+
+{
+tyMergePreds :: [PredOcc] -> Ty -> TyMergePredOut
+tyMergePreds prL ty
+  = let  t  =  wrap_TyAGItf
+                  (sem_TyAGItf  (TyAGItf_AGItf ty))
+                  (Inh_TyAGItf  { prLL_Inh_TyAGItf          = [prL]
+                                })
+    in   TyMergePredOut
+            { tmpoTy                 = prTy_Syn_TyAGItf t
+            , tmpoInsPrIdSet         = insPrIdSet_Syn_TyAGItf t
+            , tmpoImplsVarMp         = assocImplsLToVarMp (prImpls_Syn_TyAGItf t)
+            , tmpoImplsPrvReq        = prvReqs_Syn_TyAGItf t
+            }
+
+}
+{
+type InsPrPrvOcc = Assoc PredOcc [ImplsProveOcc]
+type PrvReqs = [InsPrPrvOcc]
+
+data TyMergePredOut
+  = TyMergePredOut
+      { tmpoTy               ::  Ty						-- resulting ty
+      , tmpoInsPrIdSet       ::  Set.Set PredOccId		-- idents of merged predicates
+      , tmpoImplsVarMp       ::  VarMp					-- additional bindings, for implicits
+      , tmpoImplsPrvReq      ::  PrvReqs				-- additional occurrences of predicate occurrences, arising from implicits
+      }
+
+instance Show TyMergePredOut where
+  show _ = ""
+
+instance PP TyMergePredOut where
+  pp tmpo = pp (tmpoImplsVarMp tmpo) >-< ppAssocLV (assocLMapElt ppBracketsCommas $ tmpoImplsPrvReq tmpo)
+
+}
+{
+type TQOGam = Gam HsName TyMergePredOut
+
+}
+SEM Ty
+  | *           loc         .   isQuLocExtraHook
+  											=   True
+
+SEM TyAGItf
+  | AGItf       ty          .   pol         =   polCovariant
+  				ty			.	frTvSL		<	ty.pol
+
+ATTR Ty [ | | mbImpls: {Maybe Impls} ]
+
+SEM Ty
+  | Impls       lhs         .   mbImpls                 =   Just @impls.prTy
+  | App         lhs         .   mbImpls                 =   if @isArrowArg then @arg.mbImpls else Nothing
+  | * - App Impls
+                lhs         .   mbImpls                 =   Nothing
+
+ATTR AllTy [ mbPrLoc: {Maybe Impls} | | ]
+
+SEM TyAGItf
+  | AGItf       ty          .   mbPrLoc                 =   Nothing
+
+SEM Ty
+  | App         loc         .   (implsPrL,mbTail)       =   maybe ([],Nothing) implsPredsMbTail @func.mbImpls
+                arg         .   mbPrLoc                 =   @mbTail
+                func        .   mbPrLoc                 =   Nothing
+  | Var         loc         .   implsPrL                =   []
+  | * - App Var Con Any
+                loc         .   mbPrLoc                 =   Nothing
+
+{
+prLLArrowSplit :: TyVarIdS -> [[PredOcc]] -> ([PredOcc],[[PredOcc]])
+prLLArrowSplit frTvS prLL
+  =  let  (h,r) = partition (all (`Set.member` frTvS) . varFree) . concat $ prLL
+     in   (h,[r])
+
+}
+ATTR TyAGItf AllTy [ prLL: {[[PredOcc]]} | | ]
+
+SEM Ty
+  | Var         loc         .   (herePrL,_)             =   prLLArrowSplit @qSurrTvS @lhs.prLL
+  | App         (loc.herePrL,func.prLL,arg.prLL)        =   if @isSpineRoot
+                                                            then  if @appIsArrow
+                                                                  then  let  (h,r) = prLLArrowSplit (@frTvSL !! 1 `Set.union` @lhs.qSurrTvS) @lhs.prLL
+                                                                        in   (h,[],r)
+                                                                  else  let  (h,_) = prLLArrowSplit (@frTvS `Set.union` @lhs.qSurrTvS) @lhs.prLL
+                                                                        in   (h,[],[])
+                                                            else  ([],[],[])
+
+{
+toInsPrPrvOcc :: [PredOcc] -> [ImplsProveOcc] -> [InsPrPrvOcc]
+toInsPrPrvOcc ps ipos = [ (p,ipos) | p <- ps ]
+
+}
+ATTR AllTy [ | | insPrL USE {++} {[]} : {[PredOcc]} ]
+
+SEM Ty
+  | App         loc         .   candPrL         =   @herePrL ++ @func.insPrL ++ @arg.insPrL
+  | Var         loc         .   candPrL         =   @herePrL
+  | App Var     (loc.insHerePrL,lhs.insPrL)     =   case @lhs.mbPrLoc of
+                                                      Just (Impls_Tail _ ipos)
+                                                        -> (toInsPrPrvOcc @candPrL ipos,[])
+                                                      _ -> ([],@candPrL)
+                loc         .   forPrTyOccL     =   @implsPrL ++ @insHerePrL
+
+ATTR TyAGItf AllTy [ | | insPrIdSet USE {`Set.union`} {Set.empty} : {Set.Set PredOccId} ]
+
+SEM Ty
+  | App Var     loc         .   insPrIdSet      =   Set.fromList (map (poPoi . fst) @insHerePrL)
+  | App         lhs         .   insPrIdSet      =   @insPrIdSet `Set.union` @func.insPrIdSet `Set.union` @arg.insPrIdSet
+
+{
+prOccLImpls :: Maybe Impls -> [InsPrPrvOcc] -> AssocL ImplsVarId Impls
+prOccLImpls mbI prL
+  = case mbI of
+      Just i -> [( implsTailVar i
+                 , foldr (\(p,_) im
+                             -> Impls_Cons (poId p) (poPr p) (poPoi p)
+                                           (poRange p)
+                                           [] im
+                         ) Impls_Nil prL)]
+      _      -> []
+
+}
+ATTR TyAGItf [ | | prImpls: {AssocL ImplsVarId Impls} ]
+ATTR AllTy [ | prImpls: {AssocL ImplsVarId Impls} | ]
+
+SEM TyAGItf
+  | AGItf       ty          .   prImpls         =   []
+
+SEM Ty
+  | App         lhs         .   prImpls         =   prOccLImpls @lhs.mbPrLoc @insHerePrL ++ @arg.prImpls
+  | Var         lhs         .   prImpls         =   prOccLImpls @lhs.mbPrLoc @insHerePrL ++ @lhs.prImpls
+
+{
+prOccLPrvReqs :: Maybe Impls -> [InsPrPrvOcc] -> PrvReqs
+prOccLPrvReqs mbI prL = maybe [] (const prL) mbI
+
+}
+ATTR TyAGItf AllTy [ | | prvReqs USE {++} {[]}: PrvReqs ]
+
+SEM Ty
+  | App         lhs         .   prvReqs         =   prOccLPrvReqs @lhs.mbPrLoc @insHerePrL ++ @func.prvReqs ++ @arg.prvReqs
+  | Var         lhs         .   prvReqs         =   prOccLPrvReqs @lhs.mbPrLoc @insHerePrL
+
+ATTR TyAGItf [ | | prTy: Ty ]
+ATTR AllTyAndFlds [ | | prTy: SELF ]
+
+SEM Ty
+  | Var         lhs         .   prTy            =   mkTyImpls (map (poPr . fst) @forPrTyOccL) $ Ty_Var @tv @categ.prTy
+  | App         loc         .   prTy            =   mkTyImpls (map (poPr . fst) @forPrTyOccL) $ maybe (Ty_App @func.prTy @arg.prTy) (const @arg.prTy) @func.mbImpls
