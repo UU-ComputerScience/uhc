@@ -377,7 +377,7 @@ jsModDeps (J.JavaScriptModule_Mod _ d _) = d
 
 %%[(8 javascript)
 ATTR CExpr CBound [ | | js: {J.Expr} ]
-ATTR CExpr AllBind [ | | dps USE {++} {[]} : {[String]} ]
+ATTR CExpr AllBind [ | | dps USE {`Set.union`} {Set.empty} : {Set.Set String} ]
 %%]
 
 %%[(8 javascript)
@@ -402,7 +402,7 @@ SEM CExpr
                             .   js              =   if null @argMbConL
                                                     then (@mkResJS $ @mkFFI [])
                                                     else (jsVar $ mkHNm $ forextractEnt @foreignEntInfo)
-                            .   dps             =   forextractIncludes @foreignEntInfo
+                            .   dps             =   Set.fromList $ forextractIncludes @foreignEntInfo
 
   | Let         loc         .   (jbindsLet,jstatsLet)
                                                 =   if @isGlobal
@@ -697,7 +697,7 @@ ATTR CodeAGItf CModule [ | | js: {J.JavaScriptModule} ]
 
 %%[(8 javascript)
 SEM CModule
- | Mod          lhs         .   js              =   J.JavaScriptModule_Mod (@jsModTraceStats ++ @jsModInitStats ++ @jmodStats) @expr.dps @jmodStatsMain
+ | Mod          lhs         .   js              =   J.JavaScriptModule_Mod (@jsModTraceStats ++ @jsModInitStats ++ @jmodStats) (Set.toList @expr.dps) @jmodStatsMain
 %%[[8
                 loc         .   jsModInitStats  =   []
 %%][50
