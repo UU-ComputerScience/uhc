@@ -7,7 +7,7 @@ JavaScript compilation
 %%[(8 codegen javascript) module {%{EH}EHC.CompilePhase.CompileJavaScript}
 %%]
 
-%%[(8 codegen javascript) import(System.Directory)
+%%[(8 codegen javascript) import(System.Directory, Data.List(intercalate))
 %%]
 
 -- general imports
@@ -53,17 +53,22 @@ cpJavaScript archive files
 cpCompileJavaScript :: FinalCompileHow -> [HsName] -> HsName -> EHCompilePhase ()
 cpCompileJavaScript how othModNmL modNm
   = do { cr <- get
+       ; cpMsg modNm VerboseALot "CPJAVASCRIPT"
        ; let  (ecu,_,opts,fp) = crBaseInfo modNm cr
               mbJs            = ecuMbJavaScript ecu
               fpO m f = mkPerModuleOutputFPath opts True m f Cfg.suffixJavaScriptLib
               fpM     = fpO modNm fp
               fpExec  = mkPerExecOutputFPath opts modNm fp (Just "js")
               fpHtml  = mkPerExecOutputFPath opts modNm fp (Just "html")
+              fpDeps  = map fpathFromStr (jsModDeps (fromJust mbJs))
+
+       ; hiInfo <- sgetHIInfo opts
        ; when (isJust mbJs && targetIsJavaScript (ehcOptTarget opts))
               (do { cpMsg modNm VerboseALot "Emit JavaScript"
                   ; when (ehcOptVerbosity opts >= VerboseDebug)
                          (do { lift $ putStrLn $ "fpO   : " ++ fpathToStr fpM
                              ; lift $ putStrLn $ "fpExec: " ++ fpathToStr fpExec
+                             ; lift $ putStrLn $ "module dependencies:" ++ intercalate "," (jsModDeps (fromJust mbJs))
                              })
 %%[[8
                   ; let ppMod = ppJavaScriptModule (fromJust mbJs)
@@ -76,13 +81,16 @@ cpCompileJavaScript how othModNmL modNm
                       FinalCompile_Exec
 %%[[50
                         | ehcOptWholeProgOptimizationScope opts
-                        -> do { cpJavaScript (fpathToStr fpExec) (rts ++ map fpathToStr [fpM])
-                              ; mkHtml fpHtml [fpathToStr fpExec]
+                        -> do { cpJavaScript (fpathToStr fpExec) (rts ++ [fpathToStr fpM])
+                              ; mkHtml fpHtml ((map fpathToStr fpDeps) ++ [fpathToStr fpExec])
                               }
 %%]]
                         | otherwise
-                        -> do { cpJavaScript (fpathToStr fpExec) (map fpathToStr [fpM])
-                              ; mkHtml fpHtml $ rts ++ map fpathToStr ([ fpO m fp | m <- othModNmL, let (_,_,_,fp) = crBaseInfo m cr ] ++ [fpExec])
+                        -> do { cpJavaScript (fpathToStr fpExec) [fpathToStr fpM]
+                              ; mkHtml fpHtml $ ( map fpathToStr fpDeps )
+                                               ++ rts 
+                                               ++ [ fpathToStr (fpO m fp) | m <- othModNmL, let (_,_,_,fp) = crBaseInfo m cr ] 
+                                               ++ [ fpathToStr fpExec ]
                               }
                         where rts = map (Cfg.mkInstalledRts opts Cfg.mkJavaScriptLibFilename Cfg.INST_LIB (Cfg.installVariant opts)) Cfg.libnamesRts
 %%[[8

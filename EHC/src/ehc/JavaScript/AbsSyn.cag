@@ -13,8 +13,9 @@ DATA AGItf
   | AGItf       module          : JavaScriptModule
 
 DATA JavaScriptModule
-  | Mod			decls			: StatL
-  				main			: StatL
+  | Mod		decls			: StatL
+  				deps      : {[String]}
+          main			: StatL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

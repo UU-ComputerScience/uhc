@@ -301,7 +301,7 @@ SEM CExpr
 %%% Generation: expr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 javascript) hs
+%%[(8 javascript) hs export(jsModDeps)
 -- | tracing
 jsTr :: PP x => String -> x -> Seq.Seq J.Stat
 jsTr m x = Seq.singleton $ J.Stat_Expr $ J.Expr_Call (jsVar $ mkHNm "trace") [J.Expr_Str m, J.Expr_Inline $ showPP $ pp x]
@@ -371,10 +371,13 @@ jsBody mkRet binds stats lastExpr
                 Seq.map (\(JBind _ n _ e _) -> J.jsVarDecl n e) binds
     `Seq.union` stats
     `Seq.union` Seq.fromList (map mkRet $ maybeToList lastExpr)
+
+jsModDeps (J.JavaScriptModule_Mod _ d _) = d
 %%]
 
 %%[(8 javascript)
 ATTR CExpr CBound [ | | js: {J.Expr} ]
+ATTR CExpr AllBind [ | | dps USE {++} {[]} : {[String]} ]
 %%]
 
 %%[(8 javascript)
@@ -399,6 +402,8 @@ SEM CExpr
                             .   js              =   if null @argMbConL
                                                     then (@mkResJS $ @mkFFI [])
                                                     else (jsVar $ mkHNm $ forextractEnt @foreignEntInfo)
+                            .   dps             =   forextractIncludes @foreignEntInfo
+
   | Let         loc         .   (jbindsLet,jstatsLet)
                                                 =   if @isGlobal
                                                     then ( @binds.jbinds, Seq.empty )
@@ -456,6 +461,7 @@ ATTR CExpr [ | | argUnpackWrapL : {[J.Expr -> J.Expr]} ]
 
 SEM CExpr
   | FFI         lhs         .   argUnpackWrapL  =   @mkArgsJS
+                
   | App         (loc.argUnpackWrap,loc.argUnpackWrapL)
                                                 =   hdAndTl' id @func.argUnpackWrapL
                 lhs         .   argUnpackWrapL  =   if @isTopApp' then [] else @argUnpackWrapL
@@ -468,6 +474,7 @@ ATTR CExpr [ | | resPackWrap : {J.Expr -> J.Expr} ]
 
 SEM CExpr
   | FFI         lhs         .   resPackWrap     =   @mkResJS
+                
   | App         lhs         .   resPackWrap     =   if @isTopApp' then id else @func.resPackWrap
   | * - FFI App Ann
                 lhs         .   resPackWrap     =   id
@@ -690,7 +697,7 @@ ATTR CodeAGItf CModule [ | | js: {J.JavaScriptModule} ]
 
 %%[(8 javascript)
 SEM CModule
- | Mod          lhs         .   js              =   J.JavaScriptModule_Mod (@jsModTraceStats ++ @jsModInitStats ++ @jmodStats) @jmodStatsMain
+ | Mod          lhs         .   js              =   J.JavaScriptModule_Mod (@jsModTraceStats ++ @jsModInitStats ++ @jmodStats) @expr.dps @jmodStatsMain
 %%[[8
                 loc         .   jsModInitStats  =   []
 %%][50

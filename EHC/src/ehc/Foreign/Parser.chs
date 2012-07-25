@@ -110,10 +110,16 @@ pPrimCall dfltNm
 
 pJavaScriptCall :: Maybe String -> ForeignParser JavaScriptCall
 pJavaScriptCall dfltNm
-  =   JavaScriptCall_Id nm   <$> pMb pForeignExpr
+  =   (\inclJs e -> JavaScriptCall_Id nm (appendJs inclJs) e) <$> pMb pIncludeJs <*> pMb pForeignExpr
   <|> JavaScriptCall_Dynamic <$  pDYNAMIC
   <|> JavaScriptCall_Wrapper <$  pWRAPPER
   where nm = maybe "" id dfltNm
+
+appendJs (Just x) = Just (x ++ ".js")
+appendJs Nothing  = Nothing
+
+pIncludeJs :: ForeignParser String
+pIncludeJs = pForeignVar <* (pDOT <* pKeyTk "js")
 
 pForeignVar :: ForeignParser String
 pForeignVar = tokGetVal <$> (pVARID <|> pCONID)
