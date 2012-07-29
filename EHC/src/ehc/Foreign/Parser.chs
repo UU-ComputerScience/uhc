@@ -119,7 +119,7 @@ appendJs (Just x) = Just (x ++ ".js")
 appendJs Nothing  = Nothing
 
 pIncludeJs :: ForeignParser String
-pIncludeJs = pForeignVar <* (pDOT <* pKeyTk "js")
+pIncludeJs = pForeignVar <* pDOT <* pJS
 
 pForeignVar :: ForeignParser String
 pForeignVar = tokGetVal <$> (pVARID <|> pCONID)
