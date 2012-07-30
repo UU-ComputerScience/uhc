@@ -450,7 +450,7 @@ primPureModAttr  ::  JSString -> (a -> b)
   
 Since a potentially large tree of objects will be cloned by these pure
 functions, they should be used with care. The cloning method used is a copy of
-the cloning method used by jQuery\cite{jQuery}, with some minor modifications
+the cloning method used by jQuery\cite{www11jquery}, with some minor modifications
 to make the code more specialised for the RTS purposes.
 
 - Briefly mention the dynamic/wrapper things
