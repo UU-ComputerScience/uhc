@@ -201,8 +201,14 @@ If available, record field names of the corresponding Haskell data type are used
 
 
 \subsection{\label{ffi}JavaScript Foreign Function Interface}
-Talk about all the cool stuff
-- Mostly discuss the Foreign Expression Language (FEL)
+We have extended the FFI with our Foreign Expression Language (FEL). This
+enabled us to more conveniently access functions in JavaScript space from
+Haskell space. The main improvement in the FEL is the possibility to number and
+reorder arguments and the ability to use the JavaScript object accessor, the
+dot. Other features include hardcoding of literals, accessing array indices, 
+
+The new grammar for importing functions is shown in figure \ref{jsimpent}.
+
 
 \begin{figure}[t]
 \hrule
@@ -226,6 +232,225 @@ str    ::= any string
 \caption{Import entity notation for the JS calling convention}
 \label{jsimpent}
 \end{figure}
+
+\section{\label{object-rts}Creating and handling objects}
+
+Being a purely functional programming language, Haskell has no notion of
+objects. JavaScript, however, does. Objects come in two flavours: anonymous and
+named objects. The former is denoted in \js as |{}|, while the latter is
+created by defining a constructor function of which the name starts with an
+uppercase letter, like so: |function MyObj() {}|. Objects can then be
+instantiated with the |new| keyword: |new MyObj()|. Each function also has a
+prototype object. This prototype allows for defining values and functions
+within the object scope. New object instances will automatically have the same
+values and functions as the prototype.
+
+UHC now offers a functional interface for creating, instantiating and
+manipulating objects and prototypes in \js during runtime. We can convert
+datatypes to objects, or we can define objects from scratch.
+
+
+\subsection{Creating, manipulating and querying objects}
+
+UHC now offers support for creating, manipulating and querying objects. It does
+so with the help of several new primitive functions in the RTS. Instead of
+showing the rather uninteresting function definitions in JavaScript, the code
+below shows the Haskell type signatures which need to be used when importing
+these primitives with the FFI:
+
+\begin{code}
+primMkCtor  :: JSString -> IO ()
+primMkObj   :: JSString -> JSPtr c
+primMkAnonObj  :: IO (JSPtr c)
+primGetAttr  ::  JSString -> JSPtr c -> IO a
+primSetAttr  ::  JSString -> a -> JSPtr c
+             ->  IO (JSPtr c)
+primModAttr  ::  JSString -> (a -> b)
+             ->  JSPtr c -> IO (JSPtr c)
+primGetProtoAttr  ::  JSString -> JSString -> a
+primSetProtoAttr  ::  JSString -> a
+                  ->  JSString -> IO ()
+primModProtoAttr  ::  JSString -> (a -> b)
+                  ->  JSString -> IO ()
+\end{code}
+
+The |primMkCtor| function creates a new constructor function if it does not yet
+exist in the |window| scope. This function is usually only called from within
+the other functions listed above. The |primMkAnonObj| function creates an
+anonymous object |{}|, while the |primMkObj| accepts a string with the class
+name of the new object. If the class does not exist yet, it is created using an
+empty constructor.
+
+The other functions manipulate objects and prototypes, using a mechanism
+inspired by so-called lenses\cite{lenses}; an abstraction over
+accessors and mutators. The first argument is always the name of the object
+attribute of interest in the shape of a string. In case of the |Set| functions,
+the second argument is the value that needs to be set. Since \js is a loosely
+typed language, this can be any type. The |Mod| functions take as second
+parameter a function which modifies the attribute specified in the first
+argument. Modifying an attribute can cause it to be of a different type, hence
+the |a -> b| type for the function. Finally, the last argument is either a
+reference to an object, or the name of a class in the form of a string.
+
+These functions can be used by importing them as primitives:
+
+\begin{code}
+foreign import prim "primGetAttr"
+  _getAttr :: JSString -> JSPtr p -> IO a
+\end{code}
+
+Objects are represented in Haskell by a |JSPtr a| type, which has no
+constructors, so it can't be instantiated directly. The only way an object can
+be obtained is by getting it via the FFI. A |JSPtr a| requires one type
+argument, which specifies the type of the \js object. This should again be a
+type without constructor. Suppose we want a pointer to a |Book| object, we
+could define it as follows:
+
+\begin{code}
+data JSPtr a
+data BookPtr
+type Book = JSPtr BookPtr
+\end{code}
+
+We can now define functions on the |Book| type, giving us a type-safe way to
+deal with \js objects. This is similar approach as is taken in the C FFI to
+deal with pointer types.
+
+To facilitate these basic operations, taking into account the best-practices
+described in section \ref{strings}, we offer the
+|Language.UHC.JScript.Primitives| module, which defines primitive imports and
+abstracts away from |JSString|. Using these functions we can now create,
+manipulate and query an object:
+
+\begin{code}
+main = do
+  o  <- mkObj "Book"
+  setAttr "pages" 123 o
+  modAttr "pages" (+1) o
+  p  <- getAttr "pages" o
+  print p -- Prints 124
+\end{code}
+
+\subsubsection*{Creating objects from datatypes}
+
+While defining objects as shown in the previous subsection works fine, the
+process is rather verbose and tedious. It would therefore be ideal if we could
+use Haskell datatypes to achieve the same results. In some ways, datatypes and
+\js objects have a lot in common, especially when the datatype has record
+selectors. Suppose we have a simple |Book| type in Haskell:
+
+\begin{code}
+data Book
+  =  Book
+  {  author  :: JSString
+  ,  title   :: JSString
+  ,  pages   :: Int
+  }
+\end{code}
+
+And a concrete |Book| value would look something like the following:
+
+\begin{code}
+book
+  =  Book
+  {  author  = toJS "me"
+  ,  title   = toJS "story"
+  ,  pages   = 123
+  }
+\end{code}
+
+The representation of |myBook| closely resembles an object with the same data
+in JavaScript:
+
+\begin{verbatim}
+book
+ =
+  {  author  : "me"
+  ,  title   : "story"
+  ,  pages   : 123
+  }
+
+\end{verbatim}
+
+In fact, a \js object very similar to the one shown above is already being
+generated by the UHC. However, since it is generated as an application of
+a constructor to some values the generated datatype values are not directly
+usable in other \js libraries. We require a mechanism to convert the Haskell
+representation of the datatype into a \js representation. This idea is similar
+to that of the wrapper import discussed in section \ref{ffi} where we
+wrapped a Haskell function in a \js function. We will use a similar approach to
+make datatypes available as \js objects. We introduce the object import:
+
+\begin{code}
+foreign import jscript "{}"
+  mkObj :: a -> IO (JSPtr b)
+\end{code}
+
+It takes a datatype |a| and converts it to a plain \js object, resulting in a
+pointer to the new object. If the datatype contains record selectors, they will
+be used as the object's indices. When no record selectors are available, a
+integer $\geq{1}$ with an underscore prefix is used instead. The fact that a
+non-numeric index is being created is a shortcoming of the current
+implementation.
+
+Creating the object is achieved by recursively evaluating and cloning the data
+inside the datatype to a new, empty object, disposing of RTS-specific
+information in the process. Taking the example from before, but now using the
+object wrapper. An example of the object wrapper is provided below.
+
+\begin{code}
+main = do
+  let b' = book { pages = pages book + 1 }
+  b  <- mkObj b'
+  p  <- getAttr "pages" b
+  print p -- Prints 124
+\end{code}
+
+Note that even though this example is only one line shorter, we also have the
+two strings available in our \js object, which would haven taken two more lines
+in the original example. More importantly, Haskell's type system is in a much
+better position to catch programmer mistakes, since record selectors are used
+in the modification of the |pages| value instead of strings.
+
+\subsubsection{Functions in objects}
+
+It is common for \js library functions to accept an anonymous object with some
+configuration parameters, including functions. These functions are often used
+as callbacks. The jQuery \texttt{post()} function, for example, expects an
+object which amongst other things contains callback functions. These functions
+are called when the AJAX request succeeds or fails. As we have seen in section
+\ref{ffi}, creating callback functions is done at runtime using a wrapper.
+Since we want to support these common use-cases, we restrict object creation to
+runtime as well.
+
+
+\subsection{Pure objects}
+
+Objects in \js are mutable by nature. By modifying an object, you modify it for
+everything that has a pointer to that particular object. This forces any update
+operation to be defined in |IO|. In order to escape the |IO| monad, update
+operations need to become non-destructive, which is achieved by creating a copy
+of an object before modifying it. The RTS exports a primitive to do just this:
+
+\begin{code}
+primClone :: JSPtr a -> JSPtr a
+\end{code}
+
+By cloning an object first, all pointers to the original object remain
+untouched when modifying the clone. This enables pure variants of the
+|primSetAttr| and |primModAttr| functions:
+
+\begin{code}
+primPureSetAttr  ::  JSString -> a -> JSPtr c
+                 ->  JSPtr c
+primPureModAttr  ::  JSString -> (a -> b)
+                 ->  JSPtr c -> JSPtr c
+\end{code}
+  
+Since a potentially large tree of objects will be cloned by these pure
+functions, they should be used with care. The cloning method used is a copy of
+the cloning method used by jQuery\cite{jQuery}, with some minor modifications
+to make the code more specialised for the RTS purposes.
 
 - Briefly mention the dynamic/wrapper things
 %%]
@@ -353,20 +578,20 @@ The first item could be realised by supporting type constraints in the foreign
 import. This is already allowed by the type system, but the RTS does not
 currently support this.
 
-\subsection*{Testing}
-During development, the code has only received limited, informal testing. The
-UHC's test suite should be expanded to enable automated testing. Additionally,
-real-world \js front-end applications should be ported to Haskell and the
-\uhcjscript library to identify shortcomings of the existing ideas and
-implementations.
+% \subsection*{Testing}
+% During development, the code has only received limited, informal testing. The
+% UHC's test suite should be expanded to enable automated testing. Additionally,
+% real-world \js front-end applications should be ported to Haskell and the
+% \uhcjscript library to identify shortcomings of the existing ideas and
+% implementations.
 
-\subsection*{Benchmarking an optimising}
-Some benchmarks have been performed that show that the generated \js is quite
-a bit slower than a hand-written version of the same code. Unfortunately, these
-numbers aren't publicly available, nor is is clear where the biggest
-bottlenecks are located. It would be very interesting to do another round of
-benchmarks, including the object code. Afterwards, it would be interesting to
-identify bottlenecks and find ways to speed up the generated code.
+% \subsection*{Benchmarking an optimising}
+% Some benchmarks have been performed that show that the generated \js is quite
+% a bit slower than a hand-written version of the same code. Unfortunately, these
+% numbers aren't publicly available, nor is is clear where the biggest
+% bottlenecks are located. It would be very interesting to do another round of
+% benchmarks, including the object code. Afterwards, it would be interesting to
+% identify bottlenecks and find ways to speed up the generated code.
 
 \subsection*{Static object compilation}
 Currently the only way of converting a datatype to a \js object is to do so at
@@ -550,12 +775,14 @@ For the variant of the JCU application as implemented for this paper more info
 \label{conclusion}
 We have shown that the UHC is capable of supporting the development of complete
 client-side web applications. This opens the door to Haskell-only web
-development. Better abstractions are still required to reduce the amount of
-code that lives in the |IO| monad directly, and to give programming with the
-UHC JavaScript backend a more functional feel. While in most cases performance
-is acceptable, it needs to be improved if computationally heavy functions are
-to be run on the client. In order for most of the frequently used Hackage
-libraries to be run on the client, UHC will need some more work as well.
+development. In the process we added the FEL to UHC.
+
+Better abstractions are still required to reduce the amount of code that lives
+in the |IO| monad directly, and to give programming with the UHC JavaScript
+backend a more functional feel. While in most cases performance is acceptable,
+it needs to be improved if computationally heavy functions are to be run on the
+client. In order for most of the frequently used Hackage libraries to be run on
+the client, UHC and Cabal will need some more work as well.
 %%]
 
 %%[XX
