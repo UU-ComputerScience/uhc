@@ -82,7 +82,7 @@ respectively. Finally, section~\ref{conclusion} concludes.
 
 \subsection{\label{rts}Runtime System}
 There exists an obvious mismatch between Haskell and Object-Oriented (OO) languages,
-which has been addressed in various ways over time (Section~\ref{discussionIssuesRelatedWork}):
+which has been addressed in various ways over time (Section~\ref{related}):
 \begin{itemize}
 \item
  Mapping the runtime machinery required for Haskell to an imperative language has to deal with the lazy evaluation strategy
@@ -91,12 +91,12 @@ which has been addressed in various ways over time (Section~\ref{discussionIssue
  Use of OO language mechanisms as available in JavaScript, in particular prototype based objects; we avoid dealing with this problem.
 \item
  Use of available JavaScript libraries;
- we deal with this in the next section by exploiting the freedom offered by Haskells Foreign Function Interface (FFI)
+ we deal with this in the next section by exploiting the freedom offered by Haskell's Foreign Function Interface (FFI)
 \end{itemize}
 
 The design of any backend for a lazy functional languages needs to deal with functions, their (lazy) application to arguments,
 and  evaluating  such applications to Weak Head Normal Form (WHNF).
-The design should also cater for under- and oversaturated function applications as well as tail recursion.
+The design should also cater for under- and over saturated function applications as well as tail recursion.
 
 In UHC's JavaScript backend functions and their applications are both represented straightforwardly by objects:
 
@@ -130,8 +130,9 @@ function AppLT( fun, args ) { ... }
 
 An |AppLT| only wraps other |AppLT| objects or |Fun| objects.
 
-Finally, for all remaining saturation cases an |App| object is used, knowledge about saturatedness is delegated to the encapsulated
-function object, which may be another |App|, |AppLT|, or |Fun|.
+Finally, for all remaining saturation cases an |App| object is used, knowledge
+about the degree of saturation is delegated to the encapsulated function
+object, which may be another |App|, |AppLT|, or |Fun|.
 
 \begin{code}
 App.prototype = {
@@ -237,7 +238,7 @@ Is the UHC JS backend a full replacement for JS coding? Etc?
 \cite{swierstra2011,stutterheim2012} \cite{snap}
 
 The JCU Prolog Proof Assistant\cite{swierstra2011} is a tool developed for
-students to familiarize themselves with Prolog through the aided solving of
+students to familiarise themselves with Prolog through the aided solving of
 Prolog proof trees. Originally programmed in \coffeescript\cite{coffeescript}
 (sugar for \js) and using the \brunch\cite{brunch} framework.
 
@@ -260,11 +261,12 @@ Thus it is possible to implement a non-trivial application completely in
 Haskell, using the UHC JavaScript backend.
 
 \subsection{\label{issues}Implementation Issues}
-Which issues do you run into in general when you develop a JS app in Haskell?
+% todo describe: Which issues do you run into in general when you develop a JS
+% app in Haskell?
 
-Ale: non-termination/threads, no native OO, interfacing with annoyingly
-multi-interpretable functions (functions that are dimensioned in both the number
-and type of their arguments)
+% Ale: non-termination/threads, no native OO, interfacing with annoyingly
+% multi-interpretable functions (functions that are dimensioned in both the number
+% and type of their arguments)
 
 We had to make concessions and create some workarounds due to the lack of
 support for advanced language features, such as Functional Dependencies and Type
@@ -291,40 +293,45 @@ fork threads, so the proof resolution runs in the main thread, risking blocking.
 The only way to achieve parallel computation in \js is using WebWorkers.
  
 \subsection{\label{performance}Performance}
-Performance is decent, except for the actual Prolog backtracking. Where is the bottleneck?
-Ale: Probably as I've stated before the problem is in the memory management as
-is supported by the benchmarks in Chrome and Fx.
+% Performance is decent, except for the actual Prolog backtracking. Where is the bottleneck?
+% Ale: Probably as I've stated before the problem is in the memory management as
+% is supported by the benchmarks in Chrome and Fx.
+
+In general the performance of the web application is on par with the previous
+implementation. Performance becomes an issue when using browsers other than
+Google Chrome (v) as their 
+
 %%]
 
 
 %%[futureWork
 \label{future}
 
-\subsection{Communicating with the server}\label{ssec:communicating-with-server}
+\subsection*{Communicating with the server}\label{ssec:communicating-with-server}
 Currently the communication with the server is encoded manually. That is, the
 creation of the \js values to be send over hardcoded in the application. When
 coding both the server and the client in Haskell one should be able to create
 something like `typed channels' for each server endpoint. This would further
 improve the type safety of the application.
 
-\subsection{Background threading}
+\subsection*{Background threading}
 Although the basic interface for using \verb+WebWorkers+ is present it is
 currently not possible to seamlessly pass Haskell values due to the presence
 of functions. Figuring out how then to pass Haskell values is subject to
 future research.
 
-\subsection{Generic |FromJS| and |ToJS| for converting objects/records}
+\subsection*{Generic |FromJS| and |ToJS| for converting objects/records}
 It should be fairly straightforward to implement a generic implementation for
 |FromJS| and |ToJS| using deriving Generic.
 
-\subsection{Providing an api to build web applications}\label{ssec:providing-an-api-to-build-web-applications}
+\subsection*{Providing an api to build web applications}\label{ssec:providing-an-api-to-build-web-applications}
 One could think of providing a similar API such as WxHaskell\cite{wxHaskell}
 does for constructing native application, but for web applications. Also one
 could think of providing a Functional
 Reactive\cite{Elliott:2009:PFR:1596638.1596643,Wan:2000:FRP:349299.349331,reactive-banana} 
 interface to building the web application.
 
-\subsubsection*{Typechecking}
+\subsection*{Typechecking}
 Currently, foreign expressions are not typechecked at all. In case of a
 programming error the compiler will currently panic in the best-case scenario
 and happily generate \js code that fails at runtime in the worst-case scenario.
@@ -342,14 +349,14 @@ The first item could be realised by supporting type constraints in the foreign
 import. This is already allowed by the type system, but the RTS does not
 currently support this.
 
-\subsubsection*{Testing}
+\subsection*{Testing}
 During development, the code has only received limited, informal testing. The
 UHC's test suite should be expanded to enable automated testing. Additionally,
 real-world \js front-end applications should be ported to Haskell and the
 \uhcjscript library to identify shortcomings of the existing ideas and
 implementations.
 
-\subsubsection*{Benchmarking an optimising}
+\subsection*{Benchmarking an optimising}
 Some benchmarks have been performed that show that the generated \js is quite
 a bit slower than a hand-written version of the same code. Unfortunately, these
 numbers aren't publicly available, nor is is clear where the biggest
@@ -357,14 +364,14 @@ bottlenecks are located. It would be very interesting to do another round of
 benchmarks, including the object code. Afterwards, it would be interesting to
 identify bottlenecks and find ways to speed up the generated code.
 
-\subsubsection*{Static object compilation}
+\subsection*{Static object compilation}
 Currently the only way of converting a datatype to a \js object is to do so at
 runtime. This, however, is a process with time complexity linear in the number
 of datatype records. Future work could focus on generating (parts of) \js
 objects at compile-time, so that only dynamic values will need to be copied to
 the object at runtime.
 
-\subsection{Safe |this| scope (working title)}\label{future-work:this-scope}
+\subsection*{Safe |this| scope (working title)}\label{future-work:this-scope}
 Is there a way to prevent the RTS from being exposed by using the keyword
 |this|?
 
@@ -373,6 +380,63 @@ Is there a way to prevent the RTS from being exposed by using the keyword
 % object's attribute name becomes an integer $\geq{1}$ with an underscore prefix.
 % Ideally this would be a numeric index $\geq{0}$.
  
+\subsection*{Deployment}
+JavaScript code is usually downloaded, hence compact representation as well as
+avoiding or delaying loading of code is important. Although UHC allows pruning
+of unused code as to achieve a relative compact representation, it provides no
+mechanism for dynamic loading of modules. This is left for future
+implementation. In addition UHC is able to perform whole program analysis
+further compacting the JavaScript code and producing a single output JavaScript
+file.
+
+%\todo{Code compactification, module loading, whole prog, ...}
+\subsection*{Packages and The Haskell ecosystem}
+Targeting Haskell to a different platform means that some assumptions following
+from using a single platform only are no longer valid. First, a different
+platform means a different runtime environment. Almost all of the UNIX
+functionality is available for the usual Haskell UNIX runtime, but is naturally
+not available inside a web browser and, vice verse, specific JavaScript
+libraries like jQuery are not available on a UNIX platform. Some library modules
+of a package (partially) cannot be build on some platforms, while others
+(partially) can. To cater for this, UHC rather ad-hoc marks modules to be
+unavailable for a backend by a pragma \verb|{-# EXCLUDE_IF_TARGET js #-}|. Of
+course |cpp| can still be used to select functionality inside a module. However,
+in general, awareness of platform permeates all aspects of a language system,
+from the compiler itself to the library build system like |Cabal|.
+
+In particular, |Cabal| needs a specification mechanism for such variation in
+target and platform to allow for selective compilation of a collection of
+variants. Currently this means that UHC compilation for the JavaScript backend
+cannot be done through |Cabal|.
+
+A second aspect has more to do with the evolution of Haskell as an ecosystem.
+Many libraries go far beyond the Haskell standard by making use of GHC
+extensions. Currently, such libraries evolve to use type families, a feature not
+yet available in UHC. For (non GHC) Haskell compiler writers to keep with this
+pace of evolution poses a considerable challenge; yet in our opinion there is
+value in the availability of compiler alternatives as well as variation in what
+those compilers are good at.
+
+%\todo{Mismatch: Cabal does not deal with multiple backend of one compiler.}
+
+%\todo{Mismatch: Libraries take GHC as standard, not Haskell2010 (or H98).}
+
+%\todo{Unix based library is useless, basically other OS to run on, what about shared code, ...}
+
+\subsection*{Type system absence}
+JavaScript has no type system, the absence of which can be dealt with by using
+phantom types in wrapper functions around untyped FFI calls. More problematic
+are for example DOM functions returning objects with a different interface, like
+a DOM element or attribute. A sum type defining all possible result types could
+be used, but data types are not extensible, which might be too limiting in
+practice. Dynamics might be used as result values, but require assistance from
+the runtime system as well as knowledge about types (e.g. in the form of
+|TypeRep|). Existentially quantified data types and classes might be used
+(similar to extensible exceptions \cite{marlow06extensible-exception}), but then
+knowledge about the class system also seeps into the runtime system. Currently
+this has not yet been further addressed.
+%\todo{Typing the untyped.}
+
 %%]
 
 
@@ -395,7 +459,7 @@ independent functional language, SAPL, which is interpreted in the browser by
 code written in Java. The latest interpreter incarnations are written in
 JavaScript
 \cite{jansen10phd-itasks-sapl-funcweb,bruel10sapl-javascript,plasmeijer08clientside-itasks-ajax}.
-Although currently a Haskell frontend exists for Clean, the use of it in a
+Although currently a Haskell front-end exists for Clean, the use of it in a
 browser seems to be tied up to the iTasks system. The intermediate language SAPL
 also does not provide the facilities as provided by our Haskell FFI.
 %This limits used code to that which is generated by the iTasks system.
@@ -405,128 +469,77 @@ based on the GHC API, supporting the use of primitives but not the FFI.
 Further down we elaborate on some consequences of multiple platforms and backends
 relevant for this GHC backend variant as well.
 
-Both ``Functional javascript'' \cite{www07functional-javascript} and
-``Haskell in Javascript'' \cite{www10haskellinjavascript} do not use a separate Haskell compiler.
-Instead, JavaScript is used directly in a functional style,
-respectively a small compiler for a subset of Haskell has been written in JavaScript.
+Both ``Functional javascript'' \cite{www07functional-javascript} and ``Haskell
+in Javascript'' \cite{www10haskellinjavascript} do not use a separate Haskell
+compiler. Instead, JavaScript is used directly in a functional style,
+respectively a small compiler for a subset of Haskell has been written in
+JavaScript.
 
 \subsection{Object orientation.}
 
-Object Oriented behavior itself can be realized inside Haskell by exploiting the
+Object Oriented behaviour itself can be realised inside Haskell by exploiting the
 class system \cite{shields01haskell-oo-overloading,kiselyov05haskell-oo}.
 However, we aim to access libraries written in JavaScript, not \emph{mimic}
 JavaScript or OO mechanism in general inside Haskell.
 
 % todo: sounds shaky en niet meer helemaal waar voor ons ding?
-However, when functionality of the libraries would have to be (re)written in Haskell some form of OO mechanism
-should be available.
-This issue arises when one would code in Haskell a platform independent part of an otherwise OO GUI library,
-say |wxHaskell|.
-For now we limit ourselves to accessing JavaScript libraries via the FFI, hiding OO idiom inside FFI import entities. 
+However, when functionality of the libraries would have to be (re)written in
+Haskell some form of OO mechanism should be available. This issue arises when
+one would code in Haskell a platform independent part of an otherwise OO GUI
+library, say |wxHaskell|. For now we limit ourselves to accessing JavaScript
+libraries via the FFI, hiding OO idiom inside FFI import entities.
 
 %\todo{Mapping to OO: FFI or other mechanism.}
 
 %\todo{Records in JS vs HS.}
 
-\paragraph{Type system absence.}
 
-JavaScript has no type system, the absence of which can be dealt with
-by using phantom types in wrapper functions around untyped FFI calls.
-More problematic are for example DOM functions returning objects with a different interface,
-like a DOM element or attribute.
-A sum type defining all possible result types could be used, but data types are not extensible,
-which might be too limiting in practice.
-Dynamics might be used as result values, but require assistance from the runtime system as well
-as knowledge about types (e.g. in the form of |TypeRep|).
-Existentially quantified data types and classes might be used (similar to extensible exceptions \cite{marlow06extensible-exception}),
-but then knowledge about the class system also seeps into the runtime system.
-Currently this has not yet been further addressed.
 
-%\todo{Typing the untyped.}
-
-\paragraph{Side effects.}
-
-All access to JavaScript values is done in the IO monad, so side effect can be properly modeled.
-For now it is assumed that no threads exist.
-Since JavaScript's worker thread mechanism can be used safely we currently do not need
- semaphores, STM, or other shared data access machinery.
-Some values like the globally available @window@ in a browser could be accessed without the use of the IO monad because its value does not change.
-However, if and when this assumption would not hold in a near future it would break our wrapping code as well.
+% \paragraph{Side effects.}
+% 
+% All access to JavaScript values is done in the IO monad, so side effect can be properly modelled.
+% For now it is assumed that no threads exist.
+% Since JavaScript's worker thread mechanism can be used safely we currently do not need
+%  semaphores, STM, or other shared data access machinery.
+% Some values like the globally available @window@ in a browser could be accessed without the use of the IO monad because its value does not change.
+% However, if and when this assumption would not hold in a near future it would break our wrapping code as well.
 
 %\todo{All in IO, what can be done without IO, threads? STM?.}
 
-\paragraph{Deployment.}
+%\todo{Onderstaande twee paragrafen zijn een beetje bloat maar er zit misschien nog wel wat in voor later.}
 
-JavaScript code is usually downloaded, hence compact representation as well as avoiding or delaying loading of code is
-important.
-UHC allows pruning of unused code as to achieve a relative compact representation,
-but provides no mechanism for dynamic loading.
-It is left up to the user of the compiled code to incorporate it into a webpage.
+% \paragraph{Mapping to OO runtime environments.}
+% 
+% In general, it is attractive to map onto available virtual machines for popular OO languages,
+% in particular because of the availability of a wealth of libraries.
+% Targeting the Java virtual machine (JVM) has been experimented with
+% \cite{wakeling98haskell-to-java,func:lazy:java:parser-combinator,stewart02mthesis-multiparadigm-jit,tullsen96haskell-to-java},
+% as well as with the @.NET@ platform \cite{monteiro05functional-to-dotnet,www04haskell-dotnet,meijer07mondrian,meijer01dotnet-scripting-mondrian};
+% UHC also provides a backend to the JVM \cite{func:lazy:java:parser-combinator}
+% using the same technique as described here.
+% However, interfacing to libraries is still lacking in UHC, and in general library access and other
+% runtime oriented features (threads, exceptions)
+% is where the real work lies \cite{www12ghc-faq}.
+% Wrapping and interfacing to libraries has to be done manually or by tools interpreting library code which requires substantial effort and is 
+% suffering from misinterpretation.
+% In the case of JavaScript lack of typing annotations even precludes automatic FFI wrapper generation,
+% unless type annotations in comments could be trustworthy and formal enough to be used instead.
 
-%\todo{Code compactification, module loading, whole prog, ...}
+% Efficient code generation is also an issue.
+% Usually non standard OO language constructs are used to implement
+% standard idiom of (lazy) functions.
+% For now, with UHC we have taken the approach to first make it work and not bother about efficiency,
+% generating code from an early stage in the compiler pipeline.
+% We expect exploitation of the results of a strictness analyser to speed up the code considerably,
+% especially because the existing JavaScript compilers to be better able to analyse the provided code.
+%%]
 
-\paragraph{Mapping to OO runtime environments.}
-
-In general, it is attractive to map onto available virtual machines for popular OO languages,
-in particular because of the availability of a wealth of libraries.
-Targeting the Java virtual machine (JVM) has been experimented with
-\cite{wakeling98haskell-to-java,func:lazy:java:parser-combinator,stewart02mthesis-multiparadigm-jit,tullsen96haskell-to-java},
-as well as with the @.NET@ platform \cite{monteiro05functional-to-dotnet,www04haskell-dotnet,meijer07mondrian,meijer01dotnet-scripting-mondrian};
-UHC also provides a backend to the JVM \cite{func:lazy:java:parser-combinator}
-using the same technique as described here.
-However, interfacing to libraries is still lacking in UHC, and in general library access and other
-runtime oriented features (threads, exceptions)
-is where the real work lies \cite{www12ghc-faq}.
-Wrapping and interfacing to libraries has to be done manually or by tools interpreting library code which requires substabtial effort and is 
-suffering from misinterpretation.
-In the case of JavaScript lack of typing annotations even precludes automatic FFI wrapper generation,
-unless type annotations in comments could be trustworthy and formal enough to be used instead.
-
-Efficient code generation is also an issue.
-Usually non standard OO language constructs are used to implement
-standard idiom of (lazy) functions.
-For now, with UHC we have taken the approach to first make it work and not bother about efficiency,
-generating code from an early stage in the compiler pipeline.
-We expect exploitation of the results of a strictness analyser to speed up the code considerably,
-especially because the existing JavaScript compilers to be better able to analyse the provided code.
-
-\paragraph{Libraries, Haskell platform.}
-
-Targeting Haskell to a different platform means that some assumptions following
-from using a single platform only are no longer valid.
-First, a different platform means a different runtime environment.
-Almost all of the UNIX functionality is available for the usual Haskell UNIX runtime, but is
-naturally  not available inside a web browser
-and, vice verse, specific JavaScript libraries like jQuery are not available on a UNIX platform.
-Some library modules of a package (partially) cannot be build on some platforms, while others (partially) can.
-To cater for this, UHC rather ad-hoc marks modules to be unavailable for a backend by a pragma
-\verb|{-# EXCLUDE_IF_TARGET js #-}|.
-Of course |cpp| can still be used to select functionality inside a module.
-However, in general, awareness of platform permeates all aspects of a language system, from the compiler itself
-to the library build system like |Cabal|.
-In particular, |Cabal| needs a specification mechanism for such variation in target and platform
-to allow for selective compilation of a collection of variants.
-Currently this means that UHC compilation for the JavaScript backend cannot be done through |Cabal|.
-
-A second aspect has more to do with the evolution of Haskell as an ecosystem.
-Many libraries go far beyond the Haskell standard by making use of a plethora of GHC extensions.
-Currently, such libraries evolve to use (say) type families, a feature not (yet) available in UHC.
-For (non GHC) Haskell compiler writers to keep with this pace of evolution poses a considerable challenge;
-yet in our opinion there is value in the availability of compiler alternatives as well as variation in what those
-compilers are good at.
-
-%\todo{Mismatch: Cabal does not deal with multiple backend of one compiler.}
-
-%\todo{Mismatch: Libraries take GHC as standard, not Haskell2010 (or H98).}
-
-%\todo{Unix based library is useless, basically other OS to run on, what about shared code, ...}
-
-\paragraph{More info, download.}
+\section{More info, download.}
 
 For the variant of the JCU application as implemented for this paper more info
 (download, how to install, etc) is available, via the UHC www site
 \cite{www09uhc} or directly \cite{www12uhc-js-backend}.
-%%]
+
 
 
 %%[conclusion
