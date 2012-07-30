@@ -70,10 +70,10 @@ With this paper, we make the following contributions:
 \end{itemize}
 
 The rest of this paper is structured as follows: section~\ref{hs2js} introduces
-the UHC JavaScript runtime system (RTS) and FFI, after which section~\ref{jcu}
-shows the implementation of a complete JavaScript application in Haskell, after
-which sections~\ref{future} and~\ref{related} discuss future and related work
-respectively. Finally, section~\ref{conclusion} concludes.
+the UHC JavaScript runtime system (RTS) and FFI with our addition, after which
+section~\ref{jcu} shows the implementation of a complete JavaScript application
+in Haskell, after which sections~\ref{future} and~\ref{related} discuss future
+and related work respectively. Finally, section~\ref{conclusion} concludes.
 %%]
 
 
@@ -205,10 +205,12 @@ We have extended the FFI with our Foreign Expression Language (FEL). This
 enabled us to more conveniently access functions in JavaScript space from
 Haskell space. The main improvement in the FEL is the possibility to number and
 reorder arguments and the ability to use the JavaScript object accessor, the
-dot. Other features include hardcoding of literals, accessing array indices, 
+dot. The new grammar for importing functions is shown in figure \ref{jsimpent}.
+Other features include hardcoding of literals, accessing array indices. (What
+else to put here?)
 
-The new grammar for importing functions is shown in figure \ref{jsimpent}.
-
+In addition we added support for the \emph{dynamic} and \emph{wrapper}
+functionality to the UHC FFI.
 
 \begin{figure}[t]
 \hrule
@@ -248,7 +250,6 @@ values and functions as the prototype.
 UHC now offers a functional interface for creating, instantiating and
 manipulating objects and prototypes in \js during runtime. We can convert
 datatypes to objects, or we can define objects from scratch.
-
 
 \subsection{Creating, manipulating and querying objects}
 
@@ -763,7 +764,7 @@ libraries via the FFI, hiding OO idiom inside FFI import entities.
 % especially because the existing JavaScript compilers to be better able to analyse the provided code.
 %%]
 
-\section{More info, download.}
+\section{More information and download}
 
 For the variant of the JCU application as implemented for this paper more info
 (download, how to install, etc) is available, via the UHC www site
