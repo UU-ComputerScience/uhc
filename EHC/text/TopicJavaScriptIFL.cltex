@@ -233,9 +233,9 @@ str    ::= any string
 
 %%[JCUApp
 \label{jcu}
-What does the app do? How is it implemented? Does it work? Does it work well?
-Is the UHC JS backend a full replacement for JS coding? Etc?
-\cite{swierstra2011,stutterheim2012} \cite{snap}
+% What does the app do? How is it implemented? Does it work? Does it work well?
+% Is the UHC JS backend a full replacement for JS coding? Etc?
+% \cite{swierstra2011,stutterheim2012} \cite{snap}
 
 The JCU Prolog Proof Assistant\cite{swierstra2011} is a tool developed for
 students to familiarise themselves with Prolog through the aided solving of
@@ -298,9 +298,13 @@ The only way to achieve parallel computation in \js is using WebWorkers.
 % is supported by the benchmarks in Chrome and Fx.
 
 In general the performance of the web application is on par with the previous
-implementation. Performance becomes an issue when using browsers other than
-Google Chrome (v) as their 
-
+implementation. The bottleneck lays in the area of memory management. Building
+up lazy Haskell expressions leads to a large amount of JavaScript objects. The
+quick creation and then successive destruction of these large expressions places
+a strain on the memory manager and garbage collector. Currently Google Chrome
+handles this strain best by keeping memory allocation to a minimum. Opera and
+Firefox hit memory issues at smaller expression sizes. Internet Explorer (up
+till version 9, 10 is not tested) is not on par with Opera or Firefox.
 %%]
 
 
