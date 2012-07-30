@@ -402,7 +402,9 @@ SEM CExpr
                             .   js              =   if null @argMbConL
                                                     then (@mkResJS $ @mkFFI [])
                                                     else (jsVar $ mkHNm $ forextractEnt @foreignEntInfo)
-                            .   dps             =   Set.fromList $ forextractIncludes @foreignEntInfo
+                            .   dps             =   case @foreignEntInfo of
+                                                      ForeignExtraction_Plain {} -> Set.fromList $ forextractIncludes @foreignEntInfo
+                                                      _                          -> Set.empty
 
   | Let         loc         .   (jbindsLet,jstatsLet)
                                                 =   if @isGlobal
