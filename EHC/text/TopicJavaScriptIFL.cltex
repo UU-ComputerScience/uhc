@@ -247,7 +247,7 @@ substitution and dropping rules from the list of rules on the tree.
 The tool is presented as a web application and runs in any modern browser. The
 application is written in Haskell which compiles to \js by UHC. It uses the
 \uhcjscript\cite{uhcjs} library. The \uhcjscript library provides (among others)
-bindings to the jQuery\cite{jquery} JavaScript library and the
+bindings to the jQuery\cite{www11jquery} JavaScript library and the
 AjaxQueue\cite{ajaxq} library. Since it is possible to compile arbitrary Haskell
 code to \js, it is also possible to run any Haskell library, including
 NanoProlog, on the client.
