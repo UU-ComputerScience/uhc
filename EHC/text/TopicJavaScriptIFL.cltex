@@ -248,10 +248,12 @@ The tool is presented as a web application and runs in any modern browser. The
 application is written in Haskell which compiles to \js by UHC. It uses the
 \uhcjscript\cite{uhcjs} library. The \uhcjscript library provides (among others)
 bindings to the jQuery\cite{jquery} JavaScript library and the
-AjaxQueue\cite{ajaxq} library.
+AjaxQueue\cite{ajaxq} library. Since it is possible to compile arbitrary Haskell
+code to \js, it is also possible to run any Haskell library, including
+NanoProlog, on the client.
 
 The Haskell implementation of the application has the same features and is as
-stable as the original \coffescript implementation. The Haskell implementation
+stable as the original \coffeescript implementation. The Haskell implementation
 is |IO|-heavy, but straightforward.
 
 Thus it is possible to implement a non-trivial application completely in
@@ -266,13 +268,14 @@ and type of their arguments)
 
 We had to make concessions and create some workarounds due to the lack of
 support for advanced language features, such as Functional Dependencies and Type
-Families.
+Families. Concretely this also means that not all Hackage packages can be build
+using the UHC.
 
 In \js the keyword |this| refers to the object currently in scope when calling a
 function. Since the function our case was run by our RTS the |this| keyword
 referred to the RTS objects' scope. Essentially exposing the RTS to the Haskell
 world and hiding the scope that would expect to get when we would be using plain
-\js.
+\js. This is a topic for future work (\ref{future-work:this-scope}).
  
 Specifically, the \jqui library ensures that |this| in the event callbacks
 points to the object you, e.g., dropped another object on, instead of passing it
@@ -280,7 +283,13 @@ as an argument. In order to work around this we added a wrapper function that
 captures |this| and passes it along to the wrapped function as an event. For
 more details see the |wrappedThis| function in the RTS.
 
-
+Since we now run the NanoProlog library on the client we risk infinite recursion
+as the proof resolution can possibly recurse infinitely. The original
+application executed this server-side where it ran in a separate thread. Each
+resolution had a limited time to complete. \js doesn't offer the possibility to
+fork threads, so the proof resolution runs in the main thread, risking blocking.
+The only way to achieve parallel computation in \js is using WebWorkers.
+ 
 \subsection{\label{performance}Performance}
 Performance is decent, except for the actual Prolog backtracking. Where is the bottleneck?
 Ale: Probably as I've stated before the problem is in the memory management as
@@ -355,7 +364,7 @@ of datatype records. Future work could focus on generating (parts of) \js
 objects at compile-time, so that only dynamic values will need to be copied to
 the object at runtime.
 
-\subsection{Safe |this| scope (working title)}
+\subsection{Safe |this| scope (working title)}\label{future-work:this-scope}
 Is there a way to prevent the RTS from being exposed by using the keyword
 |this|?
 
