@@ -302,15 +302,16 @@ name of the new object. If the class does not exist yet, it is created using an
 empty constructor.
 
 The other functions manipulate objects and prototypes, using a mechanism
-inspired by so-called lenses\cite{lenses}; an abstraction over
-accessors and mutators. The first argument is always the name of the object
-attribute of interest in the shape of a string. In case of the |set|-functions,
-the second argument is the value that needs to be set. Since \js is a loosely
-typed language, this can be any type. The |mod|-functions take as second
-parameter a function which modifies the attribute specified in the first
-argument. Modifying an attribute can cause it to be of a different type, hence
-the |a -> b| type for the function. Finally, the last argument is either a
-reference to an object, or the name of a class in the form of a string.
+inspired by so-called
+lenses\cite{Meijer:1991:FPB:645420.652535,Hofmann:2011:SL:1925844.1926428,Kagawa:1997:CRS:258949.258969};
+an abstraction over accessors and mutators. The first argument is always the
+name of the object attribute of interest in the shape of a string. In case of
+the |set|-functions, the second argument is the value that needs to be set.
+Since \js is a loosely typed language, this can be any type. The |mod|-functions
+take as second parameter a function which modifies the attribute specified in
+the first argument. Modifying an attribute can cause it to be of a different
+type, hence the |a -> b| type for the function. Finally, the last argument is
+either a reference to an object, or the name of a class in the form of a string.
 
 These functions can be used by importing them as primitives:
 
