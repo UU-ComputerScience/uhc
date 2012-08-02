@@ -808,7 +808,8 @@ For the variant of the JCU application as implemented for this paper more info
 \label{conclusion}
 We have shown that the UHC is capable of supporting the development of complete
 client-side web applications. This opens the door to Haskell-only web
-development. In the process we added the FEL to UHC.
+development. In the process we added the FEL to UHC and provided a library that
+exposes the \js world to Haskell.
 
 Better abstractions are still required to reduce the amount of code that lives
 in the |IO| monad directly, and to give programming with the UHC JavaScript
