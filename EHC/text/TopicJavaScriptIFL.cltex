@@ -55,7 +55,9 @@ JavaScript-like expression language we call the Foreign Expression Language
 write complete JavaScript applications using only Haskell. We back this claim
 up by porting a web-based Prolog proof assistant from JavaScript to Haskell.
 While this paper focusses on Haskell, the ideas should be relatively easy to
-implement in similar languages.
+implement in similar languages. Additionally we provide a library containing
+bindings to the JavaScript standard functionality and bindings to several other
+commonly used JavaScript libraries.
 
 With this paper, we make the following contributions:
 
@@ -161,15 +163,15 @@ new Fun( function(x) {
 } )
 \end{code}
 
-Evaluation is forced by a separate function |eval| which assumes the presence
-of an |eOrV| (evaluator Or Value) field in all Haskell runtime values, which
-tells us whether the JavaScript object represents a Haskell non-WHNF value
-which needs further evaluation or not; in the former case it will be a
-JavaScipt function of arity 0, which can be called.  A Haskell function or
-application object does not evaluate itself since the entailed tail recursion
-will cause the stack of the underlying JavaScript engine to flow over.  The
-separate external function |eval| doing the evaluation allows non WHNF values
-to be returned, thus implementing a trampoline mechanism:
+Evaluation is forced by a separate function |eval| which assumes the presence of
+an |eOrV| (evaluator Or Value) field in all Haskell runtime values, which tells
+us whether the JavaScript object represents a Haskell non-WHNF value which needs
+further evaluation or not; in the former case it will be a \js function of arity
+0, which can be called. A Haskell function or application object does not
+evaluate itself since the entailed tail recursion will cause the stack of the
+underlying JavaScript engine to flow over. The separate external function |eval|
+doing the evaluation allows non WHNF values to be returned, thus implementing a
+trampoline mechanism:
 
 \begin{code}
 function eval( x ) {
@@ -183,14 +185,14 @@ function eval( x ) {
 }
 \end{code}
 
-Even normal JavaScript values can be thrown at |eval|, provided they do not
+Even normal \js values can be thrown at |eval|, provided they do not
 (accidentally) contain an |eOrV| field.  The actual |eval| function is somewhat
 more involved as it provides some protection against null values and also
 updates the |eOrV| field for all intermediate non WHNF objects computed in the
 evaluation loop.
 
 As usual the evaluation is driven by the need to pattern-match on a value, e.g.
-as the result of a case expression or by a built-in JavaScipt primitive which
+as the result of a case expression or by a built-in \js primitive which
 is strict in the corresponding argument such as in the wrapper of the primitive
 multiplication function, which contains the actual multiplication (|*|):
 
@@ -212,6 +214,13 @@ definitions.  Data types and tuples are straightforwardly mapped onto
 JavaScript objects with fields for the constructor tag and its fields.  If
 available, record field names of the corresponding Haskell data type are used.
 
+\subsection{\label{uhc-js}The UHC-JavaScript library}
+The UHC-JavaScript library\cite{uhcjs} contains bindings to standard
+ECMAScript\cite{ecmascript}(\todo{Is this reference correct?}) (of which
+JavaScript is an implementation) functions as well as bindings to jQuery
+functions. It aims to provide a bare-metal interface that is consistent with the
+JavaScript functions. More functional programming abstractions should be done on
+top of this interface.
 
 \section{\label{ffi}JavaScript Foreign Function Interface}
 We have extended the FFI with our Foreign Expression Language (FEL). This
@@ -328,8 +337,8 @@ deal with \js objects. This is similar approach as is taken in the C FFI to
 deal with pointer types.
 
 To facilitate these basic operations, taking into account the best-practices
-described in section \ref{strings}, we offer the % TODO: Introduce the uhc-jscript library first
-|Language.UHC.JScript.Primitives| module, which defines primitive imports and
+described in section \ref{strings}, we offer the |Language.UHC.JS.Primitives|
+module (from section \ref{uhc-js}), which defines primitive imports and
 abstracts away from |JSString|. Using these functions we can now create,
 manipulate and query an object:
 
@@ -570,13 +579,13 @@ could think of providing a Functional
 Reactive\cite{Elliott:2009:PFR:1596638.1596643,Wan:2000:FRP:349299.349331,reactive-banana} 
 interface to building the web application.
 
-\subsection*{Typechecking}
-Currently, foreign expressions are not typechecked at all. In case of a
+\subsection*{Type checking}
+Currently, foreign expressions are not type checked at all. In case of a
 programming error the compiler will currently panic in the best-case scenario
 and happily generate \js code that fails at runtime in the worst-case scenario.
 Constraints on the imports and exports need to be formalised and the foreign
-types should be typechecked according to the foreign expressions. Some example
-constraints that could be typechecked:
+types should be type checked according to the foreign expressions. Some example
+constraints that could be type checked:
 
 \begin{itemize}
   \item Only datatype values may be exported as objects, not functions or
