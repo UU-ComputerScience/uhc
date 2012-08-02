@@ -685,6 +685,16 @@ knowledge about the class system also seeps into the runtime system. Currently
 this has not yet been further addressed.
 %\todo{Typing the untyped.}
 
+\subsection*{Compiling to native \js through Silly}
+The current setup translates Haskell to Core code and from there to our
+representation of Core code in \js. This Core code is then interpreted at
+runtime. To possibly gain performance it is interesting to see whether we can
+take the compilation a step further and compile down to
+Grin\cite{boquist96grin-optim} and possibly Silly\todo{citation needed}. Then
+instead of translating to C we should compile the Grin/Silly code to \js. We
+expect some difficulties because of the lack of direct memory management in \js
+but it should otherwise be rather straightforward.
+
 %%]
 
 
