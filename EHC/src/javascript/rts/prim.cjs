@@ -495,7 +495,7 @@ primMkAnonObj = function() { return {} }
 
 // primMkObj :: JSString -> IO (JSPtr c)
 primMkObj     = function(nm) { 
-  return new primGetCtor(nm); 
+  return new (primGetCtor(nm)); 
 }
 
 // Alias to primMkCtor
