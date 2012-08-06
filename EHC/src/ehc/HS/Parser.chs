@@ -970,7 +970,9 @@ pBody' opts addDecl
           <|> pContextItemsPrefix2
 
         pContextItemsPrefixOpt :: HSParser ContextItems
-        pContextItemsPrefixOpt = pContextItemsPrefix <|> pSucceed []
+        pContextItemsPrefixOpt = pContextItemsPrefix 
+                             <|> pParens (pSucceed []) <* pDARROW
+                             <|> pSucceed []
 
         pTypeContextPrefix :: HSParser (Type -> Type)
         pTypeContextPrefix
