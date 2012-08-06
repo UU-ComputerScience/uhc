@@ -53,12 +53,13 @@ DATA JavaScriptCall
   | Id              -- argument which acts as receiver object (if any), starting at 1, e.g. for arg 1:
 					-- "%1.g", f x y ~> to x.g(y)
   					-- mbThisArgNr		: {Maybe Int}
-                    nm              : String
+            nm            : String
 
                     -- args which is used as index, e.g. for arg 1:
                     -- "g[%1]"    , f x y ~> g[x](y)
                     -- "&%1.g[%2]", f x y ~> x.g[y]
   					-- mbIndexArgNr	: {Maybe Int}
+            mbInclude     : {Maybe String}
   					mbForeignExpr	: {Maybe ForeignExpr}
   | Dynamic
   | Wrapper

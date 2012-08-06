@@ -215,12 +215,12 @@ instance Serialize JavaScriptCall where
               0 -> liftM4 JavaScriptCall_Id sget sget sget sget
 -}
 instance Serialize JavaScriptCall where
-  sput (JavaScriptCall_Id          a b) = sputWord8 0 >> sput a >> sput b
-  sput (JavaScriptCall_Dynamic        ) = sputWord8 1
-  sput (JavaScriptCall_Wrapper        ) = sputWord8 2
+  sput (JavaScriptCall_Id          a b c) = sputWord8 0 >> sput a >> sput b >> sput c
+  sput (JavaScriptCall_Dynamic          ) = sputWord8 1
+  sput (JavaScriptCall_Wrapper          ) = sputWord8 2
   sget = do t <- sgetWord8
             case t of
-              0 -> liftM2 JavaScriptCall_Id sget sget
+              0 -> liftM3 JavaScriptCall_Id sget sget sget
               1 -> return JavaScriptCall_Dynamic
               2 -> return JavaScriptCall_Wrapper
 

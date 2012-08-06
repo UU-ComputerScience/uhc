@@ -81,6 +81,7 @@ ATTR ForeignAGItf AllForeign [ | | extr: ForeignExtraction ]
 SEM JavaScriptCall
   | Id          lhs     .   extr    =   emptyForeignExtraction
                                             { forextractEnt             = @nm
+                                            , forextractIncludes        = maybeToList @mbInclude
                                             , forextractForeignExpr     = maybe (forextractForeignExpr emptyForeignExtraction) id @mbForeignExpr
                                             }
   | Wrapper     lhs     .   extr    =   ForeignExtraction_Wrapper
