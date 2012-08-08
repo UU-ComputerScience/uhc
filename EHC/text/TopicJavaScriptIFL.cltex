@@ -69,6 +69,7 @@ With this paper, we make the following contributions:
     more natural way of interfacing with object-oriented languages.
   \item We show that it is now possible to write complete JavaScript
     applications using only Haskell.
+  \item We provide the beginning of a binding from Haskell to JavaScript.
 \end{itemize}
 
 The rest of this paper is structured as follows: section~\ref{hs2js} introduces
@@ -215,26 +216,28 @@ JavaScript objects with fields for the constructor tag and its fields.  If
 available, record field names of the corresponding Haskell data type are used.
 
 \subsection{\label{uhc-js}The UHC-JavaScript library}
-The UHC-JavaScript library\cite{uhcjs} contains bindings to standard
-ECMAScript\cite{ecmascript}(\todo{Is this reference correct?}) (of which
-JavaScript is an implementation) functions as well as bindings to jQuery
-functions. It aims to provide a bare-metal interface that is consistent with the
-JavaScript functions. More functional programming abstractions should be done on
-top of this interface.
+We provide a library\cite{uhcjs} to streamline the development of \js
+applications with UHC. Further code shown shall make use of this library. The
+library contains bindings to standard ECMAScript\cite{ecmascript}(\todo{Is this
+reference correct?}) (of which JavaScript is an implementation) functions as
+well as bindings to \verb+jQuery+\cite{www11jquery} functions. The library aims
+to provide a bare-metal interface that is consistent with the JavaScript
+functions. More functional programming abstractions should be done on top of
+this interface.
 
 \section{\label{ffi}JavaScript Foreign Function Interface}
 We have extended the FFI with our Foreign Expression Language (FEL). This
 enabled us to more conveniently access functions in JavaScript space from
 Haskell space. The main improvement in the FEL is the possibility to number and
-reorder arguments, and the ability to use the JavaScript object accessor, the
+reorder arguments and the ability to use the JavaScript object accessor, the
 dot. The new grammar for importing functions is shown in figure \ref{jsimpent}.
 Other features include hardcoding of literals, accessing array indices, and a
 built-in mechanism for converting data-types to JavaScript objects.
-% TODO (What else to put here?)
+\todo{TODO: What else to put here?}
 
-In addition we added support for the \emph{dynamic} and \emph{wrapper}
-functionality to the UHC FFI, which allows one to deal with higher-order
-JavaScript functions.
+In addition we have added support for the \emph{dynamic} and
+\emph{wrapper}\cite{Haskell98} functionality to the UHC FFI, which allows one to
+deal with higher-order JavaScript functions.
 
 \begin{figure}[t]
 \hrule
@@ -337,11 +340,10 @@ We can now define functions on the |Book| type, giving us a type-safe way to
 deal with \js objects. This is similar approach as is taken in the C FFI to
 deal with pointer types.
 
-To facilitate these basic operations, taking into account the best-practices
-described in section \ref{strings}, we offer the |Language.UHC.JS.Primitives|
-module (from section \ref{uhc-js}), which defines primitive imports and
-abstracts away from |JSString|. Using these functions we can now create,
-manipulate and query an object:
+We offer the |Language.UHC.JS.Primitives| module (from the library section
+\ref{uhc-js}), which defines primitive imports and abstracts away from
+|JSString|. Using these functions we can now create, manipulate and query an
+object:
 
 \begin{code}
 main = do
@@ -481,29 +483,39 @@ to make the code more specialised for the RTS purposes.
 % What does the app do? How is it implemented? Does it work? Does it work well?
 % Is the UHC JS backend a full replacement for JS coding? Etc?
 % \cite{swierstra2011,stutterheim2012} \cite{snap}
+To demonstrate the possibility of building a \js application in Haskell we
+ported the `JCU Prolog Proof Assistant'\cite{swierstra2011}. It is a tool
+developed for students to familiarise themselves with Prolog through the aided
+solving of Prolog proof trees. Students can proof their Prolog query by applying
+a combination of variable substitution and dropping rules from the list of rules
+on the tree.
 
-The JCU Prolog Proof Assistant\cite{swierstra2011} is a tool developed for
-students to familiarise themselves with Prolog through the aided solving of
-Prolog proof trees. Originally programmed in \coffeescript\cite{coffeescript}
-(sugar for \js) and using the \brunch\cite{brunch} framework.
+The tool was originally programmed in \coffeescript\cite{coffeescript} (sugar
+for \js) and used the \brunch\cite{brunch} framework. Any complicated work such
+as solving the current proof tree and unification of Prolog terms are done on
+the server. The list of rules is stored on the server per user in a database.
 
-Students can proof their Prolog query by applying a combination of variable
-substitution and dropping rules from the list of rules on the tree.
+We rewrote it to Haskell using the UHC and the \ref{uhc-js} library and it now
+depends on jQuery solely for the ease of interaction with the DOM. The jQuery
+plugin AjaxQueue\cite{ajaxq} is used to force sequential non-blocking
+communication with the server. The port has the same functionality as the
+previous implementation and is as stable. The Haskell code is generally
+|IO|-heavy because the greater part of the application specific code deals with
+manipulating what is shown on the screen. \todo{TODO: IO-heavy?? Maybe move this
+down a paragraph?}
 
-The tool is presented as a web application and runs in any modern browser. The
-application is written in Haskell which compiles to \js by UHC. It uses the
-\uhcjscript\cite{uhcjs} library. The \uhcjscript library provides (among others)
-bindings to the jQuery\cite{www11jquery} JavaScript library and the
-AjaxQueue\cite{ajaxq} library. Since it is possible to compile arbitrary Haskell
-code to \js, it is also possible to run any Haskell library, including
-NanoProlog, on the client.
+Since it is possible to compile arbitrary Haskell code to \js, it is also
+possible to run any Haskell library on the client. We use this to include the
+NanoProlog\cite{nanoprolog-package} library in the client. This eliminates the
+need for performing proof checking and unification on the server. Besides the
+obvious changes coming from not having to communicate with the server using the
+NanoProlog library on the client only takes calling the appropriate functions in
+the library. \todo{TODO: Maybe clarify this a bit?? Or is it clear enough,
+should we provide more proof?}
 
-The Haskell implementation of the application has the same features and is as
-stable as the original \coffeescript implementation. The Haskell implementation
-is |IO|-heavy, but straightforward.
-
-Thus it is possible to implement a non-trivial application completely in
-Haskell, using the UHC JavaScript backend.
+Although we now know it is possible to implement a non-trivial application in
+Haskell using the UHC JavaScript it does not come without issues. We will visit
+these issues now.
 
 \subsection{\label{issues}Implementation Issues}
 % todo describe: Which issues do you run into in general when you develop a JS
@@ -512,6 +524,7 @@ Haskell, using the UHC JavaScript backend.
 % Ale: non-termination/threads, no native OO, interfacing with annoyingly
 % multi-interpretable functions (functions that are dimensioned in both the number
 % and type of their arguments)
+\todo{Mismatch GHC/UHC with shared modules, some copying done, but should have separated out definitions, points to the issue where UHC is missing some features}
 
 We had to make concessions and create some workarounds due to the lack of
 support for advanced language features, such as Functional Dependencies and Type
@@ -735,8 +748,9 @@ respectively a small compiler for a subset of Haskell has been written in
 JavaScript.
 
 A more recent attempt at cross-compiling Haskell to JavaScript it the Fay
-language\cite{fay}, which aims to support a subset of Haskell. It shows
-promise, and even draws some inspiration from the work we present here.
+language\cite{fay-lang}, which aims to support a subset of Haskell. It shows
+promise, and even draws some inspiration from the work we present here, namely
+the FEL.
 
 %\subsection{Object orientation.}
 %

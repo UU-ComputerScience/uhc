@@ -2475,6 +2475,10 @@ and pointing out where and why we differ from the `standard' \cite{stuckey02theo
 
 %%[72
 %{
+\setcounter{tocdepth}{6}
+\tableofcontents
+
+
 \section{Introduction}
 
 %%@TopicJavaScriptIFL.introduction
