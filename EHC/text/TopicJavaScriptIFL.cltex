@@ -553,91 +553,39 @@ browsers, although this has only been tested informally.
 
 %%[futureWork
 \label{future}
+While we have shown that it already is possible to implement an entire
+JavaScript application in Haskell, there is still a lot of room for
+improvement. As mentioned before, the UHC itself lacks support for the more
+advanced Haskell features. Implementing these in the UHC would go a long way to
+making the UHC JavaScript back-end a true alternative to JavaScript.
 
-\subsection*{Communicating with the server}\label{ssec:communicating-with-server}
-Currently the communication with the server is encoded manually. That is, the
-creation of the \js values to be send over hardcoded in the application. When
-coding both the server and the client in Haskell one should be able to create
-something like `typed channels' for each server endpoint. This would further
-improve the type safety of the application.
+Our current UHC-JavaScript library relies on the programmer to use imported
+functions correctly. The object-wrapper import, for example, will currently try
+to wrap anything, possibly failing at runtime. Extra constraints could be
+added, although the RTS cannot currently deal with them. Eventually, one could
+image a higher-level library being built on top of the low-level imports to
+provide improved type-safety. Such libraries may be based on generic
+programming to eliminate repetition, function reactive
+programming\cite{Elliott:2009:PFR:1596638.1596643,Wan:2000:FRP:349299.349331,reactive-banana}
+to interact with the DOM, or they may be an entire user-interface toolkit, such
+as wxHaskell\cite{wxHaskell}.
 
-\subsection*{Background threading}
-Although the basic interface for using \verb+WebWorkers+ is present it is
-currently not possible to seamlessly pass Haskell values due to the presence
-of functions. Figuring out how then to pass Haskell values is subject to
-future research.
+Working with WebWorkers as an alternative to Haskell threads is currently not
+investigated yet. Our JCU application would become significantly more usable
+with a threading alternative.
 
-\subsection*{Generic |FromJS| and |ToJS| for converting objects/records}
-It should be fairly straightforward to implement a generic implementation for
-|FromJS| and |ToJS| using deriving Generic.
+Communication with the server is currently encoded manually, possibly using
+existing libraries, like jQuery. One could imagine an approach inspired by
+Cloud Haskell's\cite{epstein2011} typed channels, where communication proceeds
+over type-safe communication channels, abstracting away from the actual AJAX
+call.
 
-\subsection*{Providing an api to build web applications}\label{ssec:providing-an-api-to-build-web-applications}
-One could think of providing a similar API such as WxHaskell\cite{wxHaskell}
-does for constructing native application, but for web applications. Also one
-could think of providing a Functional
-Reactive\cite{Elliott:2009:PFR:1596638.1596643,Wan:2000:FRP:349299.349331,reactive-banana} 
-interface to building the web application.
-
-\subsection*{Type checking}
-Currently, foreign expressions are not type checked at all. In case of a
-programming error the compiler will currently panic in the best-case scenario
-and happily generate \js code that fails at runtime in the worst-case scenario.
-Constraints on the imports and exports need to be formalised and the foreign
-types should be type checked according to the foreign expressions. Some example
-constraints that could be type checked:
-
-\begin{itemize}
-  \item Only datatype values may be exported as objects, not functions or
-        primitive types.
-  \item Only wrapped functions may be exported in objects.
-\end{itemize}
-
-The first item could be realised by supporting type constraints in the foreign
-import. This is already allowed by the type system, but the RTS does not
-currently support this.
-
-% \subsection*{Testing}
-% During development, the code has only received limited, informal testing. The
-% UHC's test suite should be expanded to enable automated testing. Additionally,
-% real-world \js front-end applications should be ported to Haskell and the
-% \uhcjscript library to identify shortcomings of the existing ideas and
-% implementations.
-
-% \subsection*{Benchmarking an optimising}
-% Some benchmarks have been performed that show that the generated \js is quite
-% a bit slower than a hand-written version of the same code. Unfortunately, these
-% numbers aren't publicly available, nor is is clear where the biggest
-% bottlenecks are located. It would be very interesting to do another round of
-% benchmarks, including the object code. Afterwards, it would be interesting to
-% identify bottlenecks and find ways to speed up the generated code.
-
-\subsection*{Static object compilation}
 Currently the only way of converting a datatype to a \js object is to do so at
 runtime. This, however, is a process with time complexity linear in the number
 of datatype records. Future work could focus on generating (parts of) \js
 objects at compile-time, so that only dynamic values will need to be copied to
 the object at runtime.
 
-\subsection*{Safe |this| scope (working title)}\label{future-work:this-scope}
-Is there a way to prevent the RTS from being exposed by using the keyword
-|this|?
-
-% \subsubsection*{Numeric object indices}
-% When a datatype without record selectors is converted into a \js object, the
-% object's attribute name becomes an integer $\geq{1}$ with an underscore prefix.
-% Ideally this would be a numeric index $\geq{0}$.
- 
-\subsection*{Deployment}
-JavaScript code is usually downloaded, hence compact representation as well as
-avoiding or delaying loading of code is important. Although UHC allows pruning
-of unused code as to achieve a relative compact representation, it provides no
-mechanism for dynamic loading of modules. This is left for future
-implementation. In addition UHC is able to perform whole program analysis
-further compacting the JavaScript code and producing a single output JavaScript
-file.
-
-%\todo{Code compactification, module loading, whole prog, ...}
-\subsection*{Packages and The Haskell ecosystem}
 Targeting Haskell to a different platform means that some assumptions following
 from using a single platform only are no longer valid. First, a different
 platform means a different runtime environment. Almost all of the UNIX
@@ -664,36 +612,107 @@ pace of evolution poses a considerable challenge; yet in our opinion there is
 value in the availability of compiler alternatives as well as variation in what
 those compilers are good at.
 
+Currently, we generate JavaScript from the compiler's core language. It might
+be possible to generate faster code which uses native JavaScript language
+features when generating JavaScript at a later stage in the compiler pipeline,
+where the intermediate code is more imperative in nature.
+
+
+% \subsection*{Generic |FromJS| and |ToJS| for converting objects/records}
+% It should be fairly straightforward to implement a generic implementation for
+% |FromJS| and |ToJS| using deriving Generic.
+% 
+% \subsection*{Providing an api to build web applications}\label{ssec:providing-an-api-to-build-web-applications}
+% One could think of providing a similar API such as WxHaskell\cite{wxHaskell}
+% does for constructing native application, but for web applications. Also one
+% could think of providing a Functional
+% Reactive
+% interface to building the web application.
+% 
+% \subsection*{Type checking}
+% Currently, foreign expressions are not type checked at all. In case of a
+% programming error the compiler will currently panic in the best-case scenario
+% and happily generate \js code that fails at runtime in the worst-case scenario.
+% Constraints on the imports and exports need to be formalised and the foreign
+% types should be type checked according to the foreign expressions. Some example
+% constraints that could be type checked:
+% 
+% \begin{itemize}
+%   \item Only datatype values may be exported as objects, not functions or
+%         primitive types.
+%   \item Only wrapped functions may be exported in objects.
+% \end{itemize}
+% 
+% The first item could be realised by supporting type constraints in the foreign
+% import. This is already allowed by the type system, but the RTS does not
+% currently support this.
+
+% \subsection*{Testing}
+% During development, the code has only received limited, informal testing. The
+% UHC's test suite should be expanded to enable automated testing. Additionally,
+% real-world \js front-end applications should be ported to Haskell and the
+% \uhcjscript library to identify shortcomings of the existing ideas and
+% implementations.
+
+% \subsection*{Benchmarking an optimising}
+% Some benchmarks have been performed that show that the generated \js is quite
+% a bit slower than a hand-written version of the same code. Unfortunately, these
+% numbers aren't publicly available, nor is is clear where the biggest
+% bottlenecks are located. It would be very interesting to do another round of
+% benchmarks, including the object code. Afterwards, it would be interesting to
+% identify bottlenecks and find ways to speed up the generated code.
+
+% \subsection*{Safe |this| scope (working title)}\label{future-work:this-scope}
+% Is there a way to prevent the RTS from being exposed by using the keyword
+% |this|?
+
+% \subsubsection*{Numeric object indices}
+% When a datatype without record selectors is converted into a \js object, the
+% object's attribute name becomes an integer $\geq{1}$ with an underscore prefix.
+% Ideally this would be a numeric index $\geq{0}$.
+
+%\subsection*{Deployment}
+%JavaScript code is usually downloaded, hence compact representation as well as
+%avoiding or delaying loading of code is important. Although UHC allows pruning
+%of unused code as to achieve a relative compact representation, it provides no
+%mechanism for dynamic loading of modules. This is left for future
+%implementation. In addition UHC is able to perform whole program analysis
+%further compacting the JavaScript code and producing a single output JavaScript
+%file.
+
+%\todo{Code compactification, module loading, whole prog, ...}
+%\subsection*{Packages and The Haskell ecosystem}
+
 %\todo{Mismatch: Cabal does not deal with multiple backend of one compiler.}
 
 %\todo{Mismatch: Libraries take GHC as standard, not Haskell2010 (or H98).}
 
 %\todo{Unix based library is useless, basically other OS to run on, what about shared code, ...}
 
-\subsection*{Type system absence}
-JavaScript has no type system, the absence of which can be dealt with by using
-phantom types in wrapper functions around untyped FFI calls. More problematic
-are for example DOM functions returning objects with a different interface, like
-a DOM element or attribute. A sum type defining all possible result types could
-be used, but data types are not extensible, which might be too limiting in
-practice. Dynamics might be used as result values, but require assistance from
-the runtime system as well as knowledge about types (e.g. in the form of
-|TypeRep|). Existentially quantified data types and classes might be used
-(similar to extensible exceptions \cite{marlow06extensible-exception}), but then
-knowledge about the class system also seeps into the runtime system. Currently
-this has not yet been further addressed.
-%\todo{Typing the untyped.}
+% \subsection*{Type system absence}
+% JavaScript has no type system, the absence of which can be dealt with by using
+% phantom types in wrapper functions around untyped FFI calls. More problematic
+% are for example DOM functions returning objects with a different interface, like
+% a DOM element or attribute. A sum type defining all possible result types could
+% be used, but data types are not extensible, which might be too limiting in
+% practice. Dynamics might be used as result values, but require assistance from
+% the runtime system as well as knowledge about types (e.g. in the form of
+% |TypeRep|). Existentially quantified data types and classes might be used
+% (similar to extensible exceptions \cite{marlow06extensible-exception}), but then
+% knowledge about the class system also seeps into the runtime system. Currently
+% this has not yet been further addressed.
+% %\todo{Typing the untyped.}
 
-\subsection*{Compiling to native \js through Silly}
-The current setup translates Haskell to Core code and from there to our
-representation of Core code in \js. This Core code is then interpreted at
-runtime. To possibly gain performance it is interesting to see whether we can
-take the compilation a step further and compile down to
-Grin\cite{boquist96grin-optim} and possibly Silly\todo{citation needed}. Then
-instead of translating to C we should compile the Grin/Silly code to \js. We
-expect some difficulties because of the lack of direct memory management in \js
-but it should otherwise be rather straightforward.
-
+% \subsection*{Compiling to native \js through Silly}
+% The current setup translates Haskell to Core code and from there to our
+% representation of Core code in \js. This Core code is then interpreted at
+% runtime. To possibly gain performance it is interesting to see whether we can
+% take the compilation a step further and compile down to
+% Grin\cite{boquist96grin-optim} and possibly Silly\todo{citation needed}. Then
+% instead of translating to C we should compile the Grin/Silly code to \js. We
+% expect some difficulties because of the lack of direct memory management in \js
+% but it should otherwise be rather straightforward.
+% 
 %%]
 
 
@@ -706,7 +725,7 @@ attempts to do so using JavaScript were done in the context of the York Haskell
 Compiler (YHC) \cite{www07yhc-javascript}. The Document Object Model (DOM)
 inside a browser was accessed via wrapper code generated from HTML standard
 definitions \cite{www07haskell-in-browser}. However, YHC is no longer
-maintained and direct interfacing to DOM nowadays is replaced by libraries
+maintained and direct interfacing to the DOM nowadays is replaced by libraries
 built on top of the multiple DOM variations.
 
 The idea of running functional programs in a browser even goes further back to
