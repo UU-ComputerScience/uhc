@@ -94,7 +94,7 @@ languages, which has been addressed in various ways over time
  section).
 \item
  Use of OO language mechanisms as available in JavaScript, in particular
- prototype based objects; we avoid dealing with this problem.
+ prototype based objects; we only mention this topic in passing.
 \item
  Use of available JavaScript libraries; we deal with this in the next section
  by exploiting the freedom offered by Haskell's Foreign Function Interface
@@ -106,7 +106,7 @@ functions, their (lazy) application to arguments, and  evaluating  such
 applications to Weak Head Normal Form (WHNF).  The design should also cater for
 under- and over saturated function applications as well as tail recursion.
 
-In UHC's JavaScript backend functions and their applications are both
+In UHC's JavaScript backend, functions and their applications are both
 represented straightforwardly by objects:
 
 \begin{code}
@@ -119,12 +119,13 @@ function Fun( fun ) { ... }
 \end{code}
 
 We omit implementation details and only expose the programmatic interface as
-used by the runtime system.  A |Fun| object wraps a JavaScript function so that
-it can be used as a Haskell function.  The |applyN| field is only used when
-function applications are being evaluated  (forced); only then it is necessary
-to know the |needsNrArgs| number of arguments which must be passed.  For the
-time being it stays unevaluated as a |Fun| object wrapped inside an |App| or
-|AppLT|  closure object.
+used by the runtime system. The actual implementation can be found in the UHC
+git repository\cite{uhc-git}. A |Fun| object wraps a JavaScript function so
+that it can be used as a Haskell function.  The |applyN| field is only used
+when function applications are being evaluated  (forced); only then it is
+necessary to know the |needsNrArgs| number of arguments which must be passed.
+For the time being it stays unevaluated as a |Fun| object wrapped inside an
+|App| or |AppLT|  closure object.
 
 Similarly, partially applied (and thus undersaturated) functions need to store
 already passed arguments and how many arguments are still missing.  An |AppLT|
@@ -164,15 +165,15 @@ new Fun( function(x) {
 } )
 \end{code}
 
-Evaluation is forced by a separate function |eval| which assumes the presence of
-an |eOrV| (evaluator Or Value) field in all Haskell runtime values, which tells
-us whether the JavaScript object represents a Haskell non-WHNF value which needs
-further evaluation or not; in the former case it will be a \js function of arity
-0, which can be called. A Haskell function or application object does not
-evaluate itself since the entailed tail recursion will cause the stack of the
-underlying JavaScript engine to flow over. The separate external function |eval|
-doing the evaluation allows non WHNF values to be returned, thus implementing a
-trampoline mechanism:
+Evaluation is forced by a separate function |eval| which assumes the presence
+of an |eOrV| (evaluator Or Value) field in all Haskell runtime values, which
+tells us whether the JavaScript object represents a Haskell non-WHNF value
+which needs further evaluation or not; in the former case it will be a \js
+function of arity 0, which can be called. A Haskell function or application
+object does not evaluate itself since the entailed tail recursion will cause
+the stack of the underlying JavaScript engine to flow over. The separate
+external function |eval| doing the evaluation allows non WHNF values to be
+returned, thus implementing a trampoline mechanism:
 
 \begin{code}
 function eval( x ) {
@@ -203,41 +204,41 @@ new Fun( function(a,b) {
 } )
 \end{code}
 
-Depending on the number of arguments provided either an undersatured closure is
-built, or the function is directly invoked using JavaScripts |apply|.  In case
-too many arguments are provided a JavaScript closure is constructed, which
-subsequently is evaluated in the evaluation loop of |eval|.  The implementation
-of |AppLT| is similar to that of |Fun|.  |App|s implementation of |applyN|
-simply delegates to |applyN| of the function it applies to.  Also omitted are
-the encodings of nullary applications, used for unevaluated constants (CAF,
-Constant Applicative Form) and indirection nodes required for mutual recursive
-definitions.  Data types and tuples are straightforwardly mapped onto
-JavaScript objects with fields for the constructor tag and its fields.  If
-available, record field names of the corresponding Haskell data type are used.
+Depending on the number of arguments provided, either an undersatured closure
+is built, or the function is directly invoked using JavaScripts |apply|. In
+case too many arguments are provided, a JavaScript closure is constructed,
+which subsequently is evaluated in the evaluation loop of |eval|. The
+implementation of |AppLT| is similar to that of |Fun|. |App|'s implementation
+of |applyN| simply delegates to |applyN| of the function it applies to. Also
+omitted are the encodings of nullary applications, used for unevaluated
+constants (CAF, Constant Applicative Form) and indirection nodes required for
+mutual recursive definitions. Data types and tuples are straightforwardly
+mapped onto JavaScript objects with fields for the constructor tag and its
+fields. If available, record field names of the corresponding Haskell data type
+are used.
 
 \subsection{\label{uhc-js}The UHC-JavaScript library}
-We provide a library\cite{uhcjs} to streamline the development of \js
-applications with UHC. Further code shown shall make use of this library. The
-library contains bindings to standard ECMAScript\cite{ecmascript}(\todo{Is this
-reference correct?}) (of which JavaScript is an implementation) functions as
-well as bindings to \verb+jQuery+\cite{www11jquery} functions. The library aims
+We provide a library\cite{uhcjs}, simply called the UHC-JavaScript library, to
+streamline the development of \js applications with UHC. It contains bindings
+to standard ECMAScript\cite{ecmascript}, the formal standard behind JavaScript,
+as well as bindings to the jQuery library\cite{www11jquery}. The library aims
 to provide a bare-metal interface that is consistent with the JavaScript
-functions. More functional programming abstractions should be done on top of
-this interface.
+functions. Eventually, this library should form the basis on which more
+(functional) abstractions are built. We shall make use of this library in the
+rest of this paper.
 
 \section{\label{ffi}JavaScript Foreign Function Interface}
-We have extended the FFI with our Foreign Expression Language (FEL). This
-enabled us to more conveniently access functions in JavaScript space from
-Haskell space. The main improvement in the FEL is the possibility to number and
-reorder arguments and the ability to use the JavaScript object accessor, the
-dot. The new grammar for importing functions is shown in figure \ref{jsimpent}.
-Other features include hardcoding of literals, accessing array indices, and a
-built-in mechanism for converting data-types to JavaScript objects.
-\todo{TODO: What else to put here?}
-
-In addition we have added support for the \emph{dynamic} and
-\emph{wrapper}\cite{Haskell98} functionality to the UHC FFI, which allows one to
-deal with higher-order JavaScript functions.
+We have extended the FFI with the Foreign Expression Language (FEL), a small
+language that greatly simplifies interfacing with the JavaScript world from
+Haskell. The FEL allows one to number and reorder the function arguments,
+explicitly use them as arguments to JavaScript functions, or use them as
+objects. Functions in these objects can be called in the FEL by using the dot,
+just like in JavaScript. Other features include hardcoding of literals,
+accessing array indices, and a built-in mechanism for converting data-types to
+JavaScript objects. The new grammar for importing functions is shown in figure
+\ref{jsimpent}. Common FFI features, such as the \emph{dynamic} and
+\emph{wrapper}\cite{Haskell98} imports, work as expected, allowing one to deal
+with higher-order JavaScript functions.
 
 \begin{figure}[t]
 \hrule
@@ -258,6 +259,7 @@ ident  ::= a valid JavaScript identifier
 int    ::= any integer
 str    ::= any string
 \end{code}
+\hrule
 \caption{Import entity notation for the JS calling convention}
 \label{jsimpent}
 \end{figure}
@@ -297,24 +299,27 @@ primSetProtoAttr :: JSString -> a ->  JSString -> IO ()
 primModProtoAttr :: JSString -> (a -> b) -> JSString -> IO ()
 \end{code}
 
-The |primMkCtor| function creates a new constructor function if it does not yet
-exist in the |window| scope. This function is usually only called from within
-the other functions listed above. The |primMkAnonObj| function creates an
-anonymous object |{}|, while the |primMkObj| accepts a string with the class
-name of the new object. If the class does not exist yet, it is created using an
-empty constructor.
+|JSString| is a type synonym for |PackedString|, which is used as the type for
+JavaScript strings.  The |primMkCtor| function creates a new constructor
+function if it does not yet exist in the |window| scope. This function is
+usually only called from within the other functions listed above. The
+|primMkAnonObj| function creates an anonymous object |{}|, while the
+|primMkObj| accepts a string with the class name of the new object. If the
+class does not exist yet, it is created using an empty constructor.
 
 The other functions manipulate objects and prototypes, using a mechanism
-inspired by so-called
+inspired by
 lenses\cite{Meijer:1991:FPB:645420.652535,Hofmann:2011:SL:1925844.1926428,Kagawa:1997:CRS:258949.258969};
 an abstraction over accessors and mutators. The first argument is always the
 name of the object attribute of interest in the shape of a string. In case of
 the |set|-functions, the second argument is the value that needs to be set.
-Since \js is a loosely typed language, this can be any type. The |mod|-functions
-take as second parameter a function which modifies the attribute specified in
-the first argument. Modifying an attribute can cause it to be of a different
-type, hence the |a -> b| type for the function. Finally, the last argument is
-either a reference to an object, or the name of a class in the form of a string.
+Since \js is a loosely typed language, this can be any type, even when
+interfacing with it from the Haskell world. The |mod|-functions take as second
+parameter a function which modifies the attribute specified in the first
+argument. Modifying an attribute can cause it to be of a different type, hence
+the |a -> b| type for the function. Finally, the last argument is either a
+reference to an object, or the name of a class in the form of a string, in case
+of prototypes.
 
 These functions can be used by importing them as primitives:
 
@@ -323,12 +328,12 @@ foreign import prim "primGetAttr"
   _getAttr :: JSString -> JSPtr p -> IO a
 \end{code}
 
-Objects are represented in Haskell by a |JSPtr a| type, which has no
-constructors, so it can't be instantiated directly. The only way an object can
-be obtained is by getting it via the FFI. A |JSPtr a| requires one type
-argument, which specifies the type of the \js object. This should again be a
-type without constructor. Suppose we want a pointer to a |Book| object, we
-could define it as follows:
+Objects are represented in the UHC-JavaScript libraryl by a |JSPtr a| type,
+which has no constructors, so it can't be instantiated directly. The only way
+an object can be obtained is by getting it via the FFI. A |JSPtr a| requires
+one type argument, which specifies the type of the \js object. This should
+again be a type without constructor. Suppose we want a pointer to a |Book|
+object, we could define it as follows:
 
 \begin{code}
 data JSPtr a
@@ -337,13 +342,12 @@ type Book = JSPtr BookPtr
 \end{code}
 
 We can now define functions on the |Book| type, giving us a type-safe way to
-deal with \js objects. This is similar approach as is taken in the C FFI to
-deal with pointer types.
+deal with \js objects. This is similar approach as is often taken in GHC's C
+FFI to deal with pointer types.
 
-We offer the |Language.UHC.JS.Primitives| module (from the library section
-\ref{uhc-js}), which defines primitive imports and abstracts away from
-|JSString|. Using these functions we can now create, manipulate and query an
-object:
+We offer the |Language.UHC.JS.Primitives| module in the UHC-JavaScript library,
+which defines primitive imports and abstracts away from |JSString|. Using these
+functions we can now create, manipulate and query an object:
 
 \begin{code}
 main = do
@@ -354,13 +358,12 @@ main = do
   print p -- Prints 124
 \end{code}
 
-\subsubsection*{Creating objects from datatypes}
-
-While defining objects as shown in the previous paragraphs works fine, the
-process is rather verbose and tedious. It would therefore be ideal if we could
-use Haskell datatypes to achieve the same results. In some ways, datatypes and
-\js objects have a lot in common, especially when the datatype has record
-selectors. Suppose we have a simple |Book| type in Haskell:
+While defining objects as shown in the previous example works fine, the process
+is rather verbose and tedious, especially when dealing with several object
+attributes. It would therefore be ideal if we could use Haskell datatypes to
+achieve the same results. In some ways, datatypes and \js objects have a lot in
+common, especially when the datatype has record selectors. Suppose we have a
+simple |Book| type in Haskell:
 
 \begin{code}
 data Book
@@ -371,10 +374,10 @@ data Book
   }
 \end{code}
 
-And a concrete |Book| value would look something like the following:
+A concrete |Book| value would look as follows:
 
 \begin{code}
-book
+myBook
   =  Book
   {  author  = toJS "me"
   ,  title   = toJS "story"
@@ -386,7 +389,7 @@ The representation of |myBook| closely resembles an object with the same data
 in JavaScript:
 
 \begin{verbatim}
-book
+myBook
  =
   {  author  : "me"
   ,  title   : "story"
@@ -397,12 +400,12 @@ book
 
 In fact, a \js object very similar to the one shown above is already being
 generated by the UHC. However, since it is generated as an application of
-a constructor to some values the generated datatype values are not directly
+a constructor to some values, the generated datatype values are not directly
 usable in other \js libraries. We require a mechanism to convert the Haskell
 representation of the datatype into a \js representation. This idea is similar
-to that of the wrapper import discussed in section \ref{ffi} where we
-wrapped a Haskell function in a \js function. We will use a similar approach to
-make datatypes available as \js objects. We introduce the object import:
+to that of the FFI's wrapper import feature. Using a similar mechanism to the
+wrapper, we can make Haskell datatypes available as \js objects. This mechanism
+is exposed via de FEL, simply as |{}|:
 
 \begin{code}
 foreign import jscript "{}"
@@ -416,12 +419,12 @@ integer is used instead.
 
 Creating the object is achieved by recursively evaluating and cloning the data
 inside the datatype to a new, empty object, disposing of RTS-specific
-information in the process. Taking the example from before, but now using the
-object wrapper. An example of the object wrapper is provided below.
+information in the process. Using the object wrapper, we can simplify our
+example from before:
 
 \begin{code}
 main = do
-  let b' = book { pages = pages book + 1 }
+  let b' = myBook { pages = pages myBook + 1 }
   b  <- mkObj b'
   p  <- getAttr "pages" b
   print p -- Prints 124
@@ -432,20 +435,6 @@ two strings available in our \js object, which would haven taken two more lines
 in the original example. More importantly, Haskell's type system is in a much
 better position to catch programmer mistakes, since record selectors are used
 in the modification of the |pages| value instead of strings.
-
-\subsubsection{Functions in objects}
-
-It is common for \js library functions to accept an anonymous object with some
-configuration parameters, including functions. These functions are often used
-as callbacks. The jQuery \texttt{post()} function, for example, expects an
-object which amongst other things contains callback functions. These functions
-are called when the AJAX request succeeds or fails. As per the Haskell
-specification, the JavaScript FFI supports \textit{dynamic} and
-\textit{wrapper} imports.
-%As we have seen in section
-%\ref{ffi}, creating callback functions is done at runtime using a wrapper.
-%Since we want to support these common use-cases, we restrict object creation to
-%runtime as well.
 
 
 \subsection{Pure objects}
@@ -470,11 +459,9 @@ primPureModAttr  ::  JSString -> (a -> b) -> JSPtr c -> JSPtr c
 \end{code}
 
 Since a potentially large tree of objects will be cloned by these pure
-functions, they should be used with care. The cloning method used is a copy of
-the cloning method used by jQuery\cite{www11jquery}, with some minor modifications
-to make the code more specialised for the RTS purposes.
+functions, they should be used with care. The cloning method used is a
+modification of the cloning method used by jQuery\cite{www11jquery}.
 
-% TODO: Briefly mention the dynamic/wrapper things
 %%]
 
 
