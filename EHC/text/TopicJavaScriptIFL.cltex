@@ -470,39 +470,34 @@ modification of the cloning method used by jQuery\cite{www11jquery}.
 % What does the app do? How is it implemented? Does it work? Does it work well?
 % Is the UHC JS backend a full replacement for JS coding? Etc?
 % \cite{swierstra2011,stutterheim2012} \cite{snap}
-To demonstrate the possibility of building a \js application in Haskell we
-ported the `JCU Prolog Proof Assistant'\cite{swierstra2011}. It is a tool
-developed for students to familiarise themselves with Prolog through the aided
-solving of Prolog proof trees. Students can proof their Prolog query by applying
-a combination of variable substitution and dropping rules from the list of rules
-on the tree.
+To explore the limitations, and to demonstrate the features of the UHC
+JavaScript back-end in a real-life scenario, we ported the `JCU Prolog Proof
+Assistant'\cite{swierstra2011}. It is a tool developed for students to learn
+about important concepts in computer science, such as proofs, trees,
+unification, and backtracking, by means of proving Prolog queries manually.
+Students enter a Prolog query, after which they are tasked with constructing a
+proof by dragging and dropping Prolog rules and facts, and by applying
+substitutions manually throughout the proof tree.
 
-The tool was originally programmed in \coffeescript\cite{coffeescript} (sugar
-for \js) and used the \brunch\cite{brunch} framework. Any complicated work such
-as solving the current proof tree and unification of Prolog terms are done on
-the server. The list of rules is stored on the server per user in a database.
+The application was originally programmed in \coffeescript\cite{coffeescript},
+a layer of syntactic sugar for \js, and used the \brunch\cite{brunch}
+framework. In the original implementation, all Prolog logic was implemented
+server-side in Haskell, using the NanoProlog\cite{nanoprolog-package} library.
 
-We rewrote it to Haskell using the UHC and the \ref{uhc-js} library and it now
-depends on jQuery solely for the ease of interaction with the DOM. The jQuery
-plugin AjaxQueue\cite{ajaxq} is used to force sequential non-blocking
-communication with the server. The port has the same functionality as the
-previous implementation and is as stable. The Haskell code is generally
-|IO|-heavy because the greater part of the application specific code deals with
-manipulating what is shown on the screen. \todo{TODO: IO-heavy?? Maybe move this
-down a paragraph?}
+We rewrote the application in Haskell using the UHC and the UHC-JavaScript
+library. We also use jQuery for interacting with the DOM and the jQuery
+AjaxQueue\cite{ajaxq} plugin for sequential non-blocking communication with the
+server. The resulting application has the same functionality as the
+original implementation and appears to be at least as stable, although this has
+only been manually tested. As is expected of applications that interact heavily
+with a graphical user interface, a large part of the application's code lives
+in the |IO| monad.
 
-Since it is possible to compile arbitrary Haskell code to \js, it is also
-possible to run any Haskell library on the client. We use this to include the
-NanoProlog\cite{nanoprolog-package} library in the client. This eliminates the
-need for performing proof checking and unification on the server. Besides the
-obvious changes coming from not having to communicate with the server using the
-NanoProlog library on the client only takes calling the appropriate functions in
-the library. \todo{TODO: Maybe clarify this a bit?? Or is it clear enough,
-should we provide more proof?}
-
-Although we now know it is possible to implement a non-trivial application in
-Haskell using the UHC JavaScript it does not come without issues. We will visit
-these issues now.
+With the ability to compile Haskell to JavaScript comes the possibility of
+running any Haskell library that compiles on the UHC in the browser, without
+modification. We use this feature in the JCU web application to run the
+NanoProlog library in the browser, allowing us to perform proof checking and
+unification client-side, eliminating the need for many AJAX requests.
 
 \subsection{\label{issues}Implementation Issues}
 % todo describe: Which issues do you run into in general when you develop a JS
@@ -511,45 +506,48 @@ these issues now.
 % Ale: non-termination/threads, no native OO, interfacing with annoyingly
 % multi-interpretable functions (functions that are dimensioned in both the number
 % and type of their arguments)
-\todo{Mismatch GHC/UHC with shared modules, some copying done, but should have separated out definitions, points to the issue where UHC is missing some features}
+% \todo{Mismatch GHC/UHC with shared modules, some copying done, but should have separated out definitions, points to the issue where UHC is missing some features}
 
-We had to make concessions and create some workarounds due to the lack of
-support for advanced language features, such as Functional Dependencies and Type
-Families. Concretely this also means that not all Hackage packages can be build
-using the UHC.
+Most of the problems we encountered in porting the JCU application to Haskell
+were do to the lack of advanced language features in UHC, such as functional
+dependencies and type families, amongst others. Practically, this implies that
+only part of the libraries available on Hackage today can currently be compiled
+to JavaScript using the UHC JavaScript backend.
 
-In \js the keyword |this| refers to the object currently in scope when calling a
-function. Since the function our case was run by our RTS the |this| keyword
-referred to the RTS objects' scope. Essentially exposing the RTS to the Haskell
-world and hiding the scope that would expect to get when we would be using plain
-\js. This is a topic for future work (\ref{future-work:this-scope}).
- 
-Specifically, the \jqui library ensures that |this| in the event callbacks
-points to the object you, e.g., dropped another object on, instead of passing it
-as an argument. In order to work around this we added a wrapper function that
-captures |this| and passes it along to the wrapped function as an event. For
-more details see the |wrappedThis| function in the RTS.
+In \js the keyword |this| refers to the object currently in scope when calling
+a function. Since our functions are called by our RTS, the |this| keyword
+referred to the RTS objects' scope, essentially exposing the RTS to the Haskell
+world and hiding the scope that would expect to get when we would be using
+plain \js. One way to deal with this problem is by creating a wrapper function
+that captures the correct scope and passes it along to the wrapped function as
+explicit argument. We have implemented this solution in the |wrappedThis|
+function, which is part of the RTS.
 
-Since we now run the NanoProlog library on the client we risk infinite recursion
-as the proof resolution can possibly recurse infinitely. The original
-application executed this server-side where it ran in a separate thread. Each
-resolution had a limited time to complete. \js doesn't offer the possibility to
-fork threads, so the proof resolution runs in the main thread, risking blocking.
-The only way to achieve parallel computation in \js is using WebWorkers.
- 
+In addition to the proof exerciser, we offer a user interface to NanoProlog's
+interpreter. In some cases, the interpreter can get stuck in an infinite
+recursion when trying to unify a rule. For example, trying to proof the query
+|silly(X)|, where |silly| is defined as |silly(X):-silly(X).| will never
+terminate. Originally, we spawned a new thread on the server, which we would
+kill after a given amount of time. Our current approach, however, does not yet
+offer threading, risking blocking the client-side process. JavaScript's
+WebWorkers might provide a solution to this problem, although we have yet to
+investigate this option.
+
+
 \subsection{\label{performance}Performance}
 % Performance is decent, except for the actual Prolog backtracking. Where is the bottleneck?
 % Ale: Probably as I've stated before the problem is in the memory management as
 % is supported by the benchmarks in Chrome and Fx.
 
-In general the performance of the web application is on par with the previous
-implementation. The bottleneck lays in the area of memory management. Building
-up lazy Haskell expressions leads to a large amount of JavaScript objects. The
-quick creation and then successive destruction of these large expressions places
-a strain on the memory manager and garbage collector. Currently Google Chrome
-handles this strain best by keeping memory allocation to a minimum. Opera and
-Firefox hit memory issues at smaller expression sizes. Internet Explorer (up
-till version 9, 10 is not tested) is not on par with Opera or Firefox.
+In general, the performance of the web application is on par with the original
+implementation in JavaScript, but only when using a state of the art JavaScript
+engine, as is found in Google Chrome or Safari. The biggest bottleneck seems to
+be memory management. Building up lazy Haskell expressions leads to a large
+amount of JavaScript objects. The quick creation and then successive
+destruction of these large expressions places a strain on the memory manager
+and garbage collector. Other popular browsers, such as Firefox, Opera, and
+Internet Explorer, perform significantly worse than the aforementioned
+browsers, although this has only been tested informally.
 %%]
 
 
