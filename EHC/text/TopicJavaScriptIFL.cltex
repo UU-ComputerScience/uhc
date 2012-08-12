@@ -64,12 +64,12 @@ With this paper, we make the following contributions:
 \begin{itemize}
   \item We introduce the UHC JavaScript backend; a compiler backend that allows
     one to compile any Haskell code supported by the UHC to JavaScript and
-    execute it in the browser with the same semantics.
+    execute it in the browser, maintaining Haskell's lazy semantics.
   \item We introduce the Foreign Expression Language (FEL), which allows for a
-    more natural way of interfacing with object-oriented languages.
+    more natural way of interfacing with object-oriented languages via the FFI.
   \item We show that it is now possible to write complete JavaScript
     applications using only Haskell.
-  \item We provide the beginning of a binding from Haskell to JavaScript.
+  \item We provide a basic library with bindings to common JavaScript APIs.
 \end{itemize}
 
 The rest of this paper is structured as follows: section~\ref{hs2js} introduces
