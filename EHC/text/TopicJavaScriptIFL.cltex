@@ -523,16 +523,57 @@ that captures the correct scope and passes it along to the wrapped function as
 explicit argument. We have implemented this solution in the |wrappedThis|
 function, which is part of the RTS.
 
-In addition to the proof exerciser, we offer a user interface to NanoProlog's
-interpreter. In some cases, the interpreter can get stuck in an infinite
-recursion when trying to unify a rule. For example, trying to proof the query
-|silly(X)|, where |silly| is defined as |silly(X):-silly(X).| will never
-terminate. Originally, we spawned a new thread on the server, which we would
-kill after a given amount of time. Our current approach, however, does not yet
-offer threading, risking blocking the client-side process. JavaScript's
-WebWorkers might provide a solution to this problem, although we have yet to
-investigate this option.
+One of the recurring themes in our application is that \jq uses the |this| 
+keyword in callbacks to pass along the DOM element in question. The code in 
+figure \ref{code:this} shows how we in essence deal with this in our 
+application. \todo{TODO: Reading our code...?} Walking through the code we that 
+|falert| is a Haskell |IO| function that will show the value of the input box 
+in a popup. We request the DOM-element with |jQuery| through a CSS selector 
+that will give us all |input| elements in the DOM. We wrap our |falert| 
+function so it becomes a \js function and then we partially apply it with the 
+|this| parameter by use of |wrappedJQueryEvent|.
 
+\begin{figure}
+\begin{code}
+data JQueryPtr
+type JQuery = JSPtr JQueryPtr
+  
+foreign import js "%1.bind(%*)"
+  _bind :: JQuery -> JSString -> JEventHandler -> IO ()
+    
+type EventHandler        = JQuery -> JEventResult
+type ThisEventHandler    = JQuery -> JQuery -> JEventResult 
+type JEventHandler       = JSFunPtr EventHandler
+type JThisEventHandler   = JSFunPtr ThisEventHandler
+
+valString :: JQuery -> IO String
+mkJThisEventHandler :: ThisEventHandler -> IO JThisEventHandler
+
+foreign import js "wrappedThis(%1)"
+  wrappedJQueryEvent :: JThisEventHandler -> IO JEventHandler
+
+bindInput = do
+  let falert :: ThisEventHandler
+      falert this _ = valString this >>= alert
+  inputField <- jQuery "input"
+  eh  <- mkJThisEventHandler falert
+  eh' <- wrappedJQueryEvent eh
+  _bind inputField (toJS "blur") eh'
+
+\end{code}
+\caption{\todo{TODO: too much code?} Code showing }
+\label{code:this}
+\end{figure}
+
+In addition to the proof exerciser, we offer a user interface to NanoProlog's 
+interpreter. In some cases, the interpreter can get stuck in an infinite 
+recursion when trying to unify a rule. For example, trying to proof the query 
+|silly(X)|, where |silly| is defined as |silly(X):-silly(X).| will never 
+terminate. Originally, we spawned a new thread on the server, which we would 
+terminate after a given amount of time. Our current approach, however, does not 
+yet offer threading, risking blocking the client-side process. JavaScript's 
+WebWorkers might provide a solution to this problem, although we have yet to 
+investigate this option.
 
 \subsection{\label{performance}Performance}
 % Performance is decent, except for the actual Prolog backtracking. Where is the bottleneck?
