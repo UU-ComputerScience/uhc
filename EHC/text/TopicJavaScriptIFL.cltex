@@ -509,30 +509,44 @@ unification client-side, eliminating the need for many AJAX requests.
 % \todo{Mismatch GHC/UHC with shared modules, some copying done, but should have separated out definitions, points to the issue where UHC is missing some features}
 
 Most of the problems we encountered in porting the JCU application to Haskell
-were do to the lack of advanced language features in UHC, such as functional
+were due to the lack of advanced language features in UHC, such as functional
 dependencies and type families, amongst others. Practically, this implies that
 only part of the libraries available on Hackage today can currently be compiled
 to JavaScript using the UHC JavaScript backend.
 
-In \js the keyword |this| refers to the object currently in scope when calling
-a function. Since our functions are called by our RTS, the |this| keyword
-referred to the RTS objects' scope, essentially exposing the RTS to the Haskell
-world and hiding the scope that would expect to get when we would be using
-plain \js. One way to deal with this problem is by creating a wrapper function
-that captures the correct scope and passes it along to the wrapped function as
-explicit argument. We have implemented this solution in the |wrappedThis|
+Another issue arises from JavaScript's object-oriented nature. In \js the 
+keyword |this| is dynamically scoped while all other variables are lexically 
+scoped.
+
+When using the \jq library event callbacks receive the current DOM-node through 
+the |this| keyword and not through a parameter. One would be tempted to import
+the keyword as a function in this way:
+
+\begin{code}
+foreign import js "this"
+  this :: IO JQuery  
+\end{code}
+
+However, this would insert the \js |this| keyword inside the \js code that 
+represents our Haskell function. This function is then wrapped by our dynamic 
+wrapper. Since our function is called by our RTS, the |this| keyword referreds 
+to the RTS objects' scope, essentially exposing the RTS to the Haskell world 
+and hiding the scope that one would expect to get when we would be using plain 
+\js. One way to deal with this problem is by creating a wrapper function that 
+captures the correct scope and passes it along to the wrapped function as 
+explicit argument. We have implemented this solution in the |wrappedThis| 
 function, which is part of the RTS.
 
-The problem outlined above shows its head when using the \jq library. Event 
-callbacks receive the current DOM-node through the |this| keyword. We deal with 
-this by using the |wrappedThis| function from above. Figure \ref{code:this} 
-shows an example of how to use it when you want to show an alert box whenever 
-the focus on an input field is lost. |valString| is a function that will get 
-the value of a \jq object. |alert| is a function that will throw an alert box 
-containing the text given. We request the DOM-element in the page with |jQuery| 
-through a CSS selector that will give us all \verb+input+ elements in the DOM. 
-We wrap our |falert| function so it becomes a \js function and then we 
-partially apply it with the |this| parameter using |wrappedJQueryEvent|.
+The code in figure \ref{code:this} shows how to use this |wrappedThis| function 
+when you want to use the contents of a input field. |valString| is a function 
+that will get the value of a \jq object. |alert| is a function that will throw 
+an alert box containing the text given. We request the DOM-element in the page 
+with |jQuery| through a CSS selector that will give us all \verb+input+ 
+elements in the DOM. We wrap our |falert| function so it becomes a \js function 
+and then we partially apply it with the |this| parameter using 
+|wrappedJQueryEvent|. We finally proceed by binding the created event handler 
+to je input fields found.
+
 %TODO: Rewrite the bit above?
 
 
@@ -543,10 +557,9 @@ type JQuery = JSPtr JQueryPtr
   
 foreign import js "%1.bind(%*)"
   _bind :: JQuery -> JSString -> JEventHandler -> IO ()
-    
-type EventHandler        = JQuery -> JEventResult
+
 type ThisEventHandler    = JQuery -> JQuery -> JEventResult 
-type JEventHandler       = JSFunPtr EventHandler
+type JEventHandler       = JSFunPtr (JQuery -> JEventResult)
 type JThisEventHandler   = JSFunPtr ThisEventHandler
 
 valString :: JQuery -> IO String
