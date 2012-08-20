@@ -472,12 +472,13 @@ modification of the cloning method used by jQuery\cite{www11jquery}.
 % \cite{swierstra2011,stutterheim2012} \cite{snap}
 To explore the limitations, and to demonstrate the features of the UHC
 JavaScript back-end in a real-life scenario, we ported the `JCU Prolog Proof
-Assistant'\cite{swierstra2011}. It is a tool developed for students to learn
-about important concepts in computer science, such as proofs, trees,
-unification, and backtracking, by means of proving Prolog queries manually.
-Students enter a Prolog query, after which they are tasked with constructing a
-proof by dragging and dropping Prolog rules and facts, and by applying
-substitutions manually throughout the proof tree.
+Assistant'\cite{swierstra2011}, a web application developed to aid in
+teaching\cite{stutterheim2012} Prolog at the Junior College Utrecht. It is a
+tool developed for students to learn about important concepts in computer
+science, such as proofs, trees, unification, and backtracking, by means of
+proving Prolog queries manually.  Students enter a Prolog query, after which
+they are tasked with constructing a proof by dragging and dropping Prolog rules
+and facts, and by applying substitutions manually throughout the proof tree.
 
 The application was originally programmed in \coffeescript\cite{coffeescript},
 a layer of syntactic sugar for \js, and used the \brunch\cite{brunch}
