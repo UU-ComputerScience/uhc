@@ -512,40 +512,48 @@ Most of the problems we encountered in porting the JCU application to Haskell
 were due to the lack of advanced language features in UHC, such as functional
 dependencies and type families, amongst others. Practically, this implies that
 only part of the libraries available on Hackage today can currently be compiled
-to JavaScript using the UHC JavaScript backend.
+to JavaScript using the UHC JavaScript back-end.
 
-Another issue arises from JavaScript's object-oriented nature. In \js the 
-keyword |this| is dynamically scoped while all other variables are lexically 
-scoped.
+Another issue arises from JavaScript's scoping rules. In \js, the keyword
+|this| is dynamically scoped while all other variables are lexically scoped.
+Since we emulate lazy evaluation by native JavaScript functions encapsulated by
+objects, the |this| keyword can in some cases point to the runtime system,
+rather than the expected scope, exposing the runtime system to the programmer.
+Simply importing |this| as a function using the FFI is not an option then.
 
-When using the \jq library event callbacks receive the current DOM-node through 
-the |this| keyword and not through a parameter. One would be tempted to import
-the keyword as a function in this way:
+A common use-case of when this might happen is when an imported JavaScript
+library expects the programmer to make use of the |this| keyword in a callback
+function. The \jq library, for example, expects event callbacks to get the
+active DOM-node using the |this| keyword. One way to still get a reference to
+the expected object when using |this| is to create a wrapper function that
+captures the expected scope and passes it to the wrapped function as explicit
+argument. We have implemented this solution in the |wrappedThis| function,
+which is part of our RTS.
+% One would be tempted to import the
+% keyword as a function as follows:
+% 
+% \begin{code}
+% foreign import js "this"
+%   this :: IO JQuery
+% \end{code}
+% 
+% However, this would insert the \js |this| keyword inside the \js code that 
+% represents our Haskell function. This function is then wrapped by our dynamic 
+% wrapper. Since our function is called by our RTS, the |this| keyword referreds 
+% to the RTS objects' scope, essentially exposing the RTS to the Haskell world 
+% and hiding the scope that one would expect to get when we would be using plain 
+%\js. One way to deal with this problem is by creating a wrapper function that 
 
-\begin{code}
-foreign import js "this"
-  this :: IO JQuery  
-\end{code}
-
-However, this would insert the \js |this| keyword inside the \js code that 
-represents our Haskell function. This function is then wrapped by our dynamic 
-wrapper. Since our function is called by our RTS, the |this| keyword referreds 
-to the RTS objects' scope, essentially exposing the RTS to the Haskell world 
-and hiding the scope that one would expect to get when we would be using plain 
-\js. One way to deal with this problem is by creating a wrapper function that 
-captures the correct scope and passes it along to the wrapped function as 
-explicit argument. We have implemented this solution in the |wrappedThis| 
-function, which is part of the RTS.
-
-The code in figure \ref{code:this} shows how to use this |wrappedThis| function 
-when you want to use the contents of a input field. |valString| is a function 
-that will get the value of a \jq object. |alert| is a function that will throw 
-an alert box containing the text given. We request the DOM-element in the page 
-with |jQuery| through a CSS selector that will give us all \verb+input+ 
-elements in the DOM. We wrap our |falert| function so it becomes a \js function 
-and then we partially apply it with the |this| parameter using 
-|wrappedJQueryEvent|. We finally proceed by binding the created event handler 
-to je input fields found.
+Figure \ref{code:this} shows how the |wrappedThis| function can be used to
+obtain the value of an HTML input field. |valString| is a function that gets
+the value of a \jq object as a |String|, while |alert| shows an alert box
+containing the provided message. We query the DOM using jQuery, retrieving all
+\texttt{input} elements, such as text fields, in the DOM. We define a function
+|alertHndlr| that takes the string value of a jQuery object and then shows it
+in an alert box. Note the explicit |this| parameter. We then wrap it so it
+becomes a \js function, after which we partially apply it to an explicit |this|
+parameter using |wrappedThis|. Finally, we bind the event handler to all input
+fields retrieved by our jQuery selector.
 
 %TODO: Rewrite the bit above?
 
@@ -554,11 +562,11 @@ to je input fields found.
 \begin{code}
 data JQueryPtr
 type JQuery = JSPtr JQueryPtr
-  
-foreign import js "%1.bind(%*)"
-  _bind :: JQuery -> JSString -> JEventHandler -> IO ()
 
-type ThisEventHandler    = JQuery -> JQuery -> JEventResult 
+foreign import js "%1.bind(%*)"
+  bind :: JQuery -> JSString -> JEventHandler -> IO ()
+
+type ThisEventHandler    = JQuery -> JQuery -> JEventResult
 type JEventHandler       = JSFunPtr (JQuery -> JEventResult)
 type JThisEventHandler   = JSFunPtr ThisEventHandler
 
@@ -566,29 +574,31 @@ valString :: JQuery -> IO String
 mkJThisEventHandler :: ThisEventHandler -> IO JThisEventHandler
 
 foreign import js "wrappedThis(%1)"
-  wrappedJQueryEvent :: JThisEventHandler -> IO JEventHandler
+  wrappedThis :: JThisEventHandler -> IO JEventHandler
 
 bindInput = do
-  let falert :: ThisEventHandler
-      falert this _ = valString this >>= alert
+  let alertHndlr :: ThisEventHandler
+      alertHndlr this _ = valString this >>= alert
   inputField <- jQuery "input"
-  eh  <- mkJThisEventHandler falert >>= wrappedJQueryEvent
-  _bind inputField (toJS "blur") eh
+  eh <- mkJThisEventHandler alertHndlr >>= wrappedThis
+  bind inputField (toJS "blur") eh
 \end{code}
 \caption{Code for adding an event handler to an input field}
 \label{code:this}
 \end{figure}
 
-In addition to the proof exerciser, we offer a user interface to NanoProlog's 
-interpreter. In some cases, the interpreter can get stuck in an infinite 
-recursion when trying to unify a rule. For example, trying to proof the query 
-|silly(X)|, where |silly| is defined as |silly(X):-silly(X).| will never 
-terminate. Originally, we spawned a new thread on the server, which we would 
-terminate after a given amount of time. Our current approach, however, does not 
-yet offer threading, risking blocking the client-side process causing a tab or 
-the whole browser to hang. JavaScript's WebWorkers might provide a solution to 
-this problem, although we have yet to investigate this option. Another solution 
-would be to change the implementation to limit it's recursion depth.
+A last example of implementation difficulties is found in the lack of threading
+support in our current implementation. In addition to the web-based proof
+exerciser, we offer a web-based user interface to NanoProlog's interpreter. In
+some cases, the interpreter can get stuck in an infinite recursion when trying
+to unify a rule. For example, trying to proof the query |silly(X)|, where
+|silly| is defined as |silly(X):-silly(X).| will never terminate. Originally,
+we spawned a new thread on the server, which we would terminate after a given
+amount of time. Our current approach, however, does not yet offer threading,
+risking blocking the client-side process causing a tab or the whole browser to
+hang. JavaScript's WebWorkers might provide a solution to this problem,
+although we have yet to investigate this option. Another solution would be to
+change the implementation to limit it's recursion depth.
 
 
 \subsection{\label{performance}Performance}
