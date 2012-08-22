@@ -217,16 +217,6 @@ mapped onto JavaScript objects with fields for the constructor tag and its
 fields. If available, record field names of the corresponding Haskell data type
 are used.
 
-\subsection{\label{uhc-js}The UHC-JavaScript library}
-We provide a library\cite{uhcjs}, simply called the UHC-JavaScript library, to
-streamline the development of \js applications with UHC. It contains bindings
-to standard ECMAScript\cite{ecmascript}, the formal standard behind JavaScript,
-as well as bindings to the jQuery library\cite{www11jquery}. The library aims
-to provide a bare-metal interface that is consistent with the JavaScript
-functions. Eventually, this library should form the basis on which more
-(functional) abstractions are built. We shall make use of this library in the
-rest of this paper.
-
 \section{\label{ffi}JavaScript Foreign Function Interface}
 We have extended the FFI with the Foreign Expression Language (FEL), a small
 language that greatly simplifies interfacing with the JavaScript world from
@@ -263,6 +253,16 @@ str    ::= any string
 \caption{Import entity notation for the JS calling convention}
 \label{jsimpent}
 \end{figure}
+
+\subsection{\label{uhc-js}The UHC-JavaScript library}
+We provide a library\cite{uhcjs}, simply called the UHC-JavaScript library, to
+streamline the development of \js applications with UHC. It contains bindings
+to standard ECMAScript\cite{ecmascript}, the formal standard behind JavaScript,
+as well as bindings to the jQuery library\cite{www11jquery}. The library aims
+to provide a bare-metal interface that is consistent with the JavaScript
+functions. Eventually, this library should form the basis on which more
+(functional) abstractions are built. We shall make use of this library in the
+rest of this paper.
 
 \subsection{\label{object-rts}Creating, manipulating and querying objects}
 
