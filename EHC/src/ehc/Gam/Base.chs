@@ -284,6 +284,12 @@ gamFromAssocL = assocLToGam
 {-# INLINE gamFromAssocL #-}
 %%]
 
+%%[50 export(gamUnionWith)
+gamUnionWith :: Ord k => (v -> [v] -> [v]) -> Gam k v -> Gam k v -> Gam k v
+gamUnionWith cmb = sgamUnionWith (Just cmb)
+{-# INLINE gamUnionWith #-}
+%%]
+
 %%[1
 gamUnions :: Ord k => [Gam k v] -> Gam k v
 gamUnions [] = emptyGam

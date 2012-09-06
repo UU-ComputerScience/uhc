@@ -102,10 +102,12 @@ mkDefOccGam'' l r mka os
 mkDefOccGam' :: NmLev -> Range -> (IdOcc -> IdAspect) -> [IdOcc] -> IdDefOccGam
 mkDefOccGam' l r mka os
   = mkDefOccGam'' l r (\_ -> mka) (zip (repeat undefined) os)
+{-# INLINE mkDefOccGam' #-}
 
 mkDefOccGam :: NmLev -> Range -> IdAspect -> [IdOcc] -> IdDefOccGam
 mkDefOccGam l r a os
   = mkDefOccGam' l r (const a) os
+{-# INLINE mkDefOccGam #-}
 %%]
 
 %%[3 hs
@@ -422,7 +424,7 @@ SEM AGItf
 %%[1.initIdGam
 SEM Body
     | Body
-        loc             .   idGam       =   gamAddGam @declarations.idDefOccGam @lhs.idGam
+        loc             .   idGam       =   gamUnion @declarations.idDefOccGam @lhs.idGam
 %%]
 
 TBD: 20100205 AD: The code below to remap identifiers should be revised. Too complex.
@@ -470,26 +472,26 @@ SEM Body
                                                 as n = Map.findWithDefault n n @importdeclarations.modAsMp
                                                 -- compute new gamma holding proper mapping for unqualified & qualified idents
                                                 mkg sel g
-                                                   = gamFromAssocL
+                                                   = foldr idDefOccGamUnion emptyGam
                                                        [ {- tr "NameAnalysis.mkg" (o >#< ns)
-                                                         $ -} (o {ioccNm = n},d {doccNmAlts = Just ns})
+                                                         $ -} gamSingleton (o {ioccNm = n}) (d {doccNmAlts = Set.fromList ns})
                                                        | (o,d) <- gamToAssocL g
                                                        , (n,es) <- sel o
                                                        , let ns = [ ioccNm eo | e <- es, let eo = mentIdOcc e, ioccKind eo == ioccKind o ]
                                                        ]
                                                 gnew = mkg (lks False) @lhs.idGam
-                                            in  mkg (lks False) @declarations.idDefOccGam `gamUnion` gnew
+                                            in  mkg (lks False) @declarations.idDefOccGam `idDefOccGamUnion` gnew
 %%]
 
 %%[1
 SEM Expression
     | Let
-        loc             .   idGam       =   gamAddGam @declarations.idDefOccGam @lhs.idGam
+        loc             .   idGam       =   gamUnion @declarations.idDefOccGam @lhs.idGam
     | Lambda
-        expression      .   idGam       =   gamAddGam @patterns.idDefOccGam @lhs.idGam
+        expression      .   idGam       =   gamUnion @patterns.idDefOccGam @lhs.idGam
 %%[[3
     | Typed
-        type            .   idGam       =   gamAddGam @idDefOccGamType @lhs.idGam
+        type            .   idGam       =   gamUnion @idDefOccGamType @lhs.idGam
 %%]]
 %%[[5
     | Comprehension
@@ -506,13 +508,13 @@ SEM Expression
 %%[4
 SEM Pattern
     | Typed
-        type            .   idGam       =   gamAddGam @idDefOccGamType @lhs.idGam
+        type            .   idGam       =   gamUnion @idDefOccGamType @lhs.idGam
 %%]
 
 %%[4
 SEM LeftHandSide
     | Typed
-        type            .   idGam       =   gamAddGam @idDefOccGamType @lhs.idGam
+        type            .   idGam       =   gamUnion @idDefOccGamType @lhs.idGam
 %%]
 
 %%[3
@@ -524,7 +526,7 @@ SEM Declaration
 %%[[(90 codegen)
       ForeignExport
 %%]]
-        type            .   idGam       =   gamAddGam @idDefOccGamType @lhs.idGam
+        type            .   idGam       =   gamUnion @idDefOccGamType @lhs.idGam
 %%[[5
     | Data Newtype
 %%[[11
@@ -533,27 +535,27 @@ SEM Declaration
 %%[[31
       GADT
 %%]]
-        loc             .   idGam       =   gamAddGam @idDefOccGamType @lhs.idGam
+        loc             .   idGam       =   gamUnion @idDefOccGamType @lhs.idGam
 %%]]
 %%[[6
     | KindSignature
-        kind            .   idGam       =   gamAddGam @idDefOccGamKind @lhs.idGam
+        kind            .   idGam       =   gamUnion @idDefOccGamKind @lhs.idGam
 %%]]
 %%[[9
     | Class
         -- simpletype       .   idGam       =   @lhs.idGam      -- avoid cycles
-        loc             .   idGam       =   gamAddGam @idDefOccGamType @lhs.idGam
+        loc             .   idGam       =   gamUnion @idDefOccGamType @lhs.idGam
                         .   idDefOccGamInstForClass
                                         =   fst $ gamPartition (\_ d -> case doccAsp d of {IdAsp_Inst_Def _ n | n == @classrefname -> True ; _ -> False}) $ @lhs.idGam
     | Instance
-        loc             .   idGam       =   gamAddGam @idDefOccGamType @lhs.idGam
+        loc             .   idGam       =   gamUnion @idDefOccGamType @lhs.idGam
 %%]]
 %%]
 
 %%[1
 SEM FunctionBinding
     | FunctionBinding
-        righthandside   .   idGam       =   gamAddGam @lefthandside.idDefOccGam @lhs.idGam
+        righthandside   .   idGam       =   gamUnion @lefthandside.idDefOccGam @lhs.idGam
 %%]
 
 %%[1
@@ -562,45 +564,45 @@ SEM RightHandSide
 %%[[5
       Guarded
 %%]
-        loc             .   idGam       =   gamAddGam @where.idDefOccGam @lhs.idGam
+        loc             .   idGam       =   gamUnion @where.idDefOccGam @lhs.idGam
 %%]
 
 %%[5
 SEM Alternative
     | Alternative
-        righthandside   .   idGam       =   gamAddGam @pattern.idDefOccGam @lhs.idGam
+        righthandside   .   idGam       =   gamUnion @pattern.idDefOccGam @lhs.idGam
 
 SEM Qualifier
     | Let
-        loc             .   idGam       =   gamAddGam @declarations.idDefOccGam @lhs.idGam
+        loc             .   idGam       =   gamUnion @declarations.idDefOccGam @lhs.idGam
     | Generator
-        lhs             .   idGam       =   gamAddGam @pattern.idDefOccGam @lhs.idGam
+        lhs             .   idGam       =   gamUnion @pattern.idDefOccGam @lhs.idGam
 %%]
 
 %%[9
 SEM Statement
     | Let
-        loc             .   idGam       =   gamAddGam @declarations.idDefOccGam @lhs.idGam
+        loc             .   idGam       =   gamUnion @declarations.idDefOccGam @lhs.idGam
     | Generator
-        lhs             .   idGam       =   gamAddGam @pattern.idDefOccGam @lhs.idGam
+        lhs             .   idGam       =   gamUnion @pattern.idDefOccGam @lhs.idGam
 %%]
 
 %%[4
 SEM Type
     | Forall Exists
-        loc             .   idGam       =   gamAddGam @idDefOccGamInside @lhs.idGam
+        loc             .   idGam       =   gamUnion @idDefOccGamInside @lhs.idGam
 %%]
 
 %%[6
 SEM Kind
     | Forall
-        loc             .   idGam       =   gamAddGam @idDefOccGamInside @lhs.idGam
+        loc             .   idGam       =   gamUnion @idDefOccGamInside @lhs.idGam
 %%]
 
 %%[13
 SEM ContextItem
     | Forall
-        loc             .   idGam       =   gamAddGam @idDefOccGamInside @lhs.idGam
+        loc             .   idGam       =   gamUnion @idDefOccGamInside @lhs.idGam
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -665,9 +667,9 @@ mkUseOccGam opts idGam names kind asp rng
                 occOfDef    = idOccUse {ioccNm = nmOfDef}
                 idUseOccGam = gamSingleton occOfDef (IdUseOcc occOfDef asp rng (doccForUse mbDef))
                 errs        = case mbDef of
-                                Just d | isJust (doccNmAlts d) && length alts > 1
-                                  -> [rngLift rng Err_AmbiguousNameRef "name" "name" name alts]
-                                  where alts = fromJust (doccNmAlts d)
+                                Just d | Set.size (doccNmAlts d) > 1
+                                  -> [rngLift rng Err_AmbiguousNameRef "name" k name (Set.toList $ doccNmAlts d)]
+                                  where k = (show $ ioccKind $ doccOcc d) ++ " (" ++ (showPP $ pp $ doccAsp d) ++ ")"
                                 _ -> []
 %%]
 

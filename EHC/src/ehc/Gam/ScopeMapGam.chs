@@ -104,40 +104,47 @@ instance Show (SGam k v) where
 -- scope ident in scope?
 inScp :: Scp -> Int -> Bool
 inScp = flip elem
+{-# INLINE inScp #-}
 
 -- sgam elt in scope?
 sgameltInScp :: Scp -> SGamElt v -> Bool
 sgameltInScp scp = inScp scp . sgeScpId
+{-# INLINE sgameltInScp #-}
 %%]
 
 %%[8
 -- filter out the out of scopes
 sgameltFilterInScp :: Scp -> [SGamElt v] -> [SGamElt v]
 sgameltFilterInScp scp = filter (sgameltInScp scp)
+{-# INLINE sgameltFilterInScp #-}
 
 -- map the in scopes
 sgameltMapInScp :: Scp -> (v -> v) -> [SGamElt v] -> [SGamElt v]
 sgameltMapInScp scp f = map (\e -> if sgameltInScp scp e then e {sgeVal = f (sgeVal e)} else e)
+{-# INLINE sgameltMapInScp #-}
 
 -- extract the in scopes
 sgameltGetFilterInScp :: Scp -> (v -> v') -> [SGamElt v] -> [v']
 sgameltGetFilterInScp scp f es = [ f (sgeVal e) | e <- es, sgameltInScp scp e ]
+{-# INLINE sgameltGetFilterInScp #-}
 %%]
 
 %%[8
 -- filter out the out of scopes, applying a mapping function on the fly
 mapFilterInScp' :: Ord k => Scp -> ([SGamElt v] -> [SGamElt v]) -> SMap k v -> SMap k v
 mapFilterInScp' scp f m
-  -- = Map.mapMaybe (\es -> maybeNull Nothing (Just . f) $ sgameltFilterInScp scp es) m
   = varmpMapMaybe (\es -> maybeNull Nothing (Just . f) $ sgameltFilterInScp scp es) m
+{-# INLINE mapFilterInScp' #-}
 
 mapFilterInScp :: Ord k => Scp -> (SGamElt v -> SGamElt v) -> SMap k v -> SMap k v
 mapFilterInScp scp f m
   = mapFilterInScp' scp (map f) m
+{-# INLINE mapFilterInScp #-}
 
 sgamFilterInScp :: Ord k => SGam k v -> SGam k v
 sgamFilterInScp g@(SGam {sgScp = scp, sgMap = m})
   = g {sgMap = mapFilterInScp scp id m}
+{-# INLINE sgamFilterInScp #-}
 %%]
 
 %%[8 export(sgamFilterMapEltAccumWithKey,sgamMapEltWithKey,sgamMapThr,sgamMap)
@@ -182,12 +189,20 @@ sgamSingleton :: k -> v -> SGam k v
 sgamSingleton = sgamMetaLevSingleton metaLevVal
 %%]
 
-%%[8 export(sgamUnion)
+%%[8 export(sgamUnionWith,sgamUnion)
+-- combine gam, g1 is added to g2 with scope of g2
+sgamUnionWith :: Ord k => Maybe (v -> [v] -> [v]) -> SGam k v -> SGam k v -> SGam k v
+sgamUnionWith cmb g1@(SGam {sgScp = scp1, sgMap = m1}) g2@(SGam {sgScp = scp2@(hscp2:_), sgMap = m2})
+  = g2 {sgMap = varmpUnionWith cmb' m1' m2}
+  where m1' = mapFilterInScp scp1 (\e -> e {sgeScpId = hscp2}) m1
+        cmb' = maybe (++)
+                     (\c -> \l1 l2 -> concat [ map (SGamElt scp) $ foldr c [] $ map sgeVal g | g@(SGamElt {sgeScpId = scp} : _) <- groupSortOn sgeScpId $ l1 ++ l2 ])
+                     cmb
+
 -- combine gam, g1 is added to g2 with scope of g2
 sgamUnion :: Ord k => SGam k v -> SGam k v -> SGam k v
-sgamUnion g1@(SGam {sgScp = scp1, sgMap = m1}) g2@(SGam {sgScp = scp2@(hscp2:_), sgMap = m2})
-  = g2 {sgMap = varmpUnionWith (++) m1' m2}
-  where m1' = mapFilterInScp scp1 (\e -> e {sgeScpId = hscp2}) m1
+sgamUnion = sgamUnionWith Nothing
+{-# INLINE sgamUnion #-}
 %%]
 
 %%[8 export(sgamPartitionEltWithKey,sgamPartitionWithKey)

@@ -81,7 +81,7 @@ type CUtimbuf   = ()
 type CUtsname   = ()
 
 #ifndef __GLASGOW_HASKELL__
-type FD = CInt
+-- type FD = CInt
 #endif
 
 -- ---------------------------------------------------------------------------

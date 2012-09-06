@@ -15,6 +15,20 @@
 %\newcommand{\Coloneqq}[1]{{::=}}
 %%]
 
+%%[abstractHIW2012
+The Utrecht Haskell Compiler (UHC) has a JavaScript backend. This
+backend has been used to experiment with building applications intended
+to run inside web browsers. In particular we did a port of a small
+client-server application. Although both backend and client-server
+applications in itself are not new, the particular combination allowing
+web browser programming in Haskell is new and interesting because of
+entering otherwise unfamiliar Haskell territory. We discuss the backend,
+the JavaScript FFI, the built client-server application, and the aspects
+of this experiment which went well as the aspects (both in UHC as well
+as the Haskell ecosystem) which need improvement in order to make
+Haskell a viable option for web browser programming.
+%%]
+
 %%[abstract
 We describe a small web application which was created in order to make secondary school students familiar with functional and logic programming.
 The accompanying teaching material  explains both Prolog, and for the more advanced students  its implementation in Haskell.
