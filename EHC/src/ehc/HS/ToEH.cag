@@ -742,7 +742,7 @@ SEM Expression
     | Tuple
         loc         .   eh          =   ehExpConApp @range (hsnProd (length @expressions.eh)) @expressions.eh
     | Typed
-        loc         .   eh          =   rngLift @range EH.Expr_TypeAs @type.eh @expression.eh
+        loc         .   eh          =   rngLift @range EH.Expr_TypeAs False @type.eh @expression.eh
     | Negate
         loc         .   eh          =   ehExpVarApp @range @refname [@expression.eh]
 	| Annotate
@@ -1127,7 +1127,7 @@ SEM FunctionBinding
 %%[2 hs
 -- | enforce monomorphism
 ehMkEnforceMono :: Range -> Bool -> EH.Expr -> EH.Expr
-ehMkEnforceMono r True e = rngLift r EH.Expr_TypeAs (rngLift r EH.TyExpr_Mono) e
+ehMkEnforceMono r True e = rngLift r EH.Expr_TypeAs False (rngLift r EH.TyExpr_Mono) e
 ehMkEnforceMono _ _    e =                                                     e
 %%]
 
@@ -1166,7 +1166,7 @@ ATTR LeftHandSide [ | | ehTyMk: {EH.Expr -> EH.Expr} ]
 
 SEM LeftHandSide
     | Typed
-        lhs         .   ehTyMk      =   rngLift @range EH.Expr_TypeAs @type.eh
+        lhs         .   ehTyMk      =   rngLift @range EH.Expr_TypeAs True @type.eh
     | * - Typed
         lhs         .   ehTyMk      =   id
 %%]

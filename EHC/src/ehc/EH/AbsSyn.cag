@@ -339,7 +339,8 @@ DATA Expr
                     body            : Expr
   | AppTop          expr            : Expr
   | Parens          expr            : Expr
-  | TypeAs          tyExpr          : TyExpr
+  | TypeAs          isScoped		: {Bool}			-- ^ Are the type vars in 'tyExpr' to be lexically scoped? Used for: f a :: t = e, rewritten to \a -> (e :: t)
+                    tyExpr          : TyExpr
                     expr            : Expr
   | Ann             ann             : ExprAnn
                     expr            : Expr
