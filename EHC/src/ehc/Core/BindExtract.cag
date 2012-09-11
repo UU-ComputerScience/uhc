@@ -26,8 +26,8 @@ data BoundSel
       , selRelevTy      :: ACoreBindAspectKeyS -> RelevTy -> Bool
       , selVal          :: ACoreBindAspectKeyS -> MetaLev -> CLbl -> Bool
       , selTy           :: ACoreBindAspectKeyS -> Bool
-%%[[9090
-      , selFFE          :: -- TBD
+%%[[90
+      , selFFE          :: Bool
 %%]]
       }
 
@@ -41,8 +41,8 @@ noBoundSel
       , selRelevTy		= \_ _ -> False
       , selVal			= \_ _ _ -> False
       , selTy			= const False
-%%[[9090
-      , selFFE			= -- TBD
+%%[[90
+      , selFFE			= False
 %%]]
       }
 
@@ -63,14 +63,16 @@ boundSelMetaLev0
   = noBoundSel
       { selBind			= True
       , selVal 			= \_ mlev _ -> mlev == 0
+%%[[90
+      , selFFE 			= True
+%%]]
       }
 
 -- | Predefined selection: same MetaLev (i.e. 0), + 1 higher (i.e. has signature)
 boundSelMetaLev01 :: BoundSel
 boundSelMetaLev01
-  = noBoundSel
-      { selBind			= True
-      , selVal 			= \_ mlev _ -> mlev <= 1
+  = boundSelMetaLev0
+      { selVal 			= \_ mlev _ -> mlev <= 1
       , selTy			= const True
       }
 %%]

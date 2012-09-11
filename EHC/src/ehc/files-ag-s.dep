@@ -32,6 +32,7 @@ JVMClass/ToBinary.cag
 JavaScript/Pretty.cag
 Error/Pretty.cag
 Core/BindExtract.cag
+Core/ExtractFFE.cag
 Core/ToGrin.cag
 Core/ToJazy.cag
 Core/ToJavaScript.cag

@@ -60,5 +60,11 @@ SEM CBound
                                                 =   if selTy @lhs.boundsel @aspectKeyS
                                                     then ([@boundval],[])
                                                     else ([],[@boundval])
+%%[[90
+  | FFE         lhs         .   (selvalYesL,selvalNoL)
+                                                =   if selFFE @lhs.boundsel
+                                                    then ([@boundval],[])
+                                                    else ([],[@boundval])
+%%]]
 %%]
 
