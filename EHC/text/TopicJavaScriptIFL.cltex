@@ -1,3 +1,7 @@
+%TODO: Add pretty code example
+%TODO: Add explanation of how we handle types
+%TODO: Mention tail-recursion and the trampoline mechanism
+
 %%[prelude
 %include IdentColors.fmt
 %include Javascript.fmt
