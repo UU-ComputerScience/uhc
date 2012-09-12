@@ -1,0 +1,76 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Extraction of FFE, foreign function exports
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(90 codegen) hs module {%{EH}Core.ExtractFFE}
+%%]
+
+%%[(90 codegen) hs import(qualified Data.Set as Set,qualified Data.Map as Map)
+%%]
+
+%%[(90 codegen) hs import({%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Core},{%{EH}Ty})
+%%]
+
+%%[(90 codegen).WRAPPER ag import({Core/AbsSyn},{Core/Trf/CommonFv},{Core/CommonBindNm})
+WRAPPER CodeAGItf
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell itf
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(90 codegen) hs export(cmodExtractFFE)
+cmodExtractFFE :: CModule -> [ExtractFFE]
+cmodExtractFFE m
+  = ffeBinds_Syn_CodeAGItf t
+  where t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf m)) Inh_CodeAGItf
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Supporting datatypes
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(90 codegen) hs export(ExtractFFE(..))
+-- | Relevant info required outside
+data ExtractFFE
+  = ExtractFFE
+      { effeBind		:: CBind		-- ^ the actual binding
+      , effeFvS			:: FvS			-- ^ the free vars occurring in the exported expr
+      }
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Replica
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(90 codegen)
+ATTR AllExpr [ | | self: SELF ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% ExtractFFE
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(90 codegen)
+ATTR CodeAGItf CModule AllBind CExpr [ | | ffeBinds USE {++} {[]} : {[ExtractFFE]} ]
+%%]
+
+%%[(90 codegen)
+SEM CBind
+  | Bind		lhs			.	ffeBinds	=	map (\(b,fv) -> ExtractFFE (CBind_Bind @nm [b]) fv) @bindAspects.ffeBounds
+%%]
+
+%%[(90 codegen)
+ATTR AllBound [ | | ffeBounds USE {++} {[]} : {[(CBound,FvS)]} ]
+%%]
+
+%%[(90 codegen)
+SEM CBound
+  | FFE			lhs			.	ffeBounds	=	[(@self,@expr.fvS)]
+%%]
+

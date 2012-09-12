@@ -340,7 +340,7 @@ pExprBase       =    mkEH Expr_IConst     <$>  pInt
 
 -- pExpr
 %%[1.pExpr
-pExpr           =    pE <??> (mkEH Expr_TypeAs <$ pKey "::" <*> pTyExpr)
+pExpr           =    pE <??> (mkEH Expr_TypeAs False <$ pKey "::" <*> pTyExpr)
                 where pE  =    pExprPrefix <*> pE
                           <|>  pExprApp
 %%]

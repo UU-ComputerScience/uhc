@@ -481,6 +481,7 @@ SEM Expr
                             .   gTyTvS              =   @tyTyUpdFreeTvarS `Set.union` @valTyUpdFreeTvarS
 %%]]
                             .   tyVarWildS          =   Map.keysSet @tyExpr.tyVarWildMp
+                                                        `Set.union` (if @isScoped then varFreeSet @tyExpr.ty else Set.empty)
                             .   ty_q_               :=  tyQuantifyOuter (const kiStar {- TBD -}) (`Set.member` (@tyVarWildS `Set.union` @gTyTvS)) @tyTy
                             .   fo_                 :=  fitsIn @knTyFIOpts @fe @lUniq @lhs.tyVarMp @ty_q_ @lhs.knTy
                             .   ty_q_2_VarMp        =   foVarMp @fo_ `varUpd` @lhs.tyVarMp

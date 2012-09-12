@@ -14,8 +14,8 @@ intRange = (-100,100)
 boolRange :: (Bool, Bool)
 boolRange = (False,True)
 
-floatRange :: (Float,Float)
-floatRange  = (-10,10)
+floatRange' :: (Float,Float)
+floatRange'  = (-10,10)
 
 doubleRange :: (Double, Double)
 doubleRange = (1,20)
@@ -43,10 +43,10 @@ main = do
       sg' = read "123" :: StdGen
       ri  = fst $ randomR intRange sg
       rb  = fst $ randomR boolRange sg'
-      rfs = randomRs floatRange g
+      rfs = randomRs floatRange' g
   print (inRange intRange ri)
   print (inRange boolRange rb)
-  print (all (inRange floatRange) (take 10 rfs))
+  print (all (inRange floatRange') (take 10 rfs))
   
 
 rollDice :: IO Int

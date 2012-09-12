@@ -958,7 +958,9 @@ pBody' opts addDecl
               <|> pParens ((:) <$> pContextItemBase
                                <*> (   pImO
                                    <|> (++) <$> pList1 (pCOMMA *> pContextItemBase) <*> pImO
-                          )        )
+                                   )
+                          <|> pSucceed []
+                          )
               )
               <*  pDARROW
           where pImO  =  (:[]) <$ pCOMMA <*> pContextItemImplWild `opt` []

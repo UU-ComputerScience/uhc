@@ -229,8 +229,8 @@ isLatin1 c = c <= '\xff'
 isControl c = c < ' ' || c >= '\DEL' && c <= '\x9f'
 isPrint c = c >= ' '
 
-foreign import ccall "primCharToUpper" toUpper :: Char -> Char
-foreign import ccall "primCharToLower" toLower :: Char -> Char
+foreign import prim "primCharToUpper" toUpper :: Char -> Char
+foreign import prim "primCharToLower" toLower :: Char -> Char
 
 #endif
 

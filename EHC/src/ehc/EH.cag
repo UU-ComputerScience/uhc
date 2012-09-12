@@ -149,7 +149,7 @@ mkIf'' (bn:tn:fn:_) r c t e i failS
           | n == tn -> t
           | n == fn -> e
       _ -> mkCase' r
-             ( rngLift r Expr_TypeAs (rngLift r TyExpr_Con bn) c )
+             ( rngLift r Expr_TypeAs False (rngLift r TyExpr_Con bn) c )
 %%[[8
              i failS False
 %%]]

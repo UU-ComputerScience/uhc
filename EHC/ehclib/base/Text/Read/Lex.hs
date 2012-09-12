@@ -48,7 +48,7 @@ import GHC.Real( Ratio(..), Integral, Rational, (%), fromIntegral,
 import GHC.List
 import GHC.Enum( maxBound )
 #else
-import Prelude hiding ( lex )
+import Prelude hiding ( lex, lexDigits, lexLitChar )
 import Data.Char( chr, ord, isSpace, isAlpha, isAlphaNum )
 import Data.Ratio( Ratio, (%) )
 #endif

@@ -159,6 +159,17 @@ type IdDefOccGam = Gam    IdOcc  IdDefOcc
 type IdDefOccAsc = AssocL IdOcc [IdDefOcc]
 %%]
 
+%%[1 export(idDefOccGamUnion)
+-- | Union gam, but tailored to maintaining duplicate definition info
+idDefOccGamUnion :: IdDefOccGam -> IdDefOccGam -> IdDefOccGam
+%%[[1
+idDefOccGamUnion = gamUnion
+%%][50
+idDefOccGamUnion = gamUnionWith idDefOccLCmb
+%%]]
+{-# INLINE idDefOccGamUnion #-}
+%%]
+
 %%[9
 idDefOccGamPartitionByKind :: [IdOccKind] -> IdDefOccGam -> (IdDefOccAsc,IdDefOccAsc)
 idDefOccGamPartitionByKind ks
@@ -201,6 +212,7 @@ idGam2QualGam = gamMap (\(iocc,docc) -> (iocc {ioccNm = hsnQualified $ ioccNm io
 
 idQualGamReplacement :: IdQualGam -> IdOccKind -> HsName -> HsName
 idQualGamReplacement g k n = maybe n id $ gamLookup (IdOcc n k) g
+{-# INLINE idQualGamReplacement #-}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -253,20 +265,6 @@ instance (Ord k, PP k, PP v) => PP (Gam k v) where
 %%[8.PP.Gam -1.PP.Gam
 instance (Ord k, PP k, PP v) => PP (SGam k v) where
   pp g = ppGam g
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% ForceEval
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(9999 hmtyinfer || hmtyast)
-instance ForceEval TyKiKey
-%%[[102
-  where
-    fevCount (TyKiKey_Name  n) = cm1 "TyKiKey_Name"  `cmUnion` fevCount n
-    fevCount (TyKiKey_TyVar v) = cm1 "TyKiKey_TyVar" `cmUnion` fevCount v
-%%]]
-
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

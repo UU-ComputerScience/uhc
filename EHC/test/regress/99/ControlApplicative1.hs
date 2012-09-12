@@ -5,7 +5,7 @@
 
 module ControlApplicative1 where
 
-import Control.Applicative
+import Control.Applicative hiding (ZipList)
 
 newtype ZipList a = ZipList [a]
   deriving Show

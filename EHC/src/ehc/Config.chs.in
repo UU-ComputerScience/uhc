@@ -68,7 +68,11 @@ version
 
 %%[1 export(verInfo)
 verInfo :: Version -> String
-verInfo v = verProg v ++ "-" ++ verFull v ++ ", Revision " ++ verSvnRevision v
+verInfo v =
+  verProg v ++ "-" ++ verFull v ++ ", revision " ++ verSvnRevision v
+%%[[50
+  ++ ", timestamp " ++ verTimestamp v
+%%]]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

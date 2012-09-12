@@ -40,24 +40,18 @@ ATTR
     ]
 
 SEM CBound
-  | Val         lhs         .   (selvalYesL,selvalNoL)
-                                                =   if selVal @lhs.boundsel @aspectKeyS @mlev @lbl
-                                                    then ([@boundval],[])
-                                                    else ([],[@boundval])
-  | Bind        lhs         .   (selvalYesL,selvalNoL)
-                                                =   if selBind @lhs.boundsel
-                                                    then ([@boundval],[])
-                                                    else ([],[@boundval])
-  | Meta        lhs         .   (selvalYesL,selvalNoL)
-                                                =   if selMeta @lhs.boundsel @aspectKeyS
-                                                    then ([@boundval],[])
-                                                    else ([],[@boundval])
-  | RelevTy     lhs         .   (selvalYesL,selvalNoL)
-                                                =   if selRelevTy @lhs.boundsel @aspectKeyS @relevTy
-                                                    then ([@boundval],[])
-                                                    else ([],[@boundval])
-  | Ty          lhs         .   (selvalYesL,selvalNoL)
-                                                =   if selTy @lhs.boundsel @aspectKeyS
+  | Val         loc         .   isSelected      =   selVal     @lhs.boundsel @aspectKeyS @mlev @lbl
+  | Bind        loc         .   isSelected      =   selBind    @lhs.boundsel
+  | Meta        loc         .   isSelected      =   selMeta    @lhs.boundsel @aspectKeyS
+  | RelevTy     loc         .   isSelected      =   selRelevTy @lhs.boundsel @aspectKeyS @relevTy
+  | Ty          loc         .   isSelected      =   selTy      @lhs.boundsel @aspectKeyS
+%%[[90
+  | FFE         loc         .   isSelected      =   selFFE     @lhs.boundsel
+%%]]
+
+SEM CBound
+  | *           lhs         .   (selvalYesL,selvalNoL)
+                                                =   if @isSelected
                                                     then ([@boundval],[])
                                                     else ([],[@boundval])
 %%]

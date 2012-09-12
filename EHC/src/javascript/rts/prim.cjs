@@ -283,6 +283,12 @@ primCharIsUpper = function(x) {
 primCharIsLower = function(x) { 
   return PrimMkBool(x > 96 && x < 123) ; 
 }
+primCharToLower = function(charCode) {
+  return String.fromCharCode(charCode).toLowerCase().charCodeAt(0);
+};
+primCharToUpper = function(charCode) {
+  return String.fromCharCode(charCode).toUpperCase().charCodeAt(0);
+};
 %%]
 
 Represent packed strings as Javascript strings

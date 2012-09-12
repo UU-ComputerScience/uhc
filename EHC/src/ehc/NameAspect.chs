@@ -11,6 +11,11 @@
 %%[1 export(IdDefOcc(..),emptyIdDefOcc,mkIdDefOcc)
 %%]
 
+%%[50 import(qualified Data.Set as Set)
+%%]
+%%[50 import(EH.Util.Utils)
+%%]
+
 %%[9999 import({%{EH}Base.ForceEval})
 %%]
 
@@ -209,7 +214,7 @@ data IdDefOcc
       , doccLev     :: !NmLev
       , doccRange   :: !Range
 %%[[50
-      , doccNmAlts  :: !(Maybe [HsName])
+      , doccNmAlts  :: !(Set.Set HsName) -- !(Maybe [HsName])
 %%]]
       }
   deriving (Show)
@@ -225,15 +230,24 @@ mkIdDefOcc o a l r = IdDefOcc o a l r
 
 %%[50 -1.mkIdDefOcc hs
 mkIdDefOcc :: IdOcc -> IdAspect -> NmLev -> Range -> IdDefOcc
-mkIdDefOcc o a l r = IdDefOcc o a l r Nothing
+mkIdDefOcc o a l r = IdDefOcc o a l r Set.empty
 %%]
 
 %%[1
 instance PP IdDefOcc where
   pp o = doccOcc o >|< "/" >|< doccAsp o >|< "/" >|< doccLev o
 %%[[50
-         >|< maybe empty (\ns -> "/" >|< ppBracketsCommas ns) (doccNmAlts o)
+         >|< (ppBracketsCommas $ Set.toList $ doccNmAlts o)
+%%]]
 %%]
+
+%%[50 hs export(idDefOccLCmb)
+-- | Collapse multiple 'IdDefOcc', remembering duplicates in doccNmAlts
+idDefOccLCmb :: IdDefOcc -> [IdDefOcc] -> [IdDefOcc]
+idDefOccLCmb l1 l2 =
+  [ d {doccNmAlts = Set.unions [Set.insert (ioccNm o) a | (IdDefOcc {doccOcc = o, doccNmAlts = a}) <- g]}
+  | g@(d:_) <- groupSortOn (\d -> (ioccKind $ doccOcc d {-, doccLev d -})) $ l1 : l2
+  ]
 %%]
 
 %%[50 hs export(doccStrip)

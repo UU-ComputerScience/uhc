@@ -31,6 +31,8 @@
 %%]
 %%[(50 codegen) import({%{EH}Core.FvS}, {%{EH}Core.ModAsMap})
 %%]
+%%[(90 codegen) import({%{EH}Core.ExtractFFE})
+%%]
 
 -- debug
 %%[(8 codegen) import({%{EH}Base.Debug},EH.Util.Pretty)
@@ -228,29 +230,33 @@ emptyPullState = PullState Seq.empty Set.empty []
 
 -- | merge by pulling in that which is required only
 cModMergeByPullingIn
-  ::                                -- function giving bindings for name
-     (HsName                        -- name
+  ::                                -- ^ function giving bindings for name
+     (HsName                        -- ^ name
       -> Maybe
-           ( cat                    -- category
-           , [bind]                 -- and bindings
-           , HsNameS                -- pulled in names (might be > 1 for mutual recursiveness)
+           ( cat                    -- ^ category
+           , [bind]                 -- ^ and bindings
+           , HsNameS                -- ^ pulled in names (might be > 1 for mutual recursiveness)
      )     )
-     -> (expr -> HsNameS)           -- extract free vars
-     -> (bind -> [expr])            -- extract relevant exprs for binding
+     -> (expr -> HsNameS)           -- ^ extract free vars
+     -> (bind -> [expr])            -- ^ extract relevant exprs for binding
      -> ([(cat,[bind])] -> mod -> mod)
-                                    -- update module with pulled bindings
-     -> expr                        -- start of pulling in, usually top level name "main"
-     -> ( (mod -> mod)              -- conversion of resulting module
-        , HsNameS                   -- modules from which something was taken
+                                    -- ^ update module with pulled bindings
+     -> expr                        -- ^ start of pulling in, usually top level name "main"
+     -> (cat,[(bind,HsNameS)])		-- ^ exports, providing additional pull starting points
+     -> ( (mod -> mod)              -- ^ conversion of resulting module
+        , HsNameS                   -- ^ modules from which something was taken
         )
 cModMergeByPullingIn
      pullIn getExprFvS getBindExprs updMod
-     rootExpr
-  = ( updMod (Seq.toList $ pullstBinds st)
-    , Set.map (panicJust "cModMergeByPullingIn" . hsnQualifier) $ pullstPulledNmS st
+     rootExpr (exportCateg,rootExports)
+  = ( updMod (Seq.toList $ pullstBinds final)
+    , Set.map (panicJust "cModMergeByPullingIn" . hsnQualifier) $ pullstPulledNmS final
     )
-  where st = execState (pull) (emptyPullState {pullstToDo = Set.toList $ getExprFvS rootExpr})
-        pull = do
+  where final = st {pullstBinds = pullstBinds st `Seq.union` Seq.fromList [ (exportCateg,[b]) | (b,_) <- rootExports ]}
+              where st = execState pull init
+        init  = emptyPullState
+                  {pullstToDo = Set.toList $ Set.unions $ getExprFvS rootExpr : map snd rootExports}
+        pull  = do
           s <- get
           case pullstToDo s of
             (nm:nmRest)
@@ -282,7 +288,7 @@ cModMerge2 (mimpL,mmain)
   = mkM mmain
   where (mkM,_)   = cModMergeByPullingIn lkupPull cexprFvS cbindExprs
                                          (\bs (CModule_Mod modNm _ _) -> CModule_Mod modNm (acoreLetN bs $ rootExpr) allTags)
-                                         rootExpr
+                                         rootExpr rootExports
         rootExpr  = cmoddbMainExpr modDbMain
         allTags   = concatMap cmoddbTagsMp $ modDbMain : modDbImp
         modDbMain =     cexprModAsDatabase mmain
@@ -299,6 +305,12 @@ cModMerge2 (mimpL,mmain)
                   , -- (\x -> tr "cModMerge2.lkupPull" (n >#< show x) x) $
                     Set.fromList $ map cbindNm bs
                   )
+%%[[50
+        rootExports = (CBindCateg_Rec,[])
+%%][90
+        rootExports = (CBindCateg_FFE,ffes)
+                    where ffes = [ (effeBind e, effeFvS e) | m <- mmain : mimpL, e <- cmodExtractFFE m ]
+%%]]
 %%]
         lkupMod  n = do
            m <- (\x -> tr "cModMerge2.lkupMod" (n >#< x) x) $

@@ -5,7 +5,7 @@
 
 module GenerDeriv1 where
 
-import UHC.Generics
+import UHC.Generics hiding (D)
 
 data Bit = OBit | IBit | BitsI Int | BitsC Int
   deriving Show
