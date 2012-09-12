@@ -11,8 +11,10 @@ module Common
   , Err(..)
 
   , OutDoc, emptyout
+  , outnl
   , Out(..)
   , (+++), outList, outListSep
+  , outPack
   , outToString
   
   , putOut, putOutLn
@@ -111,6 +113,9 @@ type OutDoc = Seq.Seq String
 emptyout :: OutDoc
 emptyout = Seq.empty
 
+outnl :: OutDoc
+outnl = out "\n"
+
 class Out a where
   out :: a -> OutDoc
 
@@ -137,6 +142,9 @@ outList = Seq.unions . map out
 
 outListSep :: (Out s, Out c, Out o, Out a) => o -> c -> s -> [a] -> OutDoc
 outListSep o c s outs = o +++ outList (intersperse (out s) (map out outs)) +++ c
+
+outPack :: (Out c, Out o, Out a) => o -> c -> a -> OutDoc
+outPack o c x = outListSep o c "" [x]
 
 hPutOut :: Handle -> OutDoc -> IO ()
 hPutOut h ou = hPutStr h (outToString ou)

@@ -50,7 +50,7 @@ dltxCmd :: Out c => c -> OutDoc
 dltxCmd c = "\\" +++ c
 
 dltxArg :: Out a => a -> OutDoc
-dltxArg a = "{" +++ a +++ "}"
+dltxArg = outPack "{" "}"
 
 dltxArgs :: [OutDoc] -> OutDoc
 dltxArgs a = outList $ map dltxArg a
@@ -101,7 +101,7 @@ SEM TextItem
   | HorRuler TableHorRuler
                     loc         .   out         =   dltxCmd "hline"
   | Header          loc         .   out         =   @level.out +++ dltxArg @text.out
-  | Group           loc         .   out         =   dltxBeginEnd @envtype.out @text.out
+  | Group           loc         .   out         =   @envtype.outWrap $ dltxBeginEnd @envtype.out @text.out
   | DocumentContent loc         .   out         =   dltxBeginEnd "document" @text.out
   | Table           loc         .   out         =   dltxBeginEnd "center"
                                                     $ dltxBeginEnd "tabular"
@@ -177,6 +177,16 @@ SEM TableRow
 
 SEM TableField
   | Fld             lhs         .   out         =   @extraseptext.out +++ @fld.out
+
+-------------------------------------------------------------------------
+-- Additional wrapping as OutDoc -> OutDoc
+-------------------------------------------------------------------------
+
+ATTR GroupType [ | | outWrap: {OutDoc -> OutDoc} ]
+
+SEM GroupType
+  | Verbatim		lhs			.	outWrap		=	id -- \x -> dltxArg (dltxCmd "tiny" +++ outnl +++ x +++ outnl)
+  | * - Verbatim	lhs			.	outWrap		=	id
 
 -------------------------------------------------------------------------
 -- Replacement, as [OutDoc]

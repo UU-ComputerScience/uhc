@@ -1327,10 +1327,18 @@ The subsequent is taken from the \href{http://utrechthaskellcompiler.wordpress.c
 For reference, import entities follow the following grammar:
 
 \begin{pre}
-<ent>    ::= (<arg> | ident) <post>*
-<arg>    ::= '%' <argnr> | '%*' | <string>
-<post>   ::= '(' <arg> ')' | '.' ident | '[' <arg> ']'
-<string> ::= '"' char* '"' | "'" char* "'"
+exp    ::=  '{}'                         -- Haskell constructor to JS object
+         |  (arg | ident) post *         -- JS expression
+post   ::=  '.' ident                    -- object field
+         |  '[' exp ']'                  -- array indexing
+         |  '(' args ')'                 -- function call
+args   ::=  epsilon | arg (, arg) *      -- possible arguments
+arg    ::=  '%' ('*' | int)              -- all arguments, or a specific one
+         |  '"' str '"'                  -- literal text
+
+ident  ::= a valid JavaScript identifier
+int    ::= any integer
+str    ::= any string
 \end{pre}
 
 where @ident@ is a Haskell like lowercase/uppercase identifier, and where parenthesis only may appear at the end.
@@ -1567,6 +1575,7 @@ This is not yet used, except for experimenting with code generation with extra d
  \item \verb|0|: per module (default).
  \item \verb|1|: link per module GRIN to whole program GRIN, and continue from there (not yet implemented)
  \item \verb|2|: link per module Core to whole program COre, and continue from ther; Core precedes GRIN in the compiler pipeline.
+ \end{itemize}
 \item \verb|--no-recomp|. Don't check for the necessity to recompile, recompile allways instead.
 \item \verb|--no-prelude|. Don't assume the presence of @Prelude@.
 \item \verb|--no-hi-check|. Don't use out of date of compiler version w.r.t. to .hi files as a reason to recompile.

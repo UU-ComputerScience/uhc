@@ -748,7 +748,7 @@ Anonymity, blinding things
 
 % pre environment (a verbatim environment based upon the fancyvrb package)
 \DefineVerbatimEnvironment{pre}{Verbatim}
-  {xleftmargin=0.03\linewidth,fontsize=\small}
+  {xleftmargin=0.03\linewidth,fontsize=\footnotesize}
 
 % reference to label in url style:
 % #1: label

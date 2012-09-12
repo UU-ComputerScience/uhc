@@ -7,7 +7,6 @@ template can be found here:
 	http://www.opensource.org/licenses/bsd-license.php
 
 UHC uses the following libraries with their own license:
-- Boehm Garbage Collector (BGC) library, see extlibs/bgc
 - Library code from the GHC distribution, see comment in the modules in ehclib
 
 License text
