@@ -550,15 +550,21 @@ Type @make help@ to see what more can be build:
 
 \subsubsection{Configuration parameters}
 
-Apart from the usual options @./configure@ accepts the following options enabling a particular feature:
+Apart from the usual options @./configure@ accepts the following options enabling a particular feature.
+Unless mentioned otherwise, the default is @no@.
 \begin{itemize}
 \item \verb|--enable-java|. Enable @jazy@ backend. 
-% \item \verb|--enable-jscript|. Enable @jscript@ (Javascript) backend. Default=yes.
+\item \verb|--enable-jscript|. Enable @jscript@ (Javascript) backend. Default=@yes@.
 \item \verb|--enable-llvm|. Enable @llvm@ backend. 
 \item \verb|--enable-clr|. Enable @clr@ backend.
 \item \verb|--enable-tycore|. Enable @TyCore@ typed core intermediate representation.
 \item \verb|--enable-tauphi| (implies @tycore@). Enable @TyCore@ based experimental strictness optimizations.
+\item \verb|--enable-wholeprogC| (implies @wholeprogAnal@). Enable the @C@ whole program analysis backend.
+\item \verb|--enable-wholeprogAnal|. Enable whole program analysis.
+\item \verb|--enable-coresysf| (under construction). Enable System F generation for Core.
+\item \verb|--enable-cmm| (under construction). Enable Cmm intermediate language for C code generation.
 \end{itemize}
+Replacing @enable@ with @disable@ will have the reverse effect.
 
 %%]]
 
@@ -983,11 +989,30 @@ The implementation still has some quirks when abstracted dictionaries are involv
 %%]
 
 %%[lexicallyScopedTyVar doclatex
-Lexically scoped type variables can be introduced via pattern type signatures,
+Lexically scoped type variables can be introduced via 
+\begin{itemize}
+\item
+pattern type signatures on arguments,
 for example in the following result type and type of an intermediate computation are connected:
 \begin{pre}
 z (Wrap x) :: (mt,...) = let (m::mt,y) = properFraction x in (m::mt, Wrap y)
 \end{pre}
+\item
+pattern type signatures on a function result,
+as in the following:
+\begin{pre}
+z a b c :: x = ... :: x
+\end{pre}
+\item
+type variables occurring in instance declarations,
+as in the following for @a@ and @b@:
+\begin{pre}
+instance (Sup (a (b ())) (a (b c)), Widen (a ()) (a (b ()))) => Sup (a ()) (a (b c)) where
+   downcast o = case widen o :: Maybe (a (b ())) of
+                  Just r   -> downcast r 
+                  Nothing  -> Nothing
+\end{pre}
+\end{itemize}
 
 %%]
 
@@ -1075,10 +1100,12 @@ The following pragmas are supported.
 \item @CPP@ : switch on \href{http://gcc.gnu.org/onlinedocs/cpp/}{cpp} preprocessing.
 \item @NoImplicitPrelude@: don't automatically import @Prelude@ and/or assume its presence.
 \item @GenericDeriving@, @NoGenericDeriving@: turn on/off respectively generic deriving, default is on.
+\item @BangPatterns@, @NoBangPatterns@: turn on/off respectively bang patterns, default is on.
 \item @ExtensibleRecords@: turn on special syntax for extensible records. Available for internal backwards compatibility, but otherwise useless as codegeneration and runtime currently does not support extensible records. It reserves the operators \verb|#| and \verb|:=| for record selection and update respectively.
 \end{itemize}
 \item \verb|{-# DERIVING class field generic-function #-}| pragma: see \lref{generic-deriving}{generic deriving}.
 \item \verb|{-# EXCLUDE_IF_TARGET targets #-}| (file header pragma) make the module invisible for compilation. This is a (hopefully) temporary measure to deal with the abilities of distinctive backend. For example, the @js@ (Javascript) backend does not support (e.g.) file access.
+\item \verb|{-# OPTIONS_UHC "..." #-}| (file header pragma) provide compiler options as a string to be parsed as if it were passed via the commandline.
 \end{itemize}
 Other or unsupported pragmas are silently ignored, even when appropriate currently no warning will be given.
 The text inside the pragma delimiters is then treated as normal comment, as were it inside plain \verb|{-| and \verb|-}| comment delimiters.
@@ -1342,6 +1369,8 @@ str    ::= any string
 \end{pre}
 
 where @ident@ is a Haskell like lowercase/uppercase identifier, and where parenthesis only may appear at the end.
+
+See also \href{http://uu-computerscience.github.com/uhc-js/}{The Utrecht Haskell Compiler JavaScript Backend Page}
 %%]
 
 %%[includedPackages doclatex
@@ -1389,8 +1418,9 @@ The C based backends (C, bc) use the following public domain libraries:
 
 \subsubsection{Third party libraries}
 \begin{itemize}
-\item \href{http://www.hpl.hp.com/personal/Hans_Boehm/gc/}{Boehm Garbage Collection} (BGC) library.
- Some corners of some backends (notably llvm) still linger onto the BGC library, other backends are not using BGC anymore.
+%\item \href{http://www.hpl.hp.com/personal/Hans_Boehm/gc/}{Boehm Garbage Collection} (BGC) library.
+% Some corners of some backends (notably llvm) still linger onto the BGC library, other backends are not using BGC anymore.
+\item \href{http://libtom.org/}{LibTomMath} has been cloned and adapted to play nicely with the garbage collector.
 \end{itemize}
 
 \subsection{Known issues}
@@ -1605,6 +1635,7 @@ This is not yet used, except for experimenting with code generation with extra d
  \item \verb|--pkg-hide-all|: hide all packages.
  \item \verb|--pkg-searchpath=path|: additional locations to search for packages.
  \end{itemize}
+\item \verb|--opt<X>=opt|. Pass option to command for pass @<X>@. Currently only @P@ is implemented, that is, passing to the preprocessor (CPP).
 \end{itemize}
 %%]
 
@@ -1661,6 +1692,7 @@ See also
 \item \eref{Text2TextDocumentation}{Text2Text} for documentation formatting.
 \item \href{http://haskell.org/ghc/}{GHC}.
 \item \href{http://www.cs.uu.nl/wiki/HUT/WebHome}{HUT library}.
+\item \href{http://uu-computerscience.github.com/uhc-js/}{The Utrecht Haskell Compiler JavaScript Backend Page}.
 \end{itemize}
 %%]
 

@@ -108,6 +108,7 @@ pPrimCall dfltNm
   where nm = maybe "" id dfltNm
         pKnownPrim = pMb (pAnyFromMap pKeyTk allKnownPrimMp)
 
+%%[[(90 javascript)
 pJavaScriptCall :: Maybe String -> ForeignParser JavaScriptCall
 pJavaScriptCall dfltNm
   =   JavaScriptCall_Id nm   <$> pMb pForeignExpr
@@ -137,6 +138,6 @@ pForeignExpr
 
         mk    = \pre e post -> let pre' = maybe [] ((flip (:)) []) pre
                                in foldr ($) e $ pre' ++ reverse post
-
+%%]]
 %%]
 
