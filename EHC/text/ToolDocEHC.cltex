@@ -126,6 +126,10 @@ hence no documentation is currently available.
 \label{pragmas}
 %%@ToolDocEHC.pragmas
 
+\subsection{Preprocessing (with @cpp@)}
+\label{preprocessing}
+%%@ToolDocEHC.preprocessing
+
 \section{Haskell compatibility}
 \label{HaskellCompatibility}
 \glabel{HaskellCompatibility}
@@ -454,7 +458,7 @@ A list of often occurring build problems is maintained \eref{BuildProblems}{here
 
 %%[[gettingStartedDownload
 \begin{itemize}
-\item Prerequisites:
+\item Prerequisites. Running the configure scripts yields an overview of what is missing.
 \begin{itemize}
  \item \href{http://haskell.org/ghc/}{GHC}: a recent version, preferably @>= 6.12.1@; @GHC 6.12.1@ has been used for development.
   Older GHC versions may do as well, but are not used for developing.
@@ -550,7 +554,7 @@ Type @make help@ to see what more can be build:
 
 \subsubsection{Configuration parameters}
 
-Apart from the usual options @./configure@ accepts the following options enabling a particular feature.
+Apart from the usual options the @./configure@ accepts the following options enabling a particular feature.
 Unless mentioned otherwise, the default is @no@.
 \begin{itemize}
 \item \verb|--enable-java|. Enable @jazy@ backend. 
@@ -1097,7 +1101,7 @@ The following pragmas are supported.
 \begin{itemize}
 \item \verb|{-# LANGAUGE pragma #-}| (file header) pragmas, where pragma may be:
 \begin{itemize}
-\item @CPP@ : switch on \href{http://gcc.gnu.org/onlinedocs/cpp/}{cpp} preprocessing.
+\item @CPP@ : switch on \href{http://gcc.gnu.org/onlinedocs/cpp/}{cpp} preprocessing. See also \lref{preprocessing}{preprocessing}.
 \item @NoImplicitPrelude@: don't automatically import @Prelude@ and/or assume its presence.
 \item @GenericDeriving@, @NoGenericDeriving@: turn on/off respectively generic deriving, default is on.
 \item @BangPatterns@, @NoBangPatterns@: turn on/off respectively bang patterns, default is on.
@@ -1111,9 +1115,26 @@ Other or unsupported pragmas are silently ignored, even when appropriate current
 The text inside the pragma delimiters is then treated as normal comment, as were it inside plain \verb|{-| and \verb|-}| comment delimiters.
 %%]
 
+%%[preprocessing doclatex
+With @LANGUAGE@ pragma @CPP@ defined, or option @--cpp@ specified, source text will be preprocessed by @cpp@ before compilation.
+With option @--optP@ additional options passed to @cpp@ may be given.
+
+The following compile time flags are then defined.
+Unless mentioned otherwise the flags are just defined, i.e. have no value.
+\begin{itemize}
+\item \verb|__UHC__|, which has the numerical form of the compiler version as its value (See also option \verb|--version-asnumber|). 
+\item \verb|__UHC_TARGET_X__|, where @X@ stands for the current backend target.
+\item \verb|__UHC_BUILDS_X__|, where @X@ stands for
+ \begin{itemize}
+ \item @O@ when @C@ compilation is done (only relevant for C code compilation, but @cpp@ is then invoked as part of @C@ compilation).
+ \item @CPP@ when @cpp@ preprocessing is done.
+ \end{itemize}
+\end{itemize}
+%%]
+
 %%[typelevelOperators doclatex
 UHC allows type constructors, classes, and type variables to be operators, and to be written infix, as does GHC.
-See GHC's documentation on
+See (e.g.) GHC's documentation on
 \href{http://haskell.org/ghc/docs/6.12.1/html/users_guide/data-type-extensions.html}{Infix type constructors, classes, and type variables}
 %%]
 
@@ -1611,7 +1632,7 @@ This is not yet used, except for experimenting with code generation with extra d
 \item \verb|--no-hi-check|. Don't use out of date of compiler version w.r.t. to .hi files as a reason to recompile.
   This is useful when debugging the compiler if you know that .hi files will not change.
   Use this option only if you know what you are doing.
-\item \verb|--cpp|. Preprocess with \href{http://gcc.gnu.org/onlinedocs/cpp/}{cpp}.
+\item \verb|--cpp|. Preprocess with \href{http://gcc.gnu.org/onlinedocs/cpp/}{cpp}. See also \lref{preprocessing}{preprocessing}.
 \item \verb|--limit-tysyn-expand=<nr>|. Limit the level of type synonym expansion.
 \item \verb|-i<path>|, \verb|--import-path=<path>|. Add @<path>@ to the search path for importing modules and \href{http://gcc.gnu.org/onlinedocs/cpp/}{cpp}.
 \item \verb|--odir=dir|. Generated files are put in @dir@. More precisely, for each generated artefact for a module,
