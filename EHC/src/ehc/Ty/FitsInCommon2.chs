@@ -181,3 +181,8 @@ fiBindTyVar :: TyVarId -> Ty -> FIIn' gm -> FIIn' gm
 fiBindTyVar v t = fiPlusVarMp (v `varmpTyUnit` t)
 %%]
 
+%%[(9 hmtyinfer) export(fiBindImplsVar)
+fiBindImplsVar :: ImplsVarId -> Impls -> FIIn' gm -> FIIn' gm
+fiBindImplsVar v i = fiPlusVarMp (v `varmpImplsUnit` i)
+%%]
+

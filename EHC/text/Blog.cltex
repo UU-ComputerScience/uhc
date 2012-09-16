@@ -1,5 +1,74 @@
 %%[main
-%%@Blog.entry20101027.javascript.FFI
+%%@Blog.entry20120913.javascript.wholeProgLinking
+%%]
+
+%%[entry20120913.javascript.wholeProgLinking doclatex
+\section{Compiling Haskell to compact Javascript programs}
+@UHC@ allows for the generation of relatively compact Javascript programs from Haskell. With relatively I mean that @UHC@ can prune unnecessary code at the Core level before generating Javascript but then still redundant code from the runtime system remains, as well as the use of lengthy identifiers. This of course can be fixed, but currently not by @UHC@. Let's look at a small Hello World example and see what @UHC@ can do to obtain compact code.
+
+The hello world example @Hello.hs@ used runs in a browser, popping up an alert:
+
+\begin{pre}
+module Hello where
+
+import Language.UHC.JS.Prelude
+import Language.UHC.JS.Assorted
+
+main = alert "Hi"
+\end{pre}
+
+The UHC specific Javascript library \href{https://github.com/UU-ComputerScience/uhc-js}{UHC JavaScript libraries} for interacting with the Javascript runtime environment is required, so to get it running execute in a shell:
+
+\begin{pre}
+> git clone git://github.com/UU-ComputerScience/uhc-js.git uhcjs	# read only access
+> uhc --import-path=uhcjs/uhc-js/src -tjs Hello.hs
+\end{pre}
+
+This will create @Hello.js@ and @Hello.html@; @Hello.html@ loads both @Hello.js@ and library modules, omitting most @script@ tags for brevity:
+
+\begin{pre}
+<!DOCTYPE html><html><head><title>Hello</title>
+<script type="text/javascript" src="/usr/local/lib/uhc-1.1.4/lib/js/libEH-RTS.mjs"></script>
+<script type="text/javascript" src="/usr/local/lib/uhc-1.1.4/lib/pkg/uhcbase-1.1.4/uhc-1.1.4/js/plain/UHC/UHC_Base.mjs"></script>
+...
+<script type="text/javascript" src="/usr/local/lib/uhc-1.1.4/lib/pkg/uhcbase-1.1.4/uhc-1.1.4/js/plain/UHC/UHC_Run.mjs"></script>
+<script type="text/javascript" src="/usr/local/lib/uhc-1.1.4/lib/pkg/base-3.0.0.0/uhc-1.1.4/js/plain/Prelude.mjs"></script>
+<script type="text/javascript" src="uhcjs/uhc-js/src/Language/UHC/JS/Language_UHC_JS_Types.mjs"></script>
+...
+<script type="text/javascript" src="uhcjs/uhc-js/src/Language/UHC/JS/Language_UHC_JS_Assorted.mjs"></script>
+<script type="text/javascript" src="Hello.js"></script>
+</head>
+<body>
+</body>
+</html>
+\end{pre}
+
+Opening @Hello.html@ in a browser then pops up an alert box.
+
+The problem with the resulting @Hello.html@ is that it loads too much code; running a word count reveals that almost 2MB will be loaded!
+This might be ok for locally running the html file, but now for network based access.
+
+Luckily the @-O@ optimization flag for @UHC@ allows to specify in which compiler stage linking will take place:
+
+\begin{pre}
+> uhc --import-path=uhcjs/uhc-js/src -tjs -O,2 Hello.hs
+\end{pre}
+
+With the @-O@ flag both the amount of optimization may be specified (e.g. classical @-O2@) as well as the scope of it, the @2@ behind the comma indicating that optimizations should be done on the whole program on the Core level (instead of just per module, being the default). Currently not many optimizations are in place in @UHC@ but this mechanism links all imported modules on the Core level, only pulling in required code, thus automatically minimizing its size. The size of @Hello.js@ now is almost 60KB, of which the major part is the runtime system. No other modules need to be loaded, as shown by the corresponding @Hello.html@:
+
+\begin{pre}
+<!DOCTYPE html><html><head><title>Hello</title>
+<script type="text/javascript" src="Hello.js"></script>
+</head>
+<body>
+</body>
+</html>
+\end{pre}
+
+This form of linking only has meaning for a program actually having a @main@ because @main@ acts as the root from which to start pulling in required code.
+In addition to @main@ also the @foreign export@s declarations of all linked modules are used as a root.
+
+
 %%]
 
 %%[entry20101204.Brazil.intersection doclatex

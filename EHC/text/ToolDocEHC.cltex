@@ -153,7 +153,7 @@ hence no documentation is currently available.
 \subsubsection{@bc@ and @C@ backend}
 %%@ToolDocEHC.ffi.C.bc
 
-\subsubsection{@js@}
+\subsubsection{@js@ backend}
 %%@ToolDocEHC.ffi.js
 
 
@@ -460,10 +460,10 @@ A list of often occurring build problems is maintained \eref{BuildProblems}{here
 \begin{itemize}
 \item Prerequisites. Running the configure scripts yields an overview of what is missing.
 \begin{itemize}
- \item \href{http://haskell.org/ghc/}{GHC}: a recent version, preferably @>= 6.12.1@; @GHC 6.12.1@ has been used for development.
-  Older GHC versions may do as well, but are not used for developing.
+ \item \href{http://haskell.org/ghc/}{GHC}: a recent version, preferably @>= 7.0.3@; @GHC 7.0.3@ has been used for recent development, @GHC 7.4.1@ for current development.
+  Older GHC versions may do as well, but are not used for developing, nor is any effort done for keeping @UHC@ compilable with older @GHC@ versions.
   The installed libraries should include the @mtl@ and @fgl@ library.
-  Depending on platform and GHC distribution more libraries may need to be installed.
+  Depending on platform and @GHC@ distribution more libraries may need to be installed.
  \item Additional libraries, available via \href{http://hackage.haskell.org/packages/hackage.html}{Hackage} or \href{http://www.cs.uu.nl/wiki/HUT/WebHome}{locally}.
  \begin{itemize}
   \item \href{http://hackage.haskell.org/cgi-bin/hackage-scripts/package/uulib}{uulib}: parser combinators.
@@ -559,8 +559,8 @@ Unless mentioned otherwise, the default is @no@.
 \begin{itemize}
 \item \verb|--enable-java|. Enable @jazy@ backend. 
 \item \verb|--enable-jscript|. Enable @jscript@ (Javascript) backend. Default=@yes@.
-\item \verb|--enable-llvm|. Enable @llvm@ backend. 
-\item \verb|--enable-clr|. Enable @clr@ backend.
+\item \verb|--enable-llvm| (implies @wholeprogAnal@, @wholeprogC@). Enable @llvm@ backend. 
+\item \verb|--enable-clr| (implies @wholeprogAnal@, @wholeprogC@). Enable @clr@ backend.
 \item \verb|--enable-tycore|. Enable @TyCore@ typed core intermediate representation.
 \item \verb|--enable-tauphi| (implies @tycore@). Enable @TyCore@ based experimental strictness optimizations.
 \item \verb|--enable-wholeprogC| (implies @wholeprogAnal@). Enable the @C@ whole program analysis backend.

@@ -152,6 +152,18 @@ type LabelVarId      = UID
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Lookup types
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(2 hmtyinfer) hs export(LookupTy)
+type LookupTy = TyVarId -> Maybe Ty
+%%]
+
+%%[(9 hmtyinfer) hs export(LookupImpls)
+type LookupImpls = ImplsVarId -> Maybe Impls
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Misc types
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -1048,18 +1060,18 @@ tyString o = appCon (ehcOptBuiltin o ehbnPrelString)
 Substitution aware variants
 
 %%[(9 hmtyinfer || hmtyast) hs export(tyArrowArgResWithLkup)
-tyArrowArgResWithLkup :: (TyVarId -> Maybe Ty) -> Ty -> (Ty,Ty)
+tyArrowArgResWithLkup :: LookupTy -> Ty -> (Ty,Ty)
 tyArrowArgResWithLkup lookup = tyVarChkVisitLift lookup appUn1Arr appUn1Arr
 %%]
 
 %%[(9 hmtyinfer || hmtyast) hs export(tyArrowImplsResWithLkup,tyArrowImplsArgResWithLkup)
-tyArrowImplsArgResWithLkup :: (TyVarId -> Maybe Ty) -> Ty -> (TyL,Ty,Ty)
+tyArrowImplsArgResWithLkup :: LookupTy -> Ty -> (TyL,Ty,Ty)
 tyArrowImplsArgResWithLkup lookup t
   = (i,a,r)
   where (i,t')  = tyArrowImplsResWithLkup lookup t
         (a,r)   = tyArrowArgResWithLkup   lookup t'
 
-tyMbArrowImplsResWithLkup :: (TyVarId -> Maybe Ty) -> Ty -> Maybe (TyL,Ty)
+tyMbArrowImplsResWithLkup :: LookupTy -> Ty -> Maybe (TyL,Ty)
 tyMbArrowImplsResWithLkup lookup t
   = extr t
   where extr t = case appMb1Arr t of
@@ -1075,7 +1087,7 @@ tyMbArrowImplsResWithLkup lookup t
                             isImpls _             = False
                    _   -> tyVarLift lookup extr (const Nothing) t
 
-tyArrowImplsResWithLkup :: (TyVarId -> Maybe Ty) -> Ty -> (TyL,Ty)
+tyArrowImplsResWithLkup :: LookupTy -> Ty -> (TyL,Ty)
 tyArrowImplsResWithLkup lookup t = maybe ([],t) id $ tyMbArrowImplsResWithLkup lookup t
 %%]
 
@@ -1098,7 +1110,7 @@ tyLHdAndTl      :: [Ty] -> (Ty,TyL)
 
 %%[(6 hmtyinfer || hmtyast) hs export(tyAppFunArgsWithLkup)
 -- Substitution aware
-tyAppFunArgsWithLkup :: (TyVarId -> Maybe Ty) -> Ty -> (Ty,TyL)
+tyAppFunArgsWithLkup :: LookupTy -> Ty -> (Ty,TyL)
 tyAppFunArgsWithLkup lookup = tyVarChkVisitLift lookup appUnApp appUnApp
 {-# INLINE tyAppFunArgsWithLkup #-}
 %%]
@@ -1137,7 +1149,7 @@ tyConNm = maybe hsnUnknown id . tyMbCon
 %%]
 
 %%[(7 hmtyinfer || hmtyast) hs export(tyMbConWithLkup)
-tyMbConWithLkup :: (TyVarId -> Maybe Ty) -> Ty -> Maybe HsName
+tyMbConWithLkup :: LookupTy -> Ty -> Maybe HsName
 tyMbConWithLkup lookup = tyVarChkVisitLift lookup tyMbCon tyMbCon
 {-# INLINE tyMbConWithLkup #-}
 %%]
@@ -1269,13 +1281,13 @@ mkTyRecExt recd al
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(6 hmtyinfer || hmtyast) hs
-tyVarChkVisitLift :: (TyVarId -> Maybe Ty) -> (Ty -> x) -> (Ty -> x) -> Ty -> x
+tyVarChkVisitLift :: LookupTy -> (Ty -> x) -> (Ty -> x) -> Ty -> x
 tyVarChkVisitLift
   = withLkupChkVisitLift tyMbVar (noVisit . tyUnAnn)
   where noVisit (Ty_TBind _ qv _ _) = Set.singleton qv
         noVisit _                   = Set.empty
 
-tyVarLift :: (TyVarId -> Maybe Ty) -> (Ty -> x) -> (Ty -> x) -> Ty -> x
+tyVarLift :: LookupTy -> (Ty -> x) -> (Ty -> x) -> Ty -> x
 tyVarLift = withLkupLift tyMbVar
 {-# INLINE tyVarLift #-}
 %%]
@@ -1293,7 +1305,7 @@ implsTailVarLiftCyc = withLkupLiftCyc1 implsMbVar (const Set.empty)
 Substitution aware variants
 
 %%[(7 hmtyinfer || hmtyast) hs export(tyRowExtsWithLkup,tyRecExtrWithLkup,tyRecExtsWithLkup)
-tyRowExtsWithLkup :: (TyVarId -> Maybe Ty) -> Ty -> (Ty,AssocL HsName Ty)
+tyRowExtsWithLkup :: LookupTy -> Ty -> (Ty,AssocL HsName Ty)
 tyRowExtsWithLkup lookup
   =  extr []
   where  extr as t
@@ -1301,16 +1313,16 @@ tyRowExtsWithLkup lookup
                 (Ty_Ext r l e) -> extr ((l,e):as) r
                 t'             -> tyVarLift lookup (extr as) (flip (,) as) t'
 
-tyRecExtsWithLkup :: (TyVarId -> Maybe Ty) -> Ty -> (Ty,AssocL HsName Ty)
+tyRecExtsWithLkup :: LookupTy -> Ty -> (Ty,AssocL HsName Ty)
 tyRecExtsWithLkup lookup t
   =  case tyRecRowWithLkup lookup t of
        Ty_Any  -> (Ty_Any,[])
        row     -> tyRowExtsWithLkup lookup row
 
-tyRecRowWithLkup :: (TyVarId -> Maybe Ty) -> Ty -> Ty
+tyRecRowWithLkup :: LookupTy -> Ty -> Ty
 tyRecRowWithLkup lookup = maybe Ty_Any id . tyMbRecRowWithLkup lookup
 
-tyRowExtrWithLkup :: (TyVarId -> Maybe Ty) -> HsName -> Ty -> Maybe (Ty,Ty)
+tyRowExtrWithLkup :: LookupTy -> HsName -> Ty -> Maybe (Ty,Ty)
 tyRowExtrWithLkup lookup lbl t
   = extr t
   where extr t 
@@ -1319,13 +1331,13 @@ tyRowExtrWithLkup lookup lbl t
                              | otherwise  -> maybe Nothing (\(r',e') -> Just (Ty_Ext r' l e,e')) (extr r)
               t'                          -> tyVarLift lookup extr (const Nothing) t'
 
-tyRecExtrWithLkup :: (TyVarId -> Maybe Ty) -> HsName -> Ty -> Maybe (Ty,Ty)
+tyRecExtrWithLkup :: LookupTy -> HsName -> Ty -> Maybe (Ty,Ty)
 tyRecExtrWithLkup lookup lbl t
   =  case tyRowExtrWithLkup lookup lbl (tyRecRowWithLkup lookup t) of
        Nothing    -> Nothing
        Just (r,e) -> Just (hsnRec `appConApp` [r],e)
 
-tyMbRecRowWithLkup :: (TyVarId -> Maybe Ty) -> Ty -> Maybe Ty
+tyMbRecRowWithLkup :: LookupTy -> Ty -> Maybe Ty
 tyMbRecRowWithLkup lookup t
   =  case tyAppFunArgsWithLkup lookup t of
        (f,[row])
@@ -1458,7 +1470,7 @@ tyRecOffset lbl t
 Substitution aware
 
 %%[(8 hmtyinfer || hmtyast) hs export(tyRecOffsetWithLkup)
-tyRecOffsetWithLkup :: (TyVarId -> Maybe Ty) -> HsName -> Ty -> Int
+tyRecOffsetWithLkup :: LookupTy -> HsName -> Ty -> Int
 tyRecOffsetWithLkup lookup nm
   = tyVarLift lookup o o
   where o = tyRecOffset nm
@@ -1589,7 +1601,7 @@ implsPredsTailWithLkup lookup sc i
   = (map fst is,t)
   where (is,t) = implsPredsTailWithLkup' lookup sc i
 
-tyImplsWithLkup :: (TyVarId -> Maybe Ty) -> Ty -> Impls
+tyImplsWithLkup :: LookupTy -> Ty -> Impls
 tyImplsWithLkup lookup = tyVarLift lookup tyImpls tyImpls
 {-# INLINE tyImplsWithLkup #-}
 
@@ -1597,6 +1609,11 @@ implsPrIdLWithLkup :: (TyVarId -> Maybe Impls) -> Impls -> [PredOccId]
 implsPrIdLWithLkup lookup = map poPoi . fst . implsPredsTailWithLkup lookup initPredScope
 {-# INLINE implsPrIdLWithLkup #-}
 
+%%]
+
+%%[(9 hmtyinfer || hmtyast) hs export()
+tyMbVarWithLkup :: LookupTy -> Ty -> Maybe TyVarId
+tyMbVarWithLkup lookup = tyVarLift lookup tyMbVar tyMbVar
 %%]
 
 %%[(9 hmtyinfer || hmtyast) hs export(tyImpls,implsPredsTail,implsPredsMbTail,implsIsTail,tyIsImplsTail,tyImplsPreds,implsPrIdPredL,implsPrIdL)
@@ -1643,6 +1660,28 @@ implsPrIdL = map fst . implsPrIdPredL
 {-# INLINE implsPrIdL #-}
 %%]
 
+%%[(9 hmtyinfer || hmtyast) hs export(tyMb1ArrTailVar2VarWithLkup)
+-- | Is an 'Impls' the tail (last empty element) of a sequence?
+implsMbTailVarWithLkup :: LookupImpls -> Impls -> Maybe ImplsVarId
+implsMbTailVarWithLkup lkup (Impls_Tail iv _) = maybe (Just iv) (const Nothing) (lkup iv)
+implsMbTailVarWithLkup _    _                 = Nothing
+{-# INLINE implsMbTailVarWithLkup #-}
+
+-- | Is a 'Ty' the tail of an Impls?
+tyMbTailVarWithLkup :: LookupImpls -> Ty -> Maybe ImplsVarId
+tyMbTailVarWithLkup lkup t = do { i <- tyMbImpls t ; implsMbTailVarWithLkup lkup i }
+{-# INLINE tyMbTailVarWithLkup #-}
+
+-- | Is 'Ty' a function type from an Impls tail to ...
+tyMb1ArrTailVarWithLkup :: LookupImpls -> Ty -> Maybe (ImplsVarId,Ty)
+tyMb1ArrTailVarWithLkup lkup t = do { (a,r) <- appMb1Arr t; i <- tyMbTailVarWithLkup lkup a; return (i,r) }
+{-# INLINE tyMb1ArrTailVarWithLkup #-}
+
+-- | Is 'Ty' a function type from an Impls tail to a ty var
+tyMb1ArrTailVar2VarWithLkup :: LookupTy -> LookupImpls -> Ty -> Maybe (ImplsVarId,TyVarId)
+tyMb1ArrTailVar2VarWithLkup lkupt lkupi t = do { (i,r) <- tyMb1ArrTailVarWithLkup lkupi t; v <- tyMbVarWithLkup lkupt r; return (i,v) }
+%%]
+
 %%[(9 hmtyinfer || hmtyast) hs export(implsMbVar,implsTailVar)
 implsMbVar :: Impls -> Maybe TyVarId
 implsMbVar (Impls_Tail v _)  = Just v
@@ -1671,7 +1710,7 @@ tyIsPredicated t            = isPr a
                                   isPr (Ty_Pred p:_) = True
                                   isPr _             = False
 
-tyIsPredicatedWithLkup :: (TyVarId -> Maybe Ty) -> Ty -> Bool
+tyIsPredicatedWithLkup :: LookupTy -> Ty -> Bool
 tyIsPredicatedWithLkup lookup = tyVarLift lookup tyIsPredicated tyIsPredicated
 {-# INLINE tyIsPredicatedWithLkup #-}
 %%]

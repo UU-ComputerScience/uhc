@@ -131,7 +131,7 @@ SEM Expr
                             .   (quValGam_qu_,quTyVarMp, (cycTyVarMp_l,tqoGam))
                                                     :=  @doValGamQuantify True @tyVarMpDeclsQuant @toQuantOverPrOccL
                             .   tmpoTyVarMp         =   foldr (\tmpo c -> tmpoImplsVarMp tmpo `varUpd` c) emptyVarMp (gamElts @tqoGam)
-                            .   bodyVarMp2          :=  @chrSolve1SimpTyVarMp `varUpd` (@exTyVarMp2 :: VarMp) `varUpd` @bodyVarMp1
+                            .   bodyVarMp2          :=  @tmpoTyVarMp `varUpd` @chrSolve1SimpTyVarMp `varUpd` (@exTyVarMp2 :: VarMp) `varUpd` @bodyVarMp1
 %%]
                 decls       .   patTyVarMp          :=  foVarMp @foKnRes `varUpd` @exTyVarMp1b -- @forExprTyVarMp `varUpd` @exTyVarMp1b
                 

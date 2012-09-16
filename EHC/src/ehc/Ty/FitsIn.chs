@@ -1114,33 +1114,17 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                 |     lBefR && fiAllowTyVarBind fi t1   = Just $ bind fi True  v1 (updTy t2)
                 | not lBefR && fiAllowTyVarBind fi t2   = Just $ bind fi False v2 (updTy t1)
                 where lBefR = fioBindLBeforeR (fiFIOpts fi)
-            {-
-            varBind1  fi updTy t1@(Ty_Var v1 f1)      t2
-                | isJust mbNoise                        = case fromJust mbNoise of
-                                                            (Ty_Var v2 f2) | v1 == v2 && f1 == f2 -> Just $ res fi t1
-                where mbNoise = tyUnNoiseForVarBind t2
-            varBind1  fi updTy t1                     t2@(Ty_Var v2 f2)
-                | isJust mbNoise                        = case fromJust mbNoise of
-                                                            (Ty_Var v1 f1) | v1 == v2 && f1 == f2 -> Just $ res fi t2
-                where mbNoise = tyUnNoiseForVarBind t1
-            -}
             varBind1  _  _     _                      _ = Nothing       
 
             -- | tvar binding part 2: 1 of 2 tvars, impredicatively
             varBind2  fi updTy t1@(Ty_Var v1 _)       t2
+                | isJust m && v1 == v2                  = Just $ res (fiBindImplsVar iv2 Impls_Nil fi) (updTy t1)
                 | allowImpredTVBindL fi t1 t2           = Just $ occurBind fi True  v1 (updTy t2)
+                where m@(~(Just (iv2,v2))) = tyMb1ArrTailVar2VarWithLkup (fiLookupTyVarCyc fi) (lookupImplsVarCyc fi) t2
             varBind2  fi updTy t1                     t2@(Ty_Var v2 _)
+                | isJust m && v1 == v2                  = Just $ res (fiBindImplsVar iv1 Impls_Nil fi) (updTy t2)
                 | allowImpredTVBindR fi t2 t1           = Just $ occurBind fi False v2 (updTy t1)
-            {-
-            varBind2  fi updTy t1@(Ty_Var v1 f1)      t2
-                | isJust mbNoise                        = case fromJust mbNoise of
-                                                            (Ty_Var v2 f2) | v1 == v2 && f1 == f2 -> Just $ res fi t1
-                where mbNoise = tyUnNoiseForVarBind t2
-            varBind2  fi updTy t1                     t2@(Ty_Var v2 f2)
-                | isJust mbNoise                        = case fromJust mbNoise of
-                                                            (Ty_Var v1 f1) | v1 == v2 && f1 == f2 -> Just $ res fi t2
-                where mbNoise = tyUnNoiseForVarBind t1
-            -}
+                where m@(~(Just (iv1,v1))) = tyMb1ArrTailVar2VarWithLkup (fiLookupTyVarCyc fi) (lookupImplsVarCyc fi) t1
             varBind2  _  _     _                      _ = Nothing       
 
             -- | tvar binding part 3: 1 of 2 tvars, non impredicatively
@@ -1181,11 +1165,11 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
 
 %%[(9 hmtyinfer)
             fVarPred2 f fi tpr1                             (Ty_Impls (Impls_Tail iv2 _))
-                | isJust mbTl                                 = f fi tpr1 (Ty_Impls (fromJust mbTl))
-                where mbTl = lookupImplsVarCyc fi iv2
+                | isJust mbTl                                 = f fi tpr1 (Ty_Impls tl2)
+                where mbTl@(~(Just tl2)) = lookupImplsVarCyc fi iv2
             fVarPred2 f fi (Ty_Impls (Impls_Tail iv1 _))    tpr2
-                | isJust mbTl                                 = f fi (Ty_Impls (fromJust mbTl)) tpr2
-                where mbTl = lookupImplsVarCyc fi iv1
+                | isJust mbTl                                 = f fi (Ty_Impls tl1) tpr2
+                where mbTl@(~(Just tl1)) = lookupImplsVarCyc fi iv1
             fVarPred2 f fi tpr1                             tpr2
                 = f fi tpr1 tpr2
             fVarPred1 f fi (Ty_Impls (Impls_Tail iv1 _))
@@ -1231,7 +1215,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                            t2
                     | hsnIsArrow c1 && not (fioPredAsTy (fiFIOpts fi)) && isJust mbfp
                 = fromJust mbfp
-                where  mbfp             = fVarPred1 fP fi tpr1
+                where  mbfp = fVarPred1 fP fi tpr1
                        fP fi (Ty_Impls (Impls_Nil))
                             =  Just (fVar' fTySyn fi updTy tr1 t2)
                        fP fi _ =  Nothing
@@ -1239,7 +1223,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                            t2@(Ty_App (Ty_App (Ty_Con c2) tpr2) tr2)
                     | hsnIsArrow c2 && not (fioPredAsTy (fiFIOpts fi)) && isJust mbfp
                 = fromJust mbfp
-                where  mbfp             = fVarPred1 fP fi tpr2
+                where  mbfp = fVarPred1 fP fi tpr2
                        fP fi (Ty_Impls (Impls_Nil))
                             =  Just (fVar' fTySyn fi updTy t1 tr2)
                        fP fi _ =  Nothing
@@ -1325,6 +1309,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
 %%]
 
 %%[(9 hmtyinfer)
+            -- tpr1 => tr1 `fit` tpr2 => tr2
             fBase fi updTy t1@(Ty_App (Ty_App (Ty_Con c1) tpr1) tr1)
                            t2@(Ty_App (Ty_App (Ty_Con c2) tpr2) tr2)
                     | hsnIsArrow c1 && c1 == c2 && not (fioPredAsTy (fiFIOpts fi)) && isJust mbfp
@@ -1424,6 +1409,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
 %%]
 
 %%[(9 hmtyinfer)
+            -- t1 `fit` tpr2 => tr2
             fBase fi updTy t1
                            t2@(Ty_App (Ty_App (Ty_Con c2) tpr2) tr2)
                     | hsnIsArrow c2 && not (fioPredAsTy (fiFIOpts fi)) && isJust mbfp
@@ -1508,6 +1494,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
 %%]
 
 %%[(9 hmtyinfer)
+            -- tpr1 => tr1 `fit` t2
             fBase fi updTy t1@(Ty_App (Ty_App (Ty_Con c1) tpr1) tr1)
                            t2
                     | hsnIsArrow c1 && not (fioPredAsTy (fiFIOpts fi)) && isJust mbfp
@@ -1625,6 +1612,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
 %%]
 
 %%[(4 hmtyinfer).fitsIn.App
+            -- tf1 ta1 `fit` tf2 ta2
             fBase fi updTy t1@(Ty_App tf1 ta1)
                            t2@(Ty_App tf2 ta2)
                 = manyFO [ ffo, afo

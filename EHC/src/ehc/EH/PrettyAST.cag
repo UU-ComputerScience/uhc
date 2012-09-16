@@ -309,7 +309,7 @@ SEM TyExpr
 
 %%[(3 hmtyinfer)
 SEM Expr
-  | Let         loc     .  info_3   :=  [ -- mkInfo1 "valGam_l_ (+ decls.tyVarMp)" (ppGam $ @tyVarMpDeclsL0 `varUpd` @valGam_l_)
+  | Let         loc     .  info_3   :=  [ mkInfo1 "cycTyVarMp_l" (ppVarMpV @cycTyVarMp_l)
                                         ]
   | TypeAs      loc     .  info_3   :=  [ mkInfo1 "knTy+lhs.tyVarMp" (ppTy (@lhs.tyVarMp `varUpd` @lhs.knTy))
                                         , mkInfo1 "lhs.tyVarMp" (ppVarMpV @lhs.tyVarMp)
@@ -888,6 +888,7 @@ SEM Decl
 
 SEM AGItf
   | AGItf       loc     .  info_9   :=  [ mkInfo1 "chrSolveSimpTyVarMp" (pp @chrSolveSimpTyVarMp)
+                                        , mkInfo1 "finTyVarMp" (pp @finTyVarMp)
                                         ]
                                         ++ mkInfo1Dbg @lhs.opts "chrStore" (ppCHRStore @chrStore)
 %%]
@@ -943,6 +944,7 @@ SEM Expr
                                         , mkInfo1 "toQuantOverPrOccL (decl)" (ppBracketsCommasV @toQuantOverPrOccL)
                                         , mkInfo1 "quantCnstrMp" (ppAssocLV $ assocLMapElt ppBracketsCommas $ Map.toList @quantCnstrMp)
                                         , mkInfo1 "tqoGam" (ppGam @tqoGam)
+                                        -- , mkInfo1 "quTyVarMp" (pp @quTyVarMp)
                                         , mkInfo1 "tmpoTyVarMp" (pp @tmpoTyVarMp)
                                         , mkInfo1 "chrSolve1RedGraph" (pp $ show @chrSolve1RedGraph)
                                         , mkInfo1 "chrSimplifyResult1 redgraphs" (ppAssocLV $ assocLMapElt show $ simpresRedGraphs @chrSimplifyResult1)
