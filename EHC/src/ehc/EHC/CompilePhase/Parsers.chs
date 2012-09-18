@@ -13,6 +13,8 @@ CompilePhase building blocks: parsers
 %%]
 %%[8 import(EH.Util.ParseUtils)
 %%]
+%%[99 import(Control.Exception as CE)
+%%]
 
 %%[8 import({%{EH}EHC.Common})
 %%]
@@ -212,12 +214,12 @@ cpDecodeHIInfo modNm
 %%]]
        ; cpMsg' modNm VerboseALot "Decoding" Nothing fpH
        ; hiinfo <- lift $
-           catch (do { i <- getSGetFile (fpathToStr fpH) (HI.sgetHIInfo opts)
-                            -- getSerializeFile (fpathToStr fpH)
-                            -- Bin.getBinaryFPath fpH
-                     ; return i
-                     })
-                 (\_ -> return $ HI.emptyHIInfo {HI.hiiValidity = HI.HIValidity_Absent})
+           CE.catch (do { i <- getSGetFile (fpathToStr fpH) (HI.sgetHIInfo opts)
+                               -- getSerializeFile (fpathToStr fpH)
+                               -- Bin.getBinaryFPath fpH
+                        ; return i
+                        })
+                    (\(_ :: SomeException) -> return $ HI.emptyHIInfo {HI.hiiValidity = HI.HIValidity_Absent})
        ; when (ehcOptVerbosity opts > VerboseALot)
               (do { lift $ putPPLn (pp hiinfo)
                   })

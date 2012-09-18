@@ -230,7 +230,7 @@ putRef c i
 sputShared :: (Ord x, Serialize x, Typeable x) => x -> SPut
 sputShared x
   = do { s <- St.get
-       ; let tykey = tyConString $ typeRepTyCon $ typeOf x
+       ; let tykey = tyConName $ typeRepTyCon $ typeOf x
        ; case Map.lookup tykey (sputsSMp s) of
            Just (SerPutMp m)
              -> case Map.lookup xcasted m of
@@ -274,7 +274,7 @@ sgetShared
              -> do { i <- lift (getRef cmd)
                    ; x <- sgetNested
                    ; s <- St.get
-                   ; let tykey = tyConString $ typeRepTyCon $ typeOf (undefined :: x)
+                   ; let tykey = tyConName $ typeRepTyCon $ typeOf (undefined :: x)
                    ; case Map.lookup tykey (sgetsSMp s) of
                        Just (SerGetMp m)
                          -> St.put (s { sgetsSMp = Map.insert tykey (SerGetMp (Map.insert i xcasted m)) (sgetsSMp s)
@@ -287,7 +287,7 @@ sgetShared
            SCmd_ShareRef
              -> do { i <- lift (getRef cmd)
                    ; s <- St.get
-                   ; let tykey = tyConString $ typeRepTyCon $ typeOf (undefined :: x)
+                   ; let tykey = tyConName $ typeRepTyCon $ typeOf (undefined :: x)
                    ; case Map.lookup tykey (sgetsSMp s) of
                        Just (SerGetMp m)
                          -> return $ panicJust "Serialize.sgetShared C" $ cast $ panicJust "Serialize.sgetShared B" $ Map.lookup i m

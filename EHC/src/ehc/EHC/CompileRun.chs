@@ -16,6 +16,8 @@ An EHC compile run maintains info for one compilation invocation
 %%]
 %%[99 import(System.Directory)
 %%]
+%%[99 import(Control.Exception as CE)
+%%]
 %%[99 import(EH.Util.FPath)
 %%]
 %%[99 import({%{EH}Base.PackageDatabase})
@@ -272,8 +274,8 @@ cpRmFilesToRm
        ; lift $ mapM rm files
        ; cpUpdSI (\crsi -> crsi {crsiFilesToRm = []})
        }
-  where rm f = catch (removeFile f)
-                     (\e -> hPutStrLn stderr (show f ++ ": " ++ show e))
+  where rm f = CE.catch (removeFile f)
+                        (\(e :: SomeException) -> hPutStrLn stderr (show f ++ ": " ++ show e))
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
