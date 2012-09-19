@@ -409,7 +409,7 @@ SEM Expr
                             .   gKiTvS              =   @tyKiUpdFreeTvarS
 %%]]
                             .   lQuTyGam            =   @tyGam_l_extra
-                            .   lQuTyKiGam_qu       =   tyKiGamQuantify @gKiTvS @lSubsTyKiGam
+                            .   lQuTyKiGam_qu       =   tyKiGamQuantify @lhs.opts @gKiTvS @lSubsTyKiGam
                             .   lQuTyKiGam_ex       =   tyKiGamInst1Exists @lUniq3 @lQuTyKiGam_qu
                             .   lQuTyKiGam          =   @lQuTyKiGam_ex_extra
                             .   lQuTyKiGam_ex_extra =   gamUnion @extraTyKiGam @lQuTyKiGam_ex
@@ -437,7 +437,7 @@ SEM Expr
 %%[(8 hmtyinfer)
 SEM Expr
   | Let         loc         .   (lQuTyKiGam_qu,quTyKiVarMp, cycTyKiVarMp_l)
-                                                    :=  tyKiGamQuantifyWithVarMp @decls.kiVarMp @gKiTvS @tyKiGam_l_
+                                                    :=  tyKiGamQuantifyWithVarMp @lhs.opts @decls.kiVarMp @gKiTvS @tyKiGam_l_
                             .   bodyTyKiVarMp1      =   @quTyKiVarMp `varUpd` @decls.kiVarMp
                             .   (lQuTyKiGam_ex,exTyKiVarMp2)
                                                     :=  tyKiGamInst1ExistsWithVarMp @bodyTyKiVarMp1 @lUniq3 @lQuTyKiGam_qu
@@ -679,7 +679,7 @@ SEM Decl
 
 %%[(6 hmtyinfer)
 SEM Decl
-  | KiSig       loc         .   sigKi               =   tyKiQuantify (const False) @kiExpr.ki
+  | KiSig       loc         .   sigKi               =   tyKiQuantify True (const False) @kiExpr.ki
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

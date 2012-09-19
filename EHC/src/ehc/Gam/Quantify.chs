@@ -5,7 +5,7 @@
 %%[(3 hmtyinfer) module {%{EH}Gam.Quantify}
 %%]
 
-%%[(3 hmtyinfer) hs import ({%{EH}Base.Common})
+%%[(3 hmtyinfer) hs import ({%{EH}Base.Common}, {%{EH}Opts.Base})
 %%]
 %%[(3 hmtyinfer) hs import ({%{EH}Ty})
 %%]
@@ -86,16 +86,16 @@ valGamQuantifyWithVarMp doQuant tyKiGam tvKiVarMp gamVarMp globTvS prL valGam
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(6 hmtyinfer || hmtyast).tyKiGamQuantify export(tyKiGamQuantify)
-tyKiGamQuantify :: TyVarIdS -> TyKiGam -> TyKiGam
-tyKiGamQuantify globTvS
-  = gamMap (\(n,k) -> (n,k {tkgiKi = tyKiQuantify (`Set.member` globTvS) (tkgiKi k)}))
+tyKiGamQuantify :: EHCOpts -> TyVarIdS -> TyKiGam -> TyKiGam
+tyKiGamQuantify opts globTvS
+  = gamMap (\(n,k) -> (n,k {tkgiKi = tyKiQuantify (ehcOptPolyKinds opts) (`Set.member` globTvS) (tkgiKi k)}))
 %%]
 
 %%[(8 hmtyinfer || hmtyast).tyKiGamQuantifyWithVarMp -6.tyKiGamQuantify export(tyKiGamQuantifyWithVarMp)
-tyKiGamQuantifyWithVarMp :: {- TyKiGam -> VarMp -> -} VarMp -> TyVarIdS -> TyKiGam -> (TyKiGam,VarMp,VarMp)
-tyKiGamQuantifyWithVarMp {- tyKiGam tvKiVarMp -} gamVarMp globTvS gam
+tyKiGamQuantifyWithVarMp :: EHCOpts -> VarMp -> TyVarIdS -> TyKiGam -> (TyKiGam,VarMp,VarMp)
+tyKiGamQuantifyWithVarMp opts {- tyKiGam tvKiVarMp -} gamVarMp globTvS gam
   = tyKiGamDoWithVarMp
-      (\_ (t,tyCycMp) m cycMp -> (tyKiQuantify {- (tvarKi tyKiGam tvKiVarMp gamVarMp) -} (`Set.member` globTvS) t,m,tyCycMp `varUpd` cycMp))
+      (\_ (t,tyCycMp) m cycMp -> (tyKiQuantify (ehcOptPolyKinds opts) {- (tvarKi tyKiGam tvKiVarMp gamVarMp) -} (`Set.member` globTvS) t,m,tyCycMp `varUpd` cycMp))
       gamVarMp emptyVarMp gam
 %%]
 

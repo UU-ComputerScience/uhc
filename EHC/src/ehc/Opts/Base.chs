@@ -147,6 +147,9 @@ data EHCOpts
       ,  ehcOptImmQuit        ::  Maybe ImmediateQuitOption
       ,  ehcOptDebug          ::  Bool              -- debug info
       ,  ehcStopAtPoint       ::  CompilePoint      -- stop at (after) compile phase
+%%[[6
+      ,  ehcOptPolyKinds	  ::  Bool              -- allow kind polymorphism
+%%]]
 %%[[7
       ,  ehcOptExtensibleRecords
       						  ::  Bool
@@ -241,7 +244,8 @@ data EHCOpts
       ,  ehcOptCPP            ::  Bool              -- do preprocess with C preprecessor CPP
       ,  ehcOptUseAssumePrelude                     -- use & assume presence of prelude
                               ::  Bool
-      ,  ehcOptPackageSearchFilter   ::  [PackageSearchFilter]  -- description of what to expose from package database
+      ,  ehcOptPackageSearchFilter 
+      					 	  ::  [PackageSearchFilter]  -- description of what to expose from package database
       ,  ehcOptOutputDir      ::  Maybe String      -- where to put output, instead of same dir as input file
       ,  ehcOptKeepIntermediateFiles
                               ::  Bool              -- keep intermediate files
@@ -251,6 +255,8 @@ data EHCOpts
       ,  ehcOptCmdLineOpts    ::  CmdLineOpts       -- options from the commandline and pragma for such options
       ,  ehcOptCmdLineOptsDoneViaPragma
       						  ::  Bool       		-- options via OPTIONS_UHC pragma have been set
+      ,  ehcOptOverloadedStrings
+      						  ::  Bool              -- allow overloaded strings
 %%]]
       }
 %%]
@@ -285,6 +291,11 @@ emptyEHCOpts
       ,  ehcOptImmQuit          =   Nothing
       ,  ehcOptDebug            =   False
       ,  ehcStopAtPoint         =   CompilePoint_All
+%%[[6
+      ,  ehcOptPolyKinds	    =   True
+%%][99
+      ,  ehcOptPolyKinds	    =   False
+%%]]
 %%[[7
       ,  ehcOptExtensibleRecords=   True
 %%][99
@@ -393,6 +404,7 @@ emptyEHCOpts
       ,  ehcOptCmdLineOpts      =   []
       ,  ehcOptCmdLineOptsDoneViaPragma
                                 =   False
+      ,  ehcOptOverloadedStrings=   False
 %%]]
       }
 %%]

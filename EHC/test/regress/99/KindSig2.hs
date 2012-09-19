@@ -3,6 +3,8 @@
    expected: error because U's kind is too general for Functor
 ---------------------------------------------------------------------------------------- -}
 
+{-# LANGUAGE PolyKinds #-}
+
 module KindSig2 where
 
 -- the signature would make U acceptable for Functor

@@ -41,6 +41,10 @@ data Pragma
   | Pragma_GenericDeriving                  -- turn on generic deriving (default)
   | Pragma_NoBangPatterns               	-- turn off bang patterns
   | Pragma_BangPatterns                  	-- turn on bang patterns (default)
+  | Pragma_NoPolyKinds               		-- turn off polymorphic kinds (default)
+  | Pragma_PolyKinds                  		-- turn on
+  | Pragma_NoOverloadedStrings         		-- turn off overloaded strings (default)
+  | Pragma_OverloadedStrings           		-- turn on
   | Pragma_ExtensibleRecords                -- turn on extensible records
   | Pragma_Fusion               			-- turn on fusion syntax
   | Pragma_OptionsUHC              			-- commandline options
@@ -69,6 +73,10 @@ allSimplePragmaMp
                   , Pragma_NoGenericDeriving
                   , Pragma_BangPatterns
                   , Pragma_NoBangPatterns
+                  , Pragma_NoPolyKinds         
+                  , Pragma_PolyKinds           
+                  , Pragma_NoOverloadedStrings 
+                  , Pragma_OverloadedStrings   
                   , Pragma_ExtensibleRecords
                   , Pragma_Fusion
                   ]
@@ -120,6 +128,10 @@ instance Serialize Pragma where
   sput (Pragma_NoBangPatterns           ) = sputWord8 8
   sput (Pragma_BangPatterns             ) = sputWord8 9
   sput (Pragma_OptionsUHC      a        ) = sputWord8 10 >> sput a
+  sput (Pragma_NoPolyKinds       		) = sputWord8 11
+  sput (Pragma_PolyKinds         		) = sputWord8 12
+  sput (Pragma_NoOverloadedStrings		) = sputWord8 13
+  sput (Pragma_OverloadedStrings 		) = sputWord8 14
   sget = do t <- sgetWord8
             case t of
               0  -> return Pragma_NoImplicitPrelude
@@ -135,6 +147,10 @@ instance Serialize Pragma where
               8  -> return Pragma_NoBangPatterns
               9  -> return Pragma_BangPatterns
               10 -> liftM  Pragma_OptionsUHC             sget
+              11 -> return Pragma_NoPolyKinds       
+              12 -> return Pragma_PolyKinds         
+              13 -> return Pragma_NoOverloadedStrings
+              14 -> return Pragma_OverloadedStrings 
 
 %%]
 

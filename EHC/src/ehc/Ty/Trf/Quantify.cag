@@ -89,13 +89,19 @@ tyQuantifyOuter tvKi tvIsBound ty
 %%]
 
 %%[(6 hmtyinfer || hmtyast) -3.valTyQuantify hs export(tyKiQuantify,valTyQuantify)
-tyKiQuantify :: TvIsBound -> Ty -> Ty
-tyKiQuantify tvIsBound ty -- = tyQuantify' tvIsBound tyQu_Forall {- tyQu_KiForall -} ty
+-- | Quantify kind, i.e. add universal quantifier for free tvars when kind polymorphism is allowed, otherwise just *
+tyKiQuantify
+  :: Bool			-- ^ kind polymorphism on (for inference steered by PolyKinds pragma)
+     -> TvIsBound
+     -> Ty
+     -> Ty
+tyKiQuantify polyKinds tvIsBound ty -- = tyQuantify' tvIsBound tyQu_Forall {- tyQu_KiForall -} ty
   = tqoTy $ tyQuantifyWithOpts opts ty
   where opts = defaultTyQuOpts
-                  { tqoptAllowInnerQuant = False
-                  , tqoptTvIsBound       = tvIsBound
-                  , tqoptBaseQuant       = tyQu_Forall
+                  { tqoptAllowInnerQuant 	= False
+                  , tqoptTvIsBound       	= tvIsBound
+                  , tqoptBaseQuant       	= tyQu_Forall
+                  , tqoptQuantVarDefaultsTo	= if polyKinds then Nothing else Just kiStar
                   }
 
 valTyQuantify :: (TyVarId -> Ty) -> TvIsBound -> Ty -> Ty
@@ -129,12 +135,13 @@ tyQuantify' tvIsBound baseQuant ty
 data TyQuOpts
   = TyQuOpts
       { tqoptTvIsBound			:: TvIsBound
+      , tqoptQuantVarDefaultsTo	:: !(Maybe Ty)				-- ^ if provided, not quantification takes place but var defaults to this
 %%[[4
-      , tqoptAllowInnerQuant	:: Bool
+      , tqoptAllowInnerQuant	:: !Bool
 %%]]
 %%[[6
-      , tqoptBaseQuant			:: TyQu
-      , tqoptTvL1				:: TyVarId -> Ty		-- mapping of tvar to 1 higher metalevel ty (i.e. kind)
+      , tqoptBaseQuant			:: !TyQu
+      , tqoptTvL1				:: TyVarId -> Ty			-- ^ mapping of tvar to 1 higher metalevel ty (i.e. kind)
 %%]]
 %%[[9
       , tqoptQuRanks 			:: [Int]
@@ -145,6 +152,7 @@ defaultTyQuOpts :: TyQuOpts
 defaultTyQuOpts
   = TyQuOpts
       (const False)
+      Nothing
 %%[[4
       True
 %%]]
@@ -363,7 +371,20 @@ tvarsToQuantL1 boundablesL tvIsBound
 %%]
 
 %%[(4 hmtyinfer || hmtyast).tvarsToQuant hs
-tvarsToQuant :: TyQuOpts -> Bool -> TvCatMp -> (TyVarId -> Bool) -> TvLevIsBound -> TyVarIdS -> (TyVarIdsToBind,TyVarIdsToBind,TyVarIdsToBind,TvLevIsBound)
+-- | Compute bindable tvars
+tvarsToQuant
+  :: TyQuOpts
+     -> Bool
+     -> TvCatMp
+     -> (TyVarId -> Bool)
+     -> TvLevIsBound			-- ^ 'is already bound?'
+     -> TyVarIdS
+     -> ( TyVarIdsToBind		-- ^ to bind universal, on this level
+        , TyVarIdsToBind		-- ^ to bind existential
+        , TyVarIdsToBind		-- ^ to bind universal, 1 level higher
+        , TvLevIsBound			-- ^ updated 'is already bound?'
+        , VarMp					-- ^ the tvars which are defaulted
+        )
 tvarsToQuant opts isQuLoc _ mayQuFx tvIsBound tvS
   =  if isQuLoc
      then  let boundablesS = tvNotBound 0 tvIsBound tvS
@@ -371,9 +392,12 @@ tvarsToQuant opts isQuLoc _ mayQuFx tvIsBound tvS
                boundablesL = Set.toList boundablesS
                tvIsBound'  = tvBoundAddS 0 boundablesS tvIsBound
 %%][6
-               boundablesL                = [ (v,{- trm "tvarsToQuant" (\k -> v >|< "::" >|< k) $ -} tqoptTvL1 opts v) | v <- Set.toList boundablesS ]
-               (boundablesL1L,_,tvIsBound') = tvarsToQuantL1 boundablesL (tvBoundAddS 0 boundablesS tvIsBound)
-               -- tvIsBound'  = tvBoundAddS (boundablesS `Set.union` boundablesL1S) tvIsBound
+               (boundablesL,boundablesL1L,tvIsBound',defaultedVarMp)
+                 | isJust mbDf = ([]         , [] , tvIsBound, assocTyLToVarMp [ (v,df) | (v,_) <- boundablesL ])
+                 | otherwise   = (boundablesL, b1L, isb      , emptyVarMp                                       )
+                 where mbDf@(~(Just df)) = tqoptQuantVarDefaultsTo opts
+                       (b1L,_,isb) = tvarsToQuantL1 boundablesL (tvBoundAddS 0 boundablesS tvIsBound)
+                       boundablesL = [ (v, tqoptTvL1 opts v) | v <- Set.toList boundablesS ]
 %%]]
            in ( boundablesL
               , []
@@ -383,8 +407,9 @@ tvarsToQuant opts isQuLoc _ mayQuFx tvIsBound tvS
               , boundablesL1L
 %%]]
               , tvIsBound'
+              , defaultedVarMp
               )
-     else  ([],[],[],tvIsBound)
+     else  ([],[],[],tvIsBound,emptyVarMp)
 %%]
 
 %%[(6_4 hmtyinfer || hmtyast).tvarsToQuant -4.tvarsToQuant hs
@@ -417,18 +442,18 @@ tvMayQuFx qu fxTvM isQuFxLoc tv
 ATTR AllTy [ tvIsBound: {TvLevIsBound} | | ]
 
 SEM TyAGItf
-  | AGItf       loc         .   (qBndTvs,qBndExTvs,qBndL1Tvs,tvIsBound)
+  | AGItf       loc         .   (qBndTvs,qBndExTvs,qBndL1Tvs,tvIsBound,defaultedVarMpNew)
                                                         =   tvarsToQuant @lhs.opts True @fxTvM
                                                                          (const False)
                                                                          (tvIsBound2L0 $ tqoptTvIsBound @lhs.opts) @qHereTvS
 
 SEM Ty
-  | App Var     loc         .   (qBndTvs,qBndExTvs,qBndL1Tvs,tvIsBound)
+  | App Var     loc         .   (qBndTvs,qBndExTvs,qBndL1Tvs,tvIsBound,defaultedVarMpNew)
                                                         =   tvarsToQuant @lhs.opts @isQuLoc @lhs.fxTvM
                                                                          (tvMayQuFx @hereQu @lhs.fxTvM @isQuFxLoc)
                                                                          @lhs.tvIsBound @qHereTvS
   | TBind       loc         .   tvIsBoundQu             =   tvBoundAddS 0 @introTVarS @lhs.tvIsBound
-                            .   (qBndTvs,qBndExTvs,qBndL1TvsOther,tvIsBound)
+                            .   (qBndTvs,qBndExTvs,qBndL1TvsOther,tvIsBound,defaultedVarMpNew)
                                                         =   tvarsToQuant @lhs.opts @isQuLoc @lhs.fxTvM
                                                                          (tvMayQuFx @hereQu @lhs.fxTvM @isQuFxLoc)
                                                                          @tvIsBoundQu @qHereTvS
@@ -445,19 +470,37 @@ SEM Ty
 
 %%[(9 hmtyinfer || hmtyast)
 SEM Ty
-  | App Var     loc         .   (qBndTvs,qBndExTvs,qBndL1Tvs,tvIsBound)
+  | App Var     loc         .   (qBndTvs,qBndExTvs,qBndL1Tvs,tvIsBound,defaultedVarMpNew)
                                                         :=  tvarsToQuant @lhs.opts @isQuLoc @lhs.fxTvM (tvMayQuFx @hereQu @lhs.fxTvM @isQuFxLoc) @lhs.tvIsBound @qHereTvS
 %%]
 
 %%[(9 hmtyinfer || hmtyast)
 SEM Ty
-  | Pred        loc         .   (qBndTvs,qBndExTvs,qBndL1Tvs,tvIsBound)
+  | Pred        loc         .   (qBndTvs,qBndExTvs,qBndL1Tvs,tvIsBound,defaultedVarMpNew)
                                                         =   tvarsToQuant @lhs.opts @isQuLoc @lhs.fxTvM (const False) @lhs.tvIsBound @qHereTvS
 %%]
 
 %%[(11 hmtyinfer || hmtyast)
 SEM Ty
   | Lam         loc         .   tvIsBound               =   tvBoundAddS 0 @introTVarS @lhs.tvIsBound
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Mapping for defaulting tyvars
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(4 hmtyinfer || hmtyast)
+ATTR AllTy [ defaultedVarMp: VarMp | | ]
+
+SEM TyAGItf
+  | AGItf		loc			.	defaultedVarMp	=	@defaultedVarMpNew
+
+SEM Ty
+  | App Var TBind
+%%[[9
+    Pred
+%%]]
+  				loc			.	defaultedVarMp	=	@defaultedVarMpNew `varUpd` @lhs.defaultedVarMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -520,7 +563,7 @@ SEM TyAGItf
   | AGItf       loc         .   quTyBase        =   @ty.quTy
 
 SEM Ty
-  | Var         loc         .   quTyBase        =   Ty_Var @tv @categ.quTy
+  | Var         loc         .   quTyBase        =   maybe (Ty_Var @tv @categ.quTy) id $ varmpTyLookup @tv @lhs.defaultedVarMp
   | App         loc         .   quTyBase        =   Ty_App @func.quTy @arg.quTy
   | TBind       loc         .   quTyBase        =   
 %%[[4

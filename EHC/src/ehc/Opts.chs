@@ -73,15 +73,19 @@ ehcOptUpdateWithPragmas pragmas opts
   = foldr (\p om@(o,modf) -> maybe om (\o -> (o,True)) $ upd p o) (opts,False) (Set.toList pragmas)
   where upd pragma opts
           = case pragma of
-              Pragma_NoGenericDeriving  -> Just $ opts { ehcOptGenGenerics          = False }
-              Pragma_GenericDeriving    -> Just $ opts { ehcOptGenGenerics          = True  }
-              Pragma_NoBangPatterns     -> Just $ opts { ehcOptBangPatterns         = False }
-              Pragma_BangPatterns       -> Just $ opts { ehcOptBangPatterns         = True  }
-              Pragma_ExtensibleRecords  -> Just $ opts { ehcOptExtensibleRecords    = True  }
-              Pragma_Fusion             -> Just $ opts { ehcOptFusion               = True  }
-              Pragma_OptionsUHC o       -> fmap (\o -> o {ehcOptCmdLineOptsDoneViaPragma = True}) mo
-                                        where (mo,_,_) = ehcCmdLineOptsApply (words o) opts
-              _                         -> Nothing
+              Pragma_NoGenericDeriving  	-> Just $ opts { ehcOptGenGenerics          = False }
+              Pragma_GenericDeriving    	-> Just $ opts { ehcOptGenGenerics          = True  }
+              Pragma_NoBangPatterns     	-> Just $ opts { ehcOptBangPatterns         = False }
+              Pragma_BangPatterns       	-> Just $ opts { ehcOptBangPatterns         = True  }
+              Pragma_NoOverloadedStrings	-> Just $ opts { ehcOptOverloadedStrings	= False }
+              Pragma_OverloadedStrings		-> Just $ opts { ehcOptOverloadedStrings	= True  }
+              Pragma_NoPolyKinds     		-> Just $ opts { ehcOptPolyKinds         	= False }
+              Pragma_PolyKinds       		-> Just $ opts { ehcOptPolyKinds         	= True  }
+              Pragma_ExtensibleRecords  	-> Just $ opts { ehcOptExtensibleRecords    = True  }
+              Pragma_Fusion             	-> Just $ opts { ehcOptFusion               = True  }
+              Pragma_OptionsUHC o       	-> fmap (\o -> o {ehcOptCmdLineOptsDoneViaPragma = True}) mo
+                                        	where (mo,_,_) = ehcCmdLineOptsApply (words o) opts
+              _                         	-> Nothing
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

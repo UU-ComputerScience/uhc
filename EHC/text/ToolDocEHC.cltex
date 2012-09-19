@@ -1105,6 +1105,7 @@ The following pragmas are supported.
 \item @NoImplicitPrelude@: don't automatically import @Prelude@ and/or assume its presence.
 \item @GenericDeriving@, @NoGenericDeriving@: turn on/off respectively generic deriving, default is on.
 \item @BangPatterns@, @NoBangPatterns@: turn on/off respectively bang patterns, default is on.
+\item @PolyKinds@, @NoPolyKinds@: turn on/off respectively polymorphic kind inference, default is off.
 \item @ExtensibleRecords@: turn on special syntax for extensible records. Available for internal backwards compatibility, but otherwise useless as codegeneration and runtime currently does not support extensible records. It reserves the operators \verb|#| and \verb|:=| for record selection and update respectively.
 \end{itemize}
 \item \verb|{-# DERIVING class field generic-function #-}| pragma: see \lref{generic-deriving}{generic deriving}.
