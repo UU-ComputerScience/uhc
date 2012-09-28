@@ -33,19 +33,20 @@ Module analysis
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[50 export(cpCheckMods')
-cpCheckMods' :: [Mod] -> EHCompilePhase ()
-cpCheckMods' modL@(Mod {modName = modNm} : _)
+cpCheckMods' :: (HsName -> ModMpInfo) -> [Mod] -> EHCompilePhase ()
+cpCheckMods' dfltMod modL@(Mod {modName = modNm} : _)
   = do { cr <- get
+       -- ; cpMsg modNm VerboseDebug $ "cpCheckMods' modL: " ++ show modL
        ; let crsi   = crStateInfo cr
-             (mm,e) = modMpCombine modL (crsiModMp crsi)
+             (mm,e) = modMpCombine' dfltMod modL (crsiModMp crsi)
+       ; cpUpdSI (\crsi -> crsi {crsiModMp = mm})
 %%[[50
        ; when (ehcOptVerbosity (crsiOpts crsi) >= VerboseDebug)
               (do { cpMsg modNm VerboseDebug "cpCheckMods'"
-                  ; lift $ putWidthPPLn 120 (pp (head modL) >-< pp modL >-< ppModMp mm) -- debug
+                  ; lift $ putWidthPPLn 120 (pp modNm >-< pp modL >-< ppModMp mm)
                   })
 %%][99
 %%]]
-       ; cpUpdSI (\crsi -> crsi {crsiModMp = mm})
        ; cpSetLimitErrsWhen 5 "Module analysis" e
        }
 %%]
@@ -55,7 +56,7 @@ cpCheckMods :: [HsName] -> EHCompilePhase ()
 cpCheckMods modNmL
   = do { cr <- get
        ; let modL   = [ addBuiltin $ ecuMod $ crCU n cr | n <- modNmL ]
-       ; cpCheckMods' modL
+       ; cpCheckMods' (\n -> panic $ "cpCheckMods: " ++ show n) modL
        }
   where addBuiltin m = m { modImpL = modImpBuiltin : modImpL m }
 %%]

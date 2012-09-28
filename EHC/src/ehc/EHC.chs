@@ -59,7 +59,7 @@
 %%]
 
 -- module
-%%[50 import({%{EH}Module}(modBuiltin))
+%%[50 import({%{EH}Module}(modBuiltin), {%{EH}Module})
 %%]
 
 -- packages
@@ -512,8 +512,11 @@ doCompileRun fnL@(fn:_) opts
         compile :: EHCOpts -> FileSuffMp -> FileLocPath -> [FPath] -> [HsName] -> EHCompilePhase ()
         compile opts fileSuffMpHs searchPath fpL topModNmL
           = do { 
+               -- check module import relationship for builtin module
+                 cpCheckMods' (const emptyModMpInfo) [modBuiltin]
+               
                -- start with directly importing top modules, providing the filepath directly
-                 topModNmL' <- zipWithM (\fp topModNm -> imp HSOnlyImports (Just fp) Nothing topModNm) fpL topModNmL
+               ; topModNmL' <- zipWithM (\fp topModNm -> imp HSOnlyImports (Just fp) Nothing topModNm) fpL topModNmL
                
                -- follow the import relation to chase modules which have to be analysed
                ; cpImportGatherFromModsWithImp
@@ -536,9 +539,6 @@ doCompileRun fnL@(fn:_) opts
                           ; importAlso HMOnlyMinimal (Set.unions . Map.elems . ecuTransClosedUsedModMp)
                           })
 
-               -- check module import relationship
-               ; cpCheckMods' [modBuiltin]
-               
                -- inhibit mutual recursiveness
                ; cpEhcCheckAbsenceOfMutRecModules
                

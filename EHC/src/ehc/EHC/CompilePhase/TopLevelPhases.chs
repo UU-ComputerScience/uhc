@@ -780,12 +780,12 @@ Analyse a module for
 cpEhcHaskellAnalyseModuleItf :: HsName -> EHCompilePhase ()
 cpEhcHaskellAnalyseModuleItf modNm
   = cpSeq [ cpStepUID, cpFoldHsMod modNm, cpGetHsMod modNm
-%%[[99
-          , cpCleanupHSMod modNm
-%%]]
           , cpCheckMods [modNm]
 %%[[(50 codegen grin)
           , cpUpdateModOffMp [modNm]
+%%]]
+%%[[99
+          , cpCleanupHSMod modNm
 %%]]
           ]
 %%]

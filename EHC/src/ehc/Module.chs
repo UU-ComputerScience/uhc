@@ -42,6 +42,9 @@
 %%[102 import({%{EH}Base.ForceEval})
 %%]
 
+%%[50 import({%{EH}Base.Debug})
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Imp/Exp entity
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -322,7 +325,12 @@ modInscope m expsOf
                     [ hsnQualified `Rel.mapDom` defEnts
                     , hsnSetQual (modName m) `Rel.mapDom` defEnts 
                     ]
-        imports = Rel.unions $ map (modImp expsOf) (modImpL m)
+        imports = Rel.unions $ map (impOf expsOf) impL
+        impL    = -- (\v -> tr "modInscope.impL: " (modName m >#< v) v) $
+                  modImpL m
+        impOf e n
+                = -- (\v -> tr "modInscope.impOf: " (modName m >#< n >#< v) v) $
+                  modImp e n
 %%]
 
 %%[50
@@ -472,7 +480,8 @@ emptyModMpInfo = mkModMpInfo hsnUnknown Rel.empty Rel.empty Rel.empty
 
 mkModMpInfo :: HsName -> ModEntRel -> ModEntRel -> ModEntRel -> ModMpInfo
 mkModMpInfo modNm i e he
-  = resetModMpInfo modNm
+  = -- (\v -> tr "mkModMpInfo" (modNm >-< i) v) $
+      resetModMpInfo modNm
     $ ModMpInfo
         { mmiInscps   		= i
         , mmiExps     		= e
@@ -528,16 +537,20 @@ expsNmOffMp modNm exps
       ]
 %%]
 
-%%[50 export(modMpCombine)
-modMpCombine ::  [Mod] -> ModMp -> (ModMp,[Err])
-modMpCombine ms mp
+%%[50 export(modMpCombine',modMpCombine)
+modMpCombine' :: (HsName -> ModMpInfo) -> [Mod] -> ModMp -> (ModMp,[Err])
+modMpCombine' dfltMod ms mp
   = (newMp,concat errs)
-  where expsOf mp n     = mmiExps $ Map.findWithDefault emptyModMpInfo n mp
+  where expsOf mp n     = mmiExps $ Map.findWithDefault (dfltMod n) n mp
+        -- expsOf mp n     = mmiExps $ Map.findWithDefault emptyModMpInfo n mp
         rels            = modInsOuts (expsOf mp) ms
         (inscps,exps)   = unzip rels
         newMp           = (Map.fromList $ zipWith4 (\n i o ho -> (n,mkModMpInfo n i o ho)) (map modName ms) inscps exps (map modHiddenExps ms))
                            `Map.union` mp
         errs            = zipWith (checkMod (fmap mmiExps . (`Map.lookup` newMp))) inscps ms
+
+modMpCombine ::  [Mod] -> ModMp -> (ModMp,[Err])
+modMpCombine = modMpCombine' (const emptyModMpInfo)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

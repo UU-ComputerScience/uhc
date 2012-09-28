@@ -66,9 +66,10 @@ SEM Module
 %%[99 -50.Module.modImpL
 SEM Module
     | Module
-        loc             .   modImpL     =   -- (\v -> tr "XX" (pp v) v) $
-                                            @prelModImpL ++ @body.extraModImpL ++ @body.modImpL
-                        .   prelModImpL =   if hsnModPrelude `elem` map mimpSource @body.modImpL
+        loc             .   bodyModImpL =   @body.extraModImpL ++ @body.modImpL
+                        .   modImpL     =   -- (\v -> tr "XX" (pp v) v) $
+                                            @prelModImpL ++ @bodyModImpL
+                        .   prelModImpL =   if hsnModPrelude `elem` map mimpSource @bodyModImpL
                                                || @realModuleNm == hsnModPrelude
                                                || hsnIsInPrelude @realModuleNm
                                                || not (ehcOptUseAssumePrelude @lhs.opts)
@@ -232,7 +233,7 @@ ATTR Module AGItf [ | | mod: Mod ]
 SEM Module
     | Module
         lhs             .   mod         =   -- (\v -> tr "XX" (pp v) v) $
-        									Mod @lhs.moduleNm @name
+                                            Mod @lhs.moduleNm @name
                                                 @exports.modExpsMb @modImpL
                                                 @body.modDefsRel @body.modHideDefsRel
                                                 (reverse @body.topInstanceNmL)

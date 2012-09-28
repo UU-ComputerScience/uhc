@@ -443,7 +443,7 @@ SEM Body
         loc             .   idGam       =   let -- lookup a name whether it is in scope and check for equality of its qualifier
                                                 lkn :: (IdOcc -> Bool) -> HsName -> Maybe (HsName,[ModEnt])
                                                 lkn isq n = case Map.lookup n 
-                                                                 -- $ (\v -> tr "ZZ" (pp $ Map.toList v) v) $
+                                                                 -- $ (\v -> tr "ZZ" (vlist $ Map.toList v) v) $
                                                                  @lhs.modInScope of
                                                               Just es | not (null es')
                                                                 -> Just (n,es')
@@ -1550,7 +1550,9 @@ SEM ImportDeclaration
 
 SEM Body
     | Body
-        loc             .   modAsMp     =	Map.fromList [ (mimpSource e, mimpAs e) | e <- @extraModImpL ] `Map.union` @importdeclarations.modAsMp
+        loc             .   modAsMp     =   -- (\v -> tr "Body.modAsMp" (pp $ Map.toList v) v) $
+                                            -- Map.fromList [ (mimpSource e, mimpAs e) | e <- @extraModImpL ] `Map.union`
+                                            @importdeclarations.modAsMp
 %%]
 
 

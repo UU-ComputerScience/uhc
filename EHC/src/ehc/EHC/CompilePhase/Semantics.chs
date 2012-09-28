@@ -112,8 +112,10 @@ cpFoldHs modNm
                                                 })
 %%[[50
                         where mmi    = panicJust "cpFoldHs.crsiModMp" $ Map.lookup modNm $ crsiModMp crsi
-                              inscps = Rel.toDomMap -- $ (\v -> tr "XX" (pp v ) v)
-                                                    $ mmiInscps mmi
+                              inscps = Rel.toDomMap -- $ (\v -> tr "XX mmiInscps mmi" (pp v ) v)
+                                                    $ mmiInscps 
+                                                    -- $ (\v -> tr "XX mmi" (pp v ) v)
+                                                    $ mmi
                               exps   = Rel.toRngMap $ Rel.restrictRng (\o -> let mq = hsnQualifier (ioccNm o) in isJust mq && fromJust mq /= modNm)
                                                     $ Rel.mapRng mentIdOcc $ mmiExps mmi
 %%]]
@@ -123,7 +125,8 @@ cpFoldHs modNm
          ;  when (isJust mbHS)
                  (do { cpUpdCU modNm ( ecuStoreHSSem hsSem
 %%[[50
-                                     . ecuStoreHIDeclImpS (ecuHSDeclImpNmS ecu)
+                                     . ecuStoreHIDeclImpS ( -- (\v -> tr "YY" (pp $ Set.toList v) v) $
+                                                           ecuHSDeclImpNmS ecu)
                                      -- . ecuSetHasMain hasMain
 %%]]
                                      )
@@ -177,7 +180,8 @@ cpFoldHIInfo modNm
                            mmi    = Map.findWithDefault emptyModMpInfo modNm mm
                            mmi'   = mkModMpInfo modNm
                                                 (mmiInscps mmi)
-                                                ({- (\v -> tr "cpFoldHIInfo.hiiExps" (pp v) v) $ -} HI.hiiExps hiInfo)
+                                                ( -- (\v -> tr "cpFoldHIInfo.hiiExps" (pp v) v) $
+                                                 HI.hiiExps hiInfo)
                                                 (HI.hiiHiddenExps hiInfo)
                      ; when hasMain (crSetAndCheckMain modNm)
                      ; cpUpdSI (\crsi -> crsi {crsiModMp = Map.insert modNm mmi' mm})

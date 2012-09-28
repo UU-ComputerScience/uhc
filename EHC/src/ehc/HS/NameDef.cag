@@ -513,7 +513,7 @@ ATTR Body [ | | extraModImpL: {[ModImp]} ]
 SEM Body
     | Body
         loc             .   extraModImpL=   if   ehcOptOverloadedStrings @lhs.opts
-                                            then [ModImp True hsnModDataString hsnModDataString False [] @range]
+                                            then [ModImp True hsnModDataString hsnModDataString False [ModEntSpec (hsnQualified hsnDataStringFromString) @range Nothing] @range]
                                             else []
 %%]
 
