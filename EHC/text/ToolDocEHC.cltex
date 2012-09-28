@@ -1106,6 +1106,9 @@ The following pragmas are supported.
 \item @GenericDeriving@, @NoGenericDeriving@: turn on/off respectively generic deriving, default is on.
 \item @BangPatterns@, @NoBangPatterns@: turn on/off respectively bang patterns, default is on.
 \item @PolyKinds@, @NoPolyKinds@: turn on/off respectively polymorphic kind inference, default is off.
+\item @OverloadedStrings@, @NoOverloadedStrings@: turn on/off overloaded strings, default is off.
+ See also \href{http://www.haskell.org/ghc/docs/7.0.3/html/users_guide/type-class-extensions.html#overloaded-strings}{GHC doc}.
+ The (current) difference is that the module @Data.String@ is brought in scope, although qualified.
 \item @ExtensibleRecords@: turn on special syntax for extensible records. Available for internal backwards compatibility, but otherwise useless as codegeneration and runtime currently does not support extensible records. It reserves the operators \verb|#| and \verb|:=| for record selection and update respectively.
 \end{itemize}
 \item \verb|{-# DERIVING class field generic-function #-}| pragma: see \lref{generic-deriving}{generic deriving}.

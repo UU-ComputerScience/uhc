@@ -1,5 +1,8 @@
 {-# LANGUAGE Trustworthy #-}
-{-# LANGUAGE CPP, NoImplicitPrelude, FlexibleInstances #-}
+{-# LANGUAGE CPP, FlexibleInstances #-}
+#ifdef __GLASGOW_HASKELL__
+{-# LANGUAGE NoImplicitPrelude #-}
+#endif
 
 -----------------------------------------------------------------------------
 -- |
@@ -31,7 +34,7 @@ import GHC.Base
 #endif
 
 #ifdef __UHC__
-import UHC.Base
+-- import UHC.Base
 #endif
 
 import Data.List (lines, words, unlines, unwords)
@@ -41,8 +44,8 @@ import Data.List (lines, words, unlines, unwords)
 class IsString a where
     fromString :: String -> a
 
-instance IsString [Char] where
-    fromString xs = xs
+instance IsString String where
+    fromString = id
 
 #ifdef __UHC_TARGET_JS__
 foreign import prim "primStringToPackedString" primStringToPackedString :: String -> PackedString
@@ -50,3 +53,8 @@ foreign import prim "primStringToPackedString" primStringToPackedString :: Strin
 instance IsString PackedString where
     fromString = primStringToPackedString
 #endif
+
+#ifdef __UHC__
+default IsString [Char]
+#endif
+

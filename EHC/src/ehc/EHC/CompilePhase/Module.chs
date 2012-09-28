@@ -8,7 +8,7 @@ Module analysis
 %%]
 
 -- general imports
-%%[50 import(qualified Data.Map as Map)
+%%[50 import(qualified Data.Map as Map, qualified Data.Set as Set)
 %%]
 %%[50 import(qualified EH.Util.Rel as Rel)
 %%]
@@ -25,6 +25,9 @@ Module analysis
 %%[50 import(qualified {%{EH}HS.ModImpExp} as HSSemMod)
 %%]
 
+%%[50 import({%{EH}Base.Debug})
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Module analysis
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -38,7 +41,7 @@ cpCheckMods' modL@(Mod {modName = modNm} : _)
 %%[[50
        ; when (ehcOptVerbosity (crsiOpts crsi) >= VerboseDebug)
               (do { cpMsg modNm VerboseDebug "cpCheckMods'"
-                  ; lift $ putWidthPPLn 120 (pp (head modL) >-< ppModMp mm) -- debug
+                  ; lift $ putWidthPPLn 120 (pp (head modL) >-< pp modL >-< ppModMp mm) -- debug
                   })
 %%][99
 %%]]
@@ -82,10 +85,11 @@ cpGetHsImports modNm
                  mbHsSemMod = ecuMbHSSemMod ecu
                  hsSemMod   = panicJust "cpGetHsImports" mbHsSemMod
                  modNm'     = HSSemMod.realModuleNm_Syn_AGItf hsSemMod
-                 upd        = ecuStoreHSDeclImpS (HSSemMod.modImpNmS_Syn_AGItf hsSemMod)
+                 upd        = ecuStoreHSDeclImpS ( -- (\v -> tr "XX" (pp $ Set.toList v) v) $ 
+                                                  HSSemMod.modImpNmS_Syn_AGItf hsSemMod)
          ;  case mbHsSemMod of
               Just _ | ecuIsTopMod ecu -> cpUpdCUWithKey modNm (\_ ecu -> (modNm', upd $ cuUpdKey modNm' ecu))
-                     | otherwise       -> do cpUpdCU modNm upd ; return modNm
+                     | otherwise       -> do { cpUpdCU modNm upd ; return modNm }
               _      -> return modNm
          }
 

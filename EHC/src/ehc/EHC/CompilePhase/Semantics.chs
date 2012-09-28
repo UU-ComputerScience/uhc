@@ -112,7 +112,8 @@ cpFoldHs modNm
                                                 })
 %%[[50
                         where mmi    = panicJust "cpFoldHs.crsiModMp" $ Map.lookup modNm $ crsiModMp crsi
-                              inscps = Rel.toDomMap $ mmiInscps $ mmi
+                              inscps = Rel.toDomMap -- $ (\v -> tr "XX" (pp v ) v)
+                                                    $ mmiInscps mmi
                               exps   = Rel.toRngMap $ Rel.restrictRng (\o -> let mq = hsnQualifier (ioccNm o) in isJust mq && fromJust mq /= modNm)
                                                     $ Rel.mapRng mentIdOcc $ mmiExps mmi
 %%]]

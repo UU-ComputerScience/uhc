@@ -615,8 +615,8 @@ pBody' opts addDecl
         pDeclarationDefault :: HSParser Declaration
         pDeclarationDefault
           = (Declaration_Default . mkRange1) <$> pDEFAULT <*> pMb (tokMkQName <$> qtyconid)
-            <*> (   (:[]) <$> pTypeBaseCon
-                <|> pParens (pListSep pCOMMA pTypeBaseCon)
+            <*> (   (:[]) <$> pTypeBase
+                <|> pParens (pListSep pCOMMA pTypeBase)
                 )
 %%]
 

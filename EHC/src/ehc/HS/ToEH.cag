@@ -652,6 +652,14 @@ ehExpLitFloat r s sign litrefnames
             )
 %%]
 
+%%[99 hs
+ehExpLitString :: EHCOpts -> Range -> String -> [HsName] -> (EH.Expr,Maybe SrcConst)
+ehExpLitString opts r str litrefnames
+  | ehcOptOverloadedStrings opts = (ehExpVarApp r (litrefnames !! 2) [s], Nothing)
+  | otherwise                    = (s                                   , Nothing)
+  where s = rngLift r EH.Expr_SConst str
+%%]
+
 %%[1 hs
 ehExpApp' :: (EH.Expr -> a -> EH.Expr) -> Range -> EH.Expr -> [a] -> EH.Expr
 ehExpApp' app r f as
@@ -706,6 +714,8 @@ SEM Expression
                                           Literal_Char   r s -> rngLift r EH.Expr_CConst (head s)
 %%[[5
                                           Literal_String r s -> rngLift r EH.Expr_SConst s
+%%][99
+                                          Literal_String r s -> fst $ ehExpLitString @lhs.opts r s @litrefnames
 %%]]
 %%[[97
                                           Literal_Float  r s -> fst $ ehExpLitFloat r s 1 @litrefnames

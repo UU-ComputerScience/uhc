@@ -653,6 +653,17 @@ TBD: Needs cleaning up, correct partitioning in variants
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Known/available runtime values: IsString
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99 export(hsnDataStringFromString)
+[hsnDataStringFromString]
+  = map
+      (mkRV hsnModDataString)
+      [ "fromString" ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Known/available runtime values: main entry point
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -690,6 +701,10 @@ hsnModBuiltin                       =   mkHNm "#Builtin"
 hsnUHC                              =   hsnFromString "UHC"
 %%]
 
+%%[92
+hsnData                             =   hsnFromString "Data"
+%%]
+
 %%[99 export(hsnIsInPrelude)
 hsnIsInPrelude :: HsName -> Bool
 hsnIsInPrelude n
@@ -714,6 +729,10 @@ hsnModIntlGenerics                      =   hsnPrefixQual hsnUHC (hsnFromString 
 hsnModIntlRead                          =   hsnPrefixQual hsnUHC (hsnFromString "Read")
 hsnModIntlShow                          =   hsnPrefixQual hsnUHC (hsnFromString "Show")
 hsnModPrelude                           =                         hsnFromString "Prelude"
+%%]
+
+%%[99 export(hsnModDataString)
+hsnModDataString                        =   hsnPrefixQual hsnData (hsnFromString "String")
 %%]
 
 %%[99

@@ -292,7 +292,8 @@ emptyECU
 
 %%[50 export(ecuImpNmS,ecuImpNmL)
 ecuImpNmS :: EHCompileUnit -> Set.Set HsName
-ecuImpNmS ecu = Set.delete (ecuModNm ecu) $ Set.unions [ ecuHSDeclImpNmS ecu, ecuHIDeclImpNmS ecu, ecuHIUsedImpNmS ecu ] 
+ecuImpNmS ecu = -- (\v -> tr "XX" (pp $ Set.toList v) v) $
+  Set.delete (ecuModNm ecu) $ Set.unions [ ecuHSDeclImpNmS ecu, ecuHIDeclImpNmS ecu, ecuHIUsedImpNmS ecu ] 
 
 ecuImpNmL :: EHCompileUnit -> [HsName]
 ecuImpNmL = Set.toList . ecuImpNmS -- ecu = (nub $ ecuHSDeclImpNmL ecu ++ ecuHIDeclImpNmL ecu ++ ecuHIUsedImpNmL ecu) \\ [ecuModNm ecu]

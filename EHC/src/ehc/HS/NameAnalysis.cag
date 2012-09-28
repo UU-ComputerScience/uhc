@@ -442,7 +442,9 @@ SEM Body
     | Body
         loc             .   idGam       =   let -- lookup a name whether it is in scope and check for equality of its qualifier
                                                 lkn :: (IdOcc -> Bool) -> HsName -> Maybe (HsName,[ModEnt])
-                                                lkn isq n = case Map.lookup n @lhs.modInScope of
+                                                lkn isq n = case Map.lookup n 
+                                                                 -- $ (\v -> tr "ZZ" (pp $ Map.toList v) v) $
+                                                                 @lhs.modInScope of
                                                               Just es | not (null es')
                                                                 -> Just (n,es')
                                                                 where es' = [ e | e <- es, isq (mentIdOcc e) ]
@@ -469,7 +471,7 @@ SEM Body
                                                                       | otherwise   = const []
                                                 -- map qualifier to a possible 'qualified as' alias
                                                 as :: HsName -> HsName
-                                                as n = Map.findWithDefault n n @importdeclarations.modAsMp
+                                                as n = Map.findWithDefault n n @modAsMp
                                                 -- compute new gamma holding proper mapping for unqualified & qualified idents
                                                 mkg sel g
                                                    = foldr idDefOccGamUnion emptyGam
@@ -479,8 +481,11 @@ SEM Body
                                                        , (n,es) <- sel o
                                                        , let ns = [ ioccNm eo | e <- es, let eo = mentIdOcc e, ioccKind eo == ioccKind o ]
                                                        ]
-                                                gnew = mkg (lks False) @lhs.idGam
-                                            in  mkg (lks False) @declarations.idDefOccGam `idDefOccGamUnion` gnew
+                                                gnew = mkg (lks False) 
+                                                       -- $ (\v -> tr "YY" (pp v) v) $
+                                                       @lhs.idGam
+                                            in  -- (\v -> tr "XX" (pp v) v) $
+                                                mkg (lks False) @declarations.idDefOccGam `idDefOccGamUnion` gnew
 %%]
 
 %%[1
@@ -610,29 +615,34 @@ SEM ContextItem
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1 hs
-litNames :: Literal -> Bool -> Int -> ([HsName],IdAspect)
-litNames lit isPat sign
+-- | Get the names used by the literals
+-- Note: don't change the order in returned lists, only append new values, as position is assumed to be fixed
+litNames :: EHCOpts -> Literal -> Bool -> Int -> [([HsName],IdOccKind,IdAspect)]
+litNames opts lit isPat sign
   = case lit of
 %%[[5
-      Literal_String r s   -> ([hsnDataListAltCons,hsnDataListAltNil],if isPat then IdAsp_Val_Con else IdAsp_Val_Var)
+      Literal_String r s   -> mk' (if isPat then IdAsp_Val_Con else IdAsp_Val_Var) [hsnDataListAltCons,hsnDataListAltNil]
+                              ++ (if ehcOptOverloadedStrings opts then mk [hsnDataStringFromString] else [])
 %%]]
 %%[[97
       Literal_Int    _ _ _
-        | sign < 0         -> ([hsnFromInteger,hsnNegate],IdAsp_Val_Var)
-        | otherwise        -> ([hsnFromInteger],IdAsp_Val_Var)
+        | sign < 0         -> mk [hsnFromInteger,hsnNegate]
+        | otherwise        -> mk [hsnFromInteger]
       Literal_Float  _ _
-        | sign < 0         -> ([hsnMkRatio,hsnFromRational,hsnNegate],IdAsp_Val_Var)
-        | otherwise        -> ([hsnMkRatio,hsnFromRational],IdAsp_Val_Var)
+        | sign < 0         -> mk [hsnMkRatio,hsnFromRational,hsnNegate]
+        | otherwise        -> mk [hsnMkRatio,hsnFromRational]
 %%]]
-      _                    -> ([],IdAsp_Val_Var)
+      _                    -> []
+  where mk' a ns = [(ns,IdOcc_Val,a)]
+        mk = mk' IdAsp_Val_Var
 %%]
 
 %%[1.mkUseOccGam hs
-mkUseOccGam :: EHCOpts -> IdDefOccGam -> [HsName] -> IdOccKind -> IdAspect -> Range -> (HsName,[HsName],IdUseOccGam,[Err])
-mkUseOccGam _ _ [] _ _ _
+mkUseOccGam' :: EHCOpts -> IdDefOccGam -> [([HsName],IdOccKind,IdAspect)] -> Range -> (HsName,[HsName],IdUseOccGam,[Err])
+mkUseOccGam' _ _ [] _
   = (hsnUnknown,[],emptyGam,[])
-mkUseOccGam _ idGam names@(fstName:_) kind asp rng
-  = (fstName,names,gamUnions [ mkUse idGam n kind asp rng | n <- names ],[])
+mkUseOccGam' _ idGam names@((fstName:_):_) rng
+  = (fstName,names,gamUnions [ mkUse idGam n kind asp rng | (ns,kind,asp) <- names, n <- ns ],[])
   where mkUse idGam name kind asp rng
           = idUseOccGam
           where idOccUse    = IdOcc name kind
@@ -640,13 +650,18 @@ mkUseOccGam _ idGam names@(fstName:_) kind asp rng
                 idUseOccGam = gamSingleton idOccUse (IdUseOcc idOccUse asp rng (doccForUse mbDef))
 %%]
 
-%%[50 -1.mkUseOccGam hs
+%%[1 hs
 mkUseOccGam :: EHCOpts -> IdDefOccGam -> [HsName] -> IdOccKind -> IdAspect -> Range -> (HsName,[HsName],IdUseOccGam,[Err])
-mkUseOccGam _ _ [] _ _ _
+mkUseOccGam opts idGam names kind asp rng = mkUseOccGam' opts idGam [(names,kind,asp)] rng
+%%]
+
+%%[50 -1.mkUseOccGam hs
+mkUseOccGam' :: EHCOpts -> IdDefOccGam -> [([HsName],IdOccKind,IdAspect)] -> Range -> (HsName,[HsName],IdUseOccGam,[Err])
+mkUseOccGam' _ _ [] _
   = (hsnUnknown,[],emptyGam,[])
-mkUseOccGam opts idGam names kind asp rng
-  = (n, ns, gamUnions g, concat e)
-  where (ns@(n:_),g,e) = unzip3 [ mkUse idGam n kind asp rng | n <- names ]
+mkUseOccGam' opts idGam names rng
+  = (if null ns then hsnUnknown else n, ns, gamUnions g, concat e)
+  where (ns@(~(n:_)),g,e) = unzip3 [ mkUse idGam n kind asp rng | (ns,kind,asp) <- names, n <- ns ]
         mkUse idGam name kind asp rng
           = (nmOfDef,idUseOccGam,errs)
           where idOccUse    = IdOcc name kind
@@ -680,10 +695,9 @@ ATTR AllNT [ | | idUseOccGam USE {`gamAddGam`} {emptyGam}: IdUseOccGam ]
 %%[1
 SEM Expression
     | Literal
-        loc             .   (litnames,litAsp)
-                                        =   litNames @literal.eh False 1
+        loc             .   litnames    =   litNames @lhs.opts @literal.eh False 1
                         .   (litrefname,litrefnames,idUseOccGam,errIdUse)
-                                        =   mkUseOccGam @lhs.opts @lhs.idGam @litnames IdOcc_Val @litAsp @range
+                                        =   mkUseOccGam' @lhs.opts @lhs.idGam @litnames @range
         lhs             .   idUseOccGam =   gamUnions [@idUseOccGam, @literal.idUseOccGam]
     | Variable
         loc             .   idAsp       =   IdAsp_Val_Var
@@ -730,7 +744,7 @@ SEM Expression
 %%]
 %%]
 
-%%[5
+%%[5555
 SEM Literal
     | String
         loc             .   (_,refnames,idUseOccGam,errIdUse)
@@ -750,10 +764,9 @@ SEM Pattern
     | Literal
         loc             .   (eqrefname,_,idUseOccGamEq,errIdUseEq)
                                         =   mkUseOccGam @lhs.opts @lhs.idGam [hsnClassEqFldEq] IdOcc_Val IdAsp_Val_Var @range
-                        .   (litnames,litAsp)
-                                        =   litNames @literal.eh True @sign
+                        .   litnames    =   litNames @lhs.opts @literal.eh True @sign
                         .   (litrefname,litrefnames,idUseOccGam,errIdUse)
-                                        =   mkUseOccGam @lhs.opts @lhs.idGam @litnames IdOcc_Val @litAsp @range
+                                        =   mkUseOccGam' @lhs.opts @lhs.idGam @litnames @range
 %%[[9
                         .   (eqclassrefname,_,idUseOccGamCls,errIdUseCls)
                                         =   mkUseOccGam @lhs.opts @lhs.idGam [hsnClassEq] IdOcc_Class IdAsp_Class_Class @range
@@ -1534,6 +1547,10 @@ SEM ImportDeclaration
         lhs             .   modAsMp     =   maybe Map.empty (Map.singleton @name) @asname
     | * - Import
         lhs             .   modAsMp     =   Map.empty
+
+SEM Body
+    | Body
+        loc             .   modAsMp     =	Map.fromList [ (mimpSource e, mimpAs e) | e <- @extraModImpL ] `Map.union` @importdeclarations.modAsMp
 %%]
 
 

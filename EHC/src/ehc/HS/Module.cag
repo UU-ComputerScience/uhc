@@ -66,13 +66,15 @@ SEM Module
 %%[99 -50.Module.modImpL
 SEM Module
     | Module
-        loc             .   modImpL     =   if hsnModPrelude `elem` map mimpSource @body.modImpL
+        loc             .   modImpL     =   -- (\v -> tr "XX" (pp v) v) $
+                                            @prelModImpL ++ @body.extraModImpL ++ @body.modImpL
+                        .   prelModImpL =   if hsnModPrelude `elem` map mimpSource @body.modImpL
                                                || @realModuleNm == hsnModPrelude
                                                || hsnIsInPrelude @realModuleNm
                                                || not (ehcOptUseAssumePrelude @lhs.opts)
                                                || Set.member Pragma.Pragma_NoImplicitPrelude @fileHeaderPragmas
-                                            then @body.modImpL
-                                            else modImpPrelude : @body.modImpL
+                                            then []
+                                            else [modImpPrelude]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -84,7 +86,8 @@ ATTR AGItf Module [ | | modImpNmS: {Set.Set HsName} ]
 
 SEM Module
     | Module
-        lhs             .   modImpNmS   =   Set.fromList $ map mimpSource @modImpL
+        lhs             .   modImpNmS   =   -- (\v -> tr "XX" (pp $ Set.toList v) v) $
+                                            Set.fromList $ map mimpSource @modImpL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -228,7 +231,8 @@ ATTR Module AGItf [ | | mod: Mod ]
 
 SEM Module
     | Module
-        lhs             .   mod         =   Mod @lhs.moduleNm @name
+        lhs             .   mod         =   -- (\v -> tr "XX" (pp v) v) $
+        									Mod @lhs.moduleNm @name
                                                 @exports.modExpsMb @modImpL
                                                 @body.modDefsRel @body.modHideDefsRel
                                                 (reverse @body.topInstanceNmL)

@@ -32,6 +32,7 @@ SEM Module
     | Module
         loc             .   fileHeaderPragmas
                                         =   @fileheaderpragmas.gathPragmas
+            			.	opts		=	fst $ ehcOptUpdateWithPragmas @fileHeaderPragmas @lhs.opts
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
