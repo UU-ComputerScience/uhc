@@ -520,7 +520,7 @@ jiToCd i = J.Code_Code Nothing Nothing (Seq.toList i)
 %%]
 
 %%[(8 jazy)
-ATTR CExpr [ | | ji USE {##} {emptyJI}: {J.JInstr} ]
+ATTR CExpr CBound [ | | ji USE {##} {emptyJI}: {J.JInstr} ]
 %%]
 
 %%[(8 jazy)
