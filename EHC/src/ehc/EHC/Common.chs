@@ -28,6 +28,10 @@ Used by all compiler driver code
 %%[50 import(System.Time, System.Directory) export(module System.Time, module System.Directory)
 %%]
 
+-- 20121029 the time package cannot be used as System.Directory used old-time, and no conversion to UTCTime (from Data.Time) could be found
+%%[5050 import(Data.Time, System.Directory) export(module Data.Time, module System.Directory)
+%%]
+
 %%[1
 -- dummy, so module is not empty for initial variants, and exports will take effect
 %%]

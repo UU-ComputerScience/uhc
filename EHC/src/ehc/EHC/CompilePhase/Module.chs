@@ -146,7 +146,8 @@ cpGetMetaInfo gm modNm
                  (wr opts ecu ecuStoreDirIsWritable (                         fp     ))
 %%]]
          }
-  where tm opts ecu store fp
+  where tm :: EHCOpts -> EHCompileUnit -> (ClockTime -> EHCompileUnit -> EHCompileUnit) -> FPath -> EHCompilePhase ()
+        tm opts ecu store fp
           = do { let n = fpathToStr fp
                ; nExists <- lift $ doesFileExist n
                ; when (ehcOptVerbosity opts >= VerboseDebug)
