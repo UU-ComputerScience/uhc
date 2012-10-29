@@ -25,7 +25,7 @@ Used by all compiler driver code
 %%[8 import({%{EH}Opts.CommandLine})
 %%]
 
-%%[50 import(System.Time, System.Directory) export(module System.Time, module System.Directory)
+%%[50 import(System.Time, System.Directory)
 %%]
 
 -- 20121029 the time package cannot be used as System.Directory used old-time, and no conversion to UTCTime (from Data.Time) could be found

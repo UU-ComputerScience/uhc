@@ -12,6 +12,8 @@ Output generation, on stdout or file
 %%]
 %%[8 import(qualified Data.Map as Map, qualified Data.Set as Set)
 %%]
+%%[50 import(System.Time, System.Directory)
+%%]
 
 %%[8 import({%{EH}EHC.Common})
 %%]
