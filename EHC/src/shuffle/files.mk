@@ -14,72 +14,6 @@ SHUFFLE_MKF			:= $(SRC_SHUFFLE_PREFIX)files.mk
 # main + sources + dpds
 SHUFFLE_MAIN		:= Shuffle
 
-#SHUFFLE_AG_MAIN_SRC	:= $(addprefix $(SRC_SHUFFLE_PREFIX),$(SHUFFLE_MAIN).ag)
-
-# SHUFFLE_HS_MAIN_SRC_HS					:= $(addprefix $(SRC_SHUFFLE_PREFIX),$(SHUFFLE_MAIN).hs)
-# SHUFFLE_HS_MAIN_DRV_HS					:= $(patsubst $(SRC_SHUFFLE_PREFIX)%.hs,$(SHUFFLE_BLD_PREFIX)%.hs,$(SHUFFLE_HS_MAIN_SRC_HS))
-# SHUFFLE_HS_DPDS_SRC_HS					:= $(patsubst %,$(SRC_SHUFFLE_PREFIX)%.hs,Common ChunkParser CDocCommon)
-# SHUFFLE_HS_DPDS_DRV_HS					:= $(patsubst $(SRC_SHUFFLE_PREFIX)%.hs,$(SHUFFLE_BLD_PREFIX)%.hs,$(SHUFFLE_HS_DPDS_SRC_HS))
-# 
-# SHUFFLE_AGMAIN_MAIN_SRC_AG				:= $(patsubst %,$(SRC_SHUFFLE_PREFIX)%.ag,MainAG)
-# SHUFFLE_AGMAIN_DPDS_SRC_AG				:= $(patsubst %,$(SRC_SHUFFLE_PREFIX)%.ag,CDocAbsSyn ChunkAbsSyn \
-# 											)
-# $(patsubst $(SRC_SHUFFLE_PREFIX)%.ag,$(SHUFFLE_BLD_PREFIX)%.hs,$(SHUFFLE_AGMAIN_MAIN_SRC_AG)) \
-# 										: $(SHUFFLE_AGMAIN_DPDS_SRC_AG)
-# 
-# SHUFFLE_AGCDOC_MAIN_SRC_AG				:= $(patsubst %,$(SRC_SHUFFLE_PREFIX)%.ag,CDoc)
-# SHUFFLE_AGCDOC_DPDS_SRC_AG				:= $(patsubst %,$(SRC_SHUFFLE_PREFIX)%.ag,CDocAbsSyn)
-# $(patsubst $(SRC_SHUFFLE_PREFIX)%.ag,$(SHUFFLE_BLD_PREFIX)%.hs,$(SHUFFLE_AGCDOC_MAIN_SRC_AG)) \
-# 										: $(SHUFFLE_AGCDOC_DPDS_SRC_AG)
-# 
-# SHUFFLE_CDSUBS_MAIN_SRC_AG				:= $(patsubst %,$(SRC_SHUFFLE_PREFIX)%.ag,CDocSubst)
-# SHUFFLE_CDSUBS_DPDS_SRC_AG				:= $(patsubst %,$(SRC_SHUFFLE_PREFIX)%.ag,CDocAbsSyn CDocCommonAG)
-# $(patsubst $(SRC_SHUFFLE_PREFIX)%.ag,$(SHUFFLE_BLD_PREFIX)%.hs,$(SHUFFLE_CDSUBS_MAIN_SRC_AG)) \
-# 										: $(SHUFFLE_CDSUBS_DPDS_SRC_AG)
-# 
-# SHUFFLE_CDINLN_MAIN_SRC_AG				:= $(patsubst %,$(SRC_SHUFFLE_PREFIX)%.ag,CDocInline)
-# SHUFFLE_CDINLN_DPDS_SRC_AG				:= $(patsubst %,$(SRC_SHUFFLE_PREFIX)%.ag,CDocAbsSyn)
-# $(patsubst $(SRC_SHUFFLE_PREFIX)%.ag,$(SHUFFLE_BLD_PREFIX)%.hs,$(SHUFFLE_CDINLN_MAIN_SRC_AG)) \
-# 										: $(SHUFFLE_CDINLN_DPDS_SRC_AG)
-# 
-# SHUFFLE_ASPEXP_MAIN_SRC_AG				:= $(patsubst %,$(SRC_SHUFFLE_PREFIX)%.ag,AspectExpr)
-# SHUFFLE_ASPEXP_DPDS_SRC_AG				:= $(patsubst %,$(SRC_SHUFFLE_PREFIX)%.ag,AspectExprAbsSyn)
-# $(patsubst $(SRC_SHUFFLE_PREFIX)%.ag,$(SHUFFLE_BLD_PREFIX)%.hs,$(SHUFFLE_ASPEXP_MAIN_SRC_AG)) \
-# 										: $(SHUFFLE_ASPEXP_DPDS_SRC_AG)
-# 
-# SHUFFLE_AEEVAL_MAIN_SRC_AG				:= $(patsubst %,$(SRC_SHUFFLE_PREFIX)%.ag,AspectExprEval)
-# SHUFFLE_AEEVAL_DPDS_SRC_AG				:= $(patsubst %,$(SRC_SHUFFLE_PREFIX)%.ag,AspectExprAbsSyn)
-# $(patsubst $(SRC_SHUFFLE_PREFIX)%.ag,$(SHUFFLE_BLD_PREFIX)%.hs,$(SHUFFLE_AEEVAL_MAIN_SRC_AG)) \
-# 										: $(SHUFFLE_AEEVAL_DPDS_SRC_AG)
-# 
-# SHUFFLE_AG_D_MAIN_SRC_AG				:= $(SHUFFLE_AGCDOC_MAIN_SRC_AG) $(SHUFFLE_ASPEXP_MAIN_SRC_AG)
-# SHUFFLE_AG_S_MAIN_SRC_AG				:= $(SHUFFLE_CDSUBS_MAIN_SRC_AG) $(SHUFFLE_CDINLN_MAIN_SRC_AG) $(SHUFFLE_AEEVAL_MAIN_SRC_AG)
-# SHUFFLE_AG_DS_MAIN_SRC_AG				:= $(SHUFFLE_AGMAIN_MAIN_SRC_AG)
-# 
-# SHUFFLE_AG_ALL_DPDS_SRC_AG				:= $(sort \
-# 											$(SHUFFLE_AGMAIN_DPDS_SRC_AG) \
-# 											$(SHUFFLE_CDSUBS_DPDS_SRC_AG) \
-# 											$(SHUFFLE_AEEVAL_DPDS_SRC_AG) \
-# 											$(SHUFFLE_CDINLN_DPDS_SRC_AG) \
-# 											$(SHUFFLE_AGCDOC_DPDS_SRC_AG) \
-# 											$(SHUFFLE_ASPEXP_DPDS_SRC_AG) \
-# 											)
-# 
-# SHUFFLE_AG_ALL_MAIN_SRC_AG				:= $(SHUFFLE_AG_D_MAIN_SRC_AG) $(SHUFFLE_AG_S_MAIN_SRC_AG) $(SHUFFLE_AG_DS_MAIN_SRC_AG)
-# 
-# 
-# 
-# # all src
-# SHUFFLE_ALL_SRC							:= $(SHUFFLE_AG_ALL_MAIN_SRC_AG) $(SHUFFLE_AG_ALL_DPDS_SRC_AG) $(SHUFFLE_HS_MAIN_SRC_HS) $(SHUFFLE_HS_DPDS_SRC_HS)
-# 
-# # derived
-# SHUFFLE_AG_D_MAIN_DRV_HS				:= $(patsubst $(SRC_SHUFFLE_PREFIX)%.ag,$(SHUFFLE_BLD_PREFIX)%.hs,$(SHUFFLE_AG_D_MAIN_SRC_AG))
-# SHUFFLE_AG_S_MAIN_DRV_HS				:= $(patsubst $(SRC_SHUFFLE_PREFIX)%.ag,$(SHUFFLE_BLD_PREFIX)%.hs,$(SHUFFLE_AG_S_MAIN_SRC_AG))
-# SHUFFLE_AG_DS_MAIN_DRV_HS				:= $(patsubst $(SRC_SHUFFLE_PREFIX)%.ag,$(SHUFFLE_BLD_PREFIX)%.hs,$(SHUFFLE_AG_DS_MAIN_SRC_AG))
-# SHUFFLE_AG_ALL_MAIN_DRV_HS				:= $(SHUFFLE_AG_D_MAIN_DRV_HS) $(SHUFFLE_AG_S_MAIN_DRV_HS) $(SHUFFLE_AG_DS_MAIN_DRV_HS)
-# 
-# SHUFFLE_HS_ALL_DRV_HS					:= $(SHUFFLE_HS_MAIN_DRV_HS) $(SHUFFLE_HS_DPDS_DRV_HS)
-
 # binary/executable
 SHUFFLE_NAME		:= shuffle
 SHUFFLE_BLD_EXEC	:= $(BIN_PREFIX)$(SHUFFLE_NAME)$(EXEC_SUFFIX)
@@ -111,35 +45,14 @@ shuffle-clean:
 # rules
 ###########################################################################################
 
-# $(SHUFFLE_BLD_EXEC): $(SHUFFLE_AG_ALL_MAIN_DRV_HS) $(SHUFFLE_HS_ALL_DRV_HS) $(LIB_EH_UTIL_INS_FLAG)
-# 	@$(EXIT_IF_ABSENT_LIB_OR_TOOL)
-# 	$(GHC) --make $(GHC_OPTS) $(GHC_OPTS_OPTIM) $(GHC_OPTS_WHEN_EHC) -ignore-package uulib-debug -package $(LIB_EH_UTIL_PKG_NAME) -i$(SHUFFLE_BLD_PREFIX) $(SHUFFLE_BLD_PREFIX)$(SHUFFLE_MAIN).hs -o $@
-# 	$(STRIP) $@
-# 
-# $(SHUFFLE_AG_D_MAIN_DRV_HS): $(SHUFFLE_BLD_PREFIX)%.hs: $(SRC_SHUFFLE_PREFIX)%.ag
-# 	@$(EXIT_IF_ABSENT_LIB_OR_TOOL)
-# 	mkdir -p $(@D) ; \
-# 	$(AGC) --module=$(*F) -dr $(UUAGC_OPTS_WHEN_EHC) -P$(SRC_SHUFFLE_PREFIX) -o $@ $<
-# 
-# $(SHUFFLE_AG_S_MAIN_DRV_HS): $(SHUFFLE_BLD_PREFIX)%.hs: $(SRC_SHUFFLE_PREFIX)%.ag
-# 	@$(EXIT_IF_ABSENT_LIB_OR_TOOL)
-# 	mkdir -p $(@D) ; \
-# 	$(AGC) -cfspr $(UUAGC_OPTS_WHEN_EHC) -P$(SRC_SHUFFLE_PREFIX) -o $@ $<
-# 
-# $(SHUFFLE_AG_DS_MAIN_DRV_HS): $(SHUFFLE_BLD_PREFIX)%.hs: $(SRC_SHUFFLE_PREFIX)%.ag
-# 	@$(EXIT_IF_ABSENT_LIB_OR_TOOL)
-# 	mkdir -p $(@D) ; \
-# 	$(AGC) --module=$(*F) -dcfspr $(UUAGC_OPTS_WHEN_EHC) -P$(SRC_SHUFFLE_PREFIX) -o $@ $<
-# 
-# $(SHUFFLE_HS_ALL_DRV_HS): $(SHUFFLE_BLD_PREFIX)%.hs: $(SRC_SHUFFLE_PREFIX)%.hs
-# 	@$(EXIT_IF_ABSENT_LIB_OR_TOOL)
-# 	mkdir -p $(@D) ; \
-# 	cp $< $@
-# 
-
+# Use cabal for building, pass UUAGC as environment variable to Setup.hs
 $(SHUFFLE_BLD_EXEC): $(LIB_EH_UTIL_INS_FLAG)
 	@$(EXIT_IF_ABSENT_LIB_OR_TOOL)
 	cd $(SRC_SHUFFLE_PREFIX) ; \
-	UUAGC=$(AGC) cabal configure --builddir=$(TOPABS_PREFIX)$(SHUFFLE_BLD_PREFIX) --bindir=$(TOPABS_PREFIX)$(BIN_PREFIX) --ghc-options="-package $(LIB_EH_UTIL_PKG_NAME)" ; \
-	UUAGC=$(AGC) cabal build --builddir=$(TOPABS_PREFIX)$(SHUFFLE_BLD_PREFIX) ; \
-	UUAGC=$(AGC) cabal copy --builddir=$(TOPABS_PREFIX)$(SHUFFLE_BLD_PREFIX) ;
+	UUAGC="$(AGC) $(UUAGC_OPTS_WHEN_EHC)" \
+	cabal configure --builddir=$(TOPABS_PREFIX)$(SHUFFLE_BLD_PREFIX) --bindir=$(TOPABS_PREFIX)$(BIN_PREFIX) \
+		--with-compiler=$(GHC) --ghc-options="$(GHC_OPTS) $(GHC_OPTS_OPTIM) $(GHC_OPTS_WHEN_EHC) -package $(LIB_EH_UTIL_PKG_NAME)"; \
+	UUAGC="$(AGC) $(UUAGC_OPTS_WHEN_EHC)" \
+	cabal build --builddir=$(TOPABS_PREFIX)$(SHUFFLE_BLD_PREFIX) ; \
+	UUAGC="$(AGC) $(UUAGC_OPTS_WHEN_EHC)" \
+	cabal copy --builddir=$(TOPABS_PREFIX)$(SHUFFLE_BLD_PREFIX) ;
