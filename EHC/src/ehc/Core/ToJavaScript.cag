@@ -301,7 +301,7 @@ SEM CExpr
 %%% Generation: expr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 javascript) hs
+%%[(8 javascript) hs export(jsModDeps)
 -- | tracing
 jsTr :: PP x => String -> x -> Seq.Seq J.Stat
 jsTr m x = Seq.singleton $ J.Stat_Expr $ J.Expr_Call (jsVar $ mkHNm "trace") [J.Expr_Str m, J.Expr_Inline $ showPP $ pp x]
@@ -371,10 +371,13 @@ jsBody mkRet binds stats lastExpr
                 Seq.map (\(JBind _ n _ e _) -> J.jsVarDecl n e) binds
     `Seq.union` stats
     `Seq.union` Seq.fromList (map mkRet $ maybeToList lastExpr)
+
+jsModDeps (J.JavaScriptModule_Mod _ d _) = d
 %%]
 
 %%[(8 javascript)
 ATTR CExpr CBound [ | | js: {J.Expr} ]
+ATTR CExpr AllBind [ | | dps USE {`Set.union`} {Set.empty} : {Set.Set String} ]
 %%]
 
 %%[(8 javascript)
@@ -399,6 +402,10 @@ SEM CExpr
                             .   js              =   if null @argMbConL
                                                     then (@mkResJS $ @mkFFI [])
                                                     else (jsVar $ mkHNm $ forextractEnt @foreignEntInfo)
+                            .   dps             =   case @foreignEntInfo of
+                                                      ForeignExtraction_Plain {} -> Set.fromList $ forextractIncludes @foreignEntInfo
+                                                      _                          -> Set.empty
+
   | Let         loc         .   (jbindsLet,jstatsLet)
                                                 =   if @isGlobal
                                                     then ( @binds.jbinds, Seq.empty )
@@ -637,7 +644,9 @@ ffiJavaScriptMkCall ty
         mkWrap n (e:_) = mkWrapFn as bdy
           where as   = map (mkHNm . ('v':) . show) [1..(tyNumArgs ty - 1)]
                 rn   = mkHNm "res"
+                -- evaluate the composite parts of "res" before returning to the regular js world
                 bdy  = [ J.jsVarDecl rn $ jsEvl $ jsApp e $ (map jsVar as) ++ [J.Expr_Arr []]
+                       , J.Stat_Expr $ jsEvl $ J.Expr_ArrInx (jsVar rn) (jsIntConst 0)
                        , J.Stat_Ret $ jsEvl $ J.Expr_ArrInx (jsVar rn) (jsIntConst 1) ]
 
         mkDyn _ (e:es) = J.Expr_Call e es
@@ -688,7 +697,7 @@ ATTR CodeAGItf CModule [ | | js: {J.JavaScriptModule} ]
 
 %%[(8 javascript)
 SEM CModule
- | Mod          lhs         .   js              =   J.JavaScriptModule_Mod (@jsModTraceStats ++ @jsModInitStats ++ @jmodStats) @jmodStatsMain
+ | Mod          lhs         .   js              =   J.JavaScriptModule_Mod (@jsModTraceStats ++ @jsModInitStats ++ @jmodStats) (Set.toList @expr.dps) @jmodStatsMain
 %%[[8
                 loc         .   jsModInitStats  =   []
 %%][50

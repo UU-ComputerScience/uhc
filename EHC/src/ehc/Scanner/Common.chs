@@ -418,7 +418,7 @@ tyScanOpts
 %%[90
 foreignEntScanOpts :: FFIWay -> ScanOpts
 foreignEntScanOpts way
-  =  o {   scoKeywordsTxt      =   Set.fromList [ "dynamic", "wrapper", "h", "static", "new" ]
+  =  o {   scoKeywordsTxt      =   Set.fromList [ "dynamic", "wrapper", "h", "static", "new", "js" ]
        ,   scoSpecChars        =   Set.fromList ",.&%[]()*{}"
        ,   scoDollarIdent      =   False
        ,   scoKeywExtraChars   =   Set.fromList wayKeywExtraChars
@@ -937,6 +937,7 @@ pUNSAFE     ,
     pSTATIC     ,
     pH          ,
     pNEW        ,
+    pJS         ,
     pAMPERSAND
   :: IsParser p Token => p Token
 
@@ -948,6 +949,7 @@ pSTATIC          = pKeyTk "static" -- not a HS keyword, but only for foreign fun
 pH               = pKeyTk "h" -- not a HS keyword, but only for foreign function entity
 pAMPERSAND       = pKeyTk "&" -- not a HS keyword, but only for foreign function entity
 pNEW             = pKeyTk "new"
+pJS              = pKeyTk "js"
 
 tokKeywStrsEH90  = [  ]
 tokKeywStrsHS90  = [ "unsafe", "threadsafe", "dynamic" ]
