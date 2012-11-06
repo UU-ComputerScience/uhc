@@ -666,4 +666,79 @@ function wrappedThis(cps) {
   } 
 }
 
+primIsFunction = function(a) {
+  return PrimMkBool(typeof a === "function");
+}
+
+primIsBool = function(a) {
+  return PrimMkBool(typeof a === "boolean" || _primIsA(a, Boolean));
+}
+
+_primIsNumber = function(a) {
+  return typeof a === "number" || _primIsA(a, Number);
+}
+
+primIsNumber = function(a) {
+  return PrimMkBool(_primIsNumber(a));
+}
+
+_primIsString = function(a) {
+  return typeof a === "string" || _primIsA(a, String);
+}
+
+primIsString = function(a) {
+  return PrimMkBool(_primIsString(a));
+}
+
+primIsChar = function(a) {
+  return PrimMkBool(_primIsString(a) && a.length == 1);
+}
+
+primIsInt = function(a) {
+  return PrimMkBool(_primIsNumber(a) && parseFloat(a) == parseInt(a, 10) && !isNaN(a));
+}
+
+primIsDouble = function(a) {
+  return PrimMkBool(_primIsNumber(a) && parseFloat(a) != parseInt(a, 10) && !isNaN(a));
+}
+
+primIsNull = function(a) {
+  //typeof does not work, known bug.
+  return PrimMkBool(a === null);
+}
+
+primIsUndefined = function(a) {
+  return PrimMkBool(typeof a === "undefined");
+}
+
+primIsObject = function(a) {
+  return PrimMkBool(typeof a === "object" && a !== null);
+}
+
+_primIsA = function(a, b) {
+  //if a isObject and b isFunction
+  if(typeof a === "object" && a !== null && typeof b === "function") {
+    return a.constructor == b;
+  }
+  return false;
+}
+
+primIsA = function(a, b) {
+  return PrimMkBool(_primIsA(a,b));
+}
+
+primInstanceOf = function(a, b) {
+  if(typeof a === "object" && typeof b === "function") {
+    return PrimMkBool(a instanceof b);
+  }
+  return PrimMkBool(false);
+}
+
+primEq = function(a, b) { 
+  return PrimMkBool(a == b); 
+}
+
+primCharToUpper = function(c) {
+  return String.fromCharCode(c).toUpperCase().charCodeAt(0);
+}
 %%]
