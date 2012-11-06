@@ -59,6 +59,7 @@ DATA JavaScriptCall
                     -- "g[%1]"    , f x y ~> g[x](y)
                     -- "&%1.g[%2]", f x y ~> x.g[y]
   					-- mbIndexArgNr	: {Maybe Int}
+            		mbInclude     	: {Maybe String}
   					mbForeignExpr	: {Maybe ForeignExpr}
   | Dynamic
   | Wrapper
