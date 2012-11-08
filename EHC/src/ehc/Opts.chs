@@ -149,6 +149,8 @@ tycoreOptMp
 %%[99
 instance Show PgmExec where
   show PgmExec_CPP      = "P"
+  show PgmExec_C        = "c"
+  show PgmExec_Linker	= "l"
 
 pgmExecMp :: Map.Map String PgmExec
 pgmExecMp = optMp

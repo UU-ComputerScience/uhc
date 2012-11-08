@@ -81,7 +81,7 @@ cpCompileWithGCC how othModNmL modNm
                  fpO m f = mkPerModuleOutputFPath opts False m f "o"
                  fpExec = mkPerExecOutputFPath opts modNm fp Cfg.mbSuffixExec
                  variant= Cfg.installVariant opts
-                 (fpTarg,targOpt,linkOpts,linkLibOpt,dotOFilesOpt,genOFiles)
+                 (fpTarg,targOpt,linkOpts,linkLibOpt,dotOFilesOpt,genOFiles,pgmExec)
                         = case how of
                             FinalCompile_Exec
                               -> ( fpExec
@@ -106,6 +106,7 @@ cpCompileWithGCC how othModNmL modNm
 %%]]
                                         [ gccArg $ fpathToStr $ fpO m fp | m <- othModNmL2, let (_,_,_,fp) = crBaseInfo m cr ]
                                  , []
+                                 , PgmExec_Linker
                                  )
                               where -- mkl  how l = Cfg.mkCLibFilename (Cfg.mkInstallFilePrefix opts how variant l) l
                                     mkl how l = gccArg $ Cfg.mkInstalledRts opts Cfg.mkCLibFilename how variant l
@@ -122,7 +123,7 @@ cpCompileWithGCC how othModNmL modNm
                                                -}
 %%]]
                             FinalCompile_Module
-                              -> (o, Cfg.gccOpts ++ [gccOptF "c", gccOptOutput $ fpathToStr o ], Cfg.ehcGccOptsStatic', [], [], [o])
+                              -> (o, Cfg.gccOpts ++ [gccOptF "c", gccOptOutput $ fpathToStr o ], Cfg.ehcGccOptsStatic', [], [], [o], PgmExec_C)
                               where o = fpO modNm fp
 %%[[8
                  pkgKeyL    = [] :: [String]
@@ -133,7 +134,7 @@ cpCompileWithGCC how othModNmL modNm
 %%]]
          ;  when (targetIsC (ehcOptTarget opts))
                  (do { let compileC
-                             = mkShellCmd' [Cmd_CPP, Cmd_C] Cfg.shellCmdGcc
+                             = mkShellCmd' [Cmd_CPP, Cmd_C] (Cfg.shellCmdOverride opts Cfg.shellCmdGcc pgmExec)
                                  (  gccDefs opts ["O"]
                                  ++ [ cppOptI $ Cfg.mkInstallFilePrefix opts Cfg.INST_INCLUDE variant "" ]
                                  ++ [ cppOptI $ Cfg.mkInstallFilePrefix opts Cfg.INST_INCLUDE_SHARED variant "" ]

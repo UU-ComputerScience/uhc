@@ -123,6 +123,8 @@ data TyCoreOpt
 -- | Pgm (internal program used) options, in particular alternate internal shell commands
 data PgmExec
   = PgmExec_CPP				-- alternate CPP
+  | PgmExec_C				-- alternate C compiler
+  | PgmExec_Linker			-- alternate linker
   deriving (Eq,Ord,Enum,Bounded)
 %%]
 
