@@ -52,7 +52,7 @@
 %%[(93 hmtyinfer) import({%{EH}Error})
 %%]
 
-%%[99 import(qualified {%{EH}ConfigInstall} as Cfg)
+%%[99 import(qualified {%{EH}Config} as Cfg)
 %%]
 
 %%[99 import({%{EH}Base.Pragma}, {%{EH}Opts.CommandLine}, {%{EH}Base.Parser}, {%{EH}Base.Parser2})
@@ -196,15 +196,6 @@ ehcOptErrAboutBytecode   = targetIsGrinBytecode . ehcOptTarget
 %%]]
 %%]
 
-%%[(8 codegen grin) export(ehcOptEmitExecBytecode, ehcOptEmitBytecode)
--- generate bytecode
-ehcOptEmitExecBytecode :: EHCOpts -> Bool
-ehcOptEmitExecBytecode = targetIsGrinBytecode . ehcOptTarget
-
-ehcOptEmitBytecode :: EHCOpts -> Bool
-ehcOptEmitBytecode = ehcOptEmitExecBytecode
-%%]
-
 %%[(8 codegen grin) export(ehcOptEmitC)
 -- generate C
 ehcOptEmitC :: EHCOpts -> Bool
@@ -260,6 +251,10 @@ ehcOptOptimizes o opts = o `Set.member` ehcOptOptimizations opts
 %%[1.defaultEHCOpts export(defaultEHCOpts)
 defaultEHCOpts
   = emptyEHCOpts
+      { ehcOptExecOptsMp = ehcOptExecOptsMp emptyEHCOpts `Map.union` Map.fromList
+      	  [ (Cfg.shellCmdCpp, [ExecOpt_Plain "fno-show-column", ExecOpt_Plain "P"])
+      	  ]
+      }
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

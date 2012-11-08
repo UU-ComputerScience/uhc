@@ -40,7 +40,7 @@ cpLinkO modNmL pkgNm
                          where l = mkFPath $ Cfg.mkCLibFilename "" pkgNm
              linkCode    = map mkShellCmd $ Cfg.mkShellCmdLibtool (fpathToStr libFile) codeFiles
        ; when (ehcOptVerbosity opts >= VerboseALot)
-              (do { lift $ mapM_ putStrLn linkCode
+              (do { lift $ mapM_ (putStrLn . showShellCmd) linkCode
                   })
        ; unless (null codeFiles)
                 (cpSeq [ cpSystem c | c <- linkCode ])

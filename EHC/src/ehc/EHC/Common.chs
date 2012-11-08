@@ -166,12 +166,15 @@ data FinalCompileHow
 %%% Shell command construction
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(mkShellCmd,mkShellCmd')
-mkShellCmd' :: [Cmd] -> String -> CmdLineOpts -> String
-mkShellCmd' forCmds cmdStr o = concat $ intersperse " " [cmdStr, showCmdLineOpts' forCmds o]
+%%[8 export(mkShellCmd,mkShellCmd',showShellCmd)
+mkShellCmd' :: [Cmd] -> FilePath -> CmdLineOpts -> (FilePath,[String])
+mkShellCmd' forCmds cmdStr o = (cmdStr, showCmdLineOpts' forCmds o)
 
-mkShellCmd :: [String] -> String
-mkShellCmd = concat . intersperse " "
+mkShellCmd :: [String] -> (FilePath,[String])
+mkShellCmd (cmd:args) = (cmd,args)
+
+showShellCmd :: (FilePath,[String]) -> String
+showShellCmd (cmd,args) = concat $ intersperse " " $ [cmd] ++ args
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -39,9 +39,9 @@ cpJavaScript :: String -> [String] -> EHCompilePhase ()
 cpJavaScript archive files
   = do { cr <- get
        ; let (_,opts) = crBaseInfo' cr
-             cmd = mkShellCmd $ [Cfg.shellCmdCat] ++ files ++ [">", archive]
-       ; when (ehcOptVerbosity opts >= VerboseALot) (lift $ putStrLn cmd)
-       ; cpSystem cmd 
+             cmd = mkShellCmd $ [Cfg.shellCmdCat] ++ files -- ++ [">", archive]
+       ; when (ehcOptVerbosity opts >= VerboseALot) (lift $ putStrLn $ showShellCmd cmd)
+       ; cpSystem' (Just archive) cmd 
        }
 %%]
 

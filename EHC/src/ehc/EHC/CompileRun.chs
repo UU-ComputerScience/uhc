@@ -339,18 +339,35 @@ cpSetUID u
 %%% Compile actions: shell/system/cmdline invocation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(cpSystem)
-cpSystem :: String -> EHCompilePhase ()
-cpSystem cmd
+%%[8 export(cpSystem',cpSystem)
+cpSystem' :: Maybe FilePath -> (FilePath,[String]) -> EHCompilePhase ()
+cpSystem' mbStdOut (cmd,args)
+  = do { exitCode <- lift $ system $ showShellCmd $ (cmd,args ++ (maybe [] (\o -> [">", o]) mbStdOut))
+       ; case exitCode of
+           ExitSuccess -> return ()
+           _           -> cpSetFail
+       }
+
+cpSystem :: (FilePath,[String]) -> EHCompilePhase ()
+cpSystem = cpSystem' Nothing
+%%]
+cpSystem' :: (FilePath,[String]) -> Maybe FilePath -> EHCompilePhase ()
+cpSystem' (cmd,args) mbStdOut
+  = do { exitcode <- lift $ do 
+           proc <- runProcess cmd args Nothing Nothing Nothing Nothing Nothing
+           waitForProcess proc
+       ; case exitCode of
+           ExitSuccess -> return ()
+           _           -> cpSetFail
+       }
+
+cpSystem' :: (FilePath,[String]) -> Maybe FilePath -> EHCompilePhase ()
+cpSystem' (cmd,args) mbStdOut
   = do { exitCode <- lift $ system cmd
        ; case exitCode of
            ExitSuccess -> return ()
            _           -> cpSetFail
        }
-%%]
-           _           -> do { lift $ putStrLn ("cpSystem ERR: " ++ show exitCode)
-                             ; cpSetFail
-                             }
 
 %%[8 export(cpSystemRaw)
 cpSystemRaw :: String -> [String] -> EHCompilePhase ()

@@ -17,7 +17,7 @@
 %%[8 import({%{EH}Opts.CommandLine})
 %%]
 
-%%[8 import({%{EH}ConfigDefines}, {%{EH}Opts}) export(module {%{EH}ConfigDefines})
+%%[8 import({%{EH}ConfigDefines}, {%{EH}Opts.Base}) export(module {%{EH}ConfigDefines})
 %%]
 
 %%[8 import({%{EH}EHC.Environment})

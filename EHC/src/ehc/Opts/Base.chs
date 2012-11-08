@@ -128,6 +128,16 @@ data PgmExec
   deriving (Eq,Ord,Enum,Bounded)
 %%]
 
+%%[99 export(ExecOpt(..),execOptsPlain)
+-- | Wrapper around options, adding semantics for adapting cmd specific behavior
+data ExecOpt
+  = ExecOpt_Plain String						-- ^ plain option
+  | ExecOpt_Output (String -> String)			-- ^ output file
+
+execOptsPlain :: [ExecOpt] -> [String]
+execOptsPlain o = [ s | ExecOpt_Plain s <- o ]
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Compiler options
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -268,6 +278,8 @@ data EHCOpts
       						  ::  Bool              -- allow overloaded strings
       ,  ehcOptPgmExecMp	  ::  Map.Map PgmExec FilePath
       												-- alternate executables for program
+      ,  ehcOptExecOptsMp	  ::  Map.Map FilePath [ExecOpt]
+      												-- default options for commands
 %%]]
       }
 %%]
@@ -417,6 +429,7 @@ emptyEHCOpts
                                 =   False
       ,  ehcOptOverloadedStrings=   False
       ,  ehcOptPgmExecMp		= 	Map.empty
+      ,  ehcOptExecOptsMp		=   Map.empty
 %%]]
       }
 %%]
@@ -465,6 +478,15 @@ ehcOptCoreSysFCheckOnlyVal opts = ehcOptCoreSysFCheck opts && CoreOpt_SysFCheckO
 %%][8
 ehcOptCoreSysFCheckOnlyVal opts = ehcOptCoreSysFCheck opts
 %%]]
+%%]
+
+%%[(8 codegen grin) export(ehcOptEmitExecBytecode, ehcOptEmitBytecode)
+-- generate bytecode
+ehcOptEmitExecBytecode :: EHCOpts -> Bool
+ehcOptEmitExecBytecode = targetIsGrinBytecode . ehcOptTarget
+
+ehcOptEmitBytecode :: EHCOpts -> Bool
+ehcOptEmitBytecode = ehcOptEmitExecBytecode
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

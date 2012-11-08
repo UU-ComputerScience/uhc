@@ -95,11 +95,11 @@ gccOptLib = gccOpt . CmdFlag_Lib
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 export(showCmdLineOpts,showCmdLineOpts')
-showCmdLineOpts' :: [Cmd] -> CmdLineOpts -> String
-showCmdLineOpts' forCmds opts = concat $ intersperse " " $ map show $ filter (\o -> cloptForCmd o `elem` forCmds) opts
+showCmdLineOpts' :: [Cmd] -> CmdLineOpts -> [String]
+showCmdLineOpts' forCmds opts = map show $ filter (\o -> cloptForCmd o `elem` forCmds) opts
 
 showCmdLineOpts :: CmdLineOpts -> String
-showCmdLineOpts = showCmdLineOpts' [minBound::Cmd .. maxBound]
+showCmdLineOpts = concat . intersperse " " . showCmdLineOpts' [minBound::Cmd .. maxBound]
 
 -- | Show key + value
 kv :: String -> String -> Maybe String -> String
