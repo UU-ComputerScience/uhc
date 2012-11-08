@@ -11,6 +11,9 @@
 %%[8 import(Data.Maybe,Data.List,EH.Util.Utils,EH.Util.FPath)
 %%]
 
+%%[8 import(qualified Data.Map as Map)
+%%]
+
 %%[8 import({%{EH}Opts.CommandLine})
 %%]
 
@@ -138,6 +141,17 @@ mkInstalledRts opts mkLib how variant rts = mkLib (mkInstallFilePrefix opts how 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Cmds
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 export(shellCmdOverride)
+shellCmdOverride'' :: (cmd -> Maybe FilePath) -> FilePath -> cmd -> FilePath
+shellCmdOverride'' override base cmd = maybe base id $ override cmd
+
+shellCmdOverride' :: Ord cmd => Map.Map cmd FilePath -> FilePath -> cmd -> FilePath
+shellCmdOverride' override = shellCmdOverride'' (flip Map.lookup override)
+
+shellCmdOverride :: EHCOpts -> FilePath -> PgmExec -> FilePath
+shellCmdOverride opts = shellCmdOverride' (ehcOptPgmExecMp opts)
+%%]
 
 %%[8 export(shellCmdGcc)
 shellCmdGcc :: String

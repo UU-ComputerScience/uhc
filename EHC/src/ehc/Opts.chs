@@ -110,6 +110,9 @@ optOpts m s = catMaybes $ map (\os -> Map.lookup os m) $ wordsBy (==',') s
 
 optOptsIsYes :: Eq opt => Maybe [opt] -> opt -> Bool
 optOptsIsYes mos o = maybe False (o `elem`) mos
+
+optMp :: (Show opt, Enum opt, Bounded opt) => Map.Map String opt
+optMp = Map.fromList [ (show o, o) | o <- [minBound .. maxBound] ]
 %%]
 
 %%[(8 codegen)
@@ -123,7 +126,7 @@ instance Show CoreOpt where
 %%]]
 
 coreOptMp :: Map.Map String CoreOpt
-coreOptMp = Map.fromList [ (show o, o) | o <- [minBound .. maxBound] ]
+coreOptMp = optMp
 %%]
 
 %%[(8 codegen tycore)
@@ -141,6 +144,14 @@ tycoreOptMp
       | o <- tycoreOpts
       , let s = show o
       ]
+%%]
+
+%%[99
+instance Show PgmExec where
+  show PgmExec_CPP      = "P"
+
+pgmExecMp :: Map.Map String PgmExec
+pgmExecMp = optMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -384,6 +395,8 @@ ehcCmdLineOpts
      ,  Option ""   ["cfg-install-variant"] (ReqArg oCfgInstallVariant "variant")   "cfg: installation variant (to be used only by wrapper script)"
      ,  Option ""   ["optP"]                (ReqArg (oCmdLineOpts Cmd_CPP_Preprocessing) "opt for cmd")
                                                                                     "opt: option for cmd used by compiler, currently only P (preprocessing)"
+     ,  Option ""   ["pgmP"]                (ReqArg (oPgmExec PgmExec_CPP)          "alternate program for cmd")
+                                                                                    "pgm: alternate executable used by compiler, currently only P (preprocessing)"
 %%]]
 %%[[(8 codegen)
      ,  Option ""   ["coreopt"]             (ReqArg oOptCore "opt[,...]")           ("core opts: " ++ (concat $ intersperse " " $ Map.keys coreOptMp))
@@ -649,6 +662,7 @@ ehcCmdLineOpts
          oCfgInstallVariant   s o   = o { ehcOptCfgInstallVariant           = Just s }
          oCmdLineOpts cmd     s o   = o { ehcOptCmdLineOpts                 = -- (\v -> tr "XX" (pp s >#< show v) v) $ 
                                                                               nub $ ehcOptCmdLineOpts o ++ fst (parseCmdLineOpts cmd s) }
+         oPgmExec     cmd     s o   = o { ehcOptPgmExecMp                   = Map.insert cmd s $ ehcOptPgmExecMp o }
 %%]]
 %%[[(99 hmtyinfer tyderivtree)
          oDerivTree  ms  o =  case ms of

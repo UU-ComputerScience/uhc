@@ -178,7 +178,7 @@ cpPreprocessWithCPP pkgKeyDirL modNm
        ; {- when (  ehcOptCPP opts
               || modNm == hsnModIntlBase      -- 20080211, AD: builtin hack to preprocess EHC.Prelude with cpp, for now, to avoid implementation of pragmas
               ) -}
-              (do { let preCPP  = mkShellCmd' [Cmd_CPP,Cmd_CPP_Preprocessing] Cfg.shellCmdCpp
+              (do { let preCPP  = mkShellCmd' [Cmd_CPP,Cmd_CPP_Preprocessing] (Cfg.shellCmdOverride opts Cfg.shellCmdCpp PgmExec_CPP)
                                     (  Cfg.cppOpts ++ gccDefs opts ["CPP"]
                                     ++ map cppOptF [ {- "traditional-cpp", -} {- "std=gnu99", -} "fno-show-column", "P" ]
 %%[[(99 codegen)

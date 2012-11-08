@@ -119,6 +119,13 @@ data TyCoreOpt
 
 %%]
 
+%%[99 export(PgmExec(..))
+-- | Pgm (internal program used) options, in particular alternate internal shell commands
+data PgmExec
+  = PgmExec_CPP				-- alternate CPP
+  deriving (Eq,Ord,Enum,Bounded)
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Compiler options
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -257,6 +264,8 @@ data EHCOpts
       						  ::  Bool       		-- options via OPTIONS_UHC pragma have been set
       ,  ehcOptOverloadedStrings
       						  ::  Bool              -- allow overloaded strings
+      ,  ehcOptPgmExecMp	  ::  Map.Map PgmExec FilePath
+      												-- alternate executables for program
 %%]]
       }
 %%]
@@ -405,6 +414,7 @@ emptyEHCOpts
       ,  ehcOptCmdLineOptsDoneViaPragma
                                 =   False
       ,  ehcOptOverloadedStrings=   False
+      ,  ehcOptPgmExecMp		= 	Map.empty
 %%]]
       }
 %%]
