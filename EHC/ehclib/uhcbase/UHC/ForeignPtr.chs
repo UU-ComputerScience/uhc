@@ -3,7 +3,6 @@
 {-# OPTIONS_GHC -XNoImplicitPrelude #-}
 {-# OPTIONS_HADDOCK hide #-}
 {-# EXCLUDE_IF_TARGET js #-}
-{-# OPTIONS_UHC "--optP=-traditional-cpp" #-}
 
 -----------------------------------------------------------------------------
 -- |

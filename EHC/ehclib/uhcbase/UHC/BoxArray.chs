@@ -10,7 +10,6 @@ All sizes and indices are in terms of machine words (that which holds a boxed va
 
 %%[99
 {-# LANGUAGE NoImplicitPrelude #-}
-{-# OPTIONS_UHC "--optP=-traditional-cpp" #-}
 
 module UHC.BoxArray
   ( BoxArray

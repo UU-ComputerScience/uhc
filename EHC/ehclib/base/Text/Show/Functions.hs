@@ -1,6 +1,5 @@
 {-# LANGUAGE CPP #-}
 {-# OPTIONS_GHC -fno-warn-orphans, CPP #-}
-{-# OPTIONS_UHC "--optP=-traditional-cpp" #-}
 
 -----------------------------------------------------------------------------
 -- |

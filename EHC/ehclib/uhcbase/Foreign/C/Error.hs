@@ -1,7 +1,6 @@
 {-# LANGUAGE NoImplicitPrelude, CPP #-}
 {-# OPTIONS_GHC -XNoImplicitPrelude -#include "HsBase.h" #-}
 {-# EXCLUDE_IF_TARGET js #-}
-{-# OPTIONS_UHC "--optP=-traditional-cpp" #-}
 
 -----------------------------------------------------------------------------
 -- |

@@ -6,7 +6,6 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE CPP #-}
-{-# OPTIONS_UHC "--optP=-traditional-cpp" #-}
 
 module UHC.Base   -- adapted from the Hugs prelude
 (

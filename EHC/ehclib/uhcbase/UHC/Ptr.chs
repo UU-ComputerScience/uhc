@@ -3,7 +3,6 @@
 
 {-# OPTIONS_GHC -XNoImplicitPrelude #-}
 {-# OPTIONS_HADDOCK hide #-}
-{-# OPTIONS_UHC "--optP=-traditional-cpp" #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  GHC.Ptr

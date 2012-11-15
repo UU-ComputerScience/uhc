@@ -14,7 +14,6 @@ In due time all (or most) primitives may move to here
 
 %%[99
 {-# LANGUAGE NoImplicitPrelude, CPP #-}
-{-# OPTIONS_UHC "--optP=-traditional-cpp" #-}
 
 module UHC.Prims
   -- export all

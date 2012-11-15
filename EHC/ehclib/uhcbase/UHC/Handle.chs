@@ -1,7 +1,6 @@
 %%[99
 {-# LANGUAGE NoImplicitPrelude, CPP #-}
 {-# EXCLUDE_IF_TARGET js #-}
-{-# OPTIONS_UHC "--optP=-traditional-cpp" #-}
 
 -----------------------------------------------------------------------------
 -- |

@@ -1,5 +1,4 @@
 {-# LANGUAGE NoImplicitPrelude, CPP #-}
-{-# OPTIONS_UHC "--optP=-traditional-cpp" #-}
 
 -----------------------------------------------------------------------------
 -- |

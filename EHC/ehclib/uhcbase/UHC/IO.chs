@@ -2,7 +2,6 @@
 {-# LANGUAGE NoImplicitPrelude, CPP #-}
 {-# OPTIONS_HADDOCK hide #-}
 {-# EXCLUDE_IF_TARGET js #-}
-{-# OPTIONS_UHC "--optP=-traditional-cpp" #-}
 
 #undef DEBUG_DUMP
 

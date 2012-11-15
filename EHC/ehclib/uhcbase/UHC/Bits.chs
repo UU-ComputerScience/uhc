@@ -1,6 +1,5 @@
 %%[99
 {-# LANGUAGE NoImplicitPrelude, CPP #-}
-{-# OPTIONS_UHC "--optP=-traditional-cpp" #-}
 
 module UHC.Bits
   -- export everything

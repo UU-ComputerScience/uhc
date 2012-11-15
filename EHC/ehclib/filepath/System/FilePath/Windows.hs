@@ -1,5 +1,4 @@
 {-# LANGUAGE CPP #-}
-{-# OPTIONS_UHC "--optP=-traditional-cpp" #-}
 
 #define MODULE_NAME     Windows
 

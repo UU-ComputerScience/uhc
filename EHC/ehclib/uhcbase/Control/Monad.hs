@@ -1,6 +1,5 @@
 {-# LANGUAGE NoImplicitPrelude, CPP #-}
 {-# OPTIONS_GHC -XNoImplicitPrelude #-}
-{-# OPTIONS_UHC "--optP=-traditional-cpp" #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Control.Monad

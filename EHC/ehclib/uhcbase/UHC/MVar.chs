@@ -11,7 +11,6 @@ In GHC MVar is offered by module GHC.Conc
 
 %%[99
 {-# LANGUAGE NoImplicitPrelude #-}
-{-# OPTIONS_UHC "--optP=-traditional-cpp" #-}
 
 module UHC.MVar
   ( MVar

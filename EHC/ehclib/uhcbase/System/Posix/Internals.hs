@@ -2,7 +2,6 @@
 {-# OPTIONS_GHC -XNoImplicitPrelude #-}
 {-# OPTIONS_GHC -fno-warn-unused-binds #-}
 {-# OPTIONS_HADDOCK hide #-}
-{-# OPTIONS_UHC "--optP=-traditional-cpp" #-}
 {-# EXCLUDE_IF_TARGET js #-}
 
 -----------------------------------------------------------------------------
