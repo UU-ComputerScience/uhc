@@ -1,6 +1,5 @@
 %TODO: Add pretty code example
 %TODO: Add explanation of how we handle types
-%TODO: Mention tail-recursion and the trampoline mechanism
 
 %%[prelude
 %include IdentColors.fmt
@@ -221,6 +220,30 @@ mutual recursive definitions. Data types and tuples are straightforwardly
 mapped onto JavaScript objects with fields for the constructor tag and its
 fields. If available, record field names of the corresponding Haskell data type
 are used.
+
+\subsection{\label{typemap} Mapping Haskell values to \js values}
+Table \ref{table:typemap} shows how we map the types in Haskell to types
+in \js. For numbers we use the \js native types, all other types are
+represented as explained above.
+\todo{Check correct formulation of text above}
+
+\begin{table}
+  \centering
+  \begin{tabular}{||l||l||}
+    \hline
+    \textbf{Haskell}     & \textbf{\js}\\
+    \hline
+    \hline
+    |Int, Double, Float| &  |Number|\\
+    \hline
+    |Integer|            &  |BigInt|\\
+    \hline
+    otherwise            &  RTS representation\\
+    \hline
+  \end{tabular}  
+  \caption{Mapping from Haskell Types to native \js types}
+  \label{table:typemap}
+\end{table}
 
 \section{\label{ffi}JavaScript Foreign Function Interface}
 We have extended the FFI with the Foreign Expression Language (FEL), a small
