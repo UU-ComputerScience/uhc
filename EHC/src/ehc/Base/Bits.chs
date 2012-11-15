@@ -15,10 +15,10 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen) export(entierLogUpShrBy,entierLogUpBy)
-entierLogUpShrBy :: Bits x => Int -> x -> x
+entierLogUpShrBy :: (Num x, Bits x) => Int -> x -> x
 entierLogUpShrBy by x = ((x - 1) `shiftR` by) + 1
 
-entierLogUpBy :: Bits x => Int -> x -> x
+entierLogUpBy :: (Num x, Bits x) => Int -> x -> x
 entierLogUpBy by x = entierLogUpShrBy by x `shiftL` by
 %%]
 
@@ -39,7 +39,7 @@ entierUpBy by x = entierUpShrBy by x * by
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen) export(pow2)
-pow2 :: Bits x => Int -> x
+pow2 :: (Num x, Bits x) => Int -> x
 pow2 x = 1 `shiftL` x
 
 pow2' :: Int -> (Integer,Integer,Integer)
@@ -69,7 +69,7 @@ pow2' x
 %%]
 
 %%[(8 codegen)
-mask2 :: Bits x => Int -> x
+mask2 :: (Num x, Bits x) => Int -> x
 mask2 x = pow2 x - 1
 %%]
 

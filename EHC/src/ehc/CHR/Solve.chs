@@ -486,7 +486,8 @@ chrSolveStateTrace = stTrace
 
 %%[(9 hmtyinfer || hmtyast) export(chrSolve,chrSolve')
 chrSolve
-  :: ( CHRMatchable env p s, CHRCheckable env g s
+  :: ( Ord i, Ord p
+     , CHRMatchable env p s, CHRCheckable env g s
      -- , VarUpdatable s s, VarUpdatable g s, VarUpdatable i s, VarUpdatable p s
      , VarLookupCmb s s
      , VarUpdatable s s, VarUpdatable g s, VarUpdatable i s, VarUpdatable p s
@@ -506,7 +507,8 @@ chrSolve env chrStore cnstrs
   where (work,done,_) = chrSolve' env chrStore cnstrs
 
 chrSolve'
-  :: ( CHRMatchable env p s, CHRCheckable env g s
+  :: ( Ord i, Ord p
+     , CHRMatchable env p s, CHRCheckable env g s
      -- , VarUpdatable s s, VarUpdatable g s, VarUpdatable i s, VarUpdatable p s
      , VarLookupCmb s s
      , VarUpdatable s s, VarUpdatable g s, VarUpdatable i s, VarUpdatable p s
@@ -529,7 +531,8 @@ chrSolve' env chrStore cnstrs
 %%[(9 hmtyinfer || hmtyast) export(chrSolve'')
 chrSolve''
   :: forall env p i g s .
-     ( CHRMatchable env p s, CHRCheckable env g s
+     ( Ord i, Ord p
+     , CHRMatchable env p s, CHRCheckable env g s
      -- , VarUpdatable s s, VarUpdatable g s, VarUpdatable i s, VarUpdatable p s
      , VarLookupCmb s s
      , VarUpdatable s s, VarUpdatable g s, VarUpdatable i s, VarUpdatable p s
