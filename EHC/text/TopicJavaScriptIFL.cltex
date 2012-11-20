@@ -221,29 +221,29 @@ mapped onto JavaScript objects with fields for the constructor tag and its
 fields. If available, record field names of the corresponding Haskell data type
 are used.
 
-\subsection{\label{typemap} Mapping Haskell values to \js values}
-Table \ref{table:typemap} shows how we map the types in Haskell to types
-in \js. For numbers we use the \js native types, all other types are
-represented as explained above.
-\todo{Check correct formulation of text above}
+We map |Int|, |Double|, |Float|, and |Integer| to \js object. See table
+\ref{table:typemap} for specifics. All other datatypes are represented by the
+structure as explained above. Despite the mapping to \js objects expressions of
+type |Int|, |Double|, |Float|, and |Integer| are lazy.
 
 \begin{table}
   \centering
   \begin{tabular}{||l||l||}
     \hline
-    \textbf{Haskell}     & \textbf{\js}\\
+    \textbf{Haskell}         & \textbf{\js}\\
     \hline
     \hline
-    |Int, Double, Float| &  |Number|\\
+    |Int|, |Double|, |Float| &  |Number|\\
     \hline
-    |Integer|            &  |BigInt|\\
+    |Integer|                &  |BigInt|\\
     \hline
-    otherwise            &  RTS representation\\
+    otherwise                &  RTS representation\\
     \hline
   \end{tabular}  
   \caption{Mapping from Haskell Types to native \js types}
   \label{table:typemap}
 \end{table}
+
 
 \section{\label{ffi}JavaScript Foreign Function Interface}
 We have extended the FFI with the Foreign Expression Language (FEL), a small
