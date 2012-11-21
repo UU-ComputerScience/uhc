@@ -50,8 +50,9 @@ $(SHUFFLE_BLD_EXEC): $(LIB_EH_UTIL_INS_FLAG)
 	@$(EXIT_IF_ABSENT_LIB_OR_TOOL)
 	cd $(SRC_SHUFFLE_PREFIX) ; \
 	UUAGC="$(AGC) $(UUAGC_OPTS_WHEN_EHC)" \
-	cabal configure --builddir=$(TOPABS_PREFIX)$(SHUFFLE_BLD_PREFIX) --bindir=$(TOPABS_PREFIX)$(BIN_PREFIX) \
-		--with-compiler=$(GHC) --ghc-options="$(GHC_OPTS) $(GHC_OPTS_OPTIM) $(GHC_OPTS_WHEN_EHC) -package $(LIB_EH_UTIL_PKG_NAME)"; \
+	cabal configure $(CABAL_SETUP_OPTS) $(CABAL_OPT_INSTALL_LOC) --builddir=$(TOPABS_PREFIX)$(SHUFFLE_BLD_PREFIX) \
+		--bindir=$(TOPABS_PREFIX)$(BIN_PREFIX) --with-compiler=$(GHC) \
+		--ghc-options="$(GHC_OPTS) $(GHC_OPTS_OPTIM) $(GHC_OPTS_WHEN_EHC) -package $(LIB_EH_UTIL_PKG_NAME)"; \
 	UUAGC="$(AGC) $(UUAGC_OPTS_WHEN_EHC)" \
 	cabal build --builddir=$(TOPABS_PREFIX)$(SHUFFLE_BLD_PREFIX) ; \
 	UUAGC="$(AGC) $(UUAGC_OPTS_WHEN_EHC)" \
