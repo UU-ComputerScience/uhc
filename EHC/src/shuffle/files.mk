@@ -28,6 +28,9 @@ SHUFFLE_JAVA		:= $(SHUFFLE_PLAIN)
 SHUFFLE_JS			:= $(SHUFFLE_PLAIN)
 # setting --line=yes for AG is not possible because of uuagc's weird interpretation of the layout rule
 
+# cabal setup
+SHUFFLE_SETUP_HS    := $(SRC_SHUFFLE_PREFIX)Setup.hs
+SHUFFLE_SETUP       := $(SHUFFLE_BLD_PREFIX)setup$(EXEC_SUFFIX)
 
 # distribution
 SHUFFLE_DIST_FILES			:= $(SHUFFLE_ALL_SRC) $(SHUFFLE_MKF)
@@ -45,15 +48,21 @@ shuffle-clean:
 # rules
 ###########################################################################################
 
+$(SHUFFLE_SETUP): $(SHUFFLE_SETUP_HS)
+	mkdir -p $(@D)
+	$(call GHC_CABAL,$<,$@)
+
 # Use cabal for building, pass UUAGC as environment variable to Setup.hs
-$(SHUFFLE_BLD_EXEC): $(LIB_EH_UTIL_INS_FLAG)
+$(SHUFFLE_BLD_EXEC): $(LIB_EH_UTIL_INS_FLAG) $(SHUFFLE_SETUP)
 	@$(EXIT_IF_ABSENT_LIB_OR_TOOL)
 	cd $(SRC_SHUFFLE_PREFIX) ; \
 	UUAGC="$(AGC) $(UUAGC_OPTS_WHEN_EHC)" \
-	cabal configure $(CABAL_SETUP_OPTS) $(CABAL_OPT_INSTALL_LOC) --builddir=$(TOPABS_PREFIX)$(SHUFFLE_BLD_PREFIX) \
-		--bindir=$(TOPABS_PREFIX)$(BIN_PREFIX) --with-compiler=$(GHC) \
+	$(TOPABS_PREFIX)$(SHUFFLE_SETUP) configure $(CABAL_SETUP_OPTS) $(CABAL_OPT_INSTALL_LOC) \
+		--builddir=$(TOPABS_PREFIX)$(SHUFFLE_BLD_PREFIX) \
+		--bindir=$(TOPABS_PREFIX)$(BIN_PREFIX) \
+		--with-compiler=$(GHC) \
 		--ghc-options="$(GHC_OPTS) $(GHC_OPTS_OPTIM) $(GHC_OPTS_WHEN_EHC) -package $(LIB_EH_UTIL_PKG_NAME)"; \
 	UUAGC="$(AGC) $(UUAGC_OPTS_WHEN_EHC)" \
-	cabal build --builddir=$(TOPABS_PREFIX)$(SHUFFLE_BLD_PREFIX) ; \
+	$(TOPABS_PREFIX)$(SHUFFLE_SETUP) build --builddir=$(TOPABS_PREFIX)$(SHUFFLE_BLD_PREFIX) ; \
 	UUAGC="$(AGC) $(UUAGC_OPTS_WHEN_EHC)" \
-	cabal copy --builddir=$(TOPABS_PREFIX)$(SHUFFLE_BLD_PREFIX) ;
+	$(TOPABS_PREFIX)$(SHUFFLE_SETUP) copy --builddir=$(TOPABS_PREFIX)$(SHUFFLE_BLD_PREFIX) ;
