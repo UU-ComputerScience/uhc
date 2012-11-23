@@ -254,6 +254,8 @@ str    ::= any string
 \label{jsimpent}
 \end{figure}
 
+% TODO: Add example of imports and exports using the FEL
+
 \subsection{\label{uhc-js}The UHC-JavaScript library}
 We provide a library\cite{uhcjs}, simply called the UHC-JavaScript library, to
 streamline the development of \js applications with UHC. It contains bindings
