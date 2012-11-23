@@ -221,7 +221,7 @@ are used. We map |Int|, |Double|, |Float|, and |Integer| values to \js objects,
 shown in table \ref{table:typemap}. Despite the mapping to \js objects, the
 expressions of these types are lazy.
 
-\begin{table}
+\begin{table}[ht]
   \centering
     \setlength{\tabcolsep}{10pt}
   \begin{tabular}{l l}
@@ -232,7 +232,7 @@ expressions of these types are lazy.
     |Integer|                 &  |BigInt|\\
     otherwise                 &  RTS representation\\
     \bottomrule
-  \end{tabular}  
+  \end{tabular}
   \caption{Mapping from Haskell Types to native \js types}
   \label{table:typemap}
 \end{table}
@@ -251,7 +251,7 @@ JavaScript objects. The new grammar for importing functions is shown in figure
 \emph{wrapper}\cite{Haskell98} imports, work as expected, allowing one to deal
 with higher-order JavaScript functions.
 
-\begin{figure}[t]
+\begin{figure}[ht]
 \hrule
 \begin{code}
 exp    ::=  '{}'                                ^ -- Haskell constructor to JS object
