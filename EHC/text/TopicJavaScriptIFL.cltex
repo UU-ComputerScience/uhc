@@ -228,17 +228,15 @@ type |Int|, |Double|, |Float|, and |Integer| are lazy.
 
 \begin{table}
   \centering
-  \begin{tabular}{||l||l||}
-    \hline
-    \textbf{Haskell}         & \textbf{\js}\\
-    \hline
-    \hline
-    |Int|, |Double|, |Float| &  |Number|\\
-    \hline
-    |Integer|                &  |BigInt|\\
-    \hline
-    otherwise                &  RTS representation\\
-    \hline
+    \setlength{\tabcolsep}{10pt}
+  \begin{tabular}{l l}
+    \toprule
+    \textbf{Haskell}          &  \textbf{\js}\\
+    \midrule
+    |Int|, |Double|, |Float|  &  |Number|\\
+    |Integer|                 &  |BigInt|\\
+    otherwise                 &  RTS representation\\
+    \bottomrule
   \end{tabular}  
   \caption{Mapping from Haskell Types to native \js types}
   \label{table:typemap}
