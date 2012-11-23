@@ -217,19 +217,20 @@ constants (CAF, Constant Applicative Form) and indirection nodes required for
 mutual recursive definitions. Data types and tuples are straightforwardly
 mapped onto JavaScript objects with fields for the constructor tag and its
 fields. If available, record field names of the corresponding Haskell data type
-are used. We map |Int|, |Double|, |Float|, and |Integer| values to \js objects,
-shown in table \ref{table:typemap}. Despite the mapping to \js objects, the
+are used. We map |Int|, |Double|, |Float|, |Integer|, and |PackedString| values to \js objects,
+shown in table~\ref{table:typemap}. Despite the mapping to \js objects, the
 expressions of these types are lazy.
 
 \begin{table}[ht]
   \centering
-    \setlength{\tabcolsep}{10pt}
+  \setlength{\tabcolsep}{10pt}
   \begin{tabular}{l l}
     \toprule
     \textbf{Haskell}          &  \textbf{\js}\\
     \midrule
     |Int|, |Double|, |Float|  &  |Number|\\
     |Integer|                 &  |BigInt|\\
+    |PackedString|            &  |String|\\
     otherwise                 &  RTS representation\\
     \bottomrule
   \end{tabular}
@@ -240,20 +241,18 @@ expressions of these types are lazy.
 
 \section{\label{ffi}JavaScript Foreign Function Interface}
 We have extended the FFI with the Foreign Expression Language (FEL), a small
-language that greatly simplifies interfacing with the JavaScript world from
-Haskell. The FEL allows one to number and reorder the function arguments,
-explicitly use them as arguments to JavaScript functions, or use them as
-objects. Functions in these objects can be called in the FEL by using the dot,
-just like in JavaScript. Other features include hardcoding of literals,
-accessing array indices, and a built-in mechanism for converting data-types to
-JavaScript objects. The new grammar for importing functions is shown in figure
-\ref{jsimpent}. Common FFI features, such as the \emph{dynamic} and
-\emph{wrapper}\cite{Haskell98} imports, work as expected, allowing one to deal
-with higher-order JavaScript functions.
+JavaScript-like language that greatly simplifies interfacing with the
+JavaScript world from Haskell. The FEL allows one to number and reorder the
+function arguments, explicitly use them as arguments to JavaScript functions,
+or use them as objects. Functions in these objects can be called in the FEL by
+using the dot, just like in JavaScript. Other features include hardcoding of
+literals, accessing array indices, and a built-in mechanism for converting
+data-types to JavaScript objects. The new grammar for importing functions is
+shown in figure~\ref{jsimpent}.
 
 \begin{figure}[ht]
 \hrule
-\begin{code}
+\begin{spec}
 exp    ::=  '{}'                                ^ -- Haskell constructor to JS object
          |  (arg | ident) post MANY             ^ -- JS expression
 
@@ -269,13 +268,64 @@ arg    ::=  '%' ('*' | int)                     ^ -- all arguments, or a specifi
 ident  ::= a valid JavaScript identifier
 int    ::= any integer
 str    ::= any string
-\end{code}
+\end{spec}
 \hrule
 \caption{Import entity notation for the JS calling convention}
 \label{jsimpent}
 \end{figure}
 
-% TODO: Add example of imports and exports using the FEL
+Common FFI features, such as the \emph{dynamic} and
+\emph{wrapper}\cite{Haskell98} imports, work as expected, allowing one to use
+higher-order JavaScript functions in the same way as C function pointers.
+
+As an example of how one would use the FEL to import a JavaScript function,
+suppose we want to import the \texttt{subString} method from the JavaScript
+String class, where \texttt{someStr} is a concrete JavaScript string object:
+
+\begin{verbatim}
+someStr.subString(start, length);
+\end{verbatim}
+
+This method is called on a JavaScript string object, and returns
+a substring, based on the integer value for a start offset and an integer value
+for the length of the substring, both of which are passed as arguments to the
+method. Importing this method is shows the FEL's added value in several
+ways: the method is called on a JavaScript \textit{object}, it takes multiple
+\textit{arguments}, and it requires conversion from a Haskell |String| type to
+a JavaScript string type\footnote{Where |JSString| is a type synonym for
+|PackedString|}. The import is shown below:
+
+\begin{spec}
+foreign import js "%1.subString(%2, %3)"
+  subString :: JSString -> Int -> Int -> JSString
+\end{spec}
+
+In addition to the |js| calling convention, the other noticeable difference
+with, for example, a C import, is the import definition in the string. Rather
+than having the FFI place all arguments in one position, we number the
+arguments and allow them to be placed in different positions in the imported
+method. With the first argument, indicated by \texttt{\%1}, before the dot, it
+is treated as an object in the generated JavaScript code. The number of the
+argument corresponds with the position of the arguments in the type signature.
+The two remaining arguments are placed between parentheses, so that they become
+arguments in the method call in the generated JavaScript code.
+
+An alternative way of writing this import is show below, where we replace the
+explicit argument positions with a wildcard. This says that all remaining
+arguments should be placed where the wildcard is. Using a wildcard has the
+advantage that it becomes easy to import methods with an overloaded number of
+arguments.
+
+\begin{spec}
+foreign import js "%1.subString(%*)"
+  subString :: JSString -> Int -> Int -> JSString
+\end{spec}
+
+Exporting a function does not make use of the FEL, so it is not much different
+from exporting a function for the C FFI. The only concerns to keep in mind is
+using the |js| calling convention, and specifying JavaScript-compatible type in
+the type signature.
+
 
 \subsection{\label{uhc-js}The UHC-JavaScript library}
 We provide a library\cite{uhcjs}, simply called the UHC-JavaScript library, to
