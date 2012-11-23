@@ -14,7 +14,7 @@
 %format \ = "{\lambda}"
 
 % defs etc
-\newcommand{\todo}[1]{{\color{red}#1}}
+\newcommand{\TODO}[1]{{\color{red}#1}}
 \newcommand{\js}{JavaScript\xspace}
 \newcommand{\uhcjscript}{\textit{uhc-jscript}\xspace}
 \def\brunch{\verb+Brunch+\xspace}
@@ -44,24 +44,25 @@ People wishing to use other programming languages or paradigms have to rely on
 using existing plugins such as Flash or Java Applets, writing custom browser
 plugins, or hacking the browsers themselves. None of these options are ideal,
 since they either require a lot of work, or force the use of strict, imperative
-languages. Instead of choosing between the aforementioned options, we use the
-Utrecht Haskell Compiler (UHC) \cite{dijkstra09uhc-arch,www09uhc} to compile
-Haskell code to JavaScript, effectively turning JavaScript into a high-level
-byte-code of some sorts.
+programming languages. Instead of choosing between the aforementioned options,
+we use the Utrecht Haskell Compiler (UHC) \cite{dijkstra09uhc-arch,www09uhc} to
+compile Haskell code to JavaScript, effectively turning JavaScript into a
+high-level byte-code of some sorts, and allowing us to side-step the problems
+identied with the other approaches.
 
-In this paper, we introduce the UHC JavaScript backend, a compiler backend that 
-allows one to compile Haskell to JavaScript, while keeping Haskell's lazy 
-semantics. We assume at least some familiarity with the Haskell Foreign 
-Function Interface (FFI) and with JavaScript. To overcome the 
-impedance-mismatch between Haskell and JavaScript, we have extended UHC's FFI 
-with a small JavaScript-like expression language we call the Foreign Expression 
-Language (FEL). With these enhancements to the FFI, we claim that it is now 
-possible to write complete JavaScript applications using only Haskell. We back 
-this claim up by porting a web-based Prolog proof assistant from JavaScript to 
-Haskell. While this paper focusses on Haskell, the ideas should be relatively 
-easy to implement in similar languages. Additionally we provide a library 
-containing bindings to the JavaScript standard functionality and bindings to 
-several other commonly used JavaScript libraries.
+In this paper, we introduce the UHC JavaScript backend, a compiler backend that
+allows one to compile Haskell to JavaScript, while keeping Haskell's lazy
+semantics. We assume at least some familiarity with the Haskell Foreign
+Function Interface (FFI) and with JavaScript. To overcome the
+impedance-mismatch between Haskell and JavaScript, we have extended UHC's FFI
+with a small JavaScript-like expression language we call the Foreign Expression
+Language (FEL). With these enhancements to the FFI, we claim that it is now
+possible to write complete JavaScript applications using only Haskell. We back
+this claim up by porting a web-based Prolog ``proof assistant'' from JavaScript
+to Haskell. While this paper focusses on Haskell, the ideas should be
+relatively easy to implement in similar languages. Additionally, we provide a
+library containing bindings to the JavaScript standard functionality and
+bindings to several other commonly used JavaScript libraries.
 
 With this paper, we make the following contributions:
 
@@ -79,8 +80,8 @@ With this paper, we make the following contributions:
 The rest of this paper is structured as follows: section~\ref{hs2js} introduces
 the UHC JavaScript runtime system (RTS) and FFI with our addition, after which
 section~\ref{jcu} shows the implementation of a complete JavaScript application
-in Haskell, after which sections~\ref{future} and~\ref{related} discuss future
-and related work respectively. Finally, section~\ref{conclusion} concludes.
+in Haskell. Sections~\ref{future} and~\ref{related} discuss future and related
+work respectively, after which section~\ref{conclusion} concludes.
 %%]
 
 
@@ -529,13 +530,13 @@ NanoProlog library in the browser, allowing us to perform proof checking and
 unification client-side, eliminating the need for many AJAX requests.
 
 \subsection{\label{issues}Implementation Issues}
-% todo describe: Which issues do you run into in general when you develop a JS
+% TODO describe: Which issues do you run into in general when you develop a JS
 % app in Haskell?
 
 % Ale: non-termination/threads, no native OO, interfacing with annoyingly
 % multi-interpretable functions (functions that are dimensioned in both the number
 % and type of their arguments)
-% \todo{Mismatch GHC/UHC with shared modules, some copying done, but should have separated out definitions, points to the issue where UHC is missing some features}
+% \TODO{Mismatch GHC/UHC with shared modules, some copying done, but should have separated out definitions, points to the issue where UHC is missing some features}
 
 Most of the problems we encountered in porting the JCU application to Haskell
 were due to the lack of advanced language features in UHC, such as functional
@@ -777,14 +778,14 @@ where the intermediate code is more imperative in nature.
 %further compacting the JavaScript code and producing a single output JavaScript
 %file.
 
-%\todo{Code compactification, module loading, whole prog, ...}
+%\TODO{Code compactification, module loading, whole prog, ...}
 %\subsection*{Packages and The Haskell ecosystem}
 
-%\todo{Mismatch: Cabal does not deal with multiple backend of one compiler.}
+%\TODO{Mismatch: Cabal does not deal with multiple backend of one compiler.}
 
-%\todo{Mismatch: Libraries take GHC as standard, not Haskell2010 (or H98).}
+%\TODO{Mismatch: Libraries take GHC as standard, not Haskell2010 (or H98).}
 
-%\todo{Unix based library is useless, basically other OS to run on, what about shared code, ...}
+%\TODO{Unix based library is useless, basically other OS to run on, what about shared code, ...}
 
 % \subsection*{Type system absence}
 % JavaScript has no type system, the absence of which can be dealt with by using
@@ -798,14 +799,14 @@ where the intermediate code is more imperative in nature.
 % (similar to extensible exceptions \cite{marlow06extensible-exception}), but then
 % knowledge about the class system also seeps into the runtime system. Currently
 % this has not yet been further addressed.
-% %\todo{Typing the untyped.}
+% %\TODO{Typing the untyped.}
 
 % \subsection*{Compiling to native \js through Silly}
 % The current setup translates Haskell to Core code and from there to our
 % representation of Core code in \js. This Core code is then interpreted at
 % runtime. To possibly gain performance it is interesting to see whether we can
 % take the compilation a step further and compile down to
-% Grin\cite{boquist96grin-optim} and possibly Silly\todo{citation needed}. Then
+% Grin\cite{boquist96grin-optim} and possibly Silly\TODO{citation needed}. Then
 % instead of translating to C we should compile the Grin/Silly code to \js. We
 % expect some difficulties because of the lack of direct memory management in \js
 % but it should otherwise be rather straightforward.
@@ -815,7 +816,6 @@ where the intermediate code is more imperative in nature.
 
 %%[relatedWork
 \label{related}
-% TODO: Include Fay
 % \paragraph{Other approaches.}
 The idea of running Haskell in a browser is not new. To our knowledge first
 attempts to do so using JavaScript were done in the context of the York Haskell
@@ -851,7 +851,7 @@ JavaScript.
 A more recent attempt at cross-compiling Haskell to JavaScript it the Fay
 language\cite{fay-lang}, which aims to support a subset of Haskell. It shows
 promise, and even draws some inspiration from the work we present here, namely
-the FEL.
+the FEL. % TODO: Expand on this.. Fay has matured a bit in the mean time
 
 %\subsection{Object orientation.}
 %
@@ -860,16 +860,16 @@ the FEL.
 %However, we aim to access libraries written in JavaScript, not \emph{mimic}
 %JavaScript or OO mechanism in general inside Haskell.
 %
-%% todo: sounds shaky en niet meer helemaal waar voor ons ding?
+%% TODO: sounds shaky en niet meer helemaal waar voor ons ding?
 %However, when functionality of the libraries would have to be (re)written in
 %Haskell some form of OO mechanism should be available. This issue arises when
 %one would code in Haskell a platform independent part of an otherwise OO GUI
 %library, say |wxHaskell|. For now we limit ourselves to accessing JavaScript
 %libraries via the FFI, hiding OO idiom inside FFI import entities.
 
-%\todo{Mapping to OO: FFI or other mechanism.}
+%\TODO{Mapping to OO: FFI or other mechanism.}
 
-%\todo{Records in JS vs HS.}
+%\TODO{Records in JS vs HS.}
 
 
 
@@ -882,9 +882,9 @@ the FEL.
 % Some values like the globally available @window@ in a browser could be accessed without the use of the IO monad because its value does not change.
 % However, if and when this assumption would not hold in a near future it would break our wrapping code as well.
 
-%\todo{All in IO, what can be done without IO, threads? STM?.}
+%\TODO{All in IO, what can be done without IO, threads? STM?.}
 
-%\todo{Onderstaande twee paragrafen zijn een beetje bloat maar er zit misschien nog wel wat in voor later.}
+%\TODO{Onderstaande twee paragrafen zijn een beetje bloat maar er zit misschien nog wel wat in voor later.}
 
 % \paragraph{Mapping to OO runtime environments.}
 % 
