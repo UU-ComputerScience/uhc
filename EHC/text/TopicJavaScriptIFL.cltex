@@ -90,61 +90,58 @@ work respectively, after which section~\ref{conclusion} concludes.
 
 \subsection{\label{rts}Runtime System}
 There exists an obvious mismatch between Haskell and Object-Oriented (OO)
-languages, which has been addressed in various ways over time
-(Section~\ref{related}):
+languages, such as JavaScript, which has been addressed in various ways over
+time (Section~\ref{related}):
 \begin{itemize}
-\item
- Mapping the runtime machinery required for Haskell to an imperative language
- has to deal with the lazy evaluation strategy imposed by Haskell (rest of this
- section).
-\item
- Use of OO language mechanisms as available in JavaScript, in particular
- prototype based objects; we only mention this topic in passing.
-\item
- Use of available JavaScript libraries; we deal with this in the next section
- by exploiting the freedom offered by Haskell's Foreign Function Interface
- (FFI)
+\item Mapping the runtime machinery required for Haskell to an imperative
+  language has to deal with the lazy evaluation strategy imposed by Haskell
+  (rest of this section).
+\item Use of OO language mechanisms as available in JavaScript, in particular
+  prototype based objects; we only mention this topic in passing.
+\item Use of available JavaScript libraries; we deal with this in the next
+  section by exploiting the freedom offered by Haskell's Foreign Function
+  Interface (FFI)
 \end{itemize}
 
 The design of any backend for a lazy functional languages needs to deal with
-functions, their (lazy) application to arguments, and  evaluating  such
-applications to Weak Head Normal Form (WHNF).  The design should also cater for
+functions, their (lazy) application to arguments, and evaluating such
+applications to Weak Head Normal Form (WHNF). The design should also cater for
 under- and over saturated function applications as well as tail recursion.
 
 In UHC's JavaScript backend, functions and their applications are both
 represented straightforwardly by objects:
 
-\begin{code}
+\begin{spec}
 Fun.prototype = {
     applyN : function ( args ) ...
     needsNrArgs : function() ...
 }
 
 function Fun( fun ) { ... }
-\end{code}
+\end{spec}
 
 We omit implementation details and only expose the programmatic interface as
 used by the runtime system. The actual implementation can be found in the UHC
 git repository\cite{uhc-git}. A |Fun| object wraps a JavaScript function so
-that it can be used as a Haskell function.  The |applyN| field is only used
-when function applications are being evaluated  (forced); only then it is
-necessary to know the |needsNrArgs| number of arguments which must be passed.
-For the time being it stays unevaluated as a |Fun| object wrapped inside an
-|App| or |AppLT|  closure object.
+that it can be used as a Haskell function. The |applyN| field is only used when
+function applications are being evaluated (forced); only then it is necessary
+to know the |needsNrArgs| number of arguments which must be passed.  For the
+time being it stays unevaluated as a |Fun| object wrapped inside an |App| or
+|AppLT| closure object.
 
 Similarly, partially applied (and thus undersaturated) functions need to store
-already passed arguments and how many arguments are still missing.  An |AppLT|
+already passed arguments and how many arguments are still missing. An |AppLT|
 (|LT| stand for \emph{less than}) object encodes this and again we provide its
 programmatic interface first:
 
-\begin{code}
+\begin{spec}
 AppLT.prototype = {
     applyN : function ( args ) ...
     needsNrArgs : function() ...
 }
 
 function AppLT( fun, args ) { ... }
-\end{code}
+\end{spec}
 
 An |AppLT| only wraps other |AppLT| objects or |Fun| objects.
 
@@ -152,23 +149,23 @@ Finally, for all remaining saturation cases an |App| object is used, knowledge
 about the degree of saturation is delegated to the encapsulated function
 object, which may be another |App|, |AppLT|, or |Fun|.
 
-\begin{code}
+\begin{spec}
 App.prototype = {
     applyN : function ( args ) ...
 }
 
 function App( fun, args ) { ... }
-\end{code}
+\end{spec}
 
-With this interface we now can embed Haskell functions;
-for example the function |\x -> id ^ (id x)| is,
-assuming an elementary JavaScript function |id| is available, by:
+With this interface we now can embed Haskell functions; for example the
+function |\x -> id ^ (id x)| is, assuming an elementary JavaScript function
+|id| is available, by:
 
-\begin{code}
+\begin{spec}
 new Fun( function(x) {
     return new App(id, [new App(id,[x])]);
 } )
-\end{code}
+\end{spec}
 
 Evaluation is forced by a separate function |eval| which assumes the presence
 of an |eOrV| (evaluator Or Value) field in all Haskell runtime values, which
@@ -180,7 +177,7 @@ the stack of the underlying JavaScript engine to flow over. The separate
 external function |eval| doing the evaluation allows non WHNF values to be
 returned, thus implementing a trampoline mechanism:
 
-\begin{code}
+\begin{spec}
 function eval( x ) {
     while ( x && x.eOrV ) {
         if ( typeof x.eOrV == 'function' ) {
@@ -190,7 +187,7 @@ function eval( x ) {
     }   }
     return x ;
 }
-\end{code}
+\end{spec}
 
 Even normal \js values can be thrown at |eval|, provided they do not
 (accidentally) contain an |eOrV| field.  The actual |eval| function is somewhat
@@ -199,15 +196,15 @@ updates the |eOrV| field for all intermediate non WHNF objects computed in the
 evaluation loop.
 
 As usual the evaluation is driven by the need to pattern-match on a value, e.g.
-as the result of a case expression or by a built-in \js primitive which
-is strict in the corresponding argument such as in the wrapper of the primitive
+as the result of a case expression or by a built-in \js primitive which is
+strict in the corresponding argument such as in the wrapper of the primitive
 multiplication function, which contains the actual multiplication (|*|):
 
-\begin{code}
+\begin{spec}
 new Fun( function(a,b) {
     return eval(a) * eval(b) ;
 } )
-\end{code}
+\end{spec}
 
 Depending on the number of arguments provided, either an undersatured closure
 is built, or the function is directly invoked using JavaScripts |apply|. In
@@ -220,12 +217,9 @@ constants (CAF, Constant Applicative Form) and indirection nodes required for
 mutual recursive definitions. Data types and tuples are straightforwardly
 mapped onto JavaScript objects with fields for the constructor tag and its
 fields. If available, record field names of the corresponding Haskell data type
-are used.
-
-We map |Int|, |Double|, |Float|, and |Integer| to \js object. See table
-\ref{table:typemap} for specifics. All other datatypes are represented by the
-structure as explained above. Despite the mapping to \js objects expressions of
-type |Int|, |Double|, |Float|, and |Integer| are lazy.
+are used. We map |Int|, |Double|, |Float|, and |Integer| values to \js objects,
+shown in table \ref{table:typemap}. Despite the mapping to \js objects, the
+expressions of these types are lazy.
 
 \begin{table}
   \centering
