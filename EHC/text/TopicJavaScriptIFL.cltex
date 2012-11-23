@@ -1,3 +1,6 @@
+%TODO: Add pretty code example
+%TODO: Add explanation of how we handle types
+
 %%[prelude
 %include IdentColors.fmt
 %include Javascript.fmt
@@ -46,18 +49,19 @@ Utrecht Haskell Compiler (UHC) \cite{dijkstra09uhc-arch,www09uhc} to compile
 Haskell code to JavaScript, effectively turning JavaScript into a high-level
 byte-code of some sorts.
 
-In this paper, we introduce the UHC JavaScript backend, a compiler backend that
-allows one to compile Haskell to JavaScript, while keeping Haskell's lazy
-semantics. To overcome the impedance-mismatch between Haskell and JavaScript,
-we have extended UHC's Foreign Function Interface (FFI) with a small
-JavaScript-like expression language we call the Foreign Expression Language
-(FEL). With these enhancements to the FFI, we claim that it is now possible to
-write complete JavaScript applications using only Haskell. We back this claim
-up by porting a web-based Prolog proof assistant from JavaScript to Haskell.
-While this paper focusses on Haskell, the ideas should be relatively easy to
-implement in similar languages. Additionally we provide a library containing
-bindings to the JavaScript standard functionality and bindings to several other
-commonly used JavaScript libraries.
+In this paper, we introduce the UHC JavaScript backend, a compiler backend that 
+allows one to compile Haskell to JavaScript, while keeping Haskell's lazy 
+semantics. We assume at least some familiarity with the Haskell Foreign 
+Function Interface (FFI) and with JavaScript. To overcome the 
+impedance-mismatch between Haskell and JavaScript, we have extended UHC's FFI 
+with a small JavaScript-like expression language we call the Foreign Expression 
+Language (FEL). With these enhancements to the FFI, we claim that it is now 
+possible to write complete JavaScript applications using only Haskell. We back 
+this claim up by porting a web-based Prolog proof assistant from JavaScript to 
+Haskell. While this paper focusses on Haskell, the ideas should be relatively 
+easy to implement in similar languages. Additionally we provide a library 
+containing bindings to the JavaScript standard functionality and bindings to 
+several other commonly used JavaScript libraries.
 
 With this paper, we make the following contributions:
 
@@ -216,6 +220,30 @@ mutual recursive definitions. Data types and tuples are straightforwardly
 mapped onto JavaScript objects with fields for the constructor tag and its
 fields. If available, record field names of the corresponding Haskell data type
 are used.
+
+We map |Int|, |Double|, |Float|, and |Integer| to \js object. See table
+\ref{table:typemap} for specifics. All other datatypes are represented by the
+structure as explained above. Despite the mapping to \js objects expressions of
+type |Int|, |Double|, |Float|, and |Integer| are lazy.
+
+\begin{table}
+  \centering
+  \begin{tabular}{||l||l||}
+    \hline
+    \textbf{Haskell}         & \textbf{\js}\\
+    \hline
+    \hline
+    |Int|, |Double|, |Float| &  |Number|\\
+    \hline
+    |Integer|                &  |BigInt|\\
+    \hline
+    otherwise                &  RTS representation\\
+    \hline
+  \end{tabular}  
+  \caption{Mapping from Haskell Types to native \js types}
+  \label{table:typemap}
+\end{table}
+
 
 \section{\label{ffi}JavaScript Foreign Function Interface}
 We have extended the FFI with the Foreign Expression Language (FEL), a small
@@ -547,16 +575,17 @@ which is part of our RTS.
 % and hiding the scope that one would expect to get when we would be using plain 
 %\js. One way to deal with this problem is by creating a wrapper function that 
 
-Figure \ref{code:this} shows how the |wrappedThis| function can be used to
-obtain the value of an HTML input field. |valString| is a function that gets
-the value of a \jq object as a |String|, while |alert| shows an alert box
-containing the provided message. We query the DOM using jQuery, retrieving all
-\texttt{input} elements, such as text fields, in the DOM. We define a function
-|alertHndlr| that takes the string value of a jQuery object and then shows it
-in an alert box. Note the explicit |this| parameter. We then wrap it so it
-becomes a \js function, after which we partially apply it to an explicit |this|
-parameter using |wrappedThis|. Finally, we bind the event handler to all input
-fields retrieved by our jQuery selector.
+Figure \ref{code:this} shows how the |wrappedThis| function can be used to 
+obtain the value of an HTML input field. The code above the definition of 
+|bindInput| is copied from the \js library. |valString| is a function that gets 
+the value of a \jq object as a |String|. We query the DOM using jQuery, 
+retrieving all \texttt{input} elements, such as text fields, in the DOM. We 
+define a function |alertHndlr| that takes the string value of a jQuery object 
+and then shows it in an alert box. Note the explicit |this| parameter. We then 
+wrap it so it becomes a \js function, after which we partially apply it to an 
+explicit |this| parameter using |wrappedThis|. Finally, we bind the event 
+handler to all input fields retrieved by our jQuery selector.
+
 
 %TODO: Rewrite the bit above?
 
@@ -580,8 +609,8 @@ foreign import js "wrappedThis(%1)"
   wrappedThis :: JThisEventHandler -> IO JEventHandler
 
 bindInput = do
-  let alertHndlr :: ThisEventHandler
-      alertHndlr this _ = valString this >>= alert
+  let  alertHndlr :: ThisEventHandler
+       alertHndlr this _ = valString this >>= alert
   inputField <- jQuery "input"
   eh <- mkJThisEventHandler alertHndlr >>= wrappedThis
   bind inputField (toJS "blur") eh
