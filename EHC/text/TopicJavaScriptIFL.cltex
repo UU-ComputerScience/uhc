@@ -36,10 +36,10 @@ to develop JavaScript applications completely in Haskell.
 
 %%[introduction
 When developing interactive web applications, JavaScript is often the language
-of choice, due to every major browser supporting it natively. In contrast to
+of choice due to every major browser supporting it natively. In contrast to
 other client-side programming languages, no plugins are needed to execute
 JavaScript. Unfortunately, JavaScript is currently the \textit{only}
-client-side programming language that is supported on all major browsers.
+client-side programming language that is supported by all major browsers.
 People wishing to use other programming languages or paradigms have to rely on
 using existing plugins such as Flash or Java Applets, writing custom browser
 plugins, or hacking the browsers themselves. None of these options are ideal,
@@ -47,9 +47,8 @@ since they either require a lot of work, or force the use of strict, imperative
 programming languages. Instead of choosing between the aforementioned options,
 we use the Utrecht Haskell Compiler (UHC) \cite{dijkstra09uhc-arch,www09uhc} to
 compile Haskell code to JavaScript, effectively using JavaScript as a
-high-level byte-code, and allowing us to side-step the problems identied with
+high-level byte-code, and allowing us to side-step the problems identified with
 the other approaches.
-
 
 In this paper, we introduce the UHC JavaScript backend, a compiler backend that
 allows one to compile Haskell to JavaScript, while keeping Haskell's lazy
@@ -79,10 +78,12 @@ With this paper, we make the following contributions:
 \end{itemize}
 
 The rest of this paper is structured as follows: section~\ref{hs2js} introduces
-the UHC JavaScript runtime system (RTS) and FFI with our addition, after which
-section~\ref{jcu} shows the implementation of a complete JavaScript application
-in Haskell. Sections~\ref{future} and~\ref{related} discuss future and related
-work respectively, after which section~\ref{conclusion} concludes.
+the UHC JavaScript runtime system (RTS). Section~\ref{jsffi} covers t FFI with
+our addition, after which section~\ref{jcu} shows the implementation of a
+complete JavaScript application in Haskell. Sections~\ref{future}
+and~\ref{related} discuss future and related work respectively, after which
+section~\ref{conclusion} concludes.
+
 %%]
 
 
@@ -518,7 +519,8 @@ Objects in \js are mutable by nature. By modifying an object, you modify it for
 everything that has a pointer to that particular object. This forces any update
 operation to be defined in |IO|. In order to escape the |IO| monad, update
 operations need to become non-destructive, which is achieved by creating a copy
-of an object before modifying it. The RTS exports a primitive to do just this:
+of an object before modifying it. The RTS exports a primitive to do exactly
+this:
 
 \begin{code}
 primClone :: JSPtr a -> JSPtr a
