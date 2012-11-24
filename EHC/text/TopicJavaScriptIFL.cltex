@@ -46,9 +46,10 @@ plugins, or hacking the browsers themselves. None of these options are ideal,
 since they either require a lot of work, or force the use of strict, imperative
 programming languages. Instead of choosing between the aforementioned options,
 we use the Utrecht Haskell Compiler (UHC) \cite{dijkstra09uhc-arch,www09uhc} to
-compile Haskell code to JavaScript, effectively turning JavaScript into a
-high-level byte-code of some sorts, and allowing us to side-step the problems
-identied with the other approaches.
+compile Haskell code to JavaScript, effectively using JavaScript as a
+high-level byte-code, and allowing us to side-step the problems identied with
+the other approaches.
+
 
 In this paper, we introduce the UHC JavaScript backend, a compiler backend that
 allows one to compile Haskell to JavaScript, while keeping Haskell's lazy
@@ -322,9 +323,10 @@ foreign import js "%1.subString(%*)"
 \end{spec}
 
 Exporting a function does not make use of the FEL, so it is not much different
-from exporting a function for the C FFI. The only concerns to keep in mind is
-using the |js| calling convention, and specifying JavaScript-compatible type in
-the type signature.
+from exporting a function for the C FFI. The only concerns to keep in mind are
+using the |js| calling convention, and specifying a JavaScript-compatible type
+in the type signature.
+
 
 
 \subsection{\label{uhc-js}The UHC-JavaScript library}
@@ -900,7 +902,7 @@ language, SAPL, which is interpreted in the browser by code written in Java.
 The latest interpreter incarnations are written in JavaScript
 \cite{jansen10phd-itasks-sapl-funcweb,bruel10sapl-javascript,plasmeijer08clientside-itasks-ajax}.
 Although currently a Haskell front-end exists for Clean, the use of it in a
-browser seems to be tied up to the iTasks system. The intermediate language
+browser appears to be limited to the iTasks system. The intermediate language
 SAPL also does not provide the facilities as provided by our Haskell FFI.
 
 
@@ -993,7 +995,8 @@ in the |IO| monad directly, and to give programming with the UHC JavaScript
 backend a more functional feel. While in most cases performance is acceptable,
 it needs to be improved if computationally heavy functions are to be run on the
 client. In order for most of the frequently used Hackage libraries to be run on
-the client, UHC and Cabal will need some more work as well.
+the client, additional work on UHC and Cabal will have to be performed.
+
 %%]
 
 %%[XX
