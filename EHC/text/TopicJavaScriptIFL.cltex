@@ -872,7 +872,7 @@ maintained and direct interfacing to the DOM nowadays is replaced by libraries
 built on top of the multiple DOM variations.
 
 % TODO: Explicitly mention GHCJS here
-GHCJS\cite{www11ghcjs-git,www11ghcjs-new} is an attempt to use the GHC API to
+GHCJS\cite{www11ghcjs-git,www12ghcjs-new} is an attempt to use the GHC API to
 create a dedicated Haskell to JavaScript compiler. It uses the C calling
 convention, rather than a dedicated |js| calling convention. A major advantage
 of using the GHC API is that a mature, production-ready compiler, with support
