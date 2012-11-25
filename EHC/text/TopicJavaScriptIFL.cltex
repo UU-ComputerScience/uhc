@@ -78,7 +78,7 @@ With this paper, we make the following contributions:
 \end{itemize}
 
 The rest of this paper is structured as follows: section~\ref{hs2js} introduces
-the UHC JavaScript runtime system (RTS). Section~\ref{jsffi} covers t FFI with
+the UHC JavaScript runtime system (RTS). Section~\ref{ffi} covers the FFI with
 our addition, after which section~\ref{jcu} shows the implementation of a
 complete JavaScript application in Haskell. Sections~\ref{future}
 and~\ref{related} discuss future and related work respectively, after which
@@ -192,10 +192,10 @@ function eval( x ) {
 \end{spec}
 
 Even normal \js values can be thrown at |eval|, provided they do not
-(accidentally) contain an |eOrV| field.  The actual |eval| function is somewhat
-more involved as it provides some protection against null values and also
-updates the |eOrV| field for all intermediate non WHNF objects computed in the
-evaluation loop.
+(accidentally) contain an |eOrV| field. The actual |eval|\footnote{called |_e_|
+in the git repository.} function is somewhat more involved as it provides some
+protection against null values and also updates the |eOrV| field for all
+intermediate non WHNF objects computed in the evaluation loop.
 
 As usual the evaluation is driven by the need to pattern-match on a value, e.g.
 as the result of a case expression or by a built-in \js primitive which is
@@ -219,9 +219,9 @@ constants (CAF, Constant Applicative Form) and indirection nodes required for
 mutual recursive definitions. Data types and tuples are straightforwardly
 mapped onto JavaScript objects with fields for the constructor tag and its
 fields. If available, record field names of the corresponding Haskell data type
-are used. We map |Int|, |Double|, |Float|, |Integer|, and |PackedString| values to \js objects,
-shown in table~\ref{table:typemap}. Despite the mapping to \js objects, the
-expressions of these types are lazy.
+are used. We map |Int|, |Double|, |Float|, |Integer|, and |PackedString| values
+to \js objects, shown in table~\ref{table:typemap}. Despite the mapping to \js
+objects, the expressions of these types are lazy.
 
 \begin{table}[ht]
   \centering
