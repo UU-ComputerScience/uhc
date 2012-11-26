@@ -24,12 +24,12 @@
 %%]
 
 %%[abstract
-We introduce the Utrecht Haskell Compiler (UHC) JavaScript backend; a compiler
-backend which allows one to cross-compile Haskell to JavaScript, so it can be
-run in the browser. To interface with JavaScript and overcome part of the
-impedance mismatch between the two languages, we introduce the Foreign
-Expression Language; a small subset of JavaScript for use in Foreign Function
-Interface (FFI) imports. Finally we discuss the implementation of a JavaScript
+We introduce the Utrecht Haskell Compiler (UHC) JavaScript backend, which
+allows one to cross-compile Haskell to JavaScript, so it can be run in the
+browser. To interface with JavaScript and overcome part of the impedance
+mismatch between the two languages, we introduce the Foreign Expression
+Language; a small subset of JavaScript for use in Foreign Function Interface
+(FFI) imports. Finally we discuss the implementation of a JavaScript
 application, completely in Haskell, with which we show that it is now possible
 to develop JavaScript applications completely in Haskell.
 %%]
@@ -42,7 +42,7 @@ JavaScript. Unfortunately, JavaScript is currently the \textit{only}
 client-side programming language that is supported by all major browsers.
 People wishing to use other programming languages or paradigms have to rely on
 using existing plugins such as Flash or Java Applets, writing custom browser
-plugins, or hacking the browsers themselves. None of these options are ideal,
+plugins, or modifying the browsers themselves. None of these options are ideal,
 since they either require a lot of work, or force the use of strict, imperative
 programming languages. Instead of choosing between the aforementioned options,
 we use the Utrecht Haskell Compiler (UHC) \cite{dijkstra09uhc-arch,www09uhc} to
@@ -53,16 +53,17 @@ the other approaches.
 In this paper, we introduce the UHC JavaScript backend, a compiler backend that
 allows one to compile Haskell to JavaScript, while keeping Haskell's lazy
 semantics. We assume at least some familiarity with the Haskell Foreign
-Function Interface (FFI) and with JavaScript. To overcome the
-impedance-mismatch between Haskell and JavaScript, we have extended UHC's FFI
-with a small JavaScript-like expression language we call the Foreign Expression
-Language (FEL). With these enhancements to the FFI, we claim that it is now
-possible to write complete JavaScript applications using only Haskell. We back
-this claim up by porting a web-based Prolog ``proof assistant'' from JavaScript
-to Haskell. While this paper focusses on Haskell, the ideas should be
-relatively easy to implement in similar languages. Additionally, we provide a
-library containing bindings to the JavaScript standard functionality and
-bindings to several other commonly used JavaScript libraries.
+Function Interface (FFI) and JavaScript. To overcome the impedance-mismatch
+between Haskell and JavaScript, we have extended UHC's FFI with a small
+JavaScript-like expression language we call the Foreign Expression Language
+(FEL). With these enhancements to the FFI, we claim that it is now possible to
+write complete JavaScript applications using only Haskell. We back this claim
+up by porting a web-based Prolog ``proof assistant'' from JavaScript to
+Haskell. While this paper focusses on Haskell, the ideas should be relatively
+easy to implement in similar languages. Additionally, we provide a library
+containing bindings to the JavaScript standard functionality and bindings to
+several other commonly used JavaScript libraries.
+
 
 With this paper, we make the following contributions:
 
@@ -79,7 +80,7 @@ With this paper, we make the following contributions:
 
 The rest of this paper is structured as follows: section~\ref{hs2js} introduces
 the UHC JavaScript runtime system (RTS). Section~\ref{ffi} covers the FFI with
-our addition, after which section~\ref{jcu} shows the implementation of a
+our additions, after which section~\ref{jcu} shows the implementation of a
 complete JavaScript application in Haskell. Sections~\ref{future}
 and~\ref{related} discuss future and related work respectively, after which
 section~\ref{conclusion} concludes.
@@ -106,7 +107,7 @@ time (Section~\ref{related}):
 \end{itemize}
 
 The design of any backend for a lazy functional languages needs to deal with
-functions, their (lazy) application to arguments, and evaluating such
+functions, their (lazy) application to arguments, and reducing such
 applications to Weak Head Normal Form (WHNF). The design should also cater for
 under- and over saturated function applications as well as tail recursion.
 
@@ -131,10 +132,10 @@ to know the |needsNrArgs| number of arguments which must be passed.  For the
 time being it stays unevaluated as a |Fun| object wrapped inside an |App| or
 |AppLT| closure object.
 
-Similarly, partially applied (and thus undersaturated) functions need to store
-already passed arguments and how many arguments are still missing. An |AppLT|
-(|LT| stand for \emph{less than}) object encodes this and again we provide its
-programmatic interface first:
+Similarly, closures stemming from partially applied (and thus undersaturated)
+functions need to store already passed arguments and how many arguments are
+still missing. An |AppLT| (|LT| stand for \emph{less than}) object encodes this
+and again we provide its programmatic interface first:
 
 \begin{spec}
 AppLT.prototype = {
@@ -160,8 +161,8 @@ function App( fun, args ) { ... }
 \end{spec}
 
 With this interface we now can embed Haskell functions; for example the
-function |\x -> id ^ (id x)| is, assuming an elementary JavaScript function
-|id| is available, by:
+function |\x -> id ^ (id x)| is, assuming an elementary JavaScript
+representation of the Haskell function |id| is available, by:
 
 \begin{spec}
 new Fun( function(x) {
@@ -209,7 +210,7 @@ new Fun( function(a,b) {
 \end{spec}
 
 Depending on the number of arguments provided, either an undersatured closure
-is built, or the function is directly invoked using JavaScripts |apply|. In
+is built, or the function is directly invoked using JavaScript's |apply|. In
 case too many arguments are provided, a JavaScript closure is constructed,
 which subsequently is evaluated in the evaluation loop of |eval|. The
 implementation of |AppLT| is similar to that of |Fun|. |App|'s implementation
@@ -346,10 +347,10 @@ Being a purely functional programming language, Haskell has no notion of
 objects. JavaScript, however, does. Objects come in two flavours: anonymous and
 named objects. The former is denoted in \js as |{}|, while the latter is
 created by defining a constructor function of which the name starts with an
-uppercase letter, like so: |function MyObj() {}|. Objects can then be
+uppercase letter, as in: |function MyObj() {}|. Objects can then be
 instantiated with the |new| keyword: |new MyObj()|. Each function also has a
-prototype object. This prototype allows for defining values and functions
-within the object scope. New object instances will automatically have the same
+prototype object. This prototype enables defining values and functions within
+the scope of the object. New object instances will automatically have the same
 values and functions as the prototype.
 
 %UHC now offers a functional interface for creating, instantiating and
@@ -357,7 +358,7 @@ values and functions as the prototype.
 %datatypes to objects, or we can define objects from scratch.
 
 
-UHC now offers support for creating, manipulating and querying objects, using
+UHC offers support for creating, manipulating and querying objects, using
 several new primitive functions in the runtime-system (RTS). Instead of showing
 the rather uninteresting function definitions in JavaScript, the code below
 shows the Haskell type signatures which need to be used when importing these
@@ -375,27 +376,28 @@ primSetProtoAttr :: JSString -> a ->  JSString -> IO ()
 primModProtoAttr :: JSString -> (a -> b) -> JSString -> IO ()
 \end{code}
 
-|JSString| is a type synonym for |PackedString|, which is used as the type for
-JavaScript strings.  The |primMkCtor| function creates a new constructor
-function if it does not yet exist in the |window| scope. This function is
-usually only called from within the other functions listed above. The
-|primMkAnonObj| function creates an anonymous object |{}|, while the
-|primMkObj| accepts a string with the class name of the new object. If the
-class does not exist yet, it is created using an empty constructor.
+|JSString| is a type synonym for |PackedString|, the builtin type corresponding
+to JavaScript strings. The |primMkCtor| function creates a new constructor
+function if it does not yet exist in the |window| scope \TODO{add explanation
+for |window| scope}. This function is usually only called from within the other
+functions listed above. The |primMkAnonObj| function creates an anonymous
+object |{}|, while the |primMkObj| accepts a string with the class name of the
+object to be created. If the class does not exist yet, it is created using an
+empty constructor.
 
 The other functions manipulate objects and prototypes, using a mechanism
 inspired by
-lenses\cite{Meijer:1991:FPB:645420.652535,Hofmann:2011:SL:1925844.1926428,Kagawa:1997:CRS:258949.258969};
-an abstraction over accessors and mutators. The first argument is always the
-name of the object attribute of interest in the shape of a string. In case of
-the |set|-functions, the second argument is the value that needs to be set.
-Since \js is a loosely typed language, this can be any type, even when
-interfacing with it from the Haskell world. The |mod|-functions take as second
-parameter a function which modifies the attribute specified in the first
-argument. Modifying an attribute can cause it to be of a different type, hence
-the |a -> b| type for the function. Finally, the last argument is either a
-reference to an object, or the name of a class in the form of a string, in case
-of prototypes.
+lenses\cite{Meijer:1991:FPB:645420.652535,Hofmann:2011:SL:1925844.1926428,Kagawa
+ :1997:CRS:258949.258969}; an abstraction over accessors and mutators. The
+first argument is always the name of the object attribute of interest passed as
+a |String|. In case of the |set|-functions, the second argument is the value
+that needs to be set. Since \js is a loosely typed language, this can be any
+type, even when interfacing with it from the Haskell world. The |mod|-functions
+take as second parameter a function which modifies the attribute specified in
+the first argument. Modifying an attribute may change its type, hence the |a ->
+b| type for the function. Finally, the last argument is either a reference to
+an object, or the name of a class as a |String|, in case of prototypes.
+
 
 These functions can be used by importing them as primitives:
 
@@ -404,12 +406,12 @@ foreign import prim "primGetAttr"
   _getAttr :: JSString -> JSPtr p -> IO a
 \end{code}
 
-Objects are represented in the UHC-JavaScript libraryl by a |JSPtr a| type,
-which has no constructors, so it can't be instantiated directly. The only way
-an object can be obtained is by getting it via the FFI. A |JSPtr a| requires
-one type argument, which specifies the type of the \js object. This should
-again be a type without constructor. Suppose we want a pointer to a |Book|
-object, we could define it as follows:
+Objects are represented in the UHC-JavaScript library by a |JSPtr a| type,
+which has no constructors, so they can't be instantiated directly. The only way
+an object can be obtained is by getting it via the FFI. A |JSPtr a| takes one
+phantom type as a parameter, which specifies the type of the \js object. This
+should again be a type without constructor. Suppose we want a pointer to a
+|Book| object, we define it as follows:
 
 \begin{code}
 data JSPtr a
@@ -418,8 +420,8 @@ type Book = JSPtr BookPtr
 \end{code}
 
 We can now define functions on the |Book| type, giving us a type-safe way to
-deal with \js objects. This is similar approach as is often taken in GHC's C
-FFI to deal with pointer types.
+deal with \js objects. A similar approach as is often taken in GHC's C FFI to
+deal with pointer types.
 
 We offer the |Language.UHC.JS.Primitives| module in the UHC-JavaScript library,
 which defines primitive imports and abstracts away from |JSString|. Using these
@@ -553,9 +555,9 @@ Assistant'\cite{swierstra2011}, a web application developed to aid in
 teaching\cite{stutterheim2012} Prolog at the Junior College Utrecht. It is a
 tool developed for students to learn about important concepts in computer
 science, such as proofs, trees, unification, and backtracking, by means of
-proving Prolog queries manually.  Students enter a Prolog query, after which
-they are tasked with constructing a proof by dragging and dropping Prolog rules
-and facts, and by applying substitutions manually throughout the proof tree.
+proving Prolog queries manually. Students enter a Prolog query, after which
+they can build a proof by dragging and dropping Prolog rules and facts, and by
+applying substitutions manually throughout the proof tree.
 
 The application was originally programmed in \coffeescript\cite{coffeescript},
 a layer of syntactic sugar for \js, and used the \brunch\cite{brunch}
@@ -575,7 +577,13 @@ With the ability to compile Haskell to JavaScript comes the possibility of
 running any Haskell library that compiles on the UHC in the browser, without
 modification. We use this feature in the JCU web application to run the
 NanoProlog library in the browser, allowing us to perform proof checking and
-unification client-side, eliminating the need for many AJAX requests.
+unification at the client-side, eliminating the need for many AJAX requests.
+
+In a further step we eliminated the need for a server altogether by storing the
+set of rules and facts using HTML5 Local Storage instead of in a database on
+the server. This has the advantage that you can run the assistant wherever you
+have a modern web browser available.
+
 
 \subsection{\label{issues}Implementation Issues}
 % TODO describe: Which issues do you run into in general when you develop a JS
@@ -588,16 +596,16 @@ unification client-side, eliminating the need for many AJAX requests.
 
 Most of the problems we encountered in porting the JCU application to Haskell
 were due to the lack of advanced language features in UHC, such as functional
-dependencies and type families, amongst others. Practically, this implies that
-only part of the libraries available on Hackage today can currently be compiled
-to JavaScript using the UHC JavaScript back-end.
+dependencies and type families. Practically, this implies that only part of the
+libraries available on Hackage today can currently be compiled to JavaScript
+using the UHC JavaScript back-end.
 
 Another issue arises from JavaScript's scoping rules. In \js, the keyword
 |this| is dynamically scoped while all other variables are lexically scoped.
 Since we emulate lazy evaluation by native JavaScript functions encapsulated by
 objects, the |this| keyword can in some cases point to the runtime system,
 rather than the expected scope, exposing the runtime system to the programmer.
-Simply importing |this| as a function using the FFI is not an option then.
+Simply importing |this| as a function using the FFI is not an option here.
 
 A common use-case of when this might happen is when an imported JavaScript
 library expects the programmer to make use of the |this| keyword in a callback
@@ -624,7 +632,7 @@ which is part of our RTS.
 
 Figure \ref{code:this} shows how the |wrappedThis| function can be used to 
 obtain the value of an HTML input field. The code above the definition of 
-|bindInput| is copied from the \js library. |valString| is a function that gets 
+|bindInput| is copied from the \js library; |valString| is a function that gets 
 the value of a \jq object as a |String|. We query the DOM using jQuery, 
 retrieving all \texttt{input} elements, such as text fields, in the DOM. We 
 define a function |alertHndlr| that takes the string value of a jQuery object 
@@ -687,9 +695,9 @@ change the implementation to limit it's recursion depth.
 
 In general, the performance of the web application is on par with the original
 implementation in JavaScript, but only when using a state of the art JavaScript
-engine, as is found in Google Chrome or Safari. The biggest bottleneck seems to
+engine, as is found in Google Chrome or Safari. The largest bottleneck seems to
 be memory management. Building up lazy Haskell expressions leads to a large
-amount of JavaScript objects. The quick creation and then successive
+number of JavaScript objects. The quick creation and then successive
 destruction of these large expressions places a strain on the memory manager
 and garbage collector. Other popular browsers, such as Firefox, Opera, and
 Internet Explorer, perform significantly worse than the aforementioned
@@ -711,7 +719,7 @@ to wrap anything, possibly failing at runtime. Extra constraints could be
 added, although the RTS cannot currently deal with them. Eventually, one could
 image a higher-level library being built on top of the low-level imports to
 provide improved type-safety. Such libraries may be based on generic
-programming to eliminate repetition, function reactive
+programming to eliminate repetition, functional reactive
 programming\cite{Elliott:2009:PFR:1596638.1596643,Wan:2000:FRP:349299.349331,reactive-banana}
 to interact with the DOM, or they may be an entire user-interface toolkit, such
 as wxHaskell\cite{wxHaskell}.
@@ -865,7 +873,7 @@ where the intermediate code is more imperative in nature.
 %%[relatedWork
 \label{related}
 % \paragraph{Other approaches.}
-The idea of running Haskell in a browser is not new. To our knowledge first
+The idea of running Haskell in a browser is not new. To our knowledge the first
 attempts to do so using JavaScript were made in the context of the York Haskell
 Compiler (YHC) \cite{www07yhc-javascript}. The Document Object Model (DOM)
 inside a browser was accessed via wrapper code generated from HTML standard
