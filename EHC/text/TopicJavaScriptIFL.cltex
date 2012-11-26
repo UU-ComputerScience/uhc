@@ -900,6 +900,12 @@ use of GHC, giving it a production-ready Haskell compiler and type-checker to
 build on. In designing Fay's FFI, Doner drew some inspiration from the work we
 present here, namely the FEL.
 
+Another recent attempt is Haste\cite{ekblad2012} by Anton Ekblad, it compiles
+Haskell to Javascript and supports the same code as GHC does, with some remarks
+as how to perform large number arithmetics. It appears to be generating code
+with a small footprint and which performs better than native \js. Haste also
+comes with a small reactive library for interacting with the DOM.
+
 Rather than focussing on cross-compiling, ``Functional JavaScript''
 \cite{www07functional-javascript} offers a library for a more functional style
 of programming in JavaScript. ``Haskell in JavaScript''
