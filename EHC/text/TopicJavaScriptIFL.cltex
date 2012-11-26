@@ -365,15 +365,15 @@ shows the Haskell type signatures which need to be used when importing these
 primitives with the FFI:
 
 \begin{code}
-primMkCtor :: JSString -> IO ()
-primMkObj :: JSString -> JSPtr c
-primMkAnonObj :: IO (JSPtr c)
-primGetAttr :: JSString -> JSPtr c -> IO a
-primSetAttr :: JSString -> a -> JSPtr c -> IO (JSPtr c)
-primModAttr :: JSString -> (a -> b) -> JSPtr c -> IO (JSPtr c)
-primGetProtoAttr :: JSString -> JSString -> a
-primSetProtoAttr :: JSString -> a ->  JSString -> IO ()
-primModProtoAttr :: JSString -> (a -> b) -> JSString -> IO ()
+primMkCtor        :: JSString -> IO ()
+primMkObj         :: JSString -> IO (JSPtr c)
+primMkAnonObj     :: IO (JSPtr c)
+primGetAttr       :: JSString -> JSPtr c -> IO a
+primSetAttr       :: JSString -> a -> JSPtr c -> IO (JSPtr c)
+primModAttr       :: JSString -> (a -> b) -> JSPtr c -> IO (JSPtr c)
+primGetProtoAttr  :: JSString -> JSString -> IO a
+primSetProtoAttr  :: JSString -> a ->  JSString -> IO ()
+primModProtoAttr  :: JSString -> (a -> b) -> JSString -> IO ()
 \end{code}
 
 |JSString| is a type synonym for |PackedString|, the builtin type corresponding
