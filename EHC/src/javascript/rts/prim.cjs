@@ -104,8 +104,8 @@ primCmpInt = function(x,y) {
 primMinInt = function() {return -(1<<31) ;}
 primMaxInt = function() {return (1<<31)-1 ;}
 */
-primMinInt = function() {return -(1<<30) ;}
-primMaxInt = function() {return (1<<30)-1 ;}
+primMinInt = function() {return -4294967295 ;}
+primMaxInt = function() {return 4294967295 ;}
 
 primUnsafeId = function(x) { 
   return x ;
@@ -207,7 +207,7 @@ primComplementWord = primComplementInt ;
 
 // unsigned specific
 primMinWord = function() {return 0 ;}
-primMaxWord = function() {return (1<<32)-1 ;}
+primMaxWord = function() {return 4294967295 ;} // 2^32 - 1
 
 primAndWord = primAndInt ;
 primOrWord  = primOrInt  ;
