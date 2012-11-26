@@ -378,25 +378,25 @@ primModProtoAttr  :: JSString -> (a -> b) -> JSString -> IO ()
 
 |JSString| is a type synonym for |PackedString|, the builtin type corresponding
 to JavaScript strings. The |primMkCtor| function creates a new constructor
-function if it does not yet exist in the |window| scope \TODO{add explanation
-for |window| scope}. This function is usually only called from within the other
-functions listed above. The |primMkAnonObj| function creates an anonymous
-object |{}|, while the |primMkObj| accepts a string with the class name of the
-object to be created. If the class does not exist yet, it is created using an
-empty constructor.
+function if it does not yet exist in the |window| scope where |window| is the
+variable containing everything pertaining the current window or tab. This
+function is usually only called from within the other functions listed above.
+The |primMkAnonObj| function creates an anonymous object |{}|, while the
+|primMkObj| accepts a string with the class name of the object to be created.
+If the class does not exist yet, it is created using an empty constructor.
 
 The other functions manipulate objects and prototypes, using a mechanism
 inspired by
-lenses\cite{Meijer:1991:FPB:645420.652535,Hofmann:2011:SL:1925844.1926428,Kagawa
- :1997:CRS:258949.258969}; an abstraction over accessors and mutators. The
-first argument is always the name of the object attribute of interest passed as
-a |String|. In case of the |set|-functions, the second argument is the value
-that needs to be set. Since \js is a loosely typed language, this can be any
-type, even when interfacing with it from the Haskell world. The |mod|-functions
-take as second parameter a function which modifies the attribute specified in
-the first argument. Modifying an attribute may change its type, hence the |a ->
-b| type for the function. Finally, the last argument is either a reference to
-an object, or the name of a class as a |String|, in case of prototypes.
+lenses\cite{Meijer:1991:FPB:645420.652535,Hofmann:2011:SL:1925844.1926428,Kagawa:1997:CRS:258949.258969}; 
+an abstraction over accessors and mutators. The first argument is always the
+name of the object attribute of interest passed as a |String|. In case of the
+|set|-functions, the second argument is the value that needs to be set. Since
+\js is a loosely typed language, this can be any type, even when interfacing
+with it from the Haskell world. The |mod|-functions take as second parameter a
+function which modifies the attribute specified in the first argument.
+Modifying an attribute may change its type, hence the |a -> b| type for the
+function. Finally, the last argument is either a reference to an object, or the
+name of a class as a |String|, in case of prototypes.
 
 
 These functions can be used by importing them as primitives:
