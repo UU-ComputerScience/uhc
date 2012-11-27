@@ -724,7 +724,7 @@ improved type-safety. Such libraries may be based on generic programming to
 eliminate repetition, functional reactive
 programming~\cite{Elliott:2009:PFR:1596638.1596643,Wan:2000:FRP:349299.349331,reactive-banana}
  to interact with the DOM, or they may be an entire user-interface toolkit,
-such as wxHaskell~\cite{wxHaskell}.
+such as wxHaskell~\cite{Leijen:2004:WPC:1017472.1017483}.
 
 
 Working with WebWorkers as an alternative to Haskell threads is currently not

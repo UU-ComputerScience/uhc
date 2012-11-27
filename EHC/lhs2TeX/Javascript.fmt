@@ -9,6 +9,7 @@
 %format var     	= "\text{\textbf{var}}"
 %format new     	= "\text{\textbf{new}}"
 %format if	     	= "\text{\textbf{if}}"
+%format js	     	= "\text{\textbf{js}}"
 
 %format .	     	= "."
 
