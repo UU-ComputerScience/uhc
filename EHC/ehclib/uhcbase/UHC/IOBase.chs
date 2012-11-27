@@ -49,7 +49,7 @@ module UHC.IOBase
     try,
 
         -- Exception related: catch, throw
-#if defined (__UHC_TARGET_C__) || defined (__UHC_TARGET_LLVM__)
+#if defined (__UHC_TARGET_C__) || defined (__UHC_TARGET_LLVM__) || defined (__UHC_TARGET_JS__)
 #else
     catchTracedException,
 #endif
@@ -656,6 +656,14 @@ catchException m k = m
 
 #else
 
+#if defined (__UHC_TARGET_JS__)
+foreign import prim primCatchException :: forall a . a -> (SomeException -> a) -> a
+
+catchException :: IO a -> (SomeException -> IO a) -> IO a
+catchException (IO m) k = IO $ \s ->
+  primCatchException (m s)
+                     (\te -> case (k te) of {IO k' -> k' s })
+#else
 foreign import prim primCatchException :: forall a . a -> ((SomeException,ImplicitStackTrace,ExplicitStackTrace) -> a) -> a
 
 catchTracedException :: IO a -> ((SomeException,ImplicitStackTrace,ExplicitStackTrace) -> IO a) -> IO a
@@ -666,6 +674,7 @@ catchTracedException (IO m) k = IO $ \s ->
 catchException :: IO a -> (SomeException -> IO a) -> IO a
 catchException m k =
   catchTracedException m (\(e,_,_) -> k e)
+#endif
 
 catch :: IO a -> (IOError -> IO a) -> IO a
 catch m h = catchException m $ \e -> case e of

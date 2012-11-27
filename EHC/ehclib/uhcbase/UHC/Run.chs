@@ -18,13 +18,15 @@ import UHC.Handle
 #endif
 import UHC.StackTrace
 
-#if !( defined(__UHC_TARGET_C__) || defined(__UHC_TARGET_JS__) )
+#if ( defined(__UHC_TARGET_C__) || defined(__UHC_TARGET_JS__) || defined (__UHC_TARGET_LLVM__) )
+import UHC.OldIO (putStrLn)
+#else
 import System.IO (hPutStrLn)
 #endif
 %%]
 
 %%[99
-#if defined(__UHC_TARGET_C__) || defined(__UHC_TARGET_JS__) || defined (__UHC_TARGET_LLVM__)
+#if defined(__UHC_TARGET_C__) || defined (__UHC_TARGET_LLVM__)
 
 -- Wrapper around 'main', invoked as 'ehcRunMain main'
 ehcRunMain :: IO a -> IO a
@@ -37,15 +39,24 @@ foreign import prim primCallInfoKindIsVisible :: Int -> Bool
 -- Wrapper around 'main', invoked as 'ehcRunMain main'
 ehcRunMain :: IO a -> IO a
 ehcRunMain m =
-  catchTracedException (wrapCleanUp m)
-    (\(exc,implTrace,explTrace) -> cleanUp >>
+# if defined(__UHC_TARGET_JS__)
+    catchException m
+      (\exc ->
+# else
+    catchTracedException (wrapCleanUp m)
+      (\(exc,implTrace,explTrace) -> cleanUp >>
+# endif
           case exc of
             ExitException ExitSuccess
               -> exitWithIntCode 0
             ExitException (ExitFailure code)
                 | code == 0 -> exitWithIntCode 1
                 | otherwise -> exitWithIntCode code
-            _ -> do { hPutStrLn stderr ("Error: " ++ show exc)
+            _ -> do {
+#                   if defined(__UHC_TARGET_JS__)
+                      putStrLn ("Error: " ++ show exc)
+#                   else
+                      hPutStrLn stderr ("Error: " ++ show exc)
                     ; if null explTrace
                       then if null implTrace
                            then return ()
@@ -55,11 +66,13 @@ ehcRunMain m =
                       else do { hPutStrLn stderr "Explicit stack trace:"
                               ; mapM_ (\s -> hPutStrLn stderr s) explTrace
                               }
+#                   endif
                     ; exitWithIntCode 1
                     }
     )
 
 
+#if ! defined(__UHC_TARGET_JS__)
 -- try to flush stdout/stderr, but don't worry if we fail
 -- (these handles might have errors, and we don't want to go into
 -- an infinite loop).
@@ -72,6 +85,7 @@ wrapCleanUp :: IO a -> IO a
 wrapCleanUp m = do x <- m
                    cleanUp
                    return x
+#endif
 
 #endif
 %%]

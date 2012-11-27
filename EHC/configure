@@ -3691,7 +3691,7 @@ HSC2HS_CMD=$hsc2hsCmd
 
 
 ### now we know we have ghc, check for some libraries using ghc-pkg
-ghcLibsRequired="fgl syb uulib network binary hashable"
+ghcLibsRequired="fgl syb uulib network binary hashable uuagc-cabal"
 if test x$ghcExists = xyes
 then
   if test -x "$ghcCmd" -a -x "$ghcPkgCmd"

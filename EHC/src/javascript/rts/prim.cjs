@@ -342,8 +342,19 @@ primByteArrayToPackedString = primUnsafeId ;
 %%]
 
 %%[8
+// primThrowException :: forall a x . SomeException' x -> a
 primThrowException = function(x) { throw x ; }
+
 primExitWith = function(x) { throw "EXIT:" + x ; }
+
+// primCatchException :: forall a . a -> (SomeException -> a) -> a
+primCatchException = function(x,hdlr) {
+	try {
+		return _e_(x);
+	} catch (err) {
+		return _e_(new _A_(hdlr,[err]));
+	}
+}
 %%]
 
 %%[8
