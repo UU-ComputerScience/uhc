@@ -10,7 +10,7 @@
 %%[(8 codegen) hs module {%{EH}Core.Trf.RenUniq} import(Data.Maybe,Data.Char,Control.Monad(liftM),qualified Data.Map as Map)
 %%]
 
-%%[(8 codegen) hs import(EH.Util.Utils)
+%%[(8 codegen) hs import(UHC.Util.Utils)
 %%]
 %%[(8 codegen) hs import({%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Core},{%{EH}Ty})
 %%]
@@ -26,7 +26,7 @@ PRAGMA strictcase
 %%]
 
 -- debug
-%%[(8 codegen) hs import({%{EH}Base.Debug},EH.Util.Pretty)
+%%[(8 codegen) hs import({%{EH}Base.Debug},UHC.Util.Pretty)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

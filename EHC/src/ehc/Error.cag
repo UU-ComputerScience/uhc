@@ -13,7 +13,7 @@
 %%[(1 hmtyinfer || hmtyast) hs import({%{EH}Ty})
 %%]
 
-%%[1 hs import(EH.Util.Pretty,qualified EH.Util.FastSeq as Seq)
+%%[1 hs import(UHC.Util.Pretty,qualified UHC.Util.FastSeq as Seq)
 %%]
 
 %%[1 ag import({Error/AbsSyn})
@@ -21,7 +21,7 @@
 
 %%[(8 codegen) hs import ({%{EH}Base.Target}(FFIWay)) export(module {%{EH}Base.Target})
 %%]
-%%[8 hs import (EH.Util.FPath)
+%%[8 hs import (UHC.Util.FPath)
 %%]
 
 %%[(9999 codegen) hs import({%{EH}Core})

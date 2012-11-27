@@ -17,10 +17,10 @@
 %%[(9 codegen) hs import({%{EH}AbstractCore},qualified {%{EH}Core.SysF.AsTy} as SysF)
 %%]
 
-%%[(9 codegen) import(EH.Util.Pretty)
+%%[(9 codegen) import(UHC.Util.Pretty)
 %%]
 
-%%[(9 codegen) import(EH.Util.Utils)
+%%[(9 codegen) import(UHC.Util.Utils)
 %%]
 
 %%[(9 codegen) import(Control.Monad.State)

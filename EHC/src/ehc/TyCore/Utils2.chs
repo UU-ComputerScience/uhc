@@ -20,11 +20,11 @@
 %%[(8 codegen tycore) import({%{EH}Gam},{%{EH}VarMp},{%{EH}Substitutable},{%{EH}Gam.ValGam},{%{EH}Gam.DataGam})
 %%]
 
-%%[(8 codegen tycore) import(Data.List,qualified Data.Set as Set,Data.List,qualified Data.Map as Map,EH.Util.Utils)
+%%[(8 codegen tycore) import(Data.List,qualified Data.Set as Set,Data.List,qualified Data.Map as Map,UHC.Util.Utils)
 %%]
 
 -- debug
-%%[(8 codegen tycore) import({%{EH}Base.Debug},EH.Util.Pretty)
+%%[(8 codegen tycore) import({%{EH}Base.Debug},UHC.Util.Pretty)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

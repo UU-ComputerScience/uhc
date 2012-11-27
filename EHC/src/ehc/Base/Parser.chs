@@ -7,13 +7,13 @@
 %%% Basic/shared parsers
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 module {%{EH}Base.Parser} import(UU.Parsing, EH.Util.ParseUtils, EH.Util.ScanUtils, {%{EH}Base.Builtin},{%{EH}Base.Common}, {%{EH}Scanner.Common}, {%{EH}Scanner.Scanner}, {%{EH}Base.ParseUtils})
+%%[8 module {%{EH}Base.Parser} import(UU.Parsing, UHC.Util.ParseUtils, UHC.Util.ScanUtils, {%{EH}Base.Builtin},{%{EH}Base.Common}, {%{EH}Scanner.Common}, {%{EH}Scanner.Scanner}, {%{EH}Base.ParseUtils})
 %%]
 
 %%[8 import({%{EH}Base.ParseUtils}) export(module {%{EH}Base.ParseUtils})
 %%]
 
-%%[50 import(qualified Data.Set as Set,qualified EH.Util.Rel as Rel)
+%%[50 import(qualified Data.Set as Set,qualified UHC.Util.Rel as Rel)
 %%]
 
 %%[(5020 hmtyinfer) import(qualified {%{EH}Pred} as Pr)

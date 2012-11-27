@@ -12,10 +12,10 @@ import System.Exit
 import System.Environment
 import System.IO
 import System.Console.GetOpt
-import EH.Util.ParseUtils
-import EH.Util.DependencyGraph
-import EH.Util.FPath
-import EH.Util.Pretty
+import UHC.Util.ParseUtils
+import UHC.Util.DependencyGraph
+import UHC.Util.FPath
+import UHC.Util.Pretty
 import Common
 import MainAG
 import ChunkParser

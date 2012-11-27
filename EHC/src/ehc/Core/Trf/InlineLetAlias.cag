@@ -17,7 +17,7 @@
 WRAPPER CodeAGItf
 %%]
 
-%%[(8 codegen) hs import(EH.Util.Utils)
+%%[(8 codegen) hs import(UHC.Util.Utils)
 %%]
 %%[(9 codegen) hs import(qualified Data.Set as Set)
 %%]

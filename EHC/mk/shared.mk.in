@@ -362,7 +362,7 @@ FUN_EHC_GCC_LD_OPTS							= -L$(call FUN_INSTALLABS_VARIANT_LIB_SHARED_PREFIX,$(
 # GHC options
 GHC_OPTS_GENERAL						:= @GHC_GEN_OPTIONS@
 GHC_OPTS_WHEN_EHC						:= $(GHC_OPTS_GENERAL) @GHC_EHC_OPTIONS@
-GHC_OPTS								:= -fglasgow-exts $(OPT_GHC_STANDARD_PACKAGES) -package uulib $(GHC_OPTS_GENERAL)
+GHC_OPTS								:= -fglasgow-exts $(OPT_GHC_STANDARD_PACKAGES) -package uulib -package uhc-util $(GHC_OPTS_GENERAL)
 GHC_OPTS_OPTIM							:= -O2
 
 # HADDOCK options

@@ -10,13 +10,13 @@
 %%[1 module {%{EH}Opts.Base} import({%{EH}Base.Common})
 %%]
 
-%%[1 import(EH.Util.Utils)
+%%[1 import(UHC.Util.Utils)
 %%]
 
 %%[1 import(Data.Maybe,qualified Data.Map as Map)
 %%]
 
-%%[4 import(EH.Util.Pretty)
+%%[4 import(UHC.Util.Pretty)
 %%]
 
 %%[7 import(qualified Data.Set as Set)
@@ -25,7 +25,7 @@
 %%[8 import(Data.List,Data.Char,{%{EH}Base.Builtin})
 %%]
 
-%%[8 import(EH.Util.FPath)
+%%[8 import(UHC.Util.FPath)
 %%]
 %%[8 import({%{EH}EHC.Environment})
 %%]

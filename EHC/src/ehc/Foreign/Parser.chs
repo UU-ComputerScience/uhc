@@ -27,7 +27,7 @@ foreign import ccall unsafe "string.h" memcpy  :: Ptr a -> Ptr a -> CSize -> IO 
 %%[90 module {%{EH}Foreign.Parser} import(UU.Scanner.GenToken, {%{EH}Base.Builtin},{%{EH}Base.Common}, {%{EH}Scanner.Common}, {%{EH}Foreign})
 %%]
 
-%%[90 import(EH.Util.ParseUtils, UU.Parsing, EH.Util.Utils)
+%%[90 import(UHC.Util.ParseUtils, UU.Parsing, UHC.Util.Utils)
 %%]
 
 %%[90 import({%{EH}Error},{%{EH}Error.Pretty})

@@ -8,7 +8,7 @@
 %%[(8 codegen) hs import(qualified {%{EH}Core} as C, qualified {%{EH}Ty} as T)
 %%]
 
-%%[(8 codegen) hs import(EH.Util.Pretty,{%{EH}Core.Pretty},{%{EH}Error.Pretty})
+%%[(8 codegen) hs import(UHC.Util.Pretty,{%{EH}Core.Pretty},{%{EH}Error.Pretty})
 %%]
 
 %%[(8 codegen) hs import({%{EH}AbstractCore})
@@ -29,7 +29,7 @@
 %%[(8 codegen) hs import(qualified Data.Map as Map,Data.Maybe)
 %%]
 
-%%[(8 codegen) hs import(qualified EH.Util.FastSeq as Seq)
+%%[(8 codegen) hs import(qualified UHC.Util.FastSeq as Seq)
 %%]
 
 %%[doesWhat doclatex

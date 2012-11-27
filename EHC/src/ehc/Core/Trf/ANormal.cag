@@ -18,7 +18,7 @@ For that to work, all arguments of an application closure must themselves be bou
 
 %%[(8 codegen) hs import(Data.Maybe,qualified Data.Set as Set, Data.List as List, qualified Data.Map as Map)
 %%]
-%%[(8 codegen) hs import(qualified EH.Util.FastSeq as Seq)
+%%[(8 codegen) hs import(qualified UHC.Util.FastSeq as Seq)
 %%]
 
 %%[(8 codegen) hs import({%{EH}AbstractCore},{%{EH}Core})

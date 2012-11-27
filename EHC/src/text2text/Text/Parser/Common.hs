@@ -4,8 +4,8 @@
 
 module Text.Parser.Common
   ( module UU.Parsing
-  , module EH.Util.ParseUtils
-  , module EH.Util.ScanUtils
+  , module UHC.Util.ParseUtils
+  , module UHC.Util.ScanUtils
 
   , T2TPr, T2TPr', T2TPr2, T2TPr2', T2TPr3', T2TPr4'
   
@@ -37,9 +37,9 @@ import qualified Data.Set as Set
 import UU.Parsing
 -- import UU.Scanner.Position( initPos, Pos )
 
-import EH.Util.ScanUtils
-import EH.Util.ParseUtils
-import EH.Util.Utils
+import UHC.Util.ScanUtils
+import UHC.Util.ParseUtils
+import UHC.Util.Utils
 
 import Common
 import Text

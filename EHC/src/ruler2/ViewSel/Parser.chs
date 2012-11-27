@@ -8,7 +8,7 @@
 %%[1 hs export (module KeywParser, module NmParser, pViewSel, pViewSels, pNmSel, pRlSel)
 %%]
 
-%%[1 hs import (qualified Data.Set as Set, qualified Data.Map as Map, UU.Parsing, Scanner, EH.Util.ParseUtils, EH.Util.Nm)
+%%[1 hs import (qualified Data.Set as Set, qualified Data.Map as Map, UU.Parsing, Scanner, UHC.Util.ParseUtils, UHC.Util.Nm)
 %%]
 
 %%[1 hs import (KeywParser, NmParser, ViewSel.ViewSel)

@@ -13,7 +13,7 @@ to avoid explosion of search space during resolution.
 %%[(9 hmtyinfer || hmtyast) import(Data.Monoid,qualified Data.Set as Set)
 %%]
 
-%%[(9 hmtyinfer || hmtyast) import(EH.Util.Pretty)
+%%[(9 hmtyinfer || hmtyast) import(UHC.Util.Pretty)
 %%]
 
 %%[(9 hmtyinfer || hmtyast) import({%{EH}CHR.Key}) export(module {%{EH}CHR.Key})

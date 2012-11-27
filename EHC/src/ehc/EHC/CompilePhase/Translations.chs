@@ -8,7 +8,7 @@ Translation to another AST
 %%]
 
 -- general imports
-%%[8 import(qualified Data.Map as Map, qualified Data.Set as Set, qualified EH.Util.FastSeq as Seq)
+%%[8 import(qualified Data.Map as Map, qualified Data.Set as Set, qualified UHC.Util.FastSeq as Seq)
 %%]
 
 %%[(50 codegen) import({%{EH}Base.Optimize})

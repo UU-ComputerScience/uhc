@@ -20,13 +20,13 @@
 %%[(8 codegen coresysf) hs import({%{EH}Core.BindExtract},qualified {%{EH}Core.SysF.AsTy} as SysF)
 %%]
 
-%%[(8 codegen coresysf) hs import(qualified EH.Util.FastSeq as Seq)
+%%[(8 codegen coresysf) hs import(qualified UHC.Util.FastSeq as Seq)
 %%]
 
 %%[(8 codegen coresysf) hs import(Data.Maybe, qualified Data.Map as Map, Control.Applicative)
 %%]
 
-%%[(8 codegen coresysf) hs import(EH.Util.Pretty)
+%%[(8 codegen coresysf) hs import(UHC.Util.Pretty)
 %%]
 
 %%[(8 codegen coresysf).WRAPPER ag import({Core/AbsSyn},{Core/CommonBindNm},{Core/CommonMetaLev})

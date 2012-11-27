@@ -8,7 +8,7 @@ Output generation, on stdout or file
 %%]
 
 -- general imports
-%%[8 import(qualified EH.Util.FastSeq as Seq)
+%%[8 import(qualified UHC.Util.FastSeq as Seq)
 %%]
 %%[8 import(qualified Data.Map as Map, qualified Data.Set as Set)
 %%]

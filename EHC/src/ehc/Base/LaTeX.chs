@@ -2,7 +2,7 @@
 %%% LaTeX + lhs2TeX generation utilities
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 module {%{EH}Base.LaTeX} import(EH.Util.Utils,EH.Util.Pretty, Data.List)
+%%[1 module {%{EH}Base.LaTeX} import(UHC.Util.Utils,UHC.Util.Pretty, Data.List)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

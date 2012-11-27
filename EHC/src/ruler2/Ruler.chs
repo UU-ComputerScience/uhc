@@ -8,10 +8,10 @@
 %%[1 hs import (System.IO, System.Environment, System.Exit, Control.Monad.State, qualified Data.Map as Map)
 %%]
 
-%%[1 hs import (System.Console.GetOpt, EH.Util.Pretty, EH.Util.Utils( panicJust ))
+%%[1 hs import (System.Console.GetOpt, UHC.Util.Pretty, UHC.Util.Utils( panicJust ))
 %%]
 
-%%[1 hs import (EH.Util.ParseUtils, EH.Util.ParseErrPrettyPrint, EH.Util.CompileRun)
+%%[1 hs import (UHC.Util.ParseUtils, UHC.Util.ParseErrPrettyPrint, UHC.Util.CompileRun)
 %%]
 
 %%[1 hs import (Version, Err, Gam( emptyGam ), Common, Opts)

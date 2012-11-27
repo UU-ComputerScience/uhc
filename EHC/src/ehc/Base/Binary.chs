@@ -5,7 +5,7 @@
 %%[50 hs module {%{EH}Base.Binary}
 %%]
 
-%%[50 import(EH.Util.Binary) export (module EH.Util.Binary)
+%%[50 import(UHC.Util.Binary) export (module UHC.Util.Binary)
 %%]
 %%[50 import(Data.Typeable(Typeable,Typeable1), Data.Generics.Aliases) export(module Data.Typeable)
 %%]

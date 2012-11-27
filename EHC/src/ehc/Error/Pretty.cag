@@ -7,15 +7,15 @@
 %%% Haskell importable interface to Error pretty print
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 hs module {%{EH}Error.Pretty} import(Data.List, Data.Char, Data.Maybe,EH.Util.Pretty, EH.Util.Utils,  {%{EH}Base.Common}, {%{EH}Error}) export(ppErr, ppErrs,ppErrL)
+%%[1 hs module {%{EH}Error.Pretty} import(Data.List, Data.Char, Data.Maybe,UHC.Util.Pretty, UHC.Util.Utils,  {%{EH}Base.Common}, {%{EH}Error}) export(ppErr, ppErrs,ppErrL)
 %%]
 
 %%[(1 hmtyinfer || hmtyast) hs import({%{EH}Ty}, {%{EH}Ty.Pretty})
 %%]
 
-%%[8 hs import(EH.Util.ParseErrPrettyPrint hiding (ppErr)) export(mkPPErr)
+%%[8 hs import(UHC.Util.ParseErrPrettyPrint hiding (ppErr)) export(mkPPErr)
 %%]
-%%[8 hs import (EH.Util.FPath)
+%%[8 hs import (UHC.Util.FPath)
 %%]
 
 %%[(9 codegen) hs import({%{EH}Core},{%{EH}Core.Pretty})

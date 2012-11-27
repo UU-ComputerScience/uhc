@@ -22,12 +22,12 @@
 %%]
 %%[(8 codegen) import({%{EH}VarMp},{%{EH}Substitutable})
 %%]
-%%[(8 codegen) import(Data.List,Data.Maybe,qualified Data.Set as Set,Data.List,qualified Data.Map as Map,EH.Util.Utils)
+%%[(8 codegen) import(Data.List,Data.Maybe,qualified Data.Set as Set,Data.List,qualified Data.Map as Map,UHC.Util.Utils)
 %%]
 
 %%[(50 codegen) import(Control.Monad.State, Data.Array)
 %%]
-%%[(50 codegen) import(qualified EH.Util.FastSeq as Seq)
+%%[(50 codegen) import(qualified UHC.Util.FastSeq as Seq)
 %%]
 %%[(50 codegen) import({%{EH}Core.FvS}, {%{EH}Core.ModAsMap})
 %%]
@@ -35,7 +35,7 @@
 %%]
 
 -- debug
-%%[(8 codegen) import({%{EH}Base.Debug},EH.Util.Pretty)
+%%[(8 codegen) import({%{EH}Base.Debug},UHC.Util.Pretty)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

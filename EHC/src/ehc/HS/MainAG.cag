@@ -8,10 +8,10 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-%%[1 hs module {%{EH}HS.MainAG} import(Data.Char,Data.Maybe,Data.List as List,qualified Data.Map as Map,EH.Util.Pretty,{%{EH}Base.Common},{%{EH}Base.TermLike},{%{EH}Base.Builtin},{%{EH}Opts},{%{EH}Gam.Full},{%{EH}Error},{%{EH}Error.Pretty}, {%{EH}HS}, {%{EH}NameAspect}, EH.Util.DependencyGraph)
+%%[1 hs module {%{EH}HS.MainAG} import(Data.Char,Data.Maybe,Data.List as List,qualified Data.Map as Map,UHC.Util.Pretty,{%{EH}Base.Common},{%{EH}Base.TermLike},{%{EH}Base.Builtin},{%{EH}Opts},{%{EH}Gam.Full},{%{EH}Error},{%{EH}Error.Pretty}, {%{EH}HS}, {%{EH}NameAspect}, UHC.Util.DependencyGraph)
 %%]
 
-%%[1 hs import(qualified EH.Util.FastSeq as Seq,EH.Util.Utils)
+%%[1 hs import(qualified UHC.Util.FastSeq as Seq,UHC.Util.Utils)
 %%]
 
 %%[1 hs import(qualified {%{EH}EH} as EH)
@@ -38,7 +38,7 @@
 %%[9 hs import({%{EH}Gam.ClGam})
 %%]
 
-%%[50 hs import(qualified EH.Util.Rel as Rel,{%{EH}Module})
+%%[50 hs import(qualified UHC.Util.Rel as Rel,{%{EH}Module})
 %%]
 
 %%[90 hs import({%{EH}Foreign},{%{EH}Foreign.Parser})

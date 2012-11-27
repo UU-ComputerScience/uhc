@@ -7,7 +7,7 @@
 %%% Haskell importable interface to Foreign pretty print
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[90 hs module {%{EH}Foreign.Pretty} import(EH.Util.Pretty,{%{EH}Base.Common},{%{EH}Foreign}) 
+%%[90 hs module {%{EH}Foreign.Pretty} import(UHC.Util.Pretty,{%{EH}Base.Common},{%{EH}Foreign}) 
 %%]
 
 %%[90.WRAPPER ag import({Foreign/AbsSyn})

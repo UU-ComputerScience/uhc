@@ -7,7 +7,7 @@
 
 %%[99 import(qualified Data.Map as Map,Data.List)
 %%]
-%%[99 import(EH.Util.Pretty,EH.Util.Utils)
+%%[99 import(UHC.Util.Pretty,UHC.Util.Utils)
 %%]
 %%[99 import({%{EH}Base.HsName},{%{EH}Base.Target})
 %%]

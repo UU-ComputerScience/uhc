@@ -12,7 +12,7 @@ This file exists to avoid module circularities.
 %%[(9 hmtyinfer) import(qualified Data.Map as Map,qualified Data.Set as Set)
 %%]
 
-%%[(9 hmtyinfer) import(EH.Util.Pretty)
+%%[(9 hmtyinfer) import(UHC.Util.Pretty)
 %%]
 
 %%[(9 hmtyinfer) import({%{EH}Base.Common})

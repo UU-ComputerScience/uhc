@@ -7,7 +7,7 @@
 
 %%[(8 codegen) import(qualified Data.Map as Map,Data.List)
 %%]
-%%[(8 codegen) import(EH.Util.Pretty,EH.Util.Utils)
+%%[(8 codegen) import(UHC.Util.Pretty,UHC.Util.Utils)
 %%]
 %%[(50 codegen) import({%{EH}Base.Binary}, {%{EH}Base.Serialize})
 %%]

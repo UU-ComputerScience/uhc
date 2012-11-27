@@ -5,7 +5,7 @@
 %%[6 module {%{EH}Gam.PolGam}
 %%]
 
-%%[6 import(EH.Util.Pretty,EH.Util.Utils)
+%%[6 import(UHC.Util.Pretty,UHC.Util.Utils)
 %%]
 
 %%[6 hs import ({%{EH}Base.Common},{%{EH}Base.TermLike},{%{EH}Base.Builtin})

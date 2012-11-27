@@ -22,7 +22,7 @@
 
 %%[90 hs import(qualified Data.Map as Map, qualified Data.Set as Set)
 %%]
-%%[90 hs import(EH.Util.Utils)
+%%[90 hs import(UHC.Util.Utils)
 %%]
 
 %%[9090 hs import({%{EH}BuiltinPrims})

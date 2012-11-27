@@ -11,7 +11,7 @@
 %%]
 %%[(8 java) hs import(Data.Word,Data.Int)
 %%]
-%%[(8 java) hs import(qualified EH.Util.FastSeq as Seq)
+%%[(8 java) hs import(qualified UHC.Util.FastSeq as Seq)
 %%]
 
 %%[(8 java) hs export(AGItf(..), PoolConstAGItf(..)) 

@@ -32,7 +32,7 @@ Conceptually thus the invariant is that no entry is in the map which is not in s
 %%]
 %%[8 import({%{EH}VarMp})
 %%]
-%%[8 import(EH.Util.Utils)
+%%[8 import(UHC.Util.Utils)
 %%]
 
 %%[8 import({%{EH}Base.Common})
@@ -50,7 +50,7 @@ Conceptually thus the invariant is that no entry is in the map which is not in s
 %%% Debug
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9999 import(EH.Util.Debug)
+%%[9999 import(UHC.Util.Debug)
 %%]
 
 %%[9

@@ -14,7 +14,7 @@
 %%[1 hs import (UU.Parsing.Offside, UU.Scanner.Position( initPos, Pos, Position(..) ))
 %%]
 
-%%[1 hs import (UU.Scanner.GenToken, Scanner, EH.Util.ParseUtils, EH.Util.ScanUtils)
+%%[1 hs import (UU.Scanner.GenToken, Scanner, UHC.Util.ParseUtils, UHC.Util.ScanUtils)
 %%]
 
 %%[1 hs import (NmParser, SelParser, KeywParser, ViewSel.ViewSel, ViewSel.Parser)

@@ -13,7 +13,7 @@
 %%[(99 hmtyinfer tyderivtree) hs import({%{EH}Ty},{%{EH}Ty.Ftv},{%{EH}VarMp},{%{EH}Base.LaTeX},{%{EH}Substitutable},{%{EH}Gam.Full})
 %%]
 
-%%[(99 hmtyinfer tyderivtree) hs import(EH.Util.Pretty,{%{EH}Ty.Pretty})
+%%[(99 hmtyinfer tyderivtree) hs import(UHC.Util.Pretty,{%{EH}Ty.Pretty})
 %%]
 
 %%[(99 hmtyinfer tyderivtree) hs import(qualified Data.Map as Map)

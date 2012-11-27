@@ -8,7 +8,7 @@
 %%[1 import({%{EH}ConfigInstall}) export(module {%{EH}ConfigInstall})
 %%]
 
-%%[8 import(Data.Maybe,Data.List,EH.Util.Utils,EH.Util.FPath)
+%%[8 import(Data.Maybe,Data.List,UHC.Util.Utils,UHC.Util.FPath)
 %%]
 
 %%[8 import(qualified Data.Map as Map)

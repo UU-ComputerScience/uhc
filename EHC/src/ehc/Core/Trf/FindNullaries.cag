@@ -8,13 +8,13 @@
 %%]
 %%[(8 codegen wholeprogAnal) hs import(Data.Maybe, qualified Data.Set as Set, qualified Data.Map as Map)
 %%]
-%%[(8 codegen wholeprogAnal) hs import(EH.Util.Utils,qualified EH.Util.FastSeq as Seq,{%{EH}Base.Common},{%{EH}Core},{%{EH}Ty})
+%%[(8 codegen wholeprogAnal) hs import(UHC.Util.Utils,qualified UHC.Util.FastSeq as Seq,{%{EH}Base.Common},{%{EH}Core},{%{EH}Ty})
 %%]
 %%[(8 codegen wholeprogAnal) hs import({%{EH}AbstractCore})
 %%]
 
 -- for debug
-%%[(8 codegen wholeprogAnal) hs import({%{EH}Base.Debug},EH.Util.Pretty)
+%%[(8 codegen wholeprogAnal) hs import({%{EH}Base.Debug},UHC.Util.Pretty)
 %%]
 %%[(8 codegen wholeprogAnal) hs import(Debug.Trace)
 %%]

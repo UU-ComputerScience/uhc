@@ -7,10 +7,10 @@
 %%% Module itf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(3 hmtyinfer || hmtyast) hs module {%{EH}Ty.Trf.Quantify} import(EH.Util.Utils,{%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Ty},{%{EH}VarMp},{%{EH}Substitutable}) export(tyQuantify, tyQuantifyClosed)
+%%[(3 hmtyinfer || hmtyast) hs module {%{EH}Ty.Trf.Quantify} import(UHC.Util.Utils,{%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Ty},{%{EH}VarMp},{%{EH}Substitutable}) export(tyQuantify, tyQuantifyClosed)
 %%]
 
-%%[(4 hmtyinfer || hmtyast) hs import({%{EH}Base.Debug},EH.Util.Pretty)
+%%[(4 hmtyinfer || hmtyast) hs import({%{EH}Base.Debug},UHC.Util.Pretty)
 %%]
 
 %%[(4 hmtyinfer || hmtyast) hs import(qualified Data.Set as Set,qualified Data.Map as Map,Data.List as List)
@@ -23,7 +23,7 @@ WRAPPER TyAGItf
 %%[(6 hmtyinfer || hmtyast) hs
 %%]
 
-%%[(9 hmtyinfer || hmtyast) hs import(Data.Maybe,EH.Util.Utils,EH.Util.Pretty)
+%%[(9 hmtyinfer || hmtyast) hs import(Data.Maybe,UHC.Util.Utils,UHC.Util.Pretty)
 %%]
 
 %%[(99 hmtyinfer || hmtyast)

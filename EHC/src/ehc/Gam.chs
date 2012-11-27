@@ -10,7 +10,7 @@
 %%[1 module {%{EH}Gam} import({%{EH}Gam.Base}) export(module {%{EH}Gam.Base})
 %%]
 
-%%[1 module {%{EH}Gam} import(Data.List,EH.Util.Utils,{%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}NameAspect})
+%%[1 module {%{EH}Gam} import(Data.List,UHC.Util.Utils,{%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}NameAspect})
 %%]
 
 %%[(1 hmtyinfer || hmtyast).Ty import({%{EH}Ty})
@@ -22,7 +22,7 @@
 %%[1 import({%{EH}Error}) 
 %%]
 
-%%[1 import(EH.Util.Pretty) export(ppGam,ppGamDup)
+%%[1 import(UHC.Util.Pretty) export(ppGam,ppGamDup)
 %%]
 
 %%[(1 hmtyinfer || hmtyast) import({%{EH}Ty.Pretty})

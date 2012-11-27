@@ -37,7 +37,7 @@
 %%[1 hs import (UU.Scanner.Position)
 %%]
 
-%%[1 hs import (EH.Util.ScanUtils)
+%%[1 hs import (UHC.Util.ScanUtils)
 %%]
 
 %%[1 hs import (UU.Parsing.Offside)

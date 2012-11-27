@@ -19,7 +19,7 @@ Matching of types to
 %%[(8 codegen tycore) hs module {%{EH}TyCore.Check} import({%{EH}Base.Common},{%{EH}Opts})
 %%]
 
-%%[(8 codegen tycore) hs import(EH.Util.Pretty,EH.Util.Utils,qualified EH.Util.FastSeq as Seq)
+%%[(8 codegen tycore) hs import(UHC.Util.Pretty,UHC.Util.Utils,qualified UHC.Util.FastSeq as Seq)
 %%]
 %%[(8 codegen tycore) hs import(qualified Data.Map as Map, Data.Maybe)
 %%]

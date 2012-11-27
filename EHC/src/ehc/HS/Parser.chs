@@ -7,7 +7,7 @@
 %%% Main
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 module {%{EH}HS.Parser} import(UU.Parsing, UU.Parsing.Offside, EH.Util.ParseUtils, UU.Scanner.GenToken, EH.Util.ScanUtils)
+%%[1 module {%{EH}HS.Parser} import(UU.Parsing, UU.Parsing.Offside, UHC.Util.ParseUtils, UU.Scanner.GenToken, UHC.Util.ScanUtils)
 %%]
 
 %%[1 import({%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{EH}Scanner.Common}, {%{EH}Base.TermLike}, {%{EH}Opts}, {%{EH}HS})
@@ -22,11 +22,11 @@
 %%[(8 codegen) import ({%{EH}Base.Target})
 %%]
 
-%%[99 import (qualified EH.Util.FastSeq as Seq)
+%%[99 import (qualified UHC.Util.FastSeq as Seq)
 %%]
 
 -- debugging
-%%[1 import(EH.Util.Utils, EH.Util.Pretty)
+%%[1 import(UHC.Util.Utils, UHC.Util.Pretty)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

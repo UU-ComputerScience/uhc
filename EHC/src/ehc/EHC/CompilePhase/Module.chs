@@ -10,7 +10,7 @@ Module analysis
 -- general imports
 %%[50 import(qualified Data.Map as Map, qualified Data.Set as Set)
 %%]
-%%[50 import(qualified EH.Util.Rel as Rel)
+%%[50 import(qualified UHC.Util.Rel as Rel)
 %%]
 %%[50 import(System.Time, System.Directory)
 %%]

@@ -26,7 +26,7 @@
 %%]
 
 -- debug
-%%[(8888 codegen) import({%{EH}Base.Debug},EH.Util.Pretty)
+%%[(8888 codegen) import({%{EH}Base.Debug},UHC.Util.Pretty)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

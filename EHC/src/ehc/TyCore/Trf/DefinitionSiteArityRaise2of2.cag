@@ -45,7 +45,7 @@
 %%[(8 codegen tycore tauphi) hs import({%{EH}TyCore})
 %%]
 
-%%[(8 codegen tycore tauphi) hs import(EH.Util.Utils)
+%%[(8 codegen tycore tauphi) hs import(UHC.Util.Utils)
 %%]
 
 

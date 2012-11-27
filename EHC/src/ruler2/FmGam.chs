@@ -47,7 +47,7 @@
 %%[1 hs import (qualified Data.Map as Map)
 %%]
 
-%%[1 hs import (EH.Util.Pretty)
+%%[1 hs import (UHC.Util.Pretty)
 %%]
 
 %%[1 hs import (Common)

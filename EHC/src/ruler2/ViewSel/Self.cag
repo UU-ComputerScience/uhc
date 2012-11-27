@@ -8,7 +8,7 @@
 %%[1 hs export (viewSelsSelfT, rlSelSelfT)
 %%]
 
-%%[1 hs import (EH.Util.Nm, EH.Util.DependencyGraph, ViewSel.ViewSel)
+%%[1 hs import (UHC.Util.Nm, UHC.Util.DependencyGraph, ViewSel.ViewSel)
 %%]
 
 %%[1 ag import ({ViewSel/AbsSynAG})

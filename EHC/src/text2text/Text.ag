@@ -22,7 +22,7 @@ where
 
 import Common
 
-import EH.Util.ScanUtils
+import UHC.Util.ScanUtils
 
 }
 

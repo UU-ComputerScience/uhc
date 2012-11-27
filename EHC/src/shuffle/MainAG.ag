@@ -12,12 +12,12 @@ import CDocCommon
 import CDocSubst
 import CDocInline
 import qualified Data.Set as Set
-import qualified EH.Util.FastSeq as Seq
-import EH.Util.Utils(initlast)
+import qualified UHC.Util.FastSeq as Seq
+import UHC.Util.Utils(initlast)
 
 -- for debugging:
--- import EH.Util.Utils (tr, trp, wordsBy)
--- import EH.Util.Pretty
+-- import UHC.Util.Utils (tr, trp, wordsBy)
+-- import UHC.Util.Pretty
 }
 
 -------------------------------------------------------------------------

@@ -12,7 +12,7 @@
 %%]
 %%[(9 codegen) hs import ({%{EH}Gam.ClGam})
 %%]
-%%[(8888 codegen) hs import(EH.Util.Utils,{%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Base.TermLike},{%{EH}Opts.Base})
+%%[(8888 codegen) hs import(UHC.Util.Utils,{%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Base.TermLike},{%{EH}Opts.Base})
 %%]
 %%[(8888 codegen) hs import({%{EH}Ty} as T, qualified {%{EH}Core} as C, {%{EH}AbstractCore})
 %%]

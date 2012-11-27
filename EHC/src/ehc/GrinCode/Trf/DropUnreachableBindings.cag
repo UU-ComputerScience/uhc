@@ -12,7 +12,7 @@ either through direct calls, or through deferred (F) or partially applied (P) or
 
 %%[(8 codegen grin wholeprogAnal) ag import({GrinCode/AbsSyn})
 %%]
-%%[(8 codegen grin wholeprogAnal) hs import(EH.Util.Utils)
+%%[(8 codegen grin wholeprogAnal) hs import(UHC.Util.Utils)
 %%]
 
 -- Debugging only

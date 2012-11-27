@@ -5,7 +5,7 @@
 %%[7 module {%{EH}Gam.DataGam}
 %%]
 
-%%[7 import(EH.Util.Pretty,EH.Util.Utils)
+%%[7 import(UHC.Util.Pretty,UHC.Util.Utils)
 %%]
 
 %%[7 hs import ({%{EH}Base.Common},{%{EH}Base.TermLike},{%{EH}Base.Builtin})
@@ -34,7 +34,7 @@
 %%]
 
 -- debug
-%%[(8 codegen) import({%{EH}Base.Debug},EH.Util.Pretty)
+%%[(8 codegen) import({%{EH}Base.Debug},UHC.Util.Pretty)
 %%]
 
 %%[9999 import({%{EH}Base.ForceEval})

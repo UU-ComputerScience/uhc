@@ -16,14 +16,14 @@ Derived from work by Gerrit vd Geest.
 %%[(9 hmtyinfer) import(qualified Data.Map as Map, qualified Data.Set as Set)
 %%]
 
-%%[(9 hmtyinfer) import(EH.Util.AGraph,EH.Util.Pretty) export(module EH.Util.AGraph)
+%%[(9 hmtyinfer) import(UHC.Util.AGraph,UHC.Util.Pretty) export(module UHC.Util.AGraph)
 %%]
 
 %%[(9 hmtyinfer) import(Data.Graph.Inductive.Graph)
 %%]
 
 -- debug
-%%[(9 hmtyinfer) import(EH.Util.Utils)
+%%[(9 hmtyinfer) import(UHC.Util.Utils)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

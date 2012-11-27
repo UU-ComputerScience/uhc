@@ -15,7 +15,7 @@ module Plugin
 import qualified Data.Map as Map
 
 import UU.Parsing
-import qualified EH.Util.FastSeq as Seq
+import qualified UHC.Util.FastSeq as Seq
 
 import Common
 import Text

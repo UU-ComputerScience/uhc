@@ -368,7 +368,7 @@ AC_PATH_PROG(hsc2hsCmd,hsc2hs)
 AC_SUBST(HSC2HS_CMD,$hsc2hsCmd)
 
 ### now we know we have ghc, check for some libraries using ghc-pkg
-ghcLibsRequired="fgl syb uulib network binary hashable"
+ghcLibsRequired="fgl syb uulib network binary hashable uhc-util"
 if test x$ghcExists = xyes
 then
   if test -x "$ghcCmd" -a -x "$ghcPkgCmd"
@@ -409,7 +409,7 @@ AC_SUBST(HADDOCK_CMD,$haddockCmd)
 AC_SUBST(HADDOCK_VERSION, $haddockVersion)
 
 # GHC version dependencies: packages passed as option, cabal packages
-cabal_base_lib_depends="base mtl fgl directory hashable old-time"
+cabal_base_lib_depends="base mtl fgl directory hashable old-time uhc-util"
 if test x$enableClr = "xyes"
 then
   cabal_base_lib_depends="$cabal_base_lib_depends language-cil"

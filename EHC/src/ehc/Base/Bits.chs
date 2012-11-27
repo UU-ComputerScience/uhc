@@ -7,7 +7,7 @@
 
 %%[(8 codegen) import(Data.Word,Data.Int,Data.Bits,Data.Char)
 %%]
-%%[(8 codegen) import(qualified EH.Util.FastSeq as Seq) export(Seq.empty)
+%%[(8 codegen) import(qualified UHC.Util.FastSeq as Seq) export(Seq.empty)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -10,10 +10,10 @@
 %%[9 module {%{EH}Pred}
 %%]
 
-%%[9 import(EH.Util.Pretty)
+%%[9 import(UHC.Util.Pretty)
 %%]
 
-%%[9999 import({%{EH}Base.Builtin},Data.Maybe,Data.List,qualified Data.Map as Map,qualified Data.Set as Set,EH.Util.Pretty,{%{EH}Gam.Full},{%{EH}Base.Common})
+%%[9999 import({%{EH}Base.Builtin},Data.Maybe,Data.List,qualified Data.Map as Map,qualified Data.Set as Set,UHC.Util.Pretty,{%{EH}Gam.Full},{%{EH}Base.Common})
 %%]
 
 %%[(9999 hmtyinfer) import({%{EH}Opts.Base})

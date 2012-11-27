@@ -16,7 +16,7 @@ is the responsibility of the compiler part using a particular
 HsNameUniqifier to guarantee such an invariant.
 %%]
 
-%%[1 module {%{EH}Base.HsName} import(EH.Util.Utils,EH.Util.Pretty, Data.List)
+%%[1 module {%{EH}Base.HsName} import(UHC.Util.Utils,UHC.Util.Pretty, Data.List)
 %%]
 
 %%[1 import({%{EH}Base.UID})
@@ -34,7 +34,7 @@ HsNameUniqifier to guarantee such an invariant.
 %%[7 import(qualified Data.Map as Map)
 %%]
 
-%%[8 import(EH.Util.FPath,Data.Char)
+%%[8 import(UHC.Util.FPath,Data.Char)
 %%]
 
 %%[8 export(OrigName(..))

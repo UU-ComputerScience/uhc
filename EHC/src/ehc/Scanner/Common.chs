@@ -12,7 +12,7 @@ Note: everything is exported.
 %%[1 module {%{EH}Scanner.Common}
 %%]
 
-%%[1 import(System.IO, UU.Parsing, UU.Parsing.Offside, UU.Scanner.Position, UU.Scanner.GenToken, UU.Scanner.GenTokenParser, EH.Util.ScanUtils(), {%{EH}Base.Builtin}, {%{EH}Base.Common})
+%%[1 import(System.IO, UU.Parsing, UU.Parsing.Offside, UU.Scanner.Position, UU.Scanner.GenToken, UU.Scanner.GenTokenParser, UHC.Util.ScanUtils(), {%{EH}Base.Builtin}, {%{EH}Base.Common})
 %%]
 
 %%[1 import({%{EH}Opts.Base})
@@ -21,7 +21,7 @@ Note: everything is exported.
 %%[1 import(qualified Data.Set as Set)
 %%]
 
-%%[1 import(EH.Util.ScanUtils)
+%%[1 import(UHC.Util.ScanUtils)
 %%]
 
 %%[1.Scanner import(UU.Scanner, {%{EH}Scanner.TokenParser}) export(module UU.Scanner)
@@ -33,7 +33,7 @@ Note: everything is exported.
 %%[5.Scanner -1.Scanner import({%{EH}Scanner.Scanner}) export(module {%{EH}Scanner.Scanner})
 %%]
 
-%%[(8 codegen) import (EH.Util.ParseUtils)
+%%[(8 codegen) import (UHC.Util.ParseUtils)
 %%]
 %%[(8 codegen) import ({%{EH}Base.Target})
 %%]

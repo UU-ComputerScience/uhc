@@ -22,7 +22,7 @@ in an interpreter setting.
 %%[8 import(System, Data.Char, Data.List, Control.Monad)
 %%]
 
-%%[8 import(EH.Util.Pretty)
+%%[8 import(UHC.Util.Pretty)
 %%]
 
 %%[8 import(qualified {%{EH}Config} as EHCfg)

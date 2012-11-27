@@ -18,7 +18,7 @@ This should be in Base.Parser, but because of module circularities in an additio
 %%[8 import({%{EH}Base.Parser})
 %%]
 
-%%[8 import(UU.Parsing, EH.Util.ParseUtils, EH.Util.ScanUtils)
+%%[8 import(UU.Parsing, UHC.Util.ParseUtils, UHC.Util.ScanUtils)
 %%]
 
 %%[8 import({%{EH}Base.FileSearchLocation})
@@ -27,7 +27,7 @@ This should be in Base.Parser, but because of module circularities in an additio
 %%[50 import({%{EH}Module})
 %%]
 
-%%[50 import(qualified Data.Set as Set,qualified EH.Util.Rel as Rel)
+%%[50 import(qualified Data.Set as Set,qualified UHC.Util.Rel as Rel)
 %%]
 
 %%[99 import(Data.Version)

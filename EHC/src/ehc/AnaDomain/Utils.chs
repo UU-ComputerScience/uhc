@@ -19,14 +19,14 @@
 %%[(8 codegen) hs import(qualified Data.Map as Map,qualified Data.Set as Set, Data.Array, Data.Maybe, Data.List)
 %%]
 
-%%[(8 codegen) hs import(EH.Util.Utils)
+%%[(8 codegen) hs import(UHC.Util.Utils)
 %%]
 
 %%[(8 codegen) hs import(Control.Monad.State hiding (join), Control.Applicative)
 %%]
 
 -- debug only
-%%[(8 codegen) hs import({%{EH}Base.Debug},EH.Util.Pretty,{%{EH}AnaDomain.Pretty})
+%%[(8 codegen) hs import({%{EH}Base.Debug},UHC.Util.Pretty,{%{EH}AnaDomain.Pretty})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

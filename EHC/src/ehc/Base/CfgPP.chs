@@ -26,7 +26,7 @@ As class variations on PP
 %%[8 import(Data.Char,qualified Data.Set as Set)
 %%]
 
-%%[8 import(EH.Util.Pretty)
+%%[8 import(UHC.Util.Pretty)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

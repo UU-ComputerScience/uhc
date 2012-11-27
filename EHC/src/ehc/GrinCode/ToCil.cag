@@ -29,7 +29,7 @@ thunks.
 %%]
 %%[(8 codegen clr wholeprogAnal wholeprogC) hs import(Control.Arrow(first, second))
 %%]
-%%[(8 codegen clr wholeprogAnal wholeprogC) hs import(EH.Util.Pretty, EH.Util.Utils)
+%%[(8 codegen clr wholeprogAnal wholeprogC) hs import(UHC.Util.Pretty, UHC.Util.Utils)
 %%]
 %%[(8 codegen clr wholeprogAnal wholeprogC) hs import({%{EH}Base.Common}, {%{EH}Opts}, {%{EH}GrinCode})
 %%]

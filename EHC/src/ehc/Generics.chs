@@ -17,7 +17,7 @@
 %%[(92 hmtyinfer) import({%{EH}Gam.DataGam})
 %%]
 
-%%[(92 hmtyinfer) import(EH.Util.Utils)
+%%[(92 hmtyinfer) import(UHC.Util.Utils)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

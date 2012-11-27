@@ -22,7 +22,7 @@ Conversion from Pred to CHR.
 %%]
 
 -- debug
-%%[(9 hmtyinfer) import(EH.Util.Pretty,EH.Util.Utils)
+%%[(9 hmtyinfer) import(UHC.Util.Pretty,UHC.Util.Utils)
 %%]
 
 %%[(13 hmtyinfer) import({%{EH}Base.Builtin})

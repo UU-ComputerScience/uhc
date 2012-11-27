@@ -5,7 +5,7 @@
 %%[9 module {%{EH}CHR.Key} import({%{EH}Base.Common},{%{EH}Base.TreeTrie})
 %%]
 
-%%[9 import(EH.Util.Pretty, EH.Util.Utils)
+%%[9 import(UHC.Util.Pretty, UHC.Util.Utils)
 %%]
 
 %%[(9 hmtyinfer || hmtyast) import({%{EH}Ty},{%{EH}Ty.Pretty})

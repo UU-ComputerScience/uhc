@@ -31,7 +31,7 @@ import System.Exit
 import System.Console.GetOpt
 import System.IO
 
-import EH.Util.FPath
+import UHC.Util.FPath
 
 import Common
 import Text

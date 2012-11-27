@@ -12,7 +12,7 @@ Various C code generation snippets.
 %%[(8 codegen) hs import(qualified Data.Map as Map,Data.Bits, Data.List)
 %%]
 
-%%[(8 codegen) hs import(EH.Util.Pretty)
+%%[(8 codegen) hs import(UHC.Util.Pretty)
 %%]
 
 %%[(8 codegen) hs import({%{EH}Base.BasicAnnot})

@@ -12,7 +12,7 @@ used by EHC. The AST is described in Ty/AbsSyn.
 %%% Haskell importable interface to Ty
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 hs module {%{EH}Ty} import(EH.Util.Utils,{%{EH}Base.Common}, {%{EH}Base.TermLike}, {%{EH}Base.Builtin}, {%{EH}Opts.Base})
+%%[1 hs module {%{EH}Ty} import(UHC.Util.Utils,{%{EH}Base.Common}, {%{EH}Base.TermLike}, {%{EH}Base.Builtin}, {%{EH}Opts.Base})
 %%]
 
 %%[(1 hmtyinfer || hmtyast) hs export(TyAGItf(..), Ty(..), TyAnn(..), TyL, tyInt, tyChar)
@@ -112,7 +112,7 @@ DERIVING TyVarCateg
 
 Debug:
 
-%%[(9 hmtyinfer || hmtyast) hs import(EH.Util.Pretty,EH.Util.Utils)
+%%[(9 hmtyinfer || hmtyast) hs import(UHC.Util.Pretty,UHC.Util.Utils)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

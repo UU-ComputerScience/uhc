@@ -25,7 +25,7 @@ Datatype LamInfo holds the implementation info to be exported from a module.
 %%[(8 codegen) hs import ({%{EH}Base.Target}(FFIWay(..),TargetFlavor(..))) export(module {%{EH}Base.Target})
 %%]
 
-%%[(8 codegen) hs import(Data.Maybe,Data.Char,Data.List,EH.Util.Pretty,EH.Util.Utils,Control.Applicative((<|>)))
+%%[(8 codegen) hs import(Data.Maybe,Data.Char,Data.List,UHC.Util.Pretty,UHC.Util.Utils,Control.Applicative((<|>)))
 %%]
 
 %%[(8 codegen) hs export(CodeAGItf(..), CModule(..), CExpr(..), MbCExpr, CBind(..), CBound(..), CMetaVal(..), CMetaBind(..), CMetas, CBindL, CBoundL, CPatRest(..), CAlt(..), CAltL, CPat(..), CPatFld(..), CPatFldL) 

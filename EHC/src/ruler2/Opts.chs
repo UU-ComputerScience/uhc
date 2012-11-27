@@ -8,7 +8,7 @@
 %%[1 hs export (Opts(..), defaultOpts, cmdLineOpts)
 %%]
 
-%%[1 hs import (System.Console.GetOpt, EH.Util.ParseUtils, Common, ViewSel.ViewSel, ViewSel.Self, ViewSel.Parser)
+%%[1 hs import (System.Console.GetOpt, UHC.Util.ParseUtils, Common, ViewSel.ViewSel, ViewSel.Self, ViewSel.Parser)
 %%]
 
 %%[1 hs

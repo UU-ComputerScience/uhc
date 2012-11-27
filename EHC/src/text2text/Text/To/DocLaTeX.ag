@@ -12,8 +12,8 @@ import Data.Maybe
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
-import qualified EH.Util.FastSeq as Seq
-import EH.Util.ScanUtils
+import qualified UHC.Util.FastSeq as Seq
+import UHC.Util.ScanUtils
 
 import Common
 import Text

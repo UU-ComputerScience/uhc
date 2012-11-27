@@ -5,7 +5,7 @@
 %%[1 hs module (ViewSel.ViewSel)
 %%]
 
-%%[1 hs import (EH.Util.Nm)
+%%[1 hs import (UHC.Util.Nm)
 %%]
 
 %%[1 ag import ({ViewSel/AbsSynAG})

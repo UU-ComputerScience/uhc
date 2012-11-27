@@ -11,7 +11,7 @@
 %%[(91 codegen) import({%{EH}AbstractCore})
 %%]
 
-%%[(91 codegen) import(qualified Data.Map as Map,Data.List,EH.Util.Utils)
+%%[(91 codegen) import(qualified Data.Map as Map,Data.List,UHC.Util.Utils)
 %%]
 
 %%[(91 codegen hmtyinfer) import({%{EH}Ty.FitsInCommon2}, {%{EH}Ty.Trf.Canonic})

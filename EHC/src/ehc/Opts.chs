@@ -14,13 +14,13 @@
 %%[1 import({%{EH}Opts.Base}) export(module {%{EH}Opts.Base})
 %%]
 
-%%[1 import(EH.Util.Utils)
+%%[1 import(UHC.Util.Utils)
 %%]
 
 %%[1 import(Data.Maybe,qualified Data.Map as Map,Data.Char)
 %%]
 
-%%[4 import(EH.Util.Pretty)
+%%[4 import(UHC.Util.Pretty)
 %%]
 
 %%[(4 hmtyinfer || hmtyast) import({%{EH}Ty})
@@ -32,7 +32,7 @@
 %%[8 import(Data.List,{%{EH}Base.Builtin})
 %%]
 
-%%[8 import(EH.Util.FPath)
+%%[8 import(UHC.Util.FPath)
 %%]
 %%[8 import({%{EH}EHC.Environment})
 %%]

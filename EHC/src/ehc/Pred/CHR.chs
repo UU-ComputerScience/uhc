@@ -13,7 +13,7 @@ Derived from work by Gerrit vd Geest.
 %%[(9 hmtyinfer) import(qualified Data.Map as Map,qualified Data.Set as Set,Data.Maybe)
 %%]
 
-%%[(9 hmtyinfer) import(EH.Util.Pretty,EH.Util.AGraph)
+%%[(9 hmtyinfer) import(UHC.Util.Pretty,UHC.Util.AGraph)
 %%]
 
 %%[(9 hmtyinfer) import({%{EH}Base.Common},{%{EH}Base.TermLike})

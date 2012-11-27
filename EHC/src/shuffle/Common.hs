@@ -5,9 +5,9 @@
 module Common
   ( module Data.Maybe
   , module Data.Char
-  , module EH.Util.Nm
-  , module EH.Util.FPath
-  , module EH.Util.Pretty
+  , module UHC.Util.Nm
+  , module UHC.Util.FPath
+  , module UHC.Util.Pretty
   , module AspectExpr
 
   , Err(..), ErrM, ppErr, showUndef
@@ -56,10 +56,10 @@ import Network.URI
 import System.IO
 import System.Directory
 import System.Console.GetOpt
-import EH.Util.Pretty
-import EH.Util.FPath
-import EH.Util.Utils
-import EH.Util.Nm
+import UHC.Util.Pretty
+import UHC.Util.FPath
+import UHC.Util.Utils
+import UHC.Util.Nm
 import AspectExpr
 import AspectExprEval
 

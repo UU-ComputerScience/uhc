@@ -80,7 +80,7 @@ instance Serialize Foo where
 %%[50 import(qualified Data.ByteString.Lazy as L, System.IO, System.IO(openBinaryFile))
 %%]
 
-%%[50 import(EH.Util.Utils)
+%%[50 import(UHC.Util.Utils)
 %%]
 
 %%[50 import(Data.Typeable)

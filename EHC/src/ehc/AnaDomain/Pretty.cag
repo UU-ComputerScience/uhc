@@ -7,7 +7,7 @@
 %%% AnaDomain Pretty Printer
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs module {%{EH}AnaDomain.Pretty} import(EH.Util.Pretty,{%{EH}AnaDomain})
+%%[(8 codegen) hs module {%{EH}AnaDomain.Pretty} import(UHC.Util.Pretty,{%{EH}AnaDomain})
 %%]
 
 %%[(8 codegen) hs import({%{EH}Base.Common})

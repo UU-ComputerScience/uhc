@@ -8,7 +8,7 @@
 %%[(8 codegen) import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Base.TermLike},{%{EH}Opts.Base},{%{EH}Ty})
 %%]
 
-%%[(8 codegen) import(EH.Util.Pretty,EH.Util.Utils)
+%%[(8 codegen) import(UHC.Util.Pretty,UHC.Util.Utils)
 %%]
 
 %%[(8 codegen) import(Data.List, Data.Maybe, qualified Data.Map as Map, qualified Data.Set as Set, Control.Applicative((<|>),(<$>)))

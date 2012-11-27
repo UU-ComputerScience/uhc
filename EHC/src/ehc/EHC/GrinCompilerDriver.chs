@@ -11,7 +11,7 @@
 %%]
 %%[(8 codegen grin wholeprogAnal) import(UU.Parsing)
 %%]
-%%[(8 codegen grin wholeprogAnal) import(EH.Util.Pretty, EH.Util.CompileRun, EH.Util.FPath)
+%%[(8 codegen grin wholeprogAnal) import(UHC.Util.Pretty, UHC.Util.CompileRun, UHC.Util.FPath)
 %%]
 %%[(8 codegen grin wholeprogAnal) import({%{EH}Base.Common}, {%{EH}Base.Target}, {%{EH}Base.Builtin}, {%{EH}Opts}, {%{EH}Scanner.Scanner}, {%{EH}Scanner.Common(grinScanOpts)})
 %%]

@@ -19,7 +19,7 @@
 %%[(8888 codegen) hs import({%{EH}Core}(ctagTrue, ctagFalse, ctagCons,ctagNil)) export(ctagCons,ctagNil)
 %%]
 
-%%[(8 codegen tycore) hs import(Data.Maybe,Data.Char,Data.List,EH.Util.Pretty,qualified EH.Util.FastSeq as Seq)
+%%[(8 codegen tycore) hs import(Data.Maybe,Data.Char,Data.List,UHC.Util.Pretty,qualified UHC.Util.FastSeq as Seq)
 %%]
 
 %%[(8 codegen tycore) hs import(qualified Data.Map as Map,qualified Data.Set as Set)

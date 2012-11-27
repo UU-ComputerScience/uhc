@@ -10,7 +10,7 @@
 %%[(1 hmtyinfer) module {%{EH}Ty.FitsInCommon} import({%{EH}Base.Common}, {%{EH}Ty}, {%{EH}Error}) export (FIOut(..), emptyFO, foHasErrs)
 %%]
 
-%%[(1 hmtyinfer) import(qualified EH.Util.FastSeq as Seq)
+%%[(1 hmtyinfer) import(qualified UHC.Util.FastSeq as Seq)
 %%]
 
 %%[(2 hmtyinfer) import({%{EH}VarMp})
@@ -37,7 +37,7 @@
 %%]
 
 For debug/trace:
-%%[(4 hmtyinfer) import(EH.Util.Pretty)
+%%[(4 hmtyinfer) import(UHC.Util.Pretty)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -19,7 +19,7 @@
 %%[1 hs import (UU.Scanner.Position(Pos, initPos, advc, adv))
 %%]
 
-%%[1 hs import (EH.Util.ScanUtils)
+%%[1 hs import (UHC.Util.ScanUtils)
 %%]
 
 %%[1 hs

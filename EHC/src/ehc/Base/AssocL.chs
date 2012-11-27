@@ -10,7 +10,7 @@
 %%[1 module {%{EH}Base.AssocL}
 %%]
 
-%%[1 import(EH.Util.Pretty, EH.Util.Utils)
+%%[1 import(UHC.Util.Pretty, UHC.Util.Utils)
 %%]
 %%[1 import(Data.List)
 %%]

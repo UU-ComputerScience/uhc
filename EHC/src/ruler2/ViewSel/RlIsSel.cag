@@ -8,7 +8,7 @@
 %%[1 hs export (rlSelIsSel, RlSelIsSel)
 %%]
 
-%%[1 hs import (qualified Data.Set as Set, EH.Util.Nm, Common, EH.Util.DependencyGraph, ViewSel.ViewSel)
+%%[1 hs import (qualified Data.Set as Set, UHC.Util.Nm, Common, UHC.Util.DependencyGraph, ViewSel.ViewSel)
 %%]
 
 %%[1 ag import ({ViewSel/AbsSynAG}, {ViewSel/DpdGrAG}, {ViewSel/NmSAG})

@@ -48,7 +48,7 @@ Currently (20090821) only empty implicits \verb@Impls_Tail@ are replaced by
 %%[(41 hmtyinfer) hs import({%{EH}Ty.Trf.MergePreds})
 %%]
 
-%%[(90 hmtyinfer) hs import(EH.Util.Utils)
+%%[(90 hmtyinfer) hs import(UHC.Util.Utils)
 %%]
 %%[(90 hmtyinfer) hs import({%{EH}Gam.Full})
 %%]
@@ -58,7 +58,7 @@ Currently (20090821) only empty implicits \verb@Impls_Tail@ are replaced by
 %%]
 
 -- for debug
-%%[(90 hmtyinfer) hs import(EH.Util.Debug,EH.Util.Pretty)
+%%[(90 hmtyinfer) hs import(UHC.Util.Debug,UHC.Util.Pretty)
 %%]
 
 %%[(9 hmtyinfer).WRAPPER ag import({Ty/AbsSyn},{Ty/CommonAG})

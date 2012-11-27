@@ -26,7 +26,7 @@ The following invariants are and must be maintained:
 %%% Float lambdas to global level
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs module {%{EH}Core.Trf.FloatToGlobal} import(EH.Util.Utils,qualified EH.Util.FastSeq as Seq)
+%%[(8 codegen) hs module {%{EH}Core.Trf.FloatToGlobal} import(UHC.Util.Utils,qualified UHC.Util.FastSeq as Seq)
 %%]
 
 %%[(8 codegen) hs import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Core},{%{EH}Ty})
@@ -39,7 +39,7 @@ The following invariants are and must be maintained:
 %%]
 
 -- for debug
-%%[(8 codegen) hs import({%{EH}Base.Debug},EH.Util.Pretty)
+%%[(8 codegen) hs import({%{EH}Base.Debug},UHC.Util.Pretty)
 %%]
 %%[(8 codegen) hs import(Debug.Trace)
 %%]

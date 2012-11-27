@@ -17,10 +17,10 @@
 %%[50 hs import(qualified Data.Set as Set,qualified Data.Map as Map,Data.Maybe)
 %%]
 
-%%[50 hs import(qualified EH.Util.Rel as Rel,{%{EH}Module})
+%%[50 hs import(qualified UHC.Util.Rel as Rel,{%{EH}Module})
 %%]
 
-%%[97 hs import({%{EH}Base.Debug} as Debug, EH.Util.Pretty)
+%%[97 hs import({%{EH}Base.Debug} as Debug, UHC.Util.Pretty)
 %%]
 
 %%[(99 codegen) hs import ({%{EH}Base.Target})

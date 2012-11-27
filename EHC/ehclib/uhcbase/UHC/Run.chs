@@ -34,8 +34,6 @@ ehcRunMain m = m
 
 #else
 
-foreign import prim primCallInfoKindIsVisible :: Int -> Bool
-
 -- Wrapper around 'main', invoked as 'ehcRunMain main'
 ehcRunMain :: IO a -> IO a
 ehcRunMain m =
@@ -73,6 +71,8 @@ ehcRunMain m =
 
 
 #if ! defined(__UHC_TARGET_JS__)
+foreign import prim primCallInfoKindIsVisible :: Int -> Bool
+
 -- try to flush stdout/stderr, but don't worry if we fail
 -- (these handles might have errors, and we don't want to go into
 -- an infinite loop).

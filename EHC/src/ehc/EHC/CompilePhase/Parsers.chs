@@ -9,9 +9,9 @@ CompilePhase building blocks: parsers
 
 %%[8 import(UU.Parsing, UU.Parsing.Offside)
 %%]
-%%[8 import(qualified EH.Util.ScanUtils as ScanUtils, {%{EH}Scanner.Common})
+%%[8 import(qualified UHC.Util.ScanUtils as ScanUtils, {%{EH}Scanner.Common})
 %%]
-%%[8 import(EH.Util.ParseUtils)
+%%[8 import(UHC.Util.ParseUtils)
 %%]
 %%[99 import(Control.Exception as CE)
 %%]

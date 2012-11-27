@@ -12,7 +12,7 @@ Similar to Trf/LamGlobalAsArg, but for CAFs.
 Assumes:
 - lambdas are already treated by Trf/LamGlobalAsArg, so no free vars of lambdas need to be taken care of.
 
-%%[(8 codegen) hs module {%{EH}Core.Trf.CAFGlobalAsArg} import(EH.Util.Utils,Data.Maybe,qualified Data.Set as Set,Data.List,qualified Data.Map as Map,{%{EH}Base.Common},{%{EH}Core},{%{EH}Ty}) export(cmodTrfCAFGlobalAsArg)
+%%[(8 codegen) hs module {%{EH}Core.Trf.CAFGlobalAsArg} import(UHC.Util.Utils,Data.Maybe,qualified Data.Set as Set,Data.List,qualified Data.Map as Map,{%{EH}Base.Common},{%{EH}Core},{%{EH}Ty}) export(cmodTrfCAFGlobalAsArg)
 %%]
 
 %%[(8 codegen) hs import({%{EH}Base.Builtin},{%{EH}Core.Utils})
@@ -22,11 +22,11 @@ Assumes:
 %%]
 
 
-%%[(8 codegen) hs import(qualified EH.Util.FastSeq as Seq)
+%%[(8 codegen) hs import(qualified UHC.Util.FastSeq as Seq)
 %%]
 
 -- for debug
-%%[(8 codegen) hs import({%{EH}Base.Debug},EH.Util.Pretty)
+%%[(8 codegen) hs import({%{EH}Base.Debug},UHC.Util.Pretty)
 %%]
 %%[(8 codegen) hs import(Debug.Trace)
 %%]

@@ -18,7 +18,7 @@ Analysis domains
 %%]
 %%[(8 codegen) hs import(Control.Monad.State hiding (join), Control.Applicative)
 %%]
-%%[(8 codegen) hs import(EH.Util.Utils)
+%%[(8 codegen) hs import(UHC.Util.Utils)
 %%]
 
 %%[(8 codegen) hs export(QualAGItf(..), TyAGItf(..), CoeAGItf(..)) 
@@ -43,7 +43,7 @@ DERIVING *
 %%]
 
 -- debug only
-%%[(8 codegen) hs import({%{EH}Base.Debug},EH.Util.Pretty)
+%%[(8 codegen) hs import({%{EH}Base.Debug},UHC.Util.Pretty)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

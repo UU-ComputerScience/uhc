@@ -10,7 +10,7 @@ XXX
 -- general imports
 %%[8 import(qualified Data.Map as Map,qualified Data.Set as Set)
 %%]
-%%[92 import(qualified EH.Util.FastSeq as Seq)
+%%[92 import(qualified UHC.Util.FastSeq as Seq)
 %%]
 
 %%[8 import({%{EH}EHC.Common})
@@ -57,7 +57,7 @@ XXX
 %%]
 
 -- for debug
-%%[50 hs import({%{EH}Base.Debug},EH.Util.Pretty)
+%%[50 hs import({%{EH}Base.Debug},UHC.Util.Pretty)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

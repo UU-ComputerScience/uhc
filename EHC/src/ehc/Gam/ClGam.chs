@@ -5,7 +5,7 @@
 %%[9 module {%{EH}Gam.ClGam}
 %%]
 
-%%[9 import(EH.Util.Pretty,EH.Util.Utils)
+%%[9 import(UHC.Util.Pretty,UHC.Util.Utils)
 %%]
 
 %%[9 hs import ({%{EH}Base.Common},{%{EH}Base.TermLike},{%{EH}Base.Builtin})

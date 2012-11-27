@@ -36,7 +36,7 @@ If this is going to be avoided, the eagerness must be avoided, or use of subsump
 %%]
 %%[(9 hmtyinfer) import({%{EH}Ty})
 %%]
-%%[(10 hmtyinfer) import(EH.Util.Utils)
+%%[(10 hmtyinfer) import(UHC.Util.Utils)
 %%]
 
 %%[(4 hmtyinfer) import({%{EH}Gam.AppSpineGam})
@@ -49,7 +49,7 @@ If this is going to be avoided, the eagerness must be avoided, or use of subsump
 %%]
 
 For debug/trace:
-%%[(4 hmtyinfer) import(EH.Util.Pretty)
+%%[(4 hmtyinfer) import(UHC.Util.Pretty)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -20,7 +20,7 @@ TBD:
 %%[(8 codegen tycore) hs module {%{EH}TyCore.ToCore} import({%{EH}Base.Builtin},{%{EH}Opts},{%{EH}Base.Common})
 %%]
 
-%%[(8 codegen tycore) hs import(EH.Util.Utils)
+%%[(8 codegen tycore) hs import(UHC.Util.Utils)
 %%]
 
 %%[(8 codegen tycore) hs import(Data.Maybe)
@@ -33,7 +33,7 @@ TBD:
 %%]
 
 -- for debug
-%%[(8 codegen tycore) hs import({%{EH}Base.Debug},EH.Util.Pretty)
+%%[(8 codegen tycore) hs import({%{EH}Base.Debug},UHC.Util.Pretty)
 %%]
 
 

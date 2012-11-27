@@ -20,7 +20,7 @@ Transforms a Grin program to a Silly program.
 %%]
 %%[(8 codegen grin wholeprogAnal wholeprogC) hs import(Data.List((\\)), Data.Maybe, qualified Data.Map as Map, qualified Data.Set as Set, Data.Bits)
 %%]
-%%[(8 codegen grin wholeprogAnal wholeprogC) hs import(EH.Util.Pretty, EH.Util.Utils)
+%%[(8 codegen grin wholeprogAnal wholeprogC) hs import(UHC.Util.Pretty, UHC.Util.Utils)
 %%]
 %%[(8 codegen grin wholeprogAnal wholeprogC) hs import( {%{EH}Base.Builtin}, {%{EH}Base.Common}, {%{EH}Opts}, {%{EH}GrinCode})
 %%]

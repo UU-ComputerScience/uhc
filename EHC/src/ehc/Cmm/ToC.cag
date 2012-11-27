@@ -8,10 +8,10 @@
 %%[(8 codegen cmm) hs import({%{EH}Base.Builtin},{%{EH}Cmm},{%{EH}Base.Common} hiding (Range),{%{EH}Opts},qualified {%{EH}Config} as Cfg)
 %%]
 
-%%[(8 codegen cmm) hs import(EH.Util.Pretty,{%{EH}Base.GenC})
+%%[(8 codegen cmm) hs import(UHC.Util.Pretty,{%{EH}Base.GenC})
 %%]
 
-%%[(8 codegen cmm) hs import(Data.Maybe,Data.Char,qualified Data.Bits as B,EH.Util.Utils,qualified Data.Map as Map)
+%%[(8 codegen cmm) hs import(Data.Maybe,Data.Char,qualified Data.Bits as B,UHC.Util.Utils,qualified Data.Map as Map)
 %%]
 
 %%[(8 codegen cmm) import({Cmm/AbsSyn})

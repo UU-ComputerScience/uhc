@@ -17,11 +17,11 @@
 %%[(8 codegen) import(Data.List, qualified Data.Map as Map, qualified Data.Set as Set, Data.Maybe)
 %%]
 
-%%[(8 codegen) import(EH.Util.Utils)
+%%[(8 codegen) import(UHC.Util.Utils)
 %%]
 
 -- debug
-%%[(8 codegen) import({%{EH}Base.Debug},EH.Util.Pretty)
+%%[(8 codegen) import({%{EH}Base.Debug},UHC.Util.Pretty)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

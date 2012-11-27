@@ -14,10 +14,10 @@ In principle such files reside in directories or packages.
 %%]
 
 -- parsing
-%%[99 import(UU.Parsing, EH.Util.ParseUtils)
+%%[99 import(UU.Parsing, UHC.Util.ParseUtils)
 %%]
 -- scanning
-%%[99 import(EH.Util.ScanUtils, {%{EH}Base.HsName})
+%%[99 import(UHC.Util.ScanUtils, {%{EH}Base.HsName})
 %%]
 
 

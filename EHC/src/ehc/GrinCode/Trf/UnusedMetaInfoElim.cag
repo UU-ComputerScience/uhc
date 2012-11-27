@@ -19,7 +19,7 @@ that are not necessary for the bytecode backend.
 %%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.UnusedMetaInfoElim}
 %%]
 
-%%[(8 codegen grin) hs import(qualified EH.Util.FastSeq as Seq)
+%%[(8 codegen grin) hs import(qualified UHC.Util.FastSeq as Seq)
 %%]
 
 %%[(8 codegen grin) hs import(qualified Data.Map as Map, {%{EH}Base.Common}, {%{EH}GrinCode.Common}, {%{EH}GrinCode})

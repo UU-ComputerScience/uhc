@@ -8,7 +8,7 @@
 %%[1 hs export (as2LaTeX)
 %%]
 
-%%[1 hs import (Data.Maybe, Data.Char, Data.List, qualified Data.Set as Set, qualified Data.Map as Map, EH.Util.Utils)
+%%[1 hs import (Data.Maybe, Data.Char, Data.List, qualified Data.Set as Set, qualified Data.Map as Map, UHC.Util.Utils)
 %%]
 
 %%[1 hs import (Opts, Err, Common, KeywParser( propsSynInhMp ), Expr.Utils, ARule.Utils, FmGam, RwExprGam, ECnstrGam)
@@ -17,7 +17,7 @@
 %%[1 hs import (AbsSyn.AbsSyn2, Admin, Utils)
 %%]
 
-%%[1 hs import (EH.Util.Pretty)
+%%[1 hs import (UHC.Util.Pretty)
 %%]
 
 -------------------------------------------------------------------------

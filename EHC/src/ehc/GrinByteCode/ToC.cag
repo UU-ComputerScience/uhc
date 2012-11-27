@@ -2,10 +2,10 @@
 %%% Prettyprint Grin ByteCode program as C
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin) hs module {%{EH}GrinByteCode.ToC} import(EH.Util.Pretty,{%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Opts},{%{EH}GrinByteCode})
+%%[(8 codegen grin) hs module {%{EH}GrinByteCode.ToC} import(UHC.Util.Pretty,{%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Opts},{%{EH}GrinByteCode})
 %%]
 
-%%[(8 codegen grin) hs import(EH.Util.Pretty,{%{EH}Base.Common},{%{EH}Opts},qualified {%{EH}Config} as Cfg,{%{EH}GrinByteCode}, {%{EH}LamInfo})
+%%[(8 codegen grin) hs import(UHC.Util.Pretty,{%{EH}Base.Common},{%{EH}Opts},qualified {%{EH}Config} as Cfg,{%{EH}GrinByteCode}, {%{EH}LamInfo})
 %%]
 
 %%[(8 codegen grin) hs import({%{EH}Base.GenC})
@@ -13,7 +13,7 @@
 %%[(8 codegen grin cmm) hs import(qualified {%{EH}Cmm} as C)
 %%]
 
-%%[(8 codegen grin) hs import(Data.Maybe,Data.Char,Data.Bits,qualified EH.Util.FastSeq as Seq,EH.Util.Utils,qualified Data.Map as Map)
+%%[(8 codegen grin) hs import(Data.Maybe,Data.Char,Data.Bits,qualified UHC.Util.FastSeq as Seq,UHC.Util.Utils,qualified Data.Map as Map)
 %%]
 
 %%[(8 codegen grin) import({GrinByteCode/AbsSyn})

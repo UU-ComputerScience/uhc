@@ -20,7 +20,7 @@
 %%[1 hs export (pKeySPos, pNmStr, pNmStrSPos, pNmStrI, pNmStrISPos, pSymEscStr, pSymEscStrSPos, pSymStr, pSymStrSPos)
 %%]
 
-%%[1 hs import (qualified Data.Map as Map, qualified Data.Set as Set, System.IO, UU.Parsing, UU.Parsing.Offside, Scanner, Config, EH.Util.ParseUtils, AttrProps, EH.Util.ScanUtils)
+%%[1 hs import (qualified Data.Map as Map, qualified Data.Set as Set, System.IO, UU.Parsing, UU.Parsing.Offside, Scanner, Config, UHC.Util.ParseUtils, AttrProps, UHC.Util.ScanUtils)
 %%]
 
 

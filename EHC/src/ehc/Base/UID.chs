@@ -8,7 +8,7 @@
 %%[1 export(mkNewLevUID, mkNewLevUID2, mkNewLevUID3, mkNewLevUID4, mkNewLevUID5, mkNewLevUID6, mkNewLevUID7, mkNewLevUID8, uidNext, mkNewUID, mkNewUIDL, uidNull, uidChild, mkInfNewUIDL)
 %%]
 
-%%[1 import(EH.Util.Pretty)
+%%[1 import(UHC.Util.Pretty)
 %%]
 
 %%[1 import(qualified Data.Set as Set, Data.List)

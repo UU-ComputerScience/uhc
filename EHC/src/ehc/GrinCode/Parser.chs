@@ -7,7 +7,7 @@
 %%% GRI parser
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin) module {%{EH}GrinCode.Parser} import(System.IO, UU.Parsing, qualified Data.Map as Map, EH.Util.ParseUtils(PlainParser), EH.Util.ScanUtils, {%{EH}Base.Common}, {%{EH}Scanner.Scanner}, {%{EH}GrinCode}, {%{EH}Base.Parser} hiding (pInt))
+%%[(8 codegen grin) module {%{EH}GrinCode.Parser} import(System.IO, UU.Parsing, qualified Data.Map as Map, UHC.Util.ParseUtils(PlainParser), UHC.Util.ScanUtils, {%{EH}Base.Common}, {%{EH}Scanner.Scanner}, {%{EH}GrinCode}, {%{EH}Base.Parser} hiding (pInt))
 %%]
 
 %%[(8 codegen grin) export(pModule,pExprSeq)

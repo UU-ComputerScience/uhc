@@ -14,9 +14,9 @@ import UU.Parsing
 -- import UU.Parsing.CharParser
 import UU.Scanner.Position( initPos, Pos )
 
-import EH.Util.ScanUtils
-import EH.Util.ParseUtils
-import EH.Util.Utils
+import UHC.Util.ScanUtils
+import UHC.Util.ParseUtils
+import UHC.Util.Utils
 
 import Common
 import MainAG

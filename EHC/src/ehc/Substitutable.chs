@@ -17,7 +17,7 @@
 %%[(2 hmtyinfer || hmtyast) module {%{EH}Substitutable} import(Data.List, {%{EH}Base.Common}, {%{EH}Ty}, {%{EH}VarMp},{%{EH}Ty.Trf.Subst},{%{EH}Ty.Ftv})
 %%]
 
-%%[(2 hmtyinfer || hmtyast) import(qualified Data.Set as Set,EH.Util.Pretty)
+%%[(2 hmtyinfer || hmtyast) import(qualified Data.Set as Set,UHC.Util.Pretty)
 %%]
 
 %%[(4 hmtyinfer || hmtyast) import({%{EH}Error})

@@ -35,7 +35,7 @@ A multiple level VarMp knows its own absolute metalevel, which is the default to
 %%[2 import(qualified Data.Map as Map,qualified Data.Set as Set,Data.Maybe)
 %%]
 
-%%[2 import(EH.Util.Pretty, {%{EH}Ty.Pretty}) export(ppVarMpV)
+%%[2 import(UHC.Util.Pretty, {%{EH}Ty.Pretty}) export(ppVarMpV)
 %%]
 
 %%[4 export(varmpFilterTy,varmpDel,(|\>))
@@ -59,7 +59,7 @@ A multiple level VarMp knows its own absolute metalevel, which is the default to
 %%[6 import({%{EH}Base.Debug}) export(VarMpInfo(..))
 %%]
 
-%%[8 import(EH.Util.Utils)
+%%[8 import(UHC.Util.Utils)
 %%]
 
 %%[50 import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})

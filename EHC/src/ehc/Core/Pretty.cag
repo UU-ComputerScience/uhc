@@ -11,7 +11,7 @@ Note (20120525): lamMp use removed because of cyclic module import
 %%% Core Pretty Printer
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs module {%{EH}Core.Pretty} import(EH.Util.Pretty,{%{EH}Base.Builtin},{%{EH}Base.CfgPP},{%{EH}Opts.Base},{%{EH}Base.Common},{%{EH}Ty},{%{EH}Ty.Pretty},{%{EH}Core},{%{EH}Scanner.Common(coreScanOpts)}) export(ppCModule)
+%%[(8 codegen) hs module {%{EH}Core.Pretty} import(UHC.Util.Pretty,{%{EH}Base.Builtin},{%{EH}Base.CfgPP},{%{EH}Opts.Base},{%{EH}Base.Common},{%{EH}Ty},{%{EH}Ty.Pretty},{%{EH}Core},{%{EH}Scanner.Common(coreScanOpts)}) export(ppCModule)
 %%]
 
 %%[(8 codegen) hs import({%{EH}AnaDomain.Pretty})

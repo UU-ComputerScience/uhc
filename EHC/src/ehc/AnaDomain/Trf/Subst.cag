@@ -14,7 +14,7 @@ Substitution for AnaDomain.
 %%[(8 codegen) hs module {%{EH}AnaDomain.Trf.Subst} import({%{EH}Base.Common},{%{EH}AnaDomain},{%{EH}VarMp})
 %%]
 
-%%[(8 codegen) hs import(EH.Util.Utils)
+%%[(8 codegen) hs import(UHC.Util.Utils)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

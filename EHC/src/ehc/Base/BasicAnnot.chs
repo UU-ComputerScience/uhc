@@ -8,7 +8,7 @@
 %%[(8 codegen) hs import(qualified Data.Map as Map,Data.Bits, Data.List)
 %%]
 
-%%[(8 codegen) hs import(EH.Util.Pretty, EH.Util.Utils)
+%%[(8 codegen) hs import(UHC.Util.Pretty, UHC.Util.Utils)
 %%]
 
 %%[(8 codegen) hs import(qualified {%{EH}Config} as Cfg, {%{EH}Base.Bits})

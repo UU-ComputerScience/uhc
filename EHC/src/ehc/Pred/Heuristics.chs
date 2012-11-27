@@ -10,7 +10,7 @@ Derived from work by Gerrit vd Geest.
 %%[(9 hmtyinfer) import(Data.List(nub, partition),Data.Maybe)
 %%]
 
-%%[(9 hmtyinfer) import(EH.Util.Pretty,EH.Util.AGraph,EH.Util.Utils)
+%%[(9 hmtyinfer) import(UHC.Util.Pretty,UHC.Util.AGraph,UHC.Util.Utils)
 %%]
 
 %%[(9 hmtyinfer) export(Heuristic,SHeuristic)

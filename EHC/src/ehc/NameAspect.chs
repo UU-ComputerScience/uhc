@@ -5,7 +5,7 @@
 %%[1 module {%{EH}NameAspect} import({%{EH}Base.Common},{%{EH}Base.Builtin},qualified {%{EH}EH} as EH)
 %%]
 
-%%[1 import(EH.Util.Pretty)
+%%[1 import(UHC.Util.Pretty)
 %%]
 
 %%[1 export(IdDefOcc(..),emptyIdDefOcc,mkIdDefOcc)
@@ -13,7 +13,7 @@
 
 %%[50 import(qualified Data.Set as Set)
 %%]
-%%[50 import(EH.Util.Utils)
+%%[50 import(UHC.Util.Utils)
 %%]
 
 %%[9999 import({%{EH}Base.ForceEval})

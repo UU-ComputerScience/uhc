@@ -18,7 +18,7 @@
 %%[50 import(Data.Maybe,Data.List,qualified Data.Set as Set,qualified Data.Map as Map)
 %%]
 
-%%[50 import(EH.Util.Utils,EH.Util.Pretty,qualified EH.Util.Rel as Rel)
+%%[50 import(UHC.Util.Utils,UHC.Util.Pretty,qualified UHC.Util.Rel as Rel)
 %%]
 
 %%[50 export(ModEnt(..),ModExp(..),ModEntSpec(..),ModEntSubSpec(..),ModImp(..),Mod(..),ModEntRel,ModEntDomMp,ModEntRngMp)

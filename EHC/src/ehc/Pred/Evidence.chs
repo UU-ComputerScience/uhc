@@ -13,7 +13,7 @@ Derived from work by Gerrit vd Geest.
 %%[(9 hmtyinfer) import(Data.List,qualified Data.Set as Set,qualified Data.Map as Map,Data.Maybe)
 %%]
 
-%%[(9 hmtyinfer) import(EH.Util.Pretty,EH.Util.Utils)
+%%[(9 hmtyinfer) import(UHC.Util.Pretty,UHC.Util.Utils)
 %%]
 
 %%[doesWhat doclatex

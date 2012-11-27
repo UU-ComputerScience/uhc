@@ -16,7 +16,7 @@
 %%[(8 codegen tycore) hs import ({%{EH}Base.Target}(FFIWay(..))) export(module {%{EH}Base.Target})
 %%]
 
-%%[(8 codegen tycore) hs import(Data.Maybe,Data.Char,Data.List,EH.Util.Pretty,EH.Util.Utils)
+%%[(8 codegen tycore) hs import(Data.Maybe,Data.Char,Data.List,UHC.Util.Pretty,UHC.Util.Utils)
 %%]
 
 %%[(8 codegen tycore) hs import(qualified Data.Map as Map,qualified Data.Set as Set) export(FvS,FvSMp)

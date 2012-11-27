@@ -13,7 +13,7 @@
 %%[(50 codegen) hs import(qualified Data.Set as Set,qualified Data.Map as Map, Data.Array)
 %%]
 
-%%[(50 codegen) hs import(qualified EH.Util.FastSeq as Seq)
+%%[(50 codegen) hs import(qualified UHC.Util.FastSeq as Seq)
 %%]
 
 %%[(50 codegen) hs import({%{EH}Base.Common},{%{EH}Core},{%{EH}Ty})

@@ -8,7 +8,7 @@
 %%[1 hs export (pSel1, pSel)
 %%]
 
-%%[1 hs import (UU.Parsing, Scanner, EH.Util.ParseUtils, Config( cfgStrSel ))
+%%[1 hs import (UU.Parsing, Scanner, UHC.Util.ParseUtils, Config( cfgStrSel ))
 %%]
 
 -------------------------------------------------------------------------

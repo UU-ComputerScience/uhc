@@ -29,13 +29,13 @@ candidates is returned.
 %%[9 import(Prelude hiding (lookup,null))
 %%]
 
-%%[9 import(qualified EH.Util.FastSeq as Seq,qualified Data.List as List)
+%%[9 import(qualified UHC.Util.FastSeq as Seq,qualified Data.List as List)
 %%]
 
-%%[9 import(EH.Util.Utils)
+%%[9 import(UHC.Util.Utils)
 %%]
 
-%%[9 import(EH.Util.Pretty hiding (empty), qualified EH.Util.Pretty as PP)
+%%[9 import(UHC.Util.Pretty hiding (empty), qualified UHC.Util.Pretty as PP)
 %%]
 
 %%[50 import(Data.Typeable(Typeable,Typeable1), Data.Generics(Data))

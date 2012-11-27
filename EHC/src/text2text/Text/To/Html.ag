@@ -14,9 +14,9 @@ import Data.List
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
-import EH.Util.FPath
-import qualified EH.Util.FastSeq as Seq
-import EH.Util.ScanUtils
+import UHC.Util.FPath
+import qualified UHC.Util.FastSeq as Seq
+import UHC.Util.ScanUtils
 
 import Common
 import Text

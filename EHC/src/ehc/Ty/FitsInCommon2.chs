@@ -25,7 +25,7 @@ structures for fitsIn and related functions.
 %%]
 
 For debug/trace:
-%%[(4 hmtyinfer) import(EH.Util.Pretty)
+%%[(4 hmtyinfer) import(UHC.Util.Pretty)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

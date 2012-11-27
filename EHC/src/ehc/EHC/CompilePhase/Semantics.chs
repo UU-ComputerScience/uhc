@@ -38,7 +38,7 @@ Folding over AST to compute semantics
 %%]
 
 -- Module
-%%[50 import(qualified EH.Util.Rel as Rel)
+%%[50 import(qualified UHC.Util.Rel as Rel)
 %%]
 %%[50 import({%{EH}Module})
 %%]
@@ -46,7 +46,7 @@ Folding over AST to compute semantics
 %%]
 
 -- for debug
-%%[50 hs import({%{EH}Base.Debug},EH.Util.Pretty)
+%%[50 hs import({%{EH}Base.Debug},UHC.Util.Pretty)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

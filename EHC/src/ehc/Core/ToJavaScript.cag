@@ -12,7 +12,7 @@
 
 %%[(8 javascript) hs import(Data.Maybe, qualified Data.Map as Map, qualified Data.Set as Set, Data.Char, Data.Maybe, Data.List)
 %%]
-%%[(8 javascript) hs import(EH.Util.Utils, qualified EH.Util.FastSeq as Seq)
+%%[(8 javascript) hs import(UHC.Util.Utils, qualified UHC.Util.FastSeq as Seq)
 %%]
 
 %%[(8 javascript) hs import({%{EH}Base.Builtin},{%{EH}Base.Builtin2},{%{EH}BuiltinPrims},{%{EH}Base.BasicAnnot},{%{EH}Base.GenJavaLike})
@@ -28,7 +28,7 @@
 %%]
 
 -- debug
-%%[(8 javascript) hs import({%{EH}Base.Debug},EH.Util.Pretty)
+%%[(8 javascript) hs import({%{EH}Base.Debug},UHC.Util.Pretty)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

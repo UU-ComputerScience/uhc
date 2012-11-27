@@ -5,7 +5,7 @@
 %%[1 module {%{EH}Base.Builtin} import({%{EH}Base.HsName}, Data.Maybe)
 %%]
 
-%%[1 import(EH.Util.Utils)
+%%[1 import(UHC.Util.Utils)
 %%]
 
 %%[1 export(hsnWild, hsnArrow, strProd, hsnProd, hsnProdArity, hsnUnknown, hsnIsArrow, hsnIsProd, hsnInt, hsnChar)

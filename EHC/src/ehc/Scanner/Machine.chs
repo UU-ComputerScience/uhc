@@ -13,7 +13,7 @@ The machinery is configured with |ScanOpts|, so it can be used for all parsers e
 A |ScanOpts| specifies sets of keywords, variations on identifier parsing, etc etc.
 %%]
 
-%%[5 module {%{EH}Scanner.Machine} import(Data.Char,Data.List,Data.Maybe,System.IO,UU.Scanner.Position,EH.Util.Utils,EH.Util.ScanUtils,{%{EH}Scanner.Token})
+%%[5 module {%{EH}Scanner.Machine} import(Data.Char,Data.List,Data.Maybe,System.IO,UU.Scanner.Position,UHC.Util.Utils,UHC.Util.ScanUtils,{%{EH}Scanner.Token})
 %%]
 
 %%[5 import(qualified Data.Set as Set)
@@ -26,7 +26,7 @@ A |ScanOpts| specifies sets of keywords, variations on identifier parsing, etc e
 %%]
 
 -- debugging
-%%[5 import(EH.Util.Debug)
+%%[5 import(UHC.Util.Debug)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

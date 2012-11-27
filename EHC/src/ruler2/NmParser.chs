@@ -8,7 +8,7 @@
 %%[1 hs export (NmSPos, pNmDotSym, pNmSym, pNmDotted, pNmDottedSPos, pNmVw, pNmVwSPos, pNm, pNmSPos)
 %%]
 
-%%[1 hs import (UU.Parsing, Scanner, EH.Util.ParseUtils, EH.Util.Nm, SelParser, KeywParser)
+%%[1 hs import (UU.Parsing, Scanner, UHC.Util.ParseUtils, UHC.Util.Nm, SelParser, KeywParser)
 %%]
 
 -------------------------------------------------------------------------

@@ -11,13 +11,13 @@
 %%[1 hs export (module Data.Char)
 %%]
 
-%%[1 hs export (module EH.Util.Nm)
+%%[1 hs export (module UHC.Util.Nm)
 %%]
 
-%%[1 hs export (module EH.Util.DependencyGraph)
+%%[1 hs export (module UHC.Util.DependencyGraph)
 %%]
 
-%%[1 hs export (module EH.Util.FPath)
+%%[1 hs export (module UHC.Util.FPath)
 %%]
 
 %%[1 hs export (module AttrProps)
@@ -44,16 +44,16 @@
 %%[1 hs export (nmFunMkUniq, nmIsOver, FmKind(..), fmAS2Fm, ScKind(..), ScDeriv(..))
 %%]
 
-%%[1 hs import (Data.Maybe, Data.Char, System.IO, EH.Util.Pretty)
+%%[1 hs import (Data.Maybe, Data.Char, System.IO, UHC.Util.Pretty)
 %%]
 
-%%[1 hs import (Scanner( SPos, emptySPos ), EH.Util.FPath)
+%%[1 hs import (Scanner( SPos, emptySPos ), UHC.Util.FPath)
 %%]
 
-%%[1 hs import (EH.Util.ParseErrPrettyPrint, EH.Util.ScanUtils, EH.Util.Nm)
+%%[1 hs import (UHC.Util.ParseErrPrettyPrint, UHC.Util.ScanUtils, UHC.Util.Nm)
 %%]
 
-%%[1 hs import (EH.Util.DependencyGraph, AttrProps)
+%%[1 hs import (UHC.Util.DependencyGraph, AttrProps)
 %%]
 
 %%[1 hs

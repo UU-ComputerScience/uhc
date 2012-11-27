@@ -8,16 +8,16 @@
 %%[1 hs export (Err(..), mkPPErr, ppErrPPL, errLIsFatal, errFirst, mkTr)
 %%]
 
-%%[1 hs import (EH.Util.Pretty, EH.Util.Utils)
+%%[1 hs import (UHC.Util.Pretty, UHC.Util.Utils)
 %%]
 
 %%[1 hs import (Scanner( SPos, emptySPos ))
 %%]
 
-%%[1 hs import (EH.Util.ParseErrPrettyPrint)
+%%[1 hs import (UHC.Util.ParseErrPrettyPrint)
 %%]
 
-%%[1 hs import (EH.Util.Nm, EH.Util.Utils( maybeHd ))
+%%[1 hs import (UHC.Util.Nm, UHC.Util.Utils( maybeHd ))
 %%]
 
 %%[1 hs

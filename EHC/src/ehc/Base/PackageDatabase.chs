@@ -24,10 +24,10 @@ packages.
 %%]
 
 -- parsing
-%%[99 import(UU.Parsing, EH.Util.ParseUtils, {%{EH}Base.Parser2})
+%%[99 import(UU.Parsing, UHC.Util.ParseUtils, {%{EH}Base.Parser2})
 %%]
 -- scanning
-%%[99 import(EH.Util.ScanUtils, {%{EH}Scanner.Common}, {%{EH}Base.HsName}, {%{EH}Base.ParseUtils})
+%%[99 import(UHC.Util.ScanUtils, {%{EH}Scanner.Common}, {%{EH}Base.HsName}, {%{EH}Base.ParseUtils})
 %%]
 
 -- general imports
@@ -35,11 +35,11 @@ packages.
 %%]
 %%[99 import(System.Environment, System.Directory, Control.Monad)
 %%]
-%%[99 import(System.IO,System.Exit,System.Environment,EH.Util.FPath,EH.Util.Utils)
+%%[99 import(System.IO,System.Exit,System.Environment,UHC.Util.FPath,UHC.Util.Utils)
 %%]
 
 -- debug
-%%[99 import(EH.Util.Debug)
+%%[99 import(UHC.Util.Debug)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

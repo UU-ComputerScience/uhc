@@ -15,10 +15,10 @@ depend on UHC specific stuff.
 %%]
 
 -- parsing
-%%[8 import(UU.Parsing, EH.Util.ParseUtils)
+%%[8 import(UU.Parsing, UHC.Util.ParseUtils)
 %%]
 -- scanning
-%%[8 import(EH.Util.ScanUtils, {%{EH}Scanner.Common}, {%{EH}Base.HsName})
+%%[8 import(UHC.Util.ScanUtils, {%{EH}Scanner.Common}, {%{EH}Base.HsName})
 %%]
 
 

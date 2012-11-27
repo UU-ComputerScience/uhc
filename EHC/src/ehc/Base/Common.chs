@@ -7,7 +7,7 @@
 %%% Common
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 module {%{EH}Base.Common} import(UU.Scanner.Position,EH.Util.Utils,{%{EH}Base.HsName},{%{EH}Base.Builtin}) export(module {%{EH}Base.HsName})
+%%[1 module {%{EH}Base.Common} import(UU.Scanner.Position,UHC.Util.Utils,{%{EH}Base.HsName},{%{EH}Base.Builtin}) export(module {%{EH}Base.HsName})
 %%]
 
 %%[1 import({%{EH}Base.UID}) export(module {%{EH}Base.UID})
@@ -16,7 +16,7 @@
 %%[1 import({%{EH}Base.AssocL}) export(module {%{EH}Base.AssocL})
 %%]
 
-%%[1 import(EH.Util.Pretty, Data.List) export(ppSpaced, ppCon, ppCmt)
+%%[1 import(UHC.Util.Pretty, Data.List) export(ppSpaced, ppCon, ppCmt)
 %%]
 
 %%[1 import(Control.Applicative((<|>)))
@@ -34,7 +34,7 @@
 %%[1 export(NmLev,nmLevAbsent, nmLevBuiltin, nmLevOutside, nmLevModule)
 %%]
 
-%%[1 import(EH.Util.ScanUtils) export(tokMkQName,tokMkQNames,tokMkInt,tokMkStr)
+%%[1 import(UHC.Util.ScanUtils) export(tokMkQName,tokMkQNames,tokMkInt,tokMkStr)
 %%]
 
 %%[1.Token hs import(UU.Scanner.Token)
@@ -64,7 +64,7 @@
 %%[7 export(uidHNm, uidQualHNm)
 %%]
 
-%%[8 import (EH.Util.FPath,System.IO,System.Environment,System.Exit,Data.Char,Data.Maybe,Numeric)
+%%[8 import (UHC.Util.FPath,System.IO,System.Environment,System.Exit,Data.Char,Data.Maybe,Numeric)
 %%]
 
 %%[8 export(putCompileMsg)

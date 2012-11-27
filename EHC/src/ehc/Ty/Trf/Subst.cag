@@ -24,7 +24,7 @@ Substitution over a meta level higher is the same as over the current level, exc
 %%[(2 hmtyinfer || hmtyast) hs module {%{EH}Ty.Trf.Subst} import({%{EH}Base.Common},{%{EH}Ty},{%{EH}VarMp})
 %%]
 
-%%[(2 hmtyinfer || hmtyast) hs import(EH.Util.Utils)
+%%[(2 hmtyinfer || hmtyast) hs import(UHC.Util.Utils)
 %%]
 
 %%[(3 hmtyinfer || hmtyast) hs import(qualified Data.Map as Map)
@@ -34,7 +34,7 @@ Substitution over a meta level higher is the same as over the current level, exc
 %%]
 
 -- debug
-%%[(6 hmtyinfer || hmtyast) hs import({%{EH}Base.Debug},EH.Util.Pretty,{%{EH}Ty.Pretty})
+%%[(6 hmtyinfer || hmtyast) hs import({%{EH}Base.Debug},UHC.Util.Pretty,{%{EH}Ty.Pretty})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

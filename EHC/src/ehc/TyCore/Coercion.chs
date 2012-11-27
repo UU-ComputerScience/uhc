@@ -7,7 +7,7 @@
 
 %%[(8 codegen tycore) hs import(Data.Maybe)
 %%]
-%%[(8 codegen tycore) hs import(EH.Util.Utils)
+%%[(8 codegen tycore) hs import(UHC.Util.Utils)
 %%]
 %%[(8 codegen tycore) hs import(qualified {%{EH}Ty} as T)
 %%]

@@ -12,7 +12,7 @@
 
 %%[(8 java) hs import(qualified Data.Map as Map, Data.Maybe, Data.Bits)
 %%]
-%%[(8 java) hs import(qualified EH.Util.FastSeq as Seq, EH.Util.Utils)
+%%[(8 java) hs import(qualified UHC.Util.FastSeq as Seq, UHC.Util.Utils)
 %%]
 
 %%[(8 java) hs import({%{EH}Base.HsName},{%{EH}Base.Builtin})

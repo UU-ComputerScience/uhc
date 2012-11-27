@@ -20,10 +20,10 @@
 %%[(9 codegen tycore) hs import({%{EH}AbstractCore},{%{EH}AbstractCore.Utils})
 %%]
 
-%%[(9 codegen tycore) import(EH.Util.Pretty)
+%%[(9 codegen tycore) import(UHC.Util.Pretty)
 %%]
 
-%%[(9 codegen tycore) import(EH.Util.Utils)
+%%[(9 codegen tycore) import(UHC.Util.Utils)
 %%]
 
 %%[(9 codegen tycore) import(Control.Monad.State)

@@ -5,7 +5,7 @@
 %%[(9 hmtyinfer || hmtyast) module {%{EH}CHR.Constraint} import({%{EH}Base.Common},{%{EH}Ty},{%{EH}CHR},{%{EH}CHR.Key},{%{EH}Base.TreeTrie},{%{EH}Substitutable})
 %%]
 
-%%[(9 hmtyinfer || hmtyast) import(EH.Util.Pretty as PP, EH.Util.Utils)
+%%[(9 hmtyinfer || hmtyast) import(UHC.Util.Pretty as PP, UHC.Util.Utils)
 %%]
 
 %%[(9 hmtyinfer || hmtyast) import(qualified Data.Set as Set,qualified Data.Map as Map)

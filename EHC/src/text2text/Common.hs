@@ -37,7 +37,7 @@ import System.IO
 import Data.List
 import qualified Data.Map as Map
 
-import qualified EH.Util.FastSeq as Seq
+import qualified UHC.Util.FastSeq as Seq
 
 -------------------------------------------------------------------------
 -- Input/output types

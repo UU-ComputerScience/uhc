@@ -10,7 +10,7 @@
 %%[1 hs export (bldDtInfo, bldScInfo, bldRsInfo)
 %%]
 
-%%[1 hs import (Data.Maybe, qualified Data.Set as Set, qualified Data.Map as Map, Data.List, EH.Util.Nm, EH.Util.Utils)
+%%[1 hs import (Data.Maybe, qualified Data.Set as Set, qualified Data.Map as Map, Data.List, UHC.Util.Nm, UHC.Util.Utils)
 %%]
 
 %%[1 hs import (KeywParser( propsSynInhMp ), Opts, Err, Common, Expr.Utils, ARule.Utils( exprSubst ), ViewSel.Utils)

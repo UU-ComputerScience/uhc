@@ -12,7 +12,7 @@
 
 %%[1 import(System.Console.GetOpt, System.IO, System.Exit, System.Process, System.Environment)
 %%]
-%%[1.fastseq import(qualified EH.Util.FastSeq as Seq)
+%%[1.fastseq import(qualified UHC.Util.FastSeq as Seq)
 %%]
 %%[1 import(qualified {%{EH}Config} as Cfg)
 %%]

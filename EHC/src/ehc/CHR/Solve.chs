@@ -20,7 +20,7 @@ Assumptions (to be documented further)
 %%[(9 hmtyinfer || hmtyast) import(qualified Data.Set as Set,qualified Data.Map as Map,Data.List as List,Data.Maybe)
 %%]
 
-%%[(9 hmtyinfer || hmtyast) import(EH.Util.Pretty as Pretty)
+%%[(9 hmtyinfer || hmtyast) import(UHC.Util.Pretty as Pretty)
 %%]
 
 %%[50 import(Data.Typeable(Typeable,Typeable1), Data.Generics(Data))
@@ -34,7 +34,7 @@ Assumptions (to be documented further)
 %%]
 
 -- For debug
-%%[(9 hmtyinfer || hmtyast) import(EH.Util.Utils)
+%%[(9 hmtyinfer || hmtyast) import(UHC.Util.Utils)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

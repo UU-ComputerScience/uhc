@@ -5,7 +5,7 @@
 %%[(2 hmtyinfer || hmtyast) module {%{EH}Ty.Utils1} import({%{EH}Base.Common}, {%{EH}Base.TermLike}, {%{EH}Substitutable}, {%{EH}VarMp}, {%{EH}Ty}, {%{EH}Ty.Pretty}) 
 %%]
 
-%%[(2 hmtyinfer || hmtyast) import(EH.Util.Pretty) 
+%%[(2 hmtyinfer || hmtyast) import(UHC.Util.Pretty) 
 %%]
 
 %%[(98 hmtyinfer || hmtyast) import({%{EH}Base.Builtin}, {%{EH}Opts}) 

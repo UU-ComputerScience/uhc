@@ -14,7 +14,7 @@
 %%]
 %%[(9 codegen hmtyinfer) import({%{EH}AbstractCore},{%{EH}Core.Subst})
 %%]
-%%[(8 codegen hmtyinfer) hs import(EH.Util.Utils)
+%%[(8 codegen hmtyinfer) hs import(UHC.Util.Utils)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

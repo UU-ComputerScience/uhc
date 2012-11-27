@@ -7,7 +7,7 @@
 %%% Haskell interface to AG generated code for compiler
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 hs module {%{EH}EH.MainAG} import(Data.Char,Data.List as List,EH.Util.Pretty,{%{EH}Base.Common},{%{EH}Base.TermLike},{%{EH}Base.Builtin},{%{EH}Opts}, {%{EH}Gam.Full},{%{EH}Error},{%{EH}Error.Pretty}, {%{EH}EH})
+%%[1 hs module {%{EH}EH.MainAG} import(Data.Char,Data.List as List,UHC.Util.Pretty,{%{EH}Base.Common},{%{EH}Base.TermLike},{%{EH}Base.Builtin},{%{EH}Opts}, {%{EH}Gam.Full},{%{EH}Error},{%{EH}Error.Pretty}, {%{EH}EH})
 %%]
 
 %%[(1 hmtyinfer || hmtyast).Ty hs import({%{EH}Ty})
@@ -22,7 +22,7 @@
 %%[(1 hmtyinfer) hs import({%{EH}Ty.FitsInCommon},{%{EH}Ty.FitsIn})
 %%]
 
-%%[1 hs import(qualified EH.Util.FastSeq as Seq,EH.Util.Utils)
+%%[1 hs import(qualified UHC.Util.FastSeq as Seq,UHC.Util.Utils)
 %%]
 
 %%[(2 hmtyinfer) hs import({%{EH}VarMp},{%{EH}Substitutable},Data.Maybe,{%{EH}Ty.Utils1})
@@ -53,7 +53,7 @@
 %%[(7 hmtyinfer) hs import({%{EH}Ty.Trf.FreshVar},{%{EH}Ty.Ftv})
 %%]
 
-%%[8 hs import(EH.Util.Utils(groupSortOn))
+%%[8 hs import(UHC.Util.Utils(groupSortOn))
 %%]
 
 %%[8 hs import(Control.Applicative((<|>)))

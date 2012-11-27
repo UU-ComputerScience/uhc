@@ -38,7 +38,7 @@
 %%]
 %%[(4 hmtyinfer) import(qualified Data.Set as Set)
 %%]
-%%[(4 hmtyinfer) import(EH.Util.Utils)
+%%[(4 hmtyinfer) import(UHC.Util.Utils)
 %%]
 
 %%[(8 codegen tycore hmtyinfer) import(qualified {%{EH}TyCore.Full0} as C)
@@ -49,7 +49,7 @@
 
 %%[(9 hmtyinfer) import({%{EH}Ty.Trf.Canonic})
 %%]
-%%[(9 hmtyinfer) import(qualified Data.Map as Map,EH.Util.Pretty)
+%%[(9 hmtyinfer) import(qualified Data.Map as Map,UHC.Util.Pretty)
 %%]
 %%[(9 hmtyinfer) import({%{EH}Gam.ClGam},{%{EH}Pred})
 %%]
@@ -73,7 +73,7 @@
 %%]
 
 For debug/trace:
-%%[(4 hmtyinfer) import(EH.Util.Pretty,{%{EH}Ty.Pretty},{%{EH}Error.Pretty},{%{EH}Ty.Utils1})
+%%[(4 hmtyinfer) import(UHC.Util.Pretty,{%{EH}Ty.Pretty},{%{EH}Error.Pretty},{%{EH}Ty.Utils1})
 %%]
 
 %%[(4 hmtyinfer) import({%{EH}Base.Debug} as Debug)

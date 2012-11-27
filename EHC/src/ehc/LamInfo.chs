@@ -42,11 +42,11 @@ Currently the following is maintained:
 -- Analyses
 %%[(8 codegen) import({%{EH}AnaDomain})
 %%]
-%%[(8 codegen) import(EH.Util.Utils)
+%%[(8 codegen) import(UHC.Util.Utils)
 %%]
 
 -- PP
-%%[(8 codegen) import(EH.Util.Pretty,{%{EH}AnaDomain.Pretty},{%{EH}Ty.Pretty})
+%%[(8 codegen) import(UHC.Util.Pretty,{%{EH}AnaDomain.Pretty},{%{EH}Ty.Pretty})
 %%]
 
 -- Haskell stuff
