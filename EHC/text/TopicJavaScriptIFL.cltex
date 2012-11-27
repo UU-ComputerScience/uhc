@@ -584,7 +584,9 @@ unification at the client-side, eliminating the need for many AJAX requests.
 In a further step we eliminated the need for a server altogether by storing the
 set of rules and facts using HTML5 Local Storage instead of in a database on
 the server. This has the advantage that you can run the assistant wherever you
-have a modern web browser available. \TODO{Insert full link to the online demo}
+have a modern web browser available. This version can be found at
+\verb|http://uu-computerscience.github.com/JCU/|.
+
 
 
 \subsection{\label{issues}Implementation Issues}
@@ -725,7 +727,6 @@ eliminate repetition, functional reactive
 programming~\cite{Elliott:2009:PFR:1596638.1596643,Wan:2000:FRP:349299.349331,reactive-banana}
  to interact with the DOM, or they may be an entire user-interface toolkit,
 such as wxHaskell~\cite{Leijen:2004:WPC:1017472.1017483}.
-
 
 Working with WebWorkers as an alternative to Haskell threads is currently not
 investigated yet. Our JCU application would become significantly more usable
