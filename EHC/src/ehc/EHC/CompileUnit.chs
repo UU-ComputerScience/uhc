@@ -46,11 +46,11 @@ An EHC compile unit maintains info for one unit of compilation, a Haskell (HS) m
 %%]
 
 -- timestamps
-%%[50 import(System.Time, System.Directory)
+%%[5050 import(Data.Time, System.Directory)
 %%]
 
 -- 20121029 the time package cannot be used as System.Directory used old-time, and no conversion to UTCTime (from Data.Time) could be found
-%%[5050 import(Data.Time, Data.Time.Clock, System.Directory) export(ClockTime,diffClockTimes,noTimeDiff)
+%%[50 import(Data.Time, Data.Time.Clock, System.Directory) export(ClockTime,diffClockTimes,noTimeDiff,getClockTime)
 -- | a for now alias for old-time ClockTime
 type ClockTime = UTCTime
 
@@ -58,6 +58,9 @@ diffClockTimes = diffUTCTime
 
 noTimeDiff :: NominalDiffTime
 noTimeDiff = toEnum 0
+
+getClockTime :: IO ClockTime
+getClockTime = getCurrentTime
 %%]
 
 -- Force evaluation for IO

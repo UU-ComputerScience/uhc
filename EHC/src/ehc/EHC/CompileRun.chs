@@ -12,7 +12,7 @@ An EHC compile run maintains info for one compilation invocation
 %%]
 %%[8 import(System.IO, System.Exit, System.Environment, System.Process, System.Cmd(rawSystem))
 %%]
-%%[99 import(System.Time, System.CPUTime, System.Locale, Data.IORef, System.IO.Unsafe)
+%%[99 import(Data.Time, System.CPUTime, System.Locale, Data.IORef, System.IO.Unsafe)
 %%]
 %%[99 import(System.Directory)
 %%]
