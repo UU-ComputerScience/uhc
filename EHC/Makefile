@@ -52,7 +52,7 @@ include $(SRC_PREFIX)ehc/shared.mk
 include $(MK_PREFIX)functions.mk
 include $(MK_PREFIX)shared.mk
 
-include $(SRC_PREFIX)libutil/files.mk
+#include $(SRC_PREFIX)libutil/files.mk
 -include $(SRC_PREFIX)top/files.mk
 -include $(SRC_PREFIX)helium/files.mk
 -include $(SRC_PREFIX)lvm/files.mk
@@ -382,8 +382,9 @@ clean:
 	$(MAKE) cleans
 	$(MAKE) ruler-clean
 	$(MAKE) shuffle-clean
-	$(MAKE) libutil-clean
 	rm -rf $(DIST_PREFIX)
+
+#	$(MAKE) libutil-clean
 
 #	@echo "NOTE: all but external libraries (gmp, ...) is cleaned. Use 'make clean-extlibs' for cleaning those."
 

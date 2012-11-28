@@ -53,7 +53,7 @@ $(SHUFFLE_SETUP): $(SHUFFLE_SETUP_HS)
 	$(call GHC_CABAL,$<,$@)
 
 # Use cabal for building, pass UUAGC as environment variable to Setup.hs
-$(SHUFFLE_BLD_EXEC): $(LIB_EH_UTIL_INS_FLAG) $(SHUFFLE_SETUP)
+$(SHUFFLE_BLD_EXEC): $(SHUFFLE_SETUP)
 	@$(EXIT_IF_ABSENT_LIB_OR_TOOL)
 	cd $(SRC_SHUFFLE_PREFIX) ; \
 	UUAGC="$(AGC) $(UUAGC_OPTS_WHEN_EHC)" \
@@ -61,7 +61,7 @@ $(SHUFFLE_BLD_EXEC): $(LIB_EH_UTIL_INS_FLAG) $(SHUFFLE_SETUP)
 		--builddir=$(TOPABS_PREFIX)$(SHUFFLE_BLD_PREFIX) \
 		--bindir=$(TOPABS_PREFIX)$(BIN_PREFIX) \
 		--with-compiler=$(GHC) \
-		--ghc-options="$(GHC_OPTS) $(GHC_OPTS_OPTIM) $(GHC_OPTS_WHEN_EHC) -package $(LIB_EH_UTIL_PKG_NAME)"; \
+		--ghc-options="$(GHC_OPTS) $(GHC_OPTS_OPTIM) $(GHC_OPTS_WHEN_EHC)"; \
 	UUAGC="$(AGC) $(UUAGC_OPTS_WHEN_EHC)" \
 	$(TOPABS_PREFIX)$(SHUFFLE_SETUP) build --builddir=$(TOPABS_PREFIX)$(SHUFFLE_BLD_PREFIX) ; \
 	UUAGC="$(AGC) $(UUAGC_OPTS_WHEN_EHC)" \
