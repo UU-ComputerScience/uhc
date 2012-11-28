@@ -57,7 +57,6 @@ include $(MK_PREFIX)shared.mk
 -include $(SRC_PREFIX)helium/files.mk
 -include $(SRC_PREFIX)lvm/files.mk
 -include $(SRC_PREFIX)text2text/files.mk
-include $(SRC_PREFIX)shuffle/files.mk
 include $(SRC_PREFIX)ruler2/files.mk
 include $(SRC_PREFIX)ehc/variant.mk
 include $(SRC_PREFIX)gen/files.mk
@@ -143,7 +142,6 @@ explanation:
 	echo  "make <n>/bare            : make bare source dir for variant <n> (in bare/)," ; \
 	echo  "                           then 'cd' to there and 'make'" ; \
 	echo  "make $(RULER2_NAME)               : make ruler tool" ; \
-	echo  "make $(SHUFFLE_NAME)             : make shuffle tool" ; \
 	echo  "" ; \
     echo  "Documentation" ; \
 	echo  "=============" ; \
@@ -381,7 +379,6 @@ test: uhc-test
 clean:
 	$(MAKE) cleans
 	$(MAKE) ruler-clean
-	$(MAKE) shuffle-clean
 	rm -rf $(DIST_PREFIX)
 
 #	$(MAKE) libutil-clean
