@@ -1,2 +1,0 @@
-%%[1 module A import(B) export(C)
-%%]
