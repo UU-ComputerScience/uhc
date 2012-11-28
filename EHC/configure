@@ -688,6 +688,8 @@ CFLAGS
 CC
 GCC_CMD
 gccCmd
+SHUFFLE_CMD
+shuffleCmd
 UUAGC_CMD
 uuagcCmd
 CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES
@@ -708,6 +710,7 @@ GHC_CMD
 ghcCmd
 TOPLEVEL_SYSTEM_ABSPATH_PREFIX
 CABAL_CONFIGURE_OPTIONS
+SHUFFLE_OPTIONS
 UUAGC_EHC_SEM_OPTIONS
 UUAGC_EHC_AST_OPTIONS
 UUAGC_OPTIONS
@@ -816,12 +819,14 @@ with_shuffle_ehc_options
 with_uuagc_options
 with_uuagc_ehc_ast_options
 with_uuagc_ehc_sem_options
+with_shuffle_options
 with_cabal_config_options
 with_ehc_unixtool_prefix
 with_ghc
 with_ghc_ehc_options
 with_haddock
 with_uuagc
+with_shuffle
 with_gcc
 with_cpp
 with_llvm_as
@@ -1486,6 +1491,9 @@ Optional Packages:
   --with-uuagc-ehc-sem-options=<AG compiler options for compiling ehc's semantics>
                           Additional options to pass to UUAGC when compiling
                           EHC's AST semantics.
+  --with-shuffle-options=<shuffle options for compiling ehc>
+                          Additional options to pass to shuffle when compiling
+                          EHC.
   --with-cabal-config-options=<cabal configure options for compiling ehc>
                           Additional options to pass to cabal's ./setup
                           configure when compiling EHC.
@@ -1503,6 +1511,9 @@ Optional Packages:
   --with-uuagc=<uu ag compiler>
                           Use a command different from 'uuagc' to compile with
                           UUAGC.
+  --with-shuffle=<shuffle compiler>
+                          Use a command different from 'shuffle' to compile
+                          with shuffle.
   --with-gcc=<gcc compiler>
                           Use a command different from 'gcc' to compile with
                           GCC.
@@ -3468,6 +3479,16 @@ fi
 UUAGC_EHC_SEM_OPTIONS="$uuagcEhcSemOptions"
 
 
+### 'with' option for shuffle options
+
+# Check whether --with-shuffle-options was given.
+if test "${with_shuffle_options+set}" = set; then :
+  withval=$with_shuffle_options;  shuffleOptions="$withval"
+fi
+
+SHUFFLE_OPTIONS="$shuffleOptions"
+
+
 ### 'with' option for cabal config options
 
 # Check whether --with-cabal-config-options was given.
@@ -3878,6 +3899,70 @@ else
   uuagcExists="no"
 fi
 UUAGC_CMD=$uuagcCmd
+
+
+# shuffle
+
+# Check whether --with-shuffle was given.
+if test "${with_shuffle+set}" = set; then :
+  withval=$with_shuffle;  shuffleCmd="$withval"
+else
+
+  if test "$SHUFFLE" = ""; then
+    # Extract the first word of "shuffle", so it can be a program name with args.
+set dummy shuffle; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_shuffleCmd+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $shuffleCmd in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_shuffleCmd="$shuffleCmd" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_path_shuffleCmd="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+shuffleCmd=$ac_cv_path_shuffleCmd
+if test -n "$shuffleCmd"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $shuffleCmd" >&5
+$as_echo "$shuffleCmd" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+  else
+    shuffleCmd=$SHUFFLE
+  fi
+
+
+fi
+
+if test "$shuffleCmd" != "no" -a -x "$shuffleCmd" ; then
+  shuffleExists="yes"
+else
+  shuffleCmd=""
+  shuffleExists="no"
+fi
+SHUFFLE_CMD=$shuffleCmd
 
 
 # gcc
@@ -8811,6 +8896,7 @@ EXTLIBS_GMP_PKG_NAME="gmp"
 
 ### if some of the required libraries/tools are absent, this def will check for it and exit when make is invoked
 if test "x$uuagcExists" = "xyes" \
+   -a "x$shuffleExists" = "xyes" \
    -a "x$ghcExists" = "xyes" \
    -a "x$gccExists" = "xyes" \
    -a "x$ghcLibsRequiredButAbsent" = "x"
@@ -10136,6 +10222,13 @@ echo "    version                     : $uuagcVersion"
 echo "    command for uuagc           : $uuagcCmd"
 else
 echo "    **** ERROR **** : uuagc must be installed, use (1) cabal+hackage, or (2) http://www.cs.uu.nl/wiki/HUT"
+fi
+
+echo "  shuffle is available?         : $shuffleExists"
+if test "x$shuffleExists" = "xyes" ;then
+echo "    command for shuffle         : $shuffleCmd"
+else
+echo "    **** ERROR **** : shuffle must be installed, use (1) cabal+hackage, or (2) http://www.cs.uu.nl/wiki/HUT"
 fi
 
 echo "  ghc is available?             : $ghcExists"

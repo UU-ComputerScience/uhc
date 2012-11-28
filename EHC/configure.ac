@@ -283,6 +283,12 @@ AC_ARG_WITH(uuagc-ehc-sem-options,
 [ uuagcEhcSemOptions="$withval" ],)
 AC_SUBST(UUAGC_EHC_SEM_OPTIONS, "$uuagcEhcSemOptions")
 
+### 'with' option for shuffle options
+AC_ARG_WITH(shuffle-options,
+[AS_HELP_STRING([--with-shuffle-options=<shuffle options for compiling ehc>],[Additional options to pass to shuffle when compiling EHC.])],
+[ shuffleOptions="$withval" ],)
+AC_SUBST(SHUFFLE_OPTIONS, "$shuffleOptions")
+
 ### 'with' option for cabal config options
 AC_ARG_WITH(cabal-config-options,
 [AS_HELP_STRING([--with-cabal-config-options=<cabal configure options for compiling ehc>],[Additional options to pass to cabal's ./setup configure when compiling EHC.])],
@@ -463,6 +469,26 @@ else
   uuagcExists="no"
 fi
 AC_SUBST(UUAGC_CMD,$uuagcCmd)
+
+# shuffle
+AC_ARG_WITH(shuffle,
+[AS_HELP_STRING([--with-shuffle=<shuffle compiler>],[Use a command different from 'shuffle' to compile with shuffle.])],
+[ shuffleCmd="$withval" ],
+[
+  if test "$SHUFFLE" = ""; then
+    AC_PATH_PROG(shuffleCmd,shuffle)
+  else
+    shuffleCmd=$SHUFFLE
+  fi
+]
+)
+if test "$shuffleCmd" != "no" -a -x "$shuffleCmd" ; then
+  shuffleExists="yes"
+else
+  shuffleCmd=""
+  shuffleExists="no"
+fi
+AC_SUBST(SHUFFLE_CMD,$shuffleCmd)
 
 # gcc
 AC_ARG_WITH(gcc,
@@ -1109,6 +1135,7 @@ AC_SUBST(EXTLIBS_GMP_PKG_NAME, "gmp") # should coincide with installed lib in ex
 
 ### if some of the required libraries/tools are absent, this def will check for it and exit when make is invoked
 if test "x$uuagcExists" = "xyes" \
+   -a "x$shuffleExists" = "xyes" \
    -a "x$ghcExists" = "xyes" \
    -a "x$gccExists" = "xyes" \
    -a "x$ghcLibsRequiredButAbsent" = "x"
@@ -1144,6 +1171,13 @@ echo "    version                     : $uuagcVersion"
 echo "    command for uuagc           : $uuagcCmd"
 else
 echo "    **** ERROR **** : uuagc must be installed, use (1) cabal+hackage, or (2) http://www.cs.uu.nl/wiki/HUT"
+fi
+
+echo "  shuffle is available?         : $shuffleExists"
+if test "x$shuffleExists" = "xyes" ;then
+echo "    command for shuffle         : $shuffleCmd"
+else
+echo "    **** ERROR **** : shuffle must be installed, use (1) cabal+hackage, or (2) http://www.cs.uu.nl/wiki/HUT"
 fi
 
 echo "  ghc is available?             : $ghcExists"
