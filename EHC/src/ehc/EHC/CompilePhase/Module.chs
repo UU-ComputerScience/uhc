@@ -12,7 +12,7 @@ Module analysis
 %%]
 %%[50 import(qualified UHC.Util.Rel as Rel)
 %%]
-%%[50 import(Data.Time, System.Directory)
+%%[50 import(UHC.Util.Time, System.Directory)
 %%]
 
 %%[50 import({%{EH}EHC.Common})
