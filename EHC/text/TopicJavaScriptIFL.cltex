@@ -378,7 +378,7 @@ primModProtoAttr  :: JSString -> (a -> b) -> JSString -> IO ()
 
 |JSString| is a type synonym for |PackedString|, the builtin type corresponding
 to JavaScript strings. The |primMkCtor| function creates a new constructor
-function if it does not yet exist in the |window| scope where |window| is the
+function if it does not yet exist in the |window| scope, where |window| is the
 variable containing everything pertaining the current window or tab. This
 function is usually only called from within the other functions listed above.
 The |primMkAnonObj| function creates an anonymous object |{}|, while the
@@ -902,11 +902,10 @@ use of GHC, giving it a production-ready Haskell compiler and type-checker to
 build on. In designing Fay's FFI, Doner drew some inspiration from the work we
 present here, namely the FEL.
 
-Another recent attempt is Haste\cite{ekblad2012} by Anton Ekblad, it compiles
-Haskell to Javascript and supports the same code as GHC does, with some remarks
-as how to perform large number arithmetics. It appears to be generating code
-with a small footprint and which performs better than native \js. Haste also
-comes with a small reactive library for interacting with the DOM.
+Another recent attempt is Haste\cite{ekblad2012} by Anton Ekblad. It, too,
+builds on top of GHC, and it attempts to be easy to use and generate
+``relatively lean code''. It comes with a small reactive library for
+interacting with the DOM.
 
 Rather than focussing on cross-compiling, ``Functional JavaScript''
 \cite{www07functional-javascript} offers a library for a more functional style
