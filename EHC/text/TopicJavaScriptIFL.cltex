@@ -579,10 +579,12 @@ modification. We use this feature in the JCU web application to run the
 NanoProlog library in the browser, allowing us to perform proof checking and
 unification at the client-side, eliminating the need for many AJAX requests.
 
-In a further step we eliminated the need for a server altogether by storing the
-set of rules and facts using HTML5 Local Storage instead of in a database on
-the server. This has the advantage that you can run the assistant wherever you
-have a modern web browser available.
+We can take the idea of running the application completely client-side even
+further, by eliminating the need for a server altogether. We can do so by using
+HTML 5 Local Storage, a client-side database offered by nearly all modern
+browsers, and accessible via JavaScript, to store the set of rules and facts.
+This has the advantage that you can run the assistant, even if you have no
+Internet connection available.
 
 
 \subsection{\label{issues}Implementation Issues}
