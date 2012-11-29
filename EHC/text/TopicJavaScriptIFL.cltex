@@ -28,12 +28,13 @@
 
 %%[abstract
 We introduce the Utrecht Haskell Compiler JavaScript backend, which allows one
-to source-to-source compile Haskell to JavaScript, so it can be run in the
-browser. To interface with JavaScript and overcome part of the impedance
-mismatch between the two languages, we introduce the Foreign Expression
-Language; a small subset of JavaScript for use in Foreign Function Interface
-imports. Finally we discuss the implementation of a JavaScript application,
-completely in Haskell, with which we show that it is now possible to do so.
+to compile Haskell code to JavaScript, so it can be run in the browser. To
+interface with JavaScript and overcome part of the impedance mismatch between
+the two languages, we introduce the Foreign Expression Language; a small subset
+of JavaScript for use in Foreign Function Interface imports. Finally we discuss
+the implementation of a JavaScript application, completely written in Haskell,
+with which we show that it is now possible to write entire JavaScript
+application completely in Haskell.
 %%]
 
 %%[introduction
@@ -715,10 +716,7 @@ JavaScript application in Haskell, there is still a lot of room for
 improvement. As mentioned before, UHC itself lacks support for the more
 advanced Haskell features, such as type families. Implementing these in UHC
 would go a long way to making the UHC JavaScript back-end a true alternative to
-JavaScript. For (non GHC) Haskell compiler writers to keep with this pace of
-evolution poses a considerable challenge; yet in our opinion there is value in
-the availability of compiler alternatives, as well as variation in what those
-compilers are good at.
+JavaScript.
 
 Our current UHC-JavaScript library relies on the programmer to use imported
 functions correctly. The object-wrapper import, for example, will try to wrap
@@ -880,7 +878,6 @@ definitions~\cite{www07haskell-in-browser}. However, YHC is no longer
 maintained, and direct interfacing to the DOM nowadays is replaced by libraries
 built on top of the multiple DOM variations.
 
-% TODO: Explicitly mention GHCJS here
 GHCJS~\cite{www11ghcjs-git,www12ghcjs-new} is an attempt to use the GHC API to
 create a dedicated Haskell to JavaScript compiler. It uses the C calling
 convention, rather than a dedicated |js| calling convention. A major advantage
