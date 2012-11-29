@@ -102,7 +102,7 @@ time (Section~\ref{related}):
   language has to deal with the lazy evaluation strategy imposed by Haskell
   (rest of this section).
 \item Use of OO language mechanisms as available in JavaScript, in particular
-  prototype based objects; we only mention this topic in passing.
+  prototype based objects, in Haskell; we only mention this topic in passing.
 \item Use of available JavaScript libraries; we deal with this in the next
   section by exploiting the freedom offered by Haskell's Foreign Function
   Interface (FFI)
@@ -194,9 +194,9 @@ function eval( x ) {
 }
 \end{spec}
 
-Even normal \js values can be thrown at |eval|, provided they do not
+Even normal \js values can be thrown at |eval|, provided they do not 
 (accidentally) contain an |eOrV| field. The actual |eval|\footnote{called \texttt{\_e\_}
-in the Git repository.} function is somewhat more involved as it provides some
+in the implementation.} function is somewhat more involved as it provides some
 protection against null values and also updates the |eOrV| field for all
 intermediate non WHNF objects computed in the evaluation loop.
 
@@ -584,10 +584,9 @@ unification at the client-side, eliminating the need for many AJAX requests.
 In a further step we eliminated the need for a server altogether by storing the
 set of rules and facts using HTML5 Local Storage instead of in a database on
 the server. This has the advantage that you can run the assistant wherever you
-have a modern web browser available. This version can be found at
+have a modern web browser available, even if you have no Internet connection
+available. This version can be found at
 \verb|http://uu-computerscience.github.com/JCU/|.
-
-
 
 \subsection{\label{issues}Implementation Issues}
 % TODO describe: Which issues do you run into in general when you develop a JS
@@ -900,11 +899,10 @@ extensive use of GHC, giving it a production-ready Haskell compiler and
 type-checker to build on. In designing Fay's FFI, Doner drew some inspiration
 from the work we present here, namely the FEL.
 
-Another recent attempt is Haste~\cite{ekblad2012} by Anton Ekblad. It compiles
-Haskell to Javascript and supports the same code as GHC does, with some remarks
-as how to perform large number arithmetics. It appears to be generating code
-with a small footprint which performs better than native \js. Haste also
-comes with a small reactive library for interacting with the DOM.
+Another recent attempt is Haste\cite{ekblad2012} by Anton Ekblad. It, too,
+builds on top of GHC, and it attempts to be easy to use and generate
+``relatively lean code''. It comes with a small reactive library for
+interacting with the DOM.
 
 Rather than focusing on source-to-source compiling, ``Functional
 JavaScript''~\cite{www07functional-javascript} offers a library for a more
