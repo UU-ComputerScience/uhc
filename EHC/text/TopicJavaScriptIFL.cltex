@@ -714,8 +714,12 @@ browsers, although this has only been tested informally.
 While we have shown that it already is possible to implement an entire
 JavaScript application in Haskell, there is still a lot of room for
 improvement. As mentioned before, UHC itself lacks support for the more
-advanced Haskell features. Implementing these in UHC would go a long way to
-making the UHC JavaScript back-end a true alternative to JavaScript.
+advanced Haskell features, such as type families. Implementing these in UHC
+would go a long way to making the UHC JavaScript back-end a true alternative to
+JavaScript. For (non GHC) Haskell compiler writers to keep with this pace of
+evolution poses a considerable challenge; yet in our opinion there is value in
+the availability of compiler alternatives, as well as variation in what those
+compilers are good at.
 
 Our current UHC-JavaScript library relies on the programmer to use imported
 functions correctly. The object-wrapper import, for example, will try to wrap
@@ -761,15 +765,6 @@ In particular, Cabal needs a specification mechanism for such variation in
 target and platform to allow for selective compilation of a collection of
 variants. Currently this means that UHC compilation for the JavaScript backend
 cannot be done through Cabal.
-%TODO: A second? Where is the first, and repetition of the end of the first
-%      paragraph
-A second aspect has more to do with the evolution of Haskell as an ecosystem.
-Many libraries go far beyond the Haskell standard by making use of GHC
-extensions. Currently, such libraries evolve to use type families, a feature not
-yet available in UHC. For (non GHC) Haskell compiler writers to keep with this
-pace of evolution poses a considerable challenge; yet in our opinion there is
-value in the availability of compiler alternatives, as well as variation in what
-those compilers are good at.
 
 Currently, we generate JavaScript from the compiler's core language. It might
 be possible to generate faster code which uses native JavaScript language
