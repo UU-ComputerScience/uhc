@@ -647,23 +647,23 @@ handler to all input fields retrieved by our jQuery selector.
 %TODO: Rewrite the bit above?
 
 
-\begin{figure}
+\begin{figure}[ht]
 \begin{code}
 data JQueryPtr
 type JQuery = JSPtr JQueryPtr
-
-foreign import js "%1.bind(%*)"
-  bind :: JQuery -> JSString -> JEventHandler -> IO ()
 
 type ThisEventHandler    = JQuery -> JQuery -> JEventResult
 type JEventHandler       = JSFunPtr (JQuery -> JEventResult)
 type JThisEventHandler   = JSFunPtr ThisEventHandler
 
-valString :: JQuery -> IO String
-mkJThisEventHandler :: ThisEventHandler -> IO JThisEventHandler
+foreign import js "%1.bind(%*)"
+  bind :: JQuery -> JSString -> JEventHandler -> IO ()
 
 foreign import js "wrappedThis(%1)"
   wrappedThis :: JThisEventHandler -> IO JEventHandler
+
+valString :: JQuery -> IO String
+mkJThisEventHandler :: ThisEventHandler -> IO JThisEventHandler
 
 bindInput = do
   let  alertHndlr :: ThisEventHandler
