@@ -194,7 +194,7 @@ function eval( x ) {
 
 Even normal \js values can be thrown at |eval|, provided they do not
 (accidentally) contain an |eOrV| field. The actual |eval|\footnote{called |_e_|
-in the git repository.} function is somewhat more involved as it provides some
+in the implementation.} function is somewhat more involved as it provides some
 protection against null values and also updates the |eOrV| field for all
 intermediate non WHNF objects computed in the evaluation loop.
 
