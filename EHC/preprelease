@@ -2,10 +2,10 @@
 
 # the things to be done before releasing, and to be run correctly.
 
-make clean                                  &&
-./configure                                 &&
-make 100/ehclib                             &&
-make {1,8,20}/ehc                           &&
+# make clean                                  &&
+# ./configure                                 &&
+# make 100/ehclib                             &&
+# make {1,8,50}/ehc                           &&
 make uhc                                    &&
 make test-expect TEST_VARIANTS=uhc          &&
 make freeze-test-expect                     

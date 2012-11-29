@@ -12,7 +12,9 @@ Module analysis
 %%]
 %%[50 import(qualified UHC.Util.Rel as Rel)
 %%]
-%%[50 import(UHC.Util.Time, System.Directory)
+%%[50 import(UHC.Util.Time, UHC.Util.FPath)
+%%]
+%%[50 import(System.Directory)
 %%]
 
 %%[50 import({%{EH}EHC.Common})
@@ -156,7 +158,7 @@ cpGetMetaInfo gm modNm
                       (do { lift $ putStrLn ("meta info of: " ++ show (ecuModNm ecu) ++ ", file: " ++ n ++ ", exists: " ++ show nExists)
                           })
                ; when nExists
-                      (do { t <- lift $ getModificationTime n
+                      (do { t <- lift $ fpathGetModificationTime fp
                           ; when (ehcOptVerbosity opts >= VerboseDebug)
                                  (do { lift $ putStrLn ("time stamp of: " ++ show (ecuModNm ecu) ++ ", time: " ++ show t)
                                      })
