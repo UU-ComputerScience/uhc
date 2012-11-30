@@ -320,12 +320,11 @@ method. The first argument, indicated by \texttt{\%1}, before the dot, is
 treated as an object in the generated JavaScript code. The number of the
 argument corresponds to the position of the arguments in the type signature.
 The two remaining arguments are placed between parentheses, so that they become
-arguments in the method call in the generated JavaScript code.
-
-An alternative way of writing this import is shown below, where we replace the
-last two explicit argument positions with a wildcard. This says that all
-remaining arguments should be placed where the wildcard is. Using a wildcard
-has as added advantage that it becomes easy to import variadic methods.
+arguments in the method call in the generated JavaScript code. An alternative
+way of writing this import is shown below, where we replace the last two
+explicit argument positions with a wildcard. This says that all remaining
+arguments should be placed where the wildcard is. Using a wildcard has as added
+advantage that it becomes easy to import variadic methods.
 
 \begin{spec}
 foreign import js "%1.subString(%*)"
@@ -391,10 +390,9 @@ variable containing everything pertaining the current window or tab. This
 function is usually only called from within the other functions listed above.
 The |primMkAnonObj| function creates an anonymous object |{}|, while
 |primMkObj| accepts a string with the class name of the object to be created.
-If the class does not exist yet, it is created using an empty constructor.
-
-The other functions manipulate objects and prototypes, using a mechanism
-inspired by
+If the class does not exist yet, it is created using an empty constructor. The
+other functions manipulate objects and prototypes, using a mechanism inspired
+by
 lenses~\cite{Meijer:1991:FPB:645420.652535,Hofmann:2011:SL:1925844.1926428,Kagawa:1997:CRS:258949.258969},
 an abstraction over accessors and mutators. The first argument is always the
 name of the object attribute of interest passed as a string. In case of the
@@ -404,10 +402,8 @@ with it from the Haskell world. The |mod|-functions take as second argument a
 function which modifies the attribute specified in the first argument.
 Modifying an attribute may change its type, hence the |a -> b| type for the
 function. Finally, the last argument is either a reference to an object, or the
-name of a class as a string, in case of prototypes.
-
-
-These functions can be used by importing them as primitives:
+name of a class as a string, in case of prototypes. These functions can be used
+by importing them as primitives:
 
 \begin{code}
 foreign import prim "primGetAttr"
@@ -567,7 +563,6 @@ The application was originally programmed in \coffeescript~\cite{coffeescript},
 a layer of syntactic sugar for \js, and used the \brunch~\cite{brunch}
 framework. In the original implementation, all Prolog logic was implemented
 server-side in Haskell, using the NanoProlog~\cite{nanoprolog-package} library.
-
 We rewrote the application in Haskell using UHC and the UHC-JavaScript library.
 We also use jQuery for interacting with the Document Object Model (DOM) and the
 jQuery AjaxQueue~\cite{ajaxq} plugin for sequential non-blocking communication
@@ -582,7 +577,6 @@ running any Haskell library that compiles on UHC in the browser, without
 modification. We use this feature in the JCU web application to run the
 NanoProlog library in the browser, allowing us to perform proof checking and
 unification at the client-side, eliminating the need for many AJAX requests.
-
 In a further step we eliminated the need for a server altogether by storing the
 set of rules and facts using HTML5 Local Storage, a browser-based database
 supported by most modern browsers, instead of in a database on the server. With
@@ -618,7 +612,6 @@ keyword. One way to still get a reference to the expected object when using
 |this| is to create a wrapper function that captures the expected scope and
 passes it to the wrapped function as explicit argument. We have implemented
 this solution in the |wrappedThis| function, which is part of our RTS.
-
 % One would be tempted to import the
 % keyword as a function as follows:
 % 
@@ -633,7 +626,6 @@ this solution in the |wrappedThis| function, which is part of our RTS.
 % to the RTS objects' scope, essentially exposing the RTS to the Haskell world 
 % and hiding the scope that one would expect to get when we would be using plain 
 %\js. One way to deal with this problem is by creating a wrapper function that 
-
 \figureref{code:this} shows how the |wrappedThis| function can be used to 
 obtain the value of an HTML input field. The code above the definition of 
 |bindInput| is copied from the \js library; |valString| is a function that gets 
