@@ -36,7 +36,7 @@ the implementation of a JavaScript application, completely written in Haskell,
 with which we show that it is now possible to write an entire JavaScript
 application completely in Haskell.
 
-\keywords{Compilation, FFI, Web Applications, Haskell, Javascript}
+\keywords{Compilation, FFI, Web Applications, Haskell, JavaScript}
 %%]
 
 %%[introduction
