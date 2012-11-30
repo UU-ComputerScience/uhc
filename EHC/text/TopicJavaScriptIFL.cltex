@@ -35,6 +35,8 @@ of JavaScript for use in Foreign Function Interface imports. Finally we discuss
 the implementation of a JavaScript application, completely written in Haskell,
 with which we show that it is now possible to write entire JavaScript
 application completely in Haskell.
+
+\keywords{Compilation, FFI, Web Applications, Haskell, Javascript}
 %%]
 
 %%[introduction
