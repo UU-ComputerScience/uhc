@@ -8,6 +8,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9 module {%{EH}Pred}
+-- Force generation of module header
 %%]
 
 %%[9 import(UHC.Util.Pretty)

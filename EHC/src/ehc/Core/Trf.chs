@@ -289,6 +289,10 @@ trfCore opts optimScope dataGam modNm trfcore
 %%]]
         -- abbreviations for optimatisation scope
         osm  = [OptimizationScope_PerModule]
-        osmw = [OptimizationScope_WholeCore] ++ osm
+        osmw = 
+%%[[50
+			   [OptimizationScope_WholeCore] ++
+%%]]
+			   osm
 %%]
 

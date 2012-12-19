@@ -10,7 +10,7 @@
 %%[8 module {%{EH}Opts.CommandLine}
 %%]
 
-%%[8 import(Data.List)
+%%[8 import(Data.List, Data.Typeable, Data.Generics (Data))
 %%]
 
 %%[50 import({%{EH}Base.Binary}, {%{EH}Base.Serialize})

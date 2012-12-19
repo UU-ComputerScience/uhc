@@ -20,10 +20,10 @@
 WRAPPER TyAGItf
 %%]
 
-%%[(6 hmtyinfer || hmtyast) hs
+%%[(6 hmtyinfer || hmtyast) hs import(Data.Maybe)
 %%]
 
-%%[(9 hmtyinfer || hmtyast) hs import(Data.Maybe,UHC.Util.Utils,UHC.Util.Pretty)
+%%[(9 hmtyinfer || hmtyast) hs import(UHC.Util.Utils,UHC.Util.Pretty)
 %%]
 
 %%[(99 hmtyinfer || hmtyast)
