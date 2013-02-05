@@ -81,7 +81,7 @@ The rest of this paper is structured as follows: Section~\ref{hs2js} introduces
 the UHC JavaScript runtime system (RTS). Section~\ref{ffi} covers the FFI with
 our additions, after which Section~\ref{jcu} shows how we have implemented a
 fully working JavaScript application completely in Haskell.
-Sections~\ref{future} and~\ref{related} discuss future and related work
+Sections \ref{future}~and~\ref{related} discuss future and related work
 respectively, after which Section~\ref{conclusion} concludes.
 
 We assume at least some familiarity with the Haskell Foreign Function Interface
@@ -228,7 +228,7 @@ are used. We map |Int|, |Double|, |Float|, |Integer|, and |PackedString| values
 to \js objects, shown in \tableref{table:typemap}. Despite the mapping to \js
 objects, the expressions of these types are lazy.
 
-\begin{table}[ht]
+\begin{table}
   \centering
   \setlength{\tabcolsep}{10pt}
   \setlength{\belowbottomsep}{10pt}
@@ -245,7 +245,6 @@ objects, the expressions of these types are lazy.
   \caption{Mapping from Haskell Types to native \js types}
   \label{table:typemap}
 \end{table}
-
 
 \section{\label{ffi}JavaScript Foreign Function Interface}
 We have extended the FFI with the Foreign Expression Language (FEL), a small
