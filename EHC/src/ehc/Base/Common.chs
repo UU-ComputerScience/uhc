@@ -1085,13 +1085,7 @@ rowCanonOrderBy cmp = sortByOn cmp fst
 %%% Meta levels
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[2 hs export(MetaLev)
-type MetaLev = Int
-%%]
-
-%%[4 hs export(metaLevVal)
-metaLevVal :: MetaLev
-metaLevVal = 0
+%%[2 hs import(UHC.Util.VarLookup(MetaLev,metaLevVal)) export(MetaLev,metaLevVal)
 %%]
 
 %%[6 hs export(metaLevTy, metaLevKi, metaLevSo)
