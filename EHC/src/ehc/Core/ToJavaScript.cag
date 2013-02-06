@@ -403,7 +403,9 @@ SEM CExpr
                                                     then (@mkResJS $ @mkFFI [])
                                                     else (jsVar $ mkHNm $ forextractEnt @foreignEntInfo)
                             .   dps             =   case @foreignEntInfo of
+%%[[90
                                                       ForeignExtraction_Plain {} -> Set.fromList $ forextractIncludes @foreignEntInfo
+%%]]
                                                       _                          -> Set.empty
 
   | Let         loc         .   (jbindsLet,jstatsLet)

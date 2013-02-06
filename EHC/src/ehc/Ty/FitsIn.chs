@@ -1118,13 +1118,21 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
 
             -- | tvar binding part 2: 1 of 2 tvars, impredicatively
             varBind2  fi updTy t1@(Ty_Var v1 _)       t2
+%%[[9
                 | isJust m && v1 == v2                  = Just $ res (fiBindImplsVar iv2 Impls_Nil fi) (updTy t1)
+%%]]
                 | allowImpredTVBindL fi t1 t2           = Just $ occurBind fi True  v1 (updTy t2)
+%%[[9
                 where m@(~(Just (iv2,v2))) = tyMb1ArrTailVar2VarWithLkup (fiLookupTyVarCyc fi) (lookupImplsVarCyc fi) t2
+%%]]
             varBind2  fi updTy t1                     t2@(Ty_Var v2 _)
+%%[[9
                 | isJust m && v1 == v2                  = Just $ res (fiBindImplsVar iv1 Impls_Nil fi) (updTy t2)
+%%]]
                 | allowImpredTVBindR fi t2 t1           = Just $ occurBind fi False v2 (updTy t1)
+%%[[9
                 where m@(~(Just (iv1,v1))) = tyMb1ArrTailVar2VarWithLkup (fiLookupTyVarCyc fi) (lookupImplsVarCyc fi) t1
+%%]]
             varBind2  _  _     _                      _ = Nothing       
 
             -- | tvar binding part 3: 1 of 2 tvars, non impredicatively

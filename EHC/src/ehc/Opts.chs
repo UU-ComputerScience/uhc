@@ -251,10 +251,12 @@ ehcOptOptimizes o opts = o `Set.member` ehcOptOptimizations opts
 %%[1.defaultEHCOpts export(defaultEHCOpts)
 defaultEHCOpts
   = emptyEHCOpts
+%%[[99
       { ehcOptExecOptsMp = ehcOptExecOptsMp emptyEHCOpts `Map.union` Map.fromList
       	  [ (Cfg.shellCmdCpp, [ExecOpt_Plain "traditional-cpp", ExecOpt_Plain "std=gnu99", ExecOpt_Plain "fno-show-column", ExecOpt_Plain "P"])
       	  ]
       }
+%%]]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

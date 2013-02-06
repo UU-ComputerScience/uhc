@@ -1,0 +1,36 @@
+name:                uhc-requirements
+version:             0.1.0.0
+synopsis:            Meta-package for installing the dependencies for UHC
+
+-- A longer description of the package.
+description:         Meta-package for installing the dependencies for UHC
+
+-- The license under which the package is released.
+license:             BSD3
+
+-- The file containing the license text.
+license-file:        LICENSE
+
+-- The package author(s).
+author:              Alessandro Vermeulen
+
+-- An email address to which users can send suggestions, bug reports, and 
+-- patches.
+maintainer:          avermeulen@uu.nl
+
+-- A copyright notice.
+-- copyright:           
+
+category:            Development
+
+build-type:          Simple
+
+-- Constraint on the version of Cabal needed to build this package.
+cabal-version:       >=1.8
+
+
+library  
+  -- Other library packages from which modules are imported.
+  build-depends:       base ==4.5.*, fgl, syb, uulib, network, binary, hashable,
+                       uhc-util, uuagc, shuffle
+  
