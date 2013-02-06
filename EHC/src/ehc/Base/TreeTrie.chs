@@ -42,7 +42,7 @@ candidates is returned.
 %%]
 %%[50 hs import(Control.Monad)
 %%]
-%%[50 hs import({%{EH}Base.Serialize})
+%%[50 hs import(UHC.Util.Serialize)
 %%]
 
 %%[9999 import({%{EH}Base.ForceEval})

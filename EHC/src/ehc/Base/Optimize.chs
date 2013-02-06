@@ -7,11 +7,11 @@
 
 %%[(8 codegen) import(qualified Data.Set as Set,qualified Data.Map as Map,Data.List)
 %%]
-%%[(8 codegen) import({%{EH}Base.AssocL})
+%%[(8 codegen) import(UHC.Util.AssocL)
 %%]
 %%[(8 codegen) import(UHC.Util.Pretty,UHC.Util.Utils)
 %%]
-%%[(50 codegen) import({%{EH}Base.Binary}, {%{EH}Base.Serialize} )
+%%[(50 codegen) import(UHC.Util.Binary, UHC.Util.Serialize )
 %%]
 
 %%[doesWhat doclatex

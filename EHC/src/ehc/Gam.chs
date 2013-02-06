@@ -64,7 +64,7 @@
 %%[(9999 hmtyinfer) import({%{EH}Ty.FitsInCommon})
 %%]
 
-%%[8.ScopeMapGam import({%{EH}Gam.ScopeMapGam})
+%%[8.ScopeMapGam import(UHC.Util.ScopeMapGam)
 %%]
 
 %%[9 import({%{EH}Base.Debug})

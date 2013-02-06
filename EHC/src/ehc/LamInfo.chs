@@ -53,7 +53,7 @@ Currently the following is maintained:
 %%[(8 codegen) hs import(qualified Data.Map as Map,qualified Data.Set as Set)
 %%]
 
-%%[(50 codegen) import(Control.Monad, {%{EH}Base.Serialize})
+%%[(50 codegen) import(Control.Monad, UHC.Util.Serialize)
 %%]
 %%[(50 codegen) import(Data.Typeable(Typeable,Typeable2), Data.Generics(Data))
 %%]

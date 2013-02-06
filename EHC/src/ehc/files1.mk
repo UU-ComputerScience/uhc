@@ -62,11 +62,11 @@ EHC_HS_UTIL_SRC_CHS						:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
 													$(addprefix Cil/,Common TyTag) \
 													$(addprefix Opts/,Base CommandLine) \
 													$(addprefix Pred/,ToCHR CHR Evidence EvidenceToCore EvidenceToTyCore Heuristics CommonCHR RedGraph) \
-													$(addprefix Base/,TermLike AssocL UID Parser Parser2 Pragma Binary Serialize Strictness GenC GenJavaLike Target BasicAnnot Common Builtin Builtin2 HsName Debug TreeTrie CfgPP LaTeX HtmlCommon Bits FileSearchLocation PackageDatabase ParseUtils Optimize) \
+													$(addprefix Base/,TermLike UID Parser Parser2 Pragma Strictness GenC GenJavaLike Target BasicAnnot Common Builtin Builtin2 HsName Debug TreeTrie CfgPP LaTeX HtmlCommon Bits FileSearchLocation PackageDatabase ParseUtils Optimize) \
 													$(addprefix Scanner/,Common Machine Scanner Token TokenParser) \
 													$(addsuffix /Parser,Ty EH HS Foreign Core GrinCode) \
 													$(addprefix Ty/,FIEnv FIEnv2 FitsInCommon FitsInCommon2 FitsIn Utils1 Utils2 AppSpineGam Trf/BetaReduce) \
-													$(addprefix Gam/,Base Utils Instantiate Quantify ScopeMapGam Full ClGam AppSpineGam FixityGam TyGam KiGam DataGam PolGam TyKiGam ValGam ClassDefaultGam) \
+													$(addprefix Gam/,Base Utils Instantiate Quantify Full ClGam AppSpineGam FixityGam TyGam KiGam DataGam PolGam TyKiGam ValGam ClassDefaultGam) \
 													$(addprefix Core/,Utils FFI Coercion Trf) \
 													$(addprefix Core/SysF/,AsTy) \
 													$(addprefix TyCore/,Base Utils2 Coercion Full0 Full1 Full2 Subst Trf) \

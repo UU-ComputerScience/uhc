@@ -34,7 +34,7 @@
 %%[(9999 hmtyinfer) import({%{EH}Ty.Ftv})
 %%]
 
-%%[(50 hmtyinfer) import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
+%%[(50 hmtyinfer) import(Control.Monad, UHC.Util.Binary, UHC.Util.Serialize)
 %%]
 
 %%[(9999 hmtyinfer) import({%{EH}Base.ForceEval})

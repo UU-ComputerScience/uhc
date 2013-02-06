@@ -14,7 +14,7 @@
 %%[(8 codegen) hs import(qualified {%{EH}Config} as Cfg, {%{EH}Base.Bits})
 %%]
 
-%%[(50 codegen) hs import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
+%%[(50 codegen) hs import(Control.Monad, UHC.Util.Binary, UHC.Util.Serialize)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -33,7 +33,7 @@
 %%[(50 codegen) import ({%{EH}Core}(HsName2OffsetMp))
 %%]
 
-%%[50 import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
+%%[50 import(Control.Monad, UHC.Util.Binary, UHC.Util.Serialize)
 %%]
 
 %%[99 export(modImpPrelude)

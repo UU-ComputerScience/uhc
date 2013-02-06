@@ -25,7 +25,7 @@ Assumptions (to be documented further)
 
 %%[50 import(Data.Typeable(Typeable,Typeable1), Data.Generics(Data))
 %%]
-%%[(50 hmtyinfer || hmtyast) import({%{EH}Base.Serialize})
+%%[(50 hmtyinfer || hmtyast) import(UHC.Util.Serialize)
 %%]
 %%[(50 hmtyinfer || hmtyast) import( Control.Monad)
 %%]

@@ -13,7 +13,7 @@
 
 %%[50 import(Data.Typeable(Typeable), Data.Generics(Data))
 %%]
-%%[50 import({%{EH}Base.Serialize})
+%%[50 import(UHC.Util.Serialize)
 %%]
 %%[50 import( Control.Monad)
 %%]

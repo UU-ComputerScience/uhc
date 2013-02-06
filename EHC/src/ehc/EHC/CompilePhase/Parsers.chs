@@ -42,7 +42,7 @@ CompilePhase building blocks: parsers
 %%]
 
 -- serialization
-%%[50 import(qualified {%{EH}Base.Binary} as Bin, {%{EH}Base.Serialize})
+%%[50 import(qualified UHC.Util.Binary as Bin, UHC.Util.Serialize)
 %%]
 -- config
 %%[50 import(qualified {%{EH}Config} as Cfg)

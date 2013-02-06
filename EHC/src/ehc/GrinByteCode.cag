@@ -31,7 +31,7 @@
 
 %%[50 hs import(Control.Monad)
 %%]
-%%[50 hs import(Data.Typeable(Typeable), Data.Generics(Data), {%{EH}Base.Serialize})
+%%[50 hs import(Data.Typeable(Typeable), Data.Generics(Data), UHC.Util.Serialize)
 %%]
 
 %%[(9999 codegen grin) hs import({%{EH}Base.ForceEval})

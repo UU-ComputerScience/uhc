@@ -43,7 +43,7 @@
 %%[(10 codegen grin) hs export(mkGrPatRecSplit,mkGrPatConSplit)
 %%]
 
-%%[(50 codegen grin) hs import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
+%%[(50 codegen grin) hs import(Control.Monad, UHC.Util.Binary, UHC.Util.Serialize)
 %%]
 %%[(50 codegen grin) hs import(Data.Typeable(Typeable), Data.Generics(Data))
 %%]

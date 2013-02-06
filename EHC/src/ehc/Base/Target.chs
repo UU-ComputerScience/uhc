@@ -9,7 +9,7 @@
 %%]
 %%[(8 codegen) import(UHC.Util.Pretty,UHC.Util.Utils)
 %%]
-%%[(50 codegen) import({%{EH}Base.Binary}, {%{EH}Base.Serialize})
+%%[(50 codegen) import(UHC.Util.Binary, UHC.Util.Serialize)
 %%]
 
 %%[doesWhat doclatex

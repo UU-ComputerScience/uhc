@@ -17,7 +17,7 @@
 %%[7 export(mkNewLevUIDL,mkInfNewLevUIDL)
 %%]
 
-%%[50 import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
+%%[50 import(Control.Monad, UHC.Util.Binary, UHC.Util.Serialize)
 %%]
 
 %%[99 import(Data.Hashable)

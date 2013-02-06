@@ -43,9 +43,9 @@
 %%[50 hs export(Visible(..))
 %%]
 
-%%[50 hs import(Control.Monad, {%{EH}Base.Binary})
+%%[50 hs import(Control.Monad, UHC.Util.Binary)
 %%]
-%%[50 hs import(Data.Typeable(Typeable), Data.Generics(Data), {%{EH}Base.Serialize})
+%%[50 hs import(Data.Typeable(Typeable), Data.Generics(Data), UHC.Util.Serialize)
 %%]
 
 %%[50 hs import(qualified {%{EH}Config} as Cfg)

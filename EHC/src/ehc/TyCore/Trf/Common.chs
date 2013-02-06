@@ -10,7 +10,7 @@
 %%[(8 codegen tycore tauphi) module {%{EH}TyCore.Trf.Common} import({%{EH}Base.Common})
 %%]
 
-%%[(50 codegen tycore tauphi) import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
+%%[(50 codegen tycore tauphi) import(Control.Monad, UHC.Util.Binary, UHC.Util.Serialize)
 %%]
 
 %%[(8 codegen tycore tauphi) export(BindType (..), Seq)

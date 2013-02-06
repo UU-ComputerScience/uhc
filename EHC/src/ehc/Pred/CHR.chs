@@ -28,7 +28,7 @@ Derived from work by Gerrit vd Geest.
 %%[(41 hmtyinfer) import({%{EH}Ty.Trf.MergePreds}, {%{EH}Ty.FitsInCommon}, {%{EH}Opts}, Debug.Trace)
 %%]
 
-%%[(50 hmtyinfer) import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
+%%[(50 hmtyinfer) import(Control.Monad, UHC.Util.Binary, UHC.Util.Serialize)
 %%]
 
 %%[(9999 hmtyinfer) import({%{EH}Base.ForceEval},{%{EH}Ty.Trf.ForceEval})

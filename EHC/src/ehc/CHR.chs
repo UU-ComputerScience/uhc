@@ -19,7 +19,7 @@ to avoid explosion of search space during resolution.
 %%[(9 hmtyinfer || hmtyast) import({%{EH}CHR.Key}) export(module {%{EH}CHR.Key})
 %%]
 
-%%[(50 hmtyinfer || hmtyast) import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
+%%[(50 hmtyinfer || hmtyast) import(Control.Monad, UHC.Util.Binary, UHC.Util.Serialize)
 %%]
 
 %%[(9999 hmtyinfer || hmtyast) import({%{EH}Base.ForceEval})

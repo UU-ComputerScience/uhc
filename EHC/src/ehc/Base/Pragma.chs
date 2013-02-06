@@ -11,7 +11,7 @@
 %%]
 %%[99 import({%{EH}Base.HsName},{%{EH}Base.Target})
 %%]
-%%[99 import({%{EH}Base.Binary}, {%{EH}Base.Serialize})
+%%[99 import(UHC.Util.Binary, UHC.Util.Serialize)
 %%]
 %%[99 import(Control.Monad)
 %%]

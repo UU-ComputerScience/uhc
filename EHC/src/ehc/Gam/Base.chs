@@ -31,7 +31,7 @@
 %%[7 import(Data.Maybe,qualified Data.Set as Set,qualified Data.Map as Map) export(gamNoDups)
 %%]
 
-%%[8.ScopeMapGam import({%{EH}Gam.ScopeMapGam})
+%%[8.ScopeMapGam import(UHC.Util.ScopeMapGam)
 %%]
 
 

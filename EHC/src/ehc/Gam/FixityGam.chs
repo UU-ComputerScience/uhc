@@ -26,7 +26,7 @@
 %%[(3 hmtyinfer) import({%{EH}Ty.Trf.Quantify})
 %%]
 
-%%[50 import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
+%%[50 import(Control.Monad, UHC.Util.Binary, UHC.Util.Serialize)
 %%]
 
 %%[9999 import({%{EH}Base.ForceEval})

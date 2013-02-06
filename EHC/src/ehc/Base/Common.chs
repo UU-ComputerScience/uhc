@@ -13,7 +13,7 @@
 %%[1 import({%{EH}Base.UID}) export(module {%{EH}Base.UID})
 %%]
 
-%%[1 import({%{EH}Base.AssocL}) export(module {%{EH}Base.AssocL})
+%%[1 import(UHC.Util.AssocL) export(module UHC.Util.AssocL)
 %%]
 
 %%[1 import(UHC.Util.Pretty, Data.List) export(ppSpaced, ppCon, ppCmt)
@@ -85,7 +85,7 @@
 %%[(8 codegen) import({%{EH}Base.Strictness}) export(module {%{EH}Base.Strictness})
 %%]
 
-%%[50 import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
+%%[50 import(Control.Monad, UHC.Util.Binary, UHC.Util.Serialize)
 %%]
 
 %%[9999 import({%{EH}Base.Hashable})

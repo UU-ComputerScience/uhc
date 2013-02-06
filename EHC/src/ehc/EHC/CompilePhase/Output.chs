@@ -55,7 +55,7 @@ Output generation, on stdout or file
 %%]
 
 -- serialization
-%%[50 import(qualified {%{EH}Base.Binary} as Bin, {%{EH}Base.Serialize})
+%%[50 import(qualified UHC.Util.Binary as Bin, UHC.Util.Serialize)
 %%]
 -- for debugging only
 %%[50 import({%{EH}Gam})

@@ -13,7 +13,7 @@
 %%[8 import(Data.List)
 %%]
 
-%%[50 import({%{EH}Base.Binary}, {%{EH}Base.Serialize})
+%%[50 import(UHC.Util.Binary, UHC.Util.Serialize)
 %%]
 %%[50 import(Control.Monad)
 %%]

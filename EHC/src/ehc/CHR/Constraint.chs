@@ -14,7 +14,7 @@
 %%[(15 hmtyinfer || hmtyast) import({%{EH}VarMp})
 %%]
 
-%%[(50 hmtyinfer || hmtyast) import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
+%%[(50 hmtyinfer || hmtyast) import(Control.Monad, UHC.Util.Binary, UHC.Util.Serialize)
 %%]
 %%[(50 hmtyinfer || hmtyast) import(Data.Typeable(Typeable,Typeable2), Data.Generics(Data))
 %%]

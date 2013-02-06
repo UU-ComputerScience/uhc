@@ -23,7 +23,7 @@ This file exists to avoid module circularities.
 %%[(9 hmtyinfer) import({%{EH}VarMp})
 %%]
 
-%%[(50 hmtyinfer) import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
+%%[(50 hmtyinfer) import(Control.Monad, UHC.Util.Binary, UHC.Util.Serialize)
 %%]
 
 %%[(9999 hmtyinfer) import({%{EH}Base.ForceEval})

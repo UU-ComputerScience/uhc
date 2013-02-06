@@ -13,7 +13,7 @@
 %%[(8 codegen) hs import({%{EH}Base.HsName})
 %%]
 
-%%[(50 codegen) hs import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
+%%[(50 codegen) hs import(Control.Monad, UHC.Util.Binary, UHC.Util.Serialize)
 %%]
 
 %%[(8 codegen) hs export(Strictness(..))

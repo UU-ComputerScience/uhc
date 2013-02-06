@@ -41,7 +41,7 @@
 %%]
 %%[(8 codegen tycore) hs export(MetaVal(..), MetaBind(..), Metas, MbMetaVal, MbMetas) 
 %%]
-%%[(50 codegen tycore grin) hs import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
+%%[(50 codegen tycore grin) hs import(Control.Monad, UHC.Util.Binary, UHC.Util.Serialize)
 %%]
 
 %%[(90 codegen tycore ) hs import({%{EH}Foreign}) export(module {%{EH}Foreign})

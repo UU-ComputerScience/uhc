@@ -59,7 +59,7 @@ A multiple level VarMp knows its own absolute metalevel, which is the default to
 %%[8 import(UHC.Util.Utils)
 %%]
 
-%%[50 import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
+%%[50 import(Control.Monad, UHC.Util.Binary, UHC.Util.Serialize)
 %%]
 
 %%[9090 export(varmpMapTy)
@@ -616,8 +616,5 @@ instance Serialize VarMpInfo where
               6 -> liftM VMIOffset  sget
               7 -> liftM VMIPredSeq sget
 
-instance (Ord k, Serialize k, Serialize v) => Serialize (VarMp' k v) where
-  sput (VarMp a b) = sput a >> sput b
-  sget = liftM2 VarMp sget sget
 
 %%]
