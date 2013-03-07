@@ -17,7 +17,6 @@
 % defs etc
 \newcommand{\TODO}[1]{{\color{red}#1}}
 \newcommand{\js}{JavaScript\xspace}
-\newcommand{\uhcjscript}{\textit{uhc-jscript}\xspace}
 \newcommand{\figureref}[1]{Figure~\ref{#1}}
 \newcommand{\sectionref}[1]{Section~\ref{#1}}
 \newcommand{\tableref}[1]{Table~\ref{#1}}
@@ -72,8 +71,8 @@ With this paper, we make the following contributions:
     it in the browser, maintaining Haskell's lazy semantics.
   \item We introduce the Foreign Expression Language (FEL), which allows for a
     more natural way of interfacing with object-oriented languages via the FFI.
-  \item We give a realistic example which shows that it is now possible to
-  write complete JavaScript applications using only Haskell.
+  \item We provide evidence that it is now possible to write a web application
+    completely in Haskell.
   \item We provide a basic library with bindings to common JavaScript APIs.
 \end{itemize}
 
@@ -322,18 +321,20 @@ In addition to the |js| calling convention, the other noticeable difference
 with, for example, a C import, is the import definition in the string. Rather
 than having the FFI place all arguments in one position, we number the
 arguments and allow them to be placed in different positions in the imported
-method. This allows us to treat one of the arguments as an object. In our
-example, the first argument, indicated by \texttt{\%1}, before the dot, is
-treated as an object in the generated JavaScript code. The number of the
-argument corresponds to the position of the arguments in the type signature.
-The two remaining arguments are placed between parentheses, so that they
-become arguments in the method call in the generated JavaScript code. An
-alternative way of writing this import is shown below, where we replace the
-last two explicit argument positions with a wildcard. This says that all
-remaining arguments should be placed where the wildcard is, saving the
-programmer some work. Using a wildcard has as added advantage that it becomes
-easy to import variadic JavaScript methods by not requiring to modify the
-foreign expression for each import.
+method. Manually ordering arguments enables us to treat one of the arguments as
+an object, while treating the rest of the arguments as parameters to a method
+call on that object. In our example, the first argument, indicated by
+\texttt{\%1}, before the dot, is treated as an object in the generated
+JavaScript code. The number of the argument corresponds to the position of the
+arguments in the type signature.  The two remaining arguments are placed
+between parentheses, so that they become arguments in the method call in the
+generated JavaScript code. An alternative way of writing this import is shown
+below, where we replace the last two explicit argument positions with a
+wildcard. This says that all remaining arguments should be placed where the
+wildcard is, saving the programmer some work. Using a wildcard has as added
+advantage that it becomes easy to import variadic JavaScript methods; the
+function's arity is then only determined by the type signature, without the
+need to modify the foreign expression.
 
 \begin{spec}
 foreign import js "%1.subString(%*)"
@@ -493,15 +494,17 @@ foreign import js "{}"
   mkObj :: a -> IO (JSPtr b)
 \end{code}
 
-It takes a datatype |a| and converts it to a plain \js object, resulting in a
-pointer to the new object. If the datatype contains record selectors, they will
-be used as the object's indices. When no record selectors are available, an
-integer is used instead.
+It takes a value of datatype |a| and converts it to a plain \js object,
+resulting in a pointer to the new object. If the datatype contains record
+selectors, they will be used as the object's indices. When no record selectors
+are available, an integer is used instead.
 
 Creating the object is achieved by recursively evaluating and cloning the data
 inside the datatype to a new, empty object, disposing of RTS-specific
-information in the process. Using the object wrapper, we can simplify our
-example from before:
+information in the process. Cloning is required, because modifications on the
+new object by plain JavaScript code must not be reflected in the original
+datatype value. Using the object wrapper, we can simplify our example from
+before:
 
 \begin{code}
 main = do
@@ -539,7 +542,7 @@ primPureSetAttr  ::  JSString -> a -> JSPtr c -> JSPtr c
 primPureModAttr  ::  JSString -> (a -> b) -> JSPtr c -> JSPtr c
 \end{code}
 
-Since a potentially large tree of objects will be cloned by these pure
+Since a potentially large graphs of objects will be cloned by these pure
 functions, they should be used with care. The cloning method used is a
 modification of the cloning method used by jQuery~\cite{www11jquery}.
 
@@ -686,8 +689,8 @@ browsers, although this has only been tested informally.
 While we have shown that it already is possible to implement an entire
 JavaScript application in Haskell, there is still a lot of room for
 improvement. As mentioned before, UHC itself lacks support for the more
-advanced Haskell features, such as type families. Implementing these in UHC
-would go a long way to making the UHC JavaScript back-end a true alternative to
+advanced Haskell features, such as type families and functional dependencies.
+This prevents us from compiling many packages from Hackage directly to
 JavaScript.
 
 Our current UHC-JavaScript library relies on the programmer to use imported
