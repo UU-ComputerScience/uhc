@@ -47,7 +47,7 @@ JavaScript. Unfortunately, JavaScript is currently the \textit{only}
 client-side programming language that is supported by all major browsers.
 People wishing to use other programming languages or paradigms have to rely on
 using existing plugins such as Flash or Java Applets, writing custom browser
-plugins, or modifying the browsers themselves. None of these options are ideal,
+plugins, or modifying the browsers themselves. None of these options is ideal,
 since they either require a lot of work, or force the use of strict, imperative
 programming languages. Instead of choosing between the aforementioned options,
 we use the Utrecht Haskell Compiler (UHC)~\cite{dijkstra09uhc-arch,www09uhc} to
@@ -503,8 +503,7 @@ Creating the object is achieved by recursively evaluating and cloning the data
 inside the datatype to a new, empty object, disposing of RTS-specific
 information in the process. Cloning is required, because modifications on the
 new object by plain JavaScript code must not be reflected in the original
-datatype value. Using the object wrapper, we can simplify our example from
-before:
+datatype value. Using the object wrapper, we can simplify our example above:
 
 \begin{code}
 main = do
@@ -515,7 +514,7 @@ main = do
 \end{code}
 
 Note that even though this example is only one line shorter, we also have the
-two strings available in our \js object, which would haven taken two more lines
+two strings available in our \js object, which would have taken two more lines
 in the original example. More importantly, Haskell's type system is in a much
 better position to catch programmer mistakes, since record selectors are used
 in the modification of the |pages| value instead of strings.
@@ -762,8 +761,9 @@ for advanced type-system features is at the programmer's disposal, solving some
 of the issues we are currently experiencing due to lack of these
 features in UHC. Currently, GHCJS does not support an import system like the
 one described in this paper, so its ability to use external APIs is limited.
-GHCJS' authors remarked that adding an FEL-like import mechanism to GHCJS
-should be relatively straight-forward.
+GHCJS' authors remarked on the \texttt{glasgow-haskell-users} mailing list (13
+November 2012) that adding an FEL-like import mechanism to GHCJS should be
+relatively straight-forward.
 
 A very recent, and very promising looking attempt at compiling Haskell to
 JavaScript is the Fay language~\cite{fay-lang} by Chris Doner, which aims to
@@ -807,11 +807,11 @@ client-side web applications, opening the door to Haskell-only web development.
 In the process we added the FEL to UHC and provided a library that exposes the
 \js world to Haskell. Considering the increasing maturity of the GHC-based
 solutions, we can conclude that the two biggest contributions of this paper are
-the FEL, and our experimental example that writing a complete, non-trivial web
-application, optionally using external JavaScript libraries is now possible in
-Haskell. Since UHC does not support advanced Haskell language features, and
-GHC's development is faster and more consistent, it remains to be seen whether
-our implementation in UHC can grow to become a mature tool for developing
+the FEL, and our evidence that writing a complete, non-trivial web application,
+optionally using external JavaScript libraries is now possible in Haskell.
+Since UHC does not support advanced Haskell language features, and GHC's
+development is faster and more consistent, it remains to be seen whether our
+implementation in UHC can grow to become a mature tool for developing
 JavaScript applications. While still keeping this option open, we also call on
 authors of GHC-based solutions to consider using the contributions of this
 paper in their work.
