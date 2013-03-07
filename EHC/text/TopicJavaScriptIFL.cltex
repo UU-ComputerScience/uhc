@@ -226,7 +226,8 @@ mapped onto JavaScript objects with fields for the constructor tag and its
 fields. If available, record field names of the corresponding Haskell datatype
 are used. We map |Int|, |Double|, |Float|, |Integer|, and |PackedString| values
 to \js objects, shown in \tableref{table:typemap}. Despite the mapping to \js
-objects, the expressions of these types are lazy.
+objects, the expressions of these types are lazy. Currently, Haskell arrays are
+not yet translated to JavaScript arrays.
 
 \begin{table}
   \centering
@@ -241,7 +242,7 @@ objects, the expressions of these types are lazy.
     |PackedString|            &  |String|\\
     otherwise                 &  RTS representation\\
     \bottomrule
-  \end{tabular} % TODO: Arrays hier? Hoe gaan we daar mee om eigenlijk?
+  \end{tabular}
   \caption{Mapping from Haskell Types to native \js types}
   \label{table:typemap}
 \end{table}
@@ -251,10 +252,12 @@ We have extended the FFI with the Foreign Expression Language (FEL), a small
 JavaScript-like language that greatly simplifies interfacing with the
 JavaScript world from Haskell. The FEL allows one to number and reorder the
 function arguments, explicitly use them as arguments to JavaScript functions,
-or use them as objects. Other features include hardcoding of literals,
+or use them as objects. Other features include hard coding of literals,
 accessing array indices, and a built-in mechanism for converting datatypes to
 JavaScript objects. The new grammar for importing functions is shown in
-\figureref{jsimpent}.
+\figureref{jsimpent}. In the current implementation, only string literals are
+supported, although there are no fundamental issues preventing implementation
+of numeric, boolean, \texttt{undefined} and \texttt{null} literals.
 
 \begin{figure}[ht]
 \hrule
