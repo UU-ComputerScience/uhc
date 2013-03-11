@@ -396,7 +396,7 @@ The |primMkAnonObj| function creates an anonymous object |{}|, while
 If the class does not exist yet, it is created using an empty constructor. The
 other functions manipulate objects and prototypes, using a mechanism inspired
 by
-lenses~\cite{Meijer:1991:FPB:645420.652535,Hofmann:2011:SL:1925844.1926428,Kagawa:1997:CRS:258949.258969},
+lenses~\cite{Hofmann:2011:SL:1925844.1926428,Kagawa:1997:CRS:258949.258969},
 an abstraction over accessors and mutators. The first argument is always the
 name of the object attribute of interest passed as a string. In case of the
 |set|-functions, the second argument is the value that needs to be set. Since
