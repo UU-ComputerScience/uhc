@@ -311,6 +311,9 @@ JavaScript string. To obtain a native JavaScript string, we require the Haskell
 % Volgens mij kan dit prima in de imports en de exports. Je weet dan namelijk
 % dat je te maken krijgt met JS Strings. Is dit omdat we type informatie verliezen
 % tijdens compilation?
+% Alessandro: Omdat je soms misschien alleen maar die JSStrings wilt doorgeven
+%             oid? Het lijkt mij een beetje eng om die conversie zomaar automatisch
+%             te doen.
 
 \begin{spec}
 foreign import js "%1.subString(%2, %3)"
@@ -550,9 +553,6 @@ modification of the cloning method used by jQuery~\cite{www11jquery}.
 
 %%[JCUApp
 \label{jcu}
-% What does the app do? How is it implemented? Does it work? Does it work well?
-% Is the UHC JS backend a full replacement for JS coding? Etc?
-% \cite{swierstra2011,stutterheim2012} \cite{snap}
 To explore the limitations, and to demonstrate the features of the UHC
 JavaScript back-end in a real-life scenario, we ported the `JCU Prolog Proof
 Assistant'~\cite{swierstra2011}, a web application developed to aid in
@@ -622,8 +622,6 @@ wrap it so it becomes a \js function, after which we partially apply it to an
 explicit |this| parameter using |wrappedThis|. Finally, we bind the event 
 handler to all input fields retrieved by our jQuery selector.
 
-
-%TODO: Rewrite the bit above?
 
 
 \begin{figure}[ht]
@@ -738,7 +736,25 @@ done through Cabal.
 Currently, we generate JavaScript from the compiler's core language. It might
 be possible to generate faster code which uses native JavaScript language
 features when generating JavaScript at a later stage in the compiler pipeline,
-where the intermediate code is more imperative in nature.
+where the intermediate code is more imperative in nature. To show why this would
+be benificial we have run the benchmarks as shown in Table \ref{table:benchmarks}.
+
+\begin{table}
+  \caption{Benchmark comparing runtimes of Native JavaScript, UHC generated JavaScript, GHCJS generated JavaScript, and Fay generated JavaScript. The benchmark is available at \url{https://github.com/UU-ComputerScience/uhc-js/tree/benchmark}. Platform: Intel i7-2720QM, OS X 10.8 and Chrome 24.0.1312.57}
+  \label{table:benchmarks}
+  \centering
+  \begin{tabular}{l||llll}
+  \hline\noalign{\smallskip}
+         & Native & UHC-JS & GHCJS & Fay \\
+  \noalign{\smallskip}
+  \hline
+  \noalign{\smallskip}
+  fib 30              & 0.008759962746019784 & 17.773821200011298  & 0.09962600000629512  & 1.0609085714344733 \\
+  sum [1..100000]     & 0.006114383261057133 &  3.6892584000132045 & 0.056371117645860926 & stack overflow \\
+  sum (primes 1700)   & 0.001197444711369857 & 19.675573600013742  & 0.6857445714163727   & reference-error \\
+  \hline
+  \end{tabular}
+\end{table}
 
 %%]
 
