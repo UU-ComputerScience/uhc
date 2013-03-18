@@ -554,7 +554,7 @@ modification of the cloning method used by jQuery~\cite{www11jquery}.
 %%[JCUApp
 \label{jcu}
 To explore the limitations, and to demonstrate the features of the UHC
-JavaScript back-end in a real-life scenario, we ported the `JCU Prolog Proof
+JavaScript backend in a real-life scenario, we ported the `JCU Prolog Proof
 Assistant'~\cite{swierstra2011}, a web application developed to aid in
 teaching~\cite{stutterheim2012} Prolog at the Junior College Utrecht, to
 Haskell. It is a tool developed for students to learn about important concepts
@@ -595,7 +595,7 @@ Most of the problems we encountered in porting the JCU application to Haskell
 were due to the lack of advanced language features in UHC, such as functional
 dependencies and type families. Practically, this implies that only part of the
 libraries available on Hackage today can currently be compiled to JavaScript
-using the UHC JavaScript back-end.
+using the UHC JavaScript backend.
 
 Another issue arises from JavaScript's scoping rules. In \js, the keyword
 |this| is dynamically scoped while all other variables are lexically scoped.
@@ -701,9 +701,9 @@ programming~\cite{Elliott:2009:PFR:1596638.1596643,Wan:2000:FRP:349299.349331,re
  to interact with the DOM, or they may be an entire user-interface toolkit,
 such as wxHaskell~\cite{Leijen:2004:WPC:1017472.1017483}.
 
-Working with WebWorkers as a JavaScript counterpart to Haskell threads is
-currently not investigated yet. Our JCU application would become significantly
-more usable with a threading alternative.
+Working with WebWorkers as a JavaScript counterpart to Haskell threads is not
+investigated yet. Our JCU application would become significantly more usable
+with a threading alternative.
 
 Communication with the server is currently encoded manually. One could imagine
 an approach inspired by Cloud Haskell's~\cite{epstein2011} typed channels,
@@ -736,26 +736,7 @@ done through Cabal.
 Currently, we generate JavaScript from the compiler's core language. It might
 be possible to generate faster code which uses native JavaScript language
 features when generating JavaScript at a later stage in the compiler pipeline,
-where the intermediate code is more imperative in nature. To show why this would
-be benificial we have run the benchmarks as shown in Table \ref{table:benchmarks}.
-
-\begin{table}
-  \caption{Benchmark comparing runtimes of Native JavaScript, UHC generated JavaScript, GHCJS generated JavaScript, and Fay generated JavaScript. The benchmark is available at \url{https://github.com/UU-ComputerScience/uhc-js/tree/benchmark}. Platform: Intel i7-2720QM, OS X 10.8 and Chrome 24.0.1312.57}
-  \label{table:benchmarks}
-  \centering
-  \begin{tabular}{l||llll}
-  \hline\noalign{\smallskip}
-         & Native & UHC-JS & GHCJS & Fay \\
-  \noalign{\smallskip}
-  \hline
-  \noalign{\smallskip}
-  fib 30              & 0.008759962746019784 & 17.773821200011298  & 0.09962600000629512  & 1.0609085714344733 \\
-  sum [1..100000]     & 0.006114383261057133 &  3.6892584000132045 & 0.056371117645860926 & stack overflow \\
-  sum (primes 1700)   & 0.001197444711369857 & 19.675573600013742  & 0.6857445714163727   & reference-error \\
-  \hline
-  \end{tabular}
-\end{table}
-
+where the intermediate code is more imperative in nature.
 %%]
 
 
@@ -774,19 +755,24 @@ create a dedicated Haskell to JavaScript compiler. It uses the C calling
 convention, rather than a dedicated |js| calling convention. A major advantage
 of using the GHC API is that a mature, production-ready compiler, with support
 for advanced type-system features is at the programmer's disposal, solving some
-of the issues we are currently experiencing due to lack of these
-features in UHC. Currently, GHCJS does not support an import system like the
-one described in this paper, so its ability to use external APIs is limited.
-GHCJS' authors remarked on the \texttt{glasgow-haskell-users} mailing list (13
-November 2012) that adding an FEL-like import mechanism to GHCJS should be
-relatively straight-forward.
+of the issues we are currently experiencing due to lack of these features in
+UHC. Currently, GHCJS does not support an import system like the one described
+in this paper, so its ability to use external APIs is limited. GHCJS' authors
+remarked on the \texttt{glasgow-haskell-users} mailing list (13 November 2012)
+that adding an FEL-like import mechanism to GHCJS should be relatively straight-
+forward.
 
 A very recent, and very promising looking attempt at compiling Haskell to
-JavaScript is the Fay language~\cite{fay-lang} by Chris Doner, which aims to
+JavaScript is the Fay language~\cite{fay-lang} by Chris Done, which aims to
 support a subset of Haskell and compile to JavaScript. It, too, makes extensive
 use of GHC, giving it a production-ready Haskell compiler and type-checker to
-build on. In designing Fay's FFI, Doner drew some inspiration from the work we
+build on. In designing Fay's FFI, Done drew some inspiration from the work we
 present here, namely the FEL.
+
+We ran a benchmark between UHCJS, GHCJS, Fay and Native JavaScript and noticed
+that the code generated by UHCJS performs the worst by far. This is largely due
+  to memory allocation of objects. The full details of this benchmark can be found
+  at: \url{https://github.com/UU-ComputerScience/uhc-js/tree/benchmark}.
 
 Another recent attempt is Haste\cite{ekblad2012} by Anton Ekblad. It, too,
 builds on top of GHC, and it attempts to be easy to use and generate
