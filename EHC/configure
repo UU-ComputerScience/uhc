@@ -1499,7 +1499,7 @@ Optional Packages:
                           configure when compiling EHC.
   --with-ehc-unixtool-prefix=<additional prefix for unixtools (already with absolute pathnames) used by ehc>
                           Additional prefix for unixtools used by ehc.
-  --with-hc=<haskell compiler>
+  --with-ghc=<haskell compiler>
                           Use a command different from 'ghc' to compile with
                           GHC.
   --with-ghc-ehc-options=<haskell compiler options for compiling ehc>

@@ -317,7 +317,7 @@ AC_SUBST(TOPLEVEL_SYSTEM_ABSPATH_PREFIX, "$toplevelSystemAbsolutePathPrefix")
 
 ### 'with' option for Haskell compiler, by default ghc
 AC_ARG_WITH(ghc,
-[AS_HELP_STRING([--with-hc=<haskell compiler>],[Use a command different from 'ghc' to compile with GHC.])],
+[AS_HELP_STRING([--with-ghc=<haskell compiler>],[Use a command different from 'ghc' to compile with GHC.])],
 [ ghcCmd="$withval" ],
 [
   if test "$GHC" = ""; then
