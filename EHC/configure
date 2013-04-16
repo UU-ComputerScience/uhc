@@ -822,7 +822,7 @@ with_uuagc_ehc_sem_options
 with_shuffle_options
 with_cabal_config_options
 with_ehc_unixtool_prefix
-with_ghc
+with_hc
 with_ghc_ehc_options
 with_haddock
 with_uuagc
@@ -1499,7 +1499,7 @@ Optional Packages:
                           configure when compiling EHC.
   --with-ehc-unixtool-prefix=<additional prefix for unixtools (already with absolute pathnames) used by ehc>
                           Additional prefix for unixtools used by ehc.
-  --with-ghc=<haskell compiler>
+  --with-hc=<haskell compiler>
                           Use a command different from 'ghc' to compile with
                           GHC.
   --with-ghc-ehc-options=<haskell compiler options for compiling ehc>
@@ -3525,9 +3525,9 @@ TOPLEVEL_SYSTEM_ABSPATH_PREFIX="$toplevelSystemAbsolutePathPrefix"
 
 ### 'with' option for Haskell compiler, by default ghc
 
-# Check whether --with-ghc was given.
-if test "${with_ghc+set}" = set; then :
-  withval=$with_ghc;  ghcCmd="$withval"
+# Check whether --with-hc was given.
+if test "${with_hc+set}" = set; then :
+  withval=$with_hc;  ghcCmd="$withval"
 else
 
   if test "$GHC" = ""; then
