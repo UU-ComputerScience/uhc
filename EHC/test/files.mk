@@ -190,7 +190,7 @@ test-expect test-regress: test-lists
                 $${ehc} $${ehcOpts} $${ehcTargetOpts} $${optPreludePath} $${t} > $${th} 2>&1 ; \
                 if test $$? = 0 -a -r $${texe} ; \
                 then \
-                  echo "== target '$(EHC_VARIANT_TARGET)' execution ==" >> $${th} ; \
+                  echo "== execution ==" >> $${th} ; \
                   $${texeInvoke} $${texe} >> $${th} 2>&1 ; \
                 fi \
 	          fi \
@@ -230,3 +230,4 @@ test-expect test-regress: test-lists
 
 
 # 	    optPreludePath="--search-path=$(call FUN_INSTALLABS_VARIANT_LIB_TARGET_PREFIX,$${v},$(EHC_VARIANT_TARGET))$(EHCLIB_EHCBASE_PREFIX)" ; \
+#                  echo "== target '$(EHC_VARIANT_TARGET)' execution ==" >> $${th} ; \
