@@ -822,7 +822,7 @@ with_uuagc_ehc_sem_options
 with_shuffle_options
 with_cabal_config_options
 with_ehc_unixtool_prefix
-with_ghc
+with_hc
 with_ghc_ehc_options
 with_haddock
 with_uuagc
@@ -3525,9 +3525,9 @@ TOPLEVEL_SYSTEM_ABSPATH_PREFIX="$toplevelSystemAbsolutePathPrefix"
 
 ### 'with' option for Haskell compiler, by default ghc
 
-# Check whether --with-ghc was given.
-if test "${with_ghc+set}" = set; then :
-  withval=$with_ghc;  ghcCmd="$withval"
+# Check whether --with-hc was given.
+if test "${with_hc+set}" = set; then :
+  withval=$with_hc;  ghcCmd="$withval"
 else
 
   if test "$GHC" = ""; then
