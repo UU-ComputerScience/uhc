@@ -66,6 +66,7 @@ GrinCode/FreeVars.cag
 GrinCode/PointsToAnalysis.cag
 GrinCode/ToGrinByteCode.cag
 GrinCode/ToCil.cag
+GrinCode/ToCmm.cag
 GrinCode/ToSilly.cag
 GrinCode/Trf/AliasElim.cag
 GrinCode/Trf/AliasRename.cag
@@ -123,3 +124,4 @@ TyCore/Trf/RemoveLazyFunctions2of2.cag
 TyCore/Trf/OptimizeStrictness1of2.cag
 TyCore/Trf/OptimizeStrictness2of2.cag
 Cmm/ToC
+Cmm/ToJavaScript

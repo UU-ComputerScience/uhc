@@ -44,6 +44,8 @@ Translation to another AST
 -- Grin semantics
 %%[(8 codegen grin) import({%{EH}GrinCode.ToGrinByteCode}(grinMod2ByteCodeMod))
 %%]
+%%[(8 codegen grin cmm) import({%{EH}GrinCode.ToCmm}(grinMod2CmmMod))
+%%]
 
 -- Cmm semantics
 %%[(8 codegen cmm) import(qualified {%{EH}Cmm} as Cmm)

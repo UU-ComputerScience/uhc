@@ -108,8 +108,7 @@ DATA RegNmInit
 
 TYPE RegNmInitL		= [RegNmInit]
 
-SET AllTop			= Module
-					  TopLevel TopLevelL
+SET AllTopNoMod		= TopLevel TopLevelL
 					  Section SectionL
 					  Decl DeclL
 					  Target TargetL
@@ -119,6 +118,8 @@ SET AllTop			= Module
 					  Init MbInit
 					  Regs RegNmInit RegNmInitL
 					  String16
+SET AllTop			= Module
+					  AllTopNoMod
 %%]
 
 %%[(8 codegen)
@@ -464,5 +465,6 @@ SET	AllTy			= Ty MbTy
 %%]
 
 %%[(8 codegen)
-SET AllNT			= AllTop AllStmt AllExpr AllTy
+SET AllNTNoMod		= AllTopNoMod AllStmt AllExpr AllTy
+SET AllNT			= Module AllNTNoMod
 %%]

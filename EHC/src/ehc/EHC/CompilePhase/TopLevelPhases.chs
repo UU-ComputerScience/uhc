@@ -64,6 +64,8 @@ level 2..6 : with prefix 'cpEhc'
 %%]
 %%[(8 codegen javascript) import({%{EH}EHC.CompilePhase.CompileJavaScript})
 %%]
+%%[(8 codegen cmm) import({%{EH}EHC.CompilePhase.CompileCmm})
+%%]
 %%[99 import({%{EH}Base.PackageDatabase})
 %%]
 %%[(99 codegen) import({%{EH}EHC.CompilePhase.Link})
