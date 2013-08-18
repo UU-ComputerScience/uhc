@@ -89,6 +89,8 @@ ehc-codegentargetspecific-jazy:
 
 ehc-codegentargetspecific-js:
 
+ehc-codegentargetspecific-cmmjs:
+
 ehc-codegentargetspecific-core:
 
 ehc-codegentargetspecific-clr:

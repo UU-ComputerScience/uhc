@@ -64,8 +64,6 @@ level 2..6 : with prefix 'cpEhc'
 %%]
 %%[(8 codegen javascript) import({%{EH}EHC.CompilePhase.CompileJavaScript})
 %%]
-%%[(8 codegen cmm) import({%{EH}EHC.CompilePhase.CompileCmm})
-%%]
 %%[99 import({%{EH}Base.PackageDatabase})
 %%]
 %%[(99 codegen) import({%{EH}EHC.CompilePhase.Link})
@@ -112,7 +110,7 @@ cpEhcFullProgLinkAllModules modNmL
                 -> case () of
                      () | ehcOptOptimizationScope opts >= OptimizationScope_WholeCore
                             -> cpSeq (  hpt
-                                     ++ [ when (targetIsGrinBytecode (ehcOptTarget opts)) (cpProcessBytecode mainModNm)
+                                     ++ [ cpProcessAfterGrin mainModNm
 %%[[99
                                         , cpCleanupGrin [mainModNm]
 %%]]
@@ -525,7 +523,7 @@ cpEhcModuleCompile1 targHSState modNm
              -> do { cpMsg modNm VerboseMinimal "Compiling Grin"
                    ; cpParseGrin modNm
                    ; cpProcessGrin modNm
-                   ; cpProcessBytecode modNm 
+                   ; cpProcessAfterGrin modNm 
                    ; return defaultResult
                    }
                    
@@ -821,11 +819,8 @@ cpEhcEhAnalyseModuleDefs modNm
           ]
 %%]
 
-%%[(8 codegen) haddock
-Part 1 Core processing, on a per module basis, part1 is done always
-%%]
-
 %%[(8 codegen)
+-- | Part 1 Core processing, on a per module basis, part1 is done always
 cpEhcCorePerModulePart1 :: HsName -> EHCompilePhase ()
 cpEhcCorePerModulePart1 modNm
   = do { cr <- get
@@ -856,11 +851,8 @@ cpEhcCorePerModulePart1 modNm
        }
 %%]
 
-%%[(8 codegen) haddock
-Part 2 Core processing, part2 is done either for individual modules or after full program analysis
-%%]
-
 %%[(8 codegen)
+-- | Part 2 Core processing, part2 is done either for per individual module compilation or after full program analysis
 cpEhcCorePerModulePart2 :: HsName -> EHCompilePhase ()
 cpEhcCorePerModulePart2 modNm
   = do { cr <- get
@@ -871,7 +863,7 @@ cpEhcCorePerModulePart2 modNm
              earlyMerge = ehcOptOptimizationScope opts >= OptimizationScope_WholeCore
 %%]]
        ; cpSeq [ when earlyMerge $ cpProcessCoreRest modNm
-               , when (targetIsGrin (ehcOptTarget opts)) (cpProcessGrin modNm)
+               , when (targetIsViaGrin (ehcOptTarget opts)) (cpProcessGrin modNm)
                ]
        }
 %%]
@@ -891,18 +883,17 @@ cpEhcCoreGrinPerModuleDoneNoFullProgAnalysis opts isMainMod isTopMod doMkExec mo
 %%[[99
              , cpCleanupGrin [modNm]
 %%]]
-             , when doesGrin (cpProcessBytecode modNm)
+             , cpProcessAfterGrin modNm
              ]
           ++ (if not isMainMod || doMkExec
               then let how = if doMkExec then FinalCompile_Exec else FinalCompile_Module
                    in  [cpEhcExecutablePerModule how [] modNm]
               else []
              )
-          ++ [ cpMsg modNm VerboseALot ("Core" ++ (if doesGrin then "+Grin" else "") ++ " done")
+          ++ [ cpMsg modNm VerboseALot ("Core" ++ (if targetIsViaGrin (ehcOptTarget opts) then "+Grin" else "") ++ " done")
              , cpMsg modNm VerboseDebug ("isMainMod: " ++ show isMainMod)
              ]
           )
-  where doesGrin = targetIsGrinBytecode (ehcOptTarget opts)
 %%]
 
 %%[(8 codegen grin) haddock
@@ -926,17 +917,20 @@ Make final executable code, either still partly or fully (i.e. also linking)
 %%[(8 codegen)
 cpEhcExecutablePerModule :: FinalCompileHow -> [HsName] -> HsName -> EHCompilePhase ()
 cpEhcExecutablePerModule how impModNmL modNm
-  = cpSeq [ cpCompileWithGCC how impModNmL modNm
+  = do { cr <- get
+       ; let (_,_,opts,_) = crBaseInfo modNm cr
+       ; cpSeq $
+              [ cpCompileWithGCC how impModNmL modNm ]
 %%[[(8 llvm)
-          , cpCompileWithLLVM modNm
+           ++ [ cpCompileWithLLVM modNm ]
 %%]]
 %%[[(8 jazy)
-          , cpCompileJazyJVM how impModNmL modNm
+           ++ [ cpCompileJazyJVM how impModNmL modNm ]
 %%]]
 %%[[(8 javascript)
-          , cpCompileJavaScript how impModNmL modNm
+           ++ [ cpCompileJavaScript how impModNmL modNm ]
 %%]]
-          ]
+       }
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1059,12 +1053,12 @@ cpProcessCoreRest modNm
        ; let (_,_,opts,_) = crBaseInfo modNm cr
        ; cpSeq (   [ cpTranslateCore2Grin modNm ]
                 -- ++ (if ehcOptWholeProgHPTAnalysis opts then [ cpOutputGrin True "" modNm ] else [])
-                ++ (if targetIsGrin (ehcOptTarget opts) then [ cpOutputGrin True "" modNm ] else [])
+                ++ (if targetIsViaGrin (ehcOptTarget opts) then [ cpOutputGrin True "" modNm ] else [])
 %%[[(8 jazy)
                 ++ [ cpTranslateCore2Jazy modNm ]
 %%]]
 %%[[(8 javascript)
-                ++ [ cpTranslateCore2JavaScript modNm ]
+                ++ (if targetIsViaCoreJavaScript (ehcOptTarget opts) then [ cpTranslateCore2JavaScript modNm ] else [])
 %%]]
 %%[[99
                 ++ [ cpCleanupCore [modNm] ]
@@ -1082,11 +1076,46 @@ cpProcessGrin modNm
        ; cpSeq (   (if ehcOptDumpGrinStages opts then [cpOutputGrin False "-000-initial" modNm] else [])
                 ++ [cpTransformGrin modNm]
                 ++ (if ehcOptDumpGrinStages opts then [cpOutputGrin False "-099-final" modNm]  else [])
-                ++ (if ehcOptEmitBytecode opts then [cpTranslateGrin2Bytecode modNm] else [])
 %%[[(8 wholeprogAnal)
-                ++ (if targetDoesHPTAnalysis (ehcOptTarget opts) then [cpTranslateGrin modNm] else [])
+                ++ (if targetDoesHPTAnalysis (ehcOptTarget opts) then [cpTransformGrinHPTWholeProg modNm] else [])
 %%]]
+%%[[(8 cmm)
+                ++ (if targetIsViaCmm (ehcOptTarget opts) then [cpTranslateGrin2Cmm modNm] else [])
+%%]]
+                ++ (if ehcOptEmitBytecode opts then [cpTranslateGrin2Bytecode modNm] else [])
                )
+       }
+%%]
+
+%%[(8 codegen grin)
+cpProcessAfterGrin :: HsName -> EHCompilePhase ()
+cpProcessAfterGrin modNm 
+  = do { cr <- get
+       ; let (_,_,opts,_) = crBaseInfo modNm cr
+       ; cpSeq (  [ when (targetIsGrinBytecode (ehcOptTarget opts)) $
+                      cpProcessBytecode modNm
+%%[[(8 cmm)
+                  , when (targetIsViaCmm (ehcOptTarget opts)) $
+                      cpProcessCmm modNm
+%%]]
+                  ]
+          )
+       }
+%%]
+
+%%[(8 codegen cmm)
+cpProcessCmm :: HsName -> EHCompilePhase ()
+cpProcessCmm modNm 
+  = do { cr <- get
+       ; let (_,_,opts,_) = crBaseInfo modNm cr
+       ; cpSeq [ cpMsg modNm VerboseALot "Translate Cmm"
+%%[[(8 javascript)
+               , when (targetIsViaGrinCmmJavaScript (ehcOptTarget opts)) $ cpTranslateCmm2JavaScript modNm
+%%]]
+%%[[99
+               , cpCleanupCmm modNm
+%%]]
+               ]
        }
 %%]
 

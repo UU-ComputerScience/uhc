@@ -60,7 +60,7 @@ cpCompileJavaScript how othModNmL modNm
               fpExec  = mkPerExecOutputFPath opts modNm fp (Just "js")
               fpHtml  = mkPerExecOutputFPath opts modNm fp (Just "html")
 
-       ; when (isJust mbJs && targetIsJavaScript (ehcOptTarget opts))
+       ; when (isJust mbJs && ehcOptEmitJavaScript opts)
               (do { cpMsg modNm VerboseALot "Emit JavaScript"
                   ; when (ehcOptVerbosity opts >= VerboseDebug)
                          (do { lift $ putStrLn $ "fpO   : " ++ fpathToStr fpM

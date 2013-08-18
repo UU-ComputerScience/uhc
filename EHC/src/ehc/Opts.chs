@@ -146,6 +146,28 @@ tycoreOptMp
       ]
 %%]
 
+%%[(8 codegen cmm)
+{-
+instance Show CmmOpt where
+  show CmmOpt_Sugar      = "sugar"       -- first letters of alternatives must be unique
+  show CmmOpt_Unicode    = "unicode"
+-}
+
+cmmOpts :: [CmmOpt]
+cmmOpts = [] -- [CmmOpt_Sugar, CmmOpt_Unicode]
+
+cmmOptMp :: Map.Map String CmmOpt
+cmmOptMp
+  = Map.empty
+{-
+  = Map.fromList $ concat
+    $ [ [ (s, o), ([head s], o) ]
+      | o <- cmmOpts
+      , let s = show o
+      ]
+-}
+%%]
+
 %%[99
 instance Show PgmExec where
   show PgmExec_CPP      = "P"
@@ -220,6 +242,12 @@ ehcOptEmitCLR :: EHCOpts -> Bool
 ehcOptEmitCLR = targetIsCLR . ehcOptTarget
 %%]
 
+%%[(8 codegen javascript) export(ehcOptEmitJavaScript)
+-- | Do we generate JavaScript?
+ehcOptEmitJavaScript :: EHCOpts -> Bool
+ehcOptEmitJavaScript = targetIsJavaScript . ehcOptTarget
+%%]
+
 %%[(8 codegen) export(ehcOptEmitCore)
 -- generate Core
 ehcOptEmitCore :: EHCOpts -> Bool
@@ -236,6 +264,16 @@ ehcOptEmitTyCore opts
 ehcOptTyCore :: EHCOpts -> Bool
 ehcOptTyCore opts = ehcOptEmitTyCore opts || isJust (ehcOptUseTyCore opts)
 
+%%]
+
+%%[(8 codegen) export(ehcOptCmm)
+-- use Cmm ?
+ehcOptCmm :: EHCOpts -> Bool
+%%[[(8 cmm)
+ehcOptCmm opts = isJust (ehcOptUseCmm opts)
+%%][8
+ehcOptCmm opts = isJust (ehcOptUseCmm opts)
+%%]]
 %%]
 
 %%[(8 codegen) export(ehcOptOptimizes)
@@ -403,6 +441,9 @@ ehcCmdLineOpts
 %%[[(8 codegen tycore)
      ,  Option ""   ["tycore"]              (OptArg oUseTyCore "opt[,...]")         ("temporary/development: use typed core. opts: " ++ (concat $ intersperse " " $ Map.keys tycoreOptMp))
 %%]]
+%%[[(8 codegen cmm)
+     ,  Option ""   ["cmm"]                 (OptArg oUseCmm "opt[,...]")            ("temporary/development: use cmm. opts: " ++ (concat $ intersperse " " $ Map.keys cmmOptMp))
+%%]]
      ]
 %%]
 %%[1
@@ -461,6 +502,13 @@ ehcCmdLineOpts
                                        where opts1 = optOpts tycoreOptMp s
                                              opts2 = if TyCoreOpt_Unicode `elem` opts1 then ([TyCoreOpt_Sugar] ++ opts1) else opts1
                                 _      -> o { ehcOptUseTyCore = Just [] }
+%%]]
+%%[[(8 codegen cmm)
+         oUseCmm ms   o =  case ms of
+                                Just s -> o { ehcOptUseCmm = Just opts1 }
+                                       where opts1 = optOpts cmmOptMp s
+                                             -- opts2 = if TyCoreOpt_Unicode `elem` opts1 then ([TyCoreOpt_Sugar] ++ opts1) else opts1
+                                _      -> o { ehcOptUseCmm = Just [] }
 %%]]
 %%[[1
          oTarget        _ o =  o

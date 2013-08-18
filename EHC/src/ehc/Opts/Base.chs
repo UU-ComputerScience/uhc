@@ -119,6 +119,17 @@ data TyCoreOpt
 
 %%]
 
+%%[(8 codegen cmm) export(CmmOpt(..))
+-- | Cmm options
+data CmmOpt
+  {-
+  = TyCoreOpt_Sugar         -- produce/accept sugared version
+  | TyCoreOpt_Unicode       -- produce/accept unicode, implies sugar
+  deriving Eq
+  -}
+
+%%]
+
 %%[99 export(PgmExec(..))
 -- | Pgm (internal program used) options, in particular alternate internal shell commands
 data PgmExec
@@ -187,9 +198,10 @@ data EHCOpts
       ,  ehcOptDumpCoreStages ::  Bool              -- dump intermediate Core transformation stages
       ,  ehcOptMbTarget       ::  MaybeOk Target            -- code generation target
       ,  ehcOptMbTargetFlavor ::  MaybeOk TargetFlavor      -- code generation target flavor
-%%]]
-%%[[(8 codegen)
       ,  ehcOptCoreOpts       ::  [CoreOpt]  	    -- Core options
+%%]]
+%%[[(8 codegen cmm)
+      ,  ehcOptUseCmm		  ::  Maybe [CmmOpt]	-- use cmm? + options
 %%]]
 %%[[(8 codegen tycore)
       ,  ehcOptUseTyCore      ::  Maybe [TyCoreOpt] -- use TyCore instead of Core (temporary option until Core is obsolete)
@@ -335,9 +347,10 @@ emptyEHCOpts
       ,  ehcOptOptimizationScope=   OptimizationScope_PerModule
       ,  ehcOptMbTarget         =   JustOk defaultTarget
       ,  ehcOptMbTargetFlavor   =   JustOk defaultTargetFlavor
+      ,  ehcOptCoreOpts         =   []
 %%]]
 %%[[(8 codegen)
-      ,  ehcOptCoreOpts         =   []
+      ,  ehcOptUseCmm           =	Nothing
 %%]]
 %%[[(8 codegen tycore)
       ,  ehcOptUseTyCore        =   Nothing

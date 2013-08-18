@@ -50,6 +50,8 @@ Translation to another AST
 -- Cmm semantics
 %%[(8 codegen cmm) import(qualified {%{EH}Cmm} as Cmm)
 %%]
+%%[(8 codegen cmm javascript) import({%{EH}Cmm.ToJavaScript})
+%%]
 
 -- Bytecode semantics
 %%[(8 codegen grin) import({%{EH}GrinByteCode.ToC}(gbmod2C))
@@ -181,7 +183,7 @@ cpTranslateCore2Grin modNm
                  mbCoreSem = ecuMbCoreSem ecu
                  coreSem   = panicJust "cpTranslateCore2Grin" mbCoreSem
                  grin      = Core2GrSem.grMod_Syn_CodeAGItf coreSem
-         ;  when (isJust mbCoreSem && targetIsGrin (ehcOptTarget opts))
+         ;  when (isJust mbCoreSem && targetIsViaGrin (ehcOptTarget opts))
                  (cpUpdCU modNm $! ecuStoreGrin $! grin)
          }
 %%]
@@ -211,14 +213,41 @@ cpTranslateCore2Jazy modNm
 %%]
 
 %%[(8 codegen javascript) export(cpTranslateCore2JavaScript)
+-- | Translate Core to JavaScript
 cpTranslateCore2JavaScript :: HsName -> EHCompilePhase ()
 cpTranslateCore2JavaScript modNm
   = do { cr <- get
        ; let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
               mbCore    = ecuMbCore ecu
               coreInh  = crsiCoreInh crsi
-       ; when (isJust mbCore && targetIsJavaScript (ehcOptTarget opts))
+       ; when (isJust mbCore)
               (cpUpdCU modNm $ ecuStoreJavaScript $ cmod2JavaScriptModule opts (Core2GrSem.dataGam_Inh_CodeAGItf coreInh) $ fromJust mbCore)
+       }
+%%]
+
+%%[(8 codegen grin cmm) export(cpTranslateGrin2Cmm)
+-- | Translate Grin to Cmm
+cpTranslateGrin2Cmm :: HsName -> EHCompilePhase ()
+cpTranslateGrin2Cmm modNm
+  = do { cr <- get
+       ; let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
+              mbGrin    = ecuMbGrin ecu
+       ; when (isJust mbGrin) $ do
+           let (cmm,errs) = grinMod2CmmMod opts $ fromJust mbGrin
+           cpUpdCU modNm $ ecuStoreCmm cmm
+       }
+%%]
+
+%%[(8 codegen javascript cmm) export(cpTranslateCmm2JavaScript)
+-- | Translate Cmm to JavaScript
+cpTranslateCmm2JavaScript :: HsName -> EHCompilePhase ()
+cpTranslateCmm2JavaScript modNm
+  = do { cr <- get
+       ; let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
+              mbCmm    = ecuMbCmm ecu
+       ; when (isJust mbCmm) $ do
+           let (jsmod,errs) = cmmMod2JavaScript opts $ fromJust mbCmm
+           cpUpdCU modNm $ ecuStoreJavaScript jsmod
        }
 %%]
 
@@ -270,13 +299,15 @@ cpTranslateGrin2Bytecode modNm
         }
 %%]
 
-%%[(8 codegen grin wholeprogAnal) export(cpTranslateGrin)
-cpTranslateGrin :: HsName -> EHCompilePhase ()
-cpTranslateGrin modNm
+%%[(8 codegen grin wholeprogAnal) export(cpTransformGrinHPTWholeProg)
+-- This should be in Transformations
+-- | Transform Grin using HPT and its results
+cpTransformGrinHPTWholeProg :: HsName -> EHCompilePhase ()
+cpTransformGrinHPTWholeProg modNm
   =  do { cr <- get
         ; let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
                mbGrin = ecuMbGrin ecu
-               grin   = panicJust "cpTranslateGrin" mbGrin
+               grin   = panicJust "cpTransformGrinHPTWholeProg" mbGrin
         ; when (isJust mbGrin)
                (lift $ GRINC.doCompileGrin (Right (fp,grin)) opts)
         }

@@ -8,6 +8,9 @@
 %%[(8 codegen cmm javascript) hs import({%{EH}Base.Builtin},{%{EH}Cmm},{%{EH}Base.Common} hiding (Range),{%{EH}Opts},qualified {%{EH}Config} as Cfg)
 %%]
 
+%%[(8 codegen cmm javascript) hs import({%{EH}Error})
+%%]
+
 %%[(8 codegen cmm javascript) hs import(qualified {%{EH}JavaScript} as JS)
 %%]
 
@@ -21,12 +24,12 @@
 %%]
 
 %%[(8 codegen cmm javascript).cmmMod2JavaScript hs export(cmmMod2JavaScript)
-cmmMod2JavaScript :: EHCOpts -> Module -> JS.JavaScriptModule
+cmmMod2JavaScript :: EHCOpts -> Module -> (JS.JavaScriptModule, [Err])
 cmmMod2JavaScript opts m
   = let t = wrap_AGItf (sem_AGItf (AGItf_AGItf m))
                        (Inh_AGItf {opts_Inh_AGItf = opts}
                        )
-    in  jsMod_Syn_AGItf t
+    in  (jsMod_Syn_AGItf t, [])
 %%]
 
 %%[(8 codegen cmm javascript)

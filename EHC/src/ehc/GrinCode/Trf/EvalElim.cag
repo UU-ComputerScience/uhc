@@ -130,7 +130,7 @@ WRAPPER GrAGItf
 
 %%[(8 codegen grin) hs
 optsAllowNodePtrMix :: EHCOpts -> Bool
-optsAllowNodePtrMix opts = targetIsGrinBytecode (ehcOptTarget opts)
+optsAllowNodePtrMix opts = targetAllowsGrinNodePtrMix (ehcOptTarget opts)
 %%]
 
 %%[(8 codegen grin)

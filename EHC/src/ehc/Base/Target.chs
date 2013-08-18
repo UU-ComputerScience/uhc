@@ -86,6 +86,7 @@ data Target
 
   -- javascript
   | Target_Interpreter_Core_JavaScript		-- javascript based on Core
+  | Target_Interpreter_GrinCmm_JavaScript	-- javascript based on Grin -> Cmm
 %%[[(8888 codegen java)
   -- not used at all
   | Target_Interpreter_Core_Java			-- java based on Core, as src. Will be obsolete.
@@ -118,7 +119,8 @@ instance Show Target where
   show Target_None_TyCore_None				= "tycore"
   show Target_Interpreter_Core_Jazy			= "jazy"
   show Target_Interpreter_Core_JavaScript	= "js"
-%%[[(8888 codegen java)
+  show Target_Interpreter_GrinCmm_JavaScript= "cmmjs"
+%%[[(8888 java)
   show Target_Interpreter_Core_Java			= "java"
 %%]]
   show Target_FullProgAnal_Grin_C			= "C"
@@ -150,27 +152,30 @@ supportedTargetMp :: Map.Map String Target
           | (t,i)
               <- []
                  -- ++ [ mk Target_None_Core_None [] ]
-%%[[(8 codegen jazy)
+%%[[(8 jazy)
                  ++ [ mk Target_Interpreter_Core_Jazy [FFIWay_Jazy] ]
 %%]]
-%%[[(8 codegen javascript)
+%%[[(8 javascript)
                  ++ [ mk Target_Interpreter_Core_JavaScript [FFIWay_JavaScript] ]
 %%]]
-%%[[(8888 codegen java)
+%%[[(8 cmm javascript)
+                 ++ [ mk Target_Interpreter_GrinCmm_JavaScript [FFIWay_JavaScript] ]
+%%]]
+%%[[(8888 java)
                  -- ++ [ mk Target_Interpreter_Core_Java [] ]
 %%]]
-%%[[(8 codegen grin)
+%%[[(8 grin)
                  ++ [ mk Target_Interpreter_Grin_C [FFIWay_CCall]
                     ]
 %%]]
-%%[[(8 codegen grin wholeprogC)
+%%[[(8 grin wholeprogC)
                  ++ [ mk Target_FullProgAnal_Grin_C [FFIWay_CCall]
                     ]
 %%]]
-%%[[(8 codegen llvm wholeprogC)
+%%[[(8 llvm wholeprogC)
                  ++ [ mk Target_FullProgAnal_Grin_LLVM [FFIWay_CCall] ]
 %%]]
-%%[[(8 codegen clr wholeprogC)
+%%[[(8 clr wholeprogC)
                  ++ [ mk Target_FullProgAnal_Grin_CLR [FFIWay_CCall] ]
 %%]]
           ]
@@ -252,25 +257,51 @@ targetDoesHPTAnalysis t
       _ 								-> False
 %%]
 
+%%[(8 codegen) export(targetIsViaCmm)
+targetIsViaCmm :: Target -> Bool
+targetIsViaCmm t
+  = case t of
+%%[[(8 cmm)
+      _ 								-> targetIsViaGrinCmmJavaScript t
+%%][8
+      _ 								-> False
+%%]]
+{-# INLINE targetIsViaCmm #-}
+%%]
+
+%%[(8 codegen) export(targetIsViaGrin)
+targetIsViaGrin :: Target -> Bool
+targetIsViaGrin t
+  = case t of
+%%[[(8 grin)
+      _ 								-> targetIsViaGrinCmmJavaScript t || targetIsGrinBytecode t || targetDoesHPTAnalysis t
+%%][8
+      _ 								-> False
+%%]]
+{-# INLINE targetIsViaGrin #-}
+%%]
+
 %%[(8 codegen) export(targetIsGrinBytecode)
 targetIsGrinBytecode :: Target -> Bool
 targetIsGrinBytecode t
   = case t of
-%%[[(8 codegen grin)
+%%[[(8 grin)
       Target_Interpreter_Grin_C		 	-> True
 %%]]
       _ 								-> False
+{-# INLINE targetIsGrinBytecode #-}
 %%]
 
-%%[(8 codegen) export(targetIsGrin)
-targetIsGrin :: Target -> Bool
-targetIsGrin t
+%%[(8 codegen) export(targetAllowsGrinNodePtrMix)
+targetAllowsGrinNodePtrMix :: Target -> Bool
+targetAllowsGrinNodePtrMix t
   = case t of
-%%[[(8 codegen grin)
-      _ 								-> targetIsGrinBytecode t || targetDoesHPTAnalysis t
+%%[[(8 grin)
+      _		 							-> targetIsGrinBytecode t
 %%][8
       _ 								-> False
 %%]]
+{-# INLINE targetAllowsGrinNodePtrMix #-}
 %%]
 
 %%[(8 codegen) export(targetIsC)
@@ -284,16 +315,18 @@ targetIsC t
       Target_Interpreter_Grin_C		 	-> True
 %%]]
       _ 								-> False
+{-# INLINE targetIsC #-}
 %%]
 
 %%[(8 codegen) export(targetAllowsOLinking)
 targetAllowsOLinking :: Target -> Bool
 targetAllowsOLinking t
   = case t of
-%%[[(8 codegen grin)
+%%[[(8 grin)
       Target_Interpreter_Grin_C		 	-> True
 %%]]
       _ 								-> False
+{-# INLINE targetAllowsOLinking #-}
 %%]
 
 %%[(8 codegen) export(targetAllowsJarLinking)
@@ -304,6 +337,7 @@ targetAllowsJarLinking t
       Target_Interpreter_Core_Jazy		-> True
 %%]]
       _ 								-> False
+{-# INLINE targetAllowsJarLinking #-}
 %%]
 
 %%[(8 codegen) export(targetIsCore)
@@ -312,6 +346,7 @@ targetIsCore t
   = case t of
       Target_None_Core_None				-> True
       _ 								-> False
+{-# INLINE targetIsCore #-}
 %%]
 
 %%[(8 codegen) export(targetIsTyCore)
@@ -320,6 +355,7 @@ targetIsTyCore t
   = case t of
       Target_None_TyCore_None			-> True
       _ 								-> False
+{-# INLINE targetIsTyCore #-}
 %%]
 
 %%[(8 codegen) export(targetIsJVM)
@@ -330,16 +366,41 @@ targetIsJVM t
       Target_Interpreter_Core_Jazy		-> True
 %%]]
       _ 								-> False
+{-# INLINE targetIsJVM #-}
+%%]
+
+%%[(8 codegen) export(targetIsViaGrinCmmJavaScript)
+targetIsViaGrinCmmJavaScript :: Target -> Bool
+targetIsViaGrinCmmJavaScript t
+  = case t of
+%%[[(8 cmm javascript)
+      Target_Interpreter_GrinCmm_JavaScript	-> True
+%%]]
+      _ 									-> False
+{-# INLINE targetIsViaGrinCmmJavaScript #-}
+%%]
+
+%%[(8 codegen) export(targetIsViaCoreJavaScript)
+targetIsViaCoreJavaScript :: Target -> Bool
+targetIsViaCoreJavaScript t
+  = case t of
+%%[[(8 javascript)
+      Target_Interpreter_Core_JavaScript	-> True
+%%]]
+      _ 									-> False
+{-# INLINE targetIsViaCoreJavaScript #-}
 %%]
 
 %%[(8 codegen) export(targetIsJavaScript)
 targetIsJavaScript :: Target -> Bool
 targetIsJavaScript t
   = case t of
-%%[[(8 codegen javascript)
-      Target_Interpreter_Core_JavaScript	-> True
-%%]]
+%%[[(8 javascript)
+      _ 									-> targetIsViaCoreJavaScript t || targetIsViaGrinCmmJavaScript t
+%%][8
       _ 									-> False
+%%]]
+{-# INLINE targetIsJavaScript #-}
 %%]
 
 %%[(8 codegen grin llvm wholeprogAnal wholeprogC) export(targetIsLLVM)
@@ -350,6 +411,7 @@ targetIsLLVM t
       Target_FullProgAnal_Grin_LLVM 	-> True
 %%]]
       _ 								-> False
+{-# INLINE targetIsLLVM #-}
 %%]
 
 %%[(8 codegen grin clr wholeprogC) export(targetIsCLR)
@@ -360,6 +422,7 @@ targetIsCLR t
       Target_FullProgAnal_Grin_CLR	 	-> True
 %%]]
       _ 								-> False
+{-# INLINE targetIsCLR #-}
 %%]
 
 %%[(8 codegen) export(targetIsOnUnixAndOrC)
@@ -367,6 +430,7 @@ targetIsCLR t
 targetIsOnUnixAndOrC :: Target -> Bool
 targetIsOnUnixAndOrC t
   = targetIsC t || targetIsJVM t
+{-# INLINE targetIsOnUnixAndOrC #-}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -410,6 +474,9 @@ ffiWayForPrim Target_Interpreter_Core_Jazy			= Just FFIWay_Jazy
 %%]]
 %%[[(8 javascript)
 ffiWayForPrim Target_Interpreter_Core_JavaScript	= Just FFIWay_JavaScript
+%%]]
+%%[[(8 cmm javascript)
+ffiWayForPrim Target_Interpreter_GrinCmm_JavaScript	= Just FFIWay_JavaScript
 %%]]
 %%[[(8 grin clr wholeprogC)
 ffiWayForPrim Target_FullProgAnal_Grin_CLR			= Just FFIWay_CLR
