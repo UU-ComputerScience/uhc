@@ -5,7 +5,7 @@
 %%[(8 codegen grin cmm) hs module {%{EH}GrinCode.ToCmm}
 %%]
 
-%%[(8 codegen grin cmm) hs import(Data.Maybe,Data.List,UHC.Util.Pretty,qualified UHC.Util.FastSeq as Seq,UHC.Util.Utils,qualified Data.Set as Set,qualified Data.Map as Map)
+%%[(8 codegen grin cmm) hs import(Data.Maybe,Data.List,UHC.Util.Pretty,UHC.Util.FastSeq as Seq,UHC.Util.Utils,qualified Data.Set as Set,qualified Data.Map as Map)
 %%]
 
 %%[(8 codegen grin cmm) hs import({%{EH}Base.Common},{%{EH}Opts},{%{EH}Base.Builtin},qualified {%{EH}Config} as Cfg)
@@ -76,6 +76,15 @@ WRAPPER GrAGItf
 
 %%[(88 codegen grin cmm)
 -- PRAGMA nocycle
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Cmm types
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin cmm) hs
+tyNd :: Cmm.Ty
+tyNd = Cmm.Ty_Nm $ mkHNm "Nd"
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -900,11 +909,118 @@ SEM GrModule
                                                           , let m = panicJust ("ToCmm.GrModule.Mod: " ++ show n) (Map.lookup n @entryNmMp)
                                                       ]
 %%]]
-                                                      []
+                                                      (Seq.toList @bindL.cmmTopDecls)
 %%[[9090
                                                       (Set.toList @bindL.includeS)
 %%]]
 %%]
+
+%%[(8 codegen grin cmm) hs
+type CmmTopDecls = Seq.Seq Cmm.TopLevel
+type CmmBodyDecls = Seq.Seq Cmm.BodyDecl
+
+(&) = Seq.union
+{-# INLINE (&) #-}
+%%]
+
+%%[(8 codegen grin cmm)
+ATTR AllBind [ | | cmmTopDecls USE {&} {Seq.empty}: CmmTopDecls ]
+
+SEM GrBind
+  | Bind        lhs         .   cmmTopDecls   	=   Seq.singleton $ Cmm.TopLevel_Proc $
+  														Cmm.Proc_Proc Nothing @nm [ Cmm.Formal_Formal Nothing False tyNd a | a <- @argNmL ] $
+  															Cmm.Body_Body (Seq.toList @expr.cmmBodyDecls)
+%%]
+
+%%[(8 codegen grin cmm)
+ATTR AllGrExpr [ | | cmmBodyDecls USE {&} {Seq.empty}: CmmBodyDecls ]
+
+%%]
+
+{-
+DATA GrExpr
+  | Seq         expr            : GrExpr
+                pat             : GrPatLam
+                body            : GrExpr
+  | Unit        val             : GrVal
+                type			: GrType
+  | UpdateUnit  nm              : {HsName}
+                val             : GrVal
+  | Case        val             : GrVal
+                altL            : GrAltL
+  | FetchNode   nm              : {HsName}
+  | FetchUpdate src             : {HsName}
+                dst             : {HsName}
+  | FetchField  nm              : {HsName}
+                offset          : {Int}
+                mbTag           : {Maybe GrTag}
+  | Store       val             : GrVal
+  | Call        nm              : {HsName}
+                argL            : GrValL
+  | FFI
+ %%[[8
+                nm              : {String}
+ %%][90
+                callconv        : {FFIWay}
+                impEnt          : {ForeignEnt}
+ %%]]
+ %%[[99
+                ffiAnnot        : {GrFFIAnnot}
+ %%]]
+                argL            : GrValL
+  | Eval        nm              : {HsName}
+  | App         nm              : {HsName}
+                argL            : GrValL
+  | Throw       nm              : {HsName}
+  | Catch       body            : GrExpr
+                arg             : {HsName}
+                handler         : GrExpr
+-}
+
+%%[(8 codegen grin cmm)
+ATTR GrVal [ | | cmmE: {Cmm.Expr} ]
+
+SEM GrVal
+  | Var			loc			.	cmmE			=	Cmm.Expr_Nm @nm
+  | LitInt		loc			.	cmmE			=	Cmm.Expr_Int (fromIntegral @int) Nothing
+  | * - Var LitInt
+  				loc			.	cmmE			=	Cmm.Expr_Nm hsnUnknown
+%%]
+
+{-
+DATA GrVal
+  | Empty
+  | VarNode     fldL            : GrValL
+  | BasicNode   tag             : GrTag
+                nm              : {HsName}
+  | EnumNode    nm              : {HsName}
+  | PtrNode     nm              : {HsName}
+  | LitStr      str             : {String}
+  | Tag         tag             : GrTag
+  | Node        tag             : GrTag
+                fldL            : GrValL
+  | OpaqueNode  nm              : {HsName}
+
+DATA Expr
+  | Int				val				: Integer
+  					mbTy			: MbTy
+  | Lit				val				: Lit
+  | Round			val				: Round
+  | Rat				nom				: Integer
+  					denom			: Integer
+  					mbTy			: MbTy
+  | Float			val				: Double
+  					mbTy			: MbTy
+  | Char			val				: Char
+  					mbTy			: MbTy
+  | Nm				nm				: Nm
+  | Typed			ty				: Ty
+  					expr			: Expr
+  					mbAssert		: MbAssert
+  | Op				op				: Op
+  					exprs			: ExprL
+-}
+
 
 %%[(88 codegen grin cmm)
 ATTR AllBind AllGrExpr GrPatLam [ | | i USE {Seq.:++:} {Seq.empty}: {GB.InsSeq} ]

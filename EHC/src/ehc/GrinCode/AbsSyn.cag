@@ -20,13 +20,19 @@ DATA GrModule
                 globalL         : GrGlobalL
                 bindL           : GrBindL
                 tagsMp          : {Map.Map HsName [GrTag]}
+%%]
 
+%%[(8 codegen grin)
 DATA GrGlobal
   | Global      nm              : {HsName}
                 val             : GrVal
 
 TYPE GrGlobalL    =   [GrGlobal]
 
+SET AllGlobal   =   GrGlobal GrGlobalL
+%%]
+
+%%[(8 codegen grin)
 DATA GrBind
   | Bind        nm              : {HsName}
                 annot           : GrBindAnn
@@ -37,6 +43,8 @@ DATA GrBind
   | Rec         bindL           : GrBindL
 
 TYPE GrBindL    =   [GrBind]
+
+SET AllBind     =   GrBind GrBindL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -225,8 +233,6 @@ DATA GrFFIAnnot
 
 %%[(8 codegen grin)
 SET AllType     =   GrType GrTypeBase GrTypeBaseL
-SET AllGlobal   =   GrGlobal GrGlobalL
-SET AllBind     =   GrBind GrBindL
 SET AllDef      =   AllGlobal AllBind
 SET AllAlt      =   GrAlt GrAltL
 SET AllGrExpr   =   GrExpr AllAlt
