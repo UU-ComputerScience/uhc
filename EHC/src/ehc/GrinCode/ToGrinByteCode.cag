@@ -25,7 +25,7 @@
 %%[(8 codegen grin) hs import({%{EH}Foreign.Extract})
 %%]
 
-%%[(8 codegen grin) ag import({GrinCode/Trf/CommonFreeVar},{GrinCode/CommonForGen})
+%%[(8 codegen grin) ag import({GrinCode/Trf/CommonFreeVar},{GrinCode/CommonForGen},{GrinCode/CommonValAccess})
 %%]
 
 Debug
@@ -481,7 +481,7 @@ SEM GrBind
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Named value access
+%%% Named value access: see for hooks CommonValAccess
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen grin) hs
@@ -491,61 +491,27 @@ patNmL2DepL nmL = zip (reverse nmL) [0..]
 patNmL2DepL2 :: [HsName] -> AssocL HsName Int
 patNmL2DepL2 nmL = zip nmL [0, (- GB.nrValWords) ..]
 
-patNmL2VAGam' :: GB.StackDepth -> AssocL HsName Int -> GB.ValAccessGam
+patNmL2VAGam' :: GB.StackDepth -> AssocL HsName Int -> GB.ValAccessGamGB
 patNmL2VAGam' dep nmDepL = Map.fromList [ (n,GB.Val_Local (dep+d) (GB.ValAccessAnnot_Annot basicAnnotWord)) | (n,d) <- nmDepL ]
 
-patNmL2VAGam :: GB.StackDepth -> [HsName] -> GB.ValAccessGam
+patNmL2VAGam :: GB.StackDepth -> [HsName] -> GB.ValAccessGamGB
 patNmL2VAGam dep nmL = patNmL2VAGam' dep $ patNmL2DepL nmL
 %%]
 
 %%[(8 codegen grin)
-ATTR AllGrExpr AllBind [ vaGam: {GB.ValAccessGam} | | ]
+ATTR AllGrExpr AllBind [ vaGam: {GB.ValAccessGamGB} | | ]
 
 SEM GrModule
   | Mod         loc         .   vaGam           =   Map.fromList $ map (\(n,o) -> (n,GB.Val_GlobEntry $ GB.eiEntryNr o)) $ Map.toList @entryNmMp
 
-SEM GrExpr
-  | Seq         body        .   vaGam           =   @newVaGam `Map.union` @lhs.vaGam
-
 SEM GrBind
   | Bind        loc         .   newVaGam        =   Map.fromList [ (n,GB.Val_Local (GB.ststDepth @stState - o) (GB.ValAccessAnnot_Annot basicAnnotWord)) | (n,o) <- zip @argNmL [GB.nrCallRetWords ..] ]
-                expr        .   vaGam           =   @newVaGam `Map.union` @lhs.vaGam
 
 SEM GrAlt
   | Alt         loc         .   newVaGam        =   case @altFetch of
                                                       AltFetch_Many ns  -> patNmL2VAGam' @exprStkDepth $ patNmL2DepL2 ns
                                                       AltFetch_One  n _ -> patNmL2VAGam' @exprStkDepth $ patNmL2DepL2 [n]
                                                       _                 -> Map.empty
-                expr        .   vaGam           =   @newVaGam `Map.union` @lhs.vaGam
-%%]
-
-%%[(8 codegen grin)
-SEM GrExpr
-  | *           loc         .   nmEnv           =   GB.NmEnv
-                                                      { GB.neVAGam = @lhs.vaGam
-%%[[50
-                                                      , GB.neImpNmMp = @lhs.impNmOffMpMp
-                                                      , GB.neLamMp   = @lhs.lamMp
-%%]]
-                                                      }
-
-SEM GrBind
-  | Bind        loc         .   nmEnv           =   GB.NmEnv
-                                                      { GB.neVAGam = @lhs.vaGam
-%%[[50
-                                                      , GB.neImpNmMp = @lhs.impNmOffMpMp
-                                                      , GB.neLamMp   = @lhs.lamMp
-%%]]
-                                                      }
-
-SEM GrModule
-  | Mod         loc         .   nmEnv           =   GB.NmEnv
-                                                      { GB.neVAGam = @vaGam
-%%[[50
-                                                      , GB.neImpNmMp = @lhs.impNmOffMpMp
-                                                      , GB.neLamMp   = @lhs.lamMp
-%%]]
-                                                      }
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -17,7 +17,7 @@
 %%[(8 codegen grin) hs import({%{EH}Base.Bits} as Binary)
 %%]
 
-%%[(8 codegen grin) hs import(qualified {%{EH}CodeGen.ValAccess} as VA)
+%%[(8 codegen grin) hs import({%{EH}CodeGen.ValAccess} as VA) export(module VA)
 %%]
 
 %%[(8 codegen grin) hs export(AGItf(..),Module(..),Instr(..), Instrs, Meta(..))
@@ -676,86 +676,26 @@ defaultOptimEffect = OptimEffect {- False -}
 %%% Environmental info for name resolution
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin) hs export(ValAccessAnnot(..))
--- type ValAccessAnnot = Either BasicAnnot BasicSize			-- either we have to deal with the annotation or it has already been done partly and we need to propagate the size
+%%[(8 codegen grin) hs export(ValAccessGB, ValAccessGamGB, vaEntryInx)
+type ValAccessGB 	= ValAccess 	StackDepth Int Int Int
+type ValAccessGamGB = ValAccessGam 	StackDepth Int Int Int
 
-data ValAccessAnnot			-- either we have to deal with the annotation or it has already been done partly and we need to propagate the size
-  = ValAccessAnnot_Annot !BasicAnnot
-  | ValAccessAnnot_Basic !BasicSize  !GCPermit
-  deriving Show
-
-valAccessAnnot :: (BasicAnnot -> x) -> (BasicSize -> GCPermit -> x) -> ValAccessAnnot -> x
-valAccessAnnot f _ (ValAccessAnnot_Annot a  ) = f a
-valAccessAnnot _ f (ValAccessAnnot_Basic s p) = f s p
-
-vaAnnotBasicSize :: ValAccessAnnot -> BasicSize
-vaAnnotBasicSize = valAccessAnnot grinBasicAnnotSize const
-
-vaAnnotGCPermit :: ValAccessAnnot -> GCPermit
-vaAnnotGCPermit = valAccessAnnot grinBasicAnnotGCPermit (flip const)
+vaEntryInx :: ValAccessGB -> Int
+vaEntryInx = vaGlobRef
 %%]
 
-%%[(8 codegen grin) hs export(ValAccess(..),ValAccessGam)
-data ValAccess
-  = Val_Local           { vaStackDepth :: !StackDepth, vaAnnot :: !ValAccessAnnot }		-- value on the stack
-  | Val_NodeFldLocal    { vaStackDepth :: !StackDepth, vaAnnot :: !ValAccessAnnot }		-- field 0 of node on the stack
-  | Val_Int             Integer
-  | Val_GlobEntry       { vaEntryInx :: !Int }
-%%[[50
-  | Val_ImpEntry        { vaModOff, vaEntryOff :: !Int }
-%%]]
-  deriving Show
-
-instance PP ValAccess where
-  pp = pp . show
-
-type ValAccessGam = Map.Map HsName ValAccess
+%%[(8 codegen grin).NmEnvGB hs export(NmEnvGB)
+type NmEnvGB = NmEnv StackDepth Int Int Int ()
 %%]
 
-%%[(8 codegen grin) hs
-vaHasAnnot :: ValAccess -> Bool
-vaHasAnnot (Val_Local        _ _) = True
-vaHasAnnot (Val_NodeFldLocal _ _) = True
-vaHasAnnot _                      = False
-%%]
+%%[(50 codegen grin).NmEnvGB -8.NmEnvGB hs export(NmEnvGB, neLamMp, neLamMpUpd)
+type NmEnvGB = NmEnv StackDepth Int Int Int LamMp
 
-%%[(50 codegen grin) hs export(ImpNmMp)
-type ImpNmMp = Map.Map HsName Int
-%%]
+neLamMp :: NmEnvGB -> LamMp
+neLamMp = neExtra
 
-%%[(8 codegen grin) hs export(NmEnv(..))
-data NmEnv
-  = NmEnv
-      { neVAGam     :: ValAccessGam
-%%[[50
-      , neImpNmMp   :: HsName2OffsetMpMp
-      , neLamMp     :: LamMp
-%%]]
-      }
-%%]
-
-%%[(8 codegen grin).nmEnvLookup hs export(nmEnvLookup)
-nmEnvLookup :: HsName -> NmEnv -> Maybe ValAccess
-nmEnvLookup nm env = Map.lookup nm $ neVAGam env
-%%]
-
-%%[(50 codegen grin) -8.nmEnvLookup hs export(nmEnvLookup)
-nmEnvLookup :: HsName -> NmEnv -> Maybe ValAccess
-nmEnvLookup nm env
-  = case Map.lookup nm $ neVAGam env of
-      Nothing
-        -> do { q <- hsnQualifier nm
-              ; (mo,entryMp) <- Map.lookup q $ neImpNmMp env
-              ; eo <- Map.lookup nm entryMp
-              ; return (Val_ImpEntry mo eo
-                                     {- (maybe (-1) id
-                                      $ do { li <- Map.lookup nm $ neLamMp env
-                                           ; fi <- laminfoGrinByteCode li
-                                           ; return (gblaminfoFuninfoKey fi)
-                                           }
-                       ) -}            )
-              }
-      v -> v
+neLamMpUpd :: LamMp -> NmEnvGB -> NmEnvGB
+neLamMpUpd m e = e {neExtra = m}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -847,11 +787,11 @@ loadFrom s = loadWithPreFrom [] 0 s
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen grin) hs
-type NmLdInfo = (Maybe ValAccess,Load,BasicSize,GCPermit)
+type NmLdInfo = (Maybe ValAccessGB, Load, BasicSize, GCPermit)
 %%]
 
 %%[(8 codegen grin) hs
-nmLd' :: LoadCtxt -> NmEnv -> StackState -> GBState -> HsName -> (NmLdInfo,GBState)
+nmLd' :: LoadCtxt -> NmEnvGB -> StackState -> GBState -> HsName -> (NmLdInfo,GBState)
 nmLd' ldcxt env stState gbState nm
   = case nmEnvLookup nm env of
       mva@(Just va)
@@ -938,7 +878,7 @@ vaAndLd2Ins ldcxt nm vald
 %%]
 
 %%[(8 codegen grin) hs export(nmLd)
-nmLd :: LoadCtxt -> NmEnv -> StackState -> GBState -> HsName -> (InsSeq,StackState,GBState)
+nmLd :: LoadCtxt -> NmEnvGB -> StackState -> GBState -> HsName -> (InsSeq,StackState,GBState)
 nmLd ldcxt env stState gbState nm
   = vaAndLd2Ins ldcxt nm $ nmLd' ldcxt env stState gbState nm
 %%]
@@ -992,17 +932,17 @@ data GrValIntroAlt
 %%]
 
 %%[(8 codegen grin) hs export(gviLd,gviLd',gviLdFold)
-gviLdFold' :: EHCOpts -> GrValIntroAlt -> LoadCtxt -> NmEnv -> StackState -> GBState -> [GrValIntro] -> (GrValIntroAlt,GBState)
+gviLdFold' :: EHCOpts -> GrValIntroAlt -> LoadCtxt -> NmEnvGB -> StackState -> GBState -> [GrValIntro] -> (GrValIntroAlt,GBState)
 gviLdFold' opts dflt ldcxt env stState gbState introL
   = foldl ld (dflt, gbState) $ reverse $ introL
   where ld (GrValIntroAlt_OnTOS ins inc _ basicsz, gbState) intro
           = (GrValIntroAlt_OnTOS (ins Seq.:++: ins') (inc `ststInc` inc') defaultOptimEffect (basicsz' ++ basicsz), gbState2)
           where (GrValIntroAlt_OnTOS ins' inc' _ basicsz', gbState2) = gviLd opts ldcxt env (stState `ststInc` inc) gbState intro
 
-gviLdFold :: EHCOpts -> LoadCtxt -> NmEnv -> StackState -> GBState -> [GrValIntro] -> (GrValIntroAlt,GBState)
+gviLdFold :: EHCOpts -> LoadCtxt -> NmEnvGB -> StackState -> GBState -> [GrValIntro] -> (GrValIntroAlt,GBState)
 gviLdFold opts = gviLdFold' opts (GrValIntroAlt_OnTOS Seq.empty emptyStackState defaultOptimEffect [])
 
-gviLd' :: EHCOpts -> LoadCtxt -> NmEnv -> StackState -> GBState -> GrValIntro -> (GrValIntroAlt,GBState)
+gviLd' :: EHCOpts -> LoadCtxt -> NmEnvGB -> StackState -> GBState -> GrValIntro -> (GrValIntroAlt,GBState)
 gviLd' opts ldcxt env stState gbState intro
   = ld ldcxt (GrValIntroAlt_OnTOS Seq.empty emptyStackState defaultOptimEffect []) intro
   where ld ldcxt dflt@(GrValIntroAlt_OnTOS ins dfltInc _ _) intro
@@ -1082,7 +1022,7 @@ gviLd' opts ldcxt env stState gbState intro
                   where (ins,inc,gbState) = vaAndLd2Ins ldcxt nm ml
                 dfltBasicSize = grinBasicAnnotSize BasicAnnot_Dflt
 
-gviLd :: EHCOpts -> LoadCtxt -> NmEnv -> StackState -> GBState -> GrValIntro -> (GrValIntroAlt,GBState)
+gviLd :: EHCOpts -> LoadCtxt -> NmEnvGB -> StackState -> GBState -> GrValIntro -> (GrValIntroAlt,GBState)
 gviLd opts ldcxt env stState gbState intro
   = case gviLd' opts ldcxt env stState gbState intro of
       (GrValIntroAlt_Delay ins inc optimEffect nmLdInfo@(mbva,l,basicsz,gcPermit), gbState2)
@@ -1092,7 +1032,7 @@ gviLd opts ldcxt env stState gbState intro
 %%]
 
 %%[(8 codegen grin) hs export(gvCall)
-gvCall :: MbCIStrNm -> NmEnv -> InsSeq -> StackState -> StackState -> GBState -> HsName -> (InsSeq,StackState,GBState)
+gvCall :: MbCIStrNm -> NmEnvGB -> InsSeq -> StackState -> StackState -> GBState -> HsName -> (InsSeq,StackState,GBState)
 gvCall i nmEnv ins inc stState gbState nm
   = (ins Seq.:++: fins Seq.:++: Seq.fromList [call i InsOp_LocB_TOS], ststFromDep nrValWords, gbState2)
   where (fins,_,gbState2) = nmLd defaultLoadCtxt nmEnv (stState `ststInc` inc) gbState nm
@@ -1495,7 +1435,7 @@ tgIntl_GB_NodeTag_Intl_Double = 3
 load tag, yield stack increment and additional size to alloc
 
 %%[(8 codegen grin) hs export(tag)
-tag :: NmEnv -> StackState -> GrTag -> Maybe BasicSize -> StackDepth -> GBState -> (InsSeq,StackState,Bool,GBState)
+tag :: NmEnvGB -> StackState -> GrTag -> Maybe BasicSize -> StackDepth -> GBState -> (InsSeq,StackState,Bool,GBState)
 tag env stState gt bsz sz gbState
   = case gt of
       GrTag_Unboxed

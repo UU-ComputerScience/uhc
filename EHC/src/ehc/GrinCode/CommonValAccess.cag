@@ -1,0 +1,48 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Stuff for ValAccess shared between codegen to other AST
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Named value access
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin)
+SEM GrExpr
+  | Seq         body        .   vaGam           =   @newVaGam `Map.union` @lhs.vaGam
+
+SEM GrBind
+  | Bind        expr        .   vaGam           =   @newVaGam `Map.union` @lhs.vaGam
+
+SEM GrAlt
+  | Alt         expr        .   vaGam           =   @newVaGam `Map.union` @lhs.vaGam
+%%]
+
+%%[(8 codegen grin)
+SEM GrExpr
+  | *           loc         .   nmEnv           =   GB.NmEnv
+                                                      { GB.neVAGam = @lhs.vaGam
+%%[[50
+                                                      , GB.neImpNmMp = @lhs.impNmOffMpMp
+                                                      , GB.neExtra   = @lhs.lamMp -- , GB.neLamMp   = @lhs.lamMp
+%%]]
+                                                      }
+
+SEM GrBind
+  | Bind        loc         .   nmEnv           =   GB.NmEnv
+                                                      { GB.neVAGam = @lhs.vaGam
+%%[[50
+                                                      , GB.neImpNmMp = @lhs.impNmOffMpMp
+                                                      , GB.neExtra   = @lhs.lamMp -- , GB.neLamMp   = @lhs.lamMp
+%%]]
+                                                      }
+
+SEM GrModule
+  | Mod         loc         .   nmEnv           =   GB.NmEnv
+                                                      { GB.neVAGam = @vaGam
+%%[[50
+                                                      , GB.neImpNmMp = @lhs.impNmOffMpMp
+                                                      , GB.neExtra   = @lhs.lamMp -- , GB.neLamMp   = @lhs.lamMp
+%%]]
+                                                      }
+%%]
+

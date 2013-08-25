@@ -69,7 +69,7 @@ Ideally, these tables should be merged.
 data Primitive
   = GbPrim    
       { gbprimNrArgs        :: !Int
-      , gbprimMk            :: EHCOpts -> LoadCtxt -> NmEnv -> StackState -> GBState -> [GrValIntro] -> (GrValIntroAlt, GBState)
+      , gbprimMk            :: EHCOpts -> LoadCtxt -> NmEnvGB -> StackState -> GBState -> [GrValIntro] -> (GrValIntroAlt, GBState)
       }
   | SillyPrim 
       { fromSillyPrim       :: [PP_Doc] -> PP_Doc
@@ -116,10 +116,10 @@ prims
 
 -- Bytecode implementation
 
-mkGbInsOp :: InsOp_TyOp -> EHCOpts -> LoadCtxt -> NmEnv -> StackState -> GBState -> [GrValIntro] -> (GrValIntroAlt, GBState)
+mkGbInsOp :: InsOp_TyOp -> EHCOpts -> LoadCtxt -> NmEnvGB -> StackState -> GBState -> [GrValIntro] -> (GrValIntroAlt, GBState)
 mkGbInsOp = mkGbOp InsOp_DataOp_IntWord      
 
-mkGbOp :: InsOp_DataOp -> InsOp_TyOp -> EHCOpts -> LoadCtxt -> NmEnv -> StackState -> GBState -> [GrValIntro] -> (GrValIntroAlt, GBState)
+mkGbOp :: InsOp_DataOp -> InsOp_TyOp -> EHCOpts -> LoadCtxt -> NmEnvGB -> StackState -> GBState -> [GrValIntro] -> (GrValIntroAlt, GBState)
 mkGbOp opndTy opTy opts ldcxt env stState gbState [a1,a2]
   = case gviLd' opts ldcxt env (stState `ststInc` inc1) gbState2 a2 of
       (GrValIntroAlt_OnTOS ins2 inc2 optimEffect _, gbState3)

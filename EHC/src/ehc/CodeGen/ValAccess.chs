@@ -5,7 +5,10 @@
 %%[(8 codegen grin) hs module {%{EH}CodeGen.ValAccess}
 %%]
 
-%%[(8 codegen grin) hs import({%{EH}Base.Common},qualified {%{EH}Config} as Cfg)
+%%[(8 codegen grin) hs import({%{EH}Base.Common})
+%%]
+
+%%[(8888 codegen grin) hs import(qualified {%{EH}Config} as Cfg)
 %%]
 
 %%[(8 codegen grin) hs import(UHC.Util.Utils,UHC.Util.Pretty as Pretty,Data.Bits,Data.Maybe,qualified UHC.Util.FastSeq as Seq,qualified Data.Map as Map)
@@ -25,7 +28,9 @@ data ValAccessAnnot			-- either we have to deal with the annotation or it has al
   = ValAccessAnnot_Annot !BasicAnnot
   | ValAccessAnnot_Basic !BasicSize  !GCPermit
   deriving Show
+%%]
 
+%%[(8 codegen grin) hs export(valAccessAnnot, vaAnnotBasicSize, vaAnnotGCPermit)
 valAccessAnnot :: (BasicAnnot -> x) -> (BasicSize -> GCPermit -> x) -> ValAccessAnnot -> x
 valAccessAnnot f _ (ValAccessAnnot_Annot a  ) = f a
 valAccessAnnot _ f (ValAccessAnnot_Basic s p) = f s p
@@ -62,7 +67,7 @@ instance (Show lref, Show gref, Show mref, Show meref) => PP (ValAccess lref gre
 type ValAccessGam lref gref mref meref = Map.Map HsName (ValAccess lref gref mref meref)
 %%]
 
-%%[(8 codegen grin) hs
+%%[(8 codegen grin) hs export(vaHasAnnot)
 vaHasAnnot :: ValAccess lref gref mref meref -> Bool
 vaHasAnnot (Val_Local        _ _) = True
 vaHasAnnot (Val_NodeFldLocal _ _) = True
@@ -70,27 +75,27 @@ vaHasAnnot _                      = False
 %%]
 
 %%[(50 codegen grin) hs export(ImpNmMp)
-type ImpNmMp = Map.Map HsName Int
+type ImpNmMp mref = Map.Map HsName mref
 %%]
 
 %%[(8 codegen grin) hs export(NmEnv(..))
-data NmEnv lref gref mref meref
+data NmEnv lref gref mref meref extra
   = NmEnv
       { neVAGam     :: ValAccessGam lref gref mref meref
 %%[[50
       , neImpNmMp   :: HsName2RefMpMp mref meref
-      , neLamMp     :: LamMp
+      , neExtra     :: extra
 %%]]
       }
 %%]
 
 %%[(8 codegen grin).nmEnvLookup hs export(nmEnvLookup)
-nmEnvLookup :: HsName -> NmEnv lref gref mref meref -> Maybe (ValAccess lref gref mref meref)
+nmEnvLookup :: HsName -> NmEnv lref gref mref meref extra -> Maybe (ValAccess lref gref mref meref)
 nmEnvLookup nm env = Map.lookup nm $ neVAGam env
 %%]
 
 %%[(50 codegen grin) -8.nmEnvLookup hs export(nmEnvLookup)
-nmEnvLookup :: HsName -> NmEnv lref gref mref meref -> Maybe (ValAccess lref gref mref meref)
+nmEnvLookup :: HsName -> NmEnv lref gref mref meref extra -> Maybe (ValAccess lref gref mref meref)
 nmEnvLookup nm env
   = case Map.lookup nm $ neVAGam env of
       Nothing
