@@ -17,7 +17,9 @@
 %%[(88 codegen cmm javascript) hs import(UHC.Util.Pretty,{%{EH}Base.GenC})
 %%]
 
-%%[(8 codegen cmm javascript) hs import(Data.Maybe,Data.Char,qualified Data.Bits as B,UHC.Util.Utils,qualified Data.Map as Map)
+%%[(8 codegen cmm javascript) hs import(Data.Maybe,Data.Char, UHC.Util.Utils, qualified Data.Map as Map, UHC.Util.FastSeq as Seq)
+%%]
+%%[(8 codegen cmm javascript) hs import(qualified Data.Bits as B (Bits), Data.Bits as B hiding (Bits))
 %%]
 
 %%[(8 codegen cmm javascript) import({Cmm/AbsSyn})
@@ -53,25 +55,43 @@ Prefixing of global names ?? Or to be done outside
 %%% Utils
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(88 codegen cmm javascript) hs
+%%[(8 codegen cmm javascript) hs
+type JsTopStats = Seq.Seq JS.Stat
+type JsBodyStats = Seq.Seq JS.Stat
+
+(&) = Seq.union
+{-# INLINE (&) #-}
+
+s = Seq.singleton
+{-# INLINE s #-}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Generation of C: GenC/PP
+%%% Generation of JavaScript
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen cmm javascript)
 ATTR AGItf Module [ | | jsMod: {JS.JavaScriptModule} ]
 
 SEM Module
-  | Mod					lhs			.	jsMod	=	JS.JavaScriptModule_Mod [] [] []
-%%]
-
-%%[(88 codegen cmm javascript)
-ATTR AGItf AllNT [ | | c USE {>-<} {empty}: GenC ]
+  | Mod					lhs			.	jsMod	=	JS.JavaScriptModule_Mod (Seq.toList @decls.jsTopStats) [] []
 %%]
 
 Top level
+
+%%[(8 codegen cmm javascript)
+ATTR AllTopLevel Proc [ | | jsTopStats USE {&} {Seq.empty}: JsTopStats ]
+
+SEM Proc
+  | Proc				lhs			.	jsTopStats	=	s $ JS.Stat_FunDecl $ JS.Expr_Fun (Just @nm) @formals.nmL (JS.Stat_Block $ Seq.toList @body.jsBodyStats)
+
+%%]
+
+Body, Expr level
+
+%%[(8 codegen cmm javascript)
+ATTR AllBody [ | | jsBodyStats USE {&} {Seq.empty}: JsBodyStats ]
+%%]
 
 %%[(88 codegen cmm javascript)
 SEM Decl
@@ -139,6 +159,45 @@ SEM LValue
 
 Expression
 
+%%[(8 codegen cmm javascript)
+ATTR Expr Lit [ | | jsExpr: {JS.Expr} ]
+
+SEM Expr
+  | Int					lhs         .   jsExpr	=   JS.Expr_Int @val
+  | Char				lhs         .   jsExpr	=   JS.Expr_Char @val
+  | Str					lhs         .   jsExpr	=   JS.Expr_Str @val
+  | Nm					lhs         .   jsExpr	=   JS.Expr_Var @nm
+  | Op					lhs			.	jsExpr	=	@op.mkExpr @exprs.jsExprL
+  | NdFldGet			lhs			.	jsExpr	=	JS.Expr_ObjFld @expr.jsExpr (fldNm @fld)
+  | Nd					lhs			.	jsExpr	=	JS.Expr_Obj @elts.nmExprL
+
+  -- TBD
+  | * - Int Char Str Nm Op NdFldGet Nd
+  						lhs			.	jsExpr	=	JS.Expr_Var hsnUnknown
+
+SEM Lit
+  | MInf				lhs			.	jsExpr	=	JS.Expr_Int $ negate (1 `shiftL` @sz)
+  | PInf				lhs			.	jsExpr	=	JS.Expr_Int $ (1 `shiftL` @sz) - 1
+  | MZero				lhs			.	jsExpr	=	JS.Expr_Int 0
+  | PZero				lhs			.	jsExpr	=	JS.Expr_Int 0
+  | True				lhs			.	jsExpr	=	JS.Expr_True
+  | False				lhs			.	jsExpr	=	JS.Expr_False
+%%]
+
+DATA Expr
+  | Round			val				: Round
+  | Rat				nom				: Integer
+  					denom			: Integer
+  					mbTy			: MbTy
+  | Float			val				: Double
+  					mbTy			: MbTy
+  | Typed			ty				: Ty
+  					expr			: Expr
+  					mbAssert		: MbAssert
+  | Op				op				: Op
+  					exprs			: ExprL
+
+
 %%[(88 codegen cmm javascript)
 SEM Expr
   | Int                 lhs         .   c       =   gencInt @mbTy.mbc (>|< "L") (show @val)
@@ -160,6 +219,42 @@ SEM Ty
   | Nm					lhs			.	c		=	pp @nm
   -- | Struct
   -- | Ptr					lhs			.	c		=	ppParens $ @ty.c >|< "*"
+%%]
+
+Operator
+
+%%[(8 codegen cmm javascript)
+ATTR AllOp [ | | mkExpr: {[JS.Expr] -> JS.Expr} ]
+
+SEM OpCode
+  -- comparisons
+  | Eq					lhs			.	mkExpr	=	JS.op "=="
+  
+  -- TBD
+  | * - Eq				lhs			.	mkExpr	=	const JS.empty
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% List/Maybe of ...
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+List
+
+%%[(8 codegen cmm javascript)
+ATTR AllFormal [ | | nmL USE {++} {[]}: {[HsName]} ]
+
+SEM Formal
+  | Formal				lhs			.	nmL		=	[@nm]
+
+ATTR ExprL [ | | jsExprL USE {++} {[]}: {[JS.Expr]} ]
+
+SEM ExprL
+  | Cons				lhs			.	jsExprL	=	@hd.jsExpr : @tl.jsExprL
+
+ATTR AllFldExpr [ | | nmExprL USE {++} {[]}: {JS.NmExprL} ]
+
+SEM FldExpr
+  | Tuple				lhs			.	nmExprL	=	[(fldNm @x1, @x2.jsExpr)]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -198,19 +293,5 @@ SEM Range
 SEM ExprL LValueL FormalL BodyDeclL
   | Cons				lhs			.	lc		=	@hd.c : @tl.lc
 
-%%]
-
-Delayed construction
-
-%%[(88 codegen cmm javascript)
-ATTR Op [ | | lcmk: {[GenC] -> GenC} ]
-
-SEM Op
-  -- | FEq, ...
-  -- | FAbs, ...
-  -- | F2F, ...
-  -- | NaN, ...
-  | Eq					lhs			.	lcmk	=	gencOpL2 "=="
-  | * - Eq				lhs			.	lcmk	=	const empty
 %%]
 

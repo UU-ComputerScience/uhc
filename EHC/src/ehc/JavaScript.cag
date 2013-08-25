@@ -43,6 +43,19 @@ jsVarDecl n e
 %%]]
 %%]
 
+%%[(8 javascript) hs export(op)
+-- | Operator expression
+op :: String -> [Expr] -> Expr
+op o (l:r:_) = Expr_Op    (mkHNm o) l r
+op o (e  :_) = Expr_PreOp (mkHNm o) e
+%%]
+
+%%[(8 javascript) hs export(empty)
+-- | Placeholder for empty
+empty :: Expr
+empty = Expr_Empty
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Observations
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -190,9 +190,9 @@ SEM ExprL LValueL FormalL BodyDeclL
 Delayed construction
 
 %%[(8 codegen cmm)
-ATTR Op [ | | lcmk: {[GenC] -> GenC} ]
+ATTR AllOp [ | | lcmk: {[GenC] -> GenC} ]
 
-SEM Op
+SEM OpCode
   -- | FEq, ...
   -- | FAbs, ...
   -- | F2F, ...

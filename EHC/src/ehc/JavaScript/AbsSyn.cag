@@ -51,9 +51,15 @@ SET AllStat		= StatL Stat
 %%[(8 javascript)
 DATA Expr
   | Var         nm              : {HsName}
-  | Int         int             : {Integer}
-  | Str         str             : {String}
-  | Char        char            : {Char}
+  | Int         val             : {Integer}
+  | Rat         val             : {Rational}
+  | Float       val             : {Rational}
+  | Str         val             : {String}
+  | Char        val             : {Char}
+  | PreOp		nm              : {HsName}
+  				e				: Expr
+  | PostOp		nm              : {HsName}
+  				e				: Expr
   | Op			nm              : {HsName}
   				l				: Expr
   				r				: Expr
@@ -78,6 +84,7 @@ DATA Expr
   | True
   | False
   | Undefined
+  | Empty
   | Inline		str				: {String}				-- for debugging
 
 

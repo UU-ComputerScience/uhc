@@ -34,9 +34,9 @@ C subset, modelled after C--
 %%]
 %%[(8 codegen cmm) hs export(RetCont(..), MbRetCont, KindName(..), KindNameL, Arm(..), ArmL, Range(..), RangeL, LValue(..), LValueL)
 %%]
-%%[(8 codegen cmm) hs export(Flow(..), FlowL, Also(..), AlsoL, Alias(..), FlowAlias(..), FlowAliasL, Targets(..), Expr(..), ExprL, MbExpr, Ty(..), MbTy, Bits(..), GC(..), MbGC)
+%%[(8 codegen cmm) hs export(Flow(..), FlowL, Also(..), AlsoL, Alias(..), FlowAlias(..), FlowAliasL, Targets(..), FldExpr(..), FldExprL, Expr(..), ExprL, MbExpr, Ty(..), MbTy, Bits(..), GC(..), MbGC)
 %%]
-%%[(8 codegen cmm) hs export(String16(..), Assert(..), MbAssert, Op(..), Round(..), Lit(..))
+%%[(8 codegen cmm) hs export(String16(..), Assert(..), MbAssert, Op(..), OpCode(..), Round(..), Lit(..))
 %%]
 %%[(8 codegen cmm) hs export(StructFld(..), StructFldL)
 %%]
@@ -69,8 +69,26 @@ DERIVING *
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen cmm) hs export(Nm,NmL)
+-- | Name
 type Nm = HsName
 type NmL = [Nm]
+%%]
+
+%%[(8 codegen cmm) hs export(Fld, fldInx, fldNm)
+-- | Field (combined dereference + field access), doubly represented by index and name
+data Fld
+  = Fld
+      { _fldNm	:: Maybe Nm
+      , _fldInx	:: Maybe Int
+      }
+
+-- | Fld access preferred by name
+fldNm :: Fld -> Nm
+fldNm f = maybe (mkHNm $ fldInx f) id $ _fldNm f
+
+-- | Fld access preferred by index
+fldInx :: Fld -> Int
+fldInx f = maybe 0 id $ _fldInx f
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

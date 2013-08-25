@@ -40,6 +40,9 @@ Datatype LamInfo holds the implementation info to be exported from a module.
 %%[(8 codegen) hs import({%{EH}Ty})
 %%]
 
+%%[(8 codegen grin) hs import(qualified {%{EH}CodeGen.ValAccess} as VA)
+%%]
+
 %%[(50 codegen) hs import(Data.Array)
 %%]
 %%[(50 codegen) hs import(Control.Monad, UHC.Util.Binary, UHC.Util.Serialize)
@@ -414,8 +417,8 @@ fvsLev lm lDflt fvs = foldr (\n l -> fvLev n lm `max` l) lDflt $ Set.toList $ fv
 
 %%[(50 codegen) hs export(HsName2OffsetMp,HsName2OffsetMpMp)
 type HsNameOffset      = Int
-type HsName2OffsetMp   = Map.Map HsName HsNameOffset
-type HsName2OffsetMpMp = Map.Map HsName (Int,HsName2OffsetMp)
+type HsName2OffsetMp   = VA.HsName2RefMp HsNameOffset			-- Map.Map HsName HsNameOffset
+type HsName2OffsetMpMp = VA.HsName2RefMpMp Int HsNameOffset		-- Map.Map HsName (Int,HsName2OffsetMp)
 %%]
 
 %%[(50 codegen) hs export(offMpKeysSorted,offMpMpKeysSet)

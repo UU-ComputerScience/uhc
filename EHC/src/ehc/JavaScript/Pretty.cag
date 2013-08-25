@@ -7,7 +7,7 @@
 %%% Haskell importable interface to JavaScript pretty print
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 javascript) hs module {%{EH}JavaScript.Pretty} import(UHC.Util.Pretty,{%{EH}Base.Common},{%{EH}JavaScript}) 
+%%[(8 javascript) hs module {%{EH}JavaScript.Pretty} import(UHC.Util.Pretty as PP,{%{EH}Base.Common},{%{EH}JavaScript} as JS) 
 %%]
 
 %%[(8 javascript).WRAPPER ag import({JavaScript/AbsSyn})
@@ -59,19 +59,22 @@ ppStat x = x >|< ";"
 ATTR
   AGItf AllNT
   - NmExprL NmExpr ExprL MbExpr StatL AltL
-    [ | | pp USE {>-<} {empty}: PP_Doc ]
+    [ | | pp USE {>-<} {PP.empty}: PP_Doc ]
 
 SEM Expr
   | Var         loc     .   pp      =   pp @nm
-  | Int         loc     .   pp      =   pp $ show @int
-  | Str			loc		.	pp		=	pp $ show @str
-  | Char		loc		.	pp		=	pp $ show @char
+  | Int         loc     .   pp      =   pp $ show @val
+  | Float Rat	loc     .   pp      =   pp $ show $ (fromRational @val :: Double)
+  | Str			loc		.	pp		=	pp $ show @val
+  | Char		loc		.	pp		=	pp $ show @val
   | Sel			loc		.	pp		=	@expr.pp >|< "." >|< @sel.pp
+  | PreOp		loc		.	pp		=	ppParens (@nm >|< @e.pp)
+  | PostOp		loc		.	pp		=	ppParens (@e.pp >|< @nm)
   | Op			loc		.	pp		=	ppParens (@l.pp >|< @nm >|< @r.pp)
   | If			loc		.	pp		=	ppParens (@c.pp >#< "?" >#< @t.pp >#< ":" >#< @e.pp)
   | Call		loc		.	pp		=	@fun.pp >|< ppParensCommas @args.ppL
-  -- | Fun			loc		.	pp		=	"function" >|< maybe empty (\n -> " " >|< n) @mbNm >|< ppParensCommas @args >|< @body.pp
-  | Fun			loc		.	pp		=	"function" >|< maybe empty (\n -> " " >|< n) @mbNm >|< ppParensCommas @args >-< @body.pp
+  -- | Fun			loc		.	pp		=	"function" >|< maybe PP.empty (\n -> " " >|< n) @mbNm >|< ppParensCommas @args >|< @body.pp
+  | Fun			loc		.	pp		=	"function" >|< maybe PP.empty (\n -> " " >|< n) @mbNm >|< ppParensCommas @args >-< @body.pp
   | New			loc		.	pp		=	"new" >#< @expr.pp
   | Arr			loc		.	pp		=	ppBracketsCommas @elts.ppL
   | ArrInx		loc		.	pp		=	{- ppParens -} @arr.pp >|< ppBrackets @inx.pp
@@ -80,11 +83,12 @@ SEM Expr
   | This		loc		.	pp		=	pp "this"
   | True		loc		.	pp		=	pp "true"
   | False		loc		.	pp		=	pp "false"
-  | Undefined	loc		.	pp		=	pp "undefined"
+  | Undefined Empty
+  				loc		.	pp		=	pp "undefined"
   | Inline		loc		.	pp		=	pp @str
 
 SEM Stat
-  -- | VarDecl     lhs     .   pp      =   ppStat $ "var" >#< @nm >|< maybe empty (\e -> "=" >|< e ) @mbExpr.ppMb
+  -- | VarDecl     lhs     .   pp      =   ppStat $ "var" >#< @nm >|< maybe PP.empty (\e -> "=" >|< e ) @mbExpr.ppMb
   | VarDecl     lhs     .   pp      =   ppStat $
                                         case @mbExpr.ppMb of
                                           Just e -> pp "var" >#< @nm >|< "=" >-< indent 1 e

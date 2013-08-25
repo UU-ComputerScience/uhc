@@ -17,6 +17,9 @@
 %%[(8 codegen grin) hs import({%{EH}Base.Bits} as Binary)
 %%]
 
+%%[(8 codegen grin) hs import(qualified {%{EH}CodeGen.ValAccess} as VA)
+%%]
+
 %%[(8 codegen grin) hs export(AGItf(..),Module(..),Instr(..), Instrs, Meta(..))
 %%]
 
