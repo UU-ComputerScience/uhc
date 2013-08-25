@@ -11,7 +11,10 @@
 %%[(8888 codegen grin) hs import(qualified {%{EH}Config} as Cfg)
 %%]
 
-%%[(8 codegen grin) hs import(UHC.Util.Utils,UHC.Util.Pretty as Pretty,Data.Bits,Data.Maybe,qualified UHC.Util.FastSeq as Seq,qualified Data.Map as Map)
+%%[(8 codegen grin) hs import(UHC.Util.Utils,UHC.Util.Pretty as Pretty,Data.Bits,Data.Maybe,qualified UHC.Util.FastSeq as Seq,qualified Data.Map as Map,qualified Data.Set as Set)
+%%]
+
+%%[(8 codegen grin) hs import(Control.Monad, Control.Monad.State)
 %%]
 
 %%[(8 codegen grin) hs import({%{EH}Base.BasicAnnot}) export(module {%{EH}Base.BasicAnnot})
@@ -22,8 +25,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen grin) hs export(ValAccessAnnot(..))
--- type ValAccessAnnot = Either BasicAnnot BasicSize			-- either we have to deal with the annotation or it has already been done partly and we need to propagate the size
-
 data ValAccessAnnot			-- either we have to deal with the annotation or it has already been done partly and we need to propagate the size
   = ValAccessAnnot_Annot !BasicAnnot
   | ValAccessAnnot_Basic !BasicSize  !GCPermit
@@ -47,7 +48,7 @@ data ValAccess lref gref mref meref
   = Val_Local           { vaRef :: !lref, vaAnnot :: !ValAccessAnnot }		-- value on the stack
   | Val_NodeFldLocal    { vaRef :: !lref, vaAnnot :: !ValAccessAnnot }		-- field 0 of node on the stack
   | Val_GlobEntry       { vaGlobRef :: !gref }
-  | Val_Int             { vaInt :: Integer }
+  | Val_Int             { vaInt :: !Integer }
 %%[[50
   | Val_ImpEntry        { vaModRef :: !mref, vaModEntryRef :: !meref }
 %%]]
@@ -83,10 +84,14 @@ data NmEnv lref gref mref meref extra
   = NmEnv
       { neVAGam     :: ValAccessGam lref gref mref meref
 %%[[50
-      , neImpNmMp   :: HsName2RefMpMp mref meref
+      , neImpNmMp   :: HsName2FldMpMp
       , neExtra     :: extra
 %%]]
       }
+%%]
+
+%%[(8 codegen grin)
+-- cvtValAccessFromFld :: ValAccess Fld Fld Fld Fld -> ValAccess lref gref mref meref
 %%]
 
 %%[(8 codegen grin).nmEnvLookup hs export(nmEnvLookup)
@@ -95,14 +100,14 @@ nmEnvLookup nm env = Map.lookup nm $ neVAGam env
 %%]
 
 %%[(50 codegen grin) -8.nmEnvLookup hs export(nmEnvLookup)
-nmEnvLookup :: HsName -> NmEnv lref gref mref meref extra -> Maybe (ValAccess lref gref mref meref)
+nmEnvLookup :: (RefOfFld mref, RefOfFld meref) => HsName -> NmEnv lref gref mref meref extra -> Maybe (ValAccess lref gref mref meref)
 nmEnvLookup nm env
   = case Map.lookup nm $ neVAGam env of
       Nothing
         -> do { q <- hsnQualifier nm
               ; (mo,entryMp) <- Map.lookup q $ neImpNmMp env
               ; eo <- Map.lookup nm entryMp
-              ; return (Val_ImpEntry mo eo
+              ; return (Val_ImpEntry (refOfFld mo) (refOfFld eo)
                                      {- (maybe (-1) id
                                       $ do { li <- Map.lookup nm $ neLamMp env
                                            ; fi <- laminfoGrinByteCode li
@@ -114,11 +119,125 @@ nmEnvLookup nm env
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Access to module entries
+%%% Reference generator
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs export(RefGenerator(refGen1),refGen)
+type RefGenMonad ref = State Int ref
+
+class RefGenerator ref where
+  -- | Generate for 1 name
+  refGen1M :: Int -> HsName -> RefGenMonad ref
+  refGen1  :: Int -> Int -> HsName -> (ref, Int)
+  
+  -- defaults
+  refGen1M dir nm = do 
+    seed <- get
+    let (r,seed') = refGen1 seed dir nm
+    put seed'
+    return r
+  
+  refGen1 seed dir nm = runState (refGen1M dir nm) seed
+
+instance RefGenerator HsName where
+  refGen1M _ = return
+
+instance RefGenerator Int where
+  refGen1 seed dir nm  = (seed, seed+dir)
+
+instance RefGenerator Fld where
+  refGen1 seed dir nm  = (Fld (Just nm) (Just seed), seed+dir)
+
+-- | Generate for names, starting at a seed in a direction
+refGenM :: RefGenerator ref => Int -> [HsName] -> RefGenMonad (AssocL HsName ref)
+refGenM dir nmL
+  = forM nmL $ \nm -> do
+      r <- refGen1M dir nm
+      return (nm,r)
+
+refGen :: RefGenerator ref => Int -> Int -> [HsName] -> AssocL HsName ref
+refGen seed dir nmL = evalState (refGenM dir nmL) seed
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Access to module entries, name to offset (in a record)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(50 codegen) hs export(HsName2RefMp,HsName2RefMpMp)
 type HsName2RefMp meref = Map.Map HsName meref
 type HsName2RefMpMp mref meref = Map.Map HsName (mref, HsName2RefMp meref)
+%%]
+
+%%[(50 codegen) hs export(HsName2FldMpMp,HsName2FldMp)
+type HsName2FldMp   = HsName2RefMp   Fld
+type HsName2FldMpMp = HsName2RefMpMp Fld Fld
+%%]
+
+%%[(50 codegen) hs export(offMpKeysSorted,offMpMpKeysSet)
+-- | Module names, sorted on import order, which is included as 0-based offset (used as index in import entry table)
+offMpKeysSorted :: (Ord mref, RefOfFld mref) => HsName2FldMpMp -> AssocL HsName mref
+offMpKeysSorted m = sortOn snd [ (n, refOfFld o) | (n,(o,_)) <- Map.toList m ]
+
+offMpMpKeysSet :: HsName2RefMpMp mref meref -> HsNameS
+offMpMpKeysSet m = Set.unions [ Map.keysSet m' | (_,m') <- Map.elems m ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Access to fetched/introduced idents in a case alt
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs export(AltFetch(..))
+data AltFetch lref
+  = AltFetch_Many   [HsName]                -- multiple introduced names
+  | AltFetch_One    HsName lref             -- single introduced name, field ref in node (excluding header)
+  | AltFetch_Zero
+  deriving Eq
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Field access, holding both name and offset, for delayed decision about this
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen cmm) hs export(Fld, fldInx, fldNm)
+-- | Field (combined dereference + field access), doubly represented by index and name
+data Fld
+  = Fld
+      { _fldNm	:: Maybe HsName
+      , _fldInx	:: Maybe Int
+      }
+
+instance Eq Fld where
+  (Fld {_fldInx=Just i1}) == (Fld {_fldInx=Just i2}) = i1 == i2
+  (Fld {_fldNm =     n1}) == (Fld {_fldNm =     n2}) = n1 == n2
+
+instance Ord Fld where
+  (Fld {_fldInx=Just i1}) `compare` (Fld {_fldInx=Just i2}) = i1 `compare` i2
+  (Fld {_fldNm =     n1}) `compare` (Fld {_fldNm =     n2}) = n1 `compare` n2
+
+instance Show Fld where
+  show f = maybe (maybe "??Fld" show $ _fldNm f) show $ _fldInx f
+
+-- | Fld access preferred by name
+fldNm :: Fld -> HsName
+fldNm f = maybe (mkHNm $ fldInx f) id $ _fldNm f
+
+-- | Fld access preferred by index
+fldInx :: Fld -> Int
+fldInx f = maybe 0 id $ _fldInx f
+%%]
+
+%%[(8 codegen cmm) hs export(RefOfFld(..))
+class RefOfFld a where
+  refOfFld :: Fld -> a
+
+instance RefOfFld Fld where
+  refOfFld = id
+
+instance RefOfFld Int where
+  refOfFld = fldInx
+
+instance RefOfFld HsName where
+  refOfFld = fldNm
+
 %%]
 

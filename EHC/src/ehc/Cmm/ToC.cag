@@ -11,6 +11,9 @@
 %%[(8 codegen cmm) hs import(UHC.Util.Pretty,{%{EH}Base.GenC})
 %%]
 
+%%[(8 codegen grin) hs import({%{EH}CodeGen.ValAccess} as VA)
+%%]
+
 %%[(8 codegen cmm) hs import(Data.Maybe,Data.Char,qualified Data.Bits as B,UHC.Util.Utils,qualified Data.Map as Map)
 %%]
 

@@ -27,10 +27,13 @@
 %%[50 export(emptyMod)
 %%]
 
+%%[(50 codegen) hs import({%{EH}CodeGen.ValAccess} as VA)
+%%]
+
 %%[50 import ({%{EH}Gam},{%{EH}Gam.TyGam},{%{EH}Gam.KiGam}) 
 %%]
 
-%%[(50 codegen) import ({%{EH}Core}(HsName2OffsetMp))
+%%[(50 codegen) import({%{EH}CodeGen.ValAccess} as VA)
 %%]
 
 %%[50 import(Control.Monad, UHC.Util.Binary, UHC.Util.Serialize)
@@ -463,7 +466,7 @@ data ModMpInfo
       , mmiExps     		:: !ModEntRel
       , mmiHiddenExps     	:: !ModEntRel
 %%[[(50 codegen)
-      , mmiNmOffMp  		:: !HsName2OffsetMp		-- cached mapping of names to offsets, for all that is exported, visible or hidden
+      , mmiNmOffMp  		:: !HsName2FldMp		-- cached mapping of names to offsets, for all that is exported, visible or hidden
 %%]]
       }
 
@@ -521,10 +524,10 @@ modMpAddHiddenExps modNm newExpNms mm
 The exported names of the module
 
 %%[(50 codegen)
-expsNmOffMp :: HsName -> ModEntRel -> HsName2OffsetMp
+expsNmOffMp :: HsName -> ModEntRel -> HsName2FldMp
 expsNmOffMp modNm exps
   = Map.fromList
-    $ flip zip [0..]
+    $ refGen 0 1
     $ sortBy cmpHsNameOnNm
     $ nub
     $ [ nm

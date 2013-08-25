@@ -29,6 +29,9 @@ Module analysis
 %%[50 import(qualified {%{EH}HS.ModImpExp} as HSSemMod)
 %%]
 
+%%[(50 codegen grin) hs import({%{EH}CodeGen.ValAccess} as VA)
+%%]
+
 %%[50 import({%{EH}Base.Debug})
 %%]
 
@@ -200,13 +203,13 @@ cpUpdateModOffMp modNmL
   = do { cr <- get
        ; let crsi   = crStateInfo cr
              offMp  = crsiModOffMp crsi
-             -- offMp' = Map.fromList [ (m,(o,crsiExpNmOffMp m crsi)) | (m,o) <- zip modNmL [Map.size offMp ..] ] `Map.union` offMp
              (offMp',_)
-                    = foldr add (offMp,Map.size offMp) modNmL
-                    where add modNm (offMp,offset)
+                    = foldr add (offMp, Map.size offMp) modNmL
+                    where add modNm (offMp, offset)
                             = case Map.lookup modNm offMp of
-                                Just (o,_) -> (Map.insert modNm (o     ,new) offMp, offset  )
-                                _          -> (Map.insert modNm (offset,new) offMp, offset+1)
+                                Just (o,_) -> (Map.insert modNm (o, new) offMp, offset )
+                                _          -> (Map.insert modNm (o, new) offMp, offset')
+                                           where (o, offset') = refGen1 offset 1 modNm
                             where new = crsiExpNmOffMp modNm crsi
        ; cpUpdSI (\crsi -> crsi {crsiModOffMp = offMp'})
        }

@@ -17,6 +17,9 @@
 %%[(88 codegen cmm javascript) hs import(UHC.Util.Pretty,{%{EH}Base.GenC})
 %%]
 
+%%[(8 codegen grin) hs import({%{EH}CodeGen.ValAccess} as VA)
+%%]
+
 %%[(8 codegen cmm javascript) hs import(Data.Maybe,Data.Char, UHC.Util.Utils, qualified Data.Map as Map, UHC.Util.FastSeq as Seq)
 %%]
 %%[(8 codegen cmm javascript) hs import(qualified Data.Bits as B (Bits), Data.Bits as B hiding (Bits))

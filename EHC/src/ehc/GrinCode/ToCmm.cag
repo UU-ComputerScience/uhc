@@ -11,7 +11,12 @@
 %%[(8 codegen grin cmm) hs import({%{EH}Base.Common},{%{EH}Opts},{%{EH}Base.Builtin},qualified {%{EH}Config} as Cfg)
 %%]
 
-%%[(8 codegen grin cmm) hs import({%{EH}Error},{%{EH}BuiltinPrims})
+%%[(8 codegen grin cmm) hs import({%{EH}Error})
+%%]
+%%[(88 codegen grin cmm) hs import({%{EH}BuiltinPrims})
+%%]
+
+%%[(8 codegen grin) hs import({%{EH}CodeGen.ValAccess} as VA)
 %%]
 
 %%[(88 codegen grin cmm) hs import({%{EH}GrinCode.Pretty})
@@ -39,19 +44,34 @@ Debug
 %%[(8 codegen grin cmm).grinMod2CmmMod hs export(grinMod2CmmMod)
 grinMod2CmmMod
   :: EHCOpts
+%%[[50
+     -> LamMp
+     -> [HsName]
+     -> HsName2FldMpMp
+     -> HsName2FldMp
+%%]]
      -> GrModule
      -> ( Cmm.Module
         , [Err]
         )
 grinMod2CmmMod
       opts
+%%[[50
+      lamMp allImpNmL impNmOffMpMp expNmOffMp
+%%]]
       gmod
   = ( cmmMod_Syn_GrAGItf t
     , [] -- errs_Syn_GrAGItf t
     )
   where t = wrap_GrAGItf  (sem_GrAGItf (GrAGItf_AGItf gmod))
                           (Inh_GrAGItf
-                             {opts_Inh_GrAGItf = opts
+                             { opts_Inh_GrAGItf = opts
+%%[[50
+                             , expNmOffMp_Inh_GrAGItf     = expNmOffMp
+                             , impNmOffMpMp_Inh_GrAGItf   = impNmOffMpMp
+                             , lamMp_Inh_GrAGItf 		  = lamMp
+                             , allImpNmL_Inh_GrAGItf      = allImpNmL
+%%]]
                              })
 %%]
 
@@ -85,6 +105,8 @@ WRAPPER GrAGItf
 %%[(8 codegen grin cmm) hs
 tyNd :: Cmm.Ty
 tyNd = Cmm.Ty_Nm $ mkHNm "Nd"
+
+type Nm = Cmm.Nm
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -94,7 +116,7 @@ tyNd = Cmm.Ty_Nm $ mkHNm "Nd"
 %%[(8 codegen grin cmm)
 ATTR AllBind AllGrExpr GrModule GrAGItf
   [ opts: EHCOpts
-%%[[5050
+%%[[50
     lamMp: LamMp
 %%]]
   | |
@@ -105,9 +127,9 @@ ATTR AllBind AllGrExpr GrModule GrAGItf
 %%]
 ATTR AllNTNoMod [ modNmConstInx: Int | | ]
 
-%%[(5050 codegen grin cmm)
+%%[(50 codegen grin cmm)
 ATTR GrAGItf GrModule
-  [ expNmOffMp: HsName2OffsetMp
+  [ expNmOffMp: HsName2FldMp 
     allImpNmL: {[HsName]}
     -- impNmL: {AssocL HsName Int}
   | |
@@ -118,8 +140,8 @@ ATTR GrAGItf GrModule
 %%% Module name map to field nr in node with imported modules
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(5050 codegen grin cmm)
-ATTR GrAGItf GrModule AllBind AllGrExpr [ impNmOffMpMp: HsName2OffsetMpMp | | ]
+%%[(50 codegen grin cmm)
+ATTR GrAGItf GrModule AllBind AllGrExpr [ impNmOffMpMp: HsName2FldMpMp | | ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -260,30 +282,6 @@ SEM GrExpr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Determine how names introduced by case alt are used: often only 1; then a different fetch can be done
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(88 codegen grin cmm) hs
-data AltFetch
-  = AltFetch_Many   [HsName]                -- introduced names
-  | AltFetch_One    HsName Int              -- name, field offset in node (excluding header)
-  | AltFetch_Zero
-  deriving Eq
-%%]
-
-%%[(88 codegen grin cmm)
-SEM GrAlt
-  | Alt         loc         .   (altFetch,nrOfFlds)
-                                                =   let nmOffs = zip @pat.introNmL [0..]
-                                                    in  ( case [ x | x@(n,o) <- nmOffs, n `Map.member` @expr.gathFviMp ] of
-                                                            []      -> AltFetch_Zero
-                                                            [(n,o)] -> AltFetch_One n o
-                                                            _       -> AltFetch_Many @pat.introNmL
-                                                        , length nmOffs
-                                                        )
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Stack state simulation: depth, GC permission, ...
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -344,9 +342,9 @@ SEM GrExpr
 %%[(88 codegen grin cmm)
 SEM GrAlt
   | Alt         loc         .   fetchDepth      =   case @altFetch of
-                                                      AltFetch_Many ns   -> (length ns - 1) * GB.nrValWords
-                                                      AltFetch_One  _ _  -> GB.nrValWords
-                                                      AltFetch_Zero      -> 0
+                                                      GB.AltFetch_Many ns   -> (length ns - 1) * GB.nrValWords
+                                                      GB.AltFetch_One  _ _  -> GB.nrValWords
+                                                      GB.AltFetch_Zero      -> 0
                             .   exprStkDepth    =   GB.ststDepth @exprStState
                 loc         .   bodyStkDepth    =   GB.ststDepth @bodyStState
 %%]
@@ -471,6 +469,10 @@ SEM GrBind
 %%% Named value access
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[(8 codegen grin cmm) hs
+type ValAccessGamCmm = ValAccessGam Nm Nm Nm Nm
+%%]
+
 %%[(88 codegen grin cmm) hs
 patNmL2DepL :: [HsName] -> AssocL HsName Int
 patNmL2DepL nmL = zip (reverse nmL) [0..]
@@ -486,7 +488,7 @@ patNmL2VAGam dep nmL = patNmL2VAGam' dep $ patNmL2DepL nmL
 %%]
 
 %%[(88 codegen grin cmm)
-ATTR AllGrExpr AllBind [ vaGam: {GB.ValAccessGam} | | ]
+ATTR AllGrExpr AllBind [ vaGam: {ValAccessGamCmm} | | ]
 
 SEM GrModule
   | Mod         loc         .   vaGam           =   Map.fromList $ map (\(n,o) -> (n,GB.Val_GlobEntry $ GB.eiEntryNr o)) $ Map.toList @entryNmMp
@@ -500,39 +502,10 @@ SEM GrBind
 
 SEM GrAlt
   | Alt         loc         .   newVaGam        =   case @altFetch of
-                                                      AltFetch_Many ns  -> patNmL2VAGam' @exprStkDepth $ patNmL2DepL2 ns
-                                                      AltFetch_One  n _ -> patNmL2VAGam' @exprStkDepth $ patNmL2DepL2 [n]
+                                                      GB.AltFetch_Many ns  -> patNmL2VAGam' @exprStkDepth $ patNmL2DepL2 ns
+                                                      GB.AltFetch_One  n _ -> patNmL2VAGam' @exprStkDepth $ patNmL2DepL2 [n]
                                                       _                 -> Map.empty
                 expr        .   vaGam           =   @newVaGam `Map.union` @lhs.vaGam
-%%]
-
-%%[(88 codegen grin cmm)
-SEM GrExpr
-  | *           loc         .   nmEnv           =   GB.NmEnv
-                                                      { GB.neVAGam = @lhs.vaGam
-%%[[50
-                                                      , GB.neImpNmMp = @lhs.impNmOffMpMp
-                                                      , GB.neLamMp   = @lhs.lamMp
-%%]]
-                                                      }
-
-SEM GrBind
-  | Bind        loc         .   nmEnv           =   GB.NmEnv
-                                                      { GB.neVAGam = @lhs.vaGam
-%%[[50
-                                                      , GB.neImpNmMp = @lhs.impNmOffMpMp
-                                                      , GB.neLamMp   = @lhs.lamMp
-%%]]
-                                                      }
-
-SEM GrModule
-  | Mod         loc         .   nmEnv           =   GB.NmEnv
-                                                      { GB.neVAGam = @vaGam
-%%[[50
-                                                      , GB.neImpNmMp = @lhs.impNmOffMpMp
-                                                      , GB.neLamMp   = @lhs.lamMp
-%%]]
-                                                      }
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1057,9 +1030,9 @@ SEM GrExpr
 
 SEM GrAlt
   | Alt         lhs         .   i               =   let fetch = case @altFetch of
-                                                                  AltFetch_Many _  -> Seq.fromList [GB.fetch GB.InsOp_LocB_TOS]
-                                                                  AltFetch_One _ o -> Seq.fromList [GB.l2ts (o + GB.nrNodeHdrWords)]
-                                                                  AltFetch_Zero    -> Seq.empty
+                                                                  GB.AltFetch_Many _  -> Seq.fromList [GB.fetch GB.InsOp_LocB_TOS]
+                                                                  GB.AltFetch_One _ o -> Seq.fromList [GB.l2ts (o + GB.nrNodeHdrWords)]
+                                                                  GB.AltFetch_Zero    -> Seq.empty
                                                     in  Seq.fromList [GB.meta' GB.AnnStackDepth @lhs.stState,GB.label @altLocRef]
                                                         Seq.:++: fetch
                                                         Seq.:++: Seq.fromList [GB.meta' GB.AnnStackDepth @exprStState]

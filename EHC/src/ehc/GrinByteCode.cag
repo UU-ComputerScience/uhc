@@ -29,7 +29,7 @@
 %%[(8 codegen grin) ag import({GrinByteCode/AbsSyn})
 %%]
 
-%%[(50 codegen grin) hs import({%{EH}Core(HsName2OffsetMpMp)},{%{EH}LamInfo})
+%%[(50 codegen grin) hs import({%{EH}LamInfo})
 %%]
 
 %%[50 hs import(Control.Monad)

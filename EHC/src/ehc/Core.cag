@@ -412,25 +412,6 @@ fvsLev lm lDflt fvs = foldr (\n l -> fvLev n lm `max` l) lDflt $ Set.toList $ fv
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Name to offset (in a record)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(50 codegen) hs export(HsName2OffsetMp,HsName2OffsetMpMp)
-type HsNameOffset      = Int
-type HsName2OffsetMp   = VA.HsName2RefMp HsNameOffset			-- Map.Map HsName HsNameOffset
-type HsName2OffsetMpMp = VA.HsName2RefMpMp Int HsNameOffset		-- Map.Map HsName (Int,HsName2OffsetMp)
-%%]
-
-%%[(50 codegen) hs export(offMpKeysSorted,offMpMpKeysSet)
--- | Module names, sorted on import order, which is included as 0-based offset (used as index in import entry table)
-offMpKeysSorted :: HsName2OffsetMpMp -> AssocL HsName Int
-offMpKeysSorted m = sortOn snd [ (n,o) | (n,(o,_)) <- Map.toList m ]
-
-offMpMpKeysSet :: HsName2OffsetMpMp -> HsNameS
-offMpMpKeysSet m = Set.unions [ Map.keysSet m' | (_,m') <- Map.elems m ]
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Module merge
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

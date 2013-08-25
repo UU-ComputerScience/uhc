@@ -22,6 +22,8 @@ Translation to another AST
 %%]
 %%[(8 codegen) import({%{EH}Base.Target})
 %%]
+%%[(50 codegen) hs import({%{EH}CodeGen.ValAccess} as VA)
+%%]
 
 -- EH semantics
 %%[8 import(qualified {%{EH}EH.MainAG} as EHSem)
@@ -225,6 +227,38 @@ cpTranslateCore2JavaScript modNm
        }
 %%]
 
+%%[(50 codegen grin cmm)
+-- | Compute info for Grin based codegen
+cpGenGrinGenInfo
+  :: HsName
+  -> EHCompilePhase
+       ( LamMp
+       , [HsName]
+       , HsName2FldMpMp
+       , HsName2FldMp
+       )
+cpGenGrinGenInfo modNm
+  = do { cr <- get
+       ; let (ecu,crsi,opts,fp) = crBaseInfo modNm cr
+             isWholeProg = ehcOptOptimizationScope opts >= OptimizationScope_WholeGrin
+             impNmL     | isWholeProg = []
+                        | otherwise   = ecuImpNmL ecu
+             expNmOffMp | ecuIsMainMod ecu = Map.empty
+                        | otherwise        = crsiExpNmOffMp modNm crsi
+             modOffMp   | isWholeProg = Map.filterWithKey (\n _ -> n == modNm) $ crsiModOffMp crsi
+                        | otherwise   = crsiModOffMp crsi
+       ; return
+           ( Core2GrSem.lamMp_Inh_CodeAGItf $ crsiCoreInh crsi
+           , if ecuIsMainMod ecu then [ m | (m,_) <- sortOn snd $ Map.toList $ Map.map fst modOffMp ] else []
+           , Map.fromList [ (n,(o,mp))
+                          | (n,o) <- refGen 0 1 impNmL
+                          , let (_,mp) = panicJust ("cpGenGrinGenInfo: " ++ show n) (Map.lookup n (crsiModOffMp crsi))
+                          ]
+           , expNmOffMp
+           )
+       }
+%%]
+
 %%[(8 codegen grin cmm) export(cpTranslateGrin2Cmm)
 -- | Translate Grin to Cmm
 cpTranslateGrin2Cmm :: HsName -> EHCompilePhase ()
@@ -232,8 +266,17 @@ cpTranslateGrin2Cmm modNm
   = do { cr <- get
        ; let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
               mbGrin    = ecuMbGrin ecu
+%%[[50
+       ; (lamMp, allImpNmL, impNmOffMpMp, expNmOffMp) <- cpGenGrinGenInfo modNm
+%%]]
        ; when (isJust mbGrin) $ do
-           let (cmm,errs) = grinMod2CmmMod opts $ fromJust mbGrin
+           let (cmm,errs)
+                 = grinMod2CmmMod
+                     opts
+%%[[50
+                     lamMp allImpNmL impNmOffMpMp expNmOffMp
+%%]]
+                   $ fromJust mbGrin
            cpUpdCU modNm $ ecuStoreCmm cmm
        }
 %%]
@@ -260,9 +303,12 @@ cpTranslateGrin2Bytecode modNm
         ; when (ehcOptVerbosity opts >= VerboseDebug)
                (lift $ putStrLn ("crsiModOffMp: " ++ show (crsiModOffMp crsi)))
 %%]]
+%%[[50
+        ; (lamMp, allImpNmL, impNmOffMpMp, expNmOffMp) <- cpGenGrinGenInfo modNm
+%%]]
         ; let  mbGrin = ecuMbGrin ecu
                grin   = panicJust "cpTranslateGrin2Bytecode1" mbGrin
-%%[[50
+%%[[5050
                isWholeProg = ehcOptOptimizationScope opts >= OptimizationScope_WholeGrin
                expNmOffMp | ecuIsMainMod ecu = Map.empty
                           | otherwise        = crsiExpNmOffMp modNm crsi
@@ -275,6 +321,9 @@ cpTranslateGrin2Bytecode modNm
                (bc,errs)
                       = grinMod2ByteCodeMod opts
 %%[[50
+                          lamMp allImpNmL impNmOffMpMp expNmOffMp
+%%]]
+%%[[5050
                           (Core2GrSem.lamMp_Inh_CodeAGItf $ crsiCoreInh crsi) -- (HI.hiiLamMp $ ecuHIInfo ecu)
                           (if ecuIsMainMod ecu then [ m | (m,_) <- sortOn snd $ Map.toList $ Map.map fst modOffMp ] else [])
                           -- (ecuImpNmL ecu)

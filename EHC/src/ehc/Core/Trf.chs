@@ -17,6 +17,10 @@
 %%[(8 codegen) import({%{EH}EHC.Common})
 %%]
 
+-- ValAccess
+%%[(8 codegen) hs import({%{EH}CodeGen.ValAccess} as VA)
+%%]
+
 -- LamInfo
 %%[(8 codegen) import({%{EH}LamInfo})
 %%]
@@ -84,7 +88,7 @@ data TrfCore
       , trfcoreInhLamMp         :: LamMp        -- from context, possibly overridden from gathered one
       , trfcoreGathLamMp        :: !LamMp       -- gathered anew
 %%[[50
-      , trfcoreExpNmOffMp       :: !HsName2OffsetMp
+      , trfcoreExpNmOffMp       :: !HsName2FldMp
 %%]]
 %%[[99
       , trfcoreExtraExports     :: !FvS             -- extra exported names, introduced by transformations

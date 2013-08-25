@@ -23,6 +23,9 @@ An EHC compile run maintains info for one compilation invocation
 %%[99 import({%{EH}Base.PackageDatabase})
 %%]
 
+%%[(8 codegen) hs import({%{EH}CodeGen.ValAccess} as VA)
+%%]
+
 %%[8 import({%{EH}EHC.Common})
 %%]
 %%[8 import({%{EH}EHC.CompileUnit})
@@ -126,14 +129,13 @@ data EHCompileRunStateInfo
 %%]]
 %%[[50
       , crsiMbMainNm    :: !(Maybe HsName)                      -- name of main module, if any
-      -- , crsiHIInh       :: !HISem.Inh_AGItf                     -- current inh attrs for HI sem
       , crsiHSModInh    :: !HSSemMod.Inh_AGItf                  -- current inh attrs for HS module analysis sem
       , crsiModMp       :: !ModMp                               -- import/export info for modules
       , crsiGrpMp       :: (Map.Map HsName EHCompileGroup)      -- not yet used, for mut rec modules
       , crsiOptim       :: !Optim                               -- inter module optimisation info
 %%]]
 %%[[(50 codegen)
-      , crsiModOffMp    :: !Core.HsName2OffsetMpMp              -- mapping of all modules + exp entries to offsets in module + exp tables
+      , crsiModOffMp    :: !VA.HsName2FldMpMp              		-- mapping of all modules + exp entries to offsets in module + exp tables
 %%]]
 %%[[99
       , crsiEHCIOInfo	:: !(IORef EHCIOInfo)					-- unsafe info
@@ -156,7 +158,6 @@ emptyEHCompileRunStateInfo
 %%]]
 %%[[50
       , crsiMbMainNm    =   Nothing
-      -- , crsiHIInh       =   panic "emptyEHCompileRunStateInfo.crsiHIInh"
       , crsiHSModInh    =   panic "emptyEHCompileRunStateInfo.crsiHSModInh"
       , crsiModMp       =   Map.empty
       , crsiGrpMp       =   Map.empty
@@ -173,7 +174,7 @@ emptyEHCompileRunStateInfo
 %%]
 
 %%[(50 codegen) export(crsiExpNmOffMp)
-crsiExpNmOffMp :: HsName -> EHCompileRunStateInfo -> Core.HsName2OffsetMp
+crsiExpNmOffMp :: HsName -> EHCompileRunStateInfo -> VA.HsName2FldMp
 crsiExpNmOffMp modNm crsi = mmiNmOffMp $ panicJust ("crsiExpNmOffMp: " ++ show modNm) $ Map.lookup modNm $ crsiModMp crsi
 %%]
 
