@@ -40,7 +40,7 @@ Datatype LamInfo holds the implementation info to be exported from a module.
 %%[(8 codegen) hs import({%{EH}Ty})
 %%]
 
-%%[(8 codegen grin) hs import(qualified {%{EH}CodeGen.ValAccess} as VA)
+%%[(8888 codegen grin) hs import(qualified {%{EH}CodeGen.ValAccess} as VA)
 %%]
 
 %%[(50 codegen) hs import(Data.Array)

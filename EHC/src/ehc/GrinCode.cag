@@ -13,7 +13,7 @@
 %%[(8 codegen grin) hs import(qualified Data.Map as Map,qualified Data.Set as Set,qualified Data.List as List)
 %%]
 
-%%[(8 codegen grin) hs import({%{EH}Base.Builtin},{%{EH}Base.Builtin2}, {%{EH}Base.BasicAnnot}) export(module {%{EH}Base.BasicAnnot})
+%%[(8 codegen grin) hs import({%{EH}Base.Builtin},{%{EH}Base.Builtin2}, {%{EH}Base.BasicAnnot}, {%{EH}CodeGen.ValAccess}) export(module {%{EH}Base.BasicAnnot})
 %%]
 
 %%[(8 codegen grin) hs export(GrExpr(..), GrBind(..), GrBindL, GrGlobal(..), GrGlobalL)
@@ -389,6 +389,56 @@ willUseForEval n m = maybe False (WillUseFor_Eval `Set.member`) $ Map.lookup n m
 
 willUseForNodeField :: HsName -> WillUseForMp -> Bool
 willUseForNodeField n m = maybe False (WillUseFor_NodeField `Set.member`) $ Map.lookup n m
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% GrVal Value introduction
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin) hs export(GrValIntro(..))
+data GrValIntro
+  = GrValIntro_Nm    !HsName
+  | GrValIntro_Int   !Integer
+  | GrValIntro_Str   !String -- !Int
+  | GrValIntro_Grp   !GrTag ![GrValIntro]
+  | GrValIntro_Basic !GrTag !HsName
+  | GrValIntro_Enum  !HsName
+  | GrValIntro_None
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Name introduction
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin) hs export(NmIntro(..))
+data NmIntro
+  = NmIntro_Single    HsName BasicAnnot         -- name + size in bytes
+  | NmIntro_Grp       GrTag [HsName]
+  | NmIntro_GrpTag    HsName
+  | NmIntro_GrpBasic  HsName BasicAnnot         -- name + size in bytes, corresponding to basic/boxed values
+  | NmIntro_None
+%%]
+
+%%[(8 codegen grin) hs export(nmIntroBasicAnnot)
+nmIntroBasicAnnot :: NmIntro -> BasicAnnot
+nmIntroBasicAnnot (NmIntro_Single   _ a) = a
+nmIntroBasicAnnot (NmIntro_GrpBasic _ a) = a
+nmIntroBasicAnnot _                      = BasicAnnot_Dflt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Entry point info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin) hs export(EntryInfo'(..))
+data EntryInfo' str
+  = EntryInfo
+      { eiNm			:: !HsName
+      , eiEntryFld		:: !Fld
+      , eiIsCAF			:: !Bool
+      -- , eiNmStrConst	:: !Const
+      , eiMbNmStr		:: !(Maybe str)
+      }
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -451,16 +451,7 @@ mkCICCall e    = mkCIExtra (CallInfoExtra_CCall e) CallInfoKind_CCall
 %%% Entry point info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin) hs export(EntryInfo'(..),EntryInfo)
-data EntryInfo' str
-  = EntryInfo
-      { eiNm			:: !HsName
-      , eiEntryNr		:: !Int
-      , eiIsCAF			:: !Bool
-      -- , eiNmStrConst	:: !Const
-      , eiMbNmStr		:: !(Maybe str)
-      }
-
+%%[(8 codegen grin) hs export(EntryInfo)
 type EntryInfo = EntryInfo' StringConst
 %%]
 
@@ -676,20 +667,20 @@ defaultOptimEffect = OptimEffect {- False -}
 %%% Environmental info for name resolution
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin) hs export(ValAccessGB, ValAccessGamGB, vaEntryInx)
-type ValAccessGB 	= ValAccess 	StackDepth Int Int Int
-type ValAccessGamGB = ValAccessGam 	StackDepth Int Int Int
+%%[(8 codegen grin) hs export(ValAccessG, ValAccessGamG, vaEntryInx)
+type ValAccessG 	= ValAccess 	StackDepth Fld Int Int
+type ValAccessGamG 	= ValAccessGam 	StackDepth Fld Int Int
 
-vaEntryInx :: ValAccessGB -> Int
-vaEntryInx = vaGlobRef
+vaEntryInx :: ValAccessG -> Int
+vaEntryInx = fldInx . vaGlobRef
 %%]
 
 %%[(8 codegen grin).NmEnvGB hs export(NmEnvGB)
-type NmEnvGB = NmEnv StackDepth Int Int Int ()
+type NmEnvGB = NmEnv StackDepth Fld Int Int ()
 %%]
 
 %%[(50 codegen grin).NmEnvGB -8.NmEnvGB hs export(NmEnvGB, neLamMp, neLamMpUpd)
-type NmEnvGB = NmEnv StackDepth Int Int Int LamMp
+type NmEnvGB = NmEnv StackDepth Fld Int Int LamMp
 
 neLamMp :: NmEnvGB -> LamMp
 neLamMp = neExtra
@@ -787,7 +778,7 @@ loadFrom s = loadWithPreFrom [] 0 s
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen grin) hs
-type NmLdInfo = (Maybe ValAccessGB, Load, BasicSize, GCPermit)
+type NmLdInfo = (Maybe ValAccessG, Load, BasicSize, GCPermit)
 %%]
 
 %%[(8 codegen grin) hs
@@ -836,7 +827,7 @@ nmLd' ldcxt env stState gbState nm
                   )
              Val_GlobEntry o
                -> ( ( mva
-                    , loadWithPreFrom [instrann' AnnIdUse nm $ ldg InsOp_LocB_TOS (linkChainCode codeLbl o)]
+                    , loadWithPreFrom [instrann' AnnIdUse nm $ ldg InsOp_LocB_TOS (linkChainCode codeLbl $ fldInx o)]
                                       nrValWords LoadSrc_TOS -- (offSrc 0 nrValWords)
                     , dfltBasicSize, GCPermit_Must
                     )
@@ -913,17 +904,6 @@ gbstIncByStackState g s
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% GrVal Value introduction
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8 codegen grin) hs export(GrValIntro(..))
-data GrValIntro
-  = GrValIntro_Nm    !HsName
-  | GrValIntro_Int   !Integer
-  | GrValIntro_Str   !String -- !Int
-  | GrValIntro_Grp   !GrTag ![GrValIntro]
-  | GrValIntro_Basic !GrTag !HsName
-  | GrValIntro_Enum  !HsName
-  | GrValIntro_None
-%%]
 
 %%[(8 codegen grin) hs export(GrValIntroAlt(..))
 data GrValIntroAlt

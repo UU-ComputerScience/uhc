@@ -2,22 +2,22 @@
 %%% Factored out from various grin based backends
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin) hs module {%{EH}CodeGen.ValAccess}
+%%[(8 codegen) hs module {%{EH}CodeGen.ValAccess}
 %%]
 
-%%[(8 codegen grin) hs import({%{EH}Base.Common})
+%%[(8 codegen) hs import({%{EH}Base.Common},{%{EH}Base.Builtin})
 %%]
 
-%%[(8888 codegen grin) hs import(qualified {%{EH}Config} as Cfg)
+%%[(8888 codegen) hs import(qualified {%{EH}Config} as Cfg)
 %%]
 
-%%[(8 codegen grin) hs import(UHC.Util.Utils,UHC.Util.Pretty as Pretty,Data.Bits,Data.Maybe,qualified UHC.Util.FastSeq as Seq,qualified Data.Map as Map,qualified Data.Set as Set)
+%%[(8 codegen) hs import(UHC.Util.Utils,UHC.Util.Pretty as Pretty,Data.Bits,Data.Maybe,qualified UHC.Util.FastSeq as Seq,qualified Data.Map as Map,qualified Data.Set as Set)
 %%]
 
-%%[(8 codegen grin) hs import(Control.Monad, Control.Monad.State)
+%%[(8 codegen) hs import(Control.Monad, Control.Monad.State)
 %%]
 
-%%[(8 codegen grin) hs import({%{EH}Base.BasicAnnot}) export(module {%{EH}Base.BasicAnnot})
+%%[(8 codegen) hs import({%{EH}Base.BasicAnnot}) export(module {%{EH}Base.BasicAnnot})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -198,13 +198,15 @@ data AltFetch lref
 %%% Field access, holding both name and offset, for delayed decision about this
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen cmm) hs export(Fld, fldInx, fldNm)
+%%[(8 codegen) hs export(Fld, noFld, fldInx, fldNm)
 -- | Field (combined dereference + field access), doubly represented by index and name
 data Fld
   = Fld
       { _fldNm	:: Maybe HsName
       , _fldInx	:: Maybe Int
       }
+
+noFld = Fld (Just hsnUnknown) (Just 0)
 
 instance Eq Fld where
   (Fld {_fldInx=Just i1}) == (Fld {_fldInx=Just i2}) = i1 == i2
@@ -226,7 +228,7 @@ fldInx :: Fld -> Int
 fldInx f = maybe 0 id $ _fldInx f
 %%]
 
-%%[(8 codegen cmm) hs export(RefOfFld(..))
+%%[(8 codegen) hs export(RefOfFld(..))
 class RefOfFld a where
   refOfFld :: Fld -> a
 
@@ -239,5 +241,20 @@ instance RefOfFld Int where
 instance RefOfFld HsName where
   refOfFld = fldNm
 
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% GrVal Value introduction
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8888 codegen grin) hs export(GrValIntro(..))
+data GrValIntro
+  = GrValIntro_Nm    !HsName
+  | GrValIntro_Int   !Integer
+  | GrValIntro_Str   !String -- !Int
+  | GrValIntro_Grp   !GrTag ![GrValIntro]
+  | GrValIntro_Basic !GrTag !HsName
+  | GrValIntro_Enum  !HsName
+  | GrValIntro_None
 %%]
 

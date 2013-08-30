@@ -7,7 +7,10 @@
 %%% Common
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 module {%{EH}Base.Common} import(UU.Scanner.Position,UHC.Util.Utils,{%{EH}Base.HsName},{%{EH}Base.Builtin}) export(module {%{EH}Base.HsName})
+%%[1 module {%{EH}Base.Common} import(UU.Scanner.Position,UHC.Util.Utils)
+%%]
+
+%%[1 module {%{EH}Base.Common} import({%{EH}Base.HsName},{%{EH}Base.Builtin}) export(module {%{EH}Base.HsName})
 %%]
 
 %%[1 import({%{EH}Base.UID}) export(module {%{EH}Base.UID})

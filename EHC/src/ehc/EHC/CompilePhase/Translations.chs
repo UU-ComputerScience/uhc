@@ -302,36 +302,15 @@ cpTranslateGrin2Bytecode modNm
 %%[[50
         ; when (ehcOptVerbosity opts >= VerboseDebug)
                (lift $ putStrLn ("crsiModOffMp: " ++ show (crsiModOffMp crsi)))
-%%]]
-%%[[50
         ; (lamMp, allImpNmL, impNmOffMpMp, expNmOffMp) <- cpGenGrinGenInfo modNm
 %%]]
         ; let  mbGrin = ecuMbGrin ecu
                grin   = panicJust "cpTranslateGrin2Bytecode1" mbGrin
-%%[[5050
-               isWholeProg = ehcOptOptimizationScope opts >= OptimizationScope_WholeGrin
-               expNmOffMp | ecuIsMainMod ecu = Map.empty
-                          | otherwise        = crsiExpNmOffMp modNm crsi
-               optim  = crsiOptim crsi
-               impNmL   | isWholeProg = []
-                        | otherwise   = ecuImpNmL ecu
-               modOffMp | isWholeProg = Map.filterWithKey (\n _ -> n == modNm) $ crsiModOffMp crsi
-                        | otherwise   = crsiModOffMp crsi
-%%]]
                (bc,errs)
-                      = grinMod2ByteCodeMod opts
+                      = grinMod2ByteCodeMod
+                            opts
 %%[[50
-                          lamMp allImpNmL impNmOffMpMp expNmOffMp
-%%]]
-%%[[5050
-                          (Core2GrSem.lamMp_Inh_CodeAGItf $ crsiCoreInh crsi) -- (HI.hiiLamMp $ ecuHIInfo ecu)
-                          (if ecuIsMainMod ecu then [ m | (m,_) <- sortOn snd $ Map.toList $ Map.map fst modOffMp ] else [])
-                          -- (ecuImpNmL ecu)
-                          (Map.fromList [ (n,(o,mp))
-                                        | (o,n) <- zip [0..] impNmL
-                                        , let (_,mp) = panicJust ("cpTranslateGrin2Bytecode2: " ++ show n) (Map.lookup n (crsiModOffMp crsi))
-                                        ])
-                          expNmOffMp
+                            lamMp allImpNmL impNmOffMpMp expNmOffMp
 %%]]
                           $ grin
 %%[[50

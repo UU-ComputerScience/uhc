@@ -11,7 +11,7 @@ Ideally, these tables should be merged.
 %%[(8 codegen).moduleHeader module {%{EH}BuiltinPrims}
 %%]
 
-%%[(8 codegen) import({%{EH}Base.HsName},{%{EH}Base.Common},{%{EH}Opts},{%{EH}Base.BasicAnnot},{%{EH}Base.Builtin},{%{EH}GrinByteCode})
+%%[(8 codegen) import({%{EH}Base.HsName},{%{EH}Base.Common},{%{EH}Opts},{%{EH}Base.BasicAnnot},{%{EH}Base.Builtin},{%{EH}GrinCode},{%{EH}GrinByteCode})
 %%]
 
 %%[(8 codegen) import(qualified Data.Map as Map, qualified UHC.Util.FastSeq as Seq, UHC.Util.Pretty, UHC.Util.Utils)

@@ -7,6 +7,8 @@
 
 %%[(8 codegen grin) hs import(UHC.Util.Pretty,{%{EH}Base.Common},{%{EH}Opts},qualified {%{EH}Config} as Cfg,{%{EH}GrinByteCode}, {%{EH}LamInfo})
 %%]
+%%[(8 codegen grin) hs import(qualified {%{EH}GrinCode} as G)
+%%]
 
 %%[(8 codegen grin) hs import({%{EH}Base.GenC})
 %%]
@@ -509,8 +511,8 @@ SEM Module
                                             =   emptyBPEBasedMp
                 loc         .   (_,bytePoolMp,allEntryBPedL)
                                             =   foldr (\(e) (sm,bm,es)
-                                                        -> let (sm',bm',inx) = maybe (sm,bm,Nothing) (\s -> stringConstMpAdd s sm bm) (eiMbNmStr e)
-                                                           in  (sm',bm',(e {eiMbNmStr = inx}) : es)
+                                                        -> let (sm',bm',inx) = maybe (sm,bm,Nothing) (\s -> stringConstMpAdd s sm bm) (G.eiMbNmStr e)
+                                                           in  (sm',bm',(e {G.eiMbNmStr = inx}) : es)
                                                       )
                                                       (@instrs.stringConstMp,@instrs.bytePoolMp,[]) @allEntryL
 %%]
@@ -1319,7 +1321,7 @@ SEM Module
                                                                 (zipWith3 (\i l e
                                                                             -> let (bc,bcs) = if ehcOptGenTrace @lhs.opts then (gencAddrArrayAt @ppNmByteCodeTraceTbl i, l) else (gencNULL,0)
                                                                                in  ppCurlysCommas
-                                                                                     [ (maybe gencNULL (gencAddrArrayAt @ppNmBytePool) (eiMbNmStr e)) >#< ppCmtC @lhs.opts (eiNm e)
+                                                                                     [ (maybe gencNULL (gencAddrArrayAt @ppNmBytePool) (G.eiMbNmStr e)) >#< ppCmtC @lhs.opts (G.eiNm e)
                                                                                      , bc, genc bcs
                                                                                      ]
                                                                           ) (scanl (+) 0 bcTrLengthL) bcTrLengthL @allEntryBPedL
@@ -1412,7 +1414,7 @@ SEM Module
 %%[[50
                                                     expnd   = ppLine $ gencVarDecl "GB_NodePtr" @ppNmExpNode
                                                                        >-< (gencStatic $ "int" >#< @ppNmExpNodeOffs >|< "[] =")
-                                                                       >-< ppArr [ eiEntryNr e >#< ppCmtC @lhs.opts (eiNm e) | e <- @expEntryL ]
+                                                                       >-< ppArr [ (fldInx $ G.eiEntryFld e) >#< ppCmtC @lhs.opts (G.eiNm e) | e <- @expEntryL ]
                                                                        >-< gencVarDeclInit "int" @ppNmExpNodeSz (length @expEntryL)
                                                     externs = nl : map (\(_,m) -> (gencExtern $ gencEndsemic $ "void" >#< mkPre m >|< @strNmInitF >|< "(GB_ModEntry*,Word)")
                                                                               >-< (gencExtern $ gencVarDecl "GB_NodePtr" (mkPre m >|< @strNmExpNode))

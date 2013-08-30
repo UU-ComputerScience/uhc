@@ -5,7 +5,7 @@
 %%[(8 codegen grin cmm) hs module {%{EH}GrinCode.ToCmm}
 %%]
 
-%%[(8 codegen grin cmm) hs import(Data.Maybe,Data.List,UHC.Util.Pretty,UHC.Util.FastSeq as Seq,UHC.Util.Utils,qualified Data.Set as Set,qualified Data.Map as Map)
+%%[(8 codegen grin cmm) hs import(Data.Maybe, Data.List as L, UHC.Util.Pretty, UHC.Util.FastSeq as Seq, UHC.Util.Utils, qualified Data.Set as Set, qualified Data.Map as Map)
 %%]
 
 %%[(8 codegen grin cmm) hs import({%{EH}Base.Common},{%{EH}Opts},{%{EH}Base.Builtin},qualified {%{EH}Config} as Cfg)
@@ -13,7 +13,7 @@
 
 %%[(8 codegen grin cmm) hs import({%{EH}Error})
 %%]
-%%[(88 codegen grin cmm) hs import({%{EH}BuiltinPrims})
+%%[(8 codegen grin cmm) hs import({%{EH}BuiltinPrims})
 %%]
 
 %%[(8 codegen grin) hs import({%{EH}CodeGen.ValAccess} as VA)
@@ -30,7 +30,7 @@
 %%[(8 codegen grin cmm) hs import({%{EH}Foreign.Extract})
 %%]
 
-%%[(8 codegen grin cmm) ag import({GrinCode/AbsSyn},{GrinCode/Trf/CommonFreeVar},{GrinCode/CommonForGen},{GrinCode/Trf/CommonIntroName})
+%%[(8 codegen grin cmm) ag import({GrinCode/AbsSyn},{GrinCode/Trf/CommonFreeVar},{GrinCode/CommonForGen},{GrinCode/Trf/CommonIntroName},{GrinCode/CommonValAccess})
 %%]
 
 Debug
@@ -45,10 +45,7 @@ Debug
 grinMod2CmmMod
   :: EHCOpts
 %%[[50
-     -> LamMp
-     -> [HsName]
-     -> HsName2FldMpMp
-     -> HsName2FldMp
+     -> LamMp -> [HsName] -> HsName2FldMpMp -> HsName2FldMp
 %%]]
      -> GrModule
      -> ( Cmm.Module
@@ -94,8 +91,8 @@ grinMod2CmmMod opts lamMp allImpNmL {- impNmL -} impNmOffMpMp expNmOffMp gmod
 WRAPPER GrAGItf
 %%]
 
-%%[(88 codegen grin cmm)
--- PRAGMA nocycle
+%%[(8 codegen grin cmm)
+PRAGMA nocycle
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -180,6 +177,19 @@ SEM GrExpr
                 lhs			.	constMp	    	=   @constMp3
 %%]
 
+%%[(8 codegen grin cmm)
+SEM GrBind
+  | Bind        loc			.	entryNmConst	=	Nothing
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Entry point info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin cmm) hs
+type EntryInfo = EntryInfo' ()
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Debug info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -237,20 +247,6 @@ SEM GrExpr
   | * - Case Catch Seq
                 (loc.aftLblGBState,loc.retLocLabel)
                                                 =   mkRetLabel @lhs.returnCtxt @lhs.gbState
-%%]
-
-%%[(88 codegen grin cmm)
-ATTR GrPatAlt GrTag [ | | tag: Int ]
-
-SEM GrPatAlt
-  | LitInt		lhs			.	tag				=	@int
-  | Otherwise	lhs			.	tag				=	-1
-  | * - LitInt Tag Node Otherwise
-  				lhs			.	tag				=	panic "ToCmm.GrPatAlt.*-LitInt(etc).tag"
-
-SEM GrTag
-  | Con			lhs			.	tag				=	@int
-  | * - Con		lhs			.	tag				=	panic "ToCmm.GrTag.*-Con.tag"
 %%]
 
 %%[(88 codegen grin cmm)
@@ -371,82 +367,13 @@ SEM GrExpr
   | Seq         expr        .   returnCtxt      =   ReturnCtxt_Continues
   | Case        loc         .   returnCtxt      =   case @lhs.returnCtxt of
                                                       ReturnCtxt_Continues
-                                                        | @altL.nrAlts == 1 -> ReturnCtxt_CaseFallThrough
-                                                        | otherwise         -> ReturnCtxt_CaseReturns @aftCaseLabel @lhs.stState
+                                                        | @nrOfAlts == 1 -> ReturnCtxt_CaseFallThrough
+                                                        | otherwise      -> ReturnCtxt_CaseReturns @aftCaseLabel @lhs.stState
                                                       ReturnCtxt_CaseFallThrough
-                                                        | @altL.nrAlts == 1 -> @lhs.returnCtxt
-                                                        | otherwise         -> ReturnCtxt_CaseReturns @aftCaseLabel @lhs.stState
-                                                      _                     -> @lhs.returnCtxt
+                                                        | @nrOfAlts == 1 -> @lhs.returnCtxt
+                                                        | otherwise      -> ReturnCtxt_CaseReturns @aftCaseLabel @lhs.stState
+                                                      _                  -> @lhs.returnCtxt
 %%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Alt info
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(88 codegen grin cmm)
-ATTR GrAltL [ | | nrAlts: Int ]
-
-SEM GrAltL
-  | Cons        lhs         .   nrAlts          =   1 + @tl.nrAlts
-  | Nil         lhs         .   nrAlts          =   0
-%%]
-
-%%[(88 codegen grin cmm)
-ATTR AllAlt [ isEnum: Bool | | isAllEnum USE {&&} {True}: Bool ]
-
-SEM GrAlt
-  | Alt         lhs         .   isAllEnum       =   @nrOfFlds == 0
-
-SEM GrExpr
-  | Case        altL        .   isEnum          =   @altL.isAllEnum
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Named value introduction
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(88 codegen grin cmm) hs
-data NmIntro
-  = NmIntro_Single    HsName BasicAnnot         -- name + size in bytes
-  | NmIntro_Grp       GrTag [HsName]
-  | NmIntro_GrpTag    HsName
-  | NmIntro_GrpBasic  HsName BasicAnnot         -- name + size in bytes, corresponding to basic/boxed values
-  | NmIntro_None
-%%]
-
-%%[(88 codegen grin cmm) hs
-nmIntroBasicAnnot :: NmIntro -> BasicAnnot
-nmIntroBasicAnnot (NmIntro_Single   _ a) = a
-nmIntroBasicAnnot (NmIntro_GrpBasic _ a) = a
-nmIntroBasicAnnot _                      = BasicAnnot_Dflt
-%%]
-
-%%[(88 codegen grin cmm)
-ATTR GrPatLam [ | | nmIntro: NmIntro ]
-
-SEM GrPatLam
-  | Var         lhs         .   nmIntro         =   NmIntro_Single @nm BasicAnnot_Dflt
-  | VarNode     lhs         .   nmIntro         =   NmIntro_Grp (panic "GrPatLam.VarNode.grpHead") (tail @fldL.introNmL)
-  | BasicNode   lhs         .   nmIntro         =   NmIntro_GrpBasic @nm @annot
-  | EnumNode    lhs         .   nmIntro         =   NmIntro_GrpTag @nm
-  | BasicAnnot  lhs         .   nmIntro         =   let ann = case @annot of
-                                                                BasicAnnot_Size _ _ BasicAnnotTagging_ToPtr _
-                                                                  | @lhs.primResForIntl -> BasicAnnot_Dflt
-                                                                _                       -> @annot
-                                                    in  NmIntro_Single @nm ann
-  | EnumAnnot   lhs         .   nmIntro         =   let ann = if @lhs.primResForIntl
-                                                              then BasicAnnot_Dflt
-                                                              else BasicAnnot_Size basicSizeWord BasicTy_Word BasicAnnotTagging_ToPtr False
-                                                    in  NmIntro_Single @nm ann
-  | * - Var VarNode BasicNode EnumNode BasicAnnot EnumAnnot
-                lhs         .   nmIntro         =   NmIntro_None
-%%]
-ATTR GrPatAlt [ | | nmIntro: NmIntro ]
-
-SEM GrPatAlt
-  | Node        lhs         .   nmIntro         =   NmIntro_Grp @tag.self @fldL
-  | * - Node
-                lhs         .   nmIntro         =   NmIntro_None
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% BasicAnnot of following expr
@@ -470,7 +397,8 @@ SEM GrBind
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen grin cmm) hs
-type ValAccessGamCmm = ValAccessGam Nm Nm Nm Nm
+type ValAccessG    = ValAccess    Fld Fld Fld Fld
+type ValAccessGamG = ValAccessGam Fld Fld Fld Fld
 %%]
 
 %%[(88 codegen grin cmm) hs
@@ -487,25 +415,29 @@ patNmL2VAGam :: GB.StackDepth -> [HsName] -> GB.ValAccessGam
 patNmL2VAGam dep nmL = patNmL2VAGam' dep $ patNmL2DepL nmL
 %%]
 
-%%[(88 codegen grin cmm)
-ATTR AllGrExpr AllBind [ vaGam: {ValAccessGamCmm} | | ]
+%%[(8 codegen grin cmm)
+SEM GrBind
+  | Bind        loc         .   newVaGam        =   Map.empty
 
+SEM GrAlt
+  | Alt         loc         .   newVaGam        =   Map.empty
+
+SEM GrExpr
+  | Seq         loc         .   newVaGam        =   Map.empty
+%%]
+
+%%[(8888 codegen grin cmm)
 SEM GrModule
   | Mod         loc         .   vaGam           =   Map.fromList $ map (\(n,o) -> (n,GB.Val_GlobEntry $ GB.eiEntryNr o)) $ Map.toList @entryNmMp
 
-SEM GrExpr
-  | Seq         body        .   vaGam           =   @newVaGam `Map.union` @lhs.vaGam
-
 SEM GrBind
   | Bind        loc         .   newVaGam        =   Map.fromList [ (n,GB.Val_Local (GB.ststDepth @stState - o) (GB.ValAccessAnnot_Annot basicAnnotWord)) | (n,o) <- zip @argNmL [GB.nrCallRetWords ..] ]
-                expr        .   vaGam           =   @newVaGam `Map.union` @lhs.vaGam
 
 SEM GrAlt
   | Alt         loc         .   newVaGam        =   case @altFetch of
                                                       GB.AltFetch_Many ns  -> patNmL2VAGam' @exprStkDepth $ patNmL2DepL2 ns
                                                       GB.AltFetch_One  n _ -> patNmL2VAGam' @exprStkDepth $ patNmL2DepL2 [n]
                                                       _                 -> Map.empty
-                expr        .   vaGam           =   @newVaGam `Map.union` @lhs.vaGam
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -523,31 +455,6 @@ SEM GrModule
                                                     in  if Set.null undefNms
                                                         then []
                                                         else [rngLift emptyRange mkErr_NamesNotIntrod "(Internal) GRIN ByteCode location" $ Set.toList undefNms]
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% GrVal Value introduction
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(88 codegen grin cmm)
-ATTR GrVal [ | | grvalIntro: {GB.GrValIntro} ]
-ATTR GrValL [ | | grvalIntroL: {[GB.GrValIntro]} length : {Int} ]
-
-SEM GrVal
-  | Var         lhs         .   grvalIntro      =   GB.GrValIntro_Nm    @nm
-  | LitInt      lhs         .   grvalIntro      =   GB.GrValIntro_Int   (toInteger @int)
-  | LitStr      lhs         .   grvalIntro      =   GB.GrValIntro_Str   @str -- @constInx
-  | Node        lhs         .   grvalIntro      =   GB.GrValIntro_Grp   @tag.self @fldL.grvalIntroL
-  | BasicNode   lhs         .   grvalIntro      =   GB.GrValIntro_Basic @tag.self @nm
-  | EnumNode    lhs         .   grvalIntro      =   GB.GrValIntro_Enum  @nm
-  | * - Var LitStr Node LitInt BasicNode EnumNode
-                lhs         .   grvalIntro      =   GB.GrValIntro_None
-
-SEM GrValL
-  | Nil         lhs         .   grvalIntroL     =   []
-                lhs         .   length          =   0
-  | Cons        lhs         .   grvalIntroL     =   @hd.grvalIntro : @tl.grvalIntroL
-                lhs         .   length          =   1              + @tl.length
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -724,7 +631,7 @@ SEM GrExpr
   | Case        loc         .   (valIns,valStInc,retIsDone,scrutineeStInc,aftLdGBState)
                                                 =   case GB.gviLd @lhs.opts GB.defaultLoadCtxt @nmEnv @ldStState @altL.gbState @val.grvalIntro of
                                                       (GB.GrValIntroAlt_OnTOS ins inc _ _, gbState)
-                                                        | @altL.nrAlts == 1
+                                                        | @nrOfAlts == 1
                                                           -> ( ins Seq.:++: @altL.i, GB.ststFromDep GB.nrValWords, True, inc, gbState )
                                                         | otherwise
                                                           -> ( ins Seq.:++: insc Seq.:++: ins', GB.ststFromDep GB.nrValWords, True, inc `GB.ststIncDep` @enumStkInc, gbState2 )
@@ -840,9 +747,6 @@ SEM GrModule
   | Mod         loc         .   (entryNmMp,entryL,isCafL)
                                                 =   let entryL = zipWith (\i e -> e {GB.eiEntryNr = i}) [0..] $ Seq.toList @bindL.entryNms
                                                         mpMod = Map.fromList [ (GB.eiNm e, e) | e <- entryL ]
-%%[[50
-                                                        mpReExp = Map.fromList $ zip [ n | n <- Map.keys @lhs.expNmOffMp, not (n `Map.member` mpMod) ] [Map.size mpMod ..]
-%%]]
                                                     in  ( mpMod, entryL
                                                         , map GB.eiIsCAF entryL
                                                         )
