@@ -32,7 +32,7 @@ DATA Stat
   | Expr		expr			: Expr
   | Block		stats			: StatL
   | Throw		expr			: Expr
-  | Ret			expr			: Expr
+  | Ret			mbExpr			: MbExpr
   | Switch		expr			: Expr
   				alts			: AltL
   | Break

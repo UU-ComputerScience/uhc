@@ -38,3 +38,4 @@ SEM GrModule
 %%[(8 codegen grin)
 ATTR GrTag [ | | self: SELF ]
 %%]
+

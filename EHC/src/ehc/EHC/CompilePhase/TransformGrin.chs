@@ -97,9 +97,9 @@ cpTransformGrin modNm
 %%][50                                
                          inline = [ ( do { cr <- get
                                          ; let (ecu,crsi,_,_) = crBaseInfo modNm cr
-                                               expNmOffMp     = crsiExpNmOffMp modNm crsi
+                                               expNmFldMp     = crsiExpNmOffMp modNm crsi
                                                optim          = crsiOptim crsi
-                                               (g,gathInlMp)  = grInline True (Map.keysSet expNmOffMp) (optimGrInlMp optim) $ fromJust $ ecuMbGrin ecu
+                                               (g,gathInlMp)  = grInline True (Map.keysSet expNmFldMp) (optimGrInlMp optim) $ fromJust $ ecuMbGrin ecu
                                          ; cpMsgGrinTrf modNm "inline"
                                          ; cpUpdCU modNm (ecuStoreOptim (defaultOptim {optimGrInlMp = gathInlMp}) . ecuStoreGrin g)
                                          }

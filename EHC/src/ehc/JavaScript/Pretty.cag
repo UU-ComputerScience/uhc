@@ -100,7 +100,7 @@ SEM Stat
   -- | Block		lhs		.	pp		=	ppListSep "{" "}" "" @stats.ppL
   | Block		lhs		.	pp		=	ppCurlys $ vlist @stats.ppL
   | Throw		lhs		.	pp		=	ppStat $ "throw" >#< @expr.pp
-  | Ret			loc		.	pp		=	ppStat $ "return" >#< @expr.pp
+  | Ret			loc		.	pp		=	ppStat $ "return" >#< maybe PP.empty id @mbExpr.ppMb
   | Switch		loc		.	pp		=	"switch" >|< ppParens @expr.pp >-< indent 1 (ppCurlys $ vlist @alts.ppL)
   | Break		loc		.	pp		=	ppStat $ pp "break"
 

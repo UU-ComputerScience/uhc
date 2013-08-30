@@ -27,19 +27,50 @@
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Names
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 javascript) hs
+nmFunSuff :: Int -> String
+nmFunSuff n | n >  5    = "N"
+            | n >= 0    = show n
+            | otherwise = ""
+-- nmApplyN n  = "_a" ++ nmFunSuff n ++ "_"
+nmEvalN  n  = "_e" ++ nmFunSuff n ++ "_"
+nmEval      = nmEvalN (-1)
+%%]
+
+%%[(8 javascript) hs export(hsnJavaScriptVar)
+hsnJavaScriptVar :: Bool -> HsName -> HsName -> HsName -> HsName
+%%[[8
+hsnJavaScriptVar isGlobal = hsnJavaLikeVar (id, id, id)
+%%][50
+hsnJavaScriptVar isGlobal = hsnJavaLikeVar (hsn, hsnPrefix "$", ('$':))
+  where hsn | isGlobal  = id
+            | otherwise = hsnQualified
+%%]]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Smart constructors
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 javascript) hs export(jsVarDecl)
+%%[(8 javascript) hs export(localVarDecl)
+-- | declare a local var
+localVarDecl :: HsName -> Maybe Expr -> Stat
+localVarDecl n me = Stat_VarDecl n me
+%%]
+
+%%[(8 javascript) hs export(varDecl)
 -- | declare a var, or a field in object, depending on name being qualified
-jsVarDecl :: HsName -> Expr -> Stat
+varDecl :: HsName -> Expr -> Stat
 %%[[8
-jsVarDecl n e = Stat_VarDecl n (Just e)
+varDecl n e = localVarDecl n (Just e)
 %%][50
-jsVarDecl n e
+varDecl n e
   = case hsnQualifier n of
       Just _ -> Stat_Assign (Expr_Var n) e
-      _      -> Stat_VarDecl n (Just e)
+      _      -> localVarDecl n (Just e)
 %%]]
 %%]
 
@@ -54,6 +85,28 @@ op o (e  :_) = Expr_PreOp (mkHNm o) e
 -- | Placeholder for empty
 empty :: Expr
 empty = Expr_Empty
+%%]
+
+%%[(8 javascript) hs export(evl,var,call,ret',ret)
+-- | call
+call :: HSNM n => n -> [Expr] -> Expr
+call f as = Expr_Call (var $ mkHNm f) as
+
+-- | force evaluation
+evl :: Expr -> Expr
+evl x = call nmEval [x]
+
+-- | var
+var :: HSNM x => x -> Expr
+var nm = Expr_Var $ mkHNm nm
+
+-- | return
+ret' :: Maybe Expr -> Stat
+ret' e = Stat_Ret e
+
+-- | return
+ret :: Expr -> Stat
+ret e = ret' (Just e)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

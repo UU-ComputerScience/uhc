@@ -25,9 +25,9 @@ SEM GrModule
 
 SEM GrAlt
   | Alt         loc         .   newAltNmL       =   case @altFetch of
-                                                      AltFetch_Many ns  -> ns
-                                                      AltFetch_One  n _ -> [n]
-                                                      _                 -> []
+                                                        AltFetch_Many ns  -> ns
+                                                        AltFetch_One  n _ -> [n]
+                                                        _                 -> []
 %%]
 
 SEM GrBind
@@ -38,7 +38,7 @@ SEM GrExpr
   | *           loc         .   nmEnv           =   NmEnv
                                                       { neVAGam = @lhs.vaGam
 %%[[50
-                                                      , neImpNmMp = @lhs.impNmOffMpMp
+                                                      , neImpNmMp = @lhs.impNmFldMpMp
                                                       , neExtra   = @lhs.lamMp -- , GB.neLamMp   = @lhs.lamMp
 %%]]
                                                       }
@@ -47,7 +47,7 @@ SEM GrBind
   | Bind        loc         .   nmEnv           =   NmEnv
                                                       { neVAGam = @lhs.vaGam
 %%[[50
-                                                      , neImpNmMp = @lhs.impNmOffMpMp
+                                                      , neImpNmMp = @lhs.impNmFldMpMp
                                                       , neExtra   = @lhs.lamMp -- , GB.neLamMp   = @lhs.lamMp
 %%]]
                                                       }
@@ -56,7 +56,7 @@ SEM GrModule
   | Mod         loc         .   nmEnv           =   NmEnv
                                                       { neVAGam = @vaGam
 %%[[50
-                                                      , neImpNmMp = @lhs.impNmOffMpMp
+                                                      , neImpNmMp = @lhs.impNmFldMpMp
                                                       , neExtra   = @lhs.lamMp -- , GB.neLamMp   = @lhs.lamMp
 %%]]
                                                       }
@@ -139,7 +139,7 @@ SEM GrTag
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen grin)
-ATTR GrVal [ | | grvalIntro: GrValIntro ]
+ATTR GrVal GrExpr [ | | grvalIntro: GrValIntro ]
 ATTR GrValL [ | | grvalIntroL: {[GrValIntro]} length : {Int} ]
 
 SEM GrVal
@@ -151,6 +151,10 @@ SEM GrVal
   | EnumNode    lhs         .   grvalIntro      =   GrValIntro_Enum  @nm
   | * - Var LitStr Node LitInt BasicNode EnumNode
                 lhs         .   grvalIntro      =   GrValIntro_None
+
+SEM GrExpr
+  | * - Unit Seq
+  				lhs			.	grvalIntro      =   GrValIntro_None
 
 SEM GrValL
   | Nil         lhs         .   grvalIntroL     =   []
@@ -249,5 +253,22 @@ SEM GrModule
 %%[(8 codegen grin)
 SEM GrModule
   | Mod         loc         .   mainEntryFld	=   maybe noFld vaGlobRef $ (nmEnvLookup hsnMain @nmEnv :: Maybe ValAccessG)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Extra check whether all used names are defined
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin)
+ATTR GrAGItf GrModule [ | | errs: {[Err]} ]
+
+SEM GrModule
+  | Mod         loc         .   errs            =   let undefNms = (Map.keysSet @bindL.gathFviMp `Set.difference` Map.keysSet @vaGam)
+%%[[50
+                                                                     `Set.difference` offMpMpKeysSet @lhs.impNmFldMpMp
+%%]]
+                                                    in  if Set.null undefNms
+                                                        then []
+                                                        else [rngLift emptyRange mkErr_NamesNotIntrod "(Internal) GRIN ByteCode location" $ Set.toList undefNms]
 %%]
 

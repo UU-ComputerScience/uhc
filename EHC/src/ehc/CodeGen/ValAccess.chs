@@ -159,6 +159,12 @@ refGen :: RefGenerator ref => Int -> Int -> [HsName] -> AssocL HsName ref
 refGen seed dir nmL = evalState (refGenM dir nmL) seed
 %%]
 
+%%[(8 codegen) hs export(patNmL2DepL)
+-- | Generate references starting at offset 0 with additional direction tweaking
+patNmL2DepL :: RefGenerator r => (Int -> Int) -> ([HsName] -> [HsName]) -> [HsName] -> AssocL HsName r
+patNmL2DepL fd fl nmL = refGen 0 (fd 1) (fl nmL)
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Access to module entries, name to offset (in a record)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -243,18 +249,4 @@ instance RefOfFld HsName where
 
 %%]
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% GrVal Value introduction
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8888 codegen grin) hs export(GrValIntro(..))
-data GrValIntro
-  = GrValIntro_Nm    !HsName
-  | GrValIntro_Int   !Integer
-  | GrValIntro_Str   !String -- !Int
-  | GrValIntro_Grp   !GrTag ![GrValIntro]
-  | GrValIntro_Basic !GrTag !HsName
-  | GrValIntro_Enum  !HsName
-  | GrValIntro_None
-%%]
 

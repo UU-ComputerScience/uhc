@@ -50,13 +50,12 @@ grinMod2ByteCodeMod opts gmod
 
 %%[(50 codegen grin) -8.grinMod2ByteCodeMod hs export(grinMod2ByteCodeMod)
 grinMod2ByteCodeMod :: EHCOpts -> LamMp -> [HsName] -> {- [HsName] -> -} HsName2FldMpMp -> HsName2FldMp -> GrModule -> (GB.Module,[Err])
-grinMod2ByteCodeMod opts lamMp allImpNmL {- impNmL -} impNmOffMpMp expNmOffMp gmod
+grinMod2ByteCodeMod opts lamMp allImpNmL {- impNmL -} impNmFldMpMp expNmFldMp gmod
   =  let  t = wrap_GrAGItf  (sem_GrAGItf (GrAGItf_AGItf gmod))
                             (Inh_GrAGItf
-                               { expNmOffMp_Inh_GrAGItf     = expNmOffMp
-                               , impNmOffMpMp_Inh_GrAGItf   = impNmOffMpMp
+                               { expNmFldMp_Inh_GrAGItf     = expNmFldMp
+                               , impNmFldMpMp_Inh_GrAGItf   = impNmFldMpMp
                                , allImpNmL_Inh_GrAGItf      = allImpNmL
-                               -- , impNmL_Inh_GrAGItf         = offMpKeysSorted impNmOffMpMp -- impNmL
                                , opts_Inh_GrAGItf           = opts
                                , lamMp_Inh_GrAGItf          = lamMp
                                })
@@ -121,7 +120,7 @@ ATTR AllNTNoMod [ modNmConstInx: Int | | ]
 
 %%[(50 codegen grin)
 ATTR GrAGItf GrModule
-  [ expNmOffMp: HsName2FldMp
+  [ expNmFldMp: HsName2FldMp
     allImpNmL: {[HsName]}
     -- impNmL: {AssocL HsName Int}
   | |
@@ -133,7 +132,7 @@ ATTR GrAGItf GrModule
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(50 codegen grin)
-ATTR GrAGItf GrModule AllBind AllGrExpr [ impNmOffMpMp: HsName2FldMpMp | | ]
+ATTR GrAGItf GrModule AllBind AllGrExpr [ impNmFldMpMp: HsName2FldMpMp | | ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -365,9 +364,6 @@ SEM GrBind
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen grin) hs
-patNmL2DepL' :: RefGenerator r => (Int -> Int) -> ([HsName] -> [HsName]) -> [HsName] -> AssocL HsName r
-patNmL2DepL' fd fl nmL = refGen 0 (fd 1) (fl nmL)
-
 patNmL2VAGam' :: GB.StackDepth -> AssocL HsName Int -> ValAccessGamG
 patNmL2VAGam' dep nmDepL = Map.fromList [ (n,Val_Local (dep+d) (GB.ValAccessAnnot_Annot basicAnnotWord)) | (n,d) <- nmDepL ]
 %%]
@@ -377,24 +373,7 @@ SEM GrBind
   | Bind        loc         .   newVaGam        =   Map.fromList [ (n,Val_Local (GB.ststDepth @stState - o) (GB.ValAccessAnnot_Annot basicAnnotWord)) | (n,o) <- zip @argNmL [GB.nrCallRetWords ..] ]
 
 SEM GrAlt
-  | Alt         loc			.   newVaGam        =   patNmL2VAGam' @exprStkDepth $ patNmL2DepL' negate id @newAltNmL
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Extra check whether all used names are defined
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8 codegen grin)
-ATTR GrAGItf GrModule [ | | errs: {[Err]} ]
-
-SEM GrModule
-  | Mod         loc         .   errs            =   let undefNms = (Map.keysSet @bindL.gathFviMp `Set.difference` Map.keysSet @vaGam)
-%%[[50
-                                                                     `Set.difference` offMpMpKeysSet @lhs.impNmOffMpMp
-%%]]
-                                                    in  if Set.null undefNms
-                                                        then []
-                                                        else [rngLift emptyRange mkErr_NamesNotIntrod "(Internal) GRIN ByteCode location" $ Set.toList undefNms]
+  | Alt         loc			.   newVaGam        =   patNmL2VAGam' @exprStkDepth $ patNmL2DepL negate id @newAltNmL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -582,7 +561,7 @@ SEM GrExpr
                                                               (NmIntro_Grp _ nmL) | not (null nmL)
                                                                 -> (ins Seq.:++: fins, GB.ststFromDep (length nmL * GB.nrValWords),g,gbState)
                                                                 where fins = Seq.fromList [GB.fetch GB.InsOp_LocB_TOS]
-                                                                      g = patNmL2VAGam' (GB.ststDepth @ldStState + inc) $ patNmL2DepL' id reverse nmL
+                                                                      g = patNmL2VAGam' (GB.ststDepth @ldStState + inc) $ patNmL2DepL id reverse nmL
                                                               _ -> (ins,incSt,Map.empty,gbState)
                                                           where inc = GB.ststDepth incSt 
                                                     in  case (@expr.mbUnitIntro,@pat.nmIntro) of
@@ -661,8 +640,8 @@ SEM GrModule
   | Mod         lhs         .   gbMod           =   GB.Module_Mod @moduleNmAlpha
 %%[[50
                                                       [ (n,hsnShowAlphanumeric n) | n <- @lhs.allImpNmL ]
-                                                      (offMpKeysSorted @lhs.impNmOffMpMp)
-                                                      [ m | (n,_) <- sortOn snd $ Map.toList @lhs.expNmOffMp
+                                                      (offMpKeysSorted @lhs.impNmFldMpMp)
+                                                      [ m | (n,_) <- sortOn snd $ Map.toList @lhs.expNmFldMp
                                                           , let m = panicJust ("ToGrinByteCode.GrModule.Mod: " ++ show n) (Map.lookup n @entryNmMp)
                                                       ]
 %%]]

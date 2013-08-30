@@ -243,7 +243,7 @@ cpGenGrinGenInfo modNm
              isWholeProg = ehcOptOptimizationScope opts >= OptimizationScope_WholeGrin
              impNmL     | isWholeProg = []
                         | otherwise   = ecuImpNmL ecu
-             expNmOffMp | ecuIsMainMod ecu = Map.empty
+             expNmFldMp | ecuIsMainMod ecu = Map.empty
                         | otherwise        = crsiExpNmOffMp modNm crsi
              modOffMp   | isWholeProg = Map.filterWithKey (\n _ -> n == modNm) $ crsiModOffMp crsi
                         | otherwise   = crsiModOffMp crsi
@@ -254,7 +254,7 @@ cpGenGrinGenInfo modNm
                           | (n,o) <- refGen 0 1 impNmL
                           , let (_,mp) = panicJust ("cpGenGrinGenInfo: " ++ show n) (Map.lookup n (crsiModOffMp crsi))
                           ]
-           , expNmOffMp
+           , expNmFldMp
            )
        }
 %%]
@@ -267,14 +267,14 @@ cpTranslateGrin2Cmm modNm
        ; let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
               mbGrin    = ecuMbGrin ecu
 %%[[50
-       ; (lamMp, allImpNmL, impNmOffMpMp, expNmOffMp) <- cpGenGrinGenInfo modNm
+       ; (lamMp, allImpNmL, impNmFldMpMp, expNmFldMp) <- cpGenGrinGenInfo modNm
 %%]]
        ; when (isJust mbGrin) $ do
            let (cmm,errs)
                  = grinMod2CmmMod
                      opts
 %%[[50
-                     lamMp allImpNmL impNmOffMpMp expNmOffMp
+                     lamMp allImpNmL impNmFldMpMp expNmFldMp
 %%]]
                    $ fromJust mbGrin
            cpUpdCU modNm $ ecuStoreCmm cmm
@@ -302,7 +302,7 @@ cpTranslateGrin2Bytecode modNm
 %%[[50
         ; when (ehcOptVerbosity opts >= VerboseDebug)
                (lift $ putStrLn ("crsiModOffMp: " ++ show (crsiModOffMp crsi)))
-        ; (lamMp, allImpNmL, impNmOffMpMp, expNmOffMp) <- cpGenGrinGenInfo modNm
+        ; (lamMp, allImpNmL, impNmFldMpMp, expNmFldMp) <- cpGenGrinGenInfo modNm
 %%]]
         ; let  mbGrin = ecuMbGrin ecu
                grin   = panicJust "cpTranslateGrin2Bytecode1" mbGrin
@@ -310,12 +310,12 @@ cpTranslateGrin2Bytecode modNm
                       = grinMod2ByteCodeMod
                             opts
 %%[[50
-                            lamMp allImpNmL impNmOffMpMp expNmOffMp
+                            lamMp allImpNmL impNmFldMpMp expNmFldMp
 %%]]
                           $ grin
 %%[[50
         ; when (ehcOptVerbosity opts >= VerboseDebug)
-               (lift $ putStrLn ("expNmOffMp: " ++ show expNmOffMp))
+               (lift $ putStrLn ("expNmFldMp: " ++ show expNmFldMp))
 %%]]
 
         ; cpMsg modNm VerboseDebug ("cpTranslateGrin2Bytecode: store bytecode")

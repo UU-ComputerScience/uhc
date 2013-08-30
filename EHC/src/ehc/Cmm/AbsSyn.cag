@@ -97,12 +97,16 @@ DATA Datum
 
 TYPE DatumL			= [Datum]
 
+SET AllDatum		= Datum DatumL
+
 DATA Init
   | Seq				exprs			: ExprL
   | Str				str				: String
   | Str16			str				: String16
 
 TYPE MbInit			= MAYBE Init
+
+SET AllInit			= Init MbInit
 
 DATA String16
   | Unicode			str				: String
@@ -124,8 +128,8 @@ SET AllTopNoMod		= AllTopLevel
 					  Target TargetL
 					  Import ImportL
 					  Export ExportL
-					  Datum DatumL
-					  Init MbInit
+					  AllDatum
+					  AllInit
 					  Regs RegNmInit RegNmInitL
 					  String16
 SET AllTop			= Module
@@ -147,6 +151,7 @@ TYPE MbBody			= MAYBE Body
 
 SET AllBody			= BodyDecl BodyDeclL
 					  Body MbBody
+					  AllDatum
 %%]
 
 %%[(8 codegen)
@@ -214,6 +219,8 @@ DATA Stmt
   | Cut				expr			: Expr
   					actuals			: ActualL
   					flows			: FlowL
+
+  -- support for lazy representation
 
 DATA RetCont
   | Cont			expr1			: Expr
@@ -322,6 +329,10 @@ DATA Expr
   | Nd				elts			: FldExprL
   | NdFldGet		expr			: Expr
   					fld				: Fld
+
+  -- Support for lazy representation
+  | Eval			nm				: Nm
+
 
   -- Misc
   | Round			val				: Round

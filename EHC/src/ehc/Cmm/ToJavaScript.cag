@@ -62,11 +62,57 @@ Prefixing of global names ?? Or to be done outside
 type JsTopStats = Seq.Seq JS.Stat
 type JsBodyStats = Seq.Seq JS.Stat
 
+infixr 1 &
 (&) = Seq.union
 {-# INLINE (&) #-}
 
 s = Seq.singleton
 {-# INLINE s #-}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Safe name
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Global name info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin)
+ATTR AllNT [ topClassNm: HsName  pkgNm: HsName | | ]
+ATTR AllNT [ moduleClassNm: HsName | | ]
+%%]
+
+%%[(8 codegen grin)
+SEM Module
+  | Mod         loc         .   topClassNm      =   @moduleNm
+                            .   pkgNm           =   @moduleNm
+%%[[8
+                            .   moduleClassNm   =   @moduleNm
+%%][50
+                            .   moduleClassNm   =   hsnSetQual @moduleNm $ hsnQualified @moduleNm
+%%]]
+%%]
+
+%%[(8 codegen grin)
+SEM AGItf
+  | AGItf       loc         .   topClassNm      =   hsnUnknown
+                            .   pkgNm           =   hsnUnknown
+                            .   moduleClassNm   =   hsnUnknown
+%%]
+
+%%[(8 codegen cmm javascript)
+SEM Expr
+  | Nm Eval        		loc         .   jsnm	=   JS.hsnJavaScriptVar False @lhs.pkgNm @lhs.topClassNm @nm
+
+SEM Proc
+  | Proc        		loc         .   jsnm	=   JS.hsnJavaScriptVar False @lhs.pkgNm @lhs.topClassNm @nm
+
+SEM Datum
+  | Nm	        		loc         .   jsnm	=   JS.hsnJavaScriptVar False @lhs.pkgNm @lhs.topClassNm @nm
+
+SEM Formal
+  | Formal        		loc         .   jsnm	=   JS.hsnJavaScriptVar False @lhs.pkgNm @lhs.topClassNm @nm
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -86,15 +132,24 @@ Top level
 ATTR AllTopLevel Proc [ | | jsTopStats USE {&} {Seq.empty}: JsTopStats ]
 
 SEM Proc
-  | Proc				lhs			.	jsTopStats	=	s $ JS.Stat_FunDecl $ JS.Expr_Fun (Just @nm) @formals.nmL (JS.Stat_Block $ Seq.toList @body.jsBodyStats)
+  | Proc				lhs			.	jsTopStats	=	s $ JS.Stat_FunDecl $ JS.Expr_Fun (Just @jsnm) @formals.nmL (JS.Stat_Block $ Seq.toList @body.jsBodyStats)
 
 %%]
 
 Body, Expr level
 
 %%[(8 codegen cmm javascript)
-ATTR AllBody [ | | jsBodyStats USE {&} {Seq.empty}: JsBodyStats ]
+ATTR AllBody Stmt [ | | jsBodyStats USE {&} {Seq.empty}: JsBodyStats ]
+
+SEM DatumL
+  | Cons                lhs         .   jsBodyStats =   ( maybe Seq.empty (\n -> s $ JS.localVarDecl n @tl.mbInitExpr) @hd.mbLblNm
+                                                        ) & @tl.jsBodyStats
+
+SEM Stmt
+  | Ret					lhs			.	jsBodyStats	=	s $ JS.ret' $ maybeHd Nothing Just @actuals.jsExprL
 %%]
+
+jsLocalVarDecl
 
 %%[(88 codegen cmm javascript)
 SEM Decl
@@ -163,20 +218,21 @@ SEM LValue
 Expression
 
 %%[(8 codegen cmm javascript)
-ATTR Expr Lit [ | | jsExpr: {JS.Expr} ]
+ATTR Expr Actual Lit [ | | jsExpr: {JS.Expr} ]
 
 SEM Expr
   | Int					lhs         .   jsExpr	=   JS.Expr_Int @val
   | Char				lhs         .   jsExpr	=   JS.Expr_Char @val
   | Str					lhs         .   jsExpr	=   JS.Expr_Str @val
-  | Nm					lhs         .   jsExpr	=   JS.Expr_Var @nm
+  | Nm					lhs         .   jsExpr	=   JS.var @jsnm
   | Op					lhs			.	jsExpr	=	@op.mkExpr @exprs.jsExprL
   | NdFldGet			lhs			.	jsExpr	=	JS.Expr_ObjFld @expr.jsExpr (fldNm @fld)
   | Nd					lhs			.	jsExpr	=	JS.Expr_Obj @elts.nmExprL
+  | Eval				lhs			.	jsExpr	=	JS.evl $ JS.var @jsnm
 
   -- TBD
-  | * - Int Char Str Nm Op NdFldGet Nd
-  						lhs			.	jsExpr	=	JS.Expr_Var hsnUnknown
+  | * - Int Char Str Nm Op NdFldGet Nd Eval
+  						lhs			.	jsExpr	=	JS.var hsnUnknown
 
 SEM Lit
   | MInf				lhs			.	jsExpr	=	JS.Expr_Int $ negate (1 `shiftL` @sz)
@@ -185,6 +241,38 @@ SEM Lit
   | PZero				lhs			.	jsExpr	=	JS.Expr_Int 0
   | True				lhs			.	jsExpr	=	JS.Expr_True
   | False				lhs			.	jsExpr	=	JS.Expr_False
+%%]
+
+Initial expression from Datum
+
+%%[(8 codegen cmm javascript)
+ATTR AllDatum AllInit [ | | mbInitExpr: {Maybe JS.Expr} ]
+
+SEM DatumL
+  | Cons				lhs			.	mbInitExpr	=	@hd.mbInitExpr
+  | Nil					lhs			.	mbInitExpr	= 	Nothing
+
+SEM Datum
+  | Ty					lhs			.	mbInitExpr	=	@mbInit.mbInitExpr
+  | Nm					lhs			.	mbInitExpr	=	Just $ JS.var @jsnm
+  | * - Ty Nm			lhs			.	mbInitExpr	=	Nothing
+
+SEM MbInit
+  | Nothing				lhs			.	mbInitExpr	=	Nothing
+
+SEM Init
+  | Seq 				lhs			.	mbInitExpr	=	maybeHd Nothing Just @exprs.jsExprL
+  | * - Seq				lhs			.	mbInitExpr	=	Nothing
+%%]
+
+Possible label from Datum
+
+%%[(8 codegen cmm javascript)
+ATTR Datum  [ | | mbLblNm: {Maybe HsName} ]
+
+SEM Datum
+  | Nm					lhs			.	mbLblNm		=	Just @jsnm
+  | * - Nm				lhs			.	mbLblNm		= 	Nothing
 %%]
 
 DATA Expr
@@ -247,11 +335,11 @@ List
 ATTR AllFormal [ | | nmL USE {++} {[]}: {[HsName]} ]
 
 SEM Formal
-  | Formal				lhs			.	nmL		=	[@nm]
+  | Formal				lhs			.	nmL		=	[@jsnm]
 
-ATTR ExprL [ | | jsExprL USE {++} {[]}: {[JS.Expr]} ]
+ATTR ExprL ActualL [ | | jsExprL USE {++} {[]}: {[JS.Expr]} ]
 
-SEM ExprL
+SEM ExprL ActualL
   | Cons				lhs			.	jsExprL	=	@hd.jsExpr : @tl.jsExprL
 
 ATTR AllFldExpr [ | | nmExprL USE {++} {[]}: {JS.NmExprL} ]
