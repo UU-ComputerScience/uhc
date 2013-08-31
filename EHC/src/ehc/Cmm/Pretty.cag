@@ -8,7 +8,7 @@
 %%[(8 cmm) hs import({%{EH}Base.Builtin},{%{EH}Cmm},{%{EH}Base.Common} hiding (Range),{%{EH}Opts},qualified {%{EH}Config} as Cfg)
 %%]
 
-%%[(8 cmm) hs import(UHC.Util.Pretty)
+%%[(8 cmm) hs import(UHC.Util.Pretty, UHC.Util.Utils)
 %%]
 
 %%[(8 cmm) import({Cmm/AbsSyn})
@@ -33,6 +33,12 @@ PRAGMA nocycle
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 cmm) hs
+semic = (>#< ";")
+
+mbpre, mbpost :: (PP x, PP r) => (a -> x) -> Maybe a -> r -> PP_Doc
+mbpre  p = maybe pp (\v rest -> p v >#< rest)
+mbpost p = maybe pp (\v rest -> rest >#< p v)
+mbnull p = maybeNull id (\l rest -> p l >#< rest)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -43,3 +49,241 @@ PRAGMA nocycle
 ATTR AGItf AllNT [ | | pp USE {>-<} {empty}: PP_Doc ]
 %%]
 
+%%[(8 cmm)
+SEM Module
+  | Mod			lhs		.	pp		=	"module" >#< @moduleNm >-< vlist @decls.ppL
+%%]
+
+%%[(8 cmm)
+SEM TopLevel
+  | Section		lhs		.	pp		=	"section" >#< show @snm	>-< ppCurlysBlock @sections.ppL
+%%]
+
+%%[(8888 cmm)
+SEM Section
+  -- | Span				expr1			: Expr
+  -- 					expr2			: Expr
+  -- 					sections		: SectionL
+%%]
+
+%%[(8 cmm)
+SEM Decl
+  | Import		lhs		.	pp		=	semic $ "import" >#< ppCommas' @imports.ppL
+  | Export		lhs		.	pp		=	semic $ "export" >#< ppCommas' @exports.ppL
+  | Const		lhs		.	pp		=	semic $ "const" >#< @mbTy.pp >#< @nm >#< "=" >#< @expr.pp
+  | ConstArray	lhs		.	pp		=	semic $ "const" >#< @mbTy.pp >#< @nm >|< "[]" >#< "=" >#< ppCurlysCommasBlock @exprs.ppL
+  | Typedef		lhs		.	pp		=	semic $ "typedef" >#< @ty.pp >#< ppCommas' @nms
+  | Regs		lhs		.	pp		=	semic $ (if @isInvariant then "invariant " else "")	>|< @regs.pp
+  -- | Pragma			nm				: Nm
+  -- 					pragma			: PragmaL
+  | Target		lhs		.	pp		=	semic $ "target" >#< ppSpaces @targets.ppL
+  -- | Comment			str				: String
+%%]
+
+%%[(8 cmm)
+SEM Target
+  | Memsize		lhs		.	pp		=	"memsize" >#< show @size
+  | Byteorder	lhs		.	pp		=	"byteorder" >#< (if @isLittle then "little" else "big")
+  | Pointersize	lhs		.	pp		=	"pointersize" >#< show @size
+  | Wordsize	lhs		.	pp		=	"wordsize" >#< show @size
+%%]
+
+Import
+
+Export
+
+%%[(8 cmm)
+SEM Datum
+  | Nm			lhs		.	pp		=	@nm >|< ":"
+  | Align		lhs		.	pp		=	semic $ "align" >#< show @align
+  | Ty			lhs		.	pp		=	semic $ mbpost id @mbInit.ppMb $ mbpost ppBrackets @mbSize.ppMb @ty.pp
+%%]
+
+%%[(8 cmm)
+SEM Init
+  | Seq			lhs		.	pp		=	ppCurlysCommasBlock @exprs.ppL
+  | Str			lhs		.	pp		=	pp (show @str)
+  -- | Str16			str				: String16
+%%]
+
+String16
+
+Regs
+
+RegNmInit
+
+%%[(8 cmm)
+SEM BodyDecl
+  -- | Decl			decl			: Decl
+  | StackDecl	lhs		.	pp		=	"stackdata"	>#< ppCurlysBlock @datums.ppL
+  -- | Stmt			stmt			: Stmt
+%%]
+
+%%[(8 cmm)
+SEM Proc
+  | Proc		lhs		.	pp		=	(mbpre id @mbConv.ppMb $ @nm >#< ppParensCommas' @formals.ppL) >-< ppCurlysBlock [@body.pp]
+%%]
+
+Conv
+
+%%[(8 cmm)
+SEM Formal
+  | Formal		lhs		.	pp		=	mbpre show @mbKind $ (if @isInvariant then "invariant " else "") >|< @ty.pp >#< @nm
+%%]
+
+%%[(8 cmm)
+SEM Actual
+  | Actual		lhs		.	pp		=	mbpre show @mbKind $ @expr.pp
+%%]
+
+%%[(8 cmm)
+SEM Stmt
+  -- | If				condExpr		: Expr
+  -- 					thenBody		: Body
+  -- 					elseMbBody		: MbBody
+  -- | Switch			expr			: Expr
+  -- 					arms			: ArmL
+  -- | Span				expr1			: Expr
+  -- 					expr2			: Expr
+  -- 					body			: Body
+  | Assign		lhs		.	pp		=	semic $ ppCommas' @lval.ppL >#< "=" >#< ppCommas' @rhs.ppL
+  -- | %%Assign
+  | Call        lhs     .   pp      =   semic 
+                                        $ mbnull ppCommas' @knames.ppL
+                                        $ mbpre id @mbConv.ppMb
+                                        $ @expr.pp >|< ppParensCommas' @actuals.ppL >|< (@targets.ppMk $ ppSpaces @aliasflows.ppL)
+  -- | Jump			mbConv			: MbConv
+  -- 					expr			: Expr
+  -- 					actuals			: ActualL
+  -- 					targets			: Targets
+  | Ret			lhs		.	pp		=	semic $ (mbpre id @mbConv.ppMb $ pp "return") >#< (mbpre id @mbCont.ppMb $ ppCommas' @actuals.ppL)
+  -- | Label			nm				: Nm
+  -- | Cont			nm				: Nm
+  -- 					knames			: KindNameL
+  -- | Goto			expr			: Expr
+  -- 					targets			: Targets
+  -- | Cut				expr			: Expr
+  -- 					actuals			: ActualL
+  -- 					flows			: FlowL
+%%]
+
+RetCont
+
+%%[(8 cmm)
+SEM KindName
+  | KindName	lhs		.	pp		=	mbpre pp @mbKind @nm
+%%]
+
+Arm
+
+Range
+
+%%[(8 cmm)
+SEM LValue
+  | Nm			lhs		.	pp		=	pp @nm
+  -- | Typed			ty				: Ty
+  -- 					expr			: Expr
+  -- 					mbAssert		: MbAssert
+%%]
+
+Flow
+
+Also
+
+Alias
+
+FlowAlias
+
+%%[(8 cmm)
+SEM Expr
+  -- Regular constants
+  | Int	Char Str
+  				lhs		.	pp		=	mbpost ("::" >#<) @mbTy.ppMb $ show @val
+  -- | Rat				val				: Rational
+  -- 					mbTy			: MbTy
+  -- | Float			val				: Rational
+  -- 					mbTy			: MbTy
+
+  -- Special constants
+  -- | Lit				val				: Lit
+
+  -- Variable
+  | Nm			lhs		.	pp		=	pp @nm
+
+  -- Operations
+  -- | Op				op				: Op
+  -- 					exprs			: ExprL
+  
+  -- Memory node
+  -- | Nd				elts			: FldExprL
+  -- | NdFldGet		expr			: Expr
+  -- 					fld				: Fld
+
+  -- Support for lazy representation
+  | Eval		lhs		.	pp		=	"eval" >|< ppParens @nm
+
+
+  -- Misc
+  -- | Round			val				: Round
+  -- | Typed			ty				: Ty
+  -- 					expr			: Expr
+  -- 					mbAssert		: MbAssert
+%%]
+
+FldExpr
+
+Assert
+
+Lit
+
+Round
+
+Op
+
+OpCode
+
+%%[(8 cmm)
+SEM Ty
+  -- C-- types
+  -- | Bits			bits			: Bits
+  | Nm			lhs		.	pp		=	pp @nm
+
+  -- C types
+  -- | Struct			flds			: StructFldL
+  -- | Ptr				ty				: Ty
+%%]
+
+StructFld
+
+Bits
+
+GC
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% List, Maybe variants of pp
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 cmm)
+SEM
+  TopLevelL SectionL ImportL ExportL ExprL TargetL DeclL RegNmInitL BodyDeclL FormalL ActualL LValueL KindNameL FlowAliasL FldExprL StructFldL DatumL
+    [ | | ppL: {[PP_Doc]} ]
+  | Cons		lhs		.	ppL		=	@hd.pp : @tl.ppL
+  | Nil			lhs		.	ppL		=	[]
+%%]
+
+%%[(8 cmm)
+SEM
+  MbTy MbExpr MbConv MbRetCont MbInit
+    [ | | ppMb: {Maybe PP_Doc} ]
+  | Just		lhs		.	ppMb	=	Just @just.pp
+  | Nothing		lhs		.	ppMb	=	Nothing
+%%]
+
+%%[(8 cmm)
+ATTR Targets [ | | ppMk: {PP_Doc -> PP_Doc} ]
+
+SEM Targets
+  | Targets		lhs		.	ppMk	=	mbnull ppCommas' @nms
+%%]

@@ -8,7 +8,7 @@ The purpose here is to retain as much as possible from the original design, that
 of (say) C, or llvm.
 %%]
 
-%%[(8 codegen)
+%%[(8 cmm)
 DATA AGItf
   | AGItf			module			: Module
 
@@ -17,7 +17,7 @@ DATA Module
   					decls			: TopLevelL
 %%]
 
-%%[(8 codegen)
+%%[(8 cmm)
 DATA TopLevel
   | Section			snm				: String
   					sections		: SectionL
@@ -29,7 +29,7 @@ TYPE TopLevelL		= [TopLevel]
 SET AllTopLevel		= TopLevel TopLevelL
 %%]
 
-%%[(8 codegen)
+%%[(8 cmm)
 DATA Section
   | Decl			decl			: Decl
   | Proc			proc			: Proc
@@ -41,14 +41,14 @@ DATA Section
 TYPE SectionL		= [Section]
 %%]
 
-%%[(8 codegen)
+%%[(8 cmm)
 DATA Decl
   | Import			imports			: ImportL
   | Export			exports			: ExportL
-  | Const			ty				: Ty
+  | Const			mbTy			: MbTy
   					nm				: Nm
   					expr			: Expr
-  | ConstArray		ty				: Ty
+  | ConstArray		mbTy			: MbTy
   					nm				: Nm
   					exprs			: ExprL
   | Typedef			ty				: Ty
@@ -63,7 +63,7 @@ DATA Decl
 TYPE DeclL			= [Decl]
 %%]
 
-%%[(8 codegen)
+%%[(8 cmm)
 DATA Target
   | Memsize			size			: Int
   | Byteorder		isLittle		: Bool
@@ -136,7 +136,7 @@ SET AllTop			= Module
 					  AllTopNoMod
 %%]
 
-%%[(8 codegen)
+%%[(8 cmm)
 DATA BodyDecl
   | Decl			decl			: Decl
   | StackDecl		datums			: DatumL
@@ -154,7 +154,7 @@ SET AllBody			= BodyDecl BodyDeclL
 					  AllDatum
 %%]
 
-%%[(8 codegen)
+%%[(8 cmm)
 DATA Proc
   | Proc			mbConv			: MbConv
   					nm				: Nm
@@ -167,7 +167,7 @@ DATA Conv
 TYPE MbConv			= MAYBE Conv
 %%]
 
-%%[(8 codegen)
+%%[(8 cmm)
 DATA Formal
   | Formal			mbKind			: {Maybe String}
   					isInvariant		: Bool
@@ -179,7 +179,7 @@ TYPE FormalL		= [Formal]
 SET AllFormal		= Formal FormalL
 %%]
 
-%%[(8 codegen)
+%%[(8 cmm)
 DATA Actual
   | Actual			mbKind			: {Maybe String}
   					expr			: Expr
@@ -301,7 +301,7 @@ SET	AllStmt			= AllBody
 					  Targets
 %%]
 
-%%[(8 codegen)
+%%[(8 cmm)
 DATA Expr
   -- Regular constants
   | Int				val				: Integer
@@ -479,7 +479,7 @@ SET	AllExpr			= Expr ExprL
 					  Round
 %%]
 
-%%[(8 codegen)
+%%[(8 cmm)
 DATA Ty
   -- C-- types
   | Bits			bits			: Bits
@@ -516,7 +516,7 @@ SET	AllTy			= Ty MbTy
 
 %%]
 
-%%[(8 codegen)
+%%[(8 cmm)
 SET AllNTNoMod		= AllTopNoMod AllStmt AllExpr AllTy
 SET AllNT			= Module AllNTNoMod
 %%]

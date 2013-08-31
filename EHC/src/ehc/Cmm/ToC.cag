@@ -65,8 +65,8 @@ Top level
 
 %%[(8 codegen cmm)
 SEM Decl
-  | Const				lhs			.	c		=	gencUpdAssign "" (@ty.c >#< @nm) @expr.c
-  | ConstArray			lhs			.	c		=	gencUpdAssign "" (@ty.c >#< @nm >|< "[]") (ppCurlysCommasBlock @exprs.lc)
+  | Const				lhs			.	c		=	gencUpdAssign "" (@mbTy.c >#< @nm) @expr.c
+  | ConstArray			lhs			.	c		=	gencUpdAssign "" (@mbTy.c >#< @nm >|< "[]") (ppCurlysCommasBlock @exprs.lc)
   | Typedef				lhs			.	c		=	vlist $ map (\n -> gencTypeDecl n @ty.c) @nms
   -- | Regs
   -- | Target

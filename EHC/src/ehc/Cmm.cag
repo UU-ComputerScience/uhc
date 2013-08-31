@@ -100,7 +100,7 @@ imp ns = Decl_Import (map Import_Imp ns)
 %%[(8 codegen cmm) hs export(arr)
 -- | Array decl
 arr :: Ty -> Nm -> ExprL -> Decl
-arr t n es = Decl_ConstArray t n es
+arr t n es = Decl_ConstArray (Just t) n es
 %%]
 
 %%[(8 codegen cmm) hs export(top,topDecl,topProc)
