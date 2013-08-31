@@ -1,0 +1,45 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Prettyprint Cmm
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 cmm) hs module {%{EH}Cmm.Pretty}
+%%]
+
+%%[(8 cmm) hs import({%{EH}Base.Builtin},{%{EH}Cmm},{%{EH}Base.Common} hiding (Range),{%{EH}Opts},qualified {%{EH}Config} as Cfg)
+%%]
+
+%%[(8 cmm) hs import(UHC.Util.Pretty)
+%%]
+
+%%[(8 cmm) import({Cmm/AbsSyn})
+%%]
+
+%%[(8 cmm) hs export(ppCmmModule)
+ppCmmModule :: Module -> PP_Doc
+ppCmmModule  m
+  = pp_Syn_AGItf t
+  where t = wrap_AGItf (sem_AGItf (AGItf_AGItf m))
+                       (Inh_AGItf 
+                       )
+%%]
+
+%%[(8 cmm)
+WRAPPER AGItf
+%%]
+PRAGMA nocycle
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Utils
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 cmm) hs
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% PP
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 cmm)
+ATTR AGItf AllNT [ | | pp USE {>-<} {empty}: PP_Doc ]
+%%]
+

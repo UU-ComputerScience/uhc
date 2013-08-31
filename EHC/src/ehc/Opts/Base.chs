@@ -219,6 +219,9 @@ data EHCOpts
       ,  ehcOptDumpGrinStages ::  Bool              -- dump intermediate Grin transformation stages
       -- ,  ehcOptEarlyModMerge  ::  Bool              -- produce OneBigCore instead of OneBigGrin; useful for future Core-only optimizations
 %%]]
+%%[[(8 codegen cmm)
+      ,  ehcOptDumpCmmStages  ::  Bool              -- dump intermediate Cmm transformation stages
+%%]]
 %%[[8
       ,  ehcOptEmitHS         ::  Bool
       ,  ehcOptEmitEH         ::  Bool
@@ -366,6 +369,9 @@ emptyEHCOpts
       ,  ehcOptDumpGrinStages   =   False
       -- ,  ehcOptEarlyModMerge    =   False
       ,  ehcOptBangPatterns		= 	True
+%%]]
+%%[[(8 codegen cmm)
+      ,  ehcOptDumpCmmStages    =   False
 %%]]
 %%[[8
       ,  ehcOptVerbosity        =   VerboseNormal

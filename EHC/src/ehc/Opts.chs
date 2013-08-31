@@ -376,6 +376,10 @@ ehcCmdLineOpts
      ,  Option ""   ["dump-grin-stages"]    (boolArg optDumpGrinStages)             "dump intermediate Grin and Silly transformation stages (no)"
 %%][100
 %%]]
+%%[[(8 codegen cmm)
+     ,  Option ""   ["dump-cmm-stages"]     (boolArg optDumpCmmStages)              "dump intermediate Cmm stages (no)"
+%%][100
+%%]]
 %%[[(8 codegen java)
 %%]]
 %%[[50
@@ -811,6 +815,10 @@ optSetGenCmt         o b = o { ehcOptGenCmt         = b }
 optSetGenDebug       o b = o { ehcOptGenDebug       = b }
 optDumpGrinStages    o b = o { ehcOptDumpGrinStages = b {-, ehcOptEmitGrin = b -} }
 -- optEarlyModMerge     o b = o { ehcOptEarlyModMerge  = b }
+%%]
+
+%%[(8 codegen cmm)
+optDumpCmmStages     o b = o { ehcOptDumpCmmStages = b }
 %%]
 
 %%[(50 codegen)

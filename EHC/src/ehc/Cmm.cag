@@ -46,7 +46,7 @@ C subset, modelled after C--
 %%[(50 codegen cmm) hs import(Data.Typeable(Typeable), Data.Generics(Data))
 %%]
 
-%%[(8 codegen cmm) hs import({%{EH}CodeGen.ValAccess} as VA (Fld(..)))
+%%[(8888 codegen cmm) hs import({%{EH}CodeGen.ValAccess} as VA (Fld(..)))
 %%]
 
 %%[(8 codegen cmm) ag import({Cmm/AbsSyn})

@@ -51,7 +51,7 @@ Output generation, on stdout or file
 %%[(8888 codegen java) import({%{EH}Core.ToJava})
 %%]
 -- Cmm output
-%%[(8 codegen cmm) import({%{EH}Cmm.ToC}(cmmMod2C))
+%%[(8 codegen cmm) import({%{EH}Cmm.ToC}(cmmMod2C), {%{EH}Cmm.Pretty})
 %%]
 
 -- serialization
@@ -174,6 +174,22 @@ cpOutputGrin binary suff modNm
                  else putPPFPath fpG (ppGrModule grin) 1000 --TODO ? getal
                 )
 %%]]
+         }
+
+%%]
+
+%%[(8 codegen cmm) export(cpOutputCmm)
+cpOutputCmm :: Bool -> String -> HsName -> EHCompilePhase ()
+cpOutputCmm _ suff modNm
+  =  do  { cr <- get
+         ; let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
+                mbCmm  = ecuMbCmm ecu
+                cmm    = panicJust "cpOutputCmm" mbCmm
+                mkb x  = x ++ suff
+                fpG    = mkOutputFPath opts (mkHNm $ mkb $ show modNm) (fpathUpdBase mkb fp) "cmm"
+                fnG    = fpathToStr fpG
+         ; cpMsg modNm VerboseALot "Emit Cmm"
+         ; lift $ putPPFPath fpG (ppCmmModule cmm) 1000 --TODO ? getal
          }
 
 %%]

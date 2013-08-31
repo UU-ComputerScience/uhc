@@ -1109,6 +1109,7 @@ cpProcessCmm modNm
   = do { cr <- get
        ; let (_,_,opts,_) = crBaseInfo modNm cr
        ; cpSeq [ cpMsg modNm VerboseALot "Translate Cmm"
+               , when (ehcOptDumpCmmStages opts) $ cpOutputCmm False "-000-initial" modNm
 %%[[(8 javascript)
                , when (targetIsViaGrinCmmJavaScript (ehcOptTarget opts)) $ cpTranslateCmm2JavaScript modNm
 %%]]
