@@ -74,11 +74,11 @@ SEM Expr
   | If			loc		.	pp		=	ppParens (@c.pp >#< "?" >#< @t.pp >#< ":" >#< @e.pp)
   | Call		loc		.	pp		=	@fun.pp >|< ppParensCommas @args.ppL
   -- | Fun			loc		.	pp		=	"function" >|< maybe PP.empty (\n -> " " >|< n) @mbNm >|< ppParensCommas @args >|< @body.pp
-  | Fun			loc		.	pp		=	"function" >|< maybe PP.empty (\n -> " " >|< n) @mbNm >|< ppParensCommas @args >-< @body.pp
+  | Fun			loc		.	pp		=	"function" >|< maybe PP.empty (\n -> " " >|< n) @mbNm >|< ppParensCommas @args >-|-< @body.pp
   | New			loc		.	pp		=	"new" >#< @expr.pp
   | Arr			loc		.	pp		=	ppBracketsCommas @elts.ppL
   | ArrInx		loc		.	pp		=	{- ppParens -} @arr.pp >|< ppBrackets @inx.pp
-  | Obj			loc		.	pp		=	ppCurlysCommas $ map (\(x,y) -> x >|< ":" >|< y) @elts.ppL
+  | Obj			loc		.	pp		=	ppCurlysCommasBlock $ map (\(x,y) -> x >|< ":" >|< y) @elts.ppL
   | ObjFld		loc		.	pp		=	@obj.pp >|< "." >|< @fld
   | This		loc		.	pp		=	pp "this"
   | True		loc		.	pp		=	pp "true"
@@ -97,11 +97,10 @@ SEM Stat
   -- | Assign		lhs		.	pp		=	ppStat $ @nm >|< "=" >|< @expr.pp
   | Assign		lhs		.	pp		=	ppStat $ @to.pp >|< "=" >-< indent 1 @expr.pp
   | Expr		lhs		.	pp		=	ppStat $ @expr.pp
-  -- | Block		lhs		.	pp		=	ppListSep "{" "}" "" @stats.ppL
-  | Block		lhs		.	pp		=	ppCurlys $ vlist @stats.ppL
+  | Block		lhs		.	pp		=	ppCurlysBlock @stats.ppL
   | Throw		lhs		.	pp		=	ppStat $ "throw" >#< @expr.pp
   | Ret			loc		.	pp		=	ppStat $ "return" >#< maybe PP.empty id @mbExpr.ppMb
-  | Switch		loc		.	pp		=	"switch" >|< ppParens @expr.pp >-< indent 1 (ppCurlys $ vlist @alts.ppL)
+  | Switch		loc		.	pp		=	"switch" >|< ppParens @expr.pp >-< indent 1 (ppCurlysBlock @alts.ppL)
   | Break		loc		.	pp		=	ppStat $ pp "break"
 
 SEM Alt

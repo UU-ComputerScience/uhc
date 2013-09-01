@@ -412,7 +412,7 @@ SEM KiExprAnn
 SEM Decl
   | Data        loc     .   pp      =   (if @isNewtype then "newtype" else "data")
                                         >#< @tyNm >#< ppSpaced @tyVars.ppL
-                                        >#< "=" >#< ppListSepFill "" "" " | " @constrs.ppL
+                                        >#< "=" >#< ppBlockWithStrings "" "" "| " @constrs.ppL
 
 SEM DataConstr
   | Constr      loc     .   pp      =   pp @conNm

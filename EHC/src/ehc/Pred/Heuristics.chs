@@ -68,10 +68,10 @@ instance Show (HeurRed  p  info) where
  
 %%[(9 hmtyinfer)
 instance (PP p, PP info) => PP (HeurAlts  p  info) where
-  pp x = "HeurAlts" >#< redaltsPredicate x >#< ppBracketsCommasV (redaltsAlts x)
+  pp x = "HeurAlts" >#< redaltsPredicate x >#< ppBracketsCommasBlock (redaltsAlts x)
 
 instance (PP p, PP info) => PP (HeurRed  p  info) where
-  pp (HeurRed     i subs) = "HeurRed" >#< i >#< ppBracketsCommasV subs
+  pp (HeurRed     i subs) = "HeurRed" >#< i >#< ppBracketsCommasBlock subs
   pp (HeurRed_Rec p     ) = "HeurRec" >#< p
 %%]
  

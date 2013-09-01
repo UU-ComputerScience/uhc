@@ -144,7 +144,7 @@ gencArray = ppCurlysCommasBlock
 
 -- | C array, rendered as list, with termination: { vals } term
 gencArrayV' :: PP a => String -> [a] -> [GenC]
-gencArrayV' term vals = ppBlock' "{ " ("}" ++ term) ", " vals
+gencArrayV' term vals = ppBlockWithStrings' "{" ("}" ++ term) ", " vals
 
 -- | C array, rendered as list: { ... }
 gencArrayV :: PP a => [a] -> [GenC]

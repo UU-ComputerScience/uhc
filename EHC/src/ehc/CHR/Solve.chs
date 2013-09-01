@@ -248,10 +248,10 @@ chrStoreElems = concatMap snd . chrStoreToList
 
 %%[(9 hmtyinfer || hmtyast) export(ppCHRStore,ppCHRStore')
 ppCHRStore :: (PP p,PP g,PP i) => CHRStore p i g s -> PP_Doc
-ppCHRStore = ppCurlysCommasBlock . map (\(k,v) -> ppCHRTrieKey k >-< indent 2 (":" >#< ppBracketsCommasV v)) . chrStoreToList
+ppCHRStore = ppCurlysCommasBlock . map (\(k,v) -> ppCHRTrieKey k >-< indent 2 (":" >#< ppBracketsCommasBlock v)) . chrStoreToList
 
 ppCHRStore' :: (PP p,PP g,PP i) => CHRStore p i g s -> PP_Doc
-ppCHRStore' = ppCurlysCommasBlock . map (\(k,v) -> ppCHRTrieKey k >-< indent 2 (":" >#< ppBracketsCommasV v)) . chrTrieToListByKey . chrstoreTrie
+ppCHRStore' = ppCurlysCommasBlock . map (\(k,v) -> ppCHRTrieKey k >-< indent 2 (":" >#< ppBracketsCommasBlock v)) . chrTrieToListByKey . chrstoreTrie
 %%]
 
 %%[(9999 hmtyinfer || hmtyast) export(ppCHRStore'')
@@ -381,7 +381,7 @@ instance (PP p, PP i, PP g) => PP (SolveStep p i g s) where
 
 %%[(9 hmtyinfer || hmtyast) export(ppSolveTrace)
 ppSolveTrace :: (PP s, PP p, PP i, PP g) => SolveTrace p i g s -> PP_Doc
-ppSolveTrace tr = ppBracketsCommasV [ pp st | st <- tr ]
+ppSolveTrace tr = ppBracketsCommasBlock [ pp st | st <- tr ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -618,8 +618,8 @@ chrSolve'' env chrStore cnstrs prevState
                                          >-< "workkeys" >#< ppBracketsCommas (map ppCHRTrieKey keys)
                                          >-< "worktrie" >#< wlTrie wl
                                          >-< "schr" >#< schr
-                                         >-< "usedin" >#< (ppBracketsCommasV $ map (\(k,s) -> ppKs k >#< ppBracketsCommas (map ppUsedByKey $ Set.toList s)) $ Map.toList $ wlUsedIn wl)
-                                         >-< "usedin'" >#< (ppBracketsCommasV $ map (\(k,s) -> ppKs k >#< ppBracketsCommas (map ppUsedByKey $ Set.toList s)) $ Map.toList $ wlUsedIn wl')
+                                         >-< "usedin" >#< (ppBracketsCommasBlock $ map (\(k,s) -> ppKs k >#< ppBracketsCommas (map ppUsedByKey $ Set.toList s)) $ Map.toList $ wlUsedIn wl)
+                                         >-< "usedin'" >#< (ppBracketsCommasBlock $ map (\(k,s) -> ppKs k >#< ppBracketsCommas (map ppUsedByKey $ Set.toList s)) $ Map.toList $ wlUsedIn wl')
                                      where ppKs ks = ppBracketsCommas $ map ppCHRTrieKey $ Set.toList ks
 %%][100
 %%]]
@@ -638,7 +638,7 @@ chrSolve'' env chrStore cnstrs prevState
                       st' = stmatch { stWorkList = wl', stTrace = SolveDbg (ppdbg) : {- -} stTrace stmatch }
           where (matches,lastQuery,ppdbg,stats) = workMatches st
 %%[[9
-                stmatch = addStats stats [("(a) workHd", ppCHRTrieKey workHdKey), ("(b) matches", ppBracketsCommasV [ s `varUpd` storedChr schr | ((schr,_),s) <- matches ])]
+                stmatch = addStats stats [("(a) workHd", ppCHRTrieKey workHdKey), ("(b) matches", ppBracketsCommasBlock [ s `varUpd` storedChr schr | ((schr,_),s) <- matches ])]
 %%][100
                 stmatch =
 %%]]
@@ -711,10 +711,10 @@ chrSolve'' env chrStore cnstrs prevState
                 r5  = mapMaybe (\r@(chr,kw@(_,works)) -> fmap (\s -> (r,s)) $ slvMatch env chr (map workCnstr works)) r4
 %%[[9
                 -- debug info
-                pp2  = "lookups"    >#< ("for" >#< ppCHRTrieKey workHdKey >-< ppBracketsCommasV r2)
-                -- pp2b = "cand1"      >#< (ppBracketsCommasV $ map (ppBracketsCommasV . map (ppBracketsCommasV . map (\(k,w) -> ppCHRTrieKey k >#< w)) . fst . candidate) r2)
-                -- pp2c = "cand2"      >#< (ppBracketsCommasV $ map (ppBracketsCommasV . map (ppBracketsCommasV) . combineToDistinguishedElts . fst . candidate) r2)
-                pp3  = "candidates" >#< (ppBracketsCommasV $ map (\(chr,(ks,ws)) -> "chr" >#< chr >-< "keys" >#< ppBracketsCommas (map ppCHRTrieKey ks) >-< "works" >#< ppBracketsCommasV ws) $ r3)
+                pp2  = "lookups"    >#< ("for" >#< ppCHRTrieKey workHdKey >-< ppBracketsCommasBlock r2)
+                -- pp2b = "cand1"      >#< (ppBracketsCommasBlock $ map (ppBracketsCommasBlock . map (ppBracketsCommasBlock . map (\(k,w) -> ppCHRTrieKey k >#< w)) . fst . candidate) r2)
+                -- pp2c = "cand2"      >#< (ppBracketsCommasBlock $ map (ppBracketsCommasBlock . map (ppBracketsCommasBlock) . combineToDistinguishedElts . fst . candidate) r2)
+                pp3  = "candidates" >#< (ppBracketsCommasBlock $ map (\(chr,(ks,ws)) -> "chr" >#< chr >-< "keys" >#< ppBracketsCommas (map ppCHRTrieKey ks) >-< "works" >#< ppBracketsCommasBlock ws) $ r3)
 %%][100
 %%]]
         initState st = st { stWorkList = wlInsert (stHistoryCount st) wlnew $ stWorkList st, stDoneCnstrSet = Set.unions [Set.fromList done, stDoneCnstrSet st] }

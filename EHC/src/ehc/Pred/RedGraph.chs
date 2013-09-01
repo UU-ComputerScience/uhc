@@ -83,7 +83,7 @@ instance PP p => PP (RedNode p) where
 
 %%[(9 hmtyinfer) export(ppRedGraph)
 ppRedGraph :: (PP p, PP i) => RedGraph p i -> PP_Doc
-ppRedGraph ag = "RedGraph" >-< indent 2 ((ppBracketsCommasV $ nodes g) >-< (ppBracketsCommasV $ edges g) >-< pp (show g))
+ppRedGraph ag = "RedGraph" >-< indent 2 ((ppBracketsCommasBlock $ nodes g) >-< (ppBracketsCommasBlock $ edges g) >-< pp (show g))
   where g = agraphGraph ag
 %%]
 

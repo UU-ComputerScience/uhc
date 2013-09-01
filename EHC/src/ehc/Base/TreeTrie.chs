@@ -254,7 +254,7 @@ ppTreeTrieAsIs t
     >-< "P:" >#< (ppSub $ ttriePartSubs t)
     >-< "N:" >#< (ppSub $ ttrieSubs t)
   where ppKV (k,v) = k >-< indent 2 (":" >#< ppTreeTrieAsIs v)
-        ppSub = ppBracketsCommasV . map ppKV . Map.toList
+        ppSub = ppBracketsCommasBlock . map ppKV . Map.toList
 %%]
 
 %%[9
@@ -262,7 +262,7 @@ instance (Show k, Show v) => Show (TreeTrie k v) where
   showsPrec _ t = showList $ toListByKey t
 
 instance (PP k, PP v) => PP (TreeTrie k v) where
-  pp t = ppBracketsCommasV $ map (\(a,b) -> ppTreeTrieKey a >#< ":" >#< b) $ toListByKey t
+  pp t = ppBracketsCommasBlock $ map (\(a,b) -> ppTreeTrieKey a >#< ":" >#< b) $ toListByKey t
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

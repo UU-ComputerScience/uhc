@@ -121,7 +121,7 @@ SEM BodyDecl
 
 %%[(8 cmm)
 SEM Proc
-  | Proc		lhs		.	pp		=	(mbpre id @mbConv.ppMb $ @nm >#< ppParensCommas' @formals.ppL) >-< ppCurlysBlock [@body.pp]
+  | Proc		lhs		.	pp		=	(mbpre id @mbConv.ppMb $ @nm >#< ppParensCommas' @formals.ppL) >-#-< ppCurlys @body.pp
 %%]
 
 Conv

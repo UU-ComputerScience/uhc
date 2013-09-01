@@ -64,7 +64,7 @@ instance (PP c,PP g) => PP (CHR c g s) where
           ppGB []      b@(_:_) = [ppL b]
           ppGB []      []      = []
           ppL [x] = pp x
-          ppL xs  = ppBracketsCommasV xs -- ppParensCommasBlock xs
+          ppL xs  = ppBracketsCommasBlock xs -- ppParensCommasBlock xs
           ppChr l = vlist l -- ppCurlysBlock
 %%]
 

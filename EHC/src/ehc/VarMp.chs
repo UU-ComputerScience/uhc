@@ -551,7 +551,7 @@ ppVarMpV = ppVarMp vlist
 
 %%[2.PP
 instance (PP k, PP v) => PP (VarMp' k v) where
-  pp = ppVarMp (ppListSepFill "" "" ", ")
+  pp = ppVarMp (ppBlockWithStrings "" "" ", ")
 %%]
 
 %%[6.PP -2.PP

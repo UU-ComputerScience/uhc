@@ -80,8 +80,8 @@ ppFitPair fim t1 t2
 %%[(1 hmtyinfer || hmtyast).ppUnifyErr hs
 ppUnifyErr :: PP msg => msg -> Ty -> Ty -> Ty -> Ty -> PP_Doc
 ppUnifyErr msg t1 t2 t1d t2d
-  =  ppMsgErr msg    (    "failed to fit:"  >#< ppListSepFill "" "" " <= " [ppTy t1,ppTy t2]
-                     >-<  "problem with :"  >#< ppListSepFill "" "" " <= " [ppTy t1d,ppTy t2d]
+  =  ppMsgErr msg    (    "failed to fit:"  >#< ppBlockWithStrings "" "" "<= " [ppTy t1,ppTy t2]
+                     >-<  "problem with :"  >#< ppBlockWithStrings "" "" "<= " [ppTy t1d,ppTy t2d]
                      )
 %%]
 
