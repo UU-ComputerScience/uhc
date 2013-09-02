@@ -362,22 +362,31 @@ ehcCmdLineOpts
 %%[[(8 codegen)
      ,  Option ""   ["code"]                (OptArg oCode "hs|eh|exe[c]|lexe[c]|bexe[c]|-")
                                                                                     "write code to file, default=bexe (will be obsolete and/or changed, use --target)"
-     ,  Option ""   ["dump-core-stages"]    (boolArg optDumpCoreStages)             "dump intermediate Core transformation stages (no)"
 %%][100
 %%]]
 %%[[(8 codegen grin)
      ,  Option ""   ["time-compilation"]    (NoArg oTimeCompile)                    "show grin compiler CPU usage for each compilation phase (only with -v2)"
-     ,  Option ""   ["gen-casedefault"]     (boolArg optSetGenCaseDefault)          "trap wrong casedistinction in C (no)"
-     ,  Option ""   ["gen-cmt"]             (boolArg optSetGenCmt)                  "include comment about code in generated code"
-     ,  Option ""   ["gen-debug"]           (boolArg optSetGenDebug)                "include debug info in generated code (yes)"
-     ,  Option ""   ["gen-trace"]           (boolArg optSetGenTrace)                "trace functioncalls in C (no)"
-     ,  Option ""   ["gen-trace-assign"]    (boolArg optSetGenTrace2)               "trace assignments in C (no)"
-     ,  Option ""   ["gen-rtsinfo"]         (ReqArg oRTSInfo "<nr>")                "flags for rts info dumping (default=0)"
-     ,  Option ""   ["dump-grin-stages"]    (boolArg optDumpGrinStages)             "dump intermediate Grin and Silly transformation stages (no)"
+     ,  Option ""   ["gen-casedefault"]     (boolArg optSetGenCaseDefault)          "codegen: trap wrong casedistinction in C (no)"
+     ,  Option ""   ["gen-cmt"]             (boolArg optSetGenCmt)                  "codegen: include comment about code in generated code"
+     ,  Option ""   ["gen-debug"]           (boolArg optSetGenDebug)                "codegen: include debug info in generated code (yes)"
+     ,  Option ""   ["gen-trace"]           (boolArg optSetGenTrace)                "codegen: trace functioncalls in C (no)"
+     ,  Option ""   ["gen-trace-assign"]    (boolArg optSetGenTrace2)               "codegen: trace assignments in C (no)"
+     ,  Option ""   ["gen-rtsinfo"]         (ReqArg oRTSInfo "<nr>")                "codegen: flags for rts info dumping (default=0)"
+%%][100
+%%]]
+%%[[(8 codegen)
+     ,  Option ""   ["gen-trampoline"]      (boolArg oSetGenTrampoline)             "codegen: use trampoline"
+%%]]
+%%[[(8 codegen)
+     ,  Option ""   ["dump-core-stages"]    (boolArg optDumpCoreStages)             "dump: intermediate Core transformation stages (no)"
+%%][100
+%%]]
+%%[[(8 codegen grin)
+     ,  Option ""   ["dump-grin-stages"]    (boolArg optDumpGrinStages)             "dump: intermediate Grin and Silly transformation stages (no)"
 %%][100
 %%]]
 %%[[(8 codegen cmm)
-     ,  Option ""   ["dump-cmm-stages"]     (boolArg optDumpCmmStages)              "dump intermediate Cmm stages (no)"
+     ,  Option ""   ["dump-cmm-stages"]     (boolArg optDumpCmmStages)              "dump: intermediate Cmm stages (no)"
 %%][100
 %%]]
 %%[[(8 codegen java)
@@ -813,6 +822,7 @@ optSetGenRTSInfo     o b = o { ehcOptGenRTSInfo     = b }
 optSetGenCaseDefault o b = o { ehcOptGenCaseDefault = b }
 optSetGenCmt         o b = o { ehcOptGenCmt         = b }
 optSetGenDebug       o b = o { ehcOptGenDebug       = b }
+oSetGenTrampoline	 o b = o { ehcOptGenTrampoline  = b }
 optDumpGrinStages    o b = o { ehcOptDumpGrinStages = b {-, ehcOptEmitGrin = b -} }
 -- optEarlyModMerge     o b = o { ehcOptEarlyModMerge  = b }
 %%]

@@ -16,7 +16,7 @@
 %%[(8 codegen grin cmm) hs import({%{EH}BuiltinPrims})
 %%]
 
-%%[(8 codegen grin) hs import({%{EH}CodeGen.ValAccess} as VA)
+%%[(8 codegen grin) hs import({%{EH}CodeGen.ValAccess} as VA, {%{EH}CodeGen.RefGenerator}, {%{EH}CodeGen.Const} as Const)
 %%]
 
 %%[(88 codegen grin cmm) hs import({%{EH}GrinCode.Pretty})
@@ -159,41 +159,25 @@ SEM GrExpr
 %%% Constants
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(88 codegen grin cmm) hs
-type ConstMp = Map.Map GB.Const Int
-%%]
-
-%%[(88 codegen grin cmm) hs
-constAdd :: GB.Const -> ConstMp -> (Int,ConstMp)
-constAdd c constMp
-  = case Map.lookup c constMp of
-      Just i -> (i,constMp)
-      _      -> (constInx,Map.insert c constInx constMp)
-             where constInx = Map.size constMp
-
-constCFunAdd :: String -> ConstMp -> (Int,ConstMp)
-constCFunAdd nm = constAdd (GB.Const_CFunction nm)
-
-constCCallEncWrapper :: [BasicSize] -> ConstMp -> (Int,ConstMp)
-constCCallEncWrapper szs = constAdd (GB.Const_CCallEncWrapper szs)
-%%]
-
-%%[(88 codegen grin cmm)
-ATTR AllNTNoMod [ | constMp: ConstMp | ]
-
-SEM GrModule
-  | Mod         globalL		.	constMp			=	Map.empty
-%%]
-
-%%[(88 codegen grin cmm)
+%%[(8 codegen grin cmm)
 SEM GrExpr
-  | FFI         (loc.constInx,loc.constMp2)     =   constCFunAdd @impEntNm @lhs.constMp
-                lhs			.	constMp	    	=   @constMp3
+  | FFI         lhs			.	constSt	    	=   @constSt2
 %%]
 
 %%[(8 codegen grin cmm)
 SEM GrBind
   | Bind        loc			.	entryNmConst	=	Nothing
+%%]
+
+%%[(8 codegen grin cmm)
+SEM GrBind
+  | Bind        (loc.constEntryNmFld,loc.constSt2)
+  												=   Const.addNm @nm @lhs.constSt
+  				expr		.	constSt			=	@constSt2
+
+SEM GrVal
+  | LitStr      (loc.constStrFld,loc.constSt2) 	=   Const.addStr @str @lhs.constSt
+  				lhs			.	constSt			=	@constSt2
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -557,11 +541,11 @@ SEM GrExpr
                                                                 )
                                                              where (gbState2,constLbl  ) = GB.newLabelId gbState
                                                                    (gbState3,callencLbl) = GB.newLabelId gbState2
-                                                                   fins = Seq.fromList [GB.ldg GB.InsOp_LocB_TOS $ GB.linkChainConst constLbl @constInx]
+                                                                   fins = Seq.fromList [GB.ldg GB.InsOp_LocB_TOS $ GB.linkChainConst constLbl @constCFld]
                                                                    finc = GB.ststFromDepPerm 1 GCPermit_Not
                                                                    patbasicsz = grinBasicAnnotSize @lhs.patBasicAnnot
                                                                    basicszs = patbasicsz : basicsz
-                                                                   (callencInx,constMp3) = constCCallEncWrapper basicszs @constMp2
+                                                                   (callencInx,constMp3) = Const.addFFICallEncWrapper basicszs @constMp2
                                                                    basicszStr = concatMap basicGrinSizeCharEncoding basicszs
                                                                    callStState = @ldStState `GB.ststInc` inc `GB.ststInc` finc
 %%[[8
@@ -691,9 +675,11 @@ data GrValIntro
 
 %%[(8 codegen grin cmm)
 SEM GrExpr
-  | Eval		loc			.	(valDecls,grvalIntro)
-  												=	let n = mkHNm @lUniq
-  													in  (Cmm.declLocalVar tyNd n (Just $ Cmm.Expr_Eval @nm), GrValIntro_Nm n)
+  | Eval        loc         .   (valDecls,grvalIntro)
+                                                =   if ehcOptGenTrampoline @lhs.opts
+                                                    then let n = mkHNm @lUniq
+                                                         in  (Cmm.declLocalVar tyNd n (Just $ Cmm.Expr_Eval @nm), GrValIntro_Nm n)
+                                                    else (Seq.empty, GrValIntro_Nm @nm)
   | Seq			loc			.	(seqDecls,newVaGam,grvalIntro)
   												=	case (@expr.grvalIntro, @pat.nmIntro) of
   														(gvi, NmIntro_Single nmp annot)
@@ -818,6 +804,7 @@ SEM GrModule
 %%[[9090
                                                       (Set.toList @bindL.includeS)
 %%]]
+                                                      @bindL.constSt
 %%]
 
 %%[(8 codegen grin cmm) hs

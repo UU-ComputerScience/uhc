@@ -15,6 +15,7 @@ DATA AGItf
 DATA Module
   | Mod				moduleNm		: Nm
   					decls			: TopLevelL
+  					constSt			: {ConstSt}
 %%]
 
 %%[(8 cmm)

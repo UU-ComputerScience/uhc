@@ -8,6 +8,9 @@
 %%[(8 codegen) hs import({%{EH}Base.Common},{%{EH}Base.Builtin})
 %%]
 
+%%[(8 codegen) hs import({%{EH}CodeGen.RefGenerator})
+%%]
+
 %%[(8888 codegen) hs import(qualified {%{EH}Config} as Cfg)
 %%]
 
@@ -100,7 +103,7 @@ nmEnvLookup nm env = Map.lookup nm $ neVAGam env
 %%]
 
 %%[(50 codegen grin) -8.nmEnvLookup hs export(nmEnvLookup)
-nmEnvLookup :: (RefOfFld mref, RefOfFld meref) => HsName -> NmEnv lref gref mref meref extra -> Maybe (ValAccess lref gref mref meref)
+nmEnvLookup :: (RefOfFld Fld mref, RefOfFld Fld meref) => HsName -> NmEnv lref gref mref meref extra -> Maybe (ValAccess lref gref mref meref)
 nmEnvLookup nm env
   = case Map.lookup nm $ neVAGam env of
       Nothing
@@ -119,45 +122,8 @@ nmEnvLookup nm env
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Reference generator
+%%% Reference generation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8 codegen) hs export(RefGenerator(refGen1),refGen)
-type RefGenMonad ref = State Int ref
-
-class RefGenerator ref where
-  -- | Generate for 1 name
-  refGen1M :: Int -> HsName -> RefGenMonad ref
-  refGen1  :: Int -> Int -> HsName -> (ref, Int)
-  
-  -- defaults
-  refGen1M dir nm = do 
-    seed <- get
-    let (r,seed') = refGen1 seed dir nm
-    put seed'
-    return r
-  
-  refGen1 seed dir nm = runState (refGen1M dir nm) seed
-
-instance RefGenerator HsName where
-  refGen1M _ = return
-
-instance RefGenerator Int where
-  refGen1 seed dir nm  = (seed, seed+dir)
-
-instance RefGenerator Fld where
-  refGen1 seed dir nm  = (Fld (Just nm) (Just seed), seed+dir)
-
--- | Generate for names, starting at a seed in a direction
-refGenM :: RefGenerator ref => Int -> [HsName] -> RefGenMonad (AssocL HsName ref)
-refGenM dir nmL
-  = forM nmL $ \nm -> do
-      r <- refGen1M dir nm
-      return (nm,r)
-
-refGen :: RefGenerator ref => Int -> Int -> [HsName] -> AssocL HsName ref
-refGen seed dir nmL = evalState (refGenM dir nmL) seed
-%%]
 
 %%[(8 codegen) hs export(patNmL2DepL)
 -- | Generate references starting at offset 0 with additional direction tweaking
@@ -181,7 +147,7 @@ type HsName2FldMpMp = HsName2RefMpMp Fld Fld
 
 %%[(50 codegen) hs export(offMpKeysSorted,offMpMpKeysSet)
 -- | Module names, sorted on import order, which is included as 0-based offset (used as index in import entry table)
-offMpKeysSorted :: (Ord mref, RefOfFld mref) => HsName2FldMpMp -> AssocL HsName mref
+offMpKeysSorted :: (Ord mref, RefOfFld Fld mref) => HsName2FldMpMp -> AssocL HsName mref
 offMpKeysSorted m = sortOn snd [ (n, refOfFld o) | (n,(o,_)) <- Map.toList m ]
 
 offMpMpKeysSet :: HsName2RefMpMp mref meref -> HsNameS

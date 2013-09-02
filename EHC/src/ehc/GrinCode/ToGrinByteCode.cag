@@ -18,7 +18,9 @@
 %%]
 %%[(8 codegen grin) hs import({%{EH}GrinByteCode}, qualified {%{EH}GrinByteCode} as GB,{%{EH}Core},{%{EH}GrinCode},{%{EH}LamInfo})
 %%]
-%%[(8 codegen grin) hs import({%{EH}CodeGen.ValAccess} as VA)
+%%[(8 codegen grin) hs import({%{EH}CodeGen.ValAccess} as VA, {%{EH}CodeGen.RefGenerator})
+%%]
+%%[(8 codegen grin) hs import({%{EH}CodeGen.Const} as Const)
 %%]
 
 %%[(5050 codegen grin) hs import({%{EH}Ty(tyRowCanonOrder)},{%{EH}HI})
@@ -139,34 +141,9 @@ ATTR GrAGItf GrModule AllBind AllGrExpr [ impNmFldMpMp: HsName2FldMpMp | | ]
 %%% Constants
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin) hs
-type ConstMp = Map.Map GB.Const Int
-%%]
-
-%%[(8 codegen grin) hs
-constAdd :: GB.Const -> ConstMp -> (Int,ConstMp)
-constAdd c constMp
-  = case Map.lookup c constMp of
-      Just i -> (i,constMp)
-      _      -> (constInx,Map.insert c constInx constMp)
-             where constInx = Map.size constMp
-
-constCFunAdd :: String -> ConstMp -> (Int,ConstMp)
-constCFunAdd nm = constAdd (GB.Const_CFunction nm)
-
-constCCallEncWrapper :: [BasicSize] -> ConstMp -> (Int,ConstMp)
-constCCallEncWrapper szs = constAdd (GB.Const_CCallEncWrapper szs)
-%%]
-
 %%[(8 codegen grin)
-ATTR AllNTNoMod [ | constMp: ConstMp | ]
-
-SEM GrModule
-  | Mod         globalL		.	constMp			=	Map.empty
-
 SEM GrExpr
-  | FFI         (loc.constInx,loc.constMp2)     =   constCFunAdd @impEntNm @lhs.constMp
-                lhs			.	constMp	    	=   @constMp3
+  | FFI         lhs			.	constSt	    	=   @constSt3
 %%]
 
 %%[(8 codegen grin)
@@ -455,11 +432,11 @@ SEM GrExpr
                                                                      nArgMine    = length @argL.grvalIntroL
                                                              _ -> (ins', inc', False, gbState2)
                                                                where (ins',inc',gbState2) = GB.gvCall @mbDebugStrNm @nmEnv ins inc @ldStState gbState @nm
-  | FFI         loc         .   (valIns,valStInc,retIsDone,aftLdGBState,constMp3)
+  | FFI         loc         .   (valIns,valStInc,retIsDone,aftLdGBState,constSt3)
                                                 =   if @optimForIntlPrim
                                                     then case gbprimMk (fromJust @mbGbPrim) @lhs.opts GB.defaultLoadCtxt @nmEnv @ldStState @aftLblGBState @argL.grvalIntroL of
                                                            (GB.GrValIntroAlt_OnTOS ins inc _ _, gbState)
-                                                             -> (ins, inc, False, gbState, @constMp2)
+                                                             -> (ins, inc, False, gbState, @constSt2)
                                                            _ -> panic ("ToGrinByteCode.mbGbPrim:" ++ show @impEntNm)
                                                     else case GB.gviLdFold @lhs.opts (GB.defaultLoadCtxt {GB.lcxDoLdTOS = True}) @nmEnv @ldStState @aftLblGBState @argL.grvalIntroL of
                                                            (GB.GrValIntroAlt_OnTOS ins inc _ basicsz, gbState)
@@ -467,15 +444,15 @@ SEM GrExpr
                                                                   Seq.fromList ([GB.meta' GB.AnnIdUse (@impEntNm >#< "szargs=" >|< GB.ststDepth inc >#< "basicsz=" >|< basicszStr)] ++ call)
                                                                 , GB.ststFromDepPerm (basicSizeInWords patbasicsz) (grinBasicAnnotGCPermit @lhs.patBasicAnnot), False
                                                                 , gbState3 `GB.gbstIncByStackState` callStState
-                                                                , constMp3
+                                                                , constSt3
                                                                 )
                                                              where (gbState2,constLbl  ) = GB.newLabelId gbState
                                                                    (gbState3,callencLbl) = GB.newLabelId gbState2
-                                                                   fins = Seq.fromList [GB.ldg GB.InsOp_LocB_TOS $ GB.linkChainConst constLbl @constInx]
+                                                                   fins = Seq.fromList [GB.ldg GB.InsOp_LocB_TOS $ GB.linkChainConst constLbl $ refOfFld @constCFld]
                                                                    finc = GB.ststFromDepPerm 1 GCPermit_Not
                                                                    patbasicsz = grinBasicAnnotSize @lhs.patBasicAnnot
                                                                    basicszs = patbasicsz : basicsz
-                                                                   (callencInx,constMp3) = constCCallEncWrapper basicszs @constMp2
+                                                                   (callencInx,constSt3) = Const.addFFICallEncWrapper basicszs @constSt2
                                                                    basicszStr = concatMap basicGrinSizeCharEncoding basicszs
                                                                    callStState = @ldStState `GB.ststInc` inc `GB.ststInc` finc
 %%[[8
@@ -484,7 +461,7 @@ SEM GrExpr
                                                                    call  = if forextractOptIsPtr @foreignEntInfo then [] else cl
 %%]]
                                                                          where cl = [ GB.meta' GB.AnnStackDepth callStState
-                                                                                    , GB.callc @mbDebugStr (callencLbl,callencInx,basicszs) callStState (GB.ststDepth inc)
+                                                                                    , GB.callc @mbDebugStr (callencLbl,refOfFld callencInx,basicszs) callStState (GB.ststDepth inc)
                                                                                     ]
   | FetchUpdate loc         .   (valIns,valStInc,retIsDone,aftLdGBState)
                                                 =   case GB.gviLdFold @lhs.opts GB.defaultLoadCtxt @nmEnv @ldStState @aftLblGBState $ map GrValIntro_Nm $ [@src,@dst] of
@@ -647,7 +624,7 @@ SEM GrModule
 %%]]
                                                       @entryL
                                                       (Seq.toList @i)
-                                                      [ c | (c,_) <- sortOn snd $ Map.toList @bindL.constMp ]
+                                                      [ c | (c,_) <- sortOn (cfldGlobInx . snd) $ Map.toList $ conststMp @bindL.constSt ]
                                                       [ i | (i,True) <- zip [0..] @isCafL ]
                                                       (fldInx @mainEntryFld)
 %%[[90

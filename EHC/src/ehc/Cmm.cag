@@ -21,6 +21,8 @@ C subset, modelled after C--
 %%]
 %%[(8 codegen cmm) hs import(qualified {%{EH}Config} as Cfg)
 %%]
+%%[(8 codegen cmm) hs import({%{EH}CodeGen.Const}(ConstSt)) export(ConstSt)
+%%]
 
 %%[(8 codegen cmm) hs export(AGItf(..))
 %%]

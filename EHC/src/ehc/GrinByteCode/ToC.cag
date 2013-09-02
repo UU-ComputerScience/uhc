@@ -9,6 +9,8 @@
 %%]
 %%[(8 codegen grin) hs import(qualified {%{EH}GrinCode} as G)
 %%]
+%%[(8 codegen grin) hs import({%{EH}CodeGen.Const} as Const)
+%%]
 
 %%[(8 codegen grin) hs import({%{EH}Base.GenC})
 %%]
@@ -542,7 +544,7 @@ SEM Module
                                                             (  gencWrapperCFunDef tyPre Nothing
                                                                                   (genc nArgs) [res] (Left bs)
                                                             )
-                                                    | Const_CCallEncWrapper bs@(res:args) <- @constL
+                                                    | Const_FFICallEncWrapper bs@(res:args) <- @constL
                                                     , let nArgs = length args
                                                     ]
 %%]
@@ -1135,11 +1137,11 @@ ppNodeFld :: (PP n,PP o) => n -> o -> GenC
 ppNodeFld n o = gencArrayAt (ppNodeFlds n) o
 
 ppCnst :: EHCOpts -> Const -> GenC
-ppCnst opts (Const_CFunction n)
+ppCnst opts (Const_FFIFunction n)
   = gencCast "GB_Word" $ gencAddrOf (pref ++ {- (if ehcOptPriv opts then "priv_" else "") ++ -} n)
   where pref = ""  -- if take 4 n == "prim" then "gb_" else ""
-ppCnst opts (Const_CCallEncWrapper szs)
-  = ppCnst opts (Const_CFunction $ gencBasicSizeGBFunTyNm gencBasicSizeFunPrefix szs)
+ppCnst opts (Const_FFICallEncWrapper szs)
+  = ppCnst opts (Const_FFIFunction $ gencBasicSizeGBFunTyNm gencBasicSizeFunPrefix szs)
 
 ppLine :: GenC -> GenC
 ppLine p = p >-< text ""

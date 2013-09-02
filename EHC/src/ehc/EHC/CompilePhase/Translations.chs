@@ -22,7 +22,9 @@ Translation to another AST
 %%]
 %%[(8 codegen) import({%{EH}Base.Target})
 %%]
-%%[(50 codegen) hs import({%{EH}CodeGen.ValAccess} as VA)
+%%[(50 codegen) hs import({%{EH}CodeGen.ValAccess} as VA, {%{EH}CodeGen.RefGenerator})
+%%]
+%%[(8 codegen cmm) hs import({%{EH}CodeGen.Const} as Const (emptyConstSt))
 %%]
 
 -- EH semantics
@@ -354,7 +356,7 @@ cpTranslateByteCode modNm
 %%]]
                 ) = gbmod2C opts $ panicJust "cpTranslateByteCode1" mbBytecode
 %%[[(8 cmm)
-               grinbcCmm = Cmm.Module_Mod modNm cmmMod
+               grinbcCmm = Cmm.Module_Mod modNm cmmMod Const.emptyConstSt
 %%]]
 %%][50
                coreInh  = crsiCoreInh crsi
@@ -365,7 +367,7 @@ cpTranslateByteCode modNm
                  ,functionInfoExportMp)
                         = ( vlist ([ppMod] ++ (if ecuIsMainMod ecu then [ppMain] else []))
 %%[[(50 cmm)
-                          , Cmm.Module_Mod modNm $ cmmMod  ++ (if ecuIsMainMod ecu then cmmMain else [])
+                          , Cmm.Module_Mod modNm (cmmMod  ++ (if ecuIsMainMod ecu then cmmMain else [])) emptyConstSt
 %%]]
                           , functionInfoExportMp
                           )

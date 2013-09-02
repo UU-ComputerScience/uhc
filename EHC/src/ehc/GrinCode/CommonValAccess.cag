@@ -145,7 +145,7 @@ ATTR GrValL [ | | grvalIntroL: {[GrValIntro]} length : {Int} ]
 SEM GrVal
   | Var         lhs         .   grvalIntro      =   GrValIntro_Nm    @nm
   | LitInt      lhs         .   grvalIntro      =   GrValIntro_Int   (toInteger @int)
-  | LitStr      lhs         .   grvalIntro      =   GrValIntro_Str   @str -- @constInx
+  | LitStr      lhs         .   grvalIntro      =   GrValIntro_Str   @str -- @constCFld
   | Node        lhs         .   grvalIntro      =   GrValIntro_Grp   @tag.self @fldL.grvalIntroL
   | BasicNode   lhs         .   grvalIntro      =   GrValIntro_Basic @tag.self @nm
   | EnumNode    lhs         .   grvalIntro      =   GrValIntro_Enum  @nm
@@ -253,6 +253,21 @@ SEM GrModule
 %%[(8 codegen grin)
 SEM GrModule
   | Mod         loc         .   mainEntryFld	=   maybe noFld vaGlobRef $ (nmEnvLookup hsnMain @nmEnv :: Maybe ValAccessG)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Constants
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin)
+ATTR AllNTNoMod [ | constSt: ConstSt | ]
+
+SEM GrModule
+  | Mod         globalL		.	constSt			=	emptyConstSt
+
+SEM GrExpr
+  | FFI         (loc.constCFld,loc.constSt2)    =   Const.addFFIFun @impEntNm @lhs.constSt
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

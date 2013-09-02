@@ -19,6 +19,8 @@
 
 %%[(8 codegen grin) hs import({%{EH}CodeGen.ValAccess} as VA) export(module VA)
 %%]
+%%[(8 codegen grin) hs import({%{EH}CodeGen.Const} as Const)
+%%]
 
 %%[(8 codegen grin) hs export(AGItf(..),Module(..),Instr(..), Instrs, Meta(..))
 %%]
@@ -112,18 +114,6 @@ labelLocNew lbl loc m
 
 %%[(8 codegen grin) hs export(InsSeq)
 type InsSeq = Seq.FastSeq Instr
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Constants
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8 codegen grin) hs export(Const(..))
-data Const
-  = Const_CFunction     	{ constCFunNm :: !String }
-  | Const_CCallEncWrapper   { constSizes  :: ![BasicSize] }
-  deriving(Eq,Ord,Show)
-
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -29,7 +29,7 @@ Module analysis
 %%[50 import(qualified {%{EH}HS.ModImpExp} as HSSemMod)
 %%]
 
-%%[(50 codegen grin) hs import({%{EH}CodeGen.ValAccess} as VA)
+%%[(50 codegen grin) hs import({%{EH}CodeGen.RefGenerator})
 %%]
 
 %%[50 import({%{EH}Base.Debug})

@@ -1408,30 +1408,33 @@ allKnownPrimMp
 %%% Field access, holding both name and offset, for delayed decision about this
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs export(Fld(Fld), noFld, fldInx, fldNm)
+%%[(8 codegen) hs export(Fld'(..), Fld, noFld, fldInx, fldNm)
 -- | Field (combined dereference + field access), doubly represented by index and name
-data Fld
+data Fld' inx
   = Fld
       { _fldNm	:: Maybe HsName
-      , _fldInx	:: Maybe Int
+      , _fldInx	:: Maybe inx
       }
 
+type Fld = Fld' Int
+
+noFld :: Fld
 noFld = Fld (Just hsnUnknown) (Just 0)
 
-instance Eq Fld where
+instance Eq inx => Eq (Fld' inx) where
   (Fld {_fldInx=Just i1}) == (Fld {_fldInx=Just i2}) = i1 == i2
   (Fld {_fldNm =     n1}) == (Fld {_fldNm =     n2}) = n1 == n2
 
-instance Ord Fld where
+instance Ord inx => Ord (Fld' inx) where
   (Fld {_fldInx=Just i1}) `compare` (Fld {_fldInx=Just i2}) = i1 `compare` i2
   (Fld {_fldNm =     n1}) `compare` (Fld {_fldNm =     n2}) = n1 `compare` n2
 
-instance Show Fld where
+instance Show inx => Show (Fld' inx) where
   show f = maybe (maybe "??Fld" show $ _fldNm f) show $ _fldInx f
 
 -- | Fld access preferred by name
-fldNm :: Fld -> HsName
-fldNm f = maybe (mkHNm $ fldInx f) id $ _fldNm f
+fldNm :: HSNM inx => Fld' inx -> HsName
+fldNm f = maybe (maybe hsnUnknown mkHNm $ _fldInx f) id $ _fldNm f
 
 -- | Fld access preferred by index
 fldInx :: Fld -> Int
@@ -1439,16 +1442,16 @@ fldInx f = maybe 0 id $ _fldInx f
 %%]
 
 %%[(8 codegen) hs export(RefOfFld(..))
-class RefOfFld a where
-  refOfFld :: Fld -> a
+class RefOfFld fld a where
+  refOfFld :: fld -> a
 
-instance RefOfFld Fld where
+instance RefOfFld (Fld' inx) (Fld' inx) where
   refOfFld = id
 
-instance RefOfFld Int where
+instance RefOfFld Fld Int where
   refOfFld = fldInx
 
-instance RefOfFld HsName where
+instance HSNM inx => RefOfFld (Fld' inx) HsName where
   refOfFld = fldNm
 
 %%]

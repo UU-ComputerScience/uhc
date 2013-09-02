@@ -33,7 +33,7 @@
 %%[50 import ({%{EH}Gam},{%{EH}Gam.TyGam},{%{EH}Gam.KiGam}) 
 %%]
 
-%%[(50 codegen) import({%{EH}CodeGen.ValAccess} as VA)
+%%[(50 codegen) import({%{EH}CodeGen.RefGenerator})
 %%]
 
 %%[50 import(Control.Monad, UHC.Util.Binary, UHC.Util.Serialize)

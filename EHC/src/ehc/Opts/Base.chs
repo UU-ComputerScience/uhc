@@ -206,6 +206,9 @@ data EHCOpts
 %%[[(8 codegen tycore)
       ,  ehcOptUseTyCore      ::  Maybe [TyCoreOpt] -- use TyCore instead of Core (temporary option until Core is obsolete)
 %%]]
+%%[[(8 codegen)
+      ,  ehcOptGenTrampoline  ::  Bool              -- gen trampoline with (tail) calls
+%%]]
 %%[[(8 codegen grin)
       ,  ehcOptTimeCompile    ::  Bool
 
@@ -357,6 +360,9 @@ emptyEHCOpts
 %%]]
 %%[[(8 codegen tycore)
       ,  ehcOptUseTyCore        =   Nothing
+%%]]
+%%[[(8 codegen)
+      ,  ehcOptGenTrampoline  	=	False
 %%]]
 %%[[(8 codegen grin)
       ,  ehcOptTimeCompile      =   False

@@ -11,7 +11,7 @@
 %%[(8 cmm) hs import(UHC.Util.Pretty, UHC.Util.Utils)
 %%]
 
-%%[(8 cmm) import({Cmm/AbsSyn})
+%%[(8 cmm) ag import({Cmm/AbsSyn})
 %%]
 
 %%[(8 cmm) hs export(ppCmmModule)
@@ -33,7 +33,7 @@ PRAGMA nocycle
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 cmm) hs
-semic = (>#< ";")
+semic = (>|< ";")
 
 mbpre, mbpost :: (PP x, PP r) => (a -> x) -> Maybe a -> r -> PP_Doc
 mbpre  p = maybe pp (\v rest -> p v >#< rest)
