@@ -66,13 +66,15 @@ cpTransformGrin modNm
   =  do  {  cr <- get
          ;  let  (ecu,_,opts,_) = crBaseInfo modNm cr
                  forBytecode = targetIsGrinBytecode (ehcOptTarget opts)
+                 needMetaInfo= targetDoesHPTAnalysis (ehcOptTarget opts)
                  optimizing  = ehcOptOptimizes Optimize_GrinLocal opts
          
 {- for debugging 
                  trafos  =     mk [mte,unb,flt,cpr,nme]
 -}
                  trafos  =     (                                  mk [flt,bae]                             )
-                           ++  (if forBytecode               then mk [mte,unb]                else []      )
+                           ++  (if not needMetaInfo          then mk [mte]                    else []      )
+                           ++  (if forBytecode               then mk [unb]                    else []      )
                            ++  (if optimizing                then mk evel1                    else []      )
                            ++  (if forBytecode && optimizing then inline ++ mk (evel2++[cpr]) else []      )
                            ++  (if optimizing                then mk [nme]                    else []      )

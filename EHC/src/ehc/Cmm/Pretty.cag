@@ -88,7 +88,10 @@ SEM Target
   | Wordsize	lhs		.	pp		=	"wordsize" >#< show @size
 %%]
 
-Import
+%%[(8 cmm)
+SEM Import
+  | Imp			lhs		.	pp		=	mbpre (\s -> show s >#< "as") @mbOrigNm @nm
+%%]
 
 Export
 
@@ -108,9 +111,15 @@ SEM Init
 
 String16
 
-Regs
+%%[(8 cmm)
+SEM Regs
+  | Regs		lhs		.	pp		=	mbpre show @mbKind $ @ty.pp >#< ppCommas' @nmInits.ppL
+%%]
 
-RegNmInit
+%%[(8 cmm)
+SEM RegNmInit
+  | NmInit		lhs		.	pp		=	mbpost show @mbIs @nm
+%%]
 
 %%[(8 cmm)
 SEM BodyDecl
@@ -146,12 +155,12 @@ SEM Stmt
   -- | Span				expr1			: Expr
   -- 					expr2			: Expr
   -- 					body			: Body
-  | Assign		lhs		.	pp		=	semic $ ppCommas' @lval.ppL >#< "=" >#< ppCommas' @rhs.ppL
+  | Assign		lhs		.	pp		=	semic $ ppCommas' @lval.ppL >#< "=" >-|-< indent 1 (ppCommas' @rhs.ppL)
   -- | %%Assign
   | Call        lhs     .   pp      =   semic 
-                                        $ mbnull ppCommas' @knames.ppL
+                                        $ mbnull (\l -> ppCommas' l >#< "=") @knames.ppL
                                         $ mbpre id @mbConv.ppMb
-                                        $ @expr.pp >|< ppParensCommas' @actuals.ppL >|< (@targets.ppMk $ ppSpaces @aliasflows.ppL)
+                                        $ @callexpr.pp >|< ppParensCommas' @actuals.ppL >|< (@targets.ppMk $ ppSpaces @aliasflows.ppL)
   -- | Jump			mbConv			: MbConv
   -- 					expr			: Expr
   -- 					actuals			: ActualL
@@ -195,6 +204,12 @@ Alias
 FlowAlias
 
 %%[(8 cmm)
+SEM CallExpr
+  | Eval		lhs		.	pp		=	pp "eval"
+  | Apply		lhs		.	pp		=	pp "apply"
+%%]
+
+%%[(8 cmm)
 SEM Expr
   -- Regular constants
   | Int	Char Str
@@ -220,7 +235,7 @@ SEM Expr
   -- 					fld				: Fld
 
   -- Support for lazy representation
-  | Eval		lhs		.	pp		=	"eval" >|< ppParens @nm
+  -- | Eval		lhs		.	pp		=	"eval" >|< ppParens @nm
 
 
   -- Misc

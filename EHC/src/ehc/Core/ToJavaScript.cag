@@ -292,25 +292,17 @@ jsTr m x = Seq.singleton $ J.Stat_Expr $ J.Expr_Call (J.var $ mkHNm "trace") [J.
 jsIntConst :: Integral x => x -> J.Expr
 jsIntConst i = J.Expr_Int $ fromIntegral i
 
--- var
--- jsVar :: HSNM x => x -> J.Expr
--- jsVar nm = J.Expr_Var $ mkHNm nm
-
--- call
--- jsCall :: HSNM n => n -> [J.Expr] -> J.Expr
--- jsCall f as = J.Expr_Call (jsVar $ mkHNm f) as
-
 -- apply
 jsApp :: J.Expr -> [J.Expr] -> J.Expr
 jsApp f as
-  = J.Expr_New $ J.call nm (f : as')
+  = J.Expr_New $ J.callv nm (f : as')
   where (nm,_,as') = jsArgsPack as
         nArgs      = length as'
 
 -- lam
 jsFun :: HsName -> [HsName] -> [J.Stat] -> J.Expr
 jsFun fNm as stats
-  = J.Expr_New $ J.call (nmFunN $ length as) (extra ++ [J.Expr_Fun Nothing as stat])
+  = J.Expr_New $ J.callv (nmFunN $ length as) (extra ++ [J.Expr_Fun Nothing as stat])
   where stat = J.Stat_Block stats
 %%[[8
         extra = [J.Expr_Str $ show fNm]
@@ -323,12 +315,12 @@ jsFun fNm as stats
 -- jsEvl x = jsCall nmEval [x]
 
 -- assign
-jsAssign :: HSNM x => x -> J.Expr -> J.Stat
-jsAssign n e = J.Stat_Assign (J.var $ mkHNm n) e
+-- jsAssign :: HSNM x => x -> J.Expr -> J.Stat
+-- jsAssign n e = J.Stat_Assign (J.var $ mkHNm n) e
 
 -- new tuple
 jsNewTup :: [J.Expr] -> J.Expr
-jsNewTup = J.Expr_Arr
+jsNewTup = J.arr
 
 -- | field names used for data constructors, either as provided by program, or made up here
 --   20101012 AD, note: internally generated datatypes not yet have correct meta info, so fill up names as needed, as temporary hack
@@ -398,9 +390,9 @@ SEM CExpr
                                                              initbinds
                                                                    = case @categ of
                                                                        CBindCateg_Rec
-                                                                         ->             Seq.fromList [ J.Stat_VarDecl o $ Just $ J.call nmInd [] | (o,_,_) <- binds ]
-                                                                            `Seq.union` Seq.fromList [ J.Stat_Expr $ J.call nmIndSet [J.var o, e] | (o,_,e) <- binds ]
-                                                                       _ -> Seq.fromList [ J.Stat_VarDecl o (Just e) | (o,_,e) <- binds ]
+                                                                         ->             Seq.fromList [ J.vardecl o $ Just $ J.callv nmInd [] | (o,_,_) <- binds ]
+                                                                            `Seq.union` Seq.fromList [ J.Stat_Expr $ J.callv nmIndSet [J.var o, e] | (o,_,e) <- binds ]
+                                                                       _ -> Seq.fromList [ J.vardecl o (Just e) | (o,_,e) <- binds ]
                                                          in  ( Seq.empty, initbinds )
                             .   js              =   @body.js
   | Case        loc         .   (jstatsCase,js)
@@ -408,9 +400,9 @@ SEM CExpr
                                                                  [(_,stats,e)]
                                                                     -> (stats,e)
                                                                  as -> ( Seq.fromList $
-                                                                           [ J.Stat_VarDecl swRes Nothing
+                                                                           [ J.vardecl swRes Nothing
                                                                            , J.Stat_Switch @scrutineeTagJS
-                                                                               [ J.Alt_Alt tag $ Seq.toList $ stats `Seq.union` Seq.fromList [jsAssign swRes e, J.Stat_Break]
+                                                                               [ J.Alt_Alt tag $ Seq.toList $ stats `Seq.union` Seq.fromList [J.assign swRes e, J.Stat_Break]
                                                                                | (tag,stats,e) <- as
                                                                                ]
                                                                            ]
@@ -481,7 +473,7 @@ SEM CExpr
 %%[(8 javascript) hs
 -- pack > 5 args into tuple, otherwise normal
 jsArgsPack :: [J.Expr] -> (String,(),[J.Expr])
-jsArgsPack = javalikeArgsPack (-1) ((),(),J.Expr_Arr,nmAppN)
+jsArgsPack = javalikeArgsPack (-1) ((),(),J.arr,nmAppN)
 %%]
 
 %%[(8 javascript) hs
@@ -533,7 +525,7 @@ SEM CModule
   | Mod         loc         .   jmodStats       =   jsBody J.Stat_Expr @expr.jbinds @expr.jstats Nothing
                             .   jmodStatsMain   =   [ J.Stat_Expr $ J.evl $
 %%[[99
-                                                      (\m -> jsApp m [J.Expr_Arr []]) $
+                                                      (\m -> jsApp m [J.arr []]) $
 %%]]
                                                       @expr.js
                                                     ]
@@ -551,7 +543,7 @@ SEM CExpr
                                                              t1 x = if ehcOptGenTrace @lhs.opts
                                                                     then Seq.unions [ jsTr (n ">" @lamNm) $ m $ [s " <- "] ++ intersperse (s ", ") (map p as)
                                                                                     , x
-                                                                                    , Seq.singleton $ J.Stat_VarDecl v (Just @body.jsLamBody)
+                                                                                    , Seq.singleton $ J.vardecl v (Just @body.jsLamBody)
                                                                                     , jsTr (n "<" @lamNm) $ m [s " -> ", s v]
                                                                                     ]
                                                                     else x
@@ -621,7 +613,7 @@ ffiJavaScriptMkCall ty
         mkWrap _ _ = panic "ffiJavaScriptMkCall.mkWrap"
         mkDyn  _ _ = panic "ffiJavaScriptMkCall.mkDyn"
 %%][90
-        mkObj as = J.call "primToPlainObj" as
+        mkObj as = J.callv "primToPlainObj" as
         mk = foreignexprEval (J.Expr_Sel,J.Expr_ArrInx,J.Expr_Call,id,mkObj,J.Expr_New,J.var,J.Expr_Str) (forextractForeignExpr ent)
         -- TODO: Reuse some of the foreign export code for this? It's more or less generating the same code...
         -- TODO: Document that we require callback functions to be in IO
@@ -629,7 +621,7 @@ ffiJavaScriptMkCall ty
           where as   = map (mkHNm . ('v':) . show) [1..(tyNumArgs ty - 1)]
                 rn   = mkHNm "res"
                 -- evaluate the composite parts of "res" before returning to the regular js world
-                bdy  = [ J.varDecl rn $ J.evl $ jsApp e $ (map J.var as) ++ [J.Expr_Arr []]
+                bdy  = [ J.varDecl rn $ J.evl $ jsApp e $ (map J.var as) ++ [J.arr []]
                        , J.Stat_Expr $ J.evl $ J.Expr_ArrInx (J.var rn) (jsIntConst 0)
                        , J.ret $ J.evl $ J.Expr_ArrInx (J.var rn) (jsIntConst 1) ]
 
@@ -687,13 +679,13 @@ SEM CModule
 %%][50
                 loc         .   jsModInitStats  =   let prefixes = nub . catMaybes . map hsnQualifier
                                                         mk  n = J.Expr_If (J.var n) (J.var n) (J.Expr_Obj [])
-                                                        mkd n e | isJust q  = jsAssign n e
-                                                                | otherwise = J.Stat_VarDecl n (Just e)
+                                                        mkd n e | isJust q  = J.assign n e
+                                                                | otherwise = J.vardecl n (Just e)
                                                           where q = hsnQualifier n
                                                     in  map (\n -> mkd n $ mk n) $ concat $ reverse $ takeWhile (not.null) $ iterate prefixes $ Set.toList @expr.usedModNmS
 %%]]
 %%[[8
-                loc         .   jsModTraceStats =   if ehcOptGenTrace @lhs.opts then [jsAssign (mkHNm "traceOn") J.Expr_True] else []
+                loc         .   jsModTraceStats =   if ehcOptGenTrace @lhs.opts then [J.assign (mkHNm "traceOn") J.Expr_True] else []
 %%][100
                 loc         .   jsModTraceStats =   []
 %%]]

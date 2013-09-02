@@ -82,7 +82,7 @@ SEM Formal
   | Formal				lhs			.	c		=	gencFunDefArg @ty.c @nm
 
 SEM Import
-  | Imp	ImpAs			lhs			.	c		=	gencInclude' "h" @nm
+  | Imp					lhs			.	c		=	gencInclude' "h" @nm
 
 SEM Export
   | Exp	ExpAs			lhs			.	c		=	gencEndsemic $ gencExtern $ @ty.c >#< @nm

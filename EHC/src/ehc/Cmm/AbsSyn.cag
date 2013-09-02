@@ -74,8 +74,7 @@ DATA Target
 TYPE TargetL		= [Target]
 
 DATA Import
-  | Imp				nm				: Nm
-  | ImpAs			snmAs			: String
+  | Imp 			mbOrigNm		: {Maybe String}
   					nm				: Nm
 
 TYPE ImportL		= [Import]
@@ -111,18 +110,26 @@ SET AllInit			= Init MbInit
 
 DATA String16
   | Unicode			str				: String
+%%]
 
+%%[(8 cmm)
 DATA Regs
-  | Regs			kind			: {Maybe String}
+  | Regs			mbKind			: {Maybe String}
   					ty				: Ty
   					nmInits			: RegNmInitL
 
 DATA RegNmInit
   | NmInit			nm				: Nm
   					mbIs			: {Maybe String}
+  					-- mbInit			: MbInit			-- this is non C-- standard but convenient
 
 TYPE RegNmInitL		= [RegNmInit]
 
+SET AllRegNmInit	= RegNmInit RegNmInitL
+SET AllRegs			= Regs AllRegNmInit
+%%]
+
+%%[(8 cmm)
 SET AllTopNoMod		= AllTopLevel
 					  Section SectionL
 					  Decl DeclL
@@ -131,7 +138,7 @@ SET AllTopNoMod		= AllTopLevel
 					  Export ExportL
 					  AllDatum
 					  AllInit
-					  Regs RegNmInit RegNmInitL
+					  AllRegs
 					  String16
 SET AllTop			= Module
 					  AllTopNoMod
@@ -201,7 +208,7 @@ DATA Stmt
   -- | %%Assign
   | Call			knames			: KindNameL
   					mbConv			: MbConv
-  					expr			: Expr
+  					callexpr		: CallExpr
   					actuals			: ActualL
   					targets			: Targets
   					aliasflows		: FlowAliasL
@@ -221,33 +228,44 @@ DATA Stmt
   					actuals			: ActualL
   					flows			: FlowL
 
-  -- support for lazy representation
+%%]
 
+%%[(8 cmm)
 DATA RetCont
   | Cont			expr1			: Expr
   					expr2			: Expr
 
 TYPE MbRetCont		= MAYBE RetCont
-  					
+%%]
+
+%%[(8 cmm)
 DATA KindName
   | KindName		mbKind			: {Maybe String}
   					nm				: Nm
 
 TYPE KindNameL		= [KindName]
 
+SET AllKindName		= KindName KindNameL
+%%]
+
+%%[(8 cmm)
 DATA Arm
   | Case			ranges			: RangeL
   					body			: Body
 
 TYPE ArmL			= [Arm]
+%%]
 
+%%[(8 cmm)
 DATA Range
   | Range1			expr1			: Expr
   | Range2			expr1			: Expr
   					expr2			: Expr
 
 TYPE RangeL			= [Range]
+%%]
 
+%%[(8 cmm)
 DATA LValue
   | Nm				nm				: Nm
   | Typed			ty				: Ty
@@ -256,6 +274,10 @@ DATA LValue
 
 TYPE LValueL		= [LValue]
 
+SET AllLValue		= LValue LValueL
+%%]
+
+%%[(8 cmm)
 DATA Flow
   | AlsoTo			alsos			: AlsoL
   					nms				: NmL
@@ -284,22 +306,33 @@ TYPE FlowAliasL		= [FlowAlias]
 DATA Targets
   | Targets			nms				: NmL
 
+SET	AllStmtTop		= Stmt
+
 SET	AllStmt			= AllBody
+ 					  AllStmtTop
  					  Proc
 					  Conv MbConv
 					  AllFormal
 					  Actual ActualL
-					  Stmt
 					  RetCont MbRetCont
-					  KindName KindNameL
+					  AllKindName
 					  Arm ArmL
 					  Range RangeL
-					  LValue LValueL
+					  AllLValue
 					  Flow FlowL
 					  Also AlsoL
 					  Alias
 					  FlowAlias FlowAliasL
 					  Targets
+%%]
+
+%%[(8 cmm)
+DATA CallExpr
+  | Expr			expr			: Expr
+
+  -- support for lazy representation
+  | Eval
+  | Apply
 %%]
 
 %%[(8 cmm)
@@ -332,7 +365,7 @@ DATA Expr
   					fld				: Fld
 
   -- Support for lazy representation
-  | Eval			nm				: Nm
+  -- | Eval			nm				: Nm
 
 
   -- Misc
@@ -475,6 +508,7 @@ SET	AllExpr			= Expr ExprL
 					  MbExpr
 					  AllFldExpr
 					  Assert MbAssert
+					  CallExpr
 					  AllOp
 					  Lit
 					  Round

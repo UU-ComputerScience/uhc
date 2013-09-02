@@ -8,6 +8,9 @@
 %%[(8 codegen grin cmm) hs import(Data.Maybe, Data.List as L, UHC.Util.Pretty, UHC.Util.FastSeq as Seq, UHC.Util.Utils, qualified Data.Set as Set, qualified Data.Map as Map)
 %%]
 
+%%[(8 codegen grin cmm) hs import(Control.Monad, Control.Monad.State, Control.Applicative)
+%%]
+
 %%[(8 codegen grin cmm) hs import({%{EH}Base.Common},{%{EH}Opts},{%{EH}Base.Builtin},qualified {%{EH}Config} as Cfg)
 %%]
 
@@ -152,7 +155,11 @@ SEM GrModule
   | Mod         loc			.	gUniq			=	uidStart
 
 SEM GrExpr
-  | Eval		loc			.	lUniq			:	UNIQUEREF gUniq
+  | Eval
+  				loc			.	lUniq			:	UNIQUEREF gUniq
+  | App
+  				loc			.	lUniq			:	UNIQUEREF gUniq
+  				loc			.	lUniq2			:	UNIQUEREF gUniq
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -350,7 +357,7 @@ SEM GrAlt
 %%[(8 codegen grin cmm) hs
 data ReturnCtxt
   = ReturnCtxt_Returns                                  -- return from function
-  | ReturnCtxt_Continues                                -- don't return, leave result on stack
+  | ReturnCtxt_Continues                                -- don't return, further process result
 %%]
   | ReturnCtxt_CaseReturns  GB.LabelId GB.StackState    -- return from case alt (return destination, return stack depth)
   | ReturnCtxt_CaseFallThrough                          -- return from case with only 1 alt, so don't clean up stack
@@ -647,13 +654,35 @@ SEM GrExpr
 %%]
 
 %%[(8 codegen grin cmm) hs
+gviLLoad :: UID -> [GrValIntro] -> ([Cmm.Expr], CmmBodyDecls)
+gviLLoad uniq gviL = (eL, ds)
+  where (eL, (_, ds)) = flip runState (uniq, Seq.empty) $ do
+          forM gviL $ \gvi -> do
+            case gvi2MbInlineExpr gvi of
+              Just e -> return e
+              _      -> case gvi2MbNonInlineExpr gvi of
+                Just e -> do (u, _) <- get
+                             let (u',unm) = mkNewUID u
+                                 nm = mkHNm unm
+                             modify $ \(_, ds) -> (u', ds & Cmm.declLocalVar tyNd nm (Just e))
+                             return $ Cmm.Expr_Nm nm
+                _      -> return Cmm.undef
+
 gvi2Expr :: GrValIntro -> Cmm.Expr
 gvi2Expr = fromMaybe Cmm.undef . gvi2MbExpr
 
-gvi2MbExpr :: GrValIntro -> Maybe Cmm.Expr
-gvi2MbExpr gvi = case gvi of
+-- | To directly inlineable usable expr
+gvi2MbInlineExpr :: GrValIntro -> Maybe Cmm.Expr
+gvi2MbInlineExpr gvi = case gvi of
   GrValIntro_Nm   	nm	-> Just $ Cmm.Expr_Nm nm
   GrValIntro_Int  	v	-> Just $ Cmm.Expr_Int (fromIntegral v) Nothing
+  _						-> Nothing
+
+gvi2MbExpr :: GrValIntro -> Maybe Cmm.Expr
+gvi2MbExpr gvi = gvi2MbInlineExpr gvi <|> gvi2MbNonInlineExpr gvi
+
+gvi2MbNonInlineExpr :: GrValIntro -> Maybe Cmm.Expr
+gvi2MbNonInlineExpr gvi = case gvi of
   _						-> Nothing
 %%]
   GrValIntro_Str  
@@ -676,14 +705,29 @@ data GrValIntro
 %%[(8 codegen grin cmm)
 SEM GrExpr
   | Eval        loc         .   (valDecls,grvalIntro)
-                                                =   if ehcOptGenTrampoline @lhs.opts
-                                                    then let n = mkHNm @lUniq
-                                                         in  (Cmm.declLocalVar tyNd n (Just $ Cmm.Expr_Eval @nm), GrValIntro_Nm n)
-                                                    else (Seq.empty, GrValIntro_Nm @nm)
+                                                =   case @lhs.returnCtxt of
+                                                        ReturnCtxt_Returns | ehcOptGenTrampoline @lhs.opts
+                                                          -> (Seq.empty, GrValIntro_Nm @nm)
+                                                        _ -> ( Cmm.declLocalVar tyNd n Nothing
+                                                               & Cmm.call (Just n) Cmm.CallExpr_Eval [Cmm.var @nm]
+                                                             , GrValIntro_Nm n
+                                                             )
+                                                          where n = mkHNm @lUniq
   | Seq			loc			.	(seqDecls,newVaGam,grvalIntro)
   												=	case (@expr.grvalIntro, @pat.nmIntro) of
   														(gvi, NmIntro_Single nmp annot)
   															-> (Cmm.declLocalVar tyNd nmp (gvi2MbExpr gvi), patNmL2VAGam [nmp], GrValIntro_Nm nmp)
+  | App			loc			.	(valDecls,grvalIntro)
+                                                =   case @lhs.returnCtxt of
+                                                        -- ReturnCtxt_Returns | ehcOptGenTrampoline @lhs.opts
+                                                        --   -> (Seq.empty, GrValIntro_Nm @nm)
+                                                        _ -> ( argDecls
+                                                               & Cmm.declLocalVar tyNd n Nothing
+                                                               & Cmm.call (Just n) Cmm.CallExpr_Apply (Cmm.var @nm : argExprL)
+                                                             , GrValIntro_Nm n
+                                                             )
+                                                          where n = mkHNm @lUniq2
+                                                                (argExprL, argDecls) = gviLLoad @lUniq @argL.grvalIntroL
 %%]
 
 %%[(88 codegen grin cmm) hs
@@ -725,9 +769,9 @@ mkRet returnCtxt e
 
 %%[(8 codegen grin cmm)
 SEM GrExpr
-  | Eval
+  | Eval App
                 loc			.	retDecls       	=   mkRet @lhs.returnCtxt (gvi2Expr @grvalIntro)
-  | Unit Store Call App FFI
+  | Unit Store Call FFI
                 loc			.	retDecls       	=   Seq.empty
   | * - Unit Store Call Eval App FFI
                 loc         .   retDecls        =   Seq.empty
@@ -829,9 +873,9 @@ SEM GrBind
 ATTR AllGrExpr [ | | cmmBodyDecls USE {&} {Seq.empty}: CmmBodyDecls ]
 
 SEM GrExpr
-  | Eval
+  | Eval App
                 lhs         .   cmmBodyDecls    =   @valDecls & @retDecls
-  | Unit Store Call App Case FFI FetchUpdate
+  | Unit Store Call Case FFI FetchUpdate
                 lhs         .   cmmBodyDecls    =   Seq.empty
   | Seq			lhs			.	cmmBodyDecls	= 	@expr.cmmBodyDecls & @seqDecls & @body.cmmBodyDecls
 %%]

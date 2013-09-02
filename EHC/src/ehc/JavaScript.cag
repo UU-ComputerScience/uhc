@@ -35,7 +35,8 @@ nmFunSuff :: Int -> String
 nmFunSuff n | n >  5    = "N"
             | n >= 0    = show n
             | otherwise = ""
--- nmApplyN n  = "_a" ++ nmFunSuff n ++ "_"
+nmApplyN n  = "_a" ++ nmFunSuff n ++ "_"
+nmApply     = nmApplyN (-1)
 nmEvalN  n  = "_e" ++ nmFunSuff n ++ "_"
 nmEval      = nmEvalN (-1)
 %%]
@@ -87,14 +88,33 @@ empty :: Expr
 empty = Expr_Empty
 %%]
 
-%%[(8 javascript) hs export(evl,var,call,ret',ret)
--- | call
-call :: HSNM n => n -> [Expr] -> Expr
-call f as = Expr_Call (var $ mkHNm f) as
+%%[(8 javascript) hs export(vardecl)
+vardecl :: HSNM n => n -> Maybe Expr -> Stat
+vardecl nm mbe = Stat_VarDecl (mkHNm nm) mbe
+%%]
+
+%%[(8 javascript) hs export(arr)
+-- | Construct array
+arr ::[Expr] -> Expr
+arr = Expr_Arr
+%%]
+
+%%[(8 javascript) hs export(evl, apl, var, call, callv, ret', ret, assign)
+-- | call, function is an expr
+call :: Expr -> [Expr] -> Expr
+call = Expr_Call
+
+-- | call, function is a name
+callv :: HSNM n => n -> [Expr] -> Expr
+callv f = call (var $ mkHNm f)
 
 -- | force evaluation
 evl :: Expr -> Expr
-evl x = call nmEval [x]
+evl x = callv nmEval [x]
+
+-- | force application
+apl :: Expr -> [Expr] -> Expr
+apl f as = callv nmApply [f, arr as]
 
 -- | var
 var :: HSNM x => x -> Expr
@@ -107,6 +127,11 @@ ret' e = Stat_Ret e
 -- | return
 ret :: Expr -> Stat
 ret e = ret' (Just e)
+
+-- assign
+assign :: HSNM x => x -> Expr -> Stat
+assign n e = Stat_Assign (var $ mkHNm n) e
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

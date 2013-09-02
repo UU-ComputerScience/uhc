@@ -99,12 +99,9 @@ SEM GrGlobal
 %%[(8 codegen grin) hs
 type PPGrNm = HsName -> PP_Doc
 
-ppCurlysSemisV :: [PP_Doc] -> PP_Doc
-ppCurlysSemisV pL = ppBlock "{ " "} " "; " pL
-
 -- list between {}, but with spaces, to avoid syntax clash with negative integers:
 --  {- comment -}
---  {-1, -2}
+--  { -1, -2}
 ppCurlyList :: (a -> PP_Doc) -> [a] -> PP_Doc
 ppCurlyList pL xs = ppListSep "{ " " }" ", " $ map pL xs
 
@@ -145,9 +142,9 @@ ATTR GrAGItf AllNT [ | | pp USE {>-<} {empty}: PP_Doc ]
 
 SEM GrModule
   | Mod         lhs         .   pp          =   "module" >#< cfgppHsName CfgPP_Grin @moduleNm
-                                                >-< ppCurlysSemisV @globalL.ppL
-                                                >-< ppCurlysSemisV @bindL.ppL
-                                                >-< ppCurlysSemisV
+                                                >-< ppCurlysSemisBlock @globalL.ppL
+                                                >-< ppCurlysSemisBlock @bindL.ppL
+                                                >-< ppCurlysSemisBlock
                                                          (map  (\(tn,ts)
                                                                     ->  cfgppHsName CfgPP_Grin tn >#< "="
                                                                         >#< ( ppListSep "" "" " | "
@@ -165,16 +162,16 @@ SEM GrBind
   | Bind        lhs         .   pp          =   cfgppHsName CfgPP_Grin @nm 
                                                   >#< ppGrBindAnn @loc.ppGrNm @annot
                                                   >#< ppSpaced (map (cfgppHsName CfgPP_Grin) @argNmL) 
-                                                  >-< indent 2 ("=" >#< ppCurlysSemisV [@expr.pp])
+                                                  >-|-< indent 1 ("=" >#< ppCurlysSemisBlock [@expr.pp])
   | Arity       lhs         .   pp          =   cfgppHsName CfgPP_Grin @nm 
                                                   >#< ":" >#< show @arity
-  | Rec         lhs         .   pp          =   "rec" >-< indent 2 (ppCurlysSemisV @bindL.ppL)
+  | Rec         lhs         .   pp          =   "rec" >-< indent 2 (ppCurlysSemisBlock @bindL.ppL)
 
 SEM GrExpr
   | Seq         lhs         .   pp          =   @expr.pp >#< ";" >#< "\\" >|< @pat.pp >#< "->"
                                                 >-< @body.pp
   | Case        lhs         .   pp          =   "case" >#< @val.pp >#< "of" >-<
-                                                    indent 2 (ppCurlysSemisV @altL.ppL)
+                                                    indent 2 (ppCurlysSemisBlock @altL.ppL)
   | App         lhs         .   pp          =   "apply" >#< ppSpaced (@lhs.ppGrNm @nm : @argL.ppL)
   | Call        lhs         .   pp          =   "call"  >#< ppSpaced (@lhs.ppGrNm @nm : @argL.ppL)
   | FFI         lhs         .   pp          =   "ffi" >#< ppSpaced (@ppent : @ppannot : @argL.ppL)
@@ -197,12 +194,12 @@ SEM GrExpr
   | FetchUpdate lhs         .   pp          =   "fetchupdate" >#< @lhs.ppGrNm @src >#< @lhs.ppGrNm @dst
   | Throw       lhs         .   pp          =   "throw" >#< @lhs.ppGrNm @nm
   | Catch       lhs         .   pp          =   "try" >-<
-                                                indent 2 (ppCurlysSemisV [@body.pp]) >-<
+                                                indent 2 (ppCurlysSemisBlock [@body.pp]) >-<
                                                 "catch" >|< ppParens (@lhs.ppGrNm @arg) >-<
-                                                indent 2 (ppCurlysSemisV [@handler.pp])
+                                                indent 2 (ppCurlysSemisBlock [@handler.pp])
 
 SEM GrAlt
-  | Alt         lhs         .   pp          =   ppGrAltAnn @ann >|< @pat.pp >-< indent 2 ("->" >#< ppCurlysSemisV [@expr.pp])
+  | Alt         lhs         .   pp          =   ppGrAltAnn @ann >|< @pat.pp >-< indent 2 ("->" >#< ppCurlysSemisBlock [@expr.pp])
 SEM GrVal
   | Empty       lhs         .   pp          =   pp "()"
   | LitInt      lhs         .   pp          =   pp @int

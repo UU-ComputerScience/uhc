@@ -95,7 +95,7 @@ SEM Stat
                                           _      -> pp "var" >#< @nm
   | FunDecl     lhs     .   pp      =   @expr.pp
   -- | Assign		lhs		.	pp		=	ppStat $ @nm >|< "=" >|< @expr.pp
-  | Assign		lhs		.	pp		=	ppStat $ @to.pp >|< "=" >-< indent 1 @expr.pp
+  | Assign		lhs		.	pp		=	ppStat $ @to.pp >#< "=" >-|-< indent 1 @expr.pp
   | Expr		lhs		.	pp		=	ppStat $ @expr.pp
   | Block		lhs		.	pp		=	ppCurlysBlock @stats.ppL
   | Throw		lhs		.	pp		=	ppStat $ "throw" >#< @expr.pp

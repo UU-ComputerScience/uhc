@@ -36,7 +36,7 @@ C subset, modelled after C--
 %%]
 %%[(8 codegen cmm) hs export(RetCont(..), MbRetCont, KindName(..), KindNameL, Arm(..), ArmL, Range(..), RangeL, LValue(..), LValueL)
 %%]
-%%[(8 codegen cmm) hs export(Flow(..), FlowL, Also(..), AlsoL, Alias(..), FlowAlias(..), FlowAliasL, Targets(..), FldExpr(..), FldExprL, Expr(..), ExprL, MbExpr, Ty(..), MbTy, Bits(..), GC(..), MbGC)
+%%[(8 codegen cmm) hs export(Flow(..), FlowL, Also(..), AlsoL, Alias(..), FlowAlias(..), FlowAliasL, Targets(..), FldExpr(..), FldExprL, CallExpr(..), Expr(..), ExprL, MbExpr, Ty(..), MbTy, Bits(..), GC(..), MbGC)
 %%]
 %%[(8 codegen cmm) hs export(String16(..), Assert(..), MbAssert, Op(..), OpCode(..), Round(..), Lit(..))
 %%]
@@ -96,7 +96,7 @@ cmt = Decl_Comment
 %%[(8 codegen cmm) hs export(imp)
 -- | Import
 imp :: NmL -> Decl
-imp ns = Decl_Import (map Import_Imp ns)
+imp ns = Decl_Import (map (Import_Imp Nothing) ns)
 %%]
 
 %%[(8 codegen cmm) hs export(arr)
@@ -123,10 +123,20 @@ topProc = top TopLevel_Proc
 %%% Constructing: stmt
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen cmm) hs export(declLocalVar, ret)
--- | Declare & assign
+%%[(8 codegen cmm) hs export(declLocalStackVar, declLocalVar, call, ret)
+-- | Declare & assign stack variable
+declLocalStackVar :: Ty -> Nm -> Maybe Expr -> Seq.Seq BodyDecl
+declLocalStackVar t nm me = Seq.fromList [BodyDecl_StackDecl [Datum_Nm nm, Datum_Ty t Nothing (fmap (\e -> Init_Seq [e]) me)]]
+
+-- | Declare & assign (register) variable
 declLocalVar :: Ty -> Nm -> Maybe Expr -> Seq.Seq BodyDecl
-declLocalVar t nm me = Seq.fromList [BodyDecl_StackDecl [Datum_Nm nm, Datum_Ty t Nothing (fmap (\e -> Init_Seq [e]) me)]]
+declLocalVar t nm me = Seq.fromList $
+     [BodyDecl_Decl $ Decl_Regs False $ Regs_Regs Nothing t [RegNmInit_NmInit nm Nothing]]
+  ++ maybe [] (\e -> [BodyDecl_Stmt $ Stmt_Assign [LValue_Nm nm] [e]]) me
+
+-- | Call (& assign)
+call :: Maybe Nm -> CallExpr -> [Expr] -> Seq.Seq BodyDecl
+call mbnm f as = Seq.fromList [BodyDecl_Stmt $ Stmt_Call (maybe [] (\n -> [KindName_KindName Nothing n]) mbnm) Nothing f [Actual_Actual Nothing a | a <- as] (Targets_Targets []) []]
 
 -- | Return
 ret :: Maybe Expr -> Seq.Seq BodyDecl
@@ -137,10 +147,14 @@ ret me = Seq.fromList [BodyDecl_Stmt $ Stmt_Ret Nothing Nothing $ maybe [] (\e -
 %%% Constructing: expr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen cmm) hs export(undef)
+%%[(8 codegen cmm) hs export(var, undef)
+-- | Var ref
+var :: Nm -> Expr
+var = Expr_Nm
+
 -- | Undefined
 undef :: Expr
-undef = Expr_Nm hsnUnknown
+undef = var hsnUnknown
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -17,6 +17,13 @@ var nodeCounter = 0;
 %%]
 
 %%[(8 javascript)
+// interface to apply
+function _a_(f,x) {
+  return f.__aN__(x);
+}
+%%]
+
+%%[(8 javascript)
 // interface to eval
 function _e_(x) {
   var x_, xx, x_next;
