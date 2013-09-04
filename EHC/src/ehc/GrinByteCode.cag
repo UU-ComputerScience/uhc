@@ -1034,7 +1034,7 @@ nrByte2Word sz
 tagIsUnboxed :: EHCOpts -> GrTag -> Bool
 tagIsUnboxed opts
   = \gt -> case gt of
-              GrTag_Con _ _ nm | check nm
+              GrTag_Con _ _ _ | check $ tagDataTypeNm gt
                 -> True
               GrTag_Unboxed
                 -> True
@@ -1048,7 +1048,7 @@ tagAllowsUnboxedLife opts gt
   = if tagIsUnboxed opts gt
     then Unbox_FirstField
     else case gt of
-           GrTag_Con ann t nm | gtannMaxArity ann == 0
+           GrTag_Con ann t _ | gtannMaxArity ann == 0
              -> Unbox_Tag t
            _ -> Unbox_None
 %%]
@@ -1418,7 +1418,7 @@ tag env stState gt bsz sz gbState
                     Just BasicSize_Float        -> (tgNeedEval_No ,tgCat_GB_NodeTagCat_Intl,tgIntl_GB_NodeTag_Intl_Float ,Seq.empty           ,zero ,gbState )
 %%]]
                     _ -> case gt of
-                           GrTag_Con _ tg nm    -> (tgNeedEval_No ,tgCat_GB_NodeTagCat_Con ,tg                           ,Seq.empty           ,zero ,gbState )
+                           GrTag_Con _ tg _     -> (tgNeedEval_No ,tgCat_GB_NodeTagCat_Con ,tg                           ,Seq.empty           ,zero ,gbState )
                            GrTag_Hole           -> (tgNeedEval_BlH,0                       ,0                            ,Seq.fromList [ldc 0],one  ,gbState )
                            GrTag_Rec            -> (tgNeedEval_No ,tgCat_GB_NodeTagCat_Con ,0                            ,Seq.empty           ,zero ,gbState )
                            GrTag_App      nm    -> (tgNeedEval_Yes,tgCat_GB_NodeTagCat_App ,0                            ,Seq.empty           ,zero ,gbState )

@@ -165,7 +165,7 @@ SEM GrExpr
                                 ; (x2,y,z,r) <- @body.storePS2IseqI2Iseq
                                 ; x <- maybeEqual x1 x2
                                 ; let n = read s
-                                ; let tag   = GrTag_Con (GrTagAnn 1 1) 0 hsnInt
+                                ; let tag   = GrTag_Con (GrTagAnn 1 1) 0 tagInfoInt
                                 ; let node  = GrVal_Node tag [GrVal_LitInt n]
                                 ; let store = GrExpr_Store node
                                 ; let pat   = GrPatLam_Var z

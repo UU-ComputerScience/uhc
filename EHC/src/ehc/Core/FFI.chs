@@ -185,10 +185,10 @@ ffiGrinMkResPack
          opts dataGam
          GrPatLam_BasicAnnot GrPatLam_EnumAnnot {- GrPatLam_Var -} GrPatLam_OpaqueAnnot GrPatLam_PtrAnnot
          GrExpr_Seq
-         (\tyNm n -> u (GrVal_BasicNode (GrTag_Con (mkGrTagAnn 1 1) 0 tyNm) n))
-         (\     n -> u (GrVal_EnumNode                                      n))
-         (\     n -> u (GrVal_OpaqueNode                                    n))
-         (\     n -> u (GrVal_PtrNode                                       n))
+         (\tyNm n -> u (GrVal_BasicNode (GrTag_Con (mkGrTagAnn 1 1) 0 (mkTyIsConTagInfo tyNm)) n))
+         (\     n -> u (GrVal_EnumNode                                                         n))
+         (\     n -> u (GrVal_OpaqueNode                                                       n))
+         (\     n -> u (GrVal_PtrNode                                                          n))
          resNm resTy res
   where u x = GrExpr_Unit x GrType_None
 %%]

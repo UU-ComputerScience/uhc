@@ -15,7 +15,9 @@
 %%]
 %%[(8 codegen grin wholeprogAnal) import({%{EH}Base.Common}, {%{EH}Base.Target}, {%{EH}Base.Builtin}, {%{EH}Opts}, {%{EH}Scanner.Scanner}, {%{EH}Scanner.Common(grinScanOpts)})
 %%]
-%%[(8 codegen grin wholeprogAnal) import({%{EH}GrinCode}, {%{EH}GrinCode.Parser}, {%{EH}GrinCode.Pretty})
+%%[(8 codegen grin wholeprogAnal) import({%{EH}GrinCode}, {%{EH}GrinCode.Pretty})
+%%]
+%%[(8 codegen grinparser wholeprogAnal) import({%{EH}GrinCode.Parser})
 %%]
 %%[(8 codegen grin wholeprogAnal) import({%{EH}GrinCode.Common})
 %%]

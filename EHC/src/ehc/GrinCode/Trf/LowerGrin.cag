@@ -67,7 +67,7 @@ SEM GrAGItf
 
 %%[(8 codegen grin wholeprogAnal) hs
 
-tagArity (GrTag_Con ann _ nm)  = gtannArity ann
+tagArity (GrTag_Con ann _ _)  = gtannArity ann
 
 fillgaps :: HptItems -> HptItems
 fillgaps [] = []

@@ -518,7 +518,7 @@ cpEhcModuleCompile1 targHSState modNm
                    ; return defaultResult
                    }
 %%]]
-%%[[(8 codegen grin)
+%%[[(8 codegen grin grinparser)
            (ECUSGrin,_)
              -> do { cpMsg modNm VerboseMinimal "Compiling Grin"
                    ; cpParseGrin modNm

@@ -38,7 +38,7 @@ CompilePhase building blocks: parsers
 %%[(50 codegen tycore) import(qualified {%{EH}TyCore} as C)
 %%]
 -- Grin parser
-%%[(8 codegen grin) import(qualified {%{EH}GrinCode} as Grin, qualified {%{EH}GrinCode.Parser} as GrinParser)
+%%[(8 codegen grinparser) import(qualified {%{EH}GrinCode} as Grin, qualified {%{EH}GrinCode.Parser} as GrinParser)
 %%]
 
 -- serialization
@@ -101,7 +101,7 @@ cpParseEH
   = cpParseOffside EHPrs.pAGItf (ehScanOpts defaultEHCOpts) ecuStoreEH "Parse (EH syntax) of module"
 %%]
 
-%%[(8 grin) export(cpParseGrin)
+%%[(8 grinparser) export(cpParseGrin)
 cpParseGrin :: HsName -> EHCompilePhase ()
 cpParseGrin modNm
   = do { cr <- get

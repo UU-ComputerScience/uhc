@@ -331,7 +331,7 @@ notHole :: (GrTag,[Set.Set Variable]) -> Bool
 notHole (GrTag_Hole,_) = False
 notHole _              = True
 
-isBasicTag (GrTag_Con _ _ nm) = True  -- nm==hsnInt || nm==hsnChar || nm==hsnPackedString
+isBasicTag (GrTag_Con _ _ _ ) = True  -- nm==hsnInt || nm==hsnChar || nm==hsnPackedString
 isBasicTag _                  = False
 
 hasExpectedResultTag :: GrPatLam -> HptMap -> (GrTag,[Set.Set Variable]) -> Bool

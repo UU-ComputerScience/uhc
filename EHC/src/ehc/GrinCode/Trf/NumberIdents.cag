@@ -237,7 +237,7 @@ SEM GrExpr
 %%]]
 
 SEM GrTag
-  | Con         lhs  .  grTrf    =  GrTag_Con @grtgAnn @int @nm
+  | Con         lhs  .  grTrf    =  GrTag_Con @grtgAnn @int @dataInfo
   | Fun         lhs  .  grTrf    =  GrTag_Fun               (findNewVar @lhs.bindMap @nm)
   | PApp        lhs  .  grTrf    =  GrTag_PApp @needs       (findNewVar @lhs.bindMap @nm)
   | App         lhs  .  grTrf    =  GrTag_App               (findNewVar @lhs.bindMap @nm)

@@ -49,7 +49,7 @@ tagArity :: GrTag -> Map.Map Int Int -> Int
 tagArity (GrTag_Fun       nm) arityMap = maybe (error ("Fun " ++ show nm ++ "not in aritymap " ++ show arityMap)) id        (Map.lookup (getNr nm) arityMap)
 tagArity (GrTag_App       nm) arityMap = maybe (error ("App " ++ show nm ++ "not in aritymap " ++ show arityMap)) id        (Map.lookup (getNr nm) arityMap)
 tagArity (GrTag_PApp n    nm) arityMap = maybe (error ("Pap " ++ show nm ++ "not in aritymap " ++ show arityMap)) (\x->x-n) (Map.lookup (getNr nm) arityMap)
-tagArity (GrTag_Con ann _ nm) _        = gtannArity ann
+tagArity (GrTag_Con ann _ _ ) _        = gtannArity ann
 tagArity  GrTag_Unboxed       _        = 1
 tagArity  GrTag_Hole          _        = 0
 tagArity t                    _        = error ("tagArity " ++ show t)
@@ -160,10 +160,10 @@ conNumber (GrTag_App _)     = 9
 
 
 conName :: GrTag -> HsName
-conName (GrTag_App nm) = nm
-conName (GrTag_Fun nm) = nm
-conName (GrTag_PApp _ nm) = nm
-conName (GrTag_Con _ _ nm) = nm
+conName    (GrTag_App nm) = nm
+conName    (GrTag_Fun nm) = nm
+conName    (GrTag_PApp _ nm) = nm
+conName gt@(GrTag_Con _ _ _) = tagDataConstrNm gt
 
 conInt :: GrTag -> Int
 conInt (GrTag_PApp i _ ) = i

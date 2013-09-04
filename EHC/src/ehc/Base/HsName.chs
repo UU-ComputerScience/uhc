@@ -299,6 +299,15 @@ mkHNmBase s = hsnMkModf [] (HsName_Base s) Map.empty
 %%]]
 %%]
 
+%%[1 export(hsnEnsureIsBase)
+-- | Eliminate alternative internal representations
+hsnEnsureIsBase :: HsName -> HsName
+%%[[7
+hsnEnsureIsBase (HsName_Pos i) = mkHNm $ show i
+%%]]
+hsnEnsureIsBase n              = n
+%%]
+
 %%[1 export(hsnBaseUnpack',hsnBaseUnpack)
 -- | unpack a HsName into qualifiers + base string + repack function
 hsnBaseUnpack' :: HsName -> Maybe ([String],String,[String] -> String -> HsName)
@@ -865,10 +874,12 @@ type HsNameS = Set.Set HsName
 -- ensure a name valid for JVM like backends
 hsnSafeJavaLike :: HsName -> HsName
 hsnSafeJavaLike
-  = hsnMapQualified (concatMap safe) . hsnJavalikeFixUniqifiers
+  = hsnMapQualified (concatMap safe . first) . hsnJavalikeFixUniqifiers . hsnEnsureIsBase
   where safe '_'                                      = "__"
         safe c | isDigit c || isLetter c || c == '_'  = [c]
                | otherwise                            = "_" ++ showHex (ord c) ""
+        first s@(c:_) | isDigit c = '_' : s
+        first s                   =       s
 %%]
         safe '.'  = "_dot"
         safe ':'  = "_colon"

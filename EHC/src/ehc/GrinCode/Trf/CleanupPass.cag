@@ -45,7 +45,7 @@ ATTR AllNT   [ | | grTrf: SELF ]
 ATTR AllDef AllExpr [ tagMap : {Map.Map HsName GrTag} | | ]
 
 SEM GrModule
-  | Mod  loc.tagMap  =  Map.fromList [ (nm,x) | xs <- Map.elems @tagsMp, x <- xs, let GrTag_Con _ _ nm = x ]
+  | Mod  loc.tagMap  =  Map.fromList [ (tagDataConstrNm ti,x) | xs <- Map.elems @tagsMp, x <- xs, let GrTag_Con _ _ ti = x ]
 
 -- do the translations
 SEM GrTag

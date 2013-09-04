@@ -186,11 +186,11 @@ SEM CModule
 primNmList2GrTagMap :: [HsName] -> Map.Map HsName [GrTag]
 primNmList2GrTagMap = Map.fromList . map (\tn -> (tn, [tr tn]))
                 where tr nm = let arity = if hsnIsProd nm then hsnProdArity nm else 1
-                              in  GrTag_Con (mkGrTagAnn arity arity) 0 nm
+                              in  GrTag_Con (mkGrTagAnn arity arity) 0 (mkTyIsConTagInfo nm)
 
 cTagsMp2GrTagMap :: CTagsMp -> Map.Map HsName [GrTag]
 cTagsMp2GrTagMap = Map.fromList . map (\(tn,ts) -> (tn, tr ts))
-             where  tr = map (\(_,(CTag _ nm i a ma)) -> GrTag_Con (mkGrTagAnn a ma) i nm)
+             where  tr = map (\(_,(CTag _ nm i a ma)) -> GrTag_Con (mkGrTagAnn a ma) i (mkTyIsConTagInfo nm))
 
 %%]
 
@@ -259,19 +259,19 @@ saturateAltL uniq dflt altL
 %%]
 
 %%[(10 codegen grin) hs
-unboxArg :: HsName -> UID -> HsName -> GrVal -> (GrVal,GrExpr->GrExpr)
-unboxArg modNm uniq tyNm v
+unboxArg :: HsName -> UID -> TagDataInfo -> GrVal -> (GrVal,GrExpr->GrExpr)
+unboxArg modNm uniq ti v
   =  case v of
        GrVal_LitInt _
            -> (v,id)
-       _   -> (GrVal_Var n,GrExpr_Seq (GrExpr_Unit v GrType_None) (mkGrUnbox tyNm n))
+       _   -> (GrVal_Var n,GrExpr_Seq (GrExpr_Unit v GrType_None) (mkGrUnbox ti n))
   where n = uidQualHNm modNm uniq
 
-unboxArgL :: HsName -> UID -> HsName -> GrValL -> (GrValL,GrExpr->GrExpr)
-unboxArgL modNm uniq tyNm vL
+unboxArgL :: HsName -> UID -> TagDataInfo -> GrValL -> (GrValL,GrExpr->GrExpr)
+unboxArgL modNm uniq ti vL
   =  let  uL = mkNewUIDL (length vL) $ uniq
      in   foldr  (\(u,a) (aL,wG)
-                    ->  let (a',w) = unboxArg modNm u tyNm a
+                    ->  let (a',w) = unboxArg modNm u ti a
                         in  (a' : aL, w . wG)
                  )
                  ([],id)
@@ -345,8 +345,8 @@ SEM CExpr
                                                             AppFunKind_Tag t
                                                               -> wrapGr (mkE v)
                                                               where v = case t of
-                                                                          CTagRec         -> mkGrRecNode argL'
-                                                                          CTag _ l t a ma -> mkGrConNode (mkGrTagAnn a ma) t l argL'
+                                                                          CTagRec          -> mkGrRecNode argL'
+                                                                          CTag _ l tg a ma -> mkGrConNode (mkGrTagAnn a ma) tg (tagDataInfo t) argL'
 
                                                             -- ffi or function app
                                                             _ -> case @func.mbFFIApp of
@@ -440,7 +440,7 @@ mkGrAdapt :: HsName -> UID -> LamMp -> Bool -> TupAdaptFldL -> HsName -> GrExpr
 mkGrAdapt modNm u lamMp isStrict tupFldL tupRecNm
   =  let  [u1,u2] = mkNewUIDL 2 (uidChild u)
           (oL,vL,mkAL) = unzip3 tupFldL
-          (oL',wrO) = unboxArgL modNm u1 hsnInt oL
+          (oL',wrO) = unboxArgL modNm u1 tagInfoInt oL
           (vL',wrV) = simplArgL modNm u2 lamMp vL
      in   wrV . wrO . retStrict isStrict
           . GrVal_NodeAdapt tupRecNm
@@ -451,11 +451,11 @@ mkGrAdapt modNm u lamMp isStrict tupFldL tupRecNm
 ATTR CExpr CBound  [ | | grVal: GrVal ]
 
 SEM CExpr
-  | Tup         loc         .   grVal       =   ctag (mkGrRecNode []) (\_ l t a ma -> mkGrConNode (mkGrTagAnn a ma) t l []) @tag
+  | Tup         loc         .   grVal       =   ctag (mkGrRecNode []) (\_ l tg a ma -> mkGrConNode (mkGrTagAnn a ma) tg (tagDataInfo @tag) []) @tag
   | Var         loc         .   grVal       =   maybe (GrVal_Var @nmAsp) (\a -> mkNdPApp @nmAsp a []) @mbLam
-  | Int         loc         .   grVal       =   (if @lhs.doBox then mkGrBox hsnInt  else id)  (GrVal_LitInt @int)
-  | Char        loc         .   grVal       =   (if @lhs.doBox then mkGrBox hsnChar else id)  (GrVal_LitInt (ord @char))
-  | String      loc         .   grVal       =   (if @lhs.doBox then mkGrBox (ehcOptBuiltin @lhs.opts ehbnPackedString) else id)  (GrVal_LitStr @str)
+  | Int         loc         .   grVal       =   (if @lhs.doBox then mkGrBox tagInfoInt  else id)  (GrVal_LitInt @int)
+  | Char        loc         .   grVal       =   (if @lhs.doBox then mkGrBox tagInfoChar else id)  (GrVal_LitInt (ord @char))
+  | String      loc         .   grVal       =   (if @lhs.doBox then mkGrBox (mkTyIsConTagInfo $ ehcOptBuiltin @lhs.opts ehbnPackedString) else id)  (GrVal_LitStr @str)
   | Ann         loc         .   grVal       =   @expr.grVal
   | * - Int Char String Var Tup Ann
                 loc         .   grVal       =   GrVal_Empty
@@ -466,7 +466,7 @@ SEM CBound
 
 %%[(97 codegen grin)
 SEM CExpr
-  | Integer     loc         .   grVal       :=  (if @lhs.doBox then mkGrBox hsnInt  else id)  (GrVal_LitInt $ fromInteger $ @integer)
+  | Integer     loc         .   grVal       :=  (if @lhs.doBox then mkGrBox tagInfoInt else id)  (GrVal_LitInt $ fromInteger $ @integer)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -581,12 +581,12 @@ SEM CPat
   | Con         lhs         .   (grPat,grWrapCase)
                                             =   case @rest.self of
                                                    CPatRest_Empty
-                                                     ->  (ctag mkGrPatRecNode (\_ l t a ma -> mkGrPatConNode (mkGrTagAnn a ma) t l) @tag @binds.nmL,id)
+                                                     ->  (ctag mkGrPatRecNode (\_ l t a ma -> mkGrPatConNode (mkGrTagAnn a ma) t (tagDataInfo @tag)) @tag @binds.nmL,id)
 %%[[10
                                                    CPatRest_Var r
                                                      ->  let  (oL,mkSL) = unzip @binds.grTupFldL
-                                                              (oL',wrO) = unboxArgL @lhs.modNm @lUniq hsnInt oL
-                                                         in   (ctag mkGrPatRecSplit (\_ l t a ma -> mkGrPatConSplit (mkGrTagAnn a ma) t l) @tag r . zipWith ($) mkSL $ oL',wrO)
+                                                              (oL',wrO) = unboxArgL @lhs.modNm @lUniq tagInfoInt oL
+                                                         in   (ctag mkGrPatRecSplit (\_ l t a ma -> mkGrPatConSplit (mkGrTagAnn a ma) t (tagDataInfo @tag)) @tag r . zipWith ($) mkSL $ oL',wrO)
 %%]]
 
 %%]
@@ -611,7 +611,7 @@ ATTR AllPat AllAlt [ | | grWrapCaseSel USE {`const`} {idGrWrapCaseSel}: {GrVal -
 SEM CPat
   | Int Char    lhs         .   grWrapCaseSel
                                             =   let n = uidQualHNm @lhs.modNm @lUniq
-                                                in  \v -> (GrVal_Var n,GrExpr_Seq (GrExpr_Unit v GrType_None) (mkGrUnbox hsnInt n))
+                                                in  \v -> (GrVal_Var n,GrExpr_Seq (GrExpr_Unit v GrType_None) (mkGrUnbox tagInfoInt n))
 %%]
 
 %%[(8 codegen grin)

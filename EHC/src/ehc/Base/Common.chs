@@ -401,23 +401,32 @@ data TagDataInfo = TagDataInfo
   { tagDataInfoTypeNm 	:: !HsName
   , tagDataInfoConstrNm	:: !HsName
   }
-  deriving Show
+  deriving (Show)
+
+instance Eq TagDataInfo where
+  i1 == i2 = tagDataInfoConstrNm i1 == tagDataInfoConstrNm i2
 %%]
 
-%%[8 hs export(mkTyConTagInfo, mkTyTagInfo, mkConTagInfo, emptyTagDataInfo)
+%%[8 hs export(mkTyIsConTagInfo, mkConTagInfo, emptyTagDataInfo)
 mkTyConTagInfo :: HsName -> HsName -> TagDataInfo
 mkTyConTagInfo = TagDataInfo
 {-# INLINE mkTyConTagInfo #-}
 
-mkTyTagInfo :: HsName -> TagDataInfo
-mkTyTagInfo tn = mkTyConTagInfo tn hsnUnknown
-{-# INLINE mkTyTagInfo #-}
+-- | Construct info when Ty and Con name are equal
+mkTyIsConTagInfo :: HsName -> TagDataInfo
+mkTyIsConTagInfo n = mkTyConTagInfo n n
+{-# INLINE mkTyIsConTagInfo #-}
 
 mkConTagInfo :: HsName -> TagDataInfo
 mkConTagInfo cn = mkTyConTagInfo hsnUnknown cn
 {-# INLINE mkConTagInfo #-}
 
 emptyTagDataInfo = mkTyConTagInfo hsnUnknown hsnUnknown
+%%]
+
+%%[8 hs export(tagInfoInt, tagInfoChar)
+tagInfoInt  = mkTyIsConTagInfo hsnInt
+tagInfoChar = mkTyIsConTagInfo hsnChar
 %%]
 
 %%[8 hs export(TagLike(..), tagDataInfo)

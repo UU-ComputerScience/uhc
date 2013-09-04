@@ -116,7 +116,7 @@ type Nm = Cmm.Nm
 %%[(8 codegen grin cmm) hs
 grtag2cmmtag :: GrTag -> Cmm.Tag
 grtag2cmmtag gt = case gt of
-    GrTag_Con _ tg nm    -> Cmm.Tag_Con tg (tagDataInfo gt)
+    GrTag_Con _ tg i     -> Cmm.Tag_Con tg i
     GrTag_Hole           -> Cmm.Tag_Ind
     GrTag_Rec            -> Cmm.Tag_Tup
     GrTag_App      nm    -> Cmm.Tag_App

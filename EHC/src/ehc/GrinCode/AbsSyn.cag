@@ -140,7 +140,7 @@ DATA GrPatLam
 DATA GrTag
   | Con         grtgAnn         : {GrTagAnn}
                 int             : {Int}
-                nm              : {HsName}
+                dataInfo        : {TagDataInfo}
   | Fun         nm              : {HsName}
   | PApp        needs           : {Int}
                 nm              : {HsName}

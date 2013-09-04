@@ -573,25 +573,25 @@ neededTags :: EHCOpts -> [GrTag]
 neededTags opts
   =  let ns = ehcOptBuiltinNames opts
      in [ GrTag_Hole
-        , GrTag_Con (GrTagAnn 0 0) 0 (mkHNmBase ",0")
-        , GrTag_Con (GrTagAnn 0 0) 0 (ehbnBoolFalse         ns)
-        , GrTag_Con (GrTagAnn 0 0) 1 (ehbnBoolTrue          ns)
-        , GrTag_Con (GrTagAnn 2 2) 0 (ehbnDataListAltCons   ns)
-        , GrTag_Con (GrTagAnn 0 2) 1 (ehbnDataListAltNil    ns)
-        , GrTag_Con (GrTagAnn 0 0) 0 (ehbnDataOrderingAltEQ ns)
-        , GrTag_Con (GrTagAnn 0 0) 1 (ehbnDataOrderingAltGT ns)
-        , GrTag_Con (GrTagAnn 0 0) 2 (ehbnDataOrderingAltLT ns)
+        , GrTag_Con (GrTagAnn 0 0) 0 $ mkConTagInfo (mkHNmBase ",0")
+        , GrTag_Con (GrTagAnn 0 0) 0 $ mkConTagInfo (ehbnBoolFalse         ns)
+        , GrTag_Con (GrTagAnn 0 0) 1 $ mkConTagInfo (ehbnBoolTrue          ns)
+        , GrTag_Con (GrTagAnn 2 2) 0 $ mkConTagInfo (ehbnDataListAltCons   ns)
+        , GrTag_Con (GrTagAnn 0 2) 1 $ mkConTagInfo (ehbnDataListAltNil    ns)
+        , GrTag_Con (GrTagAnn 0 0) 0 $ mkConTagInfo (ehbnDataOrderingAltEQ ns)
+        , GrTag_Con (GrTagAnn 0 0) 1 $ mkConTagInfo (ehbnDataOrderingAltGT ns)
+        , GrTag_Con (GrTagAnn 0 0) 2 $ mkConTagInfo (ehbnDataOrderingAltLT ns)
         ]     
 %%[[98
         ++
-        [ GrTag_Con (GrTagAnn 0 0) 0 (hsnMkModf qual (HsName_Base "AppendBinaryMode")    Map.empty)
-        , GrTag_Con (GrTagAnn 0 0) 1 (hsnMkModf qual (HsName_Base "AppendMode")          Map.empty)
-        , GrTag_Con (GrTagAnn 0 0) 2 (hsnMkModf qual (HsName_Base "ReadBinaryMode")      Map.empty)
-        , GrTag_Con (GrTagAnn 0 0) 3 (hsnMkModf qual (HsName_Base "ReadMode")            Map.empty)
-        , GrTag_Con (GrTagAnn 0 0) 4 (hsnMkModf qual (HsName_Base "ReadWriteBinaryMode") Map.empty)
-        , GrTag_Con (GrTagAnn 0 0) 5 (hsnMkModf qual (HsName_Base "ReadWriteMode")       Map.empty)
-        , GrTag_Con (GrTagAnn 0 0) 6 (hsnMkModf qual (HsName_Base "WriteBinaryMode")     Map.empty)
-        , GrTag_Con (GrTagAnn 0 0) 7 (hsnMkModf qual (HsName_Base "WriteMode")           Map.empty)
+        [ GrTag_Con (GrTagAnn 0 0) 0 $ mkConTagInfo (hsnMkModf qual (HsName_Base "AppendBinaryMode")    Map.empty)
+        , GrTag_Con (GrTagAnn 0 0) 1 $ mkConTagInfo (hsnMkModf qual (HsName_Base "AppendMode")          Map.empty)
+        , GrTag_Con (GrTagAnn 0 0) 2 $ mkConTagInfo (hsnMkModf qual (HsName_Base "ReadBinaryMode")      Map.empty)
+        , GrTag_Con (GrTagAnn 0 0) 3 $ mkConTagInfo (hsnMkModf qual (HsName_Base "ReadMode")            Map.empty)
+        , GrTag_Con (GrTagAnn 0 0) 4 $ mkConTagInfo (hsnMkModf qual (HsName_Base "ReadWriteBinaryMode") Map.empty)
+        , GrTag_Con (GrTagAnn 0 0) 5 $ mkConTagInfo (hsnMkModf qual (HsName_Base "ReadWriteMode")       Map.empty)
+        , GrTag_Con (GrTagAnn 0 0) 6 $ mkConTagInfo (hsnMkModf qual (HsName_Base "WriteBinaryMode")     Map.empty)
+        , GrTag_Con (GrTagAnn 0 0) 7 $ mkConTagInfo (hsnMkModf qual (HsName_Base "WriteMode")           Map.empty)
         ]
         where qual = ["UHC", "IOBase"]
 %%]]
@@ -607,12 +607,12 @@ tagConstants opts hptmap tagsmap aritymap tagset
 makeTagInfo :: EHCOpts -> HptMap -> Map.Map HsName [GrTag] -> Map.Map Int Int -> GrTag -> Int -> ConstantInfo
 makeTagInfo opts hm tm am tag seqnr
   =    case tag of
-         (GrTag_Con a i nm) -> let ar = gtannArity a
-                               in  ConstantInfo ('C':hsnShowAlphanumericShort nm)
+         (GrTag_Con a i ti) -> let ar = gtannArity a
+                               in  ConstantInfo ('C':hsnShowAlphanumericShort (tagDataConstrNm ti))
                                                 seqnr
                                                 (max 2 (1+ar))
                                                 ar
-                                                (ar>0 && hasPointerPayload opts tm nm)
+                                                (ar>0 && hasPointerPayload opts tm (tagDataConstrNm ti))
          (GrTag_PApp n nm)  -> let ar = (fromJust2 ("no arity for PApp " ++ show tag) (Map.lookup (getNr nm) am)) - n
                                in  ConstantInfo ('P':(show n ++ ('_' : hsnShowAlphanumericShort nm)))
                                                 seqnr
@@ -653,7 +653,7 @@ fromJust2 _ (Just x) = x
 
 
 finalTagPayloadSize :: Map.Map Int Int -> GrTag -> Int
-finalTagPayloadSize _  (GrTag_Con a i nm) = gtannArity a
+finalTagPayloadSize _  (GrTag_Con a i _) = gtannArity a
 finalTagPayloadSize am (GrTag_PApp n nm)  = maybe  0
                                                    (\a -> a-n)
                                                    (Map.lookup (getNr nm) am)

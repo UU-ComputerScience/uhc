@@ -7,23 +7,29 @@
 %%% GRI parser
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin) module {%{EH}GrinCode.Parser} import(System.IO, UU.Parsing, qualified Data.Map as Map, UHC.Util.ParseUtils(PlainParser), UHC.Util.ScanUtils, {%{EH}Base.Common}, {%{EH}Scanner.Scanner}, {%{EH}GrinCode}, {%{EH}Base.Parser} hiding (pInt))
+AD: As of 20130904 the grin parser is no longer maintained. It was used to allow for grin input but longtimeago used for serialization.
+For user friendly input it requires a redesign.
+
+Broken:
+- pTagCateg, because of change in GrTag_Con taking a TagDataInfo instead of HsName
+
+%%[(8 codegen grinparser) module {%{EH}GrinCode.Parser} import(System.IO, UU.Parsing, qualified Data.Map as Map, UHC.Util.ParseUtils(PlainParser), UHC.Util.ScanUtils, {%{EH}Base.Common}, {%{EH}Scanner.Scanner}, {%{EH}GrinCode}, {%{EH}Base.Parser} hiding (pInt))
 %%]
 
-%%[(8 codegen grin) export(pModule,pExprSeq)
+%%[(8 codegen grinparser)
 %%]
 
-%%[90 import({%{EH}Foreign.Parser},{%{EH}Scanner.Common(pFFIWay)})
+%%[(90 codegen grinparser) import({%{EH}Foreign.Parser},{%{EH}Scanner.Common(pFFIWay)})
 %%]
 
-%%[(8 codegen) import(Data.Maybe)
+%%[(8 codegen grinparser) import(Data.Maybe)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Parser
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin)
+%%[(8 codegen grinparser) export(pModule,pExprSeq)
 type GRIParser       gp     =    PlainParser Token gp
 
 pModule         ::   GRIParser GrModule
@@ -248,7 +254,7 @@ pInt            =    (negate <$ pKey "-" `opt` id) <*> (read <$> pInteger)
 %%]
 
 
-%%[(10 codegen grin)
+%%[(10 codegen grinparser)
 pSplit          ::   GRIParser GrSplit
 pSplit          =    GrSplit_Sel <$> pGrNm <* pKey "=" <*> pVal
 

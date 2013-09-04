@@ -321,27 +321,27 @@ data GrNodeAdapt = GrNodeUpd | GrNodeExt deriving (Show,Eq)
 %%[(8 codegen grin) hs
 -- partial parametrizations of the GrVal_Node etc.
 
-mkGrConNode :: GrTagAnn -> Int -> HsName -> GrValL -> GrVal
-mkGrConNode ann i nm = GrVal_Node (GrTag_Con ann i nm)
+mkGrConNode :: GrTagAnn -> Int -> TagDataInfo -> GrValL -> GrVal
+mkGrConNode ann i ti = GrVal_Node (GrTag_Con ann i ti)
 
 mkGrRecNode ::  GrValL -> GrVal
 mkGrRecNode xs
-  = GrVal_Node (GrTag_Con (mkGrTagAnn a a) 0 (hsnProd a)) xs
+  = GrVal_Node (GrTag_Con (mkGrTagAnn a a) 0 (mkTyIsConTagInfo $ hsnProd a)) xs
   where a = length xs
 
-mkGrPatConNode :: GrTagAnn -> Int -> HsName -> [HsName] -> GrPatAlt
-mkGrPatConNode ann i nm = GrPatAlt_Node (GrTag_Con ann i nm)
+mkGrPatConNode :: GrTagAnn -> Int -> TagDataInfo -> [HsName] -> GrPatAlt
+mkGrPatConNode ann i ti = GrPatAlt_Node (GrTag_Con ann i ti)
 
 mkGrPatRecNode :: [HsName] -> GrPatAlt
 mkGrPatRecNode xs
-  = GrPatAlt_Node (GrTag_Con (mkGrTagAnn a a) 0 (hsnProd a)) xs
+  = GrPatAlt_Node (GrTag_Con (mkGrTagAnn a a) 0 (mkTyIsConTagInfo $ hsnProd a)) xs
   where a = length xs
 
-mkGrBox :: HsName -> GrVal -> GrVal
-mkGrBox tyNm v = mkGrConNode (mkGrTagAnn 1 1) 0 tyNm [v]
+mkGrBox :: TagDataInfo -> GrVal -> GrVal
+mkGrBox ti v = mkGrConNode (mkGrTagAnn 1 1) 0 ti [v]
 
-mkGrUnbox :: HsName -> HsName -> GrPatLam
-mkGrUnbox tyNm n = let tag = GrTag_Con (mkGrTagAnn 1 1) 0 tyNm
+mkGrUnbox :: TagDataInfo -> HsName -> GrPatLam
+mkGrUnbox ti n   = let tag = GrTag_Con (mkGrTagAnn 1 1) 0 ti
                    in  GrPatLam_VarNode [ GrVar_KnownTag tag, GrVar_Var n ]
 
 mkGrUnboxFFI :: HsName -> GrPatLam
@@ -351,8 +351,8 @@ mkGrUnboxFFI   n = let tag = GrTag_Unboxed
 %%]
 
 %%[(10 codegen grin) hs
-mkGrPatConSplit :: GrTagAnn -> Int -> HsName -> HsName -> GrSplitL -> GrPatAlt
-mkGrPatConSplit ann i nm = GrPatAlt_NodeSplit (GrTag_Con ann i nm)
+mkGrPatConSplit :: GrTagAnn -> Int -> TagDataInfo -> HsName -> GrSplitL -> GrPatAlt
+mkGrPatConSplit ann i ti = GrPatAlt_NodeSplit (GrTag_Con ann i ti)
 
 mkGrPatRecSplit :: HsName -> GrSplitL -> GrPatAlt
 mkGrPatRecSplit  = GrPatAlt_NodeSplit GrTag_Rec

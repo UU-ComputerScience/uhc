@@ -289,7 +289,7 @@ SEM GrModule
 cons :: Map HsName TyTag -> Set GrTag -> Map GrTag TyTag
 cons constrs allCons = Set.fold f Map.empty allCons
   where
-    f cntag@(GrTag_Con _ _ nm) mp = maybe mp g (Map.lookup nm constrs)
+    f cntag@(GrTag_Con _ _ i) mp = maybe mp g (Map.lookup (tagDataConstrNm i) constrs)
       where
         g ty = Map.insert cntag ty mp
 
