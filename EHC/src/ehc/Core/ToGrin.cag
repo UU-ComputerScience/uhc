@@ -33,7 +33,7 @@
 %%% Wrapper
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonLevLet},{Core/CommonPred},{Core/CommonCtxtPred},{Core/CommonBindNm},{Core/CommonFFI},{Core/CommonLamInfo},{Core/CommonGathLamInfo},{Core/Trf/CommonFv})
+%%[(8 codegen grin).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonLevLet},{Core/CommonPred},{Core/CommonCtxtPred},{Core/CommonCtxtStrict},{Core/CommonBindNm},{Core/CommonFFI},{Core/CommonLamInfo},{Core/CommonGathLamInfo},{Core/Trf/CommonFv})
 WRAPPER CodeAGItf
 %%]
 

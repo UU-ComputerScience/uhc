@@ -110,6 +110,21 @@ type Nm = Cmm.Nm
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Utils
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin cmm) hs
+grtag2cmmtag :: GrTag -> Cmm.Tag
+grtag2cmmtag gt = case gt of
+    GrTag_Con _ tg nm    -> Cmm.Tag_Con tg (tagDataInfo gt)
+    GrTag_Hole           -> Cmm.Tag_Ind
+    GrTag_Rec            -> Cmm.Tag_Tup
+    GrTag_App      nm    -> Cmm.Tag_App
+    GrTag_Fun      nm    -> Cmm.Tag_Fun nm
+    GrTag_PApp m   nm    -> Cmm.Tag_PApp m nm
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Global info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -654,19 +669,36 @@ SEM GrExpr
 %%]
 
 %%[(8 codegen grin cmm) hs
+data GviLoadSt = GviLoadSt
+  { glstUniq 	:: !UID
+  , glstDecls	:: !CmmBodyDecls
+  }
+
+type GviLoadStM a = State GviLoadSt a
+
+gviFreshM :: GviLoadStM HsName
+gviFreshM = do
+    u <- gets glstUniq
+    let (u',unm) = mkNewUID u
+    modify $ \st -> st {glstUniq = u'}
+    return $ mkHNm unm
+
+gviAppendM :: CmmBodyDecls -> GviLoadStM ()
+gviAppendM ds = modify $ \st -> st { glstDecls = glstDecls st & ds }
+
+gviLLoadM :: [GrValIntro] -> GviLoadStM [Cmm.Expr]
+gviLLoadM gviL = forM gviL $ \gvi -> do
+    case gvi2MbInlineExpr gvi of
+      Just e -> return e
+      _      -> case gvi2MbNonInlineExpr gvi of
+        Just e -> do nm <- gviFreshM
+                     gviAppendM $ Cmm.declLocalVar tyNd nm (Just e)
+                     return $ Cmm.Expr_Nm nm
+        _      -> return Cmm.undef
+
 gviLLoad :: UID -> [GrValIntro] -> ([Cmm.Expr], CmmBodyDecls)
-gviLLoad uniq gviL = (eL, ds)
-  where (eL, (_, ds)) = flip runState (uniq, Seq.empty) $ do
-          forM gviL $ \gvi -> do
-            case gvi2MbInlineExpr gvi of
-              Just e -> return e
-              _      -> case gvi2MbNonInlineExpr gvi of
-                Just e -> do (u, _) <- get
-                             let (u',unm) = mkNewUID u
-                                 nm = mkHNm unm
-                             modify $ \(_, ds) -> (u', ds & Cmm.declLocalVar tyNd nm (Just e))
-                             return $ Cmm.Expr_Nm nm
-                _      -> return Cmm.undef
+gviLLoad uniq gviL = (eL, glstDecls st)
+  where (eL, st) = runState (gviLLoadM gviL) (GviLoadSt uniq Seq.empty)
 
 gvi2Expr :: GrValIntro -> Cmm.Expr
 gvi2Expr = fromMaybe Cmm.undef . gvi2MbExpr
@@ -684,9 +716,21 @@ gvi2MbExpr gvi = gvi2MbInlineExpr gvi <|> gvi2MbNonInlineExpr gvi
 gvi2MbNonInlineExpr :: GrValIntro -> Maybe Cmm.Expr
 gvi2MbNonInlineExpr gvi = case gvi of
   _						-> Nothing
+
+{-
+gvi2MbNonInlineM :: GrValIntro -> GviLoadStM (Maybe GrValIntro)
+gvi2MbNonInlineM gvi = case gvi of
+  GrValIntro_Grp  		-> do
+    
+  _						-> return Nothing
+-}
+
+cmmBindFreshIn :: HSNM n => n -> Cmm.Expr -> (HsName -> Cmm.Expr -> CmmBodyDecls) -> (GrValIntro, CmmBodyDecls)
+cmmBindFreshIn u e mk = (GrValIntro_Nm n, Cmm.declLocalVar tyNd n Nothing & mk n e)
+  where n = mkHNm u
+
 %%]
   GrValIntro_Str  
-  GrValIntro_Grp  
   GrValIntro_Basic
   GrValIntro_Enum 
   GrValIntro_None
@@ -704,30 +748,24 @@ data GrValIntro
 
 %%[(8 codegen grin cmm)
 SEM GrExpr
-  | Eval        loc         .   (valDecls,grvalIntro)
+  | Eval        loc         .   (grvalIntro, valDecls)
                                                 =   case @lhs.returnCtxt of
                                                         ReturnCtxt_Returns | ehcOptGenTrampoline @lhs.opts
-                                                          -> (Seq.empty, GrValIntro_Nm @nm)
-                                                        _ -> ( Cmm.declLocalVar tyNd n Nothing
-                                                               & Cmm.call (Just n) Cmm.CallExpr_Eval [Cmm.var @nm]
-                                                             , GrValIntro_Nm n
-                                                             )
-                                                          where n = mkHNm @lUniq
-  | Seq			loc			.	(seqDecls,newVaGam,grvalIntro)
+                                                          -> (GrValIntro_Nm @nm, Seq.empty)
+                                                        _ -> cmmBindFreshIn @lUniq (Cmm.var @nm) $ \newn oldn -> Cmm.call (Just newn) Cmm.CallExpr_Eval [oldn]
+
+  | Seq			loc			.	(grvalIntro, seqDecls, newVaGam)
   												=	case (@expr.grvalIntro, @pat.nmIntro) of
   														(gvi, NmIntro_Single nmp annot)
-  															-> (Cmm.declLocalVar tyNd nmp (gvi2MbExpr gvi), patNmL2VAGam [nmp], GrValIntro_Nm nmp)
-  | App			loc			.	(valDecls,grvalIntro)
+  															-> (GrValIntro_Nm nmp, Cmm.declLocalVar tyNd nmp (gvi2MbExpr gvi), patNmL2VAGam [nmp])
+
+  | App			loc			.	(grvalIntro, valDecls)
                                                 =   case @lhs.returnCtxt of
                                                         -- ReturnCtxt_Returns | ehcOptGenTrampoline @lhs.opts
-                                                        --   -> (Seq.empty, GrValIntro_Nm @nm)
-                                                        _ -> ( argDecls
-                                                               & Cmm.declLocalVar tyNd n Nothing
-                                                               & Cmm.call (Just n) Cmm.CallExpr_Apply (Cmm.var @nm : argExprL)
-                                                             , GrValIntro_Nm n
-                                                             )
-                                                          where n = mkHNm @lUniq2
-                                                                (argExprL, argDecls) = gviLLoad @lUniq @argL.grvalIntroL
+                                                        --   -> (GrValIntro_Nm @nm, Seq.empty)
+                                                        _ -> (res, argDecls & callDecls)
+                                                          where (argExprL, argDecls) = gviLLoad @lUniq @argL.grvalIntroL
+                                                                (res, callDecls) = cmmBindFreshIn @lUniq2 (Cmm.var @nm) $ \newn oldn -> Cmm.call (Just newn) Cmm.CallExpr_Apply (oldn : argExprL)
 %%]
 
 %%[(88 codegen grin cmm) hs

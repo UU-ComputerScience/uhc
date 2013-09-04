@@ -48,8 +48,8 @@
 -- | per named field info
 data DataFldInfo
   = DataFldInfo
-%%[[8
-      { dfiOffset 	:: !Int
+%%[[(8 codegen)
+      { dfiOffset 	:: !Fld
       }
 %%]]
       deriving Show
@@ -58,8 +58,8 @@ type DataFldMp = Map.Map HsName DataFldInfo
 
 emptyDataFldInfo
   = DataFldInfo
-%%[[8
-      (-1)
+%%[[(8 codegen)
+      noFld
 %%]]
 %%]
 
@@ -91,6 +91,7 @@ data DataTagInfo
       , dtiConTy			:: !Ty						-- type of constructor, without final tyVarMp applied
 %%[[8
       , dtiCTag 			:: !CTag					-- tag of constructor
+      , dtiFldRefL			:: ![Fld]					-- list of offset/references positionally consistent with (e.g.) dtiFldTyL
 %%]]
 %%[[91
       , dtiMbFixityPrio 	:: !(Maybe (Int,Fixity))	-- if defined as infix, with priority
@@ -103,7 +104,7 @@ emptyDataTagInfo
   = DataTagInfo
       Map.empty [] [] hsnUnknown (appDbg "emptyDataTagInfo")
 %%[[8
-      emptyCTag
+      emptyCTag []
 %%]]
 %%[[91
       Nothing
@@ -111,14 +112,14 @@ emptyDataTagInfo
 %%]
 
 %%[(8 hmtyinfer) export(dtiOffsetOfFld)
-dtiOffsetOfFld :: HsName -> DataTagInfo -> Int
+dtiOffsetOfFld :: HsName -> DataTagInfo -> Fld
 dtiOffsetOfFld fldNm dti = dfiOffset $ panicJust "dtiOffsetOfFld" $ Map.lookup fldNm $ dtiFldMp dti
 %%]
 
 %%[(8 hmtyinfer) export(DataFldInConstr(..),DataFldInConstrMp)
 data DataFldInConstr
   = DataFldInConstr
-      { dficInTagMp	:: !(Map.Map CTag Int)
+      { dficInTagMp	:: !(Map.Map CTag Fld)
       }
 
 type DataFldInConstrMp = Map.Map HsName DataFldInConstr
@@ -302,13 +303,14 @@ dataGamLookupTag t c g
 %%]
 
 %%[(8 hmtyinfer) export(dataGamTagLookup)
-dataGamTagLookup :: CTag -> DataGam -> Maybe (DataGamInfo,DataTagInfo)
-dataGamTagLookup CTagRec g
-  = Nothing
-dataGamTagLookup ct g
-  = do dgi <- dataGamLookup (ctagTyNm ct) g
-       dti <- Map.lookup (ctagNm ct) $ dgiConstrTagMp dgi
-       return (dgi,dti)
+dataGamTagLookup :: TagLike t => t -> DataGam -> Maybe (DataGamInfo,DataTagInfo)
+dataGamTagLookup tag g
+  | tagIsData tag
+      = do dgi <- dataGamLookup (tagDataTypeNm tag) g
+           dti <- Map.lookup (tagDataConstrNm tag) $ dgiConstrTagMp dgi
+           return (dgi,dti)
+  | otherwise
+      = Nothing
 %%]
 
 Is datatype an enum? I.e. has no field for any constructor.
@@ -372,11 +374,11 @@ instance Serialize DataConFldAnnInfo where
 
 instance Serialize DataTagInfo where
 %%[[50
-  sput (DataTagInfo a b c d e f) = sput a >> sput b >> sput c >> sput d >> sput e >> sput f
-  sget = liftM6 DataTagInfo sget sget sget sget sget sget
-%%][91
   sput (DataTagInfo a b c d e f g) = sput a >> sput b >> sput c >> sput d >> sput e >> sput f >> sput g
   sget = liftM7 DataTagInfo sget sget sget sget sget sget sget
+%%][91
+  sput (DataTagInfo a b c d e f g h) = sput a >> sput b >> sput c >> sput d >> sput e >> sput f >> sput g >> sput h
+  sget = liftM8 DataTagInfo sget sget sget sget sget sget sget sget
 %%]]
 
 instance Serialize DataFldInConstr where

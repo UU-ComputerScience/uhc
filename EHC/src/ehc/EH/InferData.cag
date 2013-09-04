@@ -163,6 +163,8 @@ SEM DataConstr
   							.   dataConTyL          =   assocLElts @dataConFldTyL
 				 			.	dataConGadtFldTyL	=	zip (repeat Nothing) @dataConGadtTyL ++ @dataConFldTyL
 %%]]
+%%[[8
+%%]]
 %%]
 
 %%[(7 hmtyinfer)
@@ -310,11 +312,16 @@ SEM DataConstr
 %%[[7
   | Constr      loc         .   fldMp               =   let mk = emptyDataFldInfo
                                                             mkfs = foldl (\m (ml,_) -> maybe m (\l -> (l,mk):m) ml) []
-%%][8
-  | Constr      loc         .   fldMp               =   let mk o = emptyDataFldInfo {dfiOffset = o}
-                                                            mkfs = fst . foldl (\(m,o) (ml,_) -> maybe (m,o+1) (\l -> ((l,mk o):m,o+1)) ml) ([],0)
-%%]]
                                                         in  Map.fromList $ mkfs $ @dataConGadtFldTyL
+%%][8
+  | Constr      loc			.	fldRefL				=	refGen 0 1 $ zipWith (\pn (ml,_) -> maybe pn id ml) positionalFldNames @dataConGadtFldTyL
+  				            .   fldMp               =   Map.fromList $ catMaybes $ zipWith (\(_,r) (ml,_) -> fmap (\l -> (l,emptyDataFldInfo {dfiOffset = r})) ml) @fldRefL @dataConGadtFldTyL
+{-
+  				            .   fldMp               =   let mk o = emptyDataFldInfo {dfiOffset = o}
+                                                            mkfs = fst . foldl (\(m,o) (ml,_) -> maybe (m,o+1) (\l -> ((l,mk o):m,o+1)) ml) ([],0)
+                                                        in  Map.fromList $ mkfs $ @dataConGadtFldTyL
+-}
+%%]]
 %%]
 
 %%[(7 hmtyinfer)
@@ -333,8 +340,9 @@ SEM DataConstr
                                                           , dtiConFldAnnL   = @dataConGadtFldAnnL
                                                           , dtiConNm        = @conNm
                                                           , dtiConTy        = @dataConTyAsVar
-%%[[8
+%%[[(8 codegen)
                                                           , dtiCTag         = @ctag
+                                                          , dtiFldRefL		= assocLElts @fldRefL
 %%]]
 %%[[91
                                                           , dtiMbFixityPrio = @mbFixityPrio

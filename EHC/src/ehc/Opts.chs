@@ -375,7 +375,7 @@ ehcCmdLineOpts
 %%][100
 %%]]
 %%[[(8 codegen)
-     ,  Option ""   ["gen-trampoline"]      (boolArg oSetGenTrampoline)             "codegen: use trampoline"
+     ,  Option ""   ["gen-trampoline"]      (boolArg oSetGenTrampoline)             "codegen: use trampoline mechanism"
 %%]]
 %%[[(8 codegen)
      ,  Option ""   ["dump-core-stages"]    (boolArg optDumpCoreStages)             "dump: intermediate Core transformation stages (no)"

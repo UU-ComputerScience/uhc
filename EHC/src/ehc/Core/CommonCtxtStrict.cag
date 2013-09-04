@@ -1,0 +1,60 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Context: strict yes/no
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Assumes:
+- @lhs.opts is available
+- @isGlobal
+- currently only used in A normal form, although defs are available for App in non A normal form
+
+%%[(8 codegen grin)
+ATTR AllExprOnly AllAlt AllBind [ isStrict: Bool | | ]
+
+SEM CModule
+  | Mod         expr        .   isStrict    =   not @mustTrampoline
+
+SEM CPatFld
+  | Fld         offset      .   isStrict    =   True
+                bind		.   isStrict    =   False
+
+SEM CExpr
+  | Let         binds       .   isStrict    =   @isGlobal && not @mustTrampoline || @categ == CBindCateg_Strict
+  | Lam			body		.	isStrict    =   not @mustTrampoline
+  | App			loc 		.	isStrict    =   False
+  | Case		expr		.	isStrict    =   True
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Context: is at return of lambda position
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8888 codegen grin)
+ATTR AllExprOnly AllAlt AllBind [ isAtReturn: Bool | | ]
+
+SEM CModule
+  | Mod         expr        .   isAtReturn  =   True
+
+SEM CPatFld
+  | Fld         loc 		.	isAtReturn  =   False
+
+SEM CExpr
+  | Let         binds       .   isAtReturn  =   False
+  | Lam			loc			.	isAtReturn  =   True
+  | App			loc 		.	isAtReturn  =   False
+  | Case		expr		.	isAtReturn  =   False
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Must use a trampoline?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin)
+SEM CModule
+  | Mod         loc			.	mustTrampoline
+  											=	ehcOptGenTrampoline @lhs.opts
+  
+SEM CExpr
+  | Lam	Let		loc			.	mustTrampoline
+  											=	ehcOptGenTrampoline @lhs.opts
+%%]
+

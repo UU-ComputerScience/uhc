@@ -129,31 +129,18 @@ SEM *
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Context: strict yes/no, rhs of lam yes/no
+%%% Context: rhs of lam yes/no
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen grin)
-ATTR AllExprOnly AllAlt AllBind [ isStrict, isLamBody: Bool | | ]
+ATTR AllExprOnly AllAlt AllBind [ isLamBody: Bool | | ]
 
 SEM CModule
-  | Mod         expr        .   isStrict    =   True
-                            .   isLamBody   =   False
-
-SEM CBound
-  | Bind Val
-%%[[90
-    FFE
-%%]]
-                expr        .   isStrict    =   @lhs.isStrict || @expr.whatBelow == ExprIsLam
+  | Mod         expr        .   isLamBody   =   False
 
 SEM CPatFld
-  | Fld         offset      .   isStrict    =   True
-                            .   isLamBody   =   False
-                bind		.   isStrict    =   False
-                            .   isLamBody   =   False
-
-SEM CExpr
-  | Let         binds       .   isStrict    =   @isGlobal || @categ == CBindCateg_Strict
+  | Fld         offset      .   isLamBody   =   False
+                bind		.   isLamBody   =   False
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

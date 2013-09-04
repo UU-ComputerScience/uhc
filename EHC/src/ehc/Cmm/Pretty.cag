@@ -156,6 +156,7 @@ SEM Stmt
   -- 					expr2			: Expr
   -- 					body			: Body
   | Assign		lhs		.	pp		=	semic $ ppCommas' @lval.ppL >#< "=" >-|-< indent 1 (ppCommas' @rhs.ppL)
+  | Alloc		lhs		.	pp		=	@nm >#< "=" >-|-< indent 1 ("alloc" >|< @tag.pp >|< ppParensCommas' @elts.ppL)
   -- | %%Assign
   | Call        lhs     .   pp      =   semic 
                                         $ mbnull (\l -> ppCommas' l >#< "=") @knames.ppL
@@ -207,6 +208,7 @@ FlowAlias
 SEM CallExpr
   | Eval		lhs		.	pp		=	pp "eval"
   | Apply		lhs		.	pp		=	pp "apply"
+  -- | Alloc		lhs		.	pp		=	"alloc" >|< @tag.pp
 %%]
 
 %%[(8 cmm)
@@ -250,6 +252,16 @@ FldExpr
 Assert
 
 Lit
+
+%%[(8 cmm)
+SEM Tag
+  | Con			lhs		.	pp		=	   "#" >|< @tag >|< "#" >|< @dataInfo
+  | Tup			lhs		.	pp		=	pp "#"
+  | Ind			lhs		.	pp		=	pp "#I"
+  | Fun			lhs		.	pp		=	   "#F#" >|< @nm
+  | App			lhs		.	pp		=	pp "#A"
+  | PApp		lhs		.	pp		=	   "#P#" >|< @needs >|< "#" >|< @nm
+%%]
 
 Round
 

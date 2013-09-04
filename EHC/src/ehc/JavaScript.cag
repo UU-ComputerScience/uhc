@@ -13,6 +13,9 @@
 %%[(8 javascript) hs export(JavaScriptModule(..), Stat(..), StatL, NmExpr, NmExprL, Expr(..), ExprL, MbExpr, AGItf(..)) 
 %%]
 
+%%[(8 javascript) hs import({%{EH}Gam.DataGam})
+%%]
+
 %%[(8 javascript) hs export(Alt(..), AltL) 
 %%]
 
@@ -39,6 +42,10 @@ nmApplyN n  = "_a" ++ nmFunSuff n ++ "_"
 nmApply     = nmApplyN (-1)
 nmEvalN  n  = "_e" ++ nmFunSuff n ++ "_"
 nmEval      = nmEvalN (-1)
+%%]
+
+%%[(8 javascript) hs export(nmTag)
+nmTag       = mkHNm "_tag_"
 %%]
 
 %%[(8 javascript) hs export(hsnJavaScriptVar)
@@ -93,13 +100,38 @@ vardecl :: HSNM n => n -> Maybe Expr -> Stat
 vardecl nm mbe = Stat_VarDecl (mkHNm nm) mbe
 %%]
 
-%%[(8 javascript) hs export(arr)
+%%[(8 javascript) hs export(arr, newTup)
 -- | Construct array
 arr ::[Expr] -> Expr
 arr = Expr_Arr
+
+-- new tuple
+newTup :: [Expr] -> Expr
+newTup = arr
 %%]
 
-%%[(8 javascript) hs export(evl, apl, var, call, callv, ret', ret, assign)
+%%[(8 javascript) hs export(dataFldNames, newTupOrData)
+-- | field names used for data constructors, either as provided by program, or made up here
+--   20101012 AD, note: internally generated datatypes not yet have correct meta info, so fill up names as needed, as temporary hack
+dataFldNames :: TagLike t => DataGam -> t -> [HsName]
+dataFldNames dataGam tag
+  = map (hsnSafeJavaLike . hsnQualified) nms ++ hsnLclSupply
+  where nms  = maybe [] (\(_,dti) -> map fldNm $ dtiFldRefL dti) $ dataGamTagLookup tag dataGam
+
+-- either new data constructor or tuple
+newTupOrData :: TagLike t => DataGam -> t -> [Expr] -> Expr
+newTupOrData dataGam tag as
+  | tagIsData tag
+      = Expr_Obj $ ((nmTag, intConst $ tagDataTag tag):) $ zip (dataFldNames dataGam tag) as
+  | tagIsTup tag
+      = newTup as
+%%]
+
+%%[(8 javascript) hs export(intConst, evl, apl, var, call, callv, ret', ret, assign)
+-- | Int constant
+intConst :: Integral x => x -> Expr
+intConst i = Expr_Int $ fromIntegral i
+
 -- | call, function is an expr
 call :: Expr -> [Expr] -> Expr
 call = Expr_Call

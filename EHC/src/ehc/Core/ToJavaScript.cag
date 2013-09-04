@@ -79,7 +79,6 @@ SEM CodeAGItf
 %%[(8 javascript) hs
 nmFunN   n  = mkHNm ("_F" {- ++ nmFunSuff n -} ++ "_")
 nmAppN   n  = "_A" {- ++ nmFunSuff n -} ++ "_"
-nmTag       = mkHNm "_tag_"
 nmInd       = mkHNm "_i_"
 nmIndSet    = mkHNm "_i_set_"
 nmSwitchRes = mkHNm "_sw"
@@ -135,7 +134,7 @@ jvRef
       , \_ _ f   -> J.var f
       , \_ e _ f -> J.Expr_ObjFld e (mkHNm f)
       , \  e o   -> J.Expr_ArrInx e o
-      , jsIntConst
+      , J.intConst
       )
 %%]
 
@@ -184,7 +183,7 @@ SEM CExpr
                                                         where (gettag)
                                                                  = case tag of
                                                                      CTagRec         -> ( J.Expr_Str "*** ERR GETTAG ***" )
-                                                                     CTag _ _ _ _ _  -> ( J.Expr_Sel @expr.js (J.var nmTag)
+                                                                     CTag _ _ _ _ _  -> ( J.Expr_Sel @expr.js (J.var J.nmTag)
                                                                                         )
                                                       (Scrutinee_Other x : _)
                                                         -> panic ("Core.ToJavaScript.CExpr.Case.Scrutinee_Other: " ++ x ++ " : not yet implemented")
@@ -213,7 +212,7 @@ SEM CAlt
 ATTR AllPatFld [ | dataFldNmL: {[HsName]} | ]
 
 SEM CPat
-  | Con         binds       .   dataFldNmL      =   jsDataFldNames @lhs.dataGam @tag
+  | Con         binds       .   dataFldNmL      =   J.dataFldNames @lhs.dataGam @tag
 
 SEM CPatFld
   | Fld         (loc.objFldNm,lhs.dataFldNmL)   =   hdAndTl' (panic "ToJavaScript.CPatFld.Fld.dataFldNmL") @lhs.dataFldNmL
@@ -289,8 +288,8 @@ jsTr :: PP x => String -> x -> Seq.Seq J.Stat
 jsTr m x = Seq.singleton $ J.Stat_Expr $ J.Expr_Call (J.var $ mkHNm "trace") [J.Expr_Str m, J.Expr_Inline $ showPP $ pp x]
 
 -- constant
-jsIntConst :: Integral x => x -> J.Expr
-jsIntConst i = J.Expr_Int $ fromIntegral i
+-- jsIntConst :: Integral x => x -> J.Expr
+-- jsIntConst i = J.Expr_Int $ fromIntegral i
 
 -- apply
 jsApp :: J.Expr -> [J.Expr] -> J.Expr
@@ -319,24 +318,24 @@ jsFun fNm as stats
 -- jsAssign n e = J.Stat_Assign (J.var $ mkHNm n) e
 
 -- new tuple
-jsNewTup :: [J.Expr] -> J.Expr
-jsNewTup = J.arr
+-- jsNewTup :: [J.Expr] -> J.Expr
+-- jsNewTup = J.arr
 
 -- | field names used for data constructors, either as provided by program, or made up here
 --   20101012 AD, note: internally generated datatypes not yet have correct meta info, so fill up names as needed, as temporary hack
-jsDataFldNames :: DataGam -> CTag -> [HsName]
-jsDataFldNames dataGam ctag
-  = zipWith (\o mbn -> maybe o (hsnSafeJavaLike . hsnQualified) mbn) hsnLclSupply $ nms ++ fill
-  where nms  = maybe [] (\(_,dti) -> map fst $ dtiFldTyL dti) $ dataGamTagLookup ctag dataGam
-        fill = repeat Nothing
+-- jsDataFldNames :: DataGam -> CTag -> [HsName]
+-- jsDataFldNames dataGam ctag
+--   = zipWith (\o mbn -> maybe o (hsnSafeJavaLike . hsnQualified) mbn) hsnLclSupply $ nms ++ fill
+--   where nms  = maybe [] (\(_,dti) -> map fldNm $ dtiFldRefL dti) $ dataGamTagLookup ctag dataGam
+--         fill = repeat Nothing
 
 -- either new data constructor or tuple
-jsNewTupOrData :: DataGam -> HsName -> HsName -> CTag -> [J.Expr] -> J.Expr
-jsNewTupOrData dataGam _ _ ctag as
-  = case ctag of
-      CTag _ _ t _ _ -> J.Expr_Obj $ ((nmTag,jsIntConst t):)
-                                    $ zip (jsDataFldNames dataGam ctag) as
-      CTagRec        -> jsNewTup as
+-- jsNewTupOrData :: DataGam -> HsName -> HsName -> CTag -> [J.Expr] -> J.Expr
+-- jsNewTupOrData dataGam _ _ ctag as
+--   = case ctag of
+--       CTag _ _ t _ _ -> J.Expr_Obj $ ((nmTag,jsIntConst t):)
+--                                     $ zip (jsDataFldNames dataGam ctag) as
+--       CTagRec        -> J.newTup as
 
 -- | body
 jsBody :: (J.Expr -> J.Stat) -> Seq.Seq JBind -> Seq.Seq J.Stat -> Maybe J.Expr -> [J.Stat]
@@ -357,14 +356,14 @@ ATTR CExpr AllBind [ | | dps USE {`Set.union`} {Set.empty} : {Set.Set String} ]
 %%[(8 javascript)
 SEM CExpr
   | Var         loc         .   js              =   jvRef @lhs.cvarMp @cvi
-  | Int         loc         .   js              =   jsIntConst  @int
-  | Char        loc         .   js              =   jsIntConst (ord @char) -- J.Expr_Char @char
+  | Int         loc         .   js              =   J.intConst  @int
+  | Char        loc         .   js              =   J.intConst (ord @char) -- J.Expr_Char @char
   | String      loc         .   js              =   J.Expr_Str  @str
-  | Tup         loc         .   js              =   jsNewTupOrData @lhs.dataGam @lhs.pkgNm @lhs.topClassNm @tag []
+  | Tup         loc         .   js              =   J.newTupOrData @lhs.dataGam @tag []
   | App         loc         .   js              =   if @isTopApp'
                                                     then let (f:as) = reverse @jsArgFunL
                                                          in  case @func.appFunKind of
-                                                               AppFunKind_Tag tag -> jsNewTupOrData @lhs.dataGam @lhs.pkgNm @lhs.topClassNm tag as
+                                                               AppFunKind_Tag tag -> J.newTupOrData @lhs.dataGam tag as
                                                                AppFunKind_FFI     -> @func.resPackWrap $ @func.mkFFI {-f-} as
                                                                _                  -> jsApp f as
                                                     else J.Expr_Str "*** ERR APP ***"
@@ -479,7 +478,7 @@ jsArgsPack = javalikeArgsPack (-1) ((),(),J.arr,nmAppN)
 %%[(8 javascript) hs
 -- unpack > 5 args from tuple, otherwise normal
 jsArgsUnpack :: ([HsName]->[HsName]) -> [HsName] -> ([(HsName,())],[(J.Expr,())],[(HsName,CVarInfo)])
-jsArgsUnpack toRef = javalikeArgsUnpack maxBound ((), (), (), toRef, jsIntConst, \_ a -> a, \n -> take n hsnLclSupply)
+jsArgsUnpack toRef = javalikeArgsUnpack maxBound ((), (), (), toRef, J.intConst, \_ a -> a, \n -> take n hsnLclSupply)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -622,8 +621,8 @@ ffiJavaScriptMkCall ty
                 rn   = mkHNm "res"
                 -- evaluate the composite parts of "res" before returning to the regular js world
                 bdy  = [ J.varDecl rn $ J.evl $ jsApp e $ (map J.var as) ++ [J.arr []]
-                       , J.Stat_Expr $ J.evl $ J.Expr_ArrInx (J.var rn) (jsIntConst 0)
-                       , J.ret $ J.evl $ J.Expr_ArrInx (J.var rn) (jsIntConst 1) ]
+                       , J.Stat_Expr $ J.evl $ J.Expr_ArrInx (J.var rn) (J.intConst 0)
+                       , J.ret $ J.evl $ J.Expr_ArrInx (J.var rn) (J.intConst 1) ]
 
         mkDyn _ (e:es) = J.Expr_Call e es
 %%]]

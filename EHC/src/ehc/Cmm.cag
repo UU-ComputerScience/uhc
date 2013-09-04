@@ -38,7 +38,7 @@ C subset, modelled after C--
 %%]
 %%[(8 codegen cmm) hs export(Flow(..), FlowL, Also(..), AlsoL, Alias(..), FlowAlias(..), FlowAliasL, Targets(..), FldExpr(..), FldExprL, CallExpr(..), Expr(..), ExprL, MbExpr, Ty(..), MbTy, Bits(..), GC(..), MbGC)
 %%]
-%%[(8 codegen cmm) hs export(String16(..), Assert(..), MbAssert, Op(..), OpCode(..), Round(..), Lit(..))
+%%[(8 codegen cmm) hs export(String16(..), Assert(..), MbAssert, Op(..), OpCode(..), Round(..), Lit(..), Tag(..))
 %%]
 %%[(8 codegen cmm) hs export(StructFld(..), StructFldL)
 %%]
@@ -87,6 +87,17 @@ type NmL = [Nm]
 -- | Comment
 cmt :: String -> Decl
 cmt = Decl_Comment
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Tag info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen cmm) hs
+instance TagLike Tag where
+  tagIsTup  		t	= case t of {Tag_Tup     -> True  ; _ -> False}
+  tagMbDataInfo		t 	= case t of {Tag_Con _ i -> Just i; _ -> Nothing}
+  tagDataTag 		t	= case t of {Tag_Con t _ -> t}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

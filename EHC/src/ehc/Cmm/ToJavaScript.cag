@@ -20,7 +20,7 @@
 %%[(8 codegen grin) hs import({%{EH}CodeGen.ValAccess} as VA)
 %%]
 
-%%[(8 codegen cmm javascript) hs import(Data.Maybe,Data.Char, UHC.Util.Utils, qualified Data.Map as Map, UHC.Util.FastSeq as Seq)
+%%[(8 codegen cmm javascript) hs import(Data.Maybe,Data.Char, UHC.Util.Utils, qualified Data.Map as Map, Data.List as L, UHC.Util.FastSeq as Seq)
 %%]
 %%[(8 codegen cmm javascript) hs import(qualified Data.Bits as B (Bits), Data.Bits as B hiding (Bits))
 %%]
@@ -161,6 +161,7 @@ SEM Stmt
   | Call				lhs			.	jsBodyStats	=	s $ maybeHd JS.Stat_Expr JS.assign @knames.nmL $ @callexpr.jsMkCall @actuals.jsExprL
   | Ret					lhs			.	jsBodyStats	=	s $ JS.ret' $ maybeHd Nothing Just @actuals.jsExprL
   | Assign				lhs			.	jsBodyStats	=	ss $ zipWith JS.assign @lval.nmL @rhs.jsExprL
+  | Alloc				lhs			.	jsBodyStats	=	s $ JS.assign @nm $ @tag.jsMkAlloc @elts.nmExprL
 
 SEM Regs
   | Regs				lhs			.	jsBodyStats	=	ss [ JS.vardecl n Nothing | n <- @nmInits.nmL ]
@@ -243,6 +244,20 @@ SEM CallExpr
   | Apply				lhs			.	jsMkCall=	\(f:as) -> JS.apl f as
 %%]
 
+Callable Expression
+
+%%[(8 codegen cmm javascript)
+ATTR Tag [ | | jsMkAlloc: {JS.NmExprL -> JS.Expr} ]
+
+SEM Tag
+  | Con					lhs			.	jsMkAlloc	=	JS.newTup . L.map snd	-- TBD
+  | Tup					lhs			.	jsMkAlloc	=	JS.newTup . L.map snd
+  | Ind					lhs			.	jsMkAlloc	=	JS.newTup . L.map snd	-- TBD
+  | Fun					lhs			.	jsMkAlloc	=	JS.newTup . L.map snd	-- TBD
+  | App					lhs			.	jsMkAlloc	=	JS.newTup . L.map snd	-- TBD
+  | PApp				lhs			.	jsMkAlloc	=	JS.newTup . L.map snd	-- TBD
+%%]
+
 Expression
 
 %%[(8 codegen cmm javascript)
@@ -255,7 +270,7 @@ SEM Expr
   | Nm					lhs         .   jsExpr	=   JS.var @jsnm
   | Op					lhs			.	jsExpr	=	@op.mkExpr @exprs.jsExprL
   | NdFldGet			lhs			.	jsExpr	=	JS.Expr_ObjFld @expr.jsExpr (fldNm @fld)
-  | Nd					lhs			.	jsExpr	=	JS.Expr_Obj @elts.nmExprL
+  -- | Nd					lhs			.	jsExpr	=	JS.Expr_Obj @elts.nmExprL
   -- | Eval				lhs			.	jsExpr	=	JS.evl $ JS.var @jsnm
 
   -- TBD

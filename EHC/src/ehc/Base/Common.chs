@@ -76,9 +76,6 @@
 %%[8 import (qualified Data.Map as Map) export(showPP,ppPair,ppFM)
 %%]
 
-%%[8 hs export(ctag,ppCTag,ppCTagInt)
-%%]
-
 %%[9 export(ppListV)
 %%]
 
@@ -365,9 +362,12 @@ ctagTag CTagRec = 0
 ctagTag t       = ctagTag' t
 
 ctagInt  =  CTag hsnInt  hsnInt  0 1 1
+{-# INLINE ctagInt #-}
 ctagChar =  CTag hsnChar hsnChar 0 1 1
+{-# INLINE ctagChar #-}
 
 emptyCTag = CTag hsnUnknown hsnUnknown 0 0 0
+{-# INLINE emptyCTag #-}
 %%]
 
 %%[9 export(mkClassCTag)
@@ -376,9 +376,10 @@ mkClassCTag :: HsName -> Int -> CTag
 mkClassCTag n sz = CTag n n 0 sz sz
 %%]
 
-%%[8 hs
+%%[8 hs export(ctag,ppCTag,ppCTagInt)
 ctag :: a -> (HsName -> HsName -> Int -> Int -> Int -> a) -> CTag -> a
 ctag n t tg = case tg of {CTag tn cn i a ma -> t tn cn i a ma; _ -> n}
+{-# INLINE ctag #-}
 
 ppCTag :: CTag -> PP_Doc
 ppCTag = ctag (pp "Rec") (\tn cn t a ma -> pp t >|< "/" >|< pp cn >|< "/" >|< pp a >|< "/" >|< pp ma)
@@ -388,6 +389,74 @@ ppCTagInt = ctag (pp "-1") (\_ _ t _ _ -> pp t)
 
 instance PP CTag where
   pp = ppCTag
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Tags abstraction/interface
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs export(TagDataInfo(..))
+-- | datatype info about tag: type name & constr name, required throughout various codegen stages
+data TagDataInfo = TagDataInfo
+  { tagDataInfoTypeNm 	:: !HsName
+  , tagDataInfoConstrNm	:: !HsName
+  }
+  deriving Show
+%%]
+
+%%[8 hs export(mkTyConTagInfo, mkTyTagInfo, mkConTagInfo, emptyTagDataInfo)
+mkTyConTagInfo :: HsName -> HsName -> TagDataInfo
+mkTyConTagInfo = TagDataInfo
+{-# INLINE mkTyConTagInfo #-}
+
+mkTyTagInfo :: HsName -> TagDataInfo
+mkTyTagInfo tn = mkTyConTagInfo tn hsnUnknown
+{-# INLINE mkTyTagInfo #-}
+
+mkConTagInfo :: HsName -> TagDataInfo
+mkConTagInfo cn = mkTyConTagInfo hsnUnknown cn
+{-# INLINE mkConTagInfo #-}
+
+emptyTagDataInfo = mkTyConTagInfo hsnUnknown hsnUnknown
+%%]
+
+%%[8 hs export(TagLike(..), tagDataInfo)
+class TagLike t where
+  tagIsData			:: t -> Bool
+  tagIsTup			:: t -> Bool
+  
+  -- | extract data related info, only allowed when tagIsData
+  tagMbDataInfo		:: t -> Maybe TagDataInfo
+  tagDataTypeNm   	:: t -> HsName
+  tagDataConstrNm 	:: t -> HsName
+  tagDataTag		:: t -> Int
+  
+  -- defaults: either tagDataInfo or tagDataTypeNm and tagDataConstrNm and tagIsData
+  tagMbDataInfo		t	= if tagIsData t then Just (emptyTagDataInfo {tagDataInfoTypeNm = tagDataTypeNm t, tagDataInfoConstrNm = tagDataConstrNm t}) else Nothing
+  tagDataTypeNm			= tagDataInfoTypeNm . tagDataInfo
+  tagDataConstrNm		= tagDataInfoConstrNm . tagDataInfo
+  tagIsData 			= isJust . tagMbDataInfo
+  
+  -- defaults
+  tagIsTup				= not . tagIsData
+
+-- | Assuming a datatype, return info
+tagDataInfo :: TagLike t => t -> TagDataInfo
+tagDataInfo = fromJust . tagMbDataInfo
+{-# INLINE tagDataInfo #-}
+
+instance TagLike CTag where
+  tagMbDataInfo	 	= ctag Nothing (\tn cn _ _ _ -> Just (emptyTagDataInfo {tagDataInfoTypeNm = tn, tagDataInfoConstrNm = cn}))
+  tagDataTag 		= ctagTag'
+  -- not necessary:
+  tagIsTup  		= ctagIsRec
+  tagDataTypeNm 	= ctagTyNm
+  tagDataConstrNm 	= ctagNm
+%%]
+
+%%[8 hs
+instance PP TagDataInfo where
+  pp i = tagDataInfoTypeNm i >|< "." >|< tagDataInfoConstrNm i
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1106,6 +1175,9 @@ metaLevSo  = metaLevKi  + 1
 deriving instance Typeable VarUIDHsName
 deriving instance Data VarUIDHsName
 
+deriving instance Typeable TagDataInfo
+deriving instance Data TagDataInfo
+
 deriving instance Typeable Fixity
 deriving instance Data Fixity
 
@@ -1120,6 +1192,9 @@ deriving instance Data x => Data (RLList x)
 
 deriving instance Typeable CLbl
 deriving instance Data CLbl
+
+deriving instance Typeable1 Fld'
+deriving instance Data x => Data (Fld' x)
 
 deriving instance Typeable CTag
 deriving instance Data CTag
@@ -1153,99 +1228,6 @@ uidQualHNm modnm uid =
 %%[1
 instance HSNM UID where
   mkHNm x = hsnFromString ('_' : show x)
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Instances: Binary, Serialize
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[50
-instance Serialize VarUIDHsName where
-  sput (VarUIDHs_Name a b) = sputWord8 0 >> sput a >> sput b
-  sput (VarUIDHs_UID  a  ) = sputWord8 1 >> sput a
-  sput (VarUIDHs_Var  a  ) = sputWord8 2 >> sput a
-  sget = do t <- sgetWord8
-            case t of
-              0 -> liftM2 VarUIDHs_Name sget sget
-              1 -> liftM  VarUIDHs_UID  sget
-              2 -> liftM  VarUIDHs_Var  sget
-
-instance Serialize CLbl where
-  sput (CLbl_Nm   a  ) = sputWord8 0 >> sput a
-  sput (CLbl_Tag  a  ) = sputWord8 1 >> sput a
-  sput (CLbl_None    ) = sputWord8 2
-  sget = do t <- sgetWord8
-            case t of
-              0 -> liftM  CLbl_Nm 	sget
-              1 -> liftM  CLbl_Tag  sget
-              2 -> return CLbl_None
-
-instance Binary Fixity where
-  put = putEnum8
-  get = getEnum8
-
-instance Serialize Fixity where
-  sput = sputPlain
-  sget = sgetPlain
-
-instance Binary KnownPrim where
-  put = putEnum8
-  get = getEnum8
-
-instance Serialize KnownPrim where
-  sput = sputPlain
-  sget = sgetPlain
-
-instance Binary x => Binary (AlwaysEq x) where
-  put (AlwaysEq x) = put x
-  get = liftM AlwaysEq get
-
-instance Serialize x => Serialize (AlwaysEq x) where
-  sput (AlwaysEq x) = sput x
-  sget = liftM AlwaysEq sget
-
-instance Binary PredOccId where
-  put (PredOccId a) = put a
-  get = liftM PredOccId get
-
-instance Serialize PredOccId where
-  sput = sputPlain
-  sget = sgetPlain
-
-instance Binary a => Binary (RLList a) where
-  put (RLList a) = put a
-  get = liftM RLList get
-
-instance Serialize CTag where
-  sput = sputShared
-  sget = sgetShared
-  sputNested (CTagRec          ) = sputWord8 0
-  sputNested (CTag    a b c d e) = sputWord8 1 >> sput a >> sput b >> sput c >> sput d >> sput e
-  sgetNested
-    = do t <- sgetWord8
-         case t of
-           0 -> return CTagRec
-           1 -> liftM5 CTag    sget sget sget sget sget
-
-instance Binary Range where
-  put (Range_Unknown    ) = putWord8 0
-  put (Range_Builtin    ) = putWord8 1
-  put (Range_Range   a b) = putWord8 2 >> put a >> put b
-  get = do t <- getWord8
-           case t of
-             0 -> return Range_Unknown
-             1 -> return Range_Builtin
-             2 -> liftM2 Range_Range get get
-
-instance Serialize Range where
-  sput = sputShared
-  sget = sgetShared
-  sputNested = sputPlain
-  sgetNested = sgetPlain
-
-instance Binary Pos where
-  put (Pos a b c) = put a >> put b >> put c
-  get = liftM3 Pos get get get
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1454,5 +1436,106 @@ instance RefOfFld Fld Int where
 instance HSNM inx => RefOfFld (Fld' inx) HsName where
   refOfFld = fldNm
 
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Instances: Binary, Serialize
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[50
+instance Serialize x => Serialize (Fld' x) where
+  sput (Fld a b) = sput a >> sput b
+  sget = liftM2 Fld sget sget
+
+instance Serialize TagDataInfo where
+  sput (TagDataInfo a b) = sput a >> sput b
+  sget = liftM2 TagDataInfo sget sget
+
+instance Serialize VarUIDHsName where
+  sput (VarUIDHs_Name a b) = sputWord8 0 >> sput a >> sput b
+  sput (VarUIDHs_UID  a  ) = sputWord8 1 >> sput a
+  sput (VarUIDHs_Var  a  ) = sputWord8 2 >> sput a
+  sget = do t <- sgetWord8
+            case t of
+              0 -> liftM2 VarUIDHs_Name sget sget
+              1 -> liftM  VarUIDHs_UID  sget
+              2 -> liftM  VarUIDHs_Var  sget
+
+instance Serialize CLbl where
+  sput (CLbl_Nm   a  ) = sputWord8 0 >> sput a
+  sput (CLbl_Tag  a  ) = sputWord8 1 >> sput a
+  sput (CLbl_None    ) = sputWord8 2
+  sget = do t <- sgetWord8
+            case t of
+              0 -> liftM  CLbl_Nm 	sget
+              1 -> liftM  CLbl_Tag  sget
+              2 -> return CLbl_None
+
+instance Binary Fixity where
+  put = putEnum8
+  get = getEnum8
+
+instance Serialize Fixity where
+  sput = sputPlain
+  sget = sgetPlain
+
+instance Binary KnownPrim where
+  put = putEnum8
+  get = getEnum8
+
+instance Serialize KnownPrim where
+  sput = sputPlain
+  sget = sgetPlain
+
+instance Binary x => Binary (AlwaysEq x) where
+  put (AlwaysEq x) = put x
+  get = liftM AlwaysEq get
+
+instance Serialize x => Serialize (AlwaysEq x) where
+  sput (AlwaysEq x) = sput x
+  sget = liftM AlwaysEq sget
+
+instance Binary PredOccId where
+  put (PredOccId a) = put a
+  get = liftM PredOccId get
+
+instance Serialize PredOccId where
+  sput = sputPlain
+  sget = sgetPlain
+
+instance Binary a => Binary (RLList a) where
+  put (RLList a) = put a
+  get = liftM RLList get
+
+instance Serialize CTag where
+  sput = sputShared
+  sget = sgetShared
+  sputNested (CTagRec          ) = sputWord8 0
+  sputNested (CTag    a b c d e) = sputWord8 1 >> sput a >> sput b >> sput c >> sput d >> sput e
+  sgetNested
+    = do t <- sgetWord8
+         case t of
+           0 -> return CTagRec
+           1 -> liftM5 CTag    sget sget sget sget sget
+
+instance Binary Range where
+  put (Range_Unknown    ) = putWord8 0
+  put (Range_Builtin    ) = putWord8 1
+  put (Range_Range   a b) = putWord8 2 >> put a >> put b
+  get = do t <- getWord8
+           case t of
+             0 -> return Range_Unknown
+             1 -> return Range_Builtin
+             2 -> liftM2 Range_Range get get
+
+instance Serialize Range where
+  sput = sputShared
+  sget = sgetShared
+  sputNested = sputPlain
+  sgetNested = sgetPlain
+
+instance Binary Pos where
+  put (Pos a b c) = put a >> put b >> put c
+  get = liftM3 Pos get get get
 %%]
 

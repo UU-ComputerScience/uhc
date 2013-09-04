@@ -15,12 +15,12 @@
 %%% Reference generator
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs export(RefGenerator(refGen1),refGen)
-type RefGenMonad ref = State Int ref
+%%[(8 codegen) hs export(RefGenerator(..))
+type RefGenMonad m ref = StateT Int m ref
 
 class RefGenerator ref where
   -- | Generate for 1 name
-  refGen1M :: Int -> HsName -> RefGenMonad ref
+  refGen1M :: Monad m => Int -> HsName -> RefGenMonad m ref
   refGen1  :: Int -> Int -> HsName -> (ref, Int)
   
   -- defaults
@@ -40,9 +40,11 @@ instance RefGenerator Int where
 
 instance RefGenerator Fld where
   refGen1 seed dir nm  = (Fld (Just nm) (Just seed), seed+dir)
+%%]
 
+%%[(8 codegen) hs export(refGen, refGenM)
 -- | Generate for names, starting at a seed in a direction
-refGenM :: RefGenerator ref => Int -> [HsName] -> RefGenMonad (AssocL HsName ref)
+refGenM :: (Monad m, RefGenerator ref) => Int -> [HsName] -> RefGenMonad m (AssocL HsName ref)
 refGenM dir nmL
   = forM nmL $ \nm -> do
       r <- refGen1M dir nm
