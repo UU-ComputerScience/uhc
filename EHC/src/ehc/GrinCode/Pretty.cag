@@ -149,7 +149,7 @@ SEM GrModule
                                                                     ->  cfgppHsName CfgPP_Grin tn >#< "="
                                                                         >#< ( ppListSep "" "" " | "
                                                                             --  . map  (\(n,CTag _ _ t a ma) -> cfgppHsName CfgPP_Grin n >#< t >#< a >#< ma)
-                                                                            . map (\(GrTag_Con ann n i) ->  "#" >|< show n >|< "/" >|< "C" >|< show ann >|< "/" >|< i)
+                                                                            . map (\(GrTag_Con ann n i) ->  "#" >|< show n >|< "/" >|< "C" >|< show ann >|< "/" >|< i) -- (cfgppHsName CfgPP_Grin $ tagDataInfoConstrNm i))
                                                                             $ ts
                                                                             )
                                                                )
@@ -259,7 +259,7 @@ SEM GrTag
   | App         lhs         .   pp          =   "#" >|< "0" >|< "/" >|< "A" >|< "/" >|< @lhs.ppGrNm @nm
   | Fun         lhs         .   pp          =   "#" >|< "0"  >|< "/" >|< "F" >|< "/" >|< @lhs.ppGrNm @nm
   | PApp        lhs         .   pp          =   "#" >|< "0"  >|< "/" >|< "P" >|< "/" >|< @needs >|< "/" >|< @lhs.ppGrNm @nm
-  | Con         lhs         .   pp          =   "#" >|< @int >|< "/" >|< "C" >|< show @grtgAnn >|< "/" >|< @dataInfo
+  | Con         lhs         .   pp          =   "#" >|< @int >|< "/" >|< "C" >|< show @grtgAnn >|< "/" >|< @dataInfo -- @lhs.ppGrNm (tagDataInfoConstrNm @dataInfo)
   | Unboxed     lhs         .   pp          =   pp "#U"
 %%]
 

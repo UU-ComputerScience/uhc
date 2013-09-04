@@ -465,7 +465,7 @@ instance TagLike CTag where
 
 %%[8 hs
 instance PP TagDataInfo where
-  pp i = tagDataInfoTypeNm i >|< "." >|< tagDataInfoConstrNm i
+  pp i = tagDataInfoTypeNm i >|< "#" >|< tagDataInfoConstrNm i
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

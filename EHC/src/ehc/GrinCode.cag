@@ -128,7 +128,7 @@ deriving instance Data GrTagAnn
 %%[(8 codegen cmm) hs
 instance TagLike GrTag where
   tagIsTup  		t	= case t of {GrTag_Rec       -> True ; _ -> False}
-  tagMbDataInfo		t 	= case t of {GrTag_Con _ _ _ -> Just $ emptyTagDataInfo {tagDataInfoTypeNm = hsnUnknown, tagDataInfoConstrNm = hsnUnknown}; _ -> Nothing}
+  tagMbDataInfo		t 	= case t of {GrTag_Con _ _ i -> Just i; _ -> Nothing}
   tagDataTag 		t	= case t of {GrTag_Con _ t _ -> t}
 %%]
 
