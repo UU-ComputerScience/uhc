@@ -34,12 +34,6 @@
 %%[(10 codegen grin) hs export(GrNodeAdapt(..))
 %%]
 
-%%[(8 codegen grin) hs export(mkGrBox,mkGrRecNode,mkGrConNode)
-%%]
-
-%%[(8 codegen grin) hs export(mkGrPatRecNode,mkGrPatConNode,mkGrUnbox,mkGrUnboxFFI)
-%%]
-
 %%[(10 codegen grin) hs export(mkGrPatRecSplit,mkGrPatConSplit)
 %%]
 
@@ -48,6 +42,10 @@
 %%[(50 codegen grin) hs import(Data.Typeable(Typeable), Data.Generics(Data))
 %%]
 
+%%[(8 codegen grin) hs import({%{EH}Gam.DataGam})
+%%]
+%%[(8 codegen grin) hs import({%{EH}Foreign.Boxing}) export(Boxing)
+%%]
 %%[(90 codegen grin) hs import({%{EH}Foreign},{%{EH}Base.Target}) export(FFIWay(..),module {%{EH}Foreign})
 %%]
 
@@ -318,11 +316,12 @@ data GrNodeAdapt = GrNodeUpd | GrNodeExt deriving (Show,Eq)
 %%% Node construction
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin) hs
+%%[(8 codegen grin) hs export(mkGrConNode,mkGrRecNode,mkGrUnbox,mkGrPatConNode,mkGrPatRecNode,mkGrBox)
 -- partial parametrizations of the GrVal_Node etc.
 
 mkGrConNode :: GrTagAnn -> Int -> TagDataInfo -> GrValL -> GrVal
 mkGrConNode ann i ti = GrVal_Node (GrTag_Con ann i ti)
+{-# INLINE mkGrConNode #-}
 
 mkGrRecNode ::  GrValL -> GrVal
 mkGrRecNode xs
@@ -331,24 +330,29 @@ mkGrRecNode xs
 
 mkGrPatConNode :: GrTagAnn -> Int -> TagDataInfo -> [HsName] -> GrPatAlt
 mkGrPatConNode ann i ti = GrPatAlt_Node (GrTag_Con ann i ti)
+{-# INLINE mkGrPatConNode #-}
 
 mkGrPatRecNode :: [HsName] -> GrPatAlt
 mkGrPatRecNode xs
   = GrPatAlt_Node (GrTag_Con (mkGrTagAnn a a) 0 (mkTyIsConTagInfo $ hsnProd a)) xs
   where a = length xs
 
-mkGrBox :: TagDataInfo -> GrVal -> GrVal
-mkGrBox ti v = mkGrConNode (mkGrTagAnn 1 1) 0 ti [v]
+mkGrBox :: EHCOpts -> DataGam -> TagDataInfo -> GrVal -> GrVal
+mkGrBox opts dataGam ti v 
+  | ehcOptGenBoxGrin opts = GrVal_Box (tyNm2Boxing opts dataGam (tagDataInfoTypeNm ti)) v
+  | otherwise             = mkGrConNode (mkGrTagAnn 1 1) 0 ti [v]
 
-mkGrUnbox :: TagDataInfo -> HsName -> GrPatLam
-mkGrUnbox ti n   = let tag = GrTag_Con (mkGrTagAnn 1 1) 0 ti
-                   in  GrPatLam_VarNode [ GrVar_KnownTag tag, GrVar_Var n ]
-
-mkGrUnboxFFI :: HsName -> GrPatLam
-mkGrUnboxFFI   n = let tag = GrTag_Unboxed
-                   in  GrPatLam_VarNode [ GrVar_KnownTag tag, GrVar_Var n ]
+mkGrUnbox :: EHCOpts -> DataGam -> TagDataInfo -> HsName -> GrPatLam
+mkGrUnbox opts dataGam ti n
+  | ehcOptGenBoxGrin opts = GrPatLam_Box (tyNm2Boxing opts dataGam (tagDataInfoTypeNm ti)) n
+  | otherwise             = GrPatLam_VarNode [ GrVar_KnownTag (GrTag_Con (mkGrTagAnn 1 1) 0 ti), GrVar_Var n ]
+  -- where tag = GrTag_Con (mkGrTagAnn 1 1) 0 ti
 
 %%]
+
+mkGrUnboxFFI :: EHCOpts -> HsName -> GrPatLam
+mkGrUnboxFFI opts n = GrPatLam_VarNode [ GrVar_KnownTag tag, GrVar_Var n ]
+  where tag = GrTag_Unboxed
 
 %%[(10 codegen grin) hs
 mkGrPatConSplit :: GrTagAnn -> Int -> TagDataInfo -> HsName -> GrSplitL -> GrPatAlt
@@ -415,6 +419,19 @@ data GrValIntro
   | GrValIntro_Basic !GrTag !HsName
   | GrValIntro_Enum  !HsName
   | GrValIntro_None
+  deriving Show
+%%]
+
+%%[(8 codegen grin) hs export(gviFoldInlineable, gviIsInlineable)
+-- | Convert inlineable GrValtIntro using algebra
+gviFoldInlineable :: (HsName -> x, Integer -> x, x) -> GrValIntro -> x
+gviFoldInlineable (mk,_ ,_ ) (GrValIntro_Nm  n) = mk n
+gviFoldInlineable (_ ,mk,_ ) (GrValIntro_Int i) = mk i
+gviFoldInlineable (_ ,_ ,df) _                  = df
+
+-- | Need not be bound to var but can be used directly
+gviIsInlineable :: GrValIntro -> Bool
+gviIsInlineable = gviFoldInlineable (const True, const True, False)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

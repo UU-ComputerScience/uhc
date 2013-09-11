@@ -91,7 +91,7 @@ SEM Stat
   -- | VarDecl     lhs     .   pp      =   ppStat $ "var" >#< @nm >|< maybe PP.empty (\e -> "=" >|< e ) @mbExpr.ppMb
   | VarDecl     lhs     .   pp      =   ppStat $
                                         case @mbExpr.ppMb of
-                                          Just e -> pp "var" >#< @nm >|< "=" >-< indent 1 e
+                                          Just e -> pp "var" >#< @nm >#< "=" >-|-< indent 1 e
                                           _      -> pp "var" >#< @nm
   | FunDecl     lhs     .   pp      =   @expr.pp
   -- | Assign		lhs		.	pp		=	ppStat $ @nm >|< "=" >|< @expr.pp

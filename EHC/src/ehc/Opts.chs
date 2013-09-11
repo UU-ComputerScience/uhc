@@ -375,7 +375,8 @@ ehcCmdLineOpts
 %%][100
 %%]]
 %%[[(8 codegen)
-     ,  Option ""   ["gen-trampoline"]      (boolArg oSetGenTrampoline)             "codegen: use trampoline mechanism"
+     ,  Option ""   ["gen-trampoline"]      (boolArg oSetGenTrampoline)             "codegen: use trampoline mechanism (development/internal use only)"
+     ,  Option ""   ["gen-boxgrin"]      	(boolArg oSetGenBoxGrin)             	"codegen: generate simplified grin wrt boxing (development/internal use only)"
 %%]]
 %%[[(8 codegen)
      ,  Option ""   ["dump-core-stages"]    (boolArg optDumpCoreStages)             "dump: intermediate Core transformation stages (no)"
@@ -823,6 +824,7 @@ optSetGenCaseDefault o b = o { ehcOptGenCaseDefault = b }
 optSetGenCmt         o b = o { ehcOptGenCmt         = b }
 optSetGenDebug       o b = o { ehcOptGenDebug       = b }
 oSetGenTrampoline	 o b = o { ehcOptGenTrampoline  = b }
+oSetGenBoxGrin		 o b = o { ehcOptGenBoxGrin     = b }
 optDumpGrinStages    o b = o { ehcOptDumpGrinStages = b {-, ehcOptEmitGrin = b -} }
 -- optEarlyModMerge     o b = o { ehcOptEarlyModMerge  = b }
 %%]

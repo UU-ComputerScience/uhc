@@ -205,12 +205,13 @@ SEM GrVal
   | LitInt      lhs         .   pp          =   pp @int
   | LitStr      lhs         .   pp          =   pp $ show @str
   | Var         lhs         .   pp          =   @lhs.ppGrNm @nm
-  | Node        lhs         .   pp          =   ppListSep "(" ")" " " (@tag.pp        : @fldL.ppL)
-  | VarNode     lhs         .   pp          =   ppListSep "(" ")" " " (                 @fldL.ppL)
-  | BasicNode   lhs         .   pp          =   ppListSep "(" ")" " " [pp "basicnode", @tag.pp, @lhs.ppGrNm @nm]
-  | EnumNode    lhs         .   pp          =   ppListSep "(" ")" " " [pp "enumnode" , @lhs.ppGrNm @nm]
-  | PtrNode     lhs         .   pp          =   ppListSep "(" ")" " " [pp "ptrnode" , @lhs.ppGrNm @nm]
-  | OpaqueNode  lhs         .   pp          =   ppListSep "(" ")" " " [pp "opaquenode" , @lhs.ppGrNm @nm]
+  | Node        lhs         .   pp          =   ppParensCommas' (@tag.pp        : @fldL.ppL)
+  | Box         lhs         .   pp          =   ppParensCommas' [pp @boxing, @fld.pp]
+  | VarNode     lhs         .   pp          =   ppParensCommas' (                 @fldL.ppL)
+  | BasicNode   lhs         .   pp          =   ppParensCommas' [pp "basicnode", @tag.pp, @lhs.ppGrNm @nm]
+  | EnumNode    lhs         .   pp          =   ppParensCommas' [pp "enumnode" , @lhs.ppGrNm @nm]
+  | PtrNode     lhs         .   pp          =   ppParensCommas' [pp "ptrnode" , @lhs.ppGrNm @nm]
+  | OpaqueNode  lhs         .   pp          =   ppParensCommas' [pp "opaquenode" , @lhs.ppGrNm @nm]
 %%[[10
   | NodeAdapt   lhs         .   pp          =   ppParens (@lhs.ppGrNm @nm >|< "|" >|< (ppListSep "" "" "," @fldL.ppL))
 
@@ -223,7 +224,7 @@ SEM GrAdapt
 SEM GrPatAlt
   | Otherwise   lhs         .   pp          =   pp "_"
   | LitInt      lhs         .   pp          =   pp @int
-  | Node        lhs         .   pp          =   ppListSep "(" ")" " " (@tag.pp : map @lhs.ppGrNm @fldL)
+  | Node        lhs         .   pp          =   ppParensCommas' (@tag.pp : map @lhs.ppGrNm @fldL)
 %%[[10
   | NodeSplit   lhs         .   pp          =   ppParens (@tag.pp >#< @lhs.ppGrNm @nm >|< "|" >|< (ppListSep "" "" "," @fldL.ppL))
 
@@ -234,15 +235,16 @@ SEM GrSplit
 SEM GrPatLam
   | Empty       lhs         .   pp          =   pp "()"
   | Var         lhs         .   pp          =   @lhs.ppGrNm @nm
-  | VarNode     lhs         .   pp          =   ppListSep "(" ")" " " @fldL.ppL
-  | BasicNode   lhs         .   pp          =   ppListSep "(" ")" " " [pp "basicnode", pp @annot, @lhs.ppGrNm @nm]
-  | EnumNode    lhs         .   pp          =   ppListSep "(" ")" " " [pp "enumnode" , @lhs.ppGrNm @nm]
-  | PtrNode     lhs         .   pp          =   ppListSep "(" ")" " " [pp "ptrnode" , @lhs.ppGrNm @nm]
-  | OpaqueNode  lhs         .   pp          =   ppListSep "(" ")" " " [pp "opaquenode" , @lhs.ppGrNm @nm]
-  | BasicAnnot  lhs         .   pp          =   ppListSep "(" ")" " " [pp "basicannot", pp @annot, @lhs.ppGrNm @nm]
-  | EnumAnnot   lhs         .   pp          =   ppListSep "(" ")" " " [pp "enumannot" , @lhs.ppGrNm @tycon, @lhs.ppGrNm @nm]
-  | OpaqueAnnot lhs         .   pp          =   ppListSep "(" ")" " " [pp "opaqueannot" , @lhs.ppGrNm @nm]
-  | PtrAnnot    lhs         .   pp          =   ppListSep "(" ")" " " [pp "ptrannot" , @lhs.ppGrNm @tycon, @lhs.ppGrNm @nm]
+  | VarNode     lhs         .   pp          =   ppParensCommas' @fldL.ppL
+  | Box         lhs         .   pp          =   ppParensCommas' [pp @boxing, @lhs.ppGrNm @nm]
+  | BasicNode   lhs         .   pp          =   ppParensCommas' [pp "basicnode", pp @annot, @lhs.ppGrNm @nm]
+  | EnumNode    lhs         .   pp          =   ppParensCommas' [pp "enumnode" , @lhs.ppGrNm @nm]
+  | PtrNode     lhs         .   pp          =   ppParensCommas' [pp "ptrnode" , @lhs.ppGrNm @nm]
+  | OpaqueNode  lhs         .   pp          =   ppParensCommas' [pp "opaquenode" , @lhs.ppGrNm @nm]
+  | BasicAnnot  lhs         .   pp          =   ppParensCommas' [pp "basicannot", pp @annot, @lhs.ppGrNm @nm]
+  | EnumAnnot   lhs         .   pp          =   ppParensCommas' [pp "enumannot" , @lhs.ppGrNm @tycon, @lhs.ppGrNm @nm]
+  | OpaqueAnnot lhs         .   pp          =   ppParensCommas' [pp "opaqueannot" , @lhs.ppGrNm @nm]
+  | PtrAnnot    lhs         .   pp          =   ppParensCommas' [pp "ptrannot" , @lhs.ppGrNm @tycon, @lhs.ppGrNm @nm]
 
 SEM GrVarL
   | Nil         lhs         .  pp           =   pp ""

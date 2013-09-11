@@ -102,6 +102,7 @@ SEM GrExpr
                                                              GrPatLam_EnumNode   _   -> Map.singleton n @pat.trf
                                                              GrPatLam_PtrNode    _   -> Map.singleton n @pat.trf
                                                              GrPatLam_OpaqueNode _   -> Map.singleton n @pat.trf
+                                                             GrPatLam_Box        _ _ -> Map.singleton n @pat.trf
                                                              _ -> Map.empty
                                                       _ -> Map.empty
                 lhs         .   unitUnwrapMp    =   Map.union @newMp @body.unitUnwrapMp

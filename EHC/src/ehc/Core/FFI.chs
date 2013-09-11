@@ -20,7 +20,7 @@
 %%]
 %%[(8 codegen) hs import({%{EH}GrinCode})
 %%]
-%%[(8 codegen) hs import({%{EH}Foreign.Extract})
+%%[(8 codegen) hs import({%{EH}Foreign.Extract}, {%{EH}Foreign.Boxing})
 %%]
 %%[(90 codegen) hs import({%{EH}BuiltinPrims})
 %%]
@@ -64,24 +64,6 @@ tyNmGBTagPtrBasicAnnot opts box t annot
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Predicates: builtin info about what FFI can know about a type
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8 codegen) hs export(tyIsFFIOpaque)
--- | is type (name) living opaque w.r.t. ffi?
-tyIsFFIOpaque :: Ty -> DataGam -> Bool
-tyIsFFIOpaque t dataGam = maybe True null (dataGamTagsOfTy t dataGam)
-%%]
-
-%%[(8 codegen) hs export(tyIsFFIEnumable)
--- | is type (name) Enumable, that is, representable by an Int?
-tyIsFFIEnumable :: HsName -> DataGam -> Bool
-tyIsFFIEnumable tn dataGam = maybe False dgiIsEnumable (dataGamLookup tn dataGam)
-%%]
-
-isError  tn   = maybe True (const False)  (dataGamTagsOfTy tn @lhs.dataGam)
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Construct code fragments based on FFI info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -90,11 +72,11 @@ isError  tn   = maybe True (const False)  (dataGamTagsOfTy tn @lhs.dataGam)
 ffiMkArgUnpack
   :: EHCOpts
      -> DataGam
-     -> (BasicAnnot -> HsName -> intro)     -- make intro: node around basic type
-     -> (HsName -> intro)                   -- make intro: enum
-     -> (HsName -> intro)                   -- make intro: var
-     -> (HsName -> intro)                   -- make intro: opaque
-     -> (HsName -> intro)                   -- make intro: pointer
+     -> (HsName -> BasicAnnot -> HsName -> intro)     -- make intro: node around basic type
+     -> (HsName -> HsName -> intro)             -- make intro: enum
+     -> (HsName -> HsName -> intro)             -- make intro: var
+     -> (HsName -> HsName -> intro)             -- make intro: opaque
+     -> (HsName -> HsName -> intro)             -- make intro: pointer
      -> HsName                              -- arg name
      -> Ty                                  -- its type
      -> intro
@@ -105,11 +87,11 @@ ffiMkArgUnpack
   = mk
   where tyNm  = tyAppFunConNm ty
         mbAnn = tyNmFFIBoxBasicAnnot opts tyNm
-        mk | isJust mbAnn                   = mkNodeI (tyNmGBTagPtrBasicAnnot opts False tyNm (fromJust mbAnn)) argNm
-           | tyIsFFIEnumable tyNm dataGam   = mkEnumI argNm
-           | isJust (recMbRecRow ty)        = mkVarI  argNm
-           | tyIsFFIOpaque ty dataGam       = mkOpaqI argNm
-           | otherwise                      = mkPtrI  argNm
+        mk | isJust mbAnn                   = mkNodeI tyNm (tyNmGBTagPtrBasicAnnot opts False tyNm (fromJust mbAnn)) argNm
+           | tyNmIsFFIEnumable dataGam tyNm = mkEnumI tyNm argNm
+           | isJust (recMbRecRow ty)        = mkVarI  tyNm argNm
+           | tyNmIsFFIOpaque dataGam tyNm   = mkOpaqI tyNm argNm
+           | otherwise                      = mkPtrI  tyNm argNm
 %%]
 
 %%[(8 codegen grin) hs export(ffiGrinMkArgUnpack)
@@ -123,9 +105,16 @@ ffiGrinMkArgUnpack
 ffiGrinMkArgUnpack
      opts dataGam
      argNm ty
-  = ffiMkArgUnpack
+  | ehcOptGenBoxGrin opts
+    = let unbox t n = GrPatLam_Box (tyNm2Boxing opts dataGam t) n
+      in  ffiMkArgUnpack
+             opts dataGam
+             (\t _ n -> unbox t n) unbox (const GrPatLam_Var) unbox unbox
+             argNm ty
+  | otherwise
+    = ffiMkArgUnpack
          opts dataGam
-         GrPatLam_BasicNode GrPatLam_EnumNode GrPatLam_Var GrPatLam_OpaqueNode GrPatLam_PtrNode
+         (const GrPatLam_BasicNode) (const GrPatLam_EnumNode) (const GrPatLam_Var) (const GrPatLam_OpaqueNode) (const GrPatLam_PtrNode)
          argNm ty
 %%]
 
@@ -137,33 +126,33 @@ ffiMkResPack
      -> DataGam
      -> (BasicAnnot -> HsName -> intro)     -- make intro: node around basic type
      -> (HsName -> HsName -> intro)         -- make intro: enum
-     -- -> (HsName -> intro)                    -- make intro: var
      -> (HsName -> intro)                   -- make intro: opaque
      -> (HsName -> HsName -> intro)         -- make intro: pointer
      -> (e -> intro -> e -> e)              -- make bind: let .. in
-     -> (HsName -> HsName -> e)             -- make expr: node
-     -> (HsName -> e)                       -- make expr: enum
-     -> (HsName -> e)                       -- make expr: opaq
-     -> (HsName -> e)                       -- make expr: ptr
+     -> (Ty -> HsName -> HsName -> e)       -- make expr: node
+     -> (Ty -> HsName -> HsName -> e)       -- make expr: enum
+     -> (Ty -> HsName -> HsName -> e)       -- make expr: opaq
+     -> (Ty -> HsName -> HsName -> e)       -- make expr: ptr
      -> HsName                              -- arg name
      -> Ty                                  -- its type
      -> e                                   -- res value
      -> e
 ffiMkResPack
      opts dataGam
-     mkNodeI mkEnumI {- mkVarI -} mkOpaqI mkPtrI
+     mkNodeI mkEnumI mkOpaqI mkPtrI
      mkBindE
      mkNodeE mkEnumE mkOpaqE mkPtrE
      resNm resTy res
   = mk
   where resTyNm  = tyAppFunConNm resTy
         mbAnn = tyNmFFIBoxBasicAnnot opts resTyNm
-        mk | isJust mbAnn                   = mkBindE res (mkNodeI (tyNmGBTagPtrBasicAnnot opts True resTyNm (fromJust mbAnn)) resNm) (mkNodeE resTyNm resNm)
-           | tyIsFFIEnumable resTyNm dataGam= mkBindE res (mkEnumI resTyNm                                                     resNm) (mkEnumE         resNm)
-           | isRec && arity == 0            = mkBindE res (mkEnumI recNm                                                       resNm) (mkEnumE         resNm)
-           | isRec                          = mkBindE res (mkPtrI  recNm                                                       resNm) (mkPtrE          resNm)
-           | tyIsFFIOpaque resTy dataGam    = mkBindE res (mkOpaqI                                                             resNm) (mkOpaqE         resNm)
-           | otherwise                      = mkBindE res (mkPtrI  resTyNm                                                     resNm) (mkPtrE          resNm)
+        mkE e = e resTy resTyNm resNm
+        mk | isJust mbAnn                   	= mkBindE res (mkNodeI (tyNmGBTagPtrBasicAnnot opts True resTyNm (fromJust mbAnn)) resNm) (mkE mkNodeE)
+           | tyNmIsFFIEnumable dataGam resTyNm	= mkBindE res (mkEnumI resTyNm                                                     resNm) (mkE mkEnumE)
+           | isRec && arity == 0            	= mkBindE res (mkEnumI recNm                                                       resNm) (mkE mkEnumE)
+           | isRec                          	= mkBindE res (mkPtrI  recNm                                                       resNm) (mkE mkPtrE )
+           | tyNmIsFFIOpaque dataGam resTyNm    = mkBindE res (mkOpaqI                                                             resNm) (mkE mkOpaqE)
+           | otherwise                      	= mkBindE res (mkPtrI  resTyNm                                                     resNm) (mkE mkPtrE )
            where isRec = isJust $ recMbRecRow resTy
                  arity = length $ snd $ tyRecExts resTy
                  recNm = builtinRecNm arity
@@ -181,16 +170,29 @@ ffiGrinMkResPack
 ffiGrinMkResPack
      opts dataGam
      resNm resTy res
-  = ffiMkResPack
+  {- 
+  -}
+  -- 20130910 AD: not completed
+  | ehcOptGenBoxGrin opts
+    = let box _ tn n = u $ GrVal_Box (tyNm2Boxing opts dataGam tn) (GrVal_Var n)
+      in  ffiMkResPack
+             opts dataGam
+             (const GrPatLam_Var) (const GrPatLam_Var) GrPatLam_Var (const GrPatLam_Var)
+             GrExpr_Seq
+             box box box box
+             resNm resTy res
+  | otherwise
+    = ffiMkResPack
          opts dataGam
          GrPatLam_BasicAnnot GrPatLam_EnumAnnot {- GrPatLam_Var -} GrPatLam_OpaqueAnnot GrPatLam_PtrAnnot
          GrExpr_Seq
-         (\tyNm n -> u (GrVal_BasicNode (GrTag_Con (mkGrTagAnn 1 1) 0 (mkTyIsConTagInfo tyNm)) n))
-         (\     n -> u (GrVal_EnumNode                                                         n))
-         (\     n -> u (GrVal_OpaqueNode                                                       n))
-         (\     n -> u (GrVal_PtrNode                                                          n))
+         (\_ tyNm n -> u (GrVal_BasicNode (GrTag_Con (mkGrTagAnn 1 1) 0 (mkTyIsConTagInfo tyNm)) n))
+         (\_ _    n -> u (GrVal_EnumNode                                                         n))
+         (\_ _    n -> u (GrVal_OpaqueNode                                                       n))
+         (\_ _    n -> u (GrVal_PtrNode                                                          n))
          resNm resTy res
-  where u x = GrExpr_Unit x GrType_None
+  where u | ehcOptGenBoxGrin opts = GrExpr_Store
+          | otherwise             = flip GrExpr_Unit GrType_None
 %%]
 
 %%[(8 codegen grin) export(ffiGrinMk)

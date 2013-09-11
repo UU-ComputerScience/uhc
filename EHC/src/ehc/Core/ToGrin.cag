@@ -23,6 +23,9 @@
 %%[(8 codegen grin) hs import(Debug.Trace)
 %%]
 
+%%[(8 codegen grin) hs import(Control.Monad, Control.Monad.State)
+%%]
+
 %%[(8 codegen) hs import({%{EH}Foreign.Extract})
 %%]
 
@@ -101,6 +104,11 @@ ATTR CodeAGItf [ gUniq: UID | | ]
 SEM CExpr
   | Var         loc         .   lUniq       :   UNIQUEREF gUniq
   | TupIns TupUpd TupDel
+                loc         .   lUniq       :   UNIQUEREF gUniq
+  | Int Char String
+%%[[97
+    Integer
+%%]]
                 loc         .   lUniq       :   UNIQUEREF gUniq
   | Case        loc         .   lUniq       :   UNIQUEREF gUniq
   | App         loc         .   lUniq       :   UNIQUEREF gUniq
@@ -233,22 +241,46 @@ mkSq e1 p e2 = GrExpr_Seq e1 (GrPatLam_Var p) e2
 %%]
 
 %%[(8 codegen grin) hs
-simplArgL :: HsName -> UID -> LamMp -> GrValL -> (GrValL,GrExpr->GrExpr)
-simplArgL modNm uniq lamMp vL
-  =  let  nL = map (uidQualHNm modNm) . mkNewUIDL (length vL) $ uniq
-     in   foldr  (\(n,a) (aL,wG)
-                    ->  case a of
-                            GrVal_Var v | isJust mbArity
-                                -> (GrVal_Var n : aL,mkSq a' n . wG)
-                                where mbArity = lamMpLookupLam v lamMp
-                                      a' = GrExpr_Store (mkNdPApp v (fromJust mbArity) [])
-                            GrVal_Node _ _
-                                -> (GrVal_Var n : aL,mkSq (GrExpr_Store a) n . wG)
-                            _   -> (a:aL,wG)
-                 )
-                 ([],id)
-          $ zip nL vL
+-- | Simplify GrVal by pushing the more complex ones in a GrExpr bound to a fresh variable
+type SimplState    = (GrExpr->GrExpr)
+type SimplStateM a = StateT SimplState FreshUid a
 
+runSimpl :: UID -> SimplStateM a -> (a, GrExpr->GrExpr)
+runSimpl uniq ss = evalFreshUid (runStateT ss (id)) uniq
+
+simplAppendM :: (GrExpr->GrExpr) -> SimplStateM ()
+simplAppendM f = modify (f .)
+
+simplWrapM :: HsName -> GrExpr -> SimplStateM GrVal
+simplWrapM modNm x = do
+  n <- fmap (uidQualHNm modNm) $ lift freshUID
+  simplAppendM $ mkSq x n
+  return $ GrVal_Var n
+
+simplBoxM :: HsName -> GrVal -> SimplStateM (Maybe GrVal)
+simplBoxM modNm v = case v of
+  GrVal_Box  _ _ -> fmap Just $ simplWrapM modNm $ GrExpr_Store v
+  _              -> return Nothing
+
+simplArgM :: HsName -> LamMp -> GrVal -> SimplStateM (Maybe GrVal)
+simplArgM modNm lamMp a = case a of
+  GrVal_Var v | isJust mbArity
+    -> fmap Just $ simplWrapM modNm (GrExpr_Store (mkNdPApp v arity []))
+    where mbArity@(~(Just arity)) = lamMpLookupLam v lamMp
+  GrVal_Node _ _
+    -> fmap Just $ simplWrapM modNm (GrExpr_Store a)
+  _ -> return Nothing
+
+simplArgL :: HsName -> UID -> LamMp -> GrValL -> (GrValL, GrExpr->GrExpr)
+simplArgL modNm uniq lamMp vL
+  = runSimpl uniq $ forM vL $ \v -> firstMaybeM v [simplArgM modNm lamMp, simplBoxM modNm]
+
+simplArg :: HsName -> UID -> LamMp -> GrVal -> (GrVal, GrExpr->GrExpr)
+simplArg modNm uniq lamMp v = (v', mk)
+  where ([v'], mk) = simplArgL modNm uniq lamMp [v] 
+%%]
+
+%%[(8 codegen grin) hs
 saturateAltL :: UID -> GrExpr -> GrAltL -> GrAltL
 saturateAltL uniq dflt altL
   =  case altL of
@@ -259,19 +291,19 @@ saturateAltL uniq dflt altL
 %%]
 
 %%[(10 codegen grin) hs
-unboxArg :: HsName -> UID -> TagDataInfo -> GrVal -> (GrVal,GrExpr->GrExpr)
-unboxArg modNm uniq ti v
+unboxArg :: EHCOpts -> DataGam -> HsName -> UID -> TagDataInfo -> GrVal -> (GrVal,GrExpr->GrExpr)
+unboxArg opts dataGam modNm uniq ti v
   =  case v of
        GrVal_LitInt _
            -> (v,id)
-       _   -> (GrVal_Var n,GrExpr_Seq (GrExpr_Unit v GrType_None) (mkGrUnbox ti n))
+       _   -> (GrVal_Var n,GrExpr_Seq (GrExpr_Unit v GrType_None) (mkGrUnbox opts dataGam ti n))
   where n = uidQualHNm modNm uniq
 
-unboxArgL :: HsName -> UID -> TagDataInfo -> GrValL -> (GrValL,GrExpr->GrExpr)
-unboxArgL modNm uniq ti vL
+unboxArgL :: EHCOpts -> DataGam -> HsName -> UID -> TagDataInfo -> GrValL -> (GrValL,GrExpr->GrExpr)
+unboxArgL opts dataGam modNm uniq ti vL
   =  let  uL = mkNewUIDL (length vL) $ uniq
      in   foldr  (\(u,a) (aL,wG)
-                    ->  let (a',w) = unboxArg modNm u ti a
+                    ->  let (a',w) = unboxArg opts dataGam modNm u ti a
                         in  (a' : aL, w . wG)
                  )
                  ([],id)
@@ -340,7 +372,8 @@ SEM CExpr
                                                           n = uidQualHNm @lhs.modNm @lUniq
                                                           -- 20100824 AD: TBD taking care of yes/no building closures inside simplArgL, i.e. not for FFI
                                                           (argL',wrapGr) = simplArgL @lhs.modNm @lUniq2 @lhs.lamMp argL
-                                                     in   case @func.appFunKind of
+                                                     in   @grAppWrap $
+                                                          case @func.appFunKind of
                                                             -- tuple/constructor application
                                                             AppFunKind_Tag t
                                                               -> wrapGr (mkE v)
@@ -395,8 +428,14 @@ SEM CExpr
                                                 else -- dummy val
                                                      GrExpr_Unit GrVal_Empty GrType_None
   | Var         loc         .   grExpr      =   mbMkStrict @lhs.modNm @lUniq @lhs.isStrict @grVal
-  | Tup Int Char
-                loc         .   grExpr      =   retStrict @lhs.isStrict @grVal
+  | Tup         loc         .   grExpr      =   retStrict @lhs.isStrict @grVal
+  | Int Char
+%%[[97
+    Integer
+%%]]
+                loc         .   grExpr      =   if ehcOptGenBoxGrin @lhs.opts
+                                                then @grLitWrap $ GrExpr_Unit @grVal GrType_None
+                                                else retStrict @lhs.isStrict @grVal
   | FFI         loc         .   grExpr      =   ffiGrinMk @lhs.opts @lhs.dataGam @lUniq @lhs.modNm
 %%[[90
                                                           @callconv
@@ -415,7 +454,7 @@ SEM CExpr
 %%[[10
   | TupIns TupUpd TupDel
                 loc         .   grExpr      =   if @lhs.isTopTup
-                                                then  mkGrAdapt @lhs.modNm @lUniq @lhs.lamMp @lhs.isStrict (reverse @grTupFldL) (maybe hsnUnknown id (grV2HNm @grTupRec))
+                                                then  mkGrAdapt @lhs.opts @lhs.dataGam @lhs.modNm @lUniq @lhs.lamMp @lhs.isStrict (reverse @grTupFldL) (maybe hsnUnknown id (grV2HNm @grTupRec))
                                                 else  GrExpr_Unit GrVal_Empty GrType_None
 %%]]
   | * - Let Case App Var Tup Int Char Ann FFI CaseAltFail
@@ -424,6 +463,9 @@ SEM CExpr
 %%]]
 %%[[10
     TupIns TupUpd TupDel
+%%]]
+%%[[97
+    Integer
 %%]]
                 loc         .   grExpr      =   GrExpr_Unit @grVal GrType_None
 
@@ -436,37 +478,80 @@ SEM CBound
 %%[(10 codegen grin) hs
 type TupAdaptFldL = [(GrVal,GrVal,GrVal->GrVal->GrAdapt)]
 
-mkGrAdapt :: HsName -> UID -> LamMp -> Bool -> TupAdaptFldL -> HsName -> GrExpr
-mkGrAdapt modNm u lamMp isStrict tupFldL tupRecNm
+mkGrAdapt :: EHCOpts -> DataGam -> HsName -> UID -> LamMp -> Bool -> TupAdaptFldL -> HsName -> GrExpr
+mkGrAdapt opts dataGam modNm u lamMp isStrict tupFldL tupRecNm
   =  let  [u1,u2] = mkNewUIDL 2 (uidChild u)
           (oL,vL,mkAL) = unzip3 tupFldL
-          (oL',wrO) = unboxArgL modNm u1 tagInfoInt oL
+          (oL',wrO) = unboxArgL opts dataGam modNm u1 tagInfoInt oL
           (vL',wrV) = simplArgL modNm u2 lamMp vL
      in   wrV . wrO . retStrict isStrict
           . GrVal_NodeAdapt tupRecNm
           . zipWith3 ($) mkAL oL' $ vL'
 %%]
 
+%%[(8 codegen grin) hs
+mkGrBoxed :: UID -> Bool -> EHCOpts -> HsName -> DataGam -> LamMp -> TagDataInfo -> GrVal -> (GrVal, GrExpr -> GrExpr)
+mkGrBoxed uniq doBox opts modNm dataGam lamMp ti v = runSimpl uniq $ firstMaybeM v1 [simplBoxM modNm]
+  where v1 = (if doBox then mkGrBox opts dataGam ti else id) v
+%%]
+
 %%[(8 codegen grin)
 ATTR CExpr CBound  [ | | grVal: GrVal ]
 
 SEM CExpr
+  | Int
+%%[[97
+    Integer
+%%]]
+				loc			.	tagInfo		= 	tagInfoInt
+  | Char		loc			.	tagInfo		= 	tagInfoChar
+  | String		loc			.	tagInfo		= 	mkTyIsConTagInfo $ ehcOptBuiltin @lhs.opts ehbnPackedString
+
+SEM CExpr
+  | Int			loc			.	grValLit	= 	GrVal_LitInt @int
+  | Char		loc			.	grValLit	= 	GrVal_LitInt (ord @char)
+  | String		loc			.	grValLit	= 	GrVal_LitStr @str
+%%[[97
+  | Integer		loc			.	grValLit	= 	GrVal_LitInt $ fromInteger @integer
+%%]]
+
+SEM CExpr
   | Tup         loc         .   grVal       =   ctag (mkGrRecNode []) (\_ l tg a ma -> mkGrConNode (mkGrTagAnn a ma) tg (tagDataInfo @tag) []) @tag
   | Var         loc         .   grVal       =   maybe (GrVal_Var @nmAsp) (\a -> mkNdPApp @nmAsp a []) @mbLam
-  | Int         loc         .   grVal       =   (if @lhs.doBox then mkGrBox tagInfoInt  else id)  (GrVal_LitInt @int)
-  | Char        loc         .   grVal       =   (if @lhs.doBox then mkGrBox tagInfoChar else id)  (GrVal_LitInt (ord @char))
-  | String      loc         .   grVal       =   (if @lhs.doBox then mkGrBox (mkTyIsConTagInfo $ ehcOptBuiltin @lhs.opts ehbnPackedString) else id)  (GrVal_LitStr @str)
+  | Int Char String
+%%[[97
+    Integer
+%%]]
+  				loc         .   (grVal,grLitWrap)
+  											=   mkGrBoxed @lUniq @lhs.doBox @lhs.opts @lhs.modNm @lhs.dataGam @lhs.lamMp @tagInfo @grValLit
   | Ann         loc         .   grVal       =   @expr.grVal
   | * - Int Char String Var Tup Ann
+%%[[97
+    Integer
+%%]]
                 loc         .   grVal       =   GrVal_Empty
 
 SEM CBound
   | * - Val		loc			.	grVal       =   GrVal_Empty
 %%]
 
-%%[(97 codegen grin)
+%%[(8 codegen grin)
+ATTR CExpr CBound [ | | grValWrap: {GrExpr -> GrExpr} ]
+
 SEM CExpr
-  | Integer     loc         .   grVal       :=  (if @lhs.doBox then mkGrBox tagInfoInt else id)  (GrVal_LitInt $ fromInteger $ @integer)
+  | Int Char String
+%%[[97
+    Integer
+%%]]
+  				lhs         .   grValWrap   =   @grLitWrap
+  | * - Ann Int Char String
+%%[[97
+    Integer
+%%]]
+  				lhs         .   grValWrap   =   id
+
+SEM CBound
+  | * - Val		loc			.	grValWrap 	=   id
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -585,7 +670,7 @@ SEM CPat
 %%[[10
                                                    CPatRest_Var r
                                                      ->  let  (oL,mkSL) = unzip @binds.grTupFldL
-                                                              (oL',wrO) = unboxArgL @lhs.modNm @lUniq tagInfoInt oL
+                                                              (oL',wrO) = unboxArgL @lhs.opts @lhs.dataGam @lhs.modNm @lUniq tagInfoInt oL
                                                          in   (ctag mkGrPatRecSplit (\_ l t a ma -> mkGrPatConSplit (mkGrTagAnn a ma) t (tagDataInfo @tag)) @tag r . zipWith ($) mkSL $ oL',wrO)
 %%]]
 
@@ -611,7 +696,7 @@ ATTR AllPat AllAlt [ | | grWrapCaseSel USE {`const`} {idGrWrapCaseSel}: {GrVal -
 SEM CPat
   | Int Char    lhs         .   grWrapCaseSel
                                             =   let n = uidQualHNm @lhs.modNm @lUniq
-                                                in  \v -> (GrVal_Var n,GrExpr_Seq (GrExpr_Unit v GrType_None) (mkGrUnbox tagInfoInt n))
+                                                in  \v -> (GrVal_Var n,GrExpr_Seq (GrExpr_Unit v GrType_None) (mkGrUnbox @lhs.opts @lhs.dataGam tagInfoInt n))
 %%]
 
 %%[(8 codegen grin)
@@ -681,13 +766,22 @@ SEM CExpr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen grin)
-ATTR CExpr [ | | grAppFun: HsName  grAppArgL: GrValL ]
+ATTR CExpr [ | | grAppFun: HsName  grAppArgL: GrValL  ]
 
 SEM CExpr
   | App         loc         .   grAppFun    =   @func.grAppFun
                             .   grAppArgL   =   @arg.grVal : @func.grAppArgL
   | * - App Ann lhs         .   grAppFun    =   maybe hsnUnknown id . grV2HNm $ @grVal
                             .   grAppArgL   =   []
+%%]
+
+%%[(8 codegen grin)
+ATTR CExpr [ | | grAppWrap: {GrExpr -> GrExpr} ]
+
+SEM CExpr
+  | App         loc         .   grAppWrap   =   @func.grAppWrap . @arg.grValWrap
+  | * - App Ann
+  				lhs         .   grAppWrap   =   id
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

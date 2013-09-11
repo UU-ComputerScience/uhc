@@ -256,6 +256,8 @@ ehclib-codegentargetspecific-jazy: $(if $(ENABLE_JAVA),$(INSTALL_LIB_JAZY),)
 
 ehclib-codegentargetspecific-js: $(if $(ENABLE_JS),$(INSTALL_LIB_JS) $(JSCRIPT_ALL_SRC),)
 
+ehclib-codegentargetspecific-cmmjs: $(if $(ENABLE_JS),$(INSTALL_LIB_JS) $(JSCRIPT_ALL_SRC),)
+
 ehclib-codegentargetspecific-core:
 
 ehclib-codegentargetspecific-clr:

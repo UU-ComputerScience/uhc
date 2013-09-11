@@ -13,11 +13,13 @@
 
 %%[1 import(qualified Data.Set as Set, Data.List)
 %%]
+%%[1 import(Control.Monad.State, Control.Monad.Identity)
+%%]
 
 %%[7 export(mkNewLevUIDL,mkInfNewLevUIDL)
 %%]
 
-%%[50 import(Control.Monad, UHC.Util.Binary, UHC.Util.Serialize)
+%%[50 import(Control.Monad, UHC.Util.Binary as B, UHC.Util.Serialize)
 %%]
 
 %%[99 import(Data.Hashable)
@@ -25,6 +27,31 @@
 %%[9999 import({%{EH}Base.Hashable})
 %%]
 %%[9999 import({%{EH}Base.ForceEval})
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Monadic interface to Unique id
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 export(FreshUidT, FreshUid, freshUID, runFreshUidT, runFreshUid, evalFreshUid)
+type FreshUidT m   = StateT UID m
+type FreshUid      = FreshUidT Identity
+
+freshUID :: MonadState UID m => m UID
+freshUID = state $ \x -> (x, uidNext x)
+{-# INLINE freshUID #-}
+
+runFreshUidT :: Monad m => FreshUidT m a -> UID -> m (a,UID)
+runFreshUidT f u = runStateT f u
+{-# INLINE runFreshUidT #-}
+
+runFreshUid :: FreshUid a -> UID -> (a,UID)
+runFreshUid f u = runIdentity $ runFreshUidT f u
+{-# INLINE runFreshUid #-}
+
+evalFreshUid :: FreshUid a -> UID -> a
+evalFreshUid f u = fst $ runIdentity $ runFreshUidT f u
+{-# INLINE evalFreshUid #-}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -181,11 +208,11 @@ instance Hashable UID where
 %%[50
 instance Binary UID where
 %%[[50
-  put (UID a) = put a
-  get = liftM UID get
+  put (UID a) = B.put a
+  get = liftM UID B.get
 %%][99
-  put (UID a b) = put a >> put b
-  get = liftM2 UID get get
+  put (UID a b) = B.put a >> B.put b
+  get = liftM2 UID B.get B.get
 %%]]
 
 instance Serialize UID where

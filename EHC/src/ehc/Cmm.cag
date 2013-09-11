@@ -23,6 +23,8 @@ C subset, modelled after C--
 %%]
 %%[(8 codegen cmm) hs import({%{EH}CodeGen.Const}(ConstSt)) export(ConstSt)
 %%]
+%%[(8 codegen cmm) hs import({%{EH}Gam.DataGam})
+%%]
 
 %%[(8 codegen cmm) hs export(AGItf(..))
 %%]
@@ -48,6 +50,8 @@ C subset, modelled after C--
 %%[(50 codegen cmm) hs import(Data.Typeable(Typeable), Data.Generics(Data))
 %%]
 
+%%[(8 codegen cmm) hs import({%{EH}CodeGen.RefGenerator})
+%%]
 %%[(8888 codegen cmm) hs import({%{EH}CodeGen.ValAccess} as VA (Fld(..)))
 %%]
 
@@ -77,6 +81,18 @@ DERIVING *
 -- | Name
 type Nm = HsName
 type NmL = [Nm]
+%%]
+
+%%[(8 codegen cmm) hs export(ConstKind(..))
+-- | Kind of const decls
+data ConstKind
+  = Const_CompileTime		-- ^ constant at compile time, ie also in the bound expr
+  | Const_SSA				-- ^ constant after init, not necessarily also in the bound expr
+  deriving Eq
+
+instance Show ConstKind where
+  show Const_CompileTime 	= "const"
+  show Const_SSA			= "ssa"
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -134,17 +150,24 @@ topProc = top TopLevel_Proc
 %%% Constructing: stmt
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen cmm) hs export(declLocalStackVar, declLocalVar, call, ret)
+%%[(8 codegen cmm) hs export(declLocalStackVar, declLocalRegVar, declLocalConst)
 -- | Declare & assign stack variable
 declLocalStackVar :: Ty -> Nm -> Maybe Expr -> Seq.Seq BodyDecl
 declLocalStackVar t nm me = Seq.fromList [BodyDecl_StackDecl [Datum_Nm nm, Datum_Ty t Nothing (fmap (\e -> Init_Seq [e]) me)]]
 
 -- | Declare & assign (register) variable
-declLocalVar :: Ty -> Nm -> Maybe Expr -> Seq.Seq BodyDecl
-declLocalVar t nm me = Seq.fromList $
+declLocalRegVar :: Ty -> Nm -> Maybe Expr -> Seq.Seq BodyDecl
+declLocalRegVar t nm me = Seq.fromList $
      [BodyDecl_Decl $ Decl_Regs False $ Regs_Regs Nothing t [RegNmInit_NmInit nm Nothing]]
   ++ maybe [] (\e -> [BodyDecl_Stmt $ Stmt_Assign [LValue_Nm nm] [e]]) me
 
+-- | Declare & assign constant (or variation)
+declLocalConst :: ConstKind -> Ty -> Nm -> Expr -> Seq.Seq BodyDecl
+declLocalConst k t nm e = Seq.fromList $
+     [BodyDecl_Decl $ Decl_Const k (Just t) nm e]
+%%]
+
+%%[(8 codegen cmm) hs export(call, ret)
 -- | Call (& assign)
 call :: Maybe Nm -> CallExpr -> [Expr] -> Seq.Seq BodyDecl
 call mbnm f as = Seq.fromList [BodyDecl_Stmt $ Stmt_Call (maybe [] (\n -> [KindName_KindName Nothing n]) mbnm) Nothing f [Actual_Actual Nothing a | a <- as] (Targets_Targets []) []]
@@ -152,6 +175,13 @@ call mbnm f as = Seq.fromList [BodyDecl_Stmt $ Stmt_Call (maybe [] (\n -> [KindN
 -- | Return
 ret :: Maybe Expr -> Seq.Seq BodyDecl
 ret me = Seq.fromList [BodyDecl_Stmt $ Stmt_Ret Nothing Nothing $ maybe [] (\e -> [Actual_Actual Nothing e]) me]
+%%]
+
+%%[(8 codegen cmm) hs export(alloc)
+-- | Alloc
+alloc :: DataGam -> Nm -> Tag -> [Expr] -> Seq.Seq BodyDecl
+alloc dataGam nm tag as = Seq.fromList [BodyDecl_Stmt $ Stmt_Alloc nm tag (zip (flds ++ (assocLElts $ refGen (length flds) 1 hsnLclSupply)) as)]
+  where flds  = maybe [] (\(_,dti) -> dtiFldRefL dti) $ dataGamTagLookup tag dataGam
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -166,6 +196,17 @@ var = Expr_Nm
 -- | Undefined
 undef :: Expr
 undef = var hsnUnknown
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Constructing: debug aids
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen cmm) hs export(err)
+-- | Error
+err ::String -> Expr
+err = Expr_Err
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

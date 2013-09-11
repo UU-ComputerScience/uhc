@@ -208,6 +208,7 @@ data EHCOpts
 %%]]
 %%[[(8 codegen)
       ,  ehcOptGenTrampoline  ::  Bool              -- gen trampoline with (tail) calls
+      ,  ehcOptGenBoxGrin	  ::  Bool				-- gen simplified grin delaying (un)boxing
 %%]]
 %%[[(8 codegen grin)
       ,  ehcOptTimeCompile    ::  Bool
@@ -363,6 +364,7 @@ emptyEHCOpts
 %%]]
 %%[[(8 codegen)
       ,  ehcOptGenTrampoline  	=	False
+      ,  ehcOptGenBoxGrin  		=	False
 %%]]
 %%[[(8 codegen grin)
       ,  ehcOptTimeCompile      =   False

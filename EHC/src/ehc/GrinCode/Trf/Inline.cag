@@ -185,7 +185,8 @@ SEM GrBind
 %%]]
                                                           -> (Map.singleton @nm (GrInl_Call @argNmL @expr.trf), True)
                                                       Just (FvInfo 1 use)                               -- a once used, evaluated value can be inlined and its binding removed
-                                                        | @isCAF
+                                                        | -- False &&											-- 20130906 AD: prevent this
+                                                             @isCAF
                                                           && willUseForEval @nm @expr.willUseForMp
                                                           && FvUse_Val `Set.member` use
 %%[[50

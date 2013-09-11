@@ -19,6 +19,8 @@
 
 %%[(8 codegen grin) hs import({%{EH}CodeGen.ValAccess} as VA)
 %%]
+%%[(8 codegen grin) hs import({%{EH}Gam.DataGam})
+%%]
 
 %%[(8 codegen cmm javascript) hs import(Data.Maybe,Data.Char, UHC.Util.Utils, qualified Data.Map as Map, Data.List as L, UHC.Util.FastSeq as Seq)
 %%]
@@ -29,10 +31,13 @@
 %%]
 
 %%[(8 codegen cmm javascript).cmmMod2JavaScript hs export(cmmMod2JavaScript)
-cmmMod2JavaScript :: EHCOpts -> Module -> (JS.JavaScriptModule, [Err])
-cmmMod2JavaScript opts m
+cmmMod2JavaScript :: EHCOpts -> DataGam -> Module -> (JS.JavaScriptModule, [Err])
+cmmMod2JavaScript opts dataGam m
   = let t = wrap_AGItf (sem_AGItf (AGItf_AGItf m))
-                       (Inh_AGItf {opts_Inh_AGItf = opts}
+                       (Inh_AGItf
+                         { opts_Inh_AGItf 		= opts
+                         , dataGam_Inh_AGItf	= dataGam
+                         }
                        )
     in  (jsMod_Syn_AGItf t, [])
 %%]
@@ -46,10 +51,14 @@ PRAGMA nocycle
 %%% General info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-Options
+Options, other environmental info
 
 %%[(8 codegen cmm javascript)
-ATTR AGItf AllNT [ opts: EHCOpts | | ]
+ATTR
+  AGItf AllNT
+    [ opts: EHCOpts
+      dataGam: DataGam
+    | | ]
 %%]
 
 Prefixing of global names ?? Or to be done outside
@@ -105,8 +114,14 @@ SEM AGItf
 %%]
 
 %%[(8 codegen cmm javascript)
+SEM Decl
+  | Const		       	loc         .   jsnm	=   JS.hsnJavaScriptVar False @lhs.pkgNm @lhs.topClassNm @nm
+
 SEM Expr
-  | Nm 	        		loc         .   jsnm	=   JS.hsnJavaScriptVar False @lhs.pkgNm @lhs.topClassNm @nm
+  | Nm 			       	loc         .   jsnm	=   JS.hsnJavaScriptVar False @lhs.pkgNm @lhs.topClassNm @nm
+
+SEM Stmt
+  | Alloc	  	     	loc         .   jsnm	=   JS.hsnJavaScriptVar False @lhs.pkgNm @lhs.topClassNm @nm
 
 SEM Proc
   | Proc        		loc         .   jsnm	=   JS.hsnJavaScriptVar False @lhs.pkgNm @lhs.topClassNm @nm
@@ -125,6 +140,10 @@ SEM Formal
 
 SEM KindName
   | KindName        	loc         .   jsnm	=   JS.hsnJavaScriptVar False @lhs.pkgNm @lhs.topClassNm @nm
+
+SEM FldExpr
+  | Tuple				loc			.	jsnm	=	JS.hsnJavaScriptVar False @lhs.pkgNm @lhs.topClassNm $ fldNm @x1
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -135,7 +154,7 @@ SEM KindName
 ATTR AGItf Module [ | | jsMod: {JS.JavaScriptModule} ]
 
 SEM Module
-  | Mod					lhs			.	jsMod	=	JS.JavaScriptModule_Mod (Seq.toList @decls.jsTopStats) [] []
+  | Mod					lhs			.	jsMod		=	JS.JavaScriptModule_Mod (Seq.toList @decls.jsTopStats) [] []
 %%]
 
 Top level
@@ -144,7 +163,9 @@ Top level
 ATTR AllTopLevel Proc [ | | jsTopStats USE {&} {Seq.empty}: JsTopStats ]
 
 SEM Proc
-  | Proc				lhs			.	jsTopStats	=	s $ JS.Stat_FunDecl $ JS.Expr_Fun (Just @jsnm) @formals.nmL (JS.Stat_Block $ Seq.toList @body.jsBodyStats)
+  | Proc                lhs         .   jsTopStats  =   ss [ -- JS.Stat_FunDecl $ JS.Expr_Fun (Just @jsnm) @formals.nmL (JS.Stat_Block $ Seq.toList @body.jsBodyStats)
+                                                             JS.vardecl @jsnm $ Just $ JS.fun' @jsnm (length @formals.nmL) $ JS.Expr_Fun Nothing @formals.nmL (JS.Stat_Block $ Seq.toList @body.jsBodyStats)
+                                                           ]
 
 %%]
 
@@ -161,10 +182,13 @@ SEM Stmt
   | Call				lhs			.	jsBodyStats	=	s $ maybeHd JS.Stat_Expr JS.assign @knames.nmL $ @callexpr.jsMkCall @actuals.jsExprL
   | Ret					lhs			.	jsBodyStats	=	s $ JS.ret' $ maybeHd Nothing Just @actuals.jsExprL
   | Assign				lhs			.	jsBodyStats	=	ss $ zipWith JS.assign @lval.nmL @rhs.jsExprL
-  | Alloc				lhs			.	jsBodyStats	=	s $ JS.assign @nm $ @tag.jsMkAlloc @elts.nmExprL
+  | Alloc				lhs			.	jsBodyStats	=	s $ JS.assign @jsnm $ @tag.jsMkAlloc $ @elts.nmExprL
 
 SEM Regs
   | Regs				lhs			.	jsBodyStats	=	ss [ JS.vardecl n Nothing | n <- @nmInits.nmL ]
+
+SEM Decl
+  | Const				lhs			.	jsBodyStats	=	s $ JS.vardecl @jsnm (Just @expr.jsExpr)
 %%]
 
 jsLocalVarDecl
@@ -239,7 +263,7 @@ Callable Expression
 ATTR CallExpr [ | | jsMkCall: {[JS.Expr] -> JS.Expr} ]
 
 SEM CallExpr
-  | Expr				lhs			.	jsMkCall=	JS.call @expr.jsExpr
+  | Expr				lhs			.	jsMkCall=	JS.call (JS.funFld @expr.jsExpr)
   | Eval				lhs			.	jsMkCall=	JS.evl . head
   | Apply				lhs			.	jsMkCall=	\(f:as) -> JS.apl f as
 %%]
@@ -247,14 +271,14 @@ SEM CallExpr
 Callable Expression
 
 %%[(8 codegen cmm javascript)
-ATTR Tag [ | | jsMkAlloc: {JS.NmExprL -> JS.Expr} ]
+ATTR Tag [ | | jsMkAlloc: {[JS.NmExpr] -> JS.Expr} ]
 
 SEM Tag
-  | Con					lhs			.	jsMkAlloc	=	JS.newTup . L.map snd	-- TBD
+  | Con					lhs			.	jsMkAlloc	=	JS.newDataConstr @tag
   | Tup					lhs			.	jsMkAlloc	=	JS.newTup . L.map snd
   | Ind					lhs			.	jsMkAlloc	=	JS.newTup . L.map snd	-- TBD
   | Fun					lhs			.	jsMkAlloc	=	JS.newTup . L.map snd	-- TBD
-  | App					lhs			.	jsMkAlloc	=	JS.newTup . L.map snd	-- TBD
+  | App					lhs			.	jsMkAlloc	=	\fas -> let (f:as) = L.map snd fas in JS.app f as
   | PApp				lhs			.	jsMkAlloc	=	JS.newTup . L.map snd	-- TBD
 %%]
 
@@ -397,7 +421,7 @@ SEM ExprL ActualL
 ATTR AllFldExpr [ | | nmExprL USE {++} {[]}: {JS.NmExprL} ]
 
 SEM FldExpr
-  | Tuple				lhs			.	nmExprL	=	[(fldNm @x1, @x2.jsExpr)]
+  | Tuple				lhs			.	nmExprL	=	[(@jsnm, @x2.jsExpr)]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -438,3 +462,10 @@ SEM ExprL LValueL FormalL BodyDeclL
 
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Generation of C: Maybe, List forms
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen cmm javascript)
+ATTR Tag [ | | self: SELF ]
+%%]

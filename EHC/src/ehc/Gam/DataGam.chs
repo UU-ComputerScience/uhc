@@ -274,24 +274,33 @@ dataGamDgiOfTy :: Ty -> DataGam -> Maybe DataGamInfo
 dataGamDgiOfTy conTy dg = dataGamLookup (tyAppFunConNm conTy) dg
 %%]
 
-%%[(8 hmtyinfer) export(dataGamDTIsOfTy)
-dataGamDTIsOfTy :: Ty -> DataGam -> Maybe [DataTagInfo]
-dataGamDTIsOfTy t g
-  = -- tr "dataGamDTIsOfTy" (t >#< tyAppFunConNm (appUnArrRes t)) $
-    fmap
+%%[(8 hmtyinfer) export(dataGamDTIsOfTyNm, dataGamDTIsOfTy)
+dataGamDTIsOfTyNm :: HsName -> DataGam -> Maybe [DataTagInfo]
+dataGamDTIsOfTyNm tn g
+  = fmap
 %%[[8
       (Map.elems . dgiConstrTagMp)
 %%][91
       (assocLElts . dgiConstrTagAssocL)
 %%]]
-    $ gamLookup (tyAppFunConNm $ appUnArrRes t)
+    $ gamLookup tn
     $ g
+
+dataGamDTIsOfTy :: Ty -> DataGam -> Maybe [DataTagInfo]
+dataGamDTIsOfTy = dataGamDTIsOfTyNm . tyDataTyNm
+{-# INLINE dataGamDTIsOfTy #-}
 %%]
 
-%%[(8 hmtyinfer) export(dataGamTagsOfTy)
+%%[(8 hmtyinfer) export(dataGamTagsOfTy, dataGamTagsOfTyNm)
+dataGamTagsOf :: (t -> DataGam -> Maybe [DataTagInfo]) -> t -> DataGam -> Maybe [CTag]
+dataGamTagsOf lkup t g = fmap (map dtiCTag) (lkup t g)
+{-# INLINE dataGamTagsOf #-}
+
 dataGamTagsOfTy :: Ty -> DataGam -> Maybe [CTag]
-dataGamTagsOfTy t g
-  = fmap (map dtiCTag) (dataGamDTIsOfTy t g)
+dataGamTagsOfTy = dataGamTagsOf dataGamDTIsOfTy
+
+dataGamTagsOfTyNm :: HsName -> DataGam -> Maybe [CTag]
+dataGamTagsOfTyNm = dataGamTagsOf dataGamDTIsOfTyNm
 %%]
 
 %%[(8 hmtyinfer) export(dataGamLookupTag)

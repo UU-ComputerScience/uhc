@@ -23,15 +23,18 @@
 
 %%[(8 codegen) hs export(BasicSize(..))
 data BasicSize
-  = BasicSize_Word8
+  = -- Word variants, bitsize explicit
+    BasicSize_Word8
   | BasicSize_Word16
   | BasicSize_Word32
   | BasicSize_Word64
+  -- Int variants, bitsize explicit
   | BasicSize_Int8
   | BasicSize_Int16
   | BasicSize_Int32
   | BasicSize_Int64
 %%[[97
+  -- Float variants, bitsize explicit
   | BasicSize_Float
   | BasicSize_Double
 %%]]

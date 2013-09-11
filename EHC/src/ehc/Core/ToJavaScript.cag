@@ -21,7 +21,7 @@
 %%[(8 javascript) hs import({%{EH}Gam.DataGam})
 %%]
 
-%%[(8 javascript) hs import(qualified {%{EH}JavaScript} as J)
+%%[(8 javascript) hs import(qualified {%{EH}JavaScript} as J, {%{EH}JavaScript}(CVarMp, CVarInfo, tyDefault))
 %%]
 
 %%[(8 javascript) hs import({%{EH}Foreign.Extract})
@@ -44,9 +44,9 @@ cmod2JavaScriptModule :: EHCOpts -> DataGam -> CModule -> J.JavaScriptModule
 cmod2JavaScriptModule opts dataGam cmod
   =  js_Syn_CodeAGItf t
   where t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf cmod))
-                                          (Inh_CodeAGItf { opts_Inh_CodeAGItf = opts
-                                                         , dataGam_Inh_CodeAGItf = dataGam
-                                                         })
+              (Inh_CodeAGItf { opts_Inh_CodeAGItf = opts
+                             , dataGam_Inh_CodeAGItf = dataGam
+                             })
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -77,8 +77,6 @@ SEM CodeAGItf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 javascript) hs
-nmFunN   n  = mkHNm ("_F" {- ++ nmFunSuff n -} ++ "_")
-nmAppN   n  = "_A" {- ++ nmFunSuff n -} ++ "_"
 nmInd       = mkHNm "_i_"
 nmIndSet    = mkHNm "_i_set_"
 nmSwitchRes = mkHNm "_sw"
@@ -116,28 +114,6 @@ SEM CBound
 %%% Variable bindings for other than global
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 javascript) hs
-type CVarInfo = CVarInfo' () HsName Int
-type CVarMp   = CVarMp'   () HsName Int
-%%]
-
-%%[(8 javascript) hs
-tyDefault = ()
-%%]
-
-%%[(8 javascript) hs
-jvRef :: CVarMp -> CVarInfo -> J.Expr
-jvRef
-  = cvarToRef
-      ( \_       -> J.Expr_This
-      , \_ o     -> J.var o
-      , \_ _ f   -> J.var f
-      , \_ e _ f -> J.Expr_ObjFld e (mkHNm f)
-      , \  e o   -> J.Expr_ArrInx e o
-      , J.intConst
-      )
-%%]
-
 %%[(8 javascript)
 SEM CExpr
   | Let         loc         .   nmToRefAssocL   =   map (\x -> (x, J.hsnJavaScriptVar @isGlobal @lhs.pkgNm @lhs.topClassNm x)) @binds.bindNmL
@@ -147,7 +123,7 @@ SEM CExpr
 SEM CExpr
   | Lam         loc         .   (jsArgTyL,_,lamBindings)
                                                 =   if @hasFunHere
-                                                    then jsArgsUnpack (map (J.hsnJavaScriptVar False @lhs.pkgNm @lhs.topClassNm)) @nmArgL
+                                                    then J.argsUnpack (map (J.hsnJavaScriptVar False @lhs.pkgNm @lhs.topClassNm)) @nmArgL
                                                     else ([],[],[])
 %%]
 
@@ -287,56 +263,6 @@ SEM CExpr
 jsTr :: PP x => String -> x -> Seq.Seq J.Stat
 jsTr m x = Seq.singleton $ J.Stat_Expr $ J.Expr_Call (J.var $ mkHNm "trace") [J.Expr_Str m, J.Expr_Inline $ showPP $ pp x]
 
--- constant
--- jsIntConst :: Integral x => x -> J.Expr
--- jsIntConst i = J.Expr_Int $ fromIntegral i
-
--- apply
-jsApp :: J.Expr -> [J.Expr] -> J.Expr
-jsApp f as
-  = J.Expr_New $ J.callv nm (f : as')
-  where (nm,_,as') = jsArgsPack as
-        nArgs      = length as'
-
--- lam
-jsFun :: HsName -> [HsName] -> [J.Stat] -> J.Expr
-jsFun fNm as stats
-  = J.Expr_New $ J.callv (nmFunN $ length as) (extra ++ [J.Expr_Fun Nothing as stat])
-  where stat = J.Stat_Block stats
-%%[[8
-        extra = [J.Expr_Str $ show fNm]
-%%][100
-        extra = []
-%%]]
-
--- force evaluation
--- jsEvl :: J.Expr -> J.Expr
--- jsEvl x = jsCall nmEval [x]
-
--- assign
--- jsAssign :: HSNM x => x -> J.Expr -> J.Stat
--- jsAssign n e = J.Stat_Assign (J.var $ mkHNm n) e
-
--- new tuple
--- jsNewTup :: [J.Expr] -> J.Expr
--- jsNewTup = J.arr
-
--- | field names used for data constructors, either as provided by program, or made up here
---   20101012 AD, note: internally generated datatypes not yet have correct meta info, so fill up names as needed, as temporary hack
--- jsDataFldNames :: DataGam -> CTag -> [HsName]
--- jsDataFldNames dataGam ctag
---   = zipWith (\o mbn -> maybe o (hsnSafeJavaLike . hsnQualified) mbn) hsnLclSupply $ nms ++ fill
---   where nms  = maybe [] (\(_,dti) -> map fldNm $ dtiFldRefL dti) $ dataGamTagLookup ctag dataGam
---         fill = repeat Nothing
-
--- either new data constructor or tuple
--- jsNewTupOrData :: DataGam -> HsName -> HsName -> CTag -> [J.Expr] -> J.Expr
--- jsNewTupOrData dataGam _ _ ctag as
---   = case ctag of
---       CTag _ _ t _ _ -> J.Expr_Obj $ ((nmTag,jsIntConst t):)
---                                     $ zip (jsDataFldNames dataGam ctag) as
---       CTagRec        -> J.newTup as
-
 -- | body
 jsBody :: (J.Expr -> J.Stat) -> Seq.Seq JBind -> Seq.Seq J.Stat -> Maybe J.Expr -> [J.Stat]
 jsBody mkRet binds stats lastExpr
@@ -355,17 +281,17 @@ ATTR CExpr AllBind [ | | dps USE {`Set.union`} {Set.empty} : {Set.Set String} ]
 
 %%[(8 javascript)
 SEM CExpr
-  | Var         loc         .   js              =   jvRef @lhs.cvarMp @cvi
+  | Var         loc         .   js              =   J.ref @lhs.cvarMp @cvi
   | Int         loc         .   js              =   J.intConst  @int
   | Char        loc         .   js              =   J.intConst (ord @char) -- J.Expr_Char @char
   | String      loc         .   js              =   J.Expr_Str  @str
-  | Tup         loc         .   js              =   J.newTupOrData @lhs.dataGam @tag []
+  | Tup         loc         .   js              =   J.newTupOrDataConstr @lhs.dataGam @tag []
   | App         loc         .   js              =   if @isTopApp'
                                                     then let (f:as) = reverse @jsArgFunL
                                                          in  case @func.appFunKind of
-                                                               AppFunKind_Tag tag -> J.newTupOrData @lhs.dataGam tag as
+                                                               AppFunKind_Tag tag -> J.newTupOrDataConstr @lhs.dataGam tag as
                                                                AppFunKind_FFI     -> @func.resPackWrap $ @func.mkFFI {-f-} as
-                                                               _                  -> jsApp f as
+                                                               _                  -> J.app f as
                                                     else J.Expr_Str "*** ERR APP ***"
   | FFI         loc         .   (mkArgsJS,mkResJS,mkFFI)
                                                 =   ffiJavaScriptMkCall
@@ -466,22 +392,6 @@ SEM CExpr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Dealing with >5 args
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8 javascript) hs
--- pack > 5 args into tuple, otherwise normal
-jsArgsPack :: [J.Expr] -> (String,(),[J.Expr])
-jsArgsPack = javalikeArgsPack (-1) ((),(),J.arr,nmAppN)
-%%]
-
-%%[(8 javascript) hs
--- unpack > 5 args from tuple, otherwise normal
-jsArgsUnpack :: ([HsName]->[HsName]) -> [HsName] -> ([(HsName,())],[(J.Expr,())],[(HsName,CVarInfo)])
-jsArgsUnpack toRef = javalikeArgsUnpack maxBound ((), (), (), toRef, J.intConst, \_ a -> a, \n -> take n hsnLclSupply)
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Generation: single binding
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -524,7 +434,7 @@ SEM CModule
   | Mod         loc         .   jmodStats       =   jsBody J.Stat_Expr @expr.jbinds @expr.jstats Nothing
                             .   jmodStatsMain   =   [ J.Stat_Expr $ J.evl $
 %%[[99
-                                                      (\m -> jsApp m [J.arr []]) $
+                                                      (\m -> J.app m [J.arr []]) $
 %%]]
                                                       @expr.js
                                                     ]
@@ -554,7 +464,7 @@ SEM CExpr
                                                                         p x = pp x
                                                                         n p x = p ++ show x
                                                              b = if ehcOptGenTrace @lhs.opts then J.var v else @body.jsLamBody
-                                                         in  jsFun @origLamNm as $ jsBody J.ret @body.jbinds (t1 @body.jstats) (Just b)
+                                                         in  J.fun @origLamNm as $ jsBody J.ret @body.jbinds (t1 @body.jstats) (Just b)
                                                     else J.Expr_Str "*** ERR LAM ***"
 %%]
 
@@ -620,7 +530,7 @@ ffiJavaScriptMkCall ty
           where as   = map (mkHNm . ('v':) . show) [1..(tyNumArgs ty - 1)]
                 rn   = mkHNm "res"
                 -- evaluate the composite parts of "res" before returning to the regular js world
-                bdy  = [ J.varDecl rn $ J.evl $ jsApp e $ (map J.var as) ++ [J.arr []]
+                bdy  = [ J.varDecl rn $ J.evl $ J.app e $ (map J.var as) ++ [J.arr []]
                        , J.Stat_Expr $ J.evl $ J.Expr_ArrInx (J.var rn) (J.intConst 0)
                        , J.ret $ J.evl $ J.Expr_ArrInx (J.var rn) (J.intConst 1) ]
 
@@ -648,7 +558,7 @@ mkWrapFn as bdy = J.Expr_Fun Nothing as $ J.Stat_Block bdy
 SEM CBound
   | Bind        loc         .   js              =   let str  = if @lhs.evalCtx == EvalCtx_Eval then J.evl else id
                                                         dflt = @expr.js
-                                                        caf  = jsApp (jsFun @lhs.nm [] $ jsBody J.ret @expr.jbinds @expr.jstats (Just dflt)) []
+                                                        caf  = J.app (J.fun @lhs.nm [] $ jsBody J.ret @expr.jbinds @expr.jstats (Just dflt)) []
                                                     in  if @lhs.isGlobal
                                                         then if @isCAF
                                                              then caf

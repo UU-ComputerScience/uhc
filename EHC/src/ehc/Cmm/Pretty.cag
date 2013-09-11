@@ -70,7 +70,7 @@ SEM Section
 SEM Decl
   | Import		lhs		.	pp		=	semic $ "import" >#< ppCommas' @imports.ppL
   | Export		lhs		.	pp		=	semic $ "export" >#< ppCommas' @exports.ppL
-  | Const		lhs		.	pp		=	semic $ "const" >#< @mbTy.pp >#< @nm >#< "=" >#< @expr.pp
+  | Const		lhs		.	pp		=	semic $ show @ckind >#< @mbTy.pp >#< @nm >#< "=" >#< @expr.pp
   | ConstArray	lhs		.	pp		=	semic $ "const" >#< @mbTy.pp >#< @nm >|< "[]" >#< "=" >#< ppCurlysCommasBlock @exprs.ppL
   | Typedef		lhs		.	pp		=	semic $ "typedef" >#< @ty.pp >#< ppCommas' @nms
   | Regs		lhs		.	pp		=	semic $ (if @isInvariant then "invariant " else "")	>|< @regs.pp
@@ -245,6 +245,8 @@ SEM Expr
   -- | Typed			ty				: Ty
   -- 					expr			: Expr
   -- 					mbAssert		: MbAssert
+  
+  | Err			lhs		.	pp		=	pp $ show $ "Err: " ++ @msg
 %%]
 
 FldExpr

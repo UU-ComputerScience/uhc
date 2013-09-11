@@ -109,6 +109,9 @@ DATA GrVal
                 fldL            : GrAdaptL
 
 %%]]
+  -- 20130910 AD: is to be a replacement for BasicNode, EnumNode, PtrNode
+  | Box			boxing          : {Boxing}
+                fld             : GrVal
 
 DATA GrVar
   | Var         nm              : {HsName}
@@ -135,6 +138,9 @@ DATA GrPatLam
   | PtrAnnot    tycon           : {HsName}
                 nm              : {HsName}
   | OpaqueAnnot nm              : {HsName}
+  -- 20130910 AD: is to be a replacement for BasicNode, EnumNode, PtrNode, OpaqueNode, BasicAnnot, EnumAnnot, PtrAnnot, OpaqueAnnot
+  | Box			boxing          : {Boxing}
+                nm              : {HsName}
 
 
 DATA GrTag

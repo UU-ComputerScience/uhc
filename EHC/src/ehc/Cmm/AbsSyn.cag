@@ -46,7 +46,8 @@ TYPE SectionL		= [Section]
 DATA Decl
   | Import			imports			: ImportL
   | Export			exports			: ExportL
-  | Const			mbTy			: MbTy
+  | Const			ckind			: ConstKind
+  					mbTy			: MbTy
   					nm				: Nm
   					expr			: Expr
   | ConstArray		mbTy			: MbTy
@@ -380,6 +381,9 @@ DATA Expr
   | Typed			ty				: Ty
   					expr			: Expr
   					mbAssert		: MbAssert
+
+  -- Debug aids
+  | Err				msg				: String
 
 TYPE MbExpr			= MAYBE Expr
 

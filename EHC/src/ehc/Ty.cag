@@ -1206,6 +1206,12 @@ tyAppFunConNm = tyConNm . fst . appUnApp
 {-# INLINE tyAppFunConNm #-}
 %%]
 
+%%[(8 hmtyinfer || hmtyast) hs export(tyDataTyNm)
+-- | The name of a data type extracted from a Ty
+tyDataTyNm :: Ty -> HsName
+tyDataTyNm = tyAppFunConNm . appUnArrRes
+%%]
+
 %%[(50 hmtyinfer || hmtyast) hs export(tyAllConS)
 -- | All constructors occurring in a type
 tyAllConS    :: Ty -> Set.Set HsName
