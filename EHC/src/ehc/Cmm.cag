@@ -50,6 +50,9 @@ C subset, modelled after C--
 %%[(50 codegen cmm) hs import(Data.Typeable(Typeable), Data.Generics(Data))
 %%]
 
+%%[(8 codegen cmm) hs import({%{EH}Foreign.Boxing}) export(module {%{EH}Foreign.Boxing})
+%%]
+
 %%[(8 codegen cmm) hs import({%{EH}CodeGen.RefGenerator})
 %%]
 %%[(8888 codegen cmm) hs import({%{EH}CodeGen.ValAccess} as VA (Fld(..)))
@@ -169,33 +172,48 @@ declLocalConst k t nm e = Seq.fromList $
 
 %%[(8 codegen cmm) hs export(call, ret)
 -- | Call (& assign)
-call :: Maybe Nm -> CallExpr -> [Expr] -> Seq.Seq BodyDecl
-call mbnm f as = Seq.fromList [BodyDecl_Stmt $ Stmt_Call (maybe [] (\n -> [KindName_KindName Nothing n]) mbnm) Nothing f [Actual_Actual Nothing a | a <- as] (Targets_Targets []) []]
+call :: Maybe Conv -> Maybe Nm -> CallExpr -> [Expr] -> Seq.Seq BodyDecl
+call mbconv mbnm f as = Seq.fromList [BodyDecl_Stmt $ Stmt_Call (maybe [] (\n -> [KindName_KindName Nothing n]) mbnm) mbconv f [Actual_Actual Nothing a | a <- as] (Targets_Targets []) []]
 
 -- | Return
 ret :: Maybe Expr -> Seq.Seq BodyDecl
 ret me = Seq.fromList [BodyDecl_Stmt $ Stmt_Ret Nothing Nothing $ maybe [] (\e -> [Actual_Actual Nothing e]) me]
 %%]
 
-%%[(8 codegen cmm) hs export(alloc)
+%%[(8 codegen cmm) hs export(alloc, box, unbox)
 -- | Alloc
 alloc :: DataGam -> Nm -> Tag -> [Expr] -> Seq.Seq BodyDecl
 alloc dataGam nm tag as = Seq.fromList [BodyDecl_Stmt $ Stmt_Alloc nm tag (zip (flds ++ (assocLElts $ refGen (length flds) 1 hsnLclSupply)) as)]
   where flds  = maybe [] (\(_,dti) -> dtiFldRefL dti) $ dataGamTagLookup tag dataGam
+
+-- | Boxing
+box :: Nm -> Boxing -> Expr -> Seq.Seq BodyDecl
+box nm bx e = Seq.fromList [BodyDecl_Stmt $ Stmt_Box nm bx e]
+
+-- | UnBoxing
+unbox :: Nm -> Boxing -> Expr -> Seq.Seq BodyDecl
+unbox nm bx e = Seq.fromList [BodyDecl_Stmt $ Stmt_UnBox nm bx e]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Constructing: expr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen cmm) hs export(var, undef)
+%%[(8 codegen cmm) hs export(var, undef, ffivar)
 -- | Var ref
 var :: Nm -> Expr
 var = Expr_Nm
+{-# INLINE var #-}
+
+-- | Foreign var ref
+ffivar :: String -> Expr
+ffivar = Expr_NmForeign
+{-# INLINE ffivar #-}
 
 -- | Undefined
 undef :: Expr
 undef = var hsnUnknown
+{-# INLINE undef #-}
 
 %%]
 

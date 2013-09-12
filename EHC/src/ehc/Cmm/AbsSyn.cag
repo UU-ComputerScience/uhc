@@ -172,6 +172,7 @@ DATA Proc
 
 DATA Conv
   | Foreign			conv			: String
+  | Platform
 
 TYPE MbConv			= MAYBE Conv
 %%]
@@ -207,9 +208,6 @@ DATA Stmt
   | Assign			lval			: LValueL
   					rhs				: ExprL
   -- | %%Assign
-  | Alloc			nm				: Nm
-  					tag				: Tag
-  					elts			: FldExprL
   | Call			knames			: KindNameL
   					mbConv			: MbConv
   					callexpr		: CallExpr
@@ -231,6 +229,17 @@ DATA Stmt
   | Cut				expr			: Expr
   					actuals			: ActualL
   					flows			: FlowL
+
+  -- support for nodes, boxing etc
+  | Alloc			nm				: Nm
+  					tag				: Tag
+  					elts			: FldExprL
+  | Box				nm				: Nm
+  					boxing			: Boxing
+  					expr			: Expr
+  | UnBox			nm				: Nm
+  					boxing			: Boxing
+  					expr			: Expr
 
 %%]
 
@@ -360,8 +369,9 @@ DATA Expr
   -- Special constants
   | Lit				val				: Lit
 
-  -- Variable
+  -- Variable, internal and foreign
   | Nm				nm				: Nm
+  | NmForeign		nm				: String
 
   -- Operations
   | Op				op				: Op

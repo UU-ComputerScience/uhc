@@ -187,7 +187,7 @@ cpTranslateCore2Grin modNm
                  mbCoreSem = ecuMbCoreSem ecu
                  coreSem   = panicJust "cpTranslateCore2Grin" mbCoreSem
                  grin      = Core2GrSem.grMod_Syn_CodeAGItf coreSem
-         ;  when (isJust mbCoreSem && targetIsViaGrin (ehcOptTarget opts))
+         ;  when (isJust mbCoreSem && ehcOptIsViaGrin opts)
                  (cpUpdCU modNm $! ecuStoreGrin $! grin)
          }
 %%]

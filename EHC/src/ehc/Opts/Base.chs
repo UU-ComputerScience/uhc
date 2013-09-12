@@ -110,6 +110,22 @@ data CoreOpt
   deriving (Eq,Enum,Bounded)
 %%]
 
+%%[(8 codegen javascript) export(JavaScriptOpt(..))
+-- | JavaScript options
+data JavaScriptOpt
+  = JavaScriptOpt_Debug			-- not used
+%%[[(8 cmm)
+  | JavaScriptOpt_ViaCMM		-- 20130912, temporary to take different route via CMM
+%%]]
+  deriving (Eq,Enum,Bounded)
+
+instance Show JavaScriptOpt where
+  show JavaScriptOpt_Debug      = "debug"
+%%[[(8 cmm)
+  show JavaScriptOpt_ViaCMM     = "cmm"
+%%]]
+%%]
+
 %%[(8 codegen tycore) export(TyCoreOpt(..))
 -- | TyCore options
 data TyCoreOpt
@@ -203,12 +219,15 @@ data EHCOpts
 %%[[(8 codegen cmm)
       ,  ehcOptUseCmm		  ::  Maybe [CmmOpt]	-- use cmm? + options
 %%]]
+%%[[(8 codegen javascript)
+      ,  ehcOptJavaScriptOpts ::  [JavaScriptOpt]	-- javascript options
+%%]]
 %%[[(8 codegen tycore)
       ,  ehcOptUseTyCore      ::  Maybe [TyCoreOpt] -- use TyCore instead of Core (temporary option until Core is obsolete)
 %%]]
 %%[[(8 codegen)
-      ,  ehcOptGenTrampoline  ::  Bool              -- gen trampoline with (tail) calls
-      ,  ehcOptGenBoxGrin	  ::  Bool				-- gen simplified grin delaying (un)boxing
+      ,  ehcOptGenTrampoline_ ::  Bool              -- gen trampoline with (tail) calls
+      ,  ehcOptGenBoxGrin_	  ::  Bool				-- gen simplified grin delaying (un)boxing
 %%]]
 %%[[(8 codegen grin)
       ,  ehcOptTimeCompile    ::  Bool
@@ -359,12 +378,15 @@ emptyEHCOpts
 %%[[(8 codegen)
       ,  ehcOptUseCmm           =	Nothing
 %%]]
+%%[[(8 codegen javascript)
+      ,  ehcOptJavaScriptOpts   =   []
+%%]]
 %%[[(8 codegen tycore)
       ,  ehcOptUseTyCore        =   Nothing
 %%]]
 %%[[(8 codegen)
-      ,  ehcOptGenTrampoline  	=	False
-      ,  ehcOptGenBoxGrin  		=	False
+      ,  ehcOptGenTrampoline_  	=	False
+      ,  ehcOptGenBoxGrin_  	=	False
 %%]]
 %%[[(8 codegen grin)
       ,  ehcOptTimeCompile      =   False
@@ -514,6 +536,161 @@ ehcOptEmitExecBytecode = targetIsGrinBytecode . ehcOptTarget
 
 ehcOptEmitBytecode :: EHCOpts -> Bool
 ehcOptEmitBytecode = ehcOptEmitExecBytecode
+%%]
+
+%%[(8 codegen javascript) export(ehcOptJavaScriptViaCMM)
+-- | CMM route for JavaScript backend?
+ehcOptJavaScriptViaCMM :: EHCOpts -> Bool
+%%[[(8 cmm)
+ehcOptJavaScriptViaCMM opts = JavaScriptOpt_ViaCMM `elem` ehcOptJavaScriptOpts opts
+%%][8
+ehcOptJavaScriptViaCMM _    = False
+%%]]
+%%]
+
+Some are there for (temporary) backwards compatibility.
+
+%%[(50 codegen) export(ehcOptWholeProgOptimizationScope)
+-- do something with whole program
+ehcOptWholeProgOptimizationScope :: EHCOpts -> Bool
+ehcOptWholeProgOptimizationScope opts
+  = ehcOptOptimizationScope opts >= OptimizationScope_WholeGrin
+%%]
+
+%%[(50 codegen) export(ehcOptEarlyModMerge)
+-- | compatibility option
+ehcOptEarlyModMerge :: EHCOpts -> Bool
+ehcOptEarlyModMerge opts
+  = ehcOptOptimizationScope opts >= OptimizationScope_WholeCore
+%%]
+
+%%[(8 codegen grin) export(ehcOptWholeProgHPTAnalysis)
+-- | do whole program analysis, with HPT
+ehcOptWholeProgHPTAnalysis :: EHCOpts -> Bool
+ehcOptWholeProgHPTAnalysis opts
+  =  targetDoesHPTAnalysis (ehcOptTarget opts)
+%%[[50
+  || ehcOptWholeProgOptimizationScope opts
+%%]]
+%%]
+
+%%[(8 codegen grin) export(ehcOptGenBoxGrin, ehcOptGenTrampoline)
+-- | Generate new impl of boxing (20130912 AD: temporary for development)
+ehcOptGenBoxGrin :: EHCOpts -> Bool
+ehcOptGenBoxGrin opts
+  =  ehcOptGenBoxGrin_ opts || ehcOptIsViaGrinCmmJavaScript opts
+
+-- | Generate new impl of boxing (20130912 AD: temporary for development)
+ehcOptGenTrampoline :: EHCOpts -> Bool
+ehcOptGenTrampoline opts
+  =  ehcOptGenTrampoline_ opts || ehcOptIsViaGrinCmmJavaScript opts
+%%]
+
+%%[(8 codegen grin) export(ehcOptErrAboutBytecode)
+-- report when Grin ByteCode errors occur
+ehcOptErrAboutBytecode :: EHCOpts -> Bool
+%%[[8
+ehcOptErrAboutBytecode _ = False
+%%][99
+ehcOptErrAboutBytecode   = targetIsGrinBytecode . ehcOptTarget
+%%]]
+%%]
+
+%%[(8 codegen grin) export(ehcOptEmitC)
+-- generate C
+ehcOptEmitC :: EHCOpts -> Bool
+ehcOptEmitC = targetIsC . ehcOptTarget
+%%]
+
+%%[(8888 codegen java) export(ehcOptEmitJava)
+-- generate Java, as src text
+ehcOptEmitJava :: EHCOpts -> Bool
+ehcOptEmitJava o = ehcOptTarget o == Target_Interpreter_Core_Java
+%%]
+
+%%[(8 codegen grin llvm wholeprogAnal wholeprogC) export(ehcOptEmitLLVM)
+-- generate LLVM
+ehcOptEmitLLVM :: EHCOpts -> Bool
+ehcOptEmitLLVM = targetIsLLVM . ehcOptTarget
+%%]
+
+%%[(8 codegen clr wholeprogC) export(ehcOptEmitCLR)
+-- generate CIL, as .il assembly file
+ehcOptEmitCLR :: EHCOpts -> Bool
+ehcOptEmitCLR = targetIsCLR . ehcOptTarget
+%%]
+
+%%[(8 codegen javascript) export(ehcOptEmitJavaScript)
+-- | Do we generate JavaScript?
+ehcOptEmitJavaScript :: EHCOpts -> Bool
+ehcOptEmitJavaScript = targetIsJavaScript . ehcOptTarget
+%%]
+
+%%[(8 codegen) export(ehcOptEmitCore)
+-- generate Core
+ehcOptEmitCore :: EHCOpts -> Bool
+ehcOptEmitCore opts
+  = ehcOptWholeProgHPTAnalysis opts || targetIsCore (ehcOptTarget opts)
+%%]
+
+%%[(8 codegen tycore) export(ehcOptEmitTyCore,ehcOptTyCore)
+-- generate TyCore
+ehcOptEmitTyCore :: EHCOpts -> Bool
+ehcOptEmitTyCore opts
+  = {- ehcOptWholeProgHPTAnalysis opts || -} targetIsTyCore (ehcOptTarget opts)
+
+ehcOptTyCore :: EHCOpts -> Bool
+ehcOptTyCore opts = ehcOptEmitTyCore opts || isJust (ehcOptUseTyCore opts)
+
+%%]
+
+%%[(8888 codegen) export(ehcOptCmm)
+-- use Cmm ?
+ehcOptCmm :: EHCOpts -> Bool
+%%[[(8 cmm)
+ehcOptCmm opts = isJust (ehcOptUseCmm opts)
+%%][8
+ehcOptCmm opts = isJust (ehcOptUseCmm opts)
+%%]]
+%%]
+
+%%[(8 codegen) export(ehcOptOptimizes)
+-- | optimizes a particular option
+ehcOptOptimizes :: Optimize -> EHCOpts -> Bool
+ehcOptOptimizes o opts = o `Set.member` ehcOptOptimizations opts
+%%]
+
+%%[(8 codegen) export(ehcOptIsViaGrinCmmJavaScript, ehcOptIsViaCoreJavaScript)
+-- | Via Core -> Grin -> CMM -> JS ?
+ehcOptIsViaGrinCmmJavaScript :: EHCOpts -> Bool
+ehcOptIsViaGrinCmmJavaScript opts
+%%[[(8 javascript cmm)
+  = targetIsViaGrinCmmJavaScript t || targetIsViaCoreJavaScript t && ehcOptJavaScriptViaCMM opts
+  where t = ehcOptTarget opts
+%%][8
+  = False
+%%]]
+
+-- | Via Core -> JS ?
+ehcOptIsViaCoreJavaScript :: EHCOpts -> Bool
+ehcOptIsViaCoreJavaScript opts
+  = targetIsViaCoreJavaScript t
+%%[[(8 javascript cmm)
+    && not (ehcOptJavaScriptViaCMM opts)
+%%]]
+  where t = ehcOptTarget opts
+%%]
+
+%%[(8 codegen) export(ehcOptIsViaCmm)
+ehcOptIsViaCmm :: EHCOpts -> Bool
+ehcOptIsViaCmm opts = ehcOptIsViaGrinCmmJavaScript opts
+{-# INLINE ehcOptIsViaCmm #-}
+%%]
+
+%%[(8 codegen) export(ehcOptIsViaGrin)
+ehcOptIsViaGrin :: EHCOpts -> Bool
+ehcOptIsViaGrin opts = ehcOptIsViaGrinCmmJavaScript opts || targetIsGrinBytecode t || targetDoesHPTAnalysis t
+  where t = ehcOptTarget opts
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

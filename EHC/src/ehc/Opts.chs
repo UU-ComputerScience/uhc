@@ -168,6 +168,11 @@ cmmOptMp
 -}
 %%]
 
+%%[(8 codegen javascript)
+javaScriptOptMp :: Map.Map String JavaScriptOpt
+javaScriptOptMp = optMp
+%%]
+
 %%[99
 instance Show PgmExec where
   show PgmExec_CPP      = "P"
@@ -176,110 +181,6 @@ instance Show PgmExec where
 
 pgmExecMp :: Map.Map String PgmExec
 pgmExecMp = optMp
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Derived options
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-Some are there for (temporary) backwards compatibility.
-
-%%[(50 codegen) export(ehcOptWholeProgOptimizationScope)
--- do something with whole program
-ehcOptWholeProgOptimizationScope :: EHCOpts -> Bool
-ehcOptWholeProgOptimizationScope opts
-  = ehcOptOptimizationScope opts >= OptimizationScope_WholeGrin
-%%]
-
-%%[(50 codegen) export(ehcOptEarlyModMerge)
--- compatibility option
-ehcOptEarlyModMerge :: EHCOpts -> Bool
-ehcOptEarlyModMerge opts
-  = ehcOptOptimizationScope opts >= OptimizationScope_WholeCore
-%%]
-
-%%[(8 codegen grin) export(ehcOptWholeProgHPTAnalysis)
--- do whole program analysis, with HPT
-ehcOptWholeProgHPTAnalysis :: EHCOpts -> Bool
-ehcOptWholeProgHPTAnalysis opts
-  =  targetDoesHPTAnalysis (ehcOptTarget opts)
-%%[[50
-  || ehcOptWholeProgOptimizationScope opts
-%%]]
-%%]
-
-%%[(8 codegen grin) export(ehcOptErrAboutBytecode)
--- report when Grin ByteCode errors occur
-ehcOptErrAboutBytecode :: EHCOpts -> Bool
-%%[[8
-ehcOptErrAboutBytecode _ = False
-%%][99
-ehcOptErrAboutBytecode   = targetIsGrinBytecode . ehcOptTarget
-%%]]
-%%]
-
-%%[(8 codegen grin) export(ehcOptEmitC)
--- generate C
-ehcOptEmitC :: EHCOpts -> Bool
-ehcOptEmitC = targetIsC . ehcOptTarget
-%%]
-
-%%[(8888 codegen java) export(ehcOptEmitJava)
--- generate Java, as src text
-ehcOptEmitJava :: EHCOpts -> Bool
-ehcOptEmitJava o = ehcOptTarget o == Target_Interpreter_Core_Java
-%%]
-
-%%[(8 codegen grin llvm wholeprogAnal wholeprogC) export(ehcOptEmitLLVM)
--- generate LLVM
-ehcOptEmitLLVM :: EHCOpts -> Bool
-ehcOptEmitLLVM = targetIsLLVM . ehcOptTarget
-%%]
-
-%%[(8 codegen clr wholeprogC) export(ehcOptEmitCLR)
--- generate CIL, as .il assembly file
-ehcOptEmitCLR :: EHCOpts -> Bool
-ehcOptEmitCLR = targetIsCLR . ehcOptTarget
-%%]
-
-%%[(8 codegen javascript) export(ehcOptEmitJavaScript)
--- | Do we generate JavaScript?
-ehcOptEmitJavaScript :: EHCOpts -> Bool
-ehcOptEmitJavaScript = targetIsJavaScript . ehcOptTarget
-%%]
-
-%%[(8 codegen) export(ehcOptEmitCore)
--- generate Core
-ehcOptEmitCore :: EHCOpts -> Bool
-ehcOptEmitCore opts
-  = ehcOptWholeProgHPTAnalysis opts || targetIsCore (ehcOptTarget opts)
-%%]
-
-%%[(8 codegen tycore) export(ehcOptEmitTyCore,ehcOptTyCore)
--- generate TyCore
-ehcOptEmitTyCore :: EHCOpts -> Bool
-ehcOptEmitTyCore opts
-  = {- ehcOptWholeProgHPTAnalysis opts || -} targetIsTyCore (ehcOptTarget opts)
-
-ehcOptTyCore :: EHCOpts -> Bool
-ehcOptTyCore opts = ehcOptEmitTyCore opts || isJust (ehcOptUseTyCore opts)
-
-%%]
-
-%%[(8 codegen) export(ehcOptCmm)
--- use Cmm ?
-ehcOptCmm :: EHCOpts -> Bool
-%%[[(8 cmm)
-ehcOptCmm opts = isJust (ehcOptUseCmm opts)
-%%][8
-ehcOptCmm opts = isJust (ehcOptUseCmm opts)
-%%]]
-%%]
-
-%%[(8 codegen) export(ehcOptOptimizes)
--- | optimizes a particular option
-ehcOptOptimizes :: Optimize -> EHCOpts -> Bool
-ehcOptOptimizes o opts = o `Set.member` ehcOptOptimizations opts
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -450,13 +351,16 @@ ehcCmdLineOpts
                                                                                     "pgm: alternate executable used by compiler, currently only P (preprocessing)"
 %%]]
 %%[[(8 codegen)
-     ,  Option ""   ["coreopt"]             (ReqArg oOptCore "opt[,...]")           ("core opts: " ++ (concat $ intersperse " " $ Map.keys coreOptMp))
+     ,  Option ""   ["coreopt"]             (ReqArg oOptCore "opt[,...]")           ("opts (specific) for core: " ++ (concat $ intersperse " " $ Map.keys coreOptMp))
 %%]]
 %%[[(8 codegen tycore)
-     ,  Option ""   ["tycore"]              (OptArg oUseTyCore "opt[,...]")         ("temporary/development: use typed core. opts: " ++ (concat $ intersperse " " $ Map.keys tycoreOptMp))
+     ,  Option ""   ["tycore"]              (OptArg oUseTyCore "opt[,...]")         ("temporary/development: use (specific) typed core. opts: " ++ (concat $ intersperse " " $ Map.keys tycoreOptMp))
 %%]]
 %%[[(8 codegen cmm)
-     ,  Option ""   ["cmm"]                 (OptArg oUseCmm "opt[,...]")            ("temporary/development: use cmm. opts: " ++ (concat $ intersperse " " $ Map.keys cmmOptMp))
+     ,  Option ""   ["cmm"]                 (OptArg oUseCmm "opt[,...]")            ("temporary/development: use (specific) cmm. opts: " ++ (concat $ intersperse " " $ Map.keys cmmOptMp))
+%%]]
+%%[[(8 codegen javascript)
+     ,  Option ""   ["js"]                  (ReqArg oOptJavaScript "opt[,...]")     ("opts (specific) for javascript: " ++ (concat $ intersperse " " $ Map.keys javaScriptOptMp))
 %%]]
      ]
 %%]
@@ -509,6 +413,9 @@ ehcCmdLineOpts
 %%]]
 %%[[(8 codegen)
          oOptCore    s   o =  o { ehcOptCoreOpts = optOpts coreOptMp s }
+%%]]
+%%[[(8 codegen javascript)
+         oOptJavaScript s o = o { ehcOptJavaScriptOpts = optOpts javaScriptOptMp s }
 %%]]
 %%[[(8 codegen tycore)
          oUseTyCore ms   o =  case ms of
@@ -823,8 +730,8 @@ optSetGenRTSInfo     o b = o { ehcOptGenRTSInfo     = b }
 optSetGenCaseDefault o b = o { ehcOptGenCaseDefault = b }
 optSetGenCmt         o b = o { ehcOptGenCmt         = b }
 optSetGenDebug       o b = o { ehcOptGenDebug       = b }
-oSetGenTrampoline	 o b = o { ehcOptGenTrampoline  = b }
-oSetGenBoxGrin		 o b = o { ehcOptGenBoxGrin     = b }
+oSetGenTrampoline	 o b = o { ehcOptGenTrampoline_ = b }
+oSetGenBoxGrin		 o b = o { ehcOptGenBoxGrin_    = b }
 optDumpGrinStages    o b = o { ehcOptDumpGrinStages = b {-, ehcOptEmitGrin = b -} }
 -- optEarlyModMerge     o b = o { ehcOptEarlyModMerge  = b }
 %%]

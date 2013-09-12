@@ -44,7 +44,7 @@
 
 %%[(8 codegen grin) hs import({%{EH}Gam.DataGam})
 %%]
-%%[(8 codegen grin) hs import({%{EH}Foreign.Boxing}) export(Boxing)
+%%[(8 codegen cmm) hs import({%{EH}Foreign.Boxing}) export(module {%{EH}Foreign.Boxing})
 %%]
 %%[(90 codegen grin) hs import({%{EH}Foreign},{%{EH}Base.Target}) export(FFIWay(..),module {%{EH}Foreign})
 %%]
@@ -417,6 +417,7 @@ data GrValIntro
   | GrValIntro_Str   !String -- !Int
   | GrValIntro_Grp   !GrTag ![GrValIntro]
   | GrValIntro_Basic !GrTag !HsName
+  | GrValIntro_Box   !Boxing !GrValIntro
   | GrValIntro_Enum  !HsName
   | GrValIntro_None
   deriving Show
@@ -444,6 +445,7 @@ data NmIntro
   | NmIntro_Grp       GrTag [HsName]
   | NmIntro_GrpTag    HsName
   | NmIntro_GrpBasic  HsName BasicAnnot         -- name + size in bytes, corresponding to basic/boxed values
+  | NmIntro_Box       HsName Boxing
   | NmIntro_None
 %%]
 
@@ -580,6 +582,8 @@ instance Serialize GrPatLam where
   sput (GrPatLam_EnumAnnot   a b    ) = sputWord8 8  >> sput a >> sput b
   sput (GrPatLam_PtrAnnot    a b    ) = sputWord8 9  >> sput a >> sput b
   sput (GrPatLam_OpaqueAnnot a      ) = sputWord8 10 >> sput a
+  sput (GrPatLam_Box         a b    ) = sputWord8 11 >> sput a >> sput b
+  sput _                              = panic "GrinCode.Serialize.GrPatLam.sput"		-- unused are unimplemented
   sget = do t <- sgetWord8
             case t of
               0  -> return GrPatLam_Empty
@@ -593,6 +597,8 @@ instance Serialize GrPatLam where
               8  -> liftM2 GrPatLam_EnumAnnot    sget sget
               9  -> liftM2 GrPatLam_PtrAnnot     sget sget
               10 -> liftM  GrPatLam_OpaqueAnnot  sget
+              11 -> liftM2 GrPatLam_Box          sget sget
+              _  -> panic "GrinCode.Serialize.GrPatLam.sget"		-- unused are unimplemented
 
 instance Serialize GrVal where
   sput (GrVal_Empty              ) = sputWord8 0
@@ -606,6 +612,7 @@ instance Serialize GrVal where
   sput (GrVal_Tag         a      ) = sputWord8 8  >> sput a
   sput (GrVal_Node        a b    ) = sputWord8 9  >> sput a >> sput b
   sput (GrVal_OpaqueNode  a      ) = sputWord8 10 >> sput a
+  sput (GrVal_Box         a b    ) = sputWord8 11 >> sput a >> sput b
   sput _                           = panic "GrinCode.Serialize.GrVal.sput"		-- unused are unimplemented
   sget = do t <- sgetWord8
             case t of
@@ -620,6 +627,7 @@ instance Serialize GrVal where
               8  -> liftM  GrVal_Tag          sget
               9  -> liftM2 GrVal_Node         sget sget
               10 -> liftM  GrVal_OpaqueNode   sget
+              11 -> liftM2 GrVal_Box          sget sget
               _  -> panic "GrinCode.Serialize.GrVal.sget"		-- unused are unimplemented
 
 instance Serialize GrPatAlt where

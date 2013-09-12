@@ -205,7 +205,7 @@ trfCore opts optimScope dataGam modNm trfcore
                           ; t_ana_relev
                           ; t_opt_strict
                           })
-               ; when (targetIsViaCoreJavaScript (ehcOptTarget opts))
+               ; when (ehcOptIsViaCoreJavaScript opts)
                       (do { {- t_let_flatstr
                           ; -} t_ren_uniq (emptyRenUniqOpts {renuniqOptResetOnlyInLam = True})
                           })

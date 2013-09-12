@@ -82,6 +82,12 @@ data HsNameUniqifier
 %%[[(8 javascript)
   | HsNameUniqifier_JSSwitchResult      -- var for result of switch
 %%]]
+%%[[(8 grin)
+  | HsNameUniqifier_GRINTmpVar      	-- tmp var at GRIN level
+%%]]
+%%[[(8 cmm)
+  | HsNameUniqifier_CMMTmpVar      		-- tmp var at CMM level
+%%]]
 %%[[(90 codegen)
   | HsNameUniqifier_FFE                 -- name of value to be ff exported
   | HsNameUniqifier_FFECoerced          -- name of possibly coerced value to be ff exported
@@ -115,6 +121,12 @@ instance Show HsNameUniqifier where
 %%]]
 %%[[(8 javascript)
   show HsNameUniqifier_JSSwitchResult       = "JSW"
+%%]]
+%%[[(8 grin)
+  show HsNameUniqifier_GRINTmpVar       	= "GRN"
+%%]]
+%%[[(8 cmm)
+  show HsNameUniqifier_CMMTmpVar       		= "CMM"
 %%]]
 %%[[(90 codegen)
   show HsNameUniqifier_FFE                  = "FFE"

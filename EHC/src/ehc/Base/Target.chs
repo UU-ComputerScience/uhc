@@ -257,7 +257,7 @@ targetDoesHPTAnalysis t
       _ 								-> False
 %%]
 
-%%[(8 codegen) export(targetIsViaCmm)
+%%[(8888 codegen) export(targetIsViaCmm)
 targetIsViaCmm :: Target -> Bool
 targetIsViaCmm t
   = case t of
@@ -269,7 +269,7 @@ targetIsViaCmm t
 {-# INLINE targetIsViaCmm #-}
 %%]
 
-%%[(8 codegen) export(targetIsViaGrin)
+%%[(8888 codegen) export(targetIsViaGrin)
 targetIsViaGrin :: Target -> Bool
 targetIsViaGrin t
   = case t of

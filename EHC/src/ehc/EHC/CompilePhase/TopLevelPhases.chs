@@ -863,7 +863,7 @@ cpEhcCorePerModulePart2 modNm
              earlyMerge = ehcOptOptimizationScope opts >= OptimizationScope_WholeCore
 %%]]
        ; cpSeq [ when earlyMerge $ cpProcessCoreRest modNm
-               , when (targetIsViaGrin (ehcOptTarget opts)) (cpProcessGrin modNm)
+               , when (ehcOptIsViaGrin opts) (cpProcessGrin modNm)
                ]
        }
 %%]
@@ -890,7 +890,7 @@ cpEhcCoreGrinPerModuleDoneNoFullProgAnalysis opts isMainMod isTopMod doMkExec mo
                    in  [cpEhcExecutablePerModule how [] modNm]
               else []
              )
-          ++ [ cpMsg modNm VerboseALot ("Core" ++ (if targetIsViaGrin (ehcOptTarget opts) then "+Grin" else "") ++ " done")
+          ++ [ cpMsg modNm VerboseALot ("Core" ++ (if ehcOptIsViaGrin opts then "+Grin" else "") ++ " done")
              , cpMsg modNm VerboseDebug ("isMainMod: " ++ show isMainMod)
              ]
           )
@@ -1053,12 +1053,12 @@ cpProcessCoreRest modNm
        ; let (_,_,opts,_) = crBaseInfo modNm cr
        ; cpSeq (   [ cpTranslateCore2Grin modNm ]
                 -- ++ (if ehcOptWholeProgHPTAnalysis opts then [ cpOutputGrin True "" modNm ] else [])
-                ++ (if targetIsViaGrin (ehcOptTarget opts) then [ cpOutputGrin True "" modNm ] else [])
+                ++ (if ehcOptIsViaGrin opts then [ cpOutputGrin True "" modNm ] else [])
 %%[[(8 jazy)
                 ++ [ cpTranslateCore2Jazy modNm ]
 %%]]
 %%[[(8 javascript)
-                ++ (if targetIsViaCoreJavaScript (ehcOptTarget opts) then [ cpTranslateCore2JavaScript modNm ] else [])
+                ++ (if ehcOptIsViaCoreJavaScript opts then [ cpTranslateCore2JavaScript modNm ] else [])
 %%]]
 %%[[99
                 ++ [ cpCleanupCore [modNm] ]
@@ -1080,7 +1080,7 @@ cpProcessGrin modNm
                 ++ (if targetDoesHPTAnalysis (ehcOptTarget opts) then [cpTransformGrinHPTWholeProg modNm] else [])
 %%]]
 %%[[(8 cmm)
-                ++ (if targetIsViaCmm (ehcOptTarget opts) then [cpTranslateGrin2Cmm modNm] else [])
+                ++ (if ehcOptIsViaCmm opts then [cpTranslateGrin2Cmm modNm] else [])
 %%]]
                 ++ (if ehcOptEmitBytecode opts then [cpTranslateGrin2Bytecode modNm] else [])
                )
@@ -1095,7 +1095,7 @@ cpProcessAfterGrin modNm
        ; cpSeq (  [ when (targetIsGrinBytecode (ehcOptTarget opts)) $
                       cpProcessBytecode modNm
 %%[[(8 cmm)
-                  , when (targetIsViaCmm (ehcOptTarget opts)) $
+                  , when (ehcOptIsViaCmm opts) $
                       cpProcessCmm modNm
 %%]]
                   ]
@@ -1111,7 +1111,7 @@ cpProcessCmm modNm
        ; cpSeq [ cpMsg modNm VerboseALot "Translate Cmm"
                , when (ehcOptDumpCmmStages opts) $ cpOutputCmm False "-000-initial" modNm
 %%[[(8 javascript)
-               , when (targetIsViaGrinCmmJavaScript (ehcOptTarget opts)) $ cpTranslateCmm2JavaScript modNm
+               , when (ehcOptIsViaGrinCmmJavaScript opts) $ cpTranslateCmm2JavaScript modNm
 %%]]
 %%[[99
                , cpCleanupCmm modNm

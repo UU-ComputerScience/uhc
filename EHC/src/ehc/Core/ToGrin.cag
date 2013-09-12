@@ -242,8 +242,8 @@ mkSq e1 p e2 = GrExpr_Seq e1 (GrPatLam_Var p) e2
 
 %%[(8 codegen grin) hs
 -- | Simplify GrVal by pushing the more complex ones in a GrExpr bound to a fresh variable
-type SimplState    = (GrExpr->GrExpr)
-type SimplStateM a = StateT SimplState FreshUid a
+type SimplState  = (GrExpr->GrExpr)
+type SimplStateM = StateT SimplState FreshUid
 
 runSimpl :: UID -> SimplStateM a -> (a, GrExpr->GrExpr)
 runSimpl uniq ss = evalFreshUid (runStateT ss (id)) uniq
@@ -253,7 +253,8 @@ simplAppendM f = modify (f .)
 
 simplWrapM :: HsName -> GrExpr -> SimplStateM GrVal
 simplWrapM modNm x = do
-  n <- fmap (uidQualHNm modNm) $ lift freshUID
+  -- n <- fmap (uidQualHNm modNm) $ lift freshUID
+  n <- fmap (hsnUniqify HsNameUniqifier_GRINTmpVar . mkHNm) $ lift freshUID
   simplAppendM $ mkSq x n
   return $ GrVal_Var n
 

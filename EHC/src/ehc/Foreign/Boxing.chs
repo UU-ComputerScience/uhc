@@ -105,9 +105,9 @@ data Boxing
 
 %%[(8 codegen) hs
 instance Show Boxing where
-  show (Boxing_UnboxedTy t)	= "bx:" ++ show t
-  show Boxing_Enum  		= "bxe"
-  show Boxing_Opaque  		= "bxo"
+  show (Boxing_UnboxedTy t)	= "#B" ++ show t
+  show Boxing_Enum  		= "#Be"
+  show Boxing_Opaque  		= "#Bo"
 
 instance PP Boxing where
   pp = pp . show

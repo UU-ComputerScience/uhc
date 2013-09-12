@@ -133,7 +133,11 @@ SEM Proc
   | Proc		lhs		.	pp		=	(mbpre id @mbConv.ppMb $ @nm >#< ppParensCommas' @formals.ppL) >-#-< ppCurlys @body.pp
 %%]
 
-Conv
+%%[(8 cmm)
+SEM Conv
+  | Foreign		lhs		.	pp		=	"ffi" >#< @conv
+  | Platform	lhs		.	pp		=	pp "prim"
+%%]
 
 %%[(8 cmm)
 SEM Formal
@@ -156,7 +160,6 @@ SEM Stmt
   -- 					expr2			: Expr
   -- 					body			: Body
   | Assign		lhs		.	pp		=	semic $ ppCommas' @lval.ppL >#< "=" >-|-< indent 1 (ppCommas' @rhs.ppL)
-  | Alloc		lhs		.	pp		=	@nm >#< "=" >-|-< indent 1 ("alloc" >|< @tag.pp >|< ppParensCommas' @elts.ppL)
   -- | %%Assign
   | Call        lhs     .   pp      =   semic 
                                         $ mbnull (\l -> ppCommas' l >#< "=") @knames.ppL
@@ -175,6 +178,9 @@ SEM Stmt
   -- | Cut				expr			: Expr
   -- 					actuals			: ActualL
   -- 					flows			: FlowL
+  | Alloc		lhs		.	pp		=	@nm >#< "=" >-|-< indent 1 ("alloc" >|< @tag.pp >|< ppParensCommas' @elts.ppL)
+  | Box			lhs		.	pp		=	@nm >#< "=" >-|-< indent 1 ("box" >|< @boxing >#< @expr.pp)
+  | UnBox		lhs		.	pp		=	@nm >#< "=" >-|-< indent 1 ("unbox" >|< @boxing >#< @expr.pp)
 %%]
 
 RetCont
@@ -226,6 +232,7 @@ SEM Expr
 
   -- Variable
   | Nm			lhs		.	pp		=	pp @nm
+  | NmForeign	lhs		.	pp		=	pp @nm
 
   -- Operations
   -- | Op				op				: Op

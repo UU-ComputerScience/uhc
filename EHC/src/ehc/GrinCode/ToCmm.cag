@@ -176,15 +176,12 @@ SEM GrModule
   | Mod         loc			.	gUniq			=	uidStart
 
 SEM GrExpr
-  | Eval Store App Unit
+  | Eval Store App Call FFI Unit
   				loc			.	lUniqRet		:	UNIQUEREF gUniq
 
 SEM GrExpr
-  | Eval Store
+  | Eval Store Call FFI App Seq
   				loc			.	lUniq			:	UNIQUEREF gUniq
-  | App
-  				loc			.	lUniq			:	UNIQUEREF gUniq
-  				loc			.	lUniq2			:	UNIQUEREF gUniq
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -431,7 +428,7 @@ type ValAccessG    = ValAccess    Fld Fld Fld Fld
 type ValAccessGamG = ValAccessGam Fld Fld Fld Fld
 %%]
 
-%%[(8 codegen grin) hs
+%%[(8 codegen grin cmm) hs
 patNmL2VAGam' :: AssocL HsName Fld -> ValAccessGamG
 patNmL2VAGam' nmDepL = Map.fromList [ (n,Val_Local f (ValAccessAnnot_Annot basicAnnotWord)) | (n,f) <- nmDepL ]
 
@@ -445,6 +442,16 @@ SEM GrBind
 
 SEM GrAlt
   | Alt         loc			.   newVaGam        =   patNmL2VAGam @newAltNmL
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% GrVal Value introduction
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin cmm)
+SEM GrExpr
+  | FetchNode FetchUpdate FetchField Throw
+  				lhs			.	grvalIntro      =   GrValIntro_None
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -680,56 +687,66 @@ SEM GrExpr
 
 %%[(8 codegen grin cmm) hs
 data GviLoadSt = GviLoadSt
-  { glstUniq 	:: !UID
-  , glstDecls	:: !CmmBodyDecls
+  { {- glstUniq 	:: !UID
+  , -} glstDecls	:: !CmmBodyDecls
   
   -- environment info
   , glstDataGam	:: DataGam
   }
 
-type GviLoadStM a = State GviLoadSt a
+type GviLoadStM = StateT GviLoadSt FreshUid
 
-gviFreshM :: GviLoadStM HsName
-gviFreshM = do
-    u <- gets glstUniq
-    let (u',unm) = mkNewUID u
-    modify $ \st -> st {glstUniq = u'}
-    return $ mkHNm unm
+runGviLoad :: UID -> DataGam -> GviLoadStM a -> (a, CmmBodyDecls)
+runGviLoad uniq dataGam gs = (x, glstDecls s)
+  where (x,s) = evalFreshUid (runStateT gs (GviLoadSt Seq.empty dataGam)) uniq
 
 gviAppendM :: CmmBodyDecls -> GviLoadStM ()
 gviAppendM ds = modify $ \st -> st { glstDecls = glstDecls st & ds }
 
-gviLLoadM' :: (GrValIntro -> e) -> [GrValIntro] -> GviLoadStM [e]
-gviLLoadM' mk gviL = forM gviL $ \gvi -> do
+gviLoadM' :: (GrValIntro -> e) -> GrValIntro -> GviLoadStM e
+gviLoadM' mk gvi = fmap mk $ firstMaybeM gvi [\gvi -> if gviIsInlineable gvi then return $ Just $ gvi else return Nothing, gvi2MbNonInlineM]
+{-
+  do
     if gviIsInlineable gvi
       then return $ mk gvi
       else do mbe <- gvi2MbNonInlineM gvi
               case mbe of
                 Just e -> return $ mk e
                 _      -> return $ mk $ GrValIntro_Nm hsnUnknown
+-}
 
-gviLLoadM :: [GrValIntro] -> GviLoadStM [Cmm.Expr]
-gviLLoadM = gviLLoadM' gvi2InlineableExpr
+gviLLoadM' :: (GrValIntro -> e) -> [GrValIntro] -> GviLoadStM [e]
+gviLLoadM' mk = mapM $ gviLoadM' mk
+{-# INLINE gviLLoadM' #-}
 
-gviLLoad :: UID -> DataGam -> [GrValIntro] -> ([Cmm.Expr], CmmBodyDecls)
-gviLLoad uniq dataGam gviL = (eL, glstDecls st)
-  where (eL, st) = runState (gviLLoadM gviL) (GviLoadSt uniq Seq.empty dataGam)
+gviLLoadExprM :: [GrValIntro] -> GviLoadStM [Cmm.Expr]
+gviLLoadExprM = gviLLoadM' gvi2InlineableExpr
+{-# INLINE gviLLoadExprM #-}
+
+gviLoadExprM :: GrValIntro -> GviLoadStM Cmm.Expr
+gviLoadExprM = gviLoadM' gvi2InlineableExpr
+{-# INLINE gviLoadExprM #-}
+
+gviLLoadExpr :: UID -> DataGam -> [GrValIntro] -> ([Cmm.Expr], CmmBodyDecls)
+gviLLoadExpr uniq dataGam gviL = runGviLoad uniq dataGam $ gviLLoadExprM gviL
 
 gviLoad' :: (GrValIntro -> e) -> UID -> DataGam -> GrValIntro -> (e, CmmBodyDecls)
-gviLoad' mk uniq dataGam gvi = (e, glstDecls st)
-  where ([e], st) = runState (gviLLoadM' mk [gvi]) (GviLoadSt uniq Seq.empty dataGam)
+gviLoad' mk uniq dataGam gvi = runGviLoad uniq dataGam $ gviLoadM' mk gvi
 
-gviLoad :: UID -> DataGam -> GrValIntro -> (Cmm.Expr, CmmBodyDecls)
-gviLoad = gviLoad' gvi2InlineableExpr
+gviLoadExpr :: UID -> DataGam -> GrValIntro -> (Cmm.Expr, CmmBodyDecls)
+gviLoadExpr = gviLoad' gvi2InlineableExpr
+{-# INLINE gviLoadExpr #-}
 
-gviLoadInlineable :: UID -> DataGam -> GrValIntro -> (GrValIntro, CmmBodyDecls)
-gviLoadInlineable = gviLoad' id
+gviLoadGvi :: UID -> DataGam -> GrValIntro -> (GrValIntro, CmmBodyDecls)
+gviLoadGvi = gviLoad' id
+{-# INLINE gviLoadGvi #-}
 
 gvi2InlineableExpr :: GrValIntro -> Cmm.Expr
 gvi2InlineableExpr gvi = fromMaybe (Cmm.err $ show gvi) $ gvi2MbInlineExpr gvi
 
 gvi2FullExpr :: GrValIntro -> Cmm.Expr
 gvi2FullExpr = fromMaybe Cmm.undef . gvi2MbExpr
+{-# INLINE gvi2FullExpr #-}
 
 -- | To directly inlineable usable expr
 gvi2MbInlineExpr :: GrValIntro -> Maybe Cmm.Expr
@@ -742,43 +759,26 @@ gvi2MbNonInlineExpr :: GrValIntro -> Maybe Cmm.Expr
 gvi2MbNonInlineExpr gvi = case gvi of
   _						-> Nothing
 
-{-
--}
 gvi2MbNonInlineM :: GrValIntro -> GviLoadStM (Maybe GrValIntro)
 gvi2MbNonInlineM gvi = case gvi of
   GrValIntro_Grp gt	gviL -> do
-    args <- gviLLoadM gviL
+    args <- gviLLoadExprM gviL
     dataGam <- gets glstDataGam
-    res <- cmmBindFreshInM args $ \newn args -> Cmm.alloc dataGam newn (grtag2cmmtag gt) args
-    return $ Just res
+    fmap Just $ cmmBindFreshInM $ \newn -> Cmm.alloc dataGam newn (grtag2cmmtag gt) args
+  GrValIntro_Box bx	gvi -> do
+    arg <- gviLoadExprM gvi
+    fmap Just $ cmmBindFreshInM $ \newn -> Cmm.box newn bx arg
   _ -> return Nothing
 
-cmmBindFreshInM :: e -> (HsName -> e -> CmmBodyDecls) -> GviLoadStM GrValIntro
-cmmBindFreshInM e mk = do
-    nm <- gviFreshM
-    gviAppendM $ Cmm.declLocalRegVar tyNd nm Nothing & mk nm e
+cmmBindFreshInM :: (HsName -> CmmBodyDecls) -> GviLoadStM GrValIntro
+cmmBindFreshInM mk = do
+    nm <- fmap (hsnUniqify HsNameUniqifier_CMMTmpVar . mkHNm) $ lift freshUID
+    gviAppendM $ Cmm.declLocalRegVar tyNd nm Nothing & mk nm
     return $ GrValIntro_Nm nm
 
-cmmBindFreshIn :: UID -> DataGam -> Cmm.Expr -> (HsName -> Cmm.Expr -> CmmBodyDecls) -> (GrValIntro, CmmBodyDecls)
-cmmBindFreshIn u dataGam e mk = (gvi, glstDecls st)
-  where (gvi, st) = runState (cmmBindFreshInM e mk) (GviLoadSt u Seq.empty dataGam)
-
+cmmBindFreshIn :: UID -> DataGam -> (HsName -> CmmBodyDecls) -> (GrValIntro, CmmBodyDecls)
+cmmBindFreshIn u dataGam mk = runGviLoad u dataGam $ cmmBindFreshInM mk
 %%]
-  GrValIntro_Str  
-  GrValIntro_Basic
-  GrValIntro_Enum 
-  GrValIntro_None
-
-
-data GrValIntro
-  = GrValIntro_Nm    !HsName
-  | GrValIntro_Int   !Integer
-  | GrValIntro_Str   !String -- !Int
-  | GrValIntro_Grp   !GrTag ![GrValIntro]
-  | GrValIntro_Basic !GrTag !HsName
-  | GrValIntro_Enum  !HsName
-  | GrValIntro_None
-
 
 %%[(8 codegen grin cmm)
 SEM GrExpr
@@ -789,22 +789,40 @@ SEM GrExpr
                                                 =   case @lhs.returnCtxt of
                                                         ReturnCtxt_Returns | ehcOptGenTrampoline @lhs.opts
                                                           -> (GrValIntro_Nm @nm, Seq.empty)
-                                                        _ -> cmmBindFreshIn @lUniq @lhs.dataGam (Cmm.var @nm) $ \newn oldn -> Cmm.call (Just newn) Cmm.CallExpr_Eval [oldn]
+                                                        _ -> cmmBindFreshIn @lUniq @lhs.dataGam $ \newn -> Cmm.call Nothing (Just newn) Cmm.CallExpr_Eval [Cmm.var @nm]
+  | Call        loc         .   (grvalIntro, valDecls)
+                                                =   runGviLoad @lUniq @lhs.dataGam $ do
+                                                      	argExprL <- gviLLoadExprM @argL.grvalIntroL
+                                                      	cmmBindFreshInM $ \newn -> Cmm.call Nothing (Just newn) (Cmm.CallExpr_Expr $ Cmm.var @nm) argExprL
+  | FFI         loc         .   (grvalIntro, valDecls)
+%%[[8
+                                                =   runGviLoad @lUniq @lhs.dataGam $ do
+                                                      	argExprL <- gviLLoadExprM @argL.grvalIntroL
+                                                      	cmmBindFreshInM $ \newn -> Cmm.call (Just Cmm.Conv_Platform) (Just newn) (Cmm.CallExpr_Expr $ Cmm.ffivar @nm) argExprL
+%%][90
+                                                =   (GrValIntro_None, Seq.empty)
+%%]]
   | Store       loc         .   (grvalIntro, valDecls)
-                                                =   gviLoadInlineable @lUniq @lhs.dataGam @val.grvalIntro
+                                                =   gviLoadGvi @lUniq @lhs.dataGam @val.grvalIntro
 
-  | Seq			loc			.	(grvalIntro, seqDecls, newVaGam)
-  												=	case (@expr.grvalIntro, @pat.nmIntro) of
-  														(gvi, NmIntro_Single nmp annot)
-  															-> (GrValIntro_Nm nmp, Cmm.declLocalConst Cmm.Const_SSA tyNd nmp (gvi2InlineableExpr gvi), patNmL2VAGam [nmp])
+  | Seq			loc			.	((grvalIntro, newVaGam), seqDecls)
+  												=	runGviLoad @lUniq @lhs.dataGam $ do
+  														e <- gviLoadExprM @expr.grvalIntro
+  														case @pat.nmIntro of
+  														  NmIntro_Single nmp annot -> do
+  														    gviAppendM $ Cmm.declLocalConst Cmm.Const_SSA tyNd nmp e
+  														    return $ (GrValIntro_Nm nmp, patNmL2VAGam [nmp])
+  														  NmIntro_Box nmp bx -> do
+  														    gviAppendM $ Cmm.unbox nmp bx e
+  														    return $ (GrValIntro_Nm nmp, patNmL2VAGam [nmp])
 
   | App			loc			.	(grvalIntro, valDecls)
                                                 =   case @lhs.returnCtxt of
                                                         -- ReturnCtxt_Returns | ehcOptGenTrampoline @lhs.opts
                                                         --   -> (GrValIntro_Nm @nm, Seq.empty)
-                                                        _ -> (res, argDecls & callDecls)
-                                                          where (argExprL, argDecls) = gviLLoad @lUniq @lhs.dataGam @argL.grvalIntroL
-                                                                (res, callDecls) = cmmBindFreshIn @lUniq2 @lhs.dataGam (Cmm.var @nm) $ \newn oldn -> Cmm.call (Just newn) Cmm.CallExpr_Apply (oldn : argExprL)
+                                                        _ -> runGviLoad @lUniq @lhs.dataGam $ do
+                                                               argExprL <- gviLLoadExprM @argL.grvalIntroL
+                                                               cmmBindFreshInM $ \newn -> Cmm.call Nothing (Just newn) Cmm.CallExpr_Apply (Cmm.var @nm : argExprL)
 %%]
 
 %%[(88 codegen grin cmm) hs
@@ -846,10 +864,8 @@ mkRet returnCtxt (e, decls)
 
 %%[(8 codegen grin cmm)
 SEM GrExpr
-  | Eval App Store Unit
-                loc			.	retDecls       	=   mkRet @lhs.returnCtxt (gviLoad @lUniqRet @lhs.dataGam @grvalIntro)
-  | Call FFI
-                loc			.	retDecls       	=   Seq.empty
+  | Eval App Store Unit Call FFI
+                loc			.	retDecls       	=   mkRet @lhs.returnCtxt (gviLoadExpr @lUniqRet @lhs.dataGam @grvalIntro)
   | * - Unit Store Call Eval App FFI
                 loc         .   retDecls        =   Seq.empty
 %%]

@@ -149,12 +149,9 @@ SEM GrVal
   | Node        lhs         .   grvalIntro      =   GrValIntro_Grp   @tag.self @fldL.grvalIntroL
   | BasicNode   lhs         .   grvalIntro      =   GrValIntro_Basic @tag.self @nm
   | EnumNode    lhs         .   grvalIntro      =   GrValIntro_Enum  @nm
-  | * - Var LitStr Node LitInt BasicNode EnumNode
+  | Box         lhs         .   grvalIntro      =   GrValIntro_Box   @boxing @fld.grvalIntro
+  | * - Var LitStr Node LitInt BasicNode EnumNode Box
                 lhs         .   grvalIntro      =   GrValIntro_None
-
-SEM GrExpr
-  | * - Unit Seq Store
-  				lhs			.	grvalIntro      =   GrValIntro_None
 
 SEM GrValL
   | Nil         lhs         .   grvalIntroL     =   []
@@ -215,7 +212,8 @@ SEM GrPatLam
                                                               then BasicAnnot_Dflt
                                                               else BasicAnnot_Size basicSizeWord BasicTy_Word BasicAnnotTagging_ToPtr False
                                                     in  NmIntro_Single @nm ann
-  | * - Var VarNode BasicNode EnumNode BasicAnnot EnumAnnot
+  | Box         lhs         .   nmIntro         =   NmIntro_Box @nm @boxing
+  | * - Var VarNode BasicNode EnumNode BasicAnnot EnumAnnot Box
                 lhs         .   nmIntro         =   NmIntro_None
 %%]
 ATTR GrPatAlt [ | | nmIntro: NmIntro ]

@@ -121,7 +121,8 @@ SEM Expr
   | Nm 			       	loc         .   jsnm	=   JS.hsnJavaScriptVar False @lhs.pkgNm @lhs.topClassNm @nm
 
 SEM Stmt
-  | Alloc	  	     	loc         .   jsnm	=   JS.hsnJavaScriptVar False @lhs.pkgNm @lhs.topClassNm @nm
+  | Alloc Box UnBox
+  						loc         .   jsnm	=   JS.hsnJavaScriptVar False @lhs.pkgNm @lhs.topClassNm @nm
 
 SEM Proc
   | Proc        		loc         .   jsnm	=   JS.hsnJavaScriptVar False @lhs.pkgNm @lhs.topClassNm @nm
@@ -183,6 +184,8 @@ SEM Stmt
   | Ret					lhs			.	jsBodyStats	=	s $ JS.ret' $ maybeHd Nothing Just @actuals.jsExprL
   | Assign				lhs			.	jsBodyStats	=	ss $ zipWith JS.assign @lval.nmL @rhs.jsExprL
   | Alloc				lhs			.	jsBodyStats	=	s $ JS.assign @jsnm $ @tag.jsMkAlloc $ @elts.nmExprL
+  | Box					lhs			.	jsBodyStats	=	s $ JS.assign @jsnm @expr.jsExpr
+  | UnBox				lhs			.	jsBodyStats	=	s $ JS.assign @jsnm @expr.jsExpr
 
 SEM Regs
   | Regs				lhs			.	jsBodyStats	=	ss [ JS.vardecl n Nothing | n <- @nmInits.nmL ]
