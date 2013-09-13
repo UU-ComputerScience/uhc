@@ -35,10 +35,6 @@ PRAGMA nocycle
 %%[(8 cmm) hs
 semic = (>|< ";")
 
-mbpre, mbpost :: (PP x, PP r) => (a -> x) -> Maybe a -> r -> PP_Doc
-mbpre  p = maybe pp (\v rest -> p v >#< rest)
-mbpost p = maybe pp (\v rest -> rest >#< p v)
-mbnull p = maybeNull id (\l rest -> p l >#< rest)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -90,7 +86,7 @@ SEM Target
 
 %%[(8 cmm)
 SEM Import
-  | Imp			lhs		.	pp		=	mbpre (\s -> show s >#< "as") @mbOrigNm @nm
+  | Imp			lhs		.	pp		=	ppMbPre (\s -> show s >#< "as") @mbOrigNm @nm
 %%]
 
 Export
@@ -99,7 +95,7 @@ Export
 SEM Datum
   | Nm			lhs		.	pp		=	@nm >|< ":"
   | Align		lhs		.	pp		=	semic $ "align" >#< show @align
-  | Ty			lhs		.	pp		=	semic $ mbpost id @mbInit.ppMb $ mbpost ppBrackets @mbSize.ppMb @ty.pp
+  | Ty			lhs		.	pp		=	semic $ ppMbPost id @mbInit.ppMb $ ppMbPost ppBrackets @mbSize.ppMb @ty.pp
 %%]
 
 %%[(8 cmm)
@@ -113,12 +109,12 @@ String16
 
 %%[(8 cmm)
 SEM Regs
-  | Regs		lhs		.	pp		=	mbpre show @mbKind $ @ty.pp >#< ppCommas' @nmInits.ppL
+  | Regs		lhs		.	pp		=	ppMbPre show @mbKind $ @ty.pp >#< ppCommas' @nmInits.ppL
 %%]
 
 %%[(8 cmm)
 SEM RegNmInit
-  | NmInit		lhs		.	pp		=	mbpost show @mbIs @nm
+  | NmInit		lhs		.	pp		=	ppMbPost show @mbIs @nm
 %%]
 
 %%[(8 cmm)
@@ -130,7 +126,7 @@ SEM BodyDecl
 
 %%[(8 cmm)
 SEM Proc
-  | Proc		lhs		.	pp		=	(mbpre id @mbConv.ppMb $ @nm >#< ppParensCommas' @formals.ppL) >-#-< ppCurlys @body.pp
+  | Proc		lhs		.	pp		=	(ppMbPre id @mbConv.ppMb $ @nm >#< ppParensCommas' @formals.ppL) >-#-< ppCurlys @body.pp
 %%]
 
 %%[(8 cmm)
@@ -141,12 +137,12 @@ SEM Conv
 
 %%[(8 cmm)
 SEM Formal
-  | Formal		lhs		.	pp		=	mbpre show @mbKind $ (if @isInvariant then "invariant " else "") >|< @ty.pp >#< @nm
+  | Formal		lhs		.	pp		=	ppMbPre show @mbKind $ (if @isInvariant then "invariant " else "") >|< @ty.pp >#< @nm
 %%]
 
 %%[(8 cmm)
 SEM Actual
-  | Actual		lhs		.	pp		=	mbpre show @mbKind $ @expr.pp
+  | Actual		lhs		.	pp		=	ppMbPre show @mbKind $ @expr.pp
 %%]
 
 %%[(8 cmm)
@@ -162,14 +158,14 @@ SEM Stmt
   | Assign		lhs		.	pp		=	semic $ ppCommas' @lval.ppL >#< "=" >-|-< indent 1 (ppCommas' @rhs.ppL)
   -- | %%Assign
   | Call        lhs     .   pp      =   semic 
-                                        $ mbnull (\l -> ppCommas' l >#< "=") @knames.ppL
-                                        $ mbpre id @mbConv.ppMb
+                                        $ ppListPre (\l -> ppCommas' l >#< "=") @knames.ppL
+                                        $ ppMbPre id @mbConv.ppMb
                                         $ @callexpr.pp >|< ppParensCommas' @actuals.ppL >|< (@targets.ppMk $ ppSpaces @aliasflows.ppL)
   -- | Jump			mbConv			: MbConv
   -- 					expr			: Expr
   -- 					actuals			: ActualL
   -- 					targets			: Targets
-  | Ret			lhs		.	pp		=	semic $ (mbpre id @mbConv.ppMb $ pp "return") >#< (mbpre id @mbCont.ppMb $ ppCommas' @actuals.ppL)
+  | Ret			lhs		.	pp		=	semic $ (ppMbPre id @mbConv.ppMb $ pp "return") >#< (ppMbPre id @mbCont.ppMb $ ppCommas' @actuals.ppL)
   -- | Label			nm				: Nm
   -- | Cont			nm				: Nm
   -- 					knames			: KindNameL
@@ -187,7 +183,7 @@ RetCont
 
 %%[(8 cmm)
 SEM KindName
-  | KindName	lhs		.	pp		=	mbpre pp @mbKind @nm
+  | KindName	lhs		.	pp		=	ppMbPre pp @mbKind @nm
 %%]
 
 Arm
@@ -221,7 +217,7 @@ SEM CallExpr
 SEM Expr
   -- Regular constants
   | Int	Char Str
-  				lhs		.	pp		=	mbpost ("::" >#<) @mbTy.ppMb $ show @val
+  				lhs		.	pp		=	ppMbPost ("::" >#<) @mbTy.ppMb $ show @val
   -- | Rat				val				: Rational
   -- 					mbTy			: MbTy
   -- | Float			val				: Rational
@@ -321,5 +317,5 @@ SEM
 ATTR Targets [ | | ppMk: {PP_Doc -> PP_Doc} ]
 
 SEM Targets
-  | Targets		lhs		.	ppMk	=	mbnull ppCommas' @nms
+  | Targets		lhs		.	ppMk	=	ppListPre ppCommas' @nms
 %%]

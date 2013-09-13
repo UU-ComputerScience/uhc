@@ -13,7 +13,10 @@
 %%[(8 codegen grin) hs import(qualified Data.Map as Map,qualified Data.Set as Set,qualified Data.List as List)
 %%]
 
-%%[(8 codegen grin) hs import({%{EH}Base.Builtin},{%{EH}Base.Builtin2}, {%{EH}Base.BasicAnnot}, {%{EH}CodeGen.ValAccess}) export(module {%{EH}Base.BasicAnnot})
+%%[(8 codegen grin) hs import({%{EH}Base.Builtin},{%{EH}Base.Builtin2}, {%{EH}Base.BasicAnnot}) export(module {%{EH}Base.BasicAnnot})
+%%]
+
+%%[(8 codegen grin) hs import({%{EH}CodeGen.Const}, {%{EH}CodeGen.ValAccess})
 %%]
 
 %%[(8 codegen grin) hs export(GrExpr(..), GrBind(..), GrBindL, GrGlobal(..), GrGlobalL)
@@ -414,7 +417,7 @@ willUseForNodeField n m = maybe False (WillUseFor_NodeField `Set.member`) $ Map.
 data GrValIntro
   = GrValIntro_Nm    !HsName
   | GrValIntro_Int   !Integer
-  | GrValIntro_Str   !String -- !Int
+  | GrValIntro_Str   !String (Maybe CFld)
   | GrValIntro_Grp   !GrTag ![GrValIntro]
   | GrValIntro_Basic !GrTag !HsName
   | GrValIntro_Box   !Boxing !GrValIntro
@@ -583,7 +586,7 @@ instance Serialize GrPatLam where
   sput (GrPatLam_PtrAnnot    a b    ) = sputWord8 9  >> sput a >> sput b
   sput (GrPatLam_OpaqueAnnot a      ) = sputWord8 10 >> sput a
   sput (GrPatLam_Box         a b    ) = sputWord8 11 >> sput a >> sput b
-  sput _                              = panic "GrinCode.Serialize.GrPatLam.sput"		-- unused are unimplemented
+  -- sput _                              = panic "GrinCode.Serialize.GrPatLam.sput"		-- unused are unimplemented
   sget = do t <- sgetWord8
             case t of
               0  -> return GrPatLam_Empty

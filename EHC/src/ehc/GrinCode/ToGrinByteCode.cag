@@ -363,6 +363,11 @@ SEM GrExpr
   				lhs			.	grvalIntro      =   GrValIntro_None
 %%]
 
+%%[(8 codegen grin)
+SEM GrVal
+  | LitStr      lhs         .   grvalIntro      =   GrValIntro_Str   @str Nothing
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Delayed unit gval
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

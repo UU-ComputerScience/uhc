@@ -99,6 +99,21 @@ instance Show ConstKind where
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Cmm types (only temporary place holders)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen cmm) hs export(tyNd, tyStr8)
+mkTy :: String -> Ty
+mkTy = Ty_Nm . mkHNm
+
+tyNd :: Ty
+tyNd = mkTy "Nd"
+
+tyStr8 :: Ty
+tyStr8 = mkTy "Str8"
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Constructing: misc
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -164,10 +179,17 @@ declLocalRegVar t nm me = Seq.fromList $
      [BodyDecl_Decl $ Decl_Regs False $ Regs_Regs Nothing t [RegNmInit_NmInit nm Nothing]]
   ++ maybe [] (\e -> [BodyDecl_Stmt $ Stmt_Assign [LValue_Nm nm] [e]]) me
 
--- | Declare & assign constant (or variation)
+-- | Locally declare & assign constant (or variation)
 declLocalConst :: ConstKind -> Ty -> Nm -> Expr -> Seq.Seq BodyDecl
 declLocalConst k t nm e = Seq.fromList $
      [BodyDecl_Decl $ Decl_Const k (Just t) nm e]
+%%]
+
+%%[(8 codegen cmm) hs export(declGlobalConst)
+-- | Globally declare & assign constant (or variation)
+declGlobalConst :: ConstKind -> Ty -> Nm -> Expr -> Seq.Seq TopLevel
+declGlobalConst k t nm e = Seq.fromList $
+     [TopLevel_Decl $ Decl_Const k (Just t) nm e]
 %%]
 
 %%[(8 codegen cmm) hs export(call, ret)
@@ -214,6 +236,13 @@ ffivar = Expr_NmForeign
 undef :: Expr
 undef = var hsnUnknown
 {-# INLINE undef #-}
+
+%%]
+
+%%[(8 codegen cmm) hs export(str8)
+-- | String literal
+str8 :: String -> Expr
+str8 = flip Expr_Str (Just tyStr8)
 
 %%]
 
@@ -302,64 +331,4 @@ ty2TargetTy env ty
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(5050 codegen cmm) hs
-instance Serialize RQuant where
-  sput = sputEnum8
-  sget = sgetEnum8
-
-instance Serialize RelevQual where
-  sput (RelevQual_SubEval a b        ) = sputWord8 0 >> sput a >> sput b
-  -- sput (RelevQual_Alt     a b c d e f) = sputWord8 1 >> sput a >> sput b >> sput c >> sput d >> sput e >> sput f
-  sget
-    = do t <- sgetWord8
-         case t of
-            0 -> liftM2 RelevQual_SubEval         sget sget
-            -- 1 -> liftM6 RelevQual_Alt             sget sget sget sget sget sget
-
-instance Serialize RelevTy where
-  sput (RelevTy_Ana   a        ) = sputWord8 0 >> sput a
-  sput (RelevTy_Fun   a b c d e) = sputWord8 1 >> sput a >> sput b >> sput c >> sput d >> sput e
-  sput (RelevTy_None           ) = sputWord8 2
-  sput (RelevTy_Err   a        ) = sputWord8 3 >> sput a
-  sget
-    = do t <- sgetWord8
-         case t of
-            0 -> liftM  RelevTy_Ana         sget
-            1 -> liftM5 RelevTy_Fun         sget sget sget sget sget
-            2 -> return RelevTy_None
-            3 -> liftM  RelevTy_Err         sget
-
-instance Serialize RelevCoe where
-  sput (RelevCoe_Id             ) = sputWord8 0
-  sput (RelevCoe_Err     a      ) = sputWord8 1 >> sput a
-  sput (RelevCoe_Comp    a b    ) = sputWord8 2 >> sput a >> sput b
-  sput (RelevCoe_Fun     a b    ) = sputWord8 3 >> sput a >> sput b
-  sput (RelevCoe_Cast    a      ) = sputWord8 4 >> sput a
-  sput (RelevCoe_Eval    a b    ) = sputWord8 5 >> sput a >> sput b
-  sput (RelevCoe_CastTy  a b    ) = sputWord8 6 >> sput a >> sput b
-  sget
-    = do t <- sgetWord8
-         case t of
-            0 -> return RelevCoe_Id
-            1 -> liftM  RelevCoe_Err         sget
-            2 -> liftM2 RelevCoe_Comp        sget sget
-            3 -> liftM2 RelevCoe_Fun         sget sget
-            4 -> liftM  RelevCoe_Cast        sget
-            5 -> liftM2 RelevCoe_Eval        sget sget
-            6 -> liftM2 RelevCoe_CastTy      sget sget
-
-instance Serialize AnaEval where
-  sput (AnaEval_Var   a      ) = sputWord8 0 >> sput a
-  sput (AnaEval_WHNF         ) = sputWord8 1
-  sput (AnaEval_Lazy         ) = sputWord8 2
-  sput (AnaEval_Meet  a      ) = sputWord8 3 >> sput a
-  sput (AnaEval_Join  a      ) = sputWord8 4 >> sput a
-  sget
-    = do t <- sgetWord8
-         case t of
-            0 -> liftM  AnaEval_Var         sget
-            1 -> return AnaEval_WHNF         
-            2 -> return AnaEval_Lazy         
-            3 -> liftM  AnaEval_Meet        sget
-            4 -> liftM  AnaEval_Join        sget
-
 %%]

@@ -1236,7 +1236,8 @@ uidQualHNm modnm uid =
 
 %%[1
 instance HSNM UID where
-  mkHNm x = hsnFromString ('_' : show x)
+  mkHNm = HsName_UID
+  -- mkHNm x = hsnFromString ('_' : show x)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

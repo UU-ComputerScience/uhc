@@ -168,6 +168,8 @@ SEM Proc
                                                              JS.vardecl @jsnm $ Just $ JS.fun' @jsnm (length @formals.nmL) $ JS.Expr_Fun Nothing @formals.nmL (JS.Stat_Block $ Seq.toList @body.jsBodyStats)
                                                            ]
 
+SEM TopLevel
+  | Decl				lhs			.	jsTopStats	=	@decl.jsBodyStats
 %%]
 
 Body, Expr level

@@ -24,12 +24,15 @@
 %%% Constants
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs export(ConstRef(..))
+%%[(8 codegen) hs export(CFld, ConstRef(..))
 -- | Ref as Fld for Const, made up of 2 indices, global for all constants, and per category
 data ConstRef = ConstRef
   { constrefGlobal		:: !Int
   , constrefInCateg		:: !Int
   }
+
+instance Show ConstRef where
+  show r = "CRef_" ++ show (constrefGlobal r) ++ "_" ++ show (constrefInCateg r)
 
 type CFld = Fld' ConstRef
 

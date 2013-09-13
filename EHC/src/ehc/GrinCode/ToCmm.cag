@@ -104,13 +104,10 @@ PRAGMA nocycle
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Cmm types
+%%% Utility types
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen grin cmm) hs
-tyNd :: Cmm.Ty
-tyNd = Cmm.Ty_Nm $ mkHNm "Nd"
-
 type Nm = Cmm.Nm
 %%]
 
@@ -454,6 +451,11 @@ SEM GrExpr
   				lhs			.	grvalIntro      =   GrValIntro_None
 %%]
 
+%%[(8 codegen grin cmm)
+SEM GrVal
+  | LitStr      lhs         .   grvalIntro      =   GrValIntro_Str   @str (Just @constStrFld)
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Delayed unit gval
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -750,10 +752,17 @@ gvi2FullExpr = fromMaybe Cmm.undef . gvi2MbExpr
 
 -- | To directly inlineable usable expr
 gvi2MbInlineExpr :: GrValIntro -> Maybe Cmm.Expr
-gvi2MbInlineExpr = gviFoldInlineable (Just . Cmm.Expr_Nm, \i -> Just $ Cmm.Expr_Int (fromIntegral i) Nothing, Nothing)
+gvi2MbInlineExpr gvi
+  =   gviFoldInlineable (Just . Cmm.Expr_Nm, \i -> Just $ Cmm.Expr_Int (fromIntegral i) Nothing, Nothing) gvi
+  <|> gvi2MbConstExpr gvi
 
 gvi2MbExpr :: GrValIntro -> Maybe Cmm.Expr
 gvi2MbExpr gvi = gvi2MbInlineExpr gvi <|> gvi2MbNonInlineExpr gvi
+
+gvi2MbConstExpr :: GrValIntro -> Maybe Cmm.Expr
+gvi2MbConstExpr gvi = case gvi of
+  GrValIntro_Str _ (Just cref) -> return $ Cmm.var $ refOfFld cref
+  _                            -> Nothing
 
 gvi2MbNonInlineExpr :: GrValIntro -> Maybe Cmm.Expr
 gvi2MbNonInlineExpr gvi = case gvi of
@@ -773,7 +782,7 @@ gvi2MbNonInlineM gvi = case gvi of
 cmmBindFreshInM :: (HsName -> CmmBodyDecls) -> GviLoadStM GrValIntro
 cmmBindFreshInM mk = do
     nm <- fmap (hsnUniqify HsNameUniqifier_CMMTmpVar . mkHNm) $ lift freshUID
-    gviAppendM $ Cmm.declLocalRegVar tyNd nm Nothing & mk nm
+    gviAppendM $ Cmm.declLocalRegVar Cmm.tyNd nm Nothing & mk nm
     return $ GrValIntro_Nm nm
 
 cmmBindFreshIn :: UID -> DataGam -> (HsName -> CmmBodyDecls) -> (GrValIntro, CmmBodyDecls)
@@ -810,7 +819,7 @@ SEM GrExpr
   														e <- gviLoadExprM @expr.grvalIntro
   														case @pat.nmIntro of
   														  NmIntro_Single nmp annot -> do
-  														    gviAppendM $ Cmm.declLocalConst Cmm.Const_SSA tyNd nmp e
+  														    gviAppendM $ Cmm.declLocalConst Cmm.Const_SSA Cmm.tyNd nmp e
   														    return $ (GrValIntro_Nm nmp, patNmL2VAGam [nmp])
   														  NmIntro_Box nmp bx -> do
   														    gviAppendM $ Cmm.unbox nmp bx e
@@ -937,7 +946,13 @@ SEM GrModule
                                                           , let m = panicJust ("ToCmm.GrModule.Mod: " ++ show n) (Map.lookup n @entryNmMp)
                                                       ]
 %%]]
-                                                      (Seq.toList @bindL.cmmTopDecls)
+                                                      (Seq.toList
+                                                       $ (let mk f (Const_String {constString=s}) = Cmm.declGlobalConst Cmm.Const_CompileTime Cmm.tyStr8 (refOfFld f) (Cmm.str8 s)
+                                                              mk f  _                             = Seq.empty
+                                                          in  Seq.unions [ mk f c | (c,f) <- Map.toList $ conststMp @bindL.constSt ]
+                                                         )
+                                                       & @bindL.cmmTopDecls
+                                                      )
 %%[[9090
                                                       (Set.toList @bindL.includeS)
 %%]]
@@ -958,7 +973,7 @@ ATTR AllBind [ | | cmmTopDecls USE {&} {Seq.empty}: CmmTopDecls ]
 
 SEM GrBind
   | Bind        lhs         .   cmmTopDecls   	=   Seq.singleton $ Cmm.TopLevel_Proc $
-  														Cmm.Proc_Proc Nothing @nm [ Cmm.Formal_Formal Nothing False tyNd a | a <- @argNmL ] $
+  														Cmm.Proc_Proc Nothing @nm [ Cmm.Formal_Formal Nothing False Cmm.tyNd a | a <- @argNmL ] $
   															Cmm.Body_Body (Seq.toList @expr.cmmBodyDecls)
 %%]
 

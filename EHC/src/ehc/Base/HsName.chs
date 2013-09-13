@@ -224,6 +224,7 @@ hsnUniqifyEval = hsnUniqify HsNameUniqifier_Evaluated
 %%[99
 hsnHashWithSalt :: Int -> HsName -> Int
 hsnHashWithSalt salt (HsName_Base s      ) = hashWithSalt salt s
+hsnHashWithSalt salt (HsName_UID  i      ) = hashWithSalt salt i
 hsnHashWithSalt salt (HsName_Pos  p      ) = hashWithSalt salt p
 hsnHashWithSalt salt (HsName_Modf _ q b u) = hashWithSalt salt q `combine` hashWithSalt salt b `combine` hashWithSalt salt (Map.toList u)
 hsnHashWithSalt salt (HNmNr i n          ) = i `combine` hashWithSalt salt n
@@ -262,9 +263,10 @@ hsnFixateHash n                       = n
 %%% Haskell names, datatype
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1.HsName.type export(HsName(HsName_Base,HsName_Pos,HNmNr))
+%%[1.HsName.type export(HsName(..))
 data HsName
   =   HsName_Base                   !String
+  |   HsName_UID                    !UID
 %%[[7
   |   HsName_Modf
         { 
@@ -296,7 +298,7 @@ hsnMkModf q b u = hsnFixateHash $ HsName_Modf 0 q b u
 instance Eq HsName where
   n1 == n2
     = hsnCanonicSplit n1 == hsnCanonicSplit n2
-    where base (HsName_Base s1) (HsName_Base s2) = s1 == s2
+    -- where base (HsName_Base s1) (HsName_Base s2) = s1 == s2
 
 instance Ord HsName where
   n1 `compare` n2 = hsnCanonicSplit n1 `compare` hsnCanonicSplit n2
@@ -314,10 +316,11 @@ mkHNmBase s = hsnMkModf [] (HsName_Base s) Map.empty
 %%[1 export(hsnEnsureIsBase)
 -- | Eliminate alternative internal representations
 hsnEnsureIsBase :: HsName -> HsName
+hsnEnsureIsBase n@(HsName_UID _) = mkHNm $ show n
 %%[[7
-hsnEnsureIsBase (HsName_Pos i) = mkHNm $ show i
+hsnEnsureIsBase   (HsName_Pos i) = mkHNm $ show i
 %%]]
-hsnEnsureIsBase n              = n
+hsnEnsureIsBase n                = n
 %%]
 
 %%[1 export(hsnBaseUnpack',hsnBaseUnpack)
@@ -400,6 +403,7 @@ instance PP HsName where
 %%[7 export(hsnShow)
 hsnShow :: Bool -> String -> String -> HsName -> String
 hsnShow _ _    _    (HsName_Base   s           )  = {- hsnHNmFldToString -} s
+hsnShow _ _    _    (HsName_UID    i           )  = 'u' : show i
 hsnShow l qsep usep (HsName_Modf _ qs b us     )  = concat $ (intersperse qsep $ qs ++ [hsnShow l qsep usep b]) ++ showHsNameUniqifierMp' l usep us
 hsnShow _ _    _    (HsName_Pos    p           )  = show p
 %%[[8
@@ -414,6 +418,7 @@ hsnShow l _    usep (HNmNr n (OrigFunc   hsn))  = "fun_x_"    ++ show n ++ "_" +
 instance Show HsName where
 %%[[1
   show (HsName_Base s) = s
+  show (HsName_UID  i) = 'u' : show i
 %%][7
   show = hsnShow True "." "_@"
 %%]]
@@ -517,6 +522,7 @@ hsnShowAlphanumericShort x = hsnShowAlphanumeric x
 
 hsnShowAlphanumeric :: HsName -> String
 hsnShowAlphanumeric (HsName_Base s  )           = dontStartWithDigit(stringAlphanumeric s)
+hsnShowAlphanumeric (HsName_UID  i  )           = "u" ++ show i
 hsnShowAlphanumeric (HsName_Pos p)              = "y" ++ show p
 hsnShowAlphanumeric (HNmNr n OrigNone)          = "x" ++ show n
 hsnShowAlphanumeric (HNmNr n (OrigLocal orig))  = "x" ++ show n   -- hsnShowAlphanumeric orig
@@ -752,14 +758,14 @@ instance Binary HsNameUnique where
 
 instance Binary HsName where
   put (HsName_Base  a    ) = putWord8 0 >> put a
---  put (HNmQ         a    ) = putWord8 1 >> put a
+  put (HsName_UID   a    ) = putWord8 1 >> put a
   put (HsName_Pos   a    ) = putWord8 2 >> put a
   put (HNmNr        a b  ) = putWord8 3 >> put a >> put b
   put (HsName_Modf  a b c d) = putWord8 4 >> put a >> put b >> put c >> put d
   get = do t <- getWord8
            case t of
              0 -> liftM  HsName_Base    get
-             -- 1 -> liftM  HNmQ           get
+             1 -> liftM  HsName_UID    get
              2 -> liftM  HsName_Pos     get
              3 -> liftM2 HNmNr          get get
              4 -> liftM4 HsName_Modf    get get get get

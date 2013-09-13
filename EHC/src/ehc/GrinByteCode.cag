@@ -920,7 +920,7 @@ gviLd' opts ldcxt env stState gbState intro
               GrValIntro_Nm nm
                 -> (GrValIntroAlt_Delay ins dfltInc defaultOptimEffect nmLdInfo, gbState3)
                 where (nmLdInfo,gbState3) = nmLd' ldcxt env stState gbState2 nm
-              GrValIntro_Str s -- constInx
+              GrValIntro_Str s _ -- constInx
                 -> (GrValIntroAlt_OnTOS (ins Seq.::+: str) (dfltInc `ststIncDep` nrValWords) defaultOptimEffect [dfltBasicSize], gbState3)
                 where (gbState3,constLbl) = newLabelId gbState2
                       -- lce = linkChainConst constLbl constInx
