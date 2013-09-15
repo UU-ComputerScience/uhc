@@ -1234,12 +1234,6 @@ uidQualHNm modnm uid =
                         uidHNm uid
 %%]
 
-%%[1
-instance HSNM UID where
-  mkHNm = HsName_UID
-  -- mkHNm x = hsnFromString ('_' : show x)
-%%]
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Constants as appearing directly from the source text, without class related toInteger (etc) interpretation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1422,7 +1416,14 @@ instance Ord inx => Ord (Fld' inx) where
   (Fld {_fldNm =     n1}) `compare` (Fld {_fldNm =     n2}) = n1 `compare` n2
 
 instance Show inx => Show (Fld' inx) where
-  show f = maybe (maybe "??Fld" show $ _fldNm f) show $ _fldInx f
+  -- show f = maybe (maybe "??Fld" show $ _fldNm f) show $ _fldInx f
+  show (Fld {_fldNm=Just n , _fldInx=Just i }) = show n ++ "(" ++ show i ++ ")"
+  show (Fld {_fldNm=Nothing, _fldInx=Just i }) =                  show i
+  show (Fld {_fldNm=Just n , _fldInx=Nothing}) = show n
+  show _                                       = "??Fld"
+
+instance Show inx => PP (Fld' inx) where
+  pp = pp . show
 
 -- | Fld access preferred by name
 fldNm :: HSNM inx => Fld' inx -> HsName

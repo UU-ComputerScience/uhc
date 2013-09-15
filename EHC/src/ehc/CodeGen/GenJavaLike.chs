@@ -6,7 +6,7 @@
 Various Java like code generation utility snippets.
 %%]
 
-%%[(8 jazy || javascript) hs module {%{EH}Base.GenJavaLike}
+%%[(8 jazy || javascript) hs module {%{EH}CodeGen.GenJavaLike}
 %%]
 
 %%[(8 jazy || javascript) hs import(qualified Data.Map as Map,Data.Bits, Data.List)
@@ -24,85 +24,7 @@ Various Java like code generation utility snippets.
 %%[(8 jazy || javascript) hs import({%{EH}Foreign.Extract})
 %%]
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Environment info for code variables (CVar)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8 jazy || javascript) hs export(CVarInfo'(..), CVarMp'(..))
-data CVarInfo' ty varref tupfldref
-  = CVarInfo_This                           -- this object
-      { cvarType            :: ty
-      }
-  | CVarInfo_Local                          -- a local on the stack
-      { cvarType            :: ty
-      , cvarOffset          :: varref
-      }
-  | CVarInfo_DataFld                        -- a field of a datatype alternative
-      { cvarType            :: ty
-      , cvarData            :: CVarInfo' ty varref tupfldref
-      , cvarClassLocNm      :: HsName
-      , cvarFldNm           :: String
-      }
-  | CVarInfo_TupFld                         -- a field of a tuple
-      { cvarType            :: ty
-      , cvarTuple           :: CVarInfo' ty varref tupfldref
-      , cvarInx             :: Either tupfldref HsName
-      }
-  | CVarInfo_Global                         -- a global
-      { cvarType            :: ty
-      , cvarClassLocNm      :: HsName
-      , cvarFldNm           :: String
-      }
-  | CVarInfo_None
-
-type CVarMp' ty varref tupfldref = Map.Map HsName (CVarInfo' ty varref tupfldref)
-%%]
-
-%%[(8 jazy || javascript) hs export(cvarGlob)
--- | global reference
-cvarGlob :: ty -> HsName -> HsName -> HsName -> CVarInfo' ty varref tupfldref
-cvarGlob ty clNm nm safeVarNm
-  = CVarInfo_Global ty clNm' (show safeVarNm)
-%%[[8
-  where clNm' = clNm
-%%][50
-  where clNm' = maybe clNm (\m -> hsnSetQual m $ hsnQualified m) $ hsnQualifier nm
-%%]]
-%%]
-
-
-%%[(8 jazy || javascript) hs export(cvarToRef)
--- | generate ref 
-cvarToRef
-  :: ( ty -> e                  		-- make for 'this',
-     , ty -> varref -> e        		-- local,
-     , ty -> HsName -> String -> e		-- global,
-     , ty -> e -> HsName -> String -> e	-- data field,
-     ,       e -> e -> e				-- tuple field
-     , tupfldref -> e					-- offset
-     )
-     -> CVarMp' ty varref tupfldref -> CVarInfo' ty varref tupfldref -> e
-cvarToRef
-     (mkThis,mkLocal,mkGlobal,mkDataFld,mkTupFld,mkOffset)
-     cvarMp vi
-  = ref vi
-  where ref vi
-         = case vi of
-             CVarInfo_This   t
-               -> mkThis t
-             CVarInfo_Local   t o
-               -> mkLocal t o
-             CVarInfo_Global  t cl   f
-               -> mkGlobal t cl f
-             CVarInfo_DataFld t cvid cl f
-               -> mkDataFld t (ref cvid) cl f
-             CVarInfo_TupFld  t cvit f
-               -> mkTupFld (ref cvit) o
-               where o = case f of
-                           Left  o -> mkOffset o
-                           Right n -> ref $ panicJust "GenJavaLike.cvarToRef.CVarInfo_TupFld" $ Map.lookup n cvarMp
-             CVarInfo_None
-               -> panic "GenJavaLike.cvarToRef.CVarInfo_None"
+%%[(8 jazy || javascript) hs import({%{EH}CodeGen.CVar})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -142,14 +64,14 @@ javalikeArgsUnpack
         , [(HsName,CVarInfo' ty ref fldref)]
         )
 javalikeArgsUnpack limit (tyTup,tyObj,tyInt,toRef,mkInt,mkArgRefs,mkArgRefs5) args
-  | overLimit = ([(off0,tyTup)]         , [(mkInt nArgs,tyInt)], mkMp [ CVarInfo_TupFld tyObj tup (Left o) | o <- [toEnum 0..] ])
-  | otherwise = (zip offs (repeat tyObj), []                   , mkMp [ CVarInfo_Local  tyObj           o  | o <- offs         ])
+  | overLimit = ([(off0,tyTup)]         , [(mkInt nArgs,tyInt)], mkMp [ CVar_TupFld tyObj tup (Left o) | o <- [toEnum 0..] ])
+  | otherwise = (zip offs (repeat tyObj), []                   , mkMp [ CVar_Local  tyObj           o  | o <- offs         ])
   where nArgs = length args
         overLimit = nArgs > limit
         offs@(off0:_)
           | overLimit = mkArgRefs5 nArgs
           | otherwise = mkArgRefs  nArgs $ toRef args
-        tup   = CVarInfo_Local tyTup off0
+        tup   = CVar_Local tyTup off0
         mkMp  = zip args
 %%]
 

@@ -62,12 +62,12 @@ EHC_HS_UTIL_SRC_CHS						:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
 													$(addprefix Cil/,Common TyTag) \
 													$(addprefix Opts/,Base CommandLine) \
 													$(addprefix Pred/,ToCHR CHR Evidence EvidenceToCore EvidenceToTyCore Heuristics CommonCHR RedGraph) \
-													$(addprefix Base/,TermLike UID Parser Parser2 Pragma Strictness GenC GenJavaLike Target BasicAnnot Common Builtin Builtin2 HsName Debug TreeTrie CfgPP LaTeX HtmlCommon Bits FileSearchLocation PackageDatabase ParseUtils Optimize) \
+													$(addprefix Base/,TermLike UID Parser Parser2 Pragma Strictness GenC Target BasicAnnot Common Builtin Builtin2 HsName Debug TreeTrie CfgPP LaTeX HtmlCommon Bits FileSearchLocation PackageDatabase ParseUtils Optimize) \
 													$(addprefix Scanner/,Common Machine Scanner Token TokenParser) \
 													$(addsuffix /Parser,Ty EH HS Core Foreign GrinCode) \
 													$(addprefix Ty/,FIEnv FIEnv2 FitsInCommon FitsInCommon2 FitsIn Utils1 Utils2 AppSpineGam Trf/BetaReduce) \
 													$(addprefix Gam/,Base Utils Instantiate Quantify Full ClGam AppSpineGam FixityGam TyGam KiGam DataGam PolGam TyKiGam ValGam ClassDefaultGam) \
-													$(addprefix CodeGen/,ValAccess Const RefGenerator) \
+													$(addprefix CodeGen/,CVar ValAccess Const RefGenerator GenJavaLike) \
 													$(addprefix Foreign/,Boxing) \
 													$(addprefix Core/,Utils FFI Coercion Trf) \
 													$(addprefix Core/SysF/,AsTy) \
@@ -82,8 +82,6 @@ EHC_HS_UTIL_SRC_CHS						:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
 													)	) \
 													Debug/HighWaterMark \
 											)
-# for 7_2, removed 20090803
-#													Annotations/StateMachine Annotations/Constraints Annotations/ConstraintSolver Annotations/BelownessSolver Annotations/VarianceSolver Annotations/UniquenessSolver
 
 EHC_HS_UTIL_DRV_HS						:= $(patsubst $(SRC_EHC_PREFIX)%.chs,$(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(EHC_HS_UTIL_SRC_CHS))
 

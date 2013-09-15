@@ -373,11 +373,13 @@ cmpHsNameOnNm n1                       n2                       = compare n1    
 %%[1 export(mbHNm)
 mbHNm :: HsName -> Maybe String
 mbHNm = hsnMbBaseString
+{-# INLINE mbHNm #-}
 %%]
 
 %%[1.hsnFromString export(hsnFromString)
 hsnFromString :: String -> HsName
 hsnFromString = mkHNmBase
+{-# INLINE hsnFromString #-}
 %%]
 
 %%[1111.hsnHNmFldToString export(hsnHNmFldToString)
@@ -448,18 +450,10 @@ hsnInitLast n = either (\(qs,b) -> (map mkHNmBase qs, b)) (\x -> ([],x)) (hsnCan
 hsnPrefix                           ::  String -> HsName -> HsName
 hsnPrefix   p   hsn
   = maybe (mkHNmBase $ p ++ show hsn) (\(s,mk) -> mk $ p ++ s) $ hsnBaseUnpack hsn
-{-
-  = case hsnInitLast hsn of
-      (ns,n) -> mkHNm (ns,hsnFromString (p ++ show n))
--}
 
 hsnSuffix                           ::  HsName -> String -> HsName
 hsnSuffix       hsn   p
   = maybe (mkHNmBase $ show hsn ++ p) (\(s,mk) -> mk $ s ++ p) $ hsnBaseUnpack hsn
-{-
-  = case hsnInitLast hsn of
-      (ns,n) -> mkHNm (ns,hsnFromString (show n ++ p))
--}
 
 mkHNmPrefix :: HSNM x => String -> x -> HsName
 mkHNmPrefix p = hsnPrefix p . mkHNm
@@ -668,6 +662,12 @@ instance HSNM HsName where
 instance HSNM Int where
   mkHNm = mkHNm . show
 
+%%]
+
+%%[1
+instance HSNM UID where
+  mkHNm = HsName_UID
+  -- mkHNm x = hsnFromString ('_' : show x)
 %%]
 
 %%[1.HSNM.String
@@ -888,8 +888,8 @@ type HsNameS = Set.Set HsName
 %%% Safe names for Java like backends
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 jazy || javascript) hs export(hsnSafeJavaLike)
--- ensure a name valid for JVM like backends
+%%[(8 codegen) hs export(hsnSafeJavaLike)
+-- ensure a name valid for backends which are more restrictive in their allowed identifier character set
 hsnSafeJavaLike :: HsName -> HsName
 hsnSafeJavaLike
   = hsnMapQualified (concatMap safe . first) . hsnJavalikeFixUniqifiers . hsnEnsureIsBase
@@ -909,70 +909,6 @@ hsnSafeJavaLike
         safe ']'  = "_rbrack"
         safe '@'  = "_at"
         safe  c   = [c]
-
-%%[(8 jazy || javascript) hs export(hsnJavaLikeVar)
--- safe name of a variable
-hsnJavaLikeVar
-  :: ( HsName -> HsName             -- adapt for particular platform, before mangling here
-     , HsName -> HsName             -- post prefix
-     , String -> String             -- adapt module qualifiers
-     )
-     -> HsName -> HsName -> HsName -> HsName
-hsnJavaLikeVar (preadapt, postprefix, updqual) pkg mod v
-%%[[8
-  = hsnSafeJavaLike v
-%%][50
-  = postprefix $ hsnSafeJavaLike $ handleUpper $ qual $ preadapt v
-  where handleUpper v
-          = case hsnBaseUnpack v of
-               Just (s@(c:vs), mk) | isUpper c -> mk (s ++ "_")
-               _ -> v
-        qual v
-          = case hsnBaseUnpack' v of
-               Just (q, s, mk) -> mk (map updqual q) s
-               _ -> v
-%%]]
-%%]
-
-%%[(8 jazy || javascript) hs export(hsnJavaLikeVarCls)
--- name of the class of a variable
-hsnJavaLikeVarCls :: HsName -> HsName -> HsName -> HsName
-hsnJavaLikeVarCls pkg mod v
-%%[[8
-  = hsnSuffix mod ("-" ++ show v)
-%%][50
-  = hsnSetQual pkg v
-%%]]
-%%]
-
-%%[(8 jazy || javascript) hs export(hsnJavaLikeVarToFld)
--- field name of var name
-hsnJavaLikeVarToFld :: HsName -> HsName
-hsnJavaLikeVarToFld v
-%%[[8
-  = v
-%%][50
-  = hsnQualified v
-%%]]
-%%]
-
-%%[(8 jazy || javascript) hs export(hsnJavaLikeDataTy, hsnJavaLikeDataCon, hsnJavaLikeDataFldAt, hsnJavaLikeDataFlds)
--- name of class of data type
-hsnJavaLikeDataTy :: HsName -> HsName -> HsName -> HsName
-hsnJavaLikeDataTy pkg mod d = hsnSafeJavaLike d `hsnSuffix` "_Ty"
-
--- name of class of data constructor
-hsnJavaLikeDataCon :: HsName -> HsName -> HsName -> HsName
-hsnJavaLikeDataCon pkg mod d = hsnSafeJavaLike d `hsnSuffix` "_Con"
-
--- name of field of data
-hsnJavaLikeDataFldAt :: Int -> String
-hsnJavaLikeDataFldAt i = show i
-
--- all names of fields of data
-hsnJavaLikeDataFlds :: Int -> [String]
-hsnJavaLikeDataFlds arity = map hsnJavaLikeDataFldAt [0..arity-1]
-%%]
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

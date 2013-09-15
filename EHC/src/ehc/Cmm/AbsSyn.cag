@@ -369,8 +369,9 @@ DATA Expr
   -- Special constants
   | Lit				val				: Lit
 
-  -- Variable, internal and foreign
+  -- Variable, internal, global and foreign
   | Nm				nm				: Nm
+  | NmGlobal		nm				: Nm
   | NmForeign		nm				: String
 
   -- Operations
@@ -379,7 +380,10 @@ DATA Expr
   
   -- Memory node
   -- | Nd				elts			: FldExprL
-  | NdFldGet		expr			: Expr
+  | NdDataTagGet	expr			: Expr
+  | NdDataFldGet	expr			: Expr
+  					fld				: Fld
+  | NdTupFldGet		expr			: Expr
   					fld				: Fld
 
   -- Support for lazy representation

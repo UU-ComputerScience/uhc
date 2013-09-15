@@ -10,13 +10,10 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 jazy || javascript)
-ATTR AllNT [ topClassNm: HsName  pkgNm: HsName | | ]
-%%[[8
-ATTR AllNT [ moduleClassNm: HsName | | ]
-%%][99
-ATTR AllNT - CodeAGItf CModule [ moduleClassNm: HsName | | ]
+%%[[99
 ATTR CodeAGItf CModule [ | | moduleClassNm: HsName ]
 %%]]
+ATTR AllNT [ cvarNmModCfg: CVarNmModuleCfg | | ]
 %%]
 
 %%[(8 jazy || javascript)
@@ -28,6 +25,7 @@ SEM CModule
 %%][50
                             .   moduleClassNm   =   hsnSetQual @moduleNm $ hsnQualified @moduleNm
 %%]]
+				loc			.	cvarNmModCfg	=	CVarNmModuleCfg @pkgNm @topClassNm @moduleClassNm
 
 SEM CodeAGItf
   | AGItf       loc         .   topClassNm      =   hsnUnknown
@@ -36,6 +34,7 @@ SEM CodeAGItf
                             .   moduleClassNm   =   hsnUnknown
 %%][99
 %%]]
+                            .   cvarNmModCfg    =   emptyCVarNmModuleCfg
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -123,7 +122,7 @@ SEM CExpr
                                                     else let nLocals = length @binds.bindNmL
                                                          in  ( nLocals
                                                              , Map.fromList
-                                                                 [ (n,CVarInfo_Local tyDefault o)
+                                                                 [ (n,CVar_Local tyDefault o)
                                                                  | (n,o) <- @nmToRefAssocL
                                                                  ]
                                                              )
@@ -136,7 +135,7 @@ SEM CAlt
 
 %%[(8 jazy || javascript)
 SEM CExpr
-  | Var         loc         .   cvi             =   Map.findWithDefault (cvarGlob tyDefault @lhs.moduleClassNm @nm @varnm) @nm @lhs.cvarMp
+  | Var         loc         .   cvi             =   Map.findWithDefault (cvarGlob tyDefault @lhs.cvarNmModCfg @nm @varnm) @nm @lhs.cvarMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

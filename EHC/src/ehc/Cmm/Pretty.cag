@@ -228,6 +228,7 @@ SEM Expr
 
   -- Variable
   | Nm			lhs		.	pp		=	pp @nm
+  | NmGlobal	lhs		.	pp		=	pp @nm
   | NmForeign	lhs		.	pp		=	pp @nm
 
   -- Operations
@@ -236,8 +237,10 @@ SEM Expr
   
   -- Memory node
   -- | Nd				elts			: FldExprL
-  -- | NdFldGet		expr			: Expr
-  -- 					fld				: Fld
+  | NdDataTagGet
+  				lhs		.	pp		=	@expr.pp >|< ".#tag"
+  | NdDataFldGet NdTupFldGet
+  				lhs		.	pp		=	@expr.pp >|< "." >|< @fld
 
   -- Support for lazy representation
   -- | Eval		lhs		.	pp		=	"eval" >|< ppParens @nm

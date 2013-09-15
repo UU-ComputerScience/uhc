@@ -21,6 +21,8 @@
 
 %%[(8 codegen grin) hs import({%{EH}CodeGen.ValAccess} as VA, {%{EH}CodeGen.RefGenerator}, {%{EH}CodeGen.Const} as Const)
 %%]
+%%[(8 javascript) hs import({%{EH}CodeGen.CVar})
+%%]
 
 %%[(8 javascript) hs import({%{EH}Gam.DataGam})
 %%]

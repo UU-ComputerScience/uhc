@@ -142,7 +142,6 @@ DATA GrPatLam
   | Box			boxing          : {Boxing}
                 nm              : {HsName}
 
-
 DATA GrTag
   | Con         grtgAnn         : {GrTagAnn}
                 int             : {Int}

@@ -15,13 +15,15 @@
 %%[(8 javascript) hs import(UHC.Util.Utils, qualified UHC.Util.FastSeq as Seq)
 %%]
 
-%%[(8 javascript) hs import({%{EH}Base.Builtin},{%{EH}Base.Builtin2},{%{EH}BuiltinPrims},{%{EH}Base.BasicAnnot},{%{EH}Base.GenJavaLike})
+%%[(8 javascript) hs import({%{EH}Base.Builtin},{%{EH}Base.Builtin2},{%{EH}BuiltinPrims},{%{EH}Base.BasicAnnot},{%{EH}CodeGen.GenJavaLike})
 %%]
 
 %%[(8 javascript) hs import({%{EH}Gam.DataGam})
 %%]
 
 %%[(8 javascript) hs import(qualified {%{EH}JavaScript} as J, {%{EH}JavaScript}(CVarMp, CVarInfo, tyDefault))
+%%]
+%%[(8 javascript) hs import({%{EH}CodeGen.CVar})
 %%]
 
 %%[(8 javascript) hs import({%{EH}Foreign.Extract})
@@ -88,14 +90,14 @@ nmSwitchRes = mkHNm "_sw"
 
 %%[(8 javascript)
 SEM CBound
-  | *           loc         .   varnm           =   J.hsnJavaScriptVar @lhs.isGlobal @lhs.pkgNm @lhs.topClassNm @lhs.nm
+  | *           loc         .   varnm           =   J.hsnJavaScriptVar @lhs.cvarNmModCfg @lhs.isGlobal @lhs.nm
                 loc         .   varnm           :   HsName
 
 SEM CExpr
-  | Var         loc         .   varnm           =   J.hsnJavaScriptVar True @lhs.pkgNm @lhs.topClassNm @nm
+  | Var         loc         .   varnm           =   J.hsnJavaScriptVar @lhs.cvarNmModCfg True @nm
 
 SEM CPatFld
-  | Fld         loc         .   varnm           =   J.hsnJavaScriptVar False @lhs.pkgNm @lhs.topClassNm @fldNm
+  | Fld         loc         .   varnm           =   J.hsnJavaScriptVar @lhs.cvarNmModCfg False @fldNm
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -116,20 +118,20 @@ SEM CBound
 
 %%[(8 javascript)
 SEM CExpr
-  | Let         loc         .   nmToRefAssocL   =   map (\x -> (x, J.hsnJavaScriptVar @isGlobal @lhs.pkgNm @lhs.topClassNm x)) @binds.bindNmL
+  | Let         loc         .   nmToRefAssocL   =   map (\x -> (x, J.hsnJavaScriptVar @lhs.cvarNmModCfg @isGlobal x)) @binds.bindNmL
 %%]
 
 %%[(8 javascript)
 SEM CExpr
   | Lam         loc         .   (jsArgTyL,_,lamBindings)
                                                 =   if @hasFunHere
-                                                    then J.argsUnpack (map (J.hsnJavaScriptVar False @lhs.pkgNm @lhs.topClassNm)) @nmArgL
+                                                    then J.argsUnpack (map (J.hsnJavaScriptVar @lhs.cvarNmModCfg False)) @nmArgL
                                                     else ([],[],[])
 %%]
 
 %%[(90 javascript)
 SEM CBound
-  | FFE         loc         .   jsArgL          =   maybe [] (map (J.hsnJavaScriptVar False @lhs.pkgNm @lhs.topClassNm)) @expr.mbLam
+  | FFE         loc         .   jsArgL          =   maybe [] (map (J.hsnJavaScriptVar @lhs.cvarNmModCfg False)) @expr.mbLam
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -140,7 +142,7 @@ SEM CBound
 %%]
 -- dummy
 SEM CExpr
-  | Case        loc         .   scrutineeCVarInfo =   CVarInfo_None
+  | Case        loc         .   scrutineeCVarInfo =   CVar_None
 
 %%[(8 javascript)
 SEM CExpr
@@ -150,11 +152,11 @@ SEM CExpr
                                                         -> panic ("Core.ToJavaScript.CExpr.Case.Scrutinee_Var: " ++ show nm ++ " : not yet implemented")
                                                       (Scrutinee_Int _ : _)
                                                         -> ( @expr.js
-                                                           , CVarInfo_None
+                                                           , CVar_None
                                                            )
                                                       (Scrutinee_Tag tag : _)
                                                         -> ( gettag
-                                                           , CVarInfo_Local () $ panicJust "ToJavaScript.CExpr.Case scrutinee" $ J.exprMbVar @expr.js
+                                                           , CVar_Local () $ panicJust "ToJavaScript.CExpr.Case scrutinee" $ J.exprMbVar @expr.js
                                                            )
                                                         where (gettag)
                                                                  = case tag of
@@ -206,7 +208,7 @@ ATTR AllPat [ | | offsetBinds USE {++} {[]} : {[(HsName,CVarInfo,J.Expr)]} ]
 %%]
 -- dummy
 SEM CPatFld
-  | Fld         loc.cviField = CVarInfo_None
+  | Fld         loc.cviField = CVar_None
 
 %%[(8 javascript)
 SEM CPatFld
@@ -217,15 +219,15 @@ SEM CPatFld
                                                              ExprIsInt i -> (mkf $ Left  i,[])
                                                              ExprIsVar n -> (mkf $ Right n,[])
                                                              {-
-                                                             _           -> (mkf $ Right n,[(n,CVarInfo_Local t o,mkj @offset.js)])
+                                                             _           -> (mkf $ Right n,[(n,CVar_Local t o,mkj @offset.js)])
                                                                          where n = @varnm
                                                                                o = @lhs.offsetOffset
                                                                                (mkj,t) = (id,())
                                                              -}
-                                                        where mkf o = CVarInfo_TupFld tyDefault @lhs.scrutineeCVarInfo o
+                                                        where mkf o = CVar_TupFld tyDefault @lhs.scrutineeCVarInfo o
                                                       CTag _ cn _ _ _
                                                         -> case @offset.whatBelow of
-                                                             ExprIsInt i -> (CVarInfo_DataFld tyDefault @lhs.scrutineeCVarInfo hsnUnknown (show @objFldNm),[])
+                                                             ExprIsInt i -> (CVar_DataFld tyDefault @lhs.scrutineeCVarInfo hsnUnknown (show @objFldNm),[])
                                                              _           -> panic "Core.ToJavaScript.CPatFld.Fld.cviField"
                                                         -- where cn' = hsnJavaLikeDataCon @lhs.pkgNm @lhs.topClassNm cn
 %%]
@@ -333,7 +335,7 @@ SEM CExpr
                                                                            ]
                                                                        , J.var swRes
                                                                        )
-                                                                    where swRes   = J.hsnJavaScriptVar False @lhs.pkgNm @lhs.topClassNm $ hsnUniqifyUID HsNameUniqifier_JSSwitchResult @lUniq nmSwitchRes
+                                                                    where swRes   = J.hsnJavaScriptVar @lhs.cvarNmModCfg False $ hsnUniqifyUID HsNameUniqifier_JSSwitchResult @lUniq nmSwitchRes
                                                     in  alts
                 loc         .   lUniq           :   UNIQUEREF gUniq
   | CaseAltFail loc         .   js              =   @errorExpr.js

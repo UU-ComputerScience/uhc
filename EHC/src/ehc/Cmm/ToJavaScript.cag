@@ -17,7 +17,7 @@
 %%[(88 codegen cmm javascript) hs import(UHC.Util.Pretty,{%{EH}Base.GenC})
 %%]
 
-%%[(8 codegen grin) hs import({%{EH}CodeGen.ValAccess} as VA)
+%%[(8 codegen grin) hs import({%{EH}CodeGen.ValAccess} as VA, {%{EH}CodeGen.CVar})
 %%]
 %%[(8 codegen grin) hs import({%{EH}Gam.DataGam})
 %%]
@@ -91,8 +91,7 @@ ss = Seq.fromList
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen grin)
-ATTR AllNT [ topClassNm: HsName  pkgNm: HsName | | ]
-ATTR AllNT [ moduleClassNm: HsName | | ]
+ATTR AllNT [ cvarNmModCfg: CVarNmModuleCfg | | ]
 %%]
 
 %%[(8 codegen grin)
@@ -104,6 +103,7 @@ SEM Module
 %%][50
                             .   moduleClassNm   =   hsnSetQual @moduleNm $ hsnQualified @moduleNm
 %%]]
+				loc			.	cvarNmModCfg	=	CVarNmModuleCfg @pkgNm @topClassNm @moduleClassNm
 %%]
 
 %%[(8 codegen grin)
@@ -111,39 +111,40 @@ SEM AGItf
   | AGItf       loc         .   topClassNm      =   hsnUnknown
                             .   pkgNm           =   hsnUnknown
                             .   moduleClassNm   =   hsnUnknown
+                            .   cvarNmModCfg    =   emptyCVarNmModuleCfg
 %%]
 
 %%[(8 codegen cmm javascript)
 SEM Decl
-  | Const		       	loc         .   jsnm	=   JS.hsnJavaScriptVar False @lhs.pkgNm @lhs.topClassNm @nm
+  | Const		       	loc         .   jsnm	=   JS.hsnJavaScriptVar @lhs.cvarNmModCfg False @nm
 
 SEM Expr
-  | Nm 			       	loc         .   jsnm	=   JS.hsnJavaScriptVar False @lhs.pkgNm @lhs.topClassNm @nm
+  | Nm 			       	loc         .   jsnm	=   JS.hsnJavaScriptVar @lhs.cvarNmModCfg False @nm
 
 SEM Stmt
   | Alloc Box UnBox
-  						loc         .   jsnm	=   JS.hsnJavaScriptVar False @lhs.pkgNm @lhs.topClassNm @nm
+  						loc         .   jsnm	=   JS.hsnJavaScriptVar @lhs.cvarNmModCfg False @nm
 
 SEM Proc
-  | Proc        		loc         .   jsnm	=   JS.hsnJavaScriptVar False @lhs.pkgNm @lhs.topClassNm @nm
+  | Proc        		loc         .   jsnm	=   JS.hsnJavaScriptVar @lhs.cvarNmModCfg False @nm
 
 SEM Datum
-  | Nm	        		loc         .   jsnm	=   JS.hsnJavaScriptVar False @lhs.pkgNm @lhs.topClassNm @nm
+  | Nm	        		loc         .   jsnm	=   JS.hsnJavaScriptVar @lhs.cvarNmModCfg False @nm
 
 SEM RegNmInit
-  | NmInit	        	loc         .   jsnm	=   JS.hsnJavaScriptVar False @lhs.pkgNm @lhs.topClassNm @nm
+  | NmInit	        	loc         .   jsnm	=   JS.hsnJavaScriptVar @lhs.cvarNmModCfg False @nm
 
 SEM LValue
-  | Nm		        	loc         .   jsnm	=   JS.hsnJavaScriptVar False @lhs.pkgNm @lhs.topClassNm @nm
+  | Nm		        	loc         .   jsnm	=   JS.hsnJavaScriptVar @lhs.cvarNmModCfg False @nm
 
 SEM Formal
-  | Formal        		loc         .   jsnm	=   JS.hsnJavaScriptVar False @lhs.pkgNm @lhs.topClassNm @nm
+  | Formal        		loc         .   jsnm	=   JS.hsnJavaScriptVar @lhs.cvarNmModCfg False @nm
 
 SEM KindName
-  | KindName        	loc         .   jsnm	=   JS.hsnJavaScriptVar False @lhs.pkgNm @lhs.topClassNm @nm
+  | KindName        	loc         .   jsnm	=   JS.hsnJavaScriptVar @lhs.cvarNmModCfg False @nm
 
 SEM FldExpr
-  | Tuple				loc			.	jsnm	=	JS.hsnJavaScriptVar False @lhs.pkgNm @lhs.topClassNm $ fldNm @x1
+  | Tuple				loc			.	jsnm	=	JS.hsnJavaScriptVar @lhs.cvarNmModCfg False $ fldNm @x1
 
 %%]
 
@@ -293,24 +294,26 @@ Expression
 ATTR Expr Actual Lit [ | | jsExpr: {JS.Expr} ]
 
 SEM Expr
-  | Int					lhs         .   jsExpr	=   JS.Expr_Int @val
+  | Int					lhs         .   jsExpr	=   JS.intConst @val
   | Char				lhs         .   jsExpr	=   JS.Expr_Char @val
   | Str					lhs         .   jsExpr	=   JS.Expr_Str @val
   | Nm					lhs         .   jsExpr	=   JS.var @jsnm
   | Op					lhs			.	jsExpr	=	@op.mkExpr @exprs.jsExprL
-  | NdFldGet			lhs			.	jsExpr	=	JS.Expr_ObjFld @expr.jsExpr (fldNm @fld)
+  | NdDataTagGet		lhs			.	jsExpr	=	JS.Expr_ObjFld @expr.jsExpr JS.nmTag
+  | NdDataFldGet		lhs			.	jsExpr	=	JS.Expr_ObjFld @expr.jsExpr (fldNm @fld)
+  | NdTupFldGet			lhs			.	jsExpr	=	JS.Expr_ArrInx @expr.jsExpr (JS.intConst $ fldInx @fld)
   -- | Nd					lhs			.	jsExpr	=	JS.Expr_Obj @elts.nmExprL
   -- | Eval				lhs			.	jsExpr	=	JS.evl $ JS.var @jsnm
 
   -- TBD
-  | * - Int Char Str Nm Op NdFldGet Nd
+  | * - Int Char Str Nm Op NdDataTagGet NdDataFldGet NdTupFldGet Nd
   						lhs			.	jsExpr	=	JS.var hsnUnknown
 
 SEM Lit
-  | MInf				lhs			.	jsExpr	=	JS.Expr_Int $ negate (1 `shiftL` @sz)
-  | PInf				lhs			.	jsExpr	=	JS.Expr_Int $ (1 `shiftL` @sz) - 1
-  | MZero				lhs			.	jsExpr	=	JS.Expr_Int 0
-  | PZero				lhs			.	jsExpr	=	JS.Expr_Int 0
+  | MInf				lhs			.	jsExpr	=	JS.intConst $ negate (1 `shiftL` @sz)
+  | PInf				lhs			.	jsExpr	=	JS.intConst $ (1 `shiftL` @sz) - 1
+  | MZero				lhs			.	jsExpr	=	JS.intConst 0
+  | PZero				lhs			.	jsExpr	=	JS.intConst 0
   | True				lhs			.	jsExpr	=	JS.Expr_True
   | False				lhs			.	jsExpr	=	JS.Expr_False
 %%]

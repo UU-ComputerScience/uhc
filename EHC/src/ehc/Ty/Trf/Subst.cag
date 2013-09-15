@@ -237,7 +237,7 @@ SEM Label
 		    loc     .   needRepl    =   case @tvUse of
 		    	    		           TVFree -> @isRepl
 						   _      -> False
-                    inst    .   repl'       =   if @needRepl then @replv else Label_Lab (HsName_Base "")
+                    inst    .   repl'       =   if @needRepl then @replv else Label_Lab (mkHNmBase "")
 %%]
 
 %%[(13 hmtyinfer || hmtyast)

@@ -15,7 +15,11 @@
 
 %%[(8 javascript) hs import({%{EH}Gam.DataGam})
 %%]
-%%[(8 javascript) hs import({%{EH}Base.GenJavaLike})
+
+%%[(8 javascript) hs import({%{EH}CodeGen.CVar})
+%%]
+
+%%[(8 javascript) hs import({%{EH}CodeGen.GenJavaLike})
 %%]
 
 %%[(8 javascript) hs export(Alt(..), AltL) 
@@ -54,13 +58,12 @@ nmTag       = mkHNm "_tag_"
 %%]
 
 %%[(8 javascript) hs export(hsnJavaScriptVar)
-hsnJavaScriptVar :: Bool -> HsName -> HsName -> HsName -> HsName
+-- hsnJavaScriptVar :: Bool -> HsName -> HsName -> HsName -> HsName
+hsnJavaScriptVar :: CVarNmModuleCfg -> Bool -> HsName -> HsName
 %%[[8
-hsnJavaScriptVar isGlobal = hsnJavaLikeVar (id, id, id)
+hsnJavaScriptVar = hsnJavaLikeVar (\_ -> id, id, id)
 %%][50
-hsnJavaScriptVar isGlobal = hsnJavaLikeVar (hsn, hsnPrefix "$", ('$':))
-  where hsn | isGlobal  = id
-            | otherwise = hsnQualified
+hsnJavaScriptVar = hsnJavaLikeVar (\isglob -> if isglob then id else hsnQualified, hsnPrefix "$", ('$':))
 %%]]
 %%]
 
