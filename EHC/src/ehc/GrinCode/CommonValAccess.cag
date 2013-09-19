@@ -3,66 +3,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Named value access
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8 codegen grin)
-ATTR AllGrExpr AllBind [ vaGam: {ValAccessGamG} | | ]
-
-SEM GrExpr
-  | Seq         body        .   vaGam           =   @newVaGam `Map.union` @lhs.vaGam
-
-SEM GrBind
-  | Bind        expr        .   vaGam           =   @newVaGam `Map.union` @lhs.vaGam
-
-SEM GrAlt
-  | Alt         expr        .   vaGam           =   @newVaGam `Map.union` @lhs.vaGam
-%%]
-
-%%[(8 codegen grin)
-SEM GrModule
-  | Mod         loc         .   vaGam           =   Map.fromList $ L.map (\(n,o) -> (n,Val_GlobEntry $ eiEntryFld o)) $ Map.toList @entryNmMp
-
-SEM GrAlt
-  | Alt         loc         .   newAltNmL       =   case @altFetch of
-                                                        AltFetch_Many ns  -> ns
-                                                        AltFetch_One  n _ -> [n]
-                                                        _                 -> []
-%%]
-
-SEM GrBind
-  | Bind        loc         .   newVaGam        =   Map.fromList [ (n,Val_Local (GB.ststDepth @stState - o) (GB.ValAccessAnnot_Annot basicAnnotWord)) | (n,o) <- zip @argNmL [GB.nrCallRetWords ..] ]
-
-%%[(8 codegen grin)
-SEM GrExpr
-  | *           loc         .   nmEnv           =   NmEnv
-                                                      { neVAGam = @lhs.vaGam
-%%[[50
-                                                      , neImpNmMp = @lhs.impNmFldMpMp
-                                                      , neExtra   = @lhs.lamMp -- , GB.neLamMp   = @lhs.lamMp
-%%]]
-                                                      }
-
-SEM GrBind
-  | Bind        loc         .   nmEnv           =   NmEnv
-                                                      { neVAGam = @lhs.vaGam
-%%[[50
-                                                      , neImpNmMp = @lhs.impNmFldMpMp
-                                                      , neExtra   = @lhs.lamMp -- , GB.neLamMp   = @lhs.lamMp
-%%]]
-                                                      }
-
-SEM GrModule
-  | Mod         loc         .   nmEnv           =   NmEnv
-                                                      { neVAGam = @vaGam
-%%[[50
-                                                      , neImpNmMp = @lhs.impNmFldMpMp
-                                                      , neExtra   = @lhs.lamMp -- , GB.neLamMp   = @lhs.lamMp
-%%]]
-                                                      }
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Alt info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -99,6 +39,13 @@ SEM GrExpr
   | Case        loc         .   nrOfAlts        =   @altL.gathNrOfAlts
 %%]
 
+%%[(8 codegen grin)
+SEM GrAlt
+  | Alt         loc         .   newAltNmL       =   case @altFetch of
+                                                        VA.AltFetch_Many ns  -> ns
+                                                        VA.AltFetch_One  n _ -> [n]
+                                                        _                 -> []
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Determine how names introduced by case alt are used: often only 1; then a different fetch can be done
@@ -109,9 +56,9 @@ SEM GrAlt
   | Alt         loc         .   (altFetch,nrOfFlds)
                                                 =   let nmOffs = zip @pat.introNmL [0..]
                                                     in  ( case [ x | x@(n,o) <- nmOffs, n `Map.member` @expr.gathFviMp ] of
-                                                            []      -> AltFetch_Zero
-                                                            [(n,o)] -> AltFetch_One n o
-                                                            _       -> AltFetch_Many @pat.introNmL
+                                                            []      -> VA.AltFetch_Zero
+                                                            [(n,o)] -> VA.AltFetch_One n o
+                                                            _       -> VA.AltFetch_Many @pat.introNmL
                                                         , length nmOffs
                                                         )
 %%]
@@ -234,7 +181,6 @@ ATTR AllBind [ | | entryNms USE {Seq.:++:} {Seq.empty}: {Seq.FastSeq EntryInfo} 
 %%[(8 codegen grin)
 SEM GrBind
   | Bind        lhs         .   entryNms        =   Seq.singleton (EntryInfo @nm noFld (L.null @argNmL) @entryNmConst)
-                loc         .   entryFld        =   vaGlobRef $ panicJust "GrBind.Bind.entryFld" $ nmEnvLookup @nm @nmEnv
 %%]
 
 %%[(8 codegen grin)
@@ -246,11 +192,6 @@ SEM GrModule
                                                     in  ( mpMod, entryL
                                                         , L.map eiIsCAF entryL
                                                         )
-%%]
-
-%%[(8 codegen grin)
-SEM GrModule
-  | Mod         loc         .   mainEntryFld	=   maybe noFld vaGlobRef $ (nmEnvLookup hsnMain @nmEnv :: Maybe ValAccessG)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -268,20 +209,4 @@ SEM GrExpr
 
 %%]
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Extra check whether all used names are defined
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8 codegen grin)
-ATTR GrAGItf GrModule [ | | errs: {[Err]} ]
-
-SEM GrModule
-  | Mod         loc         .   errs            =   let undefNms = (Map.keysSet @bindL.gathFviMp `Set.difference` Map.keysSet @vaGam)
-%%[[50
-                                                                     `Set.difference` offMpMpKeysSet @lhs.impNmFldMpMp
-%%]]
-                                                    in  if Set.null undefNms
-                                                        then []
-                                                        else [rngLift emptyRange mkErr_NamesNotIntrod "(Internal) GRIN ByteCode location" $ Set.toList undefNms]
-%%]
 

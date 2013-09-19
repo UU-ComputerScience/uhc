@@ -664,7 +664,7 @@ SEM Expr
                                                         . C.fuL2ExprNodeFldL True (const Nothing)
                                                         -- . (\v -> v `seq` tr "Expr.DataFields.dfexpr" ("arity" >#< length dflt) v)
                                                         . listSaturateWith 0 (ctagArity (dtiCTag dti) - 1) (\(_,(_,Just o)) -> o) dflt
-                                                        . C.fuMap (\l mke -> let o = fldInx $ dtiOffsetOfFld l dti in (mke dti o,o))
+                                                        . C.fuMap (\l mke -> let o = fldInt $ dtiOffsetOfFld l dti in (mke dti o,o))
                                                       where dflt = [ (o,(f,(C.Expr_TupIns (acoreBuiltinUndefined @lhs.opts) (dtiCTag dti) f (acoreInt o) (mkDflt f),Just o)))
                                                                    | (f,i) <- Map.toList $ dtiFldMp dti, let o = dfiOffset i
                                                                    ]
@@ -679,7 +679,7 @@ SEM Expr
                                                            _ -> acoreLet C.ValBindCateg_Plain (err ++  @dataFieldExpr.dfeValBindL)
                                                                   (acoreSatSelsCasesTy (C.rceUpdEnv (acoreVar en) @rceEnvTC) (Just (mkHNm @lUniq,ty "1" @lUniq)) @dataFieldExpr.tcdfeExpr alts)
                                                              where alts = [ ( dtiCTag dti
-                                                                            , [ (f,{-f,-}fldInx $ dfiOffset i) | (f,i) <- Map.toList $ dtiFldMp dti ]
+                                                                            , [ (f,{-f,-}fldInt $ dfiOffset i) | (f,i) <- Map.toList $ dtiFldMp dti ]
                                                                             , Nothing
                                                                             , mkTup dti acoreVar (acoreTagTupTy (dtiCTag dti) (C.tyErr "Expr.DataFields.mkExprTuple")) @dataFieldExpr.tcfuExprL
                                                                             )
@@ -760,7 +760,7 @@ SEM DataConstr
 SEM Decl
   | Data        loc         .   fldSelValBindL
                                             =   let (xn1:xn2:_) = hsnLclSupply
-                                                    tgSels f i = [ (t,[(f,fldInx o)],Nothing,acoreVar f) | (t,o) <- Map.toList $ dficInTagMp i ]
+                                                    tgSels f i = [ (t,[(f,fldInt o)],Nothing,acoreVar f) | (t,o) <- Map.toList $ dficInTagMp i ]
                                                     dataTy = C.tyToTyCore fitsInForToTyCore (tyKiGamLookupKi @lhs.finTyKiGam) @dataTy
                                                 in  if @isNewtype
                                                     then [ [ C.mkValThunkBind1 f (acoreVar $ ehbnId $ ehcOptBuiltinNames @lhs.opts)

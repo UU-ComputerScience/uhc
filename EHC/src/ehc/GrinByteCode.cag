@@ -662,7 +662,7 @@ type ValAccessG 	= ValAccess 	StackDepth Fld Int Int
 type ValAccessGamG 	= ValAccessGam 	StackDepth Fld Int Int
 
 vaEntryInx :: ValAccessG -> Int
-vaEntryInx = fldInx . vaGlobRef
+vaEntryInx = fldInt . vaGlobRef
 %%]
 
 %%[(8 codegen grin).NmEnvGB hs export(NmEnvGB)
@@ -817,7 +817,7 @@ nmLd' ldcxt env stState gbState nm
                   )
              Val_GlobEntry o
                -> ( ( mva
-                    , loadWithPreFrom [instrann' AnnIdUse nm $ ldg InsOp_LocB_TOS (linkChainCode codeLbl $ fldInx o)]
+                    , loadWithPreFrom [instrann' AnnIdUse nm $ ldg InsOp_LocB_TOS (linkChainCode codeLbl $ fldInt o)]
                                       nrValWords LoadSrc_TOS -- (offSrc 0 nrValWords)
                     , dfltBasicSize, GCPermit_Must
                     )

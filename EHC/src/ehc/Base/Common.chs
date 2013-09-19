@@ -1394,7 +1394,7 @@ allKnownPrimMp
 %%% Field access, holding both name and offset, for delayed decision about this
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs export(Fld'(..), Fld, noFld, fldInx, fldNm)
+%%[(8 codegen) hs export(Fld'(..), Fld, noFld)
 -- | Field (combined dereference + field access), doubly represented by index and name
 data Fld' inx
   = Fld
@@ -1406,7 +1406,19 @@ type Fld = Fld' Int
 
 noFld :: Fld
 noFld = Fld (Just hsnUnknown) (Just 0)
+%%]
 
+%%[(8 codegen) hs export(mkFldNm, mkFldInx)
+-- | Make a Fld holding only a name
+mkFldNm :: HsName -> Fld' inx
+mkFldNm n = Fld (Just n) Nothing
+
+-- | Make a Fld holding only an inx
+mkFldInx :: inx -> Fld' inx
+mkFldInx i = Fld Nothing (Just i)
+%%]
+
+%%[(8 codegen) hs
 instance Eq inx => Eq (Fld' inx) where
   (Fld {_fldInx=Just i1}) == (Fld {_fldInx=Just i2}) = i1 == i2
   (Fld {_fldNm =     n1}) == (Fld {_fldNm =     n2}) = n1 == n2
@@ -1424,14 +1436,34 @@ instance Show inx => Show (Fld' inx) where
 
 instance Show inx => PP (Fld' inx) where
   pp = pp . show
+%%]
 
+%%[(8 codegen) hs export(fldFoldNmInx, fldFoldInxNm)
+-- | Fold over Fld, preference to name
+fldFoldNmInx :: (HsName -> x) -> (inx -> x) -> x -> Fld' inx -> x
+fldFoldNmInx n i dflt f = maybe (maybe dflt i $ _fldInx f) n $ _fldNm f
+
+-- | Fold over Fld, preference to inx
+fldFoldInxNm :: (HsName -> x) -> (inx -> x) -> x -> Fld' inx -> x
+fldFoldInxNm n i dflt f = maybe (maybe dflt n $ _fldNm f) i $ _fldInx f
+%%]
+
+%%[(8 codegen) hs export(fldInt, fldNm)
 -- | Fld access preferred by name
 fldNm :: HSNM inx => Fld' inx -> HsName
-fldNm f = maybe (maybe hsnUnknown mkHNm $ _fldInx f) id $ _fldNm f
+fldNm = fldFoldNmInx id mkHNm hsnUnknown -- maybe (maybe hsnUnknown mkHNm $ _fldInx f) id $ _fldNm f
+{-# INLINE fldNm #-}
 
 -- | Fld access preferred by index
-fldInx :: Fld -> Int
-fldInx f = maybe 0 id $ _fldInx f
+fldInt :: Fld -> Int
+fldInt = fldFoldInxNm (const 0) id 0 -- maybe 0 id $ _fldInx f
+{-# INLINE fldInt #-}
+%%]
+
+%%[(8 codegen) hs export(fldMapNm)
+-- |
+fldMapNm :: (HsName -> HsName) -> Fld' inx -> Fld' inx
+fldMapNm f fld = fld {_fldNm = fmap f $ _fldNm fld}
 %%]
 
 %%[(8 codegen) hs export(RefOfFld(..))
@@ -1442,7 +1474,7 @@ instance RefOfFld (Fld' inx) (Fld' inx) where
   refOfFld = id
 
 instance RefOfFld Fld Int where
-  refOfFld = fldInx
+  refOfFld = fldInt
 
 instance HSNM inx => RefOfFld (Fld' inx) HsName where
   refOfFld = fldNm

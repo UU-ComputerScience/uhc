@@ -230,8 +230,8 @@ SEM CAlt
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 jazy) hs
-type CVarInfo = CVarInfo' J.Type J.Local J.Local
-type CVarMp   = CVarMp'   J.Type J.Local J.Local
+type CVarInfo = CVarInfo' CTag J.Type J.Local String J.Local
+type CVarMp   = CVarMp'   CTag J.Type J.Local String J.Local
 %%]
 
 %%[(8 jazy) hs
@@ -239,15 +239,17 @@ tyDefault = jtyObj
 %%]
 
 %%[(8 jazy) hs
-jvRef :: CVarMp -> CVarInfo -> J.JInstr
+jvRef :: CVarNmModuleCfg -> CVarMp -> CVarInfo -> J.JInstr
 jvRef
   = cvarToRef
       ( \t        -> j $ J.Instr_Load t 0
       , \t o      -> j $ J.Instr_Load t o
-      , \t cl f   -> j $ J.Instr_Get True (J.Const_Field cl f t)
+      , \t cl f   -> j $ J.Instr_Get True (J.Const_Field cl (show f) t)
       , \t e cl f -> e ## J.Instr_Get False (J.Const_Field cl f t)
       , \  e o    -> e ## o ## J.Instr_ALoad jtyObj
       , jiIntConst
+      , \cfg ct -> hsnJavaLikeDataCon cfg (ctagNm ct)
+      , \cfg _ n -> hsnJazyVar cfg n
       )
 %%]
 
@@ -290,7 +292,7 @@ SEM CExpr
                                                                  = case tag of
                                                                      CTagRec         -> (jtyTup,emptyJI,mkcvi jtyTup)
                                                                      CTag tn _ _ _ _ -> ( J.Type_Class tn'
-                                                                                        , jvRef @lhs.cvarMp cvi
+                                                                                        , jvRef @lhs.cvarNmModCfg @lhs.cvarMp cvi
                                                                                           ## J.Instr_Get False (J.Const_Field tn' nmTag J.Type_Int)
                                                                                         , cvi
                                                                                         )
@@ -308,7 +310,7 @@ SEM CAlt
   | Alt         loc         .   (scrutineeAltJI,scrutineeCVarInfo,scrutineeTag)
                                                 =   case @pat.scrutinees of
                                                       (Scrutinee_Tag (CTag _ cn tag _ _) : _)
-                                                        -> ( jiCast ty (jvRef @lhs.cvarMp cvi)
+                                                        -> ( jiCast ty (jvRef @lhs.cvarNmModCfg @lhs.cvarMp cvi)
                                                              ## J.Instr_Store ty (cvarOffset cvi)       -- assume here it is a CVar_Local as constructed above
                                                            , cvi {cvarType = ty}
                                                            , tag
@@ -374,9 +376,9 @@ SEM CPatFld
                                                         where mkf o = CVar_TupFld tyDefault @lhs.scrutineeCVarInfo o
                                                       CTag _ cn _ _ _
                                                         -> case @offset.whatBelow of
-                                                             ExprIsInt i -> (CVar_DataFld tyDefault @lhs.scrutineeCVarInfo cn' (hsnJavaLikeDataFldAt i),@lhs.offsetOffset,[])
+                                                             ExprIsInt i -> (CVar_DataFld tyDefault @lhs.scrutineeCVarInfo @lhs.ctag (hsnJavaLikeDataFldAt i),@lhs.offsetOffset,[])
                                                              _           -> panic "Core.ToJazy.CPatFld.Fld.cviField"
-                                                        where cn' = hsnJavaLikeDataCon @lhs.cvarNmModCfg cn
+                                                        -- where cn' = hsnJavaLikeDataCon @lhs.cvarNmModCfg cn
 %%]
 
 %%[(8 jazy)
@@ -513,7 +515,7 @@ SEM CExpr
   | Int         loc         .   ji              =   jiNew nmInt  [(j $ J.Instr_Const $ J.Const_Int    $ fromInteger $ toInteger       @int , J.Type_Int )]
   | Char        loc         .   ji              =   jiNew nmChar [(j $ J.Instr_Const $ J.Const_Int    $ fromInteger $ toInteger $ ord @char, J.Type_Char)]
   | String      loc         .   ji              =   jiNew nmStr  [(j $ J.Instr_Const $ J.Const_String                                 @str , jtyStr     )]
-  | Var         loc         .   ji              =   jvRef @lhs.cvarMp @cvi
+  | Var         loc         .   ji              =   jvRef @lhs.cvarNmModCfg @lhs.cvarMp @cvi
   | Tup         loc         .   ji              =   jiNewTupOrData @lhs.cvarNmModCfg @tag []
   | App         loc         .   ji              =   if @isTopApp'
                                                     then let (f:as) = reverse @jiArgFunL
@@ -749,7 +751,7 @@ SEM CModule
                             .   methMainNm      =   if ehcOptGenTrace @lhs.opts then "runVisuallyTraced" else "runTimed"
                             .   methMain        =   let d f = jiNew (hsnJavaLikeDataCon @cvarNmModCfg $ ehcOptBuiltin @lhs.opts f) []
 %%[[99
-                                                        v f = jvRef @lhs.cvarMp (cvarGlob tyDefault @cvarNmModCfg n (hsnJazyVar @cvarNmModCfg n))
+                                                        v f = jvRef @cvarNmModCfg @lhs.cvarMp (cvarGlob tyDefault @cvarNmModCfg n n)
                                                             where n = ehcOptBuiltin @lhs.opts f
 %%]]
                                                     in  J.Method_Method [J.Flag_Public,J.Flag_Static] "main" [J.Type_Array jtyStr] Nothing
@@ -830,7 +832,7 @@ SEM CModule
 %%[[98
                                                                           , J.Method_Method [J.Flag_Public] nmToTuple [] (Just jtyTup)
                                                                                (jiToCd
-                                                                                $  jiNewTup [ jvRef @lhs.cvarMp (CVar_DataFld jtyObj (CVar_This cn'ty) cn' f) | f <- fldL ]
+                                                                                $  jiNewTup [ jvRef @lhs.cvarNmModCfg @lhs.cvarMp (CVar_DataFld jtyObj (CVar_This cn'ty) ctag f) | f <- fldL ]
                                                                                 ## J.Instr_Return (Just jtyTup)
                                                                                )
 %%]]

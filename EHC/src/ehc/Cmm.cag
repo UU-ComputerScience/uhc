@@ -53,7 +53,7 @@ C subset, modelled after C--
 %%[(8 codegen cmm) hs import({%{EH}Foreign.Boxing}) export(module {%{EH}Foreign.Boxing})
 %%]
 
-%%[(8 codegen cmm) hs import({%{EH}CodeGen.RefGenerator})
+%%[(8 codegen cmm) hs import({%{EH}CodeGen.RefGenerator}, {%{EH}CodeGen.CVar})
 %%]
 %%[(8888 codegen cmm) hs import({%{EH}CodeGen.ValAccess} as VA (Fld(..)))
 %%]
@@ -96,6 +96,11 @@ data ConstKind
 instance Show ConstKind where
   show Const_CompileTime 	= "const"
   show Const_SSA			= "ssa"
+%%]
+
+%%[(8 codegen cmm) hs export(CVarInfo, CVarMp)
+type CVarInfo = CVarInfo' Tag Ty Fld Nm Int
+type CVarMp   = CVarMp'   Tag Ty Fld Nm Int
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -175,9 +180,9 @@ declLocalStackVar t nm me = Seq.fromList [BodyDecl_StackDecl [Datum_Nm nm, Datum
 
 -- | Declare & assign (register) variable
 declLocalRegVar :: Ty -> Nm -> Maybe Expr -> Seq.Seq BodyDecl
-declLocalRegVar t nm me = Seq.fromList $
-     [BodyDecl_Decl $ Decl_Regs False $ Regs_Regs Nothing t [RegNmInit_NmInit nm Nothing]]
-  ++ maybe [] (\e -> [BodyDecl_Stmt $ Stmt_Assign [LValue_Nm nm] [e]]) me
+declLocalRegVar t nm me
+  = Seq.fromList [BodyDecl_Decl $ Decl_Regs False $ Regs_Regs Nothing t [RegNmInit_NmInit nm Nothing]]
+    `Seq.union` maybe Seq.empty (\e -> assign nm e) me
 
 -- | Locally declare & assign constant (or variation)
 declLocalConst :: ConstKind -> Ty -> Nm -> Expr -> Seq.Seq BodyDecl
@@ -202,6 +207,12 @@ ret :: Maybe Expr -> Seq.Seq BodyDecl
 ret me = Seq.fromList [BodyDecl_Stmt $ Stmt_Ret Nothing Nothing $ maybe [] (\e -> [Actual_Actual Nothing e]) me]
 %%]
 
+%%[(8 codegen cmm) hs export(assign)
+-- | Assign
+assign :: Nm -> Expr -> Seq.Seq BodyDecl
+assign nm e = Seq.fromList [BodyDecl_Stmt $ Stmt_Assign [LValue_Nm nm] [e]]
+%%]
+
 %%[(8 codegen cmm) hs export(alloc, box, unbox)
 -- | Alloc
 alloc :: DataGam -> Nm -> Tag -> [Expr] -> Seq.Seq BodyDecl
@@ -221,11 +232,16 @@ unbox nm bx e = Seq.fromList [BodyDecl_Stmt $ Stmt_UnBox nm bx e]
 %%% Constructing: expr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen cmm) hs export(var, undef, ffivar)
+%%[(8 codegen cmm) hs export(var, cvar, undef, ffivar)
 -- | Var ref
 var :: Nm -> Expr
 var = Expr_Nm
 {-# INLINE var #-}
+
+-- | Var ref
+cvar :: CVarInfo -> Expr
+cvar = Expr_CVar
+{-# INLINE cvar #-}
 
 -- | Foreign var ref
 ffivar :: String -> Expr

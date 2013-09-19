@@ -370,7 +370,10 @@ DATA Expr
   | Lit				val				: Lit
 
   -- Variable, internal, global and foreign
+  | CVar			cvar			: CVarInfo
   | Nm				nm				: Nm
+  | NmImported		moduleNm		: Nm
+  					nm				: Nm
   | NmGlobal		nm				: Nm
   | NmForeign		nm				: String
 
@@ -380,10 +383,10 @@ DATA Expr
   
   -- Memory node
   -- | Nd				elts			: FldExprL
-  | NdDataTagGet	expr			: Expr
-  | NdDataFldGet	expr			: Expr
+  | NdDataTagGet	nm				: Nm
+  | NdDataFldGet	nm				: Nm
   					fld				: Fld
-  | NdTupFldGet		expr			: Expr
+  | NdTupFldGet		nm				: Nm
   					fld				: Fld
 
   -- Support for lazy representation

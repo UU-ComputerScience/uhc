@@ -8,7 +8,7 @@
 %%[(8 codegen grin cmm) hs import(Data.Maybe, Data.List as L, UHC.Util.Pretty, UHC.Util.FastSeq as Seq, UHC.Util.Utils, qualified Data.Set as Set, qualified Data.Map as Map)
 %%]
 
-%%[(8 codegen grin cmm) hs import(Control.Monad, Control.Monad.State, Control.Applicative)
+%%[(8 codegen grin cmm) hs import(Control.Monad, Control.Monad.State, Control.Monad.Reader, Control.Applicative)
 %%]
 
 %%[(8 codegen grin cmm) hs import({%{EH}Base.Common},{%{EH}Opts},{%{EH}Base.Builtin},qualified {%{EH}Config} as Cfg)
@@ -19,12 +19,10 @@
 %%[(8 codegen grin cmm) hs import({%{EH}BuiltinPrims})
 %%]
 
-%%[(8 codegen grin) hs import({%{EH}CodeGen.ValAccess} as VA, {%{EH}CodeGen.RefGenerator}, {%{EH}CodeGen.Const} as Const)
-%%]
-%%[(8 javascript) hs import({%{EH}CodeGen.CVar})
+%%[(8 codegen grin) hs import(qualified {%{EH}CodeGen.ValAccess} as VA hiding(NmEnv, nmEnvLookup), {%{EH}CodeGen.CVar}, {%{EH}CodeGen.RefGenerator}, {%{EH}CodeGen.Const} as Const)
 %%]
 
-%%[(8 javascript) hs import({%{EH}Gam.DataGam})
+%%[(8 codegen grin) hs import({%{EH}Gam.DataGam})
 %%]
 
 %%[(88 codegen grin cmm) hs import({%{EH}GrinCode.Pretty})
@@ -54,7 +52,7 @@ grinMod2CmmMod
   :: EHCOpts
      -> DataGam
 %%[[50
-     -> LamMp -> [HsName] -> HsName2FldMpMp -> HsName2FldMp
+     -> LamMp -> [HsName] -> VA.HsName2FldMpMp -> VA.HsName2FldMp
 %%]]
      -> GrModule
      -> ( Cmm.Module
@@ -149,7 +147,7 @@ ATTR AllNTNoMod [ modNmConstInx: Int | | ]
 
 %%[(50 codegen grin cmm)
 ATTR GrAGItf GrModule
-  [ expNmFldMp: HsName2FldMp 
+  [ expNmFldMp: {VA.HsName2FldMp }
     allImpNmL: {[HsName]}
     -- impNmL: {AssocL HsName Int}
   | |
@@ -161,7 +159,7 @@ ATTR GrAGItf GrModule
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(50 codegen grin cmm)
-ATTR GrAGItf GrModule AllBind AllGrExpr [ impNmFldMpMp: HsName2FldMpMp | | ]
+ATTR GrAGItf GrModule AllBind AllGrExpr [ impNmFldMpMp: {VA.HsName2FldMpMp} | | ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -179,8 +177,10 @@ SEM GrExpr
   				loc			.	lUniqRet		:	UNIQUEREF gUniq
 
 SEM GrExpr
-  | Eval Store Call FFI App Seq
+  | Eval Store Call FFI App Seq Case
   				loc			.	lUniq			:	UNIQUEREF gUniq
+  | Case
+  				loc			.	lUniq2			:	UNIQUEREF gUniq
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -206,6 +206,54 @@ SEM GrBind
 SEM GrVal
   | LitStr      (loc.constStrFld,loc.constSt2) 	=   Const.addStr @str @lhs.constSt
   				lhs			.	constSt			=	@constSt2
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% CVar, CVarInfo: encoding of name references, including info about the introduction
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin cmm) hs
+patNmL2CVarMp' :: (Fld -> Cmm.CVarInfo) -> AssocL HsName Fld -> Cmm.CVarMp
+patNmL2CVarMp' mkva nmDepL = Map.fromList [ (n, mkva f) | (n,f) <- nmDepL ]
+
+patNmL2CVarMp :: [HsName] -> Cmm.CVarMp
+patNmL2CVarMp = patNmL2CVarMp' (\f -> CVar_Local Cmm.tyNd f) . VA.patNmL2DepL id id
+%%]
+
+%%[(8 codegen grin cmm)
+ATTR GrModule AllBind GrExpr AllAlt [ | cvarMp: {Cmm.CVarMp} | ]
+
+SEM GrAGItf
+  | AGItf       loc         .   cvarMp          =   Map.empty
+%%]
+
+%%[(8 codegen grin cmm)
+SEM GrExpr
+  | Seq         body        .   cvarMp          =   @retCVarMp `Map.union` @valCVarMp `Map.union` @expr.cvarMp
+  | Case		altL		.	cvarMp			=	@retCVarMp `Map.union` @valCVarMp `Map.union` @lhs.cvarMp
+  | Unit Eval Call FFI Store App
+  				lhs			.	cvarMp			=	@retCVarMp `Map.union` @valCVarMp `Map.union` @lhs.cvarMp
+  | * - Seq Case Unit Eval Call FFI Store App
+  				lhs			.	cvarMp			=	@retCVarMp `Map.union` @lhs.cvarMp
+
+SEM GrBind
+  | Bind        expr        .   cvarMp          =   @newCVarMp `Map.union` @lhs.cvarMp
+  				lhs			.	cvarMp			=	@lhs.cvarMp
+
+SEM GrAlt
+  | Alt         expr        .   cvarMp          =   @newCVarMp `Map.union` @lhs.cvarMp
+  				lhs			.	cvarMp			=	@lhs.cvarMp
+%%]
+
+SEM GrExpr
+  | Seq         loc         .   newCVarMp       =   Map.empty -- patNmL2VAGam @argNmL
+
+%%[(8 codegen grin cmm)
+SEM GrBind
+  | Bind        loc         .   newCVarMp       =   patNmL2CVarMp @argNmL
+
+SEM GrAlt
+  | Alt         loc			.   newCVarMp       =   Map.empty -- patNmL2VAGam @newAltNmL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -423,24 +471,98 @@ SEM GrBind
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen grin cmm) hs
-type ValAccessG    = ValAccess    Fld Fld Fld Fld
-type ValAccessGamG = ValAccessGam Fld Fld Fld Fld
+type ValAccessG    = VA.ValAccess    Fld Fld Fld Fld
+type ValAccessGamG = VA.ValAccessGam Fld Fld Fld Fld
 %%]
 
 %%[(8 codegen grin cmm) hs
-patNmL2VAGam' :: AssocL HsName Fld -> ValAccessGamG
-patNmL2VAGam' nmDepL = Map.fromList [ (n,Val_Local f (ValAccessAnnot_Annot basicAnnotWord)) | (n,f) <- nmDepL ]
+patNmL2VAGam' :: (Fld -> ValAccessG) -> AssocL HsName Fld -> ValAccessGamG
+patNmL2VAGam' mkva nmDepL = Map.fromList [ (n, mkva f) | (n,f) <- nmDepL ]
 
 patNmL2VAGam :: [HsName] -> ValAccessGamG
-patNmL2VAGam = patNmL2VAGam' . patNmL2DepL id id
+patNmL2VAGam = patNmL2VAGam' (\f -> VA.Val_Local f (VA.ValAccessAnnot_Annot basicAnnotWord)) . VA.patNmL2DepL id id
 %%]
 
 %%[(8 codegen grin cmm)
+SEM GrExpr
+  | Seq         loc         .   newVaGam        =   Map.empty -- patNmL2VAGam @argNmL
+
 SEM GrBind
   | Bind        loc         .   newVaGam        =   patNmL2VAGam @argNmL
 
 SEM GrAlt
   | Alt         loc			.   newVaGam        =   patNmL2VAGam @newAltNmL
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Env for holding all name info stuff
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8888 codegen grin cmm) hs
+type NmEnvCmm
+  = NmEnv Fld Fld Fld Fld
+%%[[8
+          ()
+%%][50
+          LamMp
+%%]]
+%%]
+
+%%[(8 codegen grin cmm) hs
+data NmEnvCmm -- lref gref mref meref extra
+  = NmEnv
+      { -- neVAGam     :: ValAccessGam lref gref mref meref
+        neCVarMp	:: Cmm.CVarMp
+%%[[50
+      , neImpNmMp   :: VA.HsName2FldMpMp
+      , neExtra     :: LamMp
+%%]]
+      }
+%%]
+
+%%[(8 codegen grin cmm) hs
+nmEnvLookup :: HsName -> NmEnvCmm -> Maybe Cmm.CVarInfo
+nmEnvLookup nm env
+  = case cvarMpLookup nm $ neCVarMp env of
+      Nothing
+%%[[8
+        -> Nothing
+%%][50
+        -> do q <- hsnQualifier nm
+              (mo,entryMp) <- Map.lookup q $ neImpNmMp env
+              eo <- Map.lookup nm entryMp
+              return $ CVar_Global Cmm.tyNd (refOfFld mo) (refOfFld eo)
+%%]]
+      v -> v
+%%]
+
+%%[(8 codegen grin cmm)
+SEM GrExpr
+  | *           loc         .   nmEnv           =   NmEnv
+                                                      { neCVarMp  = @lhs.cvarMp
+%%[[50
+                                                      , neImpNmMp = @lhs.impNmFldMpMp
+                                                      , neExtra   = @lhs.lamMp -- , GB.neLamMp   = @lhs.lamMp
+%%]]
+                                                      }
+
+SEM GrBind
+  | Bind        loc         .   nmEnv           =   NmEnv
+                                                      { neCVarMp  = @lhs.cvarMp
+%%[[50
+                                                      , neImpNmMp = @lhs.impNmFldMpMp
+                                                      , neExtra   = @lhs.lamMp -- , GB.neLamMp   = @lhs.lamMp
+%%]]
+                                                      }
+
+SEM GrModule
+  | Mod         loc         .   nmEnv           =   NmEnv
+                                                      { neCVarMp  = @lhs.cvarMp
+%%[[50
+                                                      , neImpNmMp = @lhs.impNmFldMpMp
+                                                      , neExtra   = @lhs.lamMp -- , GB.neLamMp   = @lhs.lamMp
+%%]]
+                                                      }
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -691,66 +813,62 @@ SEM GrExpr
 
 %%[(8 codegen grin cmm) hs
 data GviLoadSt = GviLoadSt
-  { {- glstUniq 	:: !UID
-  , -} glstDecls	:: !CmmBodyDecls
-  
-  -- environment info
-  , glstDataGam	:: DataGam
+  { glstDecls	:: !CmmBodyDecls
+  , glstCVarMp  :: Cmm.CVarMp
   }
 
-type GviLoadStM = StateT GviLoadSt FreshUid
+-- environment info
+data GviLoadRd = GviLoadRd
+  { glrdDataGam	:: DataGam
+  , glrdNmEnv   :: NmEnvCmm
+  }
 
-runGviLoad :: UID -> DataGam -> GviLoadStM a -> (a, CmmBodyDecls)
-runGviLoad uniq dataGam gs = (x, glstDecls s)
-  where (x,s) = evalFreshUid (runStateT gs (GviLoadSt Seq.empty dataGam)) uniq
+type GviLoadM = ReaderT GviLoadRd (StateT GviLoadSt FreshUid)
 
-gviAppendM :: CmmBodyDecls -> GviLoadStM ()
-gviAppendM ds = modify $ \st -> st { glstDecls = glstDecls st & ds }
+runGviLoad :: UID -> DataGam -> NmEnvCmm -> GviLoadM a -> (a, CmmBodyDecls, Cmm.CVarMp)
+runGviLoad uniq dataGam nmEnv gs = (x, glstDecls s, glstCVarMp s)
+  where (x,s) = evalFreshUid (runStateT (runReaderT gs (GviLoadRd dataGam nmEnv)) (GviLoadSt Seq.empty Map.empty)) uniq
 
-gviLoadM' :: (GrValIntro -> e) -> GrValIntro -> GviLoadStM e
-gviLoadM' mk gvi = fmap mk $ firstMaybeM gvi [\gvi -> if gviIsInlineable gvi then return $ Just $ gvi else return Nothing, gvi2MbNonInlineM]
-{-
-  do
-    if gviIsInlineable gvi
-      then return $ mk gvi
-      else do mbe <- gvi2MbNonInlineM gvi
-              case mbe of
-                Just e -> return $ mk e
-                _      -> return $ mk $ GrValIntro_Nm hsnUnknown
--}
+gviAppendDeclsM :: CmmBodyDecls -> GviLoadM ()
+gviAppendDeclsM ds = modify $ \st -> st { glstDecls = glstDecls st & ds }
 
-gviLLoadM' :: (GrValIntro -> e) -> [GrValIntro] -> GviLoadStM [e]
+gviNewLocalM :: HsName -> GviLoadM Cmm.CVarInfo
+gviNewLocalM nm = do
+    let cv = CVar_Local Cmm.tyNd $ mkFldNm nm
+    modify $ \st -> st { glstCVarMp = Map.insert nm cv $ glstCVarMp st}
+    return cv
+
+gviFreshLocalNmM :: GviLoadM (HsName, Cmm.CVarInfo)
+gviFreshLocalNmM = do
+    nm <- fmap (hsnUniqify HsNameUniqifier_CMMTmpVar . mkHNm) $ lift $ lift freshUID
+    cv <- gviNewLocalM nm
+    return (nm, cv)
+%%]
+
+%%[(8 codegen grin cmm) hs
+gviLoadM'' :: (GrValIntro -> GviLoadM e) -> GrValIntro -> GviLoadM e
+gviLoadM'' mk gvi = do
+  x <- firstMaybeM gvi [\gvi -> if gviIsInlineable gvi then return $ Just $ gvi else return Nothing, gvi2MbNonInlineM]
+  mk x
+
+gviLoadM' :: (GrValIntro -> e) -> GrValIntro -> GviLoadM e
+-- gviLoadM' mk gvi = fmap mk $ firstMaybeM gvi [\gvi -> if gviIsInlineable gvi then return $ Just $ gvi else return Nothing, gvi2MbNonInlineM]
+gviLoadM' mk gvi = gviLoadM'' (return . mk) gvi
+
+gviLLoadM' :: (GrValIntro -> e) -> [GrValIntro] -> GviLoadM [e]
 gviLLoadM' mk = mapM $ gviLoadM' mk
 {-# INLINE gviLLoadM' #-}
 
-gviLLoadExprM :: [GrValIntro] -> GviLoadStM [Cmm.Expr]
+gviLLoadExprM :: [GrValIntro] -> GviLoadM [Cmm.Expr]
 gviLLoadExprM = gviLLoadM' gvi2InlineableExpr
 {-# INLINE gviLLoadExprM #-}
 
-gviLoadExprM :: GrValIntro -> GviLoadStM Cmm.Expr
+gviLoadExprM :: GrValIntro -> GviLoadM Cmm.Expr
 gviLoadExprM = gviLoadM' gvi2InlineableExpr
 {-# INLINE gviLoadExprM #-}
 
-gviLLoadExpr :: UID -> DataGam -> [GrValIntro] -> ([Cmm.Expr], CmmBodyDecls)
-gviLLoadExpr uniq dataGam gviL = runGviLoad uniq dataGam $ gviLLoadExprM gviL
-
-gviLoad' :: (GrValIntro -> e) -> UID -> DataGam -> GrValIntro -> (e, CmmBodyDecls)
-gviLoad' mk uniq dataGam gvi = runGviLoad uniq dataGam $ gviLoadM' mk gvi
-
-gviLoadExpr :: UID -> DataGam -> GrValIntro -> (Cmm.Expr, CmmBodyDecls)
-gviLoadExpr = gviLoad' gvi2InlineableExpr
-{-# INLINE gviLoadExpr #-}
-
-gviLoadGvi :: UID -> DataGam -> GrValIntro -> (GrValIntro, CmmBodyDecls)
-gviLoadGvi = gviLoad' id
-{-# INLINE gviLoadGvi #-}
-
 gvi2InlineableExpr :: GrValIntro -> Cmm.Expr
 gvi2InlineableExpr gvi = fromMaybe (Cmm.err $ show gvi) $ gvi2MbInlineExpr gvi
-
-gvi2FullExpr :: GrValIntro -> Cmm.Expr
-gvi2FullExpr = fromMaybe Cmm.undef . gvi2MbExpr
-{-# INLINE gvi2FullExpr #-}
 
 -- | To directly inlineable usable expr
 gvi2MbInlineExpr :: GrValIntro -> Maybe Cmm.Expr
@@ -758,82 +876,106 @@ gvi2MbInlineExpr gvi
   =   gviFoldInlineable (Just . Cmm.Expr_Nm, \i -> Just $ Cmm.Expr_Int (fromIntegral i) Nothing, Nothing) gvi
   <|> gvi2MbConstExpr gvi
 
-gvi2MbExpr :: GrValIntro -> Maybe Cmm.Expr
-gvi2MbExpr gvi = gvi2MbInlineExpr gvi <|> gvi2MbNonInlineExpr gvi
-
 gvi2MbConstExpr :: GrValIntro -> Maybe Cmm.Expr
 gvi2MbConstExpr gvi = case gvi of
   GrValIntro_Str _ (Just cref) -> return $ Cmm.var $ refOfFld cref
   _                            -> Nothing
 
-gvi2MbNonInlineExpr :: GrValIntro -> Maybe Cmm.Expr
-gvi2MbNonInlineExpr gvi = case gvi of
-  _						-> Nothing
+nm2CValInfoM :: HsName -> GviLoadM Cmm.CVarInfo
+nm2CValInfoM nm = do
+    env <- asks glrdNmEnv
+    cvarmp <- gets glstCVarMp
+    case cvarMpLookup nm cvarmp <|> nmEnvLookup nm env of
+      Just cv -> return cv
+      _       -> return CVar_None
 
-gvi2MbNonInlineM :: GrValIntro -> GviLoadStM (Maybe GrValIntro)
+gvi2CValInfoM :: GrValIntro -> GviLoadM Cmm.CVarInfo
+gvi2CValInfoM gvi = case gvi of
+  GrValIntro_Nm nm ->
+    nm2CValInfoM nm
+  gvi -> do
+    e <- gviLoadExprM gvi
+    gvi' <- cmmBindFreshInM $ \newn _ -> Cmm.assign newn e
+    gvi2CValInfoM gvi'
+
+gvi2MbNonInlineM :: GrValIntro -> GviLoadM (Maybe GrValIntro)
 gvi2MbNonInlineM gvi = case gvi of
   GrValIntro_Grp gt	gviL -> do
     args <- gviLLoadExprM gviL
-    dataGam <- gets glstDataGam
-    fmap Just $ cmmBindFreshInM $ \newn -> Cmm.alloc dataGam newn (grtag2cmmtag gt) args
+    dataGam <- asks glrdDataGam
+    fmap Just $ cmmBindFreshInM $ \newn _  -> Cmm.alloc dataGam newn (grtag2cmmtag gt) args
   GrValIntro_Box bx	gvi -> do
     arg <- gviLoadExprM gvi
-    fmap Just $ cmmBindFreshInM $ \newn -> Cmm.box newn bx arg
+    fmap Just $ cmmBindFreshInM $ \newn _  -> Cmm.box newn bx arg
   _ -> return Nothing
 
-cmmBindFreshInM :: (HsName -> CmmBodyDecls) -> GviLoadStM GrValIntro
+cmmBindFreshInM :: (HsName -> Cmm.CVarInfo -> CmmBodyDecls) -> GviLoadM GrValIntro
 cmmBindFreshInM mk = do
-    nm <- fmap (hsnUniqify HsNameUniqifier_CMMTmpVar . mkHNm) $ lift freshUID
-    gviAppendM $ Cmm.declLocalRegVar Cmm.tyNd nm Nothing & mk nm
+    (nm, cv) <- gviFreshLocalNmM
+    gviAppendDeclsM $ Cmm.declLocalRegVar Cmm.tyNd nm Nothing & mk nm cv
     return $ GrValIntro_Nm nm
-
-cmmBindFreshIn :: UID -> DataGam -> (HsName -> CmmBodyDecls) -> (GrValIntro, CmmBodyDecls)
-cmmBindFreshIn u dataGam mk = runGviLoad u dataGam $ cmmBindFreshInM mk
 %%]
 
 %%[(8 codegen grin cmm)
 SEM GrExpr
-  | Unit		loc			.	(grvalIntro, valDecls)
-  												=	(@val.grvalIntro, Seq.empty)
+  | Unit		loc			.	(grvalIntro, valDecls, valCVarMp)
+  												=	(@val.grvalIntro, Seq.empty, Map.empty)
 
-  | Eval        loc         .   (grvalIntro, valDecls)
+  | Eval        loc         .   (grvalIntro, valDecls, valCVarMp)
                                                 =   case @lhs.returnCtxt of
                                                         ReturnCtxt_Returns | ehcOptGenTrampoline @lhs.opts
-                                                          -> (GrValIntro_Nm @nm, Seq.empty)
-                                                        _ -> cmmBindFreshIn @lUniq @lhs.dataGam $ \newn -> Cmm.call Nothing (Just newn) Cmm.CallExpr_Eval [Cmm.var @nm]
-  | Call        loc         .   (grvalIntro, valDecls)
-                                                =   runGviLoad @lUniq @lhs.dataGam $ do
+                                                          -> (GrValIntro_Nm @nm, Seq.empty, Map.empty)
+                                                        _ -> runGviLoad @lUniq @lhs.dataGam @nmEnv $ do
+                                                               cv <- nm2CValInfoM @nm
+                                                               cmmBindFreshInM $ \newn _  -> Cmm.call Nothing (Just newn) Cmm.CallExpr_Eval [Cmm.cvar cv]
+  | Call        loc         .   (grvalIntro, valDecls, valCVarMp)
+                                                =   runGviLoad @lUniq @lhs.dataGam @nmEnv $ do
                                                       	argExprL <- gviLLoadExprM @argL.grvalIntroL
-                                                      	cmmBindFreshInM $ \newn -> Cmm.call Nothing (Just newn) (Cmm.CallExpr_Expr $ Cmm.var @nm) argExprL
-  | FFI         loc         .   (grvalIntro, valDecls)
+                                                      	cv <- nm2CValInfoM @nm
+                                                      	cmmBindFreshInM $ \newn _  -> Cmm.call Nothing (Just newn) (Cmm.CallExpr_Expr $ Cmm.cvar cv) argExprL
+  | FFI         loc         .   (grvalIntro, valDecls, valCVarMp)
 %%[[8
-                                                =   runGviLoad @lUniq @lhs.dataGam $ do
+                                                =   runGviLoad @lUniq @lhs.dataGam @nmEnv $ do
                                                       	argExprL <- gviLLoadExprM @argL.grvalIntroL
-                                                      	cmmBindFreshInM $ \newn -> Cmm.call (Just Cmm.Conv_Platform) (Just newn) (Cmm.CallExpr_Expr $ Cmm.ffivar @nm) argExprL
+                                                      	cmmBindFreshInM $ \newn _  -> Cmm.call (Just Cmm.Conv_Platform) (Just newn) (Cmm.CallExpr_Expr $ Cmm.ffivar @nm) argExprL
 %%][90
-                                                =   (GrValIntro_None, Seq.empty)
+                                                =   (GrValIntro_None, Seq.empty, Map.empty)
 %%]]
-  | Store       loc         .   (grvalIntro, valDecls)
-                                                =   gviLoadGvi @lUniq @lhs.dataGam @val.grvalIntro
+  | Store       loc         .   (grvalIntro, valDecls, valCVarMp)
+                                                =   runGviLoad @lUniq @lhs.dataGam @nmEnv $ do
+                                                        gviLoadM' id @val.grvalIntro
 
-  | Seq			loc			.	((grvalIntro, newVaGam), seqDecls)
-  												=	runGviLoad @lUniq @lhs.dataGam $ do
+  | Case		loc			.	(scrutineeCVar, scrutineeDecls, valCVarMp)
+  												=	runGviLoad @lUniq @lhs.dataGam @nmEnv $ do
+  														scrut <- gviLoadM'' gvi2CValInfoM @val.grvalIntro
+  														return scrut
+{-
+  | Case		loc			.	((grvalIntro, newVaGam), caseDecls)
+  												=	runGviLoad @lUniq @lhs.dataGam @nmEnv $ do
+  														scrutinee <- gviLoadExprM @val.grvalIntro
+-}
+
+  | Seq			loc			.	(grvalIntro, seqDecls, valCVarMp)
+  												=	runGviLoad @lUniq @lhs.dataGam @nmEnv $ do
   														e <- gviLoadExprM @expr.grvalIntro
   														case @pat.nmIntro of
   														  NmIntro_Single nmp annot -> do
-  														    gviAppendM $ Cmm.declLocalConst Cmm.Const_SSA Cmm.tyNd nmp e
-  														    return $ (GrValIntro_Nm nmp, patNmL2VAGam [nmp])
+  														    gviAppendDeclsM $ Cmm.declLocalConst Cmm.Const_SSA Cmm.tyNd nmp e
+  														    gviNewLocalM nmp
+  														    return $ GrValIntro_Nm nmp
   														  NmIntro_Box nmp bx -> do
-  														    gviAppendM $ Cmm.unbox nmp bx e
-  														    return $ (GrValIntro_Nm nmp, patNmL2VAGam [nmp])
+  														    gviAppendDeclsM $ Cmm.unbox nmp bx e
+  														    gviNewLocalM nmp
+  														    return $ GrValIntro_Nm nmp
 
-  | App			loc			.	(grvalIntro, valDecls)
+  | App			loc			.	(grvalIntro, valDecls, valCVarMp)
                                                 =   case @lhs.returnCtxt of
                                                         -- ReturnCtxt_Returns | ehcOptGenTrampoline @lhs.opts
                                                         --   -> (GrValIntro_Nm @nm, Seq.empty)
-                                                        _ -> runGviLoad @lUniq @lhs.dataGam $ do
+                                                        _ -> runGviLoad @lUniq @lhs.dataGam @nmEnv $ do
                                                                argExprL <- gviLLoadExprM @argL.grvalIntroL
-                                                               cmmBindFreshInM $ \newn -> Cmm.call Nothing (Just newn) Cmm.CallExpr_Apply (Cmm.var @nm : argExprL)
+                                                               cv <- nm2CValInfoM @nm
+                                                               cmmBindFreshInM $ \newn _  -> Cmm.call Nothing (Just newn) Cmm.CallExpr_Apply (Cmm.cvar cv : argExprL)
 %%]
 
 %%[(88 codegen grin cmm) hs
@@ -846,11 +988,11 @@ mkRetLabel returnCtxt st
 %%]
 
 %%[(8 codegen grin cmm) hs
-mkRet :: ReturnCtxt -> (Cmm.Expr, CmmBodyDecls) -> CmmBodyDecls
-mkRet returnCtxt (e, decls)
+mkRet :: ReturnCtxt -> (Cmm.Expr, CmmBodyDecls, Cmm.CVarMp) -> (CmmBodyDecls, Cmm.CVarMp)
+mkRet returnCtxt (e, decls, cvarMp)
   = case returnCtxt of
       ReturnCtxt_Returns
-        -> decls & Cmm.ret (Just e)
+        -> (decls & Cmm.ret (Just e), cvarMp)
       {-
       ReturnCtxt_CaseReturns labelId st
         -> ( Seq.fromList
@@ -865,7 +1007,7 @@ mkRet returnCtxt (e, decls)
       ReturnCtxt_CaseFallThrough
         -> (Seq.empty,dfltState)
       -}
-      _ -> Seq.empty
+      _ -> (Seq.empty, cvarMp)
   {-
   where dfltState = GB.ststFromDep inc
         stkDepth  = GB.ststDepth stState
@@ -876,9 +1018,11 @@ mkRet returnCtxt (e, decls)
 %%[(8 codegen grin cmm)
 SEM GrExpr
   | Eval App Store Unit Call FFI
-                loc			.	retDecls       	=   mkRet @lhs.returnCtxt (gviLoadExpr @lUniqRet @lhs.dataGam @grvalIntro)
+                loc			.	(retDecls, retCVarMp)
+                								=   mkRet @lhs.returnCtxt (runGviLoad @lUniqRet @lhs.dataGam @nmEnv $ gviLoadExprM @grvalIntro)
   | * - Unit Store Call Eval App FFI
                 loc         .   retDecls        =   Seq.empty
+                			.	retCVarMp		=	Map.empty
 %%]
 
 %%[(88 codegen grin cmm)
@@ -896,27 +1040,16 @@ SEM GrExpr
 %%% Global entry points
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(88 codegen grin cmm)
-ATTR AllBind [ | | entryNms USE {Seq.:++:} {Seq.empty}: {Seq.FastSeq GB.EntryInfo} ]
-
+%%[(8 codegen grin)
 SEM GrBind
-  | Bind        lhs         .   entryNms        =   Seq.singleton (GB.EntryInfo @nm 0 (null @argNmL) (Just $ GB.StringConst $ show @nm))
-                loc         .   entryInx        =   GB.vaEntryInx $ panicJust "GrBind.Bind.entryInx" $ GB.nmEnvLookup @nm @nmEnv
+  | Bind        loc         .   entryCVar       =   panicJust "ToCmm.GrBind.Bind.entryCVar" $ nmEnvLookup @nm @nmEnv
+                            -- .   entryFld        =   vaGlobRef $ panicJust "GrBind.Bind.entryFld" $ nmEnvLookup @nm @nmEnv
 %%]
 
-%%[(88 codegen grin cmm).entryNmMp
+%%[(8 codegen grin)
 SEM GrModule
-  | Mod         loc         .   (entryNmMp,entryL,isCafL)
-                                                =   let entryL = zipWith (\i e -> e {GB.eiEntryNr = i}) [0..] $ Seq.toList @bindL.entryNms
-                                                        mpMod = Map.fromList [ (GB.eiNm e, e) | e <- entryL ]
-                                                    in  ( mpMod, entryL
-                                                        , map GB.eiIsCAF entryL
-                                                        )
-%%]
-
-%%[(88 codegen grin cmm)
-SEM GrModule
-  | Mod         loc         .   mainEntry       =   maybe 0 GB.vaEntryInx $ GB.nmEnvLookup hsnMain @nmEnv
+  | Mod         loc         .   mainEntryCVar	=   panicJust "ToCmm.GrBind.Bind.mainEntryCVar" $ nmEnvLookup hsnMain @nmEnv
+                            -- .   mainEntryFld	=   maybe noFld vaGlobRef $ (nmEnvLookup hsnMain @nmEnv :: Maybe ValAccessG)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -980,14 +1113,20 @@ SEM GrBind
 %%]
 
 %%[(8 codegen grin cmm)
-ATTR AllGrExpr [ | | cmmBodyDecls USE {&} {Seq.empty}: CmmBodyDecls ]
+ATTR GrExpr [ | | cmmBodyDecls USE {&} {Seq.empty}: CmmBodyDecls ]
 
 SEM GrExpr
   | Eval App Store Unit
                 lhs         .   cmmBodyDecls    =   @valDecls & @retDecls
-  | Call Case FFI FetchUpdate
-                lhs         .   cmmBodyDecls    =   Seq.empty
+  | Case		lhs			.	cmmBodyDecls	= 	@scrutineeDecls & Seq.unions @altL.cmmBodyDeclsL
   | Seq			lhs			.	cmmBodyDecls	= 	@expr.cmmBodyDecls & @seqDecls & @body.cmmBodyDecls
+  | Call FFI FetchUpdate
+                lhs         .   cmmBodyDecls    =   Seq.empty
+
+ATTR AllAlt [ | | cmmBodyDeclsL USE {++} {[]}: {[CmmBodyDecls]} ]
+
+SEM GrAlt
+  | Alt			lhs			.	cmmBodyDeclsL	= 	[@expr.cmmBodyDecls]
 %%]
 
 SEM GrExpr
@@ -1150,3 +1289,19 @@ SEM GrPatLam
 ATTR GrTag [ | | self: SELF ]
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Extra check whether all used names are defined
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8888 codegen grin)
+ATTR GrAGItf GrModule [ | | errs: {[Err]} ]
+
+SEM GrModule
+  | Mod         loc         .   errs            =   let undefNms = (Map.keysSet @bindL.gathFviMp `Set.difference` Map.keysSet @vaGam)
+%%[[50
+                                                                     `Set.difference` offMpMpKeysSet @lhs.impNmFldMpMp
+%%]]
+                                                    in  if Set.null undefNms
+                                                        then []
+                                                        else [rngLift emptyRange mkErr_NamesNotIntrod "(Internal) GRIN ByteCode location" $ Set.toList undefNms]
+%%]

@@ -1416,7 +1416,7 @@ SEM Module
 %%[[50
                                                     expnd   = ppLine $ gencVarDecl "GB_NodePtr" @ppNmExpNode
                                                                        >-< (gencStatic $ "int" >#< @ppNmExpNodeOffs >|< "[] =")
-                                                                       >-< ppArr [ (fldInx $ G.eiEntryFld e) >#< ppCmtC @lhs.opts (G.eiNm e) | e <- @expEntryL ]
+                                                                       >-< ppArr [ (fldInt $ G.eiEntryFld e) >#< ppCmtC @lhs.opts (G.eiNm e) | e <- @expEntryL ]
                                                                        >-< gencVarDeclInit "int" @ppNmExpNodeSz (length @expEntryL)
                                                     externs = nl : map (\(_,m) -> (gencExtern $ gencEndsemic $ "void" >#< mkPre m >|< @strNmInitF >|< "(GB_ModEntry*,Word)")
                                                                               >-< (gencExtern $ gencVarDecl "GB_NodePtr" (mkPre m >|< @strNmExpNode))

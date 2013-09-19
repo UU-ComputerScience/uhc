@@ -187,13 +187,13 @@ SEM CAlt
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 javascript)
-ATTR AllPatFld [ | dataFldNmL: {[HsName]} | ]
+ATTR AllPatFld [ | dataFldL: {[Fld]} | ]
 
 SEM CPat
-  | Con         binds       .   dataFldNmL      =   J.dataFldNames @lhs.dataGam @tag
+  | Con         binds       .   dataFldL        =   J.dataFldNames @lhs.dataGam @tag
 
 SEM CPatFld
-  | Fld         (loc.objFldNm,lhs.dataFldNmL)   =   hdAndTl' (panic "ToJavaScript.CPatFld.Fld.dataFldNmL") @lhs.dataFldNmL
+  | Fld         (loc.objFld,lhs.dataFldL)       =   hdAndTl' (panic "ToJavaScript.CPatFld.Fld.dataFldL") @lhs.dataFldL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -227,7 +227,7 @@ SEM CPatFld
                                                         where mkf o = CVar_TupFld tyDefault @lhs.scrutineeCVarInfo o
                                                       CTag _ cn _ _ _
                                                         -> case @offset.whatBelow of
-                                                             ExprIsInt i -> (CVar_DataFld tyDefault @lhs.scrutineeCVarInfo hsnUnknown (show @objFldNm),[])
+                                                             ExprIsInt i -> (CVar_DataFld tyDefault @lhs.scrutineeCVarInfo @lhs.ctag @objFld,[])
                                                              _           -> panic "Core.ToJavaScript.CPatFld.Fld.cviField"
                                                         -- where cn' = hsnJavaLikeDataCon @lhs.pkgNm @lhs.topClassNm cn
 %%]
@@ -283,7 +283,7 @@ ATTR CExpr AllBind [ | | dps USE {`Set.union`} {Set.empty} : {Set.Set String} ]
 
 %%[(8 javascript)
 SEM CExpr
-  | Var         loc         .   js              =   J.ref @lhs.cvarMp @cvi
+  | Var         loc         .   js              =   J.ref @lhs.cvarNmModCfg @lhs.cvarMp @cvi
   | Int         loc         .   js              =   J.intConst  @int
   | Char        loc         .   js              =   J.intConst (ord @char) -- J.Expr_Char @char
   | String      loc         .   js              =   J.Expr_Str  @str

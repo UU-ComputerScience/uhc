@@ -61,7 +61,7 @@ javalikeArgsUnpack
      -> [HsName]
      -> ( [(ref,ty)]
         , [(e,ty)]
-        , [(HsName,CVarInfo' ty ref fldref)]
+        , [(HsName,CVarInfo' tag ty ref datafldref fldref)]
         )
 javalikeArgsUnpack limit (tyTup,tyObj,tyInt,toRef,mkInt,mkArgRefs,mkArgRefs5) args
   | overLimit = ([(off0,tyTup)]         , [(mkInt nArgs,tyInt)], mkMp [ CVar_TupFld tyObj tup (Left o) | o <- [toEnum 0..] ])

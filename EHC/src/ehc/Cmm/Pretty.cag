@@ -227,8 +227,10 @@ SEM Expr
   -- | Lit				val				: Lit
 
   -- Variable
+  | CVar		lhs		.	pp		=	pp @cvar
   | Nm			lhs		.	pp		=	pp @nm
   | NmGlobal	lhs		.	pp		=	pp @nm
+  | NmImported	lhs		.	pp		=	@moduleNm >|< "." >|< @nm
   | NmForeign	lhs		.	pp		=	pp @nm
 
   -- Operations
@@ -238,9 +240,9 @@ SEM Expr
   -- Memory node
   -- | Nd				elts			: FldExprL
   | NdDataTagGet
-  				lhs		.	pp		=	@expr.pp >|< ".#tag"
+  				lhs		.	pp		=	@nm >|< ".#tag"
   | NdDataFldGet NdTupFldGet
-  				lhs		.	pp		=	@expr.pp >|< "." >|< @fld
+  				lhs		.	pp		=	@nm >|< "." >|< @fld
 
   -- Support for lazy representation
   -- | Eval		lhs		.	pp		=	"eval" >|< ppParens @nm

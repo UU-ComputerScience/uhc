@@ -16,7 +16,10 @@
 %%[(8 javascript) hs import({%{EH}Gam.DataGam})
 %%]
 
-%%[(8 javascript) hs import({%{EH}CodeGen.CVar})
+%%[(8 javascript) hs import(UHC.Util.Utils, UHC.Util.AssocL)
+%%]
+
+%%[(8 javascript) hs import({%{EH}CodeGen.CVar}, {%{EH}CodeGen.RefGenerator})
 %%]
 
 %%[(8 javascript) hs import({%{EH}CodeGen.GenJavaLike})
@@ -72,8 +75,8 @@ hsnJavaScriptVar = hsnJavaLikeVar (\isglob -> if isglob then id else hsnQualifie
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 javascript) hs export(CVarInfo, CVarMp)
-type CVarInfo = CVarInfo' () HsName Int
-type CVarMp   = CVarMp'   () HsName Int
+type CVarInfo = CVarInfo' CTag () HsName Fld Int
+type CVarMp   = CVarMp'   CTag () HsName Fld Int
 %%]
 
 %%[(8 javascript) hs export(tyDefault)
@@ -81,15 +84,17 @@ tyDefault = ()
 %%]
 
 %%[(8 javascript) hs export(ref)
-ref :: CVarMp -> CVarInfo -> Expr
+ref :: CVarNmModuleCfg -> CVarMp -> CVarInfo -> Expr
 ref
   = cvarToRef
       ( \_       -> Expr_This
       , \_ o     -> var o
       , \_ _ f   -> var f
-      , \_ e _ f -> Expr_ObjFld e (mkHNm f)
+      , \_ e _ f -> Expr_ObjFld e (fldNm f)
       , \  e o   -> Expr_ArrInx e o
-      , intConst
+      , intConst -- fldFoldInxNm var intConst (panic "JavaScript.cvarToRef.mkOffset: should not happen
+      , \_ _ -> panic "JavaScript.cvarToRef.mkTag should not be used"
+      , hsnJavaScriptVar
       )
 %%]
 
@@ -115,6 +120,7 @@ argsUnpack toRef = javalikeArgsUnpack maxBound ((), (), (), toRef, intConst, \_ 
 -- | declare a local var
 localVarDecl :: HsName -> Maybe Expr -> Stat
 localVarDecl n me = Stat_VarDecl n me
+{-# INLINE localVarDecl #-}
 %%]
 
 %%[(8 javascript) hs export(varDecl)
@@ -141,6 +147,7 @@ op o (e  :_) = Expr_PreOp (mkHNm o) e
 -- | Placeholder for empty
 empty :: Expr
 empty = Expr_Empty
+{-# INLINE empty #-}
 %%]
 
 %%[(8 javascript) hs export(vardecl)
@@ -152,19 +159,21 @@ vardecl nm mbe = Stat_VarDecl (mkHNm nm) mbe
 -- | Construct array
 arr ::[Expr] -> Expr
 arr = Expr_Arr
+{-# INLINE arr #-}
 
 -- new tuple
 newTup :: [Expr] -> Expr
 newTup = arr
+{-# INLINE newTup #-}
 %%]
 
 %%[(8 javascript) hs export(dataFldNames, newDataConstr, newTupOrDataConstr)
 -- | field names used for data constructors, either as provided by program, or made up here
 --   20101012 AD, note: internally generated datatypes not yet have correct meta info, so fill up names as needed, as temporary hack
-dataFldNames :: TagLike t => DataGam -> t -> [HsName]
+dataFldNames :: TagLike t => DataGam -> t -> [Fld]
 dataFldNames dataGam tag
-  = map (hsnSafeJavaLike . hsnQualified) nms ++ hsnLclSupply
-  where nms  = maybe [] (\(_,dti) -> map fldNm $ dtiFldRefL dti) $ dataGamTagLookup tag dataGam
+  = map (fldMapNm $ hsnSafeJavaLike . hsnQualified) nms ++ (assocLElts $ refGen (length nms) 1 hsnLclSupply)
+  where nms  = maybe [] (\(_,dti) -> dtiFldRefL dti) $ dataGamTagLookup tag dataGam
 
 -- new data constructor
 newDataConstr :: Int -> [NmExpr] -> Expr
@@ -174,7 +183,7 @@ newDataConstr tag as = Expr_Obj $ ((nmTag, intConst tag):) as
 newTupOrDataConstr :: TagLike t => DataGam -> t -> [Expr] -> Expr
 newTupOrDataConstr dataGam tag as
   | tagIsData tag
-      = newDataConstr (tagDataTag tag) (zip (dataFldNames dataGam tag) as)
+      = newDataConstr (tagDataTag tag) (zip (map fldNm $ dataFldNames dataGam tag) as)
   | tagIsTup tag
       = newTup as
 %%]
@@ -183,10 +192,12 @@ newTupOrDataConstr dataGam tag as
 -- | Int constant
 intConst :: Integral x => x -> Expr
 intConst i = Expr_Int $ fromIntegral i
+{-# INLINE intConst #-}
 
 -- | call, function is an expr
 call :: Expr -> [Expr] -> Expr
 call = Expr_Call
+{-# INLINE call #-}
 
 -- | call, function is a name
 callv :: HSNM n => n -> [Expr] -> Expr
@@ -203,30 +214,34 @@ apl f as = callv nmApply [f, arr as]
 -- | var
 var :: HSNM x => x -> Expr
 var nm = Expr_Var $ mkHNm nm
+{-# INLINE var #-}
 
 -- | return
 ret' :: Maybe Expr -> Stat
 ret' e = Stat_Ret e
+{-# INLINE ret' #-}
 
 -- | return
 ret :: Expr -> Stat
 ret e = ret' (Just e)
+{-# INLINE ret #-}
 
--- assign
+-- | assign
 assign :: HSNM x => x -> Expr -> Stat
 assign n e = Stat_Assign (var $ mkHNm n) e
+{-# INLINE assign #-}
 
 %%]
 
 %%[(8 javascript) hs export(app, fun', fun, funFld)
--- apply
+-- | apply
 app :: Expr -> [Expr] -> Expr
 app f as
   = Expr_New $ callv nm (f : as')
   where (nm,_,as') = argsPack as
         nArgs      = length as'
 
--- lam
+-- | lam
 fun' :: HsName -> Int -> Expr -> Expr
 fun' fNm nArgs e
   = Expr_New $ callv (nmFunN nArgs) (extra ++ [e])

@@ -83,8 +83,23 @@ ss = Seq.fromList
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Safe name
+%%% Safe name, name expansion
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin) hs
+jref :: CVarNmModuleCfg -> CVarMp -> CVarInfo -> JS.Expr
+jref
+  = cvarToRef
+      ( \_       -> JS.Expr_This
+      , \_ o     -> JS.var $ fldNm o
+      , \_ _ f   -> JS.var f
+      , \_ e _ f -> JS.Expr_ObjFld e f -- (fldNm f)
+      , \  e o   -> JS.Expr_ArrInx e o
+      , JS.intConst -- fldFoldInxNm var JS.intConst (panic "JavaScript.cvarToRef.mkOffset: should not happen
+      , \_ _ -> panic "JavaScript.cvarToRef.mkTag should not be used"
+      , JS.hsnJavaScriptVar
+      )
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Global name info
@@ -119,7 +134,8 @@ SEM Decl
   | Const		       	loc         .   jsnm	=   JS.hsnJavaScriptVar @lhs.cvarNmModCfg False @nm
 
 SEM Expr
-  | Nm 			       	loc         .   jsnm	=   JS.hsnJavaScriptVar @lhs.cvarNmModCfg False @nm
+  | Nm NdDataTagGet NdDataFldGet NdTupFldGet
+  						loc         .   jsnm	=   JS.hsnJavaScriptVar @lhs.cvarNmModCfg False @nm
 
 SEM Stmt
   | Alloc Box UnBox
@@ -297,21 +313,22 @@ SEM Expr
   | Int					lhs         .   jsExpr	=   JS.intConst @val
   | Char				lhs         .   jsExpr	=   JS.Expr_Char @val
   | Str					lhs         .   jsExpr	=   JS.Expr_Str @val
+  | CVar				lhs         .   jsExpr	=   jref @lhs.cvarNmModCfg Map.empty @cvar
   | Nm					lhs         .   jsExpr	=   JS.var @jsnm
   | Op					lhs			.	jsExpr	=	@op.mkExpr @exprs.jsExprL
-  | NdDataTagGet		lhs			.	jsExpr	=	JS.Expr_ObjFld @expr.jsExpr JS.nmTag
-  | NdDataFldGet		lhs			.	jsExpr	=	JS.Expr_ObjFld @expr.jsExpr (fldNm @fld)
-  | NdTupFldGet			lhs			.	jsExpr	=	JS.Expr_ArrInx @expr.jsExpr (JS.intConst $ fldInx @fld)
+  | NdDataTagGet		lhs			.	jsExpr	=	JS.Expr_ObjFld (JS.var @jsnm) JS.nmTag
+  | NdDataFldGet		lhs			.	jsExpr	=	JS.Expr_ObjFld (JS.var @jsnm) (fldNm @fld)
+  | NdTupFldGet			lhs			.	jsExpr	=	JS.Expr_ArrInx (JS.var @jsnm) (JS.intConst $ fldInt @fld)
   -- | Nd					lhs			.	jsExpr	=	JS.Expr_Obj @elts.nmExprL
   -- | Eval				lhs			.	jsExpr	=	JS.evl $ JS.var @jsnm
 
   -- TBD
-  | * - Int Char Str Nm Op NdDataTagGet NdDataFldGet NdTupFldGet Nd
+  | * - Int Char Str Nm CVar Op NdDataTagGet NdDataFldGet NdTupFldGet Nd
   						lhs			.	jsExpr	=	JS.var hsnUnknown
 
 SEM Lit
-  | MInf				lhs			.	jsExpr	=	JS.intConst $ negate (1 `shiftL` @sz)
-  | PInf				lhs			.	jsExpr	=	JS.intConst $ (1 `shiftL` @sz) - 1
+  | MInf				lhs			.	jsExpr	=	JS.intConst $ (negate (1 `shiftL` @sz) :: Integer)
+  | PInf				lhs			.	jsExpr	=	JS.intConst $ ((1 `shiftL` @sz) - 1 :: Integer)
   | MZero				lhs			.	jsExpr	=	JS.intConst 0
   | PZero				lhs			.	jsExpr	=	JS.intConst 0
   | True				lhs			.	jsExpr	=	JS.Expr_True
