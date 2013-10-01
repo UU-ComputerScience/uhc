@@ -107,7 +107,7 @@ type CVarMp   = CVarMp'   Tag Ty Fld Nm Int
 %%% Cmm types (only temporary place holders)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen cmm) hs export(tyNd, tyStr8)
+%%[(8 codegen cmm) hs export(tyNd, tyStr8, tyInt)
 mkTy :: String -> Ty
 mkTy = Ty_Nm . mkHNm
 
@@ -116,6 +116,9 @@ tyNd = mkTy "Nd"
 
 tyStr8 :: Ty
 tyStr8 = mkTy "Str8"
+
+tyInt :: Ty
+tyInt = Ty_Bits Bits_Word
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -182,7 +185,7 @@ declLocalStackVar t nm me = Seq.fromList [BodyDecl_StackDecl [Datum_Nm nm, Datum
 declLocalRegVar :: Ty -> Nm -> Maybe Expr -> Seq.Seq BodyDecl
 declLocalRegVar t nm me
   = Seq.fromList [BodyDecl_Decl $ Decl_Regs False $ Regs_Regs Nothing t [RegNmInit_NmInit nm Nothing]]
-    `Seq.union` maybe Seq.empty (\e -> assign nm e) me
+    `Seq.union` maybe Seq.empty (\e -> assign' nm e) me
 
 -- | Locally declare & assign constant (or variation)
 declLocalConst :: ConstKind -> Ty -> Nm -> Expr -> Seq.Seq BodyDecl
@@ -209,8 +212,17 @@ ret me = Seq.fromList [BodyDecl_Stmt $ Stmt_Ret Nothing Nothing $ maybe [] (\e -
 
 %%[(8 codegen cmm) hs export(assign)
 -- | Assign
-assign :: Nm -> Expr -> Seq.Seq BodyDecl
-assign nm e = Seq.fromList [BodyDecl_Stmt $ Stmt_Assign [LValue_Nm nm] [e]]
+assign :: CVarInfo -> Expr -> Seq.Seq BodyDecl
+assign cvi e = Seq.fromList [BodyDecl_Stmt $ Stmt_Assign [LValue_Nm cvi] [e]]
+
+-- | Assign
+assign' :: Nm -> Expr -> Seq.Seq BodyDecl
+assign' n e = assign (cvarLoc tyNd $ mkFldNm n) e
+%%]
+
+%%[(8 codegen cmm) hs export(switch)
+switch :: Expr -> [Arm] -> Seq.Seq BodyDecl
+switch e as = Seq.fromList [BodyDecl_Stmt $ Stmt_Switch e as]
 %%]
 
 %%[(8 codegen cmm) hs export(alloc, box, unbox)
@@ -232,34 +244,36 @@ unbox nm bx e = Seq.fromList [BodyDecl_Stmt $ Stmt_UnBox nm bx e]
 %%% Constructing: expr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen cmm) hs export(var, cvar, undef, ffivar)
+%%[(8 codegen cmm) hs export(var, ffivar)
 -- | Var ref
 var :: Nm -> Expr
 var = Expr_Nm
 {-# INLINE var #-}
 
--- | Var ref
-cvar :: CVarInfo -> Expr
-cvar = Expr_CVar
-{-# INLINE cvar #-}
-
 -- | Foreign var ref
 ffivar :: String -> Expr
 ffivar = Expr_NmForeign
 {-# INLINE ffivar #-}
+%%]
 
+%%[(8 codegen cmm) hs export(cvar)
+-- | Var ref
+cvar :: CVarInfo -> Expr
+cvar = Expr_CVar
+{-# INLINE cvar #-}
+%%]
+
+%%[(8 codegen cmm) hs export(undef)
 -- | Undefined
 undef :: Expr
 undef = var hsnUnknown
 {-# INLINE undef #-}
-
 %%]
 
 %%[(8 codegen cmm) hs export(str8)
 -- | String literal
 str8 :: String -> Expr
 str8 = flip Expr_Str (Just tyStr8)
-
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

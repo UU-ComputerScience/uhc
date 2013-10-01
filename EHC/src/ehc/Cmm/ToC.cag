@@ -123,7 +123,7 @@ SEM Stmt
   -- | Cut
 
 SEM LValue
-  | Nm					lhs			.	c		=	pp @nm
+  | Nm					lhs			.	c		=	pp @cvar
   -- | Typed
 %%]
 

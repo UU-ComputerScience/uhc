@@ -94,6 +94,7 @@ jref
       , \_ o     -> JS.var $ fldNm o
       , \_ _ f   -> JS.var f
       , \_ e _ f -> JS.Expr_ObjFld e f -- (fldNm f)
+      , \_ e     -> JS.Expr_ObjFld e JS.nmTag
       , \  e o   -> JS.Expr_ArrInx e o
       , JS.intConst -- fldFoldInxNm var JS.intConst (panic "JavaScript.cvarToRef.mkOffset: should not happen
       , \_ _ -> panic "JavaScript.cvarToRef.mkTag should not be used"
@@ -150,9 +151,6 @@ SEM Datum
 SEM RegNmInit
   | NmInit	        	loc         .   jsnm	=   JS.hsnJavaScriptVar @lhs.cvarNmModCfg False @nm
 
-SEM LValue
-  | Nm		        	loc         .   jsnm	=   JS.hsnJavaScriptVar @lhs.cvarNmModCfg False @nm
-
 SEM Formal
   | Formal        		loc         .   jsnm	=   JS.hsnJavaScriptVar @lhs.cvarNmModCfg False @nm
 
@@ -200,8 +198,9 @@ SEM DatumL
 
 SEM Stmt
   | Call				lhs			.	jsBodyStats	=	s $ maybeHd JS.Stat_Expr JS.assign @knames.nmL $ @callexpr.jsMkCall @actuals.jsExprL
+  | Switch				lhs			.	jsBodyStats	=	s $ JS.Stat_Switch @expr.jsExpr @arms.jsAltL
   | Ret					lhs			.	jsBodyStats	=	s $ JS.ret' $ maybeHd Nothing Just @actuals.jsExprL
-  | Assign				lhs			.	jsBodyStats	=	ss $ zipWith JS.assign @lval.nmL @rhs.jsExprL
+  | Assign				lhs			.	jsBodyStats	=	ss $ zipWith (JS.assign' . jref @lhs.cvarNmModCfg Map.empty) @lval.cvarL @rhs.jsExprL
   | Alloc				lhs			.	jsBodyStats	=	s $ JS.assign @jsnm $ @tag.jsMkAlloc $ @elts.nmExprL
   | Box					lhs			.	jsBodyStats	=	s $ JS.assign @jsnm @expr.jsExpr
   | UnBox				lhs			.	jsBodyStats	=	s $ JS.assign @jsnm @expr.jsExpr
@@ -275,8 +274,22 @@ SEM Stmt
   -- | Cut
 
 SEM LValue
-  | Nm					lhs			.	c		=	pp @nm
+  | Nm					lhs			.	c		=	pp @cvi
   -- | Typed
+%%]
+
+Case branches
+
+%%[(8 codegen cmm javascript)
+ATTR AllArm [ | | jsAltL USE {++} {[]}: {[JS.Alt]} ]
+
+SEM Arm
+  | Case				lhs			.	jsAltL	=	[JS.Alt_Alt (maybeHd 0 id @ranges.jsTagL) $ Seq.toList $ @body.jsBodyStats & s JS.Stat_Break]
+
+ATTR AllRange [ | | jsTagL USE {++} {[]}: {[Int]} ]
+
+SEM Range
+  | RangeI				lhs			.	jsTagL	=	[@int]
 %%]
 
 Callable Expression
@@ -301,8 +314,10 @@ SEM Tag
   | Ind					lhs			.	jsMkAlloc	=	JS.newTup . L.map snd	-- TBD
   | Fun					lhs			.	jsMkAlloc	=	JS.newTup . L.map snd	-- TBD
   | App					lhs			.	jsMkAlloc	=	\fas -> let (f:as) = L.map snd fas in JS.app f as
-  | PApp				lhs			.	jsMkAlloc	=	JS.newTup . L.map snd	-- TBD
+  | PApp				lhs			.	jsMkAlloc	=	\as -> let as' = L.map snd as in JS.app (jref @lhs.cvarNmModCfg Map.empty @cvar) as' -- JS.newTup . L.map snd	-- TBD
 %%]
+
+-- \as -> fun' @cvi (length as) -> Expr -> Expr -- 
 
 Expression
 
@@ -424,7 +439,7 @@ SEM OpCode
 List
 
 %%[(8 codegen cmm javascript)
-ATTR AllFormal AllKindName AllRegNmInit AllLValue [ | | nmL USE {++} {[]}: {[HsName]} ]
+ATTR AllFormal AllKindName AllRegNmInit [ | | nmL USE {++} {[]}: {[HsName]} ]
 
 SEM Formal
   | Formal				lhs			.	nmL		=	[@jsnm]
@@ -435,8 +450,10 @@ SEM KindName
 SEM RegNmInit
   | NmInit				lhs			.	nmL		=	[@jsnm]
 
+ATTR AllLValue [ | | cvarL USE {++} {[]}: {[CVarInfo]} ]
+
 SEM LValue
-  | Nm					lhs			.	nmL		=	[@jsnm]
+  | Nm					lhs			.	cvarL	=	[@cvar]
 
 ATTR ExprL ActualL [ | | jsExprL USE {++} {[]}: {[JS.Expr]} ]
 

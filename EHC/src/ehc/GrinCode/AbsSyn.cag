@@ -122,6 +122,12 @@ DATA GrVar
 TYPE GrValL     =   [GrVal]
 TYPE GrVarL     =   [GrVar]
 
+SET AllGrVal	= 	GrVal GrValL
+%%[[10
+                    AllAdapt
+%%]]
+SET AllGrVar	= 	GrVar GrVarL
+
 DATA GrPatLam
   | Empty
   | Var         nm              : {HsName}
@@ -155,6 +161,9 @@ DATA GrTag
   | Rec
 
 TYPE GrTagL     =   [GrTag]
+
+SET AllGrTag	= 	GrTag GrTagL
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -169,6 +178,8 @@ DATA GrAlt
                 
 
 TYPE GrAltL     =   [GrAlt]
+
+SET AllAlt      =   GrAlt GrAltL
 
 DATA GrPatAlt
   | LitInt      int             : {Int}
@@ -199,6 +210,8 @@ DATA GrTypeBase
   | Pointer
 
 TYPE GrTypeBaseL     =   [GrTypeBase]
+
+SET AllType     =   GrType GrTypeBase GrTypeBaseL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -220,6 +233,9 @@ DATA GrAdapt
 TYPE GrSplitL   =   [GrSplit]
 TYPE GrAdaptL   =   [GrAdapt]
 
+SET AllAdapt    =   GrAdapt GrAdaptL
+SET AllSplit    =   GrSplit GrSplitL
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -237,24 +253,14 @@ DATA GrFFIAnnot
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen grin)
-SET AllType     =   GrType GrTypeBase GrTypeBaseL
 SET AllDef      =   AllGlobal AllBind
-SET AllAlt      =   GrAlt GrAltL
 SET AllGrExpr   =   GrExpr AllAlt
-SET AllGrTag    =   GrTag GrTagL
 SET AllExpr     =   AllGrExpr AllGrPat AllGrTag AllGrVal AllType
-%%[[10
-SET AllAdapt    =   GrAdapt GrAdaptL
-SET AllSplit    =   GrSplit GrSplitL
-%%]]
-SET AllGrVal    =   GrVal GrValL
-%%[[10
-                    AllAdapt
-%%]]
-SET AllGrPat    =   GrPatAlt GrPatLam GrVar GrVarL
+SET AllGrPat    =   GrPatAlt GrPatLam AllGrVar
 %%[[10
                     AllSplit
 %%]]
 SET AllNTNoMod  =   AllExpr AllGlobal AllBind
+SET AllNTNm		=	AllGlobal AllBind GrExpr AllGrVal AllGrVar AllGrPat AllAlt AllGrTag
 SET AllNT       =   GrModule AllNTNoMod
 %%]

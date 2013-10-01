@@ -91,6 +91,7 @@ ref
       , \_ o     -> var o
       , \_ _ f   -> var f
       , \_ e _ f -> Expr_ObjFld e (fldNm f)
+      , \_ e     -> Expr_ObjFld e nmTag
       , \  e o   -> Expr_ArrInx e o
       , intConst -- fldFoldInxNm var intConst (panic "JavaScript.cvarToRef.mkOffset: should not happen
       , \_ _ -> panic "JavaScript.cvarToRef.mkTag should not be used"
@@ -188,7 +189,7 @@ newTupOrDataConstr dataGam tag as
       = newTup as
 %%]
 
-%%[(8 javascript) hs export(intConst, evl, apl, var, call, callv, ret', ret, assign)
+%%[(8 javascript) hs export(intConst, evl, apl, var, call, callv, ret', ret, assign', assign)
 -- | Int constant
 intConst :: Integral x => x -> Expr
 intConst i = Expr_Int $ fromIntegral i
@@ -227,8 +228,13 @@ ret e = ret' (Just e)
 {-# INLINE ret #-}
 
 -- | assign
+assign' :: Expr -> Expr -> Stat
+assign' = Stat_Assign
+{-# INLINE assign' #-}
+
+-- | assign
 assign :: HSNM x => x -> Expr -> Stat
-assign n e = Stat_Assign (var $ mkHNm n) e
+assign n e = assign' (var $ mkHNm n) e
 {-# INLINE assign #-}
 
 %%]
@@ -242,7 +248,7 @@ app f as
         nArgs      = length as'
 
 -- | lam
-fun' :: HsName -> Int -> Expr -> Expr
+fun' :: Show n => n -> Int -> Expr -> Expr
 fun' fNm nArgs e
   = Expr_New $ callv (nmFunN nArgs) (extra ++ [e])
   where 

@@ -267,20 +267,25 @@ DATA Arm
   					body			: Body
 
 TYPE ArmL			= [Arm]
+
+SET AllArm			= Arm ArmL
 %%]
 
 %%[(8 cmm)
 DATA Range
+  | RangeI			int				: Int
   | Range1			expr1			: Expr
   | Range2			expr1			: Expr
   					expr2			: Expr
 
 TYPE RangeL			= [Range]
+
+SET AllRange		= Range RangeL
 %%]
 
 %%[(8 cmm)
 DATA LValue
-  | Nm				nm				: Nm
+  | Nm				cvar			: CVarInfo
   | Typed			ty				: Ty
   					expr			: Expr
   					mbAssert		: MbAssert
@@ -329,8 +334,8 @@ SET	AllStmt			= AllBody
 					  Actual ActualL
 					  RetCont MbRetCont
 					  AllKindName
-					  Arm ArmL
-					  Range RangeL
+					  AllArm
+					  AllRange
 					  AllLValue
 					  Flow FlowL
 					  Also AlsoL
@@ -372,9 +377,6 @@ DATA Expr
   -- Variable, internal, global and foreign
   | CVar			cvar			: CVarInfo
   | Nm				nm				: Nm
-  | NmImported		moduleNm		: Nm
-  					nm				: Nm
-  | NmGlobal		nm				: Nm
   | NmForeign		nm				: String
 
   -- Operations
@@ -441,10 +443,10 @@ DATA Tag
   				dataInfo		: TagDataInfo
   | Tup
   | Ind
-  | Fun			nm				: Nm
+  | Fun			cvar			: CVarInfo
   | App
   | PApp		needs			: Int
-  				nm				: Nm
+  				cvar			: CVarInfo
 %%]
 
 DATA GrTag
