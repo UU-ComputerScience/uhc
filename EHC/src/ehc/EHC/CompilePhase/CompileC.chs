@@ -14,6 +14,8 @@ C + CPP compilation
 -- general imports
 %%[8 import(Data.Char,Data.Maybe)
 %%]
+%%[8 import(Control.Monad.State)
+%%]
 %%[8 import(qualified Data.Map as Map)
 %%]
 %%[8 import({%{EH}EHC.Common})

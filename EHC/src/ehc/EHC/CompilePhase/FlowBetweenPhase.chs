@@ -13,6 +13,9 @@ XXX
 %%[92 import(qualified UHC.Util.FastSeq as Seq)
 %%]
 
+%%[8 import(Control.Monad.State)
+%%]
+
 %%[8 import({%{EH}EHC.Common})
 %%]
 %%[8 import({%{EH}EHC.CompileUnit})

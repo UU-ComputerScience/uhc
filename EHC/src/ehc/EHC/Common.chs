@@ -10,7 +10,7 @@ Used by all compiler driver code
 -- general imports
 %%[1 import(Data.List, Data.Char, Data.Maybe) export(module Data.Maybe, module Data.List, module Data.Char)
 %%]
-%%[1 import(Control.Monad.State, System.IO) export(module System.IO, module Control.Monad.State)
+%%[1 import(Control.Monad.State, System.IO) export(module System.IO)
 %%]
 %%[1 import(UHC.Util.CompileRun, UHC.Util.Pretty, UHC.Util.FPath, UHC.Util.Utils) export(module UHC.Util.CompileRun, module UHC.Util.Pretty, module UHC.Util.FPath, module UHC.Util.Utils)
 %%]

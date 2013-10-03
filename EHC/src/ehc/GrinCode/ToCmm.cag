@@ -525,6 +525,7 @@ data NmEnvCmm -- lref gref mref meref extra
   = NmEnv
       { -- neVAGam     :: ValAccessGam lref gref mref meref
         neCVarMp	:: Cmm.CVarMp
+      -- , neCVarCfg	:: CVarNmModuleCfg
 %%[[50
       , neImpNmMp   :: VA.HsName2FldMpMp
       , neExtra     :: LamMp
@@ -541,9 +542,12 @@ nmEnvLookup nm env
         -> Nothing
 %%][50
         -> do q <- hsnQualifier nm
-              (mo,entryMp) <- Map.lookup q $ neImpNmMp env
-              eo <- Map.lookup nm entryMp
-              return $ CVar_Global Cmm.tyNd (refOfFld mo) (refOfFld eo)
+              case Map.lookup q $ neImpNmMp env of
+                Just (mo,entryMp) -> do
+                    eo <- Map.lookup nm entryMp
+                    return $ CVar_GlobalExt Cmm.tyNd (refOfFld mo) (refOfFld eo)
+                _ -> do
+                    return $ CVar_GlobalInt Cmm.tyNd q nm
 %%]]
       v -> v
 %%]

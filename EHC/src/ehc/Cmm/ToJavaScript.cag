@@ -87,11 +87,12 @@ ss = Seq.fromList
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen grin) hs
-jref :: CVarNmModuleCfg -> CVarMp -> CVarInfo -> JS.Expr
-jref
+jref :: CVarNmModuleCfg -> {- CVarMp -> -} CVarInfo -> JS.Expr
+jref cfg cvi
   = cvarToRef
       ( \_       -> JS.Expr_This
       , \_ o     -> JS.var $ fldNm o
+      , \_ _ f   -> JS.var f
       , \_ _ f   -> JS.var f
       , \_ e _ f -> JS.Expr_ObjFld e f -- (fldNm f)
       , \_ e     -> JS.Expr_ObjFld e JS.nmTag
@@ -100,6 +101,7 @@ jref
       , \_ _ -> panic "JavaScript.cvarToRef.mkTag should not be used"
       , JS.hsnJavaScriptVar
       )
+      cfg Map.empty cvi
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -200,7 +202,7 @@ SEM Stmt
   | Call				lhs			.	jsBodyStats	=	s $ maybeHd JS.Stat_Expr JS.assign @knames.nmL $ @callexpr.jsMkCall @actuals.jsExprL
   | Switch				lhs			.	jsBodyStats	=	s $ JS.Stat_Switch @expr.jsExpr @arms.jsAltL
   | Ret					lhs			.	jsBodyStats	=	s $ JS.ret' $ maybeHd Nothing Just @actuals.jsExprL
-  | Assign				lhs			.	jsBodyStats	=	ss $ zipWith (JS.assign' . jref @lhs.cvarNmModCfg Map.empty) @lval.cvarL @rhs.jsExprL
+  | Assign				lhs			.	jsBodyStats	=	ss $ zipWith (JS.assign' . jref @lhs.cvarNmModCfg) @lval.cvarL @rhs.jsExprL
   | Alloc				lhs			.	jsBodyStats	=	s $ JS.assign @jsnm $ @tag.jsMkAlloc $ @elts.nmExprL
   | Box					lhs			.	jsBodyStats	=	s $ JS.assign @jsnm @expr.jsExpr
   | UnBox				lhs			.	jsBodyStats	=	s $ JS.assign @jsnm @expr.jsExpr
@@ -312,9 +314,9 @@ SEM Tag
   | Con					lhs			.	jsMkAlloc	=	JS.newDataConstr @tag
   | Tup					lhs			.	jsMkAlloc	=	JS.newTup . L.map snd
   | Ind					lhs			.	jsMkAlloc	=	JS.newTup . L.map snd	-- TBD
-  | Fun					lhs			.	jsMkAlloc	=	JS.newTup . L.map snd	-- TBD
+  -- | Fun					lhs			.	jsMkAlloc	=	JS.newTup . L.map snd	-- TBD -- \as -> let as' = L.map snd as in JS.fun' (show @cvar) (length as') $ atNm (jref @lhs.cvarNmModCfg @cvar) nmFunEvNFld
   | App					lhs			.	jsMkAlloc	=	\fas -> let (f:as) = L.map snd fas in JS.app f as
-  | PApp				lhs			.	jsMkAlloc	=	\as -> let as' = L.map snd as in JS.app (jref @lhs.cvarNmModCfg Map.empty @cvar) as' -- JS.newTup . L.map snd	-- TBD
+  | Fun PApp			lhs			.	jsMkAlloc	=	\as -> let as' = L.map snd as in JS.app (jref @lhs.cvarNmModCfg @cvar) as'
 %%]
 
 -- \as -> fun' @cvi (length as) -> Expr -> Expr -- 
@@ -328,7 +330,7 @@ SEM Expr
   | Int					lhs         .   jsExpr	=   JS.intConst @val
   | Char				lhs         .   jsExpr	=   JS.Expr_Char @val
   | Str					lhs         .   jsExpr	=   JS.Expr_Str @val
-  | CVar				lhs         .   jsExpr	=   jref @lhs.cvarNmModCfg Map.empty @cvar
+  | CVar				lhs         .   jsExpr	=   jref @lhs.cvarNmModCfg @cvar
   | Nm					lhs         .   jsExpr	=   JS.var @jsnm
   | Op					lhs			.	jsExpr	=	@op.mkExpr @exprs.jsExprL
   | NdDataTagGet		lhs			.	jsExpr	=	JS.Expr_ObjFld (JS.var @jsnm) JS.nmTag

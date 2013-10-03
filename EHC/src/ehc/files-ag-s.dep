@@ -126,3 +126,4 @@ TyCore/Trf/OptimizeStrictness2of2.cag
 Cmm/ToC
 Cmm/Pretty
 Cmm/ToJavaScript
+JavaScript/Trf/InlineSingleUseNames.cag

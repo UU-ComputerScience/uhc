@@ -18,6 +18,9 @@ Cleanup between phases
 %%[99 import({%{EH}EHC.CompileRun})
 %%]
 
+%%[99 import(Control.Monad.State)
+%%]
+
 -- HI syntax and semantics
 %%[99 import(qualified {%{EH}HI} as HI)
 %%]

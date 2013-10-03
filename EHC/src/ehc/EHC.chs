@@ -57,6 +57,8 @@
 %%]
 %%[8 import(qualified Data.Map as Map, qualified Data.Set as Set)
 %%]
+%%[8 import(Control.Monad.State)
+%%]
 
 -- module
 %%[50 import({%{EH}Module}(modBuiltin), {%{EH}Module})

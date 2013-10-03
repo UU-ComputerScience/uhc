@@ -32,6 +32,15 @@
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Defaults
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 javascript) hs export(emptyJavaScriptModule)
+emptyJavaScriptModule :: JavaScriptModule
+emptyJavaScriptModule = JavaScriptModule_Mod [] [] []
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Instances
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -89,6 +98,7 @@ ref
   = cvarToRef
       ( \_       -> Expr_This
       , \_ o     -> var o
+      , \_ _ f   -> var f
       , \_ _ f   -> var f
       , \_ e _ f -> Expr_ObjFld e (fldNm f)
       , \_ e     -> Expr_ObjFld e nmTag
@@ -239,6 +249,12 @@ assign n e = assign' (var $ mkHNm n) e
 
 %%]
 
+%%[(8 javascript) hs export(atNm)
+-- | Selection by name
+atNm :: HSNM x => Expr -> x -> Expr
+atNm e n = Expr_Sel e (var n)
+%%]
+
 %%[(8 javascript) hs export(app, fun', fun, funFld)
 -- | apply
 app :: Expr -> [Expr] -> Expr
@@ -266,7 +282,7 @@ fun fNm as stats
 
 -- | Extract field which holds actual JS function
 funFld :: Expr -> Expr
-funFld f = Expr_Sel f (var nmFunEvNFld)
+funFld = flip atNm nmFunEvNFld
 %%]
 
 

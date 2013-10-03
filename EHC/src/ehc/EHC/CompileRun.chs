@@ -16,6 +16,8 @@ An EHC compile run maintains info for one compilation invocation
 %%]
 %%[99 import(System.Directory)
 %%]
+%%[8 import(Control.Monad.State)
+%%]
 %%[99 import(Control.Exception as CE)
 %%]
 %%[99 import(UHC.Util.FPath)

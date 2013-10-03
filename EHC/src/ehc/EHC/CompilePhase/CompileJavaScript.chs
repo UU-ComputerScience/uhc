@@ -9,6 +9,8 @@ JavaScript compilation
 
 %%[(8 codegen javascript) import(System.Directory, Data.List(intercalate), Data.Either, System.Exit)
 %%]
+%%[(8 codegen javascript) import(Control.Monad.State)
+%%]
 
 -- general imports
 %%[(8 codegen javascript) import({%{EH}EHC.Common})

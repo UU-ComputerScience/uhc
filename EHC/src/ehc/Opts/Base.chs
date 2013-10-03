@@ -222,6 +222,9 @@ data EHCOpts
 %%[[(8 codegen javascript)
       ,  ehcOptJavaScriptOpts ::  [JavaScriptOpt]	-- javascript options
 %%]]
+%%[[(8 javascript)
+      ,  ehcOptDumpJavaScriptStages ::  Bool              -- dump intermediate JavaScript transformation stages
+%%]]
 %%[[(8 codegen tycore)
       ,  ehcOptUseTyCore      ::  Maybe [TyCoreOpt] -- use TyCore instead of Core (temporary option until Core is obsolete)
 %%]]
@@ -380,6 +383,10 @@ emptyEHCOpts
 %%]]
 %%[[(8 codegen javascript)
       ,  ehcOptJavaScriptOpts   =   []
+%%]]
+%%[[(8 javascript)
+      ,  ehcOptDumpJavaScriptStages
+                                =   False
 %%]]
 %%[[(8 codegen tycore)
       ,  ehcOptUseTyCore        =   Nothing

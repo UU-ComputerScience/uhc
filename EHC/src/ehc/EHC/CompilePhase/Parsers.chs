@@ -16,6 +16,9 @@ CompilePhase building blocks: parsers
 %%[99 import(Control.Exception as CE)
 %%]
 
+%%[8 import(Control.Monad.State)
+%%]
+
 %%[8 import({%{EH}EHC.Common})
 %%]
 %%[8 import({%{EH}EHC.CompileUnit})

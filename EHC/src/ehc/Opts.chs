@@ -291,6 +291,10 @@ ehcCmdLineOpts
      ,  Option ""   ["dump-cmm-stages"]     (boolArg optDumpCmmStages)              "dump: intermediate Cmm stages (no)"
 %%][100
 %%]]
+%%[[(8 javascript)
+     ,  Option ""   ["dump-js-stages"]      (boolArg optDumpJavaScriptStages)       "dump: intermediate JavaScript transformation stages (no)"
+%%][100
+%%]]
 %%[[(8 codegen java)
 %%]]
 %%[[50
@@ -721,6 +725,10 @@ oPriv                o b = o { ehcOptPriv           = b }
 
 %%[(8 codegen)
 optDumpCoreStages    o b = o { ehcOptDumpCoreStages = b }
+%%]
+
+%%[(8 javascript)
+optDumpJavaScriptStages o b = o { ehcOptDumpJavaScriptStages = b }
 %%]
 
 %%[(8 codegen grin)

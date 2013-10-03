@@ -13,6 +13,9 @@ Interface/wrapper to various transformations for Core, TyCore, etc.
 %%[8 import(qualified Data.Map as Map, qualified Data.Set as Set)
 %%]
 
+%%[8 import(Control.Monad.State)
+%%]
+
 %%[8 import({%{EH}EHC.Common})
 %%]
 %%[(8 codegen) import({%{EH}Base.Optimize})
@@ -32,8 +35,12 @@ Interface/wrapper to various transformations for Core, TyCore, etc.
 %%[(8 codegen tycore) import({%{EH}TyCore.Trf})
 %%]
 
+-- JavaScript transformations
+%%[(8 javascript) import({%{EH}JavaScript.Trf})
+%%]
+
 -- Output
-%%[8 import({%{EH}EHC.CompilePhase.Output(cpOutputCoreModule)})
+%%[8 import({%{EH}EHC.CompilePhase.Output(cpOutputCoreModules)})
 %%]
 %%[(8 tycore) import({%{EH}EHC.CompilePhase.Output(cpOutputTyCoreModule)})
 %%]
@@ -92,11 +99,9 @@ cpTransformCore optimScope modNm
 %%]]
 
          -- dump intermediate stages, print errors, if any
-       ; cpSeq [ do { when (isJust mc) (cpOutputCoreModule False ("-" ++ show optimScope ++ "-" ++ show n ++ "-" ++ nm) "core" modNm (fromJust mc))
-                    ; cpSetLimitErrsWhen 5 ("Core errors: " ++ nm) err
-                    }
-               | (n,(nm,mc,err)) <- zip [1..] (trfcoreCoreStages trfcoreOut)
-               ]
+       ; let (nms,mcs,errs) = unzip3 $ trfcoreCoreStages trfcoreOut
+       ; cpSeq $ zipWith (\nm err -> cpSetLimitErrsWhen 5 ("Core errors: " ++ nm) err) nms errs
+       ; cpOutputCoreModules False (\n nm -> "-" ++ show optimScope ++ "-" ++ show n ++ "-" ++ nm) "core" modNm [ (n,nm) | (n, Just nm) <- zip nms mcs ]
        }
 %%]
 
@@ -146,6 +151,37 @@ cpTransformTyCore modNm
          -- put back result: additional hidden exports, it should be in a cpFlowXX variant
        ; cpUpdHiddenExports modNm $ zip (Set.toList $ trftycoreExtraExports trftycoreOut) (repeat IdOcc_Val)
 %%]]
+       }
+%%]
+
+
+%%[(8888 javascript) export(cpTransformJavaScript)
+cpTransformJavaScript :: OptimizationScope -> HsName -> EHCompilePhase ()
+cpTransformJavaScript optimScope modNm
+  = do { cr <- get
+       ; let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
+       ; cpMsg' modNm VerboseALot "Transforming JavaScript ..." Nothing fp
+       
+         -- transform
+       ; let  mbJavaScript     = ecuMbJavaScript ecu
+              trfjsIn  = emptyTrfJavaScript
+                             { trfjsJavaScript          = panicJust "cpTransformJavaScript" mbJavaScript
+                             , trfjsUniq          = crsiNextUID crsi
+                             }
+              trfjsOut = trfJavaScript opts optimScope modNm trfjsIn
+       
+         -- put back result: JavaScript
+       ; cpUpdCU modNm $! ecuStoreJavaScript (trfjsJavaScript trfjsOut)
+
+         -- put back result: unique counter
+       ; cpSetUID (trfjsUniq trfjsOut)
+
+         -- dump intermediate stages, print errors, if any
+       ; cpSeq [ do { when (isJust mc) (cpOutputJavaScriptModule False ("-" ++ show optimScope ++ "-" ++ show n ++ "-" ++ nm) "js" modNm (fromJust mc))
+                    ; cpSetLimitErrsWhen 5 ("JavaScript errors: " ++ nm) err
+                    }
+               | (n,(nm,mc,err)) <- zip [1..] (trfjsJavaScriptStages trfjsOut)
+               ]
        }
 %%]
 

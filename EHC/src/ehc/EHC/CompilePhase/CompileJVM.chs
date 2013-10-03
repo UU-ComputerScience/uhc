@@ -9,6 +9,8 @@ JVM compilation
 
 %%[(8 codegen java) import(System.Directory)
 %%]
+%%[(8 codegen java) import(Control.Monad.State)
+%%]
 
 -- general imports
 %%[(8 codegen java) import({%{EH}EHC.Common})

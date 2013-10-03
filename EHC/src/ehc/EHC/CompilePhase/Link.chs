@@ -15,6 +15,9 @@ Linking
 %%[(99 codegen) import({%{EH}EHC.CompileRun})
 %%]
 
+%%[(99 codegen) import(Control.Monad.State)
+%%]
+
 %%[(99 codegen) import(qualified {%{EH}Config} as Cfg)
 %%]
 %%[(99 codegen) import({%{EH}EHC.Environment})

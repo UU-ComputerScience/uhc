@@ -8,6 +8,8 @@ Folding over AST to compute semantics
 %%]
 
 -- general imports
+%%[8 import(Control.Monad.State)
+%%]
 %%[8 import(qualified Data.Map as Map)
 %%]
 %%[50 import(qualified Data.Set as Set)

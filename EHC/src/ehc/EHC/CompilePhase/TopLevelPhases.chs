@@ -25,6 +25,8 @@ level 2..6 : with prefix 'cpEhc'
 -- general imports
 %%[8 import(qualified Data.Map as Map,qualified Data.Set as Set)
 %%]
+%%[8 import(Control.Monad.State)
+%%]
 
 -- trace, debug
 %%[8 import(System.IO.Unsafe, Debug.Trace)

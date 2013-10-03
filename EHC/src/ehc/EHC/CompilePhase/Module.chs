@@ -16,6 +16,8 @@ Module analysis
 %%]
 %%[50 import(System.Directory)
 %%]
+%%[50 import(Control.Monad.State)
+%%]
 
 %%[50 import({%{EH}EHC.Common})
 %%]
