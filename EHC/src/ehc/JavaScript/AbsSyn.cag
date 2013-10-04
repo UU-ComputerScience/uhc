@@ -36,6 +36,7 @@ DATA Stat
   | Switch		expr			: Expr
   				alts			: AltL
   | Break
+  | Cmt			str				: {String}
 
 TYPE StatL		= [Stat]
 %%]

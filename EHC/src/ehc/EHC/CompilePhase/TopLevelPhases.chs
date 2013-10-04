@@ -222,7 +222,7 @@ cpEhcGrinFullProgPostModulePhases opts modNmL (impModNmL,mainModNm)
            , cpCleanupGrin impModNmL -- clean up unused Grin (moved here from cpCleanupCU)
 %%]]
            ]
-           ++ (if ehcOptDumpGrinStages opts then [cpOutputGrin False "-fullgrin" mainModNm] else [])
+           ++ (if ehcOptDumpGrinStages opts then [void $ cpOutputGrin False "-fullgrin" mainModNm] else [])
            ++ [ cpMsg mainModNm VerboseDebug ("Full Grin generated, from: " ++ show impModNmL)
               ]
           )
@@ -250,7 +250,7 @@ cpEhcCoreFullProgPostModulePhases opts modNmL (impModNmL,mainModNm)
            , cpFlowHILamMp mainModNm
            , cpProcessCoreFold mainModNm -- redo folding for replaced main module
            ]
-           -- ++ (if ehcOptDumpCoreStages opts then [cpOutputCore False "" "full.core" mainModNm] else [])
+           -- ++ (if ehcOptDumpCoreStages opts then [void $ cpOutputCore False "" "full.core" mainModNm] else [])
            ++ [ cpMsg mainModNm VerboseDebug ("Full Core generated, from: " ++ show impModNmL)
               ]
           )
@@ -930,7 +930,9 @@ cpEhcExecutablePerModule how impModNmL modNm
            ++ [ cpCompileJazyJVM how impModNmL modNm ]
 %%]]
 %%[[(8 javascript)
-           ++ [ cpCompileJavaScript how impModNmL modNm ]
+           ++ [ cpTransformJavaScript OptimizationScope_PerModule modNm
+              , cpCompileJavaScript how impModNmL modNm
+              ]
 %%]]
        }
 %%]
@@ -1025,8 +1027,8 @@ cpProcessCoreBasic modNm
 %%[[50
                , cpFlowHILamMp modNm
 %%]]
-               -- , when (ehcOptEmitCore opts) (cpOutputCore True "" "core" modNm)
-               , cpOutputCore True "" "core" modNm
+               -- , when (ehcOptEmitCore opts) (void $ cpOutputCore True "" "core" modNm)
+               , void $ cpOutputCore True "" "core" modNm
 %%[[(8888 codegen java)
                , when (ehcOptEmitJava opts) (cpOutputJava         "java" modNm)
 %%]]
@@ -1054,8 +1056,8 @@ cpProcessCoreRest modNm
   = do { cr <- get
        ; let (_,_,opts,_) = crBaseInfo modNm cr
        ; cpSeq (   [ cpTranslateCore2Grin modNm ]
-                -- ++ (if ehcOptWholeProgHPTAnalysis opts then [ cpOutputGrin True "" modNm ] else [])
-                ++ (if ehcOptIsViaGrin opts then [ cpOutputGrin True "" modNm ] else [])
+                -- ++ (if ehcOptWholeProgHPTAnalysis opts then [ void $ cpOutputGrin True "" modNm ] else [])
+                ++ (if ehcOptIsViaGrin opts then [ void $ cpOutputGrin True "" modNm ] else [])
 %%[[(8 jazy)
                 ++ [ cpTranslateCore2Jazy modNm ]
 %%]]
@@ -1075,9 +1077,9 @@ cpProcessGrin :: HsName -> EHCompilePhase ()
 cpProcessGrin modNm 
   = do { cr <- get
        ; let (_,_,opts,_) = crBaseInfo modNm cr
-       ; cpSeq (   (if ehcOptDumpGrinStages opts then [cpOutputGrin False "-000-initial" modNm] else [])
+       ; cpSeq (   (if ehcOptDumpGrinStages opts then [void $ cpOutputGrin False "-000-initial" modNm] else [])
                 ++ [cpTransformGrin modNm]
-                ++ (if ehcOptDumpGrinStages opts then [cpOutputGrin False "-099-final" modNm]  else [])
+                ++ (if ehcOptDumpGrinStages opts then [void $ cpOutputGrin False "-099-final" modNm]  else [])
 %%[[(8 wholeprogAnal)
                 ++ (if targetDoesHPTAnalysis (ehcOptTarget opts) then [cpTransformGrinHPTWholeProg modNm] else [])
 %%]]
@@ -1111,7 +1113,7 @@ cpProcessCmm modNm
   = do { cr <- get
        ; let (_,_,opts,_) = crBaseInfo modNm cr
        ; cpSeq [ cpMsg modNm VerboseALot "Translate Cmm"
-               , when (ehcOptDumpCmmStages opts) $ cpOutputCmm False "-000-initial" modNm
+               , when (ehcOptDumpCmmStages opts) $ void $ cpOutputCmm False "-000-initial" modNm
 %%[[(8 javascript)
                , when (ehcOptIsViaGrinCmmJavaScript opts) $ cpTranslateCmm2JavaScript modNm
 %%]]

@@ -102,6 +102,7 @@ SEM Stat
   | Ret			loc		.	pp		=	ppStat $ "return" >#< maybe PP.empty id @mbExpr.ppMb
   | Switch		loc		.	pp		=	"switch" >|< ppParens @expr.pp >-< indent 1 (ppCurlysBlock @alts.ppL)
   | Break		loc		.	pp		=	ppStat $ pp "break"
+  | Cmt			loc		.	pp		=	"/*" >#< @str >#< "*/"
 
 SEM Alt
   | Alt			lhs		.	pp		=	"case" >#< @tag >|< ":" >-< indent 1 (vlist @stats.ppL)

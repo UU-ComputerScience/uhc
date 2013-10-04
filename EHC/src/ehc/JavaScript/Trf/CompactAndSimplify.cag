@@ -1,0 +1,50 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Attempt to make a more compact representation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 javascript) hs module {%{EH}JavaScript.Trf.CompactAndSimplify}
+%%]
+
+%%[(8 javascript) hs import(Data.Maybe,{%{EH}Base.Common},{%{EH}JavaScript})
+%%]
+
+%%[(8 javascript) hs import(UHC.Util.Utils)
+%%]
+
+%%[(8 javascript) hs import(qualified Data.Map as Map, qualified Data.Set as Set)
+%%]
+
+%%[(8 javascript).WRAPPER ag import({JavaScript/AbsSyn})
+WRAPPER AGItf
+%%]
+
+
+%%[(8 javascript)
+%%]
+PRAGMA nocycle
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell itf
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 javascript) hs export(cmodTrfCompactAndSimplify)
+cmodTrfCompactAndSimplify :: JavaScriptModule -> JavaScriptModule
+cmodTrfCompactAndSimplify cmod
+  =  let  t = wrap_AGItf (sem_AGItf (AGItf_AGItf cmod)) Inh_AGItf
+     in   trf_Syn_AGItf t
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Transformation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 javascript)
+ATTR AllNT [ | | trf: SELF ]
+ATTR AGItf [ | | trf: JavaScriptModule ]
+%%]
+

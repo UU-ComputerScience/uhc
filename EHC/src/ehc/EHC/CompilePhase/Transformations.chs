@@ -26,6 +26,8 @@ Interface/wrapper to various transformations for Core, TyCore, etc.
 %%]
 %%[99 import({%{EH}EHC.CompilePhase.Module(cpUpdHiddenExports)})
 %%]
+%%[8 import(qualified {%{EH}Config} as Cfg)
+%%]
 
 -- Core transformations
 %%[(8 codegen) import({%{EH}Core.Trf})
@@ -40,9 +42,7 @@ Interface/wrapper to various transformations for Core, TyCore, etc.
 %%]
 
 -- Output
-%%[8 import({%{EH}EHC.CompilePhase.Output(cpOutputCoreModules)})
-%%]
-%%[(8 tycore) import({%{EH}EHC.CompilePhase.Output(cpOutputTyCoreModule)})
+%%[8 import({%{EH}EHC.CompilePhase.Output})
 %%]
 
 -- HI syntax and semantics
@@ -100,8 +100,8 @@ cpTransformCore optimScope modNm
 
          -- dump intermediate stages, print errors, if any
        ; let (nms,mcs,errs) = unzip3 $ trfcoreCoreStages trfcoreOut
-       ; cpSeq $ zipWith (\nm err -> cpSetLimitErrsWhen 5 ("Core errors: " ++ nm) err) nms errs
        ; cpOutputCoreModules False (\n nm -> "-" ++ show optimScope ++ "-" ++ show n ++ "-" ++ nm) "core" modNm [ (n,nm) | (n, Just nm) <- zip nms mcs ]
+       ; cpSeq $ zipWith (\nm err -> cpSetLimitErrsWhen 5 ("Core errors: " ++ nm) err) nms errs
        }
 %%]
 
@@ -155,7 +155,7 @@ cpTransformTyCore modNm
 %%]
 
 
-%%[(8888 javascript) export(cpTransformJavaScript)
+%%[(8 javascript) export(cpTransformJavaScript)
 cpTransformJavaScript :: OptimizationScope -> HsName -> EHCompilePhase ()
 cpTransformJavaScript optimScope modNm
   = do { cr <- get
@@ -177,11 +177,9 @@ cpTransformJavaScript optimScope modNm
        ; cpSetUID (trfjsUniq trfjsOut)
 
          -- dump intermediate stages, print errors, if any
-       ; cpSeq [ do { when (isJust mc) (cpOutputJavaScriptModule False ("-" ++ show optimScope ++ "-" ++ show n ++ "-" ++ nm) "js" modNm (fromJust mc))
-                    ; cpSetLimitErrsWhen 5 ("JavaScript errors: " ++ nm) err
-                    }
-               | (n,(nm,mc,err)) <- zip [1..] (trfjsJavaScriptStages trfjsOut)
-               ]
+       ; let (nms,mcs,errs) = unzip3 $ trfjsJavaScriptStages trfjsOut
+       ; cpOutputJavaScriptModules False (\n nm -> "-" ++ show n ++ "-" ++ nm) Cfg.suffixJavaScriptLib modNm [ (n,nm) | (n, Just nm) <- zip nms mcs ]
+       ; cpSeq $ zipWith (\nm err -> cpSetLimitErrsWhen 5 ("JavaScript errors: " ++ nm) err) nms errs
        }
 %%]
 

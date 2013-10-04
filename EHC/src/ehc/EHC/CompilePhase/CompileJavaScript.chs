@@ -19,6 +19,8 @@ JavaScript compilation
 %%]
 %%[(8 codegen javascript) import({%{EH}EHC.CompileRun})
 %%]
+%%[(8 codegen javascript) import({%{EH}EHC.CompilePhase.Output})
+%%]
 
 %%[(8 codegen javascript) import(qualified {%{EH}Config} as Cfg)
 %%]
@@ -57,25 +59,18 @@ cpCompileJavaScript how othModNmL modNm
   = do { cr <- get
        ; let  (ecu,_,opts,fp) = crBaseInfo modNm cr
               mbJs            = ecuMbJavaScript ecu
-              fpO m f = mkPerModuleOutputFPath opts True m f Cfg.suffixJavaScriptLib
-              fpM     = fpO modNm fp
+              fpO m f = outputMkFPathJavaScriptModule opts m f Cfg.suffixJavaScriptLib
+              -- fpM     = fpO modNm fp
               fpExec  = mkPerExecOutputFPath opts modNm fp (Just "js")
               fpHtml  = mkPerExecOutputFPath opts modNm fp (Just "html")
 
        ; when (isJust mbJs && ehcOptEmitJavaScript opts)
-              (do { cpMsg modNm VerboseALot "Emit JavaScript"
-                  ; when (ehcOptVerbosity opts >= VerboseDebug)
-                         (do { lift $ putStrLn $ "fpO   : " ++ fpathToStr fpM
-                             ; lift $ putStrLn $ "fpExec: " ++ fpathToStr fpExec
+              (do { when (ehcOptVerbosity opts >= VerboseDebug)
+                         (do { lift $ putStrLn $ "fpExec: " ++ fpathToStr fpExec
                              ; lift $ putStrLn $ show (ehcOptImportFileLocPath opts)
                              ; lift $ putStrLn $ "module dependencies:" ++ intercalate "," (jsModDeps (fromJust mbJs))
                              })
-%%[[8
-                  ; let ppMod = ppJavaScriptModule (fromJust mbJs)
-%%][50
-                  ; let ppMod = vlist $ [p] ++ (if ecuIsMainMod ecu then [pmain] else [])
-                              where (p,pmain) = ppJavaScriptModule (fromJust mbJs)
-%%]]
+
                   ; let fpDeps  = map fpathFromStr (jsModDeps (fromJust mbJs))
                   ; let searchPath = ehcOptImportFileLocPath opts
 
@@ -90,7 +85,9 @@ cpCompileJavaScript how othModNmL modNm
 
                   ; let Right jsDeps = jsDepsFound
 
-                  ; lift $ putPPFPath fpM ("//" >#< modNm >-< ppMod) 1000
+                  -- ; lift $ putPPFPath fpM ("//" >#< modNm >-< ppMod) 1000
+                  ; fpM <- cpOutputJavaScript False "" modNm
+                  
                   ; case how of
                       FinalCompile_Exec
 %%[[50

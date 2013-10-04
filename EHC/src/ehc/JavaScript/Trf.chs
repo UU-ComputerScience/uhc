@@ -24,6 +24,8 @@
 -- JavaScript transformations
 %%[(8 javascript) import({%{EH}JavaScript.Trf.InlineSingleUseNames})
 %%]
+%%[(8 javascript) import({%{EH}JavaScript.Trf.CompactAndSimplify})
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Interface to transformations, used internally as state
@@ -60,6 +62,9 @@ trfJavaScript opts optimScope modNm trfjs
                  -- removal of unnecessary name introductions, in particular singly used ones
                ; t_inl_names
 
+                 -- compactify and simplify further, trivial stuff like making names shorter
+               ; t_comp_simpl
+
                }
 
         liftTrfMod :: [OptimizationScope] -> String -> (JavaScriptModule -> JavaScriptModule) -> State TrfJavaScript ()
@@ -80,6 +85,7 @@ trfJavaScript opts optimScope modNm trfjs
         -- actual transformations
         t_initial       = liftTrfMod  osm "initial"            $ id
         t_inl_names     = liftTrfMod  osm "inl-names"          $ cmodTrfInlineSingleUseNames
+        t_comp_simpl    = liftTrfMod  osm "comp-simpl"         $ cmodTrfCompactAndSimplify
 
         -- abbreviations for optimatisation scope
         osm  = [OptimizationScope_PerModule]

@@ -25,18 +25,169 @@ WRAPPER AGItf
 
 
 %%[(8 javascript)
-%%]
+-- Inlining is inherently cyclic, so turn of ordering
 PRAGMA nocycle
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Haskell itf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 javascript).cmodTrfInlineSingleUseNames hs export(cmodTrfInlineSingleUseNames)
+%%[(8 javascript) hs export(cmodTrfInlineSingleUseNames)
 cmodTrfInlineSingleUseNames :: JavaScriptModule -> JavaScriptModule
 cmodTrfInlineSingleUseNames cmod
   =  let  t = wrap_AGItf (sem_AGItf (AGItf_AGItf cmod)) Inh_AGItf
-     in   cTrf_Syn_AGItf t
+     in   trf_Syn_AGItf t
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Per identifier maintained info for deciding to inline or not
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 javascript) hs
+-- | The state/info for a variable, info for a binding takes on values in the order of constructor alternatives
+data Inl
+  = Inl_IsDeclared          -- ^ is only declared
+  | Inl_IsAssigned          -- ^ is declared & assigned to
+  | Inl_IsUsedOnce          -- ^ is used once
+  | Inl_Repl        Expr    -- ^ replacement
+  
+  -- escape
+  | Inl_Ignore              -- ^ anything else
+
+instance Show Inl where
+  show Inl_IsDeclared = "decl"
+  show Inl_IsAssigned = "asgn"
+  show Inl_IsUsedOnce = "used"
+  show (Inl_Repl _)   = "repl"
+  show Inl_Ignore     = "igno"
+
+type InlMp = Map.Map Key Inl
+%%]
+
+Pass 1: gather Inl_IsDeclared, Inl_IsAssigned, Inl_IsUsedOnce
+
+%%[(8 javascript)
+ATTR AllStat AllExpr [ | inl1Mp: InlMp | ]
+
+SEM JavaScriptModule Alt
+  | *           loc         .   inl1Mp      =   Map.empty
+
+SEM Expr
+  | Fun         body        .   inl1Mp      =   Map.empty
+  				lhs			.	inl1Mp		=	@lhs.inl1Mp
+%%]
+
+%%[(8 javascript)
+SEM Stat
+  | VarDecl     mbExpr      .   inl1Mp      =   let upd Nothing | isJust @mbExpr.trf    = Just Inl_IsAssigned
+                                                                | otherwise             = Just Inl_IsDeclared
+                                                    upd _                               = Just Inl_Ignore
+                                                in  Map.alter upd @key @lhs.inl1Mp
+  | Assign      expr        .   inl1Mp      =   let upd (Just Inl_IsDeclared)           = Just Inl_IsAssigned
+                                                    upd _                               = Just Inl_Ignore
+                                                in  maybe @to.inl1Mp (\key -> Map.alter upd key @lhs.inl1Mp) @to.mbKey
+
+SEM Expr
+  | Var         lhs         .   inl1Mp      =   let upd (Just Inl_IsAssigned)           = Just Inl_IsUsedOnce
+                                                    upd _                               = Just Inl_Ignore
+                                                in  Map.alter upd @key @lhs.inl1Mp
+%%]
+
+Pass 2: gather Inl_Repl and apply
+
+%%[(8 javascript)
+ATTR AllStat AllExpr [ | inl2Mp: InlMp | ]
+
+SEM JavaScriptModule
+  | Mod         loc         .   inl2Mp      =   Map.empty
+
+SEM Alt
+  | Alt         stats       .   inl2Mp      =   @stats.inl1Mp
+
+SEM Expr
+  | Fun         body        .   inl2Mp      =   @body.inl1Mp
+  				lhs			.	inl2Mp		=	@lhs.inl2Mp
+%%]
+
+%%[(8 javascript)
+ATTR AllStat [ | | trfStatL USE {++} {[]}: StatL ]
+
+SEM Stat
+  | * - VarDecl Assign
+                lhs         .   trfStatL    =   [@trf]
+%%]
+
+%%[(8 javascript)
+SEM Stat
+  | VarDecl     lhs         .   (inl2Mp,trfStatL)
+                                            =   case Map.lookup @key @mbExpr.inl2Mp of
+                                                    Just Inl_IsUsedOnce | isJust @mbExpr.trf -> (Map.insert @key (Inl_Repl $ fromJust @mbExpr.trf) @mbExpr.inl2Mp, []    )
+                                                                        | otherwise          -> (                                                  @mbExpr.inl2Mp, []    )
+                                                    _                                        -> (                                                  @mbExpr.inl2Mp, [@trf])
+  | Assign      lhs         .   (inl2Mp,trfStatL)
+                                            =   case do {key <- @to.mbKey; i <- Map.lookup key @expr.inl2Mp; return (key,i)} of
+                                                    Just (key,Inl_IsUsedOnce)   -> (Map.insert key (Inl_Repl @expr.trf) @expr.inl2Mp, []    )
+                                                    _                           -> (                                    @expr.inl2Mp, [@trf])
+
+SEM Expr
+  | Var         lhs         .   trf         =   case Map.lookup @key @lhs.inl2Mp of
+                                                    Just (Inl_Repl e) -> e
+                                                    _                 -> @trf
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Debugging
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8888 javascript) hs
+dbg k m1 m2
+  = []
+{-
+  = [ Stat_Cmt $ show k ++ ":" ++ show (Map.lookup k m1) ] ++
+    [ Stat_Cmt $ show k ++ ":" ++ show (Map.lookup k m2) ]
+-}
+
+dbgm mk m1 m2 = maybe [] (\k -> dbg k m1 m2) mk
+%%]
+
+%%[(8888 javascript)
+SEM Stat
+  | VarDecl
+                loc         .   dbg         =   [ Stat_Cmt $ show @key ++ ":" ++ show (Map.lookup @key @lhs.inl1Mp) ] ++
+                                                [ Stat_Cmt $ show @key ++ ":" ++ show (Map.lookup @key @lhs.inl2Mp) ]
+  | Assign
+                loc         .   dbg         =   maybe [] (\k -> [ Stat_Cmt $ show k ++ ":" ++ show (Map.lookup k @lhs.inl1Mp) ] ++
+                                                                [ Stat_Cmt $ show k ++ ":" ++ show (Map.lookup k @lhs.inl2Mp) ]
+                                                         ) @to.mbKey
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Key being used
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 javascript) hs
+type Key = HsName -- String
+%%]
+
+%%[(8 javascript)
+SEM Expr
+  | Var			loc			.	key			=	@nm -- show @nm
+
+SEM Stat
+  | VarDecl		loc			.	key			=	@nm -- show @nm
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Is expr a name?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 javascript)
+ATTR Expr [ | | mbKey: {Maybe Key} ]
+
+SEM Expr
+  | Var         lhs         .   mbKey       =   Just @key
+  | * - Var     lhs         .   mbKey       =   Nothing
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -44,7 +195,16 @@ cmodTrfInlineSingleUseNames cmod
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 javascript)
-ATTR AllNT [ | | cTrf: SELF ]
-ATTR AGItf [ | | cTrf: JavaScriptModule ]
+ATTR AllNT [ | | trf: SELF ]
+ATTR AGItf [ | | trf: JavaScriptModule ]
+
+SEM JavaScriptModule
+  | Mod         lhs         .   trf         =   JavaScriptModule_Mod @decls.trfStatL @deps @main.trfStatL
+
+SEM Stat
+  | Block       lhs         .   trf         =   Stat_Block @stats.trfStatL
+
+SEM Alt
+  | Alt         lhs         .   trf         =   Alt_Alt @tag @stats.trfStatL
 %%]
 

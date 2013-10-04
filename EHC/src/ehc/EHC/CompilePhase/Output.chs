@@ -54,7 +54,7 @@ Output generation, on stdout or file
 %%[(8888 codegen java) import({%{EH}Core.ToJava})
 %%]
 -- JavaScript output
-%%[(8 javascript) import({%{EH}Core},{%{EH}JavaScript.Pretty})
+%%[(8 javascript) import({%{EH}JavaScript} as JS,{%{EH}JavaScript.Pretty})
 %%]
 -- Cmm output
 %%[(8 codegen cmm) import({%{EH}Cmm} as Cmm,{%{EH}Cmm.ToC}(cmmMod2C), {%{EH}Cmm.Pretty})
@@ -83,22 +83,23 @@ Output generation, on stdout or file
 %%[8
 -- | Abstraction for writing a module to output with variation in suffices
 cpOutputSomeModules
-  ::    (EHCOpts -> FPath -> FilePath -> mod -> IO ())
+  ::    (EHCOpts -> EHCompileUnit -> FPath -> FilePath -> mod -> IO ())
      -> (EHCOpts -> HsName -> FPath -> String -> FPath)
      -> (Int -> String -> String)
      -> String
      -> HsName
      -> [(String,mod)]
-     -> EHCompilePhase ()
+     -> EHCompilePhase [FPath]
 cpOutputSomeModules write mkfp mknmsuff suff modNm mods = do
     cr <- get
     let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
-    lift $ do
-      forM_ (zip [1..] mods) $ \(nr,(nmsuff,mod)) -> do
-        let fpC     = mkfp opts modNm fp (suff ++ mknmsuff nr nmsuff) -- for now nmsuff after suff, but should be inside name
-            fnC     = fpathToStr fpC
+    forM (zip [1..] mods) $ \(nr,(nmsuff,mod)) -> do
+      let fpC     = mkfp opts modNm fp (suff ++ mknmsuff nr nmsuff) -- for now nmsuff after suff, but should be inside name
+          fnC     = fpathToStr fpC
+      lift $ do
         fpathEnsureExists fpC
-        write opts fpC fnC mod
+        write opts ecu fpC fnC mod
+      return fpC
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -143,10 +144,10 @@ cpOutputCoreModules
      -> (Int -> String -> String)
      -> String -> HsName
      -> [(String,CModule)]
-     -> EHCompilePhase ()
+     -> EHCompilePhase [FPath]
 cpOutputCoreModules binary mknmsuff suff modNm cMods
   = cpOutputSomeModules write mkOutputFPath mknmsuff suff modNm cMods
-  where write opts fpC fnC cMod = do
+  where write opts _ fpC fnC cMod = do
 %%[[50
           if binary
             then putSerializeFile fnC cMod
@@ -156,14 +157,14 @@ cpOutputCoreModules binary mknmsuff suff modNm cMods
 %%]
 
 %%[(8 codegen) export(cpOutputCore)
-cpOutputCore :: Bool -> String -> String -> HsName -> EHCompilePhase ()
+cpOutputCore :: Bool -> String -> String -> HsName -> EHCompilePhase FPath
 cpOutputCore binary nmsuff suff modNm
   =  do  {  cr <- get
          ;  let  (ecu,_,_,_) = crBaseInfo modNm cr
                  mbCore = ecuMbCore ecu
                  cMod   = panicJust "cpOutputCore" mbCore
          ;  cpMsg modNm VerboseALot "Emit Core"
-         ;  cpOutputCoreModules binary (\_ nm -> nm) suff modNm [(nmsuff,cMod)]
+         ;  fmap head $ cpOutputCoreModules binary (\_ nm -> nm) suff modNm [(nmsuff,cMod)]
          }
 %%]
 
@@ -173,10 +174,10 @@ cpOutputGrinModules
      -> (Int -> String -> String)
      -> String -> HsName
      -> [(String,GrModule)]
-     -> EHCompilePhase ()
+     -> EHCompilePhase [FPath]
 cpOutputGrinModules binary mknmsuff suff modNm cMods
   = cpOutputSomeModules write mkOutputFPath mknmsuff suff modNm cMods
-  where write opts fpC fnC gMod = do
+  where write opts _ fpC fnC gMod = do
 %%[[50
           if binary
             then putSerializeFile fnC gMod
@@ -186,14 +187,14 @@ cpOutputGrinModules binary mknmsuff suff modNm cMods
 %%]
 
 %%[(8 codegen grin) export(cpOutputGrin)
-cpOutputGrin :: Bool -> String -> HsName -> EHCompilePhase ()
+cpOutputGrin :: Bool -> String -> HsName -> EHCompilePhase FPath
 cpOutputGrin binary suff modNm
   =  do  { cr <- get
          ; let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
                 mbGrin = ecuMbGrin ecu
                 grin   = panicJust "cpOutputGrin" mbGrin
          ; cpMsg modNm VerboseALot "Emit Grin"
-         ; cpOutputGrinModules binary (\_ nm -> nm) "grin" modNm [(suff,grin)]
+         ; fmap head $ cpOutputGrinModules binary (\_ nm -> nm) "grin" modNm [(suff,grin)]
          }
 %%]
 
@@ -203,22 +204,56 @@ cpOutputCmmModules
      -> (Int -> String -> String)
      -> String -> HsName
      -> [(String,Cmm.Module)]
-     -> EHCompilePhase ()
-cpOutputCmmModules _ mknmsuff suff modNm cMods
-  = cpOutputSomeModules write mkOutputFPath mknmsuff suff modNm cMods
-  where write opts fpC fnC cmmMod = do
+     -> EHCompilePhase [FPath]
+cpOutputCmmModules _ mknmsuff suff modNm mods
+  = cpOutputSomeModules write mkOutputFPath mknmsuff suff modNm mods
+  where write opts _ fpC fnC cmmMod = do
           putPPFPath fpC (ppCmmModule cmmMod) 100
 %%]
 
 %%[(8 cmm) export(cpOutputCmm)
-cpOutputCmm :: Bool -> String -> HsName -> EHCompilePhase ()
+cpOutputCmm :: Bool -> String -> HsName -> EHCompilePhase FPath
 cpOutputCmm binary suff modNm
   =  do  { cr <- get
          ; let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
                 mbCmm  = ecuMbCmm ecu
                 cmm    = panicJust "cpOutputCmm" mbCmm
          ; cpMsg modNm VerboseALot "Emit Cmm"
-         ; cpOutputCmmModules binary (\_ nm -> nm) "cmm" modNm [(suff,cmm)]
+         ; fmap head $ cpOutputCmmModules binary (\_ nm -> nm) "cmm" modNm [(suff,cmm)]
+         }
+%%]
+
+%%[(8 javascript) export(outputMkFPathJavaScriptModule, cpOutputJavaScriptModules)
+outputMkFPathJavaScriptModule :: EHCOpts -> HsName -> FPath -> String -> FPath
+outputMkFPathJavaScriptModule opts m f suff = mkPerModuleOutputFPath opts True m f suff
+
+cpOutputJavaScriptModules
+  :: Bool
+     -> (Int -> String -> String)
+     -> String -> HsName
+     -> [(String,JavaScriptModule)]
+     -> EHCompilePhase [FPath]
+cpOutputJavaScriptModules _ mknmsuff suff modNm mods
+  = cpOutputSomeModules write outputMkFPathJavaScriptModule mknmsuff suff modNm mods
+  where write opts ecu fpC fnC jsMod = do
+%%[[8
+          let ppMod = ppJavaScriptModule jsMod
+%%][50
+          let ppMod = vlist $ [p] ++ (if ecuIsMainMod ecu then [pmain] else [])
+                    where (p,pmain) = ppJavaScriptModule jsMod
+%%]]
+          putPPFPath fpC ("//" >#< modNm >-< ppMod) 1000
+%%]
+
+%%[(8 javascript) export(cpOutputJavaScript)
+cpOutputJavaScript :: Bool -> String -> HsName -> EHCompilePhase FPath
+cpOutputJavaScript binary suff modNm
+  =  do  { cr <- get
+         ; let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
+                mbJavaScript  = ecuMbJavaScript ecu
+                js    = panicJust "cpOutputJavaScript" mbJavaScript
+         ; cpMsg modNm VerboseALot "Emit JavaScript"
+         ; fmap head $ cpOutputJavaScriptModules binary (\_ nm -> nm) Cfg.suffixJavaScriptLib modNm [(suff,js)]
          }
 %%]
 

@@ -127,3 +127,4 @@ Cmm/ToC
 Cmm/Pretty
 Cmm/ToJavaScript
 JavaScript/Trf/InlineSingleUseNames.cag
+JavaScript/Trf/CompactAndSimplify.cag
