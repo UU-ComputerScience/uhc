@@ -930,7 +930,7 @@ cpEhcExecutablePerModule how impModNmL modNm
            ++ [ cpCompileJazyJVM how impModNmL modNm ]
 %%]]
 %%[[(8 javascript)
-           ++ [ cpTransformJavaScript OptimizationScope_PerModule modNm
+           ++ [ when (ehcOptJavaScriptViaCMM opts) $ cpTransformJavaScript OptimizationScope_PerModule modNm
               , cpCompileJavaScript how impModNmL modNm
               ]
 %%]]
