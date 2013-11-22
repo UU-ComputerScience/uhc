@@ -213,8 +213,8 @@ hsnUniqifyEval = hsnUniqify HsNameUniqifier_Evaluated
 hsnHashWithSalt :: Int -> HsName -> Int
 hsnHashWithSalt salt (HsName_Base s      ) = hashWithSalt salt s
 hsnHashWithSalt salt (HsName_Pos  p      ) = hashWithSalt salt p
-hsnHashWithSalt salt (HsName_Modf _ q b u) = hashWithSalt salt q `combine` hashWithSalt salt b `combine` hashWithSalt salt (Map.toList u)
-hsnHashWithSalt salt (HNmNr i n          ) = i `combine` hashWithSalt salt n
+hsnHashWithSalt salt (HsName_Modf _ q b u) = hashWithSalt salt q `hashWithSalt` hashWithSalt salt b `hashWithSalt` hashWithSalt salt (Map.toList u)
+hsnHashWithSalt salt (HNmNr i n          ) = i `hashWithSalt` hashWithSalt salt n
 
 instance Hashable HsName where
   hashWithSalt salt n@(HsName_Modf h _ _ _) | h /= 0 = h
@@ -222,9 +222,9 @@ instance Hashable HsName where
 
 instance Hashable OrigName where
   hashWithSalt salt (OrigNone    ) = salt
-  hashWithSalt salt (OrigLocal  n) = 23 `combine` hashWithSalt salt n
-  hashWithSalt salt (OrigGlobal n) = 19 `combine` hashWithSalt salt n
-  hashWithSalt salt (OrigFunc   n) = 17 `combine` hashWithSalt salt n
+  hashWithSalt salt (OrigLocal  n) = 23 `hashWithSalt` hashWithSalt salt n
+  hashWithSalt salt (OrigGlobal n) = 19 `hashWithSalt` hashWithSalt salt n
+  hashWithSalt salt (OrigFunc   n) = 17 `hashWithSalt` hashWithSalt salt n
 
 instance Hashable HsNameUnique where
   hashWithSalt salt (HsNameUnique_None    ) = salt
