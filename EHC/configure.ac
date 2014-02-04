@@ -1236,7 +1236,7 @@ then
 fi
 
 echo "  MP library                    : $mplib"
-if test "$mplib" == "gmp" ; then
+if test "$mplib" = "gmp" ; then
   if test "x$gmpLibArchiveExists" = "xyes" ;then
     echo "    gmp lib archive             : $gmpLibArchive"
   else
