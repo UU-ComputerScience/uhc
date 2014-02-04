@@ -64,7 +64,7 @@ instance Show UID where
 
 %%[99
 instance Hashable UID where
-  hashWithSalt salt (UID h _) = salt `combine` h
+  hashWithSalt salt (UID h _) = salt `hashWithSalt` h
 %%]
 
 %%[1.UID.mkNewLevUID
