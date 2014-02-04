@@ -1940,6 +1940,7 @@ varid
   =   varid_no_ty
 %%[[4
   <|> pFORALL
+  <|> pEXISTS
 %%]]
   <?> "varid"
 %%]
