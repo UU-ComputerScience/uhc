@@ -13,6 +13,20 @@ AC_PROG_MAKE_SET
 AC_CANONICAL_HOST
 dnl ** canonicalize platform names
 HostPlatform=`/bin/sh $srcdir/config.sub $host` || exit 1
+
+### check whether we are indeed in the toplevel dir, otherwise copy required stuff to the current dir first
+if test "${srcdir}" != "." -a "${srcdir}" != ""
+then
+  # copy all the relevant stuff
+  echo "copying from: ${srcdir}"
+  for stuff in Makefile VERSION mk test bin ehclib extlibs src
+  do
+    echo "copying into builddir: ${stuff}"
+    d=`dirname ${stuff}`
+    rsync --archive --update --exclude='.*' ${srcdir}/${stuff} ${d}
+  done
+fi
+
 ### Version info, extract from file VERSION
 # big change
 EH_VERSION_MAJOR=`awk -F . '{print $1}' VERSION`
