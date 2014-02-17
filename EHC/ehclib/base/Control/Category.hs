@@ -29,15 +29,6 @@ class Category cat where
         -- | morphism composition
         (.) :: cat b c -> cat a b -> cat a c
 
-{-# RULES
-"identity/left" forall p .
-                id . p = p
-"identity/right"        forall p .
-                p . id = p
-"association"   forall p q r .
-                (p . q) . r = p . (q . r)
- #-}
-
 instance Category (->) where
         id = Prelude.id
 #ifndef __HADDOCK__

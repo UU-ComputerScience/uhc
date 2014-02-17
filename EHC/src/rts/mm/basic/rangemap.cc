@@ -24,6 +24,7 @@ MM_RangeMap* mm_rangeMap_New( MM_Malloc* memmgt, MM_RangeMap* a ) {
 	a->firstInx = 0 ;
 	a->size = 0 ;
 	a->memMgt = memmgt ;
+	return a;
 	// mm_rangeMap_Realloc( a, NULL, firstInx, aftLastInx ) ;
 }
 
