@@ -19,7 +19,7 @@ if test "${srcdir}" != "." -a "${srcdir}" != ""
 then
   # copy all the relevant stuff
   echo "copying from: ${srcdir}"
-  for stuff in Makefile VERSION mk test bin ehclib extlibs src
+  for stuff in Makefile LICENSE VERSION mk test bin ehclib extlibs src
   do
     echo "copying into builddir: ${stuff}"
     d=`dirname ${stuff}`

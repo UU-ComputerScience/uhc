@@ -2753,12 +2753,12 @@ case $host_os in *\ *) host_os=`echo "$host_os" | sed 's/ /-/g'`;; esac
 
 HostPlatform=`/bin/sh $srcdir/config.sub $host` || exit 1
 
-### check whether we are indeed in the src dir, otherwise copy required stuff to the current dir first
+### check whether we are indeed in the toplevel dir, otherwise copy required stuff to the current dir first
 if test "${srcdir}" != "." -a "${srcdir}" != ""
 then
   # copy all the relevant stuff
   echo "copying from: ${srcdir}"
-  for stuff in Makefile VERSION mk test bin ehclib extlibs src
+  for stuff in Makefile LICENSE VERSION mk test bin ehclib extlibs src
   do
     echo "copying into builddir: ${stuff}"
     d=`dirname ${stuff}`
