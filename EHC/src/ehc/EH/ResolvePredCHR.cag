@@ -510,7 +510,7 @@ SEM Decl
 %%]]
                                 )
                                                     =   ehcOptTrace @lhs.opts "Decl.Instance.simplify1" $ 
-                                                        simplify [SimplifyHow_Canonicalize] (@chrProveFIIn {fiUniq = @lUniq7}) @lhs.chrStore @lhs.clDfGam (heurScopedEHC @chrProveFIIn) ((,) []) Map.empty @toProveDeclsCnstrMp emptySimplifyResult
+                                                        simplify [SimplifyHow_Canonicalize] (@chrProveFIIn {fiUniq = @lUniq7}) @lhs.chrStore @lhs.clDfGam (heurScopedEHC @chrProveFIIn) @doPredAmbigSplitForSimplify Map.empty @toProveDeclsCnstrMp emptySimplifyResult
                             .   (chrSolveDeclsState,chrSolveDeclsRedGraph,chrSolveDeclsDoneConstraints,chrSolveDeclsTrace,_,_,_)
                                                     =   debugInfo @chrDeclsSimplifyResult
 
