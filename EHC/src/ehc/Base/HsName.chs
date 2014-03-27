@@ -82,7 +82,7 @@ data HsNameUniqifier
 %%[[(8 javascript)
   | HsNameUniqifier_JSSwitchResult      -- var for result of switch
 %%]]
-%%[[(90 codegen)
+%%[[90
   | HsNameUniqifier_FFE                 -- name of value to be ff exported
   | HsNameUniqifier_FFECoerced          -- name of possibly coerced value to be ff exported
 %%]]
@@ -116,7 +116,7 @@ instance Show HsNameUniqifier where
 %%[[(8 javascript)
   show HsNameUniqifier_JSSwitchResult       = "JSW"
 %%]]
-%%[[(90 codegen)
+%%[[90
   show HsNameUniqifier_FFE                  = "FFE"
   show HsNameUniqifier_FFECoerced           = "FFC"
 %%]]

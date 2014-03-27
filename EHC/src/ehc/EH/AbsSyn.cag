@@ -58,7 +58,7 @@ DATA Decl
                     kiExpr          : KiExpr
 %%]
 
-%%[(8 codegen)
+%%[8
 DATA Decl
   | FFI             callconv        : {FFIWay}
                     safety          : {String}
@@ -77,7 +77,7 @@ DATA Decl
                     tyExpr          : TyExpr
 %%]
 
-%%[(90 codegen)
+%%[90
 DATA Decl
   | FFE             nm              : {HsName}
                     callconv        : {FFIWay}

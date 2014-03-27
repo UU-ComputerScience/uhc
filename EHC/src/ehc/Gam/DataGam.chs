@@ -2,29 +2,29 @@
 %%% Gam specialization
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[7 module {%{EH}Gam.DataGam}
+%%[(7 hmtyinfer) module {%{EH}Gam.DataGam}
 %%]
 
-%%[7 import(UHC.Util.Pretty,UHC.Util.Utils)
+%%[(7 hmtyinfer) import(UHC.Util.Pretty,UHC.Util.Utils)
 %%]
 
-%%[7 hs import ({%{EH}Base.Common},{%{EH}Base.TermLike},{%{EH}Base.Builtin})
+%%[(7 hmtyinfer) hs import ({%{EH}Base.Common},{%{EH}Base.TermLike},{%{EH}Base.Builtin})
 %%]
-%%[7 hs import ({%{EH}Ty},{%{EH}Ty.Pretty})
+%%[(7 hmtyinfer) hs import ({%{EH}Ty},{%{EH}Ty.Pretty})
 %%]
-%%[7 hs import ({%{EH}Gam})
+%%[(7 hmtyinfer) hs import ({%{EH}Gam})
 %%]
-%%[7 hs import({%{EH}Error}) 
-%%]
-
-%%[(7 hmtyinfer || hmtyast) import(qualified Data.Map as Map)
-%%]
-%%[(7 hmtyinfer || hmtyast) import(qualified Data.Set as Set)
-%%]
-%%[(90 hmtyinfer || hmtyast) import(Data.Maybe)
+%%[(7 hmtyinfer) hs import({%{EH}Error}) 
 %%]
 
-%%[(7 hmtyinfer || hmtyast) import({%{EH}VarMp},{%{EH}Substitutable})
+%%[(7 hmtyinfer) import(qualified Data.Map as Map)
+%%]
+%%[(7 hmtyinfer) import(qualified Data.Set as Set)
+%%]
+%%[(90 hmtyinfer) import(Data.Maybe)
+%%]
+
+%%[(7 hmtyinfer) import({%{EH}VarMp},{%{EH}Substitutable})
 %%]
 
 %%[(7 hmtyinfer) import({%{EH}Ty.Trf.Quantify})
@@ -220,7 +220,7 @@ mkDGI tyNm dty ki cNmL m nt
 %%]]
 %%]
 
-%%[7 export(mkDGIPlain)
+%%[(7 hmtyinfer) export(mkDGIPlain)
 mkDGIPlain :: HsName -> Ty -> Ty -> [HsName] -> DataConstrTagMp -> DataGamInfo
 mkDGIPlain tyNm dty dki cNmL m
   = mkDGI tyNm dty dki cNmL m

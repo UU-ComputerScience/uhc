@@ -179,7 +179,6 @@ builtinMayLiveUnboxedTyMp opts
            )
 %%]]
          ]
-%%]]
 %%[[97
     `Map.union`
        (if Cfg.use64Bits then builtin32BitsTyMp opts True else Map.empty)

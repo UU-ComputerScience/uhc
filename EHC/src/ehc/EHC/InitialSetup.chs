@@ -31,7 +31,7 @@ Initial values
 %%]
 
 -- LamMp, SysF
-%%[8 import({%{EH}LamInfo})
+%%[(8 codegen) import({%{EH}LamInfo})
 %%]
 
 %%[9 import(qualified {%{EH}Gam.ClGam} as Pr(initClGam))

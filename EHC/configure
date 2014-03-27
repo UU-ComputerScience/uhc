@@ -717,6 +717,7 @@ SHUFFLE_EHC_OPTIONS
 CPP_EHC_OPTIONS
 GCC_EHC_OPTIONS
 EHC_BUILD_SUFFIX
+ASPECTS
 libtoolStaticCmd
 CAT_CMD
 catCmd
@@ -813,6 +814,7 @@ enable_tycore
 enable_coresysf
 enable_tauphi
 with_cpp
+with_aspects
 with_build_suffix
 with_gcc_ehc_options
 with_cpp_ehc_options
@@ -1473,6 +1475,8 @@ Optional Packages:
   --with-cpp=<cpp preprocessor>
                           Use a command different from 'cpp' to compile with
                           CPP.
+  --with-aspects=<choice of aspects>
+                          Choice of aspects, can be overridden when 'make'ing.
   --with-build-suffix=<suffix for build locations>
                           Suffix for build locations and library names of
                           globally visible cabal managed libraries.
@@ -3467,17 +3471,27 @@ $as_echo "$as_me: WARNING:
   fi
 
 
-### 'with' option for build suffix
+### 'with' option hardbaked choice of aspects
+
+# Check whether --with-aspects was given.
+if test "${with_aspects+set}" = set; then :
+  withval=$with_aspects;  aspects="$withval"
+fi
+
+ASPECTS="$aspects"
+
+
+### 'with' option for build suffix, which by default is derived from hardbaked aspects
 
 # Check whether --with-build-suffix was given.
 if test "${with_build_suffix+set}" = set; then :
   withval=$with_build_suffix;  ehcBuildSuffix="$withval"
 fi
 
-#if test "x$ehcBuildSuffix" != "x"
-#then
-#  ehcBuildSuffix="-$ehcBuildSuffix"
-#fi
+if test "x$ehcBuildSuffix" = "x"
+then
+  ehcBuildSuffix="`echo ${ASPECTS} | sed -e 's/ /-/g'`"
+fi
 EHC_BUILD_SUFFIX="$ehcBuildSuffix"
 
 
@@ -10241,6 +10255,7 @@ echo "Installation/build summary."
 echo "  host                          : $host"
 echo "  prefix                        : $prefix"
 echo "  build suffix                  : $ehcBuildSuffix"
+echo "  hardbaked aspects             : ${ASPECTS}"
 
 echo "Required:"
 echo "  uuagc is available?           : $uuagcExists"

@@ -11,7 +11,9 @@ Note (20120525): lamMp use removed because of cyclic module import
 %%% Core Pretty Printer
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs module {%{EH}Core.Pretty} import(UHC.Util.Pretty,{%{EH}Base.Builtin},{%{EH}Base.CfgPP},{%{EH}Opts.Base},{%{EH}Base.Common},{%{EH}Ty},{%{EH}Ty.Pretty},{%{EH}Core},{%{EH}Scanner.Common(coreScanOpts)}) export(ppCModule)
+%%[(8 codegen) hs module {%{EH}Core.Pretty} import(UHC.Util.Pretty,{%{EH}Base.Builtin},{%{EH}Base.CfgPP},{%{EH}Opts.Base},{%{EH}Base.Common},{%{EH}Ty},{%{EH}Core},{%{EH}Scanner.Common(coreScanOpts)})
+%%]
+%%[(8 codegen) hs import({%{EH}Ty.Pretty})
 %%]
 
 %%[(8 codegen) hs import({%{EH}AnaDomain.Pretty})
@@ -19,7 +21,7 @@ Note (20120525): lamMp use removed because of cyclic module import
 %%[(8888 codegen) hs import({%{EH}LamInfo})
 %%]
 
-%%[(8 codegen) hs import(qualified Data.Map as Map,qualified Data.Set as Set,{%{EH}Ty.Pretty})
+%%[(8 codegen) hs import(qualified Data.Map as Map,qualified Data.Set as Set)
 %%]
 
 %%[(90 codegen) hs import({%{EH}Foreign.Pretty})
@@ -36,7 +38,7 @@ WRAPPER
 %%]]
 %%]
 
-%%[(8 codegen) hs
+%%[(8 codegen) hs export(ppCModule)
 ppCModule :: EHCOpts -> {- LamMp -> -} CModule -> PP_Doc
 ppCModule opts {- lamMp -} cmod
   =  let  t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf cmod))

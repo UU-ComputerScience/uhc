@@ -194,10 +194,10 @@ data EHCompileUnit
       , ecuTarget            :: Target                              -- target for which we compile
       , ecuPragmas           :: !(Set.Set Pragma.Pragma)            -- pragmas of module
       , ecuUsedNames         :: ModEntRelFilterMp                   -- map holding actually used names, to later filter cache of imported hi's to be included in this module's hi
+      , ecuSeqNr             :: !EHCCompileSeqNr                    -- sequence nr of sorted compilation
 %%]]
 %%[[(99 codegen)
-      , ecuGenCodeFiles      :: ![FPath]                            -- generated code fiels
-      , ecuSeqNr             :: !EHCCompileSeqNr                    -- sequence nr of sorted compilation
+      , ecuGenCodeFiles      :: ![FPath]                            -- generated code files
 %%]]
       }
 %%]
@@ -294,10 +294,10 @@ emptyECU
       , ecuTarget            = defaultTarget
       , ecuPragmas           = Set.empty
       , ecuUsedNames         = Map.empty
+      , ecuSeqNr             = zeroEHCCompileSeqNr
 %%]]
 %%[[(99 codegen)
       , ecuGenCodeFiles      = []
-      , ecuSeqNr             = zeroEHCCompileSeqNr
 %%]]
       }
 %%]
@@ -312,7 +312,7 @@ ecuImpNmL :: EHCompileUnit -> [HsName]
 ecuImpNmL = Set.toList . ecuImpNmS -- ecu = (nub $ ecuHSDeclImpNmL ecu ++ ecuHIDeclImpNmL ecu ++ ecuHIUsedImpNmL ecu) \\ [ecuModNm ecu]
 %%]
 
-%%[50 export(ecuTransClosedUsedModMp, ecuTransClosedOrphanModS, ecuIsOrphan)
+%%[50 export(ecuTransClosedUsedModMp, ecuTransClosedOrphanModS)
 -- | The used modules, for linking, according to .hi info
 ecuTransClosedUsedModMp :: EHCompileUnit -> HI.HIInfoUsedModMp
 ecuTransClosedUsedModMp = HI.hiiTransClosedUsedModMp . ecuAnHIInfo
@@ -320,10 +320,16 @@ ecuTransClosedUsedModMp = HI.hiiTransClosedUsedModMp . ecuAnHIInfo
 -- | The orphan modules, must be .hi read, according to .hi info
 ecuTransClosedOrphanModS :: EHCompileUnit -> Set.Set HsName
 ecuTransClosedOrphanModS = HI.hiiTransClosedOrphanModS . ecuAnHIInfo
+%%]
 
+%%[50 export(ecuIsOrphan)
 -- | Is orphan, according to .hi info
 ecuIsOrphan :: EHCompileUnit -> Bool
+%%[[(50 hmtyinfer codegen)
 ecuIsOrphan = isJust . HI.hiiMbOrphan . ecuAnHIInfo
+%%][50
+ecuIsOrphan = const False
+%%]]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -374,10 +380,12 @@ instance CompileUnit EHCompileUnit HsName FileLoc EHCompileUnitState where
 %%][50
   cuImports         = ecuImpNmL
 %%]]
-%%[[99
+%%[[(99 codegen)
   cuParticipation u = if not (Set.null $ Set.filter (Pragma.pragmaIsExcludeTarget $ ecuTarget u) $ ecuPragmas u)
                       then [CompileParticipation_NoImport]
                       else []
+%%][99
+  cuParticipation u = []
 %%]]
 
 instance FPathError Err
@@ -576,10 +584,12 @@ ecuStoreUsedNames :: EcuUpdater ModEntRelFilterMp
 ecuStoreUsedNames x ecu = ecu { ecuUsedNames = x }
 %%]
 
-%%[(99 codegen) export(ecuStoreGenCodeFiles,ecuStoreCppFilePath,ecuStoreSeqNr)
+%%[(99 codegen) export(ecuStoreGenCodeFiles)
 ecuStoreGenCodeFiles :: EcuUpdater [FPath]
 ecuStoreGenCodeFiles x ecu = ecu { ecuGenCodeFiles = x }
+%%]
 
+%%[99 export(ecuStoreCppFilePath,ecuStoreSeqNr)
 ecuStoreSeqNr :: EcuUpdater EHCCompileSeqNr
 ecuStoreSeqNr x ecu = ecu { ecuSeqNr = x }
 

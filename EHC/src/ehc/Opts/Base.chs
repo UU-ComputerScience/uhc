@@ -30,10 +30,10 @@
 %%[8 import({%{EH}EHC.Environment})
 %%]
 
-%%[(8 codegen) import({%{EH}Base.Target})
+%%[8 import({%{EH}Base.Target})
 %%]
 
-%%[(8 codegen) import({%{EH}Base.Optimize})
+%%[8 import({%{EH}Base.Optimize})
 %%]
 
 %%[8 import({%{EH}Base.FileSearchLocation})
@@ -176,17 +176,20 @@ data EHCOpts
 %%[[7_2
       ,  ehcOptUniqueness     ::  Bool
 %%]]
-%%[[(8 codegen)
-      ,  ehcOptOptimizations  ::  OptimizeS         -- individual optimizations to be done, derived from level + scope
-      ,  ehcOptOptimizeOptionMp
-                              ::  OptimizeOptionMp  -- optimization specific configuration
+%%[[8
+      ,  ehcOptMbTarget       ::  MaybeOk Target            -- code generation target
+      ,  ehcOptMbTargetFlavor ::  MaybeOk TargetFlavor      -- code generation target flavor
+      ,  ehcOptBangPatterns   ::  Bool              -- allow bang patterns
       ,  ehcOptOptimizationLevel
                               ::  OptimizationLevel          -- optimisation level
       ,  ehcOptOptimizationScope
                               ::  OptimizationScope          -- optimisation scope
+%%]]
+%%[[(8 codegen)
+      ,  ehcOptOptimizations  ::  OptimizeS         -- individual optimizations to be done, derived from level + scope
+      ,  ehcOptOptimizeOptionMp
+                              ::  OptimizeOptionMp  -- optimization specific configuration
       ,  ehcOptDumpCoreStages ::  Bool              -- dump intermediate Core transformation stages
-      ,  ehcOptMbTarget       ::  MaybeOk Target            -- code generation target
-      ,  ehcOptMbTargetFlavor ::  MaybeOk TargetFlavor      -- code generation target flavor
 %%]]
 %%[[(8 codegen)
       ,  ehcOptCoreOpts       ::  [CoreOpt]  	    -- Core options
@@ -216,7 +219,6 @@ data EHCOpts
 
       ,  ehcOptBuiltinNames   ::  EHBuiltinNames
       ,  ehcOptEnvironment    ::  EHCEnvironment    -- runtime environment
-      ,  ehcOptBangPatterns   ::  Bool              -- allow bang patterns
       
 %%]]
 %%[[9
@@ -327,14 +329,17 @@ emptyEHCOpts
 %%[[7_2
       ,  ehcOptUniqueness       =   True
 %%]]
+%%[[8
+      ,  ehcOptMbTarget         =   JustOk defaultTarget
+      ,  ehcOptMbTargetFlavor   =   JustOk defaultTargetFlavor
+      ,  ehcOptBangPatterns		= 	True
+      ,  ehcOptOptimizationLevel=   OptimizationLevel_Normal
+      ,  ehcOptOptimizationScope=   OptimizationScope_PerModule
+%%]]
 %%[[(8 codegen)
       ,  ehcOptDumpCoreStages   =   False
       ,  ehcOptOptimizations    =   optimizeRequiresClosure $ Map.findWithDefault Set.empty OptimizationLevel_Normal optimizationLevelMp
       ,  ehcOptOptimizeOptionMp =   Map.empty
-      ,  ehcOptOptimizationLevel=   OptimizationLevel_Normal
-      ,  ehcOptOptimizationScope=   OptimizationScope_PerModule
-      ,  ehcOptMbTarget         =   JustOk defaultTarget
-      ,  ehcOptMbTargetFlavor   =   JustOk defaultTargetFlavor
 %%]]
 %%[[(8 codegen)
       ,  ehcOptCoreOpts         =   []
@@ -352,7 +357,6 @@ emptyEHCOpts
 
       ,  ehcOptDumpGrinStages   =   False
       -- ,  ehcOptEarlyModMerge    =   False
-      ,  ehcOptBangPatterns		= 	True
 %%]]
 %%[[8
       ,  ehcOptVerbosity        =   VerboseNormal

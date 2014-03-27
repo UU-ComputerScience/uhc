@@ -255,15 +255,21 @@ AC_SUBST(CAT_CMD,$catCmd)
 ### libtool
 REQUIRED_OPTIONAL_PROG_FOR_EH(libtoolStaticCmd,libtool)
 
-### 'with' option for build suffix
+### 'with' option hardbaked choice of aspects
+AC_ARG_WITH(aspects,
+[AS_HELP_STRING([--with-aspects=<choice of aspects>],[Choice of aspects, can be overridden when 'make'ing.])],
+[ aspects="$withval" ],)
+AC_SUBST(ASPECTS, "$aspects")
+
+### 'with' option for build suffix, which by default is derived from hardbaked aspects
 AC_ARG_WITH(build-suffix,
 [AC_HELP_STRING([--with-build-suffix=<suffix for build locations>],
                 [Suffix for build locations and library names of globally visible cabal managed libraries.])],
 [ ehcBuildSuffix="$withval" ],)
-#if test "x$ehcBuildSuffix" != "x"
-#then
-#  ehcBuildSuffix="-$ehcBuildSuffix"
-#fi
+if test "x$ehcBuildSuffix" = "x"
+then
+  ehcBuildSuffix="`echo ${ASPECTS} | sed -e 's/ /-/g'`"
+fi
 AC_SUBST(EHC_BUILD_SUFFIX, "$ehcBuildSuffix")
 
 ### 'with' option for gcc options
@@ -1190,6 +1196,7 @@ echo "Installation/build summary."
 echo "  host                          : $host"
 echo "  prefix                        : $prefix"
 echo "  build suffix                  : $ehcBuildSuffix"
+echo "  hardbaked aspects             : ${ASPECTS}"
 
 echo "Required:"
 echo "  uuagc is available?           : $uuagcExists"

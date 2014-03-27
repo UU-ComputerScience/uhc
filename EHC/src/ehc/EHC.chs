@@ -67,7 +67,7 @@
 %%]
 
 -- Misc
-%%[(8 codegen) import({%{EH}Base.Target}, {%{EH}Base.Optimize}(allOptimizeMp))
+%%[8 import({%{EH}Base.Target}, {%{EH}Base.Optimize}(allOptimizeMp))
 %%]
 %%[(102 codegen) import({%{EH}Core.Trf.Strip})
 %%]

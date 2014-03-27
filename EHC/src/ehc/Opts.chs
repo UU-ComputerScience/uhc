@@ -176,13 +176,17 @@ ehcOptEarlyModMerge opts
   = ehcOptOptimizationScope opts >= OptimizationScope_WholeCore
 %%]
 
-%%[(8 codegen grin) export(ehcOptWholeProgHPTAnalysis)
+%%[8 export(ehcOptWholeProgHPTAnalysis)
 -- do whole program analysis, with HPT
 ehcOptWholeProgHPTAnalysis :: EHCOpts -> Bool
 ehcOptWholeProgHPTAnalysis opts
+%%[[(8 codegen grin)
   =  targetDoesHPTAnalysis (ehcOptTarget opts)
 %%[[50
   || ehcOptWholeProgOptimizationScope opts
+%%]]
+%%][8
+  = False
 %%]]
 %%]
 

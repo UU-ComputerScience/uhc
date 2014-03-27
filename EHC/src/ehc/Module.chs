@@ -27,7 +27,10 @@
 %%[50 export(emptyMod)
 %%]
 
-%%[50 import ({%{EH}Gam},{%{EH}Gam.TyGam},{%{EH}Gam.KiGam}) 
+%%[50 import ({%{EH}Gam}) 
+%%]
+
+%%[50 import ({%{EH}Gam.TyGam}(initTyGam),{%{EH}Gam.KiGam}(initKiGam)) 
 %%]
 
 %%[(50 codegen) import ({%{EH}Core}(HsName2OffsetMp))

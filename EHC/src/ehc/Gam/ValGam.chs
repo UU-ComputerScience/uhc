@@ -10,7 +10,7 @@
 
 %%[1 hs import ({%{EH}Base.Common},{%{EH}Base.TermLike},{%{EH}Base.Builtin})
 %%]
-%%[1 hs import ({%{EH}Ty},{%{EH}Ty.Pretty})
+%%[(1 hmtyast || hmtyinfer) hs import ({%{EH}Ty},{%{EH}Ty.Pretty})
 %%]
 %%[1 hs import ({%{EH}Gam})
 %%]
@@ -52,7 +52,7 @@ deriving instance Typeable ValGamInfo
 deriving instance Data ValGamInfo
 %%]
 
-%%[8 export(vgiGetSet)
+%%[(8 hmtyinfer) export(vgiGetSet)
 vgiGetSet = (vgiTy,(\x i -> i {vgiTy = x}))
 %%]
 

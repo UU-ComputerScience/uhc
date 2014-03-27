@@ -269,13 +269,17 @@ SEM DataFieldPatExpr
 SEM Expr
   | Undefined   loc     .   pp      =   pp "..."
   | CaseAltFail loc     .   pp      =   pp "FAIL" >#< @caseId
+%%]
 
+%%[8
 SEM Decl
   | FFI         loc     .   pp      =   "foreign import" >#< @callconv >#< @safety >#< pp (show @impEnt) >#< @nm >#< "::" >#< @tyExpr.pp
 %%[[90
   | FFE         loc     .   pp      =   "foreign export" >#< @nm >#< @callconv >#< ppForeignEnt @expEnt >#< @expr.pp >#< "::" >#< @tyExpr.pp
 %%]]
+%%]
 
+%%[8
 SEM PatExpr
   | Irrefutable loc     .   pp      =   "~" >|< @patExpr.pp
   | Bang 		loc     .   pp      =   "!" >|< @patExpr.pp

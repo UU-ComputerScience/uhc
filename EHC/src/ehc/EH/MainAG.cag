@@ -112,7 +112,7 @@
 %%[(41 hmtyinfer) hs import({%{EH}Ty.Trf.Subst})
 %%]
 
-%%[50 hs import({%{EH}Module},{%{EH}Ty.UsedNames})
+%%[(50 hmtyinfer codegen) hs import({%{EH}Module},{%{EH}Ty.UsedNames})
 %%]
 
 %%[(40 hmtyinfer) hs import({%{EH}Ty.Trf.ElimEqual},{%{EH}Gam.Utils})
@@ -218,10 +218,10 @@ WRAPPER AGItf
 %%[(17 hmtyinfer) ag import({EH/InferPolarity})
 %%]
 
-%%[50 ag import({EH/UsedNames},{EH/Orphan})
+%%[(50 hmtyinfer codegen) ag import({EH/UsedNames},{EH/Orphan})
 %%]
 
-%%[92 ag import({EH/Generics})
+%%[(92 hmtyinfer) ag import({EH/Generics})
 %%]
 
 %%[99 ag import({EH/LocalAttrTypes})

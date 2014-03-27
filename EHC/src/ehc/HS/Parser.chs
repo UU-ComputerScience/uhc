@@ -545,7 +545,7 @@ pBody' opts addDecl
 %%% Foreign
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[8
         pDeclarationForeign :: HSParser Declaration
         pDeclarationForeign
           = pFOREIGN

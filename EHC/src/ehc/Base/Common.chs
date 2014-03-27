@@ -40,7 +40,7 @@
 %%[1.Token hs import(UU.Scanner.Token)
 %%]
 
-%%[2 import(qualified Data.Set as Set)
+%%[1 import(qualified Data.Set as Set)
 %%]
 
 %%[5 -1.Token hs import({%{EH}Scanner.Token})
@@ -1130,6 +1130,16 @@ deriving instance Data Pos
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% UID derivatives
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 export(VarId, VarIdS)
+-- | Use as variable id
+type VarId    = UID
+type VarIdS   = Set.Set UID
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% HsName functionality for UID
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -1157,6 +1167,16 @@ instance HSNM UID where
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[50
+instance Binary KnownPrim where
+  put = putEnum8
+  get = getEnum8
+
+instance Serialize KnownPrim where
+  sput = sputPlain
+  sget = sgetPlain
+%%]
+
+%%[50
 instance Serialize VarUIDHsName where
   sput (VarUIDHs_Name a b) = sputWord8 0 >> sput a >> sput b
   sput (VarUIDHs_UID  a  ) = sputWord8 1 >> sput a
@@ -1182,14 +1202,6 @@ instance Binary Fixity where
   get = getEnum8
 
 instance Serialize Fixity where
-  sput = sputPlain
-  sget = sgetPlain
-
-instance Binary KnownPrim where
-  put = putEnum8
-  get = getEnum8
-
-instance Serialize KnownPrim where
   sput = sputPlain
   sget = sgetPlain
 
@@ -1290,7 +1302,7 @@ genNmMap mk xs m
 %%% Variation of Maybe
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) export(MaybeOk(..),isJustOk,isNotOk,maybeOk,fromJustOk,fromNotOk)
+%%[8 export(MaybeOk(..),isJustOk,isNotOk,maybeOk,fromJustOk,fromNotOk)
 data MaybeOk a
   = JustOk  a
   | NotOk   String
@@ -1342,8 +1354,9 @@ graphVisit visit unionUnvisited thr start graph
 %%% Known primitives, encoding semantics of particular primitives in a FFI decl, propagated to backend
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) export(KnownPrim(..))
+%%[8 export(KnownPrim(..))
 data KnownPrim
+%%[[(8 codegen)
   =
     -- platform Int
     KnownPrim_AddI
@@ -1381,23 +1394,30 @@ data KnownPrim
   | KnownPrim_Sub64
   | KnownPrim_Mul64
 %%]]
+%%][8
+  = KnownPrim_NONE			-- nada
+%%]]
   deriving (Show,Eq,Enum,Bounded)
 %%]
 
-%%[(50 codegen)
+%%[50
 deriving instance Data KnownPrim
 deriving instance Typeable KnownPrim
 %%]
 
-%%[(8 codegen)
+%%[8
 instance PP KnownPrim where
   pp = pp . show
 %%]
 
-%%[(8 codegen) export(allKnownPrimMp)
+%%[8 export(allKnownPrimMp)
 allKnownPrimMp :: Map.Map String KnownPrim
 allKnownPrimMp
+%%[[(8 codegen)
   = Map.fromList [ (drop prefixLen $ show t, t) | t <- [ minBound .. maxBound ] ]
   where prefixLen = length "KnownPrim_"
+%%][8
+  = Map.empty 		-- nada
+%%]]
 %%]
 

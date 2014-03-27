@@ -17,7 +17,7 @@
 %%[(8 codegen tycore) hs import({%{EH}AbstractCore.Utils} hiding (rceMatch)) export(module {%{EH}AbstractCore.Utils})
 %%]
 
-%%[(8 codegen tycore) import({%{EH}Gam},{%{EH}VarMp},{%{EH}Substitutable},{%{EH}Gam.ValGam},{%{EH}Gam.DataGam})
+%%[(8 codegen tycore hmtyinfer) import({%{EH}Gam},{%{EH}VarMp},{%{EH}Substitutable},{%{EH}Gam.ValGam},{%{EH}Gam.DataGam})
 %%]
 
 %%[(8 codegen tycore) import(Data.List,qualified Data.Set as Set,Data.List,qualified Data.Map as Map,UHC.Util.Utils)

@@ -33,9 +33,9 @@ Note: everything is exported.
 %%[5.Scanner -1.Scanner import({%{EH}Scanner.Scanner}) export(module {%{EH}Scanner.Scanner})
 %%]
 
-%%[(8 codegen) import (UHC.Util.ParseUtils)
+%%[8 import (UHC.Util.ParseUtils)
 %%]
-%%[(8 codegen) import ({%{EH}Base.Target})
+%%[8 import ({%{EH}Base.Target})
 %%]
 
 %%[97 import (Data.Ratio)
@@ -841,7 +841,7 @@ tokKeywStrsEH8
 tokKeywStrsHS8 = [ "export", "label", "safe" ]
 %%]
 
-%%[(8 codegen)
+%%[8
 pFFIWay :: IsParser p Token => p (FFIWay,Token)
 pFFIWay
   =   pAnyKey (\way -> (,) way <$> pKeyTk (show way)) allFFIWays

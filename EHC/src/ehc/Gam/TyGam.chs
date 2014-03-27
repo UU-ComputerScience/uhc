@@ -10,7 +10,7 @@
 
 %%[1 hs import ({%{EH}Base.Common},{%{EH}Base.TermLike},{%{EH}Base.Builtin})
 %%]
-%%[1 hs import ({%{EH}Ty},{%{EH}Ty.Pretty})
+%%[(1 hmtyast || hmtyinfer) hs import ({%{EH}Ty},{%{EH}Ty.Pretty})
 %%]
 %%[1 hs import ({%{EH}Gam})
 %%]
@@ -162,6 +162,8 @@ initTyGam
 %%]]
 %%[[97
       , (hsnInteger			, mkTGI tyInteger		)
+%%]]
+%%[[9797
       , (hsnInt8Unboxed  	, mkTGI (appCon hsnInt8Unboxed  )	)
       , (hsnInt16Unboxed 	, mkTGI (appCon hsnInt16Unboxed )	)
       , (hsnInt32Unboxed 	, mkTGI (appCon hsnInt32Unboxed )	)
@@ -177,6 +179,7 @@ initTyGam
 %%]]  
       ]
 %%][6
+      $
       zip [ hsnArrow, hsnInt, hsnChar
 %%[[7
           , hsnRow, hsnRec, hsnSum
@@ -192,6 +195,8 @@ initTyGam
 %%]]
 %%[[97
           , hsnInteger
+%%]]
+%%[[9797
           , tyInt8Unboxed, tyInt16Unboxed, tyInt32Unboxed, tyInt64Unboxed
           , tyWordUnboxed
           , tyWord8Unboxed, tyWord16Unboxed, tyWord32Unboxed, tyWord64Unboxed

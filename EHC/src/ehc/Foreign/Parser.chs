@@ -108,6 +108,9 @@ pPrimCall dfltNm
   where nm = maybe "" id dfltNm
         pKnownPrim = pMb (pAnyFromMap pKeyTk allKnownPrimMp)
 
+pForeignVar :: ForeignParser String
+pForeignVar = tokGetVal <$> (pVARID <|> pCONID)
+
 %%[[(90 javascript)
 pJavaScriptCall :: Maybe String -> ForeignParser JavaScriptCall
 pJavaScriptCall dfltNm
@@ -122,9 +125,6 @@ pJavaScriptCall dfltNm
         pIncludeJs :: ForeignParser String
         pIncludeJs = pForeignVar <* pDOT <* pJS
         
-pForeignVar :: ForeignParser String
-pForeignVar = tokGetVal <$> (pVARID <|> pCONID)
-
 pForeignExpr :: ForeignParser ForeignExpr
 pForeignExpr
   = pExp

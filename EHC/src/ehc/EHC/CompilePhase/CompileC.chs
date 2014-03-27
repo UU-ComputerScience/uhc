@@ -22,7 +22,7 @@ C + CPP compilation
 %%]
 %%[8 import({%{EH}EHC.CompileRun})
 %%]
-%%[(8 codegen) import({%{EH}Opts.CommandLine})
+%%[8 import({%{EH}Opts.CommandLine})
 %%]
 
 -- for now (20111121), not yet used
@@ -35,16 +35,16 @@ C + CPP compilation
 %%]
 %%[8 import({%{EH}EHC.Environment})
 %%]
-%%[(8 codegen) import({%{EH}Base.Target})
+%%[8 import({%{EH}Base.Target})
 %%]
-%%[(99 codegen) import({%{EH}Base.FileSearchLocation},{%{EH}Base.PackageDatabase})
+%%[99 import({%{EH}Base.FileSearchLocation},{%{EH}Base.PackageDatabase})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Compile actions: C compilation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[8
 gccDefs :: EHCOpts -> [String] -> CmdLineOpts
 gccDefs opts builds
   = map (\(d,mbval) -> cppOpt $ CmdFlag_Define ("__UHC" ++ d ++ "__") mbval)

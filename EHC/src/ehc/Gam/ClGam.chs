@@ -10,7 +10,7 @@
 
 %%[9 hs import ({%{EH}Base.Common},{%{EH}Base.TermLike},{%{EH}Base.Builtin})
 %%]
-%%[9 hs import ({%{EH}Ty},{%{EH}Ty.Pretty})
+%%[(9 hmtyast || hmtyinfer) hs import ({%{EH}Ty},{%{EH}Ty.Pretty})
 %%]
 %%[9 hs import ({%{EH}Gam})
 %%]
@@ -23,7 +23,7 @@
 %%[(6999 hmtyinfer || hmtyast) import({%{EH}VarMp},{%{EH}Substitutable})
 %%]
 
-%%[(50 hmtyinfer) import(Control.Monad, UHC.Util.Binary, UHC.Util.Serialize)
+%%[50 import(Control.Monad, UHC.Util.Binary, UHC.Util.Serialize)
 %%]
 
 %%[9999 import({%{EH}Base.ForceEval})

@@ -29,13 +29,20 @@ A multiple level VarMp knows its own absolute metalevel, which is the default to
 %%% Substitution for types
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[2 module {%{EH}VarMp} import(Data.List, {%{EH}Base.Common}, {%{EH}Ty}) export(VarMp'(..), VarMp)
+%%[2 module {%{EH}VarMp}
+%%]
+
+%%[2 import(Data.List, {%{EH}Base.Common})
+%%]
+%%[2 import({%{EH}Ty})
 %%]
 
 %%[2 import(qualified Data.Map as Map,qualified Data.Set as Set,Data.Maybe)
 %%]
 
-%%[2 import(UHC.Util.Pretty, {%{EH}Ty.Pretty})
+%%[2 import(UHC.Util.Pretty)
+%%]
+%%[(2 hmtyinfer) import({%{EH}Ty.Pretty})
 %%]
 
 %%[4 import({%{EH}Error})
@@ -53,7 +60,7 @@ A multiple level VarMp knows its own absolute metalevel, which is the default to
 %%[6 import({%{EH}VarLookup}) export(module {%{EH}VarLookup})
 %%]
 
-%%[6 import({%{EH}Base.Debug}) export(VarMpInfo(..))
+%%[6 import({%{EH}Base.Debug})
 %%]
 
 %%[8 import(UHC.Util.Utils)
@@ -69,7 +76,7 @@ A multiple level VarMp knows its own absolute metalevel, which is the default to
 %%% VarMp'
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[2.VarMpQ.Base
+%%[2.VarMpQ.Base export(VarMp'(..))
 newtype VarMp' k v = VarMp (AssocL k v) deriving Show
 %%]
 
@@ -140,7 +147,7 @@ varmpSingleton tv t = VarMp [(tv,t)]
 %%% VarMp: from/to AssocL
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4.assocTyLToVarMp export(assocTyLToVarMp,varmpToAssocTyL,varmpToAssocL)
+%%[(4 hmtyinfer).assocTyLToVarMp export(assocTyLToVarMp,varmpToAssocTyL,varmpToAssocL)
 assocTyLToVarMp, assocLToVarMp :: AssocL k v -> VarMp' k v
 assocLToVarMp   = VarMp
 assocTyLToVarMp = VarMp
@@ -152,7 +159,7 @@ varmpToAssocL :: VarMp' k v -> AssocL k v
 varmpToAssocL = varmpToAssocTyL
 %%]
 
-%%[6.assocTyLToVarMp -4.assocTyLToVarMp export(assocMetaLevTyLToVarMp,assocTyLToVarMp,varmpToAssocTyL)
+%%[(6 hmtyinfer).assocTyLToVarMp -4.assocTyLToVarMp export(assocMetaLevTyLToVarMp,assocTyLToVarMp,varmpToAssocTyL)
 assocMetaLevTyLToVarMp :: Ord k => AssocL k (MetaLev,Ty) -> VarMp' k VarMpInfo
 assocMetaLevTyLToVarMp = assocMetaLevLToVarMp . assocLMapElt (\(ml,t) -> (ml, VMITy t)) -- varmpUnions [ varmpMetaLevTyUnit lev v t | (v,(lev,t)) <- l ]
 
@@ -195,7 +202,7 @@ varmpUnions l   = foldr1 varmpPlus l
 %%% Construction specific for InstTo
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[6 export(instToL1VarMp)
+%%[(6 hmtyinfer) export(instToL1VarMp)
 instToL1VarMp :: [InstTo] -> VarMp
 instToL1VarMp = varmpIncMetaLev . assocMetaLevTyLToVarMp . instToL1AssocL
 %%]
@@ -204,8 +211,9 @@ instToL1VarMp = varmpIncMetaLev . assocMetaLevTyLToVarMp . instToL1AssocL
 %%% VarMpInfo, info varieties in VarMp
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[6
+%%[6 export(VarMpInfo(..))
 data VarMpInfo
+%%[[(6 hmtyinfer)
   = VMITy      !Ty
 %%[[9
   | VMIImpls   !Impls
@@ -221,6 +229,9 @@ data VarMpInfo
 %%[[13
   | VMIPredSeq !PredSeq
 %%]]
+%%][6
+  = VMINone			-- nada
+%%]]
   deriving
     ( Eq, Ord, Show
 %%[[50
@@ -229,7 +240,7 @@ data VarMpInfo
     )
 %%]
 
-%%[2.vmiMbTy export(vmiMbTy)
+%%[(2 hmtyinfer).vmiMbTy export(vmiMbTy)
 %%[[2
 vmiMbTy      t = Just t
 %%][6
@@ -239,17 +250,17 @@ vmiMbTy      i = case i of {VMITy      x -> Just x; _ -> Nothing}
 %%]]
 %%]
 
-%%[9 export(vmiMbImpls,vmiMbScope,vmiMbPred,vmiMbAssNm)
+%%[(9 hmtyinfer) export(vmiMbImpls,vmiMbScope,vmiMbPred,vmiMbAssNm)
 vmiMbImpls   i = case i of {VMIImpls   x -> Just x; _ -> Nothing}
 vmiMbScope   i = case i of {VMIScope   x -> Just x; _ -> Nothing}
 vmiMbPred    i = case i of {VMIPred    x -> Just x; _ -> Nothing}
 vmiMbAssNm   i = case i of {VMIAssNm   x -> Just x; _ -> Nothing}
 %%]
-%%[10 export(vmiMbLabel,vmiMbOffset)
+%%[(10 hmtyinfer) export(vmiMbLabel,vmiMbOffset)
 vmiMbLabel   i = case i of {VMILabel   x -> Just x; _ -> Nothing}
 vmiMbOffset  i = case i of {VMIOffset  x -> Just x; _ -> Nothing}
 %%]
-%%[13 export(vmiMbPredSeq)
+%%[(13 hmtyinfer) export(vmiMbPredSeq)
 vmiMbPredSeq i = case i of {VMIPredSeq x -> Just x; _ -> Nothing}
 %%] 
 
@@ -257,22 +268,22 @@ vmiMbPredSeq i = case i of {VMIPredSeq x -> Just x; _ -> Nothing}
 %%% VarMp
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[2.VarMp.Base
-type VarMp  = VarMp' TyVarId Ty
+%%[2.VarMp.Base export(VarMp)
+type VarMp  = VarMp' VarId Ty
 %%]
 
 20080610, AD, todo: use TvPurpose
 
-%%[6 -2.VarMp.Base
-type VarMp  = VarMp' TyVarId VarMpInfo
+%%[6 -2.VarMp.Base export(VarMp)
+type VarMp  = VarMp' VarId VarMpInfo
 %%]
 
-%%[4.varmpFilterTy export(varmpFilterTy)
+%%[(4 hmtyinfer).varmpFilterTy export(varmpFilterTy)
 varmpFilterTy :: (k -> v -> Bool) -> VarMp' k v -> VarMp' k v
 varmpFilterTy = varmpFilter
 %%]
 
-%%[6.varmpFilterTy -4.varmpFilterTy export(varmpFilterTy)
+%%[(6 hmtyinfer).varmpFilterTy -4.varmpFilterTy export(varmpFilterTy)
 varmpFilterTy :: Ord k => (k -> Ty -> Bool) -> VarMp' k VarMpInfo -> VarMp' k VarMpInfo
 varmpFilterTy f
   = varmpFilter
@@ -283,7 +294,7 @@ varmpFilterTy f
 %%]]
 %%]
 
-%%[9 hs export(varmpTailAddOcc)
+%%[(9 hmtyinfer) hs export(varmpTailAddOcc)
 varmpTailAddOcc :: ImplsProveOcc -> Impls -> (Impls,VarMp)
 varmpTailAddOcc o (Impls_Tail i os) = (t, varmpImplsUnit i t)
                                     where t = Impls_Tail i (o:os)
@@ -294,7 +305,7 @@ varmpTailAddOcc _ x                 = (x,emptyVarMp)
 %%% Fold: map + thread, for ty related
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 export(varmpMapThr,varmpMapThrTy)
+%%[(9 hmtyinfer) export(varmpMapThr,varmpMapThrTy)
 varmpMapThr :: (MetaLev -> TyVarId -> VarMpInfo -> thr -> (VarMpInfo,thr)) -> thr -> VarMp -> (VarMp,thr)
 varmpMapThr f thr (VarMp l ms)
   = (VarMp l ms',thr')
@@ -336,7 +347,7 @@ varmpMapThrTy f
 %%% Make var counterpart of VarMpInfo, for derivation tree pretty printing
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[99.varmpinfoMkVar export(varmpinfoMkVar)
+%%[(99 hmtyinfer).varmpinfoMkVar export(varmpinfoMkVar)
 varmpinfoMkVar :: TyVarId -> VarMpInfo -> Ty
 varmpinfoMkVar v i
   = case i of
@@ -349,12 +360,12 @@ varmpinfoMkVar v i
 %%% VarMp construction
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[2.VarMp.varmpTyUnit export(varmpTyUnit)
+%%[(2 hmtyinfer).VarMp.varmpTyUnit export(varmpTyUnit)
 varmpTyUnit :: k -> v -> VarMp' k v
 varmpTyUnit = varmpSingleton
 %%]
 
-%%[6.VarMp.varmpTyUnit -2.VarMp.varmpTyUnit export(varmpMetaLevTyUnit,varmpTyUnit)
+%%[(6 hmtyinfer).VarMp.varmpTyUnit -2.VarMp.varmpTyUnit export(varmpMetaLevTyUnit,varmpTyUnit)
 varmpMetaLevTyUnit :: Ord k => MetaLev -> k -> Ty -> VarMp' k VarMpInfo
 varmpMetaLevTyUnit mlev v t = varmpMetaLevSingleton mlev v (VMITy t)
 
@@ -367,7 +378,7 @@ varmpTyRevUnit :: TyVarId -> Ty -> (Ty,VarMp)
 varmpTyRevUnit tv t = maybe (t,varmpTyUnit tv t) (\v -> let t' = mkTyVar tv in (t',varmpTyUnit v t')) . tyMbVar $ t
 %%]
 
-%%[9 export(varmpImplsUnit,assocImplsLToVarMp,varmpScopeUnit,varmpPredUnit,varmpAssNmUnit)
+%%[(9 hmtyinfer) export(varmpImplsUnit,assocImplsLToVarMp,varmpScopeUnit,varmpPredUnit,varmpAssNmUnit)
 varmpImplsUnit :: ImplsVarId -> Impls -> VarMp
 varmpImplsUnit v i = mkVarMp (Map.fromList [(v,VMIImpls i)])
 
@@ -385,7 +396,7 @@ assocImplsLToVarMp = mkVarMp . Map.fromList . assocLMapElt VMIImpls
 %%]
 
 
-%%[10 export(varmpLabelUnit,varmpOffsetUnit)
+%%[(10 hmtyinfer) export(varmpLabelUnit,varmpOffsetUnit)
 varmpLabelUnit :: LabelVarId -> Label -> VarMp
 varmpLabelUnit v l = mkVarMp (Map.fromList [(v,VMILabel l)])
 
@@ -396,12 +407,12 @@ varmpOffsetUnit v l = mkVarMp (Map.fromList [(v,VMIOffset l)])
 varmpExtsUnit :: UID -> RowExts -> VarMp
 varmpExtsUnit v l = mkVarMp (Map.fromList [(v,VMIExts l)])
 
-%%[13 export(varmpPredSeqUnit)
+%%[(13 hmtyinfer) export(varmpPredSeqUnit)
 varmpPredSeqUnit :: TyVarId -> PredSeq -> VarMp
 varmpPredSeqUnit v l = mkVarMp (Map.fromList [(v,VMIPredSeq l)])
 %%]
 
-%%[6 export(tyRestrictKiVarMp)
+%%[(6 hmtyinfer) export(tyRestrictKiVarMp)
 -- restrict the kinds of tvars bound to value identifiers to kind *
 tyRestrictKiVarMp :: [Ty] -> VarMp
 tyRestrictKiVarMp ts = varmpIncMetaLev $ assocTyLToVarMp [ (v,kiStar) | t <- ts, v <- maybeToList $ tyMbVar t ]
@@ -411,7 +422,7 @@ tyRestrictKiVarMp ts = varmpIncMetaLev $ assocTyLToVarMp [ (v,kiStar) | t <- ts,
 %%% VarMp: reification as VarMp
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[2 export(tyAsVarMp',tyAsVarMp)
+%%[(2 hmtyinfer) export(tyAsVarMp',tyAsVarMp)
 -- | Encode 'ty' as a tvar + VarMp, with additional initial construction
 tyAsVarMp' :: (UID -> Ty -> Ty) -> UID -> Ty -> (Ty,VarMp)
 tyAsVarMp' f u t
@@ -429,19 +440,19 @@ tyAsVarMp = tyAsVarMp' (flip const)
 %%% VarMp lookup
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[2.varmpTyLookup export(varmpTyLookup)
+%%[(2 hmtyinfer).varmpTyLookup export(varmpTyLookup)
 varmpTyLookup, varmpLookup :: Eq k => k -> VarMp' k v -> Maybe v
 varmpTyLookup tv (VarMp s) = lookup tv s
 
 varmpLookup = varmpTyLookup
 %%]
 
-%%[6 -2.varmpTyLookup export(varmpTyLookup)
+%%[(6 hmtyinfer) -2.varmpTyLookup export(varmpTyLookup)
 varmpTyLookup :: (VarLookup m k VarMpInfo,Ord k) => k -> m -> Maybe Ty
 varmpTyLookup = varlookupMap vmiMbTy
 %%]
 
-%%[9 export(varmpImplsLookup,varmpScopeLookup,varmpPredLookup)
+%%[(9 hmtyinfer) export(varmpImplsLookup,varmpScopeLookup,varmpPredLookup)
 varmpImplsLookup :: VarLookup m ImplsVarId VarMpInfo => ImplsVarId -> m -> Maybe Impls
 varmpImplsLookup = varlookupMap vmiMbImpls
 
@@ -455,7 +466,7 @@ varmpAssNmLookup :: VarLookup m TyVarId VarMpInfo => TyVarId -> m -> Maybe VarUI
 varmpAssNmLookup = varlookupMap vmiMbAssNm
 %%]
 
-%%[10 export(varmpLabelLookup,varmpOffsetLookup)
+%%[(10 hmtyinfer) export(varmpLabelLookup,varmpOffsetLookup)
 varmpLabelLookup :: VarLookup m LabelVarId VarMpInfo => LabelVarId -> m -> Maybe Label
 varmpLabelLookup = varlookupMap vmiMbLabel
 
@@ -463,7 +474,7 @@ varmpOffsetLookup :: VarLookup m UID VarMpInfo => UID -> m -> Maybe LabelOffset
 varmpOffsetLookup = varlookupMap vmiMbOffset
 %%]
 
-%%[13 export(varmpPredSeqLookup)
+%%[(13 hmtyinfer) export(varmpPredSeqLookup)
 varmpPredSeqLookup :: VarLookup m TyVarId VarMpInfo => TyVarId -> m -> Maybe PredSeq
 varmpPredSeqLookup = varlookupMap vmiMbPredSeq
 %%]
@@ -472,7 +483,7 @@ varmpPredSeqLookup = varlookupMap vmiMbPredSeq
 %%% VarMp lookup: Cycle check variants
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4.varmpTyLookupCyc export(varmpTyLookupCyc)
+%%[(4 hmtyinfer).varmpTyLookupCyc export(varmpTyLookupCyc)
 %%[[4
 varmpTyLookupCyc :: TyVarId -> VarMp -> Maybe Ty
 %%][8
@@ -481,7 +492,7 @@ varmpTyLookupCyc :: VarLookup m TyVarId VarMpInfo => TyVarId -> m -> Maybe Ty
 varmpTyLookupCyc x m = lookupLiftCycMb2 tyMbVar (flip varmpTyLookup m) x
 %%]
 
-%%[9 export(varmpImplsLookupImplsCyc,varmpImplsLookupCyc,varmpScopeLookupScopeCyc,varmpAssNmLookupAssNmCyc)
+%%[(9 hmtyinfer) export(varmpImplsLookupImplsCyc,varmpImplsLookupCyc,varmpScopeLookupScopeCyc,varmpAssNmLookupAssNmCyc)
 varmpImplsLookupImplsCyc :: VarLookup m ImplsVarId VarMpInfo => Impls -> m -> Maybe Impls
 varmpImplsLookupImplsCyc x m = lookupLiftCycMb1 implsMbVar (flip varmpImplsLookup m) x
 
@@ -495,7 +506,7 @@ varmpAssNmLookupAssNmCyc :: VarLookup m ImplsVarId VarMpInfo => VarUIDHsName -> 
 varmpAssNmLookupAssNmCyc x m = lookupLiftCycMb1 vunmMbVar (flip varmpAssNmLookup m) x
 %%]
 
-%%[10 export(varmpLabelLookupCyc,varmpLabelLookupLabelCyc)
+%%[(10 hmtyinfer) export(varmpLabelLookupCyc,varmpLabelLookupLabelCyc)
 varmpLabelLookupLabelCyc :: VarLookup m ImplsVarId VarMpInfo => Label -> m -> Maybe Label
 varmpLabelLookupLabelCyc x m = lookupLiftCycMb1 labelMbVar (flip varmpLabelLookup m) x
 
@@ -507,12 +518,12 @@ varmpLabelLookupCyc x m = lookupLiftCycMb2 labelMbVar (flip varmpLabelLookup m) 
 %%% VarMp lookup: Flipped variants
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4 export(varmpTyLookupCyc2)
+%%[(4 hmtyinfer) export(varmpTyLookupCyc2)
 varmpTyLookupCyc2 :: VarMp -> TyVarId -> Maybe Ty
 varmpTyLookupCyc2 x m = varmpTyLookupCyc m x
 %%]
 
-%%[9 export(varmpPredLookup2,varmpScopeLookup2,varmpAssNmLookup2,varmpImplsLookupCyc2)
+%%[(9 hmtyinfer) export(varmpPredLookup2,varmpScopeLookup2,varmpAssNmLookup2,varmpImplsLookupCyc2)
 varmpScopeLookup2 :: VarMp -> TyVarId -> Maybe PredScope
 varmpScopeLookup2 m v = varmpScopeLookup v m
 
@@ -529,7 +540,7 @@ varmpAssNmLookup2 :: VarMp -> TyVarId -> Maybe VarUIDHsName
 varmpAssNmLookup2 m v = varmpAssNmLookup v m
 %%]
 
-%%[10
+%%[(10 hmtyinfer)
 varmpLabelLookup2 :: VarMp -> LabelVarId -> Maybe Label
 varmpLabelLookup2 m v = varmpLabelLookup v m
 %%]
@@ -557,7 +568,7 @@ instance (PP k, PP v) => PP (VarMp' k v) where
 %%[6.PP -2.PP
 %%]
 
-%%[99.ppVarMpInfoCfgTy export(ppVarMpInfoCfgTy,ppVarMpInfoDt)
+%%[(99 hmtyinfer).ppVarMpInfoCfgTy export(ppVarMpInfoCfgTy,ppVarMpInfoDt)
 ppVarMpInfoCfgTy :: CfgPPTy -> VarMpInfo -> PP_Doc
 ppVarMpInfoCfgTy c i
   = case i of
@@ -573,7 +584,7 @@ ppVarMpInfoDt :: VarMpInfo -> PP_Doc
 ppVarMpInfoDt = ppVarMpInfoCfgTy cfgPPTyDT
 %%]
 
-%%[6
+%%[(6 hmtyinfer)
 instance PP VarMpInfo where
   pp (VMITy       t) = pp t
 %%[[9
@@ -595,7 +606,7 @@ instance PP VarMpInfo where
 %%% Instances: Binary, Serialize
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[50
+%%[(50 hmtyinfer)
 instance Serialize VarMpInfo where
   sput (VMITy      a) = sputWord8 0  >> sput a
   sput (VMIImpls   a) = sputWord8 1  >> sput a

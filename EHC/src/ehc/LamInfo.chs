@@ -46,7 +46,9 @@ Currently the following is maintained:
 %%]
 
 -- PP
-%%[(8 codegen) import(UHC.Util.Pretty,{%{EH}AnaDomain.Pretty},{%{EH}Ty.Pretty})
+%%[(8 codegen) import(UHC.Util.Pretty,{%{EH}AnaDomain.Pretty})
+%%]
+%%[(8 hmtyast) import({%{EH}Ty.Pretty})
 %%]
 
 -- Haskell stuff

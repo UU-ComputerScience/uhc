@@ -41,7 +41,7 @@ WRAPPER CodeAGItf
 %%% Fake AG dependencies to avoid INDUCED cycles
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[99
+%%[(99 codegen)
 SEM CModule
   | Mod         expr        .   gathLamMp           <   expr.gUniq
 %%]
@@ -52,7 +52,7 @@ SEM CBound
 %%% Type signatures
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[99
+%%[(99 codegen)
 %%]
 SEM *
   | *           loc         .   gUniq           : UID

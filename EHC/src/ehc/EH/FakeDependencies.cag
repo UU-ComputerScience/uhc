@@ -2,7 +2,7 @@
 %%% Fake AG dependencies to avoid INDUCED cycles
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[99
+%%[(99 hmtyinfer)
 SEM Decl
   | Data
   		-- constrs.dataConstrNmL < constrs.tyNm
@@ -73,20 +73,3 @@ SEM PrExpr
   		res.intlTyKiGam < res.kiVarMp
 %%]
 
-%%[99
-%%]
-
-%%[99
-%%]
-
-%%[99
-%%]
-
-%%[99
-%%]
-
-%%[99
-%%]
-
-%%[99
-%%]

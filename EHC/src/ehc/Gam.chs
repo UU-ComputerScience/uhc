@@ -141,7 +141,7 @@ type ErrGam = Gam HsName ErrL
 %%% "XX of sort" gam
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(SoGam, SoGamInfo(..))
+%%[(8 hmtyinfer) export(SoGam, SoGamInfo(..))
 data SoGamInfo
   = SoGamInfo
       { sgiSo :: Ty }
@@ -271,7 +271,7 @@ instance (Ord k, PP k, PP v) => PP (SGam k v) where
 %%% Init of soGam, only used by TyCore
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(initSoGam)
+%%[(8 hmtyinfer) export(initSoGam)
 initSoGam :: SoGam
 initSoGam
   = assocLToGam
