@@ -67,7 +67,7 @@ emptyDataFldInfo
 -- | per positional constructor field annotation like info
 data DataConFldAnnInfo
   = DataConFldAnnInfo
-%%[[(8 codegen)
+%%[[(8 codegen || hmtyinfer)
       { dcfaiStrictness		:: !Strictness
       }
 %%]]
@@ -76,7 +76,7 @@ data DataConFldAnnInfo
 emptyDataConFldAnnInfo :: DataConFldAnnInfo
 emptyDataConFldAnnInfo
   = DataConFldAnnInfo
-%%[[(8 codegen)
+%%[[(8 codegen || hmtyinfer)
       Strictness_NonStrict
 %%]]
 %%]

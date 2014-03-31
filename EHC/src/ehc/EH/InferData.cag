@@ -170,7 +170,7 @@ SEM DataConstr
   | Constr
                 loc         .   dataConGadtFldAnnL  =   replicate (length @dataConGadtTyL)
                                                                   (DataConFldAnnInfo
-%%[[(8 codegen)
+%%[[8
                                                                     Strictness_NonStrict
 %%]]
                                                                   )
@@ -396,7 +396,7 @@ ATTR AllDataField [ | | fldAnnL USE {++} {[]}: {[DataConFldAnnInfo]} ]
 SEM DataField
   | Field       lhs         .   fldAnnL             =   replicate @nrFieldsForLabel
   														  ( DataConFldAnnInfo
-%%[[(8 codegen)
+%%[[8
                                                               (maybe Strictness_NonStrict id @tyExpr.mbStrictness)
 %%]]
                                                           )

@@ -304,7 +304,7 @@ SEM Expr
 %%[[17
                                                            , @loc.cycErrSq
 %%]]
-%%[[92
+%%[[(92 codegen)
                                                            , Seq.fromList @errsDataGenerBind
 %%]]
                                                            ]

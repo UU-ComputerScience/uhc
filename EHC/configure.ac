@@ -517,6 +517,7 @@ AC_ARG_WITH(uuagc,
 if test "$uuagcCmd" != "no" -a -x "$uuagcCmd" ; then
   uuagcExists="yes"
   uuagcVersion=`$uuagcCmd --version`
+  buildToolDependenciesUnchecked="uuagc>=0.9.50.2 ${buildToolDependenciesUnchecked}"
 else
   uuagcCmd=""
   uuagcExists="no"
@@ -537,6 +538,8 @@ AC_ARG_WITH(shuffle,
 )
 if test "$shuffleCmd" != "no" -a -x "$shuffleCmd" ; then
   shuffleExists="yes"
+  shuffleVersion=`$shuffleCmd --version`
+  buildToolDependenciesUnchecked="shuffle>=0.1.1.0 ${buildToolDependenciesUnchecked}"
 else
   shuffleCmd=""
   shuffleExists="no"
@@ -1209,6 +1212,7 @@ fi
 
 echo "  shuffle is available?         : $shuffleExists"
 if test "x$shuffleExists" = "xyes" ;then
+echo "    version                     : $shuffleVersion"
 echo "    command for shuffle         : $shuffleCmd"
 else
 echo "    **** ERROR **** : shuffle must be installed, use (1) cabal+hackage, or (2) http://www.cs.uu.nl/wiki/HUT"
@@ -1286,6 +1290,11 @@ if test "$mplib" = "gmp" ; then
     echo "    **** ERROR **** : GMP lib archive not readable: $gmpLibArchive"
   fi
 fi
+
+echo "Required but not (yet) or during build enforced:"
+echo "  cabal base dependencies       : $cabal_base_lib_depends"
+echo "  cabal extra dependencies      : $cabal_extra_lib_depends"
+echo "  build tool dependencies       : $buildToolDependenciesUnchecked"
 
 echo "Optional:"
 echo "  haddock is available?         : $haddockExists"

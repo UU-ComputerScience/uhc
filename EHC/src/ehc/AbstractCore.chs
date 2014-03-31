@@ -2,10 +2,13 @@
 %%% Class interface around common functionality of Core and TyCore
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) module {%{EH}AbstractCore}
+%%[8 module {%{EH}AbstractCore}
 %%]
 
-%%[(8 codegen) import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Base.TermLike},{%{EH}Opts.Base},{%{EH}Ty})
+%%[8 import({%{EH}Base.Common})
+%%]
+
+%%[(8 codegen) import({%{EH}Base.Builtin},{%{EH}Base.TermLike},{%{EH}Opts.Base},{%{EH}Ty})
 %%]
 
 %%[(8 codegen) import(UHC.Util.Pretty,UHC.Util.Utils)
@@ -1041,7 +1044,8 @@ Additionally, this can be done in a lazy manner yielding a substitution CSubst
 to be applied at the last possible moment.
 %%]
 
-%%[(8 codegen) hs export(Coe'(..))
+%%[8 hs export(Coe'(..))
+%%[[(8 codegen)
 data Coe' expr metaval bind bindasp ty
   = Coe_Map             !(expr -> expr)                 -- normal, expression as function
   | Coe_C               !expr                           -- constant
@@ -1061,23 +1065,30 @@ data Coe' expr metaval bind bindasp ty
 
 instance Show (Coe' expr metaval bind bindasp ty) where
   show _ = "COE"
+%%][8
+data Coe'
+  = Coe_NONE            -- placeholder dummy
+  deriving Show
+%%]]
+%%]
+
+%%[(8 !codegen) hs export(Coe)
+-- | placeholder def
+type Coe = Coe'
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Coercion context
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[doesWhat.Coe doclatex
-Coercions may either be applied or not on type arguments.
-In particular, due to lack of proper analysis (and generics code like generation),
-it is only known for arrow and product types how to construct a coercion from its type args, as they directly
-correspond to values.
-
-A CoeCtx encodes this yes/no may allow.
-A CoeCtx is isomorphic (for now) to Bool.
-%%]
-
-%%[(8 codegen) hs export(CoeCtx(..))
+%%[8 hs export(CoeCtx(..))
+-- | Coercions may either be applied or not on type arguments.
+--   In particular, due to lack of proper analysis (and generics code like generation),
+--   it is only known for arrow and product types how to construct a coercion from its type args, as they directly
+--   correspond to values.
+--   
+--   A CoeCtx encodes this yes/no may allow.
+--   A CoeCtx is isomorphic (for now) to Bool.
 data CoeCtx
   = CoeCtx_Allow
   | CoeCtx_DontAllow

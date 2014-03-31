@@ -44,7 +44,7 @@
 %%[(8 codegen tycore hmtyinfer) import(qualified {%{EH}TyCore.Full0} as C)
 %%]
 
-%%[(8 codegen) hs import({%{EH}AbstractCore})
+%%[(8 hmtyinfer) hs import({%{EH}AbstractCore})
 %%]
 
 %%[(9 hmtyinfer) import({%{EH}Ty.Trf.Canonic})
@@ -693,7 +693,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                                fo = fR fi2 r1 r2 e1 [] e2
                                foR = manyFO ([fo] ++ foL ++ [foRes])
                                foRes = (\fo -> foldr foCmbPrfRes fo foL)
-%%[[(10 codegen)
+%%[[10
                                        $ foUpdRecFldsCoe eKeys foL tr1
 %%]]
                                        $ foUpdTy (foTy fo `recRow` eL) fo
@@ -765,15 +765,21 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                                  rowTCoeL = sortByOn rowLabCmp fst (foRowTCoeL fo)
                                  -- rowTCoeL = sortByOn rowLabCmp fst $ map fst extsIn12
 %%]]
-%%[[(10 codegen)
+%%[[10
                                  rowCoeL = sortByOn rowLabCmp fst (foRowCoeL fo)
-%%][10
-                                 rowCoeL = sortByOn rowLabCmp fst $ map fst extsIn12
+                                 -- rowCoeL = sortByOn rowLabCmp fst $ map fst extsIn12
 %%]]
+%%[[(10 codegen)
                                  (fuUpdL,prUpdL,tr1s',csubstUpd,_)
                                    =  foldr  (\(l,c) (fuL,prL,r,csubst,u)
+%%][10
+                                 (fuUpdL,prUpdL,tr1s',_)
+                                   =  foldr  (\(l,c) (fuL,prL,r,u)
+%%]]
                                                 ->  let (u',u1,u2) = mkNewLevUID2 u
+%%[[(10 codegen)
                                                         (sel,csubstSel) = coeEvalOnAsSubst u2 c (mkLSel l u1)
+%%]]
                                                     in  ( ( l
 %%[[(10 codegen)
                                                           , (CExpr_TupUpd (acoreBuiltinUndefined globOpts) CTagRec l (acoreNmHole u) sel,Nothing)
@@ -781,11 +787,18 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                                                           ) : fuL
                                                         , mkLPred r l u1 : prL
                                                         , r
+%%[[(10 codegen)
                                                         , csubst `cSubstApp` csubstSel
+%%]]
                                                         , u'
                                                         )
                                              )
-                                             ([],[],tr1s,emptyCSubst,u2) rowCoeL
+%%[[(10 codegen)
+                                             ([],[],tr1s,emptyCSubst,u2)
+%%][10
+                                             ([],[],tr1s,u2)
+%%]]
+                                             rowCoeL
 %%[[(10 codegen tycore)
                                  (tfuUpdL,tprUpdL,ttr1s',tcsubstUpd,_)
                                    =  foldr  (\(l,c) (fuL,prL,r,csubst,u)
@@ -830,23 +843,36 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
 %%[[(10 codegen tycore)
                                  tfuL = tfuUpdL ++ reverse tfuDelL
 %%]]
+%%[[(10 codegen)
                                  (prBldL, fBldL, _, csubstBld, _) 
                                    =  foldr  (\l (prL,fL,r,csubst,u)
+%%][10
+                                 (prBldL, fBldL, _, _) 
+                                   =  foldr  (\l (prL,fL,r,u)
+%%]]
                                                 ->  let (u',u1,u2) = mkNewLevUID2 u
+%%[[(10 codegen)
                                                         (sel,csubstSel)
                                                           = maybe (s,emptyCSubst) (\c -> coeEvalOnAsSubst u2 c s) (lookup l rowCoeL)
                                                           where s = mkLSel l u1
+%%]]
                                                     in  ( mkLPred r l u1 : prL,
 %%[[(10 codegen)
                                                           sel :
 %%]]
                                                           fL
                                                         , r
+%%[[(10 codegen)
                                                         , csubst `cSubstApp` csubstSel
+%%]]
                                                         , u'
                                                         )
                                              )
+%%[[(10 codegen)
                                              ([], [], tr1s, emptyCSubst, u3)
+%%][10
+                                             ([], [], tr1s, u3)
+%%]]
                                              (sortBy rowLabCmp ((assocLKeys . map fst $ e12) ++ assocLKeys e2))
 %%[[(10 codegen tycore)
                                  (tprBldL, tfBldL, _, tcsubstBld, _) 
@@ -952,9 +978,10 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
 %%]]
 %%]
 
-%%[(10 codegen hmtyinfer).fitsIn.fRow.Coe
+%%[(10 hmtyinfer).fitsIn.fRow.Coe
                        foUpdRecFldsCoe eKeys foL tr1 foR
                          =  let (u',u1) = mkNewLevUID (foUniq foR)
+%%[[(10 codegen)
                                 us = mkNewLevUIDL (length foL) u1
                                 (cL,sL)
                                    = unzip
@@ -963,6 +990,9 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                                        ,  let (c,s) = lrcoeWipeWeaveAsSubst globOpts u (foVarMp foR) (foLRCoe fo)
                                        ,  not (acoreCoeIsId c)
                                        ]
+%%][10
+                                cL = [ (l,Coe_NONE) | l <- eKeys ]
+%%]]
 %%[[(10 tycore)
                                 (tcL,tsL)
                                    = unzip
@@ -973,8 +1003,12 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                                        ]
 %%]]
                             in  foR { foUniq = u'
+%%[[10
                                     , foRowCoeL = cL
+%%]]
+%%[[(10 codegen)
                                     , foCSubst = foldr cSubstApp (foCSubst foR) sL
+%%]]
 %%[[(10 tycore)
                                     , foRowTCoeL = tcL
                                     , foTCSubst = foldr cSubstAppSubst (foTCSubst foR) tsL
@@ -1537,7 +1571,12 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                        -}
                        fP fi (Ty_Impls (Impls_Tail iv1 _))
                          | fiCoeCtx fi == CoeCtx_Allow
-                            =  Just (foUpdLRCoe (lrcoeLSingleton (Coe_ImplApp iv1)) (fVar' fTySyn fi updTy tr1 t2))
+                            =  Just (
+%%[[(9 codegen)
+                                      foUpdLRCoe (lrcoeLSingleton (Coe_ImplApp iv1))
+%%]]
+                                                 (fVar' fTySyn fi updTy tr1 t2)
+                                    )
                          | otherwise
                             =  Just (foUpdVarMp (iv1 `varmpImplsUnit` Impls_Nil) (fVar' fTySyn fi updTy tr1 t2))
 %%[[9
@@ -1647,7 +1686,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                        (as,_) = hdAndTl' unknownAppSpineVertebraeInfo spine
 %%]]
                        pol    = asPolarity as
-%%[[(8 codegen)
+%%[[8
                        aCoeCtx= case (foMbAppSpineInfo ffo,asMbFOUpdCoe as) of
                                   (Nothing,_      ) -> CoeCtx_DontAllow
                                   (Just _ ,Nothing) -> CoeCtx_DontAllow
@@ -1664,7 +1703,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                                  fiUpdRankByPolarity pol $
                                  fiSwapCoCo
                                    (fi3 { fiFIOpts = asFIO as $ fioSwapPolarity pol $ fiFIOpts fi
-%%[[(8 codegen)
+%%[[8
                                         , fiCoeCtx = aCoeCtx
 %%]]
                                         }))

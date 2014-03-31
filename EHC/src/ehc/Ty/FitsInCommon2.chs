@@ -21,7 +21,7 @@ structures for fitsIn and related functions.
 %%[(4 hmtyinfer) import(qualified Data.Set as Set)
 %%]
 
-%%[(8 codegen) import({%{EH}AbstractCore})
+%%[(8 hmtyinfer) import({%{EH}AbstractCore})
 %%]
 
 For debug/trace:

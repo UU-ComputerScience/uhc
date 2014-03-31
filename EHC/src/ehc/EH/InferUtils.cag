@@ -163,7 +163,7 @@ SEM Decl
 
 Only toplevel propagation allowed.
 
-%%[(8 codegen)
+%%[(8 codegen || hmtyinfer)
 ATTR TyExpr TyExprAnn [ | | mbStrictness: {Maybe Strictness} ]
 
 SEM TyExpr

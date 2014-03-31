@@ -22,7 +22,7 @@
 %%[(4 hmtyinfer) import({%{EH}Substitutable}) export(FitsIn, FitsIn')
 %%]
 
-%%[(8 codegen hmtyinfer) import({%{EH}AbstractCore})
+%%[(8 hmtyinfer) import({%{EH}AbstractCore})
 %%]
 %%[(8 codegen tycore hmtyinfer) import(qualified {%{EH}TyCore.Full0} as C)
 %%]
@@ -101,7 +101,7 @@ data FIOut
        ,  foPredOccL        :: ![PredOcc]				-- arisen predicates (to be obsolete)
        ,  foGathCnstrMp     :: !CHRPredOccCnstrMp		-- arisen predicates
 %%]]
-%%[[(10 codegen)
+%%[[10
        ,  foRowCoeL         :: !(AssocL HsName Coe)		-- internal, coercions for row fields
 %%]]
 %%[[(10 codegen tycore)
@@ -146,7 +146,7 @@ emptyFO
        ,  foPredOccL        =   []
        ,  foGathCnstrMp     =   emptyCnstrMp
 %%]]
-%%[[(10 codegen)
+%%[[10
        ,  foRowCoeL         =   []
 %%]]
 %%[[(10 codegen tycore)
@@ -201,7 +201,7 @@ data AppSpineVertebraeInfo
        { asPolarity     :: Polarity						-- the polarity on this spine position
        , asFIO          :: FIOpts -> FIOpts				-- how to update the context (swap ...)
        , asFO			:: FIOut -> FIOut -> FIOut		-- \ffo afo -> afo, update app function arg FIOut with app function FIOut
-%%[[(8 codegen)
+%%[[8
        , asMbFOUpdCoe   :: Maybe AppSpineFOUpdCoe		-- possibly update coercion
 %%]]
        }
@@ -221,7 +221,7 @@ unknownAppSpineVertebraeInfo
   = AppSpineVertebraeInfo
       polInvariant fioMkUnify
       asFODflt
-%%[[(8 codegen)
+%%[[8
       Nothing
 %%]]
 %%]

@@ -8,16 +8,16 @@
 %%[(92 hmtyinfer) import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Opts},{%{EH}Ty})
 %%]
 
-%%[(92 hmtyinfer) import({%{EH}AbstractCore},{%{EH}AbstractCore.Utils})
+%%[(92 hmtyinfer && (codegen || coresysf)) import({%{EH}AbstractCore},{%{EH}AbstractCore.Utils})
 %%]
 
-%%[(92 hmtyinfer) import({%{EH}Core},{%{EH}Core.Utils})
+%%[(92 hmtyinfer && (codegen || coresysf)) import({%{EH}Core},{%{EH}Core.Utils})
 %%]
 
-%%[(92 hmtyinfer) import({%{EH}Gam.DataGam})
+%%[(92 hmtyinfer && (codegen || coresysf)) import({%{EH}Gam.DataGam})
 %%]
 
-%%[(92 hmtyinfer) import(UHC.Util.Utils)
+%%[(92 hmtyinfer && (codegen || coresysf)) import(UHC.Util.Utils)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -88,7 +88,7 @@ data Proj
 %%% Extract nested info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(92 hmtyinfer)
+%%[(92 hmtyinfer && (codegen || coresysf))
 -- | get the constructor info
 projCon :: Proj -> Proj
 projCon (Proj_L1 p) = projCon p
@@ -97,7 +97,7 @@ projCon (Proj_M1 p) = projCon p
 projCon p           = p
 %%]
 
-%%[(92 hmtyinfer)
+%%[(92 hmtyinfer && (codegen || coresysf))
 -- | get all sum alternatives
 projSumAlts :: Proj -> [Proj]
 projSumAlts (Proj_Sum l r) = projSumAlts l ++ projSumAlts r
@@ -112,7 +112,7 @@ projSumAlts p              = [p]
 %%% Builtin name corresponding to proj
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(92 hmtyinfer)
+%%[(92 hmtyinfer && (codegen || coresysf))
 -- | builtin name of constructor
 projBuiltinNm :: EHCOpts -> Proj -> HsName
 projBuiltinNm opts proj
@@ -130,7 +130,9 @@ projBuiltinNm opts proj
       Proj_Prod  _ _    -> v  ehbnGenerDataProdAltProd
       _                 -> panic ("projBuiltinNm: " ++ show proj)
   where v  f   = ehcOptBuiltin  opts f
+%%]
 
+%%[(92 hmtyinfer && (codegen || coresysf))
 -- | builtin var of constructor
 projBuiltinVar :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => EHCOpts -> Proj -> e
 projBuiltinVar opts proj
@@ -141,12 +143,12 @@ projBuiltinVar opts proj
 %%% Code construction of projections
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(92 hmtyinfer)
+%%[(92 hmtyinfer && (codegen || coresysf))
 -- | pattern names arg to acoreSatSelsCases
 nmLForCase nL = zipWith (\n o -> (n,acoreTyErr $ "nmLForCase: " ++ show n,{-n,-}o)) nL [(0::Int) ..]
 %%]
 
-%%[(92 hmtyinfer) export(projFrom)
+%%[(92 hmtyinfer && (codegen || coresysf)) export(projFrom)
 -- | from function, starting with a top level proj
 projFrom
   :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a, Eq bcat)
@@ -199,7 +201,7 @@ projFrom
         
 %%]
 
-%%[(92 hmtyinfer) export(projTo)
+%%[(92 hmtyinfer && (codegen || coresysf)) export(projTo)
 -- | from function, starting with a top level proj
 projTo
   :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a, Eq bcat)

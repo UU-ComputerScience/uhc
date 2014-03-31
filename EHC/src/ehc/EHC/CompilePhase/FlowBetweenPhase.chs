@@ -23,7 +23,7 @@ XXX
 -- module related
 %%[50 import({%{EH}Module})
 %%]
-%%[(92 hmtyinfer) import({%{EH}EHC.CompilePhase.Module(cpUpdHiddenExports)})
+%%[(92 codegen) import({%{EH}EHC.CompilePhase.Module(cpUpdHiddenExports)})
 %%]
 
 -- EH semantics
@@ -149,7 +149,7 @@ cpFlowEHSem1 modNm
                  dfg      = prepFlow $! EHSem.gathClDfGam_Syn_AGItf    ehSem
                  cs       = prepFlow $! EHSem.gathChrStore_Syn_AGItf   ehSem
 %%]]
-%%[[(50 hmtyinfer)
+%%[[(50 codegen)
                  lm       = prepFlow $! EHSem.gathLamMp_Syn_AGItf      ehSem
 %%]]
 %%[[50
@@ -224,7 +224,7 @@ cpFlowEHSem1 modNm
 %%]]
                                      )
 %%]]
-%%[[(92 hmtyinfer)
+%%[[(92 codegen)
                      -- put back additional hidden exports
                      ; cpUpdHiddenExports modNm $ Seq.toList $ EHSem.gathHiddenExports_Syn_AGItf ehSem
 %%]]
