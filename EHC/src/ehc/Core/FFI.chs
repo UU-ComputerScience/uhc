@@ -16,7 +16,9 @@
 %%]
 %%[(8 codegen) hs import({%{EH}AbstractCore})
 %%]
-%%[(8 codegen) hs import({%{EH}Core},{%{EH}Core.Utils},qualified {%{EH}Core.SysF.AsTy} as SysF)
+%%[(8 codegen) hs import({%{EH}Core},{%{EH}Core.Utils})
+%%]
+%%[(8 codegen) hs import(qualified {%{EH}Core.SysF.AsTy} as SysF)
 %%]
 %%[(8 codegen) hs import({%{EH}GrinCode})
 %%]

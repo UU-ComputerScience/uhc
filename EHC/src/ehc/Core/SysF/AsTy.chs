@@ -2,34 +2,37 @@
 %%% Core seen as Ty, for System F generation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen || coresysf) hs module {%{EH}Core.SysF.AsTy} import({%{EH}Base.Common},{%{EH}Opts.Base},{%{EH}Error})
+%%[(8 codegen) hs module {%{EH}Core.SysF.AsTy} import({%{EH}Base.Common},{%{EH}Opts.Base},{%{EH}Error})
 %%]
 
-%%[(8 codegen || coresysf) hs import(qualified {%{EH}Core} as C, qualified {%{EH}Ty} as T)
+%%[(8 codegen) hs import(qualified {%{EH}Core} as C, qualified {%{EH}Ty} as T)
 %%]
 
-%%[(8 codegen || coresysf) hs import(UHC.Util.Pretty,{%{EH}Core.Pretty},{%{EH}Error.Pretty})
+%%[(8 codegen coresysf) hs import(UHC.Util.Pretty,{%{EH}Core.Pretty},{%{EH}Error.Pretty})
 %%]
 
-%%[(8 codegen || coresysf) hs import({%{EH}AbstractCore})
+%%[(8 codegen coresysf) hs import({%{EH}AbstractCore})
 %%]
 
-%%[(8 codegen || coresysf) hs import({%{EH}Core.BindExtract},{%{EH}FinalEnv})
+%%[(8 codegen coresysf) hs import({%{EH}Core.BindExtract})
 %%]
 
-%%[(8 codegen || coresysf) hs import({%{EH}Base.TermLike})
+%%[(8 codegen) hs import({%{EH}FinalEnv})
+%%]
+
+%%[(8 codegen coresysf) hs import({%{EH}Base.TermLike})
 %%]
  
-%%[(8 codegen || coresysf) hs import({%{EH}Ty.ToSysfTy},{%{EH}Ty.FitsIn}) export(module {%{EH}Ty.ToSysfTy})
+%%[(8 codegen coresysf) hs import({%{EH}Ty.ToSysfTy},{%{EH}Ty.FitsIn}) export(module {%{EH}Ty.ToSysfTy})
 %%]
  
-%%[(8 codegen || coresysf) hs import({%{EH}Gam},{%{EH}Gam.TyKiGam})
+%%[(8 codegen coresysf) hs import({%{EH}Gam},{%{EH}Gam.TyKiGam})
 %%]
 
-%%[(8 codegen || coresysf) hs import(qualified Data.Map as Map,Data.Maybe)
+%%[(8 codegen coresysf) hs import(qualified Data.Map as Map,Data.Maybe)
 %%]
 
-%%[(8 codegen || coresysf) hs import(qualified UHC.Util.FastSeq as Seq)
+%%[(8 codegen coresysf) hs import(qualified UHC.Util.FastSeq as Seq)
 %%]
 
 %%[doesWhat doclatex
@@ -41,7 +44,7 @@ i.e. provides the same API.
 %%% Explicit name for Ty
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen || coresysf) hs export(Ty)
+%%[(8 codegen) hs export(Ty)
 -- | The type, represented by a term CExpr
 type Ty             = C.SysfTy          -- base ty
 
@@ -58,7 +61,7 @@ type TySeq          = C.SysfTySeq
 %%% Conversion interface: general
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen || coresysf) hs export(ty2TySysfWithEnv,ty2TyC)
+%%[(8 codegen) hs export(ty2TySysfWithEnv,ty2TyC)
 ty2TySysfWithEnv :: ToSysfEnv -> T.Ty -> Ty
 %%[[(8 coresysf)
 ty2TySysfWithEnv env t = tyToSysfTy fitsInForToSysF tyKiGamLookupKi env t
@@ -71,7 +74,7 @@ ty2TyC :: EHCOpts -> ToSysfEnv -> T.Ty -> C.CTy
 ty2TyC o env t = C.mkCTy o t (ty2TySysfWithEnv env t)
 %%]
 
-%%[(8 codegen || coresysf) hs export(ty2TySysf)
+%%[(8 codegen coresysf) hs export(ty2TySysf)
 ty2TySysf :: T.Ty -> Ty
 %%[[(8 coresysf)
 ty2TySysf t = ty2TySysfWithEnv emptyToSysfEnv t
@@ -84,7 +87,7 @@ ty2TySysf t =                                 t
 %%% Conversion interface: only for FFI types, already expanded etc (for now)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen || coresysf) hs export(ty2TyCforFFI)
+%%[(8 codegen) hs export(ty2TyCforFFI)
 -- | Construct a type for use by AbstractCore, specifically for use by FFI
 ty2TyCforFFI :: EHCOpts -> T.Ty -> C.CTy
 %%[[(8 coresysf)
@@ -98,7 +101,7 @@ ty2TyCforFFI o t = C.mkCTy o t                                t
 %%% Construction
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen || coresysf) hs export(mkTySeq,unTySeq)
+%%[(8 codegen coresysf) hs export(mkTySeq,unTySeq)
 -- lift & unlift to TySeq, with mkTySeq . unTySeq == id for singleton sequences
 mkTySeq :: Ty -> TySeq
 mkTySeq = id -- mkExprSeq
@@ -109,7 +112,7 @@ unTySeq = id -- unExprSeq
 {-# INLINE unTySeq #-}
 %%]
 
-%%[(8 codegen || coresysf) hs export(mkTySeq1,unTySeq1)
+%%[(8 codegen coresysf) hs export(mkTySeq1,unTySeq1)
 mkTySeq1 :: Ty -> TySeq
 mkTySeq1 = id -- mkExprSeq1
 {-# INLINE mkTySeq1 #-}
@@ -119,7 +122,7 @@ unTySeq1 = id -- unExprSeq1
 {-# INLINE unTySeq1 #-}
 %%]
 
-%%[(8 codegen || coresysf) hs export(mkTyThunk)
+%%[(8 codegen coresysf) hs export(mkTyThunk)
 mkTySeqThunk :: TySeq -> Ty
 mkTySeqThunk t = t -- mkTySeqArrow1Ty [] t
 {-# INLINE mkTySeqThunk #-}
@@ -129,7 +132,7 @@ mkTyThunk t = t -- mkTyArrow1Ty [] t
 {-# INLINE mkTyThunk #-}
 %%]
 
-%%[(8 codegen || coresysf) hs export(tyUnThunkTySeq,tyUnThunkTy)
+%%[(8 codegen coresysf) hs export(tyUnThunkTySeq,tyUnThunkTy)
 tyUnThunkTySeq :: Ty -> TySeq
 -- tyUnThunkTySeq (Expr_Arrow (Expr_Seq []) r) = r
 tyUnThunkTySeq t                            = t -- tyErr "TyCore.tyUnThunkTySeq"
@@ -151,7 +154,7 @@ tyUnThunkTy = unTySeq . tyUnThunkTySeq
 
 ??
 
-%%[(8 codegen || coresysf) hs export(CSubst)
+%%[(8 codegen coresysf) hs export(CSubst)
 type CSubstInfo = CSubstInfo' C.CExpr C.CMetaVal C.CBind C.CBound C.CTy
 type CSubst     = CSubst'     C.CExpr C.CMetaVal C.CBind C.CBound C.CTy
 %%]
@@ -168,7 +171,7 @@ tyStripL1Args t
   where (as,r) = appUnArr t
 %%]
 
-%%[(8 codegen || coresysf) hs
+%%[(8 codegen coresysf) hs
 -- convert bind to bound
 tyBindToBound
   :: (ACoreBindAspectKeyS -> MetaLev -> CLbl -> Bool)       -- selection
@@ -182,7 +185,7 @@ tyBindToBound sel convYes convNo bind@(C.CBind_Bind n bbs)
   where (bs,_) = cbindExtract (noBoundSel {selVal = sel}) bind
 %%]
 
-%%[(8 codegen || coresysf) hs export(tyL0BindToL1Val)
+%%[(8 codegen coresysf) hs export(tyL0BindToL1Val)
 -- convert type level l<n-1> binding to l<n> argument, used to convert from type signature to value application
 tyL0BindToL1Val :: MetaLev -> TyBind -> TyBound
 tyL0BindToL1Val mlev
@@ -198,7 +201,7 @@ tyL0BindToL1Val mlev
         to   (Expr_Seq1 s) = Expr_Seq1 (    tosq s)
         to   t             = t
 
-%%[(8 codegen || coresysf) hs export(tyL0BindToL1Bind)
+%%[(8 codegen coresysf) hs export(tyL0BindToL1Bind)
 -- convert type level l0 binding to l1 binding, used to convert from type signature to value abstraction
 tyL0BindToL1Bind :: TyBind -> TyBind
 tyL0BindToL1Bind
@@ -219,11 +222,11 @@ tyL0BindToL1Bind
 %%% Lam args merge of type and actual code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen || coresysf) hs
+%%[(8 codegen coresysf) hs
 type MergeArg = ((HsName,ACoreAppLikeMetaBound),Ty)
 %%]
 
-%%[(8 codegen || coresysf) hs export(tcMergeArgTypeSeqAndCode')
+%%[(8 codegen coresysf) hs export(tcMergeArgTypeSeqAndCode')
 -- | Merge args from type and args from expr, adding type parameters from the type when necessary (i.e. higher metalev)
 tcMergeArgTypeSeqAndCode' :: (Ty -> TySeq) -> [MergeArg] -> [(HsName,C.CExpr->C.CExpr)] -> (C.CExpr->C.CExpr,[TySeq])
 tcMergeArgTypeSeqAndCode' mka ts as
@@ -248,7 +251,7 @@ tcMergeArgTypeSeqAndCode ts as
   = fst $ tcMergeArgTypeSeqAndCode' mkTySeq ts as
 %%]
 
-%%[(8 codegen || coresysf) hs export(tcMergeLamTySeqAndArgNms,tcMergeLamTySeq1AndArgNms)
+%%[(8 codegen coresysf) hs export(tcMergeLamTySeqAndArgNms,tcMergeLamTySeq1AndArgNms)
 tcMergeLamTySeqAndArgNms' :: (Ty -> TySeq) -> (Ty -> TySeq) -> Ty -> [HsName] -> (C.CExpr->C.CExpr,([TySeq],TySeq))
 tcMergeLamTySeqAndArgNms' mka mkr t as
   = (mk,(args,mkr res))
@@ -268,7 +271,7 @@ tcMergeLamTySeq1AndArgNms
 %%% Checking: environment
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen || coresysf) hs export(SysfGam,emptySysfGam)
+%%[(8 codegen coresysf) hs export(SysfGam,emptySysfGam)
 type SysfGam = Gam ACoreBindRef Ty
 
 emptySysfGam :: SysfGam
@@ -279,7 +282,7 @@ emptySysfGam = emptyGam
 %%% Matching: input/output flow via records
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen || coresysf) hs export(MatchIn(..),emptyMatchIn,emptyMatchOut)
+%%[(8 codegen coresysf) hs export(MatchIn(..),emptyMatchIn,emptyMatchOut)
 -- match input/options
 data MatchIn
   = MatchIn
@@ -299,7 +302,7 @@ emptyMatchIn = MatchIn False False False False metaLevVal emptySysfGam
 miFlipVariance :: MatchIn -> MatchIn
 miFlipVariance mi = mi {minAllowLBind = minAllowRBind mi, minAllowRBind = minAllowLBind mi}
 
-%%[(8 codegen || coresysf) hs export(allowLBindMatchIn)
+%%[(8 codegen coresysf) hs export(allowLBindMatchIn)
 allowLBindMatchIn :: MatchIn
 allowLBindMatchIn = emptyMatchIn {minAllowLBind = True}
 
@@ -307,7 +310,7 @@ allowRL0BindMatchIn :: MatchIn
 allowRL0BindMatchIn = emptyMatchIn {minAllowRL0BindBind = True}
 %%]
 
-%%[(8 codegen || coresysf) hs export(MatchOut(..),moutErrs,moutHasErr)
+%%[(8 codegen coresysf) hs export(MatchOut(..),moutErrs,moutHasErr)
 -- match output/result
 data MatchOut
   = MatchOut
@@ -326,7 +329,7 @@ moutErrs :: MatchOut -> ErrSq
 moutErrs = Seq.fromList . moutErrL
 %%]
 
-%%[(8 codegen || coresysf) hs
+%%[(8 codegen coresysf) hs
 instance Show MatchOut where
   show _ = "MatchOut"
 
@@ -351,7 +354,7 @@ Matching is asymmetric in the following:
 For the rest, all matches are exact on syntactic structure.
 %%]
 
-%%[(8 codegen || coresysf) hs export(MatchPair(..))
+%%[(8 codegen coresysf) hs export(MatchPair(..))
 data MatchPair
   = Match_Ty 			Ty		Ty
   | Match_BoundBind		TyBound	TyBind
@@ -365,7 +368,7 @@ mp2PP (Match_Ty 		_ e) = pp e
 mp2PP (Match_BoundBind 	_ e) = pp e
 %%]
 
-%%[(8 codegen || coresysf) hs
+%%[(8 codegen coresysf) hs
 match' :: MatchIn -> MatchPair -> MatchOut
 match' min mp
   = case mp of
@@ -501,7 +504,7 @@ match' min mp
         err  mout t1  t2  = err' mout (pp t1) (pp t2)
 %%]
 
-%%[(8 codegen || coresysf) hs export(match,matchBind,matchRL0Bind)
+%%[(8 codegen coresysf) hs export(match,matchBind,matchRL0Bind)
 matchBind :: Ty -> Ty -> MatchOut
 matchBind ex1 ex2 = match' allowLBindMatchIn (Match_Ty ex1 ex2)
 
