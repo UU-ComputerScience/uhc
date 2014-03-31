@@ -28,3 +28,12 @@ here:
 
 	http://www.cs.uu.nl/wiki/Ehc/WebHome
 
+
+Experimentation (optional)
+==========================
+
+The following ./configure invocations lead to buildable compilers
+20140331:
+	./configure --with-aspects="base"							# only ASTs, parser, pretty printing
+	./configure --with-aspects="base hmtyinfer noHmTyRuler"		# + HM type system (without use of ruler system)
+
