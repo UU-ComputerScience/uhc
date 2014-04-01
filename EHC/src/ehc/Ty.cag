@@ -4,7 +4,8 @@
 %%]
 
 %%[1 haddock
-The module %%@{%{EH}%%}Ty contains the Haskell interface to the internal representation of types
+The module %%@{%{EH}%%}Ty
+contains the Haskell interface to the internal representation of types
 used by EHC. The AST is described in Ty/AbsSyn.
 %%]
 
@@ -155,11 +156,11 @@ type LabelVarId      = VarId
 %%% Lookup types
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(2 hmtyinfer) hs export(LookupTy)
+%%[(2 hmtyinfer || hmtyast) hs export(LookupTy)
 type LookupTy = TyVarId -> Maybe Ty
 %%]
 
-%%[(9 hmtyinfer) hs export(LookupImpls)
+%%[(9 hmtyinfer || hmtyast) hs export(LookupImpls)
 type LookupImpls = ImplsVarId -> Maybe Impls
 %%]
 

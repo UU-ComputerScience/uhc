@@ -36,4 +36,5 @@ The following ./configure invocations lead to buildable compilers
 20140331:
 	./configure --with-aspects="base"							# only ASTs, parser, pretty printing
 	./configure --with-aspects="base hmtyinfer noHmTyRuler"		# + HM type system (without use of ruler system)
+	./configure --with-aspects="base hmtyast"					# only Ty infrastructure without its use
 

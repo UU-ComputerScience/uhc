@@ -25,7 +25,7 @@
 %%[(6 hmtyinfer || hmtyast) import({%{EH}VarMp},{%{EH}Substitutable})
 %%]
 
-%%[(50 hmtyinfer) import(Control.Monad, UHC.Util.Binary, UHC.Util.Serialize)
+%%[(50 hmtyinfer || hmtyast) import(Control.Monad, UHC.Util.Binary, UHC.Util.Serialize)
 %%]
 
 %%[9999 import({%{EH}Base.ForceEval})
@@ -58,7 +58,7 @@ deriving instance Typeable TyKiGamInfo
 deriving instance Data TyKiGamInfo
 %%]
 
-%%[(8 hmtyinfer) export(tkgiGetSet)
+%%[(8 hmtyinfer || hmtyast) export(tkgiGetSet)
 tkgiGetSet = (tkgiKi,(\x i -> i {tkgiKi = x}))
 %%]
 

@@ -108,7 +108,7 @@ instance (VarUpdatable p s,VarUpdatable info s) => VarUpdatable (Constraint p in
 %%% Resolution trace reification, for error reporting
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(9 hmtyinfer) export(UnresolvedTrace(..))
+%%[(9 hmtyinfer || hmtyast) export(UnresolvedTrace(..))
 -- | The trace of an unresolved predicate
 data UnresolvedTrace p info
   = UnresolvedTrace_None									-- no trace required when all is resolved

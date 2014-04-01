@@ -13,7 +13,7 @@
 %%[50 hs import ({%{EH}Gam.Full})
 %%]
 
-%%[(50 hmtyinfer || hmtyast) hs import ({%{EH}Gam.ClassDefaultGam})
+%%[(50 hmtyinfer) hs import ({%{EH}Gam.ClassDefaultGam})
 %%]
 
 %%[(50 hmtyinfer || hmtyast) hs import({%{EH}Ty})
