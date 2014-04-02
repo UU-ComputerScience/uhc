@@ -1245,104 +1245,9 @@ uidQualHNm modnm uid =
 %%]
 
 %%[1
+%%]
 instance HSNM UID where
   mkHNm x = hsnFromString ('_' : show x)
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Instances: Binary, Serialize
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[50
-instance Binary KnownPrim where
-  put = putEnum8
-  get = getEnum8
-
-instance Serialize KnownPrim where
-  sput = sputPlain
-  sget = sgetPlain
-%%]
-
-%%[50
-instance Serialize VarUIDHsName where
-  sput (VarUIDHs_Name a b) = sputWord8 0 >> sput a >> sput b
-  sput (VarUIDHs_UID  a  ) = sputWord8 1 >> sput a
-  sput (VarUIDHs_Var  a  ) = sputWord8 2 >> sput a
-  sget = do t <- sgetWord8
-            case t of
-              0 -> liftM2 VarUIDHs_Name sget sget
-              1 -> liftM  VarUIDHs_UID  sget
-              2 -> liftM  VarUIDHs_Var  sget
-
-instance Serialize CLbl where
-  sput (CLbl_Nm   a  ) = sputWord8 0 >> sput a
-  sput (CLbl_Tag  a  ) = sputWord8 1 >> sput a
-  sput (CLbl_None    ) = sputWord8 2
-  sget = do t <- sgetWord8
-            case t of
-              0 -> liftM  CLbl_Nm 	sget
-              1 -> liftM  CLbl_Tag  sget
-              2 -> return CLbl_None
-
-instance Binary Fixity where
-  put = putEnum8
-  get = getEnum8
-
-instance Serialize Fixity where
-  sput = sputPlain
-  sget = sgetPlain
-
-instance Binary x => Binary (AlwaysEq x) where
-  put (AlwaysEq x) = put x
-  get = liftM AlwaysEq get
-
-instance Serialize x => Serialize (AlwaysEq x) where
-  sput (AlwaysEq x) = sput x
-  sget = liftM AlwaysEq sget
-
-instance Binary PredOccId where
-  put (PredOccId a) = put a
-  get = liftM PredOccId get
-
-instance Serialize PredOccId where
-  sput = sputPlain
-  sget = sgetPlain
-
-instance Binary a => Binary (RLList a) where
-  put (RLList a) = put a
-  get = liftM RLList get
-
-instance Serialize CTag where
-  sput = sputShared
-  sget = sgetShared
-  sputNested (CTagRec          ) = sputWord8 0
-  sputNested (CTag    a b c d e) = sputWord8 1 >> sput a >> sput b >> sput c >> sput d >> sput e
-  sgetNested
-    = do t <- sgetWord8
-         case t of
-           0 -> return CTagRec
-           1 -> liftM5 CTag    sget sget sget sget sget
-
-instance Binary Range where
-  put (Range_Unknown    ) = putWord8 0
-  put (Range_Builtin    ) = putWord8 1
-  put (Range_Range   a b) = putWord8 2 >> put a >> put b
-  get = do t <- getWord8
-           case t of
-             0 -> return Range_Unknown
-             1 -> return Range_Builtin
-             2 -> liftM2 Range_Range get get
-
-instance Serialize Range where
-  sput = sputShared
-  sget = sgetShared
-  sputNested = sputPlain
-  sgetNested = sgetPlain
-
-instance Binary Pos where
-  put (Pos a b c) = put a >> put b >> put c
-  get = liftM3 Pos get get get
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Constants as appearing directly from the source text, without class related toInteger (etc) interpretation
@@ -1604,6 +1509,14 @@ instance HSNM inx => RefOfFld (Fld' inx) HsName where
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[50
+instance Binary KnownPrim where
+  put = putEnum8
+  get = getEnum8
+
+instance Serialize KnownPrim where
+  sput = sputPlain
+  sget = sgetPlain
+
 instance Serialize x => Serialize (Fld' x) where
   sput (Fld a b) = sput a >> sput b
   sget = liftM2 Fld sget sget
@@ -1637,14 +1550,6 @@ instance Binary Fixity where
   get = getEnum8
 
 instance Serialize Fixity where
-  sput = sputPlain
-  sget = sgetPlain
-
-instance Binary KnownPrim where
-  put = putEnum8
-  get = getEnum8
-
-instance Serialize KnownPrim where
   sput = sputPlain
   sget = sgetPlain
 
