@@ -47,7 +47,7 @@
 
 %%[(8 codegen grin) hs import({%{EH}Gam.DataGam})
 %%]
-%%[(8 codegen cmm) hs import({%{EH}Foreign.Boxing}) export(module {%{EH}Foreign.Boxing})
+%%[(8 codegen grin) hs import({%{EH}Foreign.Boxing}) export(module {%{EH}Foreign.Boxing})
 %%]
 %%[(90 codegen grin) hs import({%{EH}Foreign},{%{EH}Base.Target}) export(FFIWay(..),module {%{EH}Foreign})
 %%]
@@ -126,7 +126,7 @@ deriving instance Data GrTagAnn
 %%% Tag info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen cmm) hs
+%%[(8 codegen grin) hs
 instance TagLike GrTag where
   tagIsTup  		t	= case t of {GrTag_Rec       -> True ; _ -> False}
   tagMbDataInfo		t 	= case t of {GrTag_Con _ _ i -> Just i; _ -> Nothing}

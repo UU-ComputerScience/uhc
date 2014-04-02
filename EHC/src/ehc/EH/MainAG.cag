@@ -71,7 +71,7 @@
 %%]
 %%[(8 codegen) hs import({%{EH}LamInfo})
 %%]
-%%[(8 codegen) hs import({%{EH}CodeGen.RefGenerator})
+%%[(8 codegen || hmtyinfer) hs import({%{EH}CodeGen.RefGenerator})
 %%]
 %%[(8 codegen) hs import(qualified {%{EH}Core.SysF.AsTy} as SysF, {%{EH}FinalEnv})
 %%]

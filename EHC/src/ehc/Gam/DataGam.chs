@@ -48,7 +48,7 @@
 -- | per named field info
 data DataFldInfo
   = DataFldInfo
-%%[[(8 codegen)
+%%[[(8 codegen || hmtyinfer)
       { dfiOffset 	:: !Fld
       }
 %%]]
@@ -58,7 +58,7 @@ type DataFldMp = Map.Map HsName DataFldInfo
 
 emptyDataFldInfo
   = DataFldInfo
-%%[[(8 codegen)
+%%[[(8 codegen || hmtyinfer)
       noFld
 %%]]
 %%]

@@ -1181,6 +1181,11 @@ metaLevSo  = metaLevKi  + 1
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[50
+deriving instance Typeable1 Fld'
+deriving instance Data x => Data (Fld' x)
+%%]
+
+%%[50
 deriving instance Typeable VarUIDHsName
 deriving instance Data VarUIDHsName
 
@@ -1201,9 +1206,6 @@ deriving instance Data x => Data (RLList x)
 
 deriving instance Typeable CLbl
 deriving instance Data CLbl
-
-deriving instance Typeable1 Fld'
-deriving instance Data x => Data (Fld' x)
 
 deriving instance Typeable CTag
 deriving instance Data CTag
@@ -1417,7 +1419,7 @@ allKnownPrimMp
 %%% Field access, holding both name and offset, for delayed decision about this
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs export(Fld'(..), Fld, noFld)
+%%[8 hs export(Fld'(..), Fld, noFld)
 -- | Field (combined dereference + field access), doubly represented by index and name
 data Fld' inx
   = Fld
@@ -1441,7 +1443,7 @@ mkFldInx :: inx -> Fld' inx
 mkFldInx i = Fld Nothing (Just i)
 %%]
 
-%%[(8 codegen) hs
+%%[8 hs
 instance Eq inx => Eq (Fld' inx) where
   (Fld {_fldInx=Just i1}) == (Fld {_fldInx=Just i2}) = i1 == i2
   (Fld {_fldNm =     n1}) == (Fld {_fldNm =     n2}) = n1 == n2
@@ -1509,6 +1511,12 @@ instance HSNM inx => RefOfFld (Fld' inx) HsName where
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[50
+instance Serialize x => Serialize (Fld' x) where
+  sput (Fld a b) = sput a >> sput b
+  sget = liftM2 Fld sget sget
+%%]
+
+%%[50
 instance Binary KnownPrim where
   put = putEnum8
   get = getEnum8
@@ -1516,10 +1524,6 @@ instance Binary KnownPrim where
 instance Serialize KnownPrim where
   sput = sputPlain
   sget = sgetPlain
-
-instance Serialize x => Serialize (Fld' x) where
-  sput (Fld a b) = sput a >> sput b
-  sget = liftM2 Fld sget sget
 
 instance Serialize TagDataInfo where
   sput (TagDataInfo a b) = sput a >> sput b

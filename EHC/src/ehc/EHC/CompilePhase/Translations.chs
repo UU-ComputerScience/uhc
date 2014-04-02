@@ -231,7 +231,7 @@ cpTranslateCore2JavaScript modNm
        }
 %%]
 
-%%[(50 codegen grin cmm)
+%%[(50 codegen grin)
 -- | Compute info for Grin based codegen
 cpGenGrinGenInfo
   :: HsName

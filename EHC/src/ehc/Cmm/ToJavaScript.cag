@@ -17,9 +17,9 @@
 %%[(88 codegen cmm javascript) hs import(UHC.Util.Pretty,{%{EH}Base.GenC})
 %%]
 
-%%[(8 codegen grin) hs import({%{EH}CodeGen.ValAccess} as VA, {%{EH}CodeGen.CVar})
+%%[(8 codegen cmm javascript) hs import({%{EH}CodeGen.ValAccess} as VA, {%{EH}CodeGen.CVar})
 %%]
-%%[(8 codegen grin) hs import({%{EH}Gam.DataGam})
+%%[(8 codegen cmm javascript) hs import({%{EH}Gam.DataGam})
 %%]
 
 %%[(8 codegen cmm javascript) hs import(Data.Maybe,Data.Char, UHC.Util.Utils, qualified Data.Map as Map, Data.List as L, UHC.Util.FastSeq as Seq)
@@ -86,7 +86,7 @@ ss = Seq.fromList
 %%% Safe name, name expansion
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin) hs
+%%[(8 codegen cmm javascript) hs
 jref :: CVarNmModuleCfg -> {- CVarMp -> -} CVarInfo -> JS.Expr
 jref cfg cvi
   = cvarToRef
@@ -108,11 +108,11 @@ jref cfg cvi
 %%% Global name info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin)
+%%[(8 codegen cmm javascript)
 ATTR AllNT [ cvarNmModCfg: CVarNmModuleCfg | | ]
 %%]
 
-%%[(8 codegen grin)
+%%[(8 codegen cmm javascript)
 SEM Module
   | Mod         loc         .   topClassNm      =   @moduleNm
                             .   pkgNm           =   @moduleNm
@@ -124,7 +124,7 @@ SEM Module
 				loc			.	cvarNmModCfg	=	CVarNmModuleCfg @pkgNm @topClassNm @moduleClassNm
 %%]
 
-%%[(8 codegen grin)
+%%[(8 codegen cmm javascript)
 SEM AGItf
   | AGItf       loc         .   topClassNm      =   hsnUnknown
                             .   pkgNm           =   hsnUnknown

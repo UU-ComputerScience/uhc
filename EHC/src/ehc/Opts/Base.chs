@@ -383,7 +383,7 @@ emptyEHCOpts
       ,  ehcOptOptimizeOptionMp =   Map.empty
       ,  ehcOptCoreOpts         =   []
 %%]]
-%%[[(8 codegen)
+%%[[(8 codegen cmm)
       ,  ehcOptUseCmm           =	Nothing
 %%]]
 %%[[(8 codegen javascript)
