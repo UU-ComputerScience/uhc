@@ -394,16 +394,27 @@ clean-extlibs:
 ###########################################################################################
 
 bump-major:
-	@echo $$(($(EH_VERSION_MAJOR)+1)).0.0 > VERSION ; \
+	@echo $$(($(EH_VERSION_MAJOR)+1)).0.0.0 > VERSION ; \
 	echo "bumped version to `cat VERSION`"
 
 bump-minor:
-	@echo $(EH_VERSION_MAJOR).$$(($(EH_VERSION_MINOR)+1)).0 > VERSION ; \
+	@echo $(EH_VERSION_MAJOR).$$(($(EH_VERSION_MINOR)+1)).0.0 > VERSION ; \
 	echo "bumped version to `cat VERSION`"
 
 bump-minorminor:
-	@echo $(EH_VERSION_MAJOR).$(EH_VERSION_MINOR).$$(($(EH_VERSION_MINORMINOR)+1)) > VERSION ; \
+	@echo $(EH_VERSION_MAJOR).$(EH_VERSION_MINOR).$$(($(EH_VERSION_MINORMINOR)+1)).0 > VERSION ; \
 	echo "bumped version to `cat VERSION`"
+
+bump-minorminorminor:
+	@echo $(EH_VERSION_MAJOR).$(EH_VERSION_MINOR).$(EH_VERSION_MINORMINOR).$$(($(EH_VERSION_MINORMINORMINOR)+1)) > VERSION ; \
+	echo "bumped version to `cat VERSION`"
+
+# ... and shortcuts
+
+bump-M: bump-major
+bump-m: bump-minor
+bump-mm: bump-minorminor
+bump-mmm: bump-minorminorminor
 
 ###########################################################################################
 # Releasing, currently just svn copying
