@@ -37,8 +37,10 @@ data Version
       , verMajor            :: !String
       , verMinor            :: !String
       , verMinorMinor       :: !String
+      , verMinorMinorMinor  :: !String
       , verQuality          :: !String
       , verShort            :: !String
+      , verMedium           :: !String
       , verFull             :: !String
       , verAsNumber         :: !String
       , verProg             :: !String
@@ -57,8 +59,10 @@ version
       , verMajor            = "@EH_VERSION_MAJOR@"
       , verMinor            = "@EH_VERSION_MINOR@"
       , verMinorMinor       = "@EH_VERSION_MINORMINOR@"
+      , verMinorMinorMinor  = "@EH_VERSION_MINORMINORMINOR@"
       , verQuality          = "@EH_VERSION_STABILITY@"
       , verShort            = "@EH_VERSION_SHORT@"
+      , verMedium           = "@EH_VERSION_MEDIUM@"
       , verFull             = "@EH_VERSION_FULL@"
       , verAsNumber         = "@EH_VERSION_ASNUMBER@"
       , verProg             = "@EHC_EXEC_NAME@"
