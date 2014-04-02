@@ -13,10 +13,10 @@
 %%[(4_2 hmtyinfer) import({%{EH}Ty.Trf.ElimAlts})
 %%]
 
-%%[50 import(qualified Data.Map as Map, qualified Data.Set as Set)
+%%[(50 hmtyinfer) import(qualified Data.Map as Map, qualified Data.Set as Set)
 %%]
 
-%%[50 import({%{EH}Ty.UsedNames},{%{EH}Module},{%{EH}Gam.ValGam})
+%%[(50 hmtyinfer) import({%{EH}Ty.UsedNames},{%{EH}Module},{%{EH}Gam.ValGam})
 %%]
 
 %%[(40 hmtyinfer) import({%{EH}Ty.Trf.ElimEqual})
@@ -62,7 +62,7 @@ valGamElimEqual g
 %%% Get used identifiers from types of values
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[50 export(mentrelFilterMpExtendViaValGam)
+%%[(50 hmtyinfer) export(mentrelFilterMpExtendViaValGam)
 -- | Lookup indirectly used identifiers, type constants from types of value bindings.
 mentrelFilterMpExtendViaValGam :: HsName -> ValGam -> ModEntRelFilterMp -> ModEntRelFilterMp
 mentrelFilterMpExtendViaValGam moduleNm valGam mentrelFilterMp

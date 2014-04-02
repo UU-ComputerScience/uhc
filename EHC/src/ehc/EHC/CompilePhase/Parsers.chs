@@ -263,12 +263,12 @@ cpDecode suff store modNm
        }
 %%]
 
-%%[50 export(cpDecodeGrin)
+%%[(50 codegen grin) export(cpDecodeGrin)
 cpDecodeGrin :: HsName -> EHCompilePhase ()
 cpDecodeGrin = cpDecode "grin" ecuStoreGrin
 %%]
 
-%%[50 export(cpDecodeCore)
+%%[(50 codegen) export(cpDecodeCore)
 cpDecodeCore :: HsName -> EHCompilePhase ()
 cpDecodeCore = cpDecode "core" ecuStoreCore
 %%]

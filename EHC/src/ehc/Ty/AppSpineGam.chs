@@ -14,7 +14,7 @@
 %%]
 %%[(9 codegen hmtyinfer) import({%{EH}AbstractCore},{%{EH}Core.Subst})
 %%]
-%%[(8 codegen hmtyinfer) hs import(UHC.Util.Utils)
+%%[(8 hmtyinfer) hs import(UHC.Util.Utils)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -31,7 +31,7 @@ arrowAppSpineVertebraeInfoL
         polCovariant id
 %%[[4
         asFODflt
-%%][(8 codegen)
+%%][8
         asFOArrow
 %%]]
     ]
@@ -49,15 +49,15 @@ arrowAppSpineVertebraeInfoL :: FIEnv -> [AppSpineVertebraeInfo]
 arrowAppSpineVertebraeInfoL env
   = [ AppSpineVertebraeInfo polContravariant fioMkStrong
           asFODflt
-%%[[(8 codegen)
+%%[[8
           (Just dfltFOUpdCoe)
 %%]]
     , AppSpineVertebraeInfo polCovariant id
           asFOArrow
-%%[[(8 codegen)
+%%[[8
           (Just (\opts [ffo,afo]
                   -> let (u',u1) = mkNewUID (foUniq afo)
-%%[[9
+%%[[(9 codegen)
                          -- c = lrcoeForLamTyApp opts u1 (foCSubst afo) (foLRCoe ffo) (foLRCoe afo)
                          (c,s) = lrcoeForLamTyAppAsSubst opts u1 (foLRCoe ffo) (foLRCoe afo)
 %%]]
@@ -65,7 +65,7 @@ arrowAppSpineVertebraeInfoL env
                          (tc,ts) = {- C.lrcoeForLamTyAppAsSubst -} fireqLRCoeForLamTyAppAsSubst fiReqs opts u1 (C.tyErr ("arrowAppSpineVertebraeInfoL: " ++ show u1)) (foLRTCoe ffo) (foLRTCoe afo)
 %%]]
                      in  afo { foUniq = u'
-%%[[9
+%%[[(9 codegen)
                              , foLRCoe = c
                              , foCSubst = foCSubst afo `cSubstApp` s
 %%]]
@@ -85,7 +85,7 @@ prodAppSpineVertebraeInfoL :: [AppSpineVertebraeInfo]
 prodAppSpineVertebraeInfoL
   = repeat
     $ AppSpineVertebraeInfo polCovariant id asFODflt
-%%[[(8 codegen)
+%%[[8
           (Just dfltFOUpdCoe)
 %%]]
 %%]
@@ -94,7 +94,7 @@ prodAppSpineVertebraeInfoL
 %%% Coercion update
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen hmtyinfer) export(asFOUpdCoe)
+%%[(8 hmtyinfer) export(asFOUpdCoe)
 dfltFOUpdCoe :: AppSpineFOUpdCoe
 dfltFOUpdCoe _ x = last' (panic "Ty.AppSpineGam.dfltFOUpdCoe") x
 
@@ -107,7 +107,7 @@ asFODflt :: FIOut -> FIOut -> FIOut
 asFODflt _ afo = afo
 %%]
 
-%%[(8 codegen hmtyinfer)
+%%[(8 hmtyinfer)
 asFOArrow :: FIOut -> FIOut -> FIOut
 asFOArrow _ afo = afo {foLInstToL = InstTo_Plain : foLInstToL afo, foRInstToL = InstTo_Plain : foRInstToL afo}
 %%]

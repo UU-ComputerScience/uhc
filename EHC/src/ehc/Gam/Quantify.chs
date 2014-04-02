@@ -20,7 +20,7 @@
 %%[(3 hmtyinfer) import({%{EH}VarMp},{%{EH}Substitutable})
 %%]
 
-%%[(9 hmtyinfer || hmtyast) import({%{EH}Ty.Trf.MergePreds})
+%%[(9 hmtyinfer) import({%{EH}Ty.Trf.MergePreds})
 %%]
 
 %%[(3 hmtyinfer) hs import ({%{EH}Gam},{%{EH}Gam.ValGam})
@@ -34,18 +34,18 @@
 %%% For ValGam
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(3 hmtyinfer || hmtyast).valGamQuantify export(valGamQuantify)
+%%[(3 hmtyinfer).valGamQuantify export(valGamQuantify)
 valGamQuantify :: TyVarIdS -> ValGam -> ValGam
 valGamQuantify globTvS = valGamMapTy (\t -> valTyQuantify (`Set.member` globTvS) t)
 %%]
 
-%%[(6 hmtyinfer || hmtyast).valGamQuantify -3.valGamQuantify export(valGamQuantify)
+%%[(6 hmtyinfer).valGamQuantify -3.valGamQuantify export(valGamQuantify)
 valGamQuantify :: TyKiGam -> VarMp -> VarMp -> TyVarIdS -> ValGam -> ValGam
 valGamQuantify tyKiGam tvKiVarMp gamVarMp globTvS
   = valGamMapTy (\t -> valTyQuantify (tvarKi tyKiGam tvKiVarMp gamVarMp) (`Set.member` globTvS) t)
 %%]
 
-%%[(8 hmtyinfer || hmtyast).valGamQuantifyWithVarMp -6.valGamQuantify export(valGamQuantifyWithVarMp)
+%%[(8 hmtyinfer).valGamQuantifyWithVarMp -6.valGamQuantify export(valGamQuantifyWithVarMp)
 valGamQuantifyWithVarMp :: TyKiGam -> VarMp -> VarMp -> TyVarIdS -> ValGam -> (ValGam,VarMp,VarMp)
 valGamQuantifyWithVarMp tyKiGam tvKiVarMp gamVarMp globTvS gam
   = valGamDoWithVarMp
@@ -53,7 +53,7 @@ valGamQuantifyWithVarMp tyKiGam tvKiVarMp gamVarMp globTvS gam
       gamVarMp emptyVarMp gam
 %%]
 
-%%[(9 hmtyinfer || hmtyast).valGamQuantify -3.valGamQuantify export(valGamQuantify)
+%%[(9 hmtyinfer).valGamQuantify -3.valGamQuantify export(valGamQuantify)
 valGamQuantify :: TyVarIdS -> [PredOcc] -> ValGam -> (ValGam,TQOGam)
 valGamQuantify globTvS prL g
   =  let  g' = gamMapElts  (\vgi ->  let  tmpo = tyMergePreds prL (vgiTy vgi)
@@ -63,7 +63,7 @@ valGamQuantify globTvS prL g
      in   gamUnzip g'
 %%]
 
-%%[(9 hmtyinfer || hmtyast).valGamQuantifyWithVarMp -8.valGamQuantifyWithVarMp export(valGamQuantifyWithVarMp)
+%%[(9 hmtyinfer).valGamQuantifyWithVarMp -8.valGamQuantifyWithVarMp export(valGamQuantifyWithVarMp)
 valGamQuantifyWithVarMp :: Bool -> TyKiGam -> VarMp -> VarMp -> TyVarIdS -> [PredOcc] -> ValGam -> (ValGam,VarMp,(VarMp,TQOGam))
 valGamQuantifyWithVarMp doQuant tyKiGam tvKiVarMp gamVarMp globTvS prL valGam
   = valGamDoWithVarMp quant gamVarMp (emptyVarMp,emptyGam) valGam
@@ -85,13 +85,13 @@ valGamQuantifyWithVarMp doQuant tyKiGam tvKiVarMp gamVarMp globTvS prL valGam
 %%% For TyKiGam
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(6 hmtyinfer || hmtyast).tyKiGamQuantify export(tyKiGamQuantify)
+%%[(6 hmtyinfer).tyKiGamQuantify export(tyKiGamQuantify)
 tyKiGamQuantify :: EHCOpts -> TyVarIdS -> TyKiGam -> TyKiGam
 tyKiGamQuantify opts globTvS
   = gamMap (\(n,k) -> (n,k {tkgiKi = tyKiQuantify (ehcOptPolyKinds opts) (`Set.member` globTvS) (tkgiKi k)}))
 %%]
 
-%%[(8 hmtyinfer || hmtyast).tyKiGamQuantifyWithVarMp -6.tyKiGamQuantify export(tyKiGamQuantifyWithVarMp)
+%%[(8 hmtyinfer).tyKiGamQuantifyWithVarMp -6.tyKiGamQuantify export(tyKiGamQuantifyWithVarMp)
 tyKiGamQuantifyWithVarMp :: EHCOpts -> VarMp -> TyVarIdS -> TyKiGam -> (TyKiGam,VarMp,VarMp)
 tyKiGamQuantifyWithVarMp opts {- tyKiGam tvKiVarMp -} gamVarMp globTvS gam
   = tyKiGamDoWithVarMp
@@ -103,7 +103,7 @@ tyKiGamQuantifyWithVarMp opts {- tyKiGam tvKiVarMp -} gamVarMp globTvS gam
 %%% For PolGam
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(17 hmtyinfer || hmtyast) export( quantifyPolGam)
+%%[(17 hmtyinfer) export( quantifyPolGam)
 quantifyPolGam :: PolGam -> PolGam
 quantifyPolGam gam
   = let fvs = varFree gam

@@ -545,7 +545,7 @@ pBody' opts addDecl
 %%% Foreign
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[8
         pDeclarationForeign :: HSParser Declaration
         pDeclarationForeign
           = pFOREIGN
@@ -1940,6 +1940,7 @@ varid
   =   varid_no_ty
 %%[[4
   <|> pFORALL
+  <|> pEXISTS
 %%]]
   <?> "varid"
 %%]

@@ -58,10 +58,14 @@ type ErrSq = Seq.FastSeq Err
 errIsFatal :: Err -> Bool
 %%[[8
 errIsFatal (Err_MissingDataFields   		_ _			) = False
+%%[[(8 codegen)
 errIsFatal (Err_TyCoreMatchClash    		_ _ _ _		) = False
+%%]]
 %%][99
 errIsFatal (Err_MissingDataFields   	_ 	_ _			) = False
+%%[[(99 codegen)
 errIsFatal (Err_TyCoreMatchClash   		_ 	_ _ _ _		) = False
+%%]]
 %%]]
 errIsFatal _                             				  = True
 %%]

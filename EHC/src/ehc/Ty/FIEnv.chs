@@ -30,7 +30,7 @@ If this is going to be avoided, the eagerness must be avoided, or use of subsump
 %%]
 %%[(8 hmtyinfer) import({%{EH}VarMp})
 %%]
-%%[(8 hmtyinfer) import({%{EH}AbstractCore})
+%%[(8 codegen) import({%{EH}AbstractCore})
 %%]
 %%[(8 hmtyinfer tycore) import(qualified {%{EH}TyCore.Full0} as C)
 %%]

@@ -102,7 +102,7 @@ SEM Declaration
     | KindSignature
         loc         .   pp          =   ppCommas' @names >#< "::" >#< @kind.pp
 %%]
-%%[(8 codegen)
+%%[8
     | ForeignImport
         loc         .   pp          =   "foreign import" >#< @callconvention >#< @safety >#< maybe empty (pp.show) @importname >#< @name >#< "::" >#< @type.pp
 %%]
@@ -143,7 +143,7 @@ SEM FunctionalDependency
         loc         .   pp          =   ppSpaces @fromtypevariables >#< "->" >#< @totypevariables
 %%]
 
-%%[(90 codegen)
+%%[90
 SEM Declaration
     | ForeignExport
         loc         .   pp          =   "foreign export" >#< @callconvention >#< @exportname >#< @name >#< "::" >#< @type.pp

@@ -2,17 +2,17 @@
 %%% Abstraction for looking up something for a variable
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(6 hmtyinfer || hmtyast) module {%{EH}VarLookup}
+%%[6 module {%{EH}VarLookup}
 %%]
 
-%%[(6 hmtyinfer || hmtyast) import(UHC.Util.VarLookup) export(module UHC.Util.VarLookup)
+%%[6 import(UHC.Util.VarLookup) export(module UHC.Util.VarLookup)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% VarLookup
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(6 hmtyinfer || hmtyast)
+%%[6
 -- moved to uhc-util package
 %%]
 

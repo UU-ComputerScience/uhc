@@ -7,16 +7,16 @@
 %%% Strictness Common for HS, EH, Ty, TyCore
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 module {%{EH}Base.Strictness}
+%%[(8 codegen || hmtyinfer || hmtyast) module {%{EH}Base.Strictness}
 %%]
 
-%%[(8 codegen) hs import({%{EH}Base.HsName})
+%%[(8 codegen || hmtyinfer || hmtyast) hs import({%{EH}Base.HsName})
 %%]
 
-%%[(50 codegen) hs import(Control.Monad, UHC.Util.Binary, UHC.Util.Serialize)
+%%[(50 codegen || hmtyinfer || hmtyast) hs import(Control.Monad, UHC.Util.Binary, UHC.Util.Serialize)
 %%]
 
-%%[(8 codegen) hs export(Strictness(..))
+%%[(8 codegen || hmtyinfer || hmtyast) hs export(Strictness(..))
 data Strictness
   = Strictness_Strict
   | Strictness_NonStrict
@@ -34,7 +34,7 @@ instance Show Strictness where
 %%% Instances: Typeable, Data
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(50 codegen)
+%%[(50 codegen || hmtyinfer || hmtyast)
 deriving instance Typeable Strictness
 deriving instance Data Strictness
 %%]
@@ -43,7 +43,7 @@ deriving instance Data Strictness
 %%% Instances: Binary, Serialize
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(50 codegen)
+%%[(50 codegen || hmtyinfer || hmtyast)
 instance Binary Strictness where
   put (Strictness_Strict           )   = putWord8 0
   put (Strictness_NonStrict        )   = putWord8 1

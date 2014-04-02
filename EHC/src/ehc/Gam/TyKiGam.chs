@@ -10,7 +10,9 @@
 
 %%[6 hs import ({%{EH}Base.Common},{%{EH}Base.TermLike},{%{EH}Base.Builtin})
 %%]
-%%[6 hs import ({%{EH}Ty},{%{EH}Ty.Pretty})
+%%[6 hs import ({%{EH}Ty})
+%%]
+%%[(6 hmtyast || hmtyinfer) hs import ({%{EH}Ty.Pretty})
 %%]
 %%[6 hs import ({%{EH}Gam})
 %%]
@@ -23,7 +25,7 @@
 %%[(6 hmtyinfer || hmtyast) import({%{EH}VarMp},{%{EH}Substitutable})
 %%]
 
-%%[(50 hmtyinfer) import(Control.Monad, UHC.Util.Binary, UHC.Util.Serialize)
+%%[(50 hmtyinfer || hmtyast) import(Control.Monad, UHC.Util.Binary, UHC.Util.Serialize)
 %%]
 
 %%[9999 import({%{EH}Base.ForceEval})
@@ -56,11 +58,11 @@ deriving instance Typeable TyKiGamInfo
 deriving instance Data TyKiGamInfo
 %%]
 
-%%[8 export(tkgiGetSet)
+%%[(8 hmtyinfer || hmtyast) export(tkgiGetSet)
 tkgiGetSet = (tkgiKi,(\x i -> i {tkgiKi = x}))
 %%]
 
-%%[6 export(tyKiGamLookupByTyVar)
+%%[(6 hmtyinfer || hmtyast)
 tyKiGamLookupByTyVar :: TyVarId -> TyKiGam -> Maybe TyKiGamInfo
 tyKiGamLookupByTyVar v g = gamLookup (TyKiKey_TyVar v) g
 %%]
@@ -155,7 +157,7 @@ tvarKi tyKiGam tvKiVarMp _ tv
 %%% Init of tyKiGam
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[6 export(initTyKiGam)
+%%[(6 hmtyinfer) export(initTyKiGam)
 initTyKiGam :: TyKiGam
 initTyKiGam
 %%[[(6 hmtyinfer || hmtyast)

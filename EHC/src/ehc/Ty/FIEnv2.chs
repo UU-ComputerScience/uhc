@@ -12,7 +12,7 @@ This must be done in a separate module because of the module cycles it solves to
 %%[(4 hmtyinfer) import({%{EH}Ty.AppSpineGam})
 %%]
 
-%%[(8 hmtyinfer) import({%{EH}AbstractCore})
+%%[(8 codegen) import({%{EH}AbstractCore})
 %%]
 %%[(8 hmtyinfer tycore) import(qualified {%{EH}TyCore.Full1} as C)
 %%]

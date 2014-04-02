@@ -199,7 +199,7 @@ cpGetDummyCheckEhMod modNm
 %%% Update module offset info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(50 codegen grin) export(cpUpdateModOffMp)
+%%[(50 codegen) export(cpUpdateModOffMp)
 cpUpdateModOffMp :: [HsName] -> EHCompilePhase ()
 cpUpdateModOffMp modNmL
   = do { cr <- get
@@ -221,7 +221,7 @@ cpUpdateModOffMp modNmL
 %%% Update new hidden exports
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[92 export(cpUpdHiddenExports)
+%%[(92 codegen) export(cpUpdHiddenExports)
 cpUpdHiddenExports :: HsName -> [(HsName,IdOccKind)] -> EHCompilePhase ()
 cpUpdHiddenExports modNm exps
   = when (not $ null exps)

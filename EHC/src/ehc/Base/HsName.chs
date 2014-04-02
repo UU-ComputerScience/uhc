@@ -88,7 +88,7 @@ data HsNameUniqifier
 %%[[(8 cmm)
   | HsNameUniqifier_CMMTmpVar      		-- tmp var at CMM level
 %%]]
-%%[[(90 codegen)
+%%[[90
   | HsNameUniqifier_FFE                 -- name of value to be ff exported
   | HsNameUniqifier_FFECoerced          -- name of possibly coerced value to be ff exported
 %%]]
@@ -128,7 +128,7 @@ instance Show HsNameUniqifier where
 %%[[(8 cmm)
   show HsNameUniqifier_CMMTmpVar       		= "CMM"
 %%]]
-%%[[(90 codegen)
+%%[[90
   show HsNameUniqifier_FFE                  = "FFE"
   show HsNameUniqifier_FFECoerced           = "FFC"
 %%]]

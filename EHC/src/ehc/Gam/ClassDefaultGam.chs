@@ -8,27 +8,27 @@ Each class can have multiple types as its default.
 Currently only the first one is used.
 %%]
 
-%%[(9 hmtyinfer || hmtyast) module {%{EH}Gam.ClassDefaultGam}
+%%[(9 hmtyinfer) module {%{EH}Gam.ClassDefaultGam}
 %%]
 
-%%[(9 hmtyinfer || hmtyast) hs import ({%{EH}Base.Common},{%{EH}Base.TermLike},{%{EH}Base.Builtin})
+%%[(9 hmtyinfer) hs import ({%{EH}Base.Common},{%{EH}Base.TermLike},{%{EH}Base.Builtin})
 %%]
-%%[(9 hmtyinfer || hmtyast) import({%{EH}Gam},{%{EH}Ty},{%{EH}VarMp})
+%%[(9 hmtyinfer) import({%{EH}Gam},{%{EH}Ty},{%{EH}VarMp})
 %%]
-%%[(9 hmtyinfer || hmtyast) import({%{EH}Ty.FitsInCommon2},{%{EH}Ty.FitsIn})
-%%]
-
-%%[(9 hmtyinfer || hmtyast) import(Data.Maybe)
+%%[(9 hmtyinfer) import({%{EH}Ty.FitsInCommon2},{%{EH}Ty.FitsIn})
 %%]
 
-%%[(50 hmtyinfer || hmtyast) import(Control.Monad, UHC.Util.Binary, UHC.Util.Serialize)
+%%[(9 hmtyinfer) import(Data.Maybe)
+%%]
+
+%%[(50 hmtyinfer) import(Control.Monad, UHC.Util.Binary, UHC.Util.Serialize)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Class default gam
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(9 hmtyinfer || hmtyast).AppSpineGam export(ClassDefaultGamInfo(..))
+%%[(9 hmtyinfer).AppSpineGam export(ClassDefaultGamInfo(..))
 data ClassDefaultGamInfo
   = ClassDefaultGamInfo
       { cldiDefaultTypes	:: [Ty]
@@ -38,7 +38,7 @@ data ClassDefaultGamInfo
 %%]]
 %%]
 
-%%[(9 hmtyinfer || hmtyast).AppSpineGam export(ClassDefaultGam)
+%%[(9 hmtyinfer).AppSpineGam export(ClassDefaultGam)
 type ClassDefaultGam = Gam HsName ClassDefaultGamInfo
 %%]
 
@@ -46,7 +46,7 @@ type ClassDefaultGam = Gam HsName ClassDefaultGamInfo
 %%% Find a defaulting
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(9 hmtyinfer || hmtyast) export(clDfGamLookupDefault)
+%%[(9 hmtyinfer) export(clDfGamLookupDefault)
 -- | Lookup a matching default for a predicate
 clDfGamLookupDefault
   :: ( VarLookup gm TyVarId VarMpInfo
@@ -69,7 +69,7 @@ clDfGamLookupDefault fi pr clDfGam
 %%% Instances
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(50 hmtyinfer || hmtyast)
+%%[(50 hmtyinfer)
 instance Serialize ClassDefaultGamInfo where
   sput (ClassDefaultGamInfo a) = sput a
   sget = liftM ClassDefaultGamInfo sget

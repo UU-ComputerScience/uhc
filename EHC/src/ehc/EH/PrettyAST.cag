@@ -574,8 +574,7 @@ SEM RecExpr
   | Empty       loc     .  ppAST    =   ppNestInfo @lhs.opts ["RecExpr","Empty"] [] [] @info_7
                         .  info_7   =   []
   | Ext         loc     .  ppAST    =   ppNestInfo @lhs.opts ["RecExpr","Ext"] [ppNm @nm] [@recExpr.ppAST,@expr.ppAST] (@info_7 ++ @info_10 ++ @info_11)
-                        .  info_7   =   [ mkInfo1 "knTy" (ppTyS @lhs.tyVarMp @lhs.knTy)
-                                        ]
+                        .  info_7   =   []
                         .  info_10  =   []
                         .  info_11  =   []
   | Upd         loc     .  ppAST    =   ppNestInfo @lhs.opts ["RecExpr","Upd"] [ppNm @nm] [@recExpr.ppAST,@expr.ppAST] @info_7
@@ -613,6 +612,12 @@ SEM DataFieldPatExpr
                         .  info_7   =   []
   | Ext         loc     .  ppAST    =   ppNestInfo @lhs.opts ["DataFieldPatExpr","Ext"] [ppNm @nm] [@dataFieldPatExpr.ppAST,@patExpr.ppAST] @info_7
                         .  info_7   =   []
+%%]
+
+%%[(7 hmtyinfer)
+SEM RecExpr
+  | Ext         loc     .  info_7   :=  [ mkInfo1 "knTy" (ppTyS @lhs.tyVarMp @lhs.knTy)
+                                        ]
 %%]
 
 %%[(7 hmtyinfer)
@@ -1054,7 +1059,9 @@ SEM FuncDeps
 SEM MbTyExpr
   | Just        loc     .  ppAST    =   ppNest ["MbTyExpr","Just"] [] [@just.ppAST]
   | Nothing     loc     .  ppAST    =   ppNest ["MbTyExpr","Nothing"] [] []
+%%]
 
+%%[(31 hmtyinfer)
 SEM DataConstr
   | Constr      loc     .  info_31  :=  [ mkInfo1 "gadtTyVarMp" (pp (@gadtTyVarMp))
                                         ]
@@ -1122,7 +1129,8 @@ SEM Decl
                         .  info_94  =   []
 %%]
 
-%%[92
+%%[(92 hmtyinfer)
+SEM Decl
   | Instance    loc     .  info_92  :=  [ mkInfo1 "clgiGenerDerivableL @clgi" (vlist $ map (\(f,d) -> ppParensCommas [pp f, pp d]) (clgiGenerDerivableL @clgi))
                                         , mkInfo1 "generForFitsInL" (vlist $ map (\(f,d,ft,dt) -> ppParensCommas [pp f, pp d, pp ft, pp dt]) @generForFitsInL)
                                         ]

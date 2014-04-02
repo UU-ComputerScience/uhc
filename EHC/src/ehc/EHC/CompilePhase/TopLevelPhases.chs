@@ -52,7 +52,7 @@ level 2..6 : with prefix 'cpEhc'
 %%]
 %%[8 import({%{EH}EHC.CompilePhase.Output})
 %%]
-%%[8 import({%{EH}EHC.CompilePhase.Transformations},{%{EH}EHC.CompilePhase.TransformGrin})
+%%[(8 codegen grin) import({%{EH}EHC.CompilePhase.Transformations},{%{EH}EHC.CompilePhase.TransformGrin})
 %%]
 %%[8 import({%{EH}EHC.CompilePhase.Semantics})
 %%]
@@ -97,7 +97,7 @@ level 2..6 : with prefix 'cpEhc'
 Top level entry point into compilation by the compiler driver, apart from import analysis, wich is assumed to be done.
 %%]
 
-%%[50
+%%[(50 codegen)
 -- | top lever driver for after all per-module work has been done, and whole program stuff like combining/linking can start
 cpEhcFullProgLinkAllModules :: [HsName] -> EHCompilePhase ()
 cpEhcFullProgLinkAllModules modNmL
@@ -472,8 +472,10 @@ cpEhcModuleCompile1 targHSState modNm
 %%]]
                                        modNm
                    ; cpEhcHaskellModuleCommonPhases True True opts modNm
+%%[[(8 codegen)
                    ; when (ehcOptWholeProgHPTAnalysis opts)
                           (cpEhcCoreGrinPerModuleDoneFullProgAnalysis modNm)
+%%]]
                    ; cpUpdCU modNm (ecuStoreState (ECUSHaskell HSAllSem))
                    ; return defaultResult
                    }
@@ -501,12 +503,14 @@ cpEhcModuleCompile1 targHSState modNm
 %%]]   
                    ; cpEhcEhModuleCommonPhases True True True opts modNm
                    
+%%[[(8 codegen)
                    ; when (ehcOptWholeProgHPTAnalysis opts)
                           (cpEhcCoreGrinPerModuleDoneFullProgAnalysis modNm)
+%%]]   
                    ; cpUpdCU modNm (ecuStoreState (ECUSEh EHAllSem))
                    ; return defaultResult
                    }
-%%[[90
+%%[[(90 codegen)
            (ECUSC CStart,_)
              | targetIsOnUnixAndOrC (ehcOptTarget opts)
              -> do { cpSeq [ cpMsg modNm VerboseMinimal "Compiling C"
@@ -902,7 +906,7 @@ cpEhcCoreGrinPerModuleDoneNoFullProgAnalysis opts isMainMod isTopMod doMkExec mo
 Core+grin processing, on a per module basis, may only be done when full program analysis is done
 %%]
 
-%%[(8 codegen grin)
+%%[(8 codegen)
 cpEhcCoreGrinPerModuleDoneFullProgAnalysis :: HsName -> EHCompilePhase ()
 cpEhcCoreGrinPerModuleDoneFullProgAnalysis modNm
   = cpSeq (  [ cpEhcCorePerModulePart2 modNm

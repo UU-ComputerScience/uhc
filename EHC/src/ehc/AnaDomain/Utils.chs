@@ -13,7 +13,7 @@
 %%[(8 codegen) hs import({%{EH}AnaDomain},{%{EH}AnaDomain.Trf.Subst},{%{EH}AnaDomain.Ftv})
 %%]
 
-%%[(8 codegen) hs import({%{EH}Gam.DataGam})
+%%[(8 codegen hmtyinfer) hs import({%{EH}Gam.DataGam})
 %%]
 
 %%[(8 codegen) hs import(qualified Data.Map as Map,qualified Data.Set as Set, Data.Array, Data.Maybe, Data.List)

@@ -43,7 +43,7 @@
 %%[1.Token hs import(UU.Scanner.Token)
 %%]
 
-%%[2 import(qualified Data.Set as Set)
+%%[1 import(qualified Data.Set as Set)
 %%]
 
 %%[5 -1.Token hs import({%{EH}Scanner.Token})
@@ -82,7 +82,7 @@
 %%[9 export(snd3,thd)
 %%]
 
-%%[(8 codegen) import({%{EH}Base.Strictness}) export(module {%{EH}Base.Strictness})
+%%[(8 codegen || hmtyinfer || hmtyast) import({%{EH}Base.Strictness}) export(module {%{EH}Base.Strictness})
 %%]
 
 %%[50 import(Control.Monad, UHC.Util.Binary, UHC.Util.Serialize)
@@ -1217,6 +1217,16 @@ deriving instance Data Pos
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% UID derivatives
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 export(VarId, VarIdS)
+-- | Use as variable id
+type VarId    = UID
+type VarIdS   = Set.Set UID
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% HsName functionality for UID
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -1232,6 +1242,106 @@ uidQualHNm modnm uid =
                         hsnPrefixQual modnm $
 %%]]
                         uidHNm uid
+%%]
+
+%%[1
+instance HSNM UID where
+  mkHNm x = hsnFromString ('_' : show x)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Instances: Binary, Serialize
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[50
+instance Binary KnownPrim where
+  put = putEnum8
+  get = getEnum8
+
+instance Serialize KnownPrim where
+  sput = sputPlain
+  sget = sgetPlain
+%%]
+
+%%[50
+instance Serialize VarUIDHsName where
+  sput (VarUIDHs_Name a b) = sputWord8 0 >> sput a >> sput b
+  sput (VarUIDHs_UID  a  ) = sputWord8 1 >> sput a
+  sput (VarUIDHs_Var  a  ) = sputWord8 2 >> sput a
+  sget = do t <- sgetWord8
+            case t of
+              0 -> liftM2 VarUIDHs_Name sget sget
+              1 -> liftM  VarUIDHs_UID  sget
+              2 -> liftM  VarUIDHs_Var  sget
+
+instance Serialize CLbl where
+  sput (CLbl_Nm   a  ) = sputWord8 0 >> sput a
+  sput (CLbl_Tag  a  ) = sputWord8 1 >> sput a
+  sput (CLbl_None    ) = sputWord8 2
+  sget = do t <- sgetWord8
+            case t of
+              0 -> liftM  CLbl_Nm 	sget
+              1 -> liftM  CLbl_Tag  sget
+              2 -> return CLbl_None
+
+instance Binary Fixity where
+  put = putEnum8
+  get = getEnum8
+
+instance Serialize Fixity where
+  sput = sputPlain
+  sget = sgetPlain
+
+instance Binary x => Binary (AlwaysEq x) where
+  put (AlwaysEq x) = put x
+  get = liftM AlwaysEq get
+
+instance Serialize x => Serialize (AlwaysEq x) where
+  sput (AlwaysEq x) = sput x
+  sget = liftM AlwaysEq sget
+
+instance Binary PredOccId where
+  put (PredOccId a) = put a
+  get = liftM PredOccId get
+
+instance Serialize PredOccId where
+  sput = sputPlain
+  sget = sgetPlain
+
+instance Binary a => Binary (RLList a) where
+  put (RLList a) = put a
+  get = liftM RLList get
+
+instance Serialize CTag where
+  sput = sputShared
+  sget = sgetShared
+  sputNested (CTagRec          ) = sputWord8 0
+  sputNested (CTag    a b c d e) = sputWord8 1 >> sput a >> sput b >> sput c >> sput d >> sput e
+  sgetNested
+    = do t <- sgetWord8
+         case t of
+           0 -> return CTagRec
+           1 -> liftM5 CTag    sget sget sget sget sget
+
+instance Binary Range where
+  put (Range_Unknown    ) = putWord8 0
+  put (Range_Builtin    ) = putWord8 1
+  put (Range_Range   a b) = putWord8 2 >> put a >> put b
+  get = do t <- getWord8
+           case t of
+             0 -> return Range_Unknown
+             1 -> return Range_Builtin
+             2 -> liftM2 Range_Range get get
+
+instance Serialize Range where
+  sput = sputShared
+  sget = sgetShared
+  sputNested = sputPlain
+  sgetNested = sgetPlain
+
+instance Binary Pos where
+  put (Pos a b c) = put a >> put b >> put c
+  get = liftM3 Pos get get get
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1279,7 +1389,7 @@ genNmMap mk xs m
 %%% Variation of Maybe
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) export(MaybeOk(..),isJustOk,isNotOk,maybeOk,fromJustOk,fromNotOk)
+%%[8 export(MaybeOk(..),isJustOk,isNotOk,maybeOk,fromJustOk,fromNotOk)
 data MaybeOk a
   = JustOk  a
   | NotOk   String
@@ -1331,8 +1441,9 @@ graphVisit visit unionUnvisited thr start graph
 %%% Known primitives, encoding semantics of particular primitives in a FFI decl, propagated to backend
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) export(KnownPrim(..))
+%%[8 export(KnownPrim(..))
 data KnownPrim
+%%[[(8 codegen)
   =
     -- platform Int
     KnownPrim_AddI
@@ -1370,24 +1481,31 @@ data KnownPrim
   | KnownPrim_Sub64
   | KnownPrim_Mul64
 %%]]
+%%][8
+  = KnownPrim_NONE			-- nada
+%%]]
   deriving (Show,Eq,Enum,Bounded)
 %%]
 
-%%[(50 codegen)
+%%[50
 deriving instance Data KnownPrim
 deriving instance Typeable KnownPrim
 %%]
 
-%%[(8 codegen)
+%%[8
 instance PP KnownPrim where
   pp = pp . show
 %%]
 
-%%[(8 codegen) export(allKnownPrimMp)
+%%[8 export(allKnownPrimMp)
 allKnownPrimMp :: Map.Map String KnownPrim
 allKnownPrimMp
+%%[[(8 codegen)
   = Map.fromList [ (drop prefixLen $ show t, t) | t <- [ minBound .. maxBound ] ]
   where prefixLen = length "KnownPrim_"
+%%][8
+  = Map.empty 		-- nada
+%%]]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

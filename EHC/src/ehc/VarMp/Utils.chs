@@ -7,7 +7,9 @@
 
 %%[99 import({%{EH}Base.Common})
 %%]
-%%[99 import({%{EH}VarMp},{%{EH}Substitutable},{%{EH}Ty})
+%%[99 import({%{EH}VarMp},{%{EH}Substitutable})
+%%]
+%%[(99 hmtyast) import({%{EH}Ty})
 %%]
 
 %%[99 import(qualified Data.Set as Set, qualified Data.Map as Map)
@@ -31,7 +33,7 @@ Various VarMp utilities:
 %%[99 export(varmpGraphVisit)
 -- | Filter the base level by traversing as a graph
 varmpGraphVisit
-  :: TyVarIdS
+  :: VarIdS
      -> VarMp
      -> VarMp
 varmpGraphVisit start (VarMp l (m:ms))

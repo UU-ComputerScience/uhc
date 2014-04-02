@@ -24,6 +24,12 @@ EH_VERSION_FULL			:= @EH_VERSION_FULL@
 EH_VERSION_ASNUMBER		:= @EH_VERSION_ASNUMBER@
 
 ###########################################################################################
+# Choice of aspects (by default empty, used of defined (if not here) in src/ehc/variant.mk)
+###########################################################################################
+
+ASPECTS					:= @ASPECTS@
+
+###########################################################################################
 # platform config, currently changed to config by autoconf
 ###########################################################################################
 

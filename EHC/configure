@@ -677,7 +677,6 @@ llvmOpt
 LLVM_AS_CMD
 llvmAs
 CPP_CMD
-cppCmd
 CC_STD_FLAG
 OBJEXT
 EXEEXT
@@ -718,6 +717,7 @@ SHUFFLE_EHC_OPTIONS
 CPP_EHC_OPTIONS
 GCC_EHC_OPTIONS
 EHC_BUILD_SUFFIX
+ASPECTS
 libtoolStaticCmd
 CAT_CMD
 catCmd
@@ -725,6 +725,7 @@ AR_CMD
 arCmd
 RANLIB_CMD
 ranlibCmd
+cppCmd
 ENABLE_TAUPHI
 ENABLE_CORESYSF
 ENABLE_TYCORE
@@ -812,6 +813,8 @@ enable_clr
 enable_tycore
 enable_coresysf
 enable_tauphi
+with_cpp
+with_aspects
 with_build_suffix
 with_gcc_ehc_options
 with_cpp_ehc_options
@@ -828,7 +831,6 @@ with_haddock
 with_uuagc
 with_shuffle
 with_gcc
-with_cpp
 with_llvm_as
 with_opt
 with_llc
@@ -1470,6 +1472,11 @@ Optional Features:
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
+  --with-cpp=<cpp preprocessor>
+                          Use a command different from 'cpp' to compile with
+                          CPP.
+  --with-aspects=<choice of aspects>
+                          Choice of aspects, can be overridden when 'make'ing.
   --with-build-suffix=<suffix for build locations>
                           Suffix for build locations and library names of
                           globally visible cabal managed libraries.
@@ -1477,7 +1484,7 @@ Optional Packages:
                           Additional options to pass to GCC when compiling
                           with EHC.
   --with-cpp-ehc-options=<cpp preprocessor options for ehc's cpp invocation>
-                          Additional options to pass to GCC when compiling
+                          Additional options to pass to CPP when compiling
                           with EHC.
   --with-shuffle-ehc-options=<shuffle options for compiling ehc>
                           Additional options to pass to SHUFFLE when compiling
@@ -1517,9 +1524,6 @@ Optional Packages:
   --with-gcc=<gcc compiler>
                           Use a command different from 'gcc' to compile with
                           GCC.
-  --with-cpp=<cpp preprocessor>
-                          Use a command different from 'cpp' to compile with
-                          CPP.
   --with-llvm-as=<LLVM Assembler>
                           Path to the LLVM Assembler
   --with-llvm-opt=<LLVM bitcode optimizer>
@@ -2752,6 +2756,20 @@ case $host_os in *\ *) host_os=`echo "$host_os" | sed 's/ /-/g'`;; esac
 
 
 HostPlatform=`/bin/sh $srcdir/config.sub $host` || exit 1
+
+### check whether we are indeed in the toplevel dir, otherwise copy required stuff to the current dir first
+if test "${srcdir}" != "." -a "${srcdir}" != ""
+then
+  # copy all the relevant stuff
+  echo "copying from: ${srcdir}"
+  for stuff in Makefile LICENSE VERSION mk test bin ehclib extlibs src
+  do
+    echo "copying into builddir: ${stuff}"
+    d=`dirname ${stuff}`
+    rsync --archive --update --exclude='.*' ${srcdir}/${stuff} ${d}
+  done
+fi
+
 ### Version info, extract from file VERSION
 # big change
 EH_VERSION_MAJOR=`awk -F . '{print $1}' VERSION`
@@ -3132,6 +3150,79 @@ fi
 ENABLE_TAUPHI=$enableTauPhi
 
 
+### cpp
+
+# Check whether --with-cpp was given.
+if test "${with_cpp+set}" = set; then :
+  withval=$with_cpp;  cppCmd="$withval"
+else
+
+  if test "$CPP" = ""; then
+    # Extract the first word of "cpp", so it can be a program name with args.
+set dummy cpp; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_cppCmd+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $cppCmd in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_cppCmd="$cppCmd" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_path_cppCmd="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+cppCmd=$ac_cv_path_cppCmd
+if test -n "$cppCmd"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $cppCmd" >&5
+$as_echo "$cppCmd" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+  else
+    cppCmd=$CPP
+  fi
+
+
+fi
+
+if test "$cppCmd" != "no" -a -x "$cppCmd"; then
+  cppExists="yes"
+  cppVersion=`$cppCmd --version`
+else
+  cppCmd=""
+  cppExists="no"
+fi
+
+### cpp clang specific check, turning of some options
+cppVersionHasClang=`echo ${cppVersion} | grep clang`
+if test "${cppVersionHasClang}" = ""; then
+  cppClangEhcOptions=""
+  gccClangEhcOptions=""
+else
+  cppClangEhcOptions="-Wno-invalid-pp-token"
+  gccClangEhcOptions="-Wno-array-bounds"
+fi
+
 ### ranlib
 
   # Extract the first word of "ranlib", so it can be a program name with args.
@@ -3380,17 +3471,27 @@ $as_echo "$as_me: WARNING:
   fi
 
 
-### 'with' option for build suffix
+### 'with' option hardbaked choice of aspects
+
+# Check whether --with-aspects was given.
+if test "${with_aspects+set}" = set; then :
+  withval=$with_aspects;  aspects="$withval"
+fi
+
+ASPECTS="$aspects"
+
+
+### 'with' option for build suffix, which by default is derived from hardbaked aspects
 
 # Check whether --with-build-suffix was given.
 if test "${with_build_suffix+set}" = set; then :
   withval=$with_build_suffix;  ehcBuildSuffix="$withval"
 fi
 
-#if test "x$ehcBuildSuffix" != "x"
-#then
-#  ehcBuildSuffix="-$ehcBuildSuffix"
-#fi
+if test "x$ehcBuildSuffix" = "x"
+then
+  ehcBuildSuffix="`echo ${ASPECTS} | sed -e 's/ /-/g'`"
+fi
 EHC_BUILD_SUFFIX="$ehcBuildSuffix"
 
 
@@ -3405,9 +3506,11 @@ fi
 # additional platform dependend options for gcc when compiling C from within ehc
 case $HostPlatform in
   i*86-pc-linux-gnu )
-        #gccEhcOptions="$gccEhcOptions -D__USE_BSD -D__USE_POSIX"
+        #gccEhcOptions="${gccClangEhcOptions} $gccEhcOptions -D__USE_BSD -D__USE_POSIX"
+        gccEhcOptions="${gccClangEhcOptions} $gccEhcOptions"
         ;;
   *)
+        gccEhcOptions="${gccClangEhcOptions} $gccEhcOptions"
         ;;
 esac
 
@@ -3425,14 +3528,15 @@ fi
 # additional platform dependend options for cpp when compiling C from within ehc
 case $HostPlatform in
   i*86-pc-linux-gnu )
-        cppEhcOptions="$cppEhcOptions -D__STDC__"
+        cppEhcOptions="${cppClangEhcOptions} $cppEhcOptions -D__STDC__"
         #cppEhcOptions="$cppEhcOptions -D__USE_BSD -D__USE_POSIX -D__STDC__"
         ;;
   x86_64-*-linux-gnu )
-        cppEhcOptions="$cppEhcOptions -D__STDC__"
+        cppEhcOptions="${cppClangEhcOptions} $cppEhcOptions -D__STDC__"
         #cppEhcOptions="$cppEhcOptions -D__USE_BSD -D__USE_POSIX -D__STDC__"
         ;;
   *)
+        cppEhcOptions="${cppClangEhcOptions}"
         ;;
 esac
 
@@ -3894,6 +3998,7 @@ fi
 if test "$uuagcCmd" != "no" -a -x "$uuagcCmd" ; then
   uuagcExists="yes"
   uuagcVersion=`$uuagcCmd --version`
+  buildToolDependenciesUnchecked="uuagc>=0.9.50.2 ${buildToolDependenciesUnchecked}"
 else
   uuagcCmd=""
   uuagcExists="no"
@@ -3958,6 +4063,8 @@ fi
 
 if test "$shuffleCmd" != "no" -a -x "$shuffleCmd" ; then
   shuffleExists="yes"
+  shuffleVersion=`$shuffleCmd --version`
+  buildToolDependenciesUnchecked="shuffle>=0.1.1.0 ${buildToolDependenciesUnchecked}"
 else
   shuffleCmd=""
   shuffleExists="no"
@@ -4896,69 +5003,6 @@ case $cc_version in
 esac
 CC_STD_FLAG=$cc_std_flag
 
-
-# cpp
-
-# Check whether --with-cpp was given.
-if test "${with_cpp+set}" = set; then :
-  withval=$with_cpp;  cppCmd="$withval"
-else
-
-  if test "$CPP" = ""; then
-    # Extract the first word of "cpp", so it can be a program name with args.
-set dummy cpp; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_path_cppCmd+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  case $cppCmd in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_cppCmd="$cppCmd" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
-    ac_cv_path_cppCmd="$as_dir/$ac_word$ac_exec_ext"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-cppCmd=$ac_cv_path_cppCmd
-if test -n "$cppCmd"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $cppCmd" >&5
-$as_echo "$cppCmd" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-
-  else
-    cppCmd=$CPP
-  fi
-
-
-fi
-
-if test "$cppCmd" != "no" -a -x "$cppCmd"; then
-  cppExists="yes"
-  cppVersion=`$cppCmd --version`
-else
-  cppCmd=""
-  cppExists="no"
-fi
 
 # Now we have to deal with weird cygwin behaviour which allows /usr/bin to be used
 # whereas in reality it is mapped onto /bin. Direct acccess to /usr/bin with a c:/cygwin prefix therefore does not work
@@ -10214,6 +10258,7 @@ echo "Installation/build summary."
 echo "  host                          : $host"
 echo "  prefix                        : $prefix"
 echo "  build suffix                  : $ehcBuildSuffix"
+echo "  hardbaked aspects             : ${ASPECTS}"
 
 echo "Required:"
 echo "  uuagc is available?           : $uuagcExists"
@@ -10226,6 +10271,7 @@ fi
 
 echo "  shuffle is available?         : $shuffleExists"
 if test "x$shuffleExists" = "xyes" ;then
+echo "    version                     : $shuffleVersion"
 echo "    command for shuffle         : $shuffleCmd"
 else
 echo "    **** ERROR **** : shuffle must be installed, use (1) cabal+hackage, or (2) http://www.cs.uu.nl/wiki/HUT"
@@ -10251,9 +10297,18 @@ echo "  gcc is available?             : $gccExists"
 if test "x$gccExists" = "xyes" ;then
 echo "    version                     : $gccVersion"
 echo "    command for gcc             : $gccCmd"
-echo "    command for cpp             : $cppCmd"
+echo "    uhc options to gcc          : $gccEhcOptions"
 else
 echo "    **** ERROR **** : gcc must be installed, ask your OS guru"
+fi
+
+echo "  cpp is available?             : $cppExists"
+if test "x$cppExists" = "xyes" ;then
+echo "    version                     : `echo $cppVersion`"
+echo "    command for cpp             : $cppCmd"
+echo "    uhc options to cpp          : $cppEhcOptions"
+else
+echo "    **** ERROR **** : cpp must be installed, ask your OS guru"
 fi
 
 if test x$enableJava = xyes
@@ -10294,6 +10349,11 @@ if test "$mplib" = "gmp" ; then
     echo "    **** ERROR **** : GMP lib archive not readable: $gmpLibArchive"
   fi
 fi
+
+echo "Required but not (yet) or during build enforced:"
+echo "  cabal base dependencies       : $cabal_base_lib_depends"
+echo "  cabal extra dependencies      : $cabal_extra_lib_depends"
+echo "  build tool dependencies       : $buildToolDependenciesUnchecked"
 
 echo "Optional:"
 echo "  haddock is available?         : $haddockExists"

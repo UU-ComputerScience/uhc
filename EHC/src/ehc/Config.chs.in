@@ -82,7 +82,7 @@ verInfo v =
 %%% Install locations
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) export(installRoot)
+%%[8 export(installRoot)
 installRoot :: EHCOpts -> String
 installRoot opts
 %%[[8
@@ -93,7 +93,7 @@ installRoot opts
   where envroot = ehcenvInstallRoot $ ehcOptEnvironment opts
 %%]
 
-%%[(8 codegen) export(installVariant)
+%%[8 export(installVariant)
 installVariant :: EHCOpts -> String
 installVariant opts
 %%[[8
@@ -108,7 +108,7 @@ installVariant opts
 %%% File locations
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) export(mkInstallFilePrefix)
+%%[8 export(mkInstallFilePrefix)
 mkInstallFilePrefix :: EHCOpts -> WhatInstallFile -> String -> String -> String
 mkInstallFilePrefix opts whatfile variant pkg
   = mkDirbasedInstallPrefix (installRoot opts) whatfile variant (show $ ehcOptTarget opts) pkg
@@ -120,13 +120,13 @@ mkInstallBindirPrefix opts variant
   = mkDirbasedInstallPrefix (installRoot opts) INST_BIN variant "" ""
 %%]
 
-%%[(99 codegen) export(mkInstallPkgdirSystem)
+%%[99 export(mkInstallPkgdirSystem)
 mkInstallPkgdirSystem :: EHCOpts -> String
 mkInstallPkgdirSystem opts
   = filePathUnPrefix $ mkInstallFilePrefix opts INST_LIB_PKG2 (installVariant opts) ""
 %%]
 
-%%[(99 codegen) export(mkInstallPkgdirUser)
+%%[99 export(mkInstallPkgdirUser)
 mkInstallPkgdirUser :: EHCOpts -> String
 mkInstallPkgdirUser opts
   = filePathCoalesceSeparator $ filePathUnPrefix $ mkDirbasedInstallPrefix (ehcOptUserDir opts) INST_LIB_PKG2 "" (show $ ehcOptTarget opts) ""
@@ -222,10 +222,12 @@ mkShellCmdLibtool archive files
 libnamesGcc :: EHCOpts -> [String]
 libnamesGcc opts
   = [ ]
+%%[[(8 codegen)
     ++ (if useBoehmGC opts
-        then [ "@EXTLIBS_BGC_PKG_NAME@" ]
+        then [ "gc" ]
         else []
        )
+%%]]
 %%[[97
     ++ (if mpLib == MPLib_GMP
         then [ "@EXTLIBS_GMP_PKG_NAME@" ]

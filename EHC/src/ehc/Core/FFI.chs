@@ -12,11 +12,13 @@
 
 %%[(8 codegen) hs import(qualified Data.Map as Map,Data.List,Data.Maybe)
 %%]
-%%[(8 codegen) hs import({%{EH}Base.BasicAnnot},{%{EH}Ty},{%{EH}Gam.DataGam})
+%%[(8 codegen hmtyinfer) hs import({%{EH}Base.BasicAnnot},{%{EH}Ty},{%{EH}Gam.DataGam})
 %%]
 %%[(8 codegen) hs import({%{EH}AbstractCore})
 %%]
-%%[(8 codegen) hs import({%{EH}Core},{%{EH}Core.Utils},qualified {%{EH}Core.SysF.AsTy} as SysF)
+%%[(8 codegen) hs import({%{EH}Core},{%{EH}Core.Utils})
+%%]
+%%[(8 codegen) hs import(qualified {%{EH}Core.SysF.AsTy} as SysF)
 %%]
 %%[(8 codegen) hs import({%{EH}GrinCode})
 %%]

@@ -145,7 +145,7 @@ ecuStateToKind :: EHCompileUnitState -> EHCompileUnitKind
 ecuStateToKind s
   = case s of
       ECUSHaskell _ -> EHCUKind_HS
-%%[[90
+%%[[(90 codegen)
       ECUSC       _ -> EHCUKind_C
 %%]]
       _             -> EHCUKind_None

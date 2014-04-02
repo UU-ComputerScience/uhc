@@ -162,6 +162,10 @@ SEM Err
 %%[[99
                                                         @range
 %%]]
+%%]
+
+%%[1
+SEM Err
   | PatArity2           lhs     .  pp   =   ppMsgErr    (strCapHeading @kind "has wrong arity for pattern")
                                                         (@kind >#< ":" >#< @what >-< "arity:" >#< @arity)
 %%[[99
@@ -338,6 +342,7 @@ SEM Err
   | IllegalFFIWay       lhs     .  pp   =   ppMsgErr    "Illegal foreign interface"
                                                         (    "to:" >#< @ffiWay
                                                         )
+%%[[(8 codegen)
 %%[[99
                                                         @range
 %%]]
@@ -347,6 +352,7 @@ SEM Err
                                                          >-< maybe empty (\d -> "in detail between:" >#< d) @ty1detail
                                                          >-< maybe empty (\d -> "and              :" >#< d) @ty2detail
                                                         )
+%%]]
 %%[[99
                                                         @range
 %%]]

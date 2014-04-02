@@ -170,7 +170,7 @@ Bool mm_deque_IteratorStep( MM_Iterator* i ) {
 }
 
 void mm_deque_Iterator( MM_DEQue* deque, MM_Iterator* i ) {
-	if ( i->hasData = (mm_deque_HeadAvailRead(deque) > 0) ) {
+	if ( ( i->hasData = (mm_deque_HeadAvailRead(deque) > 0) ) ) {
 		Word atOff = deque->headOff ;
 		i->state  = atOff ;
 		i->state2 = (Word)deque->dll.next ;

@@ -131,7 +131,7 @@ pDecl           =    mkEH Decl_Val        <$>  pPatExprBase  <*   pEQUAL   <*> p
 %%[6.pDecl
                 <|>  mkEH Decl_KiSig      <$>  pCon          <*   pDCOLON    <*> pKiExpr
 %%]
-%%[8.pDecl
+%%[(8 codegen).pDecl
                 <|>  (\(conv,_) saf imp nm sig
                         -> mkEH Decl_FFI conv saf
                              (

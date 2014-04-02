@@ -2,14 +2,14 @@
 %%% Code generation target
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) module {%{EH}Base.Target}
+%%[8 module {%{EH}Base.Target}
 %%]
 
-%%[(8 codegen) import(qualified Data.Map as Map,Data.List)
+%%[8 import(qualified Data.Map as Map,Data.List)
 %%]
-%%[(8 codegen) import(UHC.Util.Pretty,UHC.Util.Utils)
+%%[8 import(UHC.Util.Pretty,UHC.Util.Utils)
 %%]
-%%[(50 codegen) import(UHC.Util.Binary, UHC.Util.Serialize)
+%%[50 import(UHC.Util.Binary, UHC.Util.Serialize)
 %%]
 
 %%[doesWhat doclatex
@@ -74,10 +74,11 @@ Currently there are target flavors for:
 %%% Targets for code generation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) export(Target(..))
+%%[8 export(Target(..))
 -- | All possible targets, even though they may not be configured (done in supportedTargetMp)
 data Target
   = Target_None								-- no codegen
+%%[[(8 codegen)
   | Target_None_Core_None					-- only Core
   | Target_None_TyCore_None					-- only TyCore
 
@@ -106,15 +107,17 @@ data Target
 
   -- grin, clr, wholeprogC
   | Target_FullProgAnal_Grin_CLR			-- full program analysis on grin, generating for Common Language Runtime (.NET / Mono)
+%%]]
   deriving ( Eq, Ord, Enum )
 %%]
 
 Concrete naming convention.
 Is derived from the abstract, attempting to keep each part of similar size (mostly 4 letters).
 
-%%[(8 codegen)
+%%[8
 instance Show Target where
   show Target_None							= "NONE"
+%%[[(8 codegen)
   show Target_None_Core_None				= "core"
   show Target_None_TyCore_None				= "tycore"
   show Target_Interpreter_Core_Jazy			= "jazy"
@@ -128,11 +131,12 @@ instance Show Target where
   show Target_FullProgAnal_Grin_JVM			= "jvm"
   show Target_Interpreter_Grin_C			= "bc"
   show Target_FullProgAnal_Grin_CLR			= "clr"
+%%]]
 %%]
 
 Default target
 
-%%[(8 codegen) export(defaultTarget)
+%%[8 export(defaultTarget)
 defaultTarget :: Target
 %%[[(8 codegen grin)
 defaultTarget = Target_Interpreter_Grin_C
@@ -143,7 +147,7 @@ defaultTarget = Target_None
 
 Supported targets.
 
-%%[(8 codegen) export(supportedTargetMp, showSupportedTargets', showSupportedTargets)
+%%[8 export(supportedTargetMp, showSupportedTargets', showSupportedTargets)
 supportedTargetMp :: Map.Map String Target
 (supportedTargetMp,allTargetInfoMp)
   = (Map.fromList ts, Map.fromList is)
@@ -194,7 +198,7 @@ showSupportedTargets
 %%% Target flavors
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) export(TargetFlavor(..))
+%%[8 export(TargetFlavor(..))
 data TargetFlavor
   = TargetFlavor_Plain						-- no special stuff
   | TargetFlavor_Debug						-- debugging variant
@@ -202,12 +206,12 @@ data TargetFlavor
   deriving (Eq,Ord,Enum)
 %%]
 
-%%[(8 codegen) export(defaultTargetFlavor)
+%%[8 export(defaultTargetFlavor)
 defaultTargetFlavor :: TargetFlavor
 defaultTargetFlavor = TargetFlavor_Plain
 %%]
 
-%%[(8 codegen)
+%%[8
 instance Show TargetFlavor where
   show TargetFlavor_Plain				= "plain"
   show TargetFlavor_Debug				= "debug"
@@ -215,7 +219,7 @@ instance Show TargetFlavor where
 
 Supported target variants.
 
-%%[(8 codegen) export(allTargetFlavorMp,showAllTargetFlavors',showAllTargetFlavors)
+%%[8 export(allTargetFlavorMp,showAllTargetFlavors',showAllTargetFlavors)
 allTargetFlavorMp :: Map.Map String TargetFlavor
 allTargetFlavorMp
   = Map.fromList ts
@@ -437,15 +441,15 @@ targetIsOnUnixAndOrC t
 %%% Possible FFI interface routes
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) export(FFIWay(..))
+%%[8 export(FFIWay(..))
 data FFIWay
   = FFIWay_Prim				-- as primitive
   | FFIWay_CCall			-- as C call
   | FFIWay_Jazy				-- as Java/Jazy
-%%[[(8 javascript)
+%%[[(8 codegen javascript)
   | FFIWay_JavaScript		-- JavaScript
 %%]]
-%%[[(8 clr grin wholeprogC)
+%%[[(8 codegen clr grin wholeprogC)
   | FFIWay_CLR				-- as CLR, just a placeholder
 %%]]
   deriving (Eq,Ord,Enum)
@@ -454,10 +458,10 @@ instance Show FFIWay where
   show FFIWay_Prim			= "prim"
   show FFIWay_CCall			= "ccall"
   show FFIWay_Jazy			= "jazy"
-%%[[(8 javascript)
+%%[[(8 codegen javascript)
   show FFIWay_JavaScript	= "js"
 %%]]
-%%[[(8 clr grin wholeprogC)
+%%[[(8 codegen clr grin wholeprogC)
   show FFIWay_CLR			= "dotnet"
 %%]]
 
@@ -467,32 +471,35 @@ instance PP FFIWay where
 
 The default FFIWay for FFIWay_Prim for a target
 
-%%[(8 codegen) export(ffiWayForPrim)
+%%[8 export(ffiWayForPrim)
 ffiWayForPrim :: Target -> Maybe FFIWay
-%%[[(8 jazy)
+%%[[(8 codegen jazy)
 ffiWayForPrim Target_Interpreter_Core_Jazy			= Just FFIWay_Jazy
 %%]]
-%%[[(8 javascript)
+%%[[(8 codegen javascript)
 ffiWayForPrim Target_Interpreter_Core_JavaScript	= Just FFIWay_JavaScript
 %%]]
-%%[[(8 cmm javascript)
+%%[[(8 codegen cmm javascript)
 ffiWayForPrim Target_Interpreter_GrinCmm_JavaScript	= Just FFIWay_JavaScript
 %%]]
-%%[[(8 grin clr wholeprogC)
+%%[[(8 codegen grin clr wholeprogC)
 ffiWayForPrim Target_FullProgAnal_Grin_CLR			= Just FFIWay_CLR
 %%]]
-%%[[(8 grin llvm wholeprogC)
+%%[[(8 codegen grin llvm wholeprogC)
 ffiWayForPrim Target_FullProgAnal_Grin_LLVM			= Just FFIWay_CCall
 %%]]
-ffiWayForPrim t | targetIsC t						= Just FFIWay_CCall
-                | otherwise							= Nothing
+ffiWayForPrim t
+%%[[(8 codegen)
+  | targetIsC t			              				= Just FFIWay_CCall
+%%]]
+  | otherwise			              				= Nothing
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Additional info about targets
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) export(TargetInfo(..),TargInfoMp)
+%%[8 export(TargetInfo(..),TargInfoMp)
 data TargetInfo
   = TargetInfo
       { targiAllowedFFI		:: [FFIWay]
@@ -501,7 +508,7 @@ data TargetInfo
 type TargInfoMp = Map.Map Target TargetInfo
 %%]
 
-%%[(8 codegen) export(allTargetInfoMp,allFFIWays)
+%%[8 export(allTargetInfoMp,allFFIWays)
 allTargetInfoMp :: TargInfoMp
 
 allFFIWays :: [FFIWay]
@@ -512,7 +519,7 @@ allFFIWays = nub $ concatMap targiAllowedFFI $ Map.elems allTargetInfoMp
 %%% Instances: Typeable, Data
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(50 codegen)
+%%[50
 deriving instance Typeable Target
 deriving instance Data Target
 
@@ -527,7 +534,7 @@ deriving instance Data TargetFlavor
 %%% Instances: Binary, Serialize
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(50 codegen)
+%%[50
 instance Binary Target where
   put = putEnum8
   get = getEnum8

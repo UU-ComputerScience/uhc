@@ -51,7 +51,9 @@ static inline Bool mm_rangeMap_AfterLastInx( MM_RangeMap* a ) {
 // range check
 static inline Bool mm_rangeMap_InRange( MM_RangeMap* a, MM_RangeMap_Inx i ) {
 	i -= mm_rangeMap_FirstInx(a) ;
-	return i >= 0 && i < a->size ;
+	return
+		// i >= 0 &&	// not required because of unsignedness
+		i < a->size ;
 }
 
 // indexing

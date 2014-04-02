@@ -4,24 +4,24 @@
 
 Grin transformation
 
-%%[8 module {%{EH}EHC.CompilePhase.TransformGrin}
+%%[(8 codegen grin) module {%{EH}EHC.CompilePhase.TransformGrin}
 %%]
 
-%%[8 import({%{EH}Base.Target})
+%%[(8 codegen grin) import({%{EH}Base.Target})
 %%]
 
 -- general imports
-%%[8 import(qualified Data.Map as Map)
+%%[(8 codegen grin) import(qualified Data.Map as Map)
 %%]
 
-%%[8 import(Control.Monad.State)
+%%[(8 codegen grin) import(Control.Monad.State)
 %%]
 
-%%[8 import({%{EH}EHC.Common})
+%%[(8 codegen grin) import({%{EH}EHC.Common})
 %%]
-%%[8 import({%{EH}EHC.CompileUnit})
+%%[(8 codegen grin) import({%{EH}EHC.CompileUnit})
 %%]
-%%[8 import({%{EH}EHC.CompileRun})
+%%[(8 codegen grin) import({%{EH}EHC.CompileRun})
 %%]
 
 -- Language syntax: Grin

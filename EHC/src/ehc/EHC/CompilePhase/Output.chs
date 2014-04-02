@@ -72,7 +72,7 @@ Output generation, on stdout or file
 %%]
 
 -- gam related utils
-%%[99 import({%{EH}Gam.Utils})
+%%[(99 hmtyinfer ) import({%{EH}Gam.Utils})
 %%]
 
 
@@ -329,7 +329,9 @@ cpOutputHI suff modNm
                  (lift $ removeFile fnH)
          ;  when (ehcOptVerbosity opts > VerboseALot)
                  (do { lift $ putPPLn ("hii3: " >#< hii3)
+%%[[(99 codegen hmtyinfer)
                      ; lift $ putPPLn ("orph: " >#< vlist [ m >#< (fmap Set.toList $ HI.hiiMbOrphan $ ecuHIInfo me) | m <- Set.toList impNmS, let me = crCU m cr ])
+%%]]
 %%[[99
                      ; lift $ putPPLn ("used nms: " >#< (pp $ show $ ecuUsedNames ecu))
 %%]]

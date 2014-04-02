@@ -14,34 +14,43 @@
 %%% Substitution for types
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(2 hmtyinfer || hmtyast) module {%{EH}Substitutable} import(Data.List, {%{EH}Base.Common}, {%{EH}Ty}, {%{EH}VarMp},{%{EH}Ty.Trf.Subst},{%{EH}Ty.Ftv})
+%%[2 module {%{EH}Substitutable}
 %%]
 
-%%[(2 hmtyinfer || hmtyast) import(qualified Data.Set as Set,UHC.Util.Pretty)
+%%[2 import(Data.List, {%{EH}Base.Common}, {%{EH}VarMp})
+%%]
+
+%%[(2 hmtyinfer || hmtyast) import({%{EH}Ty}, {%{EH}Ty.Trf.Subst}, {%{EH}Ty.Ftv})
+%%]
+
+%%[2 import(qualified Data.Set as Set,UHC.Util.Pretty)
 %%]
 
 %%[(4 hmtyinfer || hmtyast) import({%{EH}Error})
 %%]
 
-%%[(6 hmtyinfer || hmtyast) import(qualified Data.Map as Map)
+%%[6 import(qualified Data.Map as Map)
 %%]
 
-%%[(6 hmtyinfer || hmtyast) hs import({%{EH}VarLookup}, {%{EH}Base.TermLike})
+%%[6 hs import({%{EH}VarLookup})
+%%]
+
+%%[(6 hmtyinfer || hmtyast) hs import({%{EH}Base.TermLike})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Substitutable class
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(2 hmtyinfer || hmtyast).Substitutable
+%%[2.Substitutable
 infixr 6 {- |=>, -} `varUpd`
 %%]
 
-%%[(4 hmtyinfer || hmtyast)
+%%[4
 infixr 6 {- |==>, -} `varUpdCyc`
 %%]
 
-%%[(2 hmtyinfer || hmtyast) export(VarUpdatable(..))
+%%[2 export(VarUpdatable(..))
 class VarUpdatable vv subst where
   varUpd         	::  subst -> vv -> vv
 %%[[4
@@ -52,7 +61,7 @@ class VarUpdatable vv subst where
 %%]]
 %%]
 
-%%[(2 hmtyinfer || hmtyast) export(VarExtractable(..))
+%%[2 export(VarExtractable(..))
 class Ord k => VarExtractable vv k | vv -> k where
   varFree           ::  vv -> [k]
   varFreeSet        ::  vv -> Set.Set k
@@ -62,7 +71,7 @@ class Ord k => VarExtractable vv k | vv -> k where
   varFreeSet        =   Set.fromList . varFree
 %%]
 
-%%[(4 hmtyinfer || hmtyast) export(substLift)
+%%[4 export(substLift)
 substLift :: (v' -> v) -> (v' -> v -> v') -> (subst -> v -> (v,r)) -> subst -> v' -> (v',r)
 substLift toV updV app s v'
   = (updV v' x,r)
@@ -243,9 +252,12 @@ instance VarUpdatable VarMpInfo VarMp where
                  -- VMIExts     x  -> VMIExts (s `varUpd` x)
                  vmi            -> vmi
 %%]]
+%%]
 
-instance VarExtractable VarMpInfo TyVarId where
+%%[6
+instance VarExtractable VarMpInfo VarId where
   varFreeSet vmi = case vmi of
+%%[[(6 hmtyinfer || hmtyast)
                  VMITy       t  -> varFreeSet t
 %%[[9
                  VMIImpls    i  -> varFreeSet i
@@ -258,6 +270,9 @@ instance VarExtractable VarMpInfo TyVarId where
 %%[[10
                  -- VMIExts     x  -> varFreeSet x
                  vmi            -> Set.empty
+%%]]
+%%][6
+                 _              -> Set.empty
 %%]]
 %%]
 

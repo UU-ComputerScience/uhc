@@ -13,6 +13,20 @@ AC_PROG_MAKE_SET
 AC_CANONICAL_HOST
 dnl ** canonicalize platform names
 HostPlatform=`/bin/sh $srcdir/config.sub $host` || exit 1
+
+### check whether we are indeed in the toplevel dir, otherwise copy required stuff to the current dir first
+if test "${srcdir}" != "." -a "${srcdir}" != ""
+then
+  # copy all the relevant stuff
+  echo "copying from: ${srcdir}"
+  for stuff in Makefile LICENSE VERSION mk test bin ehclib extlibs src
+  do
+    echo "copying into builddir: ${stuff}"
+    d=`dirname ${stuff}`
+    rsync --archive --update --exclude='.*' ${srcdir}/${stuff} ${d}
+  done
+fi
+
 ### Version info, extract from file VERSION
 # big change
 EH_VERSION_MAJOR=`awk -F . '{print $1}' VERSION`
@@ -163,6 +177,36 @@ AC_SUBST(ENABLE_CORESYSF,$enableCoreSysF)
 AC_ARG_ENABLE(tauphi, AS_HELP_STRING([--enable-tauphi],[include TauPhi language extension and analyses]), [enableTauPhi=yes], [enableTauPhi=no])
 AC_SUBST(ENABLE_TAUPHI,$enableTauPhi)
 
+### cpp
+AC_ARG_WITH(cpp,
+[AS_HELP_STRING([--with-cpp=<cpp preprocessor>],[Use a command different from 'cpp' to compile with CPP.])],
+[ cppCmd="$withval" ],
+[
+  if test "$CPP" = ""; then
+    AC_PATH_PROG(cppCmd,cpp)
+  else
+    cppCmd=$CPP
+  fi
+]
+)
+if test "$cppCmd" != "no" -a -x "$cppCmd"; then
+  cppExists="yes"
+  cppVersion=`$cppCmd --version`
+else
+  cppCmd=""
+  cppExists="no"
+fi
+
+### cpp clang specific check, turning of some options
+cppVersionHasClang=`echo ${cppVersion} | grep clang`
+if test "${cppVersionHasClang}" = ""; then
+  cppClangEhcOptions=""
+  gccClangEhcOptions=""
+else
+  cppClangEhcOptions="-Wno-invalid-pp-token"
+  gccClangEhcOptions="-Wno-array-bounds"
+fi
+
 ### ranlib
 REQUIRED_PROG_FOR_EH(ranlibCmd,ranlib)
 # See remarks about cpp
@@ -211,15 +255,21 @@ AC_SUBST(CAT_CMD,$catCmd)
 ### libtool
 REQUIRED_OPTIONAL_PROG_FOR_EH(libtoolStaticCmd,libtool)
 
-### 'with' option for build suffix
+### 'with' option hardbaked choice of aspects
+AC_ARG_WITH(aspects,
+[AS_HELP_STRING([--with-aspects=<choice of aspects>],[Choice of aspects, can be overridden when 'make'ing.])],
+[ aspects="$withval" ],)
+AC_SUBST(ASPECTS, "$aspects")
+
+### 'with' option for build suffix, which by default is derived from hardbaked aspects
 AC_ARG_WITH(build-suffix,
 [AC_HELP_STRING([--with-build-suffix=<suffix for build locations>],
                 [Suffix for build locations and library names of globally visible cabal managed libraries.])],
 [ ehcBuildSuffix="$withval" ],)
-#if test "x$ehcBuildSuffix" != "x"
-#then
-#  ehcBuildSuffix="-$ehcBuildSuffix"
-#fi
+if test "x$ehcBuildSuffix" = "x"
+then
+  ehcBuildSuffix="`echo ${ASPECTS} | sed -e 's/ /-/g'`"
+fi
 AC_SUBST(EHC_BUILD_SUFFIX, "$ehcBuildSuffix")
 
 ### 'with' option for gcc options
@@ -230,9 +280,11 @@ AC_ARG_WITH(gcc-ehc-options,
 # additional platform dependend options for gcc when compiling C from within ehc
 case $HostPlatform in
   i*86-pc-linux-gnu )
-        #gccEhcOptions="$gccEhcOptions -D__USE_BSD -D__USE_POSIX"
+        #gccEhcOptions="${gccClangEhcOptions} $gccEhcOptions -D__USE_BSD -D__USE_POSIX"
+        gccEhcOptions="${gccClangEhcOptions} $gccEhcOptions"
         ;;
   *)
+        gccEhcOptions="${gccClangEhcOptions} $gccEhcOptions"
         ;;
 esac
 
@@ -240,20 +292,21 @@ AC_SUBST(GCC_EHC_OPTIONS, "$gccEhcOptions")
 
 ### 'with' option for cpp options
 AC_ARG_WITH(cpp-ehc-options,
-[AS_HELP_STRING([--with-cpp-ehc-options=<cpp preprocessor options for ehc's cpp invocation>],[Additional options to pass to GCC when compiling with EHC.])],
+[AS_HELP_STRING([--with-cpp-ehc-options=<cpp preprocessor options for ehc's cpp invocation>],[Additional options to pass to CPP when compiling with EHC.])],
 [ cppEhcOptions="$withval" ],)
 
 # additional platform dependend options for cpp when compiling C from within ehc
 case $HostPlatform in
   i*86-pc-linux-gnu )
-        cppEhcOptions="$cppEhcOptions -D__STDC__"
+        cppEhcOptions="${cppClangEhcOptions} $cppEhcOptions -D__STDC__"
         #cppEhcOptions="$cppEhcOptions -D__USE_BSD -D__USE_POSIX -D__STDC__"
         ;;
   x86_64-*-linux-gnu )
-        cppEhcOptions="$cppEhcOptions -D__STDC__"
+        cppEhcOptions="${cppClangEhcOptions} $cppEhcOptions -D__STDC__"
         #cppEhcOptions="$cppEhcOptions -D__USE_BSD -D__USE_POSIX -D__STDC__"
         ;;
   *)
+        cppEhcOptions="${cppClangEhcOptions}"
         ;;
 esac
 
@@ -464,6 +517,7 @@ AC_ARG_WITH(uuagc,
 if test "$uuagcCmd" != "no" -a -x "$uuagcCmd" ; then
   uuagcExists="yes"
   uuagcVersion=`$uuagcCmd --version`
+  buildToolDependenciesUnchecked="uuagc>=0.9.50.2 ${buildToolDependenciesUnchecked}"
 else
   uuagcCmd=""
   uuagcExists="no"
@@ -484,6 +538,8 @@ AC_ARG_WITH(shuffle,
 )
 if test "$shuffleCmd" != "no" -a -x "$shuffleCmd" ; then
   shuffleExists="yes"
+  shuffleVersion=`$shuffleCmd --version`
+  buildToolDependenciesUnchecked="shuffle>=0.1.1.0 ${buildToolDependenciesUnchecked}"
 else
   shuffleCmd=""
   shuffleExists="no"
@@ -559,26 +615,6 @@ case $cc_version in
     ;;
 esac
 AC_SUBST(CC_STD_FLAG,$cc_std_flag)
-
-# cpp
-AC_ARG_WITH(cpp,
-[AS_HELP_STRING([--with-cpp=<cpp preprocessor>],[Use a command different from 'cpp' to compile with CPP.])],
-[ cppCmd="$withval" ],
-[
-  if test "$CPP" = ""; then
-    AC_PATH_PROG(cppCmd,cpp)
-  else
-    cppCmd=$CPP
-  fi
-]
-)
-if test "$cppCmd" != "no" -a -x "$cppCmd"; then
-  cppExists="yes"
-  cppVersion=`$cppCmd --version`
-else
-  cppCmd=""
-  cppExists="no"
-fi
 
 # Now we have to deal with weird cygwin behaviour which allows /usr/bin to be used
 # whereas in reality it is mapped onto /bin. Direct acccess to /usr/bin with a c:/cygwin prefix therefore does not work
@@ -1163,6 +1199,7 @@ echo "Installation/build summary."
 echo "  host                          : $host"
 echo "  prefix                        : $prefix"
 echo "  build suffix                  : $ehcBuildSuffix"
+echo "  hardbaked aspects             : ${ASPECTS}"
 
 echo "Required:"
 echo "  uuagc is available?           : $uuagcExists"
@@ -1175,6 +1212,7 @@ fi
 
 echo "  shuffle is available?         : $shuffleExists"
 if test "x$shuffleExists" = "xyes" ;then
+echo "    version                     : $shuffleVersion"
 echo "    command for shuffle         : $shuffleCmd"
 else
 echo "    **** ERROR **** : shuffle must be installed, use (1) cabal+hackage, or (2) http://www.cs.uu.nl/wiki/HUT"
@@ -1200,9 +1238,18 @@ echo "  gcc is available?             : $gccExists"
 if test "x$gccExists" = "xyes" ;then
 echo "    version                     : $gccVersion"
 echo "    command for gcc             : $gccCmd"
-echo "    command for cpp             : $cppCmd"
+echo "    uhc options to gcc          : $gccEhcOptions"
 else
 echo "    **** ERROR **** : gcc must be installed, ask your OS guru"
+fi
+
+echo "  cpp is available?             : $cppExists"
+if test "x$cppExists" = "xyes" ;then
+echo "    version                     : `echo $cppVersion`"
+echo "    command for cpp             : $cppCmd"
+echo "    uhc options to cpp          : $cppEhcOptions"
+else
+echo "    **** ERROR **** : cpp must be installed, ask your OS guru"
 fi
 
 if test x$enableJava = xyes
@@ -1243,6 +1290,11 @@ if test "$mplib" = "gmp" ; then
     echo "    **** ERROR **** : GMP lib archive not readable: $gmpLibArchive"
   fi
 fi
+
+echo "Required but not (yet) or during build enforced:"
+echo "  cabal base dependencies       : $cabal_base_lib_depends"
+echo "  cabal extra dependencies      : $cabal_extra_lib_depends"
+echo "  build tool dependencies       : $buildToolDependenciesUnchecked"
 
 echo "Optional:"
 echo "  haddock is available?         : $haddockExists"

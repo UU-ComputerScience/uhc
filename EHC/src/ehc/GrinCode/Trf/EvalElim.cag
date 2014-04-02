@@ -233,7 +233,7 @@ SEM GrVal
                 lhs         .   isEval          =   IsEval_None
 %%]
 
-%%[99
+%%[(99 codegen grin)
 SEM GrExpr
   | FFI         lhs         .   isEval          =   if grFFIAnnotIsResEvaluated @ffiAnnot then IsEval_EvalToNode else IsEval_None
 %%]

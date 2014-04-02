@@ -216,7 +216,7 @@ DATA Declaration                                  {- *** -}
         names                    : Names
         kind                     : Kind
 %%]
-%%[(8 codegen)
+%%[8
     | ForeignImport
         range                    : Range
         callconvention           : FFIWay

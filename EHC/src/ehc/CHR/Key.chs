@@ -136,7 +136,7 @@ instance Keyable x => TrieKeyable x Key where
 %%% TTKeyable
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(9 hmtyinfer || hmtyast) hs export(TTKeyableOpts(..),defaultTTKeyableOpts)
+%%[9 hs export(TTKeyableOpts(..),defaultTTKeyableOpts)
 data TTKeyableOpts
   = TTKeyableOpts
       { ttkoptsVarsAsWild       :: Bool             -- treat vars as wildcards

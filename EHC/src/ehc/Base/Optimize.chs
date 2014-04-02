@@ -2,16 +2,16 @@
 %%% Optimization flags
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) module {%{EH}Base.Optimize}
+%%[8 module {%{EH}Base.Optimize}
 %%]
 
-%%[(8 codegen) import(qualified Data.Set as Set,qualified Data.Map as Map,Data.List)
+%%[8 import(qualified Data.Set as Set,qualified Data.Map as Map,Data.List)
 %%]
-%%[(8 codegen) import(UHC.Util.AssocL)
+%%[8 import(UHC.Util.AssocL)
 %%]
-%%[(8 codegen) import(UHC.Util.Pretty,UHC.Util.Utils)
+%%[8 import(UHC.Util.Pretty,UHC.Util.Utils)
 %%]
-%%[(50 codegen) import(UHC.Util.Binary, UHC.Util.Serialize )
+%%[50 import(UHC.Util.Binary, UHC.Util.Serialize )
 %%]
 
 %%[doesWhat doclatex
@@ -22,25 +22,34 @@ Representation of flags for turning on/off individual optimizations.
 %%% Optimize flags for code generation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) export(Optimize(..))
+%%[8 export(Optimize(..))
 -- | individual optimizations, unit of turning off/on. (Assumption) Names of alternatives must start with Optimize_
 data Optimize
+%%[[(8 codegen)
   = Optimize_GrinLocal							-- Grin: local base optimizations
   | Optimize_StrictnessAnalysis					-- Core: relevance analysis
+%%][8
+  = Optimize_NONE								-- nada
+%%]]
   deriving (Eq,Ord,Enum,Show,Bounded)
+%%]]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% All optimize flags
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) export(allOptimizeMp)
+%%[8 export(allOptimizeMp)
 -- | All optimizations, mapped to from string representation derived via show.
 -- | See also Optimize def for assumption.
 allOptimizeMp :: Map.Map String Optimize
 allOptimizeMp
+%%[[(8 codegen)
   = Map.fromList [ (drop lenPrefix $ show o, o) | o <- [minBound .. maxBound] ]
   where lenPrefix = length "Optimize_"
+%%][8
+  = Map.empty								-- nada
+%%]]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -56,29 +65,37 @@ data StrictnessAnalysisOption
   deriving (Eq,Ord,Show)
 %%]
 
-%%[(8 codegen) export(OptimizeOption(..))
+%%[8 export(OptimizeOption(..))
 -- | extra optimization specific flags/config/tuning/option/etc
 data OptimizeOption
+%%[[(8 codegen)
   = OptimizeOption_StrictnessAnalysisQuant
+%%][8
+  = OptimizeOption_NONE								-- nada
+%%]]
   deriving (Eq,Ord,Show)
 %%]
 
-%%[(8 codegen) export(OptimizeOptionValue(..))
+%%[8 export(OptimizeOptionValue(..))
 -- | extra optimization specific flags/config/tuning/option/etc
 data OptimizeOptionValue
+%%[[(8 codegen)
   = OptimizeOptionValue_StrictnessAnalysis_NoQuant					-- no quantification of relevance type
   | OptimizeOptionValue_StrictnessAnalysis_Quant					-- (default) quantification of relevance type
   | OptimizeOptionValue_StrictnessAnalysis_QuantInstantiate			-- quant + later instantiation
+%%][8
+  = OptimizeOptionValue_NONE								-- nada
+%%]]
   deriving (Eq,Ord,Show,Enum)
 %%]
 
-%%[(8 codegen) export(OptimizeOptionMp)
+%%[8 export(OptimizeOptionMp)
 -- | the map which holds for each optimization additional (optional) configuration
 type OptimizeOptionMp' val = Map.Map Optimize (Map.Map OptimizeOption val)
 type OptimizeOptionMp      = OptimizeOptionMp' OptimizeOptionValue
 %%]
 
-%%[(8 codegen) export(optimizeOptionMpSingleton)
+%%[8 export(optimizeOptionMpSingleton)
 optimizeOptionMpSingleton :: Optimize -> OptimizeOption -> OptimizeOptionValue -> OptimizeOptionMp
 optimizeOptionMpSingleton o oo v = Map.singleton o (Map.singleton oo v)
 %%]
@@ -106,7 +123,7 @@ optimizeOptionStictnessAnalysisQuant m
 %%% All options for optimize flags
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) export(allOptimizeOptionMp)
+%%[8 export(allOptimizeOptionMp)
 -- | All optimization options, map from optimize flag to allowed range of
 allOptimizeOptionMp
   :: OptimizeOptionMp'
@@ -114,6 +131,7 @@ allOptimizeOptionMp
        , (OptimizeOptionValue, OptimizeOptionValue)		-- min, max
        )
 allOptimizeOptionMp
+%%[[(8 codegen)
   = Map.fromList $ assocLMapElt Map.fromList
       [ ( Optimize_StrictnessAnalysis
         , [ ( OptimizeOption_StrictnessAnalysisQuant
@@ -124,12 +142,16 @@ allOptimizeOptionMp
           ]
         )
       ]
+%%][8
+  = Map.empty
+%%]]
 %%]
 
-%%[(8 codegen) export(allOptimizeOptionMpAnyOption)
+%%[8 export(allOptimizeOptionMpAnyOption)
 -- | Just get any optimize option (if available) with default
 allOptimizeOptionMpAnyOption :: Optimize -> (OptimizeOption, OptimizeOptionValue)
 allOptimizeOptionMpAnyOption o
+%%[[(8 codegen)
   = panicJust "allOptimizeOptionMpAnyOption"
     $ do { om <- Map.lookup o allOptimizeOptionMp
          ; if Map.null om
@@ -138,13 +160,16 @@ allOptimizeOptionMpAnyOption o
                    ; return (oo,dflt)
                    }
          }
+%%][8
+  = (OptimizeOption_NONE, OptimizeOptionValue_NONE)
+%%]]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Optimisation level: combination of how much & scope (per module, whole program)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) export(OptimizationLevel(..))
+%%[8 export(OptimizationLevel(..))
 data OptimizationLevel
   = OptimizationLevel_Off               -- no optimizations                 : -O0
   | OptimizationLevel_Normal            -- easy and cheap optimizations     : -O1 (default)
@@ -153,20 +178,24 @@ data OptimizationLevel
   deriving (Eq,Ord,Show,Enum,Bounded)
 %%]
 
-%%[(8 codegen) export(OptimizationScope(..))
+%%[8 export(OptimizationScope(..))
 -- | Scope of optimizations, increasingly more global
 data OptimizationScope
   = OptimizationScope_PerModule			-- per module
-%%[[50
+%%[[(50 codegen grin)
   | OptimizationScope_WholeGrin			-- whole program, starting with GRIN
+%%]]
+%%[[(50 codegen)
   | OptimizationScope_WholeCore			-- whole program, starting with Core
 %%]]
   deriving (Eq,Ord,Enum,Bounded)
 
 instance Show OptimizationScope where
   show OptimizationScope_PerModule = "permodule"
-%%[[50
+%%[[(50 codegen grin)
   show OptimizationScope_WholeGrin = "perwholegrin"
+%%]]
+%%[[(50 codegen)
   show OptimizationScope_WholeCore = "perwholecore"
 %%]]
 %%]
@@ -175,21 +204,25 @@ instance Show OptimizationScope where
 %%% Optimize dependencies, implied optimizations
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[8
 type OptimizeRequiresMp = Map.Map Optimize OptimizeS
 %%]
 
-%%[(8 codegen)
+%%[8
 optimizeRequiresMp :: OptimizeRequiresMp
 optimizeRequiresMp
+%%[[(8 codegen)
   = Map.map Set.fromList $ Map.fromList
       [ ( Optimize_StrictnessAnalysis
         , [  ]
         )
       ]
+%%][8
+  = Map.empty
+%%]]
 %%]
 
-%%[(8 codegen) export(optimizeRequiresClosure)
+%%[8 export(optimizeRequiresClosure)
 -- | transitive closure of required optimizations
 optimizeRequiresClosure :: OptimizeS -> OptimizeS
 optimizeRequiresClosure os
@@ -205,16 +238,16 @@ optimizeRequiresClosure os
 %%% Optimize groups, to be associated with OptimizationLevels
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) export(OptimizeS)
+%%[8 export(OptimizeS)
 type OptimizeS = Set.Set Optimize
 %%]
 
-%%[(8 codegen) export(OptimizationLevelMp)
+%%[8 export(OptimizationLevelMp)
 -- | mapping to group of optimizations
 type OptimizationLevelMp = Map.Map OptimizationLevel OptimizeS
 %%]
 
-%%[(8 codegen) export(optimizationLevelMp)
+%%[8 export(optimizationLevelMp)
 -- | map from level to optimizations, specified as increments relative to previous in Enum ordering of level
 optimizationLevelMp :: OptimizationLevelMp
 optimizationLevelMp
@@ -225,12 +258,15 @@ optimizationLevelMp
       )
     $ Map.map Set.fromList
     $ Map.fromList
+%%[[(8 codegen)
     $ [ ( OptimizationLevel_Off
         , [  ]
         )
+%%[[(8 grin)
       , ( OptimizationLevel_Normal
         , [ Optimize_GrinLocal ]
         )
+%%]]
       , ( OptimizationLevel_Much
         , [  ]
         )
@@ -238,6 +274,9 @@ optimizationLevelMp
         , [] -- [ Optimize_StrictnessAnalysis ]
         )
       ]
+%%][8
+    $ []
+%%]]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

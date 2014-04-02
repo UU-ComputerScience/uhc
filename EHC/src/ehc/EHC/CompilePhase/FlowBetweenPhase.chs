@@ -26,7 +26,7 @@ XXX
 -- module related
 %%[50 import({%{EH}Module})
 %%]
-%%[92 import({%{EH}EHC.CompilePhase.Module(cpUpdHiddenExports)})
+%%[(92 codegen) import({%{EH}EHC.CompilePhase.Module(cpUpdHiddenExports)})
 %%]
 
 -- EH semantics
@@ -152,14 +152,18 @@ cpFlowEHSem1 modNm
                  dfg      = prepFlow $! EHSem.gathClDfGam_Syn_AGItf    ehSem
                  cs       = prepFlow $! EHSem.gathChrStore_Syn_AGItf   ehSem
 %%]]
-%%[[(50 hmtyinfer)
+%%[[(50 codegen)
                  lm       = prepFlow $! EHSem.gathLamMp_Syn_AGItf      ehSem
 %%]]
 %%[[50
                  mmi      = panicJust "cpFlowEHSem1.crsiModMp" $ Map.lookup modNm $ crsiModMp crsi
                  hii      = ecuHIInfo ecu
                  mentrelFilterMp
+%%[[(8 codegen hmtyinfer)
                           = mentrelFilterMpUnions [ EHSem.gathMentrelFilterMp_Syn_AGItf ehSem, mentrelToFilterMp' False [modNm] (mmiExps mmi) ]
+%%][8
+                          = mentrelToFilterMp' False [modNm] (mmiExps mmi)
+%%]]
                  usedImpS = mentrelFilterMpModuleNames mentrelFilterMp
                  ehInh'   = ehInh
 %%[[(50 hmtyinfer)
@@ -177,7 +181,9 @@ cpFlowEHSem1 modNm
                  hii'     = hii
                               { -- 20100717 AD: redundant because later extracted from Core because of inlining etc, TBD
                                 HI.hiiHIUsedImpModS = usedImpS
+%%[[(50 codegen hmtyinfer)
                               , HI.hiiMbOrphan      = EHSem.mbOrphan_Syn_AGItf ehSem
+%%]]
 %%[[(50 hmtyinfer)
                               , HI.hiiValGam        = vg
                               , HI.hiiTyGam     	= tg
@@ -221,7 +227,7 @@ cpFlowEHSem1 modNm
 %%]]
                                      )
 %%]]
-%%[[92
+%%[[(92 codegen)
                      -- put back additional hidden exports
                      ; cpUpdHiddenExports modNm $ Seq.toList $ EHSem.gathHiddenExports_Syn_AGItf ehSem
 %%]]

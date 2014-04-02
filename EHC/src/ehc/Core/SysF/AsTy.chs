@@ -8,13 +8,16 @@
 %%[(8 codegen) hs import(qualified {%{EH}Core} as C, qualified {%{EH}Ty} as T)
 %%]
 
-%%[(8 codegen) hs import(UHC.Util.Pretty,{%{EH}Core.Pretty},{%{EH}Error.Pretty})
+%%[(8 codegen coresysf) hs import(UHC.Util.Pretty,{%{EH}Core.Pretty},{%{EH}Error.Pretty})
 %%]
 
-%%[(8 codegen) hs import({%{EH}AbstractCore})
+%%[(8 codegen coresysf) hs import({%{EH}AbstractCore})
 %%]
 
-%%[(8 codegen) hs import({%{EH}Core.BindExtract},{%{EH}FinalEnv})
+%%[(8 codegen coresysf) hs import({%{EH}Core.BindExtract})
+%%]
+
+%%[(8 codegen) hs import({%{EH}FinalEnv})
 %%]
 
 %%[(8 codegen coresysf) hs import({%{EH}Base.TermLike})
@@ -23,13 +26,13 @@
 %%[(8 codegen coresysf) hs import({%{EH}Ty.ToSysfTy},{%{EH}Ty.FitsIn}) export(module {%{EH}Ty.ToSysfTy})
 %%]
  
-%%[(8 codegen) hs import({%{EH}Gam},{%{EH}Gam.TyKiGam})
+%%[(8 codegen coresysf) hs import({%{EH}Gam},{%{EH}Gam.TyKiGam})
 %%]
 
-%%[(8 codegen) hs import(qualified Data.Map as Map,Data.Maybe)
+%%[(8 codegen coresysf) hs import(qualified Data.Map as Map,Data.Maybe)
 %%]
 
-%%[(8 codegen) hs import(qualified UHC.Util.FastSeq as Seq)
+%%[(8 codegen coresysf) hs import(qualified UHC.Util.FastSeq as Seq)
 %%]
 
 %%[doesWhat doclatex
@@ -41,7 +44,7 @@ i.e. provides the same API.
 %%% Explicit name for Ty
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 hmtyinfer || hmtyast) hs export(Ty)
+%%[(8 codegen) hs export(Ty)
 -- | The type, represented by a term CExpr
 type Ty             = C.SysfTy          -- base ty
 
@@ -71,7 +74,7 @@ ty2TyC :: EHCOpts -> ToSysfEnv -> T.Ty -> C.CTy
 ty2TyC o env t = C.mkCTy o t (ty2TySysfWithEnv env t)
 %%]
 
-%%[(8 codegen) hs export(ty2TySysf)
+%%[(8 codegen coresysf) hs export(ty2TySysf)
 ty2TySysf :: T.Ty -> Ty
 %%[[(8 coresysf)
 ty2TySysf t = ty2TySysfWithEnv emptyToSysfEnv t

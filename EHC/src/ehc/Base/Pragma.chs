@@ -50,7 +50,7 @@ data Pragma
   | Pragma_OptionsUHC              			-- commandline options
       { pragmaOptions   			:: String
       }
-%%[[(99 codegen)
+%%[[99
   | Pragma_ExcludeIfTarget
       { pragmaExcludeTargets   		:: [Target]
       }
@@ -121,9 +121,7 @@ instance Serialize Pragma where
   sput (Pragma_NoGenericDeriving        ) = sputWord8 3
   sput (Pragma_GenericDeriving          ) = sputWord8 4
   sput (Pragma_ExtensibleRecords        ) = sputWord8 5
-%%[[(99 codegen)
   sput (Pragma_ExcludeIfTarget a        ) = sputWord8 6 >> sput a
-%%]]
   sput (Pragma_Fusion        			) = sputWord8 7
   sput (Pragma_NoBangPatterns           ) = sputWord8 8
   sput (Pragma_BangPatterns             ) = sputWord8 9

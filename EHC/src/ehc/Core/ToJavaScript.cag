@@ -18,7 +18,7 @@
 %%[(8 javascript) hs import({%{EH}Base.Builtin},{%{EH}Base.Builtin2},{%{EH}BuiltinPrims},{%{EH}Base.BasicAnnot},{%{EH}CodeGen.GenJavaLike})
 %%]
 
-%%[(8 javascript) hs import({%{EH}Gam.DataGam})
+%%[(8 javascript hmtyinfer) hs import({%{EH}Gam.DataGam})
 %%]
 
 %%[(8 javascript) hs import(qualified {%{EH}JavaScript} as J, {%{EH}JavaScript}(CVarMp, CVarInfo, tyDefault))

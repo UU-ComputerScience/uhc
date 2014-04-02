@@ -109,28 +109,20 @@ SEM Expr
                 decls       .   patTyVarMp          :=  @exTyVarMp1b
 
 %%[(9 hmtyinfer) hs
--- | split a list of predicates into non-ambiguous & ambiguous, using quantifications results tqoGam,
---   which (a.o.) administers which predicates could be merged for quantification, those not are then ambiguous
-doPredAmbigSplit :: (x -> PredOcc) -> TQOGam -> [x] -> ([x],[x])
-doPredAmbigSplit get tqoGam prOccL
-  = partition (\o -> poPoi (get o) `Set.member` assumedByQuant) prOccL
-  where assumedByQuant = Set.unions $ map tmpoInsPrIdSet $ gamElts tqoGam
+-- | Construct a function which does quantification given some fixed environmental info
+mkDoValGamQuantify
+  :: TyKiGam -> VarMp -> TyVarIdS -> ValGam
+     -> (Bool -> VarMp -> [PredOcc] -> (ValGam, VarMp, (VarMp, TQOGam)))
+mkDoValGamQuantify valQuTyKiGam quTvKiVarMp noLetQuantTyVarIdS valGam_l_
+  = \doQuant tyVarMp prOccL -> valGamQuantifyWithVarMp doQuant valQuTyKiGam quTvKiVarMp tyVarMp noLetQuantTyVarIdS prOccL valGam_l_
 %%]
 
 %%[(9 hmtyinfer)
 SEM Expr
-  | Let         loc         .   doValGamQuantify    =   \doQuant tyVarMp prOccL -> valGamQuantifyWithVarMp doQuant @valQuTyKiGam @quTvKiVarMp tyVarMp @noLetQuantTyVarIdS prOccL @valGam_l_
-                            .   doPredAmbigSplitForSimplify
-                                                    =   \chrPrOccL
-                                                           -> let us                = mkNewLevUIDL (length chrPrOccL) uidStart
-                                                                  -- couple with arbitrary id's to make quantify & split work
-                                                                  prOccL            = zipWith (\u (o,_) -> cpo2PredOcc (mkPrId u) o) us chrPrOccL
-                                                                  (_,_, (_,tqoGam)) = @doValGamQuantify False @tyVarMpDeclsL01 prOccL
-                                                                  (namb,amb)        = doPredAmbigSplit fst tqoGam $ zip prOccL chrPrOccL
-                                                              in  (map snd amb, map snd namb)
+  | Let         loc         .   doValGamQuantify    =   mkDoValGamQuantify @valQuTyKiGam @quTvKiVarMp @noLetQuantTyVarIdS @valGam_l_
                             .   (quValGam_qu_,quTyVarMp, (cycTyVarMp_l,tqoGam))
                                                     :=  @doValGamQuantify True @tyVarMpDeclsQuant @toQuantOverPrOccL
-                            .   tmpoTyVarMp         =   foldr (\tmpo c -> tmpoImplsVarMp tmpo `varUpd` c) emptyVarMp (gamElts @tqoGam)
+                            .   tmpoTyVarMp         =   foldr (\tmpo c -> tmpoImplsVarMp tmpo `varUpd` c) (emptyVarMp :: VarMp) (gamElts @tqoGam)
                             .   bodyVarMp2          :=  @tmpoTyVarMp `varUpd` @chrSolve1SimpTyVarMp `varUpd` (@exTyVarMp2 :: VarMp) `varUpd` @bodyVarMp1
 %%]
                 decls       .   patTyVarMp          :=  foVarMp @foKnRes `varUpd` @exTyVarMp1b -- @forExprTyVarMp `varUpd` @exTyVarMp1b
@@ -146,6 +138,47 @@ SEM Expr
                                                                         ])
                                                             @bodyVarMp2
                                                         `varUpd` @lhs.tyVarMp
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Split for ambiguity check, required for defaulting
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(9 hmtyinfer) hs
+-- | split a list of predicates into non-ambiguous & ambiguous, using quantifications results tqoGam,
+--   which (a.o.) administers which predicates could be merged for quantification, those not are then ambiguous
+doPredAmbigSplit :: (x -> PredOcc) -> TQOGam -> [x] -> ([x],[x])
+doPredAmbigSplit get tqoGam prOccL
+  = partition (\o -> poPoi (get o) `Set.member` assumedByQuant) prOccL
+  where assumedByQuant = Set.unions $ map tmpoInsPrIdSet $ gamElts tqoGam
+
+-- | Split predicates according to whether the predicate combining part of quantification can be done
+mkDoPredAmbigSplitForSimplify :: (Bool -> vm -> [PredOcc] -> (dum1,dum2,(dum3,TQOGam))) -> vm -> [(CHRPredOcc, x)] -> ([(CHRPredOcc, x)],[(CHRPredOcc, x)])
+mkDoPredAmbigSplitForSimplify doValGamQuantify tyVarMpDeclsL01
+  = \chrPrOccL
+       -> let us                = mkNewLevUIDL (length chrPrOccL) uidStart
+              -- couple with arbitrary id's to make quantify & split work
+              prOccL            = zipWith (\u (o,_) -> cpo2PredOcc (mkPrId u) o) us chrPrOccL
+              (_,_, (_,tqoGam)) = doValGamQuantify False tyVarMpDeclsL01 prOccL
+              (namb,amb)        = doPredAmbigSplit fst tqoGam $ zip prOccL chrPrOccL
+          in  (map snd amb, map snd namb)
+%%]
+
+%%[(9 hmtyinfer)
+SEM Expr
+  | Let         loc         .   doPredAmbigSplitForSimplify
+                                                    =	mkDoPredAmbigSplitForSimplify @doValGamQuantify @tyVarMpDeclsL01
+%%]
+
+%%[(9 hmtyinfer)
+SEM Decl
+  | Instance    loc         .   doPredAmbigSplitForSimplify
+                                                    =	mkDoPredAmbigSplitForSimplify 
+                                                            (mkDoValGamQuantify
+                                                                @lhs.finTyKiGam @lhs.tvKiVarMp 
+                                                                (setSubst @tyVarMpDeclsL0 @decls.noLetQuantTyVarIdS)
+                                                                (gamTop @decls.patValGam))
+                                                            @tyVarMpDeclsL01
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Restriction of @decls.tyVarMp to meta level 0

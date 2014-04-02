@@ -184,6 +184,98 @@ pgmExecMp = optMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Derived options
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Some are there for (temporary) backwards compatibility.
+
+%%[(50 codegen) export(ehcOptWholeProgOptimizationScope)
+-- do something with whole program
+ehcOptWholeProgOptimizationScope :: EHCOpts -> Bool
+ehcOptWholeProgOptimizationScope opts
+  = ehcOptOptimizationScope opts >= OptimizationScope_WholeGrin
+%%]
+
+%%[(50 codegen) export(ehcOptEarlyModMerge)
+-- compatibility option
+ehcOptEarlyModMerge :: EHCOpts -> Bool
+ehcOptEarlyModMerge opts
+  = ehcOptOptimizationScope opts >= OptimizationScope_WholeCore
+%%]
+
+%%[8 export(ehcOptWholeProgHPTAnalysis)
+-- do whole program analysis, with HPT
+ehcOptWholeProgHPTAnalysis :: EHCOpts -> Bool
+ehcOptWholeProgHPTAnalysis opts
+%%[[(8 codegen grin)
+  =  targetDoesHPTAnalysis (ehcOptTarget opts)
+%%[[50
+  || ehcOptWholeProgOptimizationScope opts
+%%]]
+%%][8
+  = False
+%%]]
+%%]
+
+%%[(8 codegen grin) export(ehcOptErrAboutBytecode)
+-- report when Grin ByteCode errors occur
+ehcOptErrAboutBytecode :: EHCOpts -> Bool
+%%[[8
+ehcOptErrAboutBytecode _ = False
+%%][99
+ehcOptErrAboutBytecode   = targetIsGrinBytecode . ehcOptTarget
+%%]]
+%%]
+
+%%[(8 codegen grin) export(ehcOptEmitC)
+-- generate C
+ehcOptEmitC :: EHCOpts -> Bool
+ehcOptEmitC = targetIsC . ehcOptTarget
+%%]
+
+%%[(8888 codegen java) export(ehcOptEmitJava)
+-- generate Java, as src text
+ehcOptEmitJava :: EHCOpts -> Bool
+ehcOptEmitJava o = ehcOptTarget o == Target_Interpreter_Core_Java
+%%]
+
+%%[(8 codegen grin llvm wholeprogAnal wholeprogC) export(ehcOptEmitLLVM)
+-- generate LLVM
+ehcOptEmitLLVM :: EHCOpts -> Bool
+ehcOptEmitLLVM = targetIsLLVM . ehcOptTarget
+%%]
+
+%%[(8 codegen clr wholeprogC) export(ehcOptEmitCLR)
+-- generate CIL, as .il assembly file
+ehcOptEmitCLR :: EHCOpts -> Bool
+ehcOptEmitCLR = targetIsCLR . ehcOptTarget
+%%]
+
+%%[(8 codegen) export(ehcOptEmitCore)
+-- generate Core
+ehcOptEmitCore :: EHCOpts -> Bool
+ehcOptEmitCore opts
+  = ehcOptWholeProgHPTAnalysis opts || targetIsCore (ehcOptTarget opts)
+%%]
+
+%%[(8 codegen tycore) export(ehcOptEmitTyCore,ehcOptTyCore)
+-- generate TyCore
+ehcOptEmitTyCore :: EHCOpts -> Bool
+ehcOptEmitTyCore opts
+  = {- ehcOptWholeProgHPTAnalysis opts || -} targetIsTyCore (ehcOptTarget opts)
+
+ehcOptTyCore :: EHCOpts -> Bool
+ehcOptTyCore opts = ehcOptEmitTyCore opts || isJust (ehcOptUseTyCore opts)
+
+%%]
+
+%%[(8 codegen) export(ehcOptOptimizes)
+-- | optimizes a particular option
+ehcOptOptimizes :: Optimize -> EHCOpts -> Bool
+ehcOptOptimizes o opts = o `Set.member` ehcOptOptimizations opts
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Default compiler options
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
