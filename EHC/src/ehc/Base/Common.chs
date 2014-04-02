@@ -230,9 +230,9 @@ mkExtAppPP = mkExtAppPP' "|"
 %%]
 
 %%[8
+%%]
 instance (PP a, PP b) => PP (a,b) where
   pp (a,b) = ppParensCommas' [pp a,pp b]
-%%]
 
 %%[8
 ppPair :: (PP a, PP b) => (a,b) -> PP_Doc
