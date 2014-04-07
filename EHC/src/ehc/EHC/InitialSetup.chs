@@ -30,6 +30,8 @@ Initial values
 %%[50 import(qualified {%{EH}HS.ModImpExp} as HSSemMod)
 %%]
 
+%%[(50 codegen) hs import({%{EH}CodeGen.ImportUsedModules})
+%%]
 -- LamMp, SysF
 %%[(8 codegen) import({%{EH}LamInfo})
 %%]
@@ -96,10 +98,13 @@ initialEHSem opts fp
 initialCore2GrSem :: EHCOpts -> Core2GrSem.Inh_CodeAGItf
 initialCore2GrSem opts
   = Core2GrSem.Inh_CodeAGItf
-      { Core2GrSem.gUniq_Inh_CodeAGItf           = uidStart
-      , Core2GrSem.dataGam_Inh_CodeAGItf         = emptyGam
-      , Core2GrSem.opts_Inh_CodeAGItf            = opts
-      , Core2GrSem.lamMp_Inh_CodeAGItf           = initLamMp
+      { Core2GrSem.gUniq_Inh_CodeAGItf           	= uidStart
+      , Core2GrSem.dataGam_Inh_CodeAGItf         	= emptyGam
+      , Core2GrSem.opts_Inh_CodeAGItf            	= opts
+      , Core2GrSem.lamMp_Inh_CodeAGItf           	= initLamMp
+%%[[50
+      , Core2GrSem.importUsedModules_Inh_CodeAGItf	= emptyImportUsedModules
+%%]]
       }
 %%]
 

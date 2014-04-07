@@ -1461,9 +1461,12 @@ instance Show inx => Show (Fld' inx) where
 
 instance Show inx => PP (Fld' inx) where
   pp = pp . show
+
+instance HSNM inx => HSNM (Fld' inx) where
+  mkHNm = fldNm
 %%]
 
-%%[(8 codegen) hs export(fldFoldNmInx, fldFoldInxNm)
+%%[8 hs export(fldFoldNmInx, fldFoldInxNm)
 -- | Fold over Fld, preference to name
 fldFoldNmInx :: (HsName -> x) -> (inx -> x) -> x -> Fld' inx -> x
 fldFoldNmInx n i dflt f = maybe (maybe dflt i $ _fldInx f) n $ _fldNm f
@@ -1473,7 +1476,7 @@ fldFoldInxNm :: (HsName -> x) -> (inx -> x) -> x -> Fld' inx -> x
 fldFoldInxNm n i dflt f = maybe (maybe dflt n $ _fldNm f) i $ _fldInx f
 %%]
 
-%%[(8 codegen) hs export(fldInt, fldNm)
+%%[8 hs export(fldInt, fldNm)
 -- | Fld access preferred by name
 fldNm :: HSNM inx => Fld' inx -> HsName
 fldNm = fldFoldNmInx id mkHNm hsnUnknown -- maybe (maybe hsnUnknown mkHNm $ _fldInx f) id $ _fldNm f

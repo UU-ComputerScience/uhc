@@ -26,6 +26,9 @@
 %%[(8 codegen grin) hs import(Control.Monad, Control.Monad.State)
 %%]
 
+%%[(50 codegen grin) hs import({%{EH}CodeGen.ImportUsedModules})
+%%]
+
 %%[(8 codegen) hs import({%{EH}Foreign.Extract})
 %%]
 
@@ -68,6 +71,10 @@ SEM *
 
 %%[(8 codegen grin)
 ATTR AllCodeNT CodeAGItf [ opts: EHCOpts | | ]
+%%]
+
+%%[(50 codegen grin)
+ATTR CModule CodeAGItf [ importUsedModules: ImportUsedModules | | ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

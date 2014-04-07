@@ -65,8 +65,9 @@ cpFoldCore modNm
                  coreInh  = crsiCoreInh crsi
                  coreSem  = Core2GrSem.wrap_CodeAGItf
                               (Core2GrSem.sem_CodeAGItf (Core.CodeAGItf_AGItf core))
-                              (coreInh { Core2GrSem.gUniq_Inh_CodeAGItf            = crsiHereUID crsi
-                                       , Core2GrSem.opts_Inh_CodeAGItf             = opts
+                              (coreInh { Core2GrSem.gUniq_Inh_CodeAGItf                         = crsiHereUID crsi
+                                       , Core2GrSem.opts_Inh_CodeAGItf                          = opts
+                                       , Core2GrSem.importUsedModules_Inh_CodeAGItf             = ecuImportUsedModules ecu
                                        })
          ;  when (isJust mbCore)
                  (cpUpdCU modNm ( ecuStoreCoreSem coreSem

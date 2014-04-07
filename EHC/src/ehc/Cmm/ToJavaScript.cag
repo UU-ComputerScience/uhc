@@ -22,7 +22,7 @@
 %%[(8 codegen cmm javascript) hs import({%{EH}Gam.DataGam})
 %%]
 
-%%[(8 codegen cmm javascript) hs import(Data.Maybe,Data.Char, UHC.Util.Utils, qualified Data.Map as Map, Data.List as L, UHC.Util.FastSeq as Seq)
+%%[(8 codegen cmm javascript) hs import(Data.Maybe,Data.Char, UHC.Util.Utils, qualified Data.Map as Map, qualified Data.Set as Set, Data.List as L, UHC.Util.FastSeq as Seq)
 %%]
 %%[(8 codegen cmm javascript) hs import(qualified Data.Bits as B (Bits), Data.Bits as B hiding (Bits))
 %%]
@@ -30,13 +30,25 @@
 %%[(8 codegen cmm javascript) ag import({Cmm/AbsSyn})
 %%]
 
+%%[(50 codegen cmm javascript) hs import({%{EH}CodeGen.ImportUsedModules})
+%%]
+
 %%[(8 codegen cmm javascript).cmmMod2JavaScript hs export(cmmMod2JavaScript)
-cmmMod2JavaScript :: EHCOpts -> DataGam -> Module -> (JS.JavaScriptModule, [Err])
-cmmMod2JavaScript opts dataGam m
+cmmMod2JavaScript
+  :: EHCOpts
+%%[[50
+     -> ImportUsedModules
+%%]]
+     -> DataGam
+     -> Module -> (JS.JavaScriptModule, [Err])
+cmmMod2JavaScript opts importUsedModules dataGam m
   = let t = wrap_AGItf (sem_AGItf (AGItf_AGItf m))
                        (Inh_AGItf
-                         { opts_Inh_AGItf 		= opts
-                         , dataGam_Inh_AGItf	= dataGam
+                         { opts_Inh_AGItf 				= opts
+                         , dataGam_Inh_AGItf			= dataGam
+%%[[50
+                         , importUsedModules_Inh_AGItf	= importUsedModules
+%%]]
                          }
                        )
     in  (jsMod_Syn_AGItf t, [])
@@ -58,6 +70,13 @@ ATTR
   AGItf AllNT
     [ opts: EHCOpts
       dataGam: DataGam
+    | | ]
+%%]
+
+%%[(50 codegen cmm javascript)
+ATTR
+  AGItf Module
+    [ importUsedModules: ImportUsedModules
     | | ]
 %%]
 
@@ -88,20 +107,37 @@ ss = Seq.fromList
 
 %%[(8 codegen cmm javascript) hs
 jref :: CVarNmModuleCfg -> {- CVarMp -> -} CVarInfo -> JS.Expr
-jref cfg cvi
-  = cvarToRef
-      ( \_       -> JS.Expr_This
-      , \_ o     -> JS.var $ fldNm o
-      , \_ _ f   -> JS.var f
-      , \_ _ f   -> JS.var f
-      , \_ e _ f -> JS.Expr_ObjFld e f -- (fldNm f)
-      , \_ e     -> JS.Expr_ObjFld e JS.nmTag
-      , \  e o   -> JS.Expr_ArrInx e o
-      , JS.intConst -- fldFoldInxNm var JS.intConst (panic "JavaScript.cvarToRef.mkOffset: should not happen
-      , \_ _ -> panic "JavaScript.cvarToRef.mkTag should not be used"
-      , JS.hsnJavaScriptVar
-      )
-      cfg Map.empty cvi
+jdefNm :: CVarNmModuleCfg -> {- CVarMp -> -} CVarInfo -> HsName
+
+(jref, jdefNm)
+  = ( \cfg cvi
+      -> cvarToRef
+          ( \n       -> JS.var $ mkErrNm n
+          , \_       -> JS.Expr_This
+          , \_ o     -> JS.var $ fldNm o
+          , \_ _ f   -> JS.var f
+          , \_ _ f   -> JS.var f
+          , \_ e _ f -> JS.Expr_ObjFld e f -- (fldNm f)
+          , \_ e     -> JS.Expr_ObjFld e JS.nmTag
+          , \  e o   -> JS.Expr_ArrInx e o
+          , JS.intConst
+          , mkTag
+          , JS.hsnJavaScriptVar
+          )
+          cfg Map.empty cvi
+    , \cfg cvi
+      -> cvarToDefHsName
+          ( mkErrNm . mkHNm
+          , mkHNm
+          , mkHNm
+          , mkHNm
+          , mkTag
+          , JS.hsnJavaScriptVar
+          )
+          cfg Map.empty cvi
+    )
+  where mkErrNm = hsnPrefix "#ERRREF#"
+        mkTag   = \_ _ -> panic "JavaScript.cvarToXXX.mkTag should not be used"
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -134,7 +170,7 @@ SEM AGItf
 
 %%[(8 codegen cmm javascript)
 SEM Decl
-  | Const		       	loc         .   jsnm	=   JS.hsnJavaScriptVar @lhs.cvarNmModCfg False @nm
+  | Const		       	loc         .   jsnm	=   jdefNm @lhs.cvarNmModCfg @cvar -- JS.hsnJavaScriptVar @lhs.cvarNmModCfg False @nm
 
 SEM Expr
   | Nm NdDataTagGet NdDataFldGet NdTupFldGet
@@ -142,16 +178,16 @@ SEM Expr
 
 SEM Stmt
   | Alloc Box UnBox
-  						loc         .   jsnm	=   JS.hsnJavaScriptVar @lhs.cvarNmModCfg False @nm
+  						loc         .   jsnm	=   jdefNm @lhs.cvarNmModCfg @cvar -- JS.hsnJavaScriptVar @lhs.cvarNmModCfg False @nm
 
 SEM Proc
-  | Proc        		loc         .   jsnm	=   JS.hsnJavaScriptVar @lhs.cvarNmModCfg False @nm
+  | Proc        		loc         .   jsnm	=   jdefNm @lhs.cvarNmModCfg @cvar -- JS.hsnJavaScriptVar @lhs.cvarNmModCfg False @nm
 
 SEM Datum
   | Nm	        		loc         .   jsnm	=   JS.hsnJavaScriptVar @lhs.cvarNmModCfg False @nm
 
 SEM RegNmInit
-  | NmInit	        	loc         .   jsnm	=   JS.hsnJavaScriptVar @lhs.cvarNmModCfg False @nm
+  | NmInit	        	loc         .   jsnm	=   jdefNm @lhs.cvarNmModCfg @cvar -- JS.hsnJavaScriptVar @lhs.cvarNmModCfg False @nm
 
 SEM Formal
   | Formal        		loc         .   jsnm	=   JS.hsnJavaScriptVar @lhs.cvarNmModCfg False @nm
@@ -172,7 +208,29 @@ SEM FldExpr
 ATTR AGItf Module [ | | jsMod: {JS.JavaScriptModule} ]
 
 SEM Module
-  | Mod					lhs			.	jsMod		=	JS.JavaScriptModule_Mod (Seq.toList @decls.jsTopStats) [] []
+  | Mod                 lhs         .   jsMod       	=   JS.JavaScriptModule_Mod (Seq.toList $ Seq.unions [Seq.fromList @jsModInitStats, Seq.fromList @jsModTraceStats, @decls.jsTopStats, Seq.fromList @jsModStatsMain]) [] []
+                        loc         .   jsModStatsMain  =   maybe [] (\m ->[ JS.Stat_Expr $ JS.evl $
+%%[[99
+                                                                             (\m -> JS.app m [JS.arr []]) $
+%%]]
+                                                                             (jref @lhs.cvarNmModCfg m)
+                                                                           ])
+                                                                   @mbMainEntryCVar
+%%[[8
+                        loc         .   jsModInitStats  =   []
+%%][50
+                        loc         .   jsModInitStats  =   let prefixes = nub . catMaybes . L.map hsnQualifier
+                                                                mk  n = JS.Expr_If (JS.var n) (JS.var n) (JS.Expr_Obj [])
+                                                                mkd n e | isJust q  = JS.assign n e
+                                                                        | otherwise = JS.vardecl n (Just e)
+                                                                  where q = hsnQualifier n
+                                                            in  L.map (\n -> mkd n $ mk n) $ concat $ reverse $ takeWhile (not . L.null) $ iterate prefixes $ Set.toList $ iumHIUsedModules @lhs.importUsedModules
+%%]]
+%%[[8
+                        loc         .   jsModTraceStats =   if ehcOptGenTrace @lhs.opts then [JS.assign (mkHNm "traceOn") JS.Expr_True] else []
+%%][100
+                        loc         .   jsModTraceStats =   []
+%%]]
 %%]
 
 Top level

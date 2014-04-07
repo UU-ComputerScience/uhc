@@ -96,7 +96,8 @@ tyDefault = ()
 ref :: CVarNmModuleCfg -> CVarMp -> CVarInfo -> Expr
 ref
   = cvarToRef
-      ( \_       -> Expr_This
+      ( \n       -> var $ hsnPrefix "#ERRREF#" n
+      , \_       -> Expr_This
       , \_ o     -> var o
       , \_ _ f   -> var f
       , \_ _ f   -> var f

@@ -5,7 +5,10 @@
 %%[(8 cmm) hs module {%{EH}Cmm.Pretty}
 %%]
 
-%%[(8 cmm) hs import({%{EH}Base.Builtin},{%{EH}Cmm},{%{EH}Base.Common} hiding (Range),{%{EH}Opts},qualified {%{EH}Config} as Cfg)
+%%[(8 cmm) hs import({%{EH}Base.Builtin},{%{EH}Cmm} hiding (cmt, cvar),{%{EH}Base.Common} hiding (Range),{%{EH}Opts},qualified {%{EH}Config} as Cfg)
+%%]
+
+%%[(8 cmm) hs import({%{EH}CodeGen.CVar})
 %%]
 
 %%[(8 cmm) hs import(UHC.Util.Pretty, UHC.Util.Utils)
@@ -35,6 +38,8 @@ PRAGMA nocycle
 %%[(8 cmm) hs
 semic = (>|< ";")
 
+cmt x = "/*" >#< x >#< "*/"
+cvar cvi = cvi >#< cmt (cvarShowKind cvi)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -47,7 +52,7 @@ ATTR AGItf AllNT [ | | pp USE {>-<} {empty}: PP_Doc ]
 
 %%[(8 cmm)
 SEM Module
-  | Mod			lhs		.	pp		=	"module" >#< @moduleNm >-< vlist @decls.ppL
+  | Mod			lhs		.	pp		=	"module" >#< @moduleNm >-< vlist @decls.ppL >-< ppMb (fmap cvar @mbMainEntryCVar)
 %%]
 
 %%[(8 cmm)
@@ -66,7 +71,7 @@ SEM Section
 SEM Decl
   | Import		lhs		.	pp		=	semic $ "import" >#< ppCommas' @imports.ppL
   | Export		lhs		.	pp		=	semic $ "export" >#< ppCommas' @exports.ppL
-  | Const		lhs		.	pp		=	semic $ show @ckind >#< @mbTy.pp >#< @nm >#< "=" >#< @expr.pp
+  | Const		lhs		.	pp		=	semic $ show @ckind >#< @mbTy.pp >#< cvar @cvar >#< "=" >#< @expr.pp
   | ConstArray	lhs		.	pp		=	semic $ "const" >#< @mbTy.pp >#< @nm >|< "[]" >#< "=" >#< ppCurlysCommasBlock @exprs.ppL
   | Typedef		lhs		.	pp		=	semic $ "typedef" >#< @ty.pp >#< ppCommas' @nms
   | Regs		lhs		.	pp		=	semic $ (if @isInvariant then "invariant " else "")	>|< @regs.pp
@@ -114,7 +119,7 @@ SEM Regs
 
 %%[(8 cmm)
 SEM RegNmInit
-  | NmInit		lhs		.	pp		=	ppMbPost show @mbIs @nm
+  | NmInit		lhs		.	pp		=	ppMbPost show @mbIs $ cvar @cvar
 %%]
 
 %%[(8 cmm)
@@ -131,7 +136,7 @@ SEM Body
 
 %%[(8 cmm)
 SEM Proc
-  | Proc		lhs		.	pp		=	(ppMbPre id @mbConv.ppMb $ @nm >#< ppParensCommas' @formals.ppL) >-#-< @body.pp
+  | Proc		lhs		.	pp		=	(ppMbPre id @mbConv.ppMb $ cvar @cvar >#< ppParensCommas' @formals.ppL) >-#-< @body.pp
 %%]
 
 %%[(8 cmm)
@@ -178,9 +183,9 @@ SEM Stmt
   -- | Cut				expr			: Expr
   -- 					actuals			: ActualL
   -- 					flows			: FlowL
-  | Alloc		lhs		.	pp		=	semic $ @nm >#< "=" >-|-< indent 1 ("alloc" >|< @tag.pp >|< ppParensCommas' @elts.ppL)
-  | Box			lhs		.	pp		=	semic $ @nm >#< "=" >-|-< indent 1 ("box" >|< @boxing >#< @expr.pp)
-  | UnBox		lhs		.	pp		=	semic $ @nm >#< "=" >-|-< indent 1 ("unbox" >|< @boxing >#< @expr.pp)
+  | Alloc		lhs		.	pp		=	semic $ cvar @cvar >#< "=" >-|-< indent 1 ("alloc" >|< @tag.pp >|< ppParensCommas' @elts.ppL)
+  | Box			lhs		.	pp		=	semic $ cvar @cvar >#< "=" >-|-< indent 1 ("box" >|< @boxing >#< @expr.pp)
+  | UnBox		lhs		.	pp		=	semic $ cvar @cvar >#< "=" >-|-< indent 1 ("unbox" >|< @boxing >#< @expr.pp)
 %%]
 
 RetCont
@@ -204,7 +209,7 @@ SEM Range
 
 %%[(8 cmm)
 SEM LValue
-  | Nm			lhs		.	pp		=	pp @cvar
+  | Nm			lhs		.	pp		=	cvar @cvar
   -- | Typed			ty				: Ty
   -- 					expr			: Expr
   -- 					mbAssert		: MbAssert
@@ -239,7 +244,7 @@ SEM Expr
   -- | Lit				val				: Lit
 
   -- Variable
-  | CVar		lhs		.	pp		=	pp @cvar
+  | CVar		lhs		.	pp		=	cvar @cvar
   | Nm			lhs		.	pp		=	pp @nm
   | NmForeign	lhs		.	pp		=	pp @nm
 
@@ -278,9 +283,9 @@ SEM Tag
   | Con			lhs		.	pp		=	   "#" >|< @tag >|< "#" >|< @dataInfo
   | Tup			lhs		.	pp		=	pp "#"
   | Ind			lhs		.	pp		=	pp "#I"
-  | Fun			lhs		.	pp		=	   "#F#" >|< @cvar
+  | Fun			lhs		.	pp		=	   "#F#" >|< cvar @cvar
   | App			lhs		.	pp		=	pp "#A"
-  | PApp		lhs		.	pp		=	   "#P#" >|< @needs >|< "#" >|< @cvar
+  | PApp		lhs		.	pp		=	   "#P#" >|< @needs >|< "#" >|< cvar @cvar
 %%]
 
 Round

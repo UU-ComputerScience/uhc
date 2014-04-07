@@ -18,6 +18,8 @@
 
 %%[(8 codegen grin) hs import({%{EH}CodeGen.Const}, {%{EH}CodeGen.ValAccess})
 %%]
+%%[(8 codegen grin) hs import({%{EH}CodeGen.CVar})
+%%]
 
 %%[(8 codegen grin) hs export(GrExpr(..), GrBind(..), GrBindL, GrGlobal(..), GrGlobalL)
 %%]
@@ -413,14 +415,15 @@ willUseForNodeField n m = maybe False (WillUseFor_NodeField `Set.member`) $ Map.
 %%% GrVal Value introduction
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin) hs export(GrValIntro(..))
-data GrValIntro
-  = GrValIntro_Nm    !HsName
+%%[(8 codegen grin) hs export(GrValIntro'(..))
+data GrValIntro' tag ty varref datafldref tupfldref
+  = GrValIntro_Nm    !HsName											-- name intro
+  | GrValIntro_CVar  !(CVarInfo' tag ty varref datafldref tupfldref)	-- name intro but already converted to codevar format later used in pipeline(s)
   | GrValIntro_Int   !Integer
   | GrValIntro_Str   !String (Maybe CFld)
-  | GrValIntro_Grp   !GrTag ![GrValIntro]
+  | GrValIntro_Grp   !GrTag ![GrValIntro' tag ty varref datafldref tupfldref]
   | GrValIntro_Basic !GrTag !HsName
-  | GrValIntro_Box   !Boxing !GrValIntro
+  | GrValIntro_Box   !Boxing !(GrValIntro' tag ty varref datafldref tupfldref)
   | GrValIntro_Enum  !HsName
   | GrValIntro_None
   deriving Show
@@ -428,14 +431,21 @@ data GrValIntro
 
 %%[(8 codegen grin) hs export(gviFoldInlineable, gviIsInlineable)
 -- | Convert inlineable GrValtIntro using algebra
-gviFoldInlineable :: (HsName -> x, Integer -> x, x) -> GrValIntro -> x
-gviFoldInlineable (mk,_ ,_ ) (GrValIntro_Nm  n) = mk n
-gviFoldInlineable (_ ,mk,_ ) (GrValIntro_Int i) = mk i
-gviFoldInlineable (_ ,_ ,df) _                  = df
+gviFoldInlineable
+  :: ( HsName -> x
+     , CVarInfo' tag ty varref datafldref tupfldref -> x
+     , Integer -> x
+     , x
+     ) -> GrValIntro' tag ty varref datafldref tupfldref
+       -> x
+gviFoldInlineable (mk,_ ,_ ,_ ) (GrValIntro_Nm   n) = mk n
+gviFoldInlineable (_ ,mk,_ ,_ ) (GrValIntro_CVar c) = mk c
+gviFoldInlineable (_ ,_ ,mk,_ ) (GrValIntro_Int  i) = mk i
+gviFoldInlineable (_ ,_ ,_ ,df) _                   = df
 
 -- | Need not be bound to var but can be used directly
-gviIsInlineable :: GrValIntro -> Bool
-gviIsInlineable = gviFoldInlineable (const True, const True, False)
+gviIsInlineable :: GrValIntro' tag ty varref datafldref tupfldref -> Bool
+gviIsInlineable = gviFoldInlineable (const True, const True, const True, False)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

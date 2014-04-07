@@ -242,7 +242,8 @@ tyDefault = jtyObj
 jvRef :: CVarNmModuleCfg -> CVarMp -> CVarInfo -> J.JInstr
 jvRef
   = cvarToRef
-      ( \t        -> j $ J.Instr_Load t 0
+      ( \n        -> panic $ "ToJazy.jvRef.mkErrorRef: cannot deal with erroneous reference: " ++ show n
+      , \t        -> j $ J.Instr_Load t 0
       , \t o      -> j $ J.Instr_Load t o
       , \t cl f   -> j $ J.Instr_Get True (J.Const_Field cl (show f) t)
       , \t cl f   -> panic "ToJazy.jvRef.mkGlobalInt not used" -- j $ J.Instr_Get True (J.Const_Field cl (show f) t)		-- 

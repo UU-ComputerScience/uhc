@@ -107,12 +107,15 @@ type CVarMp   = CVarMp'   Tag Ty Fld Nm Int
 %%% Cmm types (only temporary place holders)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen cmm) hs export(tyNd, tyStr8, tyInt)
+%%[(8 codegen cmm) hs export(tyNd, tyFn, tyStr8, tyInt)
 mkTy :: String -> Ty
 mkTy = Ty_Nm . mkHNm
 
 tyNd :: Ty
 tyNd = mkTy "Nd"
+
+tyFn :: Ty
+tyFn = mkTy "Fn"
 
 tyStr8 :: Ty
 tyStr8 = mkTy "Str8"
@@ -182,20 +185,20 @@ declLocalStackVar :: Ty -> Nm -> Maybe Expr -> Seq.Seq BodyDecl
 declLocalStackVar t nm me = Seq.fromList [BodyDecl_StackDecl [Datum_Nm nm, Datum_Ty t Nothing (fmap (\e -> Init_Seq [e]) me)]]
 
 -- | Declare & assign (register) variable
-declLocalRegVar :: Ty -> Nm -> Maybe Expr -> Seq.Seq BodyDecl
+declLocalRegVar :: Ty -> CVarInfo -> Maybe Expr -> Seq.Seq BodyDecl
 declLocalRegVar t nm me
   = Seq.fromList [BodyDecl_Decl $ Decl_Regs False $ Regs_Regs Nothing t [RegNmInit_NmInit nm Nothing]]
-    `Seq.union` maybe Seq.empty (\e -> assign' nm e) me
+    `Seq.union` maybe Seq.empty (\e -> assign nm e) me
 
 -- | Locally declare & assign constant (or variation)
-declLocalConst :: ConstKind -> Ty -> Nm -> Expr -> Seq.Seq BodyDecl
+declLocalConst :: ConstKind -> Ty -> CVarInfo -> Expr -> Seq.Seq BodyDecl
 declLocalConst k t nm e = Seq.fromList $
      [BodyDecl_Decl $ Decl_Const k (Just t) nm e]
 %%]
 
 %%[(8 codegen cmm) hs export(declGlobalConst)
 -- | Globally declare & assign constant (or variation)
-declGlobalConst :: ConstKind -> Ty -> Nm -> Expr -> Seq.Seq TopLevel
+declGlobalConst :: ConstKind -> Ty -> CVarInfo -> Expr -> Seq.Seq TopLevel
 declGlobalConst k t nm e = Seq.fromList $
      [TopLevel_Decl $ Decl_Const k (Just t) nm e]
 %%]
@@ -227,16 +230,16 @@ switch e as = Seq.fromList [BodyDecl_Stmt $ Stmt_Switch e as]
 
 %%[(8 codegen cmm) hs export(alloc, box, unbox)
 -- | Alloc
-alloc :: DataGam -> Nm -> Tag -> [Expr] -> Seq.Seq BodyDecl
+alloc :: DataGam -> CVarInfo -> Tag -> [Expr] -> Seq.Seq BodyDecl
 alloc dataGam nm tag as = Seq.fromList [BodyDecl_Stmt $ Stmt_Alloc nm tag (zip (flds ++ (assocLElts $ refGen (length flds) 1 hsnLclSupply)) as)]
   where flds  = maybe [] (\(_,dti) -> dtiFldRefL dti) $ dataGamTagLookup tag dataGam
 
 -- | Boxing
-box :: Nm -> Boxing -> Expr -> Seq.Seq BodyDecl
+box :: CVarInfo -> Boxing -> Expr -> Seq.Seq BodyDecl
 box nm bx e = Seq.fromList [BodyDecl_Stmt $ Stmt_Box nm bx e]
 
 -- | UnBoxing
-unbox :: Nm -> Boxing -> Expr -> Seq.Seq BodyDecl
+unbox :: CVarInfo -> Boxing -> Expr -> Seq.Seq BodyDecl
 unbox nm bx e = Seq.fromList [BodyDecl_Stmt $ Stmt_UnBox nm bx e]
 %%]
 

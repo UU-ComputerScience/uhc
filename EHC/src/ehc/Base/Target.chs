@@ -163,7 +163,7 @@ supportedTargetMp :: Map.Map String Target
                  ++ [ mk Target_Interpreter_Core_JavaScript [FFIWay_JavaScript] ]
 %%]]
 %%[[(8 cmm javascript)
-                 ++ [ mk Target_Interpreter_GrinCmm_JavaScript [FFIWay_JavaScript] ]
+                 -- ++ [ mk Target_Interpreter_GrinCmm_JavaScript [FFIWay_JavaScript] ]
 %%]]
 %%[[(8888 java)
                  -- ++ [ mk Target_Interpreter_Core_Java [] ]

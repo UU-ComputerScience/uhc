@@ -42,7 +42,7 @@ An EHC compile unit maintains info for one unit of compilation, a Haskell (HS) m
 %%[50 import(qualified {%{EH}HS.ModImpExp} as HSSemMod)
 %%]
 -- module admin
-%%[50 import({%{EH}Module})
+%%[50 import({%{EH}Module}, {%{EH}CodeGen.ImportUsedModules})
 %%]
 
 -- timestamps
@@ -168,9 +168,7 @@ data EHCompileUnit
 %%]]
       , ecuState             :: !EHCompileUnitState
 %%[[50
-      , ecuHSDeclImpNmS      :: !(Set.Set HsName)                   -- imported modules as declared in src .hs
-      , ecuHIDeclImpNmS      :: !(Set.Set HsName)                   -- imported modules as declared, either in .hs or .hi
-      , ecuHIUsedImpNmS      :: !(Set.Set HsName)                   -- imported modules as actually used
+      , ecuImportUsedModules :: !ImportUsedModules                  -- imported modules info
       , ecuIsTopMod          :: !Bool                               -- module has been specified for compilation on commandline
       , ecuHasMain           :: !Bool                               -- has a def for 'main'?
       , ecuNeedsCompile      :: !Bool                               -- (re)compilation from .hs needed?
@@ -200,6 +198,12 @@ data EHCompileUnit
       , ecuGenCodeFiles      :: ![FPath]                            -- generated code files
 %%]]
       }
+%%]
+
+%%[50 export(ecuHSDeclImpNmS, ecuHIDeclImpNmS, ecuHIUsedImpNmS)
+ecuHSDeclImpNmS = iumHSDeclModules . ecuImportUsedModules
+ecuHIDeclImpNmS = iumHIDeclModules . ecuImportUsedModules
+ecuHIUsedImpNmS = iumHIUsedModules . ecuImportUsedModules
 %%]
 
 %%[8 export(ecuFilePath)
@@ -268,9 +272,7 @@ emptyECU
 %%]]
       , ecuState             = ECUSUnknown
 %%[[50
-      , ecuHSDeclImpNmS      = Set.empty
-      , ecuHIDeclImpNmS      = Set.empty
-      , ecuHIUsedImpNmS      = Set.empty
+      , ecuImportUsedModules = emptyImportUsedModules
       , ecuIsTopMod          = False
       , ecuHasMain           = False
       , ecuNeedsCompile      = True
@@ -513,13 +515,16 @@ ecuStoreHSSemMod :: EcuUpdater HSSemMod.Syn_AGItf
 ecuStoreHSSemMod x ecu = ecu { ecuMbHSSemMod = Just x }
 
 ecuStoreHSDeclImpS :: EcuUpdater (Set.Set HsName)
-ecuStoreHSDeclImpS x ecu = ecu { ecuHSDeclImpNmS = x }
+ecuStoreHSDeclImpS x ecu = ecu { ecuImportUsedModules = ium {iumHSDeclModules = x} }
+  where ium = ecuImportUsedModules ecu
 
 ecuStoreHIDeclImpS :: EcuUpdater (Set.Set HsName)
-ecuStoreHIDeclImpS x ecu = ecu { ecuHIDeclImpNmS = x }
+ecuStoreHIDeclImpS x ecu = ecu { ecuImportUsedModules = ium {iumHIDeclModules = x} }
+  where ium = ecuImportUsedModules ecu
 
 ecuStoreHIUsedImpS :: EcuUpdater (Set.Set HsName)
-ecuStoreHIUsedImpS x ecu = ecu { ecuHIUsedImpNmS = x }
+ecuStoreHIUsedImpS x ecu = ecu { ecuImportUsedModules = ium {iumHIUsedModules = x} }
+  where ium = ecuImportUsedModules ecu
 
 ecuStoreMod :: EcuUpdater Mod
 ecuStoreMod x ecu = ecu { ecuMod = x }

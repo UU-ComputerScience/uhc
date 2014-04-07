@@ -296,7 +296,13 @@ cpTranslateCmm2JavaScript modNm
               mbCmm    = ecuMbCmm ecu
               coreInh   = crsiCoreInh crsi
        ; when (isJust mbCmm) $ do
-           let (jsmod,errs) = cmmMod2JavaScript opts (Core2GrSem.dataGam_Inh_CodeAGItf coreInh) $ fromJust mbCmm
+           let (jsmod,errs) =
+                 cmmMod2JavaScript opts
+%%[[50
+                   (ecuImportUsedModules ecu)
+%%]]
+                   (Core2GrSem.dataGam_Inh_CodeAGItf coreInh)
+                   (fromJust mbCmm)
            cpUpdCU modNm $ ecuStoreJavaScript jsmod
        }
 %%]
@@ -361,7 +367,7 @@ cpTranslateByteCode modNm
 %%]]
                 ) = gbmod2C opts $ panicJust "cpTranslateByteCode1" mbBytecode
 %%[[(8 cmm)
-               grinbcCmm = Cmm.Module_Mod modNm cmmMod Const.emptyConstSt
+               grinbcCmm = Cmm.Module_Mod modNm cmmMod Nothing Const.emptyConstSt
 %%]]
 %%][50
                coreInh  = crsiCoreInh crsi
@@ -372,7 +378,7 @@ cpTranslateByteCode modNm
                  ,functionInfoExportMp)
                         = ( vlist ([ppMod] ++ (if ecuIsMainMod ecu then [ppMain] else []))
 %%[[(50 cmm)
-                          , Cmm.Module_Mod modNm (cmmMod  ++ (if ecuIsMainMod ecu then cmmMain else [])) emptyConstSt
+                          , Cmm.Module_Mod modNm (cmmMod  ++ (if ecuIsMainMod ecu then cmmMain else [])) Nothing emptyConstSt
 %%]]
                           , functionInfoExportMp
                           )

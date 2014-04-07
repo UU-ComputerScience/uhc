@@ -111,6 +111,12 @@ PRAGMA nocycle
 type Nm = Cmm.Nm
 %%]
 
+%%[(8 codegen grin cmm) hs export(GrValIntro)
+-- | Specific instantiation for cmm, see also CVarInfo
+--   type CVarInfo = CVarInfo' Tag Ty Fld Nm Int
+type GrValIntro = GrValIntro' Cmm.Tag Cmm.Ty Fld Nm Int
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Utils
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -222,6 +228,7 @@ patNmL2CVarMp = patNmL2CVarMp' (\f -> CVar_Local Cmm.tyNd f) . VA.patNmL2DepL id
 
 %%[(8 codegen grin cmm)
 ATTR GrModule AllNTNm [ | cvarMp: {Cmm.CVarMp} | ]
+ATTR AllBind [ | | newCVarMp USE {`Map.union`} {Map.empty} : {Cmm.CVarMp} ]
 
 SEM GrAGItf
   | AGItf       loc         .   cvarMp          =   Map.empty
@@ -251,6 +258,7 @@ SEM GrExpr
 %%[(8 codegen grin cmm)
 SEM GrBind
   | Bind        loc         .   newCVarMp       =   patNmL2CVarMp @argNmL
+  				lhs			.	newCVarMp		=	Map.fromList [(@nm, @cvar)]
 
 SEM GrAlt
   | Alt         loc			.   newCVarMp       =   Map.empty -- patNmL2VAGam @newAltNmL
@@ -258,7 +266,7 @@ SEM GrAlt
 
 %%[(8 codegen grin cmm) hs
 lkupCvi :: HsName -> NmEnvCmm -> Cmm.CVarInfo
-lkupCvi n ne = fromMaybe CVar_None $ nmEnvLookup n ne
+lkupCvi n ne = fromMaybe (CVar_Error n) $ nmEnvLookup n ne
 %%]
 
 %%[(8 codegen grin cmm)
@@ -545,9 +553,9 @@ nmEnvLookup nm env
               case Map.lookup q $ neImpNmMp env of
                 Just (mo,entryMp) -> do
                     eo <- Map.lookup nm entryMp
-                    return $ CVar_GlobalExt Cmm.tyNd (refOfFld mo) (refOfFld eo)
+                    return $ CVar_GlobalExtern Cmm.tyNd (refOfFld mo) (refOfFld eo)
                 _ -> do
-                    return $ CVar_GlobalInt Cmm.tyNd q nm
+                    return $ CVar_GlobalIntern Cmm.tyNd q nm
 %%]]
       v -> v
 %%]
@@ -579,6 +587,7 @@ SEM GrModule
                                                       , neExtra   = @lhs.lamMp -- , GB.neLamMp   = @lhs.lamMp
 %%]]
                                                       }
+                            .   nmEnvFinal      =   @nmEnv {neCVarMp = @bindL.newCVarMp `Map.union` neCVarMp @nmEnv}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -876,25 +885,33 @@ gviLLoadM' mk = mapM $ gviLoadM' mk
 {-# INLINE gviLLoadM' #-}
 
 gviLLoadExprM :: [GrValIntro] -> GviLoadM [Cmm.Expr]
-gviLLoadExprM = gviLLoadM' gvi2InlineableExpr
+gviLLoadExprM = mapM gvi2InlineableExprM
 {-# INLINE gviLLoadExprM #-}
 
 gviLoadExprM :: GrValIntro -> GviLoadM Cmm.Expr
-gviLoadExprM = gviLoadM' gvi2InlineableExpr
+gviLoadExprM = gvi2InlineableExprM
 {-# INLINE gviLoadExprM #-}
 
-gvi2InlineableExpr :: GrValIntro -> Cmm.Expr
-gvi2InlineableExpr gvi = fromMaybe (Cmm.err $ show gvi) $ gvi2MbInlineExpr gvi
+gvi2InlineableExprM :: GrValIntro -> GviLoadM Cmm.Expr
+gvi2InlineableExprM gvi = fmap (fromMaybe $ Cmm.err $ show gvi) $ gvi2MbInlineExprM gvi
 
 -- | To directly inlineable usable expr
-gvi2MbInlineExpr :: GrValIntro -> Maybe Cmm.Expr
-gvi2MbInlineExpr gvi
-  =   gviFoldInlineable (Just . Cmm.Expr_Nm, \i -> Just $ Cmm.Expr_Int (fromIntegral i) Nothing, Nothing) gvi
-  <|> gvi2MbConstExpr gvi
+gvi2MbInlineExprM :: GrValIntro -> GviLoadM (Maybe Cmm.Expr)
+gvi2MbInlineExprM gvi = do
+  mbe <- gviFoldInlineableM gvi
+  maybe (return $ gvi2MbConstExpr gvi) (return . Just) mbe
+  where gviFoldInlineableM = gviFoldInlineable
+          ( \n -> do cvi <- nm2CValInfoM n
+                     return $ Just $ Cmm.cvar cvi
+          , return . Just . Cmm.cvar
+          , \i -> return $ Just $ Cmm.Expr_Int (fromIntegral i) Nothing
+          , return Nothing
+          )
 
 gvi2MbConstExpr :: GrValIntro -> Maybe Cmm.Expr
 gvi2MbConstExpr gvi = case gvi of
-  GrValIntro_Str _ (Just cref) -> return $ Cmm.var $ refOfFld cref
+  GrValIntro_Str _ (Just cref) -> -- return $ Cmm.cvar cref
+                                  return $ Cmm.var $ refOfFld cref		-- 20140404 AD: should be cvar construction, but does not fit yet...
   _                            -> Nothing
 
 nm2CValInfoM :: HsName -> GviLoadM Cmm.CVarInfo
@@ -903,7 +920,7 @@ nm2CValInfoM nm = do
     cvarmp <- gets glstCVarMp
     case cvarMpLookup nm cvarmp <|> nmEnvLookup nm env of
       Just cv -> return cv
-      _       -> return CVar_None
+      _       -> return (CVar_Error nm)
 
 grtag2cmmtagM :: GrTag -> GviLoadM Cmm.Tag
 grtag2cmmtagM gt = case gt of
@@ -918,6 +935,8 @@ gvi2CValInfoM :: GrValIntro -> GviLoadM Cmm.CVarInfo
 gvi2CValInfoM gvi = case gvi of
   GrValIntro_Nm nm ->
     nm2CValInfoM nm
+  GrValIntro_CVar cvi ->
+    return cvi
   gvi -> do
     e <- gviLoadExprM gvi
     gvi' <- cmmBindFreshInM $ \_ cvi -> Cmm.assign cvi e
@@ -928,20 +947,20 @@ gvi2MbNonInlineM gvi = case gvi of
   GrValIntro_Grp gt	gviL -> do
     args <- gviLLoadExprM gviL
     dataGam <- asks glrdDataGam
-    fmap Just $ cmmBindFreshInM' $ \newn _  -> do
+    fmap Just $ cmmBindFreshInM' $ \_ newv  -> do
       t <- grtag2cmmtagM gt
-      return $ Cmm.alloc dataGam newn t args
+      return $ Cmm.alloc dataGam newv t args
   GrValIntro_Box bx	gvi -> do
     arg <- gviLoadExprM gvi
-    fmap Just $ cmmBindFreshInM $ \newn _  -> Cmm.box newn bx arg
+    fmap Just $ cmmBindFreshInM $ \_ newv  -> Cmm.box newv bx arg
   _ -> return Nothing
 
 cmmBindFreshInM' :: (HsName -> Cmm.CVarInfo -> GviLoadM CmmBodyDecls) -> GviLoadM GrValIntro
 cmmBindFreshInM' mk = do
     (nm, cv) <- gviFreshLocalNmM
     ds <- mk nm cv
-    gviAppendDeclsM $ Cmm.declLocalRegVar Cmm.tyNd nm Nothing & ds
-    return $ GrValIntro_Nm nm
+    gviAppendDeclsM $ Cmm.declLocalRegVar Cmm.tyNd cv Nothing & ds
+    return $ GrValIntro_CVar $ cv
 
 cmmBindFreshInM :: (HsName -> Cmm.CVarInfo -> CmmBodyDecls) -> GviLoadM GrValIntro
 cmmBindFreshInM mk = cmmBindFreshInM' (\n c -> return $ mk n c)
@@ -980,8 +999,8 @@ SEM GrExpr
                                                 =   runGviLoad @lUniq @lhs.dataGam @nmEnv $ do
                                                         scrut <- gviLoadM'' gvi2CValInfoM @val.grvalIntro
                                                         (nmres, cvres) <- gviFreshLocalNmM
-                                                        gviAppendDeclsM $ Cmm.declLocalRegVar Cmm.tyNd nmres Nothing
-                                                        return (scrut, GrValIntro_Nm nmres, cvres)
+                                                        gviAppendDeclsM $ Cmm.declLocalRegVar Cmm.tyNd cvres Nothing
+                                                        return (scrut, GrValIntro_CVar cvres, cvres)
                             .   scrutineeCVarTag=   CVar_DataTag Cmm.tyInt @scrutineeCVar
                             .   (_, switchDecls, _)
                                                 =   runGviLoad @lUniq2 @lhs.dataGam @nmEnv $ do
@@ -1000,13 +1019,15 @@ SEM GrExpr
   														e <- gviLoadExprM @expr.grvalIntro
   														case @pat.nmIntro of
   														  NmIntro_Single nmp annot -> do
-  														    gviAppendDeclsM $ Cmm.declLocalConst Cmm.Const_SSA Cmm.tyNd nmp e
-  														    gviNewLocalM nmp
-  														    return $ GrValIntro_Nm nmp
+  														    cvi <- gviNewLocalM nmp
+  														    gviAppendDeclsM $ Cmm.declLocalConst Cmm.Const_SSA Cmm.tyNd cvi e
+  														    return $ GrValIntro_CVar cvi
+  														    -- return $ GrValIntro_Nm nmp
   														  NmIntro_Box nmp bx -> do
-  														    gviAppendDeclsM $ Cmm.unbox nmp bx e
-  														    gviNewLocalM nmp
-  														    return $ GrValIntro_Nm nmp
+  														    cvi <- gviNewLocalM nmp
+  														    gviAppendDeclsM $ Cmm.unbox cvi bx e
+  														    return $ GrValIntro_CVar cvi
+  														    -- return $ GrValIntro_Nm nmp
 
   | App			loc			.	(grvalIntro, valDecls, valCVarMp)
                                                 =   case @lhs.returnCtxt of
@@ -1089,10 +1110,10 @@ SEM GrBind
 %%]
 
 %%[(8 codegen grin cmm)
+%%]
 SEM GrModule
   | Mod         loc         .   mainEntryCVar	=   panicJust "ToCmm.GrBind.Bind.mainEntryCVar" $ nmEnvLookup hsnMain @nmEnv
                             -- .   mainEntryFld	=   maybe noFld vaGlobRef $ (nmEnvLookup hsnMain @nmEnv :: Maybe ValAccessG)
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Additional C include files (we now assume C will be generated)
@@ -1124,12 +1145,13 @@ SEM GrModule
                                                       ]
 %%]]
                                                       (Seq.toList
-                                                       $ (let mk f (Const_String {constString=s}) = Cmm.declGlobalConst Cmm.Const_CompileTime Cmm.tyStr8 (refOfFld f) (Cmm.str8 s)
+                                                       $ (let mk f (Const_String {constString=s}) = Cmm.declGlobalConst Cmm.Const_CompileTime Cmm.tyStr8 (CVar_GlobalIntern Cmm.tyStr8 @moduleNm (refOfFld f)) (Cmm.str8 s)
                                                               mk f  _                             = Seq.empty
                                                           in  Seq.unions [ mk f c | (c,f) <- Map.toList $ conststMp @bindL.constSt ]
                                                          )
                                                        & @bindL.cmmTopDecls
                                                       )
+                                                      (nmEnvLookup hsnMain @nmEnvFinal)
 %%[[9090
                                                       (Set.toList @bindL.includeS)
 %%]]
@@ -1149,9 +1171,10 @@ infixr 1 &
 ATTR AllBind [ | | cmmTopDecls USE {&} {Seq.empty}: CmmTopDecls ]
 
 SEM GrBind
-  | Bind        lhs         .   cmmTopDecls   	=   Seq.singleton $ Cmm.TopLevel_Proc $
-  														Cmm.Proc_Proc Nothing @nm [ Cmm.Formal_Formal Nothing False Cmm.tyNd a | a <- @argNmL ] $
-  															Cmm.Body_Body (Seq.toList @expr.cmmBodyDecls)
+  | Bind        loc         .   cvar            =   CVar_GlobalIntern Cmm.tyFn hsnUnknown @nm
+                lhs         .   cmmTopDecls     =   Seq.singleton $ Cmm.TopLevel_Proc $
+                                                        Cmm.Proc_Proc Nothing @cvar [ Cmm.Formal_Formal Nothing False Cmm.tyNd a | a <- @argNmL ] $
+                                                            Cmm.Body_Body (Seq.toList @expr.cmmBodyDecls)
 %%]
 
 %%[(8 codegen grin cmm)

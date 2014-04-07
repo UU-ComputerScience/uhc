@@ -65,7 +65,7 @@ Top level
 
 %%[(8 codegen cmm)
 SEM Decl
-  | Const				lhs			.	c		=	gencUpdAssign "" (@mbTy.c >#< @nm) @expr.c
+  -- | Const				lhs			.	c		=	gencUpdAssign "" (@mbTy.c >#< @nm) @expr.c			-- TBD: cvar sort out
   | ConstArray			lhs			.	c		=	gencUpdAssign "" (@mbTy.c >#< @nm >|< "[]") (ppCurlysCommasBlock @exprs.lc)
   | Typedef				lhs			.	c		=	vlist $ map (\n -> gencTypeDecl n @ty.c) @nms
   -- | Regs
@@ -73,7 +73,7 @@ SEM Decl
   | Comment				lhs			.	c		=	gencCmt @str
 
 SEM Proc
-  | Proc				lhs			.	c		=	gencFunDef "void" @nm @formals.lc @body.lc
+  -- | Proc				lhs			.	c		=	gencFunDef "void" @nm @formals.lc @body.lc			-- TBD: cvar sort out
 
 SEM Body
   | Body				lhs			.	c		=	ppCurlysBlock @decls.lc
